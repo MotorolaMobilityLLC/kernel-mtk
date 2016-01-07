@@ -1,0 +1,5 @@
+
+config CUSTOM_KERNEL_IN_POCKET_SENSOR
+	bool "CUSTOM_KERNEL_IN_POCKET_SENSOR"
+	help
+	  Kernel space in pocket detection sensor driver.

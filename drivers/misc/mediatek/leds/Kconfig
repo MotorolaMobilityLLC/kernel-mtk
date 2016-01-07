@@ -1,0 +1,17 @@
+config MTK_LEDS
+	tristate "MediaTek LED Support"
+	depends on LEDS_CLASS
+	---help---
+	  This selects the MediaTek(R) LEDs connected to MediaTek chips.
+	  If you want to use MediaTek(R) LEDs support, say Y or M here.
+	  If unsure, say N.
+	  Mediatek LED module includes backlight, indicate LED, keypad LED, button LED etc.
+
+config LIGHTNESS_MAPPING_VALUE
+	int "LIGHTNESS_MAPPING_VALUE"
+	default 255
+ 	---help---
+	  Backlight brightness mapping value, from 0 to 255.
+
+config TB8173_EVB
+	bool "Support TB8173 EVB board"

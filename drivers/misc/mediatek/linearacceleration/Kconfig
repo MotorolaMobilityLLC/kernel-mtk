@@ -1,0 +1,5 @@
+
+config CUSTOM_KERNEL_LINEARACCEL_SENSOR
+	bool "CUSTOM_KERNEL_LINEARACCEL_SENSOR"
+	help
+	  Kernel space linear acceleration sensor driver.

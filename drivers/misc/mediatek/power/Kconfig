@@ -1,0 +1,45 @@
+# Power Related
+config MTK_PMIC
+	bool "MediaTek PMIC driver"
+	default y
+	---help---
+	  MediaTek PMIC driver
+
+config MTK_BQ25896_SUPPORT
+	bool "MTK_BQ25896_SUPPORT"
+	select MTK_SWITCH_INPUT_OUTPUT_CURRENT_SUPPORT
+	default n
+	---help---
+	Mediatek TI BQ25896 driver.
+	Set y to support this driver.
+	Set n and choose other chargers.
+	This driver uses I2c bus.
+
+config MTK_SWITCH_INPUT_OUTPUT_CURRENT_SUPPORT
+	bool "MTK_SWITCH_INPUT_OUTPUT_CURRENT_SUPPORT"
+	default n
+	---help---
+	Mediatek switch charger input output current.
+	Set y to support.
+	Set n to disable.
+	switch charger often supports this feature.
+
+config MTK_BIF_SUPPORT
+	bool "MTK_BIF_SUPPORT"
+	select MTK_DYNAMIC_BAT_CV_SUPPORT
+	default n
+	---help---
+	Mediatek smart battery BIF feature.
+	BIF feature provides battery information
+	to AP and no need to use AuxADC
+	to get battery information.
+
+config MTK_DYNAMIC_BAT_CV_SUPPORT
+	bool "MTK_DYNAMIC_BAT_CV_SUPPORT"
+	default n
+	---help---
+	Mediatek dynamic CV support with BIF battery
+	BIF feature provides battery information
+	to AP and no need to use AuxADC
+	to get battery voltage.
+

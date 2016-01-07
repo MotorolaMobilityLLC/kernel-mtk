@@ -1,0 +1,5 @@
+
+config CUSTOM_KERNEL_RV_SENSOR
+	bool "CUSTOM_KERNEL_RV_SENSOR"
+	help
+	  Kernel space rotation vector sensor driver.

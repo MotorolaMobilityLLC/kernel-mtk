@@ -1,0 +1,5 @@
+
+config CUSTOM_KERNEL_WAKE_GESTURE_SENSOR
+	bool "CUSTOM_KERNEL_WAKE_GESTURE_SENSOR"
+	help
+	  Kernel space wake up gesture sensor driver.

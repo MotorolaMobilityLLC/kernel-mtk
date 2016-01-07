@@ -1,0 +1,8 @@
+# RRC
+config MTK_RRC
+	bool "MediaTek RRC Driver"
+	default n
+	help
+	  RRC(Refresh Rate Controller) is a display tcehnology that automatically switch display refresh rate for
+	  smoother and clearer user experience.
+

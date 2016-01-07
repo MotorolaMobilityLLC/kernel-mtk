@@ -1,0 +1,85 @@
+config MT_SND_SOC_V1
+	bool "MT_SND_SOC_V1"
+    default n
+    help
+        If you say Y, enable MT_SND_SOC_V1_driver.
+config MT_SND_SOC_V2
+    bool "MT_SND_SOC_V2"
+	default n
+	help
+        If you say Y, enable MT_SND_SOC_V2_driver.
+config MT_SND_SOC_V3
+    bool "MT_SND_SOC_V3"
+	default n
+	help
+        If you say Y, enable MT_SND_SOC_V3_driver.
+config MT_SND_SOC_6580
+    bool "MT_SND_SOC_6580"
+	default n
+	help
+        If you say Y, enable MT_SND_SOC_6580_driver.
+config MT_SND_SOC_6755
+    bool "MT_SND_SOC_6755"
+	default n
+	help
+        If you say Y, enable MT_SND_SOC_6755_driver.
+config MT_SND_SOC_6797
+    bool "MT_SND_SOC_6797"
+	default n
+	help
+		If you say Y, enable MT_SND_SOC_6797_driver.
+		Must enable this to use medatek audio driver.
+		The default value is y for MT6797.
+		It's recommended no to change this.
+config MT_SND_SOC_8163
+    bool "MT_SND_SOC_8163"
+	default n
+	help
+        If you say Y, enable MT_SND_SOC_8163_driver.
+
+config MTK_SPEAKER
+	bool "MTK_SPEAKER"
+	default n
+	help
+	  If you say Y, enable MTK_SPEAKER_AMP
+config MTK_NXP_TFA9890
+    bool "MTK_NXP_TFA9890"
+	default n
+	help
+        If you say Y, enable MTK_NXP_TFA9890 driver.
+
+config SND_SOC_MT8173
+    tristate
+
+config SND_SOC_MT8173_MT6391_MACH
+    tristate "ASoC Audio driver for MT8173 with MT6391 codec"
+    depends on ARCH_MT8173
+    select SND_SOC_MT8173
+    select SND_SOC_MT6391
+    help
+        This adds audio driver for MT8173 platform with the MT6391 audio codec.
+
+config MT_SND_SOC_2701
+    tristate
+
+config SND_SOC_MT2701_EVB
+	bool "SND_SOC_MT2701_EVB"
+	select MT_SND_SOC_2701
+	help
+	  Say Y if you want to use the MT2701 EVB
+	  Audio interfaces for MT2701.
+
+config SND_SOC_MT2701_RT5640
+	bool "SND_SOC_MT2701_RT5640"
+	select MT_SND_SOC_2701
+	select SND_SOC_RT5640
+	help
+	  This adds ASoC driver for Mediatek MT2701 boards
+	  with the RT5640 audio codec.
+	  Select Y if you have such device.
+
+config MTK_BTCVSD_ALSA
+    bool "MTK_BTCVSD_ALSA"
+	default n
+	help
+        If you say Y, enable MTK_BTCVSD_ALSA.

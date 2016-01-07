@@ -1,0 +1,15 @@
+#######################################
+# Specify source files
+#######################################
+
+core_obj += $(asf_link)/core/sec_ccci.o
+core_obj += $(asf_link)/core/sec_boot_core.o
+core_obj += $(asf_link)/core/sec_mod_core.o
+core_obj += $(asf_link)/core/sec_osal.o
+core_obj += $(asf_link)/core/sec_legacy.o
+core_obj += $(asf_link)/module/sec_mod.o
+
+# HEADER FILE
+ccflags-y += -I$(src)/$(asf_link)/asf_inc
+ccflags-y += -I$(src)/$(asf_link)/asf_export_inc
+ccflags-y += -I$(src)/$(asf_link)/module

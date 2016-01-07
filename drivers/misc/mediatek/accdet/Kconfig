@@ -1,0 +1,87 @@
+config MTK_ACCDET
+	tristate "MediaTek ACCDET driver"
+	---help---
+
+	  ACCDET driver support for MediaTek SOC
+
+	  If you want to use MediaTek ACCDET driver,
+	  say Y or M here.
+
+	  If unsure, say N.
+
+config ACCDET_EINT
+	tristate "MediaTek ACCDET driver"
+	---help---
+
+	  ACCDET EINT support for MediaTek SOC
+
+	  If you want to use MediaTek ACCDET EINT from PMIC ACCDET itself,
+	  say Y or M here.
+
+	  If unsure, say N.
+
+config ACCDET_EINT_IRQ
+	tristate "MediaTek ACCDET driver"
+	---help---
+
+	  ACCDET EINT support for MediaTek SOC
+
+	  If you want to use MediaTek ACCDET EINT from AP GPIO,
+	  say Y or M here.
+
+	  If unsure, say N.
+
+config ACCDET_PIN_SWAP
+	tristate "MediaTek ACCDET driver"
+	---help---
+
+	  ACCDET_PIN_SWAP support for MediaTek SOC
+
+	  If you want to use MediaTek ACCDET PIN SWAP,
+	  say Y or M here.
+
+	  If unsure, say N.
+
+config ACCDET_PIN_RECOGNIZATION
+	tristate "MediaTek ACCDET driver"
+	---help---
+
+	  ACCDET_PIN_RECOGNIZATION support for MediaTek SOC
+
+	  If you want to use MediaTek ACCDET PIN RECOGNIZATION,
+	  say Y or M here.
+
+	  If unsure, say N.
+
+config FOUR_KEY_HEADSET
+	tristate "MediaTek ACCDET driver"
+	---help---
+
+	  FOUR_KEY_HEADSET support for MediaTek SOC
+
+	  If you want to use MediaTek ACCDET four key headset,
+	  say Y or M here.
+
+	  If unsure, say N.
+
+config HEADSET_SUPPORT_FIVE_POLE
+	tristate "MediaTek ACCDET driver"
+	---help---
+
+	  HEADSET_SUPPORT_FIVE_POLE support for MediaTek SOC
+
+	  If you want to use MediaTek ACCDET five pole headset,
+	  say Y or M here.
+
+	  If unsure, say N.
+
+config TS3A225E_ACCDET
+	tristate "MediaTek ACCDET driver"
+	---help---
+
+	  TS3A225E support for MediaTek SOC
+
+	  If you want to use TS3A225E
+	  say Y or M here.
+
+	  If unsure, say N.

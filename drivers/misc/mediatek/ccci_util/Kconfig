@@ -1,0 +1,102 @@
+menuconfig MTK_CCCI_DEVICES
+	bool "CCCI Devices"
+	default y
+	help
+	  Say Y here to enable CCCI basic support.
+	  If you say N, all CCCI related code (including dummy API) will be disable.
+
+config MTK_ENABLE_MD1
+	bool "MTK_ENABLE_MD1"
+	depends on MTK_CCCI_DRIVER || MTK_CCCI_EXT || MTK_ECCCI_DRIVER
+	default y
+	help
+	   Set to yes,
+	   	   the first modem is enabled
+	   Set to no,
+	   	   the first modem is not enabled
+
+config MTK_MD1_SUPPORT
+	int "MTK_MD1_SUPPORT"
+	depends on MTK_ENABLE_MD1
+	default 3
+	help
+	  modem 1 mode:	1=>2g,2=>3g,3=>wg,4=>tg,5=>lwg,6=>ltg,7=>sglte,0=>invalid
+
+
+
+config MD1_SIZE
+	hex "MD1_SIZE"
+	depends on MTK_ENABLE_MD1
+	default 0x5000000
+ 	help
+	   modem 1 memory size.
+
+
+
+config MD1_SMEM_SIZE
+	hex "MD1_SMEM_SIZE"
+	depends on MTK_ENABLE_MD1
+	default 0x200000
+ 	help
+	   modem 1 share memory size.
+
+
+
+config MTK_ENABLE_MD2
+	bool "MTK_ENABLE_MD2"
+	depends on MTK_CCCI_EXT || MTK_ECCCI_DRIVER
+	default n
+	help
+	   Set to yes,
+	   	   the second modem is enabled
+	   Set to no,
+	   	   the second modem is not enabled
+
+config MTK_MD2_SUPPORT
+	int "MTK_MD2_SUPPORT"
+	depends on MTK_ENABLE_MD2
+	default 1
+	help
+	  modem 2 mode:
+		1=>2g,
+		2=>3g,
+		3=>wg,
+		4=>tg,
+		5=>lwg,
+		6=>ltg,
+		7=>sglte,
+	 	0=>invalid
+
+config MD2_SIZE
+	hex "MD2_SIZE"
+	depends on MTK_ENABLE_MD2
+	default 0x1000000
+ 	help
+	   modem 2 memory size.
+
+
+
+config MD2_SMEM_SIZE
+	hex "MD2_SMEM_SIZE"
+	depends on MTK_ENABLE_MD2
+	default 0x400000
+	help
+	   modem 2 share memory size.
+
+
+
+config MTK_MD_SBP_CUSTOM_VALUE
+	string "MTK_MD_SBP_CUSTOM_VALUE"
+	default ""
+	help
+	  Disable MD SBP(Single Binary Platform) feature or not.
+	  Defined: enable MD SBP feature.
+
+
+config MTK_MD2_SBP_CUSTOM_VALUE
+	string "MTK_MD2_SBP_CUSTOM_VALUE"
+	default ""
+	help
+	  Disable MD2 SBP(Single Binary Platform) feature or not.
+	  Defined: enable MD2 SBP feature.
+
