@@ -139,6 +139,7 @@ extern LCM_DRIVER otm9608_wvga_dsi_cmd_drv;
 extern LCM_DRIVER otm9608_fwvga_dsi_cmd_drv;
 extern LCM_DRIVER otm9608_qhd_dsi_cmd_drv;
 extern LCM_DRIVER otm9608_qhd_dsi_vdo_drv;
+extern LCM_DRIVER hx8394f_boe_720p_vdo_drv;
 extern LCM_DRIVER otm8009a_fwvga_dsi_cmd_tianma_lcm_drv;
 extern LCM_DRIVER otm8009a_fwvga_dsi_vdo_tianma_lcm_drv;
 extern LCM_DRIVER hx8389b_qhd_dsi_vdo_tianma_lcm_drv;

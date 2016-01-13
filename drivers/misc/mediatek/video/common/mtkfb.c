@@ -2594,7 +2594,86 @@ int mtkfb_get_debug_state(char *stringbuf, int buf_len)
 	return len;
 }
 
+#ifdef CONFIG_LCM_GPIO_UTIL
+struct pinctrl *lcm_pinctl_pinctrl;
+struct pinctrl_state *lcm_pinctl_vsp_high, *lcm_pinctl_vsp_low, *lcm_pinctl_vsn_high, *lcm_pinctl_vsn_low;
+static int lcm_pinctl_gpio_probe(struct platform_device *pdev);
+void lcm_pinctl_gpio_output(int pin, int level) ;
 
+static int lcm_pinctl_gpio_probe(struct platform_device *pdev)
+{
+	int ret;
+	printk ("[lcm_pinctl %d] mt_lcm_pinctl_pinctrl+++++++++++++++++\n", pdev->id);
+	lcm_pinctl_pinctrl = devm_pinctrl_get(&pdev->dev);
+	if (IS_ERR(lcm_pinctl_pinctrl)) {
+		ret = PTR_ERR(lcm_pinctl_pinctrl);
+		dev_err(&pdev->dev, "fwq Cannot find lcm_pinctl lcm_pinctl_pinctrl!\n");
+		return ret;
+	}
+	lcm_pinctl_vsp_high = pinctrl_lookup_state(lcm_pinctl_pinctrl, "vsp-pullhigh");
+	if (IS_ERR(lcm_pinctl_vsp_high)) {
+		ret = PTR_ERR(lcm_pinctl_vsp_high);
+		dev_err(&pdev->dev, "fwq Cannot find lcm_pinctl pinctrl vsp-pullhigh!\n");
+		return ret;
+	}
+	lcm_pinctl_vsp_low = pinctrl_lookup_state(lcm_pinctl_pinctrl, "vsp-pulllow");
+	if (IS_ERR(lcm_pinctl_vsp_low)) {
+		ret = PTR_ERR(lcm_pinctl_vsp_low);
+		dev_err(&pdev->dev, "fwq Cannot find lcm_pinctl pinctrl vsp-pulllow!\n");
+		return ret;
+	}
+	lcm_pinctl_vsn_high = pinctrl_lookup_state(lcm_pinctl_pinctrl, "vsn-pullhigh");
+	if (IS_ERR(lcm_pinctl_vsn_high)) {
+		ret = PTR_ERR(lcm_pinctl_vsn_high);
+		dev_err(&pdev->dev, "fwq Cannot find lcm_pinctl pinctrl vsn-pullhigh!\n");
+		return ret;
+	}
+	lcm_pinctl_vsn_low = pinctrl_lookup_state(lcm_pinctl_pinctrl, "vsn-pulllow");
+	if (IS_ERR(lcm_pinctl_vsn_low)) {
+		ret = PTR_ERR(lcm_pinctl_vsn_low);
+		dev_err(&pdev->dev, "fwq Cannot find lcm_pinctl pinctrl vsn-pulllow!\n");
+		return ret;
+	}
+	printk ("[lcm_pinctl %d] mt_lcm_pinctl_pinctrl----------\n", pdev->id);
+	return 0;
+}
+void lcm_pinctl_gpio_output(int pin, int level) //pin 0->vsp 1>vsn   0->pull_down   1->pull_up  
+{
+	printk ("[lcm_pinctl] lcm_pinctl_output pin = %d, level = %d\n", pin, level);
+	if (pin == 0) {
+		if (level)
+			pinctrl_select_state(lcm_pinctl_pinctrl, lcm_pinctl_vsp_high);
+		else
+			pinctrl_select_state(lcm_pinctl_pinctrl, lcm_pinctl_vsp_low);
+	} else {
+		if (level)
+			pinctrl_select_state(lcm_pinctl_pinctrl, lcm_pinctl_vsn_high);
+		else
+			pinctrl_select_state(lcm_pinctl_pinctrl, lcm_pinctl_vsn_low);
+	}
+}
+
+
+
+struct of_device_id lcm_pinctl_gpio_of_match[] = {
+	{ .compatible = "mediatek,lcm_pinctl", },
+};
+
+struct platform_device lcm_pinctl_gpio_device = {
+	.name		= "lcm_pinctl_gpio",
+	.id			= -1,
+};
+static struct platform_driver lcm_pinctl_gpio_driver = {
+	.probe = lcm_pinctl_gpio_probe,
+	.driver = {
+			.name = "lcm_pinctl_gpio",
+			.owner = THIS_MODULE,
+			.of_match_table = lcm_pinctl_gpio_of_match,
+	},
+};
+
+
+#endif 
 /* Register both the driver and the device */
 int __init mtkfb_init(void)
 {
@@ -2607,6 +2686,14 @@ int __init mtkfb_init(void)
 		r = -ENODEV;
 		goto exit;
 	}
+#ifdef CONFIG_LCM_GPIO_UTIL
+    //add by caozhg
+    if (platform_driver_register(&lcm_pinctl_gpio_driver) != 0) {
+		printk ( "unable to register lcm_pinctl gpio driver.\n");
+		return -1;
+    }
+#endif
+
 #if 0
 #ifdef CONFIG_HAS_EARLYSUSPEND
 	register_early_suspend(&mtkfb_early_suspend_handler);

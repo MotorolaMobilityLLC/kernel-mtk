@@ -45,6 +45,11 @@ config CUSTOM_LCM_Y
 	default "0"
 	help
 	  To set CUSTOM_LCM_Y size
+config LCM_GPIO_UTIL
+	bool "LCM_GPIO_UTIL"
+	default n
+	help
+	  CONFIG_LCM_GPIO_UTIL
 
 config MTK_FB_SUPPORT_ASSERTION_LAYER
 	bool "AEE Assertion Layer Support"

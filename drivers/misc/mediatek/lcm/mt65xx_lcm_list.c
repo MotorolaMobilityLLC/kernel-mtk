@@ -614,6 +614,11 @@ LCM_DRIVER *lcm_driver_list[] = {
 	&otm9608_qhd_dsi_cmd_drv,
 #endif
 
+#if defined(HX8394F_BOE_720P_VDO)
+	&hx8394f_boe_720p_vdo_drv,
+#endif
+
+
 #if defined(OTM9608_QHD_DSI_VDO)
 	&otm9608_qhd_dsi_vdo_drv,
 #endif
@@ -936,6 +941,10 @@ unsigned char lcm_name_list[][128] = {
 
 #if defined(OTM9608_QHD_DSI_CMD)
 	"otm9608a_qhd_dsi_cmd",
+#endif
+
+#if defined(HX8394F_BOE_720P_VDO)
+	"hx8394f_boe_720p_vdo",
 #endif
 
 #if defined(OTM9608_QHD_DSI_VDO)

@@ -776,7 +776,7 @@ disp_lcm_handle *disp_lcm_probe(char *plcm_name, LCM_INTERFACE_ID lcm_id)
 #endif
 			if (strcmp(lcm_drv->name, plcm_name)) {
 				DISPERR
-				    ("FATAL ERROR!!!LCM Driver defined in kernel is different with LK\n");
+				    ("FATAL ERROR!!!LCM Driver defined in kernel is different with LK, %s, %s\n", lcm_drv->name, plcm_name);
 				return NULL;
 			}
 
