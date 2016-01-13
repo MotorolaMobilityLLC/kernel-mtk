@@ -1,7 +1,7 @@
 
 /dts-v1/;
 
-#include "mt6735m.dtsi"
+#include "taido_row.dtsi"
 
 / {
 memory@00000000 {
@@ -175,11 +175,11 @@ memory@00000000 {
 		headset-four-key-threshold = <0 58 121 192 450>;
 };
 &touch {
-	tpd-resolution = <540 960>;
-	use-tpd-button = <0>;
+	tpd-resolution = <720 1280>;
+	use-tpd-button = <1>;
 	tpd-key-num = <3>;
-	tpd-key-local= <139 172 158 0>;
-	tpd-key-dim-local = <90 883 100 40 230 883 100 40 370 883 100 40 0 0 0 0>;
+	tpd-key-local= <580 172 158 0>;
+	tpd-key-dim-local = <180 1400 100 40 360 1400 100 40 540 1400 100 40 0 0 0 0>;
 	tpd-max-touch-num = <5>;
 	tpd-filter-enable = <1>;
 	tpd-filter-pixel-density = <93>;
@@ -235,6 +235,49 @@ memory@00000000 {
 	};
 };
 /* TOUCH end */
+/*add by caozhg lcm vsp vsn*/
+&lcm_pinctrl {
+	pinctrl-names = "vsp-pullhigh","vsp-pulllow","vsn-pullhigh","vsn-pulllow";
+	pinctrl-0 = <&lcm_pins_vsp_high>;
+	pinctrl-1 = <&lcm_pins_vsp_low>;
+	pinctrl-2 = <&lcm_pins_vsn_high>;
+	pinctrl-3 = <&lcm_pins_vsn_low>;
+	status = "okay";
+};
+&pio {
+	lcm_pins_default: lcmdefault {
+	};
+	lcm_pins_vsp_high: vsphigh {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO128__FUNC_GPIO128>;
+				slew-rate = <1>;
+				output-high;
+		};
+	};
+	lcm_pins_vsp_low: vsplow {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO128__FUNC_GPIO128>;
+				slew-rate = <1>;
+				output-low;
+		};
+	};
+	lcm_pins_vsn_high: vsnhigh {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO127__FUNC_GPIO127>;
+				slew-rate = <1>;
+				output-high;
+		};
+	};
+	lcm_pins_vsn_low: vsnlow {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO127__FUNC_GPIO127>;
+				slew-rate = <1>;
+				output-low;
+		};
+	};
+};
+
+/**/
 /* CAMERA GPIO standardization */
 &pio {
 	camera_pins_cam0_rst0: cam0@0 {
