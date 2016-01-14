@@ -99,6 +99,11 @@ extern void bq24296_set_otg_config(unsigned int val);
 extern void bq24296_set_boostv(unsigned int val);
 extern void bq24296_set_boost_lim(unsigned int val);
 extern void bq24296_set_en_hiz(unsigned int val);
+#elif defined(CONFIG_MTK_SM5414_SUPPORT) //add by caozhg
+void sm5414_otg_enable(unsigned int enable);
+void sm5414_set_votg(unsigned int val);
+void sm5414_set_suspen(unsigned int val);
+
 #elif defined(CONFIG_MTK_BQ24196_SUPPORT)
 extern void bq24196_set_otg_config(unsigned int val);
 extern void bq24196_set_boost_lim(unsigned int val);

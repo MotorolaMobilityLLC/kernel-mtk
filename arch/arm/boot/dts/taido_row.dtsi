@@ -1135,6 +1135,11 @@
 						"mediatek,mt6735m-touch";
 			vtouch-supply = <&mt_pmic_vgp1_ldo_reg>;
 		};
+		/*modify by caozhg*/
+		charger: charger@ {
+			compatible = "mediatek,charger_sm5414";
+		};
+		/*modify by caozhg*/
 		lcm_pinctrl: lcm_pincrl@ {
 			compatible = "mediatek,lcm_pinctl";
 		};

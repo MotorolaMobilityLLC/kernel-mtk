@@ -235,6 +235,51 @@ memory@00000000 {
 	};
 };
 /* TOUCH end */
+
+/*add by caozhg charger nshdn*/
+&charger {
+	pinctrl-names = "nshdn-pullhigh","nshdn-pulllow","chren-pullhigh","chren-pulllow";
+	pinctrl-0 = <&charger_pins_nshdn_high>;
+	pinctrl-1 = <&charger_pins_nshdn_low>;
+	pinctrl-2 = <&charger_pins_chren_high>;
+	pinctrl-3 = <&charger_pins_chren_low>;
+	status = "okay";
+};
+&pio {
+	Chr_pins_default: chrdefault {
+	};
+	charger_pins_nshdn_high: nshdnhigh {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO121__FUNC_GPIO121>;
+				slew-rate = <1>;
+				output-high;
+		};
+	};
+	charger_pins_nshdn_low: nshdnlow {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO121__FUNC_GPIO121>;
+				slew-rate = <1>;
+				output-low;
+		};
+	};
+	charger_pins_chren_high: chrenhigh {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO124__FUNC_GPIO124>;
+				slew-rate = <1>;
+				output-high;
+		};
+	};
+	charger_pins_chren_low: chrenlow {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO124__FUNC_GPIO124>;
+				slew-rate = <1>;
+				output-low;
+		};
+	};
+};
+/**/
+
+
 /*add by caozhg lcm vsp vsn*/
 &lcm_pinctrl {
 	pinctrl-names = "vsp-pullhigh","vsp-pulllow","vsn-pullhigh","vsn-pulllow";

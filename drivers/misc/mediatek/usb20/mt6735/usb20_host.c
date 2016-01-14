@@ -97,6 +97,9 @@ void mt_usb_set_vbus(struct musb *musb, int is_on)
 		bq24296_set_boostv(0x7); /* boost voltage 4.998V */
 		bq24296_set_boost_lim(0x1); /* 1.5A on VBUS */
 		bq24296_set_en_hiz(0x0);
+	#elif defined(CONFIG_MTK_SM5414_SUPPORT) //add by caozhg
+		sm5414_set_votg (0x0); /* boost voltage 4.998V */
+		sm5414_otg_enable (0x1); /* OTG */
 	#elif defined(CONFIG_MTK_BQ24196_SUPPORT)
 		bq24196_set_otg_config(0x01);	/* OTG */
 		bq24196_set_boost_lim(0x01);	/* 1.3A on VBUS */
@@ -127,6 +130,8 @@ void mt_usb_set_vbus(struct musb *musb, int is_on)
 		bq24261_set_en_boost(0);
 	#elif defined(CONFIG_MTK_BQ24296_SUPPORT)
 		bq24296_set_otg_config(0);
+	#elif defined(CONFIG_MTK_SM5414_SUPPORT) //add by caozhg
+		sm5414_otg_enable(0x0); /* OTG */
 	#elif defined(CONFIG_MTK_BQ24196_SUPPORT)
 		bq24196_set_otg_config(0x0);	/* OTG disabled */
 	#elif defined(CONFIG_MTK_NCP1854_SUPPORT)

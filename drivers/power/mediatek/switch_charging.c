@@ -1106,7 +1106,7 @@ static void pchr_turn_on_charging(void)
 			battery_log(BAT_LOG_FULL, "[BATTERY] select_charging_current !\n");
 		}
 #else
-		} else if (g_bcct_flag == 1 || g_bcct_input_flag == 1) {
+		} else if (0){ //(g_bcct_flag == 1 || g_bcct_input_flag == 1) { //modify by caozhg for test
 			select_charging_current();
 			select_charging_current_bcct();
 			battery_log(BAT_LOG_FULL, "[BATTERY] select_charging_curret_bcct !\n");
@@ -1133,7 +1133,7 @@ static void pchr_turn_on_charging(void)
 			/*Set CV Voltage */
 #if !defined(CONFIG_MTK_JEITA_STANDARD_SUPPORT)
 			if (batt_cust_data.high_battery_voltage_support)
-				cv_voltage = BATTERY_VOLT_04_340000_V;
+				cv_voltage = BATTERY_VOLT_04_400000_V; //modify by caozhg
 			else
 				cv_voltage = BATTERY_VOLT_04_200000_V;
 
