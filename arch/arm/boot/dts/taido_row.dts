@@ -71,10 +71,10 @@ memory@00000000 {
 	};
  /* sensor standardization */
 		cust_accel@0 {
-		compatible				= "mediatek,mc3410";
+		compatible				= "mediatek,bma2xx";
 		i2c_num				= <2>;
-		i2c_addr				= <0x4c 0 0 0>;
-		direction				= <0>;
+		i2c_addr				= <0x18 0 0 0>;
+		direction				= <4>;
 		power_id				= <0xffff>;
 		power_vol				= <0>;
 		firlen					= <0>;
@@ -82,9 +82,9 @@ memory@00000000 {
 		};
 
 		cust_alsps@0 {
-		compatible				= "mediatek,cm36652";
+		compatible				= "mediatek,epl2590";
 		i2c_num				= <2>;
-		i2c_addr				= <0x60 0 0 0>;
+		i2c_addr				= <0x49 0 0 0>;
 		polling_mode_ps			= <0>;
 		polling_mode_als		= <1>;
 		power_id				= <0xffff>;
