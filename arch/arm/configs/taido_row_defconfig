@@ -479,3 +479,8 @@ CONFIG_CRYPTO_LZO=y
 # CONFIG_CRYPTO_ANSI_CPRNG is not set
 # CONFIG_CRYPTO_HW is not set
 CONFIG_LIBCRC32C=y
+
+#lenovo-sw zhangjf10 for Taido_row 2016-01-15 begin
+# CONFIG_MTK_UMTS_TDD128_MODE is not set
+CONFIG_MTK_ENABLE_MD1=y
+#lenovo-sw zhangjf10 for Taido_row 2016-01-15 end
