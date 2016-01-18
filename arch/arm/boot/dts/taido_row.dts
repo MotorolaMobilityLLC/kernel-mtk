@@ -167,12 +167,48 @@ memory@00000000 {
 		accdet-mic-vol = <7>;
 		headset-mode-setting = <0x500 0x200 1 0x1F0 0x800 0x800 0x20>;
 		accdet-plugout-debounce = <20>;
-		/*1:ACC mode, 2:low cost without in bias, 6:low cost with in bias*/
-		accdet-mic-mode = <6>;
+		/*1:ACC mode, 2:low cost without in bias, 6:low cost with in bias.modify by caozhg*/
+		accdet-mic-mode = <1>;
 		/*0--MD_MAX--UP_MAX--DW_MAX*/
 		headset-three-key-threshold = <0 80 220 500>;
 		/*0--MD_MAX--VOICE_MAX--UP_MAX--DW_MAX*/
 		headset-four-key-threshold = <0 58 121 192 450>;
+		/* ACCDET GPIO standardization ACC mode use */
+		pinctrl-names = "default", "state_eint_as_int","state_earjack_det_high","state_earjack_det_low"; /*shaohui add*/
+		pinctrl-0 = <&accdet_pins_default>;
+		pinctrl-1 = <&accdet_pins_eint_as_int>;
+		pinctrl-2 = <&earjack_det_pins_state_high>; /*shaohui add*/
+		pinctrl-3 = <&earjack_det_pins_state_low>; 
+		status = "okay";
+
+};
+&pio {
+	accdet_pins_default: accdetdefault {
+	};
+	accdet_pins_eint_as_int: accdeteint@0 {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO6__FUNC_GPIO6>;
+			slew-rate = <0>;
+			bias-disable;
+		};
+	};
+	/*shaohui add this*/
+	earjack_det_pins_state_high: earjack_det_pins_state_high {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO3__FUNC_GPIO3>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+	earjack_det_pins_state_low: earjack_det_pins_state_low {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO3__FUNC_GPIO3>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+
+
 };
 &touch {
 	tpd-resolution = <720 1280>;
@@ -323,6 +359,33 @@ memory@00000000 {
 };
 
 /**/
+
+/* AUDIO GPIO standardization  modify by shaohui*/
+&audgpio {
+	pinctrl-names = "extamp-pullhigh","extamp-pulllow";
+	pinctrl-0 = <&AUD_pins_extamp_high>;
+	pinctrl-1 = <&AUD_pins_extamp_low>;
+	status = "okay";
+};
+&pio {
+	AUD_pins_default: audiodefault {
+	};
+	AUD_pins_extamp_high: audexamphigh {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO129__FUNC_GPIO129>;
+				slew-rate = <1>;
+				output-high;
+		};
+	};
+	AUD_pins_extamp_low: audexamplow {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO129__FUNC_GPIO129>;
+				slew-rate = <1>;
+				output-low;
+		};
+	};
+};
+/* AUDIO end */
 /* CAMERA GPIO standardization */
 &pio {
 	camera_pins_cam0_rst0: cam0@0 {
