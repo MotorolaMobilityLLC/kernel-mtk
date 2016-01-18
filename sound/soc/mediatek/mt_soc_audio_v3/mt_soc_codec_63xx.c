@@ -1918,6 +1918,7 @@ static void Ext_Speaker_Amp_Change(bool enable)
 #endif /*CONFIG_MTK_LEGACY*/
 		msleep(SPK_WARM_UP_TIME);
 #endif
+		AudDrv_GPIO_EXTAMP_Select(true);//add by caozhg
 		pr_debug("Ext_Speaker_Amp_Change ON-\n");
 	} else {
 		pr_debug("Ext_Speaker_Amp_Change OFF+\n");
@@ -1937,6 +1938,7 @@ static void Ext_Speaker_Amp_Change(bool enable)
 #endif
 		udelay(500);
 #endif
+		AudDrv_GPIO_EXTAMP_Select(false);//add by caozhg
 		pr_debug("Ext_Speaker_Amp_Change OFF-\n");
 	}
 #endif
@@ -2025,6 +2027,7 @@ static void Ext_Speaker_Amp_Change(bool enable)
 
 		msleep(SPK_WARM_UP_TIME);
 #endif
+		AudDrv_GPIO_EXTAMP_Select(true);//add by caozhg
 		pr_debug("Ext_Speaker_Amp_Change ON-\n");
 	} else {
 		pr_debug("Ext_Speaker_Amp_Change OFF+\n");
@@ -2034,6 +2037,7 @@ static void Ext_Speaker_Amp_Change(bool enable)
 		mt_set_gpio_out(GPIO_EXT_SPKAMP_EN_PIN, GPIO_OUT_ZERO);	/* low disbale */
 		udelay(500);
 #endif
+		AudDrv_GPIO_EXTAMP_Select(false);//add by caozhg
 		pr_debug("Ext_Speaker_Amp_Change OFF-\n");
 	}
 #endif
