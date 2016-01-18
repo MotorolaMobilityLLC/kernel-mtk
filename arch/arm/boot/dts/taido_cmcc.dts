@@ -1,7 +1,7 @@
 
 /dts-v1/;
 
-#include "taido_row.dtsi"
+#include "taido_cmcc.dtsi"
 
 / {
 memory@00000000 {
