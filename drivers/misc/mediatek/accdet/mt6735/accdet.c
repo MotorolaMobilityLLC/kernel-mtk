@@ -83,6 +83,9 @@ static struct workqueue_struct *accdet_disable_workqueue;
 #ifndef CONFIG_ACCDET_EINT_IRQ
 struct pinctrl *accdet_pinctrl1;
 struct pinctrl_state *pins_eint_int;
+//add by caozhg
+struct pinctrl_state *pins_earjack_init_h;
+struct pinctrl_state *pins_earjack_init_l;
 #endif
 #ifdef DEBUG_THREAD
 #endif
@@ -386,6 +389,7 @@ static void accdet_eint_work_callback(struct work_struct *work)
 		pmic_pwrap_write(ACCDET_IRQ_STS, irq_temp);
 	}
 #else
+	int ret = 0;
 	/*KE under fastly plug in and plug out*/
 	if (cur_eint_state == EINT_PIN_PLUG_IN) {
 		ACCDET_DEBUG("[Accdet]ACC EINT func :plug-in, cur_eint_state = %d\n", cur_eint_state);
@@ -393,6 +397,18 @@ static void accdet_eint_work_callback(struct work_struct *work)
 		eint_accdet_sync_flag = 1;
 		mutex_unlock(&accdet_eint_irq_sync_mutex);
 		wake_lock_timeout(&accdet_timer_lock, 7 * HZ);
+
+		//add by caozhg
+		mdelay(50);
+		pins_earjack_init_h = pinctrl_lookup_state(accdet_pinctrl1, "state_earjack_det_high");
+		if (IS_ERR(pins_earjack_init_h)) {
+			ret = PTR_ERR(pins_earjack_init_h);
+			//dev_err(&accdet_device->dev, "fwq Cannot find accdet pinctrl state_eint_accdet_high!\n");
+			//return ret;
+		}
+		pinctrl_select_state(accdet_pinctrl1, pins_earjack_init_h);
+
+
 #ifdef CONFIG_ACCDET_PIN_SWAP
 		/*pmic_pwrap_write(0x0400, pmic_pwrap_read(0x0400)|(1<<14)); */
 		msleep(800);
@@ -451,6 +467,17 @@ static void accdet_eint_work_callback(struct work_struct *work)
 		eint_accdet_sync_flag = 0;
 		mutex_unlock(&accdet_eint_irq_sync_mutex);
 		del_timer_sync(&micbias_timer);
+
+		//add by caozhg
+		pins_earjack_init_l = pinctrl_lookup_state(accdet_pinctrl1, "state_earjack_det_low");
+		if (IS_ERR(pins_earjack_init_l)) {
+			ret = PTR_ERR(pins_earjack_init_l);
+			//dev_err(&accdet_device->dev, "fwq Cannot find accdet pinctrl state_eint_accdet_low!\n");
+			//return ret;
+		}
+		pinctrl_select_state(accdet_pinctrl1, pins_earjack_init_l);
+
+
 #ifdef CONFIG_ACCDET_PIN_RECOGNIZATION
 		show_icon_delay = 0;
 		cable_pin_recognition = 0;
@@ -564,6 +591,11 @@ static inline int accdet_setup_eint(struct platform_device *accdet_device)
 		return ret;
 	}
 	pinctrl_select_state(accdet_pinctrl1, pins_eint_int);
+
+
+
+
+
 
 	/*node = of_find_matching_node(node, accdet_of_match);*/
 	node = of_find_matching_node(node, accdet_of_match);

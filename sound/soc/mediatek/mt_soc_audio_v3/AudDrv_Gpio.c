@@ -56,6 +56,7 @@
 
 #if !defined(CONFIG_MTK_LEGACY)
 struct pinctrl *pinctrlaud;
+struct pinctrl_state *audextamp_high, *audextamp_low;//, *audextamp2_high, *audextamp2_low; modify by shaohui
 /*struct pinctrl_state *pins_default;
 struct pinctrl_state *audpmic_mode0, *audpmic_mode1, *audi2s1_mode0, *audi2s1_mode1;
 struct pinctrl_state *audextamp_high, *audextamp_low, *audextamp2_high, *audextamp2_low;
@@ -102,6 +103,7 @@ void AudDrv_GPIO_probe(void *dev)
 {
 	int ret;
 	int i = 0;
+	int error = 0;
 
 	pr_warn("%s\n", __func__);
 
@@ -122,6 +124,37 @@ void AudDrv_GPIO_probe(void *dev)
 			aud_gpios[i].gpio_prepare = true;
 		}
 	}
+	//modify by caozhg
+	error = gpio_request(129, NULL);
+	if (error) {
+		pr_err("Could not request GPIO#129.\n");
+		/*return -EIO;*/
+	}
+	error = gpio_direction_output(129, 1);
+	if (error) {
+		pr_err("Could not set GPIO#129 as output.\n");
+		/*return -EIO;*/
+	}
+
+
+/*add by shaohui
+	audextamp_high = pinctrl_lookup_state(pinctrlaud, "extamp-pullhigh");
+	if (IS_ERR(audextamp_high)) {
+		ret = PTR_ERR(audextamp_high);
+	//	dev_err(&pdev->dev, "Cannot find pinctrl audextamp_high!\n");
+		return;
+	}
+
+
+	audextamp_low = pinctrl_lookup_state(pinctrlaud, "extamp-pulllow");
+	if (IS_ERR(audextamp_low)) {
+		ret = PTR_ERR(audextamp_low);
+	//	dev_err(&pdev->dev, "Cannot find pinctrl audextamp_low!\n");
+		return;
+	}
+*/
+
+
 #if 0
 	pins_default = pinctrl_lookup_state(pinctrlaud, "default");
 	if (IS_ERR(pins_default)) {
@@ -254,21 +287,36 @@ int AudDrv_GPIO_I2S_Select(int bEnable)
 int AudDrv_GPIO_EXTAMP_Select(int bEnable)
 {
 	int retval = 0;
+	int i = 0;
 
+
+	//add by caozhg
 	if (bEnable == 1) {
+		/*
 		if (aud_gpios[GPIO_EXTAMP_HIGH].gpio_prepare) {
 			retval =
 			    pinctrl_select_state(pinctrlaud, aud_gpios[GPIO_EXTAMP_HIGH].gpioctrl);
 			if (retval)
 				pr_err("could not set aud_gpios[GPIO_EXTAMP_HIGH] pins\n");
 		}
+		*/
+		for (i = 0; i < 5; i++) {   //switch to mode 5
+			gpio_set_value(129,0);
+			udelay(1);
+			gpio_set_value(129,1);
+			udelay(1);
+		}
+		//mdelay (30);
 	} else {
+		/*
 		if (aud_gpios[GPIO_EXTAMP_LOW].gpio_prepare) {
 			retval =
 			    pinctrl_select_state(pinctrlaud, aud_gpios[GPIO_EXTAMP_LOW].gpioctrl);
 			if (retval)
 				pr_err("could not set aud_gpios[GPIO_EXTAMP_LOW] pins\n");
 		}
+		*/
+		gpio_set_value(129,0);
 
 	}
 	return retval;
