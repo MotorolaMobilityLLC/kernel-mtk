@@ -1189,6 +1189,12 @@
 		};
 		/* NFC end */
 
+		/*Flashlight start by liuzhen*/
+		flashlight: flashlight@ {
+			compatible = "mediatek,mt6735m-flashlight";
+		};
+		/*Flashlight end*/
+
 		gps {
 			compatible = "mediatek,mt3326-gps";
 		};

@@ -49,6 +49,9 @@
 #define PK_DBG(a, ...)
 #endif
 
+#define GPIO_OUT_ONE 1
+#define GPIO_OUT_ZERO 0
+
 /******************************************************************************
  * local variables
 ******************************************************************************/
@@ -74,7 +77,13 @@ static struct work_struct workTimeOut;
 /* #define FLASH_GPIO_ENF GPIO12 */
 /* #define FLASH_GPIO_ENT GPIO13 */
 
+#define USE_FLASHLIGHT	
+#define USE_FLASHLIGHT_NODE	
+
+#ifdef USE_FLASHLIGHT
+#else
 static int g_bLtVersion;
+#endif
 
 /*****************************************************************************
 Functions
@@ -83,8 +92,91 @@ static void work_timeOutFunc(struct work_struct *data);
 
 static struct i2c_client *LM3642_i2c_client;
 
+#ifdef USE_FLASHLIGHT
+#define GPIO_OUT_ONE 1
+#define GPIO_OUT_ZERO 0
+typedef enum _FLASHLIGHT_CTRL_
+{
+	GPIO_CAMERA_FLASH_MODE_PIN = 0,
+	GPIO_CAMERA_FLASH_EN_PIN
+}FLASHLIGHT_CTRL;
+
+/* GPIO Pin control*/
+struct platform_device *flashlight_plt_dev = NULL;
+struct pinctrl *flctrl = NULL;
+struct pinctrl_state *fl0_mode_h = NULL;
+struct pinctrl_state *fl0_mode_l = NULL;
+struct pinctrl_state *fl0_en_h = NULL;
+struct pinctrl_state *fl0_en_l = NULL;
+
+int mtkflashlight_gpio_init(struct platform_device *pdev)
+{
+	int ret = 0;
+
+	flctrl = devm_pinctrl_get(&pdev->dev);
+	if (IS_ERR(flctrl)) {
+		dev_err(&pdev->dev, "Cannot find flashlight pinctrl!");
+		ret = PTR_ERR(flctrl);
+	}
+	/*Cam0 Power/Rst Ping initialization */
+	fl0_mode_h = pinctrl_lookup_state(flctrl, "flashlight0_mode1");
+	if (IS_ERR(fl0_mode_h)) {
+		ret = PTR_ERR(fl0_mode_h);
+		pr_debug("%s : pinctrl err, fl0_mode_h\n", __func__);
+	}
+
+	fl0_mode_l = pinctrl_lookup_state(flctrl, "flashlight0_mode0");
+	if (IS_ERR(fl0_mode_l)) {
+		ret = PTR_ERR(fl0_mode_l);
+		pr_debug("%s : pinctrl err, fl0_mode_l\n", __func__);
+	}
 
 
+	fl0_en_h = pinctrl_lookup_state(flctrl, "flashlight0_en1");
+	if (IS_ERR(fl0_en_h)) {
+		ret = PTR_ERR(fl0_en_h);
+		pr_debug("%s : pinctrl err, fl0_en_h\n", __func__);
+	}
+
+	fl0_en_l = pinctrl_lookup_state(flctrl, "flashlight0_en0");
+	if (IS_ERR(fl0_en_l)) {
+		ret = PTR_ERR(fl0_en_l);
+		pr_debug("%s : pinctrl err, fl0_en_l\n", __func__);
+	}
+
+	return ret;
+}
+		
+static int mtkflashlight_gpio_set(int pin, int state)
+{
+	int ret = 0;
+
+	switch (pin) {
+	case GPIO_CAMERA_FLASH_MODE_PIN:
+		if (state == GPIO_OUT_ZERO)
+			pinctrl_select_state(flctrl, fl0_mode_l);
+		else
+			pinctrl_select_state(flctrl, fl0_mode_h);
+	
+		break;
+	case GPIO_CAMERA_FLASH_EN_PIN:
+		if (state == GPIO_OUT_ZERO)
+			pinctrl_select_state(flctrl, fl0_en_l);
+		else
+			pinctrl_select_state(flctrl, fl0_en_h);
+
+		break;
+	default:
+		PK_DBG("pin(%d) is invalid !!\n", pin);
+		break;
+	};
+
+	printk("pin(%d) state(%d)\n", pin, state);
+
+	return ret;
+}
+#endif
+//add end
 
 struct LM3642_platform_data {
 	u8 torch_pin_enable;	/* 1:  TX1/TORCH pin isa hardware TORCH enable */
@@ -107,7 +199,8 @@ struct LM3642_chip_data {
 	u8 last_flag;
 	u8 no_pdata;
 };
-
+#ifdef USE_FLASHLIGHT
+#else
 static int LM3642_write_reg(struct i2c_client *client, u8 reg, u8 val)
 {
 	int ret = 0;
@@ -121,7 +214,7 @@ static int LM3642_write_reg(struct i2c_client *client, u8 reg, u8 val)
 		PK_DBG("failed writing at 0x%02x\n", reg);
 	return ret;
 }
-
+#endif
 static int LM3642_read_reg(struct i2c_client *client, u8 reg)
 {
 	int val = 0;
@@ -251,7 +344,51 @@ int readReg(int reg)
 	val = LM3642_read_reg(LM3642_i2c_client, reg);
 	return (int)val;
 }
+#ifdef  USE_FLASHLIGHT_NODE  
+int FL_set_mainflashlight(unsigned int onOff)
+{
+	printk("<%s:%d>%d\n", __func__, __LINE__, onOff);
+	if(onOff){
+		mtkflashlight_gpio_set(GPIO_CAMERA_FLASH_MODE_PIN,GPIO_OUT_ONE);
+		mtkflashlight_gpio_set(GPIO_CAMERA_FLASH_EN_PIN,GPIO_OUT_ZERO);
+	}else{
+		mtkflashlight_gpio_set(GPIO_CAMERA_FLASH_MODE_PIN,GPIO_OUT_ZERO);
+		mtkflashlight_gpio_set(GPIO_CAMERA_FLASH_EN_PIN,GPIO_OUT_ZERO);
+	}
+	return 0;
+}
+EXPORT_SYMBOL(FL_set_mainflashlight);
+#endif 
 
+#ifdef USE_FLASHLIGHT
+int FL_Enable(void)
+{
+	printk(" FL_Enable,g_duty = %d, line=%d\n",g_duty,__LINE__);
+	if(g_duty==0)	//torch,pf
+	{
+		mtkflashlight_gpio_set(GPIO_CAMERA_FLASH_MODE_PIN,GPIO_OUT_ONE);
+		mtkflashlight_gpio_set(GPIO_CAMERA_FLASH_EN_PIN,GPIO_OUT_ZERO);
+		printk(" FL_Enable torch mode, line=%d\n",__LINE__);
+	}
+	else		//mf
+	{
+		mtkflashlight_gpio_set(GPIO_CAMERA_FLASH_MODE_PIN,GPIO_OUT_ZERO);
+		mtkflashlight_gpio_set(GPIO_CAMERA_FLASH_EN_PIN,GPIO_OUT_ONE);
+		printk(" FL_Enable flashlight mode,line=%d\n",__LINE__);
+	}
+
+    return 0;
+}
+
+int FL_Disable(void)
+{
+
+	mtkflashlight_gpio_set(GPIO_CAMERA_FLASH_MODE_PIN,GPIO_OUT_ZERO);
+	mtkflashlight_gpio_set(GPIO_CAMERA_FLASH_EN_PIN,GPIO_OUT_ZERO);
+	printk(" FL_Disable line=%d\n",__LINE__);
+    return 0;
+}
+#else
 int FL_Enable(void)
 {
 	char buf[2];
@@ -328,17 +465,36 @@ int FL_Disable(void)
 	PK_DBG(" FL_Disable line=%d\n", __LINE__);
 	return 0;
 }
+#endif
 
 int FL_dim_duty(kal_uint32 duty)
 {
-	PK_DBG(" FL_dim_duty line=%d\n", __LINE__);
+	printk(" FL_dim_duty duty=%d,line=%d\n",duty, __LINE__);
 	g_duty = duty;
 	return 0;
 }
 
 
+#ifdef USE_FLASHLIGHT
+int FL_Init(void)
+{
+    /*Init. to disable*/
+    if(mtkflashlight_gpio_set(GPIO_CAMERA_FLASH_MODE_PIN,GPIO_OUT_ZERO)){PK_DBG("[constant_flashlight] set gpio failed!! \n");}
+    if(mtkflashlight_gpio_set(GPIO_CAMERA_FLASH_EN_PIN,GPIO_OUT_ZERO)){PK_DBG("[constant_flashlight] set gpio failed!! \n");}
 
+    INIT_WORK(&workTimeOut, work_timeOutFunc);
+    PK_DBG(" FL_Init line=%d\n",__LINE__);
+    return 0;
+}
 
+int FL_Uninit(void)
+{
+    PK_DBG(" FL_Uninit line=%d\n",__LINE__);
+    /*Uninit. to disable*/
+    if(mtkflashlight_gpio_set(GPIO_CAMERA_FLASH_EN_PIN,GPIO_OUT_ZERO)){PK_DBG("[constant_flashlight] set gpio failed!! \n");}
+    return 0;
+}
+#else
 int FL_Init(void)
 {
 	int regVal0;
@@ -398,6 +554,7 @@ int FL_Uninit(void)
 	FL_Disable();
 	return 0;
 }
+#endif
 
 /*****************************************************************************
 User interface

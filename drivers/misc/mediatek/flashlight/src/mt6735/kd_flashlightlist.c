@@ -46,6 +46,7 @@
 
 /* device name and major number */
 #define FLASHLIGHT_DEVNAME            "kd_camera_flashlight"
+#define FLASHLIGHT_PLATFORM_DEVNAME            "flashlight_platform_devname"
 
 /******************************************************************************
  * Debug configuration
@@ -640,6 +641,38 @@ static const struct file_operations flashlight_fops = {
 #endif
 };
 
+#define USE_CAMERA_FLASHLIGHT_NODE	
+
+#ifdef USE_CAMERA_FLASHLIGHT_NODE 
+extern int FL_set_mainflashlight(int onOff);
+static int onoff;	//1:open,0:close
+static ssize_t show_main_brightness(struct device *dev, struct device_attribute *attr,
+			 char *buf)
+{
+	printk("Flashlight enable value is:%d\n", onoff);
+	return sprintf(buf, "%u\n", onoff);
+}
+
+static ssize_t store_main_brightness(struct device *dev, struct device_attribute *attr,
+			  const char *buf, size_t size)
+{
+	int err;
+	err = kstrtoint(buf,10,&onoff);
+	if(err){
+		printk("Wrong format\n");
+		return size;
+	}
+	printk("onoff = %d\n",onoff);
+	if(onoff){
+		FL_set_mainflashlight(onoff);
+	}else{
+		FL_set_mainflashlight(onoff);
+	}
+	return size;
+}
+static DEVICE_ATTR(main_brightness, 0664, show_main_brightness, store_main_brightness);
+#endif
+
 /* ======================================================================== */
 /* Driver interface */
 /* ======================================================================== */
@@ -653,6 +686,7 @@ static struct device *flashlight_device;
 static struct flashlight_data flashlight_private;
 static dev_t flashlight_devno;
 static struct cdev flashlight_cdev;
+extern int mtkflashlight_gpio_init(struct platform_device *pdev);
 /* ======================================================================== */
 #define ALLOC_DEVNO
 static int flashlight_probe(struct platform_device *dev)
@@ -660,6 +694,7 @@ static int flashlight_probe(struct platform_device *dev)
 	int ret = 0, err = 0;
 
 	logI("[flashlight_probe] start ~");
+	printk("[flashlight_probe] start in Printk~\n");
 
 #ifdef ALLOC_DEVNO
 	ret = alloc_chrdev_region(&flashlight_devno, 0, 1, FLASHLIGHT_DEVNAME);
@@ -703,11 +738,17 @@ static int flashlight_probe(struct platform_device *dev)
 		goto flashlight_probe_error;
 	}
 
+	#ifdef USE_CAMERA_FLASHLIGHT_NODE
+	ret = device_create_file(flashlight_device,&dev_attr_main_brightness);
+	printk("[flashlight_probe] device_create_file ret=%d\n",ret);
+	#endif
+
 	/* initialize members */
 	spin_lock_init(&flashlight_private.lock);
 	init_waitqueue_head(&flashlight_private.read_wait);
 	/* init_MUTEX(&flashlight_private.sem); */
 	sema_init(&flashlight_private.sem, 1);
+	mtkflashlight_gpio_init(dev);
 
 	logI("[flashlight_probe] Done ~");
 	return 0;
@@ -751,18 +792,28 @@ static void flashlight_shutdown(struct platform_device *dev)
 	logI("[flashlight_shutdown] Done ~");
 }
 
+#ifdef CONFIG_OF
+static const struct of_device_id FLASHLIGHT_of_match[] = {
+	{.compatible = "mediatek,mt6735m-flashlight"},
+	{},
+};
+#endif
+
 static struct platform_driver flashlight_platform_driver = {
 	.probe = flashlight_probe,
 	.remove = flashlight_remove,
 	.shutdown = flashlight_shutdown,
 	.driver = {
-		   .name = FLASHLIGHT_DEVNAME,
+		   .name = FLASHLIGHT_PLATFORM_DEVNAME,
 		   .owner = THIS_MODULE,
+#ifdef CONFIG_OF
+	.of_match_table = FLASHLIGHT_of_match,
+#endif
 		   },
 };
 
 static struct platform_device flashlight_platform_device = {
-	.name = FLASHLIGHT_DEVNAME,
+	.name = FLASHLIGHT_PLATFORM_DEVNAME,
 	.id = 0,
 	.dev = {
 		}
