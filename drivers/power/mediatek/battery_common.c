@@ -3012,7 +3012,7 @@ void do_chrdet_int_task(void)
 
 		if (BMT_status.bat_vol > 0) {
 			mt_battery_update_status();
-			skip_battery_update = KAL_TRUE;
+			//skip_battery_update = KAL_TRUE;//lishunbo remove for midtest
 
 		}
 #if defined(CONFIG_MTK_DUAL_INPUT_CHARGER_SUPPORT)
