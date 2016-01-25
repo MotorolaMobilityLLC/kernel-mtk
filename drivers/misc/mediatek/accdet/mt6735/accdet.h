@@ -65,6 +65,11 @@ extern struct i2c_client *ts3a225e_i2c_client;
 extern int ts3a225e_read_byte(unsigned char cmd, unsigned char *returnData);
 extern int ts3a225e_write_byte(unsigned char cmd, unsigned char writeData);
 #endif
+#if defined(CONFIG_TS3A227E_ACCDET)
+extern struct i2c_client *ts3a227e_i2c_client;
+extern int ts3a227e_read_byte(unsigned char cmd, unsigned char *returnData);
+extern int ts3a227e_write_byte(unsigned char cmd, unsigned char writeData);
+#endif
 extern struct of_device_id accdet_of_match[];
 void mt_accdet_remove(void);
 void mt_accdet_suspend(void);

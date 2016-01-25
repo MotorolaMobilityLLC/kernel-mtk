@@ -49,6 +49,14 @@ static int show_icon_delay;
 unsigned char ts3a225e_reg_value[7] = { 0 };
 unsigned char ts3a225e_connector_type = TS3A225E_CONNECTOR_NONE;
 #endif
+#if defined(CONFIG_TS3A227E_ACCDET)
+#define TS3A227E_CONNECTOR_NONE				0
+#define TS3A227E_CONNECTOR_TRS				1
+#define TS3A227E_CONNECTOR_TRRS_STANDARD	2
+#define TS3A227E_CONNECTOR_TRRS_OMTP		3
+unsigned char ts3a227e_reg_value[16] = { 0 };
+unsigned char ts3a227e_connector_type = TS3A227E_CONNECTOR_NONE;
+#endif
 static int eint_accdet_sync_flag;
 static int g_accdet_first = 1;
 static bool IRQ_CLR_FLAG;
@@ -83,9 +91,20 @@ static struct workqueue_struct *accdet_disable_workqueue;
 #ifndef CONFIG_ACCDET_EINT_IRQ
 struct pinctrl *accdet_pinctrl1;
 struct pinctrl_state *pins_eint_int;
+#ifndef CONFIG_TS3A227E_ACCDET
 //add by caozhg
 struct pinctrl_state *pins_earjack_init_h;
 struct pinctrl_state *pins_earjack_init_l;
+#endif
+//modify by caozhg
+#define SGM3717_DPDT_SWITCH_ENABLE
+#ifdef SGM3717_DPDT_SWITCH_ENABLE
+struct pinctrl_state *pins_dpdt_switch_en_h;
+struct pinctrl_state *pins_dpdt_switch_en_l;
+extern int AudDrv_GPIO_EXTAMP_Select(int bEnable);
+#endif 
+
+
 #endif
 #ifdef DEBUG_THREAD
 #endif
@@ -398,8 +417,9 @@ static void accdet_eint_work_callback(struct work_struct *work)
 		mutex_unlock(&accdet_eint_irq_sync_mutex);
 		wake_lock_timeout(&accdet_timer_lock, 7 * HZ);
 
+#ifndef CONFIG_TS3A227E_ACCDET
 		//add by caozhg
-		mdelay(50);
+		mdelay(200);
 		pins_earjack_init_h = pinctrl_lookup_state(accdet_pinctrl1, "state_earjack_det_high");
 		if (IS_ERR(pins_earjack_init_h)) {
 			ret = PTR_ERR(pins_earjack_init_h);
@@ -407,7 +427,7 @@ static void accdet_eint_work_callback(struct work_struct *work)
 			//return ret;
 		}
 		pinctrl_select_state(accdet_pinctrl1, pins_earjack_init_h);
-
+#endif
 
 #ifdef CONFIG_ACCDET_PIN_SWAP
 		/*pmic_pwrap_write(0x0400, pmic_pwrap_read(0x0400)|(1<<14)); */
@@ -445,7 +465,73 @@ static void accdet_eint_work_callback(struct work_struct *work)
 			ACCDET_DEBUG("[Accdet] TS3A225E Detection sequence completed without successful!\n");
 		}
 #endif
+#if defined(CONFIG_TS3A227E_ACCDET)
+		ACCDET_DEBUG("[Accdet] TS3A227E enable!\n");
+		msleep(300);
+		ret = ts3a227e_write_byte(0x04, 0x10);
+		msleep(500);
+		ts3a227e_read_byte(0x00, &ts3a227e_reg_value[0]);
+		ts3a227e_read_byte(0x01, &ts3a227e_reg_value[1]);
+		ts3a227e_read_byte(0x02, &ts3a227e_reg_value[2]);
+		ts3a227e_read_byte(0x03, &ts3a227e_reg_value[3]);
+		ts3a227e_read_byte(0x04, &ts3a227e_reg_value[4]);
+		ts3a227e_read_byte(0x05, &ts3a227e_reg_value[5]);
+		ts3a227e_read_byte(0x06, &ts3a227e_reg_value[6]);
+		ts3a227e_read_byte(0x07, &ts3a227e_reg_value[7]);
+		ts3a227e_read_byte(0x08, &ts3a227e_reg_value[8]);
+		ts3a227e_read_byte(0x09, &ts3a227e_reg_value[9]);
+		ts3a227e_read_byte(0x0A, &ts3a227e_reg_value[10]);
+		ts3a227e_read_byte(0x0B, &ts3a227e_reg_value[11]);
+		ts3a227e_read_byte(0x0C, &ts3a227e_reg_value[12]);
+		ts3a227e_read_byte(0x0D, &ts3a227e_reg_value[13]);
+		ts3a227e_read_byte(0x0E, &ts3a227e_reg_value[14]);
+		ts3a227e_read_byte(0x0F, &ts3a227e_reg_value[15]);
+		ACCDET_DEBUG("[Accdet] TS3A227E Device ID=%x!\n", ts3a227e_reg_value[0]);
+		ACCDET_DEBUG("[Accdet] TS3A227E Interrupt=%x!\n", ts3a227e_reg_value[1]);
+		ACCDET_DEBUG("[Accdet] TS3A227E Key Prress Interrupt=%x!\n", ts3a227e_reg_value[2]);
+		ACCDET_DEBUG("[Accdet] TS3A227E Interrupt Disable=%x!\n", ts3a227e_reg_value[3]);
+		ACCDET_DEBUG("[Accdet] TS3A227E Device Settings=%x!\n", ts3a227e_reg_value[4]);
+		ACCDET_DEBUG("[Accdet] TS3A227E Device Setting 1=%x!\n", ts3a227e_reg_value[5]);
+		ACCDET_DEBUG("[Accdet] TS3A227E Device Setting 2=%x!\n", ts3a227e_reg_value[6]);
+		ACCDET_DEBUG("[Accdet] TS3A227E Switch Control 1=%x!\n", ts3a227e_reg_value[7]);
+		ACCDET_DEBUG("[Accdet] TS3A227E Switch Control 2=%x!\n", ts3a227e_reg_value[8]);
+		ACCDET_DEBUG("[Accdet] TS3A227E Switch Status 1=%x!\n", ts3a227e_reg_value[9]);
+		ACCDET_DEBUG("[Accdet] TS3A227E Switch Status 2=%x!\n", ts3a227e_reg_value[10]);
+		ACCDET_DEBUG("[Accdet] TS3A227E Accessory Status=%x!\n", ts3a227e_reg_value[11]);
+		ACCDET_DEBUG("[Accdet] TS3A227E ADC Output=%x!\n", ts3a227e_reg_value[12]);
+		ACCDET_DEBUG("[Accdet] TS3A227E Threshold 1=%x!\n", ts3a227e_reg_value[13]);
+		ACCDET_DEBUG("[Accdet] TS3A227E Threshold 2=%x!\n", ts3a227e_reg_value[14]);
+		ACCDET_DEBUG("[Accdet] TS3A227E Threshold 3=%x!\n", ts3a227e_reg_value[15]);
+		if ((ts3a227e_reg_value[11] & 0x01) == 0x01) {
+			printk("[Accdet] TS3A227E 3-pole headset detected!\n");
+			ts3a227e_connector_type = TS3A227E_CONNECTOR_TRS;
+			//ts3a227e_write_byte(0x02, 0x07);
+			//ts3a227e_write_byte(0x03, 0xf3);
+			msleep(20);
+		} else if ((ts3a227e_reg_value[11] & 0x02) == 0x02) {
+			printk("[Accdet] TS3A227E 4-pole OMTP headset detected!\n");
+			ts3a227e_connector_type = TS3A227E_CONNECTOR_TRRS_OMTP;
+		} else if ((ts3a227e_reg_value[11] & 0x04) == 0x04) {
+			printk("[Accdet] TS3A227E 4-pole standard headset detected!\n");
+			ts3a227e_connector_type = TS3A227E_CONNECTOR_TRRS_STANDARD;
+			
+		} else {
+			printk("[Accdet] TS3A227E Detection sequence completed without successful!\n");
+		}
+#endif
+#ifdef SGM3717_DPDT_SWITCH_ENABLE
 
+		printk ("[Accdet] SGM3717_DPDT_SWITCH_ENABLE low.\n");
+		//DPDT_SWITCH_EN set low
+		pins_dpdt_switch_en_l = pinctrl_lookup_state(accdet_pinctrl1, "state_dpdt_switch_en_low");
+		if (IS_ERR(pins_dpdt_switch_en_l)) {
+			ret = PTR_ERR(pins_dpdt_switch_en_l);
+			//dev_err(&accdet_device->dev, "fwq Cannot find accdet pinctrl state_eint_accdet_high!\n");
+			//return ret;
+		}
+		pinctrl_select_state(accdet_pinctrl1, pins_dpdt_switch_en_l);
+
+#endif
 		accdet_init();	/* do set pwm_idle on in accdet_init*/
 
 #ifdef CONFIG_ACCDET_PIN_RECOGNIZATION
@@ -467,7 +553,7 @@ static void accdet_eint_work_callback(struct work_struct *work)
 		eint_accdet_sync_flag = 0;
 		mutex_unlock(&accdet_eint_irq_sync_mutex);
 		del_timer_sync(&micbias_timer);
-
+#ifndef CONFIG_TS3A227E_ACCDET
 		//add by caozhg
 		pins_earjack_init_l = pinctrl_lookup_state(accdet_pinctrl1, "state_earjack_det_low");
 		if (IS_ERR(pins_earjack_init_l)) {
@@ -476,6 +562,18 @@ static void accdet_eint_work_callback(struct work_struct *work)
 			//return ret;
 		}
 		pinctrl_select_state(accdet_pinctrl1, pins_earjack_init_l);
+#endif
+#ifdef SGM3717_DPDT_SWITCH_ENABLE
+		//DPDT_SWITCH_EN set high
+		printk ("[Accdet] SGM3717_DPDT_SWITCH_ENABLE high.\n");
+		pins_dpdt_switch_en_h = pinctrl_lookup_state(accdet_pinctrl1, "state_dpdt_switch_en_high");
+		if (IS_ERR(pins_dpdt_switch_en_h)) {
+			ret = PTR_ERR(pins_dpdt_switch_en_h);
+			//dev_err(&accdet_device->dev, "fwq Cannot find accdet pinctrl state_eint_accdet_high!\n");
+			//return ret;
+		}
+		pinctrl_select_state(accdet_pinctrl1, pins_dpdt_switch_en_h);
+#endif
 
 
 #ifdef CONFIG_ACCDET_PIN_RECOGNIZATION
@@ -490,6 +588,10 @@ static void accdet_eint_work_callback(struct work_struct *work)
 #if defined(CONFIG_TS3A225E_ACCDET)
 		ACCDET_DEBUG("[Accdet] TS3A225E disable!\n");
 		ts3a225e_connector_type = TS3A225E_CONNECTOR_NONE;
+#endif
+#if defined(CONFIG_TS3A227E_ACCDET)
+		ACCDET_DEBUG("[Accdet] TS3A227E disable!\n");
+		ts3a227e_connector_type = TS3A227E_CONNECTOR_NONE;
 #endif
 		/*accdet_auxadc_switch(0);*/
 		disable_accdet();
@@ -1303,6 +1405,15 @@ static ssize_t show_TS3A225EConnectorType(struct device_driver *ddri, char *buf)
 
 static DRIVER_ATTR(TS3A225EConnectorType, 0664, show_TS3A225EConnectorType, NULL);
 #endif
+#if defined(CONFIG_TS3A227E_ACCDET)
+static ssize_t show_TS3A227EConnectorType(struct device_driver *ddri, char *buf)
+{
+	ACCDET_DEBUG("[Accdet] TS3A227E ts3a227e_connector_type=%d\n", ts3a227e_connector_type);
+	return sprintf(buf, "%u\n", ts3a227e_connector_type);
+}
+
+static DRIVER_ATTR(TS3A227EConnectorType, 0664, show_TS3A227EConnectorType, NULL);
+#endif
 static ssize_t accdet_store_call_state(struct device_driver *ddri, const char *buf, size_t count)
 {
 	int ret;
@@ -1448,6 +1559,9 @@ static struct driver_attribute *accdet_attr_list[] = {
 #if defined(CONFIG_TS3A225E_ACCDET)
 	&driver_attr_TS3A225EConnectorType,
 #endif
+#if defined(CONFIG_TS3A227E_ACCDET)
+	&driver_attr_TS3A227EConnectorType,
+#endif
 };
 
 static int accdet_create_attr(struct device_driver *driver)
@@ -1499,6 +1613,13 @@ int mt_accdet_probe(struct platform_device *dev)
 #if defined(CONFIG_TS3A225E_ACCDET)
 	if (ts3a225e_i2c_client == NULL) {
 		ACCDET_DEBUG("[Accdet]ts3a225e_i2c_client is NULL!\n");
+		return -EPROBE_DEFER;
+	}
+#endif
+
+#if defined(CONFIG_TS3A227E_ACCDET)
+	if (ts3a227e_i2c_client == NULL) {
+		ACCDET_DEBUG("[Accdet]ts3a227e_i2c_client is NULL!\n");
 		return -EPROBE_DEFER;
 	}
 #endif

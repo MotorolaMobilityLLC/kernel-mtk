@@ -109,12 +109,15 @@ static void acc_work_func(struct work_struct *work)
 	/* ACC_LOG("acc data[%d,%d,%d]\n" ,cxt->drv_data.acc_data.values[0], */
 	/* cxt->drv_data.acc_data.values[1],cxt->drv_data.acc_data.values[2]); */
 
+	//modify by caozhg
+	/*
 	while ((cur_ns - pre_ns) >= delay_ms*1800000LL) {
 		pre_ns += delay_ms*1000000LL;
 		acc_data_report(cxt->drv_data.acc_data.values[0],
 			cxt->drv_data.acc_data.values[1], cxt->drv_data.acc_data.values[2],
 			cxt->drv_data.acc_data.status, pre_ns);
 	}
+	*/
 
 	acc_data_report(cxt->drv_data.acc_data.values[0],
 			cxt->drv_data.acc_data.values[1], cxt->drv_data.acc_data.values[2],

@@ -85,3 +85,14 @@ config TS3A225E_ACCDET
 	  say Y or M here.
 
 	  If unsure, say N.
+
+config TS3A227E_ACCDET
+	tristate "MediaTek ACCDET driver"
+	---help---
+
+	  TS3A227E support for MediaTek SOC
+
+	  If you want to use TS3A227E
+	  say Y or M here.
+
+	  If unsure, say N.

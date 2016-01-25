@@ -174,11 +174,13 @@ memory@00000000 {
 		/*0--MD_MAX--VOICE_MAX--UP_MAX--DW_MAX*/
 		headset-four-key-threshold = <0 58 121 192 450>;
 		/* ACCDET GPIO standardization ACC mode use */
-		pinctrl-names = "default", "state_eint_as_int","state_earjack_det_high","state_earjack_det_low"; /*shaohui add*/
+		pinctrl-names = "default", "state_eint_as_int","state_earjack_det_high","state_earjack_det_low","state_dpdt_switch_en_high","state_dpdt_switch_en_low"; /*shaohui add*/
 		pinctrl-0 = <&accdet_pins_default>;
 		pinctrl-1 = <&accdet_pins_eint_as_int>;
 		pinctrl-2 = <&earjack_det_pins_state_high>; /*shaohui add*/
 		pinctrl-3 = <&earjack_det_pins_state_low>; 
+		pinctrl-4 = <&dpdt_switch_en_state_high>; /*caozhg add*/
+		pinctrl-5 = <&dpdt_switch_en_state_low>; 
 		status = "okay";
 
 };
@@ -203,6 +205,21 @@ memory@00000000 {
 	earjack_det_pins_state_low: earjack_det_pins_state_low {
 		pins_cmd_dat {
 			pins = <PINMUX_GPIO3__FUNC_GPIO3>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+	/*caozhg add this*/
+	dpdt_switch_en_state_high: dpdt_switch_en_state_high {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO64__FUNC_GPIO64>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+	dpdt_switch_en_state_low: dpdt_switch_en_state_low {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO64__FUNC_GPIO64>;
 			slew-rate = <1>;
 			output-low;
 		};
