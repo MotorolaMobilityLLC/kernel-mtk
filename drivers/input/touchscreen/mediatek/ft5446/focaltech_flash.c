@@ -119,7 +119,8 @@ static unsigned char CTPM_FW[] = {
 	// #include "LQ_CM280_Ofilm0x51_V03_D01_20151214_app.i"
 	//#include "LQ_CM280_FT5346_Ofilm0x51_V04_D01_20151217_app.i"
 	//#include "LQ_CM320_Ofilm0x51_V03_D01_20151214_app.i"
-	#include "LQ_CM320_Ofilm0x51_V04_D01_20151222_app.i"
+	//#include "LQ_CM320_Ofilm0x51_V04_D01_20151222_app.i"
+	  #include "LQ_CU320_Ofilm0x51_V07_D01_20160118_app.i"
 };
 
 static unsigned char aucFW_PRAM_BOOT[] = {
