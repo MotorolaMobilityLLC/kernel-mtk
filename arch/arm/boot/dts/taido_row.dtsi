@@ -1793,6 +1793,10 @@
 		orientation@0 {
 			compatible = "mediatek,orientation";
 	};
+		/*add by caozhg*/
+                audio_switch {
+                        compatible = "mediatek,audio_switch";
+                };
 
 /* sensor end */
 	MOBICORE {
