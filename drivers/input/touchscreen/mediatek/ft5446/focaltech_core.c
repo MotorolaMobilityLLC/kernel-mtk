@@ -1301,7 +1301,7 @@ reset_proc:
 	#ifdef TPD_AUTO_UPGRADE
 		printk("********************Enter CTP Auto Upgrade********************\n");
 		is_update = true;
-		fts_ctpm_auto_upgrade(fts_i2c_client);
+		//fts_ctpm_auto_upgrade(fts_i2c_client);
 		is_update = false;
 	#endif
 
