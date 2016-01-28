@@ -28,6 +28,8 @@
 #include <asm/atomic.h>
 //#include <asm/system.h>
 #include <linux/types.h>
+#include <linux/semaphore.h>
+#include <linux/mutex.h>
 
 #include "kd_camera_typedef.h"
 #include "kd_camera_hw.h"
@@ -48,7 +50,7 @@ extern int read_imx219_eeprom_mtk_fmt(void);
 #define LOG_2 LOG_INF("preview 1280*960@30fps,864Mbps/lane; video 1280*960@30fps,864Mbps/lane; capture 5M@30fps,864Mbps/lane\n")
 /****************************   Modify end    *******************************************/
 
-#define LOG_INF(format, args...)	pr_debug(PFX "[%s] " format, __FUNCTION__, ##args)
+#define LOG_INF(format, args...) printk(KERN_ERR PFX format,##args)
 
 static DEFINE_SPINLOCK(imgsensor_drv_lock);
 
@@ -373,6 +375,549 @@ static void write_cmos_sensor(kal_uint32 addr, kal_uint32 para)
 	char pu_send_cmd[3] = {(char)(addr >> 8), (char)(addr & 0xFF), (char)(para & 0xFF)};
         kdSetI2CSpeed(imgsensor_info.i2c_speed);
 	iWriteRegI2C(pu_send_cmd, 3, imgsensor.i2c_write_id);
+}
+////////////////////// OTP code begin here ////////////////////////////
+
+#define IMX219_OTP_DEBUG_ENABLE 1
+
+#ifdef IMX219_OTP_DEBUG_ENABLE
+#define	IMX219_OTP_DBG(format,args...) printk(KERN_ERR "imx219_otp" format,##args)
+#else
+#define IMX219_OTP_DBG(foramt,args...)
+#endif
+
+#define IMX219_MODULE_INFO_DATA_CNT 11
+struct imx219_otp_module_info{
+	kal_uint8	module_info_flag;
+	/*kal_uint8	module_id;
+	kal_uint8	cal_ver;
+	kal_uint8	year;
+	kal_uint8	month;
+	kal_uint8	day;
+	kal_uint8	lens_id;
+	kal_uint8	vcm_id;
+	kal_uint8	driver_ic;
+	kal_uint8	ir_bg;
+	kal_uint8	ct_af_ls;
+	kal_uint8	rsv_1;*/
+	kal_uint8	module_data[IMX219_MODULE_INFO_DATA_CNT];
+	kal_uint8	module_checksum;	
+	kal_uint8	module_info_valid;
+	kal_uint8	otp_valid;
+};
+
+#define IMX219_AF_DATA_CNT	5
+struct imx219_otp_af_info{ 
+	kal_uint8	af_flag;
+	/*kal_uint8	af_cal_dir;
+	kal_uint8	af_inf_high;
+	kal_uint8	af_inf_low;
+	kal_uint8	af_mac_high;
+	kal_uint8	af_mac_low;	
+	kal_uint8	rsv_2;*/
+	kal_uint8	af_data[IMX219_AF_DATA_CNT];
+	kal_uint8	af_checksum;
+	kal_uint8	af_valid;
+};
+
+#define IMX219_AWB_DATA_CNT 20
+#define IMX219_LSC_DATA_CNT 175
+struct imx219_otp_awb_info{
+	kal_uint8	awb_flag;
+	/*kal_uint8	rg_ratio_h;
+	kal_uint8	rg_ratio_l;
+	kal_uint8	bg_ratio_h;
+	kal_uint8	bg_ratio_l;
+	kal_uint8	gg_ratio_h;
+	kal_uint8	gg_ratio_l;
+	kal_uint8	golden_rg_ratio_h;
+	kal_uint8	golden_rg_ratio_l;
+	kal_uint8	golden_bg_ratio_h;
+	kal_uint8	golden_bg_ratio_l;
+	kal_uint8	golden_gg_ratio_h;
+	kal_uint8	golden_gg_ratio_l;
+	kal_uint8	r;
+	kal_uint8	b;
+	kal_uint8	gr;
+	kal_uint8	gb;
+	kal_uint8	golden_r;
+	kal_uint8	golden_b;
+	kal_uint8	golden_gr;
+	kal_uint8	golden_gb;*/
+	kal_uint8	awb_data[IMX219_AWB_DATA_CNT];
+	kal_uint8	awb_checksum;
+	kal_uint8	awb_valid;
+};
+
+#define IMX219_LSC_DATA_CNT 175
+struct imx219_otp_lsc_info{
+	kal_uint8	lsc_flag;
+	kal_uint8	lsc_grp;
+	kal_uint8	lsc_checksum;
+	kal_uint8	lsc_valid;
+	kal_uint8	lsc_data[IMX219_LSC_DATA_CNT];
+};
+
+static struct imx219_otp_module_info imx219_otp_module;
+static struct imx219_otp_af_info imx219_otp_af;
+static struct imx219_otp_awb_info imx219_otp_awb;
+static struct imx219_otp_lsc_info imx219_otp_lsc;
+
+DEFINE_SEMAPHORE(imx219_otp_sem);
+
+static kal_uint8 imx219_init_otp(void)
+{
+	//return 0 when otp init successfully, otherwise 1
+	kal_uint16 data;
+	kal_uint32 addr;
+	kal_uint8  group;	
+	kal_uint32 check_sum;
+	kal_uint32 cnt;
+	kal_uint32 addr_end;
+         kal_uint16  j = 0;
+         kal_uint16  rt = 0;
+	IMX219_OTP_DBG("Enter %s, otp_valid=%d\n",__func__,
+	imx219_otp_module.otp_valid);
+
+	if (imx219_otp_module.otp_valid == 1){
+		IMX219_OTP_DBG("OTP data already loaded,skip now\n");
+		return 0;
+	}
+    rt = down_interruptible(&imx219_otp_sem);
+    if (rt < 0) {
+	goto otp_err;
+    }
+	write_cmos_sensor(0x0100,0x0); //sw standy
+	write_cmos_sensor(0x3302,0x02);//clk setting,24Mhz,600d
+	write_cmos_sensor(0x3303,0x58);
+	write_cmos_sensor(0X3300,0X08);//ECC off
+	write_cmos_sensor(0x3200,0x01);//otp read mode
+
+	//check status
+   
+	for( j=0;j<3;j++)
+	{
+		 data = read_cmos_sensor(0x3201);
+		 if (data & 0x1){
+			IMX219_OTP_DBG("otp status ok:reg[0x3201]=%x\n",data);
+			break;
+		 } else {
+			IMX219_OTP_DBG("otp status err:reg[0x3201]=%x\n",data);
+			//return 1;
+			if(2==j)
+			 goto otp_err;
+		}
+		 msleep(100);
+   }
+
+	//load module info
+	if (imx219_otp_module.module_info_valid != 1){
+		//check module info flag first
+		write_cmos_sensor(0x3202,0);    //set page 0
+		data = read_cmos_sensor(0x3204);
+		imx219_otp_module.module_info_flag = data;
+		IMX219_OTP_DBG("Module Info Flag:0x3204 = 0x%x\n",data);
+		if ( (data & 0xC0)>>6 == 0x01 ){
+			group = 1;
+			addr = 0x3205;
+			IMX219_OTP_DBG("Module Info GRP_1 Valid\n");
+		} else if ( (data & 0x30)>>4 == 0x01 ){
+			IMX219_OTP_DBG("Module Info GRP_2 Valid\n");
+			addr = 0x3211;
+			group = 2;
+		} else {
+			IMX219_OTP_DBG("Module Info Invalid\n");
+			imx219_otp_module.module_info_valid = 0;
+			imx219_otp_module.otp_valid = 0;
+			//return 1;
+			goto otp_err;
+		}
+	
+		check_sum = 0;
+
+		for (cnt =0; cnt < IMX219_MODULE_INFO_DATA_CNT;cnt++){
+			data = read_cmos_sensor(addr);
+                	check_sum += data;
+                	imx219_otp_module.module_data[cnt] = data;
+                	IMX219_OTP_DBG("Module Info: Reg[0x%x]=0x%x,check_sum=0x%x\n",addr,data,check_sum);
+			addr++;
+		}
+
+		data = read_cmos_sensor(addr);//read check_sum
+		imx219_otp_module.module_checksum = data;
+		check_sum = check_sum % 0xff + 1;
+		IMX219_OTP_DBG("Module Info: loaded checksum=0x%x, calculated checksum=0x%x\n",
+				data, check_sum);
+		
+		if (check_sum != data){
+			IMX219_OTP_DBG("Module Info: checksum unmatched\n");
+			imx219_otp_module.module_info_valid = 0;
+                        imx219_otp_module.otp_valid = 0;
+			//return 1;
+			goto otp_err;
+		} else{
+			IMX219_OTP_DBG("Module Info: checksum matched\n");
+                        imx219_otp_module.module_info_valid = 1;
+		}
+
+	}//end of module info check
+
+	//check af
+	if (imx219_otp_af.af_valid != 1){
+		write_cmos_sensor(0x3202,0);    //set page 0
+		data = read_cmos_sensor(0x321D);
+		imx219_otp_af.af_flag = data;
+                IMX219_OTP_DBG("AF Info Flag:0x321D = 0x%x\n",data);
+                if ( (data & 0xC0)>>6 == 0x01 ){
+                        group = 1;
+                        addr = 0x321E;
+                        IMX219_OTP_DBG("AF Info GRP_1 Valid\n");
+                } else if ( (data & 0x30)>>4 == 0x01 ){
+                        IMX219_OTP_DBG("AF Info GRP_2 Valid\n");
+                        addr = 0x3225;
+                        group = 2;
+                } else {
+                        IMX219_OTP_DBG("AF Info Invalid\n");
+                        imx219_otp_af.af_valid = 0; //AF OTP DATA could be un-available for some module
+			addr = 0;
+                }
+	
+		if (addr != 0){
+                	check_sum = 0;
+
+                	for (cnt =0; cnt < IMX219_AF_DATA_CNT;cnt++){
+                        	data = read_cmos_sensor(addr);
+                        	check_sum += data;
+                        	imx219_otp_af.af_data[cnt] = data;
+                        	IMX219_OTP_DBG("Module Info: Reg[0x%x]=0x%x,check_sum=0x%x\n",addr,data,check_sum);
+                        	addr++;
+                	}
+                     addr++;//data address between checksum is reseverd ,so address need plus
+                	data = read_cmos_sensor(addr);//read check_sum
+			imx219_otp_af.af_checksum = data;
+               	 	check_sum = check_sum % 0xff + 1;
+                	IMX219_OTP_DBG("AF Info: loaded checksum=0x%x, calculated checksum=0x%x\n",
+                                data, check_sum);
+
+               		 if (check_sum != data){
+                        	IMX219_OTP_DBG("AF Info: checksum unmatched\n");
+                        	imx219_otp_af.af_valid = 0;
+                        	imx219_otp_module.otp_valid = 0; //we have af otp,but check_sum failed,it's error
+                        	//return 1;
+				goto otp_err;
+                	} else{
+                        	IMX219_OTP_DBG("AF Info: checksum matched\n");
+                        	imx219_otp_af.af_valid = 1;
+                	}
+		}
+	} //end of check af
+
+
+	//check awb 
+	if (imx219_otp_awb.awb_valid != 1){
+                //check awb flag first
+                write_cmos_sensor(0x3202,1);    //set page 1
+                data = read_cmos_sensor(0x3204);
+		imx219_otp_awb.awb_flag = data;
+                IMX219_OTP_DBG("AWB Flag:0x3204 = 0x%x\n",data);
+                if ( (data & 0xC0)>>6 == 0x01 ){
+                        group = 1;
+                        addr = 0x3205;
+                        IMX219_OTP_DBG("Module Info GRP_1 Valid\n");
+                } else if ( (data & 0x30)>>4 == 0x01 ){
+                        IMX219_OTP_DBG("Module Info GRP_2 Valid\n");
+                        addr = 0x321A;
+                        group = 2;
+                } else {
+                        IMX219_OTP_DBG("AWB info Invalid\n");
+                        imx219_otp_awb.awb_valid = 0;
+                        imx219_otp_module.otp_valid = 0;
+                        //return 1;
+			goto otp_err;
+                }
+
+                check_sum = 0;
+
+                for (cnt =0; cnt < IMX219_AWB_DATA_CNT;cnt++){
+                        data = read_cmos_sensor(addr);
+                        check_sum += data;
+                        imx219_otp_awb.awb_data[cnt] = data;
+                        IMX219_OTP_DBG("AWB info: Reg[0x%x]=0x%x,check_sum=0x%x\n",addr,data,check_sum);
+                        addr++;
+                }
+
+                data = read_cmos_sensor(addr);//read check_sum
+		imx219_otp_awb.awb_checksum = data;
+                check_sum = check_sum % 0xff + 1;
+                IMX219_OTP_DBG("AWB Info: loaded checksum=0x%x, calculated checksum=0x%x\n",
+                                data, check_sum);
+
+                if (check_sum != data){
+                        IMX219_OTP_DBG("AWB Info: checksum unmatched\n");
+                        imx219_otp_awb.awb_valid = 0;
+                        imx219_otp_module.otp_valid = 0;
+                        //return 1;
+			goto otp_err;
+                } else{
+                        IMX219_OTP_DBG("AWB Info: checksum matched\n");
+                        imx219_otp_awb.awb_valid = 1;
+                }
+
+        }//end of awb check
+
+	//check lsc
+	if (imx219_otp_lsc.lsc_valid != 1){
+                //check lsc info flag first
+		//write_cmos_sensor(0X3300,0X00);//ECC on,enable it later
+                write_cmos_sensor(0x3202,0);    //set page 0
+
+                data = read_cmos_sensor(0x3243);
+		imx219_otp_lsc.lsc_flag = data;
+                IMX219_OTP_DBG("LSC Info Flag:0x3243 = 0x%x\n",data);
+                if ( (data & 0xC0)>>6 == 0x01 ){
+                        group = 1;
+			imx219_otp_lsc.lsc_checksum = read_cmos_sensor(0x3241);
+			imx219_otp_lsc.lsc_grp = 1;
+                        IMX219_OTP_DBG("LSC Info GRP_1 Valid,checksum=0x%x\n",imx219_otp_lsc.lsc_checksum);
+			
+                } else if ( (data & 0x30)>>4 == 0x01 ){
+                        group = 2;
+			imx219_otp_lsc.lsc_checksum = read_cmos_sensor(0x3242);
+			imx219_otp_lsc.lsc_grp = 2;
+                        IMX219_OTP_DBG("LSC Info GRP_2 Valid,checksum=0x%x\n",imx219_otp_lsc.lsc_checksum);
+                } else {
+                        IMX219_OTP_DBG("LSC Info Invalid\n");
+                        imx219_otp_lsc.lsc_valid = 0;
+                        imx219_otp_module.otp_valid = 0;
+                        //return 1;
+			goto otp_err;
+                }
+			
+		IMX219_OTP_DBG("LSC Debug\n");
+		IMX219_OTP_DBG("Reg[0X3202]=0x%x\n",read_cmos_sensor(0x3202));
+		IMX219_OTP_DBG("Reg[0X3241]=0x%x\n",read_cmos_sensor(0x3241));
+		IMX219_OTP_DBG("Reg[0X3242]=0x%x\n",read_cmos_sensor(0x3242));
+		IMX219_OTP_DBG("Reg[0X3243]=0x%x\n",read_cmos_sensor(0x3243));
+		IMX219_OTP_DBG("Reg[0X3300]=0x%x\n",read_cmos_sensor(0x3300));
+                check_sum = 0;
+		cnt = 0;
+	
+		//read part1 	
+		IMX219_OTP_DBG("Read LSC OTP Group1\n");
+		if (group == 1){
+		 	write_cmos_sensor(0x3202,2);    //set page 2
+			addr = 0X3204;
+			addr_end = 0x3243;
+		} else if (group == 2) {
+			write_cmos_sensor(0x3202,7);    //set page 7
+			addr = 0x3222;
+			addr_end = 0x3243;
+		}
+		IMX219_OTP_DBG("Current page set:reg[0x3202]=0x%x\n",read_cmos_sensor(0x3202));
+
+		write_cmos_sensor(0X3300,0X00);//ECC on
+
+                for (; addr <= addr_end ; addr++,cnt++){
+                        data = read_cmos_sensor(addr);
+                        check_sum += data;
+                        imx219_otp_lsc.lsc_data[cnt] = data;
+                        IMX219_OTP_DBG("LSC Info: cnt=%d,Reg[0x%x]=0x%x,check_sum=0x%x\n",
+				cnt,addr,data,check_sum);
+                }
+		//read part2
+		IMX219_OTP_DBG("Read LSC OTP Group2\n");
+                if (group == 1){
+                        write_cmos_sensor(0x3202,3);    //set page 3
+                        addr = 0X3204;
+                        addr_end = 0x3243;
+                } else if (group == 2) {
+                        write_cmos_sensor(0x3202,8);    //set page 8
+                        addr = 0x3204;
+                        addr_end = 0x3243;
+                }
+		IMX219_OTP_DBG("Current page set:reg[0x3202]=0x%x\n",read_cmos_sensor(0x3202));
+                for (; addr <= addr_end ; addr++,cnt++){
+                        data = read_cmos_sensor(addr);
+                        check_sum += data;
+                        imx219_otp_lsc.lsc_data[cnt] = data;
+                        IMX219_OTP_DBG("LSC Info: cnt=%d,Reg[0x%x]=0x%x,check_sum=0x%x\n",
+				cnt,addr,data,check_sum);
+                }
+		//read part3
+		IMX219_OTP_DBG("Read LSC OTP Group3\n");
+		if (group == 1){
+                        write_cmos_sensor(0x3202,4);    //set page 4
+                        addr = 0X3204;
+                        addr_end = 0x3232;
+                } else if (group == 2) {
+                        write_cmos_sensor(0x3202,9);    //set page 9
+                        addr = 0x3204;
+                        addr_end = 0x3243;
+                }
+		IMX219_OTP_DBG("Current page set:reg[0x3202]=0x%x\n",read_cmos_sensor(0x3202));	
+                for (; addr <= addr_end ; addr++,cnt++){
+                        data = read_cmos_sensor(addr);
+                        check_sum += data;
+                        imx219_otp_lsc.lsc_data[cnt] = data;
+                        IMX219_OTP_DBG("LSC Info: cnt=%d,Reg[0x%x]=0x%x,check_sum=0x%x\n",
+				cnt,addr,data,check_sum);
+                }
+		//read part4 only for gourp2
+		if (group == 2){
+			write_cmos_sensor(0x3202,10);    //set page 10	
+			addr = 0x3204;
+			addr_end = 0x3210;
+			for (; addr <= addr_end ; addr++,cnt++){
+        	                data = read_cmos_sensor(addr);
+                	        check_sum += data;
+                        	imx219_otp_lsc.lsc_data[cnt] = data;
+                        	IMX219_OTP_DBG("LSC Info: Reg[0x%x]=0x%x,check_sum=0x%x\n",addr,data,check_sum);
+	                }
+
+		}	
+
+                check_sum = check_sum % 0xff + 1;
+                IMX219_OTP_DBG("LSC Info: loaded checksum=0x%x, calculated checksum=0x%x\n",
+                                imx219_otp_lsc.lsc_checksum, check_sum);
+
+                if (check_sum != imx219_otp_lsc.lsc_checksum){
+                        IMX219_OTP_DBG("LSC Info: checksum unmatched\n");
+                        imx219_otp_lsc.lsc_valid = 0;
+                        imx219_otp_module.otp_valid = 0;
+                        //return 1;
+			goto otp_err;
+                } else{
+                        IMX219_OTP_DBG("LSC Info: checksum matched\n");
+                        imx219_otp_lsc.lsc_valid = 1;
+                }
+
+        }//end of check_lsc
+
+	//if we come here, all otp check should be ok
+	imx219_otp_module.otp_valid = 1;
+
+	up(&imx219_otp_sem);
+
+	return 0;	
+
+otp_err:
+	up(&imx219_otp_sem);
+	return 1;
+
+}
+
+static void imx219_auto_load_lsc(void)
+{
+	IMX219_OTP_DBG("enter %s\n",__func__);
+
+	write_cmos_sensor(0x3300,0x00);//ecc on
+	write_cmos_sensor(0X0190,0X01); //lsc enable
+	
+	if (imx219_otp_lsc.lsc_grp == 1){
+		write_cmos_sensor(0x0192,0x00); //LSC sel table 0
+	} else {
+		write_cmos_sensor(0x0192,0x02);
+	}
+
+	write_cmos_sensor(0X0191,0x00);//lsc color mode
+	write_cmos_sensor(0X0193,0x00);//lsc tuning mode
+	write_cmos_sensor(0X01A4,0x03);//Knot Point Format A
+
+	
+	return;
+}
+
+static void imx219_try_init_otp(void)
+{
+	int i = 0;
+
+	IMX219_OTP_DBG("enter %s,otp_valid:%d\n",
+		__func__,imx219_otp_module.otp_valid);
+
+	while ( imx219_otp_module.otp_valid != 1 ){
+		imx219_init_otp();
+		i++;
+		IMX219_OTP_DBG("otp_valid=%d,cnt=%d\n",
+		imx219_otp_module.otp_valid,i);
+
+		if (i >=3 ) //try 3 time
+			break;
+	}
+}
+
+kal_uint8 imx219_cam_cal_read_data(kal_uint32 offset,
+	kal_uint32 lenth, kal_uint8 *pBuf)
+{
+	//return accual read lenth
+	kal_uint32 i;
+	kal_uint32 rt;
+	IMX219_OTP_DBG("Enter %s,offset=0x%x,len=%d,pBuf=0x%x\n",
+		__func__,offset,lenth,*pBuf);
+
+	
+    rt = down_interruptible(&imx219_otp_sem);
+    if (rt < 0) {
+	goto cal_err;
+    }
+	
+	if(imx219_otp_module.otp_valid != 1){
+		goto cal_err;
+	}
+
+
+	if (offset == 0x00){
+		//read module id
+		if (lenth < 2){
+			goto cal_err;
+		} else {
+			pBuf[0]= 0x02;
+			pBuf[1]= 0x19;
+			up(&imx219_otp_sem);
+			return 2;
+		}	
+	}
+
+	if (offset == 0x5a10){
+		//read af
+		if ( (lenth < IMX219_AF_DATA_CNT) || (imx219_otp_af.af_valid != 1)){
+			goto cal_err;
+		} else {
+			for (i=0; i< IMX219_AF_DATA_CNT; i++){
+				pBuf[i] = imx219_otp_af.af_data[i];
+			}
+			up(&imx219_otp_sem);
+			return IMX219_AF_DATA_CNT;			
+		}
+	}	
+
+	if (offset == 0x5a20){
+                //read awb
+                if ( (lenth < IMX219_AWB_DATA_CNT) || (imx219_otp_awb.awb_valid != 1)){
+                        goto cal_err;
+                } else {
+                        for (i=0; i< IMX219_AWB_DATA_CNT;i++){
+                                pBuf[i] = imx219_otp_awb.awb_data[i];
+                        } 
+			up(&imx219_otp_sem);
+                        return IMX219_AWB_DATA_CNT;
+                }
+        } 
+	if (offset == 0x5a30){
+                //read awb
+                if ( (lenth < IMX219_LSC_DATA_CNT) || (imx219_otp_lsc.lsc_valid!= 1)){
+                        goto cal_err;
+                } else {
+                        for (i=0; i< IMX219_LSC_DATA_CNT;i++){
+                                pBuf[i] = imx219_otp_lsc.lsc_data[i];
+                        } 
+			up(&imx219_otp_sem);
+                        return IMX219_LSC_DATA_CNT;
+                }
+        } 
+
+cal_err:
+	up(&imx219_otp_sem);
+	return 0;
 }
 
 static void set_dummy(void)
@@ -1224,6 +1769,7 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 #ifdef CONFIG_MTK_CAM_CAL
 				read_imx219_eeprom_mtk_fmt();
 #endif
+				imx219_try_init_otp();
 				LOG_INF("i2c write id: 0x%x, sensor id: 0x%x\n", imgsensor.i2c_write_id,*sensor_id);
 				return ERROR_NONE;
 			}
@@ -1287,6 +1833,13 @@ static kal_uint32 open(void)
 	if (imgsensor_info.sensor_id != sensor_id)
 		return ERROR_SENSOR_CONNECT_FAIL;
 
+	imx219_try_init_otp();
+	
+	if (imx219_otp_module.otp_valid == 1){
+		IMX219_OTP_DBG("OTP Loaded successfully,auto load lsc\n");	
+		imx219_auto_load_lsc();
+	}
+	
 	/* initail sequence write in  */
 	sensor_init();
 

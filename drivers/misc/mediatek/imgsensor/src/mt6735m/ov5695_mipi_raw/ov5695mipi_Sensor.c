@@ -44,9 +44,16 @@
 #define LOG_INF(format, args...)	pr_debug(PFX "[%s] " format, __FUNCTION__, ##args)
 
 static DEFINE_SPINLOCK(imgsensor_drv_lock);
-
-
-
+#define BG_Ratio_Typical 0x14D  //lenovo.sw huangsh4 change for taido front camera
+#define RG_Ratio_Typical 0x144
+struct otp_struct {
+int flag; // bit[7]: info
+int module_integrator_id;
+int lens_id;
+int rg_ratio;
+int bg_ratio;
+};
+struct otp_struct ov5695_otp;
 static imgsensor_info_struct imgsensor_info = { 
 	.sensor_id = OV5695_SENSOR_ID,		//record sensor id defined in Kd_imgsensor.h
 	
@@ -188,7 +195,123 @@ static void write_cmos_sensor(kal_uint32 addr, kal_uint32 para)
 	iWriteRegI2C(pu_send_cmd, 3, imgsensor.i2c_write_id);
 }
 
+int read_otp(struct otp_struct *otp_ptr)
+{
+int otp_flag, addr, temp, i;
+// read OTP into buffer
+write_cmos_sensor(0x3d84, 0xC0);
+write_cmos_sensor(0x3d88, 0x70); // OTP start address
+write_cmos_sensor(0x3d89, 0x0C);
+write_cmos_sensor(0x3d8A, 0x70); // OTP end address
+write_cmos_sensor(0x3d8B, 0x1B);
+write_cmos_sensor(0x3d81, 0x01); // load otp into buffer
+mdelay(5);
+// OTP WB Calibration
+otp_flag = read_cmos_sensor(0x700C);
+addr = 0;
+if((otp_flag & 0xc0) == 0x40) {
+addr = 0x700D; // base address of WB Calibration group 1
+}
+else if((otp_flag & 0x30) == 0x10) {
+addr = 0x7012; // base address of WB Calibration group 2
+}
+else if((otp_flag & 0x0c) == 0x04) {
+addr = 0x7017; // base address of info group 3
+}
+LOG_INF("[OV5695OTP] read Data addr = %d \n",addr);
+if(addr != 0) {
+(*otp_ptr).flag |= 0x80;
+(*otp_ptr).module_integrator_id = read_cmos_sensor( addr );
+(*otp_ptr).lens_id = read_cmos_sensor( addr + 1);
+temp = read_cmos_sensor( addr + 4);
+(*otp_ptr).rg_ratio = (read_cmos_sensor(addr+2)<<2) + ((temp>>6) & 0x03);
+(*otp_ptr).bg_ratio = (read_cmos_sensor( addr + 3)<<2) + ((temp>>4) & 0x03);
+//LOG_INF("[OV5693OTP] read Data for flag = %d \n",*otp_ptr[0]);
+//LOG_INF("[OV5693OTP] read Data for module_integrator_id = %d \n",*otp_ptr[1]);
+//LOG_INF("[OV5693OTP] read Data for lens_id = %d \n",*otp_ptr[2]);
+//LOG_INF("[OV5693OTP] read Data for rg_ratio = %d \n",*otp_ptr[3]);
+//LOG_INF("[OV5693OTP] read Data for bg_ratio = %d \n",*otp_ptr[4]);
+LOG_INF("[OV5695OTP] read Data for flag = %d \n",(*otp_ptr).flag);
+LOG_INF("[OV5695TP] read Data for module_integrator_id = %d \n",(*otp_ptr).module_integrator_id );
+LOG_INF("[OV5695OTP] read Data for lens_id = %d \n",(*otp_ptr).lens_id);
+LOG_INF("[OV5695OTP] read Data for rg_ratio = %d \n",(*otp_ptr).rg_ratio);
+LOG_INF("[OV5695OTP] read Data for bg_ratio = %d \n",(*otp_ptr).bg_ratio );
+}
+else {
+(*otp_ptr).flag = 0x00; // not info in OTP
+(*otp_ptr).module_integrator_id = 0;
+(*otp_ptr).lens_id = 0;
+(*otp_ptr).rg_ratio = 0;
+(*otp_ptr).bg_ratio = 0;
+}
+for(i=0x700C;i<=0x701B;i++) {
+write_cmos_sensor(i,0); // clear OTP buffer, recommended use continuous write to accelarate
+}
+return (*otp_ptr).flag;
+}
 
+int apply_otp(struct otp_struct *otp_ptr)
+{
+int rg, bg, R_gain, G_gain, B_gain, Base_gain;
+// apply OTP WB Calibration
+if ((*otp_ptr).flag & 0x80) {
+rg = (*otp_ptr). rg_ratio;
+bg = (*otp_ptr).bg_ratio;
+ LOG_INF("[OV5695OTP] apply otp rg = %d, bg =%d \n",rg,bg);
+//calculate G gain
+R_gain = (RG_Ratio_Typical*1000) / rg;
+B_gain = (BG_Ratio_Typical*1000) / bg;
+G_gain = 1000;
+if (R_gain < 1000 || B_gain < 1000)
+{
+if (R_gain < B_gain)
+Base_gain = R_gain;
+else
+Base_gain = B_gain;
+}
+else
+{
+Base_gain = G_gain;
+}
+R_gain = 0x400 * R_gain / (Base_gain);
+B_gain = 0x400 * B_gain / (Base_gain);
+G_gain = 0x400 * G_gain / (Base_gain);
+// update sensor WB gain
+if (R_gain>0x400) {
+write_cmos_sensor(0x5019, R_gain>>8);
+write_cmos_sensor(0x501a, R_gain & 0x00ff);
+}
+if (G_gain>0x400) {
+write_cmos_sensor(0x501b, G_gain>>8);
+write_cmos_sensor(0x501c, G_gain & 0x00ff);
+}
+if (B_gain>0x400) {
+write_cmos_sensor(0x501d, B_gain>>8);
+write_cmos_sensor(0x501e, B_gain & 0x00ff);
+}
+}
+   LOG_INF("[OV5695OTP] apply otp end \n");
+return (*otp_ptr).flag;
+}
+//read MID
+static int  Read_otp_MID(void)
+{
+
+	int ret;
+//	struct otp_struct current_otp;
+	// R/G and B/G of current camera module is read out from sensor OTP
+	// check first OTP with valid data
+	write_cmos_sensor(0x0103,0x01);  // Software Reset
+	write_cmos_sensor(0x0100,0x01);  // wake up
+
+	ret = read_otp(&ov5695_otp);
+	if (ret  == 0)
+		{
+          LOG_INF("[OV5695OTP] read Data for flag  failed \n");
+	}
+	 LOG_INF("[OV5695OTP] read Data for flag  end %d \n",ret);
+	return ret;
+}
 static void set_dummy(void)
 {
 	LOG_INF("dummyline = %d, dummypixels = %d \n", imgsensor.dummy_line, imgsensor.dummy_pixel);
@@ -638,6 +761,9 @@ static void sensor_init(void)
 		write_cmos_sensor(0x3507, 0x03);
 		write_cmos_sensor(0x3508, 0x00);
 		write_cmos_sensor(0x3509, 0xf8);
+		LOG_INF("-----[%s][%d]--otp wb begin----\n",__FUNCTION__,__LINE__);
+		apply_otp(&ov5695_otp);
+		LOG_INF("-----[%s][%d]--otp wb end----\n",__FUNCTION__,__LINE__);
 		//write_cmos_sensor(0x0100, 0x01);
 
 }	/*	sensor_init  */
@@ -1025,6 +1151,7 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 {
 	kal_uint8 i = 0;
 	kal_uint8 retry = 2;
+	int mid = 0;
 #if 0
 	static kal_uint8 count = 0;
 
@@ -1050,6 +1177,8 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 		spin_unlock(&imgsensor_drv_lock);
 		do {
 			*sensor_id = ((read_cmos_sensor(0x300B) << 8) | read_cmos_sensor(0x300C));
+			mid = Read_otp_MID();
+			printk("shen ***********mid= %d\n",mid);
 			if (*sensor_id == imgsensor_info.sensor_id) {				
 				printk("ov5695=>i2c write id: 0x%x, sensor id: 0x%x\n", imgsensor.i2c_write_id,*sensor_id);	  
 				return ERROR_NONE;
@@ -1091,7 +1220,7 @@ static kal_uint32 open(void)
 	kal_uint8 i = 0;
 	kal_uint8 retry = 2;
 	kal_uint16 sensor_id = 0; 
-
+	int mid = 0;
 	LOG_INF("preview 1280*960@30fps,864Mbps/lane; video 1280*960@30fps,864Mbps/lane; capture 5M@30fps,864Mbps/lane\n");
 	
 	//sensor have two i2c address 0x6c 0x6d & 0x21 0x20, we should detect the module used i2c address
@@ -1100,7 +1229,10 @@ static kal_uint32 open(void)
 		imgsensor.i2c_write_id = imgsensor_info.i2c_addr_table[i];
 		spin_unlock(&imgsensor_drv_lock);
 		do {
+			
 			sensor_id = ((read_cmos_sensor(0x300B) << 8) | read_cmos_sensor(0x300C));
+			mid = Read_otp_MID();
+			printk("shen ****000*******mid= %d\n",mid);
 			if (sensor_id == imgsensor_info.sensor_id) {				
 				LOG_INF("i2c write id: 0x%x, sensor id: 0x%x\n", imgsensor.i2c_write_id,sensor_id);	  
 				break;
