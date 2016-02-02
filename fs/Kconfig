@@ -90,6 +90,13 @@ menu "DOS/FAT/NT Filesystems"
 
 source "fs/fat/Kconfig"
 source "fs/ntfs/Kconfig"
+source "fs/exfat/Kconfig"
+
+config SUPPORT_LENOVO_EXFAT_FS
+	bool "Lenovo exfat"
+	select EXFAT_FS
+	help
+	  Say y to get support of lenovo exfat
 
 endmenu
 endif # BLOCK
