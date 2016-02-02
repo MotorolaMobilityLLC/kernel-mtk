@@ -563,7 +563,7 @@ static BATTERY_VOLTAGE_ENUM select_jeita_cv(void)
 		cv_voltage = JEITA_TEMP_POS_45_TO_POS_60_CV_VOLTAGE;
 	} else if (g_temp_status == TEMP_POS_10_TO_POS_45) {
 		if (batt_cust_data.high_battery_voltage_support)
-			cv_voltage = BATTERY_VOLT_04_340000_V;
+			cv_voltage = BATTERY_VOLT_04_400000_V; //modify by caozhg
 		else
 			cv_voltage = JEITA_TEMP_POS_10_TO_POS_45_CV_VOLTAGE;
 	} else if (g_temp_status == TEMP_POS_0_TO_POS_10) {

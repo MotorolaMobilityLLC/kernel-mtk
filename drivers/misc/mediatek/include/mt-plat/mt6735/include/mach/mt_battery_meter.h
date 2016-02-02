@@ -153,7 +153,8 @@
 
 #if defined(CONFIG_MTK_BQ24196_SUPPORT) \
 	|| defined(CONFIG_MTK_BQ24296_SUPPORT) \
-	|| defined(CONFIG_MTK_BQ24261_SUPPORT)
+	|| defined(CONFIG_MTK_BQ24261_SUPPORT)\
+	|| defined(CONFIG_MTK_SM5414_SUPPORT) //modify by caozhg
 #define SWCHR_POWER_PATH
 #define EXTERNAL_SWCHR_SUPPORT
 #endif
@@ -173,15 +174,15 @@
 #define FG_METER_RESISTANCE 0
 
 /* Qmax for battery  */
-#define Q_MAX_POS_50 1463
-#define Q_MAX_POS_25 1437
-#define Q_MAX_POS_0 1220
-#define Q_MAX_NEG_10 1137
+#define Q_MAX_POS_50 2809 //modify by caozhg
+#define Q_MAX_POS_25 2816
+#define Q_MAX_POS_0 2858
+#define Q_MAX_NEG_10 2863
 
-#define Q_MAX_POS_50_H_CURRENT 1511
-#define Q_MAX_POS_25_H_CURRENT 1462
-#define Q_MAX_POS_0_H_CURRENT 818
-#define Q_MAX_NEG_10_H_CURRENT 149
+#define Q_MAX_POS_50_H_CURRENT 2793
+#define Q_MAX_POS_25_H_CURRENT 2801
+#define Q_MAX_POS_0_H_CURRENT 2716
+#define Q_MAX_NEG_10_H_CURRENT 2346
 
 
 /* Discharge Percentage */

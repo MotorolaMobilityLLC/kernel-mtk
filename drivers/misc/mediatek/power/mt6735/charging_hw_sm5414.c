@@ -327,8 +327,8 @@ static unsigned int charging_set_cv_voltage(void *data)
 	//static short pre_register_value = -1;
 
 	#if defined(HIGH_BATTERY_VOLTAGE_SUPPORT)
-	if(cv_value >= BATTERY_VOLT_04_350000_V)
-		cv_value = 4400000;//4350000; //
+	//if(cv_value >= BATTERY_VOLT_04_350000_V) //modify by caozhg
+		//cv_value = 4400000;//4350000; //
 	#endif
 
 	//use nearest value
@@ -406,9 +406,9 @@ static unsigned int charging_set_current(void *data)
 	register_value = charging_parameter_to_value(CS_VTH, array_size ,set_chr_current);
     	sm5414_set_fastchg(register_value);//FASTCHG
 	//add by caozhg for debug
-	printk ("caozhengguang func=%s data=%d register_value=0x%x.\n", __func__, current_value, register_value);
-	charging_get_current (&current_value);
-	printk ("caozhengguang func=%s data=%d.\n", __func__, current_value);
+	//printk ("caozhengguang func=%s data=%d register_value=0x%x.\n", __func__, current_value, register_value);
+	//charging_get_current (&current_value);
+	//printk ("caozhengguang func=%s data=%d.\n", __func__, current_value);
 	return status;
 } 	
 
