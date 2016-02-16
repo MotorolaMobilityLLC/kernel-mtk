@@ -409,6 +409,20 @@ log_again:
 		    continue;
 		}
 #endif
+
+#if 1
+		/* Lenovo-sw wuzb1 add 2015-04-29 begin, workaround mediaprovider killed ARIES-1562 */
+		if (!strcmp(p->comm, "d.process.media")
+			&& (REVERT_ADJ(oom_score_adj) >= 9) && (REVERT_ADJ(min_score_adj) >= 9)) {
+			lowmem_print(2, "select but ignore '%s' (%d), oom_score_adj %d, oom_adj %d, size %d, to kill\n" \
+					"cache %ldkB is below limit %ldkB",
+					p->comm, p->pid, oom_score_adj, REVERT_ADJ(oom_score_adj), tasksize,
+					other_file * (long)(PAGE_SIZE / 1024),
+					minfree * (long)(PAGE_SIZE / 1024));
+			continue;
+		}
+		/* Lenovo-sw wuzb1 add 2015-04-29 end, workaround meidaprovider killed ARIES-1562 */
+#endif
 		selected = p;
 		selected_tasksize = tasksize;
 		selected_oom_score_adj = oom_score_adj;
