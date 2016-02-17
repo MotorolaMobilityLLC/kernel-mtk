@@ -468,7 +468,7 @@ static void accdet_eint_work_callback(struct work_struct *work)
 #if defined(CONFIG_TS3A227E_ACCDET)
 		ACCDET_DEBUG("[Accdet] TS3A227E enable!\n");
 		msleep(300);
-		ret = ts3a227e_write_byte(0x04, 0x10);
+		ret = ts3a227e_write_byte(0x04, 0x18);
 		msleep(500);
 		ts3a227e_read_byte(0x00, &ts3a227e_reg_value[0]);
 		ts3a227e_read_byte(0x01, &ts3a227e_reg_value[1]);

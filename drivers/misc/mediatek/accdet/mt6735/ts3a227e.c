@@ -54,6 +54,7 @@ static int ts3a227e_i2c_probe(struct i2c_client *client, const struct i2c_device
 	ts3a227e_i2c_client = client;
 
 	ts3a227e_read_byte(0x00, &devicve_id[0]);
+	ts3a227e_write_byte(0x04,0x18);
 	pr_warn("ts3a227e_i2c_probe ID=%x\n", devicve_id[0]);
 
 	return 0;
