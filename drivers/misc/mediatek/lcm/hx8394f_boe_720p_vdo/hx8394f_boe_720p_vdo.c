@@ -94,7 +94,9 @@ static LCM_UTIL_FUNCS lcm_util = {0};
 /***************************************************************************** 
  * GLobal Variable
  *****************************************************************************/
+#ifndef CONFIG_OF
 static struct i2c_board_info __initdata tps65132_board_info = {I2C_BOARD_INFO(I2C_ID_NAME, TPS_ADDR)};
+#endif
 static struct i2c_client *tps65132_i2c_client = NULL;
 
 
@@ -112,10 +114,16 @@ static int tps65132_remove(struct i2c_client *client);
 	
 };
 
-static const struct i2c_device_id tps65132_id[] = {
-	{ I2C_ID_NAME, 0 },
-	{ }
+#ifdef CONFIG_OF
+static const struct of_device_id tps65132_of_match[] = {
+	{ .compatible = "mediatek,I2C_LCD_BIAS", },
+	{},
 };
+MODULE_DEVICE_TABLE(of, tps65132_of_match);
+#endif
+
+
+static const struct i2c_device_id tps65132_id[] = {{I2C_ID_NAME,0},{}};
 
 //#if (LINUX_VERSION_CODE < KERNEL_VERSION(2,6,36))
 //static struct i2c_client_address_data addr_data = { .forces = forces,};
@@ -126,8 +134,10 @@ static struct i2c_driver tps65132_iic_driver = {
 	.remove		= tps65132_remove,
 	//.detect		= mt6605_detect,
 	.driver		= {
-		.owner	= THIS_MODULE,
 		.name	= "tps65132",
+		#ifdef CONFIG_OF 
+       			.of_match_table = tps65132_of_match,
+		#endif
 	},
  
 };
@@ -157,21 +167,43 @@ static int tps65132_remove(struct i2c_client *client)
   return 0;
 }
 
-/*
+
 static int tps65132_write_bytes(unsigned char addr, unsigned char value)
 {	
 	int ret = 0;
+	unsigned char xfers = 1;
+	int retries = 3;//try 3 timers
+
 	struct i2c_client *client = tps65132_i2c_client;
-	char write_data[2]={0};	
+	unsigned char write_data[8];	
 	write_data[0]= addr;
-	write_data[1] = value;
-    ret=i2c_master_send(client, write_data, 2);
-	if(ret<0)
-	printk("tps65132 write data fail !!\n");	
-	return ret ;
+	memcpy(&write_data[1], &value, 1);
+	do {
+		struct i2c_msg msgs[1] = {
+			{
+				.addr = client->addr,
+				.flags = 0,
+				.len = 1 + 1,
+				.buf = write_data,
+			},
+		};
+
+		/*
+		 * Avoid sending the segment addr to not upset non-compliant
+		 * DDC monitors.
+		 */
+		ret = i2c_transfer(client->adapter, msgs, xfers);
+
+		if (ret == -ENXIO) {
+			printk("tps65132 write data fail !!\n");
+			break;
+		}
+	} while (ret != xfers && --retries);
+
+	return ret == xfers ? 1 : -1;
 }
 EXPORT_SYMBOL_GPL(tps65132_write_bytes);
-*/
+
 
 /*
  * module load/unload record keeping
@@ -181,9 +213,18 @@ static int __init tps65132_iic_init(void)
 {
 
    printk( "tps65132_iic_init\n");
+#ifdef CONFIG_OF
+	//battery_log(BAT_LOG_CRTI, "[sm5414_init] init start with i2c DTS");
+	printk ("[tps65132_iic_init] init start with i2c DTS");
+#else
    i2c_register_board_info(TPS_I2C_BUSNUM, &tps65132_board_info, 1);
    printk( "tps65132_iic_init2\n");
-   i2c_add_driver(&tps65132_iic_driver);
+#endif
+   if (i2c_add_driver(&tps65132_iic_driver) != 0)
+   {
+	printk ("[tps65132_iic_init] failed to register i2c driver.\n");
+	return -1;
+   }
    printk( "tps65132_iic_init success\n");	
    return 0;
 }
@@ -364,10 +405,17 @@ static void lcm_get_params(LCM_PARAMS *params)
 
 	params->width  = FRAME_WIDTH;
 	params->height = FRAME_HEIGHT;
-
+	params->physical_width = 62;
+	params->physical_height = 111;
 	// enable tearing-free
 	//params->dbi.te_mode 				= LCM_DBI_TE_MODE_VSYNC_ONLY;
 	//params->dbi.te_edge_polarity		= LCM_POLARITY_RISING;
+#ifdef CONFIG_SLT_DRV_DEVINFO_SUPPORT
+	params->module="BV050HDM-A00-380W";
+	params->vendor="BOE";
+	params->ic="hx8394f";
+	params->info="720*1280";
+#endif
 
 #if defined(LCM_DSI_CMD_MODE)
 	params->dsi.mode   = CMD_MODE;
@@ -448,8 +496,8 @@ static void KTD2125_enable(char en)
 		   MDELAY(12);
 		   set_gpio_lcd_enn(1);
 		   MDELAY(12);
-		   //tps65132_write_bytes(0x00, 0x0a);
-		   //tps65132_write_bytes(0x01, 0x0a);
+		   tps65132_write_bytes(0x00, 0x0f);
+		   tps65132_write_bytes(0x01, 0x0f);
 		#endif
 	}
 	else
@@ -464,7 +512,7 @@ static void KTD2125_enable(char en)
 			MDELAY(12);
 			set_gpio_lcd_enp(0);
 			MDELAY(12);
-			//tps65132_write_bytes(0x03, 0x40);
+			tps65132_write_bytes(0x03, 0x40);
 		#endif
 
 
@@ -474,44 +522,57 @@ static void KTD2125_enable(char en)
 
 static unsigned int lcm_compare_id(void)
 {
+
 	int   array[4];
 	char  buffer[3];
 	char  id0=0;
 	char  id1=0;
 	char  id2=0;
-        KTD2125_enable(1);
+	int   id=0;
 
+        //KTD2125_enable(1);
+        MDELAY(10);
         SET_RESET_PIN(1);
         MDELAY(20);
         SET_RESET_PIN(0);
         MDELAY(10);
         SET_RESET_PIN(1);
 	MDELAY(120);
-		
-	array[0] = 0x00033700;// read id return two byte,version and id
+
+	//------------------B9h----------------//
+		array[0] = 0x00043902; 						 
+		array[1] = 0x9483FFB9; 				
+	        dsi_set_cmdq(&array[0], 2, 1); 
+
+	array[0] = 0x00013700;// read id return two byte,version and id
 	dsi_set_cmdq(array, 1, 1);
 
 	read_reg_v2(0xDA,buffer, 1); 
 	
-	array[0] = 0x00033700;// read id return two byte,version and id
+	array[0] = 0x00013700;// read id return two byte,version and id
 	dsi_set_cmdq(array, 1, 1);
 	read_reg_v2(0xDB,buffer+1, 1);
 
 	
-	array[0] = 0x00033700;// read id return two byte,version and id
+	array[0] = 0x00013700;// read id return two byte,version and id
 	dsi_set_cmdq(array, 1, 1);
 	read_reg_v2(0xDC,buffer+2, 1);
 	
 	id0 = buffer[0]; //should be 0x00
 	id1 = buffer[1];//should be 0xaa
 	id2 = buffer[2];//should be 0x55
+        KTD2125_enable(0);
 #ifdef BUILD_LK
 	printf("%s, id0 = 0x%08x\n", __func__, id0);//should be 0x00
 	printf("%s, id1 = 0x%08x\n", __func__, id1);//should be 0xaa
 	printf("%s, id2 = 0x%08x\n", __func__, id2);//should be 0x55
 #endif
-	
-	return 1;
+	id = ((id0<<16)|(id1 << 8)) | id2; //we only need ID
+	if (id == 0x018101 || id == 0x1a5041)//otp  //if no vsp/vsn enable the id should be the default value 0x83940f
+	//if (id == 0x83940f) //default
+		return 1;
+	else
+		return 0;
 }
 
 static void lcm_init(void)
