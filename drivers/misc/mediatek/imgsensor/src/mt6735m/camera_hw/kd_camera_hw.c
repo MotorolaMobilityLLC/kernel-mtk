@@ -321,7 +321,7 @@ int kdCISModulePowerOn(CAMERA_DUAL_CAMERA_SENSOR_ENUM SensorIdx, char *currSenso
 
 		ISP_MCLK1_EN(1);
 
-		PK_DBG("[PowerON]pinSetIdx:%d, currSensorName: %s\n", pinSetIdx, currSensorName);
+		printk("[PowerON]pinSetIdx:%d, currSensorName: %s\n", pinSetIdx, currSensorName);
 
 		if ((currSensorName && (0 == strcmp(currSensorName, "imx135mipiraw"))) ||
 		    (currSensorName && (0 == strcmp(currSensorName, "imx220mipiraw")))) {
@@ -387,7 +387,7 @@ int kdCISModulePowerOn(CAMERA_DUAL_CAMERA_SENSOR_ENUM SensorIdx, char *currSenso
 									  IDX_PS_ON]);
 				}
 			}
-		}else if ((currSensorName && (0 == strcmp(currSensorName, SENSOR_DRVNAME_IMX219_MIPI_RAW)))) {
+		}else if (currSensorName && ((0 == strcmp(currSensorName, SENSOR_DRVNAME_IMX219_MIPI_RAW)) || (0 == strcmp(currSensorName, SENSOR_DRVNAME_IMX219_OFILM_MIPI_RAW)) ) ) {
 			printk("sensorDebug:[PowerON]pinSetIdx:%d,IMX219 power on\n", pinSetIdx);
 			if(pinSetIdx == 0)
 			{
@@ -562,7 +562,7 @@ int kdCISModulePowerOn(CAMERA_DUAL_CAMERA_SENSOR_ENUM SensorIdx, char *currSenso
 						pinSet[pinSetIdx][IDX_PS_CMRST + IDX_PS_ON]);
 
 			mdelay(20);
-		} else if (currSensorName&& (0 == strcmp(SENSOR_DRVNAME_OV5695_MIPI_RAW, currSensorName))) {
+		} else if (currSensorName&& ((0 == strcmp(SENSOR_DRVNAME_OV5695_MIPI_RAW, currSensorName)) || (0 == strcmp(SENSOR_DRVNAME_OV5695_OFILM_MIPI_RAW, currSensorName))) ) {
 			printk("[PowerON]pinSetIdx:%d,OV5695 power on\n", pinSetIdx);
 			/* First Power Pin low and Reset Pin Low */
 
@@ -809,7 +809,7 @@ int kdCISModulePowerOn(CAMERA_DUAL_CAMERA_SENSOR_ENUM SensorIdx, char *currSenso
 				goto _kdCISModulePowerOn_exit_;
 			}
 
-		}else if ((currSensorName && (0 == strcmp(currSensorName, SENSOR_DRVNAME_IMX219_MIPI_RAW)))) {
+		}else if (currSensorName && ((0 == strcmp(currSensorName, SENSOR_DRVNAME_IMX219_MIPI_RAW)) || (0 == strcmp(currSensorName, SENSOR_DRVNAME_IMX219_OFILM_MIPI_RAW)) ) ) {
 			printk("[PowerOFF]pinSetIdx:%d,IMX219 power off\n", pinSetIdx);
 			/* Set Power Pin low and Reset Pin Low */
 			if (GPIO_CAMERA_INVALID != pinSet[pinSetIdx][IDX_PS_CMPDN]) {
@@ -894,7 +894,7 @@ int kdCISModulePowerOn(CAMERA_DUAL_CAMERA_SENSOR_ENUM SensorIdx, char *currSenso
 				     VCAMAF);
 				goto _kdCISModulePowerOn_exit_;
 			}
-		} else if (currSensorName&& (0 == strcmp(SENSOR_DRVNAME_OV5695_MIPI_RAW, currSensorName))) {
+		} else if (currSensorName&& ((0 == strcmp(SENSOR_DRVNAME_OV5695_MIPI_RAW, currSensorName)) || (0 == strcmp(SENSOR_DRVNAME_OV5695_OFILM_MIPI_RAW, currSensorName))) ) {
 			printk("[PowerOFF]pinSetIdx:%d,OV5695 power off\n", pinSetIdx);
 			/* Set Power Pin low and Reset Pin Low */
 			if (GPIO_CAMERA_INVALID != pinSet[pinSetIdx][IDX_PS_CMPDN]) {

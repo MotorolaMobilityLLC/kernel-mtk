@@ -2,7 +2,7 @@
  *
  * Filename:
  * ---------
- *	 OV5695mipi_Sensor.h
+ *	 OV5693mipi_Sensor.h
  *
  * Project:
  * --------
@@ -13,8 +13,8 @@
  *	 CMOS sensor header file
  *
  ****************************************************************************/
-#ifndef _OV5695MIPI_SENSOR_H
-#define _OV5695MIPI_SENSOR_H
+#ifndef _IMX219MIPI_OFILM_SENSOR_H
+#define _IMX219MIPI_OFILM_SENSOR_H
 
 
 typedef enum{
@@ -74,7 +74,7 @@ typedef struct imgsensor_struct {
 
 /* SENSOR PRIVATE STRUCT FOR CONSTANT*/
 typedef struct imgsensor_info_struct { 
-    kal_uint32 sensor_id;            //record sensor id defined in Kd_imgsensor.h
+	kal_uint32 sensor_id;			//record sensor id defined in Kd_imgsensor.h
 	kal_uint32 checksum_value;		//checksum value for Camera Auto Test
 	imgsensor_mode_struct pre;		//preview scenario relative information
 	imgsensor_mode_struct cap;		//capture scenario relative information
@@ -120,19 +120,4 @@ typedef struct imgsensor_info_struct {
 extern int iReadRegI2C(u8 *a_pSendData , u16 a_sizeSendData, u8 * a_pRecvData, u16 a_sizeRecvData, u16 i2cId);
 extern int iWriteRegI2C(u8 *a_pSendData , u16 a_sizeSendData, u16 i2cId);
 
-//add OTP declare
-struct otp_struct
-{
-   int flag; 
-   int module_integrator_id;
-   int lens_id;
-   int rg_ratio;
-   int bg_ratio;
-
-};
-int RG_Ratio_Typical = 0x141;	//modify by liuzhen
-int BG_Ratio_Typical = 0x148;
-//add end
-
 #endif 
-

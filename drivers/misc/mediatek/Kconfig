@@ -119,6 +119,13 @@ config CUSTOM_KERNEL_IMGSENSOR
 	  CUSTOM_KERNEL_MAIN_BACKUP_IMGSENSOR, CUSTOM_KERNEL_SUB_IMGSENSOR,
 	  and CUSTOM_KERNEL_SUB_BACKUP_IMGSENSOR
 
+#add by huangsh4
+config CUSTOM_KERNEL_CAM_CAL_DRV
+	string "CUSTOM_KERNEL_CAM_CAL_DRV"
+	help
+	  Kernel space camera calibration driver. Define  project used cam_cal
+	  driver .
+
 config MTK_HIBERNATION
 	bool "MTK Hibernation support (IPOH)"
 	depends on TOI
@@ -246,6 +253,8 @@ source "drivers/misc/mediatek/dynamic_boost/Kconfig"
 source "drivers/misc/mediatek/trustzone/Kconfig"
 source "drivers/misc/mediatek/fmradio/Kconfig"
 source "drivers/misc/mediatek/imgsensor/Kconfig"
+#add by huangsh4
+source "drivers/misc/mediatek/cam_cal/Kconfig"
 source "drivers/misc/mediatek/multibridge/Kconfig"
 source "drivers/misc/mediatek/btif/Kconfig"
 source "drivers/misc/mediatek/connectivity/Kconfig"

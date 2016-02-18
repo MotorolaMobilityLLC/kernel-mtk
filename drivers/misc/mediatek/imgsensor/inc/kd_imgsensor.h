@@ -104,6 +104,7 @@ NSFeature :  : RAWSensorInfo < _id >  :  : getFlickerPara \
 #define IMX230_SENSOR_ID                        0x0230
 #define IMX220_SENSOR_ID                        0x0220
 #define IMX219_SENSOR_ID                        0x0219
+#define IMX219_OFILM_SENSOR_ID                  0x021b	//add by liuzhen
 #define IMX215_SENSOR_ID                        0x0215
 #define IMX214_SENSOR_ID                        0x0214
 #define IMX179_SENSOR_ID                        0x0179
@@ -131,7 +132,8 @@ NSFeature :  : RAWSensorInfo < _id >  :  : getFlickerPara \
 #define OV8825_SENSOR_ID                        0x8825
 #define OV7675_SENSOR_ID                        0x7673
 #define OV5693_SENSOR_ID                        0x5690
-#define OV5695_SENSOR_ID                        0x5695	
+#define OV5695_SENSOR_ID                        0x5695	//add by liuzhen
+#define OV5695_OFILM_SENSOR_ID                        0x5697	//add by liuzhen
 #define OV5670MIPI_SENSOR_ID                    0x5670
 #define OV5671MIPI_SENSOR_ID                    0x5671
 #define OV5650_SENSOR_ID                        0x5651
@@ -269,6 +271,7 @@ NSFeature :  : RAWSensorInfo < _id >  :  : getFlickerPara \
 #define SENSOR_DRVNAME_IMX230_MIPI_RAW          "imx230mipiraw"
 #define SENSOR_DRVNAME_IMX220_MIPI_RAW          "imx220mipiraw"
 #define SENSOR_DRVNAME_IMX219_MIPI_RAW          "imx219mipiraw"
+#define SENSOR_DRVNAME_IMX219_OFILM_MIPI_RAW          "imx219mipiraw_ofilm"//liuzhen
 #define SENSOR_DRVNAME_IMX215_MIPI_RAW          "imx215mipiraw"
 #define SENSOR_DRVNAME_IMX214_MIPI_RAW          "imx214mipiraw"
 #define SENSOR_DRVNAME_IMX179_MIPI_RAW          "imx179mipiraw"
@@ -295,7 +298,8 @@ NSFeature :  : RAWSensorInfo < _id >  :  : getFlickerPara \
 #define SENSOR_DRVNAME_OV8825_MIPI_RAW          "ov8825mipiraw"
 #define SENSOR_DRVNAME_OV7675_YUV               "ov7675yuv"
 #define SENSOR_DRVNAME_OV5693_MIPI_RAW          "ov5693mipi"
-#define SENSOR_DRVNAME_OV5695_MIPI_RAW          "ov5695mipiraw"	
+#define SENSOR_DRVNAME_OV5695_MIPI_RAW          "ov5695mipiraw"	//add by liuzhen
+#define SENSOR_DRVNAME_OV5695_OFILM_MIPI_RAW          "ov5695mipiraw_ofilm"	//add by liuzhen
 #define SENSOR_DRVNAME_OV5670_MIPI_RAW          "ov5670mipiraw"
 #define SENSOR_DRVNAME_OV5671_MIPI_RAW          "ov5671mipiraw"
 #define SENSOR_DRVNAME_OV5647MIPI_RAW           "ov5647mipiraw"

@@ -1,23 +1,19 @@
-$(info cam_cal:makefile start)
-include $(srctree)/drivers/misc/mediatek/Makefile.custom
+$(info cam_cal: makefile start)
+MTK_CUSTOM_PATH  := $(srctree)/drivers/misc/mediatek
 
-define FILTER_PROJECT_DRV
-$(info cam_cal:FILTER_PROJECT_DRV start)
-$(info $(srctree)/drivers/misc/mediatek/cam_cal/src/$(subst ",,$(CONFIG_MTK_PLATFORM))/$(1))
-ifneq ($(wildcard $(srctree)/drivers/misc/mediatek/cam_cal/src/$(subst ",,$(CONFIG_MTK_PLATFORM))/$(1)),)
-platform_cam_cal_drv += $(subst ",,$(CONFIG_MTK_PLATFORM))/$(1)/
-obj-y += $(subst ",,$(CONFIG_MTK_PLATFORM))/$(1)/
-else ifneq ($(wildcard $(srctree)/drivers/misc/mediatek/cam_cal/src/common/$(1)),)
-common_cam_cal_drv += common/$(1)/
-obj-y += common/$(1)/
+subdir-ccflags-y += -I$(MTK_CUSTOM_PATH)/imgsensor/inc \
+                    -I$(MTK_CUSTOM_PATH)/imgsensor/src/$(CONFIG_MTK_PLATFORM)/camera_hw \
+                    -I$(MTK_CUSTOM_PATH)/cam_cal/inc
+
+LEGACY_PLATFORM = mt6572 mt6580 mt6582 mt6752 mt6795 mt6755
+CURRENT_PLATFORM = $(subst ",,$(CONFIG_MTK_PLATFORM))
+
+ifneq (, $(findstring $(CURRENT_PLATFORM), $(LEGACY_PLATFORM)))
+$(info cam_cal: use legacy folder)
+obj-y += legacy/$(subst ",,$(CONFIG_MTK_PLATFORM))/
 else
-without_cam_cal_drv += $(1)
+$(info cam_cal: use common folder)
+obj-y += mt6735/
 endif
-endef
+$(info cam_cal: makefile end)
 
-cam_cal_drv = $(subst ",,$(CONFIG_CUSTOM_KERNEL_CAM_CAL_DRV))
-$(info cam_cal_drv =$(cam_cal_drv))
-$(foreach drv,$(cam_cal_drv),$(eval $(call FILTER_PROJECT_DRV,$(drv))))
-$(info cam_cal: platform_cam_cal_drv = $(platform_cam_cal_drv))
-$(info cam_cal: common_cam_cal_drv = $(common_cam_cal_drv))
-$(info cam_cal: can't find cam_cal_drv = $(without_cam_cal_drv))

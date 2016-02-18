@@ -37,9 +37,9 @@
 #include "kd_imgsensor_define.h"
 #include "kd_imgsensor_errcode.h"
 
-#include "ov5695mipi_Sensor.h"
+#include "ov5695mipi_Sensor_Ofilm.h"
 
-#define PFX "ov5695_Sunny_camera_sensor"
+#define PFX "ov5695_Ofilm_camera_sensor"
 //#define LOG_WRN(format, args...) xlog_printk(ANDROID_LOG_WARN ,PFX, "[%S] " format, __FUNCTION__, ##args)
 //#defineLOG_INF(format, args...) xlog_printk(ANDROID_LOG_INFO ,PFX, "[%s] " format, __FUNCTION__, ##args)
 //#define LOG_DBG(format, args...) xlog_printk(ANDROID_LOG_DEBUG ,PFX, "[%S] " format, __FUNCTION__, ##args)
@@ -54,12 +54,10 @@ static struct devinfo_struct *s_DEVINFO_ccm;
 
 static DEFINE_SPINLOCK(imgsensor_drv_lock);
 
-
-
 static imgsensor_info_struct imgsensor_info = { 
-	.sensor_id = OV5695_SENSOR_ID,		//record sensor id defined in Kd_imgsensor.h
+	.sensor_id = OV5695_OFILM_SENSOR_ID,		//record sensor id defined in Kd_imgsensor.h
 	
-	.checksum_value = 0xc8106c60,		//checksum value for Camera Auto Test by liuzhen,20150131
+	.checksum_value = 0xeb6b65f9,		//checksum value for Camera Auto Test
 	
 	.pre = {
 		.pclk = 45000000,				//record different mode's pclk
@@ -197,14 +195,14 @@ static void write_cmos_sensor(kal_uint32 addr, kal_uint32 para)
 	iWriteRegI2C(pu_send_cmd, 3, imgsensor.i2c_write_id);
 }
 
-#define OTP_SLAVE_ID 0x20
 //add otp code
+#define OTP_SLAVE_ID2 0x20
 static kal_uint16 read_otp_cmos_sensor(kal_uint32 addr)
 {
 	kal_uint16 get_byte=0;
 
 	char pu_send_cmd[2] = {(char)(addr >> 8), (char)(addr & 0xFF) };
-	iReadRegI2C(pu_send_cmd, 2, (u8*)&get_byte, 1, OTP_SLAVE_ID);
+	iReadRegI2C(pu_send_cmd, 2, (u8*)&get_byte, 1, OTP_SLAVE_ID2);
 
 	return get_byte;
 }
@@ -212,10 +210,10 @@ static kal_uint16 read_otp_cmos_sensor(kal_uint32 addr)
 static void write_otp_cmos_sensor(kal_uint32 addr, kal_uint32 para)
 {
 	char pu_send_cmd[3] = {(char)(addr >> 8), (char)(addr & 0xFF), (char)(para & 0xFF)};
-	iWriteRegI2C(pu_send_cmd, 3, OTP_SLAVE_ID);
+	iWriteRegI2C(pu_send_cmd, 3, OTP_SLAVE_ID2);
 }
 
-static kal_uint8 read_Sunny_otp_mid(void)
+static kal_uint8 read_Ofilm_otp_mid(void)
 {
 	int otp_flag, addr, i;
 	int useful_group = 0;
@@ -232,24 +230,24 @@ static kal_uint8 read_Sunny_otp_mid(void)
 	mDELAY(5);
 	// OTP base information and WB calibration data
 	otp_flag = read_otp_cmos_sensor(0x700C);
-	printk("Sunny:OV5695_otp:otp_flag =0x%x\n",otp_flag);
+	printk("Ofilm:OV5695_otp:otp_flag =0x%x\n",otp_flag);
 	addr = 0;
 	if((otp_flag & 0xc0) == 0x40) 
 	{
-		printk("Sunny:OV5695_otp:Group1 valid\n");
+		printk("Ofilm:OV5695_otp:Group1 valid\n");
 		useful_group = 0x1;
 		addr = 0x700D; // base address of info group 1
 	}
 	else {
 		if((otp_flag & 0x30) == 0x10) 
 		{
-			printk("Sunny:OV5695_otp:Group2 valid\n");
+			printk("Ofilm:OV5695_otp:Group2 valid\n");
 			useful_group = 0x2;
 			addr = 0x7012; // base address of info group 2
 		}
 		else if((otp_flag & 0x0C) == 0x04) 
 		{
-			printk("Sunny:OV5695_otp:Group3 valid\n");
+			printk("Ofilm:OV5695_otp:Group3 valid\n");
 			useful_group = 0x3;
 			addr = 0x7017; // base address of info group 3
 		}
@@ -257,9 +255,9 @@ static kal_uint8 read_Sunny_otp_mid(void)
 	if(addr != 0) {
 		otp_mid = read_cmos_sensor(addr);
 		lens_id = read_cmos_sensor(addr + 1);
-		printk("Sunny:OV5695_otp:valid Group=%d,mid=%d\n",useful_group,otp_mid);
+		printk("Ofilm:OV5695_otp:valid Group=%d,mid=%d\n",useful_group,otp_mid);
 	}else {
-		printk("Sunny:OV5695_otp: Invalid otp data\n");
+		printk("Ofilm:OV5695_otp: Invalid otp data\n");
 	}
 	
 	for(i=0x700C;i<=0x701B;i++) 
@@ -269,9 +267,8 @@ static kal_uint8 read_Sunny_otp_mid(void)
 	
 	return otp_mid;
 }
-
-#define USE_OTP_CALI_SUNNY
-#ifdef USE_OTP_CALI_SUNNY
+#define USE_OTP_CALI_OFILM
+#ifdef USE_OTP_CALI_OFILM
 static int read_otp(struct otp_struct *otp_ptr)
 {
 	int otp_flag, addr, temp, i;
@@ -288,7 +285,7 @@ static int read_otp(struct otp_struct *otp_ptr)
 	mDELAY(5);
 	// OTP base information and WB calibration data
 	otp_flag = read_otp_cmos_sensor(0x700C);
-	printk("OV5695_otp:otp_flag =0x%x\n",otp_flag);
+	printk("Ofilm:OV5695_otp:otp_flag =0x%x\n",otp_flag);
 	addr = 0;
 	if((otp_flag & 0xc0) == 0x40) 
 	{
@@ -354,10 +351,10 @@ static int apply_otp(struct otp_struct *otp_ptr)
 		rg = (*otp_ptr).rg_ratio;
 		bg = (*otp_ptr).bg_ratio;
 		printk("OV5695_otp:Read from Module:rg=0x%x,bg=0x%x\n",rg,bg);
-		printk("OV5695_otp:RG_Ratio_Typical=0x%x,BG_Ratio_Typical=0x%x\n",RG_Ratio_Typical,BG_Ratio_Typical);
+		printk("OV5695_otp:RG_Ratio_Typical_Ofilm=0x%x,BG_Ratio_Typical_Ofilm=0x%x\n",RG_Ratio_Typical_Ofilm,BG_Ratio_Typical_Ofilm);
 		//calculate G gain
-		R_gain = (RG_Ratio_Typical*1000) / rg;
-		B_gain = (BG_Ratio_Typical*1000) / bg;
+		R_gain = (RG_Ratio_Typical_Ofilm*1000) / rg;
+		B_gain = (BG_Ratio_Typical_Ofilm*1000) / bg;
 		G_gain = 1000;
 		if (R_gain < 1000 || B_gain < 1000)
 		{
@@ -1074,14 +1071,14 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 #ifdef CONFIG_SLT_DRV_DEVINFO_SUPPORT 
  	s_DEVINFO_ccm =(struct devinfo_struct*) kmalloc(sizeof(struct devinfo_struct), GFP_KERNEL);	
 	s_DEVINFO_ccm->device_type = "CCM-S";
-	s_DEVINFO_ccm->device_module = "D5V16B";
-	s_DEVINFO_ccm->device_vendor = "Sunny";
+	s_DEVINFO_ccm->device_module = "L5695F40";
+	s_DEVINFO_ccm->device_vendor = "Ofilm";
 	s_DEVINFO_ccm->device_ic = "OV5695";
 	s_DEVINFO_ccm->device_version = "OmniVision";
 	s_DEVINFO_ccm->device_info = "500W";
 #endif
 
-	printk("Sunny:ov5695 get sensor id\n");
+	printk("Ofilm:ov5695 get sensor id\n");
 	//sensor have two i2c address 0x6c 0x6d & 0x21 0x20, we should detect the module used i2c address
 	while (imgsensor_info.i2c_addr_table[i] != 0xff) {
 		spin_lock(&imgsensor_drv_lock);
@@ -1089,22 +1086,24 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 		spin_unlock(&imgsensor_drv_lock);
 		do {
 			*sensor_id = ((read_cmos_sensor(0x300B) << 8) | read_cmos_sensor(0x300C));
+			*sensor_id = *sensor_id +2;
 			if (*sensor_id == imgsensor_info.sensor_id) {				
-				printk("Sunny:ov5695=>i2c write id: 0x%x, sensor id: 0x%x\n", imgsensor.i2c_write_id,*sensor_id);	  
+				printk("ov5695=>i2c write id: 0x%x, sensor id: 0x%x\n", imgsensor.i2c_write_id,*sensor_id);	  
 				break;
 			}	
-			printk("Sunny:ov5695=>Read sensor id fail, I2c addr=0x%x,sensor id: 0x%x\n", imgsensor.i2c_write_id,*sensor_id);
+			printk("ov5695=>Read sensor id fail, I2c addr=0x%x,sensor id: 0x%x\n", imgsensor.i2c_write_id,*sensor_id);
 			retry--;
 		} while(retry > 0);
 		if(*sensor_id == imgsensor_info.sensor_id) break;
 		i++;
 		retry = 2;
 	}
+
 	/* initail sequence write in  */
 	sensor_init();
-	otp_mid = read_Sunny_otp_mid();
-	printk("Sunny:ov5695_otp:otp_mid=0x%x\n", otp_mid);
-	if ((*sensor_id != imgsensor_info.sensor_id) || (otp_mid != 0x01)) {//Sunny otp_mid=0x01
+	otp_mid = read_Ofilm_otp_mid();
+	printk("Ofilm:ov5695_otp:otp_mid=%d\n",otp_mid);
+	if ((*sensor_id != imgsensor_info.sensor_id) || (otp_mid != 0x07)) {
 	#ifdef CONFIG_SLT_DRV_DEVINFO_SUPPORT 
 		s_DEVINFO_ccm->device_used = DEVINFO_UNUSED;
 		devinfo_check_add_device(s_DEVINFO_ccm);
@@ -1144,7 +1143,7 @@ static kal_uint32 open(void)
 	kal_uint8 i = 0;
 	kal_uint8 retry = 2;
 	kal_uint16 sensor_id = 0; 
-#ifdef USE_OTP_CALI_SUNNY
+#ifdef USE_OTP_CALI_OFILM
 	struct otp_struct *otp_ptr = NULL;
 #endif
 
@@ -1157,11 +1156,12 @@ static kal_uint32 open(void)
 		spin_unlock(&imgsensor_drv_lock);
 		do {
 			sensor_id = ((read_cmos_sensor(0x300B) << 8) | read_cmos_sensor(0x300C));
+			sensor_id = sensor_id + 2;
 			if (sensor_id == imgsensor_info.sensor_id) {				
-				LOG_INF("Sunny:i2c write id: 0x%x, sensor id: 0x%x\n", imgsensor.i2c_write_id,sensor_id);	  
+				LOG_INF("i2c write id: 0x%x, sensor id: 0x%x\n", imgsensor.i2c_write_id,sensor_id);	  
 				break;
 			}	
-			LOG_INF("Sunny:Read sensor id fail, i2c write id: 0x%x,sensor id: 0x%x\n", imgsensor.i2c_write_id,sensor_id);
+			LOG_INF("Read sensor id fail, i2c write id: 0x%x,sensor id: 0x%x\n", imgsensor.i2c_write_id,sensor_id);
 			retry--;
 		} while(retry > 0);
 		i++;
@@ -1175,20 +1175,20 @@ static kal_uint32 open(void)
 	/* initail sequence write in  */
 	sensor_init();
 
-#ifdef USE_OTP_CALI_SUNNY
+#ifdef USE_OTP_CALI_OFILM
 	mdelay(10);
-	printk("%s,Sunny:OV5695_otp: start\n",__func__);
+	printk("%s,OV5695_otp: start\n",__func__);
 	otp_ptr = (struct otp_struct *)kmalloc(sizeof(struct otp_struct), GFP_KERNEL);
 	if(otp_ptr != NULL){
 		if(0 == read_otp(otp_ptr))
 			apply_otp(otp_ptr);
 		else
-			printk("%s,Sunny:OV5695_otp:Otp cali fail.\n",__func__);
+			printk("%s,OV5695_otp:Otp cali fail.\n",__func__);
 		kfree(otp_ptr);
 	}else{
-		printk("%s,Sunny:OV5695_otp:allocate memory fail.\n",__func__);	
+		printk("%s,OV5695_otp:allocate memory fail.\n",__func__);	
 	}
-	printk("%s,Sunny:OV5695_otp: end\n",__func__);
+	printk("%s,OV5695_otp: end\n",__func__);
 #endif
 
 	spin_lock(&imgsensor_drv_lock);
@@ -1822,7 +1822,7 @@ static SENSOR_FUNCTION_STRUCT sensor_func = {
 	close
 };
 
-UINT32 OV5695_MIPI_RAW_SensorInit(PSENSOR_FUNCTION_STRUCT *pfFunc)
+UINT32 OV5695_MIPI_RAW_SensorInit_Ofilm(PSENSOR_FUNCTION_STRUCT *pfFunc)
 {
 	/* To Do : Check Sensor status here */
 	if (pfFunc!=NULL)

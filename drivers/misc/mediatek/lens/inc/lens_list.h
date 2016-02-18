@@ -38,6 +38,12 @@ extern long DW9718AF_Ioctl(struct file *a_pstFile, unsigned int a_u4Command, uns
 extern int DW9718AF_Release(struct inode *a_pstInode, struct file *a_pstFile);
 #endif
 
+#ifdef CONFIG_MTK_LENS_DW9718AF_OFILM_SUPPORT
+extern void DW9718AF2_SetI2Cclient(struct i2c_client *pstAF_I2Cclient, spinlock_t *pAF_SpinLock, int *pAF_Opened);
+extern long DW9718AF2_Ioctl(struct file *a_pstFile, unsigned int a_u4Command, unsigned long a_u4Param);
+extern int DW9718AF2_Release(struct inode *a_pstInode, struct file *a_pstFile);
+#endif
+
 #ifdef CONFIG_MTK_LENS_FM50AF_SUPPORT
 extern void FM50AF_SetI2Cclient(struct i2c_client *pstAF_I2Cclient, spinlock_t *pAF_SpinLock, int *pAF_Opened);
 extern long FM50AF_Ioctl(struct file *a_pstFile, unsigned int a_u4Command, unsigned long a_u4Param);
