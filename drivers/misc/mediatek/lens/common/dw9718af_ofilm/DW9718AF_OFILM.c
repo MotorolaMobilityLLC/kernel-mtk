@@ -12,7 +12,7 @@
 #include "lens_info.h"
 
 
-#define AF_DRVNAME "DW9718AF_DRV"
+#define AF_DRVNAME "DW9718AF_OFILM_DRV"
 #define AF_I2C_SLAVE_ADDR        0x18
 
 #define AF_DEBUG
@@ -111,11 +111,8 @@ static inline int getAFInfo(__user stAF_MotorInfo *pstMotorInfo)
 
 static void initdrv(void)
 {
-	char puSendCmd2[2] = { 0x01, 0x39 };// SAC3 mode  Linear mode
-	// OCP/UVLO on
-	char puSendCmd3[2] = { 0x05, 0x4F };// Set Tvib  DIV[1:0]:01  SACT[5:0]:001111
-										// TSAC=7.8ms
-
+	char puSendCmd2[2] = { 0x01, 0x39 };
+	char puSendCmd3[2] = { 0x05, 0x4F };
 	i2c_master_send(g_pstAF_I2Cclient, puSendCmd2, 2);
 	i2c_master_send(g_pstAF_I2Cclient, puSendCmd3, 2);
 }
@@ -192,7 +189,7 @@ static inline int setAFMacro(unsigned long a_u4Position)
 }
 
 /* ////////////////////////////////////////////////////////////// */
-long DW9718AF_Ioctl(struct file *a_pstFile, unsigned int a_u4Command, unsigned long a_u4Param)
+long DW9718AF2_Ioctl(struct file *a_pstFile, unsigned int a_u4Command, unsigned long a_u4Param)
 {
 	long i4RetValue = 0;
 
@@ -227,7 +224,7 @@ long DW9718AF_Ioctl(struct file *a_pstFile, unsigned int a_u4Command, unsigned l
 /* 2.Shut down the device on last close. */
 /* 3.Only called once on last time. */
 /* Q1 : Try release multiple times. */
-int DW9718AF_Release(struct inode *a_pstInode, struct file *a_pstFile)
+int DW9718AF2_Release(struct inode *a_pstInode, struct file *a_pstFile)
 {
 	LOG_INF("Start\n");
 
@@ -247,7 +244,7 @@ int DW9718AF_Release(struct inode *a_pstInode, struct file *a_pstFile)
 	return 0;
 }
 
-void DW9718AF_SetI2Cclient(struct i2c_client *pstAF_I2Cclient, spinlock_t *pAF_SpinLock, int *pAF_Opened)
+void DW9718AF2_SetI2Cclient(struct i2c_client *pstAF_I2Cclient, spinlock_t *pAF_SpinLock, int *pAF_Opened)
 {
 	g_pstAF_I2Cclient = pstAF_I2Cclient;
 	g_pAF_SpinLock = pAF_SpinLock;

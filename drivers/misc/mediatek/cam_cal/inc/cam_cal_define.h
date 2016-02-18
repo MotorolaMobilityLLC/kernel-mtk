@@ -1,6 +1,7 @@
 #ifndef _CAM_CAL_DATA_H
 #define _CAM_CAL_DATA_H
 
+#include "cam_cal_typedef.h"
 #ifdef CONFIG_COMPAT
 /* 64 bit */
 #include <linux/fs.h>

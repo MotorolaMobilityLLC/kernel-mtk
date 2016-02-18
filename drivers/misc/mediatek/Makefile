@@ -101,6 +101,9 @@ obj-$(CONFIG_MTK_SECURITY_SW_SUPPORT) +=masp/
 obj-$(CONFIG_MEDIATEK_SOLUTION)  += sched/
 obj-y += cameraisp/src/
 obj-$(CONFIG_MTK_IMGSENSOR) += imgsensor/src/
+#add by huangsh4
+obj-$(CONFIG_MTK_CAM_CAL) += cam_cal/src/
+
 obj-$(CONFIG_MTK_LENS)   += lens/
 obj-$(CONFIG_MTK_FLASHLIGHT)	+= flashlight/src/
 ifneq ($(wildcard $(srctree)/drivers/misc/mediatek/met/),)
@@ -123,7 +126,7 @@ endif
 obj-$(CONFIG_MTK_COMBO) += connectivity/
 obj-$(CONFIG_MTK_BTIF) += btif/
 obj-$(CONFIG_MTK_CONN_MD) += conn_md/
-obj-$(CONFIG_MTK_CAM_CAL_IMX219OTP_SUPPORT)	+= cam_cal/src/mt6735/imx219_otp/
+#obj-$(CONFIG_MTK_CAM_CAL_IMX219OTP_SUPPORT)	+= cam_cal/src/mt6735/imx219_otp/
 obj-$(CONFIG_MTK_IN_HOUSE_TEE_SUPPORT) += gcpu/
 obj-$(CONFIG_TRUSTONIC_TEE_SUPPORT) += gcpu/
 obj-$(CONFIG_TRUSTONIC_TEE_SUPPORT) += gud/
