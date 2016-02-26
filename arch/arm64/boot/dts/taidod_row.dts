@@ -1,7 +1,7 @@
 
 /dts-v1/;
 
-#include "mt6735m.dtsi"
+#include "taidod_row.dtsi"
 #include <dt-bindings/lcm/otm9608_qhd_dsi_cmd.dtsi>
 
 / {
@@ -24,14 +24,14 @@ memory@00000000 {
 	};
 	led0:led@0 {
 		compatible = "mediatek,red";
-		led_mode = <0>;
+		led_mode = <3>;
 		data = <1>;
 		pwm_config = <0 0 0 0 0>;
 	};
 	led1:led@1 {
 		compatible = "mediatek,green";
-		led_mode = <0>;
-		data = <1>;
+		led_mode = <3>;
+		data = <2>;
 		pwm_config = <0 0 0 0 0>;
 	};
 	led2:led@2 {
@@ -72,24 +72,24 @@ memory@00000000 {
 	};
  /* sensor standardization */
 		cust_accel@0 {
-		compatible = "mediatek,mc3410";
-		i2c_num	= <2>;
-		i2c_addr = <0x4c 0 0 0>;
-		direction = <0>;
-		power_id = <0xffff>;
-		power_vol = <0>;
-		firlen = <0>;
-		is_batch_supported = <0>;
+		compatible				= "mediatek,bma2xx";
+		i2c_num				= <2>;
+		i2c_addr				= <0x18 0 0 0>;
+		direction				= <4>;
+		power_id				= <0xffff>;
+		power_vol				= <0>;
+		firlen					= <0>;
+		is_batch_supported			= <0>;
 		};
 
 		cust_alsps@0 {
-		compatible = "mediatek,cm36652";
-		i2c_num	= <2>;
-		i2c_addr = <0x60 0 0 0>;
-		polling_mode_ps = <0>;
-		polling_mode_als = <1>;
-		power_id = <0xffff>;
-		power_vol = <0>;
+		compatible				= "mediatek,epl2590";
+		i2c_num				= <2>;
+		i2c_addr				= <0x49 0 0 0>;
+		polling_mode_ps			= <0>;
+		polling_mode_als		= <1>;
+		power_id				= <0xffff>;
+		power_vol				= <0>;
 		als_level = <0 328 861 1377 3125 7721 7767 12621 23062 28430 33274 47116 57694 57694 65535>;
 		als_value = <0 133 304 502 1004 2005 3058 5005 8008 10010 12000 16000 20000 20000 20000 20000>;
 		ps_threshold_high		=  <34>;
@@ -167,19 +167,72 @@ memory@00000000 {
 		accdet-mic-vol = <7>;
 		headset-mode-setting = <0x500 0x200 1 0x1F0 0x800 0x800 0x20>;
 		accdet-plugout-debounce = <20>;
-		/*1:ACC mode, 2:low cost without in bias, 6:low cost with in bias*/
-		accdet-mic-mode = <6>;
+		/*1:ACC mode, 2:low cost without in bias, 6:low cost with in bias.modify by caozhg*/
+		accdet-mic-mode = <1>;
 		/*0--MD_MAX--UP_MAX--DW_MAX*/
 		headset-three-key-threshold = <0 80 220 500>;
 		/*0--MD_MAX--VOICE_MAX--UP_MAX--DW_MAX*/
 		headset-four-key-threshold = <0 58 121 192 450>;
+		/* ACCDET GPIO standardization ACC mode use */
+		pinctrl-names = "default", "state_eint_as_int","state_earjack_det_high","state_earjack_det_low","state_dpdt_switch_en_high","state_dpdt_switch_en_low"; /*shaohui add*/
+		pinctrl-0 = <&accdet_pins_default>;
+		pinctrl-1 = <&accdet_pins_eint_as_int>;
+		pinctrl-2 = <&earjack_det_pins_state_high>; /*shaohui add*/
+		pinctrl-3 = <&earjack_det_pins_state_low>; 
+		pinctrl-4 = <&dpdt_switch_en_state_high>; /*caozhg add*/
+		pinctrl-5 = <&dpdt_switch_en_state_low>; 
+		status = "okay";
+
+};
+&pio {
+	accdet_pins_default: accdetdefault {
+	};
+	accdet_pins_eint_as_int: accdeteint@0 {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO6__FUNC_GPIO6>;
+			slew-rate = <0>;
+			bias-disable;
+		};
+	};
+	/*shaohui add this*/
+	earjack_det_pins_state_high: earjack_det_pins_state_high {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO3__FUNC_GPIO3>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+	earjack_det_pins_state_low: earjack_det_pins_state_low {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO3__FUNC_GPIO3>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+	/*caozhg add this*/
+	dpdt_switch_en_state_high: dpdt_switch_en_state_high {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO64__FUNC_GPIO64>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+	dpdt_switch_en_state_low: dpdt_switch_en_state_low {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO64__FUNC_GPIO64>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+
+
 };
 &touch {
-	tpd-resolution = <540 960>;
-	use-tpd-button = <0>;
+	tpd-resolution = <720 1280>;
+	use-tpd-button = <1>;
 	tpd-key-num = <3>;
-	tpd-key-local= <139 172 158 0>;
-	tpd-key-dim-local = <90 883 100 40 230 883 100 40 370 883 100 40 0 0 0 0>;
+	tpd-key-local= <580 172 158 0>;
+	tpd-key-dim-local = <180 1400 100 40 360 1400 100 40 540 1400 100 40 0 0 0 0>;
 	tpd-max-touch-num = <5>;
 	tpd-filter-enable = <1>;
 	tpd-filter-pixel-density = <93>;
@@ -235,6 +288,121 @@ memory@00000000 {
 	};
 };
 /* TOUCH end */
+
+/*add by caozhg charger nshdn*/
+&charger {
+	pinctrl-names = "nshdn-pullhigh","nshdn-pulllow","chren-pullhigh","chren-pulllow";
+	pinctrl-0 = <&charger_pins_nshdn_high>;
+	pinctrl-1 = <&charger_pins_nshdn_low>;
+	pinctrl-2 = <&charger_pins_chren_high>;
+	pinctrl-3 = <&charger_pins_chren_low>;
+	status = "okay";
+};
+&pio {
+	Chr_pins_default: chrdefault {
+	};
+	charger_pins_nshdn_high: nshdnhigh {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO121__FUNC_GPIO121>;
+				slew-rate = <1>;
+				output-high;
+		};
+	};
+	charger_pins_nshdn_low: nshdnlow {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO121__FUNC_GPIO121>;
+				slew-rate = <1>;
+				output-low;
+		};
+	};
+	charger_pins_chren_high: chrenhigh {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO124__FUNC_GPIO124>;
+				slew-rate = <1>;
+				output-high;
+		};
+	};
+	charger_pins_chren_low: chrenlow {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO124__FUNC_GPIO124>;
+				slew-rate = <1>;
+				output-low;
+		};
+	};
+};
+/**/
+
+
+/*add by caozhg lcm vsp vsn*/
+&lcm_pinctrl {
+	pinctrl-names = "vsp-pullhigh","vsp-pulllow","vsn-pullhigh","vsn-pulllow";
+	pinctrl-0 = <&lcm_pins_vsp_high>;
+	pinctrl-1 = <&lcm_pins_vsp_low>;
+	pinctrl-2 = <&lcm_pins_vsn_high>;
+	pinctrl-3 = <&lcm_pins_vsn_low>;
+	status = "okay";
+};
+&pio {
+	lcm_pins_default: lcmdefault {
+	};
+	lcm_pins_vsp_high: vsphigh {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO128__FUNC_GPIO128>;
+				slew-rate = <1>;
+				output-high;
+		};
+	};
+	lcm_pins_vsp_low: vsplow {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO128__FUNC_GPIO128>;
+				slew-rate = <1>;
+				output-low;
+		};
+	};
+	lcm_pins_vsn_high: vsnhigh {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO127__FUNC_GPIO127>;
+				slew-rate = <1>;
+				output-high;
+		};
+	};
+	lcm_pins_vsn_low: vsnlow {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO127__FUNC_GPIO127>;
+				slew-rate = <1>;
+				output-low;
+		};
+	};
+};
+
+/**/
+
+/* AUDIO GPIO standardization  modify by shaohui*/
+&audgpio {
+	pinctrl-names = "extamp-pullhigh","extamp-pulllow";
+	pinctrl-0 = <&AUD_pins_extamp_high>;
+	pinctrl-1 = <&AUD_pins_extamp_low>;
+	status = "okay";
+};
+&pio {
+	AUD_pins_default: audiodefault {
+	};
+	AUD_pins_extamp_high: audexamphigh {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO129__FUNC_GPIO129>;
+				slew-rate = <1>;
+				output-high;
+		};
+	};
+	AUD_pins_extamp_low: audexamplow {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO129__FUNC_GPIO129>;
+				slew-rate = <1>;
+				output-low;
+		};
+	};
+};
+/* AUDIO end */
 /* CAMERA GPIO standardization */
 &pio {
 	camera_pins_cam0_rst0: cam0@0 {
@@ -267,28 +435,28 @@ memory@00000000 {
 	};
 	camera_pins_cam1_rst0: cam1@0 {
 	    pins_cmd_dat {
-			pins = <PINMUX_GPIO11__FUNC_GPIO11>;/*GPIO_CAMERA_CMRST1_PIN*/
+			pins = <PINMUX_GPIO9__FUNC_GPIO9>;/*GPIO_CAMERA_CMRST1_PIN*/
 			slew-rate = <1>; /*direction 0:in, 1:out*/
 			output-low;/*direction out used only. output_low or high*/
 		};
 	};
 	camera_pins_cam1_rst1: cam1@1 {
 	    pins_cmd_dat {
-			pins = <PINMUX_GPIO11__FUNC_GPIO11>;/*GPIO_CAMERA_CMRST1_PIN*/
+			pins = <PINMUX_GPIO9__FUNC_GPIO9>;/*GPIO_CAMERA_CMRST1_PIN*/
 			slew-rate = <1>;
 			output-high;
 		};
 	};
 	camera_pins_cam1_pnd0: cam1@2 {
 	    pins_cmd_dat {
-			pins = <PINMUX_GPIO12__FUNC_GPIO12>;/*GPIO_CAMERA_CMPDN1_PIN*/
+			pins = <PINMUX_GPIO11__FUNC_GPIO11>;/*GPIO_CAMERA_CMPDN1_PIN*/
 			slew-rate = <1>;
 			output-low;
 		};
 	};
 	camera_pins_cam1_pnd1: cam1@3 {
 	    pins_cmd_dat {
-			pins = <PINMUX_GPIO12__FUNC_GPIO12>;/*GPIO_CAMERA_CMPDN1_PIN*/
+			pins = <PINMUX_GPIO11__FUNC_GPIO11>;/*GPIO_CAMERA_CMPDN1_PIN*/
 			slew-rate = <1>;
 			output-high;
 		};
@@ -617,6 +785,75 @@ memory@00000000 {
 	status = "okay";
 };
 /* NFC end */
+
+/* FLASHLIGHT GPIO standardization */
+&pio {
+	flashlight_pins_default: default {
+
+	};
+
+	flashlight_pins_hwen_high: hwen_high {
+
+	    pins_cmd_dat {
+			pins = <PINMUX_GPIO90__FUNC_GPIO90>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+
+	flashlight_pins_hwen_low: hwen_low {
+
+	    pins_cmd_dat {
+			pins = <PINMUX_GPIO90__FUNC_GPIO90>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+
+	flashlight0_pins_mode0: flashlight0@mode0 {
+	    pins_cmd_dat {
+			pins = <PINMUX_GPIO42__FUNC_GPIO42>;/*GPIO_CAMERA_FLASHLIGHT_MODE_PIN*/
+			slew-rate = <1>; /*direction 0:in, 1:out*/
+			output-low;/*direction out used only. output_low or high*/
+		};
+	};
+	flashlight0_pins_mode1: flashlight0@mode1 {
+	    pins_cmd_dat {
+			pins = <PINMUX_GPIO42__FUNC_GPIO42>;/*GPIO_CAMERA_FLASHLIGHT_MODE_PIN*/
+			slew-rate = <1>; /*direction 0:in, 1:out*/
+			output-high;/*direction out used only. output_low or high*/
+		};
+	};
+	flashlight0_pins_en0: flashlight0@en0 {
+	    pins_cmd_dat {
+			pins = <PINMUX_GPIO43__FUNC_GPIO43>;/*GPIO_CAMERA_FLASHLIGHT_EN_PIN*/
+			slew-rate = <1>; /*direction 0:in, 1:out*/
+			output-low;/*direction out used only. output_low or high*/
+		};
+	};
+	flashlight0_pins_en1: flashlight0@en1 {
+	    pins_cmd_dat {
+			pins = <PINMUX_GPIO43__FUNC_GPIO43>;/*GPIO_CAMERA_FLASHLIGHT_EN_PIN*/
+			slew-rate = <1>; /*direction 0:in, 1:out*/
+			output-high;/*direction out used only. output_low or high*/
+		};
+	};
+
+};
+
+&flashlight {
+	pinctrl-names = "default", "hwen_high", "hwen_low","flashlight0_mode0","flashlight0_mode1","flashlight0_en0","flashlight0_en1";
+	pinctrl-0 = <&flashlight_pins_default>;
+	pinctrl-1 = <&flashlight_pins_hwen_high>;
+	pinctrl-2 = <&flashlight_pins_hwen_low>;
+	pinctrl-3 = <&flashlight0_pins_mode0>;
+	pinctrl-4 = <&flashlight0_pins_mode1>;
+	pinctrl-5 = <&flashlight0_pins_en0>;
+	pinctrl-6 = <&flashlight0_pins_en1>;
+	status = "okay";
+
+};
+/* FLASHLIGHT GPIO end */
 
 /* USB GPIO Kernal Standardization start */
 &pio {
