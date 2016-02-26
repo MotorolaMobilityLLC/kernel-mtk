@@ -768,76 +768,65 @@ void select_charging_current_bcct(void)
 		g_temp_input_CC_value = CHARGE_CURRENT_500_00_MA;
 	}
 #else
+/*
 	if (g_bcct_flag == 1)
 		g_temp_CC_value = g_bcct_value * 100;
 	if (g_bcct_input_flag == 1)
 		g_temp_input_CC_value = g_bcct_input_value * 100;
-/*
-		if ((BMT_status.charger_type == STANDARD_CHARGER) ||
+*/
+	if ((BMT_status.charger_type == STANDARD_HOST) ||
+            (BMT_status.charger_type == NONSTANDARD_CHARGER)) {
+                if (g_bcct_value < 100)
+		{
+			g_temp_input_CC_value = CHARGE_CURRENT_0_00_MA;
+                        g_temp_CC_value = CHARGE_CURRENT_0_00_MA;
+		}
+                else{
+                        g_temp_input_CC_value = CHARGE_CURRENT_500_00_MA;
+			g_temp_CC_value = CHARGE_CURRENT_500_00_MA;
+		}
+        }else if ((BMT_status.charger_type == STANDARD_CHARGER) ||
 		   (BMT_status.charger_type == CHARGING_HOST)) {
 		if (g_bcct_value < 550)
 			g_temp_CC_value = CHARGE_CURRENT_550_00_MA;
-		else
-			g_temp_CC_value = g_bcct_value * 100;
-
-		if (g_bcct_value < 650)
-			g_temp_CC_value = CHARGE_CURRENT_550_00_MA;
+		else if (g_bcct_value < 650)
+			g_temp_CC_value = CHARGE_CURRENT_650_00_MA;
 		else if (g_bcct_value < 750)
-			g_temp_CC_value = CHARGE_CURRENT_650_00_MA;
-		else if (g_bcct_value < 850)
 			g_temp_CC_value = CHARGE_CURRENT_750_00_MA;
-		else if (g_bcct_value < 950)
+		else if (g_bcct_value < 850)
 			g_temp_CC_value = CHARGE_CURRENT_850_00_MA;
-		else if (g_bcct_value < 1050)
+		else if (g_bcct_value < 950)
 			g_temp_CC_value = CHARGE_CURRENT_950_00_MA;
-		else if (g_bcct_value < 1150)
+		else if (g_bcct_value < 1050)
 			g_temp_CC_value = CHARGE_CURRENT_1050_00_MA;
-		else if (g_bcct_value < 1250)
+		else if (g_bcct_value < 1150)
 			g_temp_CC_value = CHARGE_CURRENT_1150_00_MA;
-		else if (g_bcct_value == 1250)
+		else if (g_bcct_value < 1250)
 			g_temp_CC_value = CHARGE_CURRENT_1250_00_MA;
-		else if (g_bcct_value == 1350)
+		else if (g_bcct_value < 1350)
 			g_temp_CC_value = CHARGE_CURRENT_1350_00_MA;
-		else if (g_bcct_value == 1450)
+		else if (g_bcct_value < 1450)
 			g_temp_CC_value = CHARGE_CURRENT_1450_00_MA;
-		else if (g_bcct_value == 1550)
+		else if (g_bcct_value < 1550)
 			g_temp_CC_value = CHARGE_CURRENT_1550_00_MA;
-		else if (g_bcct_value == 1650)
+		else if (g_bcct_value < 1650)
 			g_temp_CC_value = CHARGE_CURRENT_1650_00_MA;
-		else if (g_bcct_value == 1750)
+		else if (g_bcct_value < 1750)
 			g_temp_CC_value = CHARGE_CURRENT_1750_00_MA;
-		else if (g_bcct_value == 1850)
+		else if (g_bcct_value < 1850)
 			g_temp_CC_value = CHARGE_CURRENT_1850_00_MA;
-		else if (g_bcct_value == 1950)
+		else if (g_bcct_value < 1950)
 			g_temp_CC_value = CHARGE_CURRENT_1950_00_MA;
-		else if (g_bcct_value == 2050)
+		else if (g_bcct_value <= 2050)
 			g_temp_CC_value = CHARGE_CURRENT_2050_00_MA;
-		else if (g_bcct_value == 2150)
-			g_temp_CC_value = CHARGE_CURRENT_2150_00_MA;
-		else if (g_bcct_value == 2250)
-			g_temp_CC_value = CHARGE_CURRENT_2250_00_MA;
-		else if (g_bcct_value == 2350)
-			g_temp_CC_value = CHARGE_CURRENT_2350_00_MA;
-		else if (g_bcct_value == 2450)
-			g_temp_CC_value = CHARGE_CURRENT_2450_00_MA;
-		else if (g_bcct_value == 2550)
-			g_temp_CC_value = CHARGE_CURRENT_2550_00_MA;
-		else if (g_bcct_value == 2650)
-			g_temp_CC_value = CHARGE_CURRENT_2650_00_MA;
-		else if (g_bcct_value == 2750)
-			g_temp_CC_value = CHARGE_CURRENT_2750_00_MA;
-		else if (g_bcct_value == 2850)
-			g_temp_CC_value = CHARGE_CURRENT_2850_00_MA;
-		else if (g_bcct_value == 2950)
-			g_temp_CC_value = CHARGE_CURRENT_2950_00_MA;
 		else
 			g_temp_CC_value = CHARGE_CURRENT_650_00_MA;
-
 	} else {
 		g_temp_CC_value = CHARGE_CURRENT_500_00_MA;
 	}
-*/
+
 #endif
+	battery_log(BAT_LOG_CRTI, "[BATTERY]select_charging_current_bcct input:%d,cc: %d \r\n",g_temp_input_CC_value,g_temp_CC_value);
 }
 
 
@@ -1106,7 +1095,7 @@ static void pchr_turn_on_charging(void)
 			battery_log(BAT_LOG_FULL, "[BATTERY] select_charging_current !\n");
 		}
 #else
-		} else if (0){ //(g_bcct_flag == 1 || g_bcct_input_flag == 1) { //modify by caozhg for test
+		} else if ( (g_bcct_flag == 1 || g_bcct_input_flag == 1)) { //modify by caozhg for test
 			select_charging_current();
 			select_charging_current_bcct();
 			battery_log(BAT_LOG_FULL, "[BATTERY] select_charging_curret_bcct !\n");
