@@ -14,6 +14,8 @@ extern void disable_dpidle_by_bit(int id);
 extern void enable_soidle_by_bit(int id);
 extern void disable_soidle_by_bit(int id);
 
+extern void defeature_soidle_by_display(void);
+
 #if defined(EN_PTP_OD) && EN_PTP_OD
 extern u32 ptp_data[3];
 #endif

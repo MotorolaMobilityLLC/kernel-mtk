@@ -107,6 +107,7 @@ static int create_external_display_path(unsigned int session, int mode)
 		if (path_info.old_session[device_id] == DISP_SESSION_EXTERNAL) {
 			if (EXTD_OVERLAY_CNT < 1) {
 				/*external display has no OVL to use, so no actions for mode switch */
+				MULTI_COTRL_ERR("external display has no OVL to use, so no actions for mode switch\n");
 				return ret;
 			}
 		}

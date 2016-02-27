@@ -158,6 +158,7 @@ int m4u_do_mva_free(unsigned int mva, unsigned int size);
 /* ==== define in m4u_pgtable.c===== */
 void m4u_dump_pgtable(m4u_domain_t *domain, struct seq_file *seq);
 void m4u_dump_pte_nolock(m4u_domain_t *domain, unsigned int mva);
+int m4u_pte_invalid(m4u_domain_t *domain, unsigned int mva);
 void m4u_dump_pte(m4u_domain_t *domain, unsigned int mva);
 int m4u_pgtable_init(struct m4u_device *m4u_dev, m4u_domain_t *m4u_domain);
 int m4u_map_4K(m4u_domain_t *m4u_domain, unsigned int mva, unsigned long pa, unsigned int prot);

@@ -188,6 +188,24 @@ void AudDrv_Clk_probe(void *dev)
 		}
 	}
 
+	if (aud_clks[CLOCK_MUX_AUDIOINTBUS].clk_prepare) {
+		ret = clk_enable(aud_clks[CLOCK_MUX_AUDIOINTBUS].clock);
+		if (ret) {
+			pr_err
+			    ("%s [CCF]Aud enable_clock enable_clock CLOCK_MUX_AUDIOINTBUS fail",
+			     __func__);
+			BUG();
+			return;
+		}
+	} else {
+		pr_err
+		    ("%s [CCF]clk_prepare error Aud enable_clock CLOCK_MUX_AUDIOINTBUS fail",
+		     __func__);
+		BUG();
+		return;
+	}
+
+
 }
 
 void AudDrv_Clk_Deinit(void *dev)
@@ -342,6 +360,7 @@ void AudDrv_Clk_On(void)
 		if (enable_clock(MT_CG_INFRA_AUDIO, "AUDIO"))
 			PRINTK_AUD_CLK("%s Aud enable_clock MT_CG_INFRA_AUDIO fail", __func__);
 
+		SetClkCfg(CLK_MISC_CFG_0, 0x00000000, 0x00000008);
 		if (enable_clock(MT_CG_AUDIO_AFE, "AUDIO"))
 			PRINTK_AUD_CLK("%s Aud enable_clock MT_CG_AUDIO_AFE fail", __func__);
 
@@ -352,7 +371,7 @@ void AudDrv_Clk_On(void)
 			PRINTK_AUD_CLK("%s MT_CG_AUDIO_DAC_PREDIS fail", __func__);
 
 #else
-		pr_debug("-----------[CCF]AudDrv_Clk_On, aud_infra_clk:%d\n",
+		PRINTK_AUD_CLK("-----------[CCF]AudDrv_Clk_On, aud_infra_clk:%d\n",
 			 aud_clks[CLOCK_INFRA_SYS_AUDIO].clk_prepare);
 
 		if (aud_clks[CLOCK_INFRA_SYS_AUDIO].clk_prepare) {
@@ -370,6 +389,7 @@ void AudDrv_Clk_On(void)
 			BUG();
 			goto UNLOCK;
 		}
+		SetClkCfg(CLK_MISC_CFG_0, 0x00000000, 0x00000008);
 
 		if (aud_clks[CLOCK_AFE].clk_prepare) {
 			ret = clk_enable(aud_clks[CLOCK_AFE].clock);
@@ -415,12 +435,13 @@ void AudDrv_Clk_On(void)
 			BUG();
 			goto UNLOCK;
 		}
-		pr_debug("-----------[CCF]AudDrv_Clk_On, aud_dac_predis_clk:%d\n",
-			 aud_clks[CLOCK_DAC_PREDIS].clk_prepare);
+		/*pr_debug("-----------[CCF]AudDrv_Clk_On, aud_dac_predis_clk:%d\n",
+			 aud_clks[CLOCK_DAC_PREDIS].clk_prepare);*/
 
 #endif
 #else
 		SetInfraCfg(AUDIO_CG_CLR, 0x2000000, 0x2000000);
+		SetClkCfg(CLK_MISC_CFG_0, 0x00000000, 0x00000008);
 		/* bit 25=0, without 133m master and 66m slave bus clock cg gating */
 		Afe_Set_Reg(AUDIO_TOP_CON0, 0x4000, 0x06004044);
 #endif
@@ -441,7 +462,7 @@ void AudDrv_Clk_Off(void)
 	PRINTK_AUD_CLK("+!! AudDrv_Clk_Off, Aud_AFE_Clk_cntr:%d\n", Aud_AFE_Clk_cntr);
 	spin_lock_irqsave(&auddrv_Clk_lock, flags);
 
-	/* Aud_AFE_Clk_cntr--; */
+	Aud_AFE_Clk_cntr--;
 	if (Aud_AFE_Clk_cntr == 0) {
 		PRINTK_AUD_CLK("------------AudDrv_Clk_Off, Aud_AFE_Clk_cntr:%d\n", Aud_AFE_Clk_cntr);
 		{
@@ -457,11 +478,12 @@ void AudDrv_Clk_Off(void)
 			if (disable_clock(MT_CG_AUDIO_DAC_PREDIS, "AUDIO"))
 				PRINTK_AUD_CLK("%s MT_CG_AUDIO_DAC_PREDIS fail", __func__);
 
+			SetClkCfg(CLK_MISC_CFG_0, 0x00000008, 0x00000008);
 			if (disable_clock(MT_CG_INFRA_AUDIO, "AUDIO"))
 				PRINTK_AUD_CLK("%s disable_clock MT_CG_INFRA_AUDIO fail", __func__);
 
 #else
-			pr_debug
+			PRINTK_AUD_CLK
 			    ("-----------[CCF]AudDrv_Clk_Off, paudclk->aud_infra_clk_prepare:%d\n",
 			     aud_clks[CLOCK_INFRA_SYS_AUDIO].clk_prepare);
 
@@ -474,6 +496,7 @@ void AudDrv_Clk_Off(void)
 			if (aud_clks[CLOCK_DAC_PREDIS].clk_prepare)
 				clk_disable(aud_clks[CLOCK_DAC_PREDIS].clock);
 
+			SetClkCfg(CLK_MISC_CFG_0, 0x00000008, 0x00000008);
 			if (aud_clks[CLOCK_INFRA_SYS_AUDIO].clk_prepare)
 				clk_disable(aud_clks[CLOCK_INFRA_SYS_AUDIO].clock);
 
@@ -481,6 +504,7 @@ void AudDrv_Clk_Off(void)
 
 #else
 			Afe_Set_Reg(AUDIO_TOP_CON0, 0x06000044, 0x06000044);
+			SetClkCfg(CLK_MISC_CFG_0, 0x00000008, 0x00000008);
 			SetInfraCfg(AUDIO_CG_SET, 0x2000000, 0x2000000);
 			/* bit25=1, with 133m mastesr and 66m slave bus clock cg gating */
 #endif

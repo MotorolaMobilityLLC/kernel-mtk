@@ -17,6 +17,7 @@
 #include <linux/of_address.h>
 #include <linux/of_irq.h>
 #include <linux/slab.h>
+#include <linux/gpio.h>
 #include <mt-plat/sync_write.h>
 #include <mt-plat/mt_io.h>
 #include <mt-plat/mt_gpio.h>
@@ -71,6 +72,7 @@ struct eint_func {
 	unsigned int *deb_time;
 	struct timer_list *eint_sw_deb_timer;
 	unsigned int *count;
+	unsigned int *gpio;
 };
 
 struct builtin_eint {
@@ -1419,44 +1421,9 @@ static void mt_eint_irq_ack(struct irq_data *data)
 	mt_eint_ack(data->hwirq);
 }
 
-static unsigned int mt_eint_get_raw_status(unsigned int eint_num)
-{
-	unsigned long base, raw_base;
-	unsigned int bit_pos;
-
-	bit_pos = eint_num % 32;
-	base = eint_num / 32;
-	raw_base = EINT_RAW_STA_BASE + base * 4;
-
-	return ((readl(IOMEM(raw_base)) & (1<<bit_pos))>>bit_pos);
-}
-
 static int mt_eint_get_level(unsigned int eint_num)
 {
-	unsigned int prev_mask = mt_eint_get_mask(eint_num);
-	unsigned int prev_pol = mt_eint_get_polarity(eint_num);
-	unsigned int prev_sens = mt_eint_get_sens(eint_num);
-	unsigned int level = 0;
-
-	if (!prev_mask)
-		mt_eint_mask(eint_num);
-
-	mt_eint_set_polarity(eint_num, MT_EINT_POL_POS);
-	mt_eint_set_sens(eint_num, MT_LEVEL_SENSITIVE);
-	mt_eint_ack(eint_num);
-
-	/* if high level can keep pending on raw status
-	 * it means current level is high */
-	level = mt_eint_get_raw_status(eint_num);
-
-	mt_eint_set_polarity(eint_num, prev_pol);
-	mt_eint_set_sens(eint_num, prev_sens);
-	mt_eint_ack(eint_num);
-
-	if (!prev_mask)
-		mt_eint_unmask(eint_num);
-
-	return level;
+	return __gpio_get_value(EINT_FUNC.gpio[eint_num]);
 }
 
 static unsigned int mt_eint_flip_edge(struct eint_chip *chip,
@@ -1526,6 +1493,8 @@ int mt_eint_domain_xlate_onetwocell(struct irq_domain *d,
 		return -EINVAL;
 	*out_hwirq = mt_gpio_to_irq(intspec[0]) - EINT_IRQ_BASE;
 	*out_type = (intsize > 1) ? intspec[1] : IRQ_TYPE_NONE;
+	EINT_FUNC.gpio[*out_hwirq] = intspec[0];
+
 	return 0;
 }
 
@@ -1605,6 +1574,8 @@ static int __init mt_eint_init(void)
 	EINT_FUNC.eint_sw_deb_timer =
 	    kmalloc(sizeof(struct timer_list) * EINT_MAX_CHANNEL, GFP_KERNEL);
 	EINT_FUNC.count = kmalloc(sizeof(unsigned int) * EINT_MAX_CHANNEL,
+					GFP_KERNEL);
+	EINT_FUNC.gpio = kmalloc(sizeof(unsigned int) * EINT_MAX_CHANNEL,
 					GFP_KERNEL);
 	mt_eint_chip = kmalloc(sizeof(struct eint_chip), GFP_KERNEL);
 	mt_eint_chip->max_channel = EINT_MAX_CHANNEL;

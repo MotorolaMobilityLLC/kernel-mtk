@@ -1003,10 +1003,9 @@ static void binder_print_buf(struct binder_buffer *buffer, char *dest, int succe
 
 	if (NULL == t) {
 		struct binder_transaction_log_entry *log_entry = buffer->log_entry;
-
-		rtc_time_to_tm(log_entry->tv.tv_sec, &tm);
 		if ((log_entry != NULL)
 		    && (buffer->debug_id == log_entry->debug_id)) {
+			rtc_time_to_tm(log_entry->tv.tv_sec, &tm);
 			sender_tsk = find_process_by_pid(log_entry->from_proc);
 			rec_tsk = find_process_by_pid(log_entry->to_proc);
 			len_s = binder_proc_pid_cmdline(sender_tsk, sender_name);
@@ -1016,16 +1015,14 @@ static void binder_print_buf(struct binder_buffer *buffer, char *dest, int succe
 				check, success, buffer->debug_id,
 				buffer->async_transaction ? "async" : "sync",
 				(2 == log_entry->call_type) ? "reply" :
-				((1 ==
-					log_entry->call_type) ? "async" : "call"));
+				((1 == log_entry->call_type) ? "async" : "call"));
 			ptr += snprintf(str+ptr, sizeof(str)-ptr,
 				"from=%d,tid=%d,name=%s,to=%d,name=%s,tid=%d,name=%s,",
 				log_entry->from_proc, log_entry->from_thread,
 				len_s ? sender_name : ((sender_tsk != NULL) ?
 							sender_tsk->comm : ""),
 				log_entry->to_proc,
-				len_r ? rec_name : ((rec_tsk != NULL) ?
-							rec_tsk->comm : ""),
+				len_r ? rec_name : ((rec_tsk != NULL) ? rec_tsk->comm : ""),
 				log_entry->to_thread, log_entry->service);
 			ptr += snprintf(str+ptr, sizeof(str)-ptr,
 				"size=%zd,node=%d,handle=%d,dex=%u,auf=%d,start=%lu.%03ld,",
@@ -1039,7 +1036,7 @@ static void binder_print_buf(struct binder_buffer *buffer, char *dest, int succe
 				(tm.tm_year + 1900), (tm.tm_mon + 1),
 				tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec,
 				(unsigned long)(log_entry->tv.tv_usec / USEC_PER_MSEC));
-		} else
+		} else {
 			ptr += snprintf(str+ptr, sizeof(str)-ptr,
 				"binder:check=%d,success=%d,id=%d,call=%s, ,",
 				check, success, buffer->debug_id,
@@ -1048,6 +1045,7 @@ static void binder_print_buf(struct binder_buffer *buffer, char *dest, int succe
 				",,,,,,,size=%zd,,,," "auf=%d,,\n",
 				(buffer->data_size + buffer->offsets_size),
 				buffer->allow_user_free);
+		}
 	} else {
 		rtc_time_to_tm(t->tv.tv_sec, &tm);
 		sender_tsk = find_process_by_pid(t->fproc);
@@ -5075,26 +5073,24 @@ static int binder_transactions_show(struct seq_file *m, void *unused)
 
 static int binder_proc_show(struct seq_file *m, void *unused)
 {
+	struct binder_proc *itr;
 	struct binder_proc *proc = m->private;
 	int do_lock = !binder_debug_no_lock;
-#ifdef MTK_BINDER_DEBUG
-	struct binder_proc *tmp_proc;
-	bool find = false;
-#endif
+	bool valid_proc = false;
 
 	if (do_lock)
 		binder_lock(__func__);
-	seq_puts(m, "binder proc state:\n");
-#ifdef MTK_BINDER_DEBUG
-	hlist_for_each_entry(tmp_proc, &binder_procs, proc_node) {
-		if (proc == tmp_proc) {
-			find = true;
+
+	hlist_for_each_entry(itr, &binder_procs, proc_node) {
+		if (itr == proc) {
+			valid_proc = true;
 			break;
 		}
 	}
-	if (find == true)
-#endif
+	if (valid_proc) {
+		seq_puts(m, "binder proc state:\n");
 		print_binder_proc(m, proc, 1);
+	}
 #ifdef MTK_BINDER_DEBUG
 	else
 		pr_debug("show proc addr 0x%p exit\n", proc);

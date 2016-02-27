@@ -1,3 +1,4 @@
+#if defined(MTK_LCM_DEVICE_TREE_SUPPORT)
 #include <linux/string.h>
 #include <linux/wait.h>
 
@@ -22,6 +23,7 @@ static LCM_STATUS _lcm_util_check_data(char type, const LCM_DATA_T1 *t1)
 
 	case LCM_UTIL_MDELAY:
 	case LCM_UTIL_UDELAY:
+	case LCM_UTIL_RAR:
 		/* no limitation */
 		break;
 
@@ -84,6 +86,10 @@ LCM_STATUS lcm_util_set_data(const LCM_UTIL_FUNCS *lcm_util, char type, LCM_DATA
 			lcm_util->udelay((unsigned int)t1->data);
 			break;
 
+		case LCM_UTIL_RAR:
+			lcm_util->rar((unsigned int)t1->data);
+			break;
+
 		default:
 			pr_debug("[LCM][ERROR] %s/%d: %d\n", __func__, __LINE__, type);
 			return LCM_STATUS_ERROR;
@@ -125,10 +131,15 @@ LCM_STATUS lcm_util_set_write_cmd_v2(const LCM_UTIL_FUNCS *lcm_util, LCM_DATA_T3
 				     unsigned char force_update)
 {
 	/* check parameter is valid */
-	if (LCM_STATUS_OK == _lcm_util_check_write_cmd_v2(t3))
-		lcm_util->dsi_set_cmdq_V2((unsigned char)t3->cmd, (unsigned char)t3->size,
-					  (unsigned char *)t3->data, force_update);
-	else {
+	if (LCM_STATUS_OK == _lcm_util_check_write_cmd_v2(t3)) {
+		if (t3->cmd == LCM_UTIL_WRITE_CMD_V2_NULL) {
+			lcm_util->dsi_set_null((unsigned char)t3->cmd, (unsigned char)t3->size,
+					       (unsigned char *)t3->data, force_update);
+		} else {
+			lcm_util->dsi_set_cmdq_V2((unsigned char)t3->cmd, (unsigned char)t3->size,
+						  (unsigned char *)t3->data, force_update);
+		}
+	} else {
 		pr_debug("[LCM][ERROR] %s/%d: 0x%x, %d, 0x%p\n", __func__, __LINE__, t3->cmd,
 		       t3->size, t3->data);
 		return LCM_STATUS_ERROR;
@@ -164,3 +175,4 @@ LCM_STATUS lcm_util_set_read_cmd_v2(const LCM_UTIL_FUNCS *lcm_util, LCM_DATA_T4 
 
 	return LCM_STATUS_OK;
 }
+#endif

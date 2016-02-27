@@ -548,11 +548,12 @@ EXPORT_SYMBOL(ccci_mem_dump);
 
 void ccci_cmpt_mem_dump(int md_id, void *start_addr, int len)
 {
+	#define DUMP_LEN 80
 	unsigned int *curr_p = (unsigned int *)start_addr;
 	unsigned char *curr_ch_p;
-	int _64_fix_num = len / 64;
-	int tail_num = len % 64;
-	char buf[64];
+	int fix_num = len / DUMP_LEN;
+	int tail_num = len % DUMP_LEN;
+	char buf[DUMP_LEN];
 	int i, j;
 
 	if (NULL == curr_p) {
@@ -565,14 +566,16 @@ void ccci_cmpt_mem_dump(int md_id, void *start_addr, int len)
 	}
 
 	/* Fix section */
-	for (i = 0; i < _64_fix_num; i++) {
-		CCCI_INF_MSG(md_id, BM, "%03X: %X %X %X %X %X %X %X %X %X %X %X %X %X %X %X %X\n",
-		       i * 64,
+	for (i = 0; i < fix_num; i++) {
+		CCCI_INF_MSG(md_id, BM, "%03X: %X %X %X %X %X %X %X %X %X %X %X %X %X %X %X %X %X %X %X %X\n",
+		       i * DUMP_LEN,
 		       *curr_p, *(curr_p + 1), *(curr_p + 2), *(curr_p + 3),
 		       *(curr_p + 4), *(curr_p + 5), *(curr_p + 6), *(curr_p + 7),
 		       *(curr_p + 8), *(curr_p + 9), *(curr_p + 10), *(curr_p + 11),
-		       *(curr_p + 12), *(curr_p + 13), *(curr_p + 14), *(curr_p + 15));
-		curr_p += 64/4;
+		       *(curr_p + 12), *(curr_p + 13), *(curr_p + 14), *(curr_p + 15),
+   		       *(curr_p + 16), *(curr_p + 17), *(curr_p + 18), *(curr_p + 19)
+		       );
+		curr_p += DUMP_LEN/4;
 	}
 
 	/* Tail section */
@@ -582,15 +585,17 @@ void ccci_cmpt_mem_dump(int md_id, void *start_addr, int len)
 			buf[j] = *curr_ch_p;
 			curr_ch_p++;
 		}
-		for (; j < 64; j++)
+		for (; j < DUMP_LEN; j++)
 			buf[j] = 0;
 		curr_p = (unsigned int *)buf;
-		CCCI_INF_MSG(md_id, BM, "%03X: %X %X %X %X %X %X %X %X %X %X %X %X %X %X %X %X\n",
-		       i * 64,
+		CCCI_INF_MSG(md_id, BM, "%03X: %X %X %X %X %X %X %X %X %X %X %X %X %X %X %X %X %X %X %X %X\n",
+		       i * DUMP_LEN,
 		       *curr_p, *(curr_p + 1), *(curr_p + 2), *(curr_p + 3),
 		       *(curr_p + 4), *(curr_p + 5), *(curr_p + 6), *(curr_p + 7),
 		       *(curr_p + 8), *(curr_p + 9), *(curr_p + 10), *(curr_p + 11),
-		       *(curr_p + 12), *(curr_p + 13), *(curr_p + 14), *(curr_p + 15));
+		       *(curr_p + 12), *(curr_p + 13), *(curr_p + 14), *(curr_p + 15),
+		       *(curr_p + 16), *(curr_p + 17), *(curr_p + 18), *(curr_p + 19)
+		       );
 	}
 }
 EXPORT_SYMBOL(ccci_cmpt_mem_dump);

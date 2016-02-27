@@ -312,100 +312,112 @@ extern asmlinkage void dump_stack(void) __cold;
 
 /* -------printk too much patch------ */
 #if defined CONFIG_MT_ENG_BUILD && defined CONFIG_LOG_TOO_MUCH_WARNING
+
 #define pr_emerg(fmt, ...) \
-({						\
-	static bool __print_once;		\
-						\
-	if (!__print_once) {			\
-		__print_once = true;		\
-		pr_debug(fmt, ##__VA_ARGS__);	\
-		printk(KERN_EMERG "[name:"KBUILD_MODNAME"&]"pr_fmt(fmt), ##__VA_ARGS__);\
-	}	else				\
-		printk(KERN_EMERG "[name:"KBUILD_MODNAME"&]"pr_fmt(fmt), ##__VA_ARGS__);\
+({											\
+	static bool __print_once __read_mostly;	\
+	if (!__print_once) {					\
+		DEFINE_DYNAMIC_DEBUG_METADATA(descriptor, "[name:"KBUILD_MODNAME"&]"fmt); \
+		if (unlikely(descriptor.flags & _DPRINTK_FLAGS_PRINT)) \
+			barrier();   \
+		__print_once = true;				\
+		printk(KERN_EMERG "[name:"KBUILD_MODNAME"&]"pr_fmt(fmt), ##__VA_ARGS__); \
+	}	else								\
+		printk(KERN_EMERG "[name:"KBUILD_MODNAME"&]"pr_fmt(fmt), ##__VA_ARGS__); \
 })
 
+
 #define pr_alert(fmt, ...) \
-({						\
-	static bool __print_once;		\
-						\
-	if (!__print_once) {			\
-		__print_once = true;		\
-		pr_debug(fmt, ##__VA_ARGS__);	\
-			printk(KERN_ALERT "[name:"KBUILD_MODNAME"&]"pr_fmt(fmt), ##__VA_ARGS__);\
-	}	else				\
-		printk(KERN_ALERT "[name:"KBUILD_MODNAME"&]"pr_fmt(fmt), ##__VA_ARGS__);\
+({											\
+	static bool __print_once __read_mostly;	\
+	if (!__print_once) {					\
+		DEFINE_DYNAMIC_DEBUG_METADATA(descriptor, "[name:"KBUILD_MODNAME"&]"fmt); \
+		if (unlikely(descriptor.flags & _DPRINTK_FLAGS_PRINT)) \
+			barrier();   \
+		__print_once = true;				\
+		printk(KERN_ALERT "[name:"KBUILD_MODNAME"&]"pr_fmt(fmt), ##__VA_ARGS__); \
+	}	else								\
+		printk(KERN_ALERT "[name:"KBUILD_MODNAME"&]"pr_fmt(fmt), ##__VA_ARGS__); \
 })
 
 #define pr_crit(fmt, ...) \
-({						\
-	static bool __print_once;		\
-						\
-	if (!__print_once) {			\
-		__print_once = true;		\
-		pr_debug(fmt, ##__VA_ARGS__);	\
-		printk(KERN_CRIT "[name:"KBUILD_MODNAME"&]"pr_fmt(fmt), ##__VA_ARGS__);\
-	}	else				\
-		printk(KERN_CRIT "[name:"KBUILD_MODNAME"&]"pr_fmt(fmt), ##__VA_ARGS__);\
+({											\
+	static bool __print_once __read_mostly;	\
+	if (!__print_once) {					\
+		DEFINE_DYNAMIC_DEBUG_METADATA(descriptor, "[name:"KBUILD_MODNAME"&]"fmt); \
+		if (unlikely(descriptor.flags & _DPRINTK_FLAGS_PRINT)) \
+			barrier();   \
+		__print_once = true;				\
+		printk(KERN_CRIT "[name:"KBUILD_MODNAME"&]"pr_fmt(fmt), ##__VA_ARGS__); \
+	}	else								\
+		printk(KERN_CRIT "[name:"KBUILD_MODNAME"&]"pr_fmt(fmt), ##__VA_ARGS__); \
 })
 
+
 #define pr_err(fmt, ...) \
-({						\
-	static bool __print_once;		\
-						\
-	if (!__print_once) {			\
-		__print_once = true;		\
-		pr_debug(fmt, ##__VA_ARGS__);	\
-		printk(KERN_ERR "[name:"KBUILD_MODNAME"&]"pr_fmt(fmt), ##__VA_ARGS__);\
-	}	else				\
-		printk(KERN_ERR "[name:"KBUILD_MODNAME"&]"pr_fmt(fmt), ##__VA_ARGS__);\
+({											\
+	static bool __print_once __read_mostly;	\
+	if (!__print_once) {					\
+		DEFINE_DYNAMIC_DEBUG_METADATA(descriptor, "[name:"KBUILD_MODNAME"&]"fmt); \
+		if (unlikely(descriptor.flags & _DPRINTK_FLAGS_PRINT)) \
+			barrier();   \
+		__print_once = true;				\
+		printk(KERN_ERR "[name:"KBUILD_MODNAME"&]"pr_fmt(fmt), ##__VA_ARGS__); \
+	}	else								\
+		printk(KERN_ERR "[name:"KBUILD_MODNAME"&]"pr_fmt(fmt), ##__VA_ARGS__); \
 })
 
 #define pr_warning(fmt, ...) \
-({						\
-	static bool __print_once;		\
-						\
-	if (!__print_once) {			\
-		__print_once = true;		\
-		pr_debug(fmt, ##__VA_ARGS__);	\
-		printk(KERN_WARNING "[name:"KBUILD_MODNAME"&]"pr_fmt(fmt), ##__VA_ARGS__);\
-	}	else				\
-		printk(KERN_WARNING "[name:"KBUILD_MODNAME"&]"pr_fmt(fmt), ##__VA_ARGS__);\
-})
-#define pr_warn pr_warning
-#define pr_notice(fmt, ...) \
-({						\
-	static bool __print_once;		\
-						\
-	if (!__print_once) {			\
-		__print_once = true;		\
-		pr_debug(fmt, ##__VA_ARGS__);	\
-		printk(KERN_NOTICE "[name:"KBUILD_MODNAME"&]"pr_fmt(fmt), ##__VA_ARGS__);\
-	}	else				\
-		printk(KERN_NOTICE "[name:"KBUILD_MODNAME"&]"pr_fmt(fmt), ##__VA_ARGS__);\
+({											\
+	static bool __print_once __read_mostly;	\
+	if (!__print_once) {					\
+		DEFINE_DYNAMIC_DEBUG_METADATA(descriptor, "[name:"KBUILD_MODNAME"&]"fmt); \
+		if (unlikely(descriptor.flags & _DPRINTK_FLAGS_PRINT)) \
+			barrier();   \
+		__print_once = true;				\
+		printk(KERN_WARNING "[name:"KBUILD_MODNAME"&]"pr_fmt(fmt), ##__VA_ARGS__); \
+	}	else								\
+		printk(KERN_WARNING "[name:"KBUILD_MODNAME"&]"pr_fmt(fmt), ##__VA_ARGS__); \
 })
 
-#define pr_info(fmt, ...) \
-({						\
-	static bool __print_once;		\
-						\
-	if (!__print_once) {			\
-		__print_once = true;		\
-		pr_debug(fmt, ##__VA_ARGS__);	\
-		printk(KERN_INFO "[name:"KBUILD_MODNAME"&]"pr_fmt(fmt), ##__VA_ARGS__);\
-	}	else				\
-		printk(KERN_INFO "[name:"KBUILD_MODNAME"&]"pr_fmt(fmt), ##__VA_ARGS__);\
+#define pr_warn pr_warning
+#define pr_notice(fmt, ...) \
+({											\
+	static bool __print_once __read_mostly;	\
+	if (!__print_once) {					\
+		DEFINE_DYNAMIC_DEBUG_METADATA(descriptor, "[name:"KBUILD_MODNAME"&]"fmt); \
+		if (unlikely(descriptor.flags & _DPRINTK_FLAGS_PRINT)) \
+			barrier();   \
+		__print_once = true;				\
+		printk(KERN_NOTICE "[name:"KBUILD_MODNAME"&]"pr_fmt(fmt), ##__VA_ARGS__); \
+	}	else								\
+		printk(KERN_NOTICE "[name:"KBUILD_MODNAME"&]"pr_fmt(fmt), ##__VA_ARGS__); \
+})
+
+#define pr_info(fmt, ...)          \
+({											\
+	static bool __print_once __read_mostly;	\
+	if (!__print_once) {					\
+		DEFINE_DYNAMIC_DEBUG_METADATA(descriptor, "[name:"KBUILD_MODNAME"&]"fmt); \
+		if (unlikely(descriptor.flags & _DPRINTK_FLAGS_PRINT)) \
+			barrier();   \
+		__print_once = true;				\
+		printk(KERN_INFO "[name:"KBUILD_MODNAME"&]"pr_fmt(fmt), ##__VA_ARGS__); \
+	}	else								\
+		printk(KERN_INFO "[name:"KBUILD_MODNAME"&]"pr_fmt(fmt), ##__VA_ARGS__); \
 })
 
 #define pr_cont(fmt, ...) \
-({						\
-	static bool __print_once;		\
-						\
-	if (!__print_once) {			\
-		__print_once = true;		\
-		pr_debug(fmt, ##__VA_ARGS__);	\
-		printk(KERN_CONT "[name:"KBUILD_MODNAME"&]"pr_fmt(fmt), ##__VA_ARGS__);\
-	}	else				\
-		printk(KERN_CONT "[name:"KBUILD_MODNAME"&]"pr_fmt(fmt), ##__VA_ARGS__);\
+({											\
+	static bool __print_once __read_mostly;	\
+	if (!__print_once) {					\
+		DEFINE_DYNAMIC_DEBUG_METADATA(descriptor, "[name:"KBUILD_MODNAME"&]"fmt); \
+		if (unlikely(descriptor.flags & _DPRINTK_FLAGS_PRINT)) \
+			barrier();   \
+		__print_once = true;				\
+		printk(KERN_CONT "[name:"KBUILD_MODNAME"&]"pr_fmt(fmt), ##__VA_ARGS__); \
+	}	else								\
+		printk(KERN_CONT "[name:"KBUILD_MODNAME"&]"pr_fmt(fmt), ##__VA_ARGS__); \
 })
 
 #else

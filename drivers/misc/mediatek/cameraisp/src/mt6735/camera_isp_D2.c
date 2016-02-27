@@ -101,7 +101,7 @@ typedef bool MBOOL;
 /*******************************************************************************
 * LOG marco
 ********************************************************************************/
-#define MyTag "ISP"
+#define MyTag "[ISP_D2] "
 #define LOG_DBG(format, args...)    pr_debug(MyTag format, ##args)
 #define LOG_INF(format, args...)    pr_debug(MyTag format,  ##args)
 #define LOG_NOTICE(format, args...) pr_notice(MyTag format,  ##args)
@@ -1749,13 +1749,13 @@ static inline MVOID ISP_Reset(MVOID)
 	MUINT32 i, Reg;
 	unsigned long flags;
 
-	LOG_DBG("+");
+	/*LOG_DBG("+");*/
 
 	/* TODO: MUST remove later */
 	/* imgsys clk on */
 	/* ISP_WR32(ISP_ADDR_CAMINF, 0); */
 	/* ISP_EnableClock(MTRUE); */
-	LOG_DBG("isp gate clk(0x%x)", ISP_RD32((void *)ISP_ADDR_CAMINF));
+	LOG_DBG("+ isp gate clk(0x%x)", ISP_RD32((void *)ISP_ADDR_CAMINF));
 
 	/* imgsys IMG_SW_RST -> reset HW register */
 	/*
@@ -2354,6 +2354,7 @@ static MINT32 ISP_WriteReg(ISP_REG_IO_STRUCT *pRegIo)
 			LOG_DBG("ERROR: kmalloc failed, (process, pid, tgid)=(%s, %d, %d)",
 				current->comm, current->pid, current->tgid);
 			Ret = -ENOMEM;
+			goto EXIT;
 		}
 		if (copy_from_user
 		    (pData, (void __user *)(pRegIo->pData),
@@ -2518,7 +2519,7 @@ static long ISP_REF_CNT_CTRL_FUNC(unsigned long Param)
 			}
 
 			imem_ref_cnt = (MINT32) atomic_read(&g_imem_ref_cnt[ref_cnt_ctrl.id]);
-			LOG_DBG("g_imem_ref_cnt[%d]: %d.", ref_cnt_ctrl.id, imem_ref_cnt);
+			/*LOG_DBG("g_imem_ref_cnt[%d]: %d.", ref_cnt_ctrl.id, imem_ref_cnt);*/
 
 			if ((imem_ref_cnt == 0)) {
 				if(ref_cnt_ctrl.ctrl == ISP_REF_CNT_DEC_AND_RESET_IF_LAST_ONE) /* No user left and ctrl is RESET_IF_LAST_ONE, do ISP reset. */
@@ -2560,7 +2561,7 @@ static long ISP_REF_CNT_CTRL_FUNC(unsigned long Param)
 	/* add unlock here */
 	/* spin_unlock_irqrestore(&(g_IspInfo.SpinLock), flags); */
 
-	LOG_DBG("Ret(%d)", Ret);
+	/*LOG_DBG("Ret(%d)", Ret);*/
 	return Ret;
 }
 
@@ -5510,7 +5511,7 @@ static MINT32 ISP_release(struct inode *pInode, struct file *pFile)
 
 	mMclk1User = 0;
 	ISP_WR32(ISP_ADDR + 0x4200, 0x00000001);
-	LOG_DBG("ISP_MCLK1_EN release\n");
+	/*LOG_DBG("ISP_MCLK1_EN release\n");*/
 
 
 EXIT:
@@ -5698,7 +5699,7 @@ static inline MINT32 ISP_RegCharDev(MVOID)
 {
 	MINT32 Ret = 0;
 
-	LOG_DBG("+");
+	/*LOG_DBG("+");*/
 
 	Ret = alloc_chrdev_region(&g_IspDevNo, 0, 1, ISP_DEV_NAME);
 	if ((Ret) < 0) {
@@ -5732,7 +5733,7 @@ EXIT:
 		ISP_UnregCharDev();
 	}
 
-	LOG_DBG("-");
+	/*LOG_DBG("-");*/
 	return Ret;
 }
 
@@ -5983,7 +5984,7 @@ EXIT:
 		ISP_UnregCharDev();
 	}
 
-	LOG_DBG("-");
+	LOG_DBG("isp probe-");
 	return Ret;
 }
 
@@ -6239,7 +6240,7 @@ static ssize_t ISP_DumpRegToProc(struct file *pPage,
 
 	ret = Length < Count ? Length : Count;
 
-	LOG_DBG("ret(%ld)", ret);
+	/*LOG_DBG("ret(%ld)", ret);*/
 	return ((ssize_t)(ret));
 }
 
@@ -6301,7 +6302,7 @@ static ssize_t CAMIO_DumpRegToProc(struct file *pPage,
 	/*  */
 	ret = Length < Count ? Length : Count;
 
-	LOG_DBG("ret(%ld)", ret);
+	/*LOG_DBG("ret(%ld)", ret);*/
 	return ((ssize_t)ret);
 }
 
@@ -6677,7 +6678,7 @@ static MINT32 __init ISP_Init(MVOID)
 
 	ISP_Init_FrmB();
 
-	LOG_DBG("Ret(%d)", Ret);
+	/*LOG_DBG("Ret(%d)", Ret);*/
 	return Ret;
 }
 
@@ -6688,11 +6689,11 @@ static MVOID __exit ISP_Exit(MVOID)
 {
 	MINT32 i;
 
-	LOG_DBG("+");
+	/*LOG_DBG("+");*/
 
 	platform_driver_unregister(&IspDriver);
 	/*  */
-	LOG_INF("unregister isp callback for MDP,is_v3(%d)", CAM_HAL_VER_IS3);
+	LOG_INF("+ unregister isp callback for MDP,is_v3(%d)", CAM_HAL_VER_IS3);
 	ISP_ControlMdpClock(false);
 
 	/* unreserve the pages */
@@ -6705,7 +6706,7 @@ static MVOID __exit ISP_Exit(MVOID)
 
 	ISP_Exit_FRMB();
 
-	LOG_DBG("-");
+	/*LOG_DBG("-");*/
 }
 
 /*******************************************************************************

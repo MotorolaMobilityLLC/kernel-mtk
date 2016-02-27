@@ -208,11 +208,6 @@ static ssize_t rawfs_proc_write(struct file *filp, const char __user *buf,
 		}
 		dbg_name = NULL;
 
-		if (parse_strtoull(buf + pos, -1ULL, &val))
-			return -EINVAL;
-
-		dbg_bit = val;
-
 		for (x = buf + pos, i = 0;
 			 (*x == '_' || (*x >= 'a' && *x <= 'z')) &&
 			 i < MAX_DBG_NAME_LENGTH; x++, i++, pos++)

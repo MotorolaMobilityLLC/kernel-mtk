@@ -381,9 +381,8 @@ void check_battery_exist(void);
 #ifdef DLPT_POWER_OFF_EN
 	extern int dlpt_check_power_off(void);
 #endif
-#ifdef BATTERY_CDP_WORKAROUND
+
 extern kal_bool is_usb_rdy(void);
-#endif
 extern unsigned int upmu_get_reg_value(unsigned int reg);
 
 

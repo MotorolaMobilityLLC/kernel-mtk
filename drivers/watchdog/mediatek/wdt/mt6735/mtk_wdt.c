@@ -310,7 +310,8 @@ void wdt_arch_reset(char mode)
 	pr_debug("wdt_arch_reset called@Kernel mode =%c\n", mode);
 
 #ifdef CONFIG_MTK_MULTIBRIDGE_SUPPORT
-	mt8193_bus_clk_switch(false);
+	if (!multibridge_exit)
+		mt8193_bus_clk_switch(false);
 #endif
 
 #ifdef CONFIG_OF

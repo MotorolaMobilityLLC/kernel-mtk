@@ -113,6 +113,7 @@ SRC := \
 	mali_kbase_debug_mem_view.c \
 	mali_kbase_debug_job_fault.c \
 	mali_kbase_smc.c \
+	mali_kbase_debug_gpu_mem_mapping.c \
 	mali_kbase_mem_pool.c \
 	mali_kbase_mem_pool_debugfs.c
 

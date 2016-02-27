@@ -129,7 +129,7 @@ enum DDRTYPE {
 };
 enum RANKNUM {
 	SINGLE_RANK = 1,
-	DULE_RANK,
+	DUAL_RANK,
 };
 
 /************************** Common Macro *********************/

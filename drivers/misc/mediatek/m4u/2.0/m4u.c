@@ -438,6 +438,9 @@ static int m4u_fill_sgtable_user(struct vm_area_struct *vma, unsigned long va, i
 			page = phys_to_page(pa);
 			/* M4UMSG("page=0x%x, pfn=%d\n", page, __phys_to_pfn(pa)); */
 			sg_set_page(sg, page, PAGE_SIZE, 0);
+			#ifdef CONFIG_NEED_SG_DMA_LENGTH
+				sg->dma_length = sg->length;
+			#endif
 		} else {
 			sg_dma_address(sg) = pa;
 			sg_dma_len(sg) = PAGE_SIZE;
@@ -1150,8 +1153,23 @@ long m4u_dma_op(m4u_client_t *client, M4U_PORT_ID port,
 	}
 
 	for_each_sg(table->sgl, sg, table->nents, i) {
-		int npages_this_entry = PAGE_ALIGN(sg->length) / PAGE_SIZE;
+		int npages_this_entry = PAGE_ALIGN(sg_dma_len(sg)) / PAGE_SIZE;
 		struct page *page = sg_page(sg);
+
+		if (!page) {
+			phys_addr_t pa = sg_dma_address(sg);
+
+			if (!pa) {
+				M4UMSG("m4u_dma_op fail, VM_PFNMAP, no page.\n");
+				return -EFAULT;
+			}
+			page = phys_to_page(pa);
+			if (!pfn_valid(page_to_pfn(page))) {
+				M4UMSG("m4u_dma_op fail, VM_PFNMAP, no page, va = 0x%lx, size = 0x%x, npages = 0x%x.\n",
+					va, size, npages);
+				return -EFAULT;
+			}
+		}
 
 		BUG_ON(i >= npages);
 		for (j = 0; j < npages_this_entry; j++) {

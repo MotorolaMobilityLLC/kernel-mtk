@@ -7,7 +7,7 @@
 */
 
 #include "fuse_i.h"
-#include "fuse.h"
+#include "mt_fuse.h"
 
 #include <linux/init.h>
 #include <linux/module.h>

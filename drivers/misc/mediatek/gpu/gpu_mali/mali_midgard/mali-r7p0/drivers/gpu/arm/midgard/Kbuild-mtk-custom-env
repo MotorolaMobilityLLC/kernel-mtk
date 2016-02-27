@@ -31,6 +31,7 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/$(CONFIG_MTK_PLATFORM
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/power/$(CONFIG_MTK_PLATFORM)
 
 ccflags-y += -DCONFIG_DEBUG_FS
+#Add MTK debug info
 ccflags-y += -DCONFIG_PROC_FS
 ccflags-y += -DENABLE_MTK_MEMINFO
 
@@ -43,6 +44,9 @@ ccflags-y += \
     -I$(MTK_TOP)/base/power/$(subst ",,$(CONFIG_MTK_PLATFORM))/
 
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/gpu/ged/include
+
+#include path for AEE
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/include
 
 ifeq ($(CONFIG_MTK_GPU_COMMON_DVFS_SUPPORT),y)
 ccflags-y += -DENABLE_COMMON_DVFS
@@ -58,3 +62,8 @@ endif
 
 #ccflags-y += -DCONFIG_HAVE_CLK
 
+ccflags-$(CONFIG_MTK_EXCL_MEMORY) += -DMMU_USE_RESERVED_CMA
+
+ifeq ($(CONFIG_MTK_PLATFORM), "mt6797")
+ccflags-y += -DMTK_MT6797_DEBUG
+endif

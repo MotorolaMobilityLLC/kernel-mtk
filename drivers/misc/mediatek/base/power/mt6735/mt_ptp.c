@@ -1160,8 +1160,16 @@ static void ptp_init_ctrl(struct ptp_ctrl *ctrl)
 	FUNC_EXIT(FUNC_LV_HELP);
 }
 
+#define _BIT_(_bit_)                        (unsigned)(1 << (_bit_))
+#define _BITS_(_bits_, _val_)               ((((unsigned) -1 >> (31 - ((1) ? _bits_))) & ~((1U << ((0) ? _bits_)) - 1)) & ((_val_)<<((0) ? _bits_)))
+#define _BITMASK_(_bits_)                   (((unsigned) -1 >> (31 - ((1) ? _bits_))) & ~((1U << ((0) ? _bits_)) - 1))
+#define _GET_BITS_VAL_(_bits_, _val_)       (((_val_) & (_BITMASK_(_bits_))) >> ((0) ? _bits_))
+
 static void ptp_init_det(struct ptp_det *det, struct ptp_devinfo *devinfo)
 {
+	unsigned int segment_code = _GET_BITS_VAL_(31 : 25, get_devinfo_with_index(47));
+	unsigned int down_grade_bit = _GET_BITS_VAL_(20 : 20, get_devinfo_with_index(24));
+
 	ptp_det_id det_id = det_to_id(det);
 
 	 FUNC_ENTER(FUNC_LV_HELP);
@@ -1199,6 +1207,19 @@ static void ptp_init_det(struct ptp_det *det, struct ptp_devinfo *devinfo)
 		det->BDES = devinfo->CPU_BDES;
 		det->DCMDET = devinfo->CPU_DCMDET;
 		det->DCBDET = devinfo->CPU_DCBDET;
+		switch (segment_code) {
+		case 0x4A:
+		case 0x4B:
+		case 0x52:
+		case 0x53:
+			if (down_grade_bit)
+				det->volt_offset = 0x2;
+			det->DVTFIXED = 0x8;
+			break;
+		default:
+			det->DVTFIXED = 0x6;
+			break;
+		}
 		break;
 
 	default:

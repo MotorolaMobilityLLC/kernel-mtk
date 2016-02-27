@@ -7200,12 +7200,12 @@ static int mt6311_driver_probe(struct i2c_client *client, const struct i2c_devic
 
 	PMICLOG1("[mt6311_driver_probe] g_mt6311_hw_exist=%d, g_mt6311_driver_ready=%d\n",
 		 g_mt6311_hw_exist, g_mt6311_driver_ready);
-
+/*
 #if defined(CONFIG_ARCH_MT6753)
 	PMIC_INIT_SETTING_V1();
 #else
 #endif
-
+*/
 	if (g_mt6311_hw_exist == 0) {
 #ifdef BATTERY_OC_PROTECT
 		/*re-init battery oc protect point for platform without extbuck */
@@ -7219,10 +7219,12 @@ static int mt6311_driver_probe(struct i2c_client *client, const struct i2c_devic
 
 exit:
 	PMICLOG1("[mt6311_driver_probe] exit: return err\n");
+/*
 #if defined(CONFIG_ARCH_MT6753)
 	PMIC_INIT_SETTING_V1();
 #else
 #endif
+*/
 	return err;
 }
 
@@ -7351,6 +7353,8 @@ static struct platform_driver mt6311_user_space_driver = {
 
 static int __init mt6311_init(void)
 {
+	int ret = 0;
+
 #ifdef mt6311_AUTO_DETECT_DISABLE
 
 	PMICLOG1("[mt6311_init] mt6311_AUTO_DETECT_DISABLE\n");
@@ -7358,8 +7362,6 @@ static int __init mt6311_init(void)
 	g_mt6311_driver_ready = 1;
 
 #else
-
-	int ret = 0;
 
 	PMICLOG1("[mt6311_init] init start. ch=%d!!\n", mt6311_BUSNUM);
 
@@ -7374,24 +7376,29 @@ static int __init mt6311_init(void)
 	ret = platform_device_register(&mt6311_user_space_device);
 	if (ret) {
 		PMICLOG1("****[mt6311_init] Unable to device register(%d)\n", ret);
-		return ret;
+		goto exit;
 	}
 	ret = platform_driver_register(&mt6311_user_space_driver);
 	if (ret) {
 		PMICLOG1("****[mt6311_init] Unable to register driver (%d)\n", ret);
-		return ret;
+		goto exit;
 	}
 
 	PMICLOG1("[mt6311_init] g_mt6311_hw_exist=%d, g_mt6311_driver_ready=%d\n",
 		 g_mt6311_hw_exist, g_mt6311_driver_ready);
+/*
 #if defined(CONFIG_ARCH_MT6753)
 	PMIC_INIT_SETTING_V1();
 #else
 #endif
-
+*/
 #endif
-
-	return 0;
+exit:
+#if defined(CONFIG_ARCH_MT6753)
+	PMIC_INIT_SETTING_V1();
+#else
+#endif
+	return ret;
 }
 
 static void __exit mt6311_exit(void)

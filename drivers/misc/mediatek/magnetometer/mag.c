@@ -925,8 +925,8 @@ static int mag_probe(void)
 	/* init real mageleration driver */
 	err = mag_real_driver_init();
 	if (err) {
-		goto exit_alloc_data_failed;
 		MAG_ERR("mag_real_driver_init fail\n");
+		goto exit_alloc_data_failed;
 	}
 
 	err = mag_factory_device_init();
@@ -944,10 +944,10 @@ static int mag_probe(void)
 	return 0;
 
 exit_alloc_input_dev_failed:
-	kfree(mag_context_obj);
+	mag_input_destroy(mag_context_obj);
 
 exit_alloc_data_failed:
-	mag_input_destroy(mag_context_obj);
+	kfree(mag_context_obj);
 	MAG_ERR("----magel_probe fail !!!\n");
 	return err;
 }
@@ -992,4 +992,3 @@ late_initcall(mag_init);
 MODULE_LICENSE("GPL");
 MODULE_DESCRIPTION("MAGELEROMETER device driver");
 MODULE_AUTHOR("Mediatek");
-

@@ -61,6 +61,8 @@ static AFE_MEM_CONTROL_T *pdl1btMemControl;
 
 static DEFINE_SPINLOCK(auddrv_DL1BTCtl_lock);
 
+static struct snd_dma_buffer *Dl1_Playback_dma_buf;
+static int mPlaybackSramState;
 static struct device *mDev;
 
 /*
@@ -165,6 +167,29 @@ static snd_pcm_uframes_t mtk_dl1bt_pcm_pointer(struct snd_pcm_substream *substre
 	return Frameidx;
 }
 
+static void SetDL1Buffer(struct snd_pcm_substream *substream,
+			 struct snd_pcm_hw_params *hw_params)
+{
+	struct snd_pcm_runtime *runtime = substream->runtime;
+	AFE_BLOCK_T *pblock = &pdl1btMemControl->rBlock;
+
+	pblock->pucPhysBufAddr =  runtime->dma_addr;
+	pblock->pucVirtBufAddr =  runtime->dma_area;
+	pblock->u4BufferSize = runtime->dma_bytes;
+	pblock->u4SampleNumMask = 0x001f;  /* 32 byte align */
+	pblock->u4WriteIdx      = 0;
+	pblock->u4DMAReadIdx    = 0;
+	pblock->u4DataRemained  = 0;
+	pblock->u4fsyncflag     = false;
+	pblock->uResetFlag      = true;
+	PRINTK_AUDDRV("SetDL1Buffer u4BufferSize = %d pucVirtBufAddr = %p pucPhysBufAddr = 0x%x\n",
+		pblock->u4BufferSize, pblock->pucVirtBufAddr, pblock->pucPhysBufAddr);
+	/*set dram address top hardware*/
+	Afe_Set_Reg(AFE_DL1_BASE , pblock->pucPhysBufAddr , 0xffffffff);
+	Afe_Set_Reg(AFE_DL1_END  , pblock->pucPhysBufAddr + (pblock->u4BufferSize - 1), 0xffffffff);
+	memset((void *)pblock->pucVirtBufAddr, 0, pblock->u4BufferSize);
+
+}
 
 static int mtk_pcm_dl1bt_hw_params(struct snd_pcm_substream *substream,
 				   struct snd_pcm_hw_params *hw_params)
@@ -176,11 +201,16 @@ static int mtk_pcm_dl1bt_hw_params(struct snd_pcm_substream *substream,
 	/* runtime->dma_bytes has to be set manually to allow mmap */
 	substream->runtime->dma_bytes = params_buffer_bytes(hw_params);
 
-	/* here to allcoate sram to hardware --------------------------- */
-	AudDrv_Allocate_mem_Buffer(mDev, Soc_Aud_Digital_Block_MEM_DL1, substream->runtime->dma_bytes);
-	/* substream->runtime->dma_bytes = AFE_INTERNAL_SRAM_SIZE; */
-	substream->runtime->dma_area = (unsigned char *)Get_Afe_SramBase_Pointer();
-	substream->runtime->dma_addr = AFE_INTERNAL_SRAM_PHY_BASE;
+	if (mPlaybackSramState == SRAM_STATE_PLAYBACKFULL) {
+		substream->runtime->dma_area = (unsigned char *)Get_Afe_SramBase_Pointer();
+		substream->runtime->dma_addr = AFE_INTERNAL_SRAM_PHY_BASE;
+		AudDrv_Allocate_DL1_Buffer(mDev, substream->runtime->dma_bytes);
+	} else {
+		substream->runtime->dma_bytes = params_buffer_bytes(hw_params);
+		substream->runtime->dma_area = Dl1_Playback_dma_buf->area;
+		substream->runtime->dma_addr = Dl1_Playback_dma_buf->addr;
+		SetDL1Buffer(substream, hw_params);
+	}
 
 	PRINTK_AUDDRV(" dma_bytes = %zu dma_area = %p dma_addr = 0x%lx\n",
 		      substream->runtime->dma_bytes, substream->runtime->dma_area, (long)substream->runtime->dma_addr);
@@ -199,7 +229,6 @@ static struct snd_pcm_hw_constraint_list constraints_dl1_sample_rates = {
 	.mask = 0,
 };
 
-static int mPlaybackSramState;
 static int mtk_dl1bt_pcm_open(struct snd_pcm_substream *substream)
 {
 	int ret = 0;
@@ -562,6 +591,8 @@ static int mtk_asoc_Dl1Bt_pcm_new(struct snd_soc_pcm_runtime *rtd)
 static int mtk_asoc_dl1bt_probe(struct snd_soc_platform *platform)
 {
 	PRINTK_AUDDRV("mtk_asoc_dl1bt_probe\n");
+	AudDrv_Allocate_mem_Buffer(platform->dev, Soc_Aud_Digital_Block_MEM_DL1, Dl1_MAX_BUFFER_SIZE);
+	Dl1_Playback_dma_buf =  Get_Mem_Buffer(Soc_Aud_Digital_Block_MEM_DL1);
 	return 0;
 }
 

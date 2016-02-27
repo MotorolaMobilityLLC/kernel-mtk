@@ -213,7 +213,7 @@
 ********************************************************************************
 */
 
-static void
+static UINT_32
 HifAhbDmaEnhanceModeConf(IN GLUE_INFO_T *GlueInfo, IN UINT_32 BurstLen, IN UINT_32 PortId, IN UINT_32 TransByte);
 
 static irqreturn_t HifAhbISR(IN int Irq, IN void *Arg);
@@ -837,7 +837,6 @@ BOOLEAN kalDevRegWrite(IN GLUE_INFO_T *GlueInfo, IN UINT_32 RegOffset, IN UINT_3
 
 } /* end of kalDevRegWrite() */
 
-static void HifAhbDmaEnhanceModeConf(IN GLUE_INFO_T *GlueInfo, UINT_32 BurstLen, UINT_32 PortId, UINT_32 TransByte);
 
 /*----------------------------------------------------------------------------*/
 /*!
@@ -857,6 +856,7 @@ BOOLEAN
 kalDevPortRead(IN P_GLUE_INFO_T GlueInfo, IN UINT_16 Port, IN UINT_32 Size, OUT PUINT_8 Buf, IN UINT_32 MaxBufSize)
 {
 	GL_HIF_INFO_T *HifInfo;
+	UINT_32 u4HSTCRValue = 0;
 
 	/* sanity check */
 	if ((WlanDmaFatalErr == 1) || (fgIsResetting == TRUE) || (HifIsFwOwn(GlueInfo->prAdapter) == TRUE)) {
@@ -873,12 +873,11 @@ kalDevPortRead(IN P_GLUE_INFO_T GlueInfo, IN UINT_16 Port, IN UINT_32 Size, OUT 
 
 	/* Note: burst length should be equal to the one used in DMA */
 	if (Port == MCR_WRDR0)
-		HifAhbDmaEnhanceModeConf(GlueInfo, HIF_BURST_4DW, HIF_TARGET_RXD0, Size);
+		u4HSTCRValue = HifAhbDmaEnhanceModeConf(GlueInfo, HIF_BURST_4DW, HIF_TARGET_RXD0, Size);
 	else if (Port == MCR_WRDR1)
-		HifAhbDmaEnhanceModeConf(GlueInfo, HIF_BURST_4DW, HIF_TARGET_RXD1, Size);
+		u4HSTCRValue = HifAhbDmaEnhanceModeConf(GlueInfo, HIF_BURST_4DW, HIF_TARGET_RXD1, Size);
 	else if (Port == MCR_WHISR)
-		HifAhbDmaEnhanceModeConf(GlueInfo, HIF_BURST_4DW, HIF_TARGET_WHISR, Size);
-	/* else other non-data port */
+		u4HSTCRValue = HifAhbDmaEnhanceModeConf(GlueInfo, HIF_BURST_4DW, HIF_TARGET_WHISR, Size);
 
 	/* Read */
 #if (CONF_MTK_AHB_DMA == 1)
@@ -946,24 +945,22 @@ kalDevPortRead(IN P_GLUE_INFO_T GlueInfo, IN UINT_16 Port, IN UINT_32 Size, OUT 
 		PollTimeout = jiffies + HZ * 5;
 
 		do {
-			if (!time_before(jiffies, PollTimeout)) {
-				DBGLOG(RX, INFO, "DMA Timeout, Hif Reg dump WCIR:%u, WHLPCR:%u\n",
-						HIF_REG_READL(HifInfo, MCR_WCIR), HIF_REG_READL(HifInfo, MCR_WHLPCR));
-
-				if (prDmaOps->DmaRegDump != NULL)
-					prDmaOps->DmaRegDump(HifInfo);
-
-				WlanDmaFatalErr = 1;
-
-				if (!fgIsResetting)
-					glDoChipReset();
-				return FALSE;
-			}
+			if (time_before(jiffies, PollTimeout))
+				continue;
+			DBGLOG(RX, INFO, "RX DMA Timeout, HSTCR: 0x%08x, and dump WHISR EnhanceMode data\n",
+					u4HSTCRValue);
+			HifDumpEnhanceModeData(GlueInfo->prAdapter);
+			if (prDmaOps->DmaRegDump != NULL)
+				prDmaOps->DmaRegDump(HifInfo);
+			WlanDmaFatalErr = 1;
+			/* we still need complete dma progress even dma timeout */
+			break;
 		} while (!prDmaOps->DmaPollIntr(HifInfo));
 #endif /* CONF_HIF_DMA_INT */
-
-		prDmaOps->DmaAckIntr(HifInfo);
+		/* we should disable dma interrupt then clear dma interrupt, otherwise,
+			for dma timeout case, interrupt may be set after we clear it */
 		prDmaOps->DmaStop(HifInfo);
+		prDmaOps->DmaAckIntr(HifInfo);
 
 		LoopCnt = 0;
 		do {
@@ -984,7 +981,11 @@ kalDevPortRead(IN P_GLUE_INFO_T GlueInfo, IN UINT_16 Port, IN UINT_32 Size, OUT 
 #else
 		dma_unmap_single(HifInfo->Dev, DmaConf.Dst, Size, DMA_FROM_DEVICE);
 #endif /* MTK_DMA_BUF_MEMCPY_SUP */
-
+		if (WlanDmaFatalErr) {
+			if (!fgIsResetting)
+				glDoChipReset();
+			return FALSE;
+		}
 		HIF_DBG(("[WiFi/HIF] DMA RX OK!\n"));
 	} else
 #endif /* CONF_MTK_AHB_DMA */
@@ -1027,6 +1028,7 @@ BOOLEAN
 kalDevPortWrite(IN P_GLUE_INFO_T GlueInfo, IN UINT_16 Port, IN UINT_32 Size, IN PUINT_8 Buf, IN UINT_32 MaxBufSize)
 {
 	GL_HIF_INFO_T *HifInfo;
+	UINT_32 u4HSTCRValue = 0;
 
 	/* sanity check */
 	if ((WlanDmaFatalErr == 1) || (fgIsResetting == TRUE) || (HifIsFwOwn(GlueInfo->prAdapter) == TRUE)) {
@@ -1046,9 +1048,9 @@ kalDevPortWrite(IN P_GLUE_INFO_T GlueInfo, IN UINT_16 Port, IN UINT_32 Size, IN 
 
 	/* Note: burst length should be equal to the one used in DMA */
 	if (Port == MCR_WTDR0)
-		HifAhbDmaEnhanceModeConf(GlueInfo, HIF_BURST_4DW, HIF_TARGET_TXD0, Size);
+		u4HSTCRValue = HifAhbDmaEnhanceModeConf(GlueInfo, HIF_BURST_4DW, HIF_TARGET_TXD0, Size);
 	else if (Port == MCR_WTDR1)
-		HifAhbDmaEnhanceModeConf(GlueInfo, HIF_BURST_4DW, HIF_TARGET_TXD1, Size);
+		u4HSTCRValue = HifAhbDmaEnhanceModeConf(GlueInfo, HIF_BURST_4DW, HIF_TARGET_TXD1, Size);
 	/* else other non-data port */
 
 	/* Write */
@@ -1110,24 +1112,20 @@ kalDevPortWrite(IN P_GLUE_INFO_T GlueInfo, IN UINT_16 Port, IN UINT_32 Size, IN 
 		PollTimeout = jiffies + HZ * 5;
 
 		do {
-			if (!time_before(jiffies, PollTimeout)) {
-				DBGLOG(TX, INFO, "DMA Timeout, Hif Reg dump WCIR:%u, WHLPCR:%u\n",
-					HIF_REG_READL(HifInfo, MCR_WCIR),
-					HIF_REG_READL(HifInfo, MCR_WHLPCR));
-				if (prDmaOps->DmaRegDump != NULL)
-					prDmaOps->DmaRegDump(HifInfo);
-				LoopCnt = 0;
-				WlanDmaFatalErr = 1;
-
-				if (!fgIsResetting)
-					glDoChipReset();
-				return FALSE;
-			}
+			if (time_before(jiffies, PollTimeout))
+				continue;
+			DBGLOG(TX, INFO, "TX DMA Timeout, HSTCR: 0x%08x\n", u4HSTCRValue);
+			if (prDmaOps->DmaRegDump != NULL)
+				prDmaOps->DmaRegDump(HifInfo);
+			WlanDmaFatalErr = 1;
+			/* we still need complete dma progress even dma timeout */
+			break;
 		} while (!prDmaOps->DmaPollIntr(HifInfo));
 #endif /* CONF_HIF_DMA_INT */
-
-		prDmaOps->DmaAckIntr(HifInfo);
+		/* we should disable dma interrupt then clear dma interrupt, otherwise,
+			for dma timeout case, interrupt may be set after we clear it */
 		prDmaOps->DmaStop(HifInfo);
+		prDmaOps->DmaAckIntr(HifInfo);
 
 		LoopCnt = 0;
 		do {
@@ -1144,7 +1142,11 @@ kalDevPortWrite(IN P_GLUE_INFO_T GlueInfo, IN UINT_16 Port, IN UINT_32 Size, IN 
 #ifndef MTK_DMA_BUF_MEMCPY_SUP
 		dma_unmap_single(HifInfo->Dev, DmaConf.Src, Size, DMA_TO_DEVICE);
 #endif /* MTK_DMA_BUF_MEMCPY_SUP */
-
+		if (WlanDmaFatalErr) {
+			if (!fgIsResetting)
+				glDoChipReset();
+			return FALSE;
+		}
 		HIF_DBG_TX(("[WiFi/HIF] DMA TX OK!\n"));
 	} else
 #endif /* CONF_MTK_AHB_DMA */
@@ -1424,7 +1426,7 @@ static int HifAhbBusCntClr(VOID)
 * \return void
 */
 /*----------------------------------------------------------------------------*/
-static void HifAhbDmaEnhanceModeConf(IN GLUE_INFO_T *GlueInfo, UINT_32 BurstLen, UINT_32 PortId, UINT_32 TransByte)
+static UINT_32 HifAhbDmaEnhanceModeConf(IN GLUE_INFO_T * GlueInfo, UINT_32 BurstLen, UINT_32 PortId, UINT_32 TransByte)
 {
 	GL_HIF_INFO_T *HifInfo;
 	UINT_32 RegHSTCR;
@@ -1440,6 +1442,7 @@ static void HifAhbDmaEnhanceModeConf(IN GLUE_INFO_T *GlueInfo, UINT_32 BurstLen,
 	    ((PortId << HSTCR_TRANS_TARGET_OFFSET) & HSTCR_TRANS_TARGET) |
 	    (((TransByte & 0x3) == 0) ? (TransByte & HSTCR_HSIF_TRANS_CNT) : ((TransByte + 4) & HSTCR_HSIF_TRANS_CNT));
 	HIF_REG_WRITEL(HifInfo, MCR_HSTCR, RegHSTCR);
+	return RegHSTCR;
 }
 
 VOID glSetPowerState(IN GLUE_INFO_T *GlueInfo, IN UINT_32 ePowerMode)

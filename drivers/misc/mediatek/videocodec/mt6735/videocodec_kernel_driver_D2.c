@@ -26,6 +26,7 @@
 #include "mt-plat/sync_write.h"
 /* #include "mach/mt_reg_base.h" */
 #include "mach/mt_clkmgr.h"
+#include "mmdvfs_mgr.h"
 
 #ifdef CONFIG_MTK_HIBERNATION
 #include <mtk_hibernate_dpm.h>
@@ -84,6 +85,7 @@ static VAL_TIME_T gMMDFVFSLastLockTime;
 static VAL_TIME_T gMMDFVFSMonitorEndTime;
 static VAL_UINT32_T gHWLockInterval;
 static VAL_INT32_T gHWLockMaxDuration;
+static VAL_INT32_T gMMDVFSHandle = 0;
 
 VAL_UINT32_T TimeDiffMs(VAL_TIME_T timeOld, VAL_TIME_T timeNew)
 {
@@ -332,6 +334,8 @@ VAL_ULONG_T KVA_VENC_CLK_CFG_0_ADDR, KVA_VENC_CLK_CFG_4_ADDR, KVA_VENC_PWR_ADDR,
 #endif
 
 /* extern unsigned long pmem_user_v2p_video(unsigned long va); */
+extern int register_mmclk_switch_vdec_ctrl_cb(vdec_ctrl_cb vdec_suspend_cb,
+vdec_ctrl_cb vdec_resume_cb);
 
 #if defined(VENC_USE_L2C)
 /* extern int config_L2(int option); */
@@ -1016,18 +1020,300 @@ static long vcodec_lockhw_enc_while_loop(VAL_HW_LOCK_T *prHWLock, VAL_BOOL_T *pb
 	return 0xFF;
 }
 
+static long vcodec_lockhw(VAL_HW_LOCK_T rHWLock)
+{
+	VAL_LONG_T ret;
+	VAL_RESULT_T eValRet;
+	VAL_BOOL_T bLockedHW = VAL_FALSE;
+	VAL_UINT32_T FirstUseDecHW = 0;
+	VAL_TIME_T rCurTime;
+	VAL_UINT32_T u4TimeInterval;
+	VAL_ULONG_T ulFlags, ulFlagsLockHW;
+	MODULE_MFV_LOGD("[VCODEC] LOCKHW eDriverType = %d\n", rHWLock.eDriverType);
+	eValRet = VAL_RESULT_INVALID_ISR;
+	if (rHWLock.eDriverType == VAL_DRIVER_TYPE_MP4_DEC ||
+	    rHWLock.eDriverType == VAL_DRIVER_TYPE_HEVC_DEC ||
+	    rHWLock.eDriverType == VAL_DRIVER_TYPE_H264_DEC ||
+	    rHWLock.eDriverType == VAL_DRIVER_TYPE_MP1_MP2_DEC ||
+	    rHWLock.eDriverType == VAL_DRIVER_TYPE_VC1_DEC ||
+	    rHWLock.eDriverType == VAL_DRIVER_TYPE_VC1_ADV_DEC ||
+	    rHWLock.eDriverType == VAL_DRIVER_TYPE_VP8_DEC ||
+            rHWLock.eDriverType == VAL_DRIVER_TYPE_MMDVFS) {
+		while (bLockedHW == VAL_FALSE) {
+			mutex_lock(&DecHWLockEventTimeoutLock);
+			if (DecHWLockEvent.u4TimeoutMs == 1) {
+				MODULE_MFV_LOGE("VCODEC_LOCKHW, First Use Dec HW!!\n");
+				FirstUseDecHW = 1;
+			} else {
+				FirstUseDecHW = 0;
+			}
+			mutex_unlock(&DecHWLockEventTimeoutLock);
+
+			if (FirstUseDecHW == 1) {
+				eValRet =
+				    eVideoWaitEvent(&DecHWLockEvent,
+						    sizeof(VAL_EVENT_T));
+			}
+			mutex_lock(&DecHWLockEventTimeoutLock);
+			if (DecHWLockEvent.u4TimeoutMs != 1000) {
+				DecHWLockEvent.u4TimeoutMs = 1000;
+				FirstUseDecHW = 1;
+			} else {
+				FirstUseDecHW = 0;
+			}
+			mutex_unlock(&DecHWLockEventTimeoutLock);
+
+			mutex_lock(&VdecHWLock);
+			/* one process try to lock twice */
+			if (grVcodecDecHWLock.pvHandle ==
+			    (VAL_VOID_T *) pmem_user_v2p_video((VAL_ULONG_T)
+							       rHWLock.pvHandle)) {
+				MODULE_MFV_LOGE("[WARNING] VCODEC_LOCKHW, one decoder instance");
+				MODULE_MFV_LOGE("[WARNING] try to lock twice, may cause lock HW timeout!");
+				MODULE_MFV_LOGE("[WARNING] instance = 0x%lx, CurrentTID = %d\n",
+				     (VAL_ULONG_T) grVcodecDecHWLock.pvHandle, current->pid);
+
+				}
+			mutex_unlock(&VdecHWLock);
+
+			if (FirstUseDecHW == 0) {
+				MODULE_MFV_LOGD
+				    ("VCODEC_LOCKHW, Not first time use HW, timeout = %d\n",
+				     DecHWLockEvent.u4TimeoutMs);
+				eValRet =
+				    eVideoWaitEvent(&DecHWLockEvent,
+						    sizeof(VAL_EVENT_T));
+			}
+
+			if (VAL_RESULT_INVALID_ISR == eValRet) {
+				vcodec_lockhw_dec_fail(FirstUseDecHW);
+			} else if (VAL_RESULT_RESTARTSYS == eValRet) {
+				MODULE_MFV_LOGE("[WARNING] VCODEC_LOCKHW\n");
+				MODULE_MFV_LOGE("[WARNING] VAL_RESULT_RESTARTSYS return when HWLock!!\n");
+				return -ERESTARTSYS;
+			}
+
+			mutex_lock(&VdecHWLock);
+			if (grVcodecDecHWLock.pvHandle == 0) {	/* No one holds dec hw lock now */
+				gu4VdecLockThreadId = current->pid;
+				grVcodecDecHWLock.pvHandle =
+				    (VAL_VOID_T *) pmem_user_v2p_video((VAL_ULONG_T)
+								       rHWLock.pvHandle);
+				grVcodecDecHWLock.eDriverType = rHWLock.eDriverType;
+				eVideoGetTimeOfDay(&grVcodecDecHWLock.rLockedTime,
+						   sizeof(VAL_TIME_T));
+
+				MODULE_MFV_LOGD("VCODEC_LOCKHW, No process use dec HW\n");
+				MODULE_MFV_LOGD("VCODEC_LOCKHW, so current process can use HW\n");
+				MODULE_MFV_LOGD("VCODEC_LOCKHW, LockInstance = 0x%lx CurrentTID = %d\n",
+				     (VAL_ULONG_T) grVcodecDecHWLock.pvHandle,
+				     current->pid);
+				MODULE_MFV_LOGD("VCODEC_LOCKHW, rLockedTime(s, us) = %d, %d\n",
+				     grVcodecDecHWLock.rLockedTime.u4Sec,
+				     grVcodecDecHWLock.rLockedTime.u4uSec);
+
+				bLockedHW = VAL_TRUE;
+				vcodec_lockhw_dec_fail_more(eValRet, FirstUseDecHW);
+			} else {	/* Another one holding dec hw now */
+				MODULE_MFV_LOGE("VCODEC_LOCKHW E\n");
+				eVideoGetTimeOfDay(&rCurTime, sizeof(VAL_TIME_T));
+				u4TimeInterval =
+				    (((((rCurTime.u4Sec -
+					 grVcodecDecHWLock.rLockedTime.u4Sec) *
+					1000000) + rCurTime.u4uSec)
+				      -
+				      grVcodecDecHWLock.rLockedTime.u4uSec) / 1000);
+
+				MODULE_MFV_LOGD("VCODEC_LOCKHW, someone use dec HW, and check timeout value\n");
+				MODULE_MFV_LOGD("VCODEC_LOCKHW, Instance = 0x%lx CurrentTID = %d,TimeInterval(ms) = %d, TimeOutValue(ms)) = %d\n",
+				     (VAL_ULONG_T) grVcodecDecHWLock.pvHandle,
+				     current->pid, u4TimeInterval,
+				     rHWLock.u4TimeoutMs);
+
+				MODULE_MFV_LOGE("VCODEC_LOCKHW Lock Instance = 0x%lx, Lock TID = %d\n",
+				     (VAL_ULONG_T) grVcodecDecHWLock.pvHandle,
+				     gu4VdecLockThreadId);
+				MODULE_MFV_LOGE("CurrentTID = %d, rLockedTime(%d s, %d us)\n",
+				     current->pid,
+				     grVcodecDecHWLock.rLockedTime.u4Sec,
+				     grVcodecDecHWLock.rLockedTime.u4uSec);
+				MODULE_MFV_LOGE("rCurTime(%d s, %d us)\n",
+				     rCurTime.u4Sec, rCurTime.u4uSec);
+			}
+			mutex_unlock(&VdecHWLock);
+			spin_lock_irqsave(&LockDecHWCountLock, ulFlagsLockHW);
+			gu4LockDecHWCount++;
+			spin_unlock_irqrestore(&LockDecHWCountLock, ulFlagsLockHW);
+		}
+	} else if (rHWLock.eDriverType == VAL_DRIVER_TYPE_H264_ENC ||
+		   rHWLock.eDriverType == VAL_DRIVER_TYPE_HEVC_ENC ||
+		   rHWLock.eDriverType == VAL_DRIVER_TYPE_JPEG_ENC ||
+		   rHWLock.eDriverType == VAL_DRIVER_TYPE_MP4_ENC) {
+
+		vcodec_lockhw_enc_while_loop(&rHWLock, &bLockedHW);
+
+		if (VAL_FALSE == bLockedHW) {
+			MODULE_MFV_LOGE
+			    ("[ERROR] VCODEC_LOCKHW - ID %d  fail, someone locked HW already\n",
+			     current->pid);
+			MODULE_MFV_LOGE
+			    ("[ERROR] VCODEC_LOCKHW -0x%lx, %lx, 0x%lx, type:%d\n",
+			     (VAL_ULONG_T) grVcodecEncHWLock.pvHandle,
+			     pmem_user_v2p_video((VAL_ULONG_T) rHWLock.pvHandle),
+			     (VAL_ULONG_T) rHWLock.pvHandle, rHWLock.eDriverType);
+			gLockTimeOutCount = 0;
+			return -EFAULT;
+		}
+
+		spin_lock_irqsave(&LockEncHWCountLock, ulFlagsLockHW);
+		gu4LockEncHWCount++;
+		spin_unlock_irqrestore(&LockEncHWCountLock, ulFlagsLockHW);
+
+		MODULE_MFV_LOGD("VCODEC_LOCKHWed - tid = %d\n", current->pid);
+
+		if (rHWLock.eDriverType == VAL_DRIVER_TYPE_MP4_ENC) {
+			/* add for debugging checking */
+			spin_lock_irqsave(&OalHWContextLock, ulFlags);
+			ret = search_HWLockSlot_ByTID(0, current->pid);
+			spin_unlock_irqrestore(&OalHWContextLock, ulFlags);
+
+			if (ret == -1) {
+				MODULE_MFV_LOGE
+				    ("VCODEC_LOCKHW - ID %d  fail, didn't call InitHWLock\n",
+				     current->pid);
+				return -EFAULT;
+			}
+		}
+	} else {
+		MODULE_MFV_LOGE("[WARNING] VCODEC_LOCKHW Unknown instance\n");
+		return -EFAULT;
+	}
+	MODULE_MFV_LOGD("VCODEC_LOCKHW - tid = %d\n", current->pid);
+	return 0;
+}
+
+static long vcodec_unlockhw(VAL_HW_LOCK_T rHWLock)
+{
+	VAL_RESULT_T eValRet;
+#ifdef ENABLE_MMDVFS_VDEC
+	VAL_UINT32_T _monitor_duration = 0;
+#endif
+	MODULE_MFV_LOGD("VCODEC_UNLOCKHW eDriverType = %d\n", rHWLock.eDriverType);
+	eValRet = VAL_RESULT_INVALID_ISR;
+	if (rHWLock.eDriverType == VAL_DRIVER_TYPE_MP4_DEC ||
+	    rHWLock.eDriverType == VAL_DRIVER_TYPE_HEVC_DEC ||
+	    rHWLock.eDriverType == VAL_DRIVER_TYPE_H264_DEC ||
+	    rHWLock.eDriverType == VAL_DRIVER_TYPE_MP1_MP2_DEC ||
+	    rHWLock.eDriverType == VAL_DRIVER_TYPE_VC1_DEC ||
+	    rHWLock.eDriverType == VAL_DRIVER_TYPE_VC1_ADV_DEC ||
+	    rHWLock.eDriverType == VAL_DRIVER_TYPE_VP8_DEC ||
+            rHWLock.eDriverType == VAL_DRIVER_TYPE_MMDVFS) {
+		mutex_lock(&VdecHWLock);
+		if (grVcodecDecHWLock.pvHandle ==
+		    (VAL_VOID_T *) pmem_user_v2p_video((VAL_ULONG_T)
+						       rHWLock.pvHandle)) {
+			/* Current owner give up hw lock */
+			grVcodecDecHWLock.pvHandle = 0;
+			grVcodecDecHWLock.eDriverType = VAL_DRIVER_TYPE_NONE;
+			/* disable_irq(MT_VDEC_IRQ_ID); */
+			disable_irq(VDEC_IRQ_ID);
+			/* TODO: check if turning power off is ok */
+			vdec_power_off();
+
+#ifdef ENABLE_MMDVFS_VDEC
+			/* MM DVFS related */
+			if (VAL_TRUE == gMMDFVFSMonitorStarts
+			    && gMMDFVFSMonitorCounts > MONITOR_START_MINUS_1) {
+				_monitor_duration = VdecDvfsGetMonitorDuration();
+				vcodec_lockhw_dec_monitor_duration(_monitor_duration);
+			}
+			gMMDFVFSMonitorCounts++;
+#endif
+
+		} else {	/* Not current owner */
+			MODULE_MFV_LOGE
+			    ("[ERROR] VCODEC_UNLOCKHW, Not owner trying to unlock dec hardware 0x%lx\n",
+			     pmem_user_v2p_video((VAL_ULONG_T) rHWLock.pvHandle));
+			mutex_unlock(&VdecHWLock);
+			return -EFAULT;
+		}
+		mutex_unlock(&VdecHWLock);
+		eValRet = eVideoSetEvent(&DecHWLockEvent, sizeof(VAL_EVENT_T));
+	} else if (rHWLock.eDriverType == VAL_DRIVER_TYPE_H264_ENC ||
+		   rHWLock.eDriverType == VAL_DRIVER_TYPE_HEVC_ENC ||
+		   rHWLock.eDriverType == VAL_DRIVER_TYPE_JPEG_ENC ||
+		   rHWLock.eDriverType == VAL_DRIVER_TYPE_MP4_ENC) {
+		if (rHWLock.eDriverType == VAL_DRIVER_TYPE_MP4_ENC) {
+			/* Debug */
+			MODULE_MFV_LOGE("Hybrid VCODEC_UNLOCKHW\n");
+		} else if (rHWLock.eDriverType == VAL_DRIVER_TYPE_H264_ENC ||
+			   rHWLock.eDriverType == VAL_DRIVER_TYPE_HEVC_ENC) {
+			mutex_lock(&VencHWLock);
+			if (grVcodecEncHWLock.pvHandle ==
+			    (VAL_VOID_T *) pmem_user_v2p_video((VAL_ULONG_T)
+							       rHWLock.pvHandle)) {
+				/* Current owner give up hw lock */
+				grVcodecEncHWLock.pvHandle = 0;
+				grVcodecEncHWLock.eDriverType =
+				    VAL_DRIVER_TYPE_NONE;
+				/* disable_irq(MT_VENC_IRQ_ID); */
+				disable_irq(VENC_IRQ_ID);
+				/* turn venc power off */
+				venc_power_off();
+			} else {	/* Not current owner */
+				/* [TODO] error handling */
+				MODULE_MFV_LOGE("[ERROR] Not owner trying to unlock enc hardware\n");
+				MODULE_MFV_LOGE("[ERROR] 0x%lx,pa:%lx, va:%lx type:%d\n",
+					(VAL_ULONG_T) grVcodecEncHWLock.pvHandle,
+					pmem_user_v2p_video((VAL_ULONG_T)rHWLock.pvHandle),
+					(VAL_ULONG_T) rHWLock.pvHandle,
+					 rHWLock.eDriverType);
+					mutex_unlock(&VencHWLock);
+				return -EFAULT;
+			}
+			mutex_unlock(&VencHWLock);
+			eValRet =
+			    eVideoSetEvent(&EncHWLockEvent, sizeof(VAL_EVENT_T));
+		}
+	} else {
+		MODULE_MFV_LOGE("[WARNING] VCODEC_UNLOCKHW Unknown instance\n");
+		return -EFAULT;
+	}
+	MODULE_MFV_LOGD("VCODEC_UNLOCKHW - tid = %d\n", current->pid);
+        return 0;
+}
+
+int vdec_suspend_before_mmsysclk_switch(void){
+	/* Waiting for the frame done and suspend vdec jobs*/
+	VAL_HW_LOCK_T rLock;
+	rLock.eDriverType = VAL_DRIVER_TYPE_MMDVFS;
+	/* kenel VA won't overlap with any PA, still unique key */
+	rLock.pvHandle = &gMMDVFSHandle;
+	rLock.u4TimeoutMs = 1000;
+	vcodec_lockhw(rLock);
+	return 1; /* Success, return 0 to notify suspension failed*/
+}
+
+int vdec_resume_after_mmsysclk_switch(void){
+	/* Waiting for the frame done and suspend vdec jobs*/
+	VAL_HW_LOCK_T rLock;
+	rLock.eDriverType = VAL_DRIVER_TYPE_MMDVFS;
+	/* kenel VA won't overlap with any PA, still unique key */
+	rLock.pvHandle = &gMMDVFSHandle;
+	rLock.u4TimeoutMs = 1000;
+	vcodec_unlockhw(rLock);
+	return 1; /* Success, return 0 to notify suspension failed*/
+}
+
 static long vcodec_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 {
 	VAL_LONG_T ret;
 	VAL_UINT8_T *user_data_addr;
 	VAL_RESULT_T eValRet;
 	VAL_RESULT_T eValHWLockRet = VAL_RESULT_INVALID_ISR;
-	VAL_ULONG_T ulFlags, ulFlagsLockHW, ulFlagsISR;
+	VAL_ULONG_T ulFlags, ulFlagsISR;
 	VAL_HW_LOCK_T rHWLock;
 	VAL_BOOL_T bLockedHW = VAL_FALSE;
-	VAL_UINT32_T FirstUseDecHW = 0;
-	VAL_TIME_T rCurTime;
-	VAL_UINT32_T u4TimeInterval;
 	VAL_ISR_T val_isr;
 	VAL_VCODEC_CORE_LOADING_T rTempCoreLoading;
 	VAL_VCODEC_CPU_OPP_LIMIT_T rCpuOppLimit;
@@ -1040,10 +1326,6 @@ static long vcodec_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned 
 	VAL_ULONG_T u8TempKPA;
 	VAL_UINT32_T u4TempVCodecThreadNum;
 	VAL_UINT32_T u4TempVCodecThreadID[VCODEC_THREAD_MAX_NUM];
-
-#ifdef ENABLE_MMDVFS_VDEC
-	VAL_UINT32_T _monitor_duration = 0;
-#endif
 
 #if 0
 	VCODEC_DRV_CMD_QUEUE_T rDrvCmdQueue;
@@ -1288,166 +1570,12 @@ static long vcodec_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned 
 					 ret);
 				return -EFAULT;
 			}
-
-			MODULE_MFV_LOGD("[VCODEC] LOCKHW eDriverType = %d\n", rHWLock.eDriverType);
-			eValRet = VAL_RESULT_INVALID_ISR;
-			if (rHWLock.eDriverType == VAL_DRIVER_TYPE_MP4_DEC ||
-			    rHWLock.eDriverType == VAL_DRIVER_TYPE_HEVC_DEC ||
-			    rHWLock.eDriverType == VAL_DRIVER_TYPE_H264_DEC ||
-			    rHWLock.eDriverType == VAL_DRIVER_TYPE_MP1_MP2_DEC ||
-			    rHWLock.eDriverType == VAL_DRIVER_TYPE_VC1_DEC ||
-			    rHWLock.eDriverType == VAL_DRIVER_TYPE_VC1_ADV_DEC ||
-			    rHWLock.eDriverType == VAL_DRIVER_TYPE_VP8_DEC) {
-				while (bLockedHW == VAL_FALSE) {
-					mutex_lock(&DecHWLockEventTimeoutLock);
-					if (DecHWLockEvent.u4TimeoutMs == 1) {
-						MODULE_MFV_LOGE("VCODEC_LOCKHW, First Use Dec HW!!\n");
-						FirstUseDecHW = 1;
-					} else {
-						FirstUseDecHW = 0;
-					}
-					mutex_unlock(&DecHWLockEventTimeoutLock);
-
-					if (FirstUseDecHW == 1) {
-						eValRet =
-						    eVideoWaitEvent(&DecHWLockEvent,
-								    sizeof(VAL_EVENT_T));
-					}
-					mutex_lock(&DecHWLockEventTimeoutLock);
-					if (DecHWLockEvent.u4TimeoutMs != 1000) {
-						DecHWLockEvent.u4TimeoutMs = 1000;
-						FirstUseDecHW = 1;
-					} else {
-						FirstUseDecHW = 0;
-					}
-					mutex_unlock(&DecHWLockEventTimeoutLock);
-
-					mutex_lock(&VdecHWLock);
-					/* one process try to lock twice */
-					if (grVcodecDecHWLock.pvHandle ==
-					    (VAL_VOID_T *) pmem_user_v2p_video((VAL_ULONG_T)
-									       rHWLock.pvHandle)) {
-						MODULE_MFV_LOGE("[WARNING] VCODEC_LOCKHW, one decoder instance");
-						MODULE_MFV_LOGE("[WARNING] try to lock twice, may cause lock HW timeout!");
-						MODULE_MFV_LOGE("[WARNING] instance = 0x%lx, CurrentTID = %d\n",
-						     (VAL_ULONG_T) grVcodecDecHWLock.pvHandle, current->pid);
-
-					}
-					mutex_unlock(&VdecHWLock);
-
-					if (FirstUseDecHW == 0) {
-						MODULE_MFV_LOGD
-						    ("VCODEC_LOCKHW, Not first time use HW, timeout = %d\n",
-						     DecHWLockEvent.u4TimeoutMs);
-						eValRet =
-						    eVideoWaitEvent(&DecHWLockEvent,
-								    sizeof(VAL_EVENT_T));
-					}
-
-					if (VAL_RESULT_INVALID_ISR == eValRet) {
-						vcodec_lockhw_dec_fail(FirstUseDecHW);
-					} else if (VAL_RESULT_RESTARTSYS == eValRet) {
-						MODULE_MFV_LOGE("[WARNING] VCODEC_LOCKHW\n");
-						MODULE_MFV_LOGE("[WARNING] VAL_RESULT_RESTARTSYS return when HWLock!!\n");
-						return -ERESTARTSYS;
-					}
-
-					mutex_lock(&VdecHWLock);
-					if (grVcodecDecHWLock.pvHandle == 0) {	/* No one holds dec hw lock now */
-						gu4VdecLockThreadId = current->pid;
-						grVcodecDecHWLock.pvHandle =
-						    (VAL_VOID_T *) pmem_user_v2p_video((VAL_ULONG_T)
-										       rHWLock.pvHandle);
-						grVcodecDecHWLock.eDriverType = rHWLock.eDriverType;
-						eVideoGetTimeOfDay(&grVcodecDecHWLock.rLockedTime,
-								   sizeof(VAL_TIME_T));
-
-						MODULE_MFV_LOGD("VCODEC_LOCKHW, No process use dec HW\n");
-						MODULE_MFV_LOGD("VCODEC_LOCKHW, so current process can use HW\n");
-						MODULE_MFV_LOGD("VCODEC_LOCKHW, LockInstance = 0x%lx CurrentTID = %d\n",
-						     (VAL_ULONG_T) grVcodecDecHWLock.pvHandle,
-						     current->pid);
-						MODULE_MFV_LOGD("VCODEC_LOCKHW, rLockedTime(s, us) = %d, %d\n",
-						     grVcodecDecHWLock.rLockedTime.u4Sec,
-						     grVcodecDecHWLock.rLockedTime.u4uSec);
-
-						bLockedHW = VAL_TRUE;
-						vcodec_lockhw_dec_fail_more(eValRet, FirstUseDecHW);
-					} else {	/* Another one holding dec hw now */
-						MODULE_MFV_LOGE("VCODEC_LOCKHW E\n");
-						eVideoGetTimeOfDay(&rCurTime, sizeof(VAL_TIME_T));
-						u4TimeInterval =
-						    (((((rCurTime.u4Sec -
-							 grVcodecDecHWLock.rLockedTime.u4Sec) *
-							1000000) + rCurTime.u4uSec)
-						      -
-						      grVcodecDecHWLock.rLockedTime.u4uSec) / 1000);
-
-						MODULE_MFV_LOGD("VCODEC_LOCKHW, someone use dec HW, and check timeout value\n");
-						MODULE_MFV_LOGD("VCODEC_LOCKHW, Instance = 0x%lx CurrentTID = %d,TimeInterval(ms) = %d, TimeOutValue(ms)) = %d\n",
-						     (VAL_ULONG_T) grVcodecDecHWLock.pvHandle,
-						     current->pid, u4TimeInterval,
-						     rHWLock.u4TimeoutMs);
-
-						MODULE_MFV_LOGE("VCODEC_LOCKHW Lock Instance = 0x%lx, Lock TID = %d\n",
-						     (VAL_ULONG_T) grVcodecDecHWLock.pvHandle,
-						     gu4VdecLockThreadId);
-						MODULE_MFV_LOGE("CurrentTID = %d, rLockedTime(%d s, %d us)\n",
-						     current->pid,
-						     grVcodecDecHWLock.rLockedTime.u4Sec,
-						     grVcodecDecHWLock.rLockedTime.u4uSec);
-						MODULE_MFV_LOGE("rCurTime(%d s, %d us)\n",
-						     rCurTime.u4Sec, rCurTime.u4uSec);
-					}
-					mutex_unlock(&VdecHWLock);
-					spin_lock_irqsave(&LockDecHWCountLock, ulFlagsLockHW);
-					gu4LockDecHWCount++;
-					spin_unlock_irqrestore(&LockDecHWCountLock, ulFlagsLockHW);
-				}
-			} else if (rHWLock.eDriverType == VAL_DRIVER_TYPE_H264_ENC ||
-				   rHWLock.eDriverType == VAL_DRIVER_TYPE_HEVC_ENC ||
-				   rHWLock.eDriverType == VAL_DRIVER_TYPE_JPEG_ENC ||
-				   rHWLock.eDriverType == VAL_DRIVER_TYPE_MP4_ENC) {
-
-				vcodec_lockhw_enc_while_loop(&rHWLock, &bLockedHW);
-
-				if (VAL_FALSE == bLockedHW) {
-					MODULE_MFV_LOGE
-					    ("[ERROR] VCODEC_LOCKHW - ID %d  fail, someone locked HW already\n",
-					     current->pid);
-					MODULE_MFV_LOGE
-					    ("[ERROR] VCODEC_LOCKHW -0x%lx, %lx, 0x%lx, type:%d\n",
-					     (VAL_ULONG_T) grVcodecEncHWLock.pvHandle,
-					     pmem_user_v2p_video((VAL_ULONG_T) rHWLock.pvHandle),
-					     (VAL_ULONG_T) rHWLock.pvHandle, rHWLock.eDriverType);
-					gLockTimeOutCount = 0;
-					return -EFAULT;
-				}
-
-				spin_lock_irqsave(&LockEncHWCountLock, ulFlagsLockHW);
-				gu4LockEncHWCount++;
-				spin_unlock_irqrestore(&LockEncHWCountLock, ulFlagsLockHW);
-
-				MODULE_MFV_LOGD("VCODEC_LOCKHWed - tid = %d\n", current->pid);
-
-				if (rHWLock.eDriverType == VAL_DRIVER_TYPE_MP4_ENC) {
-					/* add for debugging checking */
-					spin_lock_irqsave(&OalHWContextLock, ulFlags);
-					ret = search_HWLockSlot_ByTID(0, current->pid);
-					spin_unlock_irqrestore(&OalHWContextLock, ulFlags);
-
-					if (ret == -1) {
-						MODULE_MFV_LOGE
-						    ("VCODEC_LOCKHW - ID %d  fail, didn't call InitHWLock\n",
-						     current->pid);
-						return -EFAULT;
-					}
-				}
-			} else {
-				MODULE_MFV_LOGE("[WARNING] VCODEC_LOCKHW Unknown instance\n");
-				return -EFAULT;
+			ret = vcodec_lockhw(rHWLock);
+			if (0 != ret)
+			{
+				/* return error code or let it fall through to end */
+				return ret;
 			}
-			MODULE_MFV_LOGD("VCODEC_LOCKHW - tid = %d\n", current->pid);
 		}
 		break;
 
@@ -1461,89 +1589,12 @@ static long vcodec_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned 
 					 ret);
 				return -EFAULT;
 			}
-
-			MODULE_MFV_LOGD("VCODEC_UNLOCKHW eDriverType = %d\n", rHWLock.eDriverType);
-			eValRet = VAL_RESULT_INVALID_ISR;
-			if (rHWLock.eDriverType == VAL_DRIVER_TYPE_MP4_DEC ||
-			    rHWLock.eDriverType == VAL_DRIVER_TYPE_HEVC_DEC ||
-			    rHWLock.eDriverType == VAL_DRIVER_TYPE_H264_DEC ||
-			    rHWLock.eDriverType == VAL_DRIVER_TYPE_MP1_MP2_DEC ||
-			    rHWLock.eDriverType == VAL_DRIVER_TYPE_VC1_DEC ||
-			    rHWLock.eDriverType == VAL_DRIVER_TYPE_VC1_ADV_DEC ||
-			    rHWLock.eDriverType == VAL_DRIVER_TYPE_VP8_DEC) {
-				mutex_lock(&VdecHWLock);
-				if (grVcodecDecHWLock.pvHandle ==
-				    (VAL_VOID_T *) pmem_user_v2p_video((VAL_ULONG_T)
-								       rHWLock.pvHandle)) {
-					/* Current owner give up hw lock */
-					grVcodecDecHWLock.pvHandle = 0;
-					grVcodecDecHWLock.eDriverType = VAL_DRIVER_TYPE_NONE;
-					/* disable_irq(MT_VDEC_IRQ_ID); */
-					disable_irq(VDEC_IRQ_ID);
-					/* TODO: check if turning power off is ok */
-					vdec_power_off();
-
-#ifdef ENABLE_MMDVFS_VDEC
-					/* MM DVFS related */
-					if (VAL_TRUE == gMMDFVFSMonitorStarts
-					    && gMMDFVFSMonitorCounts > MONITOR_START_MINUS_1) {
-						_monitor_duration = VdecDvfsGetMonitorDuration();
-						vcodec_lockhw_dec_monitor_duration(_monitor_duration);
-					}
-					gMMDFVFSMonitorCounts++;
-#endif
-
-				} else {	/* Not current owner */
-					MODULE_MFV_LOGE
-					    ("[ERROR] VCODEC_UNLOCKHW, Not owner trying to unlock dec hardware 0x%lx\n",
-					     pmem_user_v2p_video((VAL_ULONG_T) rHWLock.pvHandle));
-					mutex_unlock(&VdecHWLock);
-					return -EFAULT;
-				}
-				mutex_unlock(&VdecHWLock);
-				eValRet = eVideoSetEvent(&DecHWLockEvent, sizeof(VAL_EVENT_T));
-			} else if (rHWLock.eDriverType == VAL_DRIVER_TYPE_H264_ENC ||
-				   rHWLock.eDriverType == VAL_DRIVER_TYPE_HEVC_ENC ||
-				   rHWLock.eDriverType == VAL_DRIVER_TYPE_JPEG_ENC ||
-				   rHWLock.eDriverType == VAL_DRIVER_TYPE_MP4_ENC) {
-				if (rHWLock.eDriverType == VAL_DRIVER_TYPE_MP4_ENC) {
-					/* Debug */
-					MODULE_MFV_LOGE("Hybrid VCODEC_UNLOCKHW\n");
-				} else if (rHWLock.eDriverType == VAL_DRIVER_TYPE_H264_ENC ||
-					   rHWLock.eDriverType == VAL_DRIVER_TYPE_HEVC_ENC) {
-					mutex_lock(&VencHWLock);
-					if (grVcodecEncHWLock.pvHandle ==
-					    (VAL_VOID_T *) pmem_user_v2p_video((VAL_ULONG_T)
-									       rHWLock.pvHandle)) {
-						/* Current owner give up hw lock */
-						grVcodecEncHWLock.pvHandle = 0;
-						grVcodecEncHWLock.eDriverType =
-						    VAL_DRIVER_TYPE_NONE;
-						/* disable_irq(MT_VENC_IRQ_ID); */
-						disable_irq(VENC_IRQ_ID);
-						/* turn venc power off */
-						venc_power_off();
-					} else {	/* Not current owner */
-						/* [TODO] error handling */
-						MODULE_MFV_LOGE("[ERROR] Not owner trying to unlock enc hardware\n");
-						MODULE_MFV_LOGE("[ERROR] 0x%lx,pa:%lx, va:%lx type:%d\n",
-							(VAL_ULONG_T) grVcodecEncHWLock.pvHandle,
-							pmem_user_v2p_video((VAL_ULONG_T)rHWLock.pvHandle),
-							(VAL_ULONG_T) rHWLock.pvHandle,
-							 rHWLock.eDriverType);
-
-						mutex_unlock(&VencHWLock);
-						return -EFAULT;
-					}
-					mutex_unlock(&VencHWLock);
-					eValRet =
-					    eVideoSetEvent(&EncHWLockEvent, sizeof(VAL_EVENT_T));
-				}
-			} else {
-				MODULE_MFV_LOGE("[WARNING] VCODEC_UNLOCKHW Unknown instance\n");
-				return -EFAULT;
+			ret = vcodec_unlockhw(rHWLock);
+			if (0 != ret)
+			{
+				/* return error code or let it fall through to end */
+				return ret;
 			}
-			MODULE_MFV_LOGD("VCODEC_UNLOCKHW - tid = %d\n", current->pid);
 		}
 		break;
 
@@ -3163,6 +3214,8 @@ static int __init vcodec_driver_init(void)
 #ifdef CONFIG_MTK_HIBERNATION
 	register_swsusp_restore_noirq_func(ID_M_VCODEC, vcodec_pm_restore_noirq, NULL);
 #endif
+
+	register_mmclk_switch_vdec_ctrl_cb(vdec_suspend_before_mmsysclk_switch, vdec_resume_after_mmsysclk_switch);
 
 	return 0;
 }

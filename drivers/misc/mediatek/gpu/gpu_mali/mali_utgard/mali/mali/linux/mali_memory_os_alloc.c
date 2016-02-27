@@ -336,6 +336,7 @@ u32 mali_mem_os_release(mali_mem_backend *mem_bkend)
 {
 
 	mali_mem_allocation *alloc;
+    struct mali_session_data *session;
 	u32 free_pages_nr = 0;
 	MALI_DEBUG_ASSERT_POINTER(mem_bkend);
 	MALI_DEBUG_ASSERT(MALI_MEM_OS == mem_bkend->type);
@@ -343,12 +344,18 @@ u32 mali_mem_os_release(mali_mem_backend *mem_bkend)
 	alloc = mem_bkend->mali_allocation;
 	MALI_DEBUG_ASSERT_POINTER(alloc);
 
+    session = alloc->session;
+    MALI_DEBUG_ASSERT_POINTER(session);
+
 	/* Unmap the memory from the mali virtual address space. */
 	mali_mem_os_mali_unmap(alloc);
 	mutex_lock(&mem_bkend->mutex);
 	/* Free pages */
 	if (MALI_MEM_BACKEND_FLAG_COWED & mem_bkend->cow_flag) {
+        /* Lock to avoid the free race condition for the cow shared memory page node. */
+        _mali_osk_mutex_wait(session->cow_lock);
 		free_pages_nr = mali_mem_os_free(&mem_bkend->os_mem.pages, mem_bkend->os_mem.count, MALI_TRUE);
+        _mali_osk_mutex_signal(session->cow_lock);
 	} else {
 		free_pages_nr = mali_mem_os_free(&mem_bkend->os_mem.pages, mem_bkend->os_mem.count, MALI_FALSE);
 	}

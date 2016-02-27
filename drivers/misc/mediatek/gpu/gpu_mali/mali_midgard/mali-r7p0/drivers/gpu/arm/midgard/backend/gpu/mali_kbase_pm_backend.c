@@ -207,6 +207,7 @@ int kbase_hwaccess_pm_powerup(struct kbase_device *kbdev,
 	struct kbasep_js_device_data *js_devdata = &kbdev->js_data;
 	unsigned long irq_flags;
 	int ret;
+	extern int g_mtk_gpu_efuse_set_already;
 
 	KBASE_DEBUG_ASSERT(kbdev != NULL);
 
@@ -225,10 +226,12 @@ int kbase_hwaccess_pm_powerup(struct kbase_device *kbdev,
 		return ret;
 	}
 
-	kbasep_pm_read_present_cores(kbdev);
+	if (!g_mtk_gpu_efuse_set_already) {
+		kbasep_pm_read_present_cores(kbdev);
 
-	kbdev->pm.debug_core_mask =
-			kbdev->gpu_props.props.raw_props.shader_present;
+		kbdev->pm.debug_core_mask =
+				kbdev->gpu_props.props.raw_props.shader_present;
+	}
 
 	/* Pretend the GPU is active to prevent a power policy turning the GPU
 	 * cores off */

@@ -32,8 +32,6 @@ extern bool si_mhl_tx_set_path_en_I(struct mhl_dev_context *dev_context);
 extern bool packed_pixel_available(struct mhl_dev_context *dev_context);
 extern void configure_and_send_audio_info(struct mhl_dev_context *dev_context, int audio_format);
 
-#define MHL_RESOLUTION_LIMIT_720P_60
-
 //Should align to mhl_linux_tx.h
 #define	MHL_TX_EVENT_DISCONNECTION	0x01
 #define	MHL_TX_EVENT_CONNECTION		0x02
@@ -541,19 +539,6 @@ void hdmi_GetEdidInfo(void *pv_get_info)
 	            ptr->ui4_pal_resolution = SINK_720P60 | SINK_1080P30 | SINK_480P;
 		}
     }
-
-#ifdef MHL_RESOLUTION_LIMIT_720P_60
-		ptr->ui4_pal_resolution &= (~SINK_1080P60);
-		ptr->ui4_pal_resolution &= (~SINK_1080P30);
-#endif
-
-#ifdef MHL_RESOLUTION_LIMIT_1080P_30
-		if(ptr->ui4_pal_resolution & SINK_1080P60)
-		{
-			ptr->ui4_pal_resolution &= (~SINK_1080P60);
-			ptr->ui4_pal_resolution |= SINK_1080P30;
-		}
-#endif
 
     if(si_dev_context)
     {

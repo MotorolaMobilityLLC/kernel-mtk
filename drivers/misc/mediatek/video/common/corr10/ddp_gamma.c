@@ -28,6 +28,12 @@ int ccorr_scenario = 0;
 
 static DEFINE_MUTEX(g_gamma_global_lock);
 
+/* Padeding for gamma and ccorr notify pointer, avoid memory corruption */
+#define PADDING_GAMMA 0
+#define PADDING_CCORR 1
+#define DISP_PADDING_TOTAL 2
+static ddp_module_notify g_notify_padding[DISP_PADDING_TOTAL];
+
 
 /* ======================================================================== */
 /*  GAMMA                                                                   */
@@ -36,7 +42,6 @@ static DEFINE_MUTEX(g_gamma_global_lock);
 static DISP_GAMMA_LUT_T *g_disp_gamma_lut[DISP_GAMMA_TOTAL] = { NULL };
 
 static ddp_module_notify g_gamma_ddp_notify;
-
 
 static int disp_gamma_write_lut_reg(cmdqRecHandle cmdq, disp_gamma_id_t id, int lock);
 
@@ -62,6 +67,10 @@ static int disp_gamma_config(DISP_MODULE_ENUM module, disp_ddp_path_config *pCon
 
 static void disp_gamma_trigger_refresh(disp_gamma_id_t id)
 {
+	if (g_notify_padding[PADDING_GAMMA] != g_gamma_ddp_notify) {
+		GAMMA_DBG("g_gamma_ddp_notify differen: 0x%08lx and 0x%08lx",
+				(unsigned long)g_notify_padding[PADDING_GAMMA], (unsigned long)g_gamma_ddp_notify);
+	}
 	if (g_gamma_ddp_notify != NULL)
 		g_gamma_ddp_notify(DISP_MODULE_GAMMA, DISP_PATH_EVENT_TRIGGER);
 }
@@ -180,7 +189,9 @@ static int disp_gamma_io(DISP_MODULE_ENUM module, int msg, unsigned long arg, vo
 
 static int disp_gamma_set_listener(DISP_MODULE_ENUM module, ddp_module_notify notify)
 {
+	g_notify_padding[PADDING_GAMMA] = notify;
 	g_gamma_ddp_notify = notify;
+	GAMMA_DBG("g_gamma_ddp_notify: 0x%08lx", (unsigned long)notify);
 	return 0;
 }
 
@@ -322,6 +333,10 @@ ccorr_write_coef_unlock:
 
 static void disp_ccorr_trigger_refresh(disp_ccorr_id_t id)
 {
+	if (g_notify_padding[PADDING_CCORR] != g_ccorr_ddp_notify) {
+		CCORR_DBG("g_ccorr_ddp_notify differen: 0x%08lx and 0x%08lx",
+				(unsigned long)g_notify_padding[PADDING_CCORR], (unsigned long)g_ccorr_ddp_notify);
+	}
 	if (g_ccorr_ddp_notify != NULL)
 		g_ccorr_ddp_notify(DISP_MODULE_CCORR, DISP_PATH_EVENT_TRIGGER);
 }
@@ -394,7 +409,9 @@ static int disp_ccorr_io(DISP_MODULE_ENUM module, int msg, unsigned long arg, vo
 
 static int disp_ccorr_set_listener(DISP_MODULE_ENUM module, ddp_module_notify notify)
 {
+	g_notify_padding[PADDING_CCORR] = notify;
 	g_ccorr_ddp_notify = notify;
+	GAMMA_DBG("g_ccorr_ddp_notify: 0x%08lx", (unsigned long)notify);
 	return 0;
 }
 

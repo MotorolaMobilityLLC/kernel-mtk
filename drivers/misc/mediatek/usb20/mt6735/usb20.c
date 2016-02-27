@@ -435,6 +435,7 @@ void mt_usb_connect(void)
 #endif
 
 	DBG(0, "cable_mode=%d\n", cable_mode);
+/*
 #ifdef CONFIG_MTK_KERNEL_POWER_OFF_CHARGING
 	if (get_boot_mode() == KERNEL_POWER_OFF_CHARGING_BOOT
 	    || get_boot_mode() == LOW_POWER_OFF_CHARGING_BOOT) {
@@ -448,6 +449,7 @@ void mt_usb_connect(void)
 		}
 	}
 #endif
+*/
 
 	spin_lock(&musb_connect_lock);
 	if (cable_mode != CABLE_MODE_NORMAL) {

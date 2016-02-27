@@ -438,6 +438,10 @@ LCM_DRIVER *lcm_driver_list[] = {
 	&hx8392a_dsi_cmd_3lane_lcm_drv,
 #endif
 
+#if defined(HX8392A_DSI_CMD_3LANE_QHD)
+	&hx8392a_dsi_cmd_3lane_qhd_lcm_drv,
+#endif
+
 #if defined(HX8392A_DSI_CMD_WVGA)
 	&hx8392a_dsi_cmd_wvga_lcm_drv,
 #endif
@@ -917,6 +921,9 @@ LCM_DRIVER *lcm_driver_list[] = {
 	&nt35595_truly_fhd_dsi_vdo_lcm_drv,
 #endif
 
+#if defined(B080UAN01_2_WUXGA_DSI_VDO)
+	&b080uan01_2_wuxga_dsi_vdo_lcm_drv,
+#endif
 #endif
 };
 
@@ -940,6 +947,18 @@ unsigned char lcm_name_list[][128] = {
 
 #if defined(OTM9608_QHD_DSI_VDO)
 	"otm9608a_qhd_dsi_vdo",
+#endif
+
+#if defined(R63417_FHD_DSI_CMD_TRULY_NT50358)
+	"r63417_fhd_dsi_cmd_truly_nt50358_drv",
+#endif
+
+#if defined(R63417_FHD_DSI_CMD_TRULY_NT50358_QHD)
+	"r63417_fhd_dsi_cmd_truly_nt50358_qhd_drv",
+#endif
+
+#if defined(R63417_FHD_DSI_VDO_TRULY_NT50358)
+	"r63417_fhd_dsi_vdo_truly_nt50358_drv",
 #endif
 };
 #endif

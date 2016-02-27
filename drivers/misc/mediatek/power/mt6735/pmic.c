@@ -149,6 +149,16 @@ static DEFINE_MUTEX(pmic_access_mutex);
 /*--- Global suspend state ---*/
 static bool pmic_suspend_state;
 
+void pmic_md_power_on(void)
+{
+	/*ALPS02057700 workaround:
+	* Power on VLTE for system power off backlight work normal
+	*/
+	PMICLOG("md_power_on:set VLTE on,bit0,1\n");
+	pmic_config_interface(0x04D6, 0x1, 0x1, 0); /* bit[0] =>1'b1 */
+	udelay(200);
+}
+
 unsigned int pmic_read_interface(unsigned int RegNum, unsigned int *val, unsigned int MASK,
 				 unsigned int SHIFT)
 {
@@ -764,8 +774,21 @@ static int mtk_regulator_set_voltage_sel(struct regulator_dev *rdev, unsigned se
 			upmu_set_rg_vcamd(0);
 	}
 
-	if (mreg->vol_reg != 0)
-		pmic_set_register_value(mreg->vol_reg, selector);
+	if (strcmp(rdesc->name, "VRF18_1") == 0) {
+		if (selector == 4)
+			pmic_config_interface(0xA86, 0x0, 0x1, 2);
+		else
+			pmic_config_interface(0xA86, 0x1, 0x1, 2);
+	}
+
+	if (strcmp(rdesc->name, "VEFUSE") == 0) {
+		if (mreg->vol_reg != 0)
+			pmic_set_register_value(mreg->vol_reg, selector+3);
+	} else {
+		if (mreg->vol_reg != 0)
+			pmic_set_register_value(mreg->vol_reg, selector);
+	}
+
 
 	return 0;
 }
@@ -1036,6 +1059,7 @@ static const int mt6328_VRF18_1_voltages[] = {
 	1200000,
 	1300000,
 	1500000,
+	1800000,
 	1825000,
 };
 
@@ -3688,279 +3712,296 @@ void PMIC_INIT_SETTING_V1(void)
 	PMICLOG("[Kernel_PMIC_INIT_SETTING_V1] 2015-03-12...\n");
 	PMICLOG("[Kernel_PMIC_INIT_SETTING_V1] is_battery_remove =%d is_wdt_reboot=%d\n",
 		is_battery_remove, is_wdt_reboot_pmic);
-/*
-#if defined(CONFIG_ARCH_MT6753)
-#else
-*/
-	/* [4:4]: RG_EN_DRVSEL; Ricky */
-	ret = pmic_config_interface(0x4, 0x1, 0x1, 4);
-	/* [0:0]: DDUVLO_DEB_EN; Ricky */
-	ret = pmic_config_interface(0xA, 0x1, 0x1, 0);
-	/* [11:11]: BIAS_GEN_EN_SEL; Luke, in pre-load for SMPS */
-	ret = pmic_config_interface(0xA, 0x1, 0x1, 11);
-	/* [0:0]: VPROC_PG_H2L_EN; Ricky */
-	ret = pmic_config_interface(0xC, 0x1, 0x1, 0);
-	/* [1:1]: VAUX18_PG_H2L_EN; Ricky */
-	ret = pmic_config_interface(0xC, 0x1, 0x1, 1);
-	/* [4:4]: VCORE1_PG_H2L_EN; Ricky */
-	ret = pmic_config_interface(0xC, 0x1, 0x1, 4);
-	/* [5:5]: VSYS22_PG_H2L_EN; Ricky */
-	ret = pmic_config_interface(0xC, 0x1, 0x1, 5);
-	/* [6:6]: VLTE_PG_H2L_EN; Ricky */
-	ret = pmic_config_interface(0xC, 0x1, 0x1, 6);
-	/* [7:7]: VIO18_PG_H2L_EN; Ricky */
-	ret = pmic_config_interface(0xC, 0x1, 0x1, 7);
-	/* [8:8]: VAUD28_PG_H2L_EN; Ricky */
-	ret = pmic_config_interface(0xC, 0x1, 0x1, 8);
-	/* [9:9]: VTCXO_PG_H2L_EN; Ricky */
-	ret = pmic_config_interface(0xC, 0x1, 0x1, 9);
-	/* [10:10]: VUSB_PG_H2L_EN; Ricky */
-	ret = pmic_config_interface(0xC, 0x1, 0x1, 10);
-	/* [11:11]: VSRAM_PG_H2L_EN; Ricky */
-	ret = pmic_config_interface(0xC, 0x1, 0x1, 11);
-	/* [12:12]: VIO28_PG_H2L_EN; Ricky */
-	ret = pmic_config_interface(0xC, 0x1, 0x1, 12);
-	/* [13:13]: VM_PG_H2L_EN; Ricky */
-	ret = pmic_config_interface(0xC, 0x1, 0x1, 13);
-	/* [5:5]: UVLO_L2H_DEB_EN; Ricky */
-	ret = pmic_config_interface(0x10, 0x1, 0x1, 5);
-	/* [0:0]: STRUP_PWROFF_SEQ_EN; Ricky */
-	ret = pmic_config_interface(0x16, 0x1, 0x1, 0);
-	/* [1:1]: STRUP_PWROFF_PREOFF_EN; Ricky */
-	ret = pmic_config_interface(0x16, 0x1, 0x1, 1);
-	/* [11:11]: RG_TESTMODE_SWEN; CC: Test mode, first command */
-	ret = pmic_config_interface(0x1E, 0x0, 0x1, 11);
-	/* [12:12]: RG_RST_DRVSEL; Ricky */
-	ret = pmic_config_interface(0x40, 0x1, 0x1, 12);
-	/* [4:4]: RG_SRCLKEN_IN0_HW_MODE; Juinn-Ting */
-	ret = pmic_config_interface(0x204, 0x1, 0x1, 4);
-	/* [5:5]: RG_SRCLKEN_IN1_HW_MODE; Juinn-Ting */
-	ret = pmic_config_interface(0x204, 0x1, 0x1, 5);
-	/* [6:6]: RG_OSC_SEL_HW_MODE; Luke, for Vsys PFM issue,0204 */
-	ret = pmic_config_interface(0x204, 0x0, 0x1, 6);
-	/* [0:0]: RG_SMT_WDTRSTB_IN; Ricky */
-	ret = pmic_config_interface(0x226, 0x1, 0x1, 0);
-	/* [2:2]: RG_SMT_SRCLKEN_IN0; Ricky */
-	ret = pmic_config_interface(0x226, 0x1, 0x1, 2);
-	/* [3:3]: RG_SMT_SRCLKEN_IN1; Ricky */
-	ret = pmic_config_interface(0x226, 0x1, 0x1, 3);
-	/* [2:2]: RG_RTC_75K_CK_PDN; Juinn-Ting */
-	ret = pmic_config_interface(0x242, 0x1, 0x1, 2);
-	/* [3:3]: RG_RTCDET_CK_PDN; Juinn-Ting */
-	ret = pmic_config_interface(0x242, 0x1, 0x1, 3);
-	/* [13:13]: RG_RTC_EOSC32_CK_PDN; Juinn-Ting */
-	ret = pmic_config_interface(0x248, 0x1, 0x1, 13);
-	/* [14:14]: RG_TRIM_75K_CK_PDN; Juinn-Ting */
-	ret = pmic_config_interface(0x248, 0x1, 0x1, 14);
-	/* [9:9]: RG_75K_32K_SEL; Angela */
-	ret = pmic_config_interface(0x25A, 0x1, 0x1, 9);
-	/* [3:2]: VPROC_OC_WND; update OC debounce timing , 0527, Luke */
-	ret = pmic_config_interface(0x40E, 0x0, 0x3, 2);
-	/* [3:2]: VLTE_OC_WND; update OC debounce timing , 0527, Luke */
-	ret = pmic_config_interface(0x412, 0x0, 0x3, 2);
-	/* [0:0]: VSRAM_TRACK_SLEEP_CTRL; SRAM Tracking,Fandy */
-	ret = pmic_config_interface(0x422, 0x1, 0x1, 0);
-	/* [1:1]: VSRAM_TRACK_ON_CTRL; SRAM Tracking,Fandy */
-	ret = pmic_config_interface(0x422, 0x1, 0x1, 1);
-	/* [2:2]: VPROC_TRACK_ON_CTRL; SRAM Tracking,Fandy */
-	ret = pmic_config_interface(0x422, 0x1, 0x1, 2);
-	/* [6:0]: VSRAM_VOSEL_DELTA; SRAM Tracking,Fandy */
-	ret = pmic_config_interface(0x424, 0x0, 0x7F, 0);
-	/* [14:8]: VSRAM_VOSEL_OFFSET; SRAM Tracking,Fandy */
-	ret = pmic_config_interface(0x424, 0x10, 0x7F, 8);
-	/* [6:0]: VSRAM_VOSEL_ON_LB; SRAM Tracking,Fandy */
-	ret = pmic_config_interface(0x426, 0x48, 0x7F, 0);
-	/* [14:8]: VSRAM_VOSEL_ON_HB; SRAM Tracking,Fandy */
-	ret = pmic_config_interface(0x426, 0x78, 0x7F, 8);
-	/* [6:0]: VSRAM_VOSEL_SLEEP_LB; SRAM Tracking,Fandy */
-	ret = pmic_config_interface(0x428, 0x28, 0x7F, 0);
-	/* [8:0]: RG_SMPS_TESTMODE_B; */
-	ret = pmic_config_interface(0x42E, 0x1, 0x1FF, 0);
-	/* [10:8]: RG_VCORE1_PFM_RIP; for FPM ripple,0312 */
-	ret = pmic_config_interface(0x446, 0x2, 0x7, 8);
-	/* [8:7]: RG_VSYS22_ZX_OS; Luke,0114 for VSYS damage */
-	ret = pmic_config_interface(0x44C, 0x0, 0x3, 7);
-	/* [7:0]: RG_VSYS22_RSV; Luke,0114 for VSYS damage */
-	ret = pmic_config_interface(0x450, 0x80, 0xFF, 0);
-	/* [8:3]: RG_VSYS22_TRAN_BST; Luke,0204 for VSYS not sleep */
-	ret = pmic_config_interface(0x452, 0x8, 0x3F, 3);
-	/* [10:8]: RG_VPROC_PFM_RIP; for FPM ripple,0312 */
-	ret = pmic_config_interface(0x45A, 0x2, 0x7, 8);
-	/* [11:10]: RG_VPA_SLP; Seven Stability */
-	ret = pmic_config_interface(0x462, 0x3, 0x3, 10);
-	/* [10:8]: RG_VLTE_PFM_RIP; for FPM ripple,0312 */
-	ret = pmic_config_interface(0x470, 0x2, 0x7, 8);
-	/* [1:1]: VPROC_VOSEL_CTRL; ShangYing */
-	ret = pmic_config_interface(0x482, 0x1, 0x1, 1);
-	/* [6:0]: VPROC_SFCHG_FRATE; 11/20 DVFS raising slewrate,SY */
-	ret = pmic_config_interface(0x488, 0x11, 0x7F, 0);
-	/* [7:7]: VPROC_SFCHG_FEN; VSRAM tracking,Fandy */
-	ret = pmic_config_interface(0x488, 0x1, 0x1, 7);
-	/* [14:8]: VPROC_SFCHG_RRATE; 11/20 DVFS raising slewrate,SY */
-	ret = pmic_config_interface(0x488, 0x4, 0x7F, 8);
-	/* [15:15]: VPROC_SFCHG_REN; VSRAM tracking,Fandy */
-	ret = pmic_config_interface(0x488, 0x1, 0x1, 15);
-	/* [6:0]: VPROC_VOSEL_SLEEP; 11/20 Sleep mode 0.85V */
-	ret = pmic_config_interface(0x48E, 0x28, 0x7F, 0);
-	/* [1:0]: VPROC_TRANS_TD; ShangYing */
-	ret = pmic_config_interface(0x498, 0x3, 0x3, 0);
-	/* [5:4]: VPROC_TRANS_CTRL; ShangYing */
-	ret = pmic_config_interface(0x498, 0x1, 0x3, 4);
-	/* [8:8]: VPROC_VSLEEP_EN; 11/20 sleep mode by SRCLKEN */
-	ret = pmic_config_interface(0x498, 0x1, 0x1, 8);
-	/* [5:4]: VPROC_OSC_SEL_SRCLKEN_SEL; ShangYing */
-	ret = pmic_config_interface(0x49A, 0x0, 0x3, 4);
-	/* [9:8]: VPROC_R2R_PDN_SRCLKEN_SEL; ShangYing */
-	ret = pmic_config_interface(0x49A, 0x0, 0x3, 8);
-	/* [15:14]: VPROC_VSLEEP_SRCLKEN_SEL; ShangYing */
-	ret = pmic_config_interface(0x49A, 0x0, 0x3, 14);
-	/* [1:1]: VSRAM_VOSEL_CTRL; SRAM tracking,Fandy */
-	ret = pmic_config_interface(0x4AA, 0x1, 0x1, 1);
-	/* [6:0]: VSRAM_SFCHG_FRATE; SRAM tracking,Fandy */
-	ret = pmic_config_interface(0x4B0, 0x8, 0x7F, 0);
-	/* [7:7]: VSRAM_SFCHG_FEN; SRAM tracking,Fandy */
-	ret = pmic_config_interface(0x4B0, 0x1, 0x1, 7);
-	/* [14:8]: VSRAM_SFCHG_RRATE; SRAM tracking,Fandy */
-	ret = pmic_config_interface(0x4B0, 0x8, 0x7F, 8);
-	/* [15:15]: VSRAM_SFCHG_REN; SRAM tracking,Fandy */
-	ret = pmic_config_interface(0x4B0, 0x1, 0x1, 15);
-	/* [6:0]: VSRAM_VOSEL_ON; SRAM tracking,Fandy */
-	ret = pmic_config_interface(0x4B4, 0x40, 0x7F, 0);
-	/* [1:1]: VLTE_VOSEL_CTRL; ShangYing */
-	ret = pmic_config_interface(0x4D2, 0x1, 0x1, 1);
-	/* [6:0]: VLTE_SFCHG_FRATE; 11/20 DVFS falling slewrate */
-	ret = pmic_config_interface(0x4D8, 0x11, 0x7F, 0);
-	/* [14:8]: VLTE_SFCHG_RRATE; 11/20 DVFS raising slewrate */
-	ret = pmic_config_interface(0x4D8, 0x4, 0x7F, 8);
-	/* [6:0]: VLTE_VOSEL_SLEEP; 11/20 Sleep mode 0.85V */
-	ret = pmic_config_interface(0x4DE, 0x28, 0x7F, 0);
-	/* [1:0]: VLTE_TRANS_TD; ShangYing */
-	ret = pmic_config_interface(0x4E8, 0x3, 0x3, 0);
-	/* [8:8]: VLTE_VSLEEP_EN; 11/20 sleep mode by SRCLKEN */
-	ret = pmic_config_interface(0x4E8, 0x1, 0x1, 8);
-	/* [5:4]: VLTE_OSC_SEL_SRCLKEN_SEL; */
-	ret = pmic_config_interface(0x4EA, 0x0, 0x3, 4);
-	/* [9:8]: VLTE_R2R_PDN_SRCLKEN_SEL; */
-	ret = pmic_config_interface(0x4EA, 0x0, 0x3, 8);
-	/* [15:14]: VLTE_VSLEEP_SRCLKEN_SEL; */
-	ret = pmic_config_interface(0x4EA, 0x0, 0x3, 14);
-	/* [1:1]: VCORE1_VOSEL_CTRL; ShangYing */
-	ret = pmic_config_interface(0x60E, 0x1, 0x1, 1);
-	/* [6:0]: VCORE1_SFCHG_FRATE; 11/20 DVS falling slewrate */
-	ret = pmic_config_interface(0x614, 0x11, 0x7F, 0);
-	/* [14:8]: VCORE1_SFCHG_RRATE; 11/20 DVS rising slewrate */
-	ret = pmic_config_interface(0x614, 0x4, 0x7F, 8);
-	/* [6:0]: VCORE1_VOSEL_SLEEP; 11/20 sleep mode 0.85V */
-	ret = pmic_config_interface(0x61A, 0x28, 0x7F, 0);
-	/* [1:0]: VCORE1_TRANS_TD; ShangYing */
-	ret = pmic_config_interface(0x624, 0x3, 0x3, 0);
-	/* [8:8]: VCORE1_VSLEEP_EN; 11/20 sleep mode control by SRCLKEN */
-	ret = pmic_config_interface(0x624, 0x1, 0x1, 8);
-	/* [5:4]: VCORE1_OSC_SEL_SRCLKEN_SEL; ShangYing */
-	ret = pmic_config_interface(0x626, 0x0, 0x3, 4);
-	/* [9:8]: VCORE1_R2R_PDN_SRCLKEN_SEL; ShangYing */
-	ret = pmic_config_interface(0x626, 0x0, 0x3, 8);
-	/* [15:14]: VCORE1_VSLEEP_SRCLKEN_SEL; ShangYing */
-	ret = pmic_config_interface(0x626, 0x0, 0x3, 14);
-	/* [2:0]: VSYS22_BURST; Seven */
-	ret = pmic_config_interface(0x646, 0x5, 0x7, 0);
-	/* [8:8]: VSYS22_VSLEEP_EN; VSYS22 sleep mode in 0105,Luke */
-	ret = pmic_config_interface(0x64C, 0x0, 0x1, 8);
-	/* [6:0]: VPA_SFCHG_FRATE; Seven */
-	ret = pmic_config_interface(0x664, 0x2, 0x7F, 0);
-	/* [7:7]: VPA_SFCHG_FEN; Seven */
-	ret = pmic_config_interface(0x664, 0x0, 0x1, 7);
-	/* [14:8]: VPA_SFCHG_RRATE; Seven */
-	ret = pmic_config_interface(0x664, 0x2, 0x7F, 8);
-	/* [15:15]: VPA_SFCHG_REN; Seven */
-	ret = pmic_config_interface(0x664, 0x0, 0x1, 15);
-	/* [5:4]: VPA_TRANS_CTRL; Seven for BW exten */
-	ret = pmic_config_interface(0x674, 0x3, 0x3, 4);
-	/* [5:4]: VPA_DVS_TRANS_CTRL; Seven for BW exten */
-	ret = pmic_config_interface(0x67E, 0x2, 0x3, 4);
-	/* [3:3]: RG_VTCXO_0_ON_CTRL; 12/15, Fandy HW mode */
-	ret = pmic_config_interface(0xA00, 0x1, 0x1, 3);
-	/* [3:3]: RG_VTCXO_1_ON_CTRL; by RF request 11/02,Luke */
-	ret = pmic_config_interface(0xA02, 0x1, 0x1, 3);
-	/* [6:6]: RG_VAUX18_AUXADC_PWDB_EN; Chuan-Hung */
-	ret = pmic_config_interface(0xA06, 0x1, 0x1, 6);
-	/* [0:0]: RG_VEFUSE_MODE_SET; Fandy:Disable VEFUSE */
-	ret = pmic_config_interface(0xA30, 0x0, 0x1, 0);
-	/* [1:1]: RG_TREF_EN; Tim */
-	ret = pmic_config_interface(0xA44, 0x1, 0x1, 1);
-	/* [14:14]: QI_VM_STB; Fandy, disable */
-	ret = pmic_config_interface(0xA46, 0x0, 0x1, 14);
-	/* [5:4]: RG_VEMC_3V3_VOSEL; */
-	ret = pmic_config_interface(0xA64, 0x2, 0x3, 4);
-	/* [0:0]: RG_SKIP_OTP_OUT; Fandy: for CORE power(VDVFS1x, VCOREx, VSRAM_DVFS) max voltage limitation. */
-	ret = pmic_config_interface(0xC14, 0x1, 0x1, 0);
-	/* [8:8]: FG_SLP_EN; Ricky */
-	ret = pmic_config_interface(0xCBC, 0x1, 0x1, 8);
-	/* [9:9]: FG_ZCV_DET_EN; Ricky */
-	ret = pmic_config_interface(0xCBC, 0x1, 0x1, 9);
-	/* [15:0]: FG_SLP_CUR_TH; Ricky */
-	ret = pmic_config_interface(0xCC0, 0x24, 0xFFFF, 0);
-	/* [7:0]: FG_SLP_TIME; Ricky */
-	ret = pmic_config_interface(0xCC2, 0x14, 0xFF, 0);
-	/* [15:8]: FG_DET_TIME; Ricky */
-	ret = pmic_config_interface(0xCC4, 0xFF, 0xFF, 8);
-	/* [13:13]: AUXADC_CK_AON_GPS; YP Niou, sync with golden setting */
-	ret = pmic_config_interface(0xE94, 0x0, 0x1, 13);
-	/* [14:14]: AUXADC_CK_AON_MD; YP Niou, sync with golden setting */
-	ret = pmic_config_interface(0xE94, 0x0, 0x1, 14);
-	/* [15:15]: AUXADC_CK_AON; YP Niou, sync with golden setting */
-	ret = pmic_config_interface(0xE94, 0x0, 0x1, 15);
-	/* [5:4]: AUXADC_TRIM_CH2_SEL; Ricky */
-	ret = pmic_config_interface(0xEA4, 0x1, 0x3, 4);
-	/* [7:6]: AUXADC_TRIM_CH3_SEL; Ricky */
-	ret = pmic_config_interface(0xEA4, 0x1, 0x3, 6);
-	/* [9:8]: AUXADC_TRIM_CH4_SEL; Ricky */
-	ret = pmic_config_interface(0xEA4, 0x1, 0x3, 8);
-	/* [11:10]: AUXADC_TRIM_CH5_SEL; Ricky */
-	ret = pmic_config_interface(0xEA4, 0x1, 0x3, 10);
-	/* [13:12]: AUXADC_TRIM_CH6_SEL; Ricky */
-	ret = pmic_config_interface(0xEA4, 0x1, 0x3, 12);
-	/* [15:14]: AUXADC_TRIM_CH7_SEL; Ricky */
-	ret = pmic_config_interface(0xEA4, 0x2, 0x3, 14);
-	/* [1:0]: AUXADC_TRIM_CH8_SEL; Ricky */
-	ret = pmic_config_interface(0xEA6, 0x1, 0x3, 0);
-	/* [3:2]: AUXADC_TRIM_CH9_SEL; Ricky */
-	ret = pmic_config_interface(0xEA6, 0x1, 0x3, 2);
-	/* [5:4]: AUXADC_TRIM_CH10_SEL; Ricky */
-	ret = pmic_config_interface(0xEA6, 0x1, 0x3, 4);
-	/* [7:6]: AUXADC_TRIM_CH11_SEL; Ricky */
-	ret = pmic_config_interface(0xEA6, 0x1, 0x3, 6);
-	/* [14:14]: AUXADC_START_SHADE_EN; Chuan-Hung */
-	ret = pmic_config_interface(0xEB8, 0x1, 0x1, 14);
-	/* [7:4]: RG_VCDT_HV_VTH; Tim:VCDT_HV_th=7V */
-	ret = pmic_config_interface(0xF4A, 0xB, 0xF, 4);
-	/* [3:1]: RG_VBAT_OV_VTH; Tim:for 4.35 battery */
-	ret = pmic_config_interface(0xF54, 0x0, 0x7, 1);
-	/* [3:0]: RG_CHRWDT_TD; Tim:WDT=32s */
-	ret = pmic_config_interface(0xF62, 0x3, 0xF, 0);
-	/* [4:0]: RG_LBAT_INT_VTH; Ricky: E1 only */
-	ret = pmic_config_interface(0xF6C, 0x2, 0x1F, 0);
-	/* [1:1]: RG_BC11_RST; Tim:Disable BC1.1 timer */
-	ret = pmic_config_interface(0xF70, 0x1, 0x1, 1);
-	/* [6:4]: RG_CSDAC_STP_DEC; Tim:Reduce ICHG current ripple (align 6323) */
-	ret = pmic_config_interface(0xF74, 0x0, 0x7, 4);
-	/* [2:2]: RG_CSDAC_MODE; Tim:Align 6323 */
-	ret = pmic_config_interface(0xF7A, 0x1, 0x1, 2);
-	/* [6:6]: RG_HWCV_EN; Tim:Align 6323 */
-	ret = pmic_config_interface(0xF7A, 0x1, 0x1, 6);
-	/* [7:7]: RG_ULC_DET_EN; Tim:Align 6323 */
-	ret = pmic_config_interface(0xF7A, 0x1, 0x1, 7);
-/*#endif*/
-
+	if (is_ext_buck_exist() == 1) {
+		PMICLOG("[Kernel_PMIC_INIT_SETTING_V1] 2015-04-27 for turbo...\n");
+		ret = pmic_config_interface(0x4, 0x1, 0x1, 4);
+		ret = pmic_config_interface(0xA, 0x1, 0x1, 0);
+		ret = pmic_config_interface(0xA, 0x1, 0x1, 11);
+		ret = pmic_config_interface(0xC, 0x1, 0x1, 0);
+		ret = pmic_config_interface(0xC, 0x1, 0x1, 1);
+		ret = pmic_config_interface(0xC, 0x1, 0x1, 4);
+		ret = pmic_config_interface(0xC, 0x1, 0x1, 5);
+		ret = pmic_config_interface(0xC, 0x1, 0x1, 6);
+		ret = pmic_config_interface(0xC, 0x1, 0x1, 7);
+		ret = pmic_config_interface(0xC, 0x1, 0x1, 8);
+		ret = pmic_config_interface(0xC, 0x1, 0x1, 9);
+		ret = pmic_config_interface(0xC, 0x1, 0x1, 10);
+		ret = pmic_config_interface(0xC, 0x1, 0x1, 11);
+		ret = pmic_config_interface(0xC, 0x1, 0x1, 12);
+		ret = pmic_config_interface(0xC, 0x1, 0x1, 13);
+		ret = pmic_config_interface(0xE, 0x1, 0x1, 0);
+		ret = pmic_config_interface(0x10, 0x1, 0x1, 5);
+		ret = pmic_config_interface(0x16, 0x1, 0x1, 0);
+		ret = pmic_config_interface(0x16, 0x1, 0x1, 1);
+		ret = pmic_config_interface(0x1E, 0x0, 0x1, 11);
+		ret = pmic_config_interface(0x32, 0x1, 0x1, 15);
+		ret = pmic_config_interface(0x40, 0x1, 0x1, 12);
+		ret = pmic_config_interface(0x204, 0x1, 0x1, 4);
+		ret = pmic_config_interface(0x204, 0x1, 0x1, 5);
+		ret = pmic_config_interface(0x204, 0x0, 0x1, 6);
+		ret = pmic_config_interface(0x226, 0x1, 0x1, 0);
+		ret = pmic_config_interface(0x226, 0x1, 0x1, 2);
+		ret = pmic_config_interface(0x226, 0x1, 0x1, 3);
+		ret = pmic_config_interface(0x242, 0x1, 0x1, 2);
+		ret = pmic_config_interface(0x242, 0x1, 0x1, 3);
+		ret = pmic_config_interface(0x248, 0x1, 0x1, 13);
+		ret = pmic_config_interface(0x248, 0x1, 0x1, 14);
+		ret = pmic_config_interface(0x25A, 0x1, 0x1, 9);
+		ret = pmic_config_interface(0x40E, 0x0, 0x3, 2);
+		ret = pmic_config_interface(0x412, 0x0, 0x3, 2);
+		ret = pmic_config_interface(0x420, 0x1, 0x1, 4);
+		ret = pmic_config_interface(0x422, 0x0, 0x1, 0);
+		ret = pmic_config_interface(0x422, 0x0, 0x1, 1);
+		ret = pmic_config_interface(0x422, 0x0, 0x1, 2);
+		ret = pmic_config_interface(0x424, 0x0, 0x7F, 0);
+		ret = pmic_config_interface(0x424, 0x10, 0x7F, 8);
+		ret = pmic_config_interface(0x426, 0x48, 0x7F, 0);
+		ret = pmic_config_interface(0x426, 0x78, 0x7F, 8);
+		ret = pmic_config_interface(0x428, 0x28, 0x7F, 0);
+		ret = pmic_config_interface(0x42E, 0x1, 0x1FF, 0);
+		ret = pmic_config_interface(0x446, 0x2, 0x7, 8);
+		ret = pmic_config_interface(0x44C, 0x0, 0x3, 7);
+		ret = pmic_config_interface(0x450, 0x80, 0xFF, 0);
+		ret = pmic_config_interface(0x452, 0x8, 0x3F, 3);
+		ret = pmic_config_interface(0x462, 0x3, 0x3, 10);
+		ret = pmic_config_interface(0x470, 0x2, 0x7, 8);
+		ret = pmic_config_interface(0x486, 0x1, 0x1, 0);
+		ret = pmic_config_interface(0x488, 0x11, 0x7F, 0);
+		ret = pmic_config_interface(0x488, 0x0, 0x1, 7);
+		ret = pmic_config_interface(0x488, 0x4, 0x7F, 8);
+		ret = pmic_config_interface(0x488, 0x0, 0x1, 15);
+		ret = pmic_config_interface(0x498, 0x1, 0x1, 8);
+		ret = pmic_config_interface(0x49A, 0x0, 0x3, 4);
+		ret = pmic_config_interface(0x49A, 0x0, 0x3, 8);
+		ret = pmic_config_interface(0x49A, 0x0, 0x3, 14);
+		ret = pmic_config_interface(0x4AA, 0x0, 0x1, 1);
+		ret = pmic_config_interface(0x4B0, 0x8, 0x7F, 0);
+		ret = pmic_config_interface(0x4B0, 0x1, 0x1, 7);
+		ret = pmic_config_interface(0x4B0, 0x8, 0x7F, 8);
+		ret = pmic_config_interface(0x4B0, 0x1, 0x1, 15);
+		ret = pmic_config_interface(0x4B4, 0x38, 0x7F, 0);
+		ret = pmic_config_interface(0x4B6, 0x28, 0x7F, 0);
+		ret = pmic_config_interface(0x4D2, 0x1, 0x1, 1);
+		ret = pmic_config_interface(0x4D8, 0x11, 0x7F, 0);
+		ret = pmic_config_interface(0x4D8, 0x4, 0x7F, 8);
+		ret = pmic_config_interface(0x4DE, 0x28, 0x7F, 0);
+		ret = pmic_config_interface(0x4E8, 0x3, 0x3, 0);
+		ret = pmic_config_interface(0x4E8, 0x1, 0x1, 8);
+		ret = pmic_config_interface(0x4EA, 0x0, 0x3, 4);
+		ret = pmic_config_interface(0x4EA, 0x0, 0x3, 8);
+		ret = pmic_config_interface(0x4EA, 0x0, 0x3, 14);
+		ret = pmic_config_interface(0x60E, 0x1, 0x1, 1);
+		ret = pmic_config_interface(0x614, 0x11, 0x7F, 0);
+		ret = pmic_config_interface(0x614, 0x4, 0x7F, 8);
+		ret = pmic_config_interface(0x61A, 0x28, 0x7F, 0);
+		ret = pmic_config_interface(0x624, 0x3, 0x3, 0);
+		ret = pmic_config_interface(0x624, 0x1, 0x1, 8);
+		ret = pmic_config_interface(0x626, 0x0, 0x3, 4);
+		ret = pmic_config_interface(0x626, 0x0, 0x3, 8);
+		ret = pmic_config_interface(0x626, 0x0, 0x3, 14);
+		ret = pmic_config_interface(0x646, 0x5, 0x7, 0);
+		ret = pmic_config_interface(0x64C, 0x0, 0x1, 8);
+		ret = pmic_config_interface(0x664, 0x2, 0x7F, 0);
+		ret = pmic_config_interface(0x664, 0x0, 0x1, 7);
+		ret = pmic_config_interface(0x664, 0x2, 0x7F, 8);
+		ret = pmic_config_interface(0x664, 0x0, 0x1, 15);
+		ret = pmic_config_interface(0x674, 0x3, 0x3, 4);
+		ret = pmic_config_interface(0x67E, 0x2, 0x3, 4);
+		ret = pmic_config_interface(0xA00, 0x1, 0x1, 3);
+		ret = pmic_config_interface(0xA02, 0x1, 0x1, 3);
+		ret = pmic_config_interface(0xA06, 0x1, 0x1, 6);
+		ret = pmic_config_interface(0xA30, 0x0, 0x1, 0);
+		ret = pmic_config_interface(0xA44, 0x1, 0x1, 1);
+		ret = pmic_config_interface(0xA46, 0x0, 0x1, 14);
+		ret = pmic_config_interface(0xA64, 0x2, 0x3, 4);
+		ret = pmic_config_interface(0xA88, 0x68, 0x7F, 0);
+		ret = pmic_config_interface(0xCBC, 0x1, 0x1, 8);
+		ret = pmic_config_interface(0xCBC, 0x1, 0x1, 9);
+		ret = pmic_config_interface(0xCC0, 0x24, 0xFFFF, 0);
+		ret = pmic_config_interface(0xCC2, 0x14, 0xFF, 0);
+		ret = pmic_config_interface(0xCC4, 0xFF, 0xFF, 8);
+		ret = pmic_config_interface(0xE94, 0x0, 0x1, 13);
+		ret = pmic_config_interface(0xE94, 0x0, 0x1, 14);
+		ret = pmic_config_interface(0xE94, 0x0, 0x1, 15);
+		ret = pmic_config_interface(0xEA4, 0x1, 0x3, 4);
+		ret = pmic_config_interface(0xEA4, 0x1, 0x3, 6);
+		ret = pmic_config_interface(0xEA4, 0x1, 0x3, 8);
+		ret = pmic_config_interface(0xEA4, 0x1, 0x3, 10);
+		ret = pmic_config_interface(0xEA4, 0x1, 0x3, 12);
+		ret = pmic_config_interface(0xEA4, 0x2, 0x3, 14);
+		ret = pmic_config_interface(0xEA6, 0x1, 0x3, 0);
+		ret = pmic_config_interface(0xEA6, 0x1, 0x3, 2);
+		ret = pmic_config_interface(0xEA6, 0x1, 0x3, 4);
+		ret = pmic_config_interface(0xEA6, 0x1, 0x3, 6);
+		ret = pmic_config_interface(0xEB8, 0x1, 0x1, 14);
+		ret = pmic_config_interface(0xF4A, 0xB, 0xF, 4);
+		ret = pmic_config_interface(0xF54, 0x0, 0x7, 1);
+		ret = pmic_config_interface(0xF62, 0x3, 0xF, 0);
+		ret = pmic_config_interface(0xF6C, 0x2, 0x1F, 0);
+		ret = pmic_config_interface(0xF70, 0x1, 0x1, 1);
+		ret = pmic_config_interface(0xF74, 0x0, 0x7, 4);
+		ret = pmic_config_interface(0xF7A, 0x1, 0x1, 2);
+		ret = pmic_config_interface(0xF7A, 0x1, 0x1, 6);
+		ret = pmic_config_interface(0xF7A, 0x1, 0x1, 7);
+	} else {
+		PMICLOG("[Kernel_PMIC_INIT_SETTING_V1] 2015-11-4...\n");
+		ret = pmic_config_interface(0x4, 0x1, 0x1, 4);
+		ret = pmic_config_interface(0xA, 0x1, 0x1, 0);
+		ret = pmic_config_interface(0xA, 0x1, 0x1, 11);
+		ret = pmic_config_interface(0xC, 0x1, 0x1, 0);
+		ret = pmic_config_interface(0xC, 0x1, 0x1, 1);
+		ret = pmic_config_interface(0xC, 0x1, 0x1, 4);
+		ret = pmic_config_interface(0xC, 0x1, 0x1, 5);
+		ret = pmic_config_interface(0xC, 0x1, 0x1, 6);
+		ret = pmic_config_interface(0xC, 0x1, 0x1, 7);
+		ret = pmic_config_interface(0xC, 0x1, 0x1, 8);
+		ret = pmic_config_interface(0xC, 0x1, 0x1, 9);
+		ret = pmic_config_interface(0xC, 0x1, 0x1, 10);
+		ret = pmic_config_interface(0xC, 0x1, 0x1, 11);
+		ret = pmic_config_interface(0xC, 0x1, 0x1, 12);
+		ret = pmic_config_interface(0xC, 0x1, 0x1, 13);
+		ret = pmic_config_interface(0x10, 0x1, 0x1, 5);
+		ret = pmic_config_interface(0x14, 0x1, 0x1, 5);
+		ret = pmic_config_interface(0x14, 0x1, 0x1, 7);
+		ret = pmic_config_interface(0x16, 0x1, 0x1, 0);
+		ret = pmic_config_interface(0x16, 0x1, 0x1, 1);
+		ret = pmic_config_interface(0x1E, 0x0, 0x1, 11);
+		ret = pmic_config_interface(0x40, 0x1, 0x1, 12);
+		ret = pmic_config_interface(0x204, 0x1, 0x1, 4);
+		ret = pmic_config_interface(0x204, 0x1, 0x1, 5);
+		ret = pmic_config_interface(0x204, 0x0, 0x1, 6);
+		ret = pmic_config_interface(0x226, 0x1, 0x1, 0);
+		ret = pmic_config_interface(0x226, 0x1, 0x1, 2);
+		ret = pmic_config_interface(0x226, 0x1, 0x1, 3);
+		ret = pmic_config_interface(0x242, 0x1, 0x1, 2);
+		ret = pmic_config_interface(0x242, 0x1, 0x1, 3);
+		ret = pmic_config_interface(0x248, 0x1, 0x1, 13);
+		ret = pmic_config_interface(0x248, 0x1, 0x1, 14);
+		ret = pmic_config_interface(0x25A, 0x1, 0x1, 9);
+		ret = pmic_config_interface(0x25A, 0x0, 0x1, 10);
+		ret = pmic_config_interface(0x278, 0x0, 0x1, 11);
+		ret = pmic_config_interface(0x40E, 0x0, 0x3, 2);
+		ret = pmic_config_interface(0x412, 0x0, 0x3, 2);
+		ret = pmic_config_interface(0x420, 0x1, 0x1, 4);
+		ret = pmic_config_interface(0x422, 0x1, 0x1, 0);
+		ret = pmic_config_interface(0x422, 0x1, 0x1, 1);
+		ret = pmic_config_interface(0x422, 0x1, 0x1, 2);
+		ret = pmic_config_interface(0x424, 0x0, 0x7F, 0);
+		ret = pmic_config_interface(0x424, 0x10, 0x7F, 8);
+		ret = pmic_config_interface(0x426, 0x48, 0x7F, 0);
+		ret = pmic_config_interface(0x426, 0x78, 0x7F, 8);
+		ret = pmic_config_interface(0x428, 0x28, 0x7F, 0);
+		ret = pmic_config_interface(0x42E, 0x1, 0x1FF, 0);
+		ret = pmic_config_interface(0x446, 0x2, 0x7, 8);
+		ret = pmic_config_interface(0x44C, 0x0, 0x3, 7);
+		ret = pmic_config_interface(0x450, 0x80, 0xFF, 0);
+		ret = pmic_config_interface(0x452, 0x8, 0x3F, 3);
+		ret = pmic_config_interface(0x45A, 0x2, 0x7, 8);
+		ret = pmic_config_interface(0x462, 0x3, 0x3, 10);
+		ret = pmic_config_interface(0x470, 0x2, 0x7, 8);
+		ret = pmic_config_interface(0x482, 0x1, 0x1, 1);
+		ret = pmic_config_interface(0x488, 0x11, 0x7F, 0);
+		ret = pmic_config_interface(0x488, 0x1, 0x1, 7);
+		ret = pmic_config_interface(0x488, 0x4, 0x7F, 8);
+		ret = pmic_config_interface(0x488, 0x1, 0x1, 15);
+		ret = pmic_config_interface(0x48E, 0x28, 0x7F, 0);
+		ret = pmic_config_interface(0x498, 0x3, 0x3, 0);
+		ret = pmic_config_interface(0x498, 0x1, 0x3, 4);
+		ret = pmic_config_interface(0x498, 0x1, 0x1, 8);
+		ret = pmic_config_interface(0x49A, 0x0, 0x3, 4);
+		ret = pmic_config_interface(0x49A, 0x0, 0x3, 8);
+		ret = pmic_config_interface(0x49A, 0x0, 0x3, 14);
+		ret = pmic_config_interface(0x4AA, 0x1, 0x1, 1);
+		ret = pmic_config_interface(0x4B0, 0x8, 0x7F, 0);
+		ret = pmic_config_interface(0x4B0, 0x1, 0x1, 7);
+		ret = pmic_config_interface(0x4B0, 0x8, 0x7F, 8);
+		ret = pmic_config_interface(0x4B0, 0x1, 0x1, 15);
+		ret = pmic_config_interface(0x4B4, 0x40, 0x7F, 0);
+		ret = pmic_config_interface(0x4D2, 0x1, 0x1, 1);
+		ret = pmic_config_interface(0x4D8, 0x11, 0x7F, 0);
+		ret = pmic_config_interface(0x4D8, 0x4, 0x7F, 8);
+		ret = pmic_config_interface(0x4DE, 0x28, 0x7F, 0);
+		ret = pmic_config_interface(0x4E8, 0x3, 0x3, 0);
+		ret = pmic_config_interface(0x4E8, 0x1, 0x1, 8);
+		ret = pmic_config_interface(0x4EA, 0x0, 0x3, 4);
+		ret = pmic_config_interface(0x4EA, 0x0, 0x3, 8);
+		ret = pmic_config_interface(0x4EA, 0x0, 0x3, 14);
+		ret = pmic_config_interface(0x60E, 0x1, 0x1, 1);
+		ret = pmic_config_interface(0x614, 0x11, 0x7F, 0);
+		ret = pmic_config_interface(0x614, 0x4, 0x7F, 8);
+		ret = pmic_config_interface(0x61A, 0x28, 0x7F, 0);
+		ret = pmic_config_interface(0x624, 0x3, 0x3, 0);
+		ret = pmic_config_interface(0x624, 0x1, 0x1, 8);
+		ret = pmic_config_interface(0x626, 0x0, 0x3, 4);
+		ret = pmic_config_interface(0x626, 0x0, 0x3, 8);
+		ret = pmic_config_interface(0x626, 0x0, 0x3, 14);
+		ret = pmic_config_interface(0x646, 0x5, 0x7, 0);
+		ret = pmic_config_interface(0x64C, 0x0, 0x1, 8);
+		ret = pmic_config_interface(0x664, 0x2, 0x7F, 0);
+		ret = pmic_config_interface(0x664, 0x0, 0x1, 7);
+		ret = pmic_config_interface(0x664, 0x2, 0x7F, 8);
+		ret = pmic_config_interface(0x664, 0x0, 0x1, 15);
+		ret = pmic_config_interface(0x674, 0x3, 0x3, 4);
+		ret = pmic_config_interface(0x67E, 0x2, 0x3, 4);
+		ret = pmic_config_interface(0xA00, 0x1, 0x1, 3);
+		ret = pmic_config_interface(0xA02, 0x1, 0x1, 3);
+		ret = pmic_config_interface(0xA06, 0x1, 0x1, 6);
+		ret = pmic_config_interface(0xA30, 0x0, 0x1, 0);
+		ret = pmic_config_interface(0xA44, 0x1, 0x1, 1);
+		ret = pmic_config_interface(0xA46, 0x0, 0x1, 14);
+		ret = pmic_config_interface(0xA64, 0x2, 0x3, 4);
+		ret = pmic_config_interface(0xCBC, 0x1, 0x1, 8);
+		ret = pmic_config_interface(0xCBC, 0x1, 0x1, 9);
+		ret = pmic_config_interface(0xCC0, 0x24, 0xFFFF, 0);
+		ret = pmic_config_interface(0xCC2, 0x14, 0xFF, 0);
+		ret = pmic_config_interface(0xCC4, 0xFF, 0xFF, 8);
+		ret = pmic_config_interface(0xE94, 0x0, 0x1, 13);
+		ret = pmic_config_interface(0xE94, 0x0, 0x1, 14);
+		ret = pmic_config_interface(0xE94, 0x0, 0x1, 15);
+		ret = pmic_config_interface(0xEA4, 0x1, 0x3, 4);
+		ret = pmic_config_interface(0xEA4, 0x1, 0x3, 6);
+		ret = pmic_config_interface(0xEA4, 0x1, 0x3, 8);
+		ret = pmic_config_interface(0xEA4, 0x1, 0x3, 10);
+		ret = pmic_config_interface(0xEA4, 0x1, 0x3, 12);
+		ret = pmic_config_interface(0xEA4, 0x2, 0x3, 14);
+		ret = pmic_config_interface(0xEA6, 0x1, 0x3, 0);
+		ret = pmic_config_interface(0xEA6, 0x1, 0x3, 2);
+		ret = pmic_config_interface(0xEA6, 0x1, 0x3, 4);
+		ret = pmic_config_interface(0xEA6, 0x1, 0x3, 6);
+		ret = pmic_config_interface(0xEB8, 0x1, 0x1, 14);
+		ret = pmic_config_interface(0xF08, 0xC, 0x3FF, 0);
+		ret = pmic_config_interface(0xF08, 0x0, 0x1, 15);
+		ret = pmic_config_interface(0xF0E, 0xC, 0x3FF, 0);
+		ret = pmic_config_interface(0xF0E, 0x1, 0x1, 15);
+		ret = pmic_config_interface(0xF12, 0x0, 0x1, 0);
+		ret = pmic_config_interface(0xF12, 0x0, 0x1, 1);
+		ret = pmic_config_interface(0xF12, 0x1, 0x1, 2);
+		ret = pmic_config_interface(0xF4A, 0xB, 0xF, 4);
+		ret = pmic_config_interface(0xF54, 0x0, 0x7, 1);
+		ret = pmic_config_interface(0xF62, 0x3, 0xF, 0);
+		ret = pmic_config_interface(0xF6C, 0x2, 0x1F, 0);
+		ret = pmic_config_interface(0xF70, 0x1, 0x1, 1);
+		ret = pmic_config_interface(0xF74, 0x0, 0x7, 4);
+		ret = pmic_config_interface(0xF7A, 0x1, 0x1, 2);
+		ret = pmic_config_interface(0xF7A, 0x1, 0x1, 6);
+		ret = pmic_config_interface(0xF7A, 0x1, 0x1, 7);
+	}
 	/*--------------------------------------------------------*/
 
-#ifdef CONFIG_CRYSTAL /*TBD*/
-	    if (crystal_exist_status() == 0) {
+	if (crystal_exist_status() == 0) {
 		PMICLOG("32k-less VTCXO always on...\n");
 		pmic_set_register_value(PMIC_RG_VTCXO_0_ON_CTRL, 0);
 		pmic_set_register_value(PMIC_RG_VTCXO_0_EN, 1);
-
 	}
+#if defined(PMIC_HW_USE_4L_SS_LAYOUT)
+	ret = pmic_config_interface(0x494, 0x0, 0x3, 0); /* [1:0]: VPROC slow slew rate */
+	ret = pmic_config_interface(0x496, 0x0, 0x3, 0); /* [1:0]: VPROC slow slew rate */
+	ret = pmic_config_interface(0x620, 0x0, 0x3, 0); /* [1:0]: VCORE slow slew rate */
+	ret = pmic_config_interface(0x622, 0x0, 0x3, 0); /* [1:0]: VCORE slow slew rate */
+	ret = pmic_config_interface(0x4E4, 0x0, 0x3, 0); /* [1:0]: VLTE slow slew rate  */
+	ret = pmic_config_interface(0x4E6, 0x0, 0x3, 0); /* [1:0]: VLTE slow slew rate  */
+	ret = pmic_config_interface(0x648, 0x0, 0x3, 0); /* [1:0]: VSYS slow slew rate  */
+	ret = pmic_config_interface(0x64A, 0x0, 0x3, 0); /* [1:0]: VSYS slow slew rate  */
 #endif
 }
 
@@ -4824,6 +4865,7 @@ static int pmic_mt_remove(struct platform_device *dev)
 static void pmic_mt_shutdown(struct platform_device *dev)
 {
 	PMICLOG("******** MT pmic driver shutdown!! ********\n");
+	pmic_md_power_on();
 }
 
 static int pmic_mt_suspend(struct platform_device *dev, pm_message_t state)

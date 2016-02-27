@@ -587,7 +587,7 @@ static s32 tpd_i2c_probe(struct i2c_client *client, const struct i2c_device_id *
 		return err;
 	}
 	GTP_INFO("tpd_i2c_probe start.wait_event_interruptible");
-	wait_event_interruptible(init_waiter, check_flag == true);
+	wait_event_interruptible_timeout(init_waiter, check_flag == true, 5 * HZ);
 	GTP_INFO("tpd_i2c_probe end.wait_event_interruptible");
 /*
 	do {
@@ -940,6 +940,7 @@ static int tpd_local_init(void)
 		}
 		memset(gpDMABuf_va, 0, IIC_DMA_MAX_TRANSFER_SIZE);
 #endif
+	spin_lock_init(&irq_flag_lock);
 	if (i2c_add_driver(&tpd_i2c_driver) != 0) {
 		GTP_ERROR("unable to add i2c driver.");
 		return -1;
@@ -974,7 +975,6 @@ static int tpd_local_init(void)
 
 	GTP_INFO("end %s, %d\n", __func__, __LINE__);
 	tpd_type_cap = 1;
-	spin_lock_init(&irq_flag_lock);
 	return 0;
 }
 

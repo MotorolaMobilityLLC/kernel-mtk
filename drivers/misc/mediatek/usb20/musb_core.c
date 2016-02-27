@@ -119,9 +119,11 @@ struct device_node *dts_np;
 int musb_is_shutting = 0;
 int musb_skip_charge_detect = 0;
 int musb_removed = 0;
+int musb_epx_transfer_allowed = 0;
 module_param(musb_is_shutting, int, 0644);
 module_param(musb_skip_charge_detect, int, 0644);
 module_param(musb_removed, int, 0644);
+module_param(musb_epx_transfer_allowed, int, 0644);
 #ifdef MUSB_QMU_SUPPORT
 #include "musb_qmu.h"
 int mtk_qmu_dbg_level = LOG_WARN;
@@ -963,6 +965,7 @@ static irqreturn_t musb_stage0_irq(struct musb *musb, u8 int_usb, u8 devctl)
 		struct usb_hcd *hcd = musb_to_hcd(musb);
 
 		DBG(0, "MUSB_INTR_CONNECT (%s)\n", otg_state_string(musb->xceiv->state));
+		musb_epx_transfer_allowed = 1;
 
 		handled = IRQ_HANDLED;
 		musb->is_active = 1;
@@ -1042,6 +1045,7 @@ b_host:
 	if ((int_usb & MUSB_INTR_DISCONNECT) && !musb->ignore_disconnect) {
 		DBG(0, "DISCONNECT (%s) as %s, devctl %02x\n",
 		    otg_state_string(musb->xceiv->state), MUSB_MODE(musb), devctl);
+		musb_epx_transfer_allowed = 0;
 		handled = IRQ_HANDLED;
 		musb->is_active = 0;
 #ifdef MUSB_QMU_SUPPORT
@@ -1093,6 +1097,7 @@ b_host:
 		handled = IRQ_HANDLED;
 
 		DBG(0, "MUSB_INTR_RESET (%s)\n", otg_state_string(musb->xceiv->state));
+		musb_epx_transfer_allowed = 1;
 
 		if ((devctl & MUSB_DEVCTL_HM) != 0) {
 			/*
@@ -1812,6 +1817,7 @@ irqreturn_t musb_interrupt(struct musb *musb)
 	if (musb->int_usb)
 		retval |= musb_stage0_irq(musb, musb->int_usb, devctl);
 
+
 	/* "stage 1" is handling endpoint irqs */
 
 	/* handle endpoint 0 first */
@@ -1821,6 +1827,13 @@ irqreturn_t musb_interrupt(struct musb *musb)
 		else
 			retval |= musb_g_ep0_irq(musb);
 	}
+
+	/* check this to skip unnecessary interrupt handle after disconnect in host mode*/
+	if (unlikely(!musb_epx_transfer_allowed)) {
+		DBG(0, "!musb_epx_transfer_allowed\n");
+		return IRQ_HANDLED;
+	}
+
 #ifdef MUSB_QMU_SUPPORT
 	/* process generic queue interrupt */
 	if (musb->int_queue) {

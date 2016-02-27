@@ -1844,7 +1844,11 @@ static int p2pStop(IN struct net_device *prDev)
 {
 	P_GLUE_INFO_T prGlueInfo = NULL;
 	P_ADAPTER_T prAdapter = NULL;
+	struct cfg80211_scan_request *prScanRequest = NULL;
+	P_GL_P2P_INFO_T prGlueP2pInfo = (P_GL_P2P_INFO_T) NULL;
 /* P_MSG_P2P_FUNCTION_SWITCH_T prFuncSwitch; */
+
+	GLUE_SPIN_LOCK_DECLARATION();
 
 	ASSERT(prDev);
 
@@ -1853,6 +1857,17 @@ static int p2pStop(IN struct net_device *prDev)
 
 	prAdapter = prGlueInfo->prAdapter;
 	ASSERT(prAdapter);
+	prGlueP2pInfo = prGlueInfo->prP2PInfo;
+	/* CFG80211 down */
+	GLUE_ACQUIRE_SPIN_LOCK(prGlueInfo, SPIN_LOCK_NET_DEV);
+	if (prGlueP2pInfo->prScanRequest != NULL) {
+		prScanRequest = prGlueP2pInfo->prScanRequest;
+		prGlueP2pInfo->prScanRequest = NULL;
+	} else
+		DBGLOG(P2P, WARN, "[p2p] scan complete but cfg80211 scan request is NULL\n");
+	GLUE_RELEASE_SPIN_LOCK(prGlueInfo, SPIN_LOCK_NET_DEV);
+	if (prScanRequest)
+		cfg80211_scan_done(prScanRequest, TRUE);
 
 	/* 1. stop TX queue */
 	netif_tx_stop_all_queues(prDev);

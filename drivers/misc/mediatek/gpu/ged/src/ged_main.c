@@ -43,15 +43,15 @@
 #define GED_IOCTL_PARAM_BUF_SIZE 0x3000 //12KB
 
 #ifdef GED_DEBUG
-#define GED_LOG_BUF_COMMON_HWC "HWC"
-static GED_LOG_BUF_HANDLE ghLogBuf_HWC = 0;
-#define GED_LOG_BUF_COMMON_FENCE "FENCE"
-static GED_LOG_BUF_HANDLE ghLogBuf_FENCE = 0;
 #define GED_LOG_BUF_COMMON_GLES "GLES"
 static GED_LOG_BUF_HANDLE ghLogBuf_GLES = 0;
 GED_LOG_BUF_HANDLE ghLogBuf_GED = 0;
 #endif
 
+#define GED_LOG_BUF_COMMON_HWC "HWC"
+static GED_LOG_BUF_HANDLE ghLogBuf_HWC = 0;
+#define GED_LOG_BUF_COMMON_FENCE "FENCE"
+static GED_LOG_BUF_HANDLE ghLogBuf_FENCE = 0;
 
 GED_LOG_BUF_HANDLE ghLogBuf_DVFS = 0;
 GED_LOG_BUF_HANDLE ghLogBuf_ged_srv = 0;
@@ -277,14 +277,14 @@ static void ged_exit(void)
     ghLogBuf_GED = 0;
     ged_log_buf_free(ghLogBuf_GLES);
     ghLogBuf_GLES = 0;
+#endif
     ged_log_buf_free(ghLogBuf_FENCE);
     ghLogBuf_FENCE = 0;
     ged_log_buf_free(ghLogBuf_HWC);
     ghLogBuf_HWC = 0;
-#endif
-
-	ged_dvfs_system_exit();
 	
+	ged_dvfs_system_exit();
+
     ged_profile_dvfs_exit();
 
     //ged_notify_vsync_system_exit();
@@ -369,11 +369,11 @@ static int ged_init(void)
     
  
 #ifdef GED_DEBUG
-    ghLogBuf_HWC = ged_log_buf_alloc(4096, 128 * 4096, GED_LOG_BUF_TYPE_RINGBUFFER, GED_LOG_BUF_COMMON_HWC, NULL);
-    ghLogBuf_FENCE = ged_log_buf_alloc(256, 128 * 256, GED_LOG_BUF_TYPE_RINGBUFFER, GED_LOG_BUF_COMMON_FENCE, NULL);
     ghLogBuf_GLES = ged_log_buf_alloc(160, 128 * 160, GED_LOG_BUF_TYPE_RINGBUFFER, GED_LOG_BUF_COMMON_GLES, NULL);
     ghLogBuf_GED = ged_log_buf_alloc(32, 64 * 32, GED_LOG_BUF_TYPE_RINGBUFFER, "GED internal", NULL);
 #endif
+	ghLogBuf_HWC = ged_log_buf_alloc(4096, 128 * 4096, GED_LOG_BUF_TYPE_RINGBUFFER, GED_LOG_BUF_COMMON_HWC, NULL);
+	ghLogBuf_FENCE = ged_log_buf_alloc(256, 128 * 256, GED_LOG_BUF_TYPE_RINGBUFFER, GED_LOG_BUF_COMMON_FENCE, NULL);
 
 #ifdef GED_DVFS_DEBUG_BUF
 #ifdef GED_LOG_SIZE_LIMITED

@@ -151,7 +151,7 @@ void aee_wdt_dump_info(void)
 
 #ifdef CONFIG_SCHED_DEBUG
 	aee_rr_rec_fiq_step(AEE_FIQ_STEP_KE_SCHED_DEBUG);
-	sysrq_sched_debug_show_at_KE();
+	/*sysrq_sched_debug_show_at_KE();*/
 #endif
 
 	for_each_process(task) {

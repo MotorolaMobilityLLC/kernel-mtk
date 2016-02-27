@@ -1,6 +1,12 @@
 #ifndef _CUST_BATTERY_METER_H
 #define _CUST_BATTERY_METER_H
 
+#if defined(CONFIG_MTK_BQ24196_SUPPORT) \
+	|| defined(CONFIG_MTK_BQ24296_SUPPORT) \
+	|| defined(CONFIG_MTK_BQ24261_SUPPORT)
+#define SWCHR_POWER_PATH
+#define EXTERNAL_SWCHR_SUPPORT
+#endif
 
 #if defined(CONFIG_ARCH_MT6735)
 /* ============================================================
@@ -15,13 +21,6 @@
 //#define CONFIG_DIS_CHECK_BATTERY
 //#define FIXED_TBAT_25
 */
-
-#if defined(CONFIG_MTK_BQ24196_SUPPORT) \
-	|| defined(CONFIG_MTK_BQ24296_SUPPORT) \
-	|| defined(CONFIG_MTK_BQ24261_SUPPORT)
-#define SWCHR_POWER_PATH
-#define EXTERNAL_SWCHR_SUPPORT
-#endif
 
 /* ADC resistor  */
 #define R_BAT_SENSE 4
@@ -68,8 +67,11 @@
 #define OCV_BOARD_COMPESATE	0 /*mV */
 #define R_FG_BOARD_BASE 1000
 #define R_FG_BOARD_SLOPE 1000 /*slope*/
+#ifdef CONFIG_MTK_EMI_D1P
+#define CAR_TUNE_VALUE 104 /*1.00*/
+#else
 #define CAR_TUNE_VALUE 86 /*1.00*/
-
+#endif
 
 /* HW Fuel gague  */
 #define CURRENT_DETECT_R_FG 10  /*1mA*/
@@ -150,13 +152,6 @@
 //#define CONFIG_DIS_CHECK_BATTERY
 //#define FIXED_TBAT_25
 */
-
-#if defined(CONFIG_MTK_BQ24196_SUPPORT) \
-	|| defined(CONFIG_MTK_BQ24296_SUPPORT) \
-	|| defined(CONFIG_MTK_BQ24261_SUPPORT)
-#define SWCHR_POWER_PATH
-#define EXTERNAL_SWCHR_SUPPORT
-#endif
 
 /* ADC resistor  */
 #define R_BAT_SENSE 4
@@ -287,13 +282,6 @@
 //#define CONFIG_DIS_CHECK_BATTERY
 //#define FIXED_TBAT_25
 */
-
-#if defined(CONFIG_MTK_BQ24196_SUPPORT) \
-	|| defined(CONFIG_MTK_BQ24296_SUPPORT) \
-	|| defined(CONFIG_MTK_BQ24261_SUPPORT)
-#define SWCHR_POWER_PATH
-#define EXTERNAL_SWCHR_SUPPORT
-#endif
 
 /* ADC resistor  */
 #define R_BAT_SENSE 4

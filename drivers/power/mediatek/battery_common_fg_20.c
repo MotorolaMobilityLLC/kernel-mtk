@@ -110,6 +110,7 @@ static char *DISO_state_s[8] = {
 	"DC_USB_OTG",
 };
 #endif
+struct battery_custom_data batt_cust_data;
 
 /* ///////////////////////////////////////////////////////////////////////////////////////// */
 /* // Thermal related flags */
@@ -3298,6 +3299,408 @@ static void dual_input_init(void)
 	battery_charging_control(CHARGING_CMD_DISO_INIT, &DISO_data);
 }
 #endif
+
+int __batt_init_cust_data_from_cust_header(void)
+{
+	/* mt_charging.h */
+	/* stop charging while in talking mode */
+#if defined(STOP_CHARGING_IN_TAKLING)
+	batt_cust_data.stop_charging_in_takling = 1;
+#else				/* #if defined(STOP_CHARGING_IN_TAKLING) */
+	batt_cust_data.stop_charging_in_takling = 0;
+#endif				/* #if defined(STOP_CHARGING_IN_TAKLING) */
+
+#if defined(TALKING_RECHARGE_VOLTAGE)
+	batt_cust_data.talking_recharge_voltage = TALKING_RECHARGE_VOLTAGE;
+#endif
+
+#if defined(TALKING_SYNC_TIME)
+	batt_cust_data.talking_sync_time = TALKING_SYNC_TIME;
+#endif
+
+	/* Battery Temperature Protection */
+#if defined(MTK_TEMPERATURE_RECHARGE_SUPPORT)
+	batt_cust_data.mtk_temperature_recharge_support = 1;
+#else				/* #if defined(MTK_TEMPERATURE_RECHARGE_SUPPORT) */
+	batt_cust_data.mtk_temperature_recharge_support = 0;
+#endif				/* #if defined(MTK_TEMPERATURE_RECHARGE_SUPPORT) */
+
+#if defined(MAX_CHARGE_TEMPERATURE)
+	batt_cust_data.max_charge_temperature = MAX_CHARGE_TEMPERATURE;
+#endif
+
+#if defined(MAX_CHARGE_TEMPERATURE_MINUS_X_DEGREE)
+	batt_cust_data.max_charge_temperature_minus_x_degree =
+	    MAX_CHARGE_TEMPERATURE_MINUS_X_DEGREE;
+#endif
+
+#if defined(MIN_CHARGE_TEMPERATURE)
+	batt_cust_data.min_charge_temperature = MIN_CHARGE_TEMPERATURE;
+#endif
+
+#if defined(MIN_CHARGE_TEMPERATURE_PLUS_X_DEGREE)
+	batt_cust_data.min_charge_temperature_plus_x_degree = MIN_CHARGE_TEMPERATURE_PLUS_X_DEGREE;
+#endif
+
+#if defined(ERR_CHARGE_TEMPERATURE)
+	batt_cust_data.err_charge_temperature = ERR_CHARGE_TEMPERATURE;
+#endif
+
+	/* Linear Charging Threshold */
+#if defined(V_PRE2CC_THRES)
+	batt_cust_data.v_pre2cc_thres = V_PRE2CC_THRES;
+#endif
+#if defined(V_CC2TOPOFF_THRES)
+	batt_cust_data.v_cc2topoff_thres = V_CC2TOPOFF_THRES;
+#endif
+#if defined(RECHARGING_VOLTAGE)
+	batt_cust_data.recharging_voltage = RECHARGING_VOLTAGE;
+#endif
+#if defined(CHARGING_FULL_CURRENT)
+	batt_cust_data.charging_full_current = CHARGING_FULL_CURRENT;
+#endif
+
+	/* Charging Current Setting */
+#if defined(CONFIG_USB_IF)
+	batt_cust_data.config_usb_if = 1;
+#else				/* #if defined(CONFIG_USB_IF) */
+	batt_cust_data.config_usb_if = 0;
+#endif				/* #if defined(CONFIG_USB_IF) */
+
+#if defined(USB_CHARGER_CURRENT_SUSPEND)
+	batt_cust_data.usb_charger_current_suspend = USB_CHARGER_CURRENT_SUSPEND;
+#endif
+#if defined(USB_CHARGER_CURRENT_UNCONFIGURED)
+	batt_cust_data.usb_charger_current_unconfigured = USB_CHARGER_CURRENT_UNCONFIGURED;
+#endif
+#if defined(USB_CHARGER_CURRENT_CONFIGURED)
+	batt_cust_data.usb_charger_current_configured = USB_CHARGER_CURRENT_CONFIGURED;
+#endif
+#if defined(USB_CHARGER_CURRENT)
+	batt_cust_data.usb_charger_current = USB_CHARGER_CURRENT;
+#endif
+#if defined(AC_CHARGER_INPUT_CURRENT)
+	batt_cust_data.ac_charger_input_current = AC_CHARGER_INPUT_CURRENT;
+#endif
+#if defined(AC_CHARGER_CURRENT)
+	batt_cust_data.ac_charger_current = AC_CHARGER_CURRENT;
+#endif
+#if defined(NON_STD_AC_CHARGER_CURRENT)
+	batt_cust_data.non_std_ac_charger_current = NON_STD_AC_CHARGER_CURRENT;
+#endif
+#if defined(CHARGING_HOST_CHARGER_CURRENT)
+	batt_cust_data.charging_host_charger_current = CHARGING_HOST_CHARGER_CURRENT;
+#endif
+#if defined(APPLE_0_5A_CHARGER_CURRENT)
+	batt_cust_data.apple_0_5a_charger_current = APPLE_0_5A_CHARGER_CURRENT;
+#endif
+#if defined(APPLE_1_0A_CHARGER_CURRENT)
+	batt_cust_data.apple_1_0a_charger_current = APPLE_1_0A_CHARGER_CURRENT;
+#endif
+#if defined(APPLE_2_1A_CHARGER_CURRENT)
+	batt_cust_data.apple_2_1a_charger_current = APPLE_2_1A_CHARGER_CURRENT;
+#endif
+
+	/* Precise Tunning
+	batt_cust_data.battery_average_data_number = BATTERY_AVERAGE_DATA_NUMBER;
+	batt_cust_data.battery_average_size = BATTERY_AVERAGE_SIZE;
+	*/
+
+	/* charger error check */
+#if defined(BAT_LOW_TEMP_PROTECT_ENABLE)
+	batt_cust_data.bat_low_temp_protect_enable = 1;
+#else				/* #if defined(BAT_LOW_TEMP_PROTECT_ENABLE) */
+	batt_cust_data.bat_low_temp_protect_enable = 0;
+#endif				/* #if defined(BAT_LOW_TEMP_PROTECT_ENABLE) */
+
+#if defined(V_CHARGER_ENABLE)
+	batt_cust_data.v_charger_enable = V_CHARGER_ENABLE;
+#endif
+#if defined(V_CHARGER_MAX)
+	batt_cust_data.v_charger_max = V_CHARGER_MAX;
+#endif
+#if defined(V_CHARGER_MIN)
+	batt_cust_data.v_charger_min = V_CHARGER_MIN;
+#endif
+
+	/* Tracking TIME */
+#if defined(ONEHUNDRED_PERCENT_TRACKING_TIME)
+	batt_cust_data.onehundred_percent_tracking_time = ONEHUNDRED_PERCENT_TRACKING_TIME;
+#endif
+#if defined(NPERCENT_TRACKING_TIME)
+	batt_cust_data.npercent_tracking_time = NPERCENT_TRACKING_TIME;
+#endif
+#if defined(SYNC_TO_REAL_TRACKING_TIME)
+	batt_cust_data.sync_to_real_tracking_time = SYNC_TO_REAL_TRACKING_TIME;
+#endif
+#if defined(V_0PERCENT_TRACKING)
+	batt_cust_data.v_0percent_tracking = V_0PERCENT_TRACKING;
+#endif
+
+	/* High battery support */
+#if defined(HIGH_BATTERY_VOLTAGE_SUPPORT)
+	batt_cust_data.high_battery_voltage_support = 1;
+#else				/* #if defined(HIGH_BATTERY_VOLTAGE_SUPPORT) */
+	batt_cust_data.high_battery_voltage_support = 0;
+#endif				/* #if defined(HIGH_BATTERY_VOLTAGE_SUPPORT) */
+
+#if	defined(CONFIG_MTK_PUMP_EXPRESS_PLUS_SUPPORT)
+	batt_cust_data.mtk_pump_express_plus_support = 1;
+
+	#if defined(TA_START_BATTERY_SOC)
+	batt_cust_data.ta_start_battery_soc = TA_START_BATTERY_SOC;
+	#endif
+	#if defined(TA_STOP_BATTERY_SOC)
+	batt_cust_data.ta_stop_battery_soc = TA_STOP_BATTERY_SOC;
+	#endif
+	#if defined(TA_AC_12V_INPUT_CURRENT)
+	batt_cust_data.ta_ac_12v_input_current = TA_AC_12V_INPUT_CURRENT;
+	#endif
+	#if defined(TA_AC_9V_INPUT_CURRENT)
+	batt_cust_data.ta_ac_9v_input_current = TA_AC_9V_INPUT_CURRENT;
+	#endif
+	#if defined(TA_AC_7V_INPUT_CURRENT)
+	batt_cust_data.ta_ac_7v_input_current = TA_AC_7V_INPUT_CURRENT;
+	#endif
+	#if defined(TA_AC_CHARGING_CURRENT)
+	batt_cust_data.ta_ac_charging_current = TA_AC_CHARGING_CURRENT;
+	#endif
+	#if defined(TA_9V_SUPPORT)
+	batt_cust_data.ta_9v_support = 1;
+	#endif
+	#if defined(TA_12V_SUPPORT)
+	batt_cust_data.ta_12v_support = 1;
+	#endif
+#endif
+
+	return 0;
+}
+
+#if defined(CONFIG_OF)
+static void __batt_parse_node(const struct device_node *np,
+				const char *node_srting, int *cust_val)
+{
+	u32 val;
+
+	if (of_property_read_u32(np, node_srting, &val) == 0) {
+		(*cust_val) = (int)val;
+		battery_log(BAT_LOG_FULL, "Get %s: %d\n", node_srting, (*cust_val));
+	} else {
+		battery_log(BAT_LOG_CRTI, "Get %s failed\n", node_srting);
+	}
+}
+
+static int __batt_init_cust_data_from_dt(void)
+{
+	/* struct device_node *np = dev->dev.of_node; */
+	struct device_node *np;
+
+	/* check customer setting */
+	np = of_find_compatible_node(NULL, NULL, "mediatek,battery");
+	if (!np) {
+		/* printk(KERN_ERR "(E) Failed to find device-tree node: %s\n", path); */
+		battery_log(BAT_LOG_CRTI, "Failed to find device-tree node: bat_comm\n");
+		return -ENODEV;
+	}
+
+	__batt_parse_node(np, "stop_charging_in_takling",
+		&batt_cust_data.stop_charging_in_takling);
+
+	__batt_parse_node(np, "talking_recharge_voltage",
+		&batt_cust_data.talking_recharge_voltage);
+
+	__batt_parse_node(np, "talking_sync_time",
+		&batt_cust_data.talking_sync_time);
+
+	__batt_parse_node(np, "mtk_temperature_recharge_support",
+		&batt_cust_data.mtk_temperature_recharge_support);
+
+	__batt_parse_node(np, "max_charge_temperature",
+		&batt_cust_data.max_charge_temperature);
+
+	__batt_parse_node(np, "max_charge_temperature_minus_x_degree",
+		&batt_cust_data.max_charge_temperature_minus_x_degree);
+
+	__batt_parse_node(np, "min_charge_temperature",
+		&batt_cust_data.min_charge_temperature);
+
+	__batt_parse_node(np, "min_charge_temperature_plus_x_degree",
+		&batt_cust_data.min_charge_temperature_plus_x_degree);
+
+	__batt_parse_node(np, "err_charge_temperature",
+		&batt_cust_data.err_charge_temperature);
+
+	__batt_parse_node(np, "v_pre2cc_thres",
+		&batt_cust_data.v_pre2cc_thres);
+
+	__batt_parse_node(np, "v_cc2topoff_thres",
+		&batt_cust_data.v_cc2topoff_thres);
+
+	__batt_parse_node(np, "recharging_voltage",
+		&batt_cust_data.recharging_voltage);
+
+	__batt_parse_node(np, "charging_full_current",
+		&batt_cust_data.charging_full_current);
+
+	__batt_parse_node(np, "config_usb_if",
+		&batt_cust_data.config_usb_if);
+
+	__batt_parse_node(np, "usb_charger_current_suspend",
+		&batt_cust_data.usb_charger_current_suspend);
+
+	__batt_parse_node(np, "usb_charger_current_unconfigured",
+		&batt_cust_data.usb_charger_current_unconfigured);
+
+	__batt_parse_node(np, "usb_charger_current_configured",
+		&batt_cust_data.usb_charger_current_configured);
+
+	__batt_parse_node(np, "usb_charger_current",
+		&batt_cust_data.usb_charger_current);
+
+	__batt_parse_node(np, "ac_charger_input_current",
+		&batt_cust_data.ac_charger_input_current);
+
+	__batt_parse_node(np, "ac_charger_current",
+		&batt_cust_data.ac_charger_current);
+
+	__batt_parse_node(np, "non_std_ac_charger_current",
+		&batt_cust_data.non_std_ac_charger_current);
+
+	__batt_parse_node(np, "charging_host_charger_current",
+		&batt_cust_data.charging_host_charger_current);
+
+	__batt_parse_node(np, "apple_0_5a_charger_current",
+		&batt_cust_data.apple_0_5a_charger_current);
+
+	__batt_parse_node(np, "apple_1_0a_charger_current",
+		&batt_cust_data.apple_1_0a_charger_current);
+
+	__batt_parse_node(np, "apple_2_1a_charger_current",
+		&batt_cust_data.apple_2_1a_charger_current);
+
+	__batt_parse_node(np, "bat_low_temp_protect_enable",
+		&batt_cust_data.bat_low_temp_protect_enable);
+
+	__batt_parse_node(np, "v_charger_enable",
+		&batt_cust_data.v_charger_enable);
+
+	__batt_parse_node(np, "v_charger_max",
+		&batt_cust_data.v_charger_max);
+
+	__batt_parse_node(np, "v_charger_min",
+		&batt_cust_data.v_charger_min);
+
+	__batt_parse_node(np, "onehundred_percent_tracking_time",
+		&batt_cust_data.onehundred_percent_tracking_time);
+
+	__batt_parse_node(np, "npercent_tracking_time",
+		&batt_cust_data.npercent_tracking_time);
+
+	__batt_parse_node(np, "sync_to_real_tracking_time",
+		&batt_cust_data.sync_to_real_tracking_time);
+
+	__batt_parse_node(np, "v_0percent_tracking",
+		&batt_cust_data.v_0percent_tracking);
+
+	__batt_parse_node(np, "high_battery_voltage_support",
+		&batt_cust_data.high_battery_voltage_support);
+
+	__batt_parse_node(np, "mtk_jeita_standard_support",
+		&batt_cust_data.mtk_jeita_standard_support);
+
+	__batt_parse_node(np, "cust_soc_jeita_sync_time",
+		&batt_cust_data.cust_soc_jeita_sync_time);
+
+	__batt_parse_node(np, "jeita_recharge_voltage",
+		&batt_cust_data.jeita_recharge_voltage);
+
+	__batt_parse_node(np, "jeita_temp_above_pos_60_cv_voltage",
+		&batt_cust_data.jeita_temp_above_pos_60_cv_voltage);
+
+	__batt_parse_node(np, "jeita_temp_pos_10_to_pos_45_cv_voltage",
+		&batt_cust_data.jeita_temp_pos_10_to_pos_45_cv_voltage);
+
+	__batt_parse_node(np, "jeita_temp_pos_0_to_pos_10_cv_voltage",
+		&batt_cust_data.jeita_temp_pos_0_to_pos_10_cv_voltage);
+
+	__batt_parse_node(np, "jeita_temp_neg_10_to_pos_0_cv_voltage",
+		&batt_cust_data.jeita_temp_neg_10_to_pos_0_cv_voltage);
+
+	__batt_parse_node(np, "jeita_temp_below_neg_10_cv_voltage",
+		&batt_cust_data.jeita_temp_below_neg_10_cv_voltage);
+
+	__batt_parse_node(np, "jeita_neg_10_to_pos_0_full_current",
+		&batt_cust_data.jeita_neg_10_to_pos_0_full_current);
+
+	__batt_parse_node(np, "jeita_temp_pos_45_to_pos_60_recharge_voltage",
+		&batt_cust_data.jeita_temp_pos_45_to_pos_60_recharge_voltage);
+
+	__batt_parse_node(np, "jeita_temp_pos_10_to_pos_45_recharge_voltage",
+		&batt_cust_data.jeita_temp_pos_10_to_pos_45_recharge_voltage);
+
+	__batt_parse_node(np, "jeita_temp_pos_0_to_pos_10_recharge_voltage",
+		&batt_cust_data.jeita_temp_pos_0_to_pos_10_recharge_voltage);
+
+	__batt_parse_node(np, "jeita_temp_neg_10_to_pos_0_recharge_voltage",
+		&batt_cust_data.jeita_temp_neg_10_to_pos_0_recharge_voltage);
+
+	__batt_parse_node(np, "jeita_temp_pos_45_to_pos_60_cc2topoff_threshold",
+		&batt_cust_data.jeita_temp_pos_45_to_pos_60_cc2topoff_threshold);
+
+	__batt_parse_node(np, "jeita_temp_pos_10_to_pos_45_cc2topoff_threshold",
+		&batt_cust_data.jeita_temp_pos_10_to_pos_45_cc2topoff_threshold);
+
+	__batt_parse_node(np, "jeita_temp_pos_0_to_pos_10_cc2topoff_threshold",
+		&batt_cust_data.jeita_temp_pos_0_to_pos_10_cc2topoff_threshold);
+
+	__batt_parse_node(np, "jeita_temp_neg_10_to_pos_0_cc2topoff_threshold",
+		&batt_cust_data.jeita_temp_neg_10_to_pos_0_cc2topoff_threshold);
+
+#if	defined(CONFIG_MTK_PUMP_EXPRESS_PLUS_SUPPORT)
+	__batt_parse_node(np, "mtk_pump_express_plus_support",
+		&batt_cust_data.mtk_pump_express_plus_support);
+
+	__batt_parse_node(np, "ta_start_battery_soc",
+		&batt_cust_data.ta_start_battery_soc);
+
+	__batt_parse_node(np, "ta_stop_battery_soc",
+		&batt_cust_data.ta_stop_battery_soc);
+
+	__batt_parse_node(np, "ta_ac_12v_input_current",
+		&batt_cust_data.ta_ac_12v_input_current);
+
+	__batt_parse_node(np, "ta_ac_9v_input_current",
+		&batt_cust_data.ta_ac_9v_input_current);
+
+	__batt_parse_node(np, "ta_ac_7v_input_current",
+		&batt_cust_data.ta_ac_7v_input_current);
+
+	__batt_parse_node(np, "ta_ac_charging_current",
+		&batt_cust_data.ta_ac_charging_current);
+
+	__batt_parse_node(np, "ta_9v_support",
+		&batt_cust_data.ta_9v_support);
+
+	__batt_parse_node(np, "ta_12v_support",
+		&batt_cust_data.ta_12v_support);
+#endif
+
+	return 0;
+}
+#endif
+
+
+int batt_init_cust_data(void)
+{
+	__batt_init_cust_data_from_cust_header();
+
+#if defined(CONFIG_OF)
+	battery_log(BAT_LOG_CRTI, "battery custom init by DTS\n");
+	__batt_init_cust_data_from_dt();
+#endif
+	return 0;
+}
+
 static int battery_probe(struct platform_device *dev)
 {
 	struct class_device *class_dev = NULL;
@@ -3325,6 +3728,8 @@ static int battery_probe(struct platform_device *dev)
 	battery_log(BAT_LOG_CRTI, "[BAT_probe] adc_cali prepare : done !!\n ");
 
 	get_charging_control();
+
+	batt_init_cust_data();
 
 #if defined(BATTERY_SW_INIT)
 	battery_charging_control(CHARGING_CMD_SW_INIT, NULL);
@@ -4056,9 +4461,8 @@ static int battery_pm_event(struct notifier_block *notifier, unsigned long pm_ev
 
 	case PM_POST_HIBERNATION:	/* Hibernation finished */
 		pr_warn("[%s] pm_event %lu\n", __func__, pm_event);
-		battery_timer_resume();
-
 		fg_ipoh_reset = 1;
+		battery_timer_resume();
 		if (pending_wake_up_bat) {
 			pr_warn("[%s] PM_POST_HIBERNATION b4r wakeup bat_routine_wq\n", __func__);
 			wake_up(&bat_routine_wq);

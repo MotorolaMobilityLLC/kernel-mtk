@@ -1,7 +1,20 @@
+/*
+ * Copyright (C) 2015 MediaTek Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ */
+
 #ifndef __BMT_H__
 #define __BMT_H__
 
-#define MAX_BMT_SIZE        (0x80)
+#define MAX_BMT_SIZE        (0x200)
 #define BMT_VERSION         (1)	/* initial version */
 
 #define MAIN_SIGNATURE_OFFSET   (0)
@@ -41,7 +54,11 @@ extern int mtk_nand_erase_hw(struct mtd_info *mtd, int page);
 extern int mtk_nand_block_markbad_hw(struct mtd_info *mtd, loff_t ofs);
 extern int mtk_nand_exec_write_page(struct mtd_info *mtd, u32 row, u32 page_size, u8 *dat,
 				    u8 *oob);
-
+#if defined(CONFIG_MTK_TLC_NAND_SUPPORT)
+extern bool mtk_is_normal_tlc_nand(void);
+extern u32 mtk_nand_page_transform(struct mtd_info *mtd, struct nand_chip *chip, u32 page,
+				    u32 *blk, u32 *map_blk);
+#endif
 
 /***************************************************************
 *                                                              *

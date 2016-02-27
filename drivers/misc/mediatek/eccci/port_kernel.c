@@ -710,22 +710,24 @@ static int get_md_gpio_val(unsigned int num)
 
 static int get_md_adc_val(unsigned int num)
 {
+	int ret = -1;
 #if defined(FEATURE_GET_MD_ADC_VAL)
 	int data[4] = { 0, 0, 0, 0 };
 	int val = 0;
-	int ret = 0;
 
-	CCCI_DBG_MSG(0, RPC, "FEATURE_GET_MD_ADC_VAL\n");
 	ret = IMM_GetOneChannelValue(num, data, &val);
+	CCCI_DBG_MSG(0, RPC, "FEATURE_GET_MD_ADC_VAL,ret=%d, val=%d\n", ret, val);
 	if (ret == 0)
 		return val;
 	else
 		return ret;
 #elif defined(FEATURE_GET_MD_PMIC_ADC_VAL)
-	CCCI_DBG_MSG(0, RPC, "FEATURE_GET_MD_PMIC_ADC_VAL\n");
-	return PMIC_IMM_GetOneChannelValue(num, 1, 0);
+	ret = PMIC_IMM_GetOneChannelValue(num, 1, 0);
+	CCCI_DBG_MSG(0, RPC, "FEATURE_GET_MD_PMIC_ADC_VAL, %d\n", ret);
+	return ret;
 #else
-	return -1;
+	CCCI_INF_MSG(0, RPC, "FEATURE GET MD ADC not def %d\n", ret);
+	return ret;
 #endif
 }
 
@@ -740,15 +742,18 @@ static int get_td_eint_info(char *eint_name, unsigned int len)
 
 static int get_md_adc_info(char *adc_name, unsigned int len)
 {
+	int ret = 0;
 #if defined(FEATURE_GET_MD_ADC_NUM)
-	CCCI_DBG_MSG(0, RPC, "FEATURE_GET_MD_ADC_NUM\n");
-	return IMM_get_adc_channel_num(adc_name, len);
+	ret = IMM_get_adc_channel_num(adc_name, len);
+	CCCI_DBG_MSG(0, RPC, "IMM_get_adc_channel_num, %d\n", ret);
 #elif defined(FEATURE_GET_MD_PMIC_ADC_NUM)
-	CCCI_DBG_MSG(0, RPC, "FEATURE_GET_MD_PMIC_ADC_NUM\n");
-	return PMIC_IMM_get_adc_channel_num(adc_name, len);
+	ret = PMIC_IMM_get_adc_channel_num(adc_name, len);
+	CCCI_DBG_MSG(0, RPC, "PMIC_IMM_get_adc_channel_num, %d\n", ret);
 #else
-	return -1;
+	ret = -1;
+	CCCI_INF_MSG(0, RPC, "FEATURE_GET_MD_ADC_VAL not def %d\n", ret);
 #endif
+	return ret;
 }
 
 static int get_md_gpio_info(char *gpio_name, unsigned int len)
@@ -843,6 +848,7 @@ static int get_eint_attr_val(struct device_node *node, int index)
 {
 	int value;
 	int ret = 0, type;
+	int covert_AP_to_MD_unit = 1000; /*unit of AP eint is us, but unit of MD eint is ms. So need covertion here.*/
 
 	for (type = 0; type < SIM_HOT_PLUG_EINT_MAX; type++) {
 		ret = of_property_read_u32_index(node, md_eint_struct[type].property,
@@ -873,8 +879,10 @@ static int get_eint_attr_val(struct device_node *node, int index)
 				   md_eint_struct[SIM_HOT_PLUG_EINT_POLARITY].value_sim[index],
 				   md_eint_struct[SIM_HOT_PLUG_EINT_SENSITIVITY].value_sim[index]); */
 				type++;
-			} /* special case: polarity's position == sensitivity's end] */
-			else {
+			} else if (type == SIM_HOT_PLUG_EINT_DEBOUNCETIME) {
+				/*debounce time should divide by 1000 due to different unit in AP and MD.*/
+				md_eint_struct[type].value_sim[index] = value/covert_AP_to_MD_unit;
+			} else {
 				md_eint_struct[type].value_sim[index] = value;
 				/* CCCI_INF_MSG(-1, RPC, "%s: --- %d_%d\n", md_eint_struct[type].property,
 				   md_eint_struct[type].index, md_eint_struct[type].value_sim[index]); */
@@ -963,6 +971,7 @@ static void ccci_rpc_get_gpio_adc(struct ccci_rpc_gpio_adc_intput *input, struct
 	int num;
 	unsigned int val, i;
 
+	CCCI_INF_MSG(0, KERN, "IPC_RPC_GET_GPIO_ADC_OP reqMask=%x\n", input->reqMask);
 	if ((input->reqMask & (RPC_REQ_GPIO_PIN | RPC_REQ_GPIO_VALUE)) == (RPC_REQ_GPIO_PIN | RPC_REQ_GPIO_VALUE)) {
 		for (i = 0; i < GPIO_MAX_COUNT; i++) {
 			if (input->gpioValidPinMask & (1 << i)) {
@@ -2088,13 +2097,13 @@ void ccci_md_exception_notify(struct ccci_modem *md, MD_EX_STAGE stage)
 		del_timer(&md->md_status_poller);
 		del_timer(&md->md_status_timeout);
 		md->ee_info_flag |= ((1 << MD_EE_FLOW_START) | (1 << MD_EE_SWINT_GET));
-		if (!MD_IN_DEBUG(md))
-			mod_timer(&md->ex_monitor, jiffies + EX_TIMER_SWINT * HZ);
 		md->ops->broadcast_state(md, EXCEPTION);
 		break;
 	case EX_DHL_DL_RDY:
 		break;
 	case EX_INIT_DONE:
+		if (!MD_IN_DEBUG(md))
+			mod_timer(&md->ex_monitor, jiffies + EX_TIMER_SWINT * HZ);
 		ccci_reset_seq_num(md);
 		break;
 	case MD_NO_RESPONSE:
@@ -2529,6 +2538,7 @@ PL_CORE_PROC:
 				case MD_EX_CC_CS_EXCEPTION:
 				case MD_EX_CC_MD32_EXCEPTION:
 				case MD_EX_CC_C2K_EXCEPTION:
+					/* Fall through */
 				case MD_EX_CC_ARM7_EXCEPTION:
 					/*
 					md1:(MCU_PCORE)

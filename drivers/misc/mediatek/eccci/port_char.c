@@ -133,7 +133,7 @@ static int dev_char_close(struct inode *inode, struct file *file)
 
 static void port_ch_dump(int md_id, char *str, void *msg_buf, int len)
 {
-    #if 0
+#if 0
 #define DUMP_BUF_SIZE 200
 	unsigned char *char_ptr = (unsigned char *)msg_buf;
 	char buf[DUMP_BUF_SIZE];

@@ -48,8 +48,9 @@ static int mt_rt_mon_enabled;
 static int rt_mon_count;
 static unsigned long long rt_start_ts, rt_end_ts, rt_dur_ts;
 static DEFINE_SPINLOCK(mt_rt_mon_lock);
-
-
+static struct mt_rt_mon_struct buffer[MAX_THROTTLE_COUNT];
+static int rt_mon_count_buffer;
+static unsigned long long rt_start_ts_buffer, rt_end_ts_buffer, rt_dur_ts_buffer;
 /*
  * Ease the printing of nsec fields:
  */
@@ -193,7 +194,10 @@ void stop_rt_mon_task(void)
 			cost_cputime =
 			   tmp->cputime - tmp->cost_isrtime - tmp->cputime_init;
 			tmp->cost_cputime += cost_cputime;
-			do_div(cost_cputime, rt_dur_ts);
+			if (rt_dur_ts == 0)
+				cost_cputime = 0;
+			else
+				do_div(cost_cputime, rt_dur_ts);
 			tmp->cputime_percen_6 = cost_cputime;
 		} else {
 			tmp->cost_cputime = 0;
@@ -255,6 +259,11 @@ void mt_rt_mon_print_task(void)
 	int count = 0;
 	struct mt_rt_mon_struct *tmp;
 
+	rt_mon_count_buffer = rt_mon_count;
+	rt_start_ts_buffer = rt_start_ts;
+	rt_end_ts_buffer =  rt_end_ts;
+	rt_dur_ts_buffer = rt_dur_ts;
+
 	pr_err(
 		"sched: mon_count = %d monitor start[%lld.%06lu] end[%lld.%06lu] dur[%lld.%06lu]\n",
 		rt_mon_count, SPLIT_NS_H(rt_start_ts), SPLIT_NS_L(rt_start_ts),
@@ -267,6 +276,7 @@ void mt_rt_mon_print_task(void)
 	list_sort(NULL, &mt_rt_mon_head.list, mt_rt_mon_cmp);
 
 	list_for_each_entry(tmp, &mt_rt_mon_head.list, list) {
+		memcpy(&buffer[count], tmp, sizeof(struct mt_rt_mon_struct));
 		count++;
 		pr_err("sched:[%s] pid:%d prio:%d cputime[%lld.%06lu] percen[%d.%04d%%] isr_time[%lld.%06lu]\n",
 			tmp->comm, tmp->pid, tmp->prio,
@@ -279,6 +289,28 @@ void mt_rt_mon_print_task(void)
 	}
 
 	spin_unlock_irqrestore(&mt_rt_mon_lock, irq_flags);
+}
+
+void mt_rt_mon_print_task_from_buffer(void)
+{
+	int i;
+
+	pr_err("last throttle information start\n");
+	pr_err("sched: mon_count = %d monitor start[%lld.%06lu] end[%lld.%06lu] dur[%lld.%06lu]\n",
+		rt_mon_count_buffer, SPLIT_NS_H(rt_start_ts_buffer), SPLIT_NS_L(rt_start_ts_buffer),
+		SPLIT_NS_H(rt_end_ts_buffer), SPLIT_NS_L(rt_end_ts_buffer),
+		SPLIT_NS_H((rt_end_ts_buffer - rt_start_ts_buffer)),
+		SPLIT_NS_L((rt_end_ts_buffer - rt_start_ts_buffer)));
+
+	for (i = 0 ; i < MAX_THROTTLE_COUNT ; i++)  {
+		pr_err("sched:[%s] pid:%d prio:%d cputime[%lld.%06lu] percen[%d.%04d%%] isr_time[%lld.%06lu]\n",
+			buffer[i].comm, buffer[i].pid, buffer[i].prio,
+			SPLIT_NS_H(buffer[i].cost_cputime), SPLIT_NS_L(buffer[i].cost_cputime),
+			buffer[i].cputime_percen_6 / 10000, buffer[i].cputime_percen_6 % 10000,
+			SPLIT_NS_H(buffer[i].isr_time), SPLIT_NS_L(buffer[i].isr_time));
+	}
+
+	pr_err("last throttle information end\n");
 }
 
 void mt_rt_mon_switch(int on)

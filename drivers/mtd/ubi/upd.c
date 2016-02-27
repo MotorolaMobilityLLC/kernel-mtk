@@ -142,6 +142,9 @@ int ubi_start_update(struct ubi_device *ubi, struct ubi_volume *vol,
 		return err;
 
 	/* Before updating - wipe out the volume */
+#ifdef CONFIG_MTK_SLC_BUFFER_SUPPORT
+	ubi_wipe_mtbl_record(ubi, vol->vol_id);
+#endif
 	for (i = 0; i < vol->reserved_pebs; i++) {
 		err = ubi_eba_unmap_leb(ubi, vol, i);
 		if (err)
@@ -243,7 +246,11 @@ static int write_leb(struct ubi_device *ubi, struct ubi_volume *vol, int lnum,
 			dbg_gen("all %d bytes contain 0xFF - skip", len);
 			return 0;
 		}
-
+#ifdef CONFIG_MTK_SLC_BUFFER_SUPPORT
+		if (lnum >= 10)
+			err = ubi_eba_write_tlc_leb(ubi, vol, lnum, buf, 0, len);
+		else
+#endif
 		err = ubi_eba_write_leb(ubi, vol, lnum, buf, 0, len);
 	} else {
 		/*
@@ -416,6 +423,11 @@ int ubi_more_leb_change_data(struct ubi_device *ubi, struct ubi_volume *vol,
 		memset(vol->upd_buf + vol->upd_bytes, 0xFF,
 		       len - vol->upd_bytes);
 		len = ubi_calc_data_len(ubi, vol->upd_buf, len);
+#ifdef CONFIG_MTK_SLC_BUFFER_SUPPORT
+		if (vol->ch_lnum >= 10)
+			err = ubi_eba_write_tlc_leb(ubi, vol, vol->ch_lnum, vol->upd_buf, 0, len);
+		else
+#endif
 		err = ubi_eba_atomic_leb_change(ubi, vol, vol->ch_lnum,
 						vol->upd_buf, len);
 		if (err)

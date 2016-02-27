@@ -255,6 +255,10 @@ int mt_set_gpio_pull_select_base(unsigned long pin, unsigned long select)
 	if (pin >= MAX_GPIO_PIN)
 		return -ERINVAL;
 
+	if (pin == 5) {
+		pr_err("XXX MSDC SD CD PIN be touched!\n");
+		dump_stack();
+	}
 #ifdef GPIO_BRINGUP
 
 
@@ -478,8 +482,8 @@ int mt_set_gpio_mode_base(unsigned long pin, unsigned long mode)
 	/* pos = pin / MAX_GPIO_MODE_PER_REG; */
 	bit = MODE_offset[pin].offset;
 
-	GPIOERR("modebefore1 set pin[%ld],addr=%lx,(%p,%p)\n", pin, MODE_addr[pin].addr, GPIO_BASE,
-		(GPIO_BASE + MODE_addr[pin].addr));
+	/* GPIOERR("modebefore1 set pin[%ld],addr=%lx,(%p,%p)\n", pin, MODE_addr[pin].addr, GPIO_BASE,
+		(GPIO_BASE + MODE_addr[pin].addr)); */
 
 /* #ifdef GPIO_BRINGUP */
 #if 1
@@ -509,8 +513,8 @@ int mt_set_gpio_mode_base(unsigned long pin, unsigned long mode)
 
 
 #endif
-	GPIOERR("%s:pin:%ld, mode:%ld, value:0x%x\n", __func__, pin, mode,
-		GPIO_RD32(MODE_addr[pin].addr));
+	/* GPIOERR("%s:pin:%ld, mode:%ld, value:0x%x\n", __func__, pin, mode,
+		GPIO_RD32(MODE_addr[pin].addr)); */
 
 	return RSUCCESS;
 }

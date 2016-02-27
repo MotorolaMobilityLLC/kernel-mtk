@@ -720,6 +720,10 @@ static IST_EVENT_FUNCTION apfnEventFuncTable[] = {
 *                              F U N C T I O N S
 ********************************************************************************
 */
+VOID HifDumpEnhanceModeData(P_ADAPTER_T prAdapter)
+{
+	dumpMemory32((PUINT_32)prAdapter->prSDIOCtrl, sizeof(ENHANCE_MODE_DATA_STRUCT_T));
+}
 
 VOID HifRegDump(P_ADAPTER_T prAdapter)
 {

@@ -1,4 +1,3 @@
-
 config MTK_AUTO_DETECT_ACCELEROMETER
 	bool "MTK_AUTO_DETECT_ACCELEROMETER"
 	depends on MTK_SENSOR_SUPPORT
@@ -17,6 +16,7 @@ config CUSTOM_KERNEL_ACCELEROMETER
           driver configuration should be configured as well.
 
 source "drivers/misc/mediatek/accelerometer/mc3410-new/Kconfig"
+source "drivers/misc/mediatek/accelerometer/mc3xxx_auto/Kconfig"
 source "drivers/misc/mediatek/accelerometer/icm20645g/Kconfig"
 source "drivers/misc/mediatek/accelerometer/mpu6050g-new/Kconfig"
 source "drivers/misc/mediatek/accelerometer/mpu6515/Kconfig"

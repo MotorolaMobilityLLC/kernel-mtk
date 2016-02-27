@@ -102,6 +102,18 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 		interrupts = <GIC_SPI 248 IRQ_TYPE_EDGE_RISING>;
 	};
 
+	utos {
+	compatible = "microtrust,utos";
+	interrupts = <GIC_SPI 244 IRQ_TYPE_EDGE_RISING>,
+		<GIC_SPI 245 IRQ_TYPE_EDGE_RISING>,
+		<GIC_SPI 246 IRQ_TYPE_EDGE_RISING>,
+		<GIC_SPI 250 IRQ_TYPE_EDGE_RISING>,
+		<GIC_SPI 251 IRQ_TYPE_EDGE_RISING>,
+		<GIC_SPI 252 IRQ_TYPE_EDGE_RISING>,
+		<GIC_SPI 253 IRQ_TYPE_EDGE_RISING>,
+		<GIC_SPI 255 IRQ_TYPE_EDGE_RISING>;
+	};
+
 	cpus {	#address-cells = <1>;
 		#size-cells = <0>;
 
@@ -706,6 +718,19 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 			status = "okay";
 		};
 
+		irtx-pwm {
+			compatible = "mediatek,irtx-pwm";
+			pwm_ch = <2>;
+			pwm_data_invert = <0>;
+		};
+
+		irlearning-spi {
+			compatible = "mediatek,irlearning-spi";
+			spi_clock = <109000000>;
+			spi_data_invert = <0>;
+			spi_cs_invert = <1>;
+		};
+
 		apuart0: apuart0@11002000 {
 			cell-index = <0>;
 			compatible = "mediatek,mt6735-uart";
@@ -1218,6 +1243,7 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 				 <&mmsys MM_DISP1_DPI_PIXEL>,
 				 <&perisys PERI_DISP_PWM>,
 				 <&topckgen TOP_MUX_DPI0>,
+                                 <&apmixedsys APMIXED_TVDPLL>,
 				 <&topckgen TOP_TVDPLL_CK>,
 				 <&topckgen TOP_TVDPLL_D2>,
 				 <&topckgen TOP_TVDPLL_D4>,
@@ -1245,6 +1271,7 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 				      "DISP1_DPI_PIXEL",
 				      "DISP_PWM",
 				      "MUX_DPI0",
+                                      "TVDPLL",
 				      "TVDPLL_CK",
 				      "TVDPLL_D2",
 				      "TVDPLL_D4",
@@ -1258,6 +1285,10 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 
 		mhl:mhl@0 {
 			compatible = "mediatek,sii8348-hdmi";
+		};
+
+		lcm_mode: lcm_mode {
+			compatible = "mediatek,lcm_mode";
 		};
 
 		smi_larb0@14015000 {
@@ -1382,9 +1413,9 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 			reg = <0x15008000 0x1000>;  /* SENINF_ADDR */
 		};
 
-		fdvt@1500B000 {
-			compatible = "mediatek,mt6735-fdvt";
-			reg = <0x1500B000 0x1000>;
+		fdvt@1500b000 {
+			compatible = "mediatek,fdvt";
+			reg = <0x1500b000 0x1000>;
 			interrupts = <GIC_SPI 208 IRQ_TYPE_LEVEL_LOW>;
 			clocks = <&scpsys SCP_SYS_DIS>,
 				 <&scpsys SCP_SYS_ISP>,
@@ -2881,8 +2912,10 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 			/* High battery support */
 			high_battery_voltage_support = <0 >;
 		};
-
-
+		dsi_te: dsi_te {
+			compatible = "mediatek, dsi_te_1-eint";
+			status = "disabled";
+		};
 	};
 
 	vcorefs {
@@ -2968,7 +3001,7 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 		status = "disabled";
 	};
 
-	mt8193ckgen {
+	mt8193ckgen: mt8193ckgen@0 {
 		compatible = "mediatek,mt8193-ckgen";
 	};
 
@@ -2976,6 +3009,35 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 		compatible = "mediatek,multibridge";
 	};
 
+};
+
+&mt8193ckgen {
+	pinctrl-names = "default", "bus_switch_gpio", "bus_switch_dpi";
+	pinctrl-0 = <&mt8193ckgen_pins_default>;
+	pinctrl-1 = <&mt8193ckgen_pins_gpio>;
+	pinctrl-2 = <&mt8193ckgen_pins_dpi>;
+	bus_switch_pin = <&pio 0 0>;
+	status = "okay";
+};
+
+&pio {
+	mt8193ckgen_pins_default: 8193ckgen_default {
+	};
+
+	mt8193ckgen_pins_gpio: 8193ckgen_gpio {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO0__FUNC_GPIO0>;
+			slew-rate = <1>;
+			bias-pull-up = <00>;
+			output-high;
+		};
+	};
+
+	mt8193ckgen_pins_dpi: 8193ckgen_dpi {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO0__FUNC_DPI_D4>;
+		};
+	};
 };
 
 &eintc {

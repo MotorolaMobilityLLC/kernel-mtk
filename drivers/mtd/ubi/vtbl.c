@@ -471,28 +471,28 @@ static struct ubi_vtbl_record *process_lvol(struct ubi_device *ubi,
 		/* Both LEB 1 and LEB 2 are OK and consistent */
 		vfree(leb[1]);
 		return leb[0];
-	} else {
-		/* LEB 0 is corrupted or does not exist */
-		if (leb[1]) {
-			leb_corrupted[1] = vtbl_check(ubi, leb[1]);
-			if (leb_corrupted[1] < 0)
-				goto out_free;
-		}
-		if (leb_corrupted[1]) {
-			/* Both LEB 0 and LEB 1 are corrupted */
-			ubi_err("both volume tables are corrupted");
-			goto out_free;
-		}
-
-		ubi_warn("volume table copy #1 is corrupted");
-		err = create_vtbl(ubi, ai, 0, leb[1]);
-		if (err)
-			goto out_free;
-		ubi_msg("volume table was restored");
-
-		vfree(leb[0]);
-		return leb[1];
 	}
+
+	/* LEB 0 is corrupted or does not exist */
+	if (leb[1]) {
+		leb_corrupted[1] = vtbl_check(ubi, leb[1]);
+		if (leb_corrupted[1] < 0)
+			goto out_free;
+	}
+	if (leb_corrupted[1]) {
+		/* Both LEB 0 and LEB 1 are corrupted */
+		ubi_err("both volume tables are corrupted");
+		goto out_free;
+	}
+
+	ubi_warn("volume table copy #1 is corrupted");
+	err = create_vtbl(ubi, ai, 0, leb[1]);
+	if (err)
+		goto out_free;
+	ubi_msg("volume table was restored");
+
+	vfree(leb[0]);
+	return leb[1];
 
 out_free:
 	vfree(leb[0]);
@@ -660,7 +660,7 @@ static int init_volumes(struct ubi_device *ubi,
 	ubi->vol_count += 1;
 	vol->ubi = ubi;
 
-#ifdef CONFIG_BLB
+#ifdef CONFIG_MTD_UBI_LOWPAGE_BACKUP
 	/* And add the backup volume */
 	vol = kzalloc(sizeof(struct ubi_volume), GFP_KERNEL);
 	if (!vol)
@@ -686,6 +686,31 @@ static int init_volumes(struct ubi_device *ubi,
 	vol->ubi = ubi;
 #endif
 
+#ifdef CONFIG_MTK_SLC_BUFFER_SUPPORT
+	/* And add the maintain table volume */
+	vol = kzalloc(sizeof(struct ubi_volume), GFP_KERNEL);
+	if (!vol)
+		return -ENOMEM;
+
+	vol->reserved_pebs = UBI_MAINTAIN_VOLUME_EBS;
+	vol->alignment = 1;
+	vol->vol_type = UBI_DYNAMIC_VOLUME;
+	vol->name_len = sizeof(UBI_MAINTAIN_VOLUME_NAME) - 1;
+	memcpy(vol->name, UBI_MAINTAIN_VOLUME_NAME, vol->name_len + 1);
+	vol->usable_leb_size = ubi->leb_size;
+	vol->used_ebs = vol->reserved_pebs;
+	vol->last_eb_bytes = vol->reserved_pebs;
+	vol->used_bytes =
+		(long long)vol->used_ebs * (ubi->leb_size - vol->data_pad);
+	vol->vol_id = UBI_MAINTAIN_VOLUME_ID;
+	vol->ref_count = 1;
+
+	ubi_assert(!ubi->volumes[vol_id2idx(ubi, vol->vol_id)]);
+	ubi->volumes[vol_id2idx(ubi, vol->vol_id)] = vol;
+	reserved_pebs += vol->reserved_pebs;
+	ubi->vol_count += 1;
+	vol->ubi = ubi;
+#endif
 
 	if (reserved_pebs > ubi->avail_pebs) {
 		ubi_err("not enough PEBs, required %d, available %d",
@@ -891,6 +916,10 @@ out_free:
 		kfree(ubi->volumes[i]);
 		ubi->volumes[i] = NULL;
 	}
+#ifdef CONFIG_MTK_SLC_BUFFER_SUPPORT
+	vfree(ubi->mtbl);
+	vfree(ubi->empty_mtbl_record);
+#endif
 	return err;
 }
 
@@ -908,3 +937,136 @@ static void self_vtbl_check(const struct ubi_device *ubi)
 		BUG();
 	}
 }
+
+#ifdef CONFIG_MTK_SLC_BUFFER_SUPPORT
+int ubi_change_empty_ec(struct ubi_device *ubi, int pnum, int ec, int vol_id, int map)
+{
+	uint32_t crc;
+
+	if (ubi->empty_mtbl_record == NULL) {
+		ubi_err("cannot get empty maintain tale for update empty ec!");
+		dump_stack();
+		return 0;
+	}
+	ubi->empty_mtbl_record->info[pnum].ec = cpu_to_be32(ec);
+	ubi->empty_mtbl_record->info[pnum].vol_id = cpu_to_be32(vol_id);
+	ubi->empty_mtbl_record->info[pnum].map = cpu_to_be32(map);
+	crc = crc32(UBI_CRC32_INIT, ubi->empty_mtbl_record->info, ubi->mtbl_slots*sizeof(struct ec_map_info));
+	ubi->empty_mtbl_record->crc = cpu_to_be32(crc);
+#ifdef MTK_TMP_DEBUG_LOG
+	pr_err("update maintain table info:\n");
+	pr_err("magic: %x\n", ubi->empty_mtbl_record->magic);
+	pr_err("crc: %x\n", ubi->empty_mtbl_record->crc);
+	pr_err("peb_count: %x\n", ubi->empty_mtbl_record->peb_count);
+	pr_err("ec:%x\n", ubi->empty_mtbl_record->info[pnum].ec);
+	pr_err("map:%x\n", ubi->empty_mtbl_record->info[pnum].map);
+#endif
+	return 0;
+}
+int ubi_read_mtbl_record(struct ubi_device *ubi, struct ubi_attach_info *ai, int peb_count)
+{
+	int err = 0, tbsz, align_tbsz, crc_sz;
+	int i;
+	uint32_t crc;
+	struct ubi_ainf_volume *av;
+	struct rb_node *rb;
+	struct ubi_ainf_peb *aeb;
+	struct ubi_mtbl_record *mtbl_rec;
+	char *leb[UBI_MAINTAIN_VOLUME_EBS] = { NULL };
+
+	if (peb_count == 0)
+		dump_stack();
+
+	tbsz = sizeof(struct ubi_mtbl_record) + peb_count * sizeof(struct ec_map_info);
+	align_tbsz = ALIGN(tbsz, ubi->min_io_size);
+	crc_sz = peb_count * sizeof(struct ec_map_info);
+
+	dbg_gen("table sz(%d), align sz(%d), crc sz(%d) over peb count(%d)", tbsz, align_tbsz, crc_sz, peb_count);
+
+	ubi->mtbl_size = align_tbsz;
+	ubi->empty_mtbl_record = vmalloc(ubi->mtbl_size); /* need free */
+	if (!ubi->empty_mtbl_record) {
+		err = -ENOMEM;
+		ubi_err("cannot create the empty maintain table at ENOMEM");
+		goto out_free;
+	}
+	memset(ubi->empty_mtbl_record, 0xFF, ubi->mtbl_size);
+	ubi->empty_mtbl_record->magic = cpu_to_be32(UBI_MT_EBA_MAGIC);
+	ubi->empty_mtbl_record->peb_count = cpu_to_be32(peb_count);
+	memset(ubi->empty_mtbl_record->info, 0, crc_sz);
+	crc = crc32(UBI_CRC32_INIT, ubi->empty_mtbl_record->info, crc_sz);
+	ubi->empty_mtbl_record->crc = cpu_to_be32(crc);
+	ubi->mtbl_slots = peb_count; /* tlc peb counts */
+
+	av = ubi_find_av(ai, UBI_MAINTAIN_VOLUME_ID);
+	if (!av) {
+		ubi_err("the maintain table volume was not found");
+		return -EINVAL;
+	}
+
+	if (av->leb_count > UBI_MAINTAIN_VOLUME_EBS) {
+		/* This must not happen with proper UBI images */
+		ubi_err("too many LEBs (%d) in maintain table volume",
+				av->leb_count);
+		return -EINVAL;
+	}
+	ubi_rb_for_each_entry(rb, aeb, &av->root, u.rb) {
+		leb[aeb->lnum] = vmalloc(ubi->leb_size);
+		if (!leb[aeb->lnum]) {
+			err = -ENOMEM;
+			goto out_free;
+		}
+		err = ubi_io_read_data(ubi, leb[aeb->lnum], aeb->pnum, 0,
+				ubi->leb_size);
+		if (err == UBI_IO_BITFLIPS || mtd_is_eccerr(err))
+			aeb->scrub = 1;
+		else if (err)
+			goto out_free;
+	}
+
+	mtbl_rec = (struct ubi_mtbl_record *)(leb[0] + ubi->leb_size);
+	while (mtbl_rec >= (struct ubi_mtbl_record *)leb[0]) {
+		mtbl_rec = (struct ubi_mtbl_record *)((char *)mtbl_rec - ubi->min_io_size);
+		if (be32_to_cpu(mtbl_rec->magic) == UBI_MT_EBA_MAGIC) {
+			ubi_assert(peb_count == be32_to_cpu(mtbl_rec->peb_count));
+			crc = crc32(UBI_CRC32_INIT, mtbl_rec->info, crc_sz);
+			if (crc == be32_to_cpu(mtbl_rec->crc)) {
+				ubi->mtbl_count = ((char *)mtbl_rec - leb[0]) / ubi->mtbl_size + 1;
+				break;
+			}
+		}
+	}
+	if (ubi->mtbl_count == 0) {
+		ubi_err("the maintain table was not found at count %d", ubi->mtbl_count);
+		goto out_free;
+	} else {
+		ubi_err("the maintain table was found at count %d", ubi->mtbl_count);
+		memcpy(ubi->empty_mtbl_record, mtbl_rec, tbsz);
+	}
+	ubi->mtbl = vmalloc(ubi->mtbl_size); /* need free */
+	if (!ubi->mtbl) {
+		err = -ENOMEM;
+		goto out_free;
+	}
+
+	memcpy(ubi->mtbl, mtbl_rec, tbsz);
+#ifdef MTK_TMP_DEBUG_LOG
+	pr_err("maintain table info:\n");
+	pr_err("magic: %x\n", ubi->mtbl->magic);
+	pr_err("crc: %x\n", ubi->mtbl->crc);
+	pr_err("peb_count: %x\n", ubi->mtbl->peb_count);
+	pr_err("ec:\n");
+	for (i = 0; i < ubi->mtbl_slots; i++) {
+		pr_err("%x:%d:%d ", cpu_to_be32(ubi->mtbl->info[i].ec), cpu_to_be32(ubi->mtbl->info[i].vol_id),
+			cpu_to_be32(ubi->mtbl->info[i].map));
+		if ((i + 1) % 16 == 0)
+			pr_err("\n");
+	}
+#endif
+out_free:
+	if (leb[0])
+		vfree(leb[0]);
+	return err;
+}
+#endif
+

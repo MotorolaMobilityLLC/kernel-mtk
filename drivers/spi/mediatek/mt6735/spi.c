@@ -98,7 +98,9 @@ static void enable_clk(struct mt_spi_t *ms)
 #if defined(CONFIG_MTK_CLKMGR)
 	enable_clock(MT_CG_PERI_SPI0, "spi");
 #else
-	clk_prepare_enable(ms->clk_main);
+	int ret;
+/*	clk_prepare_enable(ms->clk_main); */
+	ret = clk_enable(ms->clk_main);
 #endif
 #endif
 }
@@ -115,7 +117,8 @@ static void disable_clk(struct mt_spi_t *ms)
 #if defined(CONFIG_MTK_CLKMGR)
 	disable_clock(MT_CG_PERI_SPI0, "spi");
 #else
-	clk_disable_unprepare(ms->clk_main);
+/*	clk_disable_unprepare(ms->clk_main); */
+	clk_disable(ms->clk_main);
 #endif
 #endif
 
@@ -701,7 +704,7 @@ static int mt_spi_next_xfer(struct mt_spi_t *ms, struct spi_message *msg)
 	struct mt_chip_conf *chip_config = (struct mt_chip_conf *)msg->state;
 	u8 mode, cnt, i;
 	int ret = 0;
-	char xfer_rec[16];
+	char xfer_rec[64];
 #ifdef SPI_AUTO_SELECT_MODE
 	u32 reg_val = 0;
 #endif
@@ -881,7 +884,7 @@ static void mt_spi_next_message(struct mt_spi_t *ms)
 {
 	struct spi_message *msg;
 	struct mt_chip_conf *chip_config;
-	char msg_addr[16];
+	char msg_addr[64];
 
 	msg = list_entry(ms->queue.next, struct spi_message, queue);
 	chip_config = (struct mt_chip_conf *)msg->state;
@@ -919,7 +922,7 @@ static int mt_spi_transfer(struct spi_device *spidev, struct spi_message *msg)
 	struct spi_transfer *xfer;
 	struct mt_chip_conf *chip_config;
 	unsigned long flags;
-	char msg_addr[16];
+	char msg_addr[64];
 
 	master = spidev->master;
 	ms = spi_master_get_devdata(master);
@@ -1412,7 +1415,21 @@ static int __init mt_spi_probe(struct platform_device *pdev)
 	}
 
 	spi_master_set_devdata(master, ms);
+#if !defined(CONFIG_MTK_CLKMGR)
+	/*
+	 * prepare the clock source
+	 */
+	ret = clk_prepare(ms->clk_main);
+#endif
+	/*
+	 * enable clk before access spi register
+	 */
+	enable_clk(ms);
 	reset_spi(ms);
+	/*
+	 * disable clk when finishing access spi register
+	 */
+	disable_clk(ms);
 
 	ret = spi_register_master(master);
 	if (ret) {
@@ -1460,11 +1477,38 @@ static int mt_spi_suspend(struct platform_device *pdev, pm_message_t message)
 {
 	/* if interrupt is enabled,
 	 * then wait for interrupt complete. */
+	struct mt_spi_t *ms;
+	struct spi_master *master = platform_get_drvdata(pdev);
+
+	ms = spi_master_get_devdata(master);
+
+#if !defined(CONFIG_MTK_CLKMGR)
+	/*
+	 * unprepare the clock source
+	 */
+	clk_unprepare(ms->clk_main);
+	SPI_DBG("spi mt_spi_suspend clk_unpreparer success.\n");
+#endif
 	return 0;
 }
 
 static int mt_spi_resume(struct platform_device *pdev)
 {
+#if !defined(CONFIG_MTK_CLKMGR)
+	int ret;
+#endif
+	struct mt_spi_t *ms;
+	struct spi_master *master = platform_get_drvdata(pdev);
+
+	ms = spi_master_get_devdata(master);
+
+#if !defined(CONFIG_MTK_CLKMGR)
+	/*
+	 * prepare the clock source
+	 */
+	ret = clk_prepare(ms->clk_main);
+	SPI_DBG("spi mt_spi_resume clk_prepare success.\n");
+#endif
 	return 0;
 }
 #else

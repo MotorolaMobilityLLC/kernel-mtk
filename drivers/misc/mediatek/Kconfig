@@ -160,9 +160,16 @@ config MTK_LCM_PHYSICAL_ROTATION_HW
 	  Enable it when LCM hardware is intalled upside down,
 	  and you need to rotate the display content to adapting.
 
+config TABLET_PROJECT
+	bool "IS_TABLET_PROJECT"
+	default n
+	help
+	  Is Tablet Project or not
+
 source "drivers/misc/mediatek/gpt/Kconfig"
 source "drivers/misc/mediatek/uart/Kconfig"
 source "drivers/misc/mediatek/irtx/Kconfig"
+source "drivers/misc/mediatek/ir_learning/Kconfig"
 source "drivers/misc/mediatek/irq/Kconfig"
 source "drivers/misc/mediatek/auxadc/Kconfig"
 source "drivers/misc/mediatek/videocodec/Kconfig"
@@ -230,6 +237,7 @@ source "drivers/misc/mediatek/pdr_sensor/Kconfig"
 source "drivers/misc/mediatek/freefall_sensor/Kconfig"
 source "drivers/misc/mediatek/sensorHub/Kconfig"
 source "drivers/misc/mediatek/gud/Kconfig"
+source "drivers/misc/mediatek/teei/Kconfig"
 source "drivers/misc/mediatek/freqhopping/Kconfig"
 source "drivers/misc/mediatek/cirq/Kconfig"
 source "drivers/misc/mediatek/accdet/Kconfig"

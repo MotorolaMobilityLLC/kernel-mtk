@@ -3,6 +3,7 @@
 
 #include "lcm_drv.h"
 
+#if defined(MTK_LCM_DEVICE_TREE_SUPPORT)
 typedef enum {
 	LCM_STATUS_OK = 0,
 	LCM_STATUS_ERROR,
@@ -18,5 +19,6 @@ void lcm_common_resume(void);
 void lcm_common_update(unsigned int x, unsigned int y, unsigned int width, unsigned int height);
 void lcm_common_setbacklight(unsigned int level);
 unsigned int lcm_common_compare_id(void);
+#endif
 
 #endif

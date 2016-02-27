@@ -11,10 +11,6 @@
 #include "ddp_rdma.h"
 #include "ddp_rdma_ex.h"
 
-#if defined(MTK_FB_SODI_SUPPORT)
-#include "mt_spm.h"
-#endif
-
 #ifdef CONFIG_MTK_CLKMGR
 #include <mach/mt_clkmgr.h>
 #endif
@@ -366,10 +362,6 @@ static void mutex_dump_analysis(void)
 
 static void mmsys_config_dump_reg(void)
 {
-#if defined(MTK_FB_SODI_SUPPORT)
-	unsigned int i = 0;
-#endif
-
 	DDPMSG("== DISP Config  ==\n");
 	DDPMSG("(0x0 )MMSYS_INTEN      =0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_MMSYS_INTEN));
 	DDPMSG("(0x4 )MMSYS_INTSTA     =0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_MMSYS_INTSTA));
@@ -403,14 +395,6 @@ static void mmsys_config_dump_reg(void)
 	DDPMSG("(0xc08)C08             =0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_C08));
 	DDPMSG("(0x40 )C09             =0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_C09));
 	DDPMSG("(0x44 )C10             =0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_C10));
-
-#if defined(MTK_FB_SODI_SUPPORT)
-	DDPMSG("==DISP SPM REGS==\n");
-	for (i = 0; i < 4 * 16; i += 16)
-		DDPMSG("SPM_PCM_DATA+%04x : 0x%08x  0x%08x  0x%08x  0x%08x\n", i,
-		       INREG32(SPM_PCM_REG0_DATA + i), INREG32(SPM_PCM_REG0_DATA + i + 0x4),
-		       INREG32(SPM_PCM_REG0_DATA + i + 0x8), INREG32(SPM_PCM_REG0_DATA + i + 0xc));
-#endif
 }
 
 /* ------ clock:
@@ -806,13 +790,13 @@ static void dsi_dump_reg(DISP_MODULE_ENUM module)
 	if (DISP_MODULE_DSI0 == module) {
 		DDPDUMP("==DISP DSI0 REGS==\n");
 		for (i = 0; i < 25 * 16; i += 16)
-			pr_debug("DSI0+%04x : 0x%08x  0x%08x  0x%08x  0x%08x\n", i,
+			DDPDUMP("DSI0+%04x : 0x%08x  0x%08x  0x%08x  0x%08x\n", i,
 				 INREG32(DISPSYS_DSI0_BASE + i),
 				 INREG32(DISPSYS_DSI0_BASE + i + 0x4),
 				 INREG32(DISPSYS_DSI0_BASE + i + 0x8),
 				 INREG32(DISPSYS_DSI0_BASE + i + 0xc));
 
-		pr_debug("DSI0 CMDQ+0x200 : 0x%08x  0x%08x  0x%08x  0x%08x\n",
+		DDPDUMP("DSI0 CMDQ+0x200 : 0x%08x  0x%08x  0x%08x  0x%08x\n",
 			 INREG32(DISPSYS_DSI0_BASE + 0x200),
 			 INREG32(DISPSYS_DSI0_BASE + 0x200 + 0x4),
 			 INREG32(DISPSYS_DSI0_BASE + 0x200 + 0x8),

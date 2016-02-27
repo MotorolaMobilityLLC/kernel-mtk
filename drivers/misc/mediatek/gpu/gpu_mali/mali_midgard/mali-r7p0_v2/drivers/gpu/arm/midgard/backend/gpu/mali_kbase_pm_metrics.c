@@ -63,84 +63,9 @@ int g_touch_boost_id = 0;
 int g_early_suspend = 0;
 extern unsigned int g_power_status;
 
-#ifdef CONFIG_HAS_EARLYSUSPEND
-#include <linux/earlysuspend.h>
-#endif /* CONFIG_HAS_EARLYSUSPEND */
 #include <linux/suspend.h>
 
 static enum hrtimer_restart dvfs_callback(struct hrtimer *timer);
-
-#ifdef CONFIG_HAS_EARLYSUSPEND
-static void mali_early_suspend(struct early_suspend *h)
-{
-		struct list_head *entry;
-	  const struct list_head *kbdev_list;    
-	  unsigned long flgs;	  
-	  kbdev_list = kbase_dev_list_get();
-	  
-	  list_for_each(entry, kbdev_list) 
-	  {
-	  	struct kbase_device *kbdev = NULL;
-	  	kbdev = list_entry(entry, struct kbase_device, entry);	  	
-		spin_lock_irqsave(&kbdev->pm.backend.metrics.lock, flgs);
-	    g_early_suspend = 1;				
-	    spin_unlock_irqrestore(&kbdev->pm.backend.metrics.lock, flgs);
-	  	
-	  	if (true == kbdev->pm.backend.metrics.timer_active)
-	  	{
-				 unsigned long flags;	
-				
-				 spin_lock_irqsave(&kbdev->pm.backend.metrics.lock, flags);
-				 kbdev->pm.backend.metrics.timer_active = false;				
-				 spin_unlock_irqrestore(&kbdev->pm.backend.metrics.lock, flags);
-				 
-				 hrtimer_cancel(&kbdev->pm.backend.metrics.timer);
-	  	}
-	  }	  
-	  kbase_dev_list_put(kbdev_list);	  	  
-}
-
-
-static void mali_late_resume(struct early_suspend *h)
-{	  
-		struct list_head *entry;
-	  const struct list_head *kbdev_list;	  	    
-	  unsigned long flgs;
-	  kbdev_list = kbase_dev_list_get();	
-	    
-	  list_for_each(entry, kbdev_list) 
-	  {
-	  	 struct kbase_device *kbdev = NULL;
-	  	 kbdev = list_entry(entry, struct kbase_device, entry);	  	
-
-	  	 if (false == kbdev->pm.backend.metrics.timer_active)
-	  	 {		
-	  	 	 unsigned long flags;	
-	  	 	 
-			 	 spin_lock_irqsave(&kbdev->pm.backend.metrics.lock, flags);
-  		 	 kbdev->pm.backend.metrics.timer_active = true;
-  		 	 spin_unlock_irqrestore(&kbdev->pm.backend.metrics.lock, flags);
-  		 	 
-  		 	 hrtimer_init(&kbdev->pm.backend.metrics.timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
-  		 	 kbdev->pm.backend.metrics.timer.function = dvfs_callback;
-  		 	 hrtimer_start(&kbdev->pm.backend.metrics.timer, HR_TIMER_DELAY_MSEC(kbdev->pm.platform_dvfs_frequency), HRTIMER_MODE_REL);
-			 spin_lock_irqsave(&kbdev->pm.backend.metrics.lock, flags);
-  		 	 g_early_suspend = 0;
-  		 	 spin_unlock_irqrestore(&kbdev->pm.backend.metrics.lock, flags);			 
-  		 }
-  	}
-  	kbase_dev_list_put(kbdev_list);  	
-}
-
-
-static struct early_suspend mali_early_suspend_handler =
-{
-	.level =    EARLY_SUSPEND_LEVEL_BLANK_SCREEN +1 ,
-	.suspend =  mali_early_suspend,
-	.resume =   mali_late_resume,
-};
-#endif /* CONFIG_HAS_EARLYSUSPEND */
-
 
 void mali_SODI_begin(void)
 {
@@ -804,9 +729,6 @@ void kbasep_pm_metrics_term(struct kbase_device *kbdev)
 
 	KBASE_DEBUG_ASSERT(kbdev != NULL);
 
-#ifdef CONFIG_HAS_EARLYSUSPEND
-    unregister_early_suspend(&mali_early_suspend_handler);
-#endif
 	if (true == kbdev->pm.backend.metrics.timer_active)
 	{
 		spin_lock_irqsave(&kbdev->pm.backend.metrics.lock, flags);

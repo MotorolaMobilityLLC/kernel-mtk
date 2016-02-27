@@ -16,6 +16,7 @@ void disp_register_irq(unsigned int irq_num, char *device_name);
 int disp_init_irq(void);
 
 void disp_dump_emi_status(void);
+int disp_irq_get_reset_status(void);
 
 extern unsigned int ovl_complete_irq_cnt[2];
 extern unsigned long long rdma_start_time[2];

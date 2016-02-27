@@ -44,7 +44,7 @@
 #include <linux/major.h>
 #include "ubi.h"
 #ifdef CONFIG_MTK_COMBO_NAND_SUPPORT
-#ifdef CONFIG_MTK_MLC_NAND_SUPPORT
+#if defined(CONFIG_MTK_MLC_NAND_SUPPORT) || defined(CONFIG_MTK_SLC_BUFFER_SUPPORT)
 #define COMBO_NAND_BLOCK_SIZE (ubi->mtd->erasesize)
 #define COMBO_NAND_PAGE_SIZE  (ubi->mtd->writesize)
 #else
@@ -173,6 +173,24 @@ static struct device_attribute dev_scrub_size =
 	__ATTR(scrub_size, S_IRUGO, dev_attribute_show, NULL);
 static struct device_attribute dev_wl_th =
 	__ATTR(wl_th, 00755, dev_attribute_show, dev_attribute_store);
+#ifdef CONFIG_MTK_SLC_BUFFER_SUPPORT
+static struct device_attribute dev_archive_count =
+	__ATTR(archive_count, S_IRUGO, dev_attribute_show, NULL);
+static struct device_attribute dev_tlc_ec_count =
+	__ATTR(tlc_ec_count, S_IRUGO, dev_attribute_show, NULL);
+static struct device_attribute dev_tlc_mean_ec =
+	__ATTR(tlc_mean_ec, S_IRUGO, dev_attribute_show, NULL);
+static struct device_attribute dev_tlc_ec_sum =
+	__ATTR(tlc_ec_sum, S_IRUGO, dev_attribute_show, NULL);
+static struct device_attribute dev_tlc_min_ec =
+	__ATTR(tlc_min_ec, S_IRUGO, dev_attribute_show, NULL);
+static struct device_attribute dev_tlc_max_ec =
+	__ATTR(tlc_max_ec, S_IRUGO, dev_attribute_show, NULL);
+static struct device_attribute dev_mtbl_slots =
+	__ATTR(mtbl_slots, S_IRUGO, dev_attribute_show, NULL);
+static struct device_attribute dev_tlc_wl_th =
+	__ATTR(tlc_wl_th, 00755, dev_attribute_show, dev_attribute_store);
+#endif
 static struct device_attribute dev_torture =
 	__ATTR(torture, 00755, dev_attribute_show, NULL);
 /*MTK end*/
@@ -400,6 +418,15 @@ static ssize_t dev_attribute_store(struct device *dev, struct device_attribute *
 			ubi_msg("set th=%d\n", th);
 			ubi->wl_th = th;
 		}
+#ifdef CONFIG_MTK_SLC_BUFFER_SUPPORT
+	} else if (attr == &dev_tlc_wl_th) {
+		int ret = kstrtoint(buf, 0, &th);
+
+		if (ret == 0) {
+			dbg_gen("set tlc th=%d\n", th);
+			ubi->tlc_wl_th = th;
+		}
+#endif
 	}
 	return count;
 }
@@ -440,6 +467,40 @@ static ssize_t dev_attribute_show(struct device *dev,
 		ret = sprintf(buf, "torture: %d\n", ubi->torture);
 	else if (attr == &dev_wl_th)
 		ret = sprintf(buf, "wl_th: %d\n", ubi->wl_th);
+#ifdef CONFIG_MTK_SLC_BUFFER_SUPPORT
+	else if (attr == &dev_archive_count)
+		ret = sprintf(buf, "archive_count: %d\n", ubi->archive_count);
+	else if (attr == &dev_tlc_max_ec)
+		ret = sprintf(buf, "tlc_max_ec: %d\n", ubi->tlc_max_ec);
+	else if (attr == &dev_tlc_ec_count)
+		ret = sprintf(buf, "tlc_ec_count: %d\n", atomic_read(&ubi->tlc_ec_count));
+	else if (attr == &dev_tlc_mean_ec)
+		ret = sprintf(buf, "tlc_mean_ec: %d\n", ubi->tlc_mean_ec);
+	else if (attr == &dev_tlc_ec_sum)
+		ret = sprintf(buf, "tlc_ec_sum: %lld\n", ubi->tlc_ec_sum);
+	else if (attr == &dev_mtbl_slots)
+		ret = sprintf(buf, "mtbl_slots: %d\n", ubi->mtbl_slots);
+	else if (attr == &dev_tlc_min_ec) {
+		struct ubi_wl_entry *e = NULL, *efree = NULL, *eused = NULL;
+
+		spin_lock(&ubi->wl_lock);
+		efree = rb_entry(rb_first(&ubi->tlc_free), struct ubi_wl_entry, u.rb);
+		eused = rb_entry(rb_first(&ubi->tlc_used), struct ubi_wl_entry, u.rb);
+		if (efree && eused) {
+			if (efree->ec < eused->ec)
+				e = efree;
+			else
+				e = eused;
+		} else if (efree) {
+			e = efree;
+		} else {
+			e = eused;
+		}
+		ret = sprintf(buf, "tlc_min_ec: %d\n", e->ec);
+		spin_unlock(&ubi->wl_lock);
+	} else if (attr == &dev_tlc_wl_th)
+		ret = sprintf(buf, "tlc_wl_th: %d\n", ubi->tlc_wl_th);
+#endif
 	else if (attr == &dev_wl_count)
 		ret = sprintf(buf, "wl_count: %d\n", ubi->wl_count);
 	else if (attr == &dev_wl_size)
@@ -548,6 +609,32 @@ static int ubi_sysfs_init(struct ubi_device *ubi, int *ref)
 	err = device_create_file(&ubi->dev, &dev_move_retry);
 	if (err)
 		return err;
+#ifdef CONFIG_MTK_SLC_BUFFER_SUPPORT
+	err = device_create_file(&ubi->dev, &dev_archive_count);
+	if (err)
+		return err;
+	err = device_create_file(&ubi->dev, &dev_tlc_ec_count);
+	if (err)
+		return err;
+	err = device_create_file(&ubi->dev, &dev_tlc_mean_ec);
+	if (err)
+		return err;
+	err = device_create_file(&ubi->dev, &dev_tlc_ec_sum);
+	if (err)
+		return err;
+	err = device_create_file(&ubi->dev, &dev_tlc_min_ec);
+	if (err)
+		return err;
+	err = device_create_file(&ubi->dev, &dev_tlc_max_ec);
+	if (err)
+		return err;
+	err = device_create_file(&ubi->dev, &dev_mtbl_slots);
+	if (err)
+		return err;
+	err = device_create_file(&ubi->dev, &dev_tlc_wl_th);
+	if (err)
+		return err;
+#endif
 	err = device_create_file(&ubi->dev, &dev_ec_count);
 	if (err)
 		return err;
@@ -856,8 +943,9 @@ static int io_init(struct ubi_device *ubi, int max_beb_per1024)
 #ifdef CONFIG_MTK_COMBO_NAND_SUPPORT
 	ubi->max_write_size = COMBO_NAND_PAGE_SIZE;
 #endif
-#ifdef CONFIG_MTK_MLC_NAND_SUPPORT
+#if defined(CONFIG_MTK_MLC_NAND_SUPPORT) || defined(CONFIG_MTK_SLC_BUFFER_SUPPORT)
 	ubi->max_write_size = ubi->mtd->erasesize/4;
+	ubi->max_write_size = roundup_pow_of_two(ubi->max_write_size);
 #endif
 	/*
 	 * Maximum write size has to be greater or equivalent to min. I/O
@@ -1101,6 +1189,10 @@ int ubi_attach_mtd_dev(struct mtd_info *mtd, int ubi_num,
 	ubi->autoresize_vol_id = -1;
 /*MTK start*/
 	ubi->wl_th = CONFIG_MTD_UBI_WL_THRESHOLD;
+#ifdef CONFIG_MTK_SLC_BUFFER_SUPPORT
+	ubi->tlc_wl_th = 8;/*8, only TLC; CONFIG_MTD_UBI_WL_THRESHOLD/6; //CONFIG_MTD_UBI_TLC_WL_THRESHOLD*/
+	atomic_set(&ubi->tlc_ec_count, 0);
+#endif
 	atomic_set(&ubi->ec_count, 0);
 	atomic_set(&ubi->move_retry, 0);
 /*MTK end*/
@@ -1141,7 +1233,9 @@ int ubi_attach_mtd_dev(struct mtd_info *mtd, int ubi_num,
 	spin_lock_init(&ubi->volumes_lock);
 	mutex_init(&ubi->fm_mutex);
 	init_rwsem(&ubi->fm_sem);
-
+#ifdef CONFIG_MTK_SLC_BUFFER_SUPPORT
+	mutex_init(&ubi->mtbl_mutex);
+#endif
 	ubi_msg("attaching mtd%d to ubi%d", mtd->index, ubi_num);
 
 	err = io_init(ubi, max_beb_per1024);
@@ -1244,6 +1338,11 @@ out_free:
 #ifndef CONFIG_UBI_SHARE_BUFFER
 	vfree(ubi->peb_buf);
 #endif
+
+#ifdef CONFIG_MTK_SLC_BUFFER_SUPPORT
+	vfree(ubi->mtbl);
+	vfree(ubi->empty_mtbl_record);
+#endif
 	vfree(ubi->fm_buf);
 	if (ref)
 		put_device(&ubi->dev);
@@ -1319,10 +1418,16 @@ int ubi_detach_mtd_dev(int ubi_num, int anyway)
 	ubi_free_internal_volumes(ubi);
 	vfree(ubi->vtbl);
 	put_mtd_device(ubi->mtd);
-#ifdef CONFIG_BLB
+#ifdef CONFIG_MTD_UBI_LOWPAGE_BACKUP
 	vfree(ubi->databuf);
 	vfree(ubi->oobbuf);
 #endif
+
+#ifdef CONFIG_MTK_SLC_BUFFER_SUPPORT
+	vfree(ubi->mtbl);
+	vfree(ubi->empty_mtbl_record);
+#endif
+
 #ifndef CONFIG_UBI_SHARE_BUFFER
 	vfree(ubi->peb_buf);
 #endif

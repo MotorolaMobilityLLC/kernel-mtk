@@ -455,7 +455,7 @@
 #define AUTH_TYPE_FAST_BSS_TRANSITION               BIT(AUTH_ALGORITHM_NUM_FAST_BSS_TRANSITION)
 
 /* Authentication Retry Limit */
-#define TX_AUTH_ASSOCI_RETRY_LIMIT                  6
+#define TX_AUTH_ASSOCI_RETRY_LIMIT                  2
 #define TX_AUTH_ASSOCI_RETRY_LIMIT_FOR_ROAMING      1
 
 /* WMM-2.2.1 WMM Information Element */

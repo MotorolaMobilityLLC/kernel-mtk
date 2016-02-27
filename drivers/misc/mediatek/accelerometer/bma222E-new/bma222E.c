@@ -179,9 +179,9 @@ static struct acc_init_info bma222_init_info = {
 /*----------------------------------------------------------------------------*/
 #if 1
 #define GSE_TAG                  "[Gsensor] "
-#define GSE_FUN(f)               pr_err(GSE_TAG"%s\n", __func__)
+#define GSE_FUN(f)               pr_debug(GSE_TAG"%s\n", __func__)
 #define GSE_ERR(fmt, args...)    pr_err(GSE_TAG"%s %d : "fmt, __func__, __LINE__, ##args)
-#define GSE_LOG(fmt, args...)    pr_err(GSE_TAG fmt, ##args)
+#define GSE_LOG(fmt, args...)    pr_debug(GSE_TAG fmt, ##args)
 #else
 #define GSE_TAG
 #define GSE_FUN(f)
@@ -494,7 +494,7 @@ static int BMA222_ReadOffset(struct i2c_client *client, s8 ofs[BMA222_AXES_NUM])
 	if (err)
 		GSE_ERR("error: %d\n", err);
 #endif
-	/* printk("offesx=%x, y=%x, z=%x",ofs[0],ofs[1],ofs[2]); */
+	/* GSE_LOG("offesx=%x, y=%x, z=%x",ofs[0],ofs[1],ofs[2]); */
 
 	return err;
 }
@@ -766,7 +766,7 @@ static int BMA222_SetDataFormat(struct i2c_client *client, u8 dataformat)
 	res = bma_i2c_write_block(client, BMA222_REG_DATA_FORMAT, databuf, 0x1);
 	if (res < 0)
 		return BMA222_ERR_I2C;
-	/* printk("BMA222_SetDataFormat OK!\n"); */
+	/* GSE_LOG("BMA222_SetDataFormat OK!\n"); */
 	mdelay(1);
 	return BMA222_SetDataResolution(obj);
 }
@@ -790,7 +790,7 @@ static int BMA222_SetBWRate(struct i2c_client *client, u8 bwrate)
 	if (res < 0)
 		return BMA222_ERR_I2C;
 	mdelay(1);
-	/* printk("BMA222_SetBWRate OK!\n"); */
+	/* GSE_LOG("BMA222_SetBWRate OK!\n"); */
 
 	return BMA222_SUCCESS;
 }
@@ -808,7 +808,7 @@ static int BMA222_SetIntEnable(struct i2c_client *client, u8 intenable)
 	res = hwmsen_write_byte(client, BMA222_INT_REG_2, 0x00);
 	if (res != BMA222_SUCCESS)
 		return res;
-	/* printk("BMA222 disable interrupt ...\n"); */
+	/* GSE_LOG("BMA222 disable interrupt ...\n"); */
 
 	/*for disable interrupt function */
 	mdelay(1);
@@ -827,17 +827,17 @@ static int bma222_init_client(struct i2c_client *client, int reset_cali)
 	res = BMA222_CheckDeviceID(client);
 	if (res != BMA222_SUCCESS)
 		return res;
-	/* printk("BMA222_CheckDeviceID ok\n"); */
+	/* GSE_LOG("BMA222_CheckDeviceID ok\n"); */
 
 	res = BMA222_SetBWRate(client, BMA222_BW_100HZ);
 	if (res != BMA222_SUCCESS)
 		return res;
-	/* printk("BMA222_SetBWRate OK!\n"); */
+	/* GSE_LOG("BMA222_SetBWRate OK!\n"); */
 
 	res = BMA222_SetDataFormat(client, BMA222_RANGE_2G);
 	if (res != BMA222_SUCCESS)
 		return res;
-	/* printk("BMA222_SetDataFormat OK!\n"); */
+	/* GSE_LOG("BMA222_SetDataFormat OK!\n"); */
 
 	gsensor_gain.x = gsensor_gain.y = gsensor_gain.z = obj->reso->sensitivity;
 
@@ -850,12 +850,12 @@ static int bma222_init_client(struct i2c_client *client, int reset_cali)
 	res = BMA222_SetIntEnable(client, 0x00);
 	if (res != BMA222_SUCCESS)
 		return res;
-	/* printk("BMA222 disable interrupt function!\n"); */
+	/* GSE_LOG("BMA222 disable interrupt function!\n"); */
 
 	res = BMA222_SetPowerMode(client, enable_status);	/* false);// */
 	if (res != BMA222_SUCCESS)
 		return res;
-	/* printk("BMA222_SetPowerMode OK!\n"); */
+	/* GSE_LOG("BMA222_SetPowerMode OK!\n"); */
 
 
 	if (0 != reset_cali) {
@@ -2065,7 +2065,7 @@ static int gsensor_local_init(void)
 	}
 	if (-1 == gsensor_init_flag)
 		return -1;
-	/* printk("fwq loccal init---\n"); */
+	/* GSE_LOG("fwq loccal init---\n"); */
 	return 0;
 }
 

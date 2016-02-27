@@ -100,10 +100,11 @@
 
 /* MTK GPU DVFS */
 #include <mali_kbase_pm.h>
-#include "mt_gpufreq.h"
+#include <mt_gpufreq.h>
 #include <mali_kbase_pm_defs.h>
 #include <mali_kbase_pm_internal.h>
-#include "ged_dvfs.h"
+#include <ged_dvfs.h>
+#include <ged_log.h>
 
 /* MTK chip version API */
 #include "mt_chip.h"
@@ -375,8 +376,15 @@ struct kbase_device *MaliGetMaliData(void)
 /// MTK_GED {
 void mtk_gpu_dvfs_commit(unsigned long ui32NewFreqID, GED_DVFS_COMMIT_TYPE eCommitType, int* pbCommited)
 {
-        mt_gpufreq_target(ui32NewFreqID);
-        *pbCommited = true;
+	int ret = mtk_set_mt_gpufreq_target(ui32NewFreqID);
+	if (pbCommited) {
+		if (0 == ret) {
+			*pbCommited = true;
+		} else {
+			*pbCommited = false;
+		}
+	}
+		
 }
 ///
 #ifdef CONFIG_MALI_MIPE_ENABLED
@@ -1415,25 +1423,40 @@ static int kbase_release(struct inode *inode, struct file *filp)
 
 static long kbase_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 {
-	u64 msg[(CALL_MAX_SIZE + 7) >> 3] = { 0xdeadbeefdeadbeefull };	/* alignment fixup */
+	///u64 msg[(CALL_MAX_SIZE + 7) >> 3] = { 0xdeadbeefdeadbeefull };	/* alignment fixup */
+	u64* msg = kmalloc(CALL_MAX_SIZE + 7, GFP_KERNEL);
 	u32 size = _IOC_SIZE(cmd);
 	struct kbase_context *kctx = filp->private_data;
 
-	if (size > CALL_MAX_SIZE)
+	if (size > CALL_MAX_SIZE){
+		kfree(msg);
 		return -ENOTTY;
+	}
 
-	if (0 != copy_from_user(&msg, (void __user *)arg, size)) {
+	if (!msg) {        
+		pr_alert("kmalloc fail, %d byte\n", CALL_MAX_SIZE + 7);        
+		kfree(msg);
+		return -EFAULT;    
+	}
+	*msg = 0xdeadbeefdeadbeefull;
+
+	if (0 != copy_from_user(msg, (void __user *)arg, size)) {
 		dev_err(kctx->kbdev->dev, "failed to copy ioctl argument into kernel space\n");
+		kfree(msg);
 		return -EFAULT;
 	}
 
-	if (kbase_dispatch(kctx, &msg, size) != 0)
+	if (MALI_ERROR_NONE != kbase_dispatch(kctx, msg, size)){
+		kfree(msg);
 		return -EFAULT;
-
-	if (0 != copy_to_user((void __user *)arg, &msg, size)) {
+	}
+	if (0 != copy_to_user((void __user *)arg, msg, size)) {
 		dev_err(kctx->kbdev->dev, "failed to copy results of UK call back to user space\n");
+		kfree(msg);
 		return -EFAULT;
 	}
+    
+	kfree(msg);
 	return 0;
 }
 
@@ -3267,6 +3290,10 @@ static int kbase_device_debugfs_init(struct kbase_device *kbdev)
 	debugfs_create_file("secure_mode", S_IRUGO,
 			kbdev->mali_debugfs_directory, kbdev,
 			&kbasep_secure_mode_debugfs_fops);
+	kbdev->debug_gpu_page_tables = 1;
+	debugfs_create_u8("debug_gpu_page_tables", 0644,
+			kbdev->mali_debugfs_directory,
+			&kbdev->debug_gpu_page_tables);
 
 	return 0;
 
@@ -3632,6 +3659,9 @@ static int kbase_platform_device_probe(struct platform_device *pdev)
 	int err = 0;
 	int i;
 
+
+	pr_alert("[MALI] Midgard r7p0-02rel0 DDK kernel device driver. GPU probe() begin.\n");
+	
 #ifdef CONFIG_OF
 	err = kbase_platform_early_init();
 	if (err) {
@@ -3715,6 +3745,7 @@ static int kbase_platform_device_probe(struct platform_device *pdev)
 #ifdef CONFIG_MALI_PLATFORM_DEVICETREE
 	pm_runtime_enable(kbdev->dev);
 #endif
+#ifdef CONFIG_HAVE_CLK  //  MTK
 	kbdev->clock = clk_get(kbdev->dev, "clk_mali");
 	if (IS_ERR_OR_NULL(kbdev->clock)) {
 		dev_info(kbdev->dev, "Continuing without Mali clock control\n");
@@ -3728,8 +3759,10 @@ static int kbase_platform_device_probe(struct platform_device *pdev)
 			goto out_clock_prepare;
 		}
 	}
-
+#endif  /* CONFIG_HAVE_CLK */
 	/* MTK: common */
+	kbdev->mtk_log = 0;
+	ged_log_buf_get_early("FENCE", (GED_LOG_BUF_HANDLE *)&kbdev->mtk_log);
 	if (mtk_platform_init(pdev, kbdev))
 	{
 		dev_err(kbdev->dev, "GPU: mtk_platform_init fail");
@@ -3775,7 +3808,9 @@ static int kbase_platform_device_probe(struct platform_device *pdev)
    ged_dvfs_cal_gpu_utilization_fp = MTKCalGpuUtilization;
    ged_dvfs_gpu_freq_commit_fp = mtk_gpu_dvfs_commit;
 ///}
-#endif  
+#endif
+
+	pr_alert("[MALI] Midgard r7p0-02rel0 DDK kernel device driver. GPU probe() end.\n");
 
 	return 0;
 
@@ -3790,9 +3825,13 @@ out_common_init:
 #if (LINUX_VERSION_CODE >= KERNEL_VERSION(3, 19, 0))
 	of_free_opp_table(kbdev->dev);
 #endif
+#ifdef CONFIG_HAVE_CLK  // MTK
 	clk_disable_unprepare(kbdev->clock);
+#endif  /* CONFIG_HAVE_CLK */
 out_clock_prepare:
+#ifdef CONFIG_HAVE_CLK  // MTK
 	clk_put(kbdev->clock);
+#endif  /* CONFIG_HAVE_CLK */
 #ifdef CONFIG_MALI_PLATFORM_DEVICETREE
 	pm_runtime_disable(kbdev->dev);
 #endif
@@ -3867,11 +3906,13 @@ static int kbase_common_device_remove(struct kbase_device *kbdev)
 	put_device(kbdev->dev);
 		kbase_common_reg_unmap(kbdev);
 	kbase_device_term(kbdev);
+#ifdef CONFIG_HAVE_CLK  // MTK
 	if (kbdev->clock) {
 		clk_disable_unprepare(kbdev->clock);
 		clk_put(kbdev->clock);
 		kbdev->clock = NULL;
 	}
+#endif  /* CONFIG_HAVE_CLK */
 #if (LINUX_VERSION_CODE >= KERNEL_VERSION(3, 12, 0)) && defined(CONFIG_OF) \
 			&& defined(CONFIG_REGULATOR)
 	regulator_put(kbdev->regulator);

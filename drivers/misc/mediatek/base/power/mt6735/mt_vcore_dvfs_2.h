@@ -12,8 +12,8 @@
 #define VCORE_1_P_15_UV		1150000
 #define VCORE_1_P_05_UV		1050000
 
-#define FDDR_S0_KHZ		1066000
-#define FDDR_S1_KHZ		800000
+#define FDDR_S0_KHZ		1066000		/* 6537: 1280000 */
+#define FDDR_S1_KHZ		800000		/* 6537: 936000 */
 
 /* CLK MUX */
 #define FAXI_S0_KHZ		218000
@@ -54,9 +54,9 @@ enum dvfs_kicker {
 
 enum dvfs_opp {
 	OPP_OFF = -1,
-	OPP_0 = 0,		/* 0: Vcore 1.25, DDR 1066 */
-	OPP_1,			/* 1: Vcore 1.15, DDR 1066 */
-	OPP_2,			/* 2: Vcore 1.05, DDR 800 */
+	OPP_0 = 0,		/* 0: Vcore 1.25, DDR 1066 (6537: Vcore 1.15, DDR 1280) */
+	OPP_1,			/* 1: Vcore 1.15, DDR 1066 (6537: Vcore 1.15, DDR 1280) */
+	OPP_2,			/* 2: Vcore 1.05, DDR 800  (6537: Vcore 1.05, DDR 936) */
 	NUM_OPP
 };
 
@@ -92,6 +92,7 @@ extern bool vcorefs_sdio_need_multi_autok(void);
 /* for External Control Function */
 extern unsigned int vcorefs_get_curr_voltage(void);
 extern unsigned int get_ddr_khz(void);
+extern unsigned int get_ddr_khz_by_steps(unsigned int step);
 extern bool is_vcorefs_can_work(void);
 
 /**************************************

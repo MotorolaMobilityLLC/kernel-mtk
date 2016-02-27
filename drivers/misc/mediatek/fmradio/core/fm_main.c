@@ -1978,7 +1978,12 @@ fm_s32 fm_i2s_set(struct fm *fm, fm_s32 onoff, fm_s32 mode, fm_s32 sample)
 	if (FM_LOCK(fm_ops_lock))
 		return -FM_ELOCK;
 
-	ret = fm_low_ops.bi.i2s_set(onoff, mode, sample);
+	if ((FM_PWR_RX_ON == fm_pwr_state_get(fm)) || (FM_PWR_TX_ON == fm_pwr_state_get(fm)))
+		ret = fm_low_ops.bi.i2s_set(onoff, mode, sample);
+	if (ret)
+		WCN_DBG(FM_ALT | MAIN, "i2s setting Failed\n");
+	else
+		WCN_DBG(FM_DBG | MAIN, "i2s setting OK!\n");
 
 	FM_UNLOCK(fm_ops_lock);
 	return ret;

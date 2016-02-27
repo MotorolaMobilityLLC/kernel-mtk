@@ -56,7 +56,6 @@
 
 static unsigned int trace_sample_time = 200000000;
 static int md_cd_ccif_send(struct ccci_modem *md, int channel_id);
-
 /* CLDMA setting */
 /* always keep this in mind: what if there are more than 1 modems using CLDMA... */
 /*
@@ -105,92 +104,48 @@ static const unsigned char high_priority_queue_mask = 0x00;
 
 #define IS_NET_QUE(md, qno) \
 	((md->md_state != EXCEPTION || md->ex_stage != EX_INIT_DONE) && ((1<<qno) & NET_RX_QUEUE_MASK))
-/*
- * do NOT add any static data, data should be in modem's instance
- */
-
-static void cldma_dump_gpd_ring(int md_id, dma_addr_t start, int size)
-{
-	/* assume TGPD and RGPD's "next" pointers use the same offset */
-	struct cldma_tgpd *curr = (struct cldma_tgpd *)phys_to_virt(start);
-	int i, *tmp;
-
-	CCCI_INF_MSG(md_id, TAG, " gpd starts from 0x%x\n", (unsigned int)start);
-	/*
-	 * virtual address get from dma_pool_alloc is not equal to phys_to_virt.
-	 * e.g. dma_pool_alloca returns 0xFFDFF00, and phys_to_virt will return 0xDF364000 for the same
-	 * DMA address. therefore we can't compare gpd address with @start to exit loop.
-	 */
-	for (i = 0; i < size; i++) {
-		tmp = (int *)curr;
-		CCCI_INF_MSG(md_id, TAG, " 0x%p: %X %X %X %X\n", curr, *tmp, *(tmp + 1), *(tmp + 2),
-		       *(tmp + 3));
-		curr = (struct cldma_tgpd *)phys_to_virt(curr->next_gpd_ptr);
-	}
-}
 
 static void cldma_dump_gpd_queue(struct ccci_modem *md, unsigned int qno)
 {
+	unsigned int *tmp;
 	struct md_cd_ctrl *md_ctrl = (struct md_cd_ctrl *)md->private_data;
-	struct cldma_request *req;
+	struct cldma_request *req = NULL;
+#ifdef CLDMA_DUMP_BD
+	struct cldma_request *req_bd = NULL;
+#endif
 
-	CCCI_INF_MSG(md->index, TAG, " dump txq%d GPD\n", qno);
-	req = list_first_entry(&md_ctrl->txq[qno].tr_ring->gpd_ring, struct cldma_request, entry);
-	cldma_dump_gpd_ring(md->index, req->gpd_addr, md_ctrl->txq[qno].tr_ring->length);
+	/* use request's link head to traverse */
+	CCCI_INF_MSG(md->index, TAG, " dump txq %d request\n", qno);
+	list_for_each_entry(req, &md_ctrl->txq[qno].tr_ring->gpd_ring, entry) {
+		tmp = (unsigned int *)req->gpd;
+		CCCI_INF_MSG(md->index, TAG, " 0x%p: %X %X %X %X\n", req->gpd,
+			   *tmp, *(tmp + 1), *(tmp + 2), *(tmp + 3));
+#ifdef CLDMA_DUMP_BD
+		list_for_each_entry(req_bd, &req->bd, entry) {
+			tmp = (unsigned int *)req_bd->gpd;
+			CCCI_INF_MSG(md->index, TAG, "-0x%p: %X %X %X %X\n", req_bd->gpd,
+				   *tmp, *(tmp + 1), *(tmp + 2), *(tmp + 3));
+		}
+#endif
+	}
 
-	CCCI_INF_MSG(md->index, TAG, " dump rxq%d GPD\n", qno);
-	req = list_first_entry(&md_ctrl->rxq[qno].tr_ring->gpd_ring, struct cldma_request, entry);
-	cldma_dump_gpd_ring(md->index, req->gpd_addr, md_ctrl->rxq[qno].tr_ring->length);
+	/* use request's link head to traverse */
+	CCCI_INF_MSG(md->index, TAG, " dump rxq %d, tr_ring=%p -> gpd_ring=0x%p\n", qno, md_ctrl->rxq[qno].tr_ring,
+		&md_ctrl->rxq[qno].tr_ring->gpd_ring);
+	list_for_each_entry(req, &md_ctrl->rxq[qno].tr_ring->gpd_ring, entry) {
+		tmp = (unsigned int *)req->gpd;
+		CCCI_INF_MSG(md->index, TAG, " 0x%p/0x%p: %X %X %X %X\n", req->gpd, req->skb,
+			   *tmp, *(tmp + 1), *(tmp + 2), *(tmp + 3));
+	}
 }
 
 static void cldma_dump_all_gpd(struct ccci_modem *md)
 {
-#define TRAVERSE_VIA_GPD
 	int i;
 	struct md_cd_ctrl *md_ctrl = (struct md_cd_ctrl *)md->private_data;
-	struct cldma_request *req = NULL;
-#ifndef TRAVERSE_VIA_GPD
-	struct cldma_request *req_bd = NULL;
-	unsigned int *tmp;
-#endif
 
-	for (i = 0; i < QUEUE_LEN(md_ctrl->txq); i++) {
-#ifdef TRAVERSE_VIA_GPD
-		/* use GPD's pointer to traverse */
-		CCCI_INF_MSG(md->index, TAG, " dump txq %d GPD\n", i);
-		req = list_first_entry(&md_ctrl->txq[i].tr_ring->gpd_ring, struct cldma_request, entry);
-		cldma_dump_gpd_ring(md->index, req->gpd_addr, md_ctrl->txq[i].tr_ring->length);
-#else
-		/* use request's link head to traverse */
-		CCCI_INF_MSG(md->index, TAG, " dump txq %d request\n", i);
-		list_for_each_entry(req, &md_ctrl->txq[i].tr_ring->gpd_ring, entry) {
-			tmp = (unsigned int *)req->gpd;
-			CCCI_INF_MSG(md->index, TAG, " 0x%p: %X %X %X %X\n", req->gpd,
-			       *tmp, *(tmp + 1), *(tmp + 2), *(tmp + 3));
-			list_for_each_entry(req_bd, &req->bd, entry) {
-				tmp = (unsigned int *)req_bd->gpd;
-				CCCI_INF_MSG(md->index, TAG, "-0x%p: %X %X %X %X\n", req_bd->gpd,
-				       *tmp, *(tmp + 1), *(tmp + 2), *(tmp + 3));
-			}
-		}
-#endif
-	}
-	for (i = 0; i < QUEUE_LEN(md_ctrl->rxq); i++) {
-#ifdef TRAVERSE_VIA_GPD
-		/* use GPD's pointer to traverse */
-		CCCI_INF_MSG(md->index, TAG, " dump rxq %d GPD\n", i);
-		req = list_first_entry(&md_ctrl->rxq[i].tr_ring->gpd_ring, struct cldma_request, entry);
-		cldma_dump_gpd_ring(md->index, req->gpd_addr, md_ctrl->rxq[i].tr_ring->length);
-#else
-		/* use request's link head to traverse */
-		CCCI_INF_MSG(md->index, TAG, " dump rxq %d request\n", i);
-		list_for_each_entry(req, &md_ctrl->rxq[i].tr_ring->gpd_ring, entry) {
-			tmp = (unsigned int *)req->gpd;
-			CCCI_INF_MSG(md->index, TAG, " 0x%p/0x%p: %X %X %X %X\n", req->gpd, req->skb,
-			       *tmp, *(tmp + 1), *(tmp + 2), *(tmp + 3));
-		}
-#endif
-	}
+	for (i = 0; i < QUEUE_LEN(md_ctrl->txq); i++)
+		cldma_dump_gpd_queue(md, i);
 }
 
 #if TRAFFIC_MONITOR_INTERVAL
@@ -255,7 +210,7 @@ void md_cd_traffic_monitor_func(unsigned long data)
 			md_ctrl->rx_traffic_monitor[2], md_ctrl->rx_traffic_monitor[3],
 			md_ctrl->rx_traffic_monitor[4], md_ctrl->rx_traffic_monitor[5],
 			md_ctrl->rx_traffic_monitor[6], md_ctrl->rx_traffic_monitor[7]);
-	CCCI_INF_MSG(md->index, TAG, "net Rx skb queue:%u %u %u / %u %u %u\n",
+	CCCI_DBG_MSG(md->index, TAG, "net Rx skb queue:%u %u %u / %u %u %u\n",
 			 md_ctrl->rxq[3].skb_list.max_history, md_ctrl->rxq[4].skb_list.max_history,
 			 md_ctrl->rxq[5].skb_list.max_history, md_ctrl->rxq[3].skb_list.skb_list.qlen,
 			 md_ctrl->rxq[4].skb_list.skb_list.qlen, md_ctrl->rxq[5].skb_list.skb_list.qlen);
@@ -378,13 +333,13 @@ static int cldma_gpd_rx_refill(struct md_cd_queue *queue)
 			req->data_buffer_ptr_saved =
 			    dma_map_single(&md->plat_dev->dev, new_skb->data, skb_data_size(new_skb), DMA_FROM_DEVICE);
 			rgpd->data_buff_bd_ptr = (u32) (req->data_buffer_ptr_saved);
+			rgpd->data_buff_len = 0;
 			/* checksum of GPD */
 			caculate_checksum((char *)rgpd, 0x81);
 			/* set HWO and mark cldma_request as available*/
 			spin_lock_irqsave(&queue->ring_lock, flags);
 			spin_lock(&md_ctrl->cldma_timeout_lock);
-			if (md_ctrl->rxq_active & (1 << queue->index))
-				cldma_write8(&rgpd->gpd_flags, 0, 0x81);
+			cldma_write8(&rgpd->gpd_flags, 0, 0x81);
 			spin_unlock(&md_ctrl->cldma_timeout_lock);
 			req->skb = new_skb;
 			spin_unlock_irqrestore(&queue->ring_lock, flags);
@@ -614,12 +569,12 @@ static int cldma_gpd_net_rx_collect(struct md_cd_queue *queue, int budget, int b
 				    dma_map_single(&md->plat_dev->dev, new_skb->data, skb_data_size(new_skb),
 									DMA_FROM_DEVICE);
 				rgpd->data_buff_bd_ptr = (u32) (req->data_buffer_ptr_saved);
+				rgpd->data_buff_len = 0;
 				/* checksum of GPD */
 				caculate_checksum((char *)rgpd, 0x81);
 				/* set HWO, no need to hold ring_lock as no racer */
 				spin_lock_irqsave(&md_ctrl->cldma_timeout_lock, flags);
-				if (md_ctrl->rxq_active & (1 << queue->index))
-					cldma_write8(&rgpd->gpd_flags, 0, 0x81);
+				cldma_write8(&rgpd->gpd_flags, 0, 0x81);
 				spin_unlock_irqrestore(&md_ctrl->cldma_timeout_lock, flags);
 				/* mark cldma_request as available */
 				req->skb = new_skb;
@@ -1354,14 +1309,18 @@ static inline void cldma_stop(struct ccci_modem *md)
 		ret = cldma_read32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_UL_STATUS);
 		if ((++count) % 100000 == 0) {
 			CCCI_INF_MSG(md->index, TAG, "stop Tx CLDMA, status=%x, count=%d\n", ret, count);
-#if defined(CONFIG_MTK_AEE_FEATURE)
-			aee_kernel_dal_show("stop Tx CLDMA failed.\n");
-#endif
 			CCCI_INF_MSG(md->index, KERN, "Dump MD EX log\n");
 			ccci_mem_dump(md->index, md->smem_layout.ccci_exp_smem_base_vir,
 				      md->smem_layout.ccci_exp_dump_size);
 			md_cd_dump_debug_register(md);
 			cldma_dump_register(md);
+#if defined(CONFIG_MTK_AEE_FEATURE)
+			if (count >= 1600000) {
+				aed_md_exception_api(NULL, 0, NULL, 0,
+					"md1:\nUNKNOWN Exception\nstop Tx CLDMA failed.\n", DB_OPT_DEFAULT);
+				break;
+			}
+#endif
 		}
 	} while (ret != 0);
 	count = 0;
@@ -1376,10 +1335,18 @@ static inline void cldma_stop(struct ccci_modem *md)
 			aee_kernel_dal_show("stop Rx CLDMA failed.\n");
 #endif
 			CCCI_INF_MSG(md->index, KERN, "Dump MD EX log\n");
-			ccci_mem_dump(md->index, md->smem_layout.ccci_exp_smem_base_vir,
+			if ((count < 500000) || (count > 1200000))
+				ccci_mem_dump(md->index, md->smem_layout.ccci_exp_smem_base_vir,
 				      md->smem_layout.ccci_exp_dump_size);
 			md_cd_dump_debug_register(md);
 			cldma_dump_register(md);
+#if defined(CONFIG_MTK_AEE_FEATURE)
+			if (count >= 1600000) {
+				aed_md_exception_api(NULL, 0, NULL, 0,
+					"md1:\nUNKNOWN Exception\nstop Rx CLDMA failed.\n", DB_OPT_DEFAULT);
+				break;
+			}
+#endif
 		}
 	} while (ret != 0);
 	/* clear all L2 and L3 interrupts */
@@ -1434,14 +1401,18 @@ static inline void cldma_stop_for_ee(struct ccci_modem *md)
 		ret = cldma_read32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_UL_STATUS);
 		if ((++count) % 100000 == 0) {
 			CCCI_INF_MSG(md->index, TAG, "stop Tx CLDMA E, status=%x, count=%d\n", ret, count);
-#if defined(CONFIG_MTK_AEE_FEATURE)
-			aee_kernel_dal_show("stop Tx CLDMA failed for EE.\n");
-#endif
-			CCCI_INF_MSG(md->index, KERN, "Dump MD EX log\n");
+			CCCI_INF_MSG(md->index, TAG, "Dump MD EX log\n");
 			ccci_mem_dump(md->index, md->smem_layout.ccci_exp_smem_base_vir,
 				      md->smem_layout.ccci_exp_dump_size);
 			md_cd_dump_debug_register(md);
 			cldma_dump_register(md);
+#if defined(CONFIG_MTK_AEE_FEATURE)
+			if (count >= 1600000) {
+				aed_md_exception_api(NULL, 0, NULL, 0,
+					"md1:\nUNKNOWN Exception\nstop Tx CLDMA for EE failed.\n", DB_OPT_DEFAULT);
+				break;
+			}
+#endif
 		}
 	} while (ret != 0);
 	count = 0;
@@ -1453,14 +1424,18 @@ static inline void cldma_stop_for_ee(struct ccci_modem *md)
 		ret = cldma_read32(md_ctrl->cldma_ap_ao_base, CLDMA_AP_SO_STATUS) & NONSTOP_QUEUE_MASK;
 		if ((++count) % 100000 == 0) {
 			CCCI_INF_MSG(md->index, TAG, "stop Rx CLDMA E, status=%x, count=%d\n", ret, count);
-#if defined(CONFIG_MTK_AEE_FEATURE)
-			aee_kernel_dal_show("stop Rx CLDMA failed for EE.\n");
-#endif
-			CCCI_INF_MSG(md->index, KERN, "Dump MD EX log\n");
+			CCCI_INF_MSG(md->index, TAG, "Dump MD EX log\n");
 			ccci_mem_dump(md->index, md->smem_layout.ccci_exp_smem_base_vir,
 				      md->smem_layout.ccci_exp_dump_size);
 			md_cd_dump_debug_register(md);
 			cldma_dump_register(md);
+#if defined(CONFIG_MTK_AEE_FEATURE)
+			if (count >= 1600000) {
+				aed_md_exception_api(NULL, 0, NULL, 0,
+					"md1:\nUNKNOWN Exception\nstop Rx CLDMA for EE failed.\n", DB_OPT_DEFAULT);
+				break;
+			}
+#endif
 		}
 	} while (ret != 0);
 	/* clear all L2 and L3 interrupts, but non-stop Rx ones */
@@ -1626,10 +1601,31 @@ static void md_cd_clear_all_queue(struct ccci_modem *md, DIRECTION dir)
 				rgpd = (struct cldma_rgpd *)req->gpd;
 				cldma_write8(&rgpd->gpd_flags, 0, 0x81);
 				cldma_write16(&rgpd->data_buff_len, 0, 0);
-				req->skb->len = 0;
-				skb_reset_tail_pointer(req->skb);
+				caculate_checksum((char *)rgpd, 0x81);
+				if (req->skb != NULL) {
+					req->skb->len = 0;
+					skb_reset_tail_pointer(req->skb);
+				}
 			}
 			spin_unlock_irqrestore(&md_ctrl->rxq[i].ring_lock, flags);
+			list_for_each_entry(req, &md_ctrl->rxq[i].tr_ring->gpd_ring, entry) {
+				rgpd = (struct cldma_rgpd *)req->gpd;
+				if (req->skb == NULL) {
+					struct md_cd_queue *queue = &md_ctrl->rxq[i];
+					/*which queue*/
+					CCCI_INF_MSG(md->index, TAG, "skb NULL in Rx queue %d/%d\n",
+							i, queue->index);
+					/*if ((1 << queue->index) & NET_TX_QUEUE_MASK)
+						req->skb = ccci_alloc_skb(queue->tr_ring->pkt_size, 0, 1);
+					else */
+					req->skb = ccci_alloc_skb(queue->tr_ring->pkt_size, 1, 1);
+					req->data_buffer_ptr_saved =
+						dma_map_single(&md->plat_dev->dev, req->skb->data,
+								skb_data_size(req->skb), DMA_FROM_DEVICE);
+					rgpd->data_buff_bd_ptr = (u32) (req->data_buffer_ptr_saved);
+					caculate_checksum((char *)rgpd, 0x81);
+				}
+			}
 		}
 	}
 }
@@ -1710,12 +1706,62 @@ static int md_cd_start_queue(struct ccci_modem *md, unsigned char qno, DIRECTION
 	}
 	return 0;
 }
+void ccif_enable_irq(struct ccci_modem *md)
+{
+	struct md_cd_ctrl *md_ctrl = (struct md_cd_ctrl *)md->private_data;
 
+	if (atomic_read(&md_ctrl->ccif_irq_enabled) == 0) {
+		enable_irq(md_ctrl->ap_ccif_irq_id);
+		atomic_inc(&md_ctrl->ccif_irq_enabled);
+		CCCI_INF_MSG(md->index, TAG, "enable ccif irq\n");
+	}
+}
+
+void ccif_disable_irq(struct ccci_modem *md)
+{
+	struct md_cd_ctrl *md_ctrl = (struct md_cd_ctrl *)md->private_data;
+
+	if (atomic_read(&md_ctrl->ccif_irq_enabled) == 1) {
+		disable_irq_nosync(md_ctrl->ap_ccif_irq_id);
+		atomic_dec(&md_ctrl->ccif_irq_enabled);
+		CCCI_INF_MSG(md->index, TAG, "Disable ccif irq\n");
+	}
+}
+
+void wdt_enable_irq(struct ccci_modem *md)
+{
+	struct md_cd_ctrl *md_ctrl = (struct md_cd_ctrl *)md->private_data;
+
+	if (atomic_read(&md_ctrl->wdt_enabled) == 0) {
+		enable_irq(md_ctrl->md_wdt_irq_id);
+		atomic_inc(&md_ctrl->wdt_enabled);
+		CCCI_INF_MSG(md->index, TAG, "enable wdt irq\n");
+	}
+}
+
+void wdt_disable_irq(struct ccci_modem *md)
+{
+	struct md_cd_ctrl *md_ctrl = (struct md_cd_ctrl *)md->private_data;
+
+	if (atomic_read(&md_ctrl->wdt_enabled) == 1) {
+		/*may be called in isr, so use disable_irq_nosync.
+		   if use disable_irq in isr, system will hang */
+		disable_irq_nosync(md_ctrl->md_wdt_irq_id);
+		atomic_dec(&md_ctrl->wdt_enabled);
+		CCCI_INF_MSG(md->index, TAG, "disable wdt irq\n");
+	}
+}
+
+static int wdt_executed = 0;
 static void md_cd_wdt_work(struct work_struct *work)
 {
 	struct md_cd_ctrl *md_ctrl = container_of(work, struct md_cd_ctrl, wdt_work);
 	struct ccci_modem *md = md_ctrl->modem;
 	int ret = 0;
+
+	mutex_lock(&md_ctrl->ccif_wdt_mutex);
+	wdt_executed = 1;
+	mutex_unlock(&md_ctrl->ccif_wdt_mutex);
 	/* 1. dump RGU reg */
 	CCCI_INF_MSG(md->index, TAG, "Dump MD RGU registers\n");
 	md_cd_lock_modem_clock_src(1);
@@ -1766,7 +1812,7 @@ static void md_cd_wdt_work(struct work_struct *work)
 			ccci_md_exception_notify(md, MD_WDT);
 		}
 	}
-#endif				/* Mask by chao for build error */
+#endif	/* Mask by chao for build error */
 }
 
 static irqreturn_t md_cd_wdt_isr(int irq, void *data)
@@ -1775,6 +1821,7 @@ static irqreturn_t md_cd_wdt_isr(int irq, void *data)
 	struct md_cd_ctrl *md_ctrl = (struct md_cd_ctrl *)md->private_data;
 
 	CCCI_ERR_MSG(md->index, TAG, "MD WDT IRQ\n");
+	ccif_disable_irq(md);
 #ifndef DISABLE_MD_WDT_PROCESS
 #ifdef ENABLE_DSP_SMEM_SHARE_MPU_REGION
 	ccci_set_exp_region_protection(md);
@@ -1832,11 +1879,30 @@ static int md_cd_ccif_send(struct ccci_modem *md, int channel_id)
 	cldma_write32(md_ctrl->ap_ccif_base, APCCIF_TCHNUM, channel_id);
 	return 0;
 }
+static void md_cd_ccif_delayed_work(struct ccci_modem *md)
+{
+	struct md_cd_ctrl *md_ctrl = (struct md_cd_ctrl *)md->private_data;
+	int i;
 
+#if defined (CONFIG_MTK_AEE_FEATURE)
+	aee_kernel_dal_show("Modem exception dump start, please wait up to 5 minutes.\n");
+#endif
+
+ 	/* stop CLDMA, we don't want to get CLDMA IRQ when MD is reseting CLDMA after it got cleaq_ack */
+	cldma_stop(md);
+	for (i = 0; i < QUEUE_LEN(md_ctrl->txq); i++)
+		flush_delayed_work(&md_ctrl->txq[i].cldma_tx_work);
+	for (i = 0; i < QUEUE_LEN(md_ctrl->rxq); i++) {
+		flush_work(&md_ctrl->rxq[i].cldma_rx_work);
+		flush_work(&md_ctrl->rxq[i].cldma_refill_work);
+	}
+	/* tell MD to reset CLDMA */
+	md_cd_ccif_send(md, H2D_EXCEPTION_CLEARQ_ACK);
+	CCCI_INF_MSG(md->index, TAG, "send clearq_ack to MD\n");
+}
 static void md_cd_exception(struct ccci_modem *md, HIF_EX_STAGE stage)
 {
 	struct md_cd_ctrl *md_ctrl = (struct md_cd_ctrl *)md->private_data;
-
 	volatile unsigned int SO_CFG;
 
 	CCCI_ERR_MSG(md->index, TAG, "MD exception HIF %d\n", stage);
@@ -1864,12 +1930,13 @@ static void md_cd_exception(struct ccci_modem *md, HIF_EX_STAGE stage)
 		break;
 	case HIF_EX_CLEARQ_DONE:
 		/* give DHL some time to flush data */
-		schedule_delayed_work(&md_ctrl->ccif_delayed_work, 2 * HZ);
+		msleep(2000);
+		md_cd_ccif_delayed_work(md);
 		break;
 	case HIF_EX_ALLQ_RESET:
 		/* re-start CLDMA */
 		cldma_reset(md);
-		md_cd_clear_all_queue(md, IN);	/* purge Rx queue */
+		/* md_cd_clear_all_queue(md, IN); move to delay work for request skb in it*/ /* purge Rx queue */
 		ccci_md_exception_notify(md, EX_INIT_DONE);
 		cldma_start(md);
 
@@ -1887,44 +1954,43 @@ static void md_cd_exception(struct ccci_modem *md, HIF_EX_STAGE stage)
 	};
 }
 
-static void md_cd_ccif_delayed_work(struct work_struct *work)
+static void polling_ready(struct md_cd_ctrl *md_ctrl, int step)
 {
-	struct md_cd_ctrl *md_ctrl = container_of(to_delayed_work(work), struct md_cd_ctrl, ccif_delayed_work);
-	struct ccci_modem *md = md_ctrl->modem;
-
-#if defined(CONFIG_MTK_AEE_FEATURE)
-	aee_kernel_dal_show("Modem exception dump start, please wait up to 5 minutes.\n");
-#endif
-
-	/* stop CLDMA, we don't want to get CLDMA IRQ when MD is resetting CLDMA after it got cleaq_ack */
-	cldma_stop(md);
-#ifdef ENABLE_CLDMA_AP_SIDE
-	md_cldma_hw_reset(md);
-#endif
-	/* tell MD to reset CLDMA */
-	md_cd_ccif_send(md, H2D_EXCEPTION_CLEARQ_ACK);
-	CCCI_INF_MSG(md->index, TAG, "send clearq_ack to MD\n");
+	int cnt = 100;
+	while (cnt--)
+	{
+		if (md_ctrl->channel_id & (1 << step))
+			break;
+		msleep(20);
+	}
 }
-
 static void md_cd_ccif_work(struct work_struct *work)
 {
 	struct md_cd_ctrl *md_ctrl = container_of(work, struct md_cd_ctrl, ccif_work);
 	struct ccci_modem *md = md_ctrl->modem;
-	/* seems sometime MD send D2H_EXCEPTION_INIT_DONE and D2H_EXCEPTION_CLEARQ_DONE together */
-	if (md_ctrl->channel_id & (1 << D2H_EXCEPTION_INIT))
+
+	mutex_lock(&md_ctrl->ccif_wdt_mutex);
+	if (!wdt_executed)
+	{
+		polling_ready(md_ctrl, D2H_EXCEPTION_INIT);
 		md_cd_exception(md, HIF_EX_INIT);
-	if (md_ctrl->channel_id & (1 << D2H_EXCEPTION_INIT_DONE))
+		polling_ready(md_ctrl, D2H_EXCEPTION_INIT_DONE);
 		md_cd_exception(md, HIF_EX_INIT_DONE);
-	if (md_ctrl->channel_id & (1 << D2H_EXCEPTION_CLEARQ_DONE))
+
+		polling_ready(md_ctrl, D2H_EXCEPTION_CLEARQ_DONE);
 		md_cd_exception(md, HIF_EX_CLEARQ_DONE);
-	if (md_ctrl->channel_id & (1 << D2H_EXCEPTION_ALLQ_RESET))
+
+		polling_ready(md_ctrl, D2H_EXCEPTION_ALLQ_RESET);
 		md_cd_exception(md, HIF_EX_ALLQ_RESET);
-	if (md_ctrl->channel_id & (1 << AP_MD_PEER_WAKEUP))
-		wake_lock_timeout(&md_ctrl->peer_wake_lock, HZ);
-	if (md_ctrl->channel_id & (1 << AP_MD_SEQ_ERROR)) {
-		CCCI_ERR_MSG(md->index, TAG, "MD check seq fail\n");
-		md->ops->dump_info(md, DUMP_FLAG_CCIF, NULL, 0);
+
+	    if(md_ctrl->channel_id & (1<<AP_MD_PEER_WAKEUP))
+	        wake_lock_timeout(&md_ctrl->peer_wake_lock, HZ);
+	    if(md_ctrl->channel_id & (1<<AP_MD_SEQ_ERROR)) {
+	        CCCI_ERR_MSG(md->index, TAG, "MD check seq fail\n");
+	        md->ops->dump_info(md, DUMP_FLAG_CCIF, NULL, 0);
+	    }
 	}
+	mutex_unlock(&md_ctrl->ccif_wdt_mutex);
 }
 
 static irqreturn_t md_cd_ccif_isr(int irq, void *data)
@@ -1932,16 +1998,14 @@ static irqreturn_t md_cd_ccif_isr(int irq, void *data)
 	struct ccci_modem *md = (struct ccci_modem *)data;
 	struct md_cd_ctrl *md_ctrl = (struct md_cd_ctrl *)md->private_data;
 
+	wdt_disable_irq(md);
 	/* must ack first, otherwise IRQ will rush in */
 	md_ctrl->channel_id = cldma_read32(md_ctrl->ap_ccif_base, APCCIF_RCHNUM);
 	CCCI_DBG_MSG(md->index, TAG, "MD CCIF IRQ 0x%X\n", md_ctrl->channel_id);
 	cldma_write32(md_ctrl->ap_ccif_base, APCCIF_ACK, md_ctrl->channel_id);
-
-#if 0				/* workqueue is too slow */
-	schedule_work(&md_ctrl->ccif_work);
-#else
-	md_cd_ccif_work(&md_ctrl->ccif_work);
-#endif
+	/* only schedule tasklet in EXCEPTION HIF 1 */
+	if (md_ctrl->channel_id & (1 << D2H_EXCEPTION_INIT))
+		tasklet_hi_schedule(&md_ctrl->ccif_irq_task);
 	return IRQ_HANDLED;
 }
 
@@ -1988,6 +2052,7 @@ static inline int cldma_sw_init(struct ccci_modem *md)
 			     ret);
 		return ret;
 	}
+	atomic_inc(&md_ctrl->ccif_irq_enabled);
 #endif
 	return 0;
 }
@@ -2066,24 +2131,6 @@ static int md_cd_init(struct ccci_modem *md)
 	return 0;
 }
 
-void wdt_enable_irq(struct md_cd_ctrl *md_ctrl)
-{
-	if (atomic_read(&md_ctrl->wdt_enabled) == 0) {
-		enable_irq(md_ctrl->md_wdt_irq_id);
-		atomic_inc(&md_ctrl->wdt_enabled);
-	}
-}
-
-void wdt_disable_irq(struct md_cd_ctrl *md_ctrl)
-{
-	if (atomic_read(&md_ctrl->wdt_enabled) == 1) {
-		/*may be called in isr, so use disable_irq_nosync.
-		   if use disable_irq in isr, system will hang */
-		disable_irq_nosync(md_ctrl->md_wdt_irq_id);
-		atomic_dec(&md_ctrl->wdt_enabled);
-	}
-}
-
 #if TRAFFIC_MONITOR_INTERVAL
 static void md_cd_clear_traffic_data(struct ccci_modem *md)
 {
@@ -2094,7 +2141,14 @@ static void md_cd_clear_traffic_data(struct ccci_modem *md)
 	memset(md_ctrl->tx_pre_traffic_monitor, 0, sizeof(md_ctrl->tx_pre_traffic_monitor));
 }
 #endif
+static void md_ccif_irq_tasklet(unsigned long data)
+{
+	struct ccci_modem *md = (struct ccci_modem *)data;
+	struct md_cd_ctrl *md_ctrl = (struct md_cd_ctrl *)md->private_data;
 
+	ccif_disable_irq(md);
+	schedule_work(&md_ctrl->ccif_work);
+}
 static int md_cd_start(struct ccci_modem *md)
 {
 	struct md_cd_ctrl *md_ctrl = (struct md_cd_ctrl *)md->private_data;
@@ -2177,7 +2231,10 @@ static int md_cd_start(struct ccci_modem *md)
 #if TRAFFIC_MONITOR_INTERVAL
 	md_cd_clear_traffic_data(md);
 #endif
-
+	/* clear all ccif irq before enable it.*/
+	cldma_write32(md_ctrl->md_ccif_base, APCCIF_ACK, cldma_read32(md_ctrl->md_ccif_base, APCCIF_RCHNUM));
+	cldma_write32(md_ctrl->ap_ccif_base, APCCIF_ACK, cldma_read32(md_ctrl->ap_ccif_base, APCCIF_RCHNUM));
+	wdt_executed = 0;
 #ifdef ENABLE_CLDMA_AP_SIDE
 	md_cldma_hw_reset(md);
 #endif
@@ -2196,7 +2253,8 @@ static int md_cd_start(struct ccci_modem *md)
 		mod_timer(&md->bootup_timer, jiffies + BOOT_TIMER_ON * HZ);
 	/* 7. let modem go */
 	md_cd_let_md_go(md);
-	wdt_enable_irq(md_ctrl);
+	wdt_enable_irq(md);
+	ccif_enable_irq(md);
 	/* 8. start CLDMA */
 #ifdef ENABLE_CLDMA_AP_SIDE
 	CCCI_INF_MSG(md->index, TAG, "CLDMA AP side clock is always on\n");
@@ -2316,8 +2374,7 @@ static int md_cd_reset(struct ccci_modem *md)
 	}
 	CCCI_INF_MSG(md->index, TAG, "md_cd_reset:CLDMA modem is resetting\n");
 	/* 2. disable WDT IRQ */
-	wdt_disable_irq(md_ctrl);
-
+	wdt_disable_irq(md);
 	/* 3, stop CLDMA */
 	md->ops->broadcast_state(md, RESET);	/* to block port's write operation */
 
@@ -2357,6 +2414,11 @@ static int md_cd_stop(struct ccci_modem *md, unsigned int timeout)
 	CCCI_INF_MSG(md->index, TAG, "CLDMA modem is power off, timeout=%d\n", timeout);
 	md->sim_type = 0xEEEEEEEE;	/* reset sim_type(MCC/MNC) to 0xEEEEEEEE */
 
+	/* flush work before new start */
+	flush_work(&md_ctrl->ccif_work);
+	flush_work(&md_ctrl->wdt_work);
+	del_timer(&md->ex_monitor);
+	del_timer(&md->ex_monitor2);
 	md_cd_check_emi_state(md, 1);	/* Check EMI before */
 	en_power_check = check_power_off_en(md);
 
@@ -3300,12 +3362,10 @@ static int md_cd_dump_info(struct ccci_modem *md, MODEM_DUMP_FLAG flag, void *bu
 
 static int md_cd_ee_callback(struct ccci_modem *md, MODEM_EE_FLAG flag)
 {
-	struct md_cd_ctrl *md_ctrl = (struct md_cd_ctrl *)md->private_data;
-
 	if (flag & EE_FLAG_ENABLE_WDT)
-		wdt_enable_irq(md_ctrl);
+		wdt_enable_irq(md);
 	if (flag & EE_FLAG_DISABLE_WDT)
-		wdt_disable_irq(md_ctrl);
+		wdt_disable_irq(md);
 	return 0;
 }
 
@@ -3591,7 +3651,9 @@ static int ccci_modem_probe(struct platform_device *plat_dev)
 	snprintf(md_ctrl->peer_wakelock_name, sizeof(md_ctrl->peer_wakelock_name), "md%d_cldma_peer", md_id + 1);
 	wake_lock_init(&md_ctrl->peer_wake_lock, WAKE_LOCK_SUSPEND, md_ctrl->peer_wakelock_name);
 	INIT_WORK(&md_ctrl->ccif_work, md_cd_ccif_work);
-	INIT_DELAYED_WORK(&md_ctrl->ccif_delayed_work, md_cd_ccif_delayed_work);
+	tasklet_init(&md_ctrl->ccif_irq_task, md_ccif_irq_tasklet,
+		     (unsigned long)md);
+	mutex_init(&md_ctrl->ccif_wdt_mutex);
 	init_timer(&md_ctrl->bus_timeout_timer);
 	md_ctrl->bus_timeout_timer.function = md_cd_ap2md_bus_timeout_timer_func;
 	md_ctrl->bus_timeout_timer.data = (unsigned long)md;
@@ -3655,6 +3717,7 @@ static int ccci_modem_probe(struct platform_device *plat_dev)
 	md_ctrl->channel_id = 0;
 	atomic_set(&md_ctrl->reset_on_going, 0);
 	atomic_set(&md_ctrl->wdt_enabled, 0);
+	atomic_set(&md_ctrl->ccif_irq_enabled, 0);
 	INIT_WORK(&md_ctrl->wdt_work, md_cd_wdt_work);
 #if TRAFFIC_MONITOR_INTERVAL
 	init_timer(&md_ctrl->traffic_monitor);

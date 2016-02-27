@@ -28,10 +28,9 @@ enum rawfs_debug_level_enum {
 
 extern int rawfs_debug_msg_mask;
 
-#define RAWFS_DEBUG_MSG_DEFAULT  (RAWFS_DBG_SUPER | RAWFS_DBG_DEVICE | \
-		RAWFS_DBG_INODE | RAWFS_DBG_FILE | \
+#define RAWFS_DEBUG_MSG_DEFAULT  (RAWFS_DBG_SUPER | \
 		RAWFS_DBG_DIR | RAWFS_DBG_DENTRY | \
-		RAWFS_DBG_INIT | RAWFS_DBG_GC | RAWFS_DBG_MOUNT)
+		RAWFS_DBG_INIT | RAWFS_DBG_MOUNT)
 
 #ifdef RAWFS_DBG
 #define RAWFS_PRINT(category, str, ...) do { \

@@ -8,3 +8,9 @@ config MTK_CLKMGR
           disabling, and querying status. If this config is not set,
           system will use COMMON_CLK instead.
 
+config MTK_DISABLE_SODI
+	bool "Disable SODI"
+	default n
+	---help---
+	  Select if you want to disable Screen ON DeepIdle (SODI).
+

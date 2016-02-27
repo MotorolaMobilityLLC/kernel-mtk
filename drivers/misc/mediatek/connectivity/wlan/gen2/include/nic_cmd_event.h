@@ -1794,7 +1794,7 @@ typedef struct _CMD_EDGE_TXPWR_LIMIT_T {
 	INT_8 cBandEdgeMaxPwrCCK;
 	INT_8 cBandEdgeMaxPwrOFDM20;
 	INT_8 cBandEdgeMaxPwrOFDM40;
-	INT_8 cReserved;
+	INT_8 cBandEdgeCert;
 } CMD_EDGE_TXPWR_LIMIT_T, *P_CMD_EDGE_TXPWR_LIMIT_T;
 
 typedef struct _CMD_RSSI_COMPENSATE_T {

@@ -195,7 +195,14 @@ static void _RestoreDPIRegisters(void)
 enum DPI_STATUS ddp_dpi_ConfigPclk(cmdqRecHandle cmdq, unsigned int clk_req, enum DPI_POLARITY polarity)
 {
 	unsigned clksrc = 0;
+#ifdef CONFIG_FOR_ARCH_M3
+	unsigned temp = 0;
+#endif
+#if defined(CONFIG_MTK_LEGACY) || defined(CONFIG_MTK_CLKMGR)
 	unsigned prediv = 0x8316D89D;
+#else
+	unsigned long bclk = 0;
+#endif
 	struct DPI_REG_OUTPUT_SETTING ctrl = DPI_REG->OUTPUT_SETTING;
 	unsigned permission = INREG32(DISPSYS_EFUSE_PERMISSION);
 
@@ -208,10 +215,12 @@ enum DPI_STATUS ddp_dpi_ConfigPclk(cmdqRecHandle cmdq, unsigned int clk_req, enu
 #else
 			clksrc = 4;
 #endif
+			prediv = 0x83109D89;	/*54M*/
 #else
 			clksrc = TVDPLL_D4;
+			bclk = 108000000;
+
 #endif
-			prediv = 0x83109D89;	/*54M*/
 			break;
 		}
 	case DPI_CLK_480p_3D:
@@ -219,10 +228,12 @@ enum DPI_STATUS ddp_dpi_ConfigPclk(cmdqRecHandle cmdq, unsigned int clk_req, enu
 			pr_err("DISP/DPI " "DPI_CLK_480p_3D\n");
 #if defined(CONFIG_MTK_LEGACY) || defined(CONFIG_MTK_CLKMGR)
 			clksrc = 4;
+			prediv = 0x83109D89;	/*54M*/
 #else
 			clksrc = TVDPLL_D4;
+			bclk = 108000000;
+
 #endif
-			prediv = 0x83109D89;	/*54M*/
 			break;
 		}
 	case DPI_CLK_720p:
@@ -230,7 +241,9 @@ enum DPI_STATUS ddp_dpi_ConfigPclk(cmdqRecHandle cmdq, unsigned int clk_req, enu
 #if defined(CONFIG_MTK_LEGACY) || defined(CONFIG_MTK_CLKMGR)
 			clksrc = 2;	        /*148M*/
 #else
-			clksrc = TVDPLL_D2;
+			clksrc = TVDPLL_CK;
+			bclk = 148500000;
+
 #endif
 			break;
 		}
@@ -240,6 +253,8 @@ enum DPI_STATUS ddp_dpi_ConfigPclk(cmdqRecHandle cmdq, unsigned int clk_req, enu
 			clksrc = 1;	        /*296M*/
 #else
 			clksrc = TVDPLL_CK;
+			bclk = 148500000;
+
 #endif
 			break;
 		}
@@ -249,14 +264,21 @@ enum DPI_STATUS ddp_dpi_ConfigPclk(cmdqRecHandle cmdq, unsigned int clk_req, enu
 
 #if defined(CONFIG_MTK_LEGACY) || defined(CONFIG_MTK_CLKMGR)
 	clkmux_sel(MT_MUX_DPI0, clksrc, "DPI");
+	DPI_OUTREG32(NULL, DPI_TVDPLL_CON0, 0xc0000101);	/*TVDPLL enable*/
+	DPI_OUTREG32(NULL, DPI_TVDPLL_CON1, prediv);	/*set TVDPLL output clock frequency*/
+	pr_err("DISP/DPI,TVDPLL_CON0: 0x%x, TVDPLL_CON1: 0x%x\n", INREG32(DPI_TVDPLL_CON0), INREG32(DPI_TVDPLL_CON1));
+
 #else
 	ddp_clk_enable(MUX_DPI0);
 	ddp_clk_set_parent(MUX_DPI0, clksrc);
 	ddp_clk_disable(MUX_DPI0);
+
+	ddp_clk_prepare_enable(TVDPLL);
+	ddp_clk_set_rate(TVDPLL, bclk);
+	ddp_clk_disable_unprepare(TVDPLL);
+
+	pr_err("DISP/DPI,TVDPLL %ld\n", bclk);
 #endif
-	DPI_OUTREG32(NULL, DPI_TVDPLL_CON0, 0xc0000101);	/*TVDPLL enable*/
-	DPI_OUTREG32(NULL, DPI_TVDPLL_CON1, prediv);	/*set TVDPLL output clock frequency*/
-	pr_err("DISP/DPI,TVDPLL_CON0: 0x%x, TVDPLL_CON1: 0x%x\n", INREG32(DPI_TVDPLL_CON0), INREG32(DPI_TVDPLL_CON1));
 
 	/*IO driving setting */
 
@@ -268,21 +290,44 @@ enum DPI_STATUS ddp_dpi_ConfigPclk(cmdqRecHandle cmdq, unsigned int clk_req, enu
 	DPI_MASKREG32(NULL, DISPSYS_IO_DRIVING2, 0x0006, 0x3 << 1);
 	DPI_MASKREG32(NULL, DISPSYS_IO_DRIVING3, 0x0006, 0x3 << 1);
 
-	pr_err("DISP/DPI,DISPSYS_EFUSE: 0x%x\n", INREG32(DISPSYS_EFUSE));
-	pr_err("DISP/DPI,DISPSYS_EFUSE_PERMISSION: 0x%x\n", permission);
-
 	if ((permission & 0xC0000000) == 0) {
+	/*
 		DPI_OUTREG32(NULL, DISPSYS_EFUSE_KEY, 0xFD885CAE);
 		DPI_OUTREG32(NULL, DISPSYS_EFUSE, 0x3600000);
-
+	*/
 		pr_err("DISP/DPI,DISPSYS_EFUSE_KEY: 0x%x, DISPSYS_EFUSE: 0x%x\n",
 			INREG32(DISPSYS_EFUSE_KEY), INREG32(DISPSYS_EFUSE));
 	}
 
-	pr_err
-	    ("DISP/DPI,DISPSYS_IO_DRIVING1: 0x%x, DISPSYS_IO_DRIVING2: 0x%x, DISPSYS_IO_DRIVING3: 0x%x\n",
-	     INREG32(DISPSYS_IO_DRIVING1), INREG32(DISPSYS_IO_DRIVING2),
-	     INREG32(DISPSYS_IO_DRIVING3));
+#ifdef CONFIG_FOR_ARCH_M1
+		pr_warn("DISP/DPI,CONFIG_FOR_ARCH_M1 is defined!\n");
+		if((permission & 0xC0000000) == 0)
+		{
+			DPI_OUTREG32(NULL, DISPSYS_EFUSE_KEY, 0xFD885CAE);
+			DPI_OUTREG32(NULL, DISPSYS_EFUSE, 0x3600000);
+			pr_warn("DISP/DPI,DISPSYS_EFUSE_KEY: 0x%x, DISPSYS_EFUSE: 0x%x\n", INREG32(DISPSYS_EFUSE_KEY), INREG32(DISPSYS_EFUSE));
+		}
+#endif
+
+#ifdef CONFIG_FOR_ARCH_M3
+		pr_warn("DISP/DPI,CONFIG_FOR_ARCH_M3 is defined!\n");
+		if((permission & 0xC0000000) == 0)
+		{
+			DPI_OUTREG32(NULL, DISPSYS_EFUSE_KEY, 0xFD885CAE);
+			temp = INREG32(DISPSYS_EFUSE);
+			temp = (temp & 0xFC7FFFFF) | (5 << 23);
+			DPI_OUTREG32(NULL, DISPSYS_EFUSE, temp);
+			pr_warn("DISP/DPI,DISPSYS_EFUSE_KEY: 0x%x, DISPSYS_EFUSE: 0x%x\n", INREG32(DISPSYS_EFUSE_KEY), INREG32(DISPSYS_EFUSE));
+		}
+
+		//IO Driving Set
+		//data 4ma, firt vs/hs/de/ck 4ma, sencond 6ma
+		DPI_MASKREG32(NULL, DISPSYS_IO_DRIVING1, 0x6000, 0x0 << 13);
+		DPI_MASKREG32(NULL, DISPSYS_IO_DRIVING2, 0x0600, 0x0 << 9);
+		DPI_MASKREG32(NULL, DISPSYS_IO_DRIVING2, 0x0060, 0x0 << 5);
+		DPI_MASKREG32(NULL, DISPSYS_IO_DRIVING2, 0x0006, 0x0 << 1);
+		DPI_MASKREG32(NULL, DISPSYS_IO_DRIVING3, 0x0006, 0x2 << 1);
+#endif
 
 	/*DPI output clock polarity */
 	ctrl.CLK_POL = (DPI_POLARITY_FALLING == polarity) ? 1 : 0;
@@ -419,12 +464,17 @@ enum DPI_STATUS ddp_dpi_ConfigBG(cmdqRecHandle cmdq, bool enable, int BG_W, int 
 
 enum DPI_STATUS ddp_dpi_ConfigSize(cmdqRecHandle cmdq, unsigned width, unsigned height)
 {
+	unsigned totalSize = 0;
 	struct DPI_REG_SIZE size = DPI_REG->SIZE;
 
 	size.WIDTH = width;
 	size.HEIGHT = height;
+	/*
 	DPI_OUTREGBIT(cmdq, struct DPI_REG_SIZE, DPI_REG->SIZE, WIDTH, size.WIDTH);
 	DPI_OUTREGBIT(cmdq, struct DPI_REG_SIZE, DPI_REG->SIZE, HEIGHT, size.HEIGHT);
+	*/
+	totalSize = height << 16 | width;
+	DPI_OUTREG32(cmdq, &DPI_REG->SIZE, totalSize);
 
 	return DPI_STATUS_OK;
 }

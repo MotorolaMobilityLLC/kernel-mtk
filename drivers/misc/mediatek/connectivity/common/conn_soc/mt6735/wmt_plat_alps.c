@@ -440,7 +440,7 @@ INT32 wmt_plat_pwr_ctrl(ENUM_FUNC_STATE state)
 		break;
 
 	case FUNC_OFF:
-		ret = mtk_wcn_consys_hw_pwr_off();
+		ret = mtk_wcn_consys_hw_pwr_off(gCoClockFlag);
 		break;
 
 	case FUNC_RST:

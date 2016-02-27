@@ -333,17 +333,18 @@ int tracing_is_enabled(void)
  * to not have to wait for all that output. Anyway this can be
  * boot time and run time configurable.
  */
+#ifdef CONFIG_MTK_FTRACE_DEFAULT_ENABLE
+#define TRACE_BUF_SIZE_DEFAULT	4194304UL
+#else
 #define TRACE_BUF_SIZE_DEFAULT	1441792UL /* 16384 * 88 (sizeof(entry)) */
+#endif
 
 static unsigned long		trace_buf_size = TRACE_BUF_SIZE_DEFAULT;
 
-#ifdef CONFIG_MTK_SCHED_TRACERS
-#define SIZE_CPUX_DEFAULT 4194304UL
-#define CPU0_to_CPUX_RATIO (1.2)
-static unsigned long        size_cpu0 = (SIZE_CPUX_DEFAULT * CPU0_to_CPUX_RATIO);
-static unsigned long        size_cpuX = SIZE_CPUX_DEFAULT;
-static bool trace_buf_size_updated_from_cmdline;
-#endif
+void update_buf_size(unsigned long size)
+{
+	trace_buf_size = size;
+}
 
 /* trace_types holds a link list of available tracers. */
 static struct tracer		*trace_types __read_mostly;
@@ -783,10 +784,6 @@ static int __init set_buf_size(char *str)
 	if (buf_size == 0)
 		return 0;
 	trace_buf_size = buf_size;
-#ifdef CONFIG_MTK_SCHED_TRACERS
-	size_cpu0 = size_cpuX = buf_size;
-	trace_buf_size_updated_from_cmdline = true;
-#endif
 	return 1;
 }
 __setup("trace_buf_size=", set_buf_size);
@@ -4192,38 +4189,11 @@ out:
 int tracing_update_buffers(void)
 {
 	int ret = 0;
-#ifdef CONFIG_MTK_FTRACE_DEFAULT_ENABLE
-	int i = 0;
-	unsigned long size;
-#endif
 
 	mutex_lock(&trace_types_lock);
-#ifdef CONFIG_MTK_FTRACE_DEFAULT_ENABLE
-	if (!ring_buffer_expanded) {
-		if (!trace_buf_size_updated_from_cmdline &&
-		    (totalram_pages << (PAGE_SHIFT - 10)) > (1 << 20)) {
-			size_cpu0 = (SIZE_CPUX_DEFAULT * CPU0_to_CPUX_RATIO * 1.25);
-			size_cpuX = (SIZE_CPUX_DEFAULT * 1.25);
-		}
-
-		for_each_tracing_cpu(i) {
-			if (i == 0)
-				size = size_cpu0;
-			else
-				size = size_cpuX;
-			ret = __tracing_resize_ring_buffer(&global_trace, size, i);
-			if (ret < 0) {
-				pr_debug("[ftrace]fail to update cpu%d ring buffer to %lu KB\n",
-					i, size);
-				break;
-			}
-		}
-	}
-#else
 	if (!ring_buffer_expanded)
 		ret = __tracing_resize_ring_buffer(&global_trace, trace_buf_size,
 						RING_BUFFER_ALL_CPUS);
-#endif
 	mutex_unlock(&trace_types_lock);
 
 	return ret;

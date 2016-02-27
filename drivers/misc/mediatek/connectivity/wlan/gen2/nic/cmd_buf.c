@@ -211,6 +211,7 @@ P_CMD_INFO_T cmdBufAllocateCmdInfo(IN P_ADAPTER_T prAdapter, IN UINT_32 u4Length
 		cmdBufDumpCmdQueue(prCmdQue, "waiting Tx CMD queue");
 		cmdBufDumpCmdQueue(prPendingCmdQue, "waiting response CMD queue");
 		DBGLOG(NIC, INFO, "Tc4 number:%d\n", prTc->aucFreeBufferCount[TC4_INDEX]);
+		
 		if (prTc->aucFreeBufferCount[TC4_INDEX] != 0)
 			glDoChipReset();
 	}

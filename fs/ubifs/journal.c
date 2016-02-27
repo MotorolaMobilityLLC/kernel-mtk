@@ -897,8 +897,8 @@ int ubifs_jnl_write_data(struct ubifs_info *c, const struct inode *inode,
 		(unsigned long)key_inum(c, key), key_block(c, key), len);
 	ubifs_assert(len <= UBIFS_BLOCK_SIZE);
 
-#if 0
-	data = kmalloc(dlen, GFP_NOFS | __GFP_NOWARN);
+#if 1
+	data = vmalloc(dlen);
 #else
 	data = NULL;
 #endif
@@ -953,7 +953,7 @@ int ubifs_jnl_write_data(struct ubifs_info *c, const struct inode *inode,
 	if (!allocated)
 		mutex_unlock(&c->write_reserve_mutex);
 	else
-		kfree(data);
+		vfree(data);
 #if defined(FEATURE_UBIFS_PERF_INDEX)
 	ubifs_perf_wcount(sched_clock() - time1, len, dlen);
 #endif
@@ -968,7 +968,7 @@ out_free:
 	if (!allocated)
 		mutex_unlock(&c->write_reserve_mutex);
 	else
-		kfree(data);
+		vfree(data);
 	return err;
 }
 

@@ -143,10 +143,7 @@ do {			\
 
 #define CMDQ_AEE(tag, string, args...) \
 { \
-	if (0 == strncmp(tag, "DISP", 4)) \
-		CMDQ_AEE_EX(DB_OPT_DUMP_DISPLAY, tag, string, ##args) \
-	else \
-		CMDQ_AEE_EX(0, tag, string, ##args) \
+	CMDQ_AEE_EX(DB_OPT_DUMP_DISPLAY, tag, string, ##args) \
 }
 
 #else

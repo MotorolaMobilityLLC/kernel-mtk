@@ -686,6 +686,19 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 			status = "okay";
 		};
 
+		irtx-pwm {
+			compatible = "mediatek,irtx-pwm";
+			pwm_ch = <2>;
+			pwm_data_invert = <0>;
+		};
+
+		irlearning-spi {
+			compatible = "mediatek,irlearning-spi";
+			spi_clock = <109000000>;
+			spi_data_invert = <0>;
+			spi_cs_invert = <1>;
+		};
+
 		apuart0: apuart0@11002000 {
 			cell-index = <0>;
 			compatible = "mediatek,mt6735-uart";
@@ -1216,6 +1229,9 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 				      "DISP_MTCMOS_CLK";
 		};
 
+		lcm_mode: lcm_mode {
+			compatible = "mediatek,lcm_mode";
+		};
 
 		smi_larb0@14015000 {
 			compatible = "mediatek,smi_larb0";
@@ -1340,9 +1356,9 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 			reg = <0x15008000 0x1000>;  /* SENINF_ADDR */
 		};
 
-		fdvt@1500B000 {
-			compatible = "mediatek,mt6735-fdvt";
-			reg = <0x1500B000 0x1000>;
+		fdvt@1500b000 {
+			compatible = "mediatek,fdvt";
+			reg = <0x1500b000 0x1000>;
 			interrupts = <GIC_SPI 208 IRQ_TYPE_LEVEL_LOW>;
 			clocks = <&scpsys SCP_SYS_DIS>,
 				 <&scpsys SCP_SYS_ISP>,

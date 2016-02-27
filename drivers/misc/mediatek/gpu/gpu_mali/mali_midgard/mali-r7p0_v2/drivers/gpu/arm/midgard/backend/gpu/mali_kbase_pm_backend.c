@@ -296,7 +296,7 @@ int kbase_hwaccess_pm_powerup(struct kbase_device *kbdev,
 	unsigned long irq_flags;
 	int ret;
 	
-	unsigned int code; //mtk
+	//unsigned int code; //mtk
 	unsigned int gpu_efuse;
 
 	KBASE_DEBUG_ASSERT(kbdev != NULL);
@@ -319,16 +319,16 @@ int kbase_hwaccess_pm_powerup(struct kbase_device *kbdev,
 	kbasep_pm_read_present_cores(kbdev);
 	
 	// mtk
-	code = mt_get_chip_hw_code();
-	if (0x321 == code) // Denali-1(6735)
-	{     
+	//code = mt_get_chip_hw_code();
+	//if (0x321 == code) // Denali-1(6735)
+	//{     
      // read GPU efuse info.
-     gpu_efuse = (get_devinfo_with_index(3) >> 7)&0x01;
-	 if( gpu_efuse == 1 ) 
-	 	 kbdev->pm.debug_core_mask = (u64)1;	 // 1-core
-	 else				
-	 	 kbdev->pm.debug_core_mask = (u64)3;	 // 2-core
-	} 
+  gpu_efuse = (get_devinfo_with_index(3) >> 7)&0x01;
+	if( gpu_efuse == 1 ) 
+		kbdev->pm.debug_core_mask = (u64)1;	 // 1-core
+	else				
+		kbdev->pm.debug_core_mask = (u64)3;	 // 2-core
+	//} 
 	/*else if (0x335 == code) 
 	{
      // Denali-2(6735M)
@@ -337,13 +337,13 @@ int kbase_hwaccess_pm_powerup(struct kbase_device *kbdev,
 	{
      // Denali-3(6753)
 	}*/
-	else
-	{
-		kbdev->pm.debug_core_mask = kbdev->shader_present_bitmap;
-	}
+	//else
+	//{
+	//	kbdev->pm.debug_core_mask = kbdev->shader_present_bitmap;
+	//}
 
-	kbdev->pm.debug_core_mask =
-			kbdev->gpu_props.props.raw_props.shader_present;
+	//kbdev->pm.debug_core_mask =
+	//		kbdev->gpu_props.props.raw_props.shader_present;
 
 	/* Pretend the GPU is active to prevent a power policy turning the GPU
 	 * cores off */

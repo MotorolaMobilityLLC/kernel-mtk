@@ -219,17 +219,16 @@ INT32 __weak mtk_wcn_sdio_irq_flag_set(INT32 falg)
 
 INT32 mtk_wcn_hif_sdio_irq_flag_set(INT32 flag)
 {
-
-	if (0 == flag)
+	if (0 == flag) {
 		atomic_dec(&hif_sdio_irq_enable_flag);
-	else
+		if (0 == atomic_read(&hif_sdio_irq_enable_flag))
+			mtk_wcn_sdio_irq_flag_set(0);
+	} else {
 		atomic_inc(&hif_sdio_irq_enable_flag);
+		if (1 == atomic_read(&hif_sdio_irq_enable_flag))
+			mtk_wcn_sdio_irq_flag_set(1);
+	}
 
-	if (0 == atomic_read(&hif_sdio_irq_enable_flag))
-		mtk_wcn_sdio_irq_flag_set(0);
-
-	if (1 == atomic_read(&hif_sdio_irq_enable_flag))
-		mtk_wcn_sdio_irq_flag_set(1);
 	return 0;
 }
 

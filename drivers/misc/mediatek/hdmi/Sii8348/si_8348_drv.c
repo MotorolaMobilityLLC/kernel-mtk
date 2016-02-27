@@ -706,12 +706,14 @@ static	void	print_vic_modes(struct drv_hw_context *hw_context,uint8_t vic)
 // TODO: FD, TBU, zone control should be reconfigured after tapeout if auto-zone is not deployed
 static void set_mhl_zone_settings(struct mhl_dev_context *dev_context , uint32_t pixel_clock_frequency)
 {
+	/*
 	struct drv_hw_context *hw_context = (struct drv_hw_context *)&dev_context->drv_context;
 
 	MHL_TX_DBG_INFO(hw_context,"pixel clock:%d %04x rev %02x\n",
 					pixel_clock_frequency,
 					hw_context->chip_device_id,
 					hw_context->chip_rev_id);
+	*/
 
 #if 0	// TODO: FD, TBC, double-check for SK, check whether there is a need to manual control and what's the threhold
 	/*

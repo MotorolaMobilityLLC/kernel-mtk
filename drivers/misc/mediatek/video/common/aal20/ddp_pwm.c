@@ -42,10 +42,11 @@ static disp_pwm_id_t g_pwm_main_id = DISP_PWM0;
 static atomic_t g_pwm_backlight[1] = { ATOMIC_INIT(-1) };
 static volatile int g_pwm_max_backlight[1] = { 1023 };
 static ddp_module_notify g_ddp_notify;
+static DEFINE_SPINLOCK(g_pwm_log_lock);
+
 
 typedef struct {
 	unsigned int value;
-	unsigned int count;
 	unsigned long tsec;
 	unsigned long tusec;
 } PWM_LOG;
@@ -55,7 +56,7 @@ enum PWM_LOG_TYPE {
 	MSG_LOG,
 };
 
-static PWM_LOG g_pwm_log_buffer[PWM_LOG_BUFFER_SIZE];
+static PWM_LOG g_pwm_log_buffer[PWM_LOG_BUFFER_SIZE + 1];
 static int g_pwm_log_index;
 
 int disp_pwm_get_cust_led(unsigned int *clocksource, unsigned int *clockdiv)
@@ -95,8 +96,7 @@ static int disp_pwm_config_init(DISP_MODULE_ENUM module, disp_ddp_path_config *p
 	/* disp_pwm_id_t id = DISP_PWM0; */
 	unsigned long reg_base = pwm_get_reg_base(DISP_PWM0);
 	int index = index_of_pwm(DISP_PWM0);
-	int i, ret;
-
+	int ret;
 	pwm_div = PWM_DEFAULT_DIV_VALUE;
 #if 1
 	ret = disp_pwm_get_cust_led(&pwm_src, &pwm_div);
@@ -118,14 +118,6 @@ static int disp_pwm_config_init(DISP_MODULE_ENUM module, disp_ddp_path_config *p
 
 	DISP_REG_MASK(cmdq, reg_base + DISP_PWM_CON_1_OFF, 1023, 0x3ff);	/* 1024 levels */
 	/* We don't init the backlight here until AAL/Android give */
-
-	g_pwm_log_index = 0;
-	for (i = 0; i < PWM_LOG_BUFFER_SIZE; i += 1) {
-		g_pwm_log_buffer[i].count = 0;
-		g_pwm_log_buffer[i].tsec = -1;
-		g_pwm_log_buffer[i].tusec = -1;
-		g_pwm_log_buffer[i].value = -1;
-	}
 
 	return 0;
 }
@@ -286,14 +278,19 @@ static void disp_pwm_log(int level_1024, int log_type)
 	int i;
 	struct timeval pwm_time;
 	char buffer[256] = "";
+	int print_log;
 
 	do_gettimeofday(&pwm_time);
+
+	spin_lock(&g_pwm_log_lock);
+
 	g_pwm_log_buffer[g_pwm_log_index].value = level_1024;
 	g_pwm_log_buffer[g_pwm_log_index].tsec = (unsigned long)pwm_time.tv_sec % 1000;
-	g_pwm_log_buffer[g_pwm_log_index].tusec = (unsigned long)pwm_time.tv_usec;
+	g_pwm_log_buffer[g_pwm_log_index].tusec = (unsigned long)pwm_time.tv_usec / 1000;
 	g_pwm_log_index += 1;
+	print_log = 0;
 
-	if (g_pwm_log_index == PWM_LOG_BUFFER_SIZE || level_1024 == 0) {
+	if (g_pwm_log_index >= PWM_LOG_BUFFER_SIZE || level_1024 == 0) {
 		sprintf(buffer + strlen(buffer), "(latest=%2u): ", g_pwm_log_index);
 		for (i = 0; i < g_pwm_log_index; i += 1) {
 			sprintf(buffer + strlen(buffer), "%5u(%4lu,%4lu)",
@@ -302,20 +299,25 @@ static void disp_pwm_log(int level_1024, int log_type)
 				g_pwm_log_buffer[i].tusec);
 		}
 
-		if (log_type == MSG_LOG)
-			PWM_MSG("%s", buffer);
-		else
-			PWM_NOTICE("%s", buffer);
-
 		g_pwm_log_index = 0;
+		print_log = 1;
 
 		for (i = 0; i < PWM_LOG_BUFFER_SIZE; i += 1) {
-			g_pwm_log_buffer[i].count = 0;
 			g_pwm_log_buffer[i].tsec = -1;
 			g_pwm_log_buffer[i].tusec = -1;
 			g_pwm_log_buffer[i].value = -1;
 		}
 	}
+
+	spin_unlock(&g_pwm_log_lock);
+
+	if (print_log == 1) {
+		if (log_type == MSG_LOG)
+			PWM_MSG("%s", buffer);
+		else
+			PWM_NOTICE("%s", buffer);
+	}
+
 }
 
 int disp_pwm_set_backlight_cmdq(disp_pwm_id_t id, int level_1024, void *cmdq)

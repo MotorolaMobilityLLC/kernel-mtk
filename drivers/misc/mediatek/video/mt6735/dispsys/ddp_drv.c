@@ -94,6 +94,8 @@ static ssize_t disp_kobj_show(struct kobject *kobj, struct attribute *attr, char
 		size = ddp_dump_reg_to_buf(1, (unsigned long *)buffer);	/* DISP_MODULE_OVL */
 	else if (0 == strcmp(attr->name, "dbg3"))
 		size = ddp_dump_reg_to_buf(0, (unsigned long *)buffer);	/* DISP_MODULE_WDMA0 */
+	else if (0 == strcmp(attr->name, "dbg4"))
+		size = ddp_dump_lcm_param_to_buf(0, (unsigned long *)buffer); /* DISP_MODULE_LCM */
 
 	return size;
 }
@@ -116,6 +118,10 @@ static struct kobj_type disp_kobj_ktype = {
 		},
 		&(struct attribute){
 			.name = "dbg3",	/* disp, dbg3 */
+			.mode = S_IRUGO
+		},
+		&(struct attribute){
+			.name = "dbg4",	/* disp, dbg4 */
 			.mode = S_IRUGO
 		},
 		NULL
@@ -455,18 +461,8 @@ static int disp_flush(struct file *file, fl_owner_t a_id)
 	return 0;
 }
 
-/* remap register to user space */
 static int disp_mmap(struct file *file, struct vm_area_struct *a_pstVMArea)
 {
-#if defined(CONFIG_TRUSTONIC_TEE_SUPPORT) && defined(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT)
-	a_pstVMArea->vm_page_prot = pgprot_noncached(a_pstVMArea->vm_page_prot);
-	if (remap_pfn_range(a_pstVMArea, a_pstVMArea->vm_start, a_pstVMArea->vm_pgoff,
-			    (a_pstVMArea->vm_end - a_pstVMArea->vm_start), a_pstVMArea->vm_page_prot)) {
-		DDPERR("MMAP failed!!\n");
-		return -1;
-	}
-#endif
-
 	return 0;
 }
 
@@ -632,6 +628,7 @@ const char *disp_clk_name[MAX_DISP_CLK_CNT] = {
 	"DISP1_DPI_PIXEL",
 	"DISP_PWM",
 	"MUX_DPI0",
+	"TVDPLL",
 	"TVDPLL_CK",
 	"TVDPLL_D2",
 	"TVDPLL_D4",
@@ -703,6 +700,11 @@ int ddp_clk_disable_unprepare(eDDP_CLK_ID id)
 int ddp_clk_set_parent(eDDP_CLK_ID id, eDDP_CLK_ID parent)
 {
 	return clk_set_parent(dispsys_dev->disp_clk[id], dispsys_dev->disp_clk[parent]);
+}
+
+int ddp_clk_set_rate(eDDP_CLK_ID id, unsigned long rate)
+{
+	return clk_set_rate(dispsys_dev->disp_clk[id], rate);
 }
 #endif				/* CONFIG_MTK_CLKMGR */
 

@@ -594,7 +594,7 @@ struct _MSDU_INFO_T {
 */
 VOID nicTxInitialize(IN P_ADAPTER_T prAdapter);
 
-WLAN_STATUS nicTxAcquireResource(IN P_ADAPTER_T prAdapter, IN UINT_8 ucTC);
+WLAN_STATUS nicTxAcquireResource(IN P_ADAPTER_T prAdapter, IN UINT_8 ucTC, IN BOOLEAN pfgIsSecOrMgmt);
 
 WLAN_STATUS nicTxPollingResource(IN P_ADAPTER_T prAdapter, IN UINT_8 ucTC);
 

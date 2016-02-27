@@ -59,6 +59,7 @@
 #include <asm/atomic.h>
 //#include <mach/mt6516_pll.h>
 
+#include "kd_camera_typedef.h"
 #include "kd_camera_hw.h"
 #include "kd_imgsensor.h"
 #include "kd_imgsensor_define.h"
@@ -71,14 +72,14 @@
 
 #define GC2145MIPIYUV_DEBUG
 #ifdef GC2145MIPIYUV_DEBUG
-#define SENSORDB(fmt, args...) pr_debug(fmt, ##args)
+#define SENSORDB pr_debug
 #else
-#define SENSORDB(fmt, args...)
+#define SENSORDB(x,...)
 #endif
 
 #define GC2145MIPI_2Lane
 
-#define GC2145_TEST_PATTERN_CHECKSUM (0xd1c77d11)
+#define GC2145MIPI_TEST_PATTERN_CHECKSUM (0xd1c77d11)
 
 //#define DEBUG_SENSOR_GC2145MIPI
 
@@ -115,10 +116,12 @@ kal_uint8 out_buff[2];
     out_buff[0] = addr;
     out_buff[1] = para;
 
+    kdSetI2CSpeed(400);
+
     iWriteRegI2C((u8*)out_buff , (u16)sizeof(out_buff), GC2145MIPI_WRITE_ID); 
 
 #if (defined(__GC2145MIPI_DEBUG_TRACE__))
-  if (sizeof(out_buff) != rt) pr_debug("I2C write %x, %x error\n", addr, para);
+  if (sizeof(out_buff) != rt) SENSORDB("I2C write %x, %x error\n", addr, para);
 #endif
 }
 
@@ -145,12 +148,14 @@ static kal_uint8 GC2145MIPI_read_cmos_sensor(kal_uint8 addr)
   
   out_buff[0] = addr;
 
+      kdSetI2CSpeed(400);
+
     if (0 != iReadRegI2C((u8*)out_buff , (u16) sizeof(out_buff), (u8*)in_buff, (u16) sizeof(in_buff), GC2145MIPI_WRITE_ID)) {
         SENSORDB("ERROR: GC2145MIPI_read_cmos_sensor \n");
     }
 
 #if (defined(__GC2145MIPI_DEBUG_TRACE__))
-  if (size != rt) pr_debug("I2C read %x error\n", addr);
+  if (size != rt) SENSORDB("I2C read %x error\n", addr);
 #endif
 
   return in_buff[0];
@@ -158,10 +163,10 @@ static kal_uint8 GC2145MIPI_read_cmos_sensor(kal_uint8 addr)
 
 
 #ifdef DEBUG_SENSOR_GC2145MIPI
-#define gc2145mipi_OP_CODE_INI		0x00		/* Initial value. */
-#define gc2145mipi_OP_CODE_REG		0x01		/* Register */
-#define gc2145mipi_OP_CODE_DLY		0x02		/* Delay */
-#define gc2145mipi_OP_CODE_END		0x03		/* End of initial setting. */
+#define GC2145MIPI_OP_CODE_INI		0x00		/* Initial value. */
+#define GC2145MIPI_OP_CODE_REG		0x01		/* Register */
+#define GC2145MIPI_OP_CODE_DLY		0x02		/* Delay */
+#define GC2145MIPI_OP_CODE_END		0x03		/* End of initial setting. */
 static kal_uint16 fromsd;
 
 typedef struct
@@ -169,19 +174,19 @@ typedef struct
 	u16 init_reg;
 	u16 init_val;	/* Save the register value and delay tick */
 	u8 op_code;		/* 0 - Initial value, 1 - Register, 2 - Delay, 3 - End of setting. */
-} gc2145mipi_initial_set_struct;
+} GC2145MIPI_initial_set_struct;
 
-gc2145mipi_initial_set_struct gc2145mipi_Init_Reg[5000];
+GC2145MIPI_initial_set_struct GC2145MIPI_Init_Reg[5000];
 
 static u32 strtol(const char *nptr, u8 base)
 {
 
-	pr_debug("gc2145mipi___%s____\n",__func__); 
+	SENSORDB("GC2145MIPI___%s____\n",__func__); 
 
 	u8 ret;
 	if(!nptr || (base!=16 && base!=10 && base!=8))
 	{
-		pr_debug("gc2145mipi %s(): NULL pointer input\n", __FUNCTION__);
+		SENSORDB("GC2145MIPI %s(): NULL pointer input\n", __FUNCTION__);
 		return -1;
 	}
 	for(ret=0; *nptr; nptr++)
@@ -217,7 +222,7 @@ static u8 GC2145MIPI_Initialize_from_T_Flash()
 	u32 i = 0, j = 0;
 	u8 func_ind[4] = {0};	/* REG or DLY */
 
-	pr_debug("gc2145mipi___%s____11111111111111\n",__func__); 
+	SENSORDB("GC2145MIPI___%s____11111111111111\n",__func__); 
 
 
 
@@ -226,27 +231,27 @@ static u8 GC2145MIPI_Initialize_from_T_Flash()
 	loff_t pos = 0; 
 	static u8 data_buff[10*1024] ;
 
-	fp = filp_open("/mnt/sdcard/gc2145mipi_sd.txt", O_RDONLY , 0); 
+	fp = filp_open("/mnt/sdcard/GC2145MIPI_sd.txt", O_RDONLY , 0); 
 	if (IS_ERR(fp)) 
 	{ 
-		pr_debug("2145 create file error 1111111\n");  
+		SENSORDB("2145 create file error 1111111\n");  
 		return -1; 
 	} 
 	else
 	{
-		pr_debug("2145 create file error 2222222\n");  
+		SENSORDB("2145 create file error 2222222\n");  
 	}
 	fs = get_fs(); 
 	set_fs(KERNEL_DS); 
 
 	file_size = vfs_llseek(fp, 0, SEEK_END);
 	vfs_read(fp, data_buff, file_size, &pos); 
-	//pr_debug("%s %d %d\n", buf,iFileLen,pos); 
+	//SENSORDB("%s %d %d\n", buf,iFileLen,pos); 
 	filp_close(fp, NULL); 
 	set_fs(fs);
 
 
-	pr_debug("gc2145mipi___%s____22222222222222222\n",__func__); 
+	SENSORDB("GC2145MIPI___%s____22222222222222222\n",__func__); 
 
 
 
@@ -291,19 +296,19 @@ static u8 GC2145MIPI_Initialize_from_T_Flash()
 			curr_ptr += 2;
 			continue ;
 		}
-		//pr_debug(" curr_ptr1 = %s\n",curr_ptr);
+		//SENSORDB(" curr_ptr1 = %s\n",curr_ptr);
 		memcpy(func_ind, curr_ptr, 3);
 
 
 		if (strcmp((const char *)func_ind, "REG") == 0)		/* REG */
 		{
 			curr_ptr += 6;				/* Skip "REG(0x" or "DLY(" */
-			gc2145mipi_Init_Reg[i].op_code = gc2145mipi_OP_CODE_REG;
+			GC2145MIPI_Init_Reg[i].op_code = GC2145MIPI_OP_CODE_REG;
 
-			gc2145mipi_Init_Reg[i].init_reg = strtol((const char *)curr_ptr, 16);
+			GC2145MIPI_Init_Reg[i].init_reg = strtol((const char *)curr_ptr, 16);
 			curr_ptr += 5;	/* Skip "00, 0x" */
 
-			gc2145mipi_Init_Reg[i].init_val = strtol((const char *)curr_ptr, 16);
+			GC2145MIPI_Init_Reg[i].init_val = strtol((const char *)curr_ptr, 16);
 			curr_ptr += 4;	/* Skip "00);" */
 
 		}
@@ -311,10 +316,10 @@ static u8 GC2145MIPI_Initialize_from_T_Flash()
 		{
 			/* Need add delay for this setting. */ 
 			curr_ptr += 4;	
-			gc2145mipi_Init_Reg[i].op_code = gc2145mipi_OP_CODE_DLY;
+			GC2145MIPI_Init_Reg[i].op_code = GC2145MIPI_OP_CODE_DLY;
 
-			gc2145mipi_Init_Reg[i].init_reg = 0xFF;
-			gc2145mipi_Init_Reg[i].init_val = strtol((const char *)curr_ptr,  10);	/* Get the delay ticks, the delay should less then 50 */
+			GC2145MIPI_Init_Reg[i].init_reg = 0xFF;
+			GC2145MIPI_Init_Reg[i].init_val = strtol((const char *)curr_ptr,  10);	/* Get the delay ticks, the delay should less then 50 */
 		}
 		i++;
 
@@ -328,42 +333,42 @@ static u8 GC2145MIPI_Initialize_from_T_Flash()
 	}
 
 	/* (0xFFFF, 0xFFFF) means the end of initial setting. */
-	gc2145mipi_Init_Reg[i].op_code = gc2145mipi_OP_CODE_END;
-	gc2145mipi_Init_Reg[i].init_reg = 0xFF;
-	gc2145mipi_Init_Reg[i].init_val = 0xFF;
+	GC2145MIPI_Init_Reg[i].op_code = GC2145MIPI_OP_CODE_END;
+	GC2145MIPI_Init_Reg[i].init_reg = 0xFF;
+	GC2145MIPI_Init_Reg[i].init_val = 0xFF;
 	i++;
 	//for (j=0; j<i; j++)
-	pr_debug("gc2145mipi %x  ==  %x\n",gc2145mipi_Init_Reg[j].init_reg, gc2145mipi_Init_Reg[j].init_val);
+	SENSORDB("GC2145MIPI %x  ==  %x\n",GC2145MIPI_Init_Reg[j].init_reg, GC2145MIPI_Init_Reg[j].init_val);
 	
-	pr_debug("gc2145mipi___%s____3333333333333333\n",__func__); 
+	SENSORDB("GC2145MIPI___%s____3333333333333333\n",__func__); 
 
 	/* Start apply the initial setting to sensor. */
 #if 1
 	for (j=0; j<i; j++)
 	{
-		if (gc2145mipi_Init_Reg[j].op_code == gc2145mipi_OP_CODE_END)	/* End of the setting. */
+		if (GC2145MIPI_Init_Reg[j].op_code == GC2145MIPI_OP_CODE_END)	/* End of the setting. */
 		{
-			pr_debug("gc2145mipi REG OK -----------------END!\n");
+			SENSORDB("GC2145MIPI REG OK -----------------END!\n");
 		
 			break ;
 		}
-		else if (gc2145mipi_Init_Reg[j].op_code == gc2145mipi_OP_CODE_DLY)
+		else if (GC2145MIPI_Init_Reg[j].op_code == GC2145MIPI_OP_CODE_DLY)
 		{
-			msleep(gc2145mipi_Init_Reg[j].init_val);		/* Delay */
-			pr_debug("gc2145mipi REG OK -----------------DLY!\n");			
+			msleep(GC2145MIPI_Init_Reg[j].init_val);		/* Delay */
+			SENSORDB("GC2145MIPI REG OK -----------------DLY!\n");			
 		}
-		else if (gc2145mipi_Init_Reg[j].op_code == gc2145mipi_OP_CODE_REG)
+		else if (GC2145MIPI_Init_Reg[j].op_code == GC2145MIPI_OP_CODE_REG)
 		{
 
-			GC2145MIPI_write_cmos_sensor(gc2145mipi_Init_Reg[j].init_reg, gc2145mipi_Init_Reg[j].init_val);
-			pr_debug("gc2145mipi REG OK!-----------------REG(0x%x,0x%x)\n",gc2145mipi_Init_Reg[j].init_reg, gc2145mipi_Init_Reg[j].init_val);			
-			pr_debug("gc2145mipi REG OK!-----------------REG(0x%x,0x%x)\n",gc2145mipi_Init_Reg[j].init_reg, gc2145mipi_Init_Reg[j].init_val);			
-			pr_debug("gc2145mipi REG OK!-----------------REG(0x%x,0x%x)\n",gc2145mipi_Init_Reg[j].init_reg, gc2145mipi_Init_Reg[j].init_val);			
+			GC2145MIPI_write_cmos_sensor(GC2145MIPI_Init_Reg[j].init_reg, GC2145MIPI_Init_Reg[j].init_val);
+			SENSORDB("GC2145MIPI REG OK!-----------------REG(0x%x,0x%x)\n",GC2145MIPI_Init_Reg[j].init_reg, GC2145MIPI_Init_Reg[j].init_val);			
+			SENSORDB("GC2145MIPI REG OK!-----------------REG(0x%x,0x%x)\n",GC2145MIPI_Init_Reg[j].init_reg, GC2145MIPI_Init_Reg[j].init_val);			
+			SENSORDB("GC2145MIPI REG OK!-----------------REG(0x%x,0x%x)\n",GC2145MIPI_Init_Reg[j].init_reg, GC2145MIPI_Init_Reg[j].init_val);			
 			
 		}
 		else
 		{
-			pr_debug("gc2145mipi REG ERROR!\n");
+			SENSORDB("GC2145MIPI REG ERROR!\n");
 		}
 	}
 #endif
@@ -390,17 +395,17 @@ static kal_uint32 zoom_factor = 0;
 static kal_bool GC2145MIPI_VEDIO_encode_mode = KAL_FALSE; //Picture(Jpeg) or Video(Mpeg4)
 static kal_bool GC2145MIPI_sensor_cap_state = KAL_FALSE; //Preview or Capture
 
-static kal_uint16 GC2145MIPI_exposure_lines=0, GC2145MIPI_extra_exposure_lines = 0;
+//static kal_uint16 GC2145MIPI_exposure_lines=0;
 
-static kal_uint16 GC2145MIPI_Capture_Shutter=0;
-static kal_uint16 GC2145MIPI_Capture_Extra_Lines=0;
+//static kal_uint16 GC2145MIPI_Capture_Shutter=0;
+//static kal_uint16 GC2145MIPI_Capture_Extra_Lines=0;
 
 kal_uint32 GC2145MIPI_capture_pclk_in_M=520,GC2145MIPI_preview_pclk_in_M=390,GC2145MIPI_PV_dummy_pixels=0,GC2145MIPI_PV_dummy_lines=0,GC2145MIPI_isp_master_clock=0;
 
-static kal_uint32  GC2145MIPI_sensor_pclk=390;
+//static kal_uint32  GC2145MIPI_sensor_pclk=390;
 
 static kal_uint32 Preview_Shutter = 0;
-static kal_uint32 Capture_Shutter = 0;
+//static kal_uint32 Capture_Shutter = 0;
 
 MSDK_SENSOR_CONFIG_STRUCT GC2145MIPISensorConfigData;
 
@@ -421,7 +426,7 @@ static void GC2145MIPI_write_shutter(kal_uint32 shutter)
 	GC2145MIPI_write_cmos_sensor(0x04, shutter & 0xff);
 }    /* GC2145MIPI_write_shutter */
 
-
+/*
 static void GC2145MIPI_set_mirror_flip(kal_uint8 image_mirror)
 {
 	kal_uint8 GC2145MIPI_HV_Mirror;
@@ -445,10 +450,10 @@ static void GC2145MIPI_set_mirror_flip(kal_uint8 image_mirror)
 	}
 	GC2145MIPI_write_cmos_sensor(0x17, GC2145MIPI_HV_Mirror);
 }
-
+*/
 static void GC2145MIPI_set_AE_mode(kal_bool AE_enable)
 {
-	kal_uint8 temp_AE_reg = 0;
+/*	kal_uint8 temp_AE_reg = 0;    */
 
 	GC2145MIPI_write_cmos_sensor(0xfe, 0x00);
 	if (AE_enable == KAL_TRUE)
@@ -463,6 +468,188 @@ static void GC2145MIPI_set_AE_mode(kal_bool AE_enable)
 	}
 }
 
+void GC2145MIPI_set_contrast(UINT16 para)
+{   
+    SENSORDB("[GC2145MIPI]CONTROLFLOW enter GC2145MIPI_set_contrast function:\n ");
+#if 1
+    switch (para)
+    {
+        case ISP_CONTRAST_LOW:			 
+			GC2145MIPI_write_cmos_sensor(0xfe, 0x02);	 
+			GC2145MIPI_write_cmos_sensor(0xd3, 0x20);
+			GC2145MIPI_write_cmos_sensor(0xfe, 0x00); 
+			Sleep(10);
+			break;
+        case ISP_CONTRAST_HIGH:			 
+			GC2145MIPI_write_cmos_sensor(0xfe, 0x02); 	
+			GC2145MIPI_write_cmos_sensor(0xd3, 0x58);
+			GC2145MIPI_write_cmos_sensor(0xfe, 0x00);
+			Sleep(10);			
+			break;
+        case ISP_CONTRAST_MIDDLE: 
+        default:
+			GC2145MIPI_write_cmos_sensor(0xfe, 0x02);	 
+			GC2145MIPI_write_cmos_sensor(0xd3, 0x40);
+			GC2145MIPI_write_cmos_sensor(0xfe, 0x00);
+			Sleep(10);			
+			break;
+        //default:
+		//	break;
+    }
+    SENSORDB("[GC2145MIPI]exit GC2145MIPI_set_contrast function:\n ");
+    return;
+#endif    
+}
+
+void GC2145MIPI_set_brightness(UINT16 para)
+{
+
+	SENSORDB("[GC2145MIPI]CONTROLFLOW enter GC2145MIPI_set_brightness function:\n ");
+#if 1
+	//return;
+    switch (para)
+    {
+        case ISP_BRIGHT_LOW:
+		//case AE_EV_COMP_n13:
+			GC2145MIPI_write_cmos_sensor(0xfe, 0x01);
+			GC2145MIPI_write_cmos_sensor(0x13, 0x20);
+			GC2145MIPI_write_cmos_sensor(0xfe, 0x00);
+			Sleep(10);
+			
+		//	GC2145MIPI_SET_PAGE1;
+		//	GC2145MIPI_write_cmos_sensor(0x13, 0x30);
+			//GC2145MIPI_SET_PAGE0;
+		break;
+        case ISP_BRIGHT_HIGH:
+		//case AE_EV_COMP_13:
+			GC2145MIPI_write_cmos_sensor(0xfe, 0x01);
+			GC2145MIPI_write_cmos_sensor(0x13, 0x98);
+			GC2145MIPI_write_cmos_sensor(0xfe, 0x00);
+			Sleep(10);
+		//	GC2145MIPI_SET_PAGE1;
+		//	GC2145MIPI_write_cmos_sensor(0x13, 0x90);
+		//	GC2145MIPI_SET_PAGE0;
+			break;
+        case ISP_BRIGHT_MIDDLE:
+        default:
+		//case AE_EV_COMP_00:
+			GC2145MIPI_write_cmos_sensor(0xfe, 0x01);
+			GC2145MIPI_write_cmos_sensor(0x13, 0x68);
+			GC2145MIPI_write_cmos_sensor(0xfe, 0x00);
+			Sleep(10);
+		//	GC2145MIPI_SET_PAGE1;
+		//	GC2145MIPI_write_cmos_sensor(0x13, 0x60);
+		//	GC2145MIPI_SET_PAGE0;
+		break;
+		//	return KAL_FALSE;
+		//	break;
+    }
+    SENSORDB("[GC2145MIPI]exit GC2145MIPI_set_brightness function:\n ");
+    return;
+#endif    
+}
+void GC2145MIPI_set_saturation(UINT16 para)
+{
+	SENSORDB("[GC2145MIPI]CONTROLFLOW enter GC2145MIPI_set_saturation function:\n ");
+
+    switch (para)
+    {
+        case ISP_SAT_HIGH:
+			GC2145MIPI_write_cmos_sensor(0xfe, 0x02); 	
+			GC2145MIPI_write_cmos_sensor(0xd1, 0x48);
+			GC2145MIPI_write_cmos_sensor(0xd2, 0x48);			
+			GC2145MIPI_write_cmos_sensor(0xfe, 0x00);
+			break;
+        case ISP_SAT_LOW:
+			GC2145MIPI_write_cmos_sensor(0xfe, 0x02); 	
+			GC2145MIPI_write_cmos_sensor(0xd1, 0x20);
+			GC2145MIPI_write_cmos_sensor(0xd2, 0x20);	
+			GC2145MIPI_write_cmos_sensor(0xfe, 0x00);
+			break;
+        case ISP_SAT_MIDDLE:
+        default:
+			GC2145MIPI_write_cmos_sensor(0xfe, 0x02); 	
+			GC2145MIPI_write_cmos_sensor(0xd1, 0x34);
+			GC2145MIPI_write_cmos_sensor(0xd2, 0x34);	
+			GC2145MIPI_write_cmos_sensor(0xfe, 0x00);
+			break;
+		//	return KAL_FALSE;
+		//	break;
+    }
+	SENSORDB("[GC2145MIPI]exit GC2145MIPI_set_saturation function:\n ");
+     return;
+    
+}
+
+void GC2145MIPI_set_edge(UINT16 para)
+{
+	SENSORDB("[GC2145MIPI]CONTROLFLOW enter GC2145MIPI_set_saturation function:\n ");
+
+    switch (para)
+    {
+        case ISP_SAT_HIGH:
+			GC2145MIPI_write_cmos_sensor(0xfe, 0x02); 	
+			GC2145MIPI_write_cmos_sensor(0x97, 0xff);		
+			GC2145MIPI_write_cmos_sensor(0xfe, 0x00);
+			break;
+        case ISP_SAT_LOW:
+			GC2145MIPI_write_cmos_sensor(0xfe, 0x02); 	
+			GC2145MIPI_write_cmos_sensor(0x97, 0x65);
+			GC2145MIPI_write_cmos_sensor(0xfe, 0x00);
+			break;
+        case ISP_SAT_MIDDLE:
+        default:
+			GC2145MIPI_write_cmos_sensor(0xfe, 0x02); 	
+			GC2145MIPI_write_cmos_sensor(0x97, 0xba);
+			GC2145MIPI_write_cmos_sensor(0xfe, 0x00);
+			break;
+		//	return KAL_FALSE;
+		//	break;
+    }
+	SENSORDB("[GC2145MIPI]exit GC2145MIPI_set_saturation function:\n ");
+     return;
+    
+}
+
+void GC2145MIPI_set_iso(UINT16 para)
+{
+
+	SENSORDB("[GC2145MIPI]CONTROLFLOW GC2145MIPI_set_iso:\n ");
+    switch (para)
+	{
+        case AE_ISO_100:
+             //ISO 100
+			GC2145MIPI_write_cmos_sensor(0xb6, 0x00); 	
+			GC2145MIPI_write_cmos_sensor(0xb1, 0x20);
+			//GC2145MIPI_write_cmos_sensor(0xfe, 0x00);
+			break;
+        case AE_ISO_200:
+             //ISO 200
+			GC2145MIPI_write_cmos_sensor(0xb6, 0x00); 	
+			GC2145MIPI_write_cmos_sensor(0xb1, 0x30);
+			//GC2145MIPI_write_cmos_sensor(0xfe, 0x00);
+			break;
+        case AE_ISO_400:
+             //ISO 400
+			GC2145MIPI_write_cmos_sensor(0xb6, 0x00); 	
+			GC2145MIPI_write_cmos_sensor(0xb1, 0x40);
+			//GC2145MIPI_write_cmos_sensor(0xfe, 0x00);
+			break;
+			  case AE_ISO_800:
+             //ISO 400
+			GC2145MIPI_write_cmos_sensor(0xb6, 0x00); 	
+			GC2145MIPI_write_cmos_sensor(0xb1, 0x50);
+			//GC2145MIPI_write_cmos_sensor(0xfe, 0x00);
+			break;
+		case AE_ISO_AUTO:
+		default:
+			GC2145MIPI_write_cmos_sensor(0xb6, 0x10); 	
+			GC2145MIPI_write_cmos_sensor(0xb1, 0x20);
+			//GC2145MIPI_write_cmos_sensor(0xfe, 0x00);
+			break;
+	}
+    return;  
+}
 
 static void GC2145MIPI_set_AWB_mode(kal_bool AWB_enable)
 {
@@ -1500,7 +1687,7 @@ UINT32 GC2145MIPIOpen(void)
 	kal_uint16 sensor_id=0;
 
 	zoom_factor = 0; 
-	Sleep(10);
+	//Sleep(10);
 
 
 	//  Read sensor ID to adjust I2C is OK?
@@ -1521,31 +1708,31 @@ UINT32 GC2145MIPIOpen(void)
 		loff_t pos = 0; 
 		static char buf[60*1024] ;
 
-		pr_debug("open 2145 debug \n");
-		pr_debug("open 2145 debug \n");
-		pr_debug("open 2145 debug \n");	
+		SENSORDB("open 2145 debug \n");
+		SENSORDB("open 2145 debug \n");
+		SENSORDB("open 2145 debug \n");	
 
 
-		fp = filp_open("/mnt/sdcard/gc2145mipi_sd.txt", O_RDONLY , 0); 
+		fp = filp_open("/mnt/sdcard/GC2145MIPI_sd.txt", O_RDONLY , 0); 
 
 		if (IS_ERR(fp)) 
 		{ 
 
 			fromsd = 0;   
-			pr_debug("open 2145 file error\n");
-			pr_debug("open 2145 file error\n");
-			pr_debug("open 2145 file error\n");		
+			SENSORDB("open 2145 file error\n");
+			SENSORDB("open 2145 file error\n");
+			SENSORDB("open 2145 file error\n");		
 
 
 		} 
 		else 
 		{
 			fromsd = 1;
-			pr_debug("open 2145 file ok\n");
-			pr_debug("open 2145 file ok\n");
-			pr_debug("open 2145 file ok\n");
+			SENSORDB("open 2145 file ok\n");
+			SENSORDB("open 2145 file ok\n");
+			SENSORDB("open 2145 file ok\n");
 
-			//gc2145mipi_Initialize_from_T_Flash();
+			//GC2145MIPI_Initialize_from_T_Flash();
 			
 			filp_close(fp, NULL); 
 			set_fs(fs);
@@ -1553,18 +1740,18 @@ UINT32 GC2145MIPIOpen(void)
 
 		if(fromsd == 1)
 		{
-			pr_debug("________________2145 from t!\n");
-			pr_debug("________________2145 from t!\n");
-			pr_debug("________________2145 from t!\n");		
+			SENSORDB("________________2145 from t!\n");
+			SENSORDB("________________2145 from t!\n");
+			SENSORDB("________________2145 from t!\n");		
 			GC2145MIPI_Initialize_from_T_Flash();
-			pr_debug("______after_____2145 from t!\n");	
+			SENSORDB("______after_____2145 from t!\n");	
 		}
 		else
 		{
 			//GC2145MIPI_MPEG4_encode_mode = KAL_FALSE;
-			pr_debug("________________2145 not from t!\n");	
-			pr_debug("________________2145 not from t!\n");
-			pr_debug("________________2145 not from t!\n");		
+			SENSORDB("________________2145 not from t!\n");	
+			SENSORDB("________________2145 not from t!\n");
+			SENSORDB("________________2145 not from t!\n");		
 			RETAILMSG(1, (TEXT("Sensor Read ID OK \r\n"))); 
 		}
 
@@ -1617,9 +1804,9 @@ UINT32 GC2145MIPIClose(void)
 UINT32 GC2145MIPIPreview(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 					  MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
 {
-	kal_uint8 iTemp, temp_AE_reg, temp_AWB_reg;
-	kal_uint16 iDummyPixels = 0, iDummyLines = 0, iStartX = 0, iStartY = 0;
-
+//	kal_uint8 iTemp, temp_AE_reg, temp_AWB_reg;
+	//kal_uint16 iDummyPixels = 0, iDummyLines = 0, iStartX = 0, iStartY = 0;
+//	kal_uint8  temp_AWB_reg;
 	SENSORDB("GC2145MIPIPrevie\n");
 
 	GC2145MIPI_sensor_cap_state = KAL_FALSE;
@@ -1631,7 +1818,7 @@ UINT32 GC2145MIPIPreview(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 
 	GC2145MIPI_set_AE_mode(KAL_TRUE); 
 
-	Sleep(100);
+	Sleep(10);	//Sleep(100);
 	memcpy(&GC2145MIPISensorConfigData, sensor_config_data, sizeof(MSDK_SENSOR_CONFIG_STRUCT));
 	return ERROR_NONE;
 }	/* GC2145MIPIPreview() */
@@ -1642,9 +1829,9 @@ UINT32 GC2145MIPIPreview(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 UINT32 GC2145MIPICapture(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 					  MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
 {
-    volatile kal_uint32 shutter = GC2145MIPI_exposure_lines, temp_reg;
-    kal_uint8 temp_AE_reg, temp;
-    kal_uint16 AE_setting_delay = 0;
+//    volatile kal_uint32 shutter = GC2145MIPI_exposure_lines;
+    //kal_uint8 temp_AE_reg, temp;
+   // kal_uint16 AE_setting_delay = 0;
 
     SENSORDB("GC2145MIPICapture\n");
 
@@ -1669,7 +1856,7 @@ UINT32 GC2145MIPICapture(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 	// set shutter
 	GC2145MIPI_write_shutter(Capture_Shutter);
 #endif
-	Sleep(200);
+	Sleep(10); //Sleep(200);
       }
 
      GC2145MIPI_sensor_cap_state = KAL_TRUE;
@@ -1715,7 +1902,7 @@ UINT32 GC2145MIPIGetInfo(MSDK_SCENARIO_ID_ENUM ScenarioId,
 
 	pSensorInfo->SensorCameraPreviewFrameRate=30;
 	pSensorInfo->SensorVideoFrameRate=30;
-	pSensorInfo->SensorStillCaptureFrameRate=10;
+	pSensorInfo->SensorStillCaptureFrameRate=30;	//10;
 	pSensorInfo->SensorWebCamCaptureFrameRate=15;
 	pSensorInfo->SensorResetActiveHigh=FALSE;
 	pSensorInfo->SensorResetDelayCount=1;
@@ -1725,7 +1912,7 @@ UINT32 GC2145MIPIGetInfo(MSDK_SCENARIO_ID_ENUM ScenarioId,
 	pSensorInfo->SensorHsyncPolarity = SENSOR_CLOCK_POLARITY_LOW;
 	pSensorInfo->SensorVsyncPolarity = SENSOR_CLOCK_POLARITY_LOW;
 	pSensorInfo->SensorInterruptDelayLines = 1;
-	pSensorInfo->CaptureDelayFrame = 4; 
+	pSensorInfo->CaptureDelayFrame = 2;	//4;
 	pSensorInfo->PreviewDelayFrame = 2; 
 	pSensorInfo->VideoDelayFrame = 0; 
 	pSensorInfo->HighSpeedVideoDelayFrame = 0;
@@ -1935,27 +2122,28 @@ BOOL GC2145MIPI_set_param_banding(UINT16 para)
 
 BOOL GC2145MIPI_set_param_exposure(UINT16 para)
 {
+	SENSORDB("gc2145--GC2145MIPI_set_param_exposure and para is %d!\n", para);
 	switch (para)
 	{
 		
 		case AE_EV_COMP_n30:
 			GC2145MIPI_SET_PAGE1;
-			GC2145MIPI_write_cmos_sensor(0x13,0x65);
+			GC2145MIPI_write_cmos_sensor(0x13,0x45);
 			GC2145MIPI_SET_PAGE0;
 		break;
 		case AE_EV_COMP_n20:
 			GC2145MIPI_SET_PAGE1;
-			GC2145MIPI_write_cmos_sensor(0x13,0x70);
+			GC2145MIPI_write_cmos_sensor(0x13,0x55);
 			GC2145MIPI_SET_PAGE0;
 		break;
 		case AE_EV_COMP_n10:
 			GC2145MIPI_SET_PAGE1;
-			GC2145MIPI_write_cmos_sensor(0x13,0x75);
+			GC2145MIPI_write_cmos_sensor(0x13,0x65);
 			GC2145MIPI_SET_PAGE0;
 		break;
 		case AE_EV_COMP_00:
 			GC2145MIPI_SET_PAGE1;
-			GC2145MIPI_write_cmos_sensor(0x13,0x7b);
+			GC2145MIPI_write_cmos_sensor(0x13,0x75);
 			GC2145MIPI_SET_PAGE0;
 		break;
 		case AE_EV_COMP_10:
@@ -1965,12 +2153,12 @@ BOOL GC2145MIPI_set_param_exposure(UINT16 para)
 		break;
 		case AE_EV_COMP_20:
 			GC2145MIPI_SET_PAGE1;
-			GC2145MIPI_write_cmos_sensor(0x13,0x90);
+			GC2145MIPI_write_cmos_sensor(0x13,0x95);
 			GC2145MIPI_SET_PAGE0;
 		break;
 		case AE_EV_COMP_30:
 			GC2145MIPI_SET_PAGE1;
-			GC2145MIPI_write_cmos_sensor(0x13,0x95);
+			GC2145MIPI_write_cmos_sensor(0x13,0xa5);
 			GC2145MIPI_SET_PAGE0;
 		break;
 		default:
@@ -1985,13 +2173,13 @@ UINT32 GC2145MIPIYUVSensorSetting(FEATURE_ID iCmd, UINT16 iPara)
 //	   return TRUE;
 
 #ifdef DEBUG_SENSOR_GC2145MIPI
-		pr_debug("______%s______GC2145MIPI YUV setting\n",__func__);
+		SENSORDB("______%s______GC2145MIPI YUV setting\n",__func__);
 		return TRUE;
 #endif
 
 	switch (iCmd) {
 	case FID_SCENE_MODE:	    
-//	    pr_debug("Set Scene Mode:%d\n", iPara); 
+//	    SENSORDB("Set Scene Mode:%d\n", iPara); 
 	    if (iPara == SCENE_MODE_OFF)
 	    {
 	        GC2145MIPI_night_mode(0); 
@@ -2002,19 +2190,19 @@ UINT32 GC2145MIPIYUVSensorSetting(FEATURE_ID iCmd, UINT16 iPara)
 	    }	    
 	    break; 	    
 	case FID_AWB_MODE:
-	    pr_debug("Set AWB Mode:%d\n", iPara); 	    
+	    SENSORDB("Set AWB Mode:%d\n", iPara); 	    
            GC2145MIPI_set_param_wb(iPara);
 	break;
 	case FID_COLOR_EFFECT:
-	    pr_debug("Set Color Effect:%d\n", iPara); 	    	    
+	    SENSORDB("Set Color Effect:%d\n", iPara); 	    	    
            GC2145MIPI_set_param_effect(iPara);
 	break;
 	case FID_AE_EV:
-           pr_debug("Set EV:%d\n", iPara); 	    	    
+           SENSORDB("Set EV:%d\n", iPara); 	    	    
            GC2145MIPI_set_param_exposure(iPara);
 	break;
 	case FID_AE_FLICKER:
-          pr_debug("Set Flicker:%d\n", iPara); 	    	    	    
+          SENSORDB("Set Flicker:%d\n", iPara); 	    	    	    
            GC2145MIPI_set_param_banding(iPara);
 	break;
         case FID_AE_SCENE_MODE: 
@@ -2028,6 +2216,23 @@ UINT32 GC2145MIPIYUVSensorSetting(FEATURE_ID iCmd, UINT16 iPara)
 	case FID_ZOOM_FACTOR:
 	    zoom_factor = iPara; 
         break; 
+	case FID_ISP_CONTRAST:
+		GC2145MIPI_set_contrast(iPara);
+		break;
+/*
+	case FID_ISP_BRIGHT:
+		GC2145MIPI_set_brightness(iPara);
+		break;
+	case FID_ISP_SAT:
+		GC2145MIPI_set_saturation(iPara);
+		break; 
+	case FID_ISP_EDGE:
+		GC2145MIPI_set_edge(iPara);
+		break; 
+	case FID_AE_ISO:
+		GC2145MIPI_set_iso(iPara);
+		break;
+*/
 	default:
 	break;
 	}
@@ -2036,9 +2241,9 @@ UINT32 GC2145MIPIYUVSensorSetting(FEATURE_ID iCmd, UINT16 iPara)
 
 UINT32 GC2145MIPIYUVSetVideoMode(uintptr_t u2FrameRate)
 {
-    kal_uint8 iTemp;
+  //  kal_uint8 iTemp;
     /* to fix VSYNC, to fix frame rate */
-    //pr_debug("Set YUV Video Mode \n");  
+    //SENSORDB("Set YUV Video Mode \n");  
 
     if (u2FrameRate == 30)
     {
@@ -2048,7 +2253,7 @@ UINT32 GC2145MIPIYUVSetVideoMode(uintptr_t u2FrameRate)
     }
     else 
     {
-        pr_debug("Wrong frame rate setting \n");
+        SENSORDB("Wrong frame rate setting \n");
     }
     GC2145MIPI_VEDIO_encode_mode = KAL_TRUE; 
         
@@ -2057,7 +2262,7 @@ UINT32 GC2145MIPIYUVSetVideoMode(uintptr_t u2FrameRate)
 
 /*************************************************************************
   * FUNCTION
-  * GC2145SetMaxFramerateByScenario
+  * GC2145MIPISetMaxFramerateByScenario
   *
   * DESCRIPTION
   * This function is for android4.4 kk
@@ -2069,9 +2274,9 @@ UINT32 GC2145MIPIYUVSetVideoMode(uintptr_t u2FrameRate)
   *************************************************************************/
 
   UINT32 GC2145MIPISetMaxFramerateByScenario(MSDK_SCENARIO_ID_ENUM scenarioId, MUINT32 frameRate) {
-	kal_uint32 pclk;
-	kal_int16 dummyLine;
-	kal_uint16 lineLength,frameHeight;
+	//kal_uint32 pclk;
+	//kal_int16 dummyLine;
+	//kal_uint16 lineLength,frameHeight;
 		
 	SENSORDB("GC2145MIPISetMaxFramerateByScenario: scenarioId = %d, frame rate = %d\n",scenarioId,frameRate);
 	/*
@@ -2093,7 +2298,7 @@ UINT32 GC2145MIPIYUVSetVideoMode(uintptr_t u2FrameRate)
 
 /*************************************************************************
   * FUNCTION
-  * GC2145GetDefaultFramerateByScenario
+  * GC2145MIPIGetDefaultFramerateByScenario
   *
   * DESCRIPTION
   * This function is for android4.4 kk
@@ -2114,7 +2319,8 @@ UINT32 GC2145MIPIGetDefaultFramerateByScenario(MSDK_SCENARIO_ID_ENUM scenarioId,
 			 break;
 		case MSDK_SCENARIO_ID_CAMERA_CAPTURE_JPEG:
 		case MSDK_SCENARIO_ID_CAMERA_ZSD:
-			 *pframeRate = 220;
+			 //*pframeRate = 220;
+			 *pframeRate = 300;
 			break;		//hhl 2-28
         case MSDK_SCENARIO_ID_CAMERA_3D_PREVIEW: //added
         case MSDK_SCENARIO_ID_CAMERA_3D_VIDEO:
@@ -2124,13 +2330,13 @@ UINT32 GC2145MIPIGetDefaultFramerateByScenario(MSDK_SCENARIO_ID_ENUM scenarioId,
 		default:
 			break;
 	}
-
+	return ERROR_NONE;
  }
 
  
- UINT32 GC2145SetTestPatternMode(kal_bool bEnable)
+ UINT32 GC2145MIPISetTestPatternMode(kal_bool bEnable)
  {
-     SENSORDB("[GC0310SetTestPatternMode]test pattern bEnable:=%d\n",bEnable);
+     SENSORDB("[GC2145MIPISetTestPatternMode]test pattern bEnable:=%d\n",bEnable);
  
      if(bEnable) 
      {
@@ -2186,11 +2392,11 @@ UINT32 GC2145MIPIFeatureControl(MSDK_SENSOR_FEATURE_ENUM FeatureId,
 							 UINT8 *pFeaturePara,UINT32 *pFeatureParaLen)
 {
 	UINT16 *pFeatureReturnPara16=(UINT16 *) pFeaturePara;
-	UINT16 *pFeatureData16=(UINT16 *) pFeaturePara;
+	//UINT16 *pFeatureData16=(UINT16 *) pFeaturePara;
 	UINT32 *pFeatureReturnPara32=(UINT32 *) pFeaturePara;
 	UINT32 *pFeatureData32=(UINT32 *) pFeaturePara;
     unsigned long long *feature_data=(unsigned long long *) pFeaturePara;
-    unsigned long long *feature_return_para=(unsigned long long *) pFeaturePara;
+  //  unsigned long long *feature_return_para=(unsigned long long *) pFeaturePara;
 	
 	MSDK_SENSOR_CONFIG_STRUCT *pSensorConfigData=(MSDK_SENSOR_CONFIG_STRUCT *) pFeaturePara;
 	MSDK_SENSOR_REG_INFO_STRUCT *pSensorRegData=(MSDK_SENSOR_REG_INFO_STRUCT *) pFeaturePara;
@@ -2259,7 +2465,7 @@ UINT32 GC2145MIPIFeatureControl(MSDK_SENSOR_FEATURE_ENUM FeatureId,
 			 GC2145MIPI_GetSensorID(pFeatureData32);
 			 break;
 		case SENSOR_FEATURE_SET_YUV_CMD:
-		       //pr_debug("GC2145MIPI YUV sensor Setting:%d, %d \n", *pFeatureData32,  *(pFeatureData32+1));
+		       //SENSORDB("GC2145MIPI YUV sensor Setting:%d, %d \n", *pFeatureData32,  *(pFeatureData32+1));
 			GC2145MIPIYUVSensorSetting((FEATURE_ID)*feature_data, *(feature_data+1));
 		break;
 		case SENSOR_FEATURE_SET_VIDEO_MODE:
@@ -2267,11 +2473,11 @@ UINT32 GC2145MIPIFeatureControl(MSDK_SENSOR_FEATURE_ENUM FeatureId,
 		       break;
 
         case SENSOR_FEATURE_SET_TEST_PATTERN:			 
-		    GC2145SetTestPatternMode((BOOL)*feature_data);			
+		    GC2145MIPISetTestPatternMode((BOOL)*feature_data);			
 		break;
 
         case SENSOR_FEATURE_GET_TEST_PATTERN_CHECKSUM_VALUE:
-		    *pFeatureReturnPara32 = GC2145_TEST_PATTERN_CHECKSUM;
+		    *pFeatureReturnPara32 = GC2145MIPI_TEST_PATTERN_CHECKSUM;
 		    *pFeatureParaLen=4;
 		break;
         

@@ -4,48 +4,50 @@
 #include "trace.h"
 
 #ifdef CONFIG_MTK_KERNEL_MARKER
-static unsigned long __read_mostly tracing_mark_write_addr;
+static unsigned long __read_mostly mark_addr;
 static int kernel_marker_on;
 
 static inline void update_tracing_mark_write_addr(void)
 {
-	if (unlikely(tracing_mark_write_addr == 0))
-		tracing_mark_write_addr = kallsyms_lookup_name("tracing_mark_write");
+	if (unlikely(mark_addr == 0))
+		mark_addr = kallsyms_lookup_name("tracing_mark_write");
 }
 
-inline void mt_kernel_trace_begin(char *name)
+inline void trace_begin(char *name)
 {
 	if (unlikely(kernel_marker_on) && name) {
 		preempt_disable();
-		event_trace_printk(tracing_mark_write_addr, "B|%d|%s\n", current->tgid, name);
+		event_trace_printk(mark_addr, "B|%d|%s\n",
+				   current->tgid, name);
 		preempt_enable();
 	}
 }
-EXPORT_SYMBOL(mt_kernel_trace_begin);
+EXPORT_SYMBOL(trace_begin);
 
-inline void mt_kernel_trace_counter(char *name, int count)
+inline void trace_counter(char *name, int count)
 {
 	if (unlikely(kernel_marker_on) && name) {
 		preempt_disable();
-		event_trace_printk(tracing_mark_write_addr,
-				   "C|%d|%s|%d\n", current->tgid, name, count);
+		event_trace_printk(mark_addr, "C|%d|%s|%d\n",
+				   current->tgid, name, count);
 		preempt_enable();
 	}
 }
-EXPORT_SYMBOL(mt_kernel_trace_counter);
+EXPORT_SYMBOL(trace_counter);
 
-inline void mt_kernel_trace_end(void)
+inline void trace_end(void)
 {
 	if (unlikely(kernel_marker_on)) {
 		preempt_disable();
-		event_trace_printk(tracing_mark_write_addr, "E\n");
+		event_trace_printk(mark_addr, "E\n");
 		preempt_enable();
 	}
 }
-EXPORT_SYMBOL(mt_kernel_trace_end);
+EXPORT_SYMBOL(trace_end);
 
 static ssize_t
-kernel_marker_on_simple_read(struct file *filp, char __user *ubuf, size_t cnt, loff_t *ppos)
+kernel_marker_on_simple_read(struct file *filp, char __user *ubuf,
+			     size_t cnt, loff_t *ppos)
 {
 	char buf[64];
 	int r;
@@ -91,7 +93,8 @@ static __init int init_kernel_marker(void)
 	if (!d_tracer)
 		return 0;
 
-	trace_create_file("kernel_marker_on", 0644, d_tracer, NULL, &kernel_marker_on_simple_fops);
+	trace_create_file("kernel_marker_on", 0644, d_tracer, NULL,
+			  &kernel_marker_on_simple_fops);
 
 	return 0;
 }
@@ -110,7 +113,8 @@ int resize_ring_buffer_for_hibernation(int enable)
 		ret = tracing_update_buffers();
 	} else {
 		tr = top_trace_array();
-		if (tr)
+		if (!tr)
+			return -ENODEV;
 			ret = tracing_resize_ring_buffer(tr, 0, RING_BUFFER_ALL_CPUS);
 	}
 
@@ -119,10 +123,13 @@ int resize_ring_buffer_for_hibernation(int enable)
 #endif
 
 #ifdef CONFIG_MTK_SCHED_TRACERS
-static bool boot_trace;
+bool boot_trace;
+static unsigned long buf_size = 25165824UL;
+
 static __init int boot_trace_cmdline(char *str)
 {
 	boot_trace = true;
+	update_buf_size(buf_size);
 	return 0;
 }
 __setup("boot_trace", boot_trace_cmdline);
@@ -162,6 +169,7 @@ static void ftrace_events_enable(int enable)
 #endif
 		trace_set_clr_event(NULL, "workqueue_execute_start", 1);
 		trace_set_clr_event(NULL, "workqueue_execute_end", 1);
+		trace_set_clr_event(NULL, "cpu_frequency", 1);
 
 		trace_set_clr_event(NULL, "block_bio_frontmerge", 1);
 		trace_set_clr_event(NULL, "block_bio_backmerge", 1);
@@ -207,8 +215,10 @@ static __init int enable_ftrace(void)
 		/* enable ftrace facilities */
 		ftrace_events_enable(1);
 
-		/* only update buffer eariler if we want to collect boot-time ftrace
-		to avoid the boot time impacted by early-expanded ring buffer */
+		/* only update buffer eariler
+		 * if we want to collect boot-time ftrace
+		 * to avoid the boot time impacted by
+		 * early-expanded ring buffer */
 		tracing_update_buffers();
 		pr_debug("[ftrace]ftrace ready...\n");
 	}
@@ -225,7 +235,9 @@ late_initcall(enable_ftrace);
 static DEFINE_PER_CPU(unsigned long long, last_event_ts);
 static struct notifier_block hotplug_event_notifier;
 
-static int hotplug_event_notify(struct notifier_block *self, unsigned long action, void *hcpu)
+static int
+hotplug_event_notify(struct notifier_block *self,
+		     unsigned long action, void *hcpu)
 {
 	long cpu = (long)hcpu;
 

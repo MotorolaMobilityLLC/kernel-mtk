@@ -529,7 +529,7 @@ static INT32 wmt_dbg_lte_coex_test(INT32 par1, INT32 par2, INT32 par3)
 							osal_sizeof(wmt_to_lte_test_evt1));
 		if (handle_len != osal_sizeof(wmt_to_lte_test_evt1)) {
 			WMT_ERR_FUNC
-			    ("par2=1,wmt send to lte msg fail:handle_len(%d),buff_len(%d)\n",
+			    ("par2=1,wmt send to lte msg fail:handle_len(%d),buff_len(%zu)\n",
 			     handle_len, osal_sizeof(wmt_to_lte_test_evt1));
 		} else {
 			WMT_INFO_FUNC("par2=1,wmt send to lte msg OK! send_len(%d)\n", handle_len);
@@ -548,7 +548,7 @@ static INT32 wmt_dbg_lte_coex_test(INT32 par1, INT32 par2, INT32 par3)
 		if (handle_len !=
 		    osal_sizeof(wmt_to_lte_test_evt1) + osal_sizeof(wmt_to_lte_test_evt2)) {
 			WMT_ERR_FUNC
-			    ("par2=2,wmt send to lte msg fail:handle_len(%d),buff_len(%d)\n",
+			    ("par2=2,wmt send to lte msg fail:handle_len(%d),buff_len(%zu)\n",
 			     handle_len,
 			     osal_sizeof(wmt_to_lte_test_evt1) + osal_sizeof(wmt_to_lte_test_evt2));
 		} else {
@@ -573,7 +573,7 @@ static INT32 wmt_dbg_lte_coex_test(INT32 par1, INT32 par2, INT32 par3)
 		    osal_sizeof(wmt_to_lte_test_evt1) + osal_sizeof(wmt_to_lte_test_evt2) +
 		    osal_sizeof(wmt_to_lte_test_evt3)) {
 			WMT_ERR_FUNC
-			    ("par2=3,wmt send to lte msg fail:handle_len(%d),buff_len(%d)\n",
+			    ("par2=3,wmt send to lte msg fail:handle_len(%d),buff_len(%zu)\n",
 			     handle_len,
 			     osal_sizeof(wmt_to_lte_test_evt1) + osal_sizeof(wmt_to_lte_test_evt2) +
 			     osal_sizeof(wmt_to_lte_test_evt3));
@@ -587,7 +587,7 @@ static INT32 wmt_dbg_lte_coex_test(INT32 par1, INT32 par2, INT32 par3)
 							osal_sizeof(wmt_to_lte_test_evt4));
 		if (handle_len != osal_sizeof(wmt_to_lte_test_evt4)) {
 			WMT_ERR_FUNC
-			    ("par2=1,wmt send to lte msg fail:handle_len(%d),buff_len(%d)\n",
+			    ("par2=1,wmt send to lte msg fail:handle_len(%d),buff_len(%zu)\n",
 			     handle_len, osal_sizeof(wmt_to_lte_test_evt4));
 		} else {
 			WMT_INFO_FUNC("par2=1,wmt send to lte msg OK! send_len(%d)\n", handle_len);

@@ -17,11 +17,14 @@
 #include <mach/gpio_const.h>
 #include <linux/gpio.h>
 
-#if !defined(CONFIG_MTK_LEGACY)
+#if !defined(CONFIG_MTK_CLKMGR)
 #include <linux/clk.h>
 struct clk *clk_scp_sys_md2_main;
+static atomic_t clock_on = ATOMIC_INIT(0);
 #else
 #include <mach/mt_clkmgr.h>
+#endif
+#if defined(CONFIG_MTK_LEGACY)
 #include <cust_gpio_usage.h>
 #endif
 #include "c2k_platform.h"
@@ -33,7 +36,6 @@ static unsigned long c2k_chip_id_base;
 static unsigned long md1_pccif_base;
 static unsigned long md3_pccif_base;
 static unsigned int c2k_wdt_irq_id;
-static atomic_t clock_on = ATOMIC_INIT(0);
 /*static unsigned long c2k_iram_base;*/
 static unsigned long c2k_iram_base_seg2[2] = { 0 };
 
@@ -446,7 +448,7 @@ void c2k_modem_power_on_platform(void)
 		c2k_hw_info_init();
 	pr_debug("[C2K] prepare to power on c2k\n");
 	/*step 0: power on MTCMOS */
-#if defined(CONFIG_MTK_LEGACY)
+#if defined(CONFIG_MTK_CLKMGR)
 	ret = md_power_on(SYS_MD2);
 #else
 	if (atomic_inc_return(&clock_on) == 1)
@@ -574,7 +576,7 @@ void c2k_modem_power_off_platform(void)
 	int ret = -123;
 
 	pr_debug("[C2K] md_power_off begain\n");
-#if defined(CONFIG_MTK_LEGACY)
+#if defined(CONFIG_MTK_CLKMGR)
 	ret = md_power_off(SYS_MD2, 1000);
 #else
 	atomic_set(&clock_on, 0);
@@ -594,7 +596,7 @@ void c2k_modem_reset_platform(void)
 		    (c2k_read32(toprgu_base, TOP_RGU_WDT_SWSYSRST) | 0x88000000)
 		    | (0x1 << 15));
 
-#if defined(CONFIG_MTK_LEGACY)
+#if defined(CONFIG_MTK_CLKMGR)
 	ret = md_power_on(SYS_MD2);
 #else
 	if (atomic_inc_return(&clock_on) == 1)

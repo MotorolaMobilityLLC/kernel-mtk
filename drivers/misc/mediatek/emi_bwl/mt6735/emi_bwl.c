@@ -40,7 +40,7 @@ static struct emi_bwl_ctrl ctrl_tbl[NR_CON_SCE];
 /* current concurrency scenario */
 static int cur_con_sce = 0x0FFFFFFF;
 
-#if defined(CONFIG_ARCH_MT6735)
+#if defined(CONFIG_ARCH_MT6735) && !defined(CONFIG_MTK_EMI_D1P)
 
 /* define concurrency scenario strings */
 static const char const *con_sce_str[] = {
@@ -238,7 +238,7 @@ static const unsigned int emi_arbg2_lpddr3_1600_val[] = {
 };
 
 
-#elif defined(CONFIG_ARCH_MT6753)
+#elif defined(CONFIG_ARCH_MT6753) || defined(CONFIG_MTK_EMI_D1P)
 /* define concurrency scenario strings */
 static const char const *con_sce_str[] = {
 #define X_CON_SCE(con_sce, arba, arbb, arbc, \

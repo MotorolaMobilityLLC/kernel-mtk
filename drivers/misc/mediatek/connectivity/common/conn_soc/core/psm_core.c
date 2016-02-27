@@ -759,7 +759,7 @@ static inline INT32 _stp_psm_notify_wmt_sleep_wq(MTKSTP_PSM_T *stp_psm)
 
 	STP_PSM_DBG_FUNC("OPID(%d) type(%zd) bRet(%d)\n\n", pOp->op.opId, pOp->op.au4OpData[0], bRet);
 
-	retval = (0 == bRet) ? (STP_PSM_OPERATION_FAIL) : 0;
+	retval = (0 == bRet) ? (STP_PSM_OPERATION_FAIL) : 1;
 
 	return retval;
 }
@@ -1151,8 +1151,8 @@ static inline void _stp_psm_stp_is_idle(unsigned long data)
 		return;
 	}
 
+	if (1 == _stp_psm_notify_wmt_sleep_wq(stp_psm))
 	STP_PSM_INFO_FUNC("**IDLE is over %d msec, go to sleep!!!**\n", stp_psm->idle_time_to_sleep);
-	_stp_psm_notify_wmt_sleep_wq(stp_psm);
 }
 
 static inline INT32 _stp_psm_init_monitor(MTKSTP_PSM_T *stp_psm)
@@ -1447,9 +1447,11 @@ INT32 stp_psm_disable_by_tx_rx_density(MTKSTP_PSM_T *stp_psm, INT32 dir, INT32 l
 			if ((rx_sum_len + tx_sum_len) > RTX_SPEED_THRESHOLD) {
 				/* STP_PSM_INFO_FUNC("High speed,Disable monitor\n"); */
 				osal_set_bit(STP_PSM_WMT_EVENT_DISABLE_MONITOR_TX_HIGH_DENSITY, &stp_psm->flag);
+				stp_psm->idle_time_to_sleep = STP_PSM_IDLE_TIME_SLEEP_1000;
 				stp_psm_start_monitor(stp_psm);
 			} else {
 				/* STP_PSM_INFO_FUNC("Low speed,Enable monitor\n"); */
+				stp_psm->idle_time_to_sleep = STP_PSM_IDLE_TIME_SLEEP;
 				osal_clear_bit(STP_PSM_WMT_EVENT_DISABLE_MONITOR_TX_HIGH_DENSITY, &stp_psm->flag);
 			}
 			sample_start = 0;

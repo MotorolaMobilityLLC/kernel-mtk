@@ -1,3 +1,4 @@
+#if defined(MTK_LCM_DEVICE_TREE_SUPPORT)
 #ifndef BUILD_LK
 #include <linux/kernel.h>
 #include <linux/module.h>
@@ -6,6 +7,7 @@
 #include <linux/init.h>
 #include <linux/list.h>
 #include <linux/i2c.h>
+#include <linux/i2c-dev.h>
 #include <linux/irq.h>
 #include <linux/uaccess.h>
 #include <linux/interrupt.h>
@@ -13,6 +15,7 @@
 #include <linux/platform_device.h>
 #include <linux/string.h>
 #include <linux/wait.h>
+#endif
 
 #ifdef BUILD_LK
 #include <platform/upmu_common.h>
@@ -40,22 +43,35 @@
 #include "lcm_i2c.h"
 
 
-#ifdef CONFIG_MTK_LEGACY
 /*****************************************************************************
  * Define
  *****************************************************************************/
 #ifndef CONFIG_FPGA_EARLY_PORTING
+#ifdef CONFIG_MTK_LEGACY
 #define LCM_I2C_ADDR 0x3E
 #define LCM_I2C_BUSNUM  I2C_I2C_LCD_BIAS_CHANNEL	/* for I2C channel 0 */
 #define LCM_I2C_ID_NAME "tps65132"
+#else
+#define LCM_I2C_ADDR 0x3E
+#define LCM_I2C_BUSNUM  1	/* for I2C channel 0 */
+#define LCM_I2C_ID_NAME "I2C_LCD_BIAS"
+#endif
 
 
 /*****************************************************************************
  * GLobal Variable
  *****************************************************************************/
+#ifdef CONFIG_MTK_LEGACY
 static struct i2c_board_info _lcm_i2c_board_info __initdata = {
 	I2C_BOARD_INFO(LCM_I2C_ID_NAME, LCM_I2C_ADDR)
 };
+#else
+static const struct of_device_id _lcm_i2c_of_match[] = {
+	{
+	 .compatible = "mediatek,I2C_LCD_BIAS",
+	 },
+};
+#endif
 
 static struct i2c_client *_lcm_i2c_client;
 
@@ -93,6 +109,10 @@ static struct i2c_driver _lcm_i2c_driver = {
 	.driver = {
 		   .owner = THIS_MODULE,
 		   .name = LCM_I2C_ID_NAME,
+#ifdef CONFIG_MTK_LEGACY
+#else
+		   .of_match_table = _lcm_i2c_of_match,
+#endif
 		   },
 
 };
@@ -109,8 +129,8 @@ static struct i2c_driver _lcm_i2c_driver = {
  *****************************************************************************/
 static int _lcm_i2c_probe(struct i2c_client *client, const struct i2c_device_id *id)
 {
-	pr_debug("_lcm_i2c_probe\n");
-	pr_debug("NT: info==>name=%s addr=0x%x\n", client->name, client->addr);
+	pr_debug("[LCM][I2C] _lcm_i2c_probe\n");
+	pr_debug("[LCM][I2C] NT: info==>name=%s addr=0x%x\n", client->name, client->addr);
 	_lcm_i2c_client = client;
 	return 0;
 }
@@ -118,7 +138,7 @@ static int _lcm_i2c_probe(struct i2c_client *client, const struct i2c_device_id 
 
 static int _lcm_i2c_remove(struct i2c_client *client)
 {
-	pr_debug("_lcm_i2c_remove\n");
+	pr_debug("[LCM][I2C] _lcm_i2c_remove\n");
 	_lcm_i2c_client = NULL;
 	i2c_unregister_device(client);
 	return 0;
@@ -135,7 +155,7 @@ static int _lcm_i2c_write_bytes(unsigned char addr, unsigned char value)
 	write_data[1] = value;
 	ret = i2c_master_send(client, write_data, 2);
 	if (ret < 0)
-		pr_debug("_lcm_i2c write data fail !!\n");
+		pr_err("[LCM][ERROR] _lcm_i2c write data fail !!\n");
 
 	return ret;
 }
@@ -146,22 +166,23 @@ static int _lcm_i2c_write_bytes(unsigned char addr, unsigned char value)
  */
 static int __init _lcm_i2c_init(void)
 {
-	pr_debug("_lcm_i2c_init\n");
+	pr_debug("[LCM][I2C] _lcm_i2c_init\n");
+#ifdef CONFIG_MTK_LEGACY
 	i2c_register_board_info(LCM_I2C_BUSNUM, &_lcm_i2c_board_info, 1);
-	pr_debug("_lcm_i2c_init2\n");
+	pr_debug("[LCM][I2C] _lcm_i2c_init2\n");
+#endif
 	i2c_add_driver(&_lcm_i2c_driver);
-	pr_debug("_lcm_i2c_init success\n");
+	pr_debug("[LCM][I2C] _lcm_i2c_init success\n");
 
 	return 0;
 }
 
+
 static void __exit _lcm_i2c_exit(void)
 {
-	pr_debug("_lcm_i2c_exit\n");
+	pr_debug("[LCM][I2C] _lcm_i2c_exit\n");
 	i2c_del_driver(&_lcm_i2c_driver);
 }
-#endif
-#endif
 #endif
 
 
@@ -170,17 +191,17 @@ static LCM_STATUS _lcm_i2c_check_data(char type, const LCM_DATA_T2 *t2)
 	switch (type) {
 	case LCM_I2C_WRITE:
 		if (t2->cmd > 0xFF) {
-			pr_debug("[LCM][ERROR] %s/%d: %d\n", __func__, __LINE__, t2->cmd);
+			pr_err("[LCM][ERROR] %s/%d: %d\n", __func__, __LINE__, t2->cmd);
 			return LCM_STATUS_ERROR;
 		}
 		if (t2->data > 0xFF) {
-			pr_debug("[LCM][ERROR] %s/%d: %d\n", __func__, __LINE__, t2->data);
+			pr_err("[LCM][ERROR] %s/%d: %d\n", __func__, __LINE__, t2->data);
 			return LCM_STATUS_ERROR;
 		}
 		break;
 
 	default:
-		pr_debug("[LCM][ERROR] %s/%d: %d\n", __func__, __LINE__, type);
+		pr_err("[LCM][ERROR] %s/%d: %d\n", __func__, __LINE__, type);
 		return LCM_STATUS_ERROR;
 	}
 
@@ -195,24 +216,24 @@ LCM_STATUS lcm_i2c_set_data(char type, const LCM_DATA_T2 *t2)
 	/* check parameter is valid */
 	if (LCM_STATUS_OK == _lcm_i2c_check_data(type, t2)) {
 		switch (type) {
-#ifdef CONFIG_MTK_LEGACY
 		case LCM_I2C_WRITE:
+			pr_debug("[LCM][I2C] %s/%d: %d, 0x%x, 0x%x\n", __func__, __LINE__, type,
+				 t2->cmd, t2->data);
 			ret_code =
 			    _lcm_i2c_write_bytes((unsigned char)t2->cmd, (unsigned char)t2->data);
 			break;
-#endif
 		default:
-			pr_debug("[LCM][ERROR] %s/%d: %d\n", __func__, __LINE__, type);
+			pr_err("[LCM][ERROR] %s/%d: %d\n", __func__, __LINE__, type);
 			return LCM_STATUS_ERROR;
 		}
 	} else {
-		pr_debug("[LCM][ERROR] %s/%d: %d, 0x%x, 0x%x\n", __func__, __LINE__, type, t2->cmd,
+		pr_err("[LCM][ERROR] %s/%d: %d, 0x%x, 0x%x\n", __func__, __LINE__, type, t2->cmd,
 		       t2->data);
 		return LCM_STATUS_ERROR;
 	}
 
-	if (ret_code != 0) {
-		pr_debug("[LCM][ERROR] %s/%d: 0x%x, 0x%x, %d\n", __func__, __LINE__,
+	if (ret_code < 0) {
+		pr_err("[LCM][ERROR] %s/%d: 0x%x, 0x%x, %d\n", __func__, __LINE__,
 		       (unsigned int)t2->cmd, (unsigned int)t2->data, ret_code);
 		return LCM_STATUS_ERROR;
 	}
@@ -222,11 +243,12 @@ LCM_STATUS lcm_i2c_set_data(char type, const LCM_DATA_T2 *t2)
 
 
 
-#ifdef CONFIG_MTK_LEGACY
+#ifndef CONFIG_FPGA_EARLY_PORTING
 module_init(_lcm_i2c_init);
 module_exit(_lcm_i2c_exit);
 
 MODULE_AUTHOR("Joey Pan");
-MODULE_DESCRIPTION("MTK TPS65132 I2C Driver");
+MODULE_DESCRIPTION("MTK LCM I2C Driver");
 MODULE_LICENSE("GPL");
+#endif
 #endif

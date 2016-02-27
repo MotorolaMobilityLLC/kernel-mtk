@@ -493,6 +493,10 @@
 			reg = <0x10300000 0x8000>;
 		};
 
+		gpio_usage_mapping:gpio {
+			compatible = "mediatek,gpio_usage_mapping";
+		};
+
 		gpio: gpio@10211000 {
 			compatible = "mediatek,gpio";
 			reg = <0x10211000 0x1000>;
@@ -859,10 +863,6 @@
 		MIPI_RX_ANA_CSI1@0x10215C00 {
 			compatible = "mediatek,MIPI_RX_ANA_CSI1";
 			reg = <0x10215C00 0x400>;
-		};
-
-		gpio_usage_mapping:gpio {
-			compatible = "mediatek,gpio_usage_mapping";
 		};
 
 		gcpu@10216000 {
