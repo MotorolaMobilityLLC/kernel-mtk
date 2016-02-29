@@ -22,7 +22,7 @@ typedef long long INT64, *PINT64, **PPINT64;
 typedef unsigned char UINT8, *PUINT8, **PPUINT8;
 typedef unsigned short UINT16, *PUINT16, **PPUINT16;
 typedef unsigned int UINT32, *PUINT32, **PPUINT32;
-typedef unsigned long long UINT64, *PUINT64, **PPUINT64;
+typedef unsigned long ULONG, *PULONG, **PPULONG;
 
 typedef int MTK_WCN_BOOL;
 #ifndef MTK_WCN_BOOL_TRUE

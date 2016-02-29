@@ -1,3 +1,16 @@
+/*
+ * Copyright (C) 2015 MediaTek Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ */
+
 #ifndef __DUMCHAR_H__
 #define __DUMCHAR_H__
 
@@ -6,7 +19,12 @@
 #include <linux/cdev.h>
 #include <linux/mtd/mtd.h>
 #include <linux/semaphore.h>
-#include <partition_define.h>
+#if defined(CONFIG_MTK_TLC_NAND_SUPPORT)
+#include "partition_define_tlc.h"
+#else
+#include "partition_define_mlc.h"
+#endif
+
 extern void env_init(loff_t env_part_addr, int mtd_number);
 extern struct mtd_info *__mtd_next_device(int i);
 extern int init_pmt(void);

@@ -92,7 +92,9 @@ P_WMT_FUNC_OPS gpWmtFuncOps[WMTDRV_TYPE_MAX] = {
 static WMT_CTX gMtkWmtCtx;
 static UINT8 gLpbkBuf[WMT_LPBK_BUF_LEN] = { 0 };
 static UINT8 gAntBuf[1024] = { 0 };
-
+#if CFG_WMT_LTE_COEX_HANDLING
+static UINT32 g_open_wmt_lte_flag;
+#endif
 /*******************************************************************************
 *                  F U N C T I O N   D E C L A R A T I O N S
 ********************************************************************************
@@ -2360,14 +2362,13 @@ static INT32 opfunc_idc_msg_handling(P_WMT_OP pWmtOp)
 	if (NULL == pTxBuf) {
 		WMT_ERR_FUNC("idc msg buffer is NULL\n");
 		return -1;
-	} else {
-		iRet = wmt_lib_idc_lock_aquire();
-		if (iRet) {
-			WMT_ERR_FUNC("--->lock idc_lock failed, ret=%d\n", iRet);
-			return iRet;
-		}
-
-		osal_memcpy(&msg_len, &pTxBuf[0], osal_sizeof(msg_len));
+	}
+	iRet = wmt_lib_idc_lock_aquire();
+	if (iRet) {
+		WMT_ERR_FUNC("--->lock idc_lock failed, ret=%d\n", iRet);
+		return iRet;
+	}
+	osal_memcpy(&msg_len, &pTxBuf[0], osal_sizeof(msg_len));
 	if (msg_len > 1200) {
 			wmt_lib_idc_lock_release();
 		WMT_ERR_FUNC("abnormal idc msg len:%d\n", msg_len);
@@ -2387,7 +2388,6 @@ static INT32 opfunc_idc_msg_handling(P_WMT_OP pWmtOp)
 	WMT_DBG_FUNC("wmt_core:idc msg payload:\n");
 	for (index = 0; index < total_len; index++)
 		WMT_DBG_FUNC("0x%02x ", msg_local_buffer[index]);
-
 	do {
 		fgFail = MTK_WCN_BOOL_TRUE;
 
@@ -2418,7 +2418,6 @@ static INT32 opfunc_idc_msg_handling(P_WMT_OP pWmtOp)
 
 
 /*TEST CODE*/
-static UINT32 g_open_wmt_lte_flag;
 VOID wmt_core_set_flag_for_test(UINT32 enable)
 {
 	WMT_INFO_FUNC("%s wmt_lte_flag\n", enable ? "enable" : "disable");

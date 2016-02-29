@@ -9,8 +9,8 @@
 #define VCORE_1_P_15_UV         1150000
 #define VCORE_1_P_05_UV         1050000
 
-#define FDDR_S0_KHZ             1280000
-#define FDDR_S1_KHZ             938000
+#define FDDR_S0_KHZ             1280000		/* 6737: 1466000 */
+#define FDDR_S1_KHZ             938000		/* 6737: 1313000 */
 
 /* CLK MUX */
 #define FAXI_S0_KHZ             218000
@@ -24,7 +24,6 @@
 #define FQTRHALF_S0_KHZ         54500           /* Faxi/4 */
 #define FQTRHALF_S1_KHZ         68000           /* Faxi/2 */
 
-#define SCREEN_RES_720P		(1280 * 832)
 #define PMIC_VCORE_PDN_VOSEL_ON 0x618
 
 /* Vcore 1.05 <=> trans1 <=> trans2 <=> Vcore 1.15 (SPM control) */
@@ -50,8 +49,8 @@ enum dvfs_kicker {
 
 enum dvfs_opp {
 	OPP_OFF = -1,
-	OPP_0 = 0,			/* 0: Vcore 1.15, DDR 1280 */
-	OPP_1,				/* 1: Vcore 1.05, DDR 938  */
+	OPP_0 = 0,			/* 0: Vcore 1.15, DDR 1280 (6737: Vcore 1.15, DDR 1466) */
+	OPP_1,				/* 1: Vcore 1.05, DDR 938  (6737: Vcore 1.05, DDR 1313) */
 	NUM_OPP
 };
 
@@ -86,6 +85,7 @@ extern bool vcorefs_sdio_need_multi_autok(void);
 /* for External Control Function */
 extern unsigned int vcorefs_get_curr_voltage(void);
 extern unsigned int get_ddr_khz(void);
+extern unsigned int get_ddr_khz_by_steps(unsigned int step);
 extern bool is_vcorefs_can_work(void);
 
 /*

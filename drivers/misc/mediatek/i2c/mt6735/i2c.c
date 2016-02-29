@@ -34,6 +34,7 @@
 
 #define DMA_LOG_LEN 7
 static struct i2c_dma_info g_dma_data[DMA_LOG_LEN];
+static void __iomem *spm_i2c_base;
 
 /* extern unsigned int mt_get_bus_freq(void); */
 
@@ -1231,6 +1232,12 @@ int mtk_i2c_master_recv(const struct i2c_client *client,
 }
 EXPORT_SYMBOL(mtk_i2c_master_recv);
 
+void __iomem *spm_get_i2c_base(void)
+{
+	return spm_i2c_base;
+}
+EXPORT_SYMBOL(spm_get_i2c_base);
+
 #ifdef I2C_DRIVER_IN_KERNEL
 static s32 _i2c_deal_result_3dcamera(struct mt_i2c_t *i2c, struct mt_i2c_msg *msg)
 {
@@ -1436,6 +1443,8 @@ static s32 mt_i2c_probe(struct platform_device *pdev)
 		return -ENODEV;
 	}
 	i2c->id = pdev->id;
+	if (i2c->id == 4)
+		spm_i2c_base = i2c->base;
 	irq = irq_of_parse_and_map(pdev->dev.of_node, 0);
 	if (!irq) {
 		I2CERR("I2C get irq failed\n");

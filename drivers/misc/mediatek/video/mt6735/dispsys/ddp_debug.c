@@ -1076,3 +1076,16 @@ unsigned int ddp_dump_reg_to_buf(unsigned int start_module, unsigned long *addr)
 	}
 	return cnt * sizeof(unsigned long);
 }
+
+/* ddp_dump_lcm_paramter */
+unsigned int ddp_dump_lcm_param_to_buf(unsigned int start_module, unsigned long *addr)
+{
+	unsigned int cnt = 0;
+
+	if (start_module == 3) {/*3 correspond dbg4*/
+		addr[cnt++] = primary_display_get_width();
+		addr[cnt++] = primary_display_get_height();
+	}
+
+	return cnt * sizeof(unsigned long);
+}

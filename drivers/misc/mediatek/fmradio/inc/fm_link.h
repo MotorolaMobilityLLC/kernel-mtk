@@ -159,7 +159,7 @@ struct fm_trace_fifo_t {
 #if (defined(MT6620_FM) || defined(MT6628_FM) || defined(MT6627_FM) || defined(MT6580_FM) || defined(MT6630_FM))
 #include "fm_utils.h"
 
-#define RX_BUF_SIZE 128
+#define RX_BUF_SIZE 256
 #define TX_BUF_SIZE 1024
 
 #define SW_RETRY_CNT            (1)

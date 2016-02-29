@@ -289,6 +289,13 @@ static unsigned long lowmem_scan(struct shrinker *s, struct shrink_control *sc)
 		if (!p)
 			continue;
 
+#ifdef CONFIG_MT_ENG_BUILD
+		if (p->signal->flags & SIGNAL_GROUP_COREDUMP) {
+			task_unlock(p);
+			continue;
+		}
+#endif
+
 		if (test_tsk_thread_flag(p, TIF_MEMDIE) &&
 		    time_before_eq(jiffies, lowmem_deathpending_timeout)) {
 #ifdef CONFIG_MT_ENG_BUILD

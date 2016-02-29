@@ -875,7 +875,7 @@ config ARCH_MT6753
 	select MTK_SYSTRACKER
 	select MTK_SYS_CIRQ
 	select MTK_EIC
-	select MTK_IRQ
+	select MTK_GIC
 	select ARM_HAS_SG_CHAIN
 	select PINCTRL
 	select PINCTRL_MT6735
@@ -887,6 +887,8 @@ config ARCH_MT6753
 	select CRYPTO_SHA2_ARM_CE
 	select MTK_BASE_POWER
 	select ARM_ERRATA_836870
+	select MTK_IRQ_NEW_DESIGN
+	select MTK_IRQ_NEW_DESIGN_DEBUG
 	select MTK_POWER_GS
 	select MTK_CPU_STRESS
 	help

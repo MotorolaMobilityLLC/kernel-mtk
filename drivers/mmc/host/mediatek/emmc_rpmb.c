@@ -60,7 +60,7 @@ static dciMessage_t *rpmb_dci;
 #define DBG_EVT_ERR  (1 << 31) /* Error event */
 #define DBG_EVT_ALL  (0xffffffff)
 
-#define DBG_EVT_MASK (DBG_EVT_ALL)
+#define DBG_EVT_MASK (DBG_EVT_ERR)
 
 #define MSG(evt, fmt, args...) \
 do {\
@@ -980,7 +980,6 @@ int neu_rpmb_req_get_wc(struct mmc_card *card, unsigned int *wc)
 	struct emmc_rpmb_req rpmb_req;
 	struct s_rpmb rpmb_frame;
 	u8 nonce[RPMB_SZ_NONCE] = {0};
-	u8 hmac[RPMB_SZ_MAC];
 	int ret;
 
 	memset(&rpmb_frame, 0, sizeof(rpmb_frame));
@@ -1022,7 +1021,6 @@ EXPORT_SYMBOL(neu_rpmb_req_get_wc);
 int neu_rpmb_req_read_data(struct mmc_card *card, struct s_rpmb *param, u32 blk_cnt)/*struct mmc_card *card, */
 {
 	struct emmc_rpmb_req rpmb_req;
-	u8 hmac[RPMB_SZ_MAC];
 	int ret;
 
 	rpmb_req.type = RPMB_READ_DATA;
@@ -1040,9 +1038,7 @@ EXPORT_SYMBOL(neu_rpmb_req_read_data);
 int neu_rpmb_req_write_data(struct mmc_card *card, struct s_rpmb *param, u32 blk_cnt)/*struct mmc_card *card, */
 {
 	struct emmc_rpmb_req rpmb_req;
-	int i = 0, ret;
-	u32 wc = 0xFFFFFFFF;
-	u8 hmac[RPMB_SZ_MAC];
+	int ret;
 
 	rpmb_req.type = RPMB_WRITE_DATA;
 	rpmb_req.blk_cnt = blk_cnt;
@@ -1124,7 +1120,7 @@ static int emmc_rpmb_execute(u32 cmdId)
 	return 0;
 }
 
-void emmc_rpmb_listenDci(void)
+int emmc_rpmb_listenDci(void *data)
 {
 	enum mc_result mc_ret;
 	u32 cmdId;
@@ -1157,6 +1153,8 @@ void emmc_rpmb_listenDci(void)
 			break;
 		}
 	}
+
+	return 0;
 }
 
 static int emmc_rpmb_open_session(void)
@@ -1167,6 +1165,8 @@ static int emmc_rpmb_open_session(void)
 	MSG(INFO, "%s start\n", __func__);
 
 	do {
+		msleep(2000);
+
 		/* open device */
 		mc_ret = mc_open_device(rpmb_devid);
 		if (mc_ret != MC_DRV_OK) {
@@ -1201,6 +1201,12 @@ static int emmc_rpmb_open_session(void)
 
 		if (mc_ret != MC_DRV_OK) {
 			MSG(ERR, "%s, mc_open_session failed.(%d)\n", __func__, cnt);
+
+			mc_ret = mc_free_wsm(rpmb_devid, (uint8_t *)rpmb_dci);
+			MSG(ERR, "%s, free wsm result (%d)\n", __func__, mc_ret);
+
+			mc_ret = mc_close_device(rpmb_devid);
+			MSG(ERR, "%s, try free wsm and close device\n", __func__);
 			cnt++;
 			continue;
 		}
@@ -1256,6 +1262,9 @@ static long emmc_rpmb_ioctl(struct file *file, unsigned int cmd, unsigned long a
 	struct mmc_card *card = mtk_msdc_host[0]->mmc->card;
 	struct rpmb_ioc_param param;
 	int ret;
+#if (defined(CONFIG_MICROTRUST_TZ_DRIVER))
+	struct rpmb_infor rpmbinfor;
+#endif
 
 	MSG(INFO, "%s, !!!!!!!!!!!!\n", __func__);
 
@@ -1264,10 +1273,8 @@ static long emmc_rpmb_ioctl(struct file *file, unsigned int cmd, unsigned long a
 		MSG(ERR, "%s, err=%x\n", __func__, err);
 		return -1;
 	}
-#if (defined(CONFIG_MICROTRUST_TZ_DRIVER))
-	struct rpmb_infor rpmbinfor;
-	int i;
 
+#if (defined(CONFIG_MICROTRUST_TZ_DRIVER))
 	if ((cmd == RPMB_IOCTL_SOTER_WRITE_DATA) || (cmd == RPMB_IOCTL_SOTER_READ_DATA)) {
 		err = copy_from_user(rpmb_buffer, (void *)arg, 4);
 		if (err < 0) {
@@ -1277,8 +1284,23 @@ static long emmc_rpmb_ioctl(struct file *file, unsigned int cmd, unsigned long a
 		rpmbinfor.size =  *(unsigned char *)rpmb_buffer | (*((unsigned char *)rpmb_buffer + 1) << 8);
 		rpmbinfor.size |= (*((unsigned char *)rpmb_buffer+2) << 16) | (*((unsigned char *)rpmb_buffer+3) << 24);
 		MSG(INFO, "%s, rpmbinfor.size is %d!\n", __func__, rpmbinfor.size);
-		copy_from_user(rpmb_buffer, (void *)arg, 4 + rpmbinfor.size);
+		err = copy_from_user(rpmb_buffer, (void *)arg, 4 + rpmbinfor.size);
 		rpmbinfor.data_frame = (rpmb_buffer + 4);
+
+		if (cmd == RPMB_IOCTL_SOTER_WRITE_DATA) {
+			ret = neu_rpmb_req_write_data(card,
+				(struct s_rpmb *)(rpmbinfor.data_frame), rpmbinfor.size/1024);
+			if (ret)
+				MSG(ERR, "%s, emmc_rpmb_req_handle IO error!!!(%x)\n", __func__, ret);
+			err = copy_to_user((void *)arg, rpmb_buffer, 4 + rpmbinfor.size);
+
+		} else if (cmd == RPMB_IOCTL_SOTER_READ_DATA) {
+			ret = neu_rpmb_req_read_data(card,
+				(struct s_rpmb *)(rpmbinfor.data_frame), rpmbinfor.size/1024);
+			if (ret)
+				MSG(ERR, "%s, emmc_rpmb_req_handle IO error!!!(%x)\n", __func__, ret);
+			err = copy_to_user((void *)arg, rpmb_buffer, 4 + rpmbinfor.size);
+		}
 	}
 #endif
 
@@ -1315,18 +1337,6 @@ static long emmc_rpmb_ioctl(struct file *file, unsigned int cmd, unsigned long a
 		break;
 
 #if (defined(CONFIG_MICROTRUST_TZ_DRIVER))
-	case RPMB_IOCTL_SOTER_WRITE_DATA:
-		ret = neu_rpmb_req_write_data(card, (struct s_rpmb *)(rpmbinfor.data_frame), rpmbinfor.size/1024);
-		if (ret)
-			MSG(ERR, "%s, emmc_rpmb_req_handle IO error!!!(%x)\n", __func__, ret);
-		copy_to_user((void *)arg, rpmb_buffer, 4 + rpmbinfor.size);
-		break;
-	case RPMB_IOCTL_SOTER_READ_DATA:
-		ret = neu_rpmb_req_read_data(card, (struct s_rpmb *)(rpmbinfor.data_frame), rpmbinfor.size/1024);
-		if (ret)
-			MSG(ERR, "%s, emmc_rpmb_req_handle IO error!!!(%x)\n", __func__, ret);
-		copy_to_user((void *)arg, rpmb_buffer, 4 + rpmbinfor.size);
-		break;
 	case RPMB_IOCTL_SOTER_GET_CNT:
 		ret = neu_rpmb_req_get_wc(card, (unsigned int *)arg);
 		break;

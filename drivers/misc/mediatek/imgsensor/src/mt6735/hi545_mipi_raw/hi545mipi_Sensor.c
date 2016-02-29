@@ -3412,10 +3412,9 @@ static kal_uint32 get_default_framerate_by_scenario(MSDK_SCENARIO_ID_ENUM scenar
 {
     LOG_INF("scenario_id = %d\n", scenario_id);
 	
-	spin_lock(&imgsensor_drv_lock);
     switch (scenario_id) {
         case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
-            *framerate = imgsensor_info.pre.max_framerate;
+			*framerate = imgsensor_info.pre.max_framerate;
             break;
         case MSDK_SCENARIO_ID_VIDEO_PREVIEW:
             *framerate = imgsensor_info.normal_video.max_framerate;
@@ -3432,7 +3431,7 @@ static kal_uint32 get_default_framerate_by_scenario(MSDK_SCENARIO_ID_ENUM scenar
         default:
             break;
     }
-	spin_unlock(&imgsensor_drv_lock);
+
 
     return ERROR_NONE;
 }

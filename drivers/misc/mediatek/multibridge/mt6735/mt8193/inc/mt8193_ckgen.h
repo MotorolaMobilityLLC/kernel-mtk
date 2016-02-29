@@ -151,6 +151,8 @@ u32 mt8193_ckgen_measure_clk(u32 u4Func);
 u32 mt8193_ckgen_reg_rw_test(u16 addr);
 #endif
 
+extern int multibridge_exit;
+
 void mt8193_lvds_sys_spm_control(bool power_on);
 void mt8193_hdmi_sys_spm_control(bool power_on);
 void mt8193_nfi_sys_spm_control(bool power_on);

@@ -170,9 +170,9 @@ void _dump_lcm_info(disp_lcm_handle *plcm)
 
 #if defined(MTK_LCM_DEVICE_TREE_SUPPORT)
 #define INIT_SIZE			(sizeof(LCM_DATA)*256)
-#define COMPARE_ID_SIZE	(sizeof(LCM_DATA)*8)
-#define SUSPEND_SIZE		(sizeof(LCM_DATA)*8)
-#define BACKLIGHT_SIZE		(sizeof(LCM_DATA)*8)
+#define COMPARE_ID_SIZE	(sizeof(LCM_DATA)*32)
+#define SUSPEND_SIZE		(sizeof(LCM_DATA)*32)
+#define BACKLIGHT_SIZE		(sizeof(LCM_DATA)*32)
 #define MAX_SIZE			(MAX(MAX(MAX(INIT_SIZE, COMPARE_ID_SIZE), SUSPEND_SIZE), BACKLIGHT_SIZE))
 
 static unsigned char dts[MAX_SIZE];
@@ -538,13 +538,21 @@ void parse_lcm_ops_dt_node(struct device_node *np, LCM_DTS *lcm_dts, unsigned ch
 		}
 
 		tmp = dts;
-		for (i = 0; i < 8; i++) {
+		for (i = 0; i < 32; i++) {
 			lcm_dts->compare_id[i].func = (*tmp) & 0xFF;
 			lcm_dts->compare_id[i].type = (*(tmp + 1)) & 0xFF;
 			lcm_dts->compare_id[i].size = (*(tmp + 2)) & 0xFF;
 			tmp_len = 3;
 
 			switch (lcm_dts->compare_id[i].func) {
+			case LCM_FUNC_GPIO:
+				memcpy(&(lcm_dts->compare_id[i].data_t1), tmp + 3, lcm_dts->compare_id[i].size);
+				break;
+
+			case LCM_FUNC_I2C:
+				memcpy(&(lcm_dts->compare_id[i].data_t2), tmp + 3, lcm_dts->compare_id[i].size);
+				break;
+
 			case LCM_FUNC_UTIL:
 				memcpy(&(lcm_dts->compare_id[i].data_t1), tmp + 3,
 				       lcm_dts->compare_id[i].size);
@@ -604,13 +612,21 @@ void parse_lcm_ops_dt_node(struct device_node *np, LCM_DTS *lcm_dts, unsigned ch
 	}
 
 	tmp = dts;
-	for (i = 0; i < 8; i++) {
+	for (i = 0; i < 32; i++) {
 		lcm_dts->suspend[i].func = (*tmp) & 0xFF;
 		lcm_dts->suspend[i].type = (*(tmp + 1)) & 0xFF;
 		lcm_dts->suspend[i].size = (*(tmp + 2)) & 0xFF;
 		tmp_len = 3;
 
 		switch (lcm_dts->suspend[i].func) {
+		case LCM_FUNC_GPIO:
+			memcpy(&(lcm_dts->suspend[i].data_t1), tmp + 3, lcm_dts->suspend[i].size);
+			break;
+
+		case LCM_FUNC_I2C:
+			memcpy(&(lcm_dts->suspend[i].data_t2), tmp + 3, lcm_dts->suspend[i].size);
+			break;
+
 		case LCM_FUNC_UTIL:
 			memcpy(&(lcm_dts->suspend[i].data_t1), tmp + 3, lcm_dts->suspend[i].size);
 			break;
@@ -661,13 +677,21 @@ void parse_lcm_ops_dt_node(struct device_node *np, LCM_DTS *lcm_dts, unsigned ch
 		}
 
 		tmp = dts;
-		for (i = 0; i < 8; i++) {
+		for (i = 0; i < 32; i++) {
 			lcm_dts->backlight[i].func = (*tmp) & 0xFF;
 			lcm_dts->backlight[i].type = (*(tmp + 1)) & 0xFF;
 			lcm_dts->backlight[i].size = (*(tmp + 2)) & 0xFF;
 			tmp_len = 3;
 
 			switch (lcm_dts->backlight[i].func) {
+			case LCM_FUNC_GPIO:
+				memcpy(&(lcm_dts->backlight[i].data_t1), tmp + 3, lcm_dts->backlight[i].size);
+				break;
+
+			case LCM_FUNC_I2C:
+				memcpy(&(lcm_dts->backlight[i].data_t2), tmp + 3, lcm_dts->backlight[i].size);
+				break;
+
 			case LCM_FUNC_UTIL:
 				memcpy(&(lcm_dts->backlight[i].data_t1), tmp + 3,
 				       lcm_dts->backlight[i].size);
@@ -726,7 +750,7 @@ void load_lcm_resources_from_DT(LCM_DRIVER *lcm_drv)
 	/* Load LCM parameters from DT */
 	np = of_find_compatible_node(NULL, NULL, dts_params);
 	if (!np) {
-		pr_debug("LCM PARAMS DT node: Not found\n");
+		pr_err("LCM PARAMS DT node: Not found\n");
 	} else {
 		parse_lcm_params_dt_node(np, &(parse_dts->params));
 	}
@@ -737,7 +761,7 @@ void load_lcm_resources_from_DT(LCM_DRIVER *lcm_drv)
 	/* Load LCM parameters from DT */
 	np = of_find_compatible_node(NULL, NULL, dts_ops);
 	if (!np) {
-		pr_debug("LCM OPS DT node: Not found\n");
+		pr_err("LCM OPS DT node: Not found\n");
 	} else {
 		parse_lcm_ops_dt_node(np, parse_dts, tmp_dts);
 	}
@@ -745,7 +769,7 @@ void load_lcm_resources_from_DT(LCM_DRIVER *lcm_drv)
 	if (lcm_drv->parse_dts)
 		lcm_drv->parse_dts(parse_dts, 1);
 	else
-		pr_debug("LCM set_params not implemented!!!\n");
+		pr_err("LCM set_params not implemented!!!\n");
 }
 #endif
 

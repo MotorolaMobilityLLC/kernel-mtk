@@ -398,6 +398,7 @@ static void musb_id_pin_work(struct work_struct *data)
 		MUSB_HST_MODE(mtk_musb);
 		switch_int_to_device(mtk_musb);
 	} else {
+		musb_epx_transfer_allowed = 0;
 		DBG(0, "devctl is %x\n", musb_readb(mtk_musb->mregs, MUSB_DEVCTL));
 		musb_writeb(mtk_musb->mregs, MUSB_DEVCTL, 0);
 		if (wake_lock_active(&mtk_musb->usb_lock))

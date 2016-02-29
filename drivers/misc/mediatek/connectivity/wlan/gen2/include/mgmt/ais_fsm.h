@@ -262,7 +262,7 @@
 #define AIS_BMC_MIN_TIMEOUT_VALID           TRUE
 
 #define AIS_JOIN_CH_GRANT_THRESHOLD         10
-#define AIS_JOIN_CH_REQUEST_INTERVAL        2000
+#define AIS_JOIN_CH_REQUEST_INTERVAL        3000
 
 #define AIS_SCN_DONE_TIMEOUT_SEC            30	/* 15 for 2.4G + 5G */ /* 5 */
 
@@ -355,7 +355,7 @@ typedef struct _AIS_FSM_INFO_T {
 
 	TIMER_T rIbssAloneTimer;
 
-	TIMER_T rIndicationOfDisconnectTimer;
+	UINT_32 u4PostponeIndStartTime;
 
 	TIMER_T rJoinTimeoutTimer;
 
@@ -482,7 +482,7 @@ VOID
 aisIndicationOfMediaStateToHost(IN P_ADAPTER_T prAdapter,
 				ENUM_PARAM_MEDIA_STATE_T eConnectionState, BOOLEAN fgDelayIndication);
 
-VOID aisPostponedEventOfDisconnTimeout(IN P_ADAPTER_T prAdapter, ULONG ulParam);
+VOID aisPostponedEventOfDisconnTimeout(IN P_ADAPTER_T prAdapter, P_AIS_FSM_INFO_T prAisFsmInfo);
 
 VOID aisUpdateBssInfoForJOIN(IN P_ADAPTER_T prAdapter, P_STA_RECORD_T prStaRec, P_SW_RFB_T prAssocRspSwRfb);
 

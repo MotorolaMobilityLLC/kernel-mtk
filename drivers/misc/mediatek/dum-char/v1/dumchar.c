@@ -1,3 +1,16 @@
+/*
+ * Copyright (C) 2015 MediaTek Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ */
+
 #define DEBUG
 #include <linux/module.h>
 #include <linux/moduleparam.h>
@@ -25,7 +38,11 @@
 #ifdef CONFIG_MTK_EMMC_SUPPORT
 #include "pmt.h"
 #else
-#include "partition_define.h"
+#if defined(CONFIG_MTK_TLC_NAND_SUPPORT)
+#include "partition_define_tlc.h"
+#else
+#include "partition_define_mlc.h"
+#endif
 #endif
 #include <linux/mmc/host.h>
 /* #include <linux/mmc/sd_misc.h> */
@@ -474,7 +491,7 @@ ssize_t dumchar_write(struct file *filp, const char __user *buf, size_t count, l
 #ifdef CONFIG_MTK_EMMC_SUPPORT
 	loff_t pos = 0;
 #endif
-#ifdef CONFIG_MTK_COMBO_NAND_SUPPORT
+#if defined(CONFIG_MTK_COMBO_NAND_SUPPORT) || defined(CONFIG_MTK_TLC_NAND_SUPPORT)
 	struct mtd_info *mtd;
 	unsigned int writesize = -1;
 #endif
@@ -487,7 +504,8 @@ ssize_t dumchar_write(struct file *filp, const char __user *buf, size_t count, l
 		show_stack(NULL, NULL);
 		return -EINVAL;
 	}
-#ifdef CONFIG_MTK_COMBO_NAND_SUPPORT
+
+#if defined(CONFIG_MTK_COMBO_NAND_SUPPORT) || defined(CONFIG_MTK_TLC_NAND_SUPPORT)
 	mtd_for_each_device(mtd) {
 		if (dev->mtd_index == mtd->index) {
 			writesize = mtd->writesize;

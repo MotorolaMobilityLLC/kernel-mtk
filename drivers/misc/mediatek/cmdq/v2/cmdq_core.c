@@ -100,6 +100,10 @@ static DumpCommandBufferStruct gCmdqBufferDump;
 static atomic_t gCmdqDebugForceUseEmergencyBuffer = ATOMIC_INIT(0);
 #endif
 
+#ifdef CMDQ_SECURE_PATH_CONSUME_AGAIN
+static bool g_cmdq_consume_again;
+#endif
+
 /* use to generate [CMDQ_ENGINE_ENUM_id and name] mapping for status print */
 #define CMDQ_FOREACH_MODULE_PRINT(ACTION)\
 {		\
@@ -159,7 +163,7 @@ void cmdq_core_unlock_resource(struct work_struct *workItem)
 		/* delay time is reached and unlock resource */
 		if (NULL == pResource->availableCB) {
 			/* print error message */
-			CMDQ_ERR("[Res]: available CB func is NULL, event:%d\n", pResource->lockEvent);
+			CMDQ_LOG("[Res]: available CB func is NULL, event:%d\n", pResource->lockEvent);
 		} else {
 			/* before call callback, release lock at first */
 			mutex_unlock(&gCmdqResourceMutex);
@@ -682,7 +686,7 @@ uint32_t cmdqCoreGetEvent(CMDQ_EVENT_ENUM event)
 	uint32_t regValue = 0;
 	int32_t eventValue = cmdq_core_get_event_value(event);
 
-	CMDQ_REG_SET32(CMDQ_SYNC_TOKEN_ID, (0x3FF && eventValue));
+	CMDQ_REG_SET32(CMDQ_SYNC_TOKEN_ID, (0x3FF & eventValue));
 	regValue = CMDQ_REG_GET32(CMDQ_SYNC_TOKEN_VAL);
 	return regValue;
 }
@@ -3251,7 +3255,10 @@ static int32_t cmdq_core_acquire_thread(uint64_t engineFlag,
 			engineMustEnableClock =
 			    cmdq_core_get_actual_engine_flag_for_enable_clock(engineFlag, thread);
 		}
-
+#ifdef CMDQ_SECURE_PATH_CONSUME_AGAIN
+		if (CMDQ_INVALID_THREAD == thread && true == isSecure && CMDQ_SCENARIO_USER_MDP == scenario)
+ 			g_cmdq_consume_again = true;
+#endif
 		spin_unlock_irqrestore(&gCmdqThreadLock, flags);
 
 		if (CMDQ_INVALID_THREAD != thread) {
@@ -5093,7 +5100,7 @@ static int32_t cmdq_core_remove_task_from_thread_array_by_cookie(ThreadStruct *p
 {
 	TaskStruct *pTask = NULL;
 
-	if ((NULL == pThread) || (0 > index)) {
+	if ((NULL == pThread) || (index < 0) || (index >= CMDQ_MAX_TASK_IN_THREAD)) {
 		CMDQ_ERR
 		    ("remove task from thread array, invalid param. THR[0x%p], task_slot[%d], newTaskState[%d]\n",
 		     pThread, index, newTaskState);
@@ -5132,6 +5139,46 @@ static int32_t cmdq_core_remove_task_from_thread_array_by_cookie(ThreadStruct *p
 	if (0 > pThread->taskCount) {
 		/* Error status print */
 		CMDQ_ERR("taskCount < 0 after cmdq_core_remove_task_from_thread_array_by_cookie\n");
+	}
+
+	return 0;
+}
+
+static int32_t cmdq_core_remove_task_from_thread_array_when_secure_submit_fail(ThreadStruct *pThread,
+								int32_t index)
+{
+	TaskStruct *pTask = NULL;
+
+	if ((NULL == pThread) || (index < 0) || (index >= CMDQ_MAX_TASK_IN_THREAD)) {
+		CMDQ_ERR
+		    ("remove task from thread array, invalid param. THR[0x%p], task_slot[%d]\n",
+		     pThread, index);
+		return -EINVAL;
+	}
+
+	pTask = pThread->pCurTask[index];
+
+	if (NULL == pTask) {
+		CMDQ_ERR("remove fail, task_slot[%d] on thread[%p] is NULL\n", index, pThread);
+		return -EINVAL;
+	}
+
+	if (cmdq_core_max_task_in_thread(pTask->thread) <= index) {
+		CMDQ_ERR
+		    ("remove task from thread array, invalid index. THR[0x%p], task_slot[%d]\n",
+		     pThread, index);
+		return -EINVAL;
+	}
+
+	CMDQ_VERBOSE("remove task, slot[%d]\n", index);
+	pTask = NULL;
+	pThread->pCurTask[index] = NULL;
+	pThread->taskCount--;
+	pThread->nextCookie--;
+
+	if (0 > pThread->taskCount) {
+		/* Error status print */
+		CMDQ_ERR("taskCount < 0 after cmdq_core_remove_task_from_thread_array_when_secure_submit_fail\n");
 	}
 
 	return 0;
@@ -6156,6 +6203,8 @@ static int32_t cmdq_core_exec_task_async_secure_impl(TaskStruct *pTask, int32_t 
 		if (0 > status) {
 			/* config failed case, dump for more detail */
 			cmdq_core_attach_error_task(pTask, thread, NULL);
+			cmdq_core_turnoff_first_dump();
+			cmdq_core_remove_task_from_thread_array_when_secure_submit_fail(pThread, cookie);
 		}
 	} while (0);
 
@@ -7048,7 +7097,12 @@ int32_t cmdqCoreWaitResultAndReleaseTask(TaskStruct *pTask, cmdqRegValueStruct *
 	cmdq_core_track_task_record(pTask, thread);
 	cmdq_core_release_thread(pTask);
 	cmdq_core_auto_release_task(pTask);
-
+#ifdef CMDQ_SECURE_PATH_CONSUME_AGAIN
+	if (true == g_cmdq_consume_again) {
+		cmdq_core_add_consume_task();
+		g_cmdq_consume_again = false;
+	}
+#endif
 	CMDQ_PROF_END(current->pid, __func__);
 
 	return status;
@@ -7106,6 +7160,19 @@ int32_t cmdqCoreAutoReleaseTask(TaskStruct *pTask)
 {
 	int32_t threadNo = CMDQ_INVALID_THREAD;
 	bool isSecure;
+
+	if (NULL == pTask) {
+		/* Error occurs when Double INIT_WORK */
+		CMDQ_ERR("[Double INIT WORK] pTask is NULL");
+		return 0;
+	}
+
+	if (NULL == pTask->pCMDEnd || NULL == pTask->pVABase) {
+		/* Error occurs when Double INIT_WORK */
+		CMDQ_ERR("[Double INIT WORK] pTask(%p) is already released", pTask);
+		return 0;
+	}
+
 	/* the work item is embeded in pTask already */
 	/* but we need to initialized it */
 	if (false == pTask->useWorkQueue) {
@@ -7435,6 +7502,10 @@ int32_t cmdqCoreInitialize(void)
 
 	/* Initialize Features */
 	gCmdqContext.features[CMDQ_FEATURE_SRAM_SHARE] = 1;
+
+#ifdef CMDQ_SECURE_PATH_CONSUME_AGAIN
+	g_cmdq_consume_again = false;
+#endif
 
 	return 0;
 }
@@ -7968,7 +8039,7 @@ void cmdqCoreLockResource(uint64_t engineFlag, bool fromNotify)
 				pResource->used = true;
 				CMDQ_MSG("[Res] Callback to release\n");
 				if (NULL == pResource->releaseCB) {
-					CMDQ_ERR("[Res]: release CB func is NULL, event:%d\n",
+					CMDQ_LOG("[Res]: release CB func is NULL, event:%d\n",
 						pResource->lockEvent);
 				} else {
 					/* release mutex before callback */

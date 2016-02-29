@@ -2406,7 +2406,15 @@ static void mux_disable_locked(struct clkmux *mux)
 	clk_info("[%s]: End. mux->name=%s, mux->cnt=%d\n", __func__, mux->name, mux->cnt);
 #endif
 }
+void mt_set_vencpll_con1(int val)
+{
+	unsigned long flags;
 
+	clkmgr_lock(flags);
+	clk_writel(VENCPLL_CON1, val);
+	clkmgr_unlock(flags);
+}
+EXPORT_SYMBOL(mt_set_vencpll_con1);
 int clkmux_sel(int id, unsigned int clksrc, char *name)
 {
 	unsigned long flags;

@@ -2842,7 +2842,7 @@ int btif_dump_reg(p_mtk_btif p_btif)
 
 	if ((B_S_ON != ori_state) && (B_S_MAX > ori_state)) {
 		BTIF_ERR_FUNC("BTIF's original state is %s, not B_S_ON\n", g_state[ori_state]);
-		BTIF_ERR_FUNC("!!!!---<<<This should never happen in normal mode>>>---!!!");
+		BTIF_ERR_FUNC("!!!-<-<-<This should never happen in normal mode>->->-!!!");
 		i_ret = _btif_exit_dpidle(p_btif);
 	}
 

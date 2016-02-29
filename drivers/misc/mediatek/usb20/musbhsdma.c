@@ -345,6 +345,12 @@ irqreturn_t dma_controller_irq(int irq, void *private_data)
 	musb_writeb(musb->mregs, MUSB_HSDMA_INTR, int_hsdma);
 	/* musb_read_clear_dma_interrupt */
 
+	if (unlikely(!musb_epx_transfer_allowed)) {
+		DBG(0, "!musb_epx_transfer_allowed\n");
+		spin_unlock_irqrestore(&musb->lock, flags);
+		return IRQ_HANDLED;
+	}
+
 	if (!int_hsdma) {
 		DBG(2, "spurious DMA irq\n");
 

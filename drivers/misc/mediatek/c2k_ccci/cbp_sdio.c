@@ -976,7 +976,7 @@ static int cbp_probe(struct platform_device *pdev)
 		ret = -ENOMEM;
 		goto err_create_kobj;
 	}
-#if !defined(CONFIG_MTK_LEGACY)
+#if !defined(CONFIG_MTK_CLKMGR)
 	clk_scp_sys_md2_main = devm_clk_get(&pdev->dev, "scp-sys-md2-main");
 	if (IS_ERR(clk_scp_sys_md2_main))
 		LOGPRT(LOG_ERR, "[C2K] get scp-sys-md2-main failed\n");

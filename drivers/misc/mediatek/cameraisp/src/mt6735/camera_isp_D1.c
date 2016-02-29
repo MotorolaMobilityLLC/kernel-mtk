@@ -52,6 +52,12 @@
 
 /* #define ISP_DEBUG */
 
+#define LOG_CONSTRAINT_ADJ		(1)
+#if (LOG_CONSTRAINT_ADJ == 1)
+/* for kernel log reduction */
+#include <linux/printk.h>
+#endif
+
 #define	CAMSV_DBG
 #ifdef CAMSV_DBG
 #define	CAM_TAG	"CAM:"
@@ -200,6 +206,11 @@ static void __iomem *g_isp_base_dase;
 static void __iomem *g_isp_inner_base_dase;
 static void __iomem *g_imgsys_config_base_dase;
 */
+
+#if (LOG_CONSTRAINT_ADJ == 1)
+	static MUINT32 g_log_def_constraint;
+#endif
+
 
 #define	ISP_ADDR						(gISPSYS_Reg[ISP_BASE_ADDR])
 #define	ISP_IMGSYS_BASE					(gISPSYS_Reg[ISP_IMGSYS_CONFIG_BASE_ADDR])
@@ -4893,7 +4904,7 @@ static long ISP_Buf_CTRL_FUNC(unsigned long Param)
 									}
 									return -EFAULT;
 								}
-								LOG_DBG("[rtbc]dma(%d),old(%d) PA(0x%x) VA(0x%x)",
+								LOG_DBG("[rtbc]replace2]dma(%d),old(%d) PA(0x%x) VA(0x%x)",
 								   rt_dma, i, pstRTBuf->ring_buf[rt_dma].data[i].
 								   base_pAddr, pstRTBuf->ring_buf[rt_dma].data[i].
 								   base_vAddr);
@@ -6095,8 +6106,10 @@ static long ISP_Buf_CTRL_FUNC(unsigned long Param)
 					bRawDEn = MFALSE;
 					for (z = 0; z < _rt_dma_max_; z++) {
 						pstRTBuf->ring_buf[z].active = array[z];
+						if (0 == array[z])
+							continue;
 
-					/**/	if (IspInfo.DebugMask & ISP_DBG_BUF_CTRL)
+					/**/	/*if (IspInfo.DebugMask & ISP_DBG_BUF_CTRL)*/
 							LOG_INF("[rtbc][DMA_EN]:dma_%d:%d", z,
 								array[z]);
 
@@ -10968,6 +10981,13 @@ static MINT32 ISP_open(struct inode *pInode, struct file *pFile)
 		LOG_DBG("Curr UserCount(%d), (process, pid, tgid)=(%s, %d, %d),	first user",
 			IspInfo.UserCount, current->comm, current->pid, current->tgid);
 	}
+
+	/* kernel log */
+#if (LOG_CONSTRAINT_ADJ == 1)
+	g_log_def_constraint = get_detect_count();
+	set_detect_count(g_log_def_constraint+100);
+#endif
+
 	/* do wait queue head init when re-enter in camera */
 	EDBufQueRemainNodeCnt = 0;
 	P2_Support_BurstQNum = 1;
@@ -11176,6 +11196,10 @@ static MINT32 ISP_release(struct inode *pInode, struct file *pFile)
 	ISP_WR32(ISP_ADDR + 0x4a00, 0x00000001);
 	LOG_DBG("ISP_MCLK1_EN Release");
 	ISP_BufWrite_Free();
+
+#if (LOG_CONSTRAINT_ADJ == 1)
+	set_detect_count(g_log_def_constraint);
+#endif
 	/*      */
 EXIT:
 
@@ -11747,10 +11771,17 @@ static MINT32 bPass1_On_In_Resume_TG1;
 static MINT32 bPass1_On_In_Resume_TG2;
 static MINT32 ISP_suspend(struct platform_device *pDev, pm_message_t Mesg)
 {
+	MUINT32 regTG1Val, regTG2Val;
+
+	if (IspInfo.UserCount == 0) {
+		LOG_DBG("ISP UserCount=0");
+		return 0;
+	}
+
 	/* TG_VF_CON[0] (0x15004414[0]): VFDATA_EN.     TG1     Take Picture Request. */
-	MUINT32 regTG1Val = ISP_RD32(ISP_ADDR + 0x414);
+	regTG1Val = ISP_RD32(ISP_ADDR + 0x414);
 	/* TG2_VF_CON[0] (0x150044B4[0]): VFDATA_EN. TG2 Take Picture Request. */
-	MUINT32 regTG2Val = ISP_RD32(ISP_ADDR + 0x4B4);
+	regTG2Val = ISP_RD32(ISP_ADDR + 0x4B4);
 
 	LOG_DBG
 	    ("bPass1_On_In_Resume_TG1(%d). bPass1_On_In_Resume_TG2(%d). regTG1Val(0x%08x). regTG2Val(0x%08x)\n",
@@ -11776,10 +11807,17 @@ static MINT32 ISP_suspend(struct platform_device *pDev, pm_message_t Mesg)
 ********************************************************************************/
 static MINT32 ISP_resume(struct platform_device *pDev)
 {
+	MUINT32 regTG1Val, regTG2Val;
+
+	if (IspInfo.UserCount == 0) {
+		LOG_DBG("ISP UserCount=0");
+		return 0;
+	}
+
 	/* TG_VF_CON[0] (0x15004414[0]): VFDATA_EN.     TG1     Take Picture Request. */
-	MUINT32 regTG1Val = ISP_RD32(ISP_ADDR + 0x414);
+	regTG1Val = ISP_RD32(ISP_ADDR + 0x414);
 	/* TG2_VF_CON[0] (0x150044B4[0]): VFDATA_EN. TG2 Take Picture Request. */
-	MUINT32 regTG2Val = ISP_RD32(ISP_ADDR + 0x4B4);
+	regTG2Val = ISP_RD32(ISP_ADDR + 0x4B4);
 
 	LOG_DBG
 	    ("bPass1_On_In_Resume_TG1(%d). bPass1_On_In_Resume_TG2(%d). regTG1Val(0x%x) regTG2Val(0x%x)\n",

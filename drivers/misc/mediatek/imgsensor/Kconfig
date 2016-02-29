@@ -3,3 +3,9 @@ config MTK_IMGSENSOR
   default n
   help
     CONFIG_MTK_IMGSENSOR
+
+config MTK_EFUSE_DOWNGRADE
+  bool "CONFIG_MTK_EFUSE_DOWNGRADE"
+  default n
+  help
+    CONFIG_MTK_EFUSE_DOWNGRADE

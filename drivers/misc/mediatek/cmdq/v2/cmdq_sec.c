@@ -1,4 +1,5 @@
 #include <linux/slab.h>
+#include <linux/delay.h>
 
 #include "cmdq_sec.h"
 #include "cmdq_def.h"
@@ -45,7 +46,7 @@ int32_t cmdq_sec_open_mobicore_impl(uint32_t deviceId)
 {
 	int32_t status;
 	enum mc_result mcRet = MC_DRV_ERR_UNKNOWN;
-	int retryCnt = 0;
+	int retry_cnt = 0, max_retry = 30;
 
 	do {
 		status = 0;
@@ -58,14 +59,21 @@ int32_t cmdq_sec_open_mobicore_impl(uint32_t deviceId)
 			CMDQ_MSG("[SEC]_MOBICORE_OPEN: already opened, continue to execution\n");
 			status = -EEXIST;
 		} else if (MC_DRV_OK != mcRet) {
-			CMDQ_ERR("[SEC]_MOBICORE_OPEN: err[0x%x]\n", mcRet);
+			CMDQ_ERR("[SEC]_MOBICORE_OPEN: err[0x%x], retry[%d]\n", mcRet, retry_cnt);
 			status = -1;
-			retryCnt++;
+			msleep_interruptible(2000);
+			retry_cnt++;
 			continue;
 		}
-		CMDQ_MSG("[SEC]_MOBICORE_OPEN: status[%d], ret[0x%x]\n", status, mcRet);
 		break;
-	} while (retryCnt < 30);
+	} while (retry_cnt < max_retry);
+
+	if (retry_cnt >= max_retry) {
+		/* print error message */
+		CMDQ_ERR("[SEC]_MOBICORE_OPEN fail: status[%d], mcRet[0x%x], retry[%d]\n", status, mcRet, retry_cnt);
+	} else {
+		CMDQ_MSG("[SEC]_MOBICORE_OPEN: status[%d], mcRet[0x%x], retry[%d]\n", status, mcRet, retry_cnt);
+	}
 
 	return status;
 }

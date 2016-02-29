@@ -43,6 +43,16 @@ config MT_SCHED_MONITOR
 	  monitor. If you are not sure about whether to enable it or not, please
 	  set n.
 
+config MT_SCHED_MON_DEFAULT_ENABLE
+	bool "default enable mt scheduler monitor"
+	depends on MT_SCHED_MONITOR
+	default n
+	help
+	  MT_SCHED_MON_DEFAULT_ENABLE is used to enable scheduler monitor for auto test
+	  system performance(ISR/SOFTIRQ/TASKLET/HRTIMER/STIMER). Say Y here to
+	  enable auto test scheduler monitor. If you are not sure about whether
+	  to enable it or not, please set n.
+
 config MT_RT_THROTTLE_MON
 	bool "mt rt throttle monitor"
 	default n
@@ -89,7 +99,7 @@ config LOG_TOO_MUCH_WARNING
 
 config LOG_TOO_MUCH_DETECT_COUNT
 	hex "printk too much detect count"
-	default 300
+	default 0xC8
 	depends on LOG_TOO_MUCH_WARNING
 
 config LOG_TOO_MUCH_DETECT_GAP

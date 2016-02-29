@@ -21,7 +21,7 @@ void c2k_sdio_register_pm(pm_callback_t pm_cb, void *data)
 
 #ifdef C2K_USE_EINT
 
-static const int c2k_sdio_eirq_num = 262;
+static int c2k_sdio_eirq_num = 262;
 static sdio_irq_handler_t *c2k_sdio_eirq_handler;
 static void *c2k_sdio_eirq_data;
 /*static int interrupt_count_c2k;*/
@@ -70,12 +70,14 @@ void c2k_sdio_install_eirq(void)
 	if (node) {
 		/* get IRQ ID */
 		irq_num = irq_of_parse_and_map(node, 0);
+		c2k_sdio_eirq_num = irq_num;
 	} else {
 		pr_err("c2k no device node\n");
 		return;
 	}
 	atomic_set(&irq_installed, 1);
-	pr_info("[C2K] interrupt install start from %ps, irq num = %d\n", __builtin_return_address(0), irq_num);
+	pr_info("[C2K] interrupt install start from %ps, irq num = %d(%d)\n", __builtin_return_address(0),
+		irq_num, c2k_sdio_eirq_num);
 	ret = request_irq(irq_num, c2k_sdio_eirq_handler_stub, 0, "C2K_CCCI", NULL);
 
 	pr_info("[C2K] interrupt install(%d) from %ps\n", ret, __builtin_return_address(0));

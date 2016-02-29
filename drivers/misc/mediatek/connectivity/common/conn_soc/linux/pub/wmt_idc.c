@@ -67,7 +67,6 @@ INT32 wmt_idc_msg_from_lte_handing(ipc_ilm_t *ilm)
 			WMT_ERR_FUNC("wmt handing idc msg fail\n");
 			return -2;
 		}
-		wmt_lib_notify_stp_sleep();
 	} else {
 		WMT_INFO_FUNC("Received LTE msg,but STP is not ready,drop it!\n");
 	}

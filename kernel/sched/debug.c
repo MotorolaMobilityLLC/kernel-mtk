@@ -9,7 +9,7 @@
  * it under the terms of the GNU General Public License version 2 as
  * published by the Free Software Foundation.
  */
-
+#define DEBUG
 #include <linux/proc_fs.h>
 #include <linux/sched.h>
 #include <linux/seq_file.h>
@@ -19,6 +19,9 @@
 #include <linux/sched.h>
 #ifdef CONFIG_KGDB_KDB
 #include <linux/kdb.h>
+#endif
+#ifdef CONFIG_MTPROF
+#include "mt_sched_mon.h"
 #endif
 
 #include "sched.h"
@@ -31,11 +34,11 @@
 static DEFINE_SPINLOCK(sched_debug_lock);
 
 /* sched: add rt_exec_task info */
+DECLARE_PER_CPU(u64, rt_throttling_start);
 DECLARE_PER_CPU(u64, exec_delta_time);
 DECLARE_PER_CPU(u64, clock_task);
 DECLARE_PER_CPU(u64, exec_start);
 DECLARE_PER_CPU(struct task_struct, exec_task);
-
 /*
  * This allows printing both to /proc/sched_debug and
  * to the console
@@ -148,6 +151,63 @@ static char *task_group_path(struct task_group *tg)
 #endif
 
 static void
+print_task_at_AEE(struct seq_file *m, struct rq *rq, struct task_struct *p)
+{
+#ifdef CONFIG_SCHEDSTATS
+	if (rq->curr == p) {
+#ifdef CONFIG_CGROUP_SCHED
+		SEQ_printf(m, "R %15s %5d %9Ld.%06ld %9Ld %5d %9Ld.%06ld %9Ld.%06ld %9Ld.%06ld %s\n",
+			p->comm,
+			task_pid_nr(p),
+			SPLIT_NS(p->se.vruntime),
+			(long long)(p->nvcsw + p->nivcsw),
+			p->prio,
+			SPLIT_NS(p->se.vruntime),
+			SPLIT_NS(p->se.sum_exec_runtime),
+			SPLIT_NS(p->se.statistics.sum_sleep_runtime),
+			task_group_path(task_group(p)));
+#else
+		SEQ_printf(m, "R %15s %5d %9Ld.%06ld %9Ld %5d %9Ld.%06ld %9Ld.%06ld %9Ld.%06ld\n",
+			p->comm,
+			task_pid_nr(p),
+			SPLIT_NS(p->se.vruntime),
+			(long long)(p->nvcsw + p->nivcsw),
+			p->prio,
+			SPLIT_NS(p->se.vruntime),
+			SPLIT_NS(p->se.sum_exec_runtime),
+			SPLIT_NS(p->se.statistics.sum_sleep_runtime));
+#endif
+	} else {
+#ifdef CONFIG_CGROUP_SCHED
+		SEQ_printf(m, "  %15s %5d %9Ld.%06ld %9Ld %5d %9Ld.%06ld %9Ld.%06ld %9Ld.%06ld %s\n",
+			p->comm,
+			task_pid_nr(p),
+			SPLIT_NS(p->se.vruntime),
+			(long long)(p->nvcsw + p->nivcsw),
+			p->prio,
+			SPLIT_NS(p->se.vruntime),
+			SPLIT_NS(p->se.sum_exec_runtime),
+			SPLIT_NS(p->se.statistics.sum_sleep_runtime),
+			task_group_path(task_group(p)));
+#else
+		SEQ_printf(m, "  %15s %5d %9Ld.%06ld %9Ld %5d %9Ld.%06ld %9Ld.%06ld %9Ld.%06ld\n",
+			p->comm,
+			task_pid_nr(p),
+			SPLIT_NS(p->se.vruntime),
+			(long long)(p->nvcsw + p->nivcsw),
+			p->prio,
+			SPLIT_NS(p->se.vruntime),
+			SPLIT_NS(p->se.sum_exec_runtime),
+			SPLIT_NS(p->se.statistics.sum_sleep_runtime));
+#endif
+	}
+#else
+	SEQ_printf(m, "%15Ld %15Ld %15Ld.%06ld %15Ld.%06ld %15Ld.%06ld",
+		0LL, 0LL, 0LL, 0L, 0LL, 0L, 0LL, 0L);
+#endif
+}
+
+static void
 print_task(struct seq_file *m, struct rq *rq, struct task_struct *p)
 {
 	if (rq->curr == p)
@@ -160,6 +220,7 @@ print_task(struct seq_file *m, struct rq *rq, struct task_struct *p)
 		SPLIT_NS(p->se.vruntime),
 		(long long)(p->nvcsw + p->nivcsw),
 		p->prio);
+
 #ifdef CONFIG_SCHEDSTATS
 	SEQ_printf(m, "%9Ld.%06ld %9Ld.%06ld %9Ld.%06ld",
 		SPLIT_NS(p->se.vruntime),
@@ -169,13 +230,13 @@ print_task(struct seq_file *m, struct rq *rq, struct task_struct *p)
 	SEQ_printf(m, "%15Ld %15Ld %15Ld.%06ld %15Ld.%06ld %15Ld.%06ld",
 		0LL, 0LL, 0LL, 0L, 0LL, 0L, 0LL, 0L);
 #endif
+
 #ifdef CONFIG_NUMA_BALANCING
 	SEQ_printf(m, " %d", task_node(p));
 #endif
 #ifdef CONFIG_CGROUP_SCHED
 	SEQ_printf(m, " %s", task_group_path(task_group(p)));
 #endif
-
 	SEQ_printf(m, "\n");
 }
 
@@ -864,28 +925,31 @@ int spin_trylock_n_irqsave(spinlock_t *lock, unsigned long *flags, struct seq_fi
 
 	return locked;
 }
-static void print_rq_at_KE(struct seq_file *m, struct rq *rq, int rq_cpu)
+static void print_rq_at_AEE(struct seq_file *m, struct rq *rq, int rq_cpu)
 {
 	struct task_struct *g, *p;
 
-	SEQ_printf(m, "\runnable tasks:\n");
-	SEQ_printf(m, "            task   PID         tree-key  switches  prio");
-	SEQ_printf(m, "     exec-runtime         sum-exec        sum-sleep\n");
-	SEQ_printf(m, "------------------------------------------------------");
-	SEQ_printf(m, "----------------------------------------------------\n");
+	SEQ_printf(m, "runnable tasks:\n");
+	SEQ_printf(m,
+		"             task   PID         tree-key  switches  prio      exec-runtime      sum-exec        sum-sleep\n");
+	SEQ_printf(m, "------------------------------------------------------------------------------\n");
 
 	rcu_read_lock();
 	for_each_process_thread(g, p) {
+		/*
 		if (task_cpu(p) != rq_cpu)
+		sched: only output the runnable tasks rather than ALL tasks in runqueues
+		*/
+		if (!p->on_rq || task_cpu(p) != rq_cpu)
 			continue;
 
-		print_task(m, rq, p);
+		print_task_at_AEE(m, rq, p);
 	}
 	rcu_read_unlock();
 }
 
 #ifdef CONFIG_FAIR_GROUP_SCHED
-static void print_cfs_group_stats_at_KE(struct seq_file *m, int cpu, struct task_group *tg)
+static void print_cfs_group_stats_at_AEE(struct seq_file *m, int cpu, struct task_group *tg)
 {
 	struct sched_entity *se = tg->se[cpu];
 
@@ -936,13 +1000,14 @@ static void print_cfs_group_stats_at_KE(struct seq_file *m, int cpu, struct task
 }
 #endif
 
-void print_cfs_rq_at_KE(struct seq_file *m, int cpu, struct cfs_rq *cfs_rq)
+void print_cfs_rq_at_AEE(struct seq_file *m, int cpu, struct cfs_rq *cfs_rq)
 {
 	s64 MIN_vruntime = -1, min_vruntime, max_vruntime = -1,
 		spread, rq0_min_vruntime, spread0;
 	struct rq *rq = cpu_rq(cpu);
 	struct sched_entity *last;
 	unsigned long flags;
+	int locked;
 
 #ifdef CONFIG_FAIR_GROUP_SCHED
 	SEQ_printf(m, "cfs_rq[%d]:%s\n", cpu, task_group_path(cfs_rq->tg));
@@ -952,7 +1017,8 @@ void print_cfs_rq_at_KE(struct seq_file *m, int cpu, struct cfs_rq *cfs_rq)
 	SEQ_printf(m, "  .%-22s: %lld.%06ld\n", "exec_clock",
 			SPLIT_NS(cfs_rq->exec_clock));
 
-	raw_spin_lock_irqsave(&rq->lock, flags);
+	/*raw_spin_lock_irqsave(&rq->lock, flags);*/
+	locked = raw_spin_trylock_n_irqsave(&rq->lock, &flags, m, "print_cfs_rq_at_AEE");
 	if (cfs_rq->rb_leftmost)
 		MIN_vruntime = (__pick_first_entity(cfs_rq))->vruntime;
 	last = __pick_last_entity(cfs_rq);
@@ -960,7 +1026,8 @@ void print_cfs_rq_at_KE(struct seq_file *m, int cpu, struct cfs_rq *cfs_rq)
 		max_vruntime = last->vruntime;
 	min_vruntime = cfs_rq->min_vruntime;
 	rq0_min_vruntime = cpu_rq(0)->cfs.min_vruntime;
-	raw_spin_unlock_irqrestore(&rq->lock, flags);
+	if (locked)
+		raw_spin_unlock_irqrestore(&rq->lock, flags);
 	SEQ_printf(m, "  .%-22s: %lld.%06ld\n", "MIN_vruntime",
 			SPLIT_NS(MIN_vruntime));
 	SEQ_printf(m, "  .%-22s: %lld.%06ld\n", "min_vruntime",
@@ -968,13 +1035,17 @@ void print_cfs_rq_at_KE(struct seq_file *m, int cpu, struct cfs_rq *cfs_rq)
 	SEQ_printf(m, "  .%-22s: %lld.%06ld\n", "max_vruntime",
 			SPLIT_NS(max_vruntime));
 	spread = max_vruntime - MIN_vruntime;
+	/*
 	SEQ_printf(m, "  .%-22s: %lld.%06ld\n", "spread",
 			SPLIT_NS(spread));
+	*/
 	spread0 = min_vruntime - rq0_min_vruntime;
+	/*
 	SEQ_printf(m, "  .%-22s: %lld.%06ld\n", "spread0",
 			SPLIT_NS(spread0));
 	SEQ_printf(m, "  .%-22s: %d\n", "nr_spread_over",
 			cfs_rq->nr_spread_over);
+	*/
 	SEQ_printf(m, "  .%-22s: %d\n", "nr_running", cfs_rq->nr_running);
 	SEQ_printf(m, "  .%-22s: %ld\n", "load", cfs_rq->load.weight);
 #ifdef CONFIG_SMP
@@ -1003,29 +1074,32 @@ void print_cfs_rq_at_KE(struct seq_file *m, int cpu, struct cfs_rq *cfs_rq)
 #endif
 
 #ifdef CONFIG_FAIR_GROUP_SCHED
-	print_cfs_group_stats_at_KE(m, cpu, cfs_rq->tg);
+	print_cfs_group_stats_at_AEE(m, cpu, cfs_rq->tg);
 #endif
 }
 
 #define for_each_leaf_cfs_rq(rq, cfs_rq) \
 	list_for_each_entry_rcu(cfs_rq, &rq->leaf_cfs_rq_list, leaf_cfs_rq_list)
 
-void print_cfs_stats_at_KE(struct seq_file *m, int cpu)
+
+void print_cfs_stats_at_AEE(struct seq_file *m, int cpu)
 {
 	struct cfs_rq *cfs_rq;
 
 	rcu_read_lock();
-	for_each_leaf_cfs_rq(cpu_rq(cpu), cfs_rq)
-		print_cfs_rq_at_KE(m, cpu, cfs_rq);
+	cfs_rq = &cpu_rq(cpu)->cfs;
+	/*sched: only output / cgroup schedule info*/
+	print_cfs_rq_at_AEE(m, cpu, cfs_rq);
 	rcu_read_unlock();
 }
 
-void print_rt_rq_at_KE(struct seq_file *m, int cpu, struct rt_rq *rt_rq)
+void print_rt_rq_at_AEE(struct seq_file *m, int cpu, struct rt_rq *rt_rq)
 {
 #ifdef CONFIG_RT_GROUP_SCHED
-	SEQ_printf(m, "\nrt_rq[%d]:%s\n", cpu, task_group_path(rt_rq->tg));
+	int cpu_rq_throttle = rq_cpu(rt_rq->rq);
+	SEQ_printf(m, "rt_rq[%d]:%s\n", cpu, task_group_path(rt_rq->tg));
 #else
-	SEQ_printf(m, "\nrt_rq[%d]:\n", cpu);
+	SEQ_printf(m, "rt_rq[%d]:\n", cpu);
 #endif
 
 #define P(x) \
@@ -1035,13 +1109,14 @@ void print_rt_rq_at_KE(struct seq_file *m, int cpu, struct rt_rq *rt_rq)
 
 	P(rt_nr_running);
 	P(rt_throttled);
-	SEQ_printf(m, "  exec_task[%d:%s], prio=%d exec_delta_time[%llu]",
-		   per_cpu(exec_task, cpu).pid,
-		   per_cpu(exec_task, cpu).comm,
-		   per_cpu(exec_task, cpu).prio,
-		   per_cpu(exec_delta_time, cpu));
-	SEQ_printf(m, ", clock_task[%llu], exec_start[%llu]\n",
-		   per_cpu(clock_task, cpu), per_cpu(exec_start, cpu));
+
+	SEQ_printf(m, "  exec_task[%d:%s], prio=%d\n",
+			per_cpu(exec_task, cpu).pid,
+			per_cpu(exec_task, cpu).comm,
+			per_cpu(exec_task, cpu).prio);
+#ifdef CONFIG_RT_GROUP_SCHED
+	SEQ_printf(m, "  .rt_throttling_start   : [%llu]\n", per_cpu(rt_throttling_start, cpu_rq_throttle));
+#endif
 	PN(rt_time);
 	PN(rt_runtime);
 
@@ -1079,18 +1154,18 @@ typedef struct rt_rq *rt_rq_iter_t;
 
 #endif
 
-void print_rt_stats_at_KE(struct seq_file *m, int cpu)
+void print_rt_stats_at_AEE(struct seq_file *m, int cpu)
 {
-	rt_rq_iter_t iter;
 	struct rt_rq *rt_rq;
+	rt_rq = &cpu_rq(cpu)->rt;
 
 	rcu_read_lock();
-	for_each_rt_rq(rt_rq, iter, cpu_rq(cpu))
-		print_rt_rq_at_KE(m, cpu, rt_rq);
+	/*sched: only output / cgroup schedule info*/
+	print_rt_rq_at_AEE(m, cpu, rt_rq);
 	rcu_read_unlock();
 }
 
-static void print_cpu_at_KE(struct seq_file *m, int cpu)
+static void print_cpu_at_AEE(struct seq_file *m, int cpu)
 {
 	struct rq *rq = cpu_rq(cpu);
 	unsigned long flags;
@@ -1121,17 +1196,25 @@ do {									\
 	P(nr_running);
 	SEQ_printf(m, "  .%-22s: %lu\n", "load",
 		   rq->load.weight);
-	P(nr_switches);
+	/*P(nr_switches);*/
 	P(nr_load_updates);
 	P(nr_uninterruptible);
 	PN(next_balance);
 	SEQ_printf(m, "  .%-22s: %ld\n", "curr->pid", (long)(task_pid_nr(rq->curr)));
 	PN(clock);
+	SEQ_printf(m, "  .%-22s: %ld %ld %ld %ld %ld\n", "cpu_load",
+		(long)(rq->cpu_load[0]),
+		(long)(rq->cpu_load[1]),
+		(long)(rq->cpu_load[2]),
+		(long)(rq->cpu_load[3]),
+		(long)(rq->cpu_load[4]));
+	/*
 	P(cpu_load[0]);
 	P(cpu_load[1]);
 	P(cpu_load[2]);
 	P(cpu_load[3]);
 	P(cpu_load[4]);
+	*/
 #undef P
 #undef PN
 
@@ -1139,37 +1222,37 @@ do {									\
 #define P(n) SEQ_printf(m, "  .%-22s: %d\n", #n, rq->n)
 #define P64(n) SEQ_printf(m, "  .%-22s: %lld\n", #n, rq->n)
 
+	/*
 	P(yld_count);
-
 	P(sched_count);
 	P(sched_goidle);
+	*/
 #ifdef CONFIG_SMP
 	P64(avg_idle);
 	P64(max_idle_balance_cost);
 #endif
 
-	P(ttwu_count);
-	P(ttwu_local);
+	/*P(ttwu_count);
+	P(ttwu_local);*/
 
 #undef P
 #undef P64
 #endif
 	/*spin_lock_irqsave_lock_irqsave(&sched_debug_lock, flags);*/
-	locked = spin_trylock_n_irqsave(&sched_debug_lock, &flags, m, "print_cpu_at_KE");
-	print_cfs_stats_at_KE(m, cpu);
-	print_rt_stats_at_KE(m, cpu);
+	locked = spin_trylock_n_irqsave(&sched_debug_lock, &flags, m, "print_cpu_at_AEE");
+	print_cfs_stats_at_AEE(m, cpu);
+	print_rt_stats_at_AEE(m, cpu);
 
 	rcu_read_lock();
-	print_rq_at_KE(m, rq, cpu);
-	SEQ_printf(m, "======================================================");
-	SEQ_printf(m, "====================================================\n");
+	print_rq_at_AEE(m, rq, cpu);
+	SEQ_printf(m, "============================================\n");
 	rcu_read_unlock();
 	/*spin_unlock_irqrestore(&sched_debug_lock, flags);*/
 	if (locked)
 		spin_unlock_irqrestore(&sched_debug_lock, flags);
 }
 
-static void sched_debug_header_at_KE(struct seq_file *m)
+static void sched_debug_header_at_AEE(struct seq_file *m)
 {
 	u64 sched_clk, cpu_clk;
 	unsigned long flags;
@@ -1221,20 +1304,26 @@ static void sched_debug_header_at_KE(struct seq_file *m)
 	SEQ_printf(m, "\n");
 }
 
-void sysrq_sched_debug_show_at_KE(void)
+void sysrq_sched_debug_show_at_AEE(void)
 {
 	int cpu;
 	unsigned long flags;
 	int locked;
 
-	sched_debug_header_at_KE(NULL);
+	sched_debug_header_at_AEE(NULL);
 	/* read_lock_irqsave(&tasklist_lock, flags); */
-	locked = read_trylock_n_irqsave(&tasklist_lock, &flags, NULL, "sched_debug_show_at_KE");
+	locked = read_trylock_n_irqsave(&tasklist_lock, &flags, NULL, "sched_debug_show_at_AEE");
+
 	/* for_each_online_cpu(cpu) */
-	for_each_possible_cpu(cpu)
-		print_cpu_at_KE(NULL, cpu);
+	for_each_possible_cpu(cpu) {
+		print_cpu_at_AEE(NULL, cpu);
+	}
 	if (locked)
 		read_unlock_irqrestore(&tasklist_lock, flags);
 
+#ifdef CONFIG_MTPROF
+	/* sched:rt throttle monitor */
+	mt_rt_mon_print_task_from_buffer();
+#endif
 }
 /* sched: add ke log */

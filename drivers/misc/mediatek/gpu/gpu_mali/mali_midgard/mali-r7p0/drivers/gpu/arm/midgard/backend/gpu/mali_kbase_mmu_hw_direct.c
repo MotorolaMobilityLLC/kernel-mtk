@@ -26,6 +26,9 @@
 #include <backend/gpu/mali_kbase_mmu_hw_direct.h>
 #include <backend/gpu/mali_kbase_device_internal.h>
 
+/* MTK */
+#include <platform/mtk_platform_common.h>
+
 static inline u64 lock_region(struct kbase_device *kbdev, u64 pfn,
 		u32 num_pages)
 {
@@ -75,6 +78,7 @@ static int wait_ready(struct kbase_device *kbdev,
 
 	if (max_loops == 0) {
 		dev_err(kbdev->dev, "AS_ACTIVE bit stuck\n");
+		mtk_trigger_aee(kbdev->mtk_log, "AS_ACTIVE bit stuck");
 		return -1;
 	}
 

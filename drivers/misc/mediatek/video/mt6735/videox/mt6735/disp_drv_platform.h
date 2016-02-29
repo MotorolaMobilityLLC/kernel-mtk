@@ -32,9 +32,14 @@
 #define MTK_FB_SODI_SUPPORT
 
 /**
+ * SODI defeature.
+ */
+#define MTK_FB_SODI_DEFEATURE
+
+/**
  * ESD recovery support.
  */
-/* #define MTK_FB_ESD_ENABLE */
+#define MTK_FB_ESD_ENABLE
 
 /**
  * FB Ion support.
@@ -179,23 +184,14 @@ typedef enum {
  * HW_PASS_MODE: Multi-Pass, Single-Pass.
  */
 #ifdef CONFIG_MTK_GMO_RAM_OPTIMIZE
-
-	#ifdef CONFIG_MTK_WFD_SUPPORT
-		#define DISP_HW_MODE_CAP DISP_OUTPUT_CAP_DECOUPLE
-	#else
-		#define DISP_HW_MODE_CAP DISP_OUTPUT_CAP_DIRECT_LINK
-	#endif
+	#define DISP_HW_MODE_CAP DISP_OUTPUT_CAP_SWITCHABLE
 	#define DISP_HW_PASS_MODE DISP_OUTPUT_CAP_SINGLE_PASS
 
 	#ifdef OVL_TIME_SHARING
 		#undef OVL_TIME_SHARING
 	#endif
 
-	#ifdef CONFIG_MTK_WFD_SUPPORT
-		#define DISP_INTERNAL_BUFFER_COUNT 1
-	#else
-		#define DISP_INTERNAL_BUFFER_COUNT 3
-	#endif
+	#define DISP_INTERNAL_BUFFER_COUNT 1
 #else
 	#define DISP_HW_MODE_CAP DISP_OUTPUT_CAP_SWITCHABLE
 	#ifdef OVL_MULTIPASS_SUPPORT

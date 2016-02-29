@@ -823,13 +823,13 @@ INT32 mtk_wcn_consys_hw_pwr_on(UINT32 co_clock_type)
 	return iRet;
 }
 
-INT32 mtk_wcn_consys_hw_pwr_off(VOID)
+INT32 mtk_wcn_consys_hw_pwr_off(UINT32 co_clock_type)
 {
 	INT32 iRet = 0;
 
 	WMT_PLAT_INFO_FUNC("CONSYS-HW-PWR-OFF, start\n");
 
-	iRet += mtk_wcn_consys_hw_reg_ctrl(0, 0);
+	iRet += mtk_wcn_consys_hw_reg_ctrl(0, co_clock_type);
 	iRet += mtk_wcn_consys_hw_gpio_ctrl(0);
 
 	WMT_PLAT_INFO_FUNC("CONSYS-HW-PWR-OFF, finish(%d)\n", iRet);

@@ -808,8 +808,9 @@ static int asc_rx_handle_ready(void *data, int event)
 	switch (event) {
 	case AP_RX_EVENT_STOP:
 		atomic_set(&rx->state, AP_RX_ST_IDLE);
-		mod_timer(&rx->timer,
-			  jiffies + msecs_to_jiffies(ASC_RX_WAIT_IDLE_TIME));
+		asc_rx_event_send(rx, AP_RX_EVENT_IDLE_TIMEOUT);
+		/*mod_timer(&rx->timer,
+			  jiffies + msecs_to_jiffies(ASC_RX_WAIT_IDLE_TIME));*/
 		break;
 	default:
 		ASCDPRT("ignore the rx event %d in state(%s)", event,
@@ -1803,6 +1804,7 @@ int asc_tx_auto_ready(const char *name, int sync)
 	int ret = 0;
 	int try = 1;
 	long timeout = 1;
+	long cur_timeout = 0;
 	struct asc_user *user;
 	struct asc_tx_handle *tx;
 	unsigned long flags = 0;
@@ -1870,10 +1872,12 @@ int asc_tx_auto_ready(const char *name, int sync)
 		if ((AP_TX_ST_READY != atomic_read(&tx->state))
 		    || atomic_read(&tx->sleeping)) {
 			do {
-				timeout +=
-				    wait_event_interruptible_timeout
+				cur_timeout = wait_event_interruptible_timeout
 				    (tx->wait_tx_state, (AP_TX_ST_READY == atomic_read(&tx->state))
 				    && !atomic_read(&tx->sleeping), msecs_to_jiffies(20));
+				if(cur_timeout == 0)
+					cur_timeout = msecs_to_jiffies(20);
+				timeout += cur_timeout;
 /*interruptible_sleep_on(&tx->wait_tx_state);*/
 				if (AP_TX_ST_READY == atomic_read(&tx->state)) {
 					if (timeout >
@@ -1896,8 +1900,6 @@ int asc_tx_auto_ready(const char *name, int sync)
 						break;
 					}
 				} else if (try < ASC_TX_TRY_TIMES) {
-					if (timeout == 0)
-						timeout += msecs_to_jiffies(20);
 					if (timeout <=
 					    msecs_to_jiffies
 					    (ASC_TX_WAIT_READY_TIME)) {

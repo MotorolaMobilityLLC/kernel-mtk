@@ -1,5 +1,6 @@
 #ifndef __MT_I2C_H__
 #define __MT_I2C_H__
+#include <linux/i2c.h>
 #include <linux/types.h>
 #if !defined(CONFIG_MTK_CLKMGR)
 #include <linux/clk.h>
@@ -278,6 +279,7 @@ struct mt_i2c_msg {
 
 /* external API */
 
+extern void __iomem *spm_get_i2c_base(void);
 extern char *mt_i2c_bus_to_virt(unsigned long address);
 void _i2c_dump_info(struct mt_i2c_t *i2c);
 void i2c_writel(struct mt_i2c_t *i2c, u8 offset, u16 value);

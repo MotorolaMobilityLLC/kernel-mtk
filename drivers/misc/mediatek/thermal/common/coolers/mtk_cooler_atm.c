@@ -540,8 +540,15 @@ static int P_adaptive(int total_power, unsigned int gpu_loading)
 	if (cpu_power != last_cpu_power)
 		set_adaptive_cpu_power_limit(cpu_power);
 
-	if (gpu_power != last_gpu_power)
-		set_adaptive_gpu_power_limit(gpu_power);
+
+	if (gpu_power != last_gpu_power) {
+		/* Work-around for unsync GPU power table problem 1. */
+		if (gpu_power > mtk_gpu_power[0].gpufreq_power)
+			set_adaptive_gpu_power_limit(0);
+		else
+			set_adaptive_gpu_power_limit(gpu_power);
+	}
+
 
 	tscpu_dprintk("%s cpu %d, gpu %d\n", __func__, cpu_power, gpu_power);
 

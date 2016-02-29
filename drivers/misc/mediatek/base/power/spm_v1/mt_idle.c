@@ -83,6 +83,10 @@ static unsigned long rgidle_cnt[NR_CPUS] = {0};
 static bool mt_idle_chk_golden;
 static bool mt_dpidle_chk_golden;
 
+#if defined(CONFIG_MICROTRUST_TEE_SUPPORT)
+extern int is_teei_ready(void);
+#endif
+
 #define INVALID_GRP_ID(grp) (grp < 0 || grp >= NR_GRPS)
 
 
@@ -294,7 +298,11 @@ enum {
 /* Idle handler on/off */
 static int idle_switch[NR_TYPES] = {
 	1,  /* dpidle switch */
+#if defined(CONFIG_MTK_DISABLE_SODI)
+	0,  /* soidle switch */
+#else
 	1,  /* soidle switch */
+#endif
 	1,  /* slidle switch */
 	1,  /* rgidle switch */
 };
@@ -560,6 +568,7 @@ static unsigned long    soidle_block_cnt[NR_CPUS][NR_REASONS] = { {0} };
 static unsigned long long soidle_block_prev_time;
 static bool             soidle_by_pass_cg;
 static bool             soidle_by_pass_pg;
+static int				sodi_by_uptime_count;
 
 /* DeepIdle */
 static unsigned int     dpidle_block_mask[NR_GRPS] = {0x0};
@@ -627,6 +636,8 @@ static void __iomem *cksys_base;
 #define VDE_PWR_STA_MASK        BIT(7)
 #define VEN_PWR_STA_MASK        BIT(8)
 
+#define INFRA_AUDIO_PDN_STA_MASK	BIT(5)
+
 enum subsys_id {
 	SYS_VDE,
 	SYS_MFG,
@@ -679,7 +690,8 @@ static void get_all_clock_state(u32 clks[NR_GRPS])
 	if (sys_is_on(SYS_MFG))
 		clks[CG_MFG] = ~idle_readl(MFG_CG_CON); /* MFG */
 
-	clks[CG_AUDIO] = ~idle_readl(AUDIO_TOP_CON0); /* AUDIO */
+	if (clks[CG_INFRA] & INFRA_AUDIO_PDN_STA_MASK) /* check if infra_audio is on */
+		clks[CG_AUDIO] = ~idle_readl(AUDIO_TOP_CON0); /* AUDIO */
 
 	if (sys_is_on(SYS_VDE)) {
 		clks[CG_VDEC0] = idle_readl(VDEC_CKEN_SET); /* VDEC0 */
@@ -959,6 +971,17 @@ void disable_soidle_by_bit(int id)
 }
 EXPORT_SYMBOL(disable_soidle_by_bit);
 
+#if !defined(CONFIG_ARCH_MT6580)
+void defeature_soidle_by_display(void)
+{
+    if (idle_switch[IDLE_TYPE_SO] != 0)
+    {
+        idle_switch[IDLE_TYPE_SO] = 0;
+    }
+}
+EXPORT_SYMBOL(defeature_soidle_by_display);
+#endif
+
 static bool soidle_can_enter(int cpu)
 {
 	int reason = NR_REASONS;
@@ -977,6 +1000,13 @@ static bool soidle_can_enter(int cpu)
 		reason = BY_VTG;
 		goto out;
 	}
+
+#if defined(CONFIG_MICROTRUST_TEE_SUPPORT)
+	if (!is_teei_ready()) {
+		reason = BY_OTH;
+		goto out;
+	}
+#endif
 
 	/* decide when to enable SODI by display driver */
 	if (spm_get_sodi_en() == 0) {
@@ -1011,6 +1041,22 @@ static bool soidle_can_enter(int cpu)
 		goto out;
 	}
 #endif
+
+	if (sodi_by_uptime_count != -1) {
+		struct timespec uptime;
+		unsigned long val;
+
+		get_monotonic_boottime(&uptime);
+		val = (unsigned long)uptime.tv_sec;
+		if (val <= 20) {
+		    sodi_by_uptime_count++;
+		    reason = BY_OTH;
+		    goto out;
+		} else {
+		    idle_warn("SODI: blocking by uptime count = %d\n", sodi_by_uptime_count);
+		    sodi_by_uptime_count = -1;
+		}
+	}
 
 out:
 	if (reason < NR_REASONS) {
@@ -1179,6 +1225,13 @@ static bool dpidle_can_enter(void)
 		reason = BY_VTG;
 		goto out;
 	}
+
+#if defined(CONFIG_MICROTRUST_TEE_SUPPORT)
+	if (!is_teei_ready()) {
+		reason = BY_OTH;
+		goto out;
+	}
+#endif
 
 	if (dpidle_by_pass_cg == 0) {
 		memset(dpidle_block_mask, 0, NR_GRPS * sizeof(unsigned int));

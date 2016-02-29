@@ -329,8 +329,8 @@ static void __kthread_bind(struct task_struct *p, unsigned int cpu, long state)
 {
 	/* Must have done schedule() in kthread() before we set_task_cpu */
 	if (!wait_task_inactive(p, state)) {
-		pr_warn("[%s] comm=%s pid=%d task_state=%lu cpu=%d state=%lu flag=%d\n",
-			__func__, p->comm, p->pid, p->state, cpu, state, to_kthread(current)->flags);
+		pr_warn("[%s] comm=%s pid=%d task_state=%lu cpu=%d state=%lu flag=%lu\n",
+			__func__, p->comm, p->pid, p->state, cpu, state, to_kthread(p)->flags);
 		WARN_ON(1);
 		return;
 	}

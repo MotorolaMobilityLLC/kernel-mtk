@@ -353,6 +353,7 @@ typedef enum disp_clk_id {
 	DISP1_DPI_PIXEL,
 	DISP_PWM,
 	MUX_DPI0,
+	TVDPLL,
 	TVDPLL_CK,
 	TVDPLL_D2,
 	TVDPLL_D4,
@@ -372,6 +373,7 @@ int ddp_clk_disable(eDDP_CLK_ID id);
 int ddp_clk_prepare_enable(eDDP_CLK_ID id);
 int ddp_clk_disable_unprepare(eDDP_CLK_ID id);
 int ddp_clk_set_parent(eDDP_CLK_ID id, eDDP_CLK_ID parent);
+int ddp_clk_set_rate(eDDP_CLK_ID id, unsigned long rate);
 #endif
 
 extern unsigned int dispsys_irq[DISP_REG_NUM];

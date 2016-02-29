@@ -1018,12 +1018,6 @@ static INT32 wmt_dbg_lte_to_wmt_test(UINT32 opcode, UINT32 msg_len)
 static INT32 wmt_dbg_lte_coex_test(INT32 par1, INT32 par2, INT32 par3)
 {
 	UINT8 *local_buffer = NULL;
-
-	local_buffer = kmalloc(512, GFP_KERNEL);
-	if (!local_buffer) {
-			WMT_ERR_FUNC("local_buffer kmalloc memory fail\n");
-			return 0;
-	}
 	UINT32 handle_len;
 	INT32 iRet = -1;
 
@@ -1042,6 +1036,11 @@ static INT32 wmt_dbg_lte_coex_test(INT32 par1, INT32 par2, INT32 par3)
 		0xa, 0xb
 	};
 
+	local_buffer = kmalloc(512, GFP_KERNEL);
+	if (!local_buffer) {
+			WMT_ERR_FUNC("local_buffer kmalloc memory fail\n");
+			return 0;
+	}
 	if (par2 == 1) {
 		handle_len =
 		    wmt_idc_msg_to_lte_handing_for_test(&wmt_to_lte_test_evt1[0], osal_sizeof(wmt_to_lte_test_evt1));
@@ -1756,7 +1755,6 @@ long wmt_dev_tm_temp_query(void)
 		mtk_wcn_wmt_therm_ctrl(WMTTHERM_ENABLE);
 		current_temp = mtk_wcn_wmt_therm_ctrl(WMTTHERM_READ);
 		mtk_wcn_wmt_therm_ctrl(WMTTHERM_DISABLE);
-		wmt_lib_notify_stp_sleep();
 		idx_temp_table = (idx_temp_table + 1) % HISTORY_NUM;
 		temp_table[idx_temp_table] = current_temp;
 		do_gettimeofday(&query_time);

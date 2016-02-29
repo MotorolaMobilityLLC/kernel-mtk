@@ -42,6 +42,9 @@
 #endif
 
 #include <mach/mt_freqhopping.h>
+
+#include "../../smi/mmdvfs_mgr.h"
+
 /* ----------------------------------------------------------------------------- */
 static CAM_PIPE_MGR_STRUCT CamPipeMgr;
 /* ------------------------------------------------------------------------------ */
@@ -482,6 +485,7 @@ static int CamPipeMgr_Flush(struct file *pFile, fl_owner_t Id)
 }
 
 /* ----------------------------------------------------------------------------- */
+extern u32 get_devinfo_with_index(u32 index);
 static long CamPipeMgr_Ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 {
 	long int Ret;   
@@ -790,19 +794,43 @@ static long CamPipeMgr_Ioctl(struct file *pFile, unsigned int Cmd, unsigned long
 			if (copy_from_user
 			    (&vencpll_ctrlEnum, (void *)Param,
 			     sizeof(CAM_PIPE_MGR_CMD_VECNPLL_CTRL_ENUM)) == 0) {
+			    unsigned int segment_code = (get_devinfo_with_index(47) >> 25) & 0x7F;
 				LOG_MSG("VPLL CTRL(%d)", vencpll_ctrlEnum);
 				if (vencpll_ctrlEnum == CAM_PIPE_MGR_CMD_VECNPLL_CTRL_SET_HIGH) {
-					err = mt_dfs_vencpll(0x1713B1);	/* 300MHz */
-					if (err) {
-						LOG_ERR("DISABLE_PIPE SET HIGH fail");
-						Ret = -EFAULT;
+					switch (segment_code) {
+					   case 0x4A:
+					   case 0x4B:
+					   case 0x52:
+					   case 0x53:
+						mmdvfs_set_step(MMDVFS_SCEN_ISP, MMDVFS_VOLTAGE_HIGH); /* Voltage: can't be skip */
+						mmdvfs_set_mmsys_clk(MMDVFS_SCEN_ISP, MMSYS_CLK_HIGH);
+						//err = mt_dfs_vencpll(0x1713B1);	/* 300MHz */
+						break;
+					   default:
+						err = mt_dfs_vencpll(0x1713B1);	/* 300MHz */
+						if (err) {
+							LOG_ERR("DISABLE_PIPE SET HIGH fail");
+							Ret = -EFAULT;
+						}
+						break;
 					}
 				} else if (vencpll_ctrlEnum ==
 					   CAM_PIPE_MGR_CMD_VECNPLL_CTRL_SET_LOW) {
-					err = mt_dfs_vencpll(0xE0000);	/* 182MHz */
-					if (err) {
-						LOG_ERR("DISABLE_PIPE SET LOW fail");
-						Ret = -EFAULT;
+					switch (segment_code) {
+					   case 0x4A:
+					   case 0x4B:
+					   case 0x52:
+					   case 0x53:
+						mmdvfs_set_mmsys_clk(MMDVFS_SCEN_ISP, MMSYS_CLK_LOW); /* Frequency */
+						mmdvfs_set_step(MMDVFS_SCEN_ISP, MMDVFS_VOLTAGE_LOW); /* Voltage: for power saving*/
+						break;
+					   default:
+						err = mt_dfs_vencpll(0xE0000);	/* 182MHz */
+						if (err) {
+							LOG_ERR("DISABLE_PIPE SET LOW fail");
+							Ret = -EFAULT;
+						}
+						break;
 					}
 				}
 			} else {

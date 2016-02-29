@@ -15,10 +15,12 @@
 #include <mach/mt_freqhopping.h>
 #include <primary_display.h>
 #include <mt_dramc.h>
+#include <mmdvfs_mgr.h>
 
 #include "mt_vcore_dvfs.h"
 #include "mt_cpufreq.h"
 #include "mt_spm.h"
+#include "mt_ptp.h"
 
 #ifdef CONFIG_OF
 #include <linux/of.h>
@@ -275,11 +277,21 @@ unsigned int vcorefs_get_curr_voltage(void)
 
 unsigned int get_ddr_khz(void)
 {
-	unsigned int ddr_khz;
+	int freq;
 
-	ddr_khz = get_dram_data_rate() * 1000;
+	freq = get_dram_data_rate();
 
-	return ddr_khz;
+	return freq * 1000;
+}
+
+unsigned int get_ddr_khz_by_steps(unsigned int step)
+{
+	int freq;
+
+	freq = dram_fh_steps_freq(step);
+	BUG_ON(freq < 0);
+
+	return freq * 1000;
 }
 
 bool is_vcorefs_can_work(void)
@@ -751,11 +763,6 @@ bool vcorefs_sdio_need_multi_autok(void)
 	return false;
 }
 
-static bool is_fhd_segment(void)
-{
-	return DISP_GetScreenWidth() * DISP_GetScreenHeight() > SCREEN_RES_720P;
-}
-
 /*
  * init boot-up OPP from late init
  */
@@ -773,20 +780,29 @@ static void set_init_opp_index(struct vcorefs_profile *pwrctrl)
 
 static int late_init_to_lowpwr_opp(void)
 {
-	struct vcorefs_profile *pwrctrl = &vcorefs_ctrl;
+        struct vcorefs_profile *pwrctrl = &vcorefs_ctrl;
+        struct kicker_profile *kicker_ctrl_table = kicker_table;
 
 	mutex_lock(&vcorefs_mutex);
 	if (!dram_can_support_fh()) {
 		feature_en = 0;
 		vcorefs_err("*** DISABLE DVFS DUE TO NOT SUPPORT DRAM FH ***\n");
 	}
-	if (is_fhd_segment()) {
+	if (!is_mmdvfs_supported()) {
 		feature_en = 0;
-		vcorefs_err("*** DISABLE DVFS DUE TO NOT SUPPORT FHD ***\n");
+		vcorefs_err("*** DISABLE DVFS DUE TO NOT SUPPORT MMDVFS: D1 & FHD ***\n");
 	}
 
 	set_init_opp_index(pwrctrl);
-	kick_dvfs_by_opp_index(KIR_LATE_INIT, pwrctrl->late_init_opp);
+
+	if (mmdvfs_get_mmdvfs_profile() == MMDVFS_PROFILE_D1) {
+		vcorefs_crit("MMDVFS_PROFILE_D1\n");
+		kick_dvfs_by_opp_index(KIR_LATE_INIT, pwrctrl->late_init_opp);
+	} else {
+		vcorefs_crit("MMDVFS_PROFILE_D1_PLUS: Default MM HPM\n");
+		kicker_ctrl_table[KIR_MM].opp = OPPI_PERF;
+		kick_dvfs_by_opp_index(KIR_LATE_INIT, OPPI_PERF);
+	}
 
 	pwrctrl->late_init_opp_done = 1;
 
@@ -946,7 +962,7 @@ static ssize_t vcore_debug_store(struct kobject *kobj, struct kobj_attribute *at
 		mutex_lock(&vcorefs_mutex);
 		feature_en = val;
 
-		if (dram_can_support_fh() && !is_fhd_segment() && feature_en) {
+		if (dram_can_support_fh() && is_mmdvfs_supported() && feature_en) {
 			set_init_opp_index(pwrctrl);
 		} else if (!feature_en) {
 			int r = kick_dvfs_by_opp_index(KIR_SYSFS, OPPI_PERF);
@@ -1109,12 +1125,16 @@ static int init_vcorefs_pwrctrl(void)
 
 	pwrctrl->curr_ddr_khz = get_ddr_khz();
 
-	for (i = 0; i < NUM_OPP; i++) {
-		if (i == OPPI_PERF)
-			opp_ctrl_table[i].vcore_uv = pwrctrl->curr_vcore_uv;
+	vcorefs_crit("curr_vcore_uv: %u, curr_ddr_khz: %u\n", pwrctrl->curr_vcore_uv, pwrctrl->curr_ddr_khz);
 
-		if (i < OPPI_LOW_PWR)	/* update performance OPP */
-			opp_ctrl_table[i].ddr_khz = pwrctrl->curr_ddr_khz;
+	for (i = 0; i < NUM_OPP; i++) {
+		if (i == OPPI_PERF) {
+			opp_ctrl_table[i].vcore_uv = vcore_pmic_to_uv(get_vcore_ptp_volt(VCORE_1_P_15_UV));
+			opp_ctrl_table[i].ddr_khz = get_ddr_khz_by_steps(0);
+		} else if (i == OPPI_LOW_PWR) {
+			opp_ctrl_table[i].vcore_uv = vcore_pmic_to_uv(get_vcore_ptp_volt(VCORE_1_P_05_UV));
+			opp_ctrl_table[i].ddr_khz = get_ddr_khz_by_steps(1);
+		}
 
 		vcorefs_crit("OPP %d: vcore_uv = %u, ddr_khz = %u\n",
 			     i, opp_ctrl_table[i].vcore_uv, opp_ctrl_table[i].ddr_khz);
@@ -1152,5 +1172,5 @@ static int __init vcorefs_module_init(void)
 module_init(vcorefs_module_init);
 late_initcall_sync(late_init_to_lowpwr_opp);
 
-MODULE_DESCRIPTION("Vcore DVFS Driver v0.1");
+MODULE_DESCRIPTION("Vcore DVFS Driver v0.2");
 

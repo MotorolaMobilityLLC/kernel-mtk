@@ -23,6 +23,11 @@ int __weak is_ext_buck_exist(void)
 	return 0;
 }
 
+void __attribute__((weak)) __iomem *spm_get_i2c_base(void)
+{
+	return NULL;
+}
+
 /*
  * Config and Parameter
  */
@@ -480,11 +485,18 @@ void __spm_dpidle_sodi_restore_pmic_setting(u32 vsram_vosel_on_lb)
 
 #ifdef CONFIG_ARCH_MT6753
 #include <mach/mt_clkmgr.h>
+#include <linux/i2c.h>
+#include "mt_i2c.h"
 static u32 i2c4_conf_backup;
 static u32 i2c4_conf_backup1;
 void __spm_enable_i2c4_clk(void)
 {
 	if (is_ext_buck_exist()) {
+		i2c4_base = spm_get_i2c_base();
+
+		if (i2c4_base == NULL)
+			BUG();
+
 		enable_clock(MT_CG_PERI_I2C4, "suspend");
 
 		/* Backup I2C setting */
@@ -498,6 +510,11 @@ void __spm_enable_i2c4_clk(void)
 void __spm_disable_i2c4_clk(void)
 {
 	if (is_ext_buck_exist()) {
+		i2c4_base = spm_get_i2c_base();
+
+		if (i2c4_base == NULL)
+			BUG();
+
 		/* Restore I2C setting */
 		spm_write(i2c4_base + 0x48, i2c4_conf_backup1);
 		spm_write(i2c4_base + 0x10, i2c4_conf_backup);

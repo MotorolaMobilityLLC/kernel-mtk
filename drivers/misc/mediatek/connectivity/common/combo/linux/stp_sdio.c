@@ -767,9 +767,11 @@ static VOID stp_sdio_tx_rx_handling(PVOID pData)
 				if (0 == (own_fail_counter % 50)) {
 					STPSDIO_ERR_FUNC("set OWN to driver side error!\n");
 					/*trigger whole chip reset by send fake coredump content */
-					if (0 == own_fail_counter)
+					if (0 == own_fail_counter) {
+						mtk_wcn_stp_read_fw_cpupcr();
 						_stp_sdio_issue_fake_coredump
 						    ("ABT: STP-SDIO clear f/w own failed");
+					}
 				}
 				own_fail_counter++;
 			}

@@ -1188,8 +1188,21 @@ int hdmi_get_edid(void *edid_info)
 		return -EFAULT;
 	}
 
-	if (hdmi_drv->getedid)
+	if (hdmi_drv->getedid) {
 		hdmi_drv->getedid(&pv_get_info);
+
+#ifdef MHL_RESOLUTION_LIMIT_720P_60
+			pv_get_info.ui4_pal_resolution &= (~SINK_1080P60);
+			pv_get_info.ui4_pal_resolution &= (~SINK_1080P30);
+#endif
+	
+#ifdef MHL_RESOLUTION_LIMIT_1080P_30
+			if (pv_get_info.ui4_pal_resolution & SINK_1080P60) {
+				pv_get_info.ui4_pal_resolution &= (~SINK_1080P60);
+				pv_get_info.ui4_pal_resolution |= SINK_1080P30;
+			}
+#endif
+	}
 
 	if (copy_to_user(edid_info, &pv_get_info, sizeof(pv_get_info))) {
 		HDMI_LOG("copy_to_user failed! line:%d\n", __LINE__);

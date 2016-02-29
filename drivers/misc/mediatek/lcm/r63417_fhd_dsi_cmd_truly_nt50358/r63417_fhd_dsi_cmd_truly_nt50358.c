@@ -228,11 +228,16 @@ struct LCM_setting_table {
 };
 
 static struct LCM_setting_table lcm_suspend_setting[] = {
+#ifndef LCM_DSI_CMD_MODE
+	/* switch to CMD mode for fitting DSI state */
+	{0xB3, 1, {0x04} },
+	{REGFLAG_DELAY, 120, {} },
+#endif
 	{0x28, 0, {} },
 	{REGFLAG_DELAY, 20, {} },
 	{0x10, 0, {} },
-	{0xB0, 1, {0x00 } },
-	{0xB1, 1, {0x01 } },
+	{0xB0, 1, {0x00} },
+	{0xB1, 1, {0x01} },
 	{REGFLAG_DELAY, 80, {} },
 };
 
@@ -245,15 +250,38 @@ static struct LCM_setting_table lcm_initialization_setting[] = {
 	{0xD6, 1, {0x01} },
 #ifndef LCM_DSI_CMD_MODE
 	/* video mode */
-	{0xB3, 1, {0x35} },
+	{0xB3, 1, {0x14} },
 #endif
 	/* display brightness */
 	{0x51, 1, {0xFF} },
 	/* LED pwm output enable */
 	{0x53, 1, {0x0C} },
 
+#ifdef LCM_DSI_CMD_MODE
+	/* RTN setting (for change frame rate) */
+	{0xC6, 40,
+	 {0x77, 0x01, 0x71, 0x07, 0x65, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	  0x00, 0x00, 0x09, 0x19, 0x09,
+	  0x77, 0x01, 0x71, 0x07, 0x65, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	  0x00, 0x00, 0x09, 0x19, 0x09} },
+#endif
+
+	/* Analog Gamma Setting */
+	{0xC7, 30,
+	 {0x01, 0x0C, 0x14, 0x1E, 0x2D, 0x3C, 0x48, 0x58, 0x3D, 0x44, 0x4F, 0x5C, 0x65, 0x6D, 0x75,
+	  0x01, 0x0C, 0x14, 0x1D, 0x2C, 0x39, 0x44, 0x54, 0x39, 0x41, 0x4D, 0x5A, 0x63, 0x6B,
+	  0x74} },
+
+	/* Digital Gamma Setting */
+	{0xC8, 19,
+	 {0x01, 0x00, 0xFF, 0xFF, 0x00, 0xFC, 0x00, 0x00, 0xFF, 0xFF, 0x00, 0xFC, 0x00, 0x00, 0xFF,
+	  0xFF, 0x00, 0xFC, 0x00} },
+
 	/* Enable TE */
 	{0x35, 1, {0x00} },
+
+	/* mipi clock */
+	{0xB6, 2, {0x3A, 0xD3} },
 
 	/* Display ON */
 	{0x29, 0, {} },
@@ -313,10 +341,10 @@ static void lcm_get_params(LCM_PARAMS *params)
 	params->height = FRAME_HEIGHT;
 
 #ifdef LCM_DSI_CMD_MODE
-	params->dsi.mode   = CMD_MODE;
-	params->dsi.switch_mode = SYNC_PULSE_VDO_MODE;
+	params->dsi.mode = CMD_MODE;
+	params->dsi.switch_mode = SYNC_EVENT_VDO_MODE;
 #else
-	params->dsi.mode   = SYNC_PULSE_VDO_MODE;
+	params->dsi.mode = SYNC_EVENT_VDO_MODE;
 	params->dsi.switch_mode = CMD_MODE;
 #endif
 	params->dsi.switch_mode_enable = 0;
@@ -342,16 +370,16 @@ static void lcm_get_params(LCM_PARAMS *params)
 	params->dsi.vertical_active_line					= FRAME_HEIGHT;
 
 	params->dsi.horizontal_sync_active				= 10;
-	params->dsi.horizontal_backporch				= 20;
-	params->dsi.horizontal_frontporch				= 40;
+	params->dsi.horizontal_backporch				= 60;
+	params->dsi.horizontal_frontporch				= 100;
 	params->dsi.horizontal_active_pixel				= FRAME_WIDTH;
 	/* params->dsi.ssc_disable							= 1; */
 
 #ifndef CONFIG_FPGA_EARLY_PORTING
 #ifdef LCM_DSI_CMD_MODE
-	params->dsi.PLL_CLOCK = 450; /* this value must be in MTK suggested table */
+	params->dsi.PLL_CLOCK = 450;	/* this value must be in MTK suggested table */
 #else
-	params->dsi.PLL_CLOCK = 450; /* this value must be in MTK suggested table */
+	params->dsi.PLL_CLOCK = 475;	/* this value must be in MTK suggested table */
 #endif
 #else
 	params->dsi.pll_div1 = 0;

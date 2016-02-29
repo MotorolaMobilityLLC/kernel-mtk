@@ -60,6 +60,7 @@ struct mmc_ext_csd {
 	u8			packed_event_en;
 	unsigned int		part_time;		/* Units: ms */
 	unsigned int		sa_timeout;		/* Units: 100ns */
+	unsigned int		sleep_notification_time;	/* Units: 10us */
 	unsigned int		generic_cmd6_time;	/* Units: 10ms */
 	unsigned int            power_off_longtime;     /* Units: ms */
 	u8			power_off_notification;	/* state */
@@ -338,6 +339,7 @@ struct mmc_card {
 #ifdef CONFIG_MTK_EMMC_CACHE
 #define MMC_QUIRK_DISABLE_CACHE     (1<<12) /* eMMC cache feature */
 #endif
+#define MMC_QUIRK_DISABLE_SNO       (1<<13)     /* disable sleep notifation, this may cause card busy long time on some eMMC*/
 
 	unsigned int		erase_size;	/* erase size in sectors */
  	unsigned int		erase_shift;	/* if erase unit is power 2 */

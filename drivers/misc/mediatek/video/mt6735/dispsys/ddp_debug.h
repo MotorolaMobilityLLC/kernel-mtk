@@ -40,6 +40,7 @@ extern unsigned int gDisableOVLTF;
 extern unsigned int gDumpMemoutCmdq;
 
 unsigned int ddp_dump_reg_to_buf(unsigned int start_module, unsigned long *addr);
+unsigned int ddp_dump_lcm_param_to_buf(unsigned int start_module, unsigned long *addr);
 
 #define DISP_ENABLE_SODI_FOR_VIDEO_MODE
 void ddp_debug_init(void);

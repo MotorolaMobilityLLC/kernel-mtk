@@ -284,7 +284,8 @@ static void lcm_get_params(LCM_PARAMS *params)
 		params->dsi.horizontal_active_pixel = FRAME_WIDTH;
 
 		/*params->dsi.ssc_disable = 1;*/
-		params->dsi.PLL_CLOCK = 498;
+		params->dsi.PLL_CLOCK = 519;
+		params->dsi.edp_panel = 1;
 }
 
 /* --------------------------------------------------------------------------- */
@@ -360,7 +361,7 @@ static void lcm_suspend(void)
 
 static void lcm_resume(void)
 {
-	lcm_init();
+	lcm_init_lcm();
 }
 
 LCM_DRIVER sy20810800210132_wuxga_dsi_vdo_lcm_drv = {

@@ -2626,7 +2626,7 @@ int ccci_ipo_h_restore(int md_id, char buf[], unsigned int len)
 
 	/*  1. Restore memory re-mapping/MD env/WDT irq */
 	if (ccci_ipo_h_platform_restore(md_id) < 0) {
-		pr_notice("[ccci/ctl] IPO-H p1 fail\n");
+		CCCI_MSG("[ccci/ctl] IPO-H p1 fail\n");
 		return -CCCI_IPO_H_RESTORE_FAIL;
 	}
 	/* md_dsp_wdt_irq_dis(md_id); */

@@ -97,6 +97,7 @@ UINT32 GC2145MIPIClose(void);
 //e_add for porting
 //e_add for porting
 //e_add for porting
+extern void kdSetI2CSpeed(u16 i2cSpeed);
 
 
 #endif /* __SENSOR_H */

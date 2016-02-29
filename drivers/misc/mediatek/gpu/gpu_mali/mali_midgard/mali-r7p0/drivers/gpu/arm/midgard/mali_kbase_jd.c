@@ -35,6 +35,9 @@
 #include <mali_kbase_jm.h>
 #include <mali_kbase_hwaccess_jm.h>
 
+/* MTK */
+#include <platform/mtk_platform_common.h>
+
 #if defined(CONFIG_MALI_MIPE_ENABLED)
 #include <mali_kbase_tlstream.h>
 #endif
@@ -1342,10 +1345,13 @@ void kbase_jd_done_worker(struct work_struct *data)
 	}
 
 	if (katom->event_code != BASE_JD_EVENT_DONE)
+	{
 		dev_err(kbdev->dev,
 			"t6xx: GPU fault 0x%02lx from job slot %d\n",
 					(unsigned long)katom->event_code,
 								katom->slot_nr);
+		mtk_trigger_aee(kbdev->mtk_log, "t6xx: GPU fault katom->event_code != BASE_JD_EVENT_DONE");
+	}
 
 	if (kbase_hw_has_issue(kbdev, BASE_HW_ISSUE_8316))
 		kbase_as_poking_timer_release_atom(kbdev, kctx, katom);

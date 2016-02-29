@@ -3,6 +3,7 @@
 #include "psm_core.h"
 #include "btm_core.h"
 #include "stp_dbg.h"
+#include "stp_sdio.h"
 
 #define PFX                         "[STP] "
 #define STP_LOG_DBG                  4
@@ -16,7 +17,6 @@
 UINT32 gStpDbgLvl = STP_LOG_INFO;
 
 #define REMOVE_USELESS_LOG 1
-
 
 /* global variables */
 static const UINT8 stp_delimiter[STP_DEL_SIZE] = { 0x55, 0x55 };
@@ -3341,6 +3341,32 @@ VOID mtk_wcn_stp_set_bluez(MTK_WCN_BOOL bluez_flag)
 #ifndef MTK_WCN_WMT_STP_EXP_SYMBOL_ABSTRACT
 EXPORT_SYMBOL(mtk_wcn_stp_set_bluez);
 #endif
+
+/*****************************************************************************
+* FUNCTION
+*  mtk_wcn_stp_read_fw_cpupcr
+* DESCRIPTION
+*  read firmware cpupcr for debug.
+* PARAMETERS
+*  VOID
+* RETURNS
+*  VOID
+*****************************************************************************/
+VOID mtk_wcn_stp_read_fw_cpupcr(VOID)
+{
+	INT32 i_ret = 0;
+	UINT32 chlcpr_value = 0x0;
+	INT32 i;
+
+	for (i = 0; i < STP_SDIO_FW_CPUPCR_POLLING_CNT; i++) {
+		i_ret = mtk_wcn_hif_sdio_readl(g_stp_sdio_host_info.sdio_cltctx, SWPCDBGR,
+			&chlcpr_value);
+		if (i_ret)
+			STP_ERR_FUNC("read SWPCDBGR fail(%d)\n", i_ret);
+		else
+			STP_INFO_FUNC("read SWPCDBGR value(0x%x)\n", chlcpr_value);
+	}
+}
 
 /*****************************************************************************
 * FUNCTION

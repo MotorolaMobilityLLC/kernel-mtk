@@ -163,15 +163,15 @@ struct md_cd_ctrl {
 #ifdef NO_START_ON_SUSPEND_RESUME
 	unsigned short txq_started;
 #endif
-
+	struct mutex ccif_wdt_mutex;
 	atomic_t reset_on_going;
 	atomic_t wdt_enabled;
+	atomic_t ccif_irq_enabled;
 	char trm_wakelock_name[32];
 	struct wake_lock trm_wake_lock;
 	char peer_wakelock_name[32];
 	struct wake_lock peer_wake_lock;
 	struct work_struct ccif_work;
-	struct delayed_work ccif_delayed_work;
 	struct timer_list bus_timeout_timer;
 	spinlock_t cldma_timeout_lock;	/* this lock is using to protect CLDMA, not only for timeout checking */
 	struct work_struct cldma_irq_work;
@@ -218,7 +218,7 @@ struct md_cd_ctrl {
 	void __iomem *md_pll;
 	/*struct md_pll_reg md_pll_base; struct moved to platform part*/
 	struct md_pll_reg *md_pll_base;
-
+	struct tasklet_struct ccif_irq_task;
 	unsigned int cldma_irq_id;
 	unsigned int ap_ccif_irq_id;
 	unsigned int md_wdt_irq_id;

@@ -85,7 +85,8 @@ typedef void MVOID;
 
 
 /* ---------------------------------------------------------------------------- */
-#define MyTag "ISP"
+/*Note: Must match camera_isp_D2.c*/
+#define MyTag "[ISP_D2] "
 #define LOG_DBG(format, args...)    pr_debug(MyTag format, ##args)
 #define LOG_INF(format, args...)    pr_debug(MyTag format,  ##args)
 #define LOG_NOTICE(format, args...) pr_notice(MyTag format,  ##args)
@@ -4272,13 +4273,13 @@ static MINT32 ISP_WaitIrq_FrmB(ISP_WAIT_IRQ_STRUCT_FRMB * WaitIrq)
 			/*  */
 			/* v : kernel receive mark request */
 			/* o : kernel receive wait request */
-			/* ¡ô: return to user */
+			/* Â¡Ã´: return to user */
 			/*  */
 			/* case: freeze is true, and passby signal count = 0 */
 			/*  */
 			/* |                                              | */
 			/* |                                  (wait)    | */
-			/* |       v-------------o++++++ |¡ô */
+			/* |       v-------------o++++++ |Â¡Ã´ */
 			/* |                                              | */
 			/* Sig                                            Sig */
 			/*  */
@@ -4286,7 +4287,7 @@ static MINT32 ISP_WaitIrq_FrmB(ISP_WAIT_IRQ_STRUCT_FRMB * WaitIrq)
 			/*  */
 			/* |                                              | */
 			/* |                                              | */
-			/* |       v---------------------- |-o  ¡ô(return) */
+			/* |       v---------------------- |-o  Â¡Ã´(return) */
 			/* |                                              | */
 			/* Sig                                            Sig */
 			/*  */

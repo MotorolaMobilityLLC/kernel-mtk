@@ -13,6 +13,8 @@
 #include <linux/module.h>
 #include <linux/list.h>
 #include <linux/switch.h>
+#include <linux/types.h>
+#include <linux/fb.h>
 
 #include <asm/uaccess.h>
 #include <asm/atomic.h>
@@ -459,9 +461,48 @@ static struct early_suspend extd_early_suspend_handler = {
 };
 #endif
 
+static int fb_notifier_callback(struct notifier_block *p,
+				unsigned long event, void *data)
+{
+	int i = 0;
+	int blank_mode = 0;
+	struct fb_event *evdata = data;
+
+	if (event != FB_EARLY_EVENT_BLANK)
+		return 0;
+
+	blank_mode = *(int *)evdata->data;
+	EXT_MGR_LOG("[%s] - blank_mode:%d\n", __func__, blank_mode);
+
+	switch (blank_mode) {
+	case FB_BLANK_UNBLANK:
+	case FB_BLANK_NORMAL:
+		for (i = DEV_MHL; i < DEV_MAX_NUM - 1; i++) {
+			if (i != DEV_EINK && extd_driver[i]->power_enable)
+				extd_driver[i]->power_enable(1);
+		}
+
+		break;
+	case FB_BLANK_POWERDOWN:
+		for (i = DEV_MHL; i < DEV_MAX_NUM - 1; i++) {
+			if (i != DEV_EINK && extd_driver[i]->power_enable)
+				extd_driver[i]->power_enable(0);
+		}
+
+		break;
+	default:
+		EXT_MGR_ERR("[%s] - unknown blank mode!\n", __func__);
+	}
+
+	return 0;
+}
+
+static struct notifier_block notifier;
 static int __init mtk_extd_mgr_init(void)
 {
 	int i = 0;
+	int ret = 0;
+/*	struct notifier_block notifier;*/
 
 	EXT_MGR_FUNC();
 
@@ -478,6 +519,11 @@ static int __init mtk_extd_mgr_init(void)
 		EXT_MGR_ERR("[EXTD]failed to register mtkfb driver\n");
 		return -1;
 	}
+
+	notifier.notifier_call = fb_notifier_callback;
+	ret = fb_register_client(&notifier);
+	if (ret)
+		EXT_MGR_ERR("unable to register fb callback!\n");
 
 #ifdef CONFIG_HAS_EARLYSUSPEND
 	register_early_suspend(&extd_early_suspend_handler);

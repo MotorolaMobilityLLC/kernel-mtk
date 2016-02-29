@@ -23,6 +23,7 @@
 static struct task_struct *disp_irq_log_task;
 static wait_queue_head_t disp_irq_log_wq;
 static int disp_irq_log_module;
+static int disp_irq_reset_module;
 
 static int irq_init;
 
@@ -253,6 +254,21 @@ unsigned int ovl_complete_irq_cnt[2] = { 0, 0 };
 unsigned int mutex_start_irq_cnt = 0;
 unsigned int mutex_done_irq_cnt = 0;
 
+int disp_irq_get_reset_status(void)
+{
+	int ret = 0;
+
+	ret = disp_irq_reset_module;
+	disp_irq_reset_module = 0;
+
+	if ((ret & (1 << DISP_MODULE_RDMA0)) != 0)
+		DDPDUMP("IRQ: RDMA0 ERROR! start=%d, end=%d, underflow=%d, targetline=%d\n",
+			rdma_start_irq_cnt[0], rdma_done_irq_cnt[0], rdma_underflow_irq_cnt[0],
+			rdma_targetline_irq_cnt[0]);
+
+	return ret;
+}
+
 void disp_dump_emi_status(void)
 {
 #define INFRA_BASE_PA 0x10001000
@@ -474,6 +490,7 @@ irqreturn_t disp_irq_handler(int irq, void *dev_id)
 			DDPERR("IRQ: RDMA%d abnormal! cnt=%d\n", index,
 			       cnt_rdma_abnormal[index]++);
 			disp_irq_log_module |= 1 << module;
+			disp_irq_reset_module |= 1 << module;
 
 		}
 		if (reg_val & (1 << 4)) {
@@ -490,6 +507,7 @@ irqreturn_t disp_irq_handler(int irq, void *dev_id)
 			DDPERR("IRQ: RDMA%d underflow! cnt=%d\n", index,
 			       cnt_rdma_underflow[index]++);
 			disp_irq_log_module |= 1 << module;
+			disp_irq_reset_module |= 1 << module;
 			rdma_underflow_irq_cnt[index]++;
 
 		}

@@ -2105,6 +2105,11 @@ allocate_instance(struct device *dev, struct musb_hdrc_config *config, void __io
 	/* memset(musb->xceiv, 0, sizeof(struct otg_transceiver)); */
 	/* musb->xceiv->state = OTG_STATE_B_IDLE; //initial its value */
 
+#ifdef CONFIG_DEBUG_FS
+	if (usb20_phy_init_debugfs())
+		os_printk(K_ERR, "usb20_phy_init_debugfs fail!\n");
+#endif
+
 	return musb;
 }
 
@@ -2972,3 +2977,4 @@ static void __exit musb_cleanup(void)
 }
 module_exit(musb_cleanup);
 #endif
+

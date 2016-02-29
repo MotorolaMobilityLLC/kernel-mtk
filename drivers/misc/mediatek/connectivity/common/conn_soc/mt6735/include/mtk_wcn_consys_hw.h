@@ -30,7 +30,7 @@
 #define CONSYS_AHB_CLK_MAGEMENT         1
 #define CONSYS_USE_PLATFORM_WRITE       1
 #define CONSYS_PWR_ON_OFF_API_AVAILABLE 1
-#define CONSYS_CLOCK_BUF_CTRL           0
+#define CONSYS_CLOCK_BUF_CTRL           1
 #if defined(CONFIG_MTK_LEGACY)
 #define CONFIG_MTK_PMIC_LEGACY			1
 #endif
@@ -272,7 +272,7 @@ extern BT_WIFI_V33_STATUS gBtWifiV33;
 */
 extern INT32 mtk_wcn_consys_hw_init(VOID);
 extern INT32 mtk_wcn_consys_hw_deinit(VOID);
-extern INT32 mtk_wcn_consys_hw_pwr_off(VOID);
+extern INT32 mtk_wcn_consys_hw_pwr_off(UINT32 co_clock_type);
 extern INT32 mtk_wcn_consys_hw_pwr_on(UINT32 co_clock_type);
 extern INT32 mtk_wcn_consys_hw_rst(UINT32 co_clock_type);
 extern INT32 mtk_wcn_consys_hw_bt_paldo_ctrl(UINT32 enable);

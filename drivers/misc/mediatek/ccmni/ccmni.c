@@ -402,6 +402,9 @@ static int ccmni_change_mtu(struct net_device *dev, int new_mtu)
 {
 	ccmni_instance_t *ccmni = (ccmni_instance_t *)netdev_priv(dev);
 
+	if (new_mtu > CCMNI_MTU)
+		return -EINVAL;
+
 	dev->mtu = new_mtu;
 	CCMNI_INF_MSG(ccmni->md_id, "CCMNI%d change mtu_siz=%d\n", ccmni->index, new_mtu);
 	return 0;

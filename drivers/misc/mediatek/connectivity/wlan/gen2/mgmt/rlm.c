@@ -792,6 +792,8 @@ static VOID rlmFillExtCapIE(P_ADAPTER_T prAdapter, P_BSS_INFO_T prBssInfo, P_MSD
 
 	if (prAdapter->prGlueInfo->fgConnectHS20AP == TRUE)
 		prHsExtCap->ucLength = ELEM_MAX_LEN_EXT_CAP;
+	else
+		prHsExtCap->ucLength = 3 - ELEM_HDR_LEN;
 
 	kalMemZero(prHsExtCap->aucCapabilities, sizeof(prHsExtCap->aucCapabilities));
 

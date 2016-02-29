@@ -428,7 +428,7 @@ static int ITG1010_SetPowerMode(struct i2c_client *client, bool enable)
 		GYRO_LOG("set power mode failed!\n");
 		return ITG1010_ERR_I2C;
 	}
-	GYRO_LOG("set power mode ok %d!\n", enable);
+	/* GYRO_LOG("set power mode ok %d!\n", enable); */
 
 	sensor_power = enable;
 
@@ -441,7 +441,7 @@ static int ITG1010_SetDataFormat(struct i2c_client *client, u8 dataformat)
 	u8 databuf[2] = {0};
 	int res = 0;
 
-	GYRO_LOG();
+	/* GYRO_LOG(); */
 
 	databuf[0] = dataformat;
 	res = ITG1010_i2c_write_block(client, ITG1010_REG_CFG, databuf, 1);
@@ -456,7 +456,7 @@ static int ITG1010_SetDataFormat(struct i2c_client *client, u8 dataformat)
 		GYRO_ERR("read data format register err!\n");
 		return ITG1010_ERR_I2C;
 	}
-	GYRO_LOG("read  data format: 0x%x\n", databuf[0]);
+	/* GYRO_LOG("read  data format: 0x%x\n", databuf[0]); */
 
 	return ITG1010_SUCCESS;
 }
@@ -466,7 +466,7 @@ static int ITG1010_SetFullScale(struct i2c_client *client, u8 dataformat)
 	u8 databuf[2] = {0};
 	int res = 0;
 
-	GYRO_LOG();
+	/* GYRO_LOG(); */
 
 	databuf[0] = dataformat;
 	res = ITG1010_i2c_write_block(client, ITG1010_REG_GYRO_CFG, databuf, 1);
@@ -480,7 +480,7 @@ static int ITG1010_SetFullScale(struct i2c_client *client, u8 dataformat)
 		GYRO_ERR("read data format register err!\n");
 		return ITG1010_ERR_I2C;
 	}
-	GYRO_LOG("read  data format: 0x%x\n", databuf[0]);
+	/* GYRO_LOG("read  data format: 0x%x\n", databuf[0]); */
 
 	return ITG1010_SUCCESS;
 }
@@ -493,14 +493,14 @@ static int ITG1010_SetSampleRate(struct i2c_client *client, int sample_rate)
 	int rate_div = 0;
 	int res = 0;
 
-	GYRO_LOG();
+	/* GYRO_LOG(); */
 
 	res = ITG1010_i2c_read_block(client, ITG1010_REG_CFG, databuf, 1);
 	if (res != 0) {
 		GYRO_ERR("read gyro data format register err!\n");
 		return ITG1010_ERR_I2C;
 	}
-	GYRO_LOG("read  gyro data format register: 0x%x\n", databuf[0]);
+	/* GYRO_LOG("read  gyro data format register: 0x%x\n", databuf[0]); */
 
 	if ((databuf[0] & 0x07) == 0)	/* Analog sample rate is 8KHz */
 		rate_div = 8 * 1024 / sample_rate - 1;
@@ -526,7 +526,7 @@ static int ITG1010_SetSampleRate(struct i2c_client *client, int sample_rate)
 		GYRO_ERR("read gyro sample rate register err!\n");
 		return ITG1010_ERR_I2C;
 	}
-		GYRO_LOG("read  gyro sample rate: 0x%x\n", databuf[0]);
+		/* GYRO_LOG("read  gyro sample rate: 0x%x\n", databuf[0]); */
 
 	return ITG1010_SUCCESS;
 }
@@ -911,7 +911,7 @@ static int ITG1010_init_client(struct i2c_client *client, bool enable)
 	struct ITG1010_i2c_data *obj = i2c_get_clientdata(client);
 	int res = 0;
 
-	GYRO_LOG();
+	/* GYRO_LOG(); */
 	ITG1010_gpio_config();
 
 	res = ITG1010_SetPowerMode(client, true);
@@ -934,7 +934,7 @@ static int ITG1010_init_client(struct i2c_client *client, bool enable)
 	if (res != ITG1010_SUCCESS)
 		return res;
 
-	GYRO_LOG("ITG1010_init_client OK!\n");
+	/* GYRO_LOG("ITG1010_init_client OK!\n"); */
 
 #ifdef CONFIG_ITG1010_LOWPASS
 	memset(&obj->fir, 0x00, sizeof(obj->fir));

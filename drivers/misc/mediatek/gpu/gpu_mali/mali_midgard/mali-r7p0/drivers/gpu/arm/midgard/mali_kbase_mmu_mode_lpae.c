@@ -114,22 +114,22 @@ static void mmu_disable_as(struct kbase_device *kbdev, int as_nr)
 	kbase_mmu_hw_configure(kbdev, as, NULL);
 }
 
-static phys_addr_t pte_to_phy_addr(u64 entry)
-{
-	if (!(entry & 1))
-		return 0;
-
-	return entry & ~0xFFF;
-}
-
-static int ate_is_valid(u64 ate)
+static inline int ate_is_valid(u64 ate)
 {
 	return ((ate & ENTRY_TYPE_MASK) == ENTRY_IS_ATE);
 }
 
-static int pte_is_valid(u64 pte)
+static inline int pte_is_valid(u64 pte)
 {
 	return ((pte & ENTRY_TYPE_MASK) == ENTRY_IS_PTE);
+}
+
+static phys_addr_t pte_to_phy_addr(u64 entry)
+{
+	if (!pte_is_valid(entry))
+		return 0;
+
+	return entry & MIDGARD_MMU_PA_MASK;
 }
 
 /*
@@ -174,7 +174,7 @@ static void entry_set_pte(u64 *entry, phys_addr_t phy)
 
 static void entry_invalidate(u64 *entry)
 {
-	page_table_entry_set(entry, ENTRY_IS_INVAL);
+	page_table_entry_set(entry, ENTRY_IS_INVAL | ((*entry) & ~0x3));
 }
 
 static struct kbase_mmu_mode const lpae_mode = {

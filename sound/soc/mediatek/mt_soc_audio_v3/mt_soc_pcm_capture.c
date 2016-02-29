@@ -64,6 +64,8 @@ AFE_MEM_CONTROL_T  *VUL_Control_context;
 static struct snd_dma_buffer *Capture_dma_buf;
 static AudioDigtalI2S *mAudioDigitalI2S;
 static bool mCaptureUseSram;
+static bool mCapturePrepare;
+
 static DEFINE_SPINLOCK(auddrv_ULInCtl_lock);
 
 /*
@@ -100,13 +102,13 @@ static void StopAudioCaptureHardware(struct snd_pcm_substream *substream)
 
 	/* here to set interrupt */
 
-	SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_IN_ADC, false);
-	if (GetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_IN_ADC) == false)
-		SetI2SAdcEnable(false);
-
 	SetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_VUL, false);
 
 	SetIrqEnable(Soc_Aud_IRQ_MCU_MODE_IRQ2_MCU_MODE, false);
+
+	SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_IN_ADC, false);
+	if (GetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_IN_ADC) == false)
+		SetI2SAdcEnable(false);
 
 	/* here to turn off digital part */
 	SetConnection(Soc_Aud_InterCon_DisConnect, Soc_Aud_InterConnectionInput_I03, Soc_Aud_InterConnectionOutput_O09);
@@ -196,6 +198,10 @@ static void StartAudioCaptureHardware(struct snd_pcm_substream *substream)
 
 static int mtk_capture_pcm_prepare(struct snd_pcm_substream *substream)
 {
+	/*if (mCapturePrepare == false)
+		SetMemifSubStream(Soc_Aud_Digital_Block_MEM_VUL, substream);*/
+
+	mCapturePrepare = true;
 	return 0;
 }
 
@@ -413,6 +419,8 @@ static int mtk_capture_pcm_close(struct snd_pcm_substream *substream)
 	}
 	AudDrv_ADC_Clk_Off();
 	AudDrv_Clk_Off();
+	/*RemoveMemifSubStream(Soc_Aud_Digital_Block_MEM_VUL, substream);*/
+	mCapturePrepare = false;
 	return 0;
 }
 
@@ -700,6 +708,7 @@ static int mtk_asoc_capture_pcm_new(struct snd_soc_pcm_runtime *rtd)
 static int mtk_afe_capture_probe(struct snd_soc_platform *platform)
 {
 	pr_warn("mtk_afe_capture_probe\n");
+	mCapturePrepare = false;
 	AudDrv_Allocate_mem_Buffer(platform->dev, Soc_Aud_Digital_Block_MEM_VUL, UL1_MAX_BUFFER_SIZE);
 	Capture_dma_buf =  Get_Mem_Buffer(Soc_Aud_Digital_Block_MEM_VUL);
 	mAudioDigitalI2S =  kzalloc(sizeof(AudioDigtalI2S), GFP_KERNEL);

@@ -3,3 +3,15 @@ config MTK_EMI_BWL
   default y
   help
     This enable MTK_EMI_BWL
+
+config MTK_EMI_D1P
+  bool "CONFIG_MTK_EMI for MT6737T"
+  default n
+  help
+    Config MTK_EMI_D1P
+
+config MTK_EMI_D2P
+  bool "CONFIG_MTK_EMI for MT6737M"
+  default n
+  help
+    Config MTK_EMI_D2P

@@ -72,7 +72,6 @@ static struct kbase_io_resources io_resources = {
 #endif /* CONFIG_OF */
 
 unsigned int g_power_off_gpu_freq_idx;
-unsigned int g_power_status;
 extern unsigned int g_type_T;
 
 static int pm_callback_power_on(struct kbase_device *kbdev)
@@ -100,6 +99,7 @@ static int pm_callback_power_on(struct kbase_device *kbdev)
 	}
 
 	mt_gpufreq_voltage_enable_set(1);
+	mtk_set_vgpu_power_on_flag(MTK_VGPU_POWER_ON); // the power status is "power on".
 #ifdef ENABLE_COMMON_DVFS
     ged_dvfs_gpu_clock_switch_notify(1);
 #endif
@@ -158,7 +158,6 @@ if (0x321 == code) {
 #endif /* CONFIG_MTK_CLKMGR */
 	}
 
-	g_power_status = 1; // the power status is "power on".
 	mt_gpufreq_target(g_power_off_gpu_freq_idx);
 	current_gpu_freq_idx = mt_gpufreq_get_cur_freq_index();
 	if( current_gpu_freq_idx > g_power_off_gpu_freq_idx)
@@ -255,8 +254,6 @@ static void pm_callback_power_off(struct kbase_device *kbdev)
 		printk("[MALI]!!!!MFG(GPU) subsys is still BUSY!!!!!, polling_count=%d\n", polling_count);
 	}
 
-	g_power_status = 0; // the power status is "power off".
-
 	g_power_off_gpu_freq_idx = mt_gpufreq_get_cur_freq_index(); // record current freq. index.
 	//printk("MALI:  GPU power off freq idx : %d\n",g_power_off_gpu_freq_idx );
 #if 1
@@ -302,6 +299,7 @@ static void pm_callback_power_off(struct kbase_device *kbdev)
 #ifdef ENABLE_COMMON_DVFS
     ged_dvfs_gpu_clock_switch_notify(0);
 #endif
+	mtk_set_vgpu_power_on_flag(MTK_VGPU_POWER_OFF); // the power status is "power off".
 #endif
 }
 
@@ -407,6 +405,23 @@ static int mtk_platform_device_probe(struct platform_device *pdev, struct kbase_
 int mtk_platform_init(struct platform_device *pdev, struct kbase_device *kbdev)
 {
 	int ret = 0;
+	unsigned int gpu_efuse;
+	unsigned int code;
+	extern int g_mtk_gpu_efuse_set_already;
+	
+	code = mt_get_chip_hw_code();
+
+	kbasep_pm_read_present_cores(kbdev);
+	gpu_efuse = (get_devinfo_with_index(3) >> 7)&0x01;
+	if( gpu_efuse == 1 )
+		kbdev->pm.debug_core_mask = (u64)1;	 // 1-core
+	else
+		kbdev->pm.debug_core_mask = (u64)3;	 // 2-core
+		
+	if (0x337 == code) //For MT6753 3-core
+		kbdev->pm.debug_core_mask = (u64)7;
+
+	g_mtk_gpu_efuse_set_already = 1;
 
 	ret = mtk_platform_device_probe(pdev, kbdev);
 

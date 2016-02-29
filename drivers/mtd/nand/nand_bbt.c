@@ -70,6 +70,7 @@
 #include <linux/vmalloc.h>
 #include <linux/export.h>
 #include <linux/string.h>
+#include <asm/div64.h>
 
 #define BBT_BLOCK_GOOD		0x00
 #define BBT_BLOCK_WORN		0x01
@@ -1151,6 +1152,10 @@ static int nand_update_bbt(struct mtd_info *mtd, loff_t offs)
 	uint8_t *buf;
 	struct nand_bbt_descr *td = this->bbt_td;
 	struct nand_bbt_descr *md = this->bbt_md;
+#if defined(CONFIG_MTK_TLC_NAND_SUPPORT)
+	loff_t temp;
+#endif
+
 
 	if (!this->bbt || !td)
 		return -EINVAL;
@@ -1164,7 +1169,15 @@ static int nand_update_bbt(struct mtd_info *mtd, loff_t offs)
 
 	/* Do we have a bbt per chip? */
 	if (td->options & NAND_BBT_PERCHIP) {
+		#if defined(CONFIG_MTK_TLC_NAND_SUPPORT)
+		temp = mtk_nand_device_size();
+		if (offs >= temp)
+			chip = 1;
+		else
+			chip = 0;
+		#else
 		chip = (int)(offs >> this->chip_shift);
+		#endif
 		chipsel = chip;
 	} else {
 		chip = 0;

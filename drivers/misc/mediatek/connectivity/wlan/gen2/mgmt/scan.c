@@ -1605,7 +1605,9 @@ P_BSS_DESC_T scanAddToBssDesc(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfb)
 				break;
 			/* 4 <1.2.2> Hidden is useless, remove the oldest hidden ssid. (for passive scan) */
 			scanRemoveBssDescsByPolicy(prAdapter,
-						   (SCN_RM_POLICY_EXCLUDE_CONNECTED | SCN_RM_POLICY_OLDEST_HIDDEN));
+						   (SCN_RM_POLICY_EXCLUDE_CONNECTED |
+							SCN_RM_POLICY_OLDEST_HIDDEN |
+							SCN_RM_POLICY_TIMEOUT));
 
 			/* 4 <1.2.3> Second tail of allocation */
 			prBssDesc = scanAllocateBssDesc(prAdapter);
@@ -1679,6 +1681,8 @@ P_BSS_DESC_T scanAddToBssDesc(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfb)
 #if 1
 
 	prBssDesc->u2RawLength = prSwRfb->u2PacketLen;
+	if (prBssDesc->u2RawLength > CFG_RAW_BUFFER_SIZE)
+		prBssDesc->u2RawLength = CFG_RAW_BUFFER_SIZE;
 	kalMemCopy(prBssDesc->aucRawBuf, prWlanBeaconFrame, prBssDesc->u2RawLength);
 #endif
 

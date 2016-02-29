@@ -774,7 +774,7 @@ static void __disable_runtime(struct rq *rq)
 			/*
 			 * Can't reclaim from ourselves or disabled runqueues.
 			 */
-			if (iter == rt_rq || iter->rt_runtime == RUNTIME_INF || iter->rt_disable_borrow) {
+			if (iter == rt_rq || iter->rt_runtime == RUNTIME_INF) {
 #ifdef MTK_DEBUG_CGROUP
 				pr_warn("1. disable_runtime, cpu=%d, %llu\n",
 					i, iter->rt_runtime);
@@ -840,6 +840,21 @@ balanced:
 		/* sched:  prevent normal task could run anymore, use rt_disable_borrow */
 		/* rt_rq->rt_runtime = RUNTIME_INF; */
 		rt_rq->rt_runtime = rt_b->rt_runtime;
+
+		/* sched: set rt_runtime =0 and print __disable_runtime rt_throttled*/
+		if (1 == rt_rq->rt_throttled) {
+			u64 rt_time_pre;
+
+			rt_time_pre = rt_rq->rt_time;
+			rt_rq->rt_time = 0;
+			rt_rq->rt_throttled = 0;
+			printk_deferred("sched: disable_runtime: RT throttling inactivated, cpu=%d\n",
+				rq->cpu);
+			printk_deferred("sched: cpu=%d, rt_time[%llu -> %llu], rt_throttled = %d\n",
+				rq->cpu, rt_time_pre, rt_rq->rt_time, rt_rq->rt_throttled);
+			printk_deferred("sched: rt_runtime=[%llu]\n",
+				rt_rq->rt_runtime);
+		}
 		rt_rq->rt_throttled = 0;
 #ifdef MTK_DEBUG_CGROUP
 		{
@@ -883,15 +898,13 @@ static void __enable_runtime(struct rq *rq)
 
 		raw_spin_lock(&rt_b->rt_runtime_lock);
 		raw_spin_lock(&rt_rq->rt_runtime_lock);
-		if (rt_rq->rt_disable_borrow) {
 #ifdef MTK_DEBUG_CGROUP
-			pr_warn("enable_runtime %d\n", rq->cpu);
+		pr_warn("enable_runtime %d\n", rq->cpu);
 #endif
-			rt_rq->rt_runtime = rt_b->rt_runtime;
-			rt_rq->rt_time = 0;
-			rt_rq->rt_throttled = 0;
-			rt_rq->rt_disable_borrow = 0;
-		}
+		rt_rq->rt_runtime = rt_b->rt_runtime;
+		rt_rq->rt_time = 0;
+		rt_rq->rt_throttled = 0;
+
 		raw_spin_unlock(&rt_rq->rt_runtime_lock);
 		raw_spin_unlock(&rt_b->rt_runtime_lock);
 	}
@@ -972,8 +985,7 @@ static int do_sched_rt_period_timer(struct rt_bandwidth *rt_b, int overrun)
 			}
 			if (rt_rq->rt_throttled && rt_rq->rt_time < runtime) {
 				/* sched:print throttle*/
-				printk_deferred("sched: RT throttling inactivated");
-				printk_deferred(" cpu=%d\n", i);
+				printk_deferred("sched: RT throttling inactivated cpu=%d\n", i);
 				rt_rq->rt_throttled = 0;
 				mt_sched_printf(sched_rt_info, "cpu=%d rt_throttled=%d",
 						rq_cpu(rq), rq->rt.rt_throttled);
@@ -1020,6 +1032,7 @@ static inline int rt_se_prio(struct sched_rt_entity *rt_se)
 	return rt_task_of(rt_se)->prio;
 }
 /* sched:add rt exec info*/
+DEFINE_PER_CPU(u64, rt_throttling_start);
 DEFINE_PER_CPU(u64, exec_delta_time);
 DEFINE_PER_CPU(u64, clock_task);
 DEFINE_PER_CPU(u64, exec_start);
@@ -1058,7 +1071,7 @@ static int sched_rt_runtime_exceeded(struct rt_rq *rt_rq)
 		printk_deferred(", clock_task[%llu], exec_start[%llu]\n",
 				per_cpu(clock_task, cpu), per_cpu(exec_start, cpu));
 #endif
-		/*
+	/*
 		 * Don't actually throttle groups that have no runtime assigned
 		 * but accrue some time due to boosting.
 		 */
@@ -1066,8 +1079,11 @@ static int sched_rt_runtime_exceeded(struct rt_rq *rt_rq)
 			rt_rq->rt_throttled = 1;
 			/* sched:print throttle every time*/
 			printk_deferred("sched: RT throttling activated\n");
+#ifdef CONFIG_RT_GROUP_SCHED
 			mt_sched_printf(sched_rt_info, "cpu=%d rt_throttled=%d",
 					cpu, rt_rq->rt_throttled);
+			per_cpu(rt_throttling_start, cpu) = rq_clock_task(rt_rq->rq);
+#endif
 #ifdef CONFIG_MTPROF
 			/* sched:rt throttle monitor */
 			mt_rt_mon_switch(MON_STOP);
@@ -1674,23 +1690,6 @@ pick_next_task_rt(struct rq *rq, struct task_struct *prev)
 			list_for_each_entry(rt_se, array->queue + idx, run_list) {
 				p = rt_task_of(rt_se);
 				if ((p->rt_priority == prio) && (0 == strncmp(p->comm, "wdtk", 4))) {
-					p->se.exec_start = rq->clock_task;
-					if (prev != p) {
-						printk_deferred("sched: unthrottle %d:%s state=%lu\n",
-							p->pid, p->comm, p->state);
-					}
-					goto found;
-				}
-			}
-		}
-
-		/*sched: prevent hps_main from RT throttle */
-		idx = 2;
-		prio = MAX_RT_PRIO - 1 - idx;
-		if (test_bit(idx, array->bitmap)) {
-			list_for_each_entry(rt_se, array->queue + idx, run_list) {
-				p = rt_task_of(rt_se);
-				if ((p->rt_priority == prio) && (0 == strncmp(p->comm, "hps_main", 8))) {
 					p->se.exec_start = rq->clock_task;
 					if (prev != p) {
 						printk_deferred("sched: unthrottle %d:%s state=%lu\n",

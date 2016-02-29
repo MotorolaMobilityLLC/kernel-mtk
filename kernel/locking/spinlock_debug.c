@@ -16,6 +16,9 @@
 #include <linux/kernel.h>
 #include <linux/printk.h>
 #include <mt-plat/aee.h>
+#ifdef CONFIG_MTPROF
+#include "mt_sched_mon.h"
+#endif
 
 void __raw_spin_lock_init(raw_spinlock_t *lock, const char *name,
 			  struct lock_class_key *key)
@@ -139,14 +142,21 @@ static void __spin_lock_debug(raw_spinlock_t *lock)
 	char aee_str[50];
 	unsigned long long t1, t2, t3;
 	struct task_struct *owner = NULL;
+#ifdef CONFIG_MTPROF
+	MT_trace_raw_spin_lock_s(lock);
+#endif
 
 	t1 = sched_clock();
 	t2 = t1;
 
 	for (;;) {
 		for (i = 0; i < loops; i++) {
-			if (arch_spin_trylock(&lock->raw_lock))
+			if (arch_spin_trylock(&lock->raw_lock)) {
+#ifdef CONFIG_MTPROF
+				MT_trace_raw_spin_lock_e(lock);
+#endif
 				return;
+			}
 			__delay(1);
 		}
 		t3 = sched_clock();

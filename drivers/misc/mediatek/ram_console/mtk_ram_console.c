@@ -1477,6 +1477,12 @@ last_rr_show_cpu_t aee_rr_show_cpu[] = {
 	aee_rr_show_cpu_dormant,
 };
 
+last_rr_show_t aee_rr_last_xxx[] = {
+	aee_rr_show_last_pc,
+	aee_rr_show_last_bus,
+	aee_rr_show_suspend_debug_flag
+};
+
 #define array_size(x) (sizeof(x) / sizeof((x)[0]))
 int aee_rr_reboot_reason_show(struct seq_file *m, void *v)
 {
@@ -1484,6 +1490,9 @@ int aee_rr_reboot_reason_show(struct seq_file *m, void *v)
 
 	if (ram_console_check_header(ram_console_old)) {
 		seq_puts(m, "NO VALID DATA.\n");
+		seq_puts(m, "Only try to dump last_XXX.\n");
+		for (i = 0; i < array_size(aee_rr_last_xxx); i++)
+			aee_rr_last_xxx[i] (m);
 		return 0;
 	}
 	for (i = 0; i < array_size(aee_rr_show); i++)

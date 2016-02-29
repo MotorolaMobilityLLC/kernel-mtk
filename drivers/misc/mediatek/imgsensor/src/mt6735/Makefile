@@ -27,7 +27,11 @@ obj-y                           += camera_hw/
 endif
 
 $(foreach drv,$(subst $\",,$(CONFIG_CUSTOM_KERNEL_IMGSENSOR)),$(eval $(call FILTER_PROJECT_DRV,$(drv))))
+ifeq ($(CONFIG_MTK_EFUSE_DOWNGRADE),y)
+custom_kernel_imgsensor_by_platform := $(addsuffix /, $(shell echo $(subst imx135_mipi_raw_5mp,imx135_mipi_raw_5mp_cap24fps,$(platform_drv))))
+else
 custom_kernel_imgsensor_by_platform := $(addsuffix /, $(shell echo $(platform_drv)))
+endif
 custom_kernel_imgsensor_by_project := $(addsuffix /, $(shell echo $(project_drv)))
 
 obj-y += $(custom_kernel_imgsensor_by_platform)

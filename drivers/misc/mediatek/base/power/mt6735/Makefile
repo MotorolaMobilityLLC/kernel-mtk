@@ -11,6 +11,7 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/video/include/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/cmdq/v2/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/cmdq/v2/$(MTK_PLATFORM)/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/lcm/inc/
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/smi/
 endif
 
 obj-y += mt_pm_init.o

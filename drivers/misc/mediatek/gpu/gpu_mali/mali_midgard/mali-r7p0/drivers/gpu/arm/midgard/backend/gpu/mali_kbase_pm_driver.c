@@ -1264,6 +1264,17 @@ int kbase_pm_init_hw(struct kbase_device *kbdev, unsigned int flags)
 	dev_err(kbdev->dev, "Failed to soft-reset GPU (timed out after %d ms), now attempting a hard reset\n",
 								RESET_TIMEOUT);
 	KBASE_TRACE_ADD(kbdev, CORE_GPU_HARD_RESET, NULL, NULL, 0u, 0);
+
+#ifdef MTK_MT6797_DEBUG
+	{
+#define MFG_PROT_MASK                    (0x1 << 21)
+		int spm_topaxi_protect(unsigned int mask_value, int en);
+
+		/* set bus protect */
+		spm_topaxi_protect(MFG_PROT_MASK, 1);
+	}
+#endif
+
 	kbase_reg_write(kbdev, GPU_CONTROL_REG(GPU_COMMAND),
 						GPU_COMMAND_HARD_RESET, NULL);
 
@@ -1275,6 +1286,18 @@ int kbase_pm_init_hw(struct kbase_device *kbdev, unsigned int flags)
 
 	/* Wait for the RESET_COMPLETED interrupt to be raised */
 	kbase_pm_wait_for_reset(kbdev);
+
+#ifdef MTK_MT6797_DEBUG
+	{
+		void mtk_debug_mfg_reset(void);
+		int spm_topaxi_protect(unsigned int mask_value, int en);
+
+		/* MTK: MFG_RESET */
+		mtk_debug_mfg_reset();
+		/* release bus protect */
+		spm_topaxi_protect(MFG_PROT_MASK, 0);
+	}
+#endif
 
 	if (rtdata.timed_out == 0) {
 		/* GPU has been reset */

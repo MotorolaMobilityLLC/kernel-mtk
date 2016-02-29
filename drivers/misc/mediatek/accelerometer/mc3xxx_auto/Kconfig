@@ -1,0 +1,19 @@
+config MTK_MC3XXX_AUTO
+	bool "MC3xxx for MediaTek package"
+	default n
+	help
+	  It support different accelerometer sensor.
+          If this option is set,
+	  it will support
+          MC3xxx Accelerometer.
+
+config CUSTOM_KERNEL_SENSORHUB
+	bool "MTK_MC3XXX_AUTO for Mediatek package"
+	default n
+	help
+	Say Y here if you have MTK_MC3XXX_AUTO touch panel CUSTOM_KERNEL_SENSORHUB.
+
+	If unsure, say N.
+
+	To compile this dirver as a module, choose M here: the
+	module will be called.

@@ -136,9 +136,18 @@
 #define BASE_MAX_NR_AS              16
 
 /* mmu */
-#define MIDGARD_MMU_VA_BITS 48
+#define MIDGARD_MMU_PAGE_SIZE 12
+#define MIDGARD_MMU_PAGE_MASK ((1ULL << MIDGARD_MMU_PAGE_SIZE) - 1)
 
-#if MIDGARD_MMU_VA_BITS > 39
+#define MIDGARD_MMU_PA_BITS_NUM 48
+#define MIDGARD_MMU_PA_MASK \
+	(((1ULL << MIDGARD_MMU_PA_BITS_NUM) - 1) & ~MIDGARD_MMU_PAGE_MASK)
+
+#define MIDGARD_MMU_VA_BITS_NUM 48
+#define MIDGARD_MMU_VA_MASK \
+	(((1ULL << MIDGARD_MMU_VA_BITS_NUM) - 1) & ~MIDGARD_MMU_PAGE_MASK)
+
+#if MIDGARD_MMU_VA_BITS_NUM > 39
 #define MIDGARD_MMU_TOPLEVEL    0
 #else
 #define MIDGARD_MMU_TOPLEVEL    1
@@ -766,6 +775,18 @@ struct kbase_mem_pool {
 
 #define DEVNAME_SIZE	16
 
+/* trace page map and unmap*/
+#define TRACE_MAP_COUNT	512
+/* trace mmu register access */
+#define TRACE_MMU_REG_COUNT 256
+
+struct gpu_fault_event {
+
+	struct work_struct gpu_fault_work;
+	u64 gpu_fault_address;
+};
+
+
 struct kbase_device {
 	s8 slot_submit_count_irq[BASE_JM_MAX_NR_SLOTS];
 
@@ -1022,8 +1043,10 @@ struct kbase_device {
 	bool secure_mode_support;
 
 
-	/* MTK */
+	/*  MTK  */
 	void *mtk_config;
+	/*  MTK: gedlog  */
+	unsigned int mtk_log;
 
 #ifdef CONFIG_MALI_DEBUG
 	wait_queue_head_t driver_inactive_wait;
@@ -1036,7 +1059,18 @@ struct kbase_device {
 	 */
 	struct bus_logger_client *buslogger;
 #endif
+	u8 debug_gpu_page_tables;
+
+	/* MMU register trace */
+	u32 mmu_reg_trace[2][TRACE_MMU_REG_COUNT];
+	u32 mmu_reg_trace_index;
+	
+	struct workqueue_struct *gpu_fault_wq;
+	struct gpu_fault_event gpu_fault_events;
+
 };
+
+
 
 /* JSCTX ringbuffer size must always be a power of 2 */
 #define JSCTX_RB_SIZE 256
@@ -1199,6 +1233,12 @@ struct kbase_context {
 	struct list_head completed_jobs;
 	/* Number of work items currently pending on job_done_wq */
 	atomic_t work_count;
+
+	u64 map_pa_trace[2][TRACE_MAP_COUNT];	/*VA-PA*/
+	u64 unmap_pa_trace[2][TRACE_MAP_COUNT];
+	u32 map_pa_trace_index;
+	u32 unmap_pa_trace_index;
+	char process_name[256];
 };
 
 enum kbase_reg_access_type {

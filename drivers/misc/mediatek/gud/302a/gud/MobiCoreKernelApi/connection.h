@@ -54,7 +54,7 @@ size_t connection_read_datablock(struct connection *conn, void *buffer,
 					uint32_t len);
 size_t connection_read_data(struct connection *conn, void *buffer,
 				   uint32_t len, int32_t timeout);
-size_t connection_write_data(struct connection *conn, void *buffer,
+int connection_write_data(struct connection *conn, void *buffer,
 				    uint32_t len);
 int connection_process(struct connection *conn, struct sk_buff *skb);
 

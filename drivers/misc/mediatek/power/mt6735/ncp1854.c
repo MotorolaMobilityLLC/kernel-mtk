@@ -584,7 +584,7 @@ static void ncp1854_parse_customer_setting(void)
 
 	pinctrl_select_state(pinctrl, pinctrl_drvvbus_init);
 	pinctrl_select_state(pinctrl, pinctrl_drvvbus_low);
-
+	devm_pinctrl_put(pinctrl);
 	battery_log(BAT_LOG_FULL, "[%s]pinctrl_select_state success\n", __func__);
 #endif
 }

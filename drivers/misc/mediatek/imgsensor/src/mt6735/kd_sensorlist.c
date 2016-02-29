@@ -1432,17 +1432,43 @@ static inline int adopt_CAMERA_HW_CheckIsAlive(void)
 ********************************************************************************/
 static inline int adopt_CAMERA_HW_GetResolution(void *pBuf)
 {
-	/* ToDo: remove print */
-	ACDK_SENSOR_PRESOLUTION_STRUCT *pBufResolution = (ACDK_SENSOR_PRESOLUTION_STRUCT *)pBuf;
-	PK_XLOG_INFO("[CAMERA_HW] adopt_CAMERA_HW_GetResolution, pBuf: %p\n", pBuf);
-
-	if (g_pSensorFunc) {
-		g_pSensorFunc->SensorGetResolution(pBufResolution->pResolution);
-	} else {
-		PK_DBG("[CAMERA_HW]ERROR:NULL g_pSensorFunc\n");
+    /* ToDo: remove print */
+    ACDK_SENSOR_PRESOLUTION_STRUCT *pBufResolution =  (ACDK_SENSOR_PRESOLUTION_STRUCT *)pBuf;
+	ACDK_SENSOR_RESOLUTION_INFO_STRUCT* pRes[2] = { NULL, NULL };
+    PK_XLOG_INFO("[CAMERA_HW] adopt_CAMERA_HW_GetResolution, pBuf: %p\n", pBuf);
+	pRes[0] = (ACDK_SENSOR_RESOLUTION_INFO_STRUCT* )kmalloc(sizeof(MSDK_SENSOR_RESOLUTION_INFO_STRUCT), GFP_KERNEL);
+	if (pRes[0] == NULL) {
+		PK_ERR(" ioctl allocate mem failed\n");
+		return -ENOMEM;
+	}
+	pRes[1] = (ACDK_SENSOR_RESOLUTION_INFO_STRUCT* )kmalloc(sizeof(MSDK_SENSOR_RESOLUTION_INFO_STRUCT), GFP_KERNEL);
+	if (pRes[1] == NULL) {
+		kfree(pRes[0]);
+		PK_ERR(" ioctl allocate mem failed\n");
+		return -ENOMEM;
 	}
 
-	return 0;
+
+    if (g_pSensorFunc) {
+		g_pSensorFunc->SensorGetResolution(pRes);
+		if (copy_to_user((void __user *) (pBufResolution->pResolution[0]) , (void *)pRes[0] , sizeof(MSDK_SENSOR_RESOLUTION_INFO_STRUCT))) {
+			PK_ERR("copy to user failed\n");
+		}
+		if (copy_to_user((void __user *) (pBufResolution->pResolution[1]) , (void *)pRes[1] , sizeof(MSDK_SENSOR_RESOLUTION_INFO_STRUCT))) {
+			PK_ERR("copy to user failed\n");
+		}
+    }
+    else {
+    PK_DBG("[CAMERA_HW]ERROR:NULL g_pSensorFunc\n");
+    }
+	if (pRes[0] != NULL) {
+		kfree(pRes[0]);
+	}
+	if (pRes[1] != NULL) {
+		kfree(pRes[1]);
+	}
+
+    return 0;
 }   /* adopt_CAMERA_HW_GetResolution() */
 
 

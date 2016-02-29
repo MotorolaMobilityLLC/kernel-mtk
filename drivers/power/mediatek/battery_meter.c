@@ -175,7 +175,7 @@ signed int d5_count_time_rate = 1;
 signed int g_d_hw_ocv = 0;
 signed int g_vol_bat_hw_ocv = 0;
 signed int g_hw_ocv_before_sleep = 0;
-struct timespec g_rtc_time_before_sleep, xts_before_sleep;
+struct timespec g_rtc_time_before_sleep, xts_before_sleep, g_sleep_total_time;
 signed int g_sw_vbat_temp = 0;
 struct timespec last_oam_run_time;
 
@@ -244,6 +244,14 @@ signed int gFG_min_temperature = 100;
 #define TEMP_AVERAGE_SIZE	30
 
 kal_bool gFG_Is_offset_init = KAL_FALSE;
+
+
+void battery_meter_reset_sleep_time(void)
+{
+	g_sleep_total_time.tv_sec = 0;
+	g_sleep_total_time.tv_nsec = 0;
+}
+
 
 #ifdef MTK_MULTI_BAT_PROFILE_SUPPORT
 /*extern int IMM_GetOneChannelValue_Cali(int Channel, int *voltage);*/
@@ -3141,15 +3149,19 @@ signed int get_dynamic_period(int first_use, int first_wakeup_time, int battery_
 
 	signed int car_instant = 0;
 	signed int current_instant = 0;
-	static signed int car_sleep = 0x12345678;
-	signed int car_wakeup = 0;
 	static signed int last_time;
-
-	signed int ret_val = -1;
-	signed int I_sleep = 0;
-	signed int new_time = 0;
 	signed int vbat_val = 0;
 	int ret = 0;
+
+#if defined(FG_BAT_INT)
+#else
+	signed int I_sleep = 0;
+	signed int new_time = 0;
+	signed int ret_val = -1;
+	signed int car_wakeup = 0;
+	static signed int car_sleep = 0x12345678;
+
+#endif
 
 	vbat_val = g_sw_vbat_temp;
 
@@ -3160,7 +3172,21 @@ signed int get_dynamic_period(int first_use, int first_wakeup_time, int battery_
 		car_instant = car_instant - (car_instant * 2);
 
 
+	if (BMT_status.UI_SOC != BMT_status.SOC) {
+		last_time = 10;
+		g_spm_timer = 10;
+		bm_print(BM_LOG_CRTI, "[get_dynamic_period] UISOC:%d SOC:%d vbat:%d current:%d car:%d new_time:%d\n",
+			BMT_status.UI_SOC, BMT_status.SOC, vbat_val, current_instant, car_instant, g_spm_timer);
+		return g_spm_timer;
+	}
+
+
 	if (vbat_val > batt_meter_cust_data.vbat_normal_wakeup) {	/* 3.6v */
+
+#if defined(FG_BAT_INT)
+				g_spm_timer = LOW_POWER_WAKEUP_PERIOD * 3;
+#else
+
 		car_wakeup = car_instant;
 
 		if (last_time == 0)
@@ -3198,6 +3224,7 @@ signed int get_dynamic_period(int first_use, int first_wakeup_time, int battery_
 		car_sleep = car_wakeup;
 		last_time = ret_val;
 		g_spm_timer = ret_val;
+#endif
 	} else if (vbat_val > batt_meter_cust_data.vbat_low_power_wakeup) {	/* 3.5v */
 		g_spm_timer = batt_meter_cust_data.low_power_wakeup_period;	/* 5 min */
 	} else {
@@ -4432,7 +4459,10 @@ static int battery_meter_suspend(struct platform_device *dev, pm_message_t state
 		if (_g_bat_sleep_total_time < g_spm_timer)
 			return 0;
 
-		_g_bat_sleep_total_time = 0;
+
+		g_sleep_total_time.tv_sec = 0;
+		g_sleep_total_time.tv_nsec = 0;
+
 		battery_meter_ctrl(BATTERY_METER_CMD_GET_HW_OCV, &g_hw_ocv_before_sleep);
 	}
 #endif
@@ -4644,10 +4674,16 @@ static int battery_meter_resume(struct platform_device *dev)
 
 	get_monotonic_boottime(&rtc_time_after_sleep);
 
-	_g_bat_sleep_total_time += rtc_time_after_sleep.tv_sec - g_rtc_time_before_sleep.tv_sec;
+	g_sleep_total_time = timespec_add(g_sleep_total_time,
+		timespec_sub(rtc_time_after_sleep, g_rtc_time_before_sleep));
+	_g_bat_sleep_total_time = g_sleep_total_time.tv_sec;
+
 	battery_log(BAT_LOG_CRTI,
-		    "[battery_meter_resume] sleep time = %d, g_spm_timer = %d\n",
-		    _g_bat_sleep_total_time, g_spm_timer);
+			"[battery_meter_resume] sleep time = %d, g_spm_timer = %d , %ld %ld %ld %ld %ld %ld\n",
+			_g_bat_sleep_total_time, g_spm_timer,
+			g_rtc_time_before_sleep.tv_sec, g_rtc_time_before_sleep.tv_nsec,
+			rtc_time_after_sleep.tv_sec, rtc_time_after_sleep.tv_nsec,
+			g_sleep_total_time.tv_sec, g_sleep_total_time.tv_nsec);
 
 #if defined(SOC_BY_HW_FG)
 #ifdef MTK_ENABLE_AGING_ALGORITHM

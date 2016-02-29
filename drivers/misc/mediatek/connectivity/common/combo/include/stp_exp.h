@@ -255,5 +255,16 @@ extern INT32 _mtk_wcn_stp_coredump_start_get(VOID);
 
 #endif
 
+/*****************************************************************************
+ * FUNCTION
+ *  mtk_wcn_stp_read_fw_cpupcr
+ * DESCRIPTION
+ *  read firmware cpupcr for debug.
+ * PARAMETERS
+ *  VOID
+ * RETURNS
+ *  VOID.
+ * *****************************************************************************/
+extern VOID mtk_wcn_stp_read_fw_cpupcr(VOID);
 
 #endif				/* _WMT_EXP_H_ */

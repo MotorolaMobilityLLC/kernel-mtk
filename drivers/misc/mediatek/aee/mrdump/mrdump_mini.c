@@ -416,14 +416,17 @@ void mrdump_mini_build_task_info(struct pt_regs *regs)
 	struct task_struct *tsk, *cur;
 	struct aee_process_info *cur_proc;
 
-	if (!virt_addr_valid(current_thread_info()))
+	if (!virt_addr_valid(current_thread_info())) {
+		LOGE("current thread info invalid\n");
 		return;
+	}
 	cur = current_thread_info()->task;
 	tsk = cur;
-	if (!virt_addr_valid(tsk))
+	if (!virt_addr_valid(tsk)) {
+		LOGE("tsk invalid\n");
 		return;
+	}
 	cur_proc = (struct aee_process_info *)((void *)mrdump_mini_ehdr + MRDUMP_MINI_HEADER_SIZE);
-
 	/* Current panic user tasks */
 	sz = 0;
 	do {
@@ -436,8 +439,10 @@ void mrdump_mini_build_task_info(struct pt_regs *regs)
 		sz += snprintf(symbol + sz, 96 - sz, "[%s, %d]", tsk->comm, tsk->pid);
 		tsk = tsk->real_parent;
 	} while (tsk && (tsk->pid != 0) && (tsk->pid != 1));
-	if (strncmp(cur_proc->process_path, symbol, sz) == 0)
+	if (strncmp(cur_proc->process_path, symbol, sz) == 0) {
+		LOGE("same process path\n");
 		return;
+	}
 
 	memset_io(cur_proc, 0, sizeof(struct aee_process_info));
 	memcpy(cur_proc->process_path, symbol, sz);
@@ -691,7 +696,7 @@ static void __init mrdump_mini_elf_header_init(void)
 	}
 	LOGE("mirdump: reserved %x+%lx->%p", MRDUMP_MINI_BUF_PADDR,
 	     (unsigned long)MRDUMP_MINI_HEADER_SIZE, mrdump_mini_ehdr);
-	memset_io(mrdump_mini_ehdr, 0, MRDUMP_MINI_HEADER_SIZE);
+	memset_io(mrdump_mini_ehdr, 0, MRDUMP_MINI_HEADER_SIZE + sizeof(struct aee_process_info));
 	fill_elf_header(&mrdump_mini_ehdr->ehdr, MRDUMP_MINI_NR_SECTION);
 }
 

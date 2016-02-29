@@ -231,18 +231,31 @@ inline struct AE_Msg *msg_create(char **ppmsg, int extra_size)
 	return (struct AE_Msg *) *ppmsg;
 }
 
-static ssize_t msg_copy_to_user(const char *prefix, const char *msg, char __user *buf,
+static ssize_t msg_copy_to_user(const char *prefix, char *msg, char __user *buf,
 				size_t count, loff_t *f_pos)
 {
 	ssize_t ret = 0;
 	int len;
-
-	msg_show(prefix, (struct AE_Msg *) msg);
+	char *msg_tmp = NULL;
 
 	if (msg == NULL)
 		return 0;
 
-	len = ((struct AE_Msg *) msg)->len + sizeof(struct AE_Msg);
+	msg_show(prefix, (struct AE_Msg *) msg);
+
+	msg_tmp = kzalloc(((struct AE_Msg *)msg)->len + sizeof(struct AE_Msg), GFP_KERNEL);
+	if (msg_tmp != NULL) {
+		memcpy(msg_tmp, msg, ((struct AE_Msg *)msg)->len + sizeof(struct AE_Msg));
+	} else {
+		LOGE("%s : kzalloc() fail!\n", __func__);
+		msg_tmp = msg;
+	}
+
+	if (msg_tmp == NULL || ((struct AE_Msg *)msg_tmp)->cmdType < AE_REQ
+		|| ((struct AE_Msg *)msg_tmp)->cmdType > AE_CMD_TYPE_END)
+		goto out;
+
+	len = ((struct AE_Msg *) msg_tmp)->len + sizeof(struct AE_Msg);
 
 	if (*f_pos >= len) {
 		ret = 0;
@@ -256,7 +269,7 @@ static ssize_t msg_copy_to_user(const char *prefix, const char *msg, char __user
 		goto out;
 	}
 
-	if (copy_to_user(buf, msg + *f_pos, count)) {
+	if (copy_to_user(buf, msg_tmp + *f_pos, count)) {
 		LOGE("copy_to_user failed\n");
 		ret = -EFAULT;
 		goto out;
@@ -264,6 +277,8 @@ static ssize_t msg_copy_to_user(const char *prefix, const char *msg, char __user
 	*f_pos += count;
 	ret = count;
  out:
+	if (msg_tmp != msg)
+		kfree(msg_tmp);
 	return ret;
 }
 

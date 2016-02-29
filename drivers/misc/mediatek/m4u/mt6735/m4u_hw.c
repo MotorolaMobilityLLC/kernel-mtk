@@ -1897,7 +1897,8 @@ irqreturn_t MTK_M4U_isr(int irq, void *dev_id)
 				if (0 != valid_mva && 0 != valid_size)
 					valid_mva_end = valid_mva+valid_size;
 
-				if (0 != valid_mva_end && fault_mva < valid_mva_end+SZ_4K) {
+				if ((0 != valid_mva_end && fault_mva < valid_mva_end+SZ_4K)
+				        || m4u_pte_invalid(m4u_get_domain_by_port(m4u_port), fault_mva)) {
 					M4UMSG("bypass disp TF, valid mva=0x%x, size=0x%x, mva_end=0x%x\n",
 						valid_mva, valid_size, valid_mva_end);
 					bypass_DISP_TF = 1;

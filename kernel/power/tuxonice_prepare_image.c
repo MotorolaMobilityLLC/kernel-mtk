@@ -358,7 +358,7 @@ void toi_free_extra_pagedir_memory(void)
 }
 
 #ifdef CONFIG_TOI_FIXUP
-#define TOI_BUFFER_RESERVED ((24*1024*1024) / PAGE_SIZE)
+#define TOI_BUFFER_RESERVED ((70*1024*1024) / PAGE_SIZE)
 static int is_memory_low(unsigned long wanted)
 {
 	unsigned long free_pages;

@@ -784,12 +784,14 @@ static int __init_or_module do_one_initcall_debug(initcall_t fn)
 
 int __init_or_module do_one_initcall(initcall_t fn)
 {
+	unsigned long long ts = 0;
 	int count = preempt_count();
 	int ret;
 	char msgbuf[64];
 
 	if (initcall_blacklisted(fn))
 		return -EPERM;
+	ts = sched_clock();
 #if defined(CONFIG_MT_ENG_BUILD)
 	ret = do_one_initcall_debug(fn);
 #else
@@ -798,6 +800,7 @@ int __init_or_module do_one_initcall(initcall_t fn)
 	else
 		ret = fn();
 #endif
+	ts = sched_clock() - ts;
 	msgbuf[0] = 0;
 
 	if (preempt_count() != count) {
@@ -809,6 +812,13 @@ int __init_or_module do_one_initcall(initcall_t fn)
 		local_irq_enable();
 	}
 	WARN(msgbuf[0], "initcall %pF returned with %s\n", fn, msgbuf);
+	if (ts > 15000000) {
+		/* log more than 15ms initcalls */
+		snprintf(msgbuf, 64, "%pf %10llu ns", fn, ts);
+#ifdef CONFIG_MTPROF
+		log_boot(msgbuf);
+#endif
+	}
 
 	return ret;
 }

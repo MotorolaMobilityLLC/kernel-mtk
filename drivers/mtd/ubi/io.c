@@ -188,7 +188,7 @@ retry:
 		if (retries++ < UBI_IO_RETRIES) {
 			ubi_warn("error %d%s while reading %d bytes from PEB %d:%d, read only %zd bytes, retry",
 				 err, errstr, len, pnum, offset, read);
-			yield();
+			/* yield(); */
 			goto retry;
 		}
 
@@ -356,12 +356,17 @@ retry:
 	ei.priv     = (unsigned long)&wq;
 
 	err = mtd_erase(ubi->mtd, &ei);
+#ifdef CONFIG_MTK_SLC_BUFFER_SUPPORT
+	if (ubi_peb_istlc(ubi, pnum))
+		atomic_inc(&ubi->tlc_ec_count);
+	else
+#endif
 	atomic_inc(&ubi->ec_count); /*MTK*/
 	if (err) {
 		if (retries++ < UBI_IO_RETRIES) {
 			ubi_warn("error %d while erasing PEB %d, retry",
 				 err, pnum);
-			yield();
+			/* yield(); */
 			goto retry;
 		}
 		ubi_err("cannot erase PEB %d, error %d", pnum, err);
@@ -379,7 +384,7 @@ retry:
 	if (ei.state == MTD_ERASE_FAILED) {
 		if (retries++ < UBI_IO_RETRIES) {
 			ubi_warn("error while erasing PEB %d, retry", pnum);
-			yield();
+			/* yield(); */
 			goto retry;
 		}
 		ubi_err("cannot erase PEB %d", pnum);
@@ -922,9 +927,11 @@ static int validate_vid_hdr(const struct ubi_device *ubi,
 	if (vol_id >= UBI_INTERNAL_VOL_START && compat != UBI_COMPAT_DELETE &&
 	    compat != UBI_COMPAT_RO && compat != UBI_COMPAT_PRESERVE &&
 	    compat != UBI_COMPAT_REJECT) {
-#ifndef CONFIG_BLB
-		ubi_err("bad compat");
-		goto bad;
+#if defined(CONFIG_MTK_SLC_BUFFER_SUPPORT) || defined(CONFIG_MTK_MLC_NAND_SUPPORT)
+		if (vol_id == UBI_LAYOUT_VOLUME_ID) {
+			ubi_err("bad compat");
+			goto bad;
+		}
 #else
 		if (vol_id != UBI_BACKUP_VOLUME_ID) {
 			ubi_err("bad compat");
@@ -1126,7 +1133,7 @@ int ubi_io_write_vid_hdr(struct ubi_device *ubi, int pnum,
 	if (err)
 		return err;
 
-#ifdef CONFIG_BLB
+#ifdef CONFIG_MTD_UBI_LOWPAGE_BACKUP
 	{
 		int vol_id =  be32_to_cpu(vid_hdr->vol_id);
 
@@ -1143,7 +1150,7 @@ int ubi_io_write_vid_hdr(struct ubi_device *ubi, int pnum,
 	return err;
 }
 
-#ifdef CONFIG_BLB
+#ifdef CONFIG_MTD_UBI_LOWPAGE_BACKUP
 int ubi_io_write_vid_hdr_blb(struct ubi_device *ubi, int pnum,
 			 struct ubi_vid_hdr *vid_hdr)
 {
@@ -1500,7 +1507,7 @@ error:
 	return err;
 }
 
-#ifdef CONFIG_BLB
+#ifdef CONFIG_MTD_UBI_LOWPAGE_BACKUP
 /* Read one page with oob one time */
 int ubi_io_read_oob(const struct ubi_device *ubi, void *databuf, void *oobbuf,
 		int pnum, int offset) {
@@ -1583,4 +1590,34 @@ int ubi_io_write_oob(const struct ubi_device *ubi, void *databuf, void *oobbuf,
 
 	return err;
 }
+#endif
+
+#ifdef CONFIG_MTK_SLC_BUFFER_SUPPORT
+int ubi_io_fill_ec_hdr(struct ubi_device *ubi, int pnum, struct ubi_ec_hdr *ec_hdr, int ec)
+{
+	uint32_t crc;
+
+	ec_hdr->magic = cpu_to_be32(UBI_EC_HDR_MAGIC);
+	ec_hdr->version = UBI_VERSION;
+	ec_hdr->ec = cpu_to_be64((unsigned long long)ec);
+	ec_hdr->vid_hdr_offset = cpu_to_be32(ubi->vid_hdr_offset);
+	ec_hdr->data_offset = cpu_to_be32(ubi->leb_start);
+	ec_hdr->image_seq = cpu_to_be32(ubi->image_seq);
+	crc = crc32(UBI_CRC32_INIT, ec_hdr, UBI_EC_HDR_SIZE_CRC);
+	ec_hdr->hdr_crc = cpu_to_be32(crc);
+	return self_check_ec_hdr(ubi, pnum, ec_hdr);
+}
+
+int ubi_io_fill_vid_hdr(struct ubi_device *ubi, int pnum, struct ubi_vid_hdr *vid_hdr)
+{
+	uint32_t crc;
+
+	vid_hdr->magic = cpu_to_be32(UBI_VID_HDR_MAGIC);
+	vid_hdr->version = UBI_VERSION;
+	vid_hdr->sqnum = cpu_to_be64(ubi_next_sqnum(ubi));
+	crc = crc32(UBI_CRC32_INIT, vid_hdr, UBI_VID_HDR_SIZE_CRC);
+	vid_hdr->hdr_crc = cpu_to_be32(crc);
+	return self_check_vid_hdr(ubi, pnum, vid_hdr);
+}
+
 #endif

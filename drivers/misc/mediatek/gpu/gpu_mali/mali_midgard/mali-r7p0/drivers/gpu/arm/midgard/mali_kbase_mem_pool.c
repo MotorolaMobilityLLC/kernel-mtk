@@ -500,6 +500,7 @@ static void kbase_mem_pool_add_array(struct kbase_mem_pool *pool,
 	size_t nr_to_pool = 0;
 	LIST_HEAD(new_page_list);
 	size_t i;
+	unsigned long pfn;
 
 	if (!nr_pages)
 		return;
@@ -513,6 +514,11 @@ static void kbase_mem_pool_add_array(struct kbase_mem_pool *pool,
 			continue;
 
 		p = phys_to_page(pages[i]);
+		pfn = page_to_pfn(p);
+		if( !pfn_valid(pfn) ){
+		    pr_alert("[Mali][kbase_mem_pool_add_array] phys_to_page(%lu) is invalid. \n",pfn);
+		    continue;
+		}
 
 		if (zero)
 			kbase_mem_pool_zero_page(pool, p);

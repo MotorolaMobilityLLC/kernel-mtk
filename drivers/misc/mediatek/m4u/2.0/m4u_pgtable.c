@@ -226,6 +226,14 @@ void m4u_dump_pte_nolock(m4u_domain_t *domain, unsigned int mva)
 	__m4u_print_pte(&pte_info, NULL);
 }
 
+int m4u_pte_invalid(m4u_domain_t *domain, unsigned int mva)
+{
+	m4u_pte_info_t info;
+
+	m4u_get_pte_info(domain, mva, &info);
+	return (info.pa != 0) && info.valid;
+}
+
 void m4u_dump_pte(m4u_domain_t *domain, unsigned int mva)
 {
 	read_lock_domain(domain);

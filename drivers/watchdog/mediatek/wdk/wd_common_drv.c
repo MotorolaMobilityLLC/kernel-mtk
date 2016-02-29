@@ -66,6 +66,9 @@ static int g_need_config;
 static int wdt_start;
 static int g_enable = 1;
 
+static unsigned int lasthpg_act;
+static unsigned int lasthpg_cpu;
+static unsigned long long lasthpg_t;
 
 
 static char cmd_buf[256];
@@ -294,8 +297,8 @@ void kicker_cpu_bind(int cpu)
 		/* kthread_bind(wk_tsk[cpu], cpu); */
 		WARN_ON_ONCE(set_cpus_allowed_ptr(wk_tsk[cpu], cpumask_of(cpu)) < 0);
 
-		pr_debug("[wdk]bind kicker thread[%d] to cpu[%d]\n", wk_tsk[cpu]->pid, cpu);
 		wake_up_process(wk_tsk[cpu]);
+		pr_debug("[wdk]bind kicker thread[%d] to cpu[%d]\n", wk_tsk[cpu]->pid, cpu);
 	}
 }
 
@@ -305,12 +308,18 @@ void wk_cpu_update_bit_flag(int cpu, int plug_status)
 		spin_lock(&lock);
 		cpus_kick_bit |= (1 << cpu);
 		kick_bit = 0;
+		lasthpg_cpu = cpu;
+		lasthpg_act = plug_status;
+		lasthpg_t = sched_clock();
 		spin_unlock(&lock);
 	}
 	if (0 == plug_status) {	/* plug off */
 		spin_lock(&lock);
 		cpus_kick_bit &= (~(1 << cpu));
 		kick_bit = 0;
+		lasthpg_cpu = cpu;
+		lasthpg_act = plug_status;
+		lasthpg_t = sched_clock();
 		spin_unlock(&lock);
 	}
 }
@@ -384,8 +393,10 @@ static int kwdt_thread(void *arg)
 
 	for (;;) {
 
-		if (kthread_should_stop())
+		if (kthread_should_stop()) {
+			pr_err("[WDK] kthread_should_stop do !!\n");
 			break;
+		}
 		spin_lock(&lock);
 		cpu = smp_processor_id();
 		loc_wk_wdt = g_wd_api;
@@ -416,8 +427,8 @@ static int kwdt_thread(void *arg)
 						/* aee_rr_rec_wdk_kick_jiffies(jiffies); */
 					}
 					printk_deferred
-					    ("[WDK], local_bit:0x%x, cpu:%d, check bit0x:%x,RT[%lld]\n",
-					     local_bit, cpu, wk_check_kick_bit(), sched_clock());
+					    ("[WDK], local_bit:0x%x, cpu:%d, check bit0x:%x, lasthpg_cpu:%d, lasthpg_act:%d, lasthpg_t:%lld, RT[%lld]\n",
+					     local_bit, cpu, wk_check_kick_bit(), lasthpg_cpu, lasthpg_act, lasthpg_t, sched_clock());
 					if (local_bit == wk_check_kick_bit()) {
 						printk_deferred("[WDK]: kick Ex WDT,RT[%lld]\n",
 								sched_clock());

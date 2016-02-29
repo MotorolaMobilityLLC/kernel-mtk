@@ -913,7 +913,7 @@ static inline void ccci_channel_update_packet_counter(struct ccci_modem *md, str
 
 static inline void ccci_channel_dump_packet_counter(struct ccci_modem *md)
 {
-	CCCI_INF_MSG(md->index, CORE, "traffic(ch): tx:[%d]%ld, [%d]%ld, [%d]%ld rx:[%d]%ld, [%d]%ld, [%d]%ld\n",
+	CCCI_DBG_MSG(md->index, CORE, "traffic(ch): tx:[%d]%ld, [%d]%ld, [%d]%ld rx:[%d]%ld, [%d]%ld, [%d]%ld\n",
 		     CCCI_PCM_TX, md->logic_ch_pkt_cnt[CCCI_PCM_TX],
 		     CCCI_UART2_TX, md->logic_ch_pkt_cnt[CCCI_UART2_TX],
 		     CCCI_FS_TX, md->logic_ch_pkt_cnt[CCCI_FS_TX],

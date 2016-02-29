@@ -59,6 +59,7 @@
 #define CTFSR        (0x0020)
 #define CRPLR        (0x0024)
 #define CSR        (0x00D8)	/* MT6630 only for the moment */
+#define SWPCDBGR	(0x0154)
 
 /* Common HIF register bit field address */
 /* CHLPCR */
@@ -96,6 +97,8 @@
 #define STP_SDIO_TX_BUF_CNT_MASK (STP_SDIO_TX_BUF_CNT - 1)
 #define STP_SDIO_TX_PKT_LIST_SIZE (STP_SDIO_TX_BUF_CNT)	/* must be 2^x now... */
 #define STP_SDIO_TX_PKT_LIST_SIZE_MASK (STP_SDIO_TX_PKT_LIST_SIZE - 1)
+
+#define STP_SDIO_FW_CPUPCR_POLLING_CNT (5)
 
 /* tx buffer size for a single entry */
 /* George: SHALL BE a multiple of the used BLK_SIZE!! */
@@ -211,6 +214,7 @@ typedef struct _MTK_WCN_STP_SDIO_HIF_INFO {
 *                            P U B L I C   D A T A
 ********************************************************************************
 */
+extern MTK_WCN_STP_SDIO_HIF_INFO g_stp_sdio_host_info;
 
 /*******************************************************************************
 *                           P R I V A T E   D A T A

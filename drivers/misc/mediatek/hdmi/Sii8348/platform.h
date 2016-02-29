@@ -67,7 +67,7 @@ typedef enum
     MHL_PGIO_FUNCTION_MODE
 }mhl_gpio_mode;
 
-#define DEBUG
+/*#define DEBUG*/
 #if defined(DEBUG)
 
 void print_formatted_debug_msg(int level,
@@ -77,12 +77,12 @@ void print_formatted_debug_msg(int level,
 
 void dump_i2c_transfer(void *context, u8 page, u8 offset,
 		u16 count, u8 *values, bool write);
-/*
+
 #define MHL_TX_DBG_GPIO(driver_context, fmt, arg...)				\
 	print_formatted_debug_msg(DBG_MSG_LEVEL_GPIO,				\
 			NULL, __func__, __LINE__,				\
 			fmt, ## arg);
-*/
+
 #define MHL_TX_EDID_READ(context,fmt,arg...) 					\
 	print_formatted_debug_msg(DBG_MSG_LEVEL_EDID_READ,			\
 			NULL, __func__, __LINE__,				\
@@ -131,6 +131,8 @@ void dump_i2c_transfer(void *context, u8 page, u8 offset,
 #define MHL_TX_DBG_INFO(driver_context, fmt, ...)
 #define MHL_TX_DBG_WARN(driver_context, fmt, ...)
 #define MHL_TX_DBG_ERR(driver_context, fmt, ...)
+#define MHL_TX_EDID_INFO(context,fmt,arg...)
+#define MHL_TX_EDID_READ(context,fmt,arg...)
 
 #define DUMP_I2C_TRANSFER(context, page, offset, count, values, write_flag)
 

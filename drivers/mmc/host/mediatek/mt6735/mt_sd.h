@@ -1352,17 +1352,14 @@ do { \
 do { \
 	unsigned int tv = sdr_read32(reg);    \
 	tv &= ~(field); \
-	if (uffs((unsigned int)field) == 0) \
-		return; \
-	tv |= ((val) << (uffs((unsigned int)field) - 1)); \
-	sdr_write32(reg, tv); \
+	if (uffs((unsigned int)field) > 0) \
+		sdr_write32(reg, tv | ((val) << (uffs((unsigned int)field) - 1))); \
 } while (0)
 #define sdr_get_field(reg, field, val) \
 do { \
 	unsigned int tv = sdr_read32(reg);    \
-	if (uffs((unsigned int)field) == 0) \
-		return; \
-	val = ((tv & (field)) >> (uffs((unsigned int)field) - 1)); \
+	if (uffs((unsigned int)field) > 0) \
+		val = ((tv & (field)) >> (uffs((unsigned int)field) - 1)); \
 } while (0)
 #define sdr_set_field_discrete(reg, field, val) \
 do { \
@@ -1400,11 +1397,13 @@ do { \
 } while (0)
 
 /* can modify to read h/w register */
-/* #define is_card_present(h) ((sdr_read32(MSDC_PS) & MSDC_PS_CDSTS) ? 0 : 1);*/
+/* #define is_card_present(h) ((sdr_read32(MSDC_PS) & MSDC_PS_CDSTS) ? 0 : 1);
+*/
 #define is_card_present(h)     (((struct msdc_host *)(h))->card_inserted)
 #define is_card_sdio(h)        (((struct msdc_host *)(h))->hw->register_pm)
 
-/*sd card change voltage wait time= (1/freq) * SDC_VOL_CHG_CNT(default 0x145) */
+/*sd card change voltage wait time= (1/freq) * SDC_VOL_CHG_CNT(default 0x145)
+*/
 #define msdc_set_vol_change_wait_count(count) sdr_set_field(SDC_VOL_CHG, \
 	SDC_VOL_CHG_CNT, (count))
 
@@ -1596,8 +1595,8 @@ typedef void (*pm_callback_t)(pm_message_t state, void *data);
 #define MSDC_CACHE          (1 << 12)	/* eMMC cache feature            */
 #endif
 #define MSDC_HS400          (1 << 13)	/* HS400 speed mode support      */
-
-#define MSDC_SD_NEED_POWER  (1 << 31)	/* for Yecon board, need SD power always on!! or cannot recognize the sd card */
+/* for Yecon board, need SD power always on!! or cannot recognize the sd card */
+#define MSDC_SD_NEED_POWER  (1 << 31)
 
 #define MSDC_SMPL_RISING    (0)
 #define MSDC_SMPL_FALLING   (1)
@@ -1667,15 +1666,15 @@ struct msdc_hw {
 	unsigned char dat_drv;	/* data pad driving */
 	unsigned char rst_drv;	/* RST-N pad driving */
 	unsigned char ds_drv;	/* eMMC5.0 DS pad driving */
-	unsigned char clk_drv_sd_18;	/* clock pad driving for SD card at 1.8v sdr104 mode */
-	unsigned char cmd_drv_sd_18;	/* command pad driving for SD card at 1.8v sdr104 mode */
-	unsigned char dat_drv_sd_18;	/* data pad driving for SD card at 1.8v sdr104 mode */
-	unsigned char clk_drv_sd_18_sdr50;	/* clock pad driving for SD card at 1.8v sdr50 mode */
-	unsigned char cmd_drv_sd_18_sdr50;	/* command pad driving for SD card at 1.8v sdr50 mode */
-	unsigned char dat_drv_sd_18_sdr50;	/* data pad driving for SD card at 1.8v sdr50 mode */
-	unsigned char clk_drv_sd_18_ddr50;	/* clock pad driving for SD card at 1.8v ddr50 mode */
-	unsigned char cmd_drv_sd_18_ddr50;	/* command pad driving for SD card at 1.8v ddr50 mode */
-	unsigned char dat_drv_sd_18_ddr50;	/* data pad driving for SD card at 1.8v ddr50 mode */
+	unsigned char clk_drv_sd_18; /* clock pad driving for SD card at 1.8v sdr104 mode */
+	unsigned char cmd_drv_sd_18; /* command pad driving for SD card at 1.8v sdr104 mode */
+	unsigned char dat_drv_sd_18; /* data pad driving for SD card at 1.8v sdr104 mode */
+	unsigned char clk_drv_sd_18_sdr50; /* clock pad driving for SD card at 1.8v sdr50 mode */
+	unsigned char cmd_drv_sd_18_sdr50; /* command pad driving for SD card at 1.8v sdr50 mode */
+	unsigned char dat_drv_sd_18_sdr50; /* data pad driving for SD card at 1.8v sdr50 mode */
+	unsigned char clk_drv_sd_18_ddr50; /* clock pad driving for SD card at 1.8v ddr50 mode */
+	unsigned char cmd_drv_sd_18_ddr50; /* command pad driving for SD card at 1.8v ddr50 mode */
+	unsigned char dat_drv_sd_18_ddr50; /* data pad driving for SD card at 1.8v ddr50 mode */
 	unsigned long flags;	/* hardware capability flags */
 	unsigned long data_pins;	/* data pins */
 	unsigned long data_offset;	/* data address offset */
@@ -1696,12 +1695,12 @@ struct msdc_hw {
 	unsigned char cmdrrddly;	/*cmd; range: 0~31*/
 	unsigned char cmdrddly;	/*cmd; range: 0~31*/
 
-	unsigned char cmdrtactr_sdr50;	/* command response turn around counter, sdr 50 mode*/
-	unsigned char wdatcrctactr_sdr50;	/* write data crc turn around counter, sdr 50 mode*/
+	unsigned char cmdrtactr_sdr50; /* command response turn around counter, sdr 50 mode*/
+	unsigned char wdatcrctactr_sdr50; /* write data crc turn around counter, sdr 50 mode*/
 	unsigned char intdatlatcksel_sdr50;	/* internal data latch CK select, sdr 50 mode*/
 	unsigned char cmdrtactr_sdr200;	/* command response turn around counter, sdr 200 mode*/
-	unsigned char wdatcrctactr_sdr200;	/* write data crc turn around counter, sdr 200 mode*/
-	unsigned char intdatlatcksel_sdr200;	/* internal data latch CK select, sdr 200 mode*/
+	unsigned char wdatcrctactr_sdr200; /* write data crc turn around counter, sdr 200 mode*/
+	unsigned char intdatlatcksel_sdr200; /* internal data latch CK select, sdr 200 mode*/
 
 	struct msdc_ett_settings *ett_hs200_settings;
 	unsigned int ett_hs200_count;

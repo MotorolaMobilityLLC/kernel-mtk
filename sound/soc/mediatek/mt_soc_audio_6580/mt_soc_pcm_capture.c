@@ -230,9 +230,9 @@ static snd_pcm_uframes_t mtk_capture_pcm_pointer(struct snd_pcm_substream
 		UL1_Block->u4DataRemained += Hw_Get_bytes;
 
 
-		pr_warn("%s, DMAReadIdx=0x%x, WriteIdx = 0x%x, DataRemained = 0x%x, BufferSize= 0x%x,Hw_Get_bytes= 0x%x\n",
+		/* pr_debug("%s, DMAReadIdx=0x%x, WriteIdx = 0x%x, DataRemained = 0x%x, BufferSize= 0x%x,Hw_Get_bytes= 0x%x\n",
 			__func__, UL1_Block->u4DMAReadIdx, UL1_Block->u4WriteIdx, UL1_Block->u4DataRemained,
-			UL1_Block->u4BufferSize, Hw_Get_bytes);
+			UL1_Block->u4BufferSize, Hw_Get_bytes); */
 
 		if (UL1_Block->u4DataRemained > UL1_Block->u4BufferSize) {
 			bIsOverflow = true;

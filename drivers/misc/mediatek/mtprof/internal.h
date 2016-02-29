@@ -79,6 +79,7 @@ extern struct mt_cpu_info *mt_cpu_info_head;
 extern int mt_cpu_num;
 extern struct mt_proc_struct *mt_proc_head;
 extern unsigned long long prof_start_ts, prof_end_ts, prof_dur_ts;
+extern bool boot_trace;
 
 void mt_task_times(struct task_struct *p, cputime_t *ut, cputime_t *st);
 unsigned long long mtprof_get_cpu_idle(int cpu);

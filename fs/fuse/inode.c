@@ -7,7 +7,7 @@
 */
 
 #include "fuse_i.h"
-#include "fuse.h"
+#include "mt_fuse.h"
 #include <linux/pagemap.h>
 #include <linux/slab.h>
 #include <linux/file.h>

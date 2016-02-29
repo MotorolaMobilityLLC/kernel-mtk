@@ -122,9 +122,9 @@ static int slp_suspend_ops_valid(suspend_state_t state)
 static int slp_suspend_ops_begin(suspend_state_t state)
 {
     /* legacy log */
-		slp_notice("@@@@@@@@@@@@@@@@@@@@\n");
-		slp_notice("Chip_pm_begin(%u)(%u)\n", is_cpu_pdn(slp_spm_flags), is_infra_pdn(slp_spm_flags));
-		slp_notice("@@@@@@@@@@@@@@@@@@@@\n");
+
+		slp_notice("@@@Chip_pm_begin(%u)(%u)@@@\n", is_cpu_pdn(slp_spm_flags), is_infra_pdn(slp_spm_flags));
+
 
 		slp_wake_reason = WR_NONE;
 
@@ -134,9 +134,9 @@ static int slp_suspend_ops_begin(suspend_state_t state)
 static int slp_suspend_ops_prepare(void)
 {
     /* legacy log */
-		slp_notice("@@@@@@@@@@@@@@@@@@@@\n");
-		slp_crit2("Chip_pm_prepare\n");
-		slp_notice("@@@@@@@@@@@@@@@@@@@@\n");
+
+		slp_crit2("@@@Chip_pm_prepare@@@\n");
+
 		return 0;
 }
 
@@ -167,9 +167,9 @@ static int enter_pasrdpd(void)
 {
 	int error = 0;
 	u32 sr = 0, dpd = 0;
-		slp_notice("@@@@@@@@@@@@@@@@@@@@\n");
-	slp_crit2("[%s]\n", __func__);
-	slp_notice("@@@@@@@@@@@@@@@@@@@@\n");
+
+	slp_crit2("@@@[%s]@@@\n", __func__);
+
 	/* Setup SPM wakeup event firstly */
 	spm_set_wakeup_src_check();
 
@@ -195,9 +195,9 @@ static int enter_pasrdpd(void)
 }
 static void leave_pasrdpd(void)
 {
-	slp_notice("@@@@@@@@@@@@@@@@@@@@\n");
-	slp_crit2("[%s]\n", __func__);
-	slp_notice("@@@@@@@@@@@@@@@@@@@@\n");
+
+	slp_crit2("@@@[%s]@@@\n", __func__);
+
 
 	/* Disable PASR */
 	exit_pasr_dpd_config();
@@ -228,9 +228,9 @@ static int slp_suspend_ops_enter(suspend_state_t state)
 #endif
 
     /* legacy log */
-		slp_notice("@@@@@@@@@@@@@@@@@@@@\n");
-		slp_crit2("Chip_pm_enter\n");
-		slp_notice("@@@@@@@@@@@@@@@@@@@@\n");
+
+		slp_crit2("@@@Chip_pm_enter@@@\n");
+
 
 
 #if 0
@@ -280,17 +280,17 @@ LEAVE_SLEEP:
 static void slp_suspend_ops_finish(void)
 {
     /* legacy log */
-		slp_notice("@@@@@@@@@@@@@@@@@@@@\n");
-		slp_crit2("Chip_pm_finish\n");
-		slp_notice("@@@@@@@@@@@@@@@@@@@@\n");
+
+		slp_crit2("@@@Chip_pm_finish@@@\n");
+
 }
 
 static void slp_suspend_ops_end(void)
 {
     /* legacy log */
-		slp_notice("@@@@@@@@@@@@@@@@@@@@\n");
-		slp_notice("Chip_pm_end\n");
-		slp_notice("@@@@@@@@@@@@@@@@@@@@\n");
+
+		slp_notice("@@@Chip_pm_end@@@\n");
+
 }
 
 static const struct platform_suspend_ops slp_suspend_ops = {

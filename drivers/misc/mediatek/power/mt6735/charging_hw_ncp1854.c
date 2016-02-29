@@ -167,7 +167,6 @@ static unsigned int charging_hw_init(void *data)
 	pr_notice("[BATTERY:ncp1854] ChargerHwInit_ncp1854\n");
 
 	ncp1854_status = ncp1854_get_chip_status();
-	ncp1854_set_otg_en(0x0);
 	ncp1854_set_trans_en(0);
 	ncp1854_set_tj_warn_opt(0x0);	/* set at disabled, by MT6325 BATON */
 	/* ncp1854_set_int_mask(0x0); //disable all interrupt */
@@ -178,7 +177,7 @@ static unsigned int charging_hw_init(void *data)
 	if ((ncp1854_status == 0x8) || (ncp1854_status == 0x9) || (ncp1854_status == 0xA))
 		ncp1854_set_ctrl_vbat(0x1C);	/* VCHG = 4.0V */
 
-	ncp1854_set_ieoc(0x0);
+	ncp1854_set_ieoc(0x6); /* cut off current = 250mA */
 	ncp1854_set_iweak(0x3);	/* weak charge current = 300mA */
 
 	ncp1854_set_aicl_en(0x1);	/* enable AICL as PT team suggest */
@@ -398,7 +397,9 @@ static unsigned int charging_get_hv_status(void *data)
 static unsigned int charging_get_battery_status(void *data)
 {
 	unsigned int status = STATUS_OK;
+#if !defined(CONFIG_POWER_EXT)
 	unsigned int val = 0;
+#endif
 
 #if defined(CONFIG_POWER_EXT) || defined(CONFIG_MTK_FPGA)
 	*(kal_bool *) (data) = 0;	/* battery exist */

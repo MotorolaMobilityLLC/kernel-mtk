@@ -108,7 +108,7 @@ extern unsigned int (*mtk_get_gpu_block_fp)(void);
 extern unsigned int (*mtk_get_gpu_idle_fp)(void);
 extern void (*mtk_do_gpu_dvfs_fp)(unsigned long t, long phase, unsigned long ul3DFenceDoneTime);
 extern void (*mtk_gpu_dvfs_set_mode_fp)(int eMode);
-extern void (ged_monitor_3D_fence_set_disable)(GED_BOOL bFlag);
+extern void (ged_monitor_3D_fence_set_enable)(GED_BOOL bEnable);
 
 static bool ged_dvfs_policy(
     unsigned int ui32GPULoading, unsigned int* pui32NewFreqID, 
@@ -311,6 +311,7 @@ void ged_dvfs_vsync_offset_event_switch(GED_DVFS_VSYNC_OFFSET_SWITCH_CMD eEvent,
             break;
         case GED_DVFS_VSYNC_OFFSET_GAS_EVENT:
             (bSwitch)? (g_ui32EventStatus|=GED_EVENT_GAS): (g_ui32EventStatus&= (~GED_EVENT_GAS));
+            ged_monitor_3D_fence_set_enable(!bSwitch); // switch smartboost
             break;
         default:
             GED_LOGE("%s: not acceptable event:%u \n", __func__,  eEvent); 
@@ -393,7 +394,8 @@ GED_ERROR ged_dvfs_um_commit( unsigned long gpu_tar_freq, bool bFallback)
      
     
 
-    
+#if 0
+/// NO GED_DVFS_LP usage
     if(g_eTuningMode==GED_DVFS_LP)
         {
             if(ui32NewFreqID!=i32MaxLevel && bFallback==GED_FALSE)
@@ -404,6 +406,7 @@ GED_ERROR ged_dvfs_um_commit( unsigned long gpu_tar_freq, bool bFallback)
         }
         else
             ged_monitor_3D_fence_set_disable(GED_FALSE);
+#endif
 
 
     ged_log_buf_print(ghLogBuf_DVFS, "[GED_K] rdy to commit (%u)",ui32NewFreqID);

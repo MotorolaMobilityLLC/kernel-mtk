@@ -85,10 +85,10 @@ struct epl_raw_data {
 
 /*----------------------------------------------------------------------------*/
 #define APS_TAG                  "[ALS/PS] "
-#define APS_FUN(f)               pr_err(APS_TAG"%s\n", __func__)
+#define APS_FUN(f)               pr_debug(APS_TAG"%s\n", __func__)
 #define APS_ERR(fmt, args...)    pr_err(APS_TAG"%s %d : "fmt, __func__, __LINE__, ##args)
-#define APS_LOG(fmt, args...)    pr_err(APS_TAG fmt, ##args)
-#define APS_DBG(fmt, args...)    pr_err(APS_TAG fmt, ##args)
+#define APS_LOG(fmt, args...)    pr_debug(APS_TAG fmt, ##args)
+#define APS_DBG(fmt, args...)    pr_debug(APS_TAG fmt, ##args)
 #define FTM_CUST_ALSPS "/data/epl2182"
 
 #define POWER_NONE_MACRO MT65XX_POWER_NONE
@@ -2016,7 +2016,7 @@ static int alsps_local_init(void)
 
 	if (-1 == alsps_init_flag)
 		return -1;
-	/* printk("fwq loccal init---\n"); */
+	/* APS_DBG("fwq loccal init---\n"); */
 	return 0;
 }
 

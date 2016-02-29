@@ -253,11 +253,21 @@ unsigned int vcorefs_get_curr_voltage(void)
 
 unsigned int get_ddr_khz(void)
 {
-	unsigned int ddr_khz;
+	int freq;
 
-	ddr_khz = get_dram_data_rate() * 1000;
+	freq = get_dram_data_rate();
 
-	return ddr_khz;
+	return freq * 1000;
+}
+
+unsigned int get_ddr_khz_by_steps(unsigned int step)
+{
+	int freq;
+
+	freq = dram_fh_steps_freq(step);
+	BUG_ON(freq < 0);
+
+	return freq * 1000;
 }
 
 bool is_vcorefs_can_work(void)
@@ -997,14 +1007,19 @@ static int init_vcorefs_pwrctrl(void)
 
 	pwrctrl->curr_ddr_khz = get_ddr_khz();
 
-	for (i = 0; i < NUM_OPP; i++) {
-		if (i == OPPI_PERF_ULTRA)
-			opp_ctrl_table[i].vcore_uv = vcore_pmic_to_uv(get_vcore_ptp_volt(VCORE_1_P_25_UV));
-		else if (i == OPPI_PERF)
-			opp_ctrl_table[i].vcore_uv = pwrctrl->curr_vcore_uv;
+	vcorefs_crit("curr_vcore_uv: %u, curr_ddr_khz: %u\n", pwrctrl->curr_vcore_uv, pwrctrl->curr_ddr_khz);
 
-		if (i < OPPI_LOW_PWR)	/* update performance OPP */
-			opp_ctrl_table[i].ddr_khz = pwrctrl->curr_ddr_khz;
+	for (i = 0; i < NUM_OPP; i++) {
+		if (i == OPPI_PERF_ULTRA) {
+			opp_ctrl_table[i].vcore_uv = vcore_pmic_to_uv(get_vcore_ptp_volt(VCORE_1_P_25_UV));
+			opp_ctrl_table[i].ddr_khz = get_ddr_khz_by_steps(0);
+		} else if (i == OPPI_PERF) {
+			opp_ctrl_table[i].vcore_uv = vcore_pmic_to_uv(get_vcore_ptp_volt(VCORE_1_P_15_UV));
+			opp_ctrl_table[i].ddr_khz = get_ddr_khz_by_steps(0);
+		} else if (i == OPPI_LOW_PWR) {
+			opp_ctrl_table[i].vcore_uv = vcore_pmic_to_uv(get_vcore_ptp_volt(VCORE_1_P_05_UV));
+			opp_ctrl_table[i].ddr_khz = get_ddr_khz_by_steps(1);
+		}
 
 		vcorefs_crit("OPP %d: vcore_uv = %u, ddr_khz = %u\n",
 			     i, opp_ctrl_table[i].vcore_uv, opp_ctrl_table[i].ddr_khz);
@@ -1036,4 +1051,4 @@ static int __init vcorefs_module_init(void)
 module_init(vcorefs_module_init);
 late_initcall_sync(late_init_to_lowpwr_opp);
 
-MODULE_DESCRIPTION("Vcore DVFS Driver v0.3.1");
+MODULE_DESCRIPTION("Vcore DVFS Driver v0.4");

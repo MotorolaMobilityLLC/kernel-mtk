@@ -42,7 +42,8 @@ static int kbasep_jd_debugfs_atoms_show(struct seq_file *sfile, void *data)
 	KBASE_DEBUG_ASSERT(kctx != NULL);
 
 	/* Print table heading */
-	seq_puts(sfile, "atom id,core reqs,status,coreref status,predeps,start time,time on gpu\n");
+	seq_puts(sfile, "atom id,core reqs,status,coreref status,predeps,start time,time on gpu,atom type,fence pointer\n");
+	pr_err("atom id,core reqs,status,coreref status,predeps,start time,time on gpu,atom type,fence pointer\n");
 
 	atoms = kctx->jctx.atoms;
 	/* General atom states */
@@ -52,6 +53,8 @@ static int kbasep_jd_debugfs_atoms_show(struct seq_file *sfile, void *data)
 	for (i = 0; i != BASE_JD_ATOM_COUNT; ++i) {
 		struct kbase_jd_atom *atom = &atoms[i];
 		s64 start_timestamp = 0;
+		void *fence = NULL;
+		const char *atom_type = "<NA>";
 
 		if (atom->status == KBASE_JD_ATOM_STATE_UNUSED)
 			continue;
@@ -63,6 +66,43 @@ static int kbasep_jd_debugfs_atoms_show(struct seq_file *sfile, void *data)
 			start_timestamp = ktime_to_ns(
 					ktime_sub(ktime_get(), atom->start_timestamp));
 
+#ifdef CONFIG_SYNC
+		switch (atom->core_req & BASEP_JD_REQ_ATOM_TYPE) {
+		case BASE_JD_REQ_SOFT_FENCE_TRIGGER:
+			atom_type = "Trigger";
+			fence = atom->fence;
+			break;
+		case BASE_JD_REQ_SOFT_FENCE_WAIT:
+			atom_type = "Wait";
+			fence = atom->fence;
+			break;
+		default:
+			break;
+		}
+#endif
+
+#ifdef CONFIG_64BIT
+		seq_printf(sfile,
+				"%i,%u,%u,%u,%lu %lu,%lli,%llu,%s,%p\n",
+				i, atom->core_req, atom->status, atom->coreref_state,
+				atom->dep[0].atom ? atom->dep[0].atom - atoms : 0,
+				atom->dep[1].atom ? atom->dep[1].atom - atoms : 0,
+				(signed long long)start_timestamp,
+				(unsigned long long)(atom->time_spent_us ?
+					atom->time_spent_us * 1000 : start_timestamp),
+				atom_type, fence
+				);
+		pr_err(
+				"%i,%u,%u,%u,%lu %lu,%lli,%llu,%s,%p\n",
+				i, atom->core_req, atom->status, atom->coreref_state,
+				atom->dep[0].atom ? atom->dep[0].atom - atoms : 0,
+				atom->dep[1].atom ? atom->dep[1].atom - atoms : 0,
+				(signed long long)start_timestamp,
+				(unsigned long long)(atom->time_spent_us ?
+					atom->time_spent_us * 1000 : start_timestamp),
+				atom_type, fence
+				);
+#else
 		seq_printf(sfile,
 				"%i,%u,%u,%u,%u %u,%lli,%llu\n",
 				i, atom->core_req, atom->status, atom->coreref_state,
@@ -74,6 +114,18 @@ static int kbasep_jd_debugfs_atoms_show(struct seq_file *sfile, void *data)
 				(unsigned long long)(atom->time_spent_us ?
 					atom->time_spent_us * 1000 : start_timestamp)
 				);
+		pr_err(
+				"%i,%u,%u,%u,%u %u,%lli,%llu\n",
+				i, atom->core_req, atom->status, atom->coreref_state,
+				(unsigned)(atom->dep[0].atom ?
+						atom->dep[0].atom - atoms : 0),
+				(unsigned)(atom->dep[1].atom ?
+						atom->dep[1].atom - atoms : 0),
+				(signed long long)start_timestamp,
+				(unsigned long long)(atom->time_spent_us ?
+					atom->time_spent_us * 1000 : start_timestamp)
+				);
+#endif
 	}
 	spin_unlock_irqrestore(&kctx->kbdev->js_data.runpool_irq.lock, irq_flags);
 	mutex_unlock(&kctx->jctx.lock);

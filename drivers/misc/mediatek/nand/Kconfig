@@ -26,6 +26,24 @@ config MTK_MTD_NAND_INTERRUPT_SCHEME
 	  This configuration is for user to chose from these two scheme.
 	  Default using polling mode since DMA may not take too long.
 
+config MTK_TLC_NAND_SUPPORT
+	tristate "Mediatek MLC NAND Support"
+	depends on MTK_MTD_NAND
+	help
+	  In electronics, TLC is a memory element capable of
+	  storing more than a single bit of information.
+	  TLC NAND flash is a flash memory technology using multiple levels per
+	  cell to allow more bits to be stored using the same number of transistors.
+	  The primary benefit of TLC flash memory is its lower cost per unit of storage
+	  due to the higher data density, and memory-reading software can compensate for
+	  a larger bit error rate.
+	  Thus, firmware and driver to support TLC devices need to take care of data robustness,
+	  and TLC features with extend command and storage methods.
+	  Compatible with SLC, MLC and TLC, Mediatek controller driver and firmware have
+	  implement various method to enhance data robustness.
+	  While using TLC devices as booting device, please set this configuration as
+	  y to enable TLC features.
+
 config MTK_MLC_NAND_SUPPORT
 	tristate "Mediatek MLC NAND Support"
 	depends on MTK_MTD_NAND

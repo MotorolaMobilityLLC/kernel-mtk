@@ -1,3 +1,16 @@
+/*
+ * Copyright (C) 2015 MediaTek Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ */
+
 #ifndef __MTK_NAND_UTIL_H
 #define __MTK_NAND_UTIL_H
 #include <linux/mtd/mtd.h>
@@ -5,7 +18,11 @@
 #include <linux/mtd/partitions.h>
 #include <linux/mtd/nand_ecc.h>
 #include <nand_device_list.h>
-#include "partition_define.h"
+#if defined(CONFIG_MTK_TLC_NAND_SUPPORT)
+#include "partition_define_tlc.h"
+#else
+#include "partition_define_mlc.h"
+#endif
 
 #ifndef FALSE
   #define FALSE (0)
@@ -21,10 +38,6 @@
 
 #ifndef ASSERT
     #define ASSERT(expr)        BUG_ON(!(expr))
-#endif
-
-#ifndef BOOL
-typedef unsigned char  BOOL;
 #endif
 
 #define DRV_Reg8(x) __raw_readb(x)
@@ -93,9 +106,15 @@ struct NAND_CMD {
 	u32 pureReadOOBNum;
 #endif
 };
-
+enum readCommand {
+	NORMAL_READ = 0,
+	AD_CACHE_READ,
+	AD_CACHE_FINAL
+};
+extern struct flashdev_info_t gn_devinfo;
 extern void mt_irq_set_sens(unsigned int irq, unsigned int sens);
 extern void mt_irq_set_polarity(unsigned int irq, unsigned int polarity);
+
 bool mtk_nand_SetFeature(struct mtd_info *mtd, u16 cmd, u32 addr, u8 *value, u8 bytes);
 bool mtk_nand_GetFeature(struct mtd_info *mtd, u16 cmd, u32 addr, u8 *value, u8 bytes);
 extern void part_init_pmt(struct mtd_info *mtd, u8 *buf);
@@ -106,6 +125,17 @@ extern struct mtd_partition g_pasStatic_Partition[];
 extern int part_num;
 extern struct mtd_partition g_exist_Partition[];
 extern struct mtd_partition g_pasStatic_Partition[PART_MAX_COUNT];
+#if defined(CONFIG_MTK_TLC_NAND_SUPPORT)
+extern u64 OFFSET(u32 block);
+extern void mtk_pmt_reset(void);
+extern bool mtk_nand_IsBMTPOOL(loff_t logical_address);
+#endif
+extern bool mtk_block_istlc(u64 addr);
+extern void mtk_slc_blk_addr(u64 addr, u32 *blk_num, u32 *page_in_block);
+bool mtk_is_normal_tlc_nand(void);
+int mtk_nand_tlc_block_mark(struct mtd_info *mtd, struct nand_chip *chip, u32 mapped_block);
+extern int mtk_nand_write_tlc_block_hw(struct mtd_info *mtd, struct nand_chip *chip,
+				uint8_t *buf, u32 mapped_block);
 
 void show_stack(struct task_struct *tsk, unsigned long *sp);
 extern int mtk_nand_interface_async(void);
@@ -132,6 +162,7 @@ struct mtk_nand_host_hw {
 	unsigned int nand_ecc_size;
 	unsigned int nand_ecc_bytes;
 	unsigned int nand_ecc_mode;
+	unsigned int nand_fdm_size;            /*FDM size, for 8163 tlc*/
 };
 extern struct mtk_nand_host_hw mtk_nand_hw;
 
@@ -173,7 +204,7 @@ struct nand_ecclayout {
 #define MSG(evt, fmt, args...) \
 do {	\
 	if ((DBG_EVT_##evt) & DBG_EVT_MASK) { \
-		pr_debug(fmt, ##args); \
+		pr_warn(fmt, ##args); \
 	} \
 } while (0)
 

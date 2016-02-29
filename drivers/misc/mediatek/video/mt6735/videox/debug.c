@@ -74,6 +74,9 @@ struct MTKFB_MMP_Events_t MTKFB_MMP_Events;
 /* extern unsigned int gCaptureLayerDownX; */
 /* extern unsigned int gCaptureLayerDownY; */
 
+extern unsigned int dvfs_test;
+extern int primary_display_switch_mmsys_clk(int mmsys_clk_old, int mmsys_clk_new);
+
 #ifdef MTKFB_DEBUG_FS_CAPTURE_LAYER_CONTENT_SUPPORT
 struct dentry *mtkfb_layer_dbgfs[DDP_OVL_LAYER_MUN];
 
@@ -587,6 +590,26 @@ static void process_dbg_opt(const char *opt)
 			primary_display_manual_unlock();
 			return;
 		}
+	} else if (0 == strncmp(opt, "dvfs_test:", 10)) {
+		char *p = (char *)opt + 10;
+		unsigned int val = (unsigned int)simple_strtoul(p, &p, 16);
+
+		switch (val) {
+		case 0:
+		case 1:
+		case 2:
+			/* normal test */
+			primary_display_switch_mmsys_clk(dvfs_test, val);
+			break;
+
+		default:
+			/* finish */
+			break;
+		}
+
+		pr_err("DISP/ERROR " "DVFS mode:%d->%d\n", dvfs_test, val);
+
+		dvfs_test = val;
 	} else if (0 == strncmp(opt, "mobile:", 7)) {
 		if (0 == strncmp(opt + 7, "on", 2))
 			g_mobilelog = 1;

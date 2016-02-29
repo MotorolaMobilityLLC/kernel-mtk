@@ -10,7 +10,7 @@ config TRUSTONIC_TEE_SUPPORT
 config TRUSTONIC_TEE_VERSION
 	string "TRUSTONIC TEE Version"
 	depends on TRUSTONIC_TEE_SUPPORT
-	default "302a"
+	default "302c" if (ARCH_MT6735 || ARCH_MT6735M || ARCH_MT6753 || ARCH_MT6580)
 
 #
 # MobiCore configuration

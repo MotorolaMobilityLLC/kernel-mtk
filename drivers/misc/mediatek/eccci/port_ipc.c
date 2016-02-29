@@ -174,7 +174,7 @@ int port_ipc_ioctl(struct ccci_port *port, unsigned int cmd, unsigned long arg)
 	case CCCI_IPC_WAIT_TIME_UPDATE:
 		CCCI_DBG_MSG(port->modem->index, IPC, "CCCI_IPC_WAIT_TIME_UPDATE\n");
 		ret = wait_time_update_notify();
-		CCCI_INF_MSG(port->modem->index, IPC, "CCCI_IPC_WAIT_TIME_UPDATE wakeup\n");
+		CCCI_DBG_MSG(port->modem->index, IPC, "CCCI_IPC_WAIT_TIME_UPDATE wakeup\n");
 		break;
 
 	case CCCI_IPC_UPDATE_TIMEZONE:
