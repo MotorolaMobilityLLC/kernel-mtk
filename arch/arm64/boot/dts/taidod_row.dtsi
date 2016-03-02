@@ -52,6 +52,17 @@ initrd=0x44000000,0x1000000 loglevel=8 androidboot.hardware=mt6735";
 	};
 	};
 
+	utos {
+	compatible = "microtrust,utos";
+	interrupts = <GIC_SPI 244 IRQ_TYPE_EDGE_RISING>,
+		<GIC_SPI 245 IRQ_TYPE_EDGE_RISING>,
+		<GIC_SPI 246 IRQ_TYPE_EDGE_RISING>,
+		<GIC_SPI 250 IRQ_TYPE_EDGE_RISING>,
+		<GIC_SPI 251 IRQ_TYPE_EDGE_RISING>,
+		<GIC_SPI 252 IRQ_TYPE_EDGE_RISING>,
+		<GIC_SPI 253 IRQ_TYPE_EDGE_RISING>,
+		<GIC_SPI 255 IRQ_TYPE_EDGE_RISING>;
+	};
 
 	cpus {	#address-cells = <1>;
 		#size-cells = <0>;
@@ -1871,7 +1882,6 @@ initrd=0x44000000,0x1000000 loglevel=8 androidboot.hardware=mt6735";
 			slew-rate = <1>;
 			bias-pull-up = <00>;
 			output-high;
-			output-low;
 		};
 	};
 
