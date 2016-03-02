@@ -4099,12 +4099,11 @@ int ddp_dsi_build_cmdq(DISP_MODULE_ENUM module, void *cmdq_trigger_handle, CMDQ_
     }
     DISPCHECK("DSI read long packet size: %d\n", recv_data_cnt);
 
-			if( dsi_params->lcm_esd_check_table[i].count == 4)
+			if( dsi_params->lcm_esd_check_table[i].count == 3)
 			{	
 				if((read_data1.byte0 == dsi_params->lcm_esd_check_table[i].para_list[0])&&
 (read_data1.byte1 == dsi_params->lcm_esd_check_table[i].para_list[1])&&
-(read_data1.byte2 == dsi_params->lcm_esd_check_table[i].para_list[2])&&
-(read_data1.byte3 == dsi_params->lcm_esd_check_table[i].para_list[3])
+(read_data1.byte2 == dsi_params->lcm_esd_check_table[i].para_list[2])
 )
 				{
 				// clear rx data
@@ -4120,6 +4119,26 @@ int ddp_dsi_build_cmdq(DISP_MODULE_ENUM module, void *cmdq_trigger_handle, CMDQ_
 				}
 			}
 			//add by caozhg
+			else if (dsi_params->lcm_esd_check_table[i].count == 2)
+			{
+				if(((read_data1.byte0 == dsi_params->lcm_esd_check_table[i].para_list[0])&&
+(read_data1.byte1 == dsi_params->lcm_esd_check_table[i].para_list[1])) 
+|| ((read_data1.byte0 == 0x0f)&&
+(read_data1.byte1 == 0xf0))
+)
+				{
+				// clear rx data
+				// DSI_OUTREG32(NULL, &DSI_REG[dsi_i]->DSI_RX_DATA0,0);
+					printk ("%s esd check ok.\n", __func__);
+					ret = 0; // esd pass
+				}
+				else
+				{
+					printk ("%s esd check fail.\n",__func__);
+					ret = 1; // esd fail
+					break;
+				}
+			}
 			else
 			{
 				if(read_data1.byte0 == dsi_params->lcm_esd_check_table[i].para_list[0])

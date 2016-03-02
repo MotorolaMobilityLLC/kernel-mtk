@@ -26,6 +26,11 @@ LCM_DRIVER *lcm_driver_list[] = {
 #if defined(OTM1284A_HD720_DSI_VDO_TM)
 	&otm1284a_hd720_dsi_vdo_tm_lcm_drv,
 #endif
+
+#if defined(TM050_TIANMA_720P_VDO)
+	&tm050_tianma_720p_vdo_drv,
+#endif
+
 #if defined(OTM1285A_HD720_DSI_VDO_TM)
 	&otm1285a_hd720_dsi_vdo_tm_lcm_drv,
 #endif
@@ -622,7 +627,6 @@ LCM_DRIVER *lcm_driver_list[] = {
 	&hx8394f_boe_720p_vdo_drv,
 #endif
 
-
 #if defined(OTM9608_QHD_DSI_VDO)
 	&otm9608_qhd_dsi_vdo_drv,
 #endif
@@ -929,6 +933,11 @@ LCM_DRIVER *lcm_driver_list[] = {
 #if defined(B080UAN01_2_WUXGA_DSI_VDO)
 	&b080uan01_2_wuxga_dsi_vdo_lcm_drv,
 #endif
+
+#if defined(DUMMY_LCD) //add by caozhg
+  &dummy_lcd_lcm_drv,
+#endif 
+
 #endif
 };
 

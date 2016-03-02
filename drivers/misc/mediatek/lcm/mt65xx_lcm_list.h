@@ -237,6 +237,8 @@ extern LCM_DRIVER r69429_wqxga_dsi_vdo_lcm_drv;
 extern LCM_DRIVER hx8394c_wxga_dsi_vdo_lcm_drv;
 extern LCM_DRIVER nt35595_truly_fhd_dsi_vdo_lcm_drv;
 extern LCM_DRIVER b080uan01_2_wuxga_dsi_vdo_lcm_drv;
+extern LCM_DRIVER tm050_tianma_720p_vdo_drv;//add by yufangfang
+extern LCM_DRIVER dummy_lcd_lcm_drv;
 #endif
 
 #ifdef BUILD_LK
