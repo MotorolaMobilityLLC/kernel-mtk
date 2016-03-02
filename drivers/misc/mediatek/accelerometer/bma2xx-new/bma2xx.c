@@ -225,7 +225,7 @@ static struct acc_init_info bma_init_info = {
 
 
 
-struct acc_hw accel_cust;
+static struct acc_hw accel_cust;
 static struct acc_hw *hw = &accel_cust;
 
 
