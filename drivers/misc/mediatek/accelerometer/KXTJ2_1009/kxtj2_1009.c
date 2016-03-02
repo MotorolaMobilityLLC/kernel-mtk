@@ -1768,7 +1768,7 @@ static long kxtj2_1009_compat_ioctl(struct file *file, unsigned int cmd,
 			break;    
 		}
 		
-		err = file->f_op->unlocked_ioctl(file, GSENSOR_IOCTL_READ_SENSORDATA, arg32);
+		err = file->f_op->unlocked_ioctl(file, GSENSOR_IOCTL_READ_SENSORDATA, (unsigned long)arg32);
 		if (err){
 			GSE_ERR("GSENSOR_IOCTL_READ_SENSORDATA unlocked_ioctl failed.");
 			return err;
