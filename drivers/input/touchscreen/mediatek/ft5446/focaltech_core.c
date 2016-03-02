@@ -51,6 +51,10 @@
 
 #include "tpd.h"
 #include "base.h"
+#include "charging.h"
+
+#include <mt-plat/battery_common.h>
+
 /* #define TIMER_DEBUG */
 
 
@@ -70,6 +74,42 @@
 #include <mach/md32_ipi.h>
 #include <mach/md32_helper.h>
 #endif
+#ifdef CONFIG_SLT_DRV_DEVINFO_SUPPORT
+#define SLT_DEVINFO_CTP_DEBUG
+#include  <linux/dev_info.h>
+u8 ver_id;
+u8 ver_module;
+//u8 ver;
+static char* temp_ver;
+static char* temp_comments;
+struct devinfo_struct *s_DEVINFO_ctp;   //suppose 10 max lcm device 
+ //The followd code is for GTP style
+static void devinfo_ctp_regchar(char *module,char * vendor,char *version,char *used, char* comments)
+{
+  
+         s_DEVINFO_ctp =(struct devinfo_struct*) kmalloc(sizeof(struct devinfo_struct), GFP_KERNEL);
+         s_DEVINFO_ctp->device_type="CTP";
+         s_DEVINFO_ctp->device_module=module;
+         s_DEVINFO_ctp->device_vendor=vendor;
+         s_DEVINFO_ctp->device_ic="FT5446";
+         s_DEVINFO_ctp->device_info=DEVINFO_NULL;
+         s_DEVINFO_ctp->device_version=version;
+         s_DEVINFO_ctp->device_used=used;
+         //s_DEVINFO_ctp->device_comments=comments;
+#ifdef SLT_DEVINFO_CTP_DEBUG
+        printk("[DEVINFO CTP]registe CTP device! type:<%s> module:<%s> vendor<%s> ic<%s> version<%s> info<%s> used<%s> \n",
+                  s_DEVINFO_ctp->device_type,s_DEVINFO_ctp->device_module,
+                  s_DEVINFO_ctp->device_vendor,s_DEVINFO_ctp->device_ic,
+                  s_DEVINFO_ctp->device_version,s_DEVINFO_ctp->device_info,
+                  s_DEVINFO_ctp->device_used); //s_DEVINFO_ctp->device_comments);
+#endif
+                DEVINFO_CHECK_DECLARE(s_DEVINFO_ctp->device_type,s_DEVINFO_ctp->device_module,
+                                      s_DEVINFO_ctp->device_vendor,s_DEVINFO_ctp->device_ic,
+                                      s_DEVINFO_ctp->device_version,s_DEVINFO_ctp->device_info,
+                                      s_DEVINFO_ctp->device_used);//s_DEVINFO_ctp->device_comments);
+        //devinfo_check_add_device(s_DEVINFO_ctp);
+}
+#endif
 
 #ifdef CONFIG_MTK_SENSOR_HUB_SUPPORT
 enum DOZE_T {
@@ -79,7 +119,7 @@ enum DOZE_T {
 };
 static DOZE_T doze_status = DOZE_DISABLED;
 #endif
-
+u8 ver;
 #ifdef CONFIG_MTK_SENSOR_HUB_SUPPORT
 static s8 ftp_enter_doze(struct i2c_client *client);
 
@@ -134,15 +174,17 @@ struct mutex i2c_rw_access;
 DEFINE_MUTEX(i2c_rw_access);
 #endif
 
-
+#if MTK_CTP_NODE
 static struct kobject *touchscreen_dir=NULL;
 static struct kobject *virtual_dir=NULL;
 static struct kobject *touchscreen_dev_dir=NULL;
-static char *vendor_name=NULL;
+#endif
 static u8 ctp_fw_version;
+static char *vendor_name = NULL;
+#define CTP_PROC_FILE "tp_info"
 //static int tpd_keys[TPD_VIRTUAL_KEY_MAX] = { 0 };
 //static int tpd_keys_dim[TPD_VIRTUAL_KEY_MAX][4]={0};
-
+#if MTK_CTP_NODE
 #define WRITE_BUF_SIZE  1016
 #define PROC_UPGRADE							0
 #define PROC_READ_REGISTER						1
@@ -153,7 +195,7 @@ static u8 ctp_fw_version;
 #define PROC_READ_DATA							7
 #define PROC_SET_TEST_FLAG						8
 static unsigned char proc_operate_mode 			= PROC_UPGRADE;
-
+#endif 
 
 
 static DECLARE_WAIT_QUEUE_HEAD(waiter);
@@ -430,7 +472,7 @@ static struct device_attribute *ft5x0x_attrs[] = {
 #endif
 };
 
-
+#if MTK_CTP_NODE
 static ssize_t mtk_ctp_firmware_vertion_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
 {
 
@@ -559,11 +601,12 @@ static ssize_t mtk_ctp_firmware_update_store(struct kobject *kobj, struct kobj_a
 	}
 	
 	#if FT_ESD_PROTECT
-		//printk("\n  zax proc w 1 \n");		
-esd_switch(1);apk_debug_flag = 0;
-//printk("\n  zax v= %d \n",apk_debug_flag);
-			#endif
-	return count; 
+       //printk("\n  zax proc w 1 \n");		
+       esd_switch(1);apk_debug_flag = 0;
+       //printk("\n  zax v= %d \n",apk_debug_flag);
+       #endif
+
+       return count; 
  
 }
 
@@ -602,7 +645,6 @@ static struct attribute_group mtk_ctp_attr_group = {
 	.attrs = mtk_properties_attrs,
 };
 
-#if 1
 static int create_ctp_node(void)
 {
   int ret;
@@ -617,8 +659,6 @@ static int create_ctp_node(void)
  
   return 0;
 }
-
-
 #endif
 static void tpd_down(int x, int y, int p, int id)
 {
@@ -963,7 +1003,12 @@ int fts_read_reg(struct i2c_client *client, u8 regaddr, u8 *regvalue)
 	return fts_i2c_read(client, &regaddr, 1, regvalue, 1);
 
 }
-
+#if USB_CHARGE_DETECT
+//extern int FG_charging_status;
+extern PMU_ChargerStruct BMT_status;
+int close_to_ps_flag_value = 1;
+int charging_flag = 0;
+#endif
 static int touch_event_handler(void *unused)
 {
 	int i = 0;
@@ -971,7 +1016,9 @@ static int touch_event_handler(void *unused)
 	int ret = 0;
 	u8 state = 0;
 	#endif
-
+    #if USB_CHARGE_DETECT
+	u8  data;
+    #endif
 	struct touch_info cinfo, pinfo, finfo;
 	struct sched_param param = { .sched_priority = RTPM_PRIO_TPD };
 
@@ -991,7 +1038,25 @@ static int touch_event_handler(void *unused)
 		tpd_flag = 0;
 
 		set_current_state(TASK_RUNNING);
-
+        #if USB_CHARGE_DETECT
+        if((BMT_status.charger_exist!= 0)&&(charging_flag == 0))
+		{
+		 data = 0x1;
+		 charging_flag = 1;
+		 fts_write_reg(i2c_client,0x8B,0x01);
+		}
+		else
+		{
+		 if ((BMT_status.charger_exist == 0)&&(charging_flag == 1))
+		 {
+		  charging_flag = 0;
+		  data = 0x0;
+		  fts_write_reg(i2c_client,0x8B,0x00);
+		 }
+		
+		}
+ 
+        #endif
 		#if FTS_GESTRUE_EN
 			ret = fts_read_reg(fts_i2c_client, 0xd0,&state);
 			if (ret<0)
@@ -1137,7 +1202,7 @@ int hidi2c_to_stdi2c(struct i2c_client * client)
 
 }
 #endif
-#if MTK_CTP_NODE 
+
 #define CTP_PROC_FILE "tp_info"
 
 static int ctp_proc_read_show (struct seq_file* m, void* data)
@@ -1169,7 +1234,7 @@ static const struct file_operations g_ctp_proc =
     .open = ctp_proc_open,
     .read = seq_read,
 };
-#endif
+
 
 static int tpd_probe(struct i2c_client *client, const struct i2c_device_id *id)
 {
@@ -1264,13 +1329,12 @@ reset_proc:
 #endif
 */   
     //device_create_file(tpd->tpd_dev, &tp_attr_foo); 
-	#ifdef  MTK_CTP_NODE
     if((proc_create(CTP_PROC_FILE,0444,NULL,&g_ctp_proc))==NULL)
     {
       printk("proc_create tp vertion node error\n");
-	}
-	#endif
-	#ifdef  MTK_CTP_NODE
+    }
+
+    #if  MTK_CTP_NODE
 	create_ctp_node();
     #endif
 	
@@ -1301,7 +1365,7 @@ reset_proc:
 	#ifdef TPD_AUTO_UPGRADE
 		printk("********************Enter CTP Auto Upgrade********************\n");
 		is_update = true;
-		//fts_ctpm_auto_upgrade(fts_i2c_client);
+		fts_ctpm_auto_upgrade(fts_i2c_client);
 		is_update = false;
 	#endif
 
@@ -1337,9 +1401,9 @@ reset_proc:
 	init_test_timer();
 #endif
 
-	{
-		u8 ver;
 
+	{
+		
 		fts_read_reg(client, 0xA6, &ver);
 		ctp_fw_version = ver;
 
@@ -1356,6 +1420,24 @@ reset_proc:
 		}
 		//printk("vendor_name=%s fwvertion=%x\n",vendor_name,fwvertion);
 	}
+
+        #ifdef CONFIG_SLT_DRV_DEVINFO_SUPPORT
+        ver_id = ctp_fw_version;
+        ver_module = ver;
+        temp_ver=(char*) kmalloc(8, GFP_KERNEL);
+        temp_comments=(char*) kmalloc(20, GFP_KERNEL);
+        sprintf(temp_ver,"0x%x",ver_id); //changed by caozhg
+        switch(ver_module)
+        {
+          case 0x51://No used
+          sprintf(temp_comments,"TW:OFILM:FT5446 0x%x",ver_id); 
+          devinfo_ctp_regchar("unknown","O-Film",temp_ver,DEVINFO_USED,temp_comments);
+          break;
+          default:
+          break;
+        }
+
+   #endif
    
 #ifdef CONFIG_MTK_SENSOR_HUB_SUPPORT
 	int ret;
@@ -1517,7 +1599,16 @@ static void tpd_resume(struct device *h)
 #else
 	enable_irq(touch_irq);
 #endif
-
+#if USB_CHARGE_DETECT
+    if(BMT_status.charger_exist != 0)
+	{
+     charging_flag = 0;
+	}
+	else
+	{
+	 charging_flag=1;
+	}
+#endif
 }
 
 #ifdef CONFIG_MTK_SENSOR_HUB_SUPPORT

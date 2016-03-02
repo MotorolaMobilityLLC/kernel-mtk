@@ -279,13 +279,14 @@ struct fts_ts_data {
 #define FTS_APK_DEBUG
 #define SYSFS_DEBUG
 #define TPD_AUTO_UPGRADE
-#define MTK_CTP_NODE                     1
-
+#define MTK_CTP_NODE                            0
+#define USB_CHARGE_DETECT                       1
 #ifdef TPD_AUTO_UPGRADE
 #define Boot_Upgrade_Protect			//开机升级保护。升级失败后，再次开机可重新升级
 #define FTS_CHIP_ID			0x54	//FT3427、FT5x46 CHIP ID = 0x54
 #define FTS_Vendor_1_ID		0x51//Ofilm TP VID = 0x51
 #define FTS_Vendor_2_ID		0x79//default TP VID
+#define FTS_Vendor_3_ID     0x01
 #endif
 #define FIRMWARE_VERTION_NODE                                
 #define FT_TP									0

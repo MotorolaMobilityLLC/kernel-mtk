@@ -120,7 +120,8 @@ static unsigned char CTPM_FW[] = {
 	//#include "LQ_CM280_FT5346_Ofilm0x51_V04_D01_20151217_app.i"
 	//#include "LQ_CM320_Ofilm0x51_V03_D01_20151214_app.i"
 	//#include "LQ_CM320_Ofilm0x51_V04_D01_20151222_app.i"
-	  #include "LQ_CU320_Ofilm0x51_V07_D01_20160118_app.i"
+	//  #include "LQ_CU320_Ofilm0x51_V07_D01_20160118_app.i"
+	    #include "LQ_CM3300_0film0x51_V03_D01_20160223_app.i"
 };
 
 static unsigned char aucFW_PRAM_BOOT[] = {
@@ -3801,11 +3802,11 @@ int fts_ctpm_auto_upgrade(struct i2c_client *client)
 	fts_read_reg(client, FTS_REG_VENDOR_ID, &uc_tp_vendor_id);
 	printk("[FTS] uc_tp_fm_ver = 0x%x, uc_tp_vendor_id = 0x%x\n",uc_tp_fm_ver, uc_tp_vendor_id);
 
-	if((uc_tp_vendor_id != FTS_Vendor_1_ID) && (uc_tp_vendor_id != FTS_Vendor_2_ID))
+	if((uc_tp_vendor_id != FTS_Vendor_1_ID) && (uc_tp_vendor_id != FTS_Vendor_2_ID) && (uc_tp_vendor_id != FTS_Vendor_3_ID))
 	{
 		uc_boot_vendor_id = ft5x46_ctpm_VidFWid_get_from_boot(client);
 		printk("[FTS] uc_boot_vendor_id= 0x%x!\n", uc_boot_vendor_id);
-		if((uc_boot_vendor_id == FTS_Vendor_1_ID))// || (uc_boot_vendor_id == FTS_Vendor_2_ID))
+		if((uc_boot_vendor_id == FTS_Vendor_1_ID)||(uc_boot_vendor_id == FTS_Vendor_3_ID))
 		{
 			uc_tp_fm_ver = 0;//force to upgrade the FW
 			uc_tp_vendor_id = uc_boot_vendor_id;
