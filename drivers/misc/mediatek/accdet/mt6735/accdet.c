@@ -507,6 +507,10 @@ static void accdet_eint_work_callback(struct work_struct *work)
 			ts3a227e_connector_type = TS3A227E_CONNECTOR_TRS;
 			//ts3a227e_write_byte(0x02, 0x07);
 			//ts3a227e_write_byte(0x03, 0xf3);
+			//add by caozhg to fix bug
+			ts3a227e_write_byte(0x04, 0x48); //0x40
+			ts3a227e_write_byte(0x07, 0x10); //0x14
+			ts3a227e_write_byte(0x08, 0x09);
 			msleep(20);
 		} else if ((ts3a227e_reg_value[11] & 0x02) == 0x02) {
 			printk("[Accdet] TS3A227E 4-pole OMTP headset detected!\n");
