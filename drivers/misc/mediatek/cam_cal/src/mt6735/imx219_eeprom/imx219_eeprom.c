@@ -12,7 +12,7 @@
 #include <linux/slab.h>
 #include <linux/fs.h>
 #include <linux/module.h>	//liuzhen
-#include "kd_camera_hw.h"
+//#include "kd_camera_hw.h"
 #include "cam_cal.h"
 #include "cam_cal_define.h"
 #include "imx219_eeprom.h"

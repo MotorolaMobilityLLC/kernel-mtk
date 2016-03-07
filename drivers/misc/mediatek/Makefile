@@ -103,7 +103,7 @@ obj-$(CONFIG_MEDIATEK_SOLUTION)  += sched/
 obj-y += cameraisp/src/
 obj-$(CONFIG_MTK_IMGSENSOR) += imgsensor/src/
 #add by huangsh4
-obj-$(CONFIG_MTK_CAM_CAL) += cam_cal/src/
+obj-$(CONFIG_MTK_CAM_CAL) += cam_cal/src/mt6735/imx219_eeprom/
 
 obj-$(CONFIG_MTK_LENS)   += lens/
 obj-$(CONFIG_MTK_FLASHLIGHT)	+= flashlight/src/

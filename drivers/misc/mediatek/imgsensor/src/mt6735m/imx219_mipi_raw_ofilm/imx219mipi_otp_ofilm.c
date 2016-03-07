@@ -295,7 +295,7 @@ static unsigned char get_otp_lsc(void)
 
 	kal_uint16 nLSCGroup = 0;
 
-#if 0
+#if 1
 	UBYTE pLSCInfoData[256] = {0};
 	kal_uint16 i;
 	kal_uint16 nLSCCheckSum;
@@ -311,7 +311,7 @@ static unsigned char get_otp_lsc(void)
 	{
 		nLSCGroup = 1;
 		lscTable = 0;
-	#if 0 
+	#if 1
 		for (i = 2; i < 5; i++)  
 		{
 			IMX219_readpage(i, pLSCInfoData+ (i-2)*64);
@@ -322,7 +322,7 @@ static unsigned char get_otp_lsc(void)
 	{
 		nLSCGroup = 2;
 		lscTable = 2;
-	#if 0
+	#if 1
 		for (i = 7; i < 11; i++)  
 		{
 			IMX219_readpage(i, pLSCInfoData+ (i-7)*64);
@@ -336,7 +336,7 @@ static unsigned char get_otp_lsc(void)
 	}
 
 	printk("IM219_OTP:nLSCGroup = %d\n",nLSCGroup);
-#if 0
+#if 1
 	// LSC CheckSum
 	sum = 0;
 	//kal_uint16 i;
@@ -347,9 +347,9 @@ static unsigned char get_otp_lsc(void)
 	}
 	nLSCCheckSum = sum % 0xff + 1;
 
-	printk("pBasicInfoData[61+(nLSCGroup-1)] = %d\n",pBasicInfoData[61+(nLSCGroup-1)]);
+	printk("pLSCInfoData[61+(nLSCGroup-1)] = %d\n",pLSCInfoData[61+(nLSCGroup-1)]);
 	printk("nLSCCheckSum = %d\n",nLSCCheckSum);
-	if(pBasicInfoData[61+(nLSCGroup-1)] != nLSCCheckSum)
+	if(pLSCInfoData[61+(nLSCGroup-1)] != nLSCCheckSum)
 	{
 		    OTP_LOG2("LSC CheckSum is error");
 	}
@@ -377,7 +377,9 @@ static unsigned char get_otp_wb(void)
 	unsigned char golden_Gb = 0;
 	kal_uint16 nWBFlag = 0;		//WB flag check
 	kal_uint16 nWBGroup = 0;
-
+        	kal_uint16 nWBCheckSum;
+	kal_uint16 i;
+	kal_uint16 sum;
 	IMX219_readpage(1,pWBInfoData);
 	nWBFlag = pWBInfoData[0];
 	OTP_LOG2("IM219_OTP:nWBFlag=0x%x\n",nWBFlag);
@@ -489,7 +491,7 @@ static unsigned char get_otp_wb(void)
 
 	temp_CalGain = (current_R&0x000000ff)|((current_B<<8)&0x0000ff00)|((current_Gr<<16)&0x00ff0000)|((current_Gb<<24)&0xff000000);
 	temp_FacGain = (golden_R&0x000000ff)|((golden_B<<8)&0x0000ff00)|((golden_Gr<<16)&0x00ff0000)|((golden_Gb<<24)&0xff000000);
-#if 0
+#if 1
 	//WB Data CheckSum
 	sum = 0;
 
