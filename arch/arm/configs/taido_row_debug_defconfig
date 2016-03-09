@@ -524,3 +524,6 @@ CONFIG_MTK_ENABLE_MD1=y
 #lenovo-sw zhangjf10 for Taido_row 2016-01-15 end
 #wangxiqiang add to check efuse status
 CONFIG_CHECK_EFUSE_STATUS=y
+#Lenovo-sw quebs2 added 20150510 begin,support efuse inquiry for secboot
+CONFIG_EFUSE_SBC_CHECK=y
+#Lenovo-sw quebs2 added 20150510 end,support efuse inquiry for secboot
