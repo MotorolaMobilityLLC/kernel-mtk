@@ -185,3 +185,6 @@ obj-$(CONFIG_MTK_TINYSYS_SCP_SUPPORT) += scp/
 ifneq ($(wildcard $(srctree)/drivers/misc/mediatek/cpu_stress/),)
 obj-$(CONFIG_MTK_CPU_STRESS)	+= cpu_stress/
 endif
+#wangxiqiang add to efuse status check
+obj-$(CONFIG_CHECK_EFUSE_STATUS) += efuseinfo/
+#obj-y += efuseinfo/
