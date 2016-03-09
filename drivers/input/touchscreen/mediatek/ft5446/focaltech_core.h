@@ -279,7 +279,7 @@ struct fts_ts_data {
 #define FTS_APK_DEBUG
 #define SYSFS_DEBUG
 #define TPD_AUTO_UPGRADE
-#define MTK_CTP_NODE                            0
+#define MTK_CTP_NODE                            1
 #define USB_CHARGE_DETECT                       1
 #ifdef TPD_AUTO_UPGRADE
 #define Boot_Upgrade_Protect			//开机升级保护。升级失败后，再次开机可重新升级
