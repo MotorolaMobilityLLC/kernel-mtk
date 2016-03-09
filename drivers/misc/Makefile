@@ -59,3 +59,6 @@ obj-$(CONFIG_VEXPRESS_SYSCFG)	+= vexpress-syscfg.o
 obj-$(CONFIG_CXL_BASE)		+= cxl/
 obj-$(CONFIG_UID_CPUTIME) += uid_cputime.o
 obj-$(CONFIG_MEDIATEK_SOLUTION)	+= mediatek/
+#Lenovo-sw quebs2 added 20150510 begin,support efuse check with sbc flag
+obj-$(CONFIG_EFUSE_SBC_CHECK) += efusecheck/
+#Lenovo-sw quebs2 added 20150510 end,support efuse check with sbc flag
