@@ -3,7 +3,7 @@
 #include <linux/kernel.h>
 #endif
 #include "lcm_drv.h"
-
+#include <linux/gpio.h>
 #ifdef BUILD_LK
 	#include <platform/upmu_common.h>
 	#include <platform/mt_gpio.h>
@@ -532,56 +532,24 @@ static void KTD2125_enable(char en)
 static unsigned int lcm_compare_id(void)
 {
 
-	int   array[4];
-	char  buffer[3];
-	char  id0=0;
-	char  id1=0;
-	char  id2=0;
-	int   id=0;
+    int gpio_lcm_id;
 
-        //KTD2125_enable(1);
-        MDELAY(10);
         SET_RESET_PIN(1);
         MDELAY(20);
         SET_RESET_PIN(0);
         MDELAY(10);
         SET_RESET_PIN(1);
-	MDELAY(120);
+	     MDELAY(120);
 
-	//------------------B9h----------------//
-		array[0] = 0x00043902; 						 
-		array[1] = 0x9483FFB9; 				
-	        dsi_set_cmdq(&array[0], 2, 1); 
 
-	array[0] = 0x00013700;// read id return two byte,version and id
-	dsi_set_cmdq(array, 1, 1);
-
-	read_reg_v2(0xDA,buffer, 1); 
+       // KTD2125_enable(0);
 	
-	array[0] = 0x00013700;// read id return two byte,version and id
-	dsi_set_cmdq(array, 1, 1);
-	read_reg_v2(0xDB,buffer+1, 1);
-
-	
-	array[0] = 0x00013700;// read id return two byte,version and id
-	dsi_set_cmdq(array, 1, 1);
-	read_reg_v2(0xDC,buffer+2, 1);
-	
-	id0 = buffer[0]; //should be 0x00
-	id1 = buffer[1];//should be 0xaa
-	id2 = buffer[2];//should be 0x55
-        KTD2125_enable(0);
-#ifdef BUILD_LK
-	printf("%s, id0 = 0x%08x\n", __func__, id0);//should be 0x00
-	printf("%s, id1 = 0x%08x\n", __func__, id1);//should be 0xaa
-	printf("%s, id2 = 0x%08x\n", __func__, id2);//should be 0x55
-#endif
-	id = ((id0<<16)|(id1 << 8)) | id2; //we only need ID
-	if (id == 0x018101 || id == 0x1a5041 || id == 0x1a5042 || id == 0x1a5043)//otp  //if no vsp/vsn enable the id should be the default value 0x83940f
-	//if (id == 0x83940f) //default
-		return 1;
-	else
-		return 0;
+	gpio_lcm_id = gpio_get_value(5);
+		
+	if (gpio_lcm_id == 0)	
+      return 1;	
+      else	
+      return 0;
 }
 
 static void lcm_init(void)
