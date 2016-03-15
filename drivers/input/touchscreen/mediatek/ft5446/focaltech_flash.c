@@ -123,7 +123,9 @@ static unsigned char CTPM_FW[] = {
 	//  #include "LQ_CU320_Ofilm0x51_V07_D01_20160118_app.i"
 	    #include "LQ_CM3300_0film0x51_V03_D01_20160223_app.i"
 };
-
+static unsigned char CTPM_FW_BOE[] = {
+       #include "0x3b_LEM5006+Noah-m_V04_D01_20160301_app.i"    
+};
 static unsigned char aucFW_PRAM_BOOT[] = {
 	//#include "FT8xx6_Pramboot_Vx.x_xxxx.i"
 };
@@ -3306,9 +3308,11 @@ int fts_ctpm_fw_upgrade_with_app_file(struct i2c_client *client, char *firmware_
 * Output: no
 * Return: fw version
 ***********************************************************************/
-int fts_ctpm_get_i_file_ver(void)
+int fts_ctpm_get_i_file_ver(u8 vendor_id)
 {
 	u16 ui_sz;
+	if(vendor_id==0x51 || vendor_id==0x01)
+	{
 	ui_sz = sizeof(CTPM_FW);
 	if (ui_sz > 2)
 	{
@@ -3319,7 +3323,20 @@ int fts_ctpm_get_i_file_ver(void)
 	    else
 		return CTPM_FW[ui_sz - 2];
 	}
-
+	}
+	else if(vendor_id==0x3b)
+	{
+     ui_sz = sizeof(CTPM_FW_BOE);
+	 if (ui_sz > 2)
+	 {
+	    if(fts_updateinfo_curr.CHIP_ID==0x36  || fts_updateinfo_curr.CHIP_ID==0x86  || fts_updateinfo_curr.CHIP_ID==0x64)
+                return CTPM_FW_BOE[0x10a];
+	    else if(fts_updateinfo_curr.CHIP_ID==0x58)
+                return CTPM_FW_BOE[0x1D0A];
+	    else
+		return CTPM_FW_BOE[ui_sz - 2];
+	}
+	}
 	return 0x00;
 }
 /************************************************************************
@@ -3446,7 +3463,7 @@ int fts_ctpm_update_project_setting(struct i2c_client *client)
 * Output: no
 * Return: fail <0
 ***********************************************************************/
-int fts_ctpm_fw_upgrade_with_i_file(struct i2c_client *client)
+int fts_ctpm_fw_upgrade_with_i_file(struct i2c_client *client,u8 vendor_id)
 {
 	u8 *pbt_buf = NULL;
 	int i_ret=0;
@@ -3522,15 +3539,26 @@ int fts_ctpm_fw_upgrade_with_i_file(struct i2c_client *client)
 	}
 	else if ((fts_updateinfo_curr.CHIP_ID==0x54))
 	{
+	    if(vendor_id==0x51||vendor_id==0x01)
+	    {
+			fw_len=sizeof(CTPM_FW);
+            pbt_buf = CTPM_FW;
+		}
+		else if(vendor_id==0x3b)
+		{
+         fw_len=sizeof(CTPM_FW_BOE);
+         pbt_buf = CTPM_FW_BOE;
+		}
 		if (fw_len < 8 || fw_len > 54 * 1024) 
 		{
 			pr_err("FW length error\n");
 			return -EIO;
 		}
 		/*FW upgrade*/
-		pbt_buf = CTPM_FW;
+		//pbt_buf = CTPM_FW;
 		/*call the upgrade function*/
-		i_ret = fts_5x46_ctpm_fw_upgrade(client, pbt_buf, sizeof(CTPM_FW));
+		//i_ret = fts_5x46_ctpm_fw_upgrade(client, pbt_buf, sizeof(CTPM_FW));
+		i_ret = fts_5x46_ctpm_fw_upgrade(client, pbt_buf,fw_len );
 		if (i_ret != 0)
 		{
 					dev_err(&client->dev, "[FTS] upgrade failed. err=%d.\n", i_ret);
@@ -3802,11 +3830,11 @@ int fts_ctpm_auto_upgrade(struct i2c_client *client)
 	fts_read_reg(client, FTS_REG_VENDOR_ID, &uc_tp_vendor_id);
 	printk("[FTS] uc_tp_fm_ver = 0x%x, uc_tp_vendor_id = 0x%x\n",uc_tp_fm_ver, uc_tp_vendor_id);
 
-	if((uc_tp_vendor_id != FTS_Vendor_1_ID) && (uc_tp_vendor_id != FTS_Vendor_2_ID) && (uc_tp_vendor_id != FTS_Vendor_3_ID))
+	if((uc_tp_vendor_id != FTS_Vendor_1_ID) && (uc_tp_vendor_id != FTS_Vendor_2_ID) && (uc_tp_vendor_id != FTS_Vendor_3_ID) && (uc_tp_vendor_id != FTS_Vendor_4_ID))
 	{
 		uc_boot_vendor_id = ft5x46_ctpm_VidFWid_get_from_boot(client);
 		printk("[FTS] uc_boot_vendor_id= 0x%x!\n", uc_boot_vendor_id);
-		if((uc_boot_vendor_id == FTS_Vendor_1_ID)||(uc_boot_vendor_id == FTS_Vendor_3_ID))
+		if((uc_boot_vendor_id == FTS_Vendor_1_ID)||(uc_boot_vendor_id == FTS_Vendor_3_ID)||(uc_boot_vendor_id == FTS_Vendor_4_ID) )
 		{
 			uc_tp_fm_ver = 0;//force to upgrade the FW
 			uc_tp_vendor_id = uc_boot_vendor_id;
@@ -3818,7 +3846,7 @@ int fts_ctpm_auto_upgrade(struct i2c_client *client)
 		}
 	}
 
-	uc_host_fm_ver = fts_ctpm_get_i_file_ver();
+	uc_host_fm_ver = fts_ctpm_get_i_file_ver(uc_tp_vendor_id);
 	printk("[FTS] uc_host_fm_ver = 0x%x\n",uc_host_fm_ver);
 	
 	if (uc_tp_fm_ver == FTS_REG_FW_VER ||	uc_tp_fm_ver < uc_host_fm_ver ) 
@@ -3826,11 +3854,11 @@ int fts_ctpm_auto_upgrade(struct i2c_client *client)
 	    
 		msleep(100);
 		dev_dbg(&client->dev, "[FTS] uc_tp_fm_ver = 0x%x, uc_host_fm_ver = 0x%x\n",uc_tp_fm_ver, uc_host_fm_ver);
-		i_ret = fts_ctpm_fw_upgrade_with_i_file(client);
+		i_ret = fts_ctpm_fw_upgrade_with_i_file(client,uc_tp_vendor_id);
 		if (i_ret == 0)	
 		{
 			msleep(300);
-			uc_host_fm_ver = fts_ctpm_get_i_file_ver();
+			uc_host_fm_ver = fts_ctpm_get_i_file_ver(uc_tp_vendor_id);
 			dev_dbg(&client->dev, "[FTS] upgrade to new version 0x%x\n",uc_host_fm_ver);
 			printk("[FTS] upgrade to new version 0x%x\n",uc_host_fm_ver);
 		} 

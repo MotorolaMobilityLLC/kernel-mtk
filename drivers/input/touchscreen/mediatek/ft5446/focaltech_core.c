@@ -1410,9 +1410,13 @@ reset_proc:
 		TPD_DMESG(TPD_DEVICE " fts_read_reg version : %d\n", ver);
         fts_read_reg(client, 0xA8, &ver);
 
-		if(ver==0x51)
+		if(ver==0x51 || ver==0x01)
 		{
          vendor_name="O-Film";
+		}
+		else if(ver==0x3b)
+		{
+		 vendor_name="BOEN";
 		}
 		else
 		{
@@ -1430,9 +1434,14 @@ reset_proc:
         switch(ver_module)
         {
           case 0x51://No used
+          case 0x01:
           sprintf(temp_comments,"TW:OFILM:FT5446 0x%x",ver_id); 
           devinfo_ctp_regchar("unknown","O-Film",temp_ver,DEVINFO_USED,temp_comments);
           break;
+		  case 0x3b:
+		  sprintf(temp_comments,"TW:BOEN:FT5446 0x%x",ver_id); 
+          devinfo_ctp_regchar("unknown","BOEN",temp_ver,DEVINFO_USED,temp_comments);	
+		  break;
           default:
           break;
         }
