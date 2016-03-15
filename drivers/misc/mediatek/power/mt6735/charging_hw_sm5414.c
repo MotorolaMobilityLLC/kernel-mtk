@@ -300,7 +300,7 @@ static unsigned int charging_enable(void *data)
             		mt_set_gpio_out(GPIO_SM5414_CHGEN_PIN,GPIO_OUT_ONE);    
 			*/
 			sm5414_set_chgen (CHARGE_DIS);
-			sm5414_set_suspen (SUSPEND_EN);	// disable power path
+			//sm5414_set_suspen (SUSPEND_EN);	// disable power path
 		}
 		bootmode = get_boot_mode();
 		if ((bootmode == META_BOOT) || (bootmode == ADVMETA_BOOT))

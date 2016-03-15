@@ -1028,16 +1028,16 @@ static unsigned int charging_full_check(void)
 	unsigned int status;
 
 	battery_charging_control(CHARGING_CMD_GET_CHARGING_STATUS, &status);
-	if (status == KAL_TRUE) {
+	if (status == KAL_TRUE && BMT_status.UI_SOC == 100) { //modify by caozhg
 		g_full_check_count++;
 		if (g_full_check_count >= FULL_CHECK_TIMES)
 			return KAL_TRUE;
 		else
 			return KAL_FALSE;
-	} /*else {*/
+	} else {
 		g_full_check_count = 0;
 		return status;
-	/*}*/
+	}
 }
 
 
@@ -1087,7 +1087,6 @@ static void pchr_turn_on_charging(void)
 #ifndef CONFIG_MTK_SWITCH_INPUT_OUTPUT_CURRENT_SUPPORT
 		} else if (g_bcct_flag == 1) {
 			select_charging_current_bcct();
-
 			battery_log(BAT_LOG_FULL, "[BATTERY] select_charging_current_bcct !\n");
 		} else {
 			select_charging_current();
@@ -1202,6 +1201,8 @@ PMU_STATUS BAT_ConstantCurrentModeAction(void)
 
 PMU_STATUS BAT_BatteryFullAction(void)
 {
+	unsigned int charging_enable = KAL_FALSE;//add by caozhg
+	unsigned int status; //add by caozhg
 	battery_log(BAT_LOG_CRTI, "[BATTERY] Battery full !!\n\r");
 
 	BMT_status.bat_full = KAL_TRUE;
@@ -1212,7 +1213,10 @@ PMU_STATUS BAT_BatteryFullAction(void)
 	BMT_status.POSTFULL_charging_time = 0;
 	BMT_status.bat_in_recharging_state = KAL_FALSE;
 
-	if (charging_full_check() == KAL_FALSE) {
+	battery_charging_control(CHARGING_CMD_GET_CHARGING_STATUS, &status);
+	if (status == KAL_FALSE) {
+	//if (charging_full_check() == KAL_FALSE) {
+	//if (BMT_status.bat_vol < 4300) {
 		battery_log(BAT_LOG_CRTI, "[BATTERY] Battery Re-charging !!\n\r");
 
 		BMT_status.bat_in_recharging_state = KAL_TRUE;
@@ -1225,7 +1229,8 @@ PMU_STATUS BAT_BatteryFullAction(void)
 		pep_det_rechg = KAL_TRUE;
 #endif
 	}
-
+	/*  Disable charging */
+	battery_charging_control(CHARGING_CMD_ENABLE, &charging_enable); //add by caozhg
 
 	return PMU_STATUS_OK;
 }
