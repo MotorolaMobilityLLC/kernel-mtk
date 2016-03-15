@@ -287,6 +287,7 @@ struct fts_ts_data {
 #define FTS_Vendor_1_ID		0x51//Ofilm TP VID = 0x51
 #define FTS_Vendor_2_ID		0x79//default TP VID
 #define FTS_Vendor_3_ID     0x01
+#define FTS_Vendor_4_ID     0x3b//boe 
 #endif
 #define FIRMWARE_VERTION_NODE                                
 #define FT_TP									0
@@ -316,8 +317,8 @@ extern int hidi2c_to_stdi2c(struct i2c_client * client);
 extern int fts_ctpm_fw_upgrade_with_app_file(struct i2c_client *client,
 				       char *firmware_name);
 extern int fts_ctpm_auto_clb(struct i2c_client *client);
-extern int fts_ctpm_fw_upgrade_with_i_file(struct i2c_client *client);
-extern int fts_ctpm_get_i_file_ver(void);
+extern int fts_ctpm_fw_upgrade_with_i_file(struct i2c_client *client,u8 vendor_id);
+extern int fts_ctpm_get_i_file_ver(u8 vendor_id);
 extern int fts_remove_sysfs(struct i2c_client *client);
 extern void fts_release_apk_debug_channel(void);
 extern int fts_ctpm_auto_upgrade(struct i2c_client *client);
