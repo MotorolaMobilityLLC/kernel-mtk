@@ -173,6 +173,7 @@
 
 #define FG_METER_RESISTANCE 0
 
+#ifndef CONFIG_SLT_BATTERY_3500MA_SUPPORT //2750mA
 /* Qmax for battery  */
 #define Q_MAX_POS_50 2809 //modify by caozhg
 #define Q_MAX_POS_25 2816
@@ -183,6 +184,21 @@
 #define Q_MAX_POS_25_H_CURRENT 2801
 #define Q_MAX_POS_0_H_CURRENT 2716
 #define Q_MAX_NEG_10_H_CURRENT 2346
+
+#else//3500mA
+
+/* Qmax for battery  */
+#define Q_MAX_POS_50 3421 //modify by caozhg
+#define Q_MAX_POS_25 3496
+#define Q_MAX_POS_0 3456
+#define Q_MAX_NEG_10 3495
+
+#define Q_MAX_POS_50_H_CURRENT 3405
+#define Q_MAX_POS_25_H_CURRENT 3472
+#define Q_MAX_POS_0_H_CURRENT 3303
+#define Q_MAX_NEG_10_H_CURRENT 2635
+
+#endif
 
 
 /* Discharge Percentage */

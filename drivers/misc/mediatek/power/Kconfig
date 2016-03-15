@@ -26,6 +26,14 @@ config MTK_SM5414_SUPPORT
 	Set n and choose other chargers.
 	This driver uses I2c bus.
 
+config SLT_BATTERY_3500MA_SUPPORT
+	bool "power battery support config"
+	default n
+	---help---
+	Set y to support 3500mA battery.
+	Set n to support 2750mA battery. 
+	  
+
 
 config MTK_SWITCH_INPUT_OUTPUT_CURRENT_SUPPORT
 	bool "MTK_SWITCH_INPUT_OUTPUT_CURRENT_SUPPORT"
