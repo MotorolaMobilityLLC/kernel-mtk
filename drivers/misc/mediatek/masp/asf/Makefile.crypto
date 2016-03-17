@@ -1,0 +1,13 @@
+#######################################
+# Specify source files
+#######################################
+crypto_obj += asf/crypto/rsa_lib.o
+crypto_obj += asf/crypto/rsa_core.o
+crypto_obj += asf/crypto/rsa_util.o
+crypto_obj += asf/crypto/bgn_core.o
+crypto_obj += asf/crypto/bgn_io.o
+crypto_obj += asf/crypto/bgn_util.o
+crypto_obj += asf/auth/sec_wrapper.o
+# HEADER FILE
+ccflags-y += -I$(src)/asf/asf_inc
+ccflags-y += -I$(src)/asf/asf_export_inc

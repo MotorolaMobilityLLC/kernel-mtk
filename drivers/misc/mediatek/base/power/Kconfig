@@ -1,0 +1,26 @@
+config MTK_CLKMGR
+	bool "Mediatek proprietary clock management"
+	default n
+	---help---
+	  Mediatek proprietary clock management is used to operate
+          the clocks. The clocks are composed of CG, MUX, PLL,
+          non-MTCMOS. The operations of clocks are enabling,
+          disabling, and querying status. If this config is not set,
+          system will use COMMON_CLK instead.
+
+config MTK_DISABLE_PICACHU
+        bool "Disable Picachu"
+        default n
+        ---help---
+          PICACHU (PI CAlibration and CHaracterization Utility) aims
+          at the voltage calibration during booting. It increases
+	  the voltage when needed.
+
+config MTK_HYBRID_CPU_DVFS
+	bool "MediaTek Hybrid CPU DVFS support"
+	default n
+	help
+	  This kernel config can be used to control CONFIG_HYBRID_CPU_DVFS
+	  defined/undefined in the header file of CPUHVFS driver.
+	  If CONFIG_HYBRID_CPU_DVFS is defined, CPUHVFS driver will bring up
+	  DVFS processor to do CPU DVFS.
