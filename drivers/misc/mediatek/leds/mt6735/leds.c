@@ -916,6 +916,7 @@ void mt_mt65xx_led_set(struct led_classdev *led_cdev, enum led_brightness level)
 		}
 	}
 #else
+	int level_temp;
 	/* do something only when level is changed */
 	if (led_data->level != level) {
 		led_data->level = level;
@@ -935,6 +936,20 @@ void mt_mt65xx_led_set(struct led_classdev *led_cdev, enum led_brightness level)
 			LEDS_DEBUG
 			    ("Set Backlight directly %d at time %lu, mapping level is %d\n",
 			     led_data->level, jiffies, level);
+
+
+			#if 1 //add by caozhg
+			level_temp = level;
+			//2 122 255
+			printk ("[LED]Set Backlight directly in:%d \n",level);
+			if(level >= 204)	
+				level = (133*level - 20910)/51;// 
+			else
+				level = (60*level + 82)/101;//
+			printk ("[LED]Set Backlight directly out:%d \n",level);
+			if (level_temp == 0)
+				level = 0;
+			#endif
 			if (MT65XX_LED_MODE_CUST_BLS_PWM == led_data->cust.mode) {
 				mt_mt65xx_led_set_cust(&led_data->cust,
 						       ((((1 <<
