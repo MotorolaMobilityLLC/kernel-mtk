@@ -480,6 +480,10 @@ struct input_keymap_entry {
 
 #define KEY_MICMUTE		248	/* Mute / unmute the microphone */
 
+/*add by lixh10 for touch gesture 2016-03-19 start*/
+#define KEY_SLIDE               254	
+/*add by lixh10 for touch gesture 2016-03-19  end*/
+
 /* Code 255 is reserved for special needs of AT keyboard driver */
 
 #define BTN_MISC		0x100
