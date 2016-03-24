@@ -128,9 +128,8 @@ static int __maybe_unused two = 2;
 static int __maybe_unused four = 4;
 static unsigned long one_ul = 1;
 static int one_hundred = 100;
-#ifdef CONFIG_MTK_GMO_RAM_OPTIMIZE
 static int two_hundred = 200;
-#endif
+extern int max_swappiness;
 #ifdef CONFIG_PRINTK
 static int ten_thousand = 10000;
 #endif
@@ -1229,9 +1228,9 @@ static struct ctl_table vm_table[] = {
 		.proc_handler	= proc_dointvec_minmax,
 		.extra1		= &zero,
 #ifndef CONFIG_MTK_GMO_RAM_OPTIMIZE
-		.extra2		= &one_hundred,
+		.extra2		= &max_swappiness,
 #else
-		.extra2		= &two_hundred,
+        .extra2     = &two_hundred,
 #endif
 	},
 #ifdef CONFIG_HUGETLB_PAGE

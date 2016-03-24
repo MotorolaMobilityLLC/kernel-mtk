@@ -509,4 +509,9 @@ CONFIG_CHECK_EFUSE_STATUS=y
 CONFIG_EFUSE_SBC_CHECK=y
 #Lenovo-sw quebs2 added 20150510 end,support efuse inquiry for secboot
 CONFIG_MTK_EMMC_SUPPORT_OTP=y
+# add to support swapiness configuration
+CONFIG_MEMCG=y
+CONFIG_MEMCG_SWAP=y
+
+
 
