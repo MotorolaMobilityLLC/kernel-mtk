@@ -304,7 +304,7 @@ typedef enum {
 //#define FTS_INCALL_TOUCH_REJECTION
 //for tp esd check
  #define GTP_ESD_PROTECT  1  //change by lixh10 
-#define TPD_AUTO_UPGRADE
+//#define TPD_AUTO_UPGRADE	
 //#define LENOVO_CTP_TEST_FLUENCY
 //#define CONFIG_TOUCHPANEL_PROXIMITY_SENSOR
 
