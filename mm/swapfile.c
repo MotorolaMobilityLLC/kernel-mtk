@@ -2671,7 +2671,7 @@ SYSCALL_DEFINE2(swapon, const char __user *, specialfile, int, swap_flags)
 		}
 	}
 
-    if (blk_queue_fast(bdev_get_queue(p->bdev)))
+    if (p->bdev && blk_queue_fast(bdev_get_queue(p->bdev)))
         p->flags |= SWP_FAST;
 
 
