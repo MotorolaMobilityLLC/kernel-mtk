@@ -67,7 +67,7 @@ memory@00000000 {
 		compatible = "mediatek,vibrator";
 		vib_timer = <25>;
 		vib_limit = <9>;
-		vib_vol= <5>;
+		vib_vol= <6>;
 	};
  /* sensor standardization */
 		cust_accel@0 {
