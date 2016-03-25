@@ -242,6 +242,21 @@ unsigned int touch_irq = 0;
 #define TPD_RESET_ISSUE_WORKAROUND
 #define TPD_MAX_RESET_COUNT	3
 
+/*
+for tp esd check
+*/
+#if FT_ESD_PROTECT
+#define TPD_ESD_CHECK_CIRCLE        						200
+static struct delayed_work gtp_esd_check_work;
+static struct workqueue_struct *gtp_esd_check_workqueue 	= NULL;
+static int count_irq 										= 0;
+static u8 run_check_91_register 							= 0;
+static unsigned long esd_check_circle 						= TPD_ESD_CHECK_CIRCLE;
+static void gtp_esd_check_func(struct work_struct *);
+
+extern int apk_debug_flag; 
+#endif
+
 #ifdef TIMER_DEBUG
 
 static struct timer_list test_timer;
@@ -1074,6 +1089,10 @@ static int touch_event_handler(void *unused)
 
 		TPD_DEBUG("touch_event_handler start\n");
 
+#if FT_ESD_PROTECT
+		esd_switch(0);apk_debug_flag = 1;
+#endif
+
 		if (tpd_touchinfo(&cinfo, &pinfo)) {
 			if (tpd_dts_data.use_tpd_button) {
 				if (cinfo.p[0] == 0)
@@ -1130,6 +1149,11 @@ static int touch_event_handler(void *unused)
 			input_sync(tpd->dev);
 
 		}
+
+#if FT_ESD_PROTECT
+		esd_switch(1);apk_debug_flag = 0;
+#endif
+
 	} while (!kthread_should_stop());
 
 	TPD_DEBUG("touch_event_handler exit\n");
@@ -1148,6 +1172,11 @@ static irqreturn_t tpd_eint_interrupt_handler(int irq, void *dev_id)
 {
 	TPD_DEBUG("TPD interrupt has been triggered\n");
 	tpd_flag = 1;
+
+#if FT_ESD_PROTECT
+	   count_irq ++;
+#endif
+
 	wake_up_interruptible(&waiter);
 	return IRQ_HANDLED;
 }
@@ -1284,6 +1313,13 @@ static int tpd_probe(struct i2c_client *client, const struct i2c_device_id *id)
 	else
 		TPD_DMESG("TPD dma_alloc_coherent success!\n");
 #endif
+
+#if FT_ESD_PROTECT
+	INIT_DELAYED_WORK(&gtp_esd_check_work, gtp_esd_check_func);
+		gtp_esd_check_workqueue = create_workqueue("gtp_esd_check");
+		queue_delayed_work(gtp_esd_check_workqueue, &gtp_esd_check_work, TPD_ESD_CHECK_CIRCLE);
+#endif
+
 
 #if FTS_GESTRUE_EN
 	fts_Gesture_init(tpd->dev);
@@ -1466,6 +1502,10 @@ static int tpd_remove(struct i2c_client *client)
 	//ft_rw_iic_drv_exit();
 #endif
 
+#if FT_ESD_PROTECT
+	   destroy_workqueue(gtp_esd_check_workqueue);
+#endif
+
 #ifdef CONFIG_FT_AUTO_UPGRADE_SUPPORT
 	if (tpd_i2c_dma_va) {
 		dma_free_coherent(NULL, 4096, tpd_i2c_dma_va, tpd_i2c_dma_pa);
@@ -1478,6 +1518,241 @@ static int tpd_remove(struct i2c_client *client)
 
 	return 0;
 }
+
+#if FT_ESD_PROTECT
+void esd_switch(s32 on)
+{
+    //spin_lock(&esd_lock); 
+    if (1 == on) // switch on esd 
+    {
+       // if (!esd_running)
+       // {
+       //     esd_running = 1;
+            //spin_unlock(&esd_lock);
+            //printk("\n zax Esd started \n");
+            queue_delayed_work(gtp_esd_check_workqueue, &gtp_esd_check_work, esd_check_circle);
+        //}
+        //else
+        //{
+         //   spin_unlock(&esd_lock);
+        //}
+    }
+    else // switch off esd
+    {
+       // if (esd_running)
+       // {
+         //   esd_running = 0;
+            //spin_unlock(&esd_lock);
+            //printk("\n zax Esd cancell \n");
+            cancel_delayed_work(&gtp_esd_check_work);
+       // }
+       // else
+       // {
+        //    spin_unlock(&esd_lock);
+        //}
+    }
+}
+/************************************************************************
+* Name: force_reset_guitar
+* Brief: reset
+* Input: no
+* Output: no
+* Return: 0
+***********************************************************************/
+static void force_reset_guitar(void)
+{
+    	s32 ret;
+
+    	TPD_DMESG("force_reset_guitar\n");
+
+	disable_irq(touch_irq);
+	ret = regulator_disable(tpd->reg);
+	if (ret != 0)
+		TPD_DMESG("Failed to disable reg-vgp6: %d\n", ret);
+	msleep(200);
+
+	ret = regulator_enable(tpd->reg);
+	if (ret != 0)
+		TPD_DMESG("Failed to enable reg-vgp6: %d\n", ret);
+
+	tpd_gpio_output(tpd_rst_gpio_number, 0);
+	msleep(20);
+	tpd_gpio_output(tpd_rst_gpio_number, 1);
+	msleep(200);
+;
+	
+#ifdef TPD_PROXIMITY
+	if (FT_PROXIMITY_ENABLE == tpd_proximity_flag) 
+	{
+		tpd_enable_ps(FT_PROXIMITY_ENABLE);
+	}
+#endif
+	enable_irq(touch_irq);
+}
+
+#define A3_REG_VALUE								0x54
+#define RESET_91_REGVALUE_SAMECOUNT 				5
+static u8 g_old_91_Reg_Value 							= 0x00;
+static u8 g_first_read_91 								= 0x01;
+static u8 g_91value_same_count 						= 0;
+/************************************************************************
+* Name: gtp_esd_check_func
+* Brief: esd check function
+* Input: struct work_struct
+* Output: no
+* Return: 0
+***********************************************************************/
+static void gtp_esd_check_func(struct work_struct *work)
+{
+	int i;
+	int ret = -1;
+	u8 data;
+	u8 flag_error = 0;
+	int reset_flag = 0;
+
+//	if (tpd_halt ) 
+//	{
+//		return;
+//	}
+
+	if(apk_debug_flag) 
+	{
+		//queue_delayed_work(gtp_esd_check_workqueue, &gtp_esd_check_work, esd_check_circle);
+		return;
+	}
+
+	run_check_91_register = 0;
+	for (i = 0; i < 3; i++) 
+	{
+		//ret = fts_i2c_smbus_read_i2c_block_data(i2c_client, 0xA3, 1, &data);
+		ret = fts_read_reg(fts_i2c_client, 0xA3,&data);
+		if (ret<0) 
+		{
+			printk("%s: [Focal][Touch] read value fail", __func__);
+			//return ret;
+		}
+		if (ret==1 && A3_REG_VALUE==data) 
+		{
+		    break;
+		}
+	}
+
+	if (i >= 3) 
+	{
+		force_reset_guitar();
+		printk("%s: focal--tpd reset. i >= 3  ret = %d	A3_Reg_Value = 0x%02x\n ", __func__, ret, data);
+		reset_flag = 1;
+		goto FOCAL_RESET_A3_REGISTER;
+	}
+
+	// esd check for count
+  	//ret = fts_i2c_smbus_read_i2c_block_data(i2c_client, 0x8F, 1, &data);
+	ret = fts_read_reg(fts_i2c_client, 0x8F,&data);
+	if (ret<0) 
+	{
+		printk("%s: [Focal][Touch] read value fail", __func__);
+		//return ret;
+	}
+	printk("%s: focal---0x8F:%d, count_irq is %d\n", __func__,  data, count_irq);
+			
+	flag_error = 0;
+	if((count_irq - data) > 10) 
+	{
+		if((data+200) > (count_irq+10) )
+		{
+			flag_error = 1;
+		}
+	}
+	
+	if((data - count_irq ) > 10) 
+	{
+		flag_error = 1;		
+	}
+		
+	if(1 == flag_error) 
+	{	
+		printk("%s: focal--tpd reset.1 == flag_error...data=%d	count_irq=%d\n ", __func__, data, count_irq);
+	    	force_reset_guitar();
+		reset_flag = 1;
+		goto FOCAL_RESET_INT;
+	}
+
+	run_check_91_register = 1;
+	//ret = fts_i2c_smbus_read_i2c_block_data(i2c_client, 0x91, 1, &data);
+	ret = fts_read_reg(fts_i2c_client, 0x91,&data);
+	if (ret<0) 
+	{
+		printk("%s: [Focal][Touch] read value fail", __func__);
+		//return ret;
+	}
+	printk("%s: focal---------91 register value = 0x%02x	old value = 0x%02x\n", __func__,	data, g_old_91_Reg_Value);
+	if(0x01 == g_first_read_91) 
+	{
+		g_old_91_Reg_Value = data;
+		g_first_read_91 = 0x00;
+	} 
+	else 
+	{
+		if(g_old_91_Reg_Value == data)
+		{
+			g_91value_same_count++;
+			printk("%s: focal 91 value ==============, g_91value_same_count=%d\n", __func__, g_91value_same_count);
+			if(RESET_91_REGVALUE_SAMECOUNT == g_91value_same_count) 
+			{
+				force_reset_guitar();
+				printk("%s: focal--tpd reset. g_91value_same_count = 5\n", __func__);
+				g_91value_same_count = 0;
+				reset_flag = 1;
+			}
+			
+			//run_check_91_register = 1;
+			esd_check_circle = TPD_ESD_CHECK_CIRCLE / 2;
+			g_old_91_Reg_Value = data;
+		} 
+		else 
+		{
+			g_old_91_Reg_Value = data;
+			g_91value_same_count = 0;
+			//run_check_91_register = 0;
+			esd_check_circle = TPD_ESD_CHECK_CIRCLE;
+		}
+	}
+FOCAL_RESET_INT:
+FOCAL_RESET_A3_REGISTER:
+	count_irq=0;
+	data=0;
+	//fts_i2c_smbus_write_i2c_block_data(i2c_client, 0x8F, 1, &data);
+	ret = fts_write_reg(fts_i2c_client, 0x8F,data);
+	if (ret<0) 
+	{
+		printk("%s: [Focal][Touch] write value fail", __func__);
+		//return ret;
+	}
+	if(0 == run_check_91_register)
+	{
+		g_91value_same_count = 0;
+	}
+	#ifdef TPD_PROXIMITY
+	if( (1 == reset_flag) && ( FT_PROXIMITY_ENABLE == tpd_proximity_flag) )
+	{
+		if((tpd_enable_ps(FT_PROXIMITY_ENABLE) != 0))
+		{
+			APS_ERR("enable ps fail\n"); 
+			return -1;
+		}
+	}
+	#endif
+	// end esd check for count
+
+  //  	if (!tpd_halt)
+    	{
+        	//queue_delayed_work(gtp_esd_check_workqueue, &gtp_esd_check_work, TPD_ESD_CHECK_CIRCLE);
+        	queue_delayed_work(gtp_esd_check_workqueue, &gtp_esd_check_work, esd_check_circle);
+    	}
+
+    	return;
+}
+#endif
 
 static int tpd_local_init(void)
 {
@@ -1618,6 +1893,12 @@ static void tpd_resume(struct device *h)
 	 charging_flag=1;
 	}
 #endif
+
+#if FT_ESD_PROTECT
+	count_irq = 0;
+	queue_delayed_work(gtp_esd_check_workqueue, &gtp_esd_check_work, TPD_ESD_CHECK_CIRCLE);
+#endif
+
 }
 
 #ifdef CONFIG_MTK_SENSOR_HUB_SUPPORT
@@ -1641,6 +1922,10 @@ static void tpd_suspend(struct device *h)
 	u8 state = 0;
 	#endif
 	printk("TPD enter sleep\n");
+
+#if FT_ESD_PROTECT
+	cancel_delayed_work_sync(&gtp_esd_check_work);
+#endif
 
 	#if FTS_GESTRUE_EN
         	if(1){
