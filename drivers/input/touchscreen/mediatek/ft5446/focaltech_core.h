@@ -111,7 +111,7 @@
 #define TPD_KEY_COUNT           				3    				// 4
 #define TPD_KEYS                					{ KEY_MENU, KEY_HOMEPAGE, KEY_BACK}
 #define TPD_KEYS_DIM            					{{80,900,20,TPD_BUTTON_HEIGH}, {240,900,20,TPD_BUTTON_HEIGH}, {400,900,20,TPD_BUTTON_HEIGH}}
-#define FT_ESD_PROTECT  									0
+#define FT_ESD_PROTECT  									1
 /*********************Custom Define end*************************************************/
 #define MT_PROTOCOL_B
 #define A_TYPE												0
