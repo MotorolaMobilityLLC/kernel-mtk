@@ -468,6 +468,8 @@ static void accdet_eint_work_callback(struct work_struct *work)
 #if defined(CONFIG_TS3A227E_ACCDET)
 		ACCDET_DEBUG("[Accdet] TS3A227E enable!\n");
 		msleep(300);
+		ret = ts3a227e_write_byte(0x04, 0x88);
+		msleep(200);
 		ret = ts3a227e_write_byte(0x04, 0x18);
 		msleep(500);
 		ts3a227e_read_byte(0x00, &ts3a227e_reg_value[0]);
@@ -514,9 +516,18 @@ static void accdet_eint_work_callback(struct work_struct *work)
 			msleep(20);
 		} else if ((ts3a227e_reg_value[11] & 0x02) == 0x02) {
 			printk("[Accdet] TS3A227E 4-pole OMTP headset detected!\n");
-			ts3a227e_connector_type = TS3A227E_CONNECTOR_TRRS_OMTP;
+			  
+			 ts3a227e_write_byte(0x04, (ts3a227e_reg_value[4]|(1<<6))); //0x40
+			 ts3a227e_write_byte(0x07, 0x20); 
+			 ts3a227e_write_byte(0x08, 0x04); 
+			 ts3a227e_connector_type = TS3A227E_CONNECTOR_TRRS_OMTP;
+			
 		} else if ((ts3a227e_reg_value[11] & 0x04) == 0x04) {
 			printk("[Accdet] TS3A227E 4-pole standard headset detected!\n");
+			ts3a227e_write_byte(0x04, (ts3a227e_reg_value[4]|(1<<6))); //0x40
+			ts3a227e_write_byte(0x07, 0x10); //0x40
+			ts3a227e_write_byte(0x08, 0x08); //0x40
+			//ts3a227e_write_byte(0x04, ts3a227e_reg_value[4]); //0x40       
 			ts3a227e_connector_type = TS3A227E_CONNECTOR_TRRS_STANDARD;
 			
 		} else {
