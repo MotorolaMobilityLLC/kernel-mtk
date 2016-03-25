@@ -512,6 +512,8 @@ CONFIG_MTK_EMMC_SUPPORT_OTP=y
 # add to support swapiness configuration
 CONFIG_MEMCG=y
 CONFIG_MEMCG_SWAP=y
-
+# add to tune performance
+CONFIG_MTK_DYNAMIC_BOOST=y
+CONFIG_TOUCH_BOOST=y
 
 

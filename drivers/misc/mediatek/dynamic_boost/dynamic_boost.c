@@ -228,7 +228,7 @@ static int dboost_dvfs_hotplug_thread(void *ptr)
 			break;
 		}
 
-		interactive_boost_cpu(max_freq);
+//		interactive_boost_cpu(max_freq);
 		if (!cores_to_set_l)
 			cores_to_set_l = 1;
 		hps_set_cpu_num_base(BASE_PERF_SERV, cores_to_set_l, cores_to_set_b);
@@ -346,7 +346,7 @@ static int dboost_input_connect(struct input_handler *handler,
 	in->handle.name = "dynamic_boost";
 
 	/* TODO: the following parameters should be configured through platform data */
-	in->prio_mode = PRIO_TWO_BIGS_TWO_LITTLES_MAX_FREQ;
+	in->prio_mode = PRIO_MAX_CORES;
 	in->duration = 150;
 
 	error = input_register_handle(&in->handle);
