@@ -445,6 +445,13 @@ static inline long get_nr_swap_pages(void)
 	return atomic_long_read(&nr_swap_pages);
 }
 
+static inline bool lowmemory_vm_swap_full(void)
+ {
+    return atomic_long_read(&nr_swap_pages) * 2 < total_swap_pages;
+
+}
+
+
 extern void si_swapinfo(struct sysinfo *);
 extern swp_entry_t get_swap_page(void);
 extern swp_entry_t get_swap_page_of_type(int);
@@ -489,7 +496,7 @@ extern void swap_info_unlock(struct swap_info_struct *si);
 #define total_swap_pages			0L
 #define total_swapcache_pages()			0UL
 #define vm_swap_full(si)			0
-
+#define lowmemory_vm_swap_full()    0
 #define si_swapinfo(val) \
 	do { (val)->freeswap = (val)->totalswap = 0; } while (0)
 /* only sparc can not include linux/pagemap.h in this file
