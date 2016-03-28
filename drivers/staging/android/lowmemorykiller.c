@@ -209,6 +209,13 @@ static unsigned long lowmem_scan(struct shrinker *s, struct shrink_control *sc)
 		lowmem_print(3, "Halve other_free %d\n", other_free);
 		other_free >>= 1;
 	}
+#elif defined(CONFIG_SWAP)
+
+    if (lowmemory_vm_swap_full()) {
+            lowmem_print(3, "Halve other_free %d\n", other_free);
+            other_free >>= 1;
+        }
+
 #endif
 
 	if (lowmem_adj_size < array_size)
