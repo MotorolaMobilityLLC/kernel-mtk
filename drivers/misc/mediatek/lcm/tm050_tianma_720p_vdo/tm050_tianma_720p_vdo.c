@@ -164,7 +164,8 @@ static int tps65132_remove(struct i2c_client *client)
   return 0;
 }
 
-
+extern int tps65132_write_bytes(unsigned char addr, unsigned char value);
+#if 0
 static int tps65132_write_bytes_1(unsigned char addr, unsigned char value)
 {	
    
@@ -203,7 +204,7 @@ static int tps65132_write_bytes_1(unsigned char addr, unsigned char value)
 	return ret == xfers ? 1 : -1;
 }
 EXPORT_SYMBOL_GPL(tps65132_write_bytes_1);
-
+#endif
 
 /*
  * module load/unload record keeping
@@ -594,18 +595,21 @@ static void lcm_get_params(LCM_PARAMS *params)
 
 	params->dsi.PS = LCM_PACKED_PS_24BIT_RGB888;
 
-	params->dsi.vertical_sync_active				= 2; //10
-	params->dsi.vertical_backporch					= 14; //20
+	params->dsi.vertical_sync_active				= 8; //10
+	params->dsi.vertical_backporch					= 20; //20
 	params->dsi.vertical_frontporch					= 60; //24
 	params->dsi.vertical_active_line				= FRAME_HEIGHT;
 
 	params->dsi.horizontal_sync_active				= 20; //32
-	params->dsi.horizontal_backporch				= 100;
-	params->dsi.horizontal_frontporch				= 100; //60
+	params->dsi.horizontal_backporch				= 160;
+	params->dsi.horizontal_frontporch				= 120; //60
 	params->dsi.horizontal_active_pixel				= FRAME_WIDTH;
 
+
+	params->dsi.HS_TRAIL = 15;
+
 	// Bit rate calculation
-	params->dsi.PLL_CLOCK				= 235;
+	params->dsi.PLL_CLOCK				= 255;//
 	//esd check 0x09->0x80 0x73 0x04     0xd9->0x80
 	params->dsi.clk_lp_per_line_enable = 1;
 	params->dsi.esd_check_enable = 1;
@@ -639,8 +643,8 @@ static void KTD2125_enable(char en)
 		   MDELAY(12);
 		   set_gpio_lcd_enn(1);
 		   MDELAY(12);
-		   tps65132_write_bytes_1(0x00, 0x0f);
-		   tps65132_write_bytes_1(0x01, 0x0f);
+		   tps65132_write_bytes(0x00, 0x0f);
+		   tps65132_write_bytes(0x01, 0x0f);
 		#endif
 	}
 	else
@@ -656,7 +660,7 @@ static void KTD2125_enable(char en)
 			MDELAY(12);
 			set_gpio_lcd_enp(0);
 			MDELAY(12);
-			tps65132_write_bytes_1(0x03, 0x40);
+			tps65132_write_bytes(0x03, 0x33);
 
 		#endif
 
@@ -748,7 +752,6 @@ static void lcm_suspend(void)
 	dsi_set_cmdq(data_array, 2, 1); 
 	MDELAY(1);
 
-    
 	data_array[0]=0x00280500; // Display Off
 	dsi_set_cmdq(data_array, 1, 1);
 	MDELAY(20);
@@ -756,6 +759,7 @@ static void lcm_suspend(void)
 	dsi_set_cmdq(data_array, 1, 1);
 	MDELAY(120);
 
+        KTD2125_enable(0);
 
 #ifdef BUILD_LK
 	printf("uboot %s\n", __func__);
@@ -768,14 +772,16 @@ static void lcm_suspend(void)
 
 static void lcm_resume(void)
 {
-
+/*
 	unsigned int data_array[2];
+        KTD2125_enable(1);
 	data_array[0] = 0x00110500; // Display Off
 	dsi_set_cmdq(data_array, 1, 1);
 	MDELAY(120); 
 	data_array[0] = 0x00290500; // Sleep In
 	dsi_set_cmdq(data_array, 1, 1);
 	MDELAY(20);
+*/
 #ifdef BUILD_LK
 	printf("uboot %s\n", __func__);
 #else
@@ -783,8 +789,7 @@ static void lcm_resume(void)
 #endif
 
 //	push_table(lcm_sleep_out_setting, sizeof(lcm_sleep_out_setting) / sizeof(struct LCM_setting_table), 1);
-
-	//lcm_init();
+	lcm_init();
 }
 
 #if defined(LCM_DSI_CMD_MODE)
