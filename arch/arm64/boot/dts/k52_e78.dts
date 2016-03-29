@@ -98,6 +98,7 @@
 		is_batch_supported = <1>;
 	};
 
+	/*Begin, lenovo-sw lumy1*/
 	cust_alsps@0 {
 		compatible		= "mediatek,epl8802";
 		i2c_num			= <1>;
@@ -115,6 +116,7 @@
 		is_batch_supported_ps	= <1>;
 		is_batch_supported_als	= <1>;
 	};
+	/*End, lenovo-sw lumy1*/
 
 	cust_mag {
 		compatible			= "mediatek,yamaha532";
@@ -323,7 +325,7 @@
 };
 /* CAMERA GPIO end */
 
-&pio {
+&pio {	/*Begin, lenovo-sw lumy1*/
 	alsps_intpin_cfg: alspspincfg {
 
 		pins_cmd_dat {
@@ -340,7 +342,7 @@
 			bias-pull-up = <00>;
 		};
 	};
-
+	/*End, lenovo-sw lumy1*/
 	gyro_intpin_cfg: gyropincfg {
 
 		pins_cmd_dat {
@@ -824,13 +826,13 @@
 		status = "okay";
 	};
 
-/*lenovo-sw caoyi1 modify begin*/
+/*Begin, lenovo-sw lumy1*/
 	ALSPS@49 {
 		compatible = "mediatek,alsps";
 		reg = <0x49>;
 		status = "okay";
 	};
-/*lenovo-sw caoyi1 modify end*/
+/*End, lenovo-sw lumy1*/
 
 };
 /* IRTX GPIO end */
