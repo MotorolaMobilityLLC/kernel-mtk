@@ -1314,13 +1314,6 @@ static int tpd_probe(struct i2c_client *client, const struct i2c_device_id *id)
 		TPD_DMESG("TPD dma_alloc_coherent success!\n");
 #endif
 
-#if FT_ESD_PROTECT
-	INIT_DELAYED_WORK(&gtp_esd_check_work, gtp_esd_check_func);
-		gtp_esd_check_workqueue = create_workqueue("gtp_esd_check");
-		queue_delayed_work(gtp_esd_check_workqueue, &gtp_esd_check_work, TPD_ESD_CHECK_CIRCLE);
-#endif
-
-
 #if FTS_GESTRUE_EN
 	fts_Gesture_init(tpd->dev);
 #endif
@@ -1353,6 +1346,7 @@ reset_proc:
 		msg_dma_release();
 		gpio_free(tpd_rst_gpio_number);
 		gpio_free(tpd_int_gpio_number);
+		printk("focaltech tpd_probe failed!\n");
 		return -1;
 	}
 	tpd_load_status = 1;
@@ -1490,6 +1484,12 @@ reset_proc:
 	ret = get_md32_semaphore(SEMAPHORE_TOUCH);
 	if (ret < 0)
 		pr_err("[TOUCH] HW semaphore reqiure timeout\n");
+#endif
+
+#if FT_ESD_PROTECT
+	INIT_DELAYED_WORK(&gtp_esd_check_work, gtp_esd_check_func);
+		gtp_esd_check_workqueue = create_workqueue("gtp_esd_check");
+		queue_delayed_work(gtp_esd_check_workqueue, &gtp_esd_check_work, TPD_ESD_CHECK_CIRCLE);
 #endif
 
 	return 0;
