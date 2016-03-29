@@ -24,4 +24,7 @@ obj-$(CONFIG_MTK_STK3X1X_NEW)	+=  stk3x1x-new/
 obj-$(CONFIG_MTK_RPR410)	+=  rpr410/
 obj-$(CONFIG_MTK_TMD2771)	+=  tmd2771/
 obj-$(CONFIG_MTK_TMD2771_AUTO)	+=  tmd2771_auto/
+# lenovo-sw caoyi1 add 20150907 begin
+obj-$(CONFIG_MTK_EPL8802)	+=  epl8802/
+# lenovo-sw caoyi1 add 20150907 end
 endif

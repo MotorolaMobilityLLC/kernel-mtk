@@ -1,0 +1,4 @@
+
+config MTK_EPL8802
+	bool "EPL8802 for MediaTek package"
+	default n
