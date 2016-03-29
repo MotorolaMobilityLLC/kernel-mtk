@@ -66,9 +66,10 @@ static struct proc_dir_entry *fts_proc_entry;
 /*******************************************************************************
 * Global variable or extern global variabls/functions
 *******************************************************************************/
-//#if FT_ESD_PROTECT
-extern int apk_debug_flag;
-//#endif
+#if FT_ESD_PROTECT
+int apk_debug_flag = 0;
+#endif
+
 /*******************************************************************************
 * Static function prototypes
 *******************************************************************************/
