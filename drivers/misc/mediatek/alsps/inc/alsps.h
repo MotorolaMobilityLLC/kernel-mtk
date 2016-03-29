@@ -111,8 +111,10 @@ struct alsps_drv_obj {
 };
 
 struct alsps_context {
+	/*Begin, lenovo-sw lumy1*/
 	struct input_dev		*idev_ps;
 	struct input_dev		*idev_als;
+	/*End, lenovo-sw lumy1*/
 	struct miscdevice	mdev;
 	struct work_struct	report_ps;
 	struct work_struct	report_als;
