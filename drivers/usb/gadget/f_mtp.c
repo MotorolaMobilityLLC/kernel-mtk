@@ -392,16 +392,18 @@ struct {
 #define USB_MTP_FUNCTIONS		6
 #endif
 
+//lenovo-sw yexh1 2014_12_17, the name of adb change to ffs in android L 
 #define USB_MTP			"mtp\n"
 #define USB_MTP_ACM		"mtp,acm\n"
-#define USB_MTP_ADB		"mtp,adb\n"
-#define USB_MTP_ADB_ACM	        "mtp,adb,acm\n"
+#define USB_MTP_ADB		"mtp,ffs\n"
+#define USB_MTP_ADB_ACM	        "mtp,ffs,acm\n"
 #define USB_MTP_UMS		"mtp,mass_storage\n"
-#define USB_MTP_UMS_ADB	        "mtp,mass_storage,adb\n"
+#define USB_MTP_UMS_ADB	        "mtp,mass_storage,ffs\n"
 #ifdef CONFIG_MTK_TC1_FEATURE
-#define USB_TC1_MTP_ADB	        "acm,gser,mtp,adb\n"
+#define USB_TC1_MTP_ADB	        "acm,gser,mtp,ffs\n"
 #define USB_TC1_MTP		"acm,gser,mtp\n"
 #endif
+//lenovo-sw yexh1 END
 
 static char * USB_MTP_FUNC[USB_MTP_FUNCTIONS] =
 {
