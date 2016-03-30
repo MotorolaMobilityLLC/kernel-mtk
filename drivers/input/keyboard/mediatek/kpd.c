@@ -22,7 +22,7 @@
 #include <linux/clk.h>
 
 #define KPD_NAME	"mtk-kpd"
-#define MTK_KP_WAKESOURCE	/* this is for auto set wake up source */
+//#define MTK_KP_WAKESOURCE	/* this is for auto set wake up source */
 
 void __iomem *kp_base;
 static unsigned int kp_irqnr;

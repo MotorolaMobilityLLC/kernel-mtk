@@ -1991,16 +1991,22 @@ reset_proc:
 		FTS_DBG(TPD_DEVICE " failed to create kernel thread: %d\n", retval);
 	}
 #ifdef TPD_AUTO_UPGRADE
-	err = fts_workqueue_init();
-	if (err != 0) {
-		printk("fts_workqueue_init failed\n");
-		/*
-		 *goto err_probing;
-		 */
-	} else
-		queue_work(touch_wq, &fw_update_work);
-#endif
-
+	if((KERNEL_POWER_OFF_CHARGING_BOOT == get_boot_mode()) || (LOW_POWER_OFF_CHARGING_BOOT == get_boot_mode()))
+	{
+		printk("[wj]Due to the power off charging mode,skip the auto f/w upgrade process.\n");
+	}
+	else
+	{
+		err = fts_workqueue_init ();
+		if ( err != 0 )
+		{
+			printk( "fts_workqueue_init failed\n" );
+			//goto err_probing;
+		}else
+			queue_work ( touch_wq, &fw_update_work );	
+	}
+	#endif
+	 
 	if (sysfs_create_group(&fts_i2c_client->dev.kobj , &fts_touch_group)) {
 		dev_err(&client->dev, "failed to create sysfs group\n");
 		return -EAGAIN;
