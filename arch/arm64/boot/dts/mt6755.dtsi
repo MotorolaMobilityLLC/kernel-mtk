@@ -3388,6 +3388,16 @@
 		mediatek,clkbuf-config = <2 1 1 2>;
 		mediatek,clkbuf-driving-current = <2 2 2 2>;
 	};
+
+/*Lenovo-sw weimh1 add 2016-3-30 begin:add for accel*/
+	accel_gyro_int1: accel_gyro_int1{
+		compatible = "mediatek, accel_gyro_int1-eint";
+	};
+
+	accel_gyro_int2: accel_gyro_int2{
+		compatible = "mediatek, accel_gyro_int2-eint";
+	};
+/*Lenovo-sw weimh1 add 2016-3-30 end:add for accel*/
 };
 /*/include/ "cust_pmic.dtsi"*/
 
