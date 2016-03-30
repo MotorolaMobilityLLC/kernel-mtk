@@ -89,3 +89,9 @@ config MTK_OVERLAY_ENGINE_SUPPORT
 	default n
 	help
 	  This enable support overlay time division multiplex.
+
+#lenovo wuwl10 20151215 modify for lcm feactue begin
+config BACKLIGHTIC_KTD3116_CURRENT
+       bool "BACKLIGHTIC_KTD3116_CURRENT"
+       default n
+#lenovo wuwl10 20151215 add for lcm feactue end

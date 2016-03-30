@@ -502,6 +502,17 @@ CONFIG_CRYPTO_SHA2_ARM64_CE=y
 CONFIG_CRYPTO_AES_ARM64_CE=y
 CONFIG_CRYPTO_AES_ARM64_CE_BLK=y
 CONFIG_LIBCRC32C=y
+###################### Lenovo BSP Feature begin #########################
+
 #Begin, Lenovo, zhucc2, 2016-03-28, ARIESM-20
 CONFIG_EXFAT_FS=y
 #End, Lenovo, zhucc2, 2016-03-28, ARIESM-20
+
+#### LCD  ####
+#lenovo wuwl10 20151215 modify for lcd begin
+CONFIG_LENOVO_LED_CURRENT_LIMMIT=y
+# CONFIG_LENOVO_CUSTOM_LCM_FEATURE is not set
+CONFIG_BACKLIGHTIC_KTD3116_CURRENT=y
+#lenovo wuwl10 20151215 modify for lcd end
+
+###################### Lenovo BSP Feature end #########################

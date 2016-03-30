@@ -11,29 +11,10 @@
 #elif defined(BUILD_UBOOT)
 #include <asm/arch/mt_gpio.h>
 #else
-
-#endif
-#if 0
-//lenovo-sw wuwl10 modify 20150514 for new lcm timming begin
-#ifndef GPIO_LCD_BIAS_ENP_PIN
-#define GPIO_LCD_BIAS_ENP_PIN  (GPIO12 | 0x80000000)
-#endif
-#ifndef GPIO_LCD_BIAS_ENN_PIN
-#define GPIO_LCD_BIAS_ENN_PIN  (GPIO122 | 0x80000000)
+#include <mt-plat/mt_gpio.h>
+#include <mt-plat/mt_gpio_core.h>
 #endif
 
-#ifndef GPIO_LCM_LED_EN
-#define GPIO_LCM_LED_EN  (GPIO11 | 0x80000000)
-#endif
-
-#ifndef GPIO_LCM_RST
-#define GPIO_LCM_RST  (GPIO158 | 0x80000000)
-#endif
-
-#ifndef GPIO_DISP_ID0_PIN
-#define GPIO_DISP_ID0_PIN (GPIO17 | 0x80000000)
-#endif
-#endif
 //Lenovo-sw wuwl10 add 20150515 for esd recover backlight
 #ifndef BUILD_LK
 static unsigned int esd_last_backlight_level = 255;
@@ -421,28 +402,28 @@ static void init_lcm_registers(void)
 #ifdef CONFIG_BACKLIGHTIC_KTD3116_CURRENT
 static void ktd3117_set_bit0(void)
 {
-	dsi_lcm_set_gpio_out(GPIO_LCM_LED_EN, GPIO_OUT_ZERO);
+	mt_set_gpio_out_base(11, GPIO_OUT_ZERO);
 	UDELAY(15);
-	dsi_lcm_set_gpio_out(GPIO_LCM_LED_EN, GPIO_OUT_ONE);
-	UDELAY(6);
+	mt_set_gpio_out_base(11, GPIO_OUT_ONE);
+	UDELAY(5);
 }
 static void ktd3117_set_bit1(void)
 {
-	dsi_lcm_set_gpio_out(GPIO_LCM_LED_EN, GPIO_OUT_ZERO);
-	UDELAY(6);
-	dsi_lcm_set_gpio_out(GPIO_LCM_LED_EN, GPIO_OUT_ONE);
+	mt_set_gpio_out_base(11, GPIO_OUT_ZERO);
+	UDELAY(5);
+	mt_set_gpio_out_base(11, GPIO_OUT_ONE);
 	UDELAY(15);
 }
 static void ktd3117_set_start(void)
 {
-	dsi_lcm_set_gpio_out(GPIO_LCM_LED_EN, GPIO_OUT_ONE);
+	mt_set_gpio_out_base(11, GPIO_OUT_ONE);
 	UDELAY(15);
 }
 static void ktd3117_set_end(void)
 {
-	dsi_lcm_set_gpio_out(GPIO_LCM_LED_EN, GPIO_OUT_ZERO);
+	mt_set_gpio_out_base(11, GPIO_OUT_ZERO);
 	UDELAY(15);
-	dsi_lcm_set_gpio_out(GPIO_LCM_LED_EN, GPIO_OUT_ONE);
+	mt_set_gpio_out_base(11, GPIO_OUT_ONE);
 	UDELAY(500);
 }
 static void ktd3117_set_data(unsigned int data)
@@ -451,7 +432,7 @@ static void ktd3117_set_data(unsigned int data)
 	unsigned long flags;
 	data = data & 0x3F;
 
-	printk("%s 0x%x\n ", __func__, data);
+	printk(KERN_INFO "%s data = 0x%x\n ", __func__, data);
 	ktd3117_set_start();
 
 	local_irq_save(flags);
@@ -469,8 +450,8 @@ static void ktd3117_set_data(unsigned int data)
 }
 static void  backlightic_ktd3117_onewire_scale(unsigned int level)
 {
-	dsi_lcm_set_gpio_mode(GPIO_LCM_LED_EN, GPIO_MODE_00);
-	dsi_lcm_set_gpio_dir(GPIO_LCM_LED_EN, GPIO_DIR_OUT);
+	mt_set_gpio_mode_base(11, GPIO_MODE_00);
+	mt_set_gpio_dir_base(11, GPIO_DIR_OUT);
 
 	if (( level > 4) && need_config_20ma){
 		ktd3117_set_data(0x00);//20mA  15nits
@@ -496,20 +477,6 @@ static void  backlightic_ktd3117_onewire_scale(unsigned int level)
 #endif
 //Lenovo-sw wuwl10 add 20151019 for backlight end
 
-static void lcm_setbacklight(unsigned int level)
-{
-#ifdef BUILD_LK
-	dprintf(0,"%s, level = %d\n", __func__, level);
-#else
-	printk("%s tm, level = %d\n", __func__, level);
-//Lenovo-sw wuwl10 add 20150515 for esd recover backlight
-	esd_last_backlight_level = level;
-#endif
-	// Refresh value of backlight level.
-	lcm_backlight_level_setting[0].para_list[0] = level;
-	push_table(lcm_backlight_level_setting, sizeof(lcm_backlight_level_setting) / sizeof(struct LCM_setting_table), 1);
-}
-
 //lenovo-sw wuwl10 20150515 add for esd revovery backlight begin
 #ifndef BUILD_LK
 static void lcm_esd_recover_backlight(void)
@@ -533,7 +500,7 @@ static void lcm_setbacklight_cmdq(void *handle, unsigned int level)
 #ifdef CONFIG_BACKLIGHTIC_KTD3116_CURRENT
 	backlightic_ktd3117_onewire_scale(level);
 #endif
-	printk("%s, kernel nt35596 tm backlight: level = %d\n", __func__, level);
+	printk(KERN_INFO "%s, kernel nt35596 tm backlight: level = %d\n", __func__, level);
 	if((0 < level) && (level < 5))
 	{
 		level = 5;
@@ -610,31 +577,20 @@ static void lcm_get_params(LCM_PARAMS * params)
 
 static void lcm_init(void)
 {
-	//dsi_lcm_set_gpio_mode(GPIO_LCM_LED_EN, GPIO_MODE_00);
-	//dsi_lcm_set_gpio_dir(GPIO_LCM_LED_EN, GPIO_DIR_OUT);
-	//dsi_lcm_set_gpio_out(GPIO_LCM_LED_EN, GPIO_OUT_ONE);
+	mt_set_gpio_mode_base(11, GPIO_MODE_00);
+	mt_set_gpio_dir_base(11, GPIO_DIR_OUT);
+	mt_set_gpio_out_base(11, GPIO_OUT_ONE);
 	MDELAY(1);
 
 	SET_RESET_PIN(0);
 	MDELAY(3);
 	//set avdd enable
-#ifdef CONFIG_MTK_LEGACY
-	dsi_lcm_set_gpio_mode(GPIO_LCD_BIAS_ENP_PIN, GPIO_MODE_00);
-	dsi_lcm_set_gpio_dir(GPIO_LCD_BIAS_ENP_PIN, GPIO_DIR_OUT);
-	dsi_lcm_set_gpio_out(GPIO_LCD_BIAS_ENP_PIN, GPIO_OUT_ONE);
-#else
+
 	set_gpio_lcd_enp(1);
-#endif
 	MDELAY(9);
 	
 	//set avee enable
-#ifdef CONFIG_MTK_LEGACY
-	dsi_lcm_set_gpio_mode(GPIO_LCD_BIAS_ENN_PIN, GPIO_MODE_00);
-	dsi_lcm_set_gpio_dir(GPIO_LCD_BIAS_ENN_PIN, GPIO_DIR_OUT);
-	dsi_lcm_set_gpio_out(GPIO_LCD_BIAS_ENN_PIN, GPIO_OUT_ONE);
-#else
 	set_gpio_lcd_enn(1);
-#endif
 	MDELAY(12);
 
 	SET_RESET_PIN(1);
@@ -658,9 +614,9 @@ static void lcm_suspend(void)
 {
 	unsigned int data_array[16];
 
-	//dsi_lcm_set_gpio_mode(GPIO_LCM_LED_EN, GPIO_MODE_00);
-	//dsi_lcm_set_gpio_dir(GPIO_LCM_LED_EN, GPIO_DIR_OUT);
-	//dsi_lcm_set_gpio_out(GPIO_LCM_LED_EN, GPIO_OUT_ZERO);
+	mt_set_gpio_mode_base(11, GPIO_MODE_00);
+	mt_set_gpio_dir_base(11, GPIO_DIR_OUT);
+	mt_set_gpio_out_base(11, GPIO_OUT_ZERO);
 	MDELAY(5);
 
 	data_array[0] = 0x00280500;	// Display Off
@@ -672,23 +628,11 @@ static void lcm_suspend(void)
 	MDELAY(50);
 
 	//set avee enable
-#ifdef CONFIG_MTK_LEGACY
-	dsi_lcm_set_gpio_mode(GPIO_LCD_BIAS_ENN_PIN, GPIO_MODE_00);
-	dsi_lcm_set_gpio_dir(GPIO_LCD_BIAS_ENN_PIN, GPIO_DIR_OUT);
-	dsi_lcm_set_gpio_out(GPIO_LCD_BIAS_ENN_PIN, GPIO_OUT_ZERO);
-#else
 	set_gpio_lcd_enn(0);
-#endif
 	MDELAY(2);
 
 	//set avdd disable
-#ifdef CONFIG_MTK_LEGACY
-	dsi_lcm_set_gpio_mode(GPIO_LCD_BIAS_ENP_PIN, GPIO_MODE_00);
-	dsi_lcm_set_gpio_dir(GPIO_LCD_BIAS_ENP_PIN, GPIO_DIR_OUT);
-	dsi_lcm_set_gpio_out(GPIO_LCD_BIAS_ENP_PIN, GPIO_OUT_ZERO);
-#else
 	set_gpio_lcd_enp(0);
-#endif
 	MDELAY(3);
 
 	//set reset disable
@@ -789,7 +733,6 @@ LCM_DRIVER nt35596_fhd_dsi_vdo_tm_lcm_drv = {
 #endif
 	//.resume_power = lcm_resume_power,
 	//.suspend_power = lcm_suspend_power,
-	.set_backlight	= lcm_setbacklight,
 	.set_backlight_cmdq     = lcm_setbacklight_cmdq,
 #ifdef CONFIG_LENOVO_CUSTOM_LCM_FEATURE
 	.set_cabcmode = lcm_set_cabcmode,
