@@ -1,4 +1,8 @@
 [GPIO_variables]
+/*Lenovo-sw weimh1 add for A+G sensor eint pin 2016-3-30 begin*/
+GPIO_ACCEL_GYRO_INT1
+GPIO_ACCEL_GYRO_INT2
+/*Lenovo-sw weimh1 add for A+G sesnor eint pin 2016-3-30 end*/
 GPIO_AST_RST_PIN
 GPIO_AST_CS_PIN
 GPIO_AST_CLK32K_PIN
