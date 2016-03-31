@@ -21,3 +21,9 @@ config BACKLIGHT_SUPPORT_LM3697
 	default n
  	---help---
 	  charge pump driver for external backlight
+
+#lenovo wuwl10 20151215 modify for led feactue begin
+config LENOVO_LED_CURRENT_LIMMIT
+        bool "lenovo led current limmit"
+        default n
+#lenovo wuwl10 20151215 add for led feactue end
