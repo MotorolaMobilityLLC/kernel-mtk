@@ -45,15 +45,15 @@
 		pwm_config = <0 0 0 0 0>;
 	};
 	led1:led@1 {
-		compatible = "mediatek,green";
-		led_mode = <0>;
-		data = <1>;
+		compatible = "mediatek,test-led";
+		led_mode = <3>;
+		data = <2>;
 		pwm_config = <0 0 0 0 0>;
 	};
 	led2:led@2 {
 		compatible = "mediatek,blue";
-		led_mode = <0>;
-		data = <1>;
+		led_mode = <3>;
+		data = <2>;
 		pwm_config = <0 0 0 0 0>;
 	};
 	led3:led@3 {
@@ -70,8 +70,8 @@
 	};
 	led5:led@5 {
 		compatible = "mediatek,button-backlight";
-		led_mode = <0>;
-		data = <1>;
+		led_mode = <3>;
+		data = <3>;
 		pwm_config = <0 0 0 0 0>;
 	};
 	led6:led@6 {
