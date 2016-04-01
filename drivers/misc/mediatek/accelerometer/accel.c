@@ -3,7 +3,9 @@
 #include "inc/accel_factory.h"
 
 struct acc_context *acc_context_obj = NULL;
-
+/*Lenovo-sw weimh1 add 2016-3-31 begin:add for accel*/
+static struct platform_device *pltfm_dev;
+/*Lenovo-sw weimh1 add 2016-3-31 end:add for accel*/
 
 static struct acc_init_info *gsensor_init_list[MAX_CHOOSE_G_NUM] = { 0 };
 
@@ -466,8 +468,19 @@ static int gsensor_remove(struct platform_device *pdev)
 static int gsensor_probe(struct platform_device *pdev)
 {
 	ACC_LOG("gsensor_probe\n");
+
+/*Lenovo-sw weimh1 add 2016-3-31 begin:add for accel*/
+	pltfm_dev = pdev;
+/*Lenovo-sw weimh1 add 2016-3-31 end:add for accel*/
 	return 0;
 }
+
+/*Lenovo-sw weimh1 add 2016-3-31 begin:add for accel*/
+struct platform_device *get_accel_platformdev(void)
+{
+	return pltfm_dev;
+}
+/*Lenovo-sw weimh1 add 2016-3-31 end:add for accel*/
 
 #ifdef CONFIG_OF
 static const struct of_device_id gsensor_of_match[] = {
