@@ -521,4 +521,9 @@ CONFIG_LENOVO_LED_CURRENT_LIMMIT=y
 CONFIG_BACKLIGHTIC_KTD3116_CURRENT=y
 #lenovo wuwl10 20151215 modify for lcd end
 
+#Lenovo-sw weimh1 add 2016-3-30 begin:use independent dir for K52
+CONFIG_MTK_MPU6515A=n
+CONFIG_MTK_MPU6515G=n
+CONFIG_MTK_LSM6DS3_K52=y
+#Lenovo-sw weimh1 add 2016-3-30 end
 ###################### Lenovo BSP Feature end #########################
