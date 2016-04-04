@@ -466,6 +466,18 @@ typedef struct {
 
 
 /* --------------------------------------------------------------------------- */
+//lenovo wuwl10 20160401 add CUSTOM_LCM_FEATURE begin
+#ifdef CONFIG_LENOVO_CUSTOM_LCM_FEATURE
+typedef struct
+{
+    /* common parameters */
+    unsigned char cmd;
+    unsigned char data;
+
+}lcm_reg;
+#endif
+//lenovo wuwl10 20160401 add CUSTOM_LCM_FEATURE end
+
 #define RT_MAX_NUM 10
 #define ESD_CHECK_NUM 3
 typedef struct {
@@ -804,6 +816,17 @@ typedef struct {
 //lenovo-sw wuwl10 add 201501029 for esd recover panel backlight begin
 	void (*esd_recover_backlight)(void);
 //lenovo-sw wuwl10 add 201501029 for esd recover panel backlight end
+//lenovo wuwl10 20160401 add CUSTOM_LCM_FEATURE begin
+#ifdef CONFIG_LENOVO_CUSTOM_LCM_FEATURE
+	void (*set_cabcmode)(void *handle,unsigned int mode);
+	void (*set_inversemode)(void *handle,unsigned int mode);
+
+	void (*set_lcm_reg)(lcm_reg *regs);
+	void (*get_lcm_reg)(lcm_reg *regs);
+	const char* version;
+	unsigned int  (*get_lcm_version)(void);
+#endif
+//lenovo wuwl10 20160401 add CUSTOM_LCM_FEATURE end
 	void (*set_pwm)(unsigned int divider);
 	unsigned int (*get_pwm)(unsigned int divider);
 	void (*set_backlight_mode)(unsigned int mode);

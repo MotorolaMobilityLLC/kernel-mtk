@@ -44,6 +44,12 @@ int disp_lcm_esd_recover(disp_lcm_handle *plcm);
 int disp_lcm_suspend(disp_lcm_handle *plcm);
 int disp_lcm_resume(disp_lcm_handle *plcm);
 int disp_lcm_set_backlight(disp_lcm_handle *plcm, void *handle, int level);
+//lenovo wuwl10 20160401 add CUSTOM_LCM_FEATURE begin
+#ifdef CONFIG_LENOVO_CUSTOM_LCM_FEATURE
+int disp_lcm_set_cabc(disp_lcm_handle *plcm, void *handle, unsigned int mode);
+int disp_lcm_set_inverse(disp_lcm_handle *plcm, void *handle, unsigned int mode);
+#endif
+//lenovo wuwl10 20160401 add CUSTOM_LCM_FEATURE end
 int disp_lcm_read_fb(disp_lcm_handle *plcm);
 int disp_lcm_ioctl(disp_lcm_handle *plcm, LCM_IOCTL ioctl, unsigned int arg);
 int disp_lcm_is_video_mode(disp_lcm_handle *plcm);
