@@ -981,6 +981,7 @@
 
 };
 /* IRTX GPIO end */
+#if 0
 &apirtx {
 	pinctrl-names = "irtx_gpio_led_default",
 			"irtx_gpio_led_set",
@@ -1034,7 +1035,7 @@
 
 
 }; /* IRTX GPIO Settings -End */
-
+#endif 
 
 &i2c0 {
 	cap_touch@38 {
