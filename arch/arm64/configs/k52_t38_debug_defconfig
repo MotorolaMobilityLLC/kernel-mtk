@@ -547,3 +547,7 @@ CONFIG_MTK_MPU6515G=n
 CONFIG_MTK_LSM6DS3_K52=y
 #Lenovo-sw weimh1 add 2016-3-30 end
 
+#lenovo-sw, chenzz3, integrate fpc fingerprint driver, begin
+CONFIG_SENSORS_FPC_1020=y
+CONFIG_PM_SLEEP=y
+#lenovo-sw, chenzz3, integrate fpc fingerprint driver, end
