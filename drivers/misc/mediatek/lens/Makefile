@@ -60,3 +60,8 @@ obj-$(CONFIG_MTK_LENS_LC898122AF_SUPPORT)  += common/lc898122af/
 obj-$(CONFIG_MTK_LENS_AD5820AF_SUPPORT)    += common/ad5820af/
 obj-$(CONFIG_MTK_LENS_WV511AAF_SUPPORT)    += common/wv511aaf/
 obj-$(CONFIG_MTK_LENS_AK7371AF_SUPPORT)    += common/ak7371af/
+
+#lenovo.sw START WUYT3 config k52 camera
+obj-$(CONFIG_MTK_LENS_DW9761SUNNYAF_SUPPORT)    += common/dw9761sunnyaf/
+obj-$(CONFIG_MTK_LENS_DW9761OFILMAF_SUPPORT)    += common/dw9761ofilmaf/
+#lenovo.sw END WUYT3 config k52 camera

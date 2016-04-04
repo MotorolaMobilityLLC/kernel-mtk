@@ -92,9 +92,9 @@ static DEFINE_SPINLOCK(kdsensor_drv_lock);
     #define SUPPORT_I2C_BUS_NUM1        0
 #endif
 #ifndef SUPPORT_I2C_BUS_NUM2
-    #define SUPPORT_I2C_BUS_NUM2        2
+    #define SUPPORT_I2C_BUS_NUM2        3
 #endif
-
+  
 //Main2 support
 #ifndef SUPPORT_I2C_BUS_NUM3
     #define SUPPORT_I2C_BUS_NUM3        SUPPORT_I2C_BUS_NUM2
@@ -131,7 +131,7 @@ struct device *sensor_device = NULL;
 #define PK_INF(fmt, args...)     pr_debug(PFX "[%s] " fmt, __FUNCTION__, ##args)
 
 #undef DEBUG_CAMERA_HW_K
-/* #define DEBUG_CAMERA_HW_K */
+ #define DEBUG_CAMERA_HW_K 
 #ifdef DEBUG_CAMERA_HW_K
 #define PK_DBG PK_DBG_FUNC
 #define PK_ERR(fmt, arg...)         pr_err(fmt, ##arg)
@@ -268,8 +268,8 @@ UINT32 kdGetSensorInitFuncList(ACDK_KD_SENSOR_INIT_FUNCTION_STRUCT **ppSensorLis
     *ppSensorList = &kdSensorList[0];
     return 0;
 } /* kdGetSensorInitFuncList() */
-
-
+  
+ 
 /*******************************************************************************
 *iMultiReadReg
 ********************************************************************************/
@@ -3906,7 +3906,7 @@ static int CAMERA_HW_i2c_remove2(struct i2c_client *client)
 ********************************************************************************/
 #ifdef CONFIG_OF
     static const struct of_device_id CAMERA_HW2_i2c_driver_of_ids[] = {
-	{ .compatible = "mediatek,camera_sub", },
+	{ .compatible = "mediatek,camera_sub_lenovo", },
 	{}
     };
 #endif
@@ -3933,8 +3933,8 @@ static int CAMERA_HW_probe(struct platform_device *pdev)
 {
 #ifndef CONFIG_MTK_CLKMGR
 		Get_ccf_clk(pdev);
-#endif
-
+#endif 
+ 
 #if !defined(CONFIG_MTK_LEGACY)/*GPIO Pin control*/
 	mtkcam_gpio_init(pdev);
 #endif

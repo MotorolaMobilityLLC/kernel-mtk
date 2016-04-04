@@ -35,6 +35,12 @@
 #define AFDRV_DW9714AF "DW9714AF"
 #define AFDRV_DW9718AF "DW9718AF"
 #define AFDRV_DW9814AF "DW9814AF"
+
+/*lenovo.sw wuyt3 add  for k52 camera start */
+#define AFDRV_DW9761SUNNYAF "DW9761SUNNYAF"
+#define AFDRV_DW9761OFILMAF "DW9761OFILMAF"
+/*lenovo.sw wuyt3 add for k52 camera end*/
+
 #define AFDRV_FM50AF "FM50AF"
 #define AFDRV_GAF001AF "GAF001AF"
 #define AFDRV_GAF002AF "GAF002AF"
