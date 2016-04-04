@@ -17,7 +17,7 @@
 #include <linux/types.h>
 #include "kd_camera_typedef.h"
 
-#ifdef CONFIG_MTK_LEGACY
+#if 0//def CONFIG_MTK_LEGACY
 #include <mach/mt_gpio.h>
 
 #ifdef CONFIG_MTK_MT6306_SUPPORT
@@ -73,7 +73,7 @@
 
 /* Define I2C Bus Num */
 #define SUPPORT_I2C_BUS_NUM1        I2C_CAMERA_MAIN_CHANNEL
-#define SUPPORT_I2C_BUS_NUM2        I2C_CAMERA_SUB_CHANNEL
+#define SUPPORT_I2C_BUS_NUM2        3
 
 
 typedef enum {
@@ -124,13 +124,18 @@ typedef enum {
 	PDN,
 	RST,
 	SensorMCLK,
-	AVDD,
+	AVDD,  //4//4
 	DVDD,
 	DOVDD,
 	AFVDD,
 	SUB_DVDD,
 	MAIN2_DVDD,
+/*lenovo.sw wuyt3 add for K52M*/
+	FLASHLIGHT_ENT,
+	FLASHLIGHT_ENF
+/*wuyt3 add end*/
 } PowerType;
+
 
 typedef enum {
 	Vol_Low = 0,

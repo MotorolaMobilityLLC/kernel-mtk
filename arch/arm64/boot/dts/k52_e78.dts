@@ -238,64 +238,94 @@
 &pio {
 	camera_pins_cam0_rst0: cam0@0 {
 	    pins_cmd_dat {
-			pins = <PINMUX_GPIO110__FUNC_GPIO110>;
+			pins = <PINMUX_GPIO107__FUNC_GPIO107>;
 			slew-rate = <1>; /*direction 0:in, 1:out*/
 			output-low;/*direction out used only. output_low or high*/
 		};
 	};
 	camera_pins_cam0_rst1: cam0@1 {
 	    pins_cmd_dat {
-			pins = <PINMUX_GPIO110__FUNC_GPIO110>;
+			pins = <PINMUX_GPIO107__FUNC_GPIO107>;
 			slew-rate = <1>;
 			output-high;
 		};
 	};
 	camera_pins_cam0_pnd0: cam0@2 {
 	    pins_cmd_dat {
-			pins = <PINMUX_GPIO107__FUNC_GPIO107>;
+			pins = <PINMUX_GPIO110__FUNC_GPIO110>;
 			slew-rate = <1>;
 			output-low;
 		};
 	};
 	camera_pins_cam0_pnd1: cam0@3 {
 	    pins_cmd_dat {
-			pins = <PINMUX_GPIO107__FUNC_GPIO107>;
+			pins = <PINMUX_GPIO110__FUNC_GPIO110>;
 			slew-rate = <1>;
 			output-high;
 		};
 	};
 	camera_pins_cam1_rst0: cam1@0 {
 	    pins_cmd_dat {
-			pins = <PINMUX_GPIO111__FUNC_GPIO111>;
+			pins = <PINMUX_GPIO108__FUNC_GPIO108>;
 			slew-rate = <1>; /*direction 0:in, 1:out*/
 			output-low;/*direction out used only. output_low or high*/
 		};
 	};
 	camera_pins_cam1_rst1: cam1@1 {
 	    pins_cmd_dat {
-			pins = <PINMUX_GPIO111__FUNC_GPIO111>;
+			pins = <PINMUX_GPIO108__FUNC_GPIO108>;
 			slew-rate = <1>;
 			output-high;
 		};
 	};
 	camera_pins_cam1_pnd0: cam1@2 {
 	    pins_cmd_dat {
-			pins = <PINMUX_GPIO108__FUNC_GPIO108>;
+			pins = <PINMUX_GPIO111__FUNC_GPIO111>;
 			slew-rate = <1>;
 			output-low;
 		};
 	};
 	camera_pins_cam1_pnd1: cam1@3 {
 	    pins_cmd_dat {
-			pins = <PINMUX_GPIO108__FUNC_GPIO108>;
+			pins = <PINMUX_GPIO111__FUNC_GPIO111>;
 			slew-rate = <1>;
 			output-high;
 		};
 	};
-	/*camera_pins_cam_ldo_vcama_0: cam@vcama0 {
+	main_camera_flash_ENT_0: cam@0 {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO8__FUNC_GPIO8>;
+			slew-rate = <1>;
+			output-low;
+		};
 	};
-	camera_pins_cam_ldo_vcama_1: cam@vcama1 {
-	};*/
+	main_camera_flash_ENT_1: cam@1 {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO8__FUNC_GPIO8>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+	main_camera_flash_ENT_2: cam@2 {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO8__FUNC_PWM_A>;
+			slew-rate = <1>;
+		};
+	};
+	main_camera_flash_ENF_0: cam@3 {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO9__FUNC_GPIO9>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+	main_camera_flash_ENF_1: cam@4 {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO9__FUNC_GPIO9>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
 	camera_pins_default: camdefault {
 	};
 
@@ -304,7 +334,8 @@
 &kd_camera_hw1 {
 	pinctrl-names = "default",
 			"cam0_rst0", "cam0_rst1", "cam0_pnd0", "cam0_pnd1",
-			"cam1_rst0", "cam1_rst1", "cam1_pnd0", "cam1_pnd1";
+			"cam1_rst0", "cam1_rst1", "cam1_pnd0", "cam1_pnd1",
+			"flash_ENT0", "flash_ENT1", "flash_ENT2", "flash_ENF0", "flash_ENF1";
 			/*"cam2_rst0", "cam2_rst1", "cam2_pnd0", "cam2_pnd1",
 			"cam_ldo_vcama_0", "cam_ldo_vcama_1";*/
 	pinctrl-0 = <&camera_pins_default>;
@@ -316,6 +347,13 @@
 	pinctrl-6 = <&camera_pins_cam1_rst1>;
 	pinctrl-7 = <&camera_pins_cam1_pnd0>;
 	pinctrl-8 = <&camera_pins_cam1_pnd1>;
+	/*wuyt3 add for K52 flashlight*/
+	pinctrl-9 = <&main_camera_flash_ENT_0>;
+	pinctrl-10 = <&main_camera_flash_ENT_1>;
+	pinctrl-11 = <&main_camera_flash_ENT_2>;
+	pinctrl-12 = <&main_camera_flash_ENF_0>;
+	pinctrl-13 = <&main_camera_flash_ENF_1>;
+	/*wuyt3 add end*/
 	/* for main2 */
 	/*pinctrl-9 = <&camera_pins_cam2_rst0>;
 	pinctrl-10 = <&camera_pins_cam2_rst1>;
@@ -990,6 +1028,32 @@
 /*End, lenovo-sw lumy1*/
 
 };
+
+/*lenovo.sw wuyt3 add for k52M camera*/
+&i2c2 {
+	s5k3m2_cal@58 {
+			compatible = "mediatek,s5k3m2_cal";
+			reg = <0x58>;
+			status = "okay";
+		};
+};
+
+&i2c3{
+		camera_sub_lenovo@7f {
+			compatible = "mediatek,camera_sub_lenovo";
+			reg = <0x7f>;
+			status = "okay";
+		};
+
+		gt24c08h@54 {
+			compatible = "mediatek,gt24c08h";
+			reg = <0x54>;
+			status = "okay";
+		};
+};
+
+/*lenovo.sw wuyt3 add end*/
+		
 /* IRTX GPIO end */
 #if 0
 &apirtx {

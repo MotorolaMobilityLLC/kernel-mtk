@@ -67,6 +67,7 @@ extern void ISP_MCLK1_EN(BOOL En);
 extern void ISP_MCLK2_EN(BOOL En);
 extern void ISP_MCLK3_EN(BOOL En);
 
+static char * gcurrSensorName = NULL;  //lenovo.sw wuyt3 add for k52m
 
 u32 pinSetIdx = 0;		/* default main sensor */
 u32 pinSet[3][8] = {
@@ -124,131 +125,119 @@ PowerCust PowerCustList = {
 };
 
 
+/*lenovo.sw wuyt3 add for k52 M camera*/
 
 PowerUp PowerOnList = {
 	{
-	 {SENSOR_DRVNAME_S5K5E2YA_MIPI_RAW,
+
+ {SENSOR_DRVNAME_S5K3M2_MIPI_RAW,
 	  {
 	   {SensorMCLK, Vol_High, 0},
+	   {RST, Vol_Low, 0},
+	   //{PDN, Vol_Low, 0},
 	   {DOVDD, Vol_1800, 0},
-	   {AVDD, Vol_2800, 0},
-	   {DVDD, Vol_1200, 0},
-	   {AFVDD, Vol_2800, 5},
-	   {PDN, Vol_Low, 4},
-	   {PDN, Vol_High, 0},
-	   {RST, Vol_Low, 1},
+	   {AVDD, Vol_2800, 2},
+	   {DVDD, Vol_1000, 0},
+	   {AFVDD, Vol_2800, 3},
+	   {PDN, Vol_High, 2},
 	   {RST, Vol_High, 0},
 	   },
 	  },
-	 {SENSOR_DRVNAME_S5K2P8_MIPI_RAW,
+	   {SENSOR_DRVNAME_S5K3M2_SUNNY_MIPI_RAW,
 	  {
 	   {SensorMCLK, Vol_High, 0},
+	   {RST, Vol_Low, 0},
+	   //{PDN, Vol_Low, 0},
 	   {DOVDD, Vol_1800, 0},
-	   {AVDD, Vol_2800, 0},
-	   {DVDD, Vol_1200, 0},
-	   {AFVDD, Vol_2800, 5},
-	   {PDN, Vol_Low, 4},
-	   {PDN, Vol_High, 0},
-	   {RST, Vol_Low, 1},
+	   {AVDD, Vol_2800, 2},
+	   {DVDD, Vol_1000, 0},
+	   {AFVDD, Vol_2800, 3},
+	   {PDN, Vol_High, 2},
 	   {RST, Vol_High, 0},
 	   },
 	  },
-	 {SENSOR_DRVNAME_OV5648_MIPI_RAW,
+	   {SENSOR_DRVNAME_OV8865_MIPI_RAW,
 	  {
+	  {RST, Vol_Low, 0},
+	  //{PDN, Vol_Low, 0},
+	   {DOVDD, Vol_1800, 2},
+	   {AVDD, Vol_2800, 2},
+	   {DVDD, Vol_1200, 2},
+	   {PDN, Vol_High, 2},   
+	   {RST, Vol_High, 1},
 	   {SensorMCLK, Vol_High, 0},
-	   {DOVDD, Vol_1800, 1},
-	   {AVDD, Vol_2800, 1},
-	   {DVDD, Vol_1500, 1},
-	   {AFVDD, Vol_2800, 5},
-	   {PDN, Vol_Low, 1},
-	   {RST, Vol_Low, 1},
-	   {PDN, Vol_High, 0},
-	   {RST, Vol_High, 0}
 	   },
 	  },
-	 {SENSOR_DRVNAME_OV16825_MIPI_RAW,
+	   {SENSOR_DRVNAME_OV8865_SUNNY_MIPI_RAW,
 	  {
-	   {SensorMCLK, Vol_High, 0},
-	   {DOVDD, Vol_1800, 0},
-	   {AVDD, Vol_2800, 0},
-	   {DVDD, Vol_1200, 0},
-	   {AFVDD, Vol_2800, 5},
-	   {PDN, Vol_Low, 0},
 	   {RST, Vol_Low, 0},
-	   {RST, Vol_High, 0},
+	   //{PDN, Vol_Low, 0},
+	   {DOVDD, Vol_1800, 2},
+	   {AVDD, Vol_2800, 2},
+	   {DVDD, Vol_1200, 2},
+	   {PDN, Vol_High, 2},   
+	   {RST, Vol_High, 1},
+	    {SensorMCLK, Vol_High, 0},
 	   },
 	  },
-	 {SENSOR_DRVNAME_IMX135_MIPI_RAW,
-	  {
-	   {SensorMCLK, Vol_High, 0},
-	   {AVDD, Vol_2800, 10},
-	   {DOVDD, Vol_1800, 10},
-	   {DVDD, Vol_1000, 10},
-	   {AFVDD, Vol_2800, 5},
-	   {PDN, Vol_Low, 0},
-	   {PDN, Vol_High, 0},
-	   {RST, Vol_Low, 0},
-	   {RST, Vol_High, 0}
-	   },
-	  },
-	 {SENSOR_DRVNAME_OV8858_MIPI_RAW,
-	  {
-	   {SensorMCLK, Vol_High, 0},
-	   {PDN, Vol_Low, 0},
-	   {RST, Vol_Low, 0},
-	   {DOVDD, Vol_1800, 1},
-	   {AVDD, Vol_2800, 1},
-	   {DVDD, Vol_1200, 5},
-	   {AFVDD, Vol_2800, 1},
-	   {PDN, Vol_High, 1},
-	   {RST, Vol_High, 2}
-	   },
-	  },
-	  {SENSOR_DRVNAME_IMX258_MIPI_RAW,
-	  {
-	   {SensorMCLK, Vol_High, 0},
-	   {PDN, Vol_Low, 0},
-	   {RST, Vol_Low, 0},
-	   {DOVDD, Vol_1800, 0},
-	   {AVDD, Vol_2800, 0},
-	   {DVDD, Vol_1200, 0},
-	   {AFVDD, Vol_2800, 1},
-	   {PDN, Vol_High, 0},
-	   {RST, Vol_High, 0}
-	   },
-	  },
-	  {SENSOR_DRVNAME_IMX214_MIPI_RAW,
-	  {
-	   {SensorMCLK, Vol_High, 0},
-	   {AVDD, Vol_2800, 10},
-	   {DOVDD, Vol_1800, 10},
-	   {DVDD, Vol_1000, 10},
-	   {AFVDD, Vol_2800, 5},
-	   {PDN, Vol_Low, 0},
-	   {PDN, Vol_High, 0},
-	   {RST, Vol_Low, 0},
-	   {RST, Vol_High, 0}
-	   },
-	  },
-         {SENSOR_DRVNAME_S5K3P3SX_MIPI_RAW,
-          {
-           {SensorMCLK, Vol_High, 0},
-           {DOVDD, Vol_1800, 0},
-           {AVDD, Vol_2800, 0},
-           {DVDD, Vol_1200, 0},
-           {AFVDD, Vol_2800, 5},
-           {PDN, Vol_Low, 4},
-           {PDN, Vol_High, 0},
-           {RST, Vol_Low, 1},
-           {RST, Vol_High, 0},
-           },
-          },
+
 	 /* add new sensor before this line */
 	 {NULL,},
 	 }
 };
 
+PowerUp PowerDownList = {
+	{
 
+ {SENSOR_DRVNAME_S5K3M2_MIPI_RAW,
+	  {
+	   {SensorMCLK, Vol_Low, 0},
+	   {RST, Vol_Low, 0},
+	   {PDN, Vol_Low, 0},
+	   {DOVDD, Vol_1800, 0},
+	   {AVDD, Vol_2800, 2},
+	   {DVDD, Vol_1000, 0},
+	   {AFVDD, Vol_2800, 3},
+	   },
+	  },
+	   {SENSOR_DRVNAME_S5K3M2_SUNNY_MIPI_RAW,
+	  {
+	   {SensorMCLK, Vol_Low, 0},
+	   {RST, Vol_Low, 0},
+	   {PDN, Vol_Low, 0},
+	   {DOVDD, Vol_1800, 0},
+	   {AVDD, Vol_2800, 2},
+	   {DVDD, Vol_1000, 0},
+	   {AFVDD, Vol_2800, 3},
+
+	   },
+	  },
+	   {SENSOR_DRVNAME_OV8865_MIPI_RAW,
+	  {
+	   {SensorMCLK, Vol_Low, 0},
+	   {RST, Vol_Low, 0},
+	   {PDN, Vol_Low, 0},
+	   {DOVDD, Vol_1800, 0},
+	   {AVDD, Vol_2800, 0},
+	   {DVDD, Vol_1200, 0},
+	   },
+	  },
+	   {SENSOR_DRVNAME_OV8865_SUNNY_MIPI_RAW,
+	  {
+	   {SensorMCLK, Vol_Low, 0},
+	   {RST, Vol_Low, 0},
+	   {PDN, Vol_Low, 0},
+	   {DOVDD, Vol_1800, 0},
+	   {AVDD, Vol_2800, 0},
+	   {DVDD, Vol_1200, 0},
+	   },
+	  },
+	 /* add new sensor before this line */
+	 {NULL,},
+	 }
+};
+
+/*lenovo.sw wuyt3 add end*/
 
 #ifndef CONFIG_MTK_LEGACY
 
@@ -290,6 +279,13 @@ struct pinctrl_state *cam_mipi_switch_en_h = NULL;/* for mipi switch enable */
 struct pinctrl_state *cam_mipi_switch_en_l = NULL;
 struct pinctrl_state *cam_mipi_switch_sel_h = NULL;/* for mipi switch select */
 struct pinctrl_state *cam_mipi_switch_sel_l = NULL;
+/*lenovo.sw wuyt3 add for flashlight*/
+struct pinctrl_state *flashlight_ent_GPIO_h = NULL;
+struct pinctrl_state *flashlight_ent_GPIO_l = NULL;
+struct pinctrl_state *flashlight_ent_PWM = NULL;
+struct pinctrl_state *flashlight_enf_GPIO_h = NULL;
+struct pinctrl_state *flashlight_enf_GPIO_l = NULL;
+/*lenovo.sw wuyt3 add end*/
 int has_mipi_switch = 0;
 
 int mtkcam_gpio_init(struct platform_device *pdev)
@@ -480,6 +476,37 @@ int mtkcam_gpio_init(struct platform_device *pdev)
 		ret = PTR_ERR(cam_mipi_switch_sel_l);
 		PK_DBG("%s : pinctrl err, cam_mipi_switch_sel_l\n", __func__);
 	}
+/*lenovo.sw wuyt3 add for K52M*/
+	flashlight_ent_GPIO_l = pinctrl_lookup_state(camctrl, "flash_ENT0");
+	if(IS_ERR(flashlight_ent_GPIO_l)){
+		ret = PTR_ERR(flashlight_ent_GPIO_l);
+		PK_DBG("%s : pinctrl err, flashlight_ent_GPIO_l\n", __func__);
+	}
+
+	flashlight_ent_GPIO_h = pinctrl_lookup_state(camctrl, "flash_ENT1");
+	if(IS_ERR(flashlight_ent_GPIO_h)){
+		ret = PTR_ERR(flashlight_ent_GPIO_h);
+		PK_DBG("%s : pinctrl err, flashlight_ent_GPIO_h\n", __func__);
+	}
+
+	flashlight_ent_PWM = pinctrl_lookup_state(camctrl, "flash_ENT2");
+	if(IS_ERR(flashlight_ent_PWM)){
+		ret = PTR_ERR(flashlight_ent_PWM);
+		PK_DBG("%s : pinctrl err, flashlight_ent_PWM\n", __func__);
+	}
+
+	flashlight_enf_GPIO_l = pinctrl_lookup_state(camctrl, "flash_ENF0");
+	if(IS_ERR(flashlight_enf_GPIO_l)){
+		ret = PTR_ERR(flashlight_enf_GPIO_l);
+		PK_DBG("%s : pinctrl err, flashlight_enf_GPIO_l\n", __func__);
+	}
+
+	flashlight_enf_GPIO_h = pinctrl_lookup_state(camctrl, "flash_ENF1");
+	if(IS_ERR(flashlight_enf_GPIO_h)){
+		ret = PTR_ERR(flashlight_enf_GPIO_h);
+		PK_DBG("%s : pinctrl err, flashlight_enf_GPIO_h\n", __func__);
+	}
+/*wuyt3 add end*/
 	return ret;
 }
 
@@ -488,7 +515,7 @@ int mtkcam_gpio_set(int PinIdx, int PwrType, int Val)
 	int ret = 0;
 	if (IS_ERR(camctrl)) {
 		return -1;
-	}
+	} 
 	switch (PwrType) {
 	case RST:
 		if (PinIdx == 0) {
@@ -574,6 +601,22 @@ int mtkcam_gpio_set(int PinIdx, int PwrType, int Val)
 		else if (Val == 1 && !IS_ERR(cam_ldo_main2_vcamd_h))
 			pinctrl_select_state(camctrl, cam_ldo_main2_vcamd_h);
 		break;
+/*lenovo.sw wuyt3 add for K52M*/
+	case FLASHLIGHT_ENT:
+		if(Val == 0 && !IS_ERR(flashlight_ent_GPIO_l))
+			pinctrl_select_state(camctrl, flashlight_ent_GPIO_l);
+		else if(Val == 1 && !IS_ERR(flashlight_ent_GPIO_h))
+			pinctrl_select_state(camctrl, flashlight_ent_GPIO_h);
+		else if(Val == 2 && !IS_ERR(flashlight_ent_PWM))
+			pinctrl_select_state(camctrl, flashlight_ent_PWM);
+		break;
+	case FLASHLIGHT_ENF:
+		if(Val == 0 && !IS_ERR(flashlight_enf_GPIO_l))
+			pinctrl_select_state(camctrl, flashlight_enf_GPIO_l);
+		else if(Val == 1 && !IS_ERR(flashlight_enf_GPIO_h))
+			pinctrl_select_state(camctrl, flashlight_enf_GPIO_h);
+		break;
+/*wuyt3 add end*/
 	default:
 		PK_DBG("PwrType(%d) is invalid !!\n", PwrType);
 		break;
@@ -617,10 +660,12 @@ BOOL hwpoweron(PowerInformation pwInfo, char *mode_name)
 		} else if (pinSetIdx == 1) {
 			if (PowerCustList.PowerCustInfo[CUST_SUB_DVDD].Gpio_Pin == GPIO_UNSUPPORTED) {
 				/* PK_DBG("[CAMERA SENSOR] Sub camera VCAM_D power on"); */
+			#if 1
 				if (pwInfo.Voltage == Vol_1200) {
 					pwInfo.Voltage = Vol_1220;
 					PK_DBG("[CAMERA SENSOR] Sub camera VCAM_D power 1.2V to 1.22V\n");
 				}
+			#endif
 				if (TRUE != _hwPowerOn(SUB_DVDD, pwInfo.Voltage)) {
 					PK_ERR("[CAMERA SENSOR] Fail to enable digital power\n");
 					return FALSE;
@@ -655,7 +700,7 @@ BOOL hwpoweron(PowerInformation pwInfo, char *mode_name)
 			}
 
 		}
-	} else if (pwInfo.PowerType == AFVDD) {
+	}else if (pwInfo.PowerType == AFVDD) {
 #if CONTROL_AF_POWER
 		if (PowerCustList.PowerCustInfo[CUST_AFVDD].Gpio_Pin == GPIO_UNSUPPORTED) {
 			if (TRUE != _hwPowerOn(pwInfo.PowerType, pwInfo.Voltage)) {
@@ -670,6 +715,26 @@ BOOL hwpoweron(PowerInformation pwInfo, char *mode_name)
 #endif
 	} else if (pwInfo.PowerType == PDN) {
 		/* PK_DBG("hwPowerOn: PDN %d\n", pwInfo.Voltage); */
+		if (pwInfo.Voltage == Vol_High) {
+		/*lenovo.sw wuyt3 modify begin */
+			if (gcurrSensorName && ((0 == strcmp(SENSOR_DRVNAME_S5K3M2_MIPI_RAW,gcurrSensorName))||(0 == strcmp(SENSOR_DRVNAME_S5K3M2_SUNNY_MIPI_RAW,gcurrSensorName)))){
+				if(pinSetIdx == 0){
+					mtkcam_gpio_set(0, PDN, pinSet[0][IDX_PS_CMPDN + IDX_PS_ON]);
+				}else{
+					mtkcam_gpio_set(0, PDN, pinSet[0][IDX_PS_CMPDN + IDX_PS_OFF]);
+				}
+			}else if(gcurrSensorName && ((0 == strcmp(SENSOR_DRVNAME_OV8865_MIPI_RAW,gcurrSensorName)) ||(0 == strcmp(SENSOR_DRVNAME_OV8865_SUNNY_MIPI_RAW,gcurrSensorName)))){
+				if(pinSetIdx == 1){
+					mtkcam_gpio_set(1, PDN, pinSet[1][IDX_PS_CMPDN + IDX_PS_ON]);
+				}else{
+					mtkcam_gpio_set(1, PDN, pinSet[1][IDX_PS_CMPDN + IDX_PS_OFF]);
+				}
+			}
+		}else{
+		
+			mtkcam_gpio_set(pinSetIdx, PDN, pinSet[pinSetIdx][IDX_PS_CMPDN + IDX_PS_OFF]);
+		}
+	#if 0
 		mtkcam_gpio_set(pinSetIdx, PDN, pinSet[pinSetIdx][IDX_PS_CMPDN + IDX_PS_OFF]);
 
 
@@ -682,7 +747,8 @@ BOOL hwpoweron(PowerInformation pwInfo, char *mode_name)
 
 				PK_ERR("[CAMERA SENSOR] set gpio failed!!\n");
 			}
-		}
+	#endif
+	/*lenovo.sw wuyt3 modify end */
 	} else if (pwInfo.PowerType == RST) {
 		mtkcam_gpio_set(pinSetIdx, RST, pinSet[pinSetIdx][IDX_PS_CMRST + IDX_PS_OFF]);
 		if (pwInfo.Voltage == Vol_High) {
@@ -866,7 +932,7 @@ int kdCISModulePowerOn(CAMERA_DUAL_CAMERA_SENSOR_ENUM SensorIdx, char *currSenso
 				strcmp(PowerOnList.PowerSeq[pwListIdx].SensorName,
 				       currSensorName))) {
 				//PK_DBG("sensorIdx:%d\n", SensorIdx);
-
+				gcurrSensorName =currSensorName;
 				sensorInPowerList = KAL_TRUE;
 
 				for (pwIdx = 0; pwIdx < 10; pwIdx++) {
@@ -1092,25 +1158,25 @@ int kdCISModulePowerOn(CAMERA_DUAL_CAMERA_SENSOR_ENUM SensorIdx, char *currSenso
 			pinctrl_select_state(camctrl, cam_mipi_switch_en_h);
 		}
 		for (pwListIdx = 0; pwListIdx < 16; pwListIdx++) {
-			if (currSensorName && (PowerOnList.PowerSeq[pwListIdx].SensorName != NULL)
+			if (currSensorName && (PowerDownList.PowerSeq[pwListIdx].SensorName != NULL)
 			    && (0 ==
-				strcmp(PowerOnList.PowerSeq[pwListIdx].SensorName,
+				strcmp(PowerDownList.PowerSeq[pwListIdx].SensorName,
 				       currSensorName))) {
 				PK_DBG("kdCISModulePowerOn -off:currSensorName=%s pinSetIdx=%d\n", currSensorName, pinSetIdx);
 
 				sensorInPowerList = KAL_TRUE;
 
 				for (pwIdx = 9; pwIdx >= 0; pwIdx--) {
-					if (PowerOnList.PowerSeq[pwListIdx].PowerInfo[pwIdx].
+					if (PowerDownList.PowerSeq[pwListIdx].PowerInfo[pwIdx].
 					    PowerType != VDD_None) {
 						if (hwpowerdown
-						    (PowerOnList.PowerSeq[pwListIdx].
+						    (PowerDownList.PowerSeq[pwListIdx].
 						     PowerInfo[pwIdx], mode_name) == FALSE)
 							goto _kdCISModulePowerOn_exit_;
 						if (pwIdx > 0) {
-							if (PowerOnList.PowerSeq[pwListIdx].
+							if (PowerDownList.PowerSeq[pwListIdx].
 							    PowerInfo[pwIdx - 1].Delay > 0)
-								mdelay(PowerOnList.
+								mdelay(PowerDownList.
 								       PowerSeq[pwListIdx].
 								       PowerInfo[pwIdx - 1].Delay);
 						}
@@ -1118,7 +1184,7 @@ int kdCISModulePowerOn(CAMERA_DUAL_CAMERA_SENSOR_ENUM SensorIdx, char *currSenso
 						/*PK_DBG("pwIdx=%d\n", pwIdx);*/
 					}
 				}
-			} else if (PowerOnList.PowerSeq[pwListIdx].SensorName == NULL) {
+			} else if (PowerDownList.PowerSeq[pwListIdx].SensorName == NULL) {
 				break;
 			} else {
 			}
