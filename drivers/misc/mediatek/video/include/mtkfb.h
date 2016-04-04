@@ -74,6 +74,13 @@
 #define MTKFB_GET_FRAMEBUFFER_MVA              MTK_IOR(26, unsigned int)
 #define MTKFB_SLT_AUTO_CAPTURE                 MTK_IOWR(27, struct fb_slt_catpure)
 
+//lenovo wuwl10 20160401 add CUSTOM_LCM_FEATURE begin
+#ifdef CONFIG_LENOVO_CUSTOM_LCM_FEATURE
+#define MTKFB_GET_DISPLAY_FEATURE_INFORMATION  MTK_IOR(100, lenovo_disp_feature_info_t)
+#define MTKFB_GET_DISPLAY_FEATURE_STATE  MTK_IOR(99, lenovo_disp_feature_state_t)
+#define MTKFB_SET_DISPLAY_FEATURE_STATE  MTK_IOW(98, lenovo_disp_feature_state_t)
+#endif
+//lenovo wuwl10 20160401 add CUSTOM_LCM_FEATURE end
 /*error handling*/
 #define MTKFB_META_RESTORE_SCREEN              MTK_IOW(101, unsigned long)
 #define MTKFB_ERROR_INDEX_UPDATE_TIMEOUT       MTK_IO(103)

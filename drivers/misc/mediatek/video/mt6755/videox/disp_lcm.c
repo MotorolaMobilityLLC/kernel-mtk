@@ -21,6 +21,8 @@
 
 /* This macro and arrya is designed for multiple LCM support */
 /* for multiple LCM, we should assign I/F Port id in lcm driver, such as DPI0, DSI0/1 */
+//Lenovo-sw wuwl10 add 20160401 for esd recover backlight
+static bool need_esd_recover_backlight = false;
 
 int _lcm_count(void)
 {
@@ -309,6 +311,23 @@ int disp_lcm_init(disp_lcm_handle *plcm, int force)
 
 		}
 #endif
+//Lenovo-sw wuwl10 add 20160401 for esd to recover backlight begin
+		if (need_esd_recover_backlight)
+		{
+			if(lcm_drv->esd_recover_backlight)
+			{
+				if(!disp_lcm_is_inited(plcm) || force)
+				{
+					lcm_drv->esd_recover_backlight();
+				}
+			}
+		}
+		else
+		{
+			need_esd_recover_backlight = true;
+		}
+//Lenovo-sw wuwl10 add 20160401 for esd to recover backlight end
+
 		/* ddp_dsi_start(DISP_MODULE_DSI0, NULL); */
 		/* DSI_BIST_Pattern_Test(DISP_MODULE_DSI0,NULL,true, 0x00ffff00); */
 		return 0;
@@ -470,6 +489,52 @@ int disp_lcm_set_backlight(disp_lcm_handle *plcm, void *handle, int level)
 	}
 	return ret;
 }
+
+//lenovo wuwl10 20151013 add CUSTOM_LCM_FEATURE begin
+#ifdef CONFIG_LENOVO_CUSTOM_LCM_FEATURE
+int disp_lcm_set_cabc(disp_lcm_handle *plcm, void *handle, unsigned int mode)
+{
+	LCM_DRIVER *lcm_drv = NULL;
+	int ret = 0;
+
+	DISPFUNC();
+	if (_is_lcm_inited(plcm)) {
+		lcm_drv = plcm->drv;
+		if (lcm_drv->set_cabcmode) {
+			lcm_drv->set_cabcmode(handle, mode);
+		} else {
+			DISPERR("FATAL ERROR, lcm_drv->set_cabcmode is null\n");
+			ret = -1;
+		}
+	} else {
+		DISPERR("lcm_drv is null\n");
+		ret = -1;
+	}
+	return ret;
+}
+int disp_lcm_set_inverse(disp_lcm_handle *plcm, void *handle, unsigned int mode)
+{
+	LCM_DRIVER *lcm_drv = NULL;
+	int ret = 0;
+
+	DISPFUNC();
+	if (_is_lcm_inited(plcm)) {
+		lcm_drv = plcm->drv;
+		if (lcm_drv->set_inversemode) {
+			lcm_drv->set_inversemode(handle, mode);
+		} else {
+			DISPERR("FATAL ERROR, lcm_drv->set_inversemode is null\n");
+			ret = -1;
+		}
+	} else {
+		DISPERR("lcm_drv is null\n");
+		ret = -1;
+	}
+	return ret;
+}
+
+#endif
+//lenovo wuwl10 20151013 add CUSTOM_LCM_FEATURE end
 
 int disp_lcm_ioctl(disp_lcm_handle *plcm, LCM_IOCTL ioctl, unsigned int arg)
 {

@@ -94,4 +94,8 @@ config MTK_OVERLAY_ENGINE_SUPPORT
 config BACKLIGHTIC_KTD3116_CURRENT
        bool "BACKLIGHTIC_KTD3116_CURRENT"
        default n
+
+config LENOVO_CUSTOM_LCM_FEATURE
+       bool "LENOVO_CUSTOM_LCM_FEATURE"
+       default n
 #lenovo wuwl10 20151215 add for lcm feactue end

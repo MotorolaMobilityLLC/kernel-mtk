@@ -66,6 +66,38 @@
 #include "disp_recovery.h"
 #include "ddp_clkmgr.h"
 
+//lenovo wuwl10 20160401 add CUSTOM_LCM_FEATURE begin
+#ifdef CONFIG_LENOVO_CUSTOM_LCM_FEATURE
+#include <linux/proc_fs.h>
+#include <linux/seq_file.h>
+
+static bool LCM_Feature_set_resume = false;
+lenovo_disp_feature_info_t disp_feature_info[MTKFB_MAX_DISPLAY_COUNT];
+lenovo_disp_feature_state_t disp_feature_state[MTKFB_MAX_DISPLAY_COUNT];
+
+static int mtkfb_set_lcm_feature_mode(lenovo_disp_feature_state_t *states);
+static int lcm_debug_open(struct inode *inode, struct file *file);
+static int lcm_info_open(struct inode *inode, struct file *file);
+
+static  struct file_operations lcm_debug_proc_fops = {
+    .open    = lcm_debug_open,
+    .read    = seq_read,
+    .llseek  = seq_lseek,
+    .release = single_release,
+};
+
+static  struct file_operations lcm_info_proc_fops = {
+    .open    = lcm_info_open,
+    .read    = seq_read,
+    .llseek  = seq_lseek,
+    .release = single_release,
+};
+
+LCM_DRIVER *lcm_drv;
+LCM_PARAMS *lcm_params;
+#endif
+//lenovo wuwl10 20160401 add CUSTOM_LCM_FEATURE end
+
 /* static variable */
 static u32 MTK_FB_XRES;
 static u32 MTK_FB_YRES;
@@ -256,7 +288,14 @@ static void mtkfb_blank_resume(void)
 		DISPERR("primary display resume failed\n");
 		return;
 	}
-
+//lenovo wuwl10 20151013 add CUSTOM_LCM_FEATURE beginbegin
+#ifdef CONFIG_LENOVO_CUSTOM_LCM_FEATURE
+	if(LCM_Feature_set_resume){
+		mtkfb_set_lcm_feature_mode(&(disp_feature_state[0]));
+		LCM_Feature_set_resume = false;
+	}
+#endif
+//lenovo wuwl10 20151013 add CUSTOM_LCM_FEATURE beginend
 	DISPMSG("[FB Driver] leave late_resume\n");
 
 }
@@ -1079,7 +1118,43 @@ unsigned int mtkfb_fm_auto_test(void)
 	return result;
 }
 
+//lenovo wuwl10 20160401 add CUSTOM_LCM_FEATURE beign
+#ifdef CONFIG_LENOVO_CUSTOM_LCM_FEATURE
+static int mtkfb_set_lcm_feature_mode(lenovo_disp_feature_state_t *states)
+{
+//lenovo-sw wuwl10 20160401 modify to improve cabc logic
+	static int cabc_mode = -1;
+	//static int inverse_mode = -1;
+	if (down_interruptible(&sem_flipping)) {
+		printk("[FB Driver] can't get semaphore in mtkfb_set_cabcmode\n");
+		return -ERESTARTSYS;
+	}
+	if (down_interruptible(&sem_early_suspend)) {
+		printk("[FB Driver] can't get semaphore in mtkfb_set_cabcmode\n");
+		return -ERESTARTSYS;
+	}
 
+	if (is_early_suspended){
+		LCM_Feature_set_resume = true;
+		printk("%s set !!! but FB has been suspended\n",__func__);
+		goto End;
+	}
+
+	if((states->cabc_mode>=0)&&(cabc_mode!=states->cabc_mode)){
+		cabc_mode = states->cabc_mode;
+		primary_display_setcabc(cabc_mode);
+	}
+	//if((states->inverse_mode>=0)&&(inverse_mode!=states->inverse_mode)){
+	//	inverse_mode = states->inverse_mode;
+	//	primary_display_setinverse(inverse_mode);
+	//}
+End:
+	up(&sem_early_suspend);
+	up(&sem_flipping);
+	return 0;
+}
+#endif
+//lenovo wuwl10 20160401 add CUSTOM_LCM_FEATURE end
 
 static int mtkfb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long arg)
 {
@@ -1489,6 +1564,45 @@ static int mtkfb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long arg
 
 			return 0;
 		}
+//lenovo wuwl10 20160401 add CUSTOM_LCM_FEATURE begin
+#ifdef CONFIG_LENOVO_CUSTOM_LCM_FEATURE
+	case MTKFB_GET_DISPLAY_FEATURE_INFORMATION:
+	{
+		int displayid = 0;
+		if (copy_to_user((void __user *)arg, &(disp_feature_info[displayid]),  sizeof(lenovo_disp_feature_info_t))) {
+			MTKFB_LOG("[FB]: copy_to_user failed! line:%d \n", __LINE__);
+			r = -EFAULT;
+		}
+		return (r);
+	}
+
+	case MTKFB_GET_DISPLAY_FEATURE_STATE:
+	{
+		int displayid = 0;
+		if (copy_to_user((void __user *)arg, &(disp_feature_state[displayid]),  sizeof(lenovo_disp_feature_state_t))) {
+			MTKFB_LOG("[FB]: copy_to_user failed! line:%d \n", __LINE__);
+			r = -EFAULT;
+		}
+		return (r);
+	}
+	case MTKFB_SET_DISPLAY_FEATURE_STATE:
+	{
+		lenovo_disp_feature_state_t state;
+		if (copy_from_user(&state, (void __user *)arg, sizeof(state))) {
+			MTKFB_LOG("[FB]: copy_from_user failed! line:%d \n", __LINE__);
+			return -EFAULT;
+		}
+
+		if(state.cabc_mode>=0)
+			disp_feature_state[0].cabc_mode= state.cabc_mode;
+		if(state.inverse_mode>=0)
+			disp_feature_state[0].inverse_mode= state.inverse_mode;
+
+		mtkfb_set_lcm_feature_mode(&(disp_feature_state[0]));
+		return (r);
+	}
+#endif
+//lenovo wuwl10 20160401 add CUSTOM_LCM_FEATURE end
 
 	default:
 		pr_err("mtkfb_ioctl Not support, info=0x%p, cmd=0x%08x, arg=0x%08lx\n", info,
@@ -2337,6 +2451,161 @@ static int update_test_kthread(void *data)
 }
 #endif
 
+//lenovo wuwl10 20160401 add CUSTOM_LCM_FEATURE begin
+#ifdef CONFIG_LENOVO_CUSTOM_LCM_FEATURE
+#if 0
+static char lcm_debug_buffer[255];
+static char lenovo_lcm_proc_readback[255];
+static char LENOVO_LCM_PROC_STR_HELP[255]=
+{
+"\n"
+};
+char mtkfb_lcm_version[256] = {0};
+
+static void lenovo_lcm_proc_process_opt(const char *opt)
+{
+
+ if (0 == strncmp(opt, "lcmregw:", 8))
+    {
+        char *p = (char *)opt + 8;
+        unsigned long addr = simple_strtoul(p, &p, 16);
+        unsigned long val  = simple_strtoul(p + 1, &p, 16);
+		lcm_reg lcmregs;
+		lcmregs.cmd = addr;
+		lcmregs.data = val;
+		printk("Write register 0x%x: 0x%x\n", lcmregs.cmd, lcmregs.data);
+        if (addr) {
+            //DISP_SetLCMReg(&lcmregs);
+        } else {
+            goto Error;
+        }
+    }
+    else if (0 == strncmp(opt, "lcmregr:", 8))
+    {
+        char *p = (char *)opt + 8;
+        unsigned int addr = (unsigned int) simple_strtoul(p, &p, 16);
+		lcm_reg lcmregs;
+		lcmregs.cmd=addr;
+        if (addr) {
+            //DISP_GetLCMReg(&lcmregs);
+			printk("Read register 0x%08x: 0x%08x\n", lcmregs.cmd, lcmregs.data);
+			sprintf(lenovo_lcm_proc_readback,"0x%x",lcmregs.data);
+        } else {
+            goto Error;
+        }
+    }
+    else
+	{
+		goto Error;
+	}
+
+    return;
+
+Error:
+    printk("[JX] parse command error!\n\n%s", LENOVO_LCM_PROC_STR_HELP);
+}
+
+static s32 lcm_debug_write(struct file *filp, const char __user *buff, unsigned long len, void *data)
+{
+	const int lenovo_lcm_proc_buffermax = sizeof(lcm_debug_buffer) - 1;
+	unsigned long ret;
+
+	ret = len;
+
+	if (len > lenovo_lcm_proc_buffermax) 
+		len = lenovo_lcm_proc_buffermax;
+
+	if (copy_from_user(&lcm_debug_buffer, buff, len))
+		return -EFAULT;
+
+	lcm_debug_buffer[len] = 0;
+	printk("[JX] %s buffer=%s \n",__func__,lcm_debug_buffer);
+
+	lenovo_lcm_proc_process_opt(lcm_debug_buffer);
+	return ret;
+
+}
+static int lcm_debug_read(char *page, char **start, off_t off, int count, int *eof, void *data)
+{
+    char *p = page;
+    int len = 0;
+
+    p += sprintf(p,"name=%s; width=%d; height=%d; mode=%s; lane=%d;\n",
+			lcm_drv->name,
+			lcm_params->width,
+			lcm_params->height,
+			(lcm_params->dsi.mode==0)?"CMD":"VDO",
+			lcm_params->dsi.LANE_NUM);
+
+
+    *start = page + off;
+
+    len = p - page;
+    if (len > off)
+        len -= off;
+    else
+        len = 0;
+
+    return len < count ? len : count;
+}
+
+static int lcm_info_read(char *page, char **start, off_t off, int count, int *eof, void *data)
+{
+	printk("[JX] test for lcm_info_read\n");
+	return 0;
+}
+
+static int lcm_version_read(char *page, char **start, off_t off, int count, int *eof, void *data)
+{
+    char *p = page;
+    int len = 0;
+	if(lcm_drv->version!=NULL)
+    p += sprintf(p,"version=%s\n",
+			lcm_drv->version);
+
+
+    *start = page + off;
+
+    len = p - page;
+    if (len > off)
+        len -= off;
+    else
+        len = 0;
+
+    return len < count ? len : count;
+}
+#endif
+static int lcm_debug_show(struct seq_file *s, void *unused)
+{
+	seq_printf(s, "lcm debug show\n");
+
+	return 0;
+}
+static int lcm_debug_open(struct inode *inode, struct file *file)
+{
+	return single_open(file, lcm_debug_show, inode->i_private);
+}
+
+static int lcm_info_show(struct seq_file *s, void *unused)
+{
+
+seq_printf(s,"name=%s; width=%d; height=%d; mode=%s; lane=%d; \n",
+			lcm_drv->name,
+			lcm_params->width,
+			lcm_params->height,
+			(lcm_params->dsi.mode==0)?"CMD":"VDO",
+			lcm_params->dsi.LANE_NUM);
+
+	return 0;
+}
+static int lcm_info_open(struct inode *inode, struct file *file)
+{
+	return single_open(file, lcm_info_show, inode->i_private);
+}
+
+#endif
+//lenovo wuwl10 20160401 add CUSTOM_LCM_FEATURE end
+
 static int mtkfb_probe(struct device *dev)
 {
 	struct mtkfb_device *fbdev = NULL;
@@ -2451,6 +2720,46 @@ static int mtkfb_probe(struct device *dev)
 	ion_drv_create_FB_heap(mtkfb_get_fb_base(), mtkfb_get_fb_size());
 
 	fbdev->state = MTKFB_ACTIVE;
+//lenovo wuwl10 20160401 add CUSTOM_LCM_FEATURE begin
+#ifdef CONFIG_LENOVO_CUSTOM_LCM_FEATURE
+
+	do{
+		lcm_params = DISP_GetLcmPara();
+		lcm_drv = DISP_GetLcmDrv();
+		if(lcm_drv==NULL){
+			printk("[wuwl10] lcm_drv is NULL\n");
+			break;
+		}
+		proc_create("lcm_debug", 0660, NULL, &lcm_debug_proc_fops);
+		proc_create("lcm_info", 0444, NULL, &lcm_info_proc_fops);
+	}while(0);
+
+	memset((void*)(&disp_feature_info[MTKFB_DISPIF_PRIMARY_LCD]), 0, sizeof(lenovo_disp_feature_info_t));
+	if(lcm_drv)
+	{
+		if(lcm_drv->set_cabcmode)
+			disp_feature_info[MTKFB_DISPIF_PRIMARY_LCD].cabc_support = 1;
+		if(lcm_drv->set_inversemode)
+			disp_feature_info[MTKFB_DISPIF_PRIMARY_LCD].inverse_support = 1;
+	}
+	else
+	{
+		printk("[wuwl10] DISP Info: Fatal Error!!, lcm_drv is null\n");
+	}
+    memset((void*)(&disp_feature_state[MTKFB_DISPIF_PRIMARY_LCD]), 0, sizeof(lenovo_disp_feature_state_t));
+//lenovo-sw wuwl10 modify for remove default cabc setting to init code begin
+	disp_feature_state[MTKFB_DISPIF_PRIMARY_LCD].cabc_mode = 2;//set move mode as default
+	#if 0
+//	DISP_SetCabcMode(disp_feature_state[MTKFB_DISPIF_PRIMARY_LCD].cabc_mode);
+//	DISP_SetInverseMode(disp_feature_state[MTKFB_DISPIF_PRIMARY_LCD].inverse_mode);
+	if(lcm_drv){
+		primary_display_setcabc(disp_feature_state[MTKFB_DISPIF_PRIMARY_LCD].cabc_mode);
+		primary_display_setinverse(disp_feature_state[MTKFB_DISPIF_PRIMARY_LCD].inverse_mode);
+	}
+	#endif
+//lenovo-sw wuwl10 modify for remove default cabc setting to init code end
+#endif
+//lenovo wuwl10 20160401 add CUSTOM_LCM_FEATURE end
 
 	MSG_FUNC_LEAVE();
 	return 0;
@@ -2473,7 +2782,12 @@ static int mtkfb_remove(struct device *dev)
 
 	fbdev->state = MTKFB_DISABLED;
 	mtkfb_free_resources(fbdev, saved_state);
-
+//lenovo wuwl10 20160401 add CUSTOM_LCM_FEATURE beign
+#ifdef CONFIG_LENOVO_CUSTOM_LCM_FEATURE
+	remove_proc_entry("lcm_debug", NULL);
+	remove_proc_entry("lcm_info", NULL);
+#endif
+//lenovo wuwl10 20160401 add CUSTOM_LCM_FEATURE end
 	MSG_FUNC_LEAVE();
 	return 0;
 }
