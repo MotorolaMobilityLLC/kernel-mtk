@@ -1292,3 +1292,34 @@ int mt_mt65xx_blink_set(struct led_classdev *led_cdev,
 	/* delay_on and delay_off are not changed */
 	return 0;
 }
+
+//lenovo-sw mahj2 add for pmic PCHR_LED pin control Begin
+void mt_pmic_set_charging_led(int on)
+{
+	static int pre_state = -1;
+	
+	if(pre_state == on)
+		return;
+	pre_state = on;
+	mutex_lock(&leds_pmic_mutex);
+	pmic_set_register_value(MT6351_PMIC_RG_DRV_32K_CK_PDN, 0x0); /* Disable power down */
+	pmic_set_register_value(MT6351_PMIC_RG_DRV_CHRIND_CK_PDN, 0);
+	pmic_set_register_value(MT6351_PMIC_RG_DRV_CHRIND_CK_CKSEL, 0);
+	pmic_set_register_value(MT6351_PMIC_CHRIND_MODE, ISINK_PWM_MODE);  
+	pmic_set_register_value(MT6351_PMIC_CHRIND_DIM_FSEL, ISINK_1KHZ); /* 1KHz */
+	pmic_set_register_value(MT6351_PMIC_CHRIND_EN_SEL,1);
+	pmic_set_register_value(MT6351_PMIC_CHRIND_DIM_DUTY,31);
+	pmic_set_register_value(MT6351_PMIC_CHRIND_STEP,0x01);//4ma
+
+	if(on){
+		pmic_set_register_value(MT6351_PMIC_RG_DRV_32K_CK_PDN, 0x0); /* Disable power down */
+		pmic_set_register_value(MT6351_PMIC_CHRIND_EN,1);
+	}else{
+		pmic_set_register_value(MT6351_PMIC_CHRIND_EN,0);
+	}
+
+	LEDS_DEBUG("[LED]PMIC charging led %d\n", on);
+	mutex_unlock(&leds_pmic_mutex);
+	
+}
+//lenovo-sw mahj2 add for pmic PCHR_LED pin control End

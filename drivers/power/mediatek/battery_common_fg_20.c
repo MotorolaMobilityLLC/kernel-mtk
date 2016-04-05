@@ -90,6 +90,9 @@
 #include <mach/mt_pmic.h>
 
 
+#ifdef CONFIG_LENOVO_CHARGING_STANDARD_SUPPORT
+#include "lenovo_charging.h"
+#endif
 
 #if defined(CONFIG_MTK_DUAL_INPUT_CHARGER_SUPPORT)
 #include <mach/diso.h>
@@ -1639,9 +1642,25 @@ static void mt_battery_update_EM(struct battery_data *bat_data)
 	bat_data->present_smb = g_present_smb;
 	battery_log(BAT_LOG_FULL, "status_smb = %d, capacity_smb = %d, present_smb = %d\n",
 		    bat_data->status_smb, bat_data->capacity_smb, bat_data->present_smb);
+	#ifdef CONFIG_LENOVO_CHARGING_STANDARD_SUPPORT
+	//lenovo-sw mahj2 modify for battery charging temp notify at 20141212 Begin
+	lenovo_battery_notify_to_health(g_BatteryNotifyCode, &bat_data->BAT_HEALTH);
+	//lenovo-sw mahj2 modify for battery charging temp notify at 20141212 End
+	#endif
 	if ((BMT_status.UI_SOC2 == 100) && (BMT_status.charger_exist == KAL_TRUE))
 		bat_data->BAT_STATUS = POWER_SUPPLY_STATUS_FULL;
 
+//lenovo-sw mahj2 modify for power off Begin
+	if(bat_data->BAT_CAPACITY == 1)
+	{
+		bat_data->BAT_CAPACITY = 2;
+	}
+	else if(bat_data->BAT_CAPACITY == 0)
+	{
+		bat_data->BAT_CAPACITY = 1;
+	}
+	battery_log(BAT_LOG_CRTI,"BAT_CAPACITY = %d\n",bat_data->BAT_CAPACITY);
+//lenovo-sw mahj2 modify for power off End
 #ifdef CONFIG_MTK_DISABLE_POWER_ON_OFF_VOLTAGE_LIMITATION
 	if (bat_data->BAT_CAPACITY <= 0)
 		bat_data->BAT_CAPACITY = 1;
@@ -2141,7 +2160,8 @@ void mt_battery_GetBatteryData(void)
 		    BMT_status.charger_type);
 }
 
-
+//lenovo-sw mahj2 modify for lenovo charging standard support Begin
+ #ifndef CONFIG_LENOVO_CHARGING_STANDARD_SUPPORT
 static PMU_STATUS mt_battery_CheckBatteryTemp(void)
 {
 	PMU_STATUS status = PMU_STATUS_OK;
@@ -2180,7 +2200,8 @@ static PMU_STATUS mt_battery_CheckBatteryTemp(void)
 
 	return status;
 }
-
+#endif
+//lenovo-sw mahj2 modify for lenovo charging standard support End
 
 static PMU_STATUS mt_battery_CheckChargerVoltage(void)
 {
@@ -2264,10 +2285,14 @@ static void mt_battery_CheckBatteryStatus(void)
 		battery_charging_control(CHARGING_CMD_SET_ERROR_STATE, &cmd_discharging);
 		cmd_discharging = -1;
 	}
+	/*Begin lenovo-sw mahj2 added for lenovo charging standard*/
+ #ifndef CONFIG_LENOVO_CHARGING_STANDARD_SUPPORT
 	if (mt_battery_CheckBatteryTemp() != PMU_STATUS_OK) {
 		BMT_status.bat_charging_state = CHR_ERROR;
 		return;
 	}
+#endif	
+	/*End lenovo-sw mahj2 added for lenovo charging standard*/
 
 	if (mt_battery_CheckChargerVoltage() != PMU_STATUS_OK) {
 		BMT_status.bat_charging_state = CHR_ERROR;
@@ -2313,18 +2338,31 @@ static void mt_battery_notify_TotalChargingTime_check(void)
 static void mt_battery_notify_VBat_check(void)
 {
 #if defined(BATTERY_NOTIFY_CASE_0004_VBAT)
+	/*Begin lenovo-sw mahj2 added for lenovo charging standard*/
+#ifdef CONFIG_LENOVO_CHARGING_STANDARD_SUPPORT
+#if defined(HIGH_BATTERY_VOLTAGE_SUPPORT)
+#if defined(HIGH_BATTERY_VOLTAGE_4400MV_SUPPORT)    	
+	if(BMT_status.bat_vol > 4450)
+#else
+	if(BMT_status.bat_vol > 4400)
+#endif
+#else
+	if(BMT_status.bat_vol > 4350)
+#endif	    
+#else
 	if (BMT_status.bat_vol > 4350)
+#endif
 		/* if (BMT_status.bat_vol > 3800) //test */
 	{
 		g_BatteryNotifyCode |= 0x0008;
-		battery_log(BAT_LOG_CRTI, "[BATTERY] bat_vlot(%ld) > 4350mV\n", BMT_status.bat_vol);
+		battery_log(BAT_LOG_CRTI, "[BATTERY] bat_vlot(%d) > 4350mV\n", BMT_status.bat_vol);
 	} else {
 		g_BatteryNotifyCode &= ~(0x0008);
 	}
 
 	battery_log(BAT_LOG_CRTI, "[BATTERY] BATTERY_NOTIFY_CASE_0004_VBAT (%x)\n",
 		    g_BatteryNotifyCode);
-
+/*End lenovo-sw mahj2 added for lenovo charging standard*/
 #endif
 }
 
@@ -2453,6 +2491,8 @@ void mt_battery_notify_check(void)
 	}
 }
 
+//lenovo-sw mahj2 modify for lenovo standard support Begin
+#ifndef CONFIG_LENOVO_CHARGING_STANDARD_SUPPORT
 static void mt_battery_thermal_check(void)
 {
 	if ((g_battery_thermal_throttling_flag == 1) || (g_battery_thermal_throttling_flag == 3)) {
@@ -2506,7 +2546,8 @@ static void mt_battery_thermal_check(void)
 	}
 
 }
-
+#endif
+//lenovo-sw mahj2 modify for lenovo standard support End
 
 void mt_battery_update_status(void)
 {
@@ -2543,7 +2584,27 @@ CHARGER_TYPE mt_charger_type_detection(void)
 	if ((BMT_status.charger_type == CHARGER_UNKNOWN) &&
 	    (DISO_data.diso_state.cur_vusb_state == DISO_ONLINE)) {
 #endif
-		battery_charging_control(CHARGING_CMD_GET_CHARGER_TYPE, &CHR_Type_num);
+/*lenovo-sw mahj2 porting for meta mode charger detect Begin*/    
+#if 1    
+	if( (g_platform_boot_mode==META_BOOT) || (g_platform_boot_mode==ADVMETA_BOOT) )
+	{
+		CHR_Type_num = STANDARD_HOST;
+	}
+	else
+	{
+    	battery_charging_control(CHARGING_CMD_GET_CHARGER_TYPE,&CHR_Type_num);
+	/* lenovo-sw mahj2 porting for check charge again when type is nonstandard Begin*/	
+	 if ( NONSTANDARD_CHARGER == CHR_Type_num) {
+	     msleep(200);	
+             battery_charging_control(CHARGING_CMD_GET_CHARGER_TYPE,&CHR_Type_num);
+	    printk("mahj2_debug now the charge type is %d\n",CHR_Type_num) ;	 
+	 }	
+	/* lenovo-sw mahj2 porting for check charge again when type is nonstandard End*/	 
+    }
+#else
+	battery_charging_control(CHARGING_CMD_GET_CHARGER_TYPE,&CHR_Type_num);
+#endif
+/*lenovo-sw mahj2 porting for meta mode charger detect end*/    
 		BMT_status.charger_type = CHR_Type_num;
 
 #if defined(CONFIG_MTK_KERNEL_POWER_OFF_CHARGING)
@@ -2859,10 +2920,26 @@ void BAT_thread(void)
 	if (BMT_status.charger_exist == KAL_TRUE)
 		check_battery_exist();
 
+	/*Begin lenovo-sw mahj2 added for lenovo charging standard*/
+#ifndef CONFIG_LENOVO_CHARGING_STANDARD_SUPPORT
 	mt_battery_thermal_check();
+#endif
+	/*End lenovo-sw mahj2 added for lenovo charging standard*/
 	mt_battery_notify_check();
 
+	/*Begin lenovo-sw mahj2 added for lenovo charging standard*/
+#ifdef CONFIG_LENOVO_CHARGING_STANDARD_SUPPORT
+   if(lenovo_battery_charging_thread(&g_BatteryNotifyCode, g_BN_TestMode) == KAL_FALSE){
+	  return;   //skip charging algorithm for lenovo discharging engineer test		 
+   }
+#endif	
+    /*End lenovo-sw mahj2 added for lenovo charging standard*/
 	if (BMT_status.charger_exist == KAL_TRUE) {
+	/*Begin lenovo mahj2 add for lenovo 45 - 50 cv limit*/	
+	#ifdef LENOVO_TEMP_POS_45_TO_POS_50_CV_LiMIT_SUPPORT
+	        lenovo_battery_cv_set();
+	#endif
+	/*End lenovo mahj2 add for lenovo 45 - 50 cv limit*/	
 		mt_battery_CheckBatteryStatus();
 		mt_battery_charging_algorithm();
 	}
@@ -2939,6 +3016,11 @@ int bat_update_thread(void *x)
 	while (1) {
 		mutex_lock(&bat_update_mutex);
 		mt_battery_update_status();
+		//lenovo-sw mahj2 add for charging led and ui_soc sync Begin
+		#ifdef CONFIG_LENOVO_CHARGING_STANDARD_SUPPORT
+		lenovo_battery_charging_set_led_state();
+		#endif
+		//lenovo-sw mahj2 add for charging led and ui_soc sync End
 		mutex_unlock(&bat_update_mutex);
 
 		battery_log(BAT_LOG_FULL, "wait event 2\n");
@@ -3192,6 +3274,17 @@ void check_battery_exist(void)
 
 	for (i = 0; i < 3; i++) {
 		battery_charging_control(CHARGING_CMD_GET_BATTERY_STATUS, &battery_status);
+		/* lenovo-sw mahj2 detect battery_staus when check battery is not exsit 2014-11-18 */
+		if (battery_status ==1 )
+		{
+		     for(i=0;i<20;i++) {
+                        battery_charging_control(CHARGING_CMD_GET_BATTERY_STATUS,&battery_status);				
+		       if (battery_status == 0) {
+		       break;	   	
+		       }	   	
+		     }				
+		}
+		/* lenovo-sw mahj2 detect battery_staus when check battery is not exsit 2014-11-18 */
 		baton_count += battery_status;
 
 	}
@@ -3232,7 +3325,10 @@ int charger_hv_detect_sw_thread_handler(void *unused)
 #endif
 
 	do {
-#ifdef CONFIG_MTK_BQ25896_SUPPORT
+//lenovo-sw mahj2 modify Begin
+//#ifdef CONFIG_MTK_BQ25896_SUPPORT
+#if 1
+//lenovo-sw mahj2 modify End
 		/*this annoying SW workaround wakes up bat_thread. 10 secs is set instead of 1 sec */
 		ktime = ktime_set(10, 0);
 #else
@@ -3303,7 +3399,11 @@ void charger_hv_detect_sw_workaround_init(void)
 			    "[%s]: failed to create charger_hv_detect_sw_workaround thread\n",
 			    __func__);
 	}
+	//lenovo-sw mahj2 modify for booting when have not ntc Begin
+	#if 0
 	check_battery_exist();
+	#endif
+	//lenovo-sw mahj2 modify for booting when have not ntc End
 	battery_log(BAT_LOG_CRTI, "charger_hv_detect_sw_workaround_init : done\n");
 }
 
@@ -3846,6 +3946,16 @@ static int battery_probe(struct platform_device *dev)
 	}
 	battery_log(BAT_LOG_CRTI, "[BAT_probe] power_supply_register Battery Success !!\n");
 
+    /*Lenovo-sw begin mahj2 add for lenovo charging*/ 
+	#ifdef CONFIG_LENOVO_CHARGING_STANDARD_SUPPORT
+	ret = lenovo_battery_create_sys_file(battery_main.psy.dev);
+ 	if (ret)
+	{
+		printk( "%s,failed: lenovo device_create_file \n", __func__);
+		return ret;
+	}
+	#endif
+    /*Lenovo-sw end mahj2  */
 #if !defined(CONFIG_POWER_EXT)
 
 #ifdef CONFIG_MTK_POWER_EXT_DETECT
@@ -4244,6 +4354,11 @@ static ssize_t current_cmd_write(struct file *file, const char *buffer, size_t c
 			adjust_power = -1;
 		}
 		battery_charging_control(CHARGING_CMD_ENABLE, &charging_enable);
+		//lenovo-sw mahj2 add for charging state update Begin
+		mutex_lock(&bat_mutex);
+		BAT_thread();
+		mutex_unlock(&bat_mutex);
+		//lenovo-sw mahj2 add for charging state update End
 
 		battery_log(BAT_LOG_CRTI,
 			    "[current_cmd_write] cmd_current_unlimited=%d, cmd_discharging=%d\n",
