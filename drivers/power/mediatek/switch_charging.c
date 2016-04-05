@@ -65,7 +65,19 @@
 #include <mt-plat/diso.h>
 #include <mach/mt_diso.h>
 #endif
+/*Begin lenovo chailu1 add for lenovo charging*/
+#ifdef CONFIG_LENOVO_CHARGING_STANDARD_SUPPORT
+#include "lenovo_charging.h"
+#endif
+/*End lenovo chailu1 add for lenovo charging*/
 
+/*Begin sw chailu1 porting begin */
+#ifdef LENOVO_CHARGING_FULL_CHECK_AGAIN_SUPPORT
+static bool  g_is_lenovo_charging_check_again_state = KAL_FALSE;
+static UINT32      g_bat_charging_state_back = CHR_PRE;
+extern  void lenovo_charging_again_enble(void);
+#endif
+/*End sw chailu1 porting end */
 
 /* ============================================================ // */
 /* define */
@@ -84,6 +96,11 @@ unsigned int g_bcct_value = 0;
 unsigned int g_bcct_input_flag = 0;
 unsigned int g_bcct_input_value = 0;
 #endif
+/*Begin Lenovo-sw mahj2 add for thermal*/
+#ifdef LENOVO_THERMAL_SUPPORT
+CHR_CURRENT_ENUM g_bcct_CC_value = CHARGE_CURRENT_0_00_MA;
+#endif
+/*Enable Lenovo-sw mahj2 add for thermal*/
 unsigned int g_full_check_count = 0;
 CHR_CURRENT_ENUM g_temp_CC_value = CHARGE_CURRENT_0_00_MA;
 CHR_CURRENT_ENUM g_temp_input_CC_value = CHARGE_CURRENT_0_00_MA;
@@ -91,7 +108,13 @@ unsigned int g_usb_state = USB_UNCONFIGURED;
 static bool usb_unlimited;
 #if defined(CONFIG_MTK_HAFG_20)
 #ifdef HIGH_BATTERY_VOLTAGE_SUPPORT
+//lenovo-sw mahj2 add for battery 4.4 cv support Begin
+#ifdef HIGH_BATTERY_VOLTAGE_4400MV_SUPPORT
+BATTERY_VOLTAGE_ENUM g_cv_voltage = BATTERY_VOLT_04_400000_V;
+#else
 BATTERY_VOLTAGE_ENUM g_cv_voltage = BATTERY_VOLT_04_340000_V;
+#endif
+//lenovo-sw mahj2 add for battery 4.4 cv support End
 #else
 BATTERY_VOLTAGE_ENUM g_cv_voltage = BATTERY_VOLT_04_200000_V;
 #endif
@@ -565,6 +588,39 @@ static void battery_pump_express_algorithm_start(void)
 	mutex_unlock(&ta_mutex);
 }
 #endif
+/*Begin lenovo chailu1 add for lenovo 45 - 50 cv limit*/	
+#ifdef LENOVO_TEMP_POS_45_TO_POS_50_CV_LiMIT_SUPPORT
+void lenovo_battery_cv_set( void)
+{
+	BATTERY_VOLTAGE_ENUM cv_voltage;
+	kal_bool is_temp_45_to_pos_50;
+	is_temp_45_to_pos_50 = lenovo_battery_is_temp_45_to_pos_50();
+	
+            if(is_temp_45_to_pos_50)
+            { 
+	          cv_voltage = LENOVO_TEMP_POS_45_TO_POS_50_CV_VOLTAGE;	
+	           battery_xlog_printk(BAT_LOG_CRTI, "[BATTERY] lenovo_battery_cv_set: 45 -50  cv_voltage = %d!\r\n",cv_voltage);			  
+            }		  
+	    else
+	    {
+#ifdef HIGH_BATTERY_VOLTAGE_SUPPORT
+    #ifdef HIGH_BATTERY_VOLTAGE_4400MV_SUPPORT
+	              cv_voltage = BATTERY_VOLT_04_400000_V;
+    #else	
+			cv_voltage = BATTERY_VOLT_04_340000_V; 
+    #endif		
+#else
+			cv_voltage = BATTERY_VOLT_04_200000_V;
+#endif
+	    }
+            battery_xlog_printk(BAT_LOG_CRTI, "[BATTERY] lenovo_battery_cv_set: normal cv_voltage = %d!\r\n",cv_voltage);	
+	    battery_charging_control(CHARGING_CMD_SET_CV_VOLTAGE, &cv_voltage);
+#if defined(CONFIG_MTK_HAFG_20)
+	    g_cv_voltage = cv_voltage;
+#endif
+}
+#endif
+/*End lenovo chailu1 add for lenovo 45 - 50 cv limit*/	
 
 #if defined(CONFIG_MTK_JEITA_STANDARD_SUPPORT)
 
@@ -722,6 +778,8 @@ bool get_usb_current_unlimited(void)
 
 void set_usb_current_unlimited(bool enable)
 {
+//lenovo-sw mahj2 modify Begin
+#ifdef CONFIG_MTK_BQ25896_SUPPORT
 	unsigned int en;
 
 	usb_unlimited = enable;
@@ -730,6 +788,10 @@ void set_usb_current_unlimited(bool enable)
 	else
 		en = 1;
 	battery_charging_control(CHARGING_CMD_ENABLE_SAFETY_TIMER, &en);
+#else
+	usb_unlimited = enable;
+#endif
+//lenovo-sw mahj2 modify End
 }
 
 void select_charging_current_bcct(void)
@@ -741,6 +803,39 @@ void select_charging_current_bcct(void)
 #ifndef CONFIG_MTK_SWITCH_INPUT_OUTPUT_CURRENT_SUPPORT
 	if ((BMT_status.charger_type == STANDARD_HOST) ||
 	    (BMT_status.charger_type == NONSTANDARD_CHARGER)) {
+/*Begin Lenovo-sw mahj2 add for thermal 2014-10-28*/
+#ifdef LENOVO_THERMAL_SUPPORT
+		if(g_bcct_value < 100)	
+		{
+			g_temp_input_CC_value = CHARGE_CURRENT_0_00_MA ;
+			g_temp_CC_value = CHARGE_CURRENT_0_00_MA ;
+		}
+		else if(g_bcct_value < 200)
+		{
+			g_temp_input_CC_value = CHARGE_CURRENT_100_00_MA;
+			g_temp_CC_value = CHARGE_CURRENT_100_00_MA;
+		}
+		else if(g_bcct_value < 300)
+		{
+			g_temp_input_CC_value = CHARGE_CURRENT_200_00_MA;
+			g_temp_CC_value = CHARGE_CURRENT_200_00_MA;
+		}
+		else if(g_bcct_value < 400)
+		{
+			g_temp_input_CC_value = CHARGE_CURRENT_300_00_MA;
+			g_temp_CC_value = CHARGE_CURRENT_300_00_MA;
+		}
+		else if(g_bcct_value < 450)
+		{
+			g_temp_input_CC_value = CHARGE_CURRENT_400_00_MA;
+			g_temp_CC_value = CHARGE_CURRENT_400_00_MA;
+		}
+		else
+		{
+			g_temp_input_CC_value = CHARGE_CURRENT_500_00_MA;
+			g_temp_CC_value = CHARGE_CURRENT_500_00_MA;
+		}
+#else
 		if (g_bcct_value < 100)
 			g_temp_input_CC_value = CHARGE_CURRENT_0_00_MA;
 		else if (g_bcct_value < 500)
@@ -751,8 +846,82 @@ void select_charging_current_bcct(void)
 			g_temp_input_CC_value = CHARGE_CURRENT_800_00_MA;
 		else
 			g_temp_input_CC_value = CHARGE_CURRENT_500_00_MA;
+#endif
+/*End Lenovo-sw mahj2 add for thermal 2014-10-28*/
 	} else if ((BMT_status.charger_type == STANDARD_CHARGER) ||
 		   (BMT_status.charger_type == CHARGING_HOST)) {
+/*Begin Lenovo-sw mahj2 add for thermal 2014-10-28*/
+#ifdef LENOVO_THERMAL_SUPPORT
+	g_temp_input_CC_value = CHARGE_CURRENT_2050_00_MA;
+
+	if(g_bcct_value < 100)        {
+		g_temp_CC_value = CHARGE_CURRENT_0_00_MA;
+	}
+	else if(g_bcct_value < 200)   {
+		g_temp_CC_value = CHARGE_CURRENT_100_00_MA;
+	}
+	else if(g_bcct_value < 300)   {
+		g_temp_CC_value = CHARGE_CURRENT_200_00_MA;
+	}
+	else if(g_bcct_value < 400)   {
+		g_temp_CC_value = CHARGE_CURRENT_300_00_MA;
+	}
+	else if(g_bcct_value < 450)   {
+		g_temp_CC_value = CHARGE_CURRENT_400_00_MA;
+	}
+	else if(g_bcct_value < 550)   {
+		g_temp_CC_value = CHARGE_CURRENT_450_00_MA;
+	}
+        else if(g_bcct_value < 650)   {
+		g_temp_CC_value = CHARGE_CURRENT_550_00_MA;
+        }
+        else if(g_bcct_value < 750)   {
+		g_temp_CC_value = CHARGE_CURRENT_650_00_MA;
+        }
+        else if(g_bcct_value < 850)   {
+		g_temp_CC_value = CHARGE_CURRENT_750_00_MA;
+        }
+        else if(g_bcct_value < 950)   {
+		g_temp_CC_value = CHARGE_CURRENT_850_00_MA;
+        }
+        else if(g_bcct_value < 1050)  {
+		g_temp_CC_value = CHARGE_CURRENT_950_00_MA;
+        }
+        else if(g_bcct_value < 1150)  {
+		g_temp_CC_value = CHARGE_CURRENT_1050_00_MA;
+        }
+        else if(g_bcct_value < 1250)  {
+		g_temp_CC_value = CHARGE_CURRENT_1150_00_MA;
+        }
+        else if(g_bcct_value < 1350) {
+		g_temp_CC_value = CHARGE_CURRENT_1250_00_MA;
+        }
+	else if(g_bcct_value < 1450) {
+		g_temp_CC_value = CHARGE_CURRENT_1350_00_MA;
+	}
+	else if(g_bcct_value < 1550) {
+		g_temp_CC_value = CHARGE_CURRENT_1450_00_MA;
+	}
+	else if(g_bcct_value < 1650) {
+		g_temp_CC_value = CHARGE_CURRENT_1575_00_MA;
+	}
+	else if(g_bcct_value < 1750) {
+		g_temp_CC_value = CHARGE_CURRENT_1650_00_MA;
+	}
+	else if(g_bcct_value < 1850) {
+		g_temp_CC_value = CHARGE_CURRENT_1750_00_MA;
+	}
+	else if(g_bcct_value < 1950) {
+		g_temp_CC_value = CHARGE_CURRENT_1875_00_MA;
+	}
+	else if(g_bcct_value < 2050) {
+		g_temp_CC_value = CHARGE_CURRENT_1950_00_MA;
+	}
+	else if(g_bcct_value == 2050) {
+		g_temp_CC_value = CHARGE_CURRENT_2050_00_MA;
+	}
+        else                          g_temp_CC_value = CHARGE_CURRENT_650_00_MA;
+#else
 		g_temp_input_CC_value = CHARGE_CURRENT_MAX;
 
 		/* --------------------------------------------------- */
@@ -778,7 +947,8 @@ void select_charging_current_bcct(void)
 		else
 			g_temp_CC_value = CHARGE_CURRENT_650_00_MA;
 		/* --------------------------------------------------- */
-
+#endif
+/*End Lenovo-sw mahj2 add for thermal 2014-10-28*/
 	} else {
 		g_temp_input_CC_value = CHARGE_CURRENT_500_00_MA;
 	}
@@ -858,6 +1028,8 @@ void select_charging_current_bcct(void)
 
 /*BQ25896 is the first switch chrager separating input and charge current
 */
+/*lenovo chailu1 add CONFIG_MTK_SWITCH_INPUT_OUTPUT_CURRENT_SUPPORT*/
+#ifdef CONFIG_MTK_SWITCH_INPUT_OUTPUT_CURRENT_SUPPORT
 unsigned int set_chr_input_current_limit(int current_limit)
 {
 #ifdef CONFIG_MTK_SWITCH_INPUT_OUTPUT_CURRENT_SUPPORT
@@ -899,7 +1071,7 @@ unsigned int set_chr_input_current_limit(int current_limit)
 	return 0;
 #endif
 }
-
+#endif
 
 static void pchr_turn_on_charging(void);
 unsigned int set_bat_charging_current_limit(int current_limit)
@@ -1070,7 +1242,9 @@ static unsigned int charging_full_check(void)
 static void pchr_turn_on_charging(void)
 {
 #if !defined(CONFIG_MTK_JEITA_STANDARD_SUPPORT)
+	#ifndef LENOVO_TEMP_POS_45_TO_POS_50_CV_LiMIT_SUPPORT
 	BATTERY_VOLTAGE_ENUM cv_voltage;
+	#endif
 #endif
 	unsigned int charging_enable = KAL_TRUE;
 
@@ -1120,6 +1294,31 @@ static void pchr_turn_on_charging(void)
 
 			battery_log(BAT_LOG_FULL, "[BATTERY] select_charging_current !\n");
 		}
+/*Begin Lenovo-sw mahj2 add for thermal 2014-10-28*/
+#ifdef LENOVO_THERMAL_SUPPORT
+	if (g_bcct_flag == 1)
+	{
+		g_bcct_CC_value = g_temp_CC_value;
+	}
+#endif
+/*End Lenovo-sw mahj2 add for thermal 2014-10-28*/
+
+	/*Begin lenovo chailu1 add for lenovo charging*/
+	    #ifdef CONFIG_LENOVO_CHARGING_STANDARD_SUPPORT
+	    lenovo_get_charging_curret(&g_temp_CC_value);
+	    #endif
+	/*End lenovo chailu1 add for lenovo charging*/
+/*Begin Lenovo-sw mahj2 add for thermal 2014-10-28*/
+#ifdef LENOVO_THERMAL_SUPPORT
+	if (g_bcct_flag == 1)
+	{
+		battery_log(BAT_LOG_CRTI, "[BATTERY] thermal bcct : g_temp_CC_value=%d, g_bcct_CC_value = %d\r\n", g_temp_CC_value,g_bcct_CC_value);
+		if(g_bcct_CC_value < g_temp_CC_value)	
+			g_temp_CC_value = g_bcct_CC_value;
+	}
+#endif
+/*End Lenovo-sw mahj2 add for thermal 2014-10-28*/
+
 #else
 		} else if (g_bcct_flag == 1 || g_bcct_input_flag == 1) {
 			select_charging_current();
@@ -1147,8 +1346,17 @@ static void pchr_turn_on_charging(void)
 
 			/*Set CV Voltage */
 #if !defined(CONFIG_MTK_JEITA_STANDARD_SUPPORT)
+/*lenovo chailu1 add*/
+#ifdef LENOVO_TEMP_POS_45_TO_POS_50_CV_LiMIT_SUPPORT
+#else
 			if (batt_cust_data.high_battery_voltage_support)
-				cv_voltage = BATTERY_VOLT_04_340000_V;
+    /*lenovo sw chailu1 add begin*/
+    #ifdef HIGH_BATTERY_VOLTAGE_4400MV_SUPPORT
+				cv_voltage = BATTERY_VOLT_04_400000_V;
+    #else	
+				cv_voltage = BATTERY_VOLT_04_340000_V; 
+    #endif	
+    /*lenovo sw chailu1 add end*/
 			else
 				cv_voltage = BATTERY_VOLT_04_200000_V;
 
@@ -1161,6 +1369,7 @@ static void pchr_turn_on_charging(void)
 			#if defined(CONFIG_MTK_HAFG_20)
 			g_cv_voltage = cv_voltage;
 			#endif
+#endif
 #endif
 		}
 	}
@@ -1217,9 +1426,27 @@ PMU_STATUS BAT_ConstantCurrentModeAction(void)
 	pchr_turn_on_charging();
 
 	if (charging_full_check() == KAL_TRUE) {
+	/*Begin sw chailu1 porting begin */	
+        #ifdef LENOVO_CHARGING_FULL_CHECK_AGAIN_SUPPORT
+              if ((g_is_lenovo_charging_check_again_state) &&(BMT_status.SOC <100))
+              	{
+              	     battery_xlog_printk(BAT_LOG_CRTI, "lenovo charging full check again in\n\r");
+
+                   lenovo_charging_again_enble();
+	            g_is_lenovo_charging_check_again_state = KAL_FALSE;			   
+	       }
+              else
+              	{
+		    BMT_status.bat_charging_state = CHR_BATFULL;
+		    BMT_status.bat_full = KAL_TRUE;
+		    g_charging_full_reset_bat_meter = KAL_TRUE;
+	       }
+	#else		
 		BMT_status.bat_charging_state = CHR_BATFULL;
 		BMT_status.bat_full = KAL_TRUE;
 		g_charging_full_reset_bat_meter = KAL_TRUE;
+	#endif	
+	/*Begin sw chailu1 porting end*/
 	}
 
 	return PMU_STATUS_OK;
@@ -1318,6 +1545,19 @@ void mt_battery_charging_algorithm(void)
 #endif
 	battery_pump_express_charger_check();
 #endif
+
+/*Begin sw chailu1 porting begin */
+#ifdef LENOVO_CHARGING_FULL_CHECK_AGAIN_SUPPORT
+        if ((BMT_status.bat_charging_state == CHR_CC ) &&( (g_bat_charging_state_back == CHR_PRE ) ||(g_bat_charging_state_back == CHR_BATFULL )))
+	 {
+	     g_is_lenovo_charging_check_again_state = KAL_TRUE;
+	     battery_xlog_printk(BAT_LOG_CRTI, "g_is_lenovo_charging_check_again_state = true \r\n");	 
+        }	 
+		
+        g_bat_charging_state_back = BMT_status.bat_charging_state;        
+#endif
+/*Begin sw chailu1 porting end */
+
 	switch (BMT_status.bat_charging_state) {
 	case CHR_PRE:
 		BAT_PreChargeModeAction();

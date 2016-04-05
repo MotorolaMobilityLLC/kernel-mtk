@@ -177,8 +177,10 @@ CONFIG_MTK_VIDEOCODEC_DRIVER=y
 CONFIG_MTK_LEDS=y
 CONFIG_MTK_VIBRATOR=y
 CONFIG_MTK_JPEG=y
-CONFIG_MTK_BQ25896_SUPPORT=y
-CONFIG_MTK_BIF_SUPPORT=y
+#lenovo-sw mahj2 modify for bq24296 Begin
+# CONFIG_MTK_BQ25896_SUPPORT is not set
+# CONFIG_MTK_BIF_SUPPORT is not set
+#lenovo-sw mahj2 modify for bq24296 End
 CONFIG_MTK_SYSENV=y
 CONFIG_MTPROF=y
 # CONFIG_LOG_TOO_MUCH_WARNING is not set
@@ -360,7 +362,9 @@ CONFIG_MTK_SPI=y
 CONFIG_MTK_SMART_BATTERY=y
 CONFIG_MTK_KERNEL_POWER_OFF_CHARGING=y
 CONFIG_MTK_HAFG_20=y
-CONFIG_MTK_PUMP_EXPRESS_PLUS_SUPPORT=y
+#lenovo-sw mahj2 modify Begin
+# CONFIG_MTK_PUMP_EXPRESS_PLUS_SUPPORT is not set
+#lenovo-sw mahj2 modify End
 # CONFIG_HWMON is not set
 CONFIG_THERMAL=y
 CONFIG_THERMAL_DEFAULT_GOV_BACKWARD_COMPATIBLE=y
@@ -524,3 +528,10 @@ CONFIG_MTK_LSM6DS3GY_K52=y
 CONFIG_SENSORS_FPC_1020=y
 CONFIG_PM_SLEEP=y
 #lenovo-sw, chenzz3, integrate fpc fingerprint driver, end
+###################charging###############
+CONFIG_LENOVO_CHARGING_STANDARD_SUPPORT=y
+CONFIG_MTK_BQ24296_SUPPORT=y
+#lenovo-sw mahj2 add for multi bat support Begin
+# CONFIG_MTK_MULTI_BAT_PROFILE_SUPPORT is not set
+#lenovo-sw mahj2 add for multi bat support End
+##########################################

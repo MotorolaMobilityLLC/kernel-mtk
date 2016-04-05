@@ -42,7 +42,9 @@
 #define POWER_BAT_OC_CURRENT_H_RE 4670
 #define POWER_BAT_OC_CURRENT_L_RE 5500
 
-#define DLPT_POWER_OFF_EN
+//lenovo-sw mahj2 modify Begin
+//#define DLPT_POWER_OFF_EN
+//lenovo-sw mahj2 modify End
 #define POWEROFF_BAT_CURRENT 3000
 #define DLPT_POWER_OFF_THD 100
 

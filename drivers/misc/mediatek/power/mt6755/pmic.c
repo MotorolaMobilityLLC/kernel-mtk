@@ -2555,8 +2555,12 @@ void exec_battery_percent_callback(BATTERY_PERCENT_LEVEL battery_percent_level)
 			}
 		}
 #else
-		battery_percent_callback = bpcb_tb[BATTERY_PERCENT_PRIO_FLASHLIGHT].bpcb;
-		battery_percent_callback(battery_percent_level);
+		/* Lenovo-sw weimh1 mod 2015-11-12 begin:add NULL protection*/
+		if (bpcb_tb[BATTERY_PERCENT_PRIO_FLASHLIGHT].bpcb != NULL) {
+			battery_percent_callback = bpcb_tb[BATTERY_PERCENT_PRIO_FLASHLIGHT].bpcb;
+			battery_percent_callback(battery_percent_level);
+		}
+		/* Lenovo-sw weimh1 mod 2015-11-12 end */
 		pr_err
 		    ("[exec_battery_percent_callback at DLPT] prio_val=%d,battery_percent_level=%d\n",
 		     BATTERY_PERCENT_PRIO_FLASHLIGHT, battery_percent_level);

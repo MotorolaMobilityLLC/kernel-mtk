@@ -63,6 +63,11 @@
 
 #include <mt-plat/upmu_common.h>
 
+//lenovo-sw mahj2 add for lenovo charging Begin
+#ifdef CONFIG_LENOVO_CHARGING_STANDARD_SUPPORT
+#include "lenovo_charging.h"
+#endif
+//lenovo-sw mahj2 add for lenovo charging End 
 
 /* ============================================================ // */
 /* define */
@@ -1245,6 +1250,17 @@ int BattThermistorConverTemp(int Res)
 	int i = 0;
 	int RES1 = 0, RES2 = 0;
 	int TBatt_Value = -200, TMP1 = 0, TMP2 = 0;
+
+//modify by mahj2 2014-10-22 for charing begin 
+#ifdef CONFIG_LENOVO_CHARGING_STANDARD_SUPPORT
+	if(Res <= 0)	
+	{	
+		TBatt_Value = -20;	
+		return TBatt_Value; 	
+	}	
+#endif
+//modify end
+
 	BATT_TEMPERATURE *batt_temperature_table = &Batt_Temperature_Table[g_fg_battery_id];
 
 	if (Res >= batt_temperature_table[0].TemperatureR) {
@@ -1404,6 +1420,15 @@ int BattThermistorConverTemp(int Res)
 	int RES1 = 0, RES2 = 0;
 	int TBatt_Value = -200, TMP1 = 0, TMP2 = 0;
 
+//modify by mahj2 2014-10-22 for charing begin 
+#ifdef CONFIG_LENOVO_CHARGING_STANDARD_SUPPORT
+	if(Res <= 0)	
+	{	
+		TBatt_Value = -20;	
+		return TBatt_Value; 	
+	}	
+#endif
+//modify end
 	if (Res >= Batt_Temperature_Table[0].TemperatureR) {
 		TBatt_Value = -20;
 	} else if (Res <= Batt_Temperature_Table[16].TemperatureR) {
@@ -1648,6 +1673,14 @@ int force_get_tbat(kal_bool update)
 	} else {
 		bat_temperature_val = pre_bat_temperature_val;
 	}
+/*lenovo-sw mahj2 added for ntc temp cut 2 degree Begin*/
+#ifdef LENOVO_NTC_TEMP_CUT_2_DEGREE
+	if(bat_temperature_val < 60)
+	{
+		 bat_temperature_val = bat_temperature_val-1;
+	}
+#endif
+/*lenovo-sw mahj2 added for ntc temp cut 2 degree End*/
 	return bat_temperature_val;
 #endif
 }
@@ -1956,6 +1989,40 @@ int battery_meter_get_low_battery_interrupt_status(void)
 	return is_lbat_int_trigger;
 }
 
+/* lenovo-sw mahj2 support meter charger current use charger ic Begin*/
+#ifdef CHAGER_CURRENT_USE_SWITCHIC_METER
+extern int IMM_IsAdcInitReady(void);
+extern int IMM_GetOneChannelValue(int dwChannel, int data[4], int *rawdata);
+static int get_charger_current_adc(int Channel)
+{
+	int ret = 0, data[4], i, ret_value = 0, ret_temp = 0, times = 5;
+
+	 if( IMM_IsAdcInitReady() == 0 ) {
+		battery_xlog_printk(BAT_LOG_CRTI, "[get_charger_current_adc] AUXADC is not ready");
+		return 0;
+	}
+
+	i = times;
+	while (i--)
+	{
+		ret_value = IMM_GetOneChannelValue(Channel, data, &ret_temp);
+		if(ret_value == 0) {
+			battery_xlog_printk(BAT_LOG_CRTI, "[get_charger_current_adc] adc=%d\n", ret_temp);
+			ret += ret_temp;
+		} else {
+			times = times > 1 ? times - 1 : 1;
+			battery_xlog_printk(BAT_LOG_CRTI, "[get_charger_current_adc] ret_value=%d, times=%d\n",ret_value, times);
+		}
+	}
+
+	ret = ret*1500/4096 ;
+	ret = ret/times;
+	battery_xlog_printk(BAT_LOG_CRTI, "[get_charger_current_adc] volt=%d\n", ret);	
+
+	return ret;
+	}
+#endif
+/* lenovo-sw mahj2 support meter charger current use charger ic End*/
 
 signed int battery_meter_get_charging_current_imm(void)
 {
@@ -1980,6 +2047,17 @@ signed int battery_meter_get_charging_current(void)
 {
 #ifdef DISABLE_CHARGING_CURRENT_MEASURE
 	return 0;
+	/* lenovo-sw mahj2 support meter charger current use charger ic Begin*/
+#elif defined (CHAGER_CURRENT_USE_SWITCHIC_METER)
+	int adc_current = 0;
+	int charger_current = 0;
+
+	adc_current = get_charger_current_adc(CHARGER_CURRENT_ADC);
+	charger_current = adc_current*CHARGER_IC_KLIM/CHARGER_IC_RLIM;
+	printk("battery_meter_get_charging_current : charger_current=%d \n",charger_current);
+
+	return charger_current;
+	/* lenovo-sw mahj2 support meter charger current use charger ic End*/
 #elif defined(AUXADC_SUPPORT_IMM_CURRENT_MODE)
 	return PMIC_IMM_GetCurrent();
 #elif !defined(EXTERNAL_SWCHR_SUPPORT)
@@ -4195,7 +4273,9 @@ void bmd_ctrl_cmd_from_user(void *nl_data, struct fgd_nl_msg_t *ret_msg)
 		{
 
 			bm_debug("[fg_res] FG_DAEMON_CMD_SET_POWEROFF\n");
-			kernel_power_off();
+			//lenovo-sw mahj2 modify for disable kernel power off Begin
+			//kernel_power_off();
+			//lenovo-sw mahj2 modify for disable kernel power off End
 		}
 		break;
 
