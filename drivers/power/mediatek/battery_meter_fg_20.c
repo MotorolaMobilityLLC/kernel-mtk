@@ -1578,6 +1578,25 @@ signed int fgauge_get_Q_max_high_current(signed short temperature)
 }
 
 #endif
+/*lenovo-sw liuyc7  add for meta getbattvolt begin*/
+int BattVoltToTemp_meta(int dwVolt)
+{
+	long long TRes_temp;
+	long long TRes;
+	int sBaTTMP = -100;
+
+	/* TRes_temp = ((long long)RBAT_PULL_UP_R*(long long)dwVolt) / (RBAT_PULL_UP_VOLT-dwVolt); */
+	/* TRes = (TRes_temp * (long long)RBAT_PULL_DOWN_R)/((long long)RBAT_PULL_DOWN_R - TRes_temp); */
+	TRes_temp = (RBAT_PULL_UP_R * (long long) dwVolt);
+	do_div(TRes_temp, (RBAT_PULL_UP_VOLT - dwVolt));
+	printk("battvolttotemp TRes_temp=%lld\n",TRes_temp);
+	TRes = TRes_temp;
+	/* convert register to temperature */
+	sBaTTMP = BattThermistorConverTemp((int)TRes);
+
+	return sBaTTMP;
+}
+/*lenovo-sw liuyc7 add end*/
 
 int BattVoltToTemp(int dwVolt)
 {
