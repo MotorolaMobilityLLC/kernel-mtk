@@ -1101,9 +1101,12 @@ static int touch_event_handler(void *unused)
 
 			if ((cinfo.y[0] >= TPD_RES_Y) && (pinfo.y[0] < TPD_RES_Y)
 			&& ((pinfo.p[0] == 0) || (pinfo.p[0] == 2))) {
-				TPD_DEBUG("Dummy release --->\n");
+				printk("Dummy release --->\n");
 				tpd_up(pinfo.x[0], pinfo.y[0]);
 				input_sync(tpd->dev);
+#if FT_ESD_PROTECT
+				esd_switch(1);apk_debug_flag = 0;
+#endif
 				continue;
 			}
             #if 0 
