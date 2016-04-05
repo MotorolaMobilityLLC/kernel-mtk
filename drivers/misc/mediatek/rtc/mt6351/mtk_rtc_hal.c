@@ -127,6 +127,56 @@ void hal_rtc_set_abb_32k(u16 enable)
 	hal_rtc_xinfo("ABB 32k not support\n");
 }
 
+//lenovo-sw mahj2 modify for timezone at 20141204 Begin
+#ifdef CONFIG_LENOVO_RTC_SAVE_TIMEZONE_SUPPORT
+void hal_rtc_set_spare_timezone_value(int tz_minuteswest)
+{
+	
+	int hour,minutes,temp,tz_sign = 0;
+
+	if(tz_minuteswest < 0)
+	{
+		tz_sign = 1;
+		tz_minuteswest = tz_minuteswest -2*tz_minuteswest;
+	}
+
+	hour = tz_minuteswest/60;
+	minutes = tz_minuteswest%60;
+
+	rtc_writeif_unlock();
+	temp = rtc_read(RTC_AL_DOM);
+	temp = (temp&(~RTC_NEW_SPARE1))|(hour<<8)|(tz_sign <<15);
+	rtc_write(RTC_AL_DOM, temp);
+	temp = rtc_read(RTC_AL_DOW);
+	temp = (temp&(~RTC_NEW_SPARE3))|(minutes<<8);
+	rtc_write(RTC_AL_DOW, temp);
+	rtc_write_trigger();
+}
+
+int hal_rtc_get_spare_timezone_value(void)
+{
+	
+	int hour,minutes,tz_minuteswest,temp,tz_sign;
+	
+	temp = rtc_read(RTC_AL_DOM);
+	tz_sign = (temp&(1<<15))>>15;
+	temp = temp&(~(1<<15));
+	hour = (temp&RTC_NEW_SPARE1)>>8;
+
+	temp = rtc_read(RTC_AL_DOW);
+	minutes = (temp&RTC_NEW_SPARE3)>>8;
+
+	tz_minuteswest = hour*60 + minutes;
+	if(tz_sign == 1)
+	{
+		tz_minuteswest = tz_minuteswest-2*tz_minuteswest;
+	}
+
+	return tz_minuteswest;
+}
+#endif
+//lenovo-sw mahj2 modify for timezone at 20141204 End
+
 u16 hal_rtc_get_gpio_32k_status(void)
 {
 	u16 con;

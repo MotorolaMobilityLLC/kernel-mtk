@@ -159,7 +159,12 @@ static inline void warp_clock(void)
  * as soon as possible, so that the clock can be set right. Otherwise,
  * various programs will get confused when the clock gets warped.
  */
-
+ //lenovo-sw mahj2 modify for timezone at 20141204 Begin
+ #ifdef CONFIG_LENOVO_RTC_SAVE_TIMEZONE_SUPPORT
+extern void set_rtc_spare_timezone_value(int val);
+extern int get_rtc_spare_timezone_value(void); 
+#endif
+//lenovo-sw mahj2 modify for timezone at 20141204 End
 int do_sys_settimeofday(const struct timespec *tv, const struct timezone *tz)
 {
 	static int firsttime = 1;
@@ -174,11 +179,28 @@ int do_sys_settimeofday(const struct timespec *tv, const struct timezone *tz)
 
 	if (tz) {
 		sys_tz = *tz;
+		//lenovo-sw mahj2 modify for timezone at 20141204 Begin
+		#ifdef CONFIG_LENOVO_RTC_SAVE_TIMEZONE_SUPPORT
+		if(firsttime && sys_tz.tz_minuteswest == 0)
+		{
+			sys_tz.tz_minuteswest = get_rtc_spare_timezone_value();
+		}
+		else
+		{
+			set_rtc_spare_timezone_value(sys_tz.tz_minuteswest);
+		}
+		#endif
+		//lenovo-sw mahj2 modify for timezone at 20141204 End
+	
 		update_vsyscall_tz();
 		if (firsttime) {
 			firsttime = 0;
+			//lenovo-sw mahj2 modify for timezone at 20141204 Begin
+			#ifndef CONFIG_LENOVO_RTC_SAVE_TIMEZONE_SUPPORT
 			if (!tv)
 				warp_clock();
+			#endif
+			//lenovo-sw mahj2 modify for timezone at 20141204 End
 		}
 	}
 	if (tv)
