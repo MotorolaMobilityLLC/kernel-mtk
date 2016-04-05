@@ -736,7 +736,7 @@ static int tpd_touchinfo(struct touch_info *cinfo, struct touch_info *pinfo)
 {
 	int i = 0;
 	char data[40] = {0};
-	u8 report_rate = 0;
+	//u8 report_rate = 0;
 	u16 high_byte, low_byte;
 	char writebuf[10]={0};
 	//u8 fwversion = 0;
@@ -781,12 +781,13 @@ static int tpd_touchinfo(struct touch_info *cinfo, struct touch_info *pinfo)
 		TPD_DEBUG("data[%d] = 0x%02X ", i, data[i]);
 	TPD_DEBUG("\n");
 #endif
+    #if 0
 	if (report_rate < 8) {
 		report_rate = 0x8;
 		if ((fts_write_reg(i2c_client, 0x88, report_rate)) < 0)
 			TPD_DMESG("I2C write report rate error, line: %d\n", __LINE__);
 	}
-
+    #endif
 	/* Device Mode[2:0] == 0 :Normal operating Mode*/
 	if ((data[0] & 0x70) != 0)
 		return false;
