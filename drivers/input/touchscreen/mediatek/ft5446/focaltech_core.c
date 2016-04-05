@@ -1272,7 +1272,7 @@ static const struct file_operations g_ctp_proc =
 static int tpd_probe(struct i2c_client *client, const struct i2c_device_id *id)
 {
 	int retval = TPD_OK;
-	u8 report_rate = 0;
+//	u8 report_rate = 0;
 	int reset_count = 0;
 	char data;
 	int err = 0;
@@ -1414,12 +1414,15 @@ reset_proc:
 /*#ifdef CONFIG_FT_AUTO_UPGRADE_SUPPORT
 	tpd_auto_upgrade(client);
 #endif*/
+
+#if 0
 	/* Set report rate 80Hz */
 	report_rate = 0x8;
 	if ((fts_write_reg(i2c_client, 0x88, report_rate)) < 0) {
 		if ((fts_write_reg(i2c_client, 0x88, report_rate)) < 0)
 			TPD_DMESG("I2C write report rate error, line: %d\n", __LINE__);
 	}
+#endif
 
 	/* tpd_load_status = 1; */
 
