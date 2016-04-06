@@ -122,7 +122,8 @@ int battery_cmd_thermal_test_mode = 0;
 int battery_cmd_thermal_test_mode_value = 0;
 int g_battery_tt_check_flag = 0;
 /* 0:default enable check batteryTT, 1:default disable check batteryTT */
-
+//chg_current for smart tool
+static int g_battery_chg_current = 0;
 
 /*
  *  Global Variable
@@ -4165,6 +4166,31 @@ int batt_init_cust_data(void)
 #endif
 	return 0;
 }
+static ssize_t chg_show_i_current(struct device *dev,struct device_attribute *attr,char*buf)
+{
+	if(BMT_status.charger_exist == KAL_TRUE)
+		g_battery_chg_current = battery_meter_get_battery_current()/10;
+	else
+		g_battery_chg_current = 0;
+
+	return sprintf(buf,"%d\n",g_battery_chg_current);
+}
+
+static DEVICE_ATTR(chg_current,S_IRUGO|S_IWUSR,chg_show_i_current,NULL);
+
+int lenovo_battery_create_sys_file(struct device *dev)
+{
+	int ret = 0;
+
+	ret = device_create_file(dev,&dev_attr_chg_current);
+	if(ret)
+	{
+		battery_log(BAT_LOG_CRTI, "create lenovo_battery_create_sys_file fail\n");
+		return ret;
+	}
+
+	return ret;
+}
 
 static int battery_probe(struct platform_device *dev)
 {
@@ -4236,6 +4262,13 @@ static int battery_probe(struct platform_device *dev)
 		return ret;
 	}
 	battery_log(BAT_LOG_CRTI, "[BAT_probe] power_supply_register Battery Success !!\n");
+
+	ret = lenovo_battery_create_sys_file(battery_main.psy.dev);
+	if(ret)
+	{
+		printk("%s,failed,lenovo device_create_file \n",__func__);
+		return ret;
+	}
 
 #if !defined(CONFIG_POWER_EXT)
 
