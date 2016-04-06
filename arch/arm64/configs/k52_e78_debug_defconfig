@@ -580,5 +580,8 @@ CONFIG_MTK_BQ24296_SUPPORT=y
 #lenovo-sw mahj2 add for multi bat support Begin
 # CONFIG_MTK_MULTI_BAT_PROFILE_SUPPORT is not set
 #lenovo-sw mahj2 add for multi bat support End
+#Begin, lenovo-sw mahj2 add for rtc save timezone at 20141204
+CONFIG_LENOVO_RTC_SAVE_TIMEZONE_SUPPORT=y
+#End, lenovo-sw mahj2 add for rtc save timezone at 20141204
 ##########################################
 ###################### Lenovo BSP Feature end #########################

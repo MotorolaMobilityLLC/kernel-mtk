@@ -194,6 +194,15 @@ config MTK_LCM_PHYSICAL_ROTATION_HW
 config MTK_SM100
 	bool "Software synchronization 64bits objects"
 	default n
+
+#Begin, lenovo-sw mahj2 add for rtc save timezone at 20141204
+config LENOVO_RTC_SAVE_TIMEZONE_SUPPORT
+	tristate "lenovo rtc save timezone support"
+	default n
+	help
+	  Say Y to include support for rtc save timezone.
+#end, lenovo-sw mahj2 add for rtc save timezone at 20141204
+
 source "drivers/misc/mediatek/gpt/Kconfig"
 source "drivers/misc/mediatek/uart/Kconfig"
 source "drivers/misc/mediatek/irtx/Kconfig"

@@ -59,6 +59,12 @@ extern int set_rtc_spare_fg_value(int val);
 extern void rtc_irq_handler(void);
 extern bool crystal_exist_status(void);
 extern void mt_power_off(void);
+//lenovo-sw mahj2 modify for timezone at 20141204 Begin
+#ifdef CONFIG_LENOVO_RTC_SAVE_TIMEZONE_SUPPORT
+extern void set_rtc_spare_timezone_value(int val);
+extern int get_rtc_spare_timezone_value(void);
+#endif
+//lenovo-sw mahj2 modify for timezone at 20141204 End
 #else/*ifdef CONFIG_MTK_RTC*/
 #define rtc_read_hw_time()              ({ 0; })
 #define rtc_gpio_enable_32k(user)	do {} while (0)
