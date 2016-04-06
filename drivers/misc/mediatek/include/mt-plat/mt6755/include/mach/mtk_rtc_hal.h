@@ -47,6 +47,12 @@ extern void hal_rtc_set_alarm(struct rtc_time *tm);
 extern void hal_rtc_clear_alarm(struct rtc_time *tm);
 extern void hal_rtc_set_lp_irq(void);
 extern void hal_rtc_save_pwron_time(bool enable, struct rtc_time *tm, bool logo);
+//lenovo-sw mahj2 modify for timezone at 20141204 Begin
+#ifdef CONFIG_LENOVO_RTC_SAVE_TIMEZONE_SUPPORT
+extern void hal_rtc_set_spare_timezone_value(int tz_minuteswest);
+extern int hal_rtc_get_spare_timezone_value(void);
+#endif
+//lenovo-sw mahj2 modify for timezone at 20141204 End
 #ifdef VRTC_PWM_ENABLE
 extern void hal_rtc_pwm_enable(void);
 #endif

@@ -222,7 +222,29 @@ int set_rtc_spare_fg_value(int val)
 
 	return 0;
 }
+//lenovo-sw mahj2 modify for timezone at 20141204 Begin
+#ifdef CONFIG_LENOVO_RTC_SAVE_TIMEZONE_SUPPORT
+void set_rtc_spare_timezone_value(int val)
+{
+	unsigned long flags;
 
+	spin_lock_irqsave(&rtc_lock, flags);
+	hal_rtc_set_spare_timezone_value(val);
+	spin_unlock_irqrestore(&rtc_lock, flags);
+}
+
+int get_rtc_spare_timezone_value(void)
+{
+	unsigned long flags;
+	int temp;
+
+	spin_lock_irqsave(&rtc_lock, flags);
+	temp = hal_rtc_get_spare_timezone_value();
+	spin_unlock_irqrestore(&rtc_lock, flags);
+	return temp;
+}
+#endif
+//lenovo-sw mahj2 modify for timezone at 20141204 End
 bool crystal_exist_status(void)
 {
 	unsigned long flags;
