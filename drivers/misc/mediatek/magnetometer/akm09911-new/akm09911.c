@@ -2710,9 +2710,11 @@ static int akm09911_o_get_data(int *x , int *y, int *z, int *status)
 {
 	mutex_lock(&sensor_data_mutex);
 
-	*x = sensor_data[13] * CONVERT_M;
-	*y = sensor_data[14] * CONVERT_M;
-	*z = sensor_data[15] * CONVERT_M;
+/*lenovo-sw caoyi1 modify orientation sensor data 20150825 begin*/
+	*x = sensor_data[13] * CONVERT_O;
+	*y = sensor_data[14] * CONVERT_O;
+	*z = sensor_data[15] * CONVERT_O;
+/*lenovo-sw caoyi1 modify orientation sensor data 20150825 end*/
 	*status = sensor_data[8];
 
 	mutex_unlock(&sensor_data_mutex);

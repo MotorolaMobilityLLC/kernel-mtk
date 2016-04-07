@@ -116,15 +116,17 @@
 		is_batch_supported_als	= <1>;
 	};
 
-	cust_mag {
-		compatible			= "mediatek,yamaha532";
+/*lenovo-sw caoyi1 modify Msensor begin*/
+	cust_mag@0 {
+		compatible			= "mediatek,akm09911";
 		i2c_num				= <1>;
-		/* i2c_addr			= <0x0d 0 0 0>; */
-		direction			= <0>;
+		i2c_addr			= <0x0d 0 0 0>;
+		direction			= <8>;
 		power_id			= <0xffff>;
 		power_vol			= <0>;
 		/* is_batch_supported		= <0>; */
 	};
+/*lenovo-sw caoyi1 modify Msensor end*/
 
 	cust_gyro {
 		compatible			= "mediatek,mpu6515g";
@@ -926,6 +928,16 @@
 		reg = <0x68>;
 		status = "okay";
 	};
+
+/*lenovo-sw caoyi1 modify Msensor begin*/
+	msensor@D {
+		compatible = "mediatek,msensor";
+		i2c_num	= <1>;
+		reg = <0xD>;
+		status = "okay";
+	};
+/*lenovo-sw caoyi1 modify Msensor end*/
+
 };
 /* IRTX GPIO end */
 &apirtx {
