@@ -3135,6 +3135,28 @@ static ssize_t epl_sensor_show_als_intr_table(struct device_driver *ddri, char *
     return len;
 }
 
+static ssize_t epl_sensor_show_selftest(struct device_driver *ddri, char *buf)
+{
+      struct epl_sensor_priv *epld = epl_sensor_obj;
+      ssize_t len = 0;
+      bool result;
+      APS_FUN();
+
+      if((i2c_smbus_read_byte_data(epld->client, 0x21)) != EPL_REVNO)
+      {
+            result = false;
+      }
+      else
+      {
+            result = true;
+      }
+      APS_LOG("[%s]: result=%d \r\n", __func__, result);
+
+      len += snprintf(buf + len, PAGE_SIZE - len, "%d", result);
+      return len;
+
+}
+
 /*CTS --> S_IWUSR | S_IRUGO*/
 /*----------------------------------------------------------------------------*/
 static DRIVER_ATTR(elan_status, S_IWUSR | S_IRUGO, epl_sensor_show_status, NULL);
@@ -3184,6 +3206,7 @@ static DRIVER_ATTR(ges_polling_mode, S_IWUSR | S_IRUGO, NULL, epl_sensor_store_g
 static DRIVER_ATTR(ges_thd, S_IWUSR | S_IRUGO, NULL, epl_sensor_store_ges_thd);
 #endif
 static DRIVER_ATTR(als_intr_table, S_IWUSR | S_IRUGO, epl_sensor_show_als_intr_table, NULL);
+static DRIVER_ATTR(selftest, S_IWUSR | S_IRUGO, epl_sensor_show_selftest,           NULL                  );
 
 
 /*----------------------------------------------------------------------------*/
@@ -3236,6 +3259,7 @@ static struct driver_attribute * epl_sensor_attr_list[] =
     &driver_attr_ges_thd,
 #endif
     &driver_attr_als_intr_table,
+    &driver_attr_selftest,
 };
 
 /*----------------------------------------------------------------------------*/

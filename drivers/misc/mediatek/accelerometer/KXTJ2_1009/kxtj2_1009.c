@@ -1481,16 +1481,34 @@ static ssize_t show_power_status_value(struct device_driver *ddri, char *buf)
 	return snprintf(buf, PAGE_SIZE, "%x\n", databuf[0]);
 }
 
+static ssize_t show_lenovoselftest(struct device_driver *ddri, char *buf)
+{
+	int ret;
+	ssize_t len = 0;
+	bool result = false;
+
+	ret = KXTJ2_1009_CheckDeviceID(kxtj2_1009_i2c_client);
+	if (KXTJ2_1009_SUCCESS == ret)
+		result = true;
+
+	GSE_LOG("[%s]: result=%d \r\n", __func__, result);
+	
+	len += snprintf(buf + len, PAGE_SIZE - len, "%d", result);
+
+	return len;
+}
+
 /*----------------------------------------------------------------------------*/
 static DRIVER_ATTR(chipinfo,   S_IWUSR | S_IRUGO, show_chipinfo_value,      NULL);
 static DRIVER_ATTR(sensordata, S_IWUSR | S_IRUGO, show_sensordata_value,    NULL);
 static DRIVER_ATTR(cali,       S_IWUSR | S_IRUGO, show_cali_value,          store_cali_value);
-static DRIVER_ATTR(selftest, S_IWUSR | S_IRUGO, show_self_value,  store_self_value);
+static DRIVER_ATTR(legacyselftest, S_IWUSR | S_IRUGO, show_self_value,  store_self_value);
 static DRIVER_ATTR(self,   S_IWUSR | S_IRUGO, show_selftest_value,      store_selftest_value);
 static DRIVER_ATTR(firlen,     S_IWUSR | S_IRUGO, show_firlen_value,        store_firlen_value);
 static DRIVER_ATTR(trace,      S_IWUSR | S_IRUGO, show_trace_value,         store_trace_value);
 static DRIVER_ATTR(status,               S_IRUGO, show_status_value,        NULL);
 static DRIVER_ATTR(powerstatus,               S_IRUGO, show_power_status_value,        NULL);
+ static DRIVER_ATTR(selftest, S_IWUSR | S_IRUGO, show_lenovoselftest, NULL);
 
 
 /*----------------------------------------------------------------------------*/
@@ -1678,7 +1696,7 @@ static struct driver_attribute *kxtj2_1009_attr_list[] = {
 	&driver_attr_sensordata,   /*dump sensor data*/
 	&driver_attr_cali,         /*show calibration data*/
 	&driver_attr_self,         /*self test demo*/
-	&driver_attr_selftest,     /*self control: 0: disable, 1: enable*/
+	&driver_attr_legacyselftest,     /*self control: 0: disable, 1: enable*/
 	&driver_attr_firlen,       /*filter length: 0: disable, others: enable*/
 	&driver_attr_trace,        /*trace log*/
 	&driver_attr_status,
@@ -1688,6 +1706,7 @@ static struct driver_attribute *kxtj2_1009_attr_list[] = {
 #ifdef KIONIX_TEST
 	&driver_attr_kx_test,	/* data poll test: 0 disable, others poll delay ms */
 #endif
+	&driver_attr_selftest
 };
 /*----------------------------------------------------------------------------*/
 static int kxtj2_1009_create_attr(struct device_driver *driver) 
