@@ -1022,10 +1022,10 @@
 	/* Lenovo-sw, weimh1, 2016-3-31 add end: configure gsensor i2c1 */
 
 /*lenovo-sw caoyi1 modify Msensor begin*/
-	msensor@D {
+	msensor@C {
 		compatible = "mediatek,msensor";
 		i2c_num	= <1>;
-		reg = <0xD>;
+		reg = <0xC>;
 		status = "okay";
 	};
 /*lenovo-sw caoyi1 modify Msensor end*/
