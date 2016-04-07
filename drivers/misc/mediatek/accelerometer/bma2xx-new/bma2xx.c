@@ -1901,6 +1901,27 @@ static ssize_t store_datarate_value(struct device_driver *ddri,
 	return err;
 }
 
+static ssize_t show_selftest(struct device_driver *ddri, char *buf)
+{
+      struct bma_i2c_data *obj = obj_i2c_data;
+      ssize_t len = 0;
+      bool result;
+
+      if(!strcmp(obj->sensor_name, "unknown sensor"))
+      {
+            result = false;
+      }
+      else
+      {
+            result = true;
+      }
+      GSE_LOG("[%s]: result=%d \r\n", __func__, result);
+
+      len += snprintf(buf + len, PAGE_SIZE - len, "%d", result);
+      return len;
+
+}
+
 static DRIVER_ATTR(chipinfo, S_IWUSR | S_IRUGO, show_chipinfo_value, NULL);
 static DRIVER_ATTR(sensordata, S_IWUSR | S_IRUGO, show_sensordata_value, NULL);
 static DRIVER_ATTR(cali, S_IWUSR | S_IRUGO, show_cali_value, store_cali_value);
@@ -1915,6 +1936,8 @@ static DRIVER_ATTR(range, S_IWUSR | S_IRUGO,
 		show_range_value, store_range_value);
 static DRIVER_ATTR(datarate, S_IWUSR | S_IRUGO,
 		show_datarate_value, store_datarate_value);
+static DRIVER_ATTR(selftest, S_IWUSR | S_IRUGO,
+		show_selftest,           NULL                  );
 
 static struct driver_attribute *bma_attr_list[] = {
 	/* chip information */
@@ -1935,6 +1958,7 @@ static struct driver_attribute *bma_attr_list[] = {
 	&driver_attr_range,
 	/* get data rate */
 	&driver_attr_datarate,
+	&driver_attr_selftest,
 };
 
 static int bma_create_attr(struct device_driver *driver)
