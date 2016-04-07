@@ -930,10 +930,10 @@
 	};
 
 /*lenovo-sw caoyi1 modify Msensor begin*/
-	msensor@C {
+	msensor@D {
 		compatible = "mediatek,msensor";
 		i2c_num	= <1>;
-		reg = <0xC>;
+		reg = <0xD>;
 		status = "okay";
 	};
 /*lenovo-sw caoyi1 modify Msensor end*/
