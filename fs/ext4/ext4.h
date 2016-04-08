@@ -2354,7 +2354,14 @@ extern int ext4_search_dir(struct buffer_head *bh,
 			   struct ext4_filename *fname,
 			   const struct qstr *d_name,
 			   unsigned int offset,
+/*2015.1.28 add begin for sdcardfs support case-insensitive search*/
+#ifdef CONFIG_SDCARD_FS_CI_SEARCH
+                      struct ext4_dir_entry_2 ** res_dir,
+                      char *ci_name_buf);
+#else
 			   struct ext4_dir_entry_2 **res_dir);
+#endif
+/*2015.1.28 add end*/
 extern int ext4_generic_delete_entry(handle_t *handle,
 				     struct inode *dir,
 				     struct ext4_dir_entry_2 *de_del,
@@ -2819,7 +2826,14 @@ extern struct buffer_head *ext4_find_inline_entry(struct inode *dir,
 					struct ext4_filename *fname,
 					const struct qstr *d_name,
 					struct ext4_dir_entry_2 **res_dir,
+/*2015.1.28 add begin for sdcardfs support case-insensitive search*/
+#ifdef CONFIG_SDCARD_FS_CI_SEARCH
+                                        int *has_inline_data,
+                                        char* ci_name_buf);
+#else
 					int *has_inline_data);
+#endif
+/*2015.1.28 add end*/
 extern int ext4_delete_inline_entry(handle_t *handle,
 				    struct inode *dir,
 				    struct ext4_dir_entry_2 *de_del,
