@@ -57,7 +57,13 @@
 #include <mt-plat/battery_common.h>
 #include <mt-plat/battery_meter_hal.h>
 #include <mach/mt_battery_meter.h>
+//lenovo-sw mahj2 modify for multi battery Bagin
+#ifdef MTK_MULTI_BAT_PROFILE_SUPPORT
+#include <mach/mt_battery_meter_table_multi_profile.h>
+#else
 #include <mach/mt_battery_meter_table.h>
+#endif
+//lenovo-sw mahj2 modify for multi battery End
 #include <mach/mt_pmic.h>
 
 
@@ -565,6 +571,68 @@ typedef enum {
 int __batt_meter_init_cust_data_from_cust_header(struct platform_device *dev)
 {
 	/* cust_battery_meter_table.h */
+//lenovo-sw mahj2 modify for multi battery Begin
+#ifdef MTK_MULTI_BAT_PROFILE_SUPPORT
+
+	fgauge_get_profile_id();
+
+	batt_meter_table_cust_data.battery_profile_t0_size =
+		sizeof(battery_profile_t0[g_fg_battery_id]) / sizeof(BATTERY_PROFILE_STRUCT);
+
+	memcpy(&batt_meter_table_cust_data.battery_profile_t0,
+			&battery_profile_t0[g_fg_battery_id],
+			sizeof(battery_profile_t0[g_fg_battery_id]));
+
+	batt_meter_table_cust_data.battery_profile_t1_size =
+		sizeof(battery_profile_t1[g_fg_battery_id]) / sizeof(BATTERY_PROFILE_STRUCT);
+
+	memcpy(&batt_meter_table_cust_data.battery_profile_t1,
+			&battery_profile_t1[g_fg_battery_id],
+			sizeof(battery_profile_t1[g_fg_battery_id]));
+
+	batt_meter_table_cust_data.battery_profile_t2_size =
+		sizeof(battery_profile_t2[g_fg_battery_id]) / sizeof(BATTERY_PROFILE_STRUCT);
+
+	memcpy(&batt_meter_table_cust_data.battery_profile_t2,
+			&battery_profile_t2[g_fg_battery_id],
+			sizeof(battery_profile_t2[g_fg_battery_id]));
+
+	batt_meter_table_cust_data.battery_profile_t3_size =
+		sizeof(battery_profile_t3[g_fg_battery_id]) / sizeof(BATTERY_PROFILE_STRUCT);
+
+	memcpy(&batt_meter_table_cust_data.battery_profile_t3,
+			&battery_profile_t3[g_fg_battery_id],
+			sizeof(battery_profile_t3[g_fg_battery_id]));
+
+	batt_meter_table_cust_data.r_profile_t0_size =
+		sizeof(r_profile_t0[g_fg_battery_id]) / sizeof(R_PROFILE_STRUCT);
+
+	memcpy(&batt_meter_table_cust_data.r_profile_t0,
+			&r_profile_t0[g_fg_battery_id],
+			sizeof(r_profile_t0[g_fg_battery_id]));
+
+	batt_meter_table_cust_data.r_profile_t1_size =
+		sizeof(r_profile_t1[g_fg_battery_id]) / sizeof(R_PROFILE_STRUCT);
+
+	memcpy(&batt_meter_table_cust_data.r_profile_t1,
+			&r_profile_t1[g_fg_battery_id],
+			sizeof(r_profile_t1[g_fg_battery_id]));
+
+	batt_meter_table_cust_data.r_profile_t2_size =
+		sizeof(r_profile_t2[g_fg_battery_id]) / sizeof(R_PROFILE_STRUCT);
+
+	memcpy(&batt_meter_table_cust_data.r_profile_t2,
+			&r_profile_t2[g_fg_battery_id],
+			sizeof(r_profile_t2[g_fg_battery_id]));
+
+	batt_meter_table_cust_data.r_profile_t3_size =
+		sizeof(r_profile_t3[g_fg_battery_id]) / sizeof(R_PROFILE_STRUCT);
+
+	memcpy(&batt_meter_table_cust_data.r_profile_t3,
+			&r_profile_t3[g_fg_battery_id],
+			sizeof(r_profile_t3[g_fg_battery_id]));
+
+#else
 
 	batt_meter_table_cust_data.battery_profile_t0_size = sizeof(battery_profile_t0)
 	    / sizeof(BATTERY_PROFILE_STRUCT);
@@ -609,6 +677,8 @@ int __batt_meter_init_cust_data_from_cust_header(struct platform_device *dev)
 
 	memcpy(&batt_meter_table_cust_data.r_profile_t3, &r_profile_t3, sizeof(r_profile_t3));
 
+#endif
+//lenovo-sw mahj2 modify for multi battery End
 	/* cust_battery_meter.h */
 
 #if defined(SOC_BY_HW_FG)
@@ -644,6 +714,17 @@ int __batt_meter_init_cust_data_from_cust_header(struct platform_device *dev)
 	batt_meter_cust_data.fg_meter_resistance = FG_METER_RESISTANCE;
 
 	/* Qmax for battery  */
+//lenovo-sw mahj2 modify for multi battery Begin
+#ifdef MTK_MULTI_BAT_PROFILE_SUPPORT
+	batt_meter_cust_data.q_max_pos_50 = g_Q_MAX_POS_50[g_fg_battery_id];
+	batt_meter_cust_data.q_max_pos_25 = g_Q_MAX_POS_25[g_fg_battery_id];
+	batt_meter_cust_data.q_max_pos_0 = g_Q_MAX_POS_0[g_fg_battery_id];
+	batt_meter_cust_data.q_max_neg_10 = g_Q_MAX_NEG_10[g_fg_battery_id];
+	batt_meter_cust_data.q_max_pos_50_h_current = g_Q_MAX_POS_50_H_CURRENT[g_fg_battery_id];
+	batt_meter_cust_data.q_max_pos_25_h_current = g_Q_MAX_POS_25_H_CURRENT[g_fg_battery_id];
+	batt_meter_cust_data.q_max_pos_0_h_current = g_Q_MAX_POS_0_H_CURRENT[g_fg_battery_id];
+	batt_meter_cust_data.q_max_neg_10_h_current = g_Q_MAX_NEG_10_H_CURRENT[g_fg_battery_id];
+#else
 	batt_meter_cust_data.q_max_pos_50 = Q_MAX_POS_50;
 	batt_meter_cust_data.q_max_pos_25 = Q_MAX_POS_25;
 	batt_meter_cust_data.q_max_pos_0 = Q_MAX_POS_0;
@@ -653,6 +734,8 @@ int __batt_meter_init_cust_data_from_cust_header(struct platform_device *dev)
 	batt_meter_cust_data.q_max_pos_0_h_current = Q_MAX_POS_0_H_CURRENT;
 	batt_meter_cust_data.q_max_neg_10_h_current = Q_MAX_NEG_10_H_CURRENT;
 	batt_meter_cust_data.oam_d5 = OAM_D5;	/* 1 : D5,   0: D2 */
+#endif
+//lenovo-sw mahj2 modify for multi battery End
 
 #if defined(CHANGE_TRACKING_POINT)
 	batt_meter_cust_data.change_tracking_point = 1;
@@ -701,7 +784,13 @@ int __batt_meter_init_cust_data_from_cust_header(struct platform_device *dev)
 #endif				/* #if defined(FIXED_TBAT_25) */
 
 	batt_meter_cust_data.batterypseudo100 = BATTERYPSEUDO100;
+//lenovo-sw mahj2 modify for multi battery Begin
+#ifdef MTK_MULTI_BAT_PROFILE_SUPPORT
+	batt_meter_cust_data.batterypseudo1 = g_BATTERYPSEUDO1[g_fg_battery_id];
+#else
 	batt_meter_cust_data.batterypseudo1 = BATTERYPSEUDO1;
+#endif
+//lenovo-sw mahj2 modify for multi battery End
 
 	/* Dynamic change wake up period of battery thread when suspend */
 	batt_meter_cust_data.vbat_normal_wakeup = VBAT_NORMAL_WAKEUP;
@@ -738,7 +827,13 @@ int __batt_meter_init_cust_data_from_cust_header(struct platform_device *dev)
 #else				/* #if defined(Q_MAX_BY_CURRENT) */
 	batt_meter_cust_data.q_max_by_current = 0;
 #endif				/* #if defined(Q_MAX_BY_CURRENT) */
+//lenovo-sw mahj2 modify for multi battery Begin
+#ifdef MTK_MULTI_BAT_PROFILE_SUPPORT
+	batt_meter_cust_data.q_max_sys_voltage = g_Q_MAX_SYS_VOLTAGE[g_fg_battery_id];
+#else
 	batt_meter_cust_data.q_max_sys_voltage = Q_MAX_SYS_VOLTAGE;
+#endif
+//lenovo-sw mahj2 modify for multi battery End
 
 #if defined(CONFIG_MTK_EMBEDDED_BATTERY)
 	batt_meter_cust_data.embedded_battery = 1;
@@ -1250,7 +1345,9 @@ int BattThermistorConverTemp(int Res)
 	int i = 0;
 	int RES1 = 0, RES2 = 0;
 	int TBatt_Value = -200, TMP1 = 0, TMP2 = 0;
-
+//lenovo-sw mahj2 modify Begin
+	BATT_TEMPERATURE *batt_temperature_table = (BATT_TEMPERATURE *)&Batt_Temperature_Table[g_fg_battery_id];
+//lenovo-sw mahj2 modify End
 //modify by mahj2 2014-10-22 for charing begin 
 #ifdef CONFIG_LENOVO_CHARGING_STANDARD_SUPPORT
 	if(Res <= 0)	
@@ -1260,8 +1357,6 @@ int BattThermistorConverTemp(int Res)
 	}	
 #endif
 //modify end
-
-	BATT_TEMPERATURE *batt_temperature_table = &Batt_Temperature_Table[g_fg_battery_id];
 
 	if (Res >= batt_temperature_table[0].TemperatureR) {
 		TBatt_Value = -20;

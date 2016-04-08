@@ -168,5 +168,8 @@
 #define  CHARGER_CURRENT_ADC 14 
 #endif
 /*End lenovo mahj2 add */
+//lenovo-sw mahj2 add for multi battery Begin
+#define MTK_MULTI_BAT_PROFILE_SUPPORT
+//lenovo-sw mahj2 add for multi battery End
 
 #endif
