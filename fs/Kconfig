@@ -15,6 +15,10 @@ source "fs/ext3/Kconfig"
 source "fs/ext4/Kconfig"
 source "fs/exfat/Kconfig"
 
+# lenovo.sw : add for wrapfs
+source "fs/sdcardfs/Kconfig"
+# end
+
 config FS_XIP
 # execute in place
 	bool
