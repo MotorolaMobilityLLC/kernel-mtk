@@ -81,9 +81,9 @@ struct step_c_control_path {
 };
 
 struct step_c_data_path {
-	int (*get_data)(uint32_t *value, int *status);
-	int (*get_data_step_d)(uint32_t *value, int *status);
-	int (*get_data_significant)(uint32_t *value, int *status);
+	int (*get_data)(u64 *value, int *status);
+	int (*get_data_step_d)(u64 *value, int *status);
+	int (*get_data_significant)(u64 *value, int *status);
 	int vender_div;
 };
 
@@ -117,7 +117,10 @@ struct step_c_context {
 	struct timer_list   timer;  /* polling timer */
 	atomic_t            trace;
 
-	atomic_t                early_suspend;
+#ifdef CONFIG_HAS_EARLYSUSPEND
+	struct early_suspend early_drv;
+	atomic_t early_suspend;
+#endif
 
 	struct step_c_data       drv_data;
 	struct step_c_control_path   step_c_ctl;
@@ -127,14 +130,16 @@ struct step_c_context {
 	bool		is_first_data_after_enable;
 	bool		is_polling_run;
 	bool		is_batch_enable;	/* version2.this is used for judging whether sensor is in batch mode */
+	bool        is_step_d_active; /* for step detect sensor support, add by liaoxl.lenovo 5.12.2015 */
+	bool        is_sigmot_active; /* for significant motion sensor support, add by liaoxl.lenovo 5.12.2015 */
 };
 
 /* for auto detect */
 typedef enum {
-	TYPE_STEP_NON   = 0,
-	TYPE_STEP_DETECTOR  = 1,
-	TYPE_SIGNIFICANT = 2
-
+	TYPE_STEP_NON = 0,
+	TYPE_STEP_DETECTOR = 1,
+	TYPE_SIGNIFICANT = 2,
+	TYPE_STEP_COUNTER = 3
 } STEP_NOTIFY_TYPE;
 
 extern int  step_notify(STEP_NOTIFY_TYPE type);
