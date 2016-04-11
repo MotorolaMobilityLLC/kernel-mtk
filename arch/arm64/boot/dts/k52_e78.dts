@@ -399,7 +399,34 @@
 	gyro_intpin_default: gyrodefaultcfg {
 
 	};
+
+/*Lenovo-sw weimh1 add 2016-4-6 begin:add for stepcounter*/
+	gsensor_intpin_cfg: gensorpincfg {
+	    pins_cmd_dat {
+			pins = <PINMUX_GPIO54__FUNC_GPIO54>;
+			slew-rate = <0>;
+			bias-pull-up = <00>;
+		};
+	};
+
+	gsensor_intpin_default: gensordefaultcfg {
+	    pins_cmd_dat {
+			pins = <PINMUX_GPIO54__FUNC_GPIO54>;
+			slew-rate = <0>;
+			bias-pull-up = <00>;
+		};
+	};
+/*Lenovo-sw weimh1 add 2016-4-6 end:add for stepcounter*/
 };
+
+/*Lenovo-sw weimh1 add 2016-4-6 begin:add for stepcounter*/
+&gsensor {
+	pinctrl-names = "pin_default", "pin_cfg";
+	pinctrl-0 = <&gsensor_intpin_default>;
+	pinctrl-1 = <&gsensor_intpin_cfg>;
+	status = "okay";
+};
+/*Lenovo-sw weimh1 add 2016-4-6 end*/
 
 &alsps {
 	pinctrl-names = "pin_default", "pin_cfg";

@@ -47,8 +47,14 @@ obj-$(CONFIG_CUSTOM_KERNEL_GYROSCOPE) += gyroscope/
 obj-$(CONFIG_CUSTOM_KERNEL_MAGNETOMETER) += magnetometer/
 obj-$(CONFIG_CUSTOM_KERNEL_BAROMETER) += barometer/
 obj-$(CONFIG_CUSTOM_KERNEL_HUMIDITY) += humidity/
-obj-$(CONFIG_CUSTOM_KERNEL_STEP_COUNTER)	+= step_counter/
-obj-$(CONFIG_CUSTOM_KERNEL_SIGNIFICANT_MOTION_SENSOR)	+= step_counter/
+#Lenovo-sw weimh1 mod 2016-4-6 begin:CONFIG_CUSTOM_KERNEL_STEP_COUNTER is not y or n
+ifneq ($(CONFIG_CUSTOM_KERNEL_STEP_COUNTER),"")
+obj-y	+= step_counter/
+endif
+ifneq ($(CONFIG_CUSTOM_KERNEL_SIGNIFICANT_MOTION_SENSOR),"")
+obj-y	+= step_counter/
+endif
+#Lenovo-sw weimh1 mod 2016-4-6 end
 obj-$(CONFIG_CUSTOM_KERNEL_ACTIVITY_SENSOR)	+= activity_sensor/
 obj-$(CONFIG_CUSTOM_KERNEL_PICK_UP_SENSOR)	+= pick_up_sensor/
 obj-$(CONFIG_CUSTOM_KERNEL_SHAKE_SENSOR)	+= shake_sensor/

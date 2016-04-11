@@ -81,7 +81,7 @@
 
 #define LSM6DS3_NEW_ARCH				//kk and L compatialbe
 #define LSM6DS3_M
-//#define LSM6DS3_STEP_COUNTER 			//it depends on the MACRO LSM6DS3_NEW_ARCH
+#define LSM6DS3_STEP_COUNTER 			//it depends on the MACRO LSM6DS3_NEW_ARCH
 //#define LSM6DS3_TILT_FUNC 				//dependency on LSM6DS3_STEP_COUNTER
 #define LSM6DS3_SIGNIFICANT_MOTION  	//dependency on LSM6DS3_STEP_COUNTER
 //#define LSM6DS3_FIFO_SUPPORT
@@ -117,7 +117,7 @@
 
 #endif
 /****************************************************************/
-#if(defined(LSM6DS3_TILT_FUNC) || defined(LSM6DS3_SIGNIFICANT_MOTION) || defined(LSM6DS3_STEP_COUNTER))
+#if (defined(LSM6DS3_TILT_FUNC) || defined(LSM6DS3_SIGNIFICANT_MOTION)  || defined(LSM6DS3_STEP_COUNTER))
 /*lenovo-sw caoyi1 modify for GPIO pin 20150325 begin*/
 #define GPIO_LSM6DS3_EINT_PIN GPIO_ACCEL_GYRO_INT1
 #define GPIO_LSM6DS3_EINT_PIN_M_EINT GPIO_ACCEL_GYRO_INT1_M_EINT
@@ -290,7 +290,7 @@ static bool pedo_enable_status = false;
 static bool tilt_enable_status = false;
 
 static bool sigm_enable_status = false;  /* add for significant motioon sensor -- by liaoxl.lenovo 5.12.2015 */
-//static bool stepd_enable_status = false; /* add for step detector sensor -- by liaoxl.lenovo 7.12.2015 */
+static bool stepd_enable_status = false; /* add for step detector sensor -- by liaoxl.lenovo 7.12.2015 */
 
 /*lenovo-sw caoyi1 add for Gsensor APK calibration 20150512 begin*/
 #ifdef LSM6DS3_CALIB_HAL
@@ -5024,7 +5024,6 @@ static int lsm6ds3_local_uninit(void)
     return 0;
 }
 
-#if 0
 static void lsm6ds3_eint_func(void)
 {
 	struct lsm6ds3_i2c_data *priv = obj_i2c_data;
@@ -5065,14 +5064,12 @@ static irqreturn_t lsm6ds3_eint2_handler(int irq, void *desc)
 	return IRQ_HANDLED;
 }
 #endif
-#endif
 /*lenovo-sw caoyi modify for eint API 20151021 end*/
 
 /*lenovo-sw caoyi modify for eint API 20151021 begin*/
 static int lsm6ds3_setup_eint(void)
 {
 /*Lenovo-sw weimh1 add 2016-3-30 begin:add for M*/
-#if 0
 #ifdef LSM6DS3_M
 //	struct lsm6ds3_i2c_data *priv = obj_i2c_data;
 	int ret;
@@ -5185,7 +5182,7 @@ static int lsm6ds3_setup_eint(void)
 		
 	#endif
 #endif
-#endif
+
 	return 0;
 }
 /*lenovo-sw caoyi modify for eint API 20151021 end*/
