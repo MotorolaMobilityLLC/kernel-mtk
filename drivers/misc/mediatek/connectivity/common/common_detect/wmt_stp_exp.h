@@ -50,8 +50,7 @@
 #ifdef MTK_WCN_WMT_STP_EXP_SYMBOL_ABSTRACT
 
 #if (WMT_IDC_SUPPORT)
-// lenovo-sw sunyue5 workaround decrease 3dB for LTE B40
-#define CFG_WMT_LTE_COEX_HANDLING 0
+#define CFG_WMT_LTE_COEX_HANDLING 1
 #define CFG_WMT_LTE_ENABLE_MSGID_MAPPING 0
 #else
 #define CFG_WMT_LTE_COEX_HANDLING 0
