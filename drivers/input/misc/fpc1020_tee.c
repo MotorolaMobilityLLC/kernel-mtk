@@ -34,17 +34,13 @@
 #include <linux/delay.h>
 #include <linux/gpio.h>
 #include <linux/interrupt.h>
-/*Begin, lenovo.sw niejl1 2016.02.26 added:fingerprint navigation function*/
 #include <linux/input.h>
-/*End, lenovo.sw niejl1 2016.02.26 added:fingerprint navigation function*/
 #include <linux/kernel.h>
 #include <linux/module.h>
 #include <linux/mutex.h>
 #include <linux/of.h>
 #include <linux/of_gpio.h>
-/*lenovo-sw caoyi1 modify begin*/
 #include <linux/of_irq.h>
-/*lenovo-sw caoyi1 modify end*/
 #include <linux/regulator/consumer.h>
 #include <linux/spi/spi.h>
 #include <linux/wakelock.h>
@@ -58,7 +54,6 @@
 #define FPC_TTW_HOLD_TIME 1000
 #define NUM_PARAMS_REG_ENABLE_SET 2
 
-/*Begin, lenovo.sw niejl1 2016.02.26 added:fingerprint navigation function*/
 #define FPC_IRQ_INPUT_DEV_NAME  "fpc1020_input"
  
 //#define FPC_IRQ_KEY_WAKEUP      KEY_F18 /* 188*/
@@ -69,27 +64,20 @@
 #define FPC_IRQ_KEY_UP          (0x231)
 #define FPC_IRQ_KEY_CLICK       (0x232)
 #define FPC_IRQ_KEY_HOLD        (0x233)
-/*End, lenovo.sw niejl1 2016.02.26 added:fingerprint navigation function*/
 struct fpc1020_data {
 	struct device *dev;
 	struct spi_device *spi;
-    /*Begin, lenovo.sw niejl1 2016.02.26 added:fingerprint navigation function*/
 	struct input_dev *input_dev;
-    /*End, lenovo.sw niejl1 2016.02.26 added:fingerprint navigation function*/
 
 	struct wake_lock ttw_wl;
 	int irq_gpio;
 	int rst_gpio;
 	struct mutex lock;
 	bool wakeup_enabled;
-/*lenovo-sw caoyi1 modify begin*/
 	struct device_node *irq_node;
 	int		irq;
-/*lenovo-sw caoyi1 modify end*/
 
-	/* lenovo-sw, chenzz3, using work queue to handle irq, begin */
 	struct work_struct irq_worker;
-	/* lenovo-sw, chenzz3, using work queue to handle irq, end */
 };
 
 static int hw_reset(struct  fpc1020_data *fpc1020)
@@ -124,7 +112,6 @@ static ssize_t hw_reset_set(struct device *dev,
 }
 static DEVICE_ATTR(hw_reset, S_IWUSR, NULL, hw_reset_set);
 
-/* lenovo-sw, chenzz3, TEEI-P2, begin */
 static ssize_t clk_enable_set(struct device *dev,struct device_attribute *attr, const char *buf, size_t count)
 {
     return count;
@@ -166,7 +153,6 @@ static ssize_t spi_prepare_set(struct device *dev,struct device_attribute *attr,
     return count;
 }
 static DEVICE_ATTR(spi_prepare, S_IWUSR|S_IWGRP, NULL, spi_prepare_set);
-/* lenovo-sw, chenzz3, TEEI-P2, end */
 
 /**
  * sysfs node for controlling whether the driver is allowed
@@ -220,7 +206,6 @@ static ssize_t irq_ack(struct device *device,
 
 static DEVICE_ATTR(irq, S_IRUSR | S_IWUSR, irq_get, irq_ack);
 
-/*Begin, lenovo.sw niejl1 2016.02.26 added:fingerprint navigation function*/
 int fpc_irq_navigation_event(struct  fpc1020_data *fpc1020, int val)
 {
     //pr_info("fpc_irq_navigation_event:%d \n", val);
@@ -282,9 +267,7 @@ static void fpc_input_dev_destroy(struct fpc1020_data *fpc1020) {
         fpc1020->input_dev = NULL;
     }
 }
-/*End, lenovo.sw niejl1 2016.02.26 added:fingerprint navigation function*/
 
-/* lenovo-sw, chenzz3, TEEI-P2, begin */
 static struct attribute *attributes[] = {
     &dev_attr_pinctl_set.attr,
     &dev_attr_spi_owner.attr,
@@ -296,14 +279,10 @@ static struct attribute *attributes[] = {
     &dev_attr_wakeup_enable.attr,
     &dev_attr_clk_enable.attr,
     &dev_attr_irq.attr,
-    /*Begin, lenovo.sw niejl1 2016.02.26 added:fingerprint navigation function*/
     &dev_attr_navigation_event.attr,
-    /*End, lenovo.sw niejl1 2016.02.26 added:fingerprint navigation function*/
     NULL
 };
-/* lenovo-sw, chenzz3, TEEI-P2, end */
 
-/* lenovo-sw, chenzz3, using work queue to handle irq, begin */
 static void irq_work_function(struct work_struct* work)
 {
 	struct fpc1020_data *fpc1020 = container_of(work, struct fpc1020_data, irq_worker);
@@ -319,7 +298,6 @@ static void irq_work_function(struct work_struct* work)
 
 	sysfs_notify(&fpc1020->dev->kobj, NULL, dev_attr_irq.attr.name);
 }
-/* lenovo-sw, chenzz3, using work queue to handle irq, end */
 
 static const struct attribute_group attribute_group = {
 	.attrs = attributes,
@@ -329,9 +307,7 @@ static irqreturn_t fpc1020_irq_handler(int irq, void *handle)
 {
 	struct fpc1020_data *fpc1020 = handle;
 
-	/* lenovo-sw, chenzz3, using work queue to handle irq, begin */
 	schedule_work(&fpc1020->irq_worker);
-	/* lenovo-sw, chenzz3, using work queue to handle irq, end */
 
 	return IRQ_HANDLED;
 }
@@ -365,9 +341,7 @@ static int fpc1020_probe(struct spi_device *spi)
 	struct device *dev = &spi->dev;
 	int rc = 0;
 	struct device_node *np = dev->of_node;
-/*lenovo-sw caoyi1 modify begin*/
 	u32 ints[2] = { 0, 0 };
-/*lenovo-sw caoyi1 modify end*/
 	int irqf = 0;
 	struct fpc1020_data *fpc1020 = devm_kzalloc(dev, sizeof(*fpc1020),
 			GFP_KERNEL);
@@ -382,9 +356,7 @@ static int fpc1020_probe(struct spi_device *spi)
 	dev_set_drvdata(dev, fpc1020);
 	fpc1020->spi = spi;
 
-	/* lenovo-sw, chenzz3, using work queue to handle irq, begin */
 	INIT_WORK(&fpc1020->irq_worker, irq_work_function);
-	/* lenovo-sw, chenzz3, using work queue to handle irq, end */
 
 	if (!np) {
 		dev_err(dev, "no of node found\n");
@@ -409,13 +381,10 @@ static int fpc1020_probe(struct spi_device *spi)
 		irqf |= IRQF_NO_SUSPEND;
 		device_init_wakeup(dev, 1);
 	}
-    /*Begin, lenovo.sw niejl1 2016.02.26 added:fingerprint navigation function*/
+
     fpc_input_dev_init(fpc1020);
-    /*End, lenovo.sw niejl1 2016.02.26 added:fingerprint navigation function*/
 	mutex_init(&fpc1020->lock);
-/*lenovo-sw caoyi1 modify begin*/
-	//np = of_find_matching_node(np, fpc1020_of_match);
-	np = of_find_compatible_node(NULL, NULL, "mediatek, FPC_INT-eint");
+
 	if (np) {
 		of_property_read_u32_array(np, "debounce", ints, ARRAY_SIZE(ints));
 		gpio_set_debounce(ints[0], ints[1]);
@@ -435,7 +404,7 @@ static int fpc1020_probe(struct spi_device *spi)
 		goto exit;
 	}
 	enable_irq_wake(fpc1020->irq);
-/*lenovo-sw caoyi1 modify end*/
+
 	wake_lock_init(&fpc1020->ttw_wl, WAKE_LOCK_SUSPEND, "fpc_ttw_wl");
 
 	rc = sysfs_create_group(&dev->kobj, &attribute_group);
@@ -449,9 +418,7 @@ static int fpc1020_probe(struct spi_device *spi)
 	}
 
 	dev_info(dev, "%s: ok\n", __func__);
-	/* lenovo-sw, chenzz3, TEEI-P1, begin */
 	hw_reset(fpc1020);
-	/* lenovo-sw, chenzz3, TEEI-P1, end */
 exit:
 	return rc;
 }
@@ -463,9 +430,7 @@ static int fpc1020_remove(struct spi_device *spi)
 	sysfs_remove_group(&spi->dev.kobj, &attribute_group);
 	mutex_destroy(&fpc1020->lock);
 	wake_lock_destroy(&fpc1020->ttw_wl);
-    /*Begin, lenovo.sw niejl1 2016.02.26 added:fingerprint navigation function*/
     fpc_input_dev_destroy(fpc1020);
-    /*End, lenovo.sw niejl1 2016.02.26 added:fingerprint navigation function*/
 	dev_info(&spi->dev, "%s\n", __func__);
 	return 0;
 }

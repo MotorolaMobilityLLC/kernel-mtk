@@ -1532,6 +1532,12 @@ static int __init mt_spi_probe(struct platform_device *pdev)
 	}
 #endif
 
+	/* lenovo-sw, chenzz3, enable configuration via dts, begin */
+	if (pdev->dev.of_node) {
+		master->dev.of_node = pdev->dev.of_node;
+	}
+	/* lenovo-sw, chenzz3, enable configuration via dts, end */
+
 	/* hardware can only connect 1 slave.if you want to multiple, using gpio CS */
 	master->num_chipselect = 2;
 
