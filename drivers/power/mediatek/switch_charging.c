@@ -1040,7 +1040,11 @@ static unsigned int charging_full_check(void)
 	}
 }
 
-
+extern int g_thermal_limit_current_level;
+void thermal_pchr_turn_on_charging(void)
+{
+        pchr_turn_on_charging();
+}
 static void pchr_turn_on_charging(void)
 {
 #if !defined(CONFIG_MTK_JEITA_STANDARD_SUPPORT)
@@ -1114,6 +1118,23 @@ static void pchr_turn_on_charging(void)
 			battery_log(BAT_LOG_CRTI,
 				    "[BATTERY] charging current is set 0mA, turn off charging !\r\n");
 		} else {
+
+/*Lenovo-sw: AIOROW-4398 thermal limit current*/
+        switch(g_thermal_limit_current_level){
+        case 0:
+                break;
+        case 1:
+        case 2:
+        case 3:
+                if(g_temp_CC_value > CHARGE_CURRENT_700_00_MA)
+                        g_temp_CC_value = CHARGE_CURRENT_700_00_MA ;
+                break;
+        default:
+                break;
+        }
+        printk(KERN_ERR "thermal limit level:%d, charger current:%d,input current:%d \n",g_thermal_limit_current_level,g_temp_CC_value,g_temp_input_CC_value);
+/*Lenovo-sw: AIOROW-4398 thermal limit current*/
+
 			battery_charging_control(CHARGING_CMD_SET_INPUT_CURRENT,
 						 &g_temp_input_CC_value);
 			battery_charging_control(CHARGING_CMD_SET_CURRENT, &g_temp_CC_value);

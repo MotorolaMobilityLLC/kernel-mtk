@@ -722,6 +722,38 @@ static struct battery_data battery_main = {
 #endif
 };
 
+/*Lenovo-sw: AIOROW-4398 thermal limit current*/
+//level:0 -normal, 1,2,3 current max to low three level
+int g_thermal_limit_current_level = 0;
+extern void thermal_pchr_turn_on_charging(void);
+static ssize_t show_thermal_limit_current(struct device *dev, struct device_attribute *attr,
+                                        char *buf)
+{
+        battery_xlog_printk(BAT_LOG_CRTI, "[EM] show_thermal_limit_current : %d\n",
+                            g_thermal_limit_current_level);
+        return sprintf(buf, "%d\n", g_thermal_limit_current_level);
+}
+
+static ssize_t store_thermal_limit_current(struct device *dev, struct device_attribute *attr,
+                                         const char *buf, size_t size)
+{
+        int data = 0;
+        ssize_t ret = -1;
+        ret = kstrtoint(buf,10,&data);
+
+        if(ret)
+                return ret;
+
+        g_thermal_limit_current_level = data;
+
+        battery_xlog_printk(BAT_LOG_CRTI, "[EM] store_thermal_limit_current :%d\n",g_thermal_limit_current_level);
+
+        thermal_pchr_turn_on_charging();
+        return size;
+}
+
+static DEVICE_ATTR(thermal_limit_current, 0664, show_thermal_limit_current, store_thermal_limit_current);
+
 
 #if !defined(CONFIG_POWER_EXT)
 /* ///////////////////////////////////////////////////////////////////////////////////////// */
@@ -4289,6 +4321,8 @@ static int battery_probe(struct platform_device *dev)
 	/* For EM */
 	{
 		int ret_device_file = 0;
+		
+		ret_device_file = device_create_file(&(dev->dev), &dev_attr_thermal_limit_current);
 
 		ret_device_file = device_create_file(&(dev->dev), &dev_attr_ADC_Charger_Voltage);
 
