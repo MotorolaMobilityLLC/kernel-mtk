@@ -1,3 +1,16 @@
+/*
+ * Copyright (C) 2015 MediaTek Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ */
+
 #include <linux/version.h>
 #include <asm/io.h>
 #include <linux/mm.h>
@@ -29,6 +42,7 @@ static struct dentry* gpsDvfsCurFreqEntry = NULL;
 static struct dentry* gpsDvfsPreFreqEntry = NULL;
 static struct dentry* gpsDvfsGpuUtilizationEntry = NULL;
 static struct dentry* gpsFpsUpperBoundEntry = NULL;
+static struct dentry* gpsIntegrationReportReadEntry = NULL;
 
 int tokenizer(char* pcSrc, int i32len, int* pi32IndexArray, int i32NumToken)
 {
@@ -287,7 +301,7 @@ static ssize_t ged_vsync_offset_enable_write_entry(const char __user *pszBuffer,
                 pcCMD = acBuffer+aint32Indx[0];
                 
                 pcValue = acBuffer+aint32Indx[1];
-#ifdef ENABLE_COMMON_DVFS                
+ 
                 if(strcmp(pcCMD,"touch_down")==0)
                 {
                     if ( (*pcValue)=='1'|| (*pcValue) =='0')
@@ -308,9 +322,7 @@ static ssize_t ged_vsync_offset_enable_write_entry(const char __user *pszBuffer,
                             ged_dvfs_vsync_offset_event_switch(GED_DVFS_VSYNC_OFFSET_WFD_EVENT , true);
                     }
                 }
-                else 
-#endif                    
-                    if(strcmp(pcCMD,"enable_debug")==0)
+				else if(strcmp(pcCMD,"enable_debug")==0)
                 {
                     if ( (*pcValue) =='1'|| (*pcValue) =='0'||(*pcValue) =='2')
                     {
@@ -338,6 +350,36 @@ static ssize_t ged_vsync_offset_enable_write_entry(const char __user *pszBuffer,
                                 ged_dvfs_vsync_offset_event_switch(GED_DVFS_VSYNC_OFFSET_GAS_EVENT, true);
                     }
 		}
+					else if(strcmp(pcCMD, "enable_VR") == 0)
+					{
+						if ( (*pcValue) =='1'|| (*pcValue) =='0')
+						{
+							if( (*pcValue) -'0'==0)
+								ged_dvfs_vsync_offset_event_switch(GED_DVFS_VSYNC_OFFSET_VR_EVENT, false);
+							else
+								ged_dvfs_vsync_offset_event_switch(GED_DVFS_VSYNC_OFFSET_VR_EVENT, true);
+						}
+					}
+					else if (strcmp(pcCMD, "mhl4k-vid") == 0)
+					{
+						if ((*pcValue) == '1'|| (*pcValue) == '0')
+						{
+							if ((*pcValue) -'0' == 0)
+								ged_dvfs_vsync_offset_event_switch(GED_DVFS_VSYNC_OFFSET_MHL4K_VID_EVENT, false);
+							else
+								ged_dvfs_vsync_offset_event_switch(GED_DVFS_VSYNC_OFFSET_MHL4K_VID_EVENT, true);
+						}
+					}
+					else if (strcmp(pcCMD, "low-power-mode") == 0)
+                                        {
+                                                if ((*pcValue) == '1'|| (*pcValue) == '0')
+                                                {
+                                                        if ((*pcValue) -'0' == 0)
+                                                                ged_dvfs_vsync_offset_event_switch(GED_DVFS_VSYNC_OFFSET_LOW_POWER_MODE_EVENT, false);
+                                                        else
+                                                                ged_dvfs_vsync_offset_event_switch(GED_DVFS_VSYNC_OFFSET_LOW_POWER_MODE_EVENT, true);
+                                                }
+					}
                 else
                 {
                     GED_LOGE("unknow command:%s %c",pcCMD,*pcValue);
@@ -396,7 +438,10 @@ static int ged_vsync_offset_enable_seq_show(struct seq_file *psSeqFile, void *pv
             seq_printf(psSeqFile, "WFD: %d\n",  g_ui32EventStatus&GED_EVENT_WFD?1:0 );
             seq_printf(psSeqFile, "MHL: %d\n",  g_ui32EventStatus&GED_EVENT_MHL?1:0 );
             seq_printf(psSeqFile, "GAS: %d\n",  g_ui32EventStatus&GED_EVENT_GAS?1:0 );
+			seq_printf(psSeqFile, "VR: %d\n",  g_ui32EventStatus&GED_EVENT_VR?1:0 );
             seq_printf(psSeqFile, "Thermal: %d\n", g_ui32EventStatus&GED_EVENT_THERMAL?1:0 );
+			seq_printf(psSeqFile, "Low power mode: %d\n", g_ui32EventStatus & GED_EVENT_LOW_POWER_MODE ? 1 : 0);
+			seq_printf(psSeqFile, "MHL4K Video: %d\n", g_ui32EventStatus & GED_EVENT_MHL4K_VID ? 1 : 0);
         }
     }
 
@@ -684,7 +729,13 @@ static int ged_dvfs_gpu_util_seq_show(struct seq_file *psSeqFile, void *pvData)
 {
     if (pvData != NULL)
     {
-        seq_printf(psSeqFile, "%u %u %u\n",ged_dvfs_get_gpu_loading(),ged_dvfs_get_gpu_blocking(),ged_dvfs_get_gpu_idle());      
+		unsigned int loading;
+		unsigned int block;
+		unsigned int idle;
+		mtk_get_gpu_loading(&loading);
+		mtk_get_gpu_block(&block);
+		mtk_get_gpu_idle(&idle);
+		seq_printf(psSeqFile, "%u %u %u\n",loading,block,idle);      
     }
 
     return 0;
@@ -755,6 +806,53 @@ static ssize_t ged_fps_ub_write(const char __user *pszBuffer, size_t uiCount,
 }
 
 //-----------------------------------------------------------------------------
+
+static void* ged_dvfs_integration_report_seq_start(struct seq_file *psSeqFile, loff_t *puiPosition)
+{
+	if (0 == *puiPosition)
+	{
+		return SEQ_START_TOKEN;
+	}
+
+	return NULL;
+}
+//-----------------------------------------------------------------------------
+static void ged_dvfs_integration_report_seq_stop(struct seq_file *psSeqFile, void *pvData)
+{
+
+}
+//-----------------------------------------------------------------------------
+static void* ged_dvfs_integration_report_seq_next(struct seq_file *psSeqFile, void *pvData, loff_t *puiPosition)
+{
+	return NULL;
+}
+//-----------------------------------------------------------------------------
+
+extern void (*ged_dvfs_cal_gpu_utilization_fp)(unsigned int* pui32Loading , unsigned int* pui32Block,unsigned int* pui32Idle) ;
+extern void (*ged_dvfs_gpu_freq_commit_fp)(unsigned long ui32NewFreqID, GED_DVFS_COMMIT_TYPE eCommitType, int* pbCommited) ;
+extern bool ged_gpu_power_on_notified;
+extern bool ged_gpu_power_off_notified;
+static int ged_dvfs_integration_report_seq_show(struct seq_file *psSeqFile, void *pvData)
+{
+	if (pvData != NULL)
+	{
+		seq_printf(psSeqFile, "GPU Utilization fp: %p\n", ged_dvfs_cal_gpu_utilization_fp);
+		seq_printf(psSeqFile, "GPU DVFS idx commit fp: %p\n", ged_dvfs_gpu_freq_commit_fp);
+		seq_printf(psSeqFile, "GPU clock notify on: %d\n", ged_gpu_power_on_notified);
+		seq_printf(psSeqFile, "GPU clock notify off: %d\n", ged_gpu_power_off_notified);
+	}
+	return 0;
+}
+//-----------------------------------------------------------------------------
+static struct seq_operations gsIntegrationReportReadOps = 
+{
+	.start = ged_dvfs_integration_report_seq_start,
+	.stop = ged_dvfs_integration_report_seq_stop,
+	.next = ged_dvfs_integration_report_seq_next,
+	.show = ged_dvfs_integration_report_seq_show,
+};
+//-----------------------------------------------------------------------------
+
 GED_ERROR ged_hal_init(void)
 {
     GED_ERROR err = GED_OK;
@@ -894,6 +992,20 @@ GED_ERROR ged_hal_init(void)
         goto ERROR;
     }
     
+	/* Report Integration Status */
+	err = ged_debugFS_create_entry(
+			"integration_report",
+			gpsHALDir,
+			&gsIntegrationReportReadOps,
+			NULL,
+			NULL,
+			&gpsIntegrationReportReadEntry);
+
+	if (unlikely(err != GED_OK))
+	{
+		GED_LOGE("ged: failed to create integration_report entry!\n");
+		goto ERROR;
+	}
 
     return err;
 
@@ -906,6 +1018,7 @@ ERROR:
 //-----------------------------------------------------------------------------
 void ged_hal_exit(void)
 {
+	ged_debugFS_remove_entry(gpsIntegrationReportReadEntry);
     ged_debugFS_remove_entry(gpsFpsUpperBoundEntry);
     ged_debugFS_remove_entry(gpsVsyncOffsetLevelEntry);
     ged_debugFS_remove_entry(gpsCustomUpboundGPUFreqEntry);

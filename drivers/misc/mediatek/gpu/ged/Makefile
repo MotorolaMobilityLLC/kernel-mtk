@@ -1,3 +1,16 @@
+#
+# Copyright (C) 2015 MediaTek Inc.
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License version 2 as
+# published by the Free Software Foundation.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU General Public License for more details.
+#
+
 GED_TOP = $(srctree)/drivers/misc/mediatek/gpu/ged
 MTK_TOP = $(srctree)/drivers/misc/mediatek/
 
@@ -21,9 +34,10 @@ $(info $$CONFIG_MTK_GPU_COMMON_DVFS_SUPPORT is [${CONFIG_MTK_GPU_COMMON_DVFS_SUP
 ifeq ($(CONFIG_MTK_GPU_COMMON_DVFS_SUPPORT),y)
 ccflags-y += -DGED_DVFS_ENABLE \
              -DENABLE_COMMON_DVFS \
-	     -DENABLE_TIMER_BACKUP \
-             -DGED_DVFS_DEBUG_BUF
+	     -DENABLE_TIMER_BACKUP 
 endif
+
+ccflags-y += -DGED_DVFS_DEBUG_BUF
 
 ccflags-y += \
 	-include $(GED_TOP)/include/config_kernel_$(VER).h

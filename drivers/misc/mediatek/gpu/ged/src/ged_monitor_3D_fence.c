@@ -1,3 +1,16 @@
+/*
+ * Copyright (C) 2015 MediaTek Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ */
+
 #include <linux/version.h>
 #include <linux/workqueue.h>
 #include <linux/sched.h>
@@ -58,7 +71,9 @@ static void ged_sync_cb(struct sync_fence *fence, struct sync_fence_waiter *wait
     do_div(t,1000);
     
     ged_monitor_3D_fence_notify();
+#ifdef GED_DVFS_ENABLE	
     ged_dvfs_cal_gpu_utilization_force();
+#endif	
 	psMonitor = GED_CONTAINER_OF(waiter, GED_MONITOR_3D_FENCE, sSyncWaiter);
     
     ged_log_buf_print(ghLogBuf_DVFS, "[-] ged_monitor_3D_fence_done (ts=%llu) %p", t, psMonitor->psSyncFence);
@@ -74,8 +89,9 @@ static void ged_monitor_3D_fence_work_cb(struct work_struct *psWork)
 #ifdef GED_DEBUG_MONITOR_3D_FENCE
     ged_log_buf_print(ghLogBuf_GED, "ged_monitor_3D_fence_work_cb");
 #endif
-
-    if (atomic_sub_return(1, &g_i32Count) < 1)
+	int i32Count = atomic_sub_return(1, &g_i32Count);
+	mtk_report_3D_fence_count(i32Count);
+	if ( i32Count < 1)
     {
 
         {
@@ -104,7 +120,7 @@ static void ged_monitor_3D_fence_work_cb(struct work_struct *psWork)
 
     if (ged_monitor_3D_fence_debug > 0)
     {
-        GED_LOGI("[-]3D fences count = %d\n", atomic_read(&g_i32Count));
+		GED_LOGI("[-]3D fences count = %d\n", i32Count);
     }
 
 	psMonitor = GED_CONTAINER_OF(psWork, GED_MONITOR_3D_FENCE, sWork);
@@ -172,8 +188,9 @@ GED_ERROR ged_monitor_3D_fence_add(int fence_fd)
     }
     else if (0 == err)
     {
-        int iCount = atomic_add_return (1, &g_i32Count);
-        if (iCount > 1)
+		int i32Count = atomic_add_return (1, &g_i32Count);
+		mtk_report_3D_fence_count(i32Count);
+		if (i32Count > 1)
         {
 
             {
@@ -208,10 +225,10 @@ GED_ERROR ged_monitor_3D_fence_add(int fence_fd)
 
     if (ged_monitor_3D_fence_debug > 0)
     {
-        GED_LOGI("[+]3D fences count = %d\n", atomic_read(&g_i32Count));
+		GED_LOGI("[+]3D fences count = %d\n", atomic_read(&g_i32Count));
     }
 #ifdef GED_DEBUG_MONITOR_3D_FENCE
-    ged_log_buf_print(ghLogBuf_GED, "[-]ged_monitor_3D_fence_add, count = %d", atomic_read(&g_i32Count));
+	ged_log_buf_print(ghLogBuf_GED, "[-]ged_monitor_3D_fence_add, count = %d", atomic_read(&g_i32Count));
 #endif
 
     return GED_OK;
@@ -236,6 +253,10 @@ void ged_monitor_3D_fence_notify(void)
     g_ul3DFenceDoneTime = (unsigned long)t;
 }
 
+int ged_monitor_3D_fence_get_count(void)
+{
+	return atomic_read(&g_i32Count);
+}
 
 module_param(ged_monitor_3D_fence_debug, uint, 0644);
 module_param(ged_monitor_3D_fence_disable, uint, 0644);

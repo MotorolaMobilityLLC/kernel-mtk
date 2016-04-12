@@ -1,3 +1,16 @@
+/*
+ * Copyright (C) 2015 MediaTek Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ */
+
 #ifndef __GED_LOG_H__
 #define __GED_LOG_H__
 
@@ -56,5 +69,11 @@ GED_ERROR ged_log_system_init(void);
 void ged_log_system_exit(void);
 
 int ged_log_buf_write(GED_LOG_BUF_HANDLE hLogBuf, const char __user *pszBuffer, int i32Count);
+
+void ged_log_trace_begin(char *name);
+
+void ged_log_trace_end(void);
+
+void ged_log_trace_counter(char *name, int count);
 
 #endif
