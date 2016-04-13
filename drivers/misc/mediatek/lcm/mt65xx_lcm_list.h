@@ -252,6 +252,7 @@ extern LCM_DRIVER s6e3ha3_wqhd_2k_cmd_lcm_drv;
 //lenovo_sw wuwl10 20150906 add for lcm
 extern LCM_DRIVER nt35596_fhd_dsi_vdo_tm_lcm_drv;
 extern LCM_DRIVER otm1901_fhd_dsi_vdo_boe_lcm_drv;
+extern LCM_DRIVER ft8716_fhd_dsi_vdo_tm_lcm_drv;
 
 #ifdef BUILD_LK
 extern void mdelay(unsigned long msec);
