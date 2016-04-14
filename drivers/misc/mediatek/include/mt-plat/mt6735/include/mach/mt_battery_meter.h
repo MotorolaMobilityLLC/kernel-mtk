@@ -289,7 +289,7 @@
 #define FG_BAT_INT
 #define IS_BATTERY_REMOVE_BY_PMIC
 
-
+#define DISABLE_RFG_EXIST_CHECK//add by caozhg
 
 #elif defined(CONFIG_ARCH_MT6753)
 /* ============================================================
