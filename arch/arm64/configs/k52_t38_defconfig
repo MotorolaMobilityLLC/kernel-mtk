@@ -223,7 +223,9 @@ CONFIG_MTK_GPU_COMMON_DVFS_SUPPORT=y
 CONFIG_MTK_MMPROFILE_SUPPORT=y
 CONFIG_MMPROFILE=y
 CONFIG_MTK_LCM=y
-CONFIG_CUSTOM_KERNEL_LCM="nt35695_fhd_dsi_vdo_truly_nt50358"
+# lenovo-sw wuwl10 20160322 modify begin
+CONFIG_CUSTOM_KERNEL_LCM="nt35596_fhd_dsi_vdo_tm otm1901_fhd_dsi_vdo_boe"
+# lenovo-sw wuwl10 20160322 modify end
 CONFIG_MTK_FB=y
 CONFIG_MTK_VIDEOX=y
 CONFIG_MTK_LCM_PHYSICAL_ROTATION="0"
@@ -237,7 +239,9 @@ CONFIG_MTK_PWM=y
 CONFIG_CUSTOM_KERNEL_ACCELEROMETER=y
 CONFIG_MTK_MPU6515A=y
 CONFIG_CUSTOM_KERNEL_ALSPS=y
-CONFIG_MTK_CM36686_NEW=y
+#Begin, lenovo-sw lumy1
+CONFIG_MTK_EPL8802=y
+#End, lenovo-sw lumy1
 CONFIG_CUSTOM_KERNEL_GYROSCOPE=y
 CONFIG_MTK_MPU6515G=y
 CONFIG_CUSTOM_KERNEL_MAGNETOMETER=y
@@ -524,9 +528,18 @@ CONFIG_CRYPTO_SHA2_ARM64_CE=y
 CONFIG_CRYPTO_AES_ARM64_CE=y
 CONFIG_CRYPTO_AES_ARM64_CE_BLK=y
 CONFIG_LIBCRC32C=y
+###################### Lenovo BSP Feature begin #########################
+
 #Begin, Lenovo, zhucc2, 2016-03-28, ARIESM-20
 CONFIG_EXFAT_FS=y
 #End, Lenovo, zhucc2, 2016-03-28, ARIESM-20
+
+#### LCD  ####
+#lenovo wuwl10 20151215 modify for lcd begin
+CONFIG_LENOVO_LED_CURRENT_LIMMIT=y
+CONFIG_LENOVO_CUSTOM_LCM_FEATURE=y
+CONFIG_BACKLIGHTIC_KTD3116_CURRENT=y
+#lenovo wuwl10 20151215 modify for lcd end
 
 #Lenovo-sw weimh1 add 2016-3-30 begin:use independent dir for K52
 CONFIG_MTK_MPU6515A=n
@@ -551,3 +564,4 @@ CONFIG_MTK_BQ24296_SUPPORT=y
 CONFIG_LENOVO_RTC_SAVE_TIMEZONE_SUPPORT=y
 #End, lenovo-sw mahj2 add for rtc save timezone at 20141204
 ##########################################
+###################### Lenovo BSP Feature end #########################
