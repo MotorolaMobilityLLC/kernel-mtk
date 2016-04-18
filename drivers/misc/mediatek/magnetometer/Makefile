@@ -16,9 +16,10 @@ obj-$(CONFIG_MTK_AKM8975_AUTO)	+=  akm8975_auto/
 obj-$(CONFIG_MTK_AKM09911)   +=  akm09911/
 obj-$(CONFIG_MTK_AKM09912)   +=  akm09912/
 obj-$(CONFIG_MTK_AKM09911_NEW)   +=  akm09911-new/
-# lenovo-sw caoyi1 add for akm09916 begin
+# lenovo-sw caoyi1 add  begin
 obj-$(CONFIG_MTK_AKM09916)   +=  akm09916/
-# lenovo-sw caoyi1 add for akm09916 end
+obj-$(CONFIG_MTK_MMC3524X)   +=  mmc3530/
+# lenovo-sw caoyi1 add  end
 obj-$(CONFIG_MTK_AMI304)   +=  ami304/
 obj-$(CONFIG_MTK_AMI304_AUTO)   +=  ami304_auto/
 obj-$(CONFIG_MTK_BMM050)	+=  bmm050/
