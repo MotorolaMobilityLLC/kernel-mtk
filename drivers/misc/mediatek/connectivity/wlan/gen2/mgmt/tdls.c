@@ -4801,7 +4801,7 @@ TDLS_STATUS TdlsexPeerUpdate(ADAPTER_T *prAdapter, VOID *pvSetBuffer, UINT_32 u4
 /*	prStaRec->u2HtExtendedCap */
 	prStaRec->u4TxBeamformingCap = 0;	/* no use */
 	prStaRec->ucAselCap = 0;	/* no use */
-	prStaRec->ucRCPI = 0;
+	prStaRec->ucRCPI = 120;
 	prStaRec->ucBmpTriggerAC = prCmd->UapsdBitmap;
 	prStaRec->ucBmpDeliveryAC = prCmd->UapsdBitmap;
 	prStaRec->ucUapsdSp = prCmd->UapsdMaxSp;

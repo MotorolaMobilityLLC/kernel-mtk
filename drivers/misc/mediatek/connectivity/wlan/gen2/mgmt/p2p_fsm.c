@@ -1440,6 +1440,9 @@ VOID p2pFsmRunEventChannelAbort(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHd
 				(prP2pFsmInfo->eCurrentState == P2P_STATE_CHNL_ON_HAND)));
 
 			p2pFsmStateTransition(prAdapter, prP2pFsmInfo, P2P_STATE_IDLE);
+		} else {
+			/* just avoid supplicant waiting too long */
+			complete(&prAdapter->prGlueInfo->rP2pReq);
 		}
 
 	} while (FALSE);
@@ -2275,7 +2278,10 @@ p2pFsmRunEventMgmtFrameTxDone(IN P_ADAPTER_T prAdapter,
 
 			prMgmtTxReqInfo->prMgmtTxMsdu = NULL;
 		}
-
+		/*
+		 * wake up supplicant if it is waiting for tx done
+		 */
+		complete(&prAdapter->prGlueInfo->rP2pReq);
 	} while (FALSE);
 
 	return WLAN_STATUS_SUCCESS;

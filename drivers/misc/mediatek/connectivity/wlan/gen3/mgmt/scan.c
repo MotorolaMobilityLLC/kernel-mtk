@@ -785,13 +785,16 @@ VOID scnInit(IN P_ADAPTER_T prAdapter)
 {
 	P_SCAN_INFO_T prScanInfo;
 	P_BSS_DESC_T prBSSDesc;
+	P_ROAM_BSS_DESC_T prRoamBSSDesc;
 	PUINT_8 pucBSSBuff;
+	PUINT_8 pucRoamBSSBuff;
 	UINT_32 i;
 
 	ASSERT(prAdapter);
 
 	prScanInfo = &(prAdapter->rWifiVar.rScanInfo);
 	pucBSSBuff = &prScanInfo->aucScanBuffer[0];
+	pucRoamBSSBuff = &prScanInfo->aucScanRoamBuffer[0];
 
 	DBGLOG(SCN, INFO, "->scnInit()\n");
 
@@ -804,9 +807,12 @@ VOID scnInit(IN P_ADAPTER_T prAdapter)
 
 	/* 4 <2> Reset link list of BSS_DESC_T */
 	kalMemZero((PVOID) pucBSSBuff, SCN_MAX_BUFFER_SIZE);
+	kalMemZero((PVOID) pucRoamBSSBuff, SCN_ROAM_MAX_BUFFER_SIZE);
 
 	LINK_INITIALIZE(&prScanInfo->rFreeBSSDescList);
 	LINK_INITIALIZE(&prScanInfo->rBSSDescList);
+	LINK_INITIALIZE(&prScanInfo->rRoamFreeBSSDescList);
+	LINK_INITIALIZE(&prScanInfo->rRoamBSSDescList);
 
 	for (i = 0; i < CFG_MAX_NUM_BSS_LIST; i++) {
 
@@ -819,6 +825,14 @@ VOID scnInit(IN P_ADAPTER_T prAdapter)
 	/* Check if the memory allocation consist with this initialization function */
 	ASSERT(((ULONG) pucBSSBuff - (ULONG)&prScanInfo->aucScanBuffer[0]) == SCN_MAX_BUFFER_SIZE);
 
+	for (i = 0; i < CFG_MAX_NUM_ROAM_BSS_LIST; i++) {
+		prRoamBSSDesc = (P_ROAM_BSS_DESC_T) pucRoamBSSBuff;
+
+		LINK_INSERT_TAIL(&prScanInfo->rRoamFreeBSSDescList, &prRoamBSSDesc->rLinkEntry);
+
+		pucRoamBSSBuff += ALIGN_4(sizeof(ROAM_BSS_DESC_T));
+	}
+	ASSERT(((ULONG) pucRoamBSSBuff - (ULONG)&prScanInfo->aucScanRoamBuffer[0]) == SCN_ROAM_MAX_BUFFER_SIZE);
 	/* reset freest channel information */
 	prScanInfo->fgIsSparseChannelValid = FALSE;
 
@@ -905,6 +919,8 @@ VOID scnUninit(IN P_ADAPTER_T prAdapter)
 	/* 4 <2> Reset link list of BSS_DESC_T */
 	LINK_INITIALIZE(&prScanInfo->rFreeBSSDescList);
 	LINK_INITIALIZE(&prScanInfo->rBSSDescList);
+	LINK_INITIALIZE(&prScanInfo->rRoamFreeBSSDescList);
+	LINK_INITIALIZE(&prScanInfo->rRoamBSSDescList);
 
 }				/* end of scnUninit() */
 
@@ -1060,6 +1076,139 @@ scanSearchExistingBssDesc(IN P_ADAPTER_T prAdapter,
 	return scanSearchExistingBssDescWithSsid(prAdapter, eBSSType, aucBSSID, aucSrcAddr, FALSE, NULL);
 }
 
+VOID scanRemoveRoamBssDescsByTime(IN P_ADAPTER_T prAdapter, IN UINT_32 u4RemoveTime)
+{
+	P_SCAN_INFO_T prScanInfo;
+	P_LINK_T prRoamBSSDescList;
+	P_LINK_T prRoamFreeBSSDescList;
+	P_ROAM_BSS_DESC_T prRoamBssDesc;
+	P_ROAM_BSS_DESC_T prRoamBSSDescNext;
+	OS_SYSTIME rCurrentTime;
+
+	ASSERT(prAdapter);
+
+	prScanInfo = &(prAdapter->rWifiVar.rScanInfo);
+	prRoamBSSDescList = &prScanInfo->rRoamBSSDescList;
+	prRoamFreeBSSDescList = &prScanInfo->rRoamFreeBSSDescList;
+
+	GET_CURRENT_SYSTIME(&rCurrentTime);
+
+	LINK_FOR_EACH_ENTRY_SAFE(prRoamBssDesc, prRoamBSSDescNext, prRoamBSSDescList, rLinkEntry,
+				 ROAM_BSS_DESC_T) {
+
+		if (CHECK_FOR_TIMEOUT(rCurrentTime, prRoamBssDesc->rUpdateTime,
+				      SEC_TO_SYSTIME(u4RemoveTime))) {
+
+			LINK_REMOVE_KNOWN_ENTRY(prRoamBSSDescList, prRoamBssDesc);
+			LINK_INSERT_TAIL(prRoamFreeBSSDescList, &prRoamBssDesc->rLinkEntry);
+		}
+	}
+}
+
+P_ROAM_BSS_DESC_T
+scanSearchRoamBssDescBySsid(IN P_ADAPTER_T prAdapter, IN P_BSS_DESC_T prBssDesc)
+{
+	P_SCAN_INFO_T prScanInfo;
+	P_LINK_T prRoamBSSDescList;
+	P_ROAM_BSS_DESC_T prRoamBssDesc;
+
+	ASSERT(prAdapter);
+
+	prScanInfo = &(prAdapter->rWifiVar.rScanInfo);
+
+	prRoamBSSDescList = &prScanInfo->rRoamBSSDescList;
+
+	/* Search BSS Desc from current SCAN result list. */
+	LINK_FOR_EACH_ENTRY(prRoamBssDesc, prRoamBSSDescList, rLinkEntry, ROAM_BSS_DESC_T) {
+		if (EQUAL_SSID(prRoamBssDesc->aucSSID, prRoamBssDesc->ucSSIDLen,
+				       prBssDesc->aucSSID, prBssDesc->ucSSIDLen)) {
+				return prRoamBssDesc;
+		}
+	}
+
+	return NULL;
+
+}
+
+P_ROAM_BSS_DESC_T scanAllocateRoamBssDesc(IN P_ADAPTER_T prAdapter)
+{
+	P_SCAN_INFO_T prScanInfo;
+	P_LINK_T prRoamFreeBSSDescList;
+	P_ROAM_BSS_DESC_T prRoamBssDesc = NULL;
+
+	ASSERT(prAdapter);
+	prScanInfo = &(prAdapter->rWifiVar.rScanInfo);
+
+	prRoamFreeBSSDescList = &prScanInfo->rRoamFreeBSSDescList;
+
+	LINK_REMOVE_HEAD(prRoamFreeBSSDescList, prRoamBssDesc, P_ROAM_BSS_DESC_T);
+
+	if (prRoamBssDesc) {
+		P_LINK_T prRoamBSSDescList;
+
+		kalMemZero(prRoamBssDesc, sizeof(ROAM_BSS_DESC_T));
+
+		prRoamBSSDescList = &prScanInfo->rRoamBSSDescList;
+
+		LINK_INSERT_HEAD(prRoamBSSDescList, &prRoamBssDesc->rLinkEntry);
+	}
+
+	return prRoamBssDesc;
+}
+
+VOID scanAddToRoamBssDesc(IN P_ADAPTER_T prAdapter, IN P_BSS_DESC_T prBssDesc)
+{
+	P_ROAM_BSS_DESC_T prRoamBssDesc;
+
+	prRoamBssDesc = scanSearchRoamBssDescBySsid(prAdapter, prBssDesc);
+
+	if (prRoamBssDesc == NULL) {
+		UINT_32 u4RemoveTime = REMOVE_TIMEOUT_TWO_DAY;
+
+		do {
+			prRoamBssDesc = scanAllocateRoamBssDesc(prAdapter);
+			if (prRoamBssDesc)
+				break;
+			scanRemoveRoamBssDescsByTime(prAdapter, u4RemoveTime);
+			u4RemoveTime = u4RemoveTime / 2;
+		} while (u4RemoveTime > 0);
+
+		COPY_SSID(prRoamBssDesc->aucSSID, prRoamBssDesc->ucSSIDLen,
+				prBssDesc->aucSSID, prBssDesc->ucSSIDLen);
+	}
+
+	GET_CURRENT_SYSTIME(&prRoamBssDesc->rUpdateTime);
+}
+
+VOID scanSearchBssDescOfRoamSsid(IN P_ADAPTER_T prAdapter)
+{
+#define SSID_ONLY_EXIST_ONE_AP      1    /* If only exist one same ssid AP, avoid unnecessary scan */
+
+	P_SCAN_INFO_T prScanInfo;
+	P_LINK_T prBSSDescList;
+	P_BSS_DESC_T prBssDesc;
+	P_BSS_INFO_T prAisBssInfo;
+	UINT_32	u4SameSSIDCount = 0;
+
+	prAisBssInfo = prAdapter->prAisBssInfo;
+	prScanInfo = &(prAdapter->rWifiVar.rScanInfo);
+	prBSSDescList = &prScanInfo->rBSSDescList;
+
+	if (prAisBssInfo->eConnectionState != PARAM_MEDIA_STATE_CONNECTED)
+		return;
+
+	LINK_FOR_EACH_ENTRY(prBssDesc, prBSSDescList, rLinkEntry, BSS_DESC_T) {
+		if (EQUAL_SSID(prBssDesc->aucSSID, prBssDesc->ucSSIDLen,
+				       prAisBssInfo->aucSSID, prAisBssInfo->ucSSIDLen)) {
+			u4SameSSIDCount++;
+			if (u4SameSSIDCount > SSID_ONLY_EXIST_ONE_AP) {
+				scanAddToRoamBssDesc(prAdapter, prBssDesc);
+				break;
+			}
+		}
+	}
+}
+
 /*----------------------------------------------------------------------------*/
 /*!
 * @brief Find the corresponding BSS Descriptor according to
@@ -1093,6 +1242,7 @@ scanSearchExistingBssDescWithSsid(IN P_ADAPTER_T prAdapter,
 	case BSS_TYPE_P2P_DEVICE:
 		fgCheckSsid = FALSE;
 	case BSS_TYPE_INFRASTRUCTURE:
+		scanSearchBssDescOfRoamSsid(prAdapter);
 	case BSS_TYPE_BOW_DEVICE:
 		{
 			prBssDesc = scanSearchBssDescByBssidAndSsid(prAdapter, aucBSSID, fgCheckSsid, prSsid);
@@ -1203,6 +1353,13 @@ VOID scanRemoveBssDescsByPolicy(IN P_ADAPTER_T prAdapter, IN UINT_32 u4RemovePol
 				continue;
 			}
 
+			if ((!prBssDesc->fgIsHiddenSSID) &&
+			    (EQUAL_SSID(prBssDesc->aucSSID,
+					prBssDesc->ucSSIDLen, prConnSettings->aucSSID, prConnSettings->ucSSIDLen))) {
+				/* Don't remove the one currently we will connect. */
+				continue;
+			}
+
 			if (CHECK_FOR_TIMEOUT(rCurrentTime, prBssDesc->rUpdateTime,
 					      SEC_TO_SYSTIME(SCN_BSS_DESC_REMOVE_TIMEOUT_SEC))) {
 
@@ -1254,9 +1411,6 @@ VOID scanRemoveBssDescsByPolicy(IN P_ADAPTER_T prAdapter, IN UINT_32 u4RemovePol
 		}
 	} else if (u4RemovePolicy & SCN_RM_POLICY_SMART_WEAKEST) {
 		P_BSS_DESC_T prBssDescWeakest = (P_BSS_DESC_T) NULL;
-		P_BSS_DESC_T prBssDescWeakestSameSSID = (P_BSS_DESC_T) NULL;
-		UINT_32 u4SameSSIDCount = 0;
-
 		/* Search BSS Desc from current SCAN result list. */
 		LINK_FOR_EACH_ENTRY(prBssDesc, prBSSDescList, rLinkEntry, BSS_DESC_T) {
 
@@ -1269,13 +1423,8 @@ VOID scanRemoveBssDescsByPolicy(IN P_ADAPTER_T prAdapter, IN UINT_32 u4RemovePol
 			if ((!prBssDesc->fgIsHiddenSSID) &&
 			    (EQUAL_SSID(prBssDesc->aucSSID,
 					prBssDesc->ucSSIDLen, prConnSettings->aucSSID, prConnSettings->ucSSIDLen))) {
-
-				u4SameSSIDCount++;
-
-				if (!prBssDescWeakestSameSSID)
-					prBssDescWeakestSameSSID = prBssDesc;
-				else if (prBssDesc->ucRCPI < prBssDescWeakestSameSSID->ucRCPI)
-					prBssDescWeakestSameSSID = prBssDesc;
+				/* Don't remove the one currently we will connect. */
+				continue;
 			}
 
 			if (!prBssDescWeakest) {	/* 1st element */
@@ -1287,9 +1436,6 @@ VOID scanRemoveBssDescsByPolicy(IN P_ADAPTER_T prAdapter, IN UINT_32 u4RemovePol
 				prBssDescWeakest = prBssDesc;
 
 		}
-
-		if ((u4SameSSIDCount >= SCN_BSS_DESC_SAME_SSID_THRESHOLD) && (prBssDescWeakestSameSSID))
-			prBssDescWeakest = prBssDescWeakestSameSSID;
 
 		if (prBssDescWeakest) {
 
