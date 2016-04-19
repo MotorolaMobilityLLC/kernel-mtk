@@ -1879,6 +1879,7 @@ VOID aisFsmSteps(IN P_ADAPTER_T prAdapter, ENUM_AIS_STATE_T eNextState)
 	ENUM_BAND_T eBand;
 	UINT_8 ucChannel;
 	UINT_16 u2ScanIELen;
+	ENUM_AIS_STATE_T eOriPreState;
 
 	BOOLEAN fgIsTransition = (BOOLEAN) FALSE;
 
@@ -1887,6 +1888,7 @@ VOID aisFsmSteps(IN P_ADAPTER_T prAdapter, ENUM_AIS_STATE_T eNextState)
 	prAisFsmInfo = &(prAdapter->rWifiVar.rAisFsmInfo);
 	prAisBssInfo = prAdapter->prAisBssInfo;
 	prConnSettings = &(prAdapter->rWifiVar.rConnSettings);
+	eOriPreState = prAisFsmInfo->ePreviousState;
 
 	do {
 
@@ -2000,6 +2002,17 @@ VOID aisFsmSteps(IN P_ADAPTER_T prAdapter, ENUM_AIS_STATE_T eNextState)
 #else
 			prBssDesc = scanSearchBssDescByPolicy(prAdapter, prAdapter->prAisBssInfo->ucBssIndex);
 #endif
+			/* every time BSS join failure count is integral multiples of SCN_BSS_JOIN_FAIL_THRESOLD,
+			we need to scan again to find if a new BSS is here in the ESS,
+			this can also avoid too frequency to retry the rejected AP */
+			if (prAisFsmInfo->ePreviousState == AIS_STATE_LOOKING_FOR ||
+				((eOriPreState == AIS_STATE_ONLINE_SCAN ||
+				eOriPreState == AIS_STATE_SCAN) && prAisFsmInfo->ePreviousState != eOriPreState)) {
+				/* if previous state is scan/online scan/looking for, don't try to scan again */
+			} else if (prBssDesc && prBssDesc->ucJoinFailureCount >= SCN_BSS_JOIN_FAIL_THRESOLD &&
+				((prBssDesc->ucJoinFailureCount - SCN_BSS_JOIN_FAIL_THRESOLD) %
+				SCN_BSS_JOIN_FAIL_THRESOLD) == 0)
+				prBssDesc = NULL;
 
 			/* we are under Roaming Condition. */
 			if (prAisBssInfo->eConnectionState == PARAM_MEDIA_STATE_CONNECTED) {

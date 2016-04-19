@@ -394,7 +394,7 @@ VOID scnSendScanReqExtCh(IN P_ADAPTER_T prAdapter)
 	prScanInfo = &(prAdapter->rWifiVar.rScanInfo);
 	prScanParam = &prScanInfo->rScanParam;
 
-	prCmdScanReq = kalMemAlloc(sizeof(P_CMD_SCAN_REQ_EXT_CH), VIR_MEM_TYPE);
+	prCmdScanReq = kalMemAlloc(sizeof(CMD_SCAN_REQ_EXT_CH), VIR_MEM_TYPE);
 	if (prCmdScanReq == NULL)
 		return;
 
