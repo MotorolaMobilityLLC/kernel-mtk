@@ -171,7 +171,6 @@
 
 /* TOUCH start */
 &touch {
-	vtouch-supply = <&mt_pmic_vldo28_ldo_reg>;
 	tpd-resolution = <1080 1920>;
 	interrupt-parent = <&eintc>;
 	interrupts = <1 2>;
