@@ -24,7 +24,11 @@ config TOUCHSCREEN_MTK
 config TOUCHSCREEN_MTK_FTS5446
 	bool "FTS5446 for lenovo K52 driver"
 	depends on TOUCHSCREEN_MTK
-	
+
+config TOUCHSCREEN_MTK_FT8716
+	bool "FT8716 for lenovo Kungfu driver"
+	depends on TOUCHSCREEN_MTK	
+
 
 config TOUCHSCREEN_MTK_GT1151
 	bool "GT1151 for Mediatek package"
