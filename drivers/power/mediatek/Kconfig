@@ -318,4 +318,14 @@ config LENOVO_CHARGING_STANDARD_SUPPORT
 	  Add lenovo charging standard support.
 	default n
 #lenovo-sw mahj2 add for lenovo charging standard support End
+#lenovo-sw mahj2 add for support bq24259 Begin
+config MTK_BQ24259_SUPPORT
+	bool "MTK_BQ24259_SUPPORT"
+	help
+          This is to enable MediaTek supports to BQ24259.
+          It depends on config MTK_SMART_BATTERY
+          and config MTK_SWCHR_SUPPORT
+          Set to Yes if BQ24259 is used.
+	default n
+#lenovo-sw mahj2 add for support bq24259 End
 

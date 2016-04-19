@@ -155,7 +155,7 @@
 #define LENOVO_THERMAL_SUPPORT
 //lenovo-sw mahj2 add for thermal support End
 //lenovo-sw mahj2 add for show charging ic id Begin
-#define LENOVO_SHOW_CHARGING_IC_ID
+//#define LENOVO_SHOW_CHARGING_IC_ID
 //lenovo-sw mahj2 add for show charging ic id End
 /*lenovo-sw mahj2 added for ntc temp cut 2 degree Begin*/
 //#define LENOVO_NTC_TEMP_CUT_2_DEGREE
@@ -189,7 +189,8 @@
 	|| defined(CONFIG_MTK_BQ24296_SUPPORT)\
 	|| defined(CONFIG_MTK_BQ24160_SUPPORT)\
 	|| defined(CONFIG_MTK_BQ25896_SUPPORT)\
-	|| defined(CONFIG_MTK_BQ24261_SUPPORT)
+	|| defined(CONFIG_MTK_BQ24261_SUPPORT)\
+	|| defined(CONFIG_MTK_BQ24259_SUPPORT)
 #define SWCHR_POWER_PATH
 #endif
 
@@ -203,7 +204,8 @@
 	|| defined(CONFIG_MTK_BQ24160_SUPPORT) \
 	|| defined(CONFIG_MTK_BQ24157_SUPPORT) \
 	|| defined(CONFIG_MTK_BQ24250_SUPPORT) \
-	|| defined(CONFIG_MTK_BQ24261_SUPPORT)
+	|| defined(CONFIG_MTK_BQ24261_SUPPORT) \
+	|| defined(CONFIG_MTK_BQ24259_SUPPORT)
 #define EXTERNAL_SWCHR_SUPPORT
 #endif
 
