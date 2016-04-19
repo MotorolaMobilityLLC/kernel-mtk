@@ -11,8 +11,8 @@ obj-y   +=  tpd_init.o
 obj-y   +=  tpd_misc.o
 obj-y   +=  tpd_setting.o
 
-ifeq ($(CONFIG_TOUCHSCREEN_MTK_FTS5446),y)
-obj-y	+=  ft5446/
+ifeq ($(CONFIG_TOUCHSCREEN_MTK_FT8716),y)
+obj-y	+=  ft8716/
 endif
 
 obj-$(CONFIG_TOUCHSCREEN_MTK_GT1151)	+=  GT1151/
