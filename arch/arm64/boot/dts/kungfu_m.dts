@@ -102,9 +102,9 @@
 
 	/*Begin, lenovo-sw lumy1*/
 	cust_alsps@0 {
-		compatible		= "mediatek,epl8802";
+		compatible		= "mediatek,ltr579-new";
 		i2c_num			= <1>;
-		i2c_addr		= <0x49 0 0 0>;
+		i2c_addr		= <0x53 0 0 0>;
 		polling_mode_ps		= <0>;
 		polling_mode_als	= <1>;
 		power_id		= <0xffff>;
@@ -113,8 +113,8 @@
 		als_level	= <0 257 637 1027 2297 5588 6730 11301 20449 25768 31122 45552 57937 57937 57937>;
 /*  Total has 16 range*/
 		als_value	= <0 132 304 502 1004 2003 3006 5006 8004 10000 12000 16000 20000 20000 20000 20000>;
-		ps_threshold_high	=  <800>;
-		ps_threshold_low	=  <500>;
+		ps_threshold_high	=  <26>;
+		ps_threshold_low	=  <21>;
 		is_batch_supported_ps	= <1>;
 		is_batch_supported_als	= <1>;
 	};
@@ -1030,9 +1030,9 @@
 /*lenovo-sw caoyi1 modify Msensor end*/
 
 /*Begin, lenovo-sw lumy1*/
-	ALSPS@49 {
+	ALSPS@53 {
 		compatible = "mediatek,alsps";
-		reg = <0x49>;
+		reg = <0x53>;
 		status = "okay";
 	};
 /*End, lenovo-sw lumy1*/

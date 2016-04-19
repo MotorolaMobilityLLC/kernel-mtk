@@ -24,3 +24,6 @@ source "drivers/misc/mediatek/alsps/EPL2182-new/Kconfig"
 source "drivers/misc/mediatek/alsps/epl8802/Kconfig"
 # lenovo-sw caoyi1 add 20150907 end
 source "drivers/misc/mediatek/alsps/alspshub/Kconfig"
+# lenovo-sw lumy1 add begin
+source "drivers/misc/mediatek/alsps/ltr579-new/Kconfig"
+# lenovo-sw lumy1 add end
