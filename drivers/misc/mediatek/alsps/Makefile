@@ -3,7 +3,6 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/hwmon/include
 obj-y   +=  alsps.o
 obj-y   +=  alsps_factory.o
 obj-y   +=  aal_control.o
-
 ifeq ($(CONFIG_MTK_SCP_SENSORHUB_V1),y)
 obj-$(CONFIG_MTK_ALSPSHUB)      +=  alspshub/
 else
@@ -27,4 +26,7 @@ obj-$(CONFIG_MTK_TMD2771_AUTO)	+=  tmd2771_auto/
 # lenovo-sw caoyi1 add 20150907 begin
 obj-$(CONFIG_MTK_EPL8802)	+=  epl8802/
 # lenovo-sw caoyi1 add 20150907 end
+# lenovo-sw lumy1 add begin
+obj-$(CONFIG_MTK_LTR579_NEW)	+=  ltr579-new/
+# lenovo-sw lumy1 add end
 endif
