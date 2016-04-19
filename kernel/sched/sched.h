@@ -1638,4 +1638,4 @@ extern void lock_timekeeper(void);
 #ifdef CONFIG_SCHED_DEBUG
 extern void print_rt_rq(struct seq_file *m, int cpu, struct rt_rq *rt_rq);
 #endif /* CONFIG_SCHED_DEBUG */
-
+extern void unthrottle_offline_rt_rqs(struct rq *rq);
