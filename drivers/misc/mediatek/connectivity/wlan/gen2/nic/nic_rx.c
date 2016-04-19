@@ -2448,7 +2448,9 @@ VOID nicRxProcessEventPacket(IN P_ADAPTER_T prAdapter, IN OUT P_SW_RFB_T prSwRfb
 				 (UINT8 *) prEvent->aucBuffer, (UINT32) (prEvent->u2PacketLen - 8));
 		break;
 #endif /* CFG_SUPPORT_STATISTICS */
-
+	case EVENT_ID_CHECK_REORDER_BUBBLE:
+		qmHandleEventCheckReorderBubble(prAdapter, prEvent);
+		break;
 	case EVENT_ID_FW_LOG_ENV:
 		{
 			P_EVENT_FW_LOG_T prEventLog;
@@ -3103,6 +3105,7 @@ VOID nicRxSDIOAggReceiveRFBs(IN P_ADAPTER_T prAdapter)
 	fgIsRxEnhanceMode = FALSE;
 #endif
 
+
 	do {
 #if CFG_SDIO_RX_ENHANCE
 		/* to limit maximum loop for RX */
@@ -3195,7 +3198,7 @@ VOID nicRxSDIOAggReceiveRFBs(IN P_ADAPTER_T prAdapter)
 			pucSrcAddr = prRxCtrl->pucRxCoalescingBufPtr;
 			for (i = 0; i < u4RxAggCount; i++) {
 				UINT_16 u2PktLength;
-
+				
 				u2PktLength = (rxNum == 0 ?
 					       prEnhDataStr->rRxInfo.u.au2Rx0Len[i] :
 					       prEnhDataStr->rRxInfo.u.au2Rx1Len[i]);
@@ -3210,7 +3213,7 @@ VOID nicRxSDIOAggReceiveRFBs(IN P_ADAPTER_T prAdapter)
 
 				/* record the rx time */
 				STATS_RX_ARRIVE_TIME_RECORD(prSwRfb);	/* ms */
-
+				
 				prHifRxHdr = prSwRfb->prHifRxHdr;
 				ASSERT(prHifRxHdr);
 

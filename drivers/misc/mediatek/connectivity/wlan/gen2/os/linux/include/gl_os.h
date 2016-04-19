@@ -855,6 +855,9 @@ struct _GLUE_INFO_T {
 	struct completion rScanComp;	/* indicate scan complete */
 	struct completion rHaltComp;	/* indicate main thread halt complete */
 	struct completion rPendComp;	/* indicate main thread halt complete */
+	struct completion rP2pReq; 	/* indicate p2p request(request channel/frame tx)
+					 * complete
+					 */
 #if CFG_ENABLE_WIFI_DIRECT
 	struct completion rSubModComp;	/*indicate sub module init or exit complete */
 #endif
@@ -1021,6 +1024,7 @@ enum TestModeCmdType {
 	/* all new added test mode command should great than TESTMODE_CMD_ID_NEW_BEGIN */
 	TESTMODE_CMD_ID_NEW_BEGIN = 100,
 	TESTMODE_CMD_ID_SUSPEND = 101,
+	TESTMODE_CMD_ID_STR_CMD = 102,
 };
 #if CFG_SUPPORT_HOTSPOT_2_0
 enum Hs20CmdType {

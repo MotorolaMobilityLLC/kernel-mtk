@@ -1208,7 +1208,9 @@
  *------------------------------------------------------------------------------
  */
 /*! Maximum number of BSS in the SCAN list */
-#define CFG_MAX_NUM_BSS_LIST                    64
+#define CFG_MAX_NUM_BSS_LIST			128
+
+#define CFG_MAX_NUM_ROAM_BSS_LIST		64
 
 #define CFG_MAX_COMMON_IE_BUF_LEN         ((1500 * CFG_MAX_NUM_BSS_LIST) / 3)
 

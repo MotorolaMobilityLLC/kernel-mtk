@@ -278,14 +278,34 @@ VOID roamingFsmSteps(IN P_ADAPTER_T prAdapter, IN ENUM_ROAMING_STATE_T eNextStat
 		case ROAMING_STATE_DISCOVERY:
 			{
 				OS_SYSTIME rCurrentTime;
+				P_SCAN_INFO_T prScanInfo;
+				P_LINK_T prRoamBSSDescList;
+				P_ROAM_BSS_DESC_T prRoamBssDesc;
+				P_BSS_INFO_T prAisBssInfo;
+				BOOLEAN fgIsRoamingSSID = FALSE;
+
+				prAisBssInfo = &(prAdapter->rWifiVar.arBssInfo[NETWORK_TYPE_AIS_INDEX]);
+				prScanInfo = &(prAdapter->rWifiVar.rScanInfo);
+				prRoamBSSDescList = &prScanInfo->rRoamBSSDescList;
+				/* Count same BSS Desc from current SCAN result list. */
+				LINK_FOR_EACH_ENTRY(prRoamBssDesc, prRoamBSSDescList, rLinkEntry, ROAM_BSS_DESC_T) {
+					if (EQUAL_SSID(prRoamBssDesc->aucSSID,
+							       prRoamBssDesc->ucSSIDLen,
+							       prAisBssInfo->aucSSID, prAisBssInfo->ucSSIDLen)) {
+						fgIsRoamingSSID = TRUE;
+						break;
+					}
+				}
 
 				GET_CURRENT_SYSTIME(&rCurrentTime);
 				if (CHECK_FOR_TIMEOUT(rCurrentTime, prRoamingFsmInfo->rRoamingDiscoveryUpdateTime,
-						      SEC_TO_SYSTIME(ROAMING_DISCOVERY_TIMEOUT_SEC))) {
+						      SEC_TO_SYSTIME(ROAMING_DISCOVERY_TIMEOUT_SEC)) &&
+						      fgIsRoamingSSID) {
 					DBGLOG(ROAMING, LOUD, "roamingFsmSteps: DiscoveryUpdateTime Timeout");
 					aisFsmRunEventRoamingDiscovery(prAdapter, TRUE);
 				} else {
 					DBGLOG(ROAMING, LOUD, "roamingFsmSteps: DiscoveryUpdateTime Updated");
+					DBGLOG(INIT, INFO, "fgIsRoamingSSID:%d\n", fgIsRoamingSSID);
 #if CFG_SUPPORT_ROAMING_ENC
 					if (prAdapter->fgIsRoamingEncEnabled == TRUE)
 						aisFsmRunEventRoamingDiscovery(prAdapter, TRUE);
