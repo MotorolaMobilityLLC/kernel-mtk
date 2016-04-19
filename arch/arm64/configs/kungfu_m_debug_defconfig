@@ -582,7 +582,7 @@ CONFIG_PM_SLEEP=y
 #lenovo-sw, chenzz3, integrate fpc fingerprint driver, end
 ###################charging###############
 CONFIG_LENOVO_CHARGING_STANDARD_SUPPORT=y
-CONFIG_MTK_BQ24296_SUPPORT=y
+CONFIG_MTK_BQ24259_SUPPORT=y
 #lenovo-sw mahj2 add for multi bat support Begin
 # CONFIG_MTK_MULTI_BAT_PROFILE_SUPPORT is not set
 #lenovo-sw mahj2 add for multi bat support End
