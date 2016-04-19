@@ -45,15 +45,15 @@
 		pwm_config = <0 0 0 0 0>;
 	};
 	led1:led@1 {
-		compatible = "mediatek,green";
-		led_mode = <0>;
-		data = <1>;
+		compatible = "mediatek,test-led";
+		led_mode = <3>;
+		data = <2>;
 		pwm_config = <0 0 0 0 0>;
 	};
 	led2:led@2 {
 		compatible = "mediatek,blue";
-		led_mode = <0>;
-		data = <1>;
+		led_mode = <3>;
+		data = <2>;
 		pwm_config = <0 0 0 0 0>;
 	};
 	led3:led@3 {
@@ -70,13 +70,13 @@
 	};
 	led5:led@5 {
 		compatible = "mediatek,button-backlight";
-		led_mode = <0>;
-		data = <1>;
+		led_mode = <3>;
+		data = <3>;
 		pwm_config = <0 0 0 0 0>;
 	};
 	led6:led@6 {
 		compatible = "mediatek,lcd-backlight";
-		led_mode = <5>;
+		led_mode = <4>;/* lenovo-sw wuwl10 20160322 modify */
 		data = <1>;
 		pwm_config = <0 0 0 0 0>;
 	};
@@ -418,7 +418,7 @@
 
 	mtkfb_pins_lcm_reset0: lcm_rst_out0_gpio {
 		pins_cmd_dat {
-			pins = <PINMUX_GPIO158__FUNC_LCM_RST>;
+			pins = <PINMUX_GPIO158__FUNC_GPIO158>;/* wuwl10 20160322 modify */
 			slew-rate = <1>;
 			output-low;
 		};
@@ -426,7 +426,7 @@
 
 	mtkfb_pins_lcm_reset1: lcm_rst_out1_gpio {
 		pins_cmd_dat {
-			pins = <PINMUX_GPIO158__FUNC_LCM_RST>;
+			pins = <PINMUX_GPIO158__FUNC_GPIO158>;/* wuwl10 20160322 modify */
 			slew-rate = <1>;
 			output-high;
 		};
@@ -448,13 +448,33 @@
 		};
 	};
 
+/* lenovo-sw wuwl10 20160322 modify begin */
+	mtkfb_pins_lcd_bias_enn0: lcd_bias_enn0_gpio {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO122__FUNC_GPIO122>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+
+	mtkfb_pins_lcd_bias_enn1: lcd_bias_enn1_gpio {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO122__FUNC_GPIO122>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+/* lenovo-sw wuwl10 20160322 modify end */
+
 	mtkfb_pins_default: default {
 	};
 };
 
 &mtkfb {
 	pinctrl-names = "default", "mode_te_gpio", "mode_te_te", "lcm_rst_out0_gpio",
-	"lcm_rst_out1_gpio", "lcd_bias_enp0_gpio", "lcd_bias_enp1_gpio";
+/* lenovo-sw wuwl10 20160322 modify begin */
+	"lcm_rst_out1_gpio", "lcd_bias_enp0_gpio", "lcd_bias_enp1_gpio",
+	"lcd_bias_enn0_gpio", "lcd_bias_enn1_gpio";
 	pinctrl-0 = <&mtkfb_pins_default>;
 	pinctrl-1 = <&mtkfb_pins_mode_te_gpio>;
 	pinctrl-2 = <&mtkfb_pins_mode_te_te>;
@@ -462,6 +482,9 @@
 	pinctrl-4 = <&mtkfb_pins_lcm_reset1>;
 	pinctrl-5 = <&mtkfb_pins_lcd_bias_enp0>;
 	pinctrl-6 = <&mtkfb_pins_lcd_bias_enp1>;
+	pinctrl-7 = <&mtkfb_pins_lcd_bias_enn0>;
+	pinctrl-8 = <&mtkfb_pins_lcd_bias_enn1>;
+/* lenovo-sw wuwl10 20160322 modify end */
 	status = "okay";
 };/* DISPSYS GPIO standardization end */
 /* CONSYS GPIO standardization */
