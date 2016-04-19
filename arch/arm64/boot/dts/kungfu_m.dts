@@ -122,9 +122,9 @@
 
 /*lenovo-sw caoyi1 modify Msensor begin*/
 	cust_mag@0 {
-		compatible			= "mediatek,akm09911";
+		compatible			= "mediatek,mmc3524x";
 		i2c_num				= <1>;
-		i2c_addr			= <0x0d 0 0 0>;
+		i2c_addr			= <0x30 0 0 0>;
 		direction			= <8>;
 		power_id			= <0xffff>;
 		power_vol			= <0>;
@@ -1021,10 +1021,10 @@
 	/* Lenovo-sw, weimh1, 2016-3-31 add end: configure gsensor i2c1 */
 
 /*lenovo-sw caoyi1 modify Msensor begin*/
-	msensor@C {
+	msensor@30 {
 		compatible = "mediatek,msensor";
 		i2c_num	= <1>;
-		reg = <0xC>;
+		reg = <0x30>;
 		status = "okay";
 	};
 /*lenovo-sw caoyi1 modify Msensor end*/
