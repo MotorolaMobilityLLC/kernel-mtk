@@ -11,7 +11,11 @@
 #include <mach/mt_pmic.h>
 #include "bq24259.h"
 #include <mach/mt_sleep.h>
-
+//lenovo-sw mahj2 add for control GPIO100 Begin
+#include <mt-plat/mt_gpio.h>
+#include <mach/gpio_const.h>
+#define GPIO_SWCHARGER_EN_PIN         (GPIO100 | 0x80000000)
+//lenovo-sw mahj2 add for control GPIO100 End
 /*Begin, lenovo-sw mahj2 add 45-50  CV limit fuction,  20150318 */
 #ifdef LENOVO_TEMP_POS_45_TO_POS_50_CV_LiMIT_SUPPORT
 extern kal_bool lenovo_battery_is_temp_45_to_pos_50(void);
