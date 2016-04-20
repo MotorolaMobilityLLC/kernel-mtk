@@ -1288,6 +1288,14 @@ static int ltr579_get_als_value(struct ltr579_priv *obj, u16 als)
 {
 	int idx;
 	int invalid = 0;
+        int level_high;
+        int level_low;
+        int level_diff;
+        int value_high;
+        int value_low;
+        int value_diff;
+        int value;
+
 	APS_DBG("als  = %d\n",als); 
 	for(idx = 0; idx < obj->als_level_num; idx++)
 	{
@@ -1322,7 +1330,23 @@ APS_DBG("idx  = %d\n",idx);
 	if(!invalid)
 	{
 		APS_DBG("ALS: %05d => %05d\n", als, obj->hw->als_value[idx]);	
-		return obj->hw->als_value[idx];
+
+	        level_high = obj->hw->als_level[idx];
+	        level_low = (idx > 0) ? obj->hw->als_level[idx - 1] : 0;
+	        level_diff = level_high - level_low;
+	        value_high = obj->hw->als_value[idx];
+	        value_low = (idx > 0) ? obj->hw->als_value[idx - 1] : 0;
+	        value_diff = value_high - value_low;
+	        value = 0;
+
+	        if ((level_low >= level_high) || (value_low >= value_high))
+	            value = value_low;
+	        else
+	            value = (level_diff * value_low + (als - level_low) * value_diff + ((level_diff + 1) >> 1)) / level_diff;
+
+	        APS_LOG("ALS: %d [%d, %d] => %d [%d, %d] \n\r", als, level_low, level_high, value, value_low, value_high);
+	        return value;
+	
 	}
 	else
 	{
