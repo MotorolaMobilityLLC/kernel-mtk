@@ -769,6 +769,8 @@ VOID scnInit(IN P_ADAPTER_T prAdapter)
 	if (prScanInfo->prPscnParam)
 		kalMemZero(prScanInfo->prPscnParam, sizeof(PSCN_PARAM_T));
 
+	prScanInfo->eCurrentPSCNState = PSCN_IDLE;
+
 }				/* end of scnInit() */
 
 /*----------------------------------------------------------------------------*/
@@ -801,6 +803,8 @@ VOID scnUninit(IN P_ADAPTER_T prAdapter)
 	LINK_INITIALIZE(&prScanInfo->rBSSDescList);
 
 	kalMemFree(prScanInfo->prPscnParam, VIR_MEM_TYPE, sizeof(PSCN_PARAM_T));
+
+	prScanInfo->eCurrentPSCNState = PSCN_IDLE;
 
 }				/* end of scnUninit() */
 
