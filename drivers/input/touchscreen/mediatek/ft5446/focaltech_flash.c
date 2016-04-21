@@ -125,7 +125,8 @@ static unsigned char CTPM_FW[] = {
 	    #include "LQ_CM3300_0film0x51_V05_D01_20160329_app.i"
 };
 static unsigned char CTPM_FW_BOE[] = {
-       #include "0x3b_LEM5006+Noah-m_V04_D01_20160301_app.i"    
+       //#include "0x3b_LEM5006+Noah-m_V04_D01_20160301_app.i"    
+	     #include "LQ_CM3300_FT5446i_Biel0x04_V05_D01_20160419_app.i"
 };
 static unsigned char aucFW_PRAM_BOOT[] = {
 	//#include "FT8xx6_Pramboot_Vx.x_xxxx.i"
@@ -3325,7 +3326,7 @@ int fts_ctpm_get_i_file_ver(u8 vendor_id)
 		return CTPM_FW[ui_sz - 2];
 	}
 	}
-	else if(vendor_id==0x3b)
+	else if(vendor_id==0x3b || vendor_id==0x04)
 	{
      ui_sz = sizeof(CTPM_FW_BOE);
 	 if (ui_sz > 2)
@@ -3830,12 +3831,11 @@ int fts_ctpm_auto_upgrade(struct i2c_client *client)
 	fts_read_reg(client, FTS_REG_FW_VER, &uc_tp_fm_ver);
 	fts_read_reg(client, FTS_REG_VENDOR_ID, &uc_tp_vendor_id);
 	printk("[FTS] uc_tp_fm_ver = 0x%x, uc_tp_vendor_id = 0x%x\n",uc_tp_fm_ver, uc_tp_vendor_id);
-
-	if((uc_tp_vendor_id != FTS_Vendor_1_ID) && (uc_tp_vendor_id != FTS_Vendor_2_ID) && (uc_tp_vendor_id != FTS_Vendor_3_ID) && (uc_tp_vendor_id != FTS_Vendor_4_ID))
+	if((uc_tp_vendor_id != FTS_Vendor_1_ID) && (uc_tp_vendor_id != FTS_Vendor_2_ID) && (uc_tp_vendor_id != FTS_Vendor_3_ID) && (uc_tp_vendor_id != FTS_Vendor_4_ID) && (uc_tp_vendor_id != FTS_Vendor_5_ID))
 	{
 		uc_boot_vendor_id = ft5x46_ctpm_VidFWid_get_from_boot(client);
 		printk("[FTS] uc_boot_vendor_id= 0x%x!\n", uc_boot_vendor_id);
-		if((uc_boot_vendor_id == FTS_Vendor_1_ID)||(uc_boot_vendor_id == FTS_Vendor_3_ID)||(uc_boot_vendor_id == FTS_Vendor_4_ID) )
+		if((uc_boot_vendor_id == FTS_Vendor_1_ID)||(uc_boot_vendor_id == FTS_Vendor_3_ID)||(uc_boot_vendor_id == FTS_Vendor_4_ID)||(uc_boot_vendor_id == FTS_Vendor_5_ID))
 		{
 			uc_tp_fm_ver = 0;//force to upgrade the FW
 			uc_tp_vendor_id = uc_boot_vendor_id;
