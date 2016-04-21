@@ -1,0 +1,10 @@
+
+config MTK_BMI120GY_NEW
+        bool "BMI120 for MediaTek package"
+        default n
+        help
+        It support different gyroscope sensor.
+        If this option is set,
+	  	it will support
+         BMI120 gyroscope.
+
