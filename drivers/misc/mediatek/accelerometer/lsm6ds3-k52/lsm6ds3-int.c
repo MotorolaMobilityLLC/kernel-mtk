@@ -83,7 +83,7 @@
 #define LSM6DS3_M
 #define LSM6DS3_STEP_COUNTER 			//it depends on the MACRO LSM6DS3_NEW_ARCH
 //#define LSM6DS3_TILT_FUNC 				//dependency on LSM6DS3_STEP_COUNTER
-#define LSM6DS3_SIGNIFICANT_MOTION  	//dependency on LSM6DS3_STEP_COUNTER
+//#define LSM6DS3_SIGNIFICANT_MOTION  	//dependency on LSM6DS3_STEP_COUNTER
 //#define LSM6DS3_FIFO_SUPPORT
 
 /*lenovo-sw caoyi1 add for Gsensor APK calibration 20150512 begin*/
@@ -683,7 +683,11 @@ static int LSM6DS3_enable_tilt(struct i2c_client *client, bool enable)
 			GSE_LOG(" LSM6DS3_Enable_Tilt_Func_On_Int failed!\n");
 			return LSM6DS3_ERR_STATUS;
 		}
+/*Lenovo-sw weimh1 mod 2016-4-20 begin: just enable without condition*/
+#if 0
 		if(0 == atomic_read(&obj->int1_request_num))
+#endif	
+/*Lenovo-sw weimh1 mod 2016-4-20 end*/	
 		{
 /*lenovo-sw caoyi modify for eint API 20151021 begin*/
 #if defined(CONFIG_OF)
@@ -719,7 +723,7 @@ static int LSM6DS3_enable_tilt(struct i2c_client *client, bool enable)
 			cancel_work_sync(&obj->eint_work);
 /*lenovo-sw caoyi modify for eint API 20151021 begin*/
 #if defined(CONFIG_OF)
-			disable_irq(obj_i2c_data->irq);
+//			disable_irq(obj_i2c_data->irq);
 #else
 			mt_eint_mask(CUST_EINT_LSM6DS3_NUM);
 #endif
@@ -956,7 +960,10 @@ static int LSM6DS3_enable_pedo_On_Int(struct i2c_client *client, bool enable)
 
 	if(true == enable)
 	{
+/*Lenovo-sw weimh1 mod 2016-4-20 begin: just enable without condition*/
+#if 0
 		if(0 == atomic_read(&obj->int1_request_num))
+#endif		
 		{
 /*lenovo-sw caoyi modify for eint API 20151021 begin*/
 #if defined(CONFIG_OF)
@@ -3251,7 +3258,11 @@ static int lsm6ds3_step_c_enable_significant(int en)
 			GSE_ERR("%s run LSM6DS3_Enable_SigMotion_Func_On_Int to fail!\n", __func__);
 		}
 		GSE_LOG(" sigMotion enable with1 int1_count=%d\n", atomic_read(&priv->int1_request_num));
+/*Lenovo-sw weimh1 mod 2016-4-20 begin: just enable without condition*/
+#if 0
 		if(0 == atomic_read(&priv->int1_request_num))
+#endif		
+/*Lenovo-sw weimh1 mod 2016-4-20 end*/
 /*lenovo-sw caoyi modify for eint API 20151021 begin*/
 		{
 #if defined(CONFIG_OF)
@@ -3289,7 +3300,7 @@ static int lsm6ds3_step_c_enable_significant(int en)
 			cancel_work_sync(&priv->eint_work);
 /*lenovo-sw caoyi modify for eint API 20151021 begin*/
 #if defined(CONFIG_OF)
-			disable_irq(obj_i2c_data->irq);
+//			disable_irq(obj_i2c_data->irq);
 #else
 			mt_eint_mask(CUST_EINT_LSM6DS3_NUM);
 #endif
@@ -3402,7 +3413,7 @@ static int lsm6ds3_step_c_enable_step_detect(int en)
 			cancel_work_sync(&obj->eint_work);
 /*lenovo-sw caoyi modify for eint API 20151021 begin*/
 #if defined(CONFIG_OF)
-			disable_irq(obj_i2c_data->irq);
+//			disable_irq(obj_i2c_data->irq);
 #else
 			mt_eint_mask(CUST_EINT_LSM6DS3_NUM);
 #endif
@@ -3417,7 +3428,11 @@ static int lsm6ds3_step_c_enable_step_detect(int en)
 		{
 			ret = LSM6DS3_enable_pedo(obj->client, en);
 		}
+/*Lenovo-sw weimh1 mod 2016-4-20 begin: just enable without condition*/
+#if 0
 		if(0 == atomic_read(&obj->int1_request_num))
+#endif		
+/*Lenovo-sw weimh1 mod 2016-4-20 end*/
 /*lenovo-sw caoyi modify for eint API 20151021 begin*/
 		{
 #if defined(CONFIG_OF)
@@ -5134,7 +5149,9 @@ static int lsm6ds3_setup_eint(void)
 			GSE_ERR("IRQ LINE NOT AVAILABLE!!\n");
 			return -EINVAL;
 		}
-		disable_irq(obj_i2c_data->irq);
+/*Lenovo-sw weimh1 mod 2016-4-20 begin: don't need disalble_irq here*/		
+//		disable_irq(obj_i2c_data->irq);
+/*Lenovo-sw weimh1 mod 2016-4-20 end*/
 	}
 	else
 	{
@@ -5163,7 +5180,9 @@ static int lsm6ds3_setup_eint(void)
 			GSE_ERR("IRQ LINE NOT AVAILABLE!!\n");
 			return -EINVAL;
 		}
-		disable_irq(obj_i2c_data->irq2);
+/*Lenovo-sw weimh1 mod 2016-4-20 begin: don't need disalble_irq here*/			
+//		disable_irq(obj_i2c_data->irq2);
+/*Lenovo-sw weimh1 mod 2016-4-20 end*/	
 	}
 	else
 	{
