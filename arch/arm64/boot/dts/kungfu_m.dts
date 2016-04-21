@@ -944,9 +944,9 @@
 	iddig_default: iddig_default {
 	};
 
-	gpio42_mode1_iddig: iddig_init {
+	gpio23_mode1_iddig: iddig_init {
 		pins_cmd_dat {
-			pins = <PINMUX_GPIO42__FUNC_IDDIG>;
+			pins = <PINMUX_GPIO23__FUNC_IDDIG>;
 			slew-rate = <0>;
 			bias-pull-up = <00>;
 		};
@@ -977,7 +977,7 @@
 &usb0 {
 	pinctrl-names = "iddig_default", "iddig_init";
 	pinctrl-0 = <&iddig_default>;
-	pinctrl-1 = <&gpio42_mode1_iddig>;
+	pinctrl-1 = <&gpio23_mode1_iddig>;
 	status = "okay";
 };
 
@@ -1134,5 +1134,22 @@
 /*lenovo.sw wuwl10 20160420 add end*/
 };
 
-
-
+/*lenovo-sw wengjun1 add for fusb301a configruation 20160420 begin*/
+&i2c3 {
+	fusb301@25 {
+		status = "okay";
+		compatible = "fc,fusb301";
+		reg = <0x25>;
+		vusb-supply = <&mt_pmic_vusb33_ldo_reg>;
+		interrupt-parent = <&eintc>;
+		interrupts = <24 0x2>;
+		fusb301,int-gpio = <&pio 24 0>;
+		fusb301,init-mode = /bits/ 8 <32>;
+		fusb301,drp-toggle-time = /bits/ 8 <0>;
+		fusb301,host-current = /bits/ 8 <1>;
+		fusb301,use-try-snk-emulation;
+		fusb301,ttry-timer-value = <250 600>;
+		fusb301,ccdebounce-timer-value = <20 200>;
+	};
+};
+/*lenovo-sw wengjun1 add for fusb301a configruation 20160420 end*/
