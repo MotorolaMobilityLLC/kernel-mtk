@@ -25,4 +25,5 @@ source "drivers/misc/mediatek/accelerometer/bma222E-new/Kconfig"
 source "drivers/misc/mediatek/accelerometer/bma250e/Kconfig"
 #Lenovo-sw weimh1 add 2016-3-30 begin:use independent dir for K52
 source "drivers/misc/mediatek/accelerometer/lsm6ds3-k52/Kconfig"
+source "drivers/misc/mediatek/accelerometer/bmi120-new/Kconfig"
 #Lenovo-sw weimh1 add 2016-3-30 end
