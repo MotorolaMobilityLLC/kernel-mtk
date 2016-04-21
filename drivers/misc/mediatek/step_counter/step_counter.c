@@ -774,11 +774,15 @@ int step_c_register_data_path(struct step_c_data_path *data)
 	cxt = step_c_context_obj;
 	cxt->step_c_data.get_data = data->get_data;
 	cxt->step_c_data.vender_div = data->vender_div;
+#ifdef LSM6DS3_SIGNIFICANT_MOTION	
 	cxt->step_c_data.get_data_significant = data->get_data_significant;
+#endif
 	cxt->step_c_data.get_data_step_d = data->get_data_step_d;
 	STEP_C_LOG("step_c register data path vender_div: %d\n", cxt->step_c_data.vender_div);
 	if (NULL == cxt->step_c_data.get_data
+#ifdef LSM6DS3_SIGNIFICANT_MOTION		
 	    || NULL == cxt->step_c_data.get_data_significant
+#endif	    
 	    || NULL == cxt->step_c_data.get_data_step_d) {
 		STEP_C_LOG("step_c register data path fail\n");
 		return -1;
@@ -798,12 +802,16 @@ int step_c_register_control_path(struct step_c_control_path *ctl)
 	cxt->step_c_ctl.is_support_batch = ctl->is_support_batch;
 	cxt->step_c_ctl.is_report_input_direct = ctl->is_report_input_direct;
 	cxt->step_c_ctl.is_support_batch = ctl->is_support_batch;
+#ifdef LSM6DS3_SIGNIFICANT_MOTION	
 	cxt->step_c_ctl.enable_significant = ctl->enable_significant;
+#endif
 	cxt->step_c_ctl.enable_step_detect = ctl->enable_step_detect;
 
 	if (NULL == cxt->step_c_ctl.set_delay || NULL == cxt->step_c_ctl.open_report_data
 	    || NULL == cxt->step_c_ctl.enable_nodata
+#ifdef LSM6DS3_SIGNIFICANT_MOTION	    
 	    || NULL == cxt->step_c_ctl.enable_significant
+#endif	    
 	    || NULL == cxt->step_c_ctl.enable_step_detect) {
 		STEP_C_LOG("step_c register control path fail\n");
 		return -1;
