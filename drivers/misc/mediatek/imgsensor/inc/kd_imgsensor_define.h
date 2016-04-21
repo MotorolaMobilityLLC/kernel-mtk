@@ -713,6 +713,7 @@ typedef struct {
 	MUINT32 i4SubBlkH;      /* sub block height */
 	MUINT32 i4PosL[16][2];  /* left pd pixel position in one block*/
 	MUINT32 i4PosR[16][2];  /* right pd pixel position in one block*/
+	MUINT32 iMirrorFlip;    /* 0:IMAGE_NORMAL,1:IMAGE_H_MIRROR,2:IMAGE_V_MIRROR,3:IMAGE_HV_MIRROR*/
 } SET_PD_BLOCK_INFO_T, *PSET_PD_BLOCK_INFO_T;
 
 

@@ -1,0 +1,23 @@
+config MTK_LASER
+  bool CONFIG_MTK_LASER
+  default n
+  help
+    CONFIG_MTK_LASER
+
+config MTK_LASER_STMVL6180_SUPPORT
+  bool "STMVL6180 Laser Driver"
+  default n
+  help
+    STMVL6180 Laser Driver
+    This config is used to enable the corresponding
+    lens driver for the camera sensor module
+    Set as y if the driver is used in this project
+
+config MTK_LASER_STMVL53L0_SUPPORT
+  bool "STMVL53L0 Laser Driver"
+  default n
+  help
+    STMVL53L0 Laser Driver
+    This config is used to enable the corresponding
+    lens driver for the camera sensor module
+    Set as y if the driver is used in this project

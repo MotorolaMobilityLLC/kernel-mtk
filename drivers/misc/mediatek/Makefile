@@ -106,6 +106,8 @@ obj-$(CONFIG_MTK_IMGSENSOR) += imgsensor/src/
 obj-$(CONFIG_MTK_CAM_CAL) += cam_cal/src/mt6735/imx219_eeprom/
 
 obj-$(CONFIG_MTK_LENS)   += lens/
+obj-$(CONFIG_MTK_LENS)      += lens/
+obj-$(CONFIG_MTK_LASER)     += laser/
 obj-$(CONFIG_MTK_FLASHLIGHT)	+= flashlight/src/
 ifneq ($(wildcard $(srctree)/drivers/misc/mediatek/met/),)
 obj-$(CONFIG_MTK_MET) += met/
