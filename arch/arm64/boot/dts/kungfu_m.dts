@@ -1046,9 +1046,14 @@
 			reg = <0x58>;
 			status = "okay";
 		};
+GT24c64a@50 {
+			compatible = "mediatek,GT24c64a";
+			reg = <0x50>;
+			status = "okay";
+		};
 };
 
-&i2c3{
+&i2c1{
 		camera_sub_lenovo@7f {
 			compatible = "mediatek,camera_sub_lenovo";
 			reg = <0x7f>;

@@ -260,3 +260,13 @@ config MTK_LENS_DW9761OFILMAF_SUPPORT
 	bool "DW9761OFILMAF Lens Driver"
 	default n
 #lenovo.sw END wuyt3 config k52 camera
+
+#lenovo.sw START huangsh4 config kungfu camera
+config MTK_LENS_DW9800wSUNNYAF_SUPPORT
+	bool "DW9800wSUNNYAF Lens Driver"
+	default n
+	
+config MTK_LENS_DW9800wOFILMAF_SUPPORT
+	bool "DW9800wOFILMAF Lens Driver"
+	default n
+#lenovo.sw END huangsh4 config kungfu camera

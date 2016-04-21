@@ -65,3 +65,8 @@ obj-$(CONFIG_MTK_LENS_AK7371AF_SUPPORT)    += common/ak7371af/
 obj-$(CONFIG_MTK_LENS_DW9761SUNNYAF_SUPPORT)    += common/dw9761sunnyaf/
 obj-$(CONFIG_MTK_LENS_DW9761OFILMAF_SUPPORT)    += common/dw9761ofilmaf/
 #lenovo.sw END WUYT3 config k52 camera
+
+#lenovo.sw START huangsh4 config kungfu camera
+obj-$(CONFIG_MTK_LENS_DW9800wSUNNYAF_SUPPORT)    += common/dw9800wsunnyaf/
+obj-$(CONFIG_MTK_LENS_DW9800wOFILMAF_SUPPORT)    += common/dw9800wofilmaf/
+#lenovo.sw END huangsh4 config kungfu camera

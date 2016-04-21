@@ -36,8 +36,7 @@
 ******************************************************************************/
 #define PFX "[kd_camera_hw]"
 #define PK_DBG_NONE(fmt, arg...)    do {} while (0)
-#define PK_DBG_FUNC(fmt, arg...)    pr_debug(PFX fmt, ##arg)
-
+#define PK_DBG_FUNC(fmt, arg...)    pr_err(PFX fmt, ##arg)
 #define DEBUG_CAMERA_HW_K
 #define CONTROL_AF_POWER 0
 #ifdef DEBUG_CAMERA_HW_K
@@ -124,7 +123,110 @@ PowerCust PowerCustList = {
 	 }
 };
 
+#ifdef CAMERA_HW_Kungfu
+/*lenovo.sw huangsh4 add for kungfu camera*/
 
+PowerUp PowerOnList = {
+	{
+
+ {SENSOR_DRVNAME_S5K3P3SX_MIPI_RAW,
+	  {
+	   {SensorMCLK, Vol_High, 0},
+	   {DOVDD, Vol_1800, 0},
+	   {AFVDD, Vol_2800, 0},
+	   {AVDD, Vol_2800, 2},
+	   {DVDD, Vol_1000, 0},
+	   {PDN, Vol_Low, 2},
+	   {PDN, Vol_High, 0},
+	   },
+	  },
+	   {SENSOR_DRVNAME_S5K3P3SX_OFILM_MIPI_RAW,
+	  {
+	   {SensorMCLK, Vol_High, 0},
+	 //  {RST, Vol_Low, 0},
+	   //{PDN, Vol_Low, 0},
+	   {DOVDD, Vol_1800, 0},
+	   {AFVDD, Vol_2800, 0},
+	   {AVDD, Vol_2800, 2},
+	   {DVDD, Vol_1000, 0},
+	   {PDN, Vol_Low, 2},
+	   {PDN, Vol_High, 0},
+	   },
+	  },
+	   {SENSOR_DRVNAME_IMX219_MIPI_RAW,
+	  {
+	   {SensorMCLK, Vol_High, 0},
+	   {DOVDD, Vol_1800, 0},
+	   {AVDD, Vol_2800, 2},
+	   {DVDD, Vol_1000, 0},
+	   {PDN, Vol_Low, 2},
+	   {PDN, Vol_High, 0},
+	   },
+	  },
+	   {SENSOR_DRVNAME_IMX219_OFILM_MIPI_RAW,
+	  {
+	   {SensorMCLK, Vol_High, 0},
+	   {DOVDD, Vol_1800, 0},
+	   {AVDD, Vol_2800, 2},
+	   {DVDD, Vol_1000, 0},
+	   {PDN, Vol_Low, 2},
+	   {PDN, Vol_High, 0},
+	   },
+	  },
+
+	 /* add new sensor before this line */
+	 {NULL,},
+	 }
+};
+
+PowerUp PowerDownList = {
+	{
+
+ {SENSOR_DRVNAME_S5K3P3SX_MIPI_RAW,
+	  {
+	   {SensorMCLK, Vol_Low, 0},
+	   {PDN, Vol_Low, 0},
+	   {AFVDD, Vol_2800, 3},
+	   {DOVDD, Vol_1800, 0},
+	   {AVDD, Vol_2800, 2},
+	   {DVDD, Vol_1000, 0},
+	   },
+	  },
+	   {SENSOR_DRVNAME_S5K3P3SX_OFILM_MIPI_RAW,
+	  {
+	   {SensorMCLK, Vol_Low, 0},
+	   {PDN, Vol_Low, 0},
+	   {AFVDD, Vol_2800, 3},
+	   {DOVDD, Vol_1800, 0},
+	   {AVDD, Vol_2800, 2},
+	   {DVDD, Vol_1000, 0},
+	   },
+	  },
+	   {SENSOR_DRVNAME_IMX219_MIPI_RAW,
+	  {
+	   {SensorMCLK, Vol_Low, 0},
+	   {PDN, Vol_Low, 0},
+	   {DOVDD, Vol_1800, 0},
+	   {AVDD, Vol_2800, 2},
+	   {DVDD, Vol_1000, 0},
+	   },
+	  },
+	   {SENSOR_DRVNAME_IMX219_OFILM_MIPI_RAW,
+	  {
+	   {SensorMCLK, Vol_Low, 0},
+	   {PDN, Vol_Low, 0},
+	   {DOVDD, Vol_1800, 0},
+	   {AVDD, Vol_2800, 2},
+	   {DVDD, Vol_1000, 0},
+	   },
+	  },
+	 /* add new sensor before this line */
+	 {NULL,},
+	 }
+};
+
+/*lenovo.sw huangsh4 add end*/
+#else
 /*lenovo.sw wuyt3 add for k52 M camera*/
 
 PowerUp PowerOnList = {
@@ -238,6 +340,7 @@ PowerUp PowerDownList = {
 };
 
 /*lenovo.sw wuyt3 add end*/
+#endif
 
 #ifndef CONFIG_MTK_LEGACY
 
@@ -629,8 +732,10 @@ int mtkcam_gpio_set(int PinIdx, int PwrType, int Val)
 
 BOOL hwpoweron(PowerInformation pwInfo, char *mode_name)
 {
+	PK_DBG("[CAMERA SENSOR] pwInfo.PowerType = %d  pinSetIdx = %d power on\n",pwInfo.PowerType,pinSetIdx); 
 	if (pwInfo.PowerType == AVDD) {
 		if (PowerCustList.PowerCustInfo[CUST_AVDD].Gpio_Pin == GPIO_UNSUPPORTED) {
+			PK_ERR("[CAMERA SENSOR]  enable analog power\n");
 			if (TRUE != _hwPowerOn(pwInfo.PowerType, pwInfo.Voltage)) {
 				PK_ERR("[CAMERA SENSOR] Fail to enable analog power\n");
 				return FALSE;
@@ -643,7 +748,6 @@ BOOL hwpoweron(PowerInformation pwInfo, char *mode_name)
 	} else if (pwInfo.PowerType == DVDD) {
 		if (pinSetIdx == 2) {
 			if (PowerCustList.PowerCustInfo[CUST_MAIN2_DVDD].Gpio_Pin == GPIO_UNSUPPORTED) {
-				/*PK_DBG("[CAMERA SENSOR] main2 camera VCAM_D power on");*/
 				if (pwInfo.Voltage == Vol_1200) {
 					pwInfo.Voltage = Vol_1220;
 					PK_DBG("[CAMERA SENSOR] Main2 camera VCAM_D power 1.2V to 1.22V\n");
@@ -659,7 +763,6 @@ BOOL hwpoweron(PowerInformation pwInfo, char *mode_name)
 			}
 		} else if (pinSetIdx == 1) {
 			if (PowerCustList.PowerCustInfo[CUST_SUB_DVDD].Gpio_Pin == GPIO_UNSUPPORTED) {
-				/* PK_DBG("[CAMERA SENSOR] Sub camera VCAM_D power on"); */
 			#if 1
 				if (pwInfo.Voltage == Vol_1200) {
 					pwInfo.Voltage = Vol_1220;
@@ -677,7 +780,6 @@ BOOL hwpoweron(PowerInformation pwInfo, char *mode_name)
 			}
 		} else {
 			if (PowerCustList.PowerCustInfo[CUST_DVDD].Gpio_Pin == GPIO_UNSUPPORTED) {
-				/* PK_DBG("[CAMERA SENSOR] Main camera VCAM_D power on"); */
 				if (TRUE != _hwPowerOn(pwInfo.PowerType, pwInfo.Voltage)) {
 					PK_ERR("[CAMERA SENSOR] Fail to enable digital power\n");
 					return FALSE;
@@ -717,6 +819,22 @@ BOOL hwpoweron(PowerInformation pwInfo, char *mode_name)
 		/* PK_DBG("hwPowerOn: PDN %d\n", pwInfo.Voltage); */
 		if (pwInfo.Voltage == Vol_High) {
 		/*lenovo.sw wuyt3 modify begin */
+#ifdef CAMERA_HW_Kungfu
+	PK_DBG("[CAMERA SENSOR] Main camera shen pwInfo.PowerType == PDN   power on"); 
+			if (gcurrSensorName && ((0 == strcmp(SENSOR_DRVNAME_S5K3P3SX_MIPI_RAW,gcurrSensorName))||(0 == strcmp(SENSOR_DRVNAME_S5K3P3SX_OFILM_MIPI_RAW,gcurrSensorName)))){
+				if(pinSetIdx == 0){
+					mtkcam_gpio_set(0, PDN, pinSet[0][IDX_PS_CMPDN + IDX_PS_ON]);
+				}else{
+					mtkcam_gpio_set(0, PDN, pinSet[0][IDX_PS_CMPDN + IDX_PS_OFF]);
+				}
+			}else if(gcurrSensorName && ((0 == strcmp(SENSOR_DRVNAME_IMX219_MIPI_RAW,gcurrSensorName)) ||(0 == strcmp(SENSOR_DRVNAME_IMX219_OFILM_MIPI_RAW,gcurrSensorName)))){
+				if(pinSetIdx == 1){
+					mtkcam_gpio_set(1, PDN, pinSet[1][IDX_PS_CMPDN + IDX_PS_ON]);
+				}else{
+					mtkcam_gpio_set(1, PDN, pinSet[1][IDX_PS_CMPDN + IDX_PS_OFF]);
+				}
+			}
+#else
 			if (gcurrSensorName && ((0 == strcmp(SENSOR_DRVNAME_S5K3M2_MIPI_RAW,gcurrSensorName))||(0 == strcmp(SENSOR_DRVNAME_S5K3M2_SUNNY_MIPI_RAW,gcurrSensorName)))){
 				if(pinSetIdx == 0){
 					mtkcam_gpio_set(0, PDN, pinSet[0][IDX_PS_CMPDN + IDX_PS_ON]);
@@ -730,6 +848,7 @@ BOOL hwpoweron(PowerInformation pwInfo, char *mode_name)
 					mtkcam_gpio_set(1, PDN, pinSet[1][IDX_PS_CMPDN + IDX_PS_OFF]);
 				}
 			}
+#endif
 		}else{
 		
 			mtkcam_gpio_set(pinSetIdx, PDN, pinSet[pinSetIdx][IDX_PS_CMPDN + IDX_PS_OFF]);
@@ -910,8 +1029,6 @@ int kdCISModulePowerOn(CAMERA_DUAL_CAMERA_SENSOR_ENUM SensorIdx, char *currSenso
 	/* power ON */
 	if (On) {
 		PK_DBG("kdCISModulePowerOn -on:currSensorName=%s pinSetIdx=%d\n", currSensorName, pinSetIdx);
-
-
     /* MIPI SWITCH */
 	if(has_mipi_switch){
 		if (DUAL_CAMERA_MAIN_SENSOR == SensorIdx) {

@@ -91,10 +91,15 @@ static DEFINE_SPINLOCK(kdsensor_drv_lock);
 #ifndef SUPPORT_I2C_BUS_NUM1
     #define SUPPORT_I2C_BUS_NUM1        0
 #endif
+#ifdef CAMERA_SENSORLIST_Kungfu
 #ifndef SUPPORT_I2C_BUS_NUM2
+    #define SUPPORT_I2C_BUS_NUM2        1
+#endif
+  #else 
+  #ifndef SUPPORT_I2C_BUS_NUM2
     #define SUPPORT_I2C_BUS_NUM2        3
 #endif
-  
+#endif
 //Main2 support
 #ifndef SUPPORT_I2C_BUS_NUM3
     #define SUPPORT_I2C_BUS_NUM3        SUPPORT_I2C_BUS_NUM2
@@ -174,7 +179,7 @@ inline void KD_IMGSENSOR_PROFILE(char *tag)
     tv1 = tv2;
 
     spin_unlock(&kdsensor_drv_lock);
-    PK_DBG("[%s]Profile = %lu\n", tag, TimeIntervalUS);
+    PK_DBG("[%s] Profile = %lu\n", tag, TimeIntervalUS);
 }
 #else
 inline static void KD_IMGSENSOR_PROFILE_INIT(void) {}
@@ -1088,7 +1093,7 @@ u32 i = 0;
 
     for (i = KDIMGSENSOR_INVOKE_DRIVER_0; i < KDIMGSENSOR_MAX_INVOKE_DRIVERS; i++) {
     if (g_bEnableDriver[i]) {
-        /* PK_XLOG_INFO("[%s][%d][%d][%s][%s]\r\n",__FUNCTION__,g_bEnableDriver[i],socketIdx[i],sensorNameStr[i],mode_name); */
+    //    PK_XLOG_INFO("[%s][%d][%d][%s][%s]\r\n",__FUNCTION__,g_bEnableDriver[i],socketIdx[i],sensorNameStr[i],mode_name); 
         ret = kdCISModulePowerOn(socketIdx[i], sensorNameStr[i], On, mode_name);
         if (ERROR_NONE != ret) {
         PK_ERR("[%s]", __func__);

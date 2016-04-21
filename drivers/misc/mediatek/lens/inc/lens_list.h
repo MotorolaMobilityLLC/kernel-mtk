@@ -71,6 +71,20 @@ extern int DW9761OFILMAF_Release(struct inode *a_pstInode, struct file *a_pstFil
 #endif
 /*lenovo.sw wuyt3 add for k52 camera end*/
 
+/*lenovo.sw huangsh4 add for kungfu camera start */
+#ifdef CONFIG_MTK_LENS_DW9800wSUNNYAF_SUPPORT
+extern void DW9800wSUNNYAF_SetI2Cclient(struct i2c_client *pstAF_I2Cclient, spinlock_t *pAF_SpinLock, int *pAF_Opened);
+extern long DW9800wSUNNYAF_Ioctl(struct file *a_pstFile, unsigned int a_u4Command, unsigned long a_u4Param);
+extern int DW9800wSUNNYAF_Release(struct inode *a_pstInode, struct file *a_pstFile);
+#endif
+
+#ifdef CONFIG_MTK_LENS_DW9800wOFILMAF_SUPPORT
+extern void DW9800wOFILMAF_SetI2Cclient(struct i2c_client *pstAF_I2Cclient, spinlock_t *pAF_SpinLock, int *pAF_Opened);
+extern long DW9800wOFILMAF_Ioctl(struct file *a_pstFile, unsigned int a_u4Command, unsigned long a_u4Param);
+extern int DW9800wOFILMAF_Release(struct inode *a_pstInode, struct file *a_pstFile);
+#endif
+/*lenovo.sw huangsh4 add for kungfu camera end*/
+
 #ifdef CONFIG_MTK_LENS_FM50AF_SUPPORT
 extern void FM50AF_SetI2Cclient(struct i2c_client *pstAF_I2Cclient, spinlock_t *pAF_SpinLock, int *pAF_Opened);
 extern long FM50AF_Ioctl(struct file *a_pstFile, unsigned int a_u4Command, unsigned long a_u4Param);

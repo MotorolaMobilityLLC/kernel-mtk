@@ -110,7 +110,7 @@ typedef enum {
 	Vol_3600 = VOL_3600
 } Voltage;
 #else
-
+#define VOL2950 2950000
 #define VOL2800 2800000
 #define VOL1800 1800000
 #define VOL1500 1500000
@@ -147,6 +147,7 @@ typedef enum {
 	Vol_1500 = VOL1500,
 	Vol_1800 = VOL1800,
 	Vol_2800 = VOL2800,
+	Vol_2950 = VOL2950,
 } Voltage;
 #define CAMERA_CMRST_PIN            0
 #define CAMERA_CMRST_PIN_M_GPIO     0
