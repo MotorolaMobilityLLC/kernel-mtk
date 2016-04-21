@@ -19,11 +19,7 @@
 #ifndef BUILD_LK
 static unsigned int esd_last_backlight_level = 255;
 #endif
-//Lenovo-sw wuwl10 add 20151019 for backlight begin
-#ifdef CONFIG_BACKLIGHTIC_KTD3116_CURRENT
-static bool need_config_20ma = true;
-#endif
-//Lenovo-sw wuwl10 add 20151019 for backlight end
+
 // ---------------------------------------------------------------------------
 //  Local Constants
 // ---------------------------------------------------------------------------
@@ -41,12 +37,11 @@ static LCM_UTIL_FUNCS lcm_util = {0};
 
 #define UDELAY(n) (lcm_util.udelay(n))
 #define MDELAY(n) (lcm_util.mdelay(n))
-//lenovo-sw wuwl10 20150820 add for ms delay
-//#define MSDELAY(n) (lcm_util.ms_delay(n))
+
 // ---------------------------------------------------------------------------
 //  Local Functions
 // ---------------------------------------------------------------------------
-#define dsi_set_cmdq_V22(cmdq, cmd, count, ppara, force_update)	lcm_util.dsi_set_cmdq_V22(cmdq, cmd, count, ppara, force_update)
+
 #define dsi_set_cmdq_V2(cmd, count, ppara, force_update)	(lcm_util.dsi_set_cmdq_V2(cmd, count, ppara, force_update))
 #define dsi_set_cmdq(pdata, queue_size, force_update)		(lcm_util.dsi_set_cmdq(pdata, queue_size, force_update))
 #define wrtie_cmd(cmd)										(lcm_util.dsi_write_cmd(cmd))
@@ -64,10 +59,10 @@ static LCM_UTIL_FUNCS lcm_util = {0};
 #define REGFLAG_END_OF_TABLE						0xFF
 #define set_gpio_lcd_enp(cmd) 		(lcm_util.set_gpio_lcd_enp_bias(cmd))
 #define set_gpio_lcd_enn(cmd) 		(lcm_util.set_gpio_lcd_enn_bias(cmd))
-#if 0
-#ifndef BUILD_LK
+
+#if 1  //ndef BUILD_LK
 #include <linux/kernel.h>
-#include <linux/module.h>  
+#include <linux/module.h>
 #include <linux/fs.h>
 #include <linux/slab.h>
 #include <linux/init.h>
@@ -80,104 +75,105 @@ static LCM_UTIL_FUNCS lcm_util = {0};
 #include <linux/interrupt.h>
 #include <linux/io.h>
 #include <linux/platform_device.h>
-/***************************************************************************** 
- * Define
- *****************************************************************************/
 
-#define TPS_I2C_BUSNUM  I2C_I2C_LCD_BIAS_CHANNEL//for I2C channel 0
+#define TPS_I2C_BUSNUM  I2C_I2C_LCD_BIAS_CHANNEL	/* for I2C channel 0 */
 #define I2C_ID_NAME "tps65132"
-#define TPS_ADDR 0x36
+#define TPS_ADDR 0x3E
 
-/***************************************************************************** 
- * GLobal Variable
- *****************************************************************************/
-static struct i2c_board_info __initdata tps65132_board_info = {I2C_BOARD_INFO(I2C_ID_NAME, TPS_ADDR)};
-static struct i2c_client *tps65132_i2c_client = NULL;
+#if defined(CONFIG_MTK_LEGACY)
+static struct i2c_board_info tps65132_board_info __initdata = { I2C_BOARD_INFO(I2C_ID_NAME, TPS_ADDR) };
+#else
+static const struct of_device_id lcm_of_match[] = {
+		{.compatible = "mediatek,i2c_lcd_bias"},
+		{},
+};
+#endif
 
+struct i2c_client *tps65132_i2c_client;
 
-/***************************************************************************** 
+/*****************************************************************************
  * Function Prototype
- *****************************************************************************/ 
+ *****************************************************************************/
 static int tps65132_probe(struct i2c_client *client, const struct i2c_device_id *id);
 static int tps65132_remove(struct i2c_client *client);
-/***************************************************************************** 
+/*****************************************************************************
  * Data Structure
  *****************************************************************************/
 
- struct tps65132_dev	{	
-	struct i2c_client	*client;
-	
+struct tps65132_dev {
+	struct i2c_client *client;
+
 };
 
 static const struct i2c_device_id tps65132_id[] = {
-	{ I2C_ID_NAME, 0 },
-	{ }
+	{I2C_ID_NAME, 0},
+	{}
 };
 
 static struct i2c_driver tps65132_iic_driver = {
-	.id_table	= tps65132_id,
-	.probe		= tps65132_probe,
-	.remove		= tps65132_remove,
-	.driver		= {
-		.owner	= THIS_MODULE,
-		.name	= "tps65132",
-	},
- 
+	.id_table = tps65132_id,
+	.probe = tps65132_probe,
+	.remove = tps65132_remove,
+	.driver = {
+		   .owner = THIS_MODULE,
+		   .name = "tps65132",
+#if !defined(CONFIG_MTK_LEGACY)
+			.of_match_table = lcm_of_match,
+#endif
+		   },
 };
 
 /***************************************************************************** 
  * Function
  *****************************************************************************/ 
 static int tps65132_probe(struct i2c_client *client, const struct i2c_device_id *id)
-{  
+{
 	printk( "tps65132_iic_probe\n");
 	printk("TPS: info==>name=%s addr=0x%x\n",client->name,client->addr);
-	tps65132_i2c_client  = client;		
-	return 0;      
+	tps65132_i2c_client = client;
+	return 0;
 }
-
 
 static int tps65132_remove(struct i2c_client *client)
-{  	
-  printk( "tps65132_remove\n");
-  tps65132_i2c_client = NULL;
-   i2c_unregister_device(client);
-  return 0;
+{
+	printk( "tps65132_remove\n");
+	tps65132_i2c_client = NULL;
+	i2c_unregister_device(client);
+	return 0;
 }
 
+/*static int tps65132_write_bytes(unsigned char addr, unsigned char value)*/
 
- static int tps65132_write_bytes(unsigned char addr, unsigned char value)
-{	
+int tps65132_write_bytes(unsigned char addr, unsigned char value)
+{
 	int ret = 0;
 	struct i2c_client *client = tps65132_i2c_client;
-	char write_data[2]={0};	
-	write_data[0]= addr;
-	write_data[1] = value;
-    ret=i2c_master_send(client, write_data, 2);
-	if(ret<0)
-	printk("tps65132 write data fail !!\n");	
-	return ret ;
-}
+	char write_data[2] = { 0 };
 
-/*
- * module load/unload record keeping
- */
+	write_data[0] = addr;
+	write_data[1] = value;
+	ret = i2c_master_send(client, write_data, 2);
+	if (ret < 0)
+	printk("tps65132 write data fail !!\n");	
+	return ret;
+}
 
 static int __init tps65132_iic_init(void)
 {
-
-   printk( "tps65132_iic_init\n");
-   i2c_register_board_info(TPS_I2C_BUSNUM, &tps65132_board_info, 1);
-   printk( "tps65132_iic_init2\n");
-   i2c_add_driver(&tps65132_iic_driver);
-   printk( "tps65132_iic_init success\n");	
-   return 0;
+	printk( "tps65132_iic_init\n");
+#if defined(CONFIG_MTK_LEGACY)
+	i2c_register_board_info(TPS_I2C_BUSNUM, &tps65132_board_info, 1);
+#endif
+	printk( "tps65132_iic_init2\n");
+	i2c_add_driver(&tps65132_iic_driver);
+	printk( "tps65132_iic_init success\n");
+	return 0;
 }
 
 static void __exit tps65132_iic_exit(void)
 {
-  printk( "tps65132_iic_exit\n");
-  i2c_del_driver(&tps65132_iic_driver);  
+	printk( "tps65132_iic_exit\n");
+	i2c_del_driver(&tps65132_iic_driver);
 }
 
 
@@ -186,11 +182,11 @@ module_exit(tps65132_iic_exit);
 
 MODULE_AUTHOR("Xiaokuan Shi");
 MODULE_DESCRIPTION("MTK TPS65132 I2C Driver");
-MODULE_LICENSE("GPL"); 
+MODULE_LICENSE("GPL");
 
 #else
 
-#define TPS65132_SLAVE_ADDR_WRITE  0x6C
+#define TPS65132_SLAVE_ADDR_WRITE  0x7C
 static struct mt_i2c_t TPS65132_i2c;
 
 static int TPS65132_write_byte(kal_uint8 addr, kal_uint8 value)
@@ -216,7 +212,7 @@ static int TPS65132_write_byte(kal_uint8 addr, kal_uint8 value)
 }
 
 #endif
-#endif
+
 struct LCM_setting_table {
     unsigned cmd;
     unsigned char count;
@@ -287,96 +283,15 @@ static void init_lcm_registers(void)
 
 }
 
-//Lenovo-sw wuwl10 add 20151019 for backlight begin
-#ifdef CONFIG_BACKLIGHTIC_KTD3116_CURRENT
-static void ktd3117_set_bit0(void)
-{
-	mt_set_gpio_out_base(11, GPIO_OUT_ZERO);
-	UDELAY(15);
-	mt_set_gpio_out_base(11, GPIO_OUT_ONE);
-	UDELAY(5);
-}
-static void ktd3117_set_bit1(void)
-{
-	mt_set_gpio_out_base(11, GPIO_OUT_ZERO);
-	UDELAY(5);
-	mt_set_gpio_out_base(11, GPIO_OUT_ONE);
-	UDELAY(15);
-}
-static void ktd3117_set_start(void)
-{
-	mt_set_gpio_out_base(11, GPIO_OUT_ONE);
-	UDELAY(15);
-}
-static void ktd3117_set_end(void)
-{
-	mt_set_gpio_out_base(11, GPIO_OUT_ZERO);
-	UDELAY(15);
-	mt_set_gpio_out_base(11, GPIO_OUT_ONE);
-	UDELAY(500);
-}
-
-static void ktd3117_set_data(unsigned int data)
-{
-	unsigned int i;
-	unsigned long flags;
-	data = data & 0x3F;
-
-	printk(KERN_INFO "%s data = 0x%x\n ", __func__, data);
-	ktd3117_set_start();
-
-	local_irq_save(flags);
-	for (i = 8; i > 0; ){ //MSB first
-		i --;
-		if ((data >> i) &0x01){
-			ktd3117_set_bit1();
-		}
-		else{
-			ktd3117_set_bit0();
-		}
-	}
-	local_irq_restore(flags);
-	ktd3117_set_end();
-}
-static void  backlightic_ktd3117_onewire_scale(unsigned int level)
-{
-	mt_set_gpio_mode_base(11, GPIO_MODE_00);
-	mt_set_gpio_dir_base(11, GPIO_DIR_OUT);
-
-	if (( level > 4) && need_config_20ma){
-		ktd3117_set_data(0x00);//20mA  15nits
-		need_config_20ma = false;
-	}else if (level == 4){
-		need_config_20ma = true;
-		ktd3117_set_data(0x0C);//15mA --12nits
-	}else if (level == 3){
-		need_config_20ma = true;
-		ktd3117_set_data(0x18);//10mA --8.5nits
-	}else if (level == 2){
-		need_config_20ma = true;
-		ktd3117_set_data(0x20);//6.7mA --5.8nits
-	}else if (level == 1){
-		need_config_20ma = true;
-		ktd3117_set_data(0x30);//3.3mA --2.8nits
-	}else if (level == 0){
-		need_config_20ma = true;
-		//ktd3117_set_data(0x30);//3.3mA
-	}
-}
- // EXPORT_SYMBOL_GPL(backlightic_ktd3117_onewire_scale);
-#endif
-//Lenovo-sw wuwl10 add 20151019 for backlight end
 
 //lenovo-sw wuwl10 20150515 add for esd revovery backlight begin
 #ifndef BUILD_LK
 static void lcm_esd_recover_backlight(void)
 {
-
 	printk("%s tm, level = %d\n", __func__, esd_last_backlight_level);
 
 	// Refresh value of backlight level.
 	lcm_backlight_level_setting[0].para_list[0] = esd_last_backlight_level;
-
 	push_table(lcm_backlight_level_setting, sizeof(lcm_backlight_level_setting) / sizeof(struct LCM_setting_table), 1);
 }
 #endif
@@ -386,22 +301,13 @@ static void lcm_setbacklight_cmdq(void *handle, unsigned int level)
 #ifdef BUILD_LK
 	dprintf(0,"%s,lk ft8716 tm backlight: level = %d\n", __func__, level);
 #else
-
-#ifdef CONFIG_BACKLIGHTIC_KTD3116_CURRENT
-	backlightic_ktd3117_onewire_scale(level);
-#endif
 	printk(KERN_INFO "%s, kernel ft8716 tm backlight: level = %d\n", __func__, level);
-	if((0 < level) && (level < 5))
-	{
-		level = 5;
-	}
 //Lenovo-sw wuwl10 add 20150515 for esd recover backlight
 	esd_last_backlight_level = level;
 #endif
 	// Refresh value of backlight level.
 	lcm_backlight_level_setting[0].para_list[0] = level;
 	push_table(lcm_backlight_level_setting, sizeof(lcm_backlight_level_setting) / sizeof(struct LCM_setting_table), 1);
-
 }
 
 // ---------------------------------------------------------------------------
@@ -462,21 +368,56 @@ static void lcm_get_params(LCM_PARAMS * params)
 
 static void lcm_init(void)
 {
+
+	unsigned char cmd = 0x00;
+	unsigned char data = 0x0F;
+	int ret=0;
+	
 	mt_set_gpio_mode_base(11, GPIO_MODE_00);
 	mt_set_gpio_dir_base(11, GPIO_DIR_OUT);
 	mt_set_gpio_out_base(11, GPIO_OUT_ONE);
 	MDELAY(1);
-
 	SET_RESET_PIN(0);
 	MDELAY(3);
+	
 	//set avdd enable
-
 	set_gpio_lcd_enp(1);
 	MDELAY(9);
 	
 	//set avee enable
 	set_gpio_lcd_enn(1);
 	MDELAY(12);
+
+#ifdef BUILD_LK
+	ret=TPS65132_write_byte(cmd,data);
+	if(ret)
+		printf("[LK]tps65132----cmd=%0x--i2c write error----\n",cmd);
+	else
+		printf("[LK]tps65132----cmd=%0x--i2c write success----\n",cmd);
+#else
+	ret=tps65132_write_bytes(cmd,data);
+	if(ret<0)
+		printk("[KERNEL]tps65132---cmd=%0x-- i2c write error-----\n",cmd);
+	else
+		printk("[KERNEL]tps65132---cmd=%0x-- i2c write success-----\n",cmd);
+#endif
+
+	cmd = 0x01;
+	data = 0x0F;
+
+#ifdef BUILD_LK
+	ret=TPS65132_write_byte(cmd,data);
+	if(ret)
+		printf("[LK]tps65132----cmd=%0x--i2c write error----\n",cmd);
+	else
+		printf("[LK]tps65132----cmd=%0x--i2c write success----\n",cmd);
+#else
+	ret=tps65132_write_bytes(cmd,data);
+	if(ret<0)
+		printk("[KERNEL]tps65132---cmd=%0x-- i2c write error-----\n",cmd);
+	else
+		printk("[KERNEL]tps65132---cmd=%0x-- i2c write success-----\n",cmd);
+#endif
 
 	SET_RESET_PIN(1);
 	MDELAY(2);
