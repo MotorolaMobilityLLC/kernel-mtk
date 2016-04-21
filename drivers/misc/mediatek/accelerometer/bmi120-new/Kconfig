@@ -1,0 +1,9 @@
+config MTK_BMI120_NEW
+	bool "MTK_BMA222E_NEW for MediaTek package"
+	default n
+	help
+	  It support different accelerometer sensor.
+          If this option is set,
+	  it will support
+          MTK_BMA222E_NEW Accelerometer.
+
