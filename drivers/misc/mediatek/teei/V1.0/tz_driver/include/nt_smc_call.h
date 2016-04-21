@@ -106,6 +106,9 @@
 		MAKE_SMC_CALL_ID(ID_FIELD_F_FAST_SMC_CALL, ID_FIELD_W_64, ID_FIELD_T_TRUSTED_OS_SERVICE2, 7)
 #define N_SWITCH_CORE \
 		MAKE_SMC_CALL_ID(ID_FIELD_F_FAST_SMC_CALL, ID_FIELD_W_64, ID_FIELD_T_TRUSTED_OS_SERVICE2, 8)
+#define N_GET_NON_IRQ_NUM      \
+		MAKE_SMC_CALL_ID(ID_FIELD_F_FAST_SMC_CALL, ID_FIELD_W_64, ID_FIELD_T_TRUSTED_OS_SERVICE2, 9)
+
 
 /*For nt side Standard Call*/
 #define NT_SCHED_T		\
@@ -193,7 +196,7 @@ static inline void n_get_param_in(
 
 	__asm__ volatile(
 	/* ".arch_extension sec\n" */
-	"mov x0, %[fun_id]\n\t"
+	"mov r0, %[fun_id]\n\t"
 	"mov x1, #0\n\t"
 	"mov x2, #0\n\t"
 	"mov x3, #0\n\t"
@@ -482,9 +485,19 @@ static inline void nt_sched_core(
 	: "x0", "x1", "x2", "x3", "memory");
 }
 
-
-
-
-
+static inline void nt_get_non_irq_num (uint64_t *p0)
+{
+	uint64_t temp[3];
+	__asm__ volatile(
+	/* ".arch_extension sec\n" */
+	"mov x0, %[fun_id]\n\t"
+	"smc 0\n\t"
+	"str x1, [%[temp], #0]\n\t"
+	"nop"
+	: :
+	[fun_id] "r" (N_GET_NON_IRQ_NUM), [temp] "r" (temp)
+	: "x0", "x1", "memory");
+	*p0 = temp[0];
+}
 
 #endif /* SMC_CALL_H_ */

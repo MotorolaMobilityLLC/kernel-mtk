@@ -1455,28 +1455,6 @@
 			clock-names = "main";
 			clock-frequency = <109000000>;
 			clock-div = <1>;
-
-			/* lenovo-sw, chenzz3, configure spi device for fingerprint, begin */
-			fpc1020@1 {
-				status = "ok";
-				compatible = "fpc,fpc1020";
-				reg = <1>;
-				spi-max-frequency = <4800000>;
-				input-device-name = "fpc1020";
-				fpc,gpio_rst      = <87>;
-				fpc,gpio_irq      = <86>;
-				fpc,use_fpc2050   = <1>;
-				fpc,enable-on-boot;
-				fpc,enable-wakeup;
-				/* EV_MSC, MSC_SCAN */
-				fpc,event-type = <4>;
-				fpc,event-code = <4>;
-				/* interrupt */
-				interrupt-parent = <&eintc>;
-				interrupts = <86 1>;
-				debounce = <86 1000>;
-			};
-			/* lenovo-sw, chenzz3, configure spi device for fingerprint, end */
 		};
 
 		therm_ctrl@1100b000 {
@@ -3456,8 +3434,11 @@
 	gsensor:accel@0 {
 		compatible = "mediatek,gsensor";
 	};
-	
 /*Lenovo-sw weimh1 add 2016-3-30 end:add for accel*/
+
+	fpc_int:fpc_int {
+		compatible = "mediatek, fpc_int-eint";
+	};
 };
 /*/include/ "cust_pmic.dtsi"*/
 
