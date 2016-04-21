@@ -13,7 +13,7 @@
  */
 struct teei_client_encode_cmd {
 	unsigned int len;
-	unsigned int data;
+	unsigned long long data;
 	/* unsigned long data; */
 	int   offset;
 	int   flags;

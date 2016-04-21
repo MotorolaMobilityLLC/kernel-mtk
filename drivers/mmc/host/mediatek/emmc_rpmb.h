@@ -18,7 +18,9 @@ extern struct msdc_host *mtk_msdc_host[];
 #define RPMB_IOCTL_WRITE_DATA   3
 #define RPMB_IOCTL_READ_DATA    4
 
-#if (defined(CONFIG_MICROTRUST_TZ_DRIVER))
+/* lenovo-sw, chenzz3, TEE-P1, begin */
+#if (defined(CONFIG_MICROTRUST_TEE_SUPPORT))
+/* lenovo-sw, chenzz3, TEE-P1, end */
 
 #define RPMB_MULTI_BLOCK_ACCESS 1
 
@@ -35,6 +37,9 @@ extern struct msdc_host *mtk_msdc_host[];
 #define RPMB_IOCTL_SOTER_WRITE_DATA   5
 #define RPMB_IOCTL_SOTER_READ_DATA    6
 #define RPMB_IOCTL_SOTER_GET_CNT      7
+/* lenovo-sw, chenzz3, TEE-P1, begin */
+#define RPMB_IOCTL_SOTER_GET_WR_SIZE      8
+/* lenovo-sw, chenzz3, TEE-P1, end */
 
 struct rpmb_infor {
 	unsigned int size;
