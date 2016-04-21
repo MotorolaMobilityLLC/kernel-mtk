@@ -288,6 +288,7 @@ struct fts_ts_data {
 #define FTS_Vendor_2_ID		0x79//default TP VID
 #define FTS_Vendor_3_ID     0x01
 #define FTS_Vendor_4_ID     0x3b//boe 
+#define FTS_Vendor_5_ID     0x04//lianxiang boe
 #endif
 #define FIRMWARE_VERTION_NODE                                
 #define FT_TP									0

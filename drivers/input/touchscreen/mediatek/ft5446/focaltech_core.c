@@ -91,7 +91,7 @@ static void devinfo_ctp_regchar(char *module,char * vendor,char *version,char *u
          s_DEVINFO_ctp->device_type="CTP";
          s_DEVINFO_ctp->device_module=module;
          s_DEVINFO_ctp->device_vendor=vendor;
-         s_DEVINFO_ctp->device_ic="FT5446";
+         s_DEVINFO_ctp->device_ic="FT5446i";
          s_DEVINFO_ctp->device_info=DEVINFO_NULL;
          s_DEVINFO_ctp->device_version=version;
          s_DEVINFO_ctp->device_used=used;
@@ -1451,9 +1451,9 @@ reset_proc:
 		{
          vendor_name="O-Film";
 		}
-		else if(ver==0x3b)
+		else if(ver==0x3b || ver==0x04)
 		{
-		 vendor_name="BOEN";
+		 vendor_name="BIEL";
 		}
 		else
 		{
@@ -1472,12 +1472,13 @@ reset_proc:
         {
           case 0x51://No used
           case 0x01:
-          sprintf(temp_comments,"TW:OFILM:FT5446 0x%x",ver_id); 
+          sprintf(temp_comments,"TW:OFILM:FT5446i 0x%x",ver_id); 
           devinfo_ctp_regchar("unknown","O-Film",temp_ver,DEVINFO_USED,temp_comments);
           break;
 		  case 0x3b:
-		  sprintf(temp_comments,"TW:BOEN:FT5446 0x%x",ver_id); 
-          devinfo_ctp_regchar("unknown","BOEN",temp_ver,DEVINFO_USED,temp_comments);	
+		  case 0x04:
+		  sprintf(temp_comments,"TW:BOEN:FT5446i 0x%x",ver_id); 
+          devinfo_ctp_regchar("unknown","BIEL",temp_ver,DEVINFO_USED,temp_comments);	
 		  break;
           default:
           break;
