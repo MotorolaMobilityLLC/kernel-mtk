@@ -47,12 +47,12 @@
 	led1:led@1 {
 		compatible = "mediatek,test-led";
 		led_mode = <3>;
-		data = <2>;
+		data = <1>;
 		pwm_config = <0 0 0 0 0>;
 	};
 	led2:led@2 {
 		compatible = "mediatek,blue";
-		led_mode = <3>;
+		led_mode = <0>;
 		data = <2>;
 		pwm_config = <0 0 0 0 0>;
 	};
@@ -70,7 +70,7 @@
 	};
 	led5:led@5 {
 		compatible = "mediatek,button-backlight";
-		led_mode = <3>;
+		led_mode = <0>;
 		data = <3>;
 		pwm_config = <0 0 0 0 0>;
 	};
@@ -1126,8 +1126,13 @@
 		compatible = "mediatek,cap_touch_cust";
 		reg = <0x38>;
 	};
+/*lenovo.sw wuwl10 20160420 add begin*/
+	i2c_lcd_bias@3e {
+		compatible = "mediatek,i2c_lcd_bias";
+		reg = <0x3e>;
+	};
+/*lenovo.sw wuwl10 20160420 add end*/
 };
-
 
 
 
