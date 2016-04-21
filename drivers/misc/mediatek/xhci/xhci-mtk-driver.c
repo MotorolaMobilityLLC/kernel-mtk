@@ -113,14 +113,20 @@ int mtk_iddig_debounce = 50;
 module_param(mtk_iddig_debounce, int, 0644);
 module_param(xhci_debug_level, int, 0644);
 
-//lenovo-sw wengjun1 add for support bq24296 otg Begin
+//lenovo-sw wengjun1 add for support bq24296 & bq24259 otg Begin
 #if defined(CONFIG_MTK_BQ24296_SUPPORT)
 extern void bq24296_set_boostv(unsigned int val);
 extern void bq24296_set_boost_lim(unsigned int val);
 extern void bq24296_set_en_hiz(unsigned int val);
 extern void bq24296_set_otg_config(unsigned int val);
 #endif
-//lenovo-sw wengjun1 add for support bq24296 otg End
+#if defined(CONFIG_MTK_BQ24259_SUPPORT)
+extern void bq24259_set_boostv(unsigned int val);
+extern void bq24259_set_boost_lim(unsigned int val);
+extern void bq24259_set_en_hiz(unsigned int val);
+extern void bq24259_set_otg_config(unsigned int val);
+#endif
+//lenovo-sw wengjun1 add for support bq24296 & bq24259 otg End
 
 void switch_int_to_host_and_mask(void)
 {
@@ -412,6 +418,13 @@ static void mtk_enable_otg_mode(void)
 	bq24296_set_en_hiz(0x0);
 	bq24296_set_otg_config(0x01);	/* OTG */
 //lenovo-sw mahj2 modify for support bq24296 otg End
+//lenovo-sw wengjun1 modify for support bq24259 otg Begin
+#elif defined(CONFIG_MTK_BQ24259_SUPPORT)
+	bq24259_set_boostv(0x7); //boost voltage 4.998V
+	bq24259_set_boost_lim(0x0);	/* 1A on VBUS */
+	bq24259_set_en_hiz(0x0);
+	bq24259_set_otg_config(0x01);	/* OTG */
+//lenovo-sw wengjun1 modify for support bq24259 otg End
 #endif
 #if defined(CONFIG_MTK_BQ25898_DUAL_SUPPORT)
 	bq25898_otg_en(0x01);
@@ -429,6 +442,10 @@ static void mtk_disable_otg_mode(void)
 #elif defined(CONFIG_MTK_BQ24296_SUPPORT)
 	bq24296_set_otg_config(0x0);
 //lenovo-sw mahj2 modify for support bq24296 otg End
+//lenovo-sw wengjun1 modify for support bq24259 otg Begin
+#elif defined(CONFIG_MTK_BQ24259_SUPPORT)
+	bq24259_set_otg_config(0x0);
+//lenovo-sw wengjun1 modify for support bq24259 otg end
 #endif
 #if defined(CONFIG_MTK_BQ25898_DUAL_SUPPORT)
 	bq25898_otg_en(0x0);
