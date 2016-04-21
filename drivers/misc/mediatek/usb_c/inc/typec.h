@@ -117,6 +117,27 @@ struct usbtypc {
 	struct usb3_switch *u3_sw;
 	struct usb_redriver *u_rd;
 };
+/*lenovo-sw wengjun1 add for usb typec fusb301a 20160419 begin*/
+#elif defined(CONFIG_USB_C_SWITCH_FUSB301A)
+struct usbtypc {
+	int irqnum;
+	int en_irq;
+#ifdef CONFIG_MTK_SIB_USB_SWITCH
+	bool sib_enable;
+#endif
+	struct pinctrl *pinctrl;
+	struct usbc_pin_ctrl *pin_cfg;
+	spinlock_t	fsm_lock;
+	struct delayed_work fsm_work;
+	struct i2c_client *i2c_hd;
+	struct hrtimer toggle_timer;
+	struct hrtimer debounce_timer;
+	struct typec_switch_data *host_driver;
+	struct typec_switch_data *device_driver;
+	struct usb3_switch *u3_sw;
+	struct usb_redriver *u_rd;
+};
+/*lenovo-sw wengjun1 add for usb typec fusb301a 20160419 end*/
 #elif defined(CONFIG_USB_C_SWITCH_SII70XX)
 struct usbtypc {
 	int irqnum;
