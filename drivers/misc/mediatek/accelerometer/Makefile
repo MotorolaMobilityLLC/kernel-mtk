@@ -30,5 +30,6 @@ obj-$(CONFIG_MTK_LSM6DS3)   +=  lsm6ds3/
 obj-$(CONFIG_MTK_ICM20645G)   +=  icm20645g/
 #Lenovo-sw weimh1 add 2016-3-30 begin:use independent dir for K52
 obj-$(CONFIG_MTK_LSM6DS3_K52)   +=  lsm6ds3-k52/
+obj-$(CONFIG_MTK_BMI120_NEW)   +=  bmi120-new/
 #Lenovo-sw weimh1 add 2016-3-30 end
 endif

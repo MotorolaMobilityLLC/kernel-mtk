@@ -14,4 +14,5 @@ source "drivers/misc/mediatek/gyroscope/gyrohub/Kconfig"
 source "drivers/misc/mediatek/gyroscope/icm20645gy/Kconfig"
 #Lenovo-sw weimh1 add 2016-3-30 begin:use independent dir for K52
 source "drivers/misc/mediatek/gyroscope/lsm6ds3gy-k52/Kconfig"
+source "drivers/misc/mediatek/gyroscope/bmi120gy-new/Kconfig"
 #Lenovo-sw weimh1 add 2016-3-30 end

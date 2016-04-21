@@ -89,9 +89,9 @@
 /*  start sensor */
 /* Lenovo-sw, weimh1, 2016-3-31 add begin: configure gsensor cust_accel */
 	cust_accel@0 {
-		compatible = "mediatek,lsm6ds3_acc";
+		compatible = "mediatek,bmi120_new";
 		i2c_num	= <1>;
-		i2c_addr = <0x66 0 0 0>;   /*false addr,real is 0x6A*/
+		i2c_addr = <0x6A 0 0 0>;   /*false addr,real is 0x68*/
 		direction = <7>;
 		power_id = <0xffff>;
 		power_vol = <0>;
@@ -134,9 +134,9 @@
 
 /* Lenovo-sw, weimh1, 2016-4-4 add begin: configure gyroscope cust_gyro */
 	cust_gyro@0 {
-		compatible				= "mediatek,lsm6ds3_gyro";
+		compatible				= "mediatek,bmi120gy_new";
 		i2c_num					= <1>;
-		i2c_addr				= <0x6A 0 0 0>;
+		i2c_addr				= <0x68 0 0 0>;
 		direction				= <7>;
 		power_id				= <0xffff>;
 		power_vol				= <0>;
@@ -1005,16 +1005,16 @@
 
 	/* Lenovo-sw, weimh1, 2016-3-31 add begin: configure gsensor i2c1 */
 	gyro_m@6A {
-		compatible = "mediatek,gyro_m";
+		compatible = "mediatek,bmi120gy_new";
 		i2c_num	= <1>;
-		reg = <0x6A>;
+		reg = <0x68>;
 		status = "okay";
 	};
 
-	gensor_m@6A {
-		compatible = "mediatek,lsm6ds3_acc";
+	gensor_m@68 {
+		compatible = "mediatek,bmi120_new";
 		i2c_num	= <1>;
-		reg = <0x66>;
+		reg = <0x6A>;
 		direction = <7>;
 		status = "okay";
 	};
