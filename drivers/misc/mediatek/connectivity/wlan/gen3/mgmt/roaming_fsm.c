@@ -103,7 +103,8 @@
 ********************************************************************************
 */
 
-#if DBG
+/*lenovo-sw lumy1, wifi log enhance*/
+#if 1
 /*lint -save -e64 Type mismatch */
 static PUINT_8 apucDebugRoamingState[ROAMING_STATE_NUM] = {
 	(PUINT_8) DISP_STRING("ROAMING_STATE_IDLE"),
@@ -260,7 +261,8 @@ VOID roamingFsmSteps(IN P_ADAPTER_T prAdapter, IN ENUM_ROAMING_STATE_T eNextStat
 	do {
 
 		/* Do entering Next State */
-#if DBG
+/*lenovo-sw lumy1, wifi log enhance*/
+#if 1
 		DBGLOG(ROAMING, STATE, "TRANSITION: [%s] -> [%s]\n",
 					apucDebugRoamingState[prRoamingFsmInfo->eCurrentState],
 					apucDebugRoamingState[eNextState]);

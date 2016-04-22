@@ -2289,7 +2289,9 @@ WLAN_STATUS scanAddScanResult(IN P_ADAPTER_T prAdapter, IN P_BSS_DESC_T prBssDes
 		break;
 	}
 
-	DBGLOG(SCN, TRACE, "ind %s %d %d\n", prBssDesc->aucSSID, prBssDesc->ucChannelNum, prBssDesc->ucRCPI);
+	/*lenovo-sw lumy1, wifi log enhance*/
+	DBGLOG(SCN, INFO, "ind ["MACSTR"], RSSI %d, %s,  channel %d\n", MAC2STR(prBssDesc->aucBSSID), 
+		RCPI_TO_dBm(prBssDesc->ucRCPI), prBssDesc->aucSSID, prBssDesc->ucChannelNum);
 
 	if (prAdapter->rWifiVar.rScanInfo.fgNloScanning &&
 				test_bit(SUSPEND_FLAG_CLEAR_WHEN_RESUME, &prAdapter->ulSuspendFlag)) {
@@ -2557,7 +2559,8 @@ P_BSS_DESC_T scanSearchBssDescByPolicy(IN P_ADAPTER_T prAdapter, IN UINT_8 ucBss
 		prConnSettings->aucSSID[prConnSettings->ucSSIDLen] = '\0';
 #endif
 
-	DBGLOG(SCN, INFO, "SEARCH: Num Of BSS_DESC_T = %d, Look for SSID: %s\n",
+	/*lenovo-sw lumy1, wifi log enhance*/
+	DBGLOG(SCN, TRACE, "SEARCH: Num Of BSS_DESC_T = %d, Look for SSID: %s\n",
 	       prBSSDescList->u4NumElem, prConnSettings->aucSSID);
 
 	/* 4 <1> The outer loop to search for a candidate. */
@@ -2984,6 +2987,15 @@ P_BSS_DESC_T scanSearchBssDescByPolicy(IN P_ADAPTER_T prAdapter, IN UINT_8 ucBss
 #endif
 		}
 	}
+
+	/*Begin, lenovo-sw lumy1, wifi log enhance*/
+	if (prCandidateBssDesc != NULL)
+	{
+		DBGLOG(SCN, INFO,
+			"SEARCH: prCandidateBssDesc MAC: ["MACSTR"]\n",
+			MAC2STR(prCandidateBssDesc->aucBSSID));
+	}
+	/*End, lenovo-sw lumy1, wifi log enhance*/
 
 	return prCandidateBssDesc;
 
