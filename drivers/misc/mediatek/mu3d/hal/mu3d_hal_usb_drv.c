@@ -376,8 +376,9 @@ void mu3d_hal_clear_intr(void)
 void mu3d_hal_system_intr_en(void)
 {
 	DEV_UINT16 int_en;
+#ifdef SUPPORT_U3
 	DEV_UINT32 ltssm_int_en;
-
+#endif
 	os_printk(K_ERR, "%s\n", __func__);
 
 	/* Disable All endpoint interrupt */
@@ -441,8 +442,9 @@ void mu3d_hal_system_intr_en(void)
 void _ex_mu3d_hal_system_intr_en(void)
 {
 	DEV_UINT16 int_en;
+#ifdef SUPPORT_U3
 	DEV_UINT32 ltssm_int_en;
-
+#endif
 	os_printk(K_DEBUG, "%s\n", __func__);
 
 	/* Disable All endpoint interrupt */
@@ -480,6 +482,7 @@ void _ex_mu3d_hal_system_intr_en(void)
 	os_writel(U3D_LTSSM_INTR_ENABLE, ltssm_int_en);
 #endif
 
+#if 0
 #ifdef SUPPORT_OTG
 	/* os_writel(U3D_SSUSB_OTG_INT_EN, 0x0); */
 	os_printk(K_ERR, "U3D_SSUSB_OTG_STS: %x\n", os_readl(U3D_SSUSB_OTG_STS));
@@ -489,7 +492,7 @@ void _ex_mu3d_hal_system_intr_en(void)
 		  SSUSB_CHG_B_ROLE_B_INT_EN | SSUSB_CHG_A_ROLE_B_INT_EN |
 		  SSUSB_ATTACH_B_ROLE_INT_EN);
 #endif
-
+#endif
 #ifdef USE_SSUSB_QMU
 	/* Enable QMU interrupt. */
 	os_writel(U3D_QIESR1, TXQ_EMPTY_IESR | TXQ_CSERR_IESR | TXQ_LENERR_IESR |

@@ -2,7 +2,6 @@
 
 #include "gt9xx_config.h"
 #include "include/tpd_gt9xx_common.h"
-#include "gt9xx_firmware.h"
 #define GUP_FW_INFO
 #if defined(CONFIG_TPD_PROXIMITY)
 #include <linux/hwmsensor.h>
@@ -51,8 +50,6 @@ struct touch_virtual_key_map_t {
 static struct touch_virtual_key_map_t maping[] = GTP_KEY_MAP_ARRAY;
 
 unsigned int touch_irq = 0;
-unsigned int tpd_rst_gpio_number = 0;
-unsigned int tpd_int_gpio_number = 0;
 
 #if defined(CONFIG_GTP_SLIDE_WAKEUP)
 enum DOZE_T {
@@ -128,8 +125,6 @@ static u8 tpd_proximity_detect = 1;	/* 0-->close ; 1--> far away */
 #define GTP_REG_REFRESH_RATE		0x8056
 #endif
 
-u32 gtp_eint_trigger_type = IRQF_TRIGGER_FALLING;
-
 struct i2c_client *i2c_client_tp_point = NULL;
 static const struct i2c_device_id tpd_i2c_id[] = { {"gt9xx", 0}, {} };
 static unsigned short force[] = { 0, 0xBA, I2C_CLIENT_END, I2C_CLIENT_END };
@@ -156,32 +151,6 @@ static struct i2c_driver tpd_i2c_driver = {
 	.address_list = (const unsigned short *) forces,
 };
 
-static int of_get_gt9xx_platform_data(struct device *dev)
-{
-	/*int ret, num;*/
-
-	if (dev->of_node) {
-		const struct of_device_id *match;
-
-		match = of_match_device(of_match_ptr(gt9xx_dt_match), dev);
-		if (!match) {
-			GTP_ERROR("Error: No device match found\n");
-			return -ENODEV;
-		}
-	}
-	tpd_rst_gpio_number = of_get_named_gpio(dev->of_node, "rst-gpio", 0);
-	tpd_int_gpio_number = of_get_named_gpio(dev->of_node, "int-gpio", 0);
-	/*ret = of_property_read_u32(dev->of_node, "rst-gpio", &num);
-	if (!ret)
-		tpd_rst_gpio_number = num;
-	ret = of_property_read_u32(dev->of_node, "int-gpio", &num);
-	if (!ret)
-		tpd_int_gpio_number = num;
-	*/
-	GTP_ERROR("g_vproc_en_gpio_number %d\n", tpd_rst_gpio_number);
-	GTP_ERROR("g_vproc_vsel_gpio_number %d\n", tpd_int_gpio_number);
-	return 0;
-}
 static u8 config[GTP_CONFIG_MAX_LENGTH + GTP_ADDR_LENGTH]
 = { GTP_REG_CONFIG_DATA >> 8, GTP_REG_CONFIG_DATA & 0xff };
 
@@ -1426,20 +1395,20 @@ Note:
 *******************************************************/
 void gtp_int_sync(s32 ms)
 {
-	gpio_direction_output(tpd_int_gpio_number, 0);
+	tpd_gpio_output(1, 0);
 	msleep(ms);
-	gpio_direction_input(tpd_int_gpio_number);
+	tpd_gpio_as_int(1);
 }
 
 void gtp_reset_guitar(struct i2c_client *client, s32 ms)
 {
 	GTP_INFO("GTP RESET!\n");
-	gpio_direction_output(tpd_rst_gpio_number, 0);
+	tpd_gpio_output(0, 0);
 	msleep(ms);
-	gpio_direction_output(tpd_int_gpio_number, client->addr == 0x14);
+	tpd_gpio_output(1, client->addr == 0x14);
 
 	msleep(20);
-	gpio_direction_output(tpd_rst_gpio_number, 1);
+	tpd_gpio_output(0, 1);
 
 	msleep(20);		/* must >= 6ms */
 
@@ -1460,8 +1429,8 @@ static int tpd_power_on(struct i2c_client *client)
 	int reset_count = 0;
 
 reset_proc:
-	gpio_direction_output(tpd_rst_gpio_number, 0);
-	gpio_direction_output(tpd_int_gpio_number, 0);
+	tpd_gpio_output(0, 0);
+	tpd_gpio_output(1, 0);
 	msleep(20);
 
 	ret = regulator_set_voltage(tpd->reg, 2800000, 2800000);	/* set 2.8v */
@@ -1830,31 +1799,39 @@ static int tpd_irq_registration(void)
 {
 	struct device_node *node = NULL;
 	int ret = 0;
+	u32 ints[2] = { 0, 0 };
 
-	node = of_find_compatible_node(NULL, NULL, "mediatek,cap_touch");
+	GTP_INFO("Device Tree Tpd_irq_registration!");
+
+	node = of_find_matching_node(node, touch_of_match);
 	if (node) {
-		/*touch_irq = gpio_to_irq(tpd_int_gpio_number);*/
-		touch_irq = irq_of_parse_and_map(node, 0);
+		of_property_read_u32_array(node, "debounce", ints, ARRAY_SIZE(ints));
+		gpio_set_debounce(ints[0], ints[1]);
 
-		if (!int_type) {/* EINTF_TRIGGER */
+		touch_irq = irq_of_parse_and_map(node, 0);
+		if (!int_type) {/*EINTF_TRIGGER*/
 			ret =
-					request_irq(touch_irq, tpd_eint_interrupt_handler, IRQF_TRIGGER_RISING,
-					TPD_DEVICE, NULL);
-			gtp_eint_trigger_type = IRQF_TRIGGER_RISING;
-			if (ret > 0)
+			    request_irq(touch_irq, (irq_handler_t) tpd_eint_interrupt_handler, IRQF_TRIGGER_RISING,
+					"TOUCH_PANEL-eint", NULL);
+			if (ret > 0) {
+				ret = -1;
 				GTP_ERROR("tpd request_irq IRQ LINE NOT AVAILABLE!.");
+			}
 		} else {
 			ret =
-					request_irq(touch_irq, tpd_eint_interrupt_handler,
-					IRQF_TRIGGER_FALLING, TPD_DEVICE, NULL);
-			gtp_eint_trigger_type = IRQF_TRIGGER_FALLING;
-			if (ret > 0)
+			    request_irq(touch_irq, (irq_handler_t) tpd_eint_interrupt_handler, IRQF_TRIGGER_FALLING,
+					"TOUCH_PANEL-eint", NULL);
+			if (ret > 0) {
+				ret = -1;
 				GTP_ERROR("tpd request_irq IRQ LINE NOT AVAILABLE!.");
+			}
 		}
 	} else {
-		GTP_ERROR("[%s] tpd request_irq can not find touch eint device node!.", __func__);
+		GTP_ERROR("tpd request_irq can not find touch eint device node!.");
+		ret = -1;
 	}
-	return 0;
+	GTP_INFO("[%s]irq:%d, debounce:%d-%d:", __func__, touch_irq, ints[0], ints[1]);
+	return ret;
 }
 
 int tpd_reregister_from_tui(void)
@@ -1951,12 +1928,7 @@ static int tpd_registration(void *unused)
 	/* __set_bit(INPUT_PROP_POINTER, tpd->dev->propbit); // 20130722 */
 #endif
 	/* set INT mode */
-	/*
-		 mt_set_gpio_mode(GPIO_CTP_EINT_PIN, GPIO_CTP_EINT_PIN_M_EINT);
-		 mt_set_gpio_dir(GPIO_CTP_EINT_PIN, GPIO_DIR_IN);
-		 mt_set_gpio_pull_enable(GPIO_CTP_EINT_PIN, GPIO_PULL_DISABLE);
-	 */
-	gpio_direction_input(tpd_int_gpio_number);
+	tpd_gpio_as_int(1);
 
 	msleep(50);
 
@@ -2006,21 +1978,6 @@ static s32 tpd_i2c_probe(struct i2c_client *client, const struct i2c_device_id *
 
 	GTP_INFO("tpd_i2c_probe start.");
 
-	of_get_gt9xx_platform_data(&client->dev);
-	/* configure the gpio pins */
-	err = gpio_request_one(tpd_rst_gpio_number, GPIOF_OUT_INIT_LOW,
-				 "touchp_reset");
-	if (err < 0) {
-		GTP_ERROR("Unable to request gpio reset_pin\n");
-		return -1;
-	}
-	err = gpio_request_one(tpd_int_gpio_number, GPIOF_IN,
-				 "tpd_int");
-	if (err < 0) {
-		GTP_ERROR("Unable to request gpio int_pin\n");
-		gpio_free(tpd_rst_gpio_number);
-		return -1;
-	}
 	i2c_client_tp_point = client;
 	if (RECOVERY_BOOT == get_boot_mode())
 			return 0;
@@ -2029,8 +1986,6 @@ static s32 tpd_i2c_probe(struct i2c_client *client, const struct i2c_device_id *
 	if (IS_ERR(probe_thread)) {
 		err = PTR_ERR(probe_thread);
 		GTP_INFO(TPD_DEVICE " failed to create probe thread: %d\n", err);
-		gpio_free(tpd_int_gpio_number);
-		gpio_free(tpd_rst_gpio_number);
 		return err;
 	}
 
@@ -2065,8 +2020,6 @@ static int tpd_i2c_remove(struct i2c_client *client)
 #if defined(CONFIG_GTP_ESD_PROTECT)
 	destroy_workqueue(gtp_esd_check_workqueue);
 #endif
-		gpio_free(tpd_int_gpio_number);
-		gpio_free(tpd_rst_gpio_number);
 
 	return 0;
 }
@@ -2085,8 +2038,8 @@ void force_reset_guitar(void)
 	/* mt_eint_mask(CUST_EINT_TOUCH_PANEL_NUM); */
 	disable_irq(touch_irq);
 
-	gpio_direction_output(tpd_rst_gpio_number, 0);
-	gpio_direction_output(tpd_int_gpio_number, 0);
+	tpd_gpio_output(0, 0);
+	tpd_gpio_output(1, 0);
 
 	/* Power off TP */
 	ret = regulator_disable(tpd->reg);
@@ -2299,16 +2252,6 @@ static void tpd_down(s32 x, s32 y, s32 size, s32 id)
 	}
 
 	input_report_key(tpd->dev, BTN_TOUCH, 1);
-
-	if (x < tpd_dts_data.tpd_resolution[0])
-			x = 0;
-	else
-			x = x - tpd_dts_data.tpd_resolution[0];
-	if (y < tpd_dts_data.tpd_resolution[1])
-			y = 0;
-	else
-			y = y - tpd_dts_data.tpd_resolution[1];
-	GTP_INFO("x:%d, y:%d, lcm_x:%d, lcm_y:%d\n", x, y, lcm_x, lcm_y);
 
 	input_report_abs(tpd->dev, ABS_MT_POSITION_X, x);
 	input_report_abs(tpd->dev, ABS_MT_POSITION_Y, y);
@@ -2969,8 +2912,8 @@ static s8 gtp_enter_sleep(struct i2c_client *client)
 
 #if defined(CONFIG_GTP_POWER_CTRL_SLEEP)
 
-	gpio_direction_output(tpd_rst_gpio_number, 0);
-	gpio_direction_output(tpd_int_gpio_number, 0);
+	tpd_gpio_output(0, 0);
+	tpd_gpio_output(1, 0);
 	msleep(20);
 
 #ifdef TPD_POWER_SOURCE_1800
@@ -2991,7 +2934,7 @@ static s8 gtp_enter_sleep(struct i2c_client *client)
 		u8 i2c_control_buf[3] = {(u8)(GTP_REG_SLEEP >> 8),
 					 (u8)GTP_REG_SLEEP, 5};
 
-		gpio_direction_output(tpd_int_gpio_number, 0);
+		tpd_gpio_output(1, 0);
 		msleep(20);
 
 		while (retry++ < 5) {
@@ -3057,7 +3000,7 @@ static s8 gtp_wakeup_sleep(struct i2c_client *client)
 		u8 opr_buf[2] = { 0 };
 
 		while (retry++ < 10) {
-			gpio_direction_output(tpd_int_gpio_number, 1);
+			tpd_gpio_output(1, 1);
 			msleep(20);
 
 			ret = gtp_i2c_test(client);

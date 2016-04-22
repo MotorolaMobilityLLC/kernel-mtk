@@ -17,48 +17,50 @@
 #include "trace.h"
 
 #ifdef CONFIG_MTK_KERNEL_MARKER
-static unsigned long __read_mostly tracing_mark_write_addr;
+static unsigned long __read_mostly mark_addr;
 static int kernel_marker_on;
 
 static inline void update_tracing_mark_write_addr(void)
 {
-	if (unlikely(tracing_mark_write_addr == 0))
-		tracing_mark_write_addr = kallsyms_lookup_name("tracing_mark_write");
+	if (unlikely(mark_addr == 0))
+		mark_addr = kallsyms_lookup_name("tracing_mark_write");
 }
 
-inline void mt_kernel_trace_begin(char *name)
+inline void trace_begin(char *name)
 {
 	if (unlikely(kernel_marker_on) && name) {
 		preempt_disable();
-		event_trace_printk(tracing_mark_write_addr, "B|%d|%s\n", current->tgid, name);
+		event_trace_printk(mark_addr, "B|%d|%s\n",
+				   current->tgid, name);
 		preempt_enable();
 	}
 }
-EXPORT_SYMBOL(mt_kernel_trace_begin);
+EXPORT_SYMBOL(trace_begin);
 
-inline void mt_kernel_trace_counter(char *name, int count)
+inline void trace_counter(char *name, int count)
 {
 	if (unlikely(kernel_marker_on) && name) {
 		preempt_disable();
-		event_trace_printk(tracing_mark_write_addr,
-				   "C|%d|%s|%d\n", current->tgid, name, count);
+		event_trace_printk(mark_addr, "C|%d|%s|%d\n",
+				   current->tgid, name, count);
 		preempt_enable();
 	}
 }
-EXPORT_SYMBOL(mt_kernel_trace_counter);
+EXPORT_SYMBOL(trace_counter);
 
-inline void mt_kernel_trace_end(void)
+inline void trace_end(void)
 {
 	if (unlikely(kernel_marker_on)) {
 		preempt_disable();
-		event_trace_printk(tracing_mark_write_addr, "E\n");
+		event_trace_printk(mark_addr, "E\n");
 		preempt_enable();
 	}
 }
-EXPORT_SYMBOL(mt_kernel_trace_end);
+EXPORT_SYMBOL(trace_end);
 
 static ssize_t
-kernel_marker_on_simple_read(struct file *filp, char __user *ubuf, size_t cnt, loff_t *ppos)
+kernel_marker_on_simple_read(struct file *filp, char __user *ubuf,
+			     size_t cnt, loff_t *ppos)
 {
 	char buf[64];
 	int r;
@@ -104,7 +106,8 @@ static __init int init_kernel_marker(void)
 	if (!d_tracer)
 		return 0;
 
-	trace_create_file("kernel_marker_on", 0644, d_tracer, NULL, &kernel_marker_on_simple_fops);
+	trace_create_file("kernel_marker_on", 0644, d_tracer, NULL,
+			  &kernel_marker_on_simple_fops);
 
 	return 0;
 }
@@ -123,8 +126,9 @@ int resize_ring_buffer_for_hibernation(int enable)
 		ret = tracing_update_buffers();
 	} else {
 		tr = top_trace_array();
-		if (tr)
-			ret = tracing_resize_ring_buffer(tr, 0, RING_BUFFER_ALL_CPUS);
+		if (!tr)
+			return -ENODEV;
+		ret = tracing_resize_ring_buffer(tr, 0, RING_BUFFER_ALL_CPUS);
 	}
 
 	return ret;
@@ -132,25 +136,32 @@ int resize_ring_buffer_for_hibernation(int enable)
 #endif
 
 #ifdef CONFIG_MTK_SCHED_TRACERS
+static unsigned long buf_size = 25165824UL;
 static bool boot_trace;
 static __init int boot_trace_cmdline(char *str)
 {
 	boot_trace = true;
+	update_buf_size(buf_size);
 	return 0;
 }
 __setup("boot_trace", boot_trace_cmdline);
 
+#include <linux/rtc.h>
 void print_enabled_events(struct trace_buffer *buf, struct seq_file *m)
 {
 	struct ftrace_event_call *call;
 	struct ftrace_event_file *file;
 	struct trace_array *tr;
 
+	unsigned long usec_rem;
+	unsigned long long t;
+	struct rtc_time tm_utc, tm;
+	struct timeval tv = { 0 };
+
 	if (buf->tr)
 		tr = buf->tr;
 	else
 		return;
-
 	if (tr->name != NULL)
 		seq_printf(m, "# instance: %s, enabled events:", tr->name);
 	else
@@ -162,6 +173,25 @@ void print_enabled_events(struct trace_buffer *buf, struct seq_file *m)
 				   ftrace_event_name(call));
 	}
 	seq_puts(m, "\n");
+
+	t = sched_clock();
+	do_gettimeofday(&tv);
+	t = ns2usecs(t);
+	usec_rem = do_div(t, USEC_PER_SEC);
+	rtc_time_to_tm(tv.tv_sec, &tm_utc);
+	rtc_time_to_tm(tv.tv_sec - sys_tz.tz_minuteswest * 60, &tm);
+
+	seq_printf(m, "# kernel time now: %5llu.%06lu\n",
+		   t, usec_rem);
+	seq_printf(m, "# UTC time:\t%d-%02d-%02d %02d:%02d:%02d.%03u\n",
+			tm_utc.tm_year + 1900, tm_utc.tm_mon + 1,
+			tm_utc.tm_mday, tm_utc.tm_hour,
+			tm_utc.tm_min, tm_utc.tm_sec,
+			(unsigned int)tv.tv_usec);
+	seq_printf(m, "# android time:\t%d-%02d-%02d %02d:%02d:%02d.%03u\n",
+			tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday,
+			tm.tm_hour, tm.tm_min, tm.tm_sec,
+			(unsigned int)tv.tv_usec);
 }
 
 /* ftrace's switch function for MTK solution */
@@ -179,6 +209,7 @@ static void ftrace_events_enable(int enable)
 #endif
 		trace_set_clr_event(NULL, "workqueue_execute_start", 1);
 		trace_set_clr_event(NULL, "workqueue_execute_end", 1);
+		trace_set_clr_event(NULL, "cpu_frequency", 1);
 
 		trace_set_clr_event(NULL, "block_bio_frontmerge", 1);
 		trace_set_clr_event(NULL, "block_bio_backmerge", 1);
@@ -205,10 +236,13 @@ static void ftrace_events_enable(int enable)
 static __init int boot_ftrace(void)
 {
 	struct trace_array *tr;
+	int ret;
 
 	if (boot_trace) {
 		tr = top_trace_array();
-		tracing_update_buffers();
+		ret = tracing_update_buffers();
+		if (ret != 0)
+			pr_debug("unable to expand buffer, ret=%d\n", ret);
 		ftrace_events_enable(1);
 		set_tracer_flag(tr, TRACE_ITER_OVERWRITE, 0);
 		pr_debug("[ftrace]boot-time profiling...\n");
@@ -220,14 +254,22 @@ core_initcall(boot_ftrace);
 #ifdef CONFIG_MTK_FTRACE_DEFAULT_ENABLE
 static __init int enable_ftrace(void)
 {
+	int ret;
+
 	if (!boot_trace) {
 		/* enable ftrace facilities */
 		ftrace_events_enable(1);
 
-		/* only update buffer eariler if we want to collect boot-time ftrace
-		to avoid the boot time impacted by early-expanded ring buffer */
-		tracing_update_buffers();
-		pr_debug("[ftrace]ftrace ready...\n");
+		/* only update buffer eariler
+		 * if we want to collect boot-time ftrace
+		 * to avoid the boot time impacted by
+		 * early-expanded ring buffer */
+		ret = tracing_update_buffers();
+		if (ret != 0)
+			pr_debug("fail to update buffer, ret=%d\n",
+				 ret);
+		else
+			pr_debug("[ftrace]ftrace ready...\n");
 	}
 	return 0;
 }
@@ -242,7 +284,9 @@ late_initcall(enable_ftrace);
 static DEFINE_PER_CPU(unsigned long long, last_event_ts);
 static struct notifier_block hotplug_event_notifier;
 
-static int hotplug_event_notify(struct notifier_block *self, unsigned long action, void *hcpu)
+static int
+hotplug_event_notify(struct notifier_block *self,
+		     unsigned long action, void *hcpu)
 {
 	long cpu = (long)hcpu;
 
@@ -252,8 +296,8 @@ static int hotplug_event_notify(struct notifier_block *self, unsigned long actio
 		trace_cpu_hotplug(cpu, 1, per_cpu(last_event_ts, cpu));
 		per_cpu(last_event_ts, cpu) = ns2usecs(ftrace_now(cpu));
 		break;
-	case CPU_DEAD:
-	case CPU_DEAD_FROZEN:
+	case CPU_DYING:
+	case CPU_DYING_FROZEN:
 		trace_cpu_hotplug(cpu, 0, per_cpu(last_event_ts, cpu));
 		per_cpu(last_event_ts, cpu) = ns2usecs(ftrace_now(cpu));
 		break;

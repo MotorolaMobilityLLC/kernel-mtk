@@ -11,5 +11,8 @@
 # GNU General Public License for more details.
 #
 
-
+ifdef CONFIG_MTK_PMIC_CHIP_MT6353
+obj-y += mt_power_gs_6353_array.o
+else
 obj-y += mt_power_gs_6351_array.o
+endif

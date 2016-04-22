@@ -19,6 +19,8 @@ ifeq ($(CONFIG_USB_DEBUG),y)
 	EXTRA_CFLAGS += -DDEBUG
 endif
 
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/gpio/mt6755
+
 #For USB HQA Driving Tuning Mode 1 Settings
 #EXTRA_CFLAGS += -DMTK_USB_MODE1
 

@@ -117,6 +117,7 @@ enum {
 };
 void spm_pmic_power_mode(int mode, int force, int lock);
 void spm_bypass_boost_gpio_set(void);
+void spm_vmd_sel_gpio_set(void);
 
 /**************************************
  * Macro and Inline

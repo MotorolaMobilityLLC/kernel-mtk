@@ -14,6 +14,13 @@
 /*Register address define*/
 #include <mach/upmu_hw.h>
 
+#ifdef CONFIG_MTK_PMIC_NEW_ARCH
+
+#ifdef CONFIG_MTK_PMIC_CHIP_MT6353
+#include <reg_accdet_mt6353.h>
+#endif
+
+#else
 
 #define ACCDET_BASE                 0x00000000
 #define TOP_RST_ACCDET		     MT6351_TOP_RST_CON0
@@ -166,3 +173,5 @@
 #define ACCDET_1V9_MODE_ON   0x1E10
 #define ACCDET_2V8_MODE_ON   0x5A20
 #define ACCDET_SWCTRL_IDLE_EN    (0x07<<4)
+
+#endif

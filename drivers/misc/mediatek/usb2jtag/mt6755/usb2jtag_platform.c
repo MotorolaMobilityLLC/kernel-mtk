@@ -34,11 +34,13 @@ static int mt_usb2jtag_hw_init(void)
 		pr_err("[USB2JTAG] iomap usb0p_sif2 base failed\n");
 		return -1;
 	}
-
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+	ret = pmic_set_register_value(PMIC_LDO_VUSB33_EN, 0x01);
+#else /* for pmic mt6351 setting */
 	ret |= pmic_set_register_value(MT6351_PMIC_RG_VUSB33_EN, 0x01);
 	ret |= pmic_set_register_value(MT6351_PMIC_RG_VA10_EN, 0x01);
 	ret |= pmic_set_register_value(MT6351_PMIC_RG_VA10_VOSEL, 0x02);
-
+#endif
 	if (ret) {
 		pr_err("[USB2JTAG] USB2JTAGE Voltage config failed\n");
 		BUG_ON(1);

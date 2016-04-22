@@ -1177,6 +1177,13 @@ static int __clk_enable(struct clk *clk)
 	if (WARN_ON(clk->prepare_count == 0))
 		return -ESHUTDOWN;
 
+	if (!strcmp(__clk_get_name(clk), "mm_disp0_smi_common")) {
+		if (clk->enable_count > 0) {
+			if (clk->ops->enable) {
+				ret = clk->ops->enable(clk->hw);
+			}
+		}
+	}
 	if (clk->enable_count == 0) {
 		ret = __clk_enable(clk->parent);
 

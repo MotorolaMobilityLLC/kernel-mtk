@@ -571,6 +571,8 @@ typedef struct {
 	unsigned int rg_bic;
 	unsigned int rg_bp;
 	unsigned int PLL_CLOCK;
+	unsigned int PLL_CK_VDO;
+	unsigned int PLL_CK_CMD;
 	unsigned int dsi_clock;
 	unsigned int ssc_disable;
 	unsigned int ssc_range;

@@ -144,10 +144,10 @@ static inline void append_runtime_feature(char **p_rt_data, struct ccci_runtime_
 {
 	CCCI_DEBUG_LOG(-1, KERN, "append rt_data %p, feature %u len %u\n",
 		     *p_rt_data, rt_feature->feature_id, rt_feature->data_len);
-	memcpy(*p_rt_data, rt_feature, sizeof(struct ccci_runtime_feature));
+	memcpy_toio(*p_rt_data, rt_feature, sizeof(struct ccci_runtime_feature));
 	*p_rt_data += sizeof(struct ccci_runtime_feature);
 	if (data != NULL) {
-		memcpy(*p_rt_data, data, rt_feature->data_len);
+		memcpy_toio(*p_rt_data, data, rt_feature->data_len);
 		*p_rt_data += rt_feature->data_len;
 	}
 }
@@ -246,6 +246,7 @@ static void config_ap_side_feature(struct ccci_modem *md, struct md_query_ap_fea
 #endif
 	ap_side_md_feature->feature_set[MD_IMAGE_START_MEMORY].support_mask = CCCI_FEATURE_OPTIONAL_SUPPORT;
 
+	ap_side_md_feature->feature_set[CCMNI_MTU].support_mask = CCCI_FEATURE_MUST_SUPPORT;
 }
 
 static int prepare_runtime_data(struct ccci_modem *md, struct ccci_request *req)
@@ -473,6 +474,11 @@ static int prepare_runtime_data(struct ccci_modem *md, struct ccci_request *req)
 				rt_shm.addr = md->img_info[IMG_MD].address;
 				rt_shm.size = md->img_info[IMG_MD].size;
 				append_runtime_feature(&rt_data, &rt_feature, &rt_shm);
+				break;
+			case CCMNI_MTU:
+				rt_feature.data_len = sizeof(unsigned int);
+				random_seed = NET_RX_BUF - sizeof(struct ccci_header);
+				append_runtime_feature(&rt_data, &rt_feature, &random_seed);
 				break;
 			default:
 				break;
@@ -2447,7 +2453,7 @@ static void ccci_md_ee_info_dump(struct ccci_modem *md)
 			CCCI_ERROR_LOG(md->index, KERN, "fatal error offender %s\n", debug_info->fatal_error.offender);
 			if (debug_info->fatal_error.offender[0] != '\0') {
 				snprintf(ex_info, EE_BUF_LEN_UMOLY,
-					 "%s\n[%s] err_code1:0x%08X err_code2:0x%08X erro_code3:0x%08X\nMD Offender:%s\n%s\n",
+				"%s\n[%s] err_code1:0x%08X err_code2:0x%08X erro_code3:0x%08X\nMD Offender:%s\n%s",
 					 debug_info->core_name, debug_info->name, debug_info->fatal_error.err_code1,
 					 debug_info->fatal_error.err_code2, debug_info->fatal_error.err_code3,
 					 debug_info->fatal_error.offender, debug_info->fatal_error.ExStr);
@@ -2457,6 +2463,11 @@ static void ccci_md_ee_info_dump(struct ccci_modem *md)
 					 debug_info->core_name, debug_info->name, debug_info->fatal_error.err_code1,
 					 debug_info->fatal_error.err_code2, debug_info->fatal_error.err_code3,
 					 debug_info->fatal_error.ExStr);
+			}
+			if (debug_info->fatal_error.err_code1 == 0x3104) {
+				snprintf(ex_info, EE_BUF_LEN_UMOLY, "%s%s, MD base = 0x%08X\n\n", ex_info,
+					md->ex_mpu_string, (unsigned int)md->mem_layout.md_region_phy);
+				memset(md->ex_mpu_string, 0x0, sizeof(md->ex_mpu_string));
 			}
 			break;
 		case MD_EX_DUMP_2P_EX:

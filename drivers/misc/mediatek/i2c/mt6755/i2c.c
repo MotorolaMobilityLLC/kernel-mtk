@@ -156,6 +156,7 @@ static DEVICE_ATTR(debug, S_IRUGO | S_IWUSR, show_config, set_config);
 #define I2CINFO(type, format, arg...)
 #endif
 /***********************************common API********************************************************/
+#if !defined(CONFIG_MTK_PMIC_CHIP_MT6353)
 static int i2c_get_semaphore(struct mt_i2c_t *i2c)
 {
 	if (i2c->id != 3)
@@ -182,6 +183,7 @@ static int i2c_release_semaphore(struct mt_i2c_t *i2c)
 
 	return 0;
 }
+#endif
 
 /*
 add this function for cast pointer from PA to VA
@@ -879,9 +881,11 @@ static s32 _i2c_transfer_interface(struct mt_i2c_t *i2c)
 		i2c->control_reg |= I2C_CONTROL_RS;
 	}
 
+#if !defined(CONFIG_MTK_PMIC_CHIP_MT6353)
 	/* Use HW semaphore to protect mt6311 access between AP and SPM */
 	if (i2c_get_semaphore(i2c) != 0)
 		return -EBUSY;
+#endif
 
 	spin_lock(&i2c->lock);
 	_i2c_write_reg(i2c);
@@ -907,9 +911,11 @@ static s32 _i2c_transfer_interface(struct mt_i2c_t *i2c)
 	spin_unlock(&i2c->lock);
 	ret = _i2c_deal_result(i2c);
 
+#if !defined(CONFIG_MTK_PMIC_CHIP_MT6353)
 	/* Use HW semaphore to protect mt6311 access between AP and SPM */
 	if (i2c_release_semaphore(i2c) != 0)
 		ret = -EBUSY;
+#endif
 
 	I2CINFO(I2C_T_TRANSFERFLOW, "After i2c transfer .....\n");
 err:
@@ -1481,11 +1487,13 @@ static s32 mt_i2c_probe(struct platform_device *pdev)
 	i2c->base = of_iomap(pdev->dev.of_node, 0);
 	if (!i2c->base) {
 		I2CERR("I2C iomap failed\n");
+		kfree(i2c);
 		return -ENODEV;
 	}
 
 	if (of_property_read_u32(pdev->dev.of_node, "cell-index", &pdev->id)) {
 		I2CERR("I2C get cell-index failed\n");
+		kfree(i2c);
 		return -ENODEV;
 	}
 	i2c->id = pdev->id;
@@ -1493,6 +1501,7 @@ static s32 mt_i2c_probe(struct platform_device *pdev)
 	irq = irq_of_parse_and_map(pdev->dev.of_node, 0);
 	if (!irq) {
 		I2CERR("I2C get irq failed\n");
+		kfree(i2c);
 		return -ENODEV;
 	}
 
@@ -1553,12 +1562,14 @@ static s32 mt_i2c_probe(struct platform_device *pdev)
 	i2c->clk_main = devm_clk_get(&pdev->dev, "main");
 	if (IS_ERR(i2c->clk_main)) {
 		I2CERR("cannot get main clock, err=%ld\n", PTR_ERR(i2c->clk_main));
+		kfree(i2c);
 		return PTR_ERR(i2c->clk_main);
 	}
 
 	i2c->clk_dma = devm_clk_get(&pdev->dev, "dma");
 	if (IS_ERR(i2c->clk_dma)) {
 		I2CERR("cannot get dma clock, err=%ld\n", PTR_ERR(i2c->clk_dma));
+		kfree(i2c);
 		return PTR_ERR(i2c->clk_dma);
 	}
 #endif

@@ -105,7 +105,7 @@ struct wake_status spm_wakesta; /* record last wakesta */
 #define WAKE_SRC_FOR_SUSPEND \
 	(WAKE_SRC_R12_MD32_WDT_EVENT_B | \
 	WAKE_SRC_R12_KP_IRQ_B | \
-	WAKE_SRC_R12_PCM_TIMER |            \
+	WAKE_SRC_R12_PCM_TIMER | \
 	WAKE_SRC_R12_CONN2AP_SPM_WAKEUP_B | \
 	WAKE_SRC_R12_EINT_EVENT_B | \
 	WAKE_SRC_R12_CONN_WDT_IRQ_B | \
@@ -123,7 +123,7 @@ struct wake_status spm_wakesta; /* record last wakesta */
 #define WAKE_SRC_FOR_SUSPEND \
 	(WAKE_SRC_R12_MD32_WDT_EVENT_B | \
 	WAKE_SRC_R12_KP_IRQ_B | \
-	WAKE_SRC_R12_PCM_TIMER |            \
+	WAKE_SRC_R12_PCM_TIMER | \
 	WAKE_SRC_R12_CONN2AP_SPM_WAKEUP_B | \
 	WAKE_SRC_R12_EINT_EVENT_B | \
 	WAKE_SRC_R12_CONN_WDT_IRQ_B | \
@@ -359,7 +359,27 @@ static void spm_suspend_pre_process(struct pwr_ctrl *pwrctrl)
 	spm_pmic_power_mode(PMIC_PWR_SUSPEND, 0, 0);
 
 #if defined(CONFIG_ARCH_MT6755)
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+	spm_vmd_sel_gpio_set();
+#endif
+
 	/* set PMIC WRAP table for suspend power control */
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+	pmic_read_interface_nolock(PMIC_LDO_VSRAM_PROC_EN_ADDR, &temp, 0xFFFF, 0);
+	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_SUSPEND,
+			IDX_SP_VSRAM_PWR_ON,
+			temp | (1 << PMIC_LDO_VSRAM_PROC_EN_SHIFT));
+	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_SUSPEND,
+			IDX_SP_VSRAM_SHUTDOWN,
+			temp & ~(1 << PMIC_LDO_VSRAM_PROC_EN_SHIFT));
+	pmic_read_interface_nolock(PMIC_BUCK_VPROC_EN_ADDR, &temp, 0xFFFF, 0);
+	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_SUSPEND,
+			IDX_SP_VPROC_PWR_ON,
+			temp | (1 << PMIC_BUCK_VPROC_EN_SHIFT));
+	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_SUSPEND,
+			IDX_SP_VPROC_SHUTDOWN,
+			temp & ~(1 << PMIC_BUCK_VPROC_EN_SHIFT));
+#else
 	pmic_read_interface_nolock(MT6351_PMIC_RG_VSRAM_PROC_EN_ADDR, &temp, 0xFFFF, 0);
 	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_SUSPEND,
 			IDX_SP_VSRAM_PWR_ON,
@@ -367,6 +387,7 @@ static void spm_suspend_pre_process(struct pwr_ctrl *pwrctrl)
 	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_SUSPEND,
 			IDX_SP_VSRAM_SHUTDOWN,
 			temp & ~(1 << MT6351_PMIC_RG_VSRAM_PROC_EN_SHIFT));
+#endif
 	/* fpr dpd */
 	if (!(pwrctrl->pcm_flags & SPM_FLAG_DIS_DPD))
 		spm_dpd_init();

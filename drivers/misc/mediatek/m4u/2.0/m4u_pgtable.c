@@ -979,7 +979,7 @@ const struct file_operations m4u_debug_pgtable_fops = {
 	.open = m4u_debug_pgtable_open,
 	.read = seq_read,
 	.llseek = seq_lseek,
-	.release = seq_release,
+	.release = single_release,
 };
 
 int m4u_pgtable_init(struct m4u_device *m4u_dev, m4u_domain_t *m4u_domain)

@@ -46,16 +46,13 @@
 #endif
 /*#include <mach/mtk_rtc.h> TBD*/
 #include <mach/mt_spm_mtcmos.h>
-#if defined(CONFIG_MTK_SMART_BATTERY)
 #include <mt-plat/battery_common.h>
-#endif
 #include <linux/time.h>
 #include <mt-plat/mt_boot.h>
 
 #ifdef CONFIG_MTK_USB2JTAG_SUPPORT
 #include <mt-plat/mt_usb2jtag.h>
 #endif
-
 
 /* ============================================================ // */
 /* extern function */
@@ -83,13 +80,15 @@ int hw_charging_get_charger_type(void)
 static void hw_bc11_init(void)
 {
 	msleep(200);
-#ifdef CONFIG_MTK_KERNEL_POWER_OFF_CHARGING
-	/* add delay to make sure android init.rc finish */
-	if (get_boot_mode() == KERNEL_POWER_OFF_CHARGING_BOOT
-	    || get_boot_mode() == LOW_POWER_OFF_CHARGING_BOOT) {
-		msleep(1000);
-	}
-#endif
+
+	/* add make sure USB Ready */
+	if (is_usb_rdy() == KAL_FALSE) {
+		battery_log(BAT_LOG_CRTI, "CDP, block\n");
+		while (is_usb_rdy() == KAL_FALSE)
+			msleep(100);
+		battery_log(BAT_LOG_CRTI, "CDP, free\n");
+	} else
+		battery_log(BAT_LOG_CRTI, "CDP, PASS\n");
 
 #if defined(CONFIG_MTK_SMART_BATTERY)
 	Charger_Detect_Init();
@@ -282,6 +281,21 @@ static void hw_bc11_done(void)
 		hw_bc11_dump_register();
 	}*/
 
+}
+
+void hw_charging_enable_dp_voltage(int ison)
+{
+	static int cnt;
+
+	if (ison == 1) {
+		if (cnt == 0)
+			cnt = 1;
+		hw_bc11_init();
+		bc11_set_register_value(PMIC_RG_BC11_VSRC_EN, 0x2);
+	} else if (cnt == 1) {
+		hw_bc11_done();
+		cnt = 0;
+	}
 }
 
 int hw_charging_get_charger_type(void)

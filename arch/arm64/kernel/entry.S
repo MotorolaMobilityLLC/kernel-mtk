@@ -87,7 +87,12 @@
 	push	x0, x1
 	.if	\el == 0
 	mrs	x21, sp_el0
+#ifndef CONFIG_ARM64_IRQ_STACK
 	get_thread_info tsk			// Ensure MDSCR_EL1.SS is clear,
+#else
+	mov	tsk, sp
+	and	tsk, tsk, #~(THREAD_SIZE - 1)	// Ensure MDSCR_EL1.SS is clear,
+#endif
 	ldr	x19, [tsk, #TI_FLAGS]		// since we can unmask debug
 	disable_step_tsk x19, x20		// exceptions when scheduling.
 	.else
@@ -106,6 +111,14 @@
 	str	x21, [sp, #S_SYSCALLNO]
 	.endif
 
+#ifdef CONFIG_ARM64_IRQ_STACK
+	/*
+	 * Set sp_el0 to current thread_info.
+	 */
+	.if	\el == 0
+	msr	sp_el0, tsk
+	.endif
+#endif
 	/*
 	 * Registers that may be useful after this macro is invoked:
 	 *
@@ -130,7 +143,12 @@
 	stp	x0, x1, [sp, #-16]!
 
 	mrs	x21, sp_el0
+#ifndef CONFIG_ARM64_IRQ_STACK
 	get_thread_info tsk			// Ensure MDSCR_EL1.SS is clear,
+#else
+	mov	tsk, sp
+	and	tsk, tsk, #~(THREAD_SIZE - 1)	// Ensure MDSCR_EL1.SS is clear,
+#endif
 	ldr	x19, [tsk, #TI_FLAGS]		// since we can unmask debug
 	disable_step_tsk x19, x20		// exceptions when scheduling.
 	mrs	x22, elr_el1
@@ -144,6 +162,12 @@
 	mvn	x21, xzr
 	str	x21, [sp, #S_SYSCALLNO]
 
+#ifdef CONFIG_ARM64_IRQ_STACK
+	/*
+	 * Set sp_el0 to current thread_info.
+	 */
+	msr	sp_el0, tsk
+#endif
 	/*
 	 * Registers that may be useful after this macro is invoked:
 	 *
@@ -274,10 +298,45 @@
 #endif
 
 	.macro	get_thread_info, rd
+#ifndef CONFIG_ARM64_IRQ_STACK
 	mov	\rd, sp
 	and	\rd, \rd, #~(THREAD_SIZE - 1)	// top of stack
+#else
+	mrs	\rd, sp_el0
+#endif
 	.endm
 
+#ifdef CONFIG_ARM64_IRQ_STACK
+	.macro	irq_stack_entry
+	mov	x19, sp			// preserve the original sp
+	adrp    x25, irq_count		// incremented by do_softirq_own_stack()
+	add     x25, x25, #:lo12:irq_count
+	mrs	x26, tpidr_el1
+	add	x25, x25, x26
+	ldr	w25, [x25]
+	cbnz	w25, 1f			// recursive use?
+
+	/* switch to the irq stack */
+	adrp	x25, irq_stack_ptr
+	add     x25, x25, #:lo12:irq_stack_ptr
+	add	x25, x25, x26
+	ldr	x25, [x25]
+	mov	sp, x25
+
+	/* Add a dummy stack frame */
+	stp     x29, x22, [sp, #-16]!           // dummy stack frame
+	mov	x29, sp
+	stp     x19, xzr, [sp, #-16]!
+1:
+	.endm
+
+	/*
+	 * x19 is preserved between irq_stack_entry and irq_stack_exit.
+	 */
+	.macro	irq_stack_exit
+	mov	sp, x19
+	.endm
+#endif
 /*
  * These are the registers used in the syscall handler, and allow us to
  * have in theory up to 7 arguments to a function - x0 to x6.
@@ -296,7 +355,13 @@ tsk	.req	x28		// current thread_info
 	adrp	x1, handle_arch_irq
 	ldr	x1, [x1, #:lo12:handle_arch_irq]
 	mov	x0, sp
+#ifdef CONFIG_ARM64_IRQ_STACK
+	irq_stack_entry
+#endif
 	blr	x1
+#ifdef CONFIG_ARM64_IRQ_STACK
+	irq_stack_exit
+#endif
 	.endm
 
 	.text
@@ -395,7 +460,7 @@ ENDPROC(el1_error_invalid)
 el1_sync:
 	kernel_entry 1
 	mov	x0, sp
-	and	x20, x0, #0xffffffffffffc000
+	and     x20, x0, #~(THREAD_SIZE - 1) // top of stack
 	ldr	w4, [x20, #TI_CPU_EXCP]
 	add	w4, w4, #0x1
 	str	w4, [x20, #TI_CPU_EXCP]
@@ -435,7 +500,7 @@ el1_da:
 	mov	x2, sp				// struct pt_regs
 	bl	do_mem_abort
 	mov	x5, sp
-	and	x20, x5, #0xffffffffffffc000
+	and     x20, x5, #~(THREAD_SIZE - 1) // top of stack
 	ldr	w4, [x20, #TI_CPU_EXCP]
 	sub	w4, w4, #0x1
 	str	w4, [x20, #TI_CPU_EXCP]
@@ -469,7 +534,7 @@ el1_dbg:
 	mov	x2, sp				// struct pt_regs
 	bl	do_debug_exception
 	mov	x5, sp
-	and	x20, x5, #0xffffffffffffc000
+	and     x20, x5, #~(THREAD_SIZE - 1) // top of stack
 	ldr	w4, [x20, #TI_CPU_EXCP]
 	sub	w4, w4, #0x1
 	str	w4, [x20, #TI_CPU_EXCP]
@@ -743,6 +808,10 @@ ENTRY(cpu_switch_to)
 	ldp	x29, x9, [x8], #16
 	ldr	lr, [x8]
 	mov	sp, x9
+#ifdef CONFIG_ARM64_IRQ_STACK
+	and	x9, x9, #~(THREAD_SIZE - 1)
+	msr	sp_el0, x9
+#endif
 	ret
 ENDPROC(cpu_switch_to)
 

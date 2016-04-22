@@ -86,11 +86,11 @@ static disp_session_input_config session_input;
 /* macro definiton */
 #define ALIGN_TO(x, n)  (((x) + ((n) - 1)) & ~((n) - 1))
 #define MTK_FB_XRESV (ALIGN_TO(MTK_FB_XRES, MTK_FB_ALIGNMENT))
-#define MTK_FB_YRESV (ALIGN_TO(MTK_FB_YRES, MTK_FB_ALIGNMENT) * MTK_FB_PAGES)	/* For page flipping */
+#define MTK_FB_YRESV (MTK_FB_YRES * MTK_FB_PAGES)	/* For page flipping */
 #define MTK_FB_BYPP  ((MTK_FB_BPP + 7) >> 3)
 #define MTK_FB_LINE  (ALIGN_TO(MTK_FB_XRES, MTK_FB_ALIGNMENT) * MTK_FB_BYPP)
-#define MTK_FB_SIZE  (MTK_FB_LINE * ALIGN_TO(MTK_FB_YRES, MTK_FB_ALIGNMENT))
-#define MTK_FB_SIZEV (MTK_FB_LINE * ALIGN_TO(MTK_FB_YRES, MTK_FB_ALIGNMENT) * MTK_FB_PAGES)
+#define MTK_FB_SIZE  (MTK_FB_LINE * MTK_FB_YRES)
+#define MTK_FB_SIZEV (MTK_FB_LINE * MTK_FB_YRES * MTK_FB_PAGES)
 #define ASSERT_LAYER    (DDP_OVL_LAYER_MUN-1)
 #define DISP_DEFAULT_UI_LAYER_ID (DDP_OVL_LAYER_MUN-1)
 #define DISP_CHANGED_UI_LAYER_ID (DDP_OVL_LAYER_MUN-2)
@@ -248,7 +248,7 @@ static void mtkfb_blank_resume(void)
 	if (disp_helper_get_stage() != DISP_HELPER_STAGE_NORMAL)
 		return;
 
-	DISPMSG("[FB Driver] enter late_resume\n");
+	DISPMSG("[FB Driver] enter blank_resume\n");
 
 	ret = primary_display_resume();
 
@@ -257,7 +257,7 @@ static void mtkfb_blank_resume(void)
 		return;
 	}
 
-	DISPMSG("[FB Driver] leave late_resume\n");
+	DISPMSG("[FB Driver] leave blank_resume\n");
 
 }
 
@@ -268,7 +268,7 @@ static void mtkfb_blank_suspend(void)
 	if (disp_helper_get_stage() != DISP_HELPER_STAGE_NORMAL)
 		return;
 
-	DISPMSG("[FB Driver] enter early_suspend\n");
+	DISPMSG("[FB Driver] enter blank_suspend\n");
 
 	msleep(30);
 
@@ -279,7 +279,7 @@ static void mtkfb_blank_suspend(void)
 		return;
 	}
 
-	DISPMSG("[FB Driver] leave early_suspend\n");
+	DISPMSG("[FB Driver] leave blank_suspend\n");
 }
 
 #if defined(CONFIG_PM_AUTOSLEEP)
@@ -293,11 +293,6 @@ static int mtkfb_blank(int blank_mode, struct fb_info *info)
 			break;
 		}
 		mtkfb_blank_resume();
-		/*if (!lcd_fps)
-			msleep(30);
-		else
-			msleep(2 * 100000 / lcd_fps);
-		break;*/
 	case FB_BLANK_VSYNC_SUSPEND:
 	case FB_BLANK_HSYNC_SUSPEND:
 		break;
@@ -451,6 +446,13 @@ static int _convert_fb_layer_to_disp_input(struct fb_overlay_layer *src, disp_in
 
 	case MTK_FB_FORMAT_UYVY:
 		dst->src_fmt = DISP_FORMAT_UYVY;
+		break;
+	case MTK_FB_FORMAT_RGBA8888:
+		dst->src_fmt = DISP_FORMAT_RGBA8888;
+		break;
+
+	case MTK_FB_FORMAT_BGRA8888:
+		dst->src_fmt = DISP_FORMAT_BGRA8888;
 		break;
 
 	default:
@@ -938,7 +940,7 @@ static int mtkfb_set_par(struct fb_info *fbi)
 		fb_layer.src_use_color_key = 0;
 		DISPDBG("set_par,var->blue.offset=%d\n", var->blue.offset);
 		fb_layer.src_fmt = (0 == var->blue.offset) ?
-		    MTK_FB_FORMAT_ARGB8888 : MTK_FB_FORMAT_ABGR8888;
+		    MTK_FB_FORMAT_RGBA8888 : MTK_FB_FORMAT_BGRA8888;
 		fb_layer.src_color_key = 0;
 		break;
 
@@ -973,7 +975,6 @@ static int mtkfb_set_par(struct fb_info *fbi)
 	session_input = kzalloc(sizeof(*session_input), GFP_KERNEL);
 	if (!session_input)
 		goto out;
-
 
 	session_input->config_layer_num = 0;
 
@@ -1276,8 +1277,6 @@ static int mtkfb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long arg
 			layerInfo = kmalloc(sizeof(*layerInfo), GFP_KERNEL);
 			if (!layerInfo)
 				return -ENOMEM;
-
-
 
 			if (copy_from_user(layerInfo, (void __user *)arg, sizeof(*layerInfo))) {
 				MTKFB_LOG("[FB]: copy_from_user failed! line:%d\n", __LINE__);
@@ -1913,6 +1912,31 @@ static void mtkfb_fbinfo_cleanup(struct mtkfb_device *fbdev)
 
 	MSG_FUNC_LEAVE();
 }
+/* fast memset for hw test tool */
+void DISP_memset_io(volatile void __iomem *dst, int c, size_t count)
+{
+	u32 qc = (u8)c;
+
+	qc |= qc << 8;
+	qc |= qc << 16;
+
+	while (count && !IS_ALIGNED((unsigned long)dst, 8)) {
+		__raw_writeb(c, dst);
+		dst++;
+		count--;
+	}
+	while (count >= 4) {
+		__raw_writel(qc, dst);
+		dst += 4;
+		count -= 4;
+	}
+
+	while (count) {
+		__raw_writeb(c, dst);
+		dst++;
+		count--;
+	}
+}
 
 /* Init frame buffer content as 3 R/G/B color bars for debug */
 static int init_framebuffer(struct fb_info *info)
@@ -1925,7 +1949,7 @@ static int init_framebuffer(struct fb_info *info)
 	/*memset_io(buffer, 0, info->screen_size);*/
 
 	size = info->var.xres_virtual * info->var.yres * info->var.bits_per_pixel/8;
-	memset_io(buffer, 0, size);
+	DISP_memset_io(buffer, 0, size);
 	return 0;
 }
 

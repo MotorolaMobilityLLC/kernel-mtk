@@ -117,6 +117,12 @@ int __cpu_up(unsigned int cpu, struct task_struct *idle)
 	secondary_data.stack = task_stack_page(idle) + THREAD_START_SP;
 	__flush_dcache_area(&secondary_data, sizeof(secondary_data));
 
+#ifdef CONFIG_ARM64_IRQ_STACK
+	/*
+	 * Initialise IRQ stack to handle interrupts.
+	 */
+	init_irq_stack(cpu);
+#endif
 	/*
 	 * Now bring the CPU into our world.
 	 */

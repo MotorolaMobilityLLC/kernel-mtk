@@ -499,27 +499,54 @@ static void probe_signal_deliver(void *ignore, int sig, struct siginfo *info,
 }
 
 static void probe_death_signal(void *ignore, int sig, struct siginfo *info,
-				 struct k_sigaction *ka)
+		struct task_struct *task, int _group, int result)
 {
-	struct signal_struct *signal = current->signal;
+	struct signal_struct *signal = task->signal;
 	unsigned int state;
+	int group;
 
 	/*
 	 * all action will cause process coredump or terminate
+	 * kernel log reduction: only print delivered signals
 	 */
-	if ((sig_fatal(current, sig) || sig >= SIGRTMIN) &&
-	    (ka->sa.sa_handler == SIG_DFL) &&
-	    (!(signal->flags & SIGNAL_UNKILLABLE) || sig_kernel_only(sig))) {
+	if ((result == TRACE_SIGNAL_DELIVERED) &&
+	    sig_fatal(task, sig)) {
+		signal = task->signal;
+		group = _group ||
+			(signal->flags & (SIGNAL_GROUP_EXIT | SIGNAL_GROUP_COREDUMP));
 		/*
-		 * verbose log for death signals
-		 * ignore SIGKILL because it's too much
+		 * kernel log reduction
+		 * skip SIGRTMIN because it's used as timer signal
+		 * skip if the target thread is already dead
 		 */
-		if (sig != SIGKILL) {
-			state = current->state ? __ffs(current->state) + 1 : 0;
-			pr_debug("[signal]death sig %d delivered to [%d:%s:%c]\n",
-				 sig, current->pid, current->comm,
-				 state < sizeof(stat_nam) - 1 ? stat_nam[state] : '?');
-		}
+		if (sig == SIGRTMIN ||
+		    (task->state & (TASK_DEAD | EXIT_DEAD | EXIT_ZOMBIE)))
+			return;
+		/*
+		 * Global init gets no signals it doesn't want.
+		 * Container-init gets no signals it doesn't want from same
+		 * container.
+		 *
+		 * Note that if global/container-init sees a sig_kernel_only()
+		 * signal here, the signal must have been generated internally
+		 * or must have come from an ancestor namespace. In either
+		 * case, the signal cannot be dropped.
+		 */
+		if (unlikely(signal->flags & SIGNAL_UNKILLABLE) &&
+				!sig_kernel_only(sig))
+			return;
+		/*
+		 * kernel log reduction
+		 * only print process instead of all threads
+		 */
+		if (group && (task != task->group_leader))
+			return;
+
+		state = task->state ? __ffs(task->state) + 1 : 0;
+		pr_debug("[signal][%d:%s] send death sig %d to [%d:%s:%c]\n",
+			 current->pid, current->comm,
+			 sig, task->pid, task->comm,
+			 state < sizeof(stat_nam) - 1 ? stat_nam[state] : '?');
 	}
 }
 
@@ -567,7 +594,7 @@ static void __init init_signal_log(void)
 		register_trace_signal_generate(probe_signal_generate, NULL);
 	if (enabled_signal_log & SI_DELIVER)
 		register_trace_signal_deliver(probe_signal_deliver, NULL);
-	register_trace_signal_deliver(probe_death_signal, NULL);
+	register_trace_signal_generate(probe_death_signal, NULL);
 }
 
 /*-------------------------------------------------------------------*/

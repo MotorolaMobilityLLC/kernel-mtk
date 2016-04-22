@@ -32,22 +32,30 @@ static int debug_enable_vib_hal = 1;
 
 void vibr_Enable_HW(void)
 {
+#ifdef CONFIG_MTK_PMIC_CHIP_MT6353
+	pmic_set_register_value(PMIC_LDO_VIBR_EN, 1);     /* [bit 1]: VIBR_EN,  1=enable */
+#else
 	pmic_set_register_value(MT6351_PMIC_RG_VIBR_EN, 1);	/* [bit 1]: VIBR_EN,  1=enable */
+#endif
 }
 
 void vibr_Disable_HW(void)
 {
+#ifdef CONFIG_MTK_PMIC_CHIP_MT6353
+	pmic_set_register_value(PMIC_LDO_VIBR_EN, 0);     /* [bit 1]: VIBR_EN,  1=enable */
+#else
 	pmic_set_register_value(MT6351_PMIC_RG_VIBR_EN, 0);	/* [bit 1]: VIBR_EN,  1=enable */
+#endif
 }
 
 /******************************************
 * Set RG_VIBR_VOSEL	Output voltage select
-*  hw->vib_vol:  Voltage selection
+* hw->vib_vol:  Voltage selection
 * 3'b000: 1.2V
 * 3'b001: 1.3V
 * 3'b010: 1.5V
 * 3'b011: 1.8V
-* 3'b100: 2.0V
+* 3'b100: 2.0V, if PMIC6353, 2.5V
 * 3'b101: 2.8V
 * 3'b110: 3.0V
 * 3'b111: 3.3V
@@ -119,7 +127,11 @@ void vibr_power_set(void)
 	struct vibrator_hw *hw = get_cust_vibrator_dtsi();
 
 	VIB_DEBUG("vibr_init: vibrator set voltage = %d\n", hw->vib_vol);
+#ifdef CONFIG_MTK_PMIC_CHIP_MT6353
+	pmic_set_register_value(PMIC_RG_VIBR_VOSEL, hw->vib_vol);
+#else
 	pmic_set_register_value(MT6351_PMIC_RG_VIBR_VOSEL, hw->vib_vol);
+#endif
 #endif
 }
 

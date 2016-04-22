@@ -142,6 +142,26 @@ config KERNEL_MODE_NEON
 config FIX_EARLYCON_MEM
 	def_bool y
 
+config ARM64_IRQ_STACK
+	bool "Support ARM64 IRQ stack"
+	depends on ARM64
+	default n
+	help
+	  This option enables standalone IRQ stack for ARM64 platforms.
+	  Using this option to let the size of kernel stack be reduced to 8KB if possible.
+	  It can help system to relieve the memory pressure of order-2 page allocation
+	  under low memory.
+
+config ARM64_8K_STACK
+	bool "Let ARM64 use 8KB stack"
+	depends on ARM64_IRQ_STACK
+	default n
+	help
+	  This option lets ARM64 platform use 8KB stack.
+	  It can help system to reduce the memory usage of kernel stack.
+	  To enable it, ARM64_IRQ_STACK must be enabled firstly to avoid kernel stack
+	  overflow.
+
 config ARM64_ERRATUM_836870
 	bool "Cortex-A53: 836870: Non-allocating reads might prevent a store exclusive from passing"
 	depends on ARM64

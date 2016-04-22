@@ -142,8 +142,8 @@
 
 
 /* CON6 */
-#define CON6_2XTMR_EN_MASK   0x3F
-#define CON6_2XTMR_EN_SHIFT  2
+#define CON6_VREG_MASK   0x3F
+#define CON6_VREG_SHIFT  2
 
 #define CON6_BATLOWV_MASK   0x1
 #define CON6_BATLOWV_SHIFT  1
@@ -186,6 +186,10 @@
 
 #define CON9_PUMPX_DN   0x1
 #define CON9_PUMPX_DN_SHIFT  0
+
+#define FORCE_ICO_MASK 0x1
+#define FORCE_ICO__SHIFT 7
+
 
 /* CONA */
 #define CONA_BOOST_VLIM_MASK 0xF
@@ -306,6 +310,8 @@ extern void bq25890_set_iterml(unsigned int val);
 extern void bq25890_set_vreg(unsigned int val);
 extern void bq25890_set_batlowv(unsigned int val);
 extern void bq25890_set_vrechg(unsigned int val);
+extern unsigned int bq25890_get_vreg(void);
+
 
 
 /* con7 */
@@ -362,6 +368,7 @@ unsigned int bq25890_get_boost_state(void);
 unsigned int bq25890_get_chrg_fault_state(void);
 unsigned int bq25890_get_bat_state(void);
 unsigned int bq25890_get_ichg(void);
+unsigned int bq25890_get_reg_ichg(void);
 
 /* CON0D */
 extern void bq25890_set_FORCE_VINDPM(unsigned int val);

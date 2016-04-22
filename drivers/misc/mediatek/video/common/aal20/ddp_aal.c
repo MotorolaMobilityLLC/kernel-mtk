@@ -26,8 +26,9 @@
 #include <ddp_drv.h>
 #include <ddp_path.h>
 #include <primary_display.h>
-#include <ddp_aal.h>
-#include <ddp_pwm.h>
+#include <disp_drv_platform.h>
+#include <mt_smi.h>
+#include <smi_public.h>
 #ifdef CONFIG_MTK_CLKMGR
 #include <mach/mt_clkmgr.h>
 #else
@@ -36,9 +37,12 @@
 #endif
 #endif
 #if defined(CONFIG_ARCH_MT6755)
-#include "disp_lowpower.h"
-#include "disp_helper.h"
+#include <disp_lowpower.h>
+#include <disp_helper.h>
 #endif
+#include <ddp_aal.h>
+#include <ddp_pwm.h>
+
 
 /* To enable debug log: */
 /* # echo aal_dbg:1 > /sys/kernel/debug/dispsys */
@@ -95,11 +99,49 @@ static int disp_aal_init(DISP_MODULE_ENUM module, int width, int height, void *c
 	return 0;
 }
 
-
-static void disp_aal_trigger_refresh(void)
+#ifdef DISP_PATH_DELAYED_TRIGGER_33ms_SUPPORT
+static int disp_aal_get_latency_lowerbound(void)
 {
-	if (g_ddp_notify != NULL)
-		g_ddp_notify(DISP_MODULE_AAL, DISP_PATH_EVENT_TRIGGER);
+	MTK_SMI_BWC_SCEN bwc_scen;
+	int aalrefresh;
+
+	bwc_scen = smi_get_current_profile();
+	if (bwc_scen == SMI_BWC_SCEN_VR || bwc_scen == SMI_BWC_SCEN_SWDEC_VP ||
+		bwc_scen == SMI_BWC_SCEN_SWDEC_VP || bwc_scen == SMI_BWC_SCEN_VP ||
+		bwc_scen == SMI_BWC_SCEN_VR_SLOW)
+
+		aalrefresh = AAL_REFRESH_33MS;
+	else
+		aalrefresh = AAL_REFRESH_17MS;
+
+	return aalrefresh;
+}
+#endif
+
+
+static void disp_aal_trigger_refresh(int latency)
+{
+#ifdef DISP_PATH_DELAYED_TRIGGER_33ms_SUPPORT
+	int scenario_latency = disp_aal_get_latency_lowerbound();
+#endif
+
+	if (g_ddp_notify != NULL) {
+		DISP_PATH_EVENT trigger_method = DISP_PATH_EVENT_TRIGGER;
+
+#ifdef DISP_PATH_DELAYED_TRIGGER_33ms_SUPPORT
+		/*
+		Allow 33ms latency only under VP & VR scenario for avoid
+		longer animation reduce available time of SODI which cause.
+		less power saving ratio when screen idle.
+		*/
+		if (scenario_latency < latency)
+			latency = scenario_latency;
+
+		if (latency == AAL_REFRESH_33MS)
+			trigger_method = DISP_PATH_EVENT_DELAYED_TRIGGER_33ms;
+#endif
+		g_ddp_notify(DISP_MODULE_AAL, trigger_method);
+	}
 }
 
 
@@ -310,7 +352,8 @@ void disp_aal_notify_backlight_changed(int bl_1024)
 
 	if (g_aal_is_init_regs_valid) {
 		disp_aal_set_interrupt(1);
-		disp_aal_trigger_refresh();
+		/* Backlight latency should be as smaller as possible */
+		disp_aal_trigger_refresh(AAL_REFRESH_17MS);
 	}
 }
 
@@ -423,13 +466,13 @@ int disp_aal_set_param(DISP_AAL_PARAM __user *param, void *cmdq)
 	if (ret == 0)
 		ret |= disp_pwm_set_backlight_cmdq(DISP_PWM0, backlight_value, cmdq);
 
-	AAL_DBG("disp_aal_set_param(CABC = %d, DRE[0,8] = %d,%d): ret = %d",
+	AAL_DBG("disp_aal_set_param(CABC = %d, DRE[0,8] = %d,%d, latency=%d): ret = %d",
 		g_aal_param.cabc_fltgain_force, g_aal_param.DREGainFltStatus[0],
-		g_aal_param.DREGainFltStatus[8], ret);
+		g_aal_param.DREGainFltStatus[8], g_aal_param.refreshLatency, ret);
 
 	backlight_brightness_set(backlight_value);
 
-	disp_aal_trigger_refresh();
+	disp_aal_trigger_refresh(g_aal_param.refreshLatency);
 
 	return ret;
 }
@@ -676,7 +719,7 @@ static int aal_io(DISP_MODULE_ENUM module, int msg, unsigned long arg, void *cmd
 			disp_aal_set_interrupt(enabled);
 
 			if (enabled)
-				disp_aal_trigger_refresh();
+				disp_aal_trigger_refresh(AAL_REFRESH_33MS);
 
 			break;
 		}
@@ -800,7 +843,7 @@ static void aal_test_ink(const char *cmd)
 		break;
 	}
 
-	disp_aal_trigger_refresh();
+	disp_aal_trigger_refresh(AAL_REFRESH_17MS);
 }
 
 

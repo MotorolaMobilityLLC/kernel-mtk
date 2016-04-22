@@ -944,14 +944,23 @@ static int md_ccif_op_start(struct ccci_modem *md)
 {
 	struct md_ccif_ctrl *md_ctrl = (struct md_ccif_ctrl *)md->private_data;
 	char img_err_str[IMG_ERR_STR_LEN];
+	struct ccci_modem *md1 = NULL;
 	int ret = 0;
 
 	/*something do once*/
 	if (md->config.setting & MD_SETTING_FIRST_BOOT) {
 		CCCI_BOOTUP_LOG(md->index, TAG, "CCIF modem is first boot\n");
 		memset_io(md->mem_layout.smem_region_vir, 0, md->mem_layout.smem_region_size);
-		memset_io(md->mem_layout.md1_md3_smem_vir, 0, md->mem_layout.md1_md3_smem_size);
+		md1 = ccci_get_modem_by_id(MD_SYS1);
+		if (md1) {
+			while (md1->config.setting & MD_SETTING_FIRST_BOOT)
+				msleep(20);
+			CCCI_BOOTUP_LOG(md->index, TAG, "wait for MD1 starting done\n");
+		} else
+			CCCI_ERROR_LOG(md->index, TAG, "get MD1 modem struct fail\n");
 		md_ccif_ring_buf_init(md);
+		CCCI_BOOTUP_LOG(md->index, TAG, "modem capability 0x%x\n", md->capability);
+		md->config.setting &= ~MD_SETTING_FIRST_BOOT;
 	}
 
 	/*0. init security, as security depends on dummy_char, which is ready very late. */
@@ -1091,7 +1100,7 @@ static int md_ccif_op_write_room(struct ccci_modem *md, unsigned char qno)
 {
 	struct md_ccif_ctrl *md_ctrl = (struct md_ccif_ctrl *)md->private_data;
 
-	if (qno == 0xFF)
+	if (qno >= QUEUE_NUM)
 		return -CCCI_ERR_INVALID_QUEUE_INDEX;
 	return ccci_ringbuf_writeable(md->index, md_ctrl->txq[qno].ringbuf, 0);
 }
@@ -1186,9 +1195,12 @@ static int md_ccif_op_send_request(struct ccci_modem *md, unsigned char qno,
 		/*free request */
 		if (IS_PASS_SKB(md, qno))
 			dev_kfree_skb_any(skb);
-		else
+		else if (likely(req))
 			ccci_free_req(req);
-
+		else {
+			CCCI_ERROR_LOG(md->index, TAG, "unexpected md state? only free skb for Q%d\n", queue->index);
+			dev_kfree_skb_any(skb);
+		}
 		/*send ccif request */
 		md_ccif_send(md, queue->ccif_ch);
 		spin_unlock_irqrestore(&queue->tx_lock, flags);
@@ -1429,6 +1441,8 @@ static int md_ccif_op_force_assert(struct ccci_modem *md, MD_COMM_TYPE type)
 	case CCIF_INTR_SEQ:
 		md_ccif_send(md, AP_MD_SEQ_ERROR);
 		break;
+	default:
+		break;
 	};
 	return 0;
 
@@ -1654,6 +1668,7 @@ static int md_ccif_probe(struct platform_device *dev)
 	INIT_WORK(&md_ctrl->ccif_sram_work, md_ccif_sram_rx_work);
 	INIT_WORK(&md_ctrl->wdt_work, md_ccif_wdt_work);
 	md_ctrl->channel_id = 0;
+	atomic_set(&md_ctrl->reset_on_going, 1);
 
 	/*register modem */
 	ccci_register_modem(md);

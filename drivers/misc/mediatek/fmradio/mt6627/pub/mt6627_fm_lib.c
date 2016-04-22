@@ -689,6 +689,28 @@ static fm_s32 mt6627_PowerUp(fm_u16 *chip_id, fm_u16 *device_id)
 		return ret;
 	}
 #if	defined(MT6625_FM)
+	ret = mt6627_host_read(0x80000224, &host_reg);
+	if (ret) {
+		WCN_DBG(FM_ALT | CHIP, " pwrup read 0x80000224 failed\n");
+		return ret;
+	}
+	ret = mt6627_host_write(0x80000224, host_reg | (1 << 0));
+	if (ret) {
+		WCN_DBG(FM_ALT | CHIP, " pwrup conn_srcclkena enable failed\n");
+		return ret;
+	}
+
+	ret = mt6627_host_read(0x80000224, &host_reg);
+	if (ret) {
+		WCN_DBG(FM_ALT | CHIP, " pwrup read 0x80000224 failed\n");
+		return ret;
+	}
+	ret = mt6627_host_write(0x80000224, host_reg | (1 << 16));
+	if (ret) {
+		WCN_DBG(FM_ALT | CHIP, " pwrup conn_srcclkena switch failed\n");
+		return ret;
+	}
+
 	ret = mt6627_host_read(0x80101030, &host_reg);
 	if (ret) {
 		WCN_DBG(FM_ALT | CHIP, " pwrup read 0x80100030 failed\n");
@@ -886,6 +908,17 @@ static fm_s32 mt6627_PowerDown(void)
 	ret = mt6627_host_write(0x80101030, host_reg & (~(0x1 << 1)));
 	if (ret) {
 		WCN_DBG(FM_ALT | CHIP, " pwroff disable top_ck_en_adie failed\n");
+		return ret;
+	}
+
+	ret = mt6627_host_read(0x80000224, &host_reg);
+	if (ret) {
+		WCN_DBG(FM_ALT | CHIP, " pwrup read 0x80000224 failed\n");
+		return ret;
+	}
+	ret = mt6627_host_write(0x80000224, host_reg & (~(1 << 16)));
+	if (ret) {
+		WCN_DBG(FM_ALT | CHIP, " pwrup conn_srcclkena switch failed\n");
 		return ret;
 	}
 #endif
