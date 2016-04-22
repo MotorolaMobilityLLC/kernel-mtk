@@ -1040,9 +1040,6 @@ int ut_rpmb_req_get_max_wr_size(struct mmc_card *card, unsigned int *max_wr_size
 }
 int ut_rpmb_req_get_wc(struct mmc_card *card, unsigned int *wc)
 /* lenovo-sw, chenzz3, TEE-P1, end */
-=======
-int ut_rpmb_req_get_wc(struct mmc_card *card, unsigned int *wc)
->>>>>>> lenovo/caf/mt6755_m
 {
 	struct emmc_rpmb_req rpmb_req;
 	struct s_rpmb rpmb_frame;
