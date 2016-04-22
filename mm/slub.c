@@ -3134,6 +3134,7 @@ static int calculate_sizes(struct kmem_cache *s, int forced_order)
 		return 0;
 
 	s->allocflags = 0;
+	s->allocflags |= GFP_DMA;
 	if (order)
 		s->allocflags |= __GFP_COMP;
 

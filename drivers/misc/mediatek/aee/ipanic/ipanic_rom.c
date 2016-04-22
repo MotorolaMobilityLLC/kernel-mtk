@@ -507,6 +507,9 @@ int ipanic(struct notifier_block *this, unsigned long event, void *ptr)
 	aee_wdt_dump_info();
 	ipanic_klog_region(&dumper);
 	ipanic_data_to_sd(IPANIC_DT_WDT_LOG, &dumper);
+#ifdef CONFIG_MTK_WQ_DEBUG
+	wq_debug_dump();
+#endif
 	ipanic_klog_region(&dumper);
 	ipanic_data_to_sd(IPANIC_DT_WQ_LOG, &dumper);
 	ipanic_data_to_sd(IPANIC_DT_MMPROFILE, 0);
@@ -634,6 +637,9 @@ static int ipanic_die(struct notifier_block *self, unsigned long cmd, void *ptr)
 	aee_disable_api();
 	__show_regs(dargs->regs);
 	dump_stack();
+#ifdef CONFIG_MTK_WQ_DEBUG
+	wq_debug_dump();
+#endif
 #ifdef CONFIG_SCHED_DEBUG
 	if (aee_rr_curr_exp_type() == 1)
 		sysrq_sched_debug_show_at_AEE();
@@ -643,6 +649,10 @@ static int ipanic_die(struct notifier_block *self, unsigned long cmd, void *ptr)
 	aee_rr_rec_exp_type(2);
 	mrdump_mini_ke_cpu_regs(dargs->regs);
 	flush_cache_all();
+
+	if (aee_rr_curr_exp_type() == 1)
+		/* No return for HWT thru mrdump */
+		__mrdump_create_oops_dump(AEE_REBOOT_MODE_WDT, dargs->regs, "WDT/HWT");
 
 	if (aee_rr_curr_exp_type() == 2)
 		/* No return if mrdump is enable */

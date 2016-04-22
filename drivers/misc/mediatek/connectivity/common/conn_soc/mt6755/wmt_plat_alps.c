@@ -311,7 +311,7 @@ INT32 wmt_plat_init(UINT32 co_clock_type)
 	CMB_STUB_CB stub_cb;
 	INT32 iret;
 	/*init wmt function ctrl wakelock if wake lock is supported by host platform */
-
+	co_clock_type = mtk_wcn_consys_co_clock_type();
 	wmt_plat_soc_co_clock_flag_set(co_clock_type);
 
 	stub_cb.aif_ctrl_cb = wmt_plat_audio_ctrl;

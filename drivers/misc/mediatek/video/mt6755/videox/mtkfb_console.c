@@ -26,7 +26,8 @@
 #define MFC_WIDTH           (ctxt->fb_width)
 #define MFC_HEIGHT          (ctxt->fb_height)
 #define MFC_BPP             (ctxt->fb_bpp)
-#define MFC_PITCH           (MFC_WIDTH * MFC_BPP)
+#define MFC_PITCH           (ctxt->fb_pitch)
+/* #define MFC_PITCH           (MFC_WIDTH * MFC_BPP) */
 
 #define MFC_FG_COLOR        (ctxt->fg_color)
 #define MFC_BG_COLOR        (ctxt->bg_color)
@@ -89,6 +90,7 @@ static void _MFC_DrawChar(MFC_CONTEXT *ctxt, uint32_t x, uint32_t y, char c)
 	dest = (MFC_ROW_FIRST + offset);
 
 	switch (MFC_BPP) {
+	/* RGB 565 */
 	case 2:
 		font_draw_table16[0] = MAKE_TWO_RGB565_COLOR(MFC_BG_COLOR, MFC_BG_COLOR);
 		font_draw_table16[1] = MAKE_TWO_RGB565_COLOR(MFC_BG_COLOR, MFC_FG_COLOR);
@@ -106,6 +108,7 @@ static void _MFC_DrawChar(MFC_CONTEXT *ctxt, uint32_t x, uint32_t y, char c)
 			((uint32_t *) dest)[3] = font_draw_table16[bits & 3];
 		}
 		break;
+	/* RGB 888 */
 	case 3:
 		cdat = (const uint8_t *)MFC_FONT_DATA + ch * MFC_FONT_HEIGHT;
 		for (rows = MFC_FONT_HEIGHT; rows--; dest += MFC_PITCH) {
@@ -121,6 +124,7 @@ static void _MFC_DrawChar(MFC_CONTEXT *ctxt, uint32_t x, uint32_t y, char c)
 			}
 		}
 		break;
+	/* ARGB 8888 */
 	case 4:
 		cdat = (const uint8_t *)MFC_FONT_DATA + ch * MFC_FONT_HEIGHT;
 		for (rows = MFC_FONT_HEIGHT; rows--; dest += MFC_PITCH) {
@@ -247,6 +251,7 @@ MFC_STATUS MFC_Open(MFC_HANDLE *handle,
 	ctxt->cols = fb_width / MFC_FONT_WIDTH;
 	ctxt->font_width = MFC_FONT_WIDTH;
 	ctxt->font_height = MFC_FONT_HEIGHT;
+	ctxt->fb_pitch = fb_width * fb_bpp;
 
 	*handle = ctxt;
 
@@ -285,6 +290,7 @@ MFC_STATUS MFC_Open_Ex(MFC_HANDLE *handle,
 	ctxt->cols = fb_width / MFC_FONT_WIDTH;
 	ctxt->font_width = MFC_FONT_WIDTH;
 	ctxt->font_height = MFC_FONT_HEIGHT;
+	ctxt->fb_pitch = fb_pitch * fb_bpp;
 
 	*handle = ctxt;
 
@@ -292,6 +298,41 @@ MFC_STATUS MFC_Open_Ex(MFC_HANDLE *handle,
 
 }
 
+MFC_STATUS MFC_Open_Ex_v2(MFC_HANDLE *handle,
+			  void *fb_addr,
+			  unsigned int fb_width,
+			  unsigned int fb_height,
+			  unsigned int fb_pitch_in_bytes,
+			  unsigned int fb_bpp, unsigned int fg_color, unsigned int bg_color)
+{
+
+	MFC_CONTEXT *ctxt = NULL;
+
+	if (NULL == handle || NULL == fb_addr)
+		return MFC_STATUS_INVALID_ARGUMENT;
+
+	ctxt = kzalloc(sizeof(MFC_CONTEXT), GFP_KERNEL);
+	if (!ctxt)
+		return MFC_STATUS_OUT_OF_MEMORY;
+
+/* init_MUTEX(&ctxt->sem); */
+	sema_init(&ctxt->sem, 1);
+	ctxt->fb_addr = fb_addr;
+	ctxt->fb_width = fb_pitch_in_bytes;
+	ctxt->fb_height = fb_height;
+	ctxt->fb_bpp = fb_bpp;
+	ctxt->fg_color = fg_color;
+	ctxt->bg_color = bg_color;
+	ctxt->rows = fb_height / MFC_FONT_HEIGHT;
+	ctxt->cols = fb_width / MFC_FONT_WIDTH;
+	ctxt->font_width = MFC_FONT_WIDTH;
+	ctxt->font_height = MFC_FONT_HEIGHT;
+	ctxt->fb_pitch = fb_pitch_in_bytes;
+
+	*handle = ctxt;
+
+	return MFC_STATUS_OK;
+}
 
 MFC_STATUS MFC_Close(MFC_HANDLE handle)
 {

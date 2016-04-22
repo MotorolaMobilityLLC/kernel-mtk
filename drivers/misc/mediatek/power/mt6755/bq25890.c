@@ -98,6 +98,7 @@ static int bq25890_driver_probe(struct i2c_client *client, const struct i2c_devi
 unsigned char bq25890_reg[bq25890_REG_NUM] = { 0 };
 
 static DEFINE_MUTEX(bq25890_i2c_access);
+static DEFINE_MUTEX(bq25890_access_mutex);
 
 int g_bq25890_hw_exist = 0;
 
@@ -269,17 +270,20 @@ unsigned int bq25890_config_interface(unsigned char RegNum, unsigned char val, u
 				    unsigned char SHIFT)
 {
 	unsigned char bq25890_reg = 0;
+	unsigned char bq25890_reg_ori = 0;
 	unsigned int ret = 0;
 
+	mutex_lock(&bq25890_access_mutex);
 	ret = bq25890_read_byte(RegNum, &bq25890_reg);
-	battery_log(BAT_LOG_FULL, "[bq25890_config_interface] Reg[%x]=0x%x\n", RegNum, bq25890_reg);
 
+	bq25890_reg_ori = bq25890_reg;
 	bq25890_reg &= ~(MASK << SHIFT);
 	bq25890_reg |= (val << SHIFT);
 
 	ret = bq25890_write_byte(RegNum, bq25890_reg);
-	battery_log(BAT_LOG_FULL, "[bq25890_config_interface] write Reg[%x]=0x%x\n", RegNum,
-		    bq25890_reg);
+	mutex_unlock(&bq25890_access_mutex);
+	battery_log(BAT_LOG_FULL, "[bq25890_config_interface] write Reg[%x]=0x%x from 0x%x\n", RegNum,
+		    bq25890_reg, bq25890_reg_ori);
 
 	/* Check */
 	/* bq25890_read_byte(RegNum, &bq25890_reg); */
@@ -542,9 +546,21 @@ void bq25890_set_vreg(unsigned int val)
 
 	ret = bq25890_config_interface((unsigned char) (bq25890_CON6),
 				       (unsigned char) (val),
-				       (unsigned char) (CON6_2XTMR_EN_MASK),
-				       (unsigned char) (CON6_2XTMR_EN_SHIFT)
+				       (unsigned char) (CON6_VREG_MASK),
+				       (unsigned char) (CON6_VREG_SHIFT)
 	    );
+}
+
+unsigned int bq25890_get_vreg(void)
+{
+	unsigned int ret = 0;
+	unsigned char val = 0;
+
+	ret = bq25890_read_interface((unsigned char) (bq25890_CON6),
+				     (&val),
+				     (unsigned char) (CON6_VREG_MASK), (unsigned char) (CON6_VREG_SHIFT)
+	    );
+	return val;
 }
 
 void bq25890_set_batlowv(unsigned int val)
@@ -684,6 +700,17 @@ void bq25890_pumpx_up(unsigned int val)
 /* CC mode current = 2048 mA*/
 	bq25890_set_ichg(0x20);
 	msleep(3000);
+}
+
+void bq25890_set_force_ico(void)
+{
+	unsigned int ret = 0;
+
+	ret = bq25890_config_interface((unsigned char) (bq25890_CON9),
+				       (unsigned char) (1),
+				       (unsigned char) (FORCE_ICO_MASK),
+				       (unsigned char) (FORCE_ICO__SHIFT)
+	    );
 }
 
 /* CONA---------------------------------------------------- */
@@ -972,10 +999,12 @@ void bq25890_dump_register(void)
 	unsigned char vdpm = 0;
 	unsigned char fault = 0;
 
-	/*bq25890_ADC_start(1);*/
-	for (i = 0; i < bq25890_REG_NUM; i++) {
-		/*bq25890_read_byte(i, &bq25890_reg[i]);*/
-		battery_log(BAT_LOG_FULL, "[bq25890 reg@][0x%x]=0x%x ", i, bq25890_reg[i]);
+	if (Enable_BATDRV_LOG > BAT_LOG_CRTI) {
+		bq25890_ADC_start(1);
+		for (i = 0; i < bq25890_REG_NUM; i++) {
+			bq25890_read_byte(i, &bq25890_reg[i]);
+			battery_log(BAT_LOG_FULL, "[bq25890 reg@][0x%x]=0x%x ", i, bq25890_reg[i]);
+		}
 	}
 	bq25890_ADC_start(1);
 	iinlim = bq25890_get_iinlim();
@@ -1002,7 +1031,6 @@ void bq25890_hw_init(void)
 
 static int bq25890_driver_probe(struct i2c_client *client, const struct i2c_device_id *id)
 {
-
 	battery_log(BAT_LOG_CRTI, "[bq25890_driver_probe]\n");
 
 	new_client = client;
@@ -1014,8 +1042,6 @@ static int bq25890_driver_probe(struct i2c_client *client, const struct i2c_devi
 	chargin_hw_init_done = true;
 
 	return 0;
-
-
 }
 
 /**********************************************************

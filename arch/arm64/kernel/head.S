@@ -462,6 +462,11 @@ __mmap_switched:
 	ldr	x16, [x3]
 	mov	sp, x16
 	str	x22, [x4]			// Save processor ID
+#ifdef CONFIG_ARM64_IRQ_STACK
+	mov	x4, sp
+	and	x4, x4, #~(THREAD_SIZE - 1)
+	msr	sp_el0, x4			// Save thread_info
+#endif
 	str	x21, [x5]			// Save FDT pointer
 	str	x24, [x6]			// Save PHYS_OFFSET
 	mov	x29, #0
@@ -652,6 +657,10 @@ ENDPROC(secondary_startup)
 ENTRY(__secondary_switched)
 	ldr	x0, [x21]			// get secondary_data.stack
 	mov	sp, x0
+#ifdef CONFIG_ARM64_IRQ_STACK
+	and	x0, x0, #~(THREAD_SIZE - 1)
+	msr	sp_el0, x0			// save thread_info
+#endif
 	mov	x29, #0
 	b	secondary_start_kernel
 ENDPROC(__secondary_switched)

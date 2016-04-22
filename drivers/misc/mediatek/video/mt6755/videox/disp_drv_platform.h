@@ -63,6 +63,14 @@ typedef enum {
 /* macros for display path hardware */
 #define DISP_HW_HRT_LYAERS_FOR_LOW_POWER	4
 #define DISP_HW_HRT_LYAERS_FOR_HI_PERF		6
-#define DISP_HW_HRT_720P_LYAERS_FOR_HI_PERF 8
+#define DISP_HW_HRT_720P_LYAERS_FOR_HI_PERF	6
+
+#define DISP_HW_HRT_PERF_FOR_LCM_BIG	    4
+#define DISP_HW_HRT_PERF_FOR_LCM_BIG_MAX	6
+#define DISP_HW_HRT_PERF_FOR_LCM_SMALL    6
+#define DISP_HW_HRT_PERF_LCM_AREA_THRESHOLD   (1280 * 800)
+
+/* Other platform-dependent features */
+#define DISP_PATH_DELAYED_TRIGGER_33ms_SUPPORT
 
 #endif				/* __DISP_DRV_PLATFORM_H__ */

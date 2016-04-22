@@ -17,7 +17,7 @@
 #include <linux/module.h>
 #include <linux/kernel.h>
 
-const unsigned int MT6351_PMIC_REG_gs_early_suspend_deep_idle__mode_data[] = {
+const unsigned int MT6351_PMIC_REG_gs_early_suspend_deep_idle_mode_data[] = {
 /* Address     Mask        Golden Setting Value */
 	0x0016, 0x0080, 0x0000,/* STRUP_CON11 */
 	0x0204, 0x0270, 0x0070,/* TOP_CON */
@@ -103,10 +103,10 @@ const unsigned int MT6351_PMIC_REG_gs_early_suspend_deep_idle__mode_data[] = {
 	0x0F48, 0x0001, 0x0000/* ACCDET_CON1 */
 };
 
-const unsigned int *MT6351_PMIC_REG_gs_early_suspend_deep_idle__mode =
-	MT6351_PMIC_REG_gs_early_suspend_deep_idle__mode_data;
+const unsigned int *MT6351_PMIC_REG_gs_early_suspend_deep_idle_mode =
+	MT6351_PMIC_REG_gs_early_suspend_deep_idle_mode_data;
 
-unsigned int MT6351_PMIC_REG_gs_early_suspend_deep_idle__mode_len = 246;
+unsigned int MT6351_PMIC_REG_gs_early_suspend_deep_idle_mode_len = 246;
 
 const unsigned int MT6351_PMIC_REG_gs_flightmode_suspend_mode_data[] = {
 /* Address     Mask        Golden Setting Value */

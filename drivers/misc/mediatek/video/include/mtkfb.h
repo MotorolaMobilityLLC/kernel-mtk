@@ -302,11 +302,12 @@ extern unsigned int EnableVSyncLog;
 
 void mtkfb_log_enable(int enable);
 int mtkfb_set_backlight_mode(unsigned int mode);
-int mtkfb_set_backlight_level(unsigned int level);
 int mtkfb_get_debug_state(char *stringbuf, int buf_len);
 unsigned int mtkfb_fm_auto_test(void);
 void mtkfb_clear_lcm(void);
 #endif /* CONFIG_ARCH_MT6735 */
+
+int mtkfb_set_backlight_level(unsigned int level);
 
 #ifdef __KERNEL__
 

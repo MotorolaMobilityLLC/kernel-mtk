@@ -405,6 +405,9 @@ typedef enum _VDEC_DRV_SET_TYPE_T {
 	/* /< use the max suppoerted size as output buffer size. for smooth */
 	VDEC_DRV_SET_TYPE_SET_FIXEDMAXOUTPUTBUFFER,
 	VDEC_DRV_SET_TYPE_SET_UFO_DECODE,
+	VDEC_DRV_SET_TYPE_SET_WAIT_KEYFRAME,            /* /< 0 = no, 1 = start, 2 = seek, 3 = always */
+	VDEC_DRV_SET_TYPE_SET_FULL_SPEED,
+	VDEC_DRV_SET_TYPE_SET_KERNEL_LOG_COUNT,
 } VDEC_DRV_SET_TYPE_T;
 
 

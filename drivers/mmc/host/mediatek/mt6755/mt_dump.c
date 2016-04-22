@@ -1784,22 +1784,19 @@ static int simp_emmc_dump_write(unsigned char *buf, unsigned int len,
 	}
 
 	/* find the offset in emmc */
+	if (lp_start_sect == 0) {
+		pr_err("Illegal expdb start address (0x0)\n");
+		return ret;
+	}
+
 	if (lp_start_sect == (sector_t)(-1) || lp_nr_sects == (sector_t)(-1)) {
-		pr_err("not find in scatter file error!\n");
+		pr_err("partition not found error!\n");
 		return ret;
 	}
 
-	if (lp_nr_sects < (len >> 9)) {
-		pr_err("write operation oversize!\n");
-		return ret;
-	}
-
-	if (lp_nr_sects < (offset >> 9)) {
-		pr_err("write operation oversize!\n");
-		return ret;
-	}
-
-	if (lp_nr_sects < ((len + offset) >> 9)) {
+	if ((lp_nr_sects < (len >> 9)) ||
+	    (lp_nr_sects < (offset >> 9)) ||
+	    (lp_nr_sects < ((len + offset) >> 9))) {
 		pr_err("write operation oversize!\n");
 		return ret;
 	}
@@ -1808,7 +1805,6 @@ static int simp_emmc_dump_write(unsigned char *buf, unsigned int len,
 		(u64)lp_start_sect, (u64)lp_nr_sects);
 
 	l_start_offset = (u64)offset + (u64)(lp_start_sect << 9);
-
 
 	MTK_DUMP_PR_DBG("write start address = %llu\n", l_start_offset);
 

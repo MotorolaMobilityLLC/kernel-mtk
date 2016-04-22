@@ -25,12 +25,25 @@
 #include <linux/irq.h>
 #include <linux/smp.h>
 #include <linux/init.h>
+#include <linux/interrupt.h>
 #include <linux/irqchip.h>
 #include <linux/seq_file.h>
 #include <linux/ratelimit.h>
 
 unsigned long irq_err_count;
 
+#ifdef CONFIG_ARM64_IRQ_STACK
+/* irq stack only needs to be 16 byte aligned - not IRQ_STACK_SIZE aligned */
+DEFINE_PER_CPU(unsigned long [IRQ_STACK_SIZE/sizeof(long)], irq_stack) __aligned(16);
+DEFINE_PER_CPU(unsigned long, irq_stack_ptr);
+
+/*
+ * irq_count is used to detect recursive use of the irq_stack, it is lazily
+ * incremented very late, by do_softirq_own_stack(), which is called on the
+ * irq_stack, before re-enabling interrupts to process softirqs.
+ */
+DEFINE_PER_CPU(unsigned int, irq_count);
+#endif
 int arch_show_interrupts(struct seq_file *p, int prec)
 {
 #ifdef CONFIG_SMP
@@ -52,10 +65,48 @@ void __init set_handle_irq(void (*handle_irq)(struct pt_regs *))
 
 void __init init_IRQ(void)
 {
+#ifdef CONFIG_ARM64_IRQ_STACK
+	init_irq_stack(smp_processor_id());
+#endif
 	irqchip_init();
 	if (!handle_arch_irq)
 		panic("No interrupt controller found.");
 }
+
+#ifdef CONFIG_ARM64_IRQ_STACK
+void init_irq_stack(unsigned int cpu)
+{
+	unsigned long stack = (unsigned long)per_cpu(irq_stack, cpu);
+
+	per_cpu(irq_stack_ptr, cpu) = stack + IRQ_STACK_START_SP;
+}
+
+/*
+ * do_softirq_own_stack() is called from irq_exit() before __do_softirq()
+ * re-enables interrupts, at which point we may re-enter el?_irq(). We
+ * increase irq_count here so that el1_irq() knows that it is already on the
+ * irq stack.
+ *
+ * Called with interrupts disabled, so we don't worry about moving cpu, or
+ * being interrupted while modifying irq_count.
+ *
+ * This function doesn't actually switch stack.
+ */
+void do_softirq_own_stack(void)
+{
+	int cpu = smp_processor_id();
+
+	WARN_ON_ONCE(!irqs_disabled());
+
+	if (on_irq_stack(current_stack_pointer, cpu)) {
+		per_cpu(irq_count, cpu)++;
+		__do_softirq();
+		per_cpu(irq_count, cpu)--;
+	} else {
+		__do_softirq();
+	}
+}
+#endif
 
 #ifdef CONFIG_HOTPLUG_CPU
 

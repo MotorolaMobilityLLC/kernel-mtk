@@ -33,11 +33,17 @@ typedef struct {
 	unsigned int maxHist[AAL_HIST_BIN];
 } DISP_AAL_HIST;
 
+enum DISP_AAL_REFRESH_LATENCY {
+	AAL_REFRESH_17MS = 17,
+	AAL_REFRESH_33MS = 33
+};
+
 typedef struct {
 	int DREGainFltStatus[AAL_DRE_POINT_NUM];
 	int cabc_fltgain_force;	/* 10-bit ; [0,1023] */
 	int cabc_gainlmt[33];
 	int FinalBacklight;	/* 10-bit ; [0,1023] */
+	int refreshLatency;	/* DISP_AAL_REFRESH_LATENCY */
 } DISP_AAL_PARAM;
 
 

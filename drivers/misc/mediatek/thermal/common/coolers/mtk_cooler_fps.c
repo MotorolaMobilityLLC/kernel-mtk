@@ -506,7 +506,7 @@ static ssize_t clfps_level_write(struct file *file, const char __user *buffer,
 					&nr_fps_levels, &fps_level[0], &fps_level[1], &fps_level[2],
 					&fps_level[3], &fps_level[4], &fps_level[5])) {
 
-		if (nr_fps_levels > MAX_FPS_LEVELS) {
+		if ((nr_fps_levels > MAX_FPS_LEVELS) || (nr_fps_levels < 0)) {
 			mtk_cooler_fps_dprintk_always("[%s] nr_fps_levels: %d\n", __func__, nr_fps_levels);
 			ret = -EINVAL;
 			goto exit;

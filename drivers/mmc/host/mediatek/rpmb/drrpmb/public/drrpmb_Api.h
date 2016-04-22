@@ -89,6 +89,6 @@ typedef struct {
 /*
  * Driver UUID. Update accordingly after reserving UUID
  */
-#define DRV_DBG_UUID { { 7, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 } }
+#define RPMB_UUID { { 7, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 } }
 
 #endif

@@ -76,7 +76,7 @@ static int md_cd_ccif_send(struct ccci_modem *md, int channel_id);
  * we use this as rgpd->data_allow_len, so skb length must be >= this size, check ccci_bm.c's skb pool design.
  * channel 3 is for network in normal mode, but for mdlogger_ctrl in exception mode, so choose the max packet size.
  */
-static int net_rx_queue_buffer_size[CLDMA_RXQ_NUM] = { 0, 0, 0, SKB_1_5K, SKB_1_5K, SKB_1_5K, 0, 0 };
+static int net_rx_queue_buffer_size[CLDMA_RXQ_NUM] = { 0, 0, 0, NET_RX_BUF, NET_RX_BUF, NET_RX_BUF, 0, 0 };
 static int normal_rx_queue_buffer_size[CLDMA_RXQ_NUM] = { SKB_4K, SKB_4K, SKB_4K, SKB_4K, 0, 0, SKB_4K, SKB_16 };
 
 #if 0				/* for debug log dump convenience */
@@ -2291,6 +2291,9 @@ static int md_cd_start(struct ccci_modem *md)
 	if (md->config.setting & MD_SETTING_FIRST_BOOT) {
 		/* MD will clear share memory itself after the first boot */
 		memset_io(md->mem_layout.smem_region_vir, 0, md->mem_layout.smem_region_size);
+#ifdef CONFIG_MTK_ECCCI_C2K
+		memset_io(md->mem_layout.md1_md3_smem_vir, 0, md->mem_layout.md1_md3_smem_size);
+#endif
 #if defined(CONFIG_MTK_LEGACY)
 #ifndef NO_POWER_OFF_ON_STARTMD
 		ret = md_cd_power_off(md, 0);
@@ -3120,7 +3123,11 @@ static void config_ap_runtime_data(struct ccci_modem *md, struct ap_query_md_fea
 	ap_feature->md_runtime_data_addr = ap_feature->ap_runtime_data_addr + CCCI_SMEM_SIZE_RUNTIME_AP;
 	ap_feature->md_runtime_data_size = CCCI_SMEM_SIZE_RUNTIME_MD;
 	ap_feature->set_md_mpu_start_addr = md->mem_layout.smem_region_phy - md->mem_layout.smem_offset_AP_to_MD;
-	ap_feature->set_md_mpu_total_size = md->mem_layout.smem_region_size;
+	ap_feature->set_md_mpu_total_size = md->mem_layout.smem_region_size + md->mem_layout.md1_md3_smem_size;
+	ap_feature->feature_set[1].support_mask = 0;
+	ap_feature->feature_set[1].version = 1;/* ver.1: md mpu size = ap md1 share + md1&md3 share */
+						/* ver.0: md mpu size = ap md1 share */
+
 	ap_feature->tail_pattern = AP_FEATURE_QUERY_PATTERN;
 }
 
@@ -3336,6 +3343,13 @@ static int md_cd_force_assert(struct ccci_modem *md, MD_COMM_TYPE type)
 		break;
 	case CCIF_INTR_SEQ:
 		md_cd_ccif_send(md, AP_MD_SEQ_ERROR);
+		break;
+#ifdef MD_UMOLY_EE_SUPPORT
+	case CCIF_MPU_INTR:
+		md_cd_ccif_send(md, H2D_MPU_FORCE_ASSERT);
+		break;
+#endif
+	default:
 		break;
 	};
 	return 0;
@@ -3891,7 +3905,7 @@ static int ccci_modem_probe(struct platform_device *plat_dev)
 	    alloc_workqueue("md%d_cldma_worker", WQ_UNBOUND | WQ_MEM_RECLAIM | WQ_HIGHPRI, 1, md->index + 1);
 	INIT_WORK(&md_ctrl->cldma_irq_work, cldma_irq_work);
 	md_ctrl->channel_id = 0;
-	atomic_set(&md_ctrl->reset_on_going, 0);
+	atomic_set(&md_ctrl->reset_on_going, 1);
 	atomic_set(&md_ctrl->wdt_enabled, 1); /* IRQ is default enabled after request_irq */
 	atomic_set(&md_ctrl->cldma_irq_enabled, 1);
 	atomic_set(&md_ctrl->ccif_irq_enabled, 0);

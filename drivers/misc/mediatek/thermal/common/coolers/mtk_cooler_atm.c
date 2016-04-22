@@ -606,9 +606,13 @@ static int P_adaptive(int total_power, unsigned int gpu_loading)
 	if (cpu_power != last_cpu_power)
 		set_adaptive_cpu_power_limit(cpu_power);
 
-	if (gpu_power != last_gpu_power)
-		set_adaptive_gpu_power_limit(gpu_power);
-
+	if (gpu_power != last_gpu_power) {
+		/* Work-around for unsync GPU power table problem 1. */
+		if (gpu_power > mtk_gpu_power[0].gpufreq_power)
+			set_adaptive_gpu_power_limit(0);
+		else
+			set_adaptive_gpu_power_limit(gpu_power);
+	}
 	tscpu_dprintk("%s cpu %d, gpu %d\n", __func__, cpu_power, gpu_power);
 
 	return 0;
@@ -1790,19 +1794,19 @@ static void tscpu_cooler_create_fs(void)
 
 
 		/* +ASC+ */
-		entry = proc_create("clatm", S_IRUGO | S_IWUSR, mtktscpu_dir, &mtktscpu_atm_fops);
+		entry = proc_create("clatm", S_IRUGO | S_IWUSR | S_IWGRP, mtktscpu_dir, &mtktscpu_atm_fops);
 		if (entry)
 			proc_set_user(entry, uid, gid);
 		/* -ASC- */
 
 #if THERMAL_HEADROOM
-		entry = proc_create("clthp", S_IRUGO | S_IWUSR, mtktscpu_dir, &mtktscpu_thp_fops);
+		entry = proc_create("clthp", S_IRUGO | S_IWUSR | S_IWGRP, mtktscpu_dir, &mtktscpu_thp_fops);
 		if (entry)
 			proc_set_user(entry, uid, gid);
 #endif
 
 #if CONTINUOUS_TM
-		entry = proc_create("clctm", S_IRUGO | S_IWUSR, mtktscpu_dir, &mtktscpu_ctm_fops);
+		entry = proc_create("clctm", S_IRUGO | S_IWUSR | S_IWGRP, mtktscpu_dir, &mtktscpu_ctm_fops);
 		if (entry)
 			proc_set_user(entry, uid, gid);
 #endif

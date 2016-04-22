@@ -110,6 +110,7 @@ typedef enum {
 
 #ifdef MD_UMOLY_EE_SUPPORT
 #define MD_HS1_FAIL_DUMP_SIZE  (2048)
+#define MD_EX_MPU_STR_LEN   (128)
 #endif
 
 typedef enum {
@@ -575,7 +576,7 @@ struct ccci_port {
 struct ccci_modem_cfg {
 	unsigned int load_type;
 	unsigned int load_type_saving;
-	unsigned int setting;
+	volatile unsigned int setting;
 };
 #define MD_SETTING_ENABLE (1<<0)
 #define MD_SETTING_RELOAD (1<<1)
@@ -690,6 +691,7 @@ typedef enum {
 	CCCI_MESSAGE,
 	CCIF_INTERRUPT,
 	CCIF_INTR_SEQ,
+	CCIF_MPU_INTR,
 } MD_COMM_TYPE;
 
 typedef enum {
@@ -752,6 +754,8 @@ typedef enum{
 	DHL_RAW_SHARE_MEMORY,
 	DT_NETD_SHARE_MEMORY,
 	DT_USB_SHARE_MEMORY,
+	EE_AFTER_EPOF,
+	CCMNI_MTU, /* max Rx packet buffer size on AP side */
 	RUNTIME_FEATURE_ID_MAX,
 } MD_CCCI_RUNTIME_FEATURE_ID;
 
@@ -880,6 +884,7 @@ struct ccci_modem {
 #ifdef MD_UMOLY_EE_SUPPORT
 	/* EX_PL_LOG_T ex_pl_info; */
 	unsigned char ex_pl_info[MD_HS1_FAIL_DUMP_SIZE]; /* request by modem, change to 2k: include EX_PL_LOG_T*/
+	unsigned char ex_mpu_string[MD_EX_MPU_STR_LEN];
 #endif
 	unsigned short heart_beat_counter;
 	int dtr_state; /* only for usb bypass */

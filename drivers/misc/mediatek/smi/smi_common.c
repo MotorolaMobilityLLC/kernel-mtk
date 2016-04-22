@@ -67,6 +67,7 @@
 #include "smi_debug.h"
 #include "smi_info_util.h"
 #include "smi_configuration.h"
+#include "smi_public.h"
 #if defined(MMDVFS_HOOK)
 #include "mmdvfs_mgr.h"
 #endif
@@ -2012,6 +2013,7 @@ MTK_SMI_BWC_SCEN smi_get_current_profile(void)
 {
 	return (MTK_SMI_BWC_SCEN) smi_profile;
 }
+EXPORT_SYMBOL(smi_get_current_profile);
 
 #if IS_ENABLED(CONFIG_COMPAT)
 /* 32 bits process ioctl support: */
@@ -2257,7 +2259,14 @@ int is_mmdvfs_disabled(void)
 {
 	return disable_mmdvfs;
 }
-
+void mmdvfs_enable(int enable)
+{
+	if (enable)
+		disable_mmdvfs = 0;
+	else
+		disable_mmdvfs = 1;
+	SMIDBG(1, "disable_mmdvfs=%d, enable=%d", disable_mmdvfs, enable);
+}
 
 int is_mmdvfs_freq_hopping_disabled(void)
 {

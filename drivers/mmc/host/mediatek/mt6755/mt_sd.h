@@ -457,6 +457,12 @@ struct msdc_host {
 	struct work_struct	work_tune; /* new thread tune */
 	struct mmc_request	*mrq_tune; /* backup host->mrq */
 #endif
+
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+	u32     power_DL_status;
+	u32     power_CL_status;
+#endif
+
 	int                     prev_cmd_cause_dump;
 };
 

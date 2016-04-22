@@ -21,6 +21,11 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/dramc/$(MTK_PLATFORM)/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/thermal/fakeHeader/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/pmic_wrap/$(CONFIG_MTK_PLATFORM)
 
+ifeq ($(CONFIG_MTK_PMIC_CHIP_MT6353), y)
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/pmic/include/
+ccflags-y += -I$(srctree)/sound/soc/mediatek/common_define/
+endif
+
 #ifeq ($(CONFIG_ARCH_MT6735),y)
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/video/$(MTK_PLATFORM)/videox/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/video/$(MTK_PLATFORM)/dispsys/
@@ -34,6 +39,9 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/lcm/inc/
 
 ifeq ($(CONFIG_ARCH_MT6755), y)
 ccflags-y += -I$(srctree)/sound/soc/mediatek/mt_soc_audio_6755/
+ccflags-y += -I$(srctree)/sound/soc/mediatek/common_define/
+
+ccflags-y += -I$(srctree)/drivers/watchdog/mediatek/include/
 
 obj-y += mt_idle.o
 obj-y += mt_idle_mt6755.o

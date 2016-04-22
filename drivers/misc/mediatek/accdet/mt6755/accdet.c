@@ -31,6 +31,7 @@ static variable defination
 
 #define ACCDET_DEBOUNCE3_PLUG_OUT	(0x20*30) /* 30 msec */
 static int button_press_debounce = 0x400;
+static int mic_voltage1_comp; /* only for MIC mode = 6 */
 int cur_key = 0;
 struct head_dts_data accdet_dts_data;
 s8 accdet_auxadc_offset;
@@ -153,10 +154,18 @@ int accdet_get_cable_type(void)
 void accdet_auxadc_switch(int enable)
 {
 	if (enable) {
+#ifdef CONFIG_MTK_PMIC_CHIP_MT6353
+		pmic_pwrap_write(ACCDET_EINT_NV, pmic_pwrap_read(ACCDET_EINT_NV) | ACCDET_BF_ON);
+#else
 		pmic_pwrap_write(ACCDET_ADC_REG, pmic_pwrap_read(ACCDET_ADC_REG) | ACCDET_BF_ON);
+#endif
 		/*ACCDET_DEBUG("ACCDET enable switch\n");*/
 	} else {
+#ifdef CONFIG_MTK_PMIC_CHIP_MT6353
+		pmic_pwrap_write(ACCDET_EINT_NV, pmic_pwrap_read(ACCDET_EINT_NV) & ~(ACCDET_BF_ON));
+#else
 		pmic_pwrap_write(ACCDET_ADC_REG, pmic_pwrap_read(ACCDET_ADC_REG) & ~(ACCDET_BF_ON));
+#endif
 		/*ACCDET_DEBUG("ACCDET disable switch\n");*/
 	}
 }
@@ -210,7 +219,7 @@ static void pmic_pwrap_write(unsigned int addr, unsigned int wdata)
 #ifdef GET_ADC_DIRECTLY
 static int Accdet_PMIC_IMM_GetOneChannelValue(int deCount)
 {
-	unsigned int vol_val = 0;
+	int vol_val = 0;
 
 	pmic_pwrap_write(ACCDET_AUXADC_CTL_SET, ACCDET_CH_REQ_EN);
 	mdelay(3);
@@ -220,7 +229,10 @@ static int Accdet_PMIC_IMM_GetOneChannelValue(int deCount)
 	vol_val = (pmic_pwrap_read(ACCDET_AUXADC_REG) & ACCDET_DATA_MASK);
 	vol_val = (vol_val * 1800) / 4096;	/*mv*/
 	vol_val -= accdet_auxadc_offset;
-	ACCDET_DEBUG("ACCDET accdet_auxadc_offset: %d mv, MIC_Voltage1 = %d mv!\n\r", accdet_auxadc_offset, vol_val);
+	vol_val -= mic_voltage1_comp;
+	if (vol_val < 0)
+		vol_val = 0;
+	ACCDET_DEBUG("ACCDET offset: %d mv, vol: %d mv, comp: %d\n", accdet_auxadc_offset, vol_val, mic_voltage1_comp);
 	return vol_val;
 }
 #endif
@@ -1143,13 +1155,13 @@ void accdet_get_dts_data(void)
 		of_property_read_u32(node, "accdet-mic-mode", &accdet_dts_data.accdet_mic_mode);
 		#ifdef CONFIG_FOUR_KEY_HEADSET
 		of_property_read_u32_array(node, "headset-four-key-threshold", four_key, ARRAY_SIZE(four_key));
-		memcpy(&accdet_dts_data.four_key, four_key+1, sizeof(four_key));
+		memcpy(&accdet_dts_data.four_key, four_key+1, sizeof(struct four_key_threshold));
 		ACCDET_INFO("[Accdet]mid-Key = %d, voice = %d, up_key = %d, down_key = %d\n",
 		     accdet_dts_data.four_key.mid_key_four, accdet_dts_data.four_key.voice_key_four,
 		     accdet_dts_data.four_key.up_key_four, accdet_dts_data.four_key.down_key_four);
 		#else
 		of_property_read_u32_array(node, "headset-three-key-threshold", three_key, ARRAY_SIZE(three_key));
-		memcpy(&accdet_dts_data.three_key, three_key+1, sizeof(three_key));
+		memcpy(&accdet_dts_data.three_key, three_key+1, sizeof(struct three_key_threshold));
 		ACCDET_INFO("[Accdet]mid-Key = %d, up_key = %d, down_key = %d\n",
 		     accdet_dts_data.three_key.mid_key, accdet_dts_data.three_key.up_key,
 		     accdet_dts_data.three_key.down_key);
@@ -1221,6 +1233,35 @@ static inline void accdet_init(void)
 	pmic_pwrap_write(INT_CON_ACCDET_SET, RG_ACCDET_NEGV_IRQ_SET);
 #endif
    /*********************ACCDET Analog Setting***********************************************************/
+#ifdef CONFIG_MTK_PMIC_CHIP_MT6353
+#if defined(CONFIG_MTK_LEGACY)
+#ifndef ACCDET_WQHD
+	pmic_set_register_value(PMIC_RG_AUDMICBIASVREF, ACCDET_MIC_VOL);
+#else
+	pmic_pwrap_write(ACCDET_ADC_REG, 0x068F);	/*for wqhd project*/
+#endif
+#else
+	pmic_set_register_value(PMIC_RG_AUDMICBIASVREF, accdet_dts_data.mic_mode_vol);
+#endif
+	pmic_pwrap_write(ACCDET_RSV, 0x1290);	/*TODO: need confirm pull low,6328 bit[12]=1*/
+#ifdef CONFIG_ACCDET_EINT_IRQ
+	pmic_pwrap_write(ACCDET_EINT_NV, pmic_pwrap_read(ACCDET_EINT_NV) | ACCDET_EINT_CON_EN);
+#endif
+#ifdef ACCDET_NEGV_IRQ
+	pmic_pwrap_write(ACCDET_EINT_NV, pmic_pwrap_read(ACCDET_EINT_NV) | ACCDET_NEGV_DT_EN);
+#endif
+	if (accdet_dts_data.accdet_mic_mode == 1) {	/* ACC mode*/
+		mic_voltage1_comp = 0;	/* The variation of the hook key */
+		pmic_set_register_value(PMIC_RG_AUDMICBIAS1DCSWPEN, 0);
+	} else if (accdet_dts_data.accdet_mic_mode == 2) {	/* Low cost mode without internal bias*/
+		mic_voltage1_comp = 0;	/* The variation of the hook key */
+		pmic_pwrap_write(ACCDET_RSV, pmic_pwrap_read(ACCDET_RSV) | ACCDET_INPUT_MICP);
+	} else if (accdet_dts_data.accdet_mic_mode == 6) {	/* Low cost mode with internal bias*/
+		mic_voltage1_comp = 20;	/* The variation of the hook key */
+		pmic_pwrap_write(ACCDET_RSV, pmic_pwrap_read(ACCDET_RSV) | ACCDET_INPUT_MICP);
+		pmic_set_register_value(PMIC_RG_AUDMICBIAS1DCSWPEN, 1);	/*switch P internal*/
+	}
+#else
 	pmic_pwrap_write(ACCDET_ADC_REG, pmic_pwrap_read(ACCDET_ADC_REG) | 0xF);
 	pmic_pwrap_write(ACCDET_MICBIAS_REG, pmic_pwrap_read(ACCDET_MICBIAS_REG)
 		| (accdet_dts_data.mic_mode_vol<<4) | 0x80);
@@ -1240,6 +1281,7 @@ static inline void accdet_init(void)
 		pmic_pwrap_write(ACCDET_ADC_REG, pmic_pwrap_read(ACCDET_ADC_REG) | 0x08C0);
 		pmic_pwrap_write(ACCDET_MICBIAS_REG, pmic_pwrap_read(ACCDET_MICBIAS_REG) | 0x0104);
 	}
+#endif
     /**************************************************************************************************/
 #if defined CONFIG_ACCDET_EINT
 	/* disable ACCDET unit*/
@@ -1282,7 +1324,9 @@ static int dump_register(void)
 	ACCDET_DEBUG(" TOP_RST_ACCDET(0x%x) =%x\n", TOP_RST_ACCDET, pmic_pwrap_read(TOP_RST_ACCDET));
 	ACCDET_DEBUG(" INT_CON_ACCDET(0x%x) =%x\n", INT_CON_ACCDET, pmic_pwrap_read(INT_CON_ACCDET));
 	ACCDET_DEBUG(" TOP_CKPDN(0x%x) =%x\n", TOP_CKPDN, pmic_pwrap_read(TOP_CKPDN));
+#ifndef CONFIG_MTK_PMIC_CHIP_MT6353
 	ACCDET_DEBUG(" ACCDET_MICBIAS_REG(0x%x) =%x\n", ACCDET_MICBIAS_REG, pmic_pwrap_read(ACCDET_MICBIAS_REG));
+#endif
 	ACCDET_DEBUG(" ACCDET_ADC_REG(0x%x) =%x\n", ACCDET_ADC_REG, pmic_pwrap_read(ACCDET_ADC_REG));
 #ifdef CONFIG_ACCDET_PIN_SWAP
 	/*ACCDET_DEBUG(" 0x00004000 =%x\n",pmic_pwrap_read(0x00004000));*/
@@ -1677,7 +1721,11 @@ void mt_accdet_pm_restore_noirq(void)
 #ifdef CONFIG_ACCDET_EINT_IRQ
 	pmic_pwrap_write(TOP_CKPDN_CLR, RG_ACCDET_EINT_IRQ_CLR);
 	pmic_pwrap_write(ACCDET_RSV, pmic_pwrap_read(ACCDET_RSV) | ACCDET_INPUT_MICP);
+#ifdef CONFIG_MTK_PMIC_CHIP_MT6353
+	pmic_pwrap_write(ACCDET_EINT_NV, pmic_pwrap_read(ACCDET_EINT_NV) | ACCDET_EINT_CON_EN);
+#else
 	pmic_pwrap_write(ACCDET_ADC_REG, pmic_pwrap_read(ACCDET_ADC_REG) | ACCDET_EINT_CON_EN);
+#endif
 	pmic_pwrap_write(ACCDET_CTRL, ACCDET_EINT_EN);
 #endif
 #ifdef ACCDET_NEGV_IRQ

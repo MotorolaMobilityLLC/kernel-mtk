@@ -191,11 +191,15 @@ void hps_algo_amp(void)
 	int big_num_base, big_num_limit, big_num_online;
 	int target_root_cpu, state_tran_active;
 	struct hps_func_data hps_func;
+	static unsigned int hps_disable_cnt;
 	/*
 	 * run algo or not by hps_ctxt.enabled
 	 */
 	if (!hps_ctxt.enabled) {
+		if ((hps_disable_cnt % 0x80) == 0)
+			hps_warn("[WARN] HPS is disabled!!!\n");
 		atomic_set(&hps_ctxt.is_ondemand, 0);
+		hps_disable_cnt++;
 		return;
 	}
 

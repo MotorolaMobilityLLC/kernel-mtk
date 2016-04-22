@@ -959,6 +959,10 @@ LCM_DRIVER *lcm_driver_list[] = {
 #if defined(S6E3HA3_WQHD_2K_CMD)
 	&s6e3ha3_wqhd_2k_cmd_lcm_drv,
 #endif
+
+#if defined(NT35595_FHD_DSI_CMD_TRULY_NT50358_720P_EXTERN)
+	&nt35595_fhd_dsi_cmd_truly_nt50358_720p_extern_lcm_drv,
+#endif
 };
 
 unsigned char lcm_name_list[][128] = {

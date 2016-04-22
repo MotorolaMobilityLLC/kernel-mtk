@@ -66,6 +66,7 @@ static wait_queue_head_t esd_ext_te_wq;	/* For EXT TE EINT Check */
 static atomic_t esd_ext_te_event = ATOMIC_INIT(0);	/* For EXT TE EINT Check */
 static unsigned int esd_check_mode;
 static unsigned int esd_check_enable;
+static unsigned int esd_init;
 
 unsigned int get_esd_check_mode(void)
 {
@@ -84,6 +85,20 @@ unsigned int _can_switch_check_mode(void)
 	if (primary_get_lcm()->params->dsi.customization_esd_check_enable == 0
 		&& primary_get_lcm()->params->dsi.lcm_esd_check_table[0].cmd != 0)
 		ret = 1;
+	return ret;
+}
+
+bool _can_do_read_reg(void)
+{
+	bool ret = false;
+
+	if (primary_display_is_video_mode())
+		ret = true;
+	else if (!disp_helper_get_option(DISP_OPT_IDLE_MGR))
+		ret = true;
+	if (primary_get_lcm()->params->dsi.lcm_esd_check_table[0].cmd == 0)
+		ret = false;
+
 	return ret;
 }
 
@@ -282,10 +297,17 @@ int primary_display_switch_esd_mode(int mode)
 						   ARRAY_SIZE(ints));
 			/* mt_gpio_set_debounce(ints[0], ints[1]); */
 			irq = irq_of_parse_and_map(node, 0);
-			if (request_irq(irq, _esd_check_ext_te_irq_handler,
-					IRQF_TRIGGER_RISING, "DSI_TE-eint", NULL))
-				/*IRQF_TRIGGER_NONE*/
-				DISPERR("[ESD]EINT IRQ LINE NOT AVAILABLE!!\n");
+			if (primary_get_lcm()->params->dsi.ext_te_edge == LCM_POLARITY_FALLING) {
+				if (request_irq(irq, _esd_check_ext_te_irq_handler,
+						IRQF_TRIGGER_FALLING, "DSI_TE-eint", NULL))
+					/*IRQF_TRIGGER_NONE*/
+					DISPERR("[ESD]EINT IRQ LINE NOT AVAILABLE!!\n");
+			} else {
+				if (request_irq(irq, _esd_check_ext_te_irq_handler,
+						IRQF_TRIGGER_RISING, "DSI_TE-eint", NULL))
+					/*IRQF_TRIGGER_NONE*/
+					DISPERR("[ESD]EINT IRQ LINE NOT AVAILABLE!!\n");
+			}
 
 		} else
 			DISPERR("[ESD][%s] can't find DSI_TE eint compatible node\n", __func__);
@@ -299,7 +321,8 @@ int primary_display_switch_esd_mode(int mode)
 		if (node) {
 			irq = irq_of_parse_and_map(node, 0);
 			free_irq(irq, NULL);
-		}
+		} else
+			DISPERR("[ESD][%s] can't find DSI_TE eint compatible node\n",  __func__);
 
 		/* disp_dts_gpio_select_state(DTS_GPIO_STATE_TE_MODE_TE); */
 
@@ -432,7 +455,8 @@ int primary_display_esd_check(void)
 			ret = do_esd_check_dsi_te();
 #else
 			DISPCHECK("[ESD]ESD check read\n");
-			ret = do_esd_check_read();
+			if (_can_do_read_reg())
+				ret = do_esd_check_read();
 #endif
 			mode = GPIO_EINT_MODE; /* used for mode switch */
 		}
@@ -639,27 +663,28 @@ done:
 
 void primary_display_check_recovery_init(void)
 {
-	/* primary display check thread init */
-	primary_display_check_task =
-		kthread_create(primary_display_check_recovery_worker_kthread, NULL,
-		"disp_check");
-	init_waitqueue_head(&_check_task_wq);
+	if (!esd_init) {
+		/* primary display check thread init */
+		primary_display_check_task =
+			kthread_create(primary_display_check_recovery_worker_kthread, NULL,
+			"disp_check");
+		init_waitqueue_head(&_check_task_wq);
 
-
+		esd_init = 1;
+		if (disp_helper_get_option(DISP_OPT_ESD_CHECK_RECOVERY))
+			wake_up_process(primary_display_check_task);
+		init_waitqueue_head(&esd_ext_te_wq);
+	}
 	if (disp_helper_get_option(DISP_OPT_ESD_CHECK_RECOVERY)) {
-		wake_up_process(primary_display_check_task);
 		if (_need_do_esd_check()) {
 			/* esd check init */
-			init_waitqueue_head(&esd_ext_te_wq);
 			set_esd_check_mode(GPIO_EINT_MODE);
 			primary_display_esd_check_enable(1);
 		} else {
 			atomic_set(&_check_task_wakeup, 1);
 			wake_up_interruptible(&_check_task_wq);
 		}
-
 	}
-
 }
 
 void primary_display_esd_check_enable(int enable)

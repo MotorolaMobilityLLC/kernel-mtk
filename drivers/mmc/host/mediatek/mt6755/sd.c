@@ -678,6 +678,12 @@ static void msdc_clksrc_onoff(struct msdc_host *host, u32 on)
 	u32 div, mode, hs400_div_dis;
 
 	if ((on) && (0 == host->core_clkon)) {
+		#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+		/*
+		msdc_power_DL_CL_control(host, MSDC_POWER_DL_CL_FOR_HAS_LOAD);
+		*/
+		#endif
+
 		msdc_clk_enable(host);
 
 		host->core_clkon = 1;
@@ -699,6 +705,15 @@ static void msdc_clksrc_onoff(struct msdc_host *host, u32 on)
 			msdc_clk_disable(host);
 
 			host->core_clkon = 0;
+
+			#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+			/* Bug: We cannot know if device is performning internal
+			 operation */
+			/*
+			msdc_power_DL_CL_control(host,
+				MSDC_POWER_DL_CL_FOR_NO_LOAD);
+			*/
+			#endif
 		}
 	}
 }
@@ -3511,27 +3526,29 @@ static int tune_cmdq_cmdrsp(struct mmc_host *mmc,
 {
 	struct msdc_host *host = mmc_priv(mmc);
 	void __iomem *base = host->base;
-	unsigned long polling_tmo = 0;
+	unsigned long polling_tmo = 0, polling_status_tmo;
 
 	u32 err = 0, status = 0;
+
+	/* time for wait device to return to trans state
+	when needed to send CMD48 */
+	polling_status_tmo = jiffies + 30 * HZ;
 
 	do {
 		err = msdc_get_card_status(mmc, host, &status);
 		if (err) {
 			/* wait for transfer done */
-			if (!atomic_read(&mmc->cq_tuning_now)) {
-				polling_tmo = jiffies + 10 * HZ;
-				pr_err("msdc%d waiting data transfer done\n",
-					host->id);
-				while (mmc->is_data_dma) {
-					if (time_after(jiffies, polling_tmo)) {
-						ERR_MSG("waiting data transfer done TMO");
-						msdc_dump_info(host->id);
-						msdc_dma_stop(host);
-						msdc_dma_clear(host);
-						msdc_reset_hw(host->id);
-						return -1;
-					}
+			polling_tmo = jiffies + 10 * HZ;
+			pr_err("msdc%d waiting data transfer done\n",
+				host->id);
+			while (mmc->is_data_dma) {
+				if (time_after(jiffies, polling_tmo)) {
+					ERR_MSG("waiting data transfer done TMO");
+					msdc_dump_info(host->id);
+					msdc_dma_stop(host);
+					msdc_dma_clear(host);
+					msdc_reset_hw(host->id);
+					return -1;
 				}
 			}
 
@@ -3560,6 +3577,14 @@ static int tune_cmdq_cmdrsp(struct mmc_host *mmc,
 			else
 				return 1;
 		} else {
+			if (R1_CURRENT_STATE(status) != R1_STATE_TRAN) {
+				if (time_after(jiffies, polling_status_tmo))
+					ERR_MSG("wait transfer state timeout\n");
+				else {
+					err = 1;
+					continue;
+				}
+			}
 			ERR_MSG("status = %x, discard task, re-send command",
 				status);
 			err = msdc_do_discard_task_cq(mmc, mrq);
@@ -3571,20 +3596,19 @@ static int tune_cmdq_cmdrsp(struct mmc_host *mmc,
 	} while (err);
 
 	/* wait for transfer done */
-	if (!atomic_read(&mmc->cq_tuning_now)) {
-		polling_tmo = jiffies + 10 * HZ;
-		pr_err("msdc%d waiting data transfer done\n", host->id);
-		while (mmc->is_data_dma) {
-			if (time_after(jiffies, polling_tmo)) {
-				ERR_MSG("waiting data transfer done TMO");
-				msdc_dump_info(host->id);
-				msdc_dma_stop(host);
-				msdc_dma_clear(host);
-				msdc_reset_hw(host->id);
-				return -1;
-			}
+	polling_tmo = jiffies + 10 * HZ;
+	pr_err("msdc%d waiting data transfer done\n", host->id);
+	while (mmc->is_data_dma) {
+		if (time_after(jiffies, polling_tmo)) {
+			ERR_MSG("waiting data transfer done TMO");
+			msdc_dump_info(host->id);
+			msdc_dma_stop(host);
+			msdc_dma_clear(host);
+			msdc_reset_hw(host->id);
+			return -1;
 		}
 	}
+
 	if (msdc_execute_tuning(mmc, MMC_SEND_STATUS)) {
 		pr_err("msdc%d autok failed\n", host->id);
 		return 1;
@@ -4145,7 +4169,7 @@ static void msdc_do_request_with_retry(struct msdc_host *host,
 #ifdef MTK_MSDC_USE_CMD23
 		if ((sbc != NULL) &&
 		    (sbc->error == (unsigned int)-ETIMEDOUT)) {
-			if (check_mmc_cmd1718(cmd->opcode)) {
+			if (check_mmc_cmd1825(cmd->opcode)) {
 				/* not tuning, go out directly */
 				pr_err("===[%s:%d]==cmd23 timeout==\n",
 					__func__, __LINE__);
