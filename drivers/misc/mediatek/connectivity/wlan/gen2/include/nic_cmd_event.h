@@ -750,12 +750,9 @@ typedef enum _ENUM_CMD_ID_T {
 	CMD_ID_GET_GSCN_SCN_RESULT = 0x48,	/* 0x48 (Get) */
 	CMD_ID_SET_COUNTRY_POWER_LIMIT = 0x4A,	/* 0x4A (Set) */
 	CMD_ID_SET_SYSTEM_SUSPEND = 0x60,	/* 0x60 (Set) */
-<<<<<<< HEAD
-=======
 #if CFG_SUPPORT_FCC_DYNAMIC_TX_PWR_ADJUST
 	CMD_ID_SET_FCC_TX_PWR_CERT = 0x6F,	/* 0x6F (Set) */
 #endif
->>>>>>> lenovo/caf/mt6755_m
 	CMD_ID_TDLS_PS = 0x75,	/* 0x75 (Set) */
 	CMD_ID_GET_NIC_CAPABILITY = 0x80,	/* 0x80 (Query) */
 	CMD_ID_GET_LINK_QUALITY,	/* 0x81 (Query) */
