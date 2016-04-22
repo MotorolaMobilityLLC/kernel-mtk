@@ -725,6 +725,7 @@ typedef enum _ENUM_PKT_FLAG_T {
 	ENUM_PKT_DHCP,		/* DHCP frame */
 	ENUM_PKT_ARP,		/* ARP */
 	ENUM_PKT_ICMP,		/* ICMP */
+	ENUM_PKT_DNS,       /* DNS *//*lenovo-sw lumy1, mtk temp patch for dns debug*/
 
 	ENUM_PKT_FLAG_NUM
 } ENUM_PKT_FLAG_T;

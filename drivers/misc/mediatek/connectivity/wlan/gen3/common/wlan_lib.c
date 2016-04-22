@@ -4315,6 +4315,13 @@ BOOLEAN wlanProcessTxFrame(IN P_ADAPTER_T prAdapter, IN P_NATIVE_PACKET prPacket
 
 			if (rTxPacketInfo.u2Flag & BIT(ENUM_PKT_ARP))
 				GLUE_SET_PKT_FLAG(prPacket, ENUM_PKT_ARP);
+
+			/*lenovo-sw lumy1, mtk temp patch for dns debug*/
+			if (rTxPacketInfo.u2Flag & BIT(ENUM_PKT_DNS))
+				GLUE_SET_PKT_FLAG(prPacket, ENUM_PKT_DNS);
+
+			if (rTxPacketInfo.u2Flag & BIT(ENUM_PKT_ICMP))
+				GLUE_SET_PKT_FLAG(prPacket, ENUM_PKT_ICMP);
 		}
 #else
 		if (rTxPacketInfo.fgIs1X) {
@@ -6356,7 +6363,7 @@ VOID wlanInitFeatureOption(IN P_ADAPTER_T prAdapter)
 	 * Note: For VHT STA, BW 80Mhz is a must!
 	 */
 	prWifiVar->ucStaBandwidth = (UINT_8) wlanCfgGetUint32(prAdapter, "StaBw", MAX_BW_80MHZ);
-	prWifiVar->ucSta2gBandwidth = (UINT_8) wlanCfgGetUint32(prAdapter, "Sta2gBw", MAX_BW_40MHZ);
+	prWifiVar->ucSta2gBandwidth = (UINT_8) wlanCfgGetUint32(prAdapter, "Sta2gBw", MAX_BW_20MHZ);/*lenovo-sw lumy1*/
 	prWifiVar->ucSta5gBandwidth = (UINT_8) wlanCfgGetUint32(prAdapter, "Sta5gBw", MAX_BW_80MHZ);
 	prWifiVar->ucP2p2gBandwidth = (UINT_8) wlanCfgGetUint32(prAdapter, "P2p2gBw", MAX_BW_20MHZ);
 	prWifiVar->ucP2p5gBandwidth = (UINT_8) wlanCfgGetUint32(prAdapter, "P2p5gBw", MAX_BW_40MHZ);
@@ -6455,6 +6462,8 @@ VOID wlanInitFeatureOption(IN P_ADAPTER_T prAdapter)
 	prWifiVar->ucDhcpTxDone = (UINT_8) wlanCfgGetUint32(prAdapter, "DhcpTxDone", 1);
 	prWifiVar->ucArpTxDone = (UINT_8) wlanCfgGetUint32(prAdapter, "ArpTxDone", 1);
 	prWifiVar->ucIcmpTxDone = (UINT_8) wlanCfgGetUint32(prAdapter, "IcmpTxDone", 1);
+	/*lenovo-sw lumy1, mtk temp patch for dns debug*/
+	prWifiVar->ucDnsTxDone = (UINT_8)wlanCfgGetUint32(prAdapter, "DnsTxDone", 1);
 }
 
 VOID wlanCfgSetSwCtrl(IN P_ADAPTER_T prAdapter)
@@ -7727,4 +7736,15 @@ wlanIcmpTxDone(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMsduInfo, IN ENUM_TX
 			prMsduInfo->ucWlanIndex, prMsduInfo->ucPID, rTxDoneStatus, prMsduInfo->ucTxSeqNum);
 
 	return WLAN_STATUS_SUCCESS;
+}
+/*lenovo-sw lumy1, mtk temp patch for dns debug*/
+WLAN_STATUS
+wlanDnsTxDone(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMsduInfo, 
+    IN ENUM_TX_RESULT_CODE_T rTxDoneStatus)
+{
+    DBGLOG(SW4, INFO, "DNS PKT TX DONE WIDX:PID[%u:%u] Status[%u]\n", 
+        prMsduInfo->ucWlanIndex, prMsduInfo->ucPID, 
+        rTxDoneStatus);
+
+    return WLAN_STATUS_SUCCESS;
 }
