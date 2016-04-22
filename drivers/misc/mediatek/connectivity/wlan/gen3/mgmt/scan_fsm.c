@@ -2305,7 +2305,8 @@ VOID scnScanDoneTimeout(IN P_ADAPTER_T prAdapter, ULONG ulParamPtr)
 
 	prScanInfo->ucScanDoneTimeoutCnt++;
 	/* whole chip reset check */
-	if (prScanInfo->ucScanDoneTimeoutCnt > SCAN_DONE_TIMEOUT_THRESHOLD) {
+	/*lenovo-sw lumy1, Don't reset chip in test mode when ScanDoneTimeout*/
+	if ((prScanInfo->ucScanDoneTimeoutCnt > SCAN_DONE_TIMEOUT_THRESHOLD) && (prAdapter->fgTestMode == false )) {
 
 		DBGLOG(SCN, ERROR,
 		       " meet SCAN_DONE_TIMEOUT_THRESHOLD %d, trigger whole chip reset !! \r\n",
