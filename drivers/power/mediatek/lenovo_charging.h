@@ -18,7 +18,7 @@
 #include <linux/kernel.h>
 #include <mt-plat/battery_common.h>
 #include <mt-plat/charging.h>
-#include <mach/mt_charging.h>
+#include "cust_charging.h"
 #include <mt-plat/battery_meter.h>
 #include <mach/mt_sleep.h>
 

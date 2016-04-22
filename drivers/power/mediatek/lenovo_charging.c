@@ -17,7 +17,7 @@
 //lenovo-sw mahj2 modify for battery charging temp notify at 20141212 Begin
 #include <linux/power_supply.h>
 //lenovo-sw mahj2 modify for battery charging temp notify at 20141212 End
-#include <mach/mt_charging.h>
+#include "cust_charging.h"
 /* lenovo-sw zhangrc2 use pmic to control charging led 2014-12-08 */
 #include "../../misc/mediatek/leds/mt6755/leds_sw.h"
 /* lenovo-sw zhangrc2 use pmic to control charging led 2014-12-08 */

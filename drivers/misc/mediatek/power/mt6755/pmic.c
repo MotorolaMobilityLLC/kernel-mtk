@@ -99,12 +99,16 @@
 #if defined(CONFIG_MTK_SMART_BATTERY)
 #include <mt-plat/battery_meter.h>
 #include <mt-plat/battery_common.h>
-#include <mach/mt_battery_meter.h>
+//lenovo-sw mahj2 modify for project split Begin
+#include <cust_battery_meter.h>
+//lenovo-sw mahj2 modify for project split End
 #endif
 #include <mt6311.h>
 #include <mach/mt_pmic.h>
 #include <mt-plat/mt_reboot.h>
-#include <mach/mt_charging.h>
+//lenovo-sw mahj2 modify for project split Begin
+#include <cust_charging.h>
+//lenovo-sw mahj2 modify for project split End
 
 /*****************************************************************************
  * PMIC extern variable
