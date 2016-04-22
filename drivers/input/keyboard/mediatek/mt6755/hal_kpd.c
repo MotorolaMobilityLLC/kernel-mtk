@@ -325,7 +325,6 @@ void long_press_reboot_function_setting(void)
 	}
     #endif
     /*lenovo-sw jixj 2015.4.15 modified begin*/
-	#endif
 #ifdef CONFIG_MTK_PMIC_CHIP_MT6353
 		pmic_set_register_value(PMIC_RG_PWRKEY_RST_EN, 0x01);
 		pmic_set_register_value(PMIC_RG_HOMEKEY_RST_EN, 0x00);
