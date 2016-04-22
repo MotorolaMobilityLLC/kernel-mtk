@@ -994,9 +994,32 @@
 
 }; /* IRTX GPIO Settings -End */
 
+/* lenovo-sw, chenzz3, configure spi device for fingerprint, begin */
+&spi0 {
+	fpc1020@0 {
+		status = "ok";
+		compatible = "fpc,fpc1020";
+		reg = <1>;
+		spi-max-frequency = <4800000>;
+		input-device-name = "fpc1020";
+		fpc,gpio_rst      = <87>;
+		fpc,gpio_irq      = <86>;
+		fpc,use_fpc2050   = <1>;
+		fpc,enable-on-boot;
+		fpc,enable-wakeup;
+		/* EV_MSC, MSC_SCAN */
+		fpc,event-type = <4>;
+		fpc,event-code = <4>;
+	};
+};
 
-
-
-
-
+&eintc {
+	fpc_int@86 {
+		compatible = "mediatek, fpc_int-eint";
+		interrupt-parent = <&eintc>;
+		interrupts = <86 1>;
+		debounce = <86 1000>;
+	};
+};
+/* lenovo-sw, chenzz3, configure spi device for fingerprint, end */
 

@@ -98,7 +98,7 @@ static inline void Flush_Dcache_By_Area(unsigned long start, unsigned long end)
 
 	__asm__ __volatile__ ("dsb" : : : "memory"); /* dsb */
 #endif
-	__flush_dcache_area(start, (end - start));
+	__flush_dcache_area((void *)start, (end - start));
 }
 /******************************************************************
  * @brief:
