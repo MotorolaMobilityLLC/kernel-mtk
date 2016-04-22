@@ -38,6 +38,8 @@ enum {
 	IDX_SP_VCORE_TRANS2,	/* 3 */
 	IDX_SP_VCORE_TRANS1,	/* 4 */
 	IDX_SP_VCORE_LPM,	/* 5 */
+	IDX_SP_VPROC_PWR_ON = 12,	/* 12 */
+	IDX_SP_VPROC_SHUTDOWN,	/* 13 */
 	NR_IDX_SP,
 };
 enum {
@@ -49,6 +51,8 @@ enum {
 	IDX_DI_VCORE_LPM,	/* 5 */
 	IDX_DI_SRCCLKEN_IN2_NORMAL,  /* 6 */
 	IDX_DI_SRCCLKEN_IN2_SLEEP, /* 7 */
+	IDX_DI_VPROC_NORMAL = 12,	/* 12 */
+	IDX_DI_VPROC_SLEEP,	/* 13 */
 	NR_IDX_DI,
 };
 

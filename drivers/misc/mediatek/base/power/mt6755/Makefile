@@ -19,6 +19,8 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/irq/$(MTK_PLATFORM)/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/dramc/$(MTK_PLATFORM)/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/thermal/fakeHeader/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/video/$(MTK_PLATFORM)/videox/
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/smi/
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat/$(MTK_PLATFORM)/include/
 
 obj-y += mt_pm_init.o
 obj-y += mt_clkbuf_ctl.o
@@ -35,6 +37,7 @@ obj-y += mt_cpufreq.o
 obj-y += mt_cpufreq_hybrid.o
 obj-y += mt_gpufreq.o
 obj-y += mt_ptp.o
+obj-$(CONFIG_MTK_MT6750TT) += mt_eem_turbo.o
 
 obj-y += mt_vcorefs_governor.o
 obj-y += mt_vcorefs_manager.o

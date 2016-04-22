@@ -26,8 +26,9 @@ static struct ccci_port md1_ccci_ports[] = {
 	{CCCI_CCMNI6_TX, CCCI_CCMNI6_RX, 5, 5, 0xFF, 0xFF, 0, &net_port_ops, 0xFF, "ccmni5",},
 	{CCCI_CCMNI7_TX, CCCI_CCMNI7_RX, 5, 5, 0xFF, 0xFF, 0, &net_port_ops, 0xFF, "ccmni6",},
 	{CCCI_CCMNI8_TX, CCCI_CCMNI8_RX, 3, 3, 0xF4, 0xFF, 0, &net_port_ops, 0xFF, "ccmni7",},
-/* for direct tethering */
+#ifdef FEATURE_DIRECT_TETHERING_LOGGING
 	{CCCI_CCMNILAN_TX, CCCI_CCMNILAN_RX, 3, 4, 0xFF, 0xFF, 0, &net_port_ops, 0xFF, "ccmni-lan",},
+#endif
 /* char port, notes ccci_monitor must be first for md_cd_get_port_by_minor() implement */
 	{CCCI_MONITOR_CH, CCCI_MONITOR_CH, 0xFF, 0xFF, 0xFF, 0xFF, 4, &char_port_ops, 0, "ccci_monitor",},
 	{CCCI_PCM_TX, CCCI_PCM_RX, 0, 0, 0xFF, 0xFF, 4, &char_port_ops, 1, "ccci_aud",},

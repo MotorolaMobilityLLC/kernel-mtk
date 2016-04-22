@@ -315,13 +315,24 @@ EXPORT_SYMBOL(MPU6515_SCP_SetPowerMode);
 static int mpu_i2c_read_block(struct i2c_client *client, u8 addr, u8 *data, u8 len)
 {
 	int err;
+	struct i2c_adapter *adap = client->adapter;
+	struct i2c_msg msg;
 
 	data[0] = addr;
-	client->addr &= I2C_MASK_FLAG;
-	client->addr |= I2C_WR_FLAG;
-	client->addr |= I2C_RS_FLAG;
-	err = i2c_master_send(client, data, (len << 8) | 0x1);
-	client->addr &= I2C_MASK_FLAG;
+
+	msg.addr = client->addr;
+	msg.addr &= I2C_MASK_FLAG;
+	msg.addr |= (I2C_WR_FLAG | I2C_RS_FLAG);
+	msg.flags = client->flags & I2C_M_TEN;
+	msg.len = ((len << 8) | 0x1);
+	msg.buf = (char *)data;
+#ifdef CONFIG_MTK_I2C_EXTENSION
+	/* msg.ext_flag = I2C_WR_FLAG | I2C_RS_FLAG; */
+	msg.timing = client->timing;
+	msg.ext_flag = client->ext_flag;
+#endif
+
+	err = i2c_transfer(adap, &msg, 1);
 
 	if (err < 0)
 		GSE_ERR("i2c_transfer error: (%d %p %d) %d\n", addr, data, len, err);
@@ -389,8 +400,7 @@ static int MPU6515_SetPowerMode(struct i2c_client *client, bool enable)
 	u8 databuf[2];
 
 	if (enable == sensor_power) {
-		if (atomic_read(&obj->trace) & MPU6515_TRC_INFO)
-			GSE_LOG("Sensor power status is newest!\n");
+		GSE_LOG("Sensor power status is newest!\n");
 		return MPU6515_SUCCESS;
 	}
 #if 0
@@ -473,7 +483,7 @@ static int MPU6515_SetDataResolution(struct mpu6515_i2c_data *obj)
 /*----------------------------------------------------------------------------*/
 static int MPU6515_ReadData(struct i2c_client *client, s16 data[MPU6515_AXES_NUM])
 {
-	struct mpu6515_i2c_data *priv = i2c_get_clientdata(client);
+	struct mpu6515_i2c_data *priv;
 	int err = 0;
 	u8 buf[MPU6515_DATA_LEN] = { 0 };
 
@@ -483,6 +493,8 @@ static int MPU6515_ReadData(struct i2c_client *client, s16 data[MPU6515_AXES_NUM
 
 	if (NULL == client)
 		return -EINVAL;
+
+	priv = i2c_get_clientdata(client);
 
 
 	{
@@ -1196,7 +1208,7 @@ static int MPU6515_ReadSensorData(struct i2c_client *client, char *buf, int bufs
 /*----------------------------------------------------------------------------*/
 static int MPU6515_ReadRawData(struct i2c_client *client, char *buf)
 {
-	struct mpu6515_i2c_data *obj = (struct mpu6515_i2c_data *)i2c_get_clientdata(client);
+	struct mpu6515_i2c_data *obj;
 	int res = 0;
 
 #ifdef GSENSOR_UT
@@ -1205,6 +1217,8 @@ static int MPU6515_ReadRawData(struct i2c_client *client, char *buf)
 
 	if (!buf || !client)
 		return -EINVAL;
+
+	obj = (struct mpu6515_i2c_data *)i2c_get_clientdata(client);
 
 
 	if (atomic_read(&obj->suspend))
@@ -2116,14 +2130,15 @@ static int mpu6515_suspend(struct i2c_client *client, pm_message_t msg)
 	struct mpu6515_i2c_data *obj = i2c_get_clientdata(client);
 	int err = 0;
 
+	if (obj == NULL) {
+		GSE_ERR("null pointer!!\n");
+		return -EINVAL;
+	}
+
 	if (atomic_read(&obj->trace) & MPU6515_TRC_INFO)
 		GSE_FUN();
 
 	if (msg.event == PM_EVENT_SUSPEND) {
-		if (obj == NULL) {
-			GSE_ERR("null pointer!!\n");
-			return -EINVAL;
-		}
 		/* mutex_lock(&gsensor_mutex); */
 		atomic_set(&obj->suspend, 1);
 #ifndef CUSTOM_KERNEL_SENSORHUB
@@ -2152,13 +2167,14 @@ static int mpu6515_resume(struct i2c_client *client)
 	struct mpu6515_i2c_data *obj = i2c_get_clientdata(client);
 	int err;
 
-	if (atomic_read(&obj->trace) & MPU6515_TRC_INFO)
-		GSE_FUN();
-
 	if (obj == NULL) {
 		GSE_ERR("null pointer!!\n");
 		return -EINVAL;
 	}
+
+	if (atomic_read(&obj->trace) & MPU6515_TRC_INFO)
+		GSE_FUN();
+
 #ifndef CUSTOM_KERNEL_SENSORHUB
 	MPU6515_power(obj->hw, 1);
 #endif				/* #ifndef CUSTOM_KERNEL_SENSORHUB */
@@ -2463,7 +2479,7 @@ static int gsensor_get_data(int *x, int *y, int *z, int *status)
 /*----------------------------------------------------------------------------*/
 static int mpu6515_i2c_detect(struct i2c_client *client, struct i2c_board_info *info)
 {
-	strcpy(info->type, MPU6515_DEV_NAME);
+	strncpy(info->type, MPU6515_DEV_NAME, sizeof(info->type));
 	return 0;
 }
 

@@ -331,6 +331,14 @@ extern kal_bool is_ta_connect;
 extern struct wake_lock TA_charger_suspend_lock;
 #endif
 
+#if defined(CONFIG_MTK_PUMP_EXPRESS_PLUS_20_SUPPORT)
+extern struct wake_lock PE20_charger_suspend_lock;
+extern kal_bool pe20_check_chr_type;
+extern kal_bool pe20_cable_out_occur;
+extern kal_bool is_pe20_connect;
+#endif
+
+
 /*****************************************************************************
  *  Extern Function
  ****************************************************************************/
@@ -398,11 +406,10 @@ void check_battery_exist(void);
 #ifdef DLPT_POWER_OFF_EN
 	extern int dlpt_check_power_off(void);
 #endif
-#ifdef BATTERY_CDP_WORKAROUND
 extern kal_bool is_usb_rdy(void);
-#endif
 extern unsigned int upmu_get_reg_value(unsigned int reg);
 
+extern void mt_charger_enable_DP_voltage(int ison);
 
 /* usb header */
 extern bool mt_usb_is_device(void);

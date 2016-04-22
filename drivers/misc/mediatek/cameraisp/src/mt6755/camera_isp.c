@@ -5494,6 +5494,17 @@ static long ISP_Buf_CTRL_FUNC(unsigned long Param)
 										 ring_buf[rt_dma].
 										 data[i].
 										 base_pAddr);
+									/* for openedDma=2,
+									it must update 2 dma's based address,
+									or it will occur tearing */
+					/**/			if (pstRTBuf->ring_buf[ch_imgo].active == MTRUE)
+										ISP_WR32(
+					/**/				    p1_dma_addr_reg[ch_imgo],
+					/**/				    pstRTBuf->ring_buf[ch_imgo].data[i].base_pAddr);
+					/**/			if (pstRTBuf->ring_buf[ch_rrzo].active == MTRUE)
+										ISP_WR32(
+					/**/				    p1_dma_addr_reg[ch_rrzo],
+					/**/				    pstRTBuf->ring_buf[ch_rrzo].data[i].base_pAddr);
 								}
 					/**/			if ((_camsv_imgo_ == rt_dma)
 					/**/			    || (_camsv2_imgo_ == rt_dma)) {
@@ -11188,23 +11199,20 @@ static MINT32 ISP_open(struct inode *pInode, struct file *pFile)
 		goto EXIT;
 	} else {
 		IspInfo.UserCount++;
+		/*Move P2_IMEM_DBGList here to fix re-setting after other initializations*/
+		for (i = 0; i <	PROCESS_MAX; i++) {
+		    P2_IMEM_DBGList[i].processID = 0x0;
+		    P2_IMEM_DBGList[i].bImemDbgDump = false;
+		    P2_IMEM_DBGList[i].bImemDbgDumpDone = false;
+		}
+		for (i = 0; i < ISP_REF_CNT_ID_MAX; i++)
+		    atomic_set(&g_imem_ref_cnt[i], 0);
 		spin_unlock(&(IspInfo.SpinLockIspRef));
-
-		/* kernellog limit to (current+150) lines per second */
-		pr_detect_count = get_detect_count();
-		i = pr_detect_count + 150;
-		set_detect_count(i);
 
 		LOG_DBG("Curr UserCount(%d), (process, pid, tgid)=(%s, %d, %d),	first user, %d",
 			IspInfo.UserCount, current->comm, current->pid, current->tgid, i);
 	}
-	spin_lock(&(SpinLockImemDump));
-	for (i = 0; i <	PROCESS_MAX; i++) {
-		P2_IMEM_DBGList[i].processID = 0x0;
-		P2_IMEM_DBGList[i].bImemDbgDump = false;
-		P2_IMEM_DBGList[i].bImemDbgDumpDone = false;
-	}
-	spin_unlock(&(SpinLockImemDump));
+
 	/* do wait queue head init when re-enter in camera */
 	EDBufQueRemainNodeCnt = 0;
 	P2_Support_BurstQNum = 1;
@@ -11270,8 +11278,6 @@ static MINT32 ISP_open(struct inode *pInode, struct file *pFile)
 	atomic_set(&(IspInfo.HoldInfo.HoldEnable), 0);
 	atomic_set(&(IspInfo.HoldInfo.WriteEnable), 0);
 
-	for (i = 0; i < ISP_REF_CNT_ID_MAX; i++)
-		atomic_set(&g_imem_ref_cnt[i], 0);
 	/*      */
 	for (q = 0; q < IRQ_USER_NUM_MAX; q++) {
 		for (i = 0; i < ISP_IRQ_TYPE_AMOUNT; i++) {
@@ -11307,7 +11313,10 @@ static MINT32 ISP_open(struct inode *pInode, struct file *pFile)
 #ifdef KERNEL_LOG
 	IspInfo.DebugMask = (ISP_DBG_INT | ISP_DBG_BUF_CTRL);
 #endif
-	/*      */
+	/* kernellog limit to (current+150) lines per second */
+	pr_detect_count = get_detect_count();
+	i = pr_detect_count + 150;
+	set_detect_count(i);
 EXIT:
 	if (Ret < 0) {
 		if (IspInfo.BufInfo.Read.pData != NULL) {
@@ -11328,6 +11337,9 @@ EXIT:
 		*/
 		ISP_WR32(ISP_IMGSYS_BASE + 0x120, 0x33F);
 		ISP_WR32(ISP_IMGSYS_BASE + 0x124, 0x0);
+
+		/* IMG_CAM_DCM_DIS */
+		ISP_WR32(ISP_IMGSYS_BASE + 0x98, (ISP_RD32(ISP_IMGSYS_BASE + 0x98)|0x3));
 	}
 
 	/* LOG_DBG("Before spm_disable_sodi()."); */

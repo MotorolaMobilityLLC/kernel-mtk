@@ -25,7 +25,10 @@
 #define SUPPORT_OTG
 #endif
 /* This should be defined if superspeed is supported */
+#if !defined(CONFIG_USB_MU3D_ONLY_U2_MODE)
 #define SUPPORT_U3
+#endif
+
 #ifdef SUPPORT_U3
 
 #define U3D_DFT_SPEED SSUSB_SPEED_SUPER

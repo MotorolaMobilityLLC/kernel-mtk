@@ -121,6 +121,11 @@ void mt_ppm_hica_update_algo_data(unsigned int cur_loads,
 		cur_state == PPM_POWER_STATE_NONE)
 		goto end;
 
+#ifdef PPM_IC_SEGMENT_CHECK
+	if (ppm_main_info.fix_state_by_segment != PPM_POWER_STATE_NONE)
+		goto end;
+#endif
+
 	/* skip HICA if DVFS is not ready (we cannot get current freq...) */
 	if (!ppm_main_info.client_info[PPM_CLIENT_DVFS].limit_cb)
 		goto end;
@@ -198,6 +203,12 @@ void ppm_hica_set_default_limit_by_state(enum ppm_power_state state,
 				state_info[state].cluster_limit->state_limit[i].max_cpufreq_idx;
 		}
 	}
+
+#ifdef PPM_IC_SEGMENT_CHECK
+	/* ignore HICA min freq setting for L cluster in L_ONLY state */
+	if (state == PPM_POWER_STATE_L_ONLY && ppm_main_info.fix_state_by_segment == PPM_POWER_STATE_L_ONLY)
+		policy->req.limit[1].min_cpufreq_idx = get_cluster_min_cpufreq_idx(1);
+#endif
 
 	FUNC_EXIT(FUNC_LV_HICA);
 }

@@ -39,6 +39,10 @@
 #include <asm/system_misc.h>
 #include <mt-plat/mt_hooks.h>
 
+#ifdef CONFIG_ARM64_IRQ_STACK
+#include <asm/sections.h>
+#endif
+
 static const char *handler[]= {
 	"Synchronous Abort",
 	"IRQ",
@@ -90,14 +94,79 @@ static void dump_mem(const char *lvl, const char *str, unsigned long bottom,
 	set_fs(fs);
 }
 
+#ifndef CONFIG_ARM64_IRQ_STACK
 static void dump_backtrace_entry(unsigned long where, unsigned long stack)
 {
 	print_ip_sym(where);
 	if (in_exception_text(where))
 		dump_mem("", "Exception stack", stack,
-			 stack + sizeof(struct pt_regs));
+				stack + sizeof(struct pt_regs));
+}
+#else /* CONFIG_ARM64_IRQ_STACK */
+static void dump_backtrace_entry(unsigned long where, unsigned long stack)
+{
+	unsigned long _irq_stack_ptr = per_cpu(irq_stack_ptr, smp_processor_id());
+
+	print_ip_sym(where);
+	if (in_exception_text(where)) {
+		/*
+		 * If we switched to the irq_stack before calling this
+		 * exception handler, then the pt_regs will be on the
+		 * task stack. The easiest way to tell is if the large
+		 * pt_regs would overlap with the end of the irq_stack.
+		 */
+		if (stack < _irq_stack_ptr &&
+		    (stack + sizeof(struct pt_regs)) > _irq_stack_ptr)
+			stack = IRQ_STACK_TO_TASK_STACK(_irq_stack_ptr);
+
+		dump_mem("", "Exception stack", stack,
+				stack + sizeof(struct pt_regs));
+	}
 }
 
+/* Dump stack content from indicated range */
+void dump_mem_from_sp(unsigned long stack, unsigned long end, bool check_start)
+{
+	unsigned long first;
+	unsigned long fp, lr;
+
+	pr_alert("Start:0x%lx End:0x%lx\n", stack, end);
+
+	/* Find start point for stack frame */
+	if (check_start) {
+		for (first = stack; first < end; first += sizeof(unsigned long)) {
+			lr = *(unsigned long *)first;
+			if (lr >= (unsigned long)_stext && lr <= (unsigned long)_etext) {
+				print_ip_sym(lr);
+				stack = first - sizeof(unsigned long);
+				break;
+			}
+		}
+	}
+
+	/* Dump stack trace */
+	for (first = stack; first < end;) {
+		/* Current frame */
+		fp = *(unsigned long *)first;
+
+		/* Return address */
+		first += sizeof(unsigned long);
+		lr = *(unsigned long *)first;
+		/*
+		 * No need to check the kernel text range -
+		 * if (lr >= (unsigned long)_stext && lr <= (unsigned long)_etext)
+		 */
+		print_ip_sym(lr);
+
+		/* Avoid infinite loop */
+		if (fp <= first)
+			break;
+
+		/* Next frame */
+		first = fp;
+	}
+}
+#endif
 static void dump_instr(const char *lvl, struct pt_regs *regs)
 {
 	unsigned long addr = instruction_pointer(regs);

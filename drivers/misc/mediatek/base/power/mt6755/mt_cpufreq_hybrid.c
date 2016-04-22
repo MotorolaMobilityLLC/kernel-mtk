@@ -307,15 +307,19 @@
 #define SW_ALL_PAUSE		(SW_B_PAUSE | SW_L_PAUSE)
 
 #define L_F_CURR(val)		(((val) & 0xf) << 0)
+#define L_F_DES(val)		(((val) & 0xf) << 4)
 #define L_V_CURR(val)		(((val) & 0x7f) << 8)
 #define FW_L_DONE		(1U << 15)
 #define B_F_CURR(val)		(((val) & 0xf) << 16)
+#define B_F_DES(val)		(((val) & 0xf) << 20)
 #define B_V_CURR(val)		(((val) & 0x7f) << 24)
 #define FW_B_DONE		(1U << 31)
 
 #define L_F_CURR_MASK		(0xf << 0)
+#define L_F_DES_MASK		(0xf << 4)
 #define L_V_CURR_MASK		(0x7f << 8)
 #define B_F_CURR_MASK		(0xf << 16)
+#define B_F_DES_MASK		(0xf << 20)
 #define B_V_CURR_MASK		(0x7f << 24)
 #define FW_ALL_DONE		(FW_B_DONE | FW_L_DONE)
 
@@ -668,7 +672,7 @@ static void __cspm_pcm_sw_reset(void)
 
 static void __cspm_register_init(void)
 {
-	/* enable register control */
+	/* enable register write */
 	cspm_write(CSPM_POWERON_CONFIG_EN, REGWR_CFG_KEY | REGWR_EN);
 
 	/* init power control register */
@@ -698,7 +702,12 @@ static void __cspm_register_init(void)
 static void __cspm_reset_and_init_pcm(const struct pcm_desc *pcmdesc)
 {
 	/* do basic init because of Infra power-on reset */
+#if 0
+	/* others will set REGWR_EN for SEMA access */
 	if (!(cspm_read(CSPM_POWERON_CONFIG_EN) & REGWR_EN))
+#else
+	if (!(cspm_read(CSPM_PCM_CON1) & CON1_MIF_APBEN))
+#endif
 		__cspm_register_init();
 
 	/* reset PCM */
@@ -781,11 +790,14 @@ static void __cspm_kick_pcm_to_run(const struct pwr_ctrl *pwrctrl, const struct 
 	csram_write(OFFS_SW_RSV4, cspm_read(CSPM_SW_RSV4));
 
 	cspm_write(CSPM_SW_RSV5, B_F_CURR(opp_sw_to_fw(sta->opp[CPU_CLUSTER_L])) |
+				 B_F_DES(opp_sw_to_fw(sta->opp[CPU_CLUSTER_L])) |
 				 B_V_CURR(sta->volt[CPU_CLUSTER_L]) |
 				 L_F_CURR(opp_sw_to_fw(sta->opp[CPU_CLUSTER_LL])) |
+				 L_F_DES(opp_sw_to_fw(sta->opp[CPU_CLUSTER_LL])) |
 				 L_V_CURR(sta->volt[CPU_CLUSTER_LL]));
 	csram_write(OFFS_FW_RSV5, cspm_read(CSPM_SW_RSV5));
 
+	/* init variable to match FW state */
 	pause_src_map |= PSF_PAUSE_INIT;
 	csram_write(OFFS_PAUSE_SRC, pause_src_map);
 
@@ -842,28 +854,19 @@ static void cspm_dump_debug_info(struct cpuhvfs_dvfsp *dvfsp, const char *fmt, .
 	va_end(args);
 
 	cspm_err("%s\n", msg);
-	cspm_err("FW_VER     : %s\n", dvfsp->pcmdesc->version);
-	cspm_err("PCM_TIMER  : %08x\n", cspm_read(CSPM_PCM_TIMER_OUT));
-	cspm_err("SW_RSV4    : 0x%x\n", cspm_read(CSPM_SW_RSV4));
-	cspm_err("SW_RSV5    : 0x%x\n", cspm_read(CSPM_SW_RSV5));
-	cspm_err("SW_RSV3    : 0x%x\n", cspm_read(CSPM_SW_RSV3));
-	cspm_err("SW_RSV2    : 0x%x\n", cspm_read(CSPM_SW_RSV2));
-	cspm_err("PCM_REG0   : 0x%x\n", cspm_read(CSPM_PCM_REG0_DATA));
-	cspm_err("PCM_REG1   : 0x%x\n", cspm_read(CSPM_PCM_REG1_DATA));
-	cspm_err("PCM_REG2   : 0x%x\n", cspm_read(CSPM_PCM_REG2_DATA));
-	cspm_err("PCM_REG3   : 0x%x\n", cspm_read(CSPM_PCM_REG3_DATA));
-	cspm_err("PCM_REG4   : 0x%x\n", cspm_read(CSPM_PCM_REG4_DATA));
-	cspm_err("PCM_REG5   : 0x%x\n", cspm_read(CSPM_PCM_REG5_DATA));
-	cspm_err("PCM_REG6   : 0x%x\n", cspm_read(CSPM_PCM_REG6_DATA));
-	cspm_err("PCM_REG7   : 0x%x\n", cspm_read(CSPM_PCM_REG7_DATA));
-	cspm_err("PCM_REG8   : 0x%x\n", cspm_read(CSPM_PCM_REG8_DATA));
-	cspm_err("PCM_REG9   : 0x%x\n", cspm_read(CSPM_PCM_REG9_DATA));
-	cspm_err("PCM_REG10  : 0x%x\n", cspm_read(CSPM_PCM_REG10_DATA));
-	cspm_err("PCM_REG11  : 0x%x\n", cspm_read(CSPM_PCM_REG11_DATA));
-	cspm_err("PCM_REG12  : 0x%x\n", cspm_read(CSPM_PCM_REG12_DATA));
-	cspm_err("PCM_REG13  : 0x%x\n", cspm_read(CSPM_PCM_REG13_DATA));
-	cspm_err("PCM_REG14  : 0x%x\n", cspm_read(CSPM_PCM_REG14_DATA));
-	cspm_err("PCM_REG15  : %u\n"  , cspm_read(CSPM_PCM_REG15_DATA));
+	cspm_err("FW_VER: %s\n", dvfsp->pcmdesc->version);
+
+	cspm_err("PCM_TIMER: %08x\n", cspm_read(CSPM_PCM_TIMER_OUT));
+	cspm_err("PCM_REG15: %u\n"  , cspm_read(CSPM_PCM_REG15_DATA));
+
+	cspm_err("SW_RSV4: 0x%x\n", cspm_read(CSPM_SW_RSV4));
+	cspm_err("SW_RSV5: 0x%x\n", cspm_read(CSPM_SW_RSV5));
+	cspm_err("SW_RSV3: 0x%x\n", cspm_read(CSPM_SW_RSV3));
+
+	cspm_err("SW_RSV2 : 0x%x\n", cspm_read(CSPM_SW_RSV2));
+	cspm_err("SW_DEBUG: 0x%x\n", cspm_read(CSPM_SW_DEBUG));
+	cspm_err("SW_FLAG : 0x%x\n", cspm_read(CSPM_SW_FLAG));
+
 	cspm_err("PCM_FSM_STA: 0x%x\n", cspm_read(CSPM_PCM_FSM_STA));
 }
 
@@ -1006,6 +1009,8 @@ static int cspm_get_semaphore(struct cpuhvfs_dvfsp *dvfsp, enum sema_user user)
 
 	cspm_dbgx(SEMA, "sema get, user = %u\n", user);
 
+	cspm_write(CSPM_POWERON_CONFIG_EN, REGWR_CFG_KEY | REGWR_EN);	/* enable register write */
+
 	for (i = 0; i < n; i++) {
 		cspm_write(sema_reg[user], 0x1);
 		if (cspm_read(sema_reg[user]) & 0x1)
@@ -1031,6 +1036,8 @@ static void cspm_release_semaphore(struct cpuhvfs_dvfsp *dvfsp, enum sema_user u
 		return;
 
 	cspm_dbgx(SEMA, "sema release, user = %u\n", user);
+
+	cspm_write(CSPM_POWERON_CONFIG_EN, REGWR_CFG_KEY | REGWR_EN);	/* enable register write */
 
 	if (cspm_read(sema_reg[user]) & 0x1) {
 		cspm_write(sema_reg[user], 0x1);
@@ -1180,36 +1187,29 @@ static void cspm_cluster_notify_off(struct cpuhvfs_dvfsp *dvfsp, unsigned int cl
 	case CPU_CLUSTER_LL:
 		BUG_ON(!(rsv4 & L_CLUSTER_EN));		/* already off */
 
-		cspm_write(CSPM_SW_RSV4, rsv4 & ~(L_CLUSTER_EN | SW_L_PAUSE));
+		cspm_write(CSPM_SW_RSV4, rsv4 & ~(L_CLUSTER_EN | SW_L_PAUSE | SW_L_F_ASSIGN));
 		csram_write(OFFS_SW_RSV4, cspm_read(CSPM_SW_RSV4));
 
 		/* FW will set SW_PAUSE when done */
 		r = wait_complete_us(cspm_get_curr_freq_ll() == 0 && cspm_is_ll_paused(),
 				     10, DVFS_TIMEOUT);
 		csram_write_fw_sta();
-
-		rsv4 = cspm_read(CSPM_SW_RSV4) & ~SW_L_F_DES_MASK;
 		break;
 	case CPU_CLUSTER_L:
 	default:
 		BUG_ON(!(rsv4 & B_CLUSTER_EN));		/* already off */
 
-		cspm_write(CSPM_SW_RSV4, rsv4 & ~(B_CLUSTER_EN | SW_B_PAUSE));
+		cspm_write(CSPM_SW_RSV4, rsv4 & ~(B_CLUSTER_EN | SW_B_PAUSE | SW_B_F_ASSIGN));
 		csram_write(OFFS_SW_RSV4, cspm_read(CSPM_SW_RSV4));
 
 		/* FW will set SW_PAUSE when done */
 		r = wait_complete_us(cspm_get_curr_freq_l() == 0 && cspm_is_l_paused(),
 				     10, DVFS_TIMEOUT);
 		csram_write_fw_sta();
-
-		rsv4 = cspm_read(CSPM_SW_RSV4) & ~SW_B_F_DES_MASK;
 		break;
 	}
 
-	if (r >= 0) {
-		cspm_write(CSPM_SW_RSV4, rsv4);		/* SW_F_DES = 0 */
-		csram_write(OFFS_SW_RSV4, cspm_read(CSPM_SW_RSV4));
-	} else {
+	if (r < 0) {
 		cspm_dump_debug_info(dvfsp, "CLUSTER%u OFF TIMEOUT", cluster);
 		BUG();
 	}
@@ -1365,7 +1365,7 @@ static int dvfsp_fw_show(struct seq_file *m, void *v)
 	struct pcm_desc *pcmdesc = dvfsp->pcmdesc;
 
 	seq_printf(m, "version = %s\n"  , pcmdesc->version);
-	seq_printf(m, "base    = 0x%p\n", pcmdesc->base);
+	seq_printf(m, "base    = 0x%p -> 0x%x\n", pcmdesc->base, base_va_to_pa(pcmdesc->base));
 	seq_printf(m, "size    = %u\n"  , pcmdesc->size);
 	seq_printf(m, "sess    = %u\n"  , pcmdesc->sess);
 	seq_printf(m, "replace = %u\n"  , pcmdesc->replace);
@@ -1378,26 +1378,16 @@ static int dvfsp_fw_show(struct seq_file *m, void *v)
 static int dvfsp_reg_show(struct seq_file *m, void *v)
 {
 	seq_printf(m, "PCM_TIMER  : %08x\n", cspm_read(CSPM_PCM_TIMER_OUT));
+	seq_printf(m, "PCM_REG15  : %u\n"  , cspm_read(CSPM_PCM_REG15_DATA));
+	seq_puts(m,   "============\n");
 	seq_printf(m, "SW_RSV4    : 0x%x\n", cspm_read(CSPM_SW_RSV4));
 	seq_printf(m, "SW_RSV5    : 0x%x\n", cspm_read(CSPM_SW_RSV5));
 	seq_printf(m, "SW_RSV3    : 0x%x\n", cspm_read(CSPM_SW_RSV3));
+	seq_puts(m,   "============\n");
 	seq_printf(m, "SW_RSV2    : 0x%x\n", cspm_read(CSPM_SW_RSV2));
-	seq_printf(m, "PCM_REG0   : 0x%x\n", cspm_read(CSPM_PCM_REG0_DATA));
-	seq_printf(m, "PCM_REG1   : 0x%x\n", cspm_read(CSPM_PCM_REG1_DATA));
-	seq_printf(m, "PCM_REG2   : 0x%x\n", cspm_read(CSPM_PCM_REG2_DATA));
-	seq_printf(m, "PCM_REG3   : 0x%x\n", cspm_read(CSPM_PCM_REG3_DATA));
-	seq_printf(m, "PCM_REG4   : 0x%x\n", cspm_read(CSPM_PCM_REG4_DATA));
-	seq_printf(m, "PCM_REG5   : 0x%x\n", cspm_read(CSPM_PCM_REG5_DATA));
-	seq_printf(m, "PCM_REG6   : 0x%x\n", cspm_read(CSPM_PCM_REG6_DATA));
-	seq_printf(m, "PCM_REG7   : 0x%x\n", cspm_read(CSPM_PCM_REG7_DATA));
-	seq_printf(m, "PCM_REG8   : 0x%x\n", cspm_read(CSPM_PCM_REG8_DATA));
-	seq_printf(m, "PCM_REG9   : 0x%x\n", cspm_read(CSPM_PCM_REG9_DATA));
-	seq_printf(m, "PCM_REG10  : 0x%x\n", cspm_read(CSPM_PCM_REG10_DATA));
-	seq_printf(m, "PCM_REG11  : 0x%x\n", cspm_read(CSPM_PCM_REG11_DATA));
-	seq_printf(m, "PCM_REG12  : 0x%x\n", cspm_read(CSPM_PCM_REG12_DATA));
-	seq_printf(m, "PCM_REG13  : 0x%x\n", cspm_read(CSPM_PCM_REG13_DATA));
-	seq_printf(m, "PCM_REG14  : 0x%x\n", cspm_read(CSPM_PCM_REG14_DATA));
-	seq_printf(m, "PCM_REG15  : %u\n"  , cspm_read(CSPM_PCM_REG15_DATA));
+	seq_printf(m, "SW_DEBUG   : 0x%x\n", cspm_read(CSPM_SW_DEBUG));
+	seq_printf(m, "SW_FLAG    : 0x%x\n", cspm_read(CSPM_SW_FLAG));
+	seq_puts(m,   "============\n");
 	seq_printf(m, "PCM_FSM_STA: 0x%x\n", cspm_read(CSPM_PCM_FSM_STA));
 
 	return 0;
@@ -1742,4 +1732,4 @@ fs_initcall(cpuhvfs_pre_module_init);
 
 #endif	/* CONFIG_HYBRID_CPU_DVFS */
 
-MODULE_DESCRIPTION("Hybrid CPU DVFS Driver v0.4");
+MODULE_DESCRIPTION("Hybrid CPU DVFS Driver v0.5");

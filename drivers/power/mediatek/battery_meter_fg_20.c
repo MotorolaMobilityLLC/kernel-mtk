@@ -1745,6 +1745,10 @@ int force_get_tbat(kal_bool update)
 	int bat_temperature_volt_temp = 0;
 	int ret = 0;
 
+	if (batt_meter_cust_data.fixed_tbat_25) {
+		bm_err("[force_get_tbat] fixed TBAT=25 t\n");
+		return 25;
+	}
 	if (update == KAL_TRUE || pre_bat_temperature_val == -1) {
 		/* Get V_BAT_Temperature */
 		bat_temperature_volt = 2;
@@ -2476,6 +2480,9 @@ signed int battery_meter_get_VSense(void)
 static ssize_t fgadc_log_write(struct file *filp, const char __user *buff,
 			       size_t len, loff_t *data)
 {
+	if (len >= sizeof(proc_fgadc_data))
+		return -EFAULT;
+
 	if (copy_from_user(&proc_fgadc_data, buff, len)) {
 		bm_debug("fgadc_log_write error.\n");
 		return -EFAULT;
@@ -3465,6 +3472,37 @@ static ssize_t store_FG_daemon_disable(struct device *dev, struct device_attribu
 static DEVICE_ATTR(FG_daemon_disable, 0664, show_FG_daemon_disable, store_FG_daemon_disable);
 /* ------------------------------------------------------------------------------------------- */
 
+static ssize_t show_FG_drv_force25c(struct device *dev, struct device_attribute *attr, char *buf)
+{
+	bm_debug("[FG] show FG_drv_force25c : %d\n", batt_meter_cust_data.fixed_tbat_25);
+	return sprintf(buf, "%d\n", batt_meter_cust_data.fixed_tbat_25);
+}
+
+static ssize_t store_FG_drv_force25c(struct device *dev, struct device_attribute *attr,
+					const char *buf, size_t size)
+{
+	unsigned long val = 0;
+	int ret;
+
+	bm_debug("[Enable FG_drv_force25c]\n");
+	batt_meter_cust_data.fixed_tbat_25 = 1;
+
+	if (buf != NULL && size != 0) {
+		bm_debug("[FG_drv_force25c] buf is %s\n", buf);
+		ret = kstrtoul(buf, 10, &val);
+		if (val < 0) {
+			bm_debug("[FG_drv_force25c] val is %d ??\n", (int)val);
+			val = 0;
+		}
+		batt_meter_cust_data.fixed_tbat_25 = val;
+		bm_debug("[FG_drv_force25c] fixed_tbat_25=%d, ret=%d\n", batt_meter_cust_data.fixed_tbat_25, ret);
+	}
+
+	return size;
+}
+
+static DEVICE_ATTR(FG_drv_force25c, 0664, show_FG_drv_force25c, store_FG_drv_force25c);
+/* ------------------------------------------------------------------------------------------- */
 #ifdef FG_BAT_INT
 unsigned char reset_fg_bat_int = KAL_TRUE;
 
@@ -3566,7 +3604,7 @@ static int battery_meter_probe(struct platform_device *dev)
 #endif
 	ret_device_file = device_create_file(&(dev->dev), &dev_attr_FG_daemon_log_level);
 	ret_device_file = device_create_file(&(dev->dev), &dev_attr_FG_daemon_disable);
-
+	ret_device_file = device_create_file(&(dev->dev), &dev_attr_FG_drv_force25c);
 
 
 	batt_meter_init_cust_data(dev);

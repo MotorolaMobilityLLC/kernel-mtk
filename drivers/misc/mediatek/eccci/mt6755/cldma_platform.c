@@ -44,6 +44,10 @@
 #include <linux/of_address.h>
 #endif
 #include "ccci_core.h"
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+#include "include/pmic_api_buck.h"
+#endif
+#include <mt-plat/mt_chip.h>
 
 #if !defined(CONFIG_MTK_CLKMGR)
 static struct clk *clk_scp_sys_md1_main;
@@ -405,6 +409,17 @@ void ccci_power_off(void)
 {
 }
 
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+void md1_pmic_setting_off(void)
+{
+	vmd1_pmic_setting_off();
+}
+
+void md1_pmic_setting_on(void)
+{
+	vmd1_pmic_setting_on();
+}
+#else
 void md1_pmic_setting_off(void)
 {
 	/* VMODEM off */
@@ -428,16 +443,28 @@ void md1_pmic_setting_on(void)
 	pmic_set_register_value(MT6351_PMIC_BUCK_VMD1_EN, 1); /* 0x0640[0]=0, 0:Disable, 1:Enable */
 	pmic_set_register_value(MT6351_PMIC_BUCK_VMD1_VSLEEP_EN, 1); /* 0x064E[8]=0, 0:SW control, 1:HW control */
 
+
 	/* VMODEM on */
 	pmic_set_register_value(MT6351_PMIC_BUCK_VMODEM_EN, 1); /* 0x062C[0]=0, 0:Disable, 1:Enable */
 	pmic_set_register_value(MT6351_PMIC_BUCK_VMODEM_VSLEEP_EN, 1); /* 0x063A[8]=0, 0:SW control, 1:HW control */
 
-	pmic_set_register_value(MT6351_PMIC_BUCK_VSRAM_MD_VOSEL_ON, 0x40);/*E1 1.0V; offset:0x65A */
-	pmic_set_register_value(MT6351_PMIC_BUCK_VMODEM_VOSEL_ON, 0x40);/* 1.0V; offset: 0x632 */
+	if (CHIP_SW_VER_01 == mt_get_chip_sw_ver()) {
+		CCCI_ERR_MSG(0, TAG, "modem E1 chip\n");
+		pmic_set_register_value(MT6351_PMIC_BUCK_VSRAM_MD_VOSEL_ON, 0x40);/*E1 1.0V; offset:0x65A */
+		pmic_set_register_value(MT6351_PMIC_BUCK_VMODEM_VOSEL_ON, 0x40);/* 1.0V; offset: 0x632 */
+	} else {
+		CCCI_ERR_MSG(0, TAG, "modem E2 chip\n");
+		pmic_set_register_value(MT6351_PMIC_BUCK_VSRAM_MD_VOSEL_ON, 0x50);/*E2 1.1V; offset:0x65A */
+		pmic_set_register_value(MT6351_PMIC_BUCK_VMODEM_VOSEL_ON, 0x40);/* E2 1.0V; offset: 0x632 */
+	}
+
+	udelay(300);
+
 	pmic_set_register_value(MT6351_PMIC_BUCK_VSRAM_MD_VOSEL_CTRL, 1);/* HW mode, bit[1]; offset: 0x650 */
 	pmic_set_register_value(MT6351_PMIC_BUCK_VMD1_VOSEL_CTRL, 1);/* HW mode, bit[1]; offset: 0x63C */
 	pmic_set_register_value(MT6351_PMIC_BUCK_VMODEM_VOSEL_CTRL, 1);/* HW mode, bit[1]; offset: 0x628 */
 }
+#endif
 
 #define ROr2W(a, b, c)  cldma_write32(a, b, (cldma_read32(a, b)|c))
 #define RAnd2W(a, b, c)  cldma_write32(a, b, (cldma_read32(a, b)&c))

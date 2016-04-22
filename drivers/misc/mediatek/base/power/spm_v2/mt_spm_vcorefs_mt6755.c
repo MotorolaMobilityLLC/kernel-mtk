@@ -337,7 +337,16 @@ void _spm_vcorefs_init_reg(void)
 void dump_pmic_info(void)
 {
 	u32 ret, reg_val;
-
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+	ret = pmic_read_interface_nolock(MT6353_WDTDBG_CON1, &reg_val, 0xffff, 0);
+	spm_notice("[PMIC]wdtdbg_con1=0x%x\n", reg_val);
+	ret = pmic_read_interface_nolock(MT6353_BUCK_VCORE_HWM_CON0, &reg_val, 0xffff, 0);
+	spm_notice("[PMIC]vcore vosel_ctrl=0x%x\n", reg_val);
+	ret = pmic_read_interface_nolock(MT6353_BUCK_VCORE_VOL_CON1, &reg_val, 0xffff, 0);
+	spm_notice("[PMIC]vcore vosel=0x%x\n", reg_val);
+	ret = pmic_read_interface_nolock(MT6353_BUCK_VCORE_VOL_CON2, &reg_val, 0xffff, 0);
+	spm_notice("[PMIC]vcore vosel_on=0x%x\n", reg_val);
+#else
 	ret = pmic_read_interface_nolock(MT6351_WDTDBG_CON1, &reg_val, 0xffff, 0);
 	spm_notice("[PMIC]wdtdbg_con1=0x%x\n", reg_val);
 
@@ -349,6 +358,7 @@ void dump_pmic_info(void)
 
 	ret = pmic_read_interface_nolock(MT6351_BUCK_VCORE_CON5, &reg_val, 0xffff, 0);
 	spm_notice("[PMIC]vcore vosel_on=0x%x\n", reg_val);
+#endif
 }
 
 char *spm_vcorefs_dump_dvfs_regs(char *p)
@@ -536,9 +546,6 @@ int spm_vcorefs_set_dvfs_hpm_force(int opp, int vcore, int ddr)
 	if (r < 0) {
 		spm_vcorefs_err("wait idle timeout(opp:%d)\n", opp);
 		spm_vcorefs_dump_dvfs_regs(NULL);
-		spm_vcorefs_aee_warn("set_hpm_force_waitidle_timeout(opp:%d)\n", opp);
-		__check_dvfs_halt_source(pwrctrl->dvfs_halt_src_chk);
-		do_check = 0;
 	}
 
 	set_aee_vcore_dvfs_status(SPM_VCOREFS_DVFS_START);
@@ -610,9 +617,6 @@ int spm_vcorefs_set_dvfs_hpm(int opp, int vcore, int ddr)
 	if (r < 0) {
 		spm_vcorefs_err("wait idle timeout(opp:%d)\n", opp);
 		spm_vcorefs_dump_dvfs_regs(NULL);
-		spm_vcorefs_aee_warn("set_hpm_waitidle_timeout(opp:%d)\n", opp);
-		__check_dvfs_halt_source(pwrctrl->dvfs_halt_src_chk);
-		do_check = 0;
 	}
 
 	set_aee_vcore_dvfs_status(SPM_VCOREFS_DVFS_START);
@@ -686,9 +690,6 @@ int spm_vcorefs_set_dvfs_lpm_force(int opp, int vcore, int ddr)
 	if (r < 0) {
 		spm_vcorefs_err("wait idle timeout(opp:%d)\n", opp);
 		spm_vcorefs_dump_dvfs_regs(NULL);
-		spm_vcorefs_aee_warn("set_lpm_force_waitidle_timeout(opp:%d)\n", opp);
-		__check_dvfs_halt_source(pwrctrl->dvfs_halt_src_chk);
-		do_check = 0;
 	}
 
 	set_aee_vcore_dvfs_status(SPM_VCOREFS_DVFS_START);

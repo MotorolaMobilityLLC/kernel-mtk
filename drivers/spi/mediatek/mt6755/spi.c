@@ -1005,9 +1005,9 @@ static void mt_spi_msg_done(struct mt_spi_t *ms, struct spi_message *msg, int st
 		SPI_DBG("All msg is completion.\n\n");
 		/* clock and gpio reset */
 		spi_gpio_reset(ms);
-#ifndef SPI_TRUSTONIC_TEE_SUPPORT
+
 		disable_clk(ms);
-#endif
+
 		/* schedule_work(&mt_spi_msgdone_workqueue);//disable clock */
 
 		wake_unlock(&ms->wk_lock);
@@ -1337,11 +1337,15 @@ static int mt_spi_setup(struct spi_device *spidev)
 
 	struct mt_chip_conf *chip_config = NULL;
 
+	if (!spidev) {
+		pr_err("spidev is null. error\n");
+		/* dev_err(&spidev->dev, "spi device %s: error.\n", dev_name(&spidev->dev)); */
+		return -EINVAL;
+	}
+
 	master = spidev->master;
 	ms = spi_master_get_devdata(master);
 
-	if (!spidev)
-		dev_err(&spidev->dev, "spi device %s: error.\n", dev_name(&spidev->dev));
 	if (spidev->chip_select >= master->num_chipselect) {
 		dev_err(&spidev->dev, "spi device chip select excesses the number of master's chipselect number.\n");
 		return -EINVAL;
@@ -1532,12 +1536,16 @@ static int __init mt_spi_probe(struct platform_device *pdev)
 	}
 #endif
 
+<<<<<<< HEAD
 	/* lenovo-sw, chenzz3, enable configuration via dts, begin */
 	if (pdev->dev.of_node) {
 		master->dev.of_node = pdev->dev.of_node;
 	}
 	/* lenovo-sw, chenzz3, enable configuration via dts, end */
 
+=======
+	master->dev.of_node = pdev->dev.of_node;
+>>>>>>> lenovo/caf/mt6755_m
 	/* hardware can only connect 1 slave.if you want to multiple, using gpio CS */
 	master->num_chipselect = 2;
 

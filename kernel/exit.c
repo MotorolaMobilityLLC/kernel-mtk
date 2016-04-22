@@ -62,6 +62,12 @@
 #include <asm/pgtable.h>
 #include <asm/mmu_context.h>
 
+#if defined(CONFIG_ARM64_IRQ_STACK) && defined(CONFIG_MTK_AEE_FEATURE)
+#include <mt-plat/aee.h>
+#include <disp_assert_layer.h>
+#define MSG_SIZE_TO_AEE (TASK_COMM_LEN + 16)
+#endif
+
 static void exit_mm(struct task_struct *tsk);
 
 static void __unhash_process(struct task_struct *p, bool group_dead)
@@ -654,6 +660,23 @@ static void check_stack_usage(void)
 
 	if (free >= lowest_to_date)
 		return;
+
+#if defined(CONFIG_ARM64_IRQ_STACK) && defined(CONFIG_MTK_AEE_FEATURE)
+#define CHECK_MAX_STACK_SIZE	0x1E40
+	if (free < (THREAD_SIZE - CHECK_MAX_STACK_SIZE)) {
+		char msg_to_aee[MSG_SIZE_TO_AEE];
+
+		pr_alert("\n\n\n%s (%d) Potential stack overflow - depth: %lu bytes left\n",
+			current->comm, task_pid_nr(current), free);
+		dump_mem_from_sp((unsigned long)end_of_stack(current) + free,
+				(unsigned long)task_thread_info(current) + THREAD_SIZE, false);
+		pr_alert("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n\n\n");
+		snprintf(msg_to_aee, MSG_SIZE_TO_AEE, "[%s:%d]\n", current->comm, current->pid);
+		aee_kernel_warning_api("Stack-Depth", 0, DB_OPT_DEFAULT,
+		"Potential kernel stack overflow\nCRDISPATCH_KEY:Stack Overflow Detected/PROCESS_EXIT", msg_to_aee);
+	}
+#undef CHECK_MAX_STACK_SIZE
+#endif
 
 	spin_lock(&low_water_lock);
 	if (free < lowest_to_date) {

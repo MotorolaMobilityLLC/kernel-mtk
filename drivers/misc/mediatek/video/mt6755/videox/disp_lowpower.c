@@ -217,6 +217,8 @@ int _blocking_flush(void)
 		return -1;
 	}
 	cmdqRecReset(handle);
+	if (primary_display_is_decouple_mode())
+		cmdqRecWaitNoClear(handle, CMDQ_EVENT_DISP_WDMA0_EOF);
 	_cmdq_insert_wait_frame_done_token_mira(handle);
 
 	cmdqRecFlush(handle);
@@ -542,17 +544,21 @@ void _primary_display_disable_mmsys_clk(void)
 void _primary_display_enable_mmsys_clk(void)
 {
 	disp_ddp_path_config *data_config;
+	struct ddp_io_golden_setting_arg gset_arg;
 
 	if (primary_get_sess_mode() != DISP_SESSION_DIRECT_LINK_MODE)
 		return;
 	/* do something */
 	DISPDBG("[LP]1.dpmanager path power on[begin]\n");
+	memset(&gset_arg, 0, sizeof(gset_arg));
+	gset_arg.dst_mod_type = dpmgr_path_get_dst_module_type(primary_get_dpmgr_handle());
 	if (primary_display_is_decouple_mode()) {
 		if (primary_get_ovl2mem_handle() == NULL) {
 			DISPERR("display is decouple mode, but ovl2mem_path_handle is null\n");
 			return;
 		}
-
+		gset_arg.dst_mod_type = dpmgr_path_get_dst_module_type(primary_get_ovl2mem_handle());
+		gset_arg.is_decouple_mode = 1;
 		DISPDBG("[LP]1.1 dpmanager path power on: ovl2men [begin]\n");
 		dpmgr_path_power_on(primary_get_ovl2mem_handle(), CMDQ_DISABLE);
 		DISPDBG("[LP]1.1 dpmanager path power on: ovl2men [end]\n");
@@ -591,6 +597,9 @@ void _primary_display_enable_mmsys_clk(void)
 		data_config = dpmgr_path_get_last_config(primary_get_ovl2mem_handle());
 		data_config->dst_dirty = 1;
 		dpmgr_path_config(primary_get_ovl2mem_handle(), data_config, NULL);
+		dpmgr_path_ioctl(primary_get_ovl2mem_handle(), NULL, DDP_OVL_GOLDEN_SETTING, &gset_arg);
+	} else {
+		dpmgr_path_ioctl(primary_get_dpmgr_handle(), NULL, DDP_OVL_GOLDEN_SETTING, &gset_arg);
 	}
 
 	DISPCHECK("[LP]2.dpmanager path config[end]\n");
@@ -773,6 +782,8 @@ void _cmd_mode_enter_idle(void)
 			;/*mmdvfs_notify_mmclk_switch_request(MMDVFS_EVENT_OVL_SINGLE_LAYER_EXIT);*/
 		/* need delay to make sure done??? */
 		_primary_display_disable_mmsys_clk();
+		/* Enable SODI3 after mmsys is disabled */
+		spm_enable_sodi3(1);
 	}
 
 
@@ -781,8 +792,11 @@ void _cmd_mode_leave_idle(void)
 {
 	DISPMSG("[disp_lowpower]%s\n", __func__);
 
-	if (disp_helper_get_option(DISP_OPT_IDLEMGR_ENTER_ULPS))
+	if (disp_helper_get_option(DISP_OPT_IDLEMGR_ENTER_ULPS)) {
+		/* Disable SODI3 before mmsys is enabled */
+		spm_enable_sodi3(0);
 		_primary_display_enable_mmsys_clk();
+	}
 
 
 	if (disp_helper_get_option(DISP_OPT_SHARE_SRAM))

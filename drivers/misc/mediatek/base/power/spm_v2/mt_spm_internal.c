@@ -645,8 +645,11 @@ wake_reason_t __spm_output_wake_reason(const struct wake_status *wakesta,
 		  wakesta->r12, wakesta->r12_ext, wakesta->raw_sta, wakesta->idle_sta,
 		  wakesta->event_reg, wakesta->isr);
 
-	spm_print(suspend, "raw_ext_sta = 0x%x, wake_misc = 0x%x", wakesta->raw_ext_sta,
-		  wakesta->wake_misc);
+	spm_print(suspend, "raw_ext_sta = 0x%x, wake_misc = 0x%x, pcm_flag = 0x%x",
+			wakesta->raw_ext_sta,
+			wakesta->wake_misc,
+			spm_read(SPM_SW_FLAG));
+
 	return wr;
 }
 
@@ -777,7 +780,7 @@ int __check_dvfs_halt_source(int enable)
 	if ((spm_read(CPU_DVFS_REQ) & DVFS_HALT_LSB) == 0) {
 		is_halt = 0;
 		pr_err("[VcoreFS]dvfs_halt already clear!(%d, 0x%x)\n", is_halt, spm_read(CPU_DVFS_REQ));
-		aee_kernel_warning_api(__FILE__, __LINE__,
+		aee_kernel_exception_api(__FILE__, __LINE__,
 			 DB_OPT_DEFAULT | DB_OPT_MMPROFILE_BUFFER | DB_OPT_DISPLAY_HANG_DUMP | DB_OPT_DUMP_DISPLAY,
 			 "DVFS_HALT_UNKNOWN", "DVFS_HALT_UNKNOWN");
 	}
@@ -790,7 +793,7 @@ int __check_dvfs_halt_source(int enable)
 		pr_err("[VcoreFS]isp_halt[1]:src2_mask=0x%x r6=0x%x r15=0x%x\n",
 				spm_read(SPM_SRC2_MASK), spm_read(PCM_REG6_DATA), spm_read(PCM_REG15_DATA));
 		if ((spm_read(CPU_DVFS_REQ) & DVFS_HALT_LSB) == 0) {
-			aee_kernel_warning_api(__FILE__, __LINE__,
+			aee_kernel_exception_api(__FILE__, __LINE__,
 			 DB_OPT_DEFAULT, "DVFS_HALT_ISP", "DVFS_HALT_ISP");
 			is_halt = 0;
 			pr_err("[VcoreFS]dvfs_halt is hold by ISP (%d, 0x%x)\n", is_halt, spm_read(CPU_DVFS_REQ));
@@ -807,7 +810,7 @@ int __check_dvfs_halt_source(int enable)
 		pr_err("[VcoreFS]disp1_halt[1]:src2_mask=0x%x r6=0x%x r15=0x%x\n",
 				spm_read(SPM_SRC2_MASK), spm_read(PCM_REG6_DATA), spm_read(PCM_REG15_DATA));
 		if ((spm_read(CPU_DVFS_REQ) & DVFS_HALT_LSB) == 0) {
-			aee_kernel_warning_api(__FILE__, __LINE__,
+			aee_kernel_exception_api(__FILE__, __LINE__,
 			 DB_OPT_DEFAULT | DB_OPT_MMPROFILE_BUFFER | DB_OPT_DISPLAY_HANG_DUMP | DB_OPT_DUMP_DISPLAY,
 			 "DVFS_HALT_DISP1", "DVFS_HALT_DISP1");
 			/* primary_display_diagnose(); */
@@ -826,7 +829,7 @@ int __check_dvfs_halt_source(int enable)
 		pr_err("[VcoreFS]disp0_halt[1]:src2_mask=0x%x r6=0x%x r15=0x%x\n",
 				spm_read(SPM_SRC2_MASK), spm_read(PCM_REG6_DATA), spm_read(PCM_REG15_DATA));
 		if ((spm_read(CPU_DVFS_REQ) & DVFS_HALT_LSB) == 0) {
-			aee_kernel_warning_api(__FILE__, __LINE__,
+			aee_kernel_exception_api(__FILE__, __LINE__,
 			 DB_OPT_DEFAULT | DB_OPT_MMPROFILE_BUFFER | DB_OPT_DISPLAY_HANG_DUMP | DB_OPT_DUMP_DISPLAY,
 			 "DVFS_HALT_DISP0", "DVFS_HALT_DISP0");
 			/* primary_display_diagnose(); */
@@ -845,7 +848,7 @@ int __check_dvfs_halt_source(int enable)
 		pr_err("[VcoreFS]gce_halt[1]:src2_mask=0x%x r6=0x%x r15=0x%x\n",
 				spm_read(SPM_SRC2_MASK), spm_read(PCM_REG6_DATA), spm_read(PCM_REG15_DATA));
 		if ((spm_read(CPU_DVFS_REQ) & DVFS_HALT_LSB) == 0) {
-			aee_kernel_warning_api(__FILE__, __LINE__,
+			aee_kernel_exception_api(__FILE__, __LINE__,
 			 DB_OPT_DEFAULT, "DVFS_HALT_GCE", "DVFS_HALT_GCE");
 			is_halt = 0;
 			pr_err("[VcoreFS]dvfs_halt is hold by GCE (%d, 0x%x)\n", is_halt, spm_read(CPU_DVFS_REQ));
@@ -913,6 +916,25 @@ static u32 pmic_rg_efuse_ck_pdn;
 void __spm_backup_pmic_ck_pdn(void)
 {
 	/* PMIC setting 2015/07/31 by Chia-Lin/Kev */
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+	pmic_read_interface_nolock(PMIC_CLK_AUXADC_CK_PDN_HWEN_ADDR,
+				   &pmic_rg_auxadc_ck_pdn_hwen,
+				   PMIC_CLK_AUXADC_CK_PDN_HWEN_MASK,
+				   PMIC_CLK_AUXADC_CK_PDN_HWEN_SHIFT);
+	pmic_config_interface_nolock(PMIC_CLK_AUXADC_CK_PDN_HWEN_ADDR,
+				     0,
+				     PMIC_CLK_AUXADC_CK_PDN_HWEN_MASK,
+				     PMIC_CLK_AUXADC_CK_PDN_HWEN_SHIFT);
+
+	pmic_read_interface_nolock(PMIC_CLK_EFUSE_CK_PDN_ADDR,
+				   &pmic_rg_efuse_ck_pdn,
+				   PMIC_CLK_EFUSE_CK_PDN_MASK,
+				   PMIC_CLK_EFUSE_CK_PDN_SHIFT);
+	pmic_config_interface_nolock(PMIC_CLK_EFUSE_CK_PDN_ADDR,
+				     1,
+				     PMIC_CLK_EFUSE_CK_PDN_MASK,
+				     PMIC_CLK_EFUSE_CK_PDN_SHIFT);
+#else
 	pmic_read_interface_nolock(MT6351_PMIC_RG_AUXADC_CK_PDN_HWEN_ADDR,
 				   &pmic_rg_auxadc_ck_pdn_hwen,
 				   MT6351_PMIC_RG_AUXADC_CK_PDN_HWEN_MASK,
@@ -930,11 +952,23 @@ void __spm_backup_pmic_ck_pdn(void)
 				     1,
 				     MT6351_PMIC_RG_EFUSE_CK_PDN_MASK,
 				     MT6351_PMIC_RG_EFUSE_CK_PDN_SHIFT);
+#endif
 }
 
 void __spm_restore_pmic_ck_pdn(void)
 {
 	/* PMIC setting 2015/07/31 by Chia-Lin/Kev */
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+	pmic_config_interface_nolock(PMIC_CLK_AUXADC_CK_PDN_HWEN_ADDR,
+				     pmic_rg_auxadc_ck_pdn_hwen,
+				     PMIC_CLK_AUXADC_CK_PDN_HWEN_MASK,
+				     PMIC_CLK_AUXADC_CK_PDN_HWEN_SHIFT);
+
+	pmic_config_interface_nolock(PMIC_CLK_EFUSE_CK_PDN_ADDR,
+				     pmic_rg_efuse_ck_pdn,
+				     PMIC_CLK_EFUSE_CK_PDN_MASK,
+				     PMIC_CLK_EFUSE_CK_PDN_SHIFT);
+#else
 	pmic_config_interface_nolock(MT6351_PMIC_RG_AUXADC_CK_PDN_HWEN_ADDR,
 				     pmic_rg_auxadc_ck_pdn_hwen,
 				     MT6351_PMIC_RG_AUXADC_CK_PDN_HWEN_MASK,
@@ -944,6 +978,7 @@ void __spm_restore_pmic_ck_pdn(void)
 				     pmic_rg_efuse_ck_pdn,
 				     MT6351_PMIC_RG_EFUSE_CK_PDN_MASK,
 				     MT6351_PMIC_RG_EFUSE_CK_PDN_SHIFT);
+#endif
 }
 
 void __spm_bsi_top_init_setting(void)
@@ -961,6 +996,16 @@ void __spm_bsi_top_init_setting(void)
 
 void __spm_pmic_pg_force_on(void)
 {
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+	pmic_config_interface_nolock(PMIC_STRUP_DIG_IO_PG_FORCE_ADDR,
+			0x1,
+			PMIC_STRUP_DIG_IO_PG_FORCE_MASK,
+			PMIC_STRUP_DIG_IO_PG_FORCE_SHIFT);
+	pmic_config_interface_nolock(PMIC_RG_STRUP_VIO18_PG_ENB_ADDR,
+			0x1,
+			PMIC_RG_STRUP_VIO18_PG_ENB_MASK,
+			PMIC_RG_STRUP_VIO18_PG_ENB_SHIFT);
+#else
 	pmic_config_interface_nolock(MT6351_PMIC_STRUP_DIG_IO_PG_FORCE_ADDR,
 			0x1,
 			MT6351_PMIC_STRUP_DIG_IO_PG_FORCE_MASK,
@@ -969,10 +1014,21 @@ void __spm_pmic_pg_force_on(void)
 			0x1,
 			MT6351_PMIC_RG_STRUP_VIO18_PG_ENB_MASK,
 			MT6351_PMIC_RG_STRUP_VIO18_PG_ENB_SHIFT);
+#endif
 }
 
 void __spm_pmic_pg_force_off(void)
 {
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+	pmic_config_interface_nolock(PMIC_STRUP_DIG_IO_PG_FORCE_ADDR,
+			0x0,
+			PMIC_STRUP_DIG_IO_PG_FORCE_MASK,
+			PMIC_STRUP_DIG_IO_PG_FORCE_SHIFT);
+	pmic_config_interface_nolock(PMIC_RG_STRUP_VIO18_PG_ENB_ADDR,
+			0x0,
+			PMIC_RG_STRUP_VIO18_PG_ENB_MASK,
+			PMIC_RG_STRUP_VIO18_PG_ENB_SHIFT);
+#else
 	pmic_config_interface_nolock(MT6351_PMIC_STRUP_DIG_IO_PG_FORCE_ADDR,
 			0x0,
 			MT6351_PMIC_STRUP_DIG_IO_PG_FORCE_MASK,
@@ -981,6 +1037,7 @@ void __spm_pmic_pg_force_off(void)
 			0x0,
 			MT6351_PMIC_RG_STRUP_VIO18_PG_ENB_MASK,
 			MT6351_PMIC_RG_STRUP_VIO18_PG_ENB_SHIFT);
+#endif
 }
 
 void __spm_pmic_low_iq_mode(int en)

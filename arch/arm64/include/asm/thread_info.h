@@ -24,10 +24,18 @@
 #include <linux/compiler.h>
 
 #ifndef CONFIG_ARM64_64K_PAGES
+#ifdef CONFIG_ARM64_8K_STACK
+#define THREAD_SIZE_ORDER	1
+#else
 #define THREAD_SIZE_ORDER	2
 #endif
+#endif
 
+#ifdef CONFIG_ARM64_8K_STACK
+#define THREAD_SIZE		8192
+#else
 #define THREAD_SIZE		16384
+#endif
 #define THREAD_START_SP		(THREAD_SIZE - 16)
 
 #ifndef __ASSEMBLY__
@@ -53,8 +61,26 @@ struct thread_info {
 	int			cpu;		/* cpu */
 	void			*regs_on_excp;	/* aee */
 	int			cpu_excp;	/* aee */
+#ifdef CONFIG_ARM64_8K_STACK
+	unsigned long		magic __aligned(16);	/* 16-byte aligned magic number */
+#endif
 };
 
+#ifdef CONFIG_ARM64_8K_STACK
+#define INIT_THREAD_INFO(tsk)						\
+{									\
+	.task		= &tsk,						\
+	.exec_domain	= &default_exec_domain,				\
+	.flags		= 0,						\
+	.preempt_count	= INIT_PREEMPT_COUNT,				\
+	.addr_limit	= KERNEL_DS,					\
+	.restart_block	= {						\
+		.fn	= do_no_restart_syscall,			\
+	},								\
+	.cpu_excp	= 0,			/* aee */		\
+	.magic          = 0,						\
+}
+#else /* !CONFIG_ARM64_8K_STACK */
 #define INIT_THREAD_INFO(tsk)						\
 {									\
 	.task		= &tsk,						\
@@ -67,9 +93,15 @@ struct thread_info {
 	},								\
 	.cpu_excp	= 0,			/* aee */		\
 }
+#endif
 
 #define init_thread_info	(init_thread_union.thread_info)
 #define init_stack		(init_thread_union.stack)
+
+#ifdef CONFIG_ARM64_8K_STACK
+#define ti_magic_is_wrong(ti)	(ti->magic != 0)
+#define ti_magic_address(ti)	(&ti->magic)
+#endif
 
 /*
  * how to get the current stack pointer from C
@@ -81,11 +113,25 @@ register unsigned long current_stack_pointer asm ("sp");
  */
 static inline struct thread_info *current_thread_info(void) __attribute_const__;
 
+#ifndef CONFIG_ARM64_IRQ_STACK
 static inline struct thread_info *current_thread_info(void)
 {
 	return (struct thread_info *)
 		(current_stack_pointer & ~(THREAD_SIZE - 1));
 }
+#else /* CONFIG_ARM64_IRQ_STACK */
+/*
+ * struct thread_info can be accessed directly via sp_el0.
+ */
+static inline struct thread_info *current_thread_info(void)
+{
+	unsigned long sp_el0;
+
+	asm ("mrs %0, sp_el0" : "=r" (sp_el0));
+
+	return (struct thread_info *)sp_el0;
+}
+#endif
 
 #define thread_saved_pc(tsk)	\
 	((unsigned long)(tsk->thread.cpu_context.pc))

@@ -39,6 +39,16 @@ config MTK_LM_MODE
 	help
 	  Large Memory mode support for supporting more than 4GB DRAM access
 
+config DMAUSER_PAGES
+	bool "allocate highuser movable pages from dma zone"
+	depends on MTK_LM_MODE
+	help
+	  A interl debug kernel config for testing large memory mode.
+	  To test if kernel drivers are fully compatible to large
+	  memorys, we replace all GFP_HIGHUSER_MOVABLE/GFP_USER pages by
+	  DMA (<= 4GB) pages. Is makes all drivers have more changes
+	  to allocate >= 4GB physical memory.
+
 config MTK_MEM
 	bool "Support platform memory information"
 	default y
@@ -195,6 +205,7 @@ config MTK_SM100
 	bool "Software synchronization 64bits objects"
 	default n
 
+<<<<<<< HEAD
 #Begin, lenovo-sw mahj2 add for rtc save timezone at 20141204
 config LENOVO_RTC_SAVE_TIMEZONE_SUPPORT
 	tristate "lenovo rtc save timezone support"
@@ -202,6 +213,13 @@ config LENOVO_RTC_SAVE_TIMEZONE_SUPPORT
 	help
 	  Say Y to include support for rtc save timezone.
 #end, lenovo-sw mahj2 add for rtc save timezone at 20141204
+=======
+config MTK_MT6750TT
+	bool "MTK_MT6750TT"
+	default n
+	help
+	  Set the chip as MT6750TT
+>>>>>>> lenovo/caf/mt6755_m
 
 source "drivers/misc/mediatek/gpt/Kconfig"
 source "drivers/misc/mediatek/uart/Kconfig"

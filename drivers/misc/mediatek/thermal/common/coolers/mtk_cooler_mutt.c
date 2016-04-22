@@ -39,7 +39,7 @@ static struct task_struct *ptmd_task = &tmd_task;
 
 #if FEATURE_MUTT_V2
 /* signal */
-#define MAX_LEN	256
+#define MAX_LEN	128
 static unsigned int tm_pid;
 static unsigned int tm_input_pid;
 static struct task_struct g_task;
@@ -193,12 +193,14 @@ static int clmutt_send_tmd_signal(int level)
 	return ret;
 }
 
-static ssize_t clmutt_tmd_pid_write(struct file *filp, const char __user *buf, size_t len,
+static ssize_t clmutt_tmd_pid_write(struct file *filp, const char __user *buf, size_t count,
 				    loff_t *data)
 {
 	int ret = 0;
 	char tmp[MAX_LEN] = { 0 };
+	int len = 0;
 
+	len = (count < (MAX_LEN - 1)) ? count : (MAX_LEN - 1);
 	/* write data to the buffer */
 	if (copy_from_user(tmp, buf, len))
 		return -EFAULT;
@@ -291,11 +293,13 @@ static int clmutt_send_tm_signal(int level)
 	return ret;
 }
 
-static ssize_t clmutt_tm_pid_write(struct file *filp, const char __user *buf, size_t len, loff_t *data)
+static ssize_t clmutt_tm_pid_write(struct file *filp, const char __user *buf, size_t count, loff_t *data)
 {
 	int ret = 0;
 	char tmp[MAX_LEN] = {0};
+	int len = 0;
 
+	len = (count < (MAX_LEN - 1)) ? count : (MAX_LEN - 1);
 	/* write data to the buffer */
 	if (copy_from_user(tmp, buf, len))
 		return -EFAULT;

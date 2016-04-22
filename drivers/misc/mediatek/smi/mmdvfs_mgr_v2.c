@@ -13,6 +13,7 @@
 
 #include <mt_vcorefs_manager.h>
 #include <mach/mt_freqhopping.h>
+#include <mt_devinfo.h>
 #include "mmdvfs_mgr.h"
 
 #undef pr_fmt
@@ -906,6 +907,15 @@ void mmdvfs_init(MTK_SMI_BWC_MM_INFO *info)
 #if !MMDVFS_ENABLE
 	return;
 #endif
+
+	if (!is_mmdvfs_disabled()) {
+		/* get platform info */
+		unsigned int profile_id;
+
+		profile_id = get_devinfo_with_index(21) & 0xff;
+		if (profile_id == 0x42 || profile_id == 0x43)
+			mmdvfs_enable(0);
+	}
 
 	spin_lock_init(&g_mmdvfs_mgr->scen_lock);
 	/* set current step as the default step */

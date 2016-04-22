@@ -118,6 +118,14 @@ static void hps_get_sysinfo(void)
 #endif
 }
 
+struct hrtimer cpuhp_timer;
+static int cpuhp_timer_func(unsigned long data)
+{
+	BUG_ON(1);
+
+	return HRTIMER_NORESTART;
+}
+
 /*
  * hps task main loop
  */
@@ -127,6 +135,10 @@ static int _hps_task_main(void *data)
 	void (*algo_func_ptr)(void);
 
 	hps_ctxt_print_basic(1);
+
+	hrtimer_init(&cpuhp_timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
+	cpuhp_timer.function = (void *)&cpuhp_timer_func;
+
 #if 0
 	if (hps_ctxt.is_hmp)
 		algo_func_ptr = hps_algo_hmp;
@@ -167,10 +179,12 @@ static int _hps_task_main(void *data)
 
 		/*Execute PPM main function */
 		mt_ppm_main();
-
+		if (!hrtimer_active(&cpuhp_timer))
+			hrtimer_start(&cpuhp_timer, ns_to_ktime(CPUHP_INTERVAL), HRTIMER_MODE_REL);
 
 		/*execute hotplug algorithm */
 		(*algo_func_ptr) ();
+		hrtimer_cancel(&cpuhp_timer);
 
 #ifdef CONFIG_CPU_ISOLATION
 HPS_WAIT_EVENT:
@@ -187,11 +201,12 @@ HPS_WAIT_EVENT:
 				schedule();
 			}
 		} else if (hps_ctxt.periodical_by == HPS_PERIODICAL_BY_HR_TIMER) {
-
-			hrtimer_cancel(&hps_ctxt.hr_timer);
-			hrtimer_start(&hps_ctxt.hr_timer, ktime, HRTIMER_MODE_REL);
-			set_current_state(TASK_INTERRUPTIBLE);
-			schedule();
+			if (atomic_read(&hps_ctxt.is_ondemand) == 0) {
+				hrtimer_cancel(&hps_ctxt.hr_timer);
+				hrtimer_start(&hps_ctxt.hr_timer, ktime, HRTIMER_MODE_REL);
+				set_current_state(TASK_INTERRUPTIBLE);
+				schedule();
+			}
 		}
 
 		if (kthread_should_stop())
@@ -268,7 +283,6 @@ int big_max = -1;
 static void ppm_limit_callback(struct ppm_client_req req)
 {
 	struct ppm_client_req *p = (struct ppm_client_req *)&req;
-	void (*algo_func_ptr)(void);
 
 	if (!p->cpu_limit[0].has_advise_core) {
 		little_min = p->cpu_limit[0].min_cpu_core;
@@ -283,18 +297,7 @@ static void ppm_limit_callback(struct ppm_client_req req)
 		big_min = big_max = p->cpu_limit[1].advise_cpu_core;
 	}
 	hps_set_PPM_request(little_min, little_max, big_min, big_max);
-#if 0
-	if (hps_ctxt.is_hmp)
-		algo_func_ptr = hps_algo_hmp;
-	else if (hps_ctxt.is_amp)
-		algo_func_ptr = hps_algo_amp;
-	else
-		algo_func_ptr = hps_algo_smp;
-#else
-	algo_func_ptr = hps_algo_amp;
-#endif
-	/*execute hotplug algorithm */
-	(*algo_func_ptr) ();
+	hps_task_wakeup_nolock();
 }
 
 /*

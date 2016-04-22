@@ -71,6 +71,7 @@ extern int is_mmdvfs_freq_mux_disabled(void);
 extern int is_force_max_mmsys_clk(void);
 extern int is_force_camera_hpm(void);
 extern int is_mmdvfs_disabled(void);
+extern void mmdvfs_enable(int enable);
 
 
 #ifdef MMDVFS_STANDALONE

@@ -159,6 +159,11 @@ struct usbtypc {
 	struct typec_switch_data *host_driver;
 	struct typec_switch_data *device_driver;
 };
+#elif defined(CONFIG_USB_C_SWITCH_MT6353)
+struct usbtypc {
+	struct typec_switch_data *host_driver;
+	struct typec_switch_data *device_driver;
+};
 #endif
 
 
@@ -167,5 +172,8 @@ extern int unregister_typec_switch_callback(struct typec_switch_data *new_driver
 extern int usb_redriver_config(struct usbtypc *typec, int ctrl_pin, int stat);
 extern int usb_redriver_enter_dps(struct usbtypc *typec);
 extern int usb_redriver_exit_dps(struct usbtypc *typec);
+#if defined(CONFIG_USB_C_SWITCH_MT6353)
+extern void typec_hanlder(void);
+#endif
 
 #endif	/* USB_TYPEC_H */

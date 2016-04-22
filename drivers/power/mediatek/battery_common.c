@@ -456,6 +456,9 @@ EXPORT_SYMBOL(wake_up_bat2);
 
 static ssize_t bat_log_write(struct file *filp, const char __user *buff, size_t len, loff_t *data)
 {
+	if (len >= sizeof(proc_bat_data))
+		return -EFAULT;
+
 	if (copy_from_user(&proc_bat_data, buff, len)) {
 		battery_log(BAT_LOG_FULL, "bat_log_write error.\n");
 		return -EFAULT;
@@ -3652,7 +3655,6 @@ void charger_hv_detect_sw_workaround_init(void)
 			    "[%s]: failed to create charger_hv_detect_sw_workaround thread\n",
 			    __func__);
 	}
-	check_battery_exist();
 	battery_log(BAT_LOG_CRTI, "charger_hv_detect_sw_workaround_init : done\n");
 }
 
@@ -4428,9 +4430,10 @@ static void battery_shutdown(struct platform_device *dev)
 {
 #if defined(CONFIG_MTK_PUMP_EXPRESS_PLUS_SUPPORT)
 	CHR_CURRENT_ENUM input_current = CHARGE_CURRENT_70_00_MA;
-
-	battery_charging_control(CHARGING_CMD_SET_INPUT_CURRENT, &input_current);
-	battery_log(BAT_LOG_CRTI, "[PE+] Resetting TA adapter before shutdown\n");
+	if (is_ta_connect == KAL_TRUE) {
+		battery_charging_control(CHARGING_CMD_SET_INPUT_CURRENT, &input_current);
+		battery_log(BAT_LOG_CRTI, "[PE+] Resetting TA adapter before shutdown\n");
+	}
 #endif
 	battery_log(BAT_LOG_CRTI, "******** battery driver shutdown!! ********\n");
 

@@ -54,3 +54,12 @@ config USB_MU3D_DEFAULT_U2_MODE
 	  Say Y here if you want to keep USB in high speed.
 	  Say N here if you want to enable USB super speed.
 	  If unsure, say Y.
+
+config USB_MU3D_ONLY_U2_MODE
+	tristate "MediaTek SSUSB force in USB High-Speed Mode"
+	default n
+	---help---
+	  Please attach chip vendor about the speed support on this IP.
+	  Say Y here if this chip only support USB2.0.
+	  Say N here if this chip can support USB3.0.
+	  If unsure, say N.

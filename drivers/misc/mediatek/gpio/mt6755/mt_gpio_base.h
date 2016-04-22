@@ -32,6 +32,10 @@
 #define IOCFG_SET_BITS(BIT, REG)   IOCFG_WR32(REG, (unsigned long)(BIT))
 #define IOCFG_CLR_BITS(BIT, REG)   IOCFG_WR32(REG, IOCFG_RD32(REG) & ~((unsigned long)(BIT)))
 
+/*Marvin's USB request to direct access GPIO base*/
+#define USB_WR32(addr, data)   mt_reg_sync_writel(data, (GPIO_BASE + (unsigned long)addr))
+#define USB_RD32(addr)         __raw_readl((GPIO_BASE + (unsigned long)addr))
+
 /*----------------------------------------------------------------------------*/
 typedef struct {		/*FIXME: check GPIO spec */
 	unsigned int val;
