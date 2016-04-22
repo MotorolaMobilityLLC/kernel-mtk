@@ -90,11 +90,10 @@
 #include <mach/mt_pmic.h>
 
 
-<<<<<<< HEAD
 #ifdef CONFIG_LENOVO_CHARGING_STANDARD_SUPPORT
 #include "lenovo_charging.h"
 #endif
-=======
+
 #if defined(CONFIG_MTK_PUMP_EXPRESS_SUPPORT) || defined(CONFIG_MTK_PUMP_EXPRESS_PLUS_SUPPORT)
 #ifndef PUMP_EXPRESS_SERIES
 #define PUMP_EXPRESS_SERIES
@@ -108,7 +107,6 @@
 #endif
 
 
->>>>>>> lenovo/caf/mt6755_m
 
 #if defined(CONFIG_MTK_DUAL_INPUT_CHARGER_SUPPORT)
 #include <mach/diso.h>
@@ -3474,14 +3472,13 @@ void charger_hv_detect_sw_workaround_init(void)
 			    "[%s]: failed to create charger_hv_detect_sw_workaround thread\n",
 			    __func__);
 	}
-<<<<<<< HEAD
+
 	//lenovo-sw mahj2 modify for booting when have not ntc Begin
 	#if 0
 	check_battery_exist();
 	#endif
 	//lenovo-sw mahj2 modify for booting when have not ntc End
-=======
->>>>>>> lenovo/caf/mt6755_m
+
 	battery_log(BAT_LOG_CRTI, "charger_hv_detect_sw_workaround_init : done\n");
 }
 
