@@ -10,7 +10,7 @@
 #include <asm/uaccess.h>
 #include <linux/sched.h>
 #include <linux/delay.h>	/* udelay() */
-
+#include "ts3a227e.h"
 #include "fm_config.h"
 #include "fm_main.h"
 #include "fm_ioctl.h"
@@ -139,6 +139,27 @@ static long fm_ops_ioctl(struct file *filp, fm_u32 cmd, unsigned long arg)
 			}
 
 			ret = fm_powerdown(fm, powerdwn_type);	/* 0: RX 1: TX */
+			//fm_notify_accdet=0;
+			if ((ts3a227e_reg_value[11] & 0x01) == 0x01) {
+			WCN_DBG(FM_NTC | MAIN, "XLJ 3 POLE  FM==0\n");
+			ts3a227e_write_byte(0x04, 0x40); //0x40
+			ts3a227e_write_byte(0x07, 0x3d); //0x14
+			ts3a227e_write_byte(0x08, 0x03);
+			}
+			else if((ts3a227e_reg_value[11] & 0x02) == 0x02)
+			{
+		     WCN_DBG(FM_NTC | MAIN, "XLJ 4 POLE OMTP FM==0\n");
+			 ts3a227e_write_byte(0x04, (ts3a227e_reg_value[4]|(1<<6))); //0x40
+             ts3a227e_write_byte(0x07, 0x20); 
+             ts3a227e_write_byte(0x08, 0x06);
+			}
+			else if((ts3a227e_reg_value[11] & 0x04) == 0x04)
+			{
+			 WCN_DBG(FM_NTC | MAIN, "XLJ 4 POLE STANDARD FM==0\n");
+			 ts3a227e_write_byte(0x04, (ts3a227e_reg_value[4]|(1<<6))); //0x40
+             ts3a227e_write_byte(0x07, 0x10); //0x40
+             ts3a227e_write_byte(0x08, 0x09); //0x40
+			}
 			WCN_DBG(FM_NTC | MAIN, "FM_IOCTL_POWERDOWN:1\n");
 			break;
 		}
@@ -727,6 +748,27 @@ static long fm_ops_ioctl(struct file *filp, fm_u32 cmd, unsigned long arg)
 				goto out;
 			}
 			ret = fm_rds_onoff(fm, rdson_off);
+			//fm_notify_accdet=1;
+			if ((ts3a227e_reg_value[11] & 0x01) == 0x01) {
+			WCN_DBG(FM_NTC | MAIN, "XLJ 3 POLE  FM==1\n");
+			ts3a227e_write_byte(0x04, 0x48); //0x40
+			ts3a227e_write_byte(0x07, 0x10); //0x14
+			ts3a227e_write_byte(0x08, 0x08);
+			}
+			else if((ts3a227e_reg_value[11] & 0x02) == 0x02)
+			{
+			 WCN_DBG(FM_NTC | MAIN, "XLJ 4 POLE OMTP FM==1\n");
+             ts3a227e_write_byte(0x04, (ts3a227e_reg_value[4]|(1<<6))); //0x40
+             ts3a227e_write_byte(0x07, 0x20); 
+             ts3a227e_write_byte(0x08, 0x04);
+			}
+			else if((ts3a227e_reg_value[11] & 0x04) == 0x04)
+		    {
+		     WCN_DBG(FM_NTC | MAIN, "XLJ4 POLE STANDARD FM==1\n");
+             ts3a227e_write_byte(0x04, (ts3a227e_reg_value[4]|(1<<6))); //0x40
+			 ts3a227e_write_byte(0x07, 0x10); //0x40
+			 ts3a227e_write_byte(0x08, 0x08); //0x40
+			}
 			WCN_DBG(FM_NTC | MAIN, "FM_IOCTL_RDS_ONOFF end:%d\n", rdson_off);
 			break;
 		}

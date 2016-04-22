@@ -102,7 +102,6 @@ static struct i2c_driver ts3a227e_i2c_driver = {
 
 static DEFINE_MUTEX(ts3a227e_i2c_access);
 
-#if 1
 int ts3a227e_read_byte(unsigned char cmd, unsigned char *returnData)
 {
 	char cmd_buf[1] = { 0x00 };
@@ -159,84 +158,6 @@ int ts3a227e_write_byte(unsigned char cmd, unsigned char writeData)
 	return 1;
 }
 
-#else
-unsigned int ts3a227e_read_byte(unsigned char cmd, unsigned char *returnData)
-{
-	unsigned char xfers = 2;
-	int ret, retries = 1;
-
-	mutex_lock(&ts3a227e_i2c_access);
-
-	do {
-		struct i2c_msg msgs[2] = {
-			{
-				.addr = ts3a227e_i2c_client->addr,
-				.flags = 0,
-				.len = 1,
-				.buf = &cmd,
-			},
-			{
-
-				.addr = ts3a227e_i2c_client->addr,
-				.flags = I2C_M_RD,
-				.len = 1,
-				.buf = returnData,
-			}
-		};
-
-		/*
-		 * Avoid sending the segment addr to not upset non-compliant
-		 * DDC monitors.
-		 */
-		ret = i2c_transfer(ts3a227e_i2c_client->adapter, msgs, xfers);
-
-		if (ret == -ENXIO) {
-			break;
-		}
-	} while (ret != xfers && --retries);
-
-	mutex_unlock(&ts3a227e_i2c_access);
-
-	return ret == xfers ? 1 : -1;
-}
-
-unsigned int ts3a227e_write_byte(unsigned char cmd, unsigned char writeData)
-{
-	unsigned char xfers = 1;
-	int ret, retries = 1;
-	unsigned char buf[8];
-
-	mutex_lock(&ts3a227e_i2c_access);
-
-	buf[0] = cmd;
-	memcpy(&buf[1], &writeData, 1);
-
-	do {
-		struct i2c_msg msgs[1] = {
-			{
-				.addr = ts3a227e_i2c_client->addr,
-				.flags = 0,
-				.len = 1 + 1,
-				.buf = buf,
-			},
-		};
-
-		/*
-		 * Avoid sending the segment addr to not upset non-compliant
-		 * DDC monitors.
-		 */
-		ret = i2c_transfer(ts3a227e_i2c_client->adapter, msgs, xfers);
-
-		if (ret == -ENXIO) {
-			break;
-		}
-	} while (ret != xfers && --retries);
-
-	mutex_unlock(&ts3a227e_i2c_access);
-
-	return ret == xfers ? 1 : -1;
-}
-#endif
 /******************************************************************************
  * extern functions
 *******************************************************************************/
