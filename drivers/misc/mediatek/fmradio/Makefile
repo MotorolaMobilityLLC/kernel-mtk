@@ -9,6 +9,7 @@ subdir-ccflags-y += -D WMT_IDC_SUPPORT
 subdir-ccflags-y += -D MTK_WCN_WMT_STP_EXP_SYMBOL_ABSTRACT
 subdir-ccflags-y += -D MTK_WCN_REMOVE_KERNEL_MODULE
 subdir-ccflags-y += -I$(src)/../include/mt-plat
+subdir-ccflags-y += -I$(src)/../accdet/mt6735
 
 #define build_speical_fm_driver
 

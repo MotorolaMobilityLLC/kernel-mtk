@@ -56,6 +56,7 @@ unsigned char ts3a225e_connector_type = TS3A225E_CONNECTOR_NONE;
 #define TS3A227E_CONNECTOR_TRRS_OMTP		3
 unsigned char ts3a227e_reg_value[16] = { 0 };
 unsigned char ts3a227e_connector_type = TS3A227E_CONNECTOR_NONE;
+//#define READ_TS3A227E_REGISTER
 #endif
 static int eint_accdet_sync_flag;
 static int g_accdet_first = 1;
@@ -74,17 +75,31 @@ static inline void clear_accdet_eint_interrupt(void);
 static void send_key_event(int keycode, int flag);
 #if defined CONFIG_ACCDET_EINT || defined CONFIG_ACCDET_EINT_IRQ
 static struct work_struct accdet_eint_work;
+#ifdef READ_TS3A227E_REGISTER
+static struct work_struct accdet_read_ts3a_work;
+#endif
 static struct workqueue_struct *accdet_eint_workqueue;
 static inline void accdet_init(void);
 #define MICBIAS_DISABLE_TIMER   (6 * HZ)	/*6 seconds*/
+unsigned char fm_channel[15];
 struct timer_list micbias_timer;
 static void disable_micbias(unsigned long a);
+#ifdef READ_TS3A227E_REGISTER
+#define READ_TI_REG_TIMER       (10 * HZ)  //10 sec
+static int read_count=0;
+struct timer_list readtireg_timer;
+
+static void read_Tireg(unsigned long a);
+#endif
 /* Used to let accdet know if the pin has been fully plugged-in */
 #define EINT_PIN_PLUG_IN        (1)
 #define EINT_PIN_PLUG_OUT       (0)
 int cur_eint_state = EINT_PIN_PLUG_OUT;
 static struct work_struct accdet_disable_work;
 static struct workqueue_struct *accdet_disable_workqueue;
+#ifdef READ_TS3A227E_REGISTER
+static struct workqueue_struct *accdet_read_workqueue;
+#endif
 #else
 /*static int g_accdet_working_in_suspend =0;*/
 #endif/*end CONFIG_ACCDET_EINT*/
@@ -319,7 +334,22 @@ static void disable_micbias(unsigned long a)
 	if (!ret)
 		ACCDET_DEBUG("[Accdet]disable_micbias:accdet_work return:%d!\n", ret);
 }
-
+#ifdef READ_TS3A227E_REGISTER
+static void read_Tireg(unsigned long a)
+{
+ //printk("xljread tiregister %d\n",read_count++);
+        int ret;
+        read_count++;
+        //printk("xljread tiregister %d\n",read_count);
+		//ts3a227e_read_byte(0x04, &ts3a227e_reg_value[4]);
+		//printk("[Accdet] TS3A227E reg:0x04=Device Settings=%x!\n", ts3a227e_reg_value[4]);
+		ret = queue_work(accdet_read_workqueue, &accdet_read_ts3a_work);
+        readtireg_timer.expires = jiffies + READ_TI_REG_TIMER;
+        add_timer(&readtireg_timer);
+       
+	
+}
+#endif
 static void disable_micbias_callback(struct work_struct *work)
 {
 
@@ -348,7 +378,43 @@ static void disable_micbias_callback(struct work_struct *work)
 	}
 #endif
 }
-
+#ifdef READ_TS3A227E_REGISTER
+static void accdet_read_callback(struct work_struct *work)
+{
+        ts3a227e_read_byte(0x00, &ts3a227e_reg_value[0]);
+		ts3a227e_read_byte(0x01, &ts3a227e_reg_value[1]);
+		ts3a227e_read_byte(0x02, &ts3a227e_reg_value[2]);
+		ts3a227e_read_byte(0x03, &ts3a227e_reg_value[3]);
+		ts3a227e_read_byte(0x04, &ts3a227e_reg_value[4]);
+		ts3a227e_read_byte(0x05, &ts3a227e_reg_value[5]);
+		ts3a227e_read_byte(0x06, &ts3a227e_reg_value[6]);
+		ts3a227e_read_byte(0x07, &ts3a227e_reg_value[7]);
+		ts3a227e_read_byte(0x08, &ts3a227e_reg_value[8]);
+		ts3a227e_read_byte(0x09, &ts3a227e_reg_value[9]);
+		ts3a227e_read_byte(0x0A, &ts3a227e_reg_value[10]);
+		ts3a227e_read_byte(0x0B, &ts3a227e_reg_value[11]);
+		ts3a227e_read_byte(0x0C, &ts3a227e_reg_value[12]);
+		ts3a227e_read_byte(0x0D, &ts3a227e_reg_value[13]);
+		ts3a227e_read_byte(0x0E, &ts3a227e_reg_value[14]);
+		ts3a227e_read_byte(0x0F, &ts3a227e_reg_value[15]);
+		printk("[Accdet] TS3A227E reg:0x00=Device ID=%x!\n", ts3a227e_reg_value[0]);
+		printk("[Accdet] TS3A227E reg:0x01=Interrupt=%x!\n", ts3a227e_reg_value[1]);
+		printk("[Accdet] TS3A227E reg:0x02=Prress Interrupt=%x!\n", ts3a227e_reg_value[2]);
+		printk("[Accdet] TS3A227E reg:0x03=Interrupt Disable=%x!\n", ts3a227e_reg_value[3]);
+		printk("[Accdet] TS3A227E reg:0x04=Device Settings=%x!\n", ts3a227e_reg_value[4]);
+		printk("[Accdet] TS3A227E reg:0x05=Device Setting 1=%x!\n", ts3a227e_reg_value[5]);
+		printk("[Accdet] reg:0x05 reg:0x06=TS3A227E Device Setting 2=%x!\n", ts3a227e_reg_value[6]);
+		printk("[Accdet] TS3A227E reg:0x07=Switch Control 1=%x!\n", ts3a227e_reg_value[7]);
+		printk("[Accdet] TS3A227E reg:0x08=Switch Control 2=%x!\n", ts3a227e_reg_value[8]);
+		printk("[Accdet] TS3A227E reg:0x09=Switch Status 1=%x!\n", ts3a227e_reg_value[9]);
+		printk("[Accdet] TS3A227E reg:0x0a=Switch Status 2=%x!\n", ts3a227e_reg_value[10]);
+		printk("[Accdet] TS3A227E reg:0x0b=Accessory Status=%x!\n", ts3a227e_reg_value[11]);
+		printk("[Accdet] TS3A227E reg:0x0c=ADC Output=%x!\n", ts3a227e_reg_value[12]);
+		printk("[Accdet] TS3A227E reg:0x0d=Threshold 1=%x!\n", ts3a227e_reg_value[13]);
+		printk("[Accdet] TS3A227E reg:0x0e=Threshold 2=%x!\n", ts3a227e_reg_value[14]);
+		printk("[Accdet] TS3A227E reg:0x0f=Threshold 3=%x!\n", ts3a227e_reg_value[15]);
+}
+#endif
 static void accdet_eint_work_callback(struct work_struct *work)
 {
 #ifdef CONFIG_ACCDET_EINT_IRQ
@@ -468,6 +534,8 @@ static void accdet_eint_work_callback(struct work_struct *work)
 #if defined(CONFIG_TS3A227E_ACCDET)
 		ACCDET_DEBUG("[Accdet] TS3A227E enable!\n");
 		msleep(300);
+		ret = ts3a227e_write_byte(0x04, 0x88);
+		msleep(200);
 		ret = ts3a227e_write_byte(0x04, 0x18);
 		msleep(500);
 		ts3a227e_read_byte(0x00, &ts3a227e_reg_value[0]);
@@ -508,21 +576,41 @@ static void accdet_eint_work_callback(struct work_struct *work)
 			//ts3a227e_write_byte(0x02, 0x07);
 			//ts3a227e_write_byte(0x03, 0xf3);
 			//add by caozhg to fix bug
-			ts3a227e_write_byte(0x04, 0x48); //0x40
-			ts3a227e_write_byte(0x07, 0x10); //0x14
-			ts3a227e_write_byte(0x08, 0x09);
+			ts3a227e_write_byte(0x04, 0x40); //0x40
+			ts3a227e_write_byte(0x07, 0x3d); //0x14
+			ts3a227e_write_byte(0x08, 0x03);
+			
 			msleep(20);
 		} else if ((ts3a227e_reg_value[11] & 0x02) == 0x02) {
 			printk("[Accdet] TS3A227E 4-pole OMTP headset detected!\n");
-			ts3a227e_connector_type = TS3A227E_CONNECTOR_TRRS_OMTP;
+		
+               ts3a227e_write_byte(0x04, (ts3a227e_reg_value[4]|(1<<6))); //0x40
+               ts3a227e_write_byte(0x07, 0x20); 
+               ts3a227e_write_byte(0x08, 0x06);
+		
+			  ts3a227e_connector_type = TS3A227E_CONNECTOR_TRRS_OMTP;
+			
 		} else if ((ts3a227e_reg_value[11] & 0x04) == 0x04) {
 			printk("[Accdet] TS3A227E 4-pole standard headset detected!\n");
-			ts3a227e_connector_type = TS3A227E_CONNECTOR_TRRS_STANDARD;
+	
+			 ts3a227e_write_byte(0x04, (ts3a227e_reg_value[4]|(1<<6))); //0x40
+			 ts3a227e_write_byte(0x07, 0x10); //0x40
+			 ts3a227e_write_byte(0x08, 0x09); //0x40     
+			
+			 ts3a227e_connector_type = TS3A227E_CONNECTOR_TRRS_STANDARD;
 			
 		} else {
 			printk("[Accdet] TS3A227E Detection sequence completed without successful!\n");
 		}
 #endif
+        #ifdef READ_TS3A227E_REGISTER
+		readtireg_timer.expires = jiffies + READ_TI_REG_TIMER;
+        add_timer(&readtireg_timer);
+        #endif
+        
+
+
+
 #ifdef SGM3717_DPDT_SWITCH_ENABLE
 
 		printk ("[Accdet] SGM3717_DPDT_SWITCH_ENABLE low.\n");
@@ -557,6 +645,9 @@ static void accdet_eint_work_callback(struct work_struct *work)
 		eint_accdet_sync_flag = 0;
 		mutex_unlock(&accdet_eint_irq_sync_mutex);
 		del_timer_sync(&micbias_timer);
+		#ifdef READ_TS3A227E_REGISTER
+		del_timer_sync(&readtireg_timer);
+		#endif
 #ifndef CONFIG_TS3A227E_ACCDET
 		//add by caozhg
 		pins_earjack_init_l = pinctrl_lookup_state(accdet_pinctrl1, "state_earjack_det_low");
@@ -1543,6 +1634,21 @@ static ssize_t store_accdet_dump_register(struct device_driver *ddri, const char
 
 	return count;
 }
+static ssize_t show_accdet_fm(struct device_driver *ddri, char *buf)
+{
+  return sprintf(buf, "%s\n", fm_channel);
+}
+static ssize_t store_accdet_fm(struct device_driver *ddri, const char *buf, size_t count)
+{
+ u8 ret;
+ ret = sscanf(buf, "%s", fm_channel);
+ if (ret != 1) 
+ {
+  ACCDET_DEBUG("accdet: Invalid values\n");
+  return -EINVAL;
+ }
+ return count;
+}
 
 /*----------------------------------------------------------------------------*/
 static DRIVER_ATTR(dump_register, S_IWUSR | S_IRUGO, NULL, store_accdet_dump_register);
@@ -1550,13 +1656,16 @@ static DRIVER_ATTR(dump_register, S_IWUSR | S_IRUGO, NULL, store_accdet_dump_reg
 static DRIVER_ATTR(set_headset_mode, S_IWUSR | S_IRUGO, NULL, store_accdet_set_headset_mode);
 
 static DRIVER_ATTR(start_debug, S_IWUSR | S_IRUGO, NULL, store_accdet_start_debug_thread);
-
+static DRIVER_ATTR(fm_rssi_state,S_IWUSR | S_IRUGO,show_accdet_fm,store_accdet_fm);
 /*----------------------------------------------------------------------------*/
+
+
 static struct driver_attribute *accdet_attr_list[] = {
 	&driver_attr_start_debug,
 	&driver_attr_set_headset_mode,
 	&driver_attr_dump_register,
 	&driver_attr_accdet_call_state,
+	&driver_attr_fm_rssi_state,
 	/*#ifdef CONFIG_ACCDET_PIN_RECOGNIZATION*/
 	&driver_attr_accdet_pin_recognition,
 	/*#endif*/
@@ -1610,9 +1719,12 @@ int mt_accdet_probe(struct platform_device *dev)
 {
 	int ret = 0;
 
+
+
 #if DEBUG_THREAD
 	struct platform_driver accdet_driver_hal = accdet_driver_func();
 #endif
+
 
 #if defined(CONFIG_TS3A225E_ACCDET)
 	if (ts3a225e_i2c_client == NULL) {
@@ -1673,7 +1785,12 @@ int mt_accdet_probe(struct platform_device *dev)
 	micbias_timer.expires = jiffies + MICBIAS_DISABLE_TIMER;
 	micbias_timer.function = &disable_micbias;
 	micbias_timer.data = ((unsigned long)0);
-
+    #ifdef READ_TS3A227E_REGISTER
+    init_timer(&readtireg_timer);
+	readtireg_timer.expires = jiffies + READ_TI_REG_TIMER;
+	readtireg_timer.function = &read_Tireg;
+	readtireg_timer.data = ((unsigned long)0);
+	#endif
 	/*define multi-key keycode*/
 	__set_bit(EV_KEY, kpd_accdet_dev->evbit);
 	__set_bit(KEY_PLAYPAUSE, kpd_accdet_dev->keybit);
@@ -1725,6 +1842,10 @@ int mt_accdet_probe(struct platform_device *dev)
 		INIT_WORK(&accdet_disable_work, disable_micbias_callback);
 		accdet_eint_workqueue = create_singlethread_workqueue("accdet_eint");
 		INIT_WORK(&accdet_eint_work, accdet_eint_work_callback);
+		#ifdef READ_TS3A227E_REGISTER
+        accdet_read_workqueue = create_singlethread_workqueue("accdet_read");
+		INIT_WORK(&accdet_read_ts3a_work,accdet_read_callback);
+		#endif
 		accdet_setup_eint(dev);
 #endif
 		g_accdet_first = 0;

@@ -18,5 +18,5 @@
 
 int ts3a227e_read_byte(unsigned char cmd, unsigned char *returnData);
 int ts3a227e_write_byte(unsigned char cmd, unsigned char writeData);
-
+extern unsigned char ts3a227e_reg_value[16];
 #endif
