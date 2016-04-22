@@ -3135,7 +3135,7 @@
 
 	fpc_int:fpc_int {
 		compatible = "mediatek, fpc_int-eint";
-
+	};	
 	ext_buck_vmd1:ext_buck_vmd1 {
 		compatible = "mediatek,ext_buck_vmd1";
 
