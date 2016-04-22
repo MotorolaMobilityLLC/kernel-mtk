@@ -304,7 +304,6 @@ void long_press_reboot_function_setting(void)
 #ifdef CONFIG_KPD_PMIC_LPRST_TD
 		kpd_info("Enable other mode LPRST\n");
 #ifdef CONFIG_ONEKEY_REBOOT_OTHER_MODE
-<<<<<<< HEAD
 	/*lenovo-sw liuyc7 2015.4.15 modified begin*/
 	#if 0
 		pmic_set_register_value(PMIC_RG_PWRKEY_RST_EN, 0x01);
@@ -327,7 +326,6 @@ void long_press_reboot_function_setting(void)
     #endif
     /*lenovo-sw jixj 2015.4.15 modified begin*/
 	#endif
-=======
 #ifdef CONFIG_MTK_PMIC_CHIP_MT6353
 		pmic_set_register_value(PMIC_RG_PWRKEY_RST_EN, 0x01);
 		pmic_set_register_value(PMIC_RG_HOMEKEY_RST_EN, 0x00);
@@ -338,7 +336,6 @@ void long_press_reboot_function_setting(void)
 		pmic_set_register_value(MT6351_PMIC_RG_PWRKEY_RST_TD, CONFIG_KPD_PMIC_LPRST_TD);
 #endif
 #endif
->>>>>>> lenovo/caf/mt6755_m
 
 #ifdef CONFIG_TWOKEY_REBOOT_OTHER_MODE
 #ifdef CONFIG_MTK_PMIC_CHIP_MT6353
