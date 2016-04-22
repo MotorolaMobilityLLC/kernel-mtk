@@ -1,0 +1,1631 @@
+!_TAG_FILE_FORMAT	2	/extended format; --format=1 will not append ;" to lines/
+!_TAG_FILE_SORTED	1	/0=unsorted, 1=sorted, 2=foldcase/
+!_TAG_PROGRAM_AUTHOR	Darren Hiebert	/dhiebert@users.sourceforge.net/
+!_TAG_PROGRAM_NAME	Exuberant Ctags	//
+!_TAG_PROGRAM_URL	http://ctags.sourceforge.net	/official site/
+!_TAG_PROGRAM_VERSION	5.9~svn20110310	//
+ALLOC_CPUSET	tz_driver/ut_mm.c	57;"	d	file:
+ALLOC_NO_WATERMARKS	tz_driver/ut_mm.c	54;"	d	file:
+ALLOC_WMARK_LOW	tz_driver/ut_mm.c	56;"	d	file:
+ALLOC_WMARK_MASK	tz_driver/ut_mm.c	55;"	d	file:
+ALLOC_WMARK_MIN	tz_driver/ut_mm.c	64;"	d	file:
+ARGS_BLOCK_SIZE	teei_fp/teei_fp.h	5;"	d
+ARGS_BLOCK_SIZE	tz_driver/include/TEEI.h	5;"	d
+ARGS_BLOCK_SIZE	tz_socket/TEEI.h	5;"	d
+BDRV_CALL	tz_driver/backward_driver.c	11;"	d	file:
+BDRV_CALL	tz_driver/include/utdriver_macro.h	59;"	d
+BDRV_CALL	tz_driver/switch_queue.c	12;"	d	file:
+BDRV_IRQ	tz_driver/include/utdriver_irq.h	6;"	d
+BLOCK_MAX_COUNT	tz_driver/include/utdriver_macro.h	40;"	d
+BOOT_IRQ	tz_driver/include/utdriver_irq.h	2;"	d
+CALL_TRUSTZONE_API	tz_driver/include/smc_id.h	7;"	d
+CAPI_CALL	tz_driver/include/utdriver_macro.h	57;"	d
+CAPI_CALL	tz_driver/switch_queue.c	10;"	d	file:
+CAPI_CALL	tz_driver/teei_smc_call.c	13;"	d	file:
+CMD_FIRST_TIME_BOOT	ut_keymaster/mt_keymaster.c	71;"	d	file:
+CMD_FP_CMD	teei_fp/fp_func.c	26;"	d	file:
+CMD_GATEKEEPER_CMD	teei_fp/fp_func.c	27;"	d	file:
+CMD_ID_TEE_ABORT	ut_keymaster/mt_keymaster_api.h	43;"	d
+CMD_ID_TEE_BEGIN	ut_keymaster/mt_keymaster_api.h	40;"	d
+CMD_ID_TEE_DELETE_ALL_KEYS	ut_keymaster/mt_keymaster_api.h	39;"	d
+CMD_ID_TEE_DELETE_KEY	ut_keymaster/mt_keymaster_api.h	38;"	d
+CMD_ID_TEE_DSA_GEN_KEY_PAIR	ut_keymaster/mt_keymaster_api.h	20;"	d
+CMD_ID_TEE_DSA_SIGN	ut_keymaster/mt_keymaster_api.h	21;"	d
+CMD_ID_TEE_DSA_VERIFY	ut_keymaster/mt_keymaster_api.h	22;"	d
+CMD_ID_TEE_ECDSA_GEN_KEY_PAIR	ut_keymaster/mt_keymaster_api.h	23;"	d
+CMD_ID_TEE_ECDSA_SIGN	ut_keymaster/mt_keymaster_api.h	24;"	d
+CMD_ID_TEE_ECDSA_VERIFY	ut_keymaster/mt_keymaster_api.h	25;"	d
+CMD_ID_TEE_EXPORT_KEY	ut_keymaster/mt_keymaster_api.h	37;"	d
+CMD_ID_TEE_FINISH	ut_keymaster/mt_keymaster_api.h	42;"	d
+CMD_ID_TEE_GENERATE_KEY	ut_keymaster/mt_keymaster_api.h	28;"	d
+CMD_ID_TEE_GET_KEY_CHARACTERISTICS	ut_keymaster/mt_keymaster_api.h	35;"	d
+CMD_ID_TEE_GET_KEY_INFO	ut_keymaster/mt_keymaster_api.h	26;"	d
+CMD_ID_TEE_GET_PUB_KEY	ut_keymaster/mt_keymaster_api.h	19;"	d
+CMD_ID_TEE_GET_SUPPORTED_ALGO	ut_keymaster/mt_keymaster_api.h	29;"	d
+CMD_ID_TEE_GET_SUPPORTED_BLOCK	ut_keymaster/mt_keymaster_api.h	30;"	d
+CMD_ID_TEE_GET_SUPPORTED_DIGESTS	ut_keymaster/mt_keymaster_api.h	32;"	d
+CMD_ID_TEE_GET_SUPPORTED_EXPORT_FORMATS	ut_keymaster/mt_keymaster_api.h	34;"	d
+CMD_ID_TEE_GET_SUPPORTED_IMPORT_FORMATS	ut_keymaster/mt_keymaster_api.h	33;"	d
+CMD_ID_TEE_GET_SUPPORTED_PADDING	ut_keymaster/mt_keymaster_api.h	31;"	d
+CMD_ID_TEE_IMPORT_KEY	ut_keymaster/mt_keymaster_api.h	36;"	d
+CMD_ID_TEE_KEY_IMPORT	ut_keymaster/mt_keymaster_api.h	18;"	d
+CMD_ID_TEE_RSA_GEN_KEY_PAIR	ut_keymaster/mt_keymaster_api.h	15;"	d
+CMD_ID_TEE_RSA_SIGN	ut_keymaster/mt_keymaster_api.h	16;"	d
+CMD_ID_TEE_RSA_VERIFY	ut_keymaster/mt_keymaster_api.h	17;"	d
+CMD_ID_TEE_UPDATE	ut_keymaster/mt_keymaster_api.h	41;"	d
+CMD_LOAD_TEE	teei_fp/fp_func.c	28;"	d	file:
+CMD_MEM_CLEAR	teei_fp/fp_func.c	25;"	d	file:
+CMD_MEM_CLEAR	ut_keymaster/mt_keymaster.c	68;"	d	file:
+CMD_MEM_SEND	ut_keymaster/mt_keymaster.c	69;"	d	file:
+CMD_NOTIFY_UTD	ut_keymaster/mt_keymaster.c	70;"	d	file:
+CTL_BUFF_SIZE	tz_driver/include/utdriver_macro.h	48;"	d
+Cache_line_size	tz_driver/include/teei_id.h	71;"	d
+Cache_line_size	tz_vfs/teei_id.h	71;"	d
+DEV_NAME	teei_fp/fp_func.c	32;"	d	file:
+DEV_NAME	ut_keymaster/mt_keymaster.c	67;"	d	file:
+ECC_CURVE_NIST_P192	ut_keymaster/mt_keymaster_api.h	52;"	d
+ECC_CURVE_NIST_P224	ut_keymaster/mt_keymaster_api.h	53;"	d
+ECC_CURVE_NIST_P256	ut_keymaster/mt_keymaster_api.h	54;"	d
+ECC_CURVE_NIST_P384	ut_keymaster/mt_keymaster_api.h	55;"	d
+ECC_CURVE_NIST_P521	ut_keymaster/mt_keymaster_api.h	56;"	d
+END_STATUS	tz_driver/include/utdriver_macro.h	4;"	d
+FAST_ACK_CREAT_FDRV	tz_driver/include/utdriver_macro.h	23;"	d
+FAST_ACK_CREAT_NQ	tz_driver/include/utdriver_macro.h	17;"	d
+FAST_ACK_CREAT_SYS_CTL	tz_driver/include/utdriver_macro.h	21;"	d
+FAST_ACK_CREAT_VDRV	tz_driver/include/utdriver_macro.h	19;"	d
+FAST_CALL_TYPE	tz_driver/include/utdriver_macro.h	7;"	d
+FAST_CREAT_FDRV	tz_driver/include/utdriver_macro.h	22;"	d
+FAST_CREAT_NQ	tz_driver/include/utdriver_macro.h	16;"	d
+FAST_CREAT_SYS_CTL	tz_driver/include/utdriver_macro.h	20;"	d
+FAST_CREAT_VDRV	tz_driver/include/utdriver_macro.h	18;"	d
+FDRV_ACK_TYPE	tz_driver/include/utdriver_macro.h	28;"	d
+FDRV_CALL	tz_driver/include/utdriver_macro.h	58;"	d
+FDRV_CALL	tz_driver/switch_queue.c	11;"	d	file:
+FDRV_CALL	tz_driver/teei_fp.c	10;"	d	file:
+FDRV_CALL	tz_driver/teei_keymaster.c	10;"	d	file:
+FP_ACK_IRQ	tz_driver/include/utdriver_irq.h	5;"	d
+FP_BUFF_SIZE	tz_driver/include/utdriver_macro.h	43;"	d
+FP_DRIVER_ID	teei_fp/fp_func.c	33;"	d	file:
+FP_MAJOR	teei_fp/fp_func.c	29;"	d	file:
+FP_SIZE	teei_fp/fp_func.c	24;"	d	file:
+FP_SYS_NO	tz_driver/include/utdriver_macro.h	42;"	d
+FP_SYS_NO	tz_driver/switch_queue.c	15;"	d	file:
+FP_SYS_NO	tz_driver/teei_fp.c	11;"	d	file:
+Flush_Dcache_By_Area	tz_driver/include/teei_id.h	/^static inline void Flush_Dcache_By_Area(unsigned long start, unsigned long end)$/;"	f
+Flush_Dcache_By_Area	tz_vfs/teei_id.h	/^static inline void Flush_Dcache_By_Area(unsigned long start, unsigned long end)$/;"	f
+GK_BUFF_SIZE	tz_driver/teei_client_main.c	51;"	d	file:
+GK_BUFF_SIZE	tz_driver/teei_gatekeeper.c	10;"	d	file:
+GK_DRIVER_ID	teei_fp/fp_func.c	34;"	d	file:
+GK_SYS_NO	tz_driver/switch_queue.c	17;"	d	file:
+GK_SYS_NO	tz_driver/teei_client_main.c	52;"	d	file:
+GK_SYS_NO	tz_driver/teei_gatekeeper.c	11;"	d	file:
+GLSCH_FOR_SOTER	tz_driver/include/sched_status.h	5;"	d
+GLSCH_HIGH	tz_driver/include/sched_status.h	3;"	d
+GLSCH_LOW	tz_driver/include/sched_status.h	2;"	d
+GLSCH_NEG	tz_driver/include/sched_status.h	4;"	d
+GLSCH_NONE	tz_driver/include/sched_status.h	1;"	d
+ID_FIELD_F_FAST_SMC_CALL	tz_driver/include/nt_smc_call.h	14;"	d
+ID_FIELD_F_STANDARD_SMC_CALL	tz_driver/include/nt_smc_call.h	15;"	d
+ID_FIELD_T_ARM_SERVICE	tz_driver/include/nt_smc_call.h	18;"	d
+ID_FIELD_T_CPU_SERVICE	tz_driver/include/nt_smc_call.h	19;"	d
+ID_FIELD_T_OEM_SERVICE	tz_driver/include/nt_smc_call.h	21;"	d
+ID_FIELD_T_SIP_SERVICE	tz_driver/include/nt_smc_call.h	20;"	d
+ID_FIELD_T_STANDARD_SERVICE	tz_driver/include/nt_smc_call.h	22;"	d
+ID_FIELD_T_TA_SERVICE0	tz_driver/include/nt_smc_call.h	25;"	d
+ID_FIELD_T_TA_SERVICE1	tz_driver/include/nt_smc_call.h	26;"	d
+ID_FIELD_T_TRUSTED_OS_SERVICE0	tz_driver/include/nt_smc_call.h	28;"	d
+ID_FIELD_T_TRUSTED_OS_SERVICE1	tz_driver/include/nt_smc_call.h	29;"	d
+ID_FIELD_T_TRUSTED_OS_SERVICE2	tz_driver/include/nt_smc_call.h	31;"	d
+ID_FIELD_T_TRUSTED_OS_SERVICE3	tz_driver/include/nt_smc_call.h	32;"	d
+ID_FIELD_W_32	tz_driver/include/nt_smc_call.h	17;"	d
+ID_FIELD_W_64	tz_driver/include/nt_smc_call.h	16;"	d
+INIT_HEAD	tz_driver/include/teei_list.h	15;"	d
+INIT_LIST_HEAD	tz_driver/include/teei_list.h	17;"	d
+INVALID_TYPE	tz_driver/include/utdriver_macro.h	33;"	d
+IS_CMD	ut_keymaster/tci.h	16;"	d
+IS_RSP	ut_keymaster/tci.h	17;"	d
+Invalidate_Dcache_By_Area	tz_driver/include/teei_id.h	/^static inline void Invalidate_Dcache_By_Area(unsigned long start, unsigned long end)$/;"	f
+Invalidate_Dcache_By_Area	tz_vfs/teei_id.h	/^static inline void Invalidate_Dcache_By_Area(unsigned long start, unsigned long end)$/;"	f
+KEYMASTER_BUFF_SIZE	tz_driver/include/utdriver_macro.h	46;"	d
+KEYMASTER_DRIVER_ID	ut_keymaster/mt_keymaster.c	62;"	d	file:
+KEYMASTER_MAJOR	ut_keymaster/mt_keymaster.c	65;"	d	file:
+KEYMASTER_SIZE	ut_keymaster/mt_keymaster.c	66;"	d	file:
+KEYMASTER_SYS_NO	tz_driver/include/utdriver_macro.h	45;"	d
+KEYMASTER_SYS_NO	tz_driver/switch_queue.c	16;"	d	file:
+KEYMASTER_SYS_NO	tz_driver/teei_keymaster.c	11;"	d	file:
+LIST_HEAD	tz_driver/include/teei_list.h	16;"	d
+LIST_POISON_NEXT	tz_driver/include/teei_list.h	6;"	d
+LIST_POISON_PREV	tz_driver/include/teei_list.h	5;"	d
+MAKE_SMC_CALL_ID	tz_driver/include/nt_smc_call.h	34;"	d
+MAX_BUFF_SIZE	tz_driver/include/utdriver_macro.h	30;"	d
+MAX_LOG_LEN	tz_driver/include/tlog.h	11;"	d
+MEM_CLEAR	tz_socket/socketFun.c	18;"	d	file:
+MEM_CLEAR	tz_vfs/vfsFun.c	19;"	d	file:
+MESSAGE_LENGTH	tz_driver/include/utdriver_macro.h	54;"	d
+MESSAGE_LENGTH	ut_keymaster/mt_keymaster_service.c	23;"	d	file:
+MESSAGE_SIZE	tz_driver/include/utdriver_macro.h	35;"	d
+MESSAGE_SIZE	tz_driver/include/utdriver_macro.h	55;"	d
+MT_KEYMASTER_BUF_SIZE	ut_keymaster/mt_keymaster.c	76;"	d	file:
+Max_count	tz_driver/include/notify_queue.h	/^	unsigned int Max_count;$/;"	m	struct:NQ_head
+Max_count	tz_driver/include/teei_capi.h	/^	unsigned int Max_count;$/;"	m	struct:NQ_head
+NQ_BLOCK_SIZE	tz_driver/include/utdriver_macro.h	39;"	d
+NQ_BUFF_SIZE	tz_driver/include/utdriver_macro.h	38;"	d
+NQ_CALL_TYPE	tz_driver/include/utdriver_macro.h	25;"	d
+NQ_SIZE	tz_driver/include/utdriver_macro.h	37;"	d
+NQ_VALID	tz_driver/include/teei_smc_call.h	5;"	d
+NQ_VALID	tz_driver/include/utdriver_macro.h	50;"	d
+NQ_entry	tz_driver/include/irq_register.h	/^struct NQ_entry {$/;"	s
+NQ_entry	tz_driver/include/notify_queue.h	/^struct NQ_entry {$/;"	s
+NQ_entry	tz_driver/include/teei_capi.h	/^struct NQ_entry {$/;"	s
+NQ_head	tz_driver/include/notify_queue.h	/^struct NQ_head {$/;"	s
+NQ_head	tz_driver/include/teei_capi.h	/^struct NQ_head {$/;"	s
+NQ_init	tz_driver/notify_queue.c	/^void NQ_init(unsigned long NQ_buff)$/;"	f
+NT_DUMP_STATE	tz_driver/include/nt_smc_call.h	99;"	d
+NT_SCHED_T	tz_driver/include/nt_smc_call.h	114;"	d
+NT_SCHED_T_FIQ	tz_driver/include/nt_smc_call.h	130;"	d
+N_ACK_T_BACKSTAGE	tz_driver/include/nt_smc_call.h	103;"	d
+N_ACK_T_FOREGROUND	tz_driver/include/nt_smc_call.h	101;"	d
+N_ACK_T_INVOKE_DRV	tz_driver/include/nt_smc_call.h	124;"	d
+N_ACK_T_LOAD_IMG	tz_driver/include/nt_smc_call.h	128;"	d
+N_CPU_CBOOT	tz_driver/include/nt_smc_call.h	85;"	d
+N_CPU_OFF	tz_driver/include/nt_smc_call.h	91;"	d
+N_CPU_ON	tz_driver/include/nt_smc_call.h	89;"	d
+N_CPU_SUSPEND	tz_driver/include/nt_smc_call.h	87;"	d
+N_GET_NON_IRQ_NUM	tz_driver/include/nt_smc_call.h	109;"	d
+N_GET_PARAM_IN	tz_driver/include/nt_smc_call.h	93;"	d
+N_INIT_T_BOOT_STAGE1	tz_driver/include/nt_smc_call.h	105;"	d
+N_INIT_T_FC_BUF	tz_driver/include/nt_smc_call.h	95;"	d
+N_INVOKE_T_DRV	tz_driver/include/nt_smc_call.h	120;"	d
+N_INVOKE_T_FAST_CALL	tz_driver/include/nt_smc_call.h	97;"	d
+N_INVOKE_T_LOAD_TEE	tz_driver/include/nt_smc_call.h	126;"	d
+N_INVOKE_T_NQ	tz_driver/include/nt_smc_call.h	118;"	d
+N_INVOKE_T_SYS_CTL	tz_driver/include/nt_smc_call.h	116;"	d
+N_RAISE_T_EVENT	tz_driver/include/nt_smc_call.h	122;"	d
+N_SWITCH_CORE	tz_driver/include/nt_smc_call.h	107;"	d
+N_SWITCH_TO_T_OS_STAGE2	tz_driver/include/nt_smc_call.h	83;"	d
+PAGE_SIZE_4K	tz_vfs/TEEI.h	7;"	d
+REETIME_SYS_NO	tz_driver/backward_driver.c	14;"	d	file:
+REETIME_SYS_NO	tz_driver/include/utdriver_macro.h	63;"	d
+REETIME_SYS_NO	tz_driver/switch_queue.c	20;"	d	file:
+RET_ERR_DIGEST	ut_keymaster/tci.h	35;"	d
+RET_ERR_INTERNAL_ERROR	ut_keymaster/tci.h	37;"	d
+RET_ERR_INVALID_BUFFER	ut_keymaster/tci.h	26;"	d
+RET_ERR_INVALID_CURVE	ut_keymaster/tci.h	31;"	d
+RET_ERR_INVALID_EXPONENT	ut_keymaster/tci.h	30;"	d
+RET_ERR_INVALID_KEY_SIZE	ut_keymaster/tci.h	27;"	d
+RET_ERR_INVALID_KEY_TYPE	ut_keymaster/tci.h	28;"	d
+RET_ERR_INVALID_LENGTH	ut_keymaster/tci.h	29;"	d
+RET_ERR_KEY_GENERATION	ut_keymaster/tci.h	32;"	d
+RET_ERR_NOT_SUPPORTED	ut_keymaster/tci.h	25;"	d
+RET_ERR_OUT_OF_MEMORY	ut_keymaster/tci.h	38;"	d
+RET_ERR_SECURE_OBJECT	ut_keymaster/tci.h	36;"	d
+RET_ERR_SIGN	ut_keymaster/tci.h	33;"	d
+RET_ERR_UNKNOWN_CMD	ut_keymaster/tci.h	24;"	d
+RET_ERR_VERIFY	ut_keymaster/tci.h	34;"	d
+RET_OK	ut_keymaster/tci.h	23;"	d
+ROUND_UP	tz_driver/include/teei_id.h	69;"	d
+ROUND_UP	tz_vfs/teei_id.h	69;"	d
+RPMB_BUFF_SIZE	tz_vfs/TEEI.h	6;"	d
+RPMB_IOCTL_SOTER_GET_CNT	tz_vfs/TEEI.h	4;"	d
+RPMB_IOCTL_SOTER_READ_DATA	tz_vfs/TEEI.h	3;"	d
+RPMB_IOCTL_SOTER_WRITE_DATA	tz_vfs/TEEI.h	2;"	d
+RSP_ID	ut_keymaster/tci.h	15;"	d
+RSP_ID_MASK	ut_keymaster/tci.h	14;"	d
+SCHD_CALL_TYPE	tz_driver/include/utdriver_macro.h	27;"	d
+SCHED_CALL	tz_driver/global_function.c	11;"	d	file:
+SCHED_CALL	tz_driver/include/utdriver_macro.h	60;"	d
+SCHED_CALL	tz_driver/switch_queue.c	13;"	d	file:
+SCHED_IRQ	tz_driver/include/utdriver_irq.h	3;"	d
+SHMEM_DISABLE	teei_fp/fp_func.c	31;"	d	file:
+SHMEM_DISABLE	tz_driver/include/utdriver_macro.h	12;"	d
+SHMEM_DISABLE	tz_socket/socketFun.c	21;"	d	file:
+SHMEM_ENABLE	teei_fp/fp_func.c	30;"	d	file:
+SHMEM_ENABLE	tz_driver/include/utdriver_macro.h	11;"	d
+SHMEM_ENABLE	tz_socket/socketFun.c	20;"	d	file:
+SMC_CACHE_CTRL	tz_driver/include/smc_id.h	33;"	d
+SMC_CALL_H_	tz_driver/include/nt_smc_call.h	11;"	d
+SMC_CALL_RTC_MONITOR_NOT_READY	tz_driver/include/nt_smc_call.h	38;"	d
+SMC_CALL_RTC_OK	tz_driver/include/nt_smc_call.h	36;"	d
+SMC_CALL_RTC_UNKNOWN_FUN	tz_driver/include/nt_smc_call.h	37;"	d
+SMC_CMD_C15RESUME	tz_driver/include/smc_id.h	17;"	d
+SMC_CMD_CPU0AFTR	tz_driver/include/smc_id.h	15;"	d
+SMC_CMD_CPU1BOOT	tz_driver/include/smc_id.h	14;"	d
+SMC_CMD_CPU1BOOT	tz_driver/include/smc_id.h	37;"	d
+SMC_CMD_INFO	tz_driver/include/smc_id.h	11;"	d
+SMC_CMD_INIT	tz_driver/include/smc_id.h	10;"	d
+SMC_CMD_INIT_SECURE_WINDOW	tz_driver/include/smc_id.h	28;"	d
+SMC_CMD_L2X0CLEANALL	tz_driver/include/smc_id.h	25;"	d
+SMC_CMD_L2X0CTRL	tz_driver/include/smc_id.h	19;"	d
+SMC_CMD_L2X0DEBUG	tz_driver/include/smc_id.h	23;"	d
+SMC_CMD_L2X0FLUSHALL	tz_driver/include/smc_id.h	24;"	d
+SMC_CMD_L2X0FLUSHRANGE	tz_driver/include/smc_id.h	26;"	d
+SMC_CMD_L2X0INVALL	tz_driver/include/smc_id.h	22;"	d
+SMC_CMD_L2X0SETUP1	tz_driver/include/smc_id.h	20;"	d
+SMC_CMD_L2X0SETUP2	tz_driver/include/smc_id.h	21;"	d
+SMC_CMD_SECURE_READ	tz_driver/include/smc_id.h	38;"	d
+SMC_CMD_SECURE_WRITE	tz_driver/include/smc_id.h	39;"	d
+SMC_CMD_SLEEP	tz_driver/include/smc_id.h	13;"	d
+SMC_CP15_AUX_CTRL	tz_driver/include/smc_id.h	31;"	d
+SMC_CP15_L2_PREFETCH	tz_driver/include/smc_id.h	32;"	d
+SMC_CP15_REG	tz_driver/include/smc_id.h	30;"	d
+SMC_EINVAL_ADDR	tz_driver/include/teei_id.h	8;"	d
+SMC_EINVAL_ADDR	tz_vfs/teei_id.h	8;"	d
+SMC_EINVAL_ARG	tz_driver/include/teei_id.h	9;"	d
+SMC_EINVAL_ARG	tz_vfs/teei_id.h	9;"	d
+SMC_ENOMEM	tz_driver/include/teei_id.h	6;"	d
+SMC_ENOMEM	tz_vfs/teei_id.h	6;"	d
+SMC_EOPNOTSUPP	tz_driver/include/teei_id.h	7;"	d
+SMC_EOPNOTSUPP	tz_vfs/teei_id.h	7;"	d
+SMC_ERROR	tz_driver/include/teei_id.h	10;"	d
+SMC_ERROR	tz_vfs/teei_id.h	10;"	d
+SMC_INTERRUPTED	tz_driver/include/teei_id.h	11;"	d
+SMC_INTERRUPTED	tz_vfs/teei_id.h	11;"	d
+SMC_PENDING	tz_driver/include/teei_id.h	12;"	d
+SMC_PENDING	tz_vfs/teei_id.h	12;"	d
+SMC_SUCCESS	tz_driver/include/teei_id.h	13;"	d
+SMC_SUCCESS	tz_vfs/teei_id.h	13;"	d
+SOCKET_MAJOR	tz_socket/socketFun.c	19;"	d	file:
+SOCKET_SIZE	tz_socket/socketFun.c	17;"	d	file:
+SOTER_ERROR_IRQ	tz_driver/include/utdriver_irq.h	8;"	d
+SOTER_IRQ	tz_driver/include/utdriver_irq.h	4;"	d
+STANDARD_CALL_TYPE	tz_driver/include/utdriver_macro.h	8;"	d
+START_STATUS	tz_driver/include/utdriver_macro.h	3;"	d
+SWITCH_IRQ	tz_driver/include/utdriver_irq.h	1;"	d
+SW_COMMON_TYPES_H	tz_driver/include/teei_common_types.h	3;"	d
+TDEBUG	tz_driver/include/teei_debug.h	17;"	d
+TDEBUG	tz_driver/include/teei_debug.h	19;"	d
+TDEBUG	tz_driver/include/teei_debug.h	7;"	d
+TEEC_UUID	tz_driver/include/teei_client.h	/^struct TEEC_UUID {$/;"	s
+TEEIC_PARAM_1ST	tz_driver/include/teei_common.h	/^	TEEIC_PARAM_1ST = 0,$/;"	e	enum:teeic_param_pos
+TEEIC_PARAM_2ND	tz_driver/include/teei_common.h	/^	TEEIC_PARAM_2ND,$/;"	e	enum:teeic_param_pos
+TEEIC_PARAM_3TD	tz_driver/include/teei_common.h	/^	TEEIC_PARAM_3TD,$/;"	e	enum:teeic_param_pos
+TEEIC_PARAM_4TH	tz_driver/include/teei_common.h	/^	TEEIC_PARAM_4TH$/;"	e	enum:teeic_param_pos
+TEEIC_PARAM_A	tz_driver/include/teei_common.h	/^	TEEIC_PARAM_A = 0,$/;"	e	enum:teeic_param_value
+TEEIC_PARAM_B	tz_driver/include/teei_common.h	/^	TEEIC_PARAM_B$/;"	e	enum:teeic_param_value
+TEEIC_PARAM_IN	tz_driver/include/teei_common.h	/^	TEEIC_PARAM_IN = 0,$/;"	e	enum:teeic_param_type
+TEEIC_PARAM_OUT	tz_driver/include/teei_common.h	/^	TEEIC_PARAM_OUT$/;"	e	enum:teeic_param_type
+TEEI_1K_SIZE	tz_driver/include/teei_common.h	8;"	d
+TEEI_CLIENT_DEV	tz_driver/include/teei_client.h	5;"	d
+TEEI_CLIENT_FULL_PATH_DEV_NAME	tz_driver/include/teei_client.h	4;"	d
+TEEI_CLIENT_IOCTL_CLOSECONTEXT_REQ	tz_driver/include/teei_client.h	114;"	d
+TEEI_CLIENT_IOCTL_DEC_ARRAY_SPACE	tz_driver/include/teei_client.h	103;"	d
+TEEI_CLIENT_IOCTL_DEC_UINT32	tz_driver/include/teei_client.h	101;"	d
+TEEI_CLIENT_IOCTL_ENC_ARRAY	tz_driver/include/teei_client.h	94;"	d
+TEEI_CLIENT_IOCTL_ENC_ARRAY_SPACE	tz_driver/include/teei_client.h	96;"	d
+TEEI_CLIENT_IOCTL_ENC_MEM_REF	tz_driver/include/teei_client.h	98;"	d
+TEEI_CLIENT_IOCTL_ENC_UINT32	tz_driver/include/teei_client.h	92;"	d
+TEEI_CLIENT_IOCTL_GET_DECODE_TYPE	tz_driver/include/teei_client.h	109;"	d
+TEEI_CLIENT_IOCTL_INITCONTEXT_REQ	tz_driver/include/teei_client.h	112;"	d
+TEEI_CLIENT_IOCTL_OPERATION_RELEASE	tz_driver/include/teei_client.h	105;"	d
+TEEI_CLIENT_IOCTL_SEND_CMD_REQ	tz_driver/include/teei_client.h	83;"	d
+TEEI_CLIENT_IOCTL_SES_CLOSE_REQ	tz_driver/include/teei_client.h	87;"	d
+TEEI_CLIENT_IOCTL_SES_INIT_REQ	tz_driver/include/teei_client.h	117;"	d
+TEEI_CLIENT_IOCTL_SES_OPEN_REQ	tz_driver/include/teei_client.h	85;"	d
+TEEI_CLIENT_IOCTL_SHR_MEM_ALLOCATE_REQ	tz_driver/include/teei_client.h	107;"	d
+TEEI_CLIENT_IOCTL_SHR_MEM_FREE_REQ	tz_driver/include/teei_client.h	89;"	d
+TEEI_CLIENT_IOC_MAGIC	tz_driver/include/teei_client.h	6;"	d
+TEEI_CMD_TYPE_CLOSE_SESSION	tz_driver/include/teei_id.h	/^	TEEI_CMD_TYPE_CLOSE_SESSION,$/;"	e	enum:teei_cmd_type
+TEEI_CMD_TYPE_CLOSE_SESSION	tz_vfs/teei_id.h	/^	TEEI_CMD_TYPE_CLOSE_SESSION,$/;"	e	enum:teei_cmd_type
+TEEI_CMD_TYPE_FINALIZE_CONTEXT	tz_driver/include/teei_id.h	/^	TEEI_CMD_TYPE_FINALIZE_CONTEXT,$/;"	e	enum:teei_cmd_type
+TEEI_CMD_TYPE_FINALIZE_CONTEXT	tz_vfs/teei_id.h	/^	TEEI_CMD_TYPE_FINALIZE_CONTEXT,$/;"	e	enum:teei_cmd_type
+TEEI_CMD_TYPE_INITILIZE_CONTEXT	tz_driver/include/teei_id.h	/^	TEEI_CMD_TYPE_INITILIZE_CONTEXT,$/;"	e	enum:teei_cmd_type
+TEEI_CMD_TYPE_INITILIZE_CONTEXT	tz_vfs/teei_id.h	/^	TEEI_CMD_TYPE_INITILIZE_CONTEXT,$/;"	e	enum:teei_cmd_type
+TEEI_CMD_TYPE_INVALID	tz_driver/include/teei_id.h	/^	TEEI_CMD_TYPE_INVALID = 0x0,$/;"	e	enum:teei_cmd_type
+TEEI_CMD_TYPE_INVALID	tz_vfs/teei_id.h	/^	TEEI_CMD_TYPE_INVALID = 0x0,$/;"	e	enum:teei_cmd_type
+TEEI_CMD_TYPE_INVOKE_COMMAND	tz_driver/include/teei_id.h	/^	TEEI_CMD_TYPE_INVOKE_COMMAND,$/;"	e	enum:teei_cmd_type
+TEEI_CMD_TYPE_INVOKE_COMMAND	tz_vfs/teei_id.h	/^	TEEI_CMD_TYPE_INVOKE_COMMAND,$/;"	e	enum:teei_cmd_type
+TEEI_CMD_TYPE_MAX	tz_driver/include/teei_id.h	/^	TEEI_CMD_TYPE_MAX             = 0x7FFFFFFF$/;"	e	enum:teei_cmd_type
+TEEI_CMD_TYPE_MAX	tz_vfs/teei_id.h	/^	TEEI_CMD_TYPE_MAX             = 0x7FFFFFFF$/;"	e	enum:teei_cmd_type
+TEEI_CMD_TYPE_OPEN_SESSION	tz_driver/include/teei_id.h	/^	TEEI_CMD_TYPE_OPEN_SESSION,$/;"	e	enum:teei_cmd_type
+TEEI_CMD_TYPE_OPEN_SESSION	tz_vfs/teei_id.h	/^	TEEI_CMD_TYPE_OPEN_SESSION,$/;"	e	enum:teei_cmd_type
+TEEI_CMD_TYPE_SOCKET_INIT	tz_driver/include/teei_id.h	/^	TEEI_CMD_TYPE_SOCKET_INIT,$/;"	e	enum:teei_cmd_type
+TEEI_CMD_TYPE_SOCKET_INIT	tz_vfs/teei_id.h	/^	TEEI_CMD_TYPE_SOCKET_INIT,$/;"	e	enum:teei_cmd_type
+TEEI_CMD_TYPE_UNKNOWN	tz_driver/include/teei_id.h	/^	TEEI_CMD_TYPE_UNKNOWN         = 0x7FFFFFFE,$/;"	e	enum:teei_cmd_type
+TEEI_CMD_TYPE_UNKNOWN	tz_vfs/teei_id.h	/^	TEEI_CMD_TYPE_UNKNOWN         = 0x7FFFFFFE,$/;"	e	enum:teei_cmd_type
+TEEI_CONFIG_DEV	tz_driver/teei_client_main.c	712;"	d	file:
+TEEI_CONFIG_FULL_PATH_DEV_NAME	tz_driver/teei_client_main.c	711;"	d	file:
+TEEI_CONFIG_IOCTL_INIT_TEEI	tz_driver/teei_client_main.c	714;"	d	file:
+TEEI_CONFIG_IOC_MAGIC	tz_driver/teei_client_main.c	713;"	d	file:
+TEEI_DRIVERS	tz_driver/include/backward_driver.h	/^        TEEI_DRIVERS,$/;"	e	enum:__anon2
+TEEI_DRIVERS	tz_driver/include/tz_service.h	/^	TEEI_DRIVERS,$/;"	e	enum:__anon1
+TEEI_ENC_ARRAY	tz_driver/include/teei_id.h	/^	TEEI_ENC_ARRAY,$/;"	e	enum:teei_enc_data_type
+TEEI_ENC_ARRAY	tz_vfs/teei_id.h	/^	TEEI_ENC_ARRAY,$/;"	e	enum:teei_enc_data_type
+TEEI_ENC_INVALID_TYPE	tz_driver/include/teei_id.h	/^	TEEI_ENC_INVALID_TYPE = 0,$/;"	e	enum:teei_enc_data_type
+TEEI_ENC_INVALID_TYPE	tz_vfs/teei_id.h	/^	TEEI_ENC_INVALID_TYPE = 0,$/;"	e	enum:teei_enc_data_type
+TEEI_ENC_UINT32	tz_driver/include/teei_id.h	/^	TEEI_ENC_UINT32,$/;"	e	enum:teei_enc_data_type
+TEEI_ENC_UINT32	tz_vfs/teei_id.h	/^	TEEI_ENC_UINT32,$/;"	e	enum:teei_enc_data_type
+TEEI_GET_TEEI_CONFIG_STAT	tz_driver/include/teei_client.h	120;"	d
+TEEI_GLOBAL_CMD_ID_BOOT_ACK	tz_driver/include/teei_id.h	/^	TEEI_GLOBAL_CMD_ID_BOOT_ACK,$/;"	e	enum:_global_cmd_id
+TEEI_GLOBAL_CMD_ID_BOOT_ACK	tz_vfs/teei_id.h	/^	TEEI_GLOBAL_CMD_ID_BOOT_ACK,$/;"	e	enum:_global_cmd_id
+TEEI_GLOBAL_CMD_ID_CLOSE_SESSION	tz_driver/include/teei_id.h	/^	TEEI_GLOBAL_CMD_ID_CLOSE_SESSION,$/;"	e	enum:_global_cmd_id
+TEEI_GLOBAL_CMD_ID_CLOSE_SESSION	tz_vfs/teei_id.h	/^	TEEI_GLOBAL_CMD_ID_CLOSE_SESSION,$/;"	e	enum:_global_cmd_id
+TEEI_GLOBAL_CMD_ID_INIT_CONTEXT	tz_driver/include/teei_id.h	/^	TEEI_GLOBAL_CMD_ID_INIT_CONTEXT,$/;"	e	enum:_global_cmd_id
+TEEI_GLOBAL_CMD_ID_INIT_CONTEXT	tz_vfs/teei_id.h	/^	TEEI_GLOBAL_CMD_ID_INIT_CONTEXT,$/;"	e	enum:_global_cmd_id
+TEEI_GLOBAL_CMD_ID_INVALID	tz_driver/include/teei_id.h	/^	TEEI_GLOBAL_CMD_ID_INVALID = 0x0,$/;"	e	enum:_global_cmd_id
+TEEI_GLOBAL_CMD_ID_INVALID	tz_vfs/teei_id.h	/^	TEEI_GLOBAL_CMD_ID_INVALID = 0x0,$/;"	e	enum:_global_cmd_id
+TEEI_GLOBAL_CMD_ID_MAX	tz_driver/include/teei_id.h	/^	TEEI_GLOBAL_CMD_ID_MAX             = 0x7FFFFFFF$/;"	e	enum:_global_cmd_id
+TEEI_GLOBAL_CMD_ID_MAX	tz_vfs/teei_id.h	/^	TEEI_GLOBAL_CMD_ID_MAX             = 0x7FFFFFFF$/;"	e	enum:_global_cmd_id
+TEEI_GLOBAL_CMD_ID_OPEN_SESSION	tz_driver/include/teei_id.h	/^	TEEI_GLOBAL_CMD_ID_OPEN_SESSION,$/;"	e	enum:_global_cmd_id
+TEEI_GLOBAL_CMD_ID_OPEN_SESSION	tz_vfs/teei_id.h	/^	TEEI_GLOBAL_CMD_ID_OPEN_SESSION,$/;"	e	enum:_global_cmd_id
+TEEI_GLOBAL_CMD_ID_RESUME_ASYNC_TASK	tz_driver/include/teei_id.h	/^	TEEI_GLOBAL_CMD_ID_RESUME_ASYNC_TASK,$/;"	e	enum:_global_cmd_id
+TEEI_GLOBAL_CMD_ID_RESUME_ASYNC_TASK	tz_vfs/teei_id.h	/^	TEEI_GLOBAL_CMD_ID_RESUME_ASYNC_TASK,$/;"	e	enum:_global_cmd_id
+TEEI_GLOBAL_CMD_ID_UNKNOWN	tz_driver/include/teei_id.h	/^	TEEI_GLOBAL_CMD_ID_UNKNOWN         = 0x7FFFFFFE,$/;"	e	enum:_global_cmd_id
+TEEI_GLOBAL_CMD_ID_UNKNOWN	tz_vfs/teei_id.h	/^	TEEI_GLOBAL_CMD_ID_UNKNOWN         = 0x7FFFFFFE,$/;"	e	enum:_global_cmd_id
+TEEI_LOG_IRQ	tz_driver/include/utdriver_irq.h	7;"	d
+TEEI_MAX_REQ_PARAMS	tz_driver/include/teei_common.h	6;"	d
+TEEI_MAX_RES_PARAMS	tz_driver/include/teei_common.h	7;"	d
+TEEI_MEM_REF	tz_driver/include/teei_id.h	/^	TEEI_MEM_REF,$/;"	e	enum:teei_enc_data_type
+TEEI_MEM_REF	tz_vfs/teei_id.h	/^	TEEI_MEM_REF,$/;"	e	enum:teei_enc_data_type
+TEEI_SECURE_MEM_REF	tz_driver/include/teei_id.h	/^	TEEI_SECURE_MEM_REF$/;"	e	enum:teei_enc_data_type
+TEEI_SECURE_MEM_REF	tz_vfs/teei_id.h	/^	TEEI_SECURE_MEM_REF$/;"	e	enum:teei_enc_data_type
+TEEI_SERVICE_MAX	tz_driver/include/backward_driver.h	/^        TEEI_SERVICE_MAX$/;"	e	enum:__anon2
+TEEI_SERVICE_MAX	tz_driver/include/tz_service.h	/^	TEEI_SERVICE_MAX$/;"	e	enum:__anon1
+TEEI_SERVICE_SOCKET	tz_driver/include/backward_driver.h	/^        TEEI_SERVICE_SOCKET,$/;"	e	enum:__anon2
+TEEI_SERVICE_SOCKET	tz_driver/include/tz_service.h	/^	TEEI_SERVICE_SOCKET,$/;"	e	enum:__anon1
+TEEI_SERVICE_TIME	tz_driver/include/backward_driver.h	/^        TEEI_SERVICE_TIME,$/;"	e	enum:__anon2
+TEEI_SERVICE_TIME	tz_driver/include/tz_service.h	/^	TEEI_SERVICE_TIME,$/;"	e	enum:__anon1
+TEEI_SERVICE_VFS	tz_driver/include/backward_driver.h	/^        TEEI_SERVICE_VFS,$/;"	e	enum:__anon2
+TEEI_SERVICE_VFS	tz_driver/include/tz_service.h	/^	TEEI_SERVICE_VFS,$/;"	e	enum:__anon1
+TEEI_STATUS_COMPLETE	tz_driver/include/teei_common.h	/^	TEEI_STATUS_COMPLETE,$/;"	e	enum:teei_cmd_status
+TEEI_STATUS_INCOMPLETE	tz_driver/include/teei_common.h	/^	TEEI_STATUS_INCOMPLETE = 0,$/;"	e	enum:teei_cmd_status
+TEEI_STATUS_MAX	tz_driver/include/teei_common.h	/^	TEEI_STATUS_MAX  = 0x7FFFFFFF$/;"	e	enum:teei_cmd_status
+TEEI_VFS_NUM	tz_driver/include/utdriver_macro.h	52;"	d
+TEEI_printer_command	tz_driver/include/backward_driver.h	/^struct TEEI_printer_command {$/;"	s
+TEEI_printer_response	tz_driver/include/backward_driver.h	/^union TEEI_printer_response {$/;"	u
+TEEI_socket_command	tz_driver/include/TEEI.h	/^struct TEEI_socket_command {$/;"	s
+TEEI_socket_command	tz_socket/TEEI.h	/^struct TEEI_socket_command {$/;"	s
+TEEI_socket_response	tz_socket/TEEI.h	/^} TEEI_socket_response;$/;"	t	typeref:union:TEEI_socket_response_type
+TEEI_socket_response_type	tz_driver/include/TEEI.h	/^union TEEI_socket_response_type {$/;"	u
+TEEI_socket_response_type	tz_socket/TEEI.h	/^typedef union TEEI_socket_response_type {$/;"	u
+TEEI_vfs_command	tz_vfs/TEEI.h	/^struct TEEI_vfs_command {$/;"	s
+TEEI_vfs_response	tz_vfs/TEEI.h	/^union TEEI_vfs_response {$/;"	u
+TEE_KEYMASTER_TL_UUID	ut_keymaster/mt_keymaster_api.h	470;"	d
+TEE_NAME_SIZE	tz_driver/include/teei_smc_struct.h	2;"	d
+TERR	tz_driver/include/teei_debug.h	29;"	d
+TERR	tz_driver/include/teei_debug.h	9;"	d
+TINFO	tz_driver/include/teei_debug.h	23;"	d
+TINFO	tz_driver/include/teei_debug.h	26;"	d
+TINFO	tz_driver/include/teei_debug.h	8;"	d
+TLOG_CONTEXT_LEN	tz_driver/include/tlog.h	2;"	d
+TLOG_INUSE	tz_driver/include/tlog.h	6;"	d
+TLOG_MAX_CNT	tz_driver/include/tlog.h	3;"	d
+TLOG_SIZE	tz_driver/include/teei_client_main.h	4;"	d
+TLOG_SIZE	tz_driver/include/tlog.h	10;"	d
+TLOG_UNUSE	tz_driver/include/tlog.h	5;"	d
+TYPE_NONE	tz_driver/include/utdriver_macro.h	9;"	d
+TZDebug	tz_driver/include/teei_debug.h	11;"	d
+TZ_SERVICE_H	tz_driver/include/tz_service.h	2;"	d
+T_ACK_N_BOOT_OK	tz_driver/include/nt_smc_call.h	73;"	d
+T_ACK_N_FAST_CALL	tz_driver/include/nt_smc_call.h	51;"	d
+T_ACK_N_INIT_FC_BUF	tz_driver/include/nt_smc_call.h	55;"	d
+T_ACK_N_INVOKE_DRV	tz_driver/include/nt_smc_call.h	67;"	d
+T_ACK_N_KERNEL_OK	tz_driver/include/nt_smc_call.h	77;"	d
+T_ACK_N_NQ	tz_driver/include/nt_smc_call.h	65;"	d
+T_ACK_N_OS_READY	tz_driver/include/nt_smc_call.h	43;"	d
+T_ACK_N_SYS_CTL	tz_driver/include/nt_smc_call.h	63;"	d
+T_ACK_T_OS_BACKSTAGE	tz_driver/include/nt_smc_call.h	49;"	d
+T_ACK_T_OS_FOREGROUND	tz_driver/include/nt_smc_call.h	47;"	d
+T_BOOT_NT_OS	tz_driver/include/nt_smc_call.h	41;"	d
+T_DUMP_STATE	tz_driver/include/nt_smc_call.h	53;"	d
+T_GET_BOOT_PARMS	tz_driver/include/nt_smc_call.h	57;"	d
+T_GET_PARAM_IN	tz_driver/include/nt_smc_call.h	45;"	d
+T_INVOKE_N_DRV	tz_driver/include/nt_smc_call.h	69;"	d
+T_INVOKE_N_LOAD_IMG	tz_driver/include/nt_smc_call.h	75;"	d
+T_RAISE_N_EVENT	tz_driver/include/nt_smc_call.h	71;"	d
+T_SCHED_NT	tz_driver/include/nt_smc_call.h	61;"	d
+T_SCHED_NT_IRQ	tz_driver/include/nt_smc_call.h	79;"	d
+UTOS_VERSION	tz_driver/include/utos_version.h	3;"	d
+UTOS_VERSION	tz_driver/utos_version.h	3;"	d
+UT_DRV_IRQ	tz_driver/include/utdriver_irq.h	10;"	d
+UT_MAX_MEM	tz_driver/ut_mm.c	67;"	d	file:
+UT_TLOG_VERSION	tz_driver/include/tlog.h	8;"	d
+UT_TYPE_STRING	tz_driver/include/tlog.h	9;"	d
+VALID_TYPE	tz_driver/include/utdriver_macro.h	32;"	d
+VDRV_CALL_TYPE	tz_driver/include/utdriver_macro.h	26;"	d
+VDRV_MAX_SIZE	tz_driver/include/utdriver_macro.h	14;"	d
+VDRV_MAX_SIZE	tz_driver/include/utdriver_macro.h	49;"	d
+VFS_MAJOR	tz_vfs/vfsFun.c	20;"	d	file:
+VFS_SIZE	tz_driver/include/utdriver_macro.h	5;"	d
+VFS_SIZE	tz_vfs/vfsFun.c	18;"	d	file:
+VFS_SYS_NO	tz_driver/backward_driver.c	13;"	d	file:
+VFS_SYS_NO	tz_driver/include/utdriver_macro.h	62;"	d
+VFS_SYS_NO	tz_driver/switch_queue.c	19;"	d	file:
+VFS_rd_comp	tz_vfs/vfsFun.c	/^DECLARE_COMPLETION(VFS_rd_comp);$/;"	v
+VFS_rd_comp	tz_vfs/vfsFun.c	/^EXPORT_SYMBOL_GPL(VFS_rd_comp);$/;"	v
+VFS_rd_sem	tz_vfs/vfsFun.c	/^EXPORT_SYMBOL_GPL(VFS_rd_sem);$/;"	v
+VFS_rd_sem	tz_vfs/vfsFun.c	/^struct semaphore VFS_rd_sem;$/;"	v	typeref:struct:semaphore
+VFS_wr_comp	tz_vfs/vfsFun.c	/^DECLARE_COMPLETION(VFS_wr_comp);$/;"	v
+VFS_wr_comp	tz_vfs/vfsFun.c	/^EXPORT_SYMBOL_GPL(VFS_wr_comp);$/;"	v
+VFS_wr_sem	tz_vfs/vfsFun.c	/^EXPORT_SYMBOL_GPL(VFS_wr_sem);$/;"	v
+VFS_wr_sem	tz_vfs/vfsFun.c	/^struct semaphore VFS_wr_sem;$/;"	v	typeref:struct:semaphore
+ZONE_RECLAIM_FULL	tz_driver/ut_mm.c	60;"	d	file:
+ZONE_RECLAIM_NOSCAN	tz_driver/ut_mm.c	59;"	d	file:
+ZONE_RECLAIM_SOME	tz_driver/ut_mm.c	61;"	d	file:
+ZONE_RECLAIM_SUCCESS	tz_driver/ut_mm.c	62;"	d	file:
+__LIB_LIST_H__	tz_driver/include/teei_list.h	3;"	d
+__MT_KEYMASTER_SERVICE_H__	ut_keymaster/mt_keymaster_service.h	2;"	d
+__TCI_H__	ut_keymaster/tci.h	5;"	d
+__TEEI_CLIENT_H_	tz_driver/include/teei_client.h	2;"	d
+__TEEI_CLIENT_MAIN_H__	tz_driver/include/teei_client_main.h	2;"	d
+__TEEI_COMMON_H_	tz_driver/include/teei_common.h	3;"	d
+__TEEI_DEBUG_H_	tz_driver/include/teei_debug.h	2;"	d
+__TEEI_GATEKEEPER_H__	tz_driver/include/teei_gatekeeper.h	2;"	d
+__TEEI_ID_H_	tz_driver/include/teei_id.h	3;"	d
+__TEEI_ID_H_	tz_vfs/teei_id.h	3;"	d
+__TEEI_SMC_ID_H__	tz_driver/include/smc_id.h	3;"	d
+__TLTEEKEYMASTERAPI_H__	ut_keymaster/mt_keymaster_api.h	6;"	d
+__TZ_SOCKETFUN_H__	tz_socket/socketFun.h	2;"	d
+__TZ_TEEI_ADMIN_MAIN_H__	tz_driver/include/teei_admin_main.h	2;"	d
+__TZ_TEEI_H__	tz_driver/include/TEEI.h	2;"	d
+__TZ_TEEI_H__	tz_socket/TEEI.h	2;"	d
+__TZ_VFS_H__	tz_vfs/VFS.h	2;"	d
+__UTOS_VERSION_H__	tz_driver/include/utos_version.h	2;"	d
+__UTOS_VERSION_H__	tz_driver/utos_version.h	2;"	d
+__list_add	tz_driver/include/teei_list.h	/^static inline void __list_add(struct list *prev,$/;"	f
+__list_del	tz_driver/include/teei_list.h	/^static inline void __list_del(struct list *node,$/;"	f
+__reetime_handle	tz_driver/backward_driver.c	/^int  __reetime_handle(struct service_handler *handler)$/;"	f
+__send_fp_command	tz_driver/teei_fp.c	/^int __send_fp_command(unsigned long share_memory_size)$/;"	f
+__send_gatekeeper_command	tz_driver/teei_gatekeeper.c	/^int __send_gatekeeper_command(unsigned long share_memory_size)$/;"	f
+__send_keymaster_command	tz_driver/teei_keymaster.c	/^int __send_keymaster_command(unsigned long share_memory_size)$/;"	f
+__teei_smc_call	tz_driver/teei_smc_call.c	/^int __teei_smc_call(unsigned long local_smc_cmd,$/;"	f
+__ut_alloc_pages	tz_driver/ut_mm.c	69;"	d	file:
+__ut_alloc_pages_node	tz_driver/ut_mm.c	/^static inline struct page *__ut_alloc_pages_node(int nid, gfp_t gfp_mask,$/;"	f	file:
+__vfs_handle	tz_driver/backward_driver.c	/^int __vfs_handle(struct service_handler *handler) \/*! invoke handler *\/$/;"	f
+_global_cmd_id	tz_driver/include/teei_id.h	/^enum _global_cmd_id {$/;"	g
+_global_cmd_id	tz_vfs/teei_id.h	/^enum _global_cmd_id {$/;"	g
+ack_fast_call_struct	tz_driver/include/backward_driver.h	/^struct ack_fast_call_struct {$/;"	s
+ack_fast_call_struct	tz_driver/include/notify_queue.h	/^struct ack_fast_call_struct {$/;"	s
+ack_fast_call_struct	tz_driver/include/teei_fp.h	/^struct ack_fast_call_struct {$/;"	s
+ack_fast_call_struct	tz_driver/include/teei_gatekeeper.h	/^struct ack_fast_call_struct {$/;"	s
+ack_fast_call_struct	tz_driver/include/teei_keymaster.h	/^struct ack_fast_call_struct {$/;"	s
+ack_vdrv_struct	tz_driver/include/backward_driver.h	/^struct ack_vdrv_struct {$/;"	s
+add_bdrv_queue	tz_driver/irq_register.c	/^void add_bdrv_queue(int bdrv_id)$/;"	f
+add_nq_entry	tz_driver/notify_queue.c	/^int add_nq_entry(unsigned char *command_buff, int command_length, int valid_flag)$/;"	f
+add_work_entry	tz_driver/switch_queue.c	/^int add_work_entry(int work_type, unsigned long buff)$/;"	f
+addr	tz_driver/include/TEEI.h	/^	uint32_t addr;$/;"	m	union:TEEI_socket_response_type
+addr	tz_socket/TEEI.h	/^	uint32_t addr;$/;"	m	union:TEEI_socket_response_type
+addrlen	tz_driver/include/TEEI.h	/^			int addrlen;$/;"	m	struct:TEEI_socket_command::func_arg::func_accept
+addrlen	tz_driver/include/TEEI.h	/^			int addrlen;$/;"	m	struct:TEEI_socket_command::func_arg::func_bind
+addrlen	tz_driver/include/TEEI.h	/^			int addrlen;$/;"	m	struct:TEEI_socket_command::func_arg::func_connect
+addrlen	tz_socket/TEEI.h	/^			int addrlen;$/;"	m	struct:TEEI_socket_command::func_arg::func_accept
+addrlen	tz_socket/TEEI.h	/^			int addrlen;$/;"	m	struct:TEEI_socket_command::func_arg::func_bind
+addrlen	tz_socket/TEEI.h	/^			int addrlen;$/;"	m	struct:TEEI_socket_command::func_arg::func_connect
+af	tz_driver/include/TEEI.h	/^			int af;$/;"	m	struct:TEEI_socket_command::func_arg::func_socket
+af	tz_socket/TEEI.h	/^			int af;$/;"	m	struct:TEEI_socket_command::func_arg::func_socket
+algo	ut_keymaster/mt_keymaster_api.h	/^	uint32_t algo;$/;"	m	struct:__anon28
+algo	ut_keymaster/mt_keymaster_api.h	/^	uint32_t algo;$/;"	m	struct:__anon29
+algo	ut_keymaster/mt_keymaster_api.h	/^	uint32_t algo;$/;"	m	struct:__anon30
+algo	ut_keymaster/mt_keymaster_api.h	/^	uint32_t algo;$/;"	m	struct:__anon31
+algo	ut_keymaster/mt_keymaster_api.h	/^	uint32_t algo;$/;"	m	struct:__anon32
+algorithm	ut_keymaster/mt_keymaster_api.h	/^    uint32_t  algorithm;          \/**< Signing algorithm *\/$/;"	m	struct:__anon15
+algorithm	ut_keymaster/mt_keymaster_api.h	/^    uint32_t  algorithm;          \/**< Signing algorithm *\/$/;"	m	struct:__anon16
+algorithms_length	ut_keymaster/mt_keymaster_api.h	/^	uint32_t algorithms_length;$/;"	m	struct:__anon27
+api_lock	tz_driver/include/teei_client_main.h	/^struct semaphore api_lock;$/;"	v	typeref:struct:semaphore
+app_data_length	ut_keymaster/mt_keymaster_api.h	/^	uint32_t app_data_length;$/;"	m	struct:__anon33
+app_data_length	ut_keymaster/mt_keymaster_api.h	/^	uint32_t app_data_length;$/;"	m	struct:__anon35
+arg	tz_vfs/TEEI.h	/^			int arg;$/;"	m	struct:TEEI_vfs_command::func_arg::func_ioctl
+args	tz_driver/include/TEEI.h	/^	} args;$/;"	m	struct:TEEI_socket_command	typeref:union:TEEI_socket_command::func_arg
+args	tz_driver/include/backward_driver.h	/^	} args;$/;"	m	struct:TEEI_printer_command	typeref:union:TEEI_printer_command::func_arg
+args	tz_socket/TEEI.h	/^	} args;$/;"	m	struct:TEEI_socket_command	typeref:union:TEEI_socket_command::func_arg
+args	tz_vfs/TEEI.h	/^	} args;$/;"	m	struct:TEEI_vfs_command	typeref:union:TEEI_vfs_command::func_arg
+b_phy_addr	ut_keymaster/mt_keymaster_service.c	/^	unsigned long b_phy_addr;$/;"	m	struct:mt_keymaster_addr_struct	file:
+backlog	tz_driver/include/TEEI.h	/^			int backlog;$/;"	m	struct:TEEI_socket_command::func_arg::func_listen
+backlog	tz_socket/TEEI.h	/^			int backlog;$/;"	m	struct:TEEI_socket_command::func_arg::func_listen
+bdrv_call_struct	tz_driver/backward_driver.c	/^struct bdrv_call_struct {$/;"	s	file:
+bdrv_call_struct	tz_driver/switch_queue.c	/^struct bdrv_call_struct {$/;"	s	file:
+bdrv_call_type	tz_driver/backward_driver.c	/^        int bdrv_call_type;$/;"	m	struct:bdrv_call_struct	file:
+bdrv_call_type	tz_driver/switch_queue.c	/^	int bdrv_call_type;$/;"	m	struct:bdrv_call_struct	file:
+bdrv_message_buff	tz_driver/include/teei_client_main.h	/^unsigned long bdrv_message_buff;$/;"	v
+bdrv_phy_addr	tz_driver/teei_client_main.c	/^	unsigned long bdrv_phy_addr;$/;"	m	struct:init_cmdbuf_struct	file:
+boot_decryto_lock	tz_driver/teei_client_main.c	/^struct semaphore boot_decryto_lock;$/;"	v	typeref:struct:semaphore
+boot_sema	tz_driver/teei_client_main.c	/^struct semaphore boot_sema;$/;"	v	typeref:struct:semaphore
+boot_soter_flag	tz_driver/teei_client_main.c	/^unsigned long boot_soter_flag;$/;"	v
+boot_stage1	tz_driver/teei_client_main.c	/^static void boot_stage1(unsigned long vfs_addr, unsigned long tlog_addr)$/;"	f	file:
+boot_stage1_entry	tz_driver/teei_client_main.c	/^struct boot_stage1_struct boot_stage1_entry;$/;"	v	typeref:struct:boot_stage1_struct
+boot_stage1_struct	tz_driver/teei_client_main.c	/^struct boot_stage1_struct {$/;"	s	file:
+boot_stage2	tz_driver/teei_client_main.c	/^static void boot_stage2(void)$/;"	f	file:
+boot_vfs_addr	tz_driver/teei_client_main.c	/^unsigned long boot_vfs_addr;$/;"	v
+buf	tz_driver/include/TEEI.h	/^			void *buf;$/;"	m	struct:TEEI_socket_command::func_arg::func_send
+buf	tz_driver/include/TEEI.h	/^		void *buf;$/;"	m	struct:TEEI_socket_response_type::response_func_recv
+buf	tz_socket/TEEI.h	/^			void *buf;$/;"	m	struct:TEEI_socket_command::func_arg::func_send
+buf	tz_socket/TEEI.h	/^		void *buf;$/;"	m	struct:TEEI_socket_response_type::response_func_recv
+buff_addr	tz_driver/switch_queue.c	/^	unsigned long buff_addr;$/;"	m	struct:switch_call_struct	file:
+buff_vaddr	tz_driver/backward_driver.c	/^static unsigned long buff_vaddr;$/;"	v	file:
+buffer_addr	tz_driver/include/irq_register.h	/^        unsigned int buffer_addr;$/;"	m	struct:NQ_entry
+buffer_addr	tz_driver/include/notify_queue.h	/^	unsigned int buffer_addr;$/;"	m	struct:NQ_entry
+buffer_addr	tz_driver/include/teei_capi.h	/^	unsigned int buffer_addr;$/;"	m	struct:NQ_entry
+call_no	tz_driver/include/irq_register.h	/^        int call_no;$/;"	m	struct:work_entry
+cdev	teei_fp/fp_func.c	/^	struct cdev cdev;$/;"	m	struct:fp_dev	typeref:struct:fp_dev::cdev	file:
+cdev	tz_socket/socketFun.c	/^	struct cdev cdev;$/;"	m	struct:socket_dev	typeref:struct:socket_dev::cdev	file:
+cdev	tz_vfs/vfsFun.c	/^	struct cdev cdev;$/;"	m	struct:vfs_dev	typeref:struct:vfs_dev::cdev	file:
+cdev	ut_keymaster/mt_keymaster.c	/^	struct cdev cdev;$/;"	m	struct:keymaster_dev	typeref:struct:keymaster_dev::cdev	file:
+check_work_type	tz_driver/switch_queue.c	/^static int check_work_type(int work_type)$/;"	f	file:
+child_type	tz_driver/include/backward_driver.h	/^        unsigned int child_type;$/;"	m	struct:message_head
+child_type	tz_driver/include/irq_register.h	/^        unsigned int child_type;$/;"	m	struct:message_head
+child_type	tz_driver/include/notify_queue.h	/^        unsigned int child_type;$/;"	m	struct:message_head
+child_type	tz_driver/include/teei_fp.h	/^        unsigned int child_type;$/;"	m	struct:message_head
+child_type	tz_driver/include/teei_gatekeeper.h	/^        unsigned int child_type;$/;"	m	struct:message_head
+child_type	tz_driver/include/teei_keymaster.h	/^        unsigned int child_type;$/;"	m	struct:message_head
+child_type	tz_driver/include/teei_smc_call.h	/^        unsigned int child_type;$/;"	m	struct:message_head
+child_type	tz_driver/teei_client_main.c	/^        unsigned int child_type;$/;"	m	struct:message_head	file:
+client_id_data_length	ut_keymaster/mt_keymaster_api.h	/^	uint32_t client_id_data_length;$/;"	m	struct:__anon33
+client_id_data_length	ut_keymaster/mt_keymaster_api.h	/^	uint32_t client_id_data_length;$/;"	m	struct:__anon35
+client_pid	tz_driver/include/teei_common.h	/^	int client_pid;$/;"	m	struct:teeic_notify_data
+clockSeqAndNode	tz_driver/include/teei_client.h	/^	uint8_t clockSeqAndNode[8];$/;"	m	struct:TEEC_UUID
+cmd	tz_vfs/TEEI.h	/^			int cmd;$/;"	m	struct:TEEI_vfs_command::func_arg::func_ioctl
+cmd_addr	tz_driver/include/teei_client.h	/^	int cmd_addr;$/;"	m	struct:teei_smc_cdata
+cmd_buf	tz_driver/include/teei_smc_call.h	/^        void *cmd_buf;$/;"	m	struct:smc_call_struct
+cmd_buf	tz_driver/switch_queue.c	/^        void *cmd_buf;$/;"	m	struct:smc_call_struct	file:
+cmd_buf	tz_driver/teei_client_main.c	/^	void *cmd_buf;$/;"	m	struct:smc_call_struct	file:
+cmd_id	tz_driver/include/teei_client.h	/^	unsigned int cmd_id;$/;"	m	struct:teei_client_encode_cmd
+cmd_id	tz_driver/include/teei_smc_call.h	/^        u32 cmd_id;$/;"	m	struct:smc_call_struct
+cmd_id	tz_driver/switch_queue.c	/^        u32 cmd_id;$/;"	m	struct:smc_call_struct	file:
+cmd_id	tz_driver/teei_client_main.c	/^	u32 cmd_id;$/;"	m	struct:smc_call_struct	file:
+cmd_len	tz_driver/include/teei_smc_call.h	/^        size_t cmd_len;$/;"	m	struct:smc_call_struct
+cmd_len	tz_driver/switch_queue.c	/^        size_t cmd_len;$/;"	m	struct:smc_call_struct	file:
+cmd_len	tz_driver/teei_client_main.c	/^	size_t cmd_len;$/;"	m	struct:smc_call_struct	file:
+cmd_size	tz_driver/include/TEEI.h	/^	int cmd_size;$/;"	m	struct:TEEI_socket_command
+cmd_size	tz_driver/include/backward_driver.h	/^	int cmd_size;$/;"	m	struct:TEEI_printer_command
+cmd_size	tz_socket/TEEI.h	/^	int cmd_size;$/;"	m	struct:TEEI_socket_command
+cmd_size	tz_vfs/TEEI.h	/^	int cmd_size;$/;"	m	struct:TEEI_vfs_command
+cmd_status	tz_driver/include/teei_common.h	/^	unsigned int    cmd_status;$/;"	m	struct:teei_smc_cmd
+command	ut_keymaster/mt_keymaster_api.h	/^	command_t     command;$/;"	m	struct:__anon36
+commandId	ut_keymaster/mt_keymaster_api.h	/^    uint32_t commandId;$/;"	m	struct:__anon3
+commandId	ut_keymaster/tci.h	/^    tciCommandId_t commandId; \/**< Command ID *\/$/;"	m	struct:__anon39
+command_t	ut_keymaster/mt_keymaster_api.h	/^} command_t;$/;"	t	typeref:struct:__anon3
+config_driver_class	tz_driver/teei_client_main.c	/^static struct class *config_driver_class;$/;"	v	typeref:struct:class	file:
+cont_id	tz_driver/include/teei_smc_struct.h	/^        unsigned long cont_id;                  \/* ID *\/$/;"	m	struct:teei_context
+cont_lock	tz_driver/include/teei_smc_struct.h	/^        struct semaphore cont_lock;$/;"	m	struct:teei_context	typeref:struct:teei_context::semaphore
+context	tz_driver/include/teei_common.h	/^	unsigned int    context;$/;"	m	struct:teei_smc_cmd
+context	tz_driver/include/teei_smc_call.h	/^        u32 context;$/;"	m	struct:smc_call_struct
+context	tz_driver/include/tlog.h	/^	char context;$/;"	m	struct:ut_log_entry
+context	tz_driver/include/tlog.h	/^	char context[TLOG_CONTEXT_LEN];$/;"	m	struct:tlog_struct
+context	tz_driver/switch_queue.c	/^        u32 context;$/;"	m	struct:smc_call_struct	file:
+context	tz_driver/teei_client_main.c	/^	u32 context;$/;"	m	struct:smc_call_struct	file:
+context_list	tz_driver/include/teei_capi.h	/^        struct list_head context_list;$/;"	m	struct:teei_contexts_head	typeref:struct:teei_contexts_head::list_head
+context_list	tz_driver/include/teei_smc_call.h	/^        struct list_head context_list;$/;"	m	struct:teei_contexts_head	typeref:struct:teei_contexts_head::list_head
+context_list	tz_driver/teei_client_main.c	/^	struct list_head context_list;$/;"	m	struct:teei_contexts_head	typeref:struct:teei_contexts_head::list_head	file:
+count	tz_vfs/TEEI.h	/^			int count;$/;"	m	struct:TEEI_vfs_command::func_arg::func_recv
+count	tz_vfs/TEEI.h	/^			int count;$/;"	m	struct:TEEI_vfs_command::func_arg::func_send
+cpu_notify_flag	tz_driver/teei_client_main.c	/^unsigned long cpu_notify_flag = 0;$/;"	v
+create_NQ_struct	tz_driver/include/notify_queue.h	/^struct create_NQ_struct {$/;"	s
+create_cmd_buff	tz_driver/teei_client_main.c	/^long create_cmd_buff(void)$/;"	f
+create_fdrv_struct	tz_driver/include/teei_fp.h	/^struct create_fdrv_struct {$/;"	s
+create_fdrv_struct	tz_driver/include/teei_gatekeeper.h	/^struct create_fdrv_struct {$/;"	s
+create_fdrv_struct	tz_driver/include/teei_keymaster.h	/^struct create_fdrv_struct {$/;"	s
+create_fp_fdrv	tz_driver/teei_fp.c	/^unsigned long create_fp_fdrv(int buff_size)$/;"	f
+create_gatekeeper_fdrv	tz_driver/teei_gatekeeper.c	/^unsigned long create_gatekeeper_fdrv(int buff_size)$/;"	f
+create_keymaster_cmd_buf	ut_keymaster/mt_keymaster_service.c	/^long create_keymaster_cmd_buf(void)$/;"	f
+create_keymaster_fdrv	tz_driver/teei_keymaster.c	/^unsigned long create_keymaster_fdrv(int buff_size)$/;"	f
+create_notify_queue	tz_driver/notify_queue.c	/^static long create_notify_queue(unsigned long msg_buff, unsigned long size)$/;"	f	file:
+create_nq_buffer	tz_driver/notify_queue.c	/^int create_nq_buffer(void)$/;"	f
+create_switch_call_struct	tz_driver/switch_queue.c	/^static struct switch_call_struct *create_switch_call_struct(void)$/;"	f	file:
+create_tlog_thread	tz_driver/tlog.c	/^long create_tlog_thread(unsigned long tlog_virt_addr, unsigned long buff_size)$/;"	f
+create_vdrv_struct	tz_driver/include/backward_driver.h	/^struct create_vdrv_struct {$/;"	s
+ctx_data	tz_driver/include/teei_client.h	/^struct ctx_data {$/;"	s
+ctx_ret	tz_driver/include/teei_client.h	/^	int ctx_ret; \/* context return *\/$/;"	m	struct:ctx_data
+current_cpu_id	tz_driver/teei_client_main.c	/^static  int current_cpu_id = 0x00;$/;"	v	file:
+curve	ut_keymaster/mt_keymaster_api.h	/^    uint32_t  curve;        \/**< Curve e.g. P192, P224,..,P521*\/$/;"	m	struct:__anon13
+curve	ut_keymaster/mt_keymaster_api.h	/^    uint32_t  curve;        \/**< Curve type *\/$/;"	m	struct:__anon9
+curve	ut_keymaster/mt_keymaster_api.h	/^    uint32_t  curve;        \/**< Curve type P192=1, P224=2, P256=3, P384=4, P521=5  *\/$/;"	m	struct:__anon22
+curve_length	ut_keymaster/mt_keymaster_api.h	/^    uint32_t  curve_length; \/**< curve length *\/$/;"	m	struct:__anon9
+data	tz_driver/include/teei_client.h	/^	unsigned long long data;$/;"	m	struct:teei_client_encode_cmd
+data	tz_driver/switch_queue.c	/^        void *data;$/;"	m	struct:ut_smc_call_work	file:
+daulOS_VFS_share_mem	tz_driver/include/backward_driver.h	/^unsigned char *daulOS_VFS_share_mem;$/;"	v
+daulOS_rd_sem	teei_fp/fp_func.c	/^EXPORT_SYMBOL_GPL(daulOS_rd_sem);$/;"	v
+daulOS_rd_sem	teei_fp/fp_func.c	/^struct semaphore daulOS_rd_sem;$/;"	v	typeref:struct:semaphore
+daulOS_rd_sem	tz_socket/socketFun.c	/^EXPORT_SYMBOL_GPL(daulOS_rd_sem);$/;"	v
+daulOS_rd_sem	tz_socket/socketFun.c	/^struct semaphore daulOS_rd_sem;$/;"	v	typeref:struct:semaphore
+daulOS_wr_sem	teei_fp/fp_func.c	/^EXPORT_SYMBOL_GPL(daulOS_wr_sem);$/;"	v
+daulOS_wr_sem	teei_fp/fp_func.c	/^struct semaphore daulOS_wr_sem;$/;"	v	typeref:struct:semaphore
+daulOS_wr_sem	tz_socket/socketFun.c	/^EXPORT_SYMBOL_GPL(daulOS_wr_sem);$/;"	v
+daulOS_wr_sem	tz_socket/socketFun.c	/^struct semaphore daulOS_wr_sem;$/;"	v	typeref:struct:semaphore
+dec_offset	tz_driver/include/teei_smc_struct.h	/^        u32  dec_offset;$/;"	m	struct:teei_encode
+dec_res_pos	tz_driver/include/teei_smc_struct.h	/^        u32  dec_res_pos;$/;"	m	struct:teei_encode
+deinit	tz_driver/include/backward_driver.h	/^        void (*deinit)(struct service_handler *handler); \/*! 服务停止处理 *\/$/;"	m	struct:service_handler
+deinit	tz_driver/include/irq_register.h	/^        void (*deinit)(struct service_handler *handler); \/*! 服务停止处理 *\/$/;"	m	struct:service_handler
+deinit	tz_driver/include/tz_service.h	/^	void (*deinit)(struct service_handler *handler); \/*! 服务停止处理 *\/$/;"	m	struct:service_handler
+destroy_switch_call_struct	tz_driver/switch_queue.c	/^static int destroy_switch_call_struct(struct switch_call_struct *ent)$/;"	f	file:
+dev_file_cnt	tz_driver/include/teei_capi.h	/^        u32 dev_file_cnt;$/;"	m	struct:teei_contexts_head
+dev_file_cnt	tz_driver/include/teei_smc_call.h	/^        u32 dev_file_cnt;$/;"	m	struct:teei_contexts_head
+dev_file_cnt	tz_driver/teei_client_main.c	/^	u32 dev_file_cnt;$/;"	m	struct:teei_contexts_head	file:
+dev_file_id	tz_driver/include/teei_common.h	/^	int dev_file_id;$/;"	m	struct:teeic_notify_data
+dev_file_id	tz_driver/include/teei_common.h	/^	unsigned int    dev_file_id;$/;"	m	struct:teei_smc_cmd
+dev_file_id	tz_driver/include/teei_smc_call.h	/^        u32 dev_file_id;$/;"	m	struct:smc_call_struct
+dev_file_id	tz_driver/switch_queue.c	/^        u32 dev_file_id;$/;"	m	struct:smc_call_struct	file:
+dev_file_id	tz_driver/teei_client_main.c	/^	u32 dev_file_id;$/;"	m	struct:smc_call_struct	file:
+device_file_cnt	tz_driver/teei_client_main.c	/^unsigned long device_file_cnt = 0;$/;"	v
+devno	teei_fp/fp_func.c	/^static dev_t devno;$/;"	v	file:
+devno	tz_socket/socketFun.c	/^static dev_t devno;$/;"	v	file:
+devno	tz_vfs/vfsFun.c	/^static dev_t devno;$/;"	v	file:
+devno	ut_keymaster/mt_keymaster.c	/^static dev_t devno;$/;"	v	file:
+digest_data	ut_keymaster/mt_keymaster_api.h	/^    uint32_t  digest_data;         \/**< Digest data buffer *\/$/;"	m	struct:__anon20
+digest_data	ut_keymaster/mt_keymaster_api.h	/^    uint32_t  digest_data;        \/**< Digest data buffer *\/$/;"	m	struct:__anon23
+digest_data	ut_keymaster/mt_keymaster_api.h	/^    uint32_t  digest_data;        \/**< Digest data buffer *\/$/;"	m	struct:__anon24
+digest_data	ut_keymaster/mt_keymaster_api.h	/^    uint32_t  digest_data;        \/**< Plaintext data buffer *\/$/;"	m	struct:__anon21
+digest_data_len	ut_keymaster/mt_keymaster_api.h	/^    uint32_t  digest_data_len;     \/**< Length of digest data buffer *\/$/;"	m	struct:__anon20
+digest_data_len	ut_keymaster/mt_keymaster_api.h	/^    uint32_t  digest_data_len;    \/**< Length of digest data buffer *\/$/;"	m	struct:__anon23
+digest_data_len	ut_keymaster/mt_keymaster_api.h	/^    uint32_t  digest_data_len;    \/**< Length of digest data buffer *\/$/;"	m	struct:__anon24
+digest_data_len	ut_keymaster/mt_keymaster_api.h	/^    uint32_t  digest_data_len;    \/**< Length of plaintext data buffer *\/$/;"	m	struct:__anon21
+digests_length	ut_keymaster/mt_keymaster_api.h	/^	uint32_t             digests_length;$/;"	m	struct:__anon30
+dp_len	ut_keymaster/mt_keymaster_api.h	/^    uint32_t  dp_len;         \/**< DP length *\/$/;"	m	struct:__anon6
+dq_len	ut_keymaster/mt_keymaster_api.h	/^    uint32_t  dq_len;         \/**< DQ length *\/$/;"	m	struct:__anon6
+driver_class	teei_fp/fp_func.c	/^static struct class *driver_class;$/;"	v	typeref:struct:class	file:
+driver_class	tz_driver/teei_client_main.c	/^static struct class *driver_class;$/;"	v	typeref:struct:class	file:
+driver_class	tz_socket/socketFun.c	/^static struct class *driver_class;$/;"	v	typeref:struct:class	file:
+driver_class	tz_vfs/vfsFun.c	/^static struct class *driver_class;$/;"	v	typeref:struct:class	file:
+driver_class	ut_keymaster/mt_keymaster.c	/^static struct class *driver_class;$/;"	v	typeref:struct:class	file:
+driver_type	tz_driver/include/teei_fp.h	/^        unsigned int driver_type;$/;"	m	struct:fdrv_message_head
+driver_type	tz_driver/include/teei_gatekeeper.h	/^        unsigned int driver_type;$/;"	m	struct:fdrv_message_head
+driver_type	tz_driver/include/teei_keymaster.h	/^        unsigned int driver_type;$/;"	m	struct:fdrv_message_head
+dsa_gen_key	ut_keymaster/mt_keymaster_api.h	/^        dsa_gen_key_t         dsa_gen_key;$/;"	m	union:__anon36::__anon37
+dsa_gen_key_t	ut_keymaster/mt_keymaster_api.h	/^} dsa_gen_key_t;$/;"	t	typeref:struct:__anon19
+dsa_key	ut_keymaster/mt_keymaster_api.h	/^    dsa_key_meta_t   dsa_key;   \/**< DSA key *\/$/;"	m	struct:__anon10
+dsa_key_meta_t	ut_keymaster/mt_keymaster_api.h	/^} dsa_key_meta_t;$/;"	t	typeref:struct:__anon8
+dsa_pub_key_meta_t	ut_keymaster/mt_keymaster_api.h	/^} dsa_pub_key_meta_t;$/;"	t	typeref:struct:__anon12
+dsa_sign	ut_keymaster/mt_keymaster_api.h	/^        dsa_sign_t            dsa_sign;$/;"	m	union:__anon36::__anon37
+dsa_sign_t	ut_keymaster/mt_keymaster_api.h	/^} dsa_sign_t;$/;"	t	typeref:struct:__anon20
+dsa_verify	ut_keymaster/mt_keymaster_api.h	/^        dsa_verify_t           dsa_verify;$/;"	m	union:__anon36::__anon37
+dsa_verify_t	ut_keymaster/mt_keymaster_api.h	/^} dsa_verify_t;$/;"	t	typeref:struct:__anon21
+ecdsa_gen_key	ut_keymaster/mt_keymaster_api.h	/^        ecdsa_gen_key_t        ecdsa_gen_key;$/;"	m	union:__anon36::__anon37
+ecdsa_gen_key_t	ut_keymaster/mt_keymaster_api.h	/^} ecdsa_gen_key_t;$/;"	t	typeref:struct:__anon22
+ecdsa_key	ut_keymaster/mt_keymaster_api.h	/^    ecdsa_key_meta_t ecdsa_key; \/**< ECDSA key *\/$/;"	m	struct:__anon10
+ecdsa_key_meta_t	ut_keymaster/mt_keymaster_api.h	/^} ecdsa_key_meta_t;$/;"	t	typeref:struct:__anon9
+ecdsa_pub_key_meta_t	ut_keymaster/mt_keymaster_api.h	/^} ecdsa_pub_key_meta_t;$/;"	t	typeref:struct:__anon13
+ecdsa_sign	ut_keymaster/mt_keymaster_api.h	/^        ecdsa_sign_t            ecdsa_sign;$/;"	m	union:__anon36::__anon37
+ecdsa_sign_t	ut_keymaster/mt_keymaster_api.h	/^} ecdsa_sign_t;$/;"	t	typeref:struct:__anon23
+ecdsa_verify	ut_keymaster/mt_keymaster_api.h	/^        ecdsa_verify_t          ecdsa_verify;$/;"	m	union:__anon36::__anon37
+ecdsa_verify_t	ut_keymaster/mt_keymaster_api.h	/^} ecdsa_verify_t;$/;"	t	typeref:struct:__anon24
+enc_id	tz_driver/include/teei_common.h	/^	int enc_id;$/;"	m	struct:teeic_notify_data
+enc_id	tz_driver/include/teei_common.h	/^	unsigned int    enc_id;$/;"	m	struct:teei_smc_cmd
+enc_id	tz_driver/include/teei_smc_call.h	/^        u32 enc_id;$/;"	m	struct:smc_call_struct
+enc_id	tz_driver/switch_queue.c	/^        u32 enc_id;$/;"	m	struct:smc_call_struct	file:
+enc_id	tz_driver/teei_client_main.c	/^	u32 enc_id;$/;"	m	struct:smc_call_struct	file:
+enc_req_offset	tz_driver/include/teei_smc_struct.h	/^        u32  enc_req_offset;$/;"	m	struct:teei_encode
+enc_req_pos	tz_driver/include/teei_smc_struct.h	/^        u32  enc_req_pos;$/;"	m	struct:teei_encode
+enc_res_offset	tz_driver/include/teei_smc_struct.h	/^        u32  enc_res_offset;$/;"	m	struct:teei_encode
+enc_res_pos	tz_driver/include/teei_smc_struct.h	/^        u32  enc_res_pos;$/;"	m	struct:teei_encode
+encode_id	tz_driver/include/teei_client.h	/^	int encode_id;\/* 命令参数编码数据块索引 *\/$/;"	m	struct:teei_client_encode_cmd
+encode_id	tz_driver/include/teei_smc_struct.h	/^        int encode_id;$/;"	m	struct:teei_encode
+encode_list	tz_driver/include/teei_smc_struct.h	/^        struct list_head encode_list;   \/* link list for the encode of this session *\/$/;"	m	struct:teei_session	typeref:struct:teei_session::list_head
+end_index	tz_driver/include/notify_queue.h	/^	unsigned int end_index;$/;"	m	struct:NQ_head
+end_index	tz_driver/include/teei_capi.h	/^	unsigned int end_index;$/;"	m	struct:NQ_head
+error	ut_keymaster/mt_keymaster_api.h	/^    int32_t            error;$/;"	m	struct:__anon4
+error_code	tz_driver/include/teei_common.h	/^	unsigned int     error_code;$/;"	m	struct:teei_smc_cmd
+error_code	tz_driver/include/teei_smc_call.h	/^        int *error_code;$/;"	m	struct:smc_call_struct
+error_code	tz_driver/switch_queue.c	/^        int *error_code;$/;"	m	struct:smc_call_struct	file:
+error_code	tz_driver/teei_client_main.c	/^	int *error_code;$/;"	m	struct:smc_call_struct	file:
+exponent	ut_keymaster/mt_keymaster_api.h	/^	uint32_t  exponent; 	  \/**< Exponent number *\/$/;"	m	struct:__anon14
+export_data_length	ut_keymaster/mt_keymaster_api.h	/^	uint32_t export_data_length;$/;"	m	struct:__anon35
+export_format	ut_keymaster/mt_keymaster_api.h	/^	uint32_t export_format;$/;"	m	struct:__anon35
+export_key	ut_keymaster/mt_keymaster_api.h	/^		export_key_t            export_key;$/;"	m	union:__anon36::__anon37
+export_key_t	ut_keymaster/mt_keymaster_api.h	/^}export_key_t;$/;"	t	typeref:struct:__anon35
+f_phy_addr	ut_keymaster/mt_keymaster_service.c	/^	unsigned long f_phy_addr;$/;"	m	struct:mt_keymaster_addr_struct	file:
+fd	tz_driver/include/TEEI.h	/^			int fd;$/;"	m	struct:TEEI_socket_command::func_arg::func_setsockopt
+fd	tz_socket/TEEI.h	/^			int fd;$/;"	m	struct:TEEI_socket_command::func_arg::func_setsockopt
+fd	tz_vfs/TEEI.h	/^			int fd;$/;"	m	struct:TEEI_vfs_command::func_arg::func_close
+fd	tz_vfs/TEEI.h	/^			int fd;$/;"	m	struct:TEEI_vfs_command::func_arg::func_ioctl
+fd	tz_vfs/TEEI.h	/^			int fd;$/;"	m	struct:TEEI_vfs_command::func_arg::func_lseek
+fd	tz_vfs/TEEI.h	/^			int fd;$/;"	m	struct:TEEI_vfs_command::func_arg::func_recv
+fd	tz_vfs/TEEI.h	/^			int fd;$/;"	m	struct:TEEI_vfs_command::func_arg::func_send
+fd	tz_vfs/TEEI.h	/^			int fd;$/;"	m	struct:TEEI_vfs_command::func_arg::func_trunc
+fdrv_call_buff_size	tz_driver/include/teei_gatekeeper.h	/^        int fdrv_call_buff_size;$/;"	m	struct:fdrv_call_struct
+fdrv_call_buff_size	tz_driver/switch_queue.c	/^	int fdrv_call_buff_size;$/;"	m	struct:fdrv_call_struct	file:
+fdrv_call_buff_size	tz_driver/teei_fp.c	/^        int fdrv_call_buff_size;$/;"	m	struct:fdrv_call_struct	file:
+fdrv_call_buff_size	tz_driver/teei_keymaster.c	/^        int fdrv_call_buff_size;$/;"	m	struct:fdrv_call_struct	file:
+fdrv_call_struct	tz_driver/include/teei_gatekeeper.h	/^extern struct fdrv_call_struct {$/;"	s
+fdrv_call_struct	tz_driver/switch_queue.c	/^struct fdrv_call_struct {$/;"	s	file:
+fdrv_call_struct	tz_driver/teei_fp.c	/^struct fdrv_call_struct {$/;"	s	file:
+fdrv_call_struct	tz_driver/teei_keymaster.c	/^struct fdrv_call_struct {$/;"	s	file:
+fdrv_call_type	tz_driver/include/teei_gatekeeper.h	/^        int fdrv_call_type;$/;"	m	struct:fdrv_call_struct
+fdrv_call_type	tz_driver/switch_queue.c	/^	int fdrv_call_type;$/;"	m	struct:fdrv_call_struct	file:
+fdrv_call_type	tz_driver/teei_fp.c	/^        int fdrv_call_type;$/;"	m	struct:fdrv_call_struct	file:
+fdrv_call_type	tz_driver/teei_keymaster.c	/^        int fdrv_call_type;$/;"	m	struct:fdrv_call_struct	file:
+fdrv_message_buff	tz_driver/include/teei_client_main.h	/^unsigned long fdrv_message_buff;$/;"	v
+fdrv_message_head	tz_driver/include/teei_fp.h	/^struct fdrv_message_head {$/;"	s
+fdrv_message_head	tz_driver/include/teei_gatekeeper.h	/^struct fdrv_message_head {$/;"	s
+fdrv_message_head	tz_driver/include/teei_keymaster.h	/^struct fdrv_message_head {$/;"	s
+fdrv_param_length	tz_driver/include/teei_fp.h	/^        unsigned int fdrv_param_length;$/;"	m	struct:fdrv_message_head
+fdrv_param_length	tz_driver/include/teei_gatekeeper.h	/^        unsigned int fdrv_param_length;$/;"	m	struct:fdrv_message_head
+fdrv_param_length	tz_driver/include/teei_keymaster.h	/^        unsigned int fdrv_param_length;$/;"	m	struct:fdrv_message_head
+fdrv_phy_addr	tz_driver/include/teei_fp.h	/^        unsigned int fdrv_phy_addr;$/;"	m	struct:create_fdrv_struct
+fdrv_phy_addr	tz_driver/include/teei_gatekeeper.h	/^        unsigned int fdrv_phy_addr;$/;"	m	struct:create_fdrv_struct
+fdrv_phy_addr	tz_driver/include/teei_keymaster.h	/^        unsigned int fdrv_phy_addr;$/;"	m	struct:create_fdrv_struct
+fdrv_phy_addr	tz_driver/teei_client_main.c	/^	unsigned long fdrv_phy_addr;$/;"	m	struct:init_cmdbuf_struct	file:
+fdrv_size	tz_driver/include/teei_fp.h	/^        unsigned int fdrv_size;$/;"	m	struct:create_fdrv_struct
+fdrv_size	tz_driver/include/teei_gatekeeper.h	/^        unsigned int fdrv_size;$/;"	m	struct:create_fdrv_struct
+fdrv_size	tz_driver/include/teei_keymaster.h	/^        unsigned int fdrv_size;$/;"	m	struct:create_fdrv_struct
+fdrv_type	tz_driver/include/teei_fp.h	/^        unsigned int fdrv_type;$/;"	m	struct:create_fdrv_struct
+fdrv_type	tz_driver/include/teei_gatekeeper.h	/^        unsigned int fdrv_type;$/;"	m	struct:create_fdrv_struct
+fdrv_type	tz_driver/include/teei_keymaster.h	/^        unsigned int fdrv_type;$/;"	m	struct:create_fdrv_struct
+flags	tz_driver/include/TEEI.h	/^			int flags;$/;"	m	struct:TEEI_socket_command::func_arg::func_send
+flags	tz_driver/include/teei_client.h	/^	int   flags;$/;"	m	struct:teei_client_encode_cmd
+flags	tz_socket/TEEI.h	/^			int flags;$/;"	m	struct:TEEI_socket_command::func_arg::func_send
+flags	tz_vfs/TEEI.h	/^			int flags;$/;"	m	struct:TEEI_vfs_command::func_arg::func_open
+formats_length	ut_keymaster/mt_keymaster_api.h	/^	uint32_t             formats_length;$/;"	m	struct:__anon31
+formats_length	ut_keymaster/mt_keymaster_api.h	/^	uint32_t             formats_length;$/;"	m	struct:__anon32
+forward_call_flag	tz_driver/teei_client_main.c	/^int forward_call_flag = 0;$/;"	v
+fp_api_lock	teei_fp/fp_func.c	/^struct semaphore fp_api_lock;$/;"	v	typeref:struct:semaphore
+fp_buff_addr	tz_driver/include/teei_fp.h	/^unsigned long fp_buff_addr;$/;"	v
+fp_buffer_size	teei_fp/teei_fp.h	3;"	d
+fp_call_flag	tz_driver/teei_client_main.c	/^int fp_call_flag = 0;$/;"	v
+fp_command_entry	tz_driver/include/teei_fp.h	/^struct fp_command_struct fp_command_entry;$/;"	v	typeref:struct:fp_command_struct
+fp_command_struct	tz_driver/include/teei_fp.h	/^struct fp_command_struct {$/;"	s
+fp_dev	teei_fp/fp_func.c	/^struct fp_dev {$/;"	s	file:
+fp_devp	teei_fp/fp_func.c	/^struct fp_dev *fp_devp;$/;"	v	typeref:struct:fp_dev
+fp_exit	teei_fp/fp_func.c	/^module_exit(fp_exit);$/;"	v
+fp_exit	teei_fp/fp_func.c	/^void fp_exit(void)$/;"	f
+fp_fops	teei_fp/fp_func.c	/^static const struct file_operations fp_fops = {$/;"	v	typeref:struct:file_operations	file:
+fp_init	teei_fp/fp_func.c	/^int fp_init(void)$/;"	f
+fp_init	teei_fp/fp_func.c	/^module_init(fp_init);$/;"	v
+fp_ioctl	teei_fp/fp_func.c	/^static long fp_ioctl(struct file *filp, unsigned cmd, unsigned long arg)$/;"	f	file:
+fp_llseek	teei_fp/fp_func.c	/^static loff_t fp_llseek(struct file *filp, loff_t offset, int orig)$/;"	f	file:
+fp_lock	tz_driver/teei_client_main.c	/^struct semaphore fp_lock;$/;"	v	typeref:struct:semaphore
+fp_major	teei_fp/fp_func.c	/^static int fp_major = FP_MAJOR;$/;"	v	file:
+fp_open	teei_fp/fp_func.c	/^int fp_open(struct inode *inode, struct file *filp)$/;"	f
+fp_read	teei_fp/fp_func.c	/^static ssize_t fp_read(struct file *filp, char __user *buf,$/;"	f	file:
+fp_release	teei_fp/fp_func.c	/^int fp_release(struct inode *inode, struct file *filp)$/;"	f
+fp_setup_cdev	teei_fp/fp_func.c	/^static void fp_setup_cdev(struct fp_dev *dev, int index)$/;"	f	file:
+fp_write	teei_fp/fp_func.c	/^static ssize_t fp_write(struct file *filp, const char __user *buf,$/;"	f	file:
+func	tz_driver/include/TEEI.h	/^	int func;$/;"	m	struct:TEEI_socket_command
+func	tz_driver/include/backward_driver.h	/^	int func;$/;"	m	struct:TEEI_printer_command
+func	tz_socket/TEEI.h	/^	int func;$/;"	m	struct:TEEI_socket_command
+func	tz_vfs/TEEI.h	/^	int func;$/;"	m	struct:TEEI_vfs_command
+func_accept	tz_driver/include/TEEI.h	/^		struct func_accept {$/;"	s	union:TEEI_socket_command::func_arg
+func_accept	tz_socket/TEEI.h	/^		struct func_accept {$/;"	s	union:TEEI_socket_command::func_arg
+func_accept_args	tz_driver/include/TEEI.h	/^		} func_accept_args;$/;"	m	union:TEEI_socket_command::func_arg	typeref:struct:TEEI_socket_command::func_arg::func_accept
+func_accept_args	tz_socket/TEEI.h	/^		} func_accept_args;$/;"	m	union:TEEI_socket_command::func_arg	typeref:struct:TEEI_socket_command::func_arg::func_accept
+func_arg	tz_driver/include/TEEI.h	/^	union func_arg {$/;"	u	struct:TEEI_socket_command
+func_arg	tz_driver/include/backward_driver.h	/^	union func_arg {$/;"	u	struct:TEEI_printer_command
+func_arg	tz_socket/TEEI.h	/^	union func_arg {$/;"	u	struct:TEEI_socket_command
+func_arg	tz_vfs/TEEI.h	/^	union func_arg {$/;"	u	struct:TEEI_vfs_command
+func_bind	tz_driver/include/TEEI.h	/^		struct func_bind {$/;"	s	union:TEEI_socket_command::func_arg
+func_bind	tz_socket/TEEI.h	/^		struct func_bind {$/;"	s	union:TEEI_socket_command::func_arg
+func_bind_args	tz_driver/include/TEEI.h	/^		} func_bind_args;$/;"	m	union:TEEI_socket_command::func_arg	typeref:struct:TEEI_socket_command::func_arg::func_bind
+func_bind_args	tz_socket/TEEI.h	/^		} func_bind_args;$/;"	m	union:TEEI_socket_command::func_arg	typeref:struct:TEEI_socket_command::func_arg::func_bind
+func_close	tz_driver/include/TEEI.h	/^		struct func_close {$/;"	s	union:TEEI_socket_command::func_arg
+func_close	tz_socket/TEEI.h	/^		struct func_close {$/;"	s	union:TEEI_socket_command::func_arg
+func_close	tz_vfs/TEEI.h	/^		struct func_close {$/;"	s	union:TEEI_vfs_command::func_arg
+func_close_args	tz_driver/include/TEEI.h	/^		} func_close_args;$/;"	m	union:TEEI_socket_command::func_arg	typeref:struct:TEEI_socket_command::func_arg::func_close
+func_close_args	tz_socket/TEEI.h	/^		} func_close_args;$/;"	m	union:TEEI_socket_command::func_arg	typeref:struct:TEEI_socket_command::func_arg::func_close
+func_close_args	tz_vfs/TEEI.h	/^		} func_close_args;$/;"	m	union:TEEI_vfs_command::func_arg	typeref:struct:TEEI_vfs_command::func_arg::func_close
+func_connect	tz_driver/include/TEEI.h	/^		struct func_connect {$/;"	s	union:TEEI_socket_command::func_arg
+func_connect	tz_socket/TEEI.h	/^		struct func_connect {$/;"	s	union:TEEI_socket_command::func_arg
+func_connect_args	tz_driver/include/TEEI.h	/^		} func_connect_args;$/;"	m	union:TEEI_socket_command::func_arg	typeref:struct:TEEI_socket_command::func_arg::func_connect
+func_connect_args	tz_socket/TEEI.h	/^		} func_connect_args;$/;"	m	union:TEEI_socket_command::func_arg	typeref:struct:TEEI_socket_command::func_arg::func_connect
+func_htons	tz_driver/include/TEEI.h	/^		struct func_htons {$/;"	s	union:TEEI_socket_command::func_arg
+func_htons	tz_socket/TEEI.h	/^		struct func_htons {$/;"	s	union:TEEI_socket_command::func_arg
+func_htons_args	tz_driver/include/TEEI.h	/^		} func_htons_args;$/;"	m	union:TEEI_socket_command::func_arg	typeref:struct:TEEI_socket_command::func_arg::func_htons
+func_htons_args	tz_socket/TEEI.h	/^		} func_htons_args;$/;"	m	union:TEEI_socket_command::func_arg	typeref:struct:TEEI_socket_command::func_arg::func_htons
+func_inet_addr	tz_driver/include/TEEI.h	/^		struct func_inet_addr {$/;"	s	union:TEEI_socket_command::func_arg
+func_inet_addr	tz_socket/TEEI.h	/^		struct func_inet_addr {$/;"	s	union:TEEI_socket_command::func_arg
+func_inet_addr_args	tz_driver/include/TEEI.h	/^		} func_inet_addr_args;$/;"	m	union:TEEI_socket_command::func_arg	typeref:struct:TEEI_socket_command::func_arg::func_inet_addr
+func_inet_addr_args	tz_socket/TEEI.h	/^		} func_inet_addr_args;$/;"	m	union:TEEI_socket_command::func_arg	typeref:struct:TEEI_socket_command::func_arg::func_inet_addr
+func_ioctl	tz_vfs/TEEI.h	/^		struct func_ioctl {$/;"	s	union:TEEI_vfs_command::func_arg
+func_ioctl_args	tz_vfs/TEEI.h	/^		} func_ioctl_args;$/;"	m	union:TEEI_vfs_command::func_arg	typeref:struct:TEEI_vfs_command::func_arg::func_ioctl
+func_listen	tz_driver/include/TEEI.h	/^		struct func_listen {$/;"	s	union:TEEI_socket_command::func_arg
+func_listen	tz_socket/TEEI.h	/^		struct func_listen {$/;"	s	union:TEEI_socket_command::func_arg
+func_listen_args	tz_driver/include/TEEI.h	/^		} func_listen_args;$/;"	m	union:TEEI_socket_command::func_arg	typeref:struct:TEEI_socket_command::func_arg::func_listen
+func_listen_args	tz_socket/TEEI.h	/^		} func_listen_args;$/;"	m	union:TEEI_socket_command::func_arg	typeref:struct:TEEI_socket_command::func_arg::func_listen
+func_lseek	tz_vfs/TEEI.h	/^		struct func_lseek {$/;"	s	union:TEEI_vfs_command::func_arg
+func_lseek_args	tz_vfs/TEEI.h	/^		} func_lseek_args;$/;"	m	union:TEEI_vfs_command::func_arg	typeref:struct:TEEI_vfs_command::func_arg::func_lseek
+func_mkdir	tz_vfs/TEEI.h	/^		struct func_mkdir {$/;"	s	union:TEEI_vfs_command::func_arg
+func_mkdir_args	tz_vfs/TEEI.h	/^		} func_mkdir_args;$/;"	m	union:TEEI_vfs_command::func_arg	typeref:struct:TEEI_vfs_command::func_arg::func_mkdir
+func_open	tz_vfs/TEEI.h	/^		struct func_open {$/;"	s	union:TEEI_vfs_command::func_arg
+func_open_args	tz_vfs/TEEI.h	/^		} func_open_args;$/;"	m	union:TEEI_vfs_command::func_arg	typeref:struct:TEEI_vfs_command::func_arg::func_open
+func_read_args	tz_vfs/TEEI.h	/^		} func_read_args;$/;"	m	union:TEEI_vfs_command::func_arg	typeref:struct:TEEI_vfs_command::func_arg::func_send
+func_recv	tz_driver/include/TEEI.h	66;"	d
+func_recv	tz_socket/TEEI.h	66;"	d
+func_recv	tz_vfs/TEEI.h	/^		struct func_recv {$/;"	s	union:TEEI_vfs_command::func_arg
+func_recv_args	tz_driver/include/TEEI.h	67;"	d
+func_recv_args	tz_socket/TEEI.h	67;"	d
+func_recv_send	tz_driver/include/TEEI.h	68;"	d
+func_recv_send	tz_socket/TEEI.h	68;"	d
+func_recv_send_args	tz_driver/include/TEEI.h	69;"	d
+func_recv_send_args	tz_socket/TEEI.h	69;"	d
+func_send	tz_driver/include/TEEI.h	/^		struct func_send {$/;"	s	union:TEEI_socket_command::func_arg
+func_send	tz_socket/TEEI.h	/^		struct func_send {$/;"	s	union:TEEI_socket_command::func_arg
+func_send	tz_vfs/TEEI.h	/^		struct func_send {$/;"	s	union:TEEI_vfs_command::func_arg
+func_send_args	tz_driver/include/TEEI.h	/^		} func_send_args;$/;"	m	union:TEEI_socket_command::func_arg	typeref:struct:TEEI_socket_command::func_arg::func_send
+func_send_args	tz_socket/TEEI.h	/^		} func_send_args;$/;"	m	union:TEEI_socket_command::func_arg	typeref:struct:TEEI_socket_command::func_arg::func_send
+func_setsockopt	tz_driver/include/TEEI.h	/^		struct func_setsockopt {$/;"	s	union:TEEI_socket_command::func_arg
+func_setsockopt	tz_socket/TEEI.h	/^		struct func_setsockopt {$/;"	s	union:TEEI_socket_command::func_arg
+func_setsockopt_args	tz_driver/include/TEEI.h	/^		} func_setsockopt_args;$/;"	m	union:TEEI_socket_command::func_arg	typeref:struct:TEEI_socket_command::func_arg::func_setsockopt
+func_setsockopt_args	tz_socket/TEEI.h	/^		} func_setsockopt_args;$/;"	m	union:TEEI_socket_command::func_arg	typeref:struct:TEEI_socket_command::func_arg::func_setsockopt
+func_socket	tz_driver/include/TEEI.h	/^		struct func_socket {$/;"	s	union:TEEI_socket_command::func_arg
+func_socket	tz_socket/TEEI.h	/^		struct func_socket {$/;"	s	union:TEEI_socket_command::func_arg
+func_socket_args	tz_driver/include/TEEI.h	/^		} func_socket_args;$/;"	m	union:TEEI_socket_command::func_arg	typeref:struct:TEEI_socket_command::func_arg::func_socket
+func_socket_args	tz_socket/TEEI.h	/^		} func_socket_args;$/;"	m	union:TEEI_socket_command::func_arg	typeref:struct:TEEI_socket_command::func_arg::func_socket
+func_trunc	tz_vfs/TEEI.h	/^		struct func_trunc {$/;"	s	union:TEEI_vfs_command::func_arg
+func_trunc_args	tz_vfs/TEEI.h	/^		} func_trunc_args;$/;"	m	union:TEEI_vfs_command::func_arg	typeref:struct:TEEI_vfs_command::func_arg::func_trunc
+func_write	tz_driver/include/backward_driver.h	/^		struct func_write {$/;"	s	union:TEEI_printer_command::func_arg
+func_write_args	tz_driver/include/backward_driver.h	/^		} func_write_args;$/;"	m	union:TEEI_printer_command::func_arg	typeref:struct:TEEI_printer_command::func_arg::func_write
+func_write_args	tz_vfs/TEEI.h	/^		} func_write_args;$/;"	m	union:TEEI_vfs_command::func_arg	typeref:struct:TEEI_vfs_command::func_arg::func_recv
+g	ut_keymaster/mt_keymaster_api.h	/^    uint32_t  g;            \/**< g *\/$/;"	m	struct:__anon19
+g_len	ut_keymaster/mt_keymaster_api.h	/^    uint32_t  g_len;        \/**< Generator length *\/$/;"	m	struct:__anon12
+g_len	ut_keymaster/mt_keymaster_api.h	/^    uint32_t  g_len;        \/**< g length *\/$/;"	m	struct:__anon19
+g_len	ut_keymaster/mt_keymaster_api.h	/^    uint32_t  g_len;      \/**< Generator length *\/$/;"	m	struct:__anon8
+gatekeeper_buff_addr	tz_driver/include/teei_gatekeeper.h	/^unsigned long gatekeeper_buff_addr;$/;"	v
+gatekeeper_buff_addr	tz_driver/teei_gatekeeper.c	/^unsigned long gatekeeper_buff_addr = NULL;$/;"	v
+gatekeeper_command_entry	tz_driver/include/teei_gatekeeper.h	/^struct gatekeeper_command_struct gatekeeper_command_entry;$/;"	v	typeref:struct:gatekeeper_command_struct
+gatekeeper_command_struct	tz_driver/include/teei_gatekeeper.h	/^struct gatekeeper_command_struct {$/;"	s
+generate_key	ut_keymaster/mt_keymaster_api.h	/^		generate_key_t           generate_key;$/;"	m	union:__anon36::__anon37
+generate_key_t	ut_keymaster/mt_keymaster_api.h	/^}generate_key_t;$/;"	t	typeref:struct:__anon26
+get_bdrv_id	tz_driver/irq_register.c	/^int get_bdrv_id(void)$/;"	f
+get_call_type	tz_driver/switch_queue.c	/^int get_call_type(struct switch_call_struct *ent)$/;"	f
+get_current_cpuid	tz_driver/teei_client_main.c	/^int get_current_cpuid(void)$/;"	f
+get_end_index	tz_driver/notify_queue.c	/^static __always_inline unsigned int get_end_index(struct NQ_head *nq_head)$/;"	f	file:
+get_export_format	ut_keymaster/mt_keymaster_api.h	/^		get_export_formats_t     get_export_format;$/;"	m	union:__anon36::__anon37
+get_export_formats_t	ut_keymaster/mt_keymaster_api.h	/^}get_export_formats_t;$/;"	t	typeref:struct:__anon32
+get_import_format	ut_keymaster/mt_keymaster_api.h	/^		get_import_formats_t     get_import_format;$/;"	m	union:__anon36::__anon37
+get_import_formats_t	ut_keymaster/mt_keymaster_api.h	/^}get_import_formats_t;$/;"	t	typeref:struct:__anon31
+get_key_character	ut_keymaster/mt_keymaster_api.h	/^		get_key_character_t		get_key_character;$/;"	m	union:__anon36::__anon37
+get_key_character_t	ut_keymaster/mt_keymaster_api.h	/^}get_key_character_t;$/;"	t	typeref:struct:__anon33
+get_key_info	ut_keymaster/mt_keymaster_api.h	/^        get_key_info_t          get_key_info;$/;"	m	union:__anon36::__anon37
+get_key_info_t	ut_keymaster/mt_keymaster_api.h	/^} get_key_info_t;$/;"	t	typeref:struct:__anon25
+get_nq_entry	tz_driver/notify_queue.c	/^unsigned char *get_nq_entry(unsigned char *buffer_addr)$/;"	f
+get_pub_key	ut_keymaster/mt_keymaster_api.h	/^        get_pub_key_t         get_pub_key;$/;"	m	union:__anon36::__anon37
+get_pub_key_t	ut_keymaster/mt_keymaster_api.h	/^} get_pub_key_t;$/;"	t	typeref:struct:__anon18
+get_response_smc_cmd	tz_driver/irq_register.c	/^static struct teei_smc_cmd *get_response_smc_cmd(void)$/;"	f	file:
+get_supported_algo	ut_keymaster/mt_keymaster_api.h	/^		get_supported_algo_t     get_supported_algo;$/;"	m	union:__anon36::__anon37
+get_supported_algo_t	ut_keymaster/mt_keymaster_api.h	/^}get_supported_algo_t;$/;"	t	typeref:struct:__anon27
+get_supported_block	ut_keymaster/mt_keymaster_api.h	/^		get_supported_block_t    get_supported_block;$/;"	m	union:__anon36::__anon37
+get_supported_block_t	ut_keymaster/mt_keymaster_api.h	/^}get_supported_block_t;$/;"	t	typeref:struct:__anon28
+get_supported_digests	ut_keymaster/mt_keymaster_api.h	/^		get_supported_digests_t  get_supported_digests;$/;"	m	union:__anon36::__anon37
+get_supported_digests_t	ut_keymaster/mt_keymaster_api.h	/^}get_supported_digests_t;$/;"	t	typeref:struct:__anon30
+get_supported_padding	ut_keymaster/mt_keymaster_api.h	/^		get_supported_padding_t  get_supported_padding;$/;"	m	union:__anon36::__anon37
+get_supported_padding_t	ut_keymaster/mt_keymaster_api.h	/^}get_supported_padding_t;$/;"	t	typeref:struct:__anon29
+global_down_lock	tz_driver/teei_client_main.c	/^DECLARE_COMPLETION(global_down_lock);$/;"	v
+global_down_lock	tz_driver/teei_client_main.c	/^EXPORT_SYMBOL_GPL(global_down_lock);$/;"	v
+global_fn	tz_driver/global_function.c	/^int global_fn(void)$/;"	f
+handle	tz_driver/include/backward_driver.h	/^        int (*handle)(struct service_handler *handler); \/*! 服务调用 *\/$/;"	m	struct:service_handler
+handle	tz_driver/include/irq_register.h	/^        int (*handle)(struct service_handler *handler); \/*! 服务调用 *\/$/;"	m	struct:service_handler
+handle	tz_driver/include/tz_service.h	/^	int (*handle)(struct service_handler *handler); \/*! 服务调用 *\/$/;"	m	struct:service_handler
+handle_bdrv_call	tz_driver/switch_queue.c	/^int handle_bdrv_call(void *buff)$/;"	f
+handle_capi_call	tz_driver/switch_queue.c	/^int handle_capi_call(void *buff)$/;"	f
+handle_fdrv_call	tz_driver/switch_queue.c	/^int handle_fdrv_call(void *buff)$/;"	f
+handle_sched_call	tz_driver/switch_queue.c	/^int handle_sched_call(void *buff)$/;"	f
+handle_switch_call	tz_driver/switch_queue.c	/^int handle_switch_call(void *buff)$/;"	f
+handle_tlog	tz_driver/tlog.c	/^int handle_tlog(void)$/;"	f
+handler	tz_driver/backward_driver.c	/^        struct service_handler *handler;$/;"	m	struct:bdrv_call_struct	typeref:struct:bdrv_call_struct::service_handler	file:
+handler	tz_driver/include/backward_driver.h	/^        struct service_handler *handler;$/;"	m	struct:reetime_handle_struct	typeref:struct:reetime_handle_struct::service_handler
+handler	tz_driver/include/backward_driver.h	/^        struct service_handler *handler;$/;"	m	struct:vfs_handle_struct	typeref:struct:vfs_handle_struct::service_handler
+handler	tz_driver/switch_queue.c	/^	struct service_handler *handler;$/;"	m	struct:bdrv_call_struct	typeref:struct:bdrv_call_struct::service_handler	file:
+hasError	tz_driver/include/TEEI.h	/^	bool hasError;$/;"	m	union:TEEI_socket_response_type
+hasError	tz_socket/TEEI.h	/^	bool hasError;$/;"	m	union:TEEI_socket_response_type
+head	tz_driver/include/teei_smc_struct.h	/^        struct list_head head;$/;"	m	struct:teei_encode	typeref:struct:teei_encode::list_head
+head	tz_driver/include/teei_smc_struct.h	/^        struct list_head head;$/;"	m	struct:teei_shared_mem	typeref:struct:teei_shared_mem::list_head
+head	tz_driver/switch_queue.c	/^	struct list_head head;$/;"	m	struct:switch_head_struct	typeref:struct:switch_head_struct::list_head	file:
+hw_length	ut_keymaster/mt_keymaster_api.h	/^	uint32_t hw_length;$/;"	m	struct:__anon33
+hw_length	ut_keymaster/mt_keymaster_api.h	/^	uint32_t hw_length;$/;"	m	struct:__anon34
+hw_params_length	ut_keymaster/mt_keymaster_api.h	/^	uint32_t  hw_params_length;$/;"	m	struct:__anon26
+id	tz_driver/include/teei_common.h	/^	unsigned int    id;$/;"	m	struct:teei_smc_cmd
+import_key	ut_keymaster/mt_keymaster_api.h	/^	    import_key_t            import_key;$/;"	m	union:__anon36::__anon37
+import_key_t	ut_keymaster/mt_keymaster_api.h	/^}import_key_t;$/;"	t	typeref:struct:__anon34
+in_addr	tz_driver/include/TEEI.h	/^struct in_addr {$/;"	s
+in_addr	tz_socket/TEEI.h	/^struct in_addr {$/;"	s
+in_params_length	ut_keymaster/mt_keymaster_api.h	/^	uint32_t  in_params_length;$/;"	m	struct:__anon26
+index	tz_driver/include/teei_smc_struct.h	/^        void *index;$/;"	m	struct:teei_shared_mem
+info_buf_len	tz_driver/include/teei_common.h	/^	unsigned int    info_buf_len;$/;"	m	struct:teei_smc_cmd
+info_buf_phys	tz_driver/include/teei_common.h	/^	unsigned int    info_buf_phys;$/;"	m	struct:teei_smc_cmd
+info_data	tz_driver/include/teei_smc_call.h	/^        void *info_data;$/;"	m	struct:smc_call_struct
+info_data	tz_driver/switch_queue.c	/^        void *info_data;$/;"	m	struct:smc_call_struct	file:
+info_data	tz_driver/teei_client_main.c	/^	void *info_data;$/;"	m	struct:smc_call_struct	file:
+info_len	tz_driver/include/teei_smc_call.h	/^        size_t info_len;$/;"	m	struct:smc_call_struct
+info_len	tz_driver/switch_queue.c	/^        size_t info_len;$/;"	m	struct:smc_call_struct	file:
+info_len	tz_driver/teei_client_main.c	/^	size_t info_len;$/;"	m	struct:smc_call_struct	file:
+init	tz_driver/include/backward_driver.h	/^        void (*init)(struct service_handler *handler); \/*! 服务初始化处理 *\/$/;"	m	struct:service_handler
+init	tz_driver/include/irq_register.h	/^        void (*init)(struct service_handler *handler); \/*! 服务初始化处理 *\/$/;"	m	struct:service_handler
+init	tz_driver/include/tz_service.h	/^	void (*init)(struct service_handler *handler); \/*! 服务初始化处理 *\/$/;"	m	struct:service_handler
+init_all_service_handlers	tz_driver/backward_driver.c	/^int init_all_service_handlers(void)$/;"	f
+init_cmdbuf	tz_driver/teei_client_main.c	/^static void init_cmdbuf(unsigned long phy_address, unsigned long fdrv_phy_address,$/;"	f	file:
+init_cmdbuf_entry	tz_driver/teei_client_main.c	/^struct init_cmdbuf_struct init_cmdbuf_entry;$/;"	v	typeref:struct:init_cmdbuf_struct
+init_cmdbuf_struct	tz_driver/teei_client_main.c	/^struct init_cmdbuf_struct {$/;"	s	file:
+init_keymaster_cmd_buf	ut_keymaster/mt_keymaster_service.c	/^static void init_keymaster_cmd_buf(unsigned long phy_address, unsigned long f_phy_address,$/;"	f	file:
+init_nq_head	tz_driver/notify_queue.c	/^long init_nq_head(unsigned char *buffer_addr)$/;"	f
+init_switch_call_struct	tz_driver/switch_queue.c	/^static int init_switch_call_struct(struct switch_call_struct *ent, int work_type, unsigned long buff)$/;"	f	file:
+init_teei_framework	tz_driver/teei_client_main.c	/^static int init_teei_framework(void)$/;"	f	file:
+init_tlog_buff_head	tz_driver/tlog.c	/^long init_tlog_buff_head(unsigned long tlog_virt_addr, unsigned long buff_size)$/;"	f
+init_tlog_entry	tz_driver/tlog.c	/^void init_tlog_entry(void)$/;"	f
+invalid_flag	tz_driver/include/backward_driver.h	/^        unsigned int invalid_flag;$/;"	m	struct:message_head
+invalid_flag	tz_driver/include/irq_register.h	/^        unsigned int invalid_flag;$/;"	m	struct:message_head
+invalid_flag	tz_driver/include/notify_queue.h	/^        unsigned int invalid_flag;$/;"	m	struct:message_head
+invalid_flag	tz_driver/include/teei_fp.h	/^        unsigned int invalid_flag;$/;"	m	struct:message_head
+invalid_flag	tz_driver/include/teei_gatekeeper.h	/^        unsigned int invalid_flag;$/;"	m	struct:message_head
+invalid_flag	tz_driver/include/teei_keymaster.h	/^        unsigned int invalid_flag;$/;"	m	struct:message_head
+invalid_flag	tz_driver/include/teei_smc_call.h	/^        unsigned int invalid_flag;$/;"	m	struct:message_head
+invalid_flag	tz_driver/teei_client_main.c	/^        unsigned int invalid_flag;$/;"	m	struct:message_head	file:
+invoke_fastcall	tz_driver/backward_driver.c	/^void invoke_fastcall(void)$/;"	f
+ip_addr	tz_driver/include/TEEI.h	/^			char ip_addr[17];$/;"	m	struct:TEEI_socket_command::func_arg::func_inet_addr
+ip_addr	tz_socket/TEEI.h	/^			char ip_addr[17];$/;"	m	struct:TEEI_socket_command::func_arg::func_inet_addr
+irq_call_flag	tz_driver/teei_client_main.c	/^int irq_call_flag = 0;$/;"	v
+is_teei_ready	tz_driver/teei_client_main.c	/^EXPORT_SYMBOL(is_teei_ready);$/;"	v
+is_teei_ready	tz_driver/teei_client_main.c	/^int is_teei_ready(void)$/;"	f
+k_addr	tz_driver/include/teei_smc_struct.h	/^        void *k_addr;$/;"	m	struct:teei_shared_mem
+ker_req_data_addr	tz_driver/include/teei_smc_struct.h	/^        void *ker_req_data_addr;$/;"	m	struct:teei_encode
+ker_res_data_addr	tz_driver/include/teei_smc_struct.h	/^        void *ker_res_data_addr;$/;"	m	struct:teei_encode
+key_blob	ut_keymaster/mt_keymaster_api.h	/^    uint32_t  key_blob;           \/**< Key blob buffer *\/$/;"	m	struct:__anon25
+key_blob_len	ut_keymaster/mt_keymaster_api.h	/^    uint32_t  key_blob_len;       \/**< Length of key blob buffer *\/$/;"	m	struct:__anon25
+key_data	ut_keymaster/mt_keymaster_api.h	/^	uint32_t  key_data; 	  \/**< Key data buffer passed by TLC  *\/$/;"	m	struct:__anon14
+key_data	ut_keymaster/mt_keymaster_api.h	/^    uint32_t  key_data;            \/**< Key data buffer *\/$/;"	m	struct:__anon20
+key_data	ut_keymaster/mt_keymaster_api.h	/^    uint32_t  key_data;           \/**< Key data buffer *\/$/;"	m	struct:__anon15
+key_data	ut_keymaster/mt_keymaster_api.h	/^    uint32_t  key_data;           \/**< Key data buffer *\/$/;"	m	struct:__anon16
+key_data	ut_keymaster/mt_keymaster_api.h	/^    uint32_t  key_data;           \/**< Key data buffer *\/$/;"	m	struct:__anon21
+key_data	ut_keymaster/mt_keymaster_api.h	/^    uint32_t  key_data;           \/**< Key data buffer *\/$/;"	m	struct:__anon23
+key_data	ut_keymaster/mt_keymaster_api.h	/^    uint32_t  key_data;           \/**< Key data buffer *\/$/;"	m	struct:__anon24
+key_data	ut_keymaster/mt_keymaster_api.h	/^    uint32_t  key_data;          \/**< Key data buffer *\/$/;"	m	struct:__anon18
+key_data	ut_keymaster/mt_keymaster_api.h	/^    uint32_t  key_data;        \/**< Key data buffer *\/$/;"	m	struct:__anon17
+key_data	ut_keymaster/mt_keymaster_api.h	/^    uint32_t  key_data;     \/**< Key data buffer passed by TLC  *\/$/;"	m	struct:__anon19
+key_data	ut_keymaster/mt_keymaster_api.h	/^    uint32_t  key_data;     \/**< Key data buffer passed by TLC  *\/$/;"	m	struct:__anon22
+key_data_len	ut_keymaster/mt_keymaster_api.h	/^	uint32_t  key_data_len;   \/**< Length of key data buffer *\/$/;"	m	struct:__anon14
+key_data_len	ut_keymaster/mt_keymaster_api.h	/^    uint32_t  key_data_len;        \/**< Length of key data buffer *\/$/;"	m	struct:__anon20
+key_data_len	ut_keymaster/mt_keymaster_api.h	/^    uint32_t  key_data_len;       \/**< Length of key data buffer *\/$/;"	m	struct:__anon15
+key_data_len	ut_keymaster/mt_keymaster_api.h	/^    uint32_t  key_data_len;       \/**< Length of key data buffer *\/$/;"	m	struct:__anon16
+key_data_len	ut_keymaster/mt_keymaster_api.h	/^    uint32_t  key_data_len;       \/**< Length of key data buffer *\/$/;"	m	struct:__anon21
+key_data_len	ut_keymaster/mt_keymaster_api.h	/^    uint32_t  key_data_len;       \/**< Length of key data buffer *\/$/;"	m	struct:__anon23
+key_data_len	ut_keymaster/mt_keymaster_api.h	/^    uint32_t  key_data_len;       \/**< Length of key data buffer *\/$/;"	m	struct:__anon24
+key_data_len	ut_keymaster/mt_keymaster_api.h	/^    uint32_t  key_data_len;      \/**< Length of key data buffer *\/$/;"	m	struct:__anon18
+key_data_len	ut_keymaster/mt_keymaster_api.h	/^    uint32_t  key_data_len;    \/**< Length of key data buffer *\/$/;"	m	struct:__anon17
+key_data_len	ut_keymaster/mt_keymaster_api.h	/^    uint32_t  key_data_len; \/**< Length of key data buffer *\/$/;"	m	struct:__anon19
+key_data_len	ut_keymaster/mt_keymaster_api.h	/^    uint32_t  key_data_len; \/**< Length of key data buffer *\/$/;"	m	struct:__anon22
+key_data_length	ut_keymaster/mt_keymaster_api.h	/^	uint32_t key_data_length;$/;"	m	struct:__anon34
+key_format	ut_keymaster/mt_keymaster_api.h	/^	uint32_t key_format;$/;"	m	struct:__anon34
+key_import	ut_keymaster/mt_keymaster_api.h	/^        key_import_t          key_import;$/;"	m	union:__anon36::__anon37
+key_import_t	ut_keymaster/mt_keymaster_api.h	/^} key_import_t;$/;"	t	typeref:struct:__anon17
+key_material_size	ut_keymaster/mt_keymaster_api.h	/^	uint32_t  key_material_size;$/;"	m	struct:__anon26
+key_material_size	ut_keymaster/mt_keymaster_api.h	/^	uint32_t key_material_size;$/;"	m	struct:__anon33
+key_material_size	ut_keymaster/mt_keymaster_api.h	/^	uint32_t key_material_size;$/;"	m	struct:__anon34
+key_material_size	ut_keymaster/mt_keymaster_api.h	/^	uint32_t key_material_size;$/;"	m	struct:__anon35
+key_meta_t	ut_keymaster/mt_keymaster_api.h	/^} key_meta_t;$/;"	t	typeref:struct:__anon10
+key_metadata	ut_keymaster/mt_keymaster_api.h	/^    uint32_t  key_metadata;       \/**< Key metadata *\/$/;"	m	struct:__anon25
+key_size	ut_keymaster/mt_keymaster_api.h	/^	uint32_t  key_size; 	  \/**< Key size in bits, e.g. 1024, 2048,.. *\/$/;"	m	struct:__anon14
+key_size	ut_keymaster/mt_keymaster_api.h	/^    uint32_t  key_size;      \/**<  RSA key size *\/$/;"	m	struct:__anon7
+key_type	ut_keymaster/mt_keymaster_api.h	/^    uint32_t  key_type;      \/**< Key type (RSA, DSA, ECDSA,..) *\/$/;"	m	struct:__anon10
+keymaster_api_lock	ut_keymaster/mt_keymaster.c	/^struct semaphore keymaster_api_lock;$/;"	v	typeref:struct:semaphore
+keymaster_buff_addr	tz_driver/include/teei_keymaster.h	/^unsigned long keymaster_buff_addr;$/;"	v
+keymaster_call_flag	tz_driver/teei_client_main.c	/^int keymaster_call_flag = 0;$/;"	v
+keymaster_cmdbuf_entry	ut_keymaster/mt_keymaster_service.c	/^struct mt_keymaster_addr_struct keymaster_cmdbuf_entry;$/;"	v	typeref:struct:mt_keymaster_addr_struct
+keymaster_command_entry	tz_driver/include/teei_keymaster.h	/^struct keymaster_command_struct keymaster_command_entry;$/;"	v	typeref:struct:keymaster_command_struct
+keymaster_command_struct	tz_driver/include/teei_keymaster.h	/^struct keymaster_command_struct {$/;"	s
+keymaster_dev	ut_keymaster/mt_keymaster.c	/^struct keymaster_dev {$/;"	s	file:
+keymaster_devp	ut_keymaster/mt_keymaster.c	/^struct keymaster_dev *keymaster_devp;$/;"	v	typeref:struct:keymaster_dev
+keymaster_exit	ut_keymaster/mt_keymaster.c	/^module_exit(keymaster_exit);$/;"	v
+keymaster_exit	ut_keymaster/mt_keymaster.c	/^void keymaster_exit(void)$/;"	f
+keymaster_fops	ut_keymaster/mt_keymaster.c	/^static const struct file_operations keymaster_fops = $/;"	v	typeref:struct:file_operations	file:
+keymaster_init	ut_keymaster/mt_keymaster.c	/^module_init(keymaster_init);$/;"	v
+keymaster_init	ut_keymaster/mt_keymaster.c	/^void keymaster_init(void)$/;"	f
+keymaster_ioctl	ut_keymaster/mt_keymaster.c	/^static int keymaster_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)$/;"	f	file:
+keymaster_key_param_t_has_block	ut_keymaster/mt_keymaster_api.h	/^	unsigned keymaster_key_param_t_has_block;$/;"	m	struct:__anon36
+keymaster_llseek	ut_keymaster/mt_keymaster.c	/^static loff_t keymaster_llseek(struct file *filp, loff_t offset, int orig)$/;"	f	file:
+keymaster_lock	tz_driver/teei_client_main.c	/^struct semaphore keymaster_lock;$/;"	v	typeref:struct:semaphore
+keymaster_major	ut_keymaster/mt_keymaster.c	/^static int keymaster_major = KEYMASTER_MAJOR;$/;"	v	file:
+keymaster_open	ut_keymaster/mt_keymaster.c	/^int keymaster_open(struct inode *inode, struct file *filp)$/;"	f
+keymaster_read	ut_keymaster/mt_keymaster.c	/^static ssize_t keymaster_read(struct file *filp, char __user *buf,$/;"	f	file:
+keymaster_release	ut_keymaster/mt_keymaster.c	/^int keymaster_release(struct inode *inode, struct file *filp)$/;"	f
+keymaster_setup_cdev	ut_keymaster/mt_keymaster.c	/^static void keymaster_setup_cdev(struct keymaster_dev *dev, int index)$/;"	f	file:
+keymaster_write	ut_keymaster/mt_keymaster.c	/^static ssize_t keymaster_write(struct file *filp, const char __user *buf,$/;"	f	file:
+len	tz_driver/include/TEEI.h	/^			int len;$/;"	m	struct:TEEI_socket_command::func_arg::func_send
+len	tz_driver/include/teei_client.h	/^	unsigned int len;$/;"	m	struct:teei_client_encode_cmd
+len	tz_driver/include/teei_common.h	/^	int len;			\/* data length *\/$/;"	m	struct:teei_encode_meta
+len	tz_driver/include/teei_smc_struct.h	/^        u32  len;$/;"	m	struct:teei_shared_mem
+len	tz_socket/TEEI.h	/^			int len;$/;"	m	struct:TEEI_socket_command::func_arg::func_send
+length	tz_driver/include/backward_driver.h	/^			int length;$/;"	m	struct:TEEI_printer_command::func_arg::func_write
+length	tz_driver/include/irq_register.h	/^        unsigned int length;$/;"	m	struct:NQ_entry
+length	tz_driver/include/notify_queue.h	/^	unsigned int length;$/;"	m	struct:NQ_entry
+length	tz_driver/include/teei_capi.h	/^	unsigned int length;$/;"	m	struct:NQ_entry
+length	tz_driver/include/tlog.h	/^	int length;$/;"	m	struct:ut_log_buf_head
+length	tz_vfs/TEEI.h	/^			int length;$/;"	m	struct:TEEI_vfs_command::func_arg::func_trunc
+level	tz_driver/include/TEEI.h	/^			int level;$/;"	m	struct:TEEI_socket_command::func_arg::func_setsockopt
+level	tz_socket/TEEI.h	/^			int level;$/;"	m	struct:TEEI_socket_command::func_arg::func_setsockopt
+link	tz_driver/include/teei_smc_struct.h	/^        struct list_head link;                  \/* link list for teei_context *\/$/;"	m	struct:teei_context	typeref:struct:teei_context::list_head
+link	tz_driver/include/teei_smc_struct.h	/^        struct list_head link;          \/* link list for teei_session *\/$/;"	m	struct:teei_session	typeref:struct:teei_session::list_head
+list	tz_driver/include/teei_list.h	/^struct list {$/;"	s
+list_add	tz_driver/include/teei_list.h	/^static inline void list_add(struct list *head, struct list *new)$/;"	f
+list_add_tail	tz_driver/include/teei_list.h	/^static inline void list_add_tail(struct list *tnode, struct list *new)$/;"	f
+list_del	tz_driver/include/teei_list.h	/^static inline void list_del(struct list *node)$/;"	f
+list_empty	tz_driver/include/teei_list.h	/^static inline int list_empty(struct list *head)$/;"	f
+list_entry	tz_driver/include/teei_list.h	21;"	d
+list_for_each	tz_driver/include/teei_list.h	24;"	d
+list_for_each_entry	tz_driver/include/teei_list.h	27;"	d
+list_for_each_entry_safe	tz_driver/include/teei_list.h	40;"	d
+list_pop	tz_driver/include/teei_list.h	/^static inline struct list *list_pop(struct list *head)$/;"	f
+list_pop_tail	tz_driver/include/teei_list.h	/^static inline struct list *list_pop_tail(struct list *head)$/;"	f
+load_ent	tz_driver/include/irq_register.h	/^static struct load_soter_entry load_ent;$/;"	v	typeref:struct:load_soter_entry
+load_func	tz_driver/irq_register.c	/^void load_func(struct work_struct *entry)$/;"	f
+load_soter_entry	tz_driver/include/irq_register.h	/^struct load_soter_entry {$/;"	s
+load_tee	tz_driver/teei_client_main.c	/^static void load_tee(void)$/;"	f	file:
+local_cmd	tz_driver/include/teei_smc_call.h	/^        unsigned long local_cmd;$/;"	m	struct:smc_call_struct
+local_cmd	tz_driver/switch_queue.c	/^        unsigned long local_cmd; $/;"	m	struct:smc_call_struct	file:
+local_cmd	tz_driver/teei_client_main.c	/^	unsigned long local_cmd;$/;"	m	struct:smc_call_struct	file:
+mask	tz_driver/teei_client_main.c	/^static struct cpumask mask = { CPU_BITS_NONE };$/;"	v	typeref:struct:cpumask	file:
+mem	teei_fp/fp_func.c	/^	unsigned char mem[FP_SIZE];$/;"	m	struct:fp_dev	file:
+mem	tz_socket/socketFun.c	/^	unsigned char mem[SOCKET_SIZE];$/;"	m	struct:socket_dev	file:
+mem	tz_vfs/vfsFun.c	/^	unsigned char mem[VFS_SIZE];$/;"	m	struct:vfs_dev	file:
+mem	ut_keymaster/mt_keymaster.c	/^	unsigned char mem[KEYMASTER_SIZE];$/;"	m	struct:keymaster_dev	file:
+mem_size	tz_driver/include/teei_fp.h	/^        unsigned long mem_size;$/;"	m	struct:fp_command_struct
+mem_size	tz_driver/include/teei_gatekeeper.h	/^        unsigned long mem_size;$/;"	m	struct:gatekeeper_command_struct
+mem_size	tz_driver/include/teei_keymaster.h	/^        unsigned long mem_size;$/;"	m	struct:keymaster_command_struct
+message	ut_keymaster/mt_keymaster_api.h	/^    tciMessage_t message;   \/**< TCI message *\/$/;"	m	struct:__anon38
+message_buff	tz_driver/include/teei_client_main.h	/^unsigned long message_buff;$/;"	v
+message_head	tz_driver/include/backward_driver.h	/^struct message_head {$/;"	s
+message_head	tz_driver/include/irq_register.h	/^struct message_head {$/;"	s
+message_head	tz_driver/include/notify_queue.h	/^struct message_head {$/;"	s
+message_head	tz_driver/include/teei_fp.h	/^struct message_head {$/;"	s
+message_head	tz_driver/include/teei_gatekeeper.h	/^struct message_head {$/;"	s
+message_head	tz_driver/include/teei_keymaster.h	/^struct message_head {$/;"	s
+message_head	tz_driver/include/teei_smc_call.h	/^struct message_head {$/;"	s
+message_head	tz_driver/teei_client_main.c	/^struct message_head {$/;"	s	file:
+message_type	tz_driver/include/backward_driver.h	/^        unsigned int message_type;$/;"	m	struct:message_head
+message_type	tz_driver/include/irq_register.h	/^        unsigned int message_type;$/;"	m	struct:message_head
+message_type	tz_driver/include/notify_queue.h	/^        unsigned int message_type;$/;"	m	struct:message_head
+message_type	tz_driver/include/teei_fp.h	/^        unsigned int message_type;$/;"	m	struct:message_head
+message_type	tz_driver/include/teei_gatekeeper.h	/^        unsigned int message_type;$/;"	m	struct:message_head
+message_type	tz_driver/include/teei_keymaster.h	/^        unsigned int message_type;$/;"	m	struct:message_head
+message_type	tz_driver/include/teei_smc_call.h	/^        unsigned int message_type;$/;"	m	struct:message_head
+message_type	tz_driver/teei_client_main.c	/^        unsigned int message_type;$/;"	m	struct:message_head	file:
+meta	tz_driver/include/teei_smc_struct.h	/^        struct teei_encode_meta *meta;$/;"	m	struct:teei_encode	typeref:struct:teei_encode::teei_encode_meta
+meta_data	tz_driver/include/teei_smc_call.h	/^        void *meta_data;$/;"	m	struct:smc_call_struct
+meta_data	tz_driver/switch_queue.c	/^        void *meta_data;$/;"	m	struct:smc_call_struct	file:
+meta_data	tz_driver/teei_client_main.c	/^	void *meta_data;$/;"	m	struct:smc_call_struct	file:
+meta_data_phys	tz_driver/include/teei_common.h	/^	unsigned int    meta_data_phys;$/;"	m	struct:teei_smc_cmd
+mode	tz_vfs/TEEI.h	/^			int mode;$/;"	m	struct:TEEI_vfs_command::func_arg::func_mkdir
+mode	tz_vfs/TEEI.h	/^			int mode;$/;"	m	struct:TEEI_vfs_command::func_arg::func_open
+modes_length	ut_keymaster/mt_keymaster_api.h	/^	uint32_t             modes_length;$/;"	m	struct:__anon28
+modes_length	ut_keymaster/mt_keymaster_api.h	/^	uint32_t             modes_length;$/;"	m	struct:__anon29
+mt_keymaster_addr_struct	ut_keymaster/mt_keymaster_service.c	/^struct mt_keymaster_addr_struct {$/;"	s	file:
+mt_keymaster_bmessage_buf	ut_keymaster/mt_keymaster_service.c	/^unsigned long mt_keymaster_bmessage_buf;$/;"	v
+mt_keymaster_fmessage_buf	ut_keymaster/mt_keymaster_service.c	/^unsigned long mt_keymaster_fmessage_buf;$/;"	v
+mt_keymaster_message_buf	ut_keymaster/mt_keymaster_service.c	/^unsigned long mt_keymaster_message_buf;$/;"	v
+n_ack_t_invoke_drv	tz_driver/include/nt_smc_call.h	/^static inline void n_ack_t_invoke_drv($/;"	f
+n_ack_t_load_img	tz_driver/include/nt_smc_call.h	/^static inline void n_ack_t_load_img($/;"	f
+n_get_param_in	tz_driver/include/nt_smc_call.h	/^static inline void n_get_param_in($/;"	f
+n_init_t_boot_stage1	tz_driver/include/nt_smc_call.h	/^static inline void n_init_t_boot_stage1($/;"	f
+n_init_t_fc_buf	tz_driver/include/nt_smc_call.h	/^static inline void n_init_t_fc_buf($/;"	f
+n_invoke_t_drv	tz_driver/include/nt_smc_call.h	/^static inline void n_invoke_t_drv($/;"	f
+n_invoke_t_fast_call	tz_driver/include/nt_smc_call.h	/^static inline void n_invoke_t_fast_call($/;"	f
+n_invoke_t_load_tee	tz_driver/include/nt_smc_call.h	/^static inline void n_invoke_t_load_tee($/;"	f
+n_invoke_t_nq	tz_driver/include/nt_smc_call.h	/^static inline void n_invoke_t_nq($/;"	f
+n_invoke_t_sys_ctl	tz_driver/include/nt_smc_call.h	/^static inline void n_invoke_t_sys_ctl($/;"	f
+n_raise_t_event	tz_driver/include/nt_smc_call.h	/^static inline void n_raise_t_event($/;"	f
+n_switch_to_t_os_stage2	tz_driver/include/nt_smc_call.h	/^static inline void n_switch_to_t_os_stage2(void)$/;"	f
+n_t_nq_phy_addr	tz_driver/include/notify_queue.h	/^	unsigned int n_t_nq_phy_addr;$/;"	m	struct:create_NQ_struct
+n_t_size	tz_driver/include/notify_queue.h	/^	unsigned int n_t_size;$/;"	m	struct:create_NQ_struct
+name	tz_driver/include/teei_client.h	/^	char name[255]; \/* context name *\/$/;"	m	struct:ctx_data
+next	tz_driver/include/teei_list.h	/^	struct list *next, *prev;$/;"	m	struct:list	typeref:struct:list::list
+nt_bdrv_handler	tz_driver/irq_register.c	/^static irqreturn_t nt_bdrv_handler(void)$/;"	f	file:
+nt_boot_irq_handler	tz_driver/irq_register.c	/^static irqreturn_t nt_boot_irq_handler(void)$/;"	f	file:
+nt_dump_state	tz_driver/include/nt_smc_call.h	/^static inline void nt_dump_state(void)$/;"	f
+nt_error_irq_handler	tz_driver/irq_register.c	/^static irqreturn_t nt_error_irq_handler(void)$/;"	f	file:
+nt_fp_ack_handler	tz_driver/irq_register.c	/^static irqreturn_t nt_fp_ack_handler(void)$/;"	f	file:
+nt_get_non_irq_num	tz_driver/include/nt_smc_call.h	/^static inline void nt_get_non_irq_num (uint64_t *p0)$/;"	f
+nt_keymaster_ack_handler	tz_driver/irq_register.c	/^static irqreturn_t nt_keymaster_ack_handler(void)$/;"	f	file:
+nt_sched_core	tz_driver/include/nt_smc_call.h	/^static inline void nt_sched_core($/;"	f
+nt_sched_irq_handler	tz_driver/irq_register.c	/^static irqreturn_t nt_sched_irq_handler(void)$/;"	f	file:
+nt_sched_t	tz_driver/include/nt_smc_call.h	/^static inline void nt_sched_t(void)$/;"	f
+nt_sched_t_call	tz_driver/global_function.c	/^void nt_sched_t_call(void)$/;"	f
+nt_sched_t_fiq	tz_driver/include/nt_smc_call.h	/^static inline void nt_sched_t_fiq($/;"	f
+nt_soter_irq_handler	tz_driver/irq_register.c	/^static irqreturn_t nt_soter_irq_handler(void)$/;"	f	file:
+nt_switch_irq_handler	tz_driver/irq_register.c	/^static irqreturn_t nt_switch_irq_handler(void)$/;"	f	file:
+nt_t_buffer	tz_driver/include/notify_queue.h	/^static unsigned long nt_t_buffer;$/;"	v
+ob_addr	tz_driver/include/TEEI.h	/^			struct sockaddr ob_addr;$/;"	m	struct:TEEI_socket_command::func_arg::func_accept	typeref:struct:TEEI_socket_command::func_arg::func_accept::sockaddr
+ob_addr	tz_driver/include/TEEI.h	/^			struct sockaddr ob_addr;$/;"	m	struct:TEEI_socket_command::func_arg::func_bind	typeref:struct:TEEI_socket_command::func_arg::func_bind::sockaddr
+ob_addr	tz_driver/include/TEEI.h	/^			struct sockaddr ob_addr;$/;"	m	struct:TEEI_socket_command::func_arg::func_connect	typeref:struct:TEEI_socket_command::func_arg::func_connect::sockaddr
+ob_addr	tz_socket/TEEI.h	/^			struct sockaddr ob_addr;$/;"	m	struct:TEEI_socket_command::func_arg::func_accept	typeref:struct:TEEI_socket_command::func_arg::func_accept::sockaddr
+ob_addr	tz_socket/TEEI.h	/^			struct sockaddr ob_addr;$/;"	m	struct:TEEI_socket_command::func_arg::func_bind	typeref:struct:TEEI_socket_command::func_arg::func_bind::sockaddr
+ob_addr	tz_socket/TEEI.h	/^			struct sockaddr ob_addr;$/;"	m	struct:TEEI_socket_command::func_arg::func_connect	typeref:struct:TEEI_socket_command::func_arg::func_connect::sockaddr
+offset	tz_driver/include/teei_client.h	/^	int   offset;$/;"	m	struct:teei_client_encode_cmd
+offset	tz_vfs/TEEI.h	/^			int offset;$/;"	m	struct:TEEI_vfs_command::func_arg::func_lseek
+optlen	tz_driver/include/TEEI.h	/^			int optlen;$/;"	m	struct:TEEI_socket_command::func_arg::func_setsockopt
+optlen	tz_socket/TEEI.h	/^			int optlen;$/;"	m	struct:TEEI_socket_command::func_arg::func_setsockopt
+optname	tz_driver/include/TEEI.h	/^			int optname;$/;"	m	struct:TEEI_socket_command::func_arg::func_setsockopt
+optname	tz_socket/TEEI.h	/^			int optname;$/;"	m	struct:TEEI_socket_command::func_arg::func_setsockopt
+origin	tz_vfs/TEEI.h	/^			int origin;$/;"	m	struct:TEEI_vfs_command::func_arg::func_lseek
+p	ut_keymaster/mt_keymaster_api.h	/^    uint32_t  p;            \/**< p *\/$/;"	m	struct:__anon19
+p_len	ut_keymaster/mt_keymaster_api.h	/^    uint32_t  p_len;          \/**< Prime p length *\/$/;"	m	struct:__anon6
+p_len	ut_keymaster/mt_keymaster_api.h	/^    uint32_t  p_len;        \/**< p length *\/$/;"	m	struct:__anon19
+p_len	ut_keymaster/mt_keymaster_api.h	/^    uint32_t  p_len;        \/**< q length *\/$/;"	m	struct:__anon12
+p_len	ut_keymaster/mt_keymaster_api.h	/^    uint32_t  p_len;      \/**< q length *\/$/;"	m	struct:__anon8
+para_vaddr	tz_driver/backward_driver.c	/^static unsigned long para_vaddr;$/;"	v	file:
+param_buf	tz_driver/include/backward_driver.h	/^        void *param_buf; \/*! 双系统通信缓冲区 *\/$/;"	m	struct:service_handler
+param_buf	tz_driver/include/irq_register.h	/^        void *param_buf; \/*! 双系统通信缓冲区 *\/$/;"	m	struct:service_handler
+param_buf	tz_driver/include/tz_service.h	/^	void *param_buf; \/*! 双系统通信缓冲区 *\/$/;"	m	struct:service_handler
+param_length	tz_driver/include/backward_driver.h	/^        unsigned int param_length;$/;"	m	struct:message_head
+param_length	tz_driver/include/irq_register.h	/^        unsigned int param_length;$/;"	m	struct:message_head
+param_length	tz_driver/include/notify_queue.h	/^        unsigned int param_length; $/;"	m	struct:message_head
+param_length	tz_driver/include/teei_fp.h	/^        unsigned int param_length;$/;"	m	struct:message_head
+param_length	tz_driver/include/teei_gatekeeper.h	/^        unsigned int param_length;$/;"	m	struct:message_head
+param_length	tz_driver/include/teei_keymaster.h	/^        unsigned int param_length;$/;"	m	struct:message_head
+param_length	tz_driver/include/teei_smc_call.h	/^        unsigned int param_length;$/;"	m	struct:message_head
+param_length	tz_driver/teei_client_main.c	/^        unsigned int param_length;$/;"	m	struct:message_head	file:
+param_pos	tz_driver/include/teei_client.h	/^	int param_pos;$/;"	m	struct:teei_client_encode_cmd
+param_pos	tz_driver/include/teei_common.h	/^	int param_pos;			\/* param order *\/$/;"	m	struct:teei_encode_meta
+param_pos_type	tz_driver/include/teei_client.h	/^	int param_pos_type;$/;"	m	struct:teei_client_encode_cmd
+param_pos_type	tz_driver/include/teei_common.h	/^	int param_pos_type;		\/* param type *\/$/;"	m	struct:teei_encode_meta
+param_type	tz_driver/include/teei_client.h	/^	int   param_type;$/;"	m	struct:teei_client_encode_cmd
+params	tz_driver/include/teei_client.h	/^	int params[8];$/;"	m	struct:ser_ses_id
+params_length	ut_keymaster/mt_keymaster_api.h	/^	uint32_t params_length;$/;"	m	struct:__anon34
+paramtype	tz_driver/include/teei_client.h	/^	int paramtype;$/;"	m	struct:ser_ses_id
+parent_cont	tz_driver/include/teei_smc_struct.h	/^        struct teei_context *parent_cont;       \/* the teei_context pointer of this session *\/$/;"	m	struct:teei_session	typeref:struct:teei_session::teei_context
+phy_addr	tz_driver/teei_client_main.c	/^	unsigned long phy_addr;$/;"	m	struct:init_cmdbuf_struct	file:
+phy_addr	ut_keymaster/mt_keymaster_service.c	/^	unsigned long phy_addr;$/;"	m	struct:mt_keymaster_addr_struct	file:
+plain_data	ut_keymaster/mt_keymaster_api.h	/^    uint32_t  plain_data;         \/**< Plaintext data buffer *\/$/;"	m	struct:__anon15
+plain_data	ut_keymaster/mt_keymaster_api.h	/^    uint32_t  plain_data;         \/**< Plaintext data buffer *\/$/;"	m	struct:__anon16
+plain_data_len	ut_keymaster/mt_keymaster_api.h	/^    uint32_t  plain_data_len;     \/**< Length of plaintext data buffer *\/$/;"	m	struct:__anon15
+plain_data_len	ut_keymaster/mt_keymaster_api.h	/^    uint32_t  plain_data_len;     \/**< Length of plaintext data buffer *\/$/;"	m	struct:__anon16
+portnum	tz_driver/include/TEEI.h	/^			unsigned short portnum;$/;"	m	struct:TEEI_socket_command::func_arg::func_htons
+portnum	tz_driver/include/TEEI.h	/^	unsigned short portnum;$/;"	m	union:TEEI_socket_response_type
+portnum	tz_socket/TEEI.h	/^			unsigned short portnum;$/;"	m	struct:TEEI_socket_command::func_arg::func_htons
+portnum	tz_socket/TEEI.h	/^	unsigned short portnum;$/;"	m	union:TEEI_socket_response_type
+post_teei_invoke_drv	tz_driver/teei_client_main.c	/^static void post_teei_invoke_drv(int cpu_id)$/;"	f	file:
+prev	tz_driver/include/teei_list.h	/^	struct list *next, *prev;$/;"	m	struct:list	typeref:struct:list::
+print_context	tz_driver/teei_capi.c	/^static int print_context(void)$/;"	f	file:
+printer_share_mem	tz_driver/include/backward_driver.h	/^static unsigned char *printer_share_mem;$/;"	v
+printer_shmem_flags	tz_driver/include/backward_driver.h	/^static unsigned int printer_shmem_flags;$/;"	v
+printk	tz_driver/backward_driver.c	16;"	d	file:
+printk	tz_driver/global_function.c	13;"	d	file:
+printk	tz_driver/irq_register.c	17;"	d	file:
+printk	tz_driver/notify_queue.c	9;"	d	file:
+printk	tz_driver/switch_queue.c	22;"	d	file:
+printk	tz_driver/teei_capi.c	13;"	d	file:
+printk	tz_driver/teei_client_main.c	106;"	d	file:
+printk	tz_driver/teei_fp.c	13;"	d	file:
+printk	tz_driver/teei_gatekeeper.c	13;"	d	file:
+printk	tz_driver/teei_keymaster.c	13;"	d	file:
+printk	tz_driver/teei_smc_call.c	15;"	d	file:
+printk	tz_driver/tlog.c	11;"	d	file:
+priv_exp_len	ut_keymaster/mt_keymaster_api.h	/^    uint32_t  priv_exp_len; \/**< Private key exponent length *\/$/;"	m	struct:__anon5
+protocol	tz_driver/include/TEEI.h	/^			int protocol;$/;"	m	struct:TEEI_socket_command::func_arg::func_socket
+protocol	tz_socket/TEEI.h	/^			int protocol;$/;"	m	struct:TEEI_socket_command::func_arg::func_socket
+psema	tz_driver/include/teei_smc_call.h	/^        struct semaphore *psema;$/;"	m	struct:smc_call_struct	typeref:struct:smc_call_struct::semaphore
+psema	tz_driver/switch_queue.c	/^        struct semaphore *psema;$/;"	m	struct:smc_call_struct	typeref:struct:smc_call_struct::semaphore	file:
+psema	tz_driver/teei_client_main.c	/^	struct semaphore *psema;$/;"	m	struct:smc_call_struct	typeref:struct:smc_call_struct::semaphore	file:
+pub_exp_len	ut_keymaster/mt_keymaster_api.h	/^    uint32_t  pub_exp_len;     \/**< Public key exponent length *\/$/;"	m	struct:__anon11
+pub_exp_len	ut_keymaster/mt_keymaster_api.h	/^    uint32_t  pub_exp_len;    \/**< Public key exponent length *\/$/;"	m	struct:__anon7
+pub_key_data	ut_keymaster/mt_keymaster_api.h	/^    uint32_t  pub_key_data;      \/**< Public key data *\/$/;"	m	struct:__anon18
+pub_key_data_len	ut_keymaster/mt_keymaster_api.h	/^    uint32_t  pub_key_data_len;  \/**< Public key length *\/$/;"	m	struct:__anon18
+pub_mod_len	ut_keymaster/mt_keymaster_api.h	/^    uint32_t  pub_mod_len;     \/**< Public key modulus length *\/$/;"	m	struct:__anon11
+pub_mod_len	ut_keymaster/mt_keymaster_api.h	/^    uint32_t  pub_mod_len;    \/**< Public key modulus length *\/$/;"	m	struct:__anon7
+purpose	ut_keymaster/mt_keymaster_api.h	/^	uint32_t   purpose;$/;"	m	struct:__anon28
+purpose	ut_keymaster/mt_keymaster_api.h	/^	uint32_t   purpose;$/;"	m	struct:__anon29
+purpose	ut_keymaster/mt_keymaster_api.h	/^	uint32_t   purpose;$/;"	m	struct:__anon30
+q	ut_keymaster/mt_keymaster_api.h	/^    uint32_t  q;            \/**< q *\/$/;"	m	struct:__anon19
+q_len	ut_keymaster/mt_keymaster_api.h	/^    uint32_t  q_len;          \/**< Prime q length *\/$/;"	m	struct:__anon6
+q_len	ut_keymaster/mt_keymaster_api.h	/^    uint32_t  q_len;        \/**< q length *\/$/;"	m	struct:__anon12
+q_len	ut_keymaster/mt_keymaster_api.h	/^    uint32_t  q_len;        \/**< q length *\/$/;"	m	struct:__anon19
+q_len	ut_keymaster/mt_keymaster_api.h	/^    uint32_t  q_len;      \/**< q length *\/$/;"	m	struct:__anon8
+qinv_len	ut_keymaster/mt_keymaster_api.h	/^    uint32_t  qinv_len;       \/**< QP length *\/$/;"	m	struct:__anon6
+raw	tz_driver/include/TEEI.h	/^		char raw[ARGS_BLOCK_SIZE];$/;"	m	union:TEEI_socket_command::func_arg
+raw	tz_socket/TEEI.h	/^		char raw[ARGS_BLOCK_SIZE];$/;"	m	union:TEEI_socket_command::func_arg
+recv	tz_driver/include/TEEI.h	/^	} recv;$/;"	m	union:TEEI_socket_response_type	typeref:struct:TEEI_socket_response_type::response_func_recv
+recv	tz_socket/TEEI.h	/^	} recv;$/;"	m	union:TEEI_socket_response_type	typeref:struct:TEEI_socket_response_type::response_func_recv
+reetime	tz_driver/backward_driver.c	/^struct service_handler reetime;$/;"	v	typeref:struct:service_handler
+reetime_deinit	tz_driver/backward_driver.c	/^static void reetime_deinit(struct service_handler *handler)$/;"	f	file:
+reetime_handle	tz_driver/backward_driver.c	/^static int reetime_handle(struct service_handler *handler)$/;"	f	file:
+reetime_handle_entry	tz_driver/include/backward_driver.h	/^struct reetime_handle_struct reetime_handle_entry;$/;"	v	typeref:struct:reetime_handle_struct
+reetime_handle_struct	tz_driver/include/backward_driver.h	/^struct reetime_handle_struct {$/;"	s
+reetime_init	tz_driver/backward_driver.c	/^static void reetime_init(struct service_handler *handler)$/;"	f	file:
+register_bdrv_handler	tz_driver/irq_register.c	/^int register_bdrv_handler(void)$/;"	f
+register_boot_irq_handler	tz_driver/irq_register.c	/^int register_boot_irq_handler(void)$/;"	f
+register_error_irq_handler	tz_driver/irq_register.c	/^int register_error_irq_handler(void)$/;"	f
+register_fp_ack_handler	tz_driver/irq_register.c	/^int register_fp_ack_handler(void)$/;"	f
+register_keymaster_ack_handler	tz_driver/irq_register.c	/^int register_keymaster_ack_handler(void)$/;"	f
+register_sched_irq_handler	tz_driver/irq_register.c	/^int register_sched_irq_handler(void)$/;"	f
+register_shared_param_buf	tz_driver/backward_driver.c	/^static long register_shared_param_buf(struct service_handler *handler)$/;"	f	file:
+register_soter_irq_handler	tz_driver/irq_register.c	/^int register_soter_irq_handler(void)$/;"	f
+register_switch_irq_handler	tz_driver/irq_register.c	/^int register_switch_irq_handler(void)$/;"	f
+register_tlog_handler	tz_driver/irq_register.c	/^int register_tlog_handler(void)$/;"	f
+register_ut_irq_handler	tz_driver/irq_register.c	/^int register_ut_irq_handler(void)$/;"	f
+req_buf_len	tz_driver/include/teei_common.h	/^	unsigned int    req_buf_len;$/;"	m	struct:teei_smc_cmd
+req_buf_phys	tz_driver/include/teei_common.h	/^	unsigned int    req_buf_phys;$/;"	m	struct:teei_smc_cmd
+reserve	tz_driver/include/irq_register.h	/^        unsigned char reserve[20];$/;"	m	struct:NQ_entry
+reserve	tz_driver/include/notify_queue.h	/^	unsigned char reserve[20];$/;"	m	struct:NQ_entry
+reserve	tz_driver/include/notify_queue.h	/^	unsigned char reserve[20];$/;"	m	struct:NQ_head
+reserve	tz_driver/include/teei_capi.h	/^	unsigned char reserve[20];$/;"	m	struct:NQ_entry
+reserve	tz_driver/include/teei_capi.h	/^	unsigned char reserve[20];$/;"	m	struct:NQ_head
+reserve	tz_driver/include/tlog.h	/^	char reserve;$/;"	m	struct:ut_log_entry
+reserve	tz_driver/include/tlog.h	/^	int reserve;$/;"	m	struct:ut_log_buf_head
+resp_buf	tz_driver/include/teei_smc_call.h	/^        void *resp_buf;$/;"	m	struct:smc_call_struct
+resp_buf	tz_driver/switch_queue.c	/^        void *resp_buf; $/;"	m	struct:smc_call_struct	file:
+resp_buf	tz_driver/teei_client_main.c	/^	void *resp_buf;$/;"	m	struct:smc_call_struct	file:
+resp_buf_len	tz_driver/include/teei_common.h	/^	unsigned int    resp_buf_len;$/;"	m	struct:teei_smc_cmd
+resp_buf_phys	tz_driver/include/teei_common.h	/^	unsigned int    resp_buf_phys;$/;"	m	struct:teei_smc_cmd
+resp_len	tz_driver/include/teei_smc_call.h	/^        size_t resp_len;$/;"	m	struct:smc_call_struct
+resp_len	tz_driver/switch_queue.c	/^        size_t resp_len;$/;"	m	struct:smc_call_struct	file:
+resp_len	tz_driver/teei_client_main.c	/^	size_t resp_len;$/;"	m	struct:smc_call_struct	file:
+response	ut_keymaster/mt_keymaster_api.h	/^    response_t    response;$/;"	m	struct:__anon36
+responseId	ut_keymaster/tci.h	/^    tciResponseId_t     responseId; \/**< Response ID (must be command ID | RSP_ID_MASK )*\/$/;"	m	struct:__anon40
+response_func_recv	tz_driver/include/TEEI.h	/^	struct response_func_recv {$/;"	s	union:TEEI_socket_response_type
+response_func_recv	tz_socket/TEEI.h	/^	struct response_func_recv {$/;"	s	union:TEEI_socket_response_type
+response_t	ut_keymaster/mt_keymaster_api.h	/^} response_t;$/;"	t	typeref:struct:__anon4
+retVal	tz_driver/backward_driver.c	/^        int retVal;$/;"	m	struct:bdrv_call_struct	file:
+retVal	tz_driver/include/backward_driver.h	/^        int retVal;$/;"	m	struct:ack_fast_call_struct
+retVal	tz_driver/include/backward_driver.h	/^        int retVal;$/;"	m	struct:reetime_handle_struct
+retVal	tz_driver/include/backward_driver.h	/^        int retVal;$/;"	m	struct:vfs_handle_struct
+retVal	tz_driver/include/notify_queue.h	/^        int retVal;$/;"	m	struct:ack_fast_call_struct
+retVal	tz_driver/include/teei_fp.h	/^        int retVal;$/;"	m	struct:ack_fast_call_struct
+retVal	tz_driver/include/teei_fp.h	/^        int retVal;$/;"	m	struct:fp_command_struct
+retVal	tz_driver/include/teei_gatekeeper.h	/^        int retVal;$/;"	m	struct:ack_fast_call_struct
+retVal	tz_driver/include/teei_gatekeeper.h	/^        int retVal;$/;"	m	struct:fdrv_call_struct
+retVal	tz_driver/include/teei_gatekeeper.h	/^        int retVal;$/;"	m	struct:gatekeeper_command_struct
+retVal	tz_driver/include/teei_keymaster.h	/^        int retVal;$/;"	m	struct:ack_fast_call_struct
+retVal	tz_driver/include/teei_keymaster.h	/^        int retVal;$/;"	m	struct:keymaster_command_struct
+retVal	tz_driver/include/teei_smc_call.h	/^        int retVal;$/;"	m	struct:smc_call_struct
+retVal	tz_driver/switch_queue.c	/^	int retVal;$/;"	m	struct:bdrv_call_struct	file:
+retVal	tz_driver/switch_queue.c	/^	int retVal;$/;"	m	struct:fdrv_call_struct	file:
+retVal	tz_driver/switch_queue.c	/^        int retVal;     $/;"	m	struct:smc_call_struct	file:
+retVal	tz_driver/teei_client_main.c	/^	int retVal;$/;"	m	struct:smc_call_struct	file:
+retVal	tz_driver/teei_fp.c	/^        int retVal;$/;"	m	struct:fdrv_call_struct	file:
+retVal	tz_driver/teei_keymaster.c	/^        int retVal;$/;"	m	struct:fdrv_call_struct	file:
+ret_len	tz_driver/include/teei_common.h	/^	int ret_len;			\/* return sizeof data *\/$/;"	m	struct:teei_encode_meta
+ret_resp_buf_len	tz_driver/include/teei_common.h	/^	unsigned int    ret_resp_buf_len;$/;"	m	struct:teei_smc_cmd
+ret_resp_len	tz_driver/include/teei_smc_call.h	/^        int *ret_resp_len;$/;"	m	struct:smc_call_struct
+ret_resp_len	tz_driver/switch_queue.c	/^        int *ret_resp_len;$/;"	m	struct:smc_call_struct	file:
+ret_resp_len	tz_driver/teei_client_main.c	/^	int *ret_resp_len;$/;"	m	struct:smc_call_struct	file:
+ret_val	tz_driver/include/teei_client.h	/^	int ret_val;$/;"	m	struct:teei_smc_cdata
+returnCode	ut_keymaster/tci.h	/^    tciReturnCode_t     returnCode; \/**< Return code of command *\/$/;"	m	struct:__anon40
+return_origin	tz_driver/include/teei_client.h	/^	int return_origin;$/;"	m	struct:ser_ses_id
+return_origin	tz_driver/include/teei_client.h	/^	int return_origin;$/;"	m	struct:teei_client_encode_cmd
+return_value	tz_driver/include/teei_client.h	/^	int return_value;$/;"	m	struct:ser_ses_id
+return_value	tz_driver/include/teei_client.h	/^	int return_value;$/;"	m	struct:teei_client_encode_cmd
+rmv_page_order	tz_driver/ut_mm.c	/^static inline void rmv_page_order(struct page *page)$/;"	f	file:
+rsa_crt_priv	ut_keymaster/mt_keymaster_api.h	/^    rsa_crt_priv_key_meta_t rsa_crt_priv; \/**< RSA CRT private key *\/$/;"	m	struct:__anon7
+rsa_crt_priv_key_meta_t	ut_keymaster/mt_keymaster_api.h	/^} rsa_crt_priv_key_meta_t;$/;"	t	typeref:struct:__anon6
+rsa_gen_key	ut_keymaster/mt_keymaster_api.h	/^        rsa_gen_key_t         rsa_gen_key;$/;"	m	union:__anon36::__anon37
+rsa_gen_key_t	ut_keymaster/mt_keymaster_api.h	/^} rsa_gen_key_t;$/;"	t	typeref:struct:__anon14
+rsa_key	ut_keymaster/mt_keymaster_api.h	/^    rsa_key_meta_t   rsa_key;   \/**< RSA key *\/$/;"	m	struct:__anon10
+rsa_key_meta_t	ut_keymaster/mt_keymaster_api.h	/^} rsa_key_meta_t;$/;"	t	typeref:struct:__anon7
+rsa_priv	ut_keymaster/mt_keymaster_api.h	/^    rsa_priv_key_meta_t     rsa_priv;     \/**< RSA private key *\/$/;"	m	struct:__anon7
+rsa_priv_key_meta_t	ut_keymaster/mt_keymaster_api.h	/^} rsa_priv_key_meta_t;$/;"	t	typeref:struct:__anon5
+rsa_pub_key_meta_t	ut_keymaster/mt_keymaster_api.h	/^} rsa_pub_key_meta_t;$/;"	t	typeref:struct:__anon11
+rsa_sign	ut_keymaster/mt_keymaster_api.h	/^        rsa_sign_t            rsa_sign;$/;"	m	union:__anon36::__anon37
+rsa_sign_t	ut_keymaster/mt_keymaster_api.h	/^} rsa_sign_t;$/;"	t	typeref:struct:__anon15
+rsa_verify	ut_keymaster/mt_keymaster_api.h	/^        rsa_verify_t          rsa_verify;$/;"	m	union:__anon36::__anon37
+rsa_verify_t	ut_keymaster/mt_keymaster_api.h	/^} rsa_verify_t;$/;"	t	typeref:struct:__anon16
+s_addr	tz_driver/include/TEEI.h	/^	unsigned long s_addr; \/* that’s a 32-bit long, or 4 bytes *\/$/;"	m	struct:in_addr
+s_addr	tz_socket/TEEI.h	/^	unsigned long s_addr; \/* that’s a 32-bit long, or 4 bytes *\/$/;"	m	struct:in_addr
+s_head	tz_driver/include/teei_smc_struct.h	/^        struct list_head s_head;$/;"	m	struct:teei_shared_mem	typeref:struct:teei_shared_mem::list_head
+sa_data	tz_driver/include/TEEI.h	/^	char sa_data[14];   \/* 14字节协议地址 *\/$/;"	m	struct:sockaddr
+sa_data	tz_socket/TEEI.h	/^	char sa_data[14];   \/* 14字节协议地址 *\/$/;"	m	struct:sockaddr
+sa_family	tz_driver/include/TEEI.h	/^	unsigned short sa_family; \/* 地址族 *\/$/;"	m	struct:sockaddr
+sa_family	tz_socket/TEEI.h	/^	unsigned short sa_family; \/* 地址族 *\/$/;"	m	struct:sockaddr
+search_tlog_entry	tz_driver/tlog.c	/^int search_tlog_entry(void)$/;"	f
+secondary_boot_stage1	tz_driver/teei_client_main.c	/^static void secondary_boot_stage1(void *info)$/;"	f	file:
+secondary_boot_stage2	tz_driver/teei_client_main.c	/^static void secondary_boot_stage2(void *info)$/;"	f	file:
+secondary_init_cmdbuf	tz_driver/teei_client_main.c	/^static void secondary_init_cmdbuf(void *info)$/;"	f	file:
+secondary_init_keymaster_cmdbuf	ut_keymaster/mt_keymaster_service.c	/^static void secondary_init_keymaster_cmdbuf(void *info)$/;"	f	file:
+secondary_invoke_fastcall	tz_driver/backward_driver.c	/^static void secondary_invoke_fastcall(void *info)$/;"	f	file:
+secondary_load_func	tz_driver/irq_register.c	/^static void secondary_load_func(void)$/;"	f	file:
+secondary_load_tee	tz_driver/teei_client_main.c	/^static void secondary_load_tee(void *info)$/;"	f	file:
+secondary_nt_sched_t	tz_driver/global_function.c	/^static void secondary_nt_sched_t(void *info)$/;"	f	file:
+secondary_reetime_handle	tz_driver/backward_driver.c	/^static void secondary_reetime_handle(void *info)$/;"	f	file:
+secondary_send_fp_command	tz_driver/teei_fp.c	/^static void secondary_send_fp_command(void *info)$/;"	f	file:
+secondary_send_gatekeeper_command	tz_driver/teei_gatekeeper.c	/^static void secondary_send_gatekeeper_command(void *info)$/;"	f	file:
+secondary_send_keymaster_command	tz_driver/teei_keymaster.c	/^static void secondary_send_keymaster_command(void *info)$/;"	f	file:
+secondary_teei_invoke_drv	tz_driver/teei_client_main.c	/^static void secondary_teei_invoke_drv(void)$/;"	f	file:
+secondary_teei_smc_call	tz_driver/teei_smc_call.c	/^static void secondary_teei_smc_call(void *info)$/;"	f	file:
+secondary_vfs_handle	tz_driver/backward_driver.c	/^static void secondary_vfs_handle(void *info)$/;"	f	file:
+secure_wq	tz_driver/include/teei_client_main.h	/^struct work_queue *secure_wq;$/;"	v	typeref:struct:work_queue
+sem	teei_fp/fp_func.c	/^	struct semaphore sem;$/;"	m	struct:fp_dev	typeref:struct:fp_dev::semaphore	file:
+sem	tz_socket/socketFun.c	/^	struct semaphore sem;$/;"	m	struct:socket_dev	typeref:struct:socket_dev::semaphore	file:
+sem	tz_vfs/vfsFun.c	/^	struct semaphore sem;$/;"	m	struct:vfs_dev	typeref:struct:vfs_dev::semaphore	file:
+sem	ut_keymaster/mt_keymaster.c	/^	struct semaphore sem;$/;"	m	struct:keymaster_dev	typeref:struct:keymaster_dev::semaphore	file:
+send_fp_command	tz_driver/teei_fp.c	/^int send_fp_command(unsigned long share_memory_size)$/;"	f
+send_gatekeeper_command	tz_driver/teei_gatekeeper.c	/^int send_gatekeeper_command(unsigned long share_memory_size)$/;"	f
+send_keymaster_command	tz_driver/teei_keymaster.c	/^int send_keymaster_command(unsigned long share_memory_size)$/;"	f
+ser_ses_id	tz_driver/include/teei_client.h	/^struct ser_ses_id {$/;"	s
+service_handler	tz_driver/include/backward_driver.h	/^struct service_handler {$/;"	s
+service_handler	tz_driver/include/irq_register.h	/^struct service_handler {$/;"	s
+service_handler	tz_driver/include/tz_service.h	/^struct service_handler {$/;"	s
+service_id	tz_driver/include/teei_common.h	/^	int service_id;$/;"	m	struct:teeic_notify_data
+sess_cnt	tz_driver/include/teei_smc_struct.h	/^        unsigned long sess_cnt;                 \/* session counter *\/$/;"	m	struct:teei_context
+sess_id	tz_driver/include/teei_smc_struct.h	/^        int sess_id;                    \/* ID *\/$/;"	m	struct:teei_session
+sess_link	tz_driver/include/teei_smc_struct.h	/^        struct list_head sess_link;                     \/* link list for the sessions of this context *\/$/;"	m	struct:teei_context	typeref:struct:teei_context::list_head
+session_id	tz_driver/include/teei_client.h	/^	int session_id;$/;"	m	struct:ser_ses_id
+session_id	tz_driver/include/teei_client.h	/^	int session_id;$/;"	m	struct:teei_client_encode_cmd
+session_id	tz_driver/include/teei_client.h	/^	int session_id;$/;"	m	struct:user_ses_init
+session_id	tz_driver/include/teei_client.h	/^	unsigned int session_id;$/;"	m	struct:teei_session_shared_mem_info
+session_id	tz_driver/include/teei_common.h	/^	int session_id;$/;"	m	struct:teeic_notify_data
+set_ack_vdrv_cmd	tz_driver/backward_driver.c	/^void set_ack_vdrv_cmd(unsigned int sys_num)$/;"	f
+set_fp_command	tz_driver/teei_fp.c	/^void set_fp_command(unsigned long memory_size)$/;"	f
+set_gatekeeper_command	tz_driver/teei_gatekeeper.c	/^void set_gatekeeper_command(unsigned long memory_size)$/;"	f
+set_keymaster_command	tz_driver/teei_keymaster.c	/^void set_keymaster_command(unsigned long memory_size)$/;"	f
+set_sch_load_img_cmd	tz_driver/teei_client_main.c	/^void set_sch_load_img_cmd(void)$/;"	f
+set_sch_nq_cmd	tz_driver/teei_smc_call.c	/^void set_sch_nq_cmd(void)$/;"	f
+shared_mem_cnt	tz_driver/include/teei_smc_struct.h	/^        unsigned long shared_mem_cnt;           \/* share memory counter *\/$/;"	m	struct:teei_context
+shared_mem_cnt	tz_driver/teei_client_main.c	/^	int shared_mem_cnt;$/;"	m	struct:teei_shared_mem_head	file:
+shared_mem_list	tz_driver/include/teei_smc_struct.h	/^        struct list_head shared_mem_list;       \/* link list for the share memory of this context *\/$/;"	m	struct:teei_context	typeref:struct:teei_context::list_head
+shared_mem_list	tz_driver/include/teei_smc_struct.h	/^        struct list_head shared_mem_list;       \/* link list for the share memory of this session *\/$/;"	m	struct:teei_session	typeref:struct:teei_session::list_head
+shared_mem_list	tz_driver/teei_client_main.c	/^	struct list_head shared_mem_list;$/;"	m	struct:teei_shared_mem_head	typeref:struct:teei_shared_mem_head::list_head	file:
+signature_data	ut_keymaster/mt_keymaster_api.h	/^    uint32_t  signature_data;      \/**< Signature data buffer *\/$/;"	m	struct:__anon20
+signature_data	ut_keymaster/mt_keymaster_api.h	/^    uint32_t  signature_data;     \/**< Signature data buffer *\/$/;"	m	struct:__anon15
+signature_data	ut_keymaster/mt_keymaster_api.h	/^    uint32_t  signature_data;     \/**< Signature data buffer *\/$/;"	m	struct:__anon16
+signature_data	ut_keymaster/mt_keymaster_api.h	/^    uint32_t  signature_data;     \/**< Signature data buffer *\/$/;"	m	struct:__anon21
+signature_data	ut_keymaster/mt_keymaster_api.h	/^    uint32_t  signature_data;     \/**< Signature data buffer *\/$/;"	m	struct:__anon23
+signature_data	ut_keymaster/mt_keymaster_api.h	/^    uint32_t  signature_data;     \/**< Signature data buffer *\/$/;"	m	struct:__anon24
+signature_data_len	ut_keymaster/mt_keymaster_api.h	/^    uint32_t  signature_data_len;  \/**< Length of signature data buffer *\/$/;"	m	struct:__anon20
+signature_data_len	ut_keymaster/mt_keymaster_api.h	/^    uint32_t  signature_data_len; \/**< Length of signature data buffer *\/$/;"	m	struct:__anon15
+signature_data_len	ut_keymaster/mt_keymaster_api.h	/^    uint32_t  signature_data_len; \/**< Length of signature data buffer *\/$/;"	m	struct:__anon16
+signature_data_len	ut_keymaster/mt_keymaster_api.h	/^    uint32_t  signature_data_len; \/**< Length of signature data buffer *\/$/;"	m	struct:__anon21
+signature_data_len	ut_keymaster/mt_keymaster_api.h	/^    uint32_t  signature_data_len; \/**< Length of signature data buffer *\/$/;"	m	struct:__anon23
+signature_data_len	ut_keymaster/mt_keymaster_api.h	/^    uint32_t  signature_data_len; \/**< Length of signature data buffer *\/$/;"	m	struct:__anon24
+sin_addr	tz_driver/include/TEEI.h	/^	struct in_addr sin_addr;   \/* IP地址 *\/$/;"	m	struct:sockaddr_in	typeref:struct:sockaddr_in::in_addr
+sin_addr	tz_socket/TEEI.h	/^	struct in_addr sin_addr;   \/* IP地址 *\/$/;"	m	struct:sockaddr_in	typeref:struct:sockaddr_in::in_addr
+sin_family	tz_driver/include/TEEI.h	/^	short int sin_family;   \/* 地址族 *\/$/;"	m	struct:sockaddr_in
+sin_family	tz_socket/TEEI.h	/^	short int sin_family;   \/* 地址族 *\/$/;"	m	struct:sockaddr_in
+sin_port	tz_driver/include/TEEI.h	/^	unsigned short int sin_port;   \/* 端口号 *\/$/;"	m	struct:sockaddr_in
+sin_port	tz_socket/TEEI.h	/^	unsigned short int sin_port;   \/* 端口号 *\/$/;"	m	struct:sockaddr_in
+sin_zero	tz_driver/include/TEEI.h	/^	unsigned char sin_zero[8];   \/* 填充0以保持与struct sockaddr同样大小 *\/$/;"	m	struct:sockaddr_in
+sin_zero	tz_socket/TEEI.h	/^	unsigned char sin_zero[8];   \/* 填充0以保持与struct sockaddr同样大小 *\/$/;"	m	struct:sockaddr_in
+size	tz_driver/include/TEEI.h	/^		unsigned int size;$/;"	m	struct:TEEI_socket_response_type::response_func_recv
+size	tz_driver/include/backward_driver.h	/^        unsigned size;$/;"	m	struct:service_handler
+size	tz_driver/include/irq_register.h	/^        unsigned size;$/;"	m	struct:service_handler
+size	tz_driver/include/teei_client.h	/^	int size;$/;"	m	struct:teei_smc_cdata
+size	tz_driver/include/tz_service.h	/^	unsigned size;$/;"	m	struct:service_handler
+size	tz_socket/TEEI.h	/^		unsigned int size;$/;"	m	struct:TEEI_socket_response_type::response_func_recv
+smc_call_entry	tz_driver/teei_client_main.c	/^struct smc_call_struct smc_call_entry;$/;"	v	typeref:struct:smc_call_struct
+smc_call_struct	tz_driver/include/teei_smc_call.h	/^struct smc_call_struct {$/;"	s
+smc_call_struct	tz_driver/switch_queue.c	/^struct smc_call_struct {$/;"	s	file:
+smc_call_struct	tz_driver/teei_client_main.c	/^struct smc_call_struct {$/;"	s	file:
+smc_lock	tz_driver/teei_client_main.c	/^struct semaphore smc_lock;$/;"	v	typeref:struct:semaphore
+so_data	ut_keymaster/mt_keymaster_api.h	/^    uint32_t  so_data;         \/**< Wrapped buffer *\/$/;"	m	struct:__anon17
+so_data_len	ut_keymaster/mt_keymaster_api.h	/^    uint32_t  so_data_len;     \/**< Length of wrapped data buffer *\/$/;"	m	struct:__anon17
+so_len	ut_keymaster/mt_keymaster_api.h	/^	uint32_t  so_len;		 \/**< Secure object length	(of key data) (provided by the trustlet)  *\/$/;"	m	struct:__anon14
+so_len	ut_keymaster/mt_keymaster_api.h	/^    uint32_t  so_len;       \/**< Secure object length (of key data) *\/$/;"	m	struct:__anon19
+so_len	ut_keymaster/mt_keymaster_api.h	/^    uint32_t  so_len;       \/**< Secure object length (of key data) *\/$/;"	m	struct:__anon22
+sockaddr	tz_driver/include/TEEI.h	/^struct sockaddr {$/;"	s
+sockaddr	tz_socket/TEEI.h	/^struct sockaddr {$/;"	s
+sockaddr_in	tz_driver/include/TEEI.h	/^struct sockaddr_in {$/;"	s
+sockaddr_in	tz_socket/TEEI.h	/^struct sockaddr_in {$/;"	s
+socket_buffer_size	tz_driver/include/TEEI.h	4;"	d
+socket_buffer_size	tz_socket/TEEI.h	4;"	d
+socket_dev	tz_socket/socketFun.c	/^struct socket_dev {$/;"	s	file:
+socket_devp	tz_socket/socketFun.c	/^struct socket_dev *socket_devp = NULL;$/;"	v	typeref:struct:socket_dev
+socket_exit	tz_socket/socketFun.c	/^module_exit(socket_exit);$/;"	v
+socket_exit	tz_socket/socketFun.c	/^void socket_exit(void)$/;"	f
+socket_fops	tz_socket/socketFun.c	/^static const struct file_operations socket_fops = {$/;"	v	typeref:struct:file_operations	file:
+socket_init	tz_socket/socketFun.c	/^int socket_init(void)$/;"	f
+socket_init	tz_socket/socketFun.c	/^module_init(socket_init);$/;"	v
+socket_ioctl	tz_socket/socketFun.c	/^static long socket_ioctl(struct file *filp,$/;"	f	file:
+socket_llseek	tz_socket/socketFun.c	/^static loff_t socket_llseek(struct file *filp, loff_t offset, int orig)$/;"	f	file:
+socket_major	tz_socket/socketFun.c	/^static int socket_major = SOCKET_MAJOR;$/;"	v	file:
+socket_open	tz_socket/socketFun.c	/^int socket_open(struct inode *inode, struct file *filp)$/;"	f
+socket_read	tz_socket/socketFun.c	/^static ssize_t socket_read(struct file *filp, char __user *buf,$/;"	f	file:
+socket_release	tz_socket/socketFun.c	/^int socket_release(struct inode *inode, struct file *filp)$/;"	f
+socket_setup_cdev	tz_socket/socketFun.c	/^static void socket_setup_cdev(struct socket_dev *dev, int index)$/;"	f	file:
+socket_write	tz_socket/socketFun.c	/^static ssize_t socket_write(struct file *filp, const char __user *buf,$/;"	f	file:
+sockfd	tz_driver/include/TEEI.h	/^			int sockfd;$/;"	m	struct:TEEI_socket_command::func_arg::func_accept
+sockfd	tz_driver/include/TEEI.h	/^			int sockfd;$/;"	m	struct:TEEI_socket_command::func_arg::func_bind
+sockfd	tz_driver/include/TEEI.h	/^			int sockfd;$/;"	m	struct:TEEI_socket_command::func_arg::func_close
+sockfd	tz_driver/include/TEEI.h	/^			int sockfd;$/;"	m	struct:TEEI_socket_command::func_arg::func_connect
+sockfd	tz_driver/include/TEEI.h	/^			int sockfd;$/;"	m	struct:TEEI_socket_command::func_arg::func_listen
+sockfd	tz_driver/include/TEEI.h	/^			int sockfd;$/;"	m	struct:TEEI_socket_command::func_arg::func_send
+sockfd	tz_socket/TEEI.h	/^			int sockfd;$/;"	m	struct:TEEI_socket_command::func_arg::func_accept
+sockfd	tz_socket/TEEI.h	/^			int sockfd;$/;"	m	struct:TEEI_socket_command::func_arg::func_bind
+sockfd	tz_socket/TEEI.h	/^			int sockfd;$/;"	m	struct:TEEI_socket_command::func_arg::func_close
+sockfd	tz_socket/TEEI.h	/^			int sockfd;$/;"	m	struct:TEEI_socket_command::func_arg::func_connect
+sockfd	tz_socket/TEEI.h	/^			int sockfd;$/;"	m	struct:TEEI_socket_command::func_arg::func_listen
+sockfd	tz_socket/TEEI.h	/^			int sockfd;$/;"	m	struct:TEEI_socket_command::func_arg::func_send
+soter_error_flag	tz_driver/teei_client_main.c	/^unsigned int soter_error_flag = 0;$/;"	v
+src_context	tz_driver/include/teei_common.h	/^	unsigned int    src_context;$/;"	m	struct:teei_smc_cmd
+src_id	tz_driver/include/teei_common.h	/^	unsigned int    src_id;$/;"	m	struct:teei_smc_cmd
+start_index	tz_driver/include/notify_queue.h	/^	unsigned int start_index;$/;"	m	struct:NQ_head
+start_index	tz_driver/include/teei_capi.h	/^	unsigned int start_index;$/;"	m	struct:NQ_head
+svc_id	tz_driver/include/teei_smc_call.h	/^        u32 svc_id;$/;"	m	struct:smc_call_struct
+svc_id	tz_driver/switch_queue.c	/^        u32 svc_id;$/;"	m	struct:smc_call_struct	file:
+svc_id	tz_driver/teei_client_main.c	/^	u32 svc_id;$/;"	m	struct:smc_call_struct	file:
+sw_length	ut_keymaster/mt_keymaster_api.h	/^	uint32_t sw_length;$/;"	m	struct:__anon33
+sw_length	ut_keymaster/mt_keymaster_api.h	/^	uint32_t sw_length;$/;"	m	struct:__anon34
+sw_params_length	ut_keymaster/mt_keymaster_api.h	/^	uint32_t  sw_params_length;$/;"	m	struct:__anon26
+switch_call_struct	tz_driver/switch_queue.c	/^struct switch_call_struct$/;"	s	file:
+switch_fn	tz_driver/switch_queue.c	/^static void switch_fn(struct kthread_work *work)$/;"	f	file:
+switch_head_struct	tz_driver/switch_queue.c	/^struct switch_head_struct$/;"	s	file:
+switch_to_t_os_stages2	tz_driver/teei_client_main.c	/^int switch_to_t_os_stages2(void)$/;"	f
+switch_type	tz_driver/switch_queue.c	/^	int switch_type;$/;"	m	struct:switch_call_struct	file:
+sysno	tz_driver/include/backward_driver.h	/^        unsigned int sysno; \/*! 服务调用号 *\/$/;"	m	struct:service_handler
+sysno	tz_driver/include/backward_driver.h	/^        unsigned int sysno;$/;"	m	struct:ack_vdrv_struct
+sysno	tz_driver/include/irq_register.h	/^        unsigned int sysno; \/*! 服务调用号 *\/$/;"	m	struct:service_handler
+sysno	tz_driver/include/tz_service.h	/^	unsigned int sysno; \/*! 服务调用号 *\/$/;"	m	struct:service_handler
+t_n_nq_phy_addr	tz_driver/include/notify_queue.h	/^	unsigned int t_n_nq_phy_addr;$/;"	m	struct:create_NQ_struct
+t_n_size	tz_driver/include/notify_queue.h	/^	unsigned int t_n_size;$/;"	m	struct:create_NQ_struct
+t_nt_buffer	tz_driver/include/notify_queue.h	/^unsigned long t_nt_buffer;$/;"	v
+t_os_load_image	tz_driver/teei_client_main.c	/^int t_os_load_image(void)$/;"	f
+tciCommandHeader_t	ut_keymaster/tci.h	/^} tciCommandHeader_t;$/;"	t	typeref:struct:__anon39
+tciCommandId_t	ut_keymaster/tci.h	/^typedef uint32_t tciCommandId_t;$/;"	t
+tciMessage_ptr	ut_keymaster/mt_keymaster_api.h	/^} tciMessage_t, *tciMessage_ptr;$/;"	t	typeref:struct:__anon36
+tciMessage_t	ut_keymaster/mt_keymaster_api.h	/^} tciMessage_t, *tciMessage_ptr;$/;"	t	typeref:struct:__anon36
+tciResponseHeader_t	ut_keymaster/tci.h	/^} tciResponseHeader_t;$/;"	t	typeref:struct:__anon40
+tciResponseId_t	ut_keymaster/tci.h	/^typedef uint32_t tciResponseId_t;$/;"	t
+tciReturnCode_t	ut_keymaster/tci.h	/^typedef uint32_t tciReturnCode_t;$/;"	t
+tci_t	ut_keymaster/mt_keymaster_api.h	/^} tci_t;$/;"	t	typeref:struct:__anon38
+tee_name	tz_driver/include/teei_smc_struct.h	/^        char tee_name[TEE_NAME_SIZE];           \/* Name *\/$/;"	m	struct:teei_context
+teei_client_cdev	tz_driver/teei_client_main.c	/^static struct cdev teei_client_cdev;$/;"	v	typeref:struct:cdev	file:
+teei_client_close_session_for_service	tz_driver/teei_capi.c	/^int teei_client_close_session_for_service($/;"	f
+teei_client_context_close	tz_driver/teei_capi.c	/^int teei_client_context_close(void *private_data, void *argp)$/;"	f
+teei_client_context_init	tz_driver/teei_capi.c	/^int teei_client_context_init(void *private_data, void *argp)$/;"	f
+teei_client_decode_array_space	tz_driver/teei_capi.c	/^int teei_client_decode_array_space(void *private_data, void *argp)$/;"	f
+teei_client_decode_uint32	tz_driver/teei_capi.c	/^int teei_client_decode_uint32(void *private_data, void *argp)$/;"	f
+teei_client_device_no	tz_driver/teei_client_main.c	/^static dev_t teei_client_device_no;$/;"	v	file:
+teei_client_encode_array	tz_driver/teei_capi.c	/^int teei_client_encode_array(void *private_data, void *argp)$/;"	f
+teei_client_encode_array_64bit	tz_driver/teei_capi.c	/^int teei_client_encode_array_64bit(void *private_data, void *argp)$/;"	f
+teei_client_encode_cmd	tz_driver/include/teei_client.h	/^struct teei_client_encode_cmd {$/;"	s
+teei_client_encode_mem_ref	tz_driver/teei_capi.c	/^int teei_client_encode_mem_ref(void *private_data, void *argp)$/;"	f
+teei_client_encode_mem_ref_64bit	tz_driver/teei_capi.c	/^int teei_client_encode_mem_ref_64bit(void *private_data, void *argp)$/;"	f
+teei_client_encode_uint32	tz_driver/teei_capi.c	/^int teei_client_encode_uint32(void *private_data, void *argp)$/;"	f
+teei_client_encode_uint32_64bit	tz_driver/teei_capi.c	/^int teei_client_encode_uint32_64bit(void *private_data, void *argp)$/;"	f
+teei_client_exit	tz_driver/teei_client_main.c	/^module_exit(teei_client_exit);$/;"	v
+teei_client_exit	tz_driver/teei_client_main.c	/^static void teei_client_exit(void)$/;"	f	file:
+teei_client_fops	tz_driver/teei_client_main.c	/^static const struct file_operations teei_client_fops = {$/;"	v	typeref:struct:file_operations	file:
+teei_client_get_decode_type	tz_driver/teei_capi.c	/^int teei_client_get_decode_type(void *private_data, void *argp)$/;"	f
+teei_client_init	tz_driver/teei_client_main.c	/^module_init(teei_client_init);$/;"	v
+teei_client_init	tz_driver/teei_client_main.c	/^static int teei_client_init(void)$/;"	f	file:
+teei_client_ioctl	tz_driver/teei_client_main.c	/^static long teei_client_ioctl(struct file *file, unsigned cmd, unsigned long arg)$/;"	f	file:
+teei_client_mmap	tz_driver/teei_client_main.c	/^static int teei_client_mmap(struct file *filp, struct vm_area_struct *vma)$/;"	f	file:
+teei_client_open	tz_driver/teei_client_main.c	/^static int teei_client_open(struct inode *inode, struct file *file)$/;"	f	file:
+teei_client_operation_release	tz_driver/teei_capi.c	/^int teei_client_operation_release(void *private_data, void *argp)$/;"	f
+teei_client_prepare_decode	tz_driver/teei_capi.c	/^int teei_client_prepare_decode(void *private_data,$/;"	f
+teei_client_prepare_encode	tz_driver/teei_capi.c	/^int teei_client_prepare_encode(void *private_data,$/;"	f
+teei_client_release	tz_driver/teei_client_main.c	/^static int teei_client_release(struct inode *inode, struct file *file)$/;"	f	file:
+teei_client_send_cmd	tz_driver/teei_capi.c	/^int teei_client_send_cmd(void *private_data, void *argp)$/;"	f
+teei_client_service_exit	tz_driver/teei_capi.c	/^int teei_client_service_exit(void *private_data)$/;"	f
+teei_client_session_close	tz_driver/teei_capi.c	/^int teei_client_session_close(void *private_data, void *argp)$/;"	f
+teei_client_session_init	tz_driver/teei_capi.c	/^int teei_client_session_init(void *private_data, void *argp)$/;"	f
+teei_client_session_open	tz_driver/teei_capi.c	/^int teei_client_session_open(void *private_data, void *argp)$/;"	f
+teei_client_shared_mem_alloc	tz_driver/teei_capi.c	/^int teei_client_shared_mem_alloc(void *private_data, void *argp)$/;"	f
+teei_client_shared_mem_free	tz_driver/teei_capi.c	/^int teei_client_shared_mem_free(void *private_data, void *argp)$/;"	f
+teei_client_unioctl	tz_driver/teei_client_main.c	/^static long teei_client_unioctl(struct file *file, unsigned cmd, unsigned long arg)$/;"	f	file:
+teei_cmd_status	tz_driver/include/teei_common.h	/^enum teei_cmd_status {$/;"	g
+teei_cmd_type	tz_driver/include/teei_common.h	/^	unsigned int    teei_cmd_type;$/;"	m	struct:teei_smc_cmd
+teei_cmd_type	tz_driver/include/teei_id.h	/^enum teei_cmd_type {$/;"	g
+teei_cmd_type	tz_driver/include/teei_smc_call.h	/^        u32 teei_cmd_type;$/;"	m	struct:smc_call_struct
+teei_cmd_type	tz_driver/switch_queue.c	/^        u32 teei_cmd_type;$/;"	m	struct:smc_call_struct	file:
+teei_cmd_type	tz_driver/teei_client_main.c	/^	u32 teei_cmd_type;$/;"	m	struct:smc_call_struct	file:
+teei_cmd_type	tz_vfs/teei_id.h	/^enum teei_cmd_type {$/;"	g
+teei_config_cdev	tz_driver/teei_client_main.c	/^static struct cdev teei_config_cdev;$/;"	v	typeref:struct:cdev	file:
+teei_config_device_no	tz_driver/teei_client_main.c	/^static dev_t teei_config_device_no;$/;"	v	file:
+teei_config_flag	tz_driver/teei_client_main.c	/^unsigned long teei_config_flag = 0;$/;"	v
+teei_config_fops	tz_driver/teei_client_main.c	/^static const struct file_operations teei_config_fops = {$/;"	v	typeref:struct:file_operations	file:
+teei_config_init	tz_driver/teei_client_main.c	/^static int teei_config_init(void)$/;"	f	file:
+teei_config_ioctl	tz_driver/teei_client_main.c	/^static long teei_config_ioctl(struct file *file, unsigned cmd, unsigned long arg)$/;"	f	file:
+teei_config_mmap	tz_driver/teei_client_main.c	/^static int teei_config_mmap(struct file *filp, struct vm_area_struct *vma)$/;"	f	file:
+teei_config_open	tz_driver/teei_client_main.c	/^static int teei_config_open(struct inode *inode, struct file *file)$/;"	f	file:
+teei_config_release	tz_driver/teei_client_main.c	/^static int teei_config_release(struct inode *inode, struct file *file)$/;"	f	file:
+teei_context	tz_driver/include/teei_smc_struct.h	/^struct teei_context {$/;"	s
+teei_contexts_head	tz_driver/include/teei_capi.h	/^struct teei_contexts_head {$/;"	s
+teei_contexts_head	tz_driver/include/teei_smc_call.h	/^struct teei_contexts_head {$/;"	s
+teei_contexts_head	tz_driver/teei_client_main.c	/^struct teei_contexts_head {$/;"	s	file:
+teei_contexts_head	tz_driver/teei_client_main.c	/^} teei_contexts_head;$/;"	v	typeref:struct:teei_contexts_head
+teei_contexts_sem	tz_driver/include/teei_capi.h	/^        struct rw_semaphore teei_contexts_sem;$/;"	m	struct:teei_contexts_head	typeref:struct:teei_contexts_head::rw_semaphore
+teei_contexts_sem	tz_driver/include/teei_smc_call.h	/^        struct rw_semaphore teei_contexts_sem;$/;"	m	struct:teei_contexts_head	typeref:struct:teei_contexts_head::rw_semaphore
+teei_contexts_sem	tz_driver/teei_client_main.c	/^	struct rw_semaphore teei_contexts_sem;$/;"	m	struct:teei_contexts_head	typeref:struct:teei_contexts_head::rw_semaphore	file:
+teei_cpu_id	tz_driver/teei_client_main.c	/^static int teei_cpu_id[]={0x0000, 0x0001, 0x0002, 0x0003, 0x0100, 0x0101, 0x0102, 0x0103,0x0200,0x0201,0x0202,0x0203};$/;"	v	file:
+teei_create_context	tz_driver/teei_capi.c	/^struct teei_context *teei_create_context(int dev_count)$/;"	f
+teei_create_session	tz_driver/teei_capi.c	/^struct teei_session *teei_create_session(struct teei_context *cont)$/;"	f
+teei_enc_data_type	tz_driver/include/teei_id.h	/^enum teei_enc_data_type {$/;"	g
+teei_enc_data_type	tz_vfs/teei_id.h	/^enum teei_enc_data_type {$/;"	g
+teei_encode	tz_driver/include/teei_smc_struct.h	/^struct teei_encode {$/;"	s
+teei_encode_meta	tz_driver/include/teei_common.h	/^struct teei_encode_meta {$/;"	s
+teei_fastcall_task	tz_driver/teei_client_main.c	/^static struct task_struct *teei_fastcall_task;$/;"	v	typeref:struct:task_struct	file:
+teei_flags	tz_driver/teei_client_main.c	/^unsigned int teei_flags = 0;$/;"	v
+teei_invoke_drv	tz_driver/teei_client_main.c	/^static void teei_invoke_drv(void)$/;"	f	file:
+teei_sema	tz_driver/include/teei_common.h	/^	struct semaphore *teei_sema;$/;"	m	struct:teei_smc_cmd	typeref:struct:teei_smc_cmd::semaphore
+teei_service_init_first	tz_driver/teei_client_main.c	/^int teei_service_init_first(void)$/;"	f
+teei_service_init_second	tz_driver/teei_client_main.c	/^int teei_service_init_second(void)$/;"	f
+teei_session	tz_driver/include/teei_smc_struct.h	/^struct teei_session {$/;"	s
+teei_session_shared_mem_info	tz_driver/include/teei_client.h	/^struct teei_session_shared_mem_info {$/;"	s
+teei_shared_mem	tz_driver/include/teei_smc_struct.h	/^struct teei_shared_mem {$/;"	s
+teei_shared_mem_head	tz_driver/teei_client_main.c	/^struct teei_shared_mem_head {$/;"	s	file:
+teei_smc	tz_driver/teei_smc_call.c	/^static u32 teei_smc(u32 cmd_addr, int size, int valid_flag)$/;"	f	file:
+teei_smc_call	tz_driver/teei_smc_call.c	/^int teei_smc_call(u32 teei_cmd_type,$/;"	f
+teei_smc_cdata	tz_driver/include/teei_client.h	/^struct teei_smc_cdata {$/;"	s
+teei_smc_cmd	tz_driver/include/teei_common.h	/^struct teei_smc_cmd {$/;"	s
+teei_switch_task	tz_driver/teei_client_main.c	/^struct task_struct *teei_switch_task;$/;"	v	typeref:struct:task_struct
+teei_vfs_flag	tz_driver/include/backward_driver.h	/^unsigned long teei_vfs_flag;$/;"	v
+teeic_notify_data	tz_driver/include/teei_common.h	/^struct teeic_notify_data {$/;"	s
+teeic_param_pos	tz_driver/include/teei_common.h	/^enum teeic_param_pos {$/;"	g
+teeic_param_type	tz_driver/include/teei_common.h	/^enum teeic_param_type {$/;"	g
+teeic_param_value	tz_driver/include/teei_common.h	/^enum teeic_param_value {$/;"	g
+timeHiAndVersion	tz_driver/include/teei_client.h	/^	uint16_t timeHiAndVersion;$/;"	m	struct:TEEC_UUID
+timeLow	tz_driver/include/teei_client.h	/^	uint32_t timeLow;$/;"	m	struct:TEEC_UUID
+timeMid	tz_driver/include/teei_client.h	/^	uint16_t timeMid;$/;"	m	struct:TEEC_UUID
+timeout	tz_driver/include/backward_driver.h	/^			int timeout;$/;"	m	struct:TEEI_printer_command::func_arg::func_write
+tlog_buf	tz_driver/tlog.c	/^unsigned long tlog_buf = NULL;$/;"	v
+tlog_ent	tz_driver/include/tlog.h	/^static struct tlog_struct tlog_ent[TLOG_MAX_CNT];$/;"	v	typeref:struct:tlog_struct
+tlog_func	tz_driver/tlog.c	/^void tlog_func(struct work_struct *entry)$/;"	f
+tlog_handler	tz_driver/tlog.c	/^irqreturn_t tlog_handler(void)$/;"	f
+tlog_line	tz_driver/tlog.c	/^unsigned char tlog_line[256];$/;"	v
+tlog_line_len	tz_driver/tlog.c	/^unsigned long tlog_line_len = 0;$/;"	v
+tlog_message_buff	tz_driver/include/teei_client_main.h	/^unsigned long tlog_message_buff;$/;"	v
+tlog_phy_addr	tz_driver/teei_client_main.c	/^	unsigned long tlog_phy_addr;$/;"	m	struct:boot_stage1_struct	file:
+tlog_phy_addr	tz_driver/teei_client_main.c	/^	unsigned long tlog_phy_addr;$/;"	m	struct:init_cmdbuf_struct	file:
+tlog_pos	tz_driver/tlog.c	/^unsigned long tlog_pos = 0;$/;"	v
+tlog_print	tz_driver/tlog.c	/^int tlog_print(unsigned long log_start)$/;"	f
+tlog_struct	tz_driver/include/tlog.h	/^struct tlog_struct {$/;"	s
+tlog_thread	tz_driver/tlog.c	/^struct task_struct *tlog_thread = NULL;$/;"	v	typeref:struct:task_struct
+tlog_thread_buff	tz_driver/tlog.c	/^unsigned long tlog_thread_buff = 0;$/;"	v
+tlog_worker	tz_driver/tlog.c	/^int tlog_worker(void *p)$/;"	f
+transSize	tz_driver/include/TEEI.h	/^	unsigned int transSize;$/;"	m	union:TEEI_socket_response_type
+transSize	tz_socket/TEEI.h	/^	unsigned int transSize;$/;"	m	union:TEEI_socket_response_type
+type	tz_driver/include/TEEI.h	/^			int type;$/;"	m	struct:TEEI_socket_command::func_arg::func_socket
+type	tz_driver/include/teei_common.h	/^	int type;$/;"	m	struct:teei_encode_meta
+type	tz_driver/include/tlog.h	/^	int type;$/;"	m	struct:ut_log_entry
+type	tz_socket/TEEI.h	/^			int type;$/;"	m	struct:TEEI_socket_command::func_arg::func_socket
+type	ut_keymaster/mt_keymaster_api.h	/^	uint32_t  type; 		  \/**< Key pair type. RSA or RSACRT *\/$/;"	m	struct:__anon14
+type	ut_keymaster/mt_keymaster_api.h	/^    uint32_t  type;              \/**< Key type *\/$/;"	m	struct:__anon18
+type	ut_keymaster/mt_keymaster_api.h	/^    uint32_t  type;           \/**< RSA key pair type. RSA or RSA CRT *\/$/;"	m	struct:__anon7
+tz_driver_cpu_callback	tz_driver/teei_client_main.c	/^static int __cpuinit tz_driver_cpu_callback(struct notifier_block *self,$/;"	f	file:
+tz_driver_cpu_notifer	tz_driver/teei_client_main.c	/^static struct notifier_block tz_driver_cpu_notifer = {$/;"	v	typeref:struct:notifier_block	file:
+tz_free_shared_mem	tz_driver/teei_client_main.c	/^void tz_free_shared_mem(void *addr, size_t size)$/;"	f
+tz_malloc	tz_driver/teei_client_main.c	/^void *tz_malloc(size_t size, int flags)$/;"	f
+tz_malloc_shared_mem	tz_driver/teei_client_main.c	/^void *tz_malloc_shared_mem(size_t size, int flags)$/;"	f
+tz_vfs_open	tz_vfs/vfsFun.c	/^int tz_vfs_open(struct inode *inode, struct file *filp)$/;"	f
+tz_vfs_read	tz_vfs/vfsFun.c	/^static ssize_t tz_vfs_read(struct file *filp, char __user *buf,$/;"	f	file:
+tz_vfs_release	tz_vfs/vfsFun.c	/^int tz_vfs_release(struct inode *inode, struct file *filp)$/;"	f
+tz_vfs_write	tz_vfs/vfsFun.c	/^static ssize_t tz_vfs_write(struct file *filp, const char __user *buf,$/;"	f	file:
+u_addr	tz_driver/include/teei_smc_struct.h	/^        void *u_addr;$/;"	m	struct:teei_shared_mem
+user_mem_addr	tz_driver/include/teei_client.h	/^	u32 user_mem_addr;$/;"	m	struct:teei_session_shared_mem_info
+user_ses_init	tz_driver/include/teei_client.h	/^struct user_ses_init {$/;"	s
+usr_addr	tz_driver/include/teei_common.h	/^	unsigned long usr_addr;		\/* data address in user space *\/$/;"	m	struct:teei_encode_meta
+ut_alloc_pages	tz_driver/ut_mm.c	/^ut_alloc_pages(gfp_t gfp_mask, unsigned int order,$/;"	f	file:
+ut_alloc_pages_nodemask	tz_driver/ut_mm.c	/^ut_alloc_pages_nodemask(gfp_t gfp_mask, unsigned int order,$/;"	f
+ut_buffered_rmqueue	tz_driver/ut_mm.c	/^struct page *ut_buffered_rmqueue(struct zone *preferred_zone,$/;"	f	file:
+ut_drv_irq_handler	tz_driver/irq_register.c	/^static irqreturn_t ut_drv_irq_handler(void)$/;"	f	file:
+ut_fastcall_worker	tz_driver/teei_client_main.c	/^DEFINE_KTHREAD_WORKER(ut_fastcall_worker);$/;"	v
+ut_get_free_pages	tz_driver/ut_mm.c	/^unsigned long ut_get_free_pages(gfp_t gfp_mask, unsigned int order)$/;"	f
+ut_get_page_from_freelist	tz_driver/ut_mm.c	/^ut_get_page_from_freelist(gfp_t gfp_mask, nodemask_t *nodemask, unsigned int order,$/;"	f	file:
+ut_log_buf_head	tz_driver/include/tlog.h	/^struct ut_log_buf_head {$/;"	s
+ut_log_entry	tz_driver/include/tlog.h	/^struct ut_log_entry {$/;"	s
+ut_rmqueue	tz_driver/ut_mm.c	/^static struct page *ut_rmqueue(struct zone *zone, unsigned int order,$/;"	f	file:
+ut_rmqueue_smallest	tz_driver/ut_mm.c	/^struct page *ut_rmqueue_smallest(struct zone *zone, unsigned int order,$/;"	f	file:
+ut_smc_call	tz_driver/switch_queue.c	/^static int ut_smc_call(void *buff)$/;"	f	file:
+ut_smc_call_work	tz_driver/switch_queue.c	/^struct ut_smc_call_work {$/;"	s	file:
+uuid	tz_driver/include/teei_client.h	/^	struct TEEC_UUID uuid;$/;"	m	struct:ser_ses_id	typeref:struct:ser_ses_id::TEEC_UUID
+valid	tz_driver/include/tlog.h	/^	int valid;$/;"	m	struct:tlog_struct
+valid_flag	tz_driver/include/irq_register.h	/^        unsigned int valid_flag;$/;"	m	struct:NQ_entry
+valid_flag	tz_driver/include/notify_queue.h	/^	unsigned int valid_flag;$/;"	m	struct:NQ_entry
+valid_flag	tz_driver/include/teei_capi.h	/^	unsigned int valid_flag;$/;"	m	struct:NQ_entry
+valid_flag	tz_driver/include/teei_client.h	/^	int valid_flag;$/;"	m	struct:teei_smc_cdata
+validity	ut_keymaster/mt_keymaster_api.h	/^    uint32_t  validity;           \/**< Signature validity *\/$/;"	m	struct:__anon16
+validity	ut_keymaster/mt_keymaster_api.h	/^    uint32_t  validity;           \/**< Signature validity *\/$/;"	m	struct:__anon21
+validity	ut_keymaster/mt_keymaster_api.h	/^    uint32_t  validity;           \/**< Signature validity *\/$/;"	m	struct:__anon24
+value	tz_driver/include/TEEI.h	/^	int value;$/;"	m	union:TEEI_socket_response_type
+value	tz_driver/include/backward_driver.h	/^	int value;$/;"	m	union:TEEI_printer_response
+value	tz_socket/TEEI.h	/^	int value;$/;"	m	union:TEEI_socket_response_type
+value	tz_vfs/TEEI.h	/^	int value;$/;"	m	union:TEEI_vfs_response
+value_flag	tz_driver/include/teei_client.h	/^	int value_flag;$/;"	m	struct:teei_client_encode_cmd
+value_flag	tz_driver/include/teei_common.h	/^	int value_flag;			\/* value of a or b *\/$/;"	m	struct:teei_encode_meta
+vdrv_phy_addr	tz_driver/include/backward_driver.h	/^        unsigned int vdrv_phy_addr;$/;"	m	struct:create_vdrv_struct
+vdrv_size	tz_driver/include/backward_driver.h	/^        unsigned int vdrv_size;$/;"	m	struct:create_vdrv_struct
+vdrv_type	tz_driver/include/backward_driver.h	/^        unsigned int vdrv_type;$/;"	m	struct:create_vdrv_struct
+version	tz_driver/include/tlog.h	/^	int version;$/;"	m	struct:ut_log_buf_head
+vfs_addr	tz_driver/include/irq_register.h	/^        unsigned long vfs_addr;$/;"	m	struct:load_soter_entry
+vfs_deinit	tz_driver/backward_driver.c	/^static void vfs_deinit(struct service_handler *handler) \/*! stop service  *\/$/;"	f	file:
+vfs_dev	tz_vfs/vfsFun.c	/^struct vfs_dev {$/;"	s	file:
+vfs_devp	tz_vfs/vfsFun.c	/^struct vfs_dev *vfs_devp = NULL;$/;"	v	typeref:struct:vfs_dev
+vfs_exit	tz_vfs/vfsFun.c	/^module_exit(vfs_exit);$/;"	v
+vfs_exit	tz_vfs/vfsFun.c	/^void vfs_exit(void)$/;"	f
+vfs_flush_address	tz_driver/include/backward_driver.h	/^static unsigned char *vfs_flush_address;$/;"	v
+vfs_fops	tz_vfs/vfsFun.c	/^static const struct file_operations vfs_fops = {$/;"	v	typeref:struct:file_operations	file:
+vfs_handle	tz_driver/backward_driver.c	/^static int vfs_handle(struct service_handler *handler)$/;"	f	file:
+vfs_handle_entry	tz_driver/include/backward_driver.h	/^struct vfs_handle_struct vfs_handle_entry;$/;"	v	typeref:struct:vfs_handle_struct
+vfs_handle_struct	tz_driver/include/backward_driver.h	/^struct vfs_handle_struct {$/;"	s
+vfs_handler	tz_driver/backward_driver.c	/^struct service_handler vfs_handler;$/;"	v	typeref:struct:service_handler
+vfs_init	tz_driver/backward_driver.c	/^static void vfs_init(struct service_handler *handler) \/*! init service *\/$/;"	f	file:
+vfs_init	tz_vfs/vfsFun.c	/^int vfs_init(void)$/;"	f
+vfs_init	tz_vfs/vfsFun.c	/^module_init(vfs_init);$/;"	v
+vfs_major	tz_vfs/vfsFun.c	/^static int vfs_major = VFS_MAJOR;$/;"	v	file:
+vfs_phy_addr	tz_driver/teei_client_main.c	/^	unsigned long vfs_phy_addr;$/;"	m	struct:boot_stage1_struct	file:
+vfs_setup_cdev	tz_vfs/vfsFun.c	/^static void vfs_setup_cdev(struct vfs_dev *dev, int index)$/;"	f	file:
+vfs_thread_function	tz_driver/backward_driver.c	/^int vfs_thread_function(unsigned long virt_addr, unsigned long para_vaddr, unsigned long buff_vaddr)$/;"	f
+work	tz_driver/include/irq_register.h	/^        struct work_struct work;$/;"	m	struct:load_soter_entry	typeref:struct:load_soter_entry::work_struct
+work	tz_driver/include/irq_register.h	/^        struct work_struct work;$/;"	m	struct:work_entry	typeref:struct:work_entry::work_struct
+work	tz_driver/include/tlog.h	/^	struct work_struct work;$/;"	m	struct:tlog_struct	typeref:struct:tlog_struct::work_struct
+work	tz_driver/switch_queue.c	/^        struct kthread_work work;$/;"	m	struct:ut_smc_call_work	typeref:struct:ut_smc_call_work::kthread_work	file:
+work_ent	tz_driver/include/irq_register.h	/^static struct work_entry work_ent;$/;"	v	typeref:struct:work_entry
+work_entry	tz_driver/include/irq_register.h	/^struct work_entry {$/;"	s
+work_func	tz_driver/irq_register.c	/^void work_func(struct work_struct *entry)$/;"	f
+write_pos	tz_driver/include/tlog.h	/^	int write_pos;$/;"	m	struct:ut_log_buf_head
+x_len	ut_keymaster/mt_keymaster_api.h	/^    uint32_t  x_len;        \/**< x length *\/$/;"	m	struct:__anon19
+x_len	ut_keymaster/mt_keymaster_api.h	/^    uint32_t  x_len;      \/**< x length *\/$/;"	m	struct:__anon8
+y_len	ut_keymaster/mt_keymaster_api.h	/^    uint32_t  y_len;        \/**< y length *\/$/;"	m	struct:__anon12
+y_len	ut_keymaster/mt_keymaster_api.h	/^    uint32_t  y_len;        \/**< y length *\/$/;"	m	struct:__anon19
+y_len	ut_keymaster/mt_keymaster_api.h	/^    uint32_t  y_len;      \/**< y length *\/$/;"	m	struct:__anon8
