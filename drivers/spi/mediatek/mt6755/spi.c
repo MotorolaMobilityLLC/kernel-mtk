@@ -126,6 +126,28 @@ static void disable_clk(struct mt_spi_t *ms)
 
 }
 
+/* lenovo-sw, chenzz3, TEEI-P1, begin */
+void mt_spi_enable_clk(struct spi_device* spidev)
+{
+	struct spi_master *master;
+	struct mt_spi_t *ms;
+
+	master = spidev->master;
+	ms = spi_master_get_devdata(master);
+    enable_clk(ms);
+}
+
+void mt_spi_disable_clk(struct spi_device* spidev)
+{
+	struct spi_master *master;
+	struct mt_spi_t *ms;
+
+	master = spidev->master;
+	ms = spi_master_get_devdata(master);
+    disable_clk(ms);
+}
+/* lenovo-sw, chenzz3, TEEI-P1, end */
+
 #ifdef SPI_DEBUG
 #define SPI_DBG(fmt, args...) pr_debug("spi.c:%5d: <%s>" fmt, __LINE__, __func__, ##args)
 
@@ -1605,6 +1627,9 @@ static int __init mt_spi_probe(struct platform_device *pdev)
 		dev_err(&pdev->dev, "spi_register_master fails.\n");
 		goto out_free;
 	} else {
+		/* lenovo-sw, chenzz3, TEEI-P1, begin */
+		enable_clk(ms);
+		/* lenovo-sw, chenzz3, TEEI-P1, end */
 		SPI_DBG("spi register master success.\n");
 		/* reg_val = spi_readl ( ms, SPI_CMD_REG ); */
 		/* reg_val &= SPI_CMD_RST_MASK; */

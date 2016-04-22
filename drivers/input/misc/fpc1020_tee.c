@@ -80,6 +80,9 @@ struct fpc1020_data {
 	struct work_struct irq_worker;
 };
 
+extern void mt_spi_enable_clk(struct spi_device* spidev);
+extern void mt_spi_disable_clk(struct spi_device* spidev);
+
 static int hw_reset(struct  fpc1020_data *fpc1020)
 {
 	int irq_gpio;
@@ -114,6 +117,16 @@ static DEVICE_ATTR(hw_reset, S_IWUSR, NULL, hw_reset_set);
 
 static ssize_t clk_enable_set(struct device *dev,struct device_attribute *attr, const char *buf, size_t count)
 {
+	struct  fpc1020_data *fpc1020 = dev_get_drvdata(dev);
+
+	if (*buf == 0x30) {
+		mt_spi_disable_clk(fpc1020->spi);
+		pr_info("%s: disable\n", __func__);
+	} else {
+		mt_spi_enable_clk(fpc1020->spi);
+		pr_info("%s: enable\n", __func__);
+	}
+
     return count;
 }
 static DEVICE_ATTR(clk_enable, S_IWUSR|S_IWGRP, NULL, clk_enable_set);
@@ -355,6 +368,7 @@ static int fpc1020_probe(struct spi_device *spi)
 	fpc1020->dev = dev;
 	dev_set_drvdata(dev, fpc1020);
 	fpc1020->spi = spi;
+	mt_spi_enable_clk(spi);
 
 	INIT_WORK(&fpc1020->irq_worker, irq_work_function);
 
