@@ -288,7 +288,6 @@ static void mtkfb_blank_resume(void)
 		DISPERR("primary display resume failed\n");
 		return;
 	}
-<<<<<<< HEAD
 //lenovo wuwl10 20151013 add CUSTOM_LCM_FEATURE beginbegin
 #ifdef CONFIG_LENOVO_CUSTOM_LCM_FEATURE
 	if(LCM_Feature_set_resume){
@@ -297,11 +296,7 @@ static void mtkfb_blank_resume(void)
 	}
 #endif
 //lenovo wuwl10 20151013 add CUSTOM_LCM_FEATURE beginend
-	DISPMSG("[FB Driver] leave late_resume\n");
-=======
-
 	DISPMSG("[FB Driver] leave blank_resume\n");
->>>>>>> lenovo/caf/mt6755_m
 
 }
 
