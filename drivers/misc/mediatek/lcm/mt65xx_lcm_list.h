@@ -249,10 +249,14 @@ extern LCM_DRIVER hx8394c_wxga_dsi_vdo_lcm_drv;
 extern LCM_DRIVER nt35595_truly_fhd_dsi_vdo_lcm_drv;
 extern LCM_DRIVER nt36850_wqhd_dsi_2k_cmd_lcm_drv;
 extern LCM_DRIVER s6e3ha3_wqhd_2k_cmd_lcm_drv;
+<<<<<<< HEAD
 //lenovo_sw wuwl10 20150906 add for lcm
 extern LCM_DRIVER nt35596_fhd_dsi_vdo_tm_lcm_drv;
 extern LCM_DRIVER otm1901_fhd_dsi_vdo_boe_lcm_drv;
 extern LCM_DRIVER ft8716_fhd_dsi_vdo_tm_lcm_drv;
+=======
+extern LCM_DRIVER nt35595_fhd_dsi_cmd_truly_nt50358_720p_extern_lcm_drv;
+>>>>>>> lenovo/caf/mt6755_m
 
 #ifdef BUILD_LK
 extern void mdelay(unsigned long msec);

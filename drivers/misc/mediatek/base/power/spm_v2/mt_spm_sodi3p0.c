@@ -32,6 +32,13 @@
 #include <mt-plat/mt_io.h>
 
 #include <mt_spm_sodi3.h>
+#include "mt_spm.h" /* for spm_vmd_sel_gpio_set */
+
+#if defined(CONFIG_ARCH_MT6755)
+#include <mt_clkbuf_ctl.h>
+#endif
+
+#include "ext_wd_drv.h"
 
 
 /**************************************
@@ -170,11 +177,7 @@ struct spm_lp_scen __spm_sodi3 = {
 	.pwrctrl = &sodi3_ctrl,
 };
 
-#if defined(CONFIG_ARCH_MT6755)
-static bool gSpm_sodi3_en = true;
-#elif defined(CONFIG_ARCH_MT6797)
 static bool gSpm_sodi3_en;
-#endif
 
 static unsigned long int sodi3_logout_prev_time;
 static int pre_emi_refresh_cnt;
@@ -199,10 +202,21 @@ static void spm_sodi3_pre_process(void)
 	spm_bypass_boost_gpio_set();
 
 #if defined(CONFIG_ARCH_MT6755)
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+	spm_vmd_sel_gpio_set();
+#endif
+
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+	pmic_read_interface_nolock(PMIC_LDO_VSRAM_PROC_VOSEL_ON_ADDR,
+					&val,
+					PMIC_LDO_VSRAM_PROC_VOSEL_ON_MASK,
+					PMIC_LDO_VSRAM_PROC_VOSEL_ON_SHIFT);
+#else
 	pmic_read_interface_nolock(MT6351_PMIC_BUCK_VSRAM_PROC_VOSEL_ON_ADDR,
 					&val,
 					MT6351_PMIC_BUCK_VSRAM_PROC_VOSEL_ON_MASK,
 					MT6351_PMIC_BUCK_VSRAM_PROC_VOSEL_ON_SHIFT);
+#endif
 	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_DEEPIDLE, IDX_DI_VSRAM_NORMAL, val);
 #elif defined(CONFIG_ARCH_MT6797)
 	pmic_read_interface_nolock(MT6351_PMIC_RG_VCORE_VDIFF_ENLOWIQ_ADDR, &val, 0xFFFF, 0);
@@ -216,6 +230,15 @@ static void spm_sodi3_pre_process(void)
 	__spm_pmic_low_iq_mode(1);
 #endif
 
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+	pmic_read_interface_nolock(PMIC_RG_SRCLKEN_IN2_EN_ADDR, &val, 0x037F, 0);
+	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_DEEPIDLE,
+					IDX_DI_SRCCLKEN_IN2_NORMAL,
+					val | (1 << PMIC_RG_SRCLKEN_IN2_EN_SHIFT));
+	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_DEEPIDLE,
+					IDX_DI_SRCCLKEN_IN2_SLEEP,
+					val & ~(1 << PMIC_RG_SRCLKEN_IN2_EN_SHIFT));
+#else
 	pmic_read_interface_nolock(MT6351_TOP_CON, &val, 0x037F, 0);
 	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_DEEPIDLE,
 					IDX_DI_SRCCLKEN_IN2_NORMAL,
@@ -223,6 +246,17 @@ static void spm_sodi3_pre_process(void)
 	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_DEEPIDLE,
 					IDX_DI_SRCCLKEN_IN2_SLEEP,
 					val & ~(1 << MT6351_PMIC_RG_SRCLKEN_IN2_EN_SHIFT));
+#endif
+
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+	pmic_read_interface_nolock(PMIC_BUCK_VPROC_VOSEL_ON_ADDR,
+					&val,
+					PMIC_BUCK_VPROC_VOSEL_ON_MASK,
+					PMIC_BUCK_VPROC_VOSEL_ON_SHIFT);
+	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_DEEPIDLE, IDX_DI_VPROC_NORMAL, val);
+#else
+	/* nothing */
+#endif
 
 	/* set PMIC WRAP table for deepidle power control */
 	mt_spm_pmic_wrap_set_phase(PMIC_WRAP_PHASE_DEEPIDLE);
@@ -234,6 +268,11 @@ static void spm_sodi3_pre_process(void)
 		__spm_backup_pmic_ck_pdn();
 #endif
 	}
+
+#if defined(CONFIG_ARCH_MT6755)
+	/* for afcdac setting */
+	clk_buf_write_afcdac();
+#endif
 }
 
 static void spm_sodi3_post_process(void)
@@ -441,8 +480,16 @@ wake_reason_t spm_go_to_sodi3(u32 spm_flags, u32 spm_data, u32 sodi3_flags)
 
 #ifdef CONFIG_MTK_WD_KICKER
 	wd_ret = get_wd_api(&wd_api);
-	if (!wd_ret)
+	if (!wd_ret) {
+		wd_api->wd_spmwdt_mode_config(WD_REQ_EN, WD_REQ_RST_MODE);
+#if defined(CONFIG_ARCH_MT6755)
+		mtk_wd_suspend_sodi();
+#else
 		wd_api->wd_suspend_notify();
+#endif
+	} else {
+		sodi3_err("ERROR: FAILED TO GET WD API\n");
+	}
 #endif
 
 	/* enable APxGPT timer */
@@ -458,6 +505,13 @@ wake_reason_t spm_go_to_sodi3(u32 spm_flags, u32 spm_data, u32 sodi3_flags)
 	}
 	mt_irq_mask_all(mask);
 	mt_irq_unmask_for_sleep(SPM_IRQ0_ID);
+#if defined(CONFIG_ARCH_MT6755) /* unmask for edge trigger interrupt */
+	mt_irq_unmask_for_sleep(196); /* for KP_IRQ */
+	mt_irq_unmask_for_sleep(160); /* for WDT_IRQ */
+	mt_irq_unmask_for_sleep(252); /* for C2K_WDT */
+	mt_irq_unmask_for_sleep(255); /* for MD_WDT */
+	mt_irq_unmask_for_sleep(271); /* for CONN_WDT */
+#endif
 #if defined(CONFIG_MTK_SYS_CIRQ)
 	mt_cirq_clone_gic();
 	mt_cirq_enable();
@@ -567,8 +621,16 @@ UNLOCK_SPM:
 	/* stop APxGPT timer and enable caore0 local timer */
 	soidle3_after_wfi(cpu);
 #ifdef CONFIG_MTK_WD_KICKER
-	if (!wd_ret)
+	if (!wd_ret) {
+#if defined(CONFIG_ARCH_MT6755)
+		mtk_wd_resume_sodi();
+#else
 		wd_api->wd_resume_notify();
+#endif
+		wd_api->wd_spmwdt_mode_config(WD_REQ_DIS, WD_REQ_RST_MODE);
+	} else {
+		sodi3_err("ERROR: FAILED TO GET WD API\n");
+	}
 #endif
 
 #if defined(CONFIG_ARCH_MT6797)

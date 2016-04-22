@@ -42,13 +42,29 @@ void spm_dpidle_pre_process(void)
 
 	/* Update PMIC wrap table: deepidle */
 	value = 0;
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+	pmic_read_interface_nolock(PMIC_LDO_VSRAM_PROC_VOSEL_ON_ADDR,
+								&value,
+								PMIC_LDO_VSRAM_PROC_VOSEL_ON_MASK,
+								PMIC_LDO_VSRAM_PROC_VOSEL_ON_SHIFT);
+#else
 	pmic_read_interface_nolock(MT6351_PMIC_BUCK_VSRAM_PROC_VOSEL_ON_ADDR,
 								&value,
 								MT6351_PMIC_BUCK_VSRAM_PROC_VOSEL_ON_MASK,
 								MT6351_PMIC_BUCK_VSRAM_PROC_VOSEL_ON_SHIFT);
+#endif
 	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_DEEPIDLE, IDX_DI_VSRAM_NORMAL, value);
 
 	value = 0;
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+	pmic_read_interface_nolock(PMIC_RG_SRCLKEN_IN2_EN_ADDR, &value, 0x037F, 0);
+	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_DEEPIDLE,
+								IDX_DI_SRCCLKEN_IN2_NORMAL,
+								value | (1 << PMIC_RG_SRCLKEN_IN2_EN_SHIFT));
+	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_DEEPIDLE,
+								IDX_DI_SRCCLKEN_IN2_SLEEP,
+								value & ~(1 << PMIC_RG_SRCLKEN_IN2_EN_SHIFT));
+#else
 	pmic_read_interface_nolock(MT6351_TOP_CON, &value, 0x037F, 0);
 	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_DEEPIDLE,
 								IDX_DI_SRCCLKEN_IN2_NORMAL,
@@ -56,6 +72,17 @@ void spm_dpidle_pre_process(void)
 	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_DEEPIDLE,
 								IDX_DI_SRCCLKEN_IN2_SLEEP,
 								value & ~(1 << MT6351_PMIC_RG_SRCLKEN_IN2_EN_SHIFT));
+#endif
+
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+	pmic_read_interface_nolock(PMIC_BUCK_VPROC_VOSEL_ON_ADDR,
+					&value,
+					PMIC_BUCK_VPROC_VOSEL_ON_MASK,
+					PMIC_BUCK_VPROC_VOSEL_ON_SHIFT);
+	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_DEEPIDLE, IDX_DI_VPROC_NORMAL, value);
+#else
+	/* nothing */
+#endif
 
 	/* set PMIC WRAP table for deepidle power control */
 	mt_spm_pmic_wrap_set_phase(PMIC_WRAP_PHASE_DEEPIDLE);
@@ -70,7 +97,11 @@ void spm_dpidle_pre_process(void)
 		ap_pll_con0_val = spm_read(AP_PLL_CON0);
 		spm_write(AP_PLL_CON0, ap_pll_con0_val & (~0x18D0));
 #if defined(PMIC_CLK_SRC_BY_SRCCLKEN_IN1)
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+		pmic_config_interface_nolock(MT6353_BUCK_ALL_CON2, 0x111, 0x3FF, 0);
+#else
 		pmic_config_interface_nolock(MT6351_BUCK_ALL_CON2, 0x111, 0x3FF, 0);
+#endif
 #endif
 		clk_buf_control_bblpm(true);
 	}
@@ -83,7 +114,11 @@ void spm_dpidle_post_process(void)
 		clk_buf_control_bblpm(false);
 
 #if defined(PMIC_CLK_SRC_BY_SRCCLKEN_IN1)
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+		pmic_config_interface_nolock(MT6353_BUCK_ALL_CON2, 0x0, 0x3FF, 0);
+#else
 		pmic_config_interface_nolock(MT6351_BUCK_ALL_CON2, 0x0, 0x3FF, 0);
+#endif
 #endif
 		/* Enable 26M clks: MIPID, MIPIC1, MIPIC0, MDPLLGP, SSUSB */
 		spm_write(AP_PLL_CON0, ap_pll_con0_val);

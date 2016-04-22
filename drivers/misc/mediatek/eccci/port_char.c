@@ -935,7 +935,7 @@ static long dev_char_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 		if (!md->sbp_code_default) {
 			unsigned char *sbp_custom_value = NULL;
 
-			if (md->index == MD_SYS1) {
+			if (md->index == MD_SYS1 || md->index == MD_SYS3) {
 #if defined(CONFIG_MTK_MD_SBP_CUSTOM_VALUE)
 				sbp_custom_value = CONFIG_MTK_MD_SBP_CUSTOM_VALUE;
 #else

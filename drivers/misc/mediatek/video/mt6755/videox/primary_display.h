@@ -203,7 +203,7 @@ int primary_display_user_cmd(unsigned int cmd, unsigned long arg);
 int primary_display_trigger(int blocking, void *callback, int need_merge);
 int primary_display_switch_mode(int sess_mode, unsigned int session, int force);
 int primary_display_diagnose(void);
-
+int primary_display_signal_recovery(void);
 int primary_display_get_info(disp_session_info *info);
 int primary_display_capture_framebuffer(unsigned long pbuf);
 int primary_display_capture_framebuffer_ovl(unsigned long pbuf, unsigned int format);

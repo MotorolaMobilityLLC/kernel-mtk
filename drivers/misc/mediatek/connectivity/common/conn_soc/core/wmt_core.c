@@ -643,6 +643,7 @@ static INT32 wmt_core_stp_init(VOID)
 	P_WMT_GEN_CONF pWmtGenConf = NULL;
 
 	wmt_conf_read_file();
+	gDevWmt.rWmtGenConf.co_clock_flag = wmt_lib_co_clock_flag_get();
 	pWmtGenConf = wmt_conf_get_cfg();
 	if (!(pctx->wmtInfoBit & WMT_OP_HIF_BIT)) {
 		WMT_ERR_FUNC("WMT-CORE: no hif info!\n");

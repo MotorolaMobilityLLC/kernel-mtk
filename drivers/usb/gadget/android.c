@@ -184,7 +184,7 @@ static struct usb_gadget_strings *dev_strings[] = {
 static struct usb_device_descriptor device_desc = {
 	.bLength              = sizeof(device_desc),
 	.bDescriptorType      = USB_DT_DEVICE,
-#ifdef CONFIG_USB_MU3D_DRV
+#if CONFIG_USB_MU3D_DRV && !defined(CONFIG_USB_MU3D_ONLY_U2_MODE)
 	.bcdUSB               = __constant_cpu_to_le16(0x0300),
 #else
 	.bcdUSB               = __constant_cpu_to_le16(0x0200),
@@ -208,11 +208,11 @@ static struct usb_configuration android_config_driver = {
 #else
 	.bmAttributes	= USB_CONFIG_ATT_ONE | USB_CONFIG_ATT_SELFPOWER,
 #endif
-#ifdef CONFIG_USB_MU3D_DRV
-	.MaxPower	= 192, /* Only consume 192ma for passing USB30CV Descriptor Test [USB3.0 devices]*/
-#else
+/*#ifdef CONFIG_USB_MU3D_DRV*/
+/*	.MaxPower	= 192,  Only consume 192ma for passing USB30CV Descriptor Test [USB3.0 devices]*/
+/*#else*/
 	.MaxPower	= 500, /* 500ma */
-#endif
+/*#endif*/
 };
 
 static void android_work(struct work_struct *data)
@@ -2645,7 +2645,7 @@ static struct usb_composite_driver android_usb_driver = {
 	.bind		= android_bind,
 	.unbind		= android_usb_unbind,
 	.disconnect	= android_disconnect,
-#ifdef CONFIG_USB_MU3D_DRV
+#if CONFIG_USB_MU3D_DRV && !defined(CONFIG_USB_MU3D_ONLY_U2_MODE)
 	.max_speed	= USB_SPEED_SUPER
 #else
 	.max_speed	= USB_SPEED_HIGH

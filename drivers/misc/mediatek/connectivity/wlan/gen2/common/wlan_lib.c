@@ -1923,7 +1923,8 @@ WLAN_STATUS wlanProcessCommandQueue(IN P_ADAPTER_T prAdapter, IN P_QUE_T prCmdQu
 			if (rStatus == WLAN_STATUS_RESOURCES) {
 				/* no more TC4 resource for further transmission */
 				QUEUE_INSERT_TAIL(prMergeCmdQue, prQueueEntry);
-				DBGLOG(TX, EVENT, "No TC4 resource to send cmd, CID=%d, SEQ=%d, CMD type=%d, OID=%d\n",
+				DBGLOG(TX, EVENT,
+					"No TC4 resource to send cmd, CID=0x%x, SEQ=%d, CMD type=%d, OID=%d\n",
 					prCmdInfo->ucCID, prCmdInfo->ucCmdSeqNum,
 					prCmdInfo->eCmdType, prCmdInfo->fgIsOid);
 				break;
@@ -2047,6 +2048,7 @@ WLAN_STATUS wlanSendCommand(IN P_ADAPTER_T prAdapter, IN P_CMD_INFO_T prCmdInfo)
 				(prCmdInfo->eCmdType == COMMAND_TYPE_MANAGEMENT_FRAME))
 				pfgIsSecOrMgmt = TRUE;
 
+			wlanReadFwStatus(prAdapter);
 			/* <1.2> Check if pending packet or resource was exhausted */
 			rStatus = nicTxAcquireResource(prAdapter, ucTC, pfgIsSecOrMgmt);
 			if (rStatus == WLAN_STATUS_RESOURCES) {
@@ -4468,6 +4470,9 @@ WLAN_STATUS wlanLoadManufactureData(IN P_ADAPTER_T prAdapter, IN P_REG_INFO_T pr
 #if CFG_SUPPORT_RDD_TEST_MODE
 	CMD_RDD_CH_T rRddParam;
 #endif
+#if CFG_SUPPORT_FCC_DYNAMIC_TX_PWR_ADJUST
+	CMD_FCC_TX_PWR_ADJUST FccTxPwrAdjust = {0x00};
+#endif
 
 	ASSERT(prAdapter);
 
@@ -4497,6 +4502,27 @@ WLAN_STATUS wlanLoadManufactureData(IN P_ADAPTER_T prAdapter, IN P_REG_INFO_T pr
 			nicUpdateTxPower(prAdapter, (P_CMD_TX_PWR_T) (&(prRegInfo->rTxPwr)));
 		}
 	}
+
+#if CFG_SUPPORT_FCC_DYNAMIC_TX_PWR_ADJUST
+	/* Tx Power Adjust for FCC/CE Certification */
+	FccTxPwrAdjust.fgFccTxPwrAdjust = 1;	/* 1:enable; 0:disable */
+	FccTxPwrAdjust.Offset_CCK = 14;		/* drop 7dB */
+	FccTxPwrAdjust.Offset_HT20 = 16;	/* drop 8dB */
+	FccTxPwrAdjust.Offset_HT40 = 14;	/* drop 7dB*/
+	FccTxPwrAdjust.Channel_CCK[0] = 11;	/* [0] for start channel */
+	FccTxPwrAdjust.Channel_CCK[1] = 13;	/* [1] for ending channel */
+	FccTxPwrAdjust.Channel_HT20[0] = 11;	/* [0] for start channel */
+	FccTxPwrAdjust.Channel_HT20[1] = 13;	/* [1] for ending channel */
+	FccTxPwrAdjust.Channel_HT40[0] = 7;	/* [0] for start channel,engineer mode ch9(2452) */
+	FccTxPwrAdjust.Channel_HT40[1] = 9;	/* [1] for ending channel,engineer mode ch11(2462) */
+
+	wlanSendSetQueryCmd(prAdapter,
+			    CMD_ID_SET_FCC_TX_PWR_CERT,
+			    TRUE,
+			    FALSE,
+			    FALSE, NULL, NULL, sizeof(CMD_FCC_TX_PWR_ADJUST), (PUINT_8) (&FccTxPwrAdjust), NULL, 0);
+
+#endif
 
 	/* 3. Check if needs to support 5GHz */
 	/* if(prRegInfo->ucEnable5GBand) { // Frank workaround */

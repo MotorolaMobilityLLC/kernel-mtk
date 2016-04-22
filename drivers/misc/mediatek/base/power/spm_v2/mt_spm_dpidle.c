@@ -593,6 +593,13 @@ wake_reason_t spm_go_to_dpidle(u32 spm_flags, u32 spm_data, u32 dump_log)
 	spin_lock_irqsave(&__spm_lock, flags);
 	mt_irq_mask_all(&mask);
 	mt_irq_unmask_for_sleep(SPM_IRQ0_ID);
+#if defined(CONFIG_ARCH_MT6755) /* unmask for edge trigger interrupt */
+	mt_irq_unmask_for_sleep(196); /* for KP_IRQ */
+	mt_irq_unmask_for_sleep(160); /* for WDT_IRQ */
+	mt_irq_unmask_for_sleep(252); /* for C2K_WDT */
+	mt_irq_unmask_for_sleep(255); /* for MD_WDT */
+	mt_irq_unmask_for_sleep(271); /* for CONN_WDT */
+#endif
 #if defined(CONFIG_ARCH_MT6755)
 #if defined(CONFIG_MTK_SYS_CIRQ)
 	mt_cirq_clone_gic();
@@ -738,6 +745,9 @@ wake_reason_t spm_go_to_sleep_dpidle(u32 spm_flags, u32 spm_data)
 	pwrctrl->timer_val = sec * 32768;
 
 	pwrctrl->wake_src = spm_get_sleep_wakesrc();
+#if defined(CONFIG_ARCH_MT6755) /* for edge trigger interrupt */
+	pwrctrl->wake_src |= WAKE_SRC_R12_SYS_CIRQ_IRQ_B;
+#endif
 
 #ifdef CONFIG_MTK_WD_KICKER
 	wd_ret = get_wd_api(&wd_api);
@@ -748,6 +758,13 @@ wake_reason_t spm_go_to_sleep_dpidle(u32 spm_flags, u32 spm_data)
 	spin_lock_irqsave(&__spm_lock, flags);
 	mt_irq_mask_all(&mask);
 	mt_irq_unmask_for_sleep(SPM_IRQ0_ID);
+#if defined(CONFIG_ARCH_MT6755) /* unmask for edge trigger interrupt */
+	mt_irq_unmask_for_sleep(196); /* for KP_IRQ */
+	mt_irq_unmask_for_sleep(160); /* for WDT_IRQ */
+	mt_irq_unmask_for_sleep(252); /* for C2K_WDT */
+	mt_irq_unmask_for_sleep(255); /* for MD_WDT */
+	mt_irq_unmask_for_sleep(271); /* for CONN_WDT */
+#endif
 #if defined(CONFIG_MTK_SYS_CIRQ)
 	mt_cirq_clone_gic();
 	mt_cirq_enable();

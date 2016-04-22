@@ -18,6 +18,16 @@
 
 #include "trace.h"
 
+#ifdef CONFIG_MTK_AEE_FEATURE
+#include <mt-plat/aee.h>
+#include <disp_assert_layer.h>
+#define MSG_SIZE_TO_AEE (TASK_COMM_LEN + 16)
+static int dump_aee_warning;
+#endif
+
+/*#define MAX_STACK_TRACE_SIZE	0x1F00*//* 7936 */
+#define MAX_STACK_TRACE_SIZE	0x1E40	/* 7744 */
+
 #define STACK_TRACE_ENTRIES 500
 
 #ifdef CC_USING_FENTRY
@@ -81,8 +91,10 @@ check_stack(unsigned long ip, unsigned long *stack)
 	int frame_size = ACCESS_ONCE(tracer_frame);
 	int i;
 
+	/* IRQ stack is not THREAD_SIZE aligned */
 	this_size = ((unsigned long)stack) & (THREAD_SIZE-1);
 	this_size = THREAD_SIZE - this_size;
+
 	/* Remove the frame of the tracer */
 	this_size -= frame_size;
 
@@ -126,7 +138,7 @@ check_stack(unsigned long ip, unsigned long *stack)
 	/*
 	 * Now find where in the stack these are.
 	 */
-	i = 0;
+	i = 1;
 	start = stack;
 	top = (unsigned long *)
 		(((unsigned long)start & ~(THREAD_SIZE-1)) + THREAD_SIZE);
@@ -170,6 +182,12 @@ check_stack(unsigned long ip, unsigned long *stack)
 			i++;
 	}
 
+#ifdef CONFIG_MTK_AEE_FEATURE
+	/* Allowed to dump aee warning */
+	if (max_stack_size > MAX_STACK_TRACE_SIZE)
+		dump_aee_warning = 1;
+#endif
+
 	if (task_stack_end_corrupted(current)) {
 		print_max_stack();
 		BUG();
@@ -186,6 +204,17 @@ stack_trace_call(unsigned long ip, unsigned long parent_ip,
 {
 	unsigned long stack;
 	int cpu;
+
+	/* No track of irq stack */
+	if (in_interrupt())
+		return;
+
+	stack = ((unsigned long)&stack) & (THREAD_SIZE-1);
+	stack = THREAD_SIZE - stack;
+
+	/* No trace of kernel stack if it doesn't exceed MAX_STACK_TRACE_SIZE */
+	if (stack < MAX_STACK_TRACE_SIZE)
+		return;
 
 	preempt_disable_notrace();
 
@@ -219,10 +248,21 @@ stack_trace_call(unsigned long ip, unsigned long parent_ip,
 	per_cpu(trace_active, cpu)--;
 	/* prevent recursion in schedule */
 	preempt_enable_notrace();
+
+#ifdef CONFIG_MTK_AEE_FEATURE
+	if (dump_aee_warning == 1) {
+		char msg_to_aee[MSG_SIZE_TO_AEE];
+
+		dump_aee_warning = 0;
+		print_max_stack();
+		snprintf(msg_to_aee, MSG_SIZE_TO_AEE, "[%s:%d]\n", current->comm, current->pid);
+		aee_kernel_warning_api("Stack-Trace", 0, DB_OPT_DEFAULT,
+		"Potential kernel stack overflow\nCRDISPATCH_KEY:Stack Overflow Detected/STACKTRACER", msg_to_aee);
+	}
+#endif
 }
 
-static struct ftrace_ops trace_ops __read_mostly =
-{
+static struct ftrace_ops trace_ops __read_mostly = {
 	.func = stack_trace_call,
 	.flags = FTRACE_OPS_FL_RECURSION_SAFE,
 };
@@ -284,7 +324,7 @@ static const struct file_operations stack_max_size_fops = {
 static void *
 __next(struct seq_file *m, loff_t *pos)
 {
-	long n = *pos - 1;
+	long n = *pos;
 
 	if (n >= max_stack_trace.nr_entries || stack_dump_trace[n] == ULONG_MAX)
 		return NULL;
@@ -353,8 +393,7 @@ static int t_show(struct seq_file *m, void *v)
 	int size;
 
 	if (v == SEQ_START_TOKEN) {
-		seq_printf(m, "        Depth    Size   Location"
-			   "    (%d entries)\n"
+		seq_printf(m, "        Depth    Size   Location    (%d entries)\n"
 			   "        -----    ----   --------\n",
 			   max_stack_trace.nr_entries - 1);
 

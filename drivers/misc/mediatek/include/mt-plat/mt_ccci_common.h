@@ -705,6 +705,7 @@ enum {
 	ID_DUMP_MD_REG = 15,
 	ID_DUMP_MD_SLEEP_MODE = 16, /* for dump MD debug info from SMEM when AP sleep */
 	ID_PMIC_INTR = 17, /* for PMIC to notify MD buck over current, called from kernel thread context */
+	ID_MD_MPU_ASSERT = 20,
 
 	ID_UPDATE_TX_POWER = 100,   /* for SWTP */
 
@@ -772,6 +773,7 @@ enum {
 	CCISM_SHM_INIT_ACK = 0x11A,
 	CCISM_SHM_INIT_DONE = 0x11B,
 	PMIC_INTR_MODEM_BUCK_OC = 0x11C,
+	MD_AP_MPU_ACK_MD = 0x11D,
 
 	/*c2k ctrl msg start from 0x200*/
 	C2K_STATUS_IND_MSG = 0x201, /* for usb bypass */

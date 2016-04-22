@@ -556,19 +556,34 @@ int mt_led_blink_pmic(enum mt65xx_led_pmic pmic_type, struct nled_setting *led)
 	LEDS_DEBUG("[LED]LED breath_offtime_index is %d  offtime = %d\n", breath_offtime_index, pmic_breath_offtime_array[breath_offtime_index]);
 //lenovo-sw wuwl10 20151119 add for blue led support breath func end
 	/* pmic_set_register_value(PMIC_RG_G_DRV_2M_CK_PDN(0X0); // DISABLE POWER DOWN ,Indicator no need) */
-	pmic_set_register_value(PMIC_RG_DRV_32K_CK_PDN, 0x0);	/* Disable power down */
+	#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+	pmic_set_register_value(PMIC_CLK_DRV_32K_CK_PDN, 0x0);	/* Disable power down */
+	#else
+	pmic_set_register_value(MT6351_PMIC_RG_DRV_32K_CK_PDN, 0x0);	/* Disable power down */
+	#endif
 	switch (pmic_type) {
 	case MT65XX_LED_PMIC_NLED_ISINK0:
-		pmic_set_register_value(PMIC_RG_DRV_ISINK0_CK_PDN, 0);
-		pmic_set_register_value(PMIC_RG_DRV_ISINK0_CK_CKSEL, 0);
+		#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+		pmic_set_register_value(PMIC_CLK_DRV_ISINK0_CK_PDN, 0);
 		pmic_set_register_value(PMIC_ISINK_CH0_MODE, ISINK_PWM_MODE);
 		pmic_set_register_value(PMIC_ISINK_CH0_STEP, ISINK_3);	/* 16mA */
 		pmic_set_register_value(PMIC_ISINK_DIM0_DUTY, duty);
 		pmic_set_register_value(PMIC_ISINK_DIM0_FSEL,
 					pmic_freqsel_array[time_index]);
 		pmic_set_register_value(PMIC_ISINK_CH0_EN, NLED_ON);
+		#else
+		pmic_set_register_value(MT6351_PMIC_RG_DRV_ISINK0_CK_PDN, 0);
+		pmic_set_register_value(MT6351_PMIC_RG_DRV_ISINK0_CK_CKSEL, 0);
+		pmic_set_register_value(MT6351_PMIC_ISINK_CH0_MODE, ISINK_PWM_MODE);
+		pmic_set_register_value(MT6351_PMIC_ISINK_CH0_STEP, ISINK_3);	/* 16mA */
+		pmic_set_register_value(MT6351_PMIC_ISINK_DIM0_DUTY, duty);
+		pmic_set_register_value(MT6351_PMIC_ISINK_DIM0_FSEL,
+					pmic_freqsel_array[time_index]);
+		pmic_set_register_value(MT6351_PMIC_ISINK_CH0_EN, NLED_ON);
+		#endif
 		break;
 	case MT65XX_LED_PMIC_NLED_ISINK1:
+<<<<<<< HEAD
 		pmic_set_register_value(PMIC_RG_DRV_ISINK1_CK_PDN, 0);
 		pmic_set_register_value(PMIC_RG_DRV_ISINK1_CK_CKSEL, 0);
 #ifdef CONFIG_LENOVO_LED_CURRENT_LIMMIT
@@ -583,6 +598,10 @@ int mt_led_blink_pmic(enum mt65xx_led_pmic pmic_type, struct nled_setting *led)
 		pmic_set_register_value(PMIC_ISINK_BREATH1_TOFF_SEL,breath_offtime_index);
 //lenovo-sw wuwl10 20151119 add for blue led support breath func end
 #else
+=======
+		#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+		pmic_set_register_value(PMIC_CLK_DRV_ISINK1_CK_PDN, 0);
+>>>>>>> lenovo/caf/mt6755_m
 		pmic_set_register_value(PMIC_ISINK_CH1_MODE, ISINK_PWM_MODE);
 		pmic_set_register_value(PMIC_ISINK_CH1_STEP, ISINK_3);	/* 16mA */
 #endif
@@ -590,8 +609,19 @@ int mt_led_blink_pmic(enum mt65xx_led_pmic pmic_type, struct nled_setting *led)
 		pmic_set_register_value(PMIC_ISINK_DIM1_FSEL,
 					pmic_freqsel_array[time_index]);
 		pmic_set_register_value(PMIC_ISINK_CH1_EN, NLED_ON);
+		#else
+		pmic_set_register_value(MT6351_PMIC_RG_DRV_ISINK1_CK_PDN, 0);
+		pmic_set_register_value(MT6351_PMIC_RG_DRV_ISINK1_CK_CKSEL, 0);
+		pmic_set_register_value(MT6351_PMIC_ISINK_CH1_MODE, ISINK_PWM_MODE);
+		pmic_set_register_value(MT6351_PMIC_ISINK_CH1_STEP, ISINK_3);	/* 16mA */
+		pmic_set_register_value(MT6351_PMIC_ISINK_DIM1_DUTY, duty);
+		pmic_set_register_value(MT6351_PMIC_ISINK_DIM1_FSEL,
+					pmic_freqsel_array[time_index]);
+		pmic_set_register_value(MT6351_PMIC_ISINK_CH1_EN, NLED_ON);
+		#endif
 		break;
 	case MT65XX_LED_PMIC_NLED_ISINK2:
+<<<<<<< HEAD
 		pmic_set_register_value(PMIC_RG_DRV_ISINK4_CK_PDN, 0);
 		pmic_set_register_value(PMIC_RG_DRV_ISINK4_CK_CKSEL, 0);
 		pmic_set_register_value(PMIC_ISINK_CH4_MODE, ISINK_PWM_MODE);
@@ -602,18 +632,38 @@ int mt_led_blink_pmic(enum mt65xx_led_pmic pmic_type, struct nled_setting *led)
 #endif
 		pmic_set_register_value(PMIC_ISINK_DIM4_DUTY, duty);
 		pmic_set_register_value(PMIC_ISINK_DIM4_FSEL,
+=======
+		#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+		pmic_set_register_value(PMIC_CLK_DRV_ISINK2_CK_PDN, 0);
+		pmic_set_register_value(PMIC_ISINK_CH2_STEP, ISINK_3);	/* 16mA */
+		pmic_set_register_value(PMIC_ISINK_CH2_EN, NLED_ON);
+		#else
+		pmic_set_register_value(MT6351_PMIC_RG_DRV_ISINK4_CK_PDN, 0);
+		pmic_set_register_value(MT6351_PMIC_RG_DRV_ISINK4_CK_CKSEL, 0);
+		pmic_set_register_value(MT6351_PMIC_ISINK_CH4_MODE, ISINK_PWM_MODE);
+		pmic_set_register_value(MT6351_PMIC_ISINK_CH4_STEP, ISINK_3);	/* 16mA */
+		pmic_set_register_value(MT6351_PMIC_ISINK_DIM4_DUTY, duty);
+		pmic_set_register_value(MT6351_PMIC_ISINK_DIM4_FSEL,
+>>>>>>> lenovo/caf/mt6755_m
 					pmic_freqsel_array[time_index]);
-		pmic_set_register_value(PMIC_ISINK_CH4_EN, NLED_ON);
+		pmic_set_register_value(MT6351_PMIC_ISINK_CH4_EN, NLED_ON);
+		#endif
 		break;
 	case MT65XX_LED_PMIC_NLED_ISINK3:
-		pmic_set_register_value(PMIC_RG_DRV_ISINK5_CK_PDN, 0);
-		pmic_set_register_value(PMIC_RG_DRV_ISINK5_CK_CKSEL, 0);
-		pmic_set_register_value(PMIC_ISINK_CH5_MODE, ISINK_PWM_MODE);
-		pmic_set_register_value(PMIC_ISINK_CH5_STEP, ISINK_3);	/* 16mA */
-		pmic_set_register_value(PMIC_ISINK_DIM5_DUTY, duty);
-		pmic_set_register_value(PMIC_ISINK_DIM5_FSEL,
+		#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+		pmic_set_register_value(PMIC_CLK_DRV_ISINK3_CK_PDN, 0);
+		pmic_set_register_value(PMIC_ISINK_CH3_STEP, ISINK_3);	/* 16mA */
+		pmic_set_register_value(PMIC_ISINK_CH3_EN, NLED_ON);
+		#else
+		pmic_set_register_value(MT6351_PMIC_RG_DRV_ISINK5_CK_PDN, 0);
+		pmic_set_register_value(MT6351_PMIC_RG_DRV_ISINK5_CK_CKSEL, 0);
+		pmic_set_register_value(MT6351_PMIC_ISINK_CH5_MODE, ISINK_PWM_MODE);
+		pmic_set_register_value(MT6351_PMIC_ISINK_CH5_STEP, ISINK_3);	/* 16mA */
+		pmic_set_register_value(MT6351_PMIC_ISINK_DIM5_DUTY, duty);
+		pmic_set_register_value(MT6351_PMIC_ISINK_DIM5_FSEL,
 					pmic_freqsel_array[time_index]);
-		pmic_set_register_value(PMIC_ISINK_CH5_EN, NLED_ON);
+		pmic_set_register_value(MT6351_PMIC_ISINK_CH5_EN, NLED_ON);
+		#endif
 		break;
 	default:
 		break;
@@ -918,50 +968,97 @@ int mt_brightness_set_pmic(enum mt65xx_led_pmic pmic_type, u32 level, u32 div)
 #endif				/* No Support */
 		mutex_unlock(&leds_pmic_mutex);
 		return 0;
-	} else	if (pmic_type == MT65XX_LED_PMIC_NLED_ISINK0) {
+	} else if (pmic_type == MT65XX_LED_PMIC_NLED_ISINK0) {
 		if ((button_flag_isink0 == 0) && (first_time == true)) {
 			/* button flag ==0, means this ISINK is not for button backlight */
 			if (button_flag_isink1 == 0)
+				#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
 				pmic_set_register_value(PMIC_ISINK_CH1_EN,
 				 NLED_OFF);	/* sw workround for sync leds status */
+				#else
+				pmic_set_register_value(MT6351_PMIC_ISINK_CH1_EN,
+				 NLED_OFF);	/* sw workround for sync leds status */
+				#endif
 			if (button_flag_isink2 == 0)
-				pmic_set_register_value(PMIC_ISINK_CH2_EN,
+				#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+				pmic_set_register_value(PMIC_ISINK_CH2_EN, NLED_OFF);
+				#else
+				pmic_set_register_value(MT6351_PMIC_ISINK_CH2_EN,
 							NLED_OFF);
+				#endif
 			if (button_flag_isink3 == 0)
-				pmic_set_register_value(PMIC_ISINK_CH3_EN,
+				#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+				pmic_set_register_value(PMIC_ISINK_CH3_EN, NLED_OFF);
+				#else
+				pmic_set_register_value(MT6351_PMIC_ISINK_CH3_EN,
 							NLED_OFF);
+				#endif
 			first_time = false;
 		}
-		pmic_set_register_value(PMIC_RG_DRV_32K_CK_PDN, 0x0);	/* Disable power down */
-		pmic_set_register_value(PMIC_RG_DRV_ISINK0_CK_PDN, 0);
-		pmic_set_register_value(PMIC_RG_DRV_ISINK0_CK_CKSEL, 0);
+		#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+		pmic_set_register_value(PMIC_CLK_DRV_32K_CK_PDN, 0x0);	/* Disable power down */
+		pmic_set_register_value(PMIC_CLK_DRV_ISINK0_CK_PDN, 0);
 		pmic_set_register_value(PMIC_ISINK_CH0_MODE, ISINK_PWM_MODE);
 		pmic_set_register_value(PMIC_ISINK_CH0_STEP, ISINK_3);	/* 16mA */
 		pmic_set_register_value(PMIC_ISINK_DIM0_DUTY, 15);
-		pmic_set_register_value(PMIC_ISINK_DIM0_FSEL, ISINK_1KHZ);	/* 1KHz */
-		if (level)
+		pmic_set_register_value(PMIC_ISINK_DIM0_FSEL, ISINK_1KHZ);
+		#else
+		pmic_set_register_value(MT6351_PMIC_RG_DRV_32K_CK_PDN, 0x0);	/* Disable power down */
+		pmic_set_register_value(MT6351_PMIC_RG_DRV_ISINK0_CK_PDN, 0);
+		pmic_set_register_value(MT6351_PMIC_RG_DRV_ISINK0_CK_CKSEL, 0);
+		pmic_set_register_value(MT6351_PMIC_ISINK_CH0_MODE, ISINK_PWM_MODE);
+		pmic_set_register_value(MT6351_PMIC_ISINK_CH0_STEP, ISINK_3);	/* 16mA */
+		pmic_set_register_value(MT6351_PMIC_ISINK_DIM0_DUTY, 15);
+		pmic_set_register_value(MT6351_PMIC_ISINK_DIM0_FSEL, ISINK_1KHZ);	/* 1KHz */
+		#endif
+		if (level) {
+			#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
 			pmic_set_register_value(PMIC_ISINK_CH0_EN, NLED_ON);
-		else
+			#else
+			pmic_set_register_value(MT6351_PMIC_RG_DRV_32K_CK_PDN, 0x0);	/* Disable power down */
+			pmic_set_register_value(MT6351_PMIC_ISINK_CH0_EN, NLED_ON);
+			#endif
+		} else {
+			#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
 			pmic_set_register_value(PMIC_ISINK_CH0_EN, NLED_OFF);
+			#else
+			pmic_set_register_value(MT6351_PMIC_ISINK_CH0_EN, NLED_OFF);
+			#endif
+		}
 		mutex_unlock(&leds_pmic_mutex);
 		return 0;
 	} else if (pmic_type == MT65XX_LED_PMIC_NLED_ISINK1) {
 		if ((button_flag_isink1 == 0) && (first_time == true)) {
 			/* button flag ==0, means this ISINK is not for button backlight */
 			if (button_flag_isink0 == 0)
+				#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
 				pmic_set_register_value(PMIC_ISINK_CH0_EN,
 				 NLED_OFF);	/* sw workround for sync leds status */
+				#else
+				pmic_set_register_value(MT6351_PMIC_ISINK_CH0_EN,
+				 NLED_OFF);	/* sw workround for sync leds status */
+				#endif
 			if (button_flag_isink2 == 0)
-				pmic_set_register_value(PMIC_ISINK_CH4_EN,
+				#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+				pmic_set_register_value(PMIC_ISINK_CH2_EN,
+				 NLED_OFF);	/* sw workround for sync leds status */
+				#else
+				pmic_set_register_value(MT6351_PMIC_ISINK_CH4_EN,
 							NLED_OFF);
+				#endif
 			if (button_flag_isink3 == 0)
-				pmic_set_register_value(PMIC_ISINK_CH5_EN,
+				#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+				pmic_set_register_value(PMIC_ISINK_CH3_EN,
+				 NLED_OFF);	/* sw workround for sync leds status */
+				#else
+				pmic_set_register_value(MT6351_PMIC_ISINK_CH5_EN,
 							NLED_OFF);
+				#endif
 			first_time = false;
 		}
-		pmic_set_register_value(PMIC_RG_DRV_32K_CK_PDN, 0x0);	/* Disable power down */
-		pmic_set_register_value(PMIC_RG_DRV_ISINK1_CK_PDN, 0);
-		pmic_set_register_value(PMIC_RG_DRV_ISINK1_CK_CKSEL, 0);
+		#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+		pmic_set_register_value(PMIC_CLK_DRV_32K_CK_PDN, 0x0);	/* Disable power down */
+		pmic_set_register_value(PMIC_CLK_DRV_ISINK1_CK_PDN, 0);
 		pmic_set_register_value(PMIC_ISINK_CH1_MODE, ISINK_PWM_MODE);
 #ifdef CONFIG_LENOVO_LED_CURRENT_LIMMIT
 		pmic_set_register_value(PMIC_ISINK_CH1_STEP, ISINK_0);	/* lenovo-sw wuwl10 modify for 4mA of blue led */
@@ -969,28 +1066,61 @@ int mt_brightness_set_pmic(enum mt65xx_led_pmic pmic_type, u32 level, u32 div)
 #else
 		pmic_set_register_value(PMIC_ISINK_CH1_STEP, ISINK_3);	/* 16mA */
 		pmic_set_register_value(PMIC_ISINK_DIM1_DUTY, 15);
+<<<<<<< HEAD
 #endif
 		pmic_set_register_value(PMIC_ISINK_DIM1_FSEL, ISINK_1KHZ);	/* 1KHz */
 		if (level)
+=======
+		pmic_set_register_value(PMIC_ISINK_DIM1_FSEL, ISINK_1KHZ);
+		#else
+		pmic_set_register_value(MT6351_PMIC_RG_DRV_32K_CK_PDN, 0x0);	/* Disable power down */
+		pmic_set_register_value(MT6351_PMIC_RG_DRV_ISINK1_CK_PDN, 0);
+		pmic_set_register_value(MT6351_PMIC_RG_DRV_ISINK1_CK_CKSEL, 0);
+		pmic_set_register_value(MT6351_PMIC_ISINK_CH1_MODE, ISINK_PWM_MODE);
+		pmic_set_register_value(MT6351_PMIC_ISINK_CH1_STEP, ISINK_3);	/* 16mA */
+		pmic_set_register_value(MT6351_PMIC_ISINK_DIM1_DUTY, 15);
+		pmic_set_register_value(MT6351_PMIC_ISINK_DIM1_FSEL, ISINK_1KHZ);	/* 1KHz */
+		#endif
+		if (level) {
+			#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+>>>>>>> lenovo/caf/mt6755_m
 			pmic_set_register_value(PMIC_ISINK_CH1_EN, NLED_ON);
-		else
+			#else
+			pmic_set_register_value(MT6351_PMIC_ISINK_CH1_EN, NLED_ON);
+			#endif
+		} else {
+			#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
 			pmic_set_register_value(PMIC_ISINK_CH1_EN, NLED_OFF);
+			#else
+			pmic_set_register_value(MT6351_PMIC_ISINK_CH1_EN, NLED_OFF);
+			#endif
+		}
 		mutex_unlock(&leds_pmic_mutex);
 		return 0;
 	} else if (pmic_type == MT65XX_LED_PMIC_NLED_ISINK2) {
 		if ((button_flag_isink2 == 0) && (first_time == true)) {
 			/* button flag ==0, means this ISINK is not for button backlight */
 			if (button_flag_isink0 == 0)
-				pmic_set_register_value(PMIC_ISINK_CH0_EN,
-				 NLED_OFF);	/* sw workround for sync leds status */
+				#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+				pmic_set_register_value(PMIC_ISINK_CH0_EN, NLED_OFF);
+				#else
+				pmic_set_register_value(MT6351_PMIC_ISINK_CH0_EN, NLED_OFF);
+				#endif
 			if (button_flag_isink1 == 0)
-				pmic_set_register_value(PMIC_ISINK_CH1_EN,
-							NLED_OFF);
+				#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+				pmic_set_register_value(PMIC_ISINK_CH1_EN, NLED_OFF);
+				#else
+				pmic_set_register_value(MT6351_PMIC_ISINK_CH1_EN, NLED_OFF);
+				#endif
 			if (button_flag_isink3 == 0)
-				pmic_set_register_value(PMIC_ISINK_CH5_EN,
-							NLED_OFF);
+				#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+				pmic_set_register_value(PMIC_ISINK_CH3_EN, NLED_OFF);
+				#else
+				pmic_set_register_value(MT6351_PMIC_ISINK_CH5_EN, NLED_OFF);
+				#endif
 			first_time = false;
 		}
+<<<<<<< HEAD
 		pmic_set_register_value(PMIC_RG_DRV_32K_CK_PDN, 0x0);	/* Disable power down */
 		pmic_set_register_value(PMIC_RG_DRV_ISINK4_CK_PDN, 0);
 		pmic_set_register_value(PMIC_RG_DRV_ISINK4_CK_CKSEL, 0);
@@ -1007,31 +1137,89 @@ int mt_brightness_set_pmic(enum mt65xx_led_pmic pmic_type, u32 level, u32 div)
 			pmic_set_register_value(PMIC_ISINK_CH4_EN, NLED_ON);
 		else
 			pmic_set_register_value(PMIC_ISINK_CH4_EN, NLED_OFF);
+=======
+		#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+		pmic_set_register_value(PMIC_CLK_DRV_32K_CK_PDN, 0x0);	/* Disable power down */
+		pmic_set_register_value(PMIC_CLK_DRV_ISINK2_CK_PDN, 0);
+		pmic_set_register_value(PMIC_ISINK_CH2_STEP, ISINK_3);	/* 16mA */
+		#else
+		pmic_set_register_value(MT6351_PMIC_RG_DRV_32K_CK_PDN, 0x0);	/* Disable power down */
+		pmic_set_register_value(MT6351_PMIC_RG_DRV_ISINK4_CK_PDN, 0);
+		pmic_set_register_value(MT6351_PMIC_RG_DRV_ISINK4_CK_CKSEL, 0);
+		pmic_set_register_value(MT6351_PMIC_ISINK_CH4_MODE, ISINK_PWM_MODE);
+		pmic_set_register_value(MT6351_PMIC_ISINK_CH4_STEP, ISINK_3);	/* 16mA */
+		pmic_set_register_value(MT6351_PMIC_ISINK_DIM4_DUTY, 15);
+		pmic_set_register_value(MT6351_PMIC_ISINK_DIM4_FSEL, ISINK_1KHZ);	/* 1KHz */
+		#endif
+		if (level) {
+			#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+			pmic_set_register_value(PMIC_ISINK_CH2_EN, NLED_ON);
+			#else
+			pmic_set_register_value(MT6351_PMIC_ISINK_CH4_EN, NLED_ON);
+			#endif
+		} else {
+			#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+			pmic_set_register_value(PMIC_ISINK_CH2_EN, NLED_OFF);
+			#else
+			pmic_set_register_value(MT6351_PMIC_ISINK_CH4_EN, NLED_OFF);
+			#endif
+		}
+>>>>>>> lenovo/caf/mt6755_m
 	} else if (pmic_type == MT65XX_LED_PMIC_NLED_ISINK3) {
 		if ((button_flag_isink3 == 0) && (first_time == true)) {
 			/* button flag ==0, means this ISINK is not for button backlight */
 			if (button_flag_isink0 == 0)
+				#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
 				pmic_set_register_value(PMIC_ISINK_CH0_EN,
 				 NLED_OFF);	/* sw workround for sync leds status */
+				#else
+				pmic_set_register_value(MT6351_PMIC_ISINK_CH0_EN,
+				 NLED_OFF);	/* sw workround for sync leds status */
+				#endif
 			if (button_flag_isink1 == 0)
+				#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
 				pmic_set_register_value(PMIC_ISINK_CH1_EN,
+				 NLED_OFF);	/* sw workround for sync leds status */
+				#else
+				pmic_set_register_value(MT6351_PMIC_ISINK_CH1_EN,
 							NLED_OFF);
+				#endif
 			if (button_flag_isink2 == 0)
-				pmic_set_register_value(PMIC_ISINK_CH4_EN,
+				#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+				pmic_set_register_value(PMIC_ISINK_CH2_EN,
+				 NLED_OFF);	/* sw workround for sync leds status */
+				#else
+				pmic_set_register_value(MT6351_PMIC_ISINK_CH4_EN,
 							NLED_OFF);
+				#endif
 			first_time = false;
 		}
-		pmic_set_register_value(PMIC_RG_DRV_32K_CK_PDN, 0x0);	/* Disable power down */
-		pmic_set_register_value(PMIC_RG_DRV_ISINK5_CK_PDN, 0);
-		pmic_set_register_value(PMIC_RG_DRV_ISINK5_CK_CKSEL, 0);
-		pmic_set_register_value(PMIC_ISINK_CH5_MODE, ISINK_PWM_MODE);
-		pmic_set_register_value(PMIC_ISINK_CH5_STEP, ISINK_3);	/* 16mA */
-		pmic_set_register_value(PMIC_ISINK_DIM5_DUTY, 15);
-		pmic_set_register_value(PMIC_ISINK_DIM5_FSEL, ISINK_1KHZ);	/* 1KHz */
-		if (level)
-			pmic_set_register_value(PMIC_ISINK_CH5_EN, NLED_ON);
-		else
-			pmic_set_register_value(PMIC_ISINK_CH5_EN, NLED_OFF);
+		#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+		pmic_set_register_value(PMIC_CLK_DRV_32K_CK_PDN, 0x0);	/* Disable power down */
+		pmic_set_register_value(PMIC_CLK_DRV_ISINK3_CK_PDN, 0);
+		pmic_set_register_value(PMIC_ISINK_CH3_STEP, ISINK_3);	/* 16mA */
+		#else
+		pmic_set_register_value(MT6351_PMIC_RG_DRV_32K_CK_PDN, 0x0);	/* Disable power down */
+		pmic_set_register_value(MT6351_PMIC_RG_DRV_ISINK5_CK_PDN, 0);
+		pmic_set_register_value(MT6351_PMIC_RG_DRV_ISINK5_CK_CKSEL, 0);
+		pmic_set_register_value(MT6351_PMIC_ISINK_CH5_MODE, ISINK_PWM_MODE);
+		pmic_set_register_value(MT6351_PMIC_ISINK_CH5_STEP, ISINK_3);	/* 16mA */
+		pmic_set_register_value(MT6351_PMIC_ISINK_DIM5_DUTY, 15);
+		pmic_set_register_value(MT6351_PMIC_ISINK_DIM5_FSEL, ISINK_1KHZ);	/* 1KHz */
+		#endif
+		if (level) {
+			#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+			pmic_set_register_value(PMIC_ISINK_CH3_EN, NLED_ON);
+			#else
+			pmic_set_register_value(MT6351_PMIC_ISINK_CH5_EN, NLED_ON);
+			#endif
+		} else {
+			#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+			pmic_set_register_value(PMIC_ISINK_CH3_EN, NLED_OFF);
+			#else
+			pmic_set_register_value(MT6351_PMIC_ISINK_CH5_EN, NLED_OFF);
+			#endif
+		}
 		mutex_unlock(&leds_pmic_mutex);
 		return 0;
 	}

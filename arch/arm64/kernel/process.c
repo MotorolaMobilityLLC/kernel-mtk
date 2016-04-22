@@ -390,6 +390,13 @@ struct task_struct *__switch_to(struct task_struct *prev,
 {
 	struct task_struct *last;
 
+#ifdef CONFIG_ARM64_8K_STACK
+	if (ti_magic_is_wrong(task_thread_info(prev))) {
+		dump_mem_from_sp((unsigned long)ti_magic_address(task_thread_info(prev)),
+				(unsigned long)task_thread_info(prev) + THREAD_SIZE, true);
+		BUG();
+	}
+#endif
 	fpsimd_thread_switch(next);
 	tls_thread_switch(next);
 	hw_breakpoint_thread_switch(next);

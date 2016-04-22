@@ -14,5 +14,8 @@
 # include $(srctree)/drivers/misc/mediatek/Makefile.custom
 ccflags-y += -I$(srctree)/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/ccci_util/$(MTK_PLATFORM)
+ifeq ($(CONFIG_MTK_PMIC_CHIP_MT6353), y)
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/pmic/
+endif
 # always build-in parts
 obj-$(CONFIG_MTK_CCCI_DEVICES) += ccci_off.o

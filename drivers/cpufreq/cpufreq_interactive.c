@@ -397,7 +397,11 @@ static void cpufreq_interactive_timer(unsigned long data)
 	ppb_idx = mt_cpufreq_get_ppb_state();
 
 	/* Not to modify if L in default mode */
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+	if (ppb_idx == 0 && (arch_get_cluster_id(pcpu->policy->cpu) >= 1) && !mt_cpufreq_get_chip_id_38()) {
+#else
 	if (ppb_idx == 0 && (arch_get_cluster_id(pcpu->policy->cpu) >= 1)) {
+#endif
 		tunables->hispeed_freq = pcpu->freq_table[0].frequency;
 		tunables->min_sample_time = DEFAULT_MIN_SAMPLE_TIME;
 	} else {

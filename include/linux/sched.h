@@ -327,6 +327,9 @@ extern void show_regs(struct pt_regs *);
  * trace (or NULL if the entire call-chain of the task should be shown).
  */
 extern void show_stack(struct task_struct *task, unsigned long *sp);
+#ifdef CONFIG_ARM64_IRQ_STACK
+extern void dump_mem_from_sp(unsigned long stack, unsigned long end, bool check_start);
+#endif
 
 void io_schedule(void);
 long io_schedule_timeout(long timeout);

@@ -128,6 +128,7 @@ const char *disp_helper_option_string[DISP_OPT_NUM] = {
 	"DISP_OPT_RDMA_UNDERFLOW_AEE",
 	"DISP_OPT_GMO_OPTIMIZE",
 	"DISP_OPT_CV_BYSUSPEND",
+	"DISP_OPT_DELAYED_TRIGGER",
 };
 
 
@@ -257,6 +258,10 @@ int disp_helper_get_option(DISP_HELPER_OPT option)
 		}
 	case DISP_OPT_NO_LK:
 		{
+			if (_is_normal_stage())
+				return 0;
+			else if (_is_bringup_stage())
+				return 0;
 			return 1;
 		}
 	case DISP_OPT_PERFORMANCE_DEBUG:
@@ -328,7 +333,7 @@ void disp_helper_option_init(void)
 	disp_helper_set_option(DISP_OPT_IDLEMGR_ENTER_ULPS, 1);
 
 	/* 3. cmd mode + vdo mode */
-	disp_helper_set_option(DISP_OPT_DYNAMIC_SWITCH_MMSYSCLK, 1);
+	disp_helper_set_option(DISP_OPT_DYNAMIC_SWITCH_MMSYSCLK, 0);
 	disp_helper_set_option(DISP_OPT_DYNAMIC_RDMA_GOLDEN_SETTING, 1);
 
 
@@ -354,6 +359,9 @@ void disp_helper_option_init(void)
 	disp_helper_set_option(DISP_OPT_GMO_OPTIMIZE, 0);
 	disp_helper_set_option(DISP_OPT_CV_BYSUSPEND, 1);
 	disp_helper_set_option(DISP_OPT_DYNAMIC_DEBUG, 0);
+	disp_helper_set_option(DISP_OPT_DELAYED_TRIGGER, 1);
+	/*Detect Hang thread Option*/
+	disp_helper_set_option(DISP_OPT_DETECT_RECOVERY, 0);
 }
 
 int disp_helper_get_option_list(char *stringbuf, int buf_len)

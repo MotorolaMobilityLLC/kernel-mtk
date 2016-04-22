@@ -3925,6 +3925,8 @@ nicUpdateLinkQuality(IN P_ADAPTER_T prAdapter,
 		if (prAdapter->rWifiVar.arBssInfo[eNetTypeIdx].eConnectionState == PARAM_MEDIA_STATE_CONNECTED) {
 			/* check is to prevent RSSI to be updated by incorrect initial RSSI from hardware */
 			/* buffer statistics for further query */
+			DBGLOG(NIC, INFO, "cRssi=%d, cLinkQuality=%d, u2LinkSpeed=%u", prEventLinkQuality->cRssi,
+				prEventLinkQuality->cLinkQuality, prEventLinkQuality->u2LinkSpeed);
 			if (prAdapter->fgIsLinkQualityValid == FALSE
 			    || (kalGetTimeTick() - prAdapter->rLinkQualityUpdateTime) > CFG_LINK_QUALITY_VALID_PERIOD) {
 				nicUpdateRSSI(prAdapter, eNetTypeIdx, prEventLinkQuality->cRssi,

@@ -137,6 +137,8 @@ static char *path_event_name(DISP_PATH_EVENT event)
 		return "VSYNC";
 	case DISP_PATH_EVENT_TRIGGER:
 		return "TRIGGER";
+	case DISP_PATH_EVENT_DELAYED_TRIGGER_33ms:
+		return "DELAY_TRIG";
 	default:
 		return "unknown event";
 	}
@@ -220,7 +222,7 @@ int dpmgr_module_notify(DISP_MODULE_ENUM module, DISP_PATH_EVENT event)
 {
 	ddp_path_handle handle = find_handle_by_module(module);
 	MMProfileLogEx(ddp_mmp_get_events()->primary_display_aalod_trigger, MMProfileFlagPulse,
-		       module, 0);
+		       module, event);
 	return dpmgr_signal_event(handle, event);
 	return 0;
 }
@@ -480,13 +482,15 @@ int dpmgr_destroy_path_handle(disp_path_handle dp_handle)
 
 	ASSERT(dp_handle != NULL);
 	handle = (ddp_path_handle) dp_handle;
-	modules = ddp_get_scenario_list(handle->scenario);
-	module_num = ddp_get_module_num(handle->scenario);
-	content = _get_context();
 
-	DDPDBG("destroy path handle %p on scenario %s\n", handle,
-		   ddp_get_scenario_name(handle->scenario));
 	if (handle != NULL) {
+		modules = ddp_get_scenario_list(handle->scenario);
+		module_num = ddp_get_module_num(handle->scenario);
+		content = _get_context();
+
+		DDPDBG("destroy path handle %p on scenario %s\n", handle,
+		ddp_get_scenario_name(handle->scenario));
+
 		release_mutex(handle->hwmutexid);
 		for (i = 0; i < module_num; i++) {
 			module_name = modules[i];

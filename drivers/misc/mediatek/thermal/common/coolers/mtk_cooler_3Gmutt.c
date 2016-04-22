@@ -1,3 +1,16 @@
+/*
+* Copyright (C) 2016 MediaTek Inc.
+*
+* This program is free software; you can redistribute it and/or modify
+* it under the terms of the GNU General Public License version 2 as
+* published by the Free Software Foundation.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+* See http://www.gnu.org/licenses/gpl-2.0.html for more details.
+*/
+
 #include <linux/version.h>
 #include <linux/kernel.h>
 #include <linux/module.h>
@@ -72,12 +85,14 @@ int mddulthro_pid_read(struct seq_file *m, void *v)
 	return 0;
 }
 
-ssize_t mddulthro_pid_write(struct file *file, const char __user *buf, size_t len, loff_t *data)
+ssize_t mddulthro_pid_write(struct file *file, const char __user *buf, size_t count, loff_t *data)
 {
 	int ret = 0;
 	char tmp[MAX_LEN] = { 0 };
+	int len = 0;
 
 	/* write data to the buffer */
+	len = (count < (sizeof(tmp) - 1)) ? count : (sizeof(tmp) - 1);
 	if (copy_from_user(tmp, buf, len))
 		return -EFAULT;
 

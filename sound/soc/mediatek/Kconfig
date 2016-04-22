@@ -22,7 +22,14 @@ config MT_SND_SOC_6755
     bool "MT_SND_SOC_6755"
 	default n
 	help
-        If you say Y, enable MT_SND_SOC_6755_driver.
+	If you say Y, enable MT_SND_SOC_6755_driver.
+
+config MT_SND_SOC_6750
+    bool "MT_SND_SOC_6750"
+	default n
+	help
+	If you say Y, enable MT_SND_SOC_6750_driver.
+	Must enable this to use medatek audio driver.
 config MT_SND_SOC_6797
     bool "MT_SND_SOC_6797"
 	default n

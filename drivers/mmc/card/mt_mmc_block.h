@@ -24,6 +24,9 @@
 int mt_mmc_biolog_init(void);
 int mt_mmc_biolog_exit(void);
 
+void mt_bio_queue_alloc(struct task_struct *thread);
+void mt_bio_queue_free(struct task_struct *thread);
+
 void mt_biolog_mmcqd_req_check(void);
 void mt_biolog_mmcqd_req_start(struct mmc_host *host);
 void mt_biolog_mmcqd_req_end(struct mmc_data *data);
@@ -144,6 +147,9 @@ struct mt_bio_trace {
 
 #define mt_mmc_biolog_init(...)
 #define mt_mmc_biolog_exit(...)
+
+#define mt_bio_queue_alloc(...)
+#define mt_bio_queue_free(...)
 
 #define mt_biolog_mmcqd_req_check(...)
 #define mt_biolog_mmcqd_req_start(...)
