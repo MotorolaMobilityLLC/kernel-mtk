@@ -3110,7 +3110,7 @@
 		mediatek,clkbuf-driving-current = <2 2 2 2>;
 	};
 
-<<<<<<< HEAD
+
 /*Lenovo-sw weimh1 add 2016-3-30 begin:add for accel*/
 	accel_gyro_int1: accel_gyro_int1{
 		compatible = "mediatek, accel_gyro_int1-eint";
@@ -3135,10 +3135,10 @@
 
 	fpc_int:fpc_int {
 		compatible = "mediatek, fpc_int-eint";
-=======
+
 	ext_buck_vmd1:ext_buck_vmd1 {
 		compatible = "mediatek,ext_buck_vmd1";
->>>>>>> lenovo/caf/mt6755_m
+
 	};
 };
 /*/include/ "cust_pmic.dtsi"*/
