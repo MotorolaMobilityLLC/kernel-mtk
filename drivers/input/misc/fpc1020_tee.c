@@ -385,6 +385,7 @@ static int fpc1020_probe(struct spi_device *spi)
     fpc_input_dev_init(fpc1020);
 	mutex_init(&fpc1020->lock);
 
+	np = of_find_compatible_node(NULL, NULL, "mediatek, fpc_int-eint");
 	if (np) {
 		of_property_read_u32_array(np, "debounce", ints, ARRAY_SIZE(ints));
 		gpio_set_debounce(ints[0], ints[1]);
