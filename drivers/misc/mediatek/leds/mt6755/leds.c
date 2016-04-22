@@ -583,28 +583,10 @@ int mt_led_blink_pmic(enum mt65xx_led_pmic pmic_type, struct nled_setting *led)
 		#endif
 		break;
 	case MT65XX_LED_PMIC_NLED_ISINK1:
-<<<<<<< HEAD
-		pmic_set_register_value(PMIC_RG_DRV_ISINK1_CK_PDN, 0);
-		pmic_set_register_value(PMIC_RG_DRV_ISINK1_CK_CKSEL, 0);
-#ifdef CONFIG_LENOVO_LED_CURRENT_LIMMIT
-		pmic_set_register_value(PMIC_ISINK_CH1_STEP, ISINK_0);	/* lenovo-sw wuwl10 modify for 4mA of blue led */
-//lenovo-sw wuwl10 20151119 add for blue led support breath func begin
-		pmic_set_register_value(PMIC_ISINK_CH1_MODE, ISINK_BREATH_MODE);//wuwl10 modify for breath mode
-		pmic_set_register_value(PMIC_ISINK_BREATH1_TR1_SEL,0x02);
-		pmic_set_register_value(PMIC_ISINK_BREATH1_TR2_SEL,0x01);
-		pmic_set_register_value(PMIC_ISINK_BREATH1_TF1_SEL,0x01);
-		pmic_set_register_value(PMIC_ISINK_BREATH1_TF2_SEL,0x01);
-		pmic_set_register_value(PMIC_ISINK_BREATH1_TON_SEL,0x00);
-		pmic_set_register_value(PMIC_ISINK_BREATH1_TOFF_SEL,breath_offtime_index);
-//lenovo-sw wuwl10 20151119 add for blue led support breath func end
-#else
-=======
 		#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
 		pmic_set_register_value(PMIC_CLK_DRV_ISINK1_CK_PDN, 0);
->>>>>>> lenovo/caf/mt6755_m
 		pmic_set_register_value(PMIC_ISINK_CH1_MODE, ISINK_PWM_MODE);
 		pmic_set_register_value(PMIC_ISINK_CH1_STEP, ISINK_3);	/* 16mA */
-#endif
 		pmic_set_register_value(PMIC_ISINK_DIM1_DUTY, duty);
 		pmic_set_register_value(PMIC_ISINK_DIM1_FSEL,
 					pmic_freqsel_array[time_index]);
@@ -612,8 +594,21 @@ int mt_led_blink_pmic(enum mt65xx_led_pmic pmic_type, struct nled_setting *led)
 		#else
 		pmic_set_register_value(MT6351_PMIC_RG_DRV_ISINK1_CK_PDN, 0);
 		pmic_set_register_value(MT6351_PMIC_RG_DRV_ISINK1_CK_CKSEL, 0);
+#ifdef CONFIG_LENOVO_LED_CURRENT_LIMMIT
+		pmic_set_register_value(MT6351_PMIC_ISINK_CH1_STEP, ISINK_0);	/* lenovo-sw wuwl10 modify for 4mA of blue led */
+//lenovo-sw wuwl10 20151119 add for blue led support breath func begin
+		pmic_set_register_value(MT6351_PMIC_ISINK_CH1_MODE, ISINK_BREATH_MODE);//wuwl10 modify for breath mode
+		pmic_set_register_value(MT6351_PMIC_ISINK_BREATH1_TR1_SEL,0x02);
+		pmic_set_register_value(MT6351_PMIC_ISINK_BREATH1_TR2_SEL,0x01);
+		pmic_set_register_value(MT6351_PMIC_ISINK_BREATH1_TF1_SEL,0x01);
+		pmic_set_register_value(MT6351_PMIC_ISINK_BREATH1_TF2_SEL,0x01);
+		pmic_set_register_value(MT6351_PMIC_ISINK_BREATH1_TON_SEL,0x00);
+		pmic_set_register_value(MT6351_PMIC_ISINK_BREATH1_TOFF_SEL,breath_offtime_index);
+//lenovo-sw wuwl10 20151119 add for blue led support breath func end
+#else
 		pmic_set_register_value(MT6351_PMIC_ISINK_CH1_MODE, ISINK_PWM_MODE);
 		pmic_set_register_value(MT6351_PMIC_ISINK_CH1_STEP, ISINK_3);	/* 16mA */
+#endif
 		pmic_set_register_value(MT6351_PMIC_ISINK_DIM1_DUTY, duty);
 		pmic_set_register_value(MT6351_PMIC_ISINK_DIM1_FSEL,
 					pmic_freqsel_array[time_index]);
@@ -621,18 +616,6 @@ int mt_led_blink_pmic(enum mt65xx_led_pmic pmic_type, struct nled_setting *led)
 		#endif
 		break;
 	case MT65XX_LED_PMIC_NLED_ISINK2:
-<<<<<<< HEAD
-		pmic_set_register_value(PMIC_RG_DRV_ISINK4_CK_PDN, 0);
-		pmic_set_register_value(PMIC_RG_DRV_ISINK4_CK_CKSEL, 0);
-		pmic_set_register_value(PMIC_ISINK_CH4_MODE, ISINK_PWM_MODE);
-#ifdef CONFIG_LENOVO_LED_CURRENT_LIMMIT
-		pmic_set_register_value(PMIC_ISINK_CH4_STEP, ISINK_1);	/* lenovo-sw wuwl10 modify for 8mA of button led */
-#else
-		pmic_set_register_value(PMIC_ISINK_CH4_STEP, ISINK_3);	/* 16mA */
-#endif
-		pmic_set_register_value(PMIC_ISINK_DIM4_DUTY, duty);
-		pmic_set_register_value(PMIC_ISINK_DIM4_FSEL,
-=======
 		#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
 		pmic_set_register_value(PMIC_CLK_DRV_ISINK2_CK_PDN, 0);
 		pmic_set_register_value(PMIC_ISINK_CH2_STEP, ISINK_3);	/* 16mA */
@@ -641,10 +624,13 @@ int mt_led_blink_pmic(enum mt65xx_led_pmic pmic_type, struct nled_setting *led)
 		pmic_set_register_value(MT6351_PMIC_RG_DRV_ISINK4_CK_PDN, 0);
 		pmic_set_register_value(MT6351_PMIC_RG_DRV_ISINK4_CK_CKSEL, 0);
 		pmic_set_register_value(MT6351_PMIC_ISINK_CH4_MODE, ISINK_PWM_MODE);
+#ifdef CONFIG_LENOVO_LED_CURRENT_LIMMIT
+		pmic_set_register_value(MT6351_PMIC_ISINK_CH4_STEP, ISINK_1);	/* lenovo-sw wuwl10 modify for 8mA of button led */
+#else
 		pmic_set_register_value(MT6351_PMIC_ISINK_CH4_STEP, ISINK_3);	/* 16mA */
+#endif
 		pmic_set_register_value(MT6351_PMIC_ISINK_DIM4_DUTY, duty);
 		pmic_set_register_value(MT6351_PMIC_ISINK_DIM4_FSEL,
->>>>>>> lenovo/caf/mt6755_m
 					pmic_freqsel_array[time_index]);
 		pmic_set_register_value(MT6351_PMIC_ISINK_CH4_EN, NLED_ON);
 		#endif
@@ -1060,30 +1046,25 @@ int mt_brightness_set_pmic(enum mt65xx_led_pmic pmic_type, u32 level, u32 div)
 		pmic_set_register_value(PMIC_CLK_DRV_32K_CK_PDN, 0x0);	/* Disable power down */
 		pmic_set_register_value(PMIC_CLK_DRV_ISINK1_CK_PDN, 0);
 		pmic_set_register_value(PMIC_ISINK_CH1_MODE, ISINK_PWM_MODE);
-#ifdef CONFIG_LENOVO_LED_CURRENT_LIMMIT
-		pmic_set_register_value(PMIC_ISINK_CH1_STEP, ISINK_0);	/* lenovo-sw wuwl10 modify for 4mA of blue led */
-		pmic_set_register_value(PMIC_ISINK_DIM1_DUTY, 31);
-#else
 		pmic_set_register_value(PMIC_ISINK_CH1_STEP, ISINK_3);	/* 16mA */
 		pmic_set_register_value(PMIC_ISINK_DIM1_DUTY, 15);
-<<<<<<< HEAD
-#endif
-		pmic_set_register_value(PMIC_ISINK_DIM1_FSEL, ISINK_1KHZ);	/* 1KHz */
-		if (level)
-=======
 		pmic_set_register_value(PMIC_ISINK_DIM1_FSEL, ISINK_1KHZ);
 		#else
 		pmic_set_register_value(MT6351_PMIC_RG_DRV_32K_CK_PDN, 0x0);	/* Disable power down */
 		pmic_set_register_value(MT6351_PMIC_RG_DRV_ISINK1_CK_PDN, 0);
 		pmic_set_register_value(MT6351_PMIC_RG_DRV_ISINK1_CK_CKSEL, 0);
 		pmic_set_register_value(MT6351_PMIC_ISINK_CH1_MODE, ISINK_PWM_MODE);
+#ifdef CONFIG_LENOVO_LED_CURRENT_LIMMIT
+		pmic_set_register_value(MT6351_PMIC_ISINK_CH1_STEP, ISINK_0);	/* lenovo-sw wuwl10 modify for 4mA of blue led */
+		pmic_set_register_value(MT6351_PMIC_ISINK_DIM1_DUTY, 31);
+#else
 		pmic_set_register_value(MT6351_PMIC_ISINK_CH1_STEP, ISINK_3);	/* 16mA */
 		pmic_set_register_value(MT6351_PMIC_ISINK_DIM1_DUTY, 15);
+#endif
 		pmic_set_register_value(MT6351_PMIC_ISINK_DIM1_FSEL, ISINK_1KHZ);	/* 1KHz */
 		#endif
 		if (level) {
 			#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
->>>>>>> lenovo/caf/mt6755_m
 			pmic_set_register_value(PMIC_ISINK_CH1_EN, NLED_ON);
 			#else
 			pmic_set_register_value(MT6351_PMIC_ISINK_CH1_EN, NLED_ON);
@@ -1120,24 +1101,6 @@ int mt_brightness_set_pmic(enum mt65xx_led_pmic pmic_type, u32 level, u32 div)
 				#endif
 			first_time = false;
 		}
-<<<<<<< HEAD
-		pmic_set_register_value(PMIC_RG_DRV_32K_CK_PDN, 0x0);	/* Disable power down */
-		pmic_set_register_value(PMIC_RG_DRV_ISINK4_CK_PDN, 0);
-		pmic_set_register_value(PMIC_RG_DRV_ISINK4_CK_CKSEL, 0);
-		pmic_set_register_value(PMIC_ISINK_CH4_MODE, ISINK_PWM_MODE);
-#ifdef CONFIG_LENOVO_LED_CURRENT_LIMMIT
-		pmic_set_register_value(PMIC_ISINK_CH4_STEP, ISINK_1);	/* lenovo-sw wuwl10 modify for 8mA of button led */
-		pmic_set_register_value(PMIC_ISINK_DIM4_DUTY, 31);
-#else
-		pmic_set_register_value(PMIC_ISINK_CH4_STEP, ISINK_3);	/* 16mA */
-		pmic_set_register_value(PMIC_ISINK_DIM4_DUTY, 15);
-#endif
-		pmic_set_register_value(PMIC_ISINK_DIM4_FSEL, ISINK_1KHZ);	/* 1KHz */
-		if (level)
-			pmic_set_register_value(PMIC_ISINK_CH4_EN, NLED_ON);
-		else
-			pmic_set_register_value(PMIC_ISINK_CH4_EN, NLED_OFF);
-=======
 		#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
 		pmic_set_register_value(PMIC_CLK_DRV_32K_CK_PDN, 0x0);	/* Disable power down */
 		pmic_set_register_value(PMIC_CLK_DRV_ISINK2_CK_PDN, 0);
@@ -1147,8 +1110,13 @@ int mt_brightness_set_pmic(enum mt65xx_led_pmic pmic_type, u32 level, u32 div)
 		pmic_set_register_value(MT6351_PMIC_RG_DRV_ISINK4_CK_PDN, 0);
 		pmic_set_register_value(MT6351_PMIC_RG_DRV_ISINK4_CK_CKSEL, 0);
 		pmic_set_register_value(MT6351_PMIC_ISINK_CH4_MODE, ISINK_PWM_MODE);
+#ifdef CONFIG_LENOVO_LED_CURRENT_LIMMIT
+		pmic_set_register_value(MT6351_PMIC_ISINK_CH4_STEP, ISINK_1);	/* lenovo-sw wuwl10 modify for 8mA of button led */
+		pmic_set_register_value(MT6351_PMIC_ISINK_DIM4_DUTY, 31);
+#else
 		pmic_set_register_value(MT6351_PMIC_ISINK_CH4_STEP, ISINK_3);	/* 16mA */
 		pmic_set_register_value(MT6351_PMIC_ISINK_DIM4_DUTY, 15);
+#endif
 		pmic_set_register_value(MT6351_PMIC_ISINK_DIM4_FSEL, ISINK_1KHZ);	/* 1KHz */
 		#endif
 		if (level) {
@@ -1164,7 +1132,6 @@ int mt_brightness_set_pmic(enum mt65xx_led_pmic pmic_type, u32 level, u32 div)
 			pmic_set_register_value(MT6351_PMIC_ISINK_CH4_EN, NLED_OFF);
 			#endif
 		}
->>>>>>> lenovo/caf/mt6755_m
 	} else if (pmic_type == MT65XX_LED_PMIC_NLED_ISINK3) {
 		if ((button_flag_isink3 == 0) && (first_time == true)) {
 			/* button flag ==0, means this ISINK is not for button backlight */
