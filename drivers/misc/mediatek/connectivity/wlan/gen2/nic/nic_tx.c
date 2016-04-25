@@ -542,6 +542,7 @@ UINT_32 u4CurrTick = 0;
 WLAN_STATUS nicTxAcquireResource(IN P_ADAPTER_T prAdapter, IN UINT_8 ucTC, IN BOOLEAN pfgIsSecOrMgmt)
 {
 #define TC4_NO_RESOURCE_DELAY_MS      5    /* exponential of 5s */
+#define TC4_NO_RESOURCE_DELAY_1S      1    /* exponential of 1s */
 
 	P_TX_CTRL_T prTxCtrl;
 	WLAN_STATUS u4Status = WLAN_STATUS_RESOURCES;
@@ -586,6 +587,12 @@ WLAN_STATUS nicTxAcquireResource(IN P_ADAPTER_T prAdapter, IN UINT_8 ucTC, IN BO
 	if (ucTC == TC4_INDEX) {
 		if (u4CurrTick == 0)
 			u4CurrTick = kalGetTimeTick();
+
+		if (CHECK_FOR_TIMEOUT(kalGetTimeTick(), u4CurrTick,
+				SEC_TO_SYSTIME(TC4_NO_RESOURCE_DELAY_1S))) {
+			wlanDumpCommandFwStatus();
+		}
+
 		if (CHECK_FOR_TIMEOUT(kalGetTimeTick(), u4CurrTick,
 				SEC_TO_SYSTIME(TC4_NO_RESOURCE_DELAY_MS))) {
 			wlanDumpTcResAndTxedCmd(NULL, 0);
@@ -1604,7 +1611,8 @@ WLAN_STATUS nicTxCmd(IN P_ADAPTER_T prAdapter, IN P_CMD_INFO_T prCmdInfo, IN UIN
 		/* Broadcast/multicast data frames, 1x frames, command packets, MMPDU */
 		ucPortIdx = 1;
 	}
-	wlanTraceTxCmd(prCmdInfo);
+
+	wlanTraceTxCmd(prAdapter, prCmdInfo);
 
 	if (prCmdInfo->eCmdType == COMMAND_TYPE_SECURITY_FRAME) {
 		/* <2> Compose HIF_TX_HEADER */

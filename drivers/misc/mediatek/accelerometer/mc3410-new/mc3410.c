@@ -59,6 +59,7 @@
 /* #define _MC3XXX_SUPPORT_POWER_SAVING_SHUTDOWN_POWER_ */
 #define C_MAX_FIR_LENGTH	(32)
 #define VIRTUAL_Z	0
+#define MC3XXX_SAME_NUM    4  /*4 data is same*/
 
 /*****************************************************************************
  *** CONSTANT / DEFINITION
@@ -109,6 +110,10 @@ struct acc_hw *get_cust_acc(void)
 {
 	return &accel_cust;
 }
+
+static int g_samedataCounter = 0;/*count the same data number*/
+static int g_predata[3] = {0,0,0};/*save the pre data of acc*/
+
 /*****************************************************************************
  *** DATA TYPE / STRUCTURE DEFINITION / ENUM
  *****************************************************************************/
@@ -3412,13 +3417,61 @@ static int mc3xxx_set_delay(u64 ns)
 
 static int mc3xxx_get_data(int *x , int *y, int *z, int *status)
 {
+	int err = 0;
 	char buff[MC3XXX_BUF_SIZE];
 	int ret;
-
+	u8 databuf[2] = {0};
 	MC3XXX_ReadSensorData(mc3xxx_obj_i2c_data->client, buff, MC3XXX_BUF_SIZE);
 	ret = sscanf(buff, "%x %x %x", x, y, z);
 	*status = SENSOR_STATUS_ACCURACY_MEDIUM;
 
+/*Judge the same data*/
+	if((g_predata[0] == *x) && (g_predata[1] == *y) && (g_predata[2] == *z)) {
+		if(MC3XXX_SAME_NUM > g_samedataCounter) {
+			g_samedataCounter++;
+		}
+		else {
+			GSE_LOG("samedata[%d]:%x,%x,%x\n", g_samedataCounter, *x, *y, *z);
+			g_samedataCounter = 0;
+#if 0
+			if(MC3XXX_i2c_read_block(mc3xxx_i2c_client, MC3XXX_REG_MODE_FEATURE, databuf,1))
+   			 {
+      			  GSE_ERR("read power ctl register err!\n");
+     			  return MC3XXX_RETCODE_ERROR_I2C;
+  			  }
+    			GSE_ERR("0,setpower read MC3XXX_REG_MODE_FEATURE =%x,i2c_addr:%x\n", databuf[0],mc3xxx_i2c_client->addr);
+#endif
+			/*MC3XXX_reset(mc3xxx_i2c_client);*/
+			err = MC3XXX_Init(mc3xxx_i2c_client, 0);/*init acc hw*/
+
+#if 0
+			if(MC3XXX_i2c_read_block(mc3xxx_i2c_client, MC3XXX_REG_MODE_FEATURE, databuf,1)) {
+      				GSE_ERR("read power ctl register err!\n");
+     				return MC3XXX_RETCODE_ERROR_I2C;
+  			  }
+    			GSE_ERR("1,setpower read MC3XXX_REG_MODE_FEATURE =%x\n", databuf[0]);
+#endif
+
+			databuf[0] = 0x41;/*set power on*/
+			err = MC3XXX_i2c_write_block(mc3xxx_i2c_client, MC3XXX_REG_MODE_FEATURE, databuf, 1);/*set power mode*/
+			if (err){
+				GSE_ERR("write power control fail!!\n");
+			}
+#if 0
+			if(MC3XXX_i2c_read_block(mc3xxx_i2c_client, MC3XXX_REG_MODE_FEATURE, databuf,1)){
+				GSE_ERR("read power ctl register err!\n");
+     				return MC3XXX_RETCODE_ERROR_I2C;
+  			  }
+			 GSE_ERR("2,setpower read MC3XXX_REG_MODE_FEATURE =%x\n", databuf[0]);
+#endif
+		}
+	}
+	else {
+		g_predata[0] = *x;
+		g_predata[1] = *y;
+		g_predata[2] = *z;
+		g_samedataCounter = 0;
+	}
 	return 0;
 }
 

@@ -1923,7 +1923,7 @@ WLAN_STATUS wlanProcessCommandQueue(IN P_ADAPTER_T prAdapter, IN P_QUE_T prCmdQu
 			if (rStatus == WLAN_STATUS_RESOURCES) {
 				/* no more TC4 resource for further transmission */
 				QUEUE_INSERT_TAIL(prMergeCmdQue, prQueueEntry);
-				DBGLOG(TX, WARN, "No TC4 resource to send cmd, CID=%d, SEQ=%d, CMD type=%d, OID=%d\n",
+				DBGLOG(TX, WARN, "No TC4 resource to send cmd, CID=0x%x, SEQ=%d, CMD type=%d, OID=%d\n",
 					prCmdInfo->ucCID, prCmdInfo->ucCmdSeqNum,
 					prCmdInfo->eCmdType, prCmdInfo->fgIsOid);
 				break;
@@ -2047,6 +2047,7 @@ WLAN_STATUS wlanSendCommand(IN P_ADAPTER_T prAdapter, IN P_CMD_INFO_T prCmdInfo)
 				(prCmdInfo->eCmdType == COMMAND_TYPE_MANAGEMENT_FRAME))
 				pfgIsSecOrMgmt = TRUE;
 
+			wlanReadFwStatus(prAdapter);
 			/* <1.2> Check if pending packet or resource was exhausted */
 			rStatus = nicTxAcquireResource(prAdapter, ucTC, pfgIsSecOrMgmt);
 			if (rStatus == WLAN_STATUS_RESOURCES) {
