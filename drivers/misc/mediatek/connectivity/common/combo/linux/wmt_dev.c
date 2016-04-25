@@ -1193,16 +1193,21 @@ long WMT_unlocked_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 
 	case WMT_IOCTL_SET_PATCH_NUM:{
 			pAtchNum = arg;
-			WMT_INFO_FUNC(" get patch num from launcher = %d\n", pAtchNum);
-			wmt_lib_set_patch_num(pAtchNum);
-			if (pAtchNum > 0)
-				pPatchInfo = kcalloc(1, (pAtchNum * sizeof(WMT_PATCH_INFO)), GFP_ATOMIC);
-			else
-				WMT_ERR_FUNC("patch num == 0!\n");
-			if (!pPatchInfo) {
-				WMT_ERR_FUNC("allocate memory fail!\n");
+			if (pAtchNum == 0 || pAtchNum > MAX_PATCH_NUM) {
+				WMT_ERR_FUNC("patch num(%d) == 0 or > %d!\n", pAtchNum, MAX_PATCH_NUM);
+				iRet = -1;
 				break;
 			}
+
+			pPatchInfo = kcalloc(pAtchNum, sizeof(WMT_PATCH_INFO), GFP_ATOMIC);
+			if (!pPatchInfo) {
+				WMT_ERR_FUNC("allocate memory fail!\n");
+				iRet = -EFAULT;
+				break;
+			}
+
+			WMT_INFO_FUNC(" get patch num from launcher = %d\n", pAtchNum);
+			wmt_lib_set_patch_num(pAtchNum);
 		}
 		break;
 
