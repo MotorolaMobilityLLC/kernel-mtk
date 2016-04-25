@@ -767,12 +767,142 @@ static struct device *flashlight_device;
 static struct flashlight_data flashlight_private;
 static dev_t flashlight_devno;
 static struct cdev *g_pFlash_CharDrv;
+//lenovo.sw START wangdw10 20160425 bringup Kungfu camera Flash
+#ifdef CAMERA_FLASH_Kungfu
+/* songwei4 add for facotry mode flash test. this MACRO FLAH_SYS_CTRL
+control create sys node /sys/class/leds/flash\/torch
+and app can operation this node. 2014 7-11 */
+#define FLAH_SYS_CTRL 1
+#if FLAH_SYS_CTRL
+#include <linux/leds.h>
+static struct work_struct flash_work;
+static void flash_work_func(struct work_struct *data);
+FLASHLIGHT_FUNCTION_STRUCT *mpF=NULL;
+#ifdef CONFIG_LENOVO_TORCH_MODE
+FLASHLIGHT_FUNCTION_STRUCT *lowpF=NULL;
+#endif
+static struct led_classdev flash_cdev;
+static struct led_classdev torch_cdev;
+static int flash_torch_flag=0;
+static int fl_value=0;
+static void flash_work_func(struct work_struct *data)
+{
+	int duty=0;
+#ifdef CONFIG_LENOVO_TORCH_MODE
+	if((mpF==NULL)||(lowpF==NULL))
+#else
+	if(mpF==NULL)
+#endif
+	{
+		printk("-------flash_work_func pF==NULL----\n");
+		return;
+	}
+	if(fl_value==0){
+		//mpF->flashlight_open(0);
+		mpF->flashlight_ioctl(FLASH_IOC_SET_ONOFF, 0);
+		mpF->flashlight_release(0);
+#ifdef CONFIG_LENOVO_TORCH_MODE
+		lowpF->flashlight_ioctl(FLASH_IOC_SET_ONOFF, 0);
+		lowpF->flashlight_release(0);
+#endif
+		return;
+	}
+	if(flash_torch_flag){
+		#ifdef CONFIG_LENOVO_TORCH_MODE
+		duty=12;
+		#else
+		duty=1;
+		#endif
+	}else{
+		#ifdef CONFIG_LENOVO_TORCH_MODE
+		duty=3;
+		#else
+		duty=0;
+		#endif
+	}
+	if(flash_torch_flag==1) //engineer mode
+	{
+	mpF->flashlight_open(0);
+	mpF->flashlight_ioctl(FLASH_IOC_SET_TIME_OUT_TIME_MS, 0);
+	mpF->flashlight_ioctl(FLASH_IOC_SET_DUTY, 0);
+	mpF->flashlight_ioctl(FLASH_IOC_SET_ONOFF, 0);
+	#ifdef CONFIG_LENOVO_TORCH_MODE
+		lowpF->flashlight_open(0);
+		lowpF->flashlight_ioctl(FLASH_IOC_SET_TIME_OUT_TIME_MS, 0);
+		lowpF->flashlight_ioctl(FLASH_IOC_SET_DUTY, 12);
+		lowpF->flashlight_ioctl(FLASH_IOC_SET_ONOFF, 1);
+	#endif
+	printk("--[%s][%d]--------duty=%d  flash_torch_flag=%d only in engineer mode\n",__FUNCTION__,__LINE__,duty,flash_torch_flag);
+	return;
+	}
+	else //torch mode
+	{
+	mpF->flashlight_open(0);
+	mpF->flashlight_ioctl(FLASH_IOC_SET_TIME_OUT_TIME_MS, 0);
+	mpF->flashlight_ioctl(FLASH_IOC_SET_DUTY, duty);
+	mpF->flashlight_ioctl(FLASH_IOC_SET_ONOFF, 1);
+#ifdef CONFIG_LENOVO_TORCH_MODE
+	lowpF->flashlight_open(0);
+	lowpF->flashlight_ioctl(FLASH_IOC_SET_TIME_OUT_TIME_MS, 0);
+	lowpF->flashlight_ioctl(FLASH_IOC_SET_DUTY, 0);
+	lowpF->flashlight_ioctl(FLASH_IOC_SET_ONOFF, 1);
+#endif
+	}
+	printk("--[%s][%d]--------duty=%d  flash_torch_flag=%d\n",__FUNCTION__,__LINE__,duty,flash_torch_flag);
+	return;
+}
+static void sys_flash_brightness_set(struct led_classdev *led_cdev,enum led_brightness brightness)
+{
+	//ii
+	printk("--[%s][%d]------%d--\n",__FUNCTION__,__LINE__,brightness);
+	flash_torch_flag=1;
+	fl_value=brightness;
+	schedule_work(&flash_work);
+	return;
+}
+static void sys_torch_brightness_set(struct led_classdev *led_cdev,enum led_brightness brightness)
+{
+	printk("--[%s][%d]------%d--\n",__FUNCTION__,__LINE__,brightness);
+	flash_torch_flag=0;
+	fl_value=brightness;
+	schedule_work(&flash_work);
+	return;
+}
+
+static ssize_t show_sy7806_id(struct device *dev,struct device_attribute *attr, char *buf)
+{
+	kal_uint8 tmp;
+	mpF->flashlight_open(0);
+	tmp=mpF->flashlight_ioctl(FLASH_IOC_GET_REG, 0x0c);
+	//printk("--[%s][%d]------%d--\n",__FUNCTION__,__LINE__,tmp);
+	mpF->flashlight_release(0);
+	if (tmp == 0x02)
+		return snprintf(buf, 10, "%s\n", "sy7806");
+	else
+		return snprintf(buf, 10, "%s\n", "ERROR");
+}
+
+static ssize_t store_sy7806_id(struct device *dev,struct device_attribute *attr, const char *buf, size_t size)
+{
+	return size;
+}
+
+static DEVICE_ATTR(sy7806_id, 0664, show_sy7806_id, store_sy7806_id);
+#endif
+#endif
+//lenovo.sw END wangdw10 20160425 bringup Kungfu camera Flash
 /* ======================================================================== */
 #define ALLOC_DEVNO
 static int flashlight_probe(struct platform_device *dev)
 {
 	int ret = 0, err = 0;
-
+//lenovo.sw START wangdw10 20160425 bringup Kungfu camera Flash
+#ifdef CAMERA_FLASH_Kungfu
+#if FLAH_SYS_CTRL
+	int device_file = 0;
+#endif
+#endif
+//lenovo.sw END wangdw10 20160425 bringup Kungfu camera Flash
 	logI("[flashlight_probe] start ~");
 
 #ifdef ALLOC_DEVNO
@@ -831,10 +961,29 @@ static int flashlight_probe(struct platform_device *dev)
 	init_waitqueue_head(&flashlight_private.read_wait);
 	/* init_MUTEX(&flashlight_private.sem); */
 	sema_init(&flashlight_private.sem, 1);
+//lenovo.sw START wangdw10 20160425 bringup Kungfu camera Flash
+#ifdef CAMERA_FLASH_Kungfu
+#if FLAH_SYS_CTRL
+    //create some sys node.
+    torch_cdev.name="torch";
+    torch_cdev.brightness_set=sys_torch_brightness_set;
+    led_classdev_register(&(dev->dev),&torch_cdev);
 
+    flash_cdev.name="flash";
+    flash_cdev.brightness_set=sys_flash_brightness_set;
+    led_classdev_register(&(dev->dev),&flash_cdev);
+    constantFlashlightInit(&mpF);
+#ifdef CONFIG_LENOVO_TORCH_MODE
+    strobeInit_main_sid2_part1(&lowpF);
+#endif
+    INIT_WORK(&flash_work, flash_work_func);
+    device_file = device_create_file(flashlight_device, &dev_attr_sy7806_id);
+#endif
+#else
 	/* GPIO pinctrl initial */
 	flashlight_gpio_init(dev);
-
+#endif
+//lenovo.sw END wangdw10 20160425 bringup Kungfu camera Flash
 	logI("[flashlight_probe] Done ~");
 	return 0;
 
@@ -864,7 +1013,14 @@ static int flashlight_remove(struct platform_device *dev)
 #endif
 	device_destroy(flashlight_class, flashlight_devno);
 	class_destroy(flashlight_class);
-
+//lenovo.sw STRAT wangdw10 20160425 bringup Kungfu camera Flash
+#ifdef CAMERA_FLASH_Kungfu
+#if FLAH_SYS_CTRL
+	led_classdev_unregister(&torch_cdev);
+        led_classdev_unregister(&flash_cdev);
+#endif
+#endif
+//lenovo.sw END wangdw10 20160425 bringup Kungfu camera Flash
 	logI("[flashlight_probe] Done ~");
 	return 0;
 }
@@ -876,14 +1032,16 @@ static void flashlight_shutdown(struct platform_device *dev)
 	checkAndRelease();
 	logI("[flashlight_shutdown] Done ~");
 }
-
+//lenovo.sw START wangdw10 20160425 bringup Kungfu camera Flash
+#ifndef CAMERA_FLASH_Kungfu
 #ifdef CONFIG_OF
 static const struct of_device_id FLASHLIGHT_of_match[] = {
 	{.compatible = "mediatek,mt6755-flashlight"},
 	{},
 };
 #endif
-
+#endif
+//lenovo.sw END wangdw10 20160425 bringup Kungfu camera Flash
 static struct platform_driver flashlight_platform_driver = {
 	.probe = flashlight_probe,
 	.remove = flashlight_remove,
@@ -891,9 +1049,13 @@ static struct platform_driver flashlight_platform_driver = {
 	.driver = {
 		   .name = FLASHLIGHT_DEVNAME,
 		   .owner = THIS_MODULE,
+//lenovo.sw START wangdw10 20160425 bringup Kungfu camera Flash
+#ifndef CAMERA_FLASH_Kungfu
 #ifdef CONFIG_OF
 	.of_match_table = FLASHLIGHT_of_match,
 #endif
+#endif
+//lenovo.sw END wangdw10 20160425 bringup Kungfu camera Flash
 		   },
 };
 
