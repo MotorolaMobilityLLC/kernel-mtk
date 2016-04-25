@@ -309,18 +309,40 @@
 	};
 	main_camera_flash_ENT_2: cam@2 {
 		pins_cmd_dat {
-			pins = <PINMUX_GPIO8__FUNC_PWM_A>;
+			pins = <PINMUX_GPIO9__FUNC_GPIO9>;
 			slew-rate = <1>;
+			output-low;
+                };
+	};
+	main_camera_flash_ENT_3: cam@3 {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO9__FUNC_GPIO9>;
+			slew-rate = <1>;
+			output-high;
+                };
+	};
+	main_camera_flash_ENF_0: cam@4{
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO19__FUNC_GPIO19>;
+			slew-rate = <1>;
+			output-low;
 		};
 	};
-	main_camera_flash_ENF_0: cam@3 {
+	main_camera_flash_ENF_1: cam@5 {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO19__FUNC_GPIO19>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+	main_camera_flash_ENF_2: cam@6 {
 		pins_cmd_dat {
 			pins = <PINMUX_GPIO9__FUNC_GPIO9>;
 			slew-rate = <1>;
 			output-low;
 		};
 	};
-	main_camera_flash_ENF_1: cam@4 {
+	main_camera_flash_ENF_3: cam@7{
 		pins_cmd_dat {
 			pins = <PINMUX_GPIO9__FUNC_GPIO9>;
 			slew-rate = <1>;
@@ -336,7 +358,7 @@
 	pinctrl-names = "default",
 			"cam0_rst0", "cam0_rst1", "cam0_pnd0", "cam0_pnd1",
 			"cam1_rst0", "cam1_rst1", "cam1_pnd0", "cam1_pnd1",
-			"flash_ENT0", "flash_ENT1", "flash_ENT2", "flash_ENF0", "flash_ENF1";
+			"flash_ENT0", "flash_ENT1", "flash_ENT2", "flash_ENT3","flash_ENF0", "flash_ENF1","flash_ENF2", "flash_ENF3";
 			/*"cam2_rst0", "cam2_rst1", "cam2_pnd0", "cam2_pnd1",
 			"cam_ldo_vcama_0", "cam_ldo_vcama_1";*/
 	pinctrl-0 = <&camera_pins_default>;
@@ -348,21 +370,14 @@
 	pinctrl-6 = <&camera_pins_cam1_rst1>;
 	pinctrl-7 = <&camera_pins_cam1_pnd0>;
 	pinctrl-8 = <&camera_pins_cam1_pnd1>;
-	/*wuyt3 add for K52 flashlight*/
 	pinctrl-9 = <&main_camera_flash_ENT_0>;
 	pinctrl-10 = <&main_camera_flash_ENT_1>;
 	pinctrl-11 = <&main_camera_flash_ENT_2>;
-	pinctrl-12 = <&main_camera_flash_ENF_0>;
-	pinctrl-13 = <&main_camera_flash_ENF_1>;
-	/*wuyt3 add end*/
-	/* for main2 */
-	/*pinctrl-9 = <&camera_pins_cam2_rst0>;
-	pinctrl-10 = <&camera_pins_cam2_rst1>;
-	pinctrl-11 = <&camera_pins_cam2_pnd0>;
-	pinctrl-12 = <&camera_pins_cam2_pnd1>;*/
-	/* for ldo control by gpio */
-	/*pinctrl-13 = <&camera_pins_cam_ldo_vcama_0>;
-	pinctrl-14 = <&camera_pins_cam_ldo_vcama_1>;*/
+	pinctrl-12 = <&main_camera_flash_ENT_3>;
+	pinctrl-13 = <&main_camera_flash_ENF_0>;
+	pinctrl-14 = <&main_camera_flash_ENF_1>;
+	pinctrl-15 = <&main_camera_flash_ENF_2>;
+	pinctrl-16 = <&main_camera_flash_ENF_3>;
 	status = "okay";
 
 };
@@ -1036,6 +1051,11 @@
 		status = "okay";
 	};
 /*End, lenovo-sw lumy1*/
+
+	strobe_main1@6f{
+		compatible = "mediatek,strobe_main1";
+		reg = <0x6f>;
+	};
 
 };
 

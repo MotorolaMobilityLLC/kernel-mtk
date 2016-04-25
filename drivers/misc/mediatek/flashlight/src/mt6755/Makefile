@@ -14,7 +14,9 @@
 #
 # Makefile for misc devices that really don't fit anywhere else.
 #
-
+ifeq ($(TARGET_PRODUCT),kungfu_m)
+ccflags-y += -DCAMERA_FLASH_Kungfu
+endif
 obj-y				+= kd_flashlightlist.o
 obj-y				+= strobe_main_sid2_part1.o
 obj-y				+= strobe_main_sid2_part2.o

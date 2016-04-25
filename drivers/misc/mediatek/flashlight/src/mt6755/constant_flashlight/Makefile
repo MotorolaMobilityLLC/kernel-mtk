@@ -14,5 +14,7 @@
 #
 # Makefile for misc devices that really don't fit anywhere else.
 #
-
+ifeq ($(TARGET_PRODUCT),kungfu_m)
+ccflags-y += -DCAMERA_FLASH_Kungfu
+endif
 obj-y				+= leds_strobe.o
