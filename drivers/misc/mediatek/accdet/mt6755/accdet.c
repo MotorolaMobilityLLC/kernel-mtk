@@ -19,6 +19,7 @@
 #include <linux/timer.h>
 #include <linux/of.h>
 #include <linux/of_irq.h>
+#include "ts3a225e.h"//chengx2
 
 #define DEBUG_THREAD 1
 #define GET_ADC_DIRECTLY
@@ -374,7 +375,36 @@ static void accdet_eint_work_callback(struct work_struct *work)
 		ACCDET_DEBUG("[Accdet] FSA8049 enable!\n");
 		msleep(250);	/*PIN swap need ms*/
 #endif
-
+//lenovo-sw chengx2 add for ts3a225e start
+#if defined(ACCDET_TS3A225E_PIN_SWAP)
+				ACCDET_DEBUG("[Accdet] TS3A225E enable!\n");
+				ts3a225e_write_byte(0x04, 0x01);
+				msleep(500);
+				ts3a225e_read_byte(0x02, &ts3a225e_reg_value[1]);
+				ts3a225e_read_byte(0x03, &ts3a225e_reg_value[2]);
+				ts3a225e_read_byte(0x05, &ts3a225e_reg_value[4]);
+				ts3a225e_read_byte(0x06, &ts3a225e_reg_value[5]);
+				ACCDET_DEBUG("[Accdet] TS3A225E CTRL1=%x!\n", ts3a225e_reg_value[1]);
+				ACCDET_DEBUG("[Accdet] TS3A225E CTRL2=%x!\n", ts3a225e_reg_value[2]);
+				ACCDET_DEBUG("[Accdet] TS3A225E DAT1=%x!\n", ts3a225e_reg_value[4]);
+				ACCDET_DEBUG("[Accdet] TS3A225E INT=%x!\n", ts3a225e_reg_value[5]);
+				if (ts3a225e_reg_value[5] == 0x01) {
+					ACCDET_DEBUG("[Accdet] TS3A225E A standard TSR headset detected, RING2 and SLEEVE shorted!\n");
+					ts3a225e_connector_type = TS3A225E_CONNECTOR_TRS;
+					ts3a225e_write_byte(0x02, 0x07);
+					ts3a225e_write_byte(0x03, 0xf3);
+					msleep(20);
+				} else if (ts3a225e_reg_value[5] == 0x02) {
+					ACCDET_DEBUG("[Accdet] TS3A225E A microphone detected on either RING2 or SLEEVE!\n");
+					if ((ts3a225e_reg_value[4] & 0x40) == 0x00)
+						ts3a225e_connector_type = TS3A225E_CONNECTOR_TRRS_STANDARD;
+					else
+						ts3a225e_connector_type = TS3A225E_CONNECTOR_TRRS_OMTP;
+				} else {
+					ACCDET_DEBUG("[Accdet] TS3A225E Detection sequence completed without successful!\n");
+				}
+#endif
+//lenovo-sw chengx2 add for ts3a225e end
 		accdet_init();	/*do set pwm_idle on in accdet_init*/
 
 #ifdef CONFIG_ACCDET_PIN_RECOGNIZATION
@@ -405,6 +435,12 @@ static void accdet_eint_work_callback(struct work_struct *work)
 		accdet_FSA8049_disable();	/*disable GPIOxxx for PIN swap */
 		ACCDET_DEBUG("[Accdet] FSA8049 disable!\n");
 #endif
+		//lenovo-sw chengx2 add for ts3a225e start
+		#if defined(ACCDET_TS3A225E_PIN_SWAP)
+		ACCDET_DEBUG("[Accdet] TS3A225E disable!\n");
+		ts3a225e_connector_type = TS3A225E_CONNECTOR_NONE;
+		#endif
+		//lenovo-sw chengx2 add for ts3a225e end
 		/*accdet_auxadc_switch(0);*/
 		disable_accdet();
 		headset_plug_out();
