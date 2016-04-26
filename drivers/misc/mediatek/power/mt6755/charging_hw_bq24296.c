@@ -6,8 +6,10 @@
 #include <mt-plat/mt_boot.h>
 #include <mt-plat/battery_common.h>
 #include <mt-plat/battery_meter.h>
-#include <mach/mt_battery_meter.h>
-#include <mach/mt_charging.h>
+//lenovo-sw mahj2 modify for project split Begin
+#include <cust_battery_meter.h>
+#include <cust_charging.h>
+//lenovo-sw mahj2 modify for project split End
 #include <mach/mt_pmic.h>
 #include "bq24296.h"
 #include <mach/mt_sleep.h>

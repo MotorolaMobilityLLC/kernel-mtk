@@ -56,14 +56,16 @@
 #include <mt-plat/battery_meter.h>
 #include <mt-plat/battery_common.h>
 #include <mt-plat/battery_meter_hal.h>
-#include <mach/mt_battery_meter.h>
+//lenovo-sw mahj2 modify for project split Begin
+#include "cust_battery_meter.h"
 //lenovo-sw mahj2 modify for multi battery Bagin
 #ifdef MTK_MULTI_BAT_PROFILE_SUPPORT
-#include <mach/mt_battery_meter_table_multi_profile.h>
+#include "cust_battery_meter_table_multi_profile.h"
 #else
-#include <mach/mt_battery_meter_table.h>
+#include "cust_battery_meter_table.h"
 #endif
 //lenovo-sw mahj2 modify for multi battery End
+//lenovo-sw mahj2 modify for project split End
 #include <mach/mt_pmic.h>
 
 

@@ -13,12 +13,18 @@
 
 #$(call all-subdir-src-or-makefile)
 MTK_PLATFORM := $(subst ",,$(CONFIG_MTK_PLATFORM))
+#lenovo-sw mahj2 modify for project split Begin
+ARCH_MTK_PROJECT := $(subst ",,$(CONFIG_ARCH_MTK_PROJECT))
+#lenovo-sw mahj2 modify for project split End
 subdir-ccflags-y += -Werror
 subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/hibcore
 subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/include
 subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat/$(MTK_PLATFORM)/include
 subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat
 subdir-ccflags-y += -I$(srctree)/drivers/mmc/host/mediatek/$(MTK_PLATFORM)
+#lenovo-sw mahj2 modify for project split Begin
+subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/mach/$(MTK_PLATFORM)/$(ARCH_MTK_PROJECT)/power
+#lenovo-sw mahj2 modify for project split End
 
 obj-$(CONFIG_MTK_BASE_POWER) += base/
 obj-$(CONFIG_MTK_POWER_GS) += power_gs/
