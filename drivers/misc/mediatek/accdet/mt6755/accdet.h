@@ -56,7 +56,9 @@ IOCTL
 #define ACCDET_INIT _IO(ACCDET_IOC_MAGIC, 0)
 #define SET_CALL_STATE _IO(ACCDET_IOC_MAGIC, 1)
 #define GET_BUTTON_STATUS _IO(ACCDET_IOC_MAGIC, 2)
+#ifdef CONFIG_TS3A225E_ACCDET
 #define ACCDET_TS3A225E_PIN_SWAP//lenovo-sw chengx2 add for ts3a225e
+#endif 
 /*define for phone call state*/
 
 #define CALL_IDLE 0
