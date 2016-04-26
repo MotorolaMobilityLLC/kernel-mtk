@@ -19,8 +19,9 @@
 #include <linux/timer.h>
 #include <linux/of.h>
 #include <linux/of_irq.h>
+#ifdef CONFIG_TS3A225E_ACCDET
 #include "ts3a225e.h"//chengx2
-
+#endif
 #define DEBUG_THREAD 1
 #define GET_ADC_DIRECTLY
 
