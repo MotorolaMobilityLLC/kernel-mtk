@@ -1129,7 +1129,8 @@
 *                           P R I V A T E   D A T A
 ********************************************************************************
 */
-#if DBG
+/*lenovo-sw lumy1, wifi log enhance*/
+#if 1
 /*lint -save -e64 Type mismatch */
 static PUINT_8 apucDebugAisState[AIS_STATE_NUM] = {
 	(PUINT_8) DISP_STRING("AIS_STATE_IDLE"),
@@ -1895,7 +1896,8 @@ VOID aisFsmSteps(IN P_ADAPTER_T prAdapter, ENUM_AIS_STATE_T eNextState)
 		/* Do entering Next State */
 		prAisFsmInfo->ePreviousState = prAisFsmInfo->eCurrentState;
 
-#if DBG
+/*lenovo-sw lumy1, wifi log enhance*/
+#if 1
 		DBGLOG(AIS, STATE, "TRANSITION: [%s] -> [%s]\n",
 				    apucDebugAisState[prAisFsmInfo->eCurrentState], apucDebugAisState[eNextState]);
 #else
