@@ -216,3 +216,6 @@ ifneq ($(wildcard $(srctree)/drivers/misc/mediatek/cpu_stress/),)
 obj-$(CONFIG_MTK_CPU_STRESS)	+= cpu_stress/
 endif
 obj-$(CONFIG_MTK_VOW_SUPPORT)	+= vow/
+#lenovo-sw chengx2,add for smartpa begin
+obj-$(CONFIG_MTK_NXP_TFA9890) += smartpa/
+#lenovo-sw chengx2,add for smartpa end
