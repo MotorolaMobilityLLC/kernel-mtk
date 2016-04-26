@@ -156,6 +156,17 @@
 		is_batch_supported		= <0>;
 	};
 /* end sensor */
+/* Lenovo-sw, chengx2, 2016-4-20 add for smartpa start */
+	tfa9890@0 {
+			compatible = "mediatek,mtksmartpa";
+			
+		};
+	ts3a225e:mediatek,audio_switch {
+			compatible = "mediatek,audio_switch";
+		};
+
+/* Lenovo-sw, chengx2, 2016-4-20 add for smartpa end */
+
 };
 &accdet {
 		accdet-mic-vol = <7>;
@@ -879,6 +890,7 @@
 };/* UART GPIO end */
 
 /* NFC GPIO standardization */
+/*
 &pio {
 	nfc_default: default {
 
@@ -953,6 +965,7 @@
 	pinctrl-7 = <&nfc_irq_init>;
 	status = "okay";
 };
+*//*chengx2*/
 /* NFC end */
 
 &pio {
