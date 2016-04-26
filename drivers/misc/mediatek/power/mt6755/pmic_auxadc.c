@@ -55,7 +55,9 @@
 /*#include <mach/pmic_mt6328_sw.h>*/
 
 #include <mach/mt_pmic.h>
-#include <mach/mt_battery_meter.h>
+//lenovo-sw mahj2 modify for project split Begin
+#include <cust_battery_meter.h>
+//lenovo-sw mahj2 modify for project split End
 
 
 /*

@@ -50,7 +50,9 @@
 #include <mt-plat/battery_common.h>
 #include <mt-plat/battery_meter_hal.h>
 #include <mt-plat/charging.h>
-#include <mach/mt_charging.h>
+//lenovo-sw mahj2 modify for project split Begin
+#include "cust_charging.h"
+//lenovo-sw mahj2 modify for project split End
 #include <mt-plat/mt_boot.h>
 
 #if defined(CONFIG_MTK_PUMP_EXPRESS_PLUS_SUPPORT)
