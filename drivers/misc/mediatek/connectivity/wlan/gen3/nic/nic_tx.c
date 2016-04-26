@@ -2711,6 +2711,11 @@ BOOLEAN nicTxFillMsduInfo(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMsduInfo,
 			prMsduInfo->pfTxDoneHandler = wlanIcmpTxDone;
 			prMsduInfo->ucTxSeqNum = GLUE_GET_PKT_SEQ_NO(prPacket);
 		}
+		else if (GLUE_TEST_PKT_FLAG(prPacket, ENUM_PKT_DNS) &&
+			prAdapter->rWifiVar.ucDnsTxDone) {
+			prMsduInfo->pfTxDoneHandler = wlanDnsTxDone;
+			fgIsUseFixRate = TRUE;
+		}/*lenovo-sw lumy1, mtk temp patch for dns debug*/
 
 		if (fgIsUseFixRate == TRUE) {
 			if (prMsduInfo->ucBssIndex <= MAX_BSS_INDEX) {
@@ -3009,11 +3014,13 @@ VOID nicTxProcessTxDoneEvent(IN P_ADAPTER_T prAdapter, IN P_WIFI_EVENT_T prEvent
 
 	if (prTxDone->ucFlag & BIT(0)) {
 		/* Tx Done with advanced info */
-		DBGLOG(TX, TRACE, "EVENT_ID_TX_DONE WIDX:PID[%u:%u] Status[%u] SN[%u] CNT[%u] RATE[0x%04x]\n",
+		//lenovo-sw lumy1
+		DBGLOG(TX, INFO, "EVENT_ID_TX_DONE WIDX:PID[%u:%u] Status[%u] SN[%u] CNT[%u] RATE[0x%04x]\n",
 				    prTxDone->ucWlanIndex, prTxDone->ucPacketSeq, prTxDone->ucStatus,
 				    prTxDone->u2SequenceNumber, prTxDone->ucTxCount, prTxDone->u2TxRate);
 	} else {
-		DBGLOG(TX, TRACE, "EVENT_ID_TX_DONE WIDX:PID[%u:%u] Status[%u] SN[%u]\n",
+		//lenovo-sw lumy1
+		DBGLOG(TX, INFO, "EVENT_ID_TX_DONE WIDX:PID[%u:%u] Status[%u] SN[%u]\n",
 				    prTxDone->ucWlanIndex, prTxDone->ucPacketSeq, prTxDone->ucStatus,
 				    prTxDone->u2SequenceNumber);
 	}
