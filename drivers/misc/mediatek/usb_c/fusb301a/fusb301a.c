@@ -1132,6 +1132,9 @@ static void fusb301_work_handler(struct work_struct *work)
 	struct device *cdev = &chip->client->dev;
 	int rc;
 	u8 int_sts;
+
+	//Do not use interrupt handler so far.
+	return;
 	mutex_lock(&chip->mlock);
 	/* get interrupt */
 	rc = i2c_smbus_read_byte_data(chip->client, FUSB301_REG_INT);
@@ -1205,7 +1208,20 @@ static int fusb301_parse_dt(struct fusb301_chip *chip)
 	struct fusb301_data *data = chip->pdata;
 	u32 timeoutValues[10];
 	int len, rc = 0;
+	u32 ints[2] = { 0, 0 };
 
+	of_property_read_u32_array(dev_node, "debounce", ints, ARRAY_SIZE(ints));
+	gpio_set_debounce(ints[0], ints[1]);
+
+	data->int_gpio = ints[0];
+	printk("[wj][%s]irq:%d, debounce:%d-%d:", __func__, data->int_gpio, ints[0], ints[1]);
+	if (data->int_gpio < 0) {
+		dev_err(cdev, "int_gpio is not available\n");
+		rc = data->int_gpio;
+		goto out;
+	}
+
+/*
 	data->int_gpio = of_get_named_gpio(dev_node,
 				"fusb301,int-gpio", 0);
 	if (data->int_gpio < 0) {
@@ -1213,6 +1229,8 @@ static int fusb301_parse_dt(struct fusb301_chip *chip)
 		rc = data->int_gpio;
 		goto out;
 	}
+*/
+
 	rc = of_property_read_u8(dev_node,
 				"fusb301,init-mode", &data->init_mode);
 	if (rc || (data->init_mode > FUSB301_DRP_ACC)) {
@@ -1537,7 +1555,7 @@ static int fusb301_probe(struct i2c_client *client,
 	INIT_WORK(&chip->dwork, fusb301_work_handler);
 	INIT_DELAYED_WORK(&chip->twork, fusb301_timer_work_handler);
 	wake_lock_init(&chip->wlock, WAKE_LOCK_SUSPEND, "fusb301_wake");
-
+	mutex_init(&chip->mlock);
 	ret = fusb301_create_devices(cdev);
 	if (IS_ERR_VALUE(ret)) {
 		dev_err(cdev, "could not create devices\n");
