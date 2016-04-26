@@ -162,6 +162,7 @@ int  step_notify(STEP_NOTIFY_TYPE type)
 		input_report_rel(cxt->idev, EVENT_TYPE_STEP_DETECTOR_VALUE, value);
 		input_sync(cxt->idev);
 	}
+#ifdef LSM6DS3_SIGNIFICANT_MOTION
 	else if (type == TYPE_SIGNIFICANT) {
 		STEP_C_LOG("fwq TYPE_SIGNIFICANT notify\n");
 		/* cxt->step_c_data.get_data_significant(&value); */
@@ -169,6 +170,7 @@ int  step_notify(STEP_NOTIFY_TYPE type)
 		input_report_rel(cxt->idev, EVENT_TYPE_SIGNIFICANT_VALUE, value);
 		input_sync(cxt->idev);
 	}
+#endif	
 	else if (type == TYPE_STEP_COUNTER)	{
 		STEP_C_LOG("fwq TYPE_STEP_COUNTER notify\n");
 		
@@ -231,6 +233,7 @@ static int step_d_real_enable(int enable)
 	return err;
 }
 
+#ifdef LSM6DS3_SIGNIFICANT_MOTION
 static int significant_real_enable(int enable)
 {
 	int err =0, old;
@@ -280,8 +283,8 @@ static int significant_real_enable(int enable)
 	}
 	return err;
 }
+#endif
 /* fix step counter stop working after disable other sensor issue -- modified by liaoxl.lenovo 5.12.2015 end */
-
 
 static int step_c_real_enable(int enable)
 {
@@ -449,6 +452,7 @@ static ssize_t step_c_store_active(struct device *dev, struct device_attribute *
 		else
 			STEP_C_ERR(" step_c_store_active error !!\n");
 		break;
+		
 	case ID_STEP_DETECTOR:
 		if (1 == en)
 			step_d_real_enable(1);
@@ -457,6 +461,8 @@ static ssize_t step_c_store_active(struct device *dev, struct device_attribute *
 		else
 			STEP_C_ERR(" step_d_real_enable error !!\n");
 		break;
+		
+#ifdef LSM6DS3_SIGNIFICANT_MOTION		
 	case ID_SIGNIFICANT_MOTION:
 		if (1 == en)
 			significant_real_enable(1);
@@ -465,7 +471,7 @@ static ssize_t step_c_store_active(struct device *dev, struct device_attribute *
 		else
 			STEP_C_ERR(" significant_real_enable error !!\n");
 		break;
-
+#endif
 	}
 
 	/*
