@@ -1168,6 +1168,7 @@ GT24c64a@50 {
 		vusb-supply = <&mt_pmic_vusb33_ldo_reg>;
 		interrupt-parent = <&eintc>;
 		interrupts = <24 0x2>;
+		debounce = <24 0>;
 		fusb301,int-gpio = <&pio 24 0>;
 		fusb301,init-mode = /bits/ 8 <32>;
 		fusb301,drp-toggle-time = /bits/ 8 <0>;
