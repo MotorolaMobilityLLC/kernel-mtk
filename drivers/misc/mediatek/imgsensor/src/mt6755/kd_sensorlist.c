@@ -2925,7 +2925,7 @@ bool Get_Cam_Regulator(void)
 				    regVCAMIO = regulator_get(sensor_device, "vcamio");
 			    }
 			    if (regVCAMAF == NULL) {
-				    regVCAMAF = regulator_get(sensor_device, "vcamaf");
+				    regVCAMAF = regulator_get(sensor_device, "vcamvldo");
 			    }
 			} else{
 				PK_DBG("Camera customer regulator!\n");
@@ -2942,7 +2942,7 @@ bool Get_Cam_Regulator(void)
 				    regVCAMIO = regulator_get(sensor_device, "vcamio");
 			    }
 			    if (regVCAMAF == NULL) {
-				    regVCAMAF = regulator_get(sensor_device, "vcamaf");
+				    regVCAMAF = regulator_get(sensor_device, "vcamvldo");
 			    }
 			    if (regMain2VCAMD == NULL) {
 				    regMain2VCAMD = regulator_get(sensor_device, "vcamd_main2");

@@ -823,6 +823,18 @@ BOOL hwpoweron(PowerInformation pwInfo, char *mode_name)
 
 		}
 	}else if (pwInfo.PowerType == AFVDD) {
+#ifdef CAMERA_HW_Kungfu
+		if (PowerCustList.PowerCustInfo[CUST_AFVDD].Gpio_Pin == GPIO_UNSUPPORTED) {
+			if (TRUE != _hwPowerOn(pwInfo.PowerType, pwInfo.Voltage)) {
+				PK_ERR("[CAMERA SENSOR] Fail to enable af power\n");
+				return FALSE;
+			}
+		} else {
+			if (mtkcam_gpio_set(pinSetIdx, pwInfo.PowerType, PowerCustList.PowerCustInfo[CUST_AFVDD].Voltage)) {
+					PK_ERR("[CAMERA CUST_AFVDD] set gpio failed!!\n");
+			}
+		}
+#else 		
 #if CONTROL_AF_POWER
 		if (PowerCustList.PowerCustInfo[CUST_AFVDD].Gpio_Pin == GPIO_UNSUPPORTED) {
 			if (TRUE != _hwPowerOn(pwInfo.PowerType, pwInfo.Voltage)) {
@@ -834,6 +846,7 @@ BOOL hwpoweron(PowerInformation pwInfo, char *mode_name)
 					PK_ERR("[CAMERA CUST_AFVDD] set gpio failed!!\n");
 			}
 		}
+#endif
 #endif
 	} else if (pwInfo.PowerType == PDN) {
 		/* PK_DBG("hwPowerOn: PDN %d\n", pwInfo.Voltage); */
@@ -990,6 +1003,18 @@ BOOL hwpowerdown(PowerInformation pwInfo, char *mode_name)
 			}
 		}
 	} else if (pwInfo.PowerType == AFVDD) {
+#ifdef CAMERA_HW_Kungfu
+		if (PowerCustList.PowerCustInfo[CUST_AFVDD].Gpio_Pin == GPIO_UNSUPPORTED) {
+			if (TRUE != _hwPowerDown(AFVDD)) {
+				PK_ERR("[CAMERA SENSOR] Fail to disable af power\n");
+				return FALSE;
+			}
+		} else {
+			if (mtkcam_gpio_set(pinSetIdx, AFVDD, 1-PowerCustList.PowerCustInfo[CUST_AFVDD].Voltage)) {
+				PK_ERR("[CAMERA CUST_AFVDD] set gpio failed!!\n");/* 1-voltage for reverse*/
+			}
+		}
+#else
 #if CONTROL_AF_POWER
 		if (PowerCustList.PowerCustInfo[CUST_AFVDD].Gpio_Pin == GPIO_UNSUPPORTED) {
 			if (TRUE != _hwPowerDown(AFVDD)) {
@@ -1001,6 +1026,7 @@ BOOL hwpowerdown(PowerInformation pwInfo, char *mode_name)
 				PK_ERR("[CAMERA CUST_AFVDD] set gpio failed!!\n");/* 1-voltage for reverse*/
 			}
 		}
+#endif
 #endif
 	} else if (pwInfo.PowerType == PDN) {
 		//PK_DBG("hwPowerDown: PDN %d\n", pwInfo.Voltage);

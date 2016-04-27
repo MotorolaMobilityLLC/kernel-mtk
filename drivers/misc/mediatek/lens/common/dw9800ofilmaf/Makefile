@@ -2,6 +2,6 @@
 # Makefile for misc devices that really don't fit anywhere else.
 #
 
-obj-y += DW9800wOFILMAF.o
+obj-y += DW9800OFILMAF.o
 
 
