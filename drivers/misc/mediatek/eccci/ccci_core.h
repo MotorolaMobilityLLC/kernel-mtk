@@ -822,6 +822,13 @@ struct ap_query_md_feature {
 	u32 set_md_mpu_total_size;
 	u32 tail_pattern;
 };
+
+typedef enum {
+	MD_BOOT_MODE_INVALID = 0,
+	MD_BOOT_MODE_NORMAL,
+	MD_BOOT_MODE_META,
+	MD_BOOT_MODE_MAX,
+} MD_BOOT_MODE;
 /*********************************************/
 
 struct ccci_modem {
@@ -908,6 +915,7 @@ struct ccci_modem {
 	do NOT use this manner, otherwise spinlock inside private_data will trigger alignment exception */
 	char md_wakelock_name[32];
 	struct wake_lock md_wake_lock;
+	MD_BOOT_MODE md_boot_mode;
 };
 
 /* APIs */

@@ -3211,10 +3211,17 @@ static int md_cd_send_runtime_data(struct ccci_modem *md, unsigned int sbp_code)
 	runtime->DriverVersion = CCCI_DRIVER_VER;
 
 	mdlog_flag = md->mdlg_mode;
-	if (is_meta_mode() || is_advanced_meta_mode())
-		runtime->BootingStartID = ((char)mdlog_flag << 8 | META_BOOT_ID);
-	else
-		runtime->BootingStartID = ((char)mdlog_flag << 8 | NORMAL_BOOT_ID);
+	if (md->md_boot_mode != MD_BOOT_MODE_INVALID) {
+		if (md->md_boot_mode == MD_BOOT_MODE_META)
+			runtime->BootingStartID = ((char)mdlog_flag << 8 | META_BOOT_ID);
+		else
+			runtime->BootingStartID = ((char)mdlog_flag << 8 | NORMAL_BOOT_ID);
+	} else {
+		if (is_meta_mode())
+			runtime->BootingStartID = ((char)mdlog_flag << 8 | META_BOOT_ID);
+		else
+			runtime->BootingStartID = ((char)mdlog_flag << 8 | NORMAL_BOOT_ID);
+	}
 
 	/* share memory layout */
 	runtime->ExceShareMemBase = md->mem_layout.smem_region_phy - md->mem_layout.smem_offset_AP_to_MD;
