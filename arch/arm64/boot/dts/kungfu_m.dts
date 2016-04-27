@@ -360,6 +360,20 @@
 			output-high;
 		};
 	};
+camera_pins_cam_ldo_vcama_0: cam0@0 {
+	    pins_cmd_dat {
+			pins = <PINMUX_GPIO83__FUNC_GPIO83>;
+			slew-rate = <1>; /*direction 0:in, 1:out*/
+			output-low;/*direction out used only. output_low or high*/
+		};
+	};
+	camera_pins_cam_ldo_vcama_1: cam0@1 {
+	    pins_cmd_dat {
+			pins = <PINMUX_GPIO83__FUNC_GPIO83>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
 	camera_pins_default: camdefault {
 	};
 
@@ -369,7 +383,7 @@
 	pinctrl-names = "default",
 			"cam0_rst0", "cam0_rst1", "cam0_pnd0", "cam0_pnd1",
 			"cam1_rst0", "cam1_rst1", "cam1_pnd0", "cam1_pnd1",
-			"flash_ENT0", "flash_ENT1", "flash_ENT2", "flash_ENT3","flash_ENF0", "flash_ENF1","flash_ENF2", "flash_ENF3";
+			"flash_ENT0", "flash_ENT1", "flash_ENT2", "flash_ENT3","flash_ENF0", "flash_ENF1","flash_ENF2", "flash_ENF3","cam_ldo_vcama_0", "cam_ldo_vcama_1";
 			/*"cam2_rst0", "cam2_rst1", "cam2_pnd0", "cam2_pnd1",
 			"cam_ldo_vcama_0", "cam_ldo_vcama_1";*/
 	pinctrl-0 = <&camera_pins_default>;
@@ -389,6 +403,8 @@
 	pinctrl-14 = <&main_camera_flash_ENF_1>;
 	pinctrl-15 = <&main_camera_flash_ENF_2>;
 	pinctrl-16 = <&main_camera_flash_ENF_3>;
+	pinctrl-17 = <&camera_pins_cam_ldo_vcama_0>;
+	pinctrl-18 = <&camera_pins_cam_ldo_vcama_1>;
 	status = "okay";
 
 };
