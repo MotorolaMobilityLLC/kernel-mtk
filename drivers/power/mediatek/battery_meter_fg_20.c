@@ -2167,6 +2167,13 @@ signed int battery_meter_get_charging_current(void)
 {
 #ifdef DISABLE_CHARGING_CURRENT_MEASURE
 	return 0;
+//lenovo-sw mahj2 add for using fg meter to replace charging current Begin
+#elif defined (CHAGER_CURRENT_USE_FG_METER)
+	signed int val = 0;
+	battery_meter_ctrl(BATTERY_METER_CMD_GET_HW_FG_CURRENT, &val);
+	val = val / 10;
+	return val;
+//lenovo-sw mahj2 add for using fg meter to replace charging current End
 	/* lenovo-sw mahj2 support meter charger current use charger ic Begin*/
 #elif defined (CHAGER_CURRENT_USE_SWITCHIC_METER)
 	int adc_current = 0;
