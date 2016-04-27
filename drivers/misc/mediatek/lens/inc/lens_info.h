@@ -42,8 +42,8 @@
 /*lenovo.sw wuyt3 add for k52 camera end*/
 
 /*lenovo.sw huangsh4 add  for kungfu camera start */
-#define AFDRV_DW9800wSUNNYAF "DW9800wSUNNYAF"
-#define AFDRV_DW9800wOFILMAF "DW9800wOFILMAF"
+#define AFDRV_DW9800wSUNNYAF "DW9800SUNNYAF"
+#define AFDRV_DW9800wOFILMAF "DW9800OFILMAF"
 /*lenovo.sw huangsh4 add for kungfu camera end*/
 
 #define AFDRV_FM50AF "FM50AF"
