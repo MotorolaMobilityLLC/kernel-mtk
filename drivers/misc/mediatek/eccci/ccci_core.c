@@ -334,6 +334,8 @@ void ccci_config_modem(struct ccci_modem *md)
 		&md->mem_layout.md1_md3_smem_size);
 	md->mem_layout.md1_md3_smem_vir =
 	    ioremap_nocache(md->mem_layout.md1_md3_smem_phy, md->mem_layout.md1_md3_smem_size);
+	if (md->index == MD_SYS3)
+		memset_io(md->mem_layout.md1_md3_smem_vir, 0, md->mem_layout.md1_md3_smem_size);
 
 	/* updae image info */
 	md->img_info[IMG_MD].type = IMG_MD;
@@ -807,6 +809,10 @@ int exec_ccci_kern_func_by_md_id(int md_id, unsigned int id, char *buf, unsigned
 		break;
 	case ID_PMIC_INTR:
 		ret = ccci_send_msg_to_md(md, CCCI_SYSTEM_TX, PMIC_INTR_MODEM_BUCK_OC, *((int *)buf), 1);
+		break;
+	case ID_UPDATE_MD_BOOT_MODE:
+		if (*((unsigned int *)buf) > MD_BOOT_MODE_INVALID && *((unsigned int *)buf) < MD_BOOT_MODE_MAX)
+			md->md_boot_mode = *((unsigned int *)buf);
 		break;
 	default:
 		ret = -CCCI_ERR_FUNC_ID_ERROR;

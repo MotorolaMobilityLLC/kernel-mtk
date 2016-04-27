@@ -1106,6 +1106,28 @@ static long dev_char_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 		}
 		break;
 
+	case CCCI_IOC_SET_MD_BOOT_MODE:
+		if (copy_from_user(&sim_mode, (void __user *)arg, sizeof(unsigned int))) {
+			CCCI_ERR_MSG(md->index, CHAR, "set MD boot mode fail: copy_from_user fail!\n");
+			ret = -EFAULT;
+		} else {
+			CCCI_INF_MSG(md->index, CHAR, "set MD boot mode to %d\n", sim_mode);
+			exec_ccci_kern_func_by_md_id(md->index, ID_UPDATE_MD_BOOT_MODE,
+						(char *)&sim_mode, sizeof(sim_mode));
+#ifdef CONFIG_MTK_ECCCI_C2K
+			if (md->index == MD_SYS1)
+				exec_ccci_kern_func_by_md_id(MD_SYS3, ID_UPDATE_MD_BOOT_MODE,
+							(char *)&sim_mode, sizeof(sim_mode));
+			else if (md->index == MD_SYS3)
+				exec_ccci_kern_func_by_md_id(MD_SYS1, ID_UPDATE_MD_BOOT_MODE,
+							(char *)&sim_mode, sizeof(sim_mode));
+#endif
+		}
+		break;
+	case CCCI_IOC_GET_MD_BOOT_MODE:
+		ret = put_user((unsigned int)md->md_boot_mode, (unsigned int __user *)arg);
+		break;
+
 	default:
 		ret = -ENOTTY;
 		break;

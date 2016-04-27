@@ -404,6 +404,8 @@ enum{
 
 #define CCCI_IOC_SET_CCIF_CG			_IOW(CCCI_IOC_MAGIC, 54, unsigned int) /*md_init*/
 #define CCCI_IOC_SET_EFUN               _IOW(CCCI_IOC_MAGIC, 55, unsigned int) /* RILD */
+#define CCCI_IOC_SET_MD_BOOT_MODE       _IOW(CCCI_IOC_MAGIC, 56, unsigned int) /* META */
+#define CCCI_IOC_GET_MD_BOOT_MODE       _IOR(CCCI_IOC_MAGIC, 57, unsigned int) /* md_init */
 
 #define CCCI_IOC_SET_HEADER				_IO(CCCI_IOC_MAGIC,  112) /* emcs_va */
 #define CCCI_IOC_CLR_HEADER				_IO(CCCI_IOC_MAGIC,  113) /* emcs_va */
@@ -706,6 +708,7 @@ enum {
 	ID_DUMP_MD_SLEEP_MODE = 16, /* for dump MD debug info from SMEM when AP sleep */
 	ID_PMIC_INTR = 17, /* for PMIC to notify MD buck over current, called from kernel thread context */
 	ID_MD_MPU_ASSERT = 20,
+	ID_UPDATE_MD_BOOT_MODE = 21,
 
 	ID_UPDATE_TX_POWER = 100,   /* for SWTP */
 
