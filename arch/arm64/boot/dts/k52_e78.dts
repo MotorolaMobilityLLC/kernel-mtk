@@ -9,7 +9,8 @@
 		device_type = "memory";
 		reg = <0 0x40000000 0 0x3e800000>;
 	};
-	reserved-memory {
+/* BEGIN Lenovo, linyf, 2016-04-28, KOLEOSIIM-1, config for K52_t38. */
+/*	reserved-memory {
 		#address-cells = <2>;
 		#size-cells = <2>;
 		ranges;
@@ -22,7 +23,8 @@
 			alloc-ranges = <0 0x40000000 0 0xc0000000>;
 		};
 	};
-
+*/
+/* END, KOLEOSIIM-1 */
 	/* chosen */
 	chosen {
 		bootargs = "console=tty0 console=ttyMT0,921600n1 root=/dev/ram initrd=0x44000000,0x4B434E loglevel=8";
