@@ -573,6 +573,10 @@ CONFIG_LIBCRC32C=y
 CONFIG_EXFAT_FS=y
 #End, Lenovo, zhucc2, 2016-03-28, ARIESM-20
 
+#lenovo chenyb1 enable turbe mode begin
+CONFIG_ARCH_MT6755_TURBO=y
+#lenovo chenyb1 enable turbe mode end
+
 #### LCD  ####
 #lenovo wuwl10 20151215 modify for lcd begin
 CONFIG_LENOVO_LED_CURRENT_LIMMIT=y
