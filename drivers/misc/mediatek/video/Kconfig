@@ -98,4 +98,9 @@ config BACKLIGHTIC_KTD3116_CURRENT
 config LENOVO_CUSTOM_LCM_FEATURE
        bool "LENOVO_CUSTOM_LCM_FEATURE"
        default n
+
+config LENOVO_PANELMODE_SUPPORT
+       bool "LENOVO_PANELMODE_SUPPORT"
+       select LENOVO_CUSTOM_LCM_FEATURE
+       default n
 #lenovo wuwl10 20151215 add for lcm feactue end
