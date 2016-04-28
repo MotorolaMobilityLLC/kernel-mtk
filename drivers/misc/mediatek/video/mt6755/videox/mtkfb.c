@@ -2629,6 +2629,84 @@ static int lcm_info_open(struct inode *inode, struct file *file)
 
 #endif
 //lenovo wuwl10 20160401 add CUSTOM_LCM_FEATURE end
+//lenovo-sw wuwl10 20160426 add for moto new panel mode support begin
+#ifdef CONFIG_LENOVO_PANELMODE_SUPPORT
+static ssize_t hbm_show(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	const char *name="hbm";
+	ssize_t ret=0;
+
+	if (ret < 0)
+		return ret;
+	printk("wuwl10  to hbm_show \n");
+	return snprintf(buf, PAGE_SIZE, "%s\n", name);
+}
+
+static ssize_t hbm_store(struct device *dev,
+		struct device_attribute *attr,
+		const char *buf, size_t count)
+{
+	ssize_t ret=0;
+	printk("wuwl10  to hbm_store \n");
+
+	return ret ? ret : count;
+}
+
+static ssize_t cabc_show(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	const char *name="cabc";
+	ssize_t ret=0;
+	printk("wuwl10  to cabc_show \n");
+	if (ret < 0)
+		return ret;
+
+	return snprintf(buf, PAGE_SIZE, "%s\n", name);
+}
+
+static ssize_t cabc_store(struct device *dev,
+		struct device_attribute *attr,
+		const char *buf, size_t count)
+{
+	ssize_t ret=0;
+	unsigned int cabc_mode;
+	printk("wuwl10  to cabc_store \n");
+	if (0 == strncmp(buf, "UI", 2)) {
+		cabc_mode = 1;
+	}else if (0 == strncmp(buf, "STILL", 5)) {
+		cabc_mode = 2;
+	}else if (0 == strncmp(buf, "MV", 2)) {
+		cabc_mode = 3;
+	}else if (0 == strncmp(buf, "DIS", 3)) {
+		cabc_mode = 0;
+	}else {
+		cabc_mode = 0;
+	}
+	ret = primary_display_setcabc(cabc_mode);
+	return ret ? ret : count;
+}
+
+static struct device_attribute param_attrs[PARAM_ID_NUM] = {
+	__ATTR(hbm, S_IWUSR | S_IWGRP | S_IRUSR | S_IRGRP, hbm_show, hbm_store),
+	__ATTR(cabc_mode, S_IWUSR | S_IWGRP | S_IRUSR | S_IRGRP,
+		cabc_show, cabc_store),
+};
+
+static int mtkfb_create_param_sysfs(struct mtkfb_device *fbdev)
+{
+	int i,rc = 0;
+	for (i = 0; i < PARAM_ID_NUM; i++) {
+		rc = device_create_file(fbdev->dev, &param_attrs[i]);
+		if (rc) {
+			pr_err("failed to create sysfs for panel param id %d \n",i);
+			break;
+		}
+	}
+	return rc;
+}
+#endif
+//lenovo-sw wuwl10 20160426 add for moto new panel mode support end
 
 static int mtkfb_probe(struct device *dev)
 {
@@ -2725,6 +2803,12 @@ static int mtkfb_probe(struct device *dev)
 		goto cleanup;
 	}
 	init_state++;		/* 5 */
+
+//lenovo-sw wuwl10 20160426 add for moto new panel mode support begin
+#ifdef CONFIG_LENOVO_PANELMODE_SUPPORT
+	mtkfb_create_param_sysfs(fbdev);
+#endif
+//lenovo-sw wuwl10 20160426 add for moto new panel mode support end
 
 	r = register_framebuffer(fbi);
 	if (r != 0) {
