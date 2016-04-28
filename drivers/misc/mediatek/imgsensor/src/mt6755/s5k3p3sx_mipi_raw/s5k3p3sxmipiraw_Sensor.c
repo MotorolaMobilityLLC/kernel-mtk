@@ -148,7 +148,7 @@ static imgsensor_info_struct imgsensor_info = {
 	.sensor_interface_type = SENSOR_INTERFACE_TYPE_MIPI,
 	.mipi_sensor_type = MIPI_OPHY_NCSI2, //0,MIPI_OPHY_NCSI2;  1,MIPI_OPHY_CSI2
 	.mipi_settle_delay_mode = 0, //0,MIPI_SETTLEDELAY_AUTO; 1,MIPI_SETTLEDELAY_MANNUAL
-	.sensor_output_dataformat = SENSOR_OUTPUT_FORMAT_RAW_Gr,
+	.sensor_output_dataformat = SENSOR_OUTPUT_FORMAT_RAW_Gb,
 	.mclk = 24,
 	.mipi_lane_num = SENSOR_MIPI_4_LANE,
 	.i2c_addr_table = {0x20,0x21,0xff},
@@ -156,7 +156,7 @@ static imgsensor_info_struct imgsensor_info = {
 
 
 static imgsensor_struct imgsensor = {
-	.mirror = IMAGE_NORMAL,				//mirrorflip information
+	.mirror = IMAGE_HV_MIRROR,				//mirrorflip information
 	.sensor_mode = IMGSENSOR_MODE_INIT, //IMGSENSOR_MODE enum value,record current sensor mode,such as: INIT, Preview, Capture, Video,High Speed Video, Slim Video
 	.shutter = 0x3D0,					//current shutter
 	.gain = 0x100,						//current gain
@@ -420,19 +420,19 @@ static void set_mirror_flip(kal_uint8 image_mirror)
 		{
 
 		   case IMAGE_NORMAL:
-		   	     write_cmos_sensor(0x0101, itemp);
+		   	     write_cmos_sensor_8(0x0101, itemp);
 			      break;
 
 		   case IMAGE_V_MIRROR:
-			     write_cmos_sensor(0x0101, itemp | 0x02);
+			     write_cmos_sensor_8(0x0101, itemp | 0x02);
 			     break;
 
 		   case IMAGE_H_MIRROR:
-			     write_cmos_sensor(0x0101, itemp | 0x01);
+			     write_cmos_sensor_8(0x0101, itemp | 0x01);
 			     break;
 
 		   case IMAGE_HV_MIRROR:
-			     write_cmos_sensor(0x0101, itemp | 0x03);
+			     write_cmos_sensor_8(0x0101, itemp | 0x03);
 			     break;
 		}
 }
