@@ -38,6 +38,7 @@
 
 #include "imx219mipiraw_Sensor.h"
 
+
 #define USE_OTP_CALI_QTECH	//only open Lsc autoload,IMx219 awb&af deal in backgroud
 #ifdef USE_OTP_CALI_QTECH
 extern int otp_update(void);
@@ -157,7 +158,7 @@ static imgsensor_info_struct imgsensor_info = {
 	.sensor_interface_type = SENSOR_INTERFACE_TYPE_MIPI,//sensor_interface_type
 	.mipi_sensor_type = MIPI_OPHY_NCSI2, //0,MIPI_OPHY_NCSI2;  1,MIPI_OPHY_CSI2
 	.mipi_settle_delay_mode = 1,//0,MIPI_SETTLEDELAY_AUTO; 1,MIPI_SETTLEDELAY_MANNUAL
-	.sensor_output_dataformat = SENSOR_OUTPUT_FORMAT_RAW_R,//sensor output first pixel color
+	.sensor_output_dataformat = SENSOR_OUTPUT_FORMAT_RAW_B,//sensor output first pixel color
 	.mclk = 24,//mclk value, suggest 24 or 26 for 24Mhz or 26Mhz
 	.mipi_lane_num = SENSOR_MIPI_4_LANE,//mipi lane num
 	.i2c_addr_table = {0x20, 0x21, 0xff},//record sensor support all write id addr, only supprt 4must end with 0xff
@@ -570,9 +571,10 @@ static void ihdr_write_shutter_gain(kal_uint16 le, kal_uint16 se, kal_uint16 gai
 }
 
 
-#if 0
+#if 1
 static void set_mirror_flip(kal_uint8 image_mirror)
 {
+ int   value; 
 	LOG_INF("image_mirror = %d\n", image_mirror);
 
 	/********************************************************
@@ -586,19 +588,20 @@ static void set_mirror_flip(kal_uint8 image_mirror)
 	   *   ISP and Sensor flip or mirror register bit should be the same!!
 	   *
 	   ********************************************************/
-	kal_uint8  iTemp; 
+
 	LOG_INF("set_mirror_flip function\n");
-    iTemp = read_cmos_sensor(0x0172) & 0x03;	//Clear the mirror and flip bits.
+    value = read_cmos_sensor(0x0172);	//Clear the mirror and flip bits.
+    LOG_INF(" image_mirror = %d,value = % d\n", image_mirror,value);
     switch (image_mirror)
     {
         case IMAGE_NORMAL:
             write_cmos_sensor(0x0172, 0x03);	//Set normal
             break;
         case IMAGE_V_MIRROR:
-            write_cmos_sensor(0x0172, iTemp | 0x01);	//Set flip
+            write_cmos_sensor(0x0172,0x01);	//Set flip
             break;
         case IMAGE_H_MIRROR:
-            write_cmos_sensor(0x0172, iTemp | 0x02);	//Set mirror
+            write_cmos_sensor(0x0172, 0x02);	//Set mirror
             break;
         case IMAGE_HV_MIRROR:
             write_cmos_sensor(0x0172, 0x00);	//Set mirror and flip
@@ -1347,6 +1350,7 @@ static kal_uint32 preview(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 	imgsensor.autoflicker_en = KAL_FALSE;
 	spin_unlock(&imgsensor_drv_lock);
 	preview_setting();
+	set_mirror_flip(imgsensor.mirror);
 	return ERROR_NONE;
 }	/*	preview   */
 
@@ -1390,7 +1394,7 @@ static kal_uint32 capture(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 	spin_unlock(&imgsensor_drv_lock);
 
 	capture_setting(imgsensor.current_fps); 
-	
+	set_mirror_flip(imgsensor.mirror);
 	if(test_pattern_flag)
 	{
 		set_test_pattern_mode(TRUE);
@@ -1413,7 +1417,7 @@ static kal_uint32 normal_video(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 	imgsensor.autoflicker_en = KAL_FALSE;
 	spin_unlock(&imgsensor_drv_lock);
 	normal_video_setting(imgsensor.current_fps);
-	
+	set_mirror_flip(imgsensor.mirror);
 	
 	return ERROR_NONE;
 }	/*	normal_video   */
@@ -1435,7 +1439,7 @@ static kal_uint32 hs_video(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 	imgsensor.autoflicker_en = KAL_FALSE;
 	spin_unlock(&imgsensor_drv_lock);
 	hs_video_setting();
-	
+	set_mirror_flip(imgsensor.mirror);
 	return ERROR_NONE;
 }	/*	hs_video   */
 
@@ -1455,7 +1459,7 @@ static kal_uint32 slim_video(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 	imgsensor.autoflicker_en = KAL_FALSE;
 	spin_unlock(&imgsensor_drv_lock);
 	slim_video_setting();
-	
+	set_mirror_flip(imgsensor.mirror);
 	return ERROR_NONE;
 }	/*	slim_video	 */
 
