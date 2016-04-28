@@ -28,6 +28,15 @@ typedef struct {
 	int index;
 } disp_lcm_handle, *pdisp_lcm_handle;
 
+//lenovo wuwl10 20160426 add for panel mode begin
+#ifdef CONFIG_LENOVO_PANELMODE_SUPPORT
+enum panel_param_id {
+	PARAM_HBM_ID = 0,
+	PARAM_CABC_ID,
+	PARAM_ID_NUM
+};
+#endif
+//lenovo wuwl10 20160426 add for panel mode end
 
 /* these 2 variables are defined in mt65xx_lcm_list.c */
 extern LCM_DRIVER *lcm_driver_list[];
