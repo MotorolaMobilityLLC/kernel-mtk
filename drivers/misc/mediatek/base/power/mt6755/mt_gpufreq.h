@@ -55,6 +55,12 @@
 #define PMIC_WRAP_DVFS_WDATA7   (PWRAP_BASE + 0x124) /**/
 #endif
 
+enum post_div_enum {
+	POST_DIV2 = 0,
+	POST_DIV4,
+	POST_DIV8,
+};
+
 struct mt_gpufreq_table_info {
 	unsigned int gpufreq_khz;
 	unsigned int gpufreq_volt;
@@ -65,6 +71,12 @@ struct mt_gpufreq_power_table_info {
 	unsigned int gpufreq_khz;
 	unsigned int gpufreq_volt;
 	unsigned int gpufreq_power;
+};
+
+struct mt_gpufreq_clk_t {
+	struct clk *clk_mux;          /* main clock for mfg setting */
+	struct clk *clk_main_parent;	 /* substitution clock for mfg transient mux setting */
+	struct clk *clk_sub_parent;	 /* substitution clock for mfg transient parent setting */
 };
 
 
