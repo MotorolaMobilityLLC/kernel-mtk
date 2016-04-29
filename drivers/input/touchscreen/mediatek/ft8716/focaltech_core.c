@@ -2138,7 +2138,7 @@ static void force_reset_guitar(void)
 
 }
 
-#define A3_REG_VALUE								0x54
+#define A3_REG_VALUE								0x87
 #define RESET_91_REGVALUE_SAMECOUNT 				5
 static u8 g_old_91_Reg_Value = 0x00;
 static u8 g_first_read_91 = 0x01;
@@ -2188,7 +2188,7 @@ static void gtp_esd_check_func(struct work_struct *work)
 	}
 
 	if (i >= 3) {
-		//force_reset_guitar(); //cancel by lixh10 currently
+		force_reset_guitar(); 
 		dev_err(&fts_i2c_client->dev,"focal--tpd reset. i >= 3  ret = %d	A3_Reg_Value = 0x%02x\n ", ret, data);
 		reset_flag = 1;
 		goto FOCAL_RESET_A3_REGISTER;
