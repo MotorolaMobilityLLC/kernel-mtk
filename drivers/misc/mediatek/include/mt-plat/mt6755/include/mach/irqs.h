@@ -25,7 +25,12 @@
 #ifdef NR_IRQS
 #undef NR_IRQS
 #endif
+
+#if defined(CONFIG_SND_SOC_FLORIDA) /* lenovo-sw zhouwl, for wm8281 */
+#define NR_IRQS 			(NR_MT_IRQ_LINE+220+150)
+#else
 #define NR_IRQS			(NR_MT_IRQ_LINE+220)
+#endif
 
 #define GIC_PPI_GLOBAL_TIMER    (GIC_PPI_OFFSET + 0)
 #define GIC_PPI_LEGACY_FIQ      (GIC_PPI_OFFSET + 1)

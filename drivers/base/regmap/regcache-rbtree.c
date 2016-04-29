@@ -295,6 +295,15 @@ static int regcache_rbtree_insert_to_block(struct regmap *map,
 		       GFP_KERNEL);
 	if (!blk)
 		return -ENOMEM;
+		
+	#if defined(CONFIG_SND_SOC_FLORIDA) 
+	present = krealloc(rbnode->cache_present,
+		    BITS_TO_LONGS(blklen) * sizeof(*present), GFP_KERNEL);
+	if (!present) {
+		kfree(blk);
+		return -ENOMEM;
+		}
+	#else	
 
 	if (BITS_TO_LONGS(blklen) > BITS_TO_LONGS(rbnode->blklen)) {
 		present = krealloc(rbnode->cache_present,
@@ -311,7 +320,7 @@ static int regcache_rbtree_insert_to_block(struct regmap *map,
 	} else {
 		present = rbnode->cache_present;
 	}
-
+    #endif
 	/* insert the register value in the correct place in the rbnode block */
 	if (pos == 0) {
 		memmove(blk + offset * map->cache_word_size,

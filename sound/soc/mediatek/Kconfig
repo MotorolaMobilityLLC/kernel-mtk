@@ -77,6 +77,12 @@ config SND_SOC_MT8173_MT6391_MACH
 config MT_SND_SOC_2701
     tristate
 
+config MFD_ARIZONA
+    bool "MFD_ARIZONA"
+	default n
+	help
+        If you say Y, enable MFD_ARIZONA driver.
+
 config SND_SOC_MT2701_EVB
 	bool "SND_SOC_MT2701_EVB"
 	select MT_SND_SOC_2701

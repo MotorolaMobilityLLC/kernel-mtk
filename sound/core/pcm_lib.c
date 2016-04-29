@@ -1889,7 +1889,11 @@ static int wait_for_avail(struct snd_pcm_substream *substream,
 	if (runtime->no_period_wakeup)
 		wait_time = MAX_SCHEDULE_TIMEOUT;
 	else {
+	    #if defined(CONFIG_SND_SOC_FLORIDA)
+		wait_time = 10;/* 10 Modified by MTK */
+		#else
 		wait_time = 2;/* 10 Modified by MTK */
+		#endif
 		if (runtime->rate) {
 			long t = runtime->period_size * 2 / runtime->rate;
 			wait_time = max(t, wait_time);

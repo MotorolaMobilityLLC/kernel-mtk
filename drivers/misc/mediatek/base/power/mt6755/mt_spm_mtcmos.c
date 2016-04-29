@@ -45,6 +45,9 @@ static DEFINE_SPINLOCK(spm_cpu_lock);
 #ifdef CONFIG_OF
 void __iomem *spm_cpu_base;
 void __iomem *clk_apmixed_base;
+#if defined(CONFIG_SND_SOC_FLORIDA)
+void __iomem  *clk_cksys_base;
+#endif
 #define ARMCA15PLL_CON0         (clk_apmixed_base + 0x200)
 #define ARMCA15PLL_CON1         (clk_apmixed_base + 0x204)
 #define ARMCA15PLL_PWR_CON0     (clk_apmixed_base + 0x20C)
@@ -1349,6 +1352,15 @@ void iomap(void)
 	clk_apmixed_base = of_iomap(node, 0);
 	if (!clk_apmixed_base)
 		pr_debug("[CLK_APMIXED] base failed\n");
+#if defined(CONFIG_SND_SOC_FLORIDA)
+	    node = of_find_compatible_node(NULL, NULL, "mediatek,mt6755-topckgen");
+  	  if (!node) {
+			pr_debug("[CLK_CKSYS] find node failed\n");
+ 	   }
+    	clk_cksys_base = of_iomap(node, 0);
+   	 if (!clk_cksys_base)
+			pr_debug("[CLK_CKSYS] base failed\n");
+#endif			
 }
 
 void enable_armpll_l(void)
@@ -1393,7 +1405,41 @@ void switch_armpll_ll_hwmode(int enable)
 }
 #endif
 
+#if defined(CONFIG_SND_SOC_FLORIDA)
+static DEFINE_SPINLOCK(clock_lock);
 
+#define clkmgr_lock(flags)  \
+do {    \
+    spin_lock_irqsave(&clock_lock, flags);  \
+} while (0)
+
+#define clkmgr_unlock(flags)  \
+do {    \
+    spin_unlock_irqrestore(&clock_lock, flags);  \
+} while (0)
+
+
+EXPORT_SYMBOL(clkmgr_is_locked);
+
+
+int clk_monitor(int gpio_idx, int ckmon_value, int div)
+{
+
+    unsigned long flags;
+    clkmgr_lock(flags);
+    if (1 == ckmon_value)	{
+    spm_write(clk_cksys_base+0x300, 1<<8);
+    // mt_set_gpio_mode(GPIO115 | 0x80000000, 3);
+    } else {
+    spm_write(clk_cksys_base+0x300, 1<<8);
+//     mt_set_gpio_mode(GPIO115 | 0x80000000, 3);
+    }	
+   clkmgr_unlock(flags);
+   return 0;
+
+}
+EXPORT_SYMBOL(clk_monitor);
+#endif
 static int mt_spm_mtcmos_init(void)
 {
 	return 0;

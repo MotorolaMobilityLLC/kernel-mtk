@@ -236,7 +236,8 @@ void regmap_async_complete_cb(struct regmap_async *async, int ret);
 extern struct regcache_ops regcache_rbtree_ops;
 extern struct regcache_ops regcache_lzo_ops;
 extern struct regcache_ops regcache_flat_ops;
-
+#if defined(CONFIG_SND_SOC_FLORIDA) 
+#else
 static inline const char *regmap_name(const struct regmap *map)
 {
 	if (map->dev)
@@ -244,5 +245,5 @@ static inline const char *regmap_name(const struct regmap *map)
 
 	return map->name;
 }
-
+#endif
 #endif

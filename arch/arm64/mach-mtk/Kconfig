@@ -1,0 +1,11 @@
+menu "MTK Board Configure"
+
+config ARCH_MTK_FLORIDA_BOARD
+      tristate "MTK Platform sound board Configure"
+      default y if MFD_ARIZONA
+      help 
+           To add board for Soc audio on MTK Platform
+
+endmenu
+   
+      

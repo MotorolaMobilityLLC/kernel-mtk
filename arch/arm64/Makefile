@@ -49,6 +49,9 @@ core-$(CONFIG_NET) += arch/arm64/net/
 core-$(CONFIG_KVM) += arch/arm64/kvm/
 core-$(CONFIG_XEN) += arch/arm64/xen/
 core-$(CONFIG_CRYPTO) += arch/arm64/crypto/
+# lenovo-sw zhouwl, for wm8281 begin
+core-y		+=arch/arm64/mach-mtk/
+# lenovo-sw zhouwl, for wm8281 end
 libs-y		:= arch/arm64/lib/ $(libs-y)
 libs-y		+= $(LIBGCC)
 libs-$(CONFIG_EFI_STUB) += drivers/firmware/efi/libstub/

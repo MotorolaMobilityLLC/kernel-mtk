@@ -213,8 +213,11 @@ int regcache_read(struct regmap *map,
 		ret = map->cache_ops->read(map, reg, value);
 
 		if (ret == 0)
+		    #if defined(CONFIG_SND_SOC_FLORIDA) 
+			trace_regmap_reg_read_cache(map->dev, reg, *value);
+			#else
 			trace_regmap_reg_read_cache(map, reg, *value);
-
+            #endif
 		return ret;
 	}
 
@@ -306,7 +309,12 @@ int regcache_sync(struct regmap *map)
 	dev_dbg(map->dev, "Syncing %s cache\n",
 		map->cache_ops->name);
 	name = map->cache_ops->name;
-	trace_regcache_sync(map, name, "start");
+	 #if defined(CONFIG_SND_SOC_FLORIDA) 
+	 trace_regcache_sync(map->dev, name, "start");
+	 #else
+	 trace_regcache_sync(map, name, "start");
+     #endif
+
 
 	if (!map->cache_dirty)
 		goto out;
@@ -341,7 +349,15 @@ out:
 
 	regmap_async_complete(map);
 
-	trace_regcache_sync(map, name, "stop");
+	 #if defined(CONFIG_SND_SOC_FLORIDA) 
+	 trace_regcache_sync(map->dev, name, "stop");
+	 #else
+	 trace_regcache_sync(map, name, "stop");
+     #endif
+
+
+
+
 
 	return ret;
 }
@@ -376,7 +392,14 @@ int regcache_sync_region(struct regmap *map, unsigned int min,
 	name = map->cache_ops->name;
 	dev_dbg(map->dev, "Syncing %s cache from %d-%d\n", name, min, max);
 
-	trace_regcache_sync(map, name, "start region");
+	 #if defined(CONFIG_SND_SOC_FLORIDA) 
+	 trace_regcache_sync(map->dev, name, "start region");
+	 #else
+	 trace_regcache_sync(map, name, "start region");
+     #endif
+
+
+	
 
 	if (!map->cache_dirty)
 		goto out;
@@ -396,7 +419,11 @@ out:
 
 	regmap_async_complete(map);
 
-	trace_regcache_sync(map, name, "stop region");
+	 #if defined(CONFIG_SND_SOC_FLORIDA) 
+	 trace_regcache_sync(map->dev, name, "stop region");
+	 #else
+	 trace_regcache_sync(map, name, "stop region");
+     #endif
 
 	return ret;
 }
@@ -422,8 +449,13 @@ int regcache_drop_region(struct regmap *map, unsigned int min,
 		return -EINVAL;
 
 	map->lock(map->lock_arg);
+	
+	 #if defined(CONFIG_SND_SOC_FLORIDA) 
+	 trace_regcache_drop_region(map->dev, min, max);
+	 #else
+	 trace_regcache_drop_region(map, min, max);
+     #endif
 
-	trace_regcache_drop_region(map, min, max);
 
 	ret = map->cache_ops->drop(map, min, max);
 
@@ -450,7 +482,12 @@ void regcache_cache_only(struct regmap *map, bool enable)
 	map->lock(map->lock_arg);
 	WARN_ON(map->cache_bypass && enable);
 	map->cache_only = enable;
-	trace_regmap_cache_only(map, enable);
+	#if defined(CONFIG_SND_SOC_FLORIDA) 
+	 trace_regmap_cache_only(map->dev, enable);
+	 #else
+	 trace_regmap_cache_only(map, enable);
+     #endif
+
 	map->unlock(map->lock_arg);
 }
 EXPORT_SYMBOL_GPL(regcache_cache_only);
@@ -488,7 +525,12 @@ void regcache_cache_bypass(struct regmap *map, bool enable)
 	map->lock(map->lock_arg);
 	WARN_ON(map->cache_only && enable);
 	map->cache_bypass = enable;
+	#if defined(CONFIG_SND_SOC_FLORIDA) 
+	 trace_regmap_cache_bypass(map->dev, enable);
+	 #else
 	trace_regmap_cache_bypass(map, enable);
+     #endif	
+	
 	map->unlock(map->lock_arg);
 }
 EXPORT_SYMBOL_GPL(regcache_cache_bypass);

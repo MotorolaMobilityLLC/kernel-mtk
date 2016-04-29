@@ -13,6 +13,14 @@
 #include <linux/regmap.h>
 #include <linux/i2c.h>
 #include <linux/module.h>
+#include <linux/init.h>
+#if defined(CONFIG_SND_SOC_FLORIDA) /* lenovo-sw zhouwl, for wm8281 */
+#include <linux/dma-mapping.h>
+
+static const int I2cBuf_len = 1024;
+static void* I2cBuf_pa;
+static void* I2cBuf;
+#endif /*CONFIG_SND_SOC_FLORIDA*/
 
 
 static int regmap_smbus_byte_reg_read(void *context, unsigned int reg,
@@ -92,8 +100,17 @@ static int regmap_i2c_write(void *context, const void *data, size_t count)
 	struct device *dev = context;
 	struct i2c_client *i2c = to_i2c_client(dev);
 	int ret;
+#if defined(CONFIG_SND_SOC_FLORIDA) /* lenovo-sw zhouwl, for wm8281 */
+	u8* buf = (u8*)I2cBuf;
 
+	i2c->addr = (i2c->addr & I2C_MASK_FLAG);
+	i2c->timing = 400;
+	i2c->ext_flag = ((i2c->ext_flag ) & I2C_MASK_FLAG ) | I2C_DIRECTION_FLAG |I2C_RS_FLAG | I2C_DMA_FLAG;
+	memcpy( buf, data, count);
+	ret = i2c_master_send(i2c, (const char*)I2cBuf_pa, count);
+#else
 	ret = i2c_master_send(i2c, data, count);
+#endif /*CONFIG_SND_SOC_FLORIDA*/
 	if (ret == count)
 		return 0;
 	else if (ret < 0)
@@ -140,6 +157,27 @@ static int regmap_i2c_read(void *context,
 			   const void *reg, size_t reg_size,
 			   void *val, size_t val_size)
 {
+#ifdef CONFIG_SND_SOC_FLORIDA  /* k5 wm8281,Florida I2C with MTK platform interface Read */
+	struct device *dev = context;
+	int ret = 0;
+	int i=0;
+	u8* buf = (u8*)I2cBuf;
+	u8 lens;
+	struct i2c_client *i2c = to_i2c_client(dev);
+	if(reg_size + val_size > I2cBuf_len) {
+		return -EFAULT;
+	}
+	i2c->addr = (i2c->addr & I2C_MASK_FLAG);
+	i2c->timing = 400;
+	i2c->ext_flag = I2C_WR_FLAG | I2C_RS_FLAG | I2C_DMA_FLAG;
+	memcpy( buf, reg, reg_size);
+	ret = i2c_master_send(i2c, (const char*)I2cBuf_pa, (val_size << 8) | reg_size);
+	if (ret < 0) {
+		return -EFAULT;
+	}
+	memcpy( val, buf, val_size);
+	return 0;
+#else
 	struct device *dev = context;
 	struct i2c_client *i2c = to_i2c_client(dev);
 	struct i2c_msg xfer[2];
@@ -162,6 +200,7 @@ static int regmap_i2c_read(void *context,
 		return ret;
 	else
 		return -EIO;
+#endif /*CONFIG_SND_SOC_FLORIDA*/
 }
 
 static struct regmap_bus regmap_i2c = {
@@ -228,6 +267,13 @@ struct regmap *devm_regmap_init_i2c(struct i2c_client *i2c,
 	if (IS_ERR(bus))
 		return ERR_CAST(bus);
 
+#if defined(CONFIG_SND_SOC_FLORIDA) /* lenovo-sw zhouwl, for wm8281 */
+	I2cBuf = (char *)dma_alloc_coherent(NULL, I2cBuf_len, &I2cBuf_pa, GFP_KERNEL);
+	if(I2cBuf == NULL) {
+		//printk("devm_regmap_init_i2c : failed to allocate DMA buffer");
+		return NULL;
+	}
+#endif /*CONFIG_SND_SOC_FLORIDA*/
 	return devm_regmap_init(&i2c->dev, bus, &i2c->dev, config);
 }
 EXPORT_SYMBOL_GPL(devm_regmap_init_i2c);
