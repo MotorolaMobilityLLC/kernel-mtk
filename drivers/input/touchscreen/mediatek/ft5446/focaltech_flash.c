@@ -122,7 +122,8 @@ static unsigned char CTPM_FW[] = {
 	//#include "LQ_CM320_Ofilm0x51_V04_D01_20151222_app.i"
 	//  #include "LQ_CU320_Ofilm0x51_V07_D01_20160118_app.i"
 	//  #include "LQ_CM3300_0film0x51_V03_D01_20160223_app.i"
-	    #include "LQ_CM3300_0film0x51_V05_D01_20160329_app.i"
+	//  #include "LQ_CM3300_0film0x51_V05_D01_20160329_app.i"
+	    #include "LQ_CM3300_0film0x51_V06_D01_20160425_app.i"
 };
 static unsigned char CTPM_FW_BOE[] = {
        //#include "0x3b_LEM5006+Noah-m_V04_D01_20160301_app.i"    
