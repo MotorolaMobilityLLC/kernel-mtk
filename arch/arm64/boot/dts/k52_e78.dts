@@ -711,138 +711,11 @@
 		"audi2s1-mode0", "audi2s1-mode1", "extamp-pullhigh", "extamp-pulllow",
 		"extamp2-pullhigh", "extamp2-pulllow", "rcvspk-pullhigh",
 		"rcvspk-pulllow","hpdepop-pullhigh","hpdepop-pulllow";
-	pinctrl-0 = <&aud_pins_default>;
-	pinctrl-1 = <&aud_pins_pmicclk_mode0>;
-	pinctrl-2 = <&aud_pins_pmicclk_mode1>;
-	pinctrl-3 = <&aud_pins_i2s1_mode0>;
-	pinctrl-4 = <&aud_pins_i2s1_mode1>;
-	pinctrl-5 = <&aud_pins_extamp_high>;
-	pinctrl-6 = <&aud_pins_extamp_low>;
-	pinctrl-7 = <&aud_pins_extamp2_high>;
-	pinctrl-8 = <&aud_pins_extamp2_low>;
-	pinctrl-9 = <&aud_pins_rcvspk_high>;
-	pinctrl-10 = <&aud_pins_rcvspk_low>;
-	pinctrl-11 = <&aud_pins_hpdepop_high>;
-	pinctrl-12 = <&aud_pins_hpdepop_low>;
 	status = "okay";
 };
 
 &pio {
-	aud_pins_default: audiodefault {
-	};
 
-	aud_pins_pmicclk_mode0: pmicclkmode0 {
-		pins_cmd0_dat {
-			pins = <PINMUX_GPIO149__FUNC_GPIO149>;
-		};
-		pins_cmd1_dat {
-			pins = <PINMUX_GPIO150__FUNC_GPIO150>;
-			slew-rate = <0>;
-			bias-pull-up = <00>;
-		};
-		pins_cmd2_dat {
-			pins = <PINMUX_GPIO151__FUNC_GPIO151>;
-		};
-	};
-
-	aud_pins_pmicclk_mode1: pmicclkmode1 {
-		pins_cmd0_dat {
-			pins = <PINMUX_GPIO149__FUNC_AUD_CLK_MOSI>;
-		};
-		pins_cmd1_dat {
-			pins = <PINMUX_GPIO150__FUNC_AUD_DAT_MOSI>;
-		};
-		pins_cmd2_dat {
-			pins = <PINMUX_GPIO151__FUNC_AUD_DAT_MISO>;
-		};
-	};
-
-	aud_pins_i2s1_mode0: audi2s1mode0 {
-		pins_cmd0_dat {
-			pins = <PINMUX_GPIO7__FUNC_GPIO7>;
-		};
-		pins_cmd1_dat {
-			pins = <PINMUX_GPIO6__FUNC_GPIO6>;
-		};
-		pins_cmd2_dat {
-			pins = <PINMUX_GPIO5__FUNC_GPIO5>;
-		};
-	};
-
-	aud_pins_i2s1_mode1: audi2s1mode1 {
-		pins_cmd0_dat {
-			pins = <PINMUX_GPIO7__FUNC_I2S0_DI>;
-		};
-		pins_cmd1_dat {
-			pins = <PINMUX_GPIO6__FUNC_I2S0_LRCK>;
-		};
-		pins_cmd2_dat {
-			pins = <PINMUX_GPIO5__FUNC_I2S0_BCK>;
-		};
-	};
-
-	aud_pins_extamp_high: audexamphigh {
-		pins_cmd_dat {
-			pins = <PINMUX_GPIO115__FUNC_GPIO115>;
-			slew-rate = <1>;
-			output-high;
-		};
-	};
-
-	aud_pins_extamp_low: audexamplow {
-		pins_cmd_dat {
-			pins = <PINMUX_GPIO115__FUNC_GPIO115>;
-			slew-rate = <1>;
-			output-low;
-		};
-	};
-
-	aud_pins_extamp2_high: audexam2phigh {
-		pins_cmd_dat {
-			pins = <PINMUX_GPIO54__FUNC_GPIO54>;
-			slew-rate = <1>;
-			output-high;
-		};
-	};
-	aud_pins_extamp2_low: audexamp2low {
-		pins_cmd_dat {
-			pins = <PINMUX_GPIO54__FUNC_GPIO54>;
-			slew-rate = <1>;
-			output-low;
-		};
-	};
-
-	aud_pins_rcvspk_high: audrcvspkhigh {
-		pins_cmd_dat {
-			pins = <PINMUX_GPIO120__FUNC_GPIO120>;
-			slew-rate = <1>;
-			output-high;
-		};
-	};
-
-	aud_pins_rcvspk_low: audrcvspklow {
-		pins_cmd_dat {
-			pins = <PINMUX_GPIO120__FUNC_GPIO120>;
-			slew-rate = <1>;
-			output-low;
-		};
-	};
-
-	aud_pins_hpdepop_high: audhpdepophigh {
-		pins_cmd_dat {
-			pins = <PINMUX_GPIO24__FUNC_GPIO24>;
-			slew-rate = <1>;
-			output-high;
-		};
-	};
-
-	aud_pins_hpdepop_low: audhpdepoplow {
-		pins_cmd_dat {
-			pins = <PINMUX_GPIO24__FUNC_GPIO24>;
-			slew-rate = <1>;
-			output-low;
-		};
-	};
 };
 /* AUDIO GPIO end */
 
@@ -894,6 +767,7 @@
 };/* UART GPIO end */
 
 /* NFC GPIO standardization */
+/*
 &pio {
 	nfc_default: default {
 
@@ -968,6 +842,7 @@
 	pinctrl-7 = <&nfc_irq_init>;
 	status = "okay";
 };
+*/ /*zhangrc2 close nfc config */
 /* NFC end */
 
 &pio {
