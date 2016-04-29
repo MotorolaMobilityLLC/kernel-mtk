@@ -306,6 +306,8 @@ typedef enum {
 //for tp esd check
  //#define GTP_ESD_PROTECT  1  //change by lixh10 
  #define FT_ESD_PROTECT 1
+ #define GTP_PROC_TPINFO
+
  
 //#define TPD_AUTO_UPGRADE	
 #define Boot_Upgrade_Protect				//开机升级保护。升级失败后，再次开机可重新升级

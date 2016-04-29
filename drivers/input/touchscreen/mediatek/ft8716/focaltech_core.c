@@ -72,7 +72,7 @@
 #include <linux/input.h>
 #include <linux/input/mt.h>
 #include <linux/dma-mapping.h>
-
+#include <linux/seq_file.h>
 
 #include "focaltech_core.h"
 #include <linux/of.h>
@@ -274,6 +274,10 @@ static bool  is_turnoff_checkesd = false;
 /*
  *add by lixh10 end
  */
+#ifdef  GTP_PROC_TPINFO
+#define TP_INFO_LENGTH_UINT    50
+static const char fts_proc_name[] = "tp_info";
+#endif
 
 int up_flag = 0, up_count = 0;
 static int tpd_flag = 0;
@@ -483,8 +487,7 @@ static void fts_fw_update_work_func(struct work_struct *work)
 	enable_irq(touch_irq);
 }
 #endif
-static ssize_t fts_information_show(struct device *dev,
-		struct device_attribute *attr, char *buf)
+static int fts_info_get(char *buf)
 {
 	unsigned char uc_reg_addr;
 	unsigned char uc_reg_value[10]={0,};
@@ -492,6 +495,7 @@ static ssize_t fts_information_show(struct device *dev,
 	unsigned char vendor = 0;
 	unsigned char ic_version = 0;
 	static char* vendor_id;
+	int data_len =0;
 	int retval =0;
 	if(tpd_halt){
 		dev_err(&fts_i2c_client->dev,"ahe cancel info reading  while suspend!\n");
@@ -529,15 +533,50 @@ static ssize_t fts_information_show(struct device *dev,
 	default:
 		vendor_id = "unknown";
 	}
-	return snprintf(buf, PAGE_SIZE, "fts_%d_%s_%d \n", ic_version, vendor_id, fw_version);
+	
+	data_len =  snprintf(buf, PAGE_SIZE, "fts - ic_version:%d;vendor_id:%s;fw_version:%d", ic_version, vendor_id, fw_version);
+	return data_len;
 I2C_FAIL:
-	return retval ;
+	return retval;
+	
+}
+
+
+static ssize_t fts_information_show(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	return fts_info_get(buf);
+
 }
 static DEVICE_ATTR(touchpanel_info, 0664,
 		   fts_information_show,
 		   NULL);
 
 
+#ifdef  GTP_PROC_TPINFO
+static int fts_tpinfo_proc_show(struct seq_file *m, void *v)
+{
+	char buf[TP_INFO_LENGTH_UINT]={0,};
+	
+	 fts_info_get(buf);
+	seq_printf(m, "%s",buf);
+	
+	return 0 ;
+	
+}
+
+static int fts_proc_open(struct inode *inode, struct file *file)
+{
+	return single_open(file, fts_tpinfo_proc_show, inode->i_private);
+}
+
+static const struct file_operations fts_proc_tool_fops = {
+	.open = fts_proc_open,
+	.read = seq_read,
+	.llseek = seq_lseek,
+	.release = single_release
+};
+#endif
 #if FTS_GLOVE_EN
 static ssize_t fts_glove_show(struct device *dev,
 			      struct device_attribute *attr, char *buf)
@@ -1976,6 +2015,13 @@ reset_proc:
 		dev_err(&client->dev, "failed to create sysfs symlink\n");
 		return -EAGAIN;
 	}
+#ifdef  GTP_PROC_TPINFO
+	if (proc_create(fts_proc_name, 0660, NULL, &fts_proc_tool_fops) == NULL) {
+		dev_err(&client->dev,"fts create_proc_entry %s failed", fts_proc_name);
+		return -1;
+	}
+	dev_err(&client->dev,"fts create_proc_entry %s success", fts_proc_name);
+#endif
 
 	tpd_load_status = 1;
 
@@ -2018,6 +2064,9 @@ static int __devexit tpd_remove(struct i2c_client *client)
 #endif
 #ifdef TPD_AUTO_UPGRADE
 		cancel_work_sync(&fw_update_work);
+#endif
+#ifdef  GTP_PROC_TPINFO
+	remove_proc_entry(fts_proc_name,  NULL);
 #endif
 	}
 	TPD_DEBUG("TPD removed\n");
@@ -2139,8 +2188,8 @@ static void gtp_esd_check_func(struct work_struct *work)
 	}
 
 	if (i >= 3) {
-		force_reset_guitar();
-		printk("focal--tpd reset. i >= 3  ret = %d	A3_Reg_Value = 0x%02x\n ", ret, data);
+		//force_reset_guitar(); //cancel by lixh10 currently
+		dev_err(&fts_i2c_client->dev,"focal--tpd reset. i >= 3  ret = %d	A3_Reg_Value = 0x%02x\n ", ret, data);
 		reset_flag = 1;
 		goto FOCAL_RESET_A3_REGISTER;
 	}
@@ -2169,7 +2218,7 @@ static void gtp_esd_check_func(struct work_struct *work)
 	}
 
 	if (1 == flag_error) {
-		printk("focal--tpd reset.1 == flag_error...data=%d	count_irq: %d\n ", data, count_irq);
+		dev_err(&fts_i2c_client->dev,"focal--tpd reset.1 == flag_error...data=%d	count_irq: %d\n ", data, count_irq);
 		force_reset_guitar();
 		reset_flag = 1;
 		goto FOCAL_RESET_INT;
@@ -2193,7 +2242,7 @@ static void gtp_esd_check_func(struct work_struct *work)
 			printk("focal 91 value ==============, g_91value_same_count=%d\n", g_91value_same_count);
 			if (RESET_91_REGVALUE_SAMECOUNT == g_91value_same_count) {
 				force_reset_guitar();
-				printk("focal--tpd reset. g_91value_same_count = 5\n");
+				dev_err(&fts_i2c_client->dev,"focal--tpd reset. g_91value_same_count = 5\n");
 				g_91value_same_count = 0;
 				reset_flag = 1;
 			}
