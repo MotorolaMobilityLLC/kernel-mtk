@@ -452,11 +452,15 @@ static int fpc1020_remove(struct spi_device *spi)
 
 static int fpc1020_suspend(struct device *dev)
 {
+	struct  fpc1020_data *fpc1020 = dev_get_drvdata(dev);
+	mt_spi_disable_clk(fpc1020->spi);
 	return 0;
 }
 
 static int fpc1020_resume(struct device *dev)
 {
+	struct  fpc1020_data *fpc1020 = dev_get_drvdata(dev);
+	mt_spi_enable_clk(fpc1020->spi);
 	return 0;
 }
 
