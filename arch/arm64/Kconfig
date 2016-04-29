@@ -203,6 +203,12 @@ config ARM64_ERRATUM_845719
 
 	  If unsure, say Y.
 
+# lenovo-sw zhouwl, add for wm8281 begin
+config ARCH_MTK_BOARD
+       bool "Meditek Board Configure"
+       help
+             Support for MTK board configure
+# lenovo-sw zhouwl, add for wm8281 end
 source "init/Kconfig"
 
 source "kernel/Kconfig.freezer"

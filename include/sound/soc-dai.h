@@ -96,6 +96,11 @@ struct snd_soc_dai;
 struct snd_ac97_bus_ops;
 
 /* Digital Audio Interface clocking API.*/
+#if defined(CONFIG_SND_SOC_FLORIDA) 
+int snd_soc_register_dai(struct device *dev,
+		struct snd_soc_dai_driver *dai_drv);
+void snd_soc_unregister_dai(struct device *dev);
+#endif
 int snd_soc_dai_set_sysclk(struct snd_soc_dai *dai, int clk_id,
 	unsigned int freq, int dir);
 

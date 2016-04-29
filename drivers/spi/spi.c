@@ -2279,9 +2279,18 @@ int spi_write_then_read(struct spi_device *spi,
 	 * keep heap costs out of the hot path unless someone else is
 	 * using the pre-allocated buffer or the transfer is too large.
 	 */
+
+/* lenovo-sw zhangrc2 add for wolson tuning demand begin */		 
+#if defined(CONFIG_SND_SOC_FLORIDA) 
 	if ((n_tx + n_rx) > SPI_BUFSIZ || !mutex_trylock(&lock)) {
-		local_buf = kmalloc(max((unsigned)SPI_BUFSIZ, n_tx + n_rx),
+		local_buf = kmalloc(max((unsigned)SPI_BUFSIZ, n_tx + n_rx+2),
 				    GFP_KERNEL | GFP_DMA);
+#else
+ 	if ((n_tx + n_rx) > SPI_BUFSIZ || !mutex_trylock(&lock)) {
+ 		local_buf = kmalloc(max((unsigned)SPI_BUFSIZ, n_tx + n_rx),
+ 				    GFP_KERNEL | GFP_DMA);
+#endif	
+/* lenovo-sw zhangrc2 add for wolson tuning demand end */	
 		if (!local_buf)
 			return -ENOMEM;
 	} else {
@@ -2301,8 +2310,21 @@ int spi_write_then_read(struct spi_device *spi,
 
 	memcpy(local_buf, txbuf, n_tx);
 	x[0].tx_buf = local_buf;
-	x[1].rx_buf = local_buf + n_tx;
 
+
+/*lenovo-sw zhangrc2 add for wolson tuning demand begin */
+#if defined(CONFIG_SND_SOC_FLORIDA) 	
+	if((n_tx + n_rx) > SPI_BUFSIZ)
+	      x[1].rx_buf = local_buf + n_tx+2;
+	else
+#endif	
+          x[1].rx_buf = local_buf + n_tx;
+		  
+
+#if defined(CONFIG_SND_SOC_FLORIDA) 
+	x[1].tx_buf = local_buf + n_tx+n_rx+2;
+#endif
+/*lenovo-sw zhangrc2 add for wolson tuning demand end */	
 	/* do the i/o */
 	status = spi_sync(spi, &message);
 	if (status == 0)

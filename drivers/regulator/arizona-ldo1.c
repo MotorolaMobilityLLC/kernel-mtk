@@ -78,11 +78,6 @@ static int arizona_ldo1_hc_set_voltage_sel(struct regulator_dev *rdev,
 	if (ret != 0)
 		return ret;
 
-	ret = regmap_update_bits(regmap, ARIZONA_DYNAMIC_FREQUENCY_SCALING_1,
-				 ARIZONA_SUBSYS_MAX_FREQ, val);
-	if (ret != 0)
-		return ret;
-
 	if (val)
 		return 0;
 
@@ -113,6 +108,17 @@ static int arizona_ldo1_hc_get_voltage_sel(struct regulator_dev *rdev)
 	return (val & ARIZONA_LDO1_VSEL_MASK) >> ARIZONA_LDO1_VSEL_SHIFT;
 }
 
+static int arizona_ldo1_hc_set_voltage_time_sel(struct regulator_dev *rdev,
+						unsigned int old_selector,
+						unsigned int new_selector)
+{
+	/* if moving to 1.8v allow time for it to reach voltage */
+	if (new_selector == rdev->desc->n_voltages - 1)
+		return 25;
+	else
+		return 0;
+}
+
 static struct regulator_ops arizona_ldo1_hc_ops = {
 	.list_voltage = arizona_ldo1_hc_list_voltage,
 	.map_voltage = arizona_ldo1_hc_map_voltage,
@@ -120,6 +126,7 @@ static struct regulator_ops arizona_ldo1_hc_ops = {
 	.set_voltage_sel = arizona_ldo1_hc_set_voltage_sel,
 	.get_bypass = regulator_get_bypass_regmap,
 	.set_bypass = regulator_set_bypass_regmap,
+	.set_voltage_time_sel = arizona_ldo1_hc_set_voltage_time_sel,
 };
 
 static const struct regulator_desc arizona_ldo1_hc = {
@@ -156,7 +163,7 @@ static const struct regulator_desc arizona_ldo1 = {
 	.min_uV = 900000,
 	.uV_step = 25000,
 	.n_voltages = 13,
-	.enable_time = 500,
+	.enable_time = 3000,
 
 	.owner = THIS_MODULE,
 };
@@ -173,7 +180,10 @@ static const struct regulator_init_data arizona_ldo1_dvfs = {
 
 static const struct regulator_init_data arizona_ldo1_default = {
 	.constraints = {
-		.valid_ops_mask = REGULATOR_CHANGE_STATUS,
+		.min_uV = 1175000,
+		.max_uV = 1200000,
+		.valid_ops_mask = REGULATOR_CHANGE_STATUS |
+				  REGULATOR_CHANGE_VOLTAGE,
 	},
 	.num_consumer_supplies = 1,
 };
@@ -185,8 +195,6 @@ static int arizona_ldo1_of_get_pdata(struct arizona *arizona,
 	struct arizona_ldo1 *ldo1 = config->driver_data;
 	struct device_node *init_node, *dcvdd_node;
 	struct regulator_init_data *init_data;
-
-	pdata->ldoena = arizona_of_get_named_gpio(arizona, "wlf,ldoena", true);
 
 	init_node = of_get_child_by_name(arizona->dev->of_node, "ldo1");
 	dcvdd_node = of_parse_phandle(arizona->dev->of_node, "DCVDD-supply", 0);
@@ -208,6 +216,9 @@ static int arizona_ldo1_of_get_pdata(struct arizona *arizona,
 	} else if (dcvdd_node) {
 		arizona->external_dcvdd = true;
 	}
+
+	if (!(arizona->external_dcvdd))
+		pdata->ldoena = arizona_of_get_named_gpio(arizona, "wlf,ldoena", true);
 
 	of_node_put(dcvdd_node);
 
@@ -238,6 +249,8 @@ static int arizona_ldo1_probe(struct platform_device *pdev)
 	switch (arizona->type) {
 	case WM5102:
 	case WM8997:
+	case WM8998:
+	case WM1814:
 		desc = &arizona_ldo1_hc;
 		ldo1->init_data = arizona_ldo1_dvfs;
 		break;
@@ -263,12 +276,20 @@ static int arizona_ldo1_probe(struct platform_device *pdev)
 		}
 	}
 
-	config.ena_gpio = arizona->pdata.ldoena;
+	/* Note - we use 0 to mean invalid in pdata so that if it's not
+	 * explicitly set to a value we will ignore it. Convert this to an
+	 * invalid value before using it
+	 */
+	if (arizona->pdata.ldoena == 0)
+		arizona->pdata.ldoena = -1;
 
 	if (arizona->pdata.ldo1)
-		config.init_data = arizona->pdata.ldo1;
-	else
-		config.init_data = &ldo1->init_data;
+		ldo1->init_data = *arizona->pdata.ldo1;
+
+	config.ena_gpio = arizona->pdata.ldoena;
+	config.ena_gpio_flags = GPIOF_OUT_INIT_LOW;
+
+	config.init_data = &ldo1->init_data;
 
 	/*
 	 * LDO1 can only be used to supply DCVDD so if it has no
@@ -277,15 +298,22 @@ static int arizona_ldo1_probe(struct platform_device *pdev)
 	if (config.init_data->num_consumer_supplies == 0)
 		arizona->external_dcvdd = true;
 
+	if (!arizona->external_dcvdd && !gpio_is_valid(config.ena_gpio)) {
+		dev_warn(arizona->dev,
+			 "No LDOENA: regulator will be always-on\n");
+		ldo1->init_data.constraints.always_on = true;
+	}
+
 	ldo1->regulator = devm_regulator_register(&pdev->dev, desc, &config);
+
+	of_node_put(config.of_node);
+
 	if (IS_ERR(ldo1->regulator)) {
 		ret = PTR_ERR(ldo1->regulator);
 		dev_err(arizona->dev, "Failed to register LDO1 supply: %d\n",
 			ret);
 		return ret;
 	}
-
-	of_node_put(config.of_node);
 
 	platform_set_drvdata(pdev, ldo1);
 

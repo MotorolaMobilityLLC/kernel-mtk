@@ -637,13 +637,13 @@ static inline void spi_enable_dma(struct mt_spi_t *ms, u8 mode)
 			&& (ms->cur_transfer->tx_dma != 0))) {
 			if (ms->cur_transfer->tx_dma & (SPI_4B_ALIGN - 1)) {
 #ifdef CONFIG_ARCH_DMA_ADDR_T_64BIT
-				dev_err(&ms->pdev->dev,
-					"Warning!Tx_DMA address should be 4Byte alignment,buf:%p,dma:%llx\n",
-					ms->cur_transfer->tx_buf, ms->cur_transfer->tx_dma);
+			//	dev_err(&ms->pdev->dev,
+			//		"Warning!Tx_DMA address should be 4Byte alignment,buf:%p,dma:%llx\n",
+			//		ms->cur_transfer->tx_buf, ms->cur_transfer->tx_dma);
 #else
-				dev_err(&ms->pdev->dev,
-					"Warning!Tx_DMA address should be 4Byte alignment,buf:%p,dma:%x\n",
-					ms->cur_transfer->tx_buf, ms->cur_transfer->tx_dma);
+			//	dev_err(&ms->pdev->dev,
+			//		"Warning!Tx_DMA address should be 4Byte alignment,buf:%p,dma:%x\n",
+			//		ms->cur_transfer->tx_buf, ms->cur_transfer->tx_dma);
 #endif
 			}
 			spi_writel(ms, SPI_TX_SRC_REG, cpu_to_le32(ms->cur_transfer->tx_dma));
@@ -656,13 +656,13 @@ static inline void spi_enable_dma(struct mt_spi_t *ms, u8 mode)
 			&& (ms->cur_transfer->rx_dma != 0))) {
 			if (ms->cur_transfer->rx_dma & (SPI_4B_ALIGN - 1)) {
 #ifdef CONFIG_ARCH_DMA_ADDR_T_64BIT
-				dev_err(&ms->pdev->dev,
-					"Warning!Rx_DMA address should be 4Byte alignment,buf:%p,dma:%llx\n",
-					ms->cur_transfer->rx_buf, ms->cur_transfer->rx_dma);
+			//	dev_err(&ms->pdev->dev,
+			//		"Warning!Rx_DMA address should be 4Byte alignment,buf:%p,dma:%llx\n",
+			//		ms->cur_transfer->rx_buf, ms->cur_transfer->rx_dma);
 #else
-				dev_err(&ms->pdev->dev,
-					"Warning!Rx_DMA address should be 4Byte alignment,buf:%p,dma:%x\n",
-					ms->cur_transfer->rx_buf, ms->cur_transfer->rx_dma);
+			//	dev_err(&ms->pdev->dev,
+			//		"Warning!Rx_DMA address should be 4Byte alignment,buf:%p,dma:%x\n",
+			//		ms->cur_transfer->rx_buf, ms->cur_transfer->rx_dma);
 #endif
 			}
 			spi_writel(ms, SPI_RX_DST_REG, cpu_to_le32(ms->cur_transfer->rx_dma));
