@@ -81,6 +81,7 @@
 #include <mach/battery_common.h>
 #include "../../../../misc/mediatek/alsps/epl8801/epl8801.h"
 #endif
+#include "../../../../misc/mediatek/include/mt-plat/mt_boot_common.h"
 /*******************************************************************************
 * 2.Private constant and macro definitions using #define
 *******************************************************************************/
@@ -270,7 +271,9 @@ static struct completion report_point_complete;
 
 #endif
 static bool  is_fw_upgrate = false;
+#if FT_ESD_PROTECT
 static bool  is_turnoff_checkesd = false;
+#endif 
 /*
  *add by lixh10 end
  */
@@ -559,7 +562,7 @@ static int fts_tpinfo_proc_show(struct seq_file *m, void *v)
 	char buf[TP_INFO_LENGTH_UINT]={0,};
 	
 	 fts_info_get(buf);
-	seq_printf(m, "%s",buf);
+	seq_printf(m, "%s\n",buf);
 	
 	return 0 ;
 	
@@ -2005,7 +2008,7 @@ reset_proc:
 		}else
 			queue_work ( touch_wq, &fw_update_work );	
 	}
-	#endif
+#endif
 	 
 	if (sysfs_create_group(&fts_i2c_client->dev.kobj , &fts_touch_group)) {
 		dev_err(&client->dev, "failed to create sysfs group\n");
@@ -2138,7 +2141,6 @@ static void force_reset_guitar(void)
 
 }
 
-#define A3_REG_VALUE								0x87
 #define RESET_91_REGVALUE_SAMECOUNT 				5
 static u8 g_old_91_Reg_Value = 0x00;
 static u8 g_first_read_91 = 0x01;
@@ -2204,7 +2206,7 @@ static void gtp_esd_check_func(struct work_struct *work)
 		 *return ret;
 		 */
 	}
-	printk("0x8F:%d, count_irq is %d\n", data, count_irq);
+	dev_err(&fts_i2c_client->dev,"0x8F:%d, count_irq is %d\n", data, count_irq);
 
 	flag_error = 0;
 	if ((count_irq - data) > 10) {

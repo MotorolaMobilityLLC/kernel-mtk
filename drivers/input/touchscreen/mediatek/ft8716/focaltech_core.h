@@ -305,15 +305,16 @@ typedef enum {
 //#define FTS_INCALL_TOUCH_REJECTION
 //for tp esd check
  //#define GTP_ESD_PROTECT  1  //change by lixh10 
- #define FT_ESD_PROTECT 1
+ #define FT_ESD_PROTECT 0
  #define GTP_PROC_TPINFO
 
  
-//#define TPD_AUTO_UPGRADE	
+#define TPD_AUTO_UPGRADE	
 #define Boot_Upgrade_Protect				//开机升级保护。升级失败后，再次开机可重新升级
-#define FTS_CHIP_ID							0x54	//FT3427、FT5x46 CHIP ID = 0x54
+#define FTS_CHIP_ID							0x87	//FT3427、FT5x46 CHIP ID = 0x54
 #define FTS_Vendor_1_ID						0x51//Ofilm TP VID = 0x51
 #define FTS_Vendor_2_ID						0x01//Ofilm TP new VID
+#define A3_REG_VALUE	FTS_CHIP_ID
 #if  FTS_GESTRUE_EN
   extern  int  fts_gesture_letter ;
 #endif
