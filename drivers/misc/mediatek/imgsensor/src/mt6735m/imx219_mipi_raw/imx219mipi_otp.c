@@ -137,6 +137,7 @@ static void IMX219_readAFpage(kal_uint16 page, UBYTE *buf)
    write_cmos_sensor(0x0100,0x01);//stream off 
    
 }
+#if 0
 static void	IMX219_readpageLsc(kal_uint16 page, UBYTE *buf)
 {
    if(page != 0)
@@ -177,7 +178,7 @@ static void	IMX219_readpageLsc(kal_uint16 page, UBYTE *buf)
    write_cmos_sensor(0x0100,0x01);//stream off 
    
 }
-
+#endif
 kal_uint16 get_otp_module_id(void)
 {	
 	kal_uint16 module_id = 0;
@@ -290,7 +291,7 @@ static void IMX219_ApplyLSCAutoLoad(kal_uint16 table)
 static unsigned char get_otp_lsc(void)
 {
 	//LSC flag check
-	UBYTE pBasicInfoData[10] = {0};
+	UBYTE pBasicInfoData[64] = {0};
 	kal_uint16 LscFlag = 0;
 	kal_uint16 lscTable = 0;
 
@@ -304,9 +305,9 @@ static unsigned char get_otp_lsc(void)
 
 #endif  	  
  
-	IMX219_readpageLsc(0,pBasicInfoData); 
+	IMX219_readpage(0,pBasicInfoData); 
 
-	LscFlag = pBasicInfoData[0];
+	LscFlag = pBasicInfoData[63];
 	OTP_LOG("IM219_OTP:LscFlag=0x%x\n",LscFlag);
 	if((LscFlag & 0xc0) == 0x40)
 	{
@@ -348,9 +349,9 @@ static unsigned char get_otp_lsc(void)
 	}
 	nLSCCheckSum = sum % 0xff + 1;
 
-	printk("pBasicInfoData[61+(nLSCGroup-1)] = %d\n",pLSCInfoData[61+(nLSCGroup-1)]);
+	printk("pBasicInfoData[61+(nLSCGroup-1)] = %d\n",pBasicInfoData[61+(nLSCGroup-1)]);
 	printk("nLSCCheckSum = %d\n",nLSCCheckSum);
-	if(pLSCInfoData[61+(nLSCGroup-1)] != nLSCCheckSum)
+	if(pBasicInfoData[61+(nLSCGroup-1)] != nLSCCheckSum)
 	{
 		    OTP_LOG("LSC CheckSum is error");
 	}
