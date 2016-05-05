@@ -345,7 +345,7 @@ static unsigned char get_otp_lsc(void)
 	for(i=0+30*(nLSCGroup-1);i<175+30*(nLSCGroup-1);i++)
 	{
 		 sum += pLSCInfoData[i];
-		 printk("pLSCInfoData[%d] = %d,i = %d\n",i,pLSCInfoData[i],i);
+	//	 printk("pLSCInfoData[%d] = %d,i = %d\n",i,pLSCInfoData[i],i);
 	}
 	nLSCCheckSum = sum % 0xff + 1;
 
