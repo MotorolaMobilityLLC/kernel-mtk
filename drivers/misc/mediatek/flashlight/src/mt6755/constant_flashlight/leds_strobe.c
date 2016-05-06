@@ -818,7 +818,7 @@ enum
 {
 	e_DutyNum = 9,
 };
-static int flashDuty[e_DutyNum]=     {0,16,15,14,13,12};//lenovo.sw 20160318wangsx3 change for K52a40,decrease flash current
+static int flashDuty[e_DutyNum]=     {0,16,15,14,13,12,11,10,9}; //lenovo.sw huangsh4 change for 1A flash current
 /******************************************************************************
  * local variables
 ******************************************************************************/
@@ -895,7 +895,7 @@ extern int mtkcam_gpio_set(int PinIdx, int PwrType, int Val); //wuyt3 add for k5
 //#define GPIO_ENF 				(GPIO12|0x80000000)
 //#define GPIO_ENT				(GPIO106|0x80000000)
 #define TORCH_BRIGHTNESS 		0
-#define FLASH_BRIGHTNESS 		5///lenovo.sw 20160318wangsx3 change for K52a40,decrease flash current
+#define FLASH_BRIGHTNESS 		8 //lenovo.sw huangsh4 change for 1A flash current
 #define FLASH_BRIGHTNESS_MAX	15
 #define FLASH_ENT_PIN_M_GPIO		GPIO_MODE_00
 #define FLASH_ENT_PIN_M_PWM		GPIO_MODE_03
