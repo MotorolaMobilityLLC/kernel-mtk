@@ -264,6 +264,11 @@ int g_present_smb = 0;
 static int cmd_discharging = -1;
 static int adjust_power = -1;
 static int suspend_discharging = -1;
+//lenovo-sw mahj2 add for runin test Begin
+#if defined(LENOVO_RUNIN_TEST)
+static int g_battery_test_status = -1;
+#endif
+//lenovo-sw mahj2 add for runin test End
 
 /* ////////////////////////////////////////////////////////////////////////////// */
 /* FOR ANDROID BATTERY SERVICE */
@@ -1679,6 +1684,65 @@ static ssize_t store_Pump_Express(struct device *dev, struct device_attribute *a
 static DEVICE_ATTR(Pump_Express, 0664, show_Pump_Express, store_Pump_Express);
 #endif
 
+//lenovo-sw mahj2 add for runin test Begin
+#if defined(LENOVO_RUNIN_TEST)
+void BAT_thread(void);
+static void lenovo_battery_charging_status_update(void)
+{
+
+	if (g_battery_test_status == 1) {
+		if ((cmd_discharging == 0 ||cmd_discharging == -1) && (BMT_status.UI_SOC2 >= 80)) {
+			cmd_discharging = 1;
+		}
+		else if ((cmd_discharging == 1) && (BMT_status.UI_SOC2 <= 60)) {
+			cmd_discharging = 0;
+		}
+	}
+	else if (g_battery_test_status == 0) {
+		if (cmd_discharging == 1) {
+			cmd_discharging = 0;
+		}
+		g_battery_test_status = -1;
+	}
+
+	battery_log(BAT_LOG_CRTI, "[battery] cmd_discharging : %d\n", cmd_discharging);
+}
+
+static ssize_t show_BatteryTestStatus(struct device *dev, struct device_attribute *attr, char *buf)
+{
+
+	battery_log(BAT_LOG_CRTI, "[battery] show_BatteryTestStatus : %x\n", g_battery_test_status);
+	return sprintf(buf, "%x\n", g_battery_test_status);
+}
+
+static ssize_t store_BatteryTestStatus(struct device *dev, struct device_attribute *attr,
+				  const char *buf, size_t size)
+{
+	char *pvalue = NULL;
+	unsigned int battery_test_status = 0;
+	battery_log(BAT_LOG_CRTI, "[Battery] store_BatteryTestStatus\n");
+
+	if(buf != NULL && size != 0)
+	{
+		battery_log(BAT_LOG_CRTI, "[Battery] buf is %s \n",buf);
+		battery_test_status = simple_strtoul(buf,&pvalue,16);
+		if(g_battery_test_status != battery_test_status){
+			g_battery_test_status = battery_test_status;
+			mutex_lock(&bat_mutex);
+			BAT_thread();
+			mutex_unlock(&bat_mutex);
+		}
+
+		battery_log(BAT_LOG_CRTI, "[Battery] store code : %x \n",g_battery_test_status);
+	}
+
+	return size;
+}
+
+static DEVICE_ATTR(BatteryTestStatus, 0664, show_BatteryTestStatus, store_BatteryTestStatus);
+#endif
+//lenovo-sw mahj2 add for runin test End
+
 static void mt_battery_update_EM(struct battery_data *bat_data)
 {
 	bat_data->BAT_CAPACITY = BMT_status.UI_SOC2;
@@ -3007,6 +3071,11 @@ void BAT_thread(void)
 #endif	
     /*End lenovo-sw mahj2 added for lenovo charging standard*/
 	if (BMT_status.charger_exist == KAL_TRUE) {
+		//lenovo-sw mahj2 add for runin test Begin
+		#if defined(LENOVO_RUNIN_TEST)
+		lenovo_battery_charging_status_update();
+		#endif
+		//lenovo-sw mahj2 add for runin test End
 	/*Begin lenovo mahj2 add for lenovo 45 - 50 cv limit*/	
 	#ifdef LENOVO_TEMP_POS_45_TO_POS_50_CV_LiMIT_SUPPORT
 	        lenovo_battery_cv_set();
@@ -4105,6 +4174,11 @@ static int battery_probe(struct platform_device *dev)
 #if defined(PUMP_EXPRESS_SERIES)
 		ret_device_file = device_create_file(&(dev->dev), &dev_attr_Pump_Express);
 #endif
+//lenovo-sw mahj2 add for runin test Begin
+#if defined(LENOVO_RUNIN_TEST)
+		ret_device_file = device_create_file(&(dev->dev), &dev_attr_BatteryTestStatus);
+#endif
+//lenovo-sw mahj2 add for runin test End
 	}
 
 	/* battery_meter_initial();      //move to mt_battery_GetBatteryData() to decrease booting time */

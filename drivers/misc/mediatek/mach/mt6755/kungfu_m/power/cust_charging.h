@@ -160,6 +160,9 @@
 /*lenovo-sw mahj2 added for ntc temp cut 2 degree Begin*/
 //#define LENOVO_NTC_TEMP_CUT_2_DEGREE
 /*lenovo-sw mahj2 added for ntc temp cut 2 degree End*/
+//lenovo-sw mahj2 add for runin test Begin
+#define LENOVO_RUNIN_TEST
+//lenovo-sw mahj2 add for runin test End
 
 /*VINDPM moved from cust_pe.h to de-relating from PE+*/
 #define SWITCH_CHR_VINDPM_5V 0x13  /* 4.5V */
