@@ -93,6 +93,7 @@
 #include <trace/events/sched.h>
 
 
+ATOMIC_NOTIFIER_HEAD(migration_notifier_head);
 
 void start_bandwidth_timer(struct hrtimer *period_timer, ktime_t period)
 {
@@ -1819,6 +1820,11 @@ try_to_wake_up(struct task_struct *p, unsigned int state, int wake_flags)
 {
 	unsigned long flags;
 	int cpu, success = 0;
+    unsigned long src_cpu;
+    int notify = 0;
+    struct migration_notify_data mnd;
+
+
 
 	/*
 	 * If we are going to wake up a thread waiting for CONDITION we
@@ -1828,6 +1834,8 @@ try_to_wake_up(struct task_struct *p, unsigned int state, int wake_flags)
 	 */
 	smp_mb__before_spinlock();
 	raw_spin_lock_irqsave(&p->pi_lock, flags);
+    src_cpu = cpu = task_cpu(p);
+
 	if (!(p->state & state))
 		goto out;
 
@@ -1856,7 +1864,8 @@ try_to_wake_up(struct task_struct *p, unsigned int state, int wake_flags)
 		p->sched_class->task_waking(p);
 
 	cpu = select_task_rq(p, p->wake_cpu, SD_BALANCE_WAKE, wake_flags);
-	if (task_cpu(p) != cpu) {
+    src_cpu = task_cpu(p);
+	if (src_cpu != cpu) {
 		wake_flags |= WF_MIGRATED;
 		set_task_cpu(p, cpu);
 	}
@@ -1866,7 +1875,20 @@ try_to_wake_up(struct task_struct *p, unsigned int state, int wake_flags)
 stat:
 	ttwu_stat(p, cpu, wake_flags);
 out:
+    {
+
+        mnd.src_cpu = src_cpu;
+        mnd.dest_cpu = cpu;
+        mnd.load = 0;
+
+        if (src_cpu != cpu)
+            notify = 1;
+    }  
 	raw_spin_unlock_irqrestore(&p->pi_lock, flags);
+
+    if (notify)
+        atomic_notifier_call_chain(&migration_notifier_head,
+                                    0, (void *)&mnd);
 
 	return success;
 }
@@ -5072,6 +5094,8 @@ static int __migrate_task(struct task_struct *p, int src_cpu, int dest_cpu)
 {
 	struct rq *rq;
 	int ret = 0;
+    bool moved = false;
+
 
 	if (unlikely(!cpu_active(dest_cpu)))
 		return ret;
@@ -5092,13 +5116,27 @@ static int __migrate_task(struct task_struct *p, int src_cpu, int dest_cpu)
 	 * If we're not on a rq, the next wake-up will ensure we're
 	 * placed properly.
 	 */
-	if (task_on_rq_queued(p))
+	if (task_on_rq_queued(p)) {
 		rq = move_queued_task(p, dest_cpu);
+        moved = true;
+       }
 done:
 	ret = 1;
 fail:
 	raw_spin_unlock(&rq->lock);
 	raw_spin_unlock(&p->pi_lock);
+
+    if (moved) {
+        struct migration_notify_data mnd;
+
+        mnd.src_cpu = src_cpu;
+        mnd.dest_cpu = dest_cpu;
+        mnd.load = 0;
+
+        atomic_notifier_call_chain(&migration_notifier_head, 
+                                    0, (void *)&mnd);
+    }
+
 	return ret;
 }
 

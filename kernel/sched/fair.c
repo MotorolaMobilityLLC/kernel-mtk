@@ -6316,6 +6316,8 @@ struct lb_env {
 #endif
 };
 
+static DEFINE_PER_CPU(bool, dbs_boost_needed);
+
 #ifdef CONFIG_SCHED_HMP
 /*
  * move_task - move a task from one runqueue to another runqueue.
@@ -6676,6 +6678,8 @@ static void detach_task(struct task_struct *p, struct lb_env *env)
 	deactivate_task(env->src_rq, p, 0);
 	p->on_rq = TASK_ON_RQ_MIGRATING;
 	set_task_cpu(p, env->dst_cpu);
+
+    per_cpu(dbs_boost_needed, env->dst_cpu) = true;
 }
 
 /*
@@ -8579,8 +8583,20 @@ more_balance:
 			 */
 			sd->nr_balance_failed = sd->cache_nice_tries+1;
 		}
-	} else
+	} else {
 		sd->nr_balance_failed = 0;
+        if (per_cpu(dbs_boost_needed, this_cpu)) {
+            struct migration_notify_data mnd;
+
+            mnd.src_cpu = cpu_of(busiest);
+            mnd.dest_cpu = this_cpu;
+            mnd.load = 0;
+            atomic_notifier_call_chain(&migration_notifier_head, 
+                                        0, (void *)&mnd);
+            per_cpu(dbs_boost_needed, this_cpu) = false;
+        }
+
+    }
 
 	if (likely(!active_balance)) {
 		/* We were unbalanced, so reset the balancing interval */
@@ -8850,6 +8866,19 @@ out_unlock:
 		attach_one_task(target_rq, p);
 
 	local_irq_enable();
+
+    if (per_cpu(dbs_boost_needed, target_cpu)) {
+        struct migration_notify_data mnd;
+
+        mnd.src_cpu = cpu_of(busiest_rq);
+        mnd.dest_cpu = target_cpu;
+        mnd.load = 0;
+
+        atomic_notifier_call_chain(&migration_notifier_head, 0, (void *)&mnd);
+
+        per_cpu(dbs_boost_needed, target_cpu) = false;
+    }
+
 
 	return 0;
 }
