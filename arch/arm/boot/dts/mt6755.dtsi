@@ -3302,6 +3302,17 @@
 			affinity_info = <0x84000004>;
 		};
 
+		gpufreq {
+			compatible = "mediatek,mt6755-gpufreq";
+			clocks =
+				<&topckgen TOP_MUX_MFG>,
+				<&topckgen TOP_MMPLL_CK>,
+				<&topckgen TOP_SYSPLL_D3>;
+			clock-names =
+				"clk_mux",
+				"clk_main_parent",
+				"clk_sub_parent";
+		};
 	};
 
 	mobicore {

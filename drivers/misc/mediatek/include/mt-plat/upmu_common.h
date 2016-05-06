@@ -195,4 +195,6 @@ extern int get_battery_plug_out_status(void);
 
 extern void pmic_turn_on_clock(unsigned int enable);
 
+extern int pmic_force_vcore_pwm(bool enable);
+
 #endif				/* _MT_PMIC_COMMON_H_ */
