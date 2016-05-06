@@ -130,8 +130,8 @@ struct otp_struct
    int bg_ratio;
 
 };
-int RG_Ratio_Typical_Ofilm = 0x120;
-int BG_Ratio_Typical_Ofilm = 0x168;
+int RG_Ratio_Typical_Ofilm = 0x14b;   //modify by lvxiaoliang
+int BG_Ratio_Typical_Ofilm = 0x142;
 //add end
 
 #endif 

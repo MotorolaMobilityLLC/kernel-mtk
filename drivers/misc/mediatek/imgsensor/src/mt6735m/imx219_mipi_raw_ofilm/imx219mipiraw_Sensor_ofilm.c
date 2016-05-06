@@ -182,11 +182,11 @@ static imgsensor_struct imgsensor = {
 
 /* Sensor output window information */
 static SENSOR_WINSIZE_INFO_STRUCT imgsensor_winsize_info[5] =	 
-{{ 3280, 2464,	0, 	0, 3280, 2464, 1640, 1232, 0, 0, 1640, 1232,		2,	2, 1632,  1224}, // Preview 
- { 3280, 2464,	0,	0, 3280, 2464, 3280, 2464, 0, 0, 3280, 2464,	4,	4, 3264, 2448}, // capture 
- { 3280, 2464,	0,	0, 3280, 2464, 3280, 2464, 0, 0, 3280, 2464,	4,	4, 3264, 2448},  // video 
+{{ 3280, 2464,	0, 	0, 3280, 2464, 1640, 1232, 0, 0, 1640, 1232,	4,	4, 1632,  1224}, // Preview 
+ { 3280, 2464,	0,	0, 3280, 2464, 3280, 2464, 0, 0, 3280, 2464,	8,	8, 3264, 2448}, // capture 
+ { 3280, 2464,	0,	0, 3280, 2464, 3280, 2464, 0, 0, 3280, 2464,	8,	8, 3264, 2448},  // video 
  { 3280, 2464,	0,  0, 3280, 2464, 1920, 1080, 0, 0, 1920, 1080,	0,	0, 1920, 1080}, //hight speed video 
- { 3280, 2464,	0,  0, 3280, 2464, 1640,  926, 0, 0, 1640,  926,	0,	0, 1280,  720}};// slim video 
+ { 3280, 2464,	0,  0, 3280, 2464, 1280,  720, 0, 0, 1280,  720,	0,	0, 1280,  720}};// slim video 
 
 
 #define IMX219MIPI_MaxGainIndex2 (97)
@@ -977,19 +977,19 @@ static void slim_video_setting(void)
 	write_cmos_sensor(0x0161,     (imgsensor_info.slim_video.framelength & 0xFF));
 	write_cmos_sensor(0x0162,     ((imgsensor_info.slim_video.linelength >> 8) & 0xFF));  
 	write_cmos_sensor(0x0163,     (imgsensor_info.slim_video.linelength & 0xFF));
-	write_cmos_sensor(0x0164,   0x00); 
-	write_cmos_sensor(0x0165,   0x00); 
-	write_cmos_sensor(0x0166,   0x0C); 
-	write_cmos_sensor(0x0167,   0xCF); 
-	write_cmos_sensor(0x0168,   0x01); 
-	write_cmos_sensor(0x0169,   0x32); 
-	write_cmos_sensor(0x016A,   0x08); 
-	write_cmos_sensor(0x016B,   0x6D); 
-	write_cmos_sensor(0x016C,   0x06); 
-	write_cmos_sensor(0x016D,   0x68); 
-	write_cmos_sensor(0x016E,   0x03); 
-	write_cmos_sensor(0x016F,   0x9E); 
-	write_cmos_sensor(0x0170,   0x01); 
+	write_cmos_sensor(0x0164, 	0x01);
+	write_cmos_sensor(0x0165, 	0x68);
+	write_cmos_sensor(0x0166, 	0x0B);
+	write_cmos_sensor(0x0167, 	0x67);
+	write_cmos_sensor(0x0168, 	0x02);
+	write_cmos_sensor(0x0169, 	0x00);
+	write_cmos_sensor(0x016A, 	0x07);
+	write_cmos_sensor(0x016B, 	0x9F);
+	write_cmos_sensor(0x016C, 	0x05);
+	write_cmos_sensor(0x016D, 	0x00);
+	write_cmos_sensor(0x016E, 	0x02);
+	write_cmos_sensor(0x016F, 	0xD0);
+	write_cmos_sensor(0x0170, 	0x01);
 	write_cmos_sensor(0x0171,   0x01); 
 	write_cmos_sensor(0x0174,   0x01); 
 	write_cmos_sensor(0x0175,   0x01); 
@@ -1000,11 +1000,11 @@ static void slim_video_setting(void)
 	write_cmos_sensor(0x0304,   0x03); 
 	write_cmos_sensor(0x0305,   0x03); 
 	write_cmos_sensor(0x0306,   0x00); 
-	write_cmos_sensor(0x0307,   0x2B); //0x51
+	write_cmos_sensor(0x0307, 0x53);
 	write_cmos_sensor(0x0309,   0x0A); 
 	write_cmos_sensor(0x030B,   0x01); 
 	write_cmos_sensor(0x030C,   0x00); 
-	write_cmos_sensor(0x030D,   0x2E);//0x54 
+	write_cmos_sensor(0x030D, 0x53);
 	write_cmos_sensor(0x455E,   0x00); 
 	write_cmos_sensor(0x471E,   0x4B); 
 	write_cmos_sensor(0x4767,   0x0F); 

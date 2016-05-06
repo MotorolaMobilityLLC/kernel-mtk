@@ -137,7 +137,6 @@ static void IMX219_readAFpage(kal_uint16 page, UBYTE *buf)
    write_cmos_sensor(0x0100,0x01);//stream off 
    
 }
-#if 0
 static void	IMX219_readpageLsc(kal_uint16 page, UBYTE *buf)
 {
    if(page != 0)
@@ -178,7 +177,7 @@ static void	IMX219_readpageLsc(kal_uint16 page, UBYTE *buf)
    write_cmos_sensor(0x0100,0x01);//stream off 
    
 }
-#endif
+
 kal_uint16 get_otp_module_id(void)
 {	
 	kal_uint16 module_id = 0;
@@ -272,8 +271,11 @@ static unsigned char get_otp_AFData(void)
 	printk("Qtech IM219_OTP: macroH=0x%x,macroL=0x%x,infiH=0x%x,infiL=0x%x\n",macroH,macroL,infiH,infiL);
 	printk("Qtech IM219_OTP: af_macro=0x%x,af_infi=0x%x\n",af_macro,af_infi);
 
-	temp_AFInf = af_infi;
-	temp_AFMacro = af_macro;
+	temp_AFInf = af_infi-10; //modify by lvxiaoliang for add infi range
+	temp_AFMacro = af_macro + ((af_macro-af_infi)/5)+300; //modify by lvxiaoliang for macro 7cm
+	if (temp_AFMacro >1023)
+		temp_AFMacro=1023; //add by lvxiaoliang // af step 0~1023
+	printk("Qtech IM219_OTP: temp_AFMacro=0x%x,af_infi=0x%x\n",temp_AFMacro,af_infi);
 
 	return ret;
 }
@@ -291,13 +293,13 @@ static void IMX219_ApplyLSCAutoLoad(kal_uint16 table)
 static unsigned char get_otp_lsc(void)
 {
 	//LSC flag check
-	UBYTE pBasicInfoData[64] = {0};
+	UBYTE pBasicInfoData[10] = {0};
 	kal_uint16 LscFlag = 0;
 	kal_uint16 lscTable = 0;
 
 	kal_uint16 nLSCGroup = 0;
 
-#if 1
+#if 0
 	UBYTE pLSCInfoData[256] = {0};
 	kal_uint16 i;
 	kal_uint16 nLSCCheckSum;
@@ -305,15 +307,15 @@ static unsigned char get_otp_lsc(void)
 
 #endif  	  
  
-	IMX219_readpage(0,pBasicInfoData); 
+	IMX219_readpageLsc(0,pBasicInfoData); 
 
-	LscFlag = pBasicInfoData[63];
+	LscFlag = pBasicInfoData[0];
 	OTP_LOG("IM219_OTP:LscFlag=0x%x\n",LscFlag);
 	if((LscFlag & 0xc0) == 0x40)
 	{
 		nLSCGroup = 1;
 		lscTable = 0;
-	#if 1 
+	#if 0 
 		for (i = 2; i < 5; i++)  
 		{
 			IMX219_readpage(i, pLSCInfoData+ (i-2)*64);
@@ -324,7 +326,7 @@ static unsigned char get_otp_lsc(void)
 	{
 		nLSCGroup = 2;
 		lscTable = 2;
-	#if 1
+	#if 0
 		for (i = 7; i < 11; i++)  
 		{
 			IMX219_readpage(i, pLSCInfoData+ (i-7)*64);
@@ -338,14 +340,14 @@ static unsigned char get_otp_lsc(void)
 	}
 
 	printk("IM219_OTP:nLSCGroup = %d\n",nLSCGroup);
-#if 1
+#if 0
 	// LSC CheckSum
 	sum = 0;
 	//kal_uint16 i;
 	for(i=0+30*(nLSCGroup-1);i<175+30*(nLSCGroup-1);i++)
 	{
 		 sum += pLSCInfoData[i];
-	//	 printk("pLSCInfoData[%d] = %d,i = %d\n",i,pLSCInfoData[i],i);
+		 printk("pLSCInfoData[%d] = %d,i = %d\n",i,pLSCInfoData[i],i);
 	}
 	nLSCCheckSum = sum % 0xff + 1;
 
@@ -379,12 +381,14 @@ static unsigned char get_otp_wb(void)
 	unsigned char golden_Gb = 0;
 	kal_uint16 nWBFlag = 0;		//WB flag check
 	kal_uint16 nWBGroup = 0;
-	kal_uint16 nWBCheckSum;
-	kal_uint16 i;
-	kal_uint16 sum;
+//	int i = 0;
+
 	IMX219_readpage(1,pWBInfoData);
 	nWBFlag = pWBInfoData[0];
 	OTP_LOG("IM219_OTP:nWBFlag=0x%x\n",nWBFlag);
+//	for(i=0x3204;i<=0x3243;i++){
+//		printk("liuzhen:[%s]0x%x=0x%x\n",__FUNCTION__,i,pWBInfoData[i-0x3204]);
+//	}
 	if((nWBFlag & 0x30) == 0x10)//group2
 	{
 		nWBGroup = 2; 
@@ -492,9 +496,17 @@ static unsigned char get_otp_wb(void)
 	printk("IM219_OTP:nWBGroup = %d\n",nWBGroup);
 
 	temp_CalGain = (current_R&0x000000ff)|((current_B<<8)&0x0000ff00)|((current_Gr<<16)&0x00ff0000)|((current_Gb<<24)&0xff000000);
+
+	//add by liuzhen to custom Golden awb data
+	golden_R = 0x7d;
+	golden_B = 0x7b;
+	golden_Gr = 0xb9;
+	golden_Gb = 0xba;
+	//add end 
+
 	temp_FacGain = (golden_R&0x000000ff)|((golden_B<<8)&0x0000ff00)|((golden_Gr<<16)&0x00ff0000)|((golden_Gb<<24)&0xff000000);
 
-#if 1
+#if 0
 	//WB Data CheckSum
 	sum = 0;
 
