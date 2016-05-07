@@ -130,8 +130,8 @@ struct otp_struct
    int bg_ratio;
 
 };
-int RG_Ratio_Typical = 0x141;	//modify by liuzhen
-int BG_Ratio_Typical = 0x148;
+int RG_Ratio_Typical = 0x164;	//modify by liuzhen,original:0x141,lenovo.sw wangsx3 20160507change for new ov5695 golden
+int BG_Ratio_Typical = 0x13c;//original:0x148,lenovo.sw wangsx3 20160507change for new ov5695 golden
 //add end
 
 #endif 
