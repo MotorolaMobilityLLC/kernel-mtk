@@ -18,7 +18,8 @@
 ********************************************************************************
 */
 #define HIF_SDIO_UPDATE (1)
-#define HIF_SDIO_SUPPORT_SUSPEND (1)
+//lenovo-sw lumy1
+#define HIF_SDIO_SUPPORT_SUSPEND (0)
 #define HIF_SDIO_SUPPORT_WAKEUP (0)
 
 /*******************************************************************************
