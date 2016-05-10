@@ -25,6 +25,14 @@ struct SENSOR_DATA {
 	int z;
 };
 
+/*Lenovo-sw caoyi1 for proximity sensor cali 20140711 start*/
+typedef struct
+{
+    int close;
+    int far_away;
+    int valid;
+} HWMON_PS_STRUCT;
+/*Lenovo-sw caoyi1 for proximity sensor cali 20140711 end*/
 
 #define GSENSOR							0x85
 #define GSENSOR_IOCTL_INIT                  _IO(GSENSOR,  0x01)
@@ -93,6 +101,17 @@ struct SENSOR_DATA {
 #define MSENSOR_IOCTL_SENSOR_ENABLE         _IOW(MSENSOR, 0x51, int)
 #define MSENSOR_IOCTL_READ_FACTORY_SENSORDATA  _IOW(MSENSOR, 0x52, int)
 
+/*lenovo-sw caoyi1 add for Msensor  mxg2320 20150803 begin*/
+/* IOCTLs for MXG misc. device library */
+#define MSENSOR_IOCTL_GET_MFLAG                 _IOR(MSENSOR, 0x1e, int)
+#define	MSENSOR_IOCTL_GET_OFLAG                 _IOR(MSENSOR, 0x1f, int)
+#define MSENSOR_IOCTL_GET_OPEN_STATUS           _IOR(MSENSOR, 0x20, int)
+#define MSENSOR_IOCTL_GET_CLOSE_STATUS          _IOR(MSENSOR, 0x21, int)
+#define MSENSOR_IOCTL_READ                      _IOR(MSENSOR, 0x22, int)
+#define	MSENSOR_IOCTL_WRITE                     _IOR(MSENSOR, 0x23, int)
+#define	MSENSOR_IOCTL_SELF_TEST                 _IOR(MSENSOR, 0x24, int)
+#define MSENSOR_IOCTL_SNG_MEASURE               _IOR(MSENSOR, 0x25, int)
+/*lenovo-sw caoyi1 add for Msensor  mxg2320 20150803 end*/
 #ifdef CONFIG_COMPAT
 /*COMPACT IOCTL for 64bit kernel running 32bit daemon*/
 #define COMPAT_MSENSOR_IOCTL_INIT					_IO(MSENSOR, 0x01)
@@ -107,6 +126,17 @@ struct SENSOR_DATA {
 #define COMPAT_MSENSOR_IOCTL_SET_CALIDATA		    _IOW(MSENSOR, 0x0a, compat_int_t)
 #define COMPAT_MSENSOR_IOCTL_SENSOR_ENABLE          _IOW(MSENSOR, 0x51, compat_int_t)
 #define COMPAT_MSENSOR_IOCTL_READ_FACTORY_SENSORDATA  _IOW(MSENSOR, 0x52, compat_int_t)
+/*lenovo-sw caoyi1 add for Msensor  mxg2320 20150803 begin*/
+/* COMPAT IOCTLs for MXG misc. device library */
+#define COMPAT_MSENSOR_IOCTL_GET_MFLAG          _IOR(MSENSOR, 0x1e, compat_int_t)
+#define	COMPAT_MSENSOR_IOCTL_GET_OFLAG          _IOR(MSENSOR, 0x1f, compat_int_t)
+#define COMPAT_MSENSOR_IOCTL_GET_OPEN_STATUS    _IOR(MSENSOR, 0x20, compat_int_t)
+#define COMPAT_MSENSOR_IOCTL_GET_CLOSE_STATUS   _IOR(MSENSOR, 0x21, compat_int_t)
+#define COMPAT_MSENSOR_IOCTL_READ               _IOR(MSENSOR, 0x22, compat_int_t)
+#define	COMPAT_MSENSOR_IOCTL_WRITE              _IOR(MSENSOR, 0x23, compat_int_t)
+#define	COMPAT_MSENSOR_IOCTL_SELF_TEST          _IOR(MSENSOR, 0x24, compat_int_t)
+#define COMPAT_MSENSOR_IOCTL_SNG_MEASURE        _IOR(MSENSOR, 0x25, compat_int_t)
+/*lenovo-sw caoyi1 add for Msensor  mxg2320 20150803 end*/
 #endif
 
 /* IOCTLs for AKM library */
@@ -256,6 +286,13 @@ struct SENSOR_DATA {
 #define AAL_SET_ALS_MODE			_IOW(ALSPS, 0x14, int)
 #define AAL_GET_ALS_MODE			_IOR(ALSPS, 0x15, int)
 #define AAL_GET_ALS_DATA			_IOR(ALSPS, 0x16, int)
+/*Lenovo-sw caoyi1 for proximity sensor cali 20140711 start*/
+#define ALSPS_SET_PS_CALI           		_IOR(ALSPS, 0x17, HWMON_PS_STRUCT)
+#define ALSPS_GET_PS_RAW_DATA_FOR_CALI		 _IOR(ALSPS, 0x18, HWMON_PS_STRUCT)
+#define ALSPS_GET_PS_FAR_THRESHOLD					_IOR(ALSPS, 0x19, int)
+#define ALSPS_GET_PS_CLOSE_THRESHOLD					_IOR(ALSPS, 0x1A, int)
+#define ALSPS_GET_PS_AVERAGE					_IOR(ALSPS, 0x1B, int)
+/*Lenovo-sw caoyi1 for proximity sensor cali 20140711 end*/
 #ifdef CONFIG_COMPAT
 #define COMPAT_ALSPS_SET_PS_MODE				_IOW(ALSPS, 0x01, compat_int_t)
 #define COMPAT_ALSPS_GET_PS_MODE				_IOR(ALSPS, 0x02, compat_int_t)
