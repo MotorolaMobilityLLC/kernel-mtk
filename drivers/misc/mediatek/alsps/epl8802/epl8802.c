@@ -3426,7 +3426,6 @@ static int epl_sensor_read_data_for_cali(struct i2c_client *client, HWMON_PS_STR
 }
 #endif
 
-#if 0
 /*----------------------------------------------------------------------------*/
 static long epl_sensor_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 {
@@ -3439,8 +3438,8 @@ static long epl_sensor_unlocked_ioctl(struct file *file, unsigned int cmd, unsig
     bool enable_ps = test_bit(CMC_BIT_PS, &obj->enable) && atomic_read(&obj->ps_suspend)==0;
     bool enable_als = test_bit(CMC_BIT_ALS, &obj->enable) && atomic_read(&obj->als_suspend)==0;
 #if LENOVO_CALI
-    int ps_cali;
-    HWMON_PS_STRUCT ps_cali_temp;
+    //int ps_cali;
+    //HWMON_PS_STRUCT ps_cali_temp;
 #endif
     APS_LOG("%s cmd = 0x%04x", __FUNCTION__, cmd);
     switch (cmd)
@@ -3703,41 +3702,41 @@ static long epl_sensor_unlocked_ioctl(struct file *file, unsigned int cmd, unsig
 /*lenovo-sw caoyi1 modify for PS calibration begin*/
 #if LENOVO_CALI
             case ALSPS_SET_PS_CALI:
-        			if(copy_from_user(&ps_cali_temp, ptr, sizeof(ps_cali_temp)))
-        			{
-        				APS_LOG("copy_from_user\n");
-        				err = -EFAULT;
-        				break;
-        			}
-        			epl_sensor_WriteCalibration(obj, &ps_cali_temp);
-        			APS_LOG(" ALSPS_SET_PS_CALI %d,%d,%d\t",ps_cali_temp.close,ps_cali_temp.far_away,ps_cali_temp.valid);
+        			//if(copy_from_user(&ps_cali_temp, ptr, sizeof(ps_cali_temp)))
+        			//{
+        			//	APS_LOG("copy_from_user\n");
+        			//	err = -EFAULT;
+        			//	break;
+        			//}
+        			//epl_sensor_WriteCalibration(obj, &ps_cali_temp);
+        			//APS_LOG(" ALSPS_SET_PS_CALI %d,%d,%d\t",ps_cali_temp.close,ps_cali_temp.far_away,ps_cali_temp.valid);
         	break;
 
             case ALSPS_GET_PS_RAW_DATA_FOR_CALI:
         			{
 
-				cancel_delayed_work_sync(&obj->eint_work);
-				disable_irq(epl_sensor_obj->irq);
-        				err = epl_sensor_read_data_for_cali(obj->client,&ps_cali_temp);
-        				if(err < 0 ){
-        					goto err_out;
-        				}
-        				epl_sensor_WriteCalibration(obj, &ps_cali_temp);
-        				if(copy_to_user(ptr, &ps_cali_temp, sizeof(ps_cali_temp)))
-        				{
-        					err = -EFAULT;
-        					goto err_out;
-        				}
+				//cancel_delayed_work_sync(&obj->eint_work);
+				//disable_irq(epl_sensor_obj->irq);
+        				//err = epl_sensor_read_data_for_cali(obj->client,&ps_cali_temp);
+        				//if(err < 0 ){
+        				//	goto err_out;
+        				//}
+        				//epl_sensor_WriteCalibration(obj, &ps_cali_temp);
+        				//if(copy_to_user(ptr, &ps_cali_temp, sizeof(ps_cali_temp)))
+        				//{
+        				//	err = -EFAULT;
+        				//	goto err_out;
+        				//}
         			}
         	break;
 
             case ALSPS_GET_PS_AVERAGE:
-        			enable = epl_sensor_ps_average_val;
-        			if(copy_to_user(ptr, &enable, sizeof(enable)))
-        			{
-        				err = -EFAULT;
-        				goto err_out;
-        			}
+        			//enable = epl_sensor_ps_average_val;
+        			//if(copy_to_user(ptr, &enable, sizeof(enable)))
+        			//{
+        			//	err = -EFAULT;
+        			//	goto err_out;
+        			//}
         	break;
         			//lenovo-sw, shanghai, add by chenlj2, for geting ps average val, 2012-05-14 end
         			//lenovo-sw, shanghai, add by chenlj2, for AVAGO project, 2012-10-09 start
@@ -3771,7 +3770,6 @@ static long epl_sensor_unlocked_ioctl(struct file *file, unsigned int cmd, unsig
 err_out:
     return err;
 }
-#endif
 
 /*----------------------------------------------------------------------------*/
 static struct file_operations epl_sensor_fops =
@@ -3779,6 +3777,7 @@ static struct file_operations epl_sensor_fops =
     .owner = THIS_MODULE,
     .open = epl_sensor_open,
     .release = epl_sensor_release,
+    .unlocked_ioctl = epl_sensor_unlocked_ioctl,
 };
 
 
