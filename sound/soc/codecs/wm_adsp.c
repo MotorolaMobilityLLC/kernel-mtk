@@ -36,6 +36,11 @@
 
 #include "arizona.h"
 #include "wm_adsp.h"
+
+// #define BUF_CMP    //zhangrc2 add for check spi transmit
+#ifdef BUF_CMP
+#include <linux/string.h>
+#endif
 #define PWM_SPI_DEBUG
 
 #define adsp_crit(_dsp, fmt, ...) \
@@ -1528,6 +1533,17 @@ static int wm_adsp_write_blocks(struct wm_adsp *dsp, const u8 *data, size_t len,
 	struct wm_adsp_buf *buf;
 	int ret;
 
+	#ifdef BUF_CMP //kaka
+	char *eq  ;
+	int j,i;
+	struct wm_adsp_buf	*buf1;
+	const char *bufprint1;
+	const char *bufprint2;
+	struct regmap *regmap = dsp->regmap;
+	printk("kaka, in wm_dsp_load ++++++++++++++\n");
+	#endif
+
+
 	while (remain > 0) {
 		if (remain < PAGE_SIZE)
 			to_write = remain;
@@ -1537,6 +1553,18 @@ static int wm_adsp_write_blocks(struct wm_adsp *dsp, const u8 *data, size_t len,
 			adsp_err(dsp, "Out of memory\n");
 			return -ENOMEM;
 		}
+
+		#ifdef BUF_CMP//kaka
+			buf1 = wm_adsp_buf_alloc(data,
+							to_write,
+							list);
+			if (!buf1) {
+					adsp_err(dsp, "Out of memory\n");
+					ret = -ENOMEM;
+					goto out_buf;
+				}
+		#endif
+
 
 		ret = regmap_raw_write_async(dsp->regmap, reg,
 					     buf->buf, to_write);
@@ -1548,11 +1576,70 @@ static int wm_adsp_write_blocks(struct wm_adsp *dsp, const u8 *data, size_t len,
 			return ret;
 		}
 
+
+		#ifdef BUF_CMP//kaka
+				
+			ret = regmap_raw_read(regmap, reg, buf1->buf,
+											  to_write);
+			if (ret != 0) {
+				printk("alloc memory failed\n");
+			//	adsp_err(dsp,
+			//		"%s.%d: Failed to write %zd bytes at %d in %s: %d\n",
+			//		file, regions,
+			//		to_write, offset,
+			//		region_name, ret);
+				goto out_buf;
+			}
+			
+			bufprint1= buf->buf;
+			bufprint2= buf1->buf;
+			printk("arizona write:\n");
+			for(j=0;j<to_write;j++)
+				{
+                                        if(j==0)
+                                        {
+					  printk("arizona Reg write [%x]", reg);
+					} 
+					  printk("%x", bufprint1[j]);
+					  if((j>38) && ((j+1)%40==0))
+                                          { 
+						printk("\n");
+						printk("arizona Reg write [%x]", reg+j);
+					  }
+				}
+			printk("\n");
+			for(i=0;i<to_write;i++)
+				{
+					if(i==0)
+                                        {
+					  printk("arizona Reg read  [%x]", reg);
+					} 
+					  printk("%x", bufprint2[i]);
+					  if((i>38) && ((i+1)%40==0))
+                                          { 
+						printk("\n");
+						printk("arizona Reg read [%x]", reg+i);
+					  }
+				}
+			printk("\n");
+			ret= memcmp(buf->buf, buf1->buf, to_write);
+			if(ret==0)
+				eq="==";
+			else 
+				eq="!=";	
+			printk("arizona Reg spi firmware [write] buffer %s [read] buffer \n", eq);	
+		#endif
+
+
 		data += to_write;
 		reg += to_write / 2;
 		remain -= to_write;
 	}
 
+#ifdef BUF_CMP//kaka
+out_buf:
+	wm_adsp_buf_free(list);
+#endif	
 	return 0;
 }
 
@@ -1573,6 +1660,7 @@ static int wm_adsp_load(struct wm_adsp *dsp)
 #ifdef PWM_SPI_DEBUG
     u64 t0,t1;
 #endif
+
 	unsigned int reg;
 	int regions = 0;
 	int ret, offset, type, sizes;
