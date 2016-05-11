@@ -1,4 +1,7 @@
 [GPIO_variables]
+/*Lenovo-sw add for hwid begin*/
+GPIO_HARDWARE_ID0
+/*Lenovo-sw add for hwid end*/
 /*Lenovo-sw weimh1 add for A+G sensor eint pin 2016-3-30 begin*/
 GPIO_ACCEL_GYRO_INT1
 GPIO_ACCEL_GYRO_INT2
