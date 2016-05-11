@@ -166,6 +166,11 @@ static irqreturn_t arch_timer_handler_phys(int irq, void *dev_id)
 {
 	struct clock_event_device *evt = dev_id;
 
+#ifdef CONFIG_CPU_BOOST
+    extern void signal_thread_to_boost(void);
+
+    signal_thread_to_boost();
+#endif
 	return timer_handler(ARCH_TIMER_PHYS_ACCESS, evt);
 }
 

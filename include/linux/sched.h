@@ -177,6 +177,13 @@ extern unsigned long get_cpu_load(int cpu);
 extern void calc_global_load(unsigned long ticks);
 extern void update_cpu_load_nohz(void);
 
+struct migration_notify_data {
+    int src_cpu;
+    int dest_cpu;
+    int load; /* for future use */
+};
+extern struct atomic_notifier_head migration_notifier_head;
+
 extern unsigned long get_parent_ip(unsigned long addr);
 
 extern void dump_cpu_task(int cpu);

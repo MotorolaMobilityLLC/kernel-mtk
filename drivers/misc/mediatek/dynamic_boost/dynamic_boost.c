@@ -122,6 +122,10 @@ static int dboost_dvfs_hotplug_thread(void *ptr)
 {
 	int max_freq, cores_to_set_b, cores_to_set_l;
 	unsigned long flags;
+#ifdef CONFIG_CPU_BOOST
+    extern void set_boost_duration(unsigned int ms);
+    extern void set_freq_threshold(unsigned int freq);
+#endif
 
 	set_user_nice(current, -10);
 
@@ -147,6 +151,11 @@ static int dboost_dvfs_hotplug_thread(void *ptr)
 			cores_to_set_b = num_possible_big_cpus();
 			cores_to_set_l = num_possible_little_cpus();
 			max_freq = 0;
+#ifdef CONFIG_CPU_BOOST
+            set_boost_duration(20);
+            set_freq_threshold(1400000); 
+            printk("ready to enable boost feature\n");
+#endif      
 			break;
 		case PRIO_FOUR_BIGS_MAX_FREQ:
 			cores_to_set_b = 4;
@@ -225,6 +234,11 @@ static int dboost_dvfs_hotplug_thread(void *ptr)
 			cores_to_set_b = 0;
 			cores_to_set_l = 0;
 			max_freq = 0;
+#ifdef CONFIG_CPU_BOOST
+            set_boost_duration(0);
+            set_freq_threshold(0);
+            printk("finally reset cpu boost feature\n");
+#endif
 			break;
 		}
 
