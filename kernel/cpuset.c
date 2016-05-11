@@ -2045,6 +2045,14 @@ static void cpuset_bind(struct cgroup_subsys_state *root_css)
 	mutex_unlock(&cpuset_mutex);
 }
 
+
+static int cpuset_allow_attach(struct cgroup_subsys_state *css,
+        struct cgroup_taskset *tset)
+{
+    return subsys_cgroup_allow_attach(css, tset);
+}
+
+
 struct cgroup_subsys cpuset_cgrp_subsys = {
 	.css_alloc	= cpuset_css_alloc,
 	.css_online	= cpuset_css_online,
@@ -2053,6 +2061,7 @@ struct cgroup_subsys cpuset_cgrp_subsys = {
 	.can_attach	= cpuset_can_attach,
 	.cancel_attach	= cpuset_cancel_attach,
 	.attach		= cpuset_attach,
+    .allow_attach = cpuset_allow_attach,
 	.bind		= cpuset_bind,
 	.legacy_cftypes	= files,
 	.early_init	= 1,
