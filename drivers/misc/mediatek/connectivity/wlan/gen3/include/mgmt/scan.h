@@ -330,7 +330,7 @@
 							 */
 #define SCN_RM_POLICY_ENTIRE                BIT(4)	/* Remove entire SCAN result */
 
-#define SCN_BSS_DESC_SAME_SSID_THRESHOLD    3	/* This is used by POLICY SMART WEAKEST,
+#define SCN_BSS_DESC_SAME_SSID_THRESHOLD    20	/* This is used by POLICY SMART WEAKEST,
 						 * If exceed this value, remove weakest BSS_DESC_T
 						 * with same SSID first in large network.
 						 */
