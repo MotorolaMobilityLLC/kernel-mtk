@@ -2808,7 +2808,7 @@ bailout:
 
 	if (i4Status == WLAN_STATUS_SUCCESS) {
 		/* Init performance monitor structure */
-		kalPerMonInit(prGlueInfo);
+		//kalPerMonInit(prGlueInfo); lenovo-sw lumy1
 #if CFG_SUPPORT_AGPS_ASSIST
 		kalIndicateAgpsNotify(prAdapter, AGPS_EVENT_WLAN_ON, NULL, 0);
 #endif
