@@ -1397,7 +1397,7 @@ static int fts_report_value(struct ts_event *data)
 			/*
 			 *up
 			 */
-			dev_err(&fts_i2c_client->dev,"[fts] U  ID: %d ", data->au8_finger_id[i]);
+			//dev_err(&fts_i2c_client->dev,"[fts] U  ID: %d ", data->au8_finger_id[i]);
 			up_point++;
 			input_mt_report_slot_state(tpd->dev, MT_TOOL_FINGER, false);
 			data->touchs &= ~BIT(data->au8_finger_id[i]);
