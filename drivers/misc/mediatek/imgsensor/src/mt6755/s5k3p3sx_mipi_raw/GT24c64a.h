@@ -21,10 +21,10 @@
 #ifndef __EEPROM_H
 #define __EEPROM_H
 
-#define EEPROM_DEV_MAJOR_NUMBER 226
+#define CAM_CAL_DEV_MAJOR_NUMBER 226
 
 /* EEPROM READ/WRITE ID */
-#define GT24C64A_DEVICE_ID							0xA8
+#define GT24c64_DEVICE_ID							0xA0
 
 #endif /* __EEPROM_H */
 
