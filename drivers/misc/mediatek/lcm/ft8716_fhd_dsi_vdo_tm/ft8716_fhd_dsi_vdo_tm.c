@@ -221,7 +221,7 @@ struct LCM_setting_table {
 
 
 static struct LCM_setting_table lcm_backlight_level_setting[] = {
-    {0x51, 1, {0xFF}},
+    {0x51, 2, {0xFF,0x03}},
     {REGFLAG_END_OF_TABLE, 0x00, {}}
 };
 //lenovo wuwl10 20150604 add CUSTOM_LCM_FEATURE begin
@@ -260,7 +260,293 @@ static void init_lcm_registers(void)
 {
 
 	unsigned int data_array[16];
+//lenovo-sw wuwl10 add for pwm freq 10.9k  begin
+	data_array[0] = 0x00001500;//orise mode
+	dsi_set_cmdq(data_array, 1, 1);
+	data_array[0] = 0x00043902;
+	data_array[1] = 0x011687FF;
+	dsi_set_cmdq(data_array, 2, 1);
 
+	data_array[0] = 0x80001500;
+	dsi_set_cmdq(data_array, 1, 1);
+	data_array[0] = 0x00033902;
+	data_array[1] = 0x001687FF;
+	dsi_set_cmdq(data_array, 2, 1);
+//cabc begin
+	data_array[0] = 0x81001500;
+	dsi_set_cmdq(data_array, 1, 1);
+	data_array[0] = 0x000A2902;
+	data_array[1] = 0xDAFFE6CA;
+	data_array[2] = 0x00FFCCFF;
+	data_array[3] = 0x00000000;
+	dsi_set_cmdq(data_array, 4, 1);
+
+	data_array[0] = 0x00001500;
+	dsi_set_cmdq(data_array, 1, 1);
+	data_array[0] = 0x10C61500;
+	dsi_set_cmdq(data_array, 1, 1);
+
+	data_array[0] = 0x00001500;
+	dsi_set_cmdq(data_array, 1, 1);
+	data_array[0] = 0x00132902;
+	data_array[1] = 0xBCABB0C7;
+	data_array[2] = 0xAAAADC9B;
+	data_array[3] = 0xCABCDCCB;
+	data_array[4] = 0x13456788;
+	data_array[5] = 0x00111111;
+	dsi_set_cmdq(data_array, 6, 1);
+
+	data_array[0] = 0x00001500;
+	dsi_set_cmdq(data_array, 1, 1);
+	data_array[0] = 0x11C61500;
+	dsi_set_cmdq(data_array, 1, 1);
+
+	data_array[0] = 0x00001500;
+	dsi_set_cmdq(data_array, 1, 1);
+	data_array[0] = 0x00132902;
+	data_array[1] = 0xACABA0C7;
+	data_array[2] = 0xAAAADB9B;
+	data_array[3] = 0xBABCCBCA;
+	data_array[4] = 0x23456788;
+	data_array[5] = 0x00222222;
+	dsi_set_cmdq(data_array, 6, 1);
+
+	data_array[0] = 0x00001500;
+	dsi_set_cmdq(data_array, 1, 1);
+	data_array[0] = 0x12C61500;
+	dsi_set_cmdq(data_array, 1, 1);
+
+	data_array[0] = 0x00001500;
+	dsi_set_cmdq(data_array, 1, 1);
+	data_array[0] = 0x00132902;
+	data_array[1] = 0x9CAAA0C7;
+	data_array[2] = 0xA9AACB9B;
+	data_array[3] = 0xABBCBBAB;
+	data_array[4] = 0x34567888;
+	data_array[5] = 0x00222222;
+	dsi_set_cmdq(data_array, 6, 1);
+
+	data_array[0] = 0x00001500;
+	dsi_set_cmdq(data_array, 1, 1);
+	data_array[0] = 0x13C61500;
+	dsi_set_cmdq(data_array, 1, 1);
+
+	data_array[0] = 0x00001500;
+	dsi_set_cmdq(data_array, 1, 1);
+	data_array[0] = 0x00132902;
+	data_array[1] = 0x9BAAA0C7;
+	data_array[2] = 0x99AACA9B;
+	data_array[3] = 0xAACBBABA;
+	data_array[4] = 0x34567888;
+	data_array[5] = 0x00233333;
+	dsi_set_cmdq(data_array, 6, 1);
+
+	data_array[0] = 0x00001500;
+	dsi_set_cmdq(data_array, 1, 1);
+	data_array[0] = 0x14C61500;
+	dsi_set_cmdq(data_array, 1, 1);
+
+	data_array[0] = 0x00001500;
+	dsi_set_cmdq(data_array, 1, 1);
+	data_array[0] = 0x00132902;
+	data_array[1] = 0x9BAA90C7;
+	data_array[2] = 0x999ACA8B;
+	data_array[3] = 0xBABBBAAA;
+	data_array[4] = 0x34678888;
+	data_array[5] = 0x00333333;
+	dsi_set_cmdq(data_array, 6, 1);
+
+	data_array[0] = 0x00001500;
+	dsi_set_cmdq(data_array, 1, 1);
+	data_array[0] = 0x15C61500;
+	dsi_set_cmdq(data_array, 1, 1);
+
+	data_array[0] = 0x00001500;
+	dsi_set_cmdq(data_array, 1, 1);
+	data_array[0] = 0x00132902;
+	data_array[1] = 0x8B9A90C7;
+	data_array[2] = 0x98AAB99B;
+	data_array[3] = 0xBBAAAAAA;
+	data_array[4] = 0x45678888;
+	data_array[5] = 0x00333444;
+	dsi_set_cmdq(data_array, 6, 1);
+
+	data_array[0] = 0x00001500;
+	dsi_set_cmdq(data_array, 1, 1);
+	data_array[0] = 0x16C61500;
+	dsi_set_cmdq(data_array, 1, 1);
+
+	data_array[0] = 0x00001500;
+	dsi_set_cmdq(data_array, 1, 1);
+	data_array[0] = 0x00132902;
+	data_array[1] = 0x8A9A90C7;
+	data_array[2] = 0x9999C89B;
+	data_array[3] = 0xBAB9AAA9;
+	data_array[4] = 0x45688888;
+	data_array[5] = 0x00444444;
+	dsi_set_cmdq(data_array, 6, 1);
+
+	data_array[0] = 0x00001500;
+	dsi_set_cmdq(data_array, 1, 1);
+	data_array[0] = 0x17C61500;
+	dsi_set_cmdq(data_array, 1, 1);
+
+	data_array[0] = 0x00001500;
+	dsi_set_cmdq(data_array, 1, 1);
+	data_array[0] = 0x00132902;
+	data_array[1] = 0x9A9990C7;
+	data_array[2] = 0x98A9B98A;
+	data_array[3] = 0xBAA9A9B8;
+	data_array[4] = 0x56788888;
+	data_array[5] = 0x00444445;
+	dsi_set_cmdq(data_array, 6, 1);
+
+	data_array[0] = 0x00001500;
+	dsi_set_cmdq(data_array, 1, 1);
+	data_array[0] = 0x18C61500;
+	dsi_set_cmdq(data_array, 1, 1);
+
+	data_array[0] = 0x00001500;
+	dsi_set_cmdq(data_array, 1, 1);
+	data_array[0] = 0x00132902;
+	data_array[1] = 0x8A9990C7;
+	data_array[2] = 0x8999A98A;
+	data_array[3] = 0xAA9A9A99;
+	data_array[4] = 0x56788888;
+	data_array[5] = 0x00555555;
+	dsi_set_cmdq(data_array, 6, 1);
+
+	data_array[0] = 0x00001500;
+	dsi_set_cmdq(data_array, 1, 1);
+	data_array[0] = 0x19C61500;
+	dsi_set_cmdq(data_array, 1, 1);
+
+	data_array[0] = 0x00001500;
+	dsi_set_cmdq(data_array, 1, 1);
+	data_array[0] = 0x00132902;
+	data_array[1] = 0x8A9980C7;
+	data_array[2] = 0x88A9A88A;
+	data_array[3] = 0xA999A999;
+	data_array[4] = 0x67888888;
+	data_array[5] = 0x00555556;
+	dsi_set_cmdq(data_array, 6, 1);
+
+	data_array[0] = 0x00001500;
+	dsi_set_cmdq(data_array, 1, 1);
+	data_array[0] = 0x1AC61500;
+	dsi_set_cmdq(data_array, 1, 1);
+
+	data_array[0] = 0x00001500;
+	dsi_set_cmdq(data_array, 1, 1);
+	data_array[0] = 0x00132902;
+	data_array[1] = 0x999980C7;
+	data_array[2] = 0x8899A889;
+	data_array[3] = 0xA9999999;
+	data_array[4] = 0x67888888;
+	data_array[5] = 0x00556666;
+	dsi_set_cmdq(data_array, 6, 1);
+
+	data_array[0] = 0x00001500;
+	dsi_set_cmdq(data_array, 1, 1);
+	data_array[0] = 0x1BC61500;
+	dsi_set_cmdq(data_array, 1, 1);
+
+	data_array[0] = 0x00001500;
+	dsi_set_cmdq(data_array, 1, 1);
+	data_array[0] = 0x00132902;
+	data_array[1] = 0x998980C7;
+	data_array[2] = 0x89999889;
+	data_array[3] = 0x9A898998;
+	data_array[4] = 0x78888888;
+	data_array[5] = 0x00666666;
+	dsi_set_cmdq(data_array, 6, 1);
+
+	data_array[0] = 0x00001500;
+	dsi_set_cmdq(data_array, 1, 1);
+	data_array[0] = 0x1CC61500;
+	dsi_set_cmdq(data_array, 1, 1);
+
+	data_array[0] = 0x00001500;
+	dsi_set_cmdq(data_array, 1, 1);
+	data_array[0] = 0x00132902;
+	data_array[1] = 0x899880C7;
+	data_array[2] = 0x89899889;
+	data_array[3] = 0xA8989988;
+	data_array[4] = 0x78888888;
+	data_array[5] = 0x00666777;
+	dsi_set_cmdq(data_array, 6, 1);
+
+	data_array[0] = 0x00001500;
+	dsi_set_cmdq(data_array, 1, 1);
+	data_array[0] = 0x1DC61500;
+	dsi_set_cmdq(data_array, 1, 1);
+
+	data_array[0] = 0x00001500;
+	dsi_set_cmdq(data_array, 1, 1);
+	data_array[0] = 0x00132902;
+	data_array[1] = 0x898880C7;
+	data_array[2] = 0x88998889;
+	data_array[3] = 0xA8889898;
+	data_array[4] = 0x78888888;
+	data_array[5] = 0x00777777;
+	dsi_set_cmdq(data_array, 6, 1);
+
+	data_array[0] = 0x00001500;
+	dsi_set_cmdq(data_array, 1, 1);
+	data_array[0] = 0x1EC61500;
+	dsi_set_cmdq(data_array, 1, 1);
+
+	data_array[0] = 0x00001500;
+	dsi_set_cmdq(data_array, 1, 1);
+	data_array[0] = 0x00132902;
+	data_array[1] = 0x898880C7;
+	data_array[2] = 0x88898888;
+	data_array[3] = 0x88988988;
+	data_array[4] = 0x88888888;
+	data_array[5] = 0x00777888;
+	dsi_set_cmdq(data_array, 6, 1);
+
+	data_array[0] = 0x00001500;
+	dsi_set_cmdq(data_array, 1, 1);
+	data_array[0] = 0x1FC61500;
+	dsi_set_cmdq(data_array, 1, 1);
+
+	data_array[0] = 0x00001500;
+	dsi_set_cmdq(data_array, 1, 1);
+	data_array[0] = 0x00132902;
+	data_array[1] = 0x888880C7;
+	data_array[2] = 0x88898888;
+	data_array[3] = 0x98879888;
+	data_array[4] = 0x88888888;
+	data_array[5] = 0x00788888;
+	dsi_set_cmdq(data_array, 6, 1);
+
+	data_array[0] = 0x00001500;
+	dsi_set_cmdq(data_array, 1, 1);
+	data_array[0] = 0x00C61500;
+	dsi_set_cmdq(data_array, 1, 1);
+//cabc end
+	data_array[0] = 0xB0001500;
+	dsi_set_cmdq(data_array, 1, 1);
+	data_array[0] = 0x0CCA1500;//10.9k
+	dsi_set_cmdq(data_array, 1, 1);
+
+	data_array[0] = 0xB1001500;
+	dsi_set_cmdq(data_array, 1, 1);
+	data_array[0] = 0x0CCA1500;
+	dsi_set_cmdq(data_array, 1, 1);
+
+	data_array[0] = 0xB2001500;
+	dsi_set_cmdq(data_array, 1, 1);
+	data_array[0] = 0x02CA1500;
+	dsi_set_cmdq(data_array, 1, 1);
+
+	data_array[0] = 0xB0001500;
+	dsi_set_cmdq(data_array, 1, 1);
+	data_array[0] = 0x00043902;
+	data_array[1] = 0x040202CA;//10bit
+	dsi_set_cmdq(data_array, 2, 1);
+//lenovo-sw wuwl10 add for pwm freq 10.9k  end
 	data_array[0] = 0x00351500;
 	dsi_set_cmdq(data_array, 1, 1);
 
@@ -291,22 +577,29 @@ static void lcm_esd_recover_backlight(void)
 	printk("%s tm, level = %d\n", __func__, esd_last_backlight_level);
 
 	// Refresh value of backlight level.
-	lcm_backlight_level_setting[0].para_list[0] = esd_last_backlight_level;
+	lcm_backlight_level_setting[0].para_list[0] = (esd_last_backlight_level>>2) & 0xFF;
+	lcm_backlight_level_setting[0].para_list[1] = esd_last_backlight_level & 0x03;
 	push_table(lcm_backlight_level_setting, sizeof(lcm_backlight_level_setting) / sizeof(struct LCM_setting_table), 1);
 }
 #endif
 //lenovo-sw wuwl10 20150515 add for esd revovery backlight end
 static void lcm_setbacklight_cmdq(void *handle, unsigned int level)
 {
+	if((0 < level) && (level < 3))
+	{
+		level = 3;
+	}
+	level = level*16/5 + 8/10;
 #ifdef BUILD_LK
 	dprintf(0,"%s,lk ft8716 tm backlight: level = %d\n", __func__, level);
 #else
-	printk(KERN_INFO "%s, kernel ft8716 tm backlight: level = %d\n", __func__, level);
+	printk(KERN_INFO "%s, kernel ft8716 tm backlight: level = %d,0x%x,0x%x\n", __func__,level,((level>>2) & 0xFF), level & 0x03);
 //Lenovo-sw wuwl10 add 20150515 for esd recover backlight
 	esd_last_backlight_level = level;
 #endif
 	// Refresh value of backlight level.
-	lcm_backlight_level_setting[0].para_list[0] = level;
+	lcm_backlight_level_setting[0].para_list[0] = (level>>2) & 0xFF;
+	lcm_backlight_level_setting[0].para_list[1] = level & 0x03;
 	push_table(lcm_backlight_level_setting, sizeof(lcm_backlight_level_setting) / sizeof(struct LCM_setting_table), 1);
 }
 
@@ -348,18 +641,18 @@ static void lcm_get_params(LCM_PARAMS * params)
 	params->dsi.PS = LCM_PACKED_PS_24BIT_RGB888;
 
 	params->dsi.vertical_sync_active = 2;
-	params->dsi.vertical_backporch = 30;
-	params->dsi.vertical_frontporch = 20;
+	params->dsi.vertical_backporch = 16;
+	params->dsi.vertical_frontporch = 16;
 	params->dsi.vertical_active_line = FRAME_HEIGHT;
 
 	params->dsi.horizontal_sync_active = 4;
-	params->dsi.horizontal_backporch = 50;//wuwl10 modify for new param
-	params->dsi.horizontal_frontporch = 50;
+	params->dsi.horizontal_backporch = 32;//wuwl10 modify for new param
+	params->dsi.horizontal_frontporch = 32;
 	params->dsi.horizontal_active_pixel = FRAME_WIDTH;
 	//params->dsi.pll_select=1;     //0: MIPI_PLL; 1: LVDS_PLL
 	// Bit rate calculation
 	//1 Every lane speed
-	params->dsi.PLL_CLOCK = 460;//wuwl10 modify for new param
+	params->dsi.PLL_CLOCK = 430;//wuwl10 modify for new param
 	//params->dsi.clk_lp_per_line_enable= 1;
 	params->dsi.esd_check_enable = 1;
 	params->dsi.customization_esd_check_enable = 0;
@@ -376,17 +669,18 @@ static void lcm_init(void)
 	mt_set_gpio_mode_base(11, GPIO_MODE_00);
 	mt_set_gpio_dir_base(11, GPIO_DIR_OUT);
 	mt_set_gpio_out_base(11, GPIO_OUT_ONE);
-	MDELAY(1);
 	SET_RESET_PIN(0);
-	MDELAY(3);
+	MDELAY(2);
+	SET_RESET_PIN(1);
+	MDELAY(6);
 	
 	//set avdd enable
 	set_gpio_lcd_enp(1);
-	MDELAY(9);
+	MDELAY(6);
 	
 	//set avee enable
 	set_gpio_lcd_enn(1);
-	MDELAY(12);
+	MDELAY(6);
 
 #ifdef BUILD_LK
 	ret=TPS65132_write_byte(cmd,data);
@@ -419,13 +713,11 @@ static void lcm_init(void)
 		printk("[KERNEL]tps65132---cmd=%0x-- i2c write success-----\n",cmd);
 #endif
 
-	SET_RESET_PIN(1);
-	MDELAY(2);
 	SET_RESET_PIN(0);
-	MDELAY(3);
+	MDELAY(2);
 
 	SET_RESET_PIN(1);
-	MDELAY(9);
+	MDELAY(8);
 	//lcm init code
 	init_lcm_registers();
 
@@ -451,14 +743,14 @@ static void lcm_suspend(void)
 	
 	//set reset disable
 	SET_RESET_PIN(0);
-	MDELAY(1);
+	MDELAY(3);
 	//set avee enable
 	set_gpio_lcd_enn(0);
-	MDELAY(2);
+	MDELAY(1);
 
 	//set avdd disable
 	set_gpio_lcd_enp(0);
-	MDELAY(3);
+	MDELAY(4);
 
 }
 
@@ -540,7 +832,21 @@ static void lcm_set_cabcmode(void *handle,unsigned int mode)
 }
 #endif
 //lenovo wuwl10 20150604 add CUSTOM_LCM_FEATURE end
+#ifdef CONFIG_LENOVO_PANELMODE_SUPPORT
+static void lcm_set_hbm(void *handle,unsigned int mode)
+{
+	printk("%s, mode = %d\n", __func__, mode);
 
+	if( mode == 1){
+		lcm_backlight_level_setting[0].para_list[0] = (1023>>2) & 0xFF;
+		lcm_backlight_level_setting[0].para_list[1] = 1023 & 0x03;
+	} else{
+		lcm_backlight_level_setting[0].para_list[0] = (esd_last_backlight_level>>2) & 0xFF;
+		lcm_backlight_level_setting[0].para_list[1] = esd_last_backlight_level & 0x03;
+	}
+	push_table(lcm_backlight_level_setting, sizeof(lcm_backlight_level_setting) / sizeof(struct LCM_setting_table), 1);
+}
+#endif
 LCM_DRIVER ft8716_fhd_dsi_vdo_tm_lcm_drv = {
 	.name = "ft8716_fhd_dsi_vdo_tm",
 	.set_util_funcs = lcm_set_util_funcs,
@@ -559,6 +865,9 @@ LCM_DRIVER ft8716_fhd_dsi_vdo_tm_lcm_drv = {
 	.set_backlight_cmdq     = lcm_setbacklight_cmdq,
 #ifdef CONFIG_LENOVO_CUSTOM_LCM_FEATURE
 	.set_cabcmode = lcm_set_cabcmode,
+#endif
+#ifdef CONFIG_LENOVO_PANELMODE_SUPPORT
+	.set_hbm = lcm_set_hbm,
 #endif
 #if (LCM_DSI_CMD_MODE)
 	.update = lcm_update,
