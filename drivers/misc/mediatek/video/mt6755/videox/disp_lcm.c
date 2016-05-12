@@ -535,6 +535,31 @@ int disp_lcm_set_inverse(disp_lcm_handle *plcm, void *handle, unsigned int mode)
 
 #endif
 //lenovo wuwl10 20151013 add CUSTOM_LCM_FEATURE end
+//lenovo-sw wuwl10 20160426 add for moto new panel mode support begin
+#ifdef CONFIG_LENOVO_PANELMODE_SUPPORT
+int disp_lcm_set_hbm(disp_lcm_handle *plcm, void *handle, unsigned int mode)
+{
+	LCM_DRIVER *lcm_drv = NULL;
+	int ret = 0;
+
+	DISPFUNC();
+	if (_is_lcm_inited(plcm)) {
+		lcm_drv = plcm->drv;
+		if (lcm_drv->set_hbm) {
+			lcm_drv->set_hbm(handle, mode);
+		} else {
+			DISPERR("FATAL ERROR, lcm_drv->set_hbm is null\n");
+			ret = -1;
+		}
+	} else {
+		DISPERR("lcm_drv is null\n");
+		ret = -1;
+	}
+	return ret;
+}
+
+#endif
+//lenovo-sw wuwl10 20160426 add for moto new panel mode support begin
 
 int disp_lcm_ioctl(disp_lcm_handle *plcm, LCM_IOCTL ioctl, unsigned int arg)
 {

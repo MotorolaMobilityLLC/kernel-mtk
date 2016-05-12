@@ -382,6 +382,11 @@ static void process_dbg_opt(const char *opt)
 		char *p = (char *)opt + 4;
 		unsigned int level = (unsigned int) simple_strtoul(p, &p, 10);
 		primary_display_setbacklight(level);
+	}else if(0 == strncmp(opt, "hbm:", 4))
+	{
+		char *p = (char *)opt + 4;
+		unsigned int level = (unsigned int) simple_strtoul(p, &p, 10);
+		primary_display_sethbm(level);
 	}
 #endif
 //lenovo wuwl10 20160401 add CUSTOM_LCM_FEATURE end

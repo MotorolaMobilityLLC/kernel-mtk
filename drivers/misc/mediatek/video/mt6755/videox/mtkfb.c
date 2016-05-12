@@ -2649,6 +2649,14 @@ static ssize_t hbm_store(struct device *dev,
 {
 	ssize_t ret=0;
 	printk("wuwl10  to hbm_store \n");
+	return ret;
+	if (0 == strncmp(buf, "1", 1)) {
+		ret = primary_display_sethbm(1);
+	}else if (0 == strncmp(buf, "0", 1)) {
+		ret = primary_display_sethbm(0);
+	}else {
+		ret = primary_display_sethbm(0);
+	}
 
 	return ret ? ret : count;
 }
