@@ -184,15 +184,15 @@ static SENSOR_WINSIZE_INFO_STRUCT imgsensor_winsize_info[5] =
 //no mirror flip
 static SET_PD_BLOCK_INFO_T imgsensor_pd_info =
 {
-    .i4OffsetX = 0,
-    .i4OffsetY = 4,
+    .i4OffsetX = 3,
+    .i4OffsetY = 0,
     .i4PitchX  = 64,
     .i4PitchY  = 64,
     .i4PairNum  =16,
     .i4SubBlkW  =16,
     .i4SubBlkH  =16,
-.i4PosL = {{8,7},{60,7},{24,11},{44,11},{12,27},{56,27},{28,31},{40,31},{28,39},{40,39},{12,43},{56,43},{24,59},{44,59},{8,63},{60,63}},    
-.i4PosR = {{8,11},{60,11},{24,15},{44,15},{12,23},{56,23},{28,27},{40,27},{28,43},{40,43},{12,47},{56,47},{24,55},{44,55},{8,59},{60,59}},
+.i4PosL = {{3,4},{55,4},{19,8},{39,8},{7,16},{51,16},{23,20},{35,20},{23,36},{35,36},{7,40},{51,40},{19,48},{39,48},{3,52},{55,52}},    
+   .i4PosR = {{3,0},{55,0},{19,4},{39,4},{7,20},{51,20},{23,24},{35,24},{23,32},{35,32},{7,36},{51,36},{19,52},{39,52},{3,56},{55,56}},
 };
 
 extern int iReadReg(u16 a_u2Addr , u8 * a_puBuff , u16 i2cId);
@@ -529,6 +529,7 @@ write_cmos_sensor(0x021C,0x0200);
 write_cmos_sensor(0x3072,0x03C0);
 write_cmos_sensor(0x6028,0x4000);//TnP v150721
 write_cmos_sensor(0x0B08,0x0000);
+write_cmos_sensor(0xB0C8,0x0300);
 write_cmos_sensor(0x3058,0x0001);
 write_cmos_sensor(0x316C,0x0084);
 write_cmos_sensor(0x316E,0x1283);
@@ -829,6 +830,7 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 {
 	kal_uint8 i = 0;
 	kal_uint8 retry = 2;
+//	char data[1] = {0};
 	//sensor have two i2c address 0x6c 0x6d & 0x21 0x20, we should detect the module used i2c address
 	while (imgsensor_info.i2c_addr_table[i] != 0xff) {
 		spin_lock(&imgsensor_drv_lock);
@@ -843,6 +845,8 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 					imgsensor_info.sensor_output_dataformat = SENSOR_OUTPUT_FORMAT_RAW_RWB_Wr;
 					LOG_INF("RWB sensor of S5k3p3\n");
 				}
+				LOG_INF("shen 000 Read sensor id success, id: 0x%x\n", imgsensor.i2c_write_id);
+//	 read_3P3_eeprom(0,data,1);
 				return ERROR_NONE;
 			}
 			LOG_INF("Read sensor id fail, id: 0x%x\n", imgsensor.i2c_write_id);
@@ -856,6 +860,8 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 		*sensor_id = 0xFFFFFFFF;
 		return ERROR_SENSOR_CONNECT_FAIL;
 	}
+	LOG_INF("shen Read sensor id success, id: 0x%x\n", imgsensor.i2c_write_id);
+//	 read_3P3_eeprom(0,data,1);
 	return ERROR_NONE;
 }
 
