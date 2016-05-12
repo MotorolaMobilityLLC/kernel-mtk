@@ -818,6 +818,9 @@ typedef struct {
 //lenovo-sw wuwl10 add 201501029 for esd recover panel backlight begin
 	void (*esd_recover_backlight)(void);
 //lenovo-sw wuwl10 add 201501029 for esd recover panel backlight end
+#ifdef CONFIG_LENOVO_PANELMODE_SUPPORT
+	void (*set_hbm)(void *handle,unsigned int mode);
+#endif
 //lenovo wuwl10 20160401 add CUSTOM_LCM_FEATURE begin
 #ifdef CONFIG_LENOVO_CUSTOM_LCM_FEATURE
 	void (*set_cabcmode)(void *handle,unsigned int mode);

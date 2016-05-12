@@ -58,6 +58,9 @@ int disp_lcm_set_backlight(disp_lcm_handle *plcm, void *handle, int level);
 int disp_lcm_set_cabc(disp_lcm_handle *plcm, void *handle, unsigned int mode);
 int disp_lcm_set_inverse(disp_lcm_handle *plcm, void *handle, unsigned int mode);
 #endif
+#ifdef CONFIG_LENOVO_PANELMODE_SUPPORT
+int disp_lcm_set_hbm(disp_lcm_handle *plcm, void *handle, unsigned int mode);
+#endif
 //lenovo wuwl10 20160401 add CUSTOM_LCM_FEATURE end
 int disp_lcm_read_fb(disp_lcm_handle *plcm);
 int disp_lcm_ioctl(disp_lcm_handle *plcm, LCM_IOCTL ioctl, unsigned int arg);
