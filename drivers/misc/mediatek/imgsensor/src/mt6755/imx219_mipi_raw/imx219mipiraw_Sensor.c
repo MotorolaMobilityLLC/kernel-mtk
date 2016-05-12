@@ -1183,7 +1183,7 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 	}
 	otp_mid = get_otp_module_id();
 	printk("Q-tech:imx219 otp_mid = %d\n",otp_mid);
-	if(otp_mid == 0x06){
+	if(otp_mid == 0x07){
 		read_otp_info();
 		printk("Q-tech:imx219 read awb&af otp data\n");
 	}
