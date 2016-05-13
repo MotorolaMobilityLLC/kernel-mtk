@@ -830,6 +830,7 @@ static int ltr579_ps_enable(void)
 			//mt_eint_unmask(CUST_EINT_ALS_NUM);
 			
 			enable_irq(obj->irq);
+			APS_ERR("enable_irq\n");
 	
 		}
 	
@@ -882,7 +883,8 @@ static int ltr579_ps_disable(void)
 	{
 	    cancel_work_sync(&obj->eint_work);
 	    //mt_eint_mask(CUST_EINT_ALS_NUM);
-	    disable_irq_nosync(obj->irq);
+	    //disable_irq_nosync(obj->irq);
+	    APS_ERR("disable_irq_nosync skip\n");
 	}
 	
 	return error;
@@ -1075,6 +1077,7 @@ static irqreturn_t ltr579_eint_handler(int irq, void *desc)
 {
 	ltr579_eint_func();
 	disable_irq_nosync(ltr579_obj->irq);
+	APS_ERR("disable_irq_nosync\n");
 
 	return IRQ_HANDLED;
 }
@@ -1132,8 +1135,10 @@ int ltr579_setup_eint(struct i2c_client *client)
 			APS_ERR("IRQ LINE NOT AVAILABLE!!\n");
 			return -EINVAL;
 		}
-		disable_irq_nosync(ltr579_obj->irq);
+		//disable_irq_nosync(ltr579_obj->irq);
+		APS_ERR("disable_irq_nosync skip\n");
 		enable_irq(ltr579_obj->irq);
+		APS_ERR("enable_irq\n");
 	} else {
 		APS_ERR("null irq node!!\n");
 		return -EINVAL;
@@ -1488,6 +1493,7 @@ static void ltr579_eint_work(struct work_struct *work)
 	ltr579_clear_intr(obj->client);
   //  mt_eint_unmask(CUST_EINT_ALS_NUM);   
  	 enable_irq(obj->irq);
+  	APS_ERR("enable_irq\n");
 }
 
 
@@ -1720,7 +1726,7 @@ static int ltr579_i2c_suspend(struct i2c_client *client, pm_message_t msg)
 			APS_ERR("disable als: %d\n", err);
 			return err;
 		}
-
+#if 0
 		atomic_set(&obj->ps_suspend, 1);
 		err = ltr579_ps_disable();
 		if(err < 0)
@@ -1730,6 +1736,8 @@ static int ltr579_i2c_suspend(struct i2c_client *client, pm_message_t msg)
 		}
 		
 		ltr579_power(obj->hw, 0);
+
+#endif
 	}
 	return 0;
 }
@@ -1763,6 +1771,7 @@ static int ltr579_i2c_resume(struct i2c_client *client)
 		}
 	}
 	atomic_set(&obj->ps_suspend, 0);
+#if 0
 	if(test_bit(CMC_BIT_PS,  &obj->enable))
 	{
 		err = ltr579_ps_enable();
@@ -1771,6 +1780,7 @@ static int ltr579_i2c_resume(struct i2c_client *client)
 			APS_ERR("enable ps fail: %d\n", err);                
 		}
 	}
+#endif
 
 	return 0;
 }
