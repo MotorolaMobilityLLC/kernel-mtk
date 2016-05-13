@@ -116,19 +116,19 @@
 *******************************************************************************/
 static unsigned char CTPM_FW[] = 
 {
-	#include "FT8716_Pramboot_V0.2_20160127.i"
+	#include "Lenovo_Kungfu_EVT2_0a000001_20160513_app.i"
 };
 
 static unsigned char aucFW_PRAM_BOOT[] = 
 {
-	//#include "FT8716_Pramboot_V0.2_20160127.i"
+		#include "Lenovo_Kungfu_EVT2_0a000001_20160513_app.i"
 };
 
  struct fts_Upgrade_Info fts_updateinfo[] =
 {
 	{0x54,FTS_MAX_POINTS_5,AUTO_CLB_NONEED,2, 2, 0x54, 0x2c, 20, 2000},		//,"FT5x46"
-    {0x55,FTS_MAX_POINTS_5,AUTO_CLB_NEED,50, 30, 0x79, 0x03, 10, 2000},		//,"FT5x06"
-    {0x08,FTS_MAX_POINTS_5,AUTO_CLB_NEED,50, 10, 0x79, 0x06, 100, 2000},	//,"FT5606"
+   	 {0x55,FTS_MAX_POINTS_5,AUTO_CLB_NEED,50, 30, 0x79, 0x03, 10, 2000},		//,"FT5x06"
+    	{0x08,FTS_MAX_POINTS_5,AUTO_CLB_NEED,50, 10, 0x79, 0x06, 100, 2000},	//,"FT5606"
 	{0x0a,FTS_MAX_POINTS_5,AUTO_CLB_NEED,50, 30, 0x79, 0x07, 10, 1500},		//,"FT5x16"
 	{0x06,FTS_MAX_POINTS_2,AUTO_CLB_NONEED,100, 30, 0x79, 0x08, 10, 2000},	//,"FT6x06"
 	{0x36,FTS_MAX_POINTS_2,AUTO_CLB_NONEED,10, 10, 0x79, 0x18, 10, 2000},	//,"FT6x36"
@@ -2490,7 +2490,7 @@ int  fts_8716_writepram(struct i2c_client * client, u8* pbt_buf, u32 dw_lenth)
 	u8 bt_ecc;
 	int i_ret;
 
-	TPD_DEBUG("8716 dw_lenth= %d",dw_lenth);
+	dev_err(&client->dev,"8716 dw_lenth= %d",dw_lenth);
 	if(dw_lenth > 0x10000 || dw_lenth ==0)
 	{		
 		return -EIO;
@@ -2532,7 +2532,7 @@ int  fts_8716_writepram(struct i2c_client * client, u8* pbt_buf, u32 dw_lenth)
 		if ((reg_val[0] == 0x87
 			&& reg_val[1] == 0x16)) 
 		{
-			TPD_DEBUG("[FTS] Step 3: READ CTPM ID OK,ID1 = 0x%x,ID2 = 0x%x\n",
+			dev_err(&client->dev,"[FTS] Step 3: READ CTPM ID OK,ID1 = 0x%x,ID2 = 0x%x\n",
 				reg_val[0], reg_val[1]);
 			break;
 		} 
@@ -2550,7 +2550,7 @@ int  fts_8716_writepram(struct i2c_client * client, u8* pbt_buf, u32 dw_lenth)
 
 	/********* Step 4:write firmware(FW) to ctpm flash *********/
 	bt_ecc = 0;
-	TPD_DEBUG("Step 5:write firmware(FW) to ctpm flash\n");
+	dev_err(&client->dev,"Step 5:write firmware(FW) to ctpm flash\n");
 	
 	temp = 0;
 	packet_number = (dw_lenth) / FTS_PACKET_LENGTH;
@@ -2593,7 +2593,7 @@ int  fts_8716_writepram(struct i2c_client * client, u8* pbt_buf, u32 dw_lenth)
 	
 	/********* Step 5: read out checksum ***********************/
 	/* send the opration head */
-	TPD_DEBUG("Step 6: read out checksum\n");
+	dev_err(&client->dev,"Step 6: read out checksum\n");
 	auc_i2c_write_buf[0] = 0xcc;
 	msleep(2);
 	fts_i2c_read(client, auc_i2c_write_buf, 1, reg_val, 1);
@@ -2606,7 +2606,7 @@ int  fts_8716_writepram(struct i2c_client * client, u8* pbt_buf, u32 dw_lenth)
 	msleep(100);	
 
 	/********* Step 6: start app ***********************/
-	TPD_DEBUG("Step 6: start app\n");
+	dev_err(&client->dev,"Step 6: start app\n");
 	auc_i2c_write_buf[0] = 0x08;
 	fts_i2c_write(client, auc_i2c_write_buf, 1);
 	msleep(20);
@@ -2640,7 +2640,7 @@ int  fts_8716_ctpm_fw_upgrade(struct i2c_client * client, u8* pbt_buf, u32 dw_le
 	i_ret = hidi2c_to_stdi2c(client);
 	if(i_ret == 0)
 	{
-		TPD_DEBUG("[FTS] hid change to i2c fail ! \n");
+		dev_err(&client->dev,"[FTS] hid change to i2c fail ! \n");
 	}
 
 	auc_i2c_write_buf[0] = 0x05;
@@ -2676,7 +2676,7 @@ int  fts_8716_ctpm_fw_upgrade(struct i2c_client * client, u8* pbt_buf, u32 dw_le
 		i_ret = fts_i2c_write(client, auc_i2c_write_buf, 2);
 		if(i_ret < 0)
 		{
-			TPD_DEBUG("failed writing  0x55 and 0xaa ! \n");
+			dev_err(&client->dev,"failed writing  0x55 and 0xaa ! \n");
 			continue;
 		}
 
@@ -2691,7 +2691,7 @@ int  fts_8716_ctpm_fw_upgrade(struct i2c_client * client, u8* pbt_buf, u32 dw_le
 
 		if ((reg_val[0] == fts_updateinfo_curr.upgrade_id_1
 			&& reg_val[1] == fts_updateinfo_curr.upgrade_id_2)/*|| (reg_val[0] == 0x87 && reg_val[1] == 0xA6)*/) {
-				TPD_DEBUG("[FTS] Step 3: READ OK CTPM ID,ID1 = 0x%x,ID2 = 0x%x\n",
+				dev_err(&client->dev,"[FTS] Step 3: READ OK CTPM ID,ID1 = 0x%x,ID2 = 0x%x\n",
 					reg_val[0], reg_val[1]);
 				break;
 		} else {
@@ -2703,7 +2703,7 @@ int  fts_8716_ctpm_fw_upgrade(struct i2c_client * client, u8* pbt_buf, u32 dw_le
 	if (i >= FTS_UPGRADE_LOOP )
 		return -EIO;	
 	/* Step 4:erase app and panel paramenter area */
-	TPD_DEBUG("Step 4:erase app and panel paramenter area\n");
+	dev_err(&client->dev,"Step 4:erase app and panel paramenter area\n");
 	
 	{		
 		cmd[0] = 0x05;
@@ -2743,7 +2743,7 @@ int  fts_8716_ctpm_fw_upgrade(struct i2c_client * client, u8* pbt_buf, u32 dw_le
 	
 	/********* Step 5:write firmware(FW) to ctpm flash *********/	
 	bt_ecc = 0;
-	TPD_DEBUG("Step 5:write firmware(FW) to ctpm flash\n");
+	dev_err(&client->dev,"Step 5:write firmware(FW) to ctpm flash\n");
 
 	temp = 0;
 	packet_number = (dw_lenth) / FTS_PACKET_LENGTH;
@@ -2813,7 +2813,7 @@ int  fts_8716_ctpm_fw_upgrade(struct i2c_client * client, u8* pbt_buf, u32 dw_le
 
 	/********* Step 6: read out checksum ***********************/
 	/*send the opration head */
-	TPD_DEBUG("Step 6: read out checksum\n");
+	dev_err(&client->dev,"Step 6: read out checksum\n");
 	auc_i2c_write_buf[0] = 0x64;
 	fts_i2c_write(client, auc_i2c_write_buf, 1); 
 	msleep(300);
@@ -2833,7 +2833,7 @@ int  fts_8716_ctpm_fw_upgrade(struct i2c_client * client, u8* pbt_buf, u32 dw_le
 	else
 	{
 		temp = dw_lenth;
-		TPD_DEBUG("Step 6_1: read out checksum\n");
+		dev_err(&client->dev,"Step 6_1: read out checksum\n");
 	}
 	auc_i2c_write_buf[4] = (u8)(temp >> 8);
 	auc_i2c_write_buf[5] = (u8)(temp);
@@ -2892,7 +2892,7 @@ int  fts_8716_ctpm_fw_upgrade(struct i2c_client * client, u8* pbt_buf, u32 dw_le
 	}
 	printk(KERN_WARNING "checksum %X %X \n",reg_val[0],bt_ecc);       
 	/********* Step 7: reset the new FW ***********************/
-	TPD_DEBUG("Step 7: reset the new FW\n");
+	dev_err(&client->dev,"Step 7: reset the new FW\n");
 	auc_i2c_write_buf[0] = 0x07;
 	fts_i2c_write(client, auc_i2c_write_buf, 1);
 	msleep(200);  
@@ -3620,7 +3620,7 @@ int fts_ctpm_fw_upgrade_with_i_file(struct i2c_client *client)
 	
 		if (i_ret != 0)
 		{
-			dev_err(&client->dev, "%s:upgrade failed. err.\n",__func__);
+			dev_err(&client->dev, "%s:11 upgrade failed. err.\n",__func__);
 			return -EIO;
 		}	
 		
@@ -3798,29 +3798,29 @@ int fts_ctpm_auto_upgrade(struct i2c_client *client)
 	fts_read_reg(client, FTS_REG_FW_VER, &uc_tp_fm_ver);
 	fts_read_reg(client, FTS_REG_VENDOR_ID, &uc_tp_vendor_id);
 	printk("[FTS] uc_tp_fm_ver = 0x%x, uc_tp_vendor_id = 0x%x\n",uc_tp_fm_ver, uc_tp_vendor_id);
-
-	if((uc_tp_vendor_id != FTS_Vendor_1_ID) && (uc_tp_vendor_id != FTS_Vendor_2_ID))
-	{
-		uc_boot_vendor_id = ft5x46_ctpm_VidFWid_get_from_boot(client);
-		printk("[FTS] uc_boot_vendor_id= 0x%x!\n", uc_boot_vendor_id);
-		if((uc_boot_vendor_id == FTS_Vendor_1_ID)|| (uc_boot_vendor_id == FTS_Vendor_2_ID))
+	
+	if(FTS_CHIP_ID==0x54){
+		if((uc_tp_vendor_id != FTS_Vendor_1_ID) && (uc_tp_vendor_id != FTS_Vendor_2_ID))
 		{
-			uc_tp_fm_ver = 0;//force to upgrade the FW
-			uc_tp_vendor_id = uc_boot_vendor_id;
-		}
-		else
-		{
-			printk("[FTS] FW .i unmatched,stop upgrade\n");
-			return -EIO;//FW unmatched
+			uc_boot_vendor_id = ft5x46_ctpm_VidFWid_get_from_boot(client);
+			printk("[FTS] uc_boot_vendor_id= 0x%x!\n", uc_boot_vendor_id);
+			if((uc_boot_vendor_id == FTS_Vendor_1_ID)|| (uc_boot_vendor_id == FTS_Vendor_2_ID))
+			{
+				uc_tp_fm_ver = 0;//force to upgrade the FW
+				uc_tp_vendor_id = uc_boot_vendor_id;
+			}
+			else
+			{
+				printk("[FTS] FW .i unmatched,stop upgrade\n");
+				return -EIO;//FW unmatched
+			}
 		}
 	}
-
 	uc_host_fm_ver = fts_ctpm_get_i_file_ver();
 	printk("[FTS] uc_host_fm_ver = 0x%x\n",uc_host_fm_ver);
-	
-	if (uc_tp_fm_ver == FTS_REG_FW_VER ||	uc_tp_fm_ver < uc_host_fm_ver ) 
-	{
-	   
+	//(uc_tp_fm_ver !=0x01  ||uc_tp_fm_ver < uc_host_fm_ver ) 
+	if (uc_tp_fm_ver !=  uc_host_fm_ver ) 
+	{ 
 		msleep(100);
 		dev_dbg(&client->dev, "[FTS] uc_tp_fm_ver = 0x%x, uc_host_fm_ver = 0x%x\n",uc_tp_fm_ver, uc_host_fm_ver);
 		i_ret = fts_ctpm_fw_upgrade_with_i_file(client);

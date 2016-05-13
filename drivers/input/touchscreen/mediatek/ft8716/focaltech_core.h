@@ -303,9 +303,9 @@ typedef enum {
 #define MTK_EN 1
 //#define LENOVO_CTP_EAGE_LIMIT //add by lixh10 
 //#define FTS_INCALL_TOUCH_REJECTION
+
 //for tp esd check
- //#define GTP_ESD_PROTECT  1  //change by lixh10 
- #define FT_ESD_PROTECT 0
+ #define FT_ESD_PROTECT 1
  #define GTP_PROC_TPINFO
 
  

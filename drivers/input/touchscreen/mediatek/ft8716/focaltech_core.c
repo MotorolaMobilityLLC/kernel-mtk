@@ -518,6 +518,9 @@ static int fts_info_get(char *buf)
 	 	
 	dev_err(&fts_i2c_client->dev,"ahe [FTS] vendor = %02x \n", vendor);
 	switch (vendor){
+	case 0x0a:
+		vendor_id = "tianma";
+		break;
 	case 0x51:
 		vendor_id = "ofilm";
 		break;
@@ -537,7 +540,7 @@ static int fts_info_get(char *buf)
 		vendor_id = "unknown";
 	}
 	
-	data_len =  snprintf(buf, PAGE_SIZE, "fts - ic_version:%d;vendor_id:%s;fw_version:%d", ic_version, vendor_id, fw_version);
+	data_len =  snprintf(buf, PAGE_SIZE, "fts - ic_version:%d; vendor_id:%s; fw_version:%d", ic_version, vendor_id, fw_version);
 	return data_len;
 I2C_FAIL:
 	return retval;
@@ -1437,12 +1440,12 @@ static int fts_report_value(struct ts_event *data)
 			input_report_abs(tpd->dev, ABS_MT_POSITION_Y, data->au16_y[i]);
 			touchs |= BIT(data->au8_finger_id[i]);
 			data->touchs |= BIT(data->au8_finger_id[i]);
-			dev_err(&fts_i2c_client->dev,"[fts] D ID (%d ,%d, %d) ", data->au8_finger_id[i],data->au16_x[i],data->au16_y[i]);
+			//dev_err(&fts_i2c_client->dev,"[fts] D ID (%d ,%d, %d) ", data->au8_finger_id[i],data->au16_x[i],data->au16_y[i]);
 		} else {
 			/*
 			 *up
 			 */
-			dev_err(&fts_i2c_client->dev,"[fts] U  ID: %d ", data->au8_finger_id[i]);
+			//dev_err(&fts_i2c_client->dev,"[fts] U  ID: %d ", data->au8_finger_id[i]);
 			up_point++;
 			input_mt_report_slot_state(tpd->dev, MT_TOOL_FINGER, false);
 			data->touchs &= ~BIT(data->au8_finger_id[i]);
@@ -2157,7 +2160,7 @@ static void gtp_esd_check_func(struct work_struct *work)
 	int i;
 	int ret = -1;
 	u8 data;
-	u8 flag_error = 0;
+	//u8 flag_error = 0;
 	int reset_flag = 0;
 	/*
 	 *dev_err(&fts_i2c_client->dev,"fts esd polling ~~~~~");
@@ -2195,7 +2198,7 @@ static void gtp_esd_check_func(struct work_struct *work)
 		reset_flag = 1;
 		goto FOCAL_RESET_A3_REGISTER;
 	}
-
+#if 0
 	/*
 	 *esd check for count
 	 */
@@ -2206,7 +2209,7 @@ static void gtp_esd_check_func(struct work_struct *work)
 		 *return ret;
 		 */
 	}
-	dev_err(&fts_i2c_client->dev,"0x8F:%d, count_irq is %d\n", data, count_irq);
+	//dev_err(&fts_i2c_client->dev,"0x8F:%d, count_irq is %d\n", data, count_irq);
 
 	flag_error = 0;
 	if ((count_irq - data) > 10) {
@@ -2225,7 +2228,7 @@ static void gtp_esd_check_func(struct work_struct *work)
 		reset_flag = 1;
 		goto FOCAL_RESET_INT;
 	}
-
+#endif 
 	run_check_91_register = 1;
 	ret = fts_read_reg(fts_i2c_client, 0x91, &data);
 	if (ret < 0) {
@@ -2263,7 +2266,6 @@ static void gtp_esd_check_func(struct work_struct *work)
 			esd_check_circle = TPD_ESD_CHECK_CIRCLE;
 		}
 	}
-FOCAL_RESET_INT:
 FOCAL_RESET_A3_REGISTER:
 	count_irq = 0;
 	data = 0;
