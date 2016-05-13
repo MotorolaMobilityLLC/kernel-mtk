@@ -3788,15 +3788,6 @@ static int arizona_extcon_probe(struct platform_device *pdev)
 	pm_runtime_idle(&pdev->dev);
 	pm_runtime_get_sync(&pdev->dev);
 
-    /*add workaround soution here, the register can't write correctly */
-	regmap_write(arizona->regmap,ARIZONA_MIC_DETECT_LEVEL_1, 0x2b2b);
-	regmap_write(arizona->regmap,ARIZONA_MIC_DETECT_LEVEL_3, 0x3f3f);
-    regmap_write(arizona->regmap,ARIZONA_MIC_DETECT_LEVEL_4, 0x3b3f); 
-    /*Then need to write again for bypass cache*/
-	regmap_write(arizona->regmap,ARIZONA_MIC_DETECT_LEVEL_1, 0x3f3f);
-	regmap_write(arizona->regmap,ARIZONA_MIC_DETECT_LEVEL_3, 0x3b3f);
-    regmap_write(arizona->regmap,ARIZONA_MIC_DETECT_LEVEL_4, 0x1a32);
-    /*workaround end*/
 	switch (info->hpdet_ip_version) {
 	case 3:
 		arizona_hpdet_d_read_calibration(info);

@@ -804,7 +804,13 @@ static int arizona_runtime_resume(struct device *dev)
   /*workaroud solution temp for IRQ issue for cache issue that cause DSP IRQ report*/
 	regmap_write(arizona->regmap, ARIZONA_INTERRUPT_STATUS_2_MASK, 0x0FFE);
 	regmap_write(arizona->regmap, ARIZONA_INTERRUPT_STATUS_3_MASK, 0x0F8D);
- /*temp path solution*/
+	
+  /*Then need to write again for bypass cache that the registers will lost after shutdown*/
+	regmap_write(arizona->regmap,ARIZONA_MIC_DETECT_LEVEL_1, 0x3f3f);
+	regmap_write(arizona->regmap,ARIZONA_MIC_DETECT_LEVEL_3, 0x3b3f);
+    regmap_write(arizona->regmap,ARIZONA_MIC_DETECT_LEVEL_4, 0x1a32);
+	
+  /*temp path solution*/
 
   
 	dev_err(arizona->dev, "Leaving AoD mode complete\n");
@@ -873,6 +879,11 @@ static int arizona_runtime_suspend(struct device *dev)
  /*workaroud solution temp for IRQ issue for cache issue that cause DSP IRQ report*/
 	regmap_write(arizona->regmap, ARIZONA_INTERRUPT_STATUS_2_MASK, 0x0FFF);
 	regmap_write(arizona->regmap, ARIZONA_INTERRUPT_STATUS_3_MASK, 0xFFEF);
+
+ /*add workaround soution here, the register can't write correctly */
+	regmap_write(arizona->regmap,ARIZONA_MIC_DETECT_LEVEL_1, 0x2b2b);
+	regmap_write(arizona->regmap,ARIZONA_MIC_DETECT_LEVEL_3, 0x3f3f);
+    regmap_write(arizona->regmap,ARIZONA_MIC_DETECT_LEVEL_4, 0x3b3f);
  /*temp path solution*/
  
 	regcache_cache_only(arizona->regmap, true);
