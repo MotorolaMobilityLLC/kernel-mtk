@@ -12,6 +12,7 @@
 #include <linux/slab.h>
 #include <linux/fs.h>
 #include "kd_camera_hw.h"
+#include "kd_imgsensor.h"
 #include "cam_cal.h"
 #include "cam_cal_define.h"
 #include "s5k3m2_otp.h"
@@ -46,6 +47,8 @@
 #define BUFF_SIZE 8
 
 u8 LSCdatabuf[LSC_SIZE+2];
+
+static unsigned char save_MID = 0;  //add this to fix camera opening failed sometimes cause by eeprom read error,  but is shouldn't block camera open
 
 static int is_firstboot = 1;
 static DEFINE_SPINLOCK(g_CAM_CALLock); // for SMP
@@ -232,7 +235,7 @@ static int compat_put_cal_info_struct(
     compat_uptr_t p;
     compat_uint_t i;
     u32 err;
-
+ 
     err = get_user(i, (u32 *)&data->u4Offset);
     err |= put_user(i, (u32 *)&data32->u4Offset);
     err |= get_user(i, (u32 *)&data->u4Length);
@@ -275,34 +278,39 @@ static long s5k3m2_Ioctl_Compat(struct file *filp, unsigned int cmd, unsigned lo
     COMPAT_stCAM_CAL_INFO_STRUCT __user *data32;
     stCAM_CAL_INFO_STRUCT __user *data;
     int err;
-    CAM_CALDB("[CAMERA SENSOR] s5k3m2_Ioctl_Compat,%p %p %x ioc size %d\n",filp->f_op ,filp->f_op->unlocked_ioctl,cmd,_IOC_SIZE(cmd) );
+    CAM_CALDB("[S5K3M2_CAL] s5k3m2_Ioctl_Compat,%p %p %x ioc size %d\n",filp->f_op ,filp->f_op->unlocked_ioctl,cmd,_IOC_SIZE(cmd) );
 
 
-    if (!filp->f_op || !filp->f_op->unlocked_ioctl)
+    if (!filp->f_op || !filp->f_op->unlocked_ioctl){
+	CAM_CALDB("[S5K3M2_CAL ]s5k3m2_Ioctl_Compat ERROR:ENOTTY! ");	
         return -ENOTTY;
-
+    }
     switch (cmd) {
 
     case COMPAT_CAM_CALIOC_G_READ:
     {
         data32 = compat_ptr(arg);
         data = compat_alloc_user_space(sizeof(*data));
-        if (data == NULL)
+        if (data == NULL){
+	    CAM_CALDB("[S5K3M2_CAL ] compat_alloc_user_space  ERROR! ");
             return -EFAULT;
-
+        }
         err = compat_get_cal_info_struct(data32, data);
-        if (err)
+        if (err){
+	    CAM_CALDB("[S5K3M2_CAL ] compat_get_cal_info_struct  ERROR! ");
             return err;
-
+        }
         ret = filp->f_op->unlocked_ioctl(filp, CAM_CALIOC_G_READ,(unsigned long)data);
+	if(ret)
+		CAM_CALDB("[S5K3M2_CAL ] CAM_CALIOC_G_READ  ERROR! ");
         err = compat_put_cal_info_struct(data32, data);
 
-
         if(err != 0)
-            CAM_CALERR("[CAMERA SENSOR] compat_put_acdk_sensor_getinfo_struct failed\n");
+            CAM_CALERR("[S5K3M2_CAL] compat_put_acdk_sensor_getinfo_struct failed\n");
         return ret;
     }
     default:
+	CAM_CALERR("[S5K3M2_CAL] default :ENOIOCTLCMD\n");
         return -ENOIOCTLCMD;
     }
 }
@@ -323,13 +331,18 @@ unsigned char Read_MID_form_eeprom(void)
 {
 
 	unsigned char data[1];
-
-	if(!selective_read_eeprom(MID_ADDR, &data[0])){
-		return -1;
-	}else{
-		CAM_CALDB("[wuyt3]Read_MID_form_eeprom data[0]=%x\n", data[0]);
+	int retry =0;
+	CAM_CALDB("Read_MID_form_eeprom:save_MID = %d",save_MID);
+	if((save_MID != S5k3M2_OFILM_MID)||(save_MID != S5k3M2_SUNNY_MID)){
+		for(; retry<3; retry++){
+			if(selective_read_eeprom(MID_ADDR, &data[0])){
+				save_MID = data[0];
+				return save_MID;
+			}
+		}
 	}
-	return data[0];
+
+	return save_MID;
 }
 //end
 static int Read3M2AWBData(unsigned short ui4_offset, unsigned int  ui4_length, unsigned char * pinputdata)
