@@ -11,7 +11,7 @@ typedef struct{
 	u32 u4Offset;
 	u32 u4Length;
 	u32 *pu1Params;  //huangsh4 modify for calibration ioctl failed for k52/kungfu project	
-#endif
+
 	
 } stCAM_CAL_INFO_STRUCT, *stPCAM_CAL_INFO_STRUCT;
 
