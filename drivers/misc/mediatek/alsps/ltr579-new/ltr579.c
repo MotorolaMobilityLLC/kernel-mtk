@@ -845,6 +845,8 @@ static int ltr579_ps_enable(void)
 	    return error;
 		}
 	}
+
+	set_bit(CMC_BIT_PS, &obj->enable);
 	
 	APS_LOG("ltr579_ps_enable ...OK!\n");
 	
@@ -875,16 +877,18 @@ static int ltr579_ps_disable(void)
 	
 	error = ltr579_i2c_write_reg(LTR579_MAIN_CTRL, setctrl);  //sang
 	if(error<0)
-	    APS_LOG("ltr579_ps_disable ...ERROR\n");
- 	else
-        APS_LOG("ltr579_ps_disable ...OK\n");
+		APS_LOG("ltr579_ps_disable ...ERROR\n");
+	else {
+		clear_bit(CMC_BIT_PS, &obj->enable);
+		APS_LOG("ltr579_ps_disable ...OK\n");
+	}
 
 	if(0 == obj->hw->polling_mode_ps)
 	{
 	    cancel_work_sync(&obj->eint_work);
 	    //mt_eint_mask(CUST_EINT_ALS_NUM);
-	    //disable_irq_nosync(obj->irq);
-	    APS_ERR("disable_irq_nosync skip\n");
+	    disable_irq_nosync(obj->irq);
+	    APS_ERR("disable_irq_nosync\n");
 	}
 	
 	return error;
@@ -1135,8 +1139,8 @@ int ltr579_setup_eint(struct i2c_client *client)
 			APS_ERR("IRQ LINE NOT AVAILABLE!!\n");
 			return -EINVAL;
 		}
-		//disable_irq_nosync(ltr579_obj->irq);
-		APS_ERR("disable_irq_nosync skip\n");
+		disable_irq(ltr579_obj->irq);
+		APS_ERR("disable_irq\n");
 		enable_irq(ltr579_obj->irq);
 		APS_ERR("enable_irq\n");
 	} else {
@@ -1726,18 +1730,20 @@ static int ltr579_i2c_suspend(struct i2c_client *client, pm_message_t msg)
 			APS_ERR("disable als: %d\n", err);
 			return err;
 		}
-#if 0
 		atomic_set(&obj->ps_suspend, 1);
-		err = ltr579_ps_disable();
-		if(err < 0)
+
+		if(test_bit(CMC_BIT_PS,  &obj->enable))
 		{
-			APS_ERR("disable ps:  %d\n", err);
-			return err;
+			err = ltr579_ps_disable();
+			if(err < 0)
+			{
+				APS_ERR("disable ps:  %d\n", err);
+				return err;
+			}
 		}
 		
 		ltr579_power(obj->hw, 0);
 
-#endif
 	}
 	return 0;
 }
@@ -1770,8 +1776,8 @@ static int ltr579_i2c_resume(struct i2c_client *client)
 			APS_ERR("enable als fail: %d\n", err);        
 		}
 	}
+
 	atomic_set(&obj->ps_suspend, 0);
-#if 0
 	if(test_bit(CMC_BIT_PS,  &obj->enable))
 	{
 		err = ltr579_ps_enable();
@@ -1780,7 +1786,6 @@ static int ltr579_i2c_resume(struct i2c_client *client)
 			APS_ERR("enable ps fail: %d\n", err);                
 		}
 	}
-#endif
 
 	return 0;
 }
