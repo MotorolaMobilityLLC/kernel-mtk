@@ -38,7 +38,14 @@
 #define PK_DBG_NONE(fmt, arg...)    do {} while (0)
 #define PK_DBG_FUNC(fmt, arg...)    pr_err(PFX fmt, ##arg)
 #define DEBUG_CAMERA_HW_K
+
+/*K52 AF power*/
+#ifndef CAMERA_HW_Kungfu
+#define CONTROL_AF_POWER 1
+#else
 #define CONTROL_AF_POWER 0
+#endif
+
 #ifdef DEBUG_CAMERA_HW_K
 #define PK_DBG PK_DBG_FUNC
 #define PK_ERR(fmt, arg...)         pr_err(fmt, ##arg)
