@@ -749,7 +749,7 @@ static int  fts_enter_gesture(void)
 	ret = fts_write_reg(fts_i2c_client, 0xd0, 0x01);
 	if (ret < 0)
 		dev_err(&fts_i2c_client->dev, "[fts][ahe] enter gesture write  fail 0xd0:  ");
-	if (fts_updateinfo_curr.CHIP_ID == 0x54 || fts_updateinfo_curr.CHIP_ID == 0x58) {
+	if (fts_updateinfo_curr.CHIP_ID == 0x87 ) {
 		ret = fts_write_reg(fts_i2c_client, 0xd1, 0x33);
 		if (ret < 0)
 			dev_err(&fts_i2c_client->dev, "[fts][ahe] enter gesture write  fail 0xd1:  ");

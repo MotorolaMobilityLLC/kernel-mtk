@@ -187,7 +187,7 @@
 #define AUTO_CLB_NONEED                         		0
 #define LEN_FLASH_ECC_MAX 					0xFFFE
 
-#define FTS_PACKET_LENGTH        				128
+#define FTS_PACKET_LENGTH        				120
 #define FTS_DRV_VERSION	              		"drv: MTK_2.3_20150122  \n"
 
 
