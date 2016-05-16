@@ -13,9 +13,12 @@
 
 
 #include "step_counter.h"
+#include <generated/autoconf.h>
 
 /* step counter sensor interrupt mode support -- modified by liaoxl.lenovo 7.12.2015 start  */
+#ifndef CONFIG_MTK_BMI120_NEW
 #define STEP_COUNTER_INT_MODE_SUPPORT
+#endif
 /* step counter sensor interrupt mode support -- modified by liaoxl.lenovo 7.12.2015 end */
 
 static struct step_c_context *step_c_context_obj = NULL;
