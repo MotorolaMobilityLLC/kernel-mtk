@@ -94,8 +94,8 @@
 #define FTS_REG_ID			0xA3
 #define FTS_REG_FW_VENDOR_ID 0xA8
 
-#define FTS_PACKET_LENGTH      	128
-#define FTS_SETTING_BUF_LEN      	128
+#define FTS_PACKET_LENGTH             120//lixh 10  128 
+#define FTS_SETTING_BUF_LEN      	 128
 
 #define FTS_UPGRADE_LOOP		30
 #define FTS_MAX_POINTS_2                        		2
@@ -121,7 +121,7 @@ static unsigned char CTPM_FW[] =
 
 static unsigned char aucFW_PRAM_BOOT[] = 
 {
-		#include "Lenovo_Kungfu_EVT2_0a000001_20160513_app.i"
+		#include "pramboot_20160516_app.i"
 };
 
  struct fts_Upgrade_Info fts_updateinfo[] =
