@@ -1632,9 +1632,6 @@ static int __init mt_spi_probe(struct platform_device *pdev)
 		dev_err(&pdev->dev, "spi_register_master fails.\n");
 		goto out_free;
 	} else {
-		/* lenovo-sw, chenzz3, TEEI-P1, begin */
-		enable_clk(ms);
-		/* lenovo-sw, chenzz3, TEEI-P1, end */
 		SPI_DBG("spi register master success.\n");
 		/* reg_val = spi_readl ( ms, SPI_CMD_REG ); */
 		/* reg_val &= SPI_CMD_RST_MASK; */
