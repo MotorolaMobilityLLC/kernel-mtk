@@ -20,7 +20,7 @@
 #define HIF_SDIO_UPDATE (1)
 //lenovo-sw lumy1
 #define HIF_SDIO_SUPPORT_SUSPEND (0)
-#define HIF_SDIO_SUPPORT_WAKEUP (0)
+#define HIF_SDIO_SUPPORT_WAKEUP (1)
 
 /*******************************************************************************
 *                    E X T E R N A L   R E F E R E N C E S
