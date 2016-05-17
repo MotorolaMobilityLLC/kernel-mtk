@@ -69,7 +69,7 @@ static bool _read_3P3_eeprom(kal_uint16 addr, BYTE* data, kal_uint32 size ){
 bool read_3P3_eeprom( kal_uint16 addr, BYTE* data, kal_uint32 size){
 	int i;
 	addr = 0x0779;
-	size = 1404;
+//	size = 1404;
 	//BYTE header[9]= {0};
 	//_read_3P3_eeprom(0x0000, header, 9);
 
@@ -105,7 +105,7 @@ bool read_3P3_eeprom( kal_uint16 addr, BYTE* data, kal_uint32 size){
 	{
 		LOG_INF("data[%d] = %d\n", i, data[i]);
 	}
-	memcpy(data, s5k3P3_eeprom_data, size);
+	//memcpy(data, s5k3P3_eeprom_data, size); //huangsh4 make pdaf buffer correct
     return true;
 }
 
