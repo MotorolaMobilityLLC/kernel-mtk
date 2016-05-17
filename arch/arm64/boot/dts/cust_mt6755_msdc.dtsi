@@ -53,6 +53,7 @@
 	sd-uhs-sdr25;
 	sd-uhs-sdr50;
 	sd-uhs-sdr104;
+	keep-power-in-suspend;/*lenovo-sw lumy1*/
 	sd-uhs-ddr50;
 	non-removable;
 	pinctl = <&mmc2_pins_default>;
