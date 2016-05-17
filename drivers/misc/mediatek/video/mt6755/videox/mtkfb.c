@@ -2649,7 +2649,7 @@ static ssize_t hbm_store(struct device *dev,
 {
 	ssize_t ret=0;
 	printk("wuwl10  to hbm_store \n");
-	return ret;
+
 	if (0 == strncmp(buf, "1", 1)) {
 		ret = primary_display_sethbm(1);
 	}else if (0 == strncmp(buf, "0", 1)) {
@@ -2700,11 +2700,17 @@ static struct device_attribute param_attrs[PARAM_ID_NUM] = {
 	__ATTR(cabc_mode, S_IWUSR | S_IWGRP | S_IRUSR | S_IRGRP,
 		cabc_show, cabc_store),
 };
-
+static bool mtkfb_panel_param_is_supported(int i)
+{
+	return primary_display_panel_param_is_supported(i);
+}
 static int mtkfb_create_param_sysfs(struct mtkfb_device *fbdev)
 {
 	int i,rc = 0;
+
 	for (i = 0; i < PARAM_ID_NUM; i++) {
+		if (!mtkfb_panel_param_is_supported(i))
+			continue;
 		rc = device_create_file(fbdev->dev, &param_attrs[i]);
 		if (rc) {
 			pr_err("failed to create sysfs for panel param id %d \n",i);

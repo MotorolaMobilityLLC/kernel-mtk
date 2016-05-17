@@ -5541,6 +5541,11 @@ int primary_display_sethbm(unsigned int mode)
 	MMProfileLogEx(ddp_mmp_get_events()->primary_set_bl, MMProfileFlagEnd, 0, 0);
 	return ret;
 }
+
+bool primary_display_panel_param_is_supported(int id)
+{
+	return disp_lcm_param_is_supported(pgc->plcm,id);
+}
 #endif
 
 int _set_lcm_cmd_by_cmdq(unsigned int *lcm_cmd, unsigned int *lcm_count, unsigned int *lcm_value)

@@ -59,6 +59,7 @@ int disp_lcm_set_cabc(disp_lcm_handle *plcm, void *handle, unsigned int mode);
 int disp_lcm_set_inverse(disp_lcm_handle *plcm, void *handle, unsigned int mode);
 #endif
 #ifdef CONFIG_LENOVO_PANELMODE_SUPPORT
+bool disp_lcm_param_is_supported(disp_lcm_handle *plcm, int id);
 int disp_lcm_set_hbm(disp_lcm_handle *plcm, void *handle, unsigned int mode);
 #endif
 //lenovo wuwl10 20160401 add CUSTOM_LCM_FEATURE end
