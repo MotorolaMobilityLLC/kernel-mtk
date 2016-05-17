@@ -263,13 +263,13 @@ static void init_lcm_registers(void)
 //lenovo-sw wuwl10 add for pwm freq 10.9k  begin
 	data_array[0] = 0x00001500;//orise mode
 	dsi_set_cmdq(data_array, 1, 1);
-	data_array[0] = 0x00043902;
+	data_array[0] = 0x00042902;
 	data_array[1] = 0x011687FF;
 	dsi_set_cmdq(data_array, 2, 1);
 
 	data_array[0] = 0x80001500;
 	dsi_set_cmdq(data_array, 1, 1);
-	data_array[0] = 0x00033902;
+	data_array[0] = 0x00032902;
 	data_array[1] = 0x001687FF;
 	dsi_set_cmdq(data_array, 2, 1);
 //cabc begin
@@ -543,7 +543,7 @@ static void init_lcm_registers(void)
 
 	data_array[0] = 0xB0001500;
 	dsi_set_cmdq(data_array, 1, 1);
-	data_array[0] = 0x00043902;
+	data_array[0] = 0x00042902;
 	data_array[1] = 0x040202CA;//10bit
 	dsi_set_cmdq(data_array, 2, 1);
 //lenovo-sw wuwl10 add for pwm freq 10.9k  end
@@ -556,8 +556,12 @@ static void init_lcm_registers(void)
 	data_array[0] = 0x24531500;
 	dsi_set_cmdq(data_array, 1, 1);
 
-	data_array[0] = 0x02551500;
+	data_array[0] = 0x01551500;
 	dsi_set_cmdq(data_array, 1, 1);
+
+	data_array[0] = 0x00022902;
+	data_array[1] = 0x00030A5E;////min cabc 10
+	dsi_set_cmdq(data_array, 2, 1);
 
 	data_array[0] = 0x00110500;
 	dsi_set_cmdq(data_array, 1, 1);

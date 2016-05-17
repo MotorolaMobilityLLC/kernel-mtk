@@ -557,7 +557,40 @@ int disp_lcm_set_hbm(disp_lcm_handle *plcm, void *handle, unsigned int mode)
 	}
 	return ret;
 }
+bool disp_lcm_param_is_supported(disp_lcm_handle *plcm, int id)
+{
+	LCM_DRIVER *lcm_drv = NULL;
 
+	DISPFUNC();
+	if (_is_lcm_inited(plcm)) {
+		lcm_drv = plcm->drv;
+	} else {
+		DISPERR("lcm_drv is null\n");
+		return false;
+	}
+
+	switch (id) {
+	case PARAM_HBM_ID:
+		if (lcm_drv->set_hbm) {
+			return true;
+		} else {
+			printk("lcm_drv->set_hbm is null,HBM not supprot!\n");
+			return false;
+		}
+	case PARAM_CABC_ID:
+		if (lcm_drv->set_cabcmode) {
+			return true;
+		} else {
+			printk("lcm_drv->set_cabcmode is null,CABC not supprot!\n");
+			return false;
+		}
+	default:
+		printk("unknown lcm param type\n");
+		break;
+	}
+
+	return false;
+}
 #endif
 //lenovo-sw wuwl10 20160426 add for moto new panel mode support begin
 

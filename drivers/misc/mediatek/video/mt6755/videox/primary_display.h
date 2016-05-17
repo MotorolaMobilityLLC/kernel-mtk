@@ -250,6 +250,7 @@ int primary_display_setinverse(unsigned int mode);
 #endif
 //lenovo wuwl10 20160401 add CUSTOM_LCM_FEATURE end
 #ifdef CONFIG_LENOVO_PANELMODE_SUPPORT
+bool primary_display_panel_param_is_supported(int id);
 int primary_display_sethbm(unsigned int mode);
 #endif
 int primary_display_pause(PRIMARY_DISPLAY_CALLBACK callback, unsigned int user_data);
