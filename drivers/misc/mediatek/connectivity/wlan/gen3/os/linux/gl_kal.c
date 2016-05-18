@@ -5719,7 +5719,7 @@ VOID kalPerMonHandler(IN P_ADAPTER_T prAdapter, ULONG ulParam)
 		prPerMonitor->u4TarPerfLevel = 2;
 	else
 		prPerMonitor->u4TarPerfLevel = 3;
-	if (prPerMonitor->u4TarPerfLevel != prPerMonitor->u4CurrPerfLevel) {
+	if (prPerMonitor->u4TarPerfLevel != prPerMonitor->u4CurrPerfLevel  || prPerMonitor->ulThroughput == 0) {//lenovo-sw lumy1
 		if (0 == prPerMonitor->u4TarPerfLevel) {
 			/*cancel CPU performance mode request*/
 			kalPerMonStop(prGlueInfo);
