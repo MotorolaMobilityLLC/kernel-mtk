@@ -120,6 +120,15 @@ void kpd_pmic_rstkey_handler(unsigned long pressed)
 {}
 #endif
 
+/* add by lixh10 for touchpanel usb detect 2016-05-19 start */
+#define  TP_USB_DETECT 
+
+#ifdef  TP_USB_DETECT
+extern kal_bool upmu_is_chr_det(void);
+extern  int  fts_usb_insert( bool status );
+#endif 
+/* add by lixh10 for touchpanel usb detect 2016-05-19 end  */
+
 /*****************************************************************************
  * interrupt Setting
  ******************************************************************************/
@@ -302,6 +311,12 @@ void chrdet_int_handler(void)
 		}
 	}
 #endif
+/* add by lixh10 for touchpanel usb detect 2016-05-19 start */
+#ifdef  TP_USB_DETECT
+	  fts_usb_insert( (bool) upmu_is_chr_det() );
+#endif 
+/* add by lixh10 for touchpanel usb detect 2016-05-19 end */
+
 	pmic_set_register_value(PMIC_RG_USBDL_RST, 1);
 #if defined(CONFIG_MTK_SMART_BATTERY)
 	do_chrdet_int_task();
