@@ -32,7 +32,6 @@
 
 #define GN_MTK_BSP_PS_DYNAMIC_CALI
 #define POWER_NONE_MACRO MT65XX_POWER_NONE
-#define CUST_EINT_ALS_TYPE 8
 
 /******************************************************************************
  * configuration
@@ -43,23 +42,23 @@
 
 /*----------------------------------------------------------------------------*/
 #define APS_TAG                  "[ALS/PS] "
-#define APS_FUN(f)               pr_err(APS_TAG"%s\n", __func__)
+#define APS_FUN(f)               pr_debug(APS_TAG"%s\n", __func__)
 #define APS_ERR(fmt, args...)    pr_err(APS_TAG"%s %d : "fmt, __func__, __LINE__, ##args)
-#define APS_LOG(fmt, args...)    pr_err(APS_TAG fmt, ##args)
-#define APS_DBG(fmt, args...)    pr_err(APS_TAG fmt, ##args)
+#define APS_LOG(fmt, args...)    pr_info(APS_TAG fmt, ##args)
+#define APS_DBG(fmt, args...)    pr_debug(APS_TAG fmt, ##args)
 
 /*----------------------------------------------------------------------------*/
 
 static struct i2c_client *ltr579_i2c_client = NULL;
 static int isadjust=0;
 static int dynamic_cali = 2047;
-#define MTK_AUTO_DETECT_ALSPS
+
 /*---------------------CONFIG_OF START------------------*/
 
 struct alsps_hw alsps_cust;
 static struct alsps_hw *hw = &alsps_cust;
 struct platform_device *alspsPltFmDev;
-
+static unsigned long long int_top_time;
 /* For alsp driver get cust info */
 struct alsps_hw *get_cust_alsps(void)
 {
@@ -620,31 +619,37 @@ static int ltr579_dynamic_calibrate(void)
 	noise = data_total/(5 - j);
 
 	if(noise < (dynamic_cali + 200))
-		{
+	{
 				dynamic_cali = noise;
 				isadjust = 1;
 				
-				if(noise < 100){
-						atomic_set(&obj->ps_thd_val_high,  noise+80);
-						atomic_set(&obj->ps_thd_val_low, noise+35);
+				if(noise < 21){
+						atomic_set(&obj->ps_thd_val_high,  noise+56);
+						atomic_set(&obj->ps_thd_val_low, noise+28);
+				}else if(noise < 24){
+						atomic_set(&obj->ps_thd_val_high,  noise+69);
+						atomic_set(&obj->ps_thd_val_low, noise+33);
+				}else if(noise < 100){
+						atomic_set(&obj->ps_thd_val_high,  noise+77);
+						atomic_set(&obj->ps_thd_val_low, noise+37);
 				}else if(noise < 200){
-						atomic_set(&obj->ps_thd_val_high,  noise+95);
-						atomic_set(&obj->ps_thd_val_low, noise+60);
+						atomic_set(&obj->ps_thd_val_high,  noise+87);
+						atomic_set(&obj->ps_thd_val_low, noise+47);
 				}else if(noise < 300){
-						atomic_set(&obj->ps_thd_val_high,  noise+125);
-						atomic_set(&obj->ps_thd_val_low, noise+80);
+						atomic_set(&obj->ps_thd_val_high,  noise+97);
+						atomic_set(&obj->ps_thd_val_low, noise+57);
 				}else if(noise < 400){
-						atomic_set(&obj->ps_thd_val_high,  noise+155);
-						atomic_set(&obj->ps_thd_val_low, noise+110);
+						atomic_set(&obj->ps_thd_val_high,  noise+107);
+						atomic_set(&obj->ps_thd_val_low, noise+67);
 				}else if(noise < 600){
-						atomic_set(&obj->ps_thd_val_high,  noise+175);
-						atomic_set(&obj->ps_thd_val_low, noise+130);
+						atomic_set(&obj->ps_thd_val_high,  noise+117);
+						atomic_set(&obj->ps_thd_val_low, noise+77);
 				}else if(noise < 800){
-					atomic_set(&obj->ps_thd_val_high,  noise+185);
-					atomic_set(&obj->ps_thd_val_low, noise+150);	
+					atomic_set(&obj->ps_thd_val_high,  noise+127);
+					atomic_set(&obj->ps_thd_val_low, noise+87);
 				}else if(noise < 1000){
-						atomic_set(&obj->ps_thd_val_high,  noise+200);
-						atomic_set(&obj->ps_thd_val_low, noise+100);
+						atomic_set(&obj->ps_thd_val_high,  noise+137);
+						atomic_set(&obj->ps_thd_val_low, noise+97);
 				}else{
 						atomic_set(&obj->ps_thd_val_high,  1200);
 						atomic_set(&obj->ps_thd_val_low, 1150);
@@ -654,12 +659,10 @@ static int ltr579_dynamic_calibrate(void)
 
 		}
 	
-	//
-	
 	ps_thd_val_low = atomic_read(&obj->ps_thd_val_low);
 	ps_thd_val_high = atomic_read(&obj->ps_thd_val_high);
-	printk(" ltr579_dynamic_calibrate end:noise=%d, obj->ps_thd_val_low= %d , obj->ps_thd_val_high = %d\n", noise, ps_thd_val_low, ps_thd_val_high);
-	///
+	printk(" ltr579_dynamic_calibrate end:noise=%d, dynamic_cali = %d, isadjust= %d,  obj->ps_thd_val_low= %d , obj->ps_thd_val_high = %d\n",
+		noise, dynamic_cali, isadjust, ps_thd_val_low, ps_thd_val_high);
 
 	return 0;
 err:
@@ -680,7 +683,7 @@ static int ltr579_ps_set_thres(void)
 	
 	
 		
-		APS_DBG("ps_cali.valid: %d\n", ps_cali.valid);
+	APS_LOG("ps_cali.valid: %d\n", ps_cali.valid);
 	if(1 == ps_cali.valid)
 	{
 		databuf[0] = LTR579_PS_THRES_LOW_0; 
@@ -830,7 +833,7 @@ static int ltr579_ps_enable(void)
 			//mt_eint_unmask(CUST_EINT_ALS_NUM);
 			
 			enable_irq(obj->irq);
-			APS_ERR("enable_irq\n");
+			APS_LOG("enable_irq\n");
 	
 		}
 	
@@ -841,7 +844,7 @@ static int ltr579_ps_enable(void)
 		error = ltr579_i2c_write_reg(LTR579_MAIN_CTRL, setctrl); 
 		if(error<0)
 		{
-	    APS_LOG("ltr579_ps_enable() error1\n");
+	    APS_ERR("ltr579_ps_enable() error1\n");
 	    return error;
 		}
 	}
@@ -870,10 +873,9 @@ static int ltr579_ps_disable(void)
 	int setctrl;
 	
 	setctrl = ltr579_i2c_read_reg(LTR579_MAIN_CTRL);
-	if((setctrl & 0x01) == 1)
-	{
-		setctrl = setctrl & 0xFE; 	
-	}
+	
+	setctrl = setctrl & 0xFE; 	
+	
 	
 	error = ltr579_i2c_write_reg(LTR579_MAIN_CTRL, setctrl);  //sang
 	if(error<0)
@@ -888,7 +890,7 @@ static int ltr579_ps_disable(void)
 	    cancel_work_sync(&obj->eint_work);
 	    //mt_eint_mask(CUST_EINT_ALS_NUM);
 	    disable_irq_nosync(obj->irq);
-	    APS_ERR("disable_irq_nosync\n");
+	    APS_LOG("disable_irq_nosync\n");
 	}
 	
 	return error;
@@ -918,7 +920,7 @@ static int ltr579_ps_read(void)
 	
 	psdata = ((psval_hi & 7)* 256) + psval_lo;
     //psdata = ((psval_hi&0x7)<<8) + psval_lo;
-    APS_DBG("ps_rawdata = %d\n", psdata);
+    APS_LOG("ps_rawdata = %d\n", psdata);
     
 	out:
 	final_prox_val = psdata;
@@ -1032,13 +1034,13 @@ static int ltr579_als_read(int gainrange)
 	
 	luxdata_int = alsval;//*8/gainrange/10;//formula: ALS counts * 0.8/gain/int , int=1
 	
-	APS_DBG("als_value_lux = %d\n", luxdata_int);
+	APS_LOG("als_value_lux = %d\n", luxdata_int);
 	return luxdata_int;
 
 	
 err:
 	final_lux_val = luxdata_int;
-	APS_DBG("err als_value_lux = 0x%x\n", luxdata_int);
+	APS_ERR("err als_value_lux = 0x%x\n", luxdata_int);
 	return luxdata_int;
 }
 
@@ -1063,25 +1065,27 @@ void ltr579_eint_func(void)
 {
 	struct ltr579_priv *obj = ltr579_obj;
 	APS_FUN();
-	printk("[ALS/PS]: int !!\n");
+	APS_LOG("[ALS/PS]: eint func START!!\n");
 
 	
 	if(!obj)
 	{
 		return;
 	}
-	
+
+	int_top_time = sched_clock();
 	schedule_work(&obj->eint_work);
+	APS_LOG("[ALS/PS]: eint func END !!\n");
 	//schedule_delayed_work(&obj->eint_work);
-	//disable_irq_nosync(obj->irq);
 }
 
 #if defined(CONFIG_OF)
 static irqreturn_t ltr579_eint_handler(int irq, void *desc)
 {
+	APS_LOG("ltr579_eint_handler!!\n");
 	ltr579_eint_func();
 	disable_irq_nosync(ltr579_obj->irq);
-	APS_ERR("disable_irq_nosync\n");
+	APS_LOG("disable_irq_nosync\n");
 
 	return IRQ_HANDLED;
 }
@@ -1140,9 +1144,9 @@ int ltr579_setup_eint(struct i2c_client *client)
 			return -EINVAL;
 		}
 		disable_irq(ltr579_obj->irq);
-		APS_ERR("disable_irq\n");
+		APS_LOG("disable_irq\n");
 		enable_irq(ltr579_obj->irq);
-		APS_ERR("enable_irq\n");
+		APS_LOG("enable_irq\n");
 	} else {
 		APS_ERR("null irq node!!\n");
 		return -EINVAL;
@@ -1160,15 +1164,85 @@ static void ltr579_power(struct alsps_hw *hw, unsigned int on)
 
 /*----------------------------------------------------------------------------*/
 /*for interrup work mode support -- by liaoxl.lenovo 12.08.2011*/
+static int ltr579_check_and_clear_intr(struct i2c_client *client) 
+{
+		int res,intp,intl;
+		u8 buffer[2];	
+		u8 temp;
+
+		APS_ERR("ltr579_check_and_clear_intr\n");
+		//if (mt_get_gpio_in(GPIO_ALS_EINT_PIN) == 1) /*skip if no interrupt*/	
+		//	  return 0;
+	
+		buffer[0] = LTR579_MAIN_STATUS;
+		res = i2c_master_send(client, buffer, 0x1);
+		if(res <= 0)
+		{
+			goto EXIT_ERR;
+		}
+		res = i2c_master_recv(client, buffer, 0x1);
+		if(res <= 0)
+		{
+			goto EXIT_ERR;
+		}
+		temp = buffer[0];
+		res = 1;
+		intp = 0;
+		intl = 0;
+		if(0 != (buffer[0] & 0x02))
+		{
+			res = 0;
+			intp = 1;
+		}
+		if(0 != (buffer[0] & 0x10))
+		{
+			res = 0;
+			intl = 1;		
+		}
+	
+		if(0 == res)
+		{
+			if((1 == intp) && (0 == intl))
+			{
+				buffer[1] = buffer[0] & 0xfD;
+				
+			}
+			else if((0 == intp) && (1 == intl))
+			{
+				buffer[1] = buffer[0] & 0xEF;
+			}
+			else
+			{
+				buffer[1] = buffer[0] & 0xED;
+			}
+			buffer[0] = LTR579_MAIN_STATUS;
+			res = i2c_master_send(client, buffer, 0x2);
+			if(res <= 0)
+			{
+				goto EXIT_ERR;
+			}
+			else
+			{
+				res = 0;
+			}
+		}
+	
+		return res;
+	
+	EXIT_ERR:
+		APS_ERR("ltr579_check_and_clear_intr fail\n");
+		return 1;
+
+}
+/*----------------------------------------------------------------------------*/
+
 
 static int ltr579_check_intr(struct i2c_client *client) 
 {
 	int res,intp,intl;
 	u8 buffer[2];
-	APS_FUN();
 
-	
-
+	APS_ERR("ltr579_check_intr\n");
 	//if (mt_get_gpio_in(GPIO_ALS_EINT_PIN) == 1) /*skip if no interrupt*/  
 	//    return 0;
 
@@ -1186,6 +1260,7 @@ static int ltr579_check_intr(struct i2c_client *client)
 	res = 1;
 	intp = 0;
 	intl = 0;
+/*
 	if(0 != (buffer[0] & 0x02))
 	{
 		res = 0;
@@ -1196,53 +1271,29 @@ static int ltr579_check_intr(struct i2c_client *client)
 		res = 0;
 		intl = 1;		
 	}
+*/
+	APS_ERR("ltr579_check_intr:buffer[0] = %x\n", buffer[0]);
+	if(0 != (buffer[0] & 0x02))
+	{
+		res = 0; //Ps int
+		intp = 1;
+	}
+	if(0 != (buffer[0] & 0x10))
+	{
+		res = 2; //ALS int
+		intl = 1;		
+	}
+	if(0x0A == (buffer[0] & 0x12))
+	{
+		res = 4; //ALS & PS int
+		intl = 1;		
+	}
 
+	APS_ERR("ltr579_check_intr:res = %d\n", res);
 	return res;
 
 EXIT_ERR:
 	APS_ERR("ltr579_check_intr fail\n");
-	return 1;
-}
-
-static int ltr579_clear_intr(struct i2c_client *client) 
-{
-	int res;
-	u8 buffer[2];
-
-	APS_FUN();
-	
-	buffer[0] = LTR579_MAIN_STATUS;
-	res = i2c_master_send(client, buffer, 0x1);
-	if(res <= 0)
-	{
-		goto EXIT_ERR;
-	}
-	res = i2c_master_recv(client, buffer, 0x1);
-	if(res <= 0)
-	{
-		goto EXIT_ERR;
-	}
-	APS_DBG("buffer[0] = %d \n",buffer[0]);
-
-#if 0	
-	buffer[1] = buffer[0] & 0x01;
-	buffer[0] = LTR579_MAIN_STATUS;
-
-	res = i2c_master_send(client, buffer, 0x2);
-	if(res <= 0)
-	{
-		goto EXIT_ERR;
-	}
-	else
-	{
-		res = 0;
-	}
-#endif
-
-	return res;
-
-EXIT_ERR:
-	APS_ERR("ltr579_check_and_clear_intr fail\n");
 	return 1;
 }
 
@@ -1258,34 +1309,41 @@ static int ltr579_devinit(void)
 	struct i2c_client *client = ltr579_obj->client;
 
 	//struct ltr579_priv *obj = ltr579_obj;   
+	APS_ERR("ltr579_devinit\n");
 	
 	mdelay(PON_DELAY);
 
 	// Enable PS at startup
 
-	
+	/*
 	res = ltr579_ps_enable();
 	if (res < 0)
 		goto EXIT_ERR;
-
+*/
 
 	// Enable ALS to Full Range at startup
-	init_als_gain = ALS_RANGE_6;
+	//init_als_gain = ALS_RANGE_3;
+	init_als_gain = ALS_RANGE_18;
 	als_gainrange = init_als_gain;//Set global variable
-
+/*
 	res = ltr579_als_enable(init_als_gain);
 	if (res < 0)
 		goto EXIT_ERR;
-
+*/
 	if((res = ltr579_setup_eint(client))!=0)
 	{
 		APS_ERR("setup eint: %d\n", res);
 		return res;
 	}
+	
+	if((res = ltr579_check_and_clear_intr(client)))
+	{
+		APS_ERR("check/clear intr: %d\n", res);
+		//    return res;
+	}
 
 	res = 0;
 
-	EXIT_ERR:
 	APS_ERR("init dev: %d\n", res);
 	return res;
 
@@ -1405,11 +1463,46 @@ static int ltr579_get_ps_value(void)
 static void ltr579_eint_work(struct work_struct *work)
 {
 	struct ltr579_priv *obj = (struct ltr579_priv *)container_of(work, struct ltr579_priv, eint_work);
-	int err;
-	struct hwm_sensor_data sensor_data;
-	int ps_value;
-	int noise;
+	int res = 0;
+	int ps_value = -1;
 
+	APS_ERR("ltr579_eint_work\n");
+
+	APS_LOG("ltr579 int top half time = %lld\n", int_top_time);
+	res = ltr579_check_intr(obj->client);
+	if (res <  0) {
+		goto EXIT_INTR_ERR;
+	}
+	else if(res==2)
+	{
+		APS_ERR("get sensor als data !\n");
+	}
+	else if(res==0||res==4)
+	{
+		obj->ps = ltr579_ps_read();
+    		if(obj->ps < 0)
+    		{
+    			res = -1;
+    			return;
+    		}
+				
+		APS_DBG("ltr579_eint_work rawdata ps=%d als_ch0=%d!\n",obj->ps,obj->als);
+		ps_value = ltr579_get_ps_value();
+		APS_DBG("intr_flag_value=%d\n",intr_flag_value);
+		res = ps_report_interrupt_data(ps_value);
+	}
+	enable_irq(obj->irq);
+	return;
+ EXIT_INTR_ERR:
+	enable_irq(obj->irq);
+	APS_ERR("ltr579_eint_work err: %d\n", res);
+#if 0
+	hwm_sensor_data sensor_data;
+//	u8 buffer[1];
+//	u8 reg_value[1];
+	u8 databuf[2];
+	int res = 0;
+	int ps_value;
 	APS_FUN();
 	printk("[ALS/PS] ltr579_eint_work\n");
 	err = ltr579_check_intr(obj->client);
@@ -1426,7 +1519,6 @@ static void ltr579_eint_work(struct work_struct *work)
     		err = -1;
     		return;
     	}
-
 		//clear ps interrupt
 		obj->ps = ltr579_ps_read();
     	if(obj->ps < 0)
@@ -1434,46 +1526,6 @@ static void ltr579_eint_work(struct work_struct *work)
     		err = -1;
     		return;
     	}
-
-		noise = obj->ps;
-		if(ps_value == 1){
-			if(noise < (dynamic_cali - 100)){
-					dynamic_cali = noise;
-					isadjust = 1;
-					if(noise < 100){
-							atomic_set(&obj->ps_thd_val_high,  noise+80);
-							atomic_set(&obj->ps_thd_val_low, noise+35);
-					}else if(noise < 200){
-							atomic_set(&obj->ps_thd_val_high,  noise+95);
-							atomic_set(&obj->ps_thd_val_low, noise+60);
-					}else if(noise < 300){
-							atomic_set(&obj->ps_thd_val_high,  noise+125);
-							atomic_set(&obj->ps_thd_val_low, noise+85);
-					}else if(noise < 400){
-							atomic_set(&obj->ps_thd_val_high,  noise+155);
-							atomic_set(&obj->ps_thd_val_low, noise+110);
-					}else if(noise < 600){
-							atomic_set(&obj->ps_thd_val_high,  noise+175);
-							atomic_set(&obj->ps_thd_val_low, noise+130);
-					}else if(noise < 800){
-						atomic_set(&obj->ps_thd_val_high,  noise+185);
-						atomic_set(&obj->ps_thd_val_low, noise+150);	
-					}else if(noise < 1000){
-							atomic_set(&obj->ps_thd_val_high,  noise+200);
-							atomic_set(&obj->ps_thd_val_low, noise+100);
-					}else{
-							atomic_set(&obj->ps_thd_val_high,  1200);
-							atomic_set(&obj->ps_thd_val_low, 1150);
-							isadjust = 0;
-						printk( "ltr579 the proximity ps_raw_data \n");
-					}
-					
-					ltr579_ps_set_thres();
-			
-				}
-
-
-		}
 				
 		APS_DBG("ltr579_eint_work rawdata ps=%d als=%d!\n",obj->ps,obj->als);
 		sensor_data.values[0] = ps_value;
@@ -1481,23 +1533,16 @@ static void ltr579_eint_work(struct work_struct *work)
 		sensor_data.status = SENSOR_STATUS_ACCURACY_MEDIUM;			
 /*singal interrupt function add*/
 		APS_DBG("intr_flag_value=%d\n",intr_flag_value);
-		/*-------------------modified by hongguang@wecorp---------------------------------
+		
 		//let up layer to know
 		if((err = hwmsen_get_interrupt_data(ID_PROXIMITY, &sensor_data)))
 		{
 		  APS_ERR("call hwmsen_get_interrupt_data fail = %d\n", err);
 		}
-		------------------------------------------------------*/
-		/*-------------------modified by hongguang@wecorp-------------------------------*/
-		if(ps_report_interrupt_data(sensor_data.values[0]))
-		{	
-			APS_ERR("call ps_report_interrupt_data fail\n");
-		} 
 	}
 	ltr579_clear_intr(obj->client);
-  //  mt_eint_unmask(CUST_EINT_ALS_NUM);   
- 	 enable_irq(obj->irq);
-  	APS_ERR("enable_irq\n");
+    mt_eint_unmask(CUST_EINT_ALS_NUM);       
+#endif
 }
 
 
@@ -2003,21 +2048,11 @@ int ltr579_als_operate(void* self, uint32_t command, void* buff_in, int size_in,
 }
 
 
-/*----------------------------------------------------------------------------*/
-
-static int ltr579_i2c_detect(struct i2c_client *client, struct i2c_board_info *info) 
-{    
-	strcpy(info->type, LTR579_DEV_NAME);
-	return 0;
-}
-
 static int als_open_report_data(int open)
 {
-	//should queuq work to report event if  is_report_input_direct=true
+	APS_LOG("als_open_report_data!!\n");
 	return 0;
 }
-
-// if use  this typ of enable , Gsensor only enabled but not report inputEvent to HAL
 
 static int als_enable_nodata(int en)
 {
@@ -2128,7 +2163,7 @@ static int als_get_data(int* value, int* status)
 
 static int ps_open_report_data(int open)
 {
-	//should queuq work to report event if  is_report_input_direct=true
+	APS_LOG("ps_open_report_data!!\n");
 	return 0;
 }
 
@@ -2187,6 +2222,7 @@ static int ps_enable_nodata(int en)
 
 static int ps_set_delay(u64 ns)
 {
+	APS_LOG("ps_set_delay!!\n");
 	return 0;
 }
 
@@ -2238,7 +2274,52 @@ static int ps_get_data(int* value, int* status)
     
 	return 0;
 }
+/*----------------------------------------------------------------------------*/
+static int ltr579_i2c_detect(struct i2c_client *client, struct i2c_board_info *info) 
+{    
+	APS_ERR("ltr579_i2c_detect\n");
+	strcpy(info->type, LTR579_DEV_NAME);
+	return 0;
+}
+/*----------------------------------------------------------------------------*/
+static int ltr579_check_DeviceID(struct i2c_client *client)
+{
+	int res = 0;
+	u8 buffer[2];	
 
+		APS_LOG("ltr579_check_DeviceID\n");
+		
+		buffer[0] = LTR579_PART_ID;
+		res = i2c_master_send(client, buffer, 0x1);
+		if(res <= 0)
+		{
+			APS_LOG("ltr579_check_DeviceID i2c send cmd err!!!!\n");
+			goto EXIT_ERR;
+		}
+
+		res = i2c_master_recv(client, buffer, 0x1);
+		if(res <= 0)
+		{
+			APS_LOG("ltr579_check_DeviceID i2c send read data err!!!!\n");
+			goto EXIT_ERR;
+		}
+
+		if(buffer[0] != 0xB1)
+		{
+			APS_LOG("ltr579_check_DeviceID main status reg is not default value 0x%x!!!!\n", buffer[0] );
+			goto EXIT_ERR;
+		}
+		else 
+		{
+			res = 0;
+		}
+	
+		return res;
+	
+	EXIT_ERR:
+		APS_ERR("ltr579_check_DeviceID fail\n");
+		return -1;
+}
 /*----------------------------------------------------------------------------*/
 static int ltr579_i2c_probe(struct i2c_client *client, const struct i2c_device_id *id)
 {
@@ -2251,9 +2332,10 @@ static int ltr579_i2c_probe(struct i2c_client *client, const struct i2c_device_i
 	
 	//struct hwmsen_object obj_ps, obj_als;
 	int err = 0;
-	
-	APS_FUN();
+	int retry = 0;
 
+	APS_FUN();
+	
 	if(!(obj = kzalloc(sizeof(*obj), GFP_KERNEL)))
 	{
 		err = -ENOMEM;
@@ -2302,6 +2384,24 @@ static int ltr579_i2c_probe(struct i2c_client *client, const struct i2c_device_i
 	
 	ltr579_i2c_client = client;
 
+	for (retry = 0; retry < 3; retry++) {
+		err = ltr579_check_DeviceID(ltr579_i2c_client);
+		if(err != 0)
+		{
+			APS_LOG("ltr579_i2c_probe() check ltr579 device ID fail and will retry %d times!\n", (3-retry));
+			continue ;
+		}
+		else
+		{
+			APS_LOG("ltr579_i2c_probe() check ltr579 device ID OK!!!!!!!!!!!!\n");
+			break;
+		}
+	}
+	if(err)
+	{
+		APS_LOG("ltr579_i2c_probe() check ltr579 device ID fail finally, So we do not register ctl path!!!!!!!!!!!!\n");
+		goto exit_init_failed;
+	}
 	if((err = (ltr579_devinit())))
 	{
 		goto exit_init_failed;
@@ -2337,17 +2437,17 @@ static int ltr579_i2c_probe(struct i2c_client *client, const struct i2c_device_i
 #endif
 	
 	err = als_register_control_path(&als_ctl);
-	if(err)
-	{
+	APS_LOG("register als control path:%d ...OK!\n", err);
+	if (err) {
 		APS_ERR("register fail = %d\n", err);
 		goto exit_sensor_obj_attach_fail;
 	}
 
 	als_data.get_data = als_get_data;
 	als_data.vender_div = 100;
-	err = als_register_data_path(&als_data);	
-	if(err)
-	{
+	err = als_register_data_path(&als_data);
+	APS_LOG("register als data path:%d ...OK!\n", err);
+	if (err) {
 		APS_ERR("tregister fail = %d\n", err);
 		goto exit_sensor_obj_attach_fail;
 	}
@@ -2363,21 +2463,21 @@ static int ltr579_i2c_probe(struct i2c_client *client, const struct i2c_device_i
 		ps_ctl.is_support_batch = false;
 #endif
 		
-		err = ps_register_control_path(&ps_ctl);
-		if(err)
-		{
-			APS_ERR("register fail = %d\n", err);
-			goto exit_sensor_obj_attach_fail;
-		}
-	
-		ps_data.get_data = ps_get_data;
-		ps_data.vender_div = 100;
-		err = ps_register_data_path(&ps_data);	
-		if(err)
-		{
-			APS_ERR("tregister fail = %d\n", err);
-			goto exit_sensor_obj_attach_fail;
-		}
+	err = ps_register_control_path(&ps_ctl);
+	APS_LOG("register ps control path:%d ...OK!\n", err);
+	if (err) {
+		APS_ERR("register fail = %d\n", err);
+		goto exit_sensor_obj_attach_fail;
+	}
+
+	ps_data.get_data = ps_get_data;
+	ps_data.vender_div = 100;
+	err = ps_register_data_path(&ps_data);
+	APS_LOG("register ps data path:%d ...OK!\n", err);
+	if (err) {
+		APS_ERR("tregister fail = %d\n", err);
+		goto exit_sensor_obj_attach_fail;
+	}
 	
 		err = batch_register_support_info(ID_LIGHT,als_ctl.is_support_batch, 100, 0);
 		if(err)
@@ -2411,10 +2511,10 @@ static int ltr579_i2c_probe(struct i2c_client *client, const struct i2c_device_i
 	APS_LOG("%s: OK\n", __func__);
 	return 0;
 
+	exit_sensor_obj_attach_fail:
 	exit_create_attr_failed:
 	misc_deregister(&ltr579_device);
 	exit_misc_device_register_failed:
-	exit_sensor_obj_attach_fail:
 	exit_init_failed:
 	//i2c_detach_client(client);
 	//exit_kfree:
@@ -2431,6 +2531,7 @@ static int ltr579_i2c_probe(struct i2c_client *client, const struct i2c_device_i
 static int ltr579_i2c_remove(struct i2c_client *client)
 {
 	int err;	
+	APS_ERR("ltr579_i2c_remove\n");
 	if((err = (ltr579_delete_attr(&ltr579_i2c_driver.driver))))
 	{
 		APS_ERR("ltr579_delete_attr fail: %d\n", err);
