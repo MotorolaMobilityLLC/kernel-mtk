@@ -149,7 +149,7 @@
 /*Begin lenovo-sw mahj2 end*/
 
 //lenovo-sw mahj2 add for pmic control led Begin
-#define LENOVO_USE_PMIC_CONTROL_LED
+//#define LENOVO_USE_PMIC_CONTROL_LED
 //lenovo-sw mahj2 add for pmic control led End
 //lenovo-sw mahj2 add for thermal support Begin
 #define LENOVO_THERMAL_SUPPORT
