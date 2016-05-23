@@ -2218,17 +2218,20 @@ static INT32 opfunc_idc_msg_handling(P_WMT_OP pWmtOp)
 	pTxBuf = (UINT8 *) pWmtOp->au4OpData[0];
 	if (NULL == pTxBuf) {
 		WMT_ERR_FUNC("idc msg buffer is NULL\n");
+		kfree(msg_local_buffer);
 		return -1;
 	}
 	iRet = wmt_lib_idc_lock_aquire();
 	if (iRet) {
 		WMT_ERR_FUNC("--->lock idc_lock failed, ret=%d\n", iRet);
+		kfree(msg_local_buffer);
 		return iRet;
 	}
 	osal_memcpy(&msg_len, &pTxBuf[0], osal_sizeof(msg_len));
 	if (msg_len > 1200) {
 		wmt_lib_idc_lock_release();
 		WMT_ERR_FUNC("abnormal idc msg len:%d\n", msg_len);
+		kfree(msg_local_buffer);
 		return -2;
 	}
 	msg_len += 1;	/*flag byte */
