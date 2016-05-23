@@ -1620,6 +1620,7 @@ static int32_t cmdq_core_task_realloc_buffer_size(TaskStruct *pTask, uint32_t si
 	dma_addr_t newMVABase = 0;
 	int32_t commandSize = 0;
 	uint32_t *pCMDEnd = NULL;
+	bool useEmergency = false;
 
 	if (pTask->pVABase && pTask->bufferSize >= size) {
 		/* buffer size is already good, do nothing. */
@@ -1632,7 +1633,7 @@ static int32_t cmdq_core_task_realloc_buffer_size(TaskStruct *pTask, uint32_t si
 						&newMVABase, GFP_KERNEL | __GFP_NO_KSWAPD);
 
 		if (pNewBuffer) {
-			pTask->useEmergencyBuf = false;
+			useEmergency = false;
 			break;
 		}
 
@@ -1642,7 +1643,7 @@ static int32_t cmdq_core_task_realloc_buffer_size(TaskStruct *pTask, uint32_t si
 
 		if (pNewBuffer) {
 			CMDQ_MSG("emergency buffer %p allocated\n", pNewBuffer);
-			pTask->useEmergencyBuf = true;
+			useEmergency = true;
 			break;
 		}
 
@@ -1651,7 +1652,7 @@ static int32_t cmdq_core_task_realloc_buffer_size(TaskStruct *pTask, uint32_t si
 		    cmdq_core_alloc_hw_buffer(cmdq_dev_get(), size, &newMVABase,
 					      GFP_KERNEL);
 		if (pNewBuffer) {
-			pTask->useEmergencyBuf = false;
+			useEmergency = false;
 			break;
 		}
 	} while (0);
@@ -1674,6 +1675,7 @@ static int32_t cmdq_core_task_realloc_buffer_size(TaskStruct *pTask, uint32_t si
 	cmdq_task_free_task_command_buffer(pTask);
 
 	/* attach the new buffer */
+	pTask->useEmergencyBuf = useEmergency;
 	pTask->pVABase = (uint32_t *) pNewBuffer;
 	pTask->MVABase = newMVABase;
 	pTask->bufferSize = size;
