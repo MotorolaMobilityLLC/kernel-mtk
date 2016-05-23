@@ -1756,10 +1756,10 @@ static struct miscdevice ltr579_device = {
 
 static int ltr579_i2c_suspend(struct i2c_client *client, pm_message_t msg) 
 {
-	struct ltr579_priv *obj = i2c_get_clientdata(client);    
-	int err;
+	//struct ltr579_priv *obj = i2c_get_clientdata(client);    
+	//int err;
 	APS_FUN();    
-
+#if 0
 	if(msg.event == PM_EVENT_SUSPEND)
 	{   
 		if(!obj)
@@ -1790,15 +1790,15 @@ static int ltr579_i2c_suspend(struct i2c_client *client, pm_message_t msg)
 		ltr579_power(obj->hw, 0);
 
 	}
+#endif
 	return 0;
 }
 /*----------------------------------------------------------------------------*/
 static int ltr579_i2c_resume(struct i2c_client *client)
 {
 	struct ltr579_priv *obj = i2c_get_clientdata(client);        
-	int err;
+	//int err;
 	APS_FUN();
-
 	if(!obj)
 	{
 		APS_ERR("null pointer!!\n");
@@ -1806,6 +1806,8 @@ static int ltr579_i2c_resume(struct i2c_client *client)
 	}
 
 	ltr579_power(obj->hw, 1);
+	
+#if 0
 /*	err = ltr579_devinit();
 	if(err < 0)
 	{
@@ -1831,7 +1833,7 @@ static int ltr579_i2c_resume(struct i2c_client *client)
 			APS_ERR("enable ps fail: %d\n", err);                
 		}
 	}
-
+#endif
 	return 0;
 }
 #ifdef CONFIG_HAS_EARLYSUSPEND
@@ -2204,7 +2206,7 @@ static int ps_enable_nodata(int en)
 	}
 	else
 	{
-		if((res = ltr579_ps_enable()))
+		if((res = ltr579_ps_disable()))
 		{
 			APS_ERR("disable ps fail: %d\n", res); 
 			return -1;
@@ -2376,8 +2378,8 @@ static int ltr579_i2c_probe(struct i2c_client *client, const struct i2c_device_i
 	BUG_ON(sizeof(obj->als_value) != sizeof(obj->hw->als_value));
 	memcpy(obj->als_value, obj->hw->als_value, sizeof(obj->als_value));
 	atomic_set(&obj->i2c_retry, 3);
-	set_bit(CMC_BIT_ALS, &obj->enable);
-	set_bit(CMC_BIT_PS, &obj->enable);
+	//set_bit(CMC_BIT_ALS, &obj->enable);
+	//set_bit(CMC_BIT_PS, &obj->enable);
 
 	APS_LOG("ltr579_devinit() start...!\n");
 
