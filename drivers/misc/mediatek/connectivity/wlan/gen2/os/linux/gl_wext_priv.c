@@ -227,7 +227,7 @@
 *                              C O N S T A N T S
 ********************************************************************************
 */
-#define NUM_SUPPORTED_OIDS      (sizeof(arWlanOidReqTable) / sizeof(WLAN_REQ_ENTRY))
+#define NUM_SUPPORTED_OIDS		(sizeof(arWlanOidReqTable) / sizeof(WLAN_REQ_ENTRY))
 #define CMD_START			"START"
 #define CMD_STOP			"STOP"
 #define CMD_SCAN_ACTIVE			"SCAN-ACTIVE"
@@ -281,10 +281,11 @@
 #define MIRACAST_MCHAN_BW       25
 #endif
 
-#define	CMD_BAND_AUTO	0
+#define	CMD_BAND_AUTO		0
 #define	CMD_BAND_5G		1
 #define	CMD_BAND_2G		2
-#define	CMD_BAND_ALL	3
+#define	CMD_BAND_ALL		3
+#define	CMD_OID_BUF_LENGTH	4096
 
 /* Mediatek private command */
 
@@ -360,7 +361,7 @@ reqExtSetAcpiDevicePowerState(IN P_GLUE_INFO_T prGlueInfo,
 *                       P R I V A T E   D A T A
 ********************************************************************************
 */
-static UINT_8 aucOidBuf[4096] = { 0 };
+static UINT_8 aucOidBuf[CMD_OID_BUF_LENGTH] = { 0 };
 
 /* OID processing table */
 /* Order is important here because the OIDs should be in order of
@@ -1539,7 +1540,9 @@ static int
 _priv_set_ints(IN struct net_device *prNetDev,
 	      IN struct iw_request_info *prIwReqInfo, IN union iwreq_data *prIwReqData, IN char *pcExtra)
 {
-	UINT_32 u4SubCmd, u4BufLen;
+	UINT_16 i = 0;
+	UINT_32 u4SubCmd, u4BufLen, u4CmdLen;
+	INT_32  setting[4] = {0};
 	P_GLUE_INFO_T prGlueInfo;
 	int status = 0;
 	WLAN_STATUS rStatus = WLAN_STATUS_SUCCESS;
@@ -1555,19 +1558,15 @@ _priv_set_ints(IN struct net_device *prNetDev,
 	prGlueInfo = *((P_GLUE_INFO_T *) netdev_priv(prNetDev));
 
 	u4SubCmd = (UINT_32) prIwReqData->data.flags;
+	u4CmdLen = (UINT_32) prIwReqData->data.length;
 
 	switch (u4SubCmd) {
 	case PRIV_CMD_SET_TX_POWER:
 		{
-			INT_32 *setting = prIwReqData->data.pointer;
-			UINT_16 i;
-
-#if 0
-			DBGLOG(REQ, INFO, "Tx power num = %d\n", prIwReqData->data.length);
-
-			DBGLOG(REQ, INFO, "Tx power setting = %d %d %d %d\n",
-				setting[0], setting[1], setting[2], setting[3]);
-#endif
+			if (u4CmdLen > 4)
+				return -EINVAL;
+			if (copy_from_user(setting, prIwReqData->data.pointer, u4CmdLen))
+				return -EFAULT;
 			prTxpwr = &prGlueInfo->rTxPwr;
 			if (setting[0] == 0 && prIwReqData->data.length == 4 /* argc num */) {
 				/* 0 (All networks), 1 (legacy STA), 2 (Hotspot AP), 3 (P2P), 4 (BT over Wi-Fi) */
@@ -1724,7 +1723,6 @@ _priv_set_struct(IN struct net_device *prNetDev,
 	/* WLAN_STATUS rStatus = WLAN_STATUS_SUCCESS; */
 	UINT_32 u4CmdLen = 0;
 	P_NDIS_TRANSPORT_STRUCT prNdisReq;
-	PUINT_32 pu4IntBuf = NULL;
 
 	P_GLUE_INFO_T prGlueInfo = NULL;
 	UINT_32 u4BufLen = 0;
@@ -1810,13 +1808,19 @@ _priv_set_struct(IN struct net_device *prNetDev,
 	case PRIV_CMD_WSC_PROBE_REQ:
 		{
 			/* retrieve IE for Probe Request */
-			if (prIwReqData->data.length > 0) {
-				if (copy_from_user(prGlueInfo->aucWSCIE, prIwReqData->data.pointer,
-						   prIwReqData->data.length)) {
+			u4CmdLen = prIwReqData->data.length;
+			if (u4CmdLen > GLUE_INFO_WSCIE_LENGTH) {
+				DBGLOG(REQ, ERROR, "Input data length is invalid %u\n", u4CmdLen);
+				return -EINVAL;
+			}
+
+			if (u4CmdLen > 0) {
+				if (copy_from_user(prGlueInfo->aucWSCIE, prIwReqData->data.pointer, u4CmdLen)) {
+					DBGLOG(REQ, ERROR, "Copy from user failed\n");
 					status = -EFAULT;
 					break;
 				}
-				prGlueInfo->u2WSCIELen = prIwReqData->data.length;
+				prGlueInfo->u2WSCIELen = u4CmdLen;
 			} else {
 				prGlueInfo->u2WSCIELen = 0;
 			}
@@ -1824,11 +1828,17 @@ _priv_set_struct(IN struct net_device *prNetDev,
 		break;
 #endif
 	case PRIV_CMD_OID:
-		if (copy_from_user(&aucOidBuf[0], prIwReqData->data.pointer, prIwReqData->data.length)) {
+		u4CmdLen = prIwReqData->data.length;
+		if (u4CmdLen > CMD_OID_BUF_LENGTH) {
+			DBGLOG(REQ, ERROR, "Input data length is invalid %u\n", u4CmdLen);
+			return -EINVAL;
+		}
+
+		if (copy_from_user(&aucOidBuf[0], prIwReqData->data.pointer, u4CmdLen)) {
 			status = -EFAULT;
 			break;
 		}
-		if (!kalMemCmp(&aucOidBuf[0], pcExtra, prIwReqData->data.length))
+		if (!kalMemCmp(&aucOidBuf[0], pcExtra, u4CmdLen))
 			DBGLOG(REQ, INFO, "pcExtra buffer is valid\n");
 		else
 			DBGLOG(REQ, INFO, "pcExtra 0x%p\n", pcExtra);
@@ -1846,12 +1856,15 @@ _priv_set_struct(IN struct net_device *prNetDev,
 		break;
 
 	case PRIV_CMD_SW_CTRL:
-		pu4IntBuf = (PUINT_32) prIwReqData->data.pointer;
+		u4CmdLen = prIwReqData->data.length;
 		prNdisReq = (P_NDIS_TRANSPORT_STRUCT) &aucOidBuf[0];
 
-		/* kalMemCopy(&prNdisReq->ndisOidContent[0], prIwReqData->data.pointer, 8); */
-		if (copy_from_user(&prNdisReq->ndisOidContent[0], prIwReqData->data.pointer,
-			prIwReqData->data.length)) {
+		if (u4CmdLen > sizeof(prNdisReq->ndisOidContent)) {
+			DBGLOG(REQ, ERROR, "Input data length is invalid %u\n", u4CmdLen);
+			return -EINVAL;
+		}
+
+		if (copy_from_user(&prNdisReq->ndisOidContent[0], prIwReqData->data.pointer, u4CmdLen)) {
 			status = -EFAULT;
 			break;
 		}
@@ -1893,7 +1906,6 @@ _priv_get_struct(IN struct net_device *prNetDev,
 
 	P_GLUE_INFO_T prGlueInfo = NULL;
 	UINT_32 u4BufLen = 0;
-	PUINT_32 pu4IntBuf = NULL;
 	int status = 0;
 
 	kalMemZero(&aucOidBuf[0], sizeof(aucOidBuf));
@@ -1950,7 +1962,6 @@ _priv_get_struct(IN struct net_device *prNetDev,
 		return -EFAULT;
 
 	case PRIV_CMD_SW_CTRL:
-		pu4IntBuf = (PUINT_32) prIwReqData->data.pointer;
 		prNdisReq = (P_NDIS_TRANSPORT_STRUCT) &aucOidBuf[0];
 
 		if (prIwReqData->data.length > (sizeof(aucOidBuf) - OFFSET_OF(NDIS_TRANSPORT_STRUCT, ndisOidContent))) {
@@ -2383,10 +2394,10 @@ _priv_set_string(IN struct net_device *prNetDev,
 		IN struct iw_request_info *prIwReqInfo, IN union iwreq_data *prIwReqData, IN char *pcExtra)
 {
 	P_GLUE_INFO_T GlueInfo;
-	INT_32 Status;
-	UINT_32 Subcmd;
-	UINT_8 *InBuf;
-	UINT_32 InBufLen;
+	INT_32 status = 0;
+	UINT_32 subcmd;
+	UINT_8 *pucInBuf = aucOidBuf;
+	UINT_32 u4BufLen;
 
 	/* sanity check */
 	ASSERT(prNetDev);
@@ -2394,36 +2405,35 @@ _priv_set_string(IN struct net_device *prNetDev,
 	ASSERT(prIwReqData);
 	ASSERT(pcExtra);
 
-	/* init */
-	DBGLOG(REQ, INFO, "priv_set_string (%s)(%d)\n",
-			   (UINT8 *) prIwReqData->data.pointer, (INT32) prIwReqData->data.length);
-
 	if (FALSE == GLUE_CHK_PR3(prNetDev, prIwReqData, pcExtra))
 		return -EINVAL;
+
+	u4BufLen = prIwReqData->data.length;
 	GlueInfo = *((P_GLUE_INFO_T *) netdev_priv(prNetDev));
 
-	InBuf = aucOidBuf;
-	InBufLen = prIwReqData->data.length;
-	Status = 0;
+	if (u4BufLen > CMD_OID_BUF_LENGTH) {
+		DBGLOG(REQ, ERROR, "Input data length is invalid %u\n", u4BufLen);
+		return -EINVAL;
+	}
 
-	if (copy_from_user(InBuf, prIwReqData->data.pointer, prIwReqData->data.length))
+	if (copy_from_user(pucInBuf, prIwReqData->data.pointer, u4BufLen))
 		return -EFAULT;
 
-	Subcmd = CmdStringDecParse(prIwReqData->data.pointer, &InBuf, &InBufLen);
-	DBGLOG(REQ, INFO, "priv_set_string> command = %u\n", (UINT32) Subcmd);
+	subcmd = CmdStringDecParse(prIwReqData->data.pointer, &pucInBuf, &u4BufLen);
+	DBGLOG(REQ, INFO, "priv_set_string> command = %u\n", (UINT32) subcmd);
 
 	/* handle the command */
-	switch (Subcmd) {
+	switch (subcmd) {
 #if (CFG_SUPPORT_TDLS == 1)
 	case PRIV_CMD_OTHER_TDLS:
-		TdlsexCmd(GlueInfo, InBuf, InBufLen);
+		TdlsexCmd(GlueInfo, pucInBuf, u4BufLen);
 		break;
 #endif /* CFG_SUPPORT_TDLS */
 
 #if (CFG_SUPPORT_TXR_ENC == 1)
 	case PRIV_CMD_OTHER_TAR:
 	{
-		rlmCmd(GlueInfo, InBuf, InBufLen);
+		rlmCmd(GlueInfo, pucInBuf, u4BufLen);
 		break;
 	}
 #endif /* CFG_SUPPORT_TXR_ENC */
@@ -2431,7 +2441,7 @@ _priv_set_string(IN struct net_device *prNetDev,
 		break;
 	}
 
-	return Status;
+	return status;
 }
 
 /*----------------------------------------------------------------------------*/
