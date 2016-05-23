@@ -1815,6 +1815,11 @@ int p2pHardStartXmit(IN struct sk_buff *prSkb, IN struct net_device *prDev)
 	prQueueEntry = (P_QUE_ENTRY_T) GLUE_GET_PKT_QUEUE_ENTRY(prSkb);
 	prTxQueue = &prGlueInfo->rTxQueue;
 
+	/* Statistic usage. */
+	prGlueInfo->prP2PInfo->rNetDevStats.tx_bytes += prSkb->len;
+	prGlueInfo->prP2PInfo->rNetDevStats.tx_packets++;
+	/* prDev->stats.tx_packets++; */
+
 	if (wlanProcessSecurityFrame(prGlueInfo->prAdapter, (P_NATIVE_PACKET) prSkb) == FALSE) {
 
 		u2QueueIdx = skb_get_queue_mapping(prSkb);
@@ -1822,6 +1827,8 @@ int p2pHardStartXmit(IN struct sk_buff *prSkb, IN struct net_device *prDev)
 
 		if (u2QueueIdx >= CFG_MAX_TXQ_NUM) {
 			DBGLOG(P2P, ERROR, "Incorrect queue index, skip this frame\n");
+			prGlueInfo->prP2PInfo->rNetDevStats.tx_bytes -= prSkb->len;
+			prGlueInfo->prP2PInfo->rNetDevStats.tx_packets--;
 			dev_kfree_skb(prSkb);
 			return NETDEV_TX_OK;
 		}
@@ -1841,11 +1848,6 @@ int p2pHardStartXmit(IN struct sk_buff *prSkb, IN struct net_device *prDev)
 	}
 
 	kalSetEvent(prGlueInfo);
-
-	/* Statistic usage. */
-	prGlueInfo->prP2PInfo->rNetDevStats.tx_bytes += prSkb->len;
-	prGlueInfo->prP2PInfo->rNetDevStats.tx_packets++;
-	/* prDev->stats.tx_packets++; */
 
 	prP2pBssInfo = &prGlueInfo->prAdapter->rWifiVar.arBssInfo[NETWORK_TYPE_P2P_INDEX];
 	if ((prP2pBssInfo->eConnectionState == PARAM_MEDIA_STATE_CONNECTED) ||
@@ -1903,6 +1905,10 @@ int p2pDoIOCTL(struct net_device *prDev, struct ifreq *prIfReq, int i4Cmd)
 		/* Set Encryption Material after 4-way handshaking is done */
 		if (prIwReq->u.encoding.pointer) {
 			u4ExtraSize = prIwReq->u.encoding.length;
+			if (u4ExtraSize > sizeof(struct iw_encode_ext)) {
+				ret = -EINVAL;
+				break;
+			}
 			prExtraBuf = kalMemAlloc(u4ExtraSize, VIR_MEM_TYPE);
 
 			if (!prExtraBuf) {
@@ -1910,7 +1916,7 @@ int p2pDoIOCTL(struct net_device *prDev, struct ifreq *prIfReq, int i4Cmd)
 				break;
 			}
 
-			if (copy_from_user(prExtraBuf, prIwReq->u.encoding.pointer, prIwReq->u.encoding.length))
+			if (copy_from_user(prExtraBuf, prIwReq->u.encoding.pointer, u4ExtraSize))
 				ret = -EFAULT;
 		} else if (prIwReq->u.encoding.length != 0) {
 			ret = -EINVAL;
@@ -2605,16 +2611,19 @@ mtk_p2p_wext_set_key(IN struct net_device *prDev,
 	do {
 		if (wrqu->encoding.pointer) {
 			u4ExtraSize = wrqu->encoding.length;
-			/*need confirm u4ExtraSize > 0 but is not very large*/
-			prExtraBuf = kalMemAlloc(u4ExtraSize, VIR_MEM_TYPE);
+			if (u4ExtraSize > sizeof(struct iw_encode_ext)) {
+				ret = -EINVAL;
+				break;
+			}
 
+			prExtraBuf = kalMemAlloc(u4ExtraSize, VIR_MEM_TYPE);
 			if (!prExtraBuf) {
 				ret = -ENOMEM;
 				break;
 			}
 			/* here should set prExtraBuf default value */
 			memset(prExtraBuf, 0, u4ExtraSize);
-			if (copy_from_user(prExtraBuf, wrqu->encoding.pointer, wrqu->encoding.length)) {
+			if (copy_from_user(prExtraBuf, wrqu->encoding.pointer, u4ExtraSize)) {
 				ret = -EFAULT;
 				break;
 			}
@@ -2624,7 +2633,6 @@ mtk_p2p_wext_set_key(IN struct net_device *prDev,
 		}
 
 		prEnc = &wrqu->encoding;
-		/* here, need confirm (struct iw_encode_ext) < u4ExtraSize */
 		prIWEncExt = (struct iw_encode_ext *)prExtraBuf;
 
 		if (GLUE_CHK_PR3(prDev, prEnc, prExtraBuf) != TRUE) {
@@ -3242,6 +3250,7 @@ mtk_p2p_wext_password_ready(IN struct net_device *prDev,
 	P_GLUE_INFO_T prGlueInfo = NULL;
 	P_IW_P2P_PASSWORD_READY prPasswordReady = (P_IW_P2P_PASSWORD_READY) extra;
 	P_P2P_CONNECTION_SETTINGS_T prConnSettings;
+	UINT_16 u2CmdLen = 0;
 
 	ASSERT(prDev);
 
@@ -3252,13 +3261,14 @@ mtk_p2p_wext_password_ready(IN struct net_device *prDev,
 	ASSERT(prAdapter);
 
 	prConnSettings = prAdapter->rWifiVar.prP2PConnSettings;
+	u2CmdLen = prPasswordReady->probe_req_len;
 
 	/* retrieve IE for Probe Request */
-	if (prPasswordReady->probe_req_len > 0) {
-		if (prPasswordReady->probe_req_len <= MAX_WSC_IE_LENGTH) {
+	if (u2CmdLen > 0) {
+		if (u2CmdLen <= MAX_WSC_IE_LENGTH) {
 			if (copy_from_user
 			    (prGlueInfo->prP2PInfo->aucWSCIE[1], prPasswordReady->probe_req_ie,
-			     prPasswordReady->probe_req_len)) {
+			     u2CmdLen)) {
 				return -EFAULT;
 			}
 		} else {
@@ -3266,14 +3276,14 @@ mtk_p2p_wext_password_ready(IN struct net_device *prDev,
 		}
 	}
 
-	prGlueInfo->prP2PInfo->u2WSCIELen[1] = prPasswordReady->probe_req_len;
+	prGlueInfo->prP2PInfo->u2WSCIELen[1] = u2CmdLen;
 
 	/* retrieve IE for Probe Response */
-	if (prPasswordReady->probe_rsp_len > 0) {
-		if (prPasswordReady->probe_rsp_len <= MAX_WSC_IE_LENGTH) {
+	u2CmdLen = prPasswordReady->probe_rsp_len;
+	if (u2CmdLen > 0) {
+		if (u2CmdLen <= MAX_WSC_IE_LENGTH) {
 			if (copy_from_user
-			    (prGlueInfo->prP2PInfo->aucWSCIE[2], prPasswordReady->probe_rsp_ie,
-			     prPasswordReady->probe_rsp_len)) {
+			    (prGlueInfo->prP2PInfo->aucWSCIE[2], prPasswordReady->probe_rsp_ie, u2CmdLen)) {
 				return -EFAULT;
 			}
 		} else {
@@ -3281,7 +3291,7 @@ mtk_p2p_wext_password_ready(IN struct net_device *prDev,
 		}
 	}
 
-	prGlueInfo->prP2PInfo->u2WSCIELen[2] = prPasswordReady->probe_rsp_len;
+	prGlueInfo->prP2PInfo->u2WSCIELen[2] = u2CmdLen;
 
 	switch (prPasswordReady->active_config_method) {
 	case 1:
@@ -3749,6 +3759,7 @@ mtk_p2p_wext_set_struct(IN struct net_device *prDev,
 {
 	int status = 0;
 	UINT_32 u4SubCmd = 0;
+	UINT_32 u4CmdLen = 0;
 	P_GLUE_INFO_T prGlueInfo = NULL;
 	P_IW_P2P_TRANSPORT_STRUCT prP2PReq = NULL;
 
@@ -3762,17 +3773,24 @@ mtk_p2p_wext_set_struct(IN struct net_device *prDev,
 	ASSERT(prGlueInfo);
 
 	u4SubCmd = (UINT_32) wrqu->data.flags;
+	u4CmdLen = (UINT_32) wrqu->data.length;
 
 	kalMemZero(&prGlueInfo->prP2PInfo->aucOidBuf[0], sizeof(prGlueInfo->prP2PInfo->aucOidBuf));
 
 	switch (u4SubCmd) {
 	case PRIV_CMD_OID:
-		if (copy_from_user(&(prGlueInfo->prP2PInfo->aucOidBuf[0]), wrqu->data.pointer, wrqu->data.length)) {
+		if (u4CmdLen > OID_SET_GET_STRUCT_LENGTH) {
+			DBGLOG(P2P, ERROR, "input data length invalid %u\n", u4CmdLen);
+			status = -EINVAL;
+			break;
+		}
+
+		if (copy_from_user(&(prGlueInfo->prP2PInfo->aucOidBuf[0]), wrqu->data.pointer, u4CmdLen)) {
 			status = -EFAULT;
 			break;
 		}
 
-		if (!kalMemCmp(&(prGlueInfo->prP2PInfo->aucOidBuf[0]), extra, wrqu->data.length))
+		if (!kalMemCmp(&(prGlueInfo->prP2PInfo->aucOidBuf[0]), extra, u4CmdLen))
 			DBGLOG(P2P, INFO, "extra buffer is valid\n");
 		else
 			DBGLOG(P2P, INFO, "extra 0x%p\n", extra);
@@ -3818,16 +3836,16 @@ mtk_p2p_wext_set_struct(IN struct net_device *prDev,
 		break;
 #if CFG_SUPPORT_ANTI_PIRACY
 	case PRIV_SEC_CHECK_OID:
-		if (wrqu->data.length > 256) {
+		if (u4CmdLen > 256) {
 			status = -EOPNOTSUPP;
 			break;
 		}
-		if (copy_from_user(&(prGlueInfo->prP2PInfo->aucSecCheck[0]), wrqu->data.pointer, wrqu->data.length)) {
+		if (copy_from_user(&(prGlueInfo->prP2PInfo->aucSecCheck[0]), wrqu->data.pointer, u4CmdLen)) {
 			status = -EFAULT;
 			break;
 		}
 
-		if (!kalMemCmp(&(prGlueInfo->prP2PInfo->aucSecCheck[0]), extra, wrqu->data.length))
+		if (!kalMemCmp(&(prGlueInfo->prP2PInfo->aucSecCheck[0]), extra, u4CmdLen))
 			DBGLOG(P2P, INFO, "extra buffer is valid\n");
 		else
 			DBGLOG(P2P, INFO, "extra 0x%p\n", extra);
@@ -3843,12 +3861,18 @@ mtk_p2p_wext_set_struct(IN struct net_device *prDev,
 		break;
 #endif
 	case PRIV_CMD_P2P_VERSION:
-		if (copy_from_user(&(prGlueInfo->prP2PInfo->aucOidBuf[0]), wrqu->data.pointer, wrqu->data.length)) {
+		if (u4CmdLen > OID_SET_GET_STRUCT_LENGTH) {
+			DBGLOG(P2P, ERROR, "input data length invalid %u\n", u4CmdLen);
+			status = -EINVAL;
+			break;
+		}
+
+		if (copy_from_user(&(prGlueInfo->prP2PInfo->aucOidBuf[0]), wrqu->data.pointer, u4CmdLen)) {
 			status = -EFAULT;
 			break;
 		}
 
-		if (!kalMemCmp(&(prGlueInfo->prP2PInfo->aucOidBuf[0]), extra, wrqu->data.length))
+		if (!kalMemCmp(&(prGlueInfo->prP2PInfo->aucOidBuf[0]), extra, u4CmdLen))
 			DBGLOG(P2P, INFO, "extra buffer is valid\n");
 		else
 			DBGLOG(P2P, INFO, "extra 0x%p\n", extra);
@@ -3891,6 +3915,7 @@ mtk_p2p_wext_get_struct(IN struct net_device *prDev,
 {
 	int status = 0;
 	UINT_32 u4SubCmd = 0;
+	UINT_32 u4CmdLen = 0;
 	P_GLUE_INFO_T prGlueInfo = NULL;
 	P_IW_P2P_TRANSPORT_STRUCT prP2PReq = NULL;
 
@@ -3906,11 +3931,18 @@ mtk_p2p_wext_get_struct(IN struct net_device *prDev,
 	ASSERT(prGlueInfo);
 
 	u4SubCmd = (UINT_32) wrqu->data.flags;
+	u4CmdLen = (UINT_32) wrqu->data.length;
 
 	kalMemZero(&(prGlueInfo->prP2PInfo->aucOidBuf[0]), sizeof(prGlueInfo->prP2PInfo->aucOidBuf));
 
 	switch (u4SubCmd) {
 	case PRIV_CMD_OID:
+		if (u4CmdLen > sizeof(IW_P2P_TRANSPORT_STRUCT)) {
+			DBGLOG(P2P, ERROR, "input data length invalid %u\n", u4CmdLen);
+			status = -EINVAL;
+			break;
+		}
+
 		if (copy_from_user(&(prGlueInfo->prP2PInfo->aucOidBuf[0]),
 				   wrqu->data.pointer, sizeof(IW_P2P_TRANSPORT_STRUCT))) {
 			DBGLOG(P2P, ERROR, "%s() copy_from_user oidBuf fail\n", __func__);
@@ -4030,10 +4062,11 @@ mtk_p2p_wext_get_struct(IN struct net_device *prDev,
 		break;
 #if CFG_SUPPORT_ANTI_PIRACY
 	case PRIV_SEC_CHECK_OID:
-		if (wrqu->data.length > 256) {
-			status = -EOPNOTSUPP;
+		if (u4CmdLen > sizeof(IW_P2P_TRANSPORT_STRUCT)) {
+			status = -EINVAL;
 			break;
 		}
+
 		if (copy_from_user(&(prGlueInfo->prP2PInfo->aucSecCheck[0]),
 				   wrqu->data.pointer, sizeof(IW_P2P_TRANSPORT_STRUCT))) {
 			DBGLOG(P2P, ERROR, "%s() copy_from_user oidBuf fail\n", __func__);
@@ -4052,6 +4085,11 @@ mtk_p2p_wext_get_struct(IN struct net_device *prDev,
 		break;
 #endif
 	case PRIV_CMD_P2P_VERSION:
+		if (u4CmdLen > sizeof(IW_P2P_TRANSPORT_STRUCT)) {
+			status = -EINVAL;
+			break;
+		}
+
 		if (copy_from_user(&(prGlueInfo->prP2PInfo->aucOidBuf[0]),
 				   wrqu->data.pointer, sizeof(IW_P2P_TRANSPORT_STRUCT))) {
 			DBGLOG(P2P, ERROR, "%s() copy_from_user oidBuf fail\n", __func__);
