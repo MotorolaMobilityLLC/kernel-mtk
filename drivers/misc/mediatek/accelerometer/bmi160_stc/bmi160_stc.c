@@ -376,7 +376,9 @@ static int step_c_resume(struct i2c_client *client)
 		STEP_C_ERR("null pointer\n");
 		return -EINVAL;
 	}
-	err = step_c_init_client(client);
+	/*Lenovo-sw weimh1 mod 2016-5-23 begin:use obj->client instead of client*/
+	err = step_c_init_client(obj->client);
+	/*Lenovo-sw weimh1 mod 2016-5-23 */
 	if (err) {
 		STEP_C_ERR("initialize client failed, err = %d\n", err);
 		return err;
