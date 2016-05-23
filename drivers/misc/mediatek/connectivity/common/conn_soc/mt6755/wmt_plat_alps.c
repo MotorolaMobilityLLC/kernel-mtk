@@ -140,6 +140,9 @@ static const fp_set_pin gfp_set_pin_table[] = {
 	[PIN_I2S_GRP] = wmt_plat_i2s_ctrl,
 	[PIN_GPS_SYNC] = wmt_plat_gps_sync_ctrl,
 	[PIN_GPS_LNA] = wmt_plat_gps_lna_ctrl,
+#if CFG_WMT_LTE_COEX_HANDLING
+	[PIN_TDM_REQ] = NULL,
+#endif
 };
 
 /*******************************************************************************

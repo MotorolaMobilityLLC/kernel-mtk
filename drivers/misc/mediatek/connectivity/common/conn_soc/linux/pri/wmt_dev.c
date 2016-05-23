@@ -1037,7 +1037,8 @@ static INT32 wmt_dbg_lte_coex_test(INT32 par1, INT32 par2, INT32 par3)
 		0xa, 0xb
 	};
 
-	local_buffer = kmalloc(512, GFP_KERNEL);
+	local_buffer = kmalloc(osal_sizeof(wmt_to_lte_test_evt1) + osal_sizeof(wmt_to_lte_test_evt2) +
+		osal_sizeof(wmt_to_lte_test_evt3), GFP_KERNEL);
 	if (!local_buffer) {
 		WMT_ERR_FUNC("local_buffer kmalloc memory fail\n");
 		return 0;
@@ -1133,8 +1134,8 @@ static INT32 wmt_dbg_lte_coex_test(INT32 par1, INT32 par2, INT32 par3)
 		else
 			wmt_core_set_flag_for_test(0);
 	}
-	return 0;
 	kfree(local_buffer);
+	return 0;
 }
 #endif
 
