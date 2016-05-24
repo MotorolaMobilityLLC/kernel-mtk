@@ -301,7 +301,8 @@ CONFIG_SCHED_HMP_PLUS=y
 #lenovo_sw chengx2 modify for wcn 
 CONFIG_MTK_FM_CHIP="MT6630_FM"
 CONFIG_MTK_IMGSENSOR=y
-CONFIG_MTK_BTIF=y
+#lenovo-sw lumy1 modify
+#CONFIG_MTK_BTIF is not set
 CONFIG_MTK_COMBO=y
 #lenovo-sw lumy1
 CONFIG_MTK_MERGE_INTERFACE_SUPPORT=y
