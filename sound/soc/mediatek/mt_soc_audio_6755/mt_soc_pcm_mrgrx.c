@@ -287,7 +287,10 @@ static int mtk_pcm_mrgrx_prepare(struct snd_pcm_substream *substream)
 			      Soc_Aud_InterConnectionOutput_O03);
 		SetConnection(Soc_Aud_InterCon_Connection, Soc_Aud_InterConnectionInput_I11,
 			      Soc_Aud_InterConnectionOutput_O04);
-
+		SetConnection(Soc_Aud_InterCon_Connection, Soc_Aud_InterConnectionInput_I10,
+			      Soc_Aud_InterConnectionOutput_O00);//lenovo-sw chengx2,add for smartpa
+		SetConnection(Soc_Aud_InterCon_Connection, Soc_Aud_InterConnectionInput_I11,
+			      Soc_Aud_InterConnectionOutput_O01);//lenovo-sw chengx2,add for smartpa
 		/* Set HW_GAIN */
 		SetHwDigitalGainMode(Soc_Aud_Hw_Digital_Gain_HW_DIGITAL_GAIN1, runtime->rate,
 				     0x40);
