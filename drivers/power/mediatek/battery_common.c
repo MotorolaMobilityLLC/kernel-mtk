@@ -2714,7 +2714,8 @@ void mt_battery_notify_check(void)
 
 		mt_battery_notify_VCharger_check();
 
-		mt_battery_notify_VBatTemp_check();
+		if(BMT_status.charger_exist == KAL_TRUE)
+			mt_battery_notify_VBatTemp_check();
 
 		mt_battery_notify_ICharging_check();
 
