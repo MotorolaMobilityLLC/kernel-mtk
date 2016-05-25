@@ -340,7 +340,7 @@
  * Flags and Parameters for CMD/RESPONSE
  *------------------------------------------------------------------------------
  */
-#define CFG_RESPONSE_POLLING_TIMEOUT            512
+#define CFG_RESPONSE_POLLING_TIMEOUT            256
 
 /*------------------------------------------------------------------------------
  * Flags and Parameters for Protocol Stack
