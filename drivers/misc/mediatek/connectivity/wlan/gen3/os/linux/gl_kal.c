@@ -5743,3 +5743,11 @@ INT_32 __weak kalBoostCpu(UINT_32 core_num)
 	return 0;
 }
 
+UINT_8 kalGetEapolKeyType(P_NATIVE_PACKET prPacket)
+{
+	struct sk_buff *prSkb = (struct sk_buff *)prPacket;
+
+	if (!prSkb)
+		return EAPOL_KEY_NOT_KEY;
+	return (UINT_8)secGetEapolKeyType(prSkb->data);
+}
