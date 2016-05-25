@@ -44,8 +44,8 @@
 #define APS_TAG                  "[ALS/PS] "
 #define APS_FUN(f)               pr_debug(APS_TAG"%s\n", __func__)
 #define APS_ERR(fmt, args...)    pr_err(APS_TAG"%s %d : "fmt, __func__, __LINE__, ##args)
-#define APS_LOG(fmt, args...)    pr_info(APS_TAG fmt, ##args)
-#define APS_DBG(fmt, args...)    pr_debug(APS_TAG fmt, ##args)
+#define APS_LOG(fmt, args...)    pr_info(APS_TAG"%s %d : "fmt, __func__, __LINE__, ##args)
+#define APS_DBG(fmt, args...)    pr_debug(APS_TAG"%s %d : "fmt, __func__, __LINE__, ##args)
 
 /*----------------------------------------------------------------------------*/
 
@@ -86,7 +86,9 @@ static int ltr579_ps_enable(void);
 static int ltr579_ps_disable(void);
 static int ltr579_als_disable(void);
 static int ltr579_als_enable(int gainrange);
-	
+static int als_get_data(int* value, int* status);
+extern struct alsps_context *alsps_context_obj;
+
 static int als_gainrange;
 
 static int final_prox_val;
@@ -933,12 +935,14 @@ static int ltr579_ps_read(void)
  * ## ALS CONFIG ##
  * ################
  */
-
 static int ltr579_als_enable(int gainrange)
 {
-	int error;
+	int error, ret;
 	int setctrl;
+	int als_value, status;
+
 	APS_LOG("gainrange = %d\n",gainrange);
+
 	switch (gainrange)
 	{
 		case ALS_RANGE_1:
@@ -977,17 +981,29 @@ static int ltr579_als_enable(int gainrange)
 
 	mdelay(WAKEUP_DELAY);
 
+	ret = als_get_data(&als_value, &status);
+	if (ret) {
+		APS_ERR("get first alsps data fails!!\n");
+	} else {
+		if((ret = als_data_report(alsps_context_obj->idev_als, als_value, status)))
+		{
+			APS_ERR("ltr579_sensor call als_data_report fail = %d\n", ret);
+		}else {
+			APS_LOG("ltr579_als_enable:  report  first data after enable\n");
+		}
+	}
+
 	/* =============== 
 	 * ** IMPORTANT **
 	 * ===============
 	 * Other settings like timing and threshold to be set here, if required.
- 	 * Not set and kept as device default for now.
- 	 */
- 	if(error<0)
- 	    APS_LOG("ltr579_als_enable ...ERROR\n");
- 	else
-        APS_LOG("ltr579_als_enable ...OK\n");
-        
+	 * Not set and kept as device default for now.
+	 */
+	if(error<0)
+		APS_ERR("ltr579_als_enable ...ERROR\n");
+	else
+		APS_LOG("ltr579_als_enable ...OK\n");
+
 	return error;
 }
 
@@ -1024,11 +1040,11 @@ static int ltr579_als_read(int gainrange)
 	alsval = (alsval_2 * 256* 256) + (alsval_1 * 256) + alsval_0;
 	APS_DBG("alsval_0 = %d,alsval_1=%d,alsval_2=%d,alsval=%d\n",alsval_0,alsval_1,alsval_2,alsval);
 
-    if(alsval==0)
-    {
-        luxdata_int = 0;
-        goto err;
-    }
+	if(alsval==0)
+	{
+		luxdata_int = 0;
+		goto err;
+	}
 
 	APS_DBG("gainrange = %d\n",gainrange);
 	
