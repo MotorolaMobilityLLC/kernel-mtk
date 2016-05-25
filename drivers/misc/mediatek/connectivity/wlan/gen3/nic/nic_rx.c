@@ -2387,11 +2387,15 @@ VOID nicRxProcessDataPacket(IN P_ADAPTER_T prAdapter, IN OUT P_SW_RFB_T prSwRfb)
 
 	/* if(secCheckClassError(prAdapter, prSwRfb, prStaRec) == TRUE && */
 	if (prAdapter->fgTestMode == FALSE && fgDrop == FALSE) {
+		UINT_8 ucBssIndex = 0;
 #if CFG_HIF_RX_STARVATION_WARNING
 		prRxCtrl->u4QueuedCnt++;
 #endif
 		nicRxFillRFB(prAdapter, prSwRfb);
 		GLUE_SET_PKT_BSS_IDX(prSwRfb->pvPacket, secGetBssIdxByWlanIdx(prAdapter, prSwRfb->ucWlanIdx));
+		ucBssIndex = secGetBssIdxByWlanIdx(prAdapter, prSwRfb->ucWlanIdx);
+		GLUE_SET_PKT_BSS_IDX(prSwRfb->pvPacket, ucBssIndex);
+		StatsRxPktInfoDisplay(prSwRfb->pvHeader);
 
 		prRetSwRfb = qmHandleRxPackets(prAdapter, prSwRfb);
 		if (prRetSwRfb != NULL) {
@@ -2409,6 +2413,32 @@ VOID nicRxProcessDataPacket(IN P_ADAPTER_T prAdapter, IN OUT P_SW_RFB_T prSwRfb)
 						u4LastRxPacketTime = kalGetTimeTick();
 					}
 					nicRxProcessPktWithoutReorder(prAdapter, prRetSwRfb);
+					if (prRetSwRfb->u2PacketLen <= ETHER_HEADER_LEN) {
+						DBGLOG(RX, ERROR, "Packet Length is %d\n", prRetSwRfb->u2PacketLen);
+						break;
+					}
+					/* when we RX 3/4 */
+					if (EAPOL_KEY_3_OF_4 != secGetEapolKeyType((PUINT_8)prRetSwRfb->pvHeader))
+						break;
+
+					if (ucBssIndex <= HW_BSSID_NUM) {
+						secSetKeyCmdAction(prAdapter->aprBssInfo[ucBssIndex],
+							EAPOL_KEY_3_OF_4, FALSE);
+						break;
+					} else if (prStaRec && prStaRec->ucBssIndex <= HW_BSSID_NUM) {
+						DBGLOG(RX, INFO,
+							"BSS IDX got from wlan idx is wrong, using bss index from sta record\n");
+						secSetKeyCmdAction(prAdapter->aprBssInfo[prStaRec->ucBssIndex],
+							EAPOL_KEY_3_OF_4, FALSE);
+						break;
+					}
+					ucBssIndex = secGetBssIdxByNetType(prAdapter);
+					if (ucBssIndex <= HW_BSSID_NUM) {
+						secSetKeyCmdAction(prAdapter->aprBssInfo[ucBssIndex],
+							EAPOL_KEY_3_OF_4, FALSE);
+						break;
+					}
+					DBGLOG(RX, ERROR, "Can't get bss index base on network type\n");
 					break;
 
 				case RX_PKT_DESTINATION_FORWARD:
