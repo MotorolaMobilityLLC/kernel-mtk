@@ -58,7 +58,7 @@
 #define PK_DBG_NONE(fmt, arg...)    do {} while (0)
 #define PK_DBG_FUNC(fmt, arg...)    pr_debug(PFX "%s: " fmt, __func__ , ##arg)
 
-/*#define DEBUG_KD_STROBE*/
+#define DEBUG_KD_STROBE
 #ifdef DEBUG_KD_STROBE
 #define logI PK_DBG_FUNC
 #else
@@ -325,7 +325,7 @@ static void Lbat_protection_powerlimit_flash(LOW_BATTERY_LEVEL level)
 	if (level == LOW_BATTERY_LEVEL_0) {
 		gLowPowerVbat = LOW_BATTERY_LEVEL_0;
 	} else if (level == LOW_BATTERY_LEVEL_1) {
-		closeFlash();
+		//closeFlash();
 		gLowPowerVbat = LOW_BATTERY_LEVEL_1;
 
 	} else if (level == LOW_BATTERY_LEVEL_2) {
@@ -414,10 +414,10 @@ static long flashlight_ioctl_core(struct file *file, unsigned int cmd, unsigned 
 		logI("FLASH_IOC_IS_LOW_POWER");
 		{
 			int isLow = 0;
-
-			if (gLowPowerPer != BATTERY_PERCENT_LEVEL_0
-			|| gLowPowerVbat != LOW_BATTERY_LEVEL_0)
-				isLow = 1;
+		//lenovo.sw huangsh4 change for taidoM,low power state,enable flash_on
+		//	if (gLowPowerPer != BATTERY_PERCENT_LEVEL_0
+		//	|| gLowPowerVbat != LOW_BATTERY_LEVEL_0)
+		//		isLow = 1;
 			logI("FLASH_IOC_IS_LOW_POWER %d %d %d", gLowPowerPer, gLowPowerVbat, isLow);
 			kdArg.arg = isLow;
 			if (copy_to_user
