@@ -127,7 +127,8 @@ static unsigned char CTPM_FW[] = {
 };
 static unsigned char CTPM_FW_BOE[] = {
        //#include "0x3b_LEM5006+Noah-m_V04_D01_20160301_app.i"    
-	     #include "LQ_CM3300_FT5446i_Biel0x04_V05_D01_20160419_app.i"
+	   //#include "LQ_CM3300_FT5446i_Biel0x04_V05_D01_20160419_app.i"
+	     #include "LQ_FT5446i_L3300_Biel0x3b_V06_D01_20160525_app.i"
 };
 static unsigned char aucFW_PRAM_BOOT[] = {
 	//#include "FT8xx6_Pramboot_Vx.x_xxxx.i"
