@@ -2046,7 +2046,13 @@ bool checkUplinkMEMIfStatus(void)
 		return true;
 	if (mAudioMEMIF[Soc_Aud_Digital_Block_MEM_VUL_DATA2]->mState == true)
 		return true;
-
+        //MTK add here+++ => 如果判斷還有人使用AWB就不關閉IRQ
+	if (mAudioMEMIF[Soc_Aud_Digital_Block_MEM_AWB]->mState == true) {
+		pr_warn("%s, [Soc_Aud_Digital_Block_MEM_AWB]->mState == true\n", __func__);
+		return true;
+	}
+	pr_warn("%s,mState == false\n", __func__);
+	//MTK add here---
 	return false;
 }
 
