@@ -744,7 +744,24 @@ static void lcm_suspend(void)
 	data_array[0] = 0x00100500;	// Sleep In
 	dsi_set_cmdq(data_array, 1, 1);
 	MDELAY(120);
-	
+#if 0 //wuwl10 20160530 modify
+	//set reset disable
+	SET_RESET_PIN(0);
+	MDELAY(3);
+
+	//set avee enable
+	set_gpio_lcd_enn(0);
+	MDELAY(1);
+
+	//set avdd disable
+	set_gpio_lcd_enp(0);
+	MDELAY(4);
+#endif
+}
+//lenovo-sw wuwl10 add ,touch will call this funcion when suspend
+void lcm_power_off(void)
+{
+
 	//set reset disable
 	SET_RESET_PIN(0);
 	MDELAY(3);
@@ -755,9 +772,8 @@ static void lcm_suspend(void)
 	//set avdd disable
 	set_gpio_lcd_enp(0);
 	MDELAY(4);
-
 }
-
+EXPORT_SYMBOL_GPL(lcm_power_off);
 
 static void lcm_resume(void)
 {
