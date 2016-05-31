@@ -577,8 +577,8 @@ static void accdet_eint_work_callback(struct work_struct *work)
 			//ts3a227e_write_byte(0x03, 0xf3);
 			//add by caozhg to fix bug
 			ts3a227e_write_byte(0x04, 0x40); //0x40
-			ts3a227e_write_byte(0x07, 0x3d); //0x14
-			ts3a227e_write_byte(0x08, 0x03);
+			ts3a227e_write_byte(0x07, 0x10); //0x14
+			ts3a227e_write_byte(0x08, 0x09);
 			
 			msleep(20);
 		} else if ((ts3a227e_reg_value[11] & 0x02) == 0x02) {
@@ -1076,6 +1076,9 @@ static inline void check_cable_type(void)
 			if (1 == eint_accdet_sync_flag) {
 				cable_type = HEADSET_NO_MIC;
 				accdet_status = HOOK_SWITCH;
+		       ts3a227e_write_byte(0x07, 0x3d); //0x14
+                       ts3a227e_write_byte(0x08, 0x03);
+
 			} else {
 				ACCDET_DEBUG("[Accdet] Headset has plugged out\n");
 			}
