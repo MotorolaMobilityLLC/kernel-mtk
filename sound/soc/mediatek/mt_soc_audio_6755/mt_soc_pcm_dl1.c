@@ -169,7 +169,7 @@ static int mtk_pcm_dl1_stop(struct snd_pcm_substream *substream)
 	Ana_Set_Reg(AFE_AUDIO_TOP_CON0, 0x0040, 0x0040);	/* down-link power down */
 #endif
 
-	SetIrqEnable(Soc_Aud_IRQ_MCU_MODE_IRQ1_MCU_MODE, false);
+	irq_remove_user(substream, Soc_Aud_IRQ_MCU_MODE_IRQ1_MCU_MODE);
 	SetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_DL1, false);
 
 	/* here start digital part */
@@ -416,9 +416,6 @@ static int mtk_pcm_prepare(struct snd_pcm_substream *substream)
 		} else {
 			SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_OUT_DAC, true);
 		}
-		/* here to set interrupt_distributor */
-		SetIrqMcuCounter(Soc_Aud_IRQ_MCU_MODE_IRQ1_MCU_MODE, runtime->period_size);
-		SetIrqMcuSampleRate(Soc_Aud_IRQ_MCU_MODE_IRQ1_MCU_MODE, runtime->rate);
 
 		EnableAfe(true);
 		mPrepareDone = true;
@@ -444,7 +441,11 @@ static int mtk_pcm_dl1_start(struct snd_pcm_substream *substream)
 	SetConnection(Soc_Aud_InterCon_Connection, Soc_Aud_InterConnectionInput_I06,
 		      Soc_Aud_InterConnectionOutput_O04);
 
-	SetIrqEnable(Soc_Aud_IRQ_MCU_MODE_IRQ1_MCU_MODE, true);
+	/* here to set interrupt */
+	irq_add_user(substream,
+		     Soc_Aud_IRQ_MCU_MODE_IRQ1_MCU_MODE,
+		     substream->runtime->rate,
+		     substream->runtime->period_size);
 
 	SetSampleRate(Soc_Aud_Digital_Block_MEM_DL1, runtime->rate);
 	SetChannels(Soc_Aud_Digital_Block_MEM_DL1, runtime->channels);
