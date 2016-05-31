@@ -68,11 +68,12 @@ void Auddrv_Reg_map(void);
 
 bool SetSampleRate(uint32 Aud_block, uint32 SampleRate);
 bool SetChannels(uint32 Memory_Interface, uint32 channel);
-
+/*
+DO NOT USER DIRECTLY, use irq manager
 bool SetIrqMcuCounter(uint32 Irqmode, uint32 Counter);
 bool SetIrqEnable(uint32 Irqmode, bool bEnable);
 bool SetIrqMcuSampleRate(uint32 Irqmode, uint32 SampleRate);
-
+*/
 bool SetConnection(uint32 ConnectionState, uint32 Input, uint32 Output);
 bool SetMemoryPathEnable(uint32 Aud_block, bool bEnable);
 bool GetMemoryPathEnable(uint32 Aud_block);
@@ -225,5 +226,20 @@ bool SetHighAddr(Soc_Aud_Digital_Block MemBlock, bool usingdram);
 #ifdef CONFIG_OF
 int GetGPIO_Info(int type, int *pin, int *pinmode);
 #endif
+
+/* IRQ Manager */
+int init_irq_manager(void);
+int irq_add_user(const void *_user,
+		 enum Soc_Aud_IRQ_MCU_MODE _irq,
+		 unsigned int _rate,
+		 unsigned int _count);
+int irq_remove_user(const void *_user,
+		    enum Soc_Aud_IRQ_MCU_MODE _irq);
+int irq_update_user(const void *_user,
+		    enum Soc_Aud_IRQ_MCU_MODE _irq,
+		    unsigned int _rate,
+		    unsigned int _count);
+
+/* IRQ Manager */
 
 #endif
