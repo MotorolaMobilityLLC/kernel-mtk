@@ -228,8 +228,17 @@ int DW9718AF2_Release(struct inode *a_pstInode, struct file *a_pstFile)
 {
 	LOG_INF("Start\n");
 
-	if (*g_pAF_Opened == 2)
+	if (*g_pAF_Opened == 2) {
 		LOG_INF("Wait\n");
+	/*lenovo.sw START huangsh4 optimize the af click sound*/
+	    s4AF_WriteReg(300);
+             msleep(20);
+	    s4AF_WriteReg(250);
+             msleep(20);
+	    s4AF_WriteReg(200);
+	     msleep(20);
+		}
+        /*lenovo.sw END huangsh4 optimize the af click sound*/
 
 	if (*g_pAF_Opened) {
 		LOG_INF("Free\n");
