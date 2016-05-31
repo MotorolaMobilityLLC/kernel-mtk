@@ -303,7 +303,7 @@ extern void mt_eint_set_hw_debounce(unsigned int eint_num, unsigned int ms);
 extern void mt_eint_set_polarity(unsigned int eint_num, unsigned int pol);
 extern unsigned int mt_eint_set_sens(unsigned int eint_num, unsigned int sens);
 extern void mt_eint_registration(unsigned int eint_num, unsigned int flow, void (EINT_FUNC_PTR)(void), unsigned int is_auto_umask);
-
+extern void lcm_power_off(void);
 /*register driver and device info*/
 static const struct i2c_device_id fts_tpd_id[] = {{"fts", 0}, {}};
 
@@ -792,14 +792,14 @@ static int  fts_enter_glove(bool status)
 	return ret ;
 
 }
-#if FTS_USB_DETECT
+#ifdef  FTS_USB_DETECT
 int  fts_usb_insert(bool status)
 {
 	int ret = 0;
 	u8 buf_addr[2] = { 0 };
 	u8 buf_value[2] = { 0 };
 	u8 tp_state = 0x03;
-
+	return 0; //just return 
 	if (tpd_load_status == 0)
 		return ret ;
 	if ((fts_i2c_client == NULL) || (tpd_halt == 1)) {
@@ -2379,7 +2379,6 @@ static void tpd_resume(struct device *dev)
 	/*
 	 *int i=0,ret = 0;
 	 */
-
 	dev_err(&fts_i2c_client->dev, "fts wake up~~~~\n");
 
 #ifdef TPD_PROXIMITY
@@ -2406,6 +2405,8 @@ static void tpd_resume(struct device *dev)
 	/*
 	 *just do reset change by lixh10
 	 */
+	tpd_gpio_output(GTP_RST_PORT, 1);
+	mdelay(10);
 	tpd_gpio_output(GTP_RST_PORT, 0);
 	mdelay(10);
 #endif
@@ -2441,6 +2442,9 @@ static void tpd_resume(struct device *dev)
 static void tpd_suspend(struct device *dev)
 {
 	int ret = 0;
+#ifndef TPD_CLOSE_POWER_IN_SLEEP
+	char data =  0x00 ;
+#endif 
 
 	dev_err(&fts_i2c_client->dev, "fts  enter sleep~~~~\n");
 #ifdef TPD_PROXIMITY
@@ -2476,9 +2480,10 @@ static void tpd_suspend(struct device *dev)
 		dev_err(&fts_i2c_client->dev, "[fts][ahe] no gesture will enter normal sleep ~~~~ ");
 		tpd_halt = 1;
 		disable_irq(touch_irq);
+
 #ifdef TPD_CLOSE_POWER_IN_SLEEP
 		tpd_gpio_output(GTP_RST_PORT, 0);
-		mdelay(10);
+		mdelay(10)
 		fts_power_ctrl(false);
 #else
 		if ((fts_updateinfo_curr.CHIP_ID == 0x59)) {
@@ -2492,15 +2497,20 @@ static void tpd_suspend(struct device *dev)
 		} else {
 			data = 0x03;/*change by lixh10 */
 			ret = fts_write_reg(fts_i2c_client, 0xA5, data);
-			dev_err(&fts_i2c_client->dev, "[fts][ahe] suspend enter low power mode !!  ");
 			if (ret < 0) {
 				printk("[Focal][Touch] write value fail");
 				/*
 				 *return ret;
 				 */
-			}
+			}else
+			dev_err(&fts_i2c_client->dev, "[fts][ahe] suspend enter low power mode !!  ");
+				
+		dev_err(&fts_i2c_client->dev, "[fts] ft8716 cut lcm power off   !! ");
 		}
 #endif
+		lcm_power_off();
+		tpd_gpio_output(GTP_RST_PORT, 0);
+
 #if FTS_GESTRUE_EN
 	}
 #endif

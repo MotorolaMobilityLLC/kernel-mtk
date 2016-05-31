@@ -116,7 +116,7 @@
 *******************************************************************************/
 static unsigned char CTPM_FW[] = 
 {
-	#include "Lenovo_Kungfu_EVT2_0a000001_20160513_app.i"
+	#include "Lenovo_Kungfu_DVT1_0a000002_20160531_app.i"
 };
 
 static unsigned char aucFW_PRAM_BOOT[] = 
@@ -3819,7 +3819,7 @@ int fts_ctpm_auto_upgrade(struct i2c_client *client)
 	uc_host_fm_ver = fts_ctpm_get_i_file_ver();
 	printk("[FTS] uc_host_fm_ver = 0x%x\n",uc_host_fm_ver);
 	//(uc_tp_fm_ver !=0x01  ||uc_tp_fm_ver < uc_host_fm_ver ) 
-	if (uc_tp_fm_ver !=  uc_host_fm_ver ) 
+	if (uc_tp_fm_ver < uc_host_fm_ver ) 
 	{ 
 		msleep(100);
 		dev_dbg(&client->dev, "[FTS] uc_tp_fm_ver = 0x%x, uc_host_fm_ver = 0x%x\n",uc_tp_fm_ver, uc_host_fm_ver);

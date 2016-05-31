@@ -160,7 +160,7 @@
 
 //#define TPD_HAVE_CALIBRATION
 //#define TPD_HAVE_TREMBLE_ELIMINATION
-#define TPD_CLOSE_POWER_IN_SLEEP
+//#define TPD_CLOSE_POWER_IN_SLEEP
 /******************************************************************************/
 /*Chip Device Type*/
 #define IC_FT5X06							0				/*x=2,3,4*/
@@ -298,7 +298,7 @@ typedef enum {
 //Function Switchs: define to open,  comment to close
 #define FTS_GESTRUE_EN 1
 #define FTS_GLOVE_EN 1 
-#define FTS_USB_DETECT 1
+#define FTS_USB_DETECT 0
 #define FTS_APK_DEBUG
 #define MTK_EN 1
 //#define LENOVO_CTP_EAGE_LIMIT //add by lixh10 
@@ -334,12 +334,10 @@ void fts_get_upgrade_array(void);
 		extern int fts_Gesture_init(struct input_dev *input_dev);
 		extern int fts_read_Gestruedata(void);
 #endif
-#if FTS_USB_DETECT
+#ifdef  FTS_USB_DETECT
 extern kal_bool upmu_is_chr_det(void);
 extern  int  fts_usb_insert( bool status );
-
 #endif 
-
 #if FT_ESD_PROTECT
 extern  int  apk_debug_flag ;  
 void esd_switch(s32 on);
