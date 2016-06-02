@@ -620,4 +620,7 @@ CONFIG_MTK_BQ24259_SUPPORT=y
 CONFIG_LENOVO_RTC_SAVE_TIMEZONE_SUPPORT=y
 #End, lenovo-sw mahj2 add for rtc save timezone at 20141204
 ##########################################
+#Leovo-sw quebs2 added 20160526 begin, support for OTP functionality
+CONFIG_MTK_EMMC_SUPPORT_OTP=y
+#Leovo-sw quebs2 added 20160526 end, support for OTP functionality
 ###################### Lenovo BSP Feature end #########################
