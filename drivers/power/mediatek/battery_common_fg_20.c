@@ -1728,9 +1728,6 @@ static ssize_t store_BatteryTestStatus(struct device *dev, struct device_attribu
 		battery_test_status = simple_strtoul(buf,&pvalue,16);
 		if(g_battery_test_status != battery_test_status){
 			g_battery_test_status = battery_test_status;
-			mutex_lock(&bat_mutex);
-			BAT_thread();
-			mutex_unlock(&bat_mutex);
 		}
 
 		battery_log(BAT_LOG_CRTI, "[Battery] store code : %x \n",g_battery_test_status);

@@ -78,9 +78,9 @@ do {									\
 	}						\
 } while (0)
 
-
-#define BM_DAEMON_DEFAULT_LOG_LEVEL 3
-
+//lenovo-sw mahj2 modify for debug Begin
+#define BM_DAEMON_DEFAULT_LOG_LEVEL 5
+//lenovo-sw mahj2 modify for debug End
 
 /* ============================================================ */
 /* ENUM */
