@@ -176,7 +176,7 @@ memory@00000000 {
 
 &accdet {
 		accdet-mic-vol = <7>;
-		headset-mode-setting = <0x500 0x200 1 0x1F0 0x800 0x800 0x20>;
+		headset-mode-setting = <0x500 0x600 1 0x1F0 0x600 0x800 0x20>;
 		accdet-plugout-debounce = <20>;
 		/*1:ACC mode, 2:low cost without in bias, 6:low cost with in bias.modify by caozhg*/
 		accdet-mic-mode = <1>;
