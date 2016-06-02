@@ -1360,6 +1360,8 @@ static int florida_init(struct snd_soc_pcm_runtime *runtime)
 	snd_soc_dapm_sync(dapm);
 	return ret;
 }
+
+bool florida_power_status = false;
 int florida_powerdown_prepare(struct device *dev)
 {
     struct snd_soc_card *card =dev_get_drvdata(dev);
@@ -1370,6 +1372,7 @@ int florida_powerdown_prepare(struct device *dev)
 	if (ret == KLASSEN_RUN_HEADSETMIC) {
             //because clk will not closed by bias_level when headset in, so close here when suspend
              printk("%s disable clk",__func__);
+	   florida_power_status = true;		
             ret = snd_soc_codec_set_pll(florida, FLORIDA_FLL1_REFCLK,
                 ARIZONA_FLL_SRC_NONE, 0, 0);
             if (ret < 0) {
@@ -1407,7 +1410,8 @@ void florida_powerdown_complete(struct device *dev)
     int ret;
      ret = florida_check_clock_conditions(card);  
 	 printk("%s enter ret %d \n",__func__,ret);
-      if (ret == KLASSEN_RUN_HEADSETMIC) {
+      if ((ret == KLASSEN_RUN_HEADSETMIC) || (florida_power_status == true)) {
+	     florida_power_status = false;	
               printk("%s reenable clk",__func__);
             /*enable 26Mhz clock */
 			 clk_monitor(1,1,0);

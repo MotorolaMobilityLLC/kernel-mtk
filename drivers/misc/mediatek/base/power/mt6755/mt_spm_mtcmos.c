@@ -1421,18 +1421,22 @@ do {    \
 
 EXPORT_SYMBOL(clkmgr_is_locked);
 
-
+#define GPIO115  115
+extern int mt_set_gpio_mode_base(unsigned long pin, unsigned long mode);
 int clk_monitor(int gpio_idx, int ckmon_value, int div)
 {
 
     unsigned long flags;
+    unsigned int  value;	
     clkmgr_lock(flags);
     if (1 == ckmon_value)	{
     spm_write(clk_cksys_base+0x300, 1<<8);
-    // mt_set_gpio_mode(GPIO115 | 0x80000000, 3);
+     mt_set_gpio_mode_base(GPIO115 | 0x80000000, 3);
+     value = spm_read(clk_cksys_base+0x300);
+     printk("arizona 26m clk value is 0x%x\n",value );	 
     } else {
-    spm_write(clk_cksys_base+0x300, 1<<8);
-//     mt_set_gpio_mode(GPIO115 | 0x80000000, 3);
+    spm_write(clk_cksys_base+0x300, 0);
+     mt_set_gpio_mode_base(GPIO115 | 0x80000000, 3);
     }	
    clkmgr_unlock(flags);
    return 0;
