@@ -1091,11 +1091,7 @@ camera_pins_cam_ldo_vcama_0: cam0@0 {
 
 /*lenovo.sw wuyt3 add for k52M camera*/
 &i2c2 {
-	s5k3m2_cal@58 {
-			compatible = "mediatek,s5k3m2_cal";
-			reg = <0x58>;
-			status = "okay";
-		};
+
 GT24c64a@50 {
 			compatible = "mediatek,GT24c64a";
 			reg = <0x50>;
@@ -1110,11 +1106,7 @@ GT24c64a@50 {
 			status = "okay";
 		};
 
-		gt24c08h@54 {
-			compatible = "mediatek,gt24c08h";
-			reg = <0x54>;
-			status = "okay";
-		};
+
 };
 
 /*lenovo.sw wuyt3 add end*/
