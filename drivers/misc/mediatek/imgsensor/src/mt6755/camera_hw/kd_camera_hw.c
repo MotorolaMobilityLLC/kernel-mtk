@@ -750,14 +750,17 @@ BOOL hwpoweron(PowerInformation pwInfo, char *mode_name)
 			if (mtkcam_gpio_set(pinSetIdx, pwInfo.PowerType, 1)) {
 				PK_ERR("[CAMERA CUST_AVDD] set gpio failed!!\n");
 			}
+		/*lenovo.sw huangsh4 start remove pmic power of avdd for kungfuM*/
+			#if 0
 			if (PowerCustList.PowerCustInfo[CUST_AVDD].Gpio_Pin == GPIO_UNSUPPORTED) {
 			PK_ERR("[CAMERA SENSOR]  enable analog power\n");
 			if (TRUE != _hwPowerOn(pwInfo.PowerType, pwInfo.Voltage)) {
 				PK_ERR("[CAMERA SENSOR] Fail to enable analog power\n");
 				return FALSE;
 			}
-		}
-			
+		}	
+		#endif
+		/*lenovo.sw huangsh4 end remove pmic power of avdd for kungfuM*/
 			}else {
 		if (PowerCustList.PowerCustInfo[CUST_AVDD].Gpio_Pin == GPIO_UNSUPPORTED) {
 			PK_ERR("[CAMERA SENSOR]  enable analog power\n");
@@ -944,12 +947,16 @@ BOOL hwpowerdown(PowerInformation pwInfo, char *mode_name)
 	if (gcurrSensorName && ((0 == strcmp(SENSOR_DRVNAME_S5K3P3SX_MIPI_RAW,gcurrSensorName))||(0 == strcmp(SENSOR_DRVNAME_S5K3P3SX_OFILM_MIPI_RAW,gcurrSensorName)))){
 		if (mtkcam_gpio_set(pinSetIdx, AVDD,0)) {
 				PK_ERR("[CAMERA CUST_AVDD] set gpio ldo failed!!\n");/* 1-voltage for reverse*/}
+		/*lenovo.sw huangsh4 start remove pmic power of avdd for kungfuM*/
+		#if 0
 		if (PowerCustList.PowerCustInfo[CUST_AVDD].Gpio_Pin == GPIO_UNSUPPORTED) {
 			if (TRUE != _hwPowerDown(pwInfo.PowerType)) {
 				PK_ERR("[CAMERA SENSOR] Fail to disable analog power\n");
 				return FALSE;
 			}
 		}
+		#endif
+		/*lenovo.sw huangsh4 end remove pmic power of avdd for kungfuM*/
 			} else {
 		if (PowerCustList.PowerCustInfo[CUST_AVDD].Gpio_Pin == GPIO_UNSUPPORTED) {
 			if (TRUE != _hwPowerDown(pwInfo.PowerType)) {
