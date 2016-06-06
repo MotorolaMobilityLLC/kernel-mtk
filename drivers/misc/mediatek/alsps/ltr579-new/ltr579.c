@@ -625,18 +625,15 @@ static int ltr579_dynamic_calibrate(void)
 				dynamic_cali = noise;
 				isadjust = 1;
 				
-				if(noise < 21){
-						atomic_set(&obj->ps_thd_val_high,  noise+56);
-						atomic_set(&obj->ps_thd_val_low, noise+28);
-				}else if(noise < 24){
-						atomic_set(&obj->ps_thd_val_high,  noise+69);
-						atomic_set(&obj->ps_thd_val_low, noise+33);
+				if(noise < 20){
+						atomic_set(&obj->ps_thd_val_high,  noise+52);
+						atomic_set(&obj->ps_thd_val_low, noise+27);
 				}else if(noise < 100){
-						atomic_set(&obj->ps_thd_val_high,  noise+77);
-						atomic_set(&obj->ps_thd_val_low, noise+37);
+						atomic_set(&obj->ps_thd_val_high,  noise+75);
+						atomic_set(&obj->ps_thd_val_low, noise+36);
 				}else if(noise < 200){
-						atomic_set(&obj->ps_thd_val_high,  noise+87);
-						atomic_set(&obj->ps_thd_val_low, noise+47);
+						atomic_set(&obj->ps_thd_val_high,  noise+85);
+						atomic_set(&obj->ps_thd_val_low, noise+46);
 				}else if(noise < 300){
 						atomic_set(&obj->ps_thd_val_high,  noise+97);
 						atomic_set(&obj->ps_thd_val_low, noise+57);
