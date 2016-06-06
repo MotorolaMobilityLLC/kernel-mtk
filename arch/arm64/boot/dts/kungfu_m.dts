@@ -84,7 +84,7 @@
 		compatible = "mediatek,vibrator";
 		vib_timer = <25>;
 		vib_limit = <9>;
-		vib_vol= <5>;
+		vib_vol= <6>;
 	};
 /*  start sensor */
 /* Lenovo-sw, weimh1, 2016-3-31 add begin: configure gsensor cust_accel */
