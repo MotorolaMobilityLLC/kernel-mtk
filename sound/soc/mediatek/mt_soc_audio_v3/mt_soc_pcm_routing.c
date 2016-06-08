@@ -1074,19 +1074,39 @@ static int mtk_afe_routing_remove(struct platform_device *pdev)
 static int mtk_routing_pm_ops_suspend(struct device *device)
 {
 	pr_warn("%s\n", __func__);
-	if (get_voice_status() == true || get_voice_md2_status() == true)
+	pr_warn("%s mtkadd=>start::AFE_I2S_CON = 0x%x\n", __func__, Afe_Get_Reg(AFE_I2S_CON));
+	pr_warn("%s mtkadd=>start::AFE_I2S_CON1 = 0x%x\n", __func__, Afe_Get_Reg(AFE_I2S_CON1));
+	pr_warn("%s mtkadd=>start::AFE_I2S_CON2 = 0x%x\n", __func__, Afe_Get_Reg(AFE_I2S_CON2));
+	pr_warn("%s mtkadd=>start::AFE_I2S_CON3 = 0x%x\n", __func__, Afe_Get_Reg(AFE_I2S_CON3));
+	pr_warn("%s mtkadd=>start::AFE_DAC_CON0 = 0x%x\n", __func__, Afe_Get_Reg(AFE_DAC_CON0));
+	pr_warn("%s mtkadd=>start::AFE_DAC_CON1 = 0x%x\n", __func__, Afe_Get_Reg(AFE_DAC_CON1));
+	pr_warn("%s mtkadd=>start::AFE_GAIN1_CONN = 0x%x\n", __func__, Afe_Get_Reg(AFE_GAIN1_CONN));
+	pr_warn("%s mtkadd=>start::AFE_GAIN1_CONN2 = 0x%x\n", __func__, Afe_Get_Reg(AFE_GAIN1_CONN2));
+	
+	if (get_voice_status() == true || get_voice_md2_status() == true){
+		pr_warn("%s 000\n ", __func__);
 		return 0;
-
+	}
 	if (AudDrvSuspendStatus == false) {
+		pr_warn("%s 111\n ", __func__);
 		AudDrv_Clk_Power_On();
 		BackUp_Audio_Register();
 		if (ConditionEnterSuspend() == true) {
+			pr_warn("%s 222\n ", __func__);
 			SetAnalogSuspend(true);
 			/* clkmux_sel(MT_MUX_AUDINTBUS, 0, "AUDIO"); //select 26M */
 			AudDrv_Suspend_Clk_Off();
 		}
 		AudDrvSuspendStatus = true;
 	}
+	pr_warn("%s mtkadd=>end::AFE_I2S_CON = 0x%x\n", __func__, Afe_Get_Reg(AFE_I2S_CON));
+	pr_warn("%s mtkadd=>end::AFE_I2S_CON1 = 0x%x\n", __func__, Afe_Get_Reg(AFE_I2S_CON1));
+	pr_warn("%s mtkadd=>end::AFE_I2S_CON2 = 0x%x\n", __func__, Afe_Get_Reg(AFE_I2S_CON2));
+	pr_warn("%s mtkadd=>end::AFE_I2S_CON3 = 0x%x\n", __func__, Afe_Get_Reg(AFE_I2S_CON3));
+	pr_warn("%s mtkadd=>end::AFE_DAC_CON0 = 0x%x\n", __func__, Afe_Get_Reg(AFE_DAC_CON0));
+	pr_warn("%s mtkadd=>end::AFE_DAC_CON1 = 0x%x\n", __func__, Afe_Get_Reg(AFE_DAC_CON1));
+	pr_warn("%s mtkadd=>end::AFE_GAIN1_CONN = 0x%x\n", __func__, Afe_Get_Reg(AFE_GAIN1_CONN));
+	pr_warn("%s mtkadd=>end::AFE_GAIN1_CONN2 = 0x%x\n", __func__, Afe_Get_Reg(AFE_GAIN1_CONN2));
 	return 0;
 }
 
@@ -1100,14 +1120,32 @@ static int mtk_pm_ops_suspend_ipo(struct device *device)
 static int mtk_routing_pm_ops_resume(struct device *device)
 {
 	pr_warn("%s\n ", __func__);
+	pr_warn("%s mtkadd=>start::AFE_I2S_CON = 0x%x\n", __func__, Afe_Get_Reg(AFE_I2S_CON));
+	pr_warn("%s mtkadd=>start::AFE_I2S_CON1 = 0x%x\n", __func__, Afe_Get_Reg(AFE_I2S_CON1));
+	pr_warn("%s mtkadd=>start::AFE_I2S_CON2 = 0x%x\n", __func__, Afe_Get_Reg(AFE_I2S_CON2));
+	pr_warn("%s mtkadd=>start::AFE_I2S_CON3 = 0x%x\n", __func__, Afe_Get_Reg(AFE_I2S_CON3));
+	pr_warn("%s mtkadd=>start::AFE_DAC_CON0 = 0x%x\n", __func__, Afe_Get_Reg(AFE_DAC_CON0));
+	pr_warn("%s mtkadd=>start::AFE_DAC_CON1 = 0x%x\n", __func__, Afe_Get_Reg(AFE_DAC_CON1));
+	pr_warn("%s mtkadd=>start::AFE_GAIN1_CONN = 0x%x\n", __func__, Afe_Get_Reg(AFE_GAIN1_CONN));
+	pr_warn("%s mtkadd=>start::AFE_GAIN1_CONN2 = 0x%x\n", __func__, Afe_Get_Reg(AFE_GAIN1_CONN2));
 	if (AudDrvSuspendStatus == true) {
+		pr_warn("%s 111\n ", __func__);
 		AudDrv_Suspend_Clk_On();
 		if (ConditionEnterSuspend() == true) {
+			pr_warn("%s 222\n ", __func__);
 			Restore_Audio_Register();
 			SetAnalogSuspend(false);
 		}
 		AudDrvSuspendStatus = false;
 	}
+	pr_warn("%s mtkadd=>end::AFE_I2S_CON = 0x%x\n", __func__, Afe_Get_Reg(AFE_I2S_CON));
+	pr_warn("%s mtkadd=>end::AFE_I2S_CON1 = 0x%x\n", __func__, Afe_Get_Reg(AFE_I2S_CON1));
+	pr_warn("%s mtkadd=>end::AFE_I2S_CON2 = 0x%x\n", __func__, Afe_Get_Reg(AFE_I2S_CON2));
+	pr_warn("%s mtkadd=>end::AFE_I2S_CON3 = 0x%x\n", __func__, Afe_Get_Reg(AFE_I2S_CON3));
+	pr_warn("%s mtkadd=>end::AFE_DAC_CON0 = 0x%x\n", __func__, Afe_Get_Reg(AFE_DAC_CON0));
+	pr_warn("%s mtkadd=>end::AFE_DAC_CON1 = 0x%x\n", __func__, Afe_Get_Reg(AFE_DAC_CON1));
+	pr_warn("%s mtkadd=>end::AFE_GAIN1_CONN = 0x%x\n", __func__, Afe_Get_Reg(AFE_GAIN1_CONN));
+	pr_warn("%s mtkadd=>end::AFE_GAIN1_CONN2 = 0x%x\n", __func__, Afe_Get_Reg(AFE_GAIN1_CONN2));
 	return 0;
 }
 
