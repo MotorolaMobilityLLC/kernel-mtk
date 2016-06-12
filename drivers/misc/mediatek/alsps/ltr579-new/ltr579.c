@@ -51,7 +51,7 @@
 
 static struct i2c_client *ltr579_i2c_client = NULL;
 static int isadjust=0;
-static int dynamic_cali = 2047;
+static int dynamic_cali = 0;
 
 /*---------------------CONFIG_OF START------------------*/
 
@@ -622,7 +622,7 @@ static int ltr579_dynamic_calibrate(void)
 
 	if(noise < (dynamic_cali + 200))
 	{
-				dynamic_cali = noise;
+				//dynamic_cali = noise;
 				isadjust = 1;
 				
 				if(noise < 20){
@@ -631,32 +631,15 @@ static int ltr579_dynamic_calibrate(void)
 				}else if(noise < 100){
 						atomic_set(&obj->ps_thd_val_high,  noise+75);
 						atomic_set(&obj->ps_thd_val_low, noise+36);
-				}else if(noise < 200){
+				}else {
 						atomic_set(&obj->ps_thd_val_high,  noise+85);
 						atomic_set(&obj->ps_thd_val_low, noise+46);
-				}else if(noise < 300){
-						atomic_set(&obj->ps_thd_val_high,  noise+97);
-						atomic_set(&obj->ps_thd_val_low, noise+57);
-				}else if(noise < 400){
-						atomic_set(&obj->ps_thd_val_high,  noise+107);
-						atomic_set(&obj->ps_thd_val_low, noise+67);
-				}else if(noise < 600){
-						atomic_set(&obj->ps_thd_val_high,  noise+117);
-						atomic_set(&obj->ps_thd_val_low, noise+77);
-				}else if(noise < 800){
-					atomic_set(&obj->ps_thd_val_high,  noise+127);
-					atomic_set(&obj->ps_thd_val_low, noise+87);
-				}else if(noise < 1000){
-						atomic_set(&obj->ps_thd_val_high,  noise+137);
-						atomic_set(&obj->ps_thd_val_low, noise+97);
-				}else{
-						atomic_set(&obj->ps_thd_val_high,  1200);
-						atomic_set(&obj->ps_thd_val_low, 1150);
-						isadjust = 0;
-					printk( "ltr579 the proximity sensor ps raw data\n");
 				}
 
-		}
+	} else {
+		atomic_set(&obj->ps_thd_val_high,  obj->hw->ps_threshold_high);
+		atomic_set(&obj->ps_thd_val_low,  obj->hw->ps_threshold_low);
+	}
 	
 	ps_thd_val_low = atomic_read(&obj->ps_thd_val_low);
 	ps_thd_val_high = atomic_read(&obj->ps_thd_val_high);
@@ -2206,7 +2189,7 @@ static int ps_enable_nodata(int en)
 		APS_ERR("ltr579_obj is null!!\n");
 		return -1;
 	}
-	APS_LOG("ltr579_obj als enable value = %d\n", en);
+	APS_LOG("ltr579_obj ps  enable value = %d\n", en);
 
     if(en)
 	{
