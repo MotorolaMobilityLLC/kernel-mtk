@@ -623,4 +623,7 @@ CONFIG_LENOVO_RTC_SAVE_TIMEZONE_SUPPORT=y
 #Leovo-sw quebs2 added 20160526 begin, support for OTP functionality
 CONFIG_MTK_EMMC_SUPPORT_OTP=y
 #Leovo-sw quebs2 added 20160526 end, support for OTP functionality
+CONFIG_F2FS_FS=y
+CONFIG_F2FS_FS_SECURITY=y
+CONFIG_F2FS_FS_XATTR=y
 ###################### Lenovo BSP Feature end #########################
