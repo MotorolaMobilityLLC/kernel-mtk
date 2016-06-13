@@ -969,7 +969,7 @@ static int ltr579_als_enable(int gainrange)
 		{
 			APS_ERR("ltr579_sensor call als_data_report fail = %d\n", ret);
 		}else {
-			APS_LOG("ltr579_als_enable:  report  first data after enable\n");
+			APS_LOG("ltr579_als_enable:  report  first data after enable, als_value= %d, status=%d\n", als_value, status);
 		}
 	}
 
@@ -1006,6 +1006,10 @@ static int ltr579_als_disable(void)
  	    APS_LOG("ltr579_als_disable ...ERROR\n");
  	else
         APS_LOG("ltr579_als_disable ...OK\n");
+
+	als_data_report(alsps_context_obj->idev_als, -2, SENSOR_STATUS_ACCURACY_MEDIUM);
+	APS_LOG("ltr579_als_disable: report one fake als value -2 to make sure the first data after enable could be reported sucessfully\n");
+
 	return error;
 }
 

@@ -13,7 +13,7 @@ int als_data_report(struct input_dev *dev, int value, int status)
 	struct alsps_context *cxt = NULL;
 
 	cxt  = alsps_context_obj;
-	/*ALSPS_LOG(" +als_data_report! %d, %d\n", value, status);*/
+	ALSPS_LOG(" +als_data_report! %d, %d\n", value, status);
 	/* force trigger data update after sensor enable. */
 	if (cxt->is_get_valid_als_data_after_enable == false) {
 		input_report_abs(dev, EVENT_TYPE_ALS_VALUE, value+1);
