@@ -2314,6 +2314,9 @@ VOID aisFsmSteps(IN P_ADAPTER_T prAdapter, ENUM_AIS_STATE_T eNextState)
 				return;
 			}
 
+			/* release channel */
+			aisFsmReleaseCh(prAdapter);
+
 			/* zero-ize */
 			kalMemZero(prMsgChReq, sizeof(MSG_CH_REQ_T));
 

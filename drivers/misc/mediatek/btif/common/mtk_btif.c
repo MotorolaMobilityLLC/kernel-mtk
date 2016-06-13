@@ -2613,6 +2613,7 @@ unsigned int btif_bbs_write(p_btif_buf_str p_bbs,
 		hal_btif_dump_reg(p_btif->p_btif_info, REG_BTIF_ALL);
 		hal_dma_dump_reg(p_btif->p_rx_dma->p_dma_info, REG_RX_DMA_ALL);
 		_btif_dump_memory("<DMA Rx vFIFO>", p_buf, buf_len);
+		BBS_INIT(p_bbs);
 	}
 
 	return wr_len;
