@@ -41,15 +41,15 @@
 
 /* Qmax for battery  */
 /*lenovo-sw mahj2 update ZCV param Begin*/
-#define Q_MAX_POS_50 3430
-#define Q_MAX_POS_25 3500
-#define Q_MAX_POS_0 2710
-#define Q_MAX_NEG_10 1915
+#define Q_MAX_POS_50 2907
+#define Q_MAX_POS_25 2910
+#define Q_MAX_POS_0 1854
+#define Q_MAX_NEG_10 1138
 
-#define Q_MAX_POS_50_H_CURRENT 3361
-#define Q_MAX_POS_25_H_CURRENT 3430
-#define Q_MAX_POS_0_H_CURRENT 2656
-#define Q_MAX_NEG_10_H_CURRENT 1877
+#define Q_MAX_POS_50_H_CURRENT 2849
+#define Q_MAX_POS_25_H_CURRENT 2852
+#define Q_MAX_POS_0_H_CURRENT 1817
+#define Q_MAX_NEG_10_H_CURRENT 1115
 /*lenovo-sw mahj2 update ZCV param End*/
 
 /* Discharge Percentage */
@@ -170,7 +170,7 @@
 #endif
 /*End lenovo mahj2 add */
 //lenovo-sw mahj2 add for multi battery Begin
-#define MTK_MULTI_BAT_PROFILE_SUPPORT
+//#define MTK_MULTI_BAT_PROFILE_SUPPORT
 //lenovo-sw mahj2 add for multi battery End
 
 #endif
