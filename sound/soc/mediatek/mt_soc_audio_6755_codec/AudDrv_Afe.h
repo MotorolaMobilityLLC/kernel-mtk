@@ -285,7 +285,7 @@ typedef enum {
 	O012 = 12,
 	OUT_MAX
 } ITRCON_OUT_T;
-
+#if  0
 /* IRQ related */
 typedef enum {
 	IRQ1 = 1,
@@ -294,7 +294,7 @@ typedef enum {
 	IRQ6 = 4,		/* SPDIF */
 	IRQMAX
 } IRQTYPE_T;
-
+#endif
 
 /* Side tone filter related */
 typedef enum {

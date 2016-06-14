@@ -592,6 +592,7 @@ static int Audio_Mode_Set(struct snd_kcontrol *kcontrol,
 	return 0;
 }
 
+#if  0
 static int Audio_Irqcnt1_Get(struct snd_kcontrol *kcontrol,
 			     struct snd_ctl_elem_value *ucontrol)
 {
@@ -637,7 +638,7 @@ static int Audio_Irqcnt2_Set(struct snd_kcontrol *kcontrol,
 	AudDrv_Clk_Off();
 	return 0;
 }
-
+#endif
 /* static struct snd_dma_buffer *Dl1_Playback_dma_buf  = NULL; */
 
 static int GetAudioTrimOffsetAverage(int *buffer_value, int trim_num)
@@ -885,10 +886,10 @@ static const struct snd_kcontrol_new Audio_snd_routing_controls[] = {
 		     Audio_SideTone_Get, Audio_SideTone_Set),
 	SOC_ENUM_EXT("Audio_Mode_Switch", Audio_Routing_Enum[4],
 		     Audio_Mode_Get, Audio_Mode_Set),
-	SOC_SINGLE_EXT("Audio IRQ1 CNT", SND_SOC_NOPM, 0, 65536, 0,
-		       Audio_Irqcnt1_Get, Audio_Irqcnt1_Set),
-	SOC_SINGLE_EXT("Audio IRQ2 CNT", SND_SOC_NOPM, 0, 65536, 0,
-		       Audio_Irqcnt2_Get, Audio_Irqcnt2_Set),
+//	SOC_SINGLE_EXT("Audio IRQ1 CNT", SND_SOC_NOPM, 0, 65536, 0,
+//		       Audio_Irqcnt1_Get, Audio_Irqcnt1_Set),
+//	SOC_SINGLE_EXT("Audio IRQ2 CNT", SND_SOC_NOPM, 0, 65536, 0,
+//		       Audio_Irqcnt2_Get, Audio_Irqcnt2_Set),
 	SOC_SINGLE_EXT("Audio HPL Offset", SND_SOC_NOPM, 0, 0x20000, 0,
 		       Audio_Hpl_Offset_Get, Audio_Hpl_Offset_Set),
 	SOC_SINGLE_EXT("Audio HPR Offset", SND_SOC_NOPM, 0, 0x20000, 0,

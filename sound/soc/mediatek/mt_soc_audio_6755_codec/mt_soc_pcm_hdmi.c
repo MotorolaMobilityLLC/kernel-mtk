@@ -473,8 +473,8 @@ static int mtk_pcm_hdmi_stop(struct snd_pcm_substream *substream)
 
 	pr_warn("mtk_pcm_hdmi_stop\n");
 
-	SetIrqEnable(Soc_Aud_IRQ_MCU_MODE_IRQ5_MCU_MODE, false);
-
+	// SetIrqEnable(Soc_Aud_IRQ_MCU_MODE_IRQ5_MCU_MODE, false);
+        irq_remove_user(substream, Soc_Aud_IRQ_MCU_MODE_IRQ5_MCU_MODE);
 	SetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_HDMI, false);
 
 #ifdef _DEBUG_TDM_KERNEL_
@@ -718,8 +718,8 @@ static int mtk_pcm_hdmi_prepare(struct snd_pcm_substream *substream)
 	PRINTK_AUD_HDMI("mtk_pcm_hdmi_prepare format =%d, rate = %d  channels = %d period_size = %lu\n",
 			runtime->format, runtime->rate, runtime->channels, runtime->period_size);
 
-	SetIrqEnable(Soc_Aud_IRQ_MCU_MODE_IRQ5_MCU_MODE, false);
-
+//	SetIrqEnable(Soc_Aud_IRQ_MCU_MODE_IRQ5_MCU_MODE, false);
+SetIrqEnable(Soc_Aud_IRQ_MCU_MODE_IRQ5_MCU_MODE, false);
 	SetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_HDMI, false);
 
 	SetHDMIEnable(false);
@@ -913,9 +913,15 @@ static int mtk_pcm_hdmi_start(struct snd_pcm_substream *substream)
 #endif
 
 	/* here to set interrupt */
-	SetIrqMcuCounter(Soc_Aud_IRQ_MCU_MODE_IRQ5_MCU_MODE,
-			 (runtime->period_size / 2));
-	SetIrqEnable(Soc_Aud_IRQ_MCU_MODE_IRQ5_MCU_MODE, true);
+//	SetIrqMcuCounter(Soc_Aud_IRQ_MCU_MODE_IRQ5_MCU_MODE,
+//			 (runtime->period_size / 2));
+//	SetIrqEnable(Soc_Aud_IRQ_MCU_MODE_IRQ5_MCU_MODE, true);
+
+
+	irq_add_user(substream,
+		     Soc_Aud_IRQ_MCU_MODE_IRQ5_MCU_MODE,
+		     substream->runtime->rate,
+		     (runtime->period_size / 2));
 
 	EnableAfe(true);
 

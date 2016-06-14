@@ -435,12 +435,7 @@ typedef struct {
 } AudioMrgIf;
 
 /* class for irq mode and counter. */
-typedef struct {
-	unsigned int mStatus;	/* on,off */
-	unsigned int mIrqMcuCounter;
-	unsigned int mIrqMcuCounterSave;
-	unsigned int mSampleRate;
-} AudioIrqMcuMode;
+
 
 typedef struct {
 	int mFormat;
@@ -865,5 +860,30 @@ typedef struct {
 	uint32 REG_AFE_ADDA4_ULCF_CFG_28_27;
 	uint32 REG_AFE_ADDA4_ULCF_CFG_30_29;
 } AudioAfeRegCache;
+
+
+
+
+/*
+* IRQ Manager
+ */
+#define IRQ_MIN_RATE 48000
+#define IRQ_MAX_RATE 260000
+#define IRQ_TOLERANCE_US 10 /* irq period difference that can be tolerated */
+
+struct irq_user {
+	const void *user;
+	unsigned int request_rate;
+	unsigned int request_count;
+	struct list_head list;
+};
+
+struct irq_manager {
+	bool is_on;
+	unsigned int rate;
+	unsigned int count;
+	struct list_head users;
+	const struct irq_user *selected_user;
+};
 
 #endif
