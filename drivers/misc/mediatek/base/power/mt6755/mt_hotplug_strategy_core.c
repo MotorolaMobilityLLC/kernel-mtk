@@ -121,7 +121,7 @@ static void hps_get_sysinfo(void)
 struct hrtimer cpuhp_timer;
 static int cpuhp_timer_func(unsigned long data)
 {
-	BUG_ON(1);
+	WARN_ON(1);
 
 	return HRTIMER_NORESTART;
 }
