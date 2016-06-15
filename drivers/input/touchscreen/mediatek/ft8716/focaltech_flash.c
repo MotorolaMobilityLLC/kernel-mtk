@@ -116,7 +116,7 @@
 *******************************************************************************/
 static unsigned char CTPM_FW[] = 
 {
-	#include "Lenovo_Kungfu_DVT1_0a000002_20160531_app.i"
+	#include "Lenovo_Kungfu_DVT1_0a000004_20160615_app.i"
 };
 
 static unsigned char aucFW_PRAM_BOOT[] = 

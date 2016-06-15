@@ -136,7 +136,7 @@
 #define TPD_VELOCITY_CUSTOM_X 				15
 #define TPD_VELOCITY_CUSTOM_Y 				20
 
-#define CFG_MAX_TOUCH_POINTS				5
+#define CFG_MAX_TOUCH_POINTS				10 //chang for kungfu 
 #define MT_MAX_TOUCH_POINTS				10
 #define FTS_MAX_ID							0x0F
 #define FTS_TOUCH_STEP						6
@@ -182,7 +182,7 @@
 
 #define TPD_MAX_POINTS_2                        		2
 #define TPD_MAX_POINTS_5                        		5
-#define TPD_MAX_POINTS_10                   10
+#define TPD_MAX_POINTS_10                   		10
 #define AUTO_CLB_NEED                           		1
 #define AUTO_CLB_NONEED                         		0
 #define LEN_FLASH_ECC_MAX 					0xFFFE
