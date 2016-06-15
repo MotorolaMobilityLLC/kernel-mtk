@@ -58,6 +58,12 @@
 #define BMM050_DEFAULT_DELAY	100
 #define CALIBRATION_DATA_SIZE	12
 
+/*Lenovo-sw weimh1 add 2016-6-14 begin:add for calibration*/
+//#define BMI120_CALIB_HAL        /*Factory calibration*/
+#define BMI120_AUTO_CALIB    /*Auto calibration*/
+/*Lenovo-sw weimh1 add 2016-6-14 end*/
+
+
 /*----------------------------------------------------------------------------*/
 /*
 * Enable the driver to block e-compass daemon on suspend
@@ -302,6 +308,16 @@ static int bmi160_acc_init_flag =-1; // 0<==>OK -1 <==> fail
 struct acc_hw accel_cust_bmi160;
 static struct acc_hw *hw = &accel_cust_bmi160;
 
+/*Lenovo-sw weimh1 add 2016-6-14 begin:add for calibration*/
+#ifdef BMI120_AUTO_CALIB
+static bool bmi_daemon_enable_status = false;
+static int calib_auto_offset[3] = {0,0,0};
+#endif
+
+#ifdef BMI120_CALIB_HAL
+static int calib_offset[3] = {0,0,0};                  // for lenovo hal calib
+#endif
+/*Lenovo-sw weimh1 add 2016-6-14 end:add for calibration*/
 
 /*----------------------------------------------------------------------------*/
 #define GSE_TAG                  "[Gsensor] "
@@ -1151,6 +1167,21 @@ static int BMI160_ACC_ReadSensorData(struct i2c_client *client, char *buf, int b
 		acc[BMI160_ACC_AXIS_Y] = acc[BMI160_ACC_AXIS_Y] * GRAVITY_EARTH_1000 / obj->reso->sensitivity;
 		acc[BMI160_ACC_AXIS_Z] = acc[BMI160_ACC_AXIS_Z] * GRAVITY_EARTH_1000 / obj->reso->sensitivity;
 
+		/*Lenovo-sw weimh1 add 2016-6-14 begin:for calibration*/
+#ifdef BMI120_CALIB_HAL
+		acc[BMI160_ACC_AXIS_X] =  acc[BMI160_ACC_AXIS_X] - calib_offset[BMI160_ACC_AXIS_X];
+		acc[BMI160_ACC_AXIS_Y] =  acc[BMI160_ACC_AXIS_Y] - calib_offset[BMI160_ACC_AXIS_Y];
+		acc[BMI160_ACC_AXIS_Z] =  acc[BMI160_ACC_AXIS_Z] - calib_offset[BMI160_ACC_AXIS_Z];		
+#endif
+
+#ifdef BMI120_AUTO_CALIB
+		acc[BMI160_ACC_AXIS_X] =  acc[BMI160_ACC_AXIS_X] - calib_auto_offset[BMI160_ACC_AXIS_X];
+		acc[BMI160_ACC_AXIS_Y] =  acc[BMI160_ACC_AXIS_Y] - calib_auto_offset[BMI160_ACC_AXIS_Y];
+		acc[BMI160_ACC_AXIS_Z] =  acc[BMI160_ACC_AXIS_Z] - calib_auto_offset[BMI160_ACC_AXIS_Z]; 		
+#endif
+		/*Lenovo-sw weimh1 add 2016-6-14 end:for calibration*/
+
+
 		sprintf(buf, "%04x %04x %04x", acc[BMI160_ACC_AXIS_X], acc[BMI160_ACC_AXIS_Y], acc[BMI160_ACC_AXIS_Z]);
 		if(atomic_read(&obj->trace) & BMA_TRC_IOCTL)
 		{
@@ -1808,6 +1839,335 @@ static ssize_t show_power_status_value(struct device_driver *ddri, char *buf)
 	return 0;
 }
 
+/*Lenovo-sw weimh1 add 2016-6-14 begin:for calibration*/
+ #ifdef BMI120_CALIB_HAL
+static ssize_t show_cali_x_value(struct device_driver *ddri, char *buf)
+{
+	struct i2c_client *client = bmi160_acc_i2c_client;
+        int data;
+
+	if(NULL == client)
+	{
+		GSE_ERR("i2c client is null!!\n");
+		return 0;
+	}
+	data = calib_offset[BMI160_ACC_AXIS_X];
+
+	return snprintf(buf, PAGE_SIZE, "%d \n", data);
+}
+
+static ssize_t store_cali_x_value(struct device_driver *ddri, const char *buf, size_t count)
+{
+	struct bmi160_acc_i2c_data *obj = obj_i2c_data;
+	int cali_x;
+
+	if (obj == NULL)
+	{
+		GSE_ERR("i2c_data obj is null!!\n");
+		return count;
+	}
+
+	if(1 == sscanf(buf, "%d", &cali_x))
+	{
+		calib_offset[BMI160_ACC_AXIS_X] = cali_x;
+	}
+	else
+	{
+		GSE_ERR("invalid content: '%s', length = %zu\n", buf, count);
+	}
+
+	return count;
+}
+
+static ssize_t show_cali_y_value(struct device_driver *ddri, char *buf)
+{
+	struct i2c_client *client = bmi160_acc_i2c_client;
+        int data;
+
+	if(NULL == client)
+	{
+		GSE_ERR("i2c client is null!!\n");
+		return 0;
+	}
+	data = calib_offset[BMI160_ACC_AXIS_Y];
+
+	return snprintf(buf, PAGE_SIZE, "%d \n", data);
+}
+
+static ssize_t store_cali_y_value(struct device_driver *ddri, const char *buf, size_t count)
+{
+	struct bmi160_acc_i2c_data *obj = obj_i2c_data;
+	int cali_y;
+	if (obj == NULL)
+	{
+		GSE_ERR("i2c_data obj is null!!\n");
+		return count;
+	}
+
+	if(1 == sscanf(buf, "%d", &cali_y))
+	{
+		calib_offset[BMI160_ACC_AXIS_Y] = cali_y;
+	}
+	else
+	{
+		GSE_ERR("invalid content: '%s', length = %zu\n", buf, count);
+	}
+
+	return count;
+}
+
+static ssize_t show_cali_z_value(struct device_driver *ddri, char *buf)
+{
+	struct i2c_client *client = bmi160_acc_i2c_client;
+        int data;
+
+	if(NULL == client)
+	{
+		GSE_ERR("i2c client is null!!\n");
+		return 0;
+	}
+	data = calib_offset[BMI160_ACC_AXIS_Z];
+
+	return snprintf(buf, PAGE_SIZE, "%d \n", data);
+}
+
+static ssize_t store_cali_z_value(struct device_driver *ddri, const char *buf, size_t count)
+{
+	struct bmi160_acc_i2c_data *obj = obj_i2c_data;
+	int cali_z;
+	if (obj == NULL)
+	{
+		GSE_ERR("i2c_data obj is null!!\n");
+		return count;
+	}
+
+	if(1 == sscanf(buf, "%d", &cali_z))
+	{
+		calib_offset[BMI160_ACC_AXIS_Z] = cali_z;
+	}
+	else
+	{
+		GSE_ERR("invalid content: '%s', length = %zu\n", buf, count);
+	}
+
+	return count;
+}
+#endif
+
+#ifdef BMI120_AUTO_CALIB
+static ssize_t show_sensorrawdata_value(struct device_driver *ddri, char *buf)
+{
+	struct i2c_client *client = bmi160_acc_i2c_client;
+	s16 data[BMI160_ACC_AXES_NUM] = {0};
+	
+	if(NULL == client)
+	{
+		GSE_ERR("i2c client is null!!\n");
+		return 0;
+	}
+	
+	BMI160_ACC_ReadData(client, data);
+	
+	return snprintf(buf, PAGE_SIZE, "%x,%x,%x\n", data[0],data[1],data[2]);            
+}
+
+static ssize_t show_bmi_daemon_value(struct device_driver *ddri, char *buf)
+{
+  	struct i2c_client *client = bmi160_acc_i2c_client;
+        int data;
+
+	if (NULL == client) {
+		GSE_ERR("i2c client is null!!\n");
+		return 0;
+	}
+	
+	if (bmi_daemon_enable_status) {
+		data = 1;
+	}
+	else {
+		data =0;
+	}
+	
+	return snprintf(buf, PAGE_SIZE, "%d \n", data);
+}
+
+static ssize_t store_bmi_daemon_value(struct device_driver *ddri, const char *buf, size_t count)
+{
+	int value = 0;
+	int err = 0;
+	struct bmi160_acc_i2c_data *priv = obj_i2c_data;
+
+	GSE_LOG("bmi_store_enable buf=%s\n", buf);
+
+	if (priv == NULL) {
+		GSE_ERR("obj_i2c_data is NULL!\n");
+		return -1;
+	}
+
+	if (1 == sscanf(buf, "%d", &value)) {
+		if (value == 1) {
+			bmi_daemon_enable_status = true;
+	    	}
+		else {
+			bmi_daemon_enable_status = false;
+//			priv->sample_rate = BMI160_ACCEL_ODR_200HZ; //default rate		
+		}
+	}
+	else {
+		GSE_ERR(" bmi_store_enable error !!\n");
+	}
+	GSE_LOG(" bmi_store_enable done\n");
+	GSE_LOG("bmi enable value=%d, sensor_power =%d\n",value,sensor_power);
+
+	if (((value == 0) && (sensor_power == false)) ||((value == 1) && (sensor_power == true))) {
+		GSE_LOG("bmi Gsensor device have updated!\n");
+	}
+	else {
+		err = BMI160_ACC_SetPowerMode( priv->client, bmi_daemon_enable_status);
+	}
+
+	GSE_LOG("%s OK!\n",__FUNCTION__);
+	
+	return err;
+}
+
+static ssize_t show_bmi_released_value(struct device_driver *ddri,char *buf)
+{
+       struct i2c_client *client = bmi160_acc_i2c_client;
+        int released;
+       
+	if (NULL == client)
+	{
+		GSE_ERR("i2c client is null!!\n");
+		return 0;
+	}
+	
+	if (sensor_power) {
+		released  = 1;
+	}
+	else {
+		released = 0;
+	}
+
+	return snprintf(buf,PAGE_SIZE,"%d \n", released);
+}
+
+static ssize_t show_autocali_x_value(struct device_driver *ddri, char *buf)
+{
+	struct i2c_client *client = bmi160_acc_i2c_client;
+        int data;
+
+	if(NULL == client)
+	{
+		GSE_ERR("i2c client is null!!\n");
+		return 0;
+	}
+	data = calib_auto_offset[BMI160_ACC_AXIS_X];
+
+	return snprintf(buf, PAGE_SIZE, "%d \n", data);
+}
+
+static ssize_t store_autocali_x_value(struct device_driver *ddri, const char *buf, size_t count)
+{
+	struct bmi160_acc_i2c_data *obj = obj_i2c_data;
+	int auto_cali_x;
+
+	if (obj == NULL)
+	{
+		GSE_ERR("i2c_data obj is null!!\n");
+		return count;
+	}
+
+	if(1 == sscanf(buf, "%d", &auto_cali_x))
+	{
+		calib_auto_offset[BMI160_ACC_AXIS_X] = auto_cali_x;
+	}
+	else
+	{
+		GSE_ERR("invalid content: '%s', length = %zu\n", buf, count);
+	}
+
+	return count;
+}
+
+static ssize_t show_autocali_y_value(struct device_driver *ddri, char *buf)
+{
+	struct i2c_client *client = bmi160_acc_i2c_client;
+        int data;
+
+	if(NULL == client)
+	{
+		GSE_ERR("i2c client is null!!\n");
+		return 0;
+	}
+	data = calib_auto_offset[BMI160_ACC_AXIS_Y];
+
+	return snprintf(buf, PAGE_SIZE, "%d \n", data);
+}
+
+static ssize_t store_autocali_y_value(struct device_driver *ddri, const char *buf, size_t count)
+{
+	struct bmi160_acc_i2c_data *obj = obj_i2c_data;
+	int auto_cali_y;
+
+	if (obj == NULL)
+	{
+		GSE_ERR("i2c_data obj is null!!\n");
+		return count;
+	}
+
+	if(1 == sscanf(buf, "%d", &auto_cali_y))
+	{
+		calib_auto_offset[BMI160_ACC_AXIS_Y] = auto_cali_y;
+	}
+	else
+	{
+		GSE_ERR("invalid content: '%s', length = %zu\n", buf, count);
+	}
+
+	return count;
+}
+
+static ssize_t show_autocali_z_value(struct device_driver *ddri, char *buf)
+{
+	struct i2c_client *client = bmi160_acc_i2c_client;
+        int data;
+
+	if(NULL == client)
+	{
+		GSE_ERR("i2c client is null!!\n");
+		return 0;
+	}
+	data = calib_auto_offset[BMI160_ACC_AXIS_Z];
+
+	return snprintf(buf, PAGE_SIZE, "%d \n", data);
+}
+
+static ssize_t store_autocali_z_value(struct device_driver *ddri, const char *buf, size_t count)
+{
+	struct bmi160_acc_i2c_data *obj = obj_i2c_data;
+	int auto_cali_z;
+
+	if (obj == NULL)
+	{
+		GSE_ERR("i2c_data obj is null!!\n");
+		return count;
+	}
+
+	if(1 == sscanf(buf, "%d", &auto_cali_z))
+	{
+		calib_auto_offset[BMI160_ACC_AXIS_Z] = auto_cali_z;
+	}
+	else
+	{
+		GSE_ERR("invalid content: '%s', length = %zu\n", buf, count);
+	}
+
+	return count;
+}
+#endif
+/*Lenovo-sw weimh1 add 2016-6-14 end*/
+
 /*----------------------------------------------------------------------------*/
 static void bmi_fifo_frame_bytes_extend_calc(
 	struct bmi160_acc_i2c_data *client_data,
@@ -2408,6 +2768,25 @@ static DRIVER_ATTR(fifo_bytecount, S_IRUGO | S_IWUSR, bmi160_fifo_bytecount_show
 static DRIVER_ATTR(fifo_data_sel, S_IRUGO | S_IWUSR, bmi160_fifo_data_sel_show, bmi160_fifo_data_sel_store);
 static DRIVER_ATTR(fifo_data_frame, S_IRUGO, bmi160_fifo_data_out_frame_show, NULL);
 static DRIVER_ATTR(layout,      S_IRUGO | S_IWUSR, show_layout_value, store_layout_value );
+
+/*Lenovo-sw weimh1 add 2016-6-14 begin:add for calibration */
+#ifdef BMI120_AUTO_CALIB
+static DRIVER_ATTR(sensorrawdata,           S_IRUGO, show_sensorrawdata_value,    NULL);
+static DRIVER_ATTR(daemon,    S_IWUSR | S_IRUGO,show_bmi_daemon_value,store_bmi_daemon_value);//daemon comtrol enable
+static DRIVER_ATTR(released,     S_IRUGO, show_bmi_released_value,   NULL);//determing whether the hardware is released
+static DRIVER_ATTR(gsensor_auto_cali_x,      S_IWUSR | S_IRUGO, show_autocali_x_value, store_autocali_x_value);
+static DRIVER_ATTR(gsensor_auto_cali_y,      S_IWUSR | S_IRUGO, show_autocali_y_value, store_autocali_y_value);
+static DRIVER_ATTR(gsensor_auto_cali_z,      S_IWUSR | S_IRUGO, show_autocali_z_value, store_autocali_z_value);
+#endif
+
+#ifdef BMI120_CALIB_HAL
+static DRIVER_ATTR(gsensor_cali_val_x,  S_IWUSR | S_IRUGO, show_cali_x_value, store_cali_x_value);
+static DRIVER_ATTR(gsensor_cali_val_y,  S_IWUSR | S_IRUGO, show_cali_y_value, store_cali_y_value);
+static DRIVER_ATTR(gsensor_cali_val_z,  S_IWUSR | S_IRUGO, show_cali_z_value, store_cali_z_value);
+#endif
+/*Lenovo-sw weimh1 add 2016-6-14 end*/
+
+
 /*----------------------------------------------------------------------------*/
 static struct driver_attribute *bmi160_acc_attr_list[] = {
 	&driver_attr_chipinfo,     /*chip information*/
@@ -2426,6 +2805,23 @@ static struct driver_attribute *bmi160_acc_attr_list[] = {
 	&driver_attr_fifo_data_sel,
 	&driver_attr_fifo_data_frame,
 	&driver_attr_layout,
+
+/*Lenovo-sw weimh1 add 2016-6-14 begin:add for calibration */
+#ifdef BMI120_AUTO_CALIB
+	&driver_attr_sensorrawdata,   /*dump sensor raw data*/	
+	&driver_attr_daemon,
+	&driver_attr_released,
+	&driver_attr_gsensor_auto_cali_x,
+	&driver_attr_gsensor_auto_cali_y,
+	&driver_attr_gsensor_auto_cali_z,
+#endif
+
+#ifdef BMI120_CALIB_HAL
+	&driver_attr_gsensor_cali_val_x ,   /* add for lenovo hal calib syspoint by jonny */
+	&driver_attr_gsensor_cali_val_y ,   /* add for lenovo hal calib syspoint by jonny */
+	&driver_attr_gsensor_cali_val_z ,   /* add for lenovo hal calib syspoint by jonny */
+#endif
+/*Lenovo-sw weimh1 add 2016-6-14 end:add for calibration */
 };
 /*----------------------------------------------------------------------------*/
 static int bmi160_acc_create_attr(struct device_driver *driver)
@@ -4002,27 +4398,26 @@ static int bmi160_acc_i2c_probe(struct i2c_client *client, const struct i2c_devi
 	struct acc_control_path ctl={0};
 	struct acc_data_path data={0};
 #ifdef BMC050_VRV
-		struct hwmsen_object sobj_vrv;
+	struct hwmsen_object sobj_vrv;
 #endif //BMC050_VRV
 #ifdef BMC050_VLA
-		struct hwmsen_object sobj_vla;
+	struct hwmsen_object sobj_vla;
 #endif //BMC050_VLA
 #ifdef BMC050_VG
-		struct hwmsen_object sobj_vg;
+	struct hwmsen_object sobj_vg;
 #endif //BMC050_VG //tad3sgh add --
 
 	int err = 0;
 
 	GSE_FUN();
 
-	if(!(obj = kzalloc(sizeof(*obj), GFP_KERNEL)))
+	if (!(obj = kzalloc(sizeof(*obj), GFP_KERNEL)))
 	{
 		err = -ENOMEM;
 		goto exit;
 	}
 
 	memset(obj, 0, sizeof(struct bmi160_acc_i2c_data));
-	
 
 	obj->hw = hw;//get_cust_acc_hw();
 	GSE_LOG("%s: i2c_number=%d,addr = 0x%x,addr1 = 0x%x\n", __func__, hw->i2c_num,*hw->i2c_addr,*obj->hw->i2c_addr);
