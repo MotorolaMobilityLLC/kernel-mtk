@@ -3092,7 +3092,7 @@ enum _ENUM_AIS_STATE_T aisFsmJoinCompleteAction(IN struct _ADAPTER_T *prAdapter,
 					DBGLOG(AIS, INFO,
 					       "Bss " MACSTR " join fail %d times, temp disable it at time: %u\n",
 						MAC2STR(prBssDesc->aucBSSID),
-						SCN_BSS_JOIN_FAIL_THRESOLD,
+						prBssDesc->ucJoinFailureCount,
 						prBssDesc->rJoinFailTime);
 				}
 
