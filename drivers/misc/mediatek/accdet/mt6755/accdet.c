@@ -393,7 +393,8 @@ static void accdet_eint_work_callback(struct work_struct *work)
 					ACCDET_DEBUG("[Accdet] TS3A225E A standard TSR headset detected, RING2 and SLEEVE shorted!\n");
 					ts3a225e_connector_type = TS3A225E_CONNECTOR_TRS;
 					ts3a225e_write_byte(0x02, 0x07);
-					ts3a225e_write_byte(0x03, 0xf3);
+					//ts3a225e_write_byte(0x03, 0xf3);
+					ts3a225e_write_byte(0x03, 0x92);//lenovo-sw chengx2,selfie stick support
 					msleep(20);
 				} else if (ts3a225e_reg_value[5] == 0x02) {
 					ACCDET_DEBUG("[Accdet] TS3A225E A microphone detected on either RING2 or SLEEVE!\n");
