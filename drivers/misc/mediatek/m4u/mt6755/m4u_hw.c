@@ -1402,10 +1402,18 @@ static inline void _m4u_port_clock_toggle(int m4u_index, int larb, int on)
 
 int m4u_config_port(M4U_PORT_STRUCT *pM4uPort) /* native */
 {
-	M4U_PORT_ID PortID = (pM4uPort->ePortID);
-	int m4u_index = m4u_port_2_m4u_id(PortID);
-	int larb = m4u_port_2_larb_id(PortID);
+	int m4u_index;
+	M4U_PORT_ID PortID;
+	int larb;
 	int ret;
+
+	if (pM4uPort->ePortID < 0 || pM4uPort->ePortID > M4U_PORT_UNKNOWN) {
+		M4UERR("port is unknown,error port is %d\n", pM4uPort->ePortID);
+		return -1;
+	}
+	PortID = (pM4uPort->ePortID);
+	m4u_index = m4u_port_2_m4u_id(PortID);
+	larb = m4u_port_2_larb_id(PortID);
 #ifdef M4U_TEE_SERVICE_ENABLE
 	unsigned int larb_port, mmu_en = 0, sec_en = 0;
 #endif
@@ -1560,7 +1568,13 @@ void m4u_get_perf_counter(int m4u_index, int m4u_slave_id, M4U_PERF_COUNT *pM4U_
 
 int m4u_monitor_start(int m4u_id)
 {
-	unsigned long m4u_base = gM4UBaseAddr[m4u_id];
+	unsigned long m4u_base;
+
+	if (m4u_id < 0) {
+		M4UERR("ERROR m4u id ,error id is %d\n", m4u_id);
+		return -1;
+	}
+	m4u_base = gM4UBaseAddr[m4u_id];
 
 	M4UINFO("====m4u_monitor_start: %d======\n", m4u_id);
 	/* clear GMC performance counter */
@@ -1584,7 +1598,13 @@ int m4u_monitor_stop(int m4u_id)
 {
 	M4U_PERF_COUNT cnt;
 	int m4u_index = m4u_id;
-	unsigned long m4u_base = gM4UBaseAddr[m4u_index];
+	unsigned long m4u_base;
+
+	if (m4u_id < 0) {
+		M4UERR("ERROR m4u id ,error id is %d\n", m4u_id);
+		return -1;
+	}
+	m4u_base = gM4UBaseAddr[m4u_id];
 
 	/* disable GMC performance monitor */
 	m4uHw_set_field_by_mask(m4u_base, REG_MMU_CTRL_REG,
@@ -1911,6 +1931,8 @@ int m4u_unregister_fault_callback(int port)
 
 int m4u_enable_tf(int port, bool fgenable)
 {
+	if (port > M4U_PORT_UNKNOWN || port < 0)
+		return -1;
 	gM4uPort[port].enable_tf = fgenable;
 	return 0;
 }
