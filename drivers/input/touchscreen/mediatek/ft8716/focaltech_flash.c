@@ -107,6 +107,7 @@
 #define FTS_UPGRADE_55		0x55
 #define HIDTOI2C_DISABLE					0
 #define FTXXXX_INI_FILEPATH_CONFIG ""
+
 /*******************************************************************************
 * Private enumerations, structures and unions using typedef
 *******************************************************************************/
@@ -148,6 +149,7 @@ static unsigned char aucFW_PRAM_BOOT[] =
 * Global variable or extern global variabls/functions
 *******************************************************************************/
 struct fts_Upgrade_Info fts_updateinfo_curr;
+bool bypass_pram = false;
 /*******************************************************************************
 * Static function prototypes
 *******************************************************************************/
@@ -3616,14 +3618,14 @@ int fts_ctpm_fw_upgrade_with_i_file(struct i2c_client *client)
 	    	/*FW upgrade*/
     		pbt_buf = CTPM_FW;
 	   	 /*call the upgrade function*/
-    		i_ret = fts_8716_writepram(client, aucFW_PRAM_BOOT, sizeof(aucFW_PRAM_BOOT));
-	
-		if (i_ret != 0)
-		{
-			dev_err(&client->dev, "%s:11 upgrade failed. err.\n",__func__);
-			return -EIO;
-		}	
-		
+		 if(bypass_pram == false){
+    			i_ret = fts_8716_writepram(client, aucFW_PRAM_BOOT, sizeof(aucFW_PRAM_BOOT));
+			if (i_ret != 0)
+			{
+				dev_err(&client->dev, "%s:11 upgrade failed. err.\n",__func__);
+				return -EIO;
+			}
+		 }
 		i_ret =  fts_8716_ctpm_fw_upgrade(client, pbt_buf, sizeof(CTPM_FW));
 	
     		if (i_ret != 0) 
@@ -3781,6 +3783,156 @@ static unsigned char ft5x46_ctpm_VidFWid_get_from_boot(  struct i2c_client *clie
 	return vid;     
 }
 
+static unsigned char ft8716_ctpm_VidFWid_get_from_boot(  struct i2c_client *client )
+{
+	unsigned char auc_i2c_write_buf[10];
+	unsigned char reg_val[4] = {0};
+	unsigned char i = 0;
+	unsigned char vid = 0xFF;
+	unsigned char inRomBoot = 0x00;  //0x01 : run in rom boot;  0x02 : run in pram boot
+	int i_ret;
+	
+    	fts_get_upgrade_array();
+
+	i_ret = hidi2c_to_stdi2c(client);
+
+	msleep(fts_updateinfo_curr.delay_readid);
+	auc_i2c_write_buf[0] = 0x90;
+	auc_i2c_write_buf[1] = auc_i2c_write_buf[2] = auc_i2c_write_buf[3] =0x00;
+	fts_i2c_read(client, auc_i2c_write_buf, 4, reg_val, 2);
+
+	dev_dbg(&client->dev, "[FTS] just try pram : CTPM ID,ID1 = 0x%x,ID2 = 0x%x\n",reg_val[0], reg_val[1]);
+	if (reg_val[0] == fts_updateinfo_curr.upgrade_id_1 && reg_val[1] == 0xA6) {
+		bypass_pram = true ;
+		inRomBoot = 0x02;
+		dev_dbg(&client->dev, "[FTS] read pram boot id for success , pram boot id is: ID1 = 0x%x,ID2 = 0x%x ,0x:\n",
+			reg_val[0], reg_val[1]);
+		return inRomBoot;
+	} else{
+		dev_dbg(&client->dev, "[FTS] read pram boot id for test error: pram boot id is: ID1 = 0x%x,ID2 = 0x%x ,0x\n",
+			reg_val[0], reg_val[1]);
+	}
+	
+	for (i = 0; i < FTS_UPGRADE_LOOP; i++) 
+	{
+		msleep(100);
+		dev_dbg(&client->dev, "[FTS] Step 1:Reset  CTPM\n");
+		/*********Step 1:Reset  CTPM *****/
+#if 0
+		mt_set_gpio_mode(GPIO_CTP_RST_PIN, GPIO_CTP_RST_PIN_M_GPIO);
+		mt_set_gpio_dir(GPIO_CTP_RST_PIN, GPIO_DIR_OUT);
+		mt_set_gpio_out(GPIO_CTP_RST_PIN, GPIO_OUT_ZERO);  
+		msleep(5);
+		mt_set_gpio_mode(GPIO_CTP_RST_PIN, GPIO_CTP_RST_PIN_M_GPIO);
+		mt_set_gpio_dir(GPIO_CTP_RST_PIN, GPIO_DIR_OUT);
+		mt_set_gpio_out(GPIO_CTP_RST_PIN, GPIO_OUT_ONE);
+#else
+		/*write 0xaa to register 0xfc */
+		fts_write_reg(client, 0xfc, FTS_UPGRADE_AA);
+		msleep(5);
+		
+		/*write 0x55 to register 0xfc */
+		fts_write_reg(client, 0xfc, FTS_UPGRADE_55);
+
+#endif
+		if(i<=15)
+		{
+			msleep(fts_updateinfo_curr.delay_55+i*3);
+		}
+		else
+		{
+			msleep(fts_updateinfo_curr.delay_55-(i-15)*2);
+		}
+
+		i_ret = hidi2c_to_stdi2c(client);
+		msleep(5);
+   
+		/*********Step 2:Enter upgrade mode *****/
+		dev_dbg(&client->dev, "[FTS] Step 2:Enter upgrade mode \n");
+		#if 0
+			auc_i2c_write_buf[0] = FT_UPGRADE_55;
+			auc_i2c_write_buf[1] = FT_UPGRADE_AA;
+			do {
+				j++;
+				i_ret = fts_i2c_Write(client, auc_i2c_write_buf, 2);
+				msleep(5);
+			} while (i_ret <= 0 && j < 5);
+		#else
+			auc_i2c_write_buf[0] = FTS_UPGRADE_55;
+			fts_i2c_write(client, auc_i2c_write_buf, 1);
+			msleep(5);
+			auc_i2c_write_buf[0] = FTS_UPGRADE_AA;
+			fts_i2c_write(client, auc_i2c_write_buf, 1);
+		#endif
+
+#if 1
+		/*********Step 3:check READ-ID***********************/
+		msleep(fts_updateinfo_curr.delay_readid);
+		auc_i2c_write_buf[0] = 0x90;
+		auc_i2c_write_buf[1] = auc_i2c_write_buf[2] = auc_i2c_write_buf[3] =0x00;
+		fts_i2c_read(client, auc_i2c_write_buf, 4, reg_val, 2);
+
+		dev_dbg(&client->dev, "[FTS] Step 3: CTPM ID,ID1 = 0x%x,ID2 = 0x%x\n",reg_val[0], reg_val[1]);
+		if (reg_val[0] == fts_updateinfo_curr.upgrade_id_1 && reg_val[1] == 0xA6) {
+			bypass_pram = true ;
+			inRomBoot = 0x02;
+			dev_dbg(&client->dev, "[FTS]  ok: run in pramboot, pram boot id is: ID1 = 0x%x,ID2 = 0x%x ,0x%x, 0x%x:\n",
+				reg_val[0], reg_val[1], fts_updateinfo_curr.upgrade_id_1, fts_updateinfo_curr.upgrade_id_2);
+			break;
+		} else if (reg_val[0] == fts_updateinfo_curr.upgrade_id_1 && reg_val[1] == 0x16) {
+			inRomBoot = 0x01;
+			dev_dbg(&client->dev, "[FTS] Step 3 ok: run in romboot, rom boot id is: ID2 = 0x%x ,0x%x ,0x%x, 0x%x:\n",
+				reg_val[0], reg_val[1], fts_updateinfo_curr.upgrade_id_1, fts_updateinfo_curr.upgrade_id_2);
+			break;
+		}else {
+			dev_err(&client->dev, "[FTS] Step 3 fail: CTPM ID,ID1 = 0x%x,ID2 = 0x%x ,0x%x, 0x%x\n",
+				reg_val[0], reg_val[1], fts_updateinfo_curr.upgrade_id_1, fts_updateinfo_curr.upgrade_id_2);
+		}
+#endif	
+	}
+
+	if (i >= FTS_UPGRADE_LOOP)
+	{
+		dev_dbg(&client->dev, "[FTS] FTS_UPGRADE_LOOP is  i = %d \n", i);
+		return -EIO;
+	}
+	dev_dbg(&client->dev, "[FTS] OK: FTS_UPGRADE_LOOP is  i = %d \n", i);
+
+	auc_i2c_write_buf[0] = 0xcd;
+	fts_i2c_read(client, auc_i2c_write_buf, 1, reg_val, 1);
+	dev_dbg(&client->dev, "[FTS]bootloader version = 0x%x\n", reg_val[0]);
+	auc_i2c_write_buf[0] = 0x03;
+	auc_i2c_write_buf[1] = 0x00;
+	for(i = 0;i < FTS_UPGRADE_LOOP; i++) 
+	{
+		auc_i2c_write_buf[2] = 0xd7;
+		auc_i2c_write_buf[3] = 0x83;//84
+		i_ret = fts_i2c_write(client, auc_i2c_write_buf, 4);
+		if (i_ret < 0)
+		{
+			dev_dbg(&client->dev,  "[FTS] Step 4: read vendor id from flash error when i2c write, i_ret = %d\n", i_ret);
+			continue;
+		}
+		//fts_i2c_Read(client, auc_i2c_write_buf, 4, reg_val, 2);
+
+		i_ret = fts_i2c_read(client, auc_i2c_write_buf, 0, reg_val, 2);
+		if (i_ret < 0)
+		{
+			dev_dbg(&client->dev,  "[FTS] Step 4: read vendor id from flash error when i2c write, i_ret = %d\n", i_ret);
+			continue;
+		}
+
+		vid = reg_val[1];
+
+		dev_dbg(&client->dev, "%s: REG VAL ID1 = 0x%x,ID2 = 0x%x\n", __func__,reg_val[0],reg_val[1]);	
+		break;
+	}
+	dev_dbg(&client->dev, "Step 7: reset the new FW\n");
+	auc_i2c_write_buf[0] = 0x07;
+	fts_i2c_write(client, auc_i2c_write_buf, 1);
+	msleep(300);	/*make sure CTP startup normally */
+	return inRomBoot;     
+}
 
 /************************************************************************
 * Name: fts_ctpm_auto_upgrade
@@ -3793,37 +3945,54 @@ int fts_ctpm_auto_upgrade(struct i2c_client *client)
 {
 	u8 uc_host_fm_ver = FTS_REG_FW_VER;
 	u8 uc_tp_fm_ver,uc_tp_vendor_id,uc_boot_vendor_id;
-	int i_ret;
-
+	int i_ret = 0;
+	unsigned char inRomBoot = 0x00;  //0x01 : run in rom boot;  0x02 : run in pram boot
+	
 	fts_read_reg(client, FTS_REG_FW_VER, &uc_tp_fm_ver);
 	fts_read_reg(client, FTS_REG_VENDOR_ID, &uc_tp_vendor_id);
 	printk("[FTS] uc_tp_fm_ver = 0x%x, uc_tp_vendor_id = 0x%x\n",uc_tp_fm_ver, uc_tp_vendor_id);
-	
-	if(FTS_CHIP_ID==0x54){
-		if((uc_tp_vendor_id != FTS_Vendor_1_ID) && (uc_tp_vendor_id != FTS_Vendor_2_ID))
-		{
+	if (FTS_CHIP_ID == 0x87){
+		if(uc_tp_vendor_id != FTS_Vendor_1_ID ||
+			(uc_tp_vendor_id == FTS_Vendor_1_ID && uc_tp_fm_ver ==0xef)){
+			inRomBoot = ft8716_ctpm_VidFWid_get_from_boot(client);
+			if(inRomBoot == 0x02)
+			{
+				printk("[FTS] run in pram\n");
+				uc_tp_fm_ver = 0;
+				bypass_pram = true ;
+			}else if(inRomBoot == 0x01)
+			{
+				printk("[FTS] run in rom boot\n");
+				uc_tp_fm_ver = 0;
+				bypass_pram = false;
+			}else{
+				printk("[FTS] FW .i unmatched,stop upgrade\n");
+				return -EIO;//FW unmatched
+			}
+		}
+	}else if (FTS_CHIP_ID == 0x54){
+		if((uc_tp_vendor_id != FTS_Vendor_1_ID) && (uc_tp_vendor_id != FTS_Vendor_2_ID)){
 			uc_boot_vendor_id = ft5x46_ctpm_VidFWid_get_from_boot(client);
 			printk("[FTS] uc_boot_vendor_id= 0x%x!\n", uc_boot_vendor_id);
-			if((uc_boot_vendor_id == FTS_Vendor_1_ID)|| (uc_boot_vendor_id == FTS_Vendor_2_ID))
-			{
+			if((uc_boot_vendor_id == FTS_Vendor_1_ID)|| (uc_boot_vendor_id == FTS_Vendor_2_ID))	{
 				uc_tp_fm_ver = 0;//force to upgrade the FW
 				uc_tp_vendor_id = uc_boot_vendor_id;
-			}
-			else
-			{
+			}else{
 				printk("[FTS] FW .i unmatched,stop upgrade\n");
 				return -EIO;//FW unmatched
 			}
 		}
 	}
+
 	uc_host_fm_ver = fts_ctpm_get_i_file_ver();
 	printk("[FTS] uc_host_fm_ver = 0x%x\n",uc_host_fm_ver);
 	//(uc_tp_fm_ver !=0x01  ||uc_tp_fm_ver < uc_host_fm_ver ) 
-	if (uc_tp_fm_ver < uc_host_fm_ver ) 
+	if (uc_tp_fm_ver < uc_host_fm_ver) 
 	{ 
 		msleep(100);
 		dev_dbg(&client->dev, "[FTS] uc_tp_fm_ver = 0x%x, uc_host_fm_ver = 0x%x\n",uc_tp_fm_ver, uc_host_fm_ver);
 		i_ret = fts_ctpm_fw_upgrade_with_i_file(client);
+		bypass_pram = false ;
 		if (i_ret == 0)	
 		{
 			msleep(300);
@@ -3838,5 +4007,5 @@ int fts_ctpm_auto_upgrade(struct i2c_client *client)
 			return -EIO;
 		}
 	}
-	return 0;
+	return i_ret;
 }

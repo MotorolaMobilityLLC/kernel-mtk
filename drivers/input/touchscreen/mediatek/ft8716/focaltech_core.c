@@ -225,6 +225,7 @@ struct touch_info {
 *******************************************************************************/
 struct i2c_client *fts_i2c_client = NULL;
 struct input_dev *fts_input_dev = NULL;
+struct fts_touch_info fts_touch_info ;
 struct task_struct *thread = NULL;
 static unsigned int touch_irq = 0;
 /*
@@ -304,6 +305,7 @@ extern void mt_eint_set_polarity(unsigned int eint_num, unsigned int pol);
 extern unsigned int mt_eint_set_sens(unsigned int eint_num, unsigned int sens);
 extern void mt_eint_registration(unsigned int eint_num, unsigned int flow, void (EINT_FUNC_PTR)(void), unsigned int is_auto_umask);
 extern void lcm_power_off(void);
+static int fts_read_touchinfo(void);
 /*register driver and device info*/
 static const struct i2c_device_id fts_tpd_id[] = {{"fts", 0}, {}};
 
@@ -467,6 +469,9 @@ static DEVICE_ATTR(fts_test_delay, 0664,
 #ifdef  TPD_AUTO_UPGRADE
 static void fts_fw_update_work_func(struct work_struct *work)
 {
+	int ret ;
+	bool upgrate_loop = true ;
+	int  upgrate_cnt = 0 ;
 	printk("********************FTS Enter CTP Auto Upgrade ********************\n");
 	disable_irq(touch_irq);
 
@@ -475,8 +480,17 @@ static void fts_fw_update_work_func(struct work_struct *work)
 	esd_switch(0);
 	apk_debug_flag = 1;
 #endif
-
-	fts_ctpm_auto_upgrade(fts_i2c_client);
+	do{
+		ret = fts_ctpm_auto_upgrade(fts_i2c_client);
+		if(ret <0 && upgrate_cnt<2){
+			printk("********************FTS  Auto Upgrade times %d********************\n",upgrate_cnt);
+			upgrate_loop = true;
+		}
+		else
+			upgrate_loop=false;
+		upgrate_cnt++;
+	}while(upgrate_loop);
+	
 	mdelay(10);
 	is_fw_upgrate = false;
 #if FT_ESD_PROTECT
@@ -488,18 +502,16 @@ static void fts_fw_update_work_func(struct work_struct *work)
 	fts_usb_insert((bool) upmu_is_chr_det());
 #endif
 	enable_irq(touch_irq);
+	/*update  touch info after fw update */
+	fts_read_touchinfo();
 }
 #endif
-static int fts_info_get(char *buf)
+static int fts_read_touchinfo(void)
 {
 	unsigned char uc_reg_addr;
 	unsigned char uc_reg_value[10]={0,};
-	unsigned char fw_version = 0;
-	unsigned char vendor = 0;
-	unsigned char ic_version = 0;
-	static char* vendor_id;
-	int data_len =0;
 	int retval =0;
+	
 	if(tpd_halt){
 		dev_err(&fts_i2c_client->dev,"ahe cancel info reading  while suspend!\n");
 		return retval;
@@ -512,12 +524,19 @@ static int fts_info_get(char *buf)
 	 if(retval<0)
 	 	goto I2C_FAIL; 
 
-	  ic_version= uc_reg_value[0];
-	 fw_version = uc_reg_value[3];
-	 vendor =  uc_reg_value[5];
-	 	
-	dev_err(&fts_i2c_client->dev,"ahe [FTS] vendor = %02x \n", vendor);
-	switch (vendor){
+	  fts_touch_info.ic_version= uc_reg_value[0];
+	 fts_touch_info.fw_version = uc_reg_value[3];
+	 fts_touch_info.vendor =  uc_reg_value[5];
+	 dev_err(&fts_i2c_client->dev,"ahe [FTS] vendor = %02x \n", fts_touch_info.vendor);
+
+ I2C_FAIL:
+	return retval;
+}	 	
+static int fts_get_touchinfo(char *buf){
+	int data_len;
+	static char* vendor_id;
+	
+	switch (fts_touch_info.vendor){
 	case 0x0a:
 		vendor_id = "tianma";
 		break;
@@ -540,10 +559,10 @@ static int fts_info_get(char *buf)
 		vendor_id = "unknown";
 	}
 	
-	data_len =  snprintf(buf, PAGE_SIZE, "fts - ic_version:%d; vendor_id:%s; fw_version:%d", ic_version, vendor_id, fw_version);
+	data_len =  snprintf(buf, PAGE_SIZE, "fts - ic_version:%d; vendor_id:%s; fw_version:%d", fts_touch_info.ic_version,
+			vendor_id, fts_touch_info.fw_version);
+	
 	return data_len;
-I2C_FAIL:
-	return retval;
 	
 }
 
@@ -551,7 +570,7 @@ I2C_FAIL:
 static ssize_t fts_information_show(struct device *dev,
 		struct device_attribute *attr, char *buf)
 {
-	return fts_info_get(buf);
+	return fts_get_touchinfo(buf);
 
 }
 static DEVICE_ATTR(touchpanel_info, 0664,
@@ -564,7 +583,7 @@ static int fts_tpinfo_proc_show(struct seq_file *m, void *v)
 {
 	char buf[TP_INFO_LENGTH_UINT]={0,};
 	
-	 fts_info_get(buf);
+	 fts_get_touchinfo(buf);
 	seq_printf(m, "%s\n",buf);
 	
 	return 0 ;
@@ -2036,9 +2055,9 @@ reset_proc:
 	printk("mtk_tpd[fts] usb reg write \n");
 	fts_usb_insert((bool) upmu_is_chr_det());
 #endif
-
 #endif
-
+	/*read touch info from touch ic*/
+	fts_read_touchinfo(); 
 	printk("fts Touch Panel Device Probe %s\n", (retval < TPD_OK) ? "FAIL" : "PASS");
 	return 0;
 
