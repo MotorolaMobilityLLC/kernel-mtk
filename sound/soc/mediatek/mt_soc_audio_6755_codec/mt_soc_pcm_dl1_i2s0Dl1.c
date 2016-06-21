@@ -98,6 +98,20 @@ static struct device *mDev;
 
 static const char const *I2S0dl1_HD_output[] = {"Off", "On"};
 
+static const struct soc_enum Audio_I2S0dl1_Enum[] = {
+	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(I2S0dl1_HD_output), I2S0dl1_HD_output),
+};
+
+
+static int Audio_I2S0dl1_hdoutput_Get(struct snd_kcontrol *kcontrol,
+				      struct snd_ctl_elem_value *ucontrol)
+{
+	pr_warn("Audio_AmpR_Get = %d\n", mI2S0dl1_hdoutput_control);
+	ucontrol->value.integer.value[0] = mI2S0dl1_hdoutput_control;
+	return 0;
+}
+
+
 static int Audio_Irqcnt1_Get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
 	AudDrv_Clk_On();
@@ -125,19 +139,6 @@ static int Audio_Irqcnt1_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_
 }
  
 
-static const struct soc_enum Audio_I2S0dl1_Enum[] = {
-	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(I2S0dl1_HD_output), I2S0dl1_HD_output),
-
-};
-
-
-static int Audio_I2S0dl1_hdoutput_Get(struct snd_kcontrol *kcontrol,
-				      struct snd_ctl_elem_value *ucontrol)
-{
-	pr_warn("Audio_AmpR_Get = %d\n", mI2S0dl1_hdoutput_control);
-	ucontrol->value.integer.value[0] = mI2S0dl1_hdoutput_control;
-	return 0;
-}
 
 #if defined(CONFIG_SND_SOC_FLORIDA)
   

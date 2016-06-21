@@ -39,6 +39,7 @@
 #ifndef _AUDIO_DIGITAL_TYPE_H
 #define _AUDIO_DIGITAL_TYPE_H
 
+#include <linux/list.h>
 
 /*****************************************************************************
  *                ENUM DEFINITION
