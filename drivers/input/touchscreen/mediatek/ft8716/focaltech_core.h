@@ -255,6 +255,12 @@ struct ts_event
 	u8 touch_point_num;
 	//u8 current_touchpoint;
 };
+struct fts_touch_info {
+	unsigned char fw_version;
+	unsigned char vendor;
+	unsigned char ic_version;
+};
+
 struct fts_ts_data {
 	struct i2c_client *client;
 	struct input_dev *input_dev;
@@ -282,6 +288,7 @@ struct fts_ts_data {
 #endif
 
 };
+
 /*******************************************************************************
 * Static variables
 *******************************************************************************/
@@ -312,7 +319,7 @@ typedef enum {
 #define TPD_AUTO_UPGRADE	
 #define Boot_Upgrade_Protect				//开机升级保护。升级失败后，再次开机可重新升级
 #define FTS_CHIP_ID							0x87	//FT3427、FT5x46 CHIP ID = 0x54
-#define FTS_Vendor_1_ID						0x51//Ofilm TP VID = 0x51
+#define FTS_Vendor_1_ID						0x0a//tianma 
 #define FTS_Vendor_2_ID						0x01//Ofilm TP new VID
 #define A3_REG_VALUE	FTS_CHIP_ID
 #if  FTS_GESTRUE_EN
