@@ -287,7 +287,6 @@ static int mtk_soc_pcm_dl2_close(struct snd_pcm_substream *substream)
 
 		RemoveMemifSubStream(Soc_Aud_Digital_Block_MEM_DL2, substream);
 
-		SetIrqMcuCounter(Soc_Aud_IRQ_MCU_MODE_IRQ1_MCU_MODE, 0);
 		EnableAfe(false);
 		mPrepareDone = false;
 	}
@@ -351,7 +350,7 @@ static int mtk_pcm_dl2_prepare(struct snd_pcm_substream *substream)
 //		SetIrqMcuCounter(Soc_Aud_IRQ_MCU_MODE_IRQ1_MCU_MODE, runtime->period_size);
 //		SetIrqMcuSampleRate(Soc_Aud_IRQ_MCU_MODE_IRQ1_MCU_MODE, runtime->rate);
 
-		 EnableAfe(true); 
+		/* EnableAfe(true); */
 		mPrepareDone = true;
 	}
 	return 0;
@@ -369,7 +368,10 @@ static int mtk_pcm_dl2_start(struct snd_pcm_substream *substream)
 		      Soc_Aud_InterConnectionOutput_O03);
 	SetConnection(Soc_Aud_InterCon_Connection, Soc_Aud_InterConnectionInput_I08,
 		      Soc_Aud_InterConnectionOutput_O04);
-
+	SetConnection(Soc_Aud_InterCon_Connection, Soc_Aud_InterConnectionInput_I07,
+		      Soc_Aud_InterConnectionOutput_O00); 
+	SetConnection(Soc_Aud_InterCon_Connection, Soc_Aud_InterConnectionInput_I08,
+		      Soc_Aud_InterConnectionOutput_O01);
 #ifdef CONFIG_MTK_FPGA
 	/* set loopback test interconnection */
 	SetConnection(Soc_Aud_InterCon_Connection, Soc_Aud_InterConnectionInput_I07,

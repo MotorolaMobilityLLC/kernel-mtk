@@ -68,11 +68,12 @@ void Auddrv_Reg_map(void);
 
 bool SetSampleRate(uint32 Aud_block, uint32 SampleRate);
 bool SetChannels(uint32 Memory_Interface, uint32 channel);
-
- bool SetIrqMcuCounter(uint32 Irqmode, uint32 Counter);
- bool SetIrqEnable(uint32 Irqmode, bool bEnable);
+/*
+DO NOT USER DIRECTLY, use irq manager
+bool SetIrqMcuCounter(uint32 Irqmode, uint32 Counter);
+bool SetIrqEnable(uint32 Irqmode, bool bEnable);
 bool SetIrqMcuSampleRate(uint32 Irqmode, uint32 SampleRate);
-
+*/
 bool SetConnection(uint32 ConnectionState, uint32 Input, uint32 Output);
 bool SetMemoryPathEnable(uint32 Aud_block, bool bEnable);
 bool GetMemoryPathEnable(uint32 Aud_block);

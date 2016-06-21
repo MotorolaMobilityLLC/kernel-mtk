@@ -351,10 +351,15 @@ static snd_pcm_uframes_t mtk_capture_pcm_pointer(struct snd_pcm_substream *subst
 			       __func__, UL1_Block->u4DMAReadIdx, UL1_Block->u4WriteIdx,
 			       UL1_Block->u4DataRemained, UL1_Block->u4BufferSize);
 		}
-
 		PRINTK_AUD_UL1("[Auddrv] mtk_capture_pcm_pointer =0x%x HW_memory_index = 0x%x\n",
 			HW_Cur_ReadIdx, HW_memory_index);
 
+		if (bIsOverflow == true) {
+			pr_warn("%s u4DataRemained=%x > u4BufferSize=%x",
+			       __func__, UL1_Block->u4DataRemained, UL1_Block->u4BufferSize);
+			UL1_Block->u4DataRemained = 0;
+			UL1_Block->u4DMAReadIdx = UL1_Block->u4WriteIdx;
+		}
 		spin_unlock_irqrestore(&VUL_Control_context->substream_lock, flags);
 		Auddrv_UL1_Spinlock_unlock();
 
