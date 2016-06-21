@@ -45,11 +45,15 @@ int hps_set_cpu_num_base(enum hps_base_type_e type, unsigned int little_cpu,
 		if (hps_ctxt.is_hmp)
 			hps_ctxt.big_num_base_perf_serv = big_cpu;
 		break;
+	case BASE_WIFI:
+		hps_ctxt.little_num_base_wifi = little_cpu;
+		if (hps_ctxt.is_hmp)
+			hps_ctxt.big_num_base_wifi = big_cpu;
+		break;
 	default:
 		break;
 	}
-
-	if (hps_ctxt.is_hmp) {
+if (hps_ctxt.is_hmp) {
 		num_online = num_online_big_cpus();
 		if ((num_online < big_cpu) &&
 			(num_online < min(hps_ctxt.big_num_limit_thermal,
@@ -105,10 +109,13 @@ int hps_get_cpu_num_base(enum hps_base_type_e type,
 		*little_cpu_ptr = hps_ctxt.little_num_base_perf_serv;
 		*big_cpu_ptr = hps_ctxt.big_num_base_perf_serv;
 		break;
+	case BASE_WIFI:
+		*little_cpu_ptr = hps_ctxt.little_num_base_wifi;
+		*big_cpu_ptr = hps_ctxt.big_num_base_wifi;
+		break;
 	default:
 		break;
 	}
-
 	return 0;
 }
 

@@ -154,11 +154,13 @@ struct hps_ctxt_struct {
 
 	/* algo bound */
 	unsigned int little_num_base_perf_serv;
+	unsigned int little_num_base_wifi;
 	unsigned int little_num_limit_thermal;
 	unsigned int little_num_limit_low_battery;
 	unsigned int little_num_limit_ultra_power_saving;
 	unsigned int little_num_limit_power_serv;
 	unsigned int big_num_base_perf_serv;
+	unsigned int big_num_base_wifi;
 	unsigned int big_num_limit_thermal;
 	unsigned int big_num_limit_low_battery;
 	unsigned int big_num_limit_ultra_power_saving;

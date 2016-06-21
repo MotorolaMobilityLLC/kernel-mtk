@@ -1914,8 +1914,10 @@ wlanoidSetConnect(IN P_ADAPTER_T prAdapter, IN PVOID pvSetBuffer, IN UINT_32 u4S
 	/* Set Connection Request Issued Flag */
 	if (fgIsValidSsid)
 		prConnSettings->fgIsConnReqIssued = TRUE;
-	else
+	else {
+		prConnSettings->eReConnectLevel = RECONNECT_LEVEL_USER_SET;
 		prConnSettings->fgIsConnReqIssued = FALSE;
+	}
 
 	if (fgEqualSsid || fgEqualBssid)
 		prAisAbortMsg->fgDelayIndication = TRUE;
@@ -6761,6 +6763,7 @@ wlanoidSetDisassociate(IN P_ADAPTER_T prAdapter,
 
 	/* prepare message to AIS */
 	prAdapter->rWifiVar.rConnSettings.fgIsConnReqIssued = FALSE;
+	prAdapter->rWifiVar.rConnSettings.eReConnectLevel = RECONNECT_LEVEL_USER_SET;
 
 	/* Send AIS Abort Message */
 	prAisAbortMsg = (P_MSG_AIS_ABORT_T) cnmMemAlloc(prAdapter, RAM_TYPE_MSG, sizeof(MSG_AIS_ABORT_T));

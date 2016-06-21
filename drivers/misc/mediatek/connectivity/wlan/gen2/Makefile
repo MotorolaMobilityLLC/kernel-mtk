@@ -113,6 +113,7 @@ HIF_DIR	    := os/linux/hif/ahb/
 NIC_DIR     := nic/
 MGMT_DIR    := mgmt/
 DMA_DIR     := ../../../../platform/$(call lc,$(MTK_PLATFORM))/kernel/drivers/wifi/
+PLAT_DIR    := os/linux/plat/$(MTK_PLATFORM)/
 #$(call lc,$(MTK_PLATFORM))
 
 
@@ -217,6 +218,11 @@ endif
 HIF_OBJS :=  $(HIF_DIR)arm.o \
              $(HIF_DIR)ahb.o \
              $(HIF_DIR)$(MTK_PLATFORM)/ahb_pdma.o
+
+ifeq ($(CONFIG_ARCH_MT6735), y)
+PLAT_OBJS := $(PLAT_DIR)plat_priv.o
+$(MODULE_NAME)-objs  += $(PLAT_OBJS)
+endif
 
 $(MODULE_NAME)-objs  += $(COMMON_OBJS)
 $(MODULE_NAME)-objs  += $(NIC_OBJS)

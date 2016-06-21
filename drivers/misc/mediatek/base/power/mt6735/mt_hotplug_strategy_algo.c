@@ -460,7 +460,8 @@ void hps_algo_hmp(void)
 	little_num_limit = min3(little_num_limit,
 				hps_ctxt.little_num_limit_ultra_power_saving,
 				hps_ctxt.little_num_limit_power_serv);
-	little_num_base = hps_ctxt.little_num_base_perf_serv;
+	little_num_base = max(hps_ctxt.little_num_base_perf_serv,
+				hps_ctxt.little_num_base_wifi);
 	cpumask_and(&little_online_cpumask, &hps_ctxt.little_cpumask,
 		cpu_online_mask);
 	little_num_online = cpumask_weight(&little_online_cpumask);
@@ -470,8 +471,9 @@ void hps_algo_hmp(void)
 	big_num_limit = min3(big_num_limit,
 				hps_ctxt.big_num_limit_ultra_power_saving,
 				hps_ctxt.big_num_limit_power_serv);
-	big_num_base = max(hps_ctxt.cur_nr_heavy_task,
-				hps_ctxt.big_num_base_perf_serv);
+	big_num_base = max3(hps_ctxt.cur_nr_heavy_task,
+				hps_ctxt.big_num_base_perf_serv,
+				hps_ctxt.big_num_base_wifi);
 	cpumask_and(&big_online_cpumask, &hps_ctxt.big_cpumask,
 			cpu_online_mask);
 	big_num_online = cpumask_weight(&big_online_cpumask);
@@ -579,7 +581,7 @@ void hps_algo_hmp(void)
 	 */
 ALGO_END_WITH_ACTION:
 	hps_warn(
-		"(%04lx)(%u)(%u)action end(%u)(%u)(%u)(%u) (%u)(%u)(%u)(%u)(%u)(%u)(%u)(%u)(%u)(%u) (%u)(%u)(%u) (%u)(%u)(%u) (%u)(%u)(%u)(%u)(%u)\n",
+		"(%04lx)(%u)(%u)action end(%u)(%u)(%u)(%u) (%u)(%u)(%u)(%u)(%u)(%u)(%u)(%u)(%u)(%u) (%u)(%u)(%u) (%u)(%u)(%u) (%u)(%u)(%u)(%u)(%u) wifi_base(%u)(%u)\n",
 		hps_ctxt.action, little_num_online, big_num_online,
 		hps_ctxt.cur_loads, hps_ctxt.cur_tlp,
 		hps_ctxt.cur_iowait, hps_ctxt.cur_nr_heavy_task,
@@ -598,7 +600,9 @@ ALGO_END_WITH_ACTION:
 		hps_ctxt.down_loads_sum, hps_ctxt.down_loads_count,
 		hps_ctxt.down_loads_history_index,
 		hps_ctxt.rush_count, hps_ctxt.tlp_sum, hps_ctxt.tlp_count,
-		hps_ctxt.tlp_history_index, hps_ctxt.tlp_avg);
+		hps_ctxt.tlp_history_index, hps_ctxt.tlp_avg,
+		hps_ctxt.little_num_base_wifi,
+		hps_ctxt.big_num_base_wifi);
 	hps_ctxt_reset_stas_nolock();
 ALGO_END_WO_ACTION:
 	mutex_unlock(&hps_ctxt.lock);
@@ -843,6 +847,7 @@ void hps_algo_smp(void)
 	unsigned int val;
 	struct cpumask little_online_cpumask;
 	unsigned int little_num_base, little_num_limit, little_num_online;
+	static unsigned int hps_count;
 	/* log purpose */
 	char str1[64];
 	char str2[64];
@@ -899,7 +904,8 @@ void hps_algo_smp(void)
 	little_num_limit = min3(little_num_limit,
 				hps_ctxt.little_num_limit_ultra_power_saving,
 				hps_ctxt.little_num_limit_power_serv);
-	little_num_base = hps_ctxt.little_num_base_perf_serv;
+	little_num_base = max(hps_ctxt.little_num_base_perf_serv,
+				hps_ctxt.little_num_base_wifi);
 	cpumask_and(&little_online_cpumask,
 		&hps_ctxt.little_cpumask, cpu_online_mask);
 	little_num_online = cpumask_weight(&little_online_cpumask);
@@ -987,7 +993,7 @@ void hps_algo_smp(void)
 	 */
 ALGO_END_WITH_ACTION:
 	hps_warn(
-		"(%04lx)(%u)action end(%u)(%u)(%u)(%u) (%u)(%u)(%u)(%u)(%u) (%u)(%u)(%u) (%u)(%u)(%u) (%u)(%u)(%u)(%u)(%u)\n",
+		"(%04lx)(%u)action end(%u)(%u)(%u)(%u) (%u)(%u)(%u)(%u)(%u) (%u)(%u)(%u) (%u)(%u)(%u) (%u)(%u)(%u)(%u)(%u) wifi_base(%u)\n",
 		hps_ctxt.action, little_num_online,
 		hps_ctxt.cur_loads, hps_ctxt.cur_tlp, hps_ctxt.cur_iowait,
 		hps_ctxt.cur_nr_heavy_task,
@@ -1001,8 +1007,30 @@ ALGO_END_WITH_ACTION:
 		hps_ctxt.down_loads_sum, hps_ctxt.down_loads_count,
 		hps_ctxt.down_loads_history_index,
 		hps_ctxt.rush_count, hps_ctxt.tlp_sum, hps_ctxt.tlp_count,
-		hps_ctxt.tlp_history_index, hps_ctxt.tlp_avg);
+		hps_ctxt.tlp_history_index, hps_ctxt.tlp_avg,
+		hps_ctxt.little_num_base_wifi);
 	hps_ctxt_reset_stas_nolock();
 ALGO_END_WO_ACTION:
+	hps_count++;
+	if ((hps_count%0xf) == 0) {
+		hps_warn(
+		"(%04lx)(%u)DBG_HRT(%u)(%u)(%u)(%u) (%u)(%u)(%u)(%u)(%u) (%u)(%u)(%u) (%u)(%u)(%u) (%u)(%u)(%u)(%u)(%u) wifi_base(%u)\n",
+		hps_ctxt.action, little_num_online,
+		hps_ctxt.cur_loads, hps_ctxt.cur_tlp, hps_ctxt.cur_iowait,
+		hps_ctxt.cur_nr_heavy_task,
+		hps_ctxt.little_num_limit_thermal,
+		hps_ctxt.little_num_limit_low_battery,
+		hps_ctxt.little_num_limit_ultra_power_saving,
+		hps_ctxt.little_num_limit_power_serv,
+		hps_ctxt.little_num_base_perf_serv,
+		hps_ctxt.up_loads_sum, hps_ctxt.up_loads_count,
+		hps_ctxt.up_loads_history_index,
+		hps_ctxt.down_loads_sum, hps_ctxt.down_loads_count,
+		hps_ctxt.down_loads_history_index,
+		hps_ctxt.rush_count, hps_ctxt.tlp_sum, hps_ctxt.tlp_count,
+		hps_ctxt.tlp_history_index, hps_ctxt.tlp_avg,
+		hps_ctxt.little_num_base_wifi);
+		hps_count = 0;
+	}
 	mutex_unlock(&hps_ctxt.lock);
 }

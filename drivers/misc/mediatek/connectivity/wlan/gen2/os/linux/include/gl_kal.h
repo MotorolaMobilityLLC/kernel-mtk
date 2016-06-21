@@ -573,6 +573,7 @@ extern struct delayed_work sched_workq;
 extern ENUM_WMTHWVER_TYPE_T mtk_wcn_wmt_hwver_get(VOID);
 #endif
 
+extern BOOLEAN fgIsUnderSuspend;
 /*******************************************************************************
 *                              C O N S T A N T S
 ********************************************************************************
@@ -683,6 +684,15 @@ BOOLEAN kalIndicateAgpsNotify(P_ADAPTER_T prAdapter, UINT_8 cmd, PUINT_8 data, U
 *                                 M A C R O S
 ********************************************************************************
 */
+
+/*----------------------------------------------------------------------------*/
+/* Macros of bit operation                                                    */
+/*----------------------------------------------------------------------------*/
+#define KAL_SET_BIT(bitOffset, value)             set_bit(bitOffset, &value)
+#define KAL_CLR_BIT(bitOffset, value)             clear_bit(bitOffset, &value)
+#define KAL_TEST_AND_CLEAR_BIT(bitOffset, value)  test_and_clear_bit(bitOffset, &value)
+#define KAL_TEST_BIT(bitOffset, value)            test_bit(bitOffset, &value)
+
 /*----------------------------------------------------------------------------*/
 /* Macros of SPIN LOCK operations for using in Driver Layer                   */
 /*----------------------------------------------------------------------------*/
@@ -1527,4 +1537,20 @@ INT_32 kalReadToFile(const PUINT_8 pucPath, PUINT_8 pucData, UINT_32 u4Size, PUI
 #if CFG_SUPPORT_WAKEUP_REASON_DEBUG
 BOOLEAN kalIsWakeupByWlan(P_ADAPTER_T  prAdapter);
 #endif
+INT_32 kalHaltLock(UINT_32 waitMs);
+INT_32 kalHaltTryLock(VOID);
+VOID kalHaltUnlock(VOID);
+VOID kalSetHalted(BOOLEAN fgHalt);
+BOOLEAN kalIsHalted(VOID);
+
+INT_32 kalPerMonInit(IN P_GLUE_INFO_T prGlueInfo);
+INT_32 kalPerMonDisable(IN P_GLUE_INFO_T prGlueInfo);
+INT_32 kalPerMonEnable(IN P_GLUE_INFO_T prGlueInfo);
+INT_32 kalPerMonStart(IN P_GLUE_INFO_T prGlueInfo);
+INT_32 kalPerMonStop(IN P_GLUE_INFO_T prGlueInfo);
+INT_32 kalPerMonDestroy(IN P_GLUE_INFO_T prGlueInfo);
+VOID kalPerMonHandler(IN P_ADAPTER_T prAdapter, ULONG ulParam);
+INT_32 kalBoostCpu(UINT_32 core_num);
+INT_32 kalFbNotifierReg(IN P_GLUE_INFO_T prGlueInfo);
+VOID kalFbNotifierUnReg(VOID);
 #endif /* _GL_KAL_H */

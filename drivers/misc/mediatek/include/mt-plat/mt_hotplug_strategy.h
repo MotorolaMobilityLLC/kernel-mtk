@@ -16,6 +16,7 @@
 
 enum hps_base_type_e {
 	BASE_PERF_SERV = 0,
+	BASE_WIFI,
 	BASE_COUNT
 };
 

@@ -441,73 +441,73 @@
  * Flags for LINUX(OS) dependent
  *------------------------------------------------------------------------------
  */
-#define CFG_MAX_WLAN_DEVICES                1	/* number of wlan card will coexist */
+#define CFG_MAX_WLAN_DEVICES			1	/* number of wlan card will coexist */
 
-#define CFG_MAX_TXQ_NUM                     4	/* number of tx queue for support multi-queue h/w  */
+#define CFG_MAX_TXQ_NUM				4	/* number of tx queue for support multi-queue h/w  */
 
-#define CFG_USE_SPIN_LOCK_BOTTOM_HALF       0	/* 1: Enable use of SPIN LOCK Bottom Half for LINUX
-						   0: Disable - use SPIN LOCK IRQ SAVE instead */
+#define CFG_USE_SPIN_LOCK_BOTTOM_HALF		0	/* 1: Enable use of SPIN LOCK Bottom Half for LINUX
+							   0: Disable - use SPIN LOCK IRQ SAVE instead */
 
-#define CFG_TX_PADDING_SMALL_ETH_PACKET     0	/* 1: Enable - Drop ethernet packet if it < 14 bytes.
-						   And pad ethernet packet with dummy 0 if it < 60 bytes.
-						   0: Disable */
+#define CFG_TX_PADDING_SMALL_ETH_PACKET		0	/* 1: Enable - Drop ethernet packet if it < 14 bytes.
+							   And pad ethernet packet with dummy 0 if it < 60 bytes.
+							   0: Disable */
 
-#define CFG_TX_STOP_NETIF_QUEUE_THRESHOLD   256	/* packets */
+#define CFG_TX_STOP_NETIF_QUEUE_THRESHOLD	256	/* packets */
 
-#define CFG_TX_STOP_NETIF_PER_QUEUE_THRESHOLD   512	/* packets */
+#define CFG_TX_STOP_NETIF_PER_QUEUE_THRESHOLD   256	/* packets */
 #define CFG_TX_START_NETIF_PER_QUEUE_THRESHOLD  128	/* packets */
 
-#define ETH_P_1X                            0x888E
-#define IPTOS_PREC_OFFSET                   5
-#define USER_PRIORITY_DEFAULT               0
+#define ETH_P_1X				0x888E
+#define IPTOS_PREC_OFFSET			5
+#define USER_PRIORITY_DEFAULT			0
 
-#define ETH_WPI_1X                         0x88B4
+#define ETH_WPI_1X				0x88B4
 
-#define ETH_HLEN                                14
-#define ETH_TYPE_LEN_OFFSET                     12
-#define ETH_P_IP                                0x0800
-#define ETH_P_1X                                0x888E
-#define ETH_P_PRE_1X                            0x88C7
-#define ETH_P_ARP								0x0806
+#define ETH_HLEN				14
+#define ETH_TYPE_LEN_OFFSET			12
+#define ETH_P_IP				0x0800
+#define ETH_P_1X				0x888E
+#define ETH_P_PRE_1X				0x88C7
+#define ETH_P_ARP				0x0806
 
-#define ARP_PRO_REQ								1
-#define ARP_PRO_RSP								2
+#define ARP_PRO_REQ				1
+#define ARP_PRO_RSP				2
 
-#define IPVERSION                               4
-#define IP_HEADER_LEN                           20
+#define IPVERSION				4
+#define IP_HEADER_LEN				20
 
-#define IP_PRO_ICMP								0x01
-#define IP_PRO_UDP								0x11
-#define IP_PRO_TCP								0x06
+#define IP_PRO_ICMP				0x01
+#define IP_PRO_UDP				0x11
+#define IP_PRO_TCP				0x06
 
-#define UDP_PORT_DHCPS							0x43
-#define UDP_PORT_DHCPC							0x44
-#define UDP_PORT_DNS							0x35
+#define UDP_PORT_DHCPS				0x43
+#define UDP_PORT_DHCPC				0x44
+#define UDP_PORT_DNS				0x35
 
-#define IPVH_VERSION_OFFSET                     4	/* For Little-Endian */
-#define IPVH_VERSION_MASK                       0xF0
-#define IPTOS_PREC_OFFSET                       5
-#define IPTOS_PREC_MASK                         0xE0
+#define IPVH_VERSION_OFFSET			4	/* For Little-Endian */
+#define IPVH_VERSION_MASK			0xF0
+#define IPTOS_PREC_OFFSET			5
+#define IPTOS_PREC_MASK				0xE0
 
-#define SOURCE_PORT_LEN                         2
+#define SOURCE_PORT_LEN				2
 /* NOTE(Kevin): Without IP Option Length */
-#define LOOK_AHEAD_LEN                          (ETH_HLEN + IP_HEADER_LEN + SOURCE_PORT_LEN)
+#define LOOK_AHEAD_LEN				(ETH_HLEN + IP_HEADER_LEN + SOURCE_PORT_LEN)
 
 /* 802.2 LLC/SNAP */
-#define ETH_LLC_OFFSET                          (ETH_HLEN)
-#define ETH_LLC_LEN                             3
-#define ETH_LLC_DSAP_SNAP                       0xAA
-#define ETH_LLC_SSAP_SNAP                       0xAA
-#define ETH_LLC_CONTROL_UNNUMBERED_INFORMATION  0x03
+#define ETH_LLC_OFFSET				(ETH_HLEN)
+#define ETH_LLC_LEN				3
+#define ETH_LLC_DSAP_SNAP			0xAA
+#define ETH_LLC_SSAP_SNAP			0xAA
+#define ETH_LLC_CONTROL_UNNUMBERED_INFORMATION	0x03
 
 /* Bluetooth SNAP */
-#define ETH_SNAP_OFFSET                         (ETH_HLEN + ETH_LLC_LEN)
-#define ETH_SNAP_LEN                            5
-#define ETH_SNAP_BT_SIG_OUI_0                   0x00
-#define ETH_SNAP_BT_SIG_OUI_1                   0x19
-#define ETH_SNAP_BT_SIG_OUI_2                   0x58
+#define ETH_SNAP_OFFSET				(ETH_HLEN + ETH_LLC_LEN)
+#define ETH_SNAP_LEN				5
+#define ETH_SNAP_BT_SIG_OUI_0			0x00
+#define ETH_SNAP_BT_SIG_OUI_1			0x19
+#define ETH_SNAP_BT_SIG_OUI_2			0x58
 
-#define BOW_PROTOCOL_ID_SECURITY_FRAME          0x0003
+#define BOW_PROTOCOL_ID_SECURITY_FRAME		0x0003
 
 #if defined(MT6620)
 #define CHIP_NAME    "MT6620"
@@ -525,7 +525,9 @@
 #endif
 
 /* for CFG80211 IE buffering mechanism */
-#define CFG_CFG80211_IE_BUF_LEN     (512)
+#define CFG_CFG80211_IE_BUF_LEN		(512)
+#define GLUE_INFO_WSCIE_LENGTH		500
+
 
 /*******************************************************************************
 *                    E X T E R N A L   R E F E R E N C E S
@@ -568,6 +570,7 @@
 #include <linux/cdev.h>		/* for cdev interface */
 
 #include <linux/firmware.h>	/* for firmware download */
+#include <linux/fb.h>
 
 #if defined(_HIF_SDIO)
 #include <linux/mmc/sdio.h>
@@ -898,7 +901,7 @@ struct _GLUE_INFO_T {
 #endif
 #endif
 	BOOLEAN fgWpsActive;
-	UINT_8 aucWSCIE[500];	/*for probe req */
+	UINT_8 aucWSCIE[GLUE_INFO_WSCIE_LENGTH];	/*for probe req */
 	UINT_16 u2WSCIELen;
 	UINT_8 aucWSCAssocInfoIE[200];	/*for Assoc req */
 	UINT_16 u2WSCAssocInfoIELen;

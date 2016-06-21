@@ -1952,6 +1952,8 @@ int wlanHardStartXmit(struct sk_buff *prSkb, struct net_device *prDev)
 	DBGLOG(TX, EVENT, "\n+++++ pending frame %d len = %d +++++\n", prGlueInfo->i4TxPendingFrameNum, prSkb->len);
 	prGlueInfo->rNetDevStats.tx_bytes += prSkb->len;
 	prGlueInfo->rNetDevStats.tx_packets++;
+	if (netif_carrier_ok(prDev))
+		kalPerMonStart(prGlueInfo);
 
 	/* set GLUE_FLAG_TXREQ_BIT */
 
@@ -3155,6 +3157,8 @@ bailout:
 	}
 #endif
 	if (i4Status == WLAN_STATUS_SUCCESS) {
+		/*Init performance monitor structure */
+		kalPerMonInit(prGlueInfo);
 		/* probe ok */
 		DBGLOG(INIT, TRACE, "wlanProbe ok\n");
 	} else {
@@ -3212,6 +3216,13 @@ static VOID wlanRemove(VOID)
 		free_netdev(prDev);
 		return;
 	}
+
+	kalPerMonDestroy(prGlueInfo);
+	/* 4 <3> Remove /proc filesystem. */
+#ifdef WLAN_INCLUDE_PROC
+	procRemoveProcfs();
+#endif /* WLAN_INCLUDE_PROC */
+
 #if CFG_ENABLE_WIFI_DIRECT
 	/* avoid remove & p2p off command simultaneously */
 	{
@@ -3295,11 +3306,6 @@ static VOID wlanRemove(VOID)
 	if (prGlueInfo->rBowInfo.fgIsRegistered)
 		glUnregisterAmpc(prGlueInfo);
 #endif
-
-	/* 4 <3> Remove /proc filesystem. */
-#ifdef WLAN_INCLUDE_PROC
-	procRemoveProcfs();
-#endif /* WLAN_INCLUDE_PROC */
 
 #if (CFG_SUPPORT_MET_PROFILING == 1)
 	kalMetRemoveProcfs();
@@ -3393,6 +3399,9 @@ static int initWlan(void)
 	/* register set_dbg_level handler to mtk_wmt_wifi */
 	register_set_dbg_level_handler(set_dbg_level_handler);
 
+	/* Register framebuffer notifier client*/
+	kalFbNotifierReg((P_GLUE_INFO_T) wiphy_priv(gprWdev->wiphy));
+
 	/* Set the initial DEBUG CLASS of each module */
 	return ret;
 }				/* end of initWlan() */
@@ -3410,6 +3419,9 @@ static int initWlan(void)
 static VOID exitWlan(void)
 {
 	DBGLOG(INIT, INFO, "exitWlan\n");
+
+	/* Unregister framebuffer notifier client*/
+	kalFbNotifierUnReg();
 
 	/* unregister set_dbg_level handler to mtk_wmt_wifi */
 	register_set_dbg_level_handler(NULL);
