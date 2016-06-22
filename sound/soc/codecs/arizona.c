@@ -3360,6 +3360,8 @@ static int arizona_set_fmt(struct snd_soc_dai *dai, unsigned int fmt)
 	int lrclk, bclk, mode, base;
 	unsigned int mask;
 
+	arizona_aif_err(dai, "arizona_set_fmt slave mode\n");
+
 	base = dai->driver->base;
 
 	lrclk = 0;
@@ -3454,8 +3456,15 @@ static int arizona_set_fmt(struct snd_soc_dai *dai, unsigned int fmt)
 	regmap_update_bits_async(arizona->regmap,
 				 base + ARIZONA_AIF_RX_PIN_CTRL,
 				 mask, lrclk);
+
+	/*reset the AIF Format to default and then write the correct value*/
+	regmap_update_bits(arizona->regmap, base + ARIZONA_AIF_FORMAT,
+			   ARIZONA_AIF1_FMT_MASK, 0);
+
 	regmap_update_bits(arizona->regmap, base + ARIZONA_AIF_FORMAT,
 			   ARIZONA_AIF1_FMT_MASK, mode);
+
+	arizona_aif_err(dai, "arizona_set_fmt slave mode =%d\n",mode);
 
 	return 0;
 }
@@ -3870,7 +3879,8 @@ static bool arizona_aif_cfg_changed(struct snd_soc_codec *codec,
 			     ARIZONA_AIF1TX_SLOT_LEN_MASK)))
 		return true;
 
-	return false;
+     /*need to reconfigure every time than avoid write fail */
+	return true;
 }
 
 static int arizona_hw_params(struct snd_pcm_substream *substream,
@@ -3883,6 +3893,8 @@ static int arizona_hw_params(struct snd_pcm_substream *substream,
 	int base = dai->driver->base;
 	const int *rates;
 	int i, ret, val;
+	/*define fmt for set fmt here*/
+	int fmt;
 	int channels = params_channels(params);
 	int chan_limit = arizona->pdata.max_channels_clocked[dai->id - 1];
 	int tdm_width = arizona->tdm_width[dai->id - 1];
@@ -3890,6 +3902,8 @@ static int arizona_hw_params(struct snd_pcm_substream *substream,
 	int bclk, lrclk, wl, frame, bclk_target;
 	bool reconfig;
 	unsigned int aif_tx_state = 0, aif_rx_state = 0;
+
+	arizona_aif_dbg(dai, "arizona_hw_params setting start\n");
 
 	if (params_rate(params) % 4000)
 		rates = &arizona_44k1_bclk_rates[0];
@@ -3914,9 +3928,19 @@ static int arizona_hw_params(struct snd_pcm_substream *substream,
 		bclk_target *= chan_limit;
 	}
 
+      /*set fmt here to confirm the parametes correct*/
+       fmt= SND_SOC_DAIFMT_I2S
+			| SND_SOC_DAIFMT_NB_NF
+			| SND_SOC_DAIFMT_CBS_CFS;
+			
+       arizona_set_fmt(dai,fmt);
+
 	/* Force multiple of 2 channels for I2S mode */
 	val = snd_soc_read(codec, base + ARIZONA_AIF_FORMAT);
 	val &= ARIZONA_AIF1_FMT_MASK;
+
+	arizona_aif_dbg(dai, "arizona_hw_params setting start val=%d\n",val);
+		
 	if ((channels & 1) && (val == ARIZONA_FMT_I2S_MODE)) {
 		arizona_aif_dbg(dai, "Forcing stereo mode\n");
 		bclk_target /= channels;
@@ -3945,6 +3969,8 @@ static int arizona_hw_params(struct snd_pcm_substream *substream,
 
 	reconfig = arizona_aif_cfg_changed(codec, base, bclk, lrclk, frame);
 
+	arizona_aif_dbg(dai, "arizona_hw_params setting start reconfig=%x,lrclk=%x,frame=%x\n",reconfig,lrclk,frame);
+
 	if (reconfig) {
 		/* Save AIF TX/RX state */
 		aif_tx_state = snd_soc_read(codec,
@@ -3963,6 +3989,19 @@ static int arizona_hw_params(struct snd_pcm_substream *substream,
 		goto restore_aif;
 
 	if (reconfig) {
+		/*need to confirm the 505 and 507 registgers writes correct*/
+
+	       regmap_update_bits_async(arizona->regmap,
+					 base + ARIZONA_AIF_TX_BCLK_RATE,
+					 ARIZONA_AIF1TX_BCPF_MASK, 0x0040);		
+      
+		regmap_update_bits_async(arizona->regmap,
+					 base + ARIZONA_AIF_FRAME_CTRL_1,
+					 ARIZONA_AIF1TX_WL_MASK |
+					 ARIZONA_AIF1TX_SLOT_LEN_MASK, 0x1818);
+         
+		/*write to default and then write correct value*/
+		
 		regmap_update_bits_async(arizona->regmap,
 					 base + ARIZONA_AIF_BCLK_CTRL,
 					 ARIZONA_AIF1_BCLK_FREQ_MASK, bclk);
