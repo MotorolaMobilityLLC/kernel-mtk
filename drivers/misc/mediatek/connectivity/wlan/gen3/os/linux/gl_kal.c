@@ -5603,11 +5603,11 @@ inline INT_32 kalPerMonStart(IN P_GLUE_INFO_T prGlueInfo)
 	struct GL_PER_MON_T *prPerMonitor;
 
 	prPerMonitor = &prGlueInfo->prAdapter->rPerMonitor;
-	DBGLOG(SW4, TRACE, "enter %s\n", __func__);
+	//DBGLOG(SW4, TRACE, "enter %s\n", __func__);
 	if (KAL_TEST_BIT(PERF_MON_DISABLE_BIT_OFF, prPerMonitor->ulPerfMonFlag))
 		return 0;
 	if (KAL_TEST_BIT(PERF_MON_RUNNING_BIT_OFF, prPerMonitor->ulPerfMonFlag)) {
-		DBGLOG(SW4, TRACE, "perf monitor already running\n");
+		//DBGLOG(SW4, TRACE, "perf monitor already running\n");
 		return 0;
 	}
 	cnmTimerStartTimer(prGlueInfo->prAdapter, &prPerMonitor->rPerfMonTimer, prPerMonitor->u4UpdatePeriod);
