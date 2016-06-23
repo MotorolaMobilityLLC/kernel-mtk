@@ -208,6 +208,10 @@ typedef enum {
 	SENSOR_FEATURE_SET_SHUTTER_BUF_MODE,
 	SENSOR_FEATURE_SET_GAIN_BUF_MODE,
 	SENSOR_FEATURE_SET_I2C_BUF_MODE_EN,
+	/*lenovo-sw sunliang modify for long_shutter 2015_4_25 begin*/
+	SENSOR_FEATURE_LOCK_AE,
+	SENSOR_FEATURE_UNLOCK_AE,
+	/*lenovo-sw sunliang modify for long_shutter 2015_4_25 end*/
 	SENSOR_FEATURE_MAX
 } ACDK_SENSOR_FEATURE_ENUM;
 
