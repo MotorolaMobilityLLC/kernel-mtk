@@ -2278,8 +2278,6 @@ qmAdjustTcQuotasMthread(IN P_ADAPTER_T prAdapter, OUT P_TX_TCQ_ADJUST_T prTcqAdj
 			prTcqAdjust->acVariation[i] = 0;
 
 		KAL_ACQUIRE_SPIN_LOCK(prAdapter, SPIN_LOCK_TX_RESOURCE);
-		KAL_ACQUIRE_SPIN_LOCK(prAdapter, SPIN_LOCK_TC_RESOURCE);
-
 		/* Obtain the free-to-distribute resource */
 		for (i = 0; i < QM_ACTIVE_TC_NUM; i++) {
 			ai4ExtraQuota[i] =
@@ -2295,9 +2293,6 @@ qmAdjustTcQuotasMthread(IN P_ADAPTER_T prAdapter, OUT P_TX_TCQ_ADJUST_T prTcqAdj
 				prTcqAdjust->acVariation[i] = (INT_8) (-ai4ExtraQuota[i]);
 			}
 		}
-
-		KAL_RELEASE_SPIN_LOCK(prAdapter, SPIN_LOCK_TC_RESOURCE);
-
 		/* Distribute quotas to TCs which need extra resource according to prQM->au4CurrentTcResource */
 		for (i = 0; i < QM_ACTIVE_TC_NUM; i++) {
 			if (ai4ExtraQuota[i] < 0) {
