@@ -1351,7 +1351,7 @@ int kdCISModulePowerOn(CAMERA_DUAL_CAMERA_SENSOR_ENUM SensorIdx, char *currSenso
 				strcmp(PowerDownList.PowerSeq[pwListIdx].SensorName,
 				       currSensorName))) {
 				PK_DBG("kdCISModulePowerOn -off:currSensorName=%s pinSetIdx=%d\n", currSensorName, pinSetIdx);
-
+				gcurrSensorName =currSensorName;   //huangsh4 to fix testDualCameraPreview cts issue for kungfu project
 				sensorInPowerList = KAL_TRUE;
 
 				for (pwIdx = 9; pwIdx >= 0; pwIdx--) {
