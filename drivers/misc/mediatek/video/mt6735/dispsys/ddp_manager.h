@@ -68,6 +68,7 @@ typedef enum {
 	DDP_DSI_IDLE_CLK_CLOSED = 5,
 	DDP_DSI_IDLE_CLK_OPEN = 6,
 	DDP_DSI_VFP_LP = 7,
+	DDP_DSI_ENABLE_TE = 8,
 } DDP_IOCTL_NAME;
 
 /* path handle */

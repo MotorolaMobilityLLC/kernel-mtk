@@ -43,6 +43,10 @@ int tpd_halt = 0;
 static int tpd_eint_mode = 1;
 static struct task_struct *thread;
 
+static int tpd_tui_flag;
+static int tpd_tui_low_power_skipped;
+DEFINE_MUTEX(tui_lock);
+
 static struct task_struct *probe_thread;
 
 static int tpd_polling_time = 50;
@@ -519,6 +523,19 @@ static int tpd_irq_registration(void)
 	return ret;
 }
 
+int tpd_reregister_from_tui(void)
+{
+	int ret = 0;
+
+	free_irq(touch_irq, NULL);
+
+	ret = tpd_irq_registration();
+	if (ret < 0) {
+		ret = -1;
+	    GTP_ERROR("tpd request_irq IRQ LINE NOT AVAILABLE!.");
+	}
+	return ret;
+}
 
 static int tpd_registration(void *client)
 {
@@ -989,6 +1006,15 @@ static void tpd_suspend(struct device *h)
 #endif
 	GTP_INFO("TPD suspend start...");
 
+	mutex_lock(&tui_lock);
+	if (tpd_tui_flag) {
+		GTP_INFO("[TPD] skip tpd_suspend due to TUI in used\n");
+		tpd_tui_low_power_skipped = 1;
+		mutex_unlock(&tui_lock);
+		return;
+	}
+	mutex_unlock(&tui_lock);
+
 #ifdef CONFIG_GTP_PROXIMITY
 	if (gt1x_proximity_flag == 1) {
 		GTP_INFO("Suspend: proximity is detected!");
@@ -1100,6 +1126,39 @@ static struct tpd_driver_t tpd_device_driver = {
 	.suspend = tpd_suspend,
 	.resume = tpd_resume,
 };
+
+int tpd_enter_tui(void)
+{
+	int ret = 0;
+
+	tpd_tui_flag = 1;
+	mt_eint_set_deint(10, 187);
+	GTP_INFO("[%s] enter tui", __func__);
+	return ret;
+}
+
+int tpd_exit_tui(void)
+{
+	int ret = 0;
+
+	GTP_INFO("[%s] exit TUI+", __func__);
+	mutex_lock(&tui_lock);
+	tpd_tui_flag = 0;
+	mutex_unlock(&tui_lock);
+	if (tpd_tui_low_power_skipped) {
+		tpd_tui_low_power_skipped = 0;
+		GTP_INFO("[%s] do low power again+", __func__);
+		tpd_suspend(NULL);
+		GTP_INFO("[%s] do low power again-", __func__);
+	}
+
+	mt_eint_clr_deint(10);
+	tpd_reregister_from_tui();
+
+	GTP_INFO("[%s] exit TUI-", __func__);
+	return ret;
+}
+
 
 void tpd_off(void)
 {

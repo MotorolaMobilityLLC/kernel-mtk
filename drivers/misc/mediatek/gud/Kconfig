@@ -12,6 +12,12 @@ config TRUSTONIC_TEE_VERSION
 	depends on TRUSTONIC_TEE_SUPPORT
 	default "302c" if (ARCH_MT6735 || ARCH_MT6735M || ARCH_MT6753 || ARCH_MT6580)
 
+config MT_TRUSTONIC_TEE_DEBUGFS
+	bool "Enable Trustonic TEE debugfs"
+	default n
+	---help---
+	  Enable Trustonic TEE debugfs
+
 #
 # MobiCore configuration
 #
@@ -49,7 +55,7 @@ config MOBICORE_API
 
 config TRUSTONIC_TRUSTED_UI
 	tristate "<t-base TUI"
-	depends on MOBICORE_API
+	depends on TRUSTONIC_TEE_SUPPORT
 	default n
 	---help---
 	  Enable <t-base Trusted User Interface

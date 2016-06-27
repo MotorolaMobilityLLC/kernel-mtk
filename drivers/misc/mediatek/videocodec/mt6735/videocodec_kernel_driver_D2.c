@@ -106,15 +106,15 @@ void SendDvfsRequest(int level)
 	int ret = 0;
 
 	if (level == MMDVFS_VOLTAGE_LOW) {
-		MODULE_MFV_LOGE("[VCODEC][MMDVFS_VDEC] SendDvfsRequest(MMDVFS_VOLTAGE_LOW)\n");
+		MODULE_MFV_LOGD("[VCODEC][MMDVFS_VDEC] SendDvfsRequest(MMDVFS_VOLTAGE_LOW)\n");
 		clkmux_sel(MT_MUX_VDEC, 3, "MMDVFS_VOLTAGE_LOW");	/* 156MHz */
 		ret = mmdvfs_set_step(SMI_BWC_SCEN_VP, MMDVFS_VOLTAGE_LOW);
 	} else if (level == MMDVFS_VOLTAGE_HIGH) {
-		MODULE_MFV_LOGE("[VCODEC][MMDVFS_VDEC] SendDvfsRequest(MMDVFS_VOLTAGE_HIGH)\n");
+		MODULE_MFV_LOGD("[VCODEC][MMDVFS_VDEC] SendDvfsRequest(MMDVFS_VOLTAGE_HIGH)\n");
 		ret = mmdvfs_set_step(SMI_BWC_SCEN_VP, MMDVFS_VOLTAGE_HIGH);
 		clkmux_sel(MT_MUX_VDEC, 4, "MMDVFS_VOLTAGE_HIGH");	/* 273MHz */
 	} else {
-		MODULE_MFV_LOGE("[VCODEC][MMDVFS_VDEC] @@ OOPS: level = %d\n", level);
+		MODULE_MFV_LOGD("[VCODEC][MMDVFS_VDEC] @@ OOPS: level = %d\n", level);
 	}
 
 	if (0 != ret)
@@ -128,7 +128,7 @@ void VdecDvfsBegin(void)
 	gHWLockInterval = 0;
 	gFirstDvfsLock = VAL_TRUE;
 	gHWLockMaxDuration = 0;
-	MODULE_MFV_LOGE("[VCODEC][MMDVFS_VDEC] @@ VdecDvfsBegin\n");
+	MODULE_MFV_LOGD("[VCODEC][MMDVFS_VDEC] @@ VdecDvfsBegin\n");
 	/* eVideoGetTimeOfDay(&gMMDFVFSMonitorStartTime, sizeof(VAL_TIME_T)); */
 }
 
@@ -140,9 +140,9 @@ VAL_UINT32_T VdecDvfsGetMonitorDuration(void)
 
 void VdecDvfsEnd(int level)
 {
-	MODULE_MFV_LOGE("[VCODEC][MMDVFS_VDEC] VdecDVFS monitor %dms, decoded %d frames, total time %d\n",
+	MODULE_MFV_LOGD("[VCODEC][MMDVFS_VDEC] VdecDVFS monitor %dms, decoded %d frames, total time %d\n",
 		MONITOR_DURATION_MS, gMMDFVFSMonitorCounts, gHWLockInterval);
-	MODULE_MFV_LOGE("[VCODEC][MMDVFS_VDEC] max duration %d, target lv %d\n", gHWLockMaxDuration, level);
+	MODULE_MFV_LOGD("[VCODEC][MMDVFS_VDEC] max duration %d, target lv %d\n", gHWLockMaxDuration, level);
 	gMMDFVFSMonitorStarts = VAL_FALSE;
 	gMMDFVFSMonitorCounts = 0;
 	gHWLockInterval = 0;
@@ -158,10 +158,10 @@ VAL_UINT32_T VdecDvfsStep(void)
 	_diff = TimeDiffMs(gMMDFVFSLastLockTime, _now);
 
 	if (_diff > MMDVFS_UPPER_BOUND_MS) {
-		MODULE_MFV_LOGE("[VCODEC][MMDVFS_VDEC][VdecDvfsStep][Info] gMMDFVFSLastLockTime(%d, %d)\n",
+		/* MODULE_MFV_LOGD("[VCODEC][MMDVFS_VDEC][VdecDvfsStep][Info] gMMDFVFSLastLockTime(%d, %d)\n",
 		     gMMDFVFSLastLockTime.u4Sec, gMMDFVFSLastLockTime.u4uSec);
-		MODULE_MFV_LOGE("[VCODEC][MMDVFS_VDEC][VdecDvfsStep][Info] _now(%d, %d), diff(%d)\n",
-		     _now.u4Sec, _now.u4uSec, _diff);
+		MODULE_MFV_LOGD("[VCODEC][MMDVFS_VDEC][VdecDvfsStep][Info] _now(%d, %d), diff(%d)\n",
+		     _now.u4Sec, _now.u4uSec, _diff); */
 		_diff = MMDVFS_UPPER_BOUND_MS;
 	}
 
@@ -2063,6 +2063,11 @@ static long vcodec_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned 
 				     ret);
 				return -EFAULT;
 			}
+			if (rTempCoreLoading.CPUid > num_possible_cpus()) {
+				MODULE_MFV_LOGE("[ERROR] rTempCoreLoading.CPUid(%d) > num_possible_cpus(%d)\n",
+				rTempCoreLoading.CPUid, num_possible_cpus());
+				return -EFAULT;
+			}
 				rTempCoreLoading.Loading = get_cpu_load(rTempCoreLoading.CPUid);
 			ret =
 			    copy_to_user(user_data_addr, &rTempCoreLoading,
@@ -2666,7 +2671,7 @@ static int vcodec_open(struct inode *inode, struct file *file)
 static int vcodec_flush(struct file *file, fl_owner_t id)
 {
 	MODULE_MFV_LOGD("vcodec_flush, curr_tid =%d\n", current->pid);
-	MODULE_MFV_LOGE("vcodec_flush pid = %d, Driver_Open_Count %d\n", current->pid, Driver_Open_Count);
+	/* MODULE_MFV_LOGE("vcodec_flush pid = %d, Driver_Open_Count %d\n", current->pid, Driver_Open_Count); */
 
 	return 0;
 }
@@ -2856,9 +2861,9 @@ static int vcodec_mmap(struct file *file, struct vm_area_struct *vma)
 	}
 #endif
 	vma->vm_page_prot = pgprot_noncached(vma->vm_page_prot);
-	MODULE_MFV_LOGE("[VCODEC][mmap] vma->start 0x%lx, vma->end 0x%lx, vma->pgoff 0x%lx, pfn: 0x%lx\n",
+	/* MODULE_MFV_LOGE("[VCODEC][mmap] vma->start 0x%lx, vma->end 0x%lx, vma->pgoff 0x%lx, pfn: 0x%lx\n",
 		 (VAL_ULONG_T) vma->vm_start, (VAL_ULONG_T) vma->vm_end,
-		 (VAL_ULONG_T) vma->vm_pgoff, pfn);
+		 (VAL_ULONG_T) vma->vm_pgoff, pfn); */
 	if (remap_pfn_range
 	    (vma, vma->vm_start, vma->vm_pgoff, vma->vm_end - vma->vm_start, vma->vm_page_prot)) {
 		return -EAGAIN;

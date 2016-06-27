@@ -1196,7 +1196,8 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 			      <0x102100A0 0x1000>,  /*DISP_TVDPLL_CFG6 */
 			      <0x10209270 0x1000>,  /*DISP_TVDPLL_CON0 */
 			      <0x10209274 0x1000>,  /*DISP_TVDPLL_CON1 */
-			      <0 0>;		    /*DISP_OD      */
+			      <0 0>,		    /*DISP_OD      */
+			      <0x10209000 0x1000>;		    /*DISP_VENCPLL      */
 
 			interrupts = <GIC_SPI 193 IRQ_TYPE_LEVEL_LOW>, /*DISP_OVL0 */
 				     <GIC_SPI 0 IRQ_TYPE_LEVEL_LOW>,   /*DISP_OVL1 */
@@ -1224,7 +1225,8 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 				     <GIC_SPI 0 IRQ_TYPE_LEVEL_LOW>,   /*DISP_TVDPLL_CFG6 */
 				     <GIC_SPI 0 IRQ_TYPE_LEVEL_LOW>,   /*DISP_TVDPLL_CON0 */
 				     <GIC_SPI 0 IRQ_TYPE_LEVEL_LOW>,   /*DISP_TVDPLL_CON1 */
-				     <GIC_SPI 0 IRQ_TYPE_LEVEL_LOW>;   /*DISP_OD      */
+				     <GIC_SPI 0 IRQ_TYPE_LEVEL_LOW>,   /*DISP_OD      */
+				     <GIC_SPI 0 IRQ_TYPE_LEVEL_LOW>;   /*DISP_VENCPLL      */
 
 			clocks = <&mmsys MM_DISP0_SMI_COMMON>,
 				 <&mmsys MM_DISP0_SMI_LARB0>,

@@ -306,6 +306,8 @@ extern void gt1x_power_switch(s32 state);
 extern void gt1x_irq_enable(void);
 extern void gt1x_irq_disable(void);
 extern int gt1x_debug_proc(u8 *buf, int count);
+extern int mt_eint_set_deint(int eint_num, int irq_num);
+extern int mt_eint_clr_deint(int eint_num);
 
 struct fw_update_info {
 	int update_type;

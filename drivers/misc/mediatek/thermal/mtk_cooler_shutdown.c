@@ -59,11 +59,15 @@ static int sd_happened;
 static kuid_t uid = KUIDT_INIT(0);
 static kgid_t gid = KGIDT_INIT(1000);
 
-static ssize_t _mtk_cl_sd_rst_write(struct file *filp, const char __user *buf, size_t len,
+static ssize_t _mtk_cl_sd_rst_write(struct file *filp, const char __user *buf, size_t count,
 				    loff_t *data)
 {
 	int ret = 0;
 	char tmp[MAX_LEN] = { 0 };
+	int len = 0;
+
+	len = (count < (MAX_LEN - 1)) ? count : (MAX_LEN - 1);
+
 
 	/* write data to the buffer */
 	if (copy_from_user(tmp, buf, len))
@@ -109,11 +113,14 @@ static const struct file_operations _cl_sd_rst_fops = {
 	.release = single_release,
 };
 
-static ssize_t _mtk_cl_sd_pid_write(struct file *filp, const char __user *buf, size_t len,
+static ssize_t _mtk_cl_sd_pid_write(struct file *filp, const char __user *buf, size_t count,
 				    loff_t *data)
 {
 	int ret = 0;
 	char tmp[MAX_LEN] = { 0 };
+	int len = 0;
+
+	len = (count < (MAX_LEN - 1)) ? count : (MAX_LEN - 1);
 
 	/* write data to the buffer */
 	if (copy_from_user(tmp, buf, len))
@@ -150,11 +157,14 @@ static const struct file_operations _cl_sd_pid_fops = {
 	.release = single_release,
 };
 
-static ssize_t _mtk_cl_sd_debouncet_write(struct file *filp, const char __user *buf, size_t len,
+static ssize_t _mtk_cl_sd_debouncet_write(struct file *filp, const char __user *buf, size_t count,
 					  loff_t *data)
 {
 	char desc[MAX_LEN] = { 0 };
 	int tmp_dbt = -1;
+	int len = 0;
+
+	len = (count < (MAX_LEN - 1)) ? count : (MAX_LEN - 1);
 
 	/* write data to the buffer */
 	if (copy_from_user(desc, buf, len))

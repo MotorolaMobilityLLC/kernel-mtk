@@ -1218,10 +1218,13 @@ static int wmt_wifi_algo_open(struct inode *inode, struct file *file)
 
 /*New Wifi throttling Algo-*/
 
-ssize_t wmt_tm_wfd_write(struct file *filp, const char __user *buf, size_t len, loff_t *data)
+ssize_t wmt_tm_wfd_write(struct file *filp, const char __user *buf, size_t count, loff_t *data)
 {
 	int ret = 0;
 	char tmp[MAX_LEN] = { 0 };
+	int len = 0;
+
+	len = (count < (MAX_LEN - 1)) ? count : (MAX_LEN - 1);
 
 	/* write data to the buffer */
 	if (copy_from_user(tmp, buf, len))
@@ -1256,11 +1259,13 @@ static int wmt_tm_wfd_open(struct inode *inode, struct file *file)
 }
 
 
-ssize_t wmt_wifi_in_soc_write(struct file *filp, const char __user *buf, size_t len,
+ssize_t wmt_wifi_in_soc_write(struct file *filp, const char __user *buf, size_t count,
 			      loff_t *data)
 {
 	int ret = 0;
 	char tmp[MAX_LEN] = { 0 };
+	int len = 0;
+	len = (count < (MAX_LEN - 1)) ? count : (MAX_LEN - 1);
 
 	/* write data to the buffer */
 	if (copy_from_user(tmp, buf, len))
@@ -1323,10 +1328,14 @@ static int wmt_wifi_in_soc_open(struct inode *inode, struct file *file)
 }
 
 
-ssize_t wmt_tm_pid_write(struct file *filp, const char __user *buf, size_t len, loff_t *data)
+ssize_t wmt_tm_pid_write(struct file *filp, const char __user *buf, size_t count, loff_t *data)
 {
 	int ret = 0;
 	char tmp[MAX_LEN] = { 0 };
+	int len = 0;
+
+	len = (count < (MAX_LEN - 1)) ? count : (MAX_LEN - 1);
+
 
 	/* write data to the buffer */
 	if (copy_from_user(tmp, buf, len))

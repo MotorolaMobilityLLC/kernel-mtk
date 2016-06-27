@@ -1,3 +1,16 @@
+/*
+ * Copyright (C) 2015 MediaTek Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ */
+
 
 #include <linux/kernel.h>
 #include <linux/module.h>
@@ -66,6 +79,7 @@ static const struct mc_uuid_t secmem_uuid = { TL_SECMEM_UUID };
 static struct mc_session_handle secmem_session = { 0 };
 
 static u32 secmem_session_ref;
+static u32 secmem_k_session_opened;
 static u32 secmem_devid = MC_DEVICE_ID_DEFAULT;
 static tciMessage_t *secmem_tci;
 
@@ -520,6 +534,196 @@ static long secmem_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 	return err;
 }
 
+static inline int secmem_kernel_open(void)
+{
+	if (!secmem_k_session_opened) {
+		if (secmem_session_open() < 0)
+			return -ENXIO;
+		secmem_k_session_opened = 1;
+	}
+
+	return 0;
+}
+
+
+
+#if defined(CONFIG_CMA) && defined(CONFIG_MTK_SVP)
+int secmem_api_enable(u32 start, u32 size)
+{
+	int err = 0;
+	struct secmem_param param = { 0 };
+
+	secmem_kernel_open();
+
+	param.sec_handle = start;
+	param.size = size;
+	err = secmem_execute(CMD_SEC_MEM_ENABLE, &param);
+
+	if (err)
+		MSG(ERR, "secmem_api_enable failed: %d\n", err);
+
+	return err;
+}
+EXPORT_SYMBOL(secmem_api_enable);
+
+int secmem_api_disable(void)
+{
+	int err = 0;
+	struct secmem_param param = { 0 };
+
+	secmem_kernel_open();
+
+	err = secmem_execute(CMD_SEC_MEM_DISABLE, &param);
+	if (err)
+		MSG(ERR, "secmem_api_disable failed: %d\n", err);
+
+	return err;
+}
+EXPORT_SYMBOL(secmem_api_disable);
+
+int secmem_api_query(u32 *allocate_size)
+{
+	int err = 0;
+	struct secmem_param param = { 0 };
+
+	secmem_kernel_open();
+
+	err = secmem_execute(CMD_SEC_MEM_ALLOCATED, &param);
+	if (err) {
+		MSG(ERR, "secmem_api_query failed: %d\n", err);
+		*allocate_size = -1;
+	} else {
+		*allocate_size = param.size;
+	}
+
+	if (*allocate_size)
+		secmem_execute(CMD_SEC_MEM_DUMP_INFO, &param);
+
+	return err;
+}
+EXPORT_SYMBOL(secmem_api_query);
+#endif
+
+#ifdef SECMEM_KERNEL_API
+int secmem_api_alloc(u32 alignment, u32 size, u32 *refcount, u32 *sec_handle, uint8_t *owner,
+		     uint32_t id)
+{
+	int ret = 0;
+	struct secmem_param param;
+
+	secmem_kernel_open();
+
+	memset(&param, 0, sizeof(param));
+	param.alignment = alignment;
+	param.size = size;
+	param.refcount = 0;
+	param.sec_handle = 0;
+	param.id = id;
+	if (owner) {
+		param.owner_len = strlen(owner) > MAX_NAME_SZ ? MAX_NAME_SZ : strlen(owner);
+		memcpy(param.owner, owner, param.owner_len);
+		param.owner[MAX_NAME_SZ - 1] = 0;
+	}
+
+	ret = secmem_execute(CMD_SEC_MEM_ALLOC, &param);
+	if (ret != 0) {
+		MSG(ERR, "%s: secmem_execute alloc failed!\n", __func__);
+		return ret;
+	}
+
+	*refcount = param.refcount;
+	*sec_handle = param.sec_handle;
+
+	return 0;
+}
+EXPORT_SYMBOL(secmem_api_alloc);
+
+int secmem_api_unref(u32 sec_handle, uint8_t *owner, uint32_t id)
+{
+	int ret = 0;
+	struct secmem_param param;
+
+	secmem_kernel_open();
+
+	memset(&param, 0, sizeof(param));
+	param.sec_handle = sec_handle;
+	param.id = id;
+	if (owner) {
+		param.owner_len = strlen(owner) > MAX_NAME_SZ ? MAX_NAME_SZ : strlen(owner);
+		memcpy(param.owner, owner, param.owner_len);
+		param.owner[MAX_NAME_SZ - 1] = 0;
+	}
+
+	ret = secmem_execute(CMD_SEC_MEM_UNREF, &param);
+	if (ret != 0) {
+		MSG(ERR, "%s: secmem_execute unref failed!\n", __func__);
+		return ret;
+	}
+
+	return 0;
+}
+EXPORT_SYMBOL(secmem_api_unref);
+
+int secmem_api_alloc_pa(u32 alignment, u32 size, u32 *refcount, u32 *sec_handle, uint8_t *owner,
+	uint32_t id)
+{
+	int ret = 0;
+	struct secmem_param param;
+
+	secmem_kernel_open();
+
+	memset(&param, 0, sizeof(param));
+	param.alignment = alignment;
+	param.size = size;
+	param.refcount = 0;
+	param.sec_handle = 0;
+	param.id = id;
+	if (owner) {
+		param.owner_len = strlen(owner) > MAX_NAME_SZ ? MAX_NAME_SZ : strlen(owner);
+		memcpy(param.owner, owner, param.owner_len);
+		param.owner[MAX_NAME_SZ - 1] = 0;
+	}
+
+	ret = secmem_execute(CMD_SEC_MEM_ALLOC_PA, &param);
+	if (ret != 0) {
+		MSG(ERR, "%s: secmem_execute alloc failed!\n", __func__);
+		return ret;
+	}
+
+	*refcount = param.refcount;
+	*sec_handle = param.sec_handle;
+
+	return 0;
+}
+EXPORT_SYMBOL(secmem_api_alloc_pa);
+
+int secmem_api_unref_pa(u32 sec_handle, uint8_t *owner, uint32_t id)
+{
+	int ret = 0;
+	struct secmem_param param;
+
+	secmem_kernel_open();
+
+	memset(&param, 0, sizeof(param));
+	param.sec_handle = sec_handle;
+	param.id = id;
+	if (owner) {
+		param.owner_len = strlen(owner) > MAX_NAME_SZ ? MAX_NAME_SZ : strlen(owner);
+		memcpy(param.owner, owner, param.owner_len);
+		param.owner[MAX_NAME_SZ - 1] = 0;
+	}
+
+	ret = secmem_execute(CMD_SEC_MEM_UNREF_PA, &param);
+	if (ret != 0) {
+		MSG(ERR, "%s: secmem_execute unref failed!\n", __func__);
+		return ret;
+	}
+
+	return 0;
+}
+EXPORT_SYMBOL(secmem_api_unref_pa);
+#endif
+
 #ifdef SECMEM_DEBUG_INTERFACE
 #include <mach/emi_mpu.h>
 #include <mach/mt_secure_api.h>
@@ -532,6 +736,7 @@ static int secmem_write(struct file *file, const char __user *buffer, size_t cou
 	len = (count < (sizeof(desc) - 1)) ? count : (sizeof(desc) - 1);
 	if (copy_from_user(desc, buffer, len))
 		return 0;
+
 	desc[len] = '\0';
 
 	if (sscanf(desc, "%s", cmd) == 1) {

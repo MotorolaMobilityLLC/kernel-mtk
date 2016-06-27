@@ -1491,7 +1491,8 @@
 						<0x102100A0 0x1000>,  /*DISP_TVDPLL_CFG6 */
 						<0x10209270 0x1000>,  /*DISP_TVDPLL_CON0 */
 						<0x10209274 0x1000>,  /*DISP_TVDPLL_CON1 */
-						<0 0>;  /*DISP_OD      */
+						<0 0>,  /*DISP_OD      */
+						<0x10209000 0x1000>;  /*DISP_VENCPLL      */
 
 			interrupts = <0 193 8>, /*DISP_OVL0 */
 									 <0 0 8>, /*DISP_OVL1 */
@@ -1520,7 +1521,8 @@
 									 <0 0 8>,  /*DISP_TVDPLL_CFG6 */
 									 <0 0 8>,  /*DISP_TVDPLL_CON0 */
 									 <0 0 8>,  /*DISP_TVDPLL_CON1 */
-									 <0 0 8>;  /*DISP_OD      */
+									 <0 0 8>,  /*DISP_OD      */
+									 <0 0 8>;  /*DISP_VENCPLL      */
 				};
 
 		DISP_OVL0@0x14007000 {

@@ -141,6 +141,8 @@ char *ddp_get_reg_module_name(DISP_REG_ENUM module)
 		return "mipi";
 	case DISP_REG_OD:
 		return "od";
+	case DISP_RGE_VENCPLL:
+		return "venc_pll";
 	default:
 		DDPMSG("invalid module id=%d", module);
 		return "unknown";

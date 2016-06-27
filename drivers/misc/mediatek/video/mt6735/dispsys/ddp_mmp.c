@@ -70,6 +70,9 @@ void init_ddp_mmp_events(void)
 		DDP_MMP_Events.present_fence_set =
 		    MMProfileRegisterEvent(DDP_MMP_Events.primary_Parent, "preset_fence_set");
 
+		DDP_MMP_Events.tui =
+			MMProfileRegisterEvent(DDP_MMP_Events.primary_Parent, "tui");
+
 		DDP_MMP_Events.idlemgr =
 		    MMProfileRegisterEvent(DDP_MMP_Events.primary_Parent, "idlemgr");
 		DDP_MMP_Events.primary_error =

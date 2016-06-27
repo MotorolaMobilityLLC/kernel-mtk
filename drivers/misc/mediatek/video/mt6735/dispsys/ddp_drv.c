@@ -516,6 +516,7 @@ static int disp_is_intr_enable(DISP_REG_ENUM module)
 	case DISP_REG_EFUSE_PERMISSION:
 	case DISP_RGE_EFUSE_KEY:
 	case DISP_REG_MIPI:
+	case DISP_RGE_VENCPLL:
 		return 0;
 
 	case DISP_REG_WDMA0:

@@ -1298,6 +1298,54 @@ static void mt_i2c_clock_disable(struct mt_i2c_t *i2c)
 #endif
 }
 
+#ifdef CONFIG_TRUSTONIC_TEE_SUPPORT
+int i2c_tui_enable_clock(void)
+{
+#if defined(CONFIG_MTK_CLKMGR)
+	enable_clock(MT_CG_PERI_I2C1, "i2c");
+	enable_clock(MT_CG_PERI_APDMA, "i2c");
+#else
+	struct i2c_adapter *adap;
+	struct mt_i2c *i2c;
+
+	adap = i2c_get_adapter(1);
+	if (!adap) {
+		pr_err("Cannot get adapter\n");
+		return -1;
+	}
+
+	i2c = i2c_get_adapdata(adap);
+	clk_prepare_enable(i2c->clk_main);
+	clk_prepare_enable(i2c->clk_dma);
+#endif
+
+	return 0;
+}
+
+int i2c_tui_disable_clock(void)
+{
+#if defined(CONFIG_MTK_CLKMGR)
+	disable_clock(MT_CG_PERI_I2C1, "i2c");
+	disable_clock(MT_CG_PERI_APDMA, "i2c");
+#else
+	struct i2c_adapter *adap;
+	struct mt_i2c *i2c;
+
+	adap = i2c_get_adapter(1);
+	if (!adap) {
+		pr_err("Cannot get adapter\n");
+		return -1;
+	}
+
+	i2c = i2c_get_adapdata(adap);
+	clk_disable_unprepare(i2c->clk_dma);
+	clk_disable_unprepare(i2c->clk_main);
+#endif
+
+	return 0;
+}
+#endif
+
 /*
 static void mt_i2c_post_isr(struct mt_i2c_t *i2c)
 {

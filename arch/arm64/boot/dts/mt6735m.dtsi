@@ -656,6 +656,10 @@ initrd=0x44000000,0x1000000 loglevel=8 androidboot.hardware=mt6735";
 			status = "disabled";
 		};
 
+		dsi_te: dsi_te {
+			compatible = "mediatek, dsi_te_1-eint";
+			status = "disabled";
+		};
 	};
 
 	bus {
@@ -1519,7 +1523,8 @@ initrd=0x44000000,0x1000000 loglevel=8 androidboot.hardware=mt6735";
 				<0x102100A0 0x1000>,  /*DISP_TVDPLL_CFG6 */
 				<0x10209260 0x1000>,  /*DISP_TVDPLL_CON0 */
 				<0x10209264 0x1000>,  /*DISP_TVDPLL_CON1 */
-				<0 0>;  /*DISP_OD      */
+				<0 0>,  /*DISP_OD      */
+				<0x10209000 0x1000>;  /*DISP_VENCPLL      */
 
 			interrupts = <0 193 8>, /*DISP_OVL0 */
 				 <0 0 8>, /*DISP_OVL1 */
@@ -1547,7 +1552,8 @@ initrd=0x44000000,0x1000000 loglevel=8 androidboot.hardware=mt6735";
 				 <0 0 8>,  /*DISP_TVDPLL_CFG6 */
 				 <0 0 8>,  /*DISP_TVDPLL_CON0 */
 				 <0 0 8>,  /*DISP_TVDPLL_CON1 */
-				 <0 0 8>;  /*DISP_OD      */
+				 <0 0 8>,  /*DISP_OD      */
+				 <0 0 8>;  /*DISP_VENCPLL      */
 				};
 
 		DISP_OVL0@0x14007000 {

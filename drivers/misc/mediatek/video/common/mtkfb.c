@@ -1701,7 +1701,8 @@ static int init_framebuffer(struct fb_info *info)
 
 	/*memset_io(buffer, 0, info->screen_size)*/;
 
-	memset_io(buffer, 0, size);
+	if (info->var.yres + info->var.yoffset <= info->var.yres_virtual)
+		memset_io(buffer, 0, size);
 
 	return 0;
 }

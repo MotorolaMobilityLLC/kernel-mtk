@@ -55,6 +55,7 @@ typedef struct {
 	MMP_Event present_fence_set;
 	MMP_Event idlemgr;
 	MMP_Event primary_error;
+	MMP_Event tui;
 	MMP_Event ovl_trigger;
 	MMP_Event interface_trigger;
 	MMP_Event Extd_Parent;

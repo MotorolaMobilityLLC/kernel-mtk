@@ -136,7 +136,7 @@ static uint32_t send_cmd_to_user(uint32_t command_id)
 	/* Wait for ioctl thread to complete */
 	wait_for_completion(&io_comp);
 	pr_debug("send_cmd_to_user: Got an answer from ioctl thread.\n");
-	INIT_COMPLETION(io_comp);
+	reinit_completion(&io_comp);
 
 	/* Check id of the cmd processed by ioctl thread (paranoia) */
 	if (g_user_rsp.id != command_id) {
@@ -361,7 +361,7 @@ int tlc_wait_cmd(uint32_t *cmd_id)
 		pr_debug("interrupted by system\n");
 		return -ERESTARTSYS;
 	}
-	INIT_COMPLETION(dci_comp);
+	reinit_completion(&dci_comp);
 
 	*cmd_id = g_cmd_id;
 	return 0;

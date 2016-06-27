@@ -805,7 +805,7 @@ static void dsi_dump_reg(DISP_MODULE_ENUM module)
 #ifndef CONFIG_FPGA_EARLY_PORTING
 		DDPDUMP("==DISP MIPI REGS==\n");
 		for (i = 0; i < 10 * 16; i += 16)
-			pr_debug("MIPI+%04x : 0x%08x  0x%08x  0x%08x  0x%08x\n", i,
+			DDPDUMP("MIPI+%04x : 0x%08x  0x%08x  0x%08x  0x%08x\n", i,
 				 INREG32(MIPITX_BASE + i), INREG32(MIPITX_BASE + i + 0x4),
 				 INREG32(MIPITX_BASE + i + 0x8), INREG32(MIPITX_BASE + i + 0xc));
 

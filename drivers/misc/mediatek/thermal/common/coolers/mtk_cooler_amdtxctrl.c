@@ -547,13 +547,15 @@ int amdtxctrl_pid_read(char *buf, char **start, off_t offset, int count, int *eo
 	return ret;
 }
 
-ssize_t amdtxctrl_pid_write(struct file *filp, const char __user *buf, unsigned long len,
+ssize_t amdtxctrl_pid_write(struct file *filp, const char __user *buf, unsigned long count,
 			    void *data)
 {
 	int ret = 0;
 	char tmp[MAX_LEN] = { 0 };
+	int len = 0;
 
 	/* write data to the buffer */
+	len = (count < (sizeof(tmp) - 1)) ? count : (sizeof(tmp) - 1);
 	if (copy_from_user(tmp, buf, len))
 		return -EFAULT;
 

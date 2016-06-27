@@ -11,6 +11,7 @@
 #include <linux/of_irq.h>
 #include <linux/vmalloc.h>
 #include <linux/slab.h>
+#include <linux/switch.h>
 
 #include "disp_drv_platform.h"
 #include "ion_drv.h"
@@ -138,6 +139,9 @@ unsigned int gPresentFenceIndex = 0;
 unsigned int gTriggerDispMode = 0; /* 0: normal, 1: lcd only, 2: none of lcd and lcm */
 disp_ddp_path_config last_primary_config;
 static atomic_t DvfsIsHPM = ATOMIC_INIT(1);
+#ifdef CONFIG_TRUSTONIC_TRUSTED_UI
+static struct switch_dev disp_switch_data;
+#endif
 
 void enqueue_buffer(display_primary_path_context *ctx, struct list_head *head,
 		    disp_internal_buffer_info *buf)
@@ -281,6 +285,46 @@ static void _primary_path_unlock(const char *caller)
 	dprec_logger_done(DPREC_LOGGER_PRIMARY_MUTEX, 0, 0);
 }
 
+static DECLARE_WAIT_QUEUE_HEAD(display_state_wait_queue);
+
+static DISP_POWER_STATE primary_get_state(void)
+{
+	return pgc->state;
+}
+static DISP_POWER_STATE primary_set_state(DISP_POWER_STATE new_state)
+{
+	DISP_POWER_STATE old_state = pgc->state;
+
+	pgc->state = new_state;
+	DISPMSG("%s %d to %d\n", __func__, old_state, new_state);
+	wake_up(&display_state_wait_queue);
+	return old_state;
+}
+
+/* use MAX_SCHEDULE_TIMEOUT to wait for ever
+ * NOTES: primary_path_lock should NOT be held when call this func !!!!!!!!
+ */
+#define __primary_display_wait_state(condition, timeout)                       \
+({                                                                     \
+	wait_event_timeout(display_state_wait_queue, condition, timeout);\
+})
+
+long primary_display_wait_state(DISP_POWER_STATE state, long timeout)
+{
+	long ret;
+
+	ret = __primary_display_wait_state(primary_get_state() == state, timeout);
+	return ret;
+}
+
+long primary_display_wait_not_state(DISP_POWER_STATE state, long timeout)
+{
+	long ret;
+
+	ret = __primary_display_wait_state(primary_get_state() != state, timeout);
+	return ret;
+}
+
 static void _primary_path_vsync_lock(void)
 {
 	mutex_lock(&(pgc->vsync_lock));
@@ -306,6 +350,7 @@ static void _primary_path_set_dvfsHPM(bool bForcedinHPM, unsigned int needLock)
 		_primary_path_unlock(__func__);
 }
 
+#ifdef MTK_DISP_IDLE_LP
 static bool _primary_path_IsForcedHPM(unsigned int needLock)
 {
 	bool bResult;
@@ -323,7 +368,7 @@ static bool _primary_path_IsForcedHPM(unsigned int needLock)
 
 	return bResult;
 }
-
+#endif
 
 static void _cmdq_flush_config_handle_mira(void *handle, int blocking);
 
@@ -456,7 +501,7 @@ int primary_display_save_power_for_idle(int enter, unsigned int need_primary_loc
 	if (need_primary_lock)	/* if outer api has add primary lock, do not have to lock again */
 		_primary_path_lock(__func__);
 
-	if (pgc->state == DISP_SLEPT) {
+	if (primary_get_state() == DISP_SLEPT) {
 		DISPMSG("suspend mode can not enable low power.\n");
 		goto end;
 	}
@@ -645,7 +690,7 @@ static int _disp_primary_path_idle_detect_thread(void *data)
 			continue;
 
 		_primary_path_lock(__func__);
-		if (pgc->state == DISP_SLEPT) {
+		if (primary_get_state() != DISP_ALIVE) {
 			MMProfileLogEx(ddp_mmp_get_events()->esd_check_t, MMProfileFlagPulse, 1, 0);
 			/* DISPCHECK("[ddp_idle]primary display path is slept?? -- skip ddp_idle\n"); */
 			_primary_path_unlock(__func__);
@@ -657,7 +702,6 @@ static int _disp_primary_path_idle_detect_thread(void *data)
 			continue;
 		}
 
-		_primary_path_set_dvfsHPM(false, 0);
 
 		_primary_path_unlock(__func__);
 		/* _disp_primary_idle_lock(); */
@@ -680,9 +724,11 @@ static int _disp_primary_path_idle_detect_thread(void *data)
 			pr_debug("[LP] - enter: %d, flag:%d,%d\n", enter_cnt,
 				atomic_read(&isDdp_Idle), atomic_read(&idle_detect_flag));
 			primary_display_save_power_for_idle(1, 1);
+			_primary_path_set_dvfsHPM(false, 0);
 			_primary_path_esd_check_unlock();
 		} else {
 			/* _disp_primary_idle_unlock(); */
+			_primary_path_set_dvfsHPM(false, 0);
 			_primary_path_esd_check_unlock();
 			continue;
 		}
@@ -751,6 +797,46 @@ static int _switch_mmsys_clk(int mmsys_clk_old, int mmsys_clk_new)
 	if (mmsys_clk_new == get_mmsys_clk())
 		return ret;
 
+	if (pgc->state == DISP_SLEPT) {
+		DISP_REG_MASK(NULL, DISP_REG_CONFIG_C13, 0x07000000, 0x07000000);	/* clear */
+		DISP_REG_MASK(NULL, DISP_REG_CONFIG_C12, 0x06000000, 0x07000000);	/* set syspll2_d2 */
+
+		DISPMSG("[DISP] DVFS mode=%d, profile=%d, state=0x%x\n", mmsys_clk_new,
+			mmdvfs_get_mmdvfs_profile(), pgc->state);
+		switch (mmsys_clk_new) {
+		case MMSYS_CLK_LOW:
+			DISP_REG_MASK(NULL, DISP_REG_VENCPLL_CON1, 0x830E0000, 0xFFFFFFFF);	/* update */
+			break;
+
+		case MMSYS_CLK_MEDIUM:
+			/* by frequency hopping */
+			goto cpu_d;
+
+		case MMSYS_CLK_HIGH:
+			if (mmdvfs_get_mmdvfs_profile() == MMDVFS_PROFILE_D2_P_PLUS) {
+				DISP_REG_MASK(NULL, DISP_REG_VENCPLL_CON1, 0x82110000, 0xFFFFFFFF);	/* update */
+			} else if (mmdvfs_get_mmdvfs_profile() == MMDVFS_PROFILE_D2_M_PLUS) {
+				DISP_REG_MASK(NULL, DISP_REG_VENCPLL_CON1, 0x820F0000, 0xFFFFFFFF);	/* update */
+			}
+			break;
+
+		default:
+			DISPERR("[DISP] DVFS mode=%d\n", mmsys_clk_new);
+			goto cpu_d;
+		}
+
+		udelay(40);
+
+		DISP_REG_MASK(NULL, DISP_REG_CONFIG_C13, 0x07000000, 0x07000000);	/* clear */
+		DISP_REG_MASK(NULL, DISP_REG_CONFIG_C12, 0x01000000, 0x07000000);	/* set vencpll_ck */
+
+cpu_d:
+		/* set rdma golden setting parameters */
+		set_mmsys_clk(mmsys_clk_new);
+
+		return get_mmsys_clk();
+	}
+
 	/* 1.create and reset cmdq */
 	cmdqRecCreate(CMDQ_SCENARIO_PRIMARY_DISP, &handle);
 
@@ -762,7 +848,8 @@ static int _switch_mmsys_clk(int mmsys_clk_old, int mmsys_clk_new)
 	cmdqRecWrite(handle, 0x10210048, 0x07000000, 0x07000000);	/* clear */
 	cmdqRecWrite(handle, 0x10210044, 0x06000000, 0x07000000);	/* set syspll2_d2 */
 
-	DISPMSG("[DISP] DVFS mode=%d, profile=%d\n", mmsys_clk_new, mmdvfs_get_mmdvfs_profile());
+	DISPMSG("[DISP] DVFS mode=%d, profile=%d, state=0x%x\n", mmsys_clk_new,
+		mmdvfs_get_mmdvfs_profile(), pgc->state);
 	switch (mmsys_clk_new) {
 	case MMSYS_CLK_LOW:
 		cmdqRecWrite(handle, 0x10209254, 0x830E0000, 0xFFFFFFFF);	/* update */
@@ -2058,7 +2145,7 @@ static int _DL_switch_to_DC_fast(void)
 		wdma_config.security = DISP_NORMAL_BUFFER;
 
 	/* disable SODI by CPU to prevent underflow */
-#if defined(MTK_FB_SODI_SUPPORT) || !defined(CONFIG_FPGA_EARLY_PORTING)
+#if defined(MTK_FB_SODI_SUPPORT) && !defined(CONFIG_FPGA_EARLY_PORTING)
 	spm_enable_sodi(0);
 #endif
 
@@ -2163,7 +2250,7 @@ static int _DL_switch_to_DC_fast(void)
 	dpmgr_enable_event(pgc->dpmgr_handle, DISP_PATH_EVENT_FRAME_START);
 
 	/* enable SODI after switch */
-#if defined(MTK_FB_SODI_SUPPORT) || !defined(CONFIG_FPGA_EARLY_PORTING)
+#if defined(MTK_FB_SODI_SUPPORT) && !defined(CONFIG_FPGA_EARLY_PORTING)
 	spm_enable_sodi(1);
 #endif
 
@@ -2181,7 +2268,7 @@ static int _DC_switch_to_DL_fast(void)
 	OVL_CONFIG_STRUCT ovl_config[OVL_LAYER_NUM];
 
 	/* 1. disable SODI */
-#if defined(MTK_FB_SODI_SUPPORT) || !defined(CONFIG_FPGA_EARLY_PORTING)
+#if defined(MTK_FB_SODI_SUPPORT) && !defined(CONFIG_FPGA_EARLY_PORTING)
 	spm_enable_sodi(0);
 #endif
 
@@ -2261,7 +2348,7 @@ static int _DC_switch_to_DL_fast(void)
 	dpmgr_enable_event(pgc->dpmgr_handle, DISP_PATH_EVENT_FRAME_START);
 
 	/* 1. enable SODI */
-#if defined(MTK_FB_SODI_SUPPORT) || !defined(CONFIG_FPGA_EARLY_PORTING)
+#if defined(MTK_FB_SODI_SUPPORT) && !defined(CONFIG_FPGA_EARLY_PORTING)
 	spm_enable_sodi(1);
 #endif
 	return ret;
@@ -2542,7 +2629,7 @@ static int __build_path_direct_link(void)
 #endif
 #ifndef MTK_FB_CMDQ_DISABLE
 	dpmgr_path_init(pgc->dpmgr_handle, CMDQ_ENABLE);
-	cmdqRecFlush(pgc->cmdq_handle_config);
+/* cmdqRecFlush(pgc->cmdq_handle_config); */
 #else
 	dpmgr_path_init(pgc->dpmgr_handle, CMDQ_DISABLE);
 #endif
@@ -3296,7 +3383,7 @@ int _esd_check_config_handle_vdo(void)
 
 	_primary_path_lock(__func__);
 
-#if defined(MTK_FB_SODI_SUPPORT) || !defined(CONFIG_FPGA_EARLY_PORTING)
+#if defined(MTK_FB_SODI_SUPPORT) && !defined(CONFIG_FPGA_EARLY_PORTING)
 	spm_enable_sodi(0);
 #endif
 
@@ -3345,7 +3432,7 @@ int _esd_check_config_handle_vdo(void)
 
 	ret = cmdqRecFlush(pgc->cmdq_handle_config_esd);
 
-#if defined(MTK_FB_SODI_SUPPORT) || !defined(CONFIG_FPGA_EARLY_PORTING)
+#if defined(MTK_FB_SODI_SUPPORT) && !defined(CONFIG_FPGA_EARLY_PORTING)
 	spm_enable_sodi(1);
 #endif
 	_primary_path_unlock(__func__);
@@ -3430,7 +3517,7 @@ int primary_display_switch_esd_mode(int mode)
 					mt_eint_set_hw_debounce(ints[0], ints[1]);
 
 					irq = irq_of_parse_and_map(node, 0);
-					if (request_irq(irq, _esd_check_ext_te_irq_handler, IRQF_TRIGGER_NONE,
+					if (request_irq(irq, _esd_check_ext_te_irq_handler, IRQF_TRIGGER_RISING,
 							"DSI_TE_1-eint", NULL))
 						DISPERR("[ESD]EINT IRQ LINE NOT AVAILABLE!!\n");
 				} else {
@@ -3829,6 +3916,8 @@ int primary_display_esd_recovery(void)
 	DISPCHECK("[ESD]dsi power reset[begin]\n");
 	dpmgr_path_dsi_power_off(pgc->dpmgr_handle, CMDQ_DISABLE);
 	dpmgr_path_dsi_power_on(pgc->dpmgr_handle, CMDQ_DISABLE);
+	if (!primary_display_is_video_mode())
+		dpmgr_path_ioctl(pgc->dpmgr_handle, NULL, DDP_DSI_ENABLE_TE, NULL);
 	DISPCHECK("[ESD]dsi power reset[end]\n");
 
 	MMProfileLogEx(ddp_mmp_get_events()->esd_recovery_t, MMProfileFlagPulse, 0, 8);
@@ -3951,7 +4040,7 @@ static int primary_display_vdo_pullclk_worker_kthread(void *data)
 
 		_primary_path_lock(__func__);
 
-#if defined(MTK_FB_SODI_SUPPORT) || !defined(CONFIG_FPGA_EARLY_PORTING)
+#if defined(MTK_FB_SODI_SUPPORT) && !defined(CONFIG_FPGA_EARLY_PORTING)
 		spm_enable_sodi(0);
 #endif
 
@@ -3990,7 +4079,7 @@ static int primary_display_vdo_pullclk_worker_kthread(void *data)
 
 		ret = cmdqRecFlush(pgc->cmdq_handle_config_esd);
 
-#if defined(MTK_FB_SODI_SUPPORT) || !defined(CONFIG_FPGA_EARLY_PORTING)
+#if defined(MTK_FB_SODI_SUPPORT) && !defined(CONFIG_FPGA_EARLY_PORTING)
 		spm_enable_sodi(1);
 #endif
 		_primary_path_unlock(__func__);
@@ -4046,7 +4135,7 @@ static int _disp_primary_path_check_trigger(void *data)
 			       MMProfileFlagPulse, 0, 0);
 
 		_primary_path_lock(__func__);
-		if (pgc->state != DISP_SLEPT) {
+		if (primary_get_state() == DISP_ALIVE) {
 #ifdef MTK_DISP_IDLE_LP
 			last_primary_trigger_time = sched_clock();
 			_disp_primary_path_exit_idle(__func__, 0);
@@ -4469,7 +4558,6 @@ static int _ovl_fence_release_callback(uint32_t userdata)
 	int i = 0;
 	unsigned int addr = 0;
 	int ret = 0;
-	int disp_reset;
 	unsigned int dsi_state[10];
 	unsigned int rdma_state[50];
 
@@ -4482,18 +4570,6 @@ static int _ovl_fence_release_callback(uint32_t userdata)
 	else if (ovl_get_status() == DDP_OVL1_STATUS_PRIMARY_DISABLE)
 		dpmgr_set_ovl1_status(DDP_OVL1_STATUS_IDLE);
 
-	disp_reset = disp_irq_get_reset_status();
-	if (disp_reset) {
-		DISPERR("disp RESET begin, 0x%x\n", disp_reset);
-
-		dpmgr_path_stop(pgc->dpmgr_handle, CMDQ_DISABLE);
-		dpmgr_path_reset(pgc->dpmgr_handle, CMDQ_DISABLE);
-		dpmgr_path_start(pgc->dpmgr_handle, CMDQ_DISABLE);
-		if (primary_display_is_video_mode())
-			dpmgr_path_trigger(pgc->dpmgr_handle, NULL, CMDQ_DISABLE);
-
-		DISPERR("disp RESET end, 0x%x\n", disp_reset);
-	}
 #ifndef MTK_FB_CMDQ_DISABLE
 	for (i = 0; i < PRIMARY_DISPLAY_SESSION_LAYER_COUNT; i++) {
 		int fence_idx = 0;
@@ -4516,6 +4592,11 @@ static int _ovl_fence_release_callback(uint32_t userdata)
 		cmdqBackupReadSlot(pgc->ovl_status_info, 0, &ovl_status[0]);
 		cmdqBackupReadSlot(pgc->ovl_status_info, 1, &ovl_status[1]);
 		DISPDBG("ovl fsm state:0x%x\n", ovl_status[0]);
+		if ((ovl_status[1] & 0x1) != OVL_STATUS_IDLE) {
+			DISPERR("disp ovl status error, 0x%x, 0x%x\n", ovl_status[0],
+				ovl_status[1]);
+			/* dump cmdq cmd here */
+		}
 	}
 #endif
 
@@ -4565,6 +4646,9 @@ static int _ovl_fence_release_callback(uint32_t userdata)
 	    && (userdata == DISP_SESSION_DECOUPLE_MODE || userdata == 5)) {
 		static cmdqRecHandle cmdq_handle;
 		unsigned int rdma_pitch_sec, rdma_fmt;
+
+		if (primary_get_state() != DISP_ALIVE)
+			return 0;
 
 		if (cmdq_handle == NULL)
 			ret = cmdqRecCreate(CMDQ_SCENARIO_PRIMARY_DISP, &cmdq_handle);
@@ -5284,7 +5368,7 @@ int primary_display_init(char *lcm_name, unsigned int lcm_fps)
 			/* mt_gpio_set_debounce(ints[0], ints[1]); */
 			mt_eint_set_hw_debounce(ints[0], ints[1]);
 			irq = irq_of_parse_and_map(node, 0);
-			if (request_irq(irq, _esd_check_ext_te_irq_handler, IRQF_TRIGGER_NONE, "DSI_TE_1-eint", NULL))
+			if (request_irq(irq, _esd_check_ext_te_irq_handler, IRQF_TRIGGER_RISING, "DSI_TE_1-eint", NULL))
 				DISPCHECK("[ESD]EINT IRQ LINE NOT AVAILABLE!!\n");
 			else
 				eint_flag++;
@@ -5378,6 +5462,13 @@ int primary_display_init(char *lcm_name, unsigned int lcm_fps)
 		pgc->max_layer = OVL_LAYER_NUM;
 
 	pgc->state = DISP_ALIVE;
+
+#ifdef CONFIG_TRUSTONIC_TRUSTED_UI
+	disp_switch_data.name = "disp";
+	disp_switch_data.index = 0;
+	disp_switch_data.state = DISP_ALIVE;
+	ret = switch_dev_register(&disp_switch_data);
+#endif
 
 	primary_display_sodi_rule_init();
 
@@ -5588,6 +5679,26 @@ int primary_suspend_release_fence(void)
 	return 0;
 }
 
+static void primary_display_suspend_wait_tui(void)
+{
+	while (primary_get_state() == DISP_BLANK) {
+		_primary_path_vsync_unlock();
+		_primary_path_unlock(__func__);
+		_primary_path_esd_check_unlock();
+		disp_sw_mutex_unlock(&(pgc->capture_lock));
+#ifdef CONFIG_TRUSTONIC_TRUSTED_UI
+		switch_set_state(&disp_switch_data, DISP_SLEPT);
+#endif
+		primary_display_wait_state(DISP_ALIVE, MAX_SCHEDULE_TIMEOUT);
+
+		disp_sw_mutex_lock(&(pgc->capture_lock));
+		_primary_path_esd_check_lock();
+		_primary_path_lock(__func__);
+		_primary_path_vsync_lock();
+		DISPCHECK("primary_display_suspend wait tui done stat=%d\n", primary_get_state());
+	}
+}
+
 int primary_display_suspend(void)
 {
 	DISP_STATUS ret = DISP_STATUS_OK;
@@ -5601,6 +5712,11 @@ int primary_display_suspend(void)
 	_primary_path_esd_check_lock();
 	_primary_path_lock(__func__);
 	_primary_path_vsync_lock();
+
+	DISPCHECK("wait tui finish[begin]\n");
+	primary_display_suspend_wait_tui();
+	DISPCHECK("wait tui finish[end]\n");
+
 	if (pgc->state == DISP_SLEPT) {
 		DISPCHECK("primary display path is already sleep, skip\n");
 		goto done;
@@ -5965,6 +6081,9 @@ int primary_display_resume(void)
 	DISPCHECK("[POWER]wakeup aal/od trigger process[end]\n");
 #endif
 	pgc->state = DISP_ALIVE;
+#ifdef CONFIG_TRUSTONIC_TRUSTED_UI
+	switch_set_state(&disp_switch_data, DISP_ALIVE);
+#endif
 
 done:
 	_primary_path_unlock(__func__);
@@ -6653,6 +6772,11 @@ static int _config_ovl_input(disp_session_input_config *session_input,
 		OVL_CONFIG_STRUCT *ovl_cfg;
 
 		layer = input_cfg->layer_id;
+
+		/*security issue*/
+		if (layer >= OVL_LAYER_NUM)
+			continue;
+
 		ovl_cfg = &(data_config->ovl_config[layer]);
 		if (session_input->setter != SESSION_USER_AEE) {
 			if (isAEEEnabled && layer == primary_display_get_option("ASSERT_LAYER")) {
@@ -6819,7 +6943,7 @@ int primary_display_config_input_multiple(disp_session_input_config *session_inp
 
 	_primary_path_lock(__func__);
 
-	if (pgc->state == DISP_SLEPT && DISP_SESSION_TYPE(session_input->session_id) != DISP_SESSION_MEMORY) {
+	if (primary_get_state() == DISP_SLEPT && DISP_SESSION_TYPE(session_input->session_id) != DISP_SESSION_MEMORY) {
 		DISPMSG("%s, skip because primary dipslay is sleep\n", __func__);
 #ifdef CONFIG_SINGLE_PANEL_OUTPUT
 		primary_suspend_release_ovl_fence(session_input);
@@ -7030,6 +7154,9 @@ int primary_display_switch_mode(int sess_mode, unsigned int session, int force)
 
 	MMProfileLogEx(ddp_mmp_get_events()->primary_switch_mode, MMProfileFlagStart,
 		       pgc->session_mode, sess_mode);
+
+	if (primary_get_state() == DISP_BLANK)
+		sess_mode = DISP_SESSION_DECOUPLE_MODE;
 
 	if (pgc->session_mode == sess_mode)
 		goto done;
@@ -8054,20 +8181,20 @@ int primary_display_capture_framebuffer_ovl(unsigned long pbuf, unsigned int for
 	_primary_path_lock(__func__);
 
 	if (pgc->state == DISP_SLEPT) {
-		memset_io((void *)pbuf, 0, buffer_size);
+		/*memset_io((void *)pbuf, 0, buffer_size);*/
 		DISPMSG("primary capture:fill black for sleep\n");
 		goto out;
 	}
 
 	if (!primary_display_cmdq_enabled()) {
-		memset_io((void *)pbuf, 0, buffer_size);
+		/*memset_io((void *)pbuf, 0, buffer_size);*/
 		DISPMSG("primary capture:fill black to cmdq disable\n");
 		goto out;
 	}
 
 	if (_is_decouple_mode(pgc->session_mode) || _is_mirror_mode(pgc->session_mode)) {
 		primary_display_capture_framebuffer_decouple(pbuf, format);
-		memset_io((void *)pbuf, 0, buffer_size);
+		/*memset_io((void *)pbuf, 0, buffer_size);*/
 		DISPMSG("primary capture: fill black for decouple & mirror mode End\n");
 		goto out;
 	}
@@ -9208,4 +9335,70 @@ done:
 	_primary_path_unlock(__func__);
 	DISPCHECK("[display_test]Display test[End]\n");
 	return ret;
+}
+
+static DISP_POWER_STATE tui_power_stat_backup;
+static int tui_session_mode_backup;
+
+int display_enter_tui(void)
+{
+	msleep(500);
+	DISPMSG("TDDP: %s\n", __func__);
+
+	MMProfileLogEx(ddp_mmp_get_events()->tui, MMProfileFlagStart, 0, 0);
+
+	_primary_path_lock(__func__);
+
+	if (primary_get_state() != DISP_ALIVE) {
+		DISPERR("Can't enter tui: current_stat=%d is not alive\n", primary_get_state());
+		goto err0;
+	}
+
+	tui_power_stat_backup = primary_set_state(DISP_BLANK);
+
+	if (primary_display_is_mirror_mode()) {
+		DISPERR("Can't enter tui: current_mode=%s\n", session_mode_spy(pgc->session_mode));
+		goto err1;
+	}
+
+#ifdef MTK_DISP_IDLE_LP
+	_disp_primary_path_exit_idle(__func__, 0);
+#endif
+	tui_session_mode_backup = pgc->session_mode;
+	primary_display_switch_mode_nolock(DISP_SESSION_DECOUPLE_MODE, pgc->session_id, 0);
+
+	MMProfileLogEx(ddp_mmp_get_events()->tui, MMProfileFlagPulse, 0, 1);
+	_primary_path_unlock(__func__);
+	return 0;
+
+err1:
+	primary_set_state(tui_power_stat_backup);
+
+err0:
+	MMProfileLogEx(ddp_mmp_get_events()->tui, MMProfileFlagEnd, 0, 0);
+	_primary_path_unlock(__func__);
+
+	return -1;
+}
+
+int display_exit_tui(void)
+{
+	MMProfileLogEx(ddp_mmp_get_events()->tui, MMProfileFlagPulse, 1, 1);
+
+	_primary_path_lock(__func__);
+
+	primary_set_state(tui_power_stat_backup);
+
+	/* trigger rdma to display last normal buffer
+	_decouple_update_rdma_config_nolock();*/
+	/* workaround: wait until this frame triggered to lcm */
+	msleep(32);
+	primary_display_switch_mode_nolock(tui_session_mode_backup, pgc->session_id, 0);
+
+	_primary_path_unlock(__func__);
+
+	MMProfileLogEx(ddp_mmp_get_events()->tui, MMProfileFlagEnd, 0, 0);
+	DISPMSG("TDDP: %s\n", __func__);
+
+	return 0;
 }

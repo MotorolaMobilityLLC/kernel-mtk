@@ -79,7 +79,8 @@ typedef enum {
 
 typedef enum {
 	DISP_ALIVE = 0xf0,
-	DISP_SLEPT
+	DISP_SLEPT,
+	DISP_BLANK
 } DISP_POWER_STATE;
 
 typedef enum {
@@ -333,6 +334,8 @@ int primary_display_set_cmd(int *lcm_cmd, unsigned int cmd_num);
 int disp_fmt_to_hw_fmt(DISP_FORMAT src_fmt, unsigned int *hw_fmt,
 		       unsigned int *Bpp, unsigned int *bpp);
 void disp_update_trigger_time(void);
+int display_enter_tui(void);
+int display_exit_tui(void);
 
 display_primary_path_context *primary_display_path_lock(const char *caller);
 void primary_display_path_unlock(const char *caller);

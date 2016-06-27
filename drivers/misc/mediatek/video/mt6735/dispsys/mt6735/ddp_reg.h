@@ -95,7 +95,9 @@ static const unsigned int ddp_reg_pa_base[DISP_REG_NUM] = {
 	0, 0x14014000, 0x14011000, 0x14012000,
 	0x14000000, 0x14015000, 0x14016000, 0x14017000,
 	0x10206000, 0x10210000, 0x10211A70, 0x10211974,
-	0x10211B70, 0x10206044, 0x10206514
+	0x10211B70, 0x10206044, 0x10206514, 0x10206558,
+	0x102100A0, 0x10209270, 0x10209274, 0,
+	0x10209000
 };
 
 static const unsigned int ddp_irq_num[DISP_REG_NUM] = {
@@ -105,7 +107,9 @@ static const unsigned int ddp_irq_num[DISP_REG_NUM] = {
 	0, 186, 203, 204,
 	205, 176, 0, 0,
 	0, 0, 0, 0,
-	0, 0, 0
+	0, 0, 0, 0,
+	0, 0, 0, 0,
+	0
 };
 
 /* module bit in mutex */
@@ -1133,6 +1137,7 @@ extern unsigned long dsi_reg_va;
 #define DDP_REG_EFUSE               dispsys_reg[DISP_REG_EFUSE]
 #define DDP_REG_EFUSE_PERMISSION    dispsys_reg[DISP_REG_EFUSE_PERMISSION]
 #define DDP_REG_EFUSE_KEY           dispsys_reg[DISP_RGE_EFUSE_KEY]
+#define DDP_REG_BASE_VENCPLL        dispsys_reg[DISP_RGE_VENCPLL]
 
 
 #define DDP_REG_TVDPLL_CON6        dispsys_reg[DISP_TVDPLL_CFG6]
@@ -1205,6 +1210,7 @@ extern unsigned long dsi_reg_va;
 #define DISPSYS_EFUSE                 DDP_REG_EFUSE
 #define DISPSYS_EFUSE_PERMISSION      DDP_REG_EFUSE_PERMISSION
 #define DISPSYS_EFUSE_KEY             DDP_REG_EFUSE_KEY
+#define DISPSYS_VENCPLL_BASE          DDP_REG_BASE_VENCPLL
 
 #define MIPITX_BASE					MIPI_TX_REG_BASE
 /* --------------------------------------------------------------------------- */
@@ -1712,15 +1718,18 @@ extern unsigned int gEnableReduceRegWrite;
 #define DISP_REG_CONFIG_MDP_DL_READY_0				(DISPSYS_CONFIG_BASE + 0x8ac)
 #define DISP_REG_CONFIG_SMI_LARB0_GREQ				(DISPSYS_CONFIG_BASE + 0x8d0)
 #define DISP_REG_CONFIG_C08                         (DISPSYS_CONFIG_BASE + 0xc08)
-#define DISP_REG_CONFIG_C09                         (DISPSYS_CONFIG2_BASE + 0x40)   /* 0x10206040 */
-#define DISP_REG_CONFIG_C10                         (DISPSYS_CONFIG2_BASE + 0x44)   /* 0x10206044 */
-#define DISP_REG_CONFIG_C11                         (DISPSYS_CONFIG3_BASE + 0x40)   /* 0x10000040 */
-#define DISP_REG_CLK_CFG_0_MM_CLK                   (DISPSYS_CONFIG_BASE+0x40)  /* BIT31 0 */
-#define DISP_REG_CLK_CFG_0_CLR                      (DISPSYS_CONFIG_BASE+0x48)  /* BIT31  1 clear for mms */
-#define DISP_REG_CLK_CFG_1_CLR                      (DISPSYS_CONFIG_BASE+0x58)  /* bit7 1 clear for pwm */
-#define DISP_REG_CLK_CFG_6_DPI                      (DISPSYS_CONFIG_BASE+0xA0)  /* bit7 0 */
-#define DISP_REG_CLK_CFG_6_CLR                      (DISPSYS_CONFIG_BASE+0xA8)  /* bit7 1 clear for dpi */
+#define DISP_REG_CONFIG_C09                         (DISPSYS_CONFIG2_BASE + 0x40)	/* 0x10206040 */
+#define DISP_REG_CONFIG_C10                         (DISPSYS_CONFIG2_BASE + 0x44)	/* 0x10206044 */
+#define DISP_REG_CONFIG_C11                         (DISPSYS_CONFIG3_BASE + 0x40)	/* 0x10210040 */
+#define DISP_REG_CONFIG_C12                         (DISPSYS_CONFIG3_BASE + 0x44)	/* 0x10210044 */
+#define DISP_REG_CONFIG_C13                         (DISPSYS_CONFIG3_BASE + 0x48)	/* 0x10210048 */
+#define DISP_REG_CLK_CFG_0_MM_CLK                   (DISPSYS_CONFIG_BASE+0x40)	/* BIT31 0 */
+#define DISP_REG_CLK_CFG_0_CLR                      (DISPSYS_CONFIG_BASE+0x48)	/* BIT31  1 clear for mms */
+#define DISP_REG_CLK_CFG_1_CLR                      (DISPSYS_CONFIG_BASE+0x58)	/* bit7 1 clear for pwm */
+#define DISP_REG_CLK_CFG_6_DPI                      (DISPSYS_CONFIG_BASE+0xA0)	/* bit7 0 */
+#define DISP_REG_CLK_CFG_6_CLR                      (DISPSYS_CONFIG_BASE+0xA8)	/* bit7 1 clear for dpi */
 /* #define DISP_REG_VENCPLL_CON0                                        0xf0209260  // bit0 1 */
+#define DISP_REG_VENCPLL_CON1                       (DISPSYS_VENCPLL_BASE + 0x254)	/* 0x10209254 */
 
 #define MMSYS_INTEN_FLD_MMSYS_INTEN				REG_FLD(8, 0)
 #define MMSYS_INSTA_FLD_MMSYS_INSTA				REG_FLD(2, 0)
