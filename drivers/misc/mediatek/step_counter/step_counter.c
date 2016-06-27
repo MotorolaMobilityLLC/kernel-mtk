@@ -28,7 +28,6 @@ static struct step_c_init_info *step_counter_init_list[MAX_CHOOSE_STEP_C_NUM] = 
 
 static void step_c_work_func(struct work_struct *work)
 {
-
 	struct step_c_context *cxt = NULL;
 	/* hwm_sensor_data sensor_data; */
 	uint64_t value;
@@ -57,38 +56,35 @@ static void step_c_work_func(struct work_struct *work)
 		STEP_C_ERR("get step_c data fails!!\n");
 		goto step_c_loop;
 	} else {
-/* step counter is a on-change type sensor, don't report when same value -- modified by liaoxl.lenovo 5.12.2015 start*/
-		if (0 == (rawData >> 31))
-		{
+		if (true == cxt->is_first_data_after_enable) {
+			cxt->is_first_data_after_enable = false;
+			/* filter -1 value */
+			if (STEP_C_INVALID_VALUE == cxt->drv_data.counter) {
+				STEP_C_LOG(" read invalid data\n");
+				goto step_c_loop;
+			}
+		}
+		
+	/* step counter is a on-change type sensor, don't report when same value -- modified by liaoxl.lenovo 5.12.2015 start*/
+		if (0 == (rawData >> 31)) {
 			value = (int)rawData;
 		}
-		else
-		{
+		else {
 			value = (int)(rawData & 0x000000007FFFFFFF);
 			STEP_C_ERR("get step_c data overflow 31bit!!\n" );
 		}
-		if(value != cxt->drv_data.counter)
-		{	
+		
+		if (value != cxt->drv_data.counter) {
 			cxt->drv_data.counter = value;
 			cxt->drv_data.status = status;
 		}
-		else
-		{
+		else {
 			/* no new steps, no need to update */
 			goto step_c_loop;
 		}
-		/* step counter is a on-change type sensor, don't report when same value -- modified by liaoxl.lenovo 5.12.2015 start*/
+	/* step counter is a on-change type sensor, don't report when same value -- modified by liaoxl.lenovo 5.12.2015 start*/
 	}
-
-	if (true == cxt->is_first_data_after_enable) {
-		cxt->is_first_data_after_enable = false;
-		/* filter -1 value */
-		if (STEP_C_INVALID_VALUE == cxt->drv_data.counter) {
-			STEP_C_LOG(" read invalid data\n");
-			goto step_c_loop;
-
-		}
-	}
+	
 	/* report data to input device */
 	STEP_C_LOG("step_c data[%d]\n", cxt->drv_data.counter);
 
@@ -97,11 +93,8 @@ static void step_c_work_func(struct work_struct *work)
 step_c_loop:
 /* step counter sensor interrupt mode support -- modified by liaoxl.lenovo 7.12.2015 start  */
 #ifndef STEP_COUNTER_INT_MODE_SUPPORT
-	if(true == cxt->is_polling_run)
-	{
-		{
-			mod_timer(&cxt->timer, jiffies + atomic_read(&cxt->delay) / (1000 / HZ));
-		}
+	if (true == cxt->is_polling_run) {
+		mod_timer(&cxt->timer, jiffies + atomic_read(&cxt->delay) / (1000 / HZ));
 	}
 #endif
 	value = 0;
@@ -361,7 +354,7 @@ static int step_c_enable_data(int enable)
 				cxt->is_polling_run = false;
 				del_timer_sync(&cxt->timer);
 				cancel_work_sync(&cxt->report);
-				cxt->drv_data.counter = STEP_C_INVALID_VALUE;
+//				cxt->drv_data.counter = STEP_C_INVALID_VALUE;
 			}
 		}
 
@@ -369,8 +362,6 @@ static int step_c_enable_data(int enable)
 	step_c_real_enable(enable);
 	return 0;
 }
-
-
 
 int step_c_enable_nodata(int enable)
 {
@@ -566,7 +557,7 @@ static ssize_t step_c_store_batch(struct device *dev, struct device_attribute *a
 			cxt->is_polling_run = false;
 			del_timer_sync(&cxt->timer);
 			cancel_work_sync(&cxt->report);
-			cxt->drv_data.counter = STEP_C_INVALID_VALUE;
+//			cxt->drv_data.counter = STEP_C_INVALID_VALUE;
 		}
 	} else if (!strncmp(buf, "0", 1)) {
 		cxt->is_batch_enable = false;
@@ -579,6 +570,9 @@ static ssize_t step_c_store_batch(struct device *dev, struct device_attribute *a
 				cxt->is_polling_run = true;
 			}
 		}
+		/*Lenovo-sw weimh1 add 2016-6-25 begin:enable when batch mode is 0*/
+		step_c_real_enable(1);
+		/*Lenovo-sw weimh1 add 2016-6-25 end*/
 #endif
 /* step counter sensor interrupt mode support -- modified by liaoxl.lenovo 7.12.2015 end  */
 	} else {
@@ -587,7 +581,6 @@ static ssize_t step_c_store_batch(struct device *dev, struct device_attribute *a
 	mutex_unlock(&step_c_context_obj->step_c_op_mutex);
 	STEP_C_LOG(" step_c_store_batch done: %d\n", cxt->is_batch_enable);
 	return count;
-
 }
 
 static ssize_t step_c_show_batch(struct device *dev, struct device_attribute *attr, char *buf)
