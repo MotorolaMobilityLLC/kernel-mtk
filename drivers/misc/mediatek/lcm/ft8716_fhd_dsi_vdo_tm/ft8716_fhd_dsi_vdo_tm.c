@@ -659,8 +659,20 @@ static void lcm_get_params(LCM_PARAMS * params)
 	params->dsi.PLL_CLOCK = 430;//wuwl10 modify for new param
 	//params->dsi.clk_lp_per_line_enable= 1;
 	params->dsi.esd_check_enable = 1;
-	params->dsi.customization_esd_check_enable = 0;
+	params->dsi.customization_esd_check_enable = 1;
 	params->dsi.ssc_disable = 1;
+
+	params->dsi.lcm_esd_check_table[2].cmd = 0x0A;
+	params->dsi.lcm_esd_check_table[2].count = 1;
+	params->dsi.lcm_esd_check_table[2].para_list[0] = 0x9C;
+
+	params->dsi.lcm_esd_check_table[1].cmd = 0x0D;
+	params->dsi.lcm_esd_check_table[1].count = 1;
+	params->dsi.lcm_esd_check_table[1].para_list[0] = 0x00;
+
+	params->dsi.lcm_esd_check_table[0].cmd = 0x0E;
+	params->dsi.lcm_esd_check_table[0].count = 1;
+	params->dsi.lcm_esd_check_table[0].para_list[0] = 0x80;
 }
 
 static void lcm_init(void)
