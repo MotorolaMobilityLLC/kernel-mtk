@@ -371,7 +371,7 @@ static FLASHLIGHT_FUNCTION_STRUCT	constantFlashlightFunc=
 	constant_flashlight_ioctl
 };
 
-MUINT32 strobeInit_main_sid2_part1(PFLASHLIGHT_FUNCTION_STRUCT *pfFunc)
+MUINT32 strobeInit_main_sid2_part1_SY7806(PFLASHLIGHT_FUNCTION_STRUCT *pfFunc)
 {
     if (pfFunc != NULL)
     {

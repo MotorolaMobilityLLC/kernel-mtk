@@ -343,8 +343,11 @@ static int setFlashDrv(int sensorDev, int strobeId)
 				strobeInit_main_sid1_part2(ppF);
 		} else if (strobeId == 2) {
 			if (partId == 1)
+				#ifdef CAMERA_FLASH_Kungfu
+				strobeInit_main_sid2_part1_SY7806(ppF);
+				#else
 				strobeInit_main_sid2_part1(ppF);
-
+				#endif
 			else if (partId == 2)
 				strobeInit_main_sid2_part2(ppF);
 		}
@@ -974,7 +977,7 @@ static int flashlight_probe(struct platform_device *dev)
     led_classdev_register(&(dev->dev),&flash_cdev);
     constantFlashlightInit(&mpF);
 #ifdef CONFIG_LENOVO_TORCH_MODE
-    strobeInit_main_sid2_part1(&lowpF);
+    strobeInit_main_sid2_part1_SY7806(&lowpF);
 #endif
     INIT_WORK(&flash_work, flash_work_func);
     device_file = device_create_file(flashlight_device, &dev_attr_sy7806_id);
