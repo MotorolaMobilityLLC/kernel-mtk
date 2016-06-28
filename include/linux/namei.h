@@ -58,6 +58,7 @@ enum {LAST_NORM, LAST_ROOT, LAST_DOT, LAST_DOTDOT, LAST_BIND};
 /*2015.1.28 add begin for sdcardfs support case-insensitive search*/
 #ifdef CONFIG_SDCARD_FS_CI_SEARCH
 #define LOOKUP_CASE_INSENSITIVE 0x8000
+#define LOOKUP_NOCASE		0x8000
 #endif
 /*2015.1.28 add end*/
 
