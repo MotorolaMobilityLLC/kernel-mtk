@@ -6,6 +6,9 @@ menuconfig MEDIATEK_SOLUTION
 	  Check this to enable MediaTek properity configuration.
 
 if MEDIATEK_SOLUTION
+config LENOVO_TORCH_MODE
+	bool "LENOVO_TORCH_MODE"
+	default n
 
 config MTK_PLATFORM
 	string "MTK platform name"

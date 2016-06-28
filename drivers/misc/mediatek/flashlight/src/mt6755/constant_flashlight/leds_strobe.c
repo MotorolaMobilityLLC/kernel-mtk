@@ -251,12 +251,12 @@ int flashEnable_SY7806_2(void)
 		if(isMovieMode[m_duty2] == 1)
 			{
 			//mt_set_gpio_out(FLASH_TORCH_ENABLE, GPIO_OUT_ONE);
-			writeReg(SY7806_REG_ENABLE, (temp&0xF0) | 0xFA);//torch mode
+			writeReg(SY7806_REG_ENABLE, 0x0A);//torch mode
 			}
 		else
 			{
 			//mt_set_gpio_out(FLASH_STROBE_ENABLE, GPIO_OUT_ONE);
-			writeReg(SY7806_REG_ENABLE, (temp&0xF0) | 0xFE);//flash mode
+			writeReg(SY7806_REG_ENABLE, 0x0E);//flash mode
 			}
 	}
 	else if(LED2Closeflag == 1)
@@ -264,12 +264,12 @@ int flashEnable_SY7806_2(void)
 		if(isMovieMode[m_duty1] == 1)
 			{
 			//mt_set_gpio_out(FLASH_TORCH_ENABLE, GPIO_OUT_ONE);
-			writeReg(SY7806_REG_ENABLE, (temp&0xF0) | 0xF9);//torch mode
+			writeReg(SY7806_REG_ENABLE, 0x09);//torch mode
 			}
 		else
 			{
 			//mt_set_gpio_out(FLASH_STROBE_ENABLE, GPIO_OUT_ONE);
-			writeReg(SY7806_REG_ENABLE, (temp&0xF0) | 0xFD);//flash mode
+			writeReg(SY7806_REG_ENABLE,  0x0D);//flash mode
 			}
 	}
 	else
@@ -278,15 +278,16 @@ int flashEnable_SY7806_2(void)
 			{
 			PK_DBG("TORCH mode\n");
 			//mt_set_gpio_out(FLASH_TORCH_ENABLE, GPIO_OUT_ONE);
-			writeReg(SY7806_REG_ENABLE, (temp&0xF0) | 0xFB);//torch mode
+			writeReg(SY7806_REG_ENABLE,  0x0B);//torch mode
 			}
 		else
 			{
 			PK_DBG("FLASH mode\n");
 			//mt_set_gpio_out(FLASH_STROBE_ENABLE, GPIO_OUT_ONE);
 			//writeReg(SY7806_REG_ENABLE, (temp&0xF0) | 0xFF);//flash mode
-			writeReg(SY7806_REG_LED1_FLASH, 33);//duty5 400mA
-			writeReg(SY7806_REG_LED2_FLASH, 33);//duty5 400mA
+			//writeReg(SY7806_REG_LED1_FLASH, 33);//duty5 400mA
+			//writeReg(SY7806_REG_LED2_FLASH, 33);//duty5 400mA
+			
 			writeReg(SY7806_REG_ENABLE, 0x0F);
 			}
 	}
@@ -515,8 +516,9 @@ int FL_Enable(void)
 	flashEnable_SY7806_2();
 	PK_DBG(" FL_Enable line=%d torch_flag=%d \n",__LINE__,torch_flag);
 */
+	LED2Closeflag = 1;
 	flashEnable_SY7806_2();
-	PK_DBG(" FL_Enable line=%d \n",__LINE__);
+	PK_DBG(" led1 FL_Enable line=%d \n",__LINE__);
 	return 0;
 }
 
@@ -623,8 +625,8 @@ static int constant_flashlight_ioctl(unsigned int cmd, unsigned long arg)
 		break;
 
 	case FLASH_IOC_SET_DUTY :
-		PK_DBG("FLASHLIGHT_DUTY: %d\n",(int)arg);
-		setDuty_SY7806_2(arg);
+		PK_DBG("led1 FLASHLIGHT_DUTY: %d\n",(int)arg);
+			m_duty1 = arg;
 		break;
 
 	case FLASH_IOC_SET_STEP:
@@ -642,13 +644,13 @@ static int constant_flashlight_ioctl(unsigned int cmd, unsigned long arg)
 			hrtimer_start( &g_timeOutTimer, ktime, HRTIMER_MODE_REL );
 	            }
 			LED1Closeflag = 0;
-			LED2Closeflag = 0;
+		//	LED2Closeflag = 0;
 			FL_Enable();
 		}
 		else
 		{
 			LED1Closeflag = 1;
-			LED2Closeflag = 1;
+	       //	LED2Closeflag = 1;
 			FL_Disable();
 			hrtimer_cancel( &g_timeOutTimer );
 		}
