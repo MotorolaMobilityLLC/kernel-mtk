@@ -111,7 +111,7 @@ void SendDvfsRequest(int level)
 	int ret = 0;
 
 	if (level == MMDVFS_VOLTAGE_LOW) {
-		MODULE_MFV_LOGE("[VCODEC][MMDVFS_VDEC] SendDvfsRequest(MMDVFS_VOLTAGE_LOW)");
+		MODULE_MFV_LOGD("[VCODEC][MMDVFS_VDEC] SendDvfsRequest(MMDVFS_VOLTAGE_LOW)");
 #ifdef CONFIG_MTK_CLKMGR
 		clkmux_sel(MT_MUX_VDEC, 3, "MMDVFS_VOLTAGE_LOW");   /* 136.5MHz */
 #else
@@ -125,7 +125,7 @@ void SendDvfsRequest(int level)
 #endif
 		ret = mmdvfs_set_step(SMI_BWC_SCEN_VP, MMDVFS_VOLTAGE_LOW);
 	} else if (level == MMDVFS_VOLTAGE_HIGH) {
-		MODULE_MFV_LOGE("[VCODEC][MMDVFS_VDEC] SendDvfsRequest(MMDVFS_VOLTAGE_HIGH)");
+		MODULE_MFV_LOGD("[VCODEC][MMDVFS_VDEC] SendDvfsRequest(MMDVFS_VOLTAGE_HIGH)");
 		ret = mmdvfs_set_step(SMI_BWC_SCEN_VP, MMDVFS_VOLTAGE_HIGH);
 #ifdef CONFIG_MTK_CLKMGR
 		clkmux_sel(MT_MUX_VDEC, 1, "MMDVFS_VOLTAGE_HIGH");  /* 273MHz */
@@ -139,7 +139,7 @@ void SendDvfsRequest(int level)
 		clk_disable_unprepare(clk_MT_CG_TOP_MUX_VDEC);
 #endif
 	} else {
-		MODULE_MFV_LOGE("[VCODEC][MMDVFS_VDEC] OOPS: level = %d\n", level);
+		MODULE_MFV_LOGD("[VCODEC][MMDVFS_VDEC] OOPS: level = %d\n", level);
 	}
 
 	if (0 != ret) {
@@ -155,7 +155,7 @@ void VdecDvfsBegin(void)
 	gHWLockInterval = 0;
 	gFirstDvfsLock = VAL_TRUE;
 	gHWLockMaxDuration = 0;
-	MODULE_MFV_LOGE("[VCODEC][MMDVFS_VDEC] VdecDvfsBegin");
+	MODULE_MFV_LOGD("[VCODEC][MMDVFS_VDEC] VdecDvfsBegin");
 	/* eVideoGetTimeOfDay(&gMMDFVFSMonitorStartTime, sizeof(VAL_TIME_T)); */
 }
 
@@ -167,10 +167,10 @@ VAL_UINT32_T VdecDvfsGetMonitorDuration(void)
 
 void VdecDvfsEnd(int level)
 {
-	MODULE_MFV_LOGE("[VCODEC][MMDVFS_VDEC] VdecDVFS monitor %dms, decoded %d frames\n",
+	MODULE_MFV_LOGD("[VCODEC][MMDVFS_VDEC] VdecDVFS monitor %dms, decoded %d frames\n",
 		 MONITOR_DURATION_MS,
 		 gMMDFVFSMonitorCounts);
-	MODULE_MFV_LOGE("[VCODEC][MMDVFS_VDEC] total time %d, max duration %d, target lv %d\n",
+	MODULE_MFV_LOGD("[VCODEC][MMDVFS_VDEC] total time %d, max duration %d, target lv %d\n",
 		 gHWLockInterval,
 		 gHWLockMaxDuration,
 		 level);
@@ -210,9 +210,9 @@ void VdecDvfsAdjustment(void)
 		} else {
 			VdecDvfsStep();
 			_perc = (VAL_UINT32_T)(100 * gHWLockInterval / _monitor_duration);
-			MODULE_MFV_LOGE("[VCODEC][MMDVFS_VDEC] DROP_PERCENTAGE = %d, RAISE_PERCENTAGE = %d\n",
+			MODULE_MFV_LOGD("[VCODEC][MMDVFS_VDEC] DROP_PERCENTAGE = %d, RAISE_PERCENTAGE = %d\n",
 				 DROP_PERCENTAGE, RAISE_PERCENTAGE);
-			MODULE_MFV_LOGE("[VCODEC][MMDVFS_VDEC] reset monitor duration (%d ms), percent: %d\n",
+			MODULE_MFV_LOGD("[VCODEC][MMDVFS_VDEC] reset monitor duration (%d ms), percent: %d\n",
 				 _monitor_duration, _perc);
 			if (_perc < DROP_PERCENTAGE) {
 				SendDvfsRequest(DVFS_LOW);
@@ -235,11 +235,11 @@ void VdecDvfsMonitorStart(void)
 		VdecDvfsBegin();
 	}
 	if (VAL_TRUE == gMMDFVFSMonitorStarts) {
-		MODULE_MFV_LOGD("[VCODEC][MMDVFS_VDEC] LOCK 1\n");
+		/* MODULE_MFV_LOGD("[VCODEC][MMDVFS_VDEC] LOCK 1\n"); */
 		if (gMMDFVFSMonitorCounts > MONITOR_START_MINUS_1) {
 			if (VAL_TRUE == gFirstDvfsLock) {
 				gFirstDvfsLock = VAL_FALSE;
-				MODULE_MFV_LOGE("[VCODEC][MMDVFS_VDEC] LOCK 1 start monitor\n");
+				/* MODULE_MFV_LOGD("[VCODEC][MMDVFS_VDEC] LOCK 1 start monitor\n"); */
 				eVideoGetTimeOfDay(&gMMDFVFSMonitorStartTime, sizeof(VAL_TIME_T));
 			}
 			eVideoGetTimeOfDay(&gMMDFVFSLastLockTime, sizeof(VAL_TIME_T));
@@ -287,6 +287,7 @@ static DEFINE_MUTEX(EncHWLockEventTimeoutLock);
 
 static DEFINE_MUTEX(VdecPWRLock);
 static DEFINE_MUTEX(VencPWRLock);
+static DEFINE_MUTEX(LogCountLock);
 
 static DEFINE_SPINLOCK(DecIsrLock);
 static DEFINE_SPINLOCK(EncIsrLock);
@@ -310,6 +311,9 @@ static VAL_UINT32_T gu4HwVencIrqStatus; /* hardware VENC IRQ status (VP8/H264) *
 
 static VAL_UINT32_T gu4VdecPWRCounter;  /* mutex : VdecPWRLock */
 static VAL_UINT32_T gu4VencPWRCounter;  /* mutex : VencPWRLock */
+
+static VAL_UINT32_T gu4LogCountUser;  /* mutex : LogCountLock */
+static VAL_UINT32_T gu4LogCount;
 
 static VAL_UINT32_T gLockTimeOutCount;
 
@@ -1314,6 +1318,7 @@ static long vcodec_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned 
 	VAL_VCODEC_CPU_OPP_LIMIT_T rCpuOppLimit;
 	VAL_INT32_T temp_nr_cpu_ids;
 	VAL_POWER_T rPowerParam;
+	VAL_BOOL_T rIncLogCount;
 
 #if 0
 	VCODEC_DRV_CMD_QUEUE_T rDrvCmdQueue;
@@ -1623,6 +1628,38 @@ static long vcodec_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned 
 
 	case VCODEC_MB: {
 		mb();
+	}
+	break;
+
+	case VCODEC_SET_LOG_COUNT:
+	{
+		MODULE_MFV_LOGD("VCODEC_SET_LOG_COUNT + tid = %d\n", current->pid);
+
+		mutex_lock(&LogCountLock);
+		user_data_addr = (VAL_UINT8_T *)arg;
+		ret = copy_from_user(&rIncLogCount, user_data_addr, sizeof(VAL_BOOL_T));
+		if (ret) {
+			MODULE_MFV_LOGE("[ERROR] VCODEC_SET_LOG_COUNT, copy_from_user failed: %lu\n", ret);
+			mutex_unlock(&LogCountLock);
+			return -EFAULT;
+		}
+
+		if (rIncLogCount == VAL_TRUE) {
+			if (gu4LogCountUser == 0) {
+				gu4LogCount = get_detect_count();
+				set_detect_count(gu4LogCount + 100);
+			}
+			gu4LogCountUser++;
+		} else {
+			gu4LogCountUser--;
+			if (gu4LogCountUser == 0) {
+				set_detect_count(gu4LogCount);
+				gu4LogCount = 0;
+			}
+		}
+		mutex_unlock(&LogCountLock);
+
+		MODULE_MFV_LOGD("VCODEC_SET_LOG_COUNT - tid = %d\n", current->pid);
 	}
 	break;
 
@@ -2114,7 +2151,7 @@ static int vcodec_open(struct inode *inode, struct file *file)
 static int vcodec_flush(struct file *file, fl_owner_t id)
 {
 	MODULE_MFV_LOGD("vcodec_flush, curr_tid =%d\n", current->pid);
-	MODULE_MFV_LOGE("vcodec_flush pid = %d, Driver_Open_Count %d\n", current->pid, Driver_Open_Count);
+	/* MODULE_MFV_LOGE("vcodec_flush pid = %d, Driver_Open_Count %d\n", current->pid, Driver_Open_Count); */
 
 	return 0;
 }
@@ -2266,8 +2303,8 @@ static int vcodec_mmap(struct file *file, struct vm_area_struct *vma)
 	}
 #endif
 	vma->vm_page_prot = pgprot_noncached(vma->vm_page_prot);
-	MODULE_MFV_LOGE("[VCODEC][mmap] vma->start 0x%lx, vma->end 0x%lx, vma->pgoff 0x%lx\n",
-		 (VAL_ULONG_T)vma->vm_start, (VAL_ULONG_T)vma->vm_end, (VAL_ULONG_T)vma->vm_pgoff);
+	/* MODULE_MFV_LOGE("[VCODEC][mmap] vma->start 0x%lx, vma->end 0x%lx, vma->pgoff 0x%lx\n",
+		 (VAL_ULONG_T)vma->vm_start, (VAL_ULONG_T)vma->vm_end, (VAL_ULONG_T)vma->vm_pgoff); */
 	if (remap_pfn_range(vma, vma->vm_start, vma->vm_pgoff,
 			    vma->vm_end - vma->vm_start, vma->vm_page_prot)) {
 		return -EAGAIN;
@@ -2488,6 +2525,11 @@ static int __init vcodec_driver_init(void)
 	mutex_lock(&DriverOpenCountLock);
 	Driver_Open_Count = 0;
 	mutex_unlock(&DriverOpenCountLock);
+
+	mutex_lock(&LogCountLock);
+	gu4LogCountUser = 0;
+	gu4LogCount = 0;
+	mutex_unlock(&LogCountLock);
 
 	{
 		struct device_node *node = NULL;
