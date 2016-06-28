@@ -29,7 +29,7 @@
 #include <linux/suspend.h>
 #include <linux/tick.h>
 #include <trace/events/power.h>
-
+#define NO_RESET 1
 /**
  * The "cpufreq driver" - the arch- or hardware-dependent low
  * level driver of CPUFreq support, and its spinlock. This lock
@@ -2336,7 +2336,9 @@ EXPORT_SYMBOL(cpufreq_update_policy);
 static void setup_cpu0_symlink(struct device *dev, bool is_remove)
 {
 	static unsigned int root_cpu;
-
+#ifdef NO_RESET
+	return;
+#endif
 	/* remove cpu0 symlink */
 	if (is_remove) {
 		if (dev->id == 0) {

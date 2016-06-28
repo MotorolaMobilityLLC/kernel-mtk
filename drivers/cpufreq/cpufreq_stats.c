@@ -17,7 +17,7 @@
 #include <linux/of.h>
 #include <linux/sched.h>
 #include <linux/cputime.h>
-
+#define NO_RESET 1
 static spinlock_t cpufreq_stats_lock;
 
 struct cpufreq_stats {
@@ -56,6 +56,10 @@ static struct all_freq_table *all_freq_table;
 static DEFINE_PER_CPU(struct all_cpufreq_stats *, all_cpufreq_stats);
 static DEFINE_PER_CPU(struct cpufreq_stats *, cpufreq_stats_table);
 static DEFINE_PER_CPU(struct cpufreq_power_stats *, cpufreq_power_stats);
+#ifdef NO_RESET
+struct cpufreq_stats *cpufreq_stats_table_bk[3];
+u64 *time_in_state_bk[3];
+#endif
 
 struct cpufreq_stats_attribute {
 	struct attribute attr;
@@ -292,6 +296,9 @@ static int freq_table_get_index(struct cpufreq_stats *stat, unsigned int freq)
 static void __cpufreq_stats_free_table(struct cpufreq_policy *policy)
 {
 	struct cpufreq_stats *stat = per_cpu(cpufreq_stats_table, policy->cpu);
+#ifdef NO_RESET
+	int cluster_id;
+#endif
 
 	if (!stat)
 		return;
@@ -299,8 +306,17 @@ static void __cpufreq_stats_free_table(struct cpufreq_policy *policy)
 	pr_debug("%s: Free stat table\n", __func__);
 
 	sysfs_remove_group(&policy->kobj, &stats_attr_group);
+
+#ifdef NO_RESET
+	cluster_id = (policy->cpu < 4) ? 0 :
+				(policy->cpu < 8) ? 1 : 2;
+	time_in_state_bk[cluster_id] = stat->time_in_state;
+	cpufreq_stats_table_bk[cluster_id] = stat;
+#else				
 	kfree(stat->time_in_state);
 	kfree(stat);
+#endif
+
 	per_cpu(cpufreq_stats_table, policy->cpu) = NULL;
 }
 
@@ -366,10 +382,24 @@ static int __cpufreq_stats_create_table(struct cpufreq_policy *policy,
 	unsigned int alloc_size;
 	unsigned int cpu = policy->cpu;
 	struct cpufreq_frequency_table *pos;
+#ifdef NO_RESET
+	int cluster_id;
+#endif
 
 	if (per_cpu(cpufreq_stats_table, cpu))
 		return -EBUSY;
+
+#ifdef NO_RESET
+	cluster_id = (policy->cpu < 4) ? 0 :
+				(policy->cpu < 8) ? 1 : 2;
+	
+	stat = (cpufreq_stats_table_bk[cluster_id] != NULL) ?
+		   cpufreq_stats_table_bk[cluster_id] :
+		   kzalloc(sizeof(*stat), GFP_KERNEL);
+#else
 	stat = kzalloc(sizeof(*stat), GFP_KERNEL);
+#endif
+
 	if ((stat) == NULL)
 		return -ENOMEM;
 
@@ -386,7 +416,15 @@ static int __cpufreq_stats_create_table(struct cpufreq_policy *policy,
 	alloc_size += count * count * sizeof(int);
 #endif
 	stat->max_state = count;
+
+#ifdef NO_RESET
+	stat->time_in_state = (time_in_state_bk[cluster_id] != NULL) ?
+						  time_in_state_bk[cluster_id] :
+						  kzalloc(alloc_size, GFP_KERNEL);
+#else
 	stat->time_in_state = kzalloc(alloc_size, GFP_KERNEL);
+#endif
+
 	if (!stat->time_in_state) {
 		ret = -ENOMEM;
 		goto error_alloc;
@@ -397,10 +435,18 @@ static int __cpufreq_stats_create_table(struct cpufreq_policy *policy,
 	stat->trans_table = stat->freq_table + count;
 #endif
 	i = 0;
+
+#ifdef NO_RESET
+	if (stat->state_num ==0) {
+#endif
 	cpufreq_for_each_valid_entry(pos, table)
 		if (freq_table_get_index(stat, pos->frequency) == -1)
 			stat->freq_table[i++] = pos->frequency;
 	stat->state_num = i;
+#ifdef NO_RESET
+	}
+#endif
+
 	spin_lock(&cpufreq_stats_lock);
 	stat->last_time = get_jiffies_64();
 	stat->last_index = freq_table_get_index(stat, policy->cur);
@@ -410,6 +456,9 @@ error_alloc:
 	sysfs_remove_group(&policy->kobj, &stats_attr_group);
 error_out:
 	kfree(stat);
+#ifdef NO_RESET
+	cpufreq_stats_table_bk[cluster_id] = NULL;
+#endif
 	per_cpu(cpufreq_stats_table, cpu) = NULL;
 	return ret;
 }
@@ -599,6 +648,10 @@ static int cpufreq_stat_notifier_policy(struct notifier_block *nb,
 	struct cpufreq_frequency_table *table, *pos;
 	unsigned int cpu_num, cpu = policy->cpu;
 
+	if (val == CPUFREQ_REMOVE_POLICY) {
+		__cpufreq_stats_free_table(policy);
+	}
+
 	if (val == CPUFREQ_UPDATE_POLICY_CPU) {
 		cpufreq_stats_update_policy_cpu(policy);
 		return 0;
@@ -621,8 +674,8 @@ static int cpufreq_stat_notifier_policy(struct notifier_block *nb,
 
 	if (val == CPUFREQ_CREATE_POLICY)
 		ret = __cpufreq_stats_create_table(policy, table, count);
-	else if (val == CPUFREQ_REMOVE_POLICY)
-		__cpufreq_stats_free_table(policy);
+	/*else if (val == CPUFREQ_REMOVE_POLICY)
+		__cpufreq_stats_free_table(policy);*/
 
 	return ret;
 }
