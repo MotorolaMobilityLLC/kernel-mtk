@@ -578,12 +578,23 @@ static void init_lcm_registers(void)
 #ifndef BUILD_LK
 static void lcm_esd_recover_backlight(void)
 {
-	printk("%s tm, level = %d\n", __func__, esd_last_backlight_level);
+	printk("%s tm, level = %d, then reset touch\n", __func__, esd_last_backlight_level);
+
+//lenvo-sw wuwl10 add for esd reset touch begin
+	mt_set_gpio_mode_base(10, GPIO_MODE_00);
+	mt_set_gpio_dir_base(10, GPIO_DIR_OUT);
+	mt_set_gpio_out_base(10, GPIO_OUT_ZERO);
+	MDELAY(10);
 
 	// Refresh value of backlight level.
 	lcm_backlight_level_setting[0].para_list[0] = (esd_last_backlight_level>>2) & 0xFF;
 	lcm_backlight_level_setting[0].para_list[1] = esd_last_backlight_level & 0x03;
 	push_table(lcm_backlight_level_setting, sizeof(lcm_backlight_level_setting) / sizeof(struct LCM_setting_table), 1);
+
+	mt_set_gpio_mode_base(10, GPIO_MODE_00);
+	mt_set_gpio_dir_base(10, GPIO_DIR_OUT);
+	mt_set_gpio_out_base(10, GPIO_OUT_ONE);
+//lenvo-sw wuwl10 add for esd reset touch end
 }
 #endif
 //lenovo-sw wuwl10 20150515 add for esd revovery backlight end
