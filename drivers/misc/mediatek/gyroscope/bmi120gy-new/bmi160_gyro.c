@@ -45,6 +45,11 @@
 #include <hwmsen_helper.h>
 #include "bmi160_gyro.h"
 
+/*Lenovo-sw weimh1 add 2016-6-30 begin:add for calibration*/
+#define BMI120_CALIB_HAL        /*Factory calibration*/
+//#define BMI120_AUTO_CALIB    /*Auto calibration*/
+/*Lenovo-sw weimh1 add 2016-6-30 end*/
+
 /* sensor type */
 enum SENSOR_TYPE_ENUM {
 	BMI160_GYRO_TYPE = 0x0,
@@ -121,6 +126,18 @@ struct bmg_i2c_data {
 	struct data_filter	fir;
 #endif
 };
+
+/*Lenovo-sw weimh1 add 2016-6-30 begin:add for calibration*/
+#ifdef BMI120_AUTO_CALIB
+static int calib_auto_offset[3] = {0,0,0};
+#endif
+
+#ifdef BMI120_CALIB_HAL
+static int calib_gyro_offset[3] = {0,0,0};                  // for lenovo hal calib
+#endif
+/*Lenovo-sw weimh1 add 2016-6-30 end:add for calibration*/
+
+extern struct i2c_client *bmi160_acc_i2c_client;
 
 #ifndef GYRO_TAG
 /* log macro */
@@ -926,6 +943,14 @@ static int bmg_read_sensor_data(struct i2c_client *client,
 		gyro[BMG_AXIS_Y] = gyro[BMG_AXIS_Y] / obj->sensitivity;
 		gyro[BMG_AXIS_Z] = gyro[BMG_AXIS_Z] / obj->sensitivity;
 
+/*Lenovo-sw weimh1 add 2016-6-14 begin:for calibration*/
+#ifdef BMI120_CALIB_HAL
+		gyro[BMG_AXIS_X] =  gyro[BMG_AXIS_X] - calib_gyro_offset[BMG_AXIS_X];
+		gyro[BMG_AXIS_Y] =  gyro[BMG_AXIS_Y] - calib_gyro_offset[BMG_AXIS_Y];
+		gyro[BMG_AXIS_Z] =  gyro[BMG_AXIS_Z] - calib_gyro_offset[BMG_AXIS_Z];		
+#endif
+/*Lenovo-sw weimh1 add 2016-6-14 begin:for calibration*/
+
 		sprintf(buf, "%04x %04x %04x",
 			gyro[BMG_AXIS_X], gyro[BMG_AXIS_Y], gyro[BMG_AXIS_Z]);
 		if (atomic_read(&obj->trace) & GYRO_TRC_IOCTL)
@@ -1332,6 +1357,116 @@ static ssize_t show_selftest_value(struct device_driver *ddri, char *buf)
 	return len;
 }
 
+/*Lenovo-sw weimh1 add 2016-6-30 begin:for calibration*/
+#ifdef BMI120_CALIB_HAL
+static ssize_t show_cali_gyrox_value(struct device_driver *ddri, char *buf)
+{
+	struct i2c_client *client = bmi160_acc_i2c_client;
+        int data;
+
+	if (NULL == client) {
+		GYRO_ERR("i2c client is null!!\n");
+		return 0;
+	}
+	data = calib_gyro_offset[BMG_AXIS_X];
+
+	return snprintf(buf, PAGE_SIZE, "%d \n", data);
+}
+
+/*----------------------------------------------------------------------------*/
+static ssize_t store_cali_gyrox_value(struct device_driver *ddri, const char *buf, size_t count)
+{
+	struct bmg_i2c_data *obj = obj_i2c_data;
+	int cali_x;
+	
+	if (obj == NULL) {
+		GYRO_ERR("i2c_data obj is null!!\n");
+		return count;
+	}
+
+	if (1 == sscanf(buf, "%d", &cali_x)) {
+		calib_gyro_offset[BMG_AXIS_X] = cali_x;
+	}
+	else {
+		GYRO_ERR("invalid content: '%s', length = %zu\n", buf, count);
+	}
+
+	return count;
+}
+
+static ssize_t show_cali_gyroy_value(struct device_driver *ddri, char *buf)
+{
+	struct i2c_client *client = bmi160_acc_i2c_client;
+        int data;
+
+	if (NULL == client)	{
+		GYRO_ERR("i2c client is null!!\n");
+		return 0;
+	}
+	data = calib_gyro_offset[BMG_AXIS_Y];
+
+	return snprintf(buf, PAGE_SIZE, "%d \n", data);
+}
+
+/*----------------------------------------------------------------------------*/
+static ssize_t store_cali_gyroy_value(struct device_driver *ddri, const char *buf, size_t count)
+{
+	struct bmg_i2c_data *obj = obj_i2c_data;
+	int cali_y;
+	
+	if (obj == NULL) {
+		GYRO_ERR("i2c_data obj is null!!\n");
+		return count;
+	}
+
+	if (1 == sscanf(buf, "%d", &cali_y)) {
+		calib_gyro_offset[BMG_AXIS_Y] = cali_y;
+	}
+	else {
+		GYRO_ERR("invalid content: '%s', length = %zu\n", buf, count);
+	}
+
+	return count;
+}
+
+static ssize_t show_cali_gyroz_value(struct device_driver *ddri, char *buf)
+{
+	struct i2c_client *client = bmi160_acc_i2c_client;
+        int data;
+
+	if (NULL == client) {
+		GYRO_ERR("i2c client is null!!\n");
+		return 0;
+	}
+	
+	data = calib_gyro_offset[BMG_AXIS_Z];
+
+	return snprintf(buf, PAGE_SIZE, "%d \n", data);
+}
+
+/*----------------------------------------------------------------------------*/
+static ssize_t store_cali_gyroz_value(struct device_driver *ddri, const char *buf, size_t count)
+{
+	struct bmg_i2c_data *obj = obj_i2c_data;
+	int cali_z;
+	if (obj == NULL) {
+		GYRO_ERR("i2c_data obj is null!!\n");
+		return count;
+	}
+
+	if (1 == sscanf(buf, "%d", &cali_z)) {
+		calib_gyro_offset[BMG_AXIS_Z] = cali_z;
+	}
+	else {
+		GYRO_ERR("invalid content: '%s', length = %zu\n", buf, count);
+	}
+
+	return count;
+}
+
+#endif
+/*Lenovo-sw weimh1 add 2016-6-30 end:for calibration*/
+
 static DRIVER_ATTR(chipinfo, S_IWUSR | S_IRUGO, show_chipinfo_value, NULL);
 static DRIVER_ATTR(sensordata, S_IWUSR | S_IRUGO, show_sensordata_value, NULL);
 static DRIVER_ATTR(rawdata, S_IWUSR | S_IRUGO, show_rawdata_value, NULL);
@@ -1348,6 +1483,15 @@ static DRIVER_ATTR(range, S_IWUSR | S_IRUGO,
 static DRIVER_ATTR(datarate, S_IWUSR | S_IRUGO,
 		show_datarate_value, store_datarate_value);
 static DRIVER_ATTR(selftest, S_IRUGO, show_selftest_value, NULL);
+
+/*Lenovo-sw weimh1 add 2016-6-30 begin:add for calibration */
+#ifdef BMI120_CALIB_HAL
+static DRIVER_ATTR(gyroscope_cali_val_x,  S_IWUSR | S_IRUGO, show_cali_gyrox_value, store_cali_gyrox_value);
+static DRIVER_ATTR(gyroscope_cali_val_y,  S_IWUSR | S_IRUGO, show_cali_gyroy_value, store_cali_gyroy_value);
+static DRIVER_ATTR(gyroscope_cali_val_z,  S_IWUSR | S_IRUGO, show_cali_gyroz_value, store_cali_gyroz_value);
+#endif
+/*Lenovo-sw weimh1 add 2016-6-30 end*/
+
 
 static struct driver_attribute *bmg_attr_list[] = {
 	/* chip information */
@@ -1372,6 +1516,13 @@ static struct driver_attribute *bmg_attr_list[] = {
 	&driver_attr_datarate,
 	/* self test */
 	&driver_attr_selftest,
+/*Lenovo-sw weimh1 add 2016-6-30 begin:add for calibration */	
+#ifdef BMI120_CALIB_HAL
+	&driver_attr_gyroscope_cali_val_x,   
+	&driver_attr_gyroscope_cali_val_y ,   
+	&driver_attr_gyroscope_cali_val_z ,
+#endif
+/*Lenovo-sw weimh1 add 2016-6-30 end:add for calibration */
 };
 
 static int bmg_create_attr(struct device_driver *driver)
@@ -1850,14 +2001,12 @@ static int bmi160_gyro_get_data(int* x ,int* y,int* z, int* status)
 	char buff[BMG_BUFSIZE];
 	bmg_read_sensor_data(obj_i2c_data->client, buff, BMG_BUFSIZE);
 	
-	sscanf(buff, "%x %x %x", x, y, z);		
+	sscanf(buff, "%x %x %x", x, y, z);
 	*status = SENSOR_STATUS_ACCURACY_MEDIUM;
 
 	return 0;
 #endif
 }
-
-extern struct i2c_client *bmi160_acc_i2c_client;
 
 static int bmg_i2c_probe(struct i2c_client *client,
 		const struct i2c_device_id *id)
