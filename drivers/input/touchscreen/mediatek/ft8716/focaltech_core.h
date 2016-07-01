@@ -306,6 +306,7 @@ typedef enum {
 #define FTS_GESTRUE_EN 1
 #define FTS_GLOVE_EN 1 
 #define FTS_USB_DETECT 0
+#define FTS_ACCDET 1
 #define FTS_APK_DEBUG
 #define MTK_EN 1
 //#define LENOVO_CTP_EAGE_LIMIT //add by lixh10 
