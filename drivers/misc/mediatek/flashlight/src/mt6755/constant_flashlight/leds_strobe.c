@@ -185,9 +185,9 @@ enum
 	e_DutyNum = 23,
 };
 static int isMovieMode[e_DutyNum]={1,1,1,1,0,0,0,0,0,0,0,0,0,0,0};
-static int torchDuty[e_DutyNum]=    {36,74,111,127,0,0,0,0,0,0,0,0,0,0,0};
+static int torchDuty[e_DutyNum]=    {35,71,106,127,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};//follow k51m sy7806 the same as lm3643
 //52,105,156,179ma
-static int flashDuty[e_DutyNum]=     {12,16,21,25,29,33,38,42,46,50,55,59,63,68,72,76,80,85,93,102,110,119,128};
+static int flashDuty[e_DutyNum]=     {3,8,12,14,16,20,25,29,33,37,42,46,50,55,59,63,67,72,76,80,84,93,101}; //follow k51m sy7806 the same as lm3643
 //150,200,250,300,350,400,450,500,550,600,650,700,750,800,850,900,950,1000,1100,1200,1300,1400,1500ma
 int m_duty1=0;
 int m_duty2=0;
@@ -342,11 +342,11 @@ int setDuty_SY7806_2(int duty)
 		if((isMovieMode[m_duty1] == 1) && ((isMovieMode[m_duty2] == 1)))
 		{
 			writeReg(SY7806_REG_LED1_TORCH, torchDuty[m_duty1]);
-			writeReg(SY7806_REG_LED2_TORCH, torchDuty[m_duty1]);
+			writeReg(SY7806_REG_LED2_TORCH, torchDuty[m_duty2]);
 		}
 		else
 		{
-			writeReg(SY7806_REG_LED1_FLASH, flashDuty[m_duty2]);
+			writeReg(SY7806_REG_LED1_FLASH, flashDuty[m_duty1]);
 			writeReg(SY7806_REG_LED2_FLASH, flashDuty[m_duty2]);
 		}
 	}
@@ -539,7 +539,7 @@ int FL_Disable(void)
 	}
 */
 	LED1Closeflag = 1;
-	LED2Closeflag = 1;
+//	LED2Closeflag = 1;
 	flashDisable_SY7806_2();
 	PK_DBG(" FL_Disable line=%d\n",__LINE__);
     return 0;
