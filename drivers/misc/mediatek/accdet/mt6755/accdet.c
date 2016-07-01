@@ -69,6 +69,10 @@ unsigned char ts3a225e_connector_type = TS3A225E_CONNECTOR_NONE;
 #endif
 static int eint_accdet_sync_flag;
 static int g_accdet_first = 1;
+//lenovo-sw wengjun1 add for touch accdet detect start
+static int g_touch_detect = 0;
+extern int fts_accdet(bool status);
+//lenovo-sw wengjun1 add for touch accdet detect end
 static bool IRQ_CLR_FLAG;
 static char call_status;
 static int button_status;
@@ -376,6 +380,12 @@ static void accdet_eint_work_callback(struct work_struct *work)
 		ACCDET_DEBUG("[Accdet] FSA8049 enable!\n");
 		msleep(250);	/*PIN swap need ms*/
 #endif
+//lenovo-sw wengjun1 add for touch accdet detect start
+	if (g_touch_detect) {
+		ACCDET_ERROR("fts_accdet(true).\n");
+		fts_accdet(true);
+	}
+//lenovo-sw wengjun1 add for touch accdet detect end
 //lenovo-sw chengx2 add for ts3a225e start
 #if defined(ACCDET_TS3A225E_PIN_SWAP)
 				ACCDET_DEBUG("[Accdet] TS3A225E enable!\n");
@@ -437,6 +447,12 @@ static void accdet_eint_work_callback(struct work_struct *work)
 		accdet_FSA8049_disable();	/*disable GPIOxxx for PIN swap */
 		ACCDET_DEBUG("[Accdet] FSA8049 disable!\n");
 #endif
+//lenovo-sw wengjun1 add for touch accdet detect start
+	if (g_touch_detect) {
+		ACCDET_ERROR("fts_accdet(false).\n");
+		fts_accdet(false);
+	}
+//lenovo-sw wengjun1 add for touch accdet detect end
 		//lenovo-sw chengx2 add for ts3a225e start
 		#if defined(ACCDET_TS3A225E_PIN_SWAP)
 		ACCDET_DEBUG("[Accdet] TS3A225E disable!\n");
@@ -1567,6 +1583,17 @@ void accdet_eint_int_handler(void)
 		ACCDET_DEBUG("[accdet_int_handler] don't finished\n");
 }
 
+//lenovo-sw wengjun1 add callback function for touch accdet detect start
+int get_accdet_current_status(void)
+{
+	if (cur_eint_state == EINT_PIN_PLUG_IN)
+		return 1;
+	else
+		return 0;
+}
+EXPORT_SYMBOL(get_accdet_current_status);
+//lenovo-sw wengjun1 add callback function for touch accdet detect end
+
 int mt_accdet_probe(struct platform_device *dev)
 {
 	int ret = 0;
@@ -1676,10 +1703,16 @@ int mt_accdet_probe(struct platform_device *dev)
 #endif
 		g_accdet_first = 0;
 	}
+
+//lenovo-sw wengjun1 add for touch accdet detect start
+	if (strcmp(CONFIG_ARCH_MTK_PROJECT, "kungfu_m") == 0) {
+		ACCDET_ERROR("CONFIG_ARCH_MTK_PROJECT = %s.\n", CONFIG_ARCH_MTK_PROJECT);
+		g_touch_detect = 1;
+	}
+//lenovo-sw wengjun1 add for touch accdet detect end
 	ACCDET_INFO("[Accdet]accdet_probe done!\n");
 	return 0;
 }
-
 void mt_accdet_remove(void)
 {
 	ACCDET_DEBUG("[Accdet]accdet_remove begin!\n");

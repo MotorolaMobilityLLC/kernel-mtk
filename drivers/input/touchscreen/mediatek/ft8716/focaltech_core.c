@@ -167,6 +167,12 @@ static u8 tpd_proximity_flag_one 		= 0;
  */
 static u8 tpd_proximity_detect 		= 1;
 #endif
+
+#if FTS_ACCDET
+extern int get_accdet_current_status(void);
+static int fts_accdet_status = 0;
+int fts_accdet(bool status);
+#endif
 /*dma declare, allocate and release*/
 #define __MSG_DMA_MODE__
 #ifdef __MSG_DMA_MODE__
@@ -501,6 +507,11 @@ static void fts_fw_update_work_func(struct work_struct *work)
 	printk("mtk_tpd[fts] usb reg write \n");
 	fts_usb_insert((bool) upmu_is_chr_det());
 #endif
+
+#if FTS_ACCDET
+	fts_accdet(get_accdet_current_status());
+#endif
+
 	enable_irq(touch_irq);
 	/*update  touch info after fw update */
 	fts_read_touchinfo();
@@ -811,6 +822,49 @@ static int  fts_enter_glove(bool status)
 	return ret ;
 
 }
+
+#if FTS_ACCDET
+int fts_accdet(bool status)
+{
+	int ret = 0;
+	u8 buf_addr[2] = { 0 };
+	u8 buf_value[2] = { 0 };
+	u8 tp_state = 0x03;
+
+	if (status)
+		fts_accdet_status = 1;
+	else
+		fts_accdet_status = 0;
+
+	if (tpd_load_status == 0)
+		return ret ;
+	if ((fts_i2c_client == NULL) || (tpd_halt == 1)) {
+		dev_err(&fts_i2c_client->dev, "[fts][Touch] %s return :  %d \n", __func__, status);
+		return ret;
+	}
+	buf_addr[0] = 0xC3; /*accdet plug ? */
+	if (status)
+		buf_value[0] = 0x01;
+	else
+		buf_value[0] = 0x00;
+
+	ret = fts_read_reg(fts_i2c_client, 0xC3, &tp_state);
+
+	if (tp_state == buf_value[0]) {
+		dev_err(&fts_i2c_client->dev, "[fts][Touch] %s status cancel update  :  (before=%d, after=%d) \n", __func__, buf_value[0], status);
+		return ret;
+	}
+
+	ret = fts_write_reg(fts_i2c_client, buf_addr[0], buf_value[0]);
+	if (ret < 0) {
+		dev_err(&fts_i2c_client->dev, "[fts][Touch] %s write value fail \n", __func__);
+	} else
+		dev_err(&fts_i2c_client->dev, "[fts][Touch] %s status update success  ~~~~~~ :  (before=%d, after=%d) \n", __func__, tp_state, status);
+	return ret ;
+}
+EXPORT_SYMBOL(fts_usb_insert);
+#endif
+
 #ifdef  FTS_USB_DETECT
 int  fts_usb_insert(bool status)
 {
@@ -2055,6 +2109,10 @@ reset_proc:
 	printk("mtk_tpd[fts] usb reg write \n");
 	fts_usb_insert((bool) upmu_is_chr_det());
 #endif
+
+#if FTS_ACCDET
+	fts_accdet(get_accdet_current_status());
+#endif
 #endif
 	/*read touch info from touch ic*/
 	fts_read_touchinfo(); 
@@ -2447,6 +2505,10 @@ static void tpd_resume(struct device *dev)
 #if FT_ESD_PROTECT
 	count_irq = 0;
 	queue_delayed_work(gtp_esd_check_workqueue, &gtp_esd_check_work, TPD_ESD_CHECK_CIRCLE);
+#endif
+
+#if FTS_ACCDET
+	fts_accdet(fts_accdet_status);
 #endif
 	dev_err(&fts_i2c_client->dev, "fts wake up done\n");
 
