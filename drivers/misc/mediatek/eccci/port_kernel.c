@@ -430,6 +430,7 @@ static int prepare_runtime_data(struct ccci_modem *md, struct ccci_request *req)
 				else
 					rt_f_element.feature[1] = get_md_wm_id_map(md->config.load_type);
 				CCCI_BOOTUP_LOG(md->index, KERN, "wmid[%d]\n", rt_f_element.feature[1]);
+				CCCI_BOOTUP_LOG(md->index, KERN, "SBP[%d]", rt_f_element.feature[0]);//LENOVO-sw lianzf1 add for KUNGFUM-741
 				append_runtime_feature(&rt_data, &rt_feature, &rt_f_element);
 				break;
 			case MISC_INFO_CCCI:
