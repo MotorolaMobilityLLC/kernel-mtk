@@ -128,6 +128,7 @@ typedef enum _ENUM_CMD_ID_T {
 	CMD_ID_SET_NVRAM_SETTINGS,	/* 0x48 (Set) */
 	CMD_ID_SET_COUNTRY_POWER_LIMIT,	/* 0x49 (Set) */
 
+	CMD_ID_REQ_CHNL_UTILIZATION = 0x5C, /* 0x5C (Get) */
 	/* CFG_SUPPORT_GSCN  */
 	CMD_ID_GET_PSCAN_CAPABILITY = 0x60,	/* 0x60 (Set) */
 	CMD_ID_SET_PSCAN_ENABLE,	/* 0x61 (Set) */
@@ -227,13 +228,14 @@ typedef enum _ENUM_EVENT_ID_T {
 	EVENT_ID_SLT_STATUS,	/* 0x43 (Query - CMD_ID_SET_SLTINFO) */
 	EVENT_ID_CHIP_CONFIG,	/* 0x44 (Query - CMD_ID_CHIP_CONFIG) */
 
+	EVENT_ID_RSP_CHNL_UTILIZATION = 0x59, /* 0x59 (Query - CMD_ID_REQ_CHNL_UTILIZATION) */
+
 	EVENT_ID_TDLS = 0x80,	/* TDLS event_id */
 
 	EVENT_ID_BUILD_DATE_CODE = 0xF8,
 	EVENT_ID_GET_AIS_BSS_INFO = 0xF9,
 	EVENT_ID_DEBUG_CODE = 0xFB,
 	EVENT_ID_RFTEST_READY = 0xFC,	/* 0xFC */
-
 	EVENT_ID_END
 } ENUM_EVENT_ID_T, *P_ENUM_EVENT_ID_T;
 
@@ -902,8 +904,9 @@ typedef struct _CMD_UPDATE_STA_RECORD_T {
 
 	UINT_8 ucTxBaSize;
 	UINT_8 ucRxBaSize;
-
-	UINT_8 aucReserved4[30];
+	UINT_8 ucKeepAliveDuration; /* unit is 1s */
+	UINT_8 ucKeepAliveOption; /* only bit0 is used now */
+	UINT_8 aucReserved4[28];
 } CMD_UPDATE_STA_RECORD_T, *P_CMD_UPDATE_STA_RECORD_T;
 
 typedef struct _CMD_REMOVE_STA_RECORD_T {
@@ -1666,6 +1669,28 @@ typedef struct _CMD_SET_PSCAN_MAC_ADDR {
 	UINT_8 aucReserved[8];
 } CMD_SET_PSCAN_MAC_ADDR, *P_CMD_SET_PSCAN_MAC_ADDR;
 
+typedef struct _CMD_SUSPEND_MODE_SETTING_T {
+	UINT_8		ucBssIndex;
+	UINT_8		fIsEnableSuspendMode;
+	UINT_8		ucReserved[2];
+} CMD_SUSPEND_MODE_SETTING_T, *P_CMD_SUSPEND_MODE_SETTING_T;
+
+struct CMD_REQ_CHNL_UTILIZATION {
+	UINT_16 u2MeasureDuration;
+	UINT_8 ucChannelNum;
+	UINT_8 aucChannelList[48];
+	UINT_8 aucReserved[13];
+};
+
+struct EVENT_RSP_CHNL_UTILIZATION {
+	UINT_8 ucChannelNum;
+	UINT_8 aucChannelMeasureList[48];
+	UINT_8 aucReserved0[15];
+	UINT_8 aucChannelUtilization[48];
+	UINT_8 aucReserved1[16];
+	UINT_8 aucChannelBusyTime[48];
+	UINT_8 aucReserved2[16];
+};
 /*******************************************************************************
 *                            P U B L I C   D A T A
 ********************************************************************************

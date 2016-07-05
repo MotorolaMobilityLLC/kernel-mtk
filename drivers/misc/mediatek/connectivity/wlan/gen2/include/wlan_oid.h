@@ -1711,7 +1711,15 @@ wlanoidNotifyFwSuspend(IN P_ADAPTER_T prAdapter,
 								IN PVOID pvSetBuffer,
 								IN UINT_32 u4SetBufferLen,
 								OUT PUINT_32 pu4SetInfoLen);
+
+WLAN_STATUS
+wlanoidSetAlwaysScan(IN  P_ADAPTER_T prAdapter, IN PVOID pvSetBuffer,
+			IN UINT_32 u4SetBufferLen, OUT PUINT_32 pu4SetInfoLen);
+
+
 WLAN_STATUS
 wlanoidDisableTdlsPs(IN P_ADAPTER_T prAdapter,
 			 IN PVOID pvSetBuffer, IN UINT_32 u4SetBufferLen, OUT PUINT_32 pu4SetInfoLen);
 #endif /* _WLAN_OID_H */
+WLAN_STATUS wlanoidSetPacketFilter(P_ADAPTER_T prAdapter, UINT_32 u4PacketFilter,
+				BOOLEAN fgIsOid, PVOID pvSetBuffer, UINT_32 u4SetBufferLen);

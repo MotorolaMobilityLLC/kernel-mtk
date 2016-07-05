@@ -373,7 +373,6 @@
 #define SCN_AGPS_AP_LIST_MAX_NUM					32
 #endif
 
-#define SCN_BSS_JOIN_FAIL_THRESOLD				4
 #define SCN_BSS_JOIN_FAIL_CNT_RESET_SEC				15
 #define SCN_BSS_JOIN_FAIL_RESET_STEP				2
 
@@ -388,6 +387,7 @@
 
 #define SCAN_NLO_CHECK_SSID_ONLY    0x00000001
 #define SCAN_NLO_DEFAULT_INTERVAL           30000
+#define SCN_BSS_JOIN_FAIL_THRESOLD          4
 
 #define SWC_NUM_BSSID_THRESHOLD_DEFAULT 8
 #define SWC_RSSI_WINDSIZE_DEFAULT 8
@@ -454,6 +454,7 @@ typedef enum _ENUM_PSCAN_STATE_T {
 /*----------------------------------------------------------------------------*/
 struct _BSS_DESC_T {
 	LINK_ENTRY_T rLinkEntry;
+	LINK_ENTRY_T rLinkEntryEss;
 
 	UINT_8 aucBSSID[MAC_ADDR_LEN];
 	UINT_8 aucSrcAddr[MAC_ADDR_LEN];	/* For IBSS, the SrcAddr is different from BSSID */
@@ -562,8 +563,18 @@ struct _BSS_DESC_T {
 	ULARGE_INTEGER u8TimeStamp;	/* Place u8TimeStamp before aucIEBuf[1] to force DW align */
 	UINT_8 aucRawBuf[CFG_RAW_BUFFER_SIZE];
 	UINT_8 aucIEBuf[CFG_IE_BUFFER_SIZE];
-	UINT_8 ucJoinFailureCount;
 	OS_SYSTIME rJoinFailTime;
+	struct AIS_BLACKLIST_ITEM *prBlack;
+	UINT_16 u2StaCnt;
+	UINT_16 u2AvaliableAC; /* Available Admission Capacity */
+	UINT_8 ucJoinFailureCount;
+	UINT_8 ucChnlUtilization;
+	UINT_8 ucSNR;
+	BOOLEAN fgSeenProbeResp;
+	BOOLEAN fgExsitBssLoadIE;
+	BOOLEAN fgMultiAnttenaAndSTBC;
+	BOOLEAN fgDeauthLastTime;
+	UINT_32 u4UpdateIdx;
 };
 
 struct _ROAM_BSS_DESC_T {
@@ -692,7 +703,7 @@ typedef struct _SCAN_INFO_T {
 #endif
 	TIMER_T rScanDoneTimer;
 	UINT_8 ucScanDoneTimeoutCnt;
-
+	UINT_32 u4ScanUpdateIdx;
 } SCAN_INFO_T, *P_SCAN_INFO_T;
 
 /* Incoming Mailbox Messages */
@@ -1021,5 +1032,8 @@ VOID scnGscnGetResultReplyCheck(IN P_ADAPTER_T prAdapter);
 VOID scnGscnGetResultReplyCheckTimeout(IN P_ADAPTER_T prAdapter, ULONG ulParamPtr);
 
 VOID scnScanDoneTimeout(IN P_ADAPTER_T prAdapter, ULONG ulParamPtr);
+
+P_BSS_DESC_T scanSearchBssDescByScoreForAis(P_ADAPTER_T prAdapter);
+VOID scanGetCurrentEssChnlList(P_ADAPTER_T prAdapter);
 
 #endif /* _SCAN_H */

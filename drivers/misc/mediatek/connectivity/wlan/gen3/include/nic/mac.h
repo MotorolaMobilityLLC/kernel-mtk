@@ -914,6 +914,7 @@
 #define ELEM_ID_20_40_BSS_COEXISTENCE               72	/* 20/40 BSS Coexistence */
 #define ELEM_ID_20_40_INTOLERANT_CHNL_REPORT        73	/* 20/40 BSS Intolerant Channel Report */
 #define ELEM_ID_OBSS_SCAN_PARAMS                    74	/* Overlapping BSS Scan Parameters */
+#define ELEM_ID_BSS_MAX_IDLE_PERIOD                 90	/* AP Keep-Alive parameters */
 #define ELEM_ID_EXTENDED_CAP                        127	/* Extended capabilities */
 
 #define ELEM_ID_INTERWORKING                        107	/* Interworking with External Network */
@@ -1424,6 +1425,11 @@
 #define CTRL_BAR_BAR_INFORMATION_OFFSET             18
 #define CTRL_BAR_BAR_INFORMATION_SSN_OFFSET         4
 
+/* 802.11-2012, 8.5.7 Radio Measurement action fields, table 8-206 */
+#if CFG_SUPPORT_802_11K
+#define RM_ACTION_NEIGHBOR_REQUEST                  4
+#define RM_ACTION_REIGHBOR_RESPONSE                 5
+#endif
 /*******************************************************************************
 *                             D A T A   T Y P E S
 ********************************************************************************
@@ -1898,6 +1904,41 @@ typedef struct _IE_SUP_OPERATING_CLASS_T {
 	UINT_8 ucCur;
 	UINT_8 ucSup[255];
 } __KAL_ATTRIB_PACKED__ IE_SUP_OPERATING_CLASS_T, *P_IE_SUP_OPERATING_CLASS_T;
+
+/* 8.4.2.30 BSS Load element */
+struct IE_BSS_LOAD {
+	UINT_8 ucId;
+	UINT_8 ucLength;
+	UINT_16 u2StaCnt;
+	UINT_8 ucChnlUtilizaion;
+	UINT_16 u2AvailabeAC;
+};
+
+/* 8.4.2.81 Bss Max Idle Period */
+struct IE_BSS_MAX_IDLE_PERIOD {
+	UINT_8 ucId;
+	UINT_8 ucLength;
+	UINT_16 u2MaxIdlePeriod; /* unit is 1000 TUs, 1024ms */
+	UINT_8 ucIdleOption; /* BIT(0) is now means Protected Keep-Alive Required, other bits are reserved */
+};
+
+/* 8.4.2.39 Neighbor Report Element */
+struct IE_NEIGHBOR_REPORT_T {
+	UINT_8 ucId;		/* Element ID */
+	UINT_8 ucLength;	/* Length */
+	UINT_8 aucBSSID[MAC_ADDR_LEN];	/* OUI */
+	UINT_8 aucBSSIDInfo[4];		/* Type */
+	UINT_8 ucOperClass; /* Hotspot Configuration */
+	UINT_8 ucChnlNumber;
+	UINT_8 ucPhyType;
+	UINT_8 aucSubElem[0];
+};
+
+struct SUB_ELEMENT_T {
+	UINT_8 ucSubID;
+	UINT_8 ucLength;
+	UINT_8 aucOptInfo[1];
+};
 
 typedef struct _SM_BASIC_REQ_T {
 	UINT_8 ucChannel;
@@ -2478,6 +2519,22 @@ typedef struct _ACTION_OP_MODE_NOTIFICATION_FRAME {
 	UINT_8 ucAction;	/* Action Value */
 	UINT_8 ucOperatingMode;	/* Operating Mode */
 } __KAL_ATTRIB_PACKED__ ACTION_OP_MODE_NOTIFICATION_FRAME, *P_ACTION_OP_MODE_NOTIFICATION_FRAME;
+
+/* 8.5.7.6/8.5.7.7 Neighbor Report Request/Response frame format */
+struct ACTION_NEIGHBOR_REPORT_FRAME {
+	/* Neighbor Report Request/Response MAC header */
+	UINT_16 u2FrameCtrl;	/* Frame Control */
+	UINT_16 u2Duration;	/* Duration */
+	UINT_8 aucDestAddr[MAC_ADDR_LEN];	/* DA */
+	UINT_8 aucSrcAddr[MAC_ADDR_LEN];	/* SA */
+	UINT_8 aucBSSID[MAC_ADDR_LEN];	/* BSSID */
+	UINT_16 u2SeqCtrl;	/* Sequence Control */
+	/* Neighbor Report Request/Response frame body */
+	UINT_8 ucCategory;	/* Category */
+	UINT_8 ucAction;	/* Action Value */
+	UINT_8 ucDialogToken;	/* Dialog Token */
+	UINT_8 aucInfoElem[1];	/* subelements */
+};
 
 /* 3 Information Elements from WFA. */
 typedef struct _IE_WFA_T {

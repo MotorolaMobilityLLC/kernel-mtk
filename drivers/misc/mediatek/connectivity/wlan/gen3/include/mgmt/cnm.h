@@ -197,10 +197,28 @@ typedef struct _MSG_CH_REOCVER_T {
 	ENUM_CH_REQ_TYPE_T eReqType;
 } MSG_CH_RECOVER_T, *P_MSG_CH_RECOVER_T;
 
+struct MSG_REQ_CH_UTIL {
+	MSG_HDR_T rMsgHdr;	/* Must be the first member */
+	UINT_16 u2Duration;
+	UINT_16 u2ReturnMID;
+	UINT_8 ucChnlNum;
+	UINT_8 aucChnlList[100];
+};
+
+struct MSG_CH_UTIL_RSP {
+	MSG_HDR_T rMsgHdr;
+	UINT_8 ucChnlNum;
+	UINT_8 aucChnlList[100];
+	UINT_8 aucChUtil[100];
+};
+
 typedef struct _CNM_INFO_T {
 	BOOLEAN fgChGranted;
 	UINT_8 ucBssIndex;
 	UINT_8 ucTokenID;
+
+	UINT_16 u2ReturnMID;
+	TIMER_T rReqChnlUtilTimer;
 } CNM_INFO_T, *P_CNM_INFO_T;
 
 #if CFG_ENABLE_WIFI_DIRECT
@@ -269,10 +287,17 @@ VOID cnmFreeBssInfo(P_ADAPTER_T prAdapter, P_BSS_INFO_T prBssInfo);
 #if CFG_SUPPORT_CHNL_CONFLICT_REVISE
 BOOLEAN cnmAisDetectP2PChannel(P_ADAPTER_T prAdapter, P_ENUM_BAND_T prBand, PUINT_8 pucPrimaryChannel);
 #endif
+VOID cnmRunEventReqChnlUtilTimeout(IN P_ADAPTER_T prAdapter, ULONG ulParamPtr);
+VOID cnmHandleChannelUtilization(P_ADAPTER_T prAdapter,
+				 struct EVENT_RSP_CHNL_UTILIZATION *prChnlUtil);
+VOID cnmRequestChannelUtilization(P_ADAPTER_T prAdapter, P_MSG_HDR_T prMsgHdr);
+BOOLEAN cnmChUtilIsRunning(P_ADAPTER_T prAdapter);
+
 /*******************************************************************************
 *                              F U N C T I O N S
 ********************************************************************************
 */
+
 #ifndef _lint
 /* We don't have to call following function to inspect the data structure.
  * It will check automatically while at compile time.

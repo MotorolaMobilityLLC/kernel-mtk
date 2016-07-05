@@ -107,6 +107,7 @@
 /* Maximum Retry Count for accept a JOIN request. */
 #define JOIN_MAX_RETRY_FAILURE_COUNT                2	/* Times */
 
+#define JOIN_MAX_RETRY_OVERLOAD_RN		    1	/* Times */
 /*******************************************************************************
 *                             D A T A   T Y P E S
 ********************************************************************************

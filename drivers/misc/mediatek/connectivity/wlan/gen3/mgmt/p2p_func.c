@@ -1553,7 +1553,8 @@ p2pFuncDissolve(IN P_ADAPTER_T prAdapter,
 			if (prP2pBssInfo->prStaRecOfAP) {
 				kalP2PGCIndicateConnectionStatus(prAdapter->prGlueInfo,
 								 (UINT_8) prP2pBssInfo->u4PrivateData, NULL, NULL, 0,
-								 REASON_CODE_DEAUTH_LEAVING_BSS);
+								 REASON_CODE_DEAUTH_LEAVING_BSS,
+								 WLAN_STATUS_MEDIA_DISCONNECT_LOCALLY);
 
 				/* 2012/02/14 frog: After formation before join group, prStaRecOfAP is NULL. */
 				p2pFuncDisconnect(prAdapter,

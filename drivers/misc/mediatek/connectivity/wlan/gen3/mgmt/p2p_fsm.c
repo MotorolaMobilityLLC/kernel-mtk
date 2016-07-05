@@ -1750,7 +1750,8 @@ VOID p2pFsmRunEventConnectionAbort(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMs
 					break;
 				}
 
-				kalP2PGCIndicateConnectionStatus(prAdapter->prGlueInfo, NULL, NULL, 0, 0);
+				kalP2PGCIndicateConnectionStatus(prAdapter->prGlueInfo, NULL, NULL, 0, 0,
+					WLAN_STATUS_MEDIA_DISCONNECT_LOCALLY);
 
 				/* Stop rejoin timer if it is started. */
 				/* TODO: If it has. */
@@ -1952,7 +1953,8 @@ VOID p2pFsmRunEventRxDeauthentication(IN P_ADAPTER_T prAdapter, IN P_STA_RECORD_
 				/* Indicate disconnect to Host. */
 				kalP2PGCIndicateConnectionStatus(prAdapter->prGlueInfo,
 								 NULL,
-								 prDeauthFrame->aucInfoElem, u2IELength, u2ReasonCode);
+								 prDeauthFrame->aucInfoElem, u2IELength, u2ReasonCode,
+								 WLAN_STATUS_MEDIA_DISCONNECT);
 
 				prP2pBssInfo->prStaRecOfAP = NULL;
 
@@ -2051,7 +2053,8 @@ VOID p2pFsmRunEventRxDisassociation(IN P_ADAPTER_T prAdapter, IN P_STA_RECORD_T 
 				kalP2PGCIndicateConnectionStatus(prAdapter->prGlueInfo,
 								 NULL,
 								 prDisassocFrame->aucInfoElem,
-								 u2IELength, prStaRec->u2ReasonCode);
+								 u2IELength, prStaRec->u2ReasonCode,
+								 WLAN_STATUS_MEDIA_DISCONNECT);
 
 				prP2pBssInfo->prStaRecOfAP = NULL;
 

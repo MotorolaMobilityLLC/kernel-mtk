@@ -4019,6 +4019,7 @@ WLAN_STATUS wlanProcessQueuedSwRfb(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwR
 	P_SW_RFB_T prSwRfb, prNextSwRfb;
 	P_TX_CTRL_T prTxCtrl;
 	P_RX_CTRL_T prRxCtrl;
+	P_STA_RECORD_T prStaRec;
 
 	ASSERT(prAdapter);
 	ASSERT(prSwRfbListHead);
@@ -4034,6 +4035,13 @@ WLAN_STATUS wlanProcessQueuedSwRfb(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwR
 
 		switch (prSwRfb->eDst) {
 		case RX_PKT_DESTINATION_HOST:
+			prStaRec = cnmGetStaRecByIndex(prAdapter, prSwRfb->ucStaRecIdx);
+			if (prStaRec && IS_STA_IN_AIS(prStaRec)) {
+#if ARP_MONITER_ENABLE
+				qmHandleRxArpPackets(prAdapter, prSwRfb);
+#endif
+			}
+
 			nicRxProcessPktWithoutReorder(prAdapter, prSwRfb);
 			break;
 
@@ -7776,4 +7784,45 @@ wlanDnsTxDone(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMsduInfo,
         rTxDoneStatus);
 
     return WLAN_STATUS_SUCCESS;
+}
+
+VOID wlanReleasePendingCmdById(P_ADAPTER_T prAdapter, UINT_8 ucCid)
+{
+	P_QUE_T prCmdQue;
+	QUE_T rTempCmdQue;
+	P_QUE_T prTempCmdQue = &rTempCmdQue;
+	P_QUE_ENTRY_T prQueueEntry = (P_QUE_ENTRY_T) NULL;
+	P_CMD_INFO_T prCmdInfo = (P_CMD_INFO_T) NULL;
+
+	KAL_SPIN_LOCK_DECLARATION();
+
+	ASSERT(prAdapter);
+	DBGLOG(OID, INFO, "Remove pending Cmd: CID %d\n", ucCid);
+
+	/* 1: Clear Pending OID in prAdapter->rPendingCmdQueue */
+	KAL_ACQUIRE_SPIN_LOCK(prAdapter, SPIN_LOCK_CMD_PENDING);
+
+	prCmdQue = &prAdapter->rPendingCmdQueue;
+	QUEUE_MOVE_ALL(prTempCmdQue, prCmdQue);
+
+	QUEUE_REMOVE_HEAD(prTempCmdQue, prQueueEntry, P_QUE_ENTRY_T);
+	while (prQueueEntry) {
+		prCmdInfo = (P_CMD_INFO_T) prQueueEntry;
+		if (prCmdInfo->ucCID != ucCid) {
+			QUEUE_INSERT_TAIL(prCmdQue, prQueueEntry);
+			continue;
+		}
+
+		if (prCmdInfo->pfCmdTimeoutHandler) {
+			prCmdInfo->pfCmdTimeoutHandler(prAdapter, prCmdInfo);
+		} else if (prCmdInfo->fgIsOid) {
+			kalOidComplete(prAdapter->prGlueInfo,
+					   prCmdInfo->fgSetQuery, 0, WLAN_STATUS_FAILURE);
+		}
+
+		cmdBufFreeCmdInfo(prAdapter, prCmdInfo);
+		QUEUE_REMOVE_HEAD(prTempCmdQue, prQueueEntry, P_QUE_ENTRY_T);
+	}
+
+	KAL_RELEASE_SPIN_LOCK(prAdapter, SPIN_LOCK_CMD_PENDING);
 }

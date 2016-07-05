@@ -3116,7 +3116,19 @@ INT_32 mtk_cfg80211_process_str_cmd(P_GLUE_INFO_T prGlueInfo, PUINT_8 cmd, INT_3
 		DBGLOG(REQ, WARN, "not support tdls\n");
 		return -EOPNOTSUPP;
 #endif
-	} else
+	} else if (strnicmp(cmd, "SETALWAYSSCANSTATE ", 19) == 0) {
+
+		rStatus = kalIoctl(prGlueInfo,
+					wlanoidSetAlwaysScan,
+					(PVOID)(cmd+19),
+					sizeof(UINT_8),
+					FALSE,
+					FALSE,
+					TRUE,
+					FALSE,
+					&u4SetInfoLen);
+
+	}  else
 		return -EOPNOTSUPP;
 
 	if (rStatus == WLAN_STATUS_SUCCESS)

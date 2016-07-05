@@ -1376,3 +1376,5 @@ WLAN_STATUS wlanIcmpTxDone(IN P_ADAPTER_T prAdapter,
 /*lenovo-sw lumy1, mtk temp patch for dns debug*/
 WLAN_STATUS wlanDnsTxDone(IN P_ADAPTER_T prAdapter, 
 	IN P_MSDU_INFO_T prMsduInfo, IN ENUM_TX_RESULT_CODE_T rTxDoneStatus);
+VOID wlanReleasePendingCmdById(P_ADAPTER_T prAdapter, UINT_8 ucCid);
+
