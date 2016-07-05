@@ -743,6 +743,29 @@
 
 #define ROAMING_NO_SWING_RCPI_STEP              (10)
 
+/*
+definition for AP selection algrithm
+*/
+#define BSS_FULL_SCORE                          100
+#define CHNL_BSS_NUM_THRESOLD                   100
+#define BSS_STA_CNT_THRESOLD                    30
+#define SCORE_PER_AP                            1
+#define ROAMING_NO_SWING_SCORE_STEP             10
+#define HARD_TO_CONNECT_RSSI_THRESOLD           -80
+
+#define WEIGHT_IDX_CHNL_UTIL                    2
+#define WEIGHT_IDX_SNR                          3
+#define WEIGHT_IDX_RSSI                         3
+#define WEIGHT_IDX_SCN_MISS_CNT                 2
+#define WEIGHT_IDX_PROBE_RSP                    1
+#define WEIGHT_IDX_CLIENT_CNT                   3
+#define WEIGHT_IDX_AP_NUM                       2
+#define WEIGHT_IDX_5G_BAND                      2
+#define WEIGHT_IDX_BAND_WIDTH                   1
+#define WEIGHT_IDX_STBC                         1
+#define WEIGHT_IDX_DEAUTH_LAST                  1
+#define WEIGHT_IDX_BLACK_LIST                   2
+
 /*******************************************************************************
 *                             D A T A   T Y P E S
 ********************************************************************************
@@ -833,6 +856,7 @@ VOID scnInit(IN P_ADAPTER_T prAdapter)
 		pucRoamBSSBuff += ALIGN_4(sizeof(ROAM_BSS_DESC_T));
 	}
 	ASSERT(((ULONG) pucRoamBSSBuff - (ULONG)&prScanInfo->aucScanRoamBuffer[0]) == SCN_ROAM_MAX_BUFFER_SIZE);
+
 	/* reset freest channel information */
 	prScanInfo->fgIsSparseChannelValid = FALSE;
 
@@ -857,6 +881,7 @@ VOID scnInit(IN P_ADAPTER_T prAdapter)
 	cnmTimerInitTimer(prAdapter,
 			  &prScanInfo->rScanDoneTimer, (PFN_MGMT_TIMEOUT_FUNC) scnScanDoneTimeout, (ULONG) NULL);
 	prScanInfo->ucScanDoneTimeoutCnt = 0;
+	prScanInfo->u4ScanUpdateIdx = 0;
 
 }				/* end of scnInit() */
 
@@ -1327,6 +1352,7 @@ VOID scanRemoveBssDescsByPolicy(IN P_ADAPTER_T prAdapter, IN UINT_32 u4RemovePol
 	P_LINK_T prBSSDescList;
 	P_LINK_T prFreeBSSDescList;
 	P_BSS_DESC_T prBssDesc;
+	P_LINK_T prEssList = &prAdapter->rWifiVar.rAisSpecificBssInfo.rCurEssLink;
 
 	ASSERT(prAdapter);
 
@@ -1360,9 +1386,16 @@ VOID scanRemoveBssDescsByPolicy(IN P_ADAPTER_T prAdapter, IN UINT_32 u4RemovePol
 				 * MAC: "MACSTR", Current Time = %08lx, Update Time = %08lx\n", */
 				/* prBssDesc, MAC2STR(prBssDesc->aucBSSID), rCurrentTime, prBssDesc->rUpdateTime)); */
 
+				if (!prBssDesc->prBlack)
+					aisQueryBlackList(prAdapter, prBssDesc);
+				if (prBssDesc->prBlack)
+					prBssDesc->prBlack->u8DisapperTime = kalGetBootTime();
+
 				/* Remove this BSS Desc from the BSS Desc list */
 				LINK_REMOVE_KNOWN_ENTRY(prBSSDescList, prBssDesc);
-
+				/* Remove this BSS Desc from the Ess Desc List */
+				if (LINK_ENTRY_IS_VALID(&prBssDesc->rLinkEntryEss))
+					LINK_REMOVE_KNOWN_ENTRY(prEssList, &prBssDesc->rLinkEntryEss);
 				/* Return this BSS Desc to the free BSS Desc list. */
 				LINK_INSERT_TAIL(prFreeBSSDescList, &prBssDesc->rLinkEntry);
 			}
@@ -1395,9 +1428,16 @@ VOID scanRemoveBssDescsByPolicy(IN P_ADAPTER_T prAdapter, IN UINT_32 u4RemovePol
 			/* DBGLOG(SCN, TRACE,
 			 * ("Remove OLDEST HIDDEN BSS DESC(%#x): MAC: "MACSTR", Update Time = %08lx\n", */
 			/* prBssDescOldest, MAC2STR(prBssDescOldest->aucBSSID), prBssDescOldest->rUpdateTime)); */
+			if (!prBssDescOldest->prBlack)
+				aisQueryBlackList(prAdapter, prBssDescOldest);
+			if (prBssDescOldest->prBlack)
+				prBssDescOldest->prBlack->u8DisapperTime = kalGetBootTime();
 
 			/* Remove this BSS Desc from the BSS Desc list */
 			LINK_REMOVE_KNOWN_ENTRY(prBSSDescList, prBssDescOldest);
+			/* Remove this BSS Desc from the Ess Desc List */
+			if (LINK_ENTRY_IS_VALID(&prBssDescOldest->rLinkEntryEss))
+				LINK_REMOVE_KNOWN_ENTRY(prEssList, &prBssDescOldest->rLinkEntryEss);
 
 			/* Return this BSS Desc to the free BSS Desc list. */
 			LINK_INSERT_TAIL(prFreeBSSDescList, &prBssDescOldest->rLinkEntry);
@@ -1442,15 +1482,22 @@ VOID scanRemoveBssDescsByPolicy(IN P_ADAPTER_T prAdapter, IN UINT_32 u4RemovePol
 
 			/* DBGLOG(SCN, TRACE, ("Remove WEAKEST BSS DESC(%#x): MAC: "MACSTR", Update Time = %08lx\n", */
 			/* prBssDescOldest, MAC2STR(prBssDescOldest->aucBSSID), prBssDescOldest->rUpdateTime)); */
+			if (!prBssDescWeakest->prBlack)
+				aisQueryBlackList(prAdapter, prBssDescWeakest);
+			if (prBssDescWeakest->prBlack)
+				prBssDescWeakest->prBlack->u8DisapperTime = kalGetBootTime();
 
 			/* Remove this BSS Desc from the BSS Desc list */
 			LINK_REMOVE_KNOWN_ENTRY(prBSSDescList, prBssDescWeakest);
-
+			/* Remove this BSS Desc from the Ess Desc List */
+			if (LINK_ENTRY_IS_VALID(&prBssDescWeakest->rLinkEntryEss))
+				LINK_REMOVE_KNOWN_ENTRY(prEssList, &prBssDescWeakest->rLinkEntryEss);
 			/* Return this BSS Desc to the free BSS Desc list. */
 			LINK_INSERT_TAIL(prFreeBSSDescList, &prBssDescWeakest->rLinkEntry);
 		}
 	} else if (u4RemovePolicy & SCN_RM_POLICY_ENTIRE) {
 		P_BSS_DESC_T prBSSDescNext;
+		UINT_64 u8Current = kalGetBootTime();
 
 		LINK_FOR_EACH_ENTRY_SAFE(prBssDesc, prBSSDescNext, prBSSDescList, rLinkEntry, BSS_DESC_T) {
 
@@ -1459,9 +1506,16 @@ VOID scanRemoveBssDescsByPolicy(IN P_ADAPTER_T prAdapter, IN UINT_32 u4RemovePol
 				/* Don't remove the one currently we are connected. */
 				continue;
 			}
+			if (!prBssDesc->prBlack)
+				aisQueryBlackList(prAdapter, prBssDesc);
+			if (prBssDesc->prBlack)
+				prBssDesc->prBlack->u8DisapperTime = u8Current;
 
 			/* Remove this BSS Desc from the BSS Desc list */
 			LINK_REMOVE_KNOWN_ENTRY(prBSSDescList, prBssDesc);
+			/* Remove this BSS Desc from the Ess Desc List */
+			if (LINK_ENTRY_IS_VALID(&prBssDesc->rLinkEntryEss))
+				LINK_REMOVE_KNOWN_ENTRY(prEssList, &prBssDesc->rLinkEntryEss);
 
 			/* Return this BSS Desc to the free BSS Desc list. */
 			LINK_INSERT_TAIL(prFreeBSSDescList, &prBssDesc->rLinkEntry);
@@ -1490,6 +1544,7 @@ VOID scanRemoveBssDescByBssid(IN P_ADAPTER_T prAdapter, IN UINT_8 aucBSSID[])
 	P_LINK_T prFreeBSSDescList;
 	P_BSS_DESC_T prBssDesc = (P_BSS_DESC_T) NULL;
 	P_BSS_DESC_T prBSSDescNext;
+	P_LINK_T prEssList = NULL;
 
 	ASSERT(prAdapter);
 	ASSERT(aucBSSID);
@@ -1497,22 +1552,27 @@ VOID scanRemoveBssDescByBssid(IN P_ADAPTER_T prAdapter, IN UINT_8 aucBSSID[])
 	prScanInfo = &(prAdapter->rWifiVar.rScanInfo);
 	prBSSDescList = &prScanInfo->rBSSDescList;
 	prFreeBSSDescList = &prScanInfo->rFreeBSSDescList;
+	prEssList = &prAdapter->rWifiVar.rAisSpecificBssInfo.rCurEssLink;
 
 	/* Check if such BSS Descriptor exists in a valid list */
 	LINK_FOR_EACH_ENTRY_SAFE(prBssDesc, prBSSDescNext, prBSSDescList, rLinkEntry, BSS_DESC_T) {
 
 		if (EQUAL_MAC_ADDR(prBssDesc->aucBSSID, aucBSSID)) {
-
+			if (!prBssDesc->prBlack)
+				aisQueryBlackList(prAdapter, prBssDesc);
+			if (prBssDesc->prBlack)
+				prBssDesc->prBlack->u8DisapperTime = kalGetBootTime();
 			/* Remove this BSS Desc from the BSS Desc list */
 			LINK_REMOVE_KNOWN_ENTRY(prBSSDescList, prBssDesc);
-
+			/* Remove this BSS Desc from the Ess Desc List */
+			if (LINK_ENTRY_IS_VALID(&prBssDesc->rLinkEntryEss))
+				LINK_REMOVE_KNOWN_ENTRY(prEssList, &prBssDesc->rLinkEntryEss);
 			/* Return this BSS Desc to the free BSS Desc list. */
 			LINK_INSERT_TAIL(prFreeBSSDescList, &prBssDesc->rLinkEntry);
 
 			/* BSSID is not unique, so need to traverse whols link-list */
 		}
 	}
-
 }				/* end of scanRemoveBssDescByBssid() */
 
 /*----------------------------------------------------------------------------*/
@@ -1578,8 +1638,18 @@ VOID scanRemoveBssDescByBandAndNetwork(IN P_ADAPTER_T prAdapter, IN ENUM_BAND_T 
 		}
 
 		if (fgToRemove == TRUE) {
+			P_LINK_T prEssList = &prAdapter->rWifiVar.rAisSpecificBssInfo.rCurEssLink;
+
+			if (!prBssDesc->prBlack)
+				aisQueryBlackList(prAdapter, prBssDesc);
+			if (prBssDesc->prBlack)
+				prBssDesc->prBlack->u8DisapperTime = kalGetBootTime();
+
 			/* Remove this BSS Desc from the BSS Desc list */
 			LINK_REMOVE_KNOWN_ENTRY(prBSSDescList, prBssDesc);
+			/* Remove this BSS Desc from the Ess Desc List */
+			if (LINK_ENTRY_IS_VALID(&prBssDesc->rLinkEntryEss))
+				LINK_REMOVE_KNOWN_ENTRY(prEssList, &prBssDesc->rLinkEntryEss);
 
 			/* Return this BSS Desc to the free BSS Desc list. */
 			LINK_INSERT_TAIL(prFreeBSSDescList, &prBssDesc->rLinkEntry);
@@ -1922,7 +1992,8 @@ P_BSS_DESC_T scanAddToBssDesc(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfb)
 	prBssDesc->eChannelWidth = CW_20_40MHZ;	/*Reset VHT OP IE relative settings */
 	prBssDesc->ucCenterFreqS1 = 0;
 	prBssDesc->ucCenterFreqS2 = 0;
-
+	prBssDesc->fgExsitBssLoadIE = FALSE;
+	prBssDesc->fgMultiAnttenaAndSTBC = FALSE;
 	/* 4 <3.1> Full IE parsing on SW_RFB_T */
 	pucIE = prWlanBeaconFrame->aucInfoElem;
 
@@ -2012,9 +2083,23 @@ P_BSS_DESC_T scanAddToBssDesc(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfb)
 			break;
 
 		case ELEM_ID_HT_CAP:
-			prBssDesc->fgIsHTPresent = TRUE;
-			break;
+		{
+			P_IE_HT_CAP_T prHtCap = (P_IE_HT_CAP_T)pucIE;
+			UINT_8 ucSpatial = 0;
+			UINT_8 i = 0;
 
+			prBssDesc->fgIsHTPresent = TRUE;
+
+			if (prBssDesc->fgMultiAnttenaAndSTBC)
+				break;
+			for (; i < 4; i++) {
+				if (prHtCap->rSupMcsSet.aucRxMcsBitmask[i] > 0)
+					ucSpatial++;
+			}
+			prBssDesc->fgMultiAnttenaAndSTBC =
+				((ucSpatial > 1) && (prHtCap->u2HtCapInfo & HT_CAP_INFO_TX_STBC));
+			break;
+		}
 		case ELEM_ID_HT_OP:
 			if (IE_LEN(pucIE) != (sizeof(IE_HT_OP_T) - 2))
 				break;
@@ -2027,9 +2112,24 @@ P_BSS_DESC_T scanAddToBssDesc(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfb)
 
 			break;
 		case ELEM_ID_VHT_CAP:
-			prBssDesc->fgIsVHTPresent = TRUE;
-			break;
+		{
+			P_IE_VHT_CAP_T prVhtCap = (P_IE_VHT_CAP_T)pucIE;
+			UINT_16 u2TxMcsSet = prVhtCap->rVhtSupportedMcsSet.u2TxMcsMap;
+			UINT_8 ucSpatial = 0;
+			UINT_8 i = 0;
 
+			prBssDesc->fgIsVHTPresent = TRUE;
+
+			if (prBssDesc->fgMultiAnttenaAndSTBC)
+				break;
+			for (; i < 8; i++) {
+				if ((u2TxMcsSet & BITS(2*i, 2*i+1)) != 3)
+					ucSpatial++;
+			}
+			prBssDesc->fgMultiAnttenaAndSTBC =
+				((ucSpatial > 1) && (prVhtCap->u4VhtCapInfo & VHT_CAP_INFO_TX_STBC));
+			break;
+		}
 		case ELEM_ID_VHT_OP:
 			if (IE_LEN(pucIE) != (sizeof(IE_VHT_OP_T) - 2))
 				break;
@@ -2046,6 +2146,16 @@ P_BSS_DESC_T scanAddToBssDesc(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfb)
 			break;
 #endif
 
+		case ELEM_ID_BSS_LOAD:
+		{
+			struct IE_BSS_LOAD *prBssLoad = (struct IE_BSS_LOAD *)pucIE;
+
+			prBssDesc->u2StaCnt = prBssLoad->u2StaCnt;
+			prBssDesc->ucChnlUtilization = prBssLoad->ucChnlUtilizaion;
+			prBssDesc->u2AvaliableAC = prBssLoad->u2AvailabeAC;
+			prBssDesc->fgExsitBssLoadIE = TRUE;
+			break;
+		}
 		case ELEM_ID_VENDOR:	/* ELEM_ID_P2P, ELEM_ID_WMM */
 			{
 				UINT_8 ucOuiType;
@@ -2209,10 +2319,17 @@ P_BSS_DESC_T scanAddToBssDesc(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfb)
 			/* ASSERT(!(prBssDesc->u2OperationalRateSet & RATE_SET_HR_DSSS)); */
 		}
 	}
-
+	aisRemoveBeaconTimeoutEntry(prAdapter, prBssDesc);
+	/* update update-index and reset seen-probe-response */
+	if (prBssDesc->u4UpdateIdx != prAdapter->rWifiVar.rScanInfo.u4ScanUpdateIdx) {
+		prBssDesc->fgSeenProbeResp = FALSE;
+		prBssDesc->u4UpdateIdx = prAdapter->rWifiVar.rScanInfo.u4ScanUpdateIdx;
+	}
+	/* check if it is a probe response frame */
+	if ((prWlanBeaconFrame->u2FrameCtrl & 0x50) == 0x50)
+		prBssDesc->fgSeenProbeResp = TRUE;
 	/* 4 <7> Update BSS_DESC_T's Last Update TimeStamp. */
 	GET_CURRENT_SYSTIME(&prBssDesc->rUpdateTime);
-
 	return prBssDesc;
 }
 
@@ -2424,7 +2541,30 @@ WLAN_STATUS scanProcessBeaconAndProbeResp(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_
 			if (prAisBssInfo->u2OperationalRateSet != prBssDesc->u2OperationalRateSet)
 				fgNeedDisconnect = TRUE;
 #endif
-
+#if CFG_SUPPORT_DETECT_SECURITY_MODE_CHANGE
+			if (rsnCheckSecurityModeChanged(prAdapter, prAisBssInfo, prBssDesc)
+#if CFG_SUPPORT_WAPI
+				|| (prAdapter->rWifiVar.rConnSettings.fgWapiMode == TRUE &&
+					!wapiPerformPolicySelection(prAdapter, prBssDesc))
+#endif
+				) {
+				DBGLOG(SCN, INFO, "Beacon security mode change detected\n");
+				DBGLOG_MEM8(SCN, INFO, prSwRfb->pvHeader, prSwRfb->u2PacketLen);
+				fgNeedDisconnect = FALSE;
+				if (!prConnSettings->fgSecModeChangeStartTimer) {
+					cnmTimerStartTimer(prAdapter,
+							&prAdapter->rWifiVar.rAisFsmInfo.rSecModeChangeTimer,
+							SEC_TO_MSEC(3));
+					prConnSettings->fgSecModeChangeStartTimer = TRUE;
+				}
+			} else {
+				if (prConnSettings->fgSecModeChangeStartTimer) {
+					cnmTimerStopTimer(prAdapter,
+							&prAdapter->rWifiVar.rAisFsmInfo.rSecModeChangeTimer);
+					prConnSettings->fgSecModeChangeStartTimer = FALSE;
+				}
+			}
+#endif
 			/* <1.1.3> beacon content change detected, disconnect immediately */
 			if (fgNeedDisconnect == TRUE)
 				aisBssBeaconTimeout(prAdapter);
@@ -2592,8 +2732,12 @@ P_BSS_DESC_T scanSearchBssDescByPolicy(IN P_ADAPTER_T prAdapter, IN UINT_8 ucBss
 		if (rlmDomainIsLegalChannel(prAdapter, prBssDesc->eBand, prBssDesc->ucChannelNum) == FALSE)
 			continue;
 		/* 4 <2.5> Check if this BSS_DESC_T is stale */
-		if (CHECK_FOR_TIMEOUT(rCurrentTime, prBssDesc->rUpdateTime, SEC_TO_SYSTIME(SCN_BSS_DESC_STALE_SEC)))
-			continue;
+#if CFG_SUPPORT_RN
+		if (prBssInfo->fgDisConnReassoc == FALSE)
+#endif
+			if (CHECK_FOR_TIMEOUT(rCurrentTime, prBssDesc->rUpdateTime,
+								SEC_TO_SYSTIME(SCN_BSS_DESC_STALE_SEC)))
+				continue;
 		/* 4 <3> Check if reach the excessive join retry limit */
 		/* NOTE(Kevin): STA_RECORD_T is recorded by TA. */
 		prStaRec = cnmGetStaRecByAddress(prAdapter, ucBssIndex, prBssDesc->aucSrcAddr);
@@ -3020,34 +3164,32 @@ VOID scanReportBss2Cfg80211(IN P_ADAPTER_T prAdapter, IN ENUM_BSS_TYPE_T eBSSTyp
 	DBGLOG(SCN, TRACE, "scanReportBss2Cfg80211\n");
 
 	if (SpecificprBssDesc) {
-		{
-			/* check BSSID is legal channel */
-			if (!scanCheckBssIsLegal(prAdapter, SpecificprBssDesc))
-				return;
+		/* check BSSID is legal channel */
+		if (!scanCheckBssIsLegal(prAdapter, SpecificprBssDesc))
+			return;
 
-			DBGLOG(SCN, TRACE, "Report Specific SSID[%s]\n", SpecificprBssDesc->aucSSID);
-			if (eBSSType == BSS_TYPE_INFRASTRUCTURE) {
+		DBGLOG(SCN, TRACE, "Report Specific SSID[%s]\n", SpecificprBssDesc->aucSSID);
+		if (eBSSType == BSS_TYPE_INFRASTRUCTURE) {
 
-				kalIndicateBssInfo(prAdapter->prGlueInfo,
-						   (PUINT_8) SpecificprBssDesc->aucRawBuf,
-						   SpecificprBssDesc->u2RawLength,
-						   SpecificprBssDesc->ucChannelNum,
-						   RCPI_TO_dBm(SpecificprBssDesc->ucRCPI));
-			} else {
+			kalIndicateBssInfo(prAdapter->prGlueInfo,
+					   (PUINT_8) SpecificprBssDesc->aucRawBuf,
+					   SpecificprBssDesc->u2RawLength,
+					   SpecificprBssDesc->ucChannelNum,
+					   RCPI_TO_dBm(SpecificprBssDesc->ucRCPI));
+		} else {
 
-				rChannelInfo.ucChannelNum = SpecificprBssDesc->ucChannelNum;
-				rChannelInfo.eBand = SpecificprBssDesc->eBand;
-				kalP2PIndicateBssInfo(prAdapter->prGlueInfo,
-						      (PUINT_8) SpecificprBssDesc->aucRawBuf,
-						      SpecificprBssDesc->u2RawLength,
-						      &rChannelInfo, RCPI_TO_dBm(SpecificprBssDesc->ucRCPI));
+			rChannelInfo.ucChannelNum = SpecificprBssDesc->ucChannelNum;
+			rChannelInfo.eBand = SpecificprBssDesc->eBand;
+			kalP2PIndicateBssInfo(prAdapter->prGlueInfo,
+					      (PUINT_8) SpecificprBssDesc->aucRawBuf,
+					      SpecificprBssDesc->u2RawLength,
+					      &rChannelInfo, RCPI_TO_dBm(SpecificprBssDesc->ucRCPI));
 
-			}
+		}
 
 #if CFG_ENABLE_WIFI_DIRECT
-			SpecificprBssDesc->fgIsP2PReport = FALSE;
+		SpecificprBssDesc->fgIsP2PReport = FALSE;
 #endif
-		}
 	} else {
 		/* Search BSS Desc from current SCAN result list. */
 		LINK_FOR_EACH_ENTRY(prBssDesc, prBSSDescList, rLinkEntry, BSS_DESC_T) {
@@ -3217,3 +3359,465 @@ VOID scanReportScanResultToAgps(P_ADAPTER_T prAdapter)
 	kalMemFree(prAgpsApList, VIR_MEM_TYPE, sizeof(AGPS_AP_LIST_T));
 }
 #endif /* CFG_SUPPORT_AGPS_ASSIST */
+
+VOID scanGetCurrentEssChnlList(P_ADAPTER_T prAdapter)
+{
+	P_BSS_DESC_T prBssDesc = NULL;
+	P_LINK_T prBSSDescList = &prAdapter->rWifiVar.rScanInfo.rBSSDescList;
+	P_CONNECTION_SETTINGS_T prConnSettings = &prAdapter->rWifiVar.rConnSettings;
+	struct ESS_CHNL_INFO *prEssChnlInfo = &prAdapter->rWifiVar.rAisSpecificBssInfo.arCurEssChnlInfo[0];
+	P_LINK_T prCurEssLink = &prAdapter->rWifiVar.rAisSpecificBssInfo.rCurEssLink;
+	UINT_8 aucChnlBitMap[30] = {0,};
+	UINT_8 aucChnlApNum[215] = {0,};
+	UINT_8 aucChnlUtil[215] = {0,};
+	UINT_8 ucByteNum = 0;
+	UINT_8 ucBitNum = 0;
+	UINT_8 ucChnlCount = 0;
+	UINT_8 j = 0;
+	/*UINT_8 i = 0;*/
+
+	if (prConnSettings->ucSSIDLen == 0) {
+		DBGLOG(SCN, INFO, "No Ess are expected to connect\n");
+		return;
+	}
+	kalMemZero(prEssChnlInfo, CFG_MAX_NUM_OF_CHNL_INFO * sizeof(struct ESS_CHNL_INFO));
+	while (!LINK_IS_EMPTY(prCurEssLink)) {
+		prBssDesc = LINK_PEEK_HEAD(prCurEssLink, BSS_DESC_T, rLinkEntryEss);
+		LINK_REMOVE_KNOWN_ENTRY(prCurEssLink, &prBssDesc->rLinkEntryEss);
+	}
+	LINK_FOR_EACH_ENTRY(prBssDesc, prBSSDescList, rLinkEntry, BSS_DESC_T) {
+		if (prBssDesc->ucChannelNum > 216)
+			continue;
+		/* Statistic AP num for each channel */
+		if (aucChnlApNum[prBssDesc->ucChannelNum] < 255)
+			aucChnlApNum[prBssDesc->ucChannelNum]++;
+		if (aucChnlUtil[prBssDesc->ucChannelNum] < prBssDesc->ucChnlUtilization)
+			aucChnlUtil[prBssDesc->ucChannelNum] = prBssDesc->ucChnlUtilization;
+		if (!EQUAL_SSID(prConnSettings->aucSSID, prConnSettings->ucSSIDLen,
+			prBssDesc->aucSSID, prBssDesc->ucSSIDLen))
+			continue;
+		/* Record same BSS list */
+		LINK_INSERT_HEAD(prCurEssLink, &prBssDesc->rLinkEntryEss);
+		ucByteNum = prBssDesc->ucChannelNum / 8;
+		ucBitNum = prBssDesc->ucChannelNum % 8;
+		if (aucChnlBitMap[ucByteNum] & BIT(ucBitNum))
+			continue;
+		aucChnlBitMap[ucByteNum] |= BIT(ucBitNum);
+		prEssChnlInfo[ucChnlCount].ucChannel = prBssDesc->ucChannelNum;
+		ucChnlCount++;
+		if (ucChnlCount >= CFG_MAX_NUM_OF_CHNL_INFO)
+			break;
+	}
+	prAdapter->rWifiVar.rAisSpecificBssInfo.ucCurEssChnlInfoNum = ucChnlCount;
+	for (j = 0; j < ucChnlCount; j++) {
+		UINT_8 ucChnl = prEssChnlInfo[j].ucChannel;
+
+		prEssChnlInfo[j].ucApNum = aucChnlApNum[ucChnl];
+		prEssChnlInfo[j].ucUtilization = aucChnlUtil[ucChnl];
+	}
+#if 0
+	/* Sort according to AP number */
+	for (j = 0; j < ucChnlCount; j++) {
+		for (i = j + 1; i < ucChnlCount; i++)
+			if (prEssChnlInfo[j].ucApNum > prEssChnlInfo[i].ucApNum) {
+				struct ESS_CHNL_INFO rTemp = prEssChnlInfo[j];
+
+				prEssChnlInfo[j] = prEssChnlInfo[i];
+				prEssChnlInfo[i] = rTemp;
+			}
+	}
+#endif
+	DBGLOG(SCN, INFO, "Find %s in %d BSSes, result %d\n",
+		prConnSettings->aucSSID, prBSSDescList->u4NumElem, prCurEssLink->u4NumElem);
+}
+
+#define CALCULATE_SCORE_BY_PROBE_RSP(prBssDesc) \
+	(WEIGHT_IDX_PROBE_RSP * (prBssDesc->fgSeenProbeResp ? BSS_FULL_SCORE : 0))
+
+#define CALCULATE_SCORE_BY_MISS_CNT(prAdapter, prBssDesc) \
+	(WEIGHT_IDX_SCN_MISS_CNT * \
+	(prAdapter->rWifiVar.rScanInfo.u4ScanUpdateIdx - prBssDesc->u4UpdateIdx > 3 ? 0 : \
+	(BSS_FULL_SCORE - (prAdapter->rWifiVar.rScanInfo.u4ScanUpdateIdx - prBssDesc->u4UpdateIdx) * 25)))
+
+#define CALCULATE_SCORE_BY_BAND(prAdapter, prBssDesc, cRssi) \
+	(WEIGHT_IDX_5G_BAND * \
+	((prBssDesc->eBand == BAND_5G && prAdapter->fgEnable5GBand && cRssi > -70) ? BSS_FULL_SCORE : 0))
+
+#define CALCULATE_SCORE_BY_STBC(prAdapter, prBssDesc) \
+	(WEIGHT_IDX_STBC * \
+	((prBssDesc->fgMultiAnttenaAndSTBC && prAdapter->rWifiVar.ucRxStbc) ? BSS_FULL_SCORE:0))
+
+#define CALCULATE_SCORE_BY_DEAUTH(prBssDesc) \
+	(WEIGHT_IDX_DEAUTH_LAST * (prBssDesc->fgDeauthLastTime ? 0:BSS_FULL_SCORE))
+
+#if 0/* we don't take it into account now */
+/* Channel Utilization: weight index will be */
+static UINT_16 scanCalculateScoreByChnlInfo(
+	P_AIS_SPECIFIC_BSS_INFO_T prAisSpecificBssInfo, UINT_8 ucChannel)
+{
+	struct ESS_CHNL_INFO *prEssChnlInfo = &prAisSpecificBssInfo->arCurEssChnlInfo[0];
+	UINT_8 i = 0;
+	UINT_16 u2Score = 0;
+
+	for (; i < prAisSpecificBssInfo->ucCurEssChnlInfoNum; i++) {
+		if (ucChannel == prEssChnlInfo[i].ucChannel) {
+#if 0	/* currently, we don't take channel utilization into account */
+			/* the channel utilization max value is 255. great utilization means little weight value.
+			the step of weight value is 2.6 */
+			u2Score = WEIGHT_IDX_CHNL_UTIL *
+				(BSS_FULL_SCORE - (prEssChnlInfo[i].ucUtilization * 10 / 26));
+#endif
+			/* if AP num on this channel is greater than 100, the weight will be 0.
+			otherwise, the weight value decrease 1 if AP number increase 1 */
+			if (prEssChnlInfo[i].ucApNum <= CHNL_BSS_NUM_THRESOLD)
+				u2Score += WEIGHT_IDX_AP_NUM *
+					(BSS_FULL_SCORE - prEssChnlInfo[i].ucApNum * SCORE_PER_AP);
+			DBGLOG(SCN, INFO, "channel %d\n", ucChannel);
+			break;
+		}
+	}
+	return u2Score;
+}
+
+static UINT_16 scanCalculateScoreByBandwidth(P_ADAPTER_T prAdapter, P_BSS_DESC_T prBssDesc)
+{
+	UINT_16 u2Score = 0;
+	ENUM_CHANNEL_WIDTH_T eChannelWidth = prBssDesc->eChannelWidth;
+	UINT_8 ucSta5GBW = prAdapter->rWifiVar.ucSta5gBandwidth;
+	UINT_8 ucSta2GBW = prAdapter->rWifiVar.ucSta2gBandwidth;
+	UINT_8 ucStaBW = prAdapter->rWifiVar.ucStaBandwidth;
+
+	if (prBssDesc->fgIsVHTPresent && prAdapter->fgEnable5GBand) {
+		if (ucSta5GBW > ucStaBW)
+			ucSta5GBW = ucStaBW;
+		switch (ucSta5GBW) {
+		case MAX_BW_20MHZ:
+		case MAX_BW_40MHZ:
+			eChannelWidth = CW_20_40MHZ;
+			break;
+		case MAX_BW_80MHZ:
+			eChannelWidth = CW_80MHZ;
+			break;
+		}
+		switch (eChannelWidth) {
+		case CW_20_40MHZ:
+			u2Score = 60;
+			break;
+		case CW_80MHZ:
+			u2Score = 80;
+			break;
+		case CW_160MHZ:
+		case CW_80P80MHZ:
+			u2Score = BSS_FULL_SCORE;
+			break;
+		}
+	} else if (prBssDesc->fgIsHTPresent) {
+		if (prBssDesc->eBand == BAND_2G4) {
+			if (ucSta2GBW > ucStaBW)
+				ucSta2GBW = ucStaBW;
+			u2Score = (prBssDesc->eSco == 0 || ucSta2GBW == MAX_BW_20MHZ) ? 40:60;
+		} else if (prBssDesc->eBand == BAND_5G) {
+			if (ucSta5GBW > ucStaBW)
+				ucSta5GBW = ucStaBW;
+			u2Score = (prBssDesc->eSco == 0 || ucSta5GBW == MAX_BW_20MHZ) ? 40:60;
+		}
+	} else if (prBssDesc->u2BSSBasicRateSet & RATE_SET_OFDM)
+		u2Score = 20;
+	else
+		u2Score = 10;
+	/*DBGLOG(SCN, INFO, "eCW %d, vht %d, ht %d, eband %d, esco %d, u2Score %d\n",
+		eChannelWidth, prBssDesc->fgIsVHTPresent,
+		prBssDesc->fgIsHTPresent, prBssDesc->eBand, prBssDesc->eSco, u2Score);*/
+	return u2Score * WEIGHT_IDX_BAND_WIDTH;
+}
+
+static UINT_16 scanCalculateScoreByClientCnt(P_BSS_DESC_T prBssDesc)
+{
+	UINT_16 u2Score = 0;
+
+	if (!prBssDesc->fgExsitBssLoadIE || prBssDesc->u2StaCnt > BSS_STA_CNT_THRESOLD) {
+		DBGLOG(SCN, TRACE, "exist bss load %d, sta cnt %d\n",
+			prBssDesc->fgExsitBssLoadIE, prBssDesc->u2StaCnt);
+		return 0;
+	}
+	u2Score = BSS_FULL_SCORE - prBssDesc->u2StaCnt * 3;
+	return u2Score * WEIGHT_IDX_CLIENT_CNT;
+}
+
+static UINT_16 scanCalculateScoreBySnrRssi(P_BSS_DESC_T prBssDesc)
+{
+	UINT_16 u2Score = 0;
+	INT_8 cRssi = RCPI_TO_dBm(prBssDesc->ucRCPI);
+	/*UINT_8 ucSNR = prBssDesc->ucSNR;*/
+	DBGLOG(SCN, INFO, "cRSSI %d\n", cRssi);
+	if (cRssi >= -20)
+		u2Score = 60;
+	else if (cRssi <= -70 && cRssi > HARD_TO_CONNECT_RSSI_THRESOLD)
+		u2Score = 20;
+	else if (cRssi <= HARD_TO_CONNECT_RSSI_THRESOLD)
+		u2Score = 0;
+	u2Score = 8 * ((cRssi + 69)/5) + 28;
+	u2Score *= WEIGHT_IDX_RSSI;
+
+	/* TODO: we don't know the valid value for SNR, so don't take it into account */
+	return u2Score;
+}
+#endif
+/*****
+Bss Characteristics to be taken into account when calculate Score:
+Channel Loading Group:
+1. Client Count (in BSS Load IE).
+2. AP number on the Channel.
+
+RF Group:
+1. Channel utilization.
+2. SNR.
+3. RSSI.
+
+Misc Group:
+1. Deauth Last time.
+2. Scan Missing Count.
+3. Has probe response in scan result.
+
+Capability Group:
+1. Prefer 5G band.
+2. Bandwidth.
+3. STBC and Multi Anttena.
+*/
+P_BSS_DESC_T scanSearchBssDescByScoreForAis(P_ADAPTER_T prAdapter)
+{
+	P_AIS_SPECIFIC_BSS_INFO_T prAisSpecificBssInfo = NULL;
+	P_LINK_T prEssLink = NULL;
+	P_CONNECTION_SETTINGS_T prConnSettings = NULL;
+	P_BSS_DESC_T prBssDesc = NULL;
+	P_BSS_DESC_T prCandBssDesc = NULL;
+	P_BSS_DESC_T prCandBssDescForLowRssi = NULL;
+	UINT_16 u2ScoreBand = 0;
+	UINT_16 u2ScoreChnlInfo = 0;
+	UINT_16 u2ScoreStaCnt = 0;
+	UINT_16 u2ScoreProbeRsp = 0;
+	UINT_16 u2ScoreScanMiss = 0;
+	UINT_16 u2ScoreBandwidth = 0;
+	UINT_16 u2ScoreSTBC = 0;
+	UINT_16 u2ScoreDeauth = 0;
+	UINT_16 u2ScoreSnrRssi = 0;
+	UINT_16 u2ScoreTotal = 0;
+	UINT_16 u2CandBssScore = 0;
+	UINT_16 u2CandBssScoreForLowRssi = 0;
+	UINT_16 u2BlackListScore = 0;
+	BOOLEAN fgSearchBlackList = FALSE;
+	BOOLEAN fgIsFixedChannel = FALSE;
+	ENUM_BAND_T eBand = BAND_2G4;
+	UINT_8 ucChannel = 0;
+	INT_8 cRssi = -128;
+	INT_8 cMaxRssi = HARD_TO_CONNECT_RSSI_THRESOLD;
+
+	if (!prAdapter) {
+		DBGLOG(SCN, ERROR, "prAdapter is NULL!\n");
+		return NULL;
+	}
+	prAisSpecificBssInfo = &prAdapter->rWifiVar.rAisSpecificBssInfo;
+	prConnSettings = &(prAdapter->rWifiVar.rConnSettings);
+	prEssLink = &prAisSpecificBssInfo->rCurEssLink;
+#if CFG_SUPPORT_CHNL_CONFLICT_REVISE
+	fgIsFixedChannel = cnmAisDetectP2PChannel(prAdapter, &eBand, &ucChannel);
+#else
+	fgIsFixedChannel = cnmAisInfraChannelFixed(prAdapter, &eBand, &ucChannel);
+#endif
+	aisRemoveTimeoutBlacklist(prAdapter);
+
+#if CFG_SELECT_BSS_BASE_ON_RSSI
+	if (prConnSettings->eConnectionPolicy != CONNECT_BY_BSSID) {
+		LINK_FOR_EACH_ENTRY(prBssDesc, prEssLink, rLinkEntryEss, BSS_DESC_T) {
+			if (!fgSearchBlackList) {
+				prBssDesc->prBlack = aisQueryBlackList(prAdapter, prBssDesc);
+				if (prBssDesc->prBlack)
+					continue;
+			} else if (!prBssDesc->prBlack)
+				continue;
+			else
+				u2BlackListScore = WEIGHT_IDX_BLACK_LIST *
+					aisCalculateBlackListScore(prAdapter, prBssDesc);
+
+			if (!(prBssDesc->ucPhyTypeSet & (prAdapter->rWifiVar.ucAvailablePhyTypeSet))) {
+				DBGLOG(SCN, TRACE, "SEARCH: Ignore unsupported ucPhyTypeSet = %x\n",
+					prBssDesc->ucPhyTypeSet);
+				continue;
+			}
+			if (prBssDesc->fgIsUnknownBssBasicRate)
+				continue;
+			if (fgIsFixedChannel &&
+				(eBand != prBssDesc->eBand || ucChannel != prBssDesc->ucChannelNum))
+				continue;
+			if (!rlmDomainIsLegalChannel(prAdapter, prBssDesc->eBand, prBssDesc->ucChannelNum))
+				continue;
+#if CFG_SUPPORT_WAPI
+			if (prAdapter->rWifiVar.rConnSettings.fgWapiMode) {
+				if (!wapiPerformPolicySelection(prAdapter, prBssDesc))
+					continue;
+			} else
+#endif
+			if (!rsnPerformPolicySelection(prAdapter, prBssDesc))
+				continue;
+			if (prAisSpecificBssInfo->fgCounterMeasure) {
+				DBGLOG(RSN, INFO, "Skip while at counter measure period!!!\n");
+				continue;
+			}
+			cRssi = RCPI_TO_dBm(prBssDesc->ucRCPI);
+			if (cRssi > cMaxRssi)
+				cMaxRssi = cRssi;
+		}
+	}
+#endif
+	DBGLOG(SCN, INFO, "Max RSSI %d\n", cMaxRssi);
+try_again:
+	LINK_FOR_EACH_ENTRY(prBssDesc, prEssLink, rLinkEntryEss, BSS_DESC_T) {
+		if (prConnSettings->eConnectionPolicy == CONNECT_BY_BSSID &&
+			EQUAL_MAC_ADDR(prBssDesc->aucBSSID, prConnSettings->aucBSSID)) {
+			prCandBssDesc = prBssDesc;
+			break;
+		}
+		if (!fgSearchBlackList) {
+			prBssDesc->prBlack = aisQueryBlackList(prAdapter, prBssDesc);
+			if (prBssDesc->prBlack)
+				continue;
+		} else if (!prBssDesc->prBlack)
+			continue;
+		else
+			u2BlackListScore = WEIGHT_IDX_BLACK_LIST *
+				aisCalculateBlackListScore(prAdapter, prBssDesc);
+
+		cRssi = RCPI_TO_dBm(prBssDesc->ucRCPI);
+		DBGLOG(SCN, INFO, "cRSSI %d, %pM\n", cRssi, prBssDesc->aucBSSID);
+#if CFG_SELECT_BSS_BASE_ON_RSSI
+		if (cMaxRssi >= -55) {
+			if (cRssi < -55)
+				continue;
+		} else if (cMaxRssi >= -65) {
+			if (cRssi < -65)
+				continue;
+		} else if (cMaxRssi >= -77) {
+			if (cRssi < -77)
+				continue;
+		} else if (cMaxRssi >= -88) {
+			if (cRssi < -88)
+				continue;
+		} else if (cMaxRssi >= -100) {
+			if (cRssi < -100)
+				continue;
+		}
+#endif
+		if (!(prBssDesc->ucPhyTypeSet & (prAdapter->rWifiVar.ucAvailablePhyTypeSet))) {
+			DBGLOG(SCN, TRACE, "SEARCH: Ignore unsupported ucPhyTypeSet = %x\n",
+				prBssDesc->ucPhyTypeSet);
+			continue;
+		}
+		if (prBssDesc->fgIsUnknownBssBasicRate)
+			continue;
+		if (fgIsFixedChannel && (eBand != prBssDesc->eBand || ucChannel != prBssDesc->ucChannelNum))
+			continue;
+		if (rlmDomainIsLegalChannel(prAdapter, prBssDesc->eBand, prBssDesc->ucChannelNum) == FALSE)
+			continue;
+#if CFG_SUPPORT_WAPI
+		if (prAdapter->rWifiVar.rConnSettings.fgWapiMode) {
+			if (!wapiPerformPolicySelection(prAdapter, prBssDesc))
+				continue;
+		} else
+#endif
+		if (!rsnPerformPolicySelection(prAdapter, prBssDesc))
+			continue;
+		if (prAisSpecificBssInfo->fgCounterMeasure) {
+			DBGLOG(RSN, INFO, "Skip while at counter measure period!!!\n");
+			continue;
+		}
+
+#if 0	/* currently, we don't take these factors into account */
+		u2ScoreBandwidth = scanCalculateScoreByBandwidth(prAdapter, prBssDesc);
+		u2ScoreStaCnt = scanCalculateScoreByClientCnt(prBssDesc);
+		u2ScoreSTBC = CALCULATE_SCORE_BY_STBC(prAdapter, prBssDesc);
+		u2ScoreChnlInfo = scanCalculateScoreByChnlInfo(prAisSpecificBssInfo, prBssDesc->ucChannelNum);
+		u2ScoreSnrRssi = scanCalculateScoreBySnrRssi(prBssDesc);
+#endif
+		u2ScoreDeauth = CALCULATE_SCORE_BY_DEAUTH(prBssDesc);
+		u2ScoreProbeRsp = CALCULATE_SCORE_BY_PROBE_RSP(prBssDesc);
+		u2ScoreScanMiss = CALCULATE_SCORE_BY_MISS_CNT(prAdapter, prBssDesc);
+		u2ScoreBand = CALCULATE_SCORE_BY_BAND(prAdapter, prBssDesc, cRssi);
+		u2ScoreTotal = u2ScoreBandwidth + u2ScoreChnlInfo + u2ScoreDeauth + u2ScoreProbeRsp +
+			u2ScoreScanMiss + u2ScoreSnrRssi + u2ScoreStaCnt + u2ScoreSTBC + u2ScoreBand + u2BlackListScore;
+
+		DBGLOG(SCN, INFO,
+			"%pM Score, Total %d: BW[%d], CI[%d], DE[%d], PR[%d], SM[%d], SC[%d], SR[%d], ST[%d], BD[%d]\n",
+			prBssDesc->aucBSSID, u2ScoreTotal, u2ScoreBandwidth, u2ScoreChnlInfo, u2ScoreDeauth,
+			u2ScoreProbeRsp, u2ScoreScanMiss, u2ScoreStaCnt, u2ScoreSnrRssi, u2ScoreSTBC, u2ScoreBand);
+		/*if (cRssi < HARD_TO_CONNECT_RSSI_THRESOLD) {
+			if (!prCandBssDescForLowRssi) {
+				prCandBssDescForLowRssi = prBssDesc;
+				u2CandBssScoreForLowRssi = u2ScoreTotal;
+			} else if (prCandBssDescForLowRssi->fgIsConnected) {
+				if ((u2CandBssScoreForLowRssi + ROAMING_NO_SWING_SCORE_STEP) < u2ScoreTotal) {
+					prCandBssDescForLowRssi = prBssDesc;
+					u2CandBssScoreForLowRssi = u2ScoreTotal;
+				}
+			} else if (prBssDesc->fgIsConnected) {
+				if (u2CandBssScoreForLowRssi > (u2ScoreTotal + ROAMING_NO_SWING_SCORE_STEP)) {
+					prCandBssDescForLowRssi = prBssDesc;
+					u2CandBssScoreForLowRssi = u2ScoreTotal;
+				}
+			} else if (u2CandBssScoreForLowRssi < u2ScoreTotal) {
+				prCandBssDescForLowRssi = prBssDesc;
+				u2CandBssScoreForLowRssi = u2ScoreTotal;
+			}
+		} else */if (!prCandBssDesc) {
+			prCandBssDesc = prBssDesc;
+			u2CandBssScore = u2ScoreTotal;
+		} else if (prCandBssDesc->fgIsConnected) {
+			if ((u2CandBssScore + ROAMING_NO_SWING_SCORE_STEP) < u2ScoreTotal) {
+				prCandBssDesc = prBssDesc;
+				u2CandBssScore = u2ScoreTotal;
+			}
+		} else if (prBssDesc->fgIsConnected) {
+			if (u2CandBssScore <= (u2ScoreTotal + ROAMING_NO_SWING_SCORE_STEP)) {
+				prCandBssDesc = prBssDesc;
+				u2CandBssScore = u2ScoreTotal;
+			}
+		} else if (u2CandBssScore < u2ScoreTotal) {
+			prCandBssDesc = prBssDesc;
+			u2CandBssScore = u2ScoreTotal;
+		}
+	}
+	if (prCandBssDesc) {
+		if (prCandBssDesc->fgIsConnected && !fgSearchBlackList && prEssLink->u4NumElem > 0) {
+			fgSearchBlackList = TRUE;
+			DBGLOG(SCN, INFO, "Can't roam out, try blacklist\n");
+			goto try_again;
+		}
+		if (prConnSettings->eConnectionPolicy == CONNECT_BY_BSSID)
+			DBGLOG(SCN, INFO,
+				"Selected %pM base on bssid, when find %s, %pM in %d BSSes, fix channel %d.\n",
+				prCandBssDesc->aucBSSID, prConnSettings->aucSSID,
+				prConnSettings->aucBSSID, prEssLink->u4NumElem, ucChannel);
+		else
+			DBGLOG(SCN, INFO,
+				"Selected %pM, Score %d when find %s, %pM in %d BSSes, fix channel %d.\n",
+				prCandBssDesc->aucBSSID, u2CandBssScore,
+				prConnSettings->aucSSID, prConnSettings->aucBSSID, prEssLink->u4NumElem, ucChannel);
+		return prCandBssDesc;
+	} else if (prCandBssDescForLowRssi) {
+		DBGLOG(SCN, INFO, "Selected %pM, Score %d when find %s, %pM in %d BSSes, fix channel %d.\n",
+			prCandBssDescForLowRssi->aucBSSID, u2CandBssScoreForLowRssi,
+			prConnSettings->aucSSID, prConnSettings->aucBSSID, prEssLink->u4NumElem, ucChannel);
+		return prCandBssDescForLowRssi;
+	}
+
+	/* if No Candidate BSS is found, try BSSes which are in blacklist */
+	if (!fgSearchBlackList && prEssLink->u4NumElem > 0) {
+		fgSearchBlackList = TRUE;
+		DBGLOG(SCN, INFO, "No Bss is found, Try blacklist\n");
+		goto try_again;
+	}
+
+	DBGLOG(SCN, INFO, "Selected None when find %s, %pM in %d BSSes, fix channel %d.\n",
+				prConnSettings->aucSSID, prConnSettings->aucBSSID, prEssLink->u4NumElem, ucChannel);
+	return NULL;
+}
+

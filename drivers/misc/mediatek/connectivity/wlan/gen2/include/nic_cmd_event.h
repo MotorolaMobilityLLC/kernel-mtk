@@ -749,10 +749,12 @@ typedef enum _ENUM_CMD_ID_T {
 	CMD_ID_SET_PSCN_MAC_ADDR = 0x47,	/* 0x47 (Set) */
 	CMD_ID_GET_GSCN_SCN_RESULT = 0x48,	/* 0x48 (Get) */
 	CMD_ID_SET_COUNTRY_POWER_LIMIT = 0x4A,	/* 0x4A (Set) */
+	CMD_ID_REQ_CHNL_UTILIZATION = 0x5C, /* 0x5C (Get) */
 	CMD_ID_SET_SYSTEM_SUSPEND = 0x60,	/* 0x60 (Set) */
 #if CFG_SUPPORT_FCC_DYNAMIC_TX_PWR_ADJUST
 	CMD_ID_SET_FCC_TX_PWR_CERT = 0x6F,	/* 0x6F (Set) */
 #endif
+	CMD_ID_SET_ALWAYS_SCAN_PARAM = 0x73,/*0x73(set)*/
 	CMD_ID_TDLS_PS = 0x75,	/* 0x75 (Set) */
 	CMD_ID_GET_NIC_CAPABILITY = 0x80,	/* 0x80 (Query) */
 	CMD_ID_GET_LINK_QUALITY,	/* 0x81 (Query) */
@@ -859,6 +861,7 @@ typedef enum _ENUM_EVENT_ID_T {
 	EVENT_ID_GSCAN_RESULT = 0x36,
 	EVENT_ID_BATCH_RESULT = 0x37,
 	EVENT_ID_CHECK_REORDER_BUBBLE = 0x39,
+	EVENT_ID_RSP_CHNL_UTILIZATION = 0x59, /* 0x59 (Query - CMD_ID_REQ_CHNL_UTILIZATION) */
 
 	EVENT_ID_TDLS = 0x80,
 	EVENT_ID_STATS_ENV = 0x81,
@@ -1462,7 +1465,9 @@ typedef struct _CMD_UPDATE_STA_RECORD_T {
 	UINT_8 ucNeedResp;
 	UINT_8 ucUapsdAc;	/* b0~3: Trigger enabled, b4~7: Delivery enabled */
 	UINT_8 ucUapsdSp;	/* 0: all, 1: max 2, 2: max 4, 3: max 6 */
-	UINT_8 aucReserved[3];
+	UINT_8 ucKeepAliveDuration; /* unit is 1s */
+	UINT_8 ucKeepAliveOption; /* only bit0 is used now */
+	UINT_8 aucReserved;
 	/* TBD */
 } CMD_UPDATE_STA_RECORD_T, *P_CMD_UPDATE_STA_RECORD_T;
 
@@ -2207,6 +2212,24 @@ struct CMD_TDLS_PS_T {
 	UINT_8	ucIsEnablePs; /* 0: disable tdls power save; 1: enable tdls power save */
 	UINT_8	aucReserved[3];
 };
+
+struct CMD_REQ_CHNL_UTILIZATION {
+	UINT_16 u2MeasureDuration;
+	UINT_8 ucChannelNum;
+	UINT_8 aucChannelList[48];
+	UINT_8 aucReserved[13];
+};
+
+struct EVENT_RSP_CHNL_UTILIZATION {
+	UINT_8 ucChannelNum;
+	UINT_8 aucChannelMeasureList[48];
+	UINT_8 aucReserved0[15];
+	UINT_8 aucChannelUtilization[48];
+	UINT_8 aucReserved1[16];
+	UINT_8 aucChannelBusyTime[48];
+	UINT_8 aucReserved2[16];
+};
+
 /*******************************************************************************
 *                            P U B L I C   D A T A
 ********************************************************************************

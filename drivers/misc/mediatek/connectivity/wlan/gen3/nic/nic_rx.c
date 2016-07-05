@@ -2322,13 +2322,8 @@ VOID nicRxProcessDataPacket(IN P_ADAPTER_T prAdapter, IN OUT P_SW_RFB_T prSwRfb)
 	prSwRfb->fgFragFrame = FALSE;
 	prSwRfb->fgReorderBuffer = FALSE;
 
-	/* ToDo: Add comments by WH.Su */
-	if (HAL_RX_STATUS_IS_CIPHER_MISMATCH(prRxStatus)) {
-		/* DBGLOG(RX, TRACE, ("Not the CM bit\n")); */
-		prRxStatus->u2StatusFlag = prRxStatus->u2StatusFlag & !RX_STATUS_FLAG_CIPHER_MISMATCH;
-	}
 	/* BA session */
-	if (prRxStatus->u2StatusFlag == RXS_DW2_AMPDU_nERR_VALUE)
+	if ((prRxStatus->u2StatusFlag & RXS_DW2_AMPDU_nERR_BITMAP) == RXS_DW2_AMPDU_nERR_VALUE)
 		prSwRfb->fgReorderBuffer = TRUE;
 	/* non BA session */
 	else if ((prRxStatus->u2StatusFlag & RXS_DW2_RX_nERR_BITMAP) == RXS_DW2_RX_nERR_VALUE) {
@@ -3189,6 +3184,7 @@ VOID nicRxProcessEventPacket(IN P_ADAPTER_T prAdapter, IN OUT P_SW_RFB_T prSwRfb
 				}
 
 				aisBssBeaconTimeout(prAdapter);
+				aisRecordBeaconTimeout(prAdapter, prAdapter->prAisBssInfo);
 			}
 #if CFG_ENABLE_WIFI_DIRECT
 			else if (prBssInfo->eNetworkType == NETWORK_TYPE_P2P)
@@ -3507,7 +3503,9 @@ VOID nicRxProcessEventPacket(IN P_ADAPTER_T prAdapter, IN OUT P_SW_RFB_T prSwRfb
 			nicEventQueryMemDump(prAdapter, prEvent->aucBuffer);
 		}
 		break;
-
+	case EVENT_ID_RSP_CHNL_UTILIZATION:
+		cnmHandleChannelUtilization(prAdapter, (struct EVENT_RSP_CHNL_UTILIZATION *)prEvent->aucBuffer);
+		break;
 	case EVENT_ID_ACCESS_REG:
 	case EVENT_ID_NIC_CAPABILITY:
 		/* case EVENT_ID_MAC_MCAST_ADDR: */
@@ -4221,12 +4219,13 @@ VOID nicRxSDIOAggReceiveRFBs(IN P_ADAPTER_T prAdapter)
 	UINT_32 u4RxAvailAggLen, u4CurrAvailFreeRfbCnt;
 	PUINT_8 pucSrcAddr;
 	P_HW_MAC_RX_DESC_T prRxStatus;
-	BOOL fgResult = TRUE;
 	BOOLEAN fgIsRxEnhanceMode;
 	UINT_16 u2RxPktNum;
 #if CFG_SDIO_RX_ENHANCE
 	UINT_32 u4MaxLoopCount = CFG_MAX_RX_ENHANCE_LOOP_COUNT;
 #endif
+	UINT_32 u4RxAllPacketLength, u4RxInvaildAggLen = 0;
+	BOOLEAN    barPacketIsAbnormal[16] = {FALSE};
 
 	KAL_SPIN_LOCK_DECLARATION();
 
@@ -4260,10 +4259,13 @@ VOID nicRxSDIOAggReceiveRFBs(IN P_ADAPTER_T prAdapter)
 			     0 ? prEnhDataStr->rRxInfo.u.u2NumValidRx0Len : prEnhDataStr->rRxInfo.u.u2NumValidRx1Len);
 
 			/* if this assertion happened, it is most likely a F/W bug */
-			ASSERT(u2RxPktNum <= 16);
 
-			if (u2RxPktNum > 16)
-				continue;
+			if (u2RxPktNum > 16) {
+				DBGLOG(RX, ERROR,
+					"[%s]packets received are abnormal, need chip reset!\n",
+					__func__);
+				return;
+			}
 
 			if (u2RxPktNum == 0)
 				continue;
@@ -4295,130 +4297,96 @@ VOID nicRxSDIOAggReceiveRFBs(IN P_ADAPTER_T prAdapter)
 			u4RxAggCount = 0;
 
 			for (i = 0; i < u2RxPktNum; i++) {
-				PUINT_8 pucZeroArray = NULL;
-
-restart:
 				u4RxLength = (rxNum == 0 ?
 					      (UINT_32) prEnhDataStr->rRxInfo.u.au2Rx0Len[i] :
 					      (UINT_32) prEnhDataStr->rRxInfo.u.au2Rx1Len[i]);
 
 				if (!u4RxLength) {
-					ASSERT(0);
-					break;
+					DBGLOG(RX, ERROR, "[%s]HIF RX len(%d), SDIO abnormal, needs chip reset...\n",
+					__func__, u4RxLength);
+					return;
 				}
 
-				if (ALIGN_4(u4RxLength + HIF_RX_HW_APPENDED_LEN) < u4RxAvailAggLen) {
-					if (u4RxAggCount < u4CurrAvailFreeRfbCnt) {
-						u4RxAvailAggLen -= ALIGN_4(u4RxLength + HIF_RX_HW_APPENDED_LEN);
-						u4RxAggCount++;
-						continue;
-					}
-					/* no FreeSwRfb for rx packet */
-					DBGLOG(RX, ERROR,
-					       "[%s] RxAggCount(%d) is greater than AvailableFreeCount(%d)\n",
-					       __func__, u4RxAggCount, u4CurrAvailFreeRfbCnt);
-					ASSERT(0);
-					break;
+				if (ALIGN_4(u4RxLength + HIF_RX_HW_APPENDED_LEN) > CFG_RX_MAX_PKT_SIZE) {
+					u4RxInvaildAggLen += ALIGN_4(u4RxLength + HIF_RX_HW_APPENDED_LEN);
+					barPacketIsAbnormal[i] = TRUE;
+					continue;
+				} else {
+					u4RxAvailAggLen -= ALIGN_4(u4RxLength + HIF_RX_HW_APPENDED_LEN);
+					continue;
 				}
-
-				/* CFG_RX_COALESCING_BUFFER_SIZE is not large enough */
-				DBGLOG(RX, ERROR,
-				       "[%s] Request_len(%d) is greater than Available_len(%d)\n",
-				       __func__,
-				       (ALIGN_4(u4RxLength + HIF_RX_HW_APPENDED_LEN)), u4RxAvailAggLen);
-				u4RxLength += (CFG_RX_COALESCING_BUFFER_SIZE - u4RxAvailAggLen);
-				pucZeroArray = kalMemAlloc(1000, VIR_MEM_TYPE);
-				if (!pucZeroArray)
-					break;
-				kalMemZero(pucZeroArray, 1000);
-				HAL_READ_RX_PORT(prAdapter, rxNum, CFG_RX_COALESCING_BUFFER_SIZE,
-						prRxCtrl->pucRxCoalescingBufPtr, CFG_RX_COALESCING_BUFFER_SIZE);
-				/* dump RXD if total u4RxLength is greater than u4RxAvailAggLen */
-				DBGLOG(RX, ERROR,
-					"RXD for the wrong packet is\n");
-				DBGLOG_MEM32(RX, ERROR, prRxCtrl->pucRxCoalescingBufPtr+
-					(CFG_RX_COALESCING_BUFFER_SIZE - u4RxAvailAggLen),
-					sizeof(HW_MAC_RX_DESC_T));
-				u4RxLength -= CFG_RX_COALESCING_BUFFER_SIZE;
-				/* we should read out all pending data, otherwise,
-					DE said the port will be in abnormal case */
-				while (CFG_RX_COALESCING_BUFFER_SIZE < u4RxLength) {
-					HAL_READ_RX_PORT(prAdapter, rxNum, CFG_RX_COALESCING_BUFFER_SIZE,
-						prRxCtrl->pucRxCoalescingBufPtr, CFG_RX_COALESCING_BUFFER_SIZE);
-					/* if continuous 1000 bytes were zeros, means there's no data in this port */
-					if (!kalMemCmp(pucZeroArray, prRxCtrl->pucRxCoalescingBufPtr, 1000)) {
-						kalMemFree(pucZeroArray, VIR_MEM_TYPE, 1000);
-						goto restart;
-					}
-				}
-				if (u4RxLength > 0) {
-					HAL_READ_RX_PORT(prAdapter, rxNum, ALIGN_4(u4RxLength + HIF_RX_HW_APPENDED_LEN),
-							prRxCtrl->pucRxCoalescingBufPtr, CFG_RX_COALESCING_BUFFER_SIZE);
-				}
-				kalMemFree(pucZeroArray, VIR_MEM_TYPE, 1000);
-				goto restart;
 			}
 
 			u4RxAggLength = (CFG_RX_COALESCING_BUFFER_SIZE - u4RxAvailAggLen);
+			u4RxAllPacketLength = u4RxAggLength + u4RxInvaildAggLen;
+
+			/*
+				u4CoalescingBufCachedSize: the MAX Coalescing Buffer size in config
+				The aggregation packets size should less than u4CoalescingBufCachedSize bytes
+			*/
+			if (prAdapter->u4CoalescingBufCachedSize < u4RxAllPacketLength) {
+				DBGLOG(RX, ERROR,
+				"SDIO buf len is more than cache len, needs chip reset.\n");
+				return;
+			}
+
 			/* DBGLOG(RX, INFO, ("u4RxAggCount = %d, u4RxAggLength = %d\n", */
 			/* u4RxAggCount, u4RxAggLength)); */
+			if (u4RxInvaildAggLen > 0) {
+				HAL_READ_RX_PORT(prAdapter, rxNum, u4RxAllPacketLength,
+				prRxCtrl->pucRxCoalescingBufPtr, prAdapter->u4CoalescingBufCachedSize);
 
-			HAL_READ_RX_PORT(prAdapter,
-					 rxNum,
-					 u4RxAggLength, prRxCtrl->pucRxCoalescingBufPtr, CFG_RX_COALESCING_BUFFER_SIZE);
-			if (!fgResult) {
-				DBGLOG(RX, ERROR, "Read RX Agg Packet Error\n");
-				continue;
+				u4RxInvaildAggLen = 0;
+			} else {
+				HAL_READ_RX_PORT(prAdapter, rxNum, u4RxAggLength,
+				prRxCtrl->pucRxCoalescingBufPtr, CFG_RX_COALESCING_BUFFER_SIZE);
 			}
 
 			pucSrcAddr = prRxCtrl->pucRxCoalescingBufPtr;
-			for (i = 0; i < u4RxAggCount; i++) {
+			for (i = 0; i < u2RxPktNum; i++) {
 				UINT_16 u2PktLength;
 
 				u2PktLength = (rxNum == 0 ?
 					       prEnhDataStr->rRxInfo.u.au2Rx0Len[i] :
 					       prEnhDataStr->rRxInfo.u.au2Rx1Len[i]);
 
-				if (ALIGN_4(u2PktLength + HIF_RX_HW_APPENDED_LEN) > CFG_RX_MAX_PKT_SIZE) {
-					DBGLOG(RX, ERROR,
-					       "[%s] Request_len(%d) is greater than CFG_RX_MAX_PKT_SIZE(%d)...",
-					       __func__, (ALIGN_4(u2PktLength + HIF_RX_HW_APPENDED_LEN)),
-					       CFG_RX_MAX_PKT_SIZE);
-					DBGLOG(RX, ERROR, "Drop the unexpected packet...\n");
-					DBGLOG_MEM32(RX, ERROR, pucSrcAddr, sizeof(HW_MAC_RX_DESC_T));
-
+				if (TRUE == barPacketIsAbnormal[i]) {
+					DBGLOG(RX, WARN,
+					"FIH RX(%d) packets(%d)'s length in reg(%d) and in DESC(%d)...\n",
+					rxNum, i, u2PktLength, ((HW_MAC_RX_DESC_T *)pucSrcAddr)->u2RxByteCount);
 					pucSrcAddr += ALIGN_4(u2PktLength + HIF_RX_HW_APPENDED_LEN);
 					RX_INC_CNT(prRxCtrl, RX_DROP_TOTAL_COUNT);
+					barPacketIsAbnormal[i] = FALSE;
 					continue;
-				}
+				} else {
+					KAL_ACQUIRE_SPIN_LOCK(prAdapter, SPIN_LOCK_RX_FREE_QUE);
+					QUEUE_REMOVE_HEAD(&prRxCtrl->rFreeSwRfbList, prSwRfb, P_SW_RFB_T);
+					KAL_RELEASE_SPIN_LOCK(prAdapter, SPIN_LOCK_RX_FREE_QUE);
 
-				KAL_ACQUIRE_SPIN_LOCK(prAdapter, SPIN_LOCK_RX_FREE_QUE);
-				QUEUE_REMOVE_HEAD(&prRxCtrl->rFreeSwRfbList, prSwRfb, P_SW_RFB_T);
-				KAL_RELEASE_SPIN_LOCK(prAdapter, SPIN_LOCK_RX_FREE_QUE);
+					ASSERT(prSwRfb);
+					kalMemCopy(prSwRfb->pucRecvBuff, pucSrcAddr,
+						   ALIGN_4(u2PktLength + HIF_RX_HW_APPENDED_LEN));
 
-				ASSERT(prSwRfb);
-				kalMemCopy(prSwRfb->pucRecvBuff, pucSrcAddr,
-					   ALIGN_4(u2PktLength + HIF_RX_HW_APPENDED_LEN));
+					/* prHifRxHdr = prSwRfb->prHifRxHdr; */
+					/* ASSERT(prHifRxHdr); */
 
-				/* prHifRxHdr = prSwRfb->prHifRxHdr; */
-				/* ASSERT(prHifRxHdr); */
+					prRxStatus = prSwRfb->prRxStatus;
+					ASSERT(prRxStatus);
 
-				prRxStatus = prSwRfb->prRxStatus;
-				ASSERT(prRxStatus);
-
-				prSwRfb->ucPacketType = (UINT_8) HAL_RX_STATUS_GET_PKT_TYPE(prRxStatus);
-				/* DBGLOG(RX, TRACE, ("ucPacketType = %d\n", prSwRfb->ucPacketType)); */
+					prSwRfb->ucPacketType = (UINT_8) HAL_RX_STATUS_GET_PKT_TYPE(prRxStatus);
+					/* DBGLOG(RX, TRACE, ("ucPacketType = %d\n", prSwRfb->ucPacketType)); */
 #if DBG
-				DBGLOG(RX, TRACE,
-				       "Rx status flag = %x wlan index = %d SecMode = %d\n",
-				       prRxStatus->u2StatusFlag, prRxStatus->ucWlanIdx,
-				       HAL_RX_STATUS_GET_SEC_MODE(prRxStatus));
+					DBGLOG(RX, TRACE,
+					       "Rx status flag = %x wlan index = %d SecMode = %d\n",
+					       prRxStatus->u2StatusFlag, prRxStatus->ucWlanIdx,
+					       HAL_RX_STATUS_GET_SEC_MODE(prRxStatus));
 #endif
 
-				KAL_ACQUIRE_SPIN_LOCK(prAdapter, SPIN_LOCK_RX_QUE);
-				QUEUE_INSERT_TAIL(&prRxCtrl->rReceivedRfbList, &prSwRfb->rQueEntry);
-				RX_INC_CNT(prRxCtrl, RX_MPDU_TOTAL_COUNT);
-				KAL_RELEASE_SPIN_LOCK(prAdapter, SPIN_LOCK_RX_QUE);
+					KAL_ACQUIRE_SPIN_LOCK(prAdapter, SPIN_LOCK_RX_QUE);
+					QUEUE_INSERT_TAIL(&prRxCtrl->rReceivedRfbList, &prSwRfb->rQueEntry);
+					RX_INC_CNT(prRxCtrl, RX_MPDU_TOTAL_COUNT);
+					KAL_RELEASE_SPIN_LOCK(prAdapter, SPIN_LOCK_RX_QUE);
+				}
 
 				pucSrcAddr += ALIGN_4(u2PktLength + HIF_RX_HW_APPENDED_LEN);
 				/* prEnhDataStr->au4RxLength[i] = 0; */
@@ -5034,6 +5002,15 @@ WLAN_STATUS nicRxProcessActionFrame(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSw
 			}
 		}
 		break;
+#endif
+#if CFG_SUPPORT_802_11K
+		case CATEGORY_RM_ACTION:
+			switch (prActFrame->ucAction) {
+			case RM_ACTION_REIGHBOR_RESPONSE:
+				rlmProcessNeighborReportResonse(prAdapter, prActFrame, prSwRfb->u2PacketLen);
+				break;
+			}
+			break;
 #endif
 	default:
 		break;

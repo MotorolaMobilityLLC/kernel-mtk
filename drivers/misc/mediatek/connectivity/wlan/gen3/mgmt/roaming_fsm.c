@@ -240,6 +240,83 @@ VOID roamingFsmScanResultsUpdate(IN P_ADAPTER_T prAdapter)
 
 }				/* end of roamingFsmScanResultsUpdate() */
 
+static BOOLEAN roamingFsmIsNeedScan(IN P_ADAPTER_T prAdapter)
+{
+	P_SCAN_INFO_T prScanInfo;
+	P_LINK_T prRoamBSSDescList;
+	P_ROAM_BSS_DESC_T prRoamBssDesc;
+	P_BSS_INFO_T prAisBssInfo;
+	P_BSS_DESC_T prBssDesc;
+	CMD_SW_DBG_CTRL_T rCmdSwCtrl;
+	BOOLEAN fgIsNeedScan = FALSE;
+	BOOLEAN fgIsRoamingSSID = FALSE;
+
+	prAisBssInfo = prAdapter->prAisBssInfo;
+	prScanInfo = &(prAdapter->rWifiVar.rScanInfo);
+	prRoamBSSDescList = &prScanInfo->rRoamBSSDescList;
+	/* Count same BSS Desc from current SCAN result list. */
+	LINK_FOR_EACH_ENTRY(prRoamBssDesc, prRoamBSSDescList, rLinkEntry, ROAM_BSS_DESC_T) {
+		if (EQUAL_SSID(prRoamBssDesc->aucSSID,
+				       prRoamBssDesc->ucSSIDLen,
+				       prAisBssInfo->aucSSID, prAisBssInfo->ucSSIDLen)) {
+			fgIsRoamingSSID = TRUE;
+			fgIsNeedScan = TRUE;
+			DBGLOG(INIT, INFO, "roamingFsmSteps: IsRoamingSSID:%d\n", fgIsRoamingSSID);
+			break;
+		}
+	}
+
+	if (!fgIsRoamingSSID) {
+		prBssDesc = scanSearchBssDescByBssid(prAdapter, prAisBssInfo->aucBSSID);
+		if (prBssDesc) {
+
+			rCmdSwCtrl.u4Id = 0xa0280000;
+			rCmdSwCtrl.u4Data = 0x1;
+			wlanSendSetQueryCmd(prAdapter,
+					    CMD_ID_SW_DBG_CTRL,
+					    TRUE,
+					    FALSE,
+					    FALSE, NULL, NULL, sizeof(CMD_SW_DBG_CTRL_T),
+					    (PUINT_8)&rCmdSwCtrl, NULL, 0);
+
+			DBGLOG(INIT, INFO, "roamingFsmSteps: RCPI:%d RoamSkipTimes:%d\n",
+								prBssDesc->ucRCPI, prAisBssInfo->ucRoamSkipTimes);
+			if (prBssDesc->ucRCPI > 90) {
+				prAisBssInfo->ucRoamSkipTimes = 3;
+				prAisBssInfo->fgGoodRcpiArea = TRUE;
+				prAisBssInfo->fgPoorRcpiArea = FALSE;
+			} else {
+				if (prAisBssInfo->fgGoodRcpiArea) {
+					prAisBssInfo->ucRoamSkipTimes--;
+				} else if (prBssDesc->ucRCPI > 67) {
+					if (!prAisBssInfo->fgPoorRcpiArea) {
+						prAisBssInfo->ucRoamSkipTimes = 2;
+						prAisBssInfo->fgPoorRcpiArea = TRUE;
+						prAisBssInfo->fgGoodRcpiArea = FALSE;
+					} else {
+						prAisBssInfo->ucRoamSkipTimes--;
+					}
+				} else {
+					if (prAisBssInfo->fgPoorRcpiArea) {
+						prAisBssInfo->fgPoorRcpiArea = FALSE;
+						prAisBssInfo->fgGoodRcpiArea = FALSE;
+						prAisBssInfo->ucRoamSkipTimes--;
+					}
+				}
+			}
+
+			if (prAisBssInfo->ucRoamSkipTimes == 0) {
+				prAisBssInfo->ucRoamSkipTimes = 3;
+				prAisBssInfo->fgPoorRcpiArea = FALSE;
+				prAisBssInfo->fgGoodRcpiArea = FALSE;
+				DBGLOG(INIT, INFO, "roamingFsmSteps: Need Scan\n");
+				fgIsNeedScan = TRUE;
+			}
+		}
+	}
+
+	return fgIsNeedScan;
+}
 /*----------------------------------------------------------------------------*/
 /*!
 * @brief The Core FSM engine of ROAMING for AIS Infra.
@@ -289,34 +366,18 @@ VOID roamingFsmSteps(IN P_ADAPTER_T prAdapter, IN ENUM_ROAMING_STATE_T eNextStat
 		case ROAMING_STATE_DISCOVERY:
 			{
 				OS_SYSTIME rCurrentTime;
-				P_SCAN_INFO_T prScanInfo;
-				P_LINK_T prRoamBSSDescList;
-				P_ROAM_BSS_DESC_T prRoamBssDesc;
-				P_BSS_INFO_T prAisBssInfo;
-				BOOLEAN fgIsRoamingSSID = FALSE;
+				BOOLEAN fgIsNeedScan = FALSE;
 
-				prAisBssInfo = prAdapter->prAisBssInfo;
-				prScanInfo = &(prAdapter->rWifiVar.rScanInfo);
-				prRoamBSSDescList = &prScanInfo->rRoamBSSDescList;
-				/* Count same BSS Desc from current SCAN result list. */
-				LINK_FOR_EACH_ENTRY(prRoamBssDesc, prRoamBSSDescList, rLinkEntry, ROAM_BSS_DESC_T) {
-					if (EQUAL_SSID(prRoamBssDesc->aucSSID,
-							       prRoamBssDesc->ucSSIDLen,
-							       prAisBssInfo->aucSSID, prAisBssInfo->ucSSIDLen)) {
-						fgIsRoamingSSID = TRUE;
-						break;
-					}
-				}
+				fgIsNeedScan = roamingFsmIsNeedScan(prAdapter);
 
 				GET_CURRENT_SYSTIME(&rCurrentTime);
 				if (CHECK_FOR_TIMEOUT
 				    (rCurrentTime, prRoamingFsmInfo->rRoamingDiscoveryUpdateTime,
-				     SEC_TO_SYSTIME(ROAMING_DISCOVERY_TIMEOUT_SEC)) && fgIsRoamingSSID) {
+				     SEC_TO_SYSTIME(ROAMING_DISCOVERY_TIMEOUT_SEC)) && fgIsNeedScan) {
 					DBGLOG(ROAMING, LOUD, "roamingFsmSteps: DiscoveryUpdateTime Timeout");
 					aisFsmRunEventRoamingDiscovery(prAdapter, TRUE);
 				} else {
 					DBGLOG(ROAMING, LOUD, "roamingFsmSteps: DiscoveryUpdateTime Updated");
-					DBGLOG(INIT, INFO, "fgIsRoamingSSID:%d\n", fgIsRoamingSSID);
 					aisFsmRunEventRoamingDiscovery(prAdapter, FALSE);
 				}
 			}

@@ -1873,7 +1873,8 @@ kalIndicateStatusAndComplete(IN P_GLUE_INFO_T prGlueInfo, IN WLAN_STATUS eStatus
 			if (prBssInfo)
 				u2DeauthReason = prBssInfo->u2DeauthReason;
 			/* CFG80211 Indication */
-			cfg80211_disconnected(prGlueInfo->prDevHandler, u2DeauthReason, NULL, 0, GFP_KERNEL);
+			cfg80211_disconnected(prGlueInfo->prDevHandler, u2DeauthReason, NULL, 0,
+			eStatus == WLAN_STATUS_MEDIA_DISCONNECT_LOCALLY, GFP_KERNEL);
 		}
 
 		prGlueInfo->eParamMediaStateIndicated = PARAM_MEDIA_STATE_DISCONNECTED;

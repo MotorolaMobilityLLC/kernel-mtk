@@ -294,6 +294,10 @@ extern UINT_16 g_u2DumpIndex;
 *                             D A T A   T Y P E S
 ********************************************************************************
 */
+struct SUB_ELEMENT_LIST {
+	struct SUB_ELEMENT_LIST *prNext;
+	struct SUB_ELEMENT_T rSubIE;
+};
 
 /*******************************************************************************
 *                            P U B L I C   D A T A
@@ -410,6 +414,8 @@ VOID
 rlmSendOpModeNotificationFrame(P_ADAPTER_T prAdapter, P_STA_RECORD_T prStaRec, UINT_8 ucChannelWidth, UINT_8 ucNss);
 
 #endif
+VOID rlmProcessNeighborReportResonse(P_ADAPTER_T prAdapter, P_WLAN_ACTION_FRAME prAction, UINT_16 u2PacketLen);
+VOID rlmTxNeighborReportRequest(P_ADAPTER_T prAdapter, P_STA_RECORD_T prStaRec, struct SUB_ELEMENT_LIST *prSubIEs);
 
 /*******************************************************************************
 *                              F U N C T I O N S

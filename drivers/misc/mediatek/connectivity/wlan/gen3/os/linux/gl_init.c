@@ -2376,13 +2376,17 @@ static VOID wlanNetDestroy(struct wireless_dev *prWdev)
 VOID wlanSetSuspendMode(P_GLUE_INFO_T prGlueInfo, BOOLEAN fgEnable)
 {
 	struct net_device *prDev = NULL;
-	UINT_32 u4SetInfoLen = 0;
 
 	if (!prGlueInfo)
 		return;
 
 #if CFG_ROAMING_CTRL_BY_SUSPEND
-	kalIoctl(prGlueInfo, wlanoidSetRoamingCtrl, &fgEnable, sizeof(fgEnable), FALSE, FALSE, TRUE, &u4SetInfoLen);
+	{
+		UINT_32 u4SetInfoLen = 0;
+
+		kalIoctl(prGlueInfo, wlanoidSetRoamingCtrl, &fgEnable, sizeof(fgEnable),
+					FALSE, FALSE, TRUE, &u4SetInfoLen);
+	}
 #endif
 	prDev = prGlueInfo->prDevHandler;
 	if (!prDev)

@@ -968,7 +968,8 @@ struct _STA_RECORD_T {
 	PARAM_KEY_T rTdlsKeyTemp;	/* temp to queue the key information */
 	UINT_8 ucTdlsIndex;
 #endif				/* CFG_SUPPORT_TDLS */
-
+	UINT_16 u2MaxIdlePeriod;
+	UINT_8 ucIdleOption;
 };
 
 #if 0

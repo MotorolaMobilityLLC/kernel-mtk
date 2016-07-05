@@ -379,7 +379,7 @@ VOID scnFsmSteps(IN P_ADAPTER_T prAdapter, IN ENUM_SCAN_STATE_T eNextState)
 		switch (prScanInfo->eCurrentState) {
 		case SCAN_STATE_IDLE:
 			/* check for pending scanning requests */
-			if (!LINK_IS_EMPTY(&(prScanInfo->rPendingMsgList))) {
+			if (!cnmChUtilIsRunning(prAdapter) && !LINK_IS_EMPTY(&(prScanInfo->rPendingMsgList))) {
 				/* load next message from pending list as scan parameters */
 				LINK_REMOVE_HEAD(&(prScanInfo->rPendingMsgList), prMsgHdr, P_MSG_HDR_T);
 
@@ -410,6 +410,7 @@ VOID scnFsmSteps(IN P_ADAPTER_T prAdapter, IN ENUM_SCAN_STATE_T eNextState)
 			break;
 
 		case SCAN_STATE_SCANNING:
+			prScanInfo->u4ScanUpdateIdx++;
 			if (prScanParam->fgIsScanV2 == FALSE)
 				scnSendScanReq(prAdapter);
 			else
@@ -595,7 +596,10 @@ VOID scnFsmMsgStart(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHdr)
 	prScanInfo = &(prAdapter->rWifiVar.rScanInfo);
 	prScanParam = &prScanInfo->rScanParam;
 
-	if (prScanInfo->eCurrentState == SCAN_STATE_IDLE) {
+	if (prMsgHdr->eMsgId == MID_MNY_CNM_SCAN_CONTINUE) {
+		cnmMemFree(prAdapter, prMsgHdr);
+		scnFsmSteps(prAdapter, SCAN_STATE_IDLE);
+	} else if (prScanInfo->eCurrentState == SCAN_STATE_IDLE && !cnmChUtilIsRunning(prAdapter)) {
 		if (prMsgHdr->eMsgId == MID_AIS_SCN_SCAN_REQ
 		    || prMsgHdr->eMsgId == MID_BOW_SCN_SCAN_REQ
 		    || prMsgHdr->eMsgId == MID_P2P_SCN_SCAN_REQ || prMsgHdr->eMsgId == MID_RLM_SCN_SCAN_REQ) {

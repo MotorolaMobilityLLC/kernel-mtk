@@ -5550,6 +5550,12 @@ wlanoidSetSwCtrlWrite(IN P_ADAPTER_T prAdapter,
 
 			authSendDeauthFrame(prAdapter, prBssInfo->prStaRecOfAP, NULL, 7, NULL);
 		}
+		if (u2SubId == 0x4) {
+			P_BSS_INFO_T prBssInfo = &(prAdapter->rWifiVar.arBssInfo[(NETWORK_TYPE_AIS_INDEX)]);
+
+			DBGLOG(RSN, INFO, "Send deauth\n");
+			authSendDeauthFrame(prAdapter, prBssInfo->prStaRecOfAP, NULL, 1, NULL);
+		}
 		/* wext_set_mode */
 		/*
 		   if (u2SubId == 0x3) {
@@ -6410,19 +6416,40 @@ wlanoidSetCurrentPacketFilter(IN P_ADAPTER_T prAdapter,
 		prAdapter->u4OsPacketFilter &= PARAM_PACKET_FILTER_P2P_MASK;
 		prAdapter->u4OsPacketFilter |= u4NewPacketFilter;
 
-		return wlanSendSetQueryCmd(prAdapter,
-					   CMD_ID_SET_RX_FILTER,
-					   TRUE,
-					   FALSE,
-					   TRUE,
-					   nicCmdEventSetCommon,
-					   nicOidCmdTimeoutCommon,
-					   sizeof(UINT_32),
-					   (PUINT_8) &prAdapter->u4OsPacketFilter, pvSetBuffer, u4SetBufferLen);
-	} else {
-		return rStatus;
+		rStatus = wlanoidSetPacketFilter(prAdapter, prAdapter->u4OsPacketFilter,
+					TRUE, pvSetBuffer, u4SetBufferLen);
 	}
+	DBGLOG(REQ, INFO, "[MC debug] u4OsPacketFilter=%x\n", prAdapter->u4OsPacketFilter);
+	return rStatus;
 }				/* wlanoidSetCurrentPacketFilter */
+
+WLAN_STATUS wlanoidSetPacketFilter(P_ADAPTER_T prAdapter, UINT_32 u4PacketFilter,
+				BOOLEAN fgIsOid, PVOID pvSetBuffer, UINT_32 u4SetBufferLen)
+{
+#if CFG_SUPPORT_DROP_MC_PACKET
+	/* Note:
+		If PARAM_PACKET_FILTER_ALL_MULTICAST is set in PacketFilter,
+		Firmware will pass multicast frame.
+		Else if PARAM_PACKET_FILTER_MULTICAST is set in PacketFilter,
+		Firmware will pass some multicast frame in multicast table.
+		Else firmware will drop all multicast frame.
+	*/
+	if (fgIsUnderSuspend)
+		u4PacketFilter &= ~(PARAM_PACKET_FILTER_MULTICAST | PARAM_PACKET_FILTER_ALL_MULTICAST);
+#endif
+
+	DBGLOG(REQ, INFO, "[MC debug] u4PacketFilter=%x, IsSuspend=%d\n", u4PacketFilter, fgIsUnderSuspend);
+	return wlanSendSetQueryCmd(prAdapter,
+						   CMD_ID_SET_RX_FILTER,
+						   TRUE,
+						   FALSE,
+						   fgIsOid,
+						   nicCmdEventSetCommon,
+						   nicOidCmdTimeoutCommon,
+						   sizeof(UINT_32),
+						   (PUINT_8)&u4PacketFilter,
+						   pvSetBuffer, u4SetBufferLen);
+}
 
 /*----------------------------------------------------------------------------*/
 /*!
@@ -11027,6 +11054,49 @@ wlanoidSetTxRateInfo(
 		);
 }
 #endif /* CFG_SUPPORT_TXR_ENC */
+
+
+WLAN_STATUS
+wlanoidSetAlwaysScan(
+IN  P_ADAPTER_T prAdapter,
+IN  PVOID       pvSetBuffer,
+IN  UINT_32     u4SetBufferLen,
+OUT PUINT_32    pu4SetInfoLen
+)
+{
+	WLAN_STATUS rStatus;
+	UINT_8 u8AlwaysScan;
+
+	DEBUGFUNC("wlanoidSetAlwaysScan");
+
+	if (!prAdapter || !pvSetBuffer)
+		return WLAN_STATUS_INVALID_DATA;
+
+	u8AlwaysScan = *(PUINT_8)pvSetBuffer - '0';
+
+	if ((u8AlwaysScan != 0) && (u8AlwaysScan != 1))
+		return WLAN_STATUS_INVALID_DATA;
+
+	rStatus = wlanSendSetQueryCmd(
+				prAdapter,                  /* prAdapter */
+				CMD_ID_SET_ALWAYS_SCAN_PARAM,/* ucCID */
+				TRUE,                       /* fgSetQuery */
+				FALSE,                      /* fgNeedResp */
+				TRUE,                       /* fgIsOid */
+				nicCmdEventSetCommon,		/* pfCmdDoneHandler*/
+				nicOidCmdTimeoutCommon,		/* pfCmdTimeoutHandler */
+				sizeof(u8AlwaysScan),		/* u4SetQueryInfoLen */
+				(PUINT_8)&u8AlwaysScan,      /* pucInfoBuffer */
+				NULL,                       /* pvSetQueryBuffer */
+				0                           /* u4SetQueryBufferLen */
+				);
+	DBGLOG(OID, INFO, "u8AlwaysScan %d rStatus %x\n", u8AlwaysScan, rStatus);
+
+	ASSERT(rStatus == WLAN_STATUS_PENDING);
+
+	return rStatus;
+
+}
 
 WLAN_STATUS
 wlanoidNotifyFwSuspend(IN P_ADAPTER_T prAdapter,

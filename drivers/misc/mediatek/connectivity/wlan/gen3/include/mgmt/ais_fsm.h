@@ -305,7 +305,10 @@
 
 #define AIS_JOIN_CH_GRANT_THRESHOLD         10
 #define AIS_JOIN_CH_REQUEST_INTERVAL        4000
-#define AIS_SCN_DONE_TIMEOUT_SEC            15 /* 15 for 2.4G + 5G */	/* 5 */
+#define AIS_SCN_DONE_TIMEOUT_SEC            30 /* 30 for 2.4G + 5G */	/* 5 */
+
+#define AIS_AUTORN_MIN_INTERVAL				20
+#define AIS_BLACKLIST_TIMEOUT               15 /* seconds */
 
 /*******************************************************************************
 *                             D A T A   T Y P E S
@@ -327,6 +330,7 @@ typedef enum _ENUM_AIS_STATE_T {
 	AIS_STATE_DISCONNECTING,
 	AIS_STATE_REQ_REMAIN_ON_CHANNEL,
 	AIS_STATE_REMAIN_ON_CHANNEL,
+	AIS_STATE_COLLECT_ESS_INFO,
 	AIS_STATE_NUM
 } ENUM_AIS_STATE_T;
 
@@ -371,6 +375,30 @@ typedef struct _AIS_MGMT_TX_REQ_INFO_T {
 	UINT_64 u8Cookie;
 } AIS_MGMT_TX_REQ_INFO_T, *P_AIS_MGMT_TX_REQ_INFO_T;
 
+struct AIS_BLACKLIST_ITEM {
+	LINK_ENTRY_T rLinkEntry;
+
+	UINT_8 aucBSSID[MAC_ADDR_LEN];
+	UINT_16 u2DeauthReason;
+	UINT_16 u2AuthStatus;
+	UINT_8 ucCount;
+	UINT_8 ucSSIDLen;
+	UINT_8 aucSSID[32];
+	OS_SYSTIME rAddTime;
+	UINT_64 u8DisapperTime;
+};
+
+struct AIS_BEACON_TIMEOUT_BSS {
+	LINK_ENTRY_T rLinkEntry;
+
+	UINT_64 u8Tsf;
+	UINT_64 u8AddTime;
+	UINT_8 ucReserved;
+	UINT_8 aucBSSID[MAC_ADDR_LEN];
+	UINT_8 ucSSIDLen;
+	UINT_8 aucSSID[32];
+};
+
 typedef struct _AIS_FSM_INFO_T {
 	ENUM_AIS_STATE_T ePreviousState;
 	ENUM_AIS_STATE_T eCurrentState;
@@ -407,6 +435,10 @@ typedef struct _AIS_FSM_INFO_T {
 
 	TIMER_T rDeauthDoneTimer;
 
+#if CFG_SUPPORT_DETECT_SECURITY_MODE_CHANGE
+	TIMER_T rSecModeChangeTimer;
+#endif
+
 	UINT_8 ucSeqNumOfReqMsg;
 	UINT_8 ucSeqNumOfChReq;
 	UINT_8 ucSeqNumOfScanReq;
@@ -439,6 +471,9 @@ typedef struct _AIS_FSM_INFO_T {
 	/* for roaming target */
 	PARAM_SSID_T rRoamingSSID;
 
+	struct LINK_MGMT rBcnTimeout;
+
+	UINT_8 aucNeighborAPChnl[CFG_NEIGHBOR_AP_CHANNEL_NUM];
 } AIS_FSM_INFO_T, *P_AIS_FSM_INFO_T;
 
 /*******************************************************************************
@@ -557,6 +592,10 @@ VOID aisFsmDisconnect(IN P_ADAPTER_T prAdapter, IN BOOLEAN fgDelayIndication);
 /*----------------------------------------------------------------------------*/
 VOID aisBssBeaconTimeout(IN P_ADAPTER_T prAdapter);
 
+#if CFG_SUPPORT_DETECT_SECURITY_MODE_CHANGE
+VOID aisBssSecurityChanged(IN P_ADAPTER_T prAdapter);
+#endif
+
 WLAN_STATUS
 aisDeauthXmitComplete(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMsduInfo, IN ENUM_TX_RESULT_CODE_T rTxDoneStatus);
 
@@ -582,6 +621,10 @@ VOID aisFsmRunEventJoinTimeout(IN P_ADAPTER_T prAdapter, ULONG ulParamPtr);
 VOID aisFsmRunEventChannelTimeout(IN P_ADAPTER_T prAdapter, ULONG ulParamPtr);
 
 VOID aisFsmRunEventDeauthTimeout(IN P_ADAPTER_T prAdapter, ULONG ulParamPtr);
+
+#if CFG_SUPPORT_DETECT_SECURITY_MODE_CHANGE
+VOID aisFsmRunEventSecModeChangeTimeout(IN P_ADAPTER_T prAdapter, ULONG ulParamPtr);
+#endif
 
 /*----------------------------------------------------------------------------*/
 /* OID/IOCTL Handling                                                         */
@@ -615,6 +658,18 @@ enum _ENUM_AIS_STATE_T aisFsmStateSearchAction(IN struct _ADAPTER_T *prAdapter, 
 #if defined(CFG_TEST_MGMT_FSM) && (CFG_TEST_MGMT_FSM != 0)
 VOID aisTest(VOID);
 #endif /* CFG_TEST_MGMT_FSM */
+
+struct AIS_BLACKLIST_ITEM *aisAddBlacklist(P_ADAPTER_T prAdapter, P_BSS_DESC_T prBssDesc);
+VOID aisRemoveBlackList(P_ADAPTER_T prAdapter, P_BSS_DESC_T prBssDesc);
+VOID aisRemoveTimeoutBlacklist(P_ADAPTER_T prAdapter);
+struct AIS_BLACKLIST_ITEM *aisQueryBlackList(P_ADAPTER_T prAdapter, P_BSS_DESC_T prBssDesc);
+VOID aisRecordBeaconTimeout(P_ADAPTER_T prAdapter, P_BSS_INFO_T prAisBssInfo);
+VOID aisRemoveBeaconTimeoutEntry(P_ADAPTER_T prAdapter, P_BSS_DESC_T prBssDesc);
+UINT_16 aisCalculateBlackListScore(P_ADAPTER_T prAdapter, P_BSS_DESC_T prBssDesc);
+VOID aisCollectNeighborAPChannel(P_ADAPTER_T prAdapter,
+				 struct IE_NEIGHBOR_REPORT_T *prNeiRep, UINT_16 u2Length);
+VOID aisRunEventChnlUtilRsp(P_ADAPTER_T prAdapter, P_MSG_HDR_T prMsgHdr);
+
 /*******************************************************************************
 *                              F U N C T I O N S
 ********************************************************************************
