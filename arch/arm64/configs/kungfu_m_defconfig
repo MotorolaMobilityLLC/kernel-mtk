@@ -540,6 +540,9 @@ CONFIG_CRYPTO_SHA2_ARM64_CE=y
 CONFIG_CRYPTO_AES_ARM64_CE=y
 CONFIG_CRYPTO_AES_ARM64_CE_BLK=y
 CONFIG_LIBCRC32C=y
+#Begin Lenovo-sw lianzf1 for KUNGFUM-741 BEGIN
+CONFIG_MTK_MD_SBP_CUSTOM_VALUE="0"
+#End Lenovo-sw lianzf1 for KUNGFUM-741 END
 ###################### Lenovo BSP Feature begin #########################
 
 #Begin, Lenovo, zhucc2, 2016-03-28, ARIESM-20
