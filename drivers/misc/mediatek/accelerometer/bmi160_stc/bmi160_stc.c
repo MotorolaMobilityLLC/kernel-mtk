@@ -32,6 +32,9 @@
 #include "bmi160_stc.h"
 
 extern struct i2c_client *bmi160_acc_i2c_client;
+/*Lenovo-sw weimh1 add 2016-7-06 begin: */
+static bool step_enable_status = false;
+/*Lenovo-sw weimh1 add 2016-7-06 end*/
 struct acc_hw accel_cust;
 static struct acc_hw *hw = &accel_cust;
 #define COMPATIABLE_NAME "mediatek,m_step_c_pl"
@@ -351,7 +354,14 @@ static int step_c_suspend(struct i2c_client *client, pm_message_t msg)
 			STEP_C_ERR("null pointer.\n");
 			return -EINVAL;
 		}
-		atomic_set(&obj->suspend, ENABLE);
+		atomic_set(&obj->suspend, 1);
+
+		/*Lenovo-sw weimh1 add 2016-7-06 begin:return when status is enable*/
+		if (step_enable_status) {
+			return 0;
+		}
+		/*Lenovo-sw weimh1 add 2016-7-06 end*/
+
 		err = step_c_set_powermode(obj->client, STC_SUSPEND_MODE);
 		if (err) {
 			STEP_C_ERR("step counter set suspend mode failed, err = %d\n",
@@ -371,11 +381,21 @@ static int step_c_resume(struct i2c_client *client)
 {
 	struct step_c_i2c_data *obj = obj_i2c_data;
 	int err;
+
 	STEP_C_FUN();
+	
 	if (obj == NULL) {
 		STEP_C_ERR("null pointer\n");
 		return -EINVAL;
 	}
+
+	/*Lenovo-sw weimh1 add 2016-7-06 begin:return when status is enable*/
+	if (step_enable_status) {
+		atomic_set(&obj->suspend, 0);
+		return 0;
+	}
+	/*Lenovo-sw weimh1 add 2016-7-06 end*/
+		
 	/*Lenovo-sw weimh1 mod 2016-5-23 begin:use obj->client instead of client*/
 	err = step_c_init_client(obj->client);
 	/*Lenovo-sw weimh1 mod 2016-5-23 */
@@ -402,12 +422,18 @@ static int step_c_open_report_data(int open)
 static int step_c_enable_nodata(int en)
 {
 	int err = 0;
-	if(ENABLE == en) {
+	if (ENABLE == en) {
+		/*Lenovo-sw weimh1 add 2016-7-06 begin:save status*/
+		step_enable_status = true;
+		/*Lenovo-sw weimh1 add 2016-7-06 end:save status*/
 		err = step_c_set_powermode(obj_i2c_data->client,
 				(enum STC_POWERMODE_ENUM)STC_NORMAL_MODE);
 		err += step_counter_enable(obj_i2c_data->client, ENABLE);
 	}
 	else {
+		/*Lenovo-sw weimh1 add 2016-7-06 begin:save status*/
+		step_enable_status = false;
+		/*Lenovo-sw weimh1 add 2016-7-06 end:save status*/
 		err = step_c_set_powermode(obj_i2c_data->client,
 				(enum STC_POWERMODE_ENUM)STC_SUSPEND_MODE);
 		err += step_counter_enable(obj_i2c_data->client, DISABLE);
@@ -555,7 +581,7 @@ static int step_c_i2c_probe(struct i2c_client *client,
 	}
 
 	data.get_data = step_c_get_data;
-	data.vender_div = 1000;
+	data.vender_div = 1;
 	data.get_data_significant = stc_get_data_significant;
 	data.get_data_step_d = stc_get_data_step_d;
 	err = step_c_register_data_path(&data);
