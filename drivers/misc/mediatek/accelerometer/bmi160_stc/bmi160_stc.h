@@ -118,7 +118,12 @@
 #define BMI160_CMD_COMMANDS__REG	 	BMI160_CMD_COMMANDS_ADDR
 
 #define CMD_PMU_ACC_SUSPEND           0x10
-#define CMD_PMU_ACC_NORMAL            0x11
+#define CMD_PMU_ACC_NORMAL             0x11
+/*Lenovo-sw weimh1 add 2016-7-7:add low power mode*/
+#define CMD_PMU_ACC_LOWPOWER       0x12
+/*Lenovo-sw weimh1 add 2016-7-7:trigger a reset of the step counter*/
+#define CMD_RESET_STEPCOUNTER       0xB2
+
 #define CMD_PMU_GYRO_SUSPEND          0x14
 #define CMD_PMU_GYRO_NORMAL           0x15
 #define CMD_PMU_GYRO_FASTSTART        0x17
