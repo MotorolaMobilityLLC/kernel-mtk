@@ -44,7 +44,6 @@
 #include "bmi160_acc.h"
 #include <hwmsen_helper.h>
 
-
 //extern struct hwm_sensor_data;
 
 /*----------------------------------------------------------------------------*/
@@ -800,7 +799,7 @@ static int BMI160_ACC_SetPowerMode(struct i2c_client *client, bool enable)
 	u8 databuf[2] = {0};
 	int res = 0;
 	struct bmi160_acc_i2c_data *obj = obj_i2c_data;
-
+	
 	if(enable == sensor_power )
 	{
 		GSE_LOG("Sensor power status is newest!\n");
@@ -814,7 +813,7 @@ static int BMI160_ACC_SetPowerMode(struct i2c_client *client, bool enable)
 	}
 	else
 	{
-		databuf[0] = CMD_PMU_ACC_SUSPEND;
+		databuf[0] = CMD_PMU_ACC_LOWPOWER;
 	}
 
 	res = bma_i2c_write_block(client,
@@ -3824,6 +3823,7 @@ static int bmi160_acc_suspend(struct i2c_client *client, pm_message_t msg)
 			GSE_ERR("null pointer!!\n");
 			return -EINVAL;
 		}
+
 		atomic_set(&obj->suspend, 1);
 		//tad3sgh add ++
 #ifdef BMC050_BLOCK_DAEMON_ON_SUSPEND
@@ -3890,7 +3890,7 @@ static int bmi160_acc_suspend(struct i2c_client *client, pm_message_t msg)
 			GSE_ERR("write power control fail!!\n");
 			return err;
 		}
-		BMI160_ACC_power(obj->hw, 0);
+		BMI160_ACC_power(obj->hw, 0);	
 	}
 	return err;
 }

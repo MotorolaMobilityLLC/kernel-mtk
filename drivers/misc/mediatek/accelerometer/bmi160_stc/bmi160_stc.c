@@ -33,7 +33,7 @@
 
 extern struct i2c_client *bmi160_acc_i2c_client;
 /*Lenovo-sw weimh1 add 2016-7-06 begin: */
-static bool step_enable_status = false;
+static int step_c_enable_nodata(int en);
 /*Lenovo-sw weimh1 add 2016-7-06 end*/
 struct acc_hw accel_cust;
 static struct acc_hw *hw = &accel_cust;
@@ -48,6 +48,7 @@ enum SENSOR_TYPE_ENUM {
 enum STC_POWERMODE_ENUM {
 	STC_SUSPEND_MODE = 0x0,
 	STC_NORMAL_MODE,
+	STC_LOWPOWER_MODE,
 	STC_UNDEFINED_POWERMODE = 0xff
 };
 
@@ -195,6 +196,7 @@ int step_counter_enable(struct i2c_client *client, u8 v_step_counter_u8)
 {
 	int com_rslt = -1;
 	u8 v_data_u8 = 0;
+
 	if (v_step_counter_u8 <= 1) {
 		com_rslt = stc_i2c_read_block(client,
 				BMI160_USER_STEP_CONFIG_1_STEP_COUNT_ENABLE__REG,
@@ -211,6 +213,7 @@ int step_counter_enable(struct i2c_client *client, u8 v_step_counter_u8)
 	} else {
 		com_rslt = E_BMI160_OUT_OF_RANGE;
 	}
+
 	return com_rslt;
 }
 
@@ -229,9 +232,12 @@ static int step_c_set_powermode(struct i2c_client *client,
 		return 0;
 	}
 	mutex_lock(&obj->lock);
+	/*Lenovo-sw weimh1 add 2016-7-7:add low power mode*/
 	if (power_mode == STC_SUSPEND_MODE) {
 		actual_power_mode = CMD_PMU_ACC_SUSPEND;
-	} else {
+	} else if (power_mode == STC_LOWPOWER_MODE) {
+		actual_power_mode = CMD_PMU_ACC_LOWPOWER;
+	} else{
 		actual_power_mode = CMD_PMU_ACC_NORMAL;
 	}
 	err = stc_i2c_write_block(client,
@@ -296,16 +302,17 @@ static int step_c_init_client(struct i2c_client *client)
 		return err;
 	}
 	err = step_c_set_powermode(client,
-		(enum STC_POWERMODE_ENUM)STC_SUSPEND_MODE);
+		(enum STC_POWERMODE_ENUM)STC_LOWPOWER_MODE);
 	if (err < 0) {
 		STEP_C_ERR("set power mode failed, err = %d\n", err);
 		return err;
 	}
-	err = step_counter_enable(obj_i2c_data->client, DISABLE);
+	err = step_counter_enable(obj_i2c_data->client, ENABLE);
 	if (err < 0) {
 		STEP_C_ERR("set step counter enable failed, err = %d\n", err);
 		return err;
 	}
+	
 	return 0;
 }
 
@@ -356,19 +363,13 @@ static int step_c_suspend(struct i2c_client *client, pm_message_t msg)
 		}
 		atomic_set(&obj->suspend, 1);
 
-		/*Lenovo-sw weimh1 add 2016-7-06 begin:return when status is enable*/
-		if (step_enable_status) {
-			return 0;
-		}
-		/*Lenovo-sw weimh1 add 2016-7-06 end*/
-
-		err = step_c_set_powermode(obj->client, STC_SUSPEND_MODE);
+		err = step_c_set_powermode(obj->client, STC_LOWPOWER_MODE);
 		if (err) {
 			STEP_C_ERR("step counter set suspend mode failed, err = %d\n",
 				err);
 			return err;
 		}
-		err = step_counter_enable(obj_i2c_data->client, DISABLE);
+		err = step_counter_enable(obj_i2c_data->client, ENABLE);
 		if (err < 0) {
 			STEP_C_ERR("set step counter enable failed, err = %d\n", err);
 			return err;
@@ -388,13 +389,6 @@ static int step_c_resume(struct i2c_client *client)
 		STEP_C_ERR("null pointer\n");
 		return -EINVAL;
 	}
-
-	/*Lenovo-sw weimh1 add 2016-7-06 begin:return when status is enable*/
-	if (step_enable_status) {
-		atomic_set(&obj->suspend, 0);
-		return 0;
-	}
-	/*Lenovo-sw weimh1 add 2016-7-06 end*/
 		
 	/*Lenovo-sw weimh1 mod 2016-5-23 begin:use obj->client instead of client*/
 	err = step_c_init_client(obj->client);
@@ -404,6 +398,11 @@ static int step_c_resume(struct i2c_client *client)
 		return err;
 	}
 	atomic_set(&obj->suspend, 0);
+
+	/*Lenovo-sw weimh1 add 2016-7-06 begin:stepcounter should enable when resume*/
+	err = step_c_enable_nodata(1);
+	/*Lenovo-sw weimh1 add 2016-7-06 end*/
+	
 	return 0;
 }
 
@@ -423,26 +422,23 @@ static int step_c_enable_nodata(int en)
 {
 	int err = 0;
 	if (ENABLE == en) {
-		/*Lenovo-sw weimh1 add 2016-7-06 begin:save status*/
-		step_enable_status = true;
-		/*Lenovo-sw weimh1 add 2016-7-06 end:save status*/
 		err = step_c_set_powermode(obj_i2c_data->client,
 				(enum STC_POWERMODE_ENUM)STC_NORMAL_MODE);
 		err += step_counter_enable(obj_i2c_data->client, ENABLE);
 	}
 	else {
-		/*Lenovo-sw weimh1 add 2016-7-06 begin:save status*/
-		step_enable_status = false;
-		/*Lenovo-sw weimh1 add 2016-7-06 end:save status*/
 		err = step_c_set_powermode(obj_i2c_data->client,
-				(enum STC_POWERMODE_ENUM)STC_SUSPEND_MODE);
-		err += step_counter_enable(obj_i2c_data->client, DISABLE);
+				(enum STC_POWERMODE_ENUM)STC_LOWPOWER_MODE);
+//		err += step_counter_enable(obj_i2c_data->client, DISABLE);
 	}
+	
 	if(err < 0) {
 		STEP_C_ERR("step counter enable failed.\n");
 		return err;
 	}
+
 	STEP_C_LOG("step counter enable success.\n");
+	
 	return 0;
 }
 
@@ -489,6 +485,7 @@ static int step_c_read_counter(struct i2c_client *client, s16 *v_step_cnt_s16)
 {
 	int com_rslt = -1;
 	u8 a_data_u8r[2] = {0, 0};
+	
 	com_rslt = stc_i2c_read_block(client, BMI160_USER_STEP_COUNT_LSB__REG,
 					a_data_u8r, BMI160_STEP_COUNTER_LENGTH);
 	*v_step_cnt_s16 = (s16)
@@ -505,17 +502,27 @@ static int step_c_get_data(u64 *value, int *status)
 	int err;
 	static s16 last_stc_value;
 	struct step_c_i2c_data *obj = obj_i2c_data;
+
+	/*Lenovo-sw weimh1 add 2016-7-7 begin:enable when get data*/
+	if (obj->power_mode != STC_NORMAL_MODE) {
+		err = step_c_set_powermode(obj->client,
+				(enum STC_POWERMODE_ENUM)STC_NORMAL_MODE);
+	}
+	/*Lenovo-sw weimh1 add 2016-7-7 begin:*/
+
 	err = step_c_read_counter(obj->client, &data);
 	mdelay(30);
 	if (err < 0){
 		STEP_C_ERR("read step count fail.\n");
 		return err;
 	}
+
+	/*Lenovo-sw weimh1 mod 2016-7-7:data should > 0*/
 	if (data >= last_stc_value) {
 		obj->pedo_data.last_step_counter_value += (
 			data - last_stc_value);
 		last_stc_value = data;
-	} else {
+	} else if (data > 0){ 
 		last_stc_value = data;
 	}
 	*value = (int)obj->pedo_data.last_step_counter_value;

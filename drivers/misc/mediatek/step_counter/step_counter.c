@@ -118,7 +118,7 @@ static struct step_c_context *step_c_context_alloc_object(void)
 		STEP_C_ERR("Alloc step_c object error!\n");
 		return NULL;
 	}
-	atomic_set(&obj->delay, 200);	/*5Hz */
+	atomic_set(&obj->delay, 500);	/*2Hz */
 	atomic_set(&obj->wake, 0);
 	INIT_WORK(&obj->report, step_c_work_func);
 	init_timer(&obj->timer);
@@ -571,7 +571,7 @@ static ssize_t step_c_store_batch(struct device *dev, struct device_attribute *a
 			}
 		}
 		/*Lenovo-sw weimh1 add 2016-6-25 begin:enable when batch mode is 0*/
-		step_c_enable_data(1);
+//		step_c_enable_data(1);
 		/*Lenovo-sw weimh1 add 2016-6-25 end*/
 #endif
 /* step counter sensor interrupt mode support -- modified by liaoxl.lenovo 7.12.2015 end  */
