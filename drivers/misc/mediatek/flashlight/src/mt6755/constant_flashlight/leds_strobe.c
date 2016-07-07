@@ -223,7 +223,7 @@ int flashEnable_SY7806_2(void)
 {
 	int temp;
 
-	PK_DBG("flashEnable_SY7806_2\n");
+	PK_DBG("flashEnable_SY7806_2 Enter!\n");
 	PK_DBG("LED1Closeflag = %d, LED2Closeflag = %d, m_duty1=%d, m_duty2=%d \n", LED1Closeflag, LED2Closeflag,m_duty1, m_duty2);
 	//set gpio
 	mt_set_gpio_mode(FLASH_TORCH_ENABLE, 0);
@@ -296,7 +296,9 @@ int flashEnable_SY7806_2(void)
 
 int flashDisable_SY7806_2(void)
 {
+	PK_DBG("flashDisable_SY7806_2 Enter!");
 	flashEnable_SY7806_2();
+	PK_DBG("flashDisable_SY7806_2 Exit!");
 	return 0;
 }
 
@@ -516,7 +518,7 @@ int FL_Enable(void)
 	flashEnable_SY7806_2();
 	PK_DBG(" FL_Enable line=%d torch_flag=%d \n",__LINE__,torch_flag);
 */
-	LED2Closeflag = 1;
+	//LED2Closeflag = 1;
 	flashEnable_SY7806_2();
 	PK_DBG(" led1 FL_Enable line=%d \n",__LINE__);
 	return 0;
@@ -538,7 +540,7 @@ int FL_Disable(void)
 		mt_set_gpio_out(FLASH_STROBE_ENABLE, GPIO_OUT_ZERO);
 	}
 */
-	LED1Closeflag = 1;
+//	LED1Closeflag = 1;
 //	LED2Closeflag = 1;
 	flashDisable_SY7806_2();
 	PK_DBG(" FL_Disable line=%d\n",__LINE__);
@@ -580,6 +582,7 @@ User interface
 
 static void work_timeOutFunc(struct work_struct *data)
 {
+    LED1Closeflag = 1;
     FL_Disable();
     PK_DBG("LED1TimeOut_callback\n");
     //printk(KERN_ALERT "work handler function./n");
@@ -644,13 +647,12 @@ static int constant_flashlight_ioctl(unsigned int cmd, unsigned long arg)
 			hrtimer_start( &g_timeOutTimer, ktime, HRTIMER_MODE_REL );
 	            }
 			LED1Closeflag = 0;
-		//	LED2Closeflag = 0;
+	       		setDuty_SY7806_2(m_duty1);
 			FL_Enable();
 		}
 		else
 		{
 			LED1Closeflag = 1;
-	       //	LED2Closeflag = 1;
 			FL_Disable();
 			hrtimer_cancel( &g_timeOutTimer );
 		}
