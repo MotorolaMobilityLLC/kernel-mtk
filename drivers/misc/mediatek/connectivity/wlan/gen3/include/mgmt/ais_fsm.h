@@ -334,6 +334,15 @@ typedef enum _ENUM_AIS_STATE_T {
 	AIS_STATE_NUM
 } ENUM_AIS_STATE_T;
 
+/* reconnect level for determining if we should reconnect */
+typedef enum _EMUN_RECONNECT_LEVEL_T {
+	RECONNECT_LEVEL_MIN = 0,
+	RECONNECT_LEVEL_INTER_OTHER = RECONNECT_LEVEL_MIN + 1,				/* roaming failed */
+	RECONNECT_LEVEL_INTER_DRIVER = RECONNECT_LEVEL_INTER_OTHER + 1,		/* driver beacon timeout */
+	RECONNECT_LEVEL_INTER_SET = RECONNECT_LEVEL_INTER_DRIVER + 1,		/* user set disassociate */
+	RECONNECT_LEVEL_MAX
+} EMUN_RECONNECT_LEVEL_T;
+
 typedef struct _MSG_AIS_ABORT_T {
 	MSG_HDR_T rMsgHdr;	/* Must be the first member */
 	UINT_8 ucReasonOfDisconnect;

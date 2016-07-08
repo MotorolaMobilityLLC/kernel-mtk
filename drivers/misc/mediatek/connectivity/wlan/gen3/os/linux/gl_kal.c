@@ -1795,6 +1795,9 @@ kalIndicateStatusAndComplete(IN P_GLUE_INFO_T prGlueInfo, IN WLAN_STATUS eStatus
 							  (ucChannelNum, IEEE80211_BAND_5GHZ));
 			}
 
+			if (!prChannel)
+				DBGLOG(SCN, ERROR, "prChannel is NULL and ucChannelNum is %d\n", ucChannelNum);
+
 			/* ensure BSS exists */
 			bss = cfg80211_get_bss(priv_to_wiphy(prGlueInfo), prChannel, arBssid,
 					       ssid.aucSsid, ssid.u4SsidLen, WLAN_CAPABILITY_ESS, WLAN_CAPABILITY_ESS);
@@ -1865,6 +1868,18 @@ kalIndicateStatusAndComplete(IN P_GLUE_INFO_T prGlueInfo, IN WLAN_STATUS eStatus
 #endif
 
 		netif_carrier_off(prGlueInfo->prDevHandler);
+
+		/*Full2Partial*/
+		/*at here, should init u4LastFullScanTime, ucTrScanType, ucChannelListNum, ucChannelNum*/
+		DBGLOG(INIT, TRACE, "Full2Partial disconenct reset value\n");
+		prGlueInfo->u4LastFullScanTime = 0;
+		prGlueInfo->ucTrScanType = 0;
+		kalMemSet(prGlueInfo->ucChannelNum, 0, FULL_SCAN_MAX_CHANNEL_NUM);
+		if (prGlueInfo->puFullScan2PartialChannel != NULL) {
+			kalMemFree(prGlueInfo->puFullScan2PartialChannel,
+			VIR_MEM_TYPE, sizeof(PARTIAL_SCAN_INFO));
+			prGlueInfo->puFullScan2PartialChannel = NULL;
+		}
 
 		if (prGlueInfo->fgIsRegistered == TRUE) {
 			P_BSS_INFO_T prBssInfo = prGlueInfo->prAdapter->prAisBssInfo;

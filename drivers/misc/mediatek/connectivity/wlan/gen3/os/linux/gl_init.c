@@ -2251,6 +2251,13 @@ static struct wireless_dev *wlanNetCreate(PVOID pvData)
 	prGlueInfo->prScanRequest = NULL;
 	prGlueInfo->prSchedScanRequest = NULL;
 
+	/*Full2Partial*/
+	/*init update full scan to partial scan varable*/
+	prGlueInfo->u4LastFullScanTime = 0;
+	prGlueInfo->ucTrScanType = 0;
+	kalMemSet(prGlueInfo->ucChannelNum, 0, FULL_SCAN_MAX_CHANNEL_NUM);
+	prGlueInfo->puFullScan2PartialChannel = NULL;
+
 #if CFG_SUPPORT_PASSPOINT
 	/* Init DAD */
 	prGlueInfo->fgIsDad = FALSE;
@@ -2715,6 +2722,8 @@ bailout:
 
 		if (FALSE == prAdapter->fgEnable5GBand)
 			prWdev->wiphy->bands[IEEE80211_BAND_5GHZ] = NULL;
+		else
+			prWdev->wiphy->bands[IEEE80211_BAND_5GHZ] = &mtk_band_5ghz;
 
 		kalSetHalted(FALSE);
 		/* set MAC address */
