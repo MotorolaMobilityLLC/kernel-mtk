@@ -824,6 +824,7 @@ typedef struct _CONNECTION_SETTINGS_T {
 
 	BOOLEAN fgIsConnReqIssued;
 	BOOLEAN fgIsDisconnectedByNonRequest;
+	EMUN_RECONNECT_LEVEL_T eReConnectLevel;
 
 	UINT_8 ucSSIDLen;
 	UINT_8 aucSSID[ELEM_MAX_LEN_SSID];
