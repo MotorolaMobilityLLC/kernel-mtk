@@ -190,6 +190,9 @@ CONFIG_MTK_VIDEOCODEC_DRIVER=y
 CONFIG_MTK_LENS_DW9761OFILMAF_SUPPORT=y
 CONFIG_MTK_LENS_DW9761SUNNYAF_SUPPORT=y
 #lenovo.sw END wuyt3 config k52M camera
+#lenovo.sw START sunliang2 config Kungfu_m camera
+CONFIG_MTK_CAMERA_LSHUTTER=y
+#lenovo.sw END sunliang2 config kungfu_m camera
 #lenovo.sw START huangsh4 config kungfu camera
 CONFIG_MTK_LENS_DW9800wOFILMAF_SUPPORT=y
 CONFIG_MTK_LENS_DW9800wSUNNYAF_SUPPORT=y
