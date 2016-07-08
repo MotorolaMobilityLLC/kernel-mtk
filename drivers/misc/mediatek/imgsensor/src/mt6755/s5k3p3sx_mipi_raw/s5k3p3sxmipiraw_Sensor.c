@@ -194,11 +194,13 @@ static SET_PD_BLOCK_INFO_T imgsensor_pd_info =
 .i4PosL = {{3,4},{55,4},{19,8},{39,8},{7,16},{51,16},{23,20},{35,20},{23,36},{35,36},{7,40},{51,40},{19,48},{39,48},{3,52},{55,52}},    
    .i4PosR = {{3,0},{55,0},{19,4},{39,4},{7,20},{51,20},{23,24},{35,24},{23,32},{35,32},{7,36},{51,36},{19,52},{39,52},{3,56},{55,56}},
 };
+#ifdef CONFIG_MTK_CAMERA_LSHUTTER
 /*lenovo-sw sunliang modify for long_shutter 2015_4_25 begin*/
 static kal_uint16	preview_gain=0;
 static kal_uint16 	preview_shutter=0;
 static kal_bool	lock_flag=KAL_FALSE;
 /*lenovo-sw sunliang modify for long_shutter 2015_4_25 end*/
+#endif
 extern int iReadReg(u16 a_u2Addr , u8 * a_puBuff , u16 i2cId);
 extern int iWriteReg(u16 a_u2Addr , u32 a_u4Data , u32 a_u4Bytes , u16 i2cId);
 extern void kdSetI2CSpeed(u16 i2cSpeed);
@@ -1454,12 +1456,14 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 	MSDK_SENSOR_REG_INFO_STRUCT *sensor_reg_data=(MSDK_SENSOR_REG_INFO_STRUCT *) feature_para;
 	//unsigned long long *feature_data=(unsigned long long *) feature_para;
 	//unsigned long long *feature_return_para=(unsigned long long *) feature_para;	
+#ifdef CONFIG_MTK_CAMERA_LSHUTTER
  	/*lenovo-sw sunliang modify for long_shutter 2015_4_25 begin*/
 	unsigned long long *pLockAePara=(unsigned long long *) feature_para;
 	UINT32  mLShutter,mLGain;
 	mLGain=*pLockAePara++;
 	mLShutter=*pLockAePara;
 	/*lenovo-sw sunliang modify for long_shutter 2015_4_25 begin*/
+#endif
 	LOG_INF("feature_id = %d\n", feature_id);
 	switch (feature_id) {
 		case SENSOR_FEATURE_GET_PERIOD:
@@ -1468,13 +1472,14 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 			*feature_para_len=4;
 			break;
 		case SENSOR_FEATURE_GET_PIXEL_CLOCK_FREQ:
-            LOG_INF("feature_Control imgsensor.pclk = %d,imgsensor.current_fps = %d\n", imgsensor.pclk,imgsensor.current_fps);
+           		 LOG_INF("feature_Control imgsensor.pclk = %d,imgsensor.current_fps = %d\n", imgsensor.pclk,imgsensor.current_fps);
 			*feature_return_para_32 = imgsensor.pclk;
 			*feature_para_len=4;
 			break;
-		/*lenovo-sw sunliang modify for long_shutter 2015_4_25 begin*/
 		case SENSOR_FEATURE_SET_NIGHTMODE:
 			break;
+#ifdef CONFIG_MTK_CAMERA_LSHUTTER
+		/*lenovo-sw sunliang modify for long_shutter 2015_4_25 begin*/
 		case SENSOR_FEATURE_SET_ESHUTTER:
 			if(lock_flag==KAL_FALSE){
 				preview_shutter=*feature_data;
@@ -1499,7 +1504,15 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 			write_shutter(preview_shutter);
 			set_gain(preview_gain);
 			break;
-		/*lenovo-sw sunliang modify for long_shutter 2015_4_25 end*/				
+		/*lenovo-sw sunliang modify for long_shutter 2015_4_25 end*/		
+#else
+		case SENSOR_FEATURE_SET_ESHUTTER:
+			set_shutter(*feature_data);
+			break;
+		case SENSOR_FEATURE_SET_GAIN:	
+			set_gain((UINT16) *feature_data);
+			break;
+#endif
 		case SENSOR_FEATURE_SET_FLASHLIGHT:
 			break;
 		case SENSOR_FEATURE_SET_ISP_MASTER_CLOCK_FREQ:
