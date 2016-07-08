@@ -185,9 +185,11 @@ enum
 	e_DutyNum = 23,
 };
 static int isMovieMode[e_DutyNum]={1,1,1,1,0,0,0,0,0,0,0,0,0,0,0};
-static int torchDuty[e_DutyNum]=    {35,71,106,127,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};//follow k51m sy7806 the same as lm3643
-//52,105,156,179ma
-static int flashDuty[e_DutyNum]=     {3,8,12,14,16,20,25,29,33,37,42,46,50,55,59,63,67,72,76,80,84,93,101}; //follow k51m sy7806 the same as lm3643
+static int torchDuty_H[e_DutyNum]=    {35,71,106,127,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};//follow k51m sy7806 the same as lm3643
+static int torchDuty_L[e_DutyNum]=    {18,35,71,106,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};//follow k51m sy7806 the same as lm3643
+//50,105,156,179ma
+static int flashDuty_H[e_DutyNum]=     {3,8,12,14,16,20,25,29,33,37,42,46,50,55,59,63,67,72,76,80,84,93,101}; //follow k51m sy7806 the same as lm3643
+static int flashDuty_L[e_DutyNum]=     {1,3,8,12,14,16,20,25,29,33,37,42,46,50,55,59,63,67,72,76,80,84,93}; //follow k51m sy7806 the same as lm3643
 //150,200,250,300,350,400,450,500,550,600,650,700,750,800,850,900,950,1000,1100,1200,1300,1400,1500ma
 int m_duty1=0;
 int m_duty2=0;
@@ -308,7 +310,7 @@ int setDuty_SY7806_2(int duty)
 		duty=0;
 	else if(duty>=e_DutyNum)
 		duty=e_DutyNum-1;
-	m_duty2=duty;
+	//m_duty2=duty;
 
 	PK_DBG("setDuty_SY7806_2:m_duty = %d, m_duty2 = %d \n", m_duty1, m_duty2);
 	PK_DBG("LED1Closeflag = %d, LED2Closeflag = %d\n", LED1Closeflag, LED2Closeflag);
@@ -321,35 +323,35 @@ int setDuty_SY7806_2(int duty)
 	{
 		if(isMovieMode[m_duty2] == 1)
 		{
-			writeReg(SY7806_REG_LED2_TORCH, torchDuty[m_duty2]);
+			writeReg(SY7806_REG_LED2_TORCH, torchDuty_L[m_duty2]);
 		}
 		else
 		{
-			writeReg(SY7806_REG_LED2_FLASH, flashDuty[m_duty2]);
+			writeReg(SY7806_REG_LED2_FLASH, flashDuty_L[m_duty2]);
 		}
 	}
 	else if(LED2Closeflag == 1)
 	{
 		if(isMovieMode[m_duty1] == 1)
 		{
-			writeReg(SY7806_REG_LED1_TORCH, torchDuty[m_duty1]);
+			writeReg(SY7806_REG_LED1_TORCH, torchDuty_H[m_duty1]);
 		}
 		else
 		{
-			writeReg(SY7806_REG_LED1_FLASH, flashDuty[m_duty1]);
+			writeReg(SY7806_REG_LED1_FLASH, flashDuty_H[m_duty1]);
 		}
 	}
 	else
 	{
 		if((isMovieMode[m_duty1] == 1) && ((isMovieMode[m_duty2] == 1)))
 		{
-			writeReg(SY7806_REG_LED1_TORCH, torchDuty[m_duty1]);
-			writeReg(SY7806_REG_LED2_TORCH, torchDuty[m_duty2]);
+			writeReg(SY7806_REG_LED1_TORCH, torchDuty_H[m_duty1]);
+			writeReg(SY7806_REG_LED2_TORCH, torchDuty_L[m_duty2]);
 		}
 		else
 		{
-			writeReg(SY7806_REG_LED1_FLASH, flashDuty[m_duty1]);
-			writeReg(SY7806_REG_LED2_FLASH, flashDuty[m_duty2]);
+			writeReg(SY7806_REG_LED1_FLASH, flashDuty_H[m_duty1]);
+			writeReg(SY7806_REG_LED2_FLASH, flashDuty_L[m_duty2]);
 		}
 	}
 	return 0;

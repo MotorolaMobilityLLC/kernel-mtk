@@ -156,6 +156,7 @@ static int g_b1stInit=1;
 
 static void work_timeOutFunc(struct work_struct *data)
 {
+    LED2Closeflag = 1;
     FL_Disable();
     PK_DBG("ledTimeOut_callback\n");
 }
