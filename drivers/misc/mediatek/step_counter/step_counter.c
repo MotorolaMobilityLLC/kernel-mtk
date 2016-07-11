@@ -21,8 +21,14 @@
 #endif
 /* step counter sensor interrupt mode support -- modified by liaoxl.lenovo 7.12.2015 end */
 
-static struct step_c_context *step_c_context_obj = NULL;
+/*Lenovo-sw weimh1 add 2016-7-7 begin:record invalid count for steps*/
+#ifndef STEP_COUNTER_INT_MODE_SUPPORT
+#define STEP_COUNTER_INVALID_COUNT 30
+int invalid_count = 0;
+#endif
+/*Lenovo-sw weimh1 add 2016-7-7 end:record invalid count for steps*/
 
+static struct step_c_context *step_c_context_obj = NULL;
 
 static struct step_c_init_info *step_counter_init_list[MAX_CHOOSE_STEP_C_NUM] = { 0 };
 
@@ -65,7 +71,7 @@ static void step_c_work_func(struct work_struct *work)
 			}
 		}
 		
-	/* step counter is a on-change type sensor, don't report when same value -- modified by liaoxl.lenovo 5.12.2015 start*/
+		/* step counter is a on-change type sensor, don't report when same value -- modified by liaoxl.lenovo 5.12.2015 start*/
 		if (0 == (rawData >> 31)) {
 			value = (int)rawData;
 		}
@@ -77,8 +83,18 @@ static void step_c_work_func(struct work_struct *work)
 		if (value != cxt->drv_data.counter) {
 			cxt->drv_data.counter = value;
 			cxt->drv_data.status = status;
-		}
-		else {
+/*Lenovo-sw weimh1 add 2016-7-7 begin:record invalid count for steps*/
+#ifndef STEP_COUNTER_INT_MODE_SUPPORT
+			invalid_count = 0;
+#endif
+/*Lenovo-sw weimh1 add 2016-7-7 end:record invalid count for steps*/
+		} else {
+/*Lenovo-sw weimh1 add 2016-7-7:record invalid count for steps*/
+#ifndef STEP_COUNTER_INT_MODE_SUPPORT
+			invalid_count++;;
+#endif
+/*Lenovo-sw weimh1 add 2016-7-7 end:record invalid count for steps*/
+
 			/* no new steps, no need to update */
 			goto step_c_loop;
 		}
@@ -86,15 +102,16 @@ static void step_c_work_func(struct work_struct *work)
 	}
 	
 	/* report data to input device */
-	STEP_C_LOG("step_c data[%d]\n", cxt->drv_data.counter);
-
 	step_c_data_report(cxt->idev, cxt->drv_data.counter, cxt->drv_data.status);
 
 step_c_loop:
 /* step counter sensor interrupt mode support -- modified by liaoxl.lenovo 7.12.2015 start  */
 #ifndef STEP_COUNTER_INT_MODE_SUPPORT
-	if (true == cxt->is_polling_run) {
+	if (true == cxt->is_polling_run && invalid_count < STEP_COUNTER_INVALID_COUNT) {
 		mod_timer(&cxt->timer, jiffies + atomic_read(&cxt->delay) / (1000 / HZ));
+	} else {
+		cxt->is_polling_run = false;
+		invalid_count = 0;
 	}
 #endif
 	value = 0;
@@ -289,7 +306,6 @@ static int step_c_real_enable(int enable)
 
 	cxt = step_c_context_obj;
 	if (1 == enable) {
-
 		if (true == cxt->is_active_data || true == cxt->is_active_nodata) {
 			err = cxt->step_c_ctl.enable_nodata(1);
 			if (err) {
@@ -335,6 +351,7 @@ static int step_c_enable_data(int enable)
 		cxt->step_c_ctl.open_report_data(1);
 /* step counter sensor interrupt mode support -- modified by liaoxl.lenovo 7.12.2015 start  */
 #ifndef STEP_COUNTER_INT_MODE_SUPPORT
+		invalid_count = 0;
 		if (false == cxt->is_polling_run && cxt->is_batch_enable == false) {
 			if (false == cxt->step_c_ctl.is_report_input_direct) {
 				mod_timer(&cxt->timer,
@@ -570,9 +587,6 @@ static ssize_t step_c_store_batch(struct device *dev, struct device_attribute *a
 				cxt->is_polling_run = true;
 			}
 		}
-		/*Lenovo-sw weimh1 add 2016-6-25 begin:enable when batch mode is 0*/
-//		step_c_enable_data(1);
-		/*Lenovo-sw weimh1 add 2016-6-25 end*/
 #endif
 /* step counter sensor interrupt mode support -- modified by liaoxl.lenovo 7.12.2015 end  */
 	} else {

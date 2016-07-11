@@ -398,10 +398,6 @@ static int step_c_resume(struct i2c_client *client)
 		return err;
 	}
 	atomic_set(&obj->suspend, 0);
-
-	/*Lenovo-sw weimh1 add 2016-7-06 begin:stepcounter should enable when resume*/
-	err = step_c_enable_nodata(1);
-	/*Lenovo-sw weimh1 add 2016-7-06 end*/
 	
 	return 0;
 }
