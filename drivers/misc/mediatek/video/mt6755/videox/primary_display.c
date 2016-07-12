@@ -3584,6 +3584,11 @@ int primary_display_suspend(void)
 	MMProfileLogEx(ddp_mmp_get_events()->primary_suspend, MMProfileFlagPulse, 0, 5);
 
 	DISPDBG("[POWER]lcm suspend[begin]\n");
+//lenovo wuwl10 20160401 add CUSTOM_LCM_FEATURE end
+#ifdef CONFIG_LENOVO_PANELMODE_SUPPORT
+	//wuwl10 add, we need to update the hbm status so that backlight can work when resume
+	atomic_set(&primary_display_hbm_backlight, 0);
+#endif
 	disp_lcm_suspend(pgc->plcm);
 	DISPCHECK("[POWER]lcm suspend[end]\n");
 	MMProfileLogEx(ddp_mmp_get_events()->primary_suspend, MMProfileFlagPulse, 0, 6);
@@ -5384,7 +5389,8 @@ int primary_display_setbacklight(unsigned int level)
 					       MMProfileFlagPulse, 0, 7);
 //lenovo-sw wuwl10 20160511 add for lcm hbm func begin
 #ifdef CONFIG_LENOVO_PANELMODE_SUPPORT
-				if (atomic_read(&primary_display_hbm_backlight)){
+				//wuwl10 modify, backlight level 0 should be set even through in hbm mode to disable backlight
+				if (level && atomic_read(&primary_display_hbm_backlight)){
 					DISPMSG("skip set lcm backlight due to hbm mode\n");
 				} else {
 					disp_lcm_set_backlight(pgc->plcm, NULL, level);
@@ -5513,6 +5519,8 @@ int primary_display_sethbm(unsigned int mode)
 #endif
 	if (pgc->state == DISP_SLEPT) {
 		DISPERR("Sleep State set hbm invald\n");
+		//wuwl10 add, we need to update the hbm status so that backlight can work when resume
+		atomic_set(&primary_display_hbm_backlight, 0);
 	} else {
 		primary_display_idlemgr_kick((char *)__func__, 0);
 		if (primary_display_cmdq_enabled()) {
