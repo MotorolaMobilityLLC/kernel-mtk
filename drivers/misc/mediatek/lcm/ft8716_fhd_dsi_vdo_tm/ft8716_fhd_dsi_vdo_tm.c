@@ -59,7 +59,7 @@ static LCM_UTIL_FUNCS lcm_util = {0};
 #define REGFLAG_END_OF_TABLE						0xFF
 #define set_gpio_lcd_enp(cmd) 		(lcm_util.set_gpio_lcd_enp_bias(cmd))
 #define set_gpio_lcd_enn(cmd) 		(lcm_util.set_gpio_lcd_enn_bias(cmd))
-
+#define set_gpio_lcd_vddi(cmd) 		(lcm_util.set_gpio_lcd_vddi_en(cmd))
 #if 1  //ndef BUILD_LK
 #include <linux/kernel.h>
 #include <linux/module.h>
@@ -698,6 +698,9 @@ static void lcm_init(void)
 	mt_set_gpio_out_base(11, GPIO_OUT_ONE);
 	SET_RESET_PIN(0);
 	MDELAY(2);
+	//set vddi enable
+	set_gpio_lcd_vddi(1);
+	MDELAY(1);
 	SET_RESET_PIN(1);
 	MDELAY(6);
 	
@@ -739,7 +742,7 @@ static void lcm_init(void)
 	else
 		printk("[KERNEL]tps65132---cmd=%0x-- i2c write success-----\n",cmd);
 #endif
-
+	MDELAY(2);
 	SET_RESET_PIN(0);
 	MDELAY(2);
 
@@ -794,7 +797,9 @@ void lcm_power_off(void)
 
 	//set avdd disable
 	set_gpio_lcd_enp(0);
-	MDELAY(4);
+	MDELAY(5);
+	set_gpio_lcd_vddi(0);
+	MDELAY(1);
 }
 EXPORT_SYMBOL_GPL(lcm_power_off);
 

@@ -2790,6 +2790,18 @@ long lcd_enn_bias_setting(unsigned int value)
 #endif
 	return ret;
 }
+
+long lcd_vddi_ldo_setting(unsigned int value)
+{
+	long ret = 0;
+#if !defined(CONFIG_MTK_LEGACY)
+	if (value)
+		ret = disp_dts_gpio_select_state(DTS_GPIO_STATE_LCD_VDDI_EN1);
+	else
+		ret = disp_dts_gpio_select_state(DTS_GPIO_STATE_LCD_VDDI_EN0);
+#endif
+	return ret;
+}
 //lenovo-sw wuwl10 20160322 modify end
 
 int ddp_dsi_set_lcm_utils(DISP_MODULE_ENUM module, LCM_DRIVER *lcm_drv)
@@ -2827,6 +2839,7 @@ int ddp_dsi_set_lcm_utils(DISP_MODULE_ENUM module, LCM_DRIVER *lcm_drv)
 	utils->set_gpio_lcd_enp_bias = lcd_enp_bias_setting;
 //lenovo-sw wuwl10 20160322 add begin
 	utils->set_gpio_lcd_enn_bias = lcd_enn_bias_setting;
+	utils->set_gpio_lcd_vddi_en = lcd_vddi_ldo_setting;
 //lenovo-sw wuwl10 20160322 add end
 #endif
 #endif
