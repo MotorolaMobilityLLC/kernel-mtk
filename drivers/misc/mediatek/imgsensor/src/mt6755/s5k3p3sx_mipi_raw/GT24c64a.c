@@ -433,7 +433,8 @@ static int Read3P3LSCData(unsigned short ui4_offset, unsigned int  ui4_length, u
 		if(!selective_read_eeprom(addr, &LSCdatabuf[i])){
 			return -1;
 		}
-		CAM_CALDB("read_eeprom 0x%0x %d\n",addr, LSCdatabuf[i]);
+		/* huangsh4 to print lsc data with kungfu */
+		//CAM_CALDB("read_eeprom 0x%0x %d\n",addr, LSCdatabuf[i]);
 		addr++;
 	}
 
