@@ -519,6 +519,21 @@ camera_pins_cam_ldo_vcama_0: cam0@0 {
 			output-high;
 		};
 	};
+	mtkfb_pins_lcd_vddi_en0: lcd_vddi_en0_gpio {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO61__FUNC_GPIO61>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+
+	mtkfb_pins_lcd_vddi_en1: lcd_vddi_en1_gpio {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO61__FUNC_GPIO61>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
 /* lenovo-sw wuwl10 20160322 modify end */
 
 	mtkfb_pins_default: default {
@@ -529,7 +544,7 @@ camera_pins_cam_ldo_vcama_0: cam0@0 {
 	pinctrl-names = "default", "mode_te_gpio", "mode_te_te", "lcm_rst_out0_gpio",
 /* lenovo-sw wuwl10 20160322 modify begin */
 	"lcm_rst_out1_gpio", "lcd_bias_enp0_gpio", "lcd_bias_enp1_gpio",
-	"lcd_bias_enn0_gpio", "lcd_bias_enn1_gpio";
+	"lcd_bias_enn0_gpio", "lcd_bias_enn1_gpio", "lcd_vddi_en0_gpio", "lcd_vddi_en1_gpio";
 	pinctrl-0 = <&mtkfb_pins_default>;
 	pinctrl-1 = <&mtkfb_pins_mode_te_gpio>;
 	pinctrl-2 = <&mtkfb_pins_mode_te_te>;
@@ -539,6 +554,8 @@ camera_pins_cam_ldo_vcama_0: cam0@0 {
 	pinctrl-6 = <&mtkfb_pins_lcd_bias_enp1>;
 	pinctrl-7 = <&mtkfb_pins_lcd_bias_enn0>;
 	pinctrl-8 = <&mtkfb_pins_lcd_bias_enn1>;
+	pinctrl-9 = <&mtkfb_pins_lcd_vddi_en0>;
+	pinctrl-10 = <&mtkfb_pins_lcd_vddi_en1>;
 /* lenovo-sw wuwl10 20160322 modify end */
 	status = "okay";
 };/* DISPSYS GPIO standardization end */

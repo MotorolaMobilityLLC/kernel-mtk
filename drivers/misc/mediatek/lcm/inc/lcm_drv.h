@@ -779,6 +779,7 @@ typedef struct {
 //lenovo-sw wuwl10 20160322 modify begin
 	long (*set_gpio_lcd_enp_bias)(unsigned int value);
 	long (*set_gpio_lcd_enn_bias)(unsigned int value);
+	long (*set_gpio_lcd_vddi_en)(unsigned int value);
 //lenovo-sw wuwl10 20160322 modify end
 	void (*dsi_set_cmdq_V11)(void *cmdq, unsigned int *pdata, unsigned int queue_size,
 				  unsigned char force_update);
