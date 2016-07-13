@@ -247,6 +247,16 @@ static const UINT_16 g_u2CountryGroup20[] = {
 	 */
 };
 
+/* BEGIN lenovo-sw sunyue5 for auto disable 11ac */
+/* 11ac disabled country array */
+static const UINT_16	g_u2CountryGroupDisable11ac[] =
+{
+    COUNTRY_CODE_EG,    COUNTRY_CODE_ID
+};
+#define COUNTRY_11AC_DISABLED_NUM \
+    (sizeof(g_u2CountryGroupDisable11ac) / sizeof(UINT_16))
+/* END lenovo-sw sunyue5 for auto disable 11ac */
+
 DOMAIN_INFO_ENTRY arSupportedRegDomains[] = {
 	{
 	 (PUINT_16) g_u2CountryGroup0, sizeof(g_u2CountryGroup0) / 2,
@@ -1224,6 +1234,22 @@ rlmDomainIsValidRfSetting(P_ADAPTER_T prAdapter,
 	return fgValidRfSetting;
 
 }
+
+/* BEGIN lenovo-sw sunyue5 for auto disable 11ac */
+BOOLEAN rlmCountryIs11acDisabled(P_ADAPTER_T prAdapter)
+{
+	UINT_8 i;
+	UINT_16 u2TargetCountryCode = prAdapter->rWifiVar.rConnSettings.u2CountryCode;
+	DBGLOG(RLM, INFO, "Check whether disable 11ac for country %c%c in %d countrys\n",
+		((u2TargetCountryCode & 0xff00)>>8), (u2TargetCountryCode & 0x00ff),
+		COUNTRY_11AC_DISABLED_NUM);
+	for (i=0; i < COUNTRY_11AC_DISABLED_NUM; i++) {
+		if (u2TargetCountryCode == g_u2CountryGroupDisable11ac[i])
+			return TRUE;
+	}
+	return FALSE;
+}
+/* END lenovo-sw sunyue5 for auto disable 11ac */
 
 #if CFG_SUPPORT_PWR_LIMIT_COUNTRY
 
