@@ -104,7 +104,9 @@
 #define Q_MAX_BY_SYS			/*8. Qmax variant by system drop voltage.*/
 #define Q_MAX_SYS_VOLTAGE		3350
 #define SHUTDOWN_GAUGE0
-#define SHUTDOWN_GAUGE1_XMINS
+//lenovo-sw mahj2 modify Begin
+//#define SHUTDOWN_GAUGE1_XMINS
+//lenovo-sw mahj2 modify End
 #define SHUTDOWN_GAUGE1_MINS	60
 
 //lenovo-sw mahj2 modify Begin
