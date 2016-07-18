@@ -1154,6 +1154,7 @@ void select_charging_current_bcct(void)
 	}
         else if(g_bcct_value < 650)   {
 		g_temp_CC_value = CHARGE_CURRENT_550_00_MA;
+		g_temp_input_CC_value = CHARGE_CURRENT_550_00_MA;
         }
         else if(g_bcct_value < 750)   {
 		g_temp_CC_value = CHARGE_CURRENT_650_00_MA;
@@ -1166,9 +1167,11 @@ void select_charging_current_bcct(void)
         }
         else if(g_bcct_value < 1050)  {
 		g_temp_CC_value = CHARGE_CURRENT_950_00_MA;
+		g_temp_input_CC_value = CHARGE_CURRENT_950_00_MA;
         }
         else if(g_bcct_value < 1150)  {
 		g_temp_CC_value = CHARGE_CURRENT_1050_00_MA;
+		g_temp_input_CC_value = CHARGE_CURRENT_1050_00_MA;
         }
         else if(g_bcct_value < 1250)  {
 		g_temp_CC_value = CHARGE_CURRENT_1150_00_MA;
@@ -1184,6 +1187,7 @@ void select_charging_current_bcct(void)
 	}
 	else if(g_bcct_value < 1650) {
 		g_temp_CC_value = CHARGE_CURRENT_1575_00_MA;
+		g_temp_input_CC_value = CHARGE_CURRENT_1575_00_MA;
 	}
 	else if(g_bcct_value < 1750) {
 		g_temp_CC_value = CHARGE_CURRENT_1650_00_MA;
