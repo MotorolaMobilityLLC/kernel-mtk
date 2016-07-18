@@ -1775,6 +1775,13 @@ static void mt_battery_update_EM(struct battery_data *bat_data)
 	}
 	battery_log(BAT_LOG_CRTI,"BAT_CAPACITY = %d\n",bat_data->BAT_CAPACITY);
 //lenovo-sw mahj2 modify for power off End
+//lenovo-sw mahj2 modify for power test Begin
+	if ((bat_data->BAT_CAPACITY == 1) && (BMT_status.bat_vol > 3700)) {
+		bat_data->BAT_CAPACITY = 2;
+		battery_log(BAT_LOG_CRTI,
+			"BAT_CAPACITY=2, due to BMT_status.bat_vol > 3700, bat_vol = %d\n",BMT_status.bat_vol);
+	}
+//lenovo-sw mahj2 modify for power test End
 #ifdef CONFIG_MTK_DISABLE_POWER_ON_OFF_VOLTAGE_LIMITATION
 	if (bat_data->BAT_CAPACITY <= 0)
 		bat_data->BAT_CAPACITY = 1;
