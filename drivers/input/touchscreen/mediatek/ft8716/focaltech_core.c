@@ -2095,7 +2095,7 @@ reset_proc:
 		return -EAGAIN;
 	}
 #ifdef  GTP_PROC_TPINFO
-	if (proc_create(fts_proc_name, 0660, NULL, &fts_proc_tool_fops) == NULL) {
+	if (proc_create(fts_proc_name, 0664, NULL, &fts_proc_tool_fops) == NULL) {
 		dev_err(&client->dev,"fts create_proc_entry %s failed", fts_proc_name);
 		return -1;
 	}
