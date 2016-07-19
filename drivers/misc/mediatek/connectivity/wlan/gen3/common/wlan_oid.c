@@ -9985,12 +9985,12 @@ wlanoidSetCountryCode(IN P_ADAPTER_T prAdapter,
 
 	prAdapter->rWifiVar.rConnSettings.u2CountryCode = (((UINT_16) pucCountry[0]) << 8) | ((UINT_16) pucCountry[1]);
 
-	prAdapter->prDomainInfo = NULL;	/* Force to re-search country code */
+	/* Force to re-search country code in country domains */
+	prAdapter->prDomainInfo = NULL;
 	rlmDomainSendCmd(prAdapter, TRUE);
 
-	/* Update supported channel list for WLAN & P2P interface (wiphy->bands) */
+	/* Update supported channel list in channel table based on current country domain */
 	wlanUpdateChannelTable(prAdapter->prGlueInfo);
-	p2pUpdateChannelTableByDomain(prAdapter->prGlueInfo);
 
 	return WLAN_STATUS_SUCCESS;
 }

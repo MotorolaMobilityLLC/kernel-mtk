@@ -325,6 +325,8 @@
 #define COUNTRY_CODE_ZM (((UINT_16) 'Z' << 8) | (UINT_16) 'M')	/* Zambia                              */
 #define COUNTRY_CODE_ZW (((UINT_16) 'Z' << 8) | (UINT_16) 'W')	/* Zimbabwe                            */
 
+#define COUNTRY_CODE_DF (((UINT_16) 'D' << 8) | (UINT_16) 'F')	/* Default country domain              */
+
 /* dot11RegDomainsSupportValue */
 #define MIB_REG_DOMAIN_FCC              0x10	/* FCC (US) */
 #define MIB_REG_DOMAIN_IC               0x20	/* IC or DOC (Canada) */
@@ -399,35 +401,6 @@ typedef enum _ENUM_CHNL_BW_T {
 	CHNL_BW_5
 } ENUM_CHNL_BW_T, *P_ENUM_CHNL_BW_T;
 
-#if 0
-/* If channel width is CHNL_BW_20_40, the first channel will be SCA and
- * the second channel is SCB, then iteratively.
- * Note the final channel will not be SCA.
- */
-typedef struct _DOMAIN_SUBBAND_INFO {
-	UINT_8 ucRegClass;
-	ENUM_BAND_T eBand;
-	ENUM_CHNL_SPAN_T eChannelSpan;
-	UINT_8 ucFirstChannelNum;
-	UINT_8 ucNumChannels;
-	ENUM_CHNL_BW_T eChannelBw;
-	BOOLEAN fgDfsNeeded;
-	BOOLEAN fgIbssProhibited;
-} DOMAIN_SUBBAND_INFO, *P_DOMAIN_SUBBAND_INFO;
-
-/* Use it as all available channel list for STA */
-typedef struct _DOMAIN_INFO_ENTRY {
-	UINT_16 u2CountryCode;
-	UINT_16 u2MibRegDomainValue;
-
-	/* If different attributes, put them into different rSubBands.
-	 * For example, DFS shall be used or not.
-	 */
-	DOMAIN_SUBBAND_INFO rSubBand[MAX_SUBBAND_NUM];
-} DOMAIN_INFO_ENTRY, *P_DOMAIN_INFO_ENTRY;
-
-#else /* New definition 20110830 */
-
 /* In all bands, the first channel will be SCA and the second channel is SCB,
  * then iteratively.
  * Note the final channel will not be SCA.
@@ -444,7 +417,7 @@ typedef struct _DOMAIN_SUBBAND_INFO {
 	UINT_8 ucChannelSpan;	/* Type: ENUM_CHNL_SPAN_T */
 	UINT_8 ucFirstChannelNum;
 	UINT_8 ucNumChannels;
-	UINT_8 ucReserved;	/* Type: BOOLEAN (fgDfsNeeded) */
+	UINT_8 fgDfs;		/* Type: BOOLEAN */
 } DOMAIN_SUBBAND_INFO, *P_DOMAIN_SUBBAND_INFO;
 
 /* Use it as all available channel list for STA */
@@ -457,52 +430,7 @@ typedef struct _DOMAIN_INFO_ENTRY {
 	 */
 	DOMAIN_SUBBAND_INFO rSubBand[MAX_SUBBAND_NUM];
 } DOMAIN_INFO_ENTRY, *P_DOMAIN_INFO_ENTRY;
-#endif
 
-/* The following definitions are not used yet */
-typedef enum _ENUM_CH_SET_2G4_T {
-	CH_SET_2G4_NA,
-	CH_SET_2G4_1_11,
-	CH_SET_2G4_1_13,
-	CH_SET_2G4_1_14,
-	CH_SET_2G4_NUM
-} ENUM_CH_SET_2G4_T, *P_ENUM_CH_SET_2G4_T;
-
-typedef enum _ENUM_CH_SET_UNII_LOW_T {
-	CH_SET_UNII_LOW_NA,
-	CH_SET_UNII_LOW_36_48,
-	CH_SET_UNII_LOW_NUM
-} ENUM_CH_SET_UNII_LOW_T, *P_ENUM_CH_SET_UNII_LOW_T;
-
-typedef enum _ENUM_CH_SET_UNII_MID_T {
-	CH_SET_UNII_MID_NA,
-	CH_SET_UNII_MID_52_64,
-	CH_SET_UNII_MID_NUM
-} ENUM_CH_SET_UNII_MID_T, *P_ENUM_CH_SET_UNII_MID_T;
-
-typedef enum _ENUM_CH_SET_UNII_WW_T {
-	CH_SET_UNII_WW_NA,
-	CH_SET_UNII_WW_100_128,
-	CH_SET_UNII_WW_100_140,
-	CH_SET_UNII_WW_100_116_132_140,
-	CH_SET_UNII_WW_NUM
-} ENUM_CH_SET_UNII_WW_T, *P_ENUM_CH_SET_UNII_WW_T;
-
-typedef enum _ENUM_CH_SET_UNII_UPPER_T {
-	CH_SET_UNII_UPPER_NA,
-	CH_SET_UNII_UPPER_149_161,
-	CH_SET_UNII_UPPER_149_165,
-	CH_SET_UNII_UPPER_149_173,
-	CH_SET_UNII_UPPER_NUM
-} ENUM_CH_SET_UNII_UPPER_T, *P_ENUM_CH_SET_UNII_UPPER_T;
-
-typedef struct _COUNTRY_CH_SET_T {
-	ENUM_CH_SET_2G4_T e2G4;
-	ENUM_CH_SET_UNII_LOW_T eUniiLow;
-	ENUM_CH_SET_UNII_MID_T eUniiMid;
-	ENUM_CH_SET_UNII_WW_T eUniiWw;
-	ENUM_CH_SET_UNII_UPPER_T eUniiUpper;
-} COUNTRY_CH_SET_T, *P_COUNTRY_CH_SET_T;
 
 #if CFG_SUPPORT_PWR_LIMIT_COUNTRY
 
@@ -590,12 +518,14 @@ P_DOMAIN_INFO_ENTRY rlmDomainGetDomainInfo(P_ADAPTER_T prAdapter);
 
 VOID
 rlmDomainGetChnlList(P_ADAPTER_T prAdapter,
-		     ENUM_BAND_T eSpecificBand,
+		     ENUM_BAND_T eSpecificBand, BOOLEAN fgNoDfs,
 		     UINT_8 ucMaxChannelNum, PUINT_8 pucNumOfChannel, P_RF_CHANNEL_INFO_T paucChannelList);
 
 VOID rlmDomainSendCmd(P_ADAPTER_T prAdapter, BOOLEAN fgIsOid);
 
-VOID rlmDomainPassiveScanSendCmd(P_ADAPTER_T prAdapter, BOOLEAN fgIsOid);
+VOID rlmDomainSendDomainInfoCmd(P_ADAPTER_T prAdapter, BOOLEAN fgIsOid);
+
+VOID rlmDomainSendPassiveScanInfoCmd(P_ADAPTER_T prAdapter, BOOLEAN fgIsOid);
 
 BOOLEAN rlmDomainIsLegalChannel(P_ADAPTER_T prAdapter, ENUM_BAND_T eBand, UINT_8 ucChannel);
 

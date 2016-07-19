@@ -1249,10 +1249,6 @@ BOOLEAN glRegisterAmpc(P_GLUE_INFO_T prGlueInfo);
 BOOLEAN glUnregisterAmpc(P_GLUE_INFO_T prGlueInfo);
 #endif
 
-#if CFG_ENABLE_WIFI_DIRECT
-void p2pSetMulticastListWorkQueueWrapper(P_GLUE_INFO_T prGlueInfo);
-#endif
-
 P_GLUE_INFO_T wlanGetGlueInfo(VOID);
 
 UINT_16 wlanSelectQueue(struct net_device *dev, struct sk_buff *skb,

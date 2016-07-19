@@ -632,15 +632,15 @@
 *                    E X T E R N A L   R E F E R E N C E S
 ********************************************************************************
 */
+#include <linux/poll.h>
+#include <linux/kmod.h>
+
 #include "gl_os.h"
-#include "debug.h"
 #include "wlan_lib.h"
 #include "gl_wext.h"
-#include <linux/poll.h>
-
-#include <linux/kmod.h>
-/* #include <net/cfg80211.h> */
+#include "gl_p2p_os.h"
 #include "gl_p2p_ioctl.h"
+#include "gl_vendor.h"
 
 #include "precomp.h"
 
@@ -673,136 +673,7 @@ static struct net_device *g_P2pPrDev;
 static struct wireless_dev *gprP2pWdev;
 
 #if CFG_ENABLE_WIFI_DIRECT_CFG_80211
-/* for cfg80211 - frequency table */
-static struct ieee80211_channel mtk_2ghz_channels[] = {
-	CHAN2G(1, 2412, 0),
-	CHAN2G(2, 2417, 0),
-	CHAN2G(3, 2422, 0),
-	CHAN2G(4, 2427, 0),
-	CHAN2G(5, 2432, 0),
-	CHAN2G(6, 2437, 0),
-	CHAN2G(7, 2442, 0),
-	CHAN2G(8, 2447, 0),
-	CHAN2G(9, 2452, 0),
-	CHAN2G(10, 2457, 0),
-	CHAN2G(11, 2462, 0),
-	CHAN2G(12, 2467, 0),
-	CHAN2G(13, 2472, 0),
-	CHAN2G(14, 2484, 0),
-};
-
-static struct ieee80211_channel mtk_5ghz_a_channels[] = {
-	CHAN5G(34, 0), CHAN5G(36, 0),
-	CHAN5G(38, 0), CHAN5G(40, 0),
-	CHAN5G(42, 0), CHAN5G(44, 0),
-	CHAN5G(46, 0), CHAN5G(48, 0),
-	CHAN5G(52, 0), CHAN5G(56, 0),
-	CHAN5G(60, 0), CHAN5G(64, 0),
-	CHAN5G(100, 0), CHAN5G(104, 0),
-	CHAN5G(108, 0), CHAN5G(112, 0),
-	CHAN5G(116, 0), CHAN5G(120, 0),
-	CHAN5G(124, 0), CHAN5G(128, 0),
-	CHAN5G(132, 0), CHAN5G(136, 0),
-	CHAN5G(140, 0), CHAN5G(149, 0),
-	CHAN5G(153, 0), CHAN5G(157, 0),
-	CHAN5G(161, 0), CHAN5G(165, 0),
-	CHAN5G(169, 0), CHAN5G(173, 0),
-	CHAN5G(184, 0), CHAN5G(188, 0),
-	CHAN5G(192, 0), CHAN5G(196, 0),
-	CHAN5G(200, 0), CHAN5G(204, 0),
-	CHAN5G(208, 0), CHAN5G(212, 0),
-	CHAN5G(216, 0),
-};
-
-/* for cfg80211 - rate table */
-static struct ieee80211_rate mtk_rates[] = {
-	RATETAB_ENT(10, 0x1000, 0),
-	RATETAB_ENT(20, 0x1001, 0),
-	RATETAB_ENT(55, 0x1002, 0),
-	RATETAB_ENT(110, 0x1003, 0),	/* 802.11b */
-	RATETAB_ENT(60, 0x2000, 0),
-	RATETAB_ENT(90, 0x2001, 0),
-	RATETAB_ENT(120, 0x2002, 0),
-	RATETAB_ENT(180, 0x2003, 0),
-	RATETAB_ENT(240, 0x2004, 0),
-	RATETAB_ENT(360, 0x2005, 0),
-	RATETAB_ENT(480, 0x2006, 0),
-	RATETAB_ENT(540, 0x2007, 0),	/* 802.11a/g */
-};
-
-#define mtk_a_rates         (mtk_rates + 4)
-#define mtk_a_rates_size    (sizeof(mtk_rates) / sizeof(mtk_rates[0]) - 4)
-#define mtk_g_rates         (mtk_rates + 0)
-#define mtk_g_rates_size    (sizeof(mtk_rates) / sizeof(mtk_rates[0]) - 0)
-
-#define WLAN_MCS_INFO                                     \
-{                                                           \
-	/* MCS1~7*/                                        \
-	.rx_mask        = {0xff, 0, 0, 0, 0, 0, 0, 0, 0, 0},\
-	.rx_highest     = 0,                                \
-	.tx_params      = IEEE80211_HT_MCS_TX_DEFINED,      \
-}
-
-#if 0
-/*Bandwidth 20Mhz Only*/
-#define WLAN_HT_CAP                                       \
-{                                                           \
-	.ht_supported   = true,                             \
-	.cap            = IEEE80211_HT_CAP_SM_PS            \
-			| IEEE80211_HT_CAP_GRN_FLD          \
-			| IEEE80211_HT_CAP_SGI_20,          \
-	.ampdu_factor   = IEEE80211_HT_MAX_AMPDU_64K,       \
-	.ampdu_density  = IEEE80211_HT_MPDU_DENSITY_NONE,   \
-	.mcs            = WLAN_MCS_INFO,                  \
-}
-#else
-/*Bandwidth 20/40Mhz*/
-#define WLAN_HT_CAP                                       \
-{                                                           \
-	.ht_supported   = true,                             \
-	.cap            = IEEE80211_HT_CAP_SUP_WIDTH_20_40  \
-			| IEEE80211_HT_CAP_SM_PS            \
-			| IEEE80211_HT_CAP_GRN_FLD          \
-			| IEEE80211_HT_CAP_SGI_20           \
-			| IEEE80211_HT_CAP_SGI_40,          \
-	.ampdu_factor   = IEEE80211_HT_MAX_AMPDU_64K,       \
-	.ampdu_density  = IEEE80211_HT_MPDU_DENSITY_NONE,   \
-	.mcs            = WLAN_MCS_INFO,                  \
-}
-#endif
-
-static struct ieee80211_supported_band mtk_band_2ghz = {
-	.band = IEEE80211_BAND_2GHZ,
-	.channels = mtk_2ghz_channels,
-	.n_channels = ARRAY_SIZE(mtk_2ghz_channels),
-	.bitrates = mtk_g_rates,
-	.n_bitrates = mtk_g_rates_size,
-	.ht_cap = WLAN_HT_CAP,
-};
-
-static struct ieee80211_supported_band mtk_band_5ghz = {
-	.band = IEEE80211_BAND_5GHZ,
-	.channels = mtk_5ghz_a_channels,
-	.n_channels = ARRAY_SIZE(mtk_5ghz_a_channels),
-	.bitrates = mtk_a_rates,
-	.n_bitrates = mtk_a_rates_size,
-	.ht_cap = WLAN_HT_CAP,
-};
-
-static const UINT_32 cipher_suites[] = {
-	/* keep WEP first, it may be removed below */
-	WLAN_CIPHER_SUITE_WEP40,
-	WLAN_CIPHER_SUITE_WEP104,
-	WLAN_CIPHER_SUITE_TKIP,
-	WLAN_CIPHER_SUITE_CCMP,
-
-	/* keep last -- depends on hw flags! */
-	WLAN_CIPHER_SUITE_AES_CMAC
-};
-
-static struct cfg80211_ops mtk_p2p_config_ops = {
-#if (CFG_ENABLE_WIFI_DIRECT_CFG_80211 != 0)
-	/* Froyo */
+static struct cfg80211_ops mtk_p2p_ops = {
 	.add_virtual_intf = mtk_p2p_cfg80211_add_iface,
 	.change_virtual_intf = mtk_p2p_cfg80211_change_iface,	/* 1 st */
 	.del_virtual_intf = mtk_p2p_cfg80211_del_iface,
@@ -824,7 +695,6 @@ static struct cfg80211_ops mtk_p2p_config_ops = {
 	.set_bitrate_mask = mtk_p2p_cfg80211_set_bitrate_mask,
 	.mgmt_frame_register = mtk_p2p_cfg80211_mgmt_frame_register,
 	.get_station = mtk_p2p_cfg80211_get_station,
-	/* ================ */
 	.add_key = mtk_p2p_cfg80211_add_key,
 	.get_key = mtk_p2p_cfg80211_get_key,
 	.del_key = mtk_p2p_cfg80211_del_key,
@@ -837,42 +707,60 @@ static struct cfg80211_ops mtk_p2p_config_ops = {
 #ifdef CONFIG_NL80211_TESTMODE
 	.testmode_cmd = mtk_p2p_cfg80211_testmode_cmd,
 #endif
-#endif
+};
+
+static const struct wiphy_vendor_command mtk_p2p_vendor_ops[] = {
+	{
+		{
+			.vendor_id = GOOGLE_OUI,
+			.subcmd = WIFI_SUBCMD_GET_CHANNEL_LIST
+		},
+		.flags = WIPHY_VENDOR_CMD_NEED_WDEV | WIPHY_VENDOR_CMD_NEED_NETDEV,
+		.doit = mtk_cfg80211_vendor_get_channel_list
+	},
+	{
+		{
+			.vendor_id = GOOGLE_OUI,
+			.subcmd = WIFI_SUBCMD_SET_COUNTRY_CODE
+		},
+		.flags = WIPHY_VENDOR_CMD_NEED_WDEV | WIPHY_VENDOR_CMD_NEED_NETDEV,
+		.doit = mtk_cfg80211_vendor_set_country_code
+	},
 };
 
 /* There isn't a lot of sense in it, but you can transmit anything you like */
 static const struct ieee80211_txrx_stypes
-mtk_cfg80211_default_mgmt_stypes[NUM_NL80211_IFTYPES] = {
+	mtk_cfg80211_default_mgmt_stypes[NUM_NL80211_IFTYPES] = {
 	[NL80211_IFTYPE_ADHOC] = {
-				  .tx = 0xffff,
-				  .rx = BIT(IEEE80211_STYPE_ACTION >> 4)
-				  },
+		.tx = 0xffff,
+		.rx = BIT(IEEE80211_STYPE_ACTION >> 4)
+	},
 	[NL80211_IFTYPE_STATION] = {
-				    .tx = 0xffff,
-				    .rx = BIT(IEEE80211_STYPE_ACTION >> 4) | BIT(IEEE80211_STYPE_PROBE_REQ >> 4)
-				    },
+		.tx = 0xffff,
+		.rx = BIT(IEEE80211_STYPE_ACTION >> 4) | BIT(IEEE80211_STYPE_PROBE_REQ >> 4)
+	},
 	[NL80211_IFTYPE_AP] = {
-			       .tx = 0xffff,
-			       .rx = BIT(IEEE80211_STYPE_PROBE_REQ >> 4) | BIT(IEEE80211_STYPE_ACTION >> 4)
-			       },
+		.tx = 0xffff,
+		.rx = BIT(IEEE80211_STYPE_PROBE_REQ >> 4) | BIT(IEEE80211_STYPE_ACTION >> 4)
+	},
 	[NL80211_IFTYPE_AP_VLAN] = {
-				    /* copy AP */
-				    .tx = 0xffff,
-				    .rx = BIT(IEEE80211_STYPE_ASSOC_REQ >> 4) |
-				    BIT(IEEE80211_STYPE_REASSOC_REQ >> 4) |
-				    BIT(IEEE80211_STYPE_PROBE_REQ >> 4) |
-				    BIT(IEEE80211_STYPE_DISASSOC >> 4) |
-				    BIT(IEEE80211_STYPE_AUTH >> 4) |
-				    BIT(IEEE80211_STYPE_DEAUTH >> 4) | BIT(IEEE80211_STYPE_ACTION >> 4)
-				    },
+		/* copy AP */
+		.tx = 0xffff,
+		.rx = BIT(IEEE80211_STYPE_ASSOC_REQ >> 4) |
+		      BIT(IEEE80211_STYPE_REASSOC_REQ >> 4) |
+		      BIT(IEEE80211_STYPE_PROBE_REQ >> 4) |
+		      BIT(IEEE80211_STYPE_DISASSOC >> 4) |
+		      BIT(IEEE80211_STYPE_AUTH >> 4) |
+		      BIT(IEEE80211_STYPE_DEAUTH >> 4) | BIT(IEEE80211_STYPE_ACTION >> 4)
+	},
 	[NL80211_IFTYPE_P2P_CLIENT] = {
-				       .tx = 0xffff,
-				       .rx = BIT(IEEE80211_STYPE_ACTION >> 4) | BIT(IEEE80211_STYPE_PROBE_REQ >> 4)
-				       },
+		.tx = 0xffff,
+		.rx = BIT(IEEE80211_STYPE_ACTION >> 4) | BIT(IEEE80211_STYPE_PROBE_REQ >> 4)
+	},
 	[NL80211_IFTYPE_P2P_GO] = {
-				   .tx = 0xffff,
-				   .rx = BIT(IEEE80211_STYPE_PROBE_REQ >> 4) | BIT(IEEE80211_STYPE_ACTION >> 4)
-				   }
+		.tx = 0xffff,
+		.rx = BIT(IEEE80211_STYPE_PROBE_REQ >> 4) | BIT(IEEE80211_STYPE_ACTION >> 4)
+	}
 };
 
 #endif
@@ -1027,7 +915,7 @@ static int p2pHardStartXmit(IN struct sk_buff *prSkb, IN struct net_device *prDe
 
 static int p2pSetMACAddress(IN struct net_device *prDev, void *addr);
 
-static int p2pDoIOCTL(struct net_device *prDev, struct ifreq *prIFReq, int i4Cmd);
+static int p2pDoIOCTL(struct net_device *prDev, struct ifreq *prIfReq, int i4Cmd);
 
 #if 0
 
@@ -1265,37 +1153,6 @@ BOOLEAN p2PFreeInfo(P_GLUE_INFO_T prGlueInfo)
 
 }
 
-/*----------------------------------------------------------------------------*/
-/*!
-* \brief Enable Channel  for cfg80211 for Wi-Fi Direct based on current country code
-*
-* \param[in] prGlueInfo      Pointer to glue info
-*
-* \return   TRUE
-*           FALSE
-*/
-/*----------------------------------------------------------------------------*/
-VOID
-p2pEnableChannel(PUINT_8 pucChIdx, UINT_8 ucChannelNum, struct ieee80211_channel *mtk_channels, UINT_8 mtk_channel_sz)
-{
-	UINT_8 ucCurChIdx = *pucChIdx;
-
-	while (TRUE) {
-		(*pucChIdx)++;
-		(*pucChIdx) %= mtk_channel_sz;
-
-		if (ucChannelNum == mtk_channels[*pucChIdx].hw_value) {
-			mtk_channels[*pucChIdx].flags &= ~IEEE80211_CHAN_DISABLED;
-			break;
-		}
-
-		if (*pucChIdx == ucCurChIdx) {
-			DBGLOG(INIT, WARN, "Orphan channel [%d]\n", ucChannelNum);
-			break;
-		}
-	}
-}
-
 BOOLEAN p2pNetRegister(P_GLUE_INFO_T prGlueInfo, BOOLEAN fgIsRtnlLockAcquired)
 {
 	BOOLEAN fgDoRegister = FALSE;
@@ -1388,70 +1245,6 @@ BOOLEAN p2pNetUnregister(P_GLUE_INFO_T prGlueInfo, BOOLEAN fgIsRtnlLockAcquired)
 
 /*----------------------------------------------------------------------------*/
 /*!
-* \brief Update Channel table for cfg80211 for Wi-Fi Direct based on current country code
-*
-* \param[in] prGlueInfo      Pointer to glue info
-*
-* \return   TRUE
-*           FALSE
-*/
-/*----------------------------------------------------------------------------*/
-VOID p2pUpdateChannelTableByDomain(P_GLUE_INFO_T prGlueInfo)
-{
-	UINT_8 i, j, uc2gChIdx, uc5gChIdx;
-	UINT_8 ucMaxChannelNum = ARRAY_SIZE(mtk_2ghz_channels) + ARRAY_SIZE(mtk_5ghz_a_channels);
-	UINT_8 ucNumOfChannel = ucMaxChannelNum;
-	RF_CHANNEL_INFO_T aucChannelList[ucMaxChannelNum];
-
-	uc2gChIdx = uc5gChIdx = 0;
-
-	/* 1. Disable all channel */
-	for (i = 0; i < ARRAY_SIZE(mtk_2ghz_channels); i++) {
-		mtk_2ghz_channels[i].flags |= IEEE80211_CHAN_DISABLED;
-		mtk_2ghz_channels[i].orig_flags |= IEEE80211_CHAN_DISABLED;
-	}
-	for (i = 0; i < ARRAY_SIZE(mtk_5ghz_a_channels); i++) {
-		mtk_5ghz_a_channels[i].flags |= IEEE80211_CHAN_DISABLED;
-		mtk_5ghz_a_channels[i].orig_flags |= IEEE80211_CHAN_DISABLED;
-	}
-
-	/* 2. Get current domain channel list */
-	rlmDomainGetChnlList(prGlueInfo->prAdapter, BAND_NULL, ucMaxChannelNum, &ucNumOfChannel, aucChannelList);
-
-	/* 3. Enable specific channel based on domain channel list */
-	for (i = 0; i < ucNumOfChannel; i++) {
-		switch (aucChannelList[i].eBand) {
-		case BAND_2G4:
-			for (j = 0; j < ARRAY_SIZE(mtk_2ghz_channels); j++) {
-				if (mtk_2ghz_channels[j].hw_value == aucChannelList[i].ucChannelNum) {
-					mtk_2ghz_channels[j].flags &= ~IEEE80211_CHAN_DISABLED;
-					mtk_2ghz_channels[j].orig_flags &= ~IEEE80211_CHAN_DISABLED;
-					break;
-				}
-			}
-			break;
-
-		case BAND_5G:
-			for (j = 0; j < ARRAY_SIZE(mtk_5ghz_a_channels); j++) {
-				if (mtk_5ghz_a_channels[j].hw_value == aucChannelList[i].ucChannelNum) {
-					mtk_5ghz_a_channels[j].flags &= ~IEEE80211_CHAN_DISABLED;
-					mtk_5ghz_a_channels[j].orig_flags &= ~IEEE80211_CHAN_DISABLED;
-					break;
-				}
-			}
-			break;
-
-		default:
-			DBGLOG(INIT, WARN, "Unknown band.\n");
-			break;
-
-		}
-	}
-
-}
-
-/*----------------------------------------------------------------------------*/
-/*!
 * \brief Register for cfg80211 for Wi-Fi Direct
 *
 * \param[in] prGlueInfo      Pointer to glue info
@@ -1508,8 +1301,6 @@ BOOLEAN glRegisterP2P(P_GLUE_INFO_T prGlueInfo, const char *prDevName, BOOLEAN f
 	/*set_wiphy_dev(gprP2pWdev->wiphy, prDev);*/
 	if (!prGlueInfo->prAdapter->fgEnable5GBand)
 		gprP2pWdev->wiphy->bands[IEEE80211_BAND_5GHZ] = NULL;
-
-	p2pUpdateChannelTableByDomain(prGlueInfo);
 
 	/* 2.2 wdev initialization */
 	if (fgIsApMode)
@@ -1622,7 +1413,7 @@ BOOLEAN glP2pCreateWirelessDevice(P_GLUE_INFO_T prGlueInfo)
 		return FALSE;
 	}
 	/* 1. allocate WIPHY */
-	prWiphy = wiphy_new(&mtk_p2p_config_ops, sizeof(P_GLUE_INFO_T));
+	prWiphy = wiphy_new(&mtk_p2p_ops, sizeof(P_GLUE_INFO_T));
 	if (!prWiphy) {
 		DBGLOG(P2P, ERROR, "unable to allocate wiphy for p2p\n");
 		goto free_wdev;
@@ -1638,8 +1429,8 @@ BOOLEAN glP2pCreateWirelessDevice(P_GLUE_INFO_T prGlueInfo)
 
 	prWiphy->mgmt_stypes = mtk_cfg80211_default_mgmt_stypes;
 	prWiphy->max_remain_on_channel_duration = 5000;
-	prWiphy->n_cipher_suites = 5;
-	prWiphy->cipher_suites = (const u32 *)cipher_suites;
+	prWiphy->cipher_suites = mtk_cipher_suites;
+	prWiphy->n_cipher_suites = ARRAY_SIZE(mtk_cipher_suites);
 	prWiphy->flags = WIPHY_FLAG_HAS_REMAIN_ON_CHANNEL | WIPHY_FLAG_HAVE_AP_SME;
 	prWiphy->regulatory_flags = REGULATORY_CUSTOM_REG;
 	prWiphy->ap_sme_capa = 1;
@@ -1647,9 +1438,13 @@ BOOLEAN glP2pCreateWirelessDevice(P_GLUE_INFO_T prGlueInfo)
 	prWiphy->max_scan_ssids = MAX_SCAN_LIST_NUM;
 	prWiphy->max_scan_ie_len = MAX_SCAN_IE_LEN;
 	prWiphy->signal_type = CFG80211_SIGNAL_TYPE_MBM;
+	prWiphy->vendor_commands = mtk_p2p_vendor_ops;
+	prWiphy->n_vendor_commands = sizeof(mtk_p2p_vendor_ops) / sizeof(struct wiphy_vendor_command);
+
 #ifdef CONFIG_PM
 	prWiphy->wowlan = &mtk_p2p_wowlan_support;
 #endif
+
 	/* 2.1 set priv as pointer to glue structure */
 	*((P_GLUE_INFO_T *) wiphy_priv(prWiphy)) = prGlueInfo;
 	/* Here are functions which need rtnl_lock */
@@ -1940,6 +1735,22 @@ static void p2pSetMulticastList(IN struct net_device *prDev)
 
 }				/* p2pSetMulticastList */
 
+/* FIXME: Since we cannot sleep in the wlanSetMulticastList, we arrange
+ * another workqueue for sleeping. We don't want to block
+ * tx_thread, so we can't let tx_thread to do this */
+
+void p2pSetMulticastListWorkQueueWrapper(P_GLUE_INFO_T prGlueInfo)
+{
+	if (!prGlueInfo) {
+		DBGLOG(INIT, ERROR, "prGlueInfo is NULL\n");
+		return;
+	}
+#if CFG_ENABLE_WIFI_DIRECT
+	if (prGlueInfo->prAdapter->fgIsP2PRegistered)
+		mtk_p2p_wext_set_Multicastlist(prGlueInfo);
+#endif
+}				/* end of p2pSetMulticastListWorkQueueWrapper() */
+
 /*----------------------------------------------------------------------------*/
 /*!
  * \brief This function is to set multicast list and set rx mode.
@@ -2000,7 +1811,7 @@ void mtk_p2p_wext_set_Multicastlist(P_GLUE_INFO_T prGlueInfo)
 
 	}
 
-}				/* end of p2pSetMulticastList() */
+}				/* end of mtk_p2p_wext_set_Multicastlist() */
 
 /*----------------------------------------------------------------------------*/
 /*!
@@ -2042,44 +1853,42 @@ int p2pHardStartXmit(IN struct sk_buff *prSkb, IN struct net_device *prDev)
  *
  * \param[in] prDev      Linux kernel netdevice
  *
- * \param[in] prIFReq    Our private ioctl request structure, typed for the generic
+ * \param[in] prIfReq    Our private ioctl request structure, typed for the generic
  *                       struct ifreq so we can use ptr to function
  *
  * \param[in] cmd        Command ID
  *
- * \retval WLAN_STATUS_SUCCESS The IOCTL command is executed successfully.
- * \retval OTHER The execution of IOCTL command is failed.
+ * \retval 0  The IOCTL command is executed successfully.
+ * \retval <0 The execution of IOCTL command is failed.
  */
 /*----------------------------------------------------------------------------*/
-int p2pDoIOCTL(struct net_device *prDev, struct ifreq *prIFReq, int i4Cmd)
+int p2pDoIOCTL(struct net_device *prDev, struct ifreq *prIfReq, int i4Cmd)
 {
 	P_GLUE_INFO_T prGlueInfo = NULL;
 	int ret = 0;
 	/* char *prExtraBuf = NULL; */
 	/* UINT_32 u4ExtraSize = 0; */
-	/* struct iwreq *prIwReq = (struct iwreq *)prIFReq; */
+	/* struct iwreq *prIwReq = (struct iwreq *)prIfReq; */
 	/* struct iw_request_info rIwReqInfo; */
 
-	ASSERT(prDev);
+	ASSERT(prDev && prIfReq);
 
 	prGlueInfo = *((P_GLUE_INFO_T *) netdev_priv(prDev));
-
-	ASSERT(prGlueInfo);
 	if (!prGlueInfo) {
-		DBGLOG(INIT, WARN, "%s No glue info\n", __func__);
+		DBGLOG(P2P, ERROR, "prGlueInfo is NULL\n");
 		return -EFAULT;
 	}
 
 	if (prGlueInfo->u4ReadyFlag == 0) {
-		/* adapter not ready yet */
+		DBGLOG(P2P, ERROR, "Adapter is not ready\n");
 		return -EINVAL;
 	}
 
 	if (i4Cmd == SIOCDEVPRIVATE + 1) {
-		ret = priv_support_driver_cmd(prDev, prIFReq, i4Cmd);
+		ret = priv_support_driver_cmd(prDev, prIfReq, i4Cmd);
 
 	} else {
-		DBGLOG(INIT, WARN, "Unexpected ioctl command on p2p0 %s: 0x%04x\n", __func__, i4Cmd);
+		DBGLOG(INIT, WARN, "Unexpected ioctl command: 0x%04x\n", i4Cmd);
 		ret = -1;
 	}
 
@@ -2216,13 +2025,14 @@ int p2pSetMACAddress(IN struct net_device *prDev, void *addr)
 #if 0
 /*----------------------------------------------------------------------------*/
 /*!
- * \brief To report the private supported IOCTLs table to user space.
+ * \brief To report the iw private args table to user space.
  *
  * \param[in] prDev Net device requested.
- * \param[out] prIfReq Pointer to ifreq structure, content is copied back to
- *                  user space buffer in gl_iwpriv_table.
+ * \param[in] info Pointer to iw_request_info.
+ * \param[inout] wrqu Pointer to iwreq_data.
+ * \param[inout] extra
  *
- * \retval 0 For success.
+ * \retval 0  For success.
  * \retval -E2BIG For user's buffer size is too small.
  * \retval -EFAULT For fail.
  *
@@ -2233,15 +2043,10 @@ mtk_p2p_wext_get_priv(IN struct net_device *prDev,
 		      IN struct iw_request_info *info, IN OUT union iwreq_data *wrqu, IN OUT char *extra)
 {
 	struct iw_point *prData = (struct iw_point *)&wrqu->data;
-	UINT_16 u2BufferSize = 0;
+	UINT_16 u2BufferSize = prData->length;
 
-	ASSERT(prDev);
-
-	u2BufferSize = prData->length;
-
-	/* update our private table size */
-	prData->length = (__u16) sizeof(rP2PIwPrivTable) / sizeof(struct iw_priv_args);
-
+	/* Update our private args table size */
+	prData->length = (__u16)sizeof(rP2PIwPrivTable);
 	if (u2BufferSize < prData->length)
 		return -E2BIG;
 

@@ -89,7 +89,6 @@
 *                    E X T E R N A L   R E F E R E N C E S
 ********************************************************************************
 */
-extern VOID wlanUpdateChannelTable(P_GLUE_INFO_T prGlueInfo);
 
 #if CFG_SUPPORT_WAPI
 extern UINT_8 keyStructBuf[1024];	/* add/remove key shared buffer */
@@ -345,8 +344,6 @@ wext_indicate_wext_event(IN P_GLUE_INFO_T prGlueInfo,
 			 IN unsigned int u4Cmd, IN unsigned char *pucData, IN unsigned int u4DataLen);
 
 struct iw_statistics *wext_get_wireless_stats(struct net_device *prDev);
-
-int wext_get_priv(IN struct net_device *prNetDev, IN struct ifreq *prIfReq);
 
 BOOLEAN
 wextSrchDesiredWPAIE(IN PUINT_8 pucIEStart,

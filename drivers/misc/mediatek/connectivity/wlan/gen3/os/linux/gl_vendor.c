@@ -13,17 +13,16 @@
 *                    E X T E R N A L   R E F E R E N C E S
 ********************************************************************************
 */
-#include "gl_os.h"
-#include "debug.h"
-#include "wlan_lib.h"
-#include "gl_wext.h"
-#include "precomp.h"
 #include <linux/can/netlink.h>
 #include <net/netlink.h>
 #include <net/cfg80211.h>
+
+#include "gl_os.h"
+#include "wlan_lib.h"
+#include "gl_wext.h"
+#include "precomp.h"
 #include "gl_cfg80211.h"
 #include "gl_vendor.h"
-#include "wlan_oid.h"
 
 /*******************************************************************************
 *                              C O N S T A N T S
@@ -99,6 +98,116 @@ int mtk_cfg80211_nla_put_type(struct sk_buff *skb, ENUM_NLA_PUT_DATE_TYPE type, 
 	return 0;
 }
 
+int mtk_cfg80211_vendor_get_channel_list(struct wiphy *wiphy, struct wireless_dev *wdev, const void *data, int data_len)
+{
+	P_GLUE_INFO_T prGlueInfo;
+	struct nlattr *attr;
+	UINT_32 band = 0;
+	UINT_8 ucNumOfChannel, i, j;
+	RF_CHANNEL_INFO_T aucChannelList[64];
+	UINT_32 num_channels;
+	wifi_channel channels[64];
+	struct sk_buff *skb;
+
+	ASSERT(wiphy && wdev);
+	if ((data == NULL) || !data_len)
+		return -EINVAL;
+
+	DBGLOG(REQ, INFO, "vendor command: data_len=%d\n", data_len);
+
+	attr = (struct nlattr *)data;
+	if (attr->nla_type == WIFI_ATTRIBUTE_BAND)
+		band = nla_get_u32(attr);
+
+	DBGLOG(REQ, INFO, "Get channel list for band: %d\n", band);
+
+	prGlueInfo = (P_GLUE_INFO_T) wiphy_priv(wiphy);
+	if (!prGlueInfo)
+		return -EFAULT;
+
+	if (band == 0) { /* 2.4G band */
+		rlmDomainGetChnlList(prGlueInfo->prAdapter, BAND_2G4, TRUE,
+			     64, &ucNumOfChannel, aucChannelList);
+	} else { /* 5G band */
+		rlmDomainGetChnlList(prGlueInfo->prAdapter, BAND_5G, TRUE,
+			     64, &ucNumOfChannel, aucChannelList);
+	}
+
+	kalMemZero(channels, sizeof(channels));
+	for (i = 0, j = 0; i < ucNumOfChannel; i++) {
+		/* We need to report frequency list to HAL */
+		channels[j] = nicChannelNum2Freq(aucChannelList[i].ucChannelNum) / 1000;
+		if (channels[j] == 0)
+			continue;
+		else if ((prGlueInfo->prAdapter->rWifiVar.rConnSettings.u2CountryCode == COUNTRY_CODE_TW) &&
+			(channels[j] >= 5180 && channels[j] <= 5260)) {
+			/* Taiwan NCC has resolution to follow FCC spec to support 5G Band 1/2/3/4
+			 * (CH36~CH48, CH52~CH64, CH100~CH140, CH149~CH165)
+			 * Filter CH36~CH52 for compatible with some old devices.
+			 */
+			continue;
+		} else {
+			DBGLOG(REQ, INFO, "channels[%d] = %d\n", j, channels[j]);
+			j++;
+		}
+	}
+	num_channels = j;
+
+	skb = cfg80211_vendor_cmd_alloc_reply_skb(wiphy, sizeof(channels));
+	if (!skb) {
+		DBGLOG(REQ, ERROR, "Allocate skb failed\n");
+		return -ENOMEM;
+	}
+
+	if (unlikely(nla_put_u32(skb, WIFI_ATTRIBUTE_NUM_CHANNELS, num_channels) < 0))
+		goto nla_put_failure;
+
+	if (unlikely(nla_put(skb, WIFI_ATTRIBUTE_CHANNEL_LIST,
+		(sizeof(wifi_channel) * num_channels), channels) < 0))
+		goto nla_put_failure;
+
+	return cfg80211_vendor_cmd_reply(skb);
+
+nla_put_failure:
+	kfree_skb(skb);
+	return -EFAULT;
+}
+
+int mtk_cfg80211_vendor_set_country_code(struct wiphy *wiphy, struct wireless_dev *wdev, const void *data, int data_len)
+{
+	P_GLUE_INFO_T prGlueInfo;
+	WLAN_STATUS rStatus;
+	UINT_32 u4BufLen;
+	struct nlattr *attr;
+	UINT_8 country[2];
+
+	ASSERT(wiphy && wdev);
+	if ((data == NULL) || (data_len == 0))
+		return -EINVAL;
+
+	DBGLOG(REQ, INFO, "vendor command: data_len=%d\n", data_len);
+
+	attr = (struct nlattr *)data;
+	if (attr->nla_type == WIFI_ATTRIBUTE_COUNTRY_CODE) {
+		country[0] = *((PUINT_8)nla_data(attr));
+		country[1] = *((PUINT_8)nla_data(attr) + 1);
+	}
+
+	DBGLOG(REQ, INFO, "Set country code: %c%c\n", country[0], country[1]);
+
+	prGlueInfo = (P_GLUE_INFO_T) wiphy_priv(wiphy);
+	if (!prGlueInfo)
+		return -EFAULT;
+
+	rStatus = kalIoctl(prGlueInfo, wlanoidSetCountryCode, country, 2, FALSE, FALSE, TRUE, &u4BufLen);
+	if (rStatus != WLAN_STATUS_SUCCESS) {
+		DBGLOG(REQ, ERROR, "Set country code error: %x\n", rStatus);
+		return -EFAULT;
+	}
+
+	return 0;
+}
+
 int mtk_cfg80211_vendor_get_capabilities(struct wiphy *wiphy, struct wireless_dev *wdev, const void *data, int data_len)
 {
 	P_GLUE_INFO_T prGlueInfo = NULL;
@@ -141,7 +250,7 @@ int mtk_cfg80211_vendor_get_capabilities(struct wiphy *wiphy, struct wireless_de
 	/* NLA_PUT_U8(skb, NL80211_TESTMODE_STA_STATISTICS_INVALID, 0); */
 	/* NLA_PUT_U32(skb, NL80211_ATTR_VENDOR_ID, GOOGLE_OUI); */
 	/* NLA_PUT_U32(skb, NL80211_ATTR_VENDOR_SUBCMD, GSCAN_SUBCMD_GET_CAPABILITIES); */
-	NLA_PUT(skb, NL80211_ATTR_VENDOR_CAPABILITIES, sizeof(rGscanCapabilities), &rGscanCapabilities);
+	NLA_PUT(skb, GSCAN_ATTRIBUTE_CAPABILITIES, sizeof(rGscanCapabilities), &rGscanCapabilities);
 
 	i4Status = cfg80211_vendor_cmd_reply(skb);
 
@@ -687,38 +796,6 @@ nla_put_failure:
 	return -1;
 }
 
-int mtk_cfg80211_vendor_get_channel_list(struct wiphy *wiphy, struct wireless_dev *wdev, const void *data, int data_len)
-{
-	INT_32 i4Status = -EINVAL;
-	struct nlattr *attr;
-	UINT_32 band = 0;
-	wifi_channel channels[4];
-	struct sk_buff *skb;
-
-	ASSERT(wiphy);
-	if ((data == NULL) || !data_len)
-		return i4Status;
-
-	DBGLOG(REQ, INFO, "%s for vendor command: data_len=%d \r\n", __func__, data_len);
-
-	attr = (struct nlattr *)data;
-	if (attr->nla_type == GSCAN_ATTRIBUTE_BAND)
-		band = nla_get_u32(attr);
-	DBGLOG(REQ, INFO, "get channel list: band=%d\r\n", band);
-
-	skb = cfg80211_vendor_cmd_alloc_reply_skb(wiphy, sizeof(wifi_channel) * 4);
-	if (!skb) {
-		DBGLOG(REQ, TRACE, "%s allocate skb failed:%x\n", __func__, i4Status);
-		return -ENOMEM;
-	}
-
-	kalMemZero(channels, sizeof(wifi_channel) * 4);
-
-	i4Status = cfg80211_vendor_cmd_reply(skb);
-	DBGLOG(SCN, INFO, "%s for vendor command done\r\n", __func__);
-	return i4Status;
-}
-
 int mtk_cfg80211_vendor_llstats_get_info(struct wiphy *wiphy, struct wireless_dev *wdev, const void *data, int data_len)
 {
 	INT_32 i4Status = -EINVAL;
@@ -760,7 +837,7 @@ int mtk_cfg80211_vendor_llstats_get_info(struct wiphy *wiphy, struct wireless_de
 	pRadioStat->tx_time = 12;
 	pRadioStat->num_channels = 4;
 
-	NLA_PUT(skb, NL80211_ATTR_VENDOR_LLSTAT, u4BufLen, pRadioStat);
+	NLA_PUT(skb, LSTATS_ATTRIBUTE_STATS, u4BufLen, pRadioStat);
 
 	i4Status = cfg80211_vendor_cmd_reply(skb);
 

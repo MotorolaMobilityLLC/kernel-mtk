@@ -2081,7 +2081,8 @@ VOID p2pFsmRunEventConnectionAbort(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMs
 					break;
 				}
 
-				kalP2PGCIndicateConnectionStatus(prAdapter->prGlueInfo, NULL, NULL, 0, 0);
+				kalP2PGCIndicateConnectionStatus(prAdapter->prGlueInfo, NULL, NULL, 0, 0,
+					WLAN_STATUS_MEDIA_DISCONNECT_LOCALLY);
 
 				/* Stop rejoin timer if it is started. */
 				/* TODO: If it has. */
@@ -2347,7 +2348,7 @@ VOID p2pFsmRunEventJoinComplete(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHd
 				kalP2PGCIndicateConnectionStatus(prAdapter->prGlueInfo,
 								 &prP2pFsmInfo->rConnReqInfo,
 								 prJoinInfo->aucIEBuf, prJoinInfo->u4BufLength,
-								 prStaRec->u2StatusCode);
+								 prStaRec->u2StatusCode, WLAN_STATUS_MEDIA_CONNECT);
 
 			} else {
 				/* Join Fail */
@@ -2371,7 +2372,8 @@ VOID p2pFsmRunEventJoinComplete(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHd
 										 &prP2pFsmInfo->rConnReqInfo,
 										 prJoinInfo->aucIEBuf,
 										 prJoinInfo->u4BufLength,
-										 prStaRec->u2StatusCode);
+										 prStaRec->u2StatusCode,
+										 WLAN_STATUS_MEDIA_DISCONNECT_LOCALLY);
 					} else {
 						/* Sometime the GO is not ready to response auth. */
 						/* Connect it again */
@@ -2490,7 +2492,8 @@ VOID p2pFsmRunEventRxDeauthentication(IN P_ADAPTER_T prAdapter, IN P_STA_RECORD_
 				/* Indicate disconnect to Host. */
 				kalP2PGCIndicateConnectionStatus(prAdapter->prGlueInfo,
 								 NULL,
-								 prDeauthFrame->aucInfoElem, u2IELength, u2ReasonCode);
+								 prDeauthFrame->aucInfoElem, u2IELength, u2ReasonCode,
+								 WLAN_STATUS_MEDIA_DISCONNECT);
 
 				prP2pBssInfo->prStaRecOfAP = NULL;
 				DBGLOG(P2P, INFO, "GC RX Deauth Reason: %d\n", u2ReasonCode);
@@ -2605,7 +2608,8 @@ VOID p2pFsmRunEventRxDisassociation(IN P_ADAPTER_T prAdapter, IN P_STA_RECORD_T 
 				kalP2PGCIndicateConnectionStatus(prAdapter->prGlueInfo,
 								 NULL,
 								 prDisassocFrame->aucInfoElem,
-								 u2IELength, prStaRec->u2ReasonCode);
+								 u2IELength, prStaRec->u2ReasonCode,
+								 WLAN_STATUS_MEDIA_DISCONNECT);
 
 				prP2pBssInfo->prStaRecOfAP = NULL;
 
@@ -2709,7 +2713,8 @@ VOID p2pFsmRunEventBeaconTimeout(IN P_ADAPTER_T prAdapter)
 		if (prP2pBssInfo->eConnectionState == PARAM_MEDIA_STATE_CONNECTED) {
 			/* Indicate disconnect to Host. */
 			kalP2PGCIndicateConnectionStatus(prAdapter->prGlueInfo,
-							 NULL, NULL, 0, REASON_CODE_DISASSOC_INACTIVITY);
+							 NULL, NULL, 0, REASON_CODE_DISASSOC_INACTIVITY,
+							 WLAN_STATUS_MEDIA_DISCONNECT_LOCALLY);
 
 			if (prP2pBssInfo->prStaRecOfAP != NULL) {
 				P_STA_RECORD_T prStaRec = prP2pBssInfo->prStaRecOfAP;

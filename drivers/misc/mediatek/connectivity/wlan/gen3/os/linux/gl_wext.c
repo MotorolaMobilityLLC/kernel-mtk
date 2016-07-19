@@ -3225,18 +3225,16 @@ wext_set_encode_ext(IN struct net_device *prNetDev,
 /*!
 * \brief Set country code
 *
-* \param[in] prDev Net device requested.
-* \param[in] prIwrInfo NULL.
-* \param[in] pu4Mode Pointer to new operation mode.
-* \param[in] pcExtra NULL.
+* \param[in] prNetDev Net device requested.
+* \param[in] prData iwreq.u.data carries country code value.
 *
 * \retval 0 For success.
-* \retval -EOPNOTSUPP If new mode is not supported.
+* \retval -EEFAULT For fail.
 *
-* \note Device will run in new operation mode if it is valid.
+* \note Country code is stored and channel list is updated based on current country domain.
 */
 /*----------------------------------------------------------------------------*/
-static int wext_set_country(IN struct net_device *prNetDev, IN struct iwreq *iwr)
+static int wext_set_country(IN struct net_device *prNetDev, IN struct iw_point *prData)
 {
 	P_GLUE_INFO_T prGlueInfo;
 	WLAN_STATUS rStatus;
@@ -3245,21 +3243,55 @@ static int wext_set_country(IN struct net_device *prNetDev, IN struct iwreq *iwr
 
 	ASSERT(prNetDev);
 
-	/* iwr->u.data.pointer should be like "COUNTRY US", "COUNTRY EU"
+	/* prData->pointer should be like "COUNTRY US", "COUNTRY EU"
 	 * and "COUNTRY JP"
 	 */
-	if (FALSE == GLUE_CHK_PR2(prNetDev, iwr) || !iwr->u.data.pointer || iwr->u.data.length < 10)
+	if (FALSE == GLUE_CHK_PR2(prNetDev, prData) || !prData->pointer || prData->length < 10)
 		return -EINVAL;
+
 	prGlueInfo = *((P_GLUE_INFO_T *) netdev_priv(prNetDev));
 
-	aucCountry[0] = *((PUINT_8) iwr->u.data.pointer + 8);
-	aucCountry[1] = *((PUINT_8) iwr->u.data.pointer + 9);
+	aucCountry[0] = *((PUINT_8)prData->pointer + 8);
+	aucCountry[1] = *((PUINT_8)prData->pointer + 9);
 
 	rStatus = kalIoctl(prGlueInfo, wlanoidSetCountryCode, &aucCountry[0], 2, FALSE, FALSE, TRUE, &u4BufLen);
-	wlanUpdateChannelTable(prGlueInfo);
+	if (rStatus != WLAN_STATUS_SUCCESS) {
+		DBGLOG(REQ, ERROR, "Set country code error: %x\n", rStatus);
+		return -EFAULT;
+	}
 
 	return 0;
 }
+
+/*----------------------------------------------------------------------------*/
+/*!
+* \brief To report the iw private args table to user space.
+*
+* \param[in] prNetDev Net device requested.
+* \param[out] prData iwreq.u.data to carry the private args table.
+*
+* \retval 0  For success.
+* \retval -E2BIG For user's buffer size is too small.
+* \retval -EFAULT For fail.
+*
+*/
+/*----------------------------------------------------------------------------*/
+static int wext_get_priv(IN struct net_device *prNetDev, OUT struct iw_point *prData)
+{
+	UINT_16 u2BufferSize = prData->length;
+
+	/* Update our private args table size */
+	prData->length = (__u16)sizeof(rIwPrivTable);
+	if (u2BufferSize < prData->length)
+		return -E2BIG;
+
+	if (prData->length) {
+		if (copy_to_user(prData->pointer, rIwPrivTable, sizeof(rIwPrivTable)))
+			return -EFAULT;
+	}
+
+	return 0;
+}				/* wext_get_priv */
 
 /*----------------------------------------------------------------------------*/
 /*!
@@ -3279,7 +3311,6 @@ static int wext_set_country(IN struct net_device *prNetDev, IN struct iwreq *iwr
 /*----------------------------------------------------------------------------*/
 int wext_support_ioctl(IN struct net_device *prDev, IN struct ifreq *prIfReq, IN int i4Cmd)
 {
-	/* prIfReq is verified in the caller function wlanDoIOCTL() */
 	struct iwreq *iwr = (struct iwreq *)prIfReq;
 	struct iw_request_info rIwReqInfo;
 	int ret = 0;
@@ -3287,9 +3318,6 @@ int wext_support_ioctl(IN struct net_device *prDev, IN struct ifreq *prIfReq, IN
 	UINT_32 u4ExtraSize = 0;
 	struct iw_scan_req *prIwScanReq = NULL;
 
-	/* prDev is verified in the caller function wlanDoIOCTL() */
-
-	/* Prepare the call */
 	rIwReqInfo.cmd = (__u16) i4Cmd;
 	rIwReqInfo.flags = 0;
 
@@ -3352,13 +3380,14 @@ int wext_support_ioctl(IN struct net_device *prDev, IN struct ifreq *prIfReq, IN
 		}
 		break;
 
-	case SIOCSIWPRIV:	/* 0x8B0C, Country */
-		/* TODO: receive the android driver command */
-		/* COUNTRY PNOFORCE ... */
-		ret = wext_set_country(prDev, iwr);
+	case SIOCSIWPRIV:	/* 0x8B0C, set country code */
+		ret = wext_set_country(prDev, &iwr->u.data);
 		break;
 
-		/* case SIOCGIWPRIV: 0x8B0D, handled in wlan_do_ioctl() */
+	case SIOCGIWPRIV:	/* 0x8B0D, get private args table */
+		ret = wext_get_priv(prDev, &iwr->u.data);
+		break;
+
 		/* caes SIOCSIWSTATS: 0x8B0E, unused */
 		/* case SIOCGIWSTATS:
 		   get statistics, intercepted by wireless_process_ioctl() in wireless.c,
@@ -4037,41 +4066,5 @@ stat_out:
 	return pStats;
 }				/* wlan_get_wireless_stats */
 
-/*----------------------------------------------------------------------------*/
-/*!
-* \brief To report the private supported IOCTLs table to user space.
-*
-* \param[in] prNetDev Net device requested.
-* \param[out] prIfReq Pointer to ifreq structure, content is copied back to
-*                  user space buffer in gl_iwpriv_table.
-*
-* \retval 0 For success.
-* \retval -E2BIG For user's buffer size is too small.
-* \retval -EFAULT For fail.
-*
-*/
-/*----------------------------------------------------------------------------*/
-int wext_get_priv(IN struct net_device *prNetDev, IN struct ifreq *prIfReq)
-{
-	/* prIfReq is verified in the caller function wlanDoIOCTL() */
-	struct iwreq *prIwReq = (struct iwreq *)prIfReq;
-	struct iw_point *prData = (struct iw_point *)&prIwReq->u.data;
-	UINT_16 u2BufferSize = 0;
-
-	u2BufferSize = prData->length;
-
-	/* update our private table size */
-	prData->length = (__u16) sizeof(rIwPrivTable) / sizeof(struct iw_priv_args);
-
-	if (u2BufferSize < prData->length)
-		return -E2BIG;
-
-	if (prData->length) {
-		if (copy_to_user(prData->pointer, rIwPrivTable, sizeof(rIwPrivTable)))
-			return -EFAULT;
-	}
-
-	return 0;
-}				/* wext_get_priv */
 
 #endif /* WIRELESS_EXT */

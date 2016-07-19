@@ -931,6 +931,8 @@
 #define CFG_SUPPORT_CFG_FILE     1
 #endif
 
+#define CFG_SUPPORT_FCC_DYNAMIC_TX_PWR_ADJUST 0  /* Support FCC/CE Dynamic Tx Power Adjust */
+
 #define CFG_SUPPORT_CE_FCC_TXPWR_LIMIT 0 /* Support CE FCC Tx Power limit */
 
 #define CFG_SUPPORT_802_11D             1	/*!< 1(default): Enable 802.11d
@@ -1591,6 +1593,11 @@
 #define WLAN_INCLUDE_PROC                   1
 
 #define CFG_SUPPORT_DETECT_SECURITY_MODE_CHANGE 1
+/*------------------------------------------------------------------------------
+ * Flags of drop multicast packet when device suspend
+ *------------------------------------------------------------------------------
+ */
+#define CFG_SUPPORT_DROP_MC_PACKET		0
 /*******************************************************************************
 *                             D A T A   T Y P E S
 ********************************************************************************

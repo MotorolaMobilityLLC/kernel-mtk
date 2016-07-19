@@ -1596,6 +1596,7 @@ WLAN_STATUS kalRxIndicateOnePkt(IN P_GLUE_INFO_T prGlueInfo, IN PVOID pvPkt)
 {
 	struct net_device *prNetDev = prGlueInfo->prDevHandler;
 	struct sk_buff *prSkb = NULL;
+	UINT_8 bssIdx = 0;
 
 	ASSERT(prGlueInfo);
 	ASSERT(pvPkt);
@@ -1612,9 +1613,17 @@ WLAN_STATUS kalRxIndicateOnePkt(IN P_GLUE_INFO_T prGlueInfo, IN PVOID pvPkt)
 #endif
 
 #if 1
-	prNetDev = (struct net_device *)wlanGetNetInterfaceByBssIdx(prGlueInfo, GLUE_GET_PKT_BSS_IDX(prSkb));
-	if (!prNetDev)
+	bssIdx = GLUE_GET_PKT_BSS_IDX(prSkb);
+	prNetDev = (struct net_device *)wlanGetNetInterfaceByBssIdx(prGlueInfo, bssIdx);
+	if (!prNetDev) {
 		prNetDev = prGlueInfo->prDevHandler;
+	} else if (bssIdx == NET_DEV_P2P_IDX) {
+		if (prGlueInfo->prAdapter->rP2PNetRegState == ENUM_NET_REG_STATE_UNREGISTERED) {
+			DBGLOG(RX, INFO, "bssIdx = %d P2PNetRegState=%d\n",
+				bssIdx, prGlueInfo->prAdapter->rP2PNetRegState);
+			prNetDev = prGlueInfo->prDevHandler;
+		}
+	}
 #if CFG_SUPPORT_SNIFFER
 	if (prGlueInfo->fgIsEnableMon)
 		prNetDev = prGlueInfo->prMonDevHandler;
@@ -1801,29 +1810,11 @@ kalIndicateStatusAndComplete(IN P_GLUE_INFO_T prGlueInfo, IN WLAN_STATUS eStatus
 
 			/* CFG80211 Indication */
 			if (eStatus == WLAN_STATUS_ROAM_OUT_FIND_BEST) {
-				struct ieee80211_channel *prChannel = NULL;
-				UINT_8 ucChannelNum = wlanGetChannelNumberByNetwork(prGlueInfo->prAdapter,
-										    prGlueInfo->prAdapter->
-										    prAisBssInfo->ucBssIndex);
-
-				if (ucChannelNum <= 14) {
-					prChannel =
-					    ieee80211_get_channel(priv_to_wiphy(prGlueInfo),
-								  ieee80211_channel_to_frequency
-								  (ucChannelNum, IEEE80211_BAND_2GHZ));
-				} else {
-					prChannel =
-					    ieee80211_get_channel(priv_to_wiphy(prGlueInfo),
-								  ieee80211_channel_to_frequency
-								  (ucChannelNum, IEEE80211_BAND_5GHZ));
-				}
-
-				cfg80211_roamed(prGlueInfo->prDevHandler,
-						prChannel,
-						arBssid,
-						prGlueInfo->aucReqIe,
-						prGlueInfo->u4ReqIeLength,
-						prGlueInfo->aucRspIe, prGlueInfo->u4RspIeLength, GFP_KERNEL);
+				cfg80211_roamed_bss(prGlueInfo->prDevHandler,
+						    bss,
+						    prGlueInfo->aucReqIe,
+						    prGlueInfo->u4ReqIeLength,
+						    prGlueInfo->aucRspIe, prGlueInfo->u4RspIeLength, GFP_KERNEL);
 			} else {
 				cfg80211_connect_result(prGlueInfo->prDevHandler, arBssid,
 							prGlueInfo->aucReqIe,
@@ -1852,15 +1843,15 @@ kalIndicateStatusAndComplete(IN P_GLUE_INFO_T prGlueInfo, IN WLAN_STATUS eStatus
 
 		netif_carrier_off(prGlueInfo->prDevHandler);
 
-		if (prGlueInfo->fgIsRegistered == TRUE
-		    && eStatus == WLAN_STATUS_MEDIA_DISCONNECT) {
+		if (prGlueInfo->fgIsRegistered == TRUE) {
 			P_BSS_INFO_T prBssInfo = prGlueInfo->prAdapter->prAisBssInfo;
 			UINT_16 u2DeauthReason = 0;
 
 			if (prBssInfo)
 				u2DeauthReason = prBssInfo->u2DeauthReason;
 			/* CFG80211 Indication */
-			cfg80211_disconnected(prGlueInfo->prDevHandler, u2DeauthReason, NULL, 0, GFP_KERNEL);
+			cfg80211_disconnected(prGlueInfo->prDevHandler, u2DeauthReason, NULL, 0,
+			eStatus == WLAN_STATUS_MEDIA_DISCONNECT_LOCALLY, GFP_KERNEL);
 		}
 
 		prGlueInfo->eParamMediaStateIndicated = PARAM_MEDIA_STATE_DISCONNECTED;
@@ -4309,7 +4300,8 @@ kalGetChannelList(IN P_GLUE_INFO_T prGlueInfo,
 		  IN ENUM_BAND_T eSpecificBand,
 		  IN UINT_8 ucMaxChannelNum, IN PUINT_8 pucNumOfChannel, IN P_RF_CHANNEL_INFO_T paucChannelList)
 {
-	rlmDomainGetChnlList(prGlueInfo->prAdapter, eSpecificBand, ucMaxChannelNum, pucNumOfChannel, paucChannelList);
+	rlmDomainGetChnlList(prGlueInfo->prAdapter, eSpecificBand, FALSE, ucMaxChannelNum,
+			     pucNumOfChannel, paucChannelList);
 }
 
 /*----------------------------------------------------------------------------*/
