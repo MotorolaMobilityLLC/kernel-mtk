@@ -489,6 +489,14 @@ static unsigned char get_otp_wb(void)
 	printk("IM219_OTP:nWBGroup = %d\n",nWBGroup);
 
 	temp_CalGain = (current_R&0x000000ff)|((current_B<<8)&0x0000ff00)|((current_Gr<<16)&0x00ff0000)|((current_Gb<<24)&0xff000000);
+
+	//add by liuzhen to custom Golden awb data
+	golden_R = 0x8e;
+	golden_B = 0x84;
+	golden_Gr = 0xc8;
+	golden_Gb = 0xca;
+	//add end 
+
 	temp_FacGain = (golden_R&0x000000ff)|((golden_B<<8)&0x0000ff00)|((golden_Gr<<16)&0x00ff0000)|((golden_Gb<<24)&0xff000000);
 #if 0
 	//WB Data CheckSum
