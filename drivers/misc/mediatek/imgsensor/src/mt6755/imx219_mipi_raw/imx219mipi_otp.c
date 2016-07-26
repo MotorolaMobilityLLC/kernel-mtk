@@ -296,7 +296,7 @@ static unsigned char get_otp_lsc(void)
 
 	kal_uint16 nLSCGroup = 0;
 
-#if 1
+#if 0
 	UBYTE pLSCInfoData[256] = {0};
 	kal_uint16 i;
 	kal_uint16 nLSCCheckSum;
@@ -312,7 +312,7 @@ static unsigned char get_otp_lsc(void)
 	{
 		nLSCGroup = 1;
 		lscTable = 0;
-	#if 1 
+	#if 0 
 		for (i = 2; i < 5; i++)  
 		{
 			IMX219_readpage(i, pLSCInfoData+ (i-2)*64);
@@ -323,7 +323,7 @@ static unsigned char get_otp_lsc(void)
 	{
 		nLSCGroup = 2;
 		lscTable = 2;
-	#if 1
+	#if 0
 		for (i = 7; i < 11; i++)  
 		{
 			IMX219_readpage(i, pLSCInfoData+ (i-7)*64);
@@ -337,7 +337,7 @@ static unsigned char get_otp_lsc(void)
 	}
 
 	printk("IM219_OTP:nLSCGroup = %d\n",nLSCGroup);
-#if 1
+#if 0
 	// LSC CheckSum
 	sum = 0;
 	//kal_uint16 i;
@@ -348,9 +348,9 @@ static unsigned char get_otp_lsc(void)
 	}
 	nLSCCheckSum = sum % 0xff + 1;
 
-	printk("pBasicInfoData[61+(nLSCGroup-1)] = %d\n",pLSCInfoData[61+(nLSCGroup-1)]);
+	printk("pBasicInfoData[61+(nLSCGroup-1)] = %d\n",pBasicInfoData[61+(nLSCGroup-1)]);
 	printk("nLSCCheckSum = %d\n",nLSCCheckSum);
-	if(pLSCInfoData[61+(nLSCGroup-1)] != nLSCCheckSum)
+	if(pBasicInfoData[61+(nLSCGroup-1)] != nLSCCheckSum)
 	{
 		    OTP_LOG("LSC CheckSum is error");
 	}
