@@ -292,7 +292,7 @@ static void set_max_framerate(UINT16 framerate,kal_bool min_framelength_en)
 	set_dummy();
 }	/*	set_max_framerate  */
 
-static void write_shutter(kal_uint16 shutter)
+static void write_shutter(kal_uint32 shutter)
 {
 
     kal_uint16 realtime_fps = 0;
@@ -325,6 +325,10 @@ static void write_shutter(kal_uint16 shutter)
 
 	}
 	// Update Shutter
+		if(imgsensor.frame_length==65535)
+		{
+			shutter = imgsensor.frame_length-imgsensor_info.margin;
+		}
         write_cmos_sensor(0x0202, shutter);
 	LOG_INF("shutter =%d, framelength =%d\n", shutter,imgsensor.frame_length);
 
@@ -348,7 +352,7 @@ static void write_shutter(kal_uint16 shutter)
 * GLOBALS AFFECTED
 *
 *************************************************************************/
-static void set_shutter(kal_uint16 shutter)
+static void set_shutter(kal_uint32 shutter)
 {
 	unsigned long flags;
 	spin_lock_irqsave(&imgsensor_drv_lock, flags);
@@ -1464,7 +1468,7 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 	mLShutter=*pLockAePara;
 	/*lenovo-sw sunliang modify for long_shutter 2015_4_25 begin*/
 #endif
-	LOG_INF("feature_id = %d\n", feature_id);
+	//LOG_INF("feature_id = %d,lock_flag=%d\n", feature_id,lock_flag);
 	switch (feature_id) {
 		case SENSOR_FEATURE_GET_PERIOD:
 			*feature_return_para_16++ = imgsensor.line_length;
