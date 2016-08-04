@@ -513,12 +513,11 @@ static int step_c_get_data(u64 *value, int *status)
 		return err;
 	}
 
-	/*Lenovo-sw weimh1 mod 2016-7-7:data should > 0*/
 	if (data >= last_stc_value) {
 		obj->pedo_data.last_step_counter_value += (
 			data - last_stc_value);
 		last_stc_value = data;
-	} else if (data > 0){ 
+	} else {
 		last_stc_value = data;
 	}
 	*value = (int)obj->pedo_data.last_step_counter_value;
