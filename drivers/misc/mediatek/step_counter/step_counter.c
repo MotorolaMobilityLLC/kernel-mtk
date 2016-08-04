@@ -23,7 +23,7 @@
 
 /*Lenovo-sw weimh1 add 2016-7-7 begin:record invalid count for steps*/
 #ifndef STEP_COUNTER_INT_MODE_SUPPORT
-#define STEP_COUNTER_INVALID_COUNT 60
+#define STEP_COUNTER_INVALID_COUNT 200
 int invalid_count = 0;
 #endif
 /*Lenovo-sw weimh1 add 2016-7-7 end:record invalid count for steps*/
@@ -92,8 +92,9 @@ static void step_c_work_func(struct work_struct *work)
 /*Lenovo-sw weimh1 add 2016-7-7:record invalid count for steps*/
 #ifndef STEP_COUNTER_INT_MODE_SUPPORT
 			invalid_count++;;
-			if (invalid_count < 5)
+			if (invalid_count < 5) {
 				step_c_data_report(cxt->idev, cxt->drv_data.counter, cxt->drv_data.status);
+			}
 #endif
 /*Lenovo-sw weimh1 add 2016-7-7 end:record invalid count for steps*/
 
@@ -114,6 +115,7 @@ step_c_loop:
 	} else {
 		cxt->is_polling_run = false;
 		invalid_count = 0;
+		STEP_C_ERR("get step_c data invalid count too much,suspend!!\n" );
 	}
 #endif
 	value = 0;
@@ -137,7 +139,7 @@ static struct step_c_context *step_c_context_alloc_object(void)
 		STEP_C_ERR("Alloc step_c object error!\n");
 		return NULL;
 	}
-	atomic_set(&obj->delay, 500);	/*2Hz */
+	atomic_set(&obj->delay, 200);	/*5Hz */
 	atomic_set(&obj->wake, 0);
 	INIT_WORK(&obj->report, step_c_work_func);
 	init_timer(&obj->timer);
