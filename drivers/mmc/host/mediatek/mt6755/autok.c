@@ -410,9 +410,13 @@ static int autok_send_tune_cmd(struct msdc_host *host, unsigned int opcode, enum
 
 	/* clear fifo */
 	if ((tune_type_value == TUNE_CMD) || (tune_type_value == TUNE_DATA)) {
-		autok_msdc_reset();
-		msdc_clear_fifo();
-		MSDC_WRITE32(MSDC_INT, 0xffffffff);
+		if ((tune_type_value == TUNE_CMD) && (host->id == 0))
+			MSDC_WRITE32(MSDC_INT, MSDC_INT_CMDTMO | MSDC_INT_CMDRDY | MSDC_INT_RSPCRCERR);
+		else {
+			autok_msdc_reset();
+			msdc_clear_fifo();
+			MSDC_WRITE32(MSDC_INT, 0xffffffff);
+		}
 	}
 
 	/* start command */
@@ -982,7 +986,7 @@ static int autok_pad_dly_sel(struct AUTOK_REF_INFO *pInfo)
 			else
 				cycle_cnt = 2 * (64 - pBdPrev->Bound_Start);
 
-			uDlySel_R = (uBD_mid_prev >= 32) ? 0 : 63;
+			uDlySel_R = 0xFF;
 			uMgLost_R = 0xFF; /* Margin enough donot care margin lost */
 			uDlySel_F = uBD_mid_prev;
 			uMgLost_F = 0xFF; /* Margin enough donot care margin lost */
@@ -1112,7 +1116,7 @@ static int autok_pad_dly_sel(struct AUTOK_REF_INFO *pInfo)
 					uDlySel_R = 63;
 				} else if (pBdPrev->Bound_End == 63) {
 					uDlySel_F = 63;
-					uDlySel_R = 0;
+					uDlySel_R = 0xFF;
 				} else {
 					return -1;
 				}
@@ -1141,14 +1145,14 @@ static int autok_pad_dly_sel(struct AUTOK_REF_INFO *pInfo)
 
 					uDlySel_R = uBD_mid_prev;
 					uMgLost_R = 0xFF;
-					uDlySel_F = (uBD_mid_prev >= 32) ? 0 : 63;
+					uDlySel_F = 0xFF;
 					uMgLost_F = 0xFF;
 				} else {
 					cycle_cnt = 128;
 
 					uDlySel_R = (pBdPrev->Bound_Start == 0) ? 0 : 63;
 					uMgLost_R = 0xFF;
-					uDlySel_F = (pBdPrev->Bound_Start == 0) ? 63 : 0;
+					uDlySel_F = 0xFF;
 					uMgLost_F = 0xFF;
 				}
 
@@ -3497,9 +3501,9 @@ int hs400_execute_tuning_cmd(struct msdc_host *host, u8 *res)
 	if (execute_cmd_online_tuning(host, res) != 0)
 		AUTOK_RAWPRINT("[AUTOK only for cmd] ========Error: Autok HS400 Failed========");
 
-	autok_msdc_reset();
-	msdc_clear_fifo();
-	MSDC_WRITE32(MSDC_INT, 0xffffffff);
+	/*autok_msdc_reset();*/
+	/*msdc_clear_fifo();*/
+	/*MSDC_WRITE32(MSDC_INT, 0xffffffff);*/
 	MSDC_WRITE32(MSDC_INTEN, int_en);
 	MSDC_SET_FIELD(MSDC_CFG, MSDC_CFG_CKPDN, clk_pwdn);
 
@@ -3567,9 +3571,9 @@ int hs200_execute_tuning_cmd(struct msdc_host *host, u8 *res)
 	if (execute_cmd_online_tuning(host, res) != 0)
 		AUTOK_RAWPRINT("[AUTOK only for cmd] ========Error: Autok HS200 Failed========");
 
-	autok_msdc_reset();
-	msdc_clear_fifo();
-	MSDC_WRITE32(MSDC_INT, 0xffffffff);
+	/*autok_msdc_reset();*/
+	/*msdc_clear_fifo();*/
+	/*MSDC_WRITE32(MSDC_INT, 0xffffffff);*/
 	MSDC_WRITE32(MSDC_INTEN, int_en);
 	MSDC_SET_FIELD(MSDC_CFG, MSDC_CFG_CKPDN, clk_pwdn);
 
