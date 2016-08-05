@@ -619,10 +619,10 @@ typedef enum _ENUM_MAC_GI_INFO_T {
 #define RXM_RXD_PKT_TYPE_SW_FRAME  0xE001
 
 /* AMPDU data frame with no errors including FC/FM/I/T/LM/DAF/EL/LLC-MIS/ UDFVLT and Class 3 error */
-#define RXS_DW2_AMPDU_nERR_BITMAP  0xFFFF
+#define RXS_DW2_AMPDU_nERR_BITMAP  0xFFBF
 #define RXS_DW2_AMPDU_nERR_VALUE   0x0000
 /* no error including FC/FM/I/T/LM/DAF/EL/LLC-MIS/ UDFVLT */
-#define RXS_DW2_RX_nERR_BITMAP     0x07FC
+#define RXS_DW2_RX_nERR_BITMAP     0x07F8
 #define RXS_DW2_RX_nERR_VALUE      0x0000
 /* Non-Data frames */
 #define RXS_DW2_RX_nDATA_BITMAP    0x3000

@@ -1698,6 +1698,9 @@ kalIndicateStatusAndComplete(IN P_GLUE_INFO_T prGlueInfo, IN WLAN_STATUS eStatus
 											 IEEE80211_BAND_5GHZ));
 			}
 
+			if (!prChannel)
+				DBGLOG(SCN, ERROR, "prChannel is NULL and ucChannelNum is %d\n", ucChannelNum);
+
 			/* ensure BSS exists */
 			bss = cfg80211_get_bss(priv_to_wiphy(prGlueInfo), prChannel, arBssid,
 					       ssid.aucSsid, ssid.u4SsidLen, WLAN_CAPABILITY_ESS, WLAN_CAPABILITY_ESS);
@@ -1801,10 +1804,17 @@ kalIndicateStatusAndComplete(IN P_GLUE_INFO_T prGlueInfo, IN WLAN_STATUS eStatus
 			cfg80211_scan_done(prScanRequest, FALSE);
 		break;
 	case WLAN_STATUS_CONNECT_INDICATION:
+		prBssDesc = prGlueInfo->prAdapter->rWifiVar.rAisFsmInfo.prTargetBssDesc;
+
+		if (prBssDesc)
+			COPY_MAC_ADDR(arBssid, prBssDesc->aucBSSID);
+		else
+			COPY_MAC_ADDR(arBssid, prGlueInfo->prAdapter->rWifiVar.rConnSettings.aucBSSID);
+
 		/* indicate AIS Jion fail  event
 		if (prGlueInfo->prDevHandler->ieee80211_ptr->sme_state == CFG80211_SME_CONNECTING) */
 		cfg80211_connect_result(prGlueInfo->prDevHandler,
-					prGlueInfo->prAdapter->rWifiVar.rAisFsmInfo.prTargetBssDesc->aucBSSID,
+					arBssid,
 					prGlueInfo->aucReqIe,
 					prGlueInfo->u4ReqIeLength,
 					prGlueInfo->aucRspIe,

@@ -915,6 +915,9 @@ struct _STA_RECORD_T {
 
 	UINT8 ucStatsGenDisplayCnt;
 #endif				/* CFG_SUPPORT_STATISTICS */
+
+	UINT_16 u2MaxIdlePeriod;
+	UINT_8 ucIdleOption;
 };
 
 #if 0
