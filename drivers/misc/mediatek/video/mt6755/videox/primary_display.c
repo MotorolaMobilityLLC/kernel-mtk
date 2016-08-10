@@ -90,6 +90,8 @@
 #include "mt_spm_reg.h"
 #include "mt_spm_idle.h"
 
+#include "ddp_aal.h"
+
 #define FRM_UPDATE_SEQ_CACHE_NUM (DISP_INTERNAL_BUFFER_COUNT+1)
 
 static disp_internal_buffer_info *decouple_buffer_info[DISP_INTERNAL_BUFFER_COUNT];
@@ -5363,6 +5365,9 @@ int primary_display_setbacklight(unsigned int level)
 {
 	int ret = 0;
 	static unsigned int last_level;
+#ifdef CONFIG_MTK_AAL_SUPPORT
+	int need_aallock = 0;
+#endif
 
 	DISPFUNC();
 
@@ -5378,6 +5383,12 @@ int primary_display_setbacklight(unsigned int level)
 #ifndef CONFIG_MTK_AAL_SUPPORT
 	_primary_path_switch_dst_lock();
 	_primary_path_lock(__func__);
+#else
+	need_aallock = aal_is_need_lock();
+	if (need_aallock) {
+		_primary_path_switch_dst_lock();
+		_primary_path_lock(__func__);
+	}
 #endif
 	if (pgc->state == DISP_SLEPT) {
 		DISPERR("Sleep State set backlight invald\n");
@@ -5411,6 +5422,11 @@ int primary_display_setbacklight(unsigned int level)
 #ifndef CONFIG_MTK_AAL_SUPPORT
 	_primary_path_unlock(__func__);
 	_primary_path_switch_dst_unlock();
+#else
+	if (need_aallock) {
+		_primary_path_unlock(__func__);
+		_primary_path_switch_dst_unlock();
+	}
 #endif
 	MMProfileLogEx(ddp_mmp_get_events()->primary_set_bl, MMProfileFlagEnd, 0, 0);
 	return ret;
