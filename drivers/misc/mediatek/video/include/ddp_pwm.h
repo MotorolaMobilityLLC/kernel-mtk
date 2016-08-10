@@ -28,6 +28,8 @@ typedef enum {
 	OSC_26M,
 } DISP_PWM_CLK_FREQ;
 
+void disp_pwm_set_force_update_flag(void);
+
 void disp_pwm_set_main(disp_pwm_id_t main);
 disp_pwm_id_t disp_pwm_get_main(void);
 
