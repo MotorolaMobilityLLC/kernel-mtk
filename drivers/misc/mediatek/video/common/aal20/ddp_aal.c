@@ -61,7 +61,6 @@ static int disp_aal_write_init_regs(void *cmdq);
 #endif
 static int disp_aal_write_param_to_reg(cmdqRecHandle cmdq, const DISP_AAL_PARAM *param);
 
-
 static DECLARE_WAIT_QUEUE_HEAD(g_aal_hist_wq);
 static DEFINE_SPINLOCK(g_aal_hist_lock);
 static DISP_AAL_HIST g_aal_hist = {
@@ -120,6 +119,7 @@ static int disp_aal_exit_idle(const char *caller, int need_kick)
 	return 0;
 }
 
+//mtk add 20160815 for LTR issue begin
 static void backlight_brightness_set_with_lock(int bl_1024)
 {
 	_primary_path_switch_dst_lock();
@@ -130,7 +130,7 @@ static void backlight_brightness_set_with_lock(int bl_1024)
 	primary_display_manual_unlock();
 	_primary_path_switch_dst_unlock();
 }
-
+ //mtk add 20160815 for LTR issue end
 static int disp_aal_init(DISP_MODULE_ENUM module, int width, int height, void *cmdq)
 {
 #ifdef CONFIG_MTK_AAL_SUPPORT
@@ -388,10 +388,9 @@ void disp_aal_notify_backlight_changed(int bl_1024)
 	if (bl_1024 == 0) {
 		/* set backlight under LCM_CABC mode with cpu : need lock */
 		if (g_led_mode == MT65XX_LED_MODE_CUST_LCM)
-			backlight_brightness_set_with_lock(0);
+			backlight_brightness_set_with_lock(0);     //mtk add
 		else
 			backlight_brightness_set(0);
-
 		/* set backlight = 0 may be not from AAL, we have to let AALService
 		   can turn on backlight on phone resumption */
 		service_flags = AAL_SERVICE_FORCE_UPDATE;
@@ -399,10 +398,11 @@ void disp_aal_notify_backlight_changed(int bl_1024)
 		/* we have to set backlight = 0 through CMDQ again to avoid timimg issue */
 		disp_pwm_set_force_update_flag();
 	} else if (!g_aal_is_init_regs_valid) {
-		/* AAL Service is not running */
+			/* AAL Service is not running */
 		if (g_led_mode == MT65XX_LED_MODE_CUST_LCM)
 			backlight_brightness_set_with_lock(bl_1024);
 		else
+		/* AAL Service is not running */
 			backlight_brightness_set(bl_1024);
 	}
 	AAL_NOTICE("led_mode=%d , aal_need_lock=%d", g_led_mode, g_aal_need_lock);
