@@ -639,7 +639,7 @@ static int ltr579_dynamic_calibrate(void)
 	}
 	noise = data_total/(5 - j);
 
-	if(noise < (dynamic_cali + 200))
+	if(noise < (dynamic_cali + 300))
 	{
 				//dynamic_cali = noise;
 				isadjust = 1;
