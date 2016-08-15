@@ -5365,9 +5365,7 @@ int primary_display_setbacklight(unsigned int level)
 {
 	int ret = 0;
 	static unsigned int last_level;
-#ifdef CONFIG_MTK_AAL_SUPPORT
-	int need_aallock = 0;
-#endif
+
 
 	DISPFUNC();
 
@@ -5383,12 +5381,7 @@ int primary_display_setbacklight(unsigned int level)
 #ifndef CONFIG_MTK_AAL_SUPPORT
 	_primary_path_switch_dst_lock();
 	_primary_path_lock(__func__);
-#else
-	need_aallock = aal_is_need_lock();
-	if (need_aallock) {
-		_primary_path_switch_dst_lock();
-		_primary_path_lock(__func__);
-	}
+
 #endif
 	if (pgc->state == DISP_SLEPT) {
 		DISPERR("Sleep State set backlight invald\n");
@@ -5422,11 +5415,6 @@ int primary_display_setbacklight(unsigned int level)
 #ifndef CONFIG_MTK_AAL_SUPPORT
 	_primary_path_unlock(__func__);
 	_primary_path_switch_dst_unlock();
-#else
-	if (need_aallock) {
-		_primary_path_unlock(__func__);
-		_primary_path_switch_dst_unlock();
-	}
 #endif
 	MMProfileLogEx(ddp_mmp_get_events()->primary_set_bl, MMProfileFlagEnd, 0, 0);
 	return ret;
@@ -5445,10 +5433,12 @@ int primary_display_setcabc(unsigned int mode)
 	}
 
 	MMProfileLogEx(ddp_mmp_get_events()->primary_set_bl, MMProfileFlagStart, 0, 0);
+
 #ifndef CONFIG_MTK_AAL_SUPPORT
 	_primary_path_switch_dst_lock();
 	_primary_path_lock(__func__);
 #endif
+
 	if (pgc->state == DISP_SLEPT) {
 		DISPERR("Sleep State set cabc invald\n");
 	} else {
@@ -5462,6 +5452,7 @@ int primary_display_setcabc(unsigned int mode)
 				DISPERR("cmd mode set cabc invald\n");
 				//_set_backlight_by_cmdq(level);
 			}
+			atomic_set(&delayed_trigger_kick, 1);
 		} else {
 			//_set_backlight_by_cpu(level);
 		}
@@ -5533,6 +5524,7 @@ int primary_display_sethbm(unsigned int mode)
 	_primary_path_switch_dst_lock();
 	_primary_path_lock(__func__);
 #endif
+
 	if (pgc->state == DISP_SLEPT) {
 		DISPERR("Sleep State set hbm invald\n");
 		//wuwl10 add, we need to update the hbm status so that backlight can work when resume
@@ -5554,6 +5546,7 @@ int primary_display_sethbm(unsigned int mode)
 				DISPERR("cmd mode set hbm invald\n");
 				//_set_backlight_by_cmdq(level);
 			}
+			atomic_set(&delayed_trigger_kick, 1);
 		} else {
 			//_set_backlight_by_cpu(level);
 		}
@@ -5562,6 +5555,7 @@ int primary_display_sethbm(unsigned int mode)
 	_primary_path_unlock(__func__);
 	_primary_path_switch_dst_unlock();
 #endif
+
 	MMProfileLogEx(ddp_mmp_get_events()->primary_set_bl, MMProfileFlagEnd, 0, 0);
 	return ret;
 }
