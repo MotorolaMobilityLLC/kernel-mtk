@@ -377,8 +377,15 @@ static ssize_t gyro_show_delay(struct device *dev,
 				 struct device_attribute *attr, char *buf)
 {
 	int len = 0;
+	struct gyro_context *cxt = NULL;
 
-	GYRO_LOG(" not support now\n");
+	cxt = gyro_context_obj;
+
+//	GYRO_LOG(" not support now\n");
+	if (cxt != NULL) {
+		return snprintf(buf, PAGE_SIZE, "%d\n", cxt->delay.counter);
+	}
+
 	return len;
 }
 
@@ -456,46 +463,6 @@ static ssize_t gyro_show_devnum(struct device *dev,
 	ret = sscanf(devname+5, "%d", &devnum);
 	return snprintf(buf, PAGE_SIZE, "%d\n", devnum);
 }
-
-/*Lenovo-sw weimh1 add 2016-8-2 begin:using auto-cali for gyro*/
-#ifdef GYROSCOPE_AUTO_CALI
-static ssize_t gyro_store_freq(struct device *dev, struct device_attribute *attr,
-				  const char *buf, size_t count)
-{
-	struct gyro_context *cxt = NULL;
-	int delay;
-	int ret;
-
-	GYRO_LOG("gyro_store_freq buf=%s\n", buf);
-	mutex_lock(&gyro_context_obj->gyro_op_mutex);
-	cxt = gyro_context_obj;
-
-	if (cxt != NULL) {
-		ret = kstrtoint(buf, 10, &delay);
-		atomic_set(&cxt->delay, delay);
-	}
-
-	mutex_unlock(&gyro_context_obj->gyro_op_mutex);
-	GYRO_LOG(" gyro_store_freq done\n");
-
-	return count;
-}
-
-static ssize_t gyro_show_freq(struct device *dev,
-				 struct device_attribute *attr, char *buf)
-{
-	struct gyro_context *cxt = NULL;;
-
-	cxt = gyro_context_obj;
-
-	if (cxt != NULL) {
-		return snprintf(buf, PAGE_SIZE, "%d\n", cxt->delay.counter);
-	}
-
-	return 0;
-}
-#endif
-/*Lenovo-sw weimh1 add 2016-8-2 end*/
 
 static int gyroscope_remove(struct platform_device *pdev)
 {
@@ -648,9 +615,6 @@ DEVICE_ATTR(gyrodelay,      S_IWUSR | S_IRUGO, gyro_show_delay,  gyro_store_dela
 DEVICE_ATTR(gyrobatch,     S_IWUSR | S_IRUGO, gyro_show_batch, gyro_store_batch);
 DEVICE_ATTR(gyroflush,      S_IWUSR | S_IRUGO, gyro_show_flush,  gyro_store_flush);
 DEVICE_ATTR(gyrodevnum,      S_IWUSR | S_IRUGO, gyro_show_devnum,  NULL);
-#ifdef GYROSCOPE_AUTO_CALI
-DEVICE_ATTR(gyrofreq,      S_IWUSR | S_IRUGO, gyro_show_freq,  gyro_store_freq);
-#endif
 
 static struct attribute *gyro_attributes[] = {
 	&dev_attr_gyroenablenodata.attr,
@@ -659,9 +623,6 @@ static struct attribute *gyro_attributes[] = {
 	&dev_attr_gyrobatch.attr,
 	&dev_attr_gyroflush.attr,
 	&dev_attr_gyrodevnum.attr,
-#ifdef GYROSCOPE_AUTO_CALI
-	&dev_attr_gyrofreq.attr,
-#endif
 	NULL
 };
 
