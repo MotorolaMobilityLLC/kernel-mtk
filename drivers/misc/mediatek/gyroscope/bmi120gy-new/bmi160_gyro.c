@@ -927,11 +927,13 @@ static int bmg_read_sensor_data(struct i2c_client *client,
 		return -3;
 	} else {
 		/* compensate data */
-#ifndef BMI120_AUTO_CALIB
+/*Lenovo-sw weimh1 del 2016-8-16 begin:cali in HAL*/
+#if 0
 		databuf[BMG_AXIS_X] += obj->cali_sw[BMG_AXIS_X];
 		databuf[BMG_AXIS_Y] += obj->cali_sw[BMG_AXIS_Y];
 		databuf[BMG_AXIS_Z] += obj->cali_sw[BMG_AXIS_Z];
 #endif
+/*Lenovo-sw weimh1 del 2016-8-16 begin:caliin HAL*/
 
 		/* remap coordinate */
 		gyro[obj->cvt.map[BMG_AXIS_X]] =
@@ -945,7 +947,7 @@ static int bmg_read_sensor_data(struct i2c_client *client,
 #ifdef BMI120_CALIB_HAL
 		gyro[BMG_AXIS_X] =	gyro[BMG_AXIS_X] - calib_gyro_offset[BMG_AXIS_X];
 		gyro[BMG_AXIS_Y] =	gyro[BMG_AXIS_Y] - calib_gyro_offset[BMG_AXIS_Y];
-		gyro[BMG_AXIS_Z] =	gyro[BMG_AXIS_Z] - calib_gyro_offset[BMG_AXIS_Z];		
+		gyro[BMG_AXIS_Z] =	gyro[BMG_AXIS_Z] - calib_gyro_offset[BMG_AXIS_Z];
 #endif
 
 #ifdef BMI120_AUTO_CALIB
