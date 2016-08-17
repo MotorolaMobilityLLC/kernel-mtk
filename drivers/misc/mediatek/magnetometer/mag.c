@@ -839,10 +839,14 @@ int mag_register_control_path(struct mag_control_path *ctl)
 
 	return 0;
 }
-static int x1, y1, z1;
-static long pc;
-static long count;
+/*lenovo-sw caoyi1 modify begin*/
+//static int x1, y1, z1;
+//static long pc;
+//static long count;
+/*lenovo-sw caoyi1 modify end*/
 
+/*lenovo-sw caoyi1 modify begin*/
+/*
 static int check_repeat_data(int x, int y, int z)
 {
 	if ((x1 == x) && (y1 == y) && (z1 == z))
@@ -876,14 +880,18 @@ static int check_abnormal_data(int x, int y, int z, int status)
 
 	return 0;
 }
+*/
+/*lenovo-sw caoyi1 modify end*/
 
 int mag_data_report(enum MAG_TYPE type, int x, int y, int z, int status, int64_t nt)
 {
 	/* MAG_LOG("update!valus: %d, %d, %d, %d\n" , x, y, z, status); */
 	struct mag_context *cxt = NULL;
 
-	check_repeat_data(x, y, z);
-	check_abnormal_data(x, y, z, status);
+/*lenovo-sw caoyi1 modify begin*/
+	//check_repeat_data(x, y, z);
+	//check_abnormal_data(x, y, z, status);
+/*lenovo-sw caoyi1 modify end*/
 
 	cxt = mag_context_obj;
 	if (MAGNETIC == type) {
