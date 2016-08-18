@@ -5434,10 +5434,10 @@ int primary_display_setcabc(unsigned int mode)
 
 	MMProfileLogEx(ddp_mmp_get_events()->primary_set_bl, MMProfileFlagStart, 0, 0);
 
-#ifndef CONFIG_MTK_AAL_SUPPORT
+//#ifndef CONFIG_MTK_AAL_SUPPORT
 	_primary_path_switch_dst_lock();
 	_primary_path_lock(__func__);
-#endif
+//#endif
 
 	if (pgc->state == DISP_SLEPT) {
 		DISPERR("Sleep State set cabc invald\n");
@@ -5457,10 +5457,10 @@ int primary_display_setcabc(unsigned int mode)
 			//_set_backlight_by_cpu(level);
 		}
 	}
-#ifndef CONFIG_MTK_AAL_SUPPORT
+//#ifndef CONFIG_MTK_AAL_SUPPORT
 	_primary_path_unlock(__func__);
 	_primary_path_switch_dst_unlock();
-#endif
+//#endif
 	MMProfileLogEx(ddp_mmp_get_events()->primary_set_bl, MMProfileFlagEnd, 0, 0);
 	return ret;
 }
@@ -5477,10 +5477,10 @@ int primary_display_setinverse(unsigned int mode)
 	}
 
 	MMProfileLogEx(ddp_mmp_get_events()->primary_set_bl, MMProfileFlagStart, 0, 0);
-#ifndef CONFIG_MTK_AAL_SUPPORT
+//#ifndef CONFIG_MTK_AAL_SUPPORT
 	_primary_path_switch_dst_lock();
 	_primary_path_lock(__func__);
-#endif
+//#endif
 	if (pgc->state == DISP_SLEPT) {
 		DISPERR("Sleep State set inverse invald\n");
 	} else {
@@ -5498,10 +5498,10 @@ int primary_display_setinverse(unsigned int mode)
 			//_set_backlight_by_cpu(level);
 		}
 	}
-#ifndef CONFIG_MTK_AAL_SUPPORT
+//#ifndef CONFIG_MTK_AAL_SUPPORT
 	_primary_path_unlock(__func__);
 	_primary_path_switch_dst_unlock();
-#endif
+//#endif
 	MMProfileLogEx(ddp_mmp_get_events()->primary_set_bl, MMProfileFlagEnd, 0, 0);
 	return ret;
 }
@@ -5520,10 +5520,10 @@ int primary_display_sethbm(unsigned int mode)
 	}
 
 	MMProfileLogEx(ddp_mmp_get_events()->primary_set_bl, MMProfileFlagStart, 0, 0);
-#ifndef CONFIG_MTK_AAL_SUPPORT
+//#ifndef CONFIG_MTK_AAL_SUPPORT
 	_primary_path_switch_dst_lock();
 	_primary_path_lock(__func__);
-#endif
+//#endif
 
 	if (pgc->state == DISP_SLEPT) {
 		DISPERR("Sleep State set hbm invald\n");
@@ -5551,10 +5551,10 @@ int primary_display_sethbm(unsigned int mode)
 			//_set_backlight_by_cpu(level);
 		}
 	}
-#ifndef CONFIG_MTK_AAL_SUPPORT
+//#ifndef CONFIG_MTK_AAL_SUPPORT
 	_primary_path_unlock(__func__);
 	_primary_path_switch_dst_unlock();
-#endif
+//#endif
 
 	MMProfileLogEx(ddp_mmp_get_events()->primary_set_bl, MMProfileFlagEnd, 0, 0);
 	return ret;
