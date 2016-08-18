@@ -105,13 +105,13 @@ static void kbase_report_gpu_fault(struct kbase_device *kbdev, int multiple)
 			address);
 	if (multiple)
 		dev_warn(kbdev->dev, "There were multiple GPU faults - some have not been reported\n");
-{
-	struct gpu_fault_event *event;
-	event = kmalloc(sizeof(event), GFP_ATOMIC);
-	event->gpu_fault_address = address;
-	INIT_WORK(&event->gpu_fault_work, kbasep_gpu_fault_worker);
-	queue_work(kbdev->gpu_fault_wq, &event->gpu_fault_work);
-}
+///{
+///	struct gpu_fault_event *event;
+///	event = kmalloc(sizeof(event), GFP_ATOMIC);
+///	event->gpu_fault_address = address;
+///	INIT_WORK(&event->gpu_fault_work, kbasep_gpu_fault_worker);
+///	queue_work(kbdev->gpu_fault_wq, &event->gpu_fault_work);
+///}
 }
 
 void kbase_gpu_interrupt(struct kbase_device *kbdev, u32 val)
