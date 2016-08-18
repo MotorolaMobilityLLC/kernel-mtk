@@ -78,6 +78,7 @@ bool SetConnection(uint32 ConnectionState, uint32 Input, uint32 Output);
 bool SetMemoryPathEnable(uint32 Aud_block, bool bEnable);
 bool GetMemoryPathEnable(uint32 Aud_block);
 bool SetI2SDacEnable(bool bEnable);
+bool SetI2SADDAEnable(bool bEnable);
 bool GetI2SDacEnable(void);
 void EnableAfe(bool bEnable);
 bool Set2ndI2SOutAttribute(uint32_t sampleRate);

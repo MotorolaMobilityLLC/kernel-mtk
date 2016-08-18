@@ -110,7 +110,7 @@ static int mtk_pcm_dl2_stop(struct snd_pcm_substream *substream)
 	SetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_DL2, false);
 
 	/* SetIrqMcuCounter(Soc_Aud_IRQ_MCU_MODE_IRQ1_MCU_MODE, 0); */
-	SetIrqEnable(Soc_Aud_IRQ_MCU_MODE_IRQ1_MCU_MODE, false);
+	irq_remove_user(substream, Soc_Aud_IRQ_MCU_MODE_IRQ1_MCU_MODE);
 
 	/* here start digital part */
 	SetConnection(Soc_Aud_InterCon_DisConnect, Soc_Aud_InterConnectionInput_I07,
@@ -286,7 +286,6 @@ static int mtk_soc_pcm_dl2_close(struct snd_pcm_substream *substream)
 
 		RemoveMemifSubStream(Soc_Aud_Digital_Block_MEM_DL2, substream);
 
-		SetIrqMcuCounter(Soc_Aud_IRQ_MCU_MODE_IRQ1_MCU_MODE, 0);
 		EnableAfe(false);
 		mPrepareDone = false;
 	}
@@ -346,9 +345,6 @@ static int mtk_pcm_dl2_prepare(struct snd_pcm_substream *substream)
 		} else {
 			SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_OUT_DAC, true);
 		}
-		/* here to set interrupt_distributor */
-		SetIrqMcuCounter(Soc_Aud_IRQ_MCU_MODE_IRQ1_MCU_MODE, runtime->period_size);
-		SetIrqMcuSampleRate(Soc_Aud_IRQ_MCU_MODE_IRQ1_MCU_MODE, runtime->rate);
 
 		/* EnableAfe(true); */
 		mPrepareDone = true;
@@ -377,14 +373,16 @@ static int mtk_pcm_dl2_start(struct snd_pcm_substream *substream)
 		      Soc_Aud_InterConnectionOutput_O10);
 #endif
 
-	SetIrqEnable(Soc_Aud_IRQ_MCU_MODE_IRQ1_MCU_MODE, true);
+	/* here to set interrupt */
+	irq_add_user(substream,
+		     Soc_Aud_IRQ_MCU_MODE_IRQ1_MCU_MODE,
+		     substream->runtime->rate,
+		     substream->runtime->period_size);
 
 	SetSampleRate(Soc_Aud_Digital_Block_MEM_DL2, runtime->rate);
 	SetChannels(Soc_Aud_Digital_Block_MEM_DL2, runtime->channels);
 	SetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_DL2, true);
 
-	SetIrqMcuCounter(Soc_Aud_IRQ_MCU_MODE_IRQ1_MCU_MODE, runtime->period_size);
-	SetIrqMcuSampleRate(Soc_Aud_IRQ_MCU_MODE_IRQ1_MCU_MODE, runtime->rate);
 	EnableAfe(true);
 	return 0;
 }

@@ -84,7 +84,7 @@ static void StopAudioBtDaiHardware(struct snd_pcm_substream *substream)
 	pr_warn("StopAudioBtDaiHardware\n");
 
 	/* here to set interrupt */
-	SetIrqEnable(Soc_Aud_IRQ_MCU_MODE_IRQ2_MCU_MODE, false);
+	irq_remove_user(substream, Soc_Aud_IRQ_MCU_MODE_IRQ2_MCU_MODE);
 
 	/* here to turn off digital part */
 	SetConnection(Soc_Aud_InterCon_DisConnect, Soc_Aud_InterConnectionInput_I02, Soc_Aud_InterConnectionOutput_O11);
@@ -120,9 +120,10 @@ static void StartAudioBtDaiHardware(struct snd_pcm_substream *substream)
 	pr_warn("StartAudioBtDaiHardware period_size = %d\n", (unsigned int)(substream->runtime->period_size));
 
 	/* here to set interrupt */
-	SetIrqMcuCounter(Soc_Aud_IRQ_MCU_MODE_IRQ2_MCU_MODE, substream->runtime->period_size >> 1);
-	SetIrqMcuSampleRate(Soc_Aud_IRQ_MCU_MODE_IRQ2_MCU_MODE, substream->runtime->rate);
-	SetIrqEnable(Soc_Aud_IRQ_MCU_MODE_IRQ2_MCU_MODE, true);
+	irq_add_user(substream,
+		     Soc_Aud_IRQ_MCU_MODE_IRQ2_MCU_MODE,
+		     substream->runtime->rate,
+		     substream->runtime->period_size >> 1);
 
 	SetSampleRate(Soc_Aud_Digital_Block_MEM_DAI, substream->runtime->rate);
 	SetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_DAI, true);

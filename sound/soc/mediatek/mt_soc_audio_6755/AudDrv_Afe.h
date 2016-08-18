@@ -388,7 +388,7 @@ typedef struct {
 #define AUD_GPIO_MODE39 (0x860)
 #define AUD_DRV_SEL4 (0xB40)
 
-#define APLL_PHYSICAL_BASE (0x10209000L)
+#define APLL_PHYSICAL_BASE (0x1000C000L)
 #define AP_PLL_CON5 (0x0014)
 
 #define AUDIO_CLK_CFG_4 (0x0080)
@@ -398,6 +398,14 @@ typedef struct {
 #define AUDIO_CG_CLR (0x8c)
 #define AUDIO_CG_STATUS (0x94)
 
+#define APLL1_CON0 (0x02A0)
+#define APLL1_CON1 (0x02A4)
+#define APLL1_CON2 (0x02A8)
+#define APLL1_CON3 (0x02AC)
+#define APLL2_CON0 (0x02B4)
+#define APLL2_CON1 (0x02B8)
+#define APLL2_CON2 (0x02BC)
+#define APLL2_CON3 (0x02C0)
 
 
 #ifdef AUDIO_TOP_CON0

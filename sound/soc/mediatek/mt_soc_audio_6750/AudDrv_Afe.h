@@ -286,16 +286,6 @@ typedef enum {
 	OUT_MAX
 } ITRCON_OUT_T;
 
-/* IRQ related */
-typedef enum {
-	IRQ1 = 1,
-	IRQ2 = 2,
-	IRQ5 = 3,		/* HDMI */
-	IRQ6 = 4,		/* SPDIF */
-	IRQMAX
-} IRQTYPE_T;
-
-
 /* Side tone filter related */
 typedef enum {
 	I3I4 = 0,
