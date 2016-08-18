@@ -613,6 +613,7 @@ CONFIG_PM_SLEEP=y
 #lenovo-sw, chenzz3, integrate fpc fingerprint driver, end
 #lenovo-sw, wengjun1, typec fusb301a driver, begin
 CONFIG_USB_C_SWITCH_FUSB301A=y
+CONFIG_USB_C_SWITCH_TUSB320L=y
 CONFIG_USB_C_SWITCH=y
 #lenovo-sw, wengjun1,typec fusb301a driver, end
 ###################charging###############

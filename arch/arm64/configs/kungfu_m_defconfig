@@ -584,10 +584,11 @@ CONFIG_LZ4_DECOMPRESS=y
 CONFIG_SENSORS_FPC_1020=y
 CONFIG_PM_SLEEP=y
 #lenovo-sw, chenzz3, integrate fpc fingerprint driver, end
-#lenovo-sw, wengjun1, typec fusb301a driver, begin
+#lenovo-sw, wengjun1, typec fusb301a and tusb320 driver, begin
 CONFIG_USB_C_SWITCH_FUSB301A=y
+CONFIG_USB_C_SWITCH_TUSB320L=y
 CONFIG_USB_C_SWITCH=y
-#lenovo-sw, wengjun1,typec fusb301a driver, end
+#lenovo-sw, wengjun1,typec fusb301a and tusb320 driver, end
 ###################charging###############
 CONFIG_LENOVO_CHARGING_STANDARD_SUPPORT=y
 CONFIG_MTK_BQ24259_SUPPORT=y

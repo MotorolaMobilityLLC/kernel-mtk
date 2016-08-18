@@ -117,8 +117,8 @@ struct usbtypc {
 	struct usb3_switch *u3_sw;
 	struct usb_redriver *u_rd;
 };
-/*lenovo-sw wengjun1 add for usb typec fusb301a 20160419 begin*/
-#elif defined(CONFIG_USB_C_SWITCH_FUSB301A)
+/*lenovo-sw wengjun1 add for usb typec fusb301a and tusb320l 20160419 begin*/
+#elif defined(CONFIG_USB_C_SWITCH_FUSB301A) || defined(CONFIG_USB_C_SWITCH_TUSB320L)
 struct usbtypc {
 	int irqnum;
 	int en_irq;
@@ -137,7 +137,7 @@ struct usbtypc {
 	struct usb3_switch *u3_sw;
 	struct usb_redriver *u_rd;
 };
-/*lenovo-sw wengjun1 add for usb typec fusb301a 20160419 end*/
+/*lenovo-sw wengjun1 add for usb typec fusb301a and tusb320l 20160419 end*/
 #elif defined(CONFIG_USB_C_SWITCH_SII70XX)
 struct usbtypc {
 	int irqnum;
