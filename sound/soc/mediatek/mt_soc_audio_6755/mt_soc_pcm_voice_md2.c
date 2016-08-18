@@ -212,6 +212,7 @@ static int mtk_voice_md2_close(struct snd_pcm_substream *substream)
 	SetConnection(Soc_Aud_InterCon_DisConnect, Soc_Aud_InterConnectionInput_I09, Soc_Aud_InterConnectionOutput_O03);
 	SetConnection(Soc_Aud_InterCon_DisConnect, Soc_Aud_InterConnectionInput_I09, Soc_Aud_InterConnectionOutput_O04);
 
+	SetI2SADDAEnable(false);
 	SetI2SAdcEnable(false);
 	SetI2SDacEnable(false);
 	SetModemPcmEnable(MODEM_EXTERNAL, false);
@@ -289,8 +290,10 @@ static int mtk_voice1_ext_prepare(struct snd_pcm_substream *substream)
 	SetI2SDacEnable(true);
 
 	SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_IN_ADC, true);
-	SetI2SAdcEnable(true);
 	EnableAfe(true);
+	SetI2SAdcEnable(true);
+	SetI2SADDAEnable(true);
+
 	Voice2IntPcm.mPcmModeWidebandSel =
 		(runtimeStream->rate == 8000) ? Soc_Aud_PCM_MODE_PCM_MODE_8K : Soc_Aud_PCM_MODE_PCM_MODE_16K;
 	/* Voice2IntPcm.mAsyncFifoSel = Soc_Aud_BYPASS_SRC_SLAVE_USE_ASYNC_FIFO; */

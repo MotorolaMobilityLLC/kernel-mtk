@@ -106,6 +106,7 @@ static int Audio_fmtx_hdoutput_Set(struct snd_kcontrol *kcontrol,
 		return -EINVAL;
 	}
 	fmtx_hdoutput_control = ucontrol->value.integer.value[0];
+#if 0
 	if (fmtx_hdoutput_control) {
 		/* set APLL clock setting */
 		EnableApll1(true);
@@ -123,6 +124,7 @@ static int Audio_fmtx_hdoutput_Set(struct snd_kcontrol *kcontrol,
 		AudDrv_APLL1Tuner_Clk_Off();
 		AudDrv_APLL2Tuner_Clk_Off();
 	}
+#endif
 	return 0;
 }
 
