@@ -1216,6 +1216,16 @@ GT24c64a@50 {
 		fusb301,ttry-timer-value = <250 600>;
 		fusb301,ccdebounce-timer-value = <20 200>;
 	};
+
+	tusb301@67 {
+		status = "okay";
+		compatible = "tusb320";
+		reg = <0x67>;
+		interrupt-parent = <&eintc>;
+		interrupts = <24 0x2>;
+		debounce = <24 0>;
+		tusb320,int-gpio = <&pio 24 0>;
+	};
 };
 /*lenovo-sw wengjun1 add for fusb301a configruation 20160420 end*/
 
