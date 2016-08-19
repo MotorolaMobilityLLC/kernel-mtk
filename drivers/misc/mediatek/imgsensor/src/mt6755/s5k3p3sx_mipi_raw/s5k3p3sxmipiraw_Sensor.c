@@ -138,7 +138,7 @@ static imgsensor_info_struct imgsensor_info = {
 	.ihdr_le_firstline = 0,  //1,le first ; 0, se first
 	.sensor_mode_num = 5,	  //support sensor mode num
 
-	.cap_delay_frame = 3,
+	.cap_delay_frame = 2, //wuyt3 modify for KUNGFUM-1772 
 	.pre_delay_frame = 3,
 	.video_delay_frame = 3,
 	.hs_video_delay_frame = 3,
@@ -1028,9 +1028,22 @@ static kal_uint32 preview(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 static kal_uint32 capture(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 						  MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
 {
+	kal_uint8 flag=0; 
+	
 	LOG_INF("E\n");
-	spin_lock(&imgsensor_drv_lock);
-	imgsensor.sensor_mode = IMGSENSOR_MODE_CAPTURE;
+	if(imgsensor.sensor_mode == IMGSENSOR_MODE_CAPTURE)
+	{ 
+		flag=1;
+		LOG_INF("sensor_mode is already capture mode E\n"); 
+	}
+	else
+	{ 
+		spin_lock(&imgsensor_drv_lock);
+		imgsensor.sensor_mode = IMGSENSOR_MODE_CAPTURE;
+		spin_unlock(&imgsensor_drv_lock);
+		flag=0; 
+	}
+	spin_lock(&imgsensor_drv_lock); 
 	if (imgsensor.current_fps == imgsensor_info.cap1.max_framerate) {//PIP capture: 24fps for less than 13M, 20fps for 16M,15fps for 20M
 		imgsensor.pclk = imgsensor_info.cap1.pclk;
 		imgsensor.line_length = imgsensor_info.cap1.linelength;
@@ -1052,9 +1065,11 @@ static kal_uint32 capture(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 		imgsensor.min_frame_length = imgsensor_info.cap.framelength;
 		imgsensor.autoflicker_en = KAL_FALSE;
 	}
-	spin_unlock(&imgsensor_drv_lock);
-
-	 capture_setting(imgsensor.current_fps);
+	spin_unlock(&imgsensor_drv_lock); 
+	if(flag==0)
+	{ 
+		capture_setting(imgsensor.current_fps); 
+	}
 	set_mirror_flip(imgsensor.mirror);
 
 	return ERROR_NONE;
