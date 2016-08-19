@@ -5365,9 +5365,6 @@ int primary_display_setbacklight(unsigned int level)
 {
 	int ret = 0;
 	static unsigned int last_level;
-#ifdef CONFIG_MTK_AAL_SUPPORT
-	int need_aallock = 0;
-#endif
 
 	DISPFUNC();
 
@@ -5382,13 +5379,8 @@ int primary_display_setbacklight(unsigned int level)
 	MMProfileLogEx(ddp_mmp_get_events()->primary_set_bl, MMProfileFlagStart, 0, 0);
 #ifndef CONFIG_MTK_AAL_SUPPORT
 	_primary_path_switch_dst_lock();
+
 	_primary_path_lock(__func__);
-#else
-	need_aallock = aal_is_need_lock();
-	if (need_aallock) {
-		_primary_path_switch_dst_lock();
-		_primary_path_lock(__func__);
-	}
 #endif
 	if (pgc->state == DISP_SLEPT) {
 		DISPERR("Sleep State set backlight invald\n");
@@ -5421,12 +5413,8 @@ int primary_display_setbacklight(unsigned int level)
 	}
 #ifndef CONFIG_MTK_AAL_SUPPORT
 	_primary_path_unlock(__func__);
+
 	_primary_path_switch_dst_unlock();
-#else
-	if (need_aallock) {
-		_primary_path_unlock(__func__);
-		_primary_path_switch_dst_unlock();
-	}
 #endif
 	MMProfileLogEx(ddp_mmp_get_events()->primary_set_bl, MMProfileFlagEnd, 0, 0);
 	return ret;

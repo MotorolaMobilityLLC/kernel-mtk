@@ -60,7 +60,6 @@ int aal_dbg_en = 0;
 static int disp_aal_write_init_regs(void *cmdq);
 #endif
 static int disp_aal_write_param_to_reg(cmdqRecHandle cmdq, const DISP_AAL_PARAM *param);
-static void set_aal_need_lock(int aal_need_lock);
 
 
 static DECLARE_WAIT_QUEUE_HEAD(g_aal_hist_wq);
@@ -119,6 +118,17 @@ static int disp_aal_exit_idle(const char *caller, int need_kick)
 			primary_display_idlemgr_kick(__func__, 1);
 #endif
 	return 0;
+}
+
+static void backlight_brightness_set_with_lock(int bl_1024)
+{
+	_primary_path_switch_dst_lock();
+	primary_display_manual_lock();
+
+	backlight_brightness_set(bl_1024);
+
+	primary_display_manual_unlock();
+	_primary_path_switch_dst_unlock();
 }
 
 static int disp_aal_init(DISP_MODULE_ENUM module, int width, int height, void *cmdq)
@@ -372,18 +382,16 @@ void disp_aal_notify_backlight_changed(int bl_1024)
 	if (bl_1024 > max_backlight)
 		bl_1024 = max_backlight;
 
-	/* default set need not to lock display path */
-	set_aal_need_lock(0);
-
 	g_aal_backlight_notified = bl_1024;
 
 	service_flags = 0;
 	if (bl_1024 == 0) {
 		/* set backlight under LCM_CABC mode with cpu : need lock */
 		if (g_led_mode == MT65XX_LED_MODE_CUST_LCM)
-			set_aal_need_lock(1);
+			backlight_brightness_set_with_lock(0);
+		else
+			backlight_brightness_set(0);
 
-		backlight_brightness_set(0);
 		/* set backlight = 0 may be not from AAL, we have to let AALService
 		   can turn on backlight on phone resumption */
 		service_flags = AAL_SERVICE_FORCE_UPDATE;
@@ -391,12 +399,11 @@ void disp_aal_notify_backlight_changed(int bl_1024)
 		/* we have to set backlight = 0 through CMDQ again to avoid timimg issue */
 		disp_pwm_set_force_update_flag();
 	} else if (!g_aal_is_init_regs_valid) {
-		/* set backlight under LCM_CABC mode with cpu : need lock */
-		if (g_led_mode == MT65XX_LED_MODE_CUST_LCM)
-			set_aal_need_lock(1);
-
 		/* AAL Service is not running */
-		backlight_brightness_set(bl_1024);
+		if (g_led_mode == MT65XX_LED_MODE_CUST_LCM)
+			backlight_brightness_set_with_lock(bl_1024);
+		else
+			backlight_brightness_set(bl_1024);
 	}
 	AAL_NOTICE("led_mode=%d , aal_need_lock=%d", g_led_mode, g_aal_need_lock);
 
@@ -524,13 +531,6 @@ int disp_aal_set_param(DISP_AAL_PARAM __user *param, void *cmdq)
 	AAL_DBG("disp_aal_set_param(CABC = %d, DRE[0,8] = %d,%d, latency=%d): ret = %d",
 		g_aal_param.cabc_fltgain_force, g_aal_param.DREGainFltStatus[0],
 		g_aal_param.DREGainFltStatus[8], g_aal_param.refreshLatency, ret);
-
-	/*
-	set backlight under LCM_CABC mode with disp cmdq handle : need not lock
-	lock already applied in user command layer
-	*/
-	if (g_led_mode == MT65XX_LED_MODE_CUST_LCM)
-		set_aal_need_lock(0);
 
 	backlight_brightness_set(backlight_value);
 
@@ -732,17 +732,6 @@ int aal_is_partial_support(void)
 int aal_request_partial_support(int partial)
 {
 	return 0;
-}
-
-int aal_is_need_lock(void)
-{
-	AAL_NOTICE("g_aal_need_lock = %d", g_aal_need_lock);
-	return g_aal_need_lock;
-}
-
-static void set_aal_need_lock(int aal_need_lock)
-{
-	g_aal_need_lock = aal_need_lock;
 }
 
 #if defined(CONFIG_ARCH_MT6797)
