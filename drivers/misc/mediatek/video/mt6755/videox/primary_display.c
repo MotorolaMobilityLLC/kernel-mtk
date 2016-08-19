@@ -5366,7 +5366,6 @@ int primary_display_setbacklight(unsigned int level)
 	int ret = 0;
 	static unsigned int last_level;
 
-
 	DISPFUNC();
 
 	if (disp_helper_get_stage() != DISP_HELPER_STAGE_NORMAL) {
@@ -5380,8 +5379,8 @@ int primary_display_setbacklight(unsigned int level)
 	MMProfileLogEx(ddp_mmp_get_events()->primary_set_bl, MMProfileFlagStart, 0, 0);
 #ifndef CONFIG_MTK_AAL_SUPPORT
 	_primary_path_switch_dst_lock();
-	_primary_path_lock(__func__);
 
+	_primary_path_lock(__func__);
 #endif
 	if (pgc->state == DISP_SLEPT) {
 		DISPERR("Sleep State set backlight invald\n");
@@ -5414,6 +5413,7 @@ int primary_display_setbacklight(unsigned int level)
 	}
 #ifndef CONFIG_MTK_AAL_SUPPORT
 	_primary_path_unlock(__func__);
+
 	_primary_path_switch_dst_unlock();
 #endif
 	MMProfileLogEx(ddp_mmp_get_events()->primary_set_bl, MMProfileFlagEnd, 0, 0);
@@ -5505,6 +5505,7 @@ int primary_display_setinverse(unsigned int mode)
 	MMProfileLogEx(ddp_mmp_get_events()->primary_set_bl, MMProfileFlagEnd, 0, 0);
 	return ret;
 }
+
 #endif
 //lenovo wuwl10 20160401 add CUSTOM_LCM_FEATURE end
 #ifdef CONFIG_LENOVO_PANELMODE_SUPPORT

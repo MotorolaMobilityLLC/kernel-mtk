@@ -56,5 +56,4 @@ int aal_request_partial_support(int partial);
 
 void disp_aal_notify_backlight_changed(int bl_1024);
 
-
 #endif
