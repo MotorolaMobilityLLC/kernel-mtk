@@ -23,7 +23,6 @@
 
 /*Lenovo-sw weimh1 add 2016-7-7 begin:record invalid count for steps*/
 #ifndef STEP_COUNTER_INT_MODE_SUPPORT
-#define STEP_COUNTER_INVALID_COUNT 200
 int invalid_count = 0;
 #endif
 /*Lenovo-sw weimh1 add 2016-7-7 end:record invalid count for steps*/
@@ -91,8 +90,9 @@ static void step_c_work_func(struct work_struct *work)
 		} else {
 /*Lenovo-sw weimh1 add 2016-7-7:record invalid count for steps*/
 #ifndef STEP_COUNTER_INT_MODE_SUPPORT
-			invalid_count++;;
-			if (invalid_count < 5) {
+			invalid_count++;
+			if (invalid_count < 2 && cxt->drv_data.counter > 0 ) {
+				STEP_C_ERR("get step_c data not change,counter=%d!!\n",cxt->drv_data.counter );
 				step_c_data_report(cxt->idev, cxt->drv_data.counter, cxt->drv_data.status);
 			}
 #endif
@@ -105,18 +105,15 @@ static void step_c_work_func(struct work_struct *work)
 	}
 
 	/* report data to input device */
-	step_c_data_report(cxt->idev, cxt->drv_data.counter, cxt->drv_data.status);
+	if (cxt->drv_data.counter > 0)
+		step_c_data_report(cxt->idev, cxt->drv_data.counter, cxt->drv_data.status);
 
 step_c_loop:
 /* step counter sensor interrupt mode support -- modified by liaoxl.lenovo 7.12.2015 start  */
 #ifndef STEP_COUNTER_INT_MODE_SUPPORT
-	if (true == cxt->is_polling_run && invalid_count < STEP_COUNTER_INVALID_COUNT) {
+//	if (true == cxt->is_polling_run) {
 		mod_timer(&cxt->timer, jiffies + atomic_read(&cxt->delay) / (1000 / HZ));
-	} else {
-		cxt->is_polling_run = false;
-		invalid_count = 0;
-		STEP_C_ERR("get step_c data invalid count too much,suspend!!\n" );
-	}
+//	}
 #endif
 	value = 0;
 /* step counter sensor interrupt mode support -- modified by liaoxl.lenovo 7.12.2015 end  */
@@ -190,9 +187,17 @@ int  step_notify(STEP_NOTIFY_TYPE type)
 #endif	
 	else if (type == TYPE_STEP_COUNTER)	{
 		STEP_C_LOG("fwq TYPE_STEP_COUNTER notify\n");
-		
+
 		step_c_work_func(0);
 	}
+	/*Lenovo-sw weimh1 add 2016-8-22 begin:*/
+	else if (type == TYPE_STEP_SUSPEND)	{
+		STEP_C_LOG("fwq TYPE_STEP_SUSPEND notify\n");
+
+		del_timer_sync(&step_c_context_obj->timer);
+		cancel_work_sync(&step_c_context_obj->report);
+	}
+	/*Lenovo-sw weimh1 add 2016-8-22 end*/
 
 	return err;
 }
@@ -864,7 +869,7 @@ int step_c_register_control_path(struct step_c_control_path *ctl)
 int step_c_data_report(struct input_dev *dev, uint32_t value, int status)
 {
 	/* STEP_C_LOG("+step_c_data_report! %d, %d, %d, %d\n",x,y,z,status); */
-	input_report_rel(dev, EVENT_TYPE_STEP_C_VALUE, value);
+	input_report_abs(dev, EVENT_TYPE_STEP_C_VALUE, value);
 	input_report_abs(dev, EVENT_TYPE_STEP_C_STATUS, status);
 	input_sync(dev);
 	return 0;

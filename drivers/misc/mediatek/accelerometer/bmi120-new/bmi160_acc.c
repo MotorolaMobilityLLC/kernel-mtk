@@ -229,6 +229,7 @@ static int bmi160_acc_i2c_probe(struct i2c_client *client, const struct i2c_devi
 static int bmi160_acc_i2c_remove(struct i2c_client *client);
 static int bmi160_acc_local_init(void);
 static int bmi160_acc_remove(void);
+static int BMI160_ACC_SetBWRate(struct i2c_client *client, u8 bwrate);
 
 /*----------------------------------------------------------------------------*/
 typedef enum {
@@ -299,6 +300,7 @@ struct i2c_client *bmi160_acc_i2c_client = NULL;
 static struct acc_init_info bmi160_acc_init_info;
 static struct bmi160_acc_i2c_data *obj_i2c_data = NULL;
 static bool sensor_power = true;
+static bool enable_status = false;
 static struct GSENSOR_VECTOR3D gsensor_gain;
 
 static int bmi160_acc_init_flag =-1; // 0<==>OK -1 <==> fail
@@ -346,9 +348,12 @@ static const struct bmi_sensor_time_odr_tbl
 static unsigned char g_fifo_data_arr[2048];/*1024 + 12*4*/
 
 /*----------------------------------------------------------------------------*/
-static struct data_resolution bmi160_acc_data_resolution[1] = {
-	{{1, 0}, 16384},
+static struct data_resolution bmi160_acc_data_resolution[2] = {
+	{{1, 0}, 16384},  //2g
+	{{1, 0}, 8192},  //4g
 };
+
+
 /*----------------------------------------------------------------------------*/
 static struct data_resolution bmi160_acc_offset_resolution = {{3, 9}, 256};
 
@@ -798,23 +803,45 @@ static int BMI160_ACC_SetPowerMode(struct i2c_client *client, bool enable)
 {
 	u8 databuf[2] = {0};
 	int res = 0;
+	u8 acc_conf = 0;
+	u8 acc_us =0;
+	u8 bandwidth = BMI160_ACCEL_OSR4_AVG1;
+	u8 datarate = BMI160_ACCEL_ODR_200HZ;
 	struct bmi160_acc_i2c_data *obj = obj_i2c_data;
-	
+
 	if(enable == sensor_power )
 	{
 		GSE_LOG("Sensor power status is newest!\n");
 		return BMI160_ACC_SUCCESS;
 	}
-
+	
 	mutex_lock(&obj->lock);
 	if(enable == true)
 	{
 		databuf[0] = CMD_PMU_ACC_NORMAL;
+		acc_us = 0;
+		datarate = BMI160_ACCEL_ODR_200HZ;
+		bandwidth = BMI160_ACCEL_OSR4_AVG1;
 	}
 	else
 	{
 		databuf[0] = CMD_PMU_ACC_LOWPOWER;
+		acc_us = 1;
+		datarate = BMI160_ACCEL_ODR_50HZ;
+		bandwidth = 0x03;//BMI160_ACCEL_OSR2_AVG2;
 	}
+
+	/*Lenovo-sw weimh1 add 2016-8-17 begin:config acc_us*/
+	res = bma_i2c_read_block(client,
+		BMI160_USER_ACC_CONF_ODR__REG, &acc_conf, 1);
+	acc_conf = BMI160_SET_BITSLICE(acc_conf,
+			BMI160_USER_ACC_CONF_ACC_BWP, bandwidth);
+	acc_conf = BMI160_SET_BITSLICE(acc_conf,
+		BMI160_USER_ACC_CONF_ACC_UNDER_SAMPLING, acc_us);
+	res += bma_i2c_write_block(client,
+		BMI160_USER_ACC_CONF_ODR__REG, &acc_conf, 1);
+	GSE_LOG("%s acc_conf=0x%x!\n", __func__, acc_conf);
+	/*Lenovo-sw weimh1 add 2016-8-17 end*/
 
 	res = bma_i2c_write_block(client,
 			BMI160_CMD_COMMANDS__REG, &databuf[0], 1);
@@ -827,6 +854,13 @@ static int BMI160_ACC_SetPowerMode(struct i2c_client *client, bool enable)
 	sensor_power = enable;
 	mdelay(4);
 	mutex_unlock(&obj->lock);
+
+	res = BMI160_ACC_SetBWRate(client, datarate);
+	if (res != BMI160_ACC_SUCCESS )
+	{
+		GSE_ERR("%s,set bandwidth failed, err = %d\n", __func__, res);
+		return res;
+	}
 
 	return BMI160_ACC_SUCCESS;
 }
@@ -1145,7 +1179,7 @@ static int BMI160_ACC_ReadSensorData(struct i2c_client *client, char *buf, int b
 	}
 	else
 	{
-		//GSE_LOG("raw data x=%d, y=%d, z=%d \n",obj->data[BMI160_ACC_AXIS_X],obj->data[BMI160_ACC_AXIS_Y],obj->data[BMI160_ACC_AXIS_Z]);
+		//GSE_LOG("raw data x=%d, y=%d, z=%d   \n",databuf[BMI160_ACC_AXIS_X],databuf[BMI160_ACC_AXIS_Y],databuf[BMI160_ACC_AXIS_Z]);
 		databuf[BMI160_ACC_AXIS_X] += obj->cali_sw[BMI160_ACC_AXIS_X];
 		databuf[BMI160_ACC_AXIS_Y] += obj->cali_sw[BMI160_ACC_AXIS_Y];
 		databuf[BMI160_ACC_AXIS_Z] += obj->cali_sw[BMI160_ACC_AXIS_Z];
@@ -3909,7 +3943,11 @@ static int bmi160_acc_resume(struct i2c_client *client)
 	}
 
 	BMI160_ACC_power(obj->hw, 1);
+#if 0
 	err = bmi160_acc_init_client(client, 0);
+#else
+	err = BMI160_ACC_SetPowerMode(client, enable_status);
+#endif
 	if(err) {
 		GSE_ERR("initialize client fail!!\n");
 		return err;
@@ -4168,6 +4206,15 @@ static int bmi160_acc_enable_nodata(int en)
 {
 #ifdef MISC_FOR_DAEMON
 	int err = 0;
+
+	/*Lenovo-sw weimh1 add 2016-8-22 begin:save enable status*/
+	if (en == 1)
+		enable_status = true;
+	else
+		enable_status = false;
+
+	GSE_LOG("enable value=%d, sensor_power =%d\n",en, sensor_power);
+	/*Lenovo-sw weimh1 add 2016-8-22 end*/
 
 	if(((en == 0) && (sensor_power == false))
 			||((en == 1) && (sensor_power == true))) {

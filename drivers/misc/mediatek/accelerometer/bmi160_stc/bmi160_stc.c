@@ -71,10 +71,12 @@ struct step_c_i2c_data {
 	struct pedometer_data_t pedo_data;
 };
 
-
+static bool step_enable_status = false;
 static int step_c_init_flag =-1; // 0<==>OK -1 <==> fail
 static struct i2c_driver step_c_i2c_driver;
 static struct step_c_i2c_data *obj_i2c_data;
+static int step_c_set_datarate(struct i2c_client *client,
+		int datarate);
 static int step_c_set_powermode(struct i2c_client *client,
 		enum STC_POWERMODE_ENUM power_mode);
 static const struct i2c_device_id step_c_i2c_id[] = {
@@ -196,6 +198,19 @@ int step_counter_enable(struct i2c_client *client, u8 v_step_counter_u8)
 {
 	int com_rslt = -1;
 	u8 v_data_u8 = 0;
+//	u8 v_data_conf1 = 0x2D;
+	u8 v_data2_u8 = 0;
+	u8 v_data3_u8 = 0;
+
+#if 0
+	com_rslt = stc_i2c_write_block(client,
+					BMI160_USER_STEP_CONFIG_0_ADDR,
+					&v_data_conf1, BMI160_GEN_READ_WRITE_DATA_LENGTH);
+
+	com_rslt += stc_i2c_write_block(client,
+					BMI160_USER_STEP_CONFIG_1_ADDR,
+					&v_data_u8, BMI160_GEN_READ_WRITE_DATA_LENGTH);
+#endif
 
 	if (v_step_counter_u8 <= 1) {
 		com_rslt = stc_i2c_read_block(client,
@@ -214,6 +229,15 @@ int step_counter_enable(struct i2c_client *client, u8 v_step_counter_u8)
 		com_rslt = E_BMI160_OUT_OF_RANGE;
 	}
 
+	com_rslt = stc_i2c_read_block(client,
+		BMI160_USER_ACC_CONF_ODR__REG, &v_data3_u8, 1);
+	
+	com_rslt = stc_i2c_read_block(client,
+					BMI160_USER_STEP_CONFIG_0_ADDR,
+					&v_data2_u8, BMI160_GEN_READ_WRITE_DATA_LENGTH);
+
+	STEP_C_LOG("ACC_CONF=0x%x, STEP_CONF[0]=0x%x, STEP_CONF[1]=0x%x\n", v_data3_u8, v_data2_u8, v_data_u8);
+	
 	return com_rslt;
 }
 
@@ -222,6 +246,10 @@ static int step_c_set_powermode(struct i2c_client *client,
 {
 	int err = 0;
 	u8 actual_power_mode = 0;
+	u8 acc_conf = 0;
+	u8 acc_us =0;
+	u8 bandwidth = BMI160_ACCEL_OSR4_AVG1;
+	int datarate = BMI160_ACCEL_ODR_200HZ;
 	struct step_c_i2c_data *obj = obj_i2c_data;
 
 	STEP_C_LOG("[%s] power_mode = %d, old power_mode = %d\n",
@@ -236,10 +264,29 @@ static int step_c_set_powermode(struct i2c_client *client,
 	if (power_mode == STC_SUSPEND_MODE) {
 		actual_power_mode = CMD_PMU_ACC_SUSPEND;
 	} else if (power_mode == STC_LOWPOWER_MODE) {
+		datarate = BMI160_ACCEL_ODR_50HZ;
 		actual_power_mode = CMD_PMU_ACC_LOWPOWER;
-	} else{
+		acc_us = 1;
+		bandwidth = 0x03;//BMI160_ACCEL_OSR2_AVG2;
+	} else {
+		datarate = BMI160_ACCEL_ODR_200HZ;
 		actual_power_mode = CMD_PMU_ACC_NORMAL;
+		acc_us = 0;
+		bandwidth = BMI160_ACCEL_OSR4_AVG1;
 	}
+
+	/*Lenovo-sw weimh1 add 2016-8-17 begin:config acc_us*/
+	err = stc_i2c_read_block(client,
+		BMI160_USER_ACC_CONF_ODR__REG, &acc_conf, 1);
+	acc_conf = BMI160_SET_BITSLICE(acc_conf,
+			BMI160_USER_ACC_CONF_ACC_BWP, bandwidth);
+	acc_conf = BMI160_SET_BITSLICE(acc_conf,
+			BMI160_USER_ACC_CONF_ACC_UNDER_SAMPLING, acc_us);
+	err += stc_i2c_write_block(client,
+		BMI160_USER_ACC_CONF_ODR__REG, &acc_conf, 1);
+	STEP_C_LOG("%s acc_conf=0x%x!\n", __func__, acc_conf);
+	/*Lenovo-sw weimh1 add 2016-8-17 end*/
+
 	err = stc_i2c_write_block(client,
 		BMI160_CMD_COMMANDS__REG, &actual_power_mode, 1);
 	mdelay(30);
@@ -250,7 +297,16 @@ static int step_c_set_powermode(struct i2c_client *client,
 		return err;
 	}
 	obj->power_mode = power_mode;
+
 	mutex_unlock(&obj->lock);
+
+	err = step_c_set_datarate(client, datarate);
+	if (err < 0) {
+		STEP_C_ERR("%s,set bandwidth failed, err = %d\n", __func__, err);
+		mutex_unlock(&obj->lock);
+		return err;
+	}
+
 	return err;
 }
 
@@ -307,7 +363,7 @@ static int step_c_init_client(struct i2c_client *client)
 		STEP_C_ERR("set power mode failed, err = %d\n", err);
 		return err;
 	}
-	err = step_counter_enable(obj_i2c_data->client, ENABLE);
+	err = step_counter_enable(obj_i2c_data->client, DISABLE);
 	if (err < 0) {
 		STEP_C_ERR("set step counter enable failed, err = %d\n", err);
 		return err;
@@ -374,6 +430,10 @@ static int step_c_suspend(struct i2c_client *client, pm_message_t msg)
 			STEP_C_ERR("set step counter enable failed, err = %d\n", err);
 			return err;
 		}
+
+		/*Lenovo-sw weimh1 add 2016-8-17 begin: report data when enable*/
+		step_notify(TYPE_STEP_SUSPEND);
+		/*Lenovo-sw weimh1 add 2016-8-17 end*/
 	}
 	return err;
 }
@@ -389,10 +449,23 @@ static int step_c_resume(struct i2c_client *client)
 		STEP_C_ERR("null pointer\n");
 		return -EINVAL;
 	}
-		
+
+#if 0
 	/*Lenovo-sw weimh1 mod 2016-5-23 begin:use obj->client instead of client*/
 	err = step_c_init_client(obj->client);
 	/*Lenovo-sw weimh1 mod 2016-5-23 */
+#else
+	if (step_enable_status == true)
+		err = step_c_set_powermode(obj->client,
+				(enum STC_POWERMODE_ENUM)STC_NORMAL_MODE);
+	else
+		err = step_c_set_powermode(obj->client,
+				(enum STC_POWERMODE_ENUM)STC_LOWPOWER_MODE);
+
+	/*Lenovo-sw weimh1 add 2016-8-17 begin: report data when enable*/
+	step_notify(TYPE_STEP_COUNTER);
+	/*Lenovo-sw weimh1 add 2016-8-17 end*/
+#endif
 	if (err) {
 		STEP_C_ERR("initialize client failed, err = %d\n", err);
 		return err;
@@ -418,14 +491,20 @@ static int step_c_enable_nodata(int en)
 {
 	int err = 0;
 	if (ENABLE == en) {
+		step_enable_status = true;
 		err = step_c_set_powermode(obj_i2c_data->client,
 				(enum STC_POWERMODE_ENUM)STC_NORMAL_MODE);
 		err += step_counter_enable(obj_i2c_data->client, ENABLE);
+		
+		/*Lenovo-sw weimh1 add 2016-8-17 begin: report data when enable*/
+		step_notify(TYPE_STEP_COUNTER);
+		/*Lenovo-sw weimh1 add 2016-8-17 end*/
 	}
 	else {
+		step_enable_status = false;
 		err = step_c_set_powermode(obj_i2c_data->client,
 				(enum STC_POWERMODE_ENUM)STC_LOWPOWER_MODE);
-//		err += step_counter_enable(obj_i2c_data->client, DISABLE);
+		err += step_counter_enable(obj_i2c_data->client, ENABLE);
 	}
 	
 	if(err < 0) {
@@ -499,16 +578,9 @@ static int step_c_get_data(u64 *value, int *status)
 	static s16 last_stc_value;
 	struct step_c_i2c_data *obj = obj_i2c_data;
 
-	/*Lenovo-sw weimh1 add 2016-7-7 begin:enable when get data*/
-	if (obj->power_mode != STC_NORMAL_MODE) {
-		err = step_c_set_powermode(obj->client,
-				(enum STC_POWERMODE_ENUM)STC_NORMAL_MODE);
-	}
-	/*Lenovo-sw weimh1 add 2016-7-7 begin:*/
-
 	err = step_c_read_counter(obj->client, &data);
 	mdelay(30);
-	if (err < 0){
+	if (err < 0) {
 		STEP_C_ERR("read step count fail.\n");
 		return err;
 	}
@@ -642,7 +714,7 @@ static struct i2c_driver step_c_i2c_driver = {
 
 static int bmi160_stc_remove(void)
 {
-    STEP_C_FUN();\
+    STEP_C_FUN();
 		
     i2c_del_driver(&step_c_i2c_driver);
 	
