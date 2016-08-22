@@ -1772,6 +1772,8 @@ VOID p2pFsmRunEventStartAP(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHdr)
 				P_P2P_SPECIFIC_BSS_INFO_T prP2pSpecificBssInfo =
 				    prAdapter->rWifiVar.prP2pSpecificBssInfo;
 				P_P2P_CHNL_REQ_INFO_T prChnlReqInfo = &prP2pFsmInfo->rChnlReqInfo;
+				P_P2P_SCAN_REQ_INFO_T prScanReqInfo = &(prP2pFsmInfo->rScanReqInfo);
+
 
 #if 1
 				/* 2012-01-27: frog - Channel set from upper layer is the first priority. */
@@ -1802,6 +1804,14 @@ VOID p2pFsmRunEventStartAP(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHdr)
 				prChnlReqInfo->eChannelReqType = CHANNEL_REQ_TYPE_GO_START_BSS;
 
 				DBGLOG(P2P, INFO, "p2pFsmRunEventStartAP GO Scan\n");
+				/*Set scan only GO operation channel*/
+				prScanReqInfo->ucNumChannelList = 1;
+				prScanReqInfo->eScanType = SCAN_TYPE_ACTIVE_SCAN;
+				prScanReqInfo->eChannelSet = SCAN_CHANNEL_SPECIFIED;
+				prScanReqInfo->arScanChannelList[0].ucChannelNum =
+				 prP2pSpecificBssInfo->ucPreferredChannel;
+				prScanReqInfo->u4BufLength = 0; /* Prevent other P2P ID in IE. */
+				prScanReqInfo->fgIsAbort = TRUE;
 			}
 
 			/* If channel is specified, use active scan to shorten the scan time. */
