@@ -455,16 +455,16 @@ static int step_c_resume(struct i2c_client *client)
 	err = step_c_init_client(obj->client);
 	/*Lenovo-sw weimh1 mod 2016-5-23 */
 #else
-	if (step_enable_status == true)
+	if (step_enable_status == true) {
 		err = step_c_set_powermode(obj->client,
 				(enum STC_POWERMODE_ENUM)STC_NORMAL_MODE);
+		/*Lenovo-sw weimh1 add 2016-8-17 begin: report data when enable*/
+		step_notify(TYPE_STEP_COUNTER);
+		/*Lenovo-sw weimh1 add 2016-8-17 end*/
+	}
 	else
 		err = step_c_set_powermode(obj->client,
 				(enum STC_POWERMODE_ENUM)STC_LOWPOWER_MODE);
-
-	/*Lenovo-sw weimh1 add 2016-8-17 begin: report data when enable*/
-	step_notify(TYPE_STEP_COUNTER);
-	/*Lenovo-sw weimh1 add 2016-8-17 end*/
 #endif
 	if (err) {
 		STEP_C_ERR("initialize client failed, err = %d\n", err);
