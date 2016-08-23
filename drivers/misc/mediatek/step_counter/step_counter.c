@@ -193,7 +193,8 @@ int  step_notify(STEP_NOTIFY_TYPE type)
 	/*Lenovo-sw weimh1 add 2016-8-22 begin:*/
 	else if (type == TYPE_STEP_SUSPEND)	{
 		STEP_C_LOG("fwq TYPE_STEP_SUSPEND notify\n");
-
+		
+		cxt->is_polling_run = false;
 		del_timer_sync(&step_c_context_obj->timer);
 		cancel_work_sync(&step_c_context_obj->report);
 	}

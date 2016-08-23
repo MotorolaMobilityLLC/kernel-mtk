@@ -278,11 +278,15 @@ static int step_c_set_powermode(struct i2c_client *client,
 	/*Lenovo-sw weimh1 add 2016-8-17 begin:config acc_us*/
 	err = stc_i2c_read_block(client,
 		BMI160_USER_ACC_CONF_ODR__REG, &acc_conf, 1);
+	mdelay(30);
 	acc_conf = BMI160_SET_BITSLICE(acc_conf,
 			BMI160_USER_ACC_CONF_ACC_BWP, bandwidth);
 	acc_conf = BMI160_SET_BITSLICE(acc_conf,
 			BMI160_USER_ACC_CONF_ACC_UNDER_SAMPLING, acc_us);
 	err += stc_i2c_write_block(client,
+		BMI160_USER_ACC_CONF_ODR__REG, &acc_conf, 1);
+	mdelay(30);
+	err = stc_i2c_read_block(client,
 		BMI160_USER_ACC_CONF_ODR__REG, &acc_conf, 1);
 	STEP_C_LOG("%s acc_conf=0x%x!\n", __func__, acc_conf);
 	/*Lenovo-sw weimh1 add 2016-8-17 end*/
@@ -465,6 +469,12 @@ static int step_c_resume(struct i2c_client *client)
 	else
 		err = step_c_set_powermode(obj->client,
 				(enum STC_POWERMODE_ENUM)STC_LOWPOWER_MODE);
+
+	err = step_counter_enable(obj->client, ENABLE);
+	if (err < 0) {
+		STEP_C_ERR("set step counter enable failed, err = %d\n", err);
+		return err;
+	}
 #endif
 	if (err) {
 		STEP_C_ERR("initialize client failed, err = %d\n", err);
@@ -556,15 +566,15 @@ static int step_c_enable_step_detect(int open)
 	return 0;
 }
 
-static int step_c_read_counter(struct i2c_client *client, s16 *v_step_cnt_s16)
+static int step_c_read_counter(struct i2c_client *client, u16 *v_step_cnt_s16)
 {
 	int com_rslt = -1;
 	u8 a_data_u8r[2] = {0, 0};
 	
 	com_rslt = stc_i2c_read_block(client, BMI160_USER_STEP_COUNT_LSB__REG,
 					a_data_u8r, BMI160_STEP_COUNTER_LENGTH);
-	*v_step_cnt_s16 = (s16)
-		((((s32)((s8)a_data_u8r[BMI160_STEP_COUNT_MSB_BYTE]))
+	*v_step_cnt_s16 = (u16)
+		((((u32)(a_data_u8r[BMI160_STEP_COUNT_MSB_BYTE]))
 		<< BMI160_SHIFT_BIT_POSITION_BY_08_BITS)
 		| (a_data_u8r[BMI160_STEP_COUNT_LSB_BYTE]));
 	STEP_C_LOG("step counter = %d.\n", (*v_step_cnt_s16));
@@ -573,9 +583,9 @@ static int step_c_read_counter(struct i2c_client *client, s16 *v_step_cnt_s16)
 
 static int step_c_get_data(u64 *value, int *status)
 {
-	s16 data;
+	u16 data;
 	int err;
-	static s16 last_stc_value;
+	static u16 last_stc_value;
 	struct step_c_i2c_data *obj = obj_i2c_data;
 
 	err = step_c_read_counter(obj->client, &data);
@@ -590,8 +600,10 @@ static int step_c_get_data(u64 *value, int *status)
 			data - last_stc_value);
 		last_stc_value = data;
 	} else {
-		last_stc_value = data;
+		if (data > 0)
+			last_stc_value = data;
 	}
+
 	*value = (int)obj->pedo_data.last_step_counter_value;
 	*status = 1;
 	STEP_C_LOG("step_c_get_data = %d.\n", (int)(*value));
