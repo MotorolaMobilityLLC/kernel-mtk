@@ -203,10 +203,12 @@ int step_counter_enable(struct i2c_client *client, u8 v_step_counter_u8)
 	u8 v_data3_u8 = 0;
 
 #if 0
+	mdelay(30);
 	com_rslt = stc_i2c_write_block(client,
 					BMI160_USER_STEP_CONFIG_0_ADDR,
 					&v_data_conf1, BMI160_GEN_READ_WRITE_DATA_LENGTH);
 
+	mdelay(30);
 	com_rslt += stc_i2c_write_block(client,
 					BMI160_USER_STEP_CONFIG_1_ADDR,
 					&v_data_u8, BMI160_GEN_READ_WRITE_DATA_LENGTH);
@@ -229,13 +231,15 @@ int step_counter_enable(struct i2c_client *client, u8 v_step_counter_u8)
 		com_rslt = E_BMI160_OUT_OF_RANGE;
 	}
 
+	mdelay(30);
 	com_rslt = stc_i2c_read_block(client,
 		BMI160_USER_ACC_CONF_ODR__REG, &v_data3_u8, 1);
-	
+	mdelay(30);
 	com_rslt = stc_i2c_read_block(client,
 					BMI160_USER_STEP_CONFIG_0_ADDR,
 					&v_data2_u8, BMI160_GEN_READ_WRITE_DATA_LENGTH);
-
+	mdelay(30);
+	
 	STEP_C_LOG("ACC_CONF=0x%x, STEP_CONF[0]=0x%x, STEP_CONF[1]=0x%x\n", v_data3_u8, v_data2_u8, v_data_u8);
 	
 	return com_rslt;
@@ -264,10 +268,10 @@ static int step_c_set_powermode(struct i2c_client *client,
 	if (power_mode == STC_SUSPEND_MODE) {
 		actual_power_mode = CMD_PMU_ACC_SUSPEND;
 	} else if (power_mode == STC_LOWPOWER_MODE) {
-		datarate = BMI160_ACCEL_ODR_50HZ;
+		datarate = BMI160_ACCEL_ODR_100HZ;
 		actual_power_mode = CMD_PMU_ACC_LOWPOWER;
 		acc_us = 1;
-		bandwidth = 0x03;//BMI160_ACCEL_OSR2_AVG2;
+		bandwidth = 0x02;//BMI160_ACCEL_OSR2_AVG2;
 	} else {
 		datarate = BMI160_ACCEL_ODR_200HZ;
 		actual_power_mode = CMD_PMU_ACC_NORMAL;
@@ -288,6 +292,7 @@ static int step_c_set_powermode(struct i2c_client *client,
 	mdelay(30);
 	err = stc_i2c_read_block(client,
 		BMI160_USER_ACC_CONF_ODR__REG, &acc_conf, 1);
+	mdelay(30);
 	STEP_C_LOG("%s acc_conf=0x%x!\n", __func__, acc_conf);
 	/*Lenovo-sw weimh1 add 2016-8-17 end*/
 
@@ -367,7 +372,7 @@ static int step_c_init_client(struct i2c_client *client)
 		STEP_C_ERR("set power mode failed, err = %d\n", err);
 		return err;
 	}
-	err = step_counter_enable(obj_i2c_data->client, DISABLE);
+	err = step_counter_enable(obj_i2c_data->client, ENABLE);
 	if (err < 0) {
 		STEP_C_ERR("set step counter enable failed, err = %d\n", err);
 		return err;
@@ -577,7 +582,34 @@ static int step_c_read_counter(struct i2c_client *client, u16 *v_step_cnt_s16)
 		((((u32)(a_data_u8r[BMI160_STEP_COUNT_MSB_BYTE]))
 		<< BMI160_SHIFT_BIT_POSITION_BY_08_BITS)
 		| (a_data_u8r[BMI160_STEP_COUNT_LSB_BYTE]));
+	mdelay(30);
 	STEP_C_LOG("step counter = %d.\n", (*v_step_cnt_s16));
+	return com_rslt;
+}
+
+static int bmi160_stc_get_mode(struct i2c_client *client, u8 *mode)
+{
+	int comres = 0;
+	u8 v_data_u8r = 0;
+	comres = stc_i2c_read_block(client,
+			BMI160_USER_ACC_PMU_STATUS__REG, &v_data_u8r, 1);
+	*mode = BMI160_GET_BITSLICE(v_data_u8r,
+			BMI160_USER_ACC_PMU_STATUS);
+	mdelay(30);
+	return comres;
+}
+
+static int get_step_counter_enable(struct i2c_client *client, u8 *v_step_counter_u8)
+{
+	int com_rslt  = 0;
+	u8 v_data_u8 = 0;
+
+	com_rslt = stc_i2c_read_block(client,
+			BMI160_USER_STEP_CONFIG_1_STEP_COUNT_ENABLE__REG,
+			&v_data_u8, BMI160_GEN_READ_WRITE_DATA_LENGTH);
+	*v_step_counter_u8 = BMI160_GET_BITSLICE(v_data_u8,
+			BMI160_USER_STEP_CONFIG_1_STEP_COUNT_ENABLE);
+	mdelay(30);
 	return com_rslt;
 }
 
@@ -586,9 +618,27 @@ static int step_c_get_data(u64 *value, int *status)
 	u16 data;
 	int err;
 	static u16 last_stc_value;
+	u8 acc_mode;
+	u8 stc_enable;
 	struct step_c_i2c_data *obj = obj_i2c_data;
 
 	err = step_c_read_counter(obj->client, &data);
+	if (0 == data) {
+		err = bmi160_stc_get_mode(obj->client, &acc_mode);
+		if (err < 0) {
+			STEP_C_ERR("bmi160_acc_get_mode failed.\n");
+		}
+		STEP_C_LOG("step_c_get_data acc mode = %d.\n", acc_mode);
+		err = get_step_counter_enable(obj->client, &stc_enable);
+		if (err < 0) {
+			STEP_C_ERR("get_step_counter_enable failed.\n");
+		}
+		STEP_C_LOG("step_c_get_data stc enable = %d.\n", stc_enable);
+		if (acc_mode != 0 && stc_enable == 1) {
+			data = last_stc_value;
+		}
+	}
+
 	mdelay(30);
 	if (err < 0) {
 		STEP_C_ERR("read step count fail.\n");
