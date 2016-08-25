@@ -290,10 +290,6 @@ static int step_c_set_powermode(struct i2c_client *client,
 	err += stc_i2c_write_block(client,
 		BMI160_USER_ACC_CONF_ODR__REG, &acc_conf, 1);
 	mdelay(30);
-	err = stc_i2c_read_block(client,
-		BMI160_USER_ACC_CONF_ODR__REG, &acc_conf, 1);
-	mdelay(30);
-	STEP_C_LOG("%s acc_conf=0x%x!\n", __func__, acc_conf);
 	/*Lenovo-sw weimh1 add 2016-8-17 end*/
 
 	err = stc_i2c_write_block(client,
@@ -315,6 +311,11 @@ static int step_c_set_powermode(struct i2c_client *client,
 		mutex_unlock(&obj->lock);
 		return err;
 	}
+
+	err = stc_i2c_read_block(client,
+		BMI160_USER_ACC_CONF_ODR__REG, &acc_conf, 1);
+	mdelay(30);
+	STEP_C_LOG("%s acc_conf=0x%x!\n", __func__, acc_conf);
 
 	return err;
 }

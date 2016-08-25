@@ -827,20 +827,21 @@ static int BMI160_ACC_SetPowerMode(struct i2c_client *client, bool enable)
 	{
 		databuf[0] = CMD_PMU_ACC_LOWPOWER;
 		acc_us = 1;
-		datarate = BMI160_ACCEL_ODR_50HZ;
-		bandwidth = 0x03;//BMI160_ACCEL_OSR2_AVG2;
+		datarate = BMI160_ACCEL_ODR_100HZ;
+		bandwidth = 0x02;//BMI160_ACCEL_OSR2_AVG2;
 	}
 
 	/*Lenovo-sw weimh1 add 2016-8-17 begin:config acc_us*/
 	res = bma_i2c_read_block(client,
 		BMI160_USER_ACC_CONF_ODR__REG, &acc_conf, 1);
+	mdelay(30);
 	acc_conf = BMI160_SET_BITSLICE(acc_conf,
 			BMI160_USER_ACC_CONF_ACC_BWP, bandwidth);
 	acc_conf = BMI160_SET_BITSLICE(acc_conf,
 		BMI160_USER_ACC_CONF_ACC_UNDER_SAMPLING, acc_us);
 	res += bma_i2c_write_block(client,
 		BMI160_USER_ACC_CONF_ODR__REG, &acc_conf, 1);
-	GSE_LOG("%s acc_conf=0x%x!\n", __func__, acc_conf);
+	mdelay(30);
 	/*Lenovo-sw weimh1 add 2016-8-17 end*/
 
 	res = bma_i2c_write_block(client,
@@ -861,6 +862,11 @@ static int BMI160_ACC_SetPowerMode(struct i2c_client *client, bool enable)
 		GSE_ERR("%s,set bandwidth failed, err = %d\n", __func__, res);
 		return res;
 	}
+
+	res = bma_i2c_read_block(client,
+		BMI160_USER_ACC_CONF_ODR__REG, &acc_conf, 1);
+	mdelay(30);
+	GSE_LOG("%s acc_conf=0x%x!\n", __func__, acc_conf);
 
 	return BMI160_ACC_SUCCESS;
 }
