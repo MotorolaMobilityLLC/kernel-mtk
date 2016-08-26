@@ -526,46 +526,6 @@ static void init_lcm_registers(void)
 	data_array[0] = 0x00C61500;
 	dsi_set_cmdq(data_array, 1, 1);
 //cabc end
-	//ce 1.3
-	data_array[0] = 0xA0001500;
-	dsi_set_cmdq(data_array, 1, 1);
-	data_array[0] = 0x000D2902;
-	data_array[1] = 0x0F0F0FD6;
-	data_array[2] = 0x0F0F0F0F;
-	data_array[3] = 0x0F0F0F0F;
-	data_array[4] = 0x0000000F;
-	dsi_set_cmdq(data_array, 5, 1);
-
-	data_array[0] = 0xB0001500;
-	dsi_set_cmdq(data_array, 1, 1);
-	data_array[0] = 0x000D2902;
-	data_array[1] = 0x93A6A6D6;
-	data_array[2] = 0x80808080;
-	data_array[3] = 0x80808080;
-	data_array[4] = 0x00000080;
-	dsi_set_cmdq(data_array, 5, 1);
-
-	data_array[0] = 0xC0001500;
-	dsi_set_cmdq(data_array, 1, 1);
-	data_array[0] = 0x000D2902;
-	data_array[1] = 0x809A8DD6;
-	data_array[2] = 0x80808080;
-	data_array[3] = 0x80808080;
-	data_array[4] = 0x00000080;
-	dsi_set_cmdq(data_array, 5, 1);
-
-	data_array[0] = 0xD0001500;
-	dsi_set_cmdq(data_array, 1, 1);
-	data_array[0] = 0x000D2902;
-	data_array[1] = 0x808080D6;
-	data_array[2] = 0x80808080;
-	data_array[3] = 0x80808080;
-	data_array[4] = 0x00000080;
-	dsi_set_cmdq(data_array, 5, 1);
-
-	data_array[0] = 0x80911500;
-	dsi_set_cmdq(data_array, 1, 1);
-	//ce
 
 	data_array[0] = 0xB0001500;
 	dsi_set_cmdq(data_array, 1, 1);
