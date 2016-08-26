@@ -260,6 +260,9 @@ static void mmc_request_fn(struct request_queue *q)
 			wake_up_interruptible(&cntx->wait);
 		}
 		spin_unlock_irqrestore(&cntx->lock, flags);
+#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
+		wake_up_process(mq->thread);
+#endif
 	} else if (!mq->mqrq_cur->req && !mq->mqrq_prev->req)
 		wake_up_process(mq->thread);
 #ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
