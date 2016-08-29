@@ -291,7 +291,6 @@ static int mtk_soc_pcm_dl2_close(struct snd_pcm_substream *substream)
 			Afe_Set_Reg(AFE_I2S_CON3, 0x0, 0x1);
 		#endif 
 		//lenovo-sw chengx2, add 2nd i2s out enable/disable to avoid other dai disable it, end
-		}
 		RemoveMemifSubStream(Soc_Aud_Digital_Block_MEM_DL2, substream);
 
 		EnableAfe(false);
