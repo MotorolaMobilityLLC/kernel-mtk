@@ -91,7 +91,7 @@ static void step_c_work_func(struct work_struct *work)
 /*Lenovo-sw weimh1 add 2016-7-7:record invalid count for steps*/
 #ifndef STEP_COUNTER_INT_MODE_SUPPORT
 			invalid_count++;
-			if (invalid_count < 2 && cxt->drv_data.counter > 0 ) {
+			if (invalid_count < 2) {
 				STEP_C_ERR("get step_c data not change,counter=%d!!\n",cxt->drv_data.counter );
 				step_c_data_report(cxt->idev, cxt->drv_data.counter, cxt->drv_data.status);
 			}
@@ -105,8 +105,7 @@ static void step_c_work_func(struct work_struct *work)
 	}
 
 	/* report data to input device */
-	if (cxt->drv_data.counter > 0)
-		step_c_data_report(cxt->idev, cxt->drv_data.counter, cxt->drv_data.status);
+	step_c_data_report(cxt->idev, cxt->drv_data.counter, cxt->drv_data.status);
 
 step_c_loop:
 /* step counter sensor interrupt mode support -- modified by liaoxl.lenovo 7.12.2015 start  */
