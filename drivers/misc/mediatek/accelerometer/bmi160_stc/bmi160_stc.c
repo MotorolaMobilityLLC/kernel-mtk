@@ -34,6 +34,7 @@
 extern struct i2c_client *bmi160_acc_i2c_client;
 /*Lenovo-sw weimh1 add 2016-7-06 begin: */
 static int step_c_enable_nodata(int en);
+static int bmi160_stc_clr(struct i2c_client *client);
 /*Lenovo-sw weimh1 add 2016-7-06 end*/
 struct acc_hw accel_cust;
 static struct acc_hw *hw = &accel_cust;
@@ -588,6 +589,22 @@ static int step_c_read_counter(struct i2c_client *client, u16 *v_step_cnt_s16)
 	return com_rslt;
 }
 
+static int bmi160_stc_clr(struct i2c_client *client)
+{
+	int comres = 0;
+	u8 cmd_mode = CMD_RESET_STEPCOUNTER;
+
+	STEP_C_LOG("current cmd = 0x%x.\n", cmd_mode);
+	comres = stc_i2c_write_block(client,
+		BMI160_CMD_COMMANDS__REG, &cmd_mode, 1);
+	mdelay(30);
+	if (comres< 0) {
+		STEP_C_ERR("step_cnt_clr, err = %d,\n", comres);
+	}
+
+	return comres;
+}
+
 static int bmi160_stc_get_mode(struct i2c_client *client, u8 *mode)
 {
 	int comres = 0;
@@ -727,6 +744,7 @@ static int step_c_i2c_probe(struct i2c_client *client,
 		goto exit_create_attr_failed;
 	}
 	step_c_init_flag =0;
+	bmi160_stc_clr(obj->client);
 	STEP_C_LOG("%s: OK\n", __func__);
 	return 0;
 
