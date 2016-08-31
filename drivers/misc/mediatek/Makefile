@@ -190,3 +190,5 @@ endif
 #wangxiqiang add to efuse status check
 obj-$(CONFIG_CHECK_EFUSE_STATUS) += efuseinfo/
 #obj-y += efuseinfo/
+
+obj-$(CONFIG_PWR_LOSS_MTK_SPOH) += power-loss-test/

@@ -1,0 +1,27 @@
+# For power loss test
+menuconfig PWR_LOSS_MTK_TEST
+	tristate "Power Loss Test"
+	default n
+	help
+	  Enable power loss test driver and suuport in MTK NAND driver or MTK
+	  EMMC driver. This is only for testing purpose and shall not be
+	  enabled in kernel used by end user.
+
+config PWR_LOSS_MTK_DEBUG
+	bool "Debugging"
+	depends on PWR_LOSS_MTK_TEST
+	help
+	  Enable low-level debugging message in power loss test driver.
+	  Say Y if you turn on PWR_LOSS_MTK_TEST and want to turns on
+	  low-level debugging.
+	  Defalut is N.
+
+config PWR_LOSS_MTK_SPOH
+	bool "Power Loss Test Version SPOH"
+	depends on PWR_LOSS_MTK_TEST
+	default n
+	help
+	  Enable new power loss test driver (named SPOH) and suuport in MTK
+	  NAND driver or MTK EMMC driver.Say Y if you will run power loss
+	  test cases designed for SPOH.
+	  Default is N.
