@@ -2057,6 +2057,44 @@ VOID rlmProcessBcn(P_ADAPTER_T prAdapter, P_SW_RFB_T prSwRfb, PUINT_8 pucIE, UIN
 	}
 }
 
+static VOID rlmParseIeInfoForAssocRsp(P_ADAPTER_T prAdapter, P_BSS_INFO_T prBssInfo, PUINT_8 pucIE, UINT_16 u2IELength)
+{
+	UINT_16 u2Offset;
+	P_STA_RECORD_T prStaRec;
+	BOOLEAN fgWithHtCap = FALSE;
+	BOOLEAN fgWithVhtCap = FALSE;
+
+	prStaRec = prBssInfo->prStaRecOfAP;
+	if (!prStaRec)
+		return;
+
+	IE_FOR_EACH(pucIE, u2IELength, u2Offset) {
+		switch (IE_ID(pucIE)) {
+		case ELEM_ID_HT_CAP:
+			if (!RLM_NET_IS_11N(prBssInfo) || IE_LEN(pucIE) != (sizeof(IE_HT_CAP_T) - 2))
+				break;
+			fgWithHtCap = TRUE;
+			break;
+
+#if CFG_SUPPORT_802_11AC
+		case ELEM_ID_VHT_CAP:
+			if (!RLM_NET_IS_11AC(prBssInfo) || IE_LEN(pucIE) != (sizeof(IE_VHT_CAP_T) - 2))
+				break;
+			fgWithVhtCap = TRUE;
+			break;
+#endif
+		default:
+			break;
+		}		/* end of switch */
+	}			/* end of IE_FOR_EACH */
+
+	if (!fgWithHtCap)
+		prStaRec->ucDesiredPhyTypeSet &= ~PHY_TYPE_BIT_HT;
+
+	if (!fgWithVhtCap)
+		prStaRec->ucDesiredPhyTypeSet &= ~PHY_TYPE_BIT_VHT;
+}
+
 /*----------------------------------------------------------------------------*/
 /*!
 * \brief This function should be invoked after judging successful association.
@@ -2106,6 +2144,8 @@ VOID rlmProcessAssocRsp(P_ADAPTER_T prAdapter, P_SW_RFB_T prSwRfb, PUINT_8 pucIE
 	if (ucPriChannel > 0)
 		prBssInfo->ucPrimaryChannel = ucPriChannel;
 #endif
+
+	rlmParseIeInfoForAssocRsp(prAdapter, prBssInfo, pucIE, u2IELength);
 
 	if (!RLM_NET_IS_11N(prBssInfo) || !(prStaRec->u2HtCapInfo & HT_CAP_INFO_SUP_CHNL_WIDTH))
 		prBssInfo->fg40mBwAllowed = FALSE;
@@ -2661,8 +2701,8 @@ VOID rlmProcessSpecMgtAction(P_ADAPTER_T prAdapter, P_SW_RFB_T prSwRfb)
 	ASSERT(prAdapter);
 	ASSERT(prSwRfb);
 
-	u2IELength = (prSwRfb->u2PacketLen - prSwRfb->u2HeaderLen) -
-	    (UINT_16) (OFFSET_OF(ACTION_CHANNEL_SWITCH_FRAME, aucInfoElem[0]) - WLAN_MAC_MGMT_HEADER_LEN);
+	u2IELength = prSwRfb->u2PacketLen -
+	    (UINT_16) OFFSET_OF(ACTION_CHANNEL_SWITCH_FRAME, aucInfoElem[0]);
 
 	prRxFrame = (P_ACTION_CHANNEL_SWITCH_FRAME) prSwRfb->pvHeader;
 	pucIE = prRxFrame->aucInfoElem;
