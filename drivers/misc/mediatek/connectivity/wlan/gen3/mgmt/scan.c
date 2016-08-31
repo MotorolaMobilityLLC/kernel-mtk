@@ -1985,6 +1985,7 @@ P_BSS_DESC_T scanAddToBssDesc(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfb)
 	/* 4 <2.2> reset prBssDesc variables in case that AP has been reconfigured */
 	prBssDesc->fgIsERPPresent = FALSE;
 	prBssDesc->fgIsHTPresent = FALSE;
+	prBssDesc->fgIsVHTPresent = FALSE;
 	prBssDesc->eSco = CHNL_EXT_SCN;
 	prBssDesc->fgIEWAPI = FALSE;
 	prBssDesc->fgIERSN = FALSE;
@@ -3695,6 +3696,12 @@ P_BSS_DESC_T scanSearchBssDescByScoreForAis(P_ADAPTER_T prAdapter)
 				continue;
 			if (!rlmDomainIsLegalChannel(prAdapter, prBssDesc->eBand, prBssDesc->ucChannelNum))
 				continue;
+#if CFG_SUPPORT_RN
+			if (prAdapter->prAisBssInfo->fgDisConnReassoc == FALSE)
+#endif
+				if (CHECK_FOR_TIMEOUT(kalGetTimeTick(), prBssDesc->rUpdateTime,
+						SEC_TO_SYSTIME(SCN_BSS_DESC_STALE_SEC)))
+					continue;
 #if CFG_SUPPORT_WAPI
 			if (prAdapter->rWifiVar.rConnSettings.fgWapiMode) {
 				if (!wapiPerformPolicySelection(prAdapter, prBssDesc))
@@ -3762,6 +3769,12 @@ try_again:
 			continue;
 		if (rlmDomainIsLegalChannel(prAdapter, prBssDesc->eBand, prBssDesc->ucChannelNum) == FALSE)
 			continue;
+#if CFG_SUPPORT_RN
+		if (prAdapter->prAisBssInfo->fgDisConnReassoc == FALSE)
+#endif
+			if (CHECK_FOR_TIMEOUT(kalGetTimeTick(), prBssDesc->rUpdateTime,
+						SEC_TO_SYSTIME(SCN_BSS_DESC_STALE_SEC)))
+				continue;
 #if CFG_SUPPORT_WAPI
 		if (prAdapter->rWifiVar.rConnSettings.fgWapiMode) {
 			if (!wapiPerformPolicySelection(prAdapter, prBssDesc))

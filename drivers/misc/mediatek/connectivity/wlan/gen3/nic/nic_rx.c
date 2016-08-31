@@ -3183,6 +3183,7 @@ VOID nicRxProcessEventPacket(IN P_ADAPTER_T prAdapter, IN OUT P_SW_RFB_T prSwRfb
 					break;
 				}
 
+				prAdapter->prAisBssInfo->u2DeauthReason = prEventBssBeaconTimeout->ucReasonCode;
 				aisBssBeaconTimeout(prAdapter);
 				aisRecordBeaconTimeout(prAdapter, prAdapter->prAisBssInfo);
 			}
@@ -3383,59 +3384,16 @@ VOID nicRxProcessEventPacket(IN P_ADAPTER_T prAdapter, IN OUT P_SW_RFB_T prSwRfb
 	case EVENT_ID_DEBUG_MSG:
 		{
 			P_EVENT_DEBUG_MSG_T prEventDebugMsg;
-			UINT_16 u2DebugMsgId;
 			UINT_8 ucMsgType;
-			UINT_8 ucFlags;
-			UINT_32 u4Value;
 			UINT_16 u2MsgSize;
 			P_UINT_8 pucMsg;
-			OS_SYSTIME rCurrentTime;
-			static OS_SYSTIME rFwLogStartTime;
-			static UINT_8 ucFwLogLine;
 
-
-			prEventDebugMsg = (P_EVENT_DEBUG_MSG_T) (prEvent->aucBuffer);
-
-			u2DebugMsgId = prEventDebugMsg->u2DebugMsgId;
+			prEventDebugMsg = (P_EVENT_DEBUG_MSG_T)(prEvent->aucBuffer);
 			ucMsgType = prEventDebugMsg->ucMsgType;
-			ucFlags = prEventDebugMsg->ucFlags;
-			u4Value = prEventDebugMsg->u4Value;
 			u2MsgSize = prEventDebugMsg->u2MsgSize;
 			pucMsg = prEventDebugMsg->aucMsg;
 
-			DBGLOG(SW4, TRACE, "DEBUG_MSG Id %u Type %u Fg 0x%x Val 0x%x Size %u\n",
-			       u2DebugMsgId, ucMsgType, ucFlags, u4Value, u2MsgSize);
-
-			if (u2MsgSize <= DEBUG_MSG_SIZE_MAX) {
-				if (ucMsgType >= DEBUG_MSG_TYPE_END)
-					ucMsgType = DEBUG_MSG_TYPE_MEM32;
-
-				if (ucMsgType == DEBUG_MSG_TYPE_ASCII) {
-					GET_CURRENT_SYSTIME(&rCurrentTime);
-					if (rFwLogStartTime == 0 ||
-						CHECK_FOR_TIMEOUT(rCurrentTime, rFwLogStartTime,
-							MSEC_TO_SYSTIME(1000))) {
-						COPY_SYSTIME(rFwLogStartTime, rCurrentTime);
-						ucFwLogLine = 0;
-					}
-					if (ucFwLogLine < 5) {
-						ucFwLogLine++;
-						pucMsg[u2MsgSize] = '\0';
-						DBGLOG(RX, INFO, "FW:(%d)%s\n", ucFwLogLine, pucMsg);
-					}
-				} else if (ucMsgType == DEBUG_MSG_TYPE_MEM32) {
-					/* dumpMemory32(pucMsg, u2MsgSize); */
-					DBGLOG_MEM32(SW4, TRACE, pucMsg, u2MsgSize);
-				} else if (prEventDebugMsg->ucMsgType == DEBUG_MSG_TYPE_MEM8) {
-					/* dumpMemory8(pucMsg, u2MsgSize); */
-					DBGLOG_MEM8(SW4, TRACE, pucMsg, u2MsgSize);
-				} else {
-					/* dumpMemory32(pucMsg, u2MsgSize); */
-					DBGLOG_MEM32(SW4, TRACE, pucMsg, u2MsgSize);
-				}
-			} /* DEBUG_MSG_SIZE_MAX */
-			else
-				DBGLOG(SW4, WARN, "Debug msg size %u is too large.\n", u2MsgSize);
+			wlanPrintFwLog(pucMsg, u2MsgSize, ucMsgType);
 		}
 		break;
 #if CFG_SUPPORT_SCN_PSCN
