@@ -117,7 +117,11 @@ unsigned int reg_dump_addr_off[] = {
 unsigned int littleFreq_FY[8] = {1001000, 910000, 819000, 689000, 598000, 494000, 338000, 156000};
 
 #if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
-unsigned int bigFreq_FY[8] = {1508000, 1430000, 1352000, 1196000, 1027000, 871000, 663000, 286000};
+	#if defined(CONFIG_MTK_MT6750TT)
+		unsigned int bigFreq_FY[8] = {1807000, 1430000, 1352000, 1196000, 1027000, 871000, 663000, 286000};
+	#else
+		unsigned int bigFreq_FY[8] = {1508000, 1430000, 1352000, 1196000, 1027000, 871000, 663000, 286000};
+	#endif
 #else
 unsigned int bigFreq_FY[8] = {1807000, 1651000, 1495000, 1196000, 1027000, 871000, 663000, 286000};
 unsigned int bigFreq_FY_M[8] = {1807000, 1651000, 1495000, 1196000, 1098000, 871000, 663000, 286000};
@@ -1699,7 +1703,7 @@ static void get_freq_table_cpu(struct eem_det *det)
 					PERCENT((det_to_id(det) == EEM_DET_LITTLE) ? littleFreq_SB[i] : bigFreq_SB[i],
 					det->max_freq_khz);
 #ifdef CONFIG_ARCH_MT6755_TURBO
-				} else if (0x22 == binLevel) {
+				} else if (0x20 == (binLevel & 0xF0)) {
 					det->freq_tbl[i] =
 					PERCENT((det_to_id(det) == EEM_DET_LITTLE) ? littleFreq_P15[i] : bigFreq_P15[i],
 					det->max_freq_khz);
@@ -2175,7 +2179,16 @@ static void eem_init_det(struct eem_det *det, struct eem_devinfo *devinfo)
 
 	det->AGECONFIG = AGECONFIG_VAL;
 	det->AGEM = AGEM_VAL;
+	#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+	if ((get_devinfo_with_index(38) & 0x100) && (get_devinfo_with_index(28) & 0x40000000)) {
+		/* for Jade- UMC */
+		det->DVTFIXED = 0;
+		eem_error("Apply HT settings FEA(%d)\n", det->features);
+	} else
+		det->DVTFIXED = DVTFIXED_VAL;
+	#else
 	det->DVTFIXED = DVTFIXED_VAL;
+	#endif
 	det->VCO = VCO_VAL;
 	det->DCCONFIG = DCCONFIG_VAL;
 
@@ -2333,6 +2346,10 @@ static void eem_set_eem_volt(struct eem_det *det)
 	} else {
 		low_temp_offset = 0;
 		ctrl->volt_update |= EEM_VOLT_UPDATE;
+		#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+		if ((get_devinfo_with_index(38) & 0x100) && (get_devinfo_with_index(28) & 0x40000000))
+			memcpy(det->volt_tbl, det->volt_tbl_init2, sizeof(det->volt_tbl_init2));
+		#endif
 	}
 	/* eem_debug("ctrl->volt_update |= EEM_VOLT_UPDATE\n"); */
 
@@ -2772,7 +2789,7 @@ static inline void handle_mon_mode_isr(struct eem_det *det)
 		#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
 			if (EEM_CTRL_BIG == det->ctrl_id) {
 				ctrl_ITurbo = (0 == ctrl_ITurbo) ? 0 : 2;
-				eem_error("Finished BIG monitor mode!!\n");
+				eem_isr_info("Finished BIG monitor mode!!\n");
 			}
 		#endif
 	#endif
@@ -3149,7 +3166,7 @@ void eem_init02(const char *str)
 	FUNC_ENTER(FUNC_LV_LOCAL);
 	eem_error("eem_init02 called by [%s]\n", str);
 	for_each_det_ctrl(det, ctrl) {
-		if (HAS_FEATURE(det, FEA_MON)) {
+		if (HAS_FEATURE(det, FEA_INIT02)) {
 			unsigned long flag;
 
 			mt_ptp_lock(&flag);
@@ -3297,17 +3314,37 @@ void get_devinfo(struct eem_devinfo *p)
 
 #ifndef EARLY_PORTING
 	#if defined(__KERNEL__)
+		#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+		if ((get_devinfo_with_index(38) & 0x200) && (get_devinfo_with_index(28) & 0x40000000)) {
+			/* for Jade- UMC */
+			val[0] = get_devinfo_with_index(37);
+			val[1] = get_devinfo_with_index(38);
+			val[2] = get_devinfo_with_index(39);
+		} else {
+			val[0] = get_devinfo_with_index(34);
+			val[1] = get_devinfo_with_index(35);
+			val[2] = get_devinfo_with_index(36);
+		}
+		#else
 		val[0] = get_devinfo_with_index(34);
 		val[1] = get_devinfo_with_index(35);
 		val[2] = get_devinfo_with_index(36);
+		#endif
 		val[3] = get_devinfo_with_index(37);
 		val[4] = get_devinfo_with_index(38);
 		val[5] = get_devinfo_with_index(18);
 		val[6] = get_devinfo_with_index(19);
 	#else
-		val[0] = eem_read(0x10206660); /* EEM0 */
-		val[1] = eem_read(0x10206664); /* EEM1 */
-		val[2] = eem_read(0x10206668); /* EEM2 */
+		if ((eem_read(0x10206670) & 0x200) && (eem_read(0x10206540) & 0x40000000)) {
+			/* for Jade- UMC */
+			val[0] = eem_read(0x1020666C);
+			val[1] = eem_read(0x10206670);
+			val[2] = eem_read(0x10206674);
+		} else {
+			val[0] = eem_read(0x10206660); /* EEM0 */
+			val[1] = eem_read(0x10206664); /* EEM1 */
+			val[2] = eem_read(0x10206668); /* EEM2 */
+		}
 		val[3] = eem_read(0x1020666C); /* EEM3 */
 		val[4] = eem_read(0x10206670); /* EEM4 */
 		val[5] = eem_read(0x10206274); /* EEM_SRM_RP5 */
@@ -3351,7 +3388,7 @@ void get_devinfo(struct eem_devinfo *p)
 	#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
 	fab = get_devinfo_with_index(28) & 0x40000000;
 	segment = get_devinfo_with_index(21) & 0xFF;
-	if (((segment == 0x41) || (segment == 0x40)) && !(fab))
+	if (((segment == 0x41) || (segment == 0x45) || (segment == 0x40)) && !(fab))
 		#if defined(CONFIG_MTK_MT6750TT)
 		ctrl_ITurbo = 1; /* t */
 		#else
