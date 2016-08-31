@@ -491,16 +491,6 @@ EXPORT_SYMBOL(mt_gpufreq_start_low_batt_volume_timer);
 static unsigned int mt_gpufreq_get_dvfs_table_type(void)
 {
 	unsigned int type = 0;
-
-#ifdef CONFIG_ARCH_MT6755_TURBO
-	unsigned int segment = get_devinfo_with_index(21) & 0xFF;
-
-	gpufreq_info("check if GPU freq can be turbo by segment=0x%x\n", segment);
-	if (segment == 0x22)
-		return 3;
-#endif
-
-#ifdef MT_GPUFREQ_GPU_SOURCE_FROM_VCORE
 	unsigned int segment = get_devinfo_with_index(21) & 0xFF;
 #ifdef CONFIG_OF
 	static const struct of_device_id gpu_ids[] = {
@@ -509,7 +499,19 @@ static unsigned int mt_gpufreq_get_dvfs_table_type(void)
 		{ /* sentinel */ }
 	};
 	struct device_node *node;
+#ifndef MT_GPUFREQ_GPU_SOURCE_FROM_VCORE
+	unsigned int gpu_speed = 0;
+#endif
+#endif
 
+#ifdef CONFIG_ARCH_MT6755_TURBO
+	gpufreq_info("check if GPU freq can be turbo by segment=0x%x\n", segment);
+	if ((segment & 0xF0) == 0x20)
+		return 3;
+#endif
+
+#ifdef MT_GPUFREQ_GPU_SOURCE_FROM_VCORE
+#ifdef CONFIG_OF
 	node = of_find_matching_node(NULL, gpu_ids);
 	if (!node)
 		gpufreq_info("@%s: no GPU node found\n", __func__);
@@ -525,12 +527,15 @@ static unsigned int mt_gpufreq_get_dvfs_table_type(void)
 
 	switch (segment) {
 	case 0x42:
+	case 0x46:
 		type = 1;
 		break;
 	case 0x43:
+	case 0x4B:
 		type = 2;
 		break;
 	case 0x41:
+	case 0x45:
 	default:
 		type = 0;
 		break;
@@ -545,15 +550,14 @@ static unsigned int mt_gpufreq_get_dvfs_table_type(void)
 
 	/* No efuse or free run? use clock-frequency from device tree to determine GPU table type! */
 	if (mt_gpufreq_dvfs_mmpll_spd_bond == 0) {
-#ifdef CONFIG_OF
-		static const struct of_device_id gpu_ids[] = {
-			{.compatible = "arm,malit6xx"},
-			{.compatible = "arm,mali-midgard"},
-			{ /* sentinel */ }
-		};
-		struct device_node *node;
-		unsigned int gpu_speed = 0;
+		/* Check segment_code if no efuse */
+		if ((segment == 0x1) || (segment == 0x3) || (segment == 0x5) ||
+		    (segment == 0x7)) {
+			gpufreq_info("Set as 6755M since segment=0x%x\n", segment);
+			return 1;	/* Segment2: 550M */
+		}
 
+#ifdef CONFIG_OF
 		node = of_find_matching_node(NULL, gpu_ids);
 		if (!node) {
 			gpufreq_err("@%s: find GPU node failed\n", __func__);
@@ -3396,8 +3400,9 @@ static int mt_gpufreq_var_dump_proc_show(struct seq_file *m, void *v)
 	seq_printf(m, "_mt_gpufreq_get_cur_freq = %u KHz\n", _mt_gpufreq_get_cur_freq());
 	seq_printf(m, "_mt_gpufreq_get_cur_volt = %u mV\n", _mt_gpufreq_get_cur_volt() / 100);
 	seq_printf(m, "mt_gpufreq_volt_enable_state = %d\n", mt_gpufreq_volt_enable_state);
-	seq_printf(m, "mt_gpufreq_dvfs_table_type = %d\n", mt_gpufreq_dvfs_table_type);
-	seq_printf(m, "mt_gpufreq_dvfs_mmpll_spd_bond = %d\n", mt_gpufreq_dvfs_mmpll_spd_bond);
+	seq_printf(m, "dvfs_table_type=%d, mmpll_spd_bond=%d, segment_code=0x%x\n",
+		   mt_gpufreq_dvfs_table_type, mt_gpufreq_dvfs_mmpll_spd_bond,
+		   (get_devinfo_with_index(21) & 0xFF));
 	seq_printf(m, "mt_gpufreq_ptpod_disable_idx = %d\n", mt_gpufreq_ptpod_disable_idx);
 #ifdef MT_GPUFREQ_GPU_SOURCE_FROM_VCORE
 	seq_printf(m, "fake_segment=%u, is_vcorefs_can_work=%d\n",

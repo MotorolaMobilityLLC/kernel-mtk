@@ -414,7 +414,7 @@ static unsigned int _mt_cpufreq_get_cpu_level(void)
 			else if ((2 == func_code_0) || (4 == func_code_0))
 				return CPU_LEVEL_1;
 #ifdef CONFIG_ARCH_MT6755_TURBO
-			else if (0x22 == func_code_0)
+			else if (0x20 == (func_code_0 & 0xF0))
 				return CPU_LEVEL_2;
 #endif
 			else {
@@ -3886,7 +3886,7 @@ int mt_cpufreq_get_chip_id_38(void)
 {
 	unsigned int chip_code = get_devinfo_with_index(21) & 0xFF;
 
-	if (chip_code == 0x43)
+	if (chip_code == 0x43 || chip_code == 0x4B)
 		return 1;
 	else
 		return 0;
