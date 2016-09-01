@@ -29,7 +29,6 @@ config TOUCHSCREEN_MTK_FT8716
 	bool "FT8716 for lenovo Kungfu driver"
 	depends on TOUCHSCREEN_MTK	
 
-
 config TOUCHSCREEN_MTK_GT1151
 	bool "GT1151 for Mediatek package"
 	default n
@@ -40,8 +39,20 @@ config TOUCHSCREEN_MTK_GT1151
 
 	  To compile this dirver as a module, choose M here: the
 	  module will be called.
-
 source "drivers/input/touchscreen/mediatek/GT1151/Kconfig"
+
+config TOUCHSCREEN_MTK_GT1152
+	bool "GT1152 for Mediatek package"
+	default n
+	help
+	  Say Y here if you have GT1152 touch panel.
+
+	  If unsure, say N.
+
+	  To compile this dirver as a module, choose M here: the
+	  module will be called.
+
+source "drivers/input/touchscreen/mediatek/GT1152/Kconfig"
 
 config TOUCHSCREEN_MTK_GT1151TB
 	bool "GT1151 for Mediatek package"
