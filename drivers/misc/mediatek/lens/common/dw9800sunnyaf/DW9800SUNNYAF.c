@@ -26,6 +26,7 @@
 
 static struct i2c_client *g_pstAF_I2Cclient;
 static int *g_pAF_Opened;
+static int g_dw9800_Opened =1;
 static spinlock_t *g_pAF_SpinLock;
 
 static int g_sr = 3;
@@ -190,11 +191,18 @@ static inline int moveAF(unsigned long a_u4Position)
 	
 	if (g_u4CurrPosition == a_u4Position)
 		return 0;
-
+	/*lenovo-sw huangsh4  begin add g_dw9800_Opened flag to avoid the abnormal sound of vcm when first enter camera*/
+         if (g_dw9800_Opened  == 1) {
+	spin_lock(g_pAF_SpinLock);
+	g_u4TargetPosition = g_u4CurrPosition;
+	spin_unlock(g_pAF_SpinLock);
+	g_dw9800_Opened = 2;
+         	}else {
 	spin_lock(g_pAF_SpinLock);
 	g_u4TargetPosition = a_u4Position;
 	spin_unlock(g_pAF_SpinLock);
-
+         		}
+        /*lenovo-sw huangsh4  end add g_dw9800_Opened flag to avoid the abnormal sound of vcm when first enter camera*/
 	spin_lock(g_pAF_SpinLock);
 	g_sr = 3;
 	g_i4MotorStatus = 0;
@@ -202,7 +210,7 @@ static inline int moveAF(unsigned long a_u4Position)
 
 	AFValueH = ((unsigned short)g_u4TargetPosition>>8);
 	AFValueL = ((unsigned short)g_u4TargetPosition & 0xff); 
-	/* LOG_INF("move [curr] %d [target] %d\n", g_u4CurrPosition, g_u4TargetPosition); */
+	/* LOG_INF("move [curr] %ld [target] %ld\n", g_u4CurrPosition, g_u4TargetPosition); */
 	//DW9800 add
 	//if (s4DW9800AF_WriteReg((unsigned short)g_u4TargetPosition) == 0) {
 	if (WriteSensorReg(0x03, AFValueH) == 0 && WriteSensorReg(0x04, AFValueL) == 0) {
