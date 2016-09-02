@@ -237,6 +237,11 @@ typedef struct
 #define MMC3524X_IOC_WRITE_REG		    _IOW(MSENSOR,  0x24, unsigned char[2])
 #define MMC3524X_IOC_READ_REGS		    _IOWR(MSENSOR, 0x25, unsigned char[10])
 #define MMC3524X_IOC_WRITE_REGS		    _IOW(MSENSOR,  0x26, unsigned char[10])
+#ifdef CONFIG_COMPAT
+#define COMPAT_MMC3524X_IOC_READ_REG           _IOWR(MSENSOR, 0x32, unsigned char)
+#define COMPAT_MMC3524X_IOC_WRITE_REG          _IOW(MSENSOR, 0x33, unsigned char[2])
+#define COMPAT_MMC3524X_IOC_READ_REGS          _IOWR(MSENSOR, 0x34, unsigned char[10])
+#endif
 /*lenovo-sw caoyi1 add for mmc3530 Msensor end*/
 
 #define ALSPS							0X84

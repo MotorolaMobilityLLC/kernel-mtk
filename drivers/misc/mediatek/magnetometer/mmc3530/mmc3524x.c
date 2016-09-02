@@ -27,7 +27,6 @@
 #include <linux/workqueue.h>
 #include <linux/kobject.h>
 #include <linux/platform_device.h>
-//#include <linux/earlysuspend.h>
 #include <linux/time.h>
 #include <linux/hrtimer.h>
 #include <hwmsensor.h>
@@ -37,12 +36,7 @@
 
 #include <hwmsen_helper.h>
 #include <batch.h>
-//#include <mach/mt_typedefs.h>
-//#include <mach/mt_gpio.h>
-//#include <mach/mt_pm_ldo.h>
 
-
-/*-------------------------MT6516&MT6573 define-------------------------------*/
 
 #define MEMSIC_SINGLE_POWER 0
 
@@ -79,6 +73,8 @@
 #endif
 
 
+#define CONFIG_MTK_I2C_EXTENSION 1
+
 #if MMC3524X_DEBUG_MSG
 #define MMCDBG(format, ...)	printk(KERN_INFO "mmc3524x " format "\n", ## __VA_ARGS__)
 #else
@@ -92,17 +88,12 @@
 #endif
 static int mEnabled;
 
-/* Addresses to scan -- protected by sense_data_mutex */
-static char sense_data[SENSOR_DATA_SIZE];
-//static struct mutex sense_data_mutex;
-
 static struct i2c_client *this_client = NULL;
 
 // calibration msensor and orientation data
 static int sensor_data[CALIBRATION_DATA_SIZE];
 static struct mutex sensor_data_mutex;
 static struct mutex read_i2c_xyz;
-/* static DECLARE_WAIT_QUEUE_HEAD(data_ready_wq); */
 static DECLARE_WAIT_QUEUE_HEAD(open_wq);
 
 static int mmcd_delay = MMC3524X_DEFAULT_DELAY;
@@ -112,19 +103,11 @@ static atomic_t m_flag = ATOMIC_INIT(0);
 static atomic_t o_flag = ATOMIC_INIT(0);
 
 static const struct i2c_device_id mmc3524x_i2c_id[] = {{MMC3524X_DEV_NAME,0},{}};
-//static struct i2c_board_info __initdata i2c_mmc3524x={ I2C_BOARD_INFO("mmc3524x", (MMC3524X_I2C_ADDR>>1))};
 
 /* Maintain  cust info here */
 struct mag_hw mag_cust;
 static struct mag_hw *hw = &mag_cust;
 
-/* For  driver get cust info */
-/*
-struct mag_hw *get_cust_mag(void)
-{
-	return &mag_cust;
-}
-*/
 /*----------------------------------------------------------------------------*/
 static int mmc3524x_i2c_probe(struct i2c_client *client, const struct i2c_device_id *id); 
 static int mmc3524x_i2c_remove(struct i2c_client *client);
@@ -152,12 +135,12 @@ typedef enum {
 static u32 read_idx = 0;
 #define READMD	0
 
-/*----------------------------------------------------------------------------*/
 struct mmc3524x_i2c_data {
     struct i2c_client *client;
     struct mag_hw *hw;
     atomic_t layout;
     atomic_t trace;
+	int sensor_type;
 	struct hwmsen_convert   cvt;
 #if defined(CONFIG_HAS_EARLYSUSPEND)
     struct early_suspend    early_drv;
@@ -168,7 +151,6 @@ static int  mmc3524x_local_init(void);
 static int mmc3524x_remove(void);
 
 static int mmc3524x_init_flag = 0; // 0<==>OK -1 <==> fail
-
 
 
 static struct mag_init_info mmc3524x_init_info = {
@@ -202,17 +184,6 @@ static struct i2c_driver mmc3524x_i2c_driver = {
 	.id_table = mmc3524x_i2c_id,
 };
 
-#if 0
-struct platform_driver mmc3524x_platform_driver = {
-	.probe      = platform_mmc3524x_probe,
-	.remove     = platform_mmc3524x_remove,
-	.driver     = {
-		.name  = "msensor",
-		//.owner = THIS_MODULE,
-	}
-};
-#endif
-
 static atomic_t dev_open_count;
 
 #ifdef	CONFIG_HAS_EARLYSUSPEND
@@ -220,8 +191,18 @@ static int mmc3524x_SetPowerMode(struct i2c_client *client, bool enable)
 {
 	u8 databuf[2];
 	int res = 0;
-	u8 addr = MMC3524X_REG_CTRL;
-	//struct mmc3524x_i2c_data *obj = i2c_get_clientdata(client);
+	u8 addr;
+
+	struct mmc3524x_i2c_data *data = i2c_get_clientdata(client);
+
+	if (data->sensor_type == MEMSIC_SENSOR_MMC3630X)
+	{
+		addr = MMC36XX_REG_CTRL0;
+	}
+	else if ((data->sensor_type == MEMSIC_SENSOR_MMC3530X) || (data->sensor_type == MEMSIC_SENSOR_MMC3524X))
+	{
+		addr = MMC3524X_REG_CTRL;
+	}
 
 	if(hwmsen_read_byte(client, addr, databuf))
 	{
@@ -243,8 +224,17 @@ static int mmc3524x_SetPowerMode(struct i2c_client *client, bool enable)
 	{
 		// do nothing
 	}
-	databuf[1] = databuf[0];
-	databuf[0] = MMC3524X_REG_CTRL;
+
+	if (data->sensor_type == MEMSIC_SENSOR_MMC3630X)
+	{
+		databuf[1] = databuf[0];
+		databuf[0] = MMC36XX_REG_CTRL0;
+	}
+	else if ((data->sensor_type == MEMSIC_SENSOR_MMC3530X) || (data->sensor_type == MEMSIC_SENSOR_MMC3524X))
+	{
+		databuf[1] = databuf[0];
+		databuf[0] = MMC3524X_REG_CTRL;
+	}
 
 	res = i2c_master_send(client, databuf, 0x2);
 
@@ -261,8 +251,6 @@ static int mmc3524x_SetPowerMode(struct i2c_client *client, bool enable)
 	return 0;
 }
 #endif
-/*----------------------------------------------------------------------------*/
-//static DEFINE_MUTEX(MMC3416X_i2c_mutex);
 
 static void mmc3524x_power(struct mag_hw *hw, unsigned int on)
 {
@@ -294,8 +282,135 @@ static void mmc3524x_power(struct mag_hw *hw, unsigned int on)
 	power_on = on;
 }
 
+/******************************************************************************************************************************/
+#ifndef CONFIG_MTK_I2C_EXTENSION
+static DEFINE_MUTEX(mmc3x30x_i2c_mutex);
+int mag_read_byte(struct i2c_client *client, u8 addr, u8 *data)
+{
+	u8 beg = addr;
+	int err;
+	struct i2c_msg msgs[2] = {
+		{
+			.addr = client->addr,   .flags = 0,
+			.len = 1,   .buf = &beg
+		},   
+		{
+			.addr = client->addr,   .flags = I2C_M_RD,
+			.len = 1,   .buf = data,
+		}
+	};
+
+	if (!client)
+		return -EINVAL;
+
+	err = i2c_transfer(client->adapter, msgs, sizeof(msgs)/sizeof(msgs[0]));
+	if (err != 2) {
+		printk("i2c_transfer error: (%d %p) %d\n", addr, data, err);
+		err = -EIO;
+	}
+
+	err = 0;
+
+	return err;
+}
+
+static int mag_i2c_read_block(struct i2c_client *client, u8 addr, u8 *data, u8 len)
+{
+	int err = 0;
+	u8 beg = addr;                                                                                                      
+	struct i2c_msg msgs[2] = { {0}, {0} };
+
+	if(len == 1){
+		return mag_read_byte(client, addr, data);
+	}
+	mutex_lock(&mmc3x30x_i2c_mutex);
+	msgs[0].addr = client->addr;
+	msgs[0].flags = 0;
+	msgs[0].len = 1;
+	msgs[0].buf = &beg;
+
+	msgs[1].addr = client->addr;
+	msgs[1].flags = I2C_M_RD;
+	msgs[1].len = len;
+	msgs[1].buf = data;
+
+	if (!client) {
+		mutex_unlock(&mmc3x30x_i2c_mutex);
+		return -EINVAL;
+	} else if (len > C_I2C_FIFO_SIZE) {
+		mutex_unlock(&mmc3x30x_i2c_mutex);
+		MAGN_ERR(" length %d exceeds %d\n", len, C_I2C_FIFO_SIZE);
+		return -EINVAL;
+	}
+
+	err = i2c_transfer(client->adapter, msgs, sizeof(msgs) / sizeof(msgs[0]));
+	if (err != 2) {
+		MAGN_ERR("i2c_transfer error: (%d %p %d) %d\n", addr, data, len, err);
+		err = -EIO;
+	} else {
+		err = 0;
+	}
+	mutex_unlock(&mmc3x30x_i2c_mutex);
+	return err;
+
+}
+
+static int mag_i2c_write_block(struct i2c_client *client, u8 addr, u8 *data, u8 len)
+{               /*because address also occupies one byte, the maximum length for write is 7 bytes */
+	int err = 0, idx = 0, num = 0;
+	char buf[C_I2C_FIFO_SIZE];
+
+	err = 0;
+	mutex_lock(&mmc3x30x_i2c_mutex);
+	if (!client) {
+		mutex_unlock(&mmc3x30x_i2c_mutex);
+		return -EINVAL;
+	} else if (len >= C_I2C_FIFO_SIZE) {
+		mutex_unlock(&mmc3x30x_i2c_mutex);
+		MAGN_ERR(" length %d exceeds %d\n", len, C_I2C_FIFO_SIZE);
+		return -EINVAL;
+	}
+
+	num = 0;
+	buf[num++] = addr;
+	for (idx = 0; idx < len; idx++)
+		buf[num++] = data[idx];
+
+	err = i2c_master_send(client, buf, num);
+	if (err < 0) {
+		mutex_unlock(&mmc3x30x_i2c_mutex);
+		MAGN_ERR("send command error!!\n");
+		return -EFAULT;
+	}
+	mutex_unlock(&mmc3x30x_i2c_mutex);
+	return err;
+}
+#endif
+
+
+
+
+
+
+
+
+
+
 static int I2C_RxData(char *rxData, int length)
 {
+#ifndef CONFIG_MTK_I2C_EXTENSION
+	struct i2c_client *client = this_client;
+	int res = 0;
+	char addr = rxData[0];
+
+	if ((rxData == NULL) || (length < 1))
+		return -EINVAL;
+	res = mag_i2c_read_block(client, addr, rxData, length);
+	if (res < 0)
+		return -1;
+	return 0;
+#else
+
 	uint8_t loop_i;
 
 #if DEBUG
@@ -339,10 +454,25 @@ static int I2C_RxData(char *rxData, int length)
 	}
 #endif
 	return 0;
+#endif
 }
 
 static int I2C_TxData(char *txData, int length)
 {
+#ifndef CONFIG_MTK_I2C_EXTENSION
+	struct i2c_client *client = this_client;
+	int res = 0;
+	char addr = txData[0];
+	u8 *buff = &txData[1];
+
+	if ((txData == NULL) || (length < 2))
+		return -EINVAL;
+	res = mag_i2c_write_block(client, addr, buff, (length - 1));
+	if (res < 0)
+		return -1;
+	return 0;
+#else
+
 	uint8_t loop_i;
 
 #if DEBUG
@@ -385,112 +515,8 @@ static int I2C_TxData(char *txData, int length)
 	}
 #endif
 	return 0;
-}
-
-static long MMCECS_SetMode_SngMeasure(void)
-{
-	long err_x;
-	unsigned char data[16] = {0};
-
-	data[0] = MMC3524X_REG_CTRL;
-	data[1] = MMC3524X_CTRL_TM;
-	err_x = I2C_TxData(data, 2);
-	if ( err_x< 0)
-	{
-		printk(KERN_ERR "MMC3524X_IOC_TM failed\n");
-		return -EFAULT;
-	}
-	/* wait TM done for coming data read */
-	msleep(MMC3524X_DELAY_TM);
-	return err_x;
-}
-
-static long MMCECS_SetMode_SelfTest(void)
-{
-return 0;
-}
-static long MMCECS_SetMode_FUSEAccess(void)
-{
-	return 0;
-}
-static int MMCECS_SetMode_PowerDown(void)
-{
-return 0;
-}
-#if 1
-static long MMCECS_Reset(int hard)
-{
-	unsigned char data[16] = {0};
-
-			data[0] = MMC3524X_REG_CTRL;
-			data[1] = MMC3524X_CTRL_REFILL;
-			if(I2C_TxData(data, 2) < 0)
-			{
-				printk(KERN_ERR "MMC3524X_IOC_SET failed\n");
-				return -EFAULT;
-			}
-			/* wait external capacitor charging done for next SET/RESET */
-			msleep(MMC3524X_DELAY_SET);
-			data[0] = MMC3524X_REG_CTRL;
-			data[1] = MMC3524X_CTRL_SET;
-			if (I2C_TxData(data, 2) < 0) {
-	                printk(KERN_ERR "MMC3524X_IOC_SET failed2\n");
-				return -EFAULT;
-			}
-			msleep(1);
-			data[0] = MMC3524X_REG_CTRL;
-			data[1] = 0;
-			if (I2C_TxData(data, 2) < 0) {
-	                printk(KERN_ERR "MMC3524X_IOC_SET failed3\n");
-				return -EFAULT;
-			}
-			msleep(MMC3524X_DELAY_SET);
-
-
-	return 0;
-}
-
-static long MMCECS_SetMode(char mode)
-{
-	long ret;
-
-	switch (mode & 0x1F) {
-	case MMC3524X_MODE_SNG_MEASURE:
-	ret = MMCECS_SetMode_SngMeasure();
-	break;
-
-	case MMC3524X_MODE_SELF_TEST:
-	ret = MMCECS_SetMode_SelfTest();
-	break;
-
-	case MMC3524X_MODE_FUSE_ACCESS:
-	ret = MMCECS_SetMode_FUSEAccess();
-	break;
-
-	case MMC3524X_MODE_POWERDOWN:
-	ret = MMCECS_SetMode_PowerDown();
-	break;
-
-	default:
-	MAGN_LOG("%s: Unknown mode(%d)", __func__, mode);
-	return -EINVAL;
-	}
-
-	/* wait at least 100us after changing mode */
-	udelay(100);
-
-	return ret;
-}
-
-/* M-sensor daemon application have set the sng mode */
-static long MMCECS_GetData(char *rbuf, int size)
-{
-	int err = 0;
-	
-	memcpy(rbuf, sense_data, sizeof(sense_data));
-	return err;
-}
 #endif
+}
 
 
 // Daemon application save the data
@@ -521,16 +547,15 @@ static int ECS_SaveData(int buf[12])
 static int ECS_ReadXYZData(int *vec, int size)
 {
 	unsigned char data[6] = {0,0,0,0,0,0};
-	//ktime_t expires;
-	//int wait_n=0;
 	#if READMD
 	int MD_times = 0;
 	#endif
 	static int last_data[3];
 	struct timespec time1, time2, time3;
+	struct mmc3524x_i2c_data *clientdata ;
+	clientdata = i2c_get_clientdata(this_client);
 #if DEBUG
 	struct i2c_client *client = this_client;
-	struct mmc3524x_i2c_data *clientdata = i2c_get_clientdata(client);
 #endif
     time1 = current_kernel_time();
 
@@ -543,51 +568,65 @@ static int ECS_ReadXYZData(int *vec, int size)
 
 	if (!(read_idx % MMC3524X_RESET_INTV))
 	{
-		/* Reset Sensor Periodly SET */
-#if MEMSIC_SINGLE_POWER 
-		data[0] = MMC3524X_REG_CTRL;
-		data[1] = MMC3524X_CTRL_REFILL;
-		/* not check return value here, assume it always OK */
-		I2C_TxData(data, 2);
-		/* wait external capacitor charging done for next RM */
-		msleep(MMC3524X_DELAY_SET);
+		if (clientdata->sensor_type == MEMSIC_SENSOR_MMC3630X)
+		{
+			/* Reset Sensor Periodly SET */
+#if MEMSIC_SINGLE_POWER
+			data[0] = MMC36XX_REG_CTRL0;
+			data[1] = MMC3630X_CTRL_REFILL;
+			/* not check return value here, assume it always OK */
+			I2C_TxData(data, 2);
+			/* wait external capacitor charging done for next RM */
+			msleep(MMC3524X_DELAY_SET);
 #endif
-		data[0] = MMC3524X_REG_CTRL;
-		data[1] = MMC3524X_CTRL_SET;
-		I2C_TxData(data, 2);
-		msleep(1);
-		data[0] = MMC3524X_REG_CTRL;
-		data[1] = 0;
-		I2C_TxData(data, 2);
-		msleep(1);
+			data[0] = MMC36XX_REG_CTRL0;
+			data[1] = MMC3630X_CTRL_SET;
+			I2C_TxData(data, 2);
+			msleep(1);
+			data[0] = MMC36XX_REG_CTRL0;
+			data[1] = 0;
+			I2C_TxData(data, 2);
+			msleep(1);
+		}
+		else if ((clientdata->sensor_type == MEMSIC_SENSOR_MMC3530X) || (clientdata->sensor_type == MEMSIC_SENSOR_MMC3524X))
+		{
+			/* Reset Sensor Periodly SET */
+#if MEMSIC_SINGLE_POWER 
+			data[0] = MMC3524X_REG_CTRL;
+			data[1] = MMC3524X_CTRL_REFILL;
+			/* not check return value here, assume it always OK */
+			I2C_TxData(data, 2);
+			/* wait external capacitor charging done for next RM */
+			msleep(MMC3524X_DELAY_SET);
+#endif
+			data[0] = MMC3524X_REG_CTRL;
+			data[1] = MMC3524X_CTRL_SET;
+			I2C_TxData(data, 2);
+			msleep(1);
+			data[0] = MMC3524X_REG_CTRL;
+			data[1] = 0;
+			I2C_TxData(data, 2);
+			msleep(1);
+		}
 	}
 
 	time3 = current_kernel_time();
-	/* send TM cmd before read */
-	data[0] = MMC3524X_REG_CTRL;
-	data[1] = MMC3524X_CTRL_TM;
+	if (clientdata->sensor_type == MEMSIC_SENSOR_MMC3630X)
+	{
+		/* send TM cmd before read */
+		data[0] = MMC36XX_REG_CTRL0;
+		data[1] = MMC3630X_CTRL_TM;
+	}
+	else if ((clientdata->sensor_type == MEMSIC_SENSOR_MMC3530X) || (clientdata->sensor_type == MEMSIC_SENSOR_MMC3524X))
+	{
+		/* send TM cmd before read */
+		data[0] = MMC3524X_REG_CTRL;
+		data[1] = MMC3524X_CTRL_TM;
+	}
 	/* not check return value here, assume it always OK */
 	I2C_TxData(data, 2);
 	msleep(MMC3524X_DELAY_TM);
 
-#if READMD
-	/* Read MD */
-	data[0] = MMC3524X_REG_DS;
-	I2C_RxData(data, 1);
-	while (!(data[0] & 0x01)) {
-		msleep(1);
-		/* Read MD again*/
-		data[0] = MMC3524X_REG_DS;
-		I2C_RxData(data, 1);
-		if (data[0] & 0x01) break;
-		MD_times++;
-		if (MD_times > 3) {
-			printk("TM not work!!");
-			mutex_unlock(&read_i2c_xyz);
-			return -EFAULT;
-		}
-	}
-#endif
 	read_idx++;
 	data[0] = MMC3524X_REG_DATA;
 	if(I2C_RxData(data, 6) < 0)
@@ -638,6 +677,7 @@ static int ECS_GetOpenStatus(void)
 
 static int mmc3524x_ReadChipInfo(char *buf, int bufsize)
 {
+	struct mmc3524x_i2c_data *data = i2c_get_clientdata(this_client);
 	if((!buf)||(bufsize <= MMC3524X_BUFSIZE -1))
 	{
 		return -1;
@@ -647,233 +687,23 @@ static int mmc3524x_ReadChipInfo(char *buf, int bufsize)
 		*buf = 0;
 		return -2;
 	}
-
-	sprintf(buf, "mmc3524x Chip");
+	if(data->sensor_type == MEMSIC_SENSOR_MMC3530X)
+	{
+		sprintf(buf, "mmc3530x Chip");
+	}
+	else if (data->sensor_type == MEMSIC_SENSOR_MMC3524X)
+	{
+		sprintf(buf, "mmc3524x Chip");
+	}
+	else if (data->sensor_type == MEMSIC_SENSOR_MMC3630X)
+	{
+		sprintf(buf, "mmc3630x Chip");
+	}
+	else
+	{
+		sprintf(buf, "unknow type");
+	}
 	return 0;
-}
-
-/*----------------------------shipment test------------------------------------------------*/
-/*!
- @return If @a testdata is in the range of between @a lolimit and @a hilimit,
- the return value is 1, otherwise -1.
- @param[in] testno   A pointer to a text string.
- @param[in] testname A pointer to a text string.
- @param[in] testdata A data to be tested.
- @param[in] lolimit  The maximum allowable value of @a testdata.
- @param[in] hilimit  The minimum allowable value of @a testdata.
- @param[in,out] pf_total
- */
-int TEST_DATA(const char testno[], const char testname[], const int testdata,
-	const int lolimit, const int hilimit, int *pf_total)
-{
-	int pf;			/* Pass;1, Fail;-1 */
-
-	if ((testno == NULL) && (strncmp(testname, "START", 5) == 0)) {
-		MAGN_LOG("--------------------------------------------------------------------\n");
-		MAGN_LOG(" Test No. Test Name	Fail	Test Data	[	 Low	High]\n");
-		MAGN_LOG("--------------------------------------------------------------------\n");
-		pf = 1;
-	} else if ((testno == NULL) && (strncmp(testname, "END", 3) == 0)) {
-		MAGN_LOG("--------------------------------------------------------------------\n");
-		if (*pf_total == 1)
-			MAGN_LOG("Factory shipment test was passed.\n\n");
-		else
-			MAGN_LOG("Factory shipment test was failed.\n\n");
-
-		pf = 1;
-	} else {
-		if ((lolimit <= testdata) && (testdata <= hilimit))
-			pf = 1;
-		else
-			pf = -1;
-
-	/* display result */
-	MAGN_LOG(" %7s  %-10s	 %c	%9d	[%9d	%9d]\n",
-		testno, testname, ((pf == 1) ? ('.') : ('F')), testdata,
-		lolimit, hilimit);
-	}
-
-	/* Pass/Fail check */
-	if (*pf_total != 0) {
-		if ((*pf_total == 1) && (pf == 1))
-			*pf_total = 1;		/* Pass */
-		else
-			*pf_total = -1;		/* Fail */
-	}
-	return pf;
-}
-
-/*!
- Execute "Onboard Function Test" (NOT includes "START" and "END" command).
- @retval 1 The test is passed successfully.
- @retval -1 The test is failed.
- @retval 0 The test is aborted by kind of system error.
- */
-int FST_MMC3524X(void)
-{
-	int   pf_total;  /* p/f flag for this subtest */
-	char	i2cData[16];
-	int   hdata[3];
-	int   asax;
-	int   asay;
-	int   asaz;
-
-	/* *********************************************** */
-	/* Reset Test Result */
-	/* *********************************************** */
-	pf_total = 1;
-
-	/* *********************************************** */
-	/* Step1 */
-	/* *********************************************** */
-
-	MMCECS_Reset(0);
-	mdelay(1);
-
-
-	/* TEST */
-		/* our i2c only most can read 8 byte  at one time , */
-	//i2cData[7] = AK8963_REG_HZL;
-	if (I2C_RxData((i2cData+7), 6) < 0) {
-		MAGN_LOG("%s:%d Error.\n", __func__, __LINE__);
-		return 0;
-	}
-
-
-	/* Read values from I2CDIS. */
-	//i2cData[0] = AK8963_REG_I2CDIS;
-	if (I2C_RxData(i2cData, 1) < 0) {
-		MAGN_LOG("%s:%d Error.\n", __func__, __LINE__);
-		return 0;
-	}
-
-
-	/* Set to FUSE ROM access mode */
-	if (MMCECS_SetMode(MMC3524X_MODE_FUSE_ACCESS) < 0) {
-		MAGN_LOG("%s:%d Error.\n", __func__, __LINE__);
-	return 0;
-	}
-
-	/* Read values from ASAX to ASAZ */
-	//i2cData[0] = AK8963_FUSE_ASAX;
-	if (I2C_RxData(i2cData, 3) < 0) {
-		MAGN_LOG("%s:%d Error.\n", __func__, __LINE__);
-	return 0;
-	}
-	asax = (int)i2cData[0];
-	asay = (int)i2cData[1];
-	asaz = (int)i2cData[2];
-
-
-	/* Set to PowerDown mode */
-	if (MMCECS_SetMode(MMC3524X_MODE_POWERDOWN) < 0) {
-		MAGN_LOG("%s:%d Error.\n", __func__, __LINE__);
-	return 0;
-	}
-
-
-	/* *********************************************** */
-	/* Step2 */
-	/* *********************************************** */
-
-	/* Set to SNG measurement pattern (Set CNTL register) */
-	if (MMCECS_SetMode(MMC3524X_MODE_SNG_MEASURE) < 0) {
-		MAGN_LOG("%s:%d Error.\n", __func__, __LINE__);
-		return 0;
-	}
-
-	/* Wait for DRDY pin changes to HIGH. */
-	mdelay(10);
-	/* Get measurement data from AK8963 */
-	/* ST1 + (HXL + HXH) + (HYL + HYH) + (HZL + HZH) + ST2 */
-	/* = 1 + (1 + 1) + (1 + 1) + (1 + 1) + 1 = 8 bytes */
-	if (MMCECS_GetData(i2cData, SENSOR_DATA_SIZE) < 0) {
-		MAGN_LOG("%s:%d Error.\n", __func__, __LINE__);
-		return 0;
-	}
-
-	hdata[0] = (s16)(i2cData[1] | (i2cData[2] << 8));
-	hdata[1] = (s16)(i2cData[3] | (i2cData[4] << 8));
-	hdata[2] = (s16)(i2cData[5] | (i2cData[6] << 8));
-	/* AK8963 @ 14 BIT */
-	hdata[0] <<= 2;
-	hdata[1] <<= 2;
-	hdata[2] <<= 2;
-
-
-	/* Generate magnetic field for self-test (Set ASTC register) */
-	i2cData[1] = 0x40;
-	if (I2C_TxData(i2cData, 2) < 0) {
-		MAGN_LOG("%s:%d Error.\n", __func__, __LINE__);
-		return 0;
-	}
-
-	/* Set to Self-test mode (Set CNTL register) */
-	if (MMCECS_SetMode(MMC3524X_MODE_SELF_TEST) < 0) {
-		MAGN_LOG("%s:%d Error.\n", __func__, __LINE__);
-		return 0;
-	}
-
-	/* Wait for DRDY pin changes to HIGH. */
-	mdelay(10);
-	/* Get measurement data from AK8963 */
-	/* ST1 + (HXL + HXH) + (HYL + HYH) + (HZL + HZH) + ST2 */
-	/* = 1 + (1 + 1) + (1 + 1) + (1 + 1) + 1 = 8Byte */
-	if (MMCECS_GetData(i2cData, SENSOR_DATA_SIZE) < 0) {
-		MAGN_LOG("%s:%d Error.\n", __func__, __LINE__);
-		return 0;
-	}
-
-
-	hdata[0] = (s16)(i2cData[1] | (i2cData[2] << 8));
-	hdata[1] = (s16)(i2cData[3] | (i2cData[4] << 8));
-	hdata[2] = (s16)(i2cData[5] | (i2cData[6] << 8));
-	
-	hdata[0] <<= 2;
-	hdata[1] <<= 2;
-	hdata[2] <<= 2;
-
-	MAGN_LOG("hdata[0] = %d\n", hdata[0]);
-	MAGN_LOG("asax = %d\n", asax);
-	
-
-	/* Set to Normal mode for self-test. */
-	i2cData[1] = 0x00;
-	if (I2C_TxData(i2cData, 2) < 0) {
-		MAGN_LOG("%s:%d Error.\n", __func__, __LINE__);
-		return 0;
-	}
-	MAGN_LOG("pf_total = %d\n", pf_total);
-	return pf_total;
-}
-
-
-/*!
- Execute "Onboard Function Test" (includes "START" and "END" command).
- @retval 1 The test is passed successfully.
- @retval -1 The test is failed.
- @retval 0 The test is aborted by kind of system error.
- */
-int FctShipmntTestProcess_Body(void)
-{
-	int pf_total = 1;
-
-	/* *********************************************** */
-	/* Reset Test Result */
-	/* *********************************************** */
-	TEST_DATA(NULL, "START", 0, 0, 0, &pf_total);
-
-	/* *********************************************** */
-	/* Step 1 to 2 */
-	/* *********************************************** */
-	pf_total = FST_MMC3524X();
-	
-	/* *********************************************** */
-	/* Judge Test Result */
-	/* *********************************************** */
-	TEST_DATA(NULL, "END", 0, 0, 0, &pf_total);
-
-	return pf_total;
 }
 
 static ssize_t store_shipment_test(struct device_driver *ddri, const char *buf, size_t count)
@@ -882,28 +712,16 @@ static ssize_t store_shipment_test(struct device_driver *ddri, const char *buf, 
 	/* struct mmc3524x_i2c_data *data = i2c_get_clientdata(client); */
 	/* int layout = 0; */
 
-
 	return count;
 }
 
 static ssize_t show_shipment_test(struct device_driver *ddri, char *buf)
 {
-	char result[10];
-	int res = 0;
+//	char result[10];
+//	int res = 0;
 
-	res = FctShipmntTestProcess_Body();
-	if (1 == res) {
-		MAGN_LOG("shipment_test pass\n");
-		strcpy(result, "y");
-	} else if (-1 == res) {
-		MAGN_LOG("shipment_test fail\n");
-		strcpy(result, "n");
-	} else {
-		MAGN_LOG("shipment_test NaN\n");
-		strcpy(result, "NaN");
-	}
 
-	return sprintf(buf, "%s\n", result);
+	return 0;
 }
 
 
@@ -949,7 +767,7 @@ static ssize_t show_layout_value(struct device_driver *ddri, char *buf)
 		data->hw->direction,atomic_read(&data->layout),	data->cvt.sign[0], data->cvt.sign[1],
 		data->cvt.sign[2],data->cvt.map[0], data->cvt.map[1], data->cvt.map[2]);
 }
-/*----------------------------------------------------------------------------*/
+
 static ssize_t store_layout_value(struct device_driver *ddri, const char *buf, size_t count)
 {
 	struct i2c_client *client = this_client;
@@ -1014,7 +832,7 @@ static ssize_t show_trace_value(struct device_driver *ddri, char *buf)
 	res = snprintf(buf, PAGE_SIZE, "0x%04X\n", atomic_read(&obj->trace));
 	return res;
 }
-/*----------------------------------------------------------------------------*/
+
 static ssize_t store_trace_value(struct device_driver *ddri, const char *buf, size_t count)
 {
 	struct mmc3524x_i2c_data *obj = i2c_get_clientdata(this_client);
@@ -1221,8 +1039,16 @@ static long mmc3524x_unlocked_ioctl(struct file *file, unsigned int cmd,unsigned
 	switch (cmd)
 	{
 		case MMC31XX_IOC_TM:
-			data[0] = MMC3524X_REG_CTRL;
-			data[1] = MMC3524X_CTRL_TM;
+			if (clientdata->sensor_type == MEMSIC_SENSOR_MMC3630X)
+			{
+				data[0] = MMC36XX_REG_CTRL0;
+				data[1] = MMC3630X_CTRL_TM;
+			}
+            else if ((clientdata->sensor_type == MEMSIC_SENSOR_MMC3530X) || (clientdata->sensor_type == MEMSIC_SENSOR_MMC3524X))
+			{
+				data[0] = MMC3524X_REG_CTRL;
+				data[1] = MMC3524X_CTRL_TM;
+			}
 			if (I2C_TxData(data, 2) < 0)
 			{
 				printk(KERN_ERR "MMC3524x_IOC_TM failed\n");
@@ -1234,68 +1060,138 @@ static long mmc3524x_unlocked_ioctl(struct file *file, unsigned int cmd,unsigned
 
 		case MMC31XX_IOC_SET:
 		case MMC31XX_IOC_RM:
+			if (clientdata->sensor_type == MEMSIC_SENSOR_MMC3630X)
+			{
 #if MEMSIC_SINGLE_POWER
-			data[0] = MMC3524X_REG_CTRL;
-			data[1] = MMC3524X_CTRL_REFILL;
-			if(I2C_TxData(data, 2) < 0)
-			{
-				printk(KERN_ERR "MMC3524x_IOC_SET failed\n");
-				return -EFAULT;
-			}
-			/* wait external capacitor charging done for next SET/RESET */
-			msleep(MMC3524X_DELAY_SET);
+				data[0] = MMC36XX_REG_CTRL0;
+				data[1] = MMC3630X_CTRL_REFILL;
+				if(I2C_TxData(data, 2) < 0)
+				{
+					printk(KERN_ERR "MMC3630x_IOC_SET failed\n");
+					return -EFAULT;
+				}
+				/* wait external capacitor charging done for next SET/RESET */
+				msleep(MMC3524X_DELAY_SET);
 #endif
-			data[0] = MMC3524X_REG_CTRL;
-			data[1] = MMC3524X_CTRL_SET;
-			if(I2C_TxData(data, 2) < 0)
-			{
-				printk(KERN_ERR "MMC3524x_IOC_SET failed\n");
-				return -EFAULT;
+				data[0] = MMC36XX_REG_CTRL0;
+				data[1] = MMC3630X_CTRL_SET;
+				if(I2C_TxData(data, 2) < 0)
+				{
+					printk(KERN_ERR "MMC3630x_IOC_SET failed\n");
+					return -EFAULT;
+				}
+				/* wait external capacitor charging done for next SET/RESET */
+				msleep(1);
+				data[0] = MMC36XX_REG_CTRL0;
+				data[1] = 0;
+				if(I2C_TxData(data, 2) < 0)
+				{
+					printk(KERN_ERR "MMC3630x_IOC_SET failed\n");
+					return -EFAULT;
+				}
+				/* wait external capacitor charging done for next SET/RESET */
+				msleep(1);
 			}
-			/* wait external capacitor charging done for next SET/RESET */
-			msleep(1);
-			data[0] = MMC3524X_REG_CTRL;
-			data[1] = 0;
-			if(I2C_TxData(data, 2) < 0)
+			else if ((clientdata->sensor_type == MEMSIC_SENSOR_MMC3530X) || (clientdata->sensor_type == MEMSIC_SENSOR_MMC3524X))
 			{
-				printk(KERN_ERR "MMC3524x_IOC_SET failed\n");
-				return -EFAULT;
+#if MEMSIC_SINGLE_POWER
+				data[0] = MMC3524X_REG_CTRL;
+				data[1] = MMC3524X_CTRL_REFILL;
+				if(I2C_TxData(data, 2) < 0)
+				{
+					printk(KERN_ERR "MMC3524x_IOC_SET failed\n");
+					return -EFAULT;
+				}
+				/* wait external capacitor charging done for next SET/RESET */
+				msleep(MMC3524X_DELAY_SET);
+#endif
+				data[0] = MMC3524X_REG_CTRL;
+				data[1] = MMC3524X_CTRL_SET;
+				if(I2C_TxData(data, 2) < 0)
+				{
+					printk(KERN_ERR "MMC3524x_IOC_SET failed\n");
+					return -EFAULT;
+				}
+				/* wait external capacitor charging done for next SET/RESET */
+				msleep(1);
+				data[0] = MMC3524X_REG_CTRL;
+				data[1] = 0;
+				if(I2C_TxData(data, 2) < 0)
+				{
+					printk(KERN_ERR "MMC3524x_IOC_SET failed\n");
+					return -EFAULT;
+				}
+				/* wait external capacitor charging done for next SET/RESET */
+				msleep(1);
 			}
-			/* wait external capacitor charging done for next SET/RESET */
-			msleep(1);
 			break;
 
 		case MMC31XX_IOC_RESET:
 		case MMC31XX_IOC_RRM:
+			if (clientdata->sensor_type == MEMSIC_SENSOR_MMC3630X)
+			{
 #if MEMSIC_SINGLE_POWER
-			data[0] = MMC3524X_REG_CTRL;
-			data[1] = MMC3524X_CTRL_REFILL;
-			if(I2C_TxData(data, 2) < 0)
-			{
-				printk(KERN_ERR "MMC3524x_IOC_SET failed\n");
-				return -EFAULT;
-			}
-			/* wait external capacitor charging done for next SET/RESET */
-			msleep(MMC3524X_DELAY_RESET);
+				data[0] = MMC36XX_REG_CTRL0;
+				data[1] = MMC3630X_CTRL_REFILL;
+				if(I2C_TxData(data, 2) < 0)
+				{
+					printk(KERN_ERR "MMC3630x_IOC_SET failed\n");
+					return -EFAULT;
+				}
+				/* wait external capacitor charging done for next SET/RESET */
+				msleep(MMC3524X_DELAY_RESET);
 #endif
-			data[0] = MMC3524X_REG_CTRL;
-			data[1] = MMC3524X_CTRL_RESET;
-			if(I2C_TxData(data, 2) < 0)
-			{
-				printk(KERN_ERR "MMC3524x_IOC_SET failed\n");
-				return -EFAULT;
+				data[0] = MMC36XX_REG_CTRL0;
+				data[1] = MMC3630X_CTRL_RESET;
+				if(I2C_TxData(data, 2) < 0)
+				{
+					printk(KERN_ERR "MMC3630x_IOC_SET failed\n");
+					return -EFAULT;
+				}
+				/* wait external capacitor charging done for next SET/RESET */
+				msleep(1);
+				data[0] = MMC36XX_REG_CTRL0;
+				data[1] = 0;
+				if(I2C_TxData(data, 2) < 0)
+				{
+					printk(KERN_ERR "MMC3630x_IOC_SET failed\n");
+					return -EFAULT;
+				}
+				/* wait external capacitor charging done for next SET/RESET */
+				msleep(1);
 			}
-			/* wait external capacitor charging done for next SET/RESET */
-			msleep(1);
-			data[0] = MMC3524X_REG_CTRL;
-			data[1] = 0;
-			if(I2C_TxData(data, 2) < 0)
+			else if ((clientdata->sensor_type == MEMSIC_SENSOR_MMC3530X) || (clientdata->sensor_type == MEMSIC_SENSOR_MMC3524X))
 			{
-				printk(KERN_ERR "MMC3524x_IOC_SET failed\n");
-				return -EFAULT;
+#if MEMSIC_SINGLE_POWER
+				data[0] = MMC3524X_REG_CTRL;
+				data[1] = MMC3524X_CTRL_REFILL;
+				if(I2C_TxData(data, 2) < 0)
+				{
+					printk(KERN_ERR "MMC3524x_IOC_SET failed\n");
+					return -EFAULT;
+				}
+				/* wait external capacitor charging done for next SET/RESET */
+				msleep(MMC3524X_DELAY_RESET);
+#endif
+				data[0] = MMC3524X_REG_CTRL;
+				data[1] = MMC3524X_CTRL_RESET;
+				if(I2C_TxData(data, 2) < 0)
+				{
+					printk(KERN_ERR "MMC3524x_IOC_SET failed\n");
+					return -EFAULT;
+				}
+				/* wait external capacitor charging done for next SET/RESET */
+				msleep(1);
+				data[0] = MMC3524X_REG_CTRL;
+				data[1] = 0;
+				if(I2C_TxData(data, 2) < 0)
+				{
+					printk(KERN_ERR "MMC3524x_IOC_SET failed\n");
+					return -EFAULT;
+				}
+				/* wait external capacitor charging done for next SET/RESET */
+				msleep(1);
 			}
-			/* wait external capacitor charging done for next SET/RESET */
-			msleep(1);
 			break;
 
 		case MMC31XX_IOC_READ:
@@ -2049,8 +1945,6 @@ static int mmc3524x_m_enable(int en)
 	int err = 0;
 	value = en;
 
-//	struct mmc3524x_i2c_data *obj = container_of(h, struct mmc3524x_i2c_data, early_drv);         
-
 	if(value == 1)
 	{
 		atomic_set(&m_flag, 1);
@@ -2086,8 +1980,6 @@ static int mmc3524x_m_open_report_data(int open)
 {
 	return 0;
 }
-
-
 
 static int mmc3524x_o_enable(int en)
 {
@@ -2155,15 +2047,166 @@ static int mmc3524x_m_get_data(int* x ,int* y,int* z, int* status)
 	return 0;
 }
 
+static int memsic_check_device(struct i2c_client *client)
+{
+	int rc;
+	unsigned char rd_buffer[2] = {0};
+	struct mmc3524x_i2c_data *data;
+
+	data = i2c_get_clientdata(client);
+
+	data->sensor_type = 0;
+
+	rd_buffer[0] = MMC3524X_CHIPID_ADDR;
+	rc = I2C_RxData(rd_buffer, 1);
+	if (rc)
+	{
+		printk("[mmc35xx] read id fail\n");
+	}
+	printk("mmc3524x id = 0x%x\n", rd_buffer[0]);
+	if ((rd_buffer[0] & 0x3f) == MEMSIC_SENSOR_MMC3530X)
+	{
+		data->sensor_type = MEMSIC_SENSOR_MMC3530X;
+		printk("memsic current device is mmc3524 id = %d\n", rd_buffer[0]);
+		return 0;
+	}
+
+	if ((rd_buffer[0] & 0x3f) == MEMSIC_SENSOR_MMC3524X)
+	{
+		data->sensor_type = MEMSIC_SENSOR_MMC3524X;
+		printk("memsic current device is mmc3524 id = %d\n", rd_buffer[0]);
+		return 0;
+	}
+
+	rd_buffer[0] = MMC36XX_CHIPID_ADDR;
+	rc = I2C_RxData(rd_buffer, 1);
+	if (rc)
+	{
+		printk("[mmc36xx] read id fail\n");
+	}
+
+	printk("mmc3524x 1111id = 0x%x\n", rd_buffer[0]);
+	if ((rd_buffer[0] & 0x3f) == MEMSIC_SENSOR_MMC3630X)
+	{
+		data->sensor_type = MEMSIC_SENSOR_MMC3630X;
+		printk("memsic current device is mmc36xx id = %d\n", rd_buffer[0]);
+		return 0;
+	}
+
+	if ((data->sensor_type != MEMSIC_SENSOR_MMC3630X)
+			&& (data->sensor_type != MEMSIC_SENSOR_MMC3530X)
+			&& (data->sensor_type != MEMSIC_SENSOR_MMC3524X))
+	{
+		printk("unknown memsic sensor type \n");
+		return -1;
+	}
+
+	return rc;
+}
+
+static int mmc35xx_init_sensor(struct i2c_client *client)
+{
+	unsigned char buffer[2] = {0};
+
+#if MEMSIC_SINGLE_POWER
+	buffer[0] = MMC3524X_REG_CTRL;
+	buffer[1] = MMC3524X_CTRL_REFILL;
+	if (I2C_TxData(buffer, 2) < 0)
+	{
+		printk(KERN_ERR "mmc3524x_device refill cmd failed\n");
+		return -1;
+	}
+	msleep(MMC3524X_DELAY_SET);
+#endif
+	buffer[0] = MMC3524X_REG_CTRL;
+	buffer[1] = MMC3524X_CTRL_SET; 
+	if (I2C_TxData(buffer, 2) < 0)
+	{
+		printk(KERN_ERR "mmc3524x_device set cmd failed\n");
+		return -1;
+	}
+	msleep(1);
+	buffer[0] = MMC3524X_REG_CTRL;
+	buffer[1] = 0;
+	if (I2C_TxData(buffer, 2) < 0)
+	{
+		printk(KERN_ERR "mmc3524x_device ctrl cmd failed\n");
+		return -1;
+	}
+	msleep(MMC3524X_DELAY_SET);
+
+	buffer[0] = MMC3524X_REG_BITS;
+	buffer[1] = MMC3524X_BITS_SLOW_16;
+	if (I2C_TxData(buffer, 2) < 0)
+	{
+		printk(KERN_ERR "mmc3524x_device bit16 cmd failed\n");
+		return -1;
+	}
+	msleep(MMC3524X_DELAY_TM);
+
+	buffer[0] = MMC3524X_REG_CTRL;
+	buffer[1] = MMC3524X_CTRL_TM;
+	if (I2C_TxData(buffer, 2) < 0)
+	{
+		printk(KERN_ERR "mmc3524x_device tm cmd failed\n");
+		return -1;
+	}
+	msleep(MMC3524X_DELAY_TM);
+
+	return 0;
+}
+
+static int mmc36xx_init_sensor(struct i2c_client *client)
+{
+	unsigned char buffer[2] = {0};
+
+#if MEMSIC_SINGLE_POWER
+	buffer[0] = MMC36XX_REG_CTRL0;
+	buffer[1] = MMC3630X_CTRL_REFILL;
+	if (I2C_TxData(buffer, 2) < 0)
+	{
+		printk(KERN_ERR "mmc36xx_device refill cmd failed\n");
+		return -1;
+	}
+	msleep(MMC3524X_DELAY_SET);
+#endif
+	buffer[0] = MMC36XX_REG_CTRL0;
+	buffer[1] = MMC3630X_CTRL_SET; 
+	if (I2C_TxData(buffer, 2) < 0)
+	{
+		printk(KERN_ERR "mmc36xx_device set cmd failed\n");
+		return -1;
+	}
+	msleep(1);
+	buffer[0] = MMC36XX_REG_CTRL0;
+	buffer[1] = 0;
+	if (I2C_TxData(buffer, 2) < 0) 
+	{
+		printk(KERN_ERR "mmc3524x_device ctrl cmd failed\n");
+		return -1;
+	}
+	msleep(MMC3524X_DELAY_SET);
+
+
+	buffer[0] = MMC36XX_REG_CTRL0;
+	buffer[1] = MMC3630X_CTRL_TM;
+	if (I2C_TxData(buffer, 2) < 0)
+	{
+		printk(KERN_ERR "mmc36xx_device tm cmd failed\n");
+		return -1;
+	}
+	msleep(MMC3524X_DELAY_TM);
+
+	return 0;
+}
+
 static int mmc3524x_i2c_probe(struct i2c_client *client, const struct i2c_device_id *id)
 {
 	struct i2c_client *new_client;
 	struct mmc3524x_i2c_data *data;
-	char tmp[2];
 	int err = 0;
 	struct mag_control_path ctl={0};
 	struct mag_data_path mag_data={0};
-	char product_id[2] = {0,0};
 
     printk("%s: ++++\n", __func__);
     
@@ -2192,59 +2235,19 @@ static int mmc3524x_i2c_probe(struct i2c_client *client, const struct i2c_device
 	this_client = new_client;
     msleep(10);
 
-	/* send TM cmd to mag sensor first of all */
-	tmp[0] = MMC3524X_REG_CTRL;
-	tmp[1] = MMC3524X_CTRL_TM;
-	if(I2C_TxData(tmp, 2) < 0)
-	{
-		printk(KERN_ERR "mmc3524x_device set TM cmd failed\n");
-		goto exit_kfree;
-	}
-	
-	product_id[0] = MMC3524X_REG_PRODUCTID_1;
-	if(I2C_RxData(product_id, 1) < 0)
-	{
-		printk("[mmc3524x] read id fail\n");
-		//read again
-		I2C_RxData(product_id, 1);
-	}
-	
-	printk("[mmc3524x] product_id[0] = %d\n",product_id[0]);
-	if(product_id[0] != 0x8 && product_id[0] != 0x9)
+	if (memsic_check_device(client) < 0)
 	{
 		goto exit_kfree;
 	}
-#if MEMSIC_SINGLE_POWER
-    tmp[0] = MMC3524X_REG_CTRL;
-	tmp[1] = MMC3524X_CTRL_REFILL;
-	if (I2C_TxData(tmp, 2) < 0) {
-	}
-	msleep(MMC3524X_DELAY_SET);
-#endif
-	tmp[0] = MMC3524X_REG_CTRL;
-	tmp[1] = MMC3524X_CTRL_SET;
-	if (I2C_TxData(tmp, 2) < 0) {
-	}
-	msleep(1);
-	tmp[0] = MMC3524X_REG_CTRL;
-	tmp[1] = 0;
-	if (I2C_TxData(tmp, 2) < 0) {
-	}
-	msleep(MMC3524X_DELAY_SET);
 
-	tmp[0] = MMC3524X_REG_BITS;
-	tmp[1] = MMC3524X_BITS_SLOW_16;
-	if (I2C_TxData(tmp, 2) < 0) {
+	if (data->sensor_type == MEMSIC_SENSOR_MMC3630X)
+	{
+		mmc36xx_init_sensor(client);
 	}
-	msleep(MMC3524X_DELAY_TM);
-
-	tmp[0] = MMC3524X_REG_CTRL;
-	tmp[1] = MMC3524X_CTRL_TM;
-	if (I2C_TxData(tmp, 2) < 0) {
+	else if ((data->sensor_type == MEMSIC_SENSOR_MMC3530X) || (data->sensor_type == MEMSIC_SENSOR_MMC3524X))
+	{
+		mmc35xx_init_sensor(client);
 	}
-	msleep(MMC3524X_DELAY_TM);
-
-
 
 	/* Register sysfs attribute */
 	if((err = mmc3524x_create_attr(&(mmc3524x_init_info.platform_diver_addr->driver))))
@@ -2387,8 +2390,6 @@ static int mmc3524x_remove(void)
 	return 0;
 }
 
-
-
 /*----------------------------------------------------------------------------*/
 static int __init mmc3524x_init(void)
 {
@@ -2405,8 +2406,6 @@ static int __init mmc3524x_init(void)
 	
 	return 0;
 }
-
-
 
 /*----------------------------------------------------------------------------*/
 static void __exit mmc3524x_exit(void)
