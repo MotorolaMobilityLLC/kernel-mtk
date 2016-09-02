@@ -4695,7 +4695,7 @@ static int __init eem_conf(void)
 			recordTbl = &sbTbl[0][0];
 			eem_error("@The table ----->(sbTbl)\n");
 #ifdef CONFIG_ARCH_MT6755_TURBO
-		} else if (0x22 == binLevel) {
+		} else if (0x20 == (binLevel & 0xF0)) {
 			recordTbl = &p15Tbl[0][0];
 			eem_error("@The table ----->(p15Tbl)\n");
 #endif
