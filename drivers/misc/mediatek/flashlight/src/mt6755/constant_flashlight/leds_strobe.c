@@ -193,8 +193,10 @@ static int flashDuty_L[e_DutyNum]=     {1,3,8,12,14,16,20,25,29,33,37,42,46,50,5
 //150,200,250,300,350,400,450,500,550,600,650,700,750,800,850,900,950,1000,1100,1200,1300,1400,1500ma
 int m_duty1=0;
 int m_duty2=0;
-int LED1Closeflag = 0;
-int LED2Closeflag = 0;
+/*lenovo-sw huangsh4 begin change this flag value as 1 to avoid led2 lightning when first enter camera*/
+int LED1Closeflag = 1;
+int LED2Closeflag = 1;
+/*lenovo-sw huangsh4 end change this flag value as 1 to avoid led2 lightning when first enter camera*/
 int flashEnable_SY7806_1(void)
 {
 	//mt_set_gpio_mode(FLASH_TORCH_ENABLE, 0);
