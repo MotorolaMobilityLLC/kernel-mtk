@@ -812,6 +812,7 @@ enum ppm_power_state ppm_check_fix_state_by_segment(void)
 
 	switch (segment) {
 	case 0x43: /* fix L only */
+	case 0x4B:
 		fix_state = PPM_POWER_STATE_L_ONLY;
 		break;
 	default:

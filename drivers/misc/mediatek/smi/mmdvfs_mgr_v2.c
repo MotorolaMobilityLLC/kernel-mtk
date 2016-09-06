@@ -79,7 +79,8 @@ int mmsys_clk_mode);
 static void notify_mmsys_clk_change(int ori_mmsys_clk_mode, int update_mmsys_clk_mode);
 static int mmsys_clk_change_notify_checked(clk_switch_cb func, int ori_mmsys_clk_mode,
 int update_mmsys_clk_mode, char *msg);
-static mmdvfs_voltage_enum determine_current_mmsys_clk(void);
+static int determine_isp_clk(void);
+static int determine_current_mmsys_clk(void);
 static int get_venc_step(int venc_resolution);
 static int get_vr_step(int sensor_size, int camera_mode);
 static int get_ext_disp_step(mmdvfs_lcd_size_enum disp_resolution);
@@ -281,10 +282,26 @@ MTK_MMDVFS_CMD *cmd)
 	return step;
 }
 
-/* Check all scenario in HPM and return the corrosponding mmsys
-	clk conciguration setting. This is only need in SMI_J since mmysys
-	clk can't be configured independently in SMI_E */
-static mmdvfs_voltage_enum determine_current_mmsys_clk(void)
+
+static int determine_isp_clk(void)
+{
+		int final_clk = MMSYS_CLK_MEDIUM;
+
+		/* exclude MMDVFS_CAM_MON_SCEN case since it is not the final step */
+		if (is_force_max_mmsys_clk())
+				final_clk = MMSYS_CLK_HIGH;
+		else if (g_mmdvfs_cmd.sensor_size >= MMDVFS_PIXEL_NUM_SENSOR_FULL)
+				/* 13M high */
+				final_clk = MMSYS_CLK_HIGH;
+		else if (g_mmdvfs_cmd.camera_mode & (MMDVFS_CAMERA_MODE_FLAG_PIP |
+		MMDVFS_CAMERA_MODE_FLAG_STEREO))
+				/* PIP for ISP clock */
+				final_clk = MMSYS_CLK_HIGH;
+
+		return final_clk;
+}
+
+int mmdvfs_get_stable_isp_clk(void)
 {
 	int i = 0;
 	int final_clk = MMSYS_CLK_MEDIUM;
@@ -294,16 +311,7 @@ static mmdvfs_voltage_enum determine_current_mmsys_clk(void)
 			/* Check the mmsys clk */
 			switch (i) {
 			case SMI_BWC_SCEN_VR:
-			case MMDVFS_CAM_MON_SCEN:
-				if (is_force_max_mmsys_clk())
-					final_clk = MMSYS_CLK_HIGH;
-				else if (g_mmdvfs_cmd.sensor_size >= MMDVFS_PIXEL_NUM_SENSOR_FULL)
-					/* 13M high */
-					final_clk = MMSYS_CLK_HIGH;
-				else if (g_mmdvfs_cmd.camera_mode & (MMDVFS_CAMERA_MODE_FLAG_PIP |
-				MMDVFS_CAMERA_MODE_FLAG_STEREO))
-					/* PIP for ISP clock */
-					final_clk = MMSYS_CLK_HIGH;
+					final_clk = determine_isp_clk();
 				break;
 			case SMI_BWC_SCEN_VR_SLOW:
 			case SMI_BWC_SCEN_ICFP:
@@ -316,6 +324,27 @@ static mmdvfs_voltage_enum determine_current_mmsys_clk(void)
 	}
 
 	return final_clk;
+}
+
+/* Check all scenario in HPM and return the corrosponding mmsys
+	clk conciguration setting. This is only need in SMI_J since mmysys
+	clk can't be configured independently in SMI_E */
+static int determine_current_mmsys_clk(void)
+{
+	int temp_clk = MMSYS_CLK_MEDIUM;
+	int stable_clk = MMSYS_CLK_MEDIUM;
+
+	/* Get temp clk triggered by camera monitor */
+	if (g_mmdvfs_scenario_voltage[MMDVFS_CAM_MON_SCEN] == MMDVFS_VOLTAGE_HIGH)
+		temp_clk = determine_isp_clk();
+
+	/* Get final stable clk */
+	stable_clk = mmdvfs_get_stable_isp_clk();
+
+	if (temp_clk == MMSYS_CLK_HIGH || stable_clk == MMSYS_CLK_HIGH)
+		return MMSYS_CLK_HIGH;
+	else
+		return MMSYS_CLK_MEDIUM;
 }
 
 
@@ -913,7 +942,8 @@ void mmdvfs_init(MTK_SMI_BWC_MM_INFO *info)
 		unsigned int profile_id;
 
 		profile_id = get_devinfo_with_index(21) & 0xff;
-		if (profile_id == 0x42 || profile_id == 0x43)
+		if (profile_id == 0x42 || profile_id == 0x43 || profile_id == 0x46 ||
+				profile_id == 0x4B)
 			mmdvfs_enable(0);
 	}
 
