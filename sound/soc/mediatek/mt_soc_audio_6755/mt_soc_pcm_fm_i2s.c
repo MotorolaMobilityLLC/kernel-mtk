@@ -238,9 +238,17 @@ static int mtk_pcm_fm_i2s_close(struct snd_pcm_substream *substream)
 	}
 
 	SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_OUT_DAC, false);
-	if (GetI2SDacEnable() == false)
+	if (GetI2SDacEnable() == false) {
+		SetI2SADDAEnable(false);
 		SetI2SDacEnable(false);
+	}
 
+
+#ifdef FM_CONNECT_I2S_OUT_2
+	SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_OUT_2, false);
+	if (GetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_OUT_2) == false)
+		Afe_Set_Reg(AFE_I2S_CON3, 0x0, 0x1);
+#endif
 	/* interconnection setting */
 	SetConnection(Soc_Aud_InterCon_DisConnect, Soc_Aud_InterConnectionInput_I00,
 		      Soc_Aud_InterConnectionOutput_O13);
@@ -250,6 +258,12 @@ static int mtk_pcm_fm_i2s_close(struct snd_pcm_substream *substream)
 		      Soc_Aud_InterConnectionOutput_O03);
 	SetConnection(Soc_Aud_InterCon_DisConnect, Soc_Aud_InterConnectionInput_I11,
 		      Soc_Aud_InterConnectionOutput_O04);
+#ifdef FM_CONNECT_I2S_OUT_2
+	SetConnection(Soc_Aud_InterCon_DisConnect, Soc_Aud_InterConnectionInput_I10,
+		Soc_Aud_InterConnectionOutput_O00);
+	SetConnection(Soc_Aud_InterCon_DisConnect, Soc_Aud_InterConnectionInput_I11,
+		Soc_Aud_InterConnectionOutput_O01);
+#endif
 
 
 	EnableAfe(false);
@@ -282,6 +296,12 @@ static int mtk_pcm_fm_i2s_prepare(struct snd_pcm_substream *substream)
 		SetConnection(Soc_Aud_InterCon_Connection, Soc_Aud_InterConnectionInput_I11,
 			      Soc_Aud_InterConnectionOutput_O04);
 
+#ifdef FM_CONNECT_I2S_OUT_2
+		SetConnection(Soc_Aud_InterCon_Connection, Soc_Aud_InterConnectionInput_I10,
+			Soc_Aud_InterConnectionOutput_O00);
+		SetConnection(Soc_Aud_InterCon_Connection, Soc_Aud_InterConnectionInput_I11,
+			Soc_Aud_InterConnectionOutput_O01);
+#endif
 		/* Set HW_GAIN */
 		SetHwDigitalGainMode(Soc_Aud_Hw_Digital_Gain_HW_DIGITAL_GAIN1, runtime->rate,
 				     0x40);
@@ -295,6 +315,19 @@ static int mtk_pcm_fm_i2s_prepare(struct snd_pcm_substream *substream)
 			SetI2SDacEnable(true);
 		} else
 			SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_OUT_DAC, true);
+#ifdef FM_CONNECT_I2S_OUT_2
+		/* start I2S DAC out 2 */
+		if (GetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_OUT_DAC_2) == false) {
+			uint32 u32AudioI2S = 0;
+
+			u32AudioI2S = SampleRateTransform(runtime->rate) << 8;
+			u32AudioI2S |= Soc_Aud_I2S_FORMAT_I2S << 3;
+			u32AudioI2S |= Soc_Aud_I2S_WLEN_WLEN_16BITS << 1;
+			SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_OUT_DAC_2, true);
+			Afe_Set_Reg(AFE_I2S_CON3, u32AudioI2S | 1, AFE_MASK_ALL);
+		} else
+			SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_OUT_DAC_2, true);
+#endif
 		if (GetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_IN_2) == false) {
 			/* set merge interface */
 			SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_IN_2, true);
@@ -326,6 +359,8 @@ static int mtk_pcm_fm_i2s_prepare(struct snd_pcm_substream *substream)
 			SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_IN_2, true);
 
 		EnableAfe(true);
+		if (GetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_OUT_DAC) == true)
+			SetI2SADDAEnable(true);
 		mPrepareDone = true;
 	}
 	return 0;
