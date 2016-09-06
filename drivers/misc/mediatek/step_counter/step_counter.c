@@ -23,6 +23,7 @@
 
 /*Lenovo-sw weimh1 add 2016-7-7 begin:record invalid count for steps*/
 #ifndef STEP_COUNTER_INT_MODE_SUPPORT
+#define STEP_COUNTER_INVALID_COUNT 20
 int invalid_count = 0;
 #endif
 /*Lenovo-sw weimh1 add 2016-7-7 end:record invalid count for steps*/
@@ -111,11 +112,19 @@ step_c_loop:
 /* step counter sensor interrupt mode support -- modified by liaoxl.lenovo 7.12.2015 start  */
 #ifndef STEP_COUNTER_INT_MODE_SUPPORT
 //	if (true == cxt->is_polling_run) {
+	if (invalid_count < STEP_COUNTER_INVALID_COUNT)
 		mod_timer(&cxt->timer, jiffies + atomic_read(&cxt->delay) / (1000 / HZ));
+	else {
+		cxt->is_polling_run = false;
+		invalid_count = 0;
+		STEP_C_ERR("invalid count too much,suspend!!\n" );
+	}
 //	}
 #endif
 	value = 0;
 /* step counter sensor interrupt mode support -- modified by liaoxl.lenovo 7.12.2015 end  */
+
+	STEP_C_LOG("%s step counter:%d\n", __func__, cxt->drv_data.counter);
 }
 
 static void step_c_poll(unsigned long data)
@@ -135,7 +144,7 @@ static struct step_c_context *step_c_context_alloc_object(void)
 		STEP_C_ERR("Alloc step_c object error!\n");
 		return NULL;
 	}
-	atomic_set(&obj->delay, 200);	/*5Hz */
+	atomic_set(&obj->delay, 500);	/*2Hz */
 	atomic_set(&obj->wake, 0);
 	INIT_WORK(&obj->report, step_c_work_func);
 	init_timer(&obj->timer);
@@ -187,12 +196,18 @@ int  step_notify(STEP_NOTIFY_TYPE type)
 	else if (type == TYPE_STEP_COUNTER)	{
 		STEP_C_LOG("fwq TYPE_STEP_COUNTER notify\n");
 
+#ifndef STEP_COUNTER_INT_MODE_SUPPORT	
+		invalid_count = 0;
+#endif
 		step_c_work_func(0);
 	}
 	/*Lenovo-sw weimh1 add 2016-8-22 begin:*/
 	else if (type == TYPE_STEP_SUSPEND)	{
 		STEP_C_LOG("fwq TYPE_STEP_SUSPEND notify\n");
-		
+
+#ifndef STEP_COUNTER_INT_MODE_SUPPORT	
+		invalid_count = 0;
+#endif
 		cxt->is_polling_run = false;
 		del_timer_sync(&step_c_context_obj->timer);
 		cancel_work_sync(&step_c_context_obj->report);
