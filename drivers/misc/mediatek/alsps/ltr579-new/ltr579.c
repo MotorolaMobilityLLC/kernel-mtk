@@ -970,6 +970,9 @@ static int ltr579_als_enable(int gainrange)
 			break;
 	}
 
+	error = ltr579_i2c_write_reg(LTR579_ALS_GAIN, MODE_ALS_Range6);
+
+
 	error = ltr579_i2c_write_reg(LTR579_ALS_MEAS_RATE, ALS_RESO_MEAS);// 18 bit & 100ms measurement rate		
 	APS_ERR("ALS sensor resolution & measurement rate: %d!\n", ALS_RESO_MEAS );	
 
