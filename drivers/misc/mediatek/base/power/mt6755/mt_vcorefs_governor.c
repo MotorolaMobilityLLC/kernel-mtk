@@ -108,6 +108,9 @@ unsigned int vcorefs_log_mask = ~((0xFFFFFFFF << LAST_KICKER) | (1U << KIR_GPU))
 #define MT6750_TURBO_SEGMENT 0x41
 #define MT6750_NORMAL_SEGMENT 0x42
 #define MT6738_SEGMENT 0x43
+#define MT6750_TURBO_5M_SEGMENT 0x45
+#define MT6750_NORMAL_5M_SEGMENT 0x46
+#define MT6738_5M_SEGMENT 0x4B
 
 /*
  * struct define
@@ -1112,6 +1115,8 @@ int vcorefs_late_init_dvfs(void)
 #if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
 	/* mt6750 series */
 	if (gvrctrl->segment_code == MT6750_NORMAL_SEGMENT ||
+		gvrctrl->segment_code == MT6750_NORMAL_5M_SEGMENT ||
+		gvrctrl->segment_code == MT6738_5M_SEGMENT ||
 		gvrctrl->segment_code == MT6738_SEGMENT) {
 		if (gvrctrl->is_fhd_segment == true) {
 			if (spm_read(SPM_POWER_ON_VAL0) & (1 << 14)) {
@@ -1139,16 +1144,10 @@ int vcorefs_late_init_dvfs(void)
 		gvrctrl->vcore_dvfs_en = false;
 		vcorefs_info("vcore dvfs disable. segment(0x%x) boot_up_opp=%d\n",
 			      gvrctrl->segment_code, gvrctrl->boot_up_opp);
-		if (!(spm_read(SPM_POWER_ON_VAL0) & (1 << 14))) {
+		if (!(spm_read(SPM_POWER_ON_VAL0) & (1 << 14)))
 			vcorefs_err("boot ddr freq is not expected as LPM (seg=0x%x)\n", gvrctrl->segment_code);
-			aee_kernel_exception_api(__FILE__, __LINE__,
-						DB_OPT_DEFAULT, "BOOT_DRAMC", "BOOT DDR Freq Not Expected");
-		}
-		if (gvrctrl->boot_up_opp != OPPI_LOW_PWR) {
+		if (gvrctrl->boot_up_opp != OPPI_LOW_PWR)
 			vcorefs_err("boot vcore is not expected as LPM (seg=0x%x)\n", gvrctrl->segment_code);
-			aee_kernel_exception_api(__FILE__, __LINE__,
-						DB_OPT_DEFAULT, "BOOT_PMIC", "BOOT VCORE Not Expected");
-		}
 	} else if (gvrctrl->segment_policy == VCOREFS_SEGMENT_LPM_EXCEPT_OVL) {
 		disable_cg_fliper(); /* disable c+g fliper */
 		mmdvfs_enable(0); /* disable mm dvfs */

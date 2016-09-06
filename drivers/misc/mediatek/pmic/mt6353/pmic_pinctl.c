@@ -68,7 +68,7 @@ void vmd1_pmic_setting_off(void)
 {
 	unsigned int segment = get_devinfo_with_index(21) & 0xFF;
 
-	if (segment == 0x41 || segment == 0x40) {/* 0x41: turbo, 0x40: eng sample, set as 0x41*/
+	if (segment == 0x41 || segment == 0x45 || segment == 0x40) {/* 0x41: turbo, 0x40: eng sample, set as 0x41*/
 		/* Turn OFF VCORE2 */
 		/* Call PMIC driver API to configure VCORE2 OFF */
 		pmic_buck_vcore2_en("VMODEM", 0, 0);
@@ -85,7 +85,7 @@ void vmd1_pmic_setting_on(void)
 	unsigned int segment = get_devinfo_with_index(21) & 0xFF;
 
 	PMICLOG("before segment 0x%x\n", segment);
-	if (segment == 0x41 || segment == 0x40) {/* 0x41: turbo, 0x40: eng sample, set as 0x41*/
+	if (segment == 0x41 || segment == 0x45 || segment == 0x40) {/* 0x41: turbo, 0x40: eng sample, set as 0x41*/
 		/* Turn on VMD1 */
 		/* 1.Call PMIC driver API to configure VMD1_SEL as L (i.e. configure VMD1 as 0.9V) */
 #ifdef CONFIG_MTK_LEGACY
@@ -108,13 +108,14 @@ void vmd1_pmic_setting_on(void)
 		pmic_buck_vcore2_hw_vosel(0); /* HW source clock setting */
 		/* 2.Call PMIC driver API configure VCORE2 ON voltage as 1.0V */
 		pmic_set_register_value(PMIC_BUCK_VCORE2_VOSEL_ON, 0x40); /* set to 1.0V */
-	} else if (segment == 0x42 || segment == 0x43) {/* 0x42: normal 0x43: 6738*/
+	} else if (segment == 0x42 || segment == 0x43 || segment == 0x46 || segment == 0x4B) {
+		/* 0x42: normal 0x43: 6738*/
 		/* Turn on VCORE2 */
 		/* 1.Call PMIC driver API to configure VCORE2 as HW mode */
 		pmic_buck_vcore2_en("VMODEM", 0, 1);
 		pmic_buck_vcore2_hw_vosel(0); /* HW source clock setting */
 		/* 2.Call PMIC driver API configure VCORE2 ON voltage as 1.0V */
-		pmic_set_register_value(PMIC_BUCK_VCORE2_VOSEL_ON, 0x30); /* set to 1.0V */
+		pmic_set_register_value(PMIC_BUCK_VCORE2_VOSEL_ON, 0x40); /* set to 1.0V */
 	}
 }
 /*

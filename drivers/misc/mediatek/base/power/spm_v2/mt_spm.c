@@ -1696,9 +1696,9 @@ void spm_vmd_sel_gpio_set(void)
 	u32 segment = get_devinfo_with_index(21) & 0xFF;
 
 #if defined(CONFIG_MTK_LEGACY)
-	if ((segment == 0x41) || (segment == 0x40)) {
+	if ((segment == 0x41) || (segment == 0x45) || (segment == 0x40))
 		gpio_nf = (GPIO_VMD1_SEL_PIN & 0x0000FFFF);
-	} else if (segment == 0x42) {
+	else if ((segment == 0x42) || (segment == 0x46)) {
 #if defined(CONFIG_MTK_SPM_USE_EXT_BUCK)
 		gpio_nf = (GPIO_VMD1_SEL_PIN & 0x0000FFFF);
 #else
@@ -1708,15 +1708,15 @@ void spm_vmd_sel_gpio_set(void)
 		gpio_nf = 0;
 	}
 #else
-	if ((segment == 0x41) || (segment == 0x40)) {
+	if ((segment == 0x41) || (segment == 0x45) || (segment == 0x40))
 		gpio_nf = spm_vmd1_gpio;
-	} else if (segment == 0x42) {
+	else if ((segment == 0x42) || (segment == 0x46)) {
 #if defined(CONFIG_MTK_SPM_USE_EXT_BUCK)
 		gpio_nf = spm_vmd1_gpio;
 #else
 		gpio_nf = 0;
 #endif /* CONFIG_MTK_SPM_USE_EXT_BUCK */
-	} else if (segment == 0x43) {
+	} else if ((segment == 0x43) || (segment == 0x4B)) {
 		gpio_nf = 0;
 	}
 #endif

@@ -649,7 +649,7 @@ void __init smp_init(void)
 	unsigned int cpu, segment, i;
 
 	segment =  get_devinfo_with_index(21) & 0xFF;
-	if (segment == 0x43) {
+	if ((segment == 0x43) || (segment == 0x4B)) {
 		for (i = 1 ; i <= 3 ; i++) {
 			set_cpu_present(i, false);
 			set_cpu_active(i, false);
