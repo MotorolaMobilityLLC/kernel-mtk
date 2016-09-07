@@ -47,6 +47,7 @@ extern void rtc_enable_writeif(void);
 extern void rtc_disable_writeif(void);
 
 extern void rtc_mark_recovery(void);
+extern void rtc_mark_reboot(void);
 #if defined(CONFIG_MTK_KERNEL_POWER_OFF_CHARGING)
 extern void rtc_mark_kpoc(void);
 #endif/*if defined(CONFIG_MTK_KERNEL_POWER_OFF_CHARGING)*/
@@ -75,6 +76,7 @@ extern int get_rtc_spare_timezone_value(void);
 #define rtc_enable_writeif()		do {} while (0)
 #define rtc_disable_writeif()		do {} while (0)
 #define rtc_mark_recovery()             do {} while (0)
+#define rtc_mark_reboot()             do {} while (0)
 #if defined(CONFIG_MTK_KERNEL_POWER_OFF_CHARGING)
 #define rtc_mark_kpoc()                 do {} while (0)
 #endif/*if defined(CONFIG_MTK_KERNEL_POWER_OFF_CHARGING)*/
