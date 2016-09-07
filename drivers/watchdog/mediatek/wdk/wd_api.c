@@ -600,6 +600,7 @@ void arch_reset(char mode, const char *cmd)
 		rtc_mark_kpoc();
 #endif
 	} else {
+		rtc_mark_reboot();
 		reboot = 1;
 	}
 
