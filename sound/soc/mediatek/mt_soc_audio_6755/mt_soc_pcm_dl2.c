@@ -284,6 +284,7 @@ static int mtk_soc_pcm_dl2_close(struct snd_pcm_substream *substream)
 		if (GetI2SDacEnable() == false) {
 			SetI2SADDAEnable(false);
 			SetI2SDacEnable(false);
+                }
 		//lenovo-sw chengx2, add 2nd i2s out enable/disable to avoid other dai disable it, start
 		#ifdef CONFIG_MTK_NXP_TFA9890
 		/* stop I2S output */
