@@ -288,7 +288,7 @@ static int mtk_pcm_i2s0_stop(struct snd_pcm_substream *substream)
 	AFE_BLOCK_T *Afe_Block = &(pI2s0MemControl->rBlock);
 
 	pr_debug("mtk_pcm_i2s0_stop\n");
-	irq_remove_user(substream, Soc_Aud_IRQ_MCU_MODE_IRQ1_MCU_MODE);
+	SetIrqEnable(Soc_Aud_IRQ_MCU_MODE_IRQ1_MCU_MODE, false);
 
 	/* here start digital part */
 	SetConnection(Soc_Aud_InterCon_DisConnect, Soc_Aud_InterConnectionInput_I05,
@@ -503,10 +503,9 @@ static int mtk_pcm_i2s0_start(struct snd_pcm_substream *substream)
 	SetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_DL1, true);
 
 	/* here to set interrupt */
-	irq_add_user(substream,
-		     Soc_Aud_IRQ_MCU_MODE_IRQ1_MCU_MODE,
-		     substream->runtime->rate,
-		     substream->runtime->period_size);
+	SetIrqMcuCounter(Soc_Aud_IRQ_MCU_MODE_IRQ1_MCU_MODE, runtime->period_size);
+	SetIrqMcuSampleRate(Soc_Aud_IRQ_MCU_MODE_IRQ1_MCU_MODE, runtime->rate);
+	SetIrqEnable(Soc_Aud_IRQ_MCU_MODE_IRQ1_MCU_MODE, true);
 
 	EnableAfe(true);
 

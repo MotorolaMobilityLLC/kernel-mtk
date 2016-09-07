@@ -157,7 +157,7 @@ static void StopAudioCaptureHardware(struct snd_pcm_substream *substream)
 	pr_debug("StopAudioCaptureHardware\n");
 
 	/* here to set interrupt */
-	irq_remove_user(substream, Soc_Aud_IRQ_MCU_MODE_IRQ2_MCU_MODE);
+	SetIrqEnable(Soc_Aud_IRQ_MCU_MODE_IRQ2_MCU_MODE, false);
 
 	SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_IN_ADC, false);
 	if (GetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_IN_ADC) == false)
@@ -208,10 +208,11 @@ static void StartAudioCaptureHardware(struct snd_pcm_substream *substream)
 		SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_IN_ADC, true);
 
 	/* here to set interrupt */
-	irq_add_user(substream,
-		     Soc_Aud_IRQ_MCU_MODE_IRQ2_MCU_MODE,
-		     substream->runtime->rate,
-		     substream->runtime->period_size);
+	SetIrqMcuCounter(Soc_Aud_IRQ_MCU_MODE_IRQ2_MCU_MODE,
+			 substream->runtime->period_size);
+	SetIrqMcuSampleRate(Soc_Aud_IRQ_MCU_MODE_IRQ2_MCU_MODE,
+			    substream->runtime->rate);
+	SetIrqEnable(Soc_Aud_IRQ_MCU_MODE_IRQ2_MCU_MODE, true);
 
 	SetSampleRate(Soc_Aud_Digital_Block_MEM_VUL, substream->runtime->rate);
 	SetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_VUL, true);
