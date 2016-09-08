@@ -148,7 +148,7 @@ static struct gyro_context *gyro_context_alloc_object(void)
 	atomic_set(&obj->wake, 0);
 	INIT_WORK(&obj->report, gyro_work_func);
 	obj->gyro_workqueue = NULL;
-	//obj->gyro_workqueue = create_workqueue("gyro_polling");
+//	obj->gyro_workqueue = create_workqueue("gyro_polling");
 	obj->gyro_workqueue = alloc_workqueue("%s", WQ_HIGHPRI | WQ_UNBOUND | WQ_MEM_RECLAIM,
 											1, "gyro_polling");
 	if (!obj->gyro_workqueue) {

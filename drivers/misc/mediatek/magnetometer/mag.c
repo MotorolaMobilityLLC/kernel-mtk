@@ -167,7 +167,7 @@ static struct mag_context *mag_context_alloc_object(void)
 	atomic_set(&obj->wake, 0);
 	INIT_WORK(&obj->report, mag_work_func);
 	obj->mag_workqueue = NULL;
-	//obj->mag_workqueue = create_workqueue("mag_polling");
+//	obj->mag_workqueue = create_workqueue("mag_polling");
 	obj->mag_workqueue = alloc_workqueue("%s", WQ_HIGHPRI | WQ_UNBOUND | WQ_MEM_RECLAIM,
 											1, "mag_polling");
 	if (!obj->mag_workqueue) {
