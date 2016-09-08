@@ -2757,7 +2757,7 @@ static int mtkfb_create_param_sysfs(struct mtkfb_device *fbdev)
 	for (i = 0; i < PARAM_ID_NUM; i++) {
 		if (!mtkfb_panel_param_is_supported(i))
 			continue;
-		rc = device_create_file(fbdev->dev, &param_attrs[i]);
+		rc = device_create_file(fbdev->fb_info->dev, &param_attrs[i]);
 		if (rc) {
 			pr_err("failed to create sysfs for panel param id %d \n",i);
 			break;
@@ -2864,11 +2864,6 @@ static int mtkfb_probe(struct device *dev)
 	}
 	init_state++;		/* 5 */
 
-//lenovo-sw wuwl10 20160426 add for moto new panel mode support begin
-#ifdef CONFIG_LENOVO_PANELMODE_SUPPORT
-	mtkfb_create_param_sysfs(fbdev);
-#endif
-//lenovo-sw wuwl10 20160426 add for moto new panel mode support end
 
 	r = register_framebuffer(fbi);
 	if (r != 0) {
@@ -2879,6 +2874,11 @@ static int mtkfb_probe(struct device *dev)
 	test_task = kthread_create(update_test_kthread, NULL, "update_test_kthread");
 	wake_up_process(test_task);
 #endif
+//lenovo-sw wuwl10 20160426 add for moto new panel mode support begin
+#ifdef CONFIG_LENOVO_PANELMODE_SUPPORT
+	mtkfb_create_param_sysfs(fbdev);
+#endif
+//lenovo-sw wuwl10 20160426 add for moto new panel mode support end
 
 	if (disp_helper_get_stage() != DISP_HELPER_STAGE_NORMAL)
 		primary_display_diagnose();
