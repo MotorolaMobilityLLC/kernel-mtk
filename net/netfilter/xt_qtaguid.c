@@ -2547,8 +2547,8 @@ static int pp_stats_line(struct seq_file *m, struct tag_stat *ts_entry,
 	uid_t stat_uid = get_uid_from_tag(tag);
 	struct proc_print_info *ppi = m->private;
 	/* Detailed tags are not available to everybody */
-	if (get_atag_from_tag(tag) && !can_read_other_uid_stats(
-						make_kuid(&init_user_ns,stat_uid))) {
+        /*lenovo-sw zhangdy4 2016-09-08, fix KUNGFUM-2071*/
+	if (!can_read_other_uid_stats(make_kuid(&init_user_ns,stat_uid))) {
 		CT_DEBUG("qtaguid: stats line: "
 			 "%s 0x%llx %u: insufficient priv "
 			 "from pid=%u tgid=%u uid=%u stats.gid=%u\n",
