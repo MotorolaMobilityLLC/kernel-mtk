@@ -54,8 +54,6 @@
 #define SCN_PSCAN_SWC_MAX_NUM       8
 #define SCN_PSCAN_HOTLIST_REPORT_MAX_NUM 8
 
-#define BEACON_TIMEOUT_DUE_2_NO_TX_DONE_EVENT 0x8
-
 typedef enum _ENUM_CMD_ID_T {
 	CMD_ID_TEST_CTRL = 0x01,	/* 0x01 (Set) */
 	CMD_ID_BASIC_CONFIG,	/* 0x02 (Set) */

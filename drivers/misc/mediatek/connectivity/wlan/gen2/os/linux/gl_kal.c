@@ -3707,6 +3707,37 @@ kalGetChannelList(IN P_GLUE_INFO_T prGlueInfo,
 	rlmDomainGetChnlList(prGlueInfo->prAdapter, eSpecificBand, FALSE, ucMaxChannelNum,
 			     pucNumOfChannel, paucChannelList);
 }
+/*----------------------------------------------------------------------------*/
+/*!
+* \brief : get APMCU Mem buffer
+*
+* \param[in] type
+* \param[in] index
+* \param[in] pucBuffer
+* \param[in] u4BufferLen
+
+*
+* \return none
+*/
+/*----------------------------------------------------------------------------*/
+
+VOID kalGetAPMCUMen(IN P_GLUE_INFO_T prGlueInfo, IN UINT32 u4StartAddr
+		, IN UINT32 u4Offset, IN UINT32 index , OUT PUINT_8 pucBuffer, IN UINT_32 u4BufferLen)
+{
+
+	PUINT8 descBaseAddr;
+
+	DBGLOG(INIT, TRACE, "TC start addr:0x%x, index:%d, offset:0x%x len:%d"
+		, u4StartAddr , index, u4Offset, u4BufferLen);
+
+	descBaseAddr = (prGlueInfo->rHifInfo.APMcuRegBaseAddr + u4StartAddr
+	+(u4Offset * index));
+
+	if ((descBaseAddr != NULL) && (pucBuffer != NULL))
+		kalMemCopy(pucBuffer, descBaseAddr, u4BufferLen);
+
+}
+
 
 /*----------------------------------------------------------------------------*/
 /*!
@@ -4486,6 +4517,7 @@ BOOLEAN kalIsWakeupByWlan(P_ADAPTER_T  prAdapter)
 	return !!(spm_get_last_wakeup_src() & WAKE_SRC_CONN2AP);
 }
 #endif
+
 
 VOID kalPerMonDump(IN P_GLUE_INFO_T prGlueInfo)
 {

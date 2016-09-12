@@ -4811,6 +4811,14 @@ WLAN_STATUS wlanQueryNicCapability(IN P_ADAPTER_T prAdapter)
 	prAdapter->rVerInfo.u2FwProductID = prEventNicCapability->u2ProductID;
 	prAdapter->rVerInfo.u2FwOwnVersion = prEventNicCapability->u2FwVersion;
 	prAdapter->rVerInfo.u2FwPeerVersion = prEventNicCapability->u2DriverVersion;
+	/*support FW version extend*/
+
+	prAdapter->rVerInfo.u2FwOwnVersionExtend =
+		(prEventNicCapability->aucReserved0[0] << 24)
+		| (prEventNicCapability->aucReserved0[1] << 16)
+		| (prEventNicCapability->aucReserved0[2] << 8)
+		| (prEventNicCapability->aucReserved0[3]);
+
 	prAdapter->fgIsHw5GBandDisabled = (BOOLEAN) prEventNicCapability->ucHw5GBandDisabled;
 	prAdapter->fgIsEepromUsed = (BOOLEAN) prEventNicCapability->ucEepromUsed;
 	prAdapter->fgIsEmbbededMacAddrValid = (BOOLEAN)

@@ -531,6 +531,10 @@ kalDevWriteWithSdioCmd52(_prAdapter->prGlueInfo, _u4Port, _ucBuf); \
 	*pu2Rx0Len = (UINT_16)u4Value; \
 	*pu2Rx1Len = (UINT_16)(u4Value >> 16); \
 }
+#define HAL_GET_APMCU_MEM(_prAdapter, _addr, _Offset, _index, _buf, _len) \
+{ \
+	kalGetAPMCUMen(_prAdapter->prGlueInfo, _addr , _Offset, _index , _buf, _len); \
+}
 
 #define HAL_GET_INTR_STATUS_FROM_ENHANCE_MODE_STRUCT(pvBuf, u2Len, pu4Status) \
 { \

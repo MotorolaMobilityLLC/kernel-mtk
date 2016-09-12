@@ -8407,12 +8407,13 @@ wlanoidRftestQueryAutoTest(IN P_ADAPTER_T prAdapter,
 		ASSERT(pvQueryBuffer);
 	ASSERT(pu4QueryInfoLen);
 
-	*pu4QueryInfoLen = sizeof(PARAM_MTK_WIFI_TEST_STRUCT_T);
+	/*pu4QueryInfoLen is depended on upper-layer*/
+	*pu4QueryInfoLen = u4QueryBufferLen;
 
-	if (u4QueryBufferLen != sizeof(PARAM_MTK_WIFI_TEST_STRUCT_T)) {
-		DBGLOG(OID, ERROR, "Invalid data. QueryBufferLen: %ld.\n", u4QueryBufferLen);
-		return WLAN_STATUS_INVALID_LENGTH;
-	}
+
+	if (u4QueryBufferLen != sizeof(PARAM_MTK_WIFI_TEST_STRUCT_T))
+		DBGLOG(OID, WARN, "Invalid data. QueryBufferLen: %ld.\n", u4QueryBufferLen);
+
 
 	prRfATInfo = (P_PARAM_MTK_WIFI_TEST_STRUCT_T) pvQueryBuffer;
 	rStatus = rftestQueryATInfo(prAdapter,
@@ -8453,10 +8454,9 @@ wlanoidRftestSetAutoTest(IN P_ADAPTER_T prAdapter,
 
 	*pu4SetInfoLen = sizeof(PARAM_MTK_WIFI_TEST_STRUCT_T);
 
-	if (u4SetBufferLen != sizeof(PARAM_MTK_WIFI_TEST_STRUCT_T)) {
-		DBGLOG(OID, ERROR, "Invalid data. SetBufferLen: %u.\n", u4SetBufferLen);
-		return WLAN_STATUS_INVALID_LENGTH;
-	}
+	if (u4SetBufferLen != sizeof(PARAM_MTK_WIFI_TEST_STRUCT_T))
+		DBGLOG(OID, WARN, "Invalid data. SetBufferLen: %u.\n", u4SetBufferLen);
+
 
 	prRfATInfo = (P_PARAM_MTK_WIFI_TEST_STRUCT_T) pvSetBuffer;
 	rStatus = rftestSetATInfo(prAdapter, prRfATInfo->u4FuncIndex, prRfATInfo->u4FuncData);
@@ -8551,14 +8551,25 @@ rftestQueryATInfo(IN P_ADAPTER_T prAdapter,
 
 		prTestStatus->rATInfo.u4FuncData =
 		    (prAdapter->rVerInfo.u2FwProductID << 16) | (prAdapter->rVerInfo.u2FwOwnVersion);
-		u4QueryBufferLen = sizeof(EVENT_TEST_STATUS);
+		prTestStatus->rATInfo.u4FuncData2 = prAdapter->rVerInfo.u2FwOwnVersionExtend;
+
+		if (u4QueryBufferLen > 8) {
+			/*support FW version extended*/
+			prTestStatus->rATInfo.u4FuncData2 = prAdapter->rVerInfo.u2FwOwnVersionExtend;
+
+			DBGLOG(OID, INFO, "<wifi> version: 0x%x ,extended : 0x%x\n"
+				, prTestStatus->rATInfo.u4FuncData
+				, prTestStatus->rATInfo.u4FuncData2);
+		} else
+			DBGLOG(OID, INFO, "<wifi> version: 0x%x\n"
+				, prTestStatus->rATInfo.u4FuncData);
+
 
 	} else if (u4FuncIndex == RF_AT_FUNCID_DRV_INFO) {
 		/* driver implementation */
 		prTestStatus = (P_EVENT_TEST_STATUS) pvQueryBuffer;
 
 		prTestStatus->rATInfo.u4FuncData = CFG_DRV_OWN_VERSION;
-		u4QueryBufferLen = sizeof(EVENT_TEST_STATUS);
 
 	} else if (u4FuncIndex == RF_AT_FUNCID_QUERY_ICAP_DUMP_FILE) {
 		/* driver implementation */

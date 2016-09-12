@@ -200,6 +200,18 @@ typedef enum _ENUM_DBG_MODULE_T {
 	DBG_MODULE_NUM		/* Notice the XLOG check */
 } ENUM_DBG_MODULE_T;
 
+/* Define debug TRAFFIC_CLASS index */
+
+typedef enum _ENUM_DEBUG_TRAFFIC_CLASS_INDEX_T {
+	DEBUG_TC0_INDEX = 0,		/* HIF TX0: AC0 packets */
+	DEBUG_TC1_INDEX,		/* HIF TX0: AC1 packets & non-QoS packets */
+	DEBUG_TC2_INDEX,		/* HIF TX0: AC2 packets */
+	DEBUG_TC3_INDEX,		/* HIF TX0: AC3 packets */
+	DEBUG_TC4_INDEX,		/* HIF TX1: Command packets or 802.1x packets */
+	DEBUG_TC5_INDEX,		/* HIF TX0: BMCAST packets */
+	DEBUG_TC_NUM			/* Maximum number of Traffic Classes. */
+} ENUM_DEBUG_TRAFFIC_CLASS_INDEX_T;
+
 /* XLOG */
 /* #define XLOG_DBG_MODULE_IDX    28 */ /* DBG_MODULE_NUM */
 /* #if (XLOG_DBG_MODULE_IDX != XLOG_DBG_MODULE_IDX) */
@@ -459,8 +471,13 @@ VOID wlanDebugUninit(VOID);
 VOID wlanTraceReleaseTcRes(P_ADAPTER_T prAdapter, PUINT_8 aucTxRlsCnt, UINT_8 ucAvailable);
 VOID wlanTraceTxCmd(P_ADAPTER_T prAdapter, P_CMD_INFO_T prCmd);
 VOID wlanReadFwStatus(P_ADAPTER_T prAdapter);
+VOID wlanDumpTxReleaseCount(P_ADAPTER_T prAdapter);
 VOID wlanDumpTcResAndTxedCmd(PUINT_8 pucBuf, UINT_32 maxLen);
 VOID wlanDumpCommandFwStatus(VOID);
+VOID wlanDebugHifDescriptorDump(P_ADAPTER_T prAdapter , ENUM_AMPDU_TYPE type
+	, ENUM_DEBUG_TRAFFIC_CLASS_INDEX_T tcIndex);
+
+
 /*******************************************************************************
 *                              F U N C T I O N S
 ********************************************************************************

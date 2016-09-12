@@ -1126,6 +1126,7 @@ typedef struct {
 	UINT_16 u2FwProductID;
 	UINT_16 u2FwOwnVersion;
 	UINT_16 u2FwPeerVersion;
+	UINT_16 u2FwOwnVersionExtend; /*support version extended*/
 
 } WIFI_VER_INFO_T, *P_WIFI_VER_INFO_T;
 

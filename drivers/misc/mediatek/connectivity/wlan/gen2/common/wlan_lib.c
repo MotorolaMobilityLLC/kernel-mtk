@@ -3063,11 +3063,18 @@ WLAN_STATUS wlanImageSectionDownloadStatus(IN P_ADAPTER_T prAdapter, IN UINT_8 u
 					aucBuffer,
 					sizeof(INIT_HIF_RX_HEADER_T) + sizeof(INIT_EVENT_CMD_RESULT),/* 4B + 4B */
 					&u4RxPktLength) != WLAN_STATUS_SUCCESS) {
-			DBGLOG(INIT, ERROR, "nicRxWaitResponse fail\n");
+			DBGLOG(INIT, ERROR, "nicRxWaitResponse fail at SeqNo (%d)\n", ucCmdSeqNum);
+
+			/*Dump WLAN TX Status Register TQ0_CNT, make sure FW write ROM success before CMD send*/
+			wlanDumpTxReleaseCount(prAdapter);
+			/*Dump  TX_DESC and RX_DESC*/
+			wlanDebugHifDescriptorDump(prAdapter, MTK_AMPDU_TX_DESC, DEBUG_TC0_INDEX);
+			wlanDebugHifDescriptorDump(prAdapter, MTK_AMPDU_RX_DESC, DEBUG_TC0_INDEX);
+
+
 			u4Status = WLAN_STATUS_FAILURE;
 		} else {
 			prInitHifRxHeader = (P_INIT_HIF_RX_HEADER_T) aucBuffer;
-
 			/* EID / SeqNum check */
 			if (prInitHifRxHeader->rInitWifiEvent.ucEID != INIT_EVENT_ID_CMD_RESULT) {
 				DBGLOG(INIT, ERROR, "rInitWifiEvent.ucEID != INIT_EVENT_ID_CMD_RESULT\n");
@@ -4028,6 +4035,8 @@ WLAN_STATUS wlanQueryNicCapability(IN P_ADAPTER_T prAdapter)
 	prAdapter->rVerInfo.u2FwProductID = prEventNicCapability->u2ProductID;
 	prAdapter->rVerInfo.u2FwOwnVersion = prEventNicCapability->u2FwVersion;
 	prAdapter->rVerInfo.u2FwPeerVersion = prEventNicCapability->u2DriverVersion;
+	prAdapter->rVerInfo.u2FwOwnVersionExtend = prEventNicCapability->aucReserved[0];
+
 	prAdapter->fgIsHw5GBandDisabled = (BOOLEAN) prEventNicCapability->ucHw5GBandDisabled;
 	prAdapter->fgIsEepromUsed = (BOOLEAN) prEventNicCapability->ucEepromUsed;
 	prAdapter->fgIsEfuseValid = (BOOLEAN) prEventNicCapability->ucEfuseValid;

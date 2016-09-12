@@ -2156,6 +2156,8 @@ VOID nicRxProcessEventPacket(IN P_ADAPTER_T prAdapter, IN OUT P_SW_RFB_T prSwRfb
 									prBssInfo->aucBSSID);
 					if (prStaRec)
 						STATS_ENV_REPORT_DETECT(prAdapter, prStaRec->ucIndex);
+
+					prBssInfo->u2DeauthReason = prEventBssBeaconTimeout->ucReason;
 				}
 				aisBssBeaconTimeout(prAdapter);
 				aisRecordBeaconTimeout(prAdapter, prBssInfo);

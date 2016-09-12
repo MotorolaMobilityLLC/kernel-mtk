@@ -5031,6 +5031,9 @@ VOID qmDetectArpNoResponse(P_ADAPTER_T prAdapter, P_MSDU_INFO_T prMsduInfo)
 		arpMoniter++;
 		if (arpMoniter > 20) {
 			DBGLOG(INIT, WARN, "IOT Critical issue, arp no resp, check AP!\n");
+			if (prAdapter)
+				prAdapter->rWifiVar.arBssInfo[NETWORK_TYPE_AIS_INDEX].u2DeauthReason =
+										BEACON_TIMEOUT_DUE_2_ARP_NO_RESPONSE;
 			aisBssBeaconTimeout(prAdapter);
 			arpMoniter = 0;
 			kalMemZero(apIp, sizeof(apIp));
