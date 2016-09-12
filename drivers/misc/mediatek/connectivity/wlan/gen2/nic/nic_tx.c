@@ -602,10 +602,13 @@ WLAN_STATUS nicTxAcquireResource(IN P_ADAPTER_T prAdapter, IN UINT_8 ucTC, IN BO
 			wlanDumpTcResAndTxedCmd(NULL, 0);
 			cmdBufDumpCmdQueue(&prAdapter->rPendingCmdQueue, "waiting response CMD queue");
 			glDumpConnSysCpuInfo(prAdapter->prGlueInfo);
+			/* dump TC4[0] ~ TC4[3] TX_DESC */
+			wlanDebugHifDescriptorDump(prAdapter , MTK_AMPDU_TX_DESC, DEBUG_TC4_INDEX);
 			kalSendAeeWarning("[TC4 no resource delay 5s!]", __func__);
 			glDoChipReset();
 			u4CurrTick = 0;
 		}
+
 	}
 	return u4Status;
 

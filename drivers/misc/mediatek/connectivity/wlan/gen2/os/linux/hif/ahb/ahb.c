@@ -442,6 +442,7 @@ VOID glSetHifInfo(GLUE_INFO_T *GlueInfo, ULONG ulCookie)
 
 	HifInfo->HifRegBaseAddr = ioremap(HIF_DRV_BASE, HIF_DRV_LENGTH);
 	HifInfo->McuRegBaseAddr = ioremap(CONN_MCU_DRV_BASE, CONN_MCU_REG_LENGTH);
+	HifInfo->APMcuRegBaseAddr = ioremap(AP_MCU_DRV_BASE, AP_MCU_TX_RX_LENGTH);
 	DBGLOG(INIT, INFO, "[WiFi/HIF]HifInfo->HifRegBaseAddr=0x%p, HifInfo->McuRegBaseAddr=0x%p\n",
 	       HifInfo->HifRegBaseAddr, HifInfo->McuRegBaseAddr);
 

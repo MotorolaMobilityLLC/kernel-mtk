@@ -639,6 +639,12 @@ typedef enum _ENUM_KAL_NETWORK_TYPE_INDEX_T {
 	KAL_NETWORK_TYPE_INDEX_NUM
 } ENUM_KAL_NETWORK_TYPE_INDEX_T;
 
+typedef enum _ENUM_AMPDU_TYPE_E {
+	MTK_AMPDU_TX_DESC,
+	MTK_AMPDU_RX_DESC,
+	MTK_AMPDU_NUM
+} ENUM_AMPDU_TYPE;
+
 typedef enum _ENUM_KAL_MEM_ALLOCATION_TYPE_E {
 	PHY_MEM_TYPE,		/* physically continuous */
 	VIR_MEM_TYPE,		/* virtually continuous */
@@ -1537,6 +1543,9 @@ INT_32 kalReadToFile(const PUINT_8 pucPath, PUINT_8 pucData, UINT_32 u4Size, PUI
 #if CFG_SUPPORT_WAKEUP_REASON_DEBUG
 BOOLEAN kalIsWakeupByWlan(P_ADAPTER_T  prAdapter);
 #endif
+
+VOID kalGetAPMCUMen(IN P_GLUE_INFO_T prGlueInfo, IN UINT32 u4StartAddr
+		, IN UINT32 u4Offset, IN UINT32 index , OUT PUINT_8 pucBuffer, IN UINT_32 u4BufferLen);
 
 INT_32 kalPerMonInit(IN P_GLUE_INFO_T prGlueInfo);
 INT_32 kalPerMonDisable(IN P_GLUE_INFO_T prGlueInfo);

@@ -75,6 +75,77 @@ VOID wlanDebugUninit(VOID)
 	/* debug for command/tc4 resource end */
 }
 
+VOID wlanDebugHifDescriptorDump(P_ADAPTER_T prAdapter , ENUM_AMPDU_TYPE type
+	, ENUM_DEBUG_TRAFFIC_CLASS_INDEX_T tcIndex)
+{
+	/* debug for tx/rx description begin */
+	UINT_32 i;
+	UINT_32 u4TcCount;
+	UINT_32 u4Offset;
+	UINT_32 u4StartAddr;
+	P_HIF_TX_DESC_T prTxDesc;
+	P_HIF_RX_DESC_T prRxDesc;
+
+	do {
+		if (type == MTK_AMPDU_TX_DESC) {
+
+			if (tcIndex == DEBUG_TC0_INDEX) {
+				u4TcCount = NIC_TX_INIT_BUFF_COUNT_TC0;
+				u4StartAddr = AP_MCU_TX_DESC_ADDR;
+				u4Offset = AP_MCU_BANK_OFFSET;
+			} else if (tcIndex == DEBUG_TC4_INDEX) {
+				u4TcCount = NIC_TX_BUFF_COUNT_TC4;
+				u4StartAddr = AP_MCU_TC_INDEX_4_ADDR;
+				u4Offset = AP_MCU_TC_INDEX_4_OFFSET;
+			} else {
+				DBGLOG(TX, ERROR, "Type :%d TC_INDEX :%d don't support !", type , tcIndex);
+				break;
+			}
+
+			prTxDesc = (P_HIF_TX_DESC_T) kalMemAlloc(sizeof(HIF_TX_DESC_T), VIR_MEM_TYPE);
+
+			for (i = 0; i < u4TcCount ; i++) {
+				HAL_GET_APMCU_MEM(prAdapter, u4StartAddr, u4Offset, i, (PUINT_8)prTxDesc
+					, sizeof(HIF_TX_DESC_T));
+				DBGLOG(TX, INFO
+					, "TC%d[%d]uOwn:%2x,CS:%2x,R1:%2x,ND:0x%08x,SA: 0x%08x,R2:%x\n"
+					, tcIndex, i, prTxDesc->ucOwn, prTxDesc->ucDescChksum
+					, prTxDesc->u2Rsrv1, prTxDesc->u4NextDesc
+					, prTxDesc->u4BufStartAddr, prTxDesc->u4Rsrv2);
+			}
+			kalMemFree(prTxDesc, VIR_MEM_TYPE, sizeof(HIF_TX_DESC_T));
+
+		} else if (type == MTK_AMPDU_RX_DESC) {
+
+			if (tcIndex == DEBUG_TC0_INDEX) {
+				u4TcCount = NIC_TX_INIT_BUFF_COUNT_TC0;
+				u4StartAddr = AP_MCU_RX_DESC_ADDR;
+				u4Offset = AP_MCU_BANK_OFFSET;
+			} else {
+				DBGLOG(RX, ERROR, "Type :%d TC_INDEX :%d don't support !", type, tcIndex);
+				break;
+			}
+
+			prRxDesc = (P_HIF_RX_DESC_T) kalMemAlloc(sizeof(HIF_RX_DESC_T), VIR_MEM_TYPE);
+			DBGLOG(RX, INFO, "Start dump rx_desc from APMCU\n");
+			for (i = 0; i < NIC_TX_INIT_BUFF_COUNT_TC0 ; i++) {
+				HAL_GET_APMCU_MEM(prAdapter, u4StartAddr, u4Offset, i, (PUINT_8)prRxDesc
+					, sizeof(HIF_RX_DESC_T));
+				DBGLOG(RX, INFO
+					, "RX%d[%d]uOwn:%2x,CS:%2x,TO:%x,CSI:%x,ND:0x%08x,SA:0x%08x,len:%x,R1:%x\n"
+					, tcIndex, i, prRxDesc->ucOwn , prRxDesc->ucDescChksum
+					, prRxDesc->ucEtherTypeOffset, prRxDesc->ucChkSumInfo
+					, prRxDesc->u4NextDesc, prRxDesc->u4BufStartAddr
+					, prRxDesc->u2RxBufLen, prRxDesc->u2Rsrv1);
+			}
+			kalMemFree(prRxDesc, VIR_MEM_TYPE, sizeof(P_HIF_RX_DESC_T));
+		}
+	} while (FALSE);
+	/* debug for tx/rx description end */
+
+}
+
+
 VOID wlanReadFwStatus(P_ADAPTER_T prAdapter)
 {
 	static UINT_16 u2CurEntryCmd;
@@ -140,6 +211,13 @@ VOID wlanTraceReleaseTcRes(P_ADAPTER_T prAdapter, PUINT_8 aucTxRlsCnt, UINT_8 uc
 	u2CurEntry++;
 	if (u2CurEntry == TXED_CMD_TRACE_BUF_MAX_NUM)
 		u2CurEntry = 0;
+}
+VOID wlanDumpTxReleaseCount(P_ADAPTER_T prAdapter)
+{
+	UINT_32 au4WTSR[2];
+
+	HAL_READ_TX_RELEASED_COUNT(prAdapter, au4WTSR);
+	DBGLOG(TX, INFO, "WTSR[1]=%d, WTSR[0]=%d\n", au4WTSR[1], au4WTSR[0]);
 }
 
 VOID wlanDumpTcResAndTxedCmd(PUINT_8 pucBuf, UINT_32 maxLen)
