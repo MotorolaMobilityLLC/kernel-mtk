@@ -517,7 +517,8 @@ static int mmc_decode_ext_csd(struct mmc_card *card, u8 *ext_csd)
 		/* check whether the eMMC card supports BKOPS */
 		if (ext_csd[EXT_CSD_BKOPS_SUPPORT] & 0x1) {
 			card->ext_csd.bkops = 1;
-			card->ext_csd.bkops_en = ext_csd[EXT_CSD_BKOPS_EN];
+			card->ext_csd.bkops_en =
+				(ext_csd[EXT_CSD_BKOPS_EN] & 0x1);
 			card->ext_csd.raw_bkops_status =
 				ext_csd[EXT_CSD_BKOPS_STATUS];
 			if (!card->ext_csd.bkops_en)
@@ -1704,7 +1705,7 @@ static int mmc_sleep(struct mmc_host *host)
 	/*
 	 * Send sleep_notification if eMMC revision is after v5.0
 	 */
-	if (card->ext_csd.rev >= 7) {
+	if (card->ext_csd.rev >= 7 && !(card->quirks & MMC_QUIRK_DISABLE_SNO)) {
 		err = __mmc_switch(card, EXT_CSD_CMD_SET_NORMAL,
 				EXT_CSD_POWER_OFF_NOTIFICATION,
 				EXT_CSD_SLEEP_NOTIFICATION,

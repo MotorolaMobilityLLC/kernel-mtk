@@ -190,7 +190,7 @@ unsigned int sd_register_zone[HOST_MAX_NUM] = {
 /* mode select */
 u32 dma_size[HOST_MAX_NUM] = {
 	512,
-	512,
+	8,
 	512,
 	512,
 };
@@ -2602,6 +2602,10 @@ static void msdc_dma_start(struct msdc_host *host)
 	u32 wints = MSDC_INTEN_XFER_COMPL | MSDC_INTEN_DATTMO
 		| MSDC_INTEN_DATCRCERR;
 
+#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
+	host->mmc->is_data_dma = 1;
+#endif
+
 	if (host->autocmd & MSDC_AUTOCMD12)
 		wints |= MSDC_INT_ACMDCRCERR | MSDC_INT_ACMDTMO
 			| MSDC_INT_ACMDRDY;
@@ -2654,6 +2658,10 @@ static void msdc_dma_stop(struct msdc_host *host)
 	}
 
 	MSDC_CLR_BIT32(MSDC_INTEN, wints); /* Not just xfer_comp */
+
+#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
+	host->mmc->is_data_dma = 0;
+#endif
 
 	N_MSG(DMA, "DMA stop");
 }
@@ -3002,7 +3010,9 @@ int msdc_do_request_prepare(struct msdc_host *host,
 	u32 *l_bypass_flush,
 	int prepare_case)
 {
+#ifndef CONFIG_MTK_EMMC_CQ_SUPPORT
 	void __iomem *base = host->base;
+#endif
 
 	#ifndef MSDC_WQ_ERROR_TUNE
 	if ((prepare_case != PREPARE_TUNE) && (host->mmc->bus_dead != 1))
@@ -3460,7 +3470,7 @@ static int msdc_do_discard_task_cq(struct mmc_host *mmc,
 	mmc->deq_cmd.data = NULL;
 	msdc_do_command(host, &mmc->deq_cmd, 0, CMD_TIMEOUT);
 
-	pr_debug("[%s]: msdc%d, discard task id %d, CMD<%d> arg<0x%08x> rsp<0x%08x>",
+	pr_err("[%s]: msdc%d, discard task id %d, CMD<%d> arg<0x%08x> rsp<0x%08x>",
 		__func__, host->id, task_id, mmc->deq_cmd.opcode, mmc->deq_cmd.arg, mmc->deq_cmd.resp[0]);
 
 	return mmc->deq_cmd.error;
@@ -3531,7 +3541,7 @@ static int tune_cmdq_cmdrsp(struct mmc_host *mmc,
 	struct msdc_host *host = mmc_priv(mmc);
 	void __iomem *base = host->base;
 	unsigned long polling_tmo = 0, polling_status_tmo;
-
+	u32 state = 0;
 	u32 err = 0, status = 0;
 
 	/* time for wait device to return to trans state
@@ -3546,14 +3556,8 @@ static int tune_cmdq_cmdrsp(struct mmc_host *mmc,
 			pr_err("msdc%d waiting data transfer done\n",
 				host->id);
 			while (mmc->is_data_dma) {
-				if (time_after(jiffies, polling_tmo)) {
-					ERR_MSG("waiting data transfer done TMO");
-					msdc_dump_info(host->id);
-					msdc_dma_stop(host);
-					msdc_dma_clear(host);
-					msdc_reset_hw(host->id);
-					return -1;
-				}
+				if (time_after(jiffies, polling_tmo))
+					goto error;
 			}
 
 			ERR_MSG("get card status, err = %d", err);
@@ -3581,7 +3585,19 @@ static int tune_cmdq_cmdrsp(struct mmc_host *mmc,
 			else
 				return 1;
 		} else {
-			if (R1_CURRENT_STATE(status) != R1_STATE_TRAN) {
+			state = R1_CURRENT_STATE(status);
+			if (state != R1_STATE_TRAN) {
+				/* data dma is stop, we need bring card to tran state */
+				if (mmc->is_data_dma == 0) {
+					if (state == R1_STATE_DATA || state == R1_STATE_RCV) {
+						ERR_MSG("state<%d> need cmd12 to stop", state);
+						msdc_send_stop(host);
+					} else if (state == R1_STATE_PRG) {
+						ERR_MSG("state<%d> card is busy", state);
+						msleep(100);
+					}
+				}
+
 				if (time_after(jiffies, polling_status_tmo))
 					ERR_MSG("wait transfer state timeout\n");
 				else {
@@ -3603,14 +3619,8 @@ static int tune_cmdq_cmdrsp(struct mmc_host *mmc,
 	polling_tmo = jiffies + 10 * HZ;
 	pr_err("msdc%d waiting data transfer done\n", host->id);
 	while (mmc->is_data_dma) {
-		if (time_after(jiffies, polling_tmo)) {
-			ERR_MSG("waiting data transfer done TMO");
-			msdc_dump_info(host->id);
-			msdc_dma_stop(host);
-			msdc_dma_clear(host);
-			msdc_reset_hw(host->id);
-			return -1;
-		}
+		if (time_after(jiffies, polling_tmo))
+			goto error;
 	}
 
 	if (msdc_execute_tuning(mmc, MMC_SEND_STATUS)) {
@@ -3619,6 +3629,15 @@ static int tune_cmdq_cmdrsp(struct mmc_host *mmc,
 	}
 
 	return 0;
+
+error:
+	ERR_MSG("waiting data transfer done TMO");
+	msdc_dump_info(host->id);
+	msdc_dma_stop(host);
+	msdc_dma_clear(host);
+	msdc_reset_hw(host->id);
+
+	return -1;
 }
 
 static int tune_cmdq_data(struct mmc_host *mmc,
@@ -3896,10 +3915,6 @@ static int msdc_do_request_async(struct mmc_host *mmc, struct mmc_request *mrq)
 	/* for read, the data coming too fast, then CRC error
 	   start DMA no business with CRC. */
 	msdc_dma_setup(host, &host->dma, data->sg, data->sg_len);
-
-#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
-	mmc->is_data_dma = 1;
-#endif
 
 	msdc_dma_start(host);
 	/*ERR_MSG("0.Power cycle enable(%d)",host->power_cycle_enable);*/
@@ -5247,7 +5262,9 @@ static struct mmc_host_ops mt_msdc_ops = {
 static void msdc_irq_data_complete(struct msdc_host *host,
 	struct mmc_data *data, int error)
 {
+#ifndef CONFIG_MTK_EMMC_CQ_SUPPORT
 	void __iomem *base = host->base;
+#endif
 	struct mmc_request *mrq;
 	#ifdef MSDC_WQ_ERROR_TUNE
 	struct mmc_host *mmc = host->mmc;
@@ -5259,7 +5276,9 @@ static void msdc_irq_data_complete(struct msdc_host *host,
 		msdc_dma_stop(host);
 		if (error) {
 			msdc_clr_fifo(host->id);
+#ifndef CONFIG_MTK_EMMC_CQ_SUPPORT
 			msdc_clr_int();
+#endif
 		}
 		mrq = host->mrq;
 		msdc_dma_clear(host);
@@ -5382,9 +5401,6 @@ static irqreturn_t msdc_irq(int irq, void *dev_id)
 	} else
 #endif
 	{
-#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
-		host->mmc->is_data_dma = 0;
-#endif
 		if (inten & MSDC_INT_XFER_COMPL)
 			goto done;
 	}
