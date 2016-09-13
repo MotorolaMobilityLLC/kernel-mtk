@@ -522,6 +522,10 @@ static int step_c_enable_nodata(int en)
 		err = step_c_set_powermode(obj_i2c_data->client,
 				(enum STC_POWERMODE_ENUM)STC_LOWPOWER_MODE);
 		err += step_counter_enable(obj_i2c_data->client, ENABLE);
+
+		/*Lenovo-sw weimh1 add 2016-9-13 begin: report data when enable*/
+		step_notify(TYPE_STEP_SUSPEND);
+		/*Lenovo-sw weimh1 add 2016-9-13 end*/
 	}
 	
 	if(err < 0) {

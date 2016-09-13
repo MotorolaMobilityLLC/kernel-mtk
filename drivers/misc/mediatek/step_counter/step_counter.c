@@ -23,8 +23,10 @@
 
 /*Lenovo-sw weimh1 add 2016-7-7 begin:record invalid count for steps*/
 #ifndef STEP_COUNTER_INT_MODE_SUPPORT
-#define STEP_COUNTER_INVALID_COUNT 20
+#define STEP_COUNTER_INVALID_COUNT 50
 int invalid_count = 0;
+int step_suspend = 0; 
+int num_notify = 0;
 #endif
 /*Lenovo-sw weimh1 add 2016-7-7 end:record invalid count for steps*/
 
@@ -89,15 +91,16 @@ static void step_c_work_func(struct work_struct *work)
 #endif
 /*Lenovo-sw weimh1 add 2016-7-7 end:record invalid count for steps*/
 		} else {
-/*Lenovo-sw weimh1 add 2016-7-7:record invalid count for steps*/
+/*Lenovo-sw weimh1 add 2016-7-7:just report once when step not changed*/
 #ifndef STEP_COUNTER_INT_MODE_SUPPORT
 			invalid_count++;
-			if (invalid_count < 2) {
+			if (invalid_count < 2 && num_notify == 1) {
 				STEP_C_ERR("get step_c data not change,counter=%d!!\n",cxt->drv_data.counter );
+				num_notify = 0;
 				step_c_data_report(cxt->idev, cxt->drv_data.counter, cxt->drv_data.status);
 			}
 #endif
-/*Lenovo-sw weimh1 add 2016-7-7 end:record invalid count for steps*/
+/*Lenovo-sw weimh1 add 2016-7-7 end:just report once when step not changed*/
 
 			/* no new steps, no need to update */
 			goto step_c_loop;
@@ -112,12 +115,14 @@ step_c_loop:
 /* step counter sensor interrupt mode support -- modified by liaoxl.lenovo 7.12.2015 start  */
 #ifndef STEP_COUNTER_INT_MODE_SUPPORT
 //	if (true == cxt->is_polling_run) {
-	if (invalid_count < STEP_COUNTER_INVALID_COUNT)
+	if (invalid_count < STEP_COUNTER_INVALID_COUNT && (step_suspend == 0))
 		mod_timer(&cxt->timer, jiffies + atomic_read(&cxt->delay) / (1000 / HZ));
 	else {
 		cxt->is_polling_run = false;
 		invalid_count = 0;
-		STEP_C_ERR("invalid count too much,suspend!!\n" );
+		step_suspend = 0;
+		num_notify = 0;
+		STEP_C_ERR("come here,can suspend!!\n" );
 	}
 //	}
 #endif
@@ -198,6 +203,8 @@ int  step_notify(STEP_NOTIFY_TYPE type)
 
 #ifndef STEP_COUNTER_INT_MODE_SUPPORT	
 		invalid_count = 0;
+		step_suspend = 0;
+		num_notify = 1;
 #endif
 		step_c_work_func(0);
 	}
@@ -207,10 +214,15 @@ int  step_notify(STEP_NOTIFY_TYPE type)
 
 #ifndef STEP_COUNTER_INT_MODE_SUPPORT	
 		invalid_count = 0;
+		step_suspend = 1;
+		num_notify = 1;
 #endif
+		step_c_work_func(0);
+#if 0
 		cxt->is_polling_run = false;
 		del_timer_sync(&step_c_context_obj->timer);
 		cancel_work_sync(&step_c_context_obj->report);
+#endif
 	}
 	/*Lenovo-sw weimh1 add 2016-8-22 end*/
 
@@ -615,6 +627,7 @@ static ssize_t step_c_store_batch(struct device *dev, struct device_attribute *a
 				mod_timer(&cxt->timer,
 					  jiffies + atomic_read(&cxt->delay) / (1000 / HZ));
 				cxt->is_polling_run = true;
+				num_notify = 1;
 			}
 		}
 #endif
