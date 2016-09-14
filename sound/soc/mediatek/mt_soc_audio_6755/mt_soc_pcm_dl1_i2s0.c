@@ -228,6 +228,7 @@ static int Audio_i2s0_hdoutput_Set(struct snd_kcontrol *kcontrol,
 		return -EINVAL;
 	}
 
+#if 0
 	AudDrv_Clk_On();
 
 	if ((ucontrol->value.integer.value[0] == true) && (mi2s0_hdoutput_control == false)) {
@@ -251,9 +252,11 @@ static int Audio_i2s0_hdoutput_Set(struct snd_kcontrol *kcontrol,
 		AudDrv_APLL1Tuner_Clk_Off();
 		AudDrv_APLL2Tuner_Clk_Off();
 	}
+	AudDrv_Clk_Off();
+
+#endif
 	mi2s0_hdoutput_control = ucontrol->value.integer.value[0];
 
-	AudDrv_Clk_Off();
 	PRINTK_AUD_DL1("-%s(), mi2s0_hdoutput_control=%d\n", __func__, mi2s0_hdoutput_control);
 	return 0;
 }

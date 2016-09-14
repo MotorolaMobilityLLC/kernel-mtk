@@ -114,9 +114,13 @@ void AudDrv_APLL1Tuner_Clk_On(void);
 void AudDrv_APLL1Tuner_Clk_Off(void);
 void AudDrv_APLL2Tuner_Clk_On(void);
 void AudDrv_APLL2Tuner_Clk_Off(void);
+void AudDrv_APLL1Tuner_On(void);
+void AudDrv_APLL1Tuner_Off(void);
+void AudDrv_APLL2Tuner_On(void);
+void AudDrv_APLL2Tuner_Off(void);
 
 void AudDrv_Emi_Clk_On(void);
 void AudDrv_Emi_Clk_Off(void);
-
-
+extern int Aud_APLL1_Tuner_cntr;
+extern int Aud_APLL2_Tuner_cntr;
 #endif
