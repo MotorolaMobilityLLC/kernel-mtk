@@ -720,7 +720,6 @@ void DisableALLbySampleRate(uint32 SampleRate)
 		APLL1Counter--;
 		if (APLL1Counter == 0) {
 			/* disable APLL1 */
-			EnableI2SDivPower(AUDIO_APLL1_DIV0, false);
 			AudDrv_APLL1Tuner_Clk_Off();
 			EnableApll1(false);
 			AudDrv_Clk_Off();
@@ -730,7 +729,6 @@ void DisableALLbySampleRate(uint32 SampleRate)
 		APLL2Counter--;
 		if (APLL2Counter == 0) {
 			/* disable APLL2 */
-			EnableI2SDivPower(AUDIO_APLL2_DIV0, false);
 			AudDrv_APLL2Tuner_Clk_Off();
 			EnableApll2(false);
 			AudDrv_Clk_Off();

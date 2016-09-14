@@ -161,8 +161,10 @@ static int mtk_uldlloopbackpcm_close(struct snd_pcm_substream *substream)
 
 	/* stop DAC output */
 	SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_OUT_DAC, false);
-	if (GetI2SDacEnable() == false)
+	if (GetI2SDacEnable() == false) {
+		SetI2SADDAEnable(false);
 		SetI2SDacEnable(false);
+	}
 
 	/* stop I2S */
 	Afe_Set_Reg(AFE_I2S_CON3, 0x0, 0x1);
@@ -301,6 +303,8 @@ static int mtk_uldlloopback_pcm_prepare(struct snd_pcm_substream *substream)
 		SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_IN_ADC, true);
 
 	EnableAfe(true);
+	if (GetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_OUT_DAC) == true)
+		SetI2SADDAEnable(true);
 
 	return 0;
 }
