@@ -164,7 +164,11 @@ const size_t AudioInterruptLimiter = 100;
 static int Aud_APLL_DIV_APLL1_cntr;
 static int Aud_APLL_DIV_APLL2_cntr;
 static int irqcount;
-static int APLLCounter;
+static int APLL1Counter;
+static int APLL2Counter;
+static int APLL1TunerCounter;
+static int APLL2TunerCounter;
+
 
 static bool mExternalModemStatus;
 
@@ -239,7 +243,8 @@ static void AfeGlobalVarInit(void)
 	Aud_APLL_DIV_APLL2_cntr = 0;
 	mExternalModemStatus = false;
 	irqcount = 0;
-	APLLCounter = 0;
+	APLL1Counter = 0;
+	APLL2Counter = 0;
 }
 
 void AfeControlMutexLock(void)
@@ -417,17 +422,21 @@ void OpenAfeDigitaldl1(bool bEnable)
 			SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_OUT_DAC, true);
 			SetI2SDacOut(44100, false, Soc_Aud_I2S_WLEN_WLEN_16BITS);
 			SetI2SDacEnable(true);
+			EnableAfe(true);
+			SetI2SADDAEnable(true);
 		} else {
 			SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_OUT_DAC, true);
+			EnableAfe(true);
 		}
 
-		EnableAfe(true);
 	} else {
 		SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_OUT_DAC, false);
 		SetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_DL1, false);
 
-		if (GetI2SDacEnable() == false)
+		if (GetI2SDacEnable() == false) {
+			SetI2SADDAEnable(false);
 			SetI2SDacEnable(false);
+		}
 
 		EnableAfe(false);
 	}
@@ -675,36 +684,25 @@ void SetckSel(uint32 I2snum, uint32 SampleRate)
 }
 
 
-static int APLLUsage = Soc_Aud_APLL_NOUSE;
 void EnableALLbySampleRate(uint32 SampleRate)
 {
-	pr_debug("%s APLLUsage = %d APLLCounter = %d SampleRate = %d\n", __func__, APLLUsage,
-		APLLCounter, SampleRate);
+	pr_debug("%s APLL1Counter = %d APLL2Counter = %d SampleRate = %d\n", __func__, APLL1Counter,
+		APLL2Counter, SampleRate);
 
-	if ((GetApllbySampleRate(SampleRate) == Soc_Aud_APLL1)
-	    && (APLLUsage == Soc_Aud_APLL_NOUSE)) {
+	if (GetApllbySampleRate(SampleRate) == Soc_Aud_APLL1) {
 		/* enable APLL1 */
-		APLLUsage = Soc_Aud_APLL1;
-		APLLCounter++;
-		if (APLLCounter == true) {
+		APLL1Counter++;
+		if (APLL1Counter == 1) {
 			AudDrv_Clk_On();
 			EnableApll1(true);
-			EnableI2SDivPower(AUDIO_APLL1_DIV0, true);
-			EnableI2SDivPower(AUDIO_APLL2_DIV0, true);
 			AudDrv_APLL1Tuner_Clk_On();
-			AudDrv_APLL2Tuner_Clk_On();
 		}
-	} else if ((GetApllbySampleRate(SampleRate) == Soc_Aud_APLL2)
-		   && (APLLUsage == Soc_Aud_APLL_NOUSE)) {
+	} else if (GetApllbySampleRate(SampleRate) == Soc_Aud_APLL2) {
 		/* enable APLL2 */
-		APLLUsage = Soc_Aud_APLL2;
-		APLLCounter++;
-		if (APLLCounter == true) {
+		APLL2Counter++;
+		if (APLL2Counter == 1) {
 			AudDrv_Clk_On();
 			EnableApll2(true);
-			EnableI2SDivPower(AUDIO_APLL1_DIV0, true);
-			EnableI2SDivPower(AUDIO_APLL2_DIV0, true);
-			AudDrv_APLL1Tuner_Clk_On();
 			AudDrv_APLL2Tuner_Clk_On();
 		}
 	}
@@ -714,35 +712,68 @@ void EnableALLbySampleRate(uint32 SampleRate)
 
 void DisableALLbySampleRate(uint32 SampleRate)
 {
-	pr_debug("%s APLLUsage = %d APLLCounter = %d SampleRate = %d\n", __func__, APLLUsage,
-		APLLCounter, SampleRate);
+	pr_debug("%s APLL1Counter = %d APLL2Counter = %d SampleRate = %d\n", __func__, APLL1Counter,
+		APLL2Counter, SampleRate);
 
-	if (APLLUsage == Soc_Aud_APLL1) {
+	if (GetApllbySampleRate(SampleRate) == Soc_Aud_APLL1) {
 		/* disable APLL1 */
-		APLLCounter--;
-		if (APLLCounter == 0) {
+		APLL1Counter--;
+		if (APLL1Counter == 0) {
 			/* disable APLL1 */
-			APLLUsage = Soc_Aud_APLL_NOUSE;
 			EnableI2SDivPower(AUDIO_APLL1_DIV0, false);
-			EnableI2SDivPower(AUDIO_APLL2_DIV0, false);
 			AudDrv_APLL1Tuner_Clk_Off();
-			AudDrv_APLL2Tuner_Clk_Off();
 			EnableApll1(false);
 			AudDrv_Clk_Off();
 		}
-	} else if (APLLUsage == Soc_Aud_APLL2) {
+	} else if (GetApllbySampleRate(SampleRate) == Soc_Aud_APLL2) {
 		/* disable APLL2 */
-		APLLCounter--;
-		if (APLLCounter == 0) {
+		APLL2Counter--;
+		if (APLL2Counter == 0) {
 			/* disable APLL2 */
-			APLLUsage = Soc_Aud_APLL_NOUSE;
-			EnableI2SDivPower(AUDIO_APLL1_DIV0, false);
 			EnableI2SDivPower(AUDIO_APLL2_DIV0, false);
-			AudDrv_APLL1Tuner_Clk_Off();
 			AudDrv_APLL2Tuner_Clk_Off();
 			EnableApll2(false);
 			AudDrv_Clk_Off();
 		}
+	}
+
+}
+
+void EnableAPLLTunerbySampleRate(uint32 SampleRate)
+{
+	pr_debug("%s APLL1Counter = %d APLL2Counter = %d SampleRate = %d\n", __func__, APLL1TunerCounter,
+		APLL2TunerCounter, SampleRate);
+
+	if (GetApllbySampleRate(SampleRate) == Soc_Aud_APLL1) {
+		/* enable APLL1 Tuner*/
+		APLL1TunerCounter++;
+		if (APLL1TunerCounter == 1)
+			AudDrv_APLL1Tuner_On();
+	} else if (GetApllbySampleRate(SampleRate) == Soc_Aud_APLL2) {
+		/* enable APLL2 Tuner*/
+		APLL2TunerCounter++;
+		if (APLL2TunerCounter == 1)
+			AudDrv_APLL2Tuner_On();
+	}
+
+}
+
+void DisableAPLLTunerbySampleRate(uint32 SampleRate)
+{
+	pr_debug("%s APLL1Counter = %d APLL2Counter = %d SampleRate = %d\n", __func__, APLL1TunerCounter,
+		APLL2TunerCounter, SampleRate);
+
+	if (GetApllbySampleRate(SampleRate) == Soc_Aud_APLL1) {
+		/* disable APLL1 */
+		APLL1TunerCounter--;
+		if (APLL1TunerCounter == 0)
+			AudDrv_APLL1Tuner_Off();
+	} else if (GetApllbySampleRate(SampleRate) == Soc_Aud_APLL2) {
+		/* disable APLL2 */
+		APLL2TunerCounter--;
+		if (APLL2TunerCounter == 0)
+			AudDrv_APLL2Tuner_Off();
+
 	}
 
 }
@@ -826,10 +857,10 @@ void EnableApll1(bool bEnable)
 
 	if (bEnable) {
 		if (Aud_APLL_DIV_APLL1_cntr == 0) {
-			Afe_Set_Reg(AUDIO_CLK_AUDDIV_0, 0x3, 0x3);
+			Afe_Set_Reg(AUDIO_CLK_AUDDIV_0, 0x1, 0x1);
 			Afe_Set_Reg(AUDIO_CLK_AUDDIV_0, 0x07000000, 0x0f000000);
 			AudDrv_APLL22M_Clk_On();
-			Afe_Set_Reg(AUDIO_CLK_AUDDIV_0, 0x0, 0x3);
+			Afe_Set_Reg(AUDIO_CLK_AUDDIV_0, 0x0, 0x1);
 			/* SetClkCfg(AUDIO_CLK_CFG_6, 0x00010000, 0x00810000); */
 		}
 		Aud_APLL_DIV_APLL1_cntr++;
@@ -850,10 +881,10 @@ void EnableApll2(bool bEnable)
 
 	if (bEnable) {
 		if (Aud_APLL_DIV_APLL2_cntr == 0) {
-			Afe_Set_Reg(AUDIO_CLK_AUDDIV_0, 0x3, 0x3);
+			Afe_Set_Reg(AUDIO_CLK_AUDDIV_0, 0x2, 0x2);
 			Afe_Set_Reg(AUDIO_CLK_AUDDIV_0, 0x70000000, 0xf0000000);
 			AudDrv_APLL24M_Clk_On();
-			Afe_Set_Reg(AUDIO_CLK_AUDDIV_0, 0x0, 0x3);
+			Afe_Set_Reg(AUDIO_CLK_AUDDIV_0, 0x0, 0x2);
 			/* SetClkCfg(AUDIO_CLK_CFG_6, 0x01000000, 0x81000000); */
 		}
 		Aud_APLL_DIV_APLL2_cntr++;
@@ -915,6 +946,7 @@ static unsigned int pin_mode_audclk, pin_mode_audmosi, pin_mode_audmiso;
 #endif
 #endif				/*
 				 */
+static bool afe_on;
 void EnableAfe(bool bEnable)
 {
 	unsigned long flags;
@@ -947,7 +979,17 @@ void EnableAfe(bool bEnable)
 	MemEnable = CheckMemIfEnable();
 
 	if (false == bEnable && false == MemEnable) {
+		if (afe_on && mtk_soc_always_hd) {
+			DisableAPLLTunerbySampleRate(44100);
+			DisableAPLLTunerbySampleRate(48000);
+		}
 		Afe_Set_Reg(AFE_DAC_CON0, 0x0, 0x1);
+
+		if (afe_on && mtk_soc_always_hd) {
+			DisableALLbySampleRate(44100);
+			DisableALLbySampleRate(48000);
+		}
+		afe_on = false;
 #ifndef CONFIG_FPGA_EARLY_PORTING
 #ifdef CONFIG_OF
 #if defined(CONFIG_MTK_LEGACY)
@@ -995,7 +1037,15 @@ void EnableAfe(bool bEnable)
 
 #endif
 #endif
+		if (!afe_on && mtk_soc_always_hd) {
+			EnableALLbySampleRate(44100);
+			EnableALLbySampleRate(48000);
+		}
 		Afe_Set_Reg(AFE_DAC_CON0, 0x1, 0x1);
+		if (!afe_on && mtk_soc_always_hd) {
+			EnableAPLLTunerbySampleRate(44100);
+			EnableAPLLTunerbySampleRate(48000);
+		}
 	}
 	spin_unlock_irqrestore(&afe_control_lock, flags);
 }
@@ -1976,24 +2026,34 @@ bool SetI2SDacEnable(bool bEnable)
 	/* pr_warn("%s bEnable = %d", __func__, bEnable); */
 
 	if (bEnable) {
-		Afe_Set_Reg(AFE_ADDA_DL_SRC2_CON0, bEnable, 0x01);
 		Afe_Set_Reg(AFE_I2S_CON1, bEnable, 0x1);
-		Afe_Set_Reg(AFE_ADDA_UL_DL_CON0, bEnable, 0x0001);
 		Afe_Set_Reg(FPGA_CFG1, 0, 0x10);	/* For FPGA Pin the same with DAC */
 	} else {
-		Afe_Set_Reg(AFE_ADDA_DL_SRC2_CON0, bEnable, 0x01);
 		Afe_Set_Reg(AFE_I2S_CON1, bEnable, 0x1);
-
-		if (mAudioMEMIF[Soc_Aud_Digital_Block_I2S_OUT_DAC]->mState == false
-		    && mAudioMEMIF[Soc_Aud_Digital_Block_I2S_IN_ADC]->mState == false) {
-			Afe_Set_Reg(AFE_ADDA_UL_DL_CON0, bEnable, 0x0001);
-		}
-
 		Afe_Set_Reg(FPGA_CFG1, 1 << 4, 0x10);	/* For FPGA Pin the same with DAC */
 	}
 
 	return true;
 }
+
+bool SetI2SADDAEnable(bool bEnable)
+{
+	/* pr_warn("%s bEnable = %d", __func__, bEnable); */
+
+	if (bEnable) {
+		Afe_Set_Reg(AFE_ADDA_UL_DL_CON0, bEnable, 0x0001);
+		Afe_Set_Reg(AFE_ADDA_DL_SRC2_CON0, bEnable, 0x01);
+	} else {
+		Afe_Set_Reg(AFE_ADDA_DL_SRC2_CON0, bEnable, 0x01);
+		if (mAudioMEMIF[Soc_Aud_Digital_Block_I2S_OUT_DAC]->mState == false
+		    && mAudioMEMIF[Soc_Aud_Digital_Block_I2S_IN_ADC]->mState == false) {
+			Afe_Set_Reg(AFE_ADDA_UL_DL_CON0, bEnable, 0x0001);
+		}
+	}
+
+	return true;
+}
+
 
 
 bool GetI2SDacEnable(void)

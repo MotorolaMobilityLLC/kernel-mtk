@@ -157,7 +157,7 @@ static int mtk_pcm_fmtx_stop(struct snd_pcm_substream *substream)
 	/* AFE_BLOCK_T *Afe_Block = &(pMemControl->rBlock); */
 	PRINTK_AUD_FMTX("mtk_pcm_fmtx_stop\n");
 
-	SetIrqEnable(Soc_Aud_IRQ_MCU_MODE_IRQ1_MCU_MODE, false);
+	irq_remove_user(substream, Soc_Aud_IRQ_MCU_MODE_IRQ1_MCU_MODE);
 
 	/* here to turn off digital part */
 	SetConnection(Soc_Aud_InterCon_DisConnect, Soc_Aud_InterConnectionInput_I05,
@@ -416,10 +416,10 @@ static int mtk_pcm_fmtx_start(struct snd_pcm_substream *substream)
 	SetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_DL1, true);
 
 	/* here to set interrupt */
-	SetIrqMcuCounter(Soc_Aud_IRQ_MCU_MODE_IRQ1_MCU_MODE,
-			 (runtime->period_size * 2 / 3));
-	SetIrqMcuSampleRate(Soc_Aud_IRQ_MCU_MODE_IRQ1_MCU_MODE, runtime->rate);
-	SetIrqEnable(Soc_Aud_IRQ_MCU_MODE_IRQ1_MCU_MODE, true);
+	irq_add_user(substream,
+		     Soc_Aud_IRQ_MCU_MODE_IRQ1_MCU_MODE,
+		     runtime->rate,
+		     runtime->period_size * 2 / 3);
 
 	EnableAfe(true);
 
