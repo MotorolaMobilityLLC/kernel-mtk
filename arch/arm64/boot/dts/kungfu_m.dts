@@ -110,9 +110,9 @@
 		power_id		= <0xffff>;
 		power_vol		= <0>;
 /* Total has 15 level*/
-		als_level     = <0 3 10 30 100 200 350 500 800 1200 2000 4000 10000 30000 57937>;
+              als_level     = <0 3 10 30 100 200 350 500 800 1200 2000 4000 10000 30000 57937>;
 /*  Total has 16 range*/
-		als_value   = <0 1 8 26 80 170 320 450 730 1020 1800 3600  8500 26000 40000 40000>;
+             als_value   =   <0 8  25 65 110 170 320 450 730 1020 1800 3600  8500 26000 40000 40000>;
 		ps_threshold_high	=  <200>;
 		ps_threshold_low	=  <120>;
 		is_batch_supported_ps	= <1>;
