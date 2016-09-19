@@ -34,6 +34,11 @@ LCM_DSI_MODE_CON lcm_dsi_mode;
 #endif
 
 LCM_DRIVER *lcm_driver_list[] = {
+//lenovo_sw wuwl10 20150906 add for lcm begin
+#if defined(FT8716_FHD_DSI_VDO_TM)
+	&ft8716_fhd_dsi_vdo_tm_lcm_drv,
+#endif
+//lenovo_sw wuwl10 20150906 add for lcm end
 #if defined(OTM1284A_HD720_DSI_VDO_TM)
 	&otm1284a_hd720_dsi_vdo_tm_lcm_drv,
 #endif

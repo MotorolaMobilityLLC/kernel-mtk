@@ -2677,7 +2677,7 @@ int DSI_Send_ROI(DISP_MODULE_ENUM module, void *handle, unsigned int x, unsigned
 
 static void lcm_set_reset_pin(uint32_t value)
 {
-#if 1
+#if 0 //wuwl10 20160322 modify
 	DSI_OUTREG32(NULL, DISPSYS_CONFIG_BASE + 0x150, value);
 #else
 #if !defined(CONFIG_MTK_LEGACY)
@@ -2792,18 +2792,43 @@ unsigned int DSI_dcs_read_lcm_reg_v2_wrapper_DSIDUAL(uint8_t cmd, uint8_t *buffe
 	return DSI_dcs_read_lcm_reg_v2(DISP_MODULE_DSIDUAL, NULL, cmd, buffer, buffer_size);
 }
 
+//lenovo-sw wuwl10 20160322 modify begin
 long lcd_enp_bias_setting(unsigned int value)
 {
 	long ret = 0;
-
 #if !defined(CONFIG_MTK_LEGACY)
 	if (value)
-		ret = disp_dts_gpio_select_state(DTS_GPIO_STATE_LCD_BIAS_ENP);
+		ret = disp_dts_gpio_select_state(DTS_GPIO_STATE_LCD_BIAS_ENP1);
 	else
-		ret = disp_dts_gpio_select_state(DTS_GPIO_STATE_LCD_BIAS_ENN);
+		ret = disp_dts_gpio_select_state(DTS_GPIO_STATE_LCD_BIAS_ENP0);
 #endif
 	return ret;
 }
+long lcd_enn_bias_setting(unsigned int value)
+{
+	long ret = 0;
+#if !defined(CONFIG_MTK_LEGACY)
+	if (value)
+		ret = disp_dts_gpio_select_state(DTS_GPIO_STATE_LCD_BIAS_ENN1);
+	else
+		ret = disp_dts_gpio_select_state(DTS_GPIO_STATE_LCD_BIAS_ENN0);
+#endif
+	return ret;
+}
+
+long lcd_vddi_ldo_setting(unsigned int value)
+{
+	long ret = 0;
+#if !defined(CONFIG_MTK_LEGACY)
+	if (value)
+		ret = disp_dts_gpio_select_state(DTS_GPIO_STATE_LCD_VDDI_EN1);
+	else
+		ret = disp_dts_gpio_select_state(DTS_GPIO_STATE_LCD_VDDI_EN0);
+#endif
+	return ret;
+}
+//lenovo-sw wuwl10 20160322 modify end
+
 int ddp_dsi_set_lcm_utils(DISP_MODULE_ENUM module, LCM_DRIVER *lcm_drv)
 {
 	LCM_UTIL_FUNCS *utils = NULL;
@@ -2838,6 +2863,10 @@ int ddp_dsi_set_lcm_utils(DISP_MODULE_ENUM module, LCM_DRIVER *lcm_drv)
 	utils->set_gpio_pull_enable = (int (*)(unsigned int, unsigned char))mt_set_gpio_pull_enable;
 #else
 	utils->set_gpio_lcd_enp_bias = lcd_enp_bias_setting;
+//lenovo-sw wuwl10 20160322 add begin
+	utils->set_gpio_lcd_enn_bias = lcd_enn_bias_setting;
+	utils->set_gpio_lcd_vddi_en = lcd_vddi_ldo_setting;
+//lenovo-sw wuwl10 20160322 add end
 #endif
 #endif
 

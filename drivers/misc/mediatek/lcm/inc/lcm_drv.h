@@ -783,7 +783,11 @@ typedef struct {
 	int (*set_gpio_mode)(unsigned int pin, unsigned int mode);
 	int (*set_gpio_dir)(unsigned int pin, unsigned int dir);
 	int (*set_gpio_pull_enable)(unsigned int pin, unsigned char pull_en);
+//lenovo-sw wuwl10 20160322 modify begin
 	long (*set_gpio_lcd_enp_bias)(unsigned int value);
+	long (*set_gpio_lcd_enn_bias)(unsigned int value);
+	long (*set_gpio_lcd_vddi_en)(unsigned int value);
+//lenovo-sw wuwl10 20160322 modify end
 	void (*dsi_set_cmdq_V11)(void *cmdq, unsigned int *pdata, unsigned int queue_size,
 				  unsigned char force_update);
 	void (*dsi_set_cmdq_V22)(void *cmdq, unsigned cmd, unsigned char count,
@@ -819,6 +823,9 @@ typedef struct {
 	/* /////////////////////////CABC backlight related function */
 	void (*set_backlight)(unsigned int level);
 	void (*set_backlight_cmdq)(void *handle, unsigned int level);
+//lenovo-sw wuwl10 add 201501029 for esd recover panel backlight begin
+	void (*esd_recover_backlight)(void);
+//lenovo-sw wuwl10 add 201501029 for esd recover panel backlight end
 	void (*set_pwm)(unsigned int divider);
 	unsigned int (*get_pwm)(unsigned int divider);
 	void (*set_backlight_mode)(unsigned int mode);

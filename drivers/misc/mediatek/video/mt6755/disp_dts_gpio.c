@@ -25,7 +25,13 @@ static const char *this_state_name[DTS_GPIO_STATE_MAX] = {
 	"lcm_rst_out0_gpio",
 	"lcm_rst_out1_gpio",
 	"lcd_bias_enp0_gpio",
-	"lcd_bias_enp1_gpio"
+//lenovo-sw wuwl10 20160322 modify begin
+	"lcd_bias_enp1_gpio",
+	"lcd_bias_enn0_gpio",
+	"lcd_bias_enn1_gpio",
+	"lcd_vddi_en0_gpio",
+	"lcd_vddi_en1_gpio"
+//lenovo-sw wuwl10 20160322 modify end
 };
 
 /* pinctrl implementation */
