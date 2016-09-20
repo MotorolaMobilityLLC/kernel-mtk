@@ -258,7 +258,14 @@ static int mtk_pcm_mrgrx_close(struct snd_pcm_substream *substream)
 	SetConnection(Soc_Aud_InterCon_DisConnect, Soc_Aud_InterConnectionInput_I11,
 		      Soc_Aud_InterConnectionOutput_O04);
 
-
+	//lenovo-sw chengx2, add 2nd i2s out enable/disable to avoid other dai disable it, start
+	#ifdef CONFIG_MTK_NXP_TFA9890
+	/* stop I2S output */
+	SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_OUT_2, false);
+	if (GetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_OUT_2) == false)
+		Afe_Set_Reg(AFE_I2S_CON3, 0x0, 0x1);
+	#endif 
+	//lenovo-sw chengx2, add 2nd i2s out enable/disable to avoid other dai disable it, end
 	EnableAfe(false);
 
 	AudDrv_Clk_Off();
@@ -271,9 +278,11 @@ static int mtk_pcm_mrgrx_close(struct snd_pcm_substream *substream)
 static int mtk_pcm_mrgrx_prepare(struct snd_pcm_substream *substream)
 {
 	struct snd_pcm_runtime *runtime = substream->runtime;
-
+	#ifdef CONFIG_MTK_NXP_TFA9890
+	uint32 u32AudioI2S = 0;//lenovo-sw chengx2, add 2nd i2s out enable/disable to avoid other dai disable it;
+	#endif
 	pr_warn("%s rate = %d\n", __func__, runtime->rate);
-
+	
 	if (mPrepareDone == false) {
 #ifndef CONFIG_FPGA_EARLY_PORTING
 #ifdef _WCN_SUPPORT
@@ -299,7 +308,20 @@ static int mtk_pcm_mrgrx_prepare(struct snd_pcm_substream *substream)
 				     0x40);
 		SetHwDigitalGainEnable(Soc_Aud_Hw_Digital_Gain_HW_DIGITAL_GAIN1, true);
 		SetHwDigitalGain(mmrgrx_Volume, Soc_Aud_Hw_Digital_Gain_HW_DIGITAL_GAIN1);
+		//lenovo-sw chengx2, add 2nd i2s out enable/disable to avoid other dai disable it, start
+		#ifdef CONFIG_MTK_NXP_TFA9890
+		u32AudioI2S = SampleRateTransform(runtime->rate) << 8;
+		u32AudioI2S |= Soc_Aud_I2S_FORMAT_I2S << 3; /* us3 I2s format */
+		u32AudioI2S |= Soc_Aud_I2S_WLEN_WLEN_32BITS << 1; /* 32bit */
 
+		if (GetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_OUT_2) == false) {
+			SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_OUT_2, true);
+			Afe_Set_Reg(AFE_I2S_CON3, u32AudioI2S | 1, AFE_MASK_ALL);
+		} else {
+			SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_OUT_2, true);
+		}
+		#endif 
+		//lenovo-sw chengx2, add 2nd i2s out enable/disable to avoid other dai disable it, end
 		/* start I2S DAC out */
 		if (GetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_OUT_DAC) == false) {
 			SetI2SDacOut(runtime->rate, false, Soc_Aud_I2S_WLEN_WLEN_16BITS);
