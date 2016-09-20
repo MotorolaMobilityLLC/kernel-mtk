@@ -156,13 +156,17 @@
 
 /* TOUCH start */
 &touch {
-	tpd-resolution = <1080 1920>;
-	use-tpd-button = <0>;
-	tpd-key-num = <3>;
-	tpd-key-local= <139 172 158 0>;
-	tpd-key-dim-local = <90 883 100 40 230 883 100 40 370 883 100 40 0 0 0 0>;
-	tpd-max-touch-num = <5>;
-	tpd-filter-enable = <1>;
+	vtouch-supply = <&mt_pmic_vcn28_ldo_reg>;
+ 	tpd-resolution = <1080 1920>;
+	interrupt-parent = <&eintc>;
+	interrupts = <1 2>;
+	debounce = <1 0>;
+	use-tpd-button = <1>;
+ 	tpd-key-num = <3>;
+ 	tpd-key-local= <139 172 158 0>;
+ 	tpd-key-dim-local = <90 883 100 40 230 883 100 40 370 883 100 40 0 0 0 0>;
+ 	tpd-max-touch-num = <5>;
+ 	tpd-filter-enable = <1>;
 	tpd-filter-pixel-density = <146>;
 	tpd-filter-custom-prameters = <0 0 0 0 0 0 0 0 0 0 0 0>;
 	tpd-filter-custom-speed = <0 0 0>;
@@ -890,6 +894,10 @@
 		reg = <0x3e>;
 	};
 /*lenovo.sw wuwl10 20160420 add end*/
+	cap_touch@38 {
+		compatible = "mediatek,cap_touch_cust";
+		reg = <0x38>;		
+	};
 };
 
 

@@ -13,6 +13,9 @@ if INPUT_TOUCHSCREEN
 
 config TOUCHSCREEN_MTK
 	tristate "MediaTek Touch Panel Driver"
+config TOUCHSCREEN_MTK_FT8716
+	bool "FT8716 for lenovo Kungfu driver"
+	depends on TOUCHSCREEN_MTK	
 	default n
 	help
 	  Say Y here if you have MediaTek touch panel.
