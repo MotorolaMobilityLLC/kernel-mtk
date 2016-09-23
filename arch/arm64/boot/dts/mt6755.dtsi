@@ -3136,6 +3136,10 @@
 	ext_buck_vmd1:ext_buck_vmd1 {
 		compatible = "mediatek,ext_buck_vmd1";
 	};
+
+	fpc_int:fpc_int {
+		compatible = "mediatek, fpc_int-eint";
+	};
 };
 /*/include/ "cust_pmic.dtsi"*/
 

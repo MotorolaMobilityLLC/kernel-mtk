@@ -848,5 +848,32 @@
 };
 
 
+/* lenovo-sw, chenzz3, configure spi device for fingerprint, begin */
+&spi0 {
+	fpc1020@0 {
+		status = "ok";
+		compatible = "fpc,fpc1020";
+		reg = <1>;
+		spi-max-frequency = <4800000>;
+		input-device-name = "fpc1020";
+		fpc,gpio_rst      = <116>;
+		fpc,gpio_irq      = <12>;
+		fpc,use_fpc2050   = <1>;
+		fpc,enable-on-boot;
+		fpc,enable-wakeup;
+		/* EV_MSC, MSC_SCAN */
+		fpc,event-type = <4>;
+		fpc,event-code = <4>;
+	};
+};
 
+&eintc {
+	fpc_int@12 {
+		compatible = "mediatek, fpc_int-eint";
+		interrupt-parent = <&eintc>;
+		interrupts = <12 1>;
+		debounce = <12 1000>;
+	};
+};
+/* lenovo-sw, chenzz3, configure spi device for fingerprint, end */
 
