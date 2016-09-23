@@ -535,3 +535,7 @@ CONFIG_CRYPTO_SHA2_ARM64_CE=y
 CONFIG_CRYPTO_AES_ARM64_CE=y
 CONFIG_CRYPTO_AES_ARM64_CE_BLK=y
 CONFIG_LIBCRC32C=y
+#lenovo-sw, chenzz3, integrate fpc fingerprint driver, begin
+CONFIG_SENSORS_FPC_1020=y
+CONFIG_PM_SLEEP=y
+#lenovo-sw, chenzz3, integrate fpc fingerprint driver, end
