@@ -5394,9 +5394,10 @@ int primary_display_setbacklight(unsigned int level)
 #ifdef CONFIG_LENOVO_PANELMODE_SUPPORT
 				//wuwl10 modify, backlight level 0 should be set even through in hbm mode to disable backlight
 				if (level && atomic_read(&primary_display_hbm_backlight)){
-					DISPMSG("skip set lcm backlight due to hbm mode\n");
+					DISPMSG("set lcm backlight full due to hbm mode\n");
+					disp_lcm_set_backlight(pgc->plcm, NULL, 255);//can we set it 255 directly
 				} else {
-					disp_lcm_set_backlight(pgc->plcm, NULL, level);
+					disp_lcm_set_backlight(pgc->plcm, NULL,(level * 8 + 2)/10);
 				}
 #else
 				disp_lcm_set_backlight(pgc->plcm, NULL, level);

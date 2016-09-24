@@ -601,17 +601,17 @@ static void lcm_esd_recover_backlight(void)
 //lenovo-sw wuwl10 20150515 add for esd revovery backlight end
 static void lcm_setbacklight_cmdq(void *handle, unsigned int level)
 {
-	if((0 < level) && (level < 3))
+	if((0 < level) && (level < 2))
 	{
-		level = 3;
+		level = 2;// framework will set 3 and driver will caculate tit to 2
 	}
-	level = level*16/5 + 8/10;
+	level = level*4;
 #ifdef BUILD_LK
 	dprintf(0,"%s,lk ft8716 tm backlight: level = %d\n", __func__, level);
 #else
-	printk(KERN_INFO "%s, kernel ft8716 tm backlight: level = %d,0x%x,0x%x\n", __func__,level,((level>>2) & 0xFF), level & 0x03);
 //Lenovo-sw wuwl10 add 20150515 for esd recover backlight
 	esd_last_backlight_level = level;
+	printk(KERN_INFO "%s, kernel ft8716 tm backlight: level = %d,0x%x,0x%x\n", __func__,level,((level>>2) & 0xFF), level & 0x03);
 #endif
 	// Refresh value of backlight level.
 	lcm_backlight_level_setting[0].para_list[0] = (level>>2) & 0xFF;
@@ -892,7 +892,7 @@ static void lcm_set_cabcmode(void *handle,unsigned int mode)
 static void lcm_set_hbm(void *handle,unsigned int mode)
 {
 	printk("%s, mode = %d\n", __func__, mode);
-
+#if 0//we should keep this func to supprot the hbm
 	if( mode == 1){
 		lcm_backlight_level_setting[0].para_list[0] = (1023>>2) & 0xFF;
 		lcm_backlight_level_setting[0].para_list[1] = 1023 & 0x03;
@@ -901,6 +901,7 @@ static void lcm_set_hbm(void *handle,unsigned int mode)
 		lcm_backlight_level_setting[0].para_list[1] = esd_last_backlight_level & 0x03;
 	}
 	push_table(lcm_backlight_level_setting, sizeof(lcm_backlight_level_setting) / sizeof(struct LCM_setting_table), 1);
+#endif
 }
 #endif
 LCM_DRIVER ft8716_fhd_dsi_vdo_tm_lcm_drv = {
