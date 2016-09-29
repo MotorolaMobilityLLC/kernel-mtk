@@ -42,7 +42,9 @@
 #define USB_CHARGER_CURRENT					CHARGE_CURRENT_500_00_MA	/* 500mA */
 /* #define AC_CHARGER_CURRENT					CHARGE_CURRENT_650_00_MA */
 #define AC_CHARGER_CURRENT					CHARGE_CURRENT_2050_00_MA
-#define AC_CHARGER_INPUT_CURRENT				CHARGE_CURRENT_3200_00_MA
+//lenovo-sw mahj2 modify Begin
+#define AC_CHARGER_INPUT_CURRENT				CHARGE_CURRENT_2050_00_MA
+//lenovo-sw mahj2 modify End
 #define NON_STD_AC_CHARGER_CURRENT			CHARGE_CURRENT_500_00_MA
 #define CHARGING_HOST_CHARGER_CURRENT       CHARGE_CURRENT_650_00_MA
 #define APPLE_0_5A_CHARGER_CURRENT          CHARGE_CURRENT_500_00_MA
@@ -71,9 +73,13 @@
 
 /* Battery Notify */
 #define BATTERY_NOTIFY_CASE_0001_VCHARGER
-#define BATTERY_NOTIFY_CASE_0002_VBATTEMP
+//lenovo-sw mahj2 modify Begin
+//#define BATTERY_NOTIFY_CASE_0002_VBATTEMP
+//lenovo-sw mahj2 modiyf End
 /* #define BATTERY_NOTIFY_CASE_0003_ICHARGING */
-/* #define BATTERY_NOTIFY_CASE_0004_VBAT */
+//lenovo-sw mahj2 modify Begin
+#define BATTERY_NOTIFY_CASE_0004_VBAT
+//lenovo-sw mahj2 modify End
 /* #define BATTERY_NOTIFY_CASE_0005_TOTAL_CHARGINGTIME */
 
 /* High battery support */
@@ -122,6 +128,42 @@
 #define FAN5405_BUSNUM 1
 #endif
 
+/*Begin lenovo-sw mahj2 add*/
+#define AC_CHARGER_CURRENT_LIMIT	              CHARGE_CURRENT_1050_00_MA   //lenovo standard 0.3C
+
+#define LENOVO_AC_CHARGER_CURRENT_LIMIT_HTEMP_SUPPORT
+#ifdef LENOVO_AC_CHARGER_CURRENT_LIMIT_HTEMP_SUPPORT
+#define AC_CHARGER_CURRENT_LIMIT_HTEMP	    CHARGE_CURRENT_1050_00_MA//0.5c
+#endif
+
+#define LENOVO_TEMP_POS_45_TO_POS_50_CV_LiMIT_SUPPORT
+#ifdef LENOVO_TEMP_POS_45_TO_POS_50_CV_LiMIT_SUPPORT
+#define LENOVO_TEMP_POS_45_TO_POS_50_CV_VOLTAGE		BATTERY_VOLT_04_140000_V	   
+#define LENOVO_TEMP_POS_45_TO_POS_50_CV_REG 0x27 	
+#endif
+
+#ifdef HIGH_BATTERY_VOLTAGE_SUPPORT
+#define HIGH_BATTERY_VOLTAGE_4400MV_SUPPORT
+#endif
+
+/*Begin lenovo-sw mahj2 end*/
+
+//lenovo-sw mahj2 add for pmic control led Begin
+//#define LENOVO_USE_PMIC_CONTROL_LED
+//lenovo-sw mahj2 add for pmic control led End
+//lenovo-sw mahj2 add for thermal support Begin
+#define LENOVO_THERMAL_SUPPORT
+//lenovo-sw mahj2 add for thermal support End
+//lenovo-sw mahj2 add for show charging ic id Begin
+//#define LENOVO_SHOW_CHARGING_IC_ID
+//lenovo-sw mahj2 add for show charging ic id End
+/*lenovo-sw mahj2 added for ntc temp cut 2 degree Begin*/
+//#define LENOVO_NTC_TEMP_CUT_2_DEGREE
+/*lenovo-sw mahj2 added for ntc temp cut 2 degree End*/
+//lenovo-sw mahj2 add for runin test Begin
+#define LENOVO_RUNIN_TEST
+//lenovo-sw mahj2 add for runin test End
+
 /*VINDPM moved from cust_pe.h to de-relating from PE+*/
 #define SWITCH_CHR_VINDPM_5V 0x13  /* 4.5V */
 #define SWITCH_CHR_VINDPM_7V 0x25  /* 6.3V */
@@ -150,7 +192,8 @@
 	|| defined(CONFIG_MTK_BQ24296_SUPPORT)\
 	|| defined(CONFIG_MTK_BQ24160_SUPPORT)\
 	|| defined(CONFIG_MTK_BQ25896_SUPPORT)\
-	|| defined(CONFIG_MTK_BQ24261_SUPPORT)
+	|| defined(CONFIG_MTK_BQ24261_SUPPORT)\
+	|| defined(CONFIG_MTK_BQ24259_SUPPORT)
 #define SWCHR_POWER_PATH
 #endif
 
@@ -164,7 +207,8 @@
 	|| defined(CONFIG_MTK_BQ24160_SUPPORT) \
 	|| defined(CONFIG_MTK_BQ24157_SUPPORT) \
 	|| defined(CONFIG_MTK_BQ24250_SUPPORT) \
-	|| defined(CONFIG_MTK_BQ24261_SUPPORT)
+	|| defined(CONFIG_MTK_BQ24261_SUPPORT) \
+	|| defined(CONFIG_MTK_BQ24259_SUPPORT)
 #define EXTERNAL_SWCHR_SUPPORT
 #endif
 

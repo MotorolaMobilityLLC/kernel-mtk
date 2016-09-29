@@ -374,7 +374,11 @@ extern void mt_battery_charging_algorithm(void);
 #if defined(CONFIG_MTK_JEITA_STANDARD_SUPPORT)
 extern PMU_STATUS do_jeita_state_machine(void);
 #endif
-
+/*Begin lenovo chailu1 add for lenovo 45 - 50 cv limit*/	
+#ifdef LENOVO_TEMP_POS_45_TO_POS_50_CV_LiMIT_SUPPORT
+ extern   void lenovo_battery_cv_set(void);
+#endif
+/*End lenovo chailu1 add for lenovo 45 - 50 cv limit*/	
 #else
 
 #define wake_up_bat()			do {} while (0)

@@ -26,6 +26,9 @@ else
 obj-$(CONFIG_MTK_SMART_BATTERY) += battery_meter.o battery_common.o
 endif
 
+ifeq ($(CONFIG_LENOVO_CHARGING_STANDARD_SUPPORT),y)
+    obj-$(CONFIG_MTK_SMART_BATTERY) += lenovo_charging.o
+endif
 
 ifeq ($(CONFIG_MTK_FAN5402_SUPPORT),y)
 	obj-$(CONFIG_MTK_SMART_BATTERY) += switch_charging.o
@@ -74,7 +77,11 @@ else
 														ifeq ($(CONFIG_MTK_RT9466_SUPPORT),y)
 															obj-$(CONFIG_MTK_SMART_BATTERY) += switch_charging.o
 														else
-															obj-$(CONFIG_MTK_SMART_BATTERY) += linear_charging.o
+															ifeq ($(CONFIG_MTK_BQ24259_SUPPORT),y)
+																obj-$(CONFIG_MTK_SMART_BATTERY) += switch_charging.o
+															else
+																obj-$(CONFIG_MTK_SMART_BATTERY) += linear_charging.o
+															endif
 														endif
 													endif
 												endif
