@@ -37,7 +37,7 @@
 	pinctl_ddr50 = <&mmc1_pins_ddr50>;
 	register_setting = <&mmc1_register_setting_default>;
 	host_function = /bits/ 8 <MSDC_SD>;
-	cd_level = /bits/ 8 <MSDC_CD_LOW>;
+	cd_level = /bits/ 8 <MSDC_CD_HIGH>;
 	cd-gpios = <&pio 3 0>;
 	status = "okay";
 	vmmc-supply = <&mt_pmic_vmch_ldo_reg>;
