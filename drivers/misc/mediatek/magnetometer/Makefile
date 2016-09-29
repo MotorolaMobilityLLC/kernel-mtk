@@ -20,6 +20,7 @@ obj-$(CONFIG_MTK_AKM8975_AUTO)	+=  akm8975_auto/
 obj-$(CONFIG_MTK_AKM09911)   +=  akm09911/
 obj-$(CONFIG_MTK_AKM09912)   +=  akm09912/
 obj-y   +=  akm09911-new/
+obj-$(CONFIG_MTK_MMC3524X)   +=  mmc3530/
 obj-$(CONFIG_MTK_AMI304)   +=  ami304/
 obj-$(CONFIG_MTK_AMI304_AUTO)   +=  ami304_auto/
 obj-$(CONFIG_MTK_BMM050)	+=  bmm050/
