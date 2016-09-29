@@ -30,3 +30,6 @@ source "drivers/misc/mediatek/alsps/APDS9930-new/Kconfig"
 source "drivers/misc/mediatek/alsps/EPL2182-new/Kconfig"
 source "drivers/misc/mediatek/alsps/stk3x1x-new/Kconfig"
 source "drivers/misc/mediatek/alsps/alspshub/Kconfig"
+# lenovo-sw lumy1 add begin
+source "drivers/misc/mediatek/alsps/ltr579-new/Kconfig"
+# lenovo-sw lumy1 add end
