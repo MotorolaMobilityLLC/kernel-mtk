@@ -112,10 +112,10 @@
 	/*End, lenovo-sw lumy1*/
 
 	cust_mag {
-		compatible			= "mediatek,yamaha532";
+		compatible			= "mediatek,mmc3524x";
 		i2c_num				= <1>;
-		/* i2c_addr			= <0x0d 0 0 0>; */
-		direction			= <0>;
+		i2c_addr			= <0x30 0 0 0>;
+		direction			= <4>;
 		power_id			= <0xffff>;
 		power_vol			= <0>;
 		/* is_batch_supported		= <0>; */
@@ -868,6 +868,15 @@
 		status = "okay";
 	};
 	/*End, lenovo-sw lumy1*/
+
+/*lenovo-sw caoyi1 modify Msensor begin*/
+	msensor@30 {
+		compatible = "mediatek,msensor";
+		i2c_num	= <1>;
+		reg = <0x30>;
+		status = "okay";
+	};
+/*lenovo-sw caoyi1 modify Msensor end*/
 };
 /* IRTX GPIO end wuwl10 20160913 remove irtx for lcm pin*/
 
