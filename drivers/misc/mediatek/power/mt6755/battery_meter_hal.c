@@ -18,7 +18,9 @@
 #include <mt-plat/upmu_common.h>
 
 #include <mt-plat/battery_meter_hal.h>
-#include <mach/mt_battery_meter.h>
+//lenovo-sw mahj2 modify for project split Begin
+#include <cust_battery_meter.h>
+//lenovo-sw mahj2 modify for project split End
 #include <mach/mt_pmic.h>
 #include <mt-plat/battery_meter.h>
 

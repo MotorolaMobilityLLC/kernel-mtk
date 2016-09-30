@@ -52,7 +52,9 @@
 #define CHARGING_H
 
 #ifndef CONFIG_ARCH_MT8173
-#include <mach/mt_charging.h>
+//lenovo-sw mahj2 modify for project split Begin
+#include "cust_charging.h"
+//lenovo-sw mahj2 modify for project split End
 #endif
 
 /* ============================================================ */

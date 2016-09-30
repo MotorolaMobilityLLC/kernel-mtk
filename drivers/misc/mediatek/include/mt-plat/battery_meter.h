@@ -15,7 +15,9 @@
 #define _BATTERY_METER_H
 
 #include <linux/platform_device.h>
-#include <mach/mt_battery_meter.h>
+//lenovo-sw mahj2 modify for project split Begin
+#include "cust_battery_meter.h"
+//lenovo-sw mahj2 modify for project split End
 #include <mt-plat/charging.h>
 #if 0
 #include <mt-plat/mt_typedefs.h>

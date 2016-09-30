@@ -13,9 +13,15 @@
 
 
 MTK_PLATFORM := $(subst ",,$(CONFIG_MTK_PLATFORM))
+#lenovo-sw mahj2 modify for project split Begin
+ARCH_MTK_PROJECT := $(subst ",,$(CONFIG_ARCH_MTK_PROJECT))
+#lenovo-sw mahj2 modify for project split End
 subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/include
 subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/include/mt-plat/$(MTK_PLATFORM)/include
 subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/include/mt-plat
+#lenovo-sw mahj2 modify for project split Begin
+subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/mach/$(MTK_PLATFORM)/$(ARCH_MTK_PROJECT)/power
+#lenovo-sw mahj2 modify for project split End
 
 obj-$(CONFIG_MTK_PUMP_EXPRESS_PLUS_SUPPORT) += mtk_pep_intf.o
 obj-$(CONFIG_MTK_PUMP_EXPRESS_PLUS_20_SUPPORT) += mtk_pep20_intf.o
