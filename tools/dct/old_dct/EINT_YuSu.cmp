@@ -68,6 +68,10 @@ MRDUMP_EXT_RST
 EXT_DBG_KEY
 FPC_INT
 GOODIX_FP
+/*Lenovo-sw weimh1 add for A+G sensor eint pin 2016-9-30 begin*/
+ACCEL_GYRO_INT1
+ACCEL_GYRO_INT2
+/*Lenovo-sw weimh1 add for A+G sensor eint pin 2016-9-30 end*/
 
 [MD1_EINT_variables]
 MD1_SIM1_HOT_PLUG_EINT

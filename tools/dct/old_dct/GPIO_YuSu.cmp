@@ -641,6 +641,10 @@ GPIO_COMBO_SIM_SD
 GPIO_DEPOP_SWITCH
 GPIO_EINT_MT6311
 GPIO_MRDUMP_EXT_RST
+/*Lenovo-sw weimh1 add for A+G sensor eint pin 2016-9-30 begin*/
+GPIO_ACCEL_GYRO_INT1
+GPIO_ACCEL_GYRO_INT2
+/*Lenovo-sw weimh1 add for A+G sesnor eint pin 2016-9-30 end*/
 
 [GPIO_MODE]
 GPIO = _M_GPIO

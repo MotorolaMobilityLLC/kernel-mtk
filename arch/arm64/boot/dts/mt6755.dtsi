@@ -3139,6 +3139,28 @@
 	fpc_int:fpc_int {
 		compatible = "mediatek, fpc_int-eint";
 	};
+
+/*Lenovo-sw weimh1 add 2016-9-30 begin:add for accel*/
+	accel_gyro_int1: accel_gyro_int1{
+		compatible = "mediatek, accel_gyro_int1-eint";
+	};
+
+	accel_gyro_int2: accel_gyro_int2{
+		compatible = "mediatek, accel_gyro_int2-eint";
+	};
+
+	step_counter@0 {
+		compatible = "mediatek,step_counter";
+	};
+
+	m_step_c_pl@0 {
+		compatible = "mediatek,m_step_c_pl";
+	};
+
+	gsensor:accel@0 {
+		compatible = "mediatek,gsensor";
+	};
+/*Lenovo-sw weimh1 add 2016-9-30 end:add for accel*/
 };
 /*/include/ "cust_pmic.dtsi"*/
 
