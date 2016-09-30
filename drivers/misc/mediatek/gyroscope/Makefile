@@ -18,11 +18,14 @@ obj-$(CONFIG_MTK_MPU6050GY)   +=  mpu6050gy/
 obj-$(CONFIG_MTK_BMG160)   +=  bmg160/
 obj-$(CONFIG_MTK_MPU6515G)   +=  mpu6515/
 obj-$(CONFIG_MTK_MPU3050C_NEW)   +=  mpu3050c-new/
-obj-y   +=  ITG1010-new/
+obj-$(CONFIG_MTK_ITG1010_NEW)   +=  ITG1010-new/
 obj-$(CONFIG_MTK_L3G4200D)   +=  l3g4200d/
 obj-$(CONFIG_MTK_L3GD20)   +=  l3gd20/
 obj-$(CONFIG_MTK_LSM6DS0)   +=  lsm6ds0/
 obj-$(CONFIG_MTK_LSM6DS3)   +=  lsm6ds3gy/
 obj-$(CONFIG_MTK_ICM20645GY)   +=  icm20645gy/
 obj-$(CONFIG_MTK_LSM6DS3HGY)   +=  lsm6ds3hgy/
+#Lenovo-sw weimh1 add 2016-9-30 begin:use independent dir for bmi
+obj-$(CONFIG_MTK_BMI120GY_NEW)   +=  bmi120gy-new/
+#Lenovo-sw weimh1 add 2016-9-30 end
 endif

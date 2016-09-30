@@ -24,7 +24,7 @@ obj-$(CONFIG_MTK_MPU6515A)   +=  mpu6515/
 obj-$(CONFIG_MTK_KXTJ2_1009)   +=  KXTJ2_1009/
 obj-$(CONFIG_MTK_KXTJ2_1009_NEW)   +=  KXTJ2_1009-new/
 obj-$(CONFIG_MTK_BMA250E)   +=  bma250e/
-obj-y   +=  mc3410-new/
+obj-$(CONFIG_MTK_MC3410_NEW)   +=  mc3410-new/
 obj-$(CONFIG_MTK_MC3XXX_AUTO)   +=  mc3xxx_auto/
 obj-$(CONFIG_MTK_MPU60X0)   +=  mpu60x0/
 obj-$(CONFIG_MTK_BMA255_SDO0)   +=  bma255-sdo0/
@@ -36,4 +36,7 @@ obj-$(CONFIG_MTK_BMC156_ACC)   +=  bmc156_acc/
 obj-$(CONFIG_MTK_MMA8653)   +=  mma8653/
 obj-$(CONFIG_MTK_ACCEL_RT3000)   +=  rt3000/
 obj-$(CONFIG_MTK_LSM6DS3HG)   +=  lsm6ds3hg/
+#Lenovo-sw weimh1 add 2016-9-30 begin:use independent dir for bmi
+obj-$(CONFIG_MTK_BMI120_NEW)   +=  bmi120-new/
+#Lenovo-sw weimh1 add 2016-9-30 end
 endif

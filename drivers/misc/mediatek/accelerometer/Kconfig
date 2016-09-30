@@ -37,3 +37,6 @@ source "drivers/misc/mediatek/accelerometer/bmc156_acc/Kconfig"
 source "drivers/misc/mediatek/accelerometer/mma8653/Kconfig"
 source "drivers/misc/mediatek/accelerometer/KXTJ2_1009-new/Kconfig"
 source "drivers/misc/mediatek/accelerometer/rt3000/Kconfig"
+#Lenovo-sw weimh1 add 2016-9-30 begin:use independent dir for bmi
+source "drivers/misc/mediatek/accelerometer/bmi120-new/Kconfig"
+#Lenovo-sw weimh1 add 2016-9-30 end
