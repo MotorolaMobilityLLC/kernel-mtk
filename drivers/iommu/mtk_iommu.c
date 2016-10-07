@@ -54,7 +54,9 @@
 
 #define REG_MMU_CTRL_REG			0x110
 #define F_MMU_PREFETCH_RT_REPLACE_MOD		BIT(4)
+/* The TF-protect-select is bit[5:4] in mt2712 while it's bit[6:5] in mt8173.*/
 #define F_MMU_TF_PROTECT_SEL(prot)		(((prot) & 0x3) << 5)
+#define F_MMU_TF_PROT_SEL(prot)			(((prot) & 0x3) << 4)
 
 #define REG_MMU_IVRP_PADDR			0x114
 #define F_MMU_IVRP_PA_SET(pa, ext)		(((pa) >> 1) | ((!!(ext)) << 31))
@@ -103,6 +105,7 @@ struct mtk_iommu_domain {
 };
 
 static struct iommu_ops mtk_iommu_ops;
+static const struct of_device_id mtk_iommu_of_ids[];
 
 static struct mtk_iommu_domain *to_mtk_domain(struct iommu_domain *dom)
 {
@@ -486,8 +489,12 @@ static int mtk_iommu_hw_init(const struct mtk_iommu_data *data)
 		return ret;
 	}
 
-	regval = F_MMU_PREFETCH_RT_REPLACE_MOD |
-		F_MMU_TF_PROTECT_SEL(2);
+	if (data->match_type == m4u_mt8173) {
+		regval = F_MMU_PREFETCH_RT_REPLACE_MOD |
+			F_MMU_TF_PROTECT_SEL(2);
+	} else {
+		regval = F_MMU_TF_PROT_SEL(2);
+	}
 	writel_relaxed(regval, data->base + REG_MMU_CTRL_REG);
 
 	regval = F_L2_MULIT_HIT_EN |
@@ -531,6 +538,7 @@ static const struct component_master_ops mtk_iommu_com_ops = {
 
 static int mtk_iommu_probe(struct platform_device *pdev)
 {
+	const struct of_device_id        *of_id;
 	struct mtk_iommu_data   *data;
 	struct device           *dev = &pdev->dev;
 	struct resource         *res;
@@ -542,6 +550,9 @@ static int mtk_iommu_probe(struct platform_device *pdev)
 	if (!data)
 		return -ENOMEM;
 	data->dev = dev;
+
+	of_id = of_match_node(mtk_iommu_of_ids, dev->of_node);
+	data->match_type = (enum mtk_iommu_match_type)of_id->data;
 
 	/* Protect memory. HW will access here while translation fault.*/
 	protect = devm_kzalloc(dev, MTK_PROTECT_PA_ALIGN * 2, GFP_KERNEL);
@@ -574,6 +585,7 @@ static int mtk_iommu_probe(struct platform_device *pdev)
 	for (i = 0; i < larb_nr; i++) {
 		struct device_node *larbnode;
 		struct platform_device *plarbdev;
+		unsigned int idx;
 
 		larbnode = of_parse_phandle(dev->of_node, "mediatek,larbs", i);
 		if (!larbnode)
@@ -581,6 +593,11 @@ static int mtk_iommu_probe(struct platform_device *pdev)
 
 		if (!of_device_is_available(larbnode))
 			continue;
+
+		ret = of_property_read_u32(larbnode, "mediatek,larbidx", &idx);
+		/* The index is consecutive if there is no this property */
+		if (ret)
+			idx = i;
 
 		plarbdev = of_find_device_by_node(larbnode);
 		of_node_put(larbnode);
@@ -591,7 +608,7 @@ static int mtk_iommu_probe(struct platform_device *pdev)
 			if (!plarbdev)
 				return -EPROBE_DEFER;
 		}
-		data->smi_imu.larb_imu[i].dev = &plarbdev->dev;
+		data->smi_imu.larb_imu[idx].dev = &plarbdev->dev;
 
 		component_match_add(dev, &match, compare_of, larbnode);
 	}
@@ -661,7 +678,8 @@ const struct dev_pm_ops mtk_iommu_pm_ops = {
 };
 
 static const struct of_device_id mtk_iommu_of_ids[] = {
-	{ .compatible = "mediatek,mt8173-m4u", },
+	{ .compatible = "mediatek,mt8173-m4u", .data = (void *)m4u_mt8173},
+	{ .compatible = "mediatek,mt2712-m4u", .data = (void *)m4u_mt2712},
 	{}
 };
 
@@ -670,28 +688,34 @@ static struct platform_driver mtk_iommu_driver = {
 	.remove	= mtk_iommu_remove,
 	.driver	= {
 		.name = "mtk-iommu",
-		.of_match_table = mtk_iommu_of_ids,
+		.of_match_table = of_match_ptr(mtk_iommu_of_ids),
 		.pm = &mtk_iommu_pm_ops,
 	}
 };
 
 static int mtk_iommu_init_fn(struct device_node *np)
 {
+	static bool init_done;
 	int ret;
 	struct platform_device *pdev;
 
-	pdev = of_platform_device_create(np, NULL, platform_bus_type.dev_root);
-	if (!pdev)
-		return -ENOMEM;
+	if (!init_done) {
+		pdev = of_platform_device_create(np, NULL,
+						 platform_bus_type.dev_root);
+		if (!pdev)
+			return -ENOMEM;
 
-	ret = platform_driver_register(&mtk_iommu_driver);
-	if (ret) {
-		pr_err("%s: Failed to register driver\n", __func__);
-		return ret;
+		ret = platform_driver_register(&mtk_iommu_driver);
+		if (ret) {
+			pr_err("%s: Failed to register driver\n", __func__);
+			return ret;
+		}
+		init_done = true;
 	}
 
 	of_iommu_set_ops(np, &mtk_iommu_ops);
 	return 0;
 }
 
-IOMMU_OF_DECLARE(mtkm4u, "mediatek,mt8173-m4u", mtk_iommu_init_fn);
+IOMMU_OF_DECLARE(mt8173m4u, "mediatek,mt8173-m4u", mtk_iommu_init_fn);
+IOMMU_OF_DECLARE(mt2712m4u, "mediatek,mt2712-m4u", mtk_iommu_init_fn);
