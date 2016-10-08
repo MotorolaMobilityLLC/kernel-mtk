@@ -551,6 +551,8 @@ void sm5414_otg_enable(unsigned int enable)
     else
     {   
         sm5414_set_enboost(ENBOOST_DIS);
+	sm5414_gpio_output(0,1);
+        sm5414_gpio_output(1,0);
     }
 }
 void sm5414_hw_component_detect(void)
