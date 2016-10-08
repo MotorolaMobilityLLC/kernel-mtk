@@ -282,6 +282,7 @@ extern u32 sysctl_tcp_rto_max;
 extern atomic_long_t tcp_memory_allocated;
 extern struct percpu_counter tcp_sockets_allocated;
 extern int tcp_memory_pressure;
+extern int sysctl_tcp_ack_number;
 
 /*
  * The next routines deal with comparing 32 bit unsigned ints
