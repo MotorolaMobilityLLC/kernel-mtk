@@ -1489,11 +1489,11 @@
 			reg-names = "ssusb_base", "ssusb_sif", "ssusb_sif2";
 			interrupts = <GIC_SPI 123 IRQ_TYPE_LEVEL_LOW>;
 			interrupt-names = "xhci";
-			eint_usb_iddig@144 {
+			eint_usb_iddig@23 {
 				compatible = "mediatek,usb_iddig_bi_eint";
 				interrupt-parent = <&eintc>;
-				interrupts = <144 IRQ_TYPE_LEVEL_LOW>;
-				debounce = <144 0>;
+				interrupts = <23 IRQ_TYPE_LEVEL_LOW>;
+				debounce = <23 0>;
 			};
 		};
 

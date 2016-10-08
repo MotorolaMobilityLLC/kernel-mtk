@@ -23,6 +23,17 @@ config USB_C_SWITCH_FUSB302
           And support DRP, aka UFP and DFP mode.
           If unsure, say N.
 
+config USB_C_SWITCH_FUSB301A
+	bool "Lenovo USB TYPE-C Driver with external solution (FUSB301A)"
+	default n
+	select USB_C_SWITCH
+	---help---
+	  Enable to support usb-c.
+          usb-c is supported by fusb301a.
+          Only supports CC detect, without PD.
+          And support DRP, aka UFP and DFP mode.
+          If unsure, say N.
+
 config USB_C_SWITCH_SII70XX
 	bool "MediaTek USB TYPE-C Driver with external solution (sii70xx)"
 	default n
