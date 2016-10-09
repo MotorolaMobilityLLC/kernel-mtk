@@ -226,6 +226,12 @@ config MTK_SENSOR_BIO
 	  architecture, BIO means boost io transfer data
 	  between kernel space and user space.
 
+config MTK_NXP_TFA9890
+    bool "MTK_NXP_TFA9890"
+	default n
+	help
+        If you say Y, enable MTK_NXP_TFA9890 driver.
+
 if !MTK_SENSOR_BIO
 source "drivers/misc/mediatek/accelerometer/Kconfig"
 source "drivers/misc/mediatek/activity_sensor/Kconfig"
@@ -411,6 +417,7 @@ source "drivers/misc/mediatek/vow/Kconfig"
 source "drivers/misc/mediatek/watchpoint/Kconfig"
 source "drivers/misc/mediatek/rt-regmap/Kconfig"
 source "drivers/misc/mediatek/pd/Kconfig"
+source "drivers/misc/mediatek/smartpa/Kconfig"
 
 endmenu    # Misc
 

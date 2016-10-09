@@ -40,14 +40,15 @@
  * configuration
 *******************************************************************************/
 #define TS3A225E_DEV_NAME     "TS3A225E"
+#define TS3A225E_I2C_CHANNEL  (1)
 
-static struct i2c_client *ts3a225e_i2c_client;
-static const struct i2c_device_id ts3a225e_i2c_id[] = { {"TS3A225E", 0}, {} };
-static struct i2c_board_info i2c_TS3A225E __initdata = { I2C_BOARD_INFO("TS3A225E", (0X76 >> 1)) };
+struct i2c_client *ts3a225e_i2c_client;
+static const struct i2c_device_id ts3a225e_i2c_id[] = { {TS3A225E_DEV_NAME, 0}, {} };
+static struct i2c_board_info i2c_TS3A225E __initdata = { I2C_BOARD_INFO(TS3A225E_DEV_NAME, (0X76 >> 1)) };
 
 static int ts3a225e_i2c_probe(struct i2c_client *client, const struct i2c_device_id *id)
 {
-	unsigned char devicve_id[1];
+	unsigned char devicve_id[1] = {0};
 
 	pr_warn("ts3a225e_i2c_probe\n");
 
@@ -57,6 +58,35 @@ static int ts3a225e_i2c_probe(struct i2c_client *client, const struct i2c_device
 	pr_warn("ts3a225e_i2c_probe ID=%x\n", devicve_id[0]);
 
 	return 0;
+}
+
+int ts3a225e_i2c_add_device(struct i2c_board_info *info)
+{
+	struct i2c_adapter *adapter;
+	struct i2c_client *client;
+	int err;
+
+	adapter = i2c_get_adapter(TS3A225E_I2C_CHANNEL);
+	if (!adapter) {
+		printk("ts3a225e %s: can't get i2c adapter\n", __FUNCTION__);
+		err = -ENODEV;
+		goto i2c_err;
+	}
+
+	client = i2c_new_device(adapter, info);
+	if (!client) {
+		pr_err("ts3a225e %s:  can't add i2c device at 0x%x\n",
+			__FUNCTION__, (unsigned int)info->addr);
+		err = -ENODEV;
+		goto i2c_err;
+	}
+
+	i2c_put_adapter(adapter);
+
+	return 0;
+
+i2c_err:
+	return err;
 }
 
 static int ts3a225e_i2c_remove(struct i2c_client *client)
@@ -82,6 +112,11 @@ static int ts3a225e_i2c_resume(struct i2c_client *client)
 	return 0;
 }
 
+static const struct of_device_id ts3a225e_of_match[] = {
+	{.compatible = "mediatek,ts3a225e"},
+	{},
+};
+
 static struct i2c_driver ts3a225e_i2c_driver = {
 	.probe = ts3a225e_i2c_probe,
 	.remove = ts3a225e_i2c_remove,
@@ -89,8 +124,9 @@ static struct i2c_driver ts3a225e_i2c_driver = {
 	.resume = ts3a225e_i2c_resume,
 	.id_table = ts3a225e_i2c_id,
 	.driver = {
-		   .name = TS3A225E_DEV_NAME,
-		   },
+		.name = TS3A225E_DEV_NAME,
+		.of_match_table = ts3a225e_of_match,
+	},
 };
 
 static DEFINE_MUTEX(ts3a225e_i2c_access);
@@ -197,8 +233,7 @@ static int __init ts3a225e_init(void)
 {
 	pr_warn("ts3a225e_init\n");
 
-	i2c_register_board_info(3, &i2c_TS3A225E, 1);
-
+	ts3a225e_i2c_add_device(&i2c_TS3A225E);
 	if (platform_driver_register(&ts3a225e_audio_switch_driver)) {
 		pr_err("ts3a225e failed to register driver");
 		return -ENODEV;

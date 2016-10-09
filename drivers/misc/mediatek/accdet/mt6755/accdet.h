@@ -57,6 +57,10 @@ IOCTL
 #define SET_CALL_STATE _IO(ACCDET_IOC_MAGIC, 1)
 #define GET_BUTTON_STATUS _IO(ACCDET_IOC_MAGIC, 2)
 
+#ifdef CONFIG_TS3A225E_ACCDET
+#define ACCDET_TS3A225E_PIN_SWAP
+#endif
+
 /*define for phone call state*/
 
 #define CALL_IDLE 0

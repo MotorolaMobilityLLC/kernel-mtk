@@ -1,20 +1,18 @@
 /*
-* Copyright (C) 2015 MediaTek Inc.
-*
-* This program is free software: you can redistribute it and/or modify
-* it under the terms of the GNU General Public License version 2 as
-* published by the Free Software Foundation.
-*
-* This program is distributed in the hope that it will be useful,
-* but WITHOUT ANY WARRANTY; without even the implied warranty of
-* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-* GNU General Public License for more details.
-*
-* You should have received a copy of the GNU General Public License
-* along with this program.
-* If not, see <http://www.gnu.org/licenses/>.
-*/
-
+ * Copyright (C) 2007 The Android Open Source Project
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 /*******************************************************************************
  *
  * Filename:
@@ -50,7 +48,7 @@
 #include "AudDrv_NXP.h"
 #include <linux/gpio.h>
 
-#define TFA_I2C_CHANNEL     (3)
+#define TFA_I2C_CHANNEL     (4)
 
 #ifdef CONFIG_MTK_NXP_TFA9890
 #define ECODEC_SLAVE_ADDR_WRITE 0x68
@@ -79,18 +77,20 @@
 *******************************************************************************/
 
 /* I2C variable */
-static struct i2c_client *new_client;
+static struct i2c_client *new_client = NULL;
 static char WriteBuffer[RW_BUFFER_LENGTH];
 static char ReadBuffer[RW_BUFFER_LENGTH];
 
-static void *TfaI2CDMABuf_va;
+static u8 *TfaI2CDMABuf_va = NULL;
+#ifdef CONFIG_ARM64
 static dma_addr_t TfaI2CDMABuf_pa;
-
-static int AudDrv_nxpspk_open(struct inode *inode, struct file *fp);
+#else
+static u64 TfaI2CDMABuf_pa;
 static long AudDrv_nxpspk_ioctl(struct file *fp, unsigned int cmd, unsigned long arg);
 static ssize_t AudDrv_nxpspk_read(struct file *fp,	char __user *data, size_t count, loff_t *offset);
 static ssize_t AudDrv_nxpspk_write(struct file *fp, const char __user *data, size_t count, loff_t *offset);
-
+#endif
+/*
 static const struct file_operations AudDrv_nxpspk_fops = {
 	.owner   = THIS_MODULE,
 	.open    = AudDrv_nxpspk_open,
@@ -98,9 +98,9 @@ static const struct file_operations AudDrv_nxpspk_fops = {
 	.write   = AudDrv_nxpspk_write,
 	.read    = AudDrv_nxpspk_read,
 };
+*/
 
-
-#ifdef CONFIG_OF
+/*
 static unsigned int pin_ext_dac_rst, pin_ext_hp_en, pin_nxpspk_lrck, pin_nxpspk_bck, pin_nxpspk_datai, pin_nxpspk_datao;
 static unsigned int pin_ext_dac_rst_mode, pin_ext_hp_en_mode, pin_nxpspk_lrck_mode;
 static unsigned int pin_nxpspk_bck_mode, pin_nxpspk_datai_mode, pin_nxpspk_datao_mode;
@@ -166,21 +166,22 @@ static int smartpa_parse_gpio(void)
 	pr_debug("-%s\n", __func__);
 	return 0;
 }
+*/
 
-#endif
 
 
 /* new I2C register method */
-const struct i2c_device_id nxpExt_i2c_id[] = { {NXPEXTSPK_I2C_DEVNAME, 0}, {} };
-struct i2c_board_info __initdata nxpExt_dev = { I2C_BOARD_INFO(NXPEXTSPK_I2C_DEVNAME, 0x36) };
+static const struct i2c_device_id nxpExt_i2c_id[] = { {NXPEXTSPK_I2C_DEVNAME, 0}, {} };
+static struct i2c_board_info __initdata  nxpExt_dev ={ I2C_BOARD_INFO(NXPEXTSPK_I2C_DEVNAME, 0x34) };//chengx2
 
 /* function declration */
 static int NXPExtSpk_i2c_probe(struct i2c_client *client, const struct i2c_device_id *id);
 static int NXPExtSpk_i2c_remove(struct i2c_client *client);
-static int AudDrv_NXPSpk_Init(void);
-static bool NXPExtSpk_Register(void);
-static int NXPExtSpk_registerI2C(void);
-
+void AudDrv_NXPSpk_Init(void);
+bool NXPExtSpk_Register(void);
+static int NXPExtSpk_register(void);
+ssize_t NXPSpk_read_byte(u8 addr, u16 *returnData);
+ssize_t NXPExt_write_byte(u8 addr, u8 writeData);
 static int NXPExtSpk_i2c_detect(struct i2c_client *client, struct i2c_board_info *info)
 {
 	strcpy(info->type, NXPEXTSPK_I2C_DEVNAME);
@@ -196,7 +197,13 @@ static int NXPExtSpk_i2c_resume(struct i2c_client *client)
 {
 	return 0;
 }
-
+#ifdef CONFIG_OF
+static const struct of_device_id mtk_i2c_smart_pa_of_ids[] =
+{
+    { .compatible = "mediatek,smart_pa", },
+    {}
+};
+#endif
 /* i2c driver */
 static struct i2c_driver NXPExtSpk_i2c_driver = {
 	.probe = NXPExtSpk_i2c_probe,
@@ -207,18 +214,24 @@ static struct i2c_driver NXPExtSpk_i2c_driver = {
 	.id_table = nxpExt_i2c_id,
 	.driver = {
 		.name = NXPEXTSPK_I2C_DEVNAME,
-	},
+#ifdef CONFIG_OF
+    .of_match_table = mtk_i2c_smart_pa_of_ids,
+#endif
+    },
 };
 
 
 static int NXPExtSpk_i2c_probe(struct i2c_client *client, const struct i2c_device_id *id)
 {
-	new_client = client;
-	new_client->timing = 400;
+    int rev_value = 0;
+    int read_id = 0;
+    new_client = client;
+    new_client->timing = 400;
 
-	pr_debug("NXPExtSpk_i2c_probe\n");
+    printk("NXPExtSpk_i2c_probe \n");
 
 #ifdef CONFIG_MTK_NXP_TFA9890
+    #if 0
 	mt_set_gpio_mode(GPIO_AUD_EXTDAC_RST_PIN/*GPIO130*/, GPIO_MODE_00);
 	mt_set_gpio_out(GPIO_AUD_EXTDAC_RST_PIN/*GPIO130*/, GPIO_OUT_ZERO);
 	usleep_range(2);
@@ -226,101 +239,153 @@ static int NXPExtSpk_i2c_probe(struct i2c_client *client, const struct i2c_devic
 	usleep_range(2);
 	mt_set_gpio_out(GPIO_AUD_EXTDAC_RST_PIN/*GPIO130*/, GPIO_OUT_ZERO);
 	usleep_range(10);
+    #endif //chengx2
 #endif
+#ifdef CONFIG_ARM64
+		TfaI2CDMABuf_va = (u8 *)dma_alloc_coherent(&(client->dev), 4096, &TfaI2CDMABuf_pa, GFP_KERNEL);
+			if(!TfaI2CDMABuf_va)
+			{
+				NXP_ERROR("dma_alloc_coherent error\n");
+				NXP_INFO("i2c_probe failed\n");
+				return -1;
+			}
+#else
+			TfaI2CDMABuf_va = (u8 *)dma_alloc_coherent(NULL, 4096, &TfaI2CDMABuf_pa, GFP_KERNEL);
+			if(!TfaI2CDMABuf_va)
+			{
+				NXP_ERROR("dma_alloc_coherent error\n");
+				NXP_INFO("i2c_probe failed\n");
+				return -1;
+			}
+#endif
+		read_id = i2c_smbus_read_word_data(client, 0x03);
 
-	TfaI2CDMABuf_va = dma_alloc_coherent(NULL, 4096, &TfaI2CDMABuf_pa, GFP_KERNEL);
-	if (TfaI2CDMABuf_va == NULL) {
-		NXP_ERROR("dma_alloc_coherent error\n");
-		NXP_INFO("i2c_probe failed\n");
-		return -1;
-	}
+		rev_value = ((read_id & 0x00FF)<< 8) | ((read_id & 0xFF00)>> 8);
+
+	rev_value = rev_value & 0xFFFF;
+
+
+	printk("tfa98xx_i2c_probe:rev_value=0x%x\n", rev_value);
+
+
+	printk("tfa98xx_i2c_probe success\n");
 	NXP_INFO("i2c_probe success\n");
 	return 0;
 }
 
 static int NXPExtSpk_i2c_remove(struct i2c_client *client)
 {
-	new_client = NULL;
-	i2c_unregister_device(client);
-	i2c_del_driver(&NXPExtSpk_i2c_driver);
-	if (TfaI2CDMABuf_va != NULL) {
+    new_client = NULL;
+    i2c_unregister_device(client);
+    i2c_del_driver(&NXPExtSpk_i2c_driver);
+	if(TfaI2CDMABuf_va)
+	{
+#ifdef CONFIG_ARM64
+		dma_free_coherent(&(client->dev), 4096, TfaI2CDMABuf_va, TfaI2CDMABuf_pa);
+		TfaI2CDMABuf_va = NULL;
+		TfaI2CDMABuf_pa = 0;
+#else
 		dma_free_coherent(NULL, 4096, TfaI2CDMABuf_va, TfaI2CDMABuf_pa);
 		TfaI2CDMABuf_va = NULL;
 		TfaI2CDMABuf_pa = 0;
-	}
-	usleep_range(1);
-#ifdef CONFIG_MTK_NXP_TFA9890
-	mt_set_gpio_mode(GPIO_AUD_EXTHP_EN_PIN, GPIO_MODE_00);
-	mt_set_gpio_dir(GPIO_AUD_EXTHP_EN_PIN, GPIO_DIR_OUT);
-	mt_set_gpio_out(GPIO_AUD_EXTHP_EN_PIN, GPIO_OUT_ZERO);
 #endif
+	}
+    msleep(1);
+    return 0;
+}
+//chengx2 start
+int tfa_i2c_add_device(struct i2c_board_info *info)
+{
+	struct i2c_adapter *adapter;
+	struct i2c_client *client;
+	int err;
+
+	adapter = i2c_get_adapter(TFA_I2C_CHANNEL);
+	if (!adapter) {
+		printk("tfa98xx %s: can't get i2c adapter\n", __FUNCTION__);
+		err = -ENODEV;
+		goto i2c_err;
+	}
+
+	client = i2c_new_device(adapter, info);
+	if (!client) {
+		pr_err("tfa98xx %s:  can't add i2c device at 0x%x\n",
+			__FUNCTION__, (unsigned int)info->addr);
+		err = -ENODEV;
+		goto i2c_err;
+	}
+
+	i2c_put_adapter(adapter);
+
 	return 0;
+
+i2c_err:
+	return err;
 }
 
 /* read write implementation */
 /* read one register */
-/*
-ssize_t NXPSpk_read_byte(u8 addr, u8 *returnData)
+ssize_t NXPSpk_read_byte(u8 addr, u16 *returnData)
 {
-	char cmd_buf[1] = { 0x00 };
-	char readData = 0;
+	char cmd_buf = addr;
+	char readData[2] = {0};
 	int ret = 0;
-
-	cmd_buf[0] = addr;
-	if (!new_client) {
-		pr_debug("NXPSpk_read_byte I2C client not initialized!!");
+	if (!new_client)
+	{
+		printk("NXPSpk_read_byte I2C client not initialized!!");
 		return -1;
 	}
-	ret = i2c_master_send(new_client, &cmd_buf[0], 1);
-	if (ret < 0) {
-		pr_debug("NXPSpk_read_byte read sends command error!!\n");
+	ret = i2c_master_send(new_client, &cmd_buf, 1);
+	if (ret < 0)
+	{
+		printk("NXPSpk_read_byte read sends command error!!\n");
 		return -1;
 	}
-	ret = i2c_master_recv(new_client, &readData, 1);
-	if (ret < 0) {
-		pr_debug("NXPSpk_read_byte reads recv data error!!\n");
+	ret = i2c_master_recv(new_client, readData, 2);
+	printk("wuzhipeng ret = %d, %d,%d\n",ret,readData[0],readData[1]);
+	if (ret < 0)
+	{
+		printk("NXPSpk_read_byte reads recv data error!!\n");
 		return -1;
 	}
-	*returnData = readData;
+	*returnData = (readData[0]<<8) | readData[1];
+	/* printk("addr 0x%x data 0x%x\n", addr, readData); */
 	return 0;
 }
-*/
 
 /* write register */
 ssize_t NXPExt_write_byte(u8 addr, u8 writeData)
 {
 	char write_data[2] = { 0 };
 	int ret = 0;
-
-	if (new_client == NULL) {
-		pr_debug("I2C client not initialized!!");
+	if (!new_client)
+	{
+		printk("I2C client not initialized!!");
 		return -1;
 	}
 	write_data[0] = addr;   /* ex. 0x01 */
 	write_data[1] = writeData;
 	ret = i2c_master_send(new_client, write_data, 2);
-	if (ret < 0) {
-		pr_debug("write sends command error!!");
+	if (ret < 0)
+	{
+		printk("write sends command error!!");
 		return -1;
 	}
-	/* pr_debug("addr 0x%x data 0x%x\n", addr, writeData); */
+	/* printk("addr 0x%x data 0x%x\n", addr, writeData); */
 	return 0;
 }
 
-static int NXPExtSpk_registerI2C(void)
+
+static int NXPExtSpk_register()
 {
-	pr_debug("NXPExtSpk_registerI2C\n");
-
-#ifdef CONFIG_MTK_NXP_TFA9890
-	mt_set_gpio_mode(GPIO_AUD_EXTHP_EN_PIN, GPIO_MODE_00);
-	mt_set_gpio_dir(GPIO_AUD_EXTHP_EN_PIN, GPIO_DIR_OUT);
-	mt_set_gpio_out(GPIO_AUD_EXTHP_EN_PIN, GPIO_OUT_ONE);
-	usleep_range(1);
-#endif
-
-	i2c_register_board_info(TFA_I2C_CHANNEL, &nxpExt_dev, 1);
-	if (i2c_add_driver(&NXPExtSpk_i2c_driver)) {
-		pr_debug("fail to add device into i2c");
+   int retreg = 0;
+	printk("NXPExtSpk_register \n");
+	tfa_i2c_add_device(&nxpExt_dev);//chengx2
+   // retreg = i2c_register_board_info(TFA_I2C_CHANNEL, &nxpExt_dev, 1);//chengx2
+	printk("i2c_register_board_info:%d",retreg);
+	if (i2c_add_driver(&NXPExtSpk_i2c_driver))
+	{
+		printk("fail to add device into i2c");
 		return -1;
 	}
 	return 0;
@@ -329,19 +394,17 @@ static int NXPExtSpk_registerI2C(void)
 
 bool NXPExtSpk_Register(void)
 {
-	pr_debug("NXPExtSpk_Register\n");
-	NXPExtSpk_registerI2C();
+	printk("NXPExtSpk_Register \n");
+	NXPExtSpk_register();
 	return true;
 }
 
-int  AudDrv_NXPSpk_Init(void)
+void AudDrv_NXPSpk_Init(void)
 {
-	pr_debug("Set GPIO for AFE I2S output to external DAC\n");
-	mt_set_gpio_mode(smart_set_gpio(pin_nxpspk_lrck) , pin_nxpspk_lrck_mode);
-	mt_set_gpio_mode(smart_set_gpio(pin_nxpspk_bck), pin_nxpspk_bck_mode);
-	mt_set_gpio_mode(smart_set_gpio(pin_nxpspk_datai), pin_nxpspk_datai_mode);
-	mt_set_gpio_mode(smart_set_gpio(pin_nxpspk_datao), pin_nxpspk_datao_mode);
-	return  0;
+	printk("Set GPIO for AFE I2S output to external DAC \n");
+	// pinctrl_select_state(spactrl, spa_nxplrck_mode);
+	// pinctrl_select_state(spactrl, spa_nxpdatai_mode);
+	// pinctrl_select_state(spactrl, spa_nxpbck_mode);
 }
 
 /*****************************************************************************
@@ -355,34 +418,39 @@ int  AudDrv_NXPSpk_Init(void)
  */
 static long AudDrv_nxpspk_ioctl(struct file *fp, unsigned int cmd, unsigned long arg)
 {
-	int ret = 0;
+    int ret = 0;
 
-	switch (cmd) {
-	default: {
-		ret = -1;
-		break;
-	}
-	}
-	return ret;
+    /* printk("AudDrv_nxpspk_ioctl cmd = 0x%x arg = %lu\n", cmd, arg); */
+
+    switch (cmd)
+    {
+        default:
+        {
+            /* printk("AudDrv_nxpspk_ioctl Fail command: %x\n", cmd); */
+            ret = 0;
+            break;
+        }
+    }
+    return ret;
 }
 
 static int AudDrv_nxpspk_probe(struct platform_device *dev)
 {
-	int ret = 0;
+    int ret = 0;
+    printk("AudDrv_nxpspk_probe \n");
 
-	pr_debug("AudDrv_nxpspk_probe\n");
-	if (ret < 0)
-		pr_debug("AudDrv_nxpspk_probe request_irq MT6582_AP_BT_CVSD_IRQ_LINE Fail\n");
+    if (ret < 0)
+    {
+        printk("AudDrv_nxpspk_probe request_irq MT6582_AP_BT_CVSD_IRQ_LINE Fail \n");
+    }
+    NXPExtSpk_Register();
+   // mtksmartpa_gpio_init(dev);
+    AudDrv_NXPSpk_Init();
+    memset((void *)WriteBuffer, 0, RW_BUFFER_LENGTH);
+    memset((void *)ReadBuffer, 0, RW_BUFFER_LENGTH);
 
-	smartpa_parse_gpio();
-	NXPExtSpk_Register();
-	AudDrv_NXPSpk_Init();
-
-	memset((void *)WriteBuffer, 0, RW_BUFFER_LENGTH);
-	memset((void *)ReadBuffer, 0, RW_BUFFER_LENGTH);
-
-	pr_debug("-AudDrv_nxpspk_probe\n");
-	return 0;
+    printk("-AudDrv_nxpspk_probe \n");
+    return 0;
 }
 
 static int AudDrv_nxpspk_open(struct inode *inode, struct file *fp)
@@ -398,16 +466,22 @@ static int nxp_i2c_master_send(const struct i2c_client *client, const char *buf,
 
 	msg.timing = I2C_MASTER_CLOCK;
 
-	if (count <= 8)
-		msg.addr = client->addr & I2C_MASK_FLAG;
+	if(count <= 8)
+	{
+		msg.addr = ((client->addr & I2C_MASK_FLAG) | (I2C_ENEXT_FLAG));
+		msg.ext_flag = client->ext_flag;
+	}
 	else
-		msg.addr = client->addr & (I2C_MASK_FLAG|I2C_DMA_FLAG);
+	{
+		msg.addr = (client->addr & I2C_MASK_FLAG);
+		msg.ext_flag = (client->ext_flag | I2C_ENEXT_FLAG | I2C_DMA_FLAG);
+	}
 
-	msg.flags = client->flags & I2C_M_TEN;
+	msg.flags = 0;
 
 	msg.len = count;
 	msg.buf = (char *)buf;
-	msg.ext_flag = client->ext_flag;
+
 	ret = i2c_transfer(adap, &msg, 1);
 
 	/*
@@ -424,16 +498,21 @@ static int nxp_i2c_master_recv(const struct i2c_client *client, char *buf, int c
 	int ret;
 
 	msg.timing = I2C_MASTER_CLOCK;
-	msg.flags = client->flags & I2C_M_TEN;
+	msg.flags = 0;
 	msg.flags |= I2C_M_RD;
 	msg.len = count;
-	msg.ext_flag = client->ext_flag;
 	msg.buf = (char *)buf;
 
-	if (count <= 8)
-		msg.addr = client->addr & I2C_MASK_FLAG;
+	if(count <= 8)
+	{
+		msg.addr = ((client->addr & I2C_MASK_FLAG) | (I2C_ENEXT_FLAG));
+		msg.ext_flag = client->ext_flag;
+	}
 	else
-		msg.addr = client->addr & (I2C_MASK_FLAG|I2C_DMA_FLAG);
+	{
+		msg.addr = (client->addr & I2C_MASK_FLAG);
+		msg.ext_flag = (client->ext_flag | I2C_ENEXT_FLAG | I2C_DMA_FLAG);
+	}
 
 	ret = i2c_transfer(adap, &msg, 1);
 
@@ -450,7 +529,9 @@ static ssize_t AudDrv_nxpspk_write(struct file *fp, const char __user *data, siz
 	int i = 0;
 	int ret;
 	char *tmp;
-	char *TfaI2CDMABuf = (char *)TfaI2CDMABuf_va;
+          printk("AudDrv_nxpspk_write++\n");
+	//if (count > 8192)
+	//	count = 8192;
 
 	tmp = kmalloc(count, GFP_KERNEL);
 	if (tmp == NULL)
@@ -461,15 +542,23 @@ static ssize_t AudDrv_nxpspk_write(struct file *fp, const char __user *data, siz
 	}
 
 
-	for (i = 0;  i < count; i++)
-		TfaI2CDMABuf[i] = tmp[i];
+	for(i = 0;  i < count; i++)
+	{
+		TfaI2CDMABuf_va[i] = tmp[i];
+	}
 
-	if (count <= 8)
-		ret = nxp_i2c_master_send(new_client, tmp, count);
+	if(count <= 8)
+	{
+	    ///new_client->addr = new_client->addr & I2C_MASK_FLAG;  //cruson
+		ret = nxp_i2c_master_send(new_client,tmp,count);
+	}
 	else
-		ret = nxp_i2c_master_send(new_client, (char *)TfaI2CDMABuf_pa, count);
-
+	{
+	    //new_client->addr = new_client->addr & I2C_MASK_FLAG | I2C_DMA_FLAG |I2C_ENEXT_FLAG;  //cruson
+		ret = nxp_i2c_master_send(new_client, (u8 *)TfaI2CDMABuf_pa, count);
+	}
 	kfree(tmp);
+	  printk("AudDrv_nxpspk_write-- \n");
 	return ret;
 }
 
@@ -477,8 +566,7 @@ static ssize_t AudDrv_nxpspk_read(struct file *fp,  char __user *data, size_t co
 {
 	int i = 0;
 	char *tmp;
-	char *TfaI2CDMABuf = (char *)TfaI2CDMABuf_va;
-	int ret = 0;
+	int ret;
 
 	if (count > 8192)
 		count = 8192;
@@ -487,12 +575,21 @@ static ssize_t AudDrv_nxpspk_read(struct file *fp,  char __user *data, size_t co
 	if (tmp == NULL)
 		return -ENOMEM;
 
-	if (count <= 8)
-		ret = nxp_i2c_master_recv(new_client, tmp, count);
-	else {
-		ret = nxp_i2c_master_recv(new_client, (char *)TfaI2CDMABuf_pa, count);
-		for (i = 0; i < count; i++)
-			tmp[i] = TfaI2CDMABuf[i];
+	//NXP_INFO("i2c-dev: i2c-%d reading %zu bytes.\n", iminor(file->f_path.dentry->d_inode), count);
+
+	if(count <= 8)
+	{
+	    //new_client->addr = new_client->addr & I2C_MASK_FLAG;  //cruson
+		ret = nxp_i2c_master_recv(new_client,tmp,count);
+	}
+	else
+	{
+	    //new_client->addr = new_client->addr & I2C_MASK_FLAG | I2C_DMA_FLAG |I2C_ENEXT_FLAG;  //cruson
+		ret = nxp_i2c_master_recv(new_client,(u8 *)TfaI2CDMABuf_pa,count);
+		for(i = 0; i < count; i++)
+		{
+			tmp[i] = TfaI2CDMABuf_va[i];
+		}
 	}
 
 	if (ret >= 0)
@@ -507,6 +604,15 @@ static ssize_t AudDrv_nxpspk_read(struct file *fp,  char __user *data, size_t co
  *  File Operations and misc device
  *
  **************************************************************************/
+
+static struct file_operations AudDrv_nxpspk_fops =
+{
+    .owner   = THIS_MODULE,
+    .open    = AudDrv_nxpspk_open,
+    .unlocked_ioctl   = AudDrv_nxpspk_ioctl,
+    .write   = AudDrv_nxpspk_write,
+    .read    = AudDrv_nxpspk_read,
+};
 
 #ifdef CONFIG_MTK_NXP_TFA9890
 static struct miscdevice AudDrv_nxpspk_device = {
@@ -587,15 +693,15 @@ int AudDrv_nxpspk_mod_init(void)
 		return ret;
 	}
 
-	pr_debug("-AudDrv_nxpspk_mod_init\n");
-	return 0;
+    printk("-AudDrv_nxpspk_mod_init\n");
+    return 0;
 }
 
-void AudDrv_nxpspk_mod_exit(void)
+static void AudDrv_nxpspk_mod_exit(void)
 {
-	pr_debug("+AudDrv_nxpspk_mod_exit\n");
+    printk("+AudDrv_nxpspk_mod_exit\n");
 
-	pr_debug("-AudDrv_nxpspk_mod_exit\n");
+    printk("-AudDrv_nxpspk_mod_exit\n");
 }
 
 MODULE_LICENSE("GPL");
