@@ -142,6 +142,11 @@ DECLARE_WAIT_QUEUE_HEAD(decouple_trigger_wq);
 wait_queue_head_t primary_display_present_fence_wq;
 atomic_t primary_display_present_fence_update_event = ATOMIC_INIT(0);
 static unsigned int _need_lfr_check(void);
+//lenovo-sw wuwl10 20161010 add for lcm hbm func begin
+#ifdef CONFIG_LENOVO_PANELMODE_SUPPORT
+atomic_t primary_display_hbm_backlight = ATOMIC_INIT(0);
+#endif
+//lenovo-sw wuwl10 20161010 add for lcm hbm func end
 
 /* dvfs */
 static atomic_t dvfs_ovl_req_status = ATOMIC_INIT(OPPI_UNREQ);
@@ -3649,6 +3654,11 @@ int primary_display_suspend(void)
 	MMProfileLogEx(ddp_mmp_get_events()->primary_suspend, MMProfileFlagPulse, 0, 5);
 
 	DISPDBG("[POWER]lcm suspend[begin]\n");
+//lenovo wuwl10 20161010 add CUSTOM_LCM_FEATURE end
+#ifdef CONFIG_LENOVO_PANELMODE_SUPPORT
+	//wuwl10 add, we need to update the hbm status so that backlight can work when resume
+	atomic_set(&primary_display_hbm_backlight, 0);
+#endif
 	disp_lcm_suspend(pgc->plcm);
 	DISPMSG("[POWER]lcm suspend[end]\n");
 	MMProfileLogEx(ddp_mmp_get_events()->primary_suspend, MMProfileFlagPulse, 0, 6);
@@ -5518,7 +5528,19 @@ int primary_display_setbacklight(unsigned int level)
 			if (primary_display_is_video_mode()) {
 				MMProfileLogEx(ddp_mmp_get_events()->primary_set_bl,
 					       MMProfileFlagPulse, 0, 7);
+//lenovo-sw wuwl10 20161010 add for lcm hbm func begin
+#ifdef CONFIG_LENOVO_PANELMODE_SUPPORT
+				//wuwl10 modify, backlight level 0 should be set even through in hbm mode to disable backlight
+				if (level && atomic_read(&primary_display_hbm_backlight)){
+					DISPMSG("set lcm backlight full due to hbm mode\n");
+					disp_lcm_set_backlight(pgc->plcm, NULL, 255);//can we set it 255 directly
+				} else {
+					disp_lcm_set_backlight(pgc->plcm, NULL,(level * 8 + 2)/10);
+				}
+#else
 				disp_lcm_set_backlight(pgc->plcm, NULL, level);
+#endif
+//lenovo-sw wuwl10 20161010 add for lcm hbm func end
 			} else {
 				_set_backlight_by_cmdq(level);
 			}
@@ -5535,6 +5557,109 @@ int primary_display_setbacklight(unsigned int level)
 	MMProfileLogEx(ddp_mmp_get_events()->primary_set_bl, MMProfileFlagEnd, 0, 0);
 	return ret;
 }
+//lenovo wuwl10 20160401 add CUSTOM_LCM_FEATURE begin
+#ifdef CONFIG_LENOVO_PANELMODE_SUPPORT
+int primary_display_setcabc(unsigned int mode)
+{
+	int ret = 0;
+
+	DISPFUNC();
+
+	if (disp_helper_get_stage() != DISP_HELPER_STAGE_NORMAL) {
+		DISPMSG("%s skip due to stage %s\n", __func__, disp_helper_stage_spy());
+		return 0;
+	}
+
+	MMProfileLogEx(ddp_mmp_get_events()->primary_set_bl, MMProfileFlagStart, 0, 0);
+
+//#ifndef CONFIG_MTK_AAL_SUPPORT
+	_primary_path_switch_dst_lock();
+	_primary_path_lock(__func__);
+//#endif
+
+	if (pgc->state == DISP_SLEPT) {
+		DISPERR("Sleep State set cabc invald\n");
+	} else {
+		primary_display_idlemgr_kick((char *)__func__, 0);
+		if (primary_display_cmdq_enabled()) {
+			if (primary_display_is_video_mode()) {
+				MMProfileLogEx(ddp_mmp_get_events()->primary_set_bl,
+					       MMProfileFlagPulse, 0, 7);
+				disp_lcm_set_cabc(pgc->plcm, NULL, mode);
+			} else {
+				DISPERR("cmd mode set cabc invald\n");
+				//_set_backlight_by_cmdq(level);
+			}
+			atomic_set(&delayed_trigger_kick, 1);
+		} else {
+			//_set_backlight_by_cpu(level);
+		}
+	}
+//#ifndef CONFIG_MTK_AAL_SUPPORT
+	_primary_path_unlock(__func__);
+	_primary_path_switch_dst_unlock();
+//#endif
+	MMProfileLogEx(ddp_mmp_get_events()->primary_set_bl, MMProfileFlagEnd, 0, 0);
+	return ret;
+}
+
+int primary_display_sethbm(unsigned int mode)
+{
+	int ret = 0;
+
+	DISPFUNC();
+
+	if (disp_helper_get_stage() != DISP_HELPER_STAGE_NORMAL) {
+		DISPMSG("%s skip due to stage %s\n", __func__, disp_helper_stage_spy());
+		return 0;
+	}
+
+	MMProfileLogEx(ddp_mmp_get_events()->primary_set_bl, MMProfileFlagStart, 0, 0);
+//#ifndef CONFIG_MTK_AAL_SUPPORT
+	_primary_path_switch_dst_lock();
+	_primary_path_lock(__func__);
+//#endif
+
+	if (pgc->state == DISP_SLEPT) {
+		DISPERR("Sleep State set hbm invald\n");
+		//wuwl10 add, we need to update the hbm status so that backlight can work when resume
+		atomic_set(&primary_display_hbm_backlight, 0);
+	} else {
+		primary_display_idlemgr_kick((char *)__func__, 0);
+		if (primary_display_cmdq_enabled()) {
+			if (primary_display_is_video_mode()) {
+				MMProfileLogEx(ddp_mmp_get_events()->primary_set_bl,
+					       MMProfileFlagPulse, 0, 7);
+				if ( mode != 0)
+					atomic_set(&primary_display_hbm_backlight, 1);
+				else
+					atomic_set(&primary_display_hbm_backlight, 0);
+
+				disp_lcm_set_hbm(pgc->plcm, NULL, mode);
+
+			} else {
+				DISPERR("cmd mode set hbm invald\n");
+				//_set_backlight_by_cmdq(level);
+			}
+			atomic_set(&delayed_trigger_kick, 1);
+		} else {
+			//_set_backlight_by_cpu(level);
+		}
+	}
+//#ifndef CONFIG_MTK_AAL_SUPPORT
+	_primary_path_unlock(__func__);
+	_primary_path_switch_dst_unlock();
+//#endif
+
+	MMProfileLogEx(ddp_mmp_get_events()->primary_set_bl, MMProfileFlagEnd, 0, 0);
+	return ret;
+}
+
+bool primary_display_panel_param_is_supported(int id)
+{
+	return disp_lcm_param_is_supported(pgc->plcm,id);
+}
+#endif
 
 int _set_lcm_cmd_by_cmdq(unsigned int *lcm_cmd, unsigned int *lcm_count, unsigned int *lcm_value)
 {

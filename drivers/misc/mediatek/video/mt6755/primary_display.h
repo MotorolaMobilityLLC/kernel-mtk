@@ -244,6 +244,14 @@ int primary_display_get_original_width(void);
 int primary_display_get_original_height(void);
 int primary_display_lcm_ATA(void);
 int primary_display_setbacklight(unsigned int level);
+//lenovo wuwl10 20161010 add CUSTOM_LCM_FEATURE begin
+#ifdef CONFIG_LENOVO_PANELMODE_SUPPORT
+int primary_display_setcabc(unsigned int mode);
+bool primary_display_panel_param_is_supported(int id);
+int primary_display_sethbm(unsigned int mode);
+#endif
+//lenovo wuwl10 20161010 add CUSTOM_LCM_FEATURE end
+
 int primary_display_pause(PRIMARY_DISPLAY_CALLBACK callback, unsigned int user_data);
 int primary_display_switch_dst_mode(int mode);
 int primary_display_get_lcm_index(void);

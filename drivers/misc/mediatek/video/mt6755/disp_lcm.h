@@ -28,6 +28,15 @@ typedef struct {
 	int index;
 } disp_lcm_handle, *pdisp_lcm_handle;
 
+//lenovo wuwl10 20161010 add for panel mode begin
+#ifdef CONFIG_LENOVO_PANELMODE_SUPPORT
+enum panel_param_id {
+	PARAM_HBM_ID = 0,
+	PARAM_CABC_ID,
+	PARAM_ID_NUM
+};
+#endif
+//lenovo wuwl10 20161010 add for panel mode end
 
 /* these 2 variables are defined in mt65xx_lcm_list.c */
 extern LCM_DRIVER *lcm_driver_list[];
@@ -44,6 +53,14 @@ int disp_lcm_esd_recover(disp_lcm_handle *plcm);
 int disp_lcm_suspend(disp_lcm_handle *plcm);
 int disp_lcm_resume(disp_lcm_handle *plcm);
 int disp_lcm_set_backlight(disp_lcm_handle *plcm, void *handle, int level);
+//lenovo wuwl10 20161010 add CUSTOM_LCM_FEATURE begin
+#ifdef CONFIG_LENOVO_PANELMODE_SUPPORT
+int disp_lcm_set_cabc(disp_lcm_handle *plcm, void *handle, unsigned int mode);
+int disp_lcm_set_inverse(disp_lcm_handle *plcm, void *handle, unsigned int mode);
+bool disp_lcm_param_is_supported(disp_lcm_handle *plcm, int id);
+int disp_lcm_set_hbm(disp_lcm_handle *plcm, void *handle, unsigned int mode);
+#endif
+//lenovo wuwl10 20161010 add CUSTOM_LCM_FEATURE end
 int disp_lcm_read_fb(disp_lcm_handle *plcm);
 int disp_lcm_ioctl(disp_lcm_handle *plcm, LCM_IOCTL ioctl, unsigned int arg);
 int disp_lcm_is_video_mode(disp_lcm_handle *plcm);

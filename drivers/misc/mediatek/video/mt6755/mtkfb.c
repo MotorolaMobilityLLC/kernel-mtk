@@ -64,6 +64,37 @@
 #include "disp_recovery.h"
 #include "ddp_clkmgr.h"
 
+//lenovo wuwl10 20161010 add CUSTOM_LCM_FEATURE begin
+#ifdef CONFIG_LENOVO_CUSTOM_LCM_FEATURE
+#include <linux/proc_fs.h>
+#include <linux/seq_file.h>
+
+static int lcm_debug_open(struct inode *inode, struct file *file);
+static int lcm_info_open(struct inode *inode, struct file *file);
+
+static  struct file_operations lcm_debug_proc_fops = {
+    .open    = lcm_debug_open,
+    .read    = seq_read,
+    .llseek  = seq_lseek,
+    .release = single_release,
+};
+
+static  struct file_operations lcm_info_proc_fops = {
+    .open    = lcm_info_open,
+    .read    = seq_read,
+    .llseek  = seq_lseek,
+    .release = single_release,
+};
+LCM_DRIVER *lcm_drv;
+LCM_PARAMS *lcm_params;
+#endif
+
+#ifdef CONFIG_LENOVO_PANELMODE_SUPPORT
+lenovo_disp_feature_info_t disp_feature_info[MTKFB_MAX_DISPLAY_COUNT];
+lenovo_disp_feature_state_t panel_mode_state[MTKFB_MAX_DISPLAY_COUNT];
+#endif
+//lenovo wuwl10 20161010 add CUSTOM_LCM_FEATURE end
+
 /* static variable */
 static u32 MTK_FB_XRES;
 static u32 MTK_FB_YRES;
@@ -2418,6 +2449,123 @@ static int update_test_kthread(void *data)
 }
 #endif
 
+//lenovo wuwl10 20160401 add CUSTOM_LCM_FEATURE begin
+#ifdef CONFIG_LENOVO_CUSTOM_LCM_FEATURE
+static int lcm_debug_show(struct seq_file *s, void *unused)
+{
+	seq_printf(s, "lcm debug show\n");
+	return 0;
+}
+static int lcm_debug_open(struct inode *inode, struct file *file)
+{
+	return single_open(file, lcm_debug_show, inode->i_private);
+}
+
+static int lcm_info_show(struct seq_file *s, void *unused)
+{
+
+seq_printf(s,"name=%s; width=%d; height=%d; mode=%s; lane=%d; \n",
+			lcm_drv->name,
+			lcm_params->width,
+			lcm_params->height,
+			(lcm_params->dsi.mode==0)?"CMD":"VDO",
+			lcm_params->dsi.LANE_NUM);
+
+	return 0;
+}
+static int lcm_info_open(struct inode *inode, struct file *file)
+{
+	return single_open(file, lcm_info_show, inode->i_private);
+}
+#endif
+//lenovo wuwl10 20160401 add CUSTOM_LCM_FEATURE end
+
+//lenovo-sw wuwl10 20160426 add for moto new panel mode support begin
+#ifdef CONFIG_LENOVO_PANELMODE_SUPPORT
+static ssize_t hbm_show(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	return snprintf(buf, PAGE_SIZE, "%d\n", panel_mode_state[0].hbm);
+}
+
+static ssize_t hbm_store(struct device *dev,
+		struct device_attribute *attr,
+		const char *buf, size_t count)
+{
+	ssize_t ret=0;
+	printk("wuwl10  to hbm_store \n");
+
+	if (0 == strncmp(buf, "1", 1)) {
+		ret = primary_display_sethbm(1);
+		panel_mode_state[0].hbm= 1;
+	}else if (0 == strncmp(buf, "0", 1)) {
+		ret = primary_display_sethbm(0);
+		panel_mode_state[0].hbm = 0;
+	}else {
+		ret = primary_display_sethbm(0);
+		panel_mode_state[0].hbm = 0;
+	}
+
+	return ret ? ret : count;
+}
+
+static ssize_t cabc_show(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	return snprintf(buf, PAGE_SIZE, "%d\n", panel_mode_state[0].cabc_mode);
+}
+
+static ssize_t cabc_store(struct device *dev,
+		struct device_attribute *attr,
+		const char *buf, size_t count)
+{
+	ssize_t ret=0;
+	unsigned int cabc_mode;
+	printk("wuwl10  to cabc_store \n");
+	if (0 == strncmp(buf, "UI", 2)) {
+		cabc_mode = 1;
+	}else if (0 == strncmp(buf, "STILL", 5)) {
+		cabc_mode = 2;
+	}else if (0 == strncmp(buf, "MV", 2)) {
+		cabc_mode = 3;
+	}else if (0 == strncmp(buf, "DIS", 3)) {
+		cabc_mode = 0;
+	}else {
+		cabc_mode = 0;
+	}
+	ret = primary_display_setcabc(cabc_mode);
+	panel_mode_state[0].cabc_mode = cabc_mode;
+
+	return ret ? ret : count;
+}
+
+static struct device_attribute param_attrs[PARAM_ID_NUM] = {
+	__ATTR(hbm, S_IWUSR | S_IWGRP | S_IRUSR | S_IRGRP, hbm_show, hbm_store),
+	__ATTR(cabc_mode, S_IWUSR | S_IWGRP | S_IRUSR | S_IRGRP,
+		cabc_show, cabc_store),
+};
+static bool mtkfb_panel_param_is_supported(int i)
+{
+	return primary_display_panel_param_is_supported(i);
+}
+static int mtkfb_create_param_sysfs(struct mtkfb_device *fbdev)
+{
+	int i,rc = 0;
+
+	for (i = 0; i < PARAM_ID_NUM; i++) {
+		if (!mtkfb_panel_param_is_supported(i))
+			continue;
+		rc = device_create_file(fbdev->fb_info->dev, &param_attrs[i]);
+		if (rc) {
+			pr_err("failed to create sysfs for panel param id %d \n",i);
+			break;
+		}
+	}
+	return rc;
+}
+#endif
+//lenovo-sw wuwl10 20160426 add for moto new panel mode support end
+
 static int mtkfb_probe(struct device *dev)
 {
 	struct mtkfb_device *fbdev = NULL;
@@ -2523,6 +2671,11 @@ static int mtkfb_probe(struct device *dev)
 	test_task = kthread_create(update_test_kthread, NULL, "update_test_kthread");
 	wake_up_process(test_task);
 #endif
+//lenovo-sw wuwl10 20160426 add for moto new panel mode support begin
+#ifdef CONFIG_LENOVO_PANELMODE_SUPPORT
+	mtkfb_create_param_sysfs(fbdev);
+#endif
+//lenovo-sw wuwl10 20160426 add for moto new panel mode support end
 
 	if (disp_helper_get_stage() != DISP_HELPER_STAGE_NORMAL)
 		primary_display_diagnose();
@@ -2532,6 +2685,19 @@ static int mtkfb_probe(struct device *dev)
 	ion_drv_create_FB_heap(mtkfb_get_fb_base(), mtkfb_get_fb_size());
 
 	fbdev->state = MTKFB_ACTIVE;
+//lenovo wuwl10 20161010 add CUSTOM_LCM_FEATURE begin
+#ifdef CONFIG_LENOVO_CUSTOM_LCM_FEATURE
+	do{
+		lcm_params = DISP_GetLcmPara();
+		lcm_drv = DISP_GetLcmDrv();
+		if(lcm_drv==NULL){
+			printk("[wuwl10] lcm_drv is NULL\n");
+			break;
+		}
+		proc_create("lcm_debug", 0660, NULL, &lcm_debug_proc_fops);
+		proc_create("lcm_info", 0444, NULL, &lcm_info_proc_fops);
+	}while(0);
+#endif
 
 	MSG_FUNC_LEAVE();
 	return 0;
@@ -2554,7 +2720,12 @@ static int mtkfb_remove(struct device *dev)
 
 	fbdev->state = MTKFB_DISABLED;
 	mtkfb_free_resources(fbdev, saved_state);
-
+//lenovo wuwl10 20161010 add CUSTOM_LCM_FEATURE beign
+#ifdef CONFIG_LENOVO_CUSTOM_LCM_FEATURE
+	remove_proc_entry("lcm_debug", NULL);
+	remove_proc_entry("lcm_info", NULL);
+#endif
+//lenovo wuwl10 20161010 add CUSTOM_LCM_FEATURE end
 	MSG_FUNC_LEAVE();
 	return 0;
 }

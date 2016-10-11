@@ -588,7 +588,36 @@ void mtkfb_process_dbg_opt(const char *opt)
 	} else if (0 == strncmp(opt, "ata", 3)) {
 		mtkfb_fm_auto_test();
 		return;
-	} else if (0 == strncmp(opt, "dalprintf", 9)) {
+	}
+//lenovo wuwl10 20160401 add CUSTOM_LCM_FEATURE begin
+#ifdef CONFIG_LENOVO_PANELMODE_SUPPORT
+	else if (0 == strncmp(opt, "cabc:", 5))
+	{
+		if (0 == strncmp(opt + 5, "ui", 2)) {
+			primary_display_setcabc(1);
+		}else if (0 == strncmp(opt + 5, "mov", 3)) {
+			primary_display_setcabc(3);
+		}else if (0 == strncmp(opt + 5, "still", 5)) {
+			primary_display_setcabc(2);
+		}else if (0 == strncmp(opt + 5, "off", 3)) {
+			primary_display_setcabc(0);
+		}else {
+			return;
+		}
+	}else if(0 == strncmp(opt, "bkl:", 4))
+	{
+		char *p = (char *)opt + 4;
+		unsigned int level = (unsigned int) simple_strtoul(p, &p, 10);
+		primary_display_setbacklight(level);
+	}else if(0 == strncmp(opt, "hbm:", 4))
+	{
+		char *p = (char *)opt + 4;
+		unsigned int level = (unsigned int) simple_strtoul(p, &p, 10);
+		primary_display_sethbm(level);
+	}
+#endif
+//lenovo wuwl10 20160401 add CUSTOM_LCM_FEATURE end
+	else if (0 == strncmp(opt, "dalprintf", 9)) {
 		DAL_Printf("display aee layer test\n");
 	} else if (0 == strncmp(opt, "dalclean", 8)) {
 		DAL_Clean();

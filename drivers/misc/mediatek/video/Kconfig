@@ -90,6 +90,16 @@ config MTK_OVERLAY_ENGINE_SUPPORT
 	help
 	  This enable support overlay time division multiplex.
 
+#lenovo wuwl10 20161010 modify for lcm feactue begin
+config LENOVO_CUSTOM_LCM_FEATURE
+       bool "LENOVO_CUSTOM_LCM_FEATURE"
+       default n
+
+config LENOVO_PANELMODE_SUPPORT
+       bool "LENOVO_PANELMODE_SUPPORT"
+       default n
+#lenovo wuwl10 20161010 add for lcm feactue end
+
 config MTK_CONSUMER_PARTIAL_UPDATE_SUPPORT
 	bool "MTK_CONSUMER_PARTIAL_UPDATE_SUPPORT"
 	default n
