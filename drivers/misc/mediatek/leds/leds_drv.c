@@ -713,7 +713,7 @@ static int mt65xx_leds_probe(struct platform_device *pdev)
 	}
 #ifdef CONTROL_BL_TEMPERATURE
 
-	last_level = 0;
+	last_level = 80;//lenovo-sw wuwl10 modify
 	limit = 255;
 	limit_flag = 0;
 	current_level = 0;

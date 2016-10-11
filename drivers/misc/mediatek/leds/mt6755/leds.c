@@ -87,7 +87,7 @@ struct wake_lock leds_suspend_lock;
 
 char *leds_name[MT65XX_LED_TYPE_TOTAL] = {
 	"red",
-	"green",
+	"test-led",/*lenovo-sw wuwl10 modify for factory test*/
 	"blue",
 	"jogball-backlight",
 	"keyboard-backlight",
@@ -974,7 +974,7 @@ int mt_brightness_set_pmic(enum mt65xx_led_pmic pmic_type, u32 level, u32 div)
 		pmic_set_register_value(MT6351_PMIC_RG_DRV_ISINK0_CK_PDN, 0);
 		pmic_set_register_value(MT6351_PMIC_RG_DRV_ISINK0_CK_CKSEL, 0);
 		pmic_set_register_value(MT6351_PMIC_ISINK_CH0_MODE, ISINK_PWM_MODE);
-		pmic_set_register_value(MT6351_PMIC_ISINK_CH0_STEP, ISINK_3);	/* 16mA */
+		pmic_set_register_value(MT6351_PMIC_ISINK_CH0_STEP, ISINK_1);	/* 8mA wuwl10 modify */
 		pmic_set_register_value(MT6351_PMIC_ISINK_DIM0_DUTY, 15);
 		pmic_set_register_value(MT6351_PMIC_ISINK_DIM0_FSEL, ISINK_1KHZ);	/* 1KHz */
 		#endif
