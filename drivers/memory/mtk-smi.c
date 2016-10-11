@@ -271,6 +271,7 @@ static int mtk_smi_larb_probe(struct platform_device *pdev)
 	struct device_node *smi_node;
 	struct platform_device *smi_pdev;
 	const struct of_device_id *of_id;
+	int ret;
 
 	if (!dev->pm_domain)
 		return -EPROBE_DEFER;
@@ -297,6 +298,11 @@ static int mtk_smi_larb_probe(struct platform_device *pdev)
 	if (IS_ERR(larb->smi.clk_smi))
 		return PTR_ERR(larb->smi.clk_smi);
 	larb->smi.dev = dev;
+
+	ret = of_property_read_u32(dev->of_node, "mediatek,larbidx",
+				   &larb->larbid);
+	if (ret)
+		return ret;
 
 	smi_node = of_parse_phandle(dev->of_node, "mediatek,smi", 0);
 	if (!smi_node)
