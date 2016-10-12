@@ -63,7 +63,7 @@ static int parse_options(struct super_block *sb, char *options, int silent,
 	opts->fs_user_id = 0;
 	opts->gid = 0;
 	/* by default, 0MB is reserved */
-	opts->reserved_mb = 0;
+	opts->reserved_mb = LOWER_FS_MIN_FREE_SIZE;
 
 	*debug = 0;
 

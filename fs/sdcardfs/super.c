@@ -54,13 +54,14 @@ static int sdcardfs_statfs(struct dentry *dentry, struct kstatfs *buf)
 {
 	int err;
 	struct path lower_path;
+#if 0
 	u32 min_blocks;
 	struct sdcardfs_sb_info *sbi = SDCARDFS_SB(dentry->d_sb);
-
+#endif
 	sdcardfs_get_lower_path(dentry, &lower_path);
 	err = vfs_statfs(&lower_path, buf);
 	sdcardfs_put_lower_path(dentry, &lower_path);
-
+#if 0
 	if (sbi->options.reserved_mb) {
 		/* Invalid statfs informations. */
 		if (buf->f_bsize == 0) {
@@ -79,7 +80,7 @@ static int sdcardfs_statfs(struct dentry *dentry, struct kstatfs *buf)
 		/* Make reserved blocks invisiable to media storage */
 		buf->f_bfree = buf->f_bavail;
 	}
-
+#endif
 	/* set return buf to our f/s to avoid confusing user-level utils */
 	buf->f_type = SDCARDFS_SUPER_MAGIC;
 
