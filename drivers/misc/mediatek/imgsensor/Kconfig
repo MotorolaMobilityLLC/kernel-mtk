@@ -17,3 +17,8 @@ config MTK_EFUSE_DOWNGRADE
 	default n
 	help
 	  a variant of downgrade chip
+config MTK_CAMERA_LSHUTTER
+  bool CONFIG_MTK_CAMERA_LSHUTTER
+  default n
+  help
+    CONFIG_MTK_CAMERA_LSHUTTER

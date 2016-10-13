@@ -240,64 +240,130 @@
 &pio {
 	camera_pins_cam0_rst0: cam0@0 {
 	    pins_cmd_dat {
-			pins = <PINMUX_GPIO110__FUNC_GPIO110>;
+			pins = <PINMUX_GPIO107__FUNC_GPIO107>;
 			slew-rate = <1>; /*direction 0:in, 1:out*/
 			output-low;/*direction out used only. output_low or high*/
 		};
 	};
 	camera_pins_cam0_rst1: cam0@1 {
 	    pins_cmd_dat {
-			pins = <PINMUX_GPIO110__FUNC_GPIO110>;
+			pins = <PINMUX_GPIO107__FUNC_GPIO107>;
 			slew-rate = <1>;
 			output-high;
 		};
 	};
 	camera_pins_cam0_pnd0: cam0@2 {
 	    pins_cmd_dat {
-			pins = <PINMUX_GPIO107__FUNC_GPIO107>;
+			pins = <PINMUX_GPIO110__FUNC_GPIO110>;
 			slew-rate = <1>;
 			output-low;
 		};
 	};
 	camera_pins_cam0_pnd1: cam0@3 {
 	    pins_cmd_dat {
-			pins = <PINMUX_GPIO107__FUNC_GPIO107>;
+			pins = <PINMUX_GPIO110__FUNC_GPIO110>;
 			slew-rate = <1>;
 			output-high;
 		};
 	};
 	camera_pins_cam1_rst0: cam1@0 {
 	    pins_cmd_dat {
-			pins = <PINMUX_GPIO111__FUNC_GPIO111>;
+			pins = <PINMUX_GPIO108__FUNC_GPIO108>;
 			slew-rate = <1>; /*direction 0:in, 1:out*/
 			output-low;/*direction out used only. output_low or high*/
 		};
 	};
 	camera_pins_cam1_rst1: cam1@1 {
 	    pins_cmd_dat {
-			pins = <PINMUX_GPIO111__FUNC_GPIO111>;
+			pins = <PINMUX_GPIO108__FUNC_GPIO108>;
 			slew-rate = <1>;
 			output-high;
 		};
 	};
 	camera_pins_cam1_pnd0: cam1@2 {
 	    pins_cmd_dat {
-			pins = <PINMUX_GPIO108__FUNC_GPIO108>;
+			pins = <PINMUX_GPIO111__FUNC_GPIO111>;
 			slew-rate = <1>;
 			output-low;
 		};
 	};
 	camera_pins_cam1_pnd1: cam1@3 {
 	    pins_cmd_dat {
-			pins = <PINMUX_GPIO108__FUNC_GPIO108>;
+			pins = <PINMUX_GPIO111__FUNC_GPIO111>;
 			slew-rate = <1>;
 			output-high;
 		};
 	};
-	/*camera_pins_cam_ldo_vcama_0: cam@vcama0 {
+	main_camera_flash_ENT_0: cam@0 {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO8__FUNC_GPIO8>;
+			slew-rate = <1>;
+			output-low;
+		};
 	};
-	camera_pins_cam_ldo_vcama_1: cam@vcama1 {
-	};*/
+	main_camera_flash_ENT_1: cam@1 {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO8__FUNC_GPIO8>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+	main_camera_flash_ENT_2: cam@2 {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO9__FUNC_GPIO9>;
+			slew-rate = <1>;
+			output-low;
+                };
+	};
+	main_camera_flash_ENT_3: cam@3 {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO9__FUNC_GPIO9>;
+			slew-rate = <1>;
+			output-high;
+                };
+	};
+	main_camera_flash_ENF_0: cam@4{
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO19__FUNC_GPIO19>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+	main_camera_flash_ENF_1: cam@5 {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO19__FUNC_GPIO19>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+	main_camera_flash_ENF_2: cam@6 {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO9__FUNC_GPIO9>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+	main_camera_flash_ENF_3: cam@7{
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO9__FUNC_GPIO9>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+camera_pins_cam_ldo_vcama_0: cam0@0 {
+	    pins_cmd_dat {
+			pins = <PINMUX_GPIO83__FUNC_GPIO83>;
+			slew-rate = <1>; /*direction 0:in, 1:out*/
+			output-low;/*direction out used only. output_low or high*/
+		};
+	};
+	camera_pins_cam_ldo_vcama_1: cam0@1 {
+	    pins_cmd_dat {
+			pins = <PINMUX_GPIO83__FUNC_GPIO83>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
 	camera_pins_default: camdefault {
 	};
 
@@ -306,7 +372,8 @@
 &kd_camera_hw1 {
 	pinctrl-names = "default",
 			"cam0_rst0", "cam0_rst1", "cam0_pnd0", "cam0_pnd1",
-			"cam1_rst0", "cam1_rst1", "cam1_pnd0", "cam1_pnd1";
+			"cam1_rst0", "cam1_rst1", "cam1_pnd0", "cam1_pnd1",
+			"flash_ENT0", "flash_ENT1", "flash_ENT2", "flash_ENT3","flash_ENF0", "flash_ENF1","flash_ENF2", "flash_ENF3","cam_ldo_vcama_0", "cam_ldo_vcama_1";
 			/*"cam2_rst0", "cam2_rst1", "cam2_pnd0", "cam2_pnd1",
 			"cam_ldo_vcama_0", "cam_ldo_vcama_1";*/
 	pinctrl-0 = <&camera_pins_default>;
@@ -318,14 +385,16 @@
 	pinctrl-6 = <&camera_pins_cam1_rst1>;
 	pinctrl-7 = <&camera_pins_cam1_pnd0>;
 	pinctrl-8 = <&camera_pins_cam1_pnd1>;
-	/* for main2 */
-	/*pinctrl-9 = <&camera_pins_cam2_rst0>;
-	pinctrl-10 = <&camera_pins_cam2_rst1>;
-	pinctrl-11 = <&camera_pins_cam2_pnd0>;
-	pinctrl-12 = <&camera_pins_cam2_pnd1>;*/
-	/* for ldo control by gpio */
-	/*pinctrl-13 = <&camera_pins_cam_ldo_vcama_0>;
-	pinctrl-14 = <&camera_pins_cam_ldo_vcama_1>;*/
+	pinctrl-9 = <&main_camera_flash_ENT_0>;
+	pinctrl-10 = <&main_camera_flash_ENT_1>;
+	pinctrl-11 = <&main_camera_flash_ENT_2>;
+	pinctrl-12 = <&main_camera_flash_ENT_3>;
+	pinctrl-13 = <&main_camera_flash_ENF_0>;
+	pinctrl-14 = <&main_camera_flash_ENF_1>;
+	pinctrl-15 = <&main_camera_flash_ENF_2>;
+	pinctrl-16 = <&main_camera_flash_ENF_3>;
+	pinctrl-17 = <&camera_pins_cam_ldo_vcama_0>;
+	pinctrl-18 = <&camera_pins_cam_ldo_vcama_1>;
 	status = "okay";
 
 };
@@ -835,6 +904,84 @@
 };
 /* IRTX GPIO end wuwl10 20160913 remove irtx for lcm pin*/
 
+/*lenovo.sw wuyt3 add for k52M camera*/
+&i2c2 {
+
+GT24c64a@50 {
+			compatible = "mediatek,GT24c64a";
+			reg = <0x50>;
+			status = "okay";
+		};
+};
+
+&i2c1{
+		camera_sub_lenovo@7f {
+			compatible = "mediatek,camera_sub_lenovo";
+			reg = <0x7f>;
+			status = "okay";
+		};
+
+
+};
+
+/*lenovo.sw wuyt3 add end*/
+		
+/* IRTX GPIO end */
+#if 0
+&apirtx {
+	pinctrl-names = "irtx_gpio_led_default",
+			"irtx_gpio_led_set",
+			"irtx_gpio_en_default",
+			"irtx_gpio_en_set";
+
+	pinctrl-0 = <&irtx_gpio_led_default>;
+	pinctrl-1 = <&irtx_gpio_led_set>;
+	pinctrl-2 = <&irtx_gpio_en_default>;
+	pinctrl-3 = <&irtx_gpio_en_set>;
+	status = "okay";
+};
+&pio {
+	/* IRTX GPIO Settings -Start */
+	/* default: GPIO0, output, high */
+	irtx_gpio_led_default:irtx_gpio_led_def@gpio116 {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO116__FUNC_GPIO116>;
+			slew-rate = <1>;
+			bias-disable;
+			output-low;
+			input-schmitt-enable = <0>;
+		};
+	};
+
+	irtx_gpio_led_set:irtx_gpio_led_set@gpio116 {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO116__FUNC_IRTX_OUT>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+
+	irtx_gpio_en_default:irtx_gpio_en_def@gpio104 {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO104__FUNC_GPIO104>;
+			slew-rate = <1>;
+			bias-disable;
+			output-low;
+			input-schmitt-enable = <0>;
+		};
+	};
+
+	irtx_gpio_en_set:irtx_gpio_en_set@gpio104 {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO104__FUNC_GPIO104>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+
+
+}; /* IRTX GPIO Settings -End */
+#endif 
 
 &i2c0 {
 /*lenovo.sw wuwl10 20160420 add begin*/

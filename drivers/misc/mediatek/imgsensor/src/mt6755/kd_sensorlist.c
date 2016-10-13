@@ -94,10 +94,15 @@ static DEFINE_SPINLOCK(kdsensor_drv_lock);
 #ifndef SUPPORT_I2C_BUS_NUM1
     #define SUPPORT_I2C_BUS_NUM1        0
 #endif
+#ifdef CAMERA_SENSORLIST_Kungfu
 #ifndef SUPPORT_I2C_BUS_NUM2
-    #define SUPPORT_I2C_BUS_NUM2        2
+    #define SUPPORT_I2C_BUS_NUM2        1
 #endif
-
+  #else 
+  #ifndef SUPPORT_I2C_BUS_NUM2
+    #define SUPPORT_I2C_BUS_NUM2        3
+#endif
+#endif
 //Main2 support
 #ifndef SUPPORT_I2C_BUS_NUM3
     #define SUPPORT_I2C_BUS_NUM3        SUPPORT_I2C_BUS_NUM2
@@ -134,7 +139,7 @@ struct device *sensor_device = NULL;
 #define PK_INF(fmt, args...)     pr_debug(PFX "[%s] " fmt, __FUNCTION__, ##args)
 
 #undef DEBUG_CAMERA_HW_K
-/* #define DEBUG_CAMERA_HW_K */
+ #define DEBUG_CAMERA_HW_K 
 #ifdef DEBUG_CAMERA_HW_K
 #define PK_DBG PK_DBG_FUNC
 #define PK_ERR(fmt, arg...)         pr_err(fmt, ##arg)
@@ -2051,6 +2056,12 @@ inline static int  adopt_CAMERA_HW_FeatureControl(void *pBuf)
         g_NewSensorExpGain.uSensorGainDelayFrame = 0xFF;
         g_NewSensorExpGain.uISPGainDelayFrame = 0xFF;
         spin_unlock(&kdsensor_drv_lock);
+#ifdef CONFIG_MTK_CAMERA_LSHUTTER
+    /*lenovo-sw sunliang modify for long_shutter 2015_4_25 begin*/
+    case SENSOR_FEATURE_LOCK_AE:
+    case SENSOR_FEATURE_UNLOCK_AE:
+    /*lenovo-sw sunliang modify for long_shutter 2015_4_25 end*/
+#endif
     case SENSOR_FEATURE_SET_ISP_MASTER_CLOCK_FREQ:
     case SENSOR_FEATURE_SET_REGISTER:
     case SENSOR_FEATURE_GET_REGISTER:
@@ -2964,7 +2975,7 @@ bool Get_Cam_Regulator(void)
 				    regVCAMIO = regulator_get(sensor_device, "vcamio");
 			    }
 			    if (regVCAMAF == NULL) {
-				    regVCAMAF = regulator_get(sensor_device, "vcamaf");
+				    regVCAMAF = regulator_get(sensor_device, "vcamvldo");
 			    }
 			} else{
 				PK_DBG("Camera customer regulator!\n");
@@ -2981,7 +2992,7 @@ bool Get_Cam_Regulator(void)
 				    regVCAMIO = regulator_get(sensor_device, "vcamio");
 			    }
 			    if (regVCAMAF == NULL) {
-				    regVCAMAF = regulator_get(sensor_device, "vcamaf");
+				    regVCAMAF = regulator_get(sensor_device, "vcamvldo");
 			    }
 			    if (regMain2VCAMD == NULL) {
 				    regMain2VCAMD = regulator_get(sensor_device, "vcamd_main2");
@@ -3737,7 +3748,7 @@ static int CAMERA_HW_i2c_probe(struct i2c_client *client, const struct i2c_devic
     spin_lock(&kdsensor_drv_lock);
     g_pstI2Cclient = client;
     /* set I2C clock rate */
-    g_pstI2Cclient->timing = 100;/* 100k */
+    g_pstI2Cclient->timing = 400;/* 100k */// wuyt3 modified follow k52 l
     g_pstI2Cclient->ext_flag &= ~I2C_POLLING_FLAG; /* No I2C polling busy waiting */
 
     spin_unlock(&kdsensor_drv_lock);
@@ -3942,7 +3953,7 @@ static int CAMERA_HW_i2c_probe2(struct i2c_client *client, const struct i2c_devi
     g_pstI2Cclient2 = client;
 
     /* set I2C clock rate */
-    g_pstI2Cclient2->timing = 100;/* 100k */
+    g_pstI2Cclient2->timing = 400;/* 100k */ //wuyt3 modify follow K52 L
     g_pstI2Cclient2->ext_flag &= ~I2C_POLLING_FLAG; /* No I2C polling busy waiting */
     spin_unlock(&kdsensor_drv_lock);
 
@@ -3975,7 +3986,7 @@ static int CAMERA_HW_i2c_remove2(struct i2c_client *client)
 ********************************************************************************/
 #ifdef CONFIG_OF
     static const struct of_device_id CAMERA_HW2_i2c_driver_of_ids[] = {
-	{ .compatible = "mediatek,camera_sub", },
+	{ .compatible = "mediatek,camera_sub_lenovo", },
 	{}
     };
 #endif

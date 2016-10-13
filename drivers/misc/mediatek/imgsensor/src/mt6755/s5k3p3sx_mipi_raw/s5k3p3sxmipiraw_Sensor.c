@@ -138,7 +138,7 @@ static imgsensor_info_struct imgsensor_info = {
 	.ihdr_le_firstline = 0,  //1,le first ; 0, se first
 	.sensor_mode_num = 5,	  //support sensor mode num
 
-	.cap_delay_frame = 3,
+	.cap_delay_frame = 2, //wuyt3 modify for KUNGFUM-1772 
 	.pre_delay_frame = 3,
 	.video_delay_frame = 3,
 	.hs_video_delay_frame = 3,
@@ -148,15 +148,15 @@ static imgsensor_info_struct imgsensor_info = {
 	.sensor_interface_type = SENSOR_INTERFACE_TYPE_MIPI,
 	.mipi_sensor_type = MIPI_OPHY_NCSI2, //0,MIPI_OPHY_NCSI2;  1,MIPI_OPHY_CSI2
 	.mipi_settle_delay_mode = 0, //0,MIPI_SETTLEDELAY_AUTO; 1,MIPI_SETTLEDELAY_MANNUAL
-	.sensor_output_dataformat = SENSOR_OUTPUT_FORMAT_RAW_Gr,
+	.sensor_output_dataformat = SENSOR_OUTPUT_FORMAT_RAW_Gb,
 	.mclk = 24,
 	.mipi_lane_num = SENSOR_MIPI_4_LANE,
-	.i2c_addr_table = {0x20,0x5a,0xff},
+	.i2c_addr_table = {0x20,0x21,0xff},
 };
 
 
 static imgsensor_struct imgsensor = {
-	.mirror = IMAGE_NORMAL,				//mirrorflip information
+	.mirror = IMAGE_HV_MIRROR,				//mirrorflip information
 	.sensor_mode = IMGSENSOR_MODE_INIT, //IMGSENSOR_MODE enum value,record current sensor mode,such as: INIT, Preview, Capture, Video,High Speed Video, Slim Video
 	.shutter = 0x3D0,					//current shutter
 	.gain = 0x100,						//current gain
@@ -184,17 +184,23 @@ static SENSOR_WINSIZE_INFO_STRUCT imgsensor_winsize_info[5] =
 //no mirror flip
 static SET_PD_BLOCK_INFO_T imgsensor_pd_info =
 {
-    .i4OffsetX = 0,
-    .i4OffsetY = 4,
+    .i4OffsetX = 3,
+    .i4OffsetY = 0,
     .i4PitchX  = 64,
     .i4PitchY  = 64,
     .i4PairNum  =16,
     .i4SubBlkW  =16,
     .i4SubBlkH  =16,
-.i4PosL = {{8,7},{60,7},{24,11},{44,11},{12,27},{56,27},{28,31},{40,31},{28,39},{40,39},{12,43},{56,43},{24,59},{44,59},{8,63},{60,63}},    
-.i4PosR = {{8,11},{60,11},{24,15},{44,15},{12,23},{56,23},{28,27},{40,27},{28,43},{40,43},{12,47},{56,47},{24,55},{44,55},{8,59},{60,59}},
+.i4PosL = {{3,4},{55,4},{19,8},{39,8},{7,16},{51,16},{23,20},{35,20},{23,36},{35,36},{7,40},{51,40},{19,48},{39,48},{3,52},{55,52}},    
+   .i4PosR = {{3,0},{55,0},{19,4},{39,4},{7,20},{51,20},{23,24},{35,24},{23,32},{35,32},{7,36},{51,36},{19,52},{39,52},{3,56},{55,56}},
 };
-
+#ifdef CONFIG_MTK_CAMERA_LSHUTTER
+/*lenovo-sw sunliang modify for long_shutter 2015_4_25 begin*/
+static kal_uint16	preview_gain=0;
+static kal_uint16 	preview_shutter=0;
+static kal_bool	lock_flag=KAL_FALSE;
+/*lenovo-sw sunliang modify for long_shutter 2015_4_25 end*/
+#endif
 extern int iReadReg(u16 a_u2Addr , u8 * a_puBuff , u16 i2cId);
 extern int iWriteReg(u16 a_u2Addr , u32 a_u4Data , u32 a_u4Bytes , u16 i2cId);
 extern void kdSetI2CSpeed(u16 i2cSpeed);
@@ -286,7 +292,7 @@ static void set_max_framerate(UINT16 framerate,kal_bool min_framelength_en)
 	set_dummy();
 }	/*	set_max_framerate  */
 
-static void write_shutter(kal_uint16 shutter)
+static void write_shutter(kal_uint32 shutter)
 {
 
     kal_uint16 realtime_fps = 0;
@@ -319,6 +325,10 @@ static void write_shutter(kal_uint16 shutter)
 
 	}
 	// Update Shutter
+		if(imgsensor.frame_length==65535)
+		{
+			shutter = imgsensor.frame_length-imgsensor_info.margin;
+		}
         write_cmos_sensor(0x0202, shutter);
 	LOG_INF("shutter =%d, framelength =%d\n", shutter,imgsensor.frame_length);
 
@@ -342,7 +352,7 @@ static void write_shutter(kal_uint16 shutter)
 * GLOBALS AFFECTED
 *
 *************************************************************************/
-static void set_shutter(kal_uint16 shutter)
+static void set_shutter(kal_uint32 shutter)
 {
 	unsigned long flags;
 	spin_lock_irqsave(&imgsensor_drv_lock, flags);
@@ -420,19 +430,19 @@ static void set_mirror_flip(kal_uint8 image_mirror)
 		{
 
 		   case IMAGE_NORMAL:
-		   	     write_cmos_sensor(0x0101, itemp);
+		   	     write_cmos_sensor_8(0x0101, itemp);
 			      break;
 
 		   case IMAGE_V_MIRROR:
-			     write_cmos_sensor(0x0101, itemp | 0x02);
+			     write_cmos_sensor_8(0x0101, itemp | 0x02);
 			     break;
 
 		   case IMAGE_H_MIRROR:
-			     write_cmos_sensor(0x0101, itemp | 0x01);
+			     write_cmos_sensor_8(0x0101, itemp | 0x01);
 			     break;
 
 		   case IMAGE_HV_MIRROR:
-			     write_cmos_sensor(0x0101, itemp | 0x03);
+			     write_cmos_sensor_8(0x0101, itemp | 0x03);
 			     break;
 		}
 }
@@ -529,6 +539,7 @@ write_cmos_sensor(0x021C,0x0200);
 write_cmos_sensor(0x3072,0x03C0);
 write_cmos_sensor(0x6028,0x4000);//TnP v150721
 write_cmos_sensor(0x0B08,0x0000);
+write_cmos_sensor(0xB0C8,0x0300);
 write_cmos_sensor(0x3058,0x0001);
 write_cmos_sensor(0x316C,0x0084);
 write_cmos_sensor(0x316E,0x1283);
@@ -829,6 +840,7 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 {
 	kal_uint8 i = 0;
 	kal_uint8 retry = 2;
+//	char data[1] = {0};
 	//sensor have two i2c address 0x6c 0x6d & 0x21 0x20, we should detect the module used i2c address
 	while (imgsensor_info.i2c_addr_table[i] != 0xff) {
 		spin_lock(&imgsensor_drv_lock);
@@ -843,6 +855,8 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 					imgsensor_info.sensor_output_dataformat = SENSOR_OUTPUT_FORMAT_RAW_RWB_Wr;
 					LOG_INF("RWB sensor of S5k3p3\n");
 				}
+				LOG_INF("shen 000 Read sensor id success, id: 0x%x\n", imgsensor.i2c_write_id);
+//	 read_3P3_eeprom(0,data,1);
 				return ERROR_NONE;
 			}
 			LOG_INF("Read sensor id fail, id: 0x%x\n", imgsensor.i2c_write_id);
@@ -856,6 +870,8 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 		*sensor_id = 0xFFFFFFFF;
 		return ERROR_SENSOR_CONNECT_FAIL;
 	}
+	LOG_INF("shen Read sensor id success, id: 0x%x\n", imgsensor.i2c_write_id);
+//	 read_3P3_eeprom(0,data,1);
 	return ERROR_NONE;
 }
 
@@ -1012,9 +1028,22 @@ static kal_uint32 preview(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 static kal_uint32 capture(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 						  MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
 {
+	kal_uint8 flag=0; 
+	
 	LOG_INF("E\n");
-	spin_lock(&imgsensor_drv_lock);
-	imgsensor.sensor_mode = IMGSENSOR_MODE_CAPTURE;
+	if(imgsensor.sensor_mode == IMGSENSOR_MODE_CAPTURE)
+	{ 
+		flag=1;
+		LOG_INF("sensor_mode is already capture mode E\n"); 
+	}
+	else
+	{ 
+		spin_lock(&imgsensor_drv_lock);
+		imgsensor.sensor_mode = IMGSENSOR_MODE_CAPTURE;
+		spin_unlock(&imgsensor_drv_lock);
+		flag=0; 
+	}
+	spin_lock(&imgsensor_drv_lock); 
 	if (imgsensor.current_fps == imgsensor_info.cap1.max_framerate) {//PIP capture: 24fps for less than 13M, 20fps for 16M,15fps for 20M
 		imgsensor.pclk = imgsensor_info.cap1.pclk;
 		imgsensor.line_length = imgsensor_info.cap1.linelength;
@@ -1036,9 +1065,11 @@ static kal_uint32 capture(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 		imgsensor.min_frame_length = imgsensor_info.cap.framelength;
 		imgsensor.autoflicker_en = KAL_FALSE;
 	}
-	spin_unlock(&imgsensor_drv_lock);
-
-	 capture_setting(imgsensor.current_fps);
+	spin_unlock(&imgsensor_drv_lock); 
+	if(flag==0)
+	{ 
+		capture_setting(imgsensor.current_fps); 
+	}
 	set_mirror_flip(imgsensor.mirror);
 
 	return ERROR_NONE;
@@ -1442,8 +1473,17 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 
 
 	MSDK_SENSOR_REG_INFO_STRUCT *sensor_reg_data=(MSDK_SENSOR_REG_INFO_STRUCT *) feature_para;
-
-	LOG_INF("feature_id = %d\n", feature_id);
+	//unsigned long long *feature_data=(unsigned long long *) feature_para;
+	//unsigned long long *feature_return_para=(unsigned long long *) feature_para;	
+#ifdef CONFIG_MTK_CAMERA_LSHUTTER
+ 	/*lenovo-sw sunliang modify for long_shutter 2015_4_25 begin*/
+	unsigned long long *pLockAePara=(unsigned long long *) feature_para;
+	UINT32  mLShutter,mLGain;
+	mLGain=*pLockAePara++;
+	mLShutter=*pLockAePara;
+	/*lenovo-sw sunliang modify for long_shutter 2015_4_25 begin*/
+#endif
+	//LOG_INF("feature_id = %d,lock_flag=%d\n", feature_id,lock_flag);
 	switch (feature_id) {
 		case SENSOR_FEATURE_GET_PERIOD:
 			*feature_return_para_16++ = imgsensor.line_length;
@@ -1451,19 +1491,47 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 			*feature_para_len=4;
 			break;
 		case SENSOR_FEATURE_GET_PIXEL_CLOCK_FREQ:
-            LOG_INF("feature_Control imgsensor.pclk = %d,imgsensor.current_fps = %d\n", imgsensor.pclk,imgsensor.current_fps);
+           		 LOG_INF("feature_Control imgsensor.pclk = %d,imgsensor.current_fps = %d\n", imgsensor.pclk,imgsensor.current_fps);
 			*feature_return_para_32 = imgsensor.pclk;
 			*feature_para_len=4;
 			break;
-		case SENSOR_FEATURE_SET_ESHUTTER:
-                     set_shutter(*feature_data);
-			break;
 		case SENSOR_FEATURE_SET_NIGHTMODE:
-                     //night_mode((BOOL) *feature_data);
 			break;
-		case SENSOR_FEATURE_SET_GAIN:
-                     set_gain((UINT16) *feature_data);
+#ifdef CONFIG_MTK_CAMERA_LSHUTTER
+		/*lenovo-sw sunliang modify for long_shutter 2015_4_25 begin*/
+		case SENSOR_FEATURE_SET_ESHUTTER:
+			if(lock_flag==KAL_FALSE){
+				preview_shutter=*feature_data;
+				set_shutter(*feature_data);
+			}
 			break;
+		case SENSOR_FEATURE_SET_GAIN:	
+			if(lock_flag==KAL_FALSE){
+				preview_gain=*feature_data;
+				set_gain((UINT16) *feature_data);
+			}
+			break;
+		case SENSOR_FEATURE_LOCK_AE:
+			lock_flag=KAL_TRUE;
+			//LOG_INF("LShutter LockAe  Gain=%d Shutter=%d",mLGain,mLShutter);
+			set_gain(mLGain);
+			write_shutter(mLShutter);
+			break;
+		case SENSOR_FEATURE_UNLOCK_AE:
+			lock_flag=KAL_FALSE;
+			//LOG_INF("LShutter unlock_ae\n");
+			write_shutter(preview_shutter);
+			set_gain(preview_gain);
+			break;
+		/*lenovo-sw sunliang modify for long_shutter 2015_4_25 end*/		
+#else
+		case SENSOR_FEATURE_SET_ESHUTTER:
+			set_shutter(*feature_data);
+			break;
+		case SENSOR_FEATURE_SET_GAIN:	
+			set_gain((UINT16) *feature_data);
+			break;
+#endif
 		case SENSOR_FEATURE_SET_FLASHLIGHT:
 			break;
 		case SENSOR_FEATURE_SET_ISP_MASTER_CLOCK_FREQ:

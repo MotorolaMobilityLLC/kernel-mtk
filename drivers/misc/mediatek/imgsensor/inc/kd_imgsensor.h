@@ -123,6 +123,8 @@ NSFeature :  : RAWSensorInfo < _id >  :  : getFlickerPara \
 #define IMX230_SENSOR_ID                        0x0230
 #define IMX220_SENSOR_ID                        0x0220
 #define IMX219_SENSOR_ID                        0x0219
+#define IMX219_SENSOR_ID                        0x0219
+#define IMX219_OFILM_SENSOR_ID         0x021b
 #define IMX214_SENSOR_ID                        0x0214
 #define IMX214_MONO_SENSOR_ID                   0x0215
 #define IMX179_SENSOR_ID                        0x0179
@@ -176,10 +178,14 @@ NSFeature :  : RAWSensorInfo < _id >  :  : getFlickerPara \
 /*S5K*/
 #define S5K2L7_SENSOR_ID                        0x20C1
 #define S5K3L8_SENSOR_ID                        0x30C8
+#define S5k3P3_OFILM_MID			0x07
+#define S5k3P3_SUNNY_MID			0x01	
 #define S5K2X8_SENSOR_ID                        0x2188
 #define S5K2P8_SENSOR_ID                        0x2108
-#define S5K3P3SX_SENSOR_ID                      0x3103
-#define S5K3M2_SENSOR_ID                        0x30D2
+#define S5K3P3SX_SENSOR_ID                    0x3103
+#define S5K3P3SX_OFILM_SENSOR_ID                        (0x3103+S5k3P3_OFILM_MID)
+#define S5K3M2_SENSOR_ID                        (0x30D2+S5k3M2_OFILM_MID)
+#define S5K3M2_SUNNY_SENSOR_ID           (0x30D2+S5k3M2_SUNNY_MID)
 #define S5K3AAEA_SENSOR_ID                      0x07AC
 #define S5K3BAFB_SENSOR_ID                      0x7070
 #define S5K3H7Y_SENSOR_ID                       0x3087
@@ -297,6 +303,7 @@ NSFeature :  : RAWSensorInfo < _id >  :  : getFlickerPara \
 #define SENSOR_DRVNAME_IMX230_MIPI_RAW          "imx230mipiraw"
 #define SENSOR_DRVNAME_IMX220_MIPI_RAW          "imx220mipiraw"
 #define SENSOR_DRVNAME_IMX219_MIPI_RAW          "imx219mipiraw"
+#define SENSOR_DRVNAME_IMX219_OFILM_MIPI_RAW          "imx219ofilmmipiraw"
 #define SENSOR_DRVNAME_IMX214_MIPI_MONO         "imx214mipimono"
 #define SENSOR_DRVNAME_IMX214_MIPI_RAW          "imx214mipiraw"
 #define SENSOR_DRVNAME_IMX179_MIPI_RAW          "imx179mipiraw"
@@ -354,6 +361,7 @@ NSFeature :  : RAWSensorInfo < _id >  :  : getFlickerPara \
 #define SENSOR_DRVNAME_S5K2X8_MIPI_RAW          "s5k2x8mipiraw"
 #define SENSOR_DRVNAME_S5K2P8_MIPI_RAW          "s5k2p8mipiraw"
 #define SENSOR_DRVNAME_S5K3P3SX_MIPI_RAW      "s5k3p3sxmipiraw"
+#define SENSOR_DRVNAME_S5K3P3SX_OFILM_MIPI_RAW      "s5k3p3sxofilmmipiraw"
 #define SENSOR_DRVNAME_S5K3M2_MIPI_RAW          "s5k3m2mipiraw"
 #define SENSOR_DRVNAME_S5K3H2YX_MIPI_RAW        "s5k3h2yxmipiraw"
 #define SENSOR_DRVNAME_S5K3H7Y_MIPI_RAW         "s5k3h7ymipiraw"

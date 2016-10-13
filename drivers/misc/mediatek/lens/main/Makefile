@@ -80,4 +80,8 @@ obj-$(CONFIG_MTK_LENS_AD5820AF_SUPPORT)    += common/ad5820af/
 obj-$(CONFIG_MTK_LENS_WV511AAF_SUPPORT)    += common/wv511aaf/
 obj-$(CONFIG_MTK_LENS_AK7371AF_SUPPORT)    += common/ak7371af/
 
+#lenovo.sw START huangsh4 config kungfu camera
+obj-$(CONFIG_MTK_LENS_DW9800wSUNNYAF_SUPPORT)    += common/dw9800sunnyaf/
+obj-$(CONFIG_MTK_LENS_DW9800wOFILMAF_SUPPORT)    += common/dw9800ofilmaf/
+#lenovo.sw END huangsh4 config kungfu camera
 endif

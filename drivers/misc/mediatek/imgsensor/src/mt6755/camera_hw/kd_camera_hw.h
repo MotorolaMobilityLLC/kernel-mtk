@@ -17,7 +17,7 @@
 #include <linux/types.h>
 #include "kd_camera_typedef.h"
 
-#ifdef CONFIG_MTK_LEGACY
+#if 0//def CONFIG_MTK_LEGACY
 #include <mach/mt_gpio.h>
 
 #ifdef CONFIG_MTK_MT6306_SUPPORT
@@ -73,7 +73,7 @@
 
 /* Define I2C Bus Num */
 #define SUPPORT_I2C_BUS_NUM1        I2C_CAMERA_MAIN_CHANNEL
-#define SUPPORT_I2C_BUS_NUM2        I2C_CAMERA_SUB_CHANNEL
+#define SUPPORT_I2C_BUS_NUM2        3
 
 
 typedef enum {
@@ -110,7 +110,7 @@ typedef enum {
 	Vol_3600 = VOL_3600
 } Voltage;
 #else
-
+#define VOL2950 2950000
 #define VOL2800 2800000
 #define VOL1800 1800000
 #define VOL1500 1500000
@@ -124,13 +124,18 @@ typedef enum {
 	PDN,
 	RST,
 	SensorMCLK,
-	AVDD,
+	AVDD,  //4//4
 	DVDD,
 	DOVDD,
 	AFVDD,
 	SUB_DVDD,
 	MAIN2_DVDD,
+/*lenovo.sw wuyt3 add for K52M*/
+	FLASHLIGHT_ENT,
+	FLASHLIGHT_ENF
+/*wuyt3 add end*/
 } PowerType;
+
 
 typedef enum {
 	Vol_Low = 0,
@@ -142,6 +147,7 @@ typedef enum {
 	Vol_1500 = VOL1500,
 	Vol_1800 = VOL1800,
 	Vol_2800 = VOL2800,
+	Vol_2950 = VOL2950,
 } Voltage;
 #define CAMERA_CMRST_PIN            0
 #define CAMERA_CMRST_PIN_M_GPIO     0

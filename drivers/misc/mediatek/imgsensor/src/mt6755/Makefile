@@ -15,7 +15,9 @@
 # Makefile for misc devices that really don't fit anywhere else.
 #
 
-
+ifeq ($(TARGET_PRODUCT),kungfu_m)
+ccflags-y += -DCAMERA_SENSORLIST_Kungfu
+endif
 
 define FILTER_PROJECT_DRV
 ifeq ($(wildcard $(srctree)/drivers/misc/mediatek/imgsensor/src/$(MTK_PLATFORM)/camera_project/$(ARCH_MTK_PROJECT)/$(1)),)

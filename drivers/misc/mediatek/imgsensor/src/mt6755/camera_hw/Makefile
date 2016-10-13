@@ -10,5 +10,7 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 # GNU General Public License for more details.
 #
-
+ifeq ($(TARGET_PRODUCT),kungfu_m)
+ccflags-y += -DCAMERA_HW_Kungfu
+endif
 obj-y				+= kd_camera_hw.o
