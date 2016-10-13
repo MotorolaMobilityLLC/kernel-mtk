@@ -56,8 +56,13 @@ static int sdcardfs_statfs(struct dentry *dentry, struct kstatfs *buf)
 	struct path lower_path;
 #if 0
 	u32 min_blocks;
-	struct sdcardfs_sb_info *sbi = SDCARDFS_SB(dentry->d_sb);
 #endif
+	struct sdcardfs_sb_info *sbi = SDCARDFS_SB(dentry->d_sb);
+
+	if (sbi->flag && SDCARDFS_MOUNT_ACCESS_DISABLE) {
+		return -ENOENT;
+	}
+
 	sdcardfs_get_lower_path(dentry, &lower_path);
 	err = vfs_statfs(&lower_path, buf);
 	sdcardfs_put_lower_path(dentry, &lower_path);
