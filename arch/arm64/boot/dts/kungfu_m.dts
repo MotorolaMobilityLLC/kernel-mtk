@@ -586,7 +586,141 @@ camera_pins_cam_ldo_vcama_0: cam0@0 {
 	status = "okay";
 };
 /* CONSYS end */
-
+/* lenovo-sw chengx2 modify for wcn begin */
+/* Connectivity GPIO standardization */
+&pio {
+	pcfg_combo_pmu_en_pull_dis_cfgs:cfg_gpio22_model_pull_dis {
+		combo_pins {
+			pins = <PINMUX_GPIO22__FUNC_GPIO22>;
+			bias-disable;
+		};
+	};
+	pcfg_combo_pmu_en_in_pulldown_cfgs:cfg_gpio22_model_in_pulldown {
+		combo_pins {
+			pins = <PINMUX_GPIO22__FUNC_GPIO22>;
+			bias-pull-down;
+		};
+	};
+	pcfg_combo_rst_pull_dis_cfgs:cfg_gpio21_model_in_pull_dis {
+		combo_pins {
+			pins = <PINMUX_GPIO21__FUNC_GPIO21>;
+			bias-disable;
+		};
+	};
+	pcfg_combo_wifi_eint_in_pull_dis_cfgs:cfg_gpio18_model_in_pull_dis {
+		combo_pins {
+			pins = <PINMUX_GPIO18__FUNC_GPIO18>;
+			slew-rate = <0>;
+			bias-disable;
+		};
+	};
+	pcfg_combo_wifi_eint_in_pullup_cfgs:cfg_gpio18_model_in_pullup {
+		combo_pins {
+			pins = <PINMUX_GPIO18__FUNC_GPIO18>;
+			slew-rate = <0>;
+			bias-pull-up = <00>;
+		};
+	};
+	pcfg_combo_urxd_uart_pull_dis_cfgs:cfg_gpio118_model_pull_dis {
+		combo_pins {
+			pins = <PINMUX_GPIO118__FUNC_PTA_RXD>;
+			bias-disable;
+		};
+	};
+	pcfg_combo_urxd_gpio_in_pullup_cfgs:cfg_gpio118_model_in_pullup {
+		combo_pins {
+			pins = <PINMUX_GPIO118__FUNC_PTA_RXD>;
+			slew-rate = <0>;
+			bias-pull-up = <00>;
+		};
+	};
+	pcfg_combo_urxd_gpio_in_pull_dis_cfgs:cfg_gpio118_model_in_pull_dis {
+		combo_pins {
+			pins = <PINMUX_GPIO118__FUNC_PTA_RXD>;
+			slew-rate = <0>;
+			bias-disable;
+		};
+	};
+	pcfg_combo_utxd_uart_pull_dis_cfgs:cfg_gpio117_model_pull_dis {
+		combo_pins {
+			pins = <PINMUX_GPIO117__FUNC_PTA_TXD>;
+			bias-disable;
+		};
+	};
+	pcfg_combo_pcm_daiclk_pull_dis_cfgs:cfg_gpio14_mode5_pull_dis {
+		combo_pins {
+			pins = <PINMUX_GPIO14__FUNC_MRG_CLK>;
+			bias-disable;
+		};
+	};
+	pcfg_combo_pcm_daipcmin_pull_dis_cfgs:cfg_gpio16_mode5_pull_dis {
+		combo_pins {
+			pins = <PINMUX_GPIO16__FUNC_MRG_DI>;
+			bias-disable;
+		};
+	};
+	pcfg_combo_pcm_daipcmout_pull_dis_cfgs:cfg_gpio15_mode4_pull_dis {
+		combo_pins {
+			pins = <PINMUX_GPIO15__FUNC_MRG_DO>;
+			bias-disable;
+		};
+	};
+	pcfg_combo_pcm_daisync_pull_dis_cfgs:cfg_gpio13_mode4_pull_dis {
+		combo_pins {
+			pins = <PINMUX_GPIO13__FUNC_MRG_SYNC>;
+			bias-disable;
+		};
+	};
+	pcfg_combo_gps_lna_pull_dis_cfgs:cfg_gpio114_model_in_pull_dis {
+		combo_pins {
+			pins = <PINMUX_GPIO114__FUNC_GPIO114>;
+			bias-disable;
+		};
+	};
+	pcfg_combo_gps_sync_pull_dis_cfgs:cfg_gpio121_mode6_pull_dis {
+		combo_pins {
+			pins = <PINMUX_GPIO121__FUNC_AGPS_SYNC>;
+			bias-disable;
+		};
+	};
+};
+&connectivity{
+	pinctrl-names = "gpio_pmu_en_pull_dis",
+		"gpio_pmu_en_in_pulldown", 
+		"gpio_rst_pull_dis", 
+		"gpio_wifi_eint_in_pull_dis",
+		"gpio_wifi_eint_in_pullup",
+		"gpio_urxd_uart_pull_dis",
+		"gpio_urxd_gpio_in_pullup",
+		"gpio_urxd_gpio_in_pull_dis",
+		"gpio_utxd_uart_pull_dis",
+		"gpio_pcm_daiclk_pull_dis",
+		"gpio_pcm_daipcmin_pull_dis",
+		"gpio_pcm_daipcmout_pull_dis", 
+		"gpio_pcm_daisync_pull_dis",
+		"gpio_gps_lna_pull_dis",
+		"gpio_gps_sync_pull_dis";
+	pinctrl-0 = <&pcfg_combo_pmu_en_pull_dis_cfgs>;
+	pinctrl-1 = <&pcfg_combo_pmu_en_in_pulldown_cfgs>;
+	pinctrl-2 = <&pcfg_combo_rst_pull_dis_cfgs>;
+	pinctrl-3 = <&pcfg_combo_wifi_eint_in_pull_dis_cfgs>;
+	pinctrl-4 = <&pcfg_combo_wifi_eint_in_pullup_cfgs>;
+	pinctrl-5 = <&pcfg_combo_urxd_uart_pull_dis_cfgs>;
+	pinctrl-6 = <&pcfg_combo_urxd_gpio_in_pullup_cfgs>;
+	pinctrl-7 = <&pcfg_combo_urxd_gpio_in_pull_dis_cfgs>;
+	pinctrl-8 = <&pcfg_combo_utxd_uart_pull_dis_cfgs>;
+	pinctrl-9 = <&pcfg_combo_pcm_daiclk_pull_dis_cfgs>;
+	pinctrl-10 = <&pcfg_combo_pcm_daipcmin_pull_dis_cfgs>;
+	pinctrl-11 = <&pcfg_combo_pcm_daipcmout_pull_dis_cfgs>;
+	pinctrl-12 = <&pcfg_combo_pcm_daisync_pull_dis_cfgs>;
+	pinctrl-13 = <&pcfg_combo_gps_lna_pull_dis_cfgs>;
+	pinctrl-14 = <&pcfg_combo_gps_sync_pull_dis_cfgs>;
+};
+/* Connectivity end */
+&mmc2 {
+		status = "okay";
+};
+/* lenovo-sw chengx2 modify for wcn end */
 /* AUDIO GPIO standardization */
 &audgpio {
 	pinctrl-names = "default", "audpmicclk-mode0", "audpmicclk-mode1",

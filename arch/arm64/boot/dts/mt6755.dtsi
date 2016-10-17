@@ -2136,7 +2136,33 @@
 			clocks = <&infrasys INFRA_AP_DMA>;
 			clock-names = "wifi-dma";
 		};
-
+	// lenovo-sw chengx2 modify for 6630	
+        /* Connectivity */
+		connectivity:mediatek,connectivity-combo{
+			compatible = "mediatek,connectivity-combo";
+			/*gpio_combo_ldo_en_pin = <&pio 0xffff 0>; /*0) GPIO_COMBO_LDO_EN_PIN */
+			/*gpio_combo_pmuv28_en_pin = <&pio 0xffff 0>; /*1) GPIO_COMBO_PMUV28_EN_PIN*/
+			gpio_combo_pmu_en_pin = <&pio 22 0>;       /*2) GPIO_COMBO_PMU_EN_PIN*/
+			gpio_combo_rst_pin = <&pio 21 0>;	       /*3) GPIO_COMBO_RST_PIN*/
+			/*gpio_combo_bgf_eint_pin = <&pio 92 0>;  /*4) GPIO_COMBO_BGF_EINT_PIN*/
+			gpio_wifi_eint_pin = <&pio 18 0>;          /*5) GPIO_WIFI_EINT_PIN*/
+			/*gpio_all_eint_pin = <&pio 0xffff 0>;        /*6) GPIO_ALL_EINT_PIN*/
+			gpio_combo_urxd_pin = <&pio 118 0>;          /*7) GPIO_COMBO_URXD_PIN*/
+			gpio_combo_utxd_pin = <&pio 117 0>;          /*8) GPIO_COMBO_UTXD_PIN*/
+			gpio_pcm_daiclk_pin = <&pio 14 0>;         /*9) GPIO_PCM_DAICLK_PIN*/
+			gpio_pcm_daipcmin_pin = <&pio 16 0>;       /*10) GPIO_PCM_DAIPCMIN_PIN*/
+			gpio_pcm_daipcmout_pin = <&pio 15 0>;      /*11) GPIO_PCM_DAIPCMOUT_PIN*/
+			gpio_pcm_daisync_pin = <&pio 13 0>;        /*12) GPIO_PCM_DAISYNC_PIN*/
+			/*gpio_combo_i2s_ck_pin = <&pio 0xffff 0>;     /*13) GPIO_COMBO_I2S_CK_PIN*/
+			/*gpio_combo_i2s_ws_pin = <&pio 0xffff 0>;     /*14) GPIO_COMBO_I2S_WS_PIN*/
+			/*gpio_combo_i2s_dat_pin = <&pio 0xffff 0>;    /*15) GPIO_COMBO_I2S_DAT_PIN*/
+			gpio_gps_sync_pin = <&pio 121 0>;            /*16) GPIO_GPS_SYNC_PIN*/
+			gpio_gps_lna_pin = <&pio 114 0>;            /*17) GPIO_GPS_LNA_PIN*/
+			interrupt-parent = <&eintc>;
+			interrupts = <18 IRQ_TYPE_LEVEL_LOW>;
+			debounce = <18 0>;
+			status = "okay";
+		};
 		ccci_off@0 {
 			compatible = "mediatek,ccci_off";
 			clocks = <&scpsys SCP_SYS_MD1>;
