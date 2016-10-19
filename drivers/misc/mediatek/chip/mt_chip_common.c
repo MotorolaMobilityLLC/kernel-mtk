@@ -69,6 +69,19 @@ static int date2str(char *buf, size_t len, int val)
 
 #define __chip_info(id) ((g_chip_drv.get_chip_info) ? (g_chip_drv.get_chip_info(id)) : (0x0000))
 
+#define HWID_LEN 4
+static char hwid[HWID_LEN] = {'1','\0'};
+int __init board_hwid_init(char *s)
+{
+    memset(hwid, 0, HWID_LEN);
+    if (strstr(s, "6755"))
+        hwid[0] = '0';
+    else
+        hwid[0] = '1';
+    return 1;
+}
+__setup("androidboot.hwid=", board_hwid_init);
+
 static struct proc_dir_entry *chip_proc;
 static struct chip_inf_entry chip_ent[] = {
 	{"hw_code", CHIP_INFO_HW_CODE, hex2str},
@@ -126,6 +139,26 @@ static const struct file_operations chip_proc_fops = {
 	.release = single_release,
 };
 
+static int hwid_proc_show(struct seq_file *s, void *v)
+{
+    seq_printf(s, "%s\n", hwid);
+    return 0;
+}
+
+static int hwid_proc_open(struct inode *inode, struct file *file)
+{
+    return single_open(file, hwid_proc_show, NULL);
+}
+
+static const struct file_operations hwid_proc_fops = {
+    .open = hwid_proc_open,
+    .read = seq_read,
+    .llseek = seq_lseek,
+    .release = single_release,
+};
+
+
+
 static void __init create_procfs(void)
 {
 	int idx;
@@ -148,6 +181,9 @@ static void __init create_procfs(void)
 			return;
 		}
 	}
+    if (NULL == proc_create("board_hwid", S_IRUGO, NULL, &hwid_proc_fops)) {
+        pr_err("create board id fail\n");
+    }
 }
 
 int __init chip_common_init(void)
