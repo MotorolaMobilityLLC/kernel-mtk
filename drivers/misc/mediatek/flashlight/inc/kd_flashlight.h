@@ -199,12 +199,14 @@ typedef struct {
 
 
 /* Function declaration to avoid extern usage in .c files, for kernel standardization */
+int checkAndRelease(void);
 /* New init functions */
 int strobe_getPartId(int sensorDev, int strobeId);
 MUINT32 strobeInit_dummy(FLASHLIGHT_FUNCTION_STRUCT **pfFunc);
 MUINT32 constantFlashlightInit(FLASHLIGHT_FUNCTION_STRUCT **pfFunc);
 MUINT32 strobeInit_main_sid1_part2(FLASHLIGHT_FUNCTION_STRUCT **pfFunc);
 MUINT32 strobeInit_main_sid2_part1(FLASHLIGHT_FUNCTION_STRUCT **pfFunc);
+MUINT32 strobeInit_main_sid2_part1_SY7806(FLASHLIGHT_FUNCTION_STRUCT **pfFunc);
 MUINT32 strobeInit_main_sid2_part2(FLASHLIGHT_FUNCTION_STRUCT **pfFunc);
 MUINT32 subStrobeInit(FLASHLIGHT_FUNCTION_STRUCT **pfFunc);
 MUINT32 strobeInit_sub_sid1_part2(FLASHLIGHT_FUNCTION_STRUCT **pfFunc);

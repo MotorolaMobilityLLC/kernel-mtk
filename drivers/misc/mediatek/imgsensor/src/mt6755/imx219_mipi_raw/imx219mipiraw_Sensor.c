@@ -1168,8 +1168,8 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 		imgsensor.i2c_write_id = imgsensor_info.i2c_addr_table[i];
 		spin_unlock(&imgsensor_drv_lock);
 		do {
-			*sensor_id = 0;
-			//*sensor_id = return_sensor_id();
+			//*sensor_id = 0;
+			*sensor_id = return_sensor_id();
 			printk("Q-tech:shen imx219=>i2c write id: 0x%x, sensor id: 0x%x\n", imgsensor.i2c_write_id,*sensor_id);	
 			if (*sensor_id == imgsensor_info.sensor_id) {				
 				printk("Q-tech:imx219=>i2c write id: 0x%x, sensor id: 0x%x\n", imgsensor.i2c_write_id,*sensor_id);	  

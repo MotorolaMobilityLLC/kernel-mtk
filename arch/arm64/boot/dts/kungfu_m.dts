@@ -1035,7 +1035,12 @@ camera_pins_cam_ldo_vcama_0: cam0@0 {
 		status = "okay";
 	};
 /*lenovo-sw caoyi1 modify Msensor end*/
+	strobe_main1@6f{
+		compatible = "mediatek,strobe_main1";
+		reg = <0x6f>;
+	};
 };
+
 /* IRTX GPIO end wuwl10 20160913 remove irtx for lcm pin*/
 
 /*lenovo.sw wuyt3 add for k52M camera*/

@@ -125,6 +125,19 @@ extern long LC898122AF_Ioctl(struct file *a_pstFile, unsigned int a_u4Command,
 extern int LC898122AF_Release(struct inode *a_pstInode, struct file *a_pstFile);
 #endif
 
+/*lenovo.sw huangsh4 add for kungfu camera start */
+#ifdef CONFIG_MTK_LENS_DW9800wSUNNYAF_SUPPORT
+extern void DW9800wSUNNYAF_SetI2Cclient(struct i2c_client *pstAF_I2Cclient, spinlock_t *pAF_SpinLock, int *pAF_Opened);
+extern long DW9800wSUNNYAF_Ioctl(struct file *a_pstFile, unsigned int a_u4Command, unsigned long a_u4Param);
+extern int DW9800wSUNNYAF_Release(struct inode *a_pstInode, struct file *a_pstFile);
+#endif
+
+#ifdef CONFIG_MTK_LENS_DW9800wOFILMAF_SUPPORT
+extern void DW9800wOFILMAF_SetI2Cclient(struct i2c_client *pstAF_I2Cclient, spinlock_t *pAF_SpinLock, int *pAF_Opened);
+extern long DW9800wOFILMAF_Ioctl(struct file *a_pstFile, unsigned int a_u4Command, unsigned long a_u4Param);
+extern int DW9800wOFILMAF_Release(struct inode *a_pstInode, struct file *a_pstFile);
+#endif
+/*lenovo.sw huangsh4 add for kungfu camera end*/
 #ifdef CONFIG_MTK_LENS_LC898212AF_SUPPORT
 #define LC898212AF_SetI2Cclient LC898212AF_SetI2Cclient_Main
 #define LC898212AF_Ioctl LC898212AF_Ioctl_Main

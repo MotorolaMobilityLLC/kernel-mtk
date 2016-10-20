@@ -89,6 +89,15 @@ static stAF_DrvList g_stAF_DrvList[MAX_NUM_OF_LENS] = {
 #ifdef CONFIG_MTK_LENS_DW9719TAF_SUPPORT
 	{1, AFDRV_DW9719TAF, DW9719TAF_SetI2Cclient, DW9719TAF_Ioctl, DW9719TAF_Release},
 #endif
+/*lenovo.sw start huangsh4 add for Kungfu camera*/
+#ifdef CONFIG_MTK_LENS_DW9800wSUNNYAF_SUPPORT
+	{1, AFDRV_DW9800wSUNNYAF, DW9800wSUNNYAF_SetI2Cclient, DW9800wSUNNYAF_Ioctl, DW9800wSUNNYAF_Release},
+#endif
+#ifdef CONFIG_MTK_LENS_DW9800wOFILMAF_SUPPORT
+	{1, AFDRV_DW9800wOFILMAF, DW9800wOFILMAF_SetI2Cclient,  DW9800wOFILMAF_Ioctl,  DW9800wOFILMAF_Release},
+#endif
+/*lenovo.sw end huangsh4 add for Kungfu camera*/
+	
 #ifdef CONFIG_MTK_LENS_LC898122AF_SUPPORT
 	{1, AFDRV_LC898122AF, LC898122AF_SetI2Cclient, LC898122AF_Ioctl, LC898122AF_Release},
 #endif
