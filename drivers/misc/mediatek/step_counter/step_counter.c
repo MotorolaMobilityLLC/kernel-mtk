@@ -13,17 +13,32 @@
 
 
 #include "step_counter.h"
+#include <generated/autoconf.h>
+
+/*Lenovo-sw weimh1 add 2016-10-19 begin*/
+#ifndef CONFIG_MTK_BMI120_NEW
+#define STEP_COUNTER_INT_MODE_SUPPORT
+#endif
+
+#ifndef STEP_COUNTER_INT_MODE_SUPPORT
+#define STEP_COUNTER_INVALID_COUNT 50
+int invalid_count = 0;
+int step_suspend = 0; 
+#endif
+
+#define SIGNIFICANT_MOTION_SENSOR 0
+
+/*Lenovo-sw weimh1 add 2016-10-19 end*/
 
 static struct step_c_context *step_c_context_obj;
-
 
 static struct step_c_init_info *step_counter_init_list[MAX_CHOOSE_STEP_C_NUM] = { 0 };
 
 static void step_c_work_func(struct work_struct *work)
 {
-
 	struct step_c_context *cxt = NULL;
-	uint32_t counter;
+	uint64_t counter;
+	uint64_t rawData;
 	/* hwm_sensor_data sensor_data; */
 	int status;
 	int64_t nt;
@@ -32,24 +47,43 @@ static void step_c_work_func(struct work_struct *work)
 
 	cxt = step_c_context_obj;
 
-	if (NULL == cxt->step_c_data.get_data)
+	if (NULL == cxt->step_c_data.get_data) {
 		STEP_C_LOG("step_c driver not register data path\n");
-
+		return;
+	}
 
 	time.tv_sec = time.tv_nsec = 0;
 	time = get_monotonic_coarse();
 	nt = time.tv_sec * 1000000000LL + time.tv_nsec;
 
 	/* add wake lock to make sure data can be read before system suspend */
-	err = cxt->step_c_data.get_data(&counter, &status);
+	err = cxt->step_c_data.get_data(&rawData, &status);
 
 	if (err) {
 		STEP_C_ERR("get step_c data fails!!\n");
 		goto step_c_loop;
 	} else {
-		{
+		if (0 == (rawData >> 31)) {
+			counter = (int)rawData;
+		}
+		else {
+			counter = (int)(rawData & 0x000000007FFFFFFF);
+			STEP_C_ERR("get step_c data overflow 31bit!!\n" );
+		}
+
+		if (counter != cxt->drv_data.counter) {
 			cxt->drv_data.counter = counter;
 			cxt->drv_data.status = status;
+#ifndef STEP_COUNTER_INT_MODE_SUPPORT
+			invalid_count = 0;
+#endif
+		} else {
+#ifndef STEP_COUNTER_INT_MODE_SUPPORT
+			invalid_count++;
+#endif
+
+			/* no new steps, no need to update */
+			goto step_c_loop;
 		}
 	}
 
@@ -59,7 +93,6 @@ static void step_c_work_func(struct work_struct *work)
 		if (STEP_C_INVALID_VALUE == cxt->drv_data.counter) {
 			STEP_C_LOG(" read invalid data\n");
 			goto step_c_loop;
-
 		}
 	}
 	/* report data to input device */
@@ -68,11 +101,20 @@ static void step_c_work_func(struct work_struct *work)
 	step_c_data_report(cxt->idev, cxt->drv_data.counter, cxt->drv_data.status);
 
 step_c_loop:
-	if (true == cxt->is_polling_run) {
-		{
+#ifndef STEP_COUNTER_INT_MODE_SUPPORT
+	//	if (true == cxt->is_polling_run) {
+		if (invalid_count < STEP_COUNTER_INVALID_COUNT && (step_suspend == 0))
 			mod_timer(&cxt->timer, jiffies + atomic_read(&cxt->delay) / (1000 / HZ));
+		else {
+			cxt->is_polling_run = false;
+			invalid_count = 0;
+			step_suspend = 0;
+			STEP_C_ERR("come here,can suspend!!\n" );
 		}
-	}
+	//	}
+#endif
+
+	STEP_C_LOG("%s step counter:%d\n", __func__, cxt->drv_data.counter);
 }
 
 static void step_c_poll(unsigned long data)
@@ -104,6 +146,8 @@ static struct step_c_context *step_c_context_alloc_object(void)
 	mutex_init(&obj->step_c_op_mutex);
 	obj->is_step_c_batch_enable = false;	/* for batch mode init */
 	obj->is_step_d_batch_enable = false;	/* for batch mode init */
+	obj->is_active_data = false;
+	obj->is_active_nodata = false;
 
 	STEP_C_LOG("step_c_context_alloc_object----\n");
 	return obj;
@@ -116,7 +160,7 @@ int step_notify(STEP_NOTIFY_TYPE type)
 	struct step_c_context *cxt = NULL;
 
 	cxt = step_c_context_obj;
-	STEP_C_LOG("step_notify++++\n");
+	STEP_C_LOG("step_notify++ with type=%d\n", type);
 
 	if (type == TYPE_STEP_DETECTOR) {
 		STEP_C_LOG("fwq TYPE_STEP_DETECTOR notify\n");
@@ -127,12 +171,36 @@ int step_notify(STEP_NOTIFY_TYPE type)
 		input_sync(cxt->idev);
 
 	}
-	if (type == TYPE_SIGNIFICANT) {
+	else if (type == TYPE_SIGNIFICANT) {
 		STEP_C_LOG("fwq TYPE_SIGNIFICANT notify\n");
 		/* cxt->step_c_data.get_data_significant(&value); */
 		value = 1;
 		input_report_rel(cxt->idev, EVENT_TYPE_SIGNIFICANT_VALUE, value);
 		input_sync(cxt->idev);
+	}
+	else if (type == TYPE_STEP_COUNTER)	{
+		STEP_C_LOG("fwq TYPE_STEP_COUNTER notify\n");
+
+#ifndef STEP_COUNTER_INT_MODE_SUPPORT
+//		invalid_count = 0;
+		step_suspend = 0;
+#endif
+		step_c_work_func(0);
+	}
+	else if (type == TYPE_STEP_SUSPEND)	{
+		STEP_C_LOG("fwq TYPE_STEP_SUSPEND notify\n");
+
+#ifndef STEP_COUNTER_INT_MODE_SUPPORT
+//		invalid_count = 0;
+		step_suspend = 1;
+#endif
+		if (cxt->is_polling_run)
+			step_c_work_func(0);
+#if 0
+		cxt->is_polling_run = false;
+		del_timer_sync(&step_c_context_obj->timer);
+		cancel_work_sync(&step_c_context_obj->report);
+#endif
 	}
 
 	return err;
@@ -205,7 +273,6 @@ static int significant_real_enable(int enable)
 	return err;
 }
 
-
 static int step_c_real_enable(int enable)
 {
 	int err = 0;
@@ -263,6 +330,8 @@ static int step_c_enable_data(int enable)
 		cxt->is_active_data = true;
 		cxt->is_first_data_after_enable = true;
 		cxt->step_c_ctl.open_report_data(1);
+#ifndef STEP_COUNTER_INT_MODE_SUPPORT
+		invalid_count = 0;
 		if (false == cxt->is_polling_run && cxt->is_step_c_batch_enable == false) {
 			if (false == cxt->step_c_ctl.is_report_input_direct) {
 				mod_timer(&cxt->timer,
@@ -270,11 +339,14 @@ static int step_c_enable_data(int enable)
 				cxt->is_polling_run = true;
 			}
 		}
+#endif
 	}
 	if (0 == enable) {
 		STEP_C_LOG("STEP_C disable\n");
 		cxt->is_active_data = false;
 		cxt->step_c_ctl.open_report_data(0);
+#ifndef STEP_COUNTER_INT_MODE_SUPPORT
+		invalid_count = 0;
 		if (true == cxt->is_polling_run) {
 			if (false == cxt->step_c_ctl.is_report_input_direct) {
 				cxt->is_polling_run = false;
@@ -283,7 +355,7 @@ static int step_c_enable_data(int enable)
 				cxt->drv_data.counter = STEP_C_INVALID_VALUE;
 			}
 		}
-
+#endif
 	}
 	step_c_real_enable(enable);
 	return 0;
@@ -390,7 +462,6 @@ static ssize_t step_c_store_active(struct device *dev, struct device_attribute *
 		else
 			STEP_C_ERR(" significant_real_enable error !!\n");
 		break;
-
 	}
 
 	/*
@@ -416,12 +487,13 @@ static ssize_t step_c_store_active(struct device *dev, struct device_attribute *
 static ssize_t step_c_show_active(struct device *dev, struct device_attribute *attr, char *buf)
 {
 	struct step_c_context *cxt = NULL;
-	int div;
+	int enc,div;
 
 	cxt = step_c_context_obj;
 	div = cxt->step_c_data.vender_div;
 	STEP_C_LOG("step_c vender_div value: %d\n", div);
-	return snprintf(buf, PAGE_SIZE, "%d\n", div);
+	enc = (int)cxt->is_active_data;
+	return snprintf(buf, PAGE_SIZE, "%d - (%d)\n", div, enc); 
 }
 
 static ssize_t step_c_store_delay(struct device *dev, struct device_attribute *attr,
@@ -482,14 +554,19 @@ static ssize_t step_c_store_batch(struct device *dev, struct device_attribute *a
 	if (handle == ID_STEP_COUNTER) {
 		if (en == 1) {
 			cxt->is_step_c_batch_enable = true;
+#ifndef STEP_COUNTER_INT_MODE_SUPPORT
+		invalid_count = 0;
 			if (true == cxt->is_polling_run) {
 				cxt->is_polling_run = false;
 				del_timer_sync(&cxt->timer);
 				cancel_work_sync(&cxt->report);
 				cxt->drv_data.counter = STEP_C_INVALID_VALUE;
 			}
+#endif
 		} else if (0 == en) {
 			cxt->is_step_c_batch_enable = false;
+#ifndef STEP_COUNTER_INT_MODE_SUPPORT
+		invalid_count = 0;
 			if (false == cxt->is_polling_run) {
 				if (false == cxt->step_c_ctl.is_report_input_direct) {
 					mod_timer(&cxt->timer,
@@ -497,6 +574,7 @@ static ssize_t step_c_store_batch(struct device *dev, struct device_attribute *a
 					cxt->is_polling_run = true;
 				}
 			}
+#endif
 		} else {
 			STEP_C_ERR(" step_c_store_batch error !!\n");
 		}
@@ -627,7 +705,8 @@ int step_c_driver_add(struct step_c_init_info *obj)
 	}
 
 	return err;
-}
+} 
+EXPORT_SYMBOL_GPL(step_c_driver_add);
 
 static int step_c_misc_init(struct step_c_context *cxt)
 {

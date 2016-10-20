@@ -5,7 +5,7 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/hwmon/include
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/include
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat/mt6755/include
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/step_counter
-obj-y	:=  bmi160_acc.o
+obj-y	:=  bmi160_stc.o
 
 endif
 

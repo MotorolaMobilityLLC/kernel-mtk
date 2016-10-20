@@ -82,9 +82,9 @@ struct step_c_control_path {
 };
 
 struct step_c_data_path {
-	int (*get_data)(uint32_t *value, int *status);
-	int (*get_data_step_d)(uint32_t *value, int *status);
-	int (*get_data_significant)(uint32_t *value, int *status);
+	int (*get_data)(uint64_t *value, int *status);
+	int (*get_data_step_d)(uint64_t *value, int *status);
+	int (*get_data_significant)(uint64_t *value, int *status);
 	int vender_div;
 };
 
@@ -135,8 +135,9 @@ struct step_c_context {
 typedef enum {
 	TYPE_STEP_NON   = 0,
 	TYPE_STEP_DETECTOR  = 1,
-	TYPE_SIGNIFICANT = 2
-
+	TYPE_SIGNIFICANT = 2,
+	TYPE_STEP_COUNTER = 3,
+	TYPE_STEP_SUSPEND = 4
 } STEP_NOTIFY_TYPE;
 
 extern int  step_notify(STEP_NOTIFY_TYPE type);

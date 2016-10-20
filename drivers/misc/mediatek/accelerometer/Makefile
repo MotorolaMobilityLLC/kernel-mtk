@@ -38,5 +38,6 @@ obj-$(CONFIG_MTK_ACCEL_RT3000)   +=  rt3000/
 obj-$(CONFIG_MTK_LSM6DS3HG)   +=  lsm6ds3hg/
 #Lenovo-sw weimh1 add 2016-9-30 begin:use independent dir for bmi
 obj-$(CONFIG_MTK_BMI120_NEW)   +=  bmi120-new/
+obj-$(CONFIG_MTK_BMI120_NEW)   +=  bmi160_stc/
 #Lenovo-sw weimh1 add 2016-9-30 end
 endif
