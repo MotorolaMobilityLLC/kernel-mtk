@@ -109,6 +109,24 @@ struct mtk_iommu_domain {
 static struct iommu_ops mtk_iommu_ops;
 static const struct of_device_id mtk_iommu_of_ids[];
 
+static LIST_HEAD(m4ulist);
+
+/*
+ * There may be 1 or 2 M4U HWes.
+ * But we always expect they are in the same domain for the performance.
+ *
+ * Here always return the mtk_iommu_data of the first M4U HW.
+ */
+static struct mtk_iommu_data *mtk_iommu_get_m4u_data(void)
+{
+	struct mtk_iommu_data *cur, *tmp;
+
+	list_for_each_entry_safe(cur, tmp, &m4ulist, list)
+		return cur;
+
+	return NULL;
+}
+
 static struct mtk_iommu_domain *to_mtk_domain(struct iommu_domain *dom)
 {
 	return container_of(dom, struct mtk_iommu_domain, domain);
@@ -116,41 +134,49 @@ static struct mtk_iommu_domain *to_mtk_domain(struct iommu_domain *dom)
 
 static void mtk_iommu_tlb_flush_all(void *cookie)
 {
-	struct mtk_iommu_data *data = cookie;
+	struct mtk_iommu_data *data, *temp;
 
-	writel_relaxed(F_INVLD_EN1 | F_INVLD_EN0, data->base + REG_MMU_INV_SEL);
-	writel_relaxed(F_ALL_INVLD, data->base + REG_MMU_INVALIDATE);
-	wmb(); /* Make sure the tlb flush all done */
+	list_for_each_entry_safe(data, temp, &m4ulist, list) {
+		writel_relaxed(F_INVLD_EN1 | F_INVLD_EN0,
+			       data->base + REG_MMU_INV_SEL);
+		writel_relaxed(F_ALL_INVLD, data->base + REG_MMU_INVALIDATE);
+		wmb(); /* Make sure the tlb flush all done */
+	}
 }
 
 static void mtk_iommu_tlb_add_flush_nosync(unsigned long iova, size_t size,
 					   size_t granule, bool leaf,
 					   void *cookie)
 {
-	struct mtk_iommu_data *data = cookie;
+	struct mtk_iommu_data *data, *temp;
 
-	writel_relaxed(F_INVLD_EN1 | F_INVLD_EN0, data->base + REG_MMU_INV_SEL);
+	list_for_each_entry_safe(data, temp, &m4ulist, list) {
 
-	writel_relaxed(iova, data->base + REG_MMU_INVLD_START_A);
-	writel_relaxed(iova + size - 1, data->base + REG_MMU_INVLD_END_A);
-	writel_relaxed(F_MMU_INV_RANGE, data->base + REG_MMU_INVALIDATE);
+		writel_relaxed(F_INVLD_EN1 | F_INVLD_EN0,
+			       data->base + REG_MMU_INV_SEL);
+
+		writel_relaxed(iova, data->base + REG_MMU_INVLD_START_A);
+		writel_relaxed(iova + size - 1, data->base + REG_MMU_INVLD_END_A);
+		writel_relaxed(F_MMU_INV_RANGE, data->base + REG_MMU_INVALIDATE);
+	}
 }
 
 static void mtk_iommu_tlb_sync(void *cookie)
 {
-	struct mtk_iommu_data *data = cookie;
+	struct mtk_iommu_data *data, *temp;
 	int ret;
 	u32 tmp;
 
-	ret = readl_poll_timeout_atomic(data->base + REG_MMU_CPE_DONE, tmp,
-					tmp != 0, 10, 100000);
-	if (ret) {
-		dev_warn(data->dev,
-			 "Partial TLB flush timed out, falling back to full flush\n");
-		mtk_iommu_tlb_flush_all(cookie);
+	list_for_each_entry_safe(data, temp, &m4ulist, list) {
+		ret = readl_poll_timeout_atomic(data->base + REG_MMU_CPE_DONE,
+						tmp, tmp != 0, 10, 100000);
+		if (ret) {
+			dev_warn(data->dev, "Partial TLB flush timed out, falling back to full flush\n");
+			mtk_iommu_tlb_flush_all(cookie);
+		}
+		/* Clear the CPE status */
+		writel_relaxed(0, data->base + REG_MMU_CPE_DONE);
 	}
-	/* Clear the CPE status */
-	writel_relaxed(0, data->base + REG_MMU_CPE_DONE);
 }
 
 static const struct iommu_gather_ops mtk_iommu_gather_ops = {
@@ -287,13 +313,14 @@ static int mtk_iommu_attach_device(struct iommu_domain *domain,
 {
 	struct mtk_iommu_domain *dom = to_mtk_domain(domain);
 	struct mtk_iommu_client_priv *priv = dev->archdata.iommu;
-	struct mtk_iommu_data *data;
+	struct mtk_iommu_data *data, *curdata;
 	int ret;
 
 	if (!priv)
 		return -ENODEV;
 
-	data = dev_get_drvdata(priv->m4udev);
+	data = mtk_iommu_get_m4u_data();
+	curdata = dev_get_drvdata(priv->m4udev);
 	if (!data->m4u_dom) {
 		data->m4u_dom = dom;
 		ret = mtk_iommu_domain_finalise(data);
@@ -301,13 +328,19 @@ static int mtk_iommu_attach_device(struct iommu_domain *domain,
 			data->m4u_dom = NULL;
 			return ret;
 		}
-	} else if (data->m4u_dom != dom) {
-		/* All the client devices should be in the same m4u domain */
-		dev_err(dev, "try to attach into the error iommu domain\n");
-		return -EPERM;
 	}
 
-	mtk_iommu_config(data, dev, true);
+	/*
+	 * Always use the same pgtable for the performance.
+	 * Update the pgtable reg of M4U-HW1 with the existed pgtable.
+	 */
+	if (!curdata->m4u_dom) {
+		curdata->m4u_dom = data->m4u_dom;
+		writel(data->m4u_dom->cfg.arm_v7s_cfg.ttbr[0],
+		       curdata->base + REG_MMU_PT_BASE_ADDR);
+	}
+
+	mtk_iommu_config(curdata, dev, true);
 	return 0;
 }
 
@@ -315,13 +348,13 @@ static void mtk_iommu_detach_device(struct iommu_domain *domain,
 				    struct device *dev)
 {
 	struct mtk_iommu_client_priv *priv = dev->archdata.iommu;
-	struct mtk_iommu_data *data;
+	struct mtk_iommu_data *curdata;
 
 	if (!priv)
 		return;
 
-	data = dev_get_drvdata(priv->m4udev);
-	mtk_iommu_config(data, dev, false);
+	curdata = dev_get_drvdata(priv->m4udev);
+	mtk_iommu_config(curdata, dev, false);
 }
 
 static int mtk_iommu_map(struct iommu_domain *domain, unsigned long iova,
@@ -409,7 +442,7 @@ static struct iommu_group *mtk_iommu_device_group(struct device *dev)
 		return ERR_PTR(-ENODEV);
 
 	/* All the client devices are in the same m4u iommu-group */
-	data = dev_get_drvdata(priv->m4udev);
+	data = mtk_iommu_get_m4u_data();
 
 	/*
 	 * We may run into a scenario that of_xlate have already set dev->archdata.iommu, but
@@ -639,6 +672,8 @@ static int mtk_iommu_probe(struct platform_device *pdev)
 	ret = mtk_iommu_hw_init(data);
 	if (ret)
 		return ret;
+
+	list_add_tail(&data->list, &m4ulist);
 
 	iommu_cnt++;
 	/*
