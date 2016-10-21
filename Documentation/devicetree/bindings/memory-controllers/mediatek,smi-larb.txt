@@ -9,6 +9,7 @@ Required properties:
 		"mediatek,mt2712-smi-larb"
 - reg : the register and size of this local arbiter.
 - mediatek,smi : a phandle to the smi_common node.
+- mediatek,larbidx: the larb index of this larb in the HW design.
 - power-domains : a phandle to the power domain of this local arbiter.
 - clocks : Must contain an entry for each entry in clock-names.
 - clock-names: must contain 2 entries, as follows:
@@ -21,6 +22,7 @@ Example:
 		compatible = "mediatek,mt8173-smi-larb";
 		reg = <0 0x16010000 0 0x1000>;
 		mediatek,smi = <&smi_common>;
+		mediatek,larbidx = <0>;
 		power-domains = <&scpsys MT8173_POWER_DOMAIN_VDEC>;
 		clocks = <&vdecsys CLK_VDEC_CKEN>,
 			 <&vdecsys CLK_VDEC_LARB_CKEN>;
