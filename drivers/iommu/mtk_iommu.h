@@ -64,6 +64,7 @@ struct mtk_iommu_data {
 	struct mtk_smi_iommu		smi_imu;      /* SMI larb iommu info */
 	bool                            enable_4GB;
 	const struct mtk_iommu_match_data  *match_data;
+	struct list_head		list;
 };
 
 static inline int compare_of(struct device *dev, void *data)
