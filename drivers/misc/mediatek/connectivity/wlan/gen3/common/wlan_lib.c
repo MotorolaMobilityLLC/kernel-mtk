@@ -3271,6 +3271,10 @@ BOOLEAN wlanProcessTxFrame(IN P_ADAPTER_T prAdapter, IN P_NATIVE_PACKET prPacket
 			if (rTxPacketInfo.u2Flag & BIT(ENUM_PKT_ARP))
 				GLUE_SET_PKT_FLAG(prPacket, ENUM_PKT_ARP);
 
+			/*lenovo-sw zhaochuang2, mtk temp patch for dns debug*/
+			if (rTxPacketInfo.u2Flag & BIT(ENUM_PKT_DNS))
+				GLUE_SET_PKT_FLAG(prPacket, ENUM_PKT_DNS);
+
 			if (rTxPacketInfo.u2Flag & BIT(ENUM_PKT_ICMP))
 				GLUE_SET_PKT_FLAG(prPacket, ENUM_PKT_ICMP);
 
@@ -5477,6 +5481,8 @@ VOID wlanInitFeatureOption(IN P_ADAPTER_T prAdapter)
 	prWifiVar->ucArpTxDone = (UINT_8) wlanCfgGetUint32(prAdapter, "ArpTxDone", 1);
 	prWifiVar->ucIcmpTxDone = (UINT_8) wlanCfgGetUint32(prAdapter, "IcmpTxDone", 1);
 	prWifiVar->ePowerMode = (PARAM_POWER_MODE) wlanCfgGetUint32(prAdapter, "PowerSave", Param_PowerModeMax);
+	/*lenovo-sw zhaochuang2, mtk temp patch for dns debug*/
+	prWifiVar->ucDnsTxDone = (UINT_8)wlanCfgGetUint32(prAdapter, "DnsTxDone", 1);
 }
 
 VOID wlanCfgSetSwCtrl(IN P_ADAPTER_T prAdapter)
@@ -6697,6 +6703,14 @@ wlanTdlsTxDone(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMsduInfo, IN ENUM_TX
 			prMsduInfo->ucWlanIndex, prMsduInfo->ucPID, rTxDoneStatus, prMsduInfo->ucTxSeqNum);
 
 	return WLAN_STATUS_SUCCESS;
+}
+/*lenovo-sw zhaochuang2, mtk temp patch for dns debug*/
+WLAN_STATUS
+wlanDnsTxDone(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMsduInfo, IN ENUM_TX_RESULT_CODE_T rTxDoneStatus)
+{
+    DBGLOG(SW4, INFO, "DNS PKT TX DONE WIDX:PID[%u:%u] Status[%u]\n", prMsduInfo->ucWlanIndex, prMsduInfo->ucPID, rTxDoneStatus);
+
+    return WLAN_STATUS_SUCCESS;
 }
 
 VOID wlanReleasePendingCmdById(P_ADAPTER_T prAdapter, UINT_8 ucCid)

@@ -702,6 +702,7 @@ typedef struct _WIFI_VAR_T {
 	UINT_8 ucArpTxDone;
 	UINT_8 ucIcmpTxDone;
 	PARAM_POWER_MODE ePowerMode;
+	UINT_8 ucDnsTxDone;/*lenovo-sw zhaochuang2, mtk temp patch for dns debug*/
 } WIFI_VAR_T, *P_WIFI_VAR_T;	/* end of _WIFI_VAR_T */
 
 /* cnm_timer module */

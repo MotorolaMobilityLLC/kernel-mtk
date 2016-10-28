@@ -1636,6 +1636,13 @@ kalIPv4FrameClassifier(IN P_GLUE_INFO_T prGlueInfo,
 
 				prTxPktInfo->u2Flag |= BIT(ENUM_PKT_DHCP);
 			}
+		} else if (u2DstPort == 0x35) { /* tx dns *//*lenovo-sw zhaochuang2, mtk temp patch for dns debug*/
+				UINT_16 u2IpId = *(UINT_16 *) &pucIpHdr[IPV4_ADDR_LEN];
+				PUINT_8 pucUdpPayload = &pucUdpHdr[UDP_HDR_LEN];
+				UINT_16 u2TransId = (pucUdpPayload[0] << 8) | pucUdpPayload[1];
+
+				DBGLOG(SW4, INFO, "DNS PKT[0x%p] IPID[0x%02x] TransID[0x%04x]\n", prPacket, u2IpId, u2TransId);
+				prTxPktInfo->u2Flag |= BIT(ENUM_PKT_DNS);
 		}
 	} else if (ucIpProto == IP_PRO_ICMP) {
 			/* the number of ICMP packets is seldom so we print log here */
@@ -4888,7 +4895,8 @@ inline INT_32 kalPerMonStart(IN P_GLUE_INFO_T prGlueInfo)
 	struct PERF_MONITOR_T *prPerMonitor;
 
 	prPerMonitor = &prGlueInfo->prAdapter->rPerMonitor;
-	DBGLOG(SW4, TRACE, "enter %s\n", __func__);
+	/*lenovo-sw zhaochuang2 modify*/
+	//DBGLOG(SW4, TRACE, "enter %s\n", __func__);
 
 	if ((wlan_fb_power_down || prGlueInfo->fgIsInSuspendMode) &&
 		!KAL_TEST_BIT(PERF_MON_DISABLE_BIT, prPerMonitor->ulPerfMonFlag)) {

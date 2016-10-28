@@ -57,7 +57,8 @@
 *                           P R I V A T E   D A T A
 ********************************************************************************
 */
-#if DBG
+/*lenovo-sw zhaochuang2, wifi log enhance*/
+#if 1
 /*lint -save -e64 Type mismatch */
 static PUINT_8 apucDebugScanState[SCAN_STATE_NUM] = {
 	(PUINT_8) DISP_STRING("SCAN_STATE_IDLE"),
@@ -103,7 +104,8 @@ VOID scnFsmSteps(IN P_ADAPTER_T prAdapter, IN ENUM_SCAN_STATE_T eNextState)
 
 	do {
 
-#if DBG
+/*lenovo-sw zhaochuang2, wifi log enhance*/
+#if 1
 		DBGLOG(SCN, STATE, "TRANSITION: [%s] -> [%s]\n",
 		       apucDebugScanState[prScanInfo->eCurrentState], apucDebugScanState[eNextState]);
 #else
@@ -1800,7 +1802,8 @@ VOID scnScanDoneTimeout(IN P_ADAPTER_T prAdapter, ULONG ulParamPtr)
 
 	prScanInfo->ucScanDoneTimeoutCnt++;
 	/* whole chip reset check */
-	if (prScanInfo->ucScanDoneTimeoutCnt > SCAN_DONE_TIMEOUT_THRESHOLD) {
+	/*lenovo-sw zhaochuang2, Don't reset chip in test mode when ScanDoneTimeout*/
+	if ((prScanInfo->ucScanDoneTimeoutCnt > SCAN_DONE_TIMEOUT_THRESHOLD) && (prAdapter->fgTestMode == false )) {
 
 		DBGLOG(SCN, ERROR,
 		       " meet SCAN_DONE_TIMEOUT_THRESHOLD %d, trigger whole chip reset !! \r\n",

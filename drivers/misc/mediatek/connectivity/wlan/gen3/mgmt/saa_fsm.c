@@ -50,7 +50,8 @@
 *                           P R I V A T E   D A T A
 ********************************************************************************
 */
-#if DBG
+/*lenovo-sw zhaochuang2, wifi log enhance*/
+#if 1
 /*lint -save -e64 Type mismatch */
 static PUINT_8 apucDebugAAState[AA_STATE_NUM] = {
 	(PUINT_8) DISP_STRING("AA_STATE_IDLE"),
@@ -109,7 +110,8 @@ saaFsmSteps(IN P_ADAPTER_T prAdapter,
 
 	do {
 
-#if DBG
+/*lenovo-sw zhaochuang2, wifi log enhance*/
+#if 1
 		DBGLOG(SAA, STATE, "TRANSITION: [%s] -> [%s]\n",
 				    apucDebugAAState[prStaRec->eAuthAssocState], apucDebugAAState[eNextState]);
 #else
