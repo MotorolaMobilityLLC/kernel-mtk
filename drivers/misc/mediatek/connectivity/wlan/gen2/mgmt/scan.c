@@ -900,9 +900,11 @@ scanSearchBssDescByBssidAndSsid(IN P_ADAPTER_T prAdapter,
 				return prBssDesc;
 			} else if (prDstBssDesc == NULL && prBssDesc->fgIsHiddenSSID == TRUE) {
 				prDstBssDesc = prBssDesc;
-			} else {
+			} else if (prBssDesc->eBSSType == BSS_TYPE_P2P_DEVICE) {
 				/* 20120206 frog: Equal BSSID but not SSID, SSID not hidden,
 				 * SSID must be updated. */
+				 /* 20160823:Permit the scan reusult which there are same BSSID
+				  * but different SSID in what AIS STATE */
 				COPY_SSID(prBssDesc->aucSSID,
 					  prBssDesc->ucSSIDLen, prSsid->aucSsid, prSsid->u4SsidLen);
 				return prBssDesc;
@@ -1813,6 +1815,17 @@ P_BSS_DESC_T scanAddToBssDesc(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfb)
 		fgIsNewBssDesc = TRUE;
 
 		do {
+			if (!fgIsValidSsid) {
+				prBssDesc = scanSearchBssDescByBssid(prAdapter, (PUINT_8)prWlanBeaconFrame->aucBSSID);
+				if (prBssDesc == (P_BSS_DESC_T) NULL) {
+					DBGLOG(SCN, INFO, "ignore hidden BSS(%pM) now\n",
+						(PUINT_8)prWlanBeaconFrame->aucBSSID);
+					return NULL;
+				}
+				DBGLOG(SCN, INFO, "ssid is empty, don't update hidden BSS(%pM) now\n",
+					(PUINT_8)prWlanBeaconFrame->aucBSSID);
+				return prBssDesc;
+			}
 			/* 4 <1.2.1> First trial of allocation */
 			prBssDesc = scanAllocateBssDesc(prAdapter);
 			if (prBssDesc)
@@ -2638,8 +2651,20 @@ WLAN_STATUS scanProcessBeaconAndProbeResp(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_
 #endif
 			rsnCheckSecurityModeChanged(prAdapter, prAisBssInfo, prBssDesc)) {
 				DBGLOG(SCN, INFO, "Beacon security mode change detected\n");
+				DBGLOG_MEM8(SCN, INFO, prSwRfb->pvHeader, prSwRfb->u2PacketLen);
 				fgNeedDisconnect = FALSE;
-				aisBssSecurityChanged(prAdapter);
+				if (!prConnSettings->fgSecModeChangeStartTimer) {
+					cnmTimerStartTimer(prAdapter,
+						&prAdapter->rWifiVar.rAisFsmInfo.rSecModeChangeTimer,
+						SEC_TO_MSEC(3));
+					prConnSettings->fgSecModeChangeStartTimer = TRUE;
+				}
+			} else {
+				if (prConnSettings->fgSecModeChangeStartTimer) {
+					cnmTimerStopTimer(prAdapter,
+						&prAdapter->rWifiVar.rAisFsmInfo.rSecModeChangeTimer);
+					prConnSettings->fgSecModeChangeStartTimer = FALSE;
+				}
 			}
 #endif
 
@@ -3558,6 +3583,40 @@ static UINT_16 scanCalculateScoreBySnrRssi(P_BSS_DESC_T prBssDesc)
 	return u2Score;
 }
 #endif
+static BOOLEAN scanSanityCheckBssDesc(P_ADAPTER_T prAdapter,
+	P_BSS_DESC_T prBssDesc, ENUM_BAND_T eBand, UINT_8 ucChannel, BOOLEAN fgIsFixedChannel)
+{
+	if (!(prBssDesc->ucPhyTypeSet & (prAdapter->rWifiVar.ucAvailablePhyTypeSet))) {
+		DBGLOG(SCN, WARN, "SEARCH: Ignore unsupported ucPhyTypeSet = %x\n",
+			prBssDesc->ucPhyTypeSet);
+		return FALSE;
+	}
+	if (prBssDesc->fgIsUnknownBssBasicRate)
+		return FALSE;
+	if (fgIsFixedChannel &&
+		(eBand != prBssDesc->eBand || ucChannel != prBssDesc->ucChannelNum)) {
+		DBGLOG(SCN, INFO, "Fix channel required band %d, channel %d\n", eBand, ucChannel);
+		return FALSE;
+	}
+	if (!rlmDomainIsLegalChannel(prAdapter, prBssDesc->eBand, prBssDesc->ucChannelNum)) {
+		DBGLOG(SCN, WARN, "Band %d channel %d is not legal\n",
+			prBssDesc->eBand, prBssDesc->ucChannelNum);
+		return FALSE;
+	}
+#if CFG_SUPPORT_WAPI
+	if (prAdapter->rWifiVar.rConnSettings.fgWapiMode) {
+		if (!wapiPerformPolicySelection(prAdapter, prBssDesc))
+			return FALSE;
+	} else
+#endif
+	if (!rsnPerformPolicySelection(prAdapter, prBssDesc))
+		return FALSE;
+	if (prAdapter->rWifiVar.rAisSpecificBssInfo.fgCounterMeasure) {
+		DBGLOG(SCN, WARN, "Skip while at counter measure period!!!\n");
+		return FALSE;
+	}
+	return TRUE;
+}
 
 /*****
 Bss Characteristics to be taken into account when calculate Score:
@@ -3617,6 +3676,7 @@ P_BSS_DESC_T scanSearchBssDescByScoreForAis(P_ADAPTER_T prAdapter)
 	prAisSpecificBssInfo = &prAdapter->rWifiVar.rAisSpecificBssInfo;
 	prConnSettings = &(prAdapter->rWifiVar.rConnSettings);
 	prEssLink = &prAisSpecificBssInfo->rCurEssLink;
+
 #if CFG_SUPPORT_CHNL_CONFLICT_REVISE
 	fgIsFixedChannel = cnmAisDetectP2PChannel(prAdapter, &eBand, &ucChannel);
 #else
@@ -3626,41 +3686,25 @@ P_BSS_DESC_T scanSearchBssDescByScoreForAis(P_ADAPTER_T prAdapter)
 #if CFG_SELECT_BSS_BASE_ON_RSSI
 	if (prConnSettings->eConnectionPolicy != CONNECT_BY_BSSID) {
 		LINK_FOR_EACH_ENTRY(prBssDesc, prEssLink, rLinkEntryEss, BSS_DESC_T) {
-			if (!(prBssDesc->ucPhyTypeSet & (prAdapter->rWifiVar.ucAvailablePhyTypeSet))) {
-				DBGLOG(SCN, TRACE, "SEARCH: Ignore unsupported ucPhyTypeSet = %x\n",
-					prBssDesc->ucPhyTypeSet);
+			if (!scanSanityCheckBssDesc(prAdapter, prBssDesc, eBand, ucChannel, fgIsFixedChannel))
 				continue;
-			}
-			if (prBssDesc->fgIsUnknownBssBasicRate)
-				continue;
-			if (fgIsFixedChannel &&
-				(eBand != prBssDesc->eBand || ucChannel != prBssDesc->ucChannelNum))
-				continue;
-			if (!rlmDomainIsLegalChannel(prAdapter, prBssDesc->eBand, prBssDesc->ucChannelNum))
-				continue;
-#if CFG_SUPPORT_WAPI
-			if (prAdapter->rWifiVar.rConnSettings.fgWapiMode) {
-				if (!wapiPerformPolicySelection(prAdapter, prBssDesc))
-					continue;
-			} else
-#endif
-			if (!rsnPerformPolicySelection(prAdapter, prBssDesc))
-				continue;
-			if (prAisSpecificBssInfo->fgCounterMeasure) {
-				DBGLOG(RSN, INFO, "Skip while at counter measure period!!!\n");
-				continue;
-			}
+
 			cRssi = RCPI_TO_dBm(prBssDesc->ucRCPI);
 			if (cRssi > cMaxRssi)
 				cMaxRssi = cRssi;
 		}
 	}
 #endif
-	DBGLOG(SCN, INFO, "Max RSSI %d\n", cMaxRssi);
+	DBGLOG(SCN, INFO, "Max RSSI %d, ConnectionPolicy =%d\n",
+		  cMaxRssi,
+		  prConnSettings->eConnectionPolicy);
 try_again:
 	LINK_FOR_EACH_ENTRY(prBssDesc, prEssLink, rLinkEntryEss, BSS_DESC_T) {
 		if (prConnSettings->eConnectionPolicy == CONNECT_BY_BSSID &&
 			EQUAL_MAC_ADDR(prBssDesc->aucBSSID, prConnSettings->aucBSSID)) {
+			if (!scanSanityCheckBssDesc(prAdapter, prBssDesc, eBand, ucChannel, fgIsFixedChannel))
+				continue;
+
 			prCandBssDesc = prBssDesc;
 			break;
 		}
@@ -3694,29 +3738,8 @@ try_again:
 				continue;
 		}
 #endif
-		if (!(prBssDesc->ucPhyTypeSet & (prAdapter->rWifiVar.ucAvailablePhyTypeSet))) {
-			DBGLOG(SCN, TRACE, "SEARCH: Ignore unsupported ucPhyTypeSet = %x\n",
-				prBssDesc->ucPhyTypeSet);
+		if (!scanSanityCheckBssDesc(prAdapter, prBssDesc, eBand, ucChannel, fgIsFixedChannel))
 			continue;
-		}
-		if (prBssDesc->fgIsUnknownBssBasicRate)
-			continue;
-		if (fgIsFixedChannel && (eBand != prBssDesc->eBand || ucChannel != prBssDesc->ucChannelNum))
-			continue;
-		if (rlmDomainIsLegalChannel(prAdapter, prBssDesc->eBand, prBssDesc->ucChannelNum) == FALSE)
-			continue;
-#if CFG_SUPPORT_WAPI
-		if (prAdapter->rWifiVar.rConnSettings.fgWapiMode) {
-			if (!wapiPerformPolicySelection(prAdapter, prBssDesc))
-				continue;
-		} else
-#endif
-		if (!rsnPerformPolicySelection(prAdapter, prBssDesc))
-			continue;
-		if (prAisSpecificBssInfo->fgCounterMeasure) {
-			DBGLOG(RSN, INFO, "Skip while at counter measure period!!!\n");
-			continue;
-		}
 
 #if 0	/* currently, we don't take these factors into account */
 		u2ScoreBandwidth = scanCalculateScoreByBandwidth(prAdapter, prBssDesc);
@@ -3772,6 +3795,7 @@ try_again:
 			u2CandBssScore = u2ScoreTotal;
 		}
 	}
+
 	if (prCandBssDesc) {
 		if (prCandBssDesc->fgIsConnected && !fgSearchBlackList && prEssLink->u4NumElem > 0) {
 			fgSearchBlackList = TRUE;

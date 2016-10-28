@@ -1126,6 +1126,10 @@ VOID aisInitializeConnectionSettings(IN P_ADAPTER_T prAdapter, IN P_REG_INFO_T p
 
 	prConnSettings->fgIsAdHocQoSEnable = FALSE;
 
+#if CFG_SUPPORT_DETECT_SECURITY_MODE_CHANGE
+		prConnSettings->fgSecModeChangeStartTimer = FALSE;
+#endif
+
 	prConnSettings->eDesiredPhyConfig = PHY_CONFIG_802_11ABGN;
 
 	/* Set default bandwidth modes */
@@ -1214,6 +1218,11 @@ VOID aisFsmInit(IN P_ADAPTER_T prAdapter)
 	cnmTimerInitTimer(prAdapter,
 			  &prAisFsmInfo->rDeauthDoneTimer,
 			  (PFN_MGMT_TIMEOUT_FUNC) aisFsmRunEventDeauthTimeout, (ULONG) NULL);
+#if CFG_SUPPORT_DETECT_SECURITY_MODE_CHANGE
+		cnmTimerInitTimer(prAdapter,
+				  &prAisFsmInfo->rSecModeChangeTimer,
+				  (PFN_MGMT_TIMEOUT_FUNC) aisFsmRunEventSecModeChangeTimeout, (ULONG) NULL);
+#endif
 
 	/* 4 <1.2> Initiate PWR STATE */
 	SET_NET_PWR_STATE_IDLE(prAdapter, NETWORK_TYPE_AIS_INDEX);
@@ -3087,6 +3096,19 @@ VOID aisFsmRunEventJoinComplete(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHd
 								     WLAN_STATUS_CONNECT_INDICATION, NULL, 0);
 
 						eNextState = AIS_STATE_IDLE;
+					} else if (prBssDesc->ucJoinFailureCount >= SCN_BSS_JOIN_FAIL_THRESOLD) {
+						/*Avoid STA to retry connect AP fenqency and printk too much.*/
+						/*abort connection trial */
+						DBGLOG(AIS, INFO,
+						"Bss %pM join fail over %d,response upper layer to connect fail\n",
+						prBssDesc->aucBSSID, SCN_BSS_JOIN_FAIL_THRESOLD);
+						prAdapter->rWifiVar.rConnSettings.fgIsConnReqIssued = FALSE;
+						prAdapter->rWifiVar.rConnSettings.eReConnectLevel = RECONNECT_LEVEL_MIN;
+						kalIndicateStatusAndComplete(prAdapter->prGlueInfo,
+								     WLAN_STATUS_CONNECT_INDICATION, NULL, 0);
+
+						eNextState = AIS_STATE_IDLE;
+
 					} else {
 						/* 4.b send reconnect request */
 						aisFsmInsertRequest(prAdapter, AIS_REQUEST_RECONNECT);
@@ -4321,6 +4343,13 @@ VOID aisFsmRunEventDeauthTimeout(IN P_ADAPTER_T prAdapter, ULONG ulParam)
 {
 	aisDeauthXmitComplete(prAdapter, NULL, TX_RESULT_LIFE_TIMEOUT);
 }
+#if CFG_SUPPORT_DETECT_SECURITY_MODE_CHANGE
+VOID aisFsmRunEventSecModeChangeTimeout(IN P_ADAPTER_T prAdapter, ULONG ulParamPtr)
+{
+	DBGLOG(AIS, INFO, "Beacon security mode change timeout, trigger disconnect!\n");
+	aisBssSecurityChanged(prAdapter);
+}
+#endif
 
 #if defined(CFG_TEST_MGMT_FSM) && (CFG_TEST_MGMT_FSM != 0)
 /*----------------------------------------------------------------------------*/
