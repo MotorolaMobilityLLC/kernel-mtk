@@ -8,4 +8,5 @@ ifeq ($(CONFIG_TRUSTONIC_TEE_SUPPORT),y)
 	include $(srctree)/drivers/misc/mediatek/gud/Makefile.include
 endif
 
-obj-$(CONFIG_MTK_SPI) += spi.o spi-dev.o
+#lenovo rm spi_dev for fingerprint
+obj-$(CONFIG_MTK_SPI) += spi.o #spi-dev.o 

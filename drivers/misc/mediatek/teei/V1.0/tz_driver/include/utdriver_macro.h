@@ -3,15 +3,15 @@
 #define START_STATUS    (0)
 #define END_STATUS      (1)
 #define VFS_SIZE        0x80000
-
-#define FAST_CALL_TYPE			(0x100)
-#define STANDARD_CALL_TYPE		(0x200)
-#define TYPE_NONE			(0x300)
-
+    
+#define FAST_CALL_TYPE                  (0x100)
+#define STANDARD_CALL_TYPE              (0x200) 
+#define TYPE_NONE                               (0x300)
+    
 #define SHMEM_ENABLE   0
 #define SHMEM_DISABLE  1
 
-#define VDRV_MAX_SIZE			(0x80000)
+#define VDRV_MAX_SIZE           (0x80000)
 
 #define FAST_CREAT_NQ                   (0x40)
 #define FAST_ACK_CREAT_NQ               (0x41)
@@ -61,5 +61,3 @@
 
 #define VFS_SYS_NO 	0x08
 #define REETIME_SYS_NO	0x07
-
-#define UT_DMA_ZONE

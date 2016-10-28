@@ -6,6 +6,8 @@
 #include "notify_queue.h"
 #include "teei_id.h"
 
+#define printk(fmt, args...) printk("\033[;34m[TEEI][TZDriver]"fmt"\033[0m", ##args)
+
 /***********************************************************************
 
  create_notify_queue:
@@ -32,7 +34,7 @@ static long create_notify_queue(unsigned long msg_buff, unsigned long size)
 
 	/* Check the argument */
 	if (size > MAX_BUFF_SIZE) {
-		pr_err("[%s][%d]: The NQ buffer size is too large, DO NOT Allow to create it.\n", __FILE__, __LINE__);
+		printk("[%s][%d]: The NQ buffer size is too large, DO NOT Allow to create it.\n", __FILE__, __LINE__);
 		retVal = -EINVAL;
 		goto return_fn;
 	}
@@ -44,7 +46,7 @@ static long create_notify_queue(unsigned long msg_buff, unsigned long size)
 	nt_t_buffer = (unsigned long) __get_free_pages(GFP_KERNEL , get_order(ROUND_UP(size, SZ_4K)));
 #endif
 	if (nt_t_buffer == NULL) {
-		pr_err("[%s][%d]: kmalloc nt_t_buffer failed.\n", __func__, __LINE__);
+		printk("[%s][%d]: kmalloc nt_t_buffer failed.\n", __func__, __LINE__);
 		retVal =  -ENOMEM;
 		goto return_fn;
 	}
@@ -56,7 +58,7 @@ static long create_notify_queue(unsigned long msg_buff, unsigned long size)
 #endif
 
 	if (t_nt_buffer == NULL) {
-		pr_err("[%s][%d]: kmalloc t_nt_buffer failed.\n", __func__, __LINE__);
+		printk("[%s][%d]: kmalloc t_nt_buffer failed.\n", __func__, __LINE__);
 		retVal =  -ENOMEM;
 		goto Destroy_nt_t_buffer;
 	}
@@ -90,7 +92,6 @@ static long create_notify_queue(unsigned long msg_buff, unsigned long size)
 
 	down(&(boot_sema));
 
-	Invalidate_Dcache_By_Area((unsigned long)msg_buff, (unsigned long)msg_buff + MESSAGE_SIZE);
 	memcpy(&msg_head, msg_buff, sizeof(struct message_head));
 	memcpy(&msg_ack, msg_buff + sizeof(struct message_head), sizeof(struct ack_fast_call_struct));
 
@@ -163,7 +164,6 @@ int add_nq_entry(unsigned char *command_buff, int command_length, int valid_flag
 	temp_head->end_index = (temp_head->end_index + 1) % temp_head->Max_count;
 
 	Flush_Dcache_By_Area((unsigned long)nt_t_buffer, (unsigned long)(nt_t_buffer + NQ_BUFF_SIZE));
-	return 0;
 }
 
 
@@ -172,13 +172,10 @@ unsigned char *get_nq_entry(unsigned char *buffer_addr)
 	struct NQ_head *temp_head = NULL;
 	struct NQ_entry *temp_entry = NULL;
 
-	Invalidate_Dcache_By_Area(buffer_addr, (unsigned long)buffer_addr + NQ_BUFF_SIZE);
 	temp_head = (struct NQ_head *)buffer_addr;
 
-	if (temp_head->start_index == temp_head->end_index) {
-		pr_err("[cache] temp_head->start_index = %d  temp_head->end_index = %d\n ", temp_head->start_index,  temp_head->end_index);
+	if (temp_head->start_index == temp_head->end_index)
 		return NULL;
-	}
 
 	temp_entry = buffer_addr + NQ_BLOCK_SIZE + temp_head->start_index * NQ_BLOCK_SIZE;
 	temp_head->start_index = (temp_head->start_index + 1) % temp_head->Max_count;
@@ -188,14 +185,14 @@ unsigned char *get_nq_entry(unsigned char *buffer_addr)
 	return temp_entry;
 }
 
-long create_nq_buffer(void)
+int create_nq_buffer(void)
 {
-	long retVal = 0;
+	int retVal = 0;
 
 	retVal = create_notify_queue(message_buff, NQ_SIZE);
 
 	if (retVal < 0) {
-		pr_err("[%s][%d]:create_notify_queue failed with errno %ld.\n", __func__, __LINE__, retVal);
+		printk("[%s][%d]:create_notify_queue failed with errno %d.\n", __func__, __LINE__, retVal);
 		return -EINVAL;
 	}
 
