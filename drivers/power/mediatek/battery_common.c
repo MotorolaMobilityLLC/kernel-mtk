@@ -591,9 +591,8 @@ static int battery_get_property(struct power_supply *psy,
 	case POWER_SUPPLY_PROP_batt_vol:
 		val->intval = data->BAT_batt_vol;
 		break;
-		/*caoxu1 2016-11-01*/
 	case POWER_SUPPLY_PROP_batt_temp:
-		val->intval = 250;
+		val->intval = data->BAT_batt_temp;
 		break;
 	case POWER_SUPPLY_PROP_TemperatureR:
 		val->intval = data->BAT_TemperatureR;
