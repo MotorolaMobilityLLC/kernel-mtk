@@ -94,6 +94,8 @@ struct mt_spi_t {
 #if !defined(CONFIG_MTK_CLKMGR)
 	struct clk *clk_main;	/* main clock for spi bus */
 #endif				/* !defined(CONFIG_MTK_LEGACY) */
+
+	int enabled;
 };
 /* open time record debug, log can't affect transfer */
 /* #define SPI_REC_DEBUG */
@@ -101,16 +103,20 @@ struct mt_spi_t {
 /* u32 pad_macro; */
 static void enable_clk(struct mt_spi_t *ms)
 {
+	if (ms->enabled) {
+		return;
+	}
+
 #if (!defined(CONFIG_MT_SPI_FPGA_ENABLE))
 #if defined(CONFIG_MTK_CLKMGR)
 	enable_clock(MT_CG_PERI_SPI0, "spi");
 #else
-	int ret;
 /*	clk_prepare_enable(ms->clk_main); */
-	ret = clk_enable(ms->clk_main);
+	clk_enable(ms->clk_main);
 #endif
 #endif
 
+	ms->enabled = 1;
 }
 
 void mt_spi_enable_master_clk(struct spi_device *ms)
@@ -121,6 +127,9 @@ void mt_spi_enable_master_clk(struct spi_device *ms)
 
 static void disable_clk(struct mt_spi_t *ms)
 {
+	if (!ms->enabled) {
+		return;
+	}
 #if (!defined(CONFIG_MT_SPI_FPGA_ENABLE))
 #if defined(CONFIG_MTK_CLKMGR)
 	disable_clock(MT_CG_PERI_SPI0, "spi");
@@ -130,6 +139,7 @@ static void disable_clk(struct mt_spi_t *ms)
 #endif
 #endif
 
+	ms->enabled = 0;
 }
 
 void mt_spi_disable_master_clk(struct spi_device *ms)
@@ -1456,7 +1466,7 @@ static int __init mt_spi_probe(struct platform_device *pdev)
 	}
 
 	ms = spi_master_get_devdata(master);
-
+	ms->enabled = 0;
 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
 	if (!res) {
 		dev_err(&pdev->dev, "get resource res NULL.\n");
