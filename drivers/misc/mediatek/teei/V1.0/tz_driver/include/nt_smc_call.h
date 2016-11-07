@@ -108,7 +108,8 @@
 		MAKE_SMC_CALL_ID(ID_FIELD_F_FAST_SMC_CALL, ID_FIELD_W_64, ID_FIELD_T_TRUSTED_OS_SERVICE2, 8)
 #define N_GET_NON_IRQ_NUM      \
 		MAKE_SMC_CALL_ID(ID_FIELD_F_FAST_SMC_CALL, ID_FIELD_W_64, ID_FIELD_T_TRUSTED_OS_SERVICE2, 9)
-
+#define N_GET_SE_OS_STATE     \
+		MAKE_SMC_CALL_ID(ID_FIELD_F_FAST_SMC_CALL, ID_FIELD_W_64, ID_FIELD_T_TRUSTED_OS_SERVICE2, 10)
 
 /*For nt side Standard Call*/
 #define NT_SCHED_T		\
@@ -496,6 +497,20 @@ static inline void nt_get_non_irq_num (uint64_t *p0)
 	"nop"
 	: :
 	[fun_id] "r" (N_GET_NON_IRQ_NUM), [temp] "r" (temp)
+	: "x0", "x1", "memory");
+	*p0 = temp[0];
+}
+static inline void nt_get_secure_os_state (uint64_t *p0)
+{
+	uint64_t temp[3];
+	__asm__ volatile(
+	/* ".arch_extension sec\n" */
+	"mov x0, %[fun_id]\n\t"
+	"smc 0\n\t"
+	"str x1, [%[temp], #0]\n\t"
+	"nop"
+	: :
+	[fun_id] "r" (N_GET_SE_OS_STATE), [temp] "r" (temp)
 	: "x0", "x1", "memory");
 	*p0 = temp[0];
 }
