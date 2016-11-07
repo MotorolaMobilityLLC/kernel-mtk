@@ -299,14 +299,16 @@ static int mtk_smi_larb_probe(struct platform_device *pdev)
 		return PTR_ERR(larb->smi.clk_smi);
 	larb->smi.dev = dev;
 
-	ret = of_property_read_u32(dev->of_node, "mediatek,larbidx",
-				   &larb->larbid);
-	if (ret)
-		return ret;
-
 	smi_node = of_parse_phandle(dev->of_node, "mediatek,smi", 0);
 	if (!smi_node)
 		return -EINVAL;
+
+	ret = of_property_read_u32(dev->of_node, "mediatek,larbidx",
+				   &larb->larbid);
+	/* There may be no this property in mt8173 while the others have it. */
+	if (ret &&
+	    !of_device_is_compatible(dev->of_node, "mediatek,mt8173-smi-larb"))
+		return ret;
 
 	smi_pdev = of_find_device_by_node(smi_node);
 	of_node_put(smi_node);
