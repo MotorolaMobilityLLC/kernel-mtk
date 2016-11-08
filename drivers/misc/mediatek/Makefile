@@ -218,4 +218,5 @@ obj-$(CONFIG_USB)	+= usb_boost/
 obj-$(CONFIG_RT_REGMAP) += rt-regmap/
 #shaohui add for LCT DEVINFO start
 obj-$(CONFIG_LCT_DEVINFO_SUPPORT) += lct_devinfo/
+obj-$(CONFIG_LCT_DEVINFO_SUPPORT) += lct_meminfo/
 #shaohui add for LCT DEVINFO end
