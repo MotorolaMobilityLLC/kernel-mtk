@@ -182,6 +182,12 @@
 			compatible = "mediatek,aw87319_pa";
 	};
 	/*wangyongfu add end*/
+
+	/*LCT yufangfang add for config lcm gpio*/
+		lcm_pinctrl: lcm_pincrl@ {
+			compatible = "mediatek,lcm_pinctl";
+		};
+	/*yufangfang add end*/
 };
 
 /*LCT wangyongfu add for exteral amp*/
@@ -345,6 +351,83 @@
 		};
 	};
 };
+
+/*add by yufangfang for lcm gpio vsp vsn rst*/
+&lcm_pinctrl {
+	pinctrl-names = "vsp-pullhigh","vsp-pulllow","vsn-pullhigh","vsn-pulllow","rst-pullhigh","rst-pulllow","led_en-pullhigh","led_en-pulllow";
+	pinctrl-0 = <&lcm_pins_vsp_high>;
+	pinctrl-1 = <&lcm_pins_vsp_low>;
+	pinctrl-2 = <&lcm_pins_vsn_high>;
+	pinctrl-3 = <&lcm_pins_vsn_low>;
+	pinctrl-4 = <&lcm_pins_rst_high>;
+	pinctrl-5 = <&lcm_pins_rst_low>;
+	pinctrl-6 = <&lcm_pins_led_en_high>;
+	pinctrl-7 = <&lcm_pins_led_en_low>;
+	status = "okay";
+};
+&pio {
+	lcm_pins_default: lcmdefault {
+	};
+	lcm_pins_vsp_high: vsphigh {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO128__FUNC_GPIO128>;
+				slew-rate = <1>;
+				output-high;
+		};
+	};
+	lcm_pins_vsp_low: vsplow {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO128__FUNC_GPIO128>;
+				slew-rate = <1>;
+				output-low;
+		};
+	};
+	lcm_pins_vsn_high: vsnhigh {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO127__FUNC_GPIO127>;
+				slew-rate = <1>;
+				output-high;
+		};
+	};
+	lcm_pins_vsn_low: vsnlow {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO127__FUNC_GPIO127>;
+				slew-rate = <1>;
+				output-low;
+		};
+	};
+	lcm_pins_rst_high: rsthigh {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO146__FUNC_GPIO146>;
+				slew-rate = <1>;
+				output-high;
+		};
+	};
+	lcm_pins_rst_low: rstlow {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO146__FUNC_GPIO146>;
+				slew-rate = <1>;
+				output-low;
+		};
+	};
+	lcm_pins_led_en_high: led_enhigh {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO96__FUNC_GPIO96>;
+				slew-rate = <1>;
+				output-high;
+		};
+	};
+	lcm_pins_led_en_low: led_enlow {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO96__FUNC_GPIO96>;
+				slew-rate = <1>;
+				output-low;
+		};
+	};
+};
+
+/**/
+
 /* TOUCH end */
 /* CAMERA GPIO standardization */
 &pio {

@@ -2737,6 +2737,56 @@ static LCM_UTIL_FUNCS lcm_utils_dsi0;
 static LCM_UTIL_FUNCS lcm_utils_dsi1;
 static LCM_UTIL_FUNCS lcm_utils_dsidual;
 
+//add by yufangfang for config lcm gpio vsp vsn rst led_en
+#ifdef CONFIG_LCT_LCM_GPIO_UTIL
+extern void lcm_pinctl_gpio_output(int pin, int level);
+long lcd_enp_bias_setting(unsigned int value)
+{
+	long ret = 0;
+#if !defined(CONFIG_MTK_LEGACY)
+	if (value)
+		lcm_pinctl_gpio_output (0, 1);
+	else
+		lcm_pinctl_gpio_output (0, 0);
+#endif
+
+	return ret;
+}
+long lcd_enn_bias_setting(unsigned int value)
+{
+	long ret = 0;
+#if !defined(CONFIG_MTK_LEGACY)
+	if (value)
+		lcm_pinctl_gpio_output (1, 1);
+	else
+		lcm_pinctl_gpio_output (1, 0);
+#endif
+
+	return ret;
+}
+
+
+static void lcm_reset_settting(unsigned int value)
+{
+#if !defined(CONFIG_MTK_LEGACY)
+	if (value)
+		lcm_pinctl_gpio_output (2, 1);
+	else
+		lcm_pinctl_gpio_output (2, 0);
+#endif
+}
+
+static void lcm_led_en_settting(unsigned int value)
+{
+#if !defined(CONFIG_MTK_LEGACY)
+	if (value)
+		lcm_pinctl_gpio_output (3, 1);
+	else
+		lcm_pinctl_gpio_output (3, 0);
+#endif
+}
+
+#endif
 
 int ddp_dsi_set_lcm_utils(DISP_MODULE_ENUM module, LCM_DRIVER *lcm_drv)
 {
@@ -2814,11 +2864,19 @@ int ddp_dsi_set_lcm_utils(DISP_MODULE_ENUM module, LCM_DRIVER *lcm_drv)
 	utils->set_gpio_dir = (int (*)(unsigned int, unsigned int))mt_set_gpio_dir;
 	utils->set_gpio_pull_enable = (int (*)(unsigned int, unsigned char))mt_set_gpio_pull_enable;
 #else
+#ifdef CONFIG_LCT_LCM_GPIO_UTIL
+	//add by yufangfang
+	utils->set_gpio_lcd_enp_bias = lcd_enp_bias_setting;
+	utils->set_gpio_lcd_enn_bias = lcd_enn_bias_setting;
+	utils->set_reset_pin = lcm_reset_settting;
+	utils->set_gpio_led_en_bias = lcm_led_en_settting;
+#else
 	/* TODO: attach replacements of these functions if using kernel standardization... */
 	utils->set_gpio_out = 0;
 	utils->set_gpio_mode = 0;
 	utils->set_gpio_dir = 0;
 	utils->set_gpio_pull_enable = 0;
+#endif
 #endif
 #endif
 

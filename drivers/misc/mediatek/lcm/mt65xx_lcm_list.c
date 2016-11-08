@@ -41,6 +41,12 @@ LCM_DRIVER *lcm_driver_list[] = {
 	&otm1285a_hd720_dsi_vdo_tm_lcm_drv,
 #endif
 
+//add by yufangfang for hx8394f
+#if defined(LCT_HX8394F_BOOYITECH_720P_VDO)
+	&lct_hx8394f_booyitech_720p_vdo_lcm_drv,
+#endif
+
+
 #if defined(NT35595_FHD_DSI_CMD_TRULY_8163)
 	&nt35595_fhd_dsi_cmd_truly_8163_lcm_drv,
 #endif

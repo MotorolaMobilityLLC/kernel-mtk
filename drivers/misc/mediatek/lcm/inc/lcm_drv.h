@@ -784,6 +784,11 @@ typedef struct {
 	int (*set_gpio_dir)(unsigned int pin, unsigned int dir);
 	int (*set_gpio_pull_enable)(unsigned int pin, unsigned char pull_en);
 	long (*set_gpio_lcd_enp_bias)(unsigned int value);
+	//add by yufangfang for config lcm gpio vsp vsn rst led_en
+#ifdef CONFIG_LCT_LCM_GPIO_UTIL
+	long (*set_gpio_lcd_enn_bias)(unsigned int value);//add by yufangfang
+	void (*set_gpio_led_en_bias)(unsigned int value);
+#endif
 	void (*dsi_set_cmdq_V11)(void *cmdq, unsigned int *pdata, unsigned int queue_size,
 				  unsigned char force_update);
 	void (*dsi_set_cmdq_V22)(void *cmdq, unsigned cmd, unsigned char count,
