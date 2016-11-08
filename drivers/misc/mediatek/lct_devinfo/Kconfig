@@ -1,0 +1,7 @@
+config LCT_DEVINFO_SUPPORT
+        bool "support devinfo drivers By Longcheer"
+        default n
+        help
+         Devoloped by Longcheer,to provide service for showing BSP devices info.
+		 author: shaohui@longcheer.com
+        # states. If unsure say N.

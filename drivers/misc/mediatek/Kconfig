@@ -424,4 +424,10 @@ source "drivers/misc/mediatek/pd/Kconfig"
 
 endmenu    # Misc
 
+# Following section is added by Longcheer
+# LCT_DEVINFO module start
+menu "LCT (Longcheer) devinfo"
+source "drivers/misc/mediatek/lct_devinfo/Kconfig"
+endmenu
+# LCT_DEVINFO module add end
 endif

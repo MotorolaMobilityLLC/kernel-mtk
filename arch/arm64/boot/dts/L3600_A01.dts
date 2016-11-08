@@ -170,6 +170,11 @@
 		firlen					= <0>;
 		is_batch_supported			= <0>;
 		};
+	/*LCT shaohui add for deviceinfo*/
+	deviceinfo{
+		compatible = "mediatek,lct_devinfo";
+	};
+	/*shaohui add end*/
 };
 /* sensor gpio standization */
 &pio {
