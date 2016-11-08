@@ -122,6 +122,7 @@
 		vib_limit = <9>;
 		vib_vol= <5>;
 	};
+
  /* sensor standardization */
 		cust_accel@0 {
 		compatible = "mediatek,mc3410";
@@ -175,7 +176,59 @@
 		compatible = "mediatek,lct_devinfo";
 	};
 	/*shaohui add end*/
+	
+	/*LCT wangyongfu add for exteral amp*/
+	ext_pa:ext_pa@ {
+			compatible = "mediatek,aw87319_pa";
+	};
+	/*wangyongfu add end*/
 };
+
+/*LCT wangyongfu add for exteral amp*/
+&pio {
+	PA_pins_default: pa_default {
+	};
+	PA_pins_aw87319_rst_high: pa_rst0@0 {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO129__FUNC_GPIO129>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+	PA_pins_aw87319_rst_low: pa_rst1@1 {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO129__FUNC_GPIO129>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+	PA_pins_sgm3718_switch_high: sgm0@0  {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO64__FUNC_GPIO64>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+	PA_pins_sgm3718_switch_low: sgm1@01 {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO64__FUNC_GPIO64>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+};
+
+&ext_pa {
+	pinctrl-names = "default", "aw87319_rst_high", "aw87319_rst_low", "sgm3718_switch_high", "sgm3718_switch_low";
+	pinctrl-0 = <&PA_pins_default>;
+	pinctrl-1 = <&PA_pins_aw87319_rst_high>;
+	pinctrl-2 = <&PA_pins_aw87319_rst_low>;
+	pinctrl-3 = <&PA_pins_sgm3718_switch_high>;
+	pinctrl-4 = <&PA_pins_sgm3718_switch_low>;
+	status = "okay";
+};
+/*wangyongfu add end*/
+
 /* sensor gpio standization */
 &pio {
 	alsps_intpin_cfg: alspspincfg {
@@ -231,6 +284,7 @@
 		/*0--MD_MAX--VOICE_MAX--UP_MAX--DW_MAX*/
 		headset-four-key-threshold = <0 58 121 192 450>;
 };
+	
 &touch {
 	tpd-resolution = <720 1280>;
 	use-tpd-button = <0>;

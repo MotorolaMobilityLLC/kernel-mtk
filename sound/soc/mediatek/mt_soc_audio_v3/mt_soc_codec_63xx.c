@@ -99,7 +99,15 @@
 #include "AudDrv_Gpio.h"
 
 /* #define AW8736_MODE_CTRL // AW8736 PA output power mode control */
+//add by wangyongfu
+#if defined(CONFIG_EXTPA_AW87319)
+#define LCT_AW87319_MODE_CTRL // add amp AW97319 control
 
+extern unsigned char AW87319_Audio_Speaker(void);
+extern unsigned char AW87319_Audio_OFF(void);
+extern void SGM3718_SWITCH_ON(void);
+extern void SGM3718_SWITCH_OFF(void);
+#endif
 /* static function declaration */
 static bool AudioPreAmp1_Sel(int Mul_Sel);
 static bool GetAdcStatus(void);
@@ -1879,8 +1887,16 @@ static void Ext_Speaker_Amp_Change(bool enable)
 			mt_set_gpio_out(pin_extspkamp_2, GPIO_OUT_ZERO);	/* low disable */
 		}
 #else
+//add by wangyongfu
+#ifndef LCT_AW87319_MODE_CTRL
 		AudDrv_GPIO_EXTAMP_Select(false);
 		AudDrv_GPIO_EXTAMP2_Select(false);
+#else	
+		AW87319_Audio_OFF();
+		printk("%s AW87319_Audio_OFF-\n", __func__);
+		SGM3718_SWITCH_OFF();
+		printk("%s SGM3718_SWITCH_OFF-\n", __func__);
+#endif
 #endif /*CONFIG_MTK_LEGACY*/
 
 		/*udelay(1000);*/
@@ -1898,8 +1914,16 @@ static void Ext_Speaker_Amp_Change(bool enable)
 		if (pin_extspkamp_2 != NULL_PIN_DEFINITION)
 			mt_set_gpio_out(pin_extspkamp_2, GPIO_OUT_ONE);	/* high enable */
 #else
+//add by wangyongfu
+#ifndef LCT_AW87319_MODE_CTRL
 		AudDrv_GPIO_EXTAMP_Select(true);
 		AudDrv_GPIO_EXTAMP2_Select(true);
+#else
+		AW87319_Audio_Speaker();
+		printk("%s AW87319_Audio_Speaker\n", __func__);
+		SGM3718_SWITCH_ON();
+		printk("%s SGM3718_SWITCH_ON\n", __func__);
+#endif
 #endif /*CONFIG_MTK_LEGACY*/
 		msleep(SPK_WARM_UP_TIME);
 #endif
@@ -1917,8 +1941,17 @@ static void Ext_Speaker_Amp_Change(bool enable)
 			mt_set_gpio_out(pin_extspkamp_2, GPIO_OUT_ZERO);	/* low disbale */
 		}
 #else
+//add by wangyongfu
+#ifndef LCT_AW87319_MODE_CTRL
 		AudDrv_GPIO_EXTAMP_Select(false);
 		AudDrv_GPIO_EXTAMP2_Select(false);
+#else
+		
+		AW87319_Audio_OFF();
+		printk("%s AW87319_Audio_OFF+\n", __func__);
+		SGM3718_SWITCH_OFF();
+		printk("%s SGM3718_SWITCH_OFF+\n", __func__);
+#endif
 #endif
 		udelay(500);
 #endif
@@ -4639,11 +4672,15 @@ static struct snd_soc_codec_driver soc_mtk_codec = {
 	.read = mt6331_read,
 	.write = mt6331_write,
 
-
+	//add by wangyongfu
 	/* use add control to replace */
-	/* .controls = mt6331_snd_controls, */
-	/* .num_controls = ARRAY_SIZE(mt6331_snd_controls), */
-
+#ifndef LCT_AW87319_MODE_CTRL
+	 .controls = mt6331_snd_controls, 
+	 .num_controls = ARRAY_SIZE(mt6331_snd_controls), 
+#else
+      /* .controls = mt6331_snd_controls,  */
+      /* .num_controls = ARRAY_SIZE(mt6331_snd_controls),  */
+#endif
 	.dapm_widgets = mt6331_dapm_widgets,
 	.num_dapm_widgets = ARRAY_SIZE(mt6331_dapm_widgets),
 	.dapm_routes = mtk_audio_map,

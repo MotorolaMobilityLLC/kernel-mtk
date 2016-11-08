@@ -106,6 +106,17 @@ source "sound/parisc/Kconfig"
 
 source "sound/soc/Kconfig"
 
+config EXTPA_AW87319
+	tristate "MediaTek EXTPA_AW87319 Driver"
+	default n
+	help
+	  Say Y here if you have MediaTek EXTPA_AW87319.
+
+	  If unsure, say N.
+
+	  To compile this dirver as a module, choose M here: the
+	  module will be called.
+source "sound/lct_aw87319/Kconfig"
 endif # SND
 
 menuconfig SOUND_PRIME
