@@ -38,7 +38,9 @@
 #define TEMPERATURE_T	255 /* This should be fixed, never change the value*/
 
 #define FG_METER_RESISTANCE	0
-
+//lenovo-sw mahj2 add for full charge capacity Begin
+#define Q_MAX_CHARGE_FULL_DESIGN 3000
+//lenovo-sw mahj2 add for full charge capacity End
 /* Qmax for battery  */
 /*lenovo-sw mahj2 update ZCV param Begin*/
 #define Q_MAX_POS_50 2907

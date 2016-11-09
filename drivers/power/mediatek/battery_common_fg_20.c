@@ -312,6 +312,9 @@ struct battery_data {
 	int capacity_smb;
 	int present_smb;
 	int adjust_power;
+//lenovo-sw mahj2 add for full charge capacity Begin
+	int charge_full_design;
+//lenovo-sw mahj2 add for full charge capacity End
 };
 
 static enum power_supply_property wireless_props[] = {
@@ -349,6 +352,9 @@ static enum power_supply_property battery_props[] = {
 	POWER_SUPPLY_PROP_present_smb,
 	/* ADB CMD Discharging */
 	POWER_SUPPLY_PROP_adjust_power,
+//lenovo-sw mahj2 add for full charge capacity Begin
+	POWER_SUPPLY_PROP_CHARGE_FULL_DESIGN,
+//lenovo-sw mahj2 add for full charge capacity End
 };
 
 struct timespec batteryThreadRunTime;
@@ -671,6 +677,11 @@ static int battery_get_property(struct power_supply *psy,
 	case POWER_SUPPLY_PROP_adjust_power:
 		val->intval = data->adjust_power;
 		break;
+//lenovo-sw mahj2 add for full charge capacity Begin
+	case POWER_SUPPLY_PROP_CHARGE_FULL_DESIGN:
+		val->intval = data->charge_full_design;
+		break;
+//lenovo-sw mahj2 add for full charge capacity End
 
 	default:
 		ret = -EINVAL;
@@ -740,6 +751,9 @@ static struct battery_data battery_main = {
 	.present_smb = 0,
 	/* ADB CMD discharging */
 	.adjust_power = -1,
+//lenovo-sw mahj2 add for full charge capacity Begin
+	.charge_full_design = Q_MAX_CHARGE_FULL_DESIGN,
+//lenovo-sw mahj2 add for full charge capacity End
 #else
 	.BAT_STATUS = POWER_SUPPLY_STATUS_NOT_CHARGING,
 	.BAT_HEALTH = POWER_SUPPLY_HEALTH_GOOD,
@@ -758,6 +772,9 @@ static struct battery_data battery_main = {
 	.present_smb = 0,
 	/* ADB CMD discharging */
 	.adjust_power = -1,
+//lenovo-sw mahj2 add for full charge capacity Begin
+	.charge_full_design = Q_MAX_CHARGE_FULL_DESIGN,
+//lenovo-sw mahj2 add for full charge capacity End
 #endif
 };
 
