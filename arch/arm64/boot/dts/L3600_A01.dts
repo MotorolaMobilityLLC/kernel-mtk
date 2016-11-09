@@ -939,10 +939,10 @@
 &pio {
 	usb_default: usb_default {
 	};
-
-	gpio0_mode1_iddig: iddig_irq_init {
+/* modify OTG GPIO by Zhao Fei */
+	gpio61_mode0_iddig: iddig_irq_init {
 		pins_cmd_dat {
-			pins = <PINMUX_GPIO0__FUNC_IDDIG>;
+			pins = <PINMUX_GPIO61__FUNC_GPIO61>;
 			slew-rate = <0>;
 			bias-pull-up = <00>;
 		};
@@ -976,10 +976,11 @@
 };
 
 &usb0 {
-	iddig_gpio = <0 1>;
+/* modify OTG GPIO by Zhao Fei */
+	iddig_gpio = <61 1>;
 	pinctrl-names = "usb_default", "iddig_irq_init", "drvvbus_init", "drvvbus_low", "drvvbus_high";
 	pinctrl-0 = <&usb_default>;
-	pinctrl-1 = <&gpio0_mode1_iddig>;
+	pinctrl-1 = <&gpio61_mode0_iddig>;
 	pinctrl-2 = <&gpio83_mode2_drvvbus>;
 	pinctrl-3 = <&gpio83_mode2_drvvbus_low>;
 	pinctrl-4 = <&gpio83_mode2_drvvbus_high>;
