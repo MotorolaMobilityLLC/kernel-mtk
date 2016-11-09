@@ -293,6 +293,19 @@
 	gyro_intpin_default: gyrodefaultcfg {
 
 	};
+
+/*LCT  add  cap sensor by cly*/	
+	capsensor_pins_default: eint100default {
+	};
+	capsensor_pins_eint_as_int: eint@100 {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO100__FUNC_GPIO100>;
+			slew-rate = <0>;
+			bias-pull-up = <00>;
+		};
+	};  
+/*end LCT */
+
 };
 &alsps {
 	pinctrl-names = "pin_default", "pin_cfg";
