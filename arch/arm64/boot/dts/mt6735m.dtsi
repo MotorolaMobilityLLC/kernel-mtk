@@ -661,6 +661,34 @@ initrd=0x44000000,0x1000000 loglevel=8 androidboot.hardware=mt6735";
 			compatible = "mediatek, gse_1-eint";
 			status = "disabled";
 		};
+	/* LCT ADD For dws config*/	
+		gse_2: gse_2 {
+			compatible = "mediatek, gse_2-eint";
+			status = "disabled";
+		};
+		fpc1145: fpc1145{
+			compatible = "mediatek, fpc1145-eint";
+			status = "disabled";
+		};
+		chr_stat: chr_stat{
+			compatible = "mediatek, chr_stat-eint";
+			status = "disabled";
+		};
+	/* LCT Add End */
+	
+	/*LCT  add for cap sensor  by cly  */
+		capsensor:cap_touch@0 {
+			compatible = "mediatek,cap_touch";
+		};  
+		m_captouch_pl@0 {
+			compatible = "mediatek,m_captouch_pl";
+		};
+		capsenso:capsenso{
+			compatible = "mediatek, capsenso-eint";
+		};
+
+	/*end LCT*/
+
 		ext_buck_oc: ext_buck_oc {
 			compatible = "mediatek, ext_buck_oc-eint";
 			status = "disabled";
@@ -1192,7 +1220,11 @@ initrd=0x44000000,0x1000000 loglevel=8 androidboot.hardware=mt6735";
 						"mediatek,mt6735m-touch";
 			vtouch-supply = <&mt_pmic_vgp1_ldo_reg>;
 		};
-
+/*LCT ADD for otg*/
+		otg_iddig: otg_iddig@ {
+			compatible = "mediatek,usb_iddig_eint";
+		};
+/*LCT ADD for otg*/
 		accdet: accdet@ {
 			compatible = "mediatek,mt6735-accdet",
 						"mediatek,mt6735m-accdet";
@@ -1888,6 +1920,12 @@ initrd=0x44000000,0x1000000 loglevel=8 androidboot.hardware=mt6735";
 		mediatek,clkbuf-quantity = <4>;
 		mediatek,clkbuf-config = <2 1 1 1>;
 	};
+
+	/*modify by hxl start*/
+	fingerprint:fingerprint{
+		compatible="mediatek,fingerprint";
+	};
+	/*modify by hxl end*/
 };
 
 #include "cust.dtsi"
