@@ -57,6 +57,9 @@ endif
 ifeq ($(CONFIG_MTK_LENS_LC898212AF_SUPPORT),y)
 MAIN_CFILES += common/lc898212af/LC898212AF.c
 endif
+ifeq ($(CONFIG_MTK_LENS_LCT_DW9763AF_SUPPORT),y)
+MAIN_CFILES += common/lct_dw9763af/LCT_DW9763.c
+endif
 
 obj-m := mainaf.o
 mainaf-objs := $(MAIN_CFILES:.c=.o)
@@ -79,5 +82,6 @@ obj-$(CONFIG_MTK_LENS_LC898122AF_SUPPORT)  += common/lc898122af/
 obj-$(CONFIG_MTK_LENS_AD5820AF_SUPPORT)    += common/ad5820af/
 obj-$(CONFIG_MTK_LENS_WV511AAF_SUPPORT)    += common/wv511aaf/
 obj-$(CONFIG_MTK_LENS_AK7371AF_SUPPORT)    += common/ak7371af/
+obj-$(CONFIG_MTK_LENS_LCT_DW9763AF_SUPPORT) += common/lct_dw9763af/
 
 endif

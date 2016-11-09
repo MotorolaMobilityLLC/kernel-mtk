@@ -68,6 +68,9 @@ static struct i2c_board_info kd_lens_dev __initdata = {
 
 
 static stAF_DrvList g_stAF_DrvList[MAX_NUM_OF_LENS] = {
+#ifdef CONFIG_MTK_LENS_LCT_DW9763AF_SUPPORT/*jijin.wang lct add dw9763 for ar1335 */
+	{1, AFDRV_LCT_DW9763AF, LCT_DW9763AF_SetI2Cclient, LCT_DW9763AF_Ioctl, LCT_DW9763AF_Release},
+#endif
 #ifdef CONFIG_MTK_LENS_BU6424AF_SUPPORT
 	{1, AFDRV_BU6424AF, BU6424AF_SetI2Cclient, BU6424AF_Ioctl, BU6424AF_Release},
 #endif

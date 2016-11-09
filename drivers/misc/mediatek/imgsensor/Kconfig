@@ -17,3 +17,9 @@ config MTK_EFUSE_DOWNGRADE
 	default n
 	help
 	  a variant of downgrade chip
+
+config LCT_CAMERA_KERNEL
+	bool "a value for different ODM camera"
+	default n
+	help
+	  a value for different ODM camera

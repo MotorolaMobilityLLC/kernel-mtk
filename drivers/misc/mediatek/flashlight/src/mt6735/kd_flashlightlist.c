@@ -84,7 +84,113 @@ static FLASHLIGHT_FUNCTION_STRUCT
 	*g_pFlashInitFunc[e_Max_Sensor_Dev_Num][e_Max_Strobe_Num_Per_Dev][e_Max_Part_Num_Per_Dev];
 static int gLowBatDuty[e_Max_Sensor_Dev_Num][e_Max_Strobe_Num_Per_Dev];
 static int g_strobePartId[e_Max_Sensor_Dev_Num][e_Max_Strobe_Num_Per_Dev];
+#if defined(CONFIG_LCT_CAMERA_KERNEL)/*jijin.wang add for LCT*/
+/*jijin.wang add flashlight node&search flashlight-gpio func */
+/* ============================== */
+/* Pinctrl */
+/* ============================== */
+static struct pinctrl *flashlight_pinctrl;
+/*main flashlight*/
+static struct pinctrl_state *main_flashlight_ent_high;
+static struct pinctrl_state *main_flashlight_ent_low;
+static struct pinctrl_state *main_flashlight_enf_high;
+static struct pinctrl_state *main_flashlight_enf_low;
+/*sub flashlight*/
+static struct pinctrl_state *sub_flashlight_enf_high;
+static struct pinctrl_state *sub_flashlight_enf_low;
+int flashlight_gpio_init(struct platform_device *pdev)
+{
+	int ret = 0;
+	flashlight_pinctrl = devm_pinctrl_get(&pdev->dev);
+	if (IS_ERR(flashlight_pinctrl)) {
+		logI("Cannot find flashlight pinctrl!");
+		ret = PTR_ERR(flashlight_pinctrl);
+	}
+	/* main Flashlight ent pin initialization */
+	main_flashlight_ent_high = pinctrl_lookup_state(flashlight_pinctrl, "ent_high");
+	if (IS_ERR(main_flashlight_ent_high)) {
+		ret = PTR_ERR(main_flashlight_ent_high);
+		logI("%s : init err, main_flashlight_ent_high\n", __func__);
+	}
 
+	main_flashlight_ent_low = pinctrl_lookup_state(flashlight_pinctrl, "ent_low");
+	if (IS_ERR(main_flashlight_ent_low)) {
+		ret = PTR_ERR(main_flashlight_ent_low);
+		logI("%s : init err, main_flashlight_ent_low\n", __func__);
+	}
+	/*main Flashlight enf pin initialization */
+	main_flashlight_enf_high = pinctrl_lookup_state(flashlight_pinctrl, "enf_high");
+	if (IS_ERR(main_flashlight_enf_high)) {
+		ret = PTR_ERR(main_flashlight_enf_high);
+		logI("%s : init err, main_flashlight_enf_high\n", __func__);
+	}
+
+	main_flashlight_enf_low = pinctrl_lookup_state(flashlight_pinctrl, "enf_low");
+	if (IS_ERR(main_flashlight_enf_low)) {
+		ret = PTR_ERR(main_flashlight_enf_low);
+		logI("%s : init err, main_flashlight_enf_low\n", __func__);
+	}
+	/* sub Flashlight enf pin initialization */
+	sub_flashlight_enf_high = pinctrl_lookup_state(flashlight_pinctrl, "sub_enf_high");
+	if (IS_ERR(sub_flashlight_enf_high)) {
+		ret = PTR_ERR(sub_flashlight_enf_high);
+		logI("%s : init err, sub_flashlight_enf_high\n", __func__);
+	}
+
+	sub_flashlight_enf_low = pinctrl_lookup_state(flashlight_pinctrl, "sub_enf_low");
+	if (IS_ERR(sub_flashlight_enf_low)) {
+		ret = PTR_ERR(sub_flashlight_enf_low);
+		logI("%s : init err, sub_flashlight_enf_low\n", __func__);
+	}
+
+	return ret;
+}
+
+int flashlight_gpio_set(int pin , int state)
+{
+	int ret = 0;
+
+	if (IS_ERR(flashlight_pinctrl)) {
+		logI("%s : set err, flashlight_pinctrl not available\n", __func__);
+		return -1;
+	}
+
+	switch (pin) {
+	case MAIN_FLASHLIGHT_ENT_PIN:
+			printk("mainent MAIN_FLASHLIGHT_ent_PIN state(%d)\n", state);
+		if (state == STATE_LOW && !IS_ERR(main_flashlight_ent_low))
+			pinctrl_select_state(flashlight_pinctrl, main_flashlight_ent_low);
+		else if (state == STATE_HIGH && !IS_ERR(main_flashlight_ent_high))
+			pinctrl_select_state(flashlight_pinctrl, main_flashlight_ent_high);
+		else
+			logI("%s : set err, pin(%d) state(%d)\n", __func__, pin, state);
+		break;
+	case MAIN_FLASHLIGHT_ENF_PIN:
+		printk("mainenf MAIN_FLASHLIGHT_ENF_PIN state(%d)\n", state);
+		if (state == STATE_LOW && !IS_ERR(main_flashlight_enf_low))
+			pinctrl_select_state(flashlight_pinctrl, main_flashlight_enf_low);
+		else if (state == STATE_HIGH && !IS_ERR(main_flashlight_enf_high))
+			pinctrl_select_state(flashlight_pinctrl, main_flashlight_enf_high);
+		else
+			logI("%s : set err, pin(%d) state(%d)\n", __func__, pin, state);
+		break;
+	case SUB_FLASHLIGHT_ENF_PIN:
+		printk("subenf MAIN_FLASHLIGHT_ENF_PIN state(%d)\n", state);
+		if (state == STATE_LOW && !IS_ERR(sub_flashlight_enf_low))
+			pinctrl_select_state(flashlight_pinctrl, sub_flashlight_enf_low);
+		else if (state == STATE_HIGH && !IS_ERR(sub_flashlight_enf_high))
+			pinctrl_select_state(flashlight_pinctrl, sub_flashlight_enf_high);
+		else
+			logI("%s : set err, pin(%d) state(%d)\n", __func__, pin, state);
+		break;
+	default:
+			logI("%s : set err, pin(%d) state(%d)\n", __func__, pin, state);
+		break;
+	}
+	logI("%s : pin(%d) state(%d)\n", __func__, pin, state);
+	return ret;
+}
+#endif/*jijin.wang add for LCT*/
 /* ============================== */
 /* functions */
 /* ============================== */
@@ -721,7 +827,10 @@ static int flashlight_probe(struct platform_device *dev)
 	init_waitqueue_head(&flashlight_private.read_wait);
 	/* init_MUTEX(&flashlight_private.sem); */
 	sema_init(&flashlight_private.sem, 1);
-
+#if defined(CONFIG_LCT_CAMERA_KERNEL)/*jijin.wang add for LCT*/
+	/* jijin.wang GPIO pinctrl initial */
+	flashlight_gpio_init(dev);
+#endif
 	logI("[flashlight_probe] Done ~");
 	return 0;
 
@@ -764,6 +873,15 @@ static void flashlight_shutdown(struct platform_device *dev)
 	logI("[flashlight_shutdown] Done ~");
 }
 
+#if defined(CONFIG_LCT_CAMERA_KERNEL)/*jijin.wang add for LCT*/
+#ifdef CONFIG_OF
+static const struct of_device_id FLASHLIGHT_of_match[] = {
+	{.compatible = "mediatek,mt6735m-flashlight"},
+	{},
+};
+#endif
+#endif
+
 static struct platform_driver flashlight_platform_driver = {
 	.probe = flashlight_probe,
 	.remove = flashlight_remove,
@@ -771,6 +889,11 @@ static struct platform_driver flashlight_platform_driver = {
 	.driver = {
 		   .name = FLASHLIGHT_DEVNAME,
 		   .owner = THIS_MODULE,
+#if defined(CONFIG_LCT_CAMERA_KERNEL)/*jijin.wang add for LCT*/
+#ifdef CONFIG_OF
+	.of_match_table = FLASHLIGHT_of_match,
+#endif
+#endif
 		   },
 };
 

@@ -71,10 +71,18 @@ static DEFINE_SPINLOCK(g_strobeSMPLock);	/* cotta-- SMP proection */
 
 static u32 strobe_Res;
 static u32 strobe_Timeus;
+#if defined(CONFIG_LCT_CAMERA_KERNEL)/*jijin.wang add for LCT*/
+static bool g_strobe_On;
+#else
 static BOOL g_strobe_On;
+#endif
 
 static int g_duty = -1;
 static int g_timeOutTimeMs;
+#if defined(CONFIG_LCT_CAMERA_KERNEL)/*jijin.wang add for LCT*/
+static int g_duty1 = -1;
+//static int g_duty2 = -1;
+#endif
 
 static DEFINE_MUTEX(g_strobeSem);
 
@@ -86,9 +94,11 @@ static struct work_struct workTimeOut;
 
 /* #define FLASH_GPIO_ENF GPIO12 */
 /* #define FLASH_GPIO_ENT GPIO13 */
-
+#if defined(CONFIG_LCT_CAMERA_KERNEL)/*jijin.wang add for LCT*/
+//static int g_bLtVersion;
+#else
 static int g_bLtVersion;
-
+#endif
 /*****************************************************************************
 Functions
 *****************************************************************************/
@@ -120,7 +130,8 @@ struct LM3642_chip_data {
 	u8 last_flag;
 	u8 no_pdata;
 };
-
+#if defined(CONFIG_LCT_CAMERA_KERNEL)/*jijin.wang add for LCT*/
+/*
 static int LM3642_write_reg(struct i2c_client *client, u8 reg, u8 val)
 {
 	int ret = 0;
@@ -134,7 +145,22 @@ static int LM3642_write_reg(struct i2c_client *client, u8 reg, u8 val)
 		PK_DBG("failed writing at 0x%02x\n", reg);
 	return ret;
 }
+*/
+#else
+static int LM3642_write_reg(struct i2c_client *client, u8 reg, u8 val)
+{
+	int ret = 0;
+	struct LM3642_chip_data *chip = i2c_get_clientdata(client);
 
+	mutex_lock(&chip->lock);
+	ret = i2c_smbus_write_byte_data(client, reg, val);
+	mutex_unlock(&chip->lock);
+
+	if (ret < 0)
+		PK_DBG("failed writing at 0x%02x\n", reg);
+	return ret;
+}
+#endif
 static int LM3642_read_reg(struct i2c_client *client, u8 reg)
 {
 	int val = 0;
@@ -265,8 +291,34 @@ int readReg(int reg)
 	return (int)val;
 }
 
+/*jijin.wang add for main-camera-flashlight ops start*/
+#if defined(CONFIG_LCT_CAMERA_KERNEL)/*jijin.wang add for LCT*/
+//add by wangjijin for flashlight node
+int FL_set_flashlight(unsigned int onoff)
+{
+	PK_DBG("<%s:%d>%d\n", __func__, __LINE__, onoff);
+	if(onoff){
+        	flashlight_gpio_set(MAIN_FLASHLIGHT_ENT_PIN,STATE_HIGH);
+	}else{
+        	flashlight_gpio_set(MAIN_FLASHLIGHT_ENT_PIN,STATE_LOW);
+	}
+	return 0;
+}
+#endif
+/*jijin.wang add for main-camera-flashlight ops end*/
+
+
 int FL_Enable(void)
 {
+#if defined(CONFIG_LCT_CAMERA_KERNEL)/*jijin.wang add for LCT*/
+	PK_DBG("g_duty1 = %d FL_Enable line=%d\n",g_duty1,__LINE__);
+        if(g_duty1== 1){
+        	flashlight_gpio_set(MAIN_FLASHLIGHT_ENF_PIN,STATE_HIGH);
+        }else{
+        flashlight_gpio_set(MAIN_FLASHLIGHT_ENT_PIN,STATE_HIGH);
+	}
+        return 0;
+#else
 	char buf[2];
 /* char bufR[2]; */
 	if (g_duty < 0)
@@ -325,12 +377,22 @@ int FL_Enable(void)
 	readReg(0xb);
 
 	return 0;
+#endif
 }
 
 
 
 int FL_Disable(void)
 {
+#if defined(CONFIG_LCT_CAMERA_KERNEL)/*jijin.wang add for LCT*/
+        PK_DBG("g_duty1 = %d FL_Disable line=%d\n",g_duty1,__LINE__);
+        if(g_duty1== 1){
+        	flashlight_gpio_set(MAIN_FLASHLIGHT_ENF_PIN,STATE_LOW);
+        }else{
+            flashlight_gpio_set(MAIN_FLASHLIGHT_ENT_PIN,STATE_LOW);
+	}
+        return 0;
+#else
 	char buf[2];
 
 /* ///////////////////// */
@@ -340,9 +402,10 @@ int FL_Disable(void)
 	LM3642_write_reg(LM3642_i2c_client, buf[0], buf[1]);
 	PK_DBG(" FL_Disable line=%d\n", __LINE__);
 	return 0;
+#endif
 }
 
-int FL_dim_duty(kal_uint32 duty)
+int FL_dim_duty(u32 duty)
 {
 	PK_DBG(" FL_dim_duty line=%d\n", __LINE__);
 	g_duty = duty;
@@ -354,6 +417,11 @@ int FL_dim_duty(kal_uint32 duty)
 
 int FL_Init(void)
 {
+#if defined(CONFIG_LCT_CAMERA_KERNEL)/*jijin.wang add for LCT*/
+        PK_DBG("FL_Init line = %d\n",__LINE__);
+        INIT_WORK(&workTimeOut, work_timeOutFunc);
+        return 0;
+#else
 	int regVal0;
 	char buf[2];
 
@@ -403,6 +471,7 @@ int FL_Init(void)
 
 /*	PK_DBG(" FL_Init line=%d\n", __LINE__); */
 	return 0;
+#endif
 }
 
 

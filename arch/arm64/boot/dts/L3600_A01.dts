@@ -73,6 +73,14 @@
 			compatible = "mediatek,MTKFB";
 			reg = <0x7F000000 0x1000000>;
 		};
+/*jijin.wang add for camera flashlight start*/
+		flashlight: flashlight@ {
+			compatible = "mediatek,mt6735m-flashlight";
+			led_mode = <6>;
+			data = <2>;
+			pwm_config = <0 0 0 0 0>;
+		};
+/*jijin.wang add for camera flashlight end*/
 
 	};
 	led0:led@0 {
@@ -114,6 +122,19 @@
 	led6:led@6 {
 		compatible = "mediatek,lcd-backlight";
 		led_mode = <4>;
+		data = <0>;
+		pwm_config = <0 0 0 0 0>;
+	};
+	/*jijin.wang add for 87mode flashlight node*/
+	led7:led@7 {
+		compatible = "mediatek,flashlight";
+		led_mode = <2>;
+		data = <0>;
+		pwm_config = <0 0 0 0 0>;
+	};
+	led8:led@8 {
+		compatible = "mediatek,sub_flashlight";
+		led_mode = <2>;
 		data = <0>;
 		pwm_config = <0 0 0 0 0>;
 	};

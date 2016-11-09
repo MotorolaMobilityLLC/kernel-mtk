@@ -56,4 +56,9 @@ extern int mt_mt65xx_blink_set(struct led_classdev *led_cdev,
 
 extern struct cust_mt65xx_led *mt_get_cust_led_list(void);
 
+#if defined(CONFIG_LCT_CAMERA_KERNEL)/*jijin.wang add for LCT*/
+extern int FL_set_flashlight(int onoff);/*jijin.wang add for main camera flashlight*/
+extern int FL_set_subflashlight(int onoff);/*jijin.wang add for sub camera flashlight*/
+#endif
+
 #endif

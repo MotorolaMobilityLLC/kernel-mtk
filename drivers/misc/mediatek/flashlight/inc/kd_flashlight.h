@@ -116,7 +116,12 @@ typedef enum {
 typedef enum {
 	FLASHLIGHT_PIN_HWEN,	/* GPIO pin HWEN */
 	FLASHLIGHT_PIN_TORCH,	/* GPIO pin TORCH */
-	FLASHLIGHT_PIN_FLASH	/* GPIO pin FLASH */
+	FLASHLIGHT_PIN_FLASH,	/* GPIO pin FLASH */
+#if defined(CONFIG_LCT_CAMERA_KERNEL)/*jijin.wang add for LCT*/
+	MAIN_FLASHLIGHT_ENT_PIN, /*GPIO pin main  ENT HIGH*/
+	MAIN_FLASHLIGHT_ENF_PIN, /*GPIO pin main ENF HIGH*/
+	SUB_FLASHLIGHT_ENF_PIN /*GPIO pin sub ENF HIGH*/
+#endif
 } FLASHLIGHT_GPIO_PIN_ENUM;
 
 typedef enum {

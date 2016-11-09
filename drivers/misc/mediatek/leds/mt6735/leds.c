@@ -94,6 +94,10 @@ char *leds_name[MT65XX_LED_TYPE_TOTAL] = {
 	"keyboard-backlight",
 	"button-backlight",
 	"lcd-backlight",
+#if defined(CONFIG_LCT_CAMERA_KERNEL)/*jijin.wang add for LCT*/
+	"flashlight",
+	"sub_flashlight",
+#endif
 };
 
 struct cust_mt65xx_led *pled_dtsi = NULL;
@@ -259,6 +263,19 @@ struct cust_mt65xx_led *get_cust_led_dtsi(void)
 					    ("led dts can not get pwm config data.\n");
 
 				switch (pled_dtsi[i].mode) {
+#if defined(CONFIG_LCT_CAMERA_KERNEL)/*jijin.wang add for LCT*/
+				case MT65XX_LED_MODE_GPIO:/*jijin.wang add for camera flashlight*/
+					if((strcmp(pled_dtsi[i].name, "flashlight") == 0)){
+						pled_dtsi[i].data = (long)FL_set_flashlight;
+						LEDS_DEBUG
+					    		("kernel:the flashlight hw mode is CAMERA.\n");
+					}else if((strcmp(pled_dtsi[i].name, "sub_flashlight") == 0)){
+						pled_dtsi[i].data = (long)FL_set_subflashlight;
+						LEDS_DEBUG
+					    		("kernel:the flashlight hw mode is CAMERA.\n");
+					}
+					break;
+#endif
 				case MT65XX_LED_MODE_CUST_LCM:
 					pled_dtsi[i].data =
 					    (long)mtkfb_set_backlight_level;
