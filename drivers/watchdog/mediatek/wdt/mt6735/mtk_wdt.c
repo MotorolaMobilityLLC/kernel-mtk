@@ -146,9 +146,11 @@ void mtk_wdt_mode_config(bool dual_mode_en,
 	tmp |= MTK_WDT_MODE_KEY;
 
 	/* Bit 0 : Whether enable watchdog or not */
-	if (wdt_en == TRUE)
-		tmp |= MTK_WDT_MODE_ENABLE;
-	else
+	//temp removed by pujiabin for META 2016-11-09
+	//if (wdt_en == TRUE)
+	//	tmp |= MTK_WDT_MODE_ENABLE;
+	//else
+	//removed by pujiabin for META 2016-11-09
 		tmp &= ~MTK_WDT_MODE_ENABLE;
 
 	/* Bit 1 : Configure extern reset signal polarity. */
