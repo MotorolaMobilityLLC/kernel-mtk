@@ -469,18 +469,80 @@
 /**/
 
 /* TOUCH end */
+
+
+/*flashlight add gpio start*/
+
+&pio {
+	flashlight_pins_ent_high: ent_high {
+	    pins_cmd_dat {
+			pins = <PINMUX_GPIO42__FUNC_GPIO42>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+	flashlight_pins_ent_low: ent_low {
+	    pins_cmd_dat {
+			pins = <PINMUX_GPIO42__FUNC_GPIO42>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+	flashlight_pins_enf_high: enf_high {
+	    pins_cmd_dat {
+			pins = <PINMUX_GPIO43__FUNC_GPIO43>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+	flashlight_pins_enf_low: enf_low {
+	    pins_cmd_dat {
+			pins = <PINMUX_GPIO43__FUNC_GPIO43>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+	flashlight_pins_sub_enf_high: sub_enf_high {
+	    pins_cmd_dat {
+			pins = <PINMUX_GPIO44__FUNC_GPIO44>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+	flashlight_pins_sub_enf_low: sub_enf_low {
+	    pins_cmd_dat {
+			pins = <PINMUX_GPIO44__FUNC_GPIO44>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+};
+
+&flashlight {
+	pinctrl-names ="ent_high","ent_low","enf_high","enf_low","sub_enf_high","sub_enf_low";
+	pinctrl-0 = <&flashlight_pins_ent_high>;
+	pinctrl-1 = <&flashlight_pins_ent_low>;
+	pinctrl-2 = <&flashlight_pins_enf_high>;
+	pinctrl-3 = <&flashlight_pins_enf_low>;
+	pinctrl-4 = <&flashlight_pins_sub_enf_high>;
+	pinctrl-5 = <&flashlight_pins_sub_enf_low>;
+	status = "okay";
+};
+
+/*flashlight add gpio end*/
+
 /* CAMERA GPIO standardization */
 &pio {
 	camera_pins_cam0_rst0: cam0@0 {
 	    pins_cmd_dat {
-			pins = <PINMUX_GPIO44__FUNC_GPIO44>;/*GPIO_CAMERA_CMRST_PIN*/
+			pins = <PINMUX_GPIO7__FUNC_GPIO7>;/*GPIO_CAMERA_CMRST_PIN*/
 			slew-rate = <1>; /*direction 0:in, 1:out*/
 			output-low;/*direction out used only. output_low or high*/
 		};
 	};
 	camera_pins_cam0_rst1: cam0@1 {
 	    pins_cmd_dat {
-			pins = <PINMUX_GPIO44__FUNC_GPIO44>;/*GPIO_CAMERA_CMRST_PIN*/
+			pins = <PINMUX_GPIO7__FUNC_GPIO7>;/*GPIO_CAMERA_CMRST_PIN*/
 			slew-rate = <1>;
 			output-high;
 		};
