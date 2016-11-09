@@ -209,7 +209,12 @@
 		compatible = "mediatek,lct_devinfo";
 	};
 	/*shaohui add end*/
-	
+	/*modify by ZhaoFei for singal/dual sim mode & sku mode*/
+	simcheck:simcheck{
+		compatible = "longcheer,simcheck";
+	};
+/*end modify by ZhaoFei for singal/dual sim mode & sku mode*/
+
 	/*LCT wangyongfu add for exteral amp*/
 	ext_pa:ext_pa@ {
 			compatible = "mediatek,aw87319_pa";
@@ -981,3 +986,65 @@
 	status = "okay";
 };
 /* USB GPIO Kernal Standardization end */
+/*modify by Longcheer ZhaoFei for checking singal/dual sim mode & sku mode*/
+
+&simcheck{
+	compatible="longcheer,simcheck";
+	pinctrl-names = "default", "sim_check_gpio", "sku_id_gpio1", "sku_id_gpio2","sku_id_gpio3", "sku_id_gpio4";
+	pinctrl-0 = <&sim_check_default>;
+	pinctrl-1 = <&sim_check_gpio>;
+	pinctrl-2 = <&sku_id_gpio1>;
+	pinctrl-3 = <&sku_id_gpio2>;
+	pinctrl-4 = <&sku_id_gpio3>;
+	pinctrl-5 = <&sku_id_gpio4>;
+	status = "okay";
+};
+&pio{
+
+	sim_check_default:sim_check_default{
+
+	};
+	
+	sim_check_gpio:sim_check_gpio{
+		pins_cmd_dat{
+			pins = <PINMUX_GPIO0__FUNC_GPIO0>;
+			slew-rate = <0>;
+			bias-disable;
+		};
+	};
+	
+	sku_id_gpio1:sku_id_gpio1{
+		pins_cmd_dat{
+			pins = <PINMUX_GPIO60__FUNC_GPIO60>;
+			slew-rate = <0>;
+			bias-disable;
+		};
+	};
+	
+	sku_id_gpio2:sku_id_gpio2{
+		pins_cmd_dat{
+			pins = <PINMUX_GPIO59__FUNC_GPIO59>;
+			slew-rate = <0>;
+			bias-disable;
+		};
+	};
+
+	sku_id_gpio3:sku_id_gpio3{
+		pins_cmd_dat{
+			pins = <PINMUX_GPIO78__FUNC_GPIO78>;
+			slew-rate = <0>;
+			bias-disable;
+		};
+	};
+	
+	sku_id_gpio4:sku_id_gpio4{
+		pins_cmd_dat{
+			pins = <PINMUX_GPIO86__FUNC_GPIO86>;
+			slew-rate = <0>;
+			bias-disable;
+		};
+	};
+
+};
+
+/*end modify by ZhaoFei for singal/dual sim mode*/

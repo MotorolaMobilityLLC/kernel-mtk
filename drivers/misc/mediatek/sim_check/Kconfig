@@ -1,0 +1,8 @@
+config LCT_SIM_CHECK
+	tristate "Longcheer sim check driver"
+	---help---
+	  sim check driver support for MediaTek SOC
+	  If you want to use Longcheer Sim check driver,
+	  say Y or M here.
+	  If unsure, say N.
+

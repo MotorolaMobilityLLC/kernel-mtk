@@ -223,3 +223,6 @@ obj-$(CONFIG_LCT_CUSTOM_KERNEL_CAPSENSOR) += captouch/
 obj-$(CONFIG_LCT_DEVINFO_SUPPORT) += lct_devinfo/
 obj-$(CONFIG_LCT_DEVINFO_SUPPORT) += lct_meminfo/
 #shaohui add for LCT DEVINFO end
+#add for SIM & sku check
+obj-$(CONFIG_LCT_SIM_CHECK) += sim_check/
+#end add for SIM & sku check

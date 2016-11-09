@@ -438,6 +438,10 @@ source "drivers/misc/mediatek/lct_devinfo/Kconfig"
 endmenu
 # LCT_DEVINFO module add end
 endif
+
+# Longcheer add for sim check
+source "drivers/misc/mediatek/sim_check/Kconfig"
+# End Longcheer add for sim check
 #LCT add for capsensor by cly 
 source "drivers/misc/mediatek/captouch/Kconfig"
 #end cly 
