@@ -58,6 +58,7 @@ static LCM_UTIL_FUNCS lcm_util = { 0 };
 #define wrtie_cmd(cmd)					 lcm_util.dsi_write_cmd(cmd)
 #define write_regs(addr, pdata, byte_nums)		 lcm_util.dsi_write_regs(addr, pdata, byte_nums)
 #define read_reg					 lcm_util.dsi_read_reg()
+#define read_reg_v2(cmd, buffer, buffer_size)	lcm_util.dsi_dcs_read_lcm_reg_v2(cmd, buffer, buffer_size)
 
 #ifdef CONFIG_LCT_LCM_GPIO_UTIL
 	#define set_gpio_lcd_enp(cmd) lcm_util.set_gpio_lcd_enp_bias(cmd)
@@ -445,6 +446,56 @@ static void lcm_setbacklight(unsigned int level)
 		   sizeof(lcm_backlight_level_setting) / sizeof(struct LCM_setting_table), 1);
 }
 
+//add for ATA test by liuzhen
+#ifndef BUILD_LK 
+extern atomic_t ESDCheck_byCPU;	
+#endif
+
+static unsigned int lcm_ata_check(unsigned char *buffer)
+{
+#ifndef BUILD_LK 
+	unsigned int ret = 0 ,ret1=2; 
+	unsigned char x0_MSB = 0x4;//((x0>>8)&0xFF); 
+	unsigned char x0_LSB = 0x1;//(x0&0xFF); 
+	unsigned char x1_MSB = 0x3;//((x1>>8)&0xFF); 
+	unsigned char x1_LSB = 0x5;//(x1&0xFF); 	
+		
+	unsigned int data_array[3]; 
+	unsigned char read_buf[4]; 
+
+	#ifdef BUILD_LK 
+	printf("ATA check size = 0x%x,0x%x,0x%x,0x%x in lk\n",x0_MSB,x0_LSB,x1_MSB,x1_LSB); 
+	#else 
+	printk("ATA check size = 0x%x,0x%x,0x%x,0x%x in ker\n",x0_MSB,x0_LSB,x1_MSB,x1_LSB); 
+	#endif 
+
+		
+	data_array[0]= 0x0005390A;//HS packet 
+	data_array[1]= (x1_MSB<<24)|(x0_LSB<<16)|(x0_MSB<<8)|0xe0; 
+	data_array[2]= (x1_LSB); 
+	dsi_set_cmdq(data_array, 3, 1); 
+
+	data_array[0] = 0x00043700; 
+	dsi_set_cmdq(data_array, 1, 1); 
+
+	atomic_set(&ESDCheck_byCPU, 1);
+	read_reg_v2(0xe0, read_buf, 4); 
+	atomic_set(&ESDCheck_byCPU, 0);
+
+	//if((read_buf[0] == x0_MSB) && (read_buf[1] == x0_LSB)&& (read_buf[2] == x1_MSB) && (read_buf[3] == x1_LSB)) 
+	if((read_buf[0] == x0_MSB) && (read_buf[1] == x0_LSB)) 
+		ret = 1; 
+	else 
+		ret = 0; 
+	#ifdef BUILD_LK 
+	printf("ATA read buf size = 0x%x,0x%x,0x%x,0x%x,ret= %d in lk\n",read_buf[0],read_buf[1],read_buf[2],read_buf[3],ret); 
+	#else 
+	printk("ATA read buf size = 0x%x,0x%x,0x%x,0x%x,ret= %d ret1= %d in ker\n",read_buf[0],read_buf[1],read_buf[2],read_buf[3],ret,ret1); 
+	#endif 
+
+	return ret; 
+#endif   
+} 
 
 LCM_DRIVER lct_hx8394f_booyitech_720p_vdo_lcm_drv = {
 
@@ -455,5 +506,5 @@ LCM_DRIVER lct_hx8394f_booyitech_720p_vdo_lcm_drv = {
 	.suspend = lcm_suspend,
 	.resume = lcm_resume,
 	.set_backlight = lcm_setbacklight,
-
+	.ata_check    = lcm_ata_check
 };
