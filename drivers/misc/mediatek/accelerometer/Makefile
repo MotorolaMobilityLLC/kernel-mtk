@@ -10,6 +10,8 @@ endif
 ifeq ($(CONFIG_MTK_SCP_SENSORHUB_V1),y)
 obj-$(CONFIG_MTK_ACCELHUB)		+=	accelhub/
 else
+obj-$(CONFIG_LCT_MTK_BMI160_NEW)   +=  LCT_bmi160-new/
+obj-$(CONFIG_LCT_MTK_BMA253_NEW)   +=  LCT_bma253-new/
 obj-$(CONFIG_MTK_K2DH)   +=  k2dh/
 obj-$(CONFIG_MTK_BMA050)   +=  bma050/
 obj-$(CONFIG_MTK_BMA2XX)   +=  bma2xx/

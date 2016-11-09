@@ -146,11 +146,12 @@
 	};
 
  /* sensor standardization */
+    /*cly add accel bma253    ltr778*/
 		cust_accel@0 {
-		compatible = "mediatek,mc3410";
+		compatible = "mediatek,bma255";
 		i2c_num	= <2>;
-		i2c_addr = <0x4c 0 0 0>;
-		direction = <0>;
+		i2c_addr = <0x18 0 0 0>;
+		direction = <7>;
 		power_id = <0xffff>;
 		power_vol = <0>;
 		firlen = <0>;
@@ -158,21 +159,21 @@
 		};
 
 		cust_alsps@0 {
-		compatible = "mediatek,cm36652";
+		compatible ="mediatek,ltr778"; 
 		i2c_num	= <2>;
-		i2c_addr = <0x60 0 0 0>;
+		i2c_addr = <0x23 0 0 0>;
 		polling_mode_ps = <0>;
 		polling_mode_als = <1>;
 		power_id = <0xffff>;
 		power_vol = <0>;
-		als_level = <0 328 861 1377 3125 7721 7767 12621 23062 28430 33274 47116 57694 57694 65535>;
-		als_value = <0 133 304 502 1004 2005 3058 5005 8008 10010 12000 16000 20000 20000 20000 20000>;
+		als_level = <0 10 20 30 40 7721 7767 12621 23062 28430 33274 47116 57694 57694 65535>;
+		als_value = <0 10 20 30 40 2005 3058 5005 8008 10010 12000 16000 20000 20000 20000 20000>;
 		ps_threshold_high		=  <34>;
 		ps_threshold_low		=  <28>;
 		is_batch_supported_ps	= <0>;
 		is_batch_supported_als	= <0>;
 		};
-
+/*end  cly */
 		cust_mag@0 {
 		compatible				= "mediatek,akm09911";
 		i2c_num					= <2>;
@@ -193,6 +194,14 @@
 		firlen					= <0>;
 		is_batch_supported			= <0>;
 		};
+/*LCT add  cap sensor by cly */
+
+                cust_capsensor@0{
+                 compatible                             = "mediatek,sx9311";
+                 i2c_num				= <2>;
+                 i2c_addr              			= <0x28 0 0 0>;
+                };  
+/*END LCT */
 	/*LCT shaohui add for deviceinfo*/
 	deviceinfo{
 		compatible = "mediatek,lct_devinfo";
@@ -262,7 +271,7 @@
 	alsps_intpin_cfg: alspspincfg {
 
 	    pins_cmd_dat {
-			pins = <PINMUX_GPIO65__FUNC_GPIO65>;
+			pins = <PINMUX_GPIO123__FUNC_GPIO123>;
 			slew-rate = <0>;
 			bias-pull-up = <00>;
 		};
@@ -300,6 +309,15 @@
 	status = "okay";
 
 };
+
+/*LCT  add  cap sensor by cly*/	
+&capsensor {
+	pinctrl-names = "default", "state_eint_as_int";
+	pinctrl-0 = <&capsensor_pins_default>;
+	pinctrl-1 = <&capsensor_pins_eint_as_int>;
+	status = "okay";
+}; 
+/*END LCT*/
 /* sensor end */
 &accdet {
 		accdet-mic-vol = <7>;

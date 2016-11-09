@@ -188,6 +188,13 @@ config MTK_LCM_PHYSICAL_ROTATION_HW
 	  Rotate LCM display for 180 degree using mediatek hardware engine
 	  Enable it when LCM hardware is intalled upside down,
 	  and you need to rotate the display content to adapting.
+#LCT add for capsensor by cly 
+config LCT_CAPSENSOR_SUPPORT
+	bool "LCT_CAPSENSOR_SUPPORT"
+	default n
+	help
+          Cap sensor is working for RF.
+#end cly 
 
 source "drivers/misc/mediatek/cam_cal/Kconfig"
 source "drivers/misc/mediatek/cmdq/Kconfig"
@@ -431,3 +438,6 @@ source "drivers/misc/mediatek/lct_devinfo/Kconfig"
 endmenu
 # LCT_DEVINFO module add end
 endif
+#LCT add for capsensor by cly 
+source "drivers/misc/mediatek/captouch/Kconfig"
+#end cly 

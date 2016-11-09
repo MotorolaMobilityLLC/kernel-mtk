@@ -216,6 +216,9 @@ endif
 obj-$(CONFIG_MTK_VOW_SUPPORT)	+= vow/
 obj-$(CONFIG_USB)	+= usb_boost/
 obj-$(CONFIG_RT_REGMAP) += rt-regmap/
+#LCT add for capsensor  by cly 
+obj-$(CONFIG_LCT_CUSTOM_KERNEL_CAPSENSOR) += captouch/
+#end cly
 #shaohui add for LCT DEVINFO start
 obj-$(CONFIG_LCT_DEVINFO_SUPPORT) += lct_devinfo/
 obj-$(CONFIG_LCT_DEVINFO_SUPPORT) += lct_meminfo/

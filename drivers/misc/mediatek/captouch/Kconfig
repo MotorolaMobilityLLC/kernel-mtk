@@ -1,0 +1,12 @@
+config LCT_CUSTOM_KERNEL_CAPSENSOR
+	bool "LCT_CUSTOM_KERNEL_CAPSENSOR"
+	default n
+	help
+	It support different type sensor
+	in this platform. If this option
+	is set, it will support ambient
+	and light sensor MTK_SX9310.
+
+source "drivers/misc/mediatek/captouch/LCT_sx9310/Kconfig"
+
+

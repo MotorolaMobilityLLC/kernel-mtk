@@ -11,6 +11,8 @@ obj-y   +=  aal_control.o
 ifeq ($(CONFIG_MTK_SCP_SENSORHUB_V1),y)
 obj-$(CONFIG_MTK_ALSPSHUB)      +=  alspshub/
 else
+obj-$(CONFIG_LCT_LTR778_NEW)	+=  LCT_ltr778-new/
+obj-$(CONFIG_LCT_MTK_MN66238T_NEW)	+=  LCT_MN66238T-new/
 obj-$(CONFIG_MTK_GP2AP002S00F)	+=  gp2ap002s00f/
 obj-$(CONFIG_MTK_CM36283)	+=  cm36283/
 obj-$(CONFIG_MTK_CM36558)	+=  cm36558/

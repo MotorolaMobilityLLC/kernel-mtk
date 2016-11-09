@@ -22,7 +22,8 @@ config CUSTOM_KERNEL_ALSPS_MODULE
 	  If the config is set, it means sensor
 	  will build ko module.
 	  This is request fromo Google about odm driver.
-
+source "drivers/misc/mediatek/alsps/LCT_ltr778-new/Kconfig"
+source "drivers/misc/mediatek/alsps/LCT_MN66238T-new/Kconfig"
 source "drivers/misc/mediatek/alsps/cm36652-new/Kconfig"
 source "drivers/misc/mediatek/alsps/cm36686-new/Kconfig"
 source "drivers/misc/mediatek/alsps/cm36558/Kconfig"

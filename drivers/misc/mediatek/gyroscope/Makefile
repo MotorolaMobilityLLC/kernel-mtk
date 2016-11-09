@@ -25,4 +25,7 @@ obj-$(CONFIG_MTK_LSM6DS0)   +=  lsm6ds0/
 obj-$(CONFIG_MTK_LSM6DS3)   +=  lsm6ds3gy/
 obj-$(CONFIG_MTK_ICM20645GY)   +=  icm20645gy/
 obj-$(CONFIG_MTK_LSM6DS3HGY)   +=  lsm6ds3hgy/
+#LCT add for gyro sensor bmi160 gy by CLY
+obj-$(CONFIG_LCT_MTK_BMI160GY_NEW)   +=  LCT_bmi160gy-new/
+#end cly 
 endif
