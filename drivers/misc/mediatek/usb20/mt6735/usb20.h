@@ -38,7 +38,8 @@ extern unsigned int mt_gpio_to_irq(unsigned int gpio);
 || defined(CONFIG_MTK_NCP1851_SUPPORT) \
 || defined(CONFIG_MTK_BQ24196_SUPPORT) \
 || defined(CONFIG_MTK_BQ24296_SUPPORT) \
-|| defined(CONFIG_MTK_NCP1854_SUPPORT)
+|| defined(CONFIG_MTK_NCP1854_SUPPORT) \
+|| defined(CONFIG_LCT_CHR_BQ24296_SUPPORT)
 #define SWITCH_CHARGER 1
 #endif
 
@@ -107,7 +108,7 @@ extern void fan5405_set_otg_en(unsigned int val);
 extern unsigned int fan5405_reg_config_interface(unsigned char RegNum, unsigned char val);
 #elif defined(CONFIG_MTK_BQ24261_SUPPORT)
 extern void bq24261_set_en_boost(unsigned int val);
-#elif defined(CONFIG_MTK_BQ24296_SUPPORT)
+#elif defined(CONFIG_MTK_BQ24296_SUPPORT)||defined(CONFIG_LCT_CHR_BQ24296_SUPPORT)
 extern void bq24296_set_otg_config(unsigned int val);
 extern void bq24296_set_boostv(unsigned int val);
 extern void bq24296_set_boost_lim(unsigned int val);

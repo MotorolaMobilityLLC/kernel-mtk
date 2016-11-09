@@ -101,6 +101,11 @@ void mt_usb_set_vbus(struct musb *musb, int is_on)
 		bq24296_set_boostv(0x7); /* boost voltage 4.998V */
 		bq24296_set_boost_lim(0x1); /* 1.5A on VBUS */
 		bq24296_set_en_hiz(0x0);
+	#elif defined(CONFIG_LCT_CHR_BQ24296_SUPPORT)
+		bq24296_set_otg_config(0x1); /* OTG */
+		bq24296_set_boostv(0x7); /* boost voltage 4.998V */
+		bq24296_set_boost_lim(0x0); /* 1A on VBUS */
+		bq24296_set_en_hiz(0x0);
 	#elif defined(CONFIG_MTK_BQ24196_SUPPORT)
 		bq24196_set_otg_config(0x01);	/* OTG */
 		bq24196_set_boost_lim(0x01);	/* 1.3A on VBUS */
@@ -129,7 +134,7 @@ void mt_usb_set_vbus(struct musb *musb, int is_on)
 		fan5405_reg_config_interface(0x02, 0x8e);
 	#elif defined(CONFIG_MTK_BQ24261_SUPPORT)
 		bq24261_set_en_boost(0);
-	#elif defined(CONFIG_MTK_BQ24296_SUPPORT)
+	#elif defined(CONFIG_MTK_BQ24296_SUPPORT)||defined(CONFIG_LCT_CHR_BQ24296_SUPPORT)
 		bq24296_set_otg_config(0);
 	#elif defined(CONFIG_MTK_BQ24196_SUPPORT)
 		bq24196_set_otg_config(0x0);	/* OTG disabled */

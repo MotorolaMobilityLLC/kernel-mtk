@@ -223,6 +223,14 @@ static struct device_attribute power_supply_attrs[] = {
 	POWER_SUPPLY_ATTR(present_smb),
 	/* ADB CMD Discharging */
 	POWER_SUPPLY_ATTR(adjust_power),
+
+	#ifdef CONFIG_LCT_FUG_BATTERYTRACER_INTERFACE
+	POWER_SUPPLY_ATTR(full_bat),
+	POWER_SUPPLY_ATTR(energy_full),
+	POWER_SUPPLY_ATTR(charge_full),
+	POWER_SUPPLY_ATTR(charge_full_design),
+	POWER_SUPPLY_ATTR(charge_counter),
+	#endif
 	/* Properties of type `const char *' */
 	POWER_SUPPLY_ATTR(model_name),
 	POWER_SUPPLY_ATTR(manufacturer),

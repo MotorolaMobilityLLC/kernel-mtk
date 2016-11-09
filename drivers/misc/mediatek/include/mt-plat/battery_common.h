@@ -84,6 +84,17 @@
  *  Enum
  ****************************************************************************/
 typedef unsigned int WORD;
+#if defined(CONFIG_LCT_CHR_LIMIT_MAX_SOC)
+/*****************************************************************************
+ *  Normal battery percent state 
+ ****************************************************************************/
+typedef enum
+{
+	SOC_LOW = 0,
+	SOC_NORMAL,
+	SOC_HIGH
+}batt_soc_state_enum;
+#endif
 
 
 typedef enum {

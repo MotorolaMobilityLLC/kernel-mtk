@@ -57,7 +57,10 @@
 #include <mt-plat/battery_common.h>
 #include <mt-plat/battery_meter_hal.h>
 #include <mach/mt_battery_meter.h>
-#ifdef MTK_MULTI_BAT_PROFILE_SUPPORT
+
+#if    defined(CONFIG_LCT_FUG_MULTI_BAT_SUPPORT)
+#include <mach/lct_battery_meter_multi_profile.h>
+#elif  defined(MTK_MULTI_BAT_PROFILE_SUPPORT)
 #include <mach/mt_battery_meter_table_multi_profile.h>
 #else
 #include <mach/mt_battery_meter_table.h>
@@ -3737,6 +3740,18 @@ static struct platform_driver battery_meter_dts_driver = {
 #endif
 		   },
 };
+
+#ifdef CONFIG_LCT_FUG_BATTERYTRACER_INTERFACE
+void lct_fg_get_gFG_DOD (signed int* val)
+{
+	*val = 100 - gFG_DOD1;	
+}
+
+void lct_fg_get_gFG_BATT_CAPACITY_aging (signed int* val)
+{
+	*val = gFG_BATT_CAPACITY_aging;
+}
+#endif
 
 /* ============================================================ */
 

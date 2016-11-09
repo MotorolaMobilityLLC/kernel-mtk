@@ -172,6 +172,13 @@ enum power_supply_property {
 	POWER_SUPPLY_PROP_present_smb,
 	/* ADB CMD Discharging */
 	POWER_SUPPLY_PROP_adjust_power,
+	#ifdef CONFIG_LCT_FUG_BATTERYTRACER_INTERFACE
+		POWER_SUPPLY_PROP_full_bat,
+		POWER_SUPPLY_PROP_energy_full,
+		POWER_SUPPLY_PROP_charge_full,
+		POWER_SUPPLY_PROP_charge_full_design,
+		POWER_SUPPLY_PROP_charge_counter,
+	#endif
 	/* Properties of type `const char *' */
 	POWER_SUPPLY_PROP_MODEL_NAME,
 	POWER_SUPPLY_PROP_MANUFACTURER,

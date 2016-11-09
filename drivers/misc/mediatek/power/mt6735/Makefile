@@ -38,7 +38,11 @@ else
                          ifeq ($(CONFIG_MTK_RT9536_SUPPORT),y)
                              obj-$(CONFIG_MTK_SMART_BATTERY) += rt9536.o charging_hw_rt9536.o
                          else
-                             obj-$(CONFIG_MTK_SMART_BATTERY) += charging_hw_pmic.o
+                             ifeq ($(CONFIG_LCT_CHR_BQ24296_SUPPORT),y)
+                                  obj-$(CONFIG_MTK_SMART_BATTERY) += lct_bq24296.o lct_charging_hw_bq24296.o
+                             else
+                                  obj-$(CONFIG_MTK_SMART_BATTERY) += charging_hw_pmic.o
+                             endif
                          endif
                     endif
                endif

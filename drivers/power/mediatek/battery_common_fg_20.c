@@ -184,6 +184,11 @@ struct battery_custom_data batt_cust_data;
 int pending_wake_up_bat;
 
 int cable_in_uevent = 0;
+#if defined(CONFIG_LCT_CHR_LIMIT_MAX_SOC)
+kal_bool g_battery_test_status = KAL_FALSE;
+int g_battery_percent = 50;
+unsigned int g_batt_soc_status = SOC_NORMAL;
+#endif
 /* ////////////////////////////////////////////////////////////////////////////// */
 /* Integrate with NVRAM */
 /* ////////////////////////////////////////////////////////////////////////////// */
@@ -300,6 +305,14 @@ struct battery_data {
 	int capacity_smb;
 	int present_smb;
 	int adjust_power;
+	#ifdef CONFIG_LCT_FUG_BATTERYTRACER_INTERFACE
+		int full_bat;
+		int energy_full;
+		int charge_full;
+		int charge_full_design;
+		int charge_counter;
+	#endif
+
 };
 
 static enum power_supply_property wireless_props[] = {
@@ -337,6 +350,13 @@ static enum power_supply_property battery_props[] = {
 	POWER_SUPPLY_PROP_present_smb,
 	/* ADB CMD Discharging */
 	POWER_SUPPLY_PROP_adjust_power,
+	#ifdef CONFIG_LCT_FUG_BATTERYTRACER_INTERFACE
+	POWER_SUPPLY_PROP_full_bat,
+	POWER_SUPPLY_PROP_energy_full,
+	POWER_SUPPLY_PROP_charge_full,
+	POWER_SUPPLY_PROP_charge_full_design,
+	POWER_SUPPLY_PROP_charge_counter,
+	#endif
 };
 
 struct timespec batteryThreadRunTime;
@@ -659,6 +679,23 @@ static int battery_get_property(struct power_supply *psy,
 	case POWER_SUPPLY_PROP_adjust_power:
 		val->intval = data->adjust_power;
 		break;
+	#ifdef CONFIG_LCT_FUG_BATTERYTRACER_INTERFACE
+	case POWER_SUPPLY_PROP_full_bat:
+		val->intval = data->full_bat;
+		break;
+	case POWER_SUPPLY_PROP_energy_full:
+		val->intval = data->energy_full;
+		break;
+	case POWER_SUPPLY_PROP_charge_full:
+		val->intval = data->charge_full;
+		break;
+	case POWER_SUPPLY_PROP_charge_full_design:
+		val->intval = data->charge_full_design;
+		break;
+	case POWER_SUPPLY_PROP_charge_counter:
+		val->intval = data->charge_counter;
+		break;
+	#endif
 
 	default:
 		ret = -EINVAL;
@@ -746,6 +783,13 @@ static struct battery_data battery_main = {
 	.present_smb = 0,
 	/* ADB CMD discharging */
 	.adjust_power = -1,
+#endif
+#ifdef CONFIG_LCT_FUG_BATTERYTRACER_INTERFACE
+	.full_bat = 0,
+	.energy_full = 0,
+	.charge_full = 0,
+	.charge_full_design = 0,
+	.charge_counter = 0, 
 #endif
 };
 
@@ -1637,10 +1681,75 @@ static ssize_t store_Pump_Express(struct device *dev, struct device_attribute *a
 
 static DEVICE_ATTR(Pump_Express, 0664, show_Pump_Express, store_Pump_Express);
 
+#if defined(CONFIG_LCT_CHR_LIMIT_MAX_SOC)
+static ssize_t show_BatteryTestStatus(struct device *dev,struct device_attribute *attr, char *buf)
+{
+	battery_log(BAT_LOG_CRTI, "[Battery] show_BatteryTestStatus : %x\n", g_battery_test_status);
+
+	return sprintf(buf, "%x\n", g_battery_test_status);
+}
+static ssize_t store_BatteryTestStatus(struct device *dev,struct device_attribute *attr, const char *buf, size_t size)
+{
+	char *pvalue = NULL;
+	unsigned int battery_test_status = 0;
+	battery_log(BAT_LOG_CRTI, "[Battery] store_BatteryTestStatus\n");
+	
+	if(buf != NULL && size != 0)
+	{
+		battery_log(BAT_LOG_CRTI, "[Battery] buf is %s . \n",buf);
+		battery_test_status = simple_strtoul(buf,&pvalue,16);
+		g_battery_test_status = battery_test_status;
+		battery_log(BAT_LOG_CRTI, "[Battery] store code : %x \n",g_battery_test_status);
+	}
+	
+	return size;
+}
+static DEVICE_ATTR(BatteryTestStatus, 0664, show_BatteryTestStatus, store_BatteryTestStatus);
+
+static ssize_t show_BatteryPercent(struct device *dev,struct device_attribute *attr, char *buf)
+{
+	battery_log(BAT_LOG_CRTI, "[Battery] show_BatteryPercent : %d\n", g_battery_percent);
+
+	return sprintf(buf, "%d\n", g_battery_percent);
+}
+static ssize_t store_BatteryPercent(struct device *dev,struct device_attribute *attr, const char *buf, size_t size)
+{
+	char *pvalue = NULL;
+	unsigned int battery_percent = 0;
+	battery_log(BAT_LOG_CRTI, "[Battery] store_BatteryPercent\n");
+	
+	if(buf != NULL && size != 0)
+	{
+		battery_log(BAT_LOG_CRTI, "[Battery] buf is %s .\n",buf);
+		battery_percent = simple_strtol(buf,&pvalue,10);
+		g_battery_percent = battery_percent;
+		battery_log(BAT_LOG_CRTI, "[Battery] store code : %d \n",g_battery_percent);
+	}
+	
+	return size;
+}
+static DEVICE_ATTR(BatteryPercent, 0664, show_BatteryPercent, store_BatteryPercent);
+#endif
 
 
 static void mt_battery_update_EM(struct battery_data *bat_data)
 {
+#ifdef CONFIG_LCT_FUG_BATTERYTRACER_INTERFACE
+	signed int gFG_capacity_aging = 0;
+	signed int gFG_DOD = 0;
+	signed int gFG_columb = 0;
+	lct_fg_get_gFG_DOD (&gFG_DOD);
+	lct_fg_get_gFG_BATT_CAPACITY_aging (&gFG_capacity_aging);
+	gFG_columb = gFG_capacity_aging * 18 / 5;
+
+	bat_data->full_bat = gFG_capacity_aging;
+	bat_data->energy_full = gFG_columb;
+	bat_data->charge_full = gFG_capacity_aging;
+	bat_data->charge_full_design = 5000;
+	bat_data->charge_counter = gFG_DOD * gFG_capacity_aging / 100;
+	battery_log(BAT_LOG_CRTI,"[LCT][FUG] full_bat = %d, energy_full = %d, charge_full = %d, charge_full_design = %d, charge_counter = %d.\n",  bat_data->full_bat, bat_data->energy_full, bat_data->charge_full, bat_data->charge_full_design, bat_data->charge_counter);
+	
+#endif
 	bat_data->BAT_CAPACITY = BMT_status.UI_SOC2;
 	bat_data->BAT_TemperatureR = BMT_status.temperatureR;	/* API */
 	bat_data->BAT_TempBattVoltage = BMT_status.temperatureV;	/* API */
@@ -1985,6 +2094,42 @@ PMU_STATUS do_batt_temp_state_machine(void)
 	}
 	return PMU_STATUS_OK;
 }
+#if defined(CONFIG_LCT_CHR_LIMIT_MAX_SOC)
+PMU_STATUS do_batt_soc_state_machine(void)
+{
+	PMU_STATUS status = PMU_STATUS_OK;
+
+	if (g_battery_test_status == KAL_TRUE)
+	{
+		if (BMT_status.UI_SOC >= MAX_CHARGE_SOC)
+		{
+			battery_log(BAT_LOG_CRTI, "[BATTERY] Battery Over SOC !!\n\r");                
+			g_batt_soc_status = SOC_HIGH;
+			status = PMU_STATUS_FAIL;       
+		}
+		else
+		{        
+				battery_log(BAT_LOG_CRTI, "[BATTERY] Battery Temperature down below %d to %d, allow charging!!\n\r", MAX_CHARGE_SOC,BMT_status.UI_SOC); 
+				g_batt_soc_status = SOC_NORMAL;
+				BMT_status.bat_charging_state=CHR_PRE;
+				return PMU_STATUS_OK;
+		}
+
+	}
+	else
+	{
+		if (g_batt_soc_status == SOC_HIGH)
+		{
+			battery_log(BAT_LOG_CRTI, "[BATTERY] Battery restart charging  because runin is over !!\n\r");  
+			g_batt_soc_status = SOC_NORMAL;
+			BMT_status.bat_charging_state=CHR_PRE;
+			return PMU_STATUS_OK;
+		}
+	}
+
+	return status;
+}
+#endif
 #endif
 
 unsigned long BAT_Get_Battery_Voltage(int polling_mode)
@@ -2278,6 +2423,20 @@ static PMU_STATUS mt_battery_CheckCallState(void)
 	return status;
 }
 #endif
+#if defined(CONFIG_LCT_CHR_LIMIT_MAX_SOC)
+static PMU_STATUS mt_battery_CheckBatterySOC(void)
+{	
+	PMU_STATUS status = PMU_STATUS_OK;
+
+	if (do_batt_soc_state_machine() == PMU_STATUS_FAIL)
+	{
+		battery_log(BAT_LOG_CRTI, "[BATTERY] Batt SOC check : fail\n");
+		status = PMU_STATUS_FAIL;
+	}
+
+	return status;
+}
+#endif
 
 static void mt_battery_CheckBatteryStatus(void)
 {
@@ -2315,6 +2474,14 @@ static void mt_battery_CheckBatteryStatus(void)
 		BMT_status.bat_charging_state = CHR_ERROR;
 		return;
 	}
+    #if defined(CONFIG_LCT_CHR_LIMIT_MAX_SOC)
+    if(mt_battery_CheckBatterySOC() != PMU_STATUS_OK)
+    {
+        BMT_status.bat_charging_state = CHR_ERROR;
+        return;                  
+    }
+    #endif
+
 }
 
 
@@ -3961,6 +4128,10 @@ static int battery_probe(struct platform_device *dev)
 		ret_device_file = device_create_file(&(dev->dev), &dev_attr_FG_SW_CoulombCounter);
 		ret_device_file = device_create_file(&(dev->dev), &dev_attr_Charging_CallState);
 		ret_device_file = device_create_file(&(dev->dev), &dev_attr_Charger_Type);
+#if defined(CONFIG_LCT_CHR_LIMIT_MAX_SOC)
+	    ret_device_file = device_create_file(&(dev->dev), &dev_attr_BatteryTestStatus);
+	    ret_device_file = device_create_file(&(dev->dev), &dev_attr_BatteryPercent);
+#endif
 		ret_device_file = device_create_file(&(dev->dev), &dev_attr_Pump_Express);
 
 	}

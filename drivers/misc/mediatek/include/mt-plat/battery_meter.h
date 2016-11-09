@@ -419,4 +419,9 @@ extern void mt_battery_set_init_vol(int);
 unsigned int get_cv_voltage(void);
 #endif
 
+#ifdef CONFIG_LCT_FUG_BATTERYTRACER_INTERFACE
+extern void lct_fg_get_gFG_DOD (signed int* val);
+extern void lct_fg_get_gFG_BATT_CAPACITY_aging (signed int* val);
+#endif
+
 #endif /* #ifndef _BATTERY_METER_H */

@@ -149,7 +149,11 @@ int mtk_get_dynamic_cv(unsigned int *cv)
 
 	if (!g_enable_dynamic_cv) {
 		if (batt_cust_data.high_battery_voltage_support)
+#ifdef CONFIG_LCT_CHR_HIGH_BATTERY_VOLTAGE_SUPPORT
+			_cv = BATTERY_VOLT_04_400000_V / 1000;
+#else
 			_cv = BATTERY_VOLT_04_340000_V / 1000;
+#endif
 		else
 			_cv = BATTERY_VOLT_04_200000_V / 1000;
 		goto _out;
@@ -188,7 +192,11 @@ int mtk_get_dynamic_cv(unsigned int *cv)
 			&ircmp_resistor);
 	} else {
 		if (batt_cust_data.high_battery_voltage_support)
+#ifdef CONFIG_LCT_CHR_HIGH_BATTERY_VOLTAGE_SUPPORT
+			_cv = BATTERY_VOLT_04_400000_V / 1000;
+#else
 			_cv = BATTERY_VOLT_04_340000_V / 1000;
+#endif
 		else
 			_cv = BATTERY_VOLT_04_200000_V / 1000;
 
@@ -226,7 +234,11 @@ static BATTERY_VOLTAGE_ENUM select_jeita_cv(void)
 		cv_voltage = JEITA_TEMP_POS_45_TO_POS_60_CV_VOLTAGE;
 	} else if (g_temp_status == TEMP_POS_10_TO_POS_45) {
 		if (batt_cust_data.high_battery_voltage_support)
+#ifdef CONFIG_LCT_CHR_HIGH_BATTERY_VOLTAGE_SUPPORT
+			cv_voltage = BATTERY_VOLT_04_400000_V;
+#else
 			cv_voltage = BATTERY_VOLT_04_340000_V;
+#endif
 		else
 			cv_voltage = JEITA_TEMP_POS_10_TO_POS_45_CV_VOLTAGE;
 	} else if (g_temp_status == TEMP_POS_0_TO_POS_10) {
@@ -467,7 +479,11 @@ unsigned int set_bat_charging_current_limit(int current_limit)
 
 	mutex_lock(&g_ichg_access_mutex);
 	if (current_limit != -1) {
+#ifdef CONFIG_LCT_CHR_HIGH_BATTERY_VOLTAGE_SUPPORT
+		g_bcct_flag = 0;//modify by zhangyh to close bcct detect for temp
+#else
 		g_bcct_flag = 1;
+#endif
 		switch (BMT_status.charger_type) {
 		case STANDARD_HOST:
 			chr_type_ichg = batt_cust_data.usb_charger_current;
@@ -904,7 +920,11 @@ static void mtk_select_cv(void)
 #endif
 
 	if (batt_cust_data.high_battery_voltage_support)
+#ifdef CONFIG_LCT_CHR_HIGH_BATTERY_VOLTAGE_SUPPORT
+		cv_voltage = BATTERY_VOLT_04_400000_V;
+#else
 		cv_voltage = BATTERY_VOLT_04_340000_V;
+#endif
 	else
 		cv_voltage = BATTERY_VOLT_04_200000_V;
 

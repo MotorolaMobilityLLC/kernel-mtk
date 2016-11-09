@@ -329,3 +329,36 @@ config MTK_BIF_SUPPORT
 	  smart battery.
 	  Set No to disable BIF feature of a
 	  smart battery.
+
+config LCT_FUG_MULTI_BAT_SUPPORT
+    bool "LCT_FUG_MULTI_BAT_SUPPORT"
+       default n                                                                                                                                                                                            
+       help
+
+config LCT_CHR_JEITA_STANDARD_SUPPORT
+    bool "LCT_CHR_JEITA_STANDARD_SUPPORT"
+       default n                                                                                                                                                                                            
+       help
+
+config LCT_CHR_HIGH_BATTERY_VOLTAGE_SUPPORT
+    bool "LCT_CHR_HIGH_BATTERY_VOLTAGE_SUPPORT"
+       default n                                                                                                                                                                                            
+       help
+
+config LCT_CHR_BQ24296_SUPPORT
+    bool "LCT_CHR_BQ24296_SUPPORT"
+       default n                                                                                                                                                                                            
+       help
+config LCT_CHR_LIMIT_MAX_SOC
+	bool "LCT_CHR_LIMIT_MAX_SOC"
+	default n
+	help
+	  limit max soc to 70% for runnin test.
+	  Set Yes to support this feature.
+
+config LCT_FUG_BATTERYTRACER_INTERFACE
+	bool "LCT_FUG_BATTERYTRACER_INTERFACE"
+	default n
+	help
+	  add interface for BatteryTracer test.
+	  Set Yes to support this feature.

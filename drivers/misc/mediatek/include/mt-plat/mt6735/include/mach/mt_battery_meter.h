@@ -31,7 +31,8 @@
 
 #if defined(CONFIG_MTK_BQ24196_SUPPORT) \
 	|| defined(CONFIG_MTK_BQ24296_SUPPORT) \
-	|| defined(CONFIG_MTK_BQ24261_SUPPORT)
+	|| defined(CONFIG_MTK_BQ24261_SUPPORT) \
+	|| defined(CONFIG_LCT_CHR_BQ24296_SUPPORT)  
 #define SWCHR_POWER_PATH
 #define EXTERNAL_SWCHR_SUPPORT
 #endif
@@ -166,7 +167,8 @@
 
 #if defined(CONFIG_MTK_BQ24196_SUPPORT) \
 	|| defined(CONFIG_MTK_BQ24296_SUPPORT) \
-	|| defined(CONFIG_MTK_BQ24261_SUPPORT)
+	|| defined(CONFIG_MTK_BQ24261_SUPPORT) \
+	|| defined(CONFIG_LCT_CHR_BQ24296_SUPPORT)
 #define SWCHR_POWER_PATH
 #define EXTERNAL_SWCHR_SUPPORT
 #endif
@@ -285,7 +287,9 @@
 #define FG_BAT_INT
 #define IS_BATTERY_REMOVE_BY_PMIC
 
-
+#ifdef CONFIG_LCT_FUG_MULTI_BAT_SUPPORT
+#define MTK_MULTI_BAT_PROFILE_SUPPORT
+#endif
 
 #elif defined(CONFIG_ARCH_MT6753)
 /* ============================================================

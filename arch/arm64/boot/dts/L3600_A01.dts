@@ -3,6 +3,7 @@
 
 #include "mt6735m.dtsi"
 #include <dt-bindings/lcm/otm9608_qhd_dsi_cmd.dtsi>
+#include "lct6735_fg20_bat_setting.dtsi"
 
 / {
 	cpus {	#address-cells = <1>;
