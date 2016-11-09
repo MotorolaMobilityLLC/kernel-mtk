@@ -85,14 +85,16 @@
 	};
 	led0:led@0 {
 		compatible = "mediatek,red";
-		led_mode = <0>;
+		/* Zhao Fei modify red led */
+		led_mode = <3>;
 		data = <1>;
 		pwm_config = <0 0 0 0 0>;
 	};
 	led1:led@1 {
 		compatible = "mediatek,green";
-		led_mode = <0>;
-		data = <1>;
+		/* Zhao Fei modify green led */
+		led_mode = <3>;
+		data = <2>;
 		pwm_config = <0 0 0 0 0>;
 	};
 	led2:led@2 {
