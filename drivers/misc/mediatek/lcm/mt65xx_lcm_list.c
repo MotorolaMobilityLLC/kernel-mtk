@@ -46,6 +46,10 @@ LCM_DRIVER *lcm_driver_list[] = {
 	&lct_hx8394f_booyitech_720p_vdo_lcm_drv,
 #endif
 
+//add by yufangfang for ili9881c-0d
+#if defined(LCT_ILI9881C_DIJING_720P_VDO)
+	&lct_ili9881c_dijing_720p_vdo_lcm_drv,
+#endif
 
 #if defined(NT35595_FHD_DSI_CMD_TRULY_8163)
 	&nt35595_fhd_dsi_cmd_truly_8163_lcm_drv,
