@@ -17,7 +17,6 @@ config MTK_FINGERPRINT_SELECT
 	string "sensor type"
 	default "GF318M"
 
-
 if MTK_FINGERPRINT_SELECT = "FPC1145"
 config FPC_FINGERPRINT
 	bool "FPC Fingerprint"
@@ -39,5 +38,15 @@ config GOODIX_SENSOR_TYPE
 	---help---
 	Must input sensor type, or default is GF316M GF318M GF3118M GF518M GF5118M GF516M GF816M GF3208 GF5216
 endif
+
+if MTK_FINGERPRINT_SELECT = "lct_fps_et320"
+config LCT_FPS_ET320
+	bool "ET Fingerprint"
+	default n
+	---help---
+	LCT FPS et320 device.
+endif
+
 endif
 endmenu
+

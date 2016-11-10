@@ -989,6 +989,7 @@
 	status = "okay";
 };
 /* USB GPIO Kernal Standardization end */
+
 /*modify by Longcheer ZhaoFei for checking singal/dual sim mode & sku mode*/
 
 &simcheck{
@@ -1043,11 +1044,109 @@
 	sku_id_gpio4:sku_id_gpio4{
 		pins_cmd_dat{
 			pins = <PINMUX_GPIO86__FUNC_GPIO86>;
+		};
+	};
+};
+
+/*end modify by ZhaoFei for singal/dual sim mode*/
+
+/*modify by hxl start*/
+&spi0 {
+			/*clocks = <&infrasys INFRA_SPI>;*/
+			clock-names = "spi-main";
+			clock-frequency = <109000000>;
+			clock-div = <1>;
+};
+
+&fingerprint {
+	compatible="mediatek,fingerprint";
+	status = "ok";
+	pinctrl-names="default","fpc_rst_pulllow","fpc_rst_pullhigh","fpc_pwr_pulllow","fpc_pwr_pullhigh","fpc_eint_as_int","fpc_eint_low","fpc_eint_high","fpc_spi_mode0","fpc_spi_mode1";
+	pinctrl-0 = <&fingerprint_default>;
+	pinctrl-1 = <&fingerprint_rst_low>;
+	pinctrl-2 = <&fingerprint_rst_high>;
+	pinctrl-3 = <&fingerprint_ldo_low>;
+	pinctrl-4 = <&fingerprint_ldo_high>;
+	pinctrl-5 = <&fingerprint_irq_int>;
+	pinctrl-6 = <&fingerprint_irq_low>;
+	pinctrl-7 = <&fingerprint_irq_high>;
+	pinctrl-8 = <&fingerprint_id_low>;
+	pinctrl-9 = <&fingerprint_id_high>;
+};
+
+&pio {
+	fingerprint_default:fingerprint_default{
+		};
+
+	fingerprint_rst_low:fingerprint_rst_low{
+		pins_cmd_dat{
+			pins = <PINMUX_GPIO93__FUNC_GPIO93>;
+			output-low;
+			bias-pull-down=<00>;
+		};
+	};
+
+	fingerprint_rst_high:fingerprint_rst_high{
+		pins_cmd_dat{
+			pins = <PINMUX_GPIO93__FUNC_GPIO93>;
+			output-high;
+			bias-pull-down=<00>;
+		};
+	};
+
+	fingerprint_ldo_low:fingerprint_ldo_low{
+		pins_cmd_dat{
+			pins = <PINMUX_GPIO94__FUNC_GPIO94>;
+			output-low;
+			bias-pull-down=<00>;
+		};
+	};
+
+	fingerprint_ldo_high:fingerprint_ldo_high{
+		pins_cmd_dat{
+			pins = <PINMUX_GPIO94__FUNC_GPIO94>;
+			output-high;
+			bias-pull-down=<00>;
+		};
+	};
+	fingerprint_id_low:fingerprint_id_low{
+		pins_cmd_dat{
+			pins = <PINMUX_GPIO95__FUNC_GPIO95>;
+			output-high;
+			bias-pull-down=<00>;
+		};
+	};
+	
+	fingerprint_id_high:fingerprint_id_high{
+		pins_cmd_dat{
+			pins = <PINMUX_GPIO95__FUNC_GPIO95>;
+			output-high;
+			bias-pull-down=<00>;
+		};
+	};
+	fingerprint_irq_default:fingerprint_irq_default{
+	};
+
+	fingerprint_irq_int:fingerprint_irq_int{
+		pins_cmd_dat{
+			pins = <PINMUX_GPIO126__FUNC_GPIO126>;
 			slew-rate = <0>;
 			bias-disable;
 		};
 	};
-
+	fingerprint_irq_high:fingerprint_irq_high{
+		pins_cmd_dat{
+			pins = <PINMUX_GPIO126__FUNC_GPIO126>;
+			output-high;
+			bias-pull-down=<00>;
+		};
+	};
+	fingerprint_irq_low:fingerprint_irq_low{
+		pins_cmd_dat{
+			pins = <PINMUX_GPIO126__FUNC_GPIO126>;
+			output-high;
+			bias-pull-down=<00>;
+		};
+	};
 };
-
-/*end modify by ZhaoFei for singal/dual sim mode*/
+/*modify by hxl end*/
