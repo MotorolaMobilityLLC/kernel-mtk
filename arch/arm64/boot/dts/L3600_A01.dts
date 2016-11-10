@@ -860,6 +860,7 @@
 };
 /* mmc end */
 
+/* change NFC GPIO by changjingyang start */
 /* NFC GPIO standardization */
 &pio {
 	nfc_default: default {
@@ -882,25 +883,25 @@
 		};
 	};
 
-	nfc_rst_high: state_rst_high {
+	nfc_dwn_high: state_dwn_high {
 		pins_cmd_dat {
-			pins = <PINMUX_GPIO3__FUNC_GPIO3>;
+			pins = <PINMUX_GPIO2__FUNC_GPIO2>;
 			slew-rate = <1>;
 			output-high;
 		};
 	};
 
-	nfc_rst_low: state_rst_low {
+	nfc_dwn_low: state_dwn_low {
 		pins_cmd_dat {
-			pins = <PINMUX_GPIO3__FUNC_GPIO3>;
+			pins = <PINMUX_GPIO2__FUNC_GPIO2>;
 			slew-rate = <1>;
 			output-low;
 		};
 	};
-
+/*
 	nfc_eint_high: state_eint_high {
 		pins_cmd_dat {
-			pins = <PINMUX_GPIO1__FUNC_GPIO1>;
+			pins = <PINMUX_GPIO3__FUNC_GPIO3>;
 			slew-rate = <1>;
 			output-high;
 		};
@@ -908,35 +909,33 @@
 
 	nfc_eint_low: state_eint_low {
 		pins_cmd_dat {
-			pins = <PINMUX_GPIO1__FUNC_GPIO1>;
+			pins = <PINMUX_GPIO3__FUNC_GPIO3>;
 			slew-rate = <1>;
 			output-low;
 		};
 	};
-
-	nfc_irq_init: state_irq_init {
+*/
+	nfc_eint_as_int: state_eint_as_int {
 		pins_cmd_dat {
-			pins = <PINMUX_GPIO2__FUNC_GPIO2>;
+			pins = <PINMUX_GPIO1__FUNC_GPIO1>;
 			slew-rate = <0>;
-			bias-pull-down = <00>;
+			bias-disable;
 		};
 	};
 };
 
 &nfc {
-	pinctrl-names = "default", "ven_high", "ven_low", "rst_high", "rst_low", "eint_high", "eint_low", "irq_init";
+	pinctrl-names = "default", "ven_high", "ven_low", "dwn_high", "dwn_low", "eint_as_int";
 	pinctrl-0 = <&nfc_default>;
 	pinctrl-1 = <&nfc_ven_high>;
 	pinctrl-2 = <&nfc_ven_low>;
-	pinctrl-3 = <&nfc_rst_high>;
-	pinctrl-4 = <&nfc_rst_low>;
-	pinctrl-5 = <&nfc_eint_high>;
-	pinctrl-6 = <&nfc_eint_low>;
-	pinctrl-7 = <&nfc_irq_init>;
+	pinctrl-3 = <&nfc_dwn_high>;
+	pinctrl-4 = <&nfc_dwn_low>;
+	pinctrl-5 = <&nfc_eint_as_int>;
 	status = "okay";
 };
 /* NFC end */
-
+/* change NFC GPIO by changjingyang end */
 /* USB GPIO Kernal Standardization start */
 &pio {
 	usb_default: usb_default {

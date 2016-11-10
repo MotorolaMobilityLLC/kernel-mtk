@@ -23,5 +23,11 @@ config NFC_MSR3110
 	help
 	  Y means NFC_MSR3110 define if use MSTAR NFC Function to provide reader
 	  Card emulation or P2P function. If you are not sure about this, set n.
-
+	  
+config NFC_PN548
+	tristate "PN548 NFC driver"
+	default n
+	help
+	  Y means NFC_PN548 define if use MSTAR NFC Function to provide reader
+	  Card emulation or P2P function. If you are not sure about this, set n.
 endif # NFC
