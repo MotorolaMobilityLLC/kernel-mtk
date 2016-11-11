@@ -534,4 +534,5 @@ CONFIG_LCT_DEVINFO_SUPPORT=y
 #shaohui add LCT DEVINFO end
 # add by longcheer zhaofei 
 CONFIG_LCT_SIM_CHECK=y
-
+#shaohui add for RPMB trigger
+CONFIG_LCT_RPMB_TRIGGER=y

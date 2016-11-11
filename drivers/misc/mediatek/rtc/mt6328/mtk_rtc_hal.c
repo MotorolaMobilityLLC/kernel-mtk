@@ -118,6 +118,12 @@ u16 rtc_spare_reg[][3] = {
 	{RTC_PDN2, 0x1, 15},
 	{RTC_SPAR0, 0x1, 6},
 	{RTC_SPAR0, 0x1, 7}
+/*shaohui add for RPMB trigger*/
+#ifdef CONFIG_LCT_RPMB_TRIGGER
+	,
+	{RTC_SPAR0, 0x1, 8}
+#endif
+	/*shaohui add end*/
 };
 
 void hal_rtc_set_abb_32k(u16 enable)

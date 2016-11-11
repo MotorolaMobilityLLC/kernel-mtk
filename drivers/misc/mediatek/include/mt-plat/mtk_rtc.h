@@ -47,6 +47,11 @@ extern void rtc_enable_writeif(void);
 extern void rtc_disable_writeif(void);
 
 extern void rtc_mark_recovery(void);
+/*shaohui add for RPMB trigger*/
+#ifdef CONFIG_LCT_RPMB_TRIGGER
+extern void rtc_mark_rpmb(void);
+#endif
+/*shaohui add end`*/
 #if defined(CONFIG_MTK_KERNEL_POWER_OFF_CHARGING)
 extern void rtc_mark_kpoc(void);
 #endif/*if defined(CONFIG_MTK_KERNEL_POWER_OFF_CHARGING)*/

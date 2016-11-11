@@ -4,3 +4,9 @@ config MTK_RTC
 	default n
 	---help---
 	  MediaTek RTC driver
+# shaohui add for RPMB trigger
+config LCT_RPMB_TRIGGER
+	bool "MediaTek RPMB trigger by RTC"
+	default n
+	---help---
+	  MediaTek RPMB trigger

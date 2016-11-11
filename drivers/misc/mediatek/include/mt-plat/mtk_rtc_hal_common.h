@@ -33,6 +33,11 @@ typedef enum {
 	RTC_PWRON_LOGO,
 	RTC_32K_LESS,
 	RTC_LP_DET,
+/*shaohui add for RPMB trigger*/
+#ifdef CONFIG_LCT_RPMB_TRIGGER
+	RTC_RPMB_BOOT,
+#endif
+/*shaohui add end`*/
 	RTC_SPAR_NUM
 } rtc_spare_enum;
 

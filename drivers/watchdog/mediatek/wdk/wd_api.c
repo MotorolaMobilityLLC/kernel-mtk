@@ -575,7 +575,16 @@ int get_wd_api(struct wd_api **obj)
 	}
 	return res;
 }
-
+//shaohui add for rpmb trigger
+#ifdef CONFIG_LCT_RPMB_TRIGGER
+extern int get_rtc_mark_rpmb(void);
+int check_rtc_status(void)
+{
+	// TODO status 1 is OK 0 is NOT, other error
+	return get_rtc_mark_rpmb();
+}
+EXPORT_SYMBOL(check_rtc_status);
+#endif
 #ifndef CONFIG_MEDIATEK_WATCHDOG
 /*register restart notify and own by debug start-------
 *
@@ -605,6 +614,13 @@ void arch_reset(char mode, const char *cmd)
 #if defined(CONFIG_ARCH_MT8163) || defined(CONFIG_ARCH_MT8173)
 	} else if (cmd && !strcmp(cmd, "rpmbpk")) {
 		mtk_wd_SetNonResetReg2(0x0, 1);
+#endif
+		/*shaohui add for RPMB trigger*/
+#ifdef CONFIG_LCT_RPMB_TRIGGER
+	}else if(cmd && !strcmp(cmd,"rpmb")){
+		rtc_mark_rpmb();
+		printk("get rpmg flag:%d\n",get_rtc_mark_rpmb());
+		/*shaohui add end*/
 #endif
 	} else {
 		reboot = 1;
