@@ -136,6 +136,7 @@ extern uint8_t himax_int_gpio_read(int pinnum);
 extern int himax_gpio_power_config(struct i2c_client *client);
 extern int of_get_himax85xx_platform_data(struct device *dev);
 extern int i2c_himax_read_1(struct i2c_client *client, char *writebuf,int writelen, char *readbuf, int readlen);
+extern int i2c_himax_write_1(struct i2c_client *client, uint8_t *writebuf, uint8_t writelen);
 extern void msg_dma_alloct(void);
 #else
 extern int himax_gpio_power_config(struct i2c_client *client,struct himax_i2c_platform_data *pdata);

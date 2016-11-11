@@ -4586,8 +4586,16 @@ static uint8_t Self_Test_Bank(uint8_t *RB1H)
 	mutual_num	= x_channel * y_channel;
 	self_num	= x_channel + y_channel; //don't add KEY_COUNT
 
-	mutual_bank = kzalloc(mutual_num * sizeof(uint8_t), GFP_KERNEL);
-	self_bank = kzalloc(self_num * sizeof(uint8_t), GFP_KERNEL);
+	//mutual_bank = kzalloc(mutual_num * sizeof(uint8_t), GFP_KERNEL);
+	if(mutual_bank == NULL)
+	{
+	  mutual_bank = kzalloc(mutual_num * sizeof(uint8_t), GFP_KERNEL);
+      printk("xlajdd kzalloc \n");
+	}
+	if(self_bank==NULL)
+	{
+	 self_bank = kzalloc(self_num * sizeof(uint8_t), GFP_KERNEL);
+    }
 	memset(mutual_bank, 0xFF, mutual_num * sizeof(uint8_t));
 	memset(self_bank, 0xFF, self_num * sizeof(uint8_t));
 
@@ -4747,8 +4755,9 @@ static uint8_t Self_Test_Bank(uint8_t *RB1H)
 				}
 			}
 		}
-	kfree(mutual_bank);
-	kfree(self_bank);
+	//kfree(mutual_bank);
+	//kfree(self_bank);
+	printk("xljadd test step2 RB1H[0]=0x%x\n",RB1H[0]);
 	return RB1H[0];
 }
 #endif
@@ -6414,7 +6423,14 @@ static void himax852xes_suspend(struct device *dev)
 	ts->pre_finger_mask = 0;
 	if (ts->pdata->powerOff3V3 && ts->pdata->power)
 		ts->pdata->power(0);
-	
+	if (mutual_bank != NULL)
+	{
+		kfree(mutual_bank);
+	}
+	if (self_bank != NULL)
+	{
+		kfree(self_bank);
+	}	
 	return ;
 }
 static void himax852xes_resume(struct device *dev)

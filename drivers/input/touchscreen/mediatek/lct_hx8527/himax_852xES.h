@@ -112,7 +112,7 @@
 //#define HX_SMART_WAKEUP
 //#define HX_DOT_VIEW
 //#define HX_PALM_REPORT
-//#define HX_ESD_WORKAROUND
+#define HX_ESD_WORKAROUND
 //#define HX_CHIP_STATUS_MONITOR		//for ESD 2nd solution,default off
 //#define HX_USB_DETECT
 #define HX_USB_DETECT2

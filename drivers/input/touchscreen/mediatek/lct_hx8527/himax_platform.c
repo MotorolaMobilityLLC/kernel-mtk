@@ -67,7 +67,8 @@ uint8_t himax_int_gpio_read(int pinnum)
 #ifdef MTK_KERNEL_318
 int i2c_himax_read(struct i2c_client *client, uint8_t command, uint8_t *data, uint8_t length, uint8_t toRetry)
 {
-	/*int retry;
+	#ifdef I2C_USE_AUTO_DMA 
+	int retry;
 	struct i2c_msg msg[] = {
 		{
 			.addr = client->addr,
@@ -92,16 +93,20 @@ int i2c_himax_read(struct i2c_client *client, uint8_t command, uint8_t *data, ui
 		printk("%s: i2c_read_block retry over %d\n",
 			__func__, toRetry);
 		return -EIO;
-	}*/
+	}
+	#endif
 	char buf[2] = {command,0};	
     i2c_himax_read_1(client,buf,1,data,length);
 	return 0;	
 
 }
 #define __MSG_DMA_MODE__
-#ifdef __MSG_DMA_MODE__
+#ifdef  __MSG_DMA_MODE__
 	u8 *g_dma_buff_va = NULL;
 	dma_addr_t g_dma_buff_pa = 0;
+
+    u8 *tpd_i2c_dma_va = NULL;
+    dma_addr_t tpd_i2c_dma_pa = 0;
 #endif
 
 #ifdef __MSG_DMA_MODE__
@@ -115,9 +120,17 @@ int i2c_himax_read(struct i2c_client *client, uint8_t command, uint8_t *data, ui
     		}
 
 	    	if(!g_dma_buff_va)
-		{
-	        	TPD_DMESG("[DMA][Error] Allocate DMA I2C Buffer failed!\n");
+		    {
+	          TPD_DMESG("[DMA][Error] Allocate DMA I2C Buffer failed!\n");
 	    	}
+
+	    if (NULL == tpd_i2c_dma_va)
+          {
+          tpd->dev->dev.coherent_dma_mask = DMA_BIT_MASK(32);
+          tpd_i2c_dma_va = (u8 *)dma_alloc_coherent(&tpd->dev->dev, 250, &tpd_i2c_dma_pa, GFP_KERNEL);
+          }
+        if (!tpd_i2c_dma_va)
+		TPD_DMESG("TPD dma_alloc_coherent error!\n");
 	}
 #endif
 int i2c_himax_read_1(struct i2c_client *client, char *writebuf,int writelen, char *readbuf, int readlen)
@@ -134,8 +147,7 @@ int i2c_himax_read_1(struct i2c_client *client, char *writebuf,int writelen, cha
 		memcpy(g_dma_buff_va, writebuf, writelen);
 		client->addr = (client->addr & I2C_MASK_FLAG) | I2C_DMA_FLAG;
 		if((ret=i2c_master_send(client, (unsigned char *)g_dma_buff_pa, writelen))!=writelen)
-			//dev_err(&client->dev, "###%s i2c write len=%x,buffaddr=%x\n", __func__,ret,*g_dma_buff_pa);
-			printk("i2c write failed\n");
+		//TPD_DMESG("###%s i2c write len=%x,buffaddr=%x\n", __func__,ret,g_dma_buff_pa);	
 		client->addr = (client->addr & I2C_MASK_FLAG) &(~ I2C_DMA_FLAG);
 	}
 
@@ -157,9 +169,26 @@ int i2c_himax_read_1(struct i2c_client *client, char *writebuf,int writelen, cha
 	return ret;
 
 }
+int i2c_himax_write_1(struct i2c_client *client, uint8_t *writebuf, uint8_t writelen)
+{
+	int ret = 0;
+	if (writelen <= 8) {
+	    client->ext_flag = client->ext_flag & (~I2C_DMA_FLAG);
+		ret=i2c_master_send(client, writebuf, writelen);
+	}
+	else if((writelen > 8)&&(NULL != tpd_i2c_dma_va))
+	{
+        memcpy(tpd_i2c_dma_va,writebuf,writelen);
+		client->addr = (client->addr & I2C_MASK_FLAG )| I2C_DMA_FLAG;
+	    ret = i2c_master_send(client, (unsigned char *)tpd_i2c_dma_pa, writelen);
+	    client->addr = client->addr & I2C_MASK_FLAG;	
+	}
+	return ret;
 
+}
 int i2c_himax_write(struct i2c_client *client, uint8_t command, uint8_t *data, uint8_t length, uint8_t toRetry)
 {
+	#ifdef I2C_USE_AUTO_DMA
 	int retry/*, loop_i*/;
 	uint8_t buf[length + 1];
 
@@ -186,6 +215,12 @@ int i2c_himax_write(struct i2c_client *client, uint8_t command, uint8_t *data, u
 			__func__, toRetry);
 		return -EIO;
 	}
+	#endif
+	uint8_t writebuf[length+1];
+	memset(writebuf,0,length+1);
+    memcpy(writebuf+1,data,length);
+    writebuf[0]=command;
+	i2c_himax_write_1(client, writebuf,length+1);
 	return 0;
 
 }
@@ -222,6 +257,7 @@ int i2c_himax_write_command(struct i2c_client *client, uint8_t command, uint8_t 
 
 int i2c_himax_master_write(struct i2c_client *client, uint8_t *data, uint8_t length, uint8_t toRetry)
 {
+	#ifdef I2C_USE_AUTO_DMA
 	int retry/*, loop_i*/;
 	uint8_t buf[length];
 
@@ -247,7 +283,22 @@ int i2c_himax_master_write(struct i2c_client *client, uint8_t *data, uint8_t len
 		       __func__, toRetry);
 		return -EIO;
 	}
-	return 0;
+	#endif
+	int ret=0;
+	if (length <= 8) {
+	    client->ext_flag = client->ext_flag & (~I2C_DMA_FLAG);
+		ret=i2c_master_send(client, data, length);
+	}
+	else if((length > 8)&&(NULL != tpd_i2c_dma_va))
+	{
+		//for (i = 0; i < length; i++)
+			//tpd_i2c_dma_va[i] = data[i];
+        memcpy(tpd_i2c_dma_va,data,length);
+		client->addr = (client->addr & I2C_MASK_FLAG )| I2C_DMA_FLAG;
+	    ret = i2c_master_send(client, (unsigned char *)tpd_i2c_dma_pa, length);
+	    client->addr = client->addr & I2C_MASK_FLAG;		
+	}
+	return ret;
 }
 
 #endif
