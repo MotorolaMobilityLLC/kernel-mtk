@@ -48,7 +48,7 @@ static struct i2c_board_info i2c_TS3A225E __initdata = { I2C_BOARD_INFO(TS3A225E
 
 static int ts3a225e_i2c_probe(struct i2c_client *client, const struct i2c_device_id *id)
 {
-	unsigned char devicve_id[1];
+	unsigned char devicve_id[1]={0};
 
 	pr_warn("ts3a225e_i2c_probe\n");
 
