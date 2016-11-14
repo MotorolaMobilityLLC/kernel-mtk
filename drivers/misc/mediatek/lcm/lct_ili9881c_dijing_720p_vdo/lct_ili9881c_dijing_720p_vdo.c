@@ -370,6 +370,7 @@ static struct LCM_setting_table lcm_initialization_setting[] = {
 {0xD2,1,{0x55}},               //VN4);
 {0xD3,1,{0x2C}},
 {0xFF,3,{0x98,0x81,0x00}},
+{0x36,1,{0x03}},
 {0x68,1,{0x05}},
 {0x11,0,{}},  
 {REGFLAG_DELAY, 120, {}},            
