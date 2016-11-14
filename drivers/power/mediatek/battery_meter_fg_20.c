@@ -1801,7 +1801,9 @@ int force_get_tbat(kal_bool update)
 	}
 #endif
 /*lenovo-sw mahj2 added for ntc temp cut 2 degree End*/
-	return bat_temperature_val;
+/*caoxu1 2016-11-14 added for ALT test*/
+	//return bat_temperature_val;
+	return 25;
 #endif
 }
 EXPORT_SYMBOL(force_get_tbat);
