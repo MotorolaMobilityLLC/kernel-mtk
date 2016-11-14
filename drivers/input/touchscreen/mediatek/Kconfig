@@ -50,13 +50,15 @@ config TOUCHSCREEN_MTK_GT1151TB
 
 source "drivers/input/touchscreen/mediatek/GT1151TB/Kconfig"
 
-config TOUCHSCREEN_MTK_GT928
-	tristate "GT928 Touchscreen"
+config TOUCHSCREEN_MTK_LCT_GT917D
+	tristate "lct_gt917d Touchscreen"
 	help
-	  Say Y here if you have Goodix GT928 touchscreen,
+	  Say Y here if you have Goodix lct_gt917d touchscreen,
 	  connected to your system.
 	  If unsure, say N.
 	  To compile this driver as a module, choose M here.
+
+source "drivers/input/touchscreen/mediatek/lct_gt917d/Kconfig"
 
 config TOUCHSCREEN_MTK_GT9XXTB_HOTKNOT
 	bool "GT9XXTB hotknot for Mediatek package"
