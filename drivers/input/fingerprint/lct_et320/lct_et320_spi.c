@@ -102,6 +102,7 @@ static const struct of_device_id fp_of_match[] = {
 #define	LEVEL_TRIGGER_LOW       0x2
 #define	LEVEL_TRIGGER_HIGH      0x3
 
+#define __WORDSIZE (__SIZEOF_LONG__ * 8)// add by zhaofei - 2016-11-16-09-14
 /* Lct add sys node by zl*/
 //#define LCT_FPS_ET_SYS_NODE_SUP
 #ifdef LCT_FPS_ET_SYS_NODE_SUP
@@ -442,8 +443,13 @@ int fp_read_id(u8 addr, u8 *buf)
 		DEBUG_PRINT("fp_read_register address = %x result = %x %x\n"
 					, addr, result[0], result[1]);
 	} else
+#if __WORDSIZE==32
+		pr_err("%s read data error status = %d\n"
+				, __func__, status);
+#elif __WORDSIZE==64
 		pr_err("%s read data error status = %ld\n"
 				, __func__, status);
+#endif
 #endif
 	return status;
 }
@@ -483,9 +489,13 @@ static ssize_t et320_get_ID(struct device* cd,struct device_attribute *attr, cha
 		DEBUG_PRINT("et320_get_ID address = %x result = %x\n"
 					,result[0], result[1]);
 	} else
+#if __WORDSIZE==32
+		pr_err("%s read data error status = %d\n"
+				, __func__, status);
+#elif  __WORDSIZE==64
 		pr_err("%s read data error status = %ld\n"
 				, __func__, status);
-
+#endif
 	return status;
 }
 static ssize_t et320_set_ID(struct device* cd, struct device_attribute *attr,const char* buf, size_t len)
@@ -521,9 +531,13 @@ static ssize_t et320_set_ID(struct device* cd, struct device_attribute *attr,con
 		DEBUG_PRINT("et320_set_IDr address = %x result =%x\n"
 					,write_addr[1], set_value[1]);
 	} else
+#if __WORDSIZE==32	
+		pr_err("%s set data error status = %d\n"
+				, __func__, status);
+#elif __WORDSIZE==64
 		pr_err("%s set data error status = %ld\n"
 				, __func__, status);
-
+#endif
 	return status;
 }
 #endif
@@ -617,8 +631,13 @@ int fp_io_read_register(struct fp_data *fp, u8 *addr, u8 *buf)
 	spi_message_add_tail(&t, &m);
 	status = spi_sync(spi, &m);
 	if (status < 0) {
+#if __WORDSIZE==32	
+		pr_err("%s read data error status = %d\n"
+				, __func__, status);
+#elif __WORDSIZE==64
 		pr_err("%s read data error status = %ld\n"
 				, __func__, status);
+#endif
 		return status;
 	}
 
@@ -683,8 +702,13 @@ int fp_io_write_register(struct fp_data *fp, u8 *buf)
 	spi_message_add_tail(&t2, &m);
 	status = spi_sync(spi, &m);
 	if (status < 0) {
+#if __WORDSIZE==32
+		pr_err("%s write data error status = %d\n",
+				__func__, status);
+#elif __WORDSIZE==64
 		pr_err("%s write data error status = %ld\n",
 				__func__, status);
+#endif
 		return status;
 	}
 
@@ -724,8 +748,13 @@ int fp_read_register(struct fp_data *fp, u8 addr, u8 *buf)
 		DEBUG_PRINT("fp_read_register address = %x result = %x %x\n"
 					, addr, result[0], result[1]);
 	} else
+#if __WORDSIZE==32
+		pr_err("%s read data error status = %d\n"
+				, __func__, status);
+#elif __WORDSIZE==64
 		pr_err("%s read data error status = %ld\n"
 				, __func__, status);
+#endif
 
 	return status;
 }
@@ -755,8 +784,13 @@ int fp_set_single_register(struct fp_data *fp, u8 addr, u8 val)
 	spi_message_add_tail(&t2, &m);
 	status = spi_sync(spi, &m);
 	if (status < 0) {
+#if __WORDSIZE==32
+		pr_err("%s write data error status = %d\n",
+				__func__, status);
+#elif __WORDSIZE==64
 		pr_err("%s write data error status = %ld\n",
 				__func__, status);
+#endif
 		return status;
 	}
 

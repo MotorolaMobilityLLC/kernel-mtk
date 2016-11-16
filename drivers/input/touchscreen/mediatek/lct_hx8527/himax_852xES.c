@@ -18,6 +18,7 @@
 #define SUPPORT_FINGER_DATA_CHECKSUM 0x0F
 #define TS_WAKE_LOCK_TIMEOUT		(2 * HZ)
 
+#define __WORDSIZE (__SIZEOF_LONG__ * 8)// add by zhaofei - 2016-11-16-09-14
 #if defined(CONFIG_TOUCHSCREEN_PROXIMITY)
 //Proximity
 static u8 proximity_flag = 0;
@@ -2321,7 +2322,11 @@ static int touch_event_handler(void *ptr)
 #ifdef HX_SMART_WAKEUP
 	int ret_event = 0, KEY_EVENT = 0;
 #endif
+#if __WORDSIZE==32
+	struct timespec timeStart;
+#elif __WORDSIZE==64
 	struct timespec timeStart, timeEnd, timeDelta;
+#endif
 	//struct sched_param param = { .sched_priority = RTPM_PRIO_TPD };
 	//sched_setscheduler(current, SCHED_RR, &param);
 
@@ -2414,7 +2419,8 @@ static int touch_event_handler(void *ptr)
 	}
 #endif
 		himax_ts_work();
-
+// add by zhaofei - 2016-11-15-19-11
+#if __WORDSIZE==64
 		if(private_ts->debug_log_level & BIT(2)) {
 				getnstimeofday(&timeEnd);
 					timeDelta.tv_nsec = (timeEnd.tv_sec*1000000000+timeEnd.tv_nsec)
@@ -2423,6 +2429,8 @@ static int touch_event_handler(void *ptr)
 					timeEnd.tv_sec, timeEnd.tv_nsec/1000);*/
 				I("Touch latency = %ld us\n", timeDelta.tv_nsec/1000);
 		}
+#endif
+//// add by zhaofei - 2016-11-15-19-11
 	}
 	while(!kthread_should_stop());
 

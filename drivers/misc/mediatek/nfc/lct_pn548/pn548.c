@@ -47,7 +47,16 @@
 #include <linux/of_address.h>
 #endif
 
+// add by zhaofei - 2016-11-09-17-31
+//#define LCT_NFC_CLK_REQ
+#define LCT_SYS_CLK
+#ifdef LCT_NFC_CLK_REQ
+#include <linux/sched.h>
+#include <linux/kthread.h>
+#include <linux/of_platform.h>
+#endif
 #include <mt_clkbuf_ctl.h>	/*  for clock buffer */
+//end add by zhaofei - 2016-11-09-17-31
 
 #define PN544_DRVNAME		"pn547"
 
@@ -107,6 +116,16 @@ static char I2CDMAWriteBuf[MAX_BUFFER_SIZE];
 static char I2CDMAReadBuf[MAX_BUFFER_SIZE];
 #endif
 
+// add by zhaofei - 2016-11-09-17-31
+#ifdef LCT_NFC_CLK_REQ
+struct pinctrl_state *clk_req_int = NULL;
+static unsigned int nfc_clk_req_irq = 0;
+static int transfer_clk_onoff = 0;
+struct platform_device *nfc_clk_req_dev;
+static struct work_struct  eint1_work;
+#endif
+//end add by zhaofei - 2016-11-09-17-31
+
 /*****************************************************************************
  * Function
  *****************************************************************************/
@@ -138,6 +157,19 @@ static void pn544_disable_irq(struct pn544_dev *pn544_dev)
 	}
 	spin_unlock_irqrestore(&pn544_dev->irq_enabled_lock, flags);
 }
+
+#ifdef LCT_NFC_CLK_REQ
+static irqreturn_t pn544_clk_request_on_handler(int irq, void *dev)
+{
+	//printk("pn544_clk_request_on_handler()\n");		
+
+	disable_irq_nosync(nfc_clk_req_irq);
+	/* Wake up waiting readers */
+	schedule_work(&eint1_work);
+
+	return IRQ_HANDLED;
+}
+#endif
 
 static irqreturn_t pn544_dev_irq_handler(int irq, void *dev)
 {
@@ -391,6 +423,9 @@ static long pn544_dev_unlocked_ioctl(struct file *filp, unsigned int cmd,
 			} else if (arg == 1) {
 				/* power on */
 				printk("pn544 %s power on\n", __func__);
+#ifdef LCT_SYS_CLK
+				clk_buf_ctrl(CLK_BUF_NFC, 1);
+#endif
 				ret = pn544_platform_pinctrl_select(gpctrl, st_dwn_l);
 				ret = pn544_platform_pinctrl_select(gpctrl, st_ven_h); 
 				msleep(10);
@@ -399,6 +434,9 @@ static long pn544_dev_unlocked_ioctl(struct file *filp, unsigned int cmd,
 				printk("pn544 %s power off\n", __func__);
 				ret = pn544_platform_pinctrl_select(gpctrl, st_dwn_l);
 				ret = pn544_platform_pinctrl_select(gpctrl, st_ven_l);
+#ifdef LCT_SYS_CLK
+				clk_buf_ctrl(CLK_BUF_NFC, 0);
+#endif
 				msleep(50);
 			} else {
 				printk("pn544 %s bad arg %lu\n", __func__, arg);
@@ -463,6 +501,33 @@ static int pn544_remove(struct i2c_client *client)
 	kfree(pn544_dev);
 	return 0;
 }
+
+// add by zhaofei - 2016-11-09-17-48
+#ifdef LCT_NFC_CLK_REQ
+static void nfc_clk_req_on_thread(struct work_struct *work)
+{
+		if(transfer_clk_onoff == 0)
+		{
+			clk_buf_ctrl(CLK_BUF_NFC, 1);
+			transfer_clk_onoff = 1;
+			//irq_set_irq_type(nfc_clk_req_irq, IRQF_TRIGGER_FALLING | IRQF_ONESHOT | IRQF_SHARED);
+			irq_set_irq_type(nfc_clk_req_irq, IRQF_TRIGGER_LOW | IRQF_ONESHOT | IRQF_SHARED);
+			//printk("nfc_clk_req_on_thread on\n");
+		}
+		else
+		{
+			clk_buf_ctrl(CLK_BUF_NFC, 0);
+			transfer_clk_onoff = 0;
+			//irq_set_irq_type(nfc_clk_req_irq, IRQF_TRIGGER_RISING | IRQF_ONESHOT | IRQF_SHARED);
+			irq_set_irq_type(nfc_clk_req_irq, IRQF_TRIGGER_HIGH | IRQF_ONESHOT | IRQF_SHARED);
+			//printk("nfc_clk_req_on_thread off\n");
+		}
+		enable_irq(nfc_clk_req_irq);
+	
+		return ;
+}
+#endif
+// add by zhaofei - 2016-11-09-17-48
 
 static int pn544_probe(struct i2c_client *client,
 			const struct i2c_device_id *id)
@@ -603,8 +668,47 @@ static int pn544_probe(struct i2c_client *client,
 		       __func__);
 	}
 
-	//Temp soultion by Zhao Fei
+	// add by zhaofei - 2016-11-09-17-04
+#ifdef LCT_NFC_CLK_REQ
+	node = of_find_compatible_node(NULL, NULL, "mediatek, nfc_clk_req");
+	if (node) {
+		
+		nfc_clk_req_irq = irq_of_parse_and_map(node, 0);
+		pr_err("nfc_clk_irq = %u\n", nfc_clk_req_irq);
+
+		nfc_clk_req_dev= kzalloc(sizeof(*nfc_clk_req_dev), GFP_KERNEL);
+		printk("nfc_clk_req_dev=%p\n", nfc_clk_req_dev);
+
+		if (nfc_clk_req_dev == NULL) 
+		{
+			dev_err(&client->dev, "pn544 failed to allocate memory for nfc clk data\n");
+			return -ENOMEM;
+		}
+
+		nfc_clk_req_dev = of_find_device_by_node(node);
+
+		INIT_WORK(&eint1_work, nfc_clk_req_on_thread);
+		//ret = request_irq(nfc_clk_req_irq, pn544_clk_request_on_handler, IRQF_SHARED | IRQF_TRIGGER_RISING| IRQF_ONESHOT, "nfc_clk_req", nfc_clk_req_dev);
+		//mt_eint_set_hw_debounce(nfc_clk_req_irq, 1);
+		ret = request_irq(nfc_clk_req_irq, pn544_clk_request_on_handler, IRQF_SHARED | IRQF_TRIGGER_HIGH | IRQF_ONESHOT, "nfc_clk_req", nfc_clk_req_dev);
+
+		if (ret) {
+			pr_err("%s: CLK_REQ_EINT IRQ LINE NOT AVAILABLE, ret = %d\n", __func__, ret);
+		} else {
+			printk("%s: set CLK_REQ_EINT finished, client->irq=%d\n", __func__,
+				 nfc_clk_req_irq);
+			enable_irq(nfc_clk_req_irq);
+		}
+
+	} else
+		pr_err("%s can't find compatible node,line=%d\n", __func__,__LINE__);
+	//clk_buf_ctrl(CLK_BUF_NFC, 1);
+#else
+#ifndef LCT_SYS_CLK			
 	clk_buf_ctrl(CLK_BUF_NFC, 1);
+#endif
+#endif
+// end add by zhaofei - 2016-11-09-17-05
 
 	pn544_platform_pinctrl_select(gpctrl, st_ven_h);
 
@@ -691,6 +795,17 @@ static int pn544_platform_pinctrl_init(struct platform_device *pdev)
     }
     pn544_platform_pinctrl_select(gpctrl, st_eint_int);
 
+// add by zhaofei - 2016-11-09-16-23
+#ifdef LCT_NFC_CLK_REQ
+	clk_req_int = pinctrl_lookup_state(gpctrl, "clk_req_int");
+    if (IS_ERR(clk_req_int)) {
+    	ret = PTR_ERR(clk_req_int);
+    	printk("%s: pinctrl err, clk_req_int\n", __func__);
+    }
+    pn544_platform_pinctrl_select(gpctrl, clk_req_int);
+#endif
+//end add by zhaofei - 2016-11-09-16-23
+	
 end:
 	return ret;
 }

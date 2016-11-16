@@ -29,6 +29,7 @@
 /*----------------------------------------------------------------------------*/
 #define LTR778_DEV_NAME			"ltr778"
 
+#define __WORDSIZE (__SIZEOF_LONG__ * 8)// add by zhaofei - 2016-11-16-09-14
 /*----------------------------------------------------------------------------*/
 #define APS_TAG					"[ALS/PS] "
 #define APS_FUN(f)              printk(KERN_INFO 	APS_TAG"%s\n", __FUNCTION__)
@@ -1366,7 +1367,10 @@ int ltr778_setup_eint(struct i2c_client *client)
 			APS_ERR("irq_of_parse_and_map fail!!\n");
 			return -EINVAL;
 		}
+// add by zhaofei - 2016-11-15-19-22
+#if __WORDSIZE==64
 		APS_ERR("irq to gpio = %d \n", irq_to_gpio(ltr778_obj->irq));
+#endif
 		if (request_irq(ltr778_obj->irq, ltr778_eint_handler, IRQF_TRIGGER_NONE, "ALS-eint", NULL)) {
 			APS_ERR("IRQ LINE NOT AVAILABLE!!\n");
 			return -EINVAL;
