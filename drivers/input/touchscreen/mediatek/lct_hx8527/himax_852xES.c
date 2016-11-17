@@ -31,7 +31,8 @@ static u8 g_proximity_en = 0;
 		//#include "LQ_L3600_LX_C03_2016-10-28_0937.i"
 		//#include "LQ_L3600_LX_C02_2016-10-28_0937.i"
 			//#include "LQ_L3600_LX_C02_2016-10-29_0937.i"
-			#include "LQ_L3600_LX_C03_2016-11-01_0937.i"
+			//#include "LQ_L3600_LX_C03_2016-11-01_0937.i"
+			#include "LQ_L3600_OFG_C04_2016-11-15_0937.i"
 	};
 #endif
 #ifdef MTK
@@ -1029,6 +1030,8 @@ static int i_update_FW(void)
 
 	I("IMAGE FW_VER=%x,%x.\n",i_CTPM_FW[FW_VER_MAJ_FLASH_ADDR],i_CTPM_FW[FW_VER_MIN_FLASH_ADDR]);
 	I("IMAGE CFG_VER=%x.\n",i_CTPM_FW[FW_CFG_VER_FLASH_ADDR]);
+	if(private_ts->vendor_config_ver>=4)
+	{
 	if (( private_ts->vendor_fw_ver_H < i_CTPM_FW[FW_VER_MAJ_FLASH_ADDR] )
 		|| ( private_ts->vendor_fw_ver_L < i_CTPM_FW[FW_VER_MIN_FLASH_ADDR] )
 		|| ( private_ts->vendor_config_ver < i_CTPM_FW[FW_CFG_VER_FLASH_ADDR] )
@@ -1061,6 +1064,10 @@ update_retry:
 		}
 	else
 		return 0;//NO upgrade
+	}
+	else
+		return 0;//NO upgrade
+	
 }
 #endif
 
