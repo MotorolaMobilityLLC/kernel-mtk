@@ -61,7 +61,7 @@ static char *gpio_str[]={
 
 //define gpio number
 //The sequency is Board_ID, HW_ID1, HW_ID2, HW_ID3, HW_ID4
-static int gpio_hw[]={8,60,59,78,86};
+static int gpio_hw[]={0,86,78,59,60};
 
 /// FUNCTION_NAME:dual_sim_check_show 
 ///
