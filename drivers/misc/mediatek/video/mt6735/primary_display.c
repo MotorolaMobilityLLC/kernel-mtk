@@ -6224,6 +6224,87 @@ int primary_display_ipoh_restore(void)
 	return 0;
 }
 
+//add by lct yufangfang for cabc mode setting
+#ifdef CONFIG_LCT_CABC_MODE_SUPPORT
+int _set_cabc_by_cmdq(unsigned int enbale)
+{
+	int ret = 0;
+	cmdqRecHandle cmdq_handle_cabc = NULL;
+
+	ret = cmdqRecCreate(CMDQ_SCENARIO_PRIMARY_DISP, &cmdq_handle_cabc);
+	DISPDBG("primary cabc, handle=%p\n", cmdq_handle_cabc);
+	if (ret != 0) 
+	{
+		DISPERR("fail to create primary cmdq handle for cabc\n");
+		return -1;
+	}
+
+	if (primary_display_is_video_mode()) 
+	{
+		cmdqRecReset(cmdq_handle_cabc);
+		disp_lcm_set_cabc(pgc->plcm, cmdq_handle_cabc, enbale);
+		_cmdq_flush_config_handle_mira(cmdq_handle_cabc, 1);
+		//DISPCHECK("[BL]_set_cabc_by_cmdq ret=%d\n", ret);
+	} 
+	else 
+	{
+		cmdqRecReset(cmdq_handle_cabc);
+		cmdqRecWait(cmdq_handle_cabc, CMDQ_SYNC_TOKEN_CABC_EOF);
+		//_cmdq_handle_clear_dirty(cmdq_handle_cabc);
+		_cmdq_insert_wait_frame_done_token_mira(cmdq_handle_cabc);
+		disp_lcm_set_cabc(pgc->plcm, cmdq_handle_cabc, enbale);
+		cmdqRecSetEventToken(cmdq_handle_cabc, CMDQ_SYNC_TOKEN_CONFIG_DIRTY);
+		cmdqRecSetEventToken(cmdq_handle_cabc, CMDQ_SYNC_TOKEN_CABC_EOF);
+		_cmdq_flush_config_handle_mira(cmdq_handle_cabc, 1);
+		//DISPCHECK("[BL]_set_cabc_by_cmdq ret=%d\n", ret);
+	}
+	cmdqRecDestroy(cmdq_handle_cabc);
+	cmdq_handle_cabc = NULL;
+
+	return ret;
+}
+
+int primary_display_setcabc(unsigned int enbale)
+{
+	//int ret = 0;
+	static unsigned int last_enable;
+
+	if (last_enable == enbale)
+	return 0;
+
+	//_primary_path_switch_dst_lock();
+	_primary_path_lock(__func__);
+
+	if (pgc->state == DISP_SLEPT) 
+	{
+		DISPERR("Sleep State set cabc invald\n");
+	}
+	else 
+	{
+		//primary_display_idlemgr_kick(__func__, 0);
+		primary_display_idlemgr_kick((char *)__func__);
+		if (primary_display_cmdq_enabled()) 
+			{
+				if (primary_display_is_video_mode()) 
+					{
+						disp_lcm_set_cabc(pgc->plcm, NULL, enbale);
+					} 
+					else 
+					{
+						_set_cabc_by_cmdq(enbale);
+					}
+			}
+		last_enable = enbale;
+	}
+
+	_primary_path_unlock(__func__);
+	//_primary_path_switch_dst_unlock();
+
+	return 0;
+}
+EXPORT_SYMBOL_GPL(primary_display_setcabc)
+#endif
+
 int primary_display_ipoh_recover(void)
 {
 	DISPMSG("%s In\n", __func__);
@@ -8044,6 +8125,7 @@ int _set_backlight_by_cpu(unsigned int level)
 	return ret;
 }
 
+
 int primary_display_setbacklight(unsigned int level)
 {
 	int ret = 0;
@@ -8122,6 +8204,88 @@ int primary_display_setbacklight(unsigned int level)
 	return ret;
 }
 
+//add by LCT yufangfang for hbm
+#ifdef CONFIG_LCT_HBM_SUPPORT
+int primary_display_setbacklight_hbm(unsigned int level)
+{
+	int ret = 0;
+	static unsigned int last_level;
+
+	DISPFUNC();
+
+	if (last_level == level)
+		return 0;
+
+	MMProfileLogEx(ddp_mmp_get_events()->primary_set_bl, MMProfileFlagStart, 0, 0);
+#ifdef DISP_SWITCH_DST_MODE
+	_primary_path_switch_dst_lock();
+#endif
+	_primary_path_cmd_lock();
+	_primary_path_lock(__func__);
+	if (pgc->state == DISP_SLEPT) {
+		DISPMSG("Sleep State set backlight invald\n");
+	} else {
+		disp_update_trigger_time();
+		if (primary_display_cmdq_enabled()) {
+			if (primary_display_is_video_mode()) {
+				MMProfileLogEx(ddp_mmp_get_events()->primary_set_bl,
+					       MMProfileFlagPulse, 0, 7);
+				disp_lcm_set_backlight_hbm(pgc->plcm, level);
+				printk("yufangfang hbm level = %d\n",level);
+			} else {
+#ifdef MTK_DISP_IDLE_LP
+				/* CMD mode need to exit top clock off idle mode */
+				_disp_primary_path_exit_idle("primary_display_setbacklight", 0);
+#endif
+				_set_backlight_by_cmdq(level);
+			}
+		} else {
+#ifdef MTK_DISP_IDLE_LP
+			if (primary_display_is_video_mode() == 0)
+				_disp_primary_path_exit_idle("primary_display_setbacklight", 0);
+#endif
+			_set_backlight_by_cpu(level);
+		}
+		last_level = level;
+	}
+#ifndef CONFIG_FPGA_EARLY_PORTING
+#ifdef GPIO_LCM_LED_EN
+	if (0 == level)
+		mt_set_gpio_out(GPIO_LCM_LED_EN, GPIO_OUT_ZERO);
+	else
+		mt_set_gpio_out(GPIO_LCM_LED_EN, GPIO_OUT_ONE);
+#endif
+#endif
+#if 0	/* check writed success? for test after CABC */
+	{
+		/* extern uint32_t DSI_dcs_read_lcm_reg_v2(DISP_MODULE_ENUM module, cmdqRecHandle cmdq,
+						      uint8_t cmd, uint8_t *buffer, uint8_t buffer_size);
+		 */
+		uint8_t buffer[2];
+
+		if (primary_display_is_video_mode())
+			dpmgr_path_ioctl(pgc->dpmgr_handle, NULL, DDP_STOP_VIDEO_MODE, NULL);
+
+		DSI_dcs_read_lcm_reg_v2(DISP_MODULE_DSI0, NULL, 0x51, buffer, 1);
+		pr_debug("[CABC check result 0x51 = 0x%x,0x%x]\n", buffer[0], buffer[1]);
+		dpmgr_path_start(pgc->dpmgr_handle, CMDQ_DISABLE);
+		if (primary_display_is_video_mode()) {
+			/* for video mode, we need to force trigger here */
+			/* for cmd mode, just set DPREC_EVENT_CMDQ_SET_EVENT_ALLOW when trigger loop start */
+			dpmgr_path_trigger(pgc->dpmgr_handle, NULL, CMDQ_DISABLE);
+		}
+	}
+#endif
+	_primary_path_unlock(__func__);
+	_primary_path_cmd_unlock();
+#ifdef DISP_SWITCH_DST_MODE
+	_primary_path_switch_dst_unlock();
+#endif
+	MMProfileLogEx(ddp_mmp_get_events()->primary_set_bl, MMProfileFlagEnd, 0, 0);
+	return ret;
+}
+EXPORT_SYMBOL_GPL(primary_display_setbacklight_hbm)
+#endif
 int primary_display_set_cmd(int *lcm_cmd, unsigned int cmd_num)
 {
 	int ret = 0;

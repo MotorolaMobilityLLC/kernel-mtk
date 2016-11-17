@@ -1228,8 +1228,56 @@ int disp_lcm_set_backlight(disp_lcm_handle *plcm, int level)
 	return -1;
 }
 
+#ifdef CONFIG_LCT_HBM_SUPPORT
+//add by yufangfang for hbm
+int disp_lcm_set_backlight_hbm(disp_lcm_handle *plcm, int level)
+{
+	LCM_DRIVER *lcm_drv = NULL;
 
+	DISPFUNC();
+	if (_is_lcm_inited(plcm)) {
+		lcm_drv = plcm->drv;
+		if (lcm_drv->set_backlight_hbm) {
+			lcm_drv->set_backlight_hbm(level);
+		} else {
+			DISPERR("FATAL ERROR, lcm_drv->set_backlight is null\n");
+			return -1;
+		}
 
+		return 0;
+	}
+
+	DISPERR("lcm_drv is null\n");
+	return -1;
+}
+#endif
+#ifdef CONFIG_LCT_CABC_MODE_SUPPORT
+int disp_lcm_set_cabc(disp_lcm_handle *plcm, void *handle, unsigned int enable)
+{
+	LCM_DRIVER *lcm_drv = NULL;
+
+	DISPFUNC();
+	if (_is_lcm_inited(plcm)) 
+	{
+		lcm_drv = plcm->drv;
+		if (lcm_drv->set_cabc_cmdq) 
+		{
+			lcm_drv->set_cabc_cmdq(handle, enable);
+		} 
+		else 
+		{
+			DISPERR("FATAL ERROR, lcm_drv->set_cabc is null\n");
+			return -1;
+		}
+		return 0;
+	}
+	else 
+	{
+		DISPERR("lcm_drv is null\n");
+		return -1;
+	}
+}
+#endif
 
 int disp_lcm_ioctl(disp_lcm_handle *plcm, LCM_IOCTL ioctl, unsigned int arg)
 {

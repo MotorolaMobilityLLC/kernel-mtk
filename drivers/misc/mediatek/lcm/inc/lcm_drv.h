@@ -823,6 +823,13 @@ typedef struct {
 
 	/* /////////////////////////CABC backlight related function */
 	void (*set_backlight)(unsigned int level);
+#ifdef CONFIG_LCT_CABC_MODE_SUPPORT
+	void (*set_cabc_cmdq)(void *handle, unsigned int enable);
+	
+#endif
+#ifdef CONFIG_LCT_HBM_SUPPORT
+	void (*set_backlight_hbm)(unsigned int level);
+#endif
 	void (*set_backlight_cmdq)(void *handle, unsigned int level);
 	void (*set_pwm)(unsigned int divider);
 	unsigned int (*get_pwm)(unsigned int divider);

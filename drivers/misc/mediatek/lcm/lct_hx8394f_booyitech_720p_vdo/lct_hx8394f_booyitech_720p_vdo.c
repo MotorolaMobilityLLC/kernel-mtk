@@ -73,6 +73,17 @@ static LCM_UTIL_FUNCS lcm_util = { 0 };
 #define I2C_ID_NAME "I2C_LCD_BIAS"
 #define TPS_ADDR 0x3E
 #define TPS_I2C_BUSNUM 2
+
+#ifdef CONFIG_LCT_CABC_MODE_SUPPORT
+extern int cabc_mode_mode;
+#define CABC_MODE_SETTING_UI	1
+#define CABC_MODE_SETTING_MV	2
+#define CABC_MODE_SETTING_DIS	3
+#define CABC_MODE_SETTING_NULL	0
+static int reg_mode = 0;
+#define dsi_set_cmdq_V22(cmdq, cmd, count, ppara, force_update) \
+lcm_util.dsi_set_cmdq_V22(cmdq, cmd, count, ppara, force_update)
+#endif
 /***************************************************************************** 
 * GLobal Variable
 *****************************************************************************/
@@ -263,7 +274,31 @@ static struct LCM_setting_table lcm_initialization_setting[] = {
 	{0x55,1,{0x00}},
 	{REGFLAG_END_OF_TABLE, 0x00, {}}
 };
+#ifdef CONFIG_LCT_CABC_MODE_SUPPORT
+static struct LCM_setting_table lcm_setting_ui[] = {
+	{0x51,1,{0xff}},
+	{0x53,1,{0x24}},
+	{0x55,1,{0x01}},
+	{REGFLAG_END_OF_TABLE, 0x00, {}}
 
+};
+
+static struct LCM_setting_table lcm_setting_mv[] = {
+	{0x51,1,{0xff}},
+	{0x53,1,{0x24}},
+	{0x55,1,{0x03}},
+	{REGFLAG_END_OF_TABLE, 0x00, {}}
+
+};
+
+static struct LCM_setting_table lcm_setting_dis[] = {
+	{0x51,1,{0xff}},
+	{0x53,1,{0x24}},
+	{0x55,1,{0x00}},
+	{REGFLAG_END_OF_TABLE, 0x00, {}}
+
+};
+#endif
 static struct LCM_setting_table lcm_deep_sleep_mode_in_setting[] = {
 	/* Sleep Mode On */
 	{ 0x28, 0, {} },
@@ -306,6 +341,34 @@ static void push_table(struct LCM_setting_table *table, unsigned int count,
 
 }
 
+#ifdef CONFIG_LCT_CABC_MODE_SUPPORT
+static void push_table_v22(void *handle, struct LCM_setting_table *table, unsigned int count,
+		       unsigned char force_update)
+{
+	unsigned int i;
+
+	for (i = 0; i < count; i++) {
+
+		unsigned cmd;
+		void *cmdq = handle;
+		cmd = table[i].cmd;
+
+		switch (cmd) {
+
+		case REGFLAG_DELAY:
+			MDELAY(table[i].count);
+			break;
+
+		case REGFLAG_END_OF_TABLE:
+			break;
+
+		default:
+			dsi_set_cmdq_V22(cmdq, cmd, table[i].count, table[i].para_list, force_update);
+		}
+	}
+
+}
+#endif
 
 /* --------------------------------------------------------------------------- */
 /* LCM Driver Implementations */
@@ -427,7 +490,7 @@ static void lcm_resume(void)
 	MDELAY(10);
 }
 
-
+static unsigned int last_level=0;
 static void lcm_setbacklight(unsigned int level)
 {
 	
@@ -444,6 +507,7 @@ static void lcm_setbacklight(unsigned int level)
 	lcm_backlight_level_setting[0].para_list[0] = mapped_level;
 	push_table(lcm_backlight_level_setting,
 		   sizeof(lcm_backlight_level_setting) / sizeof(struct LCM_setting_table), 1);
+	last_level = mapped_level;
 }
 
 //add for ATA test by liuzhen
@@ -497,6 +561,78 @@ static unsigned int lcm_ata_check(unsigned char *buffer)
 #endif   
 } 
 
+//add by yufangfang for hbm
+#ifdef CONFIG_LCT_HBM_SUPPORT
+static unsigned int hbm_enable=0;
+static void lcm_setbacklight_hbm(unsigned int level)
+{
+	if(level==0)
+	{
+		level = last_level;
+		hbm_enable = 0;
+	}
+	else
+	{
+		hbm_enable = 1;
+	}
+	/* Refresh value of backlight level. */
+	lcm_backlight_level_setting[0].para_list[0] = level;
+	push_table(lcm_backlight_level_setting,
+		   sizeof(lcm_backlight_level_setting) / sizeof(struct LCM_setting_table), 1);
+	printk("yufangfang setbacklight lcm level hbm = %d\n",level);
+}
+
+int recognition_hbm(void)
+{
+	if(hbm_enable==1)
+		return 1;
+	else
+		return 0;
+}
+EXPORT_SYMBOL_GPL(recognition_hbm)
+#endif
+#ifdef CONFIG_LCT_CABC_MODE_SUPPORT
+int recognition_cabc_mode(void)
+{
+	return reg_mode;
+}
+
+EXPORT_SYMBOL_GPL(recognition_cabc_mode);
+
+static void lcm_cabc_cmdq(void *handle, unsigned int mode)
+{
+
+	reg_mode = mode;
+	switch(mode)
+	{
+		case CABC_MODE_SETTING_UI:
+			{
+				push_table_v22(handle,lcm_setting_ui,
+			   sizeof(lcm_setting_ui) / sizeof(struct LCM_setting_table), 1);
+			}
+		break;
+		case CABC_MODE_SETTING_MV:
+			{
+				push_table_v22(handle,lcm_setting_mv,
+			   sizeof(lcm_setting_mv) / sizeof(struct LCM_setting_table), 1);
+			}
+		break;
+		case CABC_MODE_SETTING_DIS:
+			{
+				push_table_v22(handle,lcm_setting_dis,
+			   sizeof(lcm_setting_dis) / sizeof(struct LCM_setting_table), 1);
+			}
+		break;
+		default:
+		{
+			push_table_v22(handle,lcm_setting_dis,
+			   sizeof(lcm_setting_dis) / sizeof(struct LCM_setting_table), 1);
+		}
+
+	}
+}
+#endif
+
 LCM_DRIVER lct_hx8394f_booyitech_720p_vdo_lcm_drv = {
 
 	.name = "lct_hx8394f_booyitech_720p_vdo",
@@ -507,4 +643,10 @@ LCM_DRIVER lct_hx8394f_booyitech_720p_vdo_lcm_drv = {
 	.resume = lcm_resume,
 	.set_backlight = lcm_setbacklight,
 	.ata_check    = lcm_ata_check
+#ifdef CONFIG_LCT_CABC_MODE_SUPPORT
+	.set_cabc_cmdq = lcm_cabc_cmdq,
+#endif
+#ifdef CONFIG_LCT_HBM_SUPPORT
+	.set_backlight_hbm = lcm_setbacklight_hbm,
+#endif
 };

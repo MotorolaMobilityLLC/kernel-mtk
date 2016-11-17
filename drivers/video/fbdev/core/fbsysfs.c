@@ -493,6 +493,116 @@ static ssize_t show_bl_curve(struct device *device,
 }
 #endif
 
+//add by LCT yufangfang for cabc
+#ifdef CONFIG_LCT_CABC_MODE_SUPPORT
+#include "disp_lcm.h"
+#include "primary_display.h"
+#include "lct_hx8394f_booyitech_720p_vdo.h"
+#define CABC_MODE_UI	1
+#define CABC_MODE_MV	2
+#define CABC_MODE_DIS	3
+extern int primary_display_setcabc(unsigned int enable);
+static ssize_t store_cabc_mode(struct device *device, struct device_attribute *attr,
+			  const char *buf, size_t count)
+{
+	unsigned int cabc_mode_mode = 0;
+	char echo_m[3]={'1','2','3'};
+	if(strncmp(echo_m,buf,1)==0)
+	{
+		cabc_mode_mode = CABC_MODE_UI;	
+	}	
+	if(strncmp(echo_m+1,buf,1)==0)	
+	{
+		cabc_mode_mode = CABC_MODE_MV;
+	}
+	if(strncmp(echo_m+2,buf,1)==0)
+	{
+		cabc_mode_mode = CABC_MODE_DIS;
+	}
+	primary_display_setcabc(cabc_mode_mode);
+	return count;
+
+}
+
+static ssize_t show_cabc_mode(struct device *device,
+			   struct device_attribute *attr, char *buf)
+{
+	char m[5] = "0";
+	switch(recognition_cabc_mode())
+	{
+		case CABC_MODE_UI:
+			{
+				m[0]='U';
+				m[1]='I';
+			}
+			break;
+		case CABC_MODE_MV:
+			{
+				m[0]='M';
+				m[1]='V';
+			}
+			break;
+		case CABC_MODE_DIS:
+			{
+				m[0]='D';
+				m[1]='I';
+				m[2]='S';
+			}
+			break;
+		default:
+			{
+				m[0]='N';
+				m[1]='U';
+				m[2]='L';
+				m[3]='L';
+			}
+		
+	}
+	return snprintf(buf, PAGE_SIZE, "%s\n",
+	                m);
+}
+#endif
+
+//add by lct yufangfang for hbm
+#ifdef CONFIG_LCT_HBM_SUPPORT
+
+#define HBM_ENABLE	1
+#define HBM_DISABLE	0
+extern int primary_display_setbacklight_hbm(unsigned int level);
+static ssize_t store_hbm(struct device *device, struct device_attribute *attr,
+			  const char *buf, size_t count)
+{
+	char echo_hbm[2]={'1','0'};
+	if(strncmp(echo_hbm,buf,1)==0)	
+		primary_display_setbacklight_hbm(255);
+	if(strncmp(echo_hbm+1,buf,1)==0)
+		primary_display_setbacklight_hbm(0);
+	printk("yufangfang buf = %s\n",buf);
+	return count;
+
+}
+static ssize_t show_hbm(struct device *device,
+			   struct device_attribute *attr, char *buf)
+{
+	char n ='0';
+	int a = recognition_hbm();
+	printk("yufangfang show_hbm a = %d\n",a);
+	switch(recognition_hbm())
+	{
+		case HBM_ENABLE:
+				n='1';
+		break;
+		case HBM_DISABLE:
+				n='0';
+		break;
+		default:
+				n='0';
+			
+	}
+	return snprintf(buf, PAGE_SIZE, "%c\n",
+	                n);
+}
+#endif
 /* When cmap is added back in it should be a binary attribute
  * not a text one. Consideration should also be given to converting
  * fbdev to use configfs instead of sysfs */
@@ -509,6 +619,12 @@ static struct device_attribute device_attrs[] = {
 	__ATTR(stride, S_IRUGO, show_stride, NULL),
 	__ATTR(rotate, S_IRUGO|S_IWUSR, show_rotate, store_rotate),
 	__ATTR(state, S_IRUGO|S_IWUSR, show_fbstate, store_fbstate),
+#ifdef CONFIG_LCT_CABC_MODE_SUPPORT
+	__ATTR(cabc_mode, S_IRUGO|S_IWUSR, show_cabc_mode, store_cabc_mode),
+#endif
+#ifdef CONFIG_LCT_HBM_SUPPORT
+	__ATTR(hbm, S_IRUGO|S_IWUSR, show_hbm, store_hbm),
+#endif
 #ifdef CONFIG_FB_BACKLIGHT
 	__ATTR(bl_curve, S_IRUGO|S_IWUSR, show_bl_curve, store_bl_curve),
 #endif
