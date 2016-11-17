@@ -181,7 +181,9 @@ int  __reetime_handle(struct service_handler *handler)
 	Flush_Dcache_By_Area((unsigned long)handler->param_buf, (unsigned long)handler->param_buf + handler->size);
 
 	set_ack_vdrv_cmd(handler->sysno);
-	teei_vfs_flag = 0;
+
+	*((unsigned long *)teei_vfs_flag) = 0;
+	Flush_Dcache_By_Area((unsigned long)(teei_vfs_flag), (unsigned long)(teei_vfs_flag + 8));
 
 	n_ack_t_invoke_drv(0, 0, 0);
 
@@ -278,7 +280,9 @@ int __vfs_handle(struct service_handler *handler) /*! invoke handler */
 	Flush_Dcache_By_Area((unsigned long)handler->param_buf, (unsigned long)handler->param_buf + handler->size);
 
 	set_ack_vdrv_cmd(handler->sysno);
-	teei_vfs_flag = 0;
+
+	*((unsigned long *)teei_vfs_flag) = 0;
+	Flush_Dcache_By_Area((unsigned long)(teei_vfs_flag), (unsigned long)(teei_vfs_flag + 8));
 
 	n_ack_t_invoke_drv(0, 0, 0);
 

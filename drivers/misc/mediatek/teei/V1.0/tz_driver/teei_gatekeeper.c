@@ -168,6 +168,7 @@ int send_gatekeeper_command(unsigned long share_memory_size)
 
 	down(&fdrv_sema);
         rmb();
+	Invalidate_Dcache_By_Area((unsigned long)gatekeeper_buff_addr, gatekeeper_buff_addr + GK_BUFF_SIZE);
         mutex_unlock(&pm_mutex);
         up(&fdrv_lock);
 

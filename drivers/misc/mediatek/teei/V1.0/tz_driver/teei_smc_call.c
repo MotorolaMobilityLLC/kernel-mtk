@@ -47,7 +47,6 @@ static u32 teei_smc(u32 cmd_addr, int size, int valid_flag)
 
         add_nq_entry(cmd_addr, size, valid_flag);
         set_sch_nq_cmd();
-        Flush_Dcache_By_Area((unsigned long)t_nt_buffer, (unsigned long)t_nt_buffer + 0x1000);
 
         n_invoke_t_nq(0, 0, 0);
 	return 0;
@@ -316,6 +315,19 @@ int teei_smc_call(u32 teei_cmd_type,
 
 	down(psema);
 
+	Invalidate_Dcache_By_Area((unsigned long)local_smc_cmd, (unsigned long)local_smc_cmd + sizeof(struct teei_smc_cmd));
+	if (cmd_buf)
+		Invalidate_Dcache_By_Area((unsigned long)cmd_buf, (unsigned long)cmd_buf + cmd_len);
+
+	if (resp_buf)
+		Invalidate_Dcache_By_Area((unsigned long)resp_buf, (unsigned long)resp_buf + resp_len);
+
+	if (meta_data)
+		Invalidate_Dcache_By_Area((unsigned long)meta_data, (unsigned long)meta_data +
+				sizeof(struct teei_encode_meta) * (TEEI_MAX_RES_PARAMS + TEEI_MAX_REQ_PARAMS));
+
+	if (info_data)
+		Invalidate_Dcache_By_Area((unsigned long)info_data, (unsigned long)info_data + info_len);
 	/* with a rmb() */
 	rmb();
 

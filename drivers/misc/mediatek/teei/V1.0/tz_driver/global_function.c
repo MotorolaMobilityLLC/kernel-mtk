@@ -7,6 +7,7 @@
 #include "nt_smc_call.h"
 #include "global_function.h"
 #include "sched_status.h"
+#include "teei_id.h"
 
 #define SCHED_CALL      0x04
 
@@ -76,7 +77,9 @@ int global_fn(void)
 			/*msleep_interruptible(10);*/
 		} else if (fp_call_flag == GLSCH_HIGH) {
 			/* printk("[%s][%d]**************************\n", __func__, __LINE__ ); */
-			if (teei_vfs_flag == 0) {
+
+			Invalidate_Dcache_By_Area((unsigned long)(teei_vfs_flag), (unsigned long)(teei_vfs_flag) + 8);
+			if (*((unsigned long *)teei_vfs_flag) == 0) {
 				nt_sched_t_call();
 			} else {
 				up(&smc_lock);
@@ -84,7 +87,8 @@ int global_fn(void)
 			}
 		} else if (forward_call_flag == GLSCH_LOW) {
 			/* printk("[%s][%d]**************************\n", __func__, __LINE__ ); */
-			if (teei_vfs_flag == 0)	{
+			Invalidate_Dcache_By_Area((unsigned long)(teei_vfs_flag), (unsigned long)(teei_vfs_flag) + 8);
+			if (*((unsigned long *)teei_vfs_flag) == 0) {
 				nt_sched_t_call();
 			} else {
 				up(&smc_lock);

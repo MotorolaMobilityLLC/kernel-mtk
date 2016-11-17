@@ -193,6 +193,7 @@ int send_fp_command(unsigned long share_memory_size)
 	/* with a rmb() */
 	rmb();
 
+	Invalidate_Dcache_By_Area((unsigned long)fp_buff_addr, fp_buff_addr + FP_BUFF_SIZE);
 	mutex_unlock(&pm_mutex);
 	up(&fdrv_lock);
 

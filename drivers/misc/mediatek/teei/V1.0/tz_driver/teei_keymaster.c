@@ -192,6 +192,7 @@ int send_keymaster_command(unsigned long share_memory_size)
 	/* with a rmb() */
 	rmb();
 
+	Invalidate_Dcache_By_Area((unsigned long)keymaster_buff_addr, keymaster_buff_addr + KEYMASTER_BUFF_SIZE);
 	mutex_unlock(&pm_mutex);
 	up(&fdrv_lock);
 

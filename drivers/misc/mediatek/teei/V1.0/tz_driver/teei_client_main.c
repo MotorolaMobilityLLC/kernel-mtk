@@ -50,9 +50,44 @@
 
 #define GK_BUFF_SIZE		(4 * 1024)
 #define GK_SYS_NO		(120)
+extern void log_boot(char *str);
+#define TEEI_BOOT_FOOTPRINT(str) log_boot(str)
+enum {
+	TEEI_BOOT_OK = 0,
+	TEEI_BOOT_ERROR_CREATE_TLOG_BUF = 1,
+	TEEI_BOOT_ERROR_CREATE_TLOG_THREAD = 2,
+	TEEI_BOOT_ERROR_CREATE_VFS_ADDR = 3,
+	TEEI_BOOT_ERROR_LOAD_SOTER_FAILED = 4,
+	TEEI_BOOT_ERROR_INIT_CMD_BUFF_FAILED = 5,
+	TEEI_BOOT_ERROR_INIT_UTGATE_FAILED = 6,
+	TEEI_BOOT_ERROR_INIT_SERVICE1_FAILED = 7,
+	TEEI_BOOT_ERROR_INIT_SERVICE2_FAILED = 8,
+	TEEI_BOOT_ERROR_LOAD_TA_FAILED = 9,
+};
+const char* teei_boot_error_to_string(uint32_t id)
+{
+#define BOOT_ID_TO_STR(id) \
+	case id: \
+	return #id
 
+	switch(id){
+		BOOT_ID_TO_STR(TEEI_BOOT_OK);
+		BOOT_ID_TO_STR(TEEI_BOOT_ERROR_CREATE_TLOG_BUF);
+		BOOT_ID_TO_STR(TEEI_BOOT_ERROR_CREATE_TLOG_THREAD);
+		BOOT_ID_TO_STR(TEEI_BOOT_ERROR_CREATE_VFS_ADDR);
+		BOOT_ID_TO_STR(TEEI_BOOT_ERROR_LOAD_SOTER_FAILED);
+		BOOT_ID_TO_STR(TEEI_BOOT_ERROR_INIT_CMD_BUFF_FAILED);
+		BOOT_ID_TO_STR(TEEI_BOOT_ERROR_INIT_UTGATE_FAILED);
+		BOOT_ID_TO_STR(TEEI_BOOT_ERROR_INIT_SERVICE1_FAILED);
+		BOOT_ID_TO_STR(TEEI_BOOT_ERROR_INIT_SERVICE2_FAILED);
+		BOOT_ID_TO_STR(TEEI_BOOT_ERROR_LOAD_TA_FAILED);
+	default:
+		return "TEEI_BOOT_ERROR_UNDEFINED";
+	}
+}
 extern unsigned long ut_get_free_pages(gfp_t gfp_mask, unsigned int order);
 extern struct semaphore keymaster_api_lock;
+extern unsigned long teei_vfs_flag;
 
 struct semaphore boot_decryto_lock;
 
@@ -354,49 +389,35 @@ static int __cpuinit tz_driver_cpu_callback(struct notifier_block *self,
 	case CPU_DOWN_PREPARE_FROZEN:
 			if (cpu == sched_cpu) {
 				printk("cpu down prepare ************************\n");
-				retVal = down_trylock(&smc_lock);
-				if (retVal == 1)
-					return NOTIFY_BAD;
-				else {
-					cpu_notify_flag = 1;
-					for_each_online_cpu(i)
-					{
-						/*printk("current on line cpu [%d]\n", i);*/
-						if (i == cpu) {
-							continue;
-						}
-						switch_to_cpu_id = i;
+				down(&smc_lock);
+				cpu_notify_flag = 1;
+				for_each_online_cpu(i)
+				{
+					/*printk("current on line cpu [%d]\n", i);*/
+					if (i == cpu) {
+						continue;
 					}
-					/*printk("[%s][%d]brefore cpumask set cpu\n",__func__,__LINE__);*/
-					nt_sched_core(teei_cpu_id[switch_to_cpu_id],teei_cpu_id[cpu],0);
+					switch_to_cpu_id = i;
+				}
+				/*printk("[%s][%d]brefore cpumask set cpu\n",__func__,__LINE__);*/
+				nt_sched_core(teei_cpu_id[switch_to_cpu_id],teei_cpu_id[cpu],0);
 
 #if 1					
-					cpumask_set_cpu(switch_to_cpu_id, &mtee_mask);
-					
-					set_cpus_allowed(teei_switch_task, mtee_mask);
-					/*printk("[%s][%d]after cpumask set cpu\n",__func__,__LINE__);*/
-					current_cpu_id = switch_to_cpu_id;
-					printk("change cpu id from [%d] to [%d]\n", sched_cpu, switch_to_cpu_id);
+				cpumask_set_cpu(switch_to_cpu_id, &mtee_mask);
+				set_cpus_allowed(teei_switch_task, mtee_mask);
+				/*printk("[%s][%d]after cpumask set cpu\n",__func__,__LINE__);*/
+				current_cpu_id = switch_to_cpu_id;
+				printk("change cpu id from [%d] to [%d]\n", sched_cpu, switch_to_cpu_id);
 #endif
-				}
+				up(&smc_lock);
 			}
 			break;
 
 	case CPU_DOWN_FAILED:
-			if (cpu_notify_flag == 1) {
-				printk("cpu down failed *************************\n");
-				up(&smc_lock);
-				cpu_notify_flag = 0;
-			}
 			break;
 
 	case CPU_DEAD:
 	case CPU_DEAD_FROZEN:
-			if (cpu_notify_flag == 1) {
-				printk("cpu down success ***********************\n");
-				up(&smc_lock);
-				cpu_notify_flag = 0;
-			}
 			break;
 	}
 
@@ -631,28 +652,27 @@ static int init_teei_framework(void)
 #endif
 	tlog_buff = (unsigned long) __get_free_pages(GFP_KERNEL  | GFP_DMA , get_order(ROUND_UP(TLOG_SIZE, SZ_4K)));
 
-	if (tlog_buff == NULL) {
-		printk("[%s][%d]ERROR: There is no enough memory for TLOG!\n", __func__, __LINE__);
-		return -1;
-	}
+	if (tlog_buff == NULL)
+		return TEEI_BOOT_ERROR_CREATE_TLOG_BUF;
 
 	retVal = create_tlog_thread(tlog_buff, TLOG_SIZE);
-	if (retVal != 0) {
-		printk("[%s][%d]ERROR: Failed to create TLOG thread!\n", __func__, __LINE__);
-		return -1;
-	}
+	if (retVal != 0)
+		return TEEI_BOOT_ERROR_CREATE_TLOG_THREAD;
+
+	TEEI_BOOT_FOOTPRINT("TEEI TLOG THREAD Created");
 
 	secure_wq = create_workqueue("Secure Call");
 
+	TEEI_BOOT_FOOTPRINT("TEEI WorkQueue Created");
 #ifdef UT_DMA_ZONE
 	boot_vfs_addr = (unsigned long) __get_free_pages(GFP_KERNEL | GFP_DMA, get_order(ROUND_UP(VFS_SIZE, SZ_4K)));
 #else
 	boot_vfs_addr = (unsigned long) __get_free_pages(GFP_KERNEL, get_order(ROUND_UP(VFS_SIZE, SZ_4K)));
 #endif
-	if (boot_vfs_addr == NULL) {
-		printk("[%s][%d]ERROR: There is no enough memory for booting Soter!\n", __func__, __LINE__);
-		return -1;
-	}
+	if (boot_vfs_addr == NULL)
+		return TEEI_BOOT_ERROR_CREATE_VFS_ADDR;
+
+	TEEI_BOOT_FOOTPRINT("TEEI VFS Buffer Created");
 
 	down(&(smc_lock));
 
@@ -660,59 +680,61 @@ static int init_teei_framework(void)
 
 	down(&(boot_sema));
 
+	TEEI_BOOT_FOOTPRINT("TEEI BOOT Stage1 Completed");
 	free_pages(boot_vfs_addr, get_order(ROUND_UP(VFS_SIZE, SZ_4K)));
 
 	boot_soter_flag = END_STATUS;
-	if (soter_error_flag == 1) {
-		return -1;
-	}
+	if (soter_error_flag == 1)
+		return TEEI_BOOT_ERROR_LOAD_SOTER_FAILED;
 
 	down(&smc_lock);
 	retVal = create_cmd_buff();
 	up(&smc_lock);
 
-	if (retVal < 0) {
-		printk("[%s][%d] create_cmd_buff failed !\n", __func__, __LINE__);
-		return retVal;
-	}
+	if (retVal < 0)
+		return TEEI_BOOT_ERROR_INIT_CMD_BUFF_FAILED;
 
-	printk("[%s][%d] begin to load Soter services.\n", __func__, __LINE__);
+	TEEI_BOOT_FOOTPRINT("TEEI BOOT CMD Buffer Created");
+
 	switch_to_t_os_stages2();
-	printk("[%s][%d] load Soter services successfully.\n", __func__, __LINE__);
 
-	if (soter_error_flag == 1) {
-		return -1;
-	}
+	TEEI_BOOT_FOOTPRINT("TEEI BOOT Stage2 Completed");
 
-	printk("[%s][%d] begin to init daulOS services.\n", __func__, __LINE__);
+	if (soter_error_flag == 1)
+		return TEEI_BOOT_ERROR_INIT_UTGATE_FAILED;
+
 	retVal = teei_service_init_first();
 	if (retVal == -1)
-		return -1;
+		return TEEI_BOOT_ERROR_INIT_SERVICE1_FAILED;
 
+	TEEI_BOOT_FOOTPRINT("TEEI BOOT Service1 Inited");
 
 	/* waiting for keymaster share memory ready and anable the keymaster IOCTL */
 	up(&keymaster_api_lock);
+	TEEI_BOOT_FOOTPRINT("TEEI BOOT Keymaster Unlocked");
 	
 	/* android notify the uTdriver that the TAs is ready !*/
 	down(&boot_decryto_lock);
 	up(&boot_decryto_lock);
+	TEEI_BOOT_FOOTPRINT("TEEI BOOT Decrypt Unlocked");
 	
 	retVal = teei_service_init_second();
+	TEEI_BOOT_FOOTPRINT("TEEI BOOT Service2 Inited");
 	if (retVal == -1)
-		return -1;
+		return TEEI_BOOT_ERROR_INIT_SERVICE2_FAILED;
 
-	printk("[%s][%d] begin to load TEEs.\n", __func__, __LINE__);
 	t_os_load_image();
+	TEEI_BOOT_FOOTPRINT("TEEI BOOT Load TEES Completed");
 	if (soter_error_flag == 1)
-		return -1;
+		return TEEI_BOOT_ERROR_LOAD_TA_FAILED;
 
-	printk("[%s][%d] load TEEs successfully.\n", __func__, __LINE__);
 
 	teei_config_flag = 1;
 
 	wake_up(&__fp_open_wq);
+	TEEI_BOOT_FOOTPRINT("TEEI BOOT All Completed");
 	
-	return 0;
+	return TEEI_BOOT_OK;
 }
 
 /**
@@ -748,7 +770,8 @@ static long teei_config_ioctl(struct file *file, unsigned cmd, unsigned long arg
 			if (teei_flags == 1) {
 				break;
 			} else {
-				init_teei_framework();
+				retVal = init_teei_framework();
+				TEEI_BOOT_FOOTPRINT(teei_boot_error_to_string(retVal));
 				teei_flags = 1;
 			}
 
@@ -1518,6 +1541,15 @@ static int teei_client_init(void)
 		printk("cdev_add failed %x\n", ret_code);
 		goto class_device_destroy;
 	}
+
+	teei_vfs_flag = (unsigned long)kmalloc(64 * sizeof(unsigned char), GFP_KERNEL);
+	if (teei_vfs_flag == NULL) {
+		printk("[%s][%d]kmalloc teei_vfs_flag failed!\n", __func__, __LINE__);
+		goto fastcall_thread_fail;
+	}
+	printk("[%s][%d] teei_vfs_flag = %lx\n", __func__, __LINE__, teei_vfs_flag);
+	memset(teei_vfs_flag, 0, 64 * sizeof(unsigned char));
+
 
 	memset(&teei_contexts_head, 0, sizeof(teei_contexts_head));
 
