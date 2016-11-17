@@ -59,7 +59,8 @@ static DEFINE_MUTEX(SX9311_mutex);
 #define CAPTOUCH_EINT_NO_TOUCH	(0)
 #define SX9311_SUPPORT_I2C_DMA
 #if defined(SX9311_SUPPORT_I2C_DMA)
-static uint8_t *v_buf = NULL;
+static u8 *v_buf = NULL;
+
 static dma_addr_t p_buf;
 #define I2C_DMA_MAX_LENGTH 8
 #endif
@@ -738,7 +739,10 @@ static int SX9311_i2c_probe(struct i2c_client *client, const struct i2c_device_i
 	CAPTOUCH_FUN();
 
 #if defined(SX9311_SUPPORT_I2C_DMA)
-	v_buf = dma_alloc_coherent(&(client->adapter->dev), I2C_DMA_MAX_LENGTH, &p_buf, GFP_KERNEL|GFP_DMA32);
+        /*for 32bit must set dms_mask 20161117 */
+        client->adapter->dev.coherent_dma_mask = DMA_BIT_MASK(32); 
+        /*end */
+	v_buf = (u8 *)dma_alloc_coherent(&(client->adapter->dev), I2C_DMA_MAX_LENGTH, &p_buf, GFP_KERNEL);//|GFP_DMA32
 	if (!v_buf)
 		CAPTOUCH_ERR("Allocate DMA I2C Buffer failed!\n");
 	else
