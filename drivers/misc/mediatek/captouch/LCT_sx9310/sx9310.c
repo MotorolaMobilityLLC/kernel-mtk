@@ -45,7 +45,7 @@
  * configuration
 *******************************************************************************/
 #define SX9311_DEV_NAME     "SX9310"
-
+#define CAPSENSOR_DEV_NAME     "capsensor"
 
 #define SX9311_STATUS_NEAR 112
 #define SX9311_STATUS_FAR 113
@@ -729,6 +729,116 @@ static int SX9311_delete_attr(struct device_driver *driver)
 
 	return err;
 }
+
+//add for ATA test by LCT,liuzhen[20161115] start
+static int cap_sensor_init(void)
+{
+	enable_irq(captouch_irq);
+	return 0;
+}
+static int get_sensor_id(void)
+{
+    uint8_t buffer[8]={0};
+    int err = 0,chipId = 0; 
+
+	#if defined(SX9311_SUPPORT_I2C_DMA)
+	err = SX9311_i2c_read_dma(SX9311_i2c_client, 0x42, 1, buffer);
+	#else
+	err = SX9311_i2c_read(SX9311_i2c_client, 0x42, 1, buffer);
+	#endif
+	chipId = buffer[0];
+	CAPTOUCH_LOG("[%s]chidID = 0x%04x,buffer[1]=0x%x,buffer[2]=0x%x,buffer[3]=0x%x.\n", __FUNCTION__, chipId,buffer[1],buffer[2],buffer[3]);
+
+	return chipId;
+}
+static int get_sensor_state(void)
+{
+	int value = 0;     
+	value = sx9310_interrupt_state();
+	CAPTOUCH_LOG("[%s]state = 0x%04x.\n",__func__,value);
+	
+	return value;
+}
+static int cap_sensor_open(struct inode *inode, struct file *file)
+{
+    file->private_data = SX9311_i2c_client;
+
+    if (!file->private_data)
+    {
+        CAPTOUCH_ERR("[%s]null pointer!!\n",__func__);
+        return -EINVAL;
+    }
+
+    return nonseekable_open(inode, file);
+}
+
+/*----------------------------------------------------------------------------*/
+static int cap_sensor_release(struct inode *inode, struct file *file)
+{
+
+    file->private_data = NULL;
+    return 0;
+}
+
+/*----------------------------------------------------------------------------*/
+static long cap_sensor_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
+{
+    //struct i2c_client *client = (struct i2c_client*)file->private_data;
+    //struct epl_sensor_priv *obj = i2c_get_clientdata(client);
+    int err=0;
+    void __user *ptr = (void __user*) arg;
+    int dat;
+
+    CAPTOUCH_LOG("%s cmd = 0x%04x", __FUNCTION__, cmd);
+    switch (cmd)
+    {
+        case CAPSENSOR_SENSOR_INIT:
+            cap_sensor_init();
+            CAPTOUCH_LOG("[%s]:cap_sensor_init()\r\n",__func__);
+	        break;
+        case CAPSENSOR_READ_SENSOR_ID:
+            dat = get_sensor_id();
+            CAPTOUCH_LOG("[%s]:ioctl dat = %d \n",__func__,dat);
+            if(copy_to_user(ptr, &dat, sizeof(dat)))
+            {
+                err = -EFAULT;
+                goto err_out;
+            }
+            break;
+        case CAPSENSOR_GET_SENSOR_STATE:
+            dat = get_sensor_state();
+            CAPTOUCH_LOG("[%s]ioctl capsensor state value = %d.\n",__func__,dat);
+            if(copy_to_user(ptr, &dat, sizeof(dat)))
+            {
+                err = -EFAULT;
+                goto err_out;
+            }
+        	break;
+        default:
+            CAPTOUCH_ERR("%s not supported = 0x%04x", __FUNCTION__, cmd);
+            err = -ENOIOCTLCMD;
+        	break;
+    }
+err_out:
+    return err;
+}
+/*----------------------------------------------------------------------------*/
+static struct file_operations cap_sensor_fops =
+{
+    .owner = THIS_MODULE,
+    .open = cap_sensor_open,
+    .release = cap_sensor_release,
+    .unlocked_ioctl = cap_sensor_unlocked_ioctl,
+};
+/*----------------------------------------------------------------------------*/
+static struct miscdevice cap_sensor_device =
+{
+    .minor = MISC_DYNAMIC_MINOR,
+    .name = CAPSENSOR_DEV_NAME,
+    .fops = &cap_sensor_fops,
+};
+//add end
+
 /*----------------------------------------------------------------------------*/
 static int SX9311_i2c_probe(struct i2c_client *client, const struct i2c_device_id *id)
 {
@@ -777,6 +887,12 @@ static int SX9311_i2c_probe(struct i2c_client *client, const struct i2c_device_i
 
 	read_regStat();
 
+    if((err = misc_register(&cap_sensor_device)))
+    {
+        CAPTOUCH_ERR("[%s]cap_sensor_device register failed\n",__func__);
+        misc_deregister(&cap_sensor_device);
+    }
+
 	if((err = SX9311_create_attr(&SX9311_init_info.platform_diver_addr->driver)))
 	{
 		CAPTOUCH_ERR("SX9311 create attribute err = %d\n", err);
@@ -806,7 +922,10 @@ static int SX9311_i2c_remove(struct i2c_client *client)
 	{
 		CAPTOUCH_ERR("SX9311_delete_attr fail: %d\n", err);
 	}
-
+    if((err = misc_deregister(&cap_sensor_device)))
+    {
+        CAPTOUCH_ERR("misc_deregister fail: %d\n", err);
+    }
 	i2c_unregister_device(client);
 
 	return 0;

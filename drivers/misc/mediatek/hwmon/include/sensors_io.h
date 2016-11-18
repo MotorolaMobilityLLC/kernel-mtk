@@ -321,4 +321,10 @@ struct SENSOR_DATA {
 #define HUMIDITY_GET_TEMP_DATA			    _IOR(HUMIDITY, 0x03, int)
 #define HUMIDITY_IOCTL_READ_CHIPINFO		_IOR(HUMIDITY, 0x04, int)
 
+//add for ATA Capsensor Test by LCT.liuzhen 
+#define CAPSENSOR						0x8A
+#define CAPSENSOR_SENSOR_INIT						_IO(CAPSENSOR, 0x01)
+#define CAPSENSOR_GET_SENSOR_STATE				_IOR(CAPSENSOR, 0x02, int)
+#define CAPSENSOR_READ_SENSOR_ID				_IOR(CAPSENSOR, 0x03, int)
+
 #endif
