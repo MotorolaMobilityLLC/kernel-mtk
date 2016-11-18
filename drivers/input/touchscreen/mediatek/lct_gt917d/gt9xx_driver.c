@@ -37,7 +37,7 @@ DEFINE_MUTEX(i2c_access);
 #define LCT_ADD_TP_VERSION		1// add by caozhg
 static char* temp_ver;
 static int temp_pid;
-u8 tpd_cfg_version = 0;
+static u8 tpd_cfg_version = 0;
 
 #ifdef LCT_ADD_TP_VERSION
 #define CTP_PROC_FILE "tp_info"
@@ -158,12 +158,12 @@ static u8 tpd_proximity_detect = 1;	/* 0-->close ; 1--> far away */
 #define GTP_REG_REFRESH_RATE		0x8056
 #endif
 
-#ifdef CONFIG_SLT_DRV_DEVINFO_SUPPORT
+#ifdef CONFIG_LCT_DEVINFO_SUPPORT
 //#define SLT_DEVINFO_CTP_DEBUG 1
 
-#include  <linux/dev_info.h>
+#include  <dev_info.h>
 //static int devinfo_first=0;
-struct devinfo_struct *s_DEVINFO_ctp;   //suppose 10 max lcm device 
+static struct devinfo_struct *s_DEVINFO_ctp;   //suppose 10 max lcm device 
 //The followd code is for GTP style
 static void devinfo_ctp_regchar(char *module,char * vendor,char *version,char *used)
 {
@@ -172,7 +172,7 @@ static void devinfo_ctp_regchar(char *module,char * vendor,char *version,char *u
 	s_DEVINFO_ctp->device_type="CTP";
 	s_DEVINFO_ctp->device_module=module;
 	s_DEVINFO_ctp->device_vendor=vendor;
-	s_DEVINFO_ctp->device_ic="GT915";
+	s_DEVINFO_ctp->device_ic="GT917d";
 	s_DEVINFO_ctp->device_info=DEVINFO_NULL;
 	s_DEVINFO_ctp->device_version=version;
 	s_DEVINFO_ctp->device_used=used;
@@ -1773,7 +1773,7 @@ static s32 tpd_i2c_probe(struct i2c_client *client, const struct i2c_device_id *
 		return -1;
 	}
 	//add devinfo start
-   #ifdef CONFIG_SLT_DRV_DEVINFO_SUPPORT 
+   #ifdef CONFIG_LCT_DEVINFO_SUPPORT 
 	temp_ver=(char*) kmalloc(8, GFP_KERNEL);	
 	sprintf(temp_ver,"0x%x",tpd_cfg_version); //changed by caozhg
 

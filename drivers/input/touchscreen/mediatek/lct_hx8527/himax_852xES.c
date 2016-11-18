@@ -119,6 +119,67 @@ static int himax_parse_config(struct himax_ts_data *ts, struct himax_config *pda
 #endif
 #endif
 
+#define LCT_ADD_TP_VERSION		1// add by yufangfang
+static char* temp_ver;
+//static int temp_pid;
+static u8 tpd_cfg_version_hx = 0;
+
+#ifdef LCT_ADD_TP_VERSION
+#define CTP_PROC_FILE "tp_info"
+
+static int ctp_proc_read_show (struct seq_file* m, void* data)
+{
+	char temp[40] = {0};
+	char vendor_name[20] = {"boyi"};
+	sprintf(temp, "[Vendor]%s,[Fw]%s,[IC]hx8527\n",vendor_name,temp_ver); 
+	seq_printf(m, "%s\n", temp);
+	//printk("vid:%s,firmware:0x%04x\n",temp_ver, temp_pid);
+	return 0;
+}
+
+static int ctp_proc_open (struct inode* inode, struct file* file) 
+{
+    return single_open(file, ctp_proc_read_show, inode->i_private);
+}
+
+static const struct file_operations g_ctp_proc = 
+{
+    .open = ctp_proc_open,
+    .read = seq_read,
+};
+#endif
+
+#ifdef CONFIG_LCT_DEVINFO_SUPPORT
+//#define SLT_DEVINFO_CTP_DEBUG 1
+
+#include  <dev_info.h>
+//static int devinfo_first=0;
+static struct devinfo_struct *s_DEVINFO_ctp_hx;   //suppose 10 max lcm device 
+//The followd code is for GTP style
+static void devinfo_ctp_regchar(char *module,char * vendor,char *version,char *used)
+{
+
+	s_DEVINFO_ctp_hx =(struct devinfo_struct*) kmalloc(sizeof(struct devinfo_struct), GFP_KERNEL);	
+	s_DEVINFO_ctp_hx->device_type="CTP";
+	s_DEVINFO_ctp_hx->device_module=module;
+	s_DEVINFO_ctp_hx->device_vendor=vendor;
+	s_DEVINFO_ctp_hx->device_ic="hx8527";
+	s_DEVINFO_ctp_hx->device_info=DEVINFO_NULL;
+	s_DEVINFO_ctp_hx->device_version=version;
+	s_DEVINFO_ctp_hx->device_used=used;
+#ifdef SLT_DEVINFO_CTP_DEBUG
+		printk("[DEVINFO CTP]registe CTP device! type:<%s> module:<%s> vendor<%s> ic<%s> version<%s> info<%s> used<%s>\n",
+				s_DEVINFO_ctp_hx->device_type,s_DEVINFO_ctp_hx->device_module,s_DEVINFO_ctp_hx->device_vendor,
+				s_DEVINFO_ctp_hx->device_ic,s_DEVINFO_ctp_hx->device_version,s_DEVINFO_ctp_hx->device_info,s_DEVINFO_ctp_hx->device_used);
+#endif
+       DEVINFO_CHECK_DECLARE(s_DEVINFO_ctp_hx->device_type,s_DEVINFO_ctp_hx->device_module,s_DEVINFO_ctp_hx->device_vendor,s_DEVINFO_ctp_hx->device_ic,s_DEVINFO_ctp_hx->device_version,s_DEVINFO_ctp_hx->device_info,s_DEVINFO_ctp_hx->device_used);
+      //devinfo_check_add_device(s_DEVINFO_ctp_hx);
+
+}
+
+
+#endif
+
 #if 1
 static int himax_hand_shaking(void)    //0:Running, 1:Stop, 2:I2C Fail
 {
@@ -6063,7 +6124,18 @@ himax_gpio_power_config(ts->client);
 		goto err_FW_CRC_failed;
 	}	
 #endif
-
+#ifdef CONFIG_LCT_DEVINFO_SUPPORT 
+	tpd_cfg_version_hx = private_ts->vendor_config_ver;
+	temp_ver=(char*) kmalloc(8, GFP_KERNEL);	
+	sprintf(temp_ver,"0x%x",tpd_cfg_version_hx);
+	devinfo_ctp_regchar("unknown","JL.BY550F-849-A",temp_ver,DEVINFO_USED);
+#endif
+#if defined(LCT_ADD_TP_VERSION)
+	if(proc_create(CTP_PROC_FILE, 0444, NULL, &g_ctp_proc)== NULL)
+	{
+		printk("create_proc_entry hx8527 failed\n");
+	}
+#endif
 	//Himax Power On and Load Config
 	if (himax_loadSensorConfig(client, pdata) < 0) {
 		E("%s: Load Sesnsor configuration failed, unload driver.\n", __func__);
