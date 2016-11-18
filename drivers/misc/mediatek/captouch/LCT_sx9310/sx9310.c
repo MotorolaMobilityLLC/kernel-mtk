@@ -309,7 +309,7 @@ static int SX9311_i2c_read(struct i2c_client *client, uint8_t regaddr, uint8_t r
 
 static irqreturn_t SX9311_eint_func(int irq, void *desc)
 {
-        lct_pr_debug("[%s] irq=[%d]",__func__,irq);
+        //lct_pr_debug("[%s] irq=[%d]",__func__,irq);
  
  	disable_irq_nosync(captouch_irq);
 	schedule_work(&captouch_eint_work);
@@ -457,7 +457,7 @@ static void SX9311_eint_work(struct work_struct *work)
         //read_regStat();        
         value = sx9310_interrupt_state();
 
-        lct_pr_info("[%s]  entry!\n",__func__);        
+        //lct_pr_info("[%s]  entry!\n",__func__);        
 
 	mutex_lock(&mtx_eint_status);
 
@@ -965,31 +965,27 @@ static int SX9311_i2c_detect(struct i2c_client *client, struct i2c_board_info *i
 	return 0;
 }
 /*----------------------------------------------------------------------------*/
-//++ Modified for close Captouch by shentaotao 2016.07.02
-#if defined(CONFIG_MTK_SX9311)
-extern volatile int call_status;
-static int SX9311_enable_flag = 0;
-void SX9311_suspend(void)
-{
-	CAPTOUCH_FUN();
-	if (!call_status)
-	{
-		disable_irq(captouch_irq);
-		SX9311_enable_flag = 1;
-	}
-	else
-	{
-		SX9311_enable_flag = 0;
-	}
+
+/*for 0x41 reg  captouch  1->active, 0->sleep mode cly add 20161117*/
+static void sx9310_sleep(void){
+
+   uint8_t buffer[8]={0};
+   int err = 0; 
+
+    buffer[0] = 0x0;
+    err = SX9311_i2c_write_dma(SX9311_i2c_client, 0x41, 1, buffer);
+     
 }
-/*----------------------------------------------------------------------------*/
-void SX9311_resume(void)
-{
-	CAPTOUCH_FUN();
-	if (SX9311_enable_flag)
-		enable_irq(captouch_irq);
+
+static void sx9310_active(void){
+   uint8_t buffer[8]={0};
+   int err = 0; 
+
+    buffer[0] = 0x1;
+    err = SX9311_i2c_write_dma(SX9311_i2c_client, 0x41, 1, buffer);
+
 }
-#endif
+/*end cly*/
 //-- Modified for close Captouch by shentaotao 2016.07.02
 /*----------------------------------------------------------------------------*/
 static int SX9311_i2c_suspend(struct i2c_client *client, pm_message_t msg)
@@ -997,7 +993,7 @@ static int SX9311_i2c_suspend(struct i2c_client *client, pm_message_t msg)
 	int err = 0;
 
 	CAPTOUCH_FUN();
-
+        sx9310_sleep();
 	return err;
 }
 /*----------------------------------------------------------------------------*/
@@ -1006,7 +1002,7 @@ static int SX9311_i2c_resume(struct i2c_client *client)
 	int err = 0;
 
 	CAPTOUCH_FUN();
-
+        sx9310_active();
 	return err;
 }
 /*----------------------------------------------------------------------------*/
