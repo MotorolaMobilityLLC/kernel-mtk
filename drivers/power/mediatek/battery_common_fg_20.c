@@ -189,6 +189,9 @@ kal_bool g_battery_test_status = KAL_FALSE;
 int g_battery_percent = 50;
 unsigned int g_batt_soc_status = SOC_NORMAL;
 #endif
+#if defined(CONFIG_LCT_FUG_DIS_CHECK_NTC)
+unsigned int lct_battery_ntc_missing = 0;
+#endif
 /* ////////////////////////////////////////////////////////////////////////////// */
 /* Integrate with NVRAM */
 /* ////////////////////////////////////////////////////////////////////////////// */
@@ -2292,9 +2295,18 @@ void mt_battery_GetBatteryData(void)
 					      &bat_sum, batteryIndex);
 	}
 
+	#ifdef CONFIG_LCT_FUG_DIS_CHECK_NTC
+	if( 1 == lct_battery_ntc_missing)
+	{
+		BMT_status.temperature = 25;
+	}
+	else
+		BMT_status.temperature = mt_battery_average_method(BATTERY_AVG_TEMP, &batteryTempBuffer[0], temperature, &temperature_sum, batteryIndex);
+	#else
 	BMT_status.temperature =
 	    mt_battery_average_method(BATTERY_AVG_TEMP, &batteryTempBuffer[0], temperature,
 				      &temperature_sum, batteryIndex);
+	#endif
 	BMT_status.Vsense = Vsense;
 	BMT_status.charger_vol = charger_vol;
 	BMT_status.temperatureV = temperatureV;
@@ -3403,7 +3415,9 @@ void check_battery_exist(void)
 	battery_log(BAT_LOG_CRTI, "[BATTERY] Disable check battery exist.\n");
 #else
 	unsigned int baton_count = 0;
+#ifndef CONFIG_LCT_FUG_DIS_CHECK_NTC
 	unsigned int charging_enable = KAL_FALSE;
+#endif
 	unsigned int battery_status;
 	unsigned int i;
 
@@ -3419,6 +3433,12 @@ void check_battery_exist(void)
 			battery_log(BAT_LOG_FULL,
 				    "[BATTERY] boot mode = %d, bypass battery check\n",
 				    g_platform_boot_mode);
+		#ifdef CONFIG_LCT_FUG_DIS_CHECK_NTC
+		} else{
+			lct_battery_ntc_missing = 1;		
+			battery_log(BAT_LOG_CRTI,"[LCT][BATTERY][NTC] no NTC exist.\n");
+		}
+		#else
 		} else {
 			battery_log(BAT_LOG_CRTI,
 				    "[BATTERY] Battery is not exist, power off FAN5405 and system (%d)\n",
@@ -3431,6 +3451,7 @@ void check_battery_exist(void)
 			battery_charging_control(CHARGING_CMD_SET_POWER_OFF, NULL);
 			#endif
 		}
+		#endif
 	}
 #endif
 }

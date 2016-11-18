@@ -432,6 +432,12 @@ static unsigned int charging_get_hv_status(void *data)
 
 static unsigned int charging_get_battery_status(void *data)
 {
+#ifdef CONFIG_LCT_FUG_DIS_CHECK_NTC
+		pmic_set_register_value(PMIC_BATON_TDET_EN, 1);
+		pmic_set_register_value(PMIC_RG_BATON_EN, 1);
+		*(kal_bool *) (data) = pmic_get_register_value(PMIC_RGS_BATON_UNDET);
+		return STATUS_OK;
+#else
 	unsigned int status = STATUS_OK;
 	unsigned int val = 0;
 
@@ -451,6 +457,7 @@ static unsigned int charging_get_battery_status(void *data)
 #endif
 
 	return status;
+#endif
 }
 
 static unsigned int charging_get_charger_det_status(void *data)
