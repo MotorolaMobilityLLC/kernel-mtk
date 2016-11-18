@@ -1881,7 +1881,11 @@ static int bmg_i2c_probe(struct i2c_client *client,
 	}
 
 	obj_i2c_data = obj;
-	obj->client = bmi160_acc_i2c_client;
+      /*modify cly for i2c client follow with dws (gryo 0x68)*/
+  
+	  //obj->client = bmi160_acc_i2c_client;
+          obj->client = client ; 
+      /*end cly*/ 
 	i2c_set_clientdata(obj->client, obj);
 
 	atomic_set(&obj->trace, 0);

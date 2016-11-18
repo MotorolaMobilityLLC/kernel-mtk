@@ -4030,8 +4030,12 @@ static int bmi160_acc_i2c_probe(struct i2c_client *client, const struct i2c_devi
 
 	obj_i2c_data = obj;
 	obj->client = client;
+       //add cly for i2c set addr follow with dts setting. 0x68
+        obj->client->addr = *obj->hw->i2c_addr;
 	new_client = obj->client;
 	i2c_set_clientdata(new_client,obj);
+    
+    GSE_LOG("%s:   --new_client_addr=0x%x\n", __func__, client->addr);
 
 	atomic_set(&obj->trace, 0);
 	atomic_set(&obj->suspend, 0);
