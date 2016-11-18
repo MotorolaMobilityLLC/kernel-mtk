@@ -77,11 +77,11 @@ static bool g_strobe_On;
 static BOOL g_strobe_On;
 #endif
 
-static int g_duty = -1;
 static int g_timeOutTimeMs;
 #if defined(CONFIG_LCT_CAMERA_KERNEL)/*jijin.wang add for LCT*/
 static int g_duty1 = -1;
-//static int g_duty2 = -1;
+#else
+static int g_duty = -1;
 #endif
 
 static DEFINE_MUTEX(g_strobeSem);
@@ -408,7 +408,11 @@ int FL_Disable(void)
 int FL_dim_duty(u32 duty)
 {
 	PK_DBG(" FL_dim_duty line=%d\n", __LINE__);
+#if defined(CONFIG_LCT_CAMERA_KERNEL)/*jijin.wang add for LCT*/
+	g_duty1 = duty;
+#else
 	g_duty = duty;
+#endif
 	return 0;
 }
 
