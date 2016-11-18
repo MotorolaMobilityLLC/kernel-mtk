@@ -180,7 +180,7 @@ static struct i2c_board_info __initdata bmg_i2c_info = {
 //u8 ver_module;
 //static int devinfo_first=0;
 //static char* temp_ver;
-static char* temp_comments;
+//static char* temp_comments;
 struct devinfo_struct *s_DEVINFO_gyro;   //suppose 10 max lcm device 
 //The followd code is for GTP style
 static void devinfo_ctp_regchar(char *module,char * vendor,char *version,char *used)
@@ -203,7 +203,7 @@ static void devinfo_ctp_regchar(char *module,char * vendor,char *version,char *u
 }
       //devinfo_check_add_device(s_DEVINFO_ctp);
 
-}
+//}
 #endif
 
 

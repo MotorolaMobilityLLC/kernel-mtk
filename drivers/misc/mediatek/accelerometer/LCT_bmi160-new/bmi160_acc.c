@@ -349,7 +349,7 @@ static struct data_resolution bmi160_acc_offset_resolution = {{3, 9}, 256};
 #ifdef CONFIG_LCT_DEVINFO_SUPPORT
 #define SLT_DEVINFO_ACC_DEBUG
 #include  "dev_info.h"
-static char* temp_comments;
+//static char* temp_comments;
 struct devinfo_struct *s_DEVINFO_acc;   
 //The followd code is for GTP style
 static void devinfo_acc_regchar(char *module,char * vendor,char *version,char *used)
@@ -372,7 +372,7 @@ static void devinfo_acc_regchar(char *module,char * vendor,char *version,char *u
 }
       //devinfo_check_add_device(s_DEVINFO_ctp);
 
-}
+
 #endif
 
 
