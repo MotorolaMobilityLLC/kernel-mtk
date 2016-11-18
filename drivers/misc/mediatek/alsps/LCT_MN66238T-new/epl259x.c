@@ -339,6 +339,32 @@ u16 ges_threshold_high = 800;
 u8 last_ges_state = 0;
 #endif /*PS_GES*/
 
+/* add LCT_DEVINFO by dingleilei*/
+#ifdef CONFIG_LCT_DEVINFO_SUPPORT
+#define SLT_DEVINFO_ALSPS_DEBUG
+#include  "dev_info.h"
+struct devinfo_struct *s_DEVINFO_alsps;    
+static void devinfo_alsps_regchar(char *module,char * vendor,char *version,char *used)
+{
+
+	s_DEVINFO_alsps =(struct devinfo_struct*) kmalloc(sizeof(struct devinfo_struct), GFP_KERNEL);	
+	s_DEVINFO_alsps->device_type="ALSPS";
+	s_DEVINFO_alsps->device_module=module;
+	s_DEVINFO_alsps->device_vendor=vendor;
+	s_DEVINFO_alsps->device_ic="MN66238T";
+	s_DEVINFO_alsps->device_info=DEVINFO_NULL;
+	s_DEVINFO_alsps->device_version=version;
+	s_DEVINFO_alsps->device_used=used;
+#ifdef SLT_DEVINFO_ALSPS_DEBUG
+		printk("[DEVINFO ALSPS]registe alsps device! type:<%s> module:<%s> vendor<%s> ic<%s> version<%s> info<%s> used<%s>\n",
+				s_DEVINFO_alsps->device_type,s_DEVINFO_alsps->device_module,s_DEVINFO_alsps->device_vendor,
+				s_DEVINFO_alsps->device_ic,s_DEVINFO_alsps->device_version,s_DEVINFO_alsps->device_info,s_DEVINFO_alsps->device_used);
+#endif
+       DEVINFO_CHECK_DECLARE(s_DEVINFO_alsps->device_type,s_DEVINFO_alsps->device_module,s_DEVINFO_alsps->device_vendor,s_DEVINFO_alsps->device_ic,s_DEVINFO_alsps->device_version,s_DEVINFO_alsps->device_info,s_DEVINFO_alsps->device_used);
+}
+#endif
+/*end add*/
+
 static int epl_sensor_I2C_Write_Block(struct i2c_client *client, u8 addr, u8 *data, u8 len)
 {   /*because address also occupies one byte, the maximum length for write is 7 bytes*/
     int err, idx, num;
@@ -4161,6 +4187,10 @@ static int epl_sensor_i2c_probe(struct i2c_client *client, const struct i2c_devi
 
     if(obj->hw->polling_mode_ps == 0 || obj->hw->polling_mode_als == 0)
         epl_sensor_setup_eint(client);
+//add by dingleilei
+#ifdef CONFIG_LCT_DEVINFO_SUPPORT
+	devinfo_alsps_regchar("MN66238T","Eminent","1.0",DEVINFO_USED);
+#endif
 
 #if MTK_LTE
     alsps_init_flag = 0;

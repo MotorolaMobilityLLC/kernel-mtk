@@ -172,10 +172,10 @@ static struct i2c_board_info __initdata bmg_i2c_info = {
 #define COMPATIABLE_NAME "mediatek,bmi120gy_new" 
 
 
-//add by wangxiqiang
-#ifdef CONFIG_SLT_DRV_DEVINFO_SUPPORT
+//add by dingleilei
+#ifdef CONFIG_LCT_DEVINFO_SUPPORT
 #define SLT_DEVINFO_GYRO_DEBUG
-#include  <linux/dev_info.h>
+#include  "dev_info.h"
 //u8 ver_id;
 //u8 ver_module;
 //static int devinfo_first=0;
@@ -183,24 +183,24 @@ static struct i2c_board_info __initdata bmg_i2c_info = {
 static char* temp_comments;
 struct devinfo_struct *s_DEVINFO_gyro;   //suppose 10 max lcm device 
 //The followd code is for GTP style
-static void devinfo_ctp_regchar(char *module,char * vendor,char *version,char *used, char* comments)
+static void devinfo_ctp_regchar(char *module,char * vendor,char *version,char *used)
 {
 
 	s_DEVINFO_gyro =(struct devinfo_struct*) kmalloc(sizeof(struct devinfo_struct), GFP_KERNEL);	
 	s_DEVINFO_gyro->device_type="gyro";
 	s_DEVINFO_gyro->device_module=module;
 	s_DEVINFO_gyro->device_vendor=vendor;
-	s_DEVINFO_gyro->device_ic="BMI120";
+	s_DEVINFO_gyro->device_ic="BMI160";
 	s_DEVINFO_gyro->device_info=DEVINFO_NULL;
 	s_DEVINFO_gyro->device_version=version;
 	s_DEVINFO_gyro->device_used=used;
-	s_DEVINFO_gyro->device_comments=comments;
 #ifdef SLT_DEVINFO_GYRO_DEBUG
-		printk("[DEVINFO accel sensor]registe CTP device! type:<%s> module:<%s> vendor<%s> ic<%s> version<%s> info<%s> used<%s> comment<%s>\n",
+		printk("[DEVINFO accel sensor]registe CTP device! type:<%s> module:<%s> vendor<%s> ic<%s> version<%s> info<%s> used<%s>\n",
 				s_DEVINFO_gyro->device_type,s_DEVINFO_gyro->device_module,s_DEVINFO_gyro->device_vendor,
-				s_DEVINFO_gyro->device_ic,s_DEVINFO_gyro->device_version,s_DEVINFO_gyro->device_info,s_DEVINFO_gyro->device_used,s_DEVINFO_gyro->device_comments);
+				s_DEVINFO_gyro->device_ic,s_DEVINFO_gyro->device_version,s_DEVINFO_gyro->device_info,s_DEVINFO_gyro->device_used);
 #endif
-       DEVINFO_CHECK_DECLARE_COMMEN(s_DEVINFO_gyro->device_type,s_DEVINFO_gyro->device_module,s_DEVINFO_gyro->device_vendor,s_DEVINFO_gyro->device_ic,s_DEVINFO_gyro->device_version,s_DEVINFO_gyro->device_info,s_DEVINFO_gyro->device_used,s_DEVINFO_gyro->device_comments);
+      DEVINFO_CHECK_DECLARE(s_DEVINFO_gyro->device_type,s_DEVINFO_gyro->device_module,s_DEVINFO_gyro->device_vendor,s_DEVINFO_gyro->device_ic,s_DEVINFO_gyro->device_version,s_DEVINFO_gyro->device_info,s_DEVINFO_gyro->device_used);
+}
       //devinfo_check_add_device(s_DEVINFO_ctp);
 
 }
@@ -1943,13 +1943,9 @@ static int bmg_i2c_probe(struct i2c_client *client,
 
 
 
-//add by wangxiqiang
-   #ifdef CONFIG_SLT_DRV_DEVINFO_SUPPORT
-   
-	temp_comments=(char*) kmalloc(20, GFP_KERNEL);
-	sprintf(temp_comments,"GYRO:BMI120 BOSCH"); 
-	devinfo_ctp_regchar("unknown","BOSCH","v1.3",DEVINFO_USED,temp_comments);
-
+//add by dingleilei
+   #ifdef CONFIG_LCT_DEVINFO_SUPPORT
+	devinfo_ctp_regchar("BMI160","BOSCH","v1.3",DEVINFO_USED);
    #endif
    //end of add
 

@@ -164,6 +164,31 @@ static int ltr778_dynamic_calibrate(void);
 static int dynamic_calibrate = 0;
 #endif
 /*-----------------------------------------------------------------------------*/
+/* add LCT_DEVINFO by dingleilei*/
+#ifdef CONFIG_LCT_DEVINFO_SUPPORT
+#define SLT_DEVINFO_ALSPS_DEBUG
+#include  "dev_info.h"
+struct devinfo_struct *s_DEVINFO_alsps;    
+static void devinfo_alsps_regchar(char *module,char * vendor,char *version,char *used)
+{
+
+	s_DEVINFO_alsps =(struct devinfo_struct*) kmalloc(sizeof(struct devinfo_struct), GFP_KERNEL);	
+	s_DEVINFO_alsps->device_type="ALSPS";
+	s_DEVINFO_alsps->device_module=module;
+	s_DEVINFO_alsps->device_vendor=vendor;
+	s_DEVINFO_alsps->device_ic="LTR778";
+	s_DEVINFO_alsps->device_info=DEVINFO_NULL;
+	s_DEVINFO_alsps->device_version=version;
+	s_DEVINFO_alsps->device_used=used;
+#ifdef SLT_DEVINFO_ALSPS_DEBUG
+		printk("[DEVINFO ALSPS]registe alsps device! type:<%s> module:<%s> vendor<%s> ic<%s> version<%s> info<%s> used<%s>\n",
+				s_DEVINFO_alsps->device_type,s_DEVINFO_alsps->device_module,s_DEVINFO_alsps->device_vendor,
+				s_DEVINFO_alsps->device_ic,s_DEVINFO_alsps->device_version,s_DEVINFO_alsps->device_info,s_DEVINFO_alsps->device_used);
+#endif
+       DEVINFO_CHECK_DECLARE(s_DEVINFO_alsps->device_type,s_DEVINFO_alsps->device_module,s_DEVINFO_alsps->device_vendor,s_DEVINFO_alsps->device_ic,s_DEVINFO_alsps->device_version,s_DEVINFO_alsps->device_info,s_DEVINFO_alsps->device_used);
+}
+#endif
+/*end add*/
 
 /* 
  * #########
@@ -2039,7 +2064,10 @@ static int ltr778_i2c_probe(struct i2c_client *client, const struct i2c_device_i
 	{
 		APS_ERR("register proximity batch support err = %d\n", err);
 	}
-
+//add by dingleilei
+#ifdef CONFIG_LCT_DEVINFO_SUPPORT
+	devinfo_alsps_regchar("LTR778","Liteon","1.0",DEVINFO_USED);
+#endif
 	ltr778_init_flag =0;
 	APS_LOG("%s: OK\n", __func__);
 	return 0;

@@ -346,34 +346,30 @@ static struct data_resolution bmi160_acc_offset_resolution = {{3, 9}, 256};
 #endif
 
 //add by wangxiqiang
-#ifdef CONFIG_SLT_DRV_DEVINFO_SUPPORT
+#ifdef CONFIG_LCT_DEVINFO_SUPPORT
 #define SLT_DEVINFO_ACC_DEBUG
-#include  <linux/dev_info.h>
-//u8 ver_id;
-//u8 ver_module;
-//static int devinfo_first=0;
-//static char* temp_ver;
+#include  "dev_info.h"
 static char* temp_comments;
-struct devinfo_struct *s_DEVINFO_acc;   //suppose 10 max lcm device 
+struct devinfo_struct *s_DEVINFO_acc;   
 //The followd code is for GTP style
-static void devinfo_ctp_regchar(char *module,char * vendor,char *version,char *used, char* comments)
+static void devinfo_acc_regchar(char *module,char * vendor,char *version,char *used)
 {
 
 	s_DEVINFO_acc =(struct devinfo_struct*) kmalloc(sizeof(struct devinfo_struct), GFP_KERNEL);	
 	s_DEVINFO_acc->device_type="Acceleration";
 	s_DEVINFO_acc->device_module=module;
 	s_DEVINFO_acc->device_vendor=vendor;
-	s_DEVINFO_acc->device_ic="BMI120";
+	s_DEVINFO_acc->device_ic="BMI160";
 	s_DEVINFO_acc->device_info=DEVINFO_NULL;
 	s_DEVINFO_acc->device_version=version;
 	s_DEVINFO_acc->device_used=used;
-	s_DEVINFO_acc->device_comments=comments;
 #ifdef SLT_DEVINFO_ACC_DEBUG
-		printk("[DEVINFO accel sensor]registe CTP device! type:<%s> module:<%s> vendor<%s> ic<%s> version<%s> info<%s> used<%s> comment<%s>\n",
+		printk("[DEVINFO accel sensor]registe CTP device! type:<%s> module:<%s> vendor<%s> ic<%s> version<%s> info<%s> used<%s>\n",
 				s_DEVINFO_acc->device_type,s_DEVINFO_acc->device_module,s_DEVINFO_acc->device_vendor,
-				s_DEVINFO_acc->device_ic,s_DEVINFO_acc->device_version,s_DEVINFO_acc->device_info,s_DEVINFO_acc->device_used, s_DEVINFO_acc->device_comments);
+				s_DEVINFO_acc->device_ic,s_DEVINFO_acc->device_version,s_DEVINFO_acc->device_info,s_DEVINFO_acc->device_used);
 #endif
-       DEVINFO_CHECK_DECLARE_COMMEN(s_DEVINFO_acc->device_type,s_DEVINFO_acc->device_module,s_DEVINFO_acc->device_vendor,s_DEVINFO_acc->device_ic,s_DEVINFO_acc->device_version,s_DEVINFO_acc->device_info,s_DEVINFO_acc->device_used,s_DEVINFO_acc->device_comments);
+       DEVINFO_CHECK_DECLARE(s_DEVINFO_acc->device_type,s_DEVINFO_acc->device_module,s_DEVINFO_acc->device_vendor,s_DEVINFO_acc->device_ic,s_DEVINFO_acc->device_version,s_DEVINFO_acc->device_info,s_DEVINFO_acc->device_used);
+}
       //devinfo_check_add_device(s_DEVINFO_ctp);
 
 }
@@ -4139,12 +4135,9 @@ static int bmi160_acc_i2c_probe(struct i2c_client *client, const struct i2c_devi
 	}
 #endif //BMC050_VG
 
-//add by wangxiqiang
-   #ifdef CONFIG_SLT_DRV_DEVINFO_SUPPORT
-   
-	temp_comments=(char*) kmalloc(20, GFP_KERNEL);
-	sprintf(temp_comments,"ACC:BMI120 BOSCH"); 
-	devinfo_ctp_regchar("unknown","BOSCH","1.5",DEVINFO_USED,temp_comments);
+//add by dingleilei
+   #ifdef CONFIG_LCT_DEVINFO_SUPPORT
+	devinfo_acc_regchar("BMI160","BOSCH","1.5",DEVINFO_USED);
 
    #endif
    //end of add

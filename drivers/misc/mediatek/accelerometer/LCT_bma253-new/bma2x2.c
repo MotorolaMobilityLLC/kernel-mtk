@@ -357,6 +357,32 @@ static struct data_resolution bma2x2_data_resolution[4] = {
 /*----------------------------------------------------------------------------*/
 static struct data_resolution bma2x2_offset_resolution;
 
+/*add DEVINFO SUPPORT BY dingleilei*/
+#ifdef CONFIG_LCT_DEVINFO_SUPPORT
+#define SLT_DEVINFO_ACCEL_DEBUG
+#include  "dev_info.h"
+struct devinfo_struct *s_DEVINFO_acceleration;    
+static void devinfo_acceleration_regchar(char *module,char * vendor,char *version,char *used)
+{
+
+	s_DEVINFO_acceleration =(struct devinfo_struct*) kmalloc(sizeof(struct devinfo_struct), GFP_KERNEL);	
+	s_DEVINFO_acceleration->device_type="Acceleration";
+	s_DEVINFO_acceleration->device_module=module;
+	s_DEVINFO_acceleration->device_vendor=vendor;
+	s_DEVINFO_acceleration->device_ic="BMA253";
+	s_DEVINFO_acceleration->device_info=DEVINFO_NULL;
+	s_DEVINFO_acceleration->device_version=version;
+	s_DEVINFO_acceleration->device_used=used;
+#ifdef SLT_DEVINFO_ACCEL_DEBUG
+		printk("[DEVINFO Acceleration]registe acceleration device! type:<%s> module:<%s> vendor<%s> ic<%s> version<%s> info<%s> used<%s>\n",
+				s_DEVINFO_acceleration->device_type,s_DEVINFO_acceleration->device_module,s_DEVINFO_acceleration->device_vendor,
+				s_DEVINFO_acceleration->device_ic,s_DEVINFO_acceleration->device_version,s_DEVINFO_acceleration->device_info,s_DEVINFO_acceleration->device_used);
+#endif
+       DEVINFO_CHECK_DECLARE(s_DEVINFO_acceleration->device_type,s_DEVINFO_acceleration->device_module,s_DEVINFO_acceleration->device_vendor,s_DEVINFO_acceleration->device_ic,s_DEVINFO_acceleration->device_version,s_DEVINFO_acceleration->device_info,s_DEVINFO_acceleration->device_used);
+}
+#endif
+/* end add*/
+
 /* I2C operation functions */
 #ifdef DMA_FEATURE
 static int bma_i2c_dma_read(struct i2c_client *client,
@@ -2713,6 +2739,10 @@ static int bma2x2_i2c_probe(struct i2c_client *client,
 	obj->early_drv.suspend  = bma2x2_early_suspend,
 	obj->early_drv.resume   = bma2x2_late_resume,
 	register_early_suspend(&obj->early_drv);
+#endif
+
+#ifdef CONFIG_LCT_DEVINFO_SUPPORT
+	devinfo_acceleration_regchar("BMA253","Bosch","1.0",DEVINFO_USED);
 #endif
 
 	bma2x2_init_flag = 0;

@@ -144,6 +144,31 @@ static struct captouch_init_info SX9311_init_info = {
 	
 };
 
+/* add LCT_DEVINFO by dingleilei*/
+#ifdef CONFIG_LCT_DEVINFO_SUPPORT
+#define SLT_DEVINFO_ALSPS_DEBUG
+#include  "dev_info.h"
+struct devinfo_struct *s_DEVINFO_capsensor;    
+static void devinfo_capsensor_regchar(char *module,char * vendor,char *version,char *used)
+{
+
+	s_DEVINFO_capsensor =(struct devinfo_struct*) kmalloc(sizeof(struct devinfo_struct), GFP_KERNEL);	
+	s_DEVINFO_capsensor->device_type="CAP SENSOR";
+	s_DEVINFO_capsensor->device_module=module;
+	s_DEVINFO_capsensor->device_vendor=vendor;
+	s_DEVINFO_capsensor->device_ic="sx9310";
+	s_DEVINFO_capsensor->device_info=DEVINFO_NULL;
+	s_DEVINFO_capsensor->device_version=version;
+	s_DEVINFO_capsensor->device_used=used;
+#ifdef SLT_DEVINFO_ALSPS_DEBUG
+		printk("[DEVINFO capsensor]registe capsensor device! type:<%s> module:<%s> vendor<%s> ic<%s> version<%s> info<%s> used<%s>\n",
+				s_DEVINFO_capsensor->device_type,s_DEVINFO_capsensor->device_module,s_DEVINFO_capsensor->device_vendor,
+				s_DEVINFO_capsensor->device_ic,s_DEVINFO_capsensor->device_version,s_DEVINFO_capsensor->device_info,s_DEVINFO_capsensor->device_used);
+#endif
+       DEVINFO_CHECK_DECLARE(s_DEVINFO_capsensor->device_type,s_DEVINFO_capsensor->device_module,s_DEVINFO_capsensor->device_vendor,s_DEVINFO_capsensor->device_ic,s_DEVINFO_capsensor->device_version,s_DEVINFO_capsensor->device_info,s_DEVINFO_capsensor->device_used);
+}
+#endif
+
 #if defined(SX9311_SUPPORT_I2C_DMA)
 
 static int SX9311_i2c_write_dma(struct i2c_client *client, uint8_t regaddr, uint8_t txbyte, uint8_t *data)
@@ -905,7 +930,10 @@ static int SX9311_i2c_probe(struct i2c_client *client, const struct i2c_device_i
 		CAPTOUCH_ERR("captouch register fail = %d\n", err);
 		return err;
 	}
-
+//add by dingleilei	
+#ifdef CONFIG_LCT_DEVINFO_SUPPORT
+	devinfo_capsensor_regchar("sx9310","Azoteq","1.0",DEVINFO_USED);
+#endif
 	CAPTOUCH_LOG("%s: OK\n", __func__);
 	return 0;
 }
