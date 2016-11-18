@@ -633,7 +633,12 @@ typedef struct {
 	unsigned int virtual_width;
 	unsigned int virtual_height;
 	unsigned int io_select_mode;	/* DBI or DPI should select IO mode according to chip spec */
-
+#ifdef CONFIG_LCT_DEVINFO_SUPPORT
+	char *ic;
+	char *vendor;
+	char *module;
+	char *info;
+#endif
 	/* particular parameters */
 	LCM_DBI_PARAMS dbi;
 	LCM_DPI_PARAMS dpi;

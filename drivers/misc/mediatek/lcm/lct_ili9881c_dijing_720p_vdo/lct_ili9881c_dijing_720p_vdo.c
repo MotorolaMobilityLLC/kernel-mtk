@@ -452,6 +452,13 @@ static void lcm_get_params(LCM_PARAMS *params)
 	//params->dsi.switch_mode = SYNC_PULSE_VDO_MODE;
 #endif
 
+#ifdef CONFIG_LCT_DEVINFO_SUPPORT
+	params->module="dijing";
+	params->vendor="F055A15-6T1";
+	params->ic="ili9881c";
+	params->info="720*1280";
+#endif
+
 	/* DSI */
 	/* Command mode setting */
 	params->dsi.LANE_NUM = LCM_THREE_LANE;

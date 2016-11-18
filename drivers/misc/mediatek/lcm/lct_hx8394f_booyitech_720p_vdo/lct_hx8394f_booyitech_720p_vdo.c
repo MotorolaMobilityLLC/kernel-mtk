@@ -395,6 +395,13 @@ static void lcm_get_params(LCM_PARAMS *params)
 	params->dsi.mode = BURST_VDO_MODE;
 #endif
 
+#ifdef CONFIG_LCT_DEVINFO_SUPPORT
+	params->module="booyitech";
+	params->vendor="BY-T55KC33P2M";
+	params->ic="hx8394f";
+	params->info="720*1280";
+#endif
+
 	/* DSI */
 	/* Command mode setting */
 	params->dsi.LANE_NUM = LCM_THREE_LANE;

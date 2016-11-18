@@ -4830,6 +4830,78 @@ static int _fence_release_worker_thread(void *data)
 }
 #endif
 
+//add by LCT yufangfang for dev_info
+#ifdef CONFIG_LCT_DEVINFO_SUPPORT
+//#define SLT_DEVINFO_LCM_DEBUG
+#include  <dev_info.h>
+#include <linux/timer.h>
+static int devinfo_first=0;
+struct devinfo_struct s_DEVINFO_lcm[10];   //suppose 10 max lcm device 
+
+extern LCM_DRIVER* lcm_driver_list[];
+extern unsigned int lcm_count;
+
+static void devinfo_lcm_reg(void)
+{
+	int i=0;
+	for(i = 0;i < lcm_count;i++)
+	{
+#ifdef SLT_DEVINFO_LCM_DEBUG
+		printk("[DEVINFO LCM]registe LCM device!num:<%d> type:<%s> module:<%s> vendor<%s> ic<%s> version<%s> info<%s> used<%s>\n",i,
+				s_DEVINFO_lcm[i].device_type,s_DEVINFO_lcm[i].device_module,s_DEVINFO_lcm[i].device_vendor,s_DEVINFO_lcm[i].device_ic,
+				s_DEVINFO_lcm[i].device_version,s_DEVINFO_lcm[i].device_info,s_DEVINFO_lcm[i].device_used);
+#endif
+		DEVINFO_CHECK_DECLARE(s_DEVINFO_lcm[i].device_type,s_DEVINFO_lcm[i].device_module,s_DEVINFO_lcm[i].device_vendor,
+				s_DEVINFO_lcm[i].device_ic,s_DEVINFO_lcm[i].device_version,s_DEVINFO_lcm[i].device_info,s_DEVINFO_lcm[i].device_used);
+
+	}
+		//return 0;
+}
+
+
+void DISP_DEVINFO_LCM_get(const char* lcm_name)
+{
+	LCM_DRIVER *slt_lcm = NULL;
+	int i;
+	LCM_PARAMS slt_s_lcm_params= {0};
+	LCM_PARAMS *slt_lcm_params= &slt_s_lcm_params;
+	for(i = 0;i < lcm_count;i++)
+	{
+		slt_lcm_params = &slt_s_lcm_params;
+		slt_lcm = lcm_driver_list[i];
+		memset((void*)slt_lcm_params, 0, sizeof(LCM_PARAMS));
+		slt_lcm->get_params(slt_lcm_params);
+
+		s_DEVINFO_lcm[i].device_info=kmalloc(64,GFP_KERNEL);
+
+			s_DEVINFO_lcm[i].device_type="LCM";
+			s_DEVINFO_lcm[i].device_module=slt_lcm_params->module;
+			s_DEVINFO_lcm[i].device_vendor=slt_lcm_params->vendor;
+			s_DEVINFO_lcm[i].device_ic=slt_lcm_params->ic;
+			s_DEVINFO_lcm[i].device_info=slt_lcm_params->info;
+			//s_DEVINFO_lcm[i].device_comments=slt_lcm_params->comments;
+			s_DEVINFO_lcm[i].device_version=DEVINFO_NULL;
+
+
+			if(!strcmp(lcm_name,slt_lcm->name))
+				s_DEVINFO_lcm[i].device_used=DEVINFO_USED;
+			else
+				s_DEVINFO_lcm[i].device_used=DEVINFO_UNUSED;
+
+//			sprintf(s_DEVINFO_lcm[i].device_info,"%d * %d",slt_lcm_params->width,slt_lcm_params->height);
+#ifdef SLT_DEVINFO_LCM_DEBUG
+		printk("[DEVINFO LCM]Num:[%d] type:[%s] module:[%s] vendor:[%s] ic:[%s] info:[%s] used:[%s] \n",i,s_DEVINFO_lcm[i].device_type,
+			s_DEVINFO_lcm[i].device_module,
+			s_DEVINFO_lcm[i].device_vendor,
+			s_DEVINFO_lcm[i].device_ic,
+			s_DEVINFO_lcm[i].device_info,
+			s_DEVINFO_lcm[i].device_used);
+#endif
+	}
+	//return 0;
+}	
+#endif
+
 static struct task_struct *present_fence_release_worker_task;
 
 static int _present_fence_release_worker_thread(void *data)
@@ -4837,6 +4909,13 @@ static int _present_fence_release_worker_thread(void *data)
 	int ret = 0;
 	disp_sync_info *layer_info = NULL;
 	struct sched_param param = {.sched_priority = 87 }; /* RTPM_PRIO_FB_THREAD */
+#ifdef CONFIG_LCT_DEVINFO_SUPPORT
+	if(devinfo_first==0)
+	{
+		devinfo_first=1;
+		devinfo_lcm_reg();
+	}
+#endif
 
 	sched_setscheduler(current, SCHED_RR, &param);
 
@@ -5106,6 +5185,8 @@ static int init_cmdq_slots(cmdqBackupSlotHandle *pSlot, int count, int init_val)
 }
 #endif
 
+
+
 int primary_display_init(char *lcm_name, unsigned int lcm_fps, int is_lcm_inited)
 {
 	DISP_STATUS ret = DISP_STATUS_OK;
@@ -5150,6 +5231,11 @@ int primary_display_init(char *lcm_name, unsigned int lcm_fps, int is_lcm_inited
 	mutex_init(&(pgc->switch_dst_lock));
 #endif
 	_primary_path_lock(__func__);
+
+//add by LCT yufangfang for lcm dev_info
+#ifdef CONFIG_LCT_DEVINFO_SUPPORT
+	DISP_DEVINFO_LCM_get(lcm_name);
+#endif
 
 	pgc->plcm = disp_lcm_probe(lcm_name, LCM_INTERFACE_NOTDEFINED, is_lcm_inited);
 
