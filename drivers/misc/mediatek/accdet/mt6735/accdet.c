@@ -572,7 +572,7 @@ static inline int accdet_setup_eint(struct platform_device *accdet_device)
 	pins_eint_int = pinctrl_lookup_state(accdet_pinctrl1, "state_eint_as_int");
 	if (IS_ERR(pins_eint_int)) {
 		ret = PTR_ERR(pins_eint_int);
-		dev_err(&accdet_device->dev, "fwq Cannot find accdet pinctrl state_eint_accdet!\n");
+		dev_err(&accdet_device->dev, "fwq Cannot find accdet pinctrl state_eint_as_int!\n");
 		return ret;
 	}
 	pinctrl_select_state(accdet_pinctrl1, pins_eint_int);
