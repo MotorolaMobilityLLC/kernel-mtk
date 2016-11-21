@@ -126,6 +126,32 @@ static struct work_struct  eint1_work;
 #endif
 //end add by zhaofei - 2016-11-09-17-31
 
+/* add LCT_DEVINFO by changjingyang start */
+#ifdef CONFIG_LCT_DEVINFO_SUPPORT
+#define LCT_DEVINFO_NFC_DEBUG
+#include  "dev_info.h"
+struct devinfo_struct *s_DEVINFO_nfc;    
+static void devinfo_nfc_regchar(char *module,char * vendor,char *version,char *used)
+{
+
+	s_DEVINFO_nfc =(struct devinfo_struct*) kmalloc(sizeof(struct devinfo_struct), GFP_KERNEL);	
+	s_DEVINFO_nfc->device_type="NFC";
+	s_DEVINFO_nfc->device_module=module;
+	s_DEVINFO_nfc->device_vendor=vendor;
+	s_DEVINFO_nfc->device_ic="PN548";
+	s_DEVINFO_nfc->device_info=DEVINFO_NULL;
+	s_DEVINFO_nfc->device_version=version;
+	s_DEVINFO_nfc->device_used=used;
+#ifdef LCT_DEVINFO_NFC_DEBUG
+		printk("[DEVINFO NFC]registe nfc device! type:<%s> module:<%s> vendor<%s> ic<%s> version<%s> info<%s> used<%s>\n",
+				s_DEVINFO_nfc->device_type,s_DEVINFO_nfc->device_module,s_DEVINFO_nfc->device_vendor,
+				s_DEVINFO_nfc->device_ic,s_DEVINFO_nfc->device_version,s_DEVINFO_nfc->device_info,s_DEVINFO_nfc->device_used);
+#endif
+       DEVINFO_CHECK_DECLARE(s_DEVINFO_nfc->device_type,s_DEVINFO_nfc->device_module,s_DEVINFO_nfc->device_vendor,s_DEVINFO_nfc->device_ic,s_DEVINFO_nfc->device_version,s_DEVINFO_nfc->device_info,s_DEVINFO_nfc->device_used);
+}
+#endif
+/* add LCT_DEVINFO by changjingyang end */
+
 /*****************************************************************************
  * Function
  *****************************************************************************/
@@ -709,6 +735,12 @@ static int pn544_probe(struct i2c_client *client,
 #endif
 #endif
 // end add by zhaofei - 2016-11-09-17-05
+
+/* add by changjingyang  start */
+#ifdef CONFIG_LCT_DEVINFO_SUPPORT
+		devinfo_nfc_regchar("PN548","ATU","NXP",DEVINFO_USED);
+#endif
+/* add by changjingyang  end */
 
 	pn544_platform_pinctrl_select(gpctrl, st_ven_h);
 
