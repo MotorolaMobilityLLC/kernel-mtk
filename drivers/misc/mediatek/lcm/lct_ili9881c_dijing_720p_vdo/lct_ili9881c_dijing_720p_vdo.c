@@ -39,6 +39,9 @@
 
 #define LCM_DSI_CMD_MODE							  0
 #define LCT_LCM_MAPP_BACKLIGHT						  1
+
+#define LCT_LCM_ATA_TEST						  
+
 /* --------------------------------------------------------------------------- */
 /* Local Variables */
 /* --------------------------------------------------------------------------- */
@@ -58,6 +61,8 @@ static LCM_UTIL_FUNCS lcm_util = { 0 };
 #define wrtie_cmd(cmd)					 lcm_util.dsi_write_cmd(cmd)
 #define write_regs(addr, pdata, byte_nums)		 lcm_util.dsi_write_regs(addr, pdata, byte_nums)
 #define read_reg					 lcm_util.dsi_read_reg()
+#define read_reg_v2(cmd, buffer, buffer_size)   				lcm_util.dsi_dcs_read_lcm_reg_v2(cmd, buffer, buffer_size)
+
 
 #ifdef CONFIG_LCT_LCM_GPIO_UTIL
 	#define set_gpio_lcd_enp(cmd) lcm_util.set_gpio_lcd_enp_bias(cmd)
@@ -570,6 +575,41 @@ static void lcm_setbacklight(unsigned int level)
 		   sizeof(lcm_backlight_level_setting) / sizeof(struct LCM_setting_table), 1);
 }
 
+/* add LCM ATA by changjingyang start */
+#ifdef LCT_LCM_ATA_TEST
+#define LCT_LCM_ATA_DEBUG
+static unsigned int lcm_ata_check(unsigned char *buffer)
+{
+	int   array[4];
+	char  read_buffer[3];
+	char  id0,id1,id=0;
+	/* page 1 */
+	array[0] = 0x00043902;						 
+	array[1] = 0x018198ff;				
+	dsi_set_cmdq(array, 2, 1); 
+
+	array[0] = 0x00013700;// read id return two byte,version and id
+	dsi_set_cmdq(array, 1, 1);
+	read_reg_v2(0x00, read_buffer, 1);
+	id0  =	read_buffer[0];
+
+	array[0] = 0x00013700;// read id return two byte,version and id
+	dsi_set_cmdq(array, 1, 1);
+	read_reg_v2(0x01, read_buffer, 1);
+	id1  =	read_buffer[0]; 
+	id = (id0 << 8) | id1;
+		
+	#ifdef LCT_LCM_ATA_DEBUG 
+	printk("ili9881-c %s, id0 = 0x%x , id1 = 0x%x, id = 0x%08x\n", __func__, id0, id1, id);
+	#endif
+	
+	if ((id0 == 0x98)&&(id1 == 0x81)) //cpt    
+		return 1;
+	else
+	    return 0;
+}
+#endif
+/* add LCM ATA by changjingyang end */
 
 LCM_DRIVER lct_ili9881c_dijing_720p_vdo_lcm_drv = {
 
@@ -580,5 +620,9 @@ LCM_DRIVER lct_ili9881c_dijing_720p_vdo_lcm_drv = {
 	.suspend = lcm_suspend,
 	.resume = lcm_resume,
 	.set_backlight = lcm_setbacklight,
-
+/* add LCM ATA by changjingyang start */
+#ifdef  LCT_LCM_ATA_TEST
+	.ata_check = lcm_ata_check,
+#endif
+/* add LCM ATA by changjingyang end */
 };
