@@ -441,6 +441,38 @@ static signed int shutdown_gauge1_xmins;
 #endif
 
 
+//add by zhangyh
+#ifdef CONFIG_LCT_DEVINFO_SUPPORT
+#define SLT_DEVINFO_BATTERY_DEBUG
+#include  "dev_info.h"
+static char* temp_ver;
+static char* temp_comments;
+static struct devinfo_struct s_DEVINFO_bat;
+
+static void devinfo_bat_regchar(char *module,char * vendor,char *version,char *used, char* comments)
+{
+
+	s_DEVINFO_bat.device_type="BATTERY";
+	s_DEVINFO_bat.device_module=module;
+	s_DEVINFO_bat.device_vendor=vendor;
+	s_DEVINFO_bat.device_ic=DEVINFO_NULL;
+	s_DEVINFO_bat.device_info=DEVINFO_NULL;
+	s_DEVINFO_bat.device_version=DEVINFO_NULL;
+	s_DEVINFO_bat.device_used=used;
+#ifdef SLT_DEVINFO_BATTERY_DEBUG
+	printk("[DEVINFO BATTERY]registe BATTERY device! type:<%s> module:<%s> vendor<%s> ic<%s> version<%s> info<%s> used<%s>\n",
+		s_DEVINFO_bat.device_type,s_DEVINFO_bat.device_module,s_DEVINFO_bat.device_vendor,
+		s_DEVINFO_bat.device_ic,s_DEVINFO_bat.device_version,s_DEVINFO_bat.device_info,
+                s_DEVINFO_bat.device_used);
+#endif
+       DEVINFO_CHECK_DECLARE(s_DEVINFO_bat.device_type,s_DEVINFO_bat.device_module,s_DEVINFO_bat.device_vendor,
+                                    s_DEVINFO_bat.device_ic,s_DEVINFO_bat.device_version,s_DEVINFO_bat.device_info,
+                                    s_DEVINFO_bat.device_used);
+
+}
+#endif
+
+
 static signed int shutdown_gauge1_mins = SHUTDOWN_GAUGE1_MINS;
 
 signed int gFG_battery_cycle = 0;
@@ -531,9 +563,35 @@ void fgauge_get_profile_id(void)
 			g_fg_battery_id = id;
 			break;
 		} else if (g_battery_id_voltage[id] == -1) {
+#ifdef CONFIG_LCT_FUG_MULTI_BAT_SUPPORT
+			g_fg_battery_id = 0;
+#else
 			g_fg_battery_id = TOTAL_BATTERY_NUMBER - 1;
+#endif
 		}
 	}
+
+	//add by zhangyh
+#ifdef CONFIG_LCT_DEVINFO_SUPPORT
+	temp_ver=(char*) kmalloc(8, GFP_KERNEL);	
+	temp_comments=(char*) kmalloc(20, GFP_KERNEL);
+	sprintf(temp_ver,"0x%x",g_fg_battery_id);
+
+	switch(g_fg_battery_id)
+	{
+		case 0x0:
+			sprintf(temp_comments,"Battery:SCUD 0x%x",g_fg_battery_id); 
+			devinfo_bat_regchar(DEVINFO_NULL,"SCUD",temp_ver,DEVINFO_USED,temp_comments);
+			break;
+		case 0x1:
+			sprintf(temp_comments,"Battery:NVT 0x%x",g_fg_battery_id);
+			devinfo_bat_regchar("LENSJ09","NVT",temp_ver,DEVINFO_USED,temp_comments);
+			break;
+		default:
+			break;
+	}
+
+#endif
 
 	bm_info("[fgauge_get_profile_id]Battery id (%d)\n", g_fg_battery_id);
 }

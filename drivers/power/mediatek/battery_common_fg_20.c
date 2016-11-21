@@ -2343,6 +2343,18 @@ static PMU_STATUS mt_battery_CheckBatteryTemp(void)
 		battery_log(BAT_LOG_CRTI, "[BATTERY] JEITA : fail\n");
 		status = PMU_STATUS_FAIL;
 	}
+#if defined(CONFIG_LCT_CHR_JEITA_STANDARD_SUPPORT)
+	if ((BMT_status.temperature < batt_cust_data.min_charge_temperature)
+	    || (BMT_status.temperature == batt_cust_data.err_charge_temperature)) {
+		battery_log(BAT_LOG_CRTI,
+				    "[BATTERY] Battery Under Temperature or NTC fail !!\n\r");
+		status = PMU_STATUS_FAIL;
+	}
+	if (BMT_status.temperature >= batt_cust_data.max_charge_temperature) {
+		battery_log(BAT_LOG_CRTI, "[BATTERY] Battery Over Temperature !!\n\r");
+		status = PMU_STATUS_FAIL;
+	}
+#endif
 #else
 
 #if defined(MTK_TEMPERATURE_RECHARGE_SUPPORT)
@@ -2611,6 +2623,22 @@ static void mt_battery_notify_VCharger_check(void)
 		battery_log(BAT_LOG_CRTI,
 			    "[BATTERY] BATTERY_NOTIFY_CASE_0001_VCHARGER (%x)\n",
 			    g_BatteryNotifyCode);
+#ifdef CONFIG_LCT_CHR_VOLTAGE_MIN_NOTIFY
+#if !defined(CONFIG_MTK_DUAL_INPUT_CHARGER_SUPPORT)
+	if ((BMT_status.charger_vol < batt_cust_data.v_charger_min) && (BMT_status.charger_exist == KAL_TRUE)) {
+#else
+	if ((BMT_status.charger_vol < v_charger_min) && (BMT_status.charger_exist == KAL_TRUE)) {
+#endif
+		g_BatteryNotifyCode |= 0x0100;
+		battery_log(BAT_LOG_CRTI, "[BATTERY] BMT_status.charger_vol(%d) < %d mV\n",
+				    BMT_status.charger_vol, batt_cust_data.v_charger_min);
+
+	} else {
+		g_BatteryNotifyCode &= ~(0x0100);
+	}
+	if (g_BatteryNotifyCode != 0x0000)
+		battery_log(BAT_LOG_CRTI, "[BATTERY] BATTERY_NOTIFY_CASE_0001_VCHARGER (%x)\n", g_BatteryNotifyCode);
+#endif
 #endif
 }
 

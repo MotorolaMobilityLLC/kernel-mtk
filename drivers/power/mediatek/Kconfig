@@ -331,24 +331,36 @@ config MTK_BIF_SUPPORT
 	  smart battery.
 
 config LCT_FUG_MULTI_BAT_SUPPORT
-	bool "LCT_FUG_MULTI_BAT_SUPPORT"
+    bool "LCT_FUG_MULTI_BAT_SUPPORT"
 	default n
 	help
+	  Set yes to support multi battery.
+	  Set No to disable multi battery.
 
 config LCT_CHR_JEITA_STANDARD_SUPPORT
     bool "LCT_CHR_JEITA_STANDARD_SUPPORT"
 	default n
 	help
+	  Set Yes if JEITA charging control is needed.
+	  MediaTek charging control flow supports
+	  JEITA standard and could provide more
+	  safety for charging function.
 
 config LCT_CHR_HIGH_BATTERY_VOLTAGE_SUPPORT
     bool "LCT_CHR_HIGH_BATTERY_VOLTAGE_SUPPORT"
 	default n
 	help
+	  Set Yes to config if 4.4V battery is
+	  to be supported.
 
 config LCT_CHR_BQ24296_SUPPORT
     bool "LCT_CHR_BQ24296_SUPPORT"
 	default n
 	help
+	  This is to enable MediaTek supports to BQ24296.
+	  It depends on config MTK_SMART_BATTERY
+	  and config MTK_SWCHR_SUPPORT
+	  Set to Yes if BQ24160 is used.
 
 config LCT_CHR_LIMIT_MAX_SOC
 	bool "LCT_CHR_LIMIT_MAX_SOC"
@@ -364,9 +376,30 @@ config LCT_FUG_BATTERYTRACER_INTERFACE
 	  add interface for BatteryTracer test.
 	  Set Yes to support this feature.
 
+config LCT_FUG_POWERON_DELTA_CAPACITY_TOLRANCE
+	bool "LCT_FUG_POWERON_DELTA_CAPACITY_TOLRANCE"
+	default n
+	help
+	  Set yes to support capacity tolrance 20.
+	  Set No to support capacity tolrance 40.
+
+config LCT_CHR_VOLTAGE_MIN_NOTIFY
+	bool "LCT_CHR_VOLTAGE_MIN_NOTIFY"
+	default n
+	help
+	  Set yes to notify min voltage.
+	  Set No to notify min voltage.
+
 config LCT_FUG_DIS_CHECK_NTC
 	bool "LCT_FUG_DIS_CHECK_NTC"
 	default n
 	help
 	  No shutdown if battery is not detected.
 	  Enable this config if device could be active without battery.
+
+config LCT_CHR_FULL_CHECK
+	bool "LCT_CHR_FULL_CHECK"
+	default n
+	help
+	  Set yes to check battery full status.
+	  Set No to not Check battery full status.

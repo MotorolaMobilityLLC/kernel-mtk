@@ -90,6 +90,8 @@ static bool usb_unlimited;
 #if defined(CONFIG_MTK_HAFG_20)
 #ifdef HIGH_BATTERY_VOLTAGE_SUPPORT
 BATTERY_VOLTAGE_ENUM g_cv_voltage = BATTERY_VOLT_04_340000_V;
+#elif defined(CONFIG_LCT_CHR_HIGH_BATTERY_VOLTAGE_SUPPORT)
+BATTERY_VOLTAGE_ENUM g_cv_voltage = BATTERY_VOLT_04_400000_V;
 #else
 BATTERY_VOLTAGE_ENUM g_cv_voltage = BATTERY_VOLT_04_200000_V;
 #endif
@@ -370,6 +372,14 @@ static void set_jeita_charging_current(void)
 		battery_log(BAT_LOG_CRTI, "[BATTERY] JEITA set charging current : %d\r\n",
 			    g_temp_CC_value);
 	}
+#ifdef CONFIG_LCT_CHR_JEITA_STANDARD_SUPPORT
+	else if (g_temp_status == TEMP_POS_0_TO_POS_10) {
+		g_temp_CC_value = CHARGE_CURRENT_1000_00_MA; 	/* for low temp */
+		g_temp_input_CC_value = CHARGE_CURRENT_1000_00_MA;
+		battery_log(BAT_LOG_CRTI, "[BATTERY] JEITA 0-10 set charging current : %d\r\n",
+				    g_temp_CC_value);
+	}
+#endif
 }
 
 #endif /* CONFIG_MTK_JEITA_STANDARD_SUPPORT */
@@ -645,7 +655,11 @@ static unsigned int charging_full_check(void)
 	unsigned int status;
 
 	battery_charging_control(CHARGING_CMD_GET_CHARGING_STATUS, &status);
+#ifdef CONFIG_LCT_CHR_FULL_CHECk
+	if (status == KAL_TRUE || && BMT_status.UI_SOC == 100) {
+#else
 	if (status == KAL_TRUE) {
+#endif
 		g_full_check_count++;
 		if (g_full_check_count >= FULL_CHECK_TIMES)
 			return KAL_TRUE;
