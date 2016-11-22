@@ -1,0 +1,24 @@
+#tuwenzan@wind-mobi.com add at 20161110 begin#
+# Input misc drivers configuration
+#
+menuconfig INPUT_MISC
+	bool "Miscellaneous devices"
+	help
+	  Say Y here, and a list of miscellaneous input drivers will be displayed.
+	  Everything that didn't fit into the other categories is here. This option
+	  doesn't affect the kernel.
+
+	  If unsure, say Y.
+
+if INPUT_MISC
+
+config INPUT_SX9310
+	tristate "SX9310_SAR_sensor"
+	depends on I2C
+	default n
+	help 
+	  Say Y to enable the SAR detection application, if N here not to use the 
+	  this SAR sensor
+
+endif
+#tuwenzan@wind-mobi.com add at 20161110 end

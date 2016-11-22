@@ -40,14 +40,41 @@ kal_bool chargin_hw_init_done = KAL_FALSE;
 static int bq24296_driver_probe(struct i2c_client *client, const struct i2c_device_id *id);
 
 #ifdef CONFIG_OF
+//zhangchao@wind-mobi.com 20161118 begin
+#ifdef CONFIG_MTK_BQ24296_SUPPORT
+static const struct of_device_id bq24296_of_match[] = {
+	{.compatible = "mediatek,SWITHING_CHARGER",},
+	{},
+};
+
+MODULE_DEVICE_TABLE(of, bq24296_of_match);
+#else
+//zhangchao@wind-mobi.com 20161118 end
 static const struct of_device_id bq24296_of_match[] = {
 	{.compatible = "bq24296",},
 	{},
 };
 
 MODULE_DEVICE_TABLE(of, bq24296_of_match);
+//zhangchao@wind-mobi.com 20161118 begin
+#endif
+//zhangchao@wind-mobi.com 20161118 end
 #endif
 
+//zhangchao@wind-mobi.com 20161118 begin
+#ifdef CONFIG_MTK_BQ24296_SUPPORT
+static struct i2c_driver bq24296_driver = {
+	.driver = {
+		   .name = "SWITHING_CHARGER",
+#ifdef CONFIG_OF
+		   .of_match_table = bq24296_of_match,
+#endif
+		   },
+	.probe = bq24296_driver_probe,
+	.id_table = bq24296_i2c_id,
+};
+#else
+//zhangchao@wind-mobi.com 20161118 end
 static struct i2c_driver bq24296_driver = {
 	.driver = {
 		   .name = "bq24296",
@@ -58,6 +85,9 @@ static struct i2c_driver bq24296_driver = {
 	.probe = bq24296_driver_probe,
 	.id_table = bq24296_i2c_id,
 };
+//zhangchao@wind-mobi.com 20161118 begin
+#endif
+//zhangchao@wind-mobi.com 20161118 end
 
 /**********************************************************
   *

@@ -34,6 +34,12 @@ LCM_DSI_MODE_CON lcm_dsi_mode;
 #endif
 
 LCM_DRIVER *lcm_driver_list[] = {
+//xuzhifeng@wind-mobi.com 20161108 begin
+#if defined(ILI9881_HD720_DSI_VDO_TM)
+	&ili9881_hd720_dsi_vdo_tm_lcm_drv,
+#endif
+//xuzhifeng@wind-mobi.com 20161108 end
+
 #if defined(OTM1284A_HD720_DSI_VDO_TM)
 	&otm1284a_hd720_dsi_vdo_tm_lcm_drv,
 #endif

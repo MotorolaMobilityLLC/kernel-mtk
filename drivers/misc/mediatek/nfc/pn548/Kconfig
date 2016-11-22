@@ -1,0 +1,5 @@
+##lipeng@wind-mobi.com 20161114 begin
+if MTK_NFC
+
+endif # NFC
+##lipeng@wind-mobi.com 20161114 end

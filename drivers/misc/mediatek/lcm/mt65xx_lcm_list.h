@@ -258,6 +258,9 @@ extern LCM_DRIVER nt35695_fhd_dsi_vdo_truly_nt50358_720p_lcm_drv;
 extern LCM_DRIVER ft8707_fhd_dsi_vdo_lgd_drv;
 extern LCM_DRIVER lct_hx8394f_booyitech_720p_vdo_lcm_drv;//add by yufangfang
 extern LCM_DRIVER lct_ili9881c_dijing_720p_vdo_lcm_drv;//add by yufangfang
+//xuzhifeng@wind-mobi.com 20161108 begin
+extern LCM_DRIVER ili9881_hd720_dsi_vdo_tm_lcm_drv;
+//xuzhifeng@wind-mobi.com 20161108 end
 #ifdef BUILD_LK
 extern void mdelay(unsigned long msec);
 #endif

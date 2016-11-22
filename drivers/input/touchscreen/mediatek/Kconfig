@@ -10,7 +10,10 @@ menuconfig INPUT_TOUCHSCREEN
 	  If unsure, say Y.
 
 if INPUT_TOUCHSCREEN
-
+#tuwenzan@wind-mobi.com add this at 20161108 begin
+source "drivers/input/touchscreen/mediatek/synaptics_dsx/Kconfig"
+source "drivers/input/touchscreen/mediatek/sx9301/Kconfig"
+#tuwenzan@wind-mobi.com add this at 20161108 end
 config TOUCHSCREEN_MTK
 	tristate "MediaTek Touch Panel Driver"
 	default n

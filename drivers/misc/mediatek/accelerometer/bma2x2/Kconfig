@@ -1,0 +1,5 @@
+#tuwenzan@wind-mobi.com modify at 20161108 begin
+config MTK_BMA2X2
+	bool "BMA2X2 for MediaTek package"
+	default n
+#tuwenzan@wind-mobi.com modify at 20161108 end

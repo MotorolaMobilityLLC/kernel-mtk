@@ -18,7 +18,10 @@
 
 
 define FILTER_PROJECT_DRV
-ifeq ($(wildcard $(srctree)/drivers/misc/mediatek/imgsensor/src/$(MTK_PLATFORM)/camera_project/$(ARCH_MTK_PROJECT)/$(1)),)
+# wangkangmin@wind-mobi.com 20161108 begin
+ifeq ($(wildcard $(srctree)/drivers/misc/mediatek/imgsensor/src/mt6735m/camera_project/$(ARCH_MTK_PROJECT)/$(1)),)
+#ifeq ($(wildcard $(srctree)/drivers/misc/mediatek/imgsensor/src/$(MTK_PLATFORM)/camera_project/$(ARCH_MTK_PROJECT)/$(1)),)
+# wangkangmin@wind-mobi.com 20161108 end
 platform_drv += $(1)
 else
 project_drv += camera_project/$(ARCH_MTK_PROJECT)/$(1)

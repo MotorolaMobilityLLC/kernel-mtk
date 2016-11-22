@@ -652,7 +652,11 @@
 		als: als {
 			compatible = "mediatek, als-eint";
 		};
-
+		//tuwenzan@wind-mobi.com modify at 20161110 begin
+		sar: sar {
+			compatible = "mediatek, sar-eint";
+		};
+		//tuwenzan@wind-mobi.com modify at 20161110 end
 		gse_1: gse_1 {
 			compatible = "mediatek, gse_1-eint";
 			status = "disabled";
@@ -1228,6 +1232,14 @@
 			compatible = "mediatek,usb_iddig_eint";
 		};
 /*LCT ADD for otg*/
+		
+		/*zhangchao@wind-mobi.com 20161118 begin*/
+		chr_stat:chr_stat{
+			compatible = "mediatek,cha_stat-eint";
+			status ="disabled";
+		};
+		/*zhangchao@wind-mobi.com 20161118 end*/
+
 		accdet: accdet@ {
 			compatible = "mediatek,mt6735-accdet",
 						"mediatek,mt6735m-accdet";
@@ -1336,7 +1348,7 @@
 			audmiso-gpio = <144 0>;
 			audmosi-gpio = <145 0>;
 			vowclk-gpio = <148 0>;
-			extspkamp-gpio = <117 0>;
+			extspkamp-gpio = <103 0>; /*ext amp for Z168 ---sunsiyuan@wind-mobi.com add at 20161109*/
 			i2s1clk-gpio = <80 0>;
 			i2s1dat-gpio = <78 0>;
 			i2s1mclk-gpio = <9 0>;

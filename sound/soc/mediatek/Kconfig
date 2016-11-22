@@ -211,3 +211,10 @@ config MTK_SND_HYBRID_DRE_SUPPORT
 	help
 	  If you say Y, enable MTK_SND_HYBRID_DRE_SUPPORT.
 	  Only enable this when we have Hybrid DRE feature.
+#ext amp for Z168 ---sunsiyuan@wind-mobi.com add at 20161109 begin
+config MTK_LEGACY_EXTSPK
+	bool "MTK_LEGACY_EXTSPK"
+	default n
+	help
+	  If you say Y, enable MTK_LEGACY_EXTSPK
+#ext amp for Z168 ---sunsiyuan@wind-mobi.com add at 20161109 end	  

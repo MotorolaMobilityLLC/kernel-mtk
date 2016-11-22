@@ -14,4 +14,7 @@
 
 obj-$(CONFIG_NFC_PN548) += lct_pn548/
 obj-y += $(subst ",,$(CONFIG_MTK_PLATFORM))/
+## liupeng@wind-mobi.com 20161118 begin
+obj-$(CONFIG_NFC_PN548) += pn548/
+## liupeng@wind-mobi.com 20161118 end
 subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/base/power/$(MTK_PLATFORM)/

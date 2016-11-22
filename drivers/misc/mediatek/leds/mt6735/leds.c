@@ -704,6 +704,90 @@ int mt_backlight_set_pwm(int pwm_num, u32 level, u32 div,
 	}
 }
 
+//wangkangmin@wind-mobi.com 20161108 begin
+int flashlight_set_pwm(u32 hduration, u32 lduration, u32 level)
+{
+	struct pwm_spec_config pwm_setting;
+//wangkangmin@wind-mobi.com 20161116 begin
+	pwm_setting.pwm_no = 3;
+//wangkangmin@wind-mobi.com 20161108 end
+	pwm_setting.mode = PWM_MODE_FIFO;//PWM_MODE_FIFO; // New mode fifo and periodical mode
+	pwm_setting.pmic_pad = false;
+	pwm_setting.clk_div = CLK_DIV2;	//liuying@wind-mobi.com 20140929 for mt6732 use 26Mhz clk source
+	pwm_setting.clk_src = PWM_CLK_NEW_MODE_BLOCK;//PWM_CLK_NEW_MODE_BLOCK;
+
+	pwm_setting.PWM_MODE_FIFO_REGS.IDLE_VALUE = 0;
+	pwm_setting.PWM_MODE_FIFO_REGS.GUARD_VALUE = 0;
+	pwm_setting.PWM_MODE_FIFO_REGS.STOP_BITPOS_VALUE =31;
+	pwm_setting.PWM_MODE_FIFO_REGS.HDURATION = 4;// 79;//liuying@wind-mobi.com 2015
+	pwm_setting.PWM_MODE_FIFO_REGS.LDURATION = 4;//19;//liuying@wind-mobi.com 20140929
+	pwm_setting.PWM_MODE_FIFO_REGS.GDURATION = (pwm_setting.PWM_MODE_FIFO_REGS.HDURATION+1)*32-1;
+	pwm_setting.PWM_MODE_FIFO_REGS.WAVE_NUM = 0;//default 0
+
+	//set level
+	LEDS_DEBUG("[LEDS]flashlight_set_pwm:level is %d\n", level);
+	if(level>0 && level<=32)
+	{
+		pwm_setting.PWM_MODE_FIFO_REGS.GUARD_VALUE = 0;
+		pwm_setting.PWM_MODE_FIFO_REGS.SEND_DATA0 = (1<<level)-1;
+		pwm_set_spec_config(&pwm_setting);
+	}
+	else if(level>32 && level<=64)
+	{
+		pwm_setting.PWM_MODE_FIFO_REGS.GUARD_VALUE = 1;
+		level -=32;
+		pwm_setting.PWM_MODE_FIFO_REGS.SEND_DATA0 = (1<<level)-1;
+		pwm_set_spec_config(&pwm_setting);
+	}
+	else
+	{
+		LEDS_DEBUG("flashlight_set_pwm Error level \n");
+		mt_pwm_disable(pwm_setting.pwm_no,pwm_setting.pmic_pad );
+	}
+	
+	//LEDS_DEBUG("[LEDS]flashlight_set_pwm:clk_src/div/hduration is %d %d %d %d\n", pwm_setting.clk_src, pwm_setting.clk_div,hduration,lduration);
+	//mt_pwm_26M_clk_enable_hal(1);
+	//pwm_set_spec_config(&pwm_setting);
+
+	return 0;
+}
+
+int flashlight_set_pwm_old(u32 hduration, u32 lduration, u32 level)
+{
+	struct pwm_spec_config pwm_setting;
+//wangkangmin@wind-mobi.com 20161116 begin
+	pwm_setting.pwm_no = 3;
+//wangkangmin@wind-mobi.com 20161116 begin
+	pwm_setting.mode = PWM_MODE_OLD;//PWM_MODE_FIFO; // New mode fifo and periodical mode
+	pwm_setting.pmic_pad = false;
+	pwm_setting.clk_div = CLK_DIV2;	//liuying@wind-mobi.com 20150312 for mt6732 use 26Mhz clk source
+	pwm_setting.clk_src = PWM_CLK_OLD_MODE_BLOCK;//PWM_CLK_NEW_MODE_BLOCK;
+
+	pwm_setting.PWM_MODE_OLD_REGS.IDLE_VALUE = 0;
+	pwm_setting.PWM_MODE_OLD_REGS.GUARD_VALUE = 0;
+	pwm_setting.PWM_MODE_OLD_REGS.GDURATION = 0;
+	pwm_setting.PWM_MODE_OLD_REGS.WAVE_NUM = 0;
+	pwm_setting.PWM_MODE_OLD_REGS.DATA_WIDTH = 99; // 100 level
+	pwm_setting.PWM_MODE_OLD_REGS.THRESH = level;
+
+
+	//set level
+	LEDS_DEBUG("flashlight_set_pwm_old:level is %d\n", level);
+	if(level >0 && level < 100)
+	{
+		pwm_set_spec_config(&pwm_setting);
+		LEDS_DEBUG("flashlight_set_pwm_old: old mode: thres/data_width is %d/%d\n", pwm_setting.PWM_MODE_OLD_REGS.THRESH, pwm_setting.PWM_MODE_OLD_REGS.DATA_WIDTH);
+	}
+	else
+	{
+		LEDS_DEBUG("flashlight_set_pwm_old Error level \n");
+		mt_pwm_disable(pwm_setting.pwm_no, pwm_setting.pmic_pad);
+	}
+
+	return 0;
+}
+//wangkangmin@wind-mobi.com 20161108 begin
+
 void mt_led_pwm_disable(int pwm_num)
 {
 	struct cust_mt65xx_led *cust_led_list = get_cust_led_dtsi();

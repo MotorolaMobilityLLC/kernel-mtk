@@ -26,7 +26,10 @@ obj-$(CONFIG_MTK_MPU6515A)   +=  mpu6515/
 obj-$(CONFIG_MTK_KXTJ2_1009)   +=  KXTJ2_1009/
 obj-$(CONFIG_MTK_KXTJ2_1009_NEW)   +=  KXTJ2_1009-new/
 obj-$(CONFIG_MTK_BMA250E)   +=  bma250e/
-obj-y   +=  mc3410-new/
+#tuwenzan@wind-mobi.com modify at 20161108 begin
+obj-$(CONFIG_MTK_BMA2X2)   +=  bma2x2/
+obj-n   +=  mc3410-new/
+#tuwenzan@wind-mobi.com modify at 20161108 end
 obj-$(CONFIG_MTK_MC3XXX_AUTO)   +=  mc3xxx_auto/
 obj-$(CONFIG_MTK_MPU60X0)   +=  mpu60x0/
 obj-$(CONFIG_MTK_BMA255_SDO0)   +=  bma255-sdo0/

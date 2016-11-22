@@ -56,7 +56,9 @@
 #include <sound/core.h>
 #include <sound/pcm.h>
 #include <sound/soc.h>
-#if !defined(CONFIG_MTK_LEGACY)
+//ext amp for Z168 ---sunsiyuan@wind-mobi.com add at 20161109 begin
+#if (!defined(CONFIG_MTK_LEGACY)) & (!defined(CONFIG_MTK_LEGACY_EXTSPK))
+//ext amp for Z168 ---sunsiyuan@wind-mobi.com add at 20161109 end
 #include <linux/gpio.h>
 #include <linux/pinctrl/consumer.h>
 #else
@@ -98,6 +100,7 @@
 #include "AudDrv_Common_func.h"
 #include "AudDrv_Gpio.h"
 
+//ext amp for Z168 ---sunsiyuan@wind-mobi.com add at 20161109 begin
 /* #define AW8736_MODE_CTRL // AW8736 PA output power mode control */
 //add by wangyongfu
 #if defined(CONFIG_EXTPA_AW87319)
@@ -107,7 +110,11 @@ extern unsigned char AW87319_Audio_Speaker(void);
 extern unsigned char AW87319_Audio_OFF(void);
 extern void SGM3718_SWITCH_ON(void);
 extern void SGM3718_SWITCH_OFF(void);
+#else
+#define AW8737_MODE_CTRL // AW8737 PA output power mode control */
+//ext amp for Z168 ---sunsiyuan@wind-mobi.com add at 20161109 end
 #endif
+
 /* static function declaration */
 static bool AudioPreAmp1_Sel(int Mul_Sel);
 static bool GetAdcStatus(void);
@@ -1840,6 +1847,7 @@ static int Speaker_Amp_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_va
 #ifdef CONFIG_OF
 
 #define GAP (2)			/* unit: us */
+//ext amp for Z168 ---sunsiyuan@wind-mobi.com add at 20161109 begin
 #if defined(CONFIG_MTK_LEGACY)
 #define AW8736_MODE3 /*0.8w*/ \
 do { \
@@ -1854,15 +1862,38 @@ do { \
 	mt_set_gpio_out(pin_extspkamp, GPIO_OUT_ONE); \
 } while (0)
 #endif
-
+#if defined(CONFIG_MTK_LEGACY_EXTSPK) 
+#define AW8737_MODE3 /*0.8w*/ \
+do { \
+	mt_set_gpio_out(pin_extspkamp, GPIO_OUT_ONE); \
+	udelay(GAP); \
+	mt_set_gpio_out(pin_extspkamp, GPIO_OUT_ZERO); \
+	udelay(GAP); \
+	mt_set_gpio_out(pin_extspkamp, GPIO_OUT_ONE); \
+	udelay(GAP); \
+	mt_set_gpio_out(pin_extspkamp, GPIO_OUT_ZERO); \
+	udelay(GAP); \
+	mt_set_gpio_out(pin_extspkamp, GPIO_OUT_ONE); \
+} while (0)
+#define AW8737_MODE2 /*1.0w*/ \
+do { \
+	mt_set_gpio_out(pin_extspkamp, GPIO_OUT_ONE); \
+	udelay(GAP); \
+	mt_set_gpio_out(pin_extspkamp, GPIO_OUT_ZERO); \
+	udelay(GAP); \
+	mt_set_gpio_out(pin_extspkamp, GPIO_OUT_ONE); \
+} while (0)
+#endif
+//ext amp for Z168 ---sunsiyuan@wind-mobi.com add at 20161109 end
 #define NULL_PIN_DEFINITION    (-1)
 static void Ext_Speaker_Amp_Change(bool enable)
 {
 #define SPK_WARM_UP_TIME        (25)	/* unit is ms */
 #ifndef CONFIG_FPGA_EARLY_PORTING
-#if defined(CONFIG_MTK_LEGACY)
+//ext amp for Z168 ---sunsiyuan@wind-mobi.com add at 20161109 begin
+#if defined(CONFIG_MTK_LEGACY) || defined(CONFIG_MTK_LEGACY_EXTSPK)
+//ext amp for Z168 ---sunsiyuan@wind-mobi.com add at 20161109 end
 	int ret;
-
 	ret = GetGPIO_Info(5, &pin_extspkamp, &pin_mode_extspkamp);
 	if (ret < 0) {
 		pr_err("Ext_Speaker_Amp_Change GetGPIO_Info FAIL!!!\n");
@@ -1872,11 +1903,12 @@ static void Ext_Speaker_Amp_Change(bool enable)
 	if (enable) {
 		pr_debug("Ext_Speaker_Amp_Change ON+\n");
 #ifndef CONFIG_MTK_SPEAKER
-#if defined(CONFIG_MTK_LEGACY)
+//ext amp for Z168 ---sunsiyuan@wind-mobi.com add at 20161109 begin
+#if defined(CONFIG_MTK_LEGACY) || defined(CONFIG_MTK_LEGACY_EXTSPK)
 
 		ret = GetGPIO_Info(10, &pin_extspkamp_2, &pin_mode_extspkamp_2);
 		pr_warn("Ext_Speaker_Amp_Change ON set GPIO\n");
-		mt_set_gpio_mode(pin_extspkamp, GPIO_MODE_00);	/* GPIO117: DPI_D3, mode 0 */
+		mt_set_gpio_mode(pin_extspkamp, GPIO_MODE_00);	/* GPIO103: DPI_D3, mode 0 */
 		mt_set_gpio_pull_enable(pin_extspkamp, GPIO_PULL_ENABLE);
 		mt_set_gpio_dir(pin_extspkamp, GPIO_DIR_OUT);	/* output */
 		mt_set_gpio_out(pin_extspkamp, GPIO_OUT_ZERO);	/* low disable */
@@ -1891,6 +1923,7 @@ static void Ext_Speaker_Amp_Change(bool enable)
 #ifndef LCT_AW87319_MODE_CTRL
 		AudDrv_GPIO_EXTAMP_Select(false);
 		AudDrv_GPIO_EXTAMP2_Select(false);
+<<<<<<< HEAD
 #else	
 		AW87319_Audio_OFF();
 		printk("%s AW87319_Audio_OFF-\n", __func__);
@@ -1899,18 +1932,26 @@ static void Ext_Speaker_Amp_Change(bool enable)
 #endif
 #endif /*CONFIG_MTK_LEGACY*/
 
+=======
+#endif /*CONFIG_MTK_LEGACY_EXTSPK*/
+//ext amp for Z168 ---sunsiyuan@wind-mobi.com add at 20161109 end
+>>>>>>> 4a0b8b7... [Purp] [woods][LCM/TP/camera]add NFC code
 		/*udelay(1000);*/
 		usleep_range(1*1000, 20*1000);
-#if defined(CONFIG_MTK_LEGACY)
+//ext amp for Z168 ---sunsiyuan@wind-mobi.com add at 20161109 begin
+#if defined(CONFIG_MTK_LEGACY) || defined(CONFIG_MTK_LEGACY_EXTSPK)
 		mt_set_gpio_dir(pin_extspkamp, GPIO_DIR_OUT);	/* output */
 		if (pin_extspkamp_2 != NULL_PIN_DEFINITION)
 			mt_set_gpio_dir(pin_extspkamp_2, GPIO_DIR_OUT);	/* output */
 
-#ifdef AW8736_MODE_CTRL
+#if defined(AW8736_MODE_CTRL)
 		AW8736_MODE3;
+
+#elif defined(AW8737_MODE_CTRL)
+		AW8737_MODE2;
 #else
 		mt_set_gpio_out(pin_extspkamp, GPIO_OUT_ONE);	/* high enable */
-#endif /*AW8736_MODE_CTRL*/
+#endif /*AW8737_MODE_CTRL*/
 		if (pin_extspkamp_2 != NULL_PIN_DEFINITION)
 			mt_set_gpio_out(pin_extspkamp_2, GPIO_OUT_ONE);	/* high enable */
 #else
@@ -1918,6 +1959,10 @@ static void Ext_Speaker_Amp_Change(bool enable)
 #ifndef LCT_AW87319_MODE_CTRL
 		AudDrv_GPIO_EXTAMP_Select(true);
 		AudDrv_GPIO_EXTAMP2_Select(true);
+#ifdef AW8737_MODE_CTRL
+        //ext amp for Z168 ---sunsiyuan@wind-mobi.com add at 20161109 end
+        msleep(SPK_WARM_UP_TIME);
+#endif
 #else
 		AW87319_Audio_Speaker();
 		printk("%s AW87319_Audio_Speaker\n", __func__);
@@ -1925,13 +1970,15 @@ static void Ext_Speaker_Amp_Change(bool enable)
 		printk("%s SGM3718_SWITCH_ON\n", __func__);
 #endif
 #endif /*CONFIG_MTK_LEGACY*/
-		msleep(SPK_WARM_UP_TIME);
+		
 #endif
 		pr_debug("Ext_Speaker_Amp_Change ON-\n");
 	} else {
 		pr_debug("Ext_Speaker_Amp_Change OFF+\n");
 #ifndef CONFIG_MTK_SPEAKER
-#if defined(CONFIG_MTK_LEGACY)
+//ext amp for Z168 ---sunsiyuan@wind-mobi.com add at 20161109 begin
+#if defined(CONFIG_MTK_LEGACY) || defined(CONFIG_MTK_LEGACY_EXTSPK)
+//ext amp for Z168 ---sunsiyuan@wind-mobi.com add at 20161109 end
 		ret = GetGPIO_Info(10, &pin_extspkamp_2, &pin_mode_extspkamp_2);
 		/* mt_set_gpio_mode(pin_extspkamp, GPIO_MODE_00); //GPIO117: DPI_D3, mode 0 */
 		mt_set_gpio_dir(pin_extspkamp, GPIO_DIR_OUT);	/* output */
