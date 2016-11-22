@@ -649,7 +649,7 @@ LCM_DRIVER lct_hx8394f_booyitech_720p_vdo_lcm_drv = {
 	.suspend = lcm_suspend,
 	.resume = lcm_resume,
 	.set_backlight = lcm_setbacklight,
-	.ata_check    = lcm_ata_check
+	.ata_check    = lcm_ata_check,
 #ifdef CONFIG_LCT_CABC_MODE_SUPPORT
 	.set_cabc_cmdq = lcm_cabc_cmdq,
 #endif

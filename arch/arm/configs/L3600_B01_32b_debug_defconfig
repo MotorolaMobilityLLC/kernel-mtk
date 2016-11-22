@@ -550,3 +550,7 @@ CONFIG_LCT_DEVINFO_SUPPORT=y
 CONFIG_LCT_SIM_CHECK=y
 #shaohui add for RPMB trigger
 CONFIG_LCT_RPMB_TRIGGER=y
+# add by longcheer yufangfang for cabc_mode setting
+CONFIG_LCT_CABC_MODE_SUPPORT=y
+# add by longcheer yufangfang for hbm
+CONFIG_LCT_HBM_SUPPORT=y
