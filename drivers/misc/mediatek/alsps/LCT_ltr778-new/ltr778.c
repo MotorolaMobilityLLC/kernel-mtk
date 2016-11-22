@@ -208,12 +208,14 @@ static int ltr778_i2c_read_reg(u8 regnum)
 	if(res <= 0)
 	{	   
 	   APS_ERR("read reg send res = %d\n",res);
+		mutex_unlock(&ltr778_mutex);
 		return res;
 	}
 	res = i2c_master_recv(ltr778_obj->client, reg_value, 0x1);
 	if(res <= 0)
 	{
 		APS_ERR("read reg recv res = %d\n",res);
+		mutex_unlock(&ltr778_mutex);
 		return res;
 	}
 	mutex_unlock(&ltr778_mutex);
@@ -473,20 +475,20 @@ static int ltr778_dynamic_calibrate(void)
 	dynamic_calibrate = noise;
 
 	if (noise < 100) {
-		ps_thd_val_high = noise + 100;
-		ps_thd_val_low  = noise + 50;
+		ps_thd_val_high = noise + 65;
+		ps_thd_val_low  = noise + 30;
 	}
 	else if (noise < 200) {
-		ps_thd_val_high = noise + 150;
-		ps_thd_val_low  = noise + 60;
+		ps_thd_val_high = noise + 70;
+		ps_thd_val_low  = noise + 35;
 	}
 	else if (noise < 300) {
-		ps_thd_val_high = noise + 150;
-		ps_thd_val_low  = noise + 60;
+		ps_thd_val_high = noise + 80;
+		ps_thd_val_low  = noise + 40;
 	}
 	else if (noise < 400) {
-		ps_thd_val_high = noise + 150;
-		ps_thd_val_low  = noise + 60;
+		ps_thd_val_high = noise + 100;
+		ps_thd_val_low  = noise + 50;
 	}
 	else if (noise < 600) {
 		ps_thd_val_high = noise + 180;
@@ -523,14 +525,14 @@ static int ltr778_als_enable(struct i2c_client *client, int enable)
 	int err = 0;
 	u8 regdata = 0;
 	
-	regdata = ltr778_i2c_read_reg(LTR778_ALS_CONTR);
+	//regdata = ltr778_i2c_read_reg(LTR778_ALS_CONTR);
 	if (enable != 0) {
 		APS_LOG("ALS(1): enable als only \n");
-		regdata |= 0x01;
+		regdata = 0x05;
 	}
 	else {
 		APS_LOG("ALS(1): disable als only \n");
-		regdata &= 0xfe;
+		regdata = 0x00;
 	}
 
 	err = ltr778_i2c_write_reg(LTR778_ALS_CONTR, regdata);
@@ -595,7 +597,7 @@ static int ltr778_als_read(struct i2c_client *client, u16* data)
 		ch1_coeff = -5760;
 	}
 
-	luxdata_int = ((ch0_coeff * alsval_ch0) + (ch1_coeff * alsval_ch1)) / coeff_factor / als_gain_factor / als_integration_factor * WIN_FACTOR;
+	luxdata_int = ((ch0_coeff * alsval_ch0) + (ch1_coeff * alsval_ch1)) / coeff_factor / als_gain_factor / als_integration_factor * WIN_FACTOR*7/5;
 	
 	APS_DBG("ltr778_als_read: als_value_lux = %d\n", luxdata_int);
 out:
@@ -695,8 +697,8 @@ static int ltr778_get_als_value(struct ltr778_priv *obj, u16 als)
 
 	if(!invalid)
 	{
-		APS_DBG("ALS: %05d => %05d\n", als, obj->hw->als_value[idx]);	
-		return obj->hw->als_value[idx];
+		APS_DBG("ALS: %05d => %05d\n", als, obj->hw->als_value[idx-1]);	
+		return obj->hw->als_value[idx-1];
 	}
 	else
 	{
@@ -1195,6 +1197,9 @@ static void ltr778_eint_work(struct work_struct *work)
 
 	/* Read fault detection status */
 	value = ltr778_i2c_read_reg(LTR778_FAULT_DET_STATUS);	
+
+//APS_ERR("ltr778_eint_work  value:  %d\n", value);	
+
 	if (value < 0) {
 		goto EXIT_INTR;
 	}
@@ -1225,7 +1230,7 @@ static void ltr778_eint_work(struct work_struct *work)
 				
 		APS_DBG("ltr778_eint_work: rawdata ps=%d!\n",obj->ps);
 		value = ltr778_get_ps_value(obj, obj->ps);
-		APS_DBG("intr_flag_value=%d\n",intr_flag_value);
+		APS_DBG("intr_flag_value=%d    value = %d \n",intr_flag_value, value);
 		if(intr_flag_value){
 			databuf[0] = LTR778_PS_THRES_LOW_0;	
 			databuf[1] = (u8)((atomic_read(&obj->ps_thd_val_low)) & 0x00FF);
@@ -1258,32 +1263,32 @@ static void ltr778_eint_work(struct work_struct *work)
 		}
 		else{	
 #ifdef GN_MTK_BSP_PS_DYNAMIC_CALI
-			if(obj->ps > 20 && obj->ps < (dynamic_calibrate - 50)){ 
+			if(obj->ps > 20 && obj->ps < (dynamic_calibrate - 300)){ 
         		if(obj->ps < 100){			
+        			atomic_set(&obj->ps_thd_val_high,  obj->ps+65);
+        			atomic_set(&obj->ps_thd_val_low, obj->ps+30);
+        		}else if(obj->ps < 200){
+        			atomic_set(&obj->ps_thd_val_high,  obj->ps+70);
+        			atomic_set(&obj->ps_thd_val_low, obj->ps+35);
+        		}else if(obj->ps < 300){
+        			atomic_set(&obj->ps_thd_val_high,  obj->ps+80);
+        			atomic_set(&obj->ps_thd_val_low, obj->ps+40);
+        		}else if(obj->ps < 400){
         			atomic_set(&obj->ps_thd_val_high,  obj->ps+100);
         			atomic_set(&obj->ps_thd_val_low, obj->ps+50);
-        		}else if(obj->ps < 200){
-        			atomic_set(&obj->ps_thd_val_high,  obj->ps+150);
-        			atomic_set(&obj->ps_thd_val_low, obj->ps+60);
-        		}else if(obj->ps < 300){
-        			atomic_set(&obj->ps_thd_val_high,  obj->ps+150);
-        			atomic_set(&obj->ps_thd_val_low, obj->ps+60);
-        		}else if(obj->ps < 400){
-        			atomic_set(&obj->ps_thd_val_high,  obj->ps+150);
-        			atomic_set(&obj->ps_thd_val_low, obj->ps+60);
         		}else if(obj->ps < 600){
         			atomic_set(&obj->ps_thd_val_high,  obj->ps+180);
         			atomic_set(&obj->ps_thd_val_low, obj->ps+90);
         		}else if(obj->ps < 1000){
         			atomic_set(&obj->ps_thd_val_high,  obj->ps+300);
         			atomic_set(&obj->ps_thd_val_low, obj->ps+180);	
-        		}else if(obj->ps < 1250){
+        		}else if(obj->ps < 1500){
         			atomic_set(&obj->ps_thd_val_high,  obj->ps+400);
         			atomic_set(&obj->ps_thd_val_low, obj->ps+300);
         		}
         		else{
-        			atomic_set(&obj->ps_thd_val_high,  1400);
-        			atomic_set(&obj->ps_thd_val_low, 1000);        			
+        			atomic_set(&obj->ps_thd_val_high,  1800);
+        			atomic_set(&obj->ps_thd_val_low, 1700);        			
         		}
         		
         		dynamic_calibrate = obj->ps;
@@ -1319,6 +1324,7 @@ static void ltr778_eint_work(struct work_struct *work)
 			}
 		}
 		//let up layer to know
+   
 		res = ps_report_interrupt_data(value);
 	}
 
@@ -1683,7 +1689,7 @@ static int ltr778_init_client(void)
 		goto EXIT_ERR;
 	}
 
-	res = ltr778_i2c_write_reg(LTR778_PS_PULSES, 0x30);		// 48 pulses
+	res = ltr778_i2c_write_reg(LTR778_PS_PULSES, 0x0A);		// 10 pulses
 	if (res<0)
 	{
 		APS_LOG("ltr778 set ps pulse error\n");
@@ -1847,7 +1853,8 @@ static int als_get_data(int* value, int* status)
 	if (ltr778_obj->als < 0)
 		err = -1;
 	else {
-		*value = ltr778_get_als_value(ltr778_obj, ltr778_obj->als);
+		*value = ltr778_obj->als;		
+		//*value = ltr778_get_als_value(ltr778_obj, ltr778_obj->als);
 		if (*value < 0)
 			err = -1;
 		*status = SENSOR_STATUS_ACCURACY_MEDIUM;
