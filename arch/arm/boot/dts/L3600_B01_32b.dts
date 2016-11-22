@@ -1170,5 +1170,12 @@
 			bias-pull-down=<00>;
 		};
 	};
+/*jijin.wang add dts for camera otp start*/
+	cam_cal_drv{
+		compatible = "mediatek,cam_cal_drv";
+		main_bus = <0>;
+		sub_bus = <0>;
+	};
+/*jijin.wang add dts for camera otp start*/
 };
 /*modify by hxl end*/

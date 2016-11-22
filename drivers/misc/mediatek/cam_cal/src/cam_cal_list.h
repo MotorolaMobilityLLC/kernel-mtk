@@ -39,7 +39,7 @@ typedef unsigned int (*cam_cal_cmd_func)(struct i2c_client *client, unsigned int
 
 typedef unsigned int (*cam_cal_check_func)(struct i2c_client *client,
 	cam_cal_cmd_func readCamCalData);
-
+#if !defined(CONFIG_LCT_CAMERA_KERNEL)/*jijin.wang add for LCT custom OTP*/
 typedef enum {
 	CMD_NONE = 0,
 	CMD_AUTO,
@@ -52,7 +52,17 @@ typedef enum {
 	CMD_GT24C32A,
 	CMD_NUM
 } CAM_CAL_CMD_TYPE;
-
+#else
+typedef enum {
+	CMD_NONE = 0,
+	CMD_AUTO,
+	CMD_DEV1,
+	CMD_BRCB032GWZ,
+	CMD_CAT24C16,
+	CMD_GT24C32A,
+	CMD_NUM
+} CAM_CAL_CMD_TYPE;
+#endif
 typedef CAM_CAL_CMD_TYPE cam_cal_cmd_type;
 
 typedef struct {
