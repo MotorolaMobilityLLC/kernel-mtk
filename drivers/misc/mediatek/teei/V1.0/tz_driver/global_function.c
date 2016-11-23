@@ -7,17 +7,15 @@
 #include "nt_smc_call.h"
 #include "global_function.h"
 #include "sched_status.h"
-// tee_xuzhifeng@wind-mobi.com 20161117 begin
 #include "utdriver_macro.h"
-// tee_xuzhifeng@wind-mobi.com 20161117 end
+
 #define SCHED_CALL      0x04
 
 extern int add_work_entry(int work_type, unsigned long buff);
 
+/* doujia modify start */
 static void secondary_nt_sched_t(void *info)
 {
-// tee_xuzhifeng@wind-mobi.com 20161117 begin
-	//nt_sched_t();
 	unsigned long smc_type = 2;
 
 	nt_sched_t(&smc_type);
@@ -26,9 +24,8 @@ static void secondary_nt_sched_t(void *info)
 		udelay(IRQ_DELAY);
 		nt_sched_t(&smc_type);
 	}
-// tee_xuzhifeng@wind-mobi.com 20161117 end
 }
-
+/* doujia modify end */
 
 void nt_sched_t_call(void)
 {

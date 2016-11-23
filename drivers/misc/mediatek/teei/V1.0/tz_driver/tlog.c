@@ -71,9 +71,8 @@ irqreturn_t tlog_handler(void)
 /**************************************************
 		LOG thread for printf
  **************************************************/
- // tee_xuzhifeng@wind-mobi.com 20161117 begin
 #define LOG_BUF_LEN		(256 * 1024)
-// tee_xuzhifeng@wind-mobi.com 20161117 end
+
 unsigned long tlog_thread_buff = 0;
 unsigned long tlog_buf = NULL;
 unsigned long tlog_pos = 0;
@@ -127,10 +126,8 @@ int tlog_print(unsigned long log_start)
 		tlog_line[tlog_line_len + 1] = 0;
 		tlog_line_len++;
 	}
- // tee_xuzhifeng@wind-mobi.com 20161117 begin
 	//tlog_pos = (tlog_pos + sizeof(struct ut_log_entry)) % (((struct ut_log_buf_head *)tlog_buf)->length - sizeof(struct ut_log_buf_head));
 	tlog_pos = (tlog_pos + sizeof(struct ut_log_entry)) % ( LOG_BUF_LEN - sizeof(struct ut_log_buf_head));
- // tee_xuzhifeng@wind-mobi.com 20161117 end
 	return 0;
 }
 
@@ -141,13 +138,12 @@ int handle_tlog(void)
 	unsigned long tlog_cont_pos = (unsigned long)tlog_buf + sizeof(struct ut_log_buf_head);
 	unsigned long last_log_pointer = tlog_cont_pos + shared_buff_write_pos;
 	unsigned long start_log_pointer = tlog_cont_pos + tlog_pos;
- // tee_xuzhifeng@wind-mobi.com 20161117 begin
+	
 	if ((shared_buff_write_pos < 0) || (shared_buff_write_pos >= (LOG_BUF_LEN - sizeof(struct ut_log_buf_head)))) {
 		printk("[%s][%d]tlog shared mem failed!\n", __func__, __LINE__);
 		tlog_pos = 0;
 		return -1;
 	}
- // tee_xuzhifeng@wind-mobi.com 20161117 end
 
 	while (last_log_pointer != start_log_pointer) {
 		retVal = tlog_print(start_log_pointer);
@@ -179,17 +175,12 @@ int tlog_worker(void *p)
 		}
 
 		switch (((struct ut_log_buf_head *)tlog_buf)->version) {
-		case UT_TLOG_VERSION:
-			ret = handle_tlog();
-
-			if (ret != 0)
- 		// tee_xuzhifeng@wind-mobi.com 20161117 begin
- 			{
-				//return ret;
-				schedule_timeout_interruptible(1 * HZ);
+			case UT_TLOG_VERSION:
+				ret = handle_tlog();
+				if (ret != 0) {
+					schedule_timeout_interruptible(1 * HZ);
 					continue;
- 			}
- 		// tee_xuzhifeng@wind-mobi.com 20161117 end
+				}
 			break;
 
 		default:

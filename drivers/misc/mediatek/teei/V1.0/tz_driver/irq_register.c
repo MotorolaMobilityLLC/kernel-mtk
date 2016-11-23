@@ -17,7 +17,6 @@
 extern int add_work_entry(int work_type, unsigned long buff);
 
 extern struct timeval stime;
-// tee_xuzhifeng@wind-mobi.com 20161117 end
 static struct teei_smc_cmd *get_response_smc_cmd(void)
 {
 	struct NQ_entry *nq_ent = NULL;
@@ -83,7 +82,6 @@ int register_sched_irq_handler(void)
 
 static irqreturn_t nt_soter_irq_handler(void)
 {
-// tee_xuzhifeng@wind-mobi.com 20161117 begin
 	struct timeval wtime;
 	int time_range = 0;
 #ifdef CAL_TIME
@@ -92,7 +90,6 @@ static irqreturn_t nt_soter_irq_handler(void)
 	time_range = (wtime.tv_sec - stime.tv_sec)*1000000 + (wtime.tv_usec - stime.tv_usec);
 	printk("[%s][%d] find irq at %d us\n", __func__, __LINE__, time_range);
 #endif
-// tee_xuzhifeng@wind-mobi.com 20161117 end
 	irq_call_flag = GLSCH_HIGH;
 	up(&smc_lock);
 #if 1
@@ -340,12 +337,16 @@ static irqreturn_t nt_boot_irq_handler(void)
 		return IRQ_HANDLED;
 	} else {
 		pr_debug("boot irq hanler else\n");
-// tee_xuzhifeng@wind-mobi.com 20161117 begin
-		//if (forward_call_flag == GLSCH_NONE)
-		//	forward_call_flag = GLSCH_NEG;
-		//else
-// tee_xuzhifeng@wind-mobi.com 20161117 end
-			forward_call_flag = GLSCH_NONE;
+	
+		/* doujia modify start */
+		/*
+		if (forward_call_flag == GLSCH_NONE)
+			forward_call_flag = GLSCH_NEG;
+		else
+		*/
+		/* doujia modify end */
+		
+    	forward_call_flag = GLSCH_NONE;
 
 		up(&smc_lock);
 		up(&(boot_sema));
@@ -418,35 +419,6 @@ int register_boot_irq_handler(void)
 	return 0;
 }
 
-// tee_xuzhifeng@wind-mobi.com 20161117 begin
-/*
-static void secondary_load_func(void)
-{
-	Flush_Dcache_By_Area((unsigned long)boot_vfs_addr, (unsigned long)boot_vfs_addr + VFS_SIZE);
-	pr_debug("[%s][%d]: %s end.\n", __func__, __LINE__, __func__);
-	n_ack_t_load_img(0, 0, 0);
-
-	return ;
-}
-
-
-void load_func(struct work_struct *entry)
-{
-	int cpu_id = 0;
-
-	vfs_thread_function(boot_vfs_addr, NULL, NULL);
-
-	down(&smc_lock);
-
-	get_online_cpus();
-	cpu_id = get_current_cpuid();
-	smp_call_function_single(cpu_id, secondary_load_func, NULL, 1);
-	put_online_cpus();
-
-	return;
-}
-
-*/
 void secondary_load_func(void)
 {
 	unsigned long smc_type;
@@ -477,7 +449,7 @@ void load_func(struct work_struct *entry)
 #endif
 	return;
 }
-// tee_xuzhifeng@wind-mobi.com 20161117 begin
+
 void work_func(struct work_struct *entry)
 {
 
@@ -543,11 +515,14 @@ static irqreturn_t nt_switch_irq_handler(void)
 				forward_call_flag = GLSCH_NONE;
 				command = get_response_smc_cmd();
 
-				if (NULL == command) {
-					pr_err("command IS NULL!!!\n");
+				if (NULL == command)
+				/* doujia modify start */
+				//{
+				//	pr_err("command IS NULL!!!\n");
 					return IRQ_NONE;
-				}
-
+				//}
+				/* doujia modify end */
+				
 				/* Get the semaphore */
 				cmd_sema = (struct semaphore *)(command->teei_sema);
 
@@ -599,10 +574,7 @@ int register_switch_irq_handler(void)
 
 static irqreturn_t ut_drv_irq_handler(void)
 {
-// tee_xuzhifeng@wind-mobi.com 20161117 begin
-	//uint64_t irq_id = 0;
 	int irq_id = 0;
-// tee_xuzhifeng@wind-mobi.com 20161117 end
 	int retVal = 0;
 
 	/* Get the interrupt ID */

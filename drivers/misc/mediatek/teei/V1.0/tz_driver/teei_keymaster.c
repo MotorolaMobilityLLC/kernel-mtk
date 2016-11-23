@@ -1,9 +1,7 @@
 #include <linux/kernel.h>
 #include <linux/slab.h>
 #include <linux/semaphore.h>
-// tee_xuzhifeng@wind-mobi.com 20161117 begin
 #include <linux/delay.h>
-// tee_xuzhifeng@wind-mobi.com 20161117 end
 #include "teei_keymaster.h"
 #include "teei_id.h"
 #include "sched_status.h"
@@ -123,23 +121,18 @@ void set_keymaster_command(unsigned long memory_size)
 
 int __send_keymaster_command(unsigned long share_memory_size)
 {
-// tee_xuzhifeng@wind-mobi.com 20161117 begin
 	unsigned long smc_type = 2;
-// tee_xuzhifeng@wind-mobi.com 20161117 end
 	set_keymaster_command(share_memory_size);
 	Flush_Dcache_By_Area((unsigned long)keymaster_buff_addr, keymaster_buff_addr + KEYMASTER_BUFF_SIZE);
 
 	fp_call_flag = GLSCH_HIGH;
-	// tee_xuzhifeng@wind-mobi.com 20161117 begin
-	//n_invoke_t_drv(0, 0, 0);
 	n_invoke_t_drv(&smc_type, 0, 0);
 
 	while(smc_type == 1) {
 		udelay(IRQ_DELAY);
 		nt_sched_t(&smc_type);
 	}
-	// tee_xuzhifeng@wind-mobi.com 20161117 end
-
+	/* doujia modify end */
 	return 0;
 
 }
@@ -168,10 +161,8 @@ int send_keymaster_command(unsigned long share_memory_size)
 	int retVal = 0;
 
 	down(&fdrv_lock);
-	// tee_xuzhifeng@wind-mobi.com 20161117 begin
-	//mutex_lock(&pm_mutex);
+	
 	ut_pm_mutex_lock(&pm_mutex);
-	// tee_xuzhifeng@wind-mobi.com 20161117 end
 
 	down(&smc_lock);
 
@@ -196,16 +187,13 @@ int send_keymaster_command(unsigned long share_memory_size)
 #else
 	Flush_Dcache_By_Area((unsigned long)&fdrv_ent, (unsigned long)&fdrv_ent + sizeof(struct fdrv_call_struct));
 	retVal = add_work_entry(FDRV_CALL, (unsigned long)&fdrv_ent);
-
-	if (retVal != 0) {
-	// tee_xuzhifeng@wind-mobi.com 20161117 begin
-		//mutex_unlock(&pm_mutex);
+        if (retVal != 0) {
+		/* doujia modify start */
 		ut_pm_mutex_unlock(&pm_mutex);
-	// tee_xuzhifeng@wind-mobi.com 20161117 end
-		up(&fdrv_lock);
-		return retVal;
-	}
-
+		/* doujia modify end */
+	        up(&fdrv_lock);
+                return retVal;
+        }	
 #endif
 
 	down(&fdrv_sema);
@@ -215,10 +203,10 @@ int send_keymaster_command(unsigned long share_memory_size)
 
 	Invalidate_Dcache_By_Area((unsigned long)keymaster_buff_addr, keymaster_buff_addr + KEYMASTER_BUFF_SIZE);
 	Invalidate_Dcache_By_Area((unsigned long)&fdrv_ent, (unsigned long)&fdrv_ent + sizeof(struct fdrv_call_struct));
-// tee_xuzhifeng@wind-mobi.com 20161117 begin
-	//mutex_unlock(&pm_mutex);
+	
+	/* doujia modify start */
 	ut_pm_mutex_unlock(&pm_mutex);
-// tee_xuzhifeng@wind-mobi.com 20161117 begin
+	/* doujia modify end */
 	up(&fdrv_lock);
 
 #if 0

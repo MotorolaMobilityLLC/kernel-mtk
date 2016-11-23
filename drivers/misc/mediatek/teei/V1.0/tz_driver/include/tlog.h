@@ -33,10 +33,8 @@ struct ut_log_entry {
 	int type;
 	char context;
 	char reserve;
-	// tee_xuzhifeng@wind-mobi.com 20161117 begin
 	char reserve2;
 	char reserve3;
-	// tee_xuzhifeng@wind-mobi.com 20161117 end
 };
 
 /********************************************

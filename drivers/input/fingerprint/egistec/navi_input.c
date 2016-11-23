@@ -1,4 +1,3 @@
-//tee_xuzhifeng@wind-mobi.com 20161123 begin
 #include <linux/delay.h>
 #include <linux/wait.h>
 #include <linux/timer.h>
@@ -45,7 +44,11 @@ enum {
  *     DISABLE : Ignore swipe-left & swipe-right navigation events.
  *               Don't care properties.
  */
+#ifndef CONFIG_LCT_FPC_TEE_EGIS
 #define ENABLE_SWIPE_UP_DOWN	ENABLE
+#else
+#define ENABLE_SWIPE_UP_DOWN	DISABLE
+#endif
 #define ENABLE_SWIPE_LEFT_RIGHT	ENABLE
 
 
@@ -668,4 +671,4 @@ void sysfs_egis_destroy(struct egistec_data *egistec)
 		platform_device_put(egistec->pd);
 	}
 }
-//tee_xuzhifeng@wind-mobi.com 20161123 end
+

@@ -39,12 +39,17 @@ config GOODIX_SENSOR_TYPE
 	Must input sensor type, or default is GF316M GF318M GF3118M GF518M GF5118M GF516M GF816M GF3208 GF5216
 endif
 
-if MTK_FINGERPRINT_SELECT = "lct_fps_et320"
+if MTK_FINGERPRINT_SELECT = "lct_fps_etchip"
 config LCT_FPS_ET320
 	bool "ET Fingerprint"
 	default n
 	---help---
 	LCT FPS et320 device.
+config LCT_FPC_TEE_EGIS
+	bool "EGIS Fingerprint"
+	default n
+	---help---
+	LCT FPS egis device.
 endif
 
 ##xuzhifeng@wind-mobi.com 20161123 begin

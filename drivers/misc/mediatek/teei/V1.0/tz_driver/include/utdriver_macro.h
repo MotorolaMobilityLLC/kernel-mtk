@@ -58,7 +58,6 @@
 #define FDRV_CALL       0x02
 #define BDRV_CALL       0x03
 #define SCHED_CALL	0x04
-// tee_xuzhifeng@wind-mobi.com 20161117 begin
 #define INIT_CMD_CALL   0x05
 #define BOOT_STAGE2     0x06
 #define INVOKE_FASTCALL 0x07
@@ -68,8 +67,12 @@
 #define LOCK_PM_MUTEX   0x0C
 #define UNLOCK_PM_MUTEX 0x0D
 #define IRQ_DELAY	1000
-// tee_xuzhifeng@wind-mobi.com 20161117 end
 #define VFS_SYS_NO 	0x08
 #define REETIME_SYS_NO	0x07
+
+
+
+
+
 
 #define UT_DMA_ZONE

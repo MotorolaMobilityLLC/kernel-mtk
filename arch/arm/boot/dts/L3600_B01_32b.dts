@@ -144,7 +144,22 @@
 		vib_limit = <9>;
 		vib_vol= <5>;
 	};
-
+	
+	et360spi@0 {
+		compatible = "egistec,et360spi";
+		reg = <0>;
+		spi-max-frequency = <16000000>;
+	};
+	
+	et360: egistec {
+			compatible = "egistec,et360";
+			interrupt-parent = <&eintc>;
+            interrupts = <126 IRQ_TYPE_EDGE_RISING>;
+            status = "okay";
+            debounce = <251 1000>;
+		};		
+	
+	
  /* sensor standardization */
     /*cly add accel bma253    ltr778*/
 		cust_accel@0 {

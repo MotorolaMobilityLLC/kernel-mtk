@@ -1,4 +1,3 @@
-//tee_xuzhifeng@wind-mobi.com 20161123 begin
 #ifndef _FP_LINUX_DIRVER_H_
 #define _FP_LINUX_DIRVER_H_
 
@@ -165,4 +164,4 @@ void fps_interrupt_abort(void);
 //[REM] int fp_read_register(struct fp_data *fp, u8 addr, u8 *buf);
 //[REM] int fp_mass_read(struct fp_data *fp, u8 addr, u8 *buf, int read_len);
 #endif
-//tee_xuzhifeng@wind-mobi.com 20161123 end
+

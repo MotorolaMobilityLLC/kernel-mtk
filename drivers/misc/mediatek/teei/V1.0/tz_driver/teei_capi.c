@@ -5,6 +5,10 @@
 #include <linux/compat.h>
 // tee_xuzhifeng@wind-mobi.com 20161117 end
 
+/* doujia modify start */
+#include <linux/compat.h>
+/* doujia modify end */
+
 #include "teei_smc_struct.h"
 #include "teei_capi.h"
 #include "teei_client.h"
@@ -1219,10 +1223,8 @@ int teei_client_encode_mem_ref(void *private_data, void *argp)
 
 				break;
 			}
-// tee_xuzhifeng@wind-mobi.com 20161117 begin
 			if (shared_mem_found == 1)
 				break;
-// tee_xuzhifeng@wind-mobi.com 20161117 end
 		}
 	}
 
@@ -1889,9 +1891,7 @@ static int teei_client_close_session_for_service_plus(void *private_data, struct
 	unsigned long dev_file_id = (unsigned long)private_data;
 	int retVal = 0;
 	int *res = (int *)tz_malloc_shared_mem(4, GFP_KERNEL | GFP_DMA);
-	// tee_xuzhifeng@wind-mobi.com 20161117 begin
 	int error_code = 0;
-	// tee_xuzhifeng@wind-mobi.com 20161117 end
 
 	if (temp_ses == NULL)
 		return -EINVAL;
@@ -1926,11 +1926,10 @@ static int teei_client_close_session_for_service_plus(void *private_data, struct
 					temp_shared,
 					&temp_ses->shared_mem_list,
 					s_head) {
-		// tee_xuzhifeng@wind-mobi.com 20161117 begin
+					
 			if (shared_mem == NULL)
 				continue;
-		// tee_xuzhifeng@wind-mobi.com 20161117 end
-
+			
 			list_del(&shared_mem->s_head);
 
 			if (shared_mem->k_addr) {
@@ -2026,11 +2025,8 @@ int teei_client_close_session_for_service(
 					temp_shared,
 					&temp_ses->shared_mem_list,
 					s_head) {
-		// tee_xuzhifeng@wind-mobi.com 20161117 begin
 			if (shared_mem == NULL)
 				continue;
-		// tee_xuzhifeng@wind-mobi.com 20161117 end
-
 			list_del(&shared_mem->s_head);
 
 			if (shared_mem->k_addr)

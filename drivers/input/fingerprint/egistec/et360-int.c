@@ -1,4 +1,3 @@
-//tee_xuzhifeng@wind-mobi.com 20161123 begin
 /*
  * Simple synchronous userspace interface to SPI devices
  *
@@ -71,9 +70,16 @@
 #define	LEVEL_TRIGGER_LOW       0x2
 #define	LEVEL_TRIGGER_HIGH      0x3
 
+#ifndef CONFIG_LCT_FPC_TEE_EGIS
+/* odm different layout */
 #define GPIO_PIN_IRQ  9
 #define GPIO_PIN_RESET 125
 #define GPIO_PIN_33V 119
+#else
+#define GPIO_PIN_IRQ  126 
+#define GPIO_PIN_RESET 93
+#define GPIO_PIN_33V 94
+#endif
 
 void mt_spi_enable_clk(struct mt_spi_t *ms);
 void mt_spi_disable_clk(struct mt_spi_t *ms);
@@ -598,8 +604,8 @@ int egistec_platformInit(struct egistec_data *egistec)
 			status = -EBUSY;
 //			goto egistec_platformInit_rst_failed;
 		}
-		
-		
+
+#ifndef CONFIG_LCT_FPC_TEE_EGIS
 		mt_set_gpio_mode(65,1);
 		mt_set_gpio_mode(66,1);
 		mt_set_gpio_mode(67,1);
@@ -614,15 +620,17 @@ int egistec_platformInit(struct egistec_data *egistec)
         
         gpio_direction_output(egistec->vcc_33v_Pin, 1);    // modify by irick
 		gpio_set_value(egistec->vcc_33v_Pin, 1);      // modify by irick
-        
+#endif 
 		gpio_set_value(GPIO_PIN_RESET, 0);
 		msleep(30);
 		gpio_set_value(GPIO_PIN_RESET, 1);
 		msleep(20);
 
 		/* initial 33V power pin */
-	//   gpio_direction_output(egistec->vcc_33v_Pin, 1);     // modify by irick
-	//   gpio_set_value(egistec->vcc_33v_Pin, 1);             // modify by irick
+#ifdef  CONFIG_LCT_FPC_TEE_EGIS
+		gpio_direction_output(egistec->vcc_33v_Pin, 1);
+		gpio_set_value(egistec->vcc_33v_Pin, 1);
+#endif        
 
 /*		status = gpio_request(egistec->vcc_33v_Pin, "33v-gpio");
 		if (status < 0) {
@@ -1096,4 +1104,4 @@ module_exit(egis360_exit);
 MODULE_AUTHOR("Wang YuWei, <robert.wang@egistec.com>");
 MODULE_DESCRIPTION("SPI Interface for ET360");
 MODULE_LICENSE("GPL");
-//tee_xuzhifeng@wind-mobi.com 20161123 end
+

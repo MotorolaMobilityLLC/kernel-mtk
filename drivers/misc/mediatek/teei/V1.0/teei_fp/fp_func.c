@@ -22,17 +22,11 @@
 /* #define FP_DEBUG */
 
 #define MICROTRUST_FP_SIZE	0x80000
-// tee_xuzhifeng@wind-mobi.com 20161117 begin
-//#define CMD_MEM_CLEAR	_IO(0x775A777E, 0x1)
-//#define CMD_FP_CMD      _IO(0x775A777E, 0x2)
-//#define CMD_GATEKEEPER_CMD	_IO(0x775A777E, 0x3)
-//#define CMD_LOAD_TEE			_IO(0x775A777E, 0x4)
 #define TEEI_FP_IOC_MAGIC              	0X74
 #define CMD_GATEKEEPER_CMD             	_IO(TEEI_FP_IOC_MAGIC, 0x3)
 #define CMD_MEM_CLEAR					_IO(TEEI_FP_IOC_MAGIC, 0x1)
 #define CMD_FP_CMD      				_IO(0x775A777E, 0x2)
 #define CMD_LOAD_TEE					_IO(TEEI_FP_IOC_MAGIC, 0x4)
-//tee_xuzhifeng@wind-mobi.com 20161117 begin
 #define FP_MAJOR	254
 #define SHMEM_ENABLE    0
 #define SHMEM_DISABLE   1

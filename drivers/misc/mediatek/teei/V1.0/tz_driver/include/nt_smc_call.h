@@ -185,6 +185,7 @@
 /* ////////////////////////////////////////////////////////////////////////////////////////////////////////////// */
 #ifdef CONFIG_ARM64
 /*  ==================  NT FAST CALL ================   */
+/* doujia modify start */
 static inline void n_init_t_boot_stage1(
 	uint64_t p0,
 	uint64_t p1,
@@ -228,6 +229,7 @@ static inline void n_switch_to_t_os_stage2(uint64_t *p0)
 	: "x0", "x1", "x2", "x3",  "memory");
 	*p0 = temp[0];
 }
+/* doujia modify end */
 
 static inline void nt_dump_state(void)
 {
@@ -274,6 +276,7 @@ static inline void n_get_param_in(
 	*rtc3 = temp[3];
 
 }
+/* doujia modify start */
 static inline void n_init_t_fc_buf(
 	uint64_t p0,
 	uint64_t p1,
@@ -342,6 +345,7 @@ static inline void nt_sched_t(uint64_t *p)
 	: "x0", "x1", "x2", "x3", "memory");
 	*p = temp[0];
 }
+/* doujia modify end */
 
 static inline void n_invoke_t_sys_ctl(
 	uint64_t p0,
@@ -366,6 +370,7 @@ static inline void n_invoke_t_sys_ctl(
 	: "x0", "x1", "x2", "x3", "memory");
 }
 
+/* doujia modify start */
 static inline void n_invoke_t_nq(
 	uint64_t *p0,
 	uint64_t p1,
@@ -415,6 +420,7 @@ static inline void n_invoke_t_drv(
 	: "x0", "x1", "x2", "x3", "memory");
 	*p0 = temp[0];
 }
+/* doujia modify end */
 
 static inline void n_raise_t_event(
 	uint64_t p0,
@@ -439,6 +445,7 @@ static inline void n_raise_t_event(
 	: "x0", "x1", "x2", "x3", "memory");
 }
 
+/* doujia modify start */
 static inline void n_ack_t_invoke_drv(
 	uint64_t *p0,
 	uint64_t p1,
@@ -513,6 +520,7 @@ static inline void n_ack_t_load_img(
 	: "x0", "x1", "x2", "x3", "memory");
 	*p0 = temp[0];
 }
+/* doujia modify start */
 
 static inline void nt_sched_t_fiq(
 	uint64_t p0,
@@ -613,7 +621,6 @@ static inline void smc_out(uint32_t id,
 			: "r0", "r1", "r2", "r3",  "memory");
 }
 
-//tee_xuzhifeng@wind-mobi.com 20161123 begin
 static inline void smc_inout(uint32_t id,
 		uint32_t p0,
 		uint32_t p1,
@@ -646,7 +653,6 @@ static inline void smc_inout(uint32_t id,
 			*ret = temp[0];
 
 }
-//tee_xuzhifeng@wind-mobi.com 20161123 end
 
 static inline void smc_in(
 		uint32_t id,
@@ -690,20 +696,19 @@ static inline void smc_in(
 
 
 /*  ==================  NT FAST CALL ================   */
-//tee_xuzhifeng@wind-mobi.com 20161123 begin
 /*
 static inline void n_init_t_boot_stage1(
 		uint32_t p0,
 		uint32_t p1,
-		uint32_t p2)
+		uint32_t *p2)
 {
-	smc_out(N_INIT_T_BOOT_STAGE1_32, p0, p1, p2);
+	smc_inout(N_INIT_T_BOOT_STAGE1_32, p0, p1, 0,p2);
 
 }
 
-static inline void n_switch_to_t_os_stage2(void)
+static inline void n_switch_to_t_os_stage2(uint32_t *p0)
 {
-	smc_out(N_SWITCH_TO_T_OS_STAGE2_32, 0, 0, 0);
+	smc_inout(N_SWITCH_TO_T_OS_STAGE2_32, 0, 0, 0,p0);
 }
 */
 static inline void n_init_t_boot_stage1(
@@ -719,7 +724,6 @@ static inline void n_switch_to_t_os_stage2(uint32_t *p0)
 {
 	smc_inout(N_SWITCH_TO_T_OS_STAGE2_32, 0, 0, 0,p0);
 }
-//tee_xuzhifeng@wind-mobi.com 20161123 end
 
 static inline void nt_dump_state(void)
 {
@@ -737,14 +741,13 @@ static inline void n_get_param_in(
 
 }
 
-//tee_xuzhifeng@wind-mobi.com 20161123 begin
 /*
 static inline void n_init_t_fc_buf(
 		uint32_t p0,
 		uint32_t p1,
-		uint32_t p2)
+		uint32_t *p2)
 {
-	smc_out(N_INIT_T_FC_BUF_32, p0, p1, p2);
+	smc_inout(N_INIT_T_FC_BUF_32, p0, p1, 0,p2);
 
 }
 */
@@ -759,11 +762,11 @@ static inline void n_init_t_fc_buf(
 
 /*
 static inline void n_invoke_t_fast_call(
-		uint32_t p0,
+		uint32_t *p0,
 		uint32_t p1,
 		uint32_t p2)
 {
-	smc_out(N_INVOKE_T_FAST_CALL_32, p0, p1, p2);
+	smc_inout(N_INVOKE_T_FAST_CALL_32, *p0, p1, p2,p0);
 }
 */
 static inline void n_invoke_t_fast_call(
@@ -782,7 +785,7 @@ static inline void nt_sched_t(void)
 	uint32_t p1;
 	uint32_t p2;
 
-	smc_out(NT_SCHED_T_32, p0, p1, p2);
+	smc_inout(NT_SCHED_T_32, p0, p1, p2,p);
 
 }
 */
@@ -795,7 +798,7 @@ static inline void nt_sched_t(uint32_t *p)
 	smc_inout(NT_SCHED_T_32, p0, p1, p2,p);
 
 }
-//tee_xuzhifeng@wind-mobi.com 20161123 end
+
 static inline void n_invoke_t_sys_ctl(
 		uint32_t p0,
 		uint32_t p1,
@@ -805,17 +808,6 @@ static inline void n_invoke_t_sys_ctl(
 
 }
 
-//tee_xuzhifeng@wind-mobi.com 20161123 begin
-/*
-static inline void n_invoke_t_nq(
-		uint32_t p0,
-		uint32_t p1,
-		uint32_t p2)
-{
-	smc_out(N_INVOKE_T_NQ_32, p0, p1, p2);
-
-}
-*/
 static inline void n_invoke_t_nq(
 		uint32_t *p0,
 		uint32_t p1,
@@ -827,11 +819,11 @@ static inline void n_invoke_t_nq(
 
 /*
 static inline void n_invoke_t_drv(
-		uint32_t p0,
+		uint32_t *p0,
 		uint32_t p1,
 		uint32_t p2)
 {
-	smc_out(N_INVOKE_T_DRV_32, p0, p1, p2);
+	smc_inout(N_INVOKE_T_DRV_32, *p0, p1, p2,p0);
 
 }
 */
@@ -846,9 +838,9 @@ static inline void n_invoke_t_drv(
 
 /*
 static inline void n_raise_t_event(
-		uint64_t p0,
-		uint64_t p1,
-		uint64_t p2)
+		uint32_t p0,
+		uint32_t p1,
+		uint32_t p2)
 {
 	smc_out(N_RAISE_T_EVENT_32, p0, p1, p2);
 
@@ -866,11 +858,11 @@ static inline void n_raise_t_event(
 
 /*
 static inline void n_ack_t_invoke_drv(
-		uint64_t p0,
-		uint64_t p1,
-		uint64_t p2)
+		uint32_t *p0,
+		uint32_t p1,
+		uint32_t p2)
 {
-	smc_out(N_ACK_T_INVOKE_DRV_32, p0, p1, p2);
+	smc_inout(N_ACK_T_INVOKE_DRV_32, *p0, p1, p2,p0);
 
 }
 */
@@ -885,11 +877,11 @@ static inline void n_ack_t_invoke_drv(
 
 /*
 static inline void n_invoke_t_load_tee(
-		uint32_t p0,
+		uint32_t *p0,
 		uint32_t p1,
 		uint32_t p2)
 {
-	smc_out(N_INVOKE_T_LOAD_TEE_32, p0, p1, p2);
+	smc_inout(N_INVOKE_T_LOAD_TEE_32, *p0, p1, p2,p0);
 
 }
 */
@@ -901,16 +893,7 @@ static inline void n_invoke_t_load_tee(
 	smc_inout(N_INVOKE_T_LOAD_TEE_32, *p0, p1, p2,p0);
 
 }
-/*
-static inline void n_ack_t_load_img(
-		uint32_t p0,
-		uint32_t p1,
-		uint32_t p2)
-{
-	smc_out(N_ACK_T_LOAD_IMG_32, p0, p1, p2);
 
-}
-*/
 static inline void n_ack_t_load_img(
 		uint32_t *p0,
 		uint32_t p1,
@@ -919,7 +902,6 @@ static inline void n_ack_t_load_img(
 	smc_inout(N_ACK_T_LOAD_IMG_32, *p0, p1, p2,p0);
 
 }
-//tee_xuzhifeng@wind-mobi.com 20161123 end
 
 static inline void nt_sched_t_fiq(
 		uint32_t p0,

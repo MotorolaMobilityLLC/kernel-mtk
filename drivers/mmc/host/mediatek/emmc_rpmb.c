@@ -227,10 +227,8 @@ int emmc_rpmb_switch(struct mmc_card *card, struct emmc_rpmb_blk_data *md)
 
 		ret = mmc_switch(card, EXT_CSD_CMD_SET_NORMAL,
 				 EXT_CSD_PART_CONFIG, part_config,
-// tee_xuzhifeng@wind-mobi.com 20161117 begin
 //				 card->ext_csd.part_time);
 				 0);
-// tee_xuzhifeng@wind-mobi.com 20161117 end
 		if (ret)
 			return ret;
 
