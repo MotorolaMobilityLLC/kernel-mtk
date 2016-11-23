@@ -57,6 +57,8 @@ static int	als_gain_factor;
 static int final_prox_val;
 static int final_lux_val;
 
+static int winfac_1;
+static int winfac_2;
 /*----------------------------------------------------------------------------*/
 typedef enum {
     CMC_BIT_ALS    = 1,
@@ -580,24 +582,40 @@ static int ltr778_als_read(struct i2c_client *client, u16* data)
 	{
 		ch0_coeff = 0;
 		ch1_coeff = 0;
+		winfac_1 = 1;
+		winfac_2 = 1;
 	}
-	else if ((ratio >= 14) && (ratio < 30))
-	{
+	else if ((ratio >= 14) && (ratio < 19))
+	{//A light
 		ch0_coeff = 379;
 		ch1_coeff = 1520;
+		winfac_1 = 1;
+		winfac_2 = 3;
+	}
+	else if ((ratio >= 19) && (ratio < 30))
+	{// D6500K 
+		ch0_coeff = 379;
+		ch1_coeff = 1520;
+		winfac_1 = 5;
+		winfac_2 = 7;
 	}
 	else if ((ratio >= 30) && (ratio < 51))
-	{
+	{//CWF
 		ch0_coeff = -4910;
 		ch1_coeff = 19950;
+		winfac_1 = 4;
+		winfac_2 = 3;
+		
 	}
 	else if (ratio >= 51)
 	{
 		ch0_coeff = 8000;
 		ch1_coeff = -5760;
+		winfac_1 = 1;
+		winfac_2 = 1;
 	}
 
-	luxdata_int = ((ch0_coeff * alsval_ch0) + (ch1_coeff * alsval_ch1)) / coeff_factor / als_gain_factor / als_integration_factor * WIN_FACTOR*7/5;
+	luxdata_int = ((ch0_coeff * alsval_ch0) + (ch1_coeff * alsval_ch1)) / coeff_factor / als_gain_factor / als_integration_factor * WIN_FACTOR*winfac_1/winfac_2;
 	
 	APS_DBG("ltr778_als_read: als_value_lux = %d\n", luxdata_int);
 out:
