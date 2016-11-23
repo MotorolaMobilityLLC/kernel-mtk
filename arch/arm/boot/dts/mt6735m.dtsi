@@ -1233,13 +1233,6 @@
 		};
 /*LCT ADD for otg*/
 		
-		/*zhangchao@wind-mobi.com 20161118 begin*/
-		chr_stat:chr_stat{
-			compatible = "mediatek,cha_stat-eint";
-			status ="disabled";
-		};
-		/*zhangchao@wind-mobi.com 20161118 end*/
-
 		accdet: accdet@ {
 			compatible = "mediatek,mt6735-accdet",
 						"mediatek,mt6735m-accdet";

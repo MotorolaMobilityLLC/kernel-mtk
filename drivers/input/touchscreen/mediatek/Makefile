@@ -6,7 +6,7 @@ ccflags-y += -I$(srctree)/drivers/input/touchscreen/mediatek
 #ifneq ($(CONFIG_TOUCHSCREEN_MTK),)
 obj-y   +=  mtk_tpd.o tpd_button.o tpd_calibrate.o tpd_debug.o \
 		tpd_default.o tpd_init.o tpd_misc.o tpd_setting.o
-endif
+#endif
 #tuwenzan@wind-mobi.com add this at 20161108 begin
 obj-$(CONFIG_TOUCHSCREEN_SYNAPTICS_DSX)	+= synaptics_dsx/
 obj-$(CONFIG_INPUT_SX9310) += sx9301/
