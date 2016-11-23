@@ -1921,9 +1921,11 @@ static void Ext_Speaker_Amp_Change(bool enable)
 #else
 //add by wangyongfu
 #ifndef LCT_AW87319_MODE_CTRL
+#ifdef AW8737_MODE_CTRL
+#else
 		AudDrv_GPIO_EXTAMP_Select(false);
 		AudDrv_GPIO_EXTAMP2_Select(false);
-<<<<<<< HEAD
+#endif        
 #else	
 		AW87319_Audio_OFF();
 		printk("%s AW87319_Audio_OFF-\n", __func__);
@@ -1932,10 +1934,6 @@ static void Ext_Speaker_Amp_Change(bool enable)
 #endif
 #endif /*CONFIG_MTK_LEGACY*/
 
-=======
-#endif /*CONFIG_MTK_LEGACY_EXTSPK*/
-//ext amp for Z168 ---sunsiyuan@wind-mobi.com add at 20161109 end
->>>>>>> 4a0b8b7... [Purp] [woods][LCM/TP/camera]add NFC code
 		/*udelay(1000);*/
 		usleep_range(1*1000, 20*1000);
 //ext amp for Z168 ---sunsiyuan@wind-mobi.com add at 20161109 begin
