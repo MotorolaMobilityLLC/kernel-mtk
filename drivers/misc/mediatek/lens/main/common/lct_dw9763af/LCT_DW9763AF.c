@@ -253,7 +253,15 @@ int LCT_DW9763AF_Release(struct inode *a_pstInode, struct file *a_pstFile)
 	LOG_INF("Start\n");
 
 	if (*g_pAF_Opened == 2)
+	{
+
 		LOG_INF("Wait\n");
+		s4AF_WriteReg(200);
+		msleep(50);
+		s4AF_WriteReg(100);
+		msleep(50);
+		s4AF_WriteReg(50);
+	}
 
 	if (*g_pAF_Opened) {
 		LOG_INF("Free\n");
