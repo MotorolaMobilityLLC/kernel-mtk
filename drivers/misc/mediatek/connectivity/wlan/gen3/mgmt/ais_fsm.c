@@ -1320,6 +1320,7 @@ VOID aisFsmInit(IN P_ADAPTER_T prAdapter)
 #endif /* CFG_SUPPORT_ROAMING */
 	prAisFsmInfo->fgIsChannelRequested = FALSE;
 	prAisFsmInfo->fgIsChannelGranted = FALSE;
+	prAisFsmInfo->ucJoinFailCntAfterScan = 0;
 
 	/* 4 <1.1> Initiate FSM - Timer INIT */
 	cnmTimerInitTimer(prAdapter,
@@ -1849,8 +1850,6 @@ VOID aisFsmStateAbort_NORMAL_TR(IN P_ADAPTER_T prAdapter)
 
 	/* 2.2 reset local variable */
 	prAisFsmInfo->fgIsInfraChannelFinished = TRUE;
-	prAdapter->rWifiVar.rConnSettings.ucSSIDLen = 0;
-
 }				/* end of aisFsmAbortNORMAL_TR() */
 
 #if CFG_SUPPORT_ADHOC
@@ -2015,7 +2014,6 @@ VOID aisFsmSteps(IN P_ADAPTER_T prAdapter, ENUM_AIS_STATE_T eNextState)
 	ENUM_BAND_T eBand;
 	UINT_8 ucChannel;
 	UINT_16 u2ScanIELen;
-	ENUM_AIS_STATE_T eOriPreState;
 
 	BOOLEAN fgIsTransition = (BOOLEAN) FALSE;
 
@@ -2024,7 +2022,6 @@ VOID aisFsmSteps(IN P_ADAPTER_T prAdapter, ENUM_AIS_STATE_T eNextState)
 	prAisFsmInfo = &(prAdapter->rWifiVar.rAisFsmInfo);
 	prAisBssInfo = prAdapter->prAisBssInfo;
 	prConnSettings = &(prAdapter->rWifiVar.rConnSettings);
-	eOriPreState = prAisFsmInfo->ePreviousState;
 
 	do {
 
@@ -2137,28 +2134,20 @@ VOID aisFsmSteps(IN P_ADAPTER_T prAdapter, ENUM_AIS_STATE_T eNextState)
 #if CFG_SLT_SUPPORT
 			prBssDesc = prAdapter->rWifiVar.rSltInfo.prPseudoBssDesc;
 #else
+			if (prAisFsmInfo->ucJoinFailCntAfterScan >= 5) {
+				prBssDesc = NULL;
+				DBGLOG(AIS, STATE,
+					"Failed to connect %s more than 5 times after last scan, scan again\n",
+					prConnSettings->aucSSID);
+			} else {
 #if CFG_SELECT_BSS_BASE_ON_MULTI_PARAM
-			prBssDesc = scanSearchBssDescByScoreForAis(prAdapter);
+				prBssDesc = scanSearchBssDescByScoreForAis(prAdapter);
 #else
-			prBssDesc = scanSearchBssDescByPolicy(prAdapter, prAisBssInfo->ucBssIndex);
+				prBssDesc = scanSearchBssDescByPolicy(prAdapter, prAisBssInfo->ucBssIndex);
 #endif
-#endif
-#if 0 /* xianpu: todo */
-			/* every time BSS join failure count is integral multiples of SCN_BSS_JOIN_FAIL_THRESOLD,
-			we need to scan again to find if a new BSS is here in the ESS,
-			this can also avoid too frequency to retry the rejected AP */
-			if (prAisFsmInfo->ePreviousState == AIS_STATE_LOOKING_FOR ||
-				((eOriPreState == AIS_STATE_ONLINE_SCAN ||
-				eOriPreState == AIS_STATE_SCAN) && prAisFsmInfo->ePreviousState != eOriPreState)) {
-				/* if previous state is scan/online scan/looking for, don't try to scan again */
-			} else if (prBssDesc) {
-				if (!prBssDesc->prBlack)
-					prBssDesc->prBlack = aisQueryBlackList(prAdapter, prBssDesc);
-				if (prBssDesc->prBlack && prBssDesc->prBlack->ucCount >= 4 &&
-					(prBssDesc->prBlack->ucCount % 4) == 0)
-					prBssDesc = NULL;
 			}
 #endif
+
 			/* we are under Roaming Condition. */
 			if (prAisBssInfo->eConnectionState == PARAM_MEDIA_STATE_CONNECTED) {
 				if (prAisFsmInfo->ucConnTrialCount > AIS_ROAMING_CONNECTION_TRIAL_LIMIT) {
@@ -2541,6 +2530,7 @@ VOID aisFsmSteps(IN P_ADAPTER_T prAdapter, ENUM_AIS_STATE_T eNextState)
 
 			mboxSendMsg(prAdapter, MBOX_ID_0, (P_MSG_HDR_T) prScanReqMsg, MSG_SEND_METHOD_BUF);
 			prAisFsmInfo->fgTryScan = FALSE;	/* Will enable background sleep for infrastructure */
+			prAisFsmInfo->ucJoinFailCntAfterScan = 0;
 			break;
 
 		case AIS_STATE_REQ_CHANNEL_JOIN:
@@ -2577,7 +2567,9 @@ VOID aisFsmSteps(IN P_ADAPTER_T prAdapter, ENUM_AIS_STATE_T eNextState)
 		case AIS_STATE_JOIN_FAILURE:
 			prAdapter->rWifiVar.rConnSettings.eReConnectLevel = RECONNECT_LEVEL_MIN;
 			prConnSettings->fgIsDisconnectedByNonRequest = TRUE;
-
+#if CFG_SELECT_BSS_BASE_ON_MULTI_PARAM
+			prConnSettings->ucSSIDLen = 0;
+#endif
 #if CFG_SUPPORT_RN
 			if (prAisBssInfo->fgDisConnReassoc == TRUE) {
 				nicMediaJoinFailure(prAdapter, prAdapter->prAisBssInfo->ucBssIndex,
@@ -2922,7 +2914,6 @@ VOID aisFsmRunEventScanDone(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHdr)
 
 	ASSERT(prAdapter);
 	ASSERT(prMsgHdr);
-	DBGLOG(AIS, INFO, "ScanDone\n");
 
 	DBGLOG(AIS, LOUD, "EVENT-SCAN DONE: Current Time = %u\n", kalGetTimeTick());
 
@@ -2987,6 +2978,7 @@ VOID aisFsmRunEventScanDone(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHdr)
 			break;
 
 		default:
+			DBGLOG(AIS, WARN, "Wrong AIS state %d\n", prAisFsmInfo->eCurrentState);
 			break;
 
 		}
@@ -3376,6 +3368,7 @@ enum _ENUM_AIS_STATE_T aisFsmJoinCompleteAction(IN struct _ADAPTER_T *prAdapter,
 			aisSendNeighborRequest(prAdapter);
 #endif
 			prAisFsmInfo->prTargetBssDesc->fgDeauthLastTime = FALSE;
+			prAisFsmInfo->ucJoinFailCntAfterScan = 0;
 			/* 4 <1.7> Set the Next State of AIS FSM */
 			eNextState = AIS_STATE_NORMAL_TR;
 		}
@@ -3396,6 +3389,7 @@ enum _ENUM_AIS_STATE_T aisFsmJoinCompleteAction(IN struct _ADAPTER_T *prAdapter,
 
 				/* 3.2 reset local variable */
 				prAisFsmInfo->fgIsInfraChannelFinished = TRUE;
+				prAisFsmInfo->ucJoinFailCntAfterScan++;
 
 				prBssDesc = scanSearchBssDescByBssid(prAdapter, prStaRec->aucMacAddr);
 
@@ -3408,7 +3402,7 @@ enum _ENUM_AIS_STATE_T aisFsmJoinCompleteAction(IN struct _ADAPTER_T *prAdapter,
 				if (prBssDesc->ucJoinFailureCount >= SCN_BSS_JOIN_FAIL_THRESOLD) {
 					aisAddBlacklist(prAdapter, prBssDesc);
 					GET_CURRENT_SYSTIME(&prBssDesc->rJoinFailTime);
-					DBGLOG(AIS, INFO,
+					DBGLOG(AIS, TRACE,
 					       "Bss " MACSTR " join fail %d times, temp disable it at time: %u\n",
 						MAC2STR(prBssDesc->aucBSSID),
 						prBssDesc->ucJoinFailureCount,
@@ -3860,6 +3854,9 @@ VOID aisPostponedEventOfDisconnTimeout(IN P_ADAPTER_T prAdapter, ULONG ulParamPt
 	aisFsmIsRequestPending(prAdapter, AIS_REQUEST_RECONNECT, TRUE);
 	prConnSettings->fgIsDisconnectedByNonRequest = TRUE;
 	prAisBssInfo->u2DeauthReason = 100 * REASON_CODE_BEACON_TIMEOUT + prAisBssInfo->u2DeauthReason;
+#if CFG_SELECT_BSS_BASE_ON_MULTI_PARAM
+	prConnSettings->ucSSIDLen = 0;
+#endif
 	/* 4 <3> Indicate Disconnected Event to Host immediately. */
 	aisIndicationOfMediaStateToHost(prAdapter, PARAM_MEDIA_STATE_DISCONNECTED, FALSE);
 
@@ -4345,6 +4342,9 @@ VOID aisFsmDisconnect(IN P_ADAPTER_T prAdapter, IN BOOLEAN fgDelayIndication)
 	}
 
 	if (!fgDelayIndication) {
+#if CFG_SELECT_BSS_BASE_ON_MULTI_PARAM
+		prAdapter->rWifiVar.rConnSettings.ucSSIDLen = 0;
+#endif
 		/* 4 <5> Deactivate previous AP's STA_RECORD_T or all Clients in Driver if have. */
 		if (prAisBssInfo->prStaRecOfAP) {
 			/* cnmStaRecChangeState(prAdapter, prAisBssInfo->prStaRecOfAP, STA_STATE_1); */
