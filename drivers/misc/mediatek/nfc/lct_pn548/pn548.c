@@ -124,6 +124,8 @@ static int transfer_clk_onoff = 0;
 struct platform_device *nfc_clk_req_dev;
 static struct work_struct  eint1_work;
 #endif
+struct pinctrl_state *nfc_ldo_low_pinctrl = NULL;
+struct pinctrl_state *nfc_ldo_high_pinctrl = NULL;
 //end add by zhaofei - 2016-11-09-17-31
 
 /* add LCT_DEVINFO by changjingyang start */
@@ -439,11 +441,14 @@ static long pn544_dev_unlocked_ioctl(struct file *filp, unsigned int cmd,
 			if (arg == 2) {
 				/* power on with firmware download (requires hw reset) */
 				printk("pn544 %s power on with firmware\n", __func__);
+				ret = pn544_platform_pinctrl_select(gpctrl, nfc_ldo_high_pinctrl); // add by zhaofei - 2016-11-17-18-17
 				ret = pn544_platform_pinctrl_select(gpctrl, st_ven_h);
 				ret = pn544_platform_pinctrl_select(gpctrl, st_dwn_h);
 				msleep(10);
+				ret = pn544_platform_pinctrl_select(gpctrl, nfc_ldo_low_pinctrl); // add by zhaofei - 2016-11-17-18-17
 				ret = pn544_platform_pinctrl_select(gpctrl, st_ven_l);
 				msleep(50);
+				ret = pn544_platform_pinctrl_select(gpctrl, nfc_ldo_high_pinctrl); // add by zhaofei - 2016-11-17-18-17
 				ret = pn544_platform_pinctrl_select(gpctrl, st_ven_h);
 				msleep(10);
 			} else if (arg == 1) {
@@ -452,6 +457,8 @@ static long pn544_dev_unlocked_ioctl(struct file *filp, unsigned int cmd,
 #ifdef LCT_SYS_CLK
 				clk_buf_ctrl(CLK_BUF_NFC, 1);
 #endif
+				ret = pn544_platform_pinctrl_select(gpctrl, nfc_ldo_high_pinctrl); // add by zhaofei - 2016-11-17-18-17
+				msleep(1);
 				ret = pn544_platform_pinctrl_select(gpctrl, st_dwn_l);
 				ret = pn544_platform_pinctrl_select(gpctrl, st_ven_h); 
 				msleep(10);
@@ -460,6 +467,8 @@ static long pn544_dev_unlocked_ioctl(struct file *filp, unsigned int cmd,
 				printk("pn544 %s power off\n", __func__);
 				ret = pn544_platform_pinctrl_select(gpctrl, st_dwn_l);
 				ret = pn544_platform_pinctrl_select(gpctrl, st_ven_l);
+				msleep(1);
+				ret = pn544_platform_pinctrl_select(gpctrl, nfc_ldo_low_pinctrl); // add by zhaofei - 2016-11-17-18-17
 #ifdef LCT_SYS_CLK
 				clk_buf_ctrl(CLK_BUF_NFC, 0);
 #endif
@@ -836,6 +845,20 @@ static int pn544_platform_pinctrl_init(struct platform_device *pdev)
     }
     pn544_platform_pinctrl_select(gpctrl, clk_req_int);
 #endif
+
+	nfc_ldo_high_pinctrl = pinctrl_lookup_state(gpctrl, "nfc_ldo_high");
+    if (IS_ERR(nfc_ldo_high_pinctrl)) {
+    	ret = PTR_ERR(nfc_ldo_high_pinctrl);
+    	printk("%s: pinctrl err, nfc_ldo_high_pinctrl\n", __func__);
+    }
+    //pn544_platform_pinctrl_select(gpctrl, nfc_ldo_high_pinctrl);
+	
+	nfc_ldo_low_pinctrl = pinctrl_lookup_state(gpctrl, "nfc_ldo_low");
+    if (IS_ERR(nfc_ldo_low_pinctrl)) {
+    	ret = PTR_ERR(nfc_ldo_low_pinctrl);
+    	printk("%s: pinctrl err, nfc_ldo_low_pinctrl\n", __func__);
+    }
+    //pn544_platform_pinctrl_select(gpctrl, nfc_ldo_low_pinctrl);
 //end add by zhaofei - 2016-11-09-16-23
 	
 end:
