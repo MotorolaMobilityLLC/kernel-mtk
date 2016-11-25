@@ -94,11 +94,13 @@ static void step_c_work_func(struct work_struct *work)
 /*Lenovo-sw weimh1 add 2016-7-7:just report once when step not changed*/
 #ifndef STEP_COUNTER_INT_MODE_SUPPORT
 			invalid_count++;
+#if 0
 			if (invalid_count < 2 && num_notify == 1) {
 				STEP_C_ERR("get step_c data not change,counter=%d!!\n",cxt->drv_data.counter );
 				num_notify = 0;
 				step_c_data_report(cxt->idev, cxt->drv_data.counter, cxt->drv_data.status);
 			}
+#endif
 #endif
 /*Lenovo-sw weimh1 add 2016-7-7 end:just report once when step not changed*/
 
@@ -112,7 +114,7 @@ static void step_c_work_func(struct work_struct *work)
 	step_c_data_report(cxt->idev, cxt->drv_data.counter, cxt->drv_data.status);
 
 step_c_loop:
-/* step counter sensor interrupt mode support -- modified by liaoxl.lenovo 7.12.2015 start  */
+/* step counter sensor interrupt mode support -- modified by liaoxl.lenovo 7.12.2015 start */
 #ifndef STEP_COUNTER_INT_MODE_SUPPORT
 //	if (true == cxt->is_polling_run) {
 	if (invalid_count < STEP_COUNTER_INVALID_COUNT && (step_suspend == 0))
@@ -127,7 +129,7 @@ step_c_loop:
 //	}
 #endif
 	value = 0;
-/* step counter sensor interrupt mode support -- modified by liaoxl.lenovo 7.12.2015 end  */
+/* step counter sensor interrupt mode support -- modified by liaoxl.lenovo 7.12.2015 end */
 
 	STEP_C_LOG("%s step counter:%d\n", __func__, cxt->drv_data.counter);
 }
@@ -172,7 +174,7 @@ static struct step_c_context *step_c_context_alloc_object(void)
 }
 
 /* step counter sensor interrupt mode support -- modified by liaoxl.lenovo 7.12.2015 start  */
-int  step_notify(STEP_NOTIFY_TYPE type)
+int step_notify(STEP_NOTIFY_TYPE type)
 {
 	int err = 0;
 	int value = 0;
@@ -197,12 +199,12 @@ int  step_notify(STEP_NOTIFY_TYPE type)
 		input_report_rel(cxt->idev, EVENT_TYPE_SIGNIFICANT_VALUE, value);
 		input_sync(cxt->idev);
 	}
-#endif	
+#endif
 	else if (type == TYPE_STEP_COUNTER)	{
 		STEP_C_LOG("fwq TYPE_STEP_COUNTER notify\n");
 
-#ifndef STEP_COUNTER_INT_MODE_SUPPORT	
-		invalid_count = 0;
+#ifndef STEP_COUNTER_INT_MODE_SUPPORT
+//		invalid_count = 0;
 		step_suspend = 0;
 		num_notify = 1;
 #endif
@@ -212,12 +214,13 @@ int  step_notify(STEP_NOTIFY_TYPE type)
 	else if (type == TYPE_STEP_SUSPEND)	{
 		STEP_C_LOG("fwq TYPE_STEP_SUSPEND notify\n");
 
-#ifndef STEP_COUNTER_INT_MODE_SUPPORT	
-		invalid_count = 0;
+#ifndef STEP_COUNTER_INT_MODE_SUPPORT
+//		invalid_count = 0;
 		step_suspend = 1;
 		num_notify = 1;
 #endif
-		step_c_work_func(0);
+		if (cxt->is_polling_run)
+			step_c_work_func(0);
 #if 0
 		cxt->is_polling_run = false;
 		del_timer_sync(&step_c_context_obj->timer);

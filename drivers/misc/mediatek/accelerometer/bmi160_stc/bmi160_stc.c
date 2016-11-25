@@ -35,6 +35,7 @@ extern struct i2c_client *bmi160_acc_i2c_client;
 /*Lenovo-sw weimh1 add 2016-7-06 begin: */
 static int step_c_enable_nodata(int en);
 static int bmi160_stc_clr(struct i2c_client *client);
+static int bmi160_stc_get_mode(struct i2c_client *client, u8 *mode);
 /*Lenovo-sw weimh1 add 2016-7-06 end*/
 struct acc_hw accel_cust;
 static struct acc_hw *hw = &accel_cust;
@@ -253,6 +254,7 @@ static int step_c_set_powermode(struct i2c_client *client,
 	u8 actual_power_mode = 0;
 	u8 acc_conf = 0;
 	u8 acc_us =0;
+	u8 acc_mode;
 	u8 bandwidth = BMI160_ACCEL_OSR4_AVG1;
 	int datarate = BMI160_ACCEL_ODR_200HZ;
 	struct step_c_i2c_data *obj = obj_i2c_data;
@@ -316,7 +318,8 @@ static int step_c_set_powermode(struct i2c_client *client,
 	err = stc_i2c_read_block(client,
 		BMI160_USER_ACC_CONF_ODR__REG, &acc_conf, 1);
 	mdelay(30);
-	STEP_C_LOG("%s acc_conf=0x%x!\n", __func__, acc_conf);
+	err = bmi160_stc_get_mode(obj->client, &acc_mode);
+	STEP_C_LOG("%s acc_conf=0x%x!, acc_mode = 0x%x\n", __func__, acc_conf, acc_mode);
 
 	return err;
 }
@@ -442,7 +445,7 @@ static int step_c_suspend(struct i2c_client *client, pm_message_t msg)
 			return err;
 		}
 
-		/*Lenovo-sw weimh1 add 2016-8-17 begin: report data when enable*/
+		/*Lenovo-sw weimh1 add 2016-8-17 begin: report data when suspend*/
 		step_notify(TYPE_STEP_SUSPEND);
 		/*Lenovo-sw weimh1 add 2016-8-17 end*/
 	}
