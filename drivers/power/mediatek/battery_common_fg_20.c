@@ -2258,7 +2258,13 @@ void mt_battery_GetBatteryData(void)
 	bat_vol = battery_meter_get_battery_voltage(KAL_TRUE);
 	Vsense = battery_meter_get_VSense();
 	if (upmu_is_chr_det() == KAL_TRUE) {
+#ifdef CONFIG_LCT_CHR_MIDTEST_CURRENT_CHECK
+		ICharging = battery_meter_get_battery_current()/10;
+		if (ICharging < 0)
+			ICharging = 0;
+#else
 		ICharging = battery_meter_get_charging_current();
+#endif
 		charger_vol = battery_meter_get_charger_voltage();
 	} else {
 		ICharging = 0;
@@ -2272,7 +2278,9 @@ void mt_battery_GetBatteryData(void)
 	BMT_status.ICharging =
 	    mt_battery_average_method(BATTERY_AVG_CURRENT, &batteryCurrentBuffer[0], ICharging,
 				      &icharging_sum, batteryIndex);
-
+#ifdef CONFIG_LCT_CHR_MIDTEST_CURRENT_CHECK
+	BMT_status.ICharging = ICharging;
+#endif
 	if (previous_SOC == -1 && bat_vol <= batt_cust_data.v_0percent_tracking) {
 		previous_SOC = 0;
 		if (ZCV != 0) {

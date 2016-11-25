@@ -706,7 +706,11 @@ void select_charging_current(void)
 		if (g_temp_CC_value == CHARGE_CURRENT_450_00_MA) {
 			g_temp_input_CC_value = CHARGE_CURRENT_500_00_MA;
 		} else {
+#ifdef CONFIG_LCT_CHR_JEITA_STANDARD_SUPPORT
+			g_temp_input_CC_value = CHARGE_CURRENT_2000_00_MA;
+#else
 			g_temp_input_CC_value = CHARGE_CURRENT_MAX;
+#endif
 			g_temp_CC_value = batt_cust_data.ac_charger_current;
 
 			battery_log(BAT_LOG_CRTI, "[BATTERY] set_ac_current \r\n");
@@ -804,8 +808,11 @@ void select_charging_current_bcct(void)
 			g_temp_input_CC_value = CHARGE_CURRENT_500_00_MA;
 	} else if ((BMT_status.charger_type == STANDARD_CHARGER) ||
 		   (BMT_status.charger_type == CHARGING_HOST)) {
+#ifdef CONFIG_LCT_CHR_JEITA_STANDARD_SUPPORT
+		g_temp_input_CC_value = CHARGE_CURRENT_2000_00_MA;
+#else
 		g_temp_input_CC_value = CHARGE_CURRENT_MAX;
-
+#endif
 		/* --------------------------------------------------- */
 		/* set IOCHARGE */
 		if (g_bcct_value < 550)

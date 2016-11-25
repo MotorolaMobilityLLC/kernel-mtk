@@ -403,3 +403,10 @@ config LCT_CHR_FULL_CHECK
 	help
 	  Set yes to check battery full status.
 	  Set No to not Check battery full status.
+
+config LCT_CHR_MIDTEST_CURRENT_CHECK
+	bool "LCT_CHR_MIDTEST_CURRENT_CHECK"
+	default n
+	help
+	  Set yes to support MIDTEST CURRENT CHECK.
+	  Set no to not support MIDTEST CURRENT CHECK.
