@@ -1486,12 +1486,10 @@ wlanAdapterStart(IN P_ADAPTER_T prAdapter,
 		}
 #endif
 
-#if 0//Sarah
 
 		/* 4 <2.3> Overwrite debug level settings */
 		wlanCfgSetDebugLevel(prAdapter);
 
-#endif
 
 		/* 4 <3> Initialize Tx */
 		nicTxInitialize(prAdapter);
@@ -1715,6 +1713,11 @@ wlanAdapterStart(IN P_ADAPTER_T prAdapter,
 
 		/* Enable Short Slot Time */
 		prAdapter->rWifiVar.fgIsShortSlotTimeOptionEnable = TRUE;
+
+#if CFG_RX_BA_REORDERING_ENHANCEMENT
+		/* Enable drop independent packets with Rx Ba reordering */
+		prAdapter->rWifiVar.fgEnableReportIndependentPkt = TRUE;
+#endif
 
 		/* configure available PHY type set */
 		nicSetAvailablePhyTypeSet(prAdapter);
@@ -4321,7 +4324,6 @@ BOOLEAN wlanProcessTxFrame(IN P_ADAPTER_T prAdapter, IN P_NATIVE_PACKET prPacket
 		/* Save the value of Priority Parameter */
 		GLUE_SET_PKT_TID(prPacket, rTxPacketInfo.ucPriorityParam);
 
-#if 1
 		if (rTxPacketInfo.u2Flag) {
 			if (rTxPacketInfo.u2Flag & BIT(ENUM_PKT_1X)) {
 				P_STA_RECORD_T prStaRec;
@@ -4350,40 +4352,15 @@ BOOLEAN wlanProcessTxFrame(IN P_ADAPTER_T prAdapter, IN P_NATIVE_PACKET prPacket
 			if (rTxPacketInfo.u2Flag & BIT(ENUM_PKT_ARP))
 				GLUE_SET_PKT_FLAG(prPacket, ENUM_PKT_ARP);
 
-			/*lenovo-sw lumy1, mtk temp patch for dns debug*/
-			if (rTxPacketInfo.u2Flag & BIT(ENUM_PKT_DNS))
-				GLUE_SET_PKT_FLAG(prPacket, ENUM_PKT_DNS);
-
 			if (rTxPacketInfo.u2Flag & BIT(ENUM_PKT_ICMP))
 				GLUE_SET_PKT_FLAG(prPacket, ENUM_PKT_ICMP);
+
+			if (rTxPacketInfo.u2Flag & BIT(ENUM_PKT_TDLS))
+				GLUE_SET_PKT_FLAG(prPacket, ENUM_PKT_TDLS);
+
+			if (rTxPacketInfo.u2Flag & BIT(ENUM_PKT_DNS))
+				GLUE_SET_PKT_FLAG(prPacket, ENUM_PKT_DNS);
 		}
-#else
-		if (rTxPacketInfo.fgIs1X) {
-			P_STA_RECORD_T prStaRec;
-
-			DBGLOG(RSN, INFO, "T1X len=%d\n", rTxPacketInfo.u4PacketLen);
-
-			prStaRec = cnmGetStaRecByAddress(prAdapter,
-							 GLUE_GET_PKT_BSS_IDX(prPacket), rTxPacketInfo.aucEthDestAddr);
-
-			GLUE_SET_PKT_FLAG(prPacket, ENUM_PKT_1X);
-
-			if (secIsProtected1xFrame(prAdapter, prStaRec))
-				GLUE_SET_PKT_FLAG(prPacket, ENUM_PKT_PROTECTED_1X);
-		}
-
-		if (rTxPacketInfo.fgIs802_3)
-			GLUE_SET_PKT_FLAG(prPacket, ENUM_PKT_802_3);
-
-		if (rTxPacketInfo.fgIsVlanExists)
-			GLUE_SET_PKT_FLAG(prPacket, ENUM_PKT_VLAN_EXIST);
-
-		if (rTxPacketInfo.fgIsDhcp)
-			GLUE_SET_PKT_FLAG(prPacket, ENUM_PKT_DHCP);
-
-		if (rTxPacketInfo.fgIsArp)
-			GLUE_SET_PKT_FLAG(prPacket, ENUM_PKT_ARP);
-#endif
 
 		ucMacHeaderLen = ETHER_HEADER_LEN;
 
@@ -6507,8 +6484,6 @@ VOID wlanInitFeatureOption(IN P_ADAPTER_T prAdapter)
 	prWifiVar->ucDhcpTxDone = (UINT_8) wlanCfgGetUint32(prAdapter, "DhcpTxDone", 1);
 	prWifiVar->ucArpTxDone = (UINT_8) wlanCfgGetUint32(prAdapter, "ArpTxDone", 1);
 	prWifiVar->ucIcmpTxDone = (UINT_8) wlanCfgGetUint32(prAdapter, "IcmpTxDone", 1);
-	/*lenovo-sw lumy1, mtk temp patch for dns debug*/
-	prWifiVar->ucDnsTxDone = (UINT_8)wlanCfgGetUint32(prAdapter, "DnsTxDone", 1);
 }
 
 VOID wlanCfgSetSwCtrl(IN P_ADAPTER_T prAdapter)
@@ -6605,6 +6580,19 @@ VOID wlanCfgSetChip(IN P_ADAPTER_T prAdapter)
 
 }
 
+VOID wlanGetFwInfo(IN P_ADAPTER_T prAdapter)
+{
+	CMD_GET_FW_INFO_T rCmdGetFwInfo;
+
+	rCmdGetFwInfo.ucValue = 0x1;
+	wlanSendSetQueryCmd(prAdapter,
+			    CMD_ID_GET_FW_INFO,
+			    TRUE,
+			    FALSE,
+			    FALSE, NULL, NULL, sizeof(CMD_GET_FW_INFO_T),
+			    (PUINT_8)&rCmdGetFwInfo, NULL, 0);
+}
+
 VOID wlanCfgSetDebugLevel(IN P_ADAPTER_T prAdapter)
 {
 	UINT_32 i = 0;
@@ -6683,7 +6671,7 @@ VOID wlanCfgSetCountryCode(IN P_ADAPTER_T prAdapter)
 
 		/* Force to re-search country code in country domains */
 		prAdapter->prDomainInfo = NULL;
-		rlmDomainSendCmd(prAdapter, TRUE);
+		rlmDomainSendCmd(prAdapter, FALSE);
 
 		/* Update supported channel list in channel table based on current country domain */
 		wlanUpdateChannelTable(prAdapter->prGlueInfo);
@@ -6747,14 +6735,14 @@ WLAN_STATUS wlanCfgGet(IN P_ADAPTER_T prAdapter, const PCHAR pucKey, PCHAR pucVa
 
 UINT_32 wlanCfgGetUint32(IN P_ADAPTER_T prAdapter, const PCHAR pucKey, UINT_32 u4ValueDef)
 {
-/*	P_WLAN_CFG_ENTRY_T prWlanCfgEntry; */
+	P_WLAN_CFG_ENTRY_T prWlanCfgEntry;
 	P_WLAN_CFG_T prWlanCfg;
-/*	UINT_32 u4Value; */
-/*	INT_32 u4Ret; */
+	UINT_32 u4Value;
+	INT_32 u4Ret;
 
 	prWlanCfg = prAdapter->prWlanCfg;
 
-#if 0/* Sarah */
+
 	ASSERT(prWlanCfg);
 
 	u4Value = u4ValueDef;
@@ -6770,23 +6758,17 @@ UINT_32 wlanCfgGetUint32(IN P_ADAPTER_T prAdapter, const PCHAR pucKey, UINT_32 u
 
 	return u4Value;
 
-#else
-
-	return u4ValueDef;
-
-#endif
 }
 
 INT_32 wlanCfgGetInt32(IN P_ADAPTER_T prAdapter, const PCHAR pucKey, INT_32 i4ValueDef)
 {
-/*	P_WLAN_CFG_ENTRY_T prWlanCfgEntry; */
+	P_WLAN_CFG_ENTRY_T prWlanCfgEntry;
 	P_WLAN_CFG_T prWlanCfg;
-/*	INT_32 i4Value = 0; */
-/*	INT_32 i4Ret = 0; */
+	INT_32 i4Value = 0;
+	INT_32 i4Ret = 0;
 
 	prWlanCfg = prAdapter->prWlanCfg;
 
-#if 0/* Sarah */
 	ASSERT(prWlanCfg);
 
 	i4Value = i4ValueDef;
@@ -6802,11 +6784,6 @@ INT_32 wlanCfgGetInt32(IN P_ADAPTER_T prAdapter, const PCHAR pucKey, INT_32 i4Va
 
 	return i4Value;
 
-#else
-
-	return i4ValueDef;
-
-#endif
 }
 
 WLAN_STATUS wlanCfgSet(IN P_ADAPTER_T prAdapter, const PCHAR pucKey, PCHAR pucValue, UINT_32 u4Flags)
@@ -7783,16 +7760,23 @@ wlanIcmpTxDone(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMsduInfo, IN ENUM_TX
 	return WLAN_STATUS_SUCCESS;
 }
 
-/*lenovo-sw lumy1, mtk temp patch for dns debug*/
 WLAN_STATUS
-wlanDnsTxDone(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMsduInfo, 
-    IN ENUM_TX_RESULT_CODE_T rTxDoneStatus)
+wlanTdlsTxDone(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMsduInfo, IN ENUM_TX_RESULT_CODE_T rTxDoneStatus)
 {
-    DBGLOG(SW4, INFO, "DNS PKT TX DONE WIDX:PID[%u:%u] Status[%u]\n", 
-        prMsduInfo->ucWlanIndex, prMsduInfo->ucPID, 
-        rTxDoneStatus);
+	DBGLOG(TX, INFO, "TDLS PKT TX DONE WIDX:PID[%u:%u] Status[%u], SeqNo: %d\n",
+			prMsduInfo->ucWlanIndex, prMsduInfo->ucPID, rTxDoneStatus, prMsduInfo->ucTxSeqNum);
 
-    return WLAN_STATUS_SUCCESS;
+	return WLAN_STATUS_SUCCESS;
+}
+
+WLAN_STATUS
+wlanDnsTxDone(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMsduInfo,
+		IN ENUM_TX_RESULT_CODE_T rTxDoneStatus)
+{
+	DBGLOG(SW4, INFO, "DNS PKT TX DONE WIDX:PID[%u:%u] Status[%u], SeqNo: %d\n",
+			prMsduInfo->ucWlanIndex, prMsduInfo->ucPID, rTxDoneStatus, prMsduInfo->ucTxSeqNum);
+
+	return WLAN_STATUS_SUCCESS;
 }
 
 VOID wlanReleasePendingCmdById(P_ADAPTER_T prAdapter, UINT_8 ucCid)

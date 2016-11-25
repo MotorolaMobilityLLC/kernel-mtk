@@ -269,16 +269,6 @@ static BOOLEAN roamingFsmIsNeedScan(IN P_ADAPTER_T prAdapter)
 	if (!fgIsRoamingSSID) {
 		prBssDesc = scanSearchBssDescByBssid(prAdapter, prAisBssInfo->aucBSSID);
 		if (prBssDesc) {
-
-			rCmdSwCtrl.u4Id = 0xa0280000;
-			rCmdSwCtrl.u4Data = 0x1;
-			wlanSendSetQueryCmd(prAdapter,
-					    CMD_ID_SW_DBG_CTRL,
-					    TRUE,
-					    FALSE,
-					    FALSE, NULL, NULL, sizeof(CMD_SW_DBG_CTRL_T),
-					    (PUINT_8)&rCmdSwCtrl, NULL, 0);
-
 			DBGLOG(INIT, INFO, "roamingFsmSteps: RCPI:%d RoamSkipTimes:%d\n",
 								prBssDesc->ucRCPI, prAisBssInfo->ucRoamSkipTimes);
 			if (prBssDesc->ucRCPI > 90) {
@@ -297,11 +287,9 @@ static BOOLEAN roamingFsmIsNeedScan(IN P_ADAPTER_T prAdapter)
 						prAisBssInfo->ucRoamSkipTimes--;
 					}
 				} else {
-					if (prAisBssInfo->fgPoorRcpiArea) {
-						prAisBssInfo->fgPoorRcpiArea = FALSE;
-						prAisBssInfo->fgGoodRcpiArea = FALSE;
-						prAisBssInfo->ucRoamSkipTimes--;
-					}
+					prAisBssInfo->fgPoorRcpiArea = FALSE;
+					prAisBssInfo->fgGoodRcpiArea = FALSE;
+					prAisBssInfo->ucRoamSkipTimes--;
 				}
 			}
 
@@ -311,6 +299,15 @@ static BOOLEAN roamingFsmIsNeedScan(IN P_ADAPTER_T prAdapter)
 				prAisBssInfo->fgGoodRcpiArea = FALSE;
 				DBGLOG(INIT, INFO, "roamingFsmSteps: Need Scan\n");
 				fgIsNeedScan = TRUE;
+			} else {
+				rCmdSwCtrl.u4Id = 0xa0280000;
+				rCmdSwCtrl.u4Data = 0x1;
+				wlanSendSetQueryCmd(prAdapter,
+					    CMD_ID_SW_DBG_CTRL,
+					    TRUE,
+					    FALSE,
+					    FALSE, NULL, NULL, sizeof(CMD_SW_DBG_CTRL_T),
+					    (PUINT_8)&rCmdSwCtrl, NULL, 0);
 			}
 		}
 	}

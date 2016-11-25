@@ -1771,6 +1771,7 @@ P_BSS_DESC_T scanAddToBssDesc(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfb)
 	PARAM_SSID_T rSsid;
 	UINT_64 u8Timestamp;
 	BOOLEAN fgIsNewBssDesc = FALSE;
+	BOOLEAN fg40mBW = FALSE;
 
 	UINT_32 i;
 	UINT_8 ucSSIDChar;
@@ -2099,6 +2100,11 @@ P_BSS_DESC_T scanAddToBssDesc(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfb)
 			}
 			prBssDesc->fgMultiAnttenaAndSTBC =
 				((ucSpatial > 1) && (prHtCap->u2HtCapInfo & HT_CAP_INFO_TX_STBC));
+			/* Get BW for 40MHZ or 20MHZ to decide the SCO and Central Channel */
+			if (prHtCap->u2HtCapInfo & HT_CAP_INFO_SUP_CHNL_WIDTH)
+				fg40mBW = TRUE;
+			else
+				fg40mBW = FALSE;
 			break;
 		}
 		case ELEM_ID_HT_OP:
@@ -2263,11 +2269,14 @@ P_BSS_DESC_T scanAddToBssDesc(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfb)
 			}
 		}
 	}
-
+	if (rlmReviseSco(prAdapter, &(prBssDesc->eSco), prBssDesc->eChannelWidth, fg40mBW))
+		DBGLOG(SCN, WARN, "Revise SCO for SSID:%s, BSSID:%pM\n", prBssDesc->aucSSID, prBssDesc->aucBSSID);
+	DBGLOG(SCN, TRACE, "eSco=%d, eChannelWidth=%d, fg40mBW=%d\n", prBssDesc->eSco,
+		prBssDesc->eChannelWidth, fg40mBW);
 	/* 4 <5> Check IE information corret or not */
 	if (!rlmDomainIsValidRfSetting(prAdapter, prBssDesc->eBand, prBssDesc->ucChannelNum, prBssDesc->eSco,
-				       prBssDesc->eChannelWidth, prBssDesc->ucCenterFreqS1,
-				       prBssDesc->ucCenterFreqS2)) {
+				       prBssDesc->eChannelWidth,
+				       prBssDesc->ucCenterFreqS1, prBssDesc->ucCenterFreqS2)) {
 		/*Dump IE Inforamtion */
 		PUINT_8 pucDumpIE;
 

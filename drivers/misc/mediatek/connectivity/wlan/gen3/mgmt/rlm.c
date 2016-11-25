@@ -1265,7 +1265,30 @@ VOID rlmFillVhtOpIE(P_ADAPTER_T prAdapter, P_BSS_INFO_T prBssInfo, P_MSDU_INFO_T
 }
 
 #endif
+BOOLEAN rlmReviseSco(P_ADAPTER_T prAdapter, P_ENUM_CHNL_EXT_T peExtend, UINT_8 eChannelWidth,
+						UINT_8 fg40mBW)
+{
+	BOOLEAN fgRet = FALSE;
 
+	if (!prAdapter || !peExtend) {
+		DBGLOG(RLM, WARN, "Param is invaild\n");
+		return FALSE;
+	}
+	/* Check whether is match between BandWidth and eSco */
+	if (eChannelWidth == CW_20_40MHZ) {
+		if (fg40mBW == FALSE
+			&& (*peExtend == CHNL_EXT_SCA || *peExtend == CHNL_EXT_SCB)) {
+			*peExtend = CHNL_EXT_SCN;
+			fgRet = TRUE;
+		} else if (fg40mBW == TRUE
+			&& (*peExtend != CHNL_EXT_SCA && *peExtend != CHNL_EXT_SCB)) {
+			/*Error Handling for Non-predicted IE - Fixed to set 20MHz */
+			*peExtend = CHNL_EXT_SCN,
+			fgRet = TRUE;
+		}
+	}
+	return fgRet;
+}
 static VOID rlmReviseMaxBw(P_ADAPTER_T prAdapter, UINT_8 ucBssIndex, P_ENUM_CHNL_EXT_T peExtend,
 			PUINT_8 peChannelWidth, PUINT_8 pucS1, UINT_8 ucPrimaryCh)
 {
@@ -1375,6 +1398,7 @@ static UINT_8 rlmRecIeInfoForClient(P_ADAPTER_T prAdapter, P_BSS_INFO_T prBssInf
 	P_IE_SECONDARY_OFFSET_T prSecondaryOffsetIE;
 	P_IE_WIDE_BAND_CHANNEL_T prWideBandChannelIE;
 #endif
+	BOOLEAN fg40mBW = FALSE; /* Whether AP supports 40M BW */
 	ASSERT(prAdapter);
 	ASSERT(prBssInfo);
 	ASSERT(pucIE);
@@ -1436,7 +1460,11 @@ static UINT_8 rlmRecIeInfoForClient(P_ADAPTER_T prAdapter, P_BSS_INFO_T prBssInf
 				prStaRec->u2HtCapInfo |= HT_CAP_INFO_HT_GF;
 			else if (IS_FEATURE_DISABLED(prWifiVar->ucTxGf))
 				prStaRec->u2HtCapInfo &= ~HT_CAP_INFO_HT_GF;
-
+			/* Get BW for 40MHZ or 20MHZ to decide the SCO and Central Channel */
+			if (prHtCap->u2HtCapInfo & HT_CAP_INFO_SUP_CHNL_WIDTH)
+				fg40mBW = TRUE;
+			else
+				fg40mBW = FALSE;
 			prStaRec->ucAmpduParam = prHtCap->ucAmpduParam;
 			prStaRec->u2HtExtendedCap = prHtCap->u2HtExtendedCap;
 			prStaRec->u4TxBeamformingCap = prHtCap->u4TxBeamformingCap;
@@ -1741,7 +1769,12 @@ static UINT_8 rlmRecIeInfoForClient(P_ADAPTER_T prAdapter, P_BSS_INFO_T prBssInf
 		DBGLOG(RLM, INFO, "Ch : DFS has Appeared\n");
 	}
 #endif
-
+	/* Check SCO when connection with 40M BW */
+	if (prBssInfo->fg40mBwAllowed)
+		if (rlmReviseSco(prAdapter, &(prBssInfo->eBssSCO), prBssInfo->ucVhtChannelWidth,
+			fg40mBW))
+			DBGLOG(RLM, WARN, "Revise SCO for SSID:%s, BSSID:%pM\n", prBssInfo->aucSSID,
+				prBssInfo->aucBSSID);
 	rlmReviseMaxBw(prAdapter, prBssInfo->ucBssIndex, &prBssInfo->eBssSCO, &prBssInfo->ucVhtChannelWidth,
 		&prBssInfo->ucVhtChannelFrequencyS1, prBssInfo->ucPrimaryChannel);
 

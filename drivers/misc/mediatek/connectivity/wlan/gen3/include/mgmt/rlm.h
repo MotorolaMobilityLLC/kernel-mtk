@@ -416,6 +416,8 @@ rlmSendOpModeNotificationFrame(P_ADAPTER_T prAdapter, P_STA_RECORD_T prStaRec, U
 #endif
 VOID rlmProcessNeighborReportResonse(P_ADAPTER_T prAdapter, P_WLAN_ACTION_FRAME prAction, UINT_16 u2PacketLen);
 VOID rlmTxNeighborReportRequest(P_ADAPTER_T prAdapter, P_STA_RECORD_T prStaRec, struct SUB_ELEMENT_LIST *prSubIEs);
+BOOLEAN rlmReviseSco(P_ADAPTER_T prAdapter, P_ENUM_CHNL_EXT_T peExtend, UINT_8 eChannelWidth,
+						UINT_8 fg40mBW);
 
 /*******************************************************************************
 *                              F U N C T I O N S

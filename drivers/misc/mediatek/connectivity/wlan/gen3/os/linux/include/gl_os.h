@@ -728,8 +728,8 @@ typedef enum _ENUM_PKT_FLAG_T {
 	ENUM_PKT_DHCP,		/* DHCP frame */
 	ENUM_PKT_ARP,		/* ARP */
 	ENUM_PKT_ICMP,		/* ICMP */
-	ENUM_PKT_DNS,       /* DNS *//*lenovo-sw lumy1, mtk temp patch for dns debug*/
-
+	ENUM_PKT_TDLS,		/* TDLS */
+	ENUM_PKT_DNS,           /* DNS */
 	ENUM_PKT_FLAG_NUM
 } ENUM_PKT_FLAG_T;
 
@@ -1109,6 +1109,7 @@ typedef struct _PACKET_PRIVATE_DATA {
 	UINT_16 u2IpId;
 	/* package seq no for debug */
 	UINT_8 ucSeqNo;
+	BOOLEAN fgIsIndependentPkt;
 } PACKET_PRIVATE_DATA, *P_PACKET_PRIVATE_DATA;
 
 /*******************************************************************************
@@ -1242,6 +1243,13 @@ typedef struct _PACKET_PRIVATE_DATA {
 
 #define GLUE_SET_EVENT(pr) \
 	kalSetEvent(pr)
+
+#define GLUE_GET_INDEPENDENT_PKT(_p)    \
+	(GLUE_GET_PKT_PRIVATE_DATA(_p)->fgIsIndependentPkt)
+
+#define GLUE_SET_INDEPENDENT_PKT(_p, _fgIsIndePkt) \
+	(GLUE_GET_PKT_PRIVATE_DATA(_p)->fgIsIndependentPkt = _fgIsIndePkt)
+
 
 #define GLUE_INC_REF_CNT(_refCount)     atomic_inc((atomic_t *)&(_refCount))
 #define GLUE_DEC_REF_CNT(_refCount)     atomic_dec((atomic_t *)&(_refCount))

@@ -1035,7 +1035,7 @@ UINT_32 rlmDomainSupOperatingClassIeFill(PUINT_8 pBuf)
 BOOLEAN rlmDomainCheckChannelEntryValid(P_ADAPTER_T prAdapter, UINT_8 ucCentralCh)
 {
 	BOOLEAN fgValid = FALSE;
-	UINT_8 ucTemp = 0;
+	UINT_8 ucTemp = -1;
 	UINT_8 i;
 	/*Check Power limit table channel efficient or not */
 
@@ -1086,7 +1086,6 @@ UINT_8 rlmDomainGetCenterChannel(ENUM_BAND_T eBand, UINT_8 ucPriChannel, ENUM_CH
 		ucCenterChannel = ucPriChannel - 2;
 	else
 		ucCenterChannel = ucPriChannel;
-
 	return ucCenterChannel;
 }
 

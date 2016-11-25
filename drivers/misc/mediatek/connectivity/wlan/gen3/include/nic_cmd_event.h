@@ -144,6 +144,7 @@ typedef enum _ENUM_CMD_ID_T {
 
 	CMD_ID_GET_LTE_CHN = 0x87,	/* 0x87 (Query) */
 	CMD_ID_GET_CHN_LOADING = 0x88,	/* 0x88 (Query) */
+	CMD_ID_GET_FW_INFO = 0x90, /* 0x90 (Query) */
 
 	CMD_ID_ACCESS_REG = 0xc0,	/* 0xc0 (Set / Query) */
 	CMD_ID_MAC_MCAST_ADDR,	/* 0xc1 (Set / Query) */
@@ -226,9 +227,15 @@ typedef enum _ENUM_EVENT_ID_T {
 	EVENT_ID_SLT_STATUS,	/* 0x43 (Query - CMD_ID_SET_SLTINFO) */
 	EVENT_ID_CHIP_CONFIG,	/* 0x44 (Query - CMD_ID_CHIP_CONFIG) */
 
+#if CFG_RX_BA_REORDERING_ENHANCEMENT
+	EVENT_ID_BA_FW_DROP_SN = 0x51,
+#endif
+
 	EVENT_ID_RSP_CHNL_UTILIZATION = 0x59, /* 0x59 (Query - CMD_ID_REQ_CHNL_UTILIZATION) */
 
 	EVENT_ID_TDLS = 0x80,	/* TDLS event_id */
+
+	EVENT_ID_UPDATE_FW_INFO = 0x90, /* 0x90 (Unsolicited) */
 
 	EVENT_ID_BUILD_DATE_CODE = 0xF8,
 	EVENT_ID_GET_AIS_BSS_INFO = 0xF9,
@@ -561,6 +568,10 @@ typedef struct _CMD_SW_DBG_CTRL_T {
 	/* Debug Support */
 	UINT_32 u4DebugCnt[64];
 } CMD_SW_DBG_CTRL_T, *P_CMD_SW_DBG_CTRL_T;
+
+typedef struct _CMD_GET_FW_INFO_T {
+	UINT_8 ucValue;
+} CMD_GET_FW_INFO_T, *P_CMD_GET_FW_INFO_T;
 
 typedef struct _CMD_CHIP_CONFIG_T {
 	UINT_16 u2Id;
@@ -1673,6 +1684,14 @@ typedef struct _CMD_SUSPEND_MODE_SETTING_T {
 	UINT_8		ucReserved[2];
 } CMD_SUSPEND_MODE_SETTING_T, *P_CMD_SUSPEND_MODE_SETTING_T;
 
+typedef struct _EVENT_UPDATE_FW_INFO_T {
+	UINT_8 ucVersion;
+	UINT_8 aucReserved1[3];    /* 4 byte alignment */
+	UINT_32 u4Flags;
+	UINT_32 au4PhyRateLimit[HW_BSSID_NUM+1];
+	UINT_32 au4Reserved2[36];
+} EVENT_UPDATE_FW_INFO_T, *P_EVENT_UPDATE_FW_INFO_T;
+
 struct CMD_REQ_CHNL_UTILIZATION {
 	UINT_16 u2MeasureDuration;
 	UINT_8 ucChannelNum;
@@ -1788,6 +1807,8 @@ VOID nicCmdEventQueryLTESafeChn(IN P_ADAPTER_T prAdapter, IN P_CMD_INFO_T prCmdI
 #if CFG_SUPPORT_BATCH_SCAN
 VOID nicCmdEventBatchScanResult(IN P_ADAPTER_T prAdapter, IN P_CMD_INFO_T prCmdInfo, IN PUINT_8 pucEventBuf);
 #endif
+
+VOID nicEventUpdateFwInfo(IN P_ADAPTER_T prAdapter, IN P_WIFI_EVENT_T prEvent);
 
 /*******************************************************************************
 *                              F U N C T I O N S

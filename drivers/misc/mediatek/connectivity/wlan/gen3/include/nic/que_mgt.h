@@ -411,6 +411,11 @@ extern UINT_8 g_arTdlsLink[MAXNUM_TDLS_PEER];
 
 #define QM_RX_BA_ENTRY_MISS_TIMEOUT_MS      (200)
 
+#if CFG_RX_BA_REORDERING_ENHANCEMENT
+#define QM_RX_MAX_FW_DROP_SSN_SIZE	8
+#define QM_SSN_MASK	0xFFF0
+#endif
+
 #if CFG_M0VE_BA_TO_DRIVER
 /* MQM internal control bitmap per-bit usage (for operations on g_prMqm->u4FlagBitmap) */
 #define MQM_FLAG_TSPEC_NEGO_ADD_IN_PROGRESS 0
@@ -499,6 +504,9 @@ typedef enum _ENUM_MAC_TX_QUEUE_INDEX_T {
 typedef struct _RX_BA_ENTRY_T {
 	BOOLEAN fgIsValid;
 	QUE_T rReOrderQue;
+#if CFG_RX_BA_REORDERING_ENHANCEMENT
+	QUE_T rNoNeedWaitQue;
+#endif
 	UINT_16 u2WinStart;
 	UINT_16 u2WinEnd;
 	UINT_16 u2WinSize;
@@ -861,6 +869,35 @@ typedef enum _ENUM_BA_ENTRY_STATUS_T {
 } ENUM_BA_ENTRY_STATUS_T, *P_ENUM_BA_ENTRY_STATUS_T;
 #endif
 
+#if CFG_RX_BA_REORDERING_ENHANCEMENT
+typedef enum _ENUM_NO_NEED_WATIT_DROP_REASON_T {
+	PACKET_DROP_BY_FW = 0,
+	PACKET_DROP_BY_DRIVER,
+	PACKET_DROP_BY_INDEPENDENT_PKT
+} ENUM_NO_NEED_WATIT_DROP_REASON_T, *P_ENUM_NO_NEED_WATIT_DROP_REASON_T;
+
+typedef struct _NO_NEED_WAIT_PKT_T {
+	QUE_ENTRY_T rQueEntry;
+	UINT_16 u2SSN;
+	ENUM_NO_NEED_WATIT_DROP_REASON_T eDropReason;
+} NO_NEED_WAIT_PKT_T, *P_NO_NEED_WAIT_PKT_T;
+
+typedef struct _EVENT_PACKET_DROP_BY_FW_T {
+	/* Event header */
+	UINT_16 u2Length;
+	UINT_16 u2Reserved1;	/* Must be filled with 0x0001 (EVENT Packet) */
+	UINT_8 ucEID;
+	UINT_8 ucSeqNum;
+	UINT_8 aucReserved2[2];
+
+	/* Event Body */
+	UINT_8 ucStaRecIdx;
+	UINT_8 ucTid;
+	UINT_16 u2StartSSN;
+	UINT_8 au1BitmapSSN[QM_RX_MAX_FW_DROP_SSN_SIZE];
+} EVENT_PACKET_DROP_BY_FW_T, *P_EVENT_PACKET_DROP_BY_FW_T;
+#endif
+
 /*******************************************************************************
  *                            P U B L I C   D A T A
  ********************************************************************************
@@ -977,6 +1014,14 @@ typedef enum _ENUM_BA_ENTRY_STATUS_T {
 #define QM_DBG_CNT_INC(_prQM, _index) {}
 #endif
 
+#if CFG_RX_BA_REORDERING_ENHANCEMENT
+#define QM_GET_PREVIOUS_SSN(_u2CurrSSN) \
+	((UINT_16) (_u2CurrSSN == 0 ? (MAX_SEQ_NO_COUNT - 1) : (_u2CurrSSN - 1)))
+#define QM_GET_DROP_BY_FW_SSN(_u2SSN) \
+	((UINT_16) (_u2SSN >>= 4))
+#endif
+
+
 /*******************************************************************************
  *                   F U N C T I O N   D E C L A R A T I O N S
  ********************************************************************************
@@ -1088,6 +1133,16 @@ qmAddRxBaEntry(IN P_ADAPTER_T prAdapter, IN UINT_8 ucStaRecIdx, IN UINT_8 ucTid,
 	       u2WinSize);
 
 VOID qmDelRxBaEntry(IN P_ADAPTER_T prAdapter, IN UINT_8 ucStaRecIdx, IN UINT_8 ucTid, IN BOOLEAN fgFlushToHost);
+
+#if CFG_RX_BA_REORDERING_ENHANCEMENT
+VOID qmInsertNoNeedWaitPkt(IN P_SW_RFB_T prSwRfb, IN ENUM_NO_NEED_WATIT_DROP_REASON_T eDropReason);
+VOID qmHandleEventDropByFW(IN P_ADAPTER_T prAdapter, IN P_WIFI_EVENT_T prEvent);
+VOID qmHandleNoNeedWaitPktList(IN P_RX_BA_ENTRY_T prReorderQueParm);
+P_NO_NEED_WAIT_PKT_T qmSearchNoNeedWaitPktBySSN(IN P_RX_BA_ENTRY_T prReorderQueParm, IN UINT_32 u2SSN);
+BOOLEAN qmIsIndependentPkt(IN P_SW_RFB_T prSwRfb);
+VOID qmRemoveAllNoNeedWaitPkt(IN P_RX_BA_ENTRY_T prReorderQueParm);
+VOID qmDumpNoNeedWaitPkt(IN P_RX_BA_ENTRY_T prReorderQueParm);
+#endif
 
 VOID mqmProcessAssocRsp(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfb, IN PUINT_8 pucIE, IN UINT_16 u2IELength);
 

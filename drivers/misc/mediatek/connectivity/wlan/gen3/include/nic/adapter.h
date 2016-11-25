@@ -1109,6 +1109,7 @@ struct _BSS_INFO_T {
 	UINT_8 ucRoamSkipTimes;
 	BOOLEAN fgGoodRcpiArea;
 	BOOLEAN fgPoorRcpiArea;
+	UINT_32 u4CoexPhyRateLimit;
 };
 
 struct ESS_CHNL_INFO {
@@ -1407,7 +1408,10 @@ typedef struct _WIFI_VAR_T {
 	UINT_8 ucDhcpTxDone;
 	UINT_8 ucArpTxDone;
 	UINT_8 ucIcmpTxDone;
-	UINT_8 ucDnsTxDone;/*lenovo-sw lumy1, mtk temp patch for dns debug*/
+
+#if CFG_RX_BA_REORDERING_ENHANCEMENT
+	BOOLEAN fgEnableReportIndependentPkt;
+#endif
 } WIFI_VAR_T, *P_WIFI_VAR_T;	/* end of _WIFI_VAR_T */
 
 /* cnm_timer module */

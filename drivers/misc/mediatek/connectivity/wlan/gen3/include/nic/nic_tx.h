@@ -1677,6 +1677,8 @@ nicTxSetPktFixedRateOption(IN P_MSDU_INFO_T prMsduInfo,
 			   IN UINT_16 u2RateCode,
 			   IN UINT_8 ucBandwidth, IN BOOLEAN fgShortGI, IN BOOLEAN fgDynamicBwRts);
 
+VOID nicTxSetPktLowestFixedRate(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMsduInfo);
+
 VOID nicTxSetPktMoreData(IN P_MSDU_INFO_T prCurrentMsduInfo, IN BOOLEAN fgSetMoreDataBit);
 
 VOID nicTxSetPktEOSP(IN P_MSDU_INFO_T prCurrentMsduInfo, IN BOOLEAN fgSetEOSPBit);

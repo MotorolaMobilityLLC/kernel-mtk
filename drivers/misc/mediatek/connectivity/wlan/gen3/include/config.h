@@ -342,6 +342,8 @@
 
 #define CFG_PF_ARP_NS_MAX_NUM                   3
 
+#define CFG_RX_BA_REORDERING_ENHANCEMENT		1
+
 /*------------------------------------------------------------------------------
  * Flags and Parameters for CMD/RESPONSE
  *------------------------------------------------------------------------------

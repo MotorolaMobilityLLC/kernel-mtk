@@ -1683,7 +1683,6 @@ WLAN_STATUS kalRxIndicateOnePkt(IN P_GLUE_INFO_T prGlueInfo, IN PVOID pvPkt)
 
 	}
 #endif
-	STATS_RX_PKT_INFO_DISPLAY(prSkb->data);
 	prNetDev->last_rx = jiffies;
 #if CFG_SUPPORT_SNIFFER
 	if (prGlueInfo->fgIsEnableMon) {
@@ -2425,31 +2424,34 @@ kalIPv4FrameClassifier(IN P_GLUE_INFO_T prGlueInfo,
 
 				prTxPktInfo->u2Flag |= BIT(ENUM_PKT_DHCP);
 			}
-		} else if (u2DstPort == 0x35) { /* tx dns *//*lenovo-sw lumy1, mtk temp patch for dns debug*/
-				UINT_16 u2IpId = *(UINT_16 *) &pucIpHdr[IPV4_ADDR_LEN];
-				PUINT_8 pucUdpPayload = &pucUdpHdr[UDP_HDR_LEN];
-				UINT_16 u2TransId = (pucUdpPayload[0] << 8) | pucUdpPayload[1];
 
-				DBGLOG(SW4, INFO, "DNS PKT[0x%p] IPID[0x%02x] TransID[0x%04x]\n", prPacket, u2IpId, u2TransId);
-				prTxPktInfo->u2Flag |= BIT(ENUM_PKT_DNS);
-		}
-	} else if (ucIpProto == IP_PRO_ICMP) {
-			/* the number of ICMP packets is seldom so we print log here */
-			pucIcmp = &pucIpHdr[20];
-
-			ucIcmpType = pucIcmp[0];
-			if (ucIcmpType == 3) /* don't log network unreachable packet */
-				return FALSE;
-			u2IcmpId = *(UINT_16 *) &pucIcmp[4];
-			u2IcmpSeq = *(UINT_16 *) &pucIcmp[6];
+		} else if (u2DstPort == UDP_PORT_DNS) {
+			UINT_16 u2IpId = *(UINT_16 *) &pucIpHdr[IPV4_ADDR_LEN];
+			PUINT_8 pucUdpPayload = &pucUdpHdr[UDP_HDR_LEN];
+			UINT_16 u2TransId = (pucUdpPayload[0] << 8) | pucUdpPayload[1];
 
 			ucSeqNo = nicIncreaseTxSeqNum(prGlueInfo->prAdapter);
 			GLUE_SET_PKT_SEQ_NO(prPacket, ucSeqNo);
-			DBGLOG(SW4, INFO, "<TX> ICMP: Type %d, Id 0x04%x, Seq BE 0x%04x, SeqNo: %d\n",
-					ucIcmpType, u2IcmpId, u2IcmpSeq, ucSeqNo);
-			prTxPktInfo->u2Flag |= BIT(ENUM_PKT_ICMP);
+			DBGLOG(TX, INFO, "<TX> DNS: [0x%p] IPID[0x%02x] TransID[0x%04x] SeqNo[%d]\n",
+					prPacket, u2IpId, u2TransId, ucSeqNo);
+			prTxPktInfo->u2Flag |= BIT(ENUM_PKT_DNS);
 		}
+	} else if (ucIpProto == IP_PRO_ICMP) {
+		/* the number of ICMP packets is seldom so we print log here */
+		pucIcmp = &pucIpHdr[20];
 
+		ucIcmpType = pucIcmp[0];
+		if (ucIcmpType == 3) /* don't log network unreachable packet */
+			return FALSE;
+		u2IcmpId = *(UINT_16 *) &pucIcmp[4];
+		u2IcmpSeq = *(UINT_16 *) &pucIcmp[6];
+
+		ucSeqNo = nicIncreaseTxSeqNum(prGlueInfo->prAdapter);
+		GLUE_SET_PKT_SEQ_NO(prPacket, ucSeqNo);
+		DBGLOG(SW4, INFO, "<TX> ICMP: Type %d, Id 0x04%x, Seq BE 0x%04x, SeqNo: %d\n",
+				ucIcmpType, u2IcmpId, u2IcmpSeq, ucSeqNo);
+		prTxPktInfo->u2Flag |= BIT(ENUM_PKT_ICMP);
+	}
 	return TRUE;
 }
 
@@ -2474,6 +2476,25 @@ kalArpFrameClassifier(IN P_GLUE_INFO_T prGlueInfo,
 	return TRUE;
 }
 
+BOOLEAN
+kalTdlsFrameClassifier(IN P_GLUE_INFO_T prGlueInfo,
+		       IN P_NATIVE_PACKET prPacket, IN PUINT_8 pucIpHdr, OUT P_TX_PACKET_INFO prTxPktInfo)
+{
+	UINT_8 ucSeqNo;
+	UINT_8 ucActionCode;
+
+	ucActionCode = pucIpHdr[TDLS_ACTION_CODE_OFFSET];
+
+	DBGLOG(TX, INFO, "TDLS action code: %d\n", ucActionCode);
+
+	ucSeqNo = nicIncreaseTxSeqNum(prGlueInfo->prAdapter);
+
+	GLUE_SET_PKT_SEQ_NO(prPacket, ucSeqNo);
+
+	prTxPktInfo->u2Flag |= BIT(ENUM_PKT_TDLS);
+
+	return TRUE;
+}
 
 BOOLEAN
 kalSecurityFrameClassifier(IN P_GLUE_INFO_T prGlueInfo,
@@ -2612,6 +2633,9 @@ kalQoSFrameClassifierAndPacketInfo(IN P_GLUE_INFO_T prGlueInfo,
 			u2EtherType, prTxPktInfo);
 		break;
 
+	case ETH_PRO_TDLS:
+		kalTdlsFrameClassifier(prGlueInfo, prPacket, pucNextProtocol, prTxPktInfo);
+		break;
 	default:
 		/* 4 <4> Handle 802.3 format if LEN <= 1500 */
 		if (u2EtherType <= ETH_802_3_MAX_LEN)
