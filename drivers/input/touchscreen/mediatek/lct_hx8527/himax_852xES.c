@@ -6511,14 +6511,7 @@ static void himax852xes_suspend(struct device *dev)
 	ts->pre_finger_mask = 0;
 	if (ts->pdata->powerOff3V3 && ts->pdata->power)
 		ts->pdata->power(0);
-	if (mutual_bank != NULL)
-	{
-		kfree(mutual_bank);
-	}
-	if (self_bank != NULL)
-	{
-		kfree(self_bank);
-	}	
+		
 	return ;
 }
 static void himax852xes_resume(struct device *dev)
