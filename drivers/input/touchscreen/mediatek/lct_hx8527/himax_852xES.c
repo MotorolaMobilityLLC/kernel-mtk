@@ -4936,7 +4936,7 @@ test_retry:
 			}
 		pf_value = 0x1;
 	}
-	
+	himax_gpio_power_config(NULL);
 	return pf_value;
 }
 
