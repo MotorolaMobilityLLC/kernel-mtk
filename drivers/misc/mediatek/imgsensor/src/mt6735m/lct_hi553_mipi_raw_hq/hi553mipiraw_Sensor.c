@@ -61,7 +61,7 @@
 #define LOG_1 LOG_INF("hi553,MIPI 2LANE\n")
 #define SENSORDB LOG_INF
 /****************************   Modify end    *******************************************/
-
+int hi553_otp_read_flag = 0;
 static DEFINE_SPINLOCK(imgsensor_drv_lock);
 
 static imgsensor_info_struct imgsensor_info = { 
@@ -166,9 +166,9 @@ static imgsensor_info_struct imgsensor_info = {
 		/*	 following for GetDefaultFramerateByScenario()	*/
 		.max_framerate = 300,	
 	},
-
-	.margin = 4,			//sensor framelength & shutter margin
-	.min_shutter = 4,		//min shutter
+	
+	.margin = 6,			//sensor framelength & shutter margin
+	.min_shutter = 6,		//min shutter
 	.max_frame_length = 0x7FFF,//REG0x0202 <=REG0x0340-5//max framelength by sensor register's limitation
 	.ae_shut_delay_frame = 0,	//shutter delay frame for AE cycle, 2 frame with ispGain_delay-shut_delay=2-0=2
 	.ae_sensor_gain_delay_frame = 0,//sensor gain delay frame for AE cycle,2 frame with ispGain_delay-sensor_gain_delay=2-0=2
@@ -182,7 +182,7 @@ static imgsensor_info_struct imgsensor_info = {
 	.video_delay_frame = 3,		//enter video delay frame num
 	.hs_video_delay_frame = 3,	//enter high speed video  delay frame num
 	.slim_video_delay_frame = 3,//enter slim video delay frame num	
-	.isp_driving_current = ISP_DRIVING_8MA, //mclk driving current
+	.isp_driving_current = ISP_DRIVING_4MA, //mclk driving current
 	.sensor_interface_type = SENSOR_INTERFACE_TYPE_MIPI,//sensor_interface_type
 	.mipi_sensor_type = MIPI_OPHY_NCSI2, //0,MIPI_OPHY_NCSI2;  1,MIPI_OPHY_CSI2
 	.mipi_settle_delay_mode = 1,//0,MIPI_SETTLEDELAY_AUTO; 1,MIPI_SETTLEDELAY_MANNUAL
@@ -231,6 +231,15 @@ static kal_uint16 read_cmos_sensor(kal_uint32 addr)
 	iReadRegI2C(pu_send_cmd, 2, (u8*)&get_byte, 2, imgsensor.i2c_write_id);
 	return ((get_byte<<8)&0xFF00)|((get_byte>>8)&0x00FF);
 }
+static kal_uint16 read_cmos_sensor_byte(kal_uint16 addr)
+{
+    kal_uint16 get_byte=0;
+    char pu_send_cmd[2] = {(char)(addr >> 8) , (char)(addr & 0xFF) };
+
+    kdSetI2CSpeed(imgsensor_info.i2c_speed); // Add this func to set i2c speed by each sensor
+    iReadRegI2C(pu_send_cmd , 2, (u8*)&get_byte,1,imgsensor.i2c_write_id);
+    return get_byte;
+}
 
 static void write_cmos_sensor(kal_uint16 addr, kal_uint16 para)
 {
@@ -239,7 +248,23 @@ static void write_cmos_sensor(kal_uint16 addr, kal_uint16 para)
 	kdSetI2CSpeed(imgsensor_info.i2c_speed); // Add this func to set i2c speed by each sensor
 	iWriteRegI2C(pusendcmd , 4, imgsensor.i2c_write_id);
 }
+static void write_cmos_sensor_byte(kal_uint32 addr, kal_uint32 para)
+{
+    char pu_send_cmd[3] = {(char)(addr >> 8), (char)(addr & 0xFF), (char)(para & 0xFF)};
 
+    kdSetI2CSpeed(imgsensor_info.i2c_speed); // Add this func to set i2c speed by each sensor
+    iWriteRegI2C(pu_send_cmd, 3, imgsensor.i2c_write_id);
+}
+static kal_uint16 OTP_read_cmos_sensor(kal_uint16 otp_addr)
+{
+    kal_uint16 data;	
+    write_cmos_sensor_byte(0x010a, (otp_addr & 0xff00)>> 8); //start address H        
+    write_cmos_sensor_byte(0x010b, otp_addr& 0x00ff); //start address L
+    write_cmos_sensor_byte(0x0102, 0x01); //single read
+ //   	mDELAY(10);
+    data = read_cmos_sensor_byte(0x0108); //OTP data read  
+	return data;
+}
 static void set_dummy(void)
 {
 	LOG_INF("dummyline = %d, dummypixels = %d \n", imgsensor.dummy_line, imgsensor.dummy_pixel);
@@ -2045,14 +2070,14 @@ static void sensor_init(void)
 	write_cmos_sensor(0x0b0e, 0xc200); 
 	write_cmos_sensor(0x0b10, 0xac20); 
 	write_cmos_sensor(0x0b12, 0x0000); 
-	write_cmos_sensor(0x0b14, 0x400c); //0x404c); -- Terry 20161104 Modified for MIPI test
+	write_cmos_sensor(0x0b14, 0x404c); //0x404c); -- Terry 20161104 Modified for MIPI test
 	write_cmos_sensor(0x0b16, 0x6e0b); 
 	write_cmos_sensor(0x0b18, 0xf20b); 
 	write_cmos_sensor(0x0b1a, 0x0000); 
 	write_cmos_sensor(0x0b1c, 0x0000); 
 	write_cmos_sensor(0x0b1e, 0x0081); 
 	write_cmos_sensor(0x0b20, 0x0000); 
-	write_cmos_sensor(0x0b22, 0xca80); //0xcc80  -- Terry 20161104 Modified for MIPI test
+	write_cmos_sensor(0x0b22, 0xd880); //0xcc80  -- Terry 20161104 Modified for MIPI test
 	write_cmos_sensor(0x0b24, 0x0400); 
 	write_cmos_sensor(0x0b26, 0x0001); 
 	write_cmos_sensor(0x0b28, 0x0807); 
@@ -2447,6 +2472,221 @@ static kal_uint32 return_sensor_id(void)
  * GLOBALS AFFECTED
  *
  *************************************************************************/
+ struct hi553_otp_struct 
+{
+	int Base_Info_Flag;	//bit[7]:info, bit[6]:wb
+	int module_integrator_id;
+	int AF_Flag;
+	int prodyction_year;
+	int production_month;
+	int production_day;
+	int sensor_id;
+	int lens_id;
+	//int vcm_id;
+	//int Driver_ic_id;
+	//int F_num_id;
+	int WB_FLAG;
+	int wb_data[30];
+	int AF_FLAG;
+	int af_data[5];
+	int infocheck;
+	int wbcheck;
+	int checksum;
+	//int rg_ratio;
+	//int bg_ratio;
+};
+
+
+struct hi553_otp_struct hi553_otp;
+#if 0
+unsigned int readSubCamCalData(struct i2c_client *client, unsigned int addr,
+	unsigned char *data, unsigned int size)
+{
+    
+	return 0;
+}
+#endif
+static void otp_init_setting(void)
+{
+	write_cmos_sensor_byte(0x0a02, 0x01);	//Fast sleep on
+	write_cmos_sensor_byte(0x0a00, 0x00);	// stand by on
+	mdelay(100);
+	write_cmos_sensor_byte(0x0f02, 0x00);	// pll disable
+	write_cmos_sensor_byte(0x011a, 0x01);	// CP TRIM_H
+	write_cmos_sensor_byte(0x011b, 0x09);	// IPGM TRIM_H
+	write_cmos_sensor_byte(0x0d04, 0x01);	// Fsync(OTP busy) Output Enable
+	write_cmos_sensor_byte(0x0d00, 0x07);	// Fsync(OTP busy) Output Drivability
+	write_cmos_sensor_byte(0x0e0a, 0x00);     //TG PMEM CEN enable
+	write_cmos_sensor_byte(0x003f, 0x10);	// OTP R/W mode
+	write_cmos_sensor_byte(0x0a00, 0x01);	// stand by off
+}
+
+static int hi553_otp_read(void)
+{
+	int i, addr = 0, wb_start_addr = 0;
+	int  checksum = 0; //wb_data[28];
+	LOG_INF("HI553 hi553_otp_read \n");
+
+	//otp_init_setting();
+
+	hi553_otp.Base_Info_Flag = OTP_read_cmos_sensor(0x501);
+	if (hi553_otp.Base_Info_Flag == 0x01)	//Base Info Group1 valid
+		addr = 0x502;
+	else if (hi553_otp.Base_Info_Flag == 0x13)	//Base Info Group2 valid
+		addr = 0x513;
+	else if (hi553_otp.Base_Info_Flag == 0x37)	//Base Info Group3 valid
+		addr = 0x524;
+	else
+		addr = 0;
+LOG_INF("HI553 addr = 0x%x \n", addr);
+	if (addr == 0) {
+		hi553_otp.module_integrator_id = 0;
+		hi553_otp.AF_Flag = 0;
+		hi553_otp.prodyction_year = 0;
+		hi553_otp.production_month = 0;
+		hi553_otp.production_day = 0;
+		hi553_otp.sensor_id = 0;
+		hi553_otp.lens_id = 0;
+		//hi553_otp.vcm_id = 0;
+		//hi553_otp.Driver_ic_id = 0;
+		//hi553_otp.F_num_id = 0;
+		hi553_otp.infocheck = 0;
+	} else {
+		hi553_otp.module_integrator_id = OTP_read_cmos_sensor(addr);
+		hi553_otp.AF_Flag = OTP_read_cmos_sensor(addr + 1);
+		hi553_otp.prodyction_year = OTP_read_cmos_sensor(addr + 2);
+		hi553_otp.production_month = OTP_read_cmos_sensor(addr + 3);
+		hi553_otp.production_day = OTP_read_cmos_sensor(addr + 4);
+		hi553_otp.sensor_id = OTP_read_cmos_sensor(addr + 5);
+		hi553_otp.lens_id = OTP_read_cmos_sensor(addr + 6);
+		//hi553_otp.vcm_id = OTP_read_cmos_sensor(addr + 7);
+		//hi553_otp.Driver_ic_id = OTP_read_cmos_sensor(addr + 8);
+		//hi553_otp.F_num_id = OTP_read_cmos_sensor(addr + 9);
+		hi553_otp.infocheck = OTP_read_cmos_sensor(addr + 16);
+	}
+
+	checksum = (hi553_otp.module_integrator_id + hi553_otp.AF_Flag + hi553_otp.prodyction_year + hi553_otp.production_month + hi553_otp.production_day + hi553_otp.sensor_id + hi553_otp.lens_id) % 0xFF + 1;
+
+if (checksum == hi553_otp.infocheck)
+			{
+		LOG_INF("HI553_Sensor: Module information checksum PASS\n ");
+		}
+	else
+		{
+		LOG_INF("HI553_Sensor: Module information checksum Fail\n ");
+		}
+	
+LOG_INF("HI553 module_integrator_id = 0x%x, AF_Flag = 0x%x, prodyction_year = 0x%x, production_month = 0x%x, production_day = 0x%x, sensor_id = 0x%x, lens_id = 0x%x, infocheck = 0x%x \n",\
+		hi553_otp.module_integrator_id,hi553_otp.AF_Flag, hi553_otp.prodyction_year, hi553_otp.production_month, hi553_otp.production_day, hi553_otp.sensor_id, hi553_otp.lens_id, hi553_otp.infocheck);
+
+
+
+	hi553_otp.WB_FLAG = OTP_read_cmos_sensor(0x535);
+	if (hi553_otp.WB_FLAG == 0x01)
+		wb_start_addr = 0x536;
+	else if (hi553_otp.WB_FLAG == 0x13)
+		wb_start_addr = 0x554;
+	else if (hi553_otp.WB_FLAG == 0x37)
+		wb_start_addr = 0x572;
+	else
+		LOG_INF("HI553 WB data invalid \n");
+
+LOG_INF("HI553 WB_FLAG = 0x%x \n", hi553_otp.WB_FLAG);
+LOG_INF("HI553 wb_start_addr = 0x%x \n", wb_start_addr);
+
+	if (wb_start_addr != 0) {
+		write_cmos_sensor_byte(0x10a, (wb_start_addr >> 8) & 0xff);	//start addr H
+		write_cmos_sensor_byte(0x10b, wb_start_addr & 0xff);	//start addr L
+		write_cmos_sensor_byte(0x102, 0x01);	//single mode
+		for (i = 0; i < 30; i++) {
+			hi553_otp.wb_data[i] = read_cmos_sensor_byte(0x108);	//otp data read
+			LOG_INF("HI553 wb_data[%d] = 0x%x  ", i, hi553_otp.wb_data[i]);
+		}
+	}
+
+	return hi553_otp.WB_FLAG;
+}
+
+static int hi553_otp_apply(struct hi553_otp_struct *otp_ptr)
+{
+	int wbcheck = 0, checksum = 0;
+	int R_gain = 1, G_gain = 1, B_gain = 1;
+	int RG_ratio_unit = 0;
+	int BG_ratio_unit = 0;
+	int RG_ratio_golden = 0x149; 
+	int BG_ratio_golden = 0x136;
+	LOG_INF("HI553 hi553_otp_apply \n");
+
+	RG_ratio_unit = (hi553_otp.wb_data[0] << 8) | (hi553_otp.wb_data[1] & 0x03FF);
+	BG_ratio_unit = (hi553_otp.wb_data[2] << 8) | (hi553_otp.wb_data[3] & 0x03FF);
+	//RG_ratio_golden = (hi553_otp.wb_data[6] << 8) | (hi553_otp.wb_data[7] & 0x03FF);
+	//BG_ratio_golden = (hi553_otp.wb_data[8] << 8) | (hi553_otp.wb_data[9] & 0x03FF);
+	wbcheck = hi553_otp.wb_data[29];
+	checksum = (hi553_otp.wb_data[0] + hi553_otp.wb_data[1] + hi553_otp.wb_data[2] + hi553_otp.wb_data[3] + hi553_otp.wb_data[4] + hi553_otp.wb_data[5] ) % 0xFF+ 1;
+    LOG_INF("HI553_Sensor: WB checksum checksum = 0x%x,wbcheck= 0x%x\n ",checksum,wbcheck);
+if (checksum == wbcheck)
+		{
+		LOG_INF("HI553_Sensor: WB checksum PASS\n ");
+		}
+else
+		{
+		LOG_INF("HI553_Sensor: WB checksum Fail\n ");
+		}
+
+LOG_INF("HI553 RG_ratio_unit = 0x%x, BG_ratio_unit = 0x%x, RG_ratio_golden = 0x%x, BG_ratio_golden = 0x%x, wbcheck = 0x%x \n",\
+		RG_ratio_unit, BG_ratio_unit, RG_ratio_golden, BG_ratio_golden, wbcheck);
+
+	R_gain = (0x100 * RG_ratio_golden / RG_ratio_unit);
+	B_gain = (0x100 * BG_ratio_golden / BG_ratio_unit);
+    G_gain = 0x100;
+
+	if (R_gain < B_gain) {
+		if(R_gain < 0x100) {
+			B_gain =0x100 *  B_gain / R_gain;
+			G_gain =0x100 *  G_gain / R_gain;
+			R_gain = 0x100;
+		}
+	} else {
+		if (B_gain < 0x100) {
+			R_gain = 0x100 * R_gain / B_gain;
+			G_gain = 0x100 * G_gain / B_gain;
+			B_gain = 0x100;
+		}
+	}
+	//R_gain = 0x11111111;
+LOG_INF("HI553 Before apply otp G_gain = 0x%x, R_gain = 0x%x, B_gain = 0x%x \n",(read_cmos_sensor_byte(0x0126) << 8) | (read_cmos_sensor_byte(0x0127) & 0xFFFF),(read_cmos_sensor_byte(0x012a) << 8) | (read_cmos_sensor_byte(0x012b) & 0xFFFF),(read_cmos_sensor_byte(0x012c) << 8) | (read_cmos_sensor_byte(0x012d) & 0xFFFF));
+
+   write_cmos_sensor_byte(0x0a00, 0x00); //sleep On
+	mdelay(100);
+    write_cmos_sensor_byte(0x003f, 0x00); //OTP mode off
+    write_cmos_sensor_byte(0x0a00, 0x01); //sleep Off
+    
+	//G_gain = (read_cmos_sensor_byte(0x0126) << 8) | (read_cmos_sensor_byte(0x0127) & 0xFFFF);
+	//R_gain = (read_cmos_sensor_byte(0x012a) << 8) | (read_cmos_sensor_byte(0x012b) & 0xFFFF);
+	//B_gain = (read_cmos_sensor_byte(0x012c) << 8) | (read_cmos_sensor_byte(0x012d) & 0xFFFF);
+	write_cmos_sensor_byte(0x0126, (G_gain) >> 8);
+	write_cmos_sensor_byte(0x0127, (G_gain) & 0xFFFF);
+	write_cmos_sensor_byte(0x0128, (G_gain) >> 8);
+	write_cmos_sensor_byte(0x0129, (G_gain) & 0xFFFF);
+	write_cmos_sensor_byte(0x012a, (R_gain) >> 8);
+	write_cmos_sensor_byte(0x012b, (R_gain) & 0xFFFF);
+	write_cmos_sensor_byte(0x012c, (B_gain) >> 8);
+	write_cmos_sensor_byte(0x012d, (B_gain) & 0xFFFF);
+LOG_INF("HI553 after apply otp G_gain = 0x%x, R_gain = 0x%x, B_gain = 0x%x \n",(read_cmos_sensor_byte(0x0126) << 8) | (read_cmos_sensor_byte(0x0127) & 0xFFFF), (read_cmos_sensor_byte(0x012a) << 8) | (read_cmos_sensor_byte(0x012b) & 0xFFFF), (read_cmos_sensor_byte(0x012c) << 8) | (read_cmos_sensor_byte(0x012d) & 0xFFFF));
+
+	return hi553_otp.WB_FLAG;
+}
+static void hi553_otp_cali_read(void)
+{
+    
+    LOG_INF("HI553 huaquan_otp_cali \n");
+    LOG_INF("hi553_otp_read_flag : 0x%d\n", hi553_otp_read_flag);
+    otp_init_setting();
+    hi553_otp_read();
+    hi553_otp_read_flag = 1;
+    //hi553_otp_apply(&hi553_otp);
+
+}
 #ifdef CONFIG_LCT_DEVINFO_SUPPORT/*jijin.wang add for dev_info*/
 #include  "dev_info.h"
 static struct devinfo_struct s_DEVINFO_ccm;
@@ -2553,6 +2793,11 @@ static kal_uint32 open(void)
 
 	/* initail sequence write in  */
 	sensor_init();
+	if(hi553_otp_read_flag == 0)
+    {
+        hi553_otp_cali_read();
+    }
+	hi553_otp_apply(&hi553_otp);
 
 	spin_lock(&imgsensor_drv_lock);
 
