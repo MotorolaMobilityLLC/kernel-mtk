@@ -86,7 +86,7 @@ struct pn544_dev
 	wait_queue_head_t	read_wq;
 	struct mutex		read_mutex;
 	struct i2c_client	*client;
-	struct miscdevice	pn544_device;
+	struct miscdevice	nfc_device;
 	bool			irq_enabled;
 	spinlock_t		irq_enabled_lock;
 
@@ -416,7 +416,7 @@ static ssize_t pn544_dev_write(struct file *filp, const char __user *buf,
 static int pn544_dev_open(struct inode *inode, struct file *filp)
 {
 	int ret = 0;
-	struct pn544_dev *pn544_dev = container_of(filp->private_data, struct pn544_dev, pn544_device);
+	struct pn544_dev *pn544_dev = container_of(filp->private_data, struct pn544_dev, nfc_device);
 	
 	printk("%s:pn544_dev=%p\n", __func__, pn544_dev);
 
@@ -530,7 +530,7 @@ static int pn544_remove(struct i2c_client *client)
 #endif
 
 	pn544_dev = i2c_get_clientdata(client);
-	misc_deregister(&pn544_dev->pn544_device);
+	misc_deregister(&pn544_dev->nfc_device);
 	mutex_destroy(&pn544_dev->read_mutex);
 	regulator_put(pn544_dev->reg);
 	kfree(pn544_dev);
@@ -602,11 +602,11 @@ static int pn544_probe(struct i2c_client *client,
 	mutex_init(&pn544_dev->read_mutex);
 	spin_lock_init(&pn544_dev->irq_enabled_lock);
 #if 1
-	pn544_dev->pn544_device.minor = MISC_DYNAMIC_MINOR;
-	pn544_dev->pn544_device.name = PN544_DRVNAME;
-	pn544_dev->pn544_device.fops = &pn544_dev_fops;
+	pn544_dev->nfc_device.minor = MISC_DYNAMIC_MINOR;
+	pn544_dev->nfc_device.name = PN544_DRVNAME;
+	pn544_dev->nfc_device.fops = &pn544_dev_fops;
 
-	ret = misc_register(&pn544_dev->pn544_device);
+	ret = misc_register(&pn544_dev->nfc_device);
 	if (ret) 
 	{
 		pr_err("%s: misc_register failed\n", __func__);
