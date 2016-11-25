@@ -5277,9 +5277,14 @@ int _set_backlight_by_cmdq(unsigned int level)
 	if (primary_display_is_video_mode()) {
 		MMProfileLogEx(ddp_mmp_get_events()->primary_set_bl, MMProfileFlagPulse, 1, 2);
 		cmdqRecReset(cmdq_handle_backlight);
+//mtk add
+		cmdqRecWaitNoClear(cmdq_handle_backlight, CMDQ_EVENT_DISP_RDMA0_EOF);
+		cmdqRecWaitNoClear(cmdq_handle_backlight, CMDQ_EVENT_MUTEX0_STREAM_EOF);
+//mtk add
 		disp_lcm_set_backlight(pgc->plcm, cmdq_handle_backlight, level);
-		_cmdq_flush_config_handle_mira(cmdq_handle_backlight, 1);
-		DISPCHECK("[BL]_set_backlight_by_cmdq ret=%d\n", ret);
+//mtk modify
+		_cmdq_flush_config_handle_mira(cmdq_handle_backlight, 0);
+		DISPDBG("[BL]_set_backlight_by_cmdq ret=%d\n", ret);
 	} else {
 		MMProfileLogEx(ddp_mmp_get_events()->primary_set_bl, MMProfileFlagPulse, 1, 3);
 		cmdqRecReset(cmdq_handle_backlight);
@@ -5292,7 +5297,7 @@ int _set_backlight_by_cmdq(unsigned int level)
 		MMProfileLogEx(ddp_mmp_get_events()->primary_set_bl, MMProfileFlagPulse, 1, 4);
 		_cmdq_flush_config_handle_mira(cmdq_handle_backlight, 1);
 		MMProfileLogEx(ddp_mmp_get_events()->primary_set_bl, MMProfileFlagPulse, 1, 6);
-		DISPCHECK("[BL]_set_backlight_by_cmdq ret=%d\n", ret);
+		DISPDBG("[BL]_set_backlight_by_cmdq ret=%d\n", ret);
 	}
 	cmdqRecDestroy(cmdq_handle_backlight);
 	cmdq_handle_backlight = NULL;
@@ -5395,9 +5400,11 @@ int primary_display_setbacklight(unsigned int level)
 				//wuwl10 modify, backlight level 0 should be set even through in hbm mode to disable backlight
 				if (level && atomic_read(&primary_display_hbm_backlight)){
 					DISPMSG("set lcm backlight full due to hbm mode\n");
-					disp_lcm_set_backlight(pgc->plcm, NULL, 255);//can we set it 255 directly
+					_set_backlight_by_cmdq(255);
+					//disp_lcm_set_backlight(pgc->plcm, NULL, 255);//can we set it 255 directly
 				} else {
-					disp_lcm_set_backlight(pgc->plcm, NULL,(level * 8 + 2)/10);
+					_set_backlight_by_cmdq((level * 8 + 2)/10);
+					//disp_lcm_set_backlight(pgc->plcm, NULL,(level * 8 + 2)/10);
 				}
 #else
 				disp_lcm_set_backlight(pgc->plcm, NULL, level);
@@ -5422,6 +5429,53 @@ int primary_display_setbacklight(unsigned int level)
 }
 //lenovo wuwl10 20160401 add CUSTOM_LCM_FEATURE begin
 #ifdef CONFIG_LENOVO_CUSTOM_LCM_FEATURE
+int _set_cabc_by_cmdq(unsigned int mode)
+{
+	int ret = 0;
+
+	cmdqRecHandle cmdq_handle_backlight = NULL;
+
+	MMProfileLogEx(ddp_mmp_get_events()->primary_set_bl, MMProfileFlagPulse, 1, 1);
+	ret = cmdqRecCreate(CMDQ_SCENARIO_PRIMARY_DISP, &cmdq_handle_backlight);
+	DISPDBG("primary backlight, handle=%p\n", cmdq_handle_backlight);
+	if (ret != 0) {
+		DISPERR("fail to create primary cmdq handle for backlight\n");
+		return -1;
+	}
+
+	if (primary_display_is_video_mode()) {
+		MMProfileLogEx(ddp_mmp_get_events()->primary_set_bl, MMProfileFlagPulse, 1, 2);
+		cmdqRecReset(cmdq_handle_backlight);
+//mtk add
+		cmdqRecWaitNoClear(cmdq_handle_backlight, CMDQ_EVENT_DISP_RDMA0_EOF);
+		cmdqRecWaitNoClear(cmdq_handle_backlight, CMDQ_EVENT_MUTEX0_STREAM_EOF);
+//mtk add
+		disp_lcm_set_cabc(pgc->plcm, cmdq_handle_backlight, mode);
+//mtk modify
+		_cmdq_flush_config_handle_mira(cmdq_handle_backlight, 0);
+		DISPDBG("[BL]_set_cabc_by_cmdq ret=%d\n", ret);
+	} else {
+		MMProfileLogEx(ddp_mmp_get_events()->primary_set_bl, MMProfileFlagPulse, 1, 3);
+		cmdqRecReset(cmdq_handle_backlight);
+		cmdqRecWait(cmdq_handle_backlight, CMDQ_SYNC_TOKEN_CABC_EOF);
+		_cmdq_handle_clear_dirty(cmdq_handle_backlight);
+		_cmdq_insert_wait_frame_done_token_mira(cmdq_handle_backlight);
+		disp_lcm_set_cabc(pgc->plcm, cmdq_handle_backlight, mode);
+		cmdqRecSetEventToken(cmdq_handle_backlight, CMDQ_SYNC_TOKEN_CONFIG_DIRTY);
+		cmdqRecSetEventToken(cmdq_handle_backlight, CMDQ_SYNC_TOKEN_CABC_EOF);
+		MMProfileLogEx(ddp_mmp_get_events()->primary_set_bl, MMProfileFlagPulse, 1, 4);
+		_cmdq_flush_config_handle_mira(cmdq_handle_backlight, 1);
+		MMProfileLogEx(ddp_mmp_get_events()->primary_set_bl, MMProfileFlagPulse, 1, 6);
+		DISPDBG("[BL]_set_backlight_by_cmdq ret=%d\n", ret);
+	}
+	cmdqRecDestroy(cmdq_handle_backlight);
+	cmdq_handle_backlight = NULL;
+	MMProfileLogEx(ddp_mmp_get_events()->primary_set_bl, MMProfileFlagPulse, 1, 5);
+
+	return ret;
+}
+
+
 int primary_display_setcabc(unsigned int mode)
 {
 	int ret = 0;
@@ -5448,7 +5502,8 @@ int primary_display_setcabc(unsigned int mode)
 			if (primary_display_is_video_mode()) {
 				MMProfileLogEx(ddp_mmp_get_events()->primary_set_bl,
 					       MMProfileFlagPulse, 0, 7);
-				disp_lcm_set_cabc(pgc->plcm, NULL, mode);
+				//disp_lcm_set_cabc(pgc->plcm, NULL, mode);
+				_set_cabc_by_cmdq(mode);
 			} else {
 				DISPERR("cmd mode set cabc invald\n");
 				//_set_backlight_by_cmdq(level);
@@ -5509,6 +5564,52 @@ int primary_display_setinverse(unsigned int mode)
 #endif
 //lenovo wuwl10 20160401 add CUSTOM_LCM_FEATURE end
 #ifdef CONFIG_LENOVO_PANELMODE_SUPPORT
+int _set_hbm_by_cmdq(unsigned int mode)
+{
+	int ret = 0;
+
+	cmdqRecHandle cmdq_handle_backlight = NULL;
+
+	MMProfileLogEx(ddp_mmp_get_events()->primary_set_bl, MMProfileFlagPulse, 1, 1);
+	ret = cmdqRecCreate(CMDQ_SCENARIO_PRIMARY_DISP, &cmdq_handle_backlight);
+	DISPDBG("primary backlight, handle=%p\n", cmdq_handle_backlight);
+	if (ret != 0) {
+		DISPERR("fail to create primary cmdq handle for backlight\n");
+		return -1;
+	}
+
+	if (primary_display_is_video_mode()) {
+		MMProfileLogEx(ddp_mmp_get_events()->primary_set_bl, MMProfileFlagPulse, 1, 2);
+		cmdqRecReset(cmdq_handle_backlight);
+//mtk add
+		cmdqRecWaitNoClear(cmdq_handle_backlight, CMDQ_EVENT_DISP_RDMA0_EOF);
+		cmdqRecWaitNoClear(cmdq_handle_backlight, CMDQ_EVENT_MUTEX0_STREAM_EOF);
+//mtk add
+		disp_lcm_set_hbm(pgc->plcm, cmdq_handle_backlight, mode);
+//mtk modify
+		_cmdq_flush_config_handle_mira(cmdq_handle_backlight, 0);
+		DISPDBG("[BL]_set_backlight_by_cmdq ret=%d\n", ret);
+	} else {
+		MMProfileLogEx(ddp_mmp_get_events()->primary_set_bl, MMProfileFlagPulse, 1, 3);
+		cmdqRecReset(cmdq_handle_backlight);
+		cmdqRecWait(cmdq_handle_backlight, CMDQ_SYNC_TOKEN_CABC_EOF);
+		_cmdq_handle_clear_dirty(cmdq_handle_backlight);
+		_cmdq_insert_wait_frame_done_token_mira(cmdq_handle_backlight);
+		disp_lcm_set_hbm(pgc->plcm, cmdq_handle_backlight, mode);
+		cmdqRecSetEventToken(cmdq_handle_backlight, CMDQ_SYNC_TOKEN_CONFIG_DIRTY);
+		cmdqRecSetEventToken(cmdq_handle_backlight, CMDQ_SYNC_TOKEN_CABC_EOF);
+		MMProfileLogEx(ddp_mmp_get_events()->primary_set_bl, MMProfileFlagPulse, 1, 4);
+		_cmdq_flush_config_handle_mira(cmdq_handle_backlight, 1);
+		MMProfileLogEx(ddp_mmp_get_events()->primary_set_bl, MMProfileFlagPulse, 1, 6);
+		DISPDBG("[BL]_set_backlight_by_cmdq ret=%d\n", ret);
+	}
+	cmdqRecDestroy(cmdq_handle_backlight);
+	cmdq_handle_backlight = NULL;
+	MMProfileLogEx(ddp_mmp_get_events()->primary_set_bl, MMProfileFlagPulse, 1, 5);
+
+	return ret;
+}
+
 int primary_display_sethbm(unsigned int mode)
 {
 	int ret = 0;
@@ -5541,7 +5642,8 @@ int primary_display_sethbm(unsigned int mode)
 				else
 					atomic_set(&primary_display_hbm_backlight, 0);
 
-				disp_lcm_set_hbm(pgc->plcm, NULL, mode);
+				_set_hbm_by_cmdq(mode);
+				//disp_lcm_set_hbm(pgc->plcm, NULL, mode);
 
 			} else {
 				DISPERR("cmd mode set hbm invald\n");

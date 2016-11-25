@@ -41,7 +41,7 @@ static LCM_UTIL_FUNCS lcm_util = {0};
 // ---------------------------------------------------------------------------
 //  Local Functions
 // ---------------------------------------------------------------------------
-
+#define dsi_set_cmdq_V22(cmdq,cmd, count, ppara, force_update)	(lcm_util.dsi_set_cmdq_V22(cmdq, cmd, count, ppara, force_update))
 #define dsi_set_cmdq_V2(cmd, count, ppara, force_update)	(lcm_util.dsi_set_cmdq_V2(cmd, count, ppara, force_update))
 #define dsi_set_cmdq(pdata, queue_size, force_update)		(lcm_util.dsi_set_cmdq(pdata, queue_size, force_update))
 #define wrtie_cmd(cmd)										(lcm_util.dsi_write_cmd(cmd))
@@ -254,7 +254,27 @@ static void push_table(struct LCM_setting_table *table, unsigned int count, unsi
 	}
 }
 
+static void push_table2(void *handle, struct LCM_setting_table *table, unsigned int count, unsigned char force_update)
+{
+	unsigned int i;
 
+	for(i = 0; i < count; i++) {
+		unsigned cmd;
+		cmd = table[i].cmd;
+
+		switch(cmd) {
+			case REGFLAG_DELAY :
+				MDELAY(table[i].count);
+				break;
+
+			case REGFLAG_END_OF_TABLE :
+				break;
+
+			default:
+				dsi_set_cmdq_V22(handle,cmd, table[i].count, table[i].para_list, force_update);
+		}
+	}
+}
 
 static void init_lcm_registers(void)
 {
@@ -616,7 +636,7 @@ static void lcm_setbacklight_cmdq(void *handle, unsigned int level)
 	// Refresh value of backlight level.
 	lcm_backlight_level_setting[0].para_list[0] = (level>>2) & 0xFF;
 	lcm_backlight_level_setting[0].para_list[1] = level & 0x03;
-	push_table(lcm_backlight_level_setting, sizeof(lcm_backlight_level_setting) / sizeof(struct LCM_setting_table), 1);
+	push_table2(handle, lcm_backlight_level_setting, sizeof(lcm_backlight_level_setting) / sizeof(struct LCM_setting_table), 1);
 }
 
 // ---------------------------------------------------------------------------
@@ -884,7 +904,7 @@ static void lcm_set_cabcmode(void *handle,unsigned int mode)
 	#endif
 
 	lcm_cabc_level_setting[0].para_list[0] = mode;
-	push_table(lcm_cabc_level_setting, sizeof(lcm_cabc_level_setting) / sizeof(struct LCM_setting_table), 1);
+	push_table2(handle, lcm_cabc_level_setting, sizeof(lcm_cabc_level_setting) / sizeof(struct LCM_setting_table), 1);
 }
 #endif
 //lenovo wuwl10 20150604 add CUSTOM_LCM_FEATURE end
@@ -900,7 +920,7 @@ static void lcm_set_hbm(void *handle,unsigned int mode)
 		lcm_backlight_level_setting[0].para_list[0] = (esd_last_backlight_level>>2) & 0xFF;
 		lcm_backlight_level_setting[0].para_list[1] = esd_last_backlight_level & 0x03;
 	}
-	push_table(lcm_backlight_level_setting, sizeof(lcm_backlight_level_setting) / sizeof(struct LCM_setting_table), 1);
+	push_table2(handle, lcm_backlight_level_setting, sizeof(lcm_backlight_level_setting) / sizeof(struct LCM_setting_table), 1);
 #endif
 }
 #endif
