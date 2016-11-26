@@ -80,6 +80,11 @@ extern int ts3a225e_read_byte(unsigned char cmd, unsigned char *returnData);
 extern int ts3a225e_write_byte(unsigned char cmd, unsigned char writeData);
 #endif
 extern struct of_device_id accdet_of_match[];
+//tuwenzan@wind-mobi.com add at 20161124 begin
+#ifdef CONFIG_WIND_FM_RSSI
+extern signed int mt6627_GetCurRSSI(signed int *pRSSI);
+#endif
+//tuwenzan@wind-mobi.com add at 20161124 end
 void mt_accdet_remove(void);
 void mt_accdet_suspend(void);
 void mt_accdet_resume(void);

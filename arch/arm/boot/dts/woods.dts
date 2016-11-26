@@ -119,6 +119,22 @@
 		vib_limit = <9>;
 		vib_vol= <5>;
 	};
+//tee_xuzhifeng@wind-mobi.com 20161117 begin
+et360spi@0 {
+		compatible = "egistec,et360spi";
+		reg = <0>;
+		spi-max-frequency = <16000000>;
+	};
+	
+	et360: egistec {
+			compatible = "egistec,et360";
+			interrupt-parent = <&eintc>;
+            interrupts = <9 IRQ_TYPE_EDGE_RISING>;
+            status = "okay";
+            debounce = <251 1000>;
+		};
+        
+  //tee_xuzhifeng@wind-mobi.com 20161117 end 
  /* sensor standardization */
  //tuwenzan@wind-mobi.com modify at 20161108 begin
  /*
@@ -196,13 +212,26 @@
 		firlen					= <0>;
 		is_batch_supported	= <0>;
 		};
+//liupeng@wind-mobi.com 20161121 begin
+		cust_boardid@1 {
+		compatible = "mediatek,bid";
+		pinctrl-names="bid_pin1","bid_pin2","bid_pin3","bid_pin4","bid_pin5";
+		pinctrl-0 = <&bid_pin_num1>;
+		pinctrl-1 = <&bid_pin_num2>;
+		pinctrl-2 = <&bid_pin_num3>;
+		pinctrl-3 = <&bid_pin_num4>;
+		pinctrl-4 = <&bid_pin_num5>;
+		status ="okay";
+		};
+//liupeng@wind-mobi.com 20161121 end
 };
 /* sensor gpio standization */
 &pio {
+//xuzhifeng@wind-mobi.com 20161123 begin
 	alsps_intpin_cfg: alspspincfg {
 
 		pins_cmd_dat {
-			pins = <PINMUX_GPIO65__FUNC_GPIO65>;
+			pins = <PINMUX_GPIO37__FUNC_GPIO37>;
 			slew-rate = <0>;
 			bias-pull-up = <00>;
 		};
@@ -215,16 +244,56 @@
 	gyro_intpin_cfg: gyropincfg {
 
 		pins_cmd_dat {
-			pins = <PINMUX_GPIO67__FUNC_GPIO67>;
+			pins = <PINMUX_GPIO37__FUNC_GPIO37>;
 			slew-rate = <0>;
 			bias-pull-down = <00>;
 		};
 	};
-
+//xuzhifeng@wind-mobi.com 20161123 end
 	gyro_intpin_default: gyrodefaultcfg {
 
 	};
 };
+//liupeng@wind-mobi.com 20161121 begin
+&pio {
+	bid_pin_num1: bidpin@1 {
+	    pins_cmd_dat {
+			pins = <PINMUX_GPIO99__FUNC_GPIO99>;
+			slew-rate = <1>;
+			bias-pull-down = <00>;
+		};
+	};
+	bid_pin_num2: bidpin@2 {
+	    pins_cmd_dat {
+			pins = <PINMUX_GPIO70__FUNC_GPIO70>;
+			slew-rate = <1>;
+			bias-pull-down = <00>;
+		};
+	};
+	bid_pin_num3: bidpin@3 {
+	    pins_cmd_dat {
+			pins = <PINMUX_GPIO71__FUNC_GPIO71>;
+			slew-rate = <1>;
+			bias-pull-down = <00>;
+		};
+	};
+	bid_pin_num4: bidpin@4{
+	    pins_cmd_dat {
+			pins = <PINMUX_GPIO59__FUNC_GPIO59>;
+			slew-rate = <1>;
+			bias-pull-down = <00>;
+		};
+	};
+	bid_pin_num5: bidpin@5 {
+	    pins_cmd_dat {
+			pins = <PINMUX_GPIO60__FUNC_GPIO60>;
+			slew-rate = <1>;
+			bias-pull-down = <00>;
+		};
+	};
+};
+//liupeng@wind-mobi.com 20161121 end
+
 &alsps {
 	pinctrl-names = "pin_default", "pin_cfg";
 	pinctrl-0 = <&alsps_intpin_default>;
@@ -394,20 +463,22 @@
 			output-high;
 		};
 	};
+	//xuzhifeng@wind-mobi.com 20161123 begin
 	camera_pins_cam_ldo0_0: cam@0 {
 		pins_cmd_dat {
-			pins = <PINMUX_GPIO68__FUNC_GPIO68>;/*GPIO_SPI_MOSI_PIN*/
+			pins = <PINMUX_GPIO37__FUNC_GPIO37>;/*GPIO_SPI_MOSI_PIN*/
 			slew-rate = <1>;
 			output-low;
 		};
 	};
 	camera_pins_cam_ldo0_1: cam@1 {
 		pins_cmd_dat {
-			pins = <PINMUX_GPIO68__FUNC_GPIO68>;/*GPIO_SPI_MOSI_PIN*/
+			pins = <PINMUX_GPIO37__FUNC_GPIO37>;/*GPIO_SPI_MOSI_PIN*/
 			slew-rate = <1>;
 			output-high;
 		};
 	};
+	//xuzhifeng@wind-mobi.com 20161123 end
 	camera_pins_default: camdefault {
 	};
 //wangkangmin@wind-mobi.com 20160118 begin

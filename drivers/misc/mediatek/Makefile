@@ -31,7 +31,9 @@ obj-$(CONFIG_MTK_GIC_EXT) += ext_gic/
 obj-$(CONFIG_MTK_FIQ_CACHE) += fiq_cache/
 obj-$(CONFIG_MTK_ICE_DEBUG) +=ice_debug/
 obj-$(CONFIG_MTK_NFC) += nfc/
-
+#liupeng@wind-mobi.com 20161121 begin
+obj-$(CONFIG_MTK_BOARD_ID) +=board_id/
+#liupeng@wind-mobi.com 20161121 end
 obj-$(CONFIG_MMPROFILE) += mmp/
 obj-$(CONFIG_MTK_AUXADC)	+= auxadc/
 obj-$(CONFIG_MTK_M4U)	+= m4u/

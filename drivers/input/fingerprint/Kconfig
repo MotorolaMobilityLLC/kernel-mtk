@@ -47,6 +47,15 @@ config LCT_FPS_ET320
 	LCT FPS et320 device.
 endif
 
+##xuzhifeng@wind-mobi.com 20161123 begin
+config EGISTEC_FINGERPRINT
+	bool "Goodix Fingerprint"
+	default y
+	---help---
+	Goodix Fingerprint chip GF316M/GF318M/GF3118M/GF518M/GF5118M/GF516M/GF816M/GF3208/GF5216 TEE driver
 endif
+##xuzhifeng@wind-mobi.com 20161123 end
+
+
 endmenu
 

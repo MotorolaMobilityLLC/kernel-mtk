@@ -113,6 +113,11 @@ int bq24296_read_byte(unsigned char cmd, unsigned char *returnData)
 
 	mutex_lock(&bq24296_i2c_access);
 
+       //zhangchao@wind-mobi.com 20161123 begin
+       if(new_client == NULL)
+	   	return 0;
+	//zhangchao@wind-mobi.com 20161123 end
+	
 	/* new_client->addr = ((new_client->addr) & I2C_MASK_FLAG) | I2C_WR_FLAG; */
 	new_client->ext_flag =
 	    ((new_client->ext_flag) & I2C_MASK_FLAG) | I2C_WR_FLAG | I2C_DIRECTION_FLAG;
@@ -146,6 +151,11 @@ int bq24296_write_byte(unsigned char cmd, unsigned char writeData)
 
 	write_data[0] = cmd;
 	write_data[1] = writeData;
+
+       //zhangchao@wind-mobi.com 20161123 begin
+       if(new_client == NULL)
+	   	return 0;
+	//zhangchao@wind-mobi.com 20161123 end
 
 	new_client->ext_flag = ((new_client->ext_flag) & I2C_MASK_FLAG) | I2C_DIRECTION_FLAG;
 

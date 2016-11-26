@@ -16,7 +16,13 @@
 #include <linux/delay.h>
 #include <linux/irq.h>
 #include <asm/uaccess.h>
+// tee_xuzhifeng@wind-mobi.com 20161117 begin
+#ifdef CONFIG_MTK_CLKMGR
 #include <mach/mt_clkmgr.h>
+#else
+#include <linux/clk.h>
+#endif
+// tee_xuzhifeng@wind-mobi.com 20161117 end
 #include <linux/of.h>
 #include <linux/of_irq.h>
 #include <linux/compat.h>
@@ -131,6 +137,10 @@ int keymaster_call_flag = 0;
 
 unsigned long teei_config_flag = 0;
 unsigned int soter_error_flag = 0;
+// tee_xuzhifeng@wind-mobi.com 20161117 begin
+struct timeval stime;
+struct timeval etime;
+// tee_xuzhifeng@wind-mobi.com 20161117 end
 
 DECLARE_COMPLETION(global_down_lock);
 EXPORT_SYMBOL_GPL(global_down_lock);
@@ -169,14 +179,28 @@ unsigned long boot_vfs_addr;
 unsigned long boot_soter_flag;
 
 extern struct mutex pm_mutex;
+// tee_xuzhifeng@wind-mobi.com 20161117 begin
+struct semaphore ut_pm_count_sema;
+unsigned long ut_pm_count = 0;
+
+void ut_pm_mutex_lock(struct mutex *lock)
+{
+	add_work_entry(LOCK_PM_MUTEX, (unsigned long)lock);
+}
 
 
+void ut_pm_mutex_unlock(struct mutex *lock)
+{
+	add_work_entry(UNLOCK_PM_MUTEX, (unsigned long)lock);
+}
+// tee_xuzhifeng@wind-mobi.com 20161117 end
 int get_current_cpuid(void)
 {
 	return current_cpu_id;
 }
 
-
+// tee_xuzhifeng@wind-mobi.com 20161117 begin
+/*
 static void secondary_boot_stage2(void *info)
 {
 	n_switch_to_t_os_stage2();
@@ -224,8 +248,72 @@ static void load_tee(void)
 	cpu_id = get_current_cpuid();
 	smp_call_function_single(cpu_id, secondary_load_tee, NULL, 1);
 	put_online_cpus();
+}*/
+void secondary_boot_stage2(void *info)
+{
+	unsigned long smc_type = 2;
+
+	n_switch_to_t_os_stage2(&smc_type);
+
+	while (smc_type == 1) {
+		udelay(IRQ_DELAY);
+		nt_sched_t(&smc_type);
+	}
 }
 
+static void boot_stage2(void)
+{
+	int cpu_id = 0;
+
+	/* get_online_cpus(); */
+#if 1
+	int retVal = 0;
+	retVal = add_work_entry(BOOT_STAGE2, NULL);
+#else
+ 	cpu_id = get_current_cpuid();
+ 	smp_call_function_single(cpu_id, secondary_boot_stage2, NULL, 1);
+#endif
+	/* put_online_cpus(); */
+}
+
+int switch_to_t_os_stages2(void)
+{
+	down(&(smc_lock));
+  forward_call_flag = GLSCH_LOW;
+	boot_stage2();
+	down(&(boot_sema));
+
+	return 0;
+}
+
+void secondary_load_tee(void *info)
+{
+	unsigned long smc_type = 2;
+
+	n_invoke_t_load_tee(&smc_type, 0, 0);
+
+	while (smc_type == 1) {
+		udelay(IRQ_DELAY);
+		nt_sched_t(&smc_type);
+
+	}
+}
+
+
+static void load_tee(void)
+{
+	int cpu_id = 0;
+
+	/* get_online_cpus(); */
+#if 1
+	add_work_entry(LOAD_TEE, NULL);
+#else
+ 	cpu_id = get_current_cpuid();
+ 	smp_call_function_single(cpu_id, secondary_load_tee, NULL, 1);
+#endif
+	/* put_online_cpus(); */
+}
+// tee_xuzhifeng@wind-mobi.com 20161117 end
 
 void set_sch_load_img_cmd(void)
 {
@@ -247,18 +335,23 @@ void set_sch_load_img_cmd(void)
 int t_os_load_image(void)
 {
 	down(&smc_lock);
-
+	// tee_xuzhifeng@wind-mobi.com 20161117 begin
+  forward_call_flag = GLSCH_LOW;
+  // tee_xuzhifeng@wind-mobi.com 20161117 end
 	set_sch_load_img_cmd();
 	load_tee();
 
 	/* start HIGH level glschedule. */
+	// tee_xuzhifeng@wind-mobi.com 20161117 begin
+	/*
 	if (forward_call_flag == GLSCH_NONE)
 		forward_call_flag = GLSCH_LOW;
 	else if (forward_call_flag == GLSCH_NEG)
 		forward_call_flag = GLSCH_NONE;
 	else
 		return -1;
-
+		*/
+// tee_xuzhifeng@wind-mobi.com 20161117 end
 	/* block here until the TOS ack N_SWITCH_TO_T_OS_STAGE2 */
 	down(&(boot_sema));
 
@@ -300,15 +393,25 @@ struct boot_stage1_struct {
 
 struct boot_stage1_struct boot_stage1_entry;
 
-
-static void secondary_boot_stage1(void *info)
+// tee_xuzhifeng@wind-mobi.com 20161117 begin
+//static void secondary_boot_stage1(void *info)
+void secondary_boot_stage1(void *info)
+// tee_xuzhifeng@wind-mobi.com 20161117 begin
 {
 	struct boot_stage1_struct *cd = (struct boot_stage1_struct *)info;
-
+	// tee_xuzhifeng@wind-mobi.com 20161117 begin
+	unsigned long smc_type = 2;
+	// tee_xuzhifeng@wind-mobi.com 20161117 end
 	/* with a rmb() */
 	rmb();
-
-	n_init_t_boot_stage1(cd->vfs_phy_addr, cd->tlog_phy_addr, 0);
+	// tee_xuzhifeng@wind-mobi.com 20161117 begin
+	//n_init_t_boot_stage1(cd->vfs_phy_addr, cd->tlog_phy_addr, 0);
+	n_init_t_boot_stage1(cd->vfs_phy_addr, cd->tlog_phy_addr, &smc_type);
+	while (smc_type == 1) {
+		udelay(IRQ_DELAY);
+		nt_sched_t(&smc_type);
+	}
+	// tee_xuzhifeng@wind-mobi.com 20161117 end
 
 	/* with a wmb() */
 	wmb();
@@ -325,11 +428,25 @@ static void boot_stage1(unsigned long vfs_addr, unsigned long tlog_addr)
 	/* with a wmb() */
 	wmb();
 
+// tee_xuzhifeng@wind-mobi.com 20161117 begin
+/*
 	get_online_cpus();
 	cpu_id = get_current_cpuid();
 	pr_debug("current cpu id [%d]\n", cpu_id);
 	smp_call_function_single(cpu_id, secondary_boot_stage1, (void *)(&boot_stage1_entry), 1);
 	put_online_cpus();
+	*/
+#if 1
+	int retVal = 0;
+        retVal = add_work_entry(BOOT_STAGE1, &boot_stage1_entry);
+#else
+	/* get_online_cpus(); */
+ 	cpu_id = get_current_cpuid();
+ 	printk("current cpu id [%d]\n", cpu_id);
+ 	smp_call_function_single(cpu_id, secondary_boot_stage1, (void *)(&boot_stage1_entry), 1);
+	/* put_online_cpus(); */
+#endif
+// tee_xuzhifeng@wind-mobi.com 20161117 end
 
 	/* with a rmb() */
 	rmb();
@@ -337,8 +454,12 @@ static void boot_stage1(unsigned long vfs_addr, unsigned long tlog_addr)
 
 static int teei_cpu_id[] = {0x0000, 0x0001, 0x0002, 0x0003, 0x0100, 0x0101, 0x0102, 0x0103, 0x0200, 0x0201, 0x0202, 0x0203};
 
-static int __cpuinit tz_driver_cpu_callback(struct notifier_block *self,
+// tee_xuzhifeng@wind-mobi.com 20161117 begin
+//static int __cpuinit tz_driver_cpu_callback(struct notifier_block *self,
+//		unsigned long action, void *hcpu)
+static int tz_driver_cpu_callback(struct notifier_block *self,
 		unsigned long action, void *hcpu)
+// tee_xuzhifeng@wind-mobi.com 20161117 end
 {
 	unsigned int cpu = (unsigned long)hcpu;
 	unsigned int sched_cpu = get_current_cpuid();
@@ -352,14 +473,20 @@ static int __cpuinit tz_driver_cpu_callback(struct notifier_block *self,
 	case CPU_DOWN_PREPARE_FROZEN:
 			if (cpu == sched_cpu) {
 				pr_debug("cpu down prepare ************************\n");
-				retVal = down_trylock(&smc_lock);
+				// tee_xuzhifeng@wind-mobi.com 20161117 begin
+				//retVal = down_trylock(&smc_lock);
+				down(&smc_lock);
+				// tee_xuzhifeng@wind-mobi.com 20161117 begin
 				if (retVal == 1)
 					return NOTIFY_BAD;
 				else {
 					cpu_notify_flag = 1;
 					for_each_online_cpu(i) {
 						/*pr_debug("current on line cpu [%d]\n", i);*/
-						if (i == cpu) {
+						// tee_xuzhifeng@wind-mobi.com 20161117 begin
+						//if (i == cpu) {
+						if ((i == cpu) || (i == 8) || (i == 9)) {
+						// tee_xuzhifeng@wind-mobi.com 20161117 end
 							continue;
 						}
 						switch_to_cpu_id = i;
@@ -370,7 +497,10 @@ static int __cpuinit tz_driver_cpu_callback(struct notifier_block *self,
 					/*pr_debug("[%s][%d]brefore cpumask set cpu\n",__func__,__LINE__);*/
 #if 1
 					cpumask_set_cpu(switch_to_cpu_id, &mtee_mask);
-					set_cpus_allowed(teei_switch_task, mtee_mask);
+					// tee_xuzhifeng@wind-mobi.com 20161117 begin
+					//set_cpus_allowed(teei_switch_task, mtee_mask);
+					set_cpus_allowed_ptr(teei_switch_task, &mtee_mask);
+					// tee_xuzhifeng@wind-mobi.com 20161117 begin
 					/*pr_debug("[%s][%d]after cpumask set cpu\n",__func__,__LINE__);*/
 					current_cpu_id = switch_to_cpu_id;
 					pr_debug("change cpu id from [%d] to [%d]\n", sched_cpu, switch_to_cpu_id);
@@ -410,21 +540,36 @@ struct init_cmdbuf_struct {
 
 struct init_cmdbuf_struct init_cmdbuf_entry;
 
-
-static void secondary_init_cmdbuf(void *info)
+// tee_xuzhifeng@wind-mobi.com 20161117 begin
+//static void secondary_init_cmdbuf(void *info)
+void secondary_init_cmdbuf(void *info)
+// tee_xuzhifeng@wind-mobi.com 20161117 end
 {
 	struct init_cmdbuf_struct *cd = (struct init_cmdbuf_struct *)info;
-
+	// tee_xuzhifeng@wind-mobi.com 20161117 begin
+	unsigned long smc_type = 2;
+	// tee_xuzhifeng@wind-mobi.com 20161117 end
 	/* with a rmb() */
 	rmb();
 
 	pr_debug("[%s][%d] message = %lx,  fdrv message = %lx, bdrv_message = %lx, tlog_message = %lx.\n", __func__, __LINE__,
 		(unsigned long)cd->phy_addr, (unsigned long)cd->fdrv_phy_addr,
 		(unsigned long)cd->bdrv_phy_addr, (unsigned long)cd->tlog_phy_addr);
+// tee_xuzhifeng@wind-mobi.com 20161117 begin
+	//n_init_t_fc_buf(cd->phy_addr, cd->fdrv_phy_addr, 0);
 
-	n_init_t_fc_buf(cd->phy_addr, cd->fdrv_phy_addr, 0);
-
-	n_init_t_fc_buf(cd->bdrv_phy_addr, cd->tlog_phy_addr, 0);
+	//n_init_t_fc_buf(cd->bdrv_phy_addr, cd->tlog_phy_addr, 0);
+	n_init_t_fc_buf(cd->phy_addr, cd->fdrv_phy_addr, &smc_type);
+	while (smc_type == 1) {
+		udelay(IRQ_DELAY);
+		nt_sched_t(&smc_type);
+	}
+	n_init_t_fc_buf(cd->bdrv_phy_addr, cd->tlog_phy_addr, &smc_type);
+	while (smc_type == 1) {
+		udelay(IRQ_DELAY);
+		nt_sched_t(&smc_type);
+	}
+// tee_xuzhifeng@wind-mobi.com 20161117 end
 
 
 	/* with a wmb() */
@@ -436,7 +581,9 @@ static void init_cmdbuf(unsigned long phy_address, unsigned long fdrv_phy_addres
 			unsigned long bdrv_phy_address, unsigned long tlog_phy_address)
 {
 	int cpu_id = 0;
-
+	// tee_xuzhifeng@wind-mobi.com 20161117 begin
+	int retVal = 0;
+	// tee_xuzhifeng@wind-mobi.com 20161117 end
 	init_cmdbuf_entry.phy_addr = phy_address;
 	init_cmdbuf_entry.fdrv_phy_addr = fdrv_phy_address;
 	init_cmdbuf_entry.bdrv_phy_addr = bdrv_phy_address;
@@ -444,12 +591,19 @@ static void init_cmdbuf(unsigned long phy_address, unsigned long fdrv_phy_addres
 
 	/* with a wmb() */
 	wmb();
-
-	get_online_cpus();
+	// tee_xuzhifeng@wind-mobi.com 20161117 begin
+#if 1
+	Flush_Dcache_By_Area((unsigned long)&init_cmdbuf_entry, (unsigned long)&init_cmdbuf_entry + sizeof(struct init_cmdbuf_struct));
+	retVal = add_work_entry(INIT_CMD_CALL, (unsigned long)&init_cmdbuf_entry);
+#else
+	// tee_xuzhifeng@wind-mobi.com 20161117 end
+  get_online_cpus();
 	cpu_id = get_current_cpuid();
 	smp_call_function_single(cpu_id, secondary_init_cmdbuf, (void *)(&init_cmdbuf_entry), 1);
 	put_online_cpus();
-
+// tee_xuzhifeng@wind-mobi.com 20161117 begin
+#endif
+// tee_xuzhifeng@wind-mobi.com 20161117 end
 	/* with a rmb() */
 	rmb();
 }
@@ -491,12 +645,18 @@ long create_cmd_buff(void)
 		free_pages(fdrv_message_buff, get_order(ROUND_UP(MESSAGE_LENGTH, SZ_4K)));
 		return -ENOMEM;
 	}
-
+// tee_xuzhifeng@wind-mobi.com 20161117 begin
+//#ifdef UT_DMA_ZONE
+//	tlog_message_buff = (unsigned long) __get_free_pages(GFP_KERNEL | GFP_DMA, get_order(ROUND_UP(MESSAGE_LENGTH * 64, SZ_4K)));
+//#else
+//	tlog_message_buff = (unsigned long) __get_free_pages(GFP_KERNEL, get_order(ROUND_UP(MESSAGE_LENGTH * 64, SZ_4K)));
+//#endif
 #ifdef UT_DMA_ZONE
-	tlog_message_buff = (unsigned long) __get_free_pages(GFP_KERNEL | GFP_DMA, get_order(ROUND_UP(MESSAGE_LENGTH * 64, SZ_4K)));
+	tlog_message_buff = (unsigned long) __get_free_pages(GFP_KERNEL | GFP_DMA, get_order(ROUND_UP(MESSAGE_LENGTH * 128, SZ_4K)));
 #else
-	tlog_message_buff = (unsigned long) __get_free_pages(GFP_KERNEL, get_order(ROUND_UP(MESSAGE_LENGTH * 64, SZ_4K)));
+	tlog_message_buff = (unsigned long) __get_free_pages(GFP_KERNEL, get_order(ROUND_UP(MESSAGE_LENGTH * 128, SZ_4K)));
 #endif
+// tee_xuzhifeng@wind-mobi.com 20161117 end
 	if (tlog_message_buff == NULL) {
 		pr_err("[%s][%d] Create tlog message buffer failed!\n", __FILE__, __LINE__);
 		free_pages(message_buff, get_order(ROUND_UP(MESSAGE_LENGTH, SZ_4K)));
@@ -611,7 +771,43 @@ long teei_service_init_second(void)
 
 	return 0;
 }
+// tee_xuzhifeng@wind-mobi.com 20161117 begin
+struct boot_switch_core_struct {
+	unsigned long from;
+	unsigned long to;
+};
 
+struct boot_switch_core_struct boot_switch_core_entry;
+
+static void secondary_boot_switch_core(void *info)
+{
+
+	struct boot_switch_core_struct *cd = (struct boot_switch_core_struct *)info;
+
+	/* with a rmb() */
+
+	rmb();
+
+	nt_sched_core(teei_cpu_id[cd->to],teei_cpu_id[cd->from],0);
+
+	/* with a wmb() */
+	wmb();
+}
+
+
+static void boot_switch_core(unsigned long to, unsigned long from)
+{
+	boot_switch_core_entry.to = to;
+	boot_switch_core_entry.from = from;
+
+	/* with a wmb() */
+	wmb();
+
+	smp_call_function_single(0, secondary_boot_switch_core, (void *)(&boot_switch_core_entry), 1);
+	/* with a rmb() */
+	rmb();
+}
+// tee_xuzhifeng@wind-mobi.com 20161117 end
 
 /**
  * @brief  init TEEI Framework
@@ -628,7 +824,9 @@ static int init_teei_framework(void)
 	unsigned long tlog_buff = 0;
 
 	boot_soter_flag = START_STATUS;
-
+// tee_xuzhifeng@wind-mobi.com 20161117 begin
+	sema_init(&(ut_pm_count_sema), 1);
+// tee_xuzhifeng@wind-mobi.com 20161117 end
 	sema_init(&(boot_sema), 0);
 	sema_init(&(fdrv_sema), 0);
 	sema_init(&(fdrv_lock), 1);
@@ -745,7 +943,10 @@ static int init_teei_framework(void)
 
 #define TEEI_CONFIG_FULL_PATH_DEV_NAME "/dev/teei_config"
 #define TEEI_CONFIG_DEV "teei_config"
-#define TEEI_CONFIG_IOC_MAGIC 0x775B777E /* "TEEI Client" */
+// tee_xuzhifeng@wind-mobi.com 20161117 begin
+//#define TEEI_CONFIG_IOC_MAGIC 0x775B777E /* "TEEI Client" */
+#define TEEI_CONFIG_IOC_MAGIC 0x77 /* "TEEI Client" */
+// tee_xuzhifeng@wind-mobi.com 20161117 end
 #define TEEI_CONFIG_IOCTL_INIT_TEEI _IOWR(TEEI_CONFIG_IOC_MAGIC, 3, int)
 
 unsigned int teei_flags = 0;
@@ -915,7 +1116,10 @@ static long teei_client_ioctl(struct file *file, unsigned cmd, unsigned long arg
 		return -ECANCELED;
 	}
 	down(&api_lock);
-	mutex_lock(&pm_mutex);
+// tee_xuzhifeng@wind-mobi.com 20161117 begin	
+	//mutex_lock(&pm_mutex);
+	ut_pm_mutex_lock(&pm_mutex);
+// tee_xuzhifeng@wind-mobi.com 20161117 end
 	switch (cmd) {
 
 	case TEEI_CLIENT_IOCTL_INITCONTEXT_REQ:
@@ -1142,7 +1346,10 @@ static long teei_client_ioctl(struct file *file, unsigned cmd, unsigned long arg
 			pr_err("[%s][%d] command not found!\n", __func__, __LINE__);
 			retVal = -EINVAL;
 	}
-	mutex_unlock(&pm_mutex);
+// tee_xuzhifeng@wind-mobi.com 20161117 begin	
+	//mutex_unlock(&pm_mutex);
+	ut_pm_mutex_unlock(&pm_mutex);
+// tee_xuzhifeng@wind-mobi.com 20161117 end
 	up(&api_lock);
 	return retVal;
 }
@@ -1162,7 +1369,10 @@ static long teei_client_unioctl(struct file *file, unsigned cmd, unsigned long a
 		return -ECANCELED;
 	}
 	down(&api_lock);
-	mutex_lock(&pm_mutex);
+	// tee_xuzhifeng@wind-mobi.com 20161117 begin
+	//mutex_lock(&pm_mutex);
+	ut_pm_mutex_lock(&pm_mutex);
+	// tee_xuzhifeng@wind-mobi.com 20161117 end
 	switch (cmd) {
 
 	case TEEI_CLIENT_IOCTL_INITCONTEXT_REQ:
@@ -1389,7 +1599,10 @@ static long teei_client_unioctl(struct file *file, unsigned cmd, unsigned long a
 		pr_err("[%s][%d] command not found!\n", __func__, __LINE__);
 		retVal = -EINVAL;
 	}
-	mutex_unlock(&pm_mutex);
+	// tee_xuzhifeng@wind-mobi.com 20161117 begin
+	//mutex_unlock(&pm_mutex);
+	ut_pm_mutex_unlock(&pm_mutex);
+	// tee_xuzhifeng@wind-mobi.com 20161117 end
 	up(&api_lock);
 	return retVal;
 }
@@ -1613,8 +1826,14 @@ static int teei_client_init(void)
 	sema_init(&(smc_lock), 1);
 
 	for_each_online_cpu(i) {
-		current_cpu_id = i;
+	// tee_xuzhifeng@wind-mobi.com 20161117 begin
+		//current_cpu_id = i;
+		//pr_debug("init stage : current_cpu_id = %d\n", current_cpu_id);
+		if ((i != 8) && (i != 9)) {
+                       current_cpu_id = i;
 		pr_debug("init stage : current_cpu_id = %d\n", current_cpu_id);
+               }
+	// tee_xuzhifeng@wind-mobi.com 20161117 end
 	}
 
 	pr_debug("begin to create sub_thread.\n");
@@ -1648,7 +1867,10 @@ static int teei_client_init(void)
 	wake_up_process(teei_switch_task);
 
 	cpumask_set_cpu(get_current_cpuid(), &mask);
-	set_cpus_allowed(teei_switch_task, mask);
+	// tee_xuzhifeng@wind-mobi.com 20161117 begin
+	//set_cpus_allowed(teei_switch_task, mask);
+	set_cpus_allowed_ptr(teei_switch_task, &mask);
+	// tee_xuzhifeng@wind-mobi.com 20161117 end
 
 	pr_debug("create the sub_thread successfully!\n");
 

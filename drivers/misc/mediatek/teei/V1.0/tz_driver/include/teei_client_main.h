@@ -55,6 +55,9 @@ extern void init_tlog_entry(void);
 extern int global_fn(void);
 
 extern long create_tlog_thread(unsigned long tlog_virt_addr, unsigned long buff_size);
+// tee_xuzhifeng@wind-mobi.com 20161117 begin
+extern int add_work_entry(int work_type, unsigned long buff);
+// tee_xuzhifeng@wind-mobi.com 20161117 end
 extern long create_utgate_log_thread(unsigned long tlog_virt_addr, unsigned long buff_size);
 
 struct semaphore api_lock;

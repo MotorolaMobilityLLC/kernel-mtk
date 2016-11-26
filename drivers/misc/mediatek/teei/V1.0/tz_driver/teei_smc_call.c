@@ -2,7 +2,9 @@
 #include <linux/types.h>
 #include <linux/sched.h>
 #include <linux/io.h>
-
+// tee_xuzhifeng@wind-mobi.com 20161117 begin
+#include <linux/delay.h>
+// tee_xuzhifeng@wind-mobi.com 20161117 end
 #include "teei_id.h"
 #include "teei_common.h"
 #include "teei_smc_call.h"
@@ -41,13 +43,22 @@ void set_sch_nq_cmd(void)
 
 static u32 teei_smc(u32 cmd_addr, int size, int valid_flag)
 {
-	int retVal = 0;
+// tee_xuzhifeng@wind-mobi.com 20161117 begin
+	unsigned long smc_type = 2;
+// tee_xuzhifeng@wind-mobi.com 20161117 end
+        int retVal = 0;
 
 	add_nq_entry(cmd_addr, size, valid_flag);
 	set_sch_nq_cmd();
 	Flush_Dcache_By_Area((unsigned long)t_nt_buffer, (unsigned long)t_nt_buffer + 0x1000);
-
-	n_invoke_t_nq(0, 0, 0);
+// tee_xuzhifeng@wind-mobi.com 20161117 begin
+	//n_invoke_t_nq(0, 0, 0);
+	n_invoke_t_nq(&smc_type, 0, 0);
+	while(smc_type == 1) {
+		udelay(IRQ_DELAY);
+		nt_sched_t(&smc_type);
+	}
+// tee_xuzhifeng@wind-mobi.com 20161117 begin
 	return 0;
 }
 

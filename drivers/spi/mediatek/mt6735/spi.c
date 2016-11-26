@@ -400,7 +400,8 @@ static int is_pause_mode(struct spi_message *msg)
 	conf = (struct mt_chip_conf *)msg->state;
 	return conf->pause;
 }
-
+//tee_xuzhifeng@wind-mobi.com 20161123 begin
+#if 0
 static int is_fifo_read(struct spi_message *msg)
 {
 	struct mt_chip_conf *conf;
@@ -410,7 +411,8 @@ static int is_fifo_read(struct spi_message *msg)
 	value = (conf->com_mod == FIFO_TRANSFER) || (conf->com_mod == OTHER1);
 	return value;
 }
-
+#endif
+//tee_xuzhifeng@wind-mobi.com 20161123 end
 static int is_interrupt_enable(struct mt_spi_t *ms)
 {
 	u32 cmd;
@@ -1014,7 +1016,8 @@ static int mt_spi_transfer(struct spi_device *spidev, struct spi_message *msg)
 	return -1;
 
 }
-
+//tee_xuzhifeng@wind-mobi.com 20161123 begin
+#if 0
 static irqreturn_t mt_spi_interrupt(int irq, void *dev_id)
 {
 	struct mt_spi_t *ms = (struct mt_spi_t *)dev_id;
@@ -1091,7 +1094,8 @@ static irqreturn_t mt_spi_interrupt(int irq, void *dev_id)
 	SPI_DBG("return IRQ_NONE.\n");
 	return IRQ_NONE;
 }
-
+#endif
+//tee_xuzhifeng@wind-mobi.com 20161123 end
 /* Write chip configuration to HW register */
 static int mt_do_spi_setup(struct mt_spi_t *ms, struct mt_chip_conf *chip_config)
 {
@@ -1417,11 +1421,13 @@ static int __init mt_spi_probe(struct platform_device *pdev)
 	INIT_LIST_HEAD(&ms->queue);
 
 	SPI_INFO(&pdev->dev, "Controller at 0x%p (irq %d)\n", ms->regs, irq);
-#ifdef CONFIG_OF
-	ret = request_irq(irq, mt_spi_interrupt, IRQF_TRIGGER_NONE, dev_name(&pdev->dev), ms);
-#else
-	ret = request_irq(irq, mt_spi_interrupt, IRQF_TRIGGER_LOW, dev_name(&pdev->dev), ms);
-#endif
+//tee_xuzhifeng@wind-mobi.com 20161123 begin
+//#ifdef CONFIG_OF
+	//ret = request_irq(irq, mt_spi_interrupt, IRQF_TRIGGER_NONE, dev_name(&pdev->dev), ms);
+//#else
+	//ret = request_irq(irq, mt_spi_interrupt, IRQF_TRIGGER_LOW, dev_name(&pdev->dev), ms);
+//#endif
+//tee_xuzhifeng@wind-mobi.com 20161123 end
 	if (ret) {
 		dev_err(&pdev->dev, "registering interrupt handler fails.\n");
 		goto out;

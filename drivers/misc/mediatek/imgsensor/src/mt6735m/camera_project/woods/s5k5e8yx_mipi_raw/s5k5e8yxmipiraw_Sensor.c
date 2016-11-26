@@ -1,5 +1,5 @@
 /*
-	wangkangmin@wind-mobi.com 20160107 begin
+	wangkangmin@wind-mobi.com 20161123 begin
 */
 /* *****************************************************************************
  *
@@ -43,30 +43,24 @@
 #define LOG_1 LOG_INF("s5k5e8yx,MIPI 2LANE\n")
 #define LOG_2 LOG_INF("preview 1280*960@30fps,864Mbps/lane; video 1280*960@30fps,864Mbps/lane; capture 5M@30fps,864Mbps/lane\n")
 /****************************   Modify end    *******************************************/
-#define LOG_INF(format, args...)    pr_err(PFX "[%s] " format, __FUNCTION__, ##args)
+#define LOG_INF(format, args...)    pr_debug(PFX "[%s] " format, __FUNCTION__, ##args)
 //static int first_flag = 1;
-//#define S5K5E8_OTP_SUPPORT
+extern int read_s5k5e8_eeprom_mtk_fmt(void);
+#define S5K5E8_OTP_SUPPORT
 #ifdef S5K5E8_OTP_SUPPORT
 struct S5K5E8_otp_struct {
 int flag;
 int MID;
 int LID;
-//luminjie@wind-mobi.com 20160809 begin
-int RGr_ratio;
-int BGr_ratio;
-int GbGr_ratio;
-//luminjie@wind-mobi.com 20160809 end
+int R_gain_h;
+int R_gain_l;
+int B_gain_h;
+int B_gain_l;
+int G_gain_h;
+int G_gain_l;
 };
-//luminjie@wind-mobi.com 20160818 bgein
-kal_uint16 R_Gr_gain=0,B_Gb_gain=0,Gb_Gr_gain=0;
-kal_uint16 R_Gr_gain_golde=0,B_Gb_gain_golde=0,Gb_Gr_gain_golde=0;
-//extern int read_s5k5e8_eeprom_mtk_fmt(void);
-//luminjie@wind-mobi.com 20160818 end
-//luminjie@wind-mobi.com 20160809 begin
-#define tRG_Ratio_typical 0x280
-#define tBG_Ratio_typical 0x24f
-#define GbGr_ratio_Typical 0x3fe
-//luminjie@wind-mobi.com 20160809 end
+kal_uint16 R_gain=0,B_gain=0;
+kal_uint8  vendor_id=0;
 #endif
 
 static DEFINE_SPINLOCK(imgsensor_drv_lock);
@@ -1038,114 +1032,55 @@ static int read_otp_s5k5e8(struct S5K5E8_otp_struct *otp_ptr)
     mDELAY(5);
 	addr = 0;
     otp_flag=read_cmos_sensor(0x0A04);//flag of info and awb
-	//luminjie@wind-mobi.com 20160809 begin
-	LOG_INF("luminjie s5k5e8 otp_flag=%x\n",read_cmos_sensor(0x0A04));
-    if(otp_flag) 
+    if((otp_flag & 0xc0) == 0x40) 
 	{
-	  addr = 0x0A0C; // group 1
-	   LOG_INF("luminjie s5k5e8 group1\n");
-	//luminjie@wind-mobi.com 20160809 end
+	  addr = 0x0A10; // group 1
+	  otp_ptr->MID = read_cmos_sensor(0x0A05);
+	  vendor_id = otp_ptr->MID;
+	  LOG_INF("wangkangmin group 1 mid = %x\n",otp_ptr->MID);
+	}
+	else if((otp_flag & 0x30) == 0x10) 
+	{
+	  addr = 0x0A16; // group 2
+	  otp_ptr->MID = read_cmos_sensor(0x0A08);
+	  vendor_id = otp_ptr->MID;
+	  LOG_INF("wangkangmin group 2 mid = %x\n",otp_ptr->MID);
 	}
 	if(addr != 0)
 	{
-	 //luminjie@wind-mobi.com 20160809 begin
-
-	 otp_ptr->RGr_ratio = ((read_cmos_sensor(addr)&0xff)<<8) | (read_cmos_sensor(addr+1)&0xff);
-     otp_ptr->BGr_ratio = ((read_cmos_sensor(addr+2)&0xff)<<8) | (read_cmos_sensor(addr+3)&0xff);
-     otp_ptr->GbGr_ratio = ((read_cmos_sensor(addr+4)&0xff)<<8) | (read_cmos_sensor(addr+5)&0xff);
-	 LOG_INF("luminjie s5k5e8 0x0a0c_l=%x,0x0a0c_h=%x",read_cmos_sensor(addr),read_cmos_sensor(addr+1));
-	 LOG_INF("luminjie s5k5e8 0x0a0c_l=%x,0x0a0c_h=%x",read_cmos_sensor(addr+2),read_cmos_sensor(addr+3));
-	 LOG_INF("luminjie s5k5e8 0x0a0c_l=%x,0x0a0c_h=%x",read_cmos_sensor(addr+4),read_cmos_sensor(addr+5));
-	 LOG_INF("luminjie s5k5e8 RG_ratio=%x,BG_ratio=%x,BGBR_ratio=%x\n",otp_ptr->RGr_ratio,otp_ptr->BGr_ratio,otp_ptr->GbGr_ratio);
-	 //luminjie@wind-mobi.com 20160818 bgein
-	 R_Gr_gain = otp_ptr->RGr_ratio;
-	 B_Gb_gain = otp_ptr->BGr_ratio;
-	 R_Gr_gain_golde = 0x280;
-	 B_Gb_gain_golde = 0x24f;
-	 //luminjie@wind-mobi.com 20160818 end
+     otp_ptr->R_gain_h = read_cmos_sensor(addr);
+	 otp_ptr->R_gain_l = read_cmos_sensor(addr+1);
+	 otp_ptr->G_gain_h = read_cmos_sensor(addr+2);
+	 otp_ptr->G_gain_l = read_cmos_sensor(addr+3);
+	 otp_ptr->B_gain_h = read_cmos_sensor(addr+4);
+	 otp_ptr->B_gain_l = read_cmos_sensor(addr+5);
+	 R_gain = (otp_ptr->R_gain_h<<8)|(otp_ptr->R_gain_l) ;
+	 B_gain = (otp_ptr->B_gain_h<<8)|(otp_ptr->B_gain_l) ;
+	 LOG_INF("wangkangmin s5k5e8 read R_G_B gain= %x,%x,%x,%x,%x,%x,%x,%x \n",otp_ptr->R_gain_h,otp_ptr->R_gain_l,otp_ptr->B_gain_h,otp_ptr->B_gain_l,otp_ptr->G_gain_h,otp_ptr->G_gain_l,R_gain,B_gain);
 	}
-   	else
-	{
-	 otp_ptr->flag=0x00;
-	 otp_ptr->RGr_ratio = 0x00;
-	 otp_ptr->BGr_ratio = 0x00;
-	 otp_ptr->GbGr_ratio = 0x00;
-	}
-	write_cmos_sensor(0x0A00,0x00);
-    return 0;
+   write_cmos_sensor(0x0A00,0x04);
+   write_cmos_sensor(0x0A00,0x00);
+   
+   return 0;
 }
-//luminjie@wind-mobi.com 20160818 bgein
 #if 0
 static int apply_otp_s5k5e8(struct S5K5E8_otp_struct *otp_ptr)
 {
- kal_uint32 R_to_G, B_to_G, G_to_G, R_Gain, B_Gain, G_Gain, G_gain_R, G_gain_B; 
- 
-  R_to_G = otp_ptr->RGr_ratio;                                                                                                                                                                                                                                                                                                                                        
-  B_to_G = otp_ptr->BGr_ratio;                                                                                                                                                                                                                                                                                                                                        
-  G_to_G = otp_ptr->GbGr_ratio;   
-  
- if(B_to_G < tBG_Ratio_typical)                                                                                                                                                                                                                                                                                                                               
-	{                                                                                                                                                                                                                                                                                                                                                            
-		if(R_to_G < tRG_Ratio_typical)                                                                                                                                                                                                                                                                                                                       
-		{                                                                                                                                                                                                                                                                                                                                                    
-			G_Gain = 0x100;                                                                                                                                                                                                                                                                                                                              
-			B_Gain = 0x100 * tBG_Ratio_typical / B_to_G;                                                                                                                                                                                                                                                                                                 
-			R_Gain = 0x100 * tRG_Ratio_typical / R_to_G;                                                                                                                                                                                                                                                                                                 
-		}                                                                                                                                                                                                                                                                                                                                                    
-		else                                                                                                                                                                                                                                                                                                                                                 
-		{                                                                                                                                                                                                                                                                                                                                                    
-	       	R_Gain = 0x100;                                                                                                                                                                                                                                                                                                                                      
-			G_Gain = 0x100 * R_to_G / tRG_Ratio_typical;                                                                                                                                                                                                                                                                                                 
-			B_Gain = G_Gain * tBG_Ratio_typical / B_to_G;	                                                                                                                                                                                                                                                                                             
-		}                                                                                                                                                                                                                                                                                                                                                    
-	}                                                                                                                                                                                                                                                                                                                                                            
-	else                                                                                                                                                                                                                                                                                                                                                         
-	{                                                                                                                                                                                                                                                                                                                                                            
-		if(R_to_G < tRG_Ratio_typical)                                                                                                                                                                                                                                                                                                                       
-		{                                                                                                                                                                                                                                                                                                                                                    
-			B_Gain = 0x100;                                                                                                                                                                                                                                                                                                                              
-			G_Gain = 0x100 * B_to_G / tBG_Ratio_typical;                                                                                                                                                                                                                                                                                                 
-			R_Gain = G_Gain * tRG_Ratio_typical / R_to_G;                                                                                                                                                                                                                                                                                                
-		}                                                                                                                                                                                                                                                                                                                                                    
-		else                                                                                                                                                                                                                                                                                                                                                 
-		{                                                                                                                                                                                                                                                                                                                                                    
-	        G_gain_B = 0x100*B_to_G / tBG_Ratio_typical;                                                                                                                                                                                                                                                                                                         
-		    G_gain_R = 0x100*R_to_G / tRG_Ratio_typical;                                                                                                                                                                                                                                                                                                     
-					                                                                                                                                                                                                                                                                                                                             
-			if(G_gain_B > G_gain_R)                                                                                                                                                                                                                                                                                                                      
-			{                                                                                                                                                                                                                                                                                                                                            
-				B_Gain = 0x100;                                                                                                                                                                                                                                                                                                                      
-				G_Gain = G_gain_B;                                                                                                                                                                                                                                                                                                                   
-				R_Gain = G_Gain * tRG_Ratio_typical / R_to_G;                                                                                                                                                                                                                                                                                        
-			}                                                                                                                                                                                                                                                                                                                                            
-			else                                                                                                                                                                                                                                                                                                                                         
-			{                                                                                                                                                                                                                                                                                                                                            
-				R_Gain = 0x100;                                                                                                                                                                                                                                                                                                                      
-				G_Gain = G_gain_R;                                                                                                                                                                                                                                                                                                                   
-				B_Gain = G_Gain * tBG_Ratio_typical / B_to_G;                                                                                                                                                                                                                                                                                        
-			}                                                                                                                                                                                                                                                                                                                                            
-		}	                                                                                                                                                                                                                                                                                                                                             
-	} 
-	LOG_INF("liukun write s5k4h8 R_Gain=%x,B_Gain=%x,G_Gain=%x\n",R_Gain,B_Gain,G_Gain);
-	write_cmos_sensor(0x020E,G_Gain>>8);
-	write_cmos_sensor(0x020F,G_Gain&0xff);
-	write_cmos_sensor(0x0210,R_Gain>>8);
-    write_cmos_sensor(0x0211,R_Gain&0xff);
-	write_cmos_sensor(0x0212,B_Gain>>8);
-    write_cmos_sensor(0x0213,B_Gain&0xff);
-	write_cmos_sensor(0x0214,G_Gain>>8);
-    write_cmos_sensor(0x0215,G_Gain&0xff);
-	LOG_INF("liukun read s5k4h8 R_Gain=%x\n",(read_cmos_sensor(0x0210)<<8) | read_cmos_sensor(0x0211));
-	LOG_INF("liukun read s5k4h8 B_Gain=%x\n",(read_cmos_sensor(0x0212)<<8) | read_cmos_sensor(0x0213));
-	LOG_INF("liukun read s5k4h8 G_Gain=%x\n",(read_cmos_sensor(0x020E)<<8) | read_cmos_sensor(0x020F));
-	LOG_INF("liukun read s5k4h8 G_Gain=%x\n",(read_cmos_sensor(0x0214)<<8) | read_cmos_sensor(0x0215));
-	
-	return 0;
+	 LOG_INF("wangkangmin s5k5e8 write R_G_B gain= %x,%x,%x,%x,%x,%x\n",otp_ptr->R_gain_h,otp_ptr->R_gain_l,otp_ptr->B_gain_h,otp_ptr->B_gain_l,otp_ptr->G_gain_h,otp_ptr->G_gain_l);
+     write_cmos_sensor(0x020E,otp_ptr->G_gain_h);
+     write_cmos_sensor(0x020F,otp_ptr->G_gain_l);
+     write_cmos_sensor(0x0210,otp_ptr->R_gain_h);
+     write_cmos_sensor(0x0211,otp_ptr->R_gain_l);
+     write_cmos_sensor(0x0212,otp_ptr->B_gain_h);
+     write_cmos_sensor(0x0213,otp_ptr->B_gain_l);
+     write_cmos_sensor(0x0214,otp_ptr->G_gain_h);
+     write_cmos_sensor(0x0215,otp_ptr->G_gain_l);
+	 
+	 return 0;
 }
-//luminjie@wind-mobi.com 20160809 end
 #endif
-//luminjie@wind-mobi.com 20160818 end
 #endif
+
 /*************************************************************************
 * FUNCTION
 *	get_imgsensor_id
@@ -1166,6 +1101,9 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 {
 	kal_uint8 i = 0;
 	kal_uint8 retry = 2;
+	#ifdef S5K5E8_OTP_SUPPORT
+	struct S5K5E8_otp_struct *otp_ptr1 = (struct S5K5E8_otp_struct *)kzalloc(sizeof(struct S5K5E8_otp_struct), GFP_KERNEL);
+	#endif
 	//sensor have two i2c address 0x6c 0x6d & 0x21 0x20, we should detect the module used i2c address
 	while(imgsensor_info.i2c_addr_table[i] != 0xff) {
 		spin_lock(&imgsensor_drv_lock);
@@ -1173,7 +1111,15 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 		spin_unlock(&imgsensor_drv_lock);
 		do {
 			*sensor_id = return_sensor_id();
-			if (*sensor_id == imgsensor_info.sensor_id) {				
+
+			if (*sensor_id == imgsensor_info.sensor_id) {
+				//wangkangmin@wind-mobi.com 20161116 bgein
+				#ifdef S5K5E8_OTP_SUPPORT
+				read_otp_s5k5e8(otp_ptr1);
+				read_s5k5e8_eeprom_mtk_fmt();
+				kfree(otp_ptr1);
+				#endif
+				//wangkangmin@wind-mobi.com 20161116 end				
 				LOG_INF("i2c write id: 0x%x, sensor id: 0x%x\n", imgsensor.i2c_write_id,*sensor_id);	  
 				return ERROR_NONE;
 			}	
@@ -1214,12 +1160,6 @@ static kal_uint32 open(void)
 	kal_uint8 i = 0;
 	kal_uint8 retry = 2;
 	kal_uint32 sensor_id = 0; 
-#ifdef S5K5E8_OTP_SUPPORT
-	int size;
-	struct S5K5E8_otp_struct *otp_ptr1;
-	size = sizeof(struct S5K5E8_otp_struct);
-    otp_ptr1 = (struct S5K5E8_otp_struct *)kzalloc(size, GFP_KERNEL);
-#endif
 	LOG_1;
 	LOG_2;
 	/*
@@ -1252,18 +1192,7 @@ static kal_uint32 open(void)
 		return ERROR_SENSOR_CONNECT_FAIL;
 	
 	/* initail sequence write in  */
-	
-    #ifdef S5K5E8_OTP_SUPPORT
-    read_otp_s5k5e8(otp_ptr1);
-	#endif
 	sensor_init();
-	#ifdef S5K5E8_OTP_SUPPORT
-	//luminjie@wind-mobi.com 20160818 bgein
-	//apply_otp_s5k5e8(otp_ptr1);
-	//read_s5k5e8_eeprom_mtk_fmt();
-	//luminjie@wind-mobi.com 20160818 end
-	kfree(otp_ptr1);
-    #endif
 
 	spin_lock(&imgsensor_drv_lock);
 
@@ -1927,5 +1856,5 @@ UINT32 S5K5E8YX_MIPI_RAW_SensorInit(PSENSOR_FUNCTION_STRUCT *pfFunc)
 	return ERROR_NONE;
 }	/*	S5K5E8YX_MIPI_RAW_SensorInit	*/
 /*
-	wangkangmin@wind-mobi.com 20160107 end
+	wangkangmin@wind-mobi.com 20161123 end
 */

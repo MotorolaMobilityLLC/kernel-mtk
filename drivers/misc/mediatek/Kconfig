@@ -57,6 +57,15 @@ config MT_ENG_BUILD
 	  features built-in. This option is supposed to specifiy engineering or
 	  user load for this build.
 	  If you are not sure about this, set n
+	  
+#tuwenzan@wind-mobi.com add at 20161125 begin
+config WIND_FM_RSSI
+	bool "flag for read FM RSSI"
+	default n
+	help
+	  this is for read fm rssi.
+	  If you are not sure about this, set n
+#tuwenzan@wind-mobi.com add at 20161125 end
 
 config MTK_LDVT
 	bool "LDVT"
@@ -137,7 +146,13 @@ config MTK_PERIODIC_DATA_COLLECTION
 	  It tries to compact memory periodically and
 	  to create a unused contiguous memory. The
 	  DRAM can enter low power state if it is idle.
-
+#liupeng@wind-mobi.com 20161121 begin
+config MTK_BOARD_ID
+	bool "BOARD ID"
+	default n
+	
+source "drivers/misc/mediatek/board_id/Kconfig"
+#liupeng@wind-mobi.com 20161121 end
 source "drivers/misc/mediatek/base/power/Kconfig"
 source "drivers/misc/mediatek/freqhopping/Kconfig"
 source "drivers/misc/mediatek/pmic/Kconfig"

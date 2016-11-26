@@ -186,9 +186,11 @@ CONFIG_MTK_CLKMGR=y
 CONFIG_MTK_DISABLE_PICACHU=y
 CONFIG_MTK_FREQ_HOPPING=y
 CONFIG_MTK_THERMAL_PA_VIA_ATCMD=y
-##wangkangmin@wind-mobi.com add for camera 20161108 begin
+##wangkangmin@wind-mobi.com add for camera 20161123 begin
 CONFIG_CUSTOM_KERNEL_IMGSENSOR="imx219_mipi_raw s5k5e8yx_mipi_raw"
-##wangkangmin@wind-mobi.com add for camera 20161108 end
+CONFIG_CUSTOM_KERNEL_CAM_CAL_DRV="s5k5e8_eeprom"
+CONFIG_MTK_CAM_CAL=y
+##wangkangmin@wind-mobi.com add for camera 20161123 end
 CONFIG_MTK_CMDQ=y
 CONFIG_MTK_FLASHLIGHT=y
 CONFIG_CUSTOM_KERNEL_FLASHLIGHT="constant_flashlight"
@@ -222,12 +224,13 @@ CONFIG_LCM_WIDTH="720"
 CONFIG_MTK_AAL_SUPPORT=y
 CONFIG_MTK_SENSOR_SUPPORT=y
 CONFIG_CUSTOM_KERNEL_ACCELEROMETER=y
-#tuwenzan@wind-mobi.com modify at 20161108 begin
+#tuwenzan@wind-mobi.com modify at 20161125 begin
 CONFIG_MTK_BMA2X2=y
 CONFIG_MTK_MN66238TKDN=y
 # CONFIG_MTK_CM36652_NEW is not set
 # CONFIG_MTK_MC3410_NEW is not set
-#tuwenzan@wind-mobi.com modify at 20161108 end
+CONFIG_WIND_FM_RSSI=y
+#tuwenzan@wind-mobi.com modify at 20161125 end
 CONFIG_CUSTOM_KERNEL_ALSPS=y
 CONFIG_CUSTOM_KERNEL_GYROSCOPE=y
 CONFIG_MTK_ITG1010_NEW=y
@@ -250,6 +253,7 @@ CONFIG_MTK_ECCCI_DRIVER=y
 # liupeng@wind-mobi.com 20161118 begin
 CONFIG_MTK_NFC=y
 CONFIG_ODM2_NFC_PN548=y
+CONFIG_MTK_BOARD_ID=y
 # liupeng@wind-mobi.com 20161118 end
 CONFIG_CUSTOM_KERNEL_SSW="ssw_single_v2"
 CONFIG_MTK_ACCDET=y
@@ -528,3 +532,7 @@ CONFIG_CRYPTO_LZO=y
 # CONFIG_CRYPTO_ANSI_CPRNG is not set
 # CONFIG_CRYPTO_HW is not set
 CONFIG_LIBCRC32C=y
+#xuzhifeng@wind-mobi.com 20161123 begin
+CONFIG_MTK_FINGERPRINT_SUPPORT=y
+CONFIG_EGISTEC_FINGERPRINT=y
+#xuzhifeng@wind-mobi.com 20161123 end

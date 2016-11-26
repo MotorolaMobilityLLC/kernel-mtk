@@ -20,7 +20,6 @@
 #include <linux/timer.h>
 #include <linux/of.h>
 #include <linux/of_irq.h>
-
 #define DEBUG_THREAD 1
 
 /*----------------------------------------------------------------------
@@ -1417,6 +1416,17 @@ static ssize_t show_accdet_dump_register(struct device_driver *ddri, char *buf)
 
 	return strlen(buf);
 }
+//tuwenzan@wind-mobi.com add at 20161124 begin
+#ifdef CONFIG_WIND_FM_RSSI
+static ssize_t show_fm_rssi_state(struct device_driver *ddri, char *buf)
+{
+	signed int rssi_value = 0;
+	mt6627_GetCurRSSI(&rssi_value);
+	return sprintf(buf,"Rssi = %d\n",rssi_value);
+}
+#endif
+//tuwenzan@wind-mobi.com add at 20161124 end
+
 
 static int dbug_thread(void *unused)
 {
@@ -1510,6 +1520,10 @@ static DRIVER_ATTR(dump_register, S_IWUSR | S_IRUGO, show_accdet_dump_register, 
 static DRIVER_ATTR(set_headset_mode, S_IWUSR | S_IRUGO, NULL, store_accdet_set_headset_mode);
 static DRIVER_ATTR(start_debug, S_IWUSR | S_IRUGO, NULL, store_accdet_start_debug_thread);
 static DRIVER_ATTR(set_register, S_IWUSR | S_IRUGO, NULL, store_accdet_set_register);
+//tuwenzan@wind-mobi.com add at 20161124 begin
+#ifdef CONFIG_WIND_FM_RSSI
+static DRIVER_ATTR(fm_rssi_state, 0644, show_fm_rssi_state, NULL);
+#endif
 
 /*----------------------------------------------------------------------------*/
 static struct driver_attribute *accdet_attr_list[] = {
@@ -1518,6 +1532,9 @@ static struct driver_attribute *accdet_attr_list[] = {
 	&driver_attr_dump_register,
 	&driver_attr_set_headset_mode,
 	&driver_attr_accdet_call_state,
+#ifdef CONFIG_WIND_FM_RSSI
+	&driver_attr_fm_rssi_state,
+#endif
 /*#ifdef CONFIG_ACCDET_PIN_RECOGNIZATION*/
 	&driver_attr_accdet_pin_recognition,
 /*#endif*/
@@ -1525,6 +1542,7 @@ static struct driver_attribute *accdet_attr_list[] = {
 	&driver_attr_TS3A225EConnectorType,
 #endif
 };
+//tuwenzan@wind-mobi.com add at 20161124 end
 
 static int accdet_create_attr(struct device_driver *driver)
 {

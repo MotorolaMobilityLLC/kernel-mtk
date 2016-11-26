@@ -188,12 +188,12 @@
 static inline void n_init_t_boot_stage1(
 	uint64_t p0,
 	uint64_t p1,
-	uint64_t p2)
+	uint64_t *p2)
 {
 	uint64_t temp[3];
 	temp[0] = p0;
 	temp[1] = p1;
-	temp[2] = p2;
+//	temp[2] = p2;
 
 	__asm__ volatile(
 	/* ".arch_extension sec\n" */
@@ -202,14 +202,18 @@ static inline void n_init_t_boot_stage1(
 	"ldr x2, [%[temp], #8]\n\t"
 	"ldr x3, [%[temp], #16]\n\t"
 	"smc 0\n\t"
+	"str x2, [%[temp], #0]\n\t"
 	"nop"
 	: :
 	[fun_id] "r" (N_INIT_T_BOOT_STAGE1), [temp] "r" (temp)
 	: "x0", "x1", "x2", "x3", "memory");
+	*p2 = temp[0];
 }
 
-static inline void n_switch_to_t_os_stage2(void)
+static inline void n_switch_to_t_os_stage2(uint64_t *p0)
 {
+	uint64_t temp[3];
+
 	__asm__ volatile(
 	/* ".arch_extension sec\n" */
 	"mov x0, %[fun_id]\n\t"
@@ -217,10 +221,12 @@ static inline void n_switch_to_t_os_stage2(void)
 	"mov x2, #0\n\t"
 	"mov x3, #0\n\t"
 	"smc 0\n\t"
+	"str x2, [%[temp], #0]\n\t"
 	"nop"
 	: :
-	[fun_id] "r" (N_SWITCH_TO_T_OS_STAGE2)
+	[fun_id] "r" (N_SWITCH_TO_T_OS_STAGE2), [temp] "r" (temp)
 	: "x0", "x1", "x2", "x3",  "memory");
+	*p0 = temp[0];
 }
 
 static inline void nt_dump_state(void)
@@ -271,12 +277,12 @@ static inline void n_get_param_in(
 static inline void n_init_t_fc_buf(
 	uint64_t p0,
 	uint64_t p1,
-	uint64_t p2)
+	uint64_t *p2)
 {
 	uint64_t temp[3];
 	temp[0] = p0;
 	temp[1] = p1;
-	temp[2] = p2;
+	//temp[2] = p2;
 
 	__asm__ volatile(
 	/* ".arch_extension sec\n" */
@@ -285,18 +291,20 @@ static inline void n_init_t_fc_buf(
 	"ldr x2, [%[temp], #8]\n\t"
 	"ldr x3, [%[temp], #16]\n\t"
 	"smc 0\n\t"
+	"str x2, [%[temp], #0]\n\t"
 	"nop"
 	: :
 	[fun_id] "r" (N_INIT_T_FC_BUF), [temp] "r" (temp)
 	: "x0", "x1", "x2", "x3", "memory");
+	*p2 = temp[0];
 }
 static inline void n_invoke_t_fast_call(
-	uint64_t p0,
+	uint64_t *p0,
 	uint64_t p1,
 	uint64_t p2)
 {
 	uint64_t temp[3];
-	temp[0] = p0;
+	temp[0] = (uint64_t)p0;
 	temp[1] = p1;
 	temp[2] = p2;
 
@@ -307,15 +315,19 @@ static inline void n_invoke_t_fast_call(
 	"ldr x2, [%[temp], #8]\n\t"
 	"ldr x3, [%[temp], #16]\n\t"
 	"smc 0\n\t"
+	"str x2, [%[temp], #0]\n\t"
 	"nop"
 	: :
 	[fun_id] "r" (N_INVOKE_T_FAST_CALL), [temp] "r" (temp)
 	: "x0", "x1", "x2", "x3", "memory");
+	*p0 = temp[0];
 }
 
 /*  ==================  NT STANDARD CALL ================   */
-static inline void nt_sched_t(void)
+static inline void nt_sched_t(uint64_t *p)
 {
+	uint64_t temp[3];
+
 	__asm__ volatile(
 	/* ".arch_extension sec\n" */
 	"mov x0, %[fun_id]\n\t"
@@ -323,10 +335,12 @@ static inline void nt_sched_t(void)
 	"mov x2, #0\n\t"
 	"mov x3, #0\n\t"
 	"smc 0\n\t"
+	"str x2, [%[temp], #0]\n\t"
 	"nop"
 	: :
-	[fun_id] "r" (NT_SCHED_T)
+	[fun_id] "r" (NT_SCHED_T), [temp] "r" (temp)
 	: "x0", "x1", "x2", "x3", "memory");
+	*p = temp[0];
 }
 
 static inline void n_invoke_t_sys_ctl(
@@ -353,12 +367,12 @@ static inline void n_invoke_t_sys_ctl(
 }
 
 static inline void n_invoke_t_nq(
-	uint64_t p0,
+	uint64_t *p0,
 	uint64_t p1,
 	uint64_t p2)
 {
 	uint64_t temp[3];
-	temp[0] = p0;
+	temp[0] = (uint64_t)p0;
 	temp[1] = p1;
 	temp[2] = p2;
 
@@ -369,19 +383,21 @@ static inline void n_invoke_t_nq(
 	"ldr x2, [%[temp], #8]\n\t"
 	"ldr x3, [%[temp], #16]\n\t"
 	"smc 0\n\t"
+	"str x2, [%[temp], #0]\n\t"
 	"nop"
 	: :
 	[fun_id] "r" (N_INVOKE_T_NQ), [temp] "r" (temp)
 	: "x0", "x1", "x2", "x3", "memory");
+	*p0 = temp[0];
 }
 
 static inline void n_invoke_t_drv(
-	uint64_t p0,
+	uint64_t *p0,
 	uint64_t p1,
 	uint64_t p2)
 {
 	uint64_t temp[3];
-	temp[0] = p0;
+	temp[0] = (uint64_t)p0;
 	temp[1] = p1;
 	temp[2] = p2;
 
@@ -392,10 +408,12 @@ static inline void n_invoke_t_drv(
 	"ldr x2, [%[temp], #8]\n\t"
 	"ldr x3, [%[temp], #16]\n\t"
 	"smc 0\n\t"
+	"str x2, [%[temp], #0]\n\t"
 	"nop"
 	: :
 	[fun_id] "r" (N_INVOKE_T_DRV), [temp] "r" (temp)
 	: "x0", "x1", "x2", "x3", "memory");
+	*p0 = temp[0];
 }
 
 static inline void n_raise_t_event(
@@ -422,12 +440,12 @@ static inline void n_raise_t_event(
 }
 
 static inline void n_ack_t_invoke_drv(
-	uint64_t p0,
+	uint64_t *p0,
 	uint64_t p1,
 	uint64_t p2)
 {
 	uint64_t temp[3];
-	temp[0] = p0;
+	temp[0] = (uint64_t)p0;
 	temp[1] = p1;
 	temp[2] = p2;
 
@@ -438,19 +456,21 @@ static inline void n_ack_t_invoke_drv(
 	"ldr x2, [%[temp], #8]\n\t"
 	"ldr x3, [%[temp], #16]\n\t"
 	"smc 0\n\t"
+	"str x2, [%[temp], #0]\n\t"
 	"nop"
 	: :
 	[fun_id] "r" (N_ACK_T_INVOKE_DRV), [temp] "r" (temp)
 	: "x0", "x1", "x2", "x3", "memory");
+	*p0 = temp[0];
 }
 
 static inline void n_invoke_t_load_tee(
-	uint64_t p0,
+	uint64_t *p0,
 	uint64_t p1,
 	uint64_t p2)
 {
 	uint64_t temp[3];
-	temp[0] = p0;
+	temp[0] = (uint64_t)p0;
 	temp[1] = p1;
 	temp[2] = p2;
 
@@ -461,19 +481,21 @@ static inline void n_invoke_t_load_tee(
 	"ldr x2, [%[temp], #8]\n\t"
 	"ldr x3, [%[temp], #16]\n\t"
 	"smc 0\n\t"
+	"str x2, [%[temp], #0]\n\t"
 	"nop"
 	: :
 	[fun_id] "r" (N_INVOKE_T_LOAD_TEE), [temp] "r" (temp)
 	: "x0", "x1", "x2", "x3", "memory");
+	*p0 = temp[0];
 }
 
 static inline void n_ack_t_load_img(
-	uint64_t p0,
+	uint64_t *p0,
 	uint64_t p1,
 	uint64_t p2)
 {
 	uint64_t temp[3];
-	temp[0] = p0;
+	temp[0] = *p0;
 	temp[1] = p1;
 	temp[2] = p2;
 
@@ -484,10 +506,12 @@ static inline void n_ack_t_load_img(
 	"ldr x2, [%[temp], #8]\n\t"
 	"ldr x3, [%[temp], #16]\n\t"
 	"smc 0\n\t"
+	"str x2, [%[temp], #0]\n\t"
 	"nop"
 	: :
 	[fun_id] "r" (N_ACK_T_LOAD_IMG), [temp] "r" (temp)
 	: "x0", "x1", "x2", "x3", "memory");
+	*p0 = temp[0];
 }
 
 static inline void nt_sched_t_fiq(
@@ -589,6 +613,40 @@ static inline void smc_out(uint32_t id,
 			: "r0", "r1", "r2", "r3",  "memory");
 }
 
+//tee_xuzhifeng@wind-mobi.com 20161123 begin
+static inline void smc_inout(uint32_t id,
+		uint32_t p0,
+		uint32_t p1,
+		uint32_t p2,
+		uint32_t *ret)
+{
+	uint32_t fun_id = (uint32_t)id;
+	uint32_t temp[3];
+
+	temp[0] = p0;
+	temp[1] = p1;
+	temp[2] = p2;
+
+
+	__asm__ volatile(
+			".arch_extension sec\n"
+			"mov r0, %[fun_id]\n\t"
+			"ldr r1, [%[temp], #0]\n\t"
+			"ldr r2, [%[temp], #4]\n\t"
+			"ldr r3, [%[temp], #8]\n\t"
+			"smc 0\n\t"
+			"nop\n\t"
+			"nop\n\t"
+			"nop\n\t"
+			"str r2, [%[temp]]\n\t"
+			"nop"
+			: :
+			[fun_id] "r" (fun_id), [temp] "r" (temp)
+			: "r0", "r1", "r2", "r3",  "memory");
+			*ret = temp[0];
+
+}
+//tee_xuzhifeng@wind-mobi.com 20161123 end
 
 static inline void smc_in(
 		uint32_t id,
@@ -632,6 +690,8 @@ static inline void smc_in(
 
 
 /*  ==================  NT FAST CALL ================   */
+//tee_xuzhifeng@wind-mobi.com 20161123 begin
+/*
 static inline void n_init_t_boot_stage1(
 		uint32_t p0,
 		uint32_t p1,
@@ -645,6 +705,21 @@ static inline void n_switch_to_t_os_stage2(void)
 {
 	smc_out(N_SWITCH_TO_T_OS_STAGE2_32, 0, 0, 0);
 }
+*/
+static inline void n_init_t_boot_stage1(
+		uint32_t p0,
+		uint32_t p1,
+		uint32_t *p2)
+{
+	smc_inout(N_INIT_T_BOOT_STAGE1_32, p0, p1, 0,p2);
+
+}
+
+static inline void n_switch_to_t_os_stage2(uint32_t *p0)
+{
+	smc_inout(N_SWITCH_TO_T_OS_STAGE2_32, 0, 0, 0,p0);
+}
+//tee_xuzhifeng@wind-mobi.com 20161123 end
 
 static inline void nt_dump_state(void)
 {
@@ -662,7 +737,8 @@ static inline void n_get_param_in(
 
 }
 
-
+//tee_xuzhifeng@wind-mobi.com 20161123 begin
+/*
 static inline void n_init_t_fc_buf(
 		uint32_t p0,
 		uint32_t p1,
@@ -671,6 +747,17 @@ static inline void n_init_t_fc_buf(
 	smc_out(N_INIT_T_FC_BUF_32, p0, p1, p2);
 
 }
+*/
+static inline void n_init_t_fc_buf(
+		uint32_t p0,
+		uint32_t p1,
+		uint32_t *p2)
+{
+	smc_inout(N_INIT_T_FC_BUF_32, p0, p1, 0,p2);
+
+}
+
+/*
 static inline void n_invoke_t_fast_call(
 		uint32_t p0,
 		uint32_t p1,
@@ -678,8 +765,17 @@ static inline void n_invoke_t_fast_call(
 {
 	smc_out(N_INVOKE_T_FAST_CALL_32, p0, p1, p2);
 }
+*/
+static inline void n_invoke_t_fast_call(
+		uint32_t *p0,
+		uint32_t p1,
+		uint32_t p2)
+{
+	smc_inout(N_INVOKE_T_FAST_CALL_32, *p0, p1, p2,p0);
+}
 
 /*  ==================  NT STANDARD CALL ================   */
+/*
 static inline void nt_sched_t(void)
 {
 	uint32_t p0;
@@ -689,7 +785,17 @@ static inline void nt_sched_t(void)
 	smc_out(NT_SCHED_T_32, p0, p1, p2);
 
 }
+*/
+static inline void nt_sched_t(uint32_t *p)
+{
+	uint32_t p0;
+	uint32_t p1;
+	uint32_t p2;
 
+	smc_inout(NT_SCHED_T_32, p0, p1, p2,p);
+
+}
+//tee_xuzhifeng@wind-mobi.com 20161123 end
 static inline void n_invoke_t_sys_ctl(
 		uint32_t p0,
 		uint32_t p1,
@@ -699,6 +805,8 @@ static inline void n_invoke_t_sys_ctl(
 
 }
 
+//tee_xuzhifeng@wind-mobi.com 20161123 begin
+/*
 static inline void n_invoke_t_nq(
 		uint32_t p0,
 		uint32_t p1,
@@ -707,7 +815,17 @@ static inline void n_invoke_t_nq(
 	smc_out(N_INVOKE_T_NQ_32, p0, p1, p2);
 
 }
+*/
+static inline void n_invoke_t_nq(
+		uint32_t *p0,
+		uint32_t p1,
+		uint32_t p2)
+{
+	smc_inout(N_INVOKE_T_NQ_32, *p0, p1, p2,p0);
 
+}
+
+/*
 static inline void n_invoke_t_drv(
 		uint32_t p0,
 		uint32_t p1,
@@ -716,7 +834,17 @@ static inline void n_invoke_t_drv(
 	smc_out(N_INVOKE_T_DRV_32, p0, p1, p2);
 
 }
+*/
+static inline void n_invoke_t_drv(
+		uint32_t *p0,
+		uint32_t p1,
+		uint32_t p2)
+{
+	smc_inout(N_INVOKE_T_DRV_32, *p0, p1, p2,p0);
 
+}
+
+/*
 static inline void n_raise_t_event(
 		uint64_t p0,
 		uint64_t p1,
@@ -725,7 +853,18 @@ static inline void n_raise_t_event(
 	smc_out(N_RAISE_T_EVENT_32, p0, p1, p2);
 
 }
+*/
 
+static inline void n_raise_t_event(
+		uint32_t p0,
+		uint32_t p1,
+		uint32_t p2)
+{
+	smc_out(N_RAISE_T_EVENT_32, p0, p1, p2);
+
+}
+
+/*
 static inline void n_ack_t_invoke_drv(
 		uint64_t p0,
 		uint64_t p1,
@@ -734,7 +873,17 @@ static inline void n_ack_t_invoke_drv(
 	smc_out(N_ACK_T_INVOKE_DRV_32, p0, p1, p2);
 
 }
+*/
+static inline void n_ack_t_invoke_drv(
+		uint32_t *p0,
+		uint32_t p1,
+		uint32_t p2)
+{
+	smc_inout(N_ACK_T_INVOKE_DRV_32, *p0, p1, p2,p0);
 
+}
+
+/*
 static inline void n_invoke_t_load_tee(
 		uint32_t p0,
 		uint32_t p1,
@@ -743,7 +892,16 @@ static inline void n_invoke_t_load_tee(
 	smc_out(N_INVOKE_T_LOAD_TEE_32, p0, p1, p2);
 
 }
+*/
+static inline void n_invoke_t_load_tee(
+		uint32_t *p0,
+		uint32_t p1,
+		uint32_t p2)
+{
+	smc_inout(N_INVOKE_T_LOAD_TEE_32, *p0, p1, p2,p0);
 
+}
+/*
 static inline void n_ack_t_load_img(
 		uint32_t p0,
 		uint32_t p1,
@@ -752,6 +910,16 @@ static inline void n_ack_t_load_img(
 	smc_out(N_ACK_T_LOAD_IMG_32, p0, p1, p2);
 
 }
+*/
+static inline void n_ack_t_load_img(
+		uint32_t *p0,
+		uint32_t p1,
+		uint32_t p2)
+{
+	smc_inout(N_ACK_T_LOAD_IMG_32, *p0, p1, p2,p0);
+
+}
+//tee_xuzhifeng@wind-mobi.com 20161123 end
 
 static inline void nt_sched_t_fiq(
 		uint32_t p0,

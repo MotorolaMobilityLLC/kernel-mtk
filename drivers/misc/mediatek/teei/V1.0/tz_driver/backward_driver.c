@@ -12,13 +12,18 @@
 
 #define VFS_SYS_NO      0x08
 #define REETIME_SYS_NO  0x07
+// tee_xuzhifeng@wind-mobi.com 20161117 begin
+#define GLSCH_LOW      0x01
+// tee_xuzhifeng@wind-mobi.com 20161117 end
 
 struct bdrv_call_struct {
 	int bdrv_call_type;
 	struct service_handler *handler;
 	int retVal;
 };
-
+// tee_xuzhifeng@wind-mobi.com 20161117 begin
+extern int forward_call_flag;
+// tee_xuzhifeng@wind-mobi.com 20161117 end
 extern int add_work_entry(int work_type, unsigned long buff);
 static long register_shared_param_buf(struct service_handler *handler);
 
@@ -51,12 +56,12 @@ void set_ack_vdrv_cmd(unsigned int sys_num)
 }
 
 
-
+// tee_xuzhifeng@wind-mobi.com 20161117 begin
+/*
 static void secondary_invoke_fastcall(void *info)
 {
 	n_invoke_t_fast_call(0, 0, 0);
 }
-
 
 void invoke_fastcall(void)
 {
@@ -67,6 +72,38 @@ void invoke_fastcall(void)
 	smp_call_function_single(cpu_id, secondary_invoke_fastcall, NULL, 1);
 	put_online_cpus();
 }
+*/
+void secondary_invoke_fastcall(void *info)
+{
+	unsigned long smc_type = 2;
+	n_invoke_t_fast_call(&smc_type, 0, 0);
+
+	while (smc_type == 1){
+		udelay(IRQ_DELAY);
+		nt_sched_t(&smc_type);
+	}
+}
+void invoke_fastcall(void)
+{
+        int cpu_id = 0;
+        forward_call_flag = GLSCH_LOW;
+	/* get_online_cpus(); */
+
+#if 1
+
+	add_work_entry(INVOKE_FASTCALL, NULL);
+
+#else
+
+	cpu_id = get_current_cpuid();
+
+	smp_call_function_single(cpu_id, secondary_invoke_fastcall, NULL, 1);
+
+#endif
+
+	/* put_online_cpus(); */
+}
+// tee_xuzhifeng@wind-mobi.com 20161117 end
 
 static long register_shared_param_buf(struct service_handler *handler)
 {
@@ -168,6 +205,9 @@ int __reetime_handle(struct service_handler *handler)
 	void *ptr = NULL;
 	int tv_sec;
 	int tv_usec;
+	// tee_xuzhifeng@wind-mobi.com 20161117 begin
+	unsigned long smc_type = 2;
+	// tee_xuzhifeng@wind-mobi.com 20161117 end
 	do_gettimeofday(&tv);
 	ptr = handler->param_buf;
 	tv_sec = tv.tv_sec;
@@ -179,8 +219,14 @@ int __reetime_handle(struct service_handler *handler)
 
 	set_ack_vdrv_cmd(handler->sysno);
 	teei_vfs_flag = 0;
-
-	n_ack_t_invoke_drv(0, 0, 0);
+// tee_xuzhifeng@wind-mobi.com 20161117 begin
+	//n_ack_t_invoke_drv(0, 0, 0);
+	n_ack_t_invoke_drv(&smc_type, 0, 0);
+	while(smc_type == 1) {
+		udelay(IRQ_DELAY);
+		nt_sched_t(&smc_type);
+	}
+// tee_xuzhifeng@wind-mobi.com 20161117 end
 
 	return 0;
 }
@@ -276,12 +322,22 @@ static void vfs_deinit(struct service_handler *handler) /*! stop service  */
 
 int __vfs_handle(struct service_handler *handler) /*! invoke handler */
 {
+// tee_xuzhifeng@wind-mobi.com 20161117 begin
+	unsigned long smc_type = 2;
+// tee_xuzhifeng@wind-mobi.com 20161117 end
 	Flush_Dcache_By_Area((unsigned long)handler->param_buf, (unsigned long)handler->param_buf + handler->size);
 
 	set_ack_vdrv_cmd(handler->sysno);
 	teei_vfs_flag = 0;
+// tee_xuzhifeng@wind-mobi.com 20161117 begin
+	//n_ack_t_invoke_drv(0, 0, 0);
+	n_ack_t_invoke_drv(&smc_type, 0, 0);
 
-	n_ack_t_invoke_drv(0, 0, 0);
+	while(smc_type == 1) {
+		udelay(IRQ_DELAY);
+		nt_sched_t(&smc_type);
+	}
+// tee_xuzhifeng@wind-mobi.com 20161117 begin
 
 	return 0;
 }

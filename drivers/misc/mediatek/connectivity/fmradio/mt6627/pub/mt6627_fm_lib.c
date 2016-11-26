@@ -1181,7 +1181,12 @@ static fm_s32 mt6627_full_cqi_get(fm_s32 min_freq, fm_s32 max_freq, fm_s32 space
  * If RS>511, then RSSI(dBm)= (RS-1024)/16*6
  *				   else RSSI(dBm)= RS/16*6
  */
+//tuwenzan@wind-mobi.com add at 20161124 begin
+#ifdef CONFIG_WIND_FM_RSSI
+fm_s32 mt6627_GetCurRSSI(fm_s32 *pRSSI)
+#else
 static fm_s32 mt6627_GetCurRSSI(fm_s32 *pRSSI)
+#endif
 {
 	fm_u16 tmp_reg;
 
@@ -1198,7 +1203,10 @@ static fm_s32 mt6627_GetCurRSSI(fm_s32 *pRSSI)
 
 	return 0;
 }
-
+#ifdef CONFIG_WIND_FM_RSSI
+EXPORT_SYMBOL(mt6627_GetCurRSSI);
+#endif
+//tuwenzan@wind-mobi.com add at 20161124 end
 static fm_u16 mt6627_vol_tbl[16] = { 0x0000, 0x0519, 0x066A, 0x0814,
 	0x0A2B, 0x0CCD, 0x101D, 0x1449,
 	0x198A, 0x2027, 0x287A, 0x32F5,

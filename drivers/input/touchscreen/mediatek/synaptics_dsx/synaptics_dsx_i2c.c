@@ -1735,7 +1735,7 @@ static void tpd_eint_handler(void)
 static int touch_event_handler(void *data)
 {
 	struct synaptics_rmi4_data *rmi4_data = data;
-	struct sched_param param = { .sched_priority = 10}; //tuwenzan  RTPM_PRIO_TPD 
+	struct sched_param param = { .sched_priority = 4}; //tuwenzan@wind-mobi.com modify at 20161125  RTPM_PRIO_TPD 
 	//printk("twz enter touch_event_handler \n");
 	//dev_dbg("twz dev enter touch_event_handler\n");
 	sched_setscheduler(current, SCHED_RR, &param);
@@ -2142,6 +2142,7 @@ static int synaptics_rmi4_f12_set_enables(struct synaptics_rmi4_data *rmi4_data,
  * status register, interrupt bit mask, and allocates memory resources
  * for finger data acquisition.
  */
+//tuwenzan@wind-mobi.com modify at 20161125 begin
 static int synaptics_rmi4_f12_init(struct synaptics_rmi4_data *rmi4_data,
 		struct synaptics_rmi4_fn *fhandler,
 		struct synaptics_rmi4_fn_desc *fd,
@@ -2149,6 +2150,7 @@ static int synaptics_rmi4_f12_init(struct synaptics_rmi4_data *rmi4_data,
 {
 	int retval;
 	unsigned char size_of_2d_data;
+	unsigned char size_of_query5;
 	unsigned char size_of_query8;
 	unsigned char ctrl_8_offset;
 	unsigned char ctrl_20_offset;
@@ -2157,10 +2159,10 @@ static int synaptics_rmi4_f12_init(struct synaptics_rmi4_data *rmi4_data,
 	unsigned char ctrl_28_offset;
 	unsigned char num_of_fingers;
 	struct synaptics_rmi4_f12_extra_data *extra_data;
-	struct synaptics_rmi4_f12_query_5 query_5;
-	struct synaptics_rmi4_f12_query_8 query_8;
-	struct synaptics_rmi4_f12_ctrl_8 ctrl_8;
-	struct synaptics_rmi4_f12_ctrl_23 ctrl_23;
+	struct synaptics_rmi4_f12_query_5 *query_5 = NULL;
+	struct synaptics_rmi4_f12_query_8 *query_8 = NULL;
+	struct synaptics_rmi4_f12_ctrl_8 *ctrl_8 = NULL;
+	struct synaptics_rmi4_f12_ctrl_23 *ctrl_23 = NULL;
 
 	fhandler->fn_number = fd->fn_number;
 	fhandler->num_of_data_sources = fd->intr_src_count;
@@ -2174,57 +2176,104 @@ static int synaptics_rmi4_f12_init(struct synaptics_rmi4_data *rmi4_data,
 	extra_data = (struct synaptics_rmi4_f12_extra_data *)fhandler->extra;
 	size_of_2d_data = sizeof(struct synaptics_rmi4_f12_finger_data);
 
+	query_5 = kzalloc(sizeof(*query_5), GFP_KERNEL);
+	if (!query_5) {
+		dev_err(&rmi4_data->i2c_client->dev,
+				"%s: Failed to alloc mem for query_5\n",
+				__func__);
+		retval = -ENOMEM;
+		goto exit;
+	}
+
+	query_8 = kzalloc(sizeof(*query_8), GFP_KERNEL);
+	if (!query_8) {
+		dev_err(&rmi4_data->i2c_client->dev,
+				"%s: Failed to alloc mem for query_8\n",
+				__func__);
+		retval = -ENOMEM;
+		goto exit;
+	}
+
+	ctrl_8 = kzalloc(sizeof(*ctrl_8), GFP_KERNEL);
+	if (!ctrl_8) {
+		dev_err(&rmi4_data->i2c_client->dev,
+				"%s: Failed to alloc mem for ctrl_8\n",
+				__func__);
+		retval = -ENOMEM;
+		goto exit;
+	}
+
+	ctrl_23 = kzalloc(sizeof(*ctrl_23), GFP_KERNEL);
+	if (!ctrl_23) {
+		dev_err(&rmi4_data->i2c_client->dev,
+				"%s: Failed to alloc mem for ctrl_23\n",
+				__func__);
+		retval = -ENOMEM;
+		goto exit;
+	}
+
+	retval = synaptics_rmi4_reg_read(rmi4_data,
+			fhandler->full_addr.query_base + 4,
+			&size_of_query5,
+			sizeof(size_of_query5));
+	if (retval < 0)
+		goto exit;
+
+	if (size_of_query5 > sizeof(query_5->data))
+		size_of_query5 = sizeof(query_5->data);
+	memset(query_5->data, 0x00, sizeof(query_5->data));
+
 	retval = synaptics_rmi4_i2c_read(rmi4_data,
 			fhandler->full_addr.query_base + 5,
-			query_5.data,
-			sizeof(query_5.data));
+			query_5->data,
+			size_of_query5);
 	if (retval < 0)
-		return retval;
+		goto exit;
 
-	ctrl_8_offset = query_5.ctrl0_is_present +
-			query_5.ctrl1_is_present +
-			query_5.ctrl2_is_present +
-			query_5.ctrl3_is_present +
-			query_5.ctrl4_is_present +
-			query_5.ctrl5_is_present +
-			query_5.ctrl6_is_present +
-			query_5.ctrl7_is_present;
+	ctrl_8_offset = query_5->ctrl0_is_present +
+			query_5->ctrl1_is_present +
+			query_5->ctrl2_is_present +
+			query_5->ctrl3_is_present +
+			query_5->ctrl4_is_present +
+			query_5->ctrl5_is_present +
+			query_5->ctrl6_is_present +
+			query_5->ctrl7_is_present;
 
 	ctrl_20_offset = ctrl_8_offset +
-			query_5.ctrl8_is_present +
-			query_5.ctrl9_is_present +
-			query_5.ctrl10_is_present +
-			query_5.ctrl11_is_present +
-			query_5.ctrl12_is_present +
-			query_5.ctrl13_is_present +
-			query_5.ctrl14_is_present +
-			query_5.ctrl15_is_present +
-			query_5.ctrl16_is_present +
-			query_5.ctrl17_is_present +
-			query_5.ctrl18_is_present +
-			query_5.ctrl19_is_present;
+			query_5->ctrl8_is_present +
+			query_5->ctrl9_is_present +
+			query_5->ctrl10_is_present +
+			query_5->ctrl11_is_present +
+			query_5->ctrl12_is_present +
+			query_5->ctrl13_is_present +
+			query_5->ctrl14_is_present +
+			query_5->ctrl15_is_present +
+			query_5->ctrl16_is_present +
+			query_5->ctrl17_is_present +
+			query_5->ctrl18_is_present +
+			query_5->ctrl19_is_present;
 
 	ctrl_23_offset = ctrl_20_offset +
-			query_5.ctrl20_is_present +
-			query_5.ctrl21_is_present +
-			query_5.ctrl22_is_present;
+			query_5->ctrl20_is_present +
+			query_5->ctrl21_is_present +
+			query_5->ctrl22_is_present;
 	ctrl_27_offset = ctrl_23_offset +
-			query_5.ctrl23_is_present +
-			query_5.ctrl24_is_present +
-			query_5.ctrl25_is_present +
-			query_5.ctrl26_is_present;
+			query_5->ctrl23_is_present +
+			query_5->ctrl24_is_present +
+			query_5->ctrl25_is_present +
+			query_5->ctrl26_is_present;
 	ctrl_28_offset = ctrl_27_offset +
-			query_5.ctrl27_is_present;
+			query_5->ctrl27_is_present;
 
 	retval = synaptics_rmi4_i2c_read(rmi4_data,
 			fhandler->full_addr.ctrl_base + ctrl_23_offset,
-			ctrl_23.data,
-			sizeof(ctrl_23.data));
+			ctrl_23->data,
+			sizeof(ctrl_23->data));
 	if (retval < 0)
-		return retval;
+		goto exit;
 
 	/* Maximum number of fingers supported */
-	fhandler->num_of_data_points = min(ctrl_23.max_reported_objects,
+	fhandler->num_of_data_points = min(ctrl_23->max_reported_objects,
 			(unsigned char)F12_FINGERS_TO_SUPPORT);
 
 	num_of_fingers = fhandler->num_of_data_points;
@@ -2235,34 +2284,38 @@ static int synaptics_rmi4_f12_init(struct synaptics_rmi4_data *rmi4_data,
 			&size_of_query8,
 			sizeof(size_of_query8));
 	if (retval < 0)
-		return retval;
+		goto exit;
+	
+	if (size_of_query8 > sizeof(query_8->data))
+		size_of_query8 = sizeof(query_8->data);
+	memset(query_8->data, 0x00, sizeof(query_8->data));	
 
 	retval = synaptics_rmi4_i2c_read(rmi4_data,
 			fhandler->full_addr.query_base + 8,
-			query_8.data,
+			query_8->data,
 			size_of_query8);
 	if (retval < 0)
-		return retval;
+		goto exit;
 
 	/* Determine the presence of the Data0 register */
-	extra_data->data1_offset = query_8.data0_is_present;
+	extra_data->data1_offset = query_8->data0_is_present;
 
-	if ((size_of_query8 >= 3) && (query_8.data15_is_present)) {
-		extra_data->data15_offset = query_8.data0_is_present +
-				query_8.data1_is_present +
-				query_8.data2_is_present +
-				query_8.data3_is_present +
-				query_8.data4_is_present +
-				query_8.data5_is_present +
-				query_8.data6_is_present +
-				query_8.data7_is_present +
-				query_8.data8_is_present +
-				query_8.data9_is_present +
-				query_8.data10_is_present +
-				query_8.data11_is_present +
-				query_8.data12_is_present +
-				query_8.data13_is_present +
-				query_8.data14_is_present;
+	if ((size_of_query8 >= 3) && (query_8->data15_is_present)) {
+		extra_data->data15_offset = query_8->data0_is_present +
+				query_8->data1_is_present +
+				query_8->data2_is_present +
+				query_8->data3_is_present +
+				query_8->data4_is_present +
+				query_8->data5_is_present +
+				query_8->data6_is_present +
+				query_8->data7_is_present +
+				query_8->data8_is_present +
+				query_8->data9_is_present +
+				query_8->data10_is_present +
+				query_8->data11_is_present +
+				query_8->data12_is_present +
+				query_8->data13_is_present +
+				query_8->data14_is_present;
 		extra_data->data15_size = (num_of_fingers + 7) / 8;
 	} else {
 		extra_data->data15_size = 0;
@@ -2283,18 +2336,18 @@ static int synaptics_rmi4_f12_init(struct synaptics_rmi4_data *rmi4_data,
 
 	retval = synaptics_rmi4_i2c_read(rmi4_data,
 			fhandler->full_addr.ctrl_base + ctrl_8_offset,
-			ctrl_8.data,
-			sizeof(ctrl_8.data));
-	if (retval < 0)
-		return retval;
-
+			ctrl_8->data,
+			sizeof(ctrl_8->data));
+	if (retval < 0)	
+		goto exit;
+		
 	/* Maximum x and y */
 	rmi4_data->sensor_max_x = SENSOR_MAX_X;
-		//	((unsigned short)ctrl_8.max_x_coord_lsb << 0) |
-		//	((unsigned short)ctrl_8.max_x_coord_msb << 8);
+			//((unsigned short)ctrl_8->max_x_coord_lsb << 0) |
+			//((unsigned short)ctrl_8->max_x_coord_msb << 8);
 	rmi4_data->sensor_max_y = SENSOR_MAX_Y;
-		//	((unsigned short)ctrl_8.max_y_coord_lsb << 0) |
-		//	((unsigned short)ctrl_8.max_y_coord_msb << 8);
+			//((unsigned short)ctrl_8->max_y_coord_lsb << 0) |
+			//((unsigned short)ctrl_8->max_y_coord_msb << 8);
 
 		/* It's recommended to parse max_x and max_y from contrel register, but this does not match MTK's mtk-tpd.c */
 
@@ -2307,17 +2360,17 @@ static int synaptics_rmi4_f12_init(struct synaptics_rmi4_data *rmi4_data,
 			rmi4_data->sensor_max_x,
 			rmi4_data->sensor_max_y);
 
-	rmi4_data->num_of_rx = ctrl_8.num_of_rx;
-	rmi4_data->num_of_tx = ctrl_8.num_of_tx;
+	rmi4_data->num_of_rx = ctrl_8->num_of_rx;
+	rmi4_data->num_of_tx = ctrl_8->num_of_tx;
 	rmi4_data->max_touch_width = max(rmi4_data->num_of_rx,
 			rmi4_data->num_of_tx);
-	rmi4_data->f12_wakeup_gesture = query_5.ctrl27_is_present;
+	rmi4_data->f12_wakeup_gesture = query_5->ctrl27_is_present;
 	if (rmi4_data->f12_wakeup_gesture) {
 		extra_data->ctrl20_offset = ctrl_20_offset;
-		extra_data->data4_offset = query_8.data0_is_present +
-				query_8.data1_is_present +
-				query_8.data2_is_present +
-				query_8.data3_is_present;
+		extra_data->data4_offset = query_8->data0_is_present +
+				query_8->data1_is_present +
+				query_8->data2_is_present +
+				query_8->data3_is_present;
 		extra_data->ctrl27_offset = ctrl_27_offset;
 	}
 
@@ -2331,11 +2384,17 @@ static int synaptics_rmi4_f12_init(struct synaptics_rmi4_data *rmi4_data,
 				"%s: Failed to alloc mem for fhandler->data\n",
 				__func__);
 		return -ENOMEM;
+		goto exit;
 	}
+exit:
+	kfree(query_5);
+	kfree(query_8);
+	kfree(ctrl_8);
+	kfree(ctrl_23);
 
 	return retval;
 }
-
+ //tuwenzan@wind-mobi.com modify at 20161125 begin
 static int synaptics_rmi4_f1a_alloc_mem(struct synaptics_rmi4_data *rmi4_data,
 		struct synaptics_rmi4_fn *fhandler)
 {
