@@ -48,8 +48,13 @@ LCM_DRIVER *lcm_driver_list[] = {
 #endif
 
 //add by yufangfang for hx8394f
-#if defined(LCT_HX8394F_BOOYITECH_720P_VDO)
-	&lct_hx8394f_booyitech_720p_vdo_lcm_drv,
+#if defined(LCT_HX8394F_BOOYITECH5515_720P_VDO)
+	&lct_hx8394f_booyitech5515_720p_vdo_lcm_drv,
+#endif
+
+//add by yufangfang for hx8394f
+#if defined(LCT_HX8394F_BOOYITECH5513_720P_VDO)
+	&lct_hx8394f_booyitech5513_720p_vdo_lcm_drv,
 #endif
 
 //add by yufangfang for ili9881c-0d

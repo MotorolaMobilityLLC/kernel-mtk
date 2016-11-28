@@ -16,6 +16,6 @@
 #
 
 
-obj-y += lct_hx8394f_booyitech_720p_vdo.o
+obj-y += lct_hx8394f_booyitech5515_720p_vdo.o
 
 ccflags-$(CONFIG_MTK_LCM) += -I$(srctree)/drivers/misc/mediatek/lcm/inc

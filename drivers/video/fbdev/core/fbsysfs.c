@@ -497,11 +497,12 @@ static ssize_t show_bl_curve(struct device *device,
 #ifdef CONFIG_LCT_CABC_MODE_SUPPORT
 #include "disp_lcm.h"
 #include "primary_display.h"
-#include "lct_hx8394f_booyitech_720p_vdo.h"
+
 #define CABC_MODE_UI	1
 #define CABC_MODE_MV	2
 #define CABC_MODE_DIS	3
 extern int primary_display_setcabc(unsigned int enable);
+extern int primary_recognition_cabc_mode(void);
 static ssize_t store_cabc_mode(struct device *device, struct device_attribute *attr,
 			  const char *buf, size_t count)
 {	
@@ -528,7 +529,7 @@ static ssize_t show_cabc_mode(struct device *device,
 			   struct device_attribute *attr, char *buf)
 {
 	char m[5] = "0";
-	switch(recognition_cabc_mode())
+	switch(primary_recognition_cabc_mode())
 	{
 		case CABC_MODE_UI:
 			{
@@ -565,10 +566,12 @@ static ssize_t show_cabc_mode(struct device *device,
 
 //add by lct yufangfang for hbm
 #ifdef CONFIG_LCT_HBM_SUPPORT
-
-#define HBM_ENABLE	1
+#include "disp_lcm.h"
+#include "primary_display.h"
+#define HBM_ENABLE	255
 #define HBM_DISABLE	0
 extern int primary_display_setbacklight_hbm(unsigned int level);
+extern int primary_recognition_hbm_level(void);
 static ssize_t store_hbm(struct device *device, struct device_attribute *attr,
 			  const char *buf, size_t count)
 {
@@ -585,9 +588,9 @@ static ssize_t show_hbm(struct device *device,
 			   struct device_attribute *attr, char *buf)
 {
 	char n ='0';
-	int a = recognition_hbm();
-	printk("yufangfang show_hbm a = %d\n",a);
-	switch(recognition_hbm())
+	int a = primary_recognition_hbm_level();
+	printk("show_hbm a = %d\n",a);
+	switch(primary_recognition_hbm_level())//(recognition_hbm())
 	{
 		case HBM_ENABLE:
 				n='1';

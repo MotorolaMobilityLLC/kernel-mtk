@@ -6312,6 +6312,13 @@ int primary_display_ipoh_restore(void)
 
 //add by lct yufangfang for cabc mode setting
 #ifdef CONFIG_LCT_CABC_MODE_SUPPORT
+static unsigned int cabc_mode_value = 0;
+int primary_recognition_cabc_mode(void)
+{
+	return cabc_mode_value;
+}
+EXPORT_SYMBOL_GPL(primary_recognition_cabc_mode)
+
 int _set_cabc_by_cmdq(unsigned int enbale)
 {
 	int ret = 0;
@@ -6354,7 +6361,7 @@ int primary_display_setcabc(unsigned int enbale)
 {
 	//int ret = 0;
 	static unsigned int last_enable;
-
+	cabc_mode_value = enbale;
 	if (last_enable == enbale)
 	return 0;
 
@@ -8292,6 +8299,13 @@ int primary_display_setbacklight(unsigned int level)
 
 //add by LCT yufangfang for hbm
 #ifdef CONFIG_LCT_HBM_SUPPORT
+static unsigned int hbm_backlight_level = 0;
+int primary_recognition_hbm_level(void)
+{
+	return hbm_backlight_level;
+}
+EXPORT_SYMBOL_GPL(primary_recognition_hbm_level)
+
 int primary_display_setbacklight_hbm(unsigned int level)
 {
 	int ret = 0;
