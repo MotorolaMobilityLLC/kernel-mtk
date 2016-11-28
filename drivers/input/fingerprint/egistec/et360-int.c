@@ -62,6 +62,14 @@
 #include "et360.h"
 #include "navi_input.h"
 
+/* Lct add by zl for devinfo */
+#include <mt-plat/lct_print.h>
+#ifdef LCT_LOG_MOD
+#undef LCT_LOG_MOD
+#define LCT_LOG_MOD "[FPS]" 
+#endif
+/* Lct add end */
+
 #define EGIS_NAVI_INPUT 1 // 1:open ; 0:close
 
 #define FP_SPI_DEBUG
@@ -141,6 +149,35 @@ static struct of_device_id fpswitch_match_table[] = {
 #endif
 //add for dual sensor end
 MODULE_DEVICE_TABLE(of, egistec_match_table);
+
+/* Lct add by zl for devinfo */
+#ifdef CONFIG_LCT_DEVINFO_SUPPORT
+#define LCT_DEVINFO_FPS_DEBUG
+#include  "dev_info.h"
+struct devinfo_struct *s_DEVINFO_egis;    
+static void devinfo_egis_regchar(char *module,char * vendor,char *version,char *used)
+{
+
+	s_DEVINFO_egis =(struct devinfo_struct*) kmalloc(sizeof(struct devinfo_struct), GFP_KERNEL);	
+	s_DEVINFO_egis->device_type="FPS";
+	s_DEVINFO_egis->device_module=module;
+	s_DEVINFO_egis->device_vendor=vendor;
+	s_DEVINFO_egis->device_ic="ET320";
+	s_DEVINFO_egis->device_info=DEVINFO_NULL;
+	s_DEVINFO_egis->device_version=version;
+	s_DEVINFO_egis->device_used=used;
+#ifdef LCT_DEVINFO_FPS_DEBUG
+	lct_pr_err("[DEVINFO]register egis device! type:<%s> module:<%s> vendor<%s> ic<%s> version<%s> info<%s> used<%s>\n",
+				s_DEVINFO_egis->device_type,s_DEVINFO_egis->device_module,s_DEVINFO_egis->device_vendor,
+				s_DEVINFO_egis->device_ic,s_DEVINFO_egis->device_version,s_DEVINFO_egis->device_info,s_DEVINFO_egis->device_used);
+#endif
+       DEVINFO_CHECK_DECLARE(s_DEVINFO_egis->device_type,s_DEVINFO_egis->device_module,s_DEVINFO_egis->device_vendor,s_DEVINFO_egis->device_ic,s_DEVINFO_egis->device_version,s_DEVINFO_egis->device_info,s_DEVINFO_egis->device_used);
+}
+#endif
+/* Lct add end */
+
+
+
 
 
 /* ------------------------------ Interrupt -----------------------------*/
@@ -997,6 +1034,12 @@ static int egistec_probe(struct platform_device *pdev)
 	sysfs_egis_init(egistec);
 	uinput_egis_init(egistec);
 	#endif
+
+	/* Lct add by zl for devinfo */
+	#ifdef CONFIG_LCT_DEVINFO_SUPPORT
+	devinfo_egis_regchar("ET320","EGIS","EGIS",DEVINFO_USED);
+	#endif
+	/* Lct add end*/
 
 	DEBUG_PRINT("%s : initialize success %d\n", __func__, status);	
 
