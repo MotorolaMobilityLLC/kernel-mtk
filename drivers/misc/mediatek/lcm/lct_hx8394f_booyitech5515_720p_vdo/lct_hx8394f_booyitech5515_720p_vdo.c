@@ -260,7 +260,7 @@ static struct LCM_setting_table lcm_initialization_setting[] = {
 	    {0x11, 0, {}},
         {REGFLAG_DELAY, 120, {}},
 
-        {0xB6, 2, {0x73,0x73}},
+        {0xB6, 2, {0x76,0x76}},
 
 	    {0x29, 0, {}},
         {REGFLAG_DELAY, 20, {}},
@@ -545,8 +545,8 @@ void tps65132_enable(char en)
 		MDELAY(12);
 		set_gpio_lcd_enn(1);
 		MDELAY(12);
-		tps65132_write_bytes(0x00, 0x0c);//5.5->5.2
-		tps65132_write_bytes(0x01, 0x0c);
+		tps65132_write_bytes(0x00, 0x0f);//5.5->5.2
+		tps65132_write_bytes(0x01, 0x0f);
 		
 	}
 	else

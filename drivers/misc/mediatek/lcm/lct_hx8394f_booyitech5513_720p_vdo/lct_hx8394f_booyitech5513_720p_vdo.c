@@ -457,8 +457,8 @@ void tps65132_enable_5513(char en)
 		MDELAY(12);
 		set_gpio_lcd_enn(1);
 		MDELAY(12);
-		tps65132_write_bytes_5513(0x00, 0x0c);//5.5->5.2
-		tps65132_write_bytes_5513(0x01, 0x0c);
+		tps65132_write_bytes_5513(0x00, 0x0f);//5.5->5.2
+		tps65132_write_bytes_5513(0x01, 0x0f);
 		
 	}
 	else
