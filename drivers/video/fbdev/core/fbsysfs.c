@@ -504,18 +504,18 @@ static ssize_t show_bl_curve(struct device *device,
 extern int primary_display_setcabc(unsigned int enable);
 static ssize_t store_cabc_mode(struct device *device, struct device_attribute *attr,
 			  const char *buf, size_t count)
-{
-	unsigned int cabc_mode_mode = 0;
-	char echo_m[3]={'1','2','3'};
-	if(strncmp(echo_m,buf,1)==0)
+{	
+	unsigned int cabc_mode_mode = 0;	
+	printk("store cabc_mode buf = %s\n",buf);
+	if((strncmp(buf,"UI",2)==0)||(strncmp(buf,"ui",2)==0))
 	{
 		cabc_mode_mode = CABC_MODE_UI;	
 	}	
-	if(strncmp(echo_m+1,buf,1)==0)	
+	if((strncmp(buf,"MV",2)==0)||(strncmp(buf,"mv",2)==0))	
 	{
 		cabc_mode_mode = CABC_MODE_MV;
 	}
-	if(strncmp(echo_m+2,buf,1)==0)
+	if((strncmp(buf,"DIS",3)==0)||(strncmp(buf,"dis",3)==0))
 	{
 		cabc_mode_mode = CABC_MODE_DIS;
 	}
