@@ -618,6 +618,7 @@ void arch_reset(char mode, const char *cmd)
 		/*shaohui add for RPMB trigger*/
 #ifdef CONFIG_LCT_RPMB_TRIGGER
 	}else if(cmd && !strcmp(cmd,"rpmb")){
+		reboot = 1;  //shaohui add for powerkey pass
 		rtc_mark_rpmb();
 		printk("get rpmg flag:%d\n",get_rtc_mark_rpmb());
 		/*shaohui add end*/
