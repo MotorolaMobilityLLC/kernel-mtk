@@ -239,6 +239,16 @@
 			compatible = "mediatek,lcm_pinctl";
 		};
 	/*yufangfang add end*/
+
+		utags {
+			compatible = "mmi,utags";
+			mmi,main-utags = "/dev/block/platform/mtk-msdc.0/11230000.msdc0/by-name/utags";
+		};
+		hw {
+			compatible = "mmi,utags";
+			mmi,dir-name = "hw";
+			mmi,main-utags = "/dev/block/platform/mtk-msdc.0/11230000.msdc0/by-name/hw";
+		};
 };
 
 /*LCT wangyongfu add for exteral amp*/
