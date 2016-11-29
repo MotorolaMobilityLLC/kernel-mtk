@@ -983,7 +983,9 @@ static void sx9310_active(void){
 
     buffer[0] = 0x1;
     err = SX9311_i2c_write_dma(SX9311_i2c_client, 0x41, 1, buffer);
-
+	//cly add for  0x00=0xff, do re calibrate  20161128
+    buffer[0] = 0xff;
+    err = SX9311_i2c_write_dma(SX9311_i2c_client, 0x00, 1, buffer);
 }
 /*end cly*/
 //-- Modified for close Captouch by shentaotao 2016.07.02
