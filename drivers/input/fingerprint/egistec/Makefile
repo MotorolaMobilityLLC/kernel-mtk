@@ -10,7 +10,7 @@ subdir-ccflags-y += -I$(srctree)/drivers/spi/trustzone/spi/Tlspi/inc
 endif
 
 
-#obj-$(CONFIG_FINGERPRINT_EGISTEC_ET360)	+= et360-int.o
-obj-y	+= et360-int.o navi_input.o
+obj-$(CONFIG_FINGERPRINT_EGISTEC_ET360)	+= et360-int.o navi_input.o
+#obj-y	+= et360-int.o navi_input.o
 ##tee_xuzhifeng@wind-mobi.com 20161123 end
 
