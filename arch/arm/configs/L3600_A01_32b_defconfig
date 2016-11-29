@@ -14,7 +14,10 @@ CONFIG_CGROUP_SCHED=y
 CONFIG_RT_GROUP_SCHED=y
 CONFIG_BLK_DEV_INITRD=y
 CONFIG_EMBEDDED=y
-# CONFIG_SLUB_DEBUG is not set
+# modify by zhaofei for debug slub issue FAQ18276
+CONFIG_SLUB_DEBUG=y
+CONFIG_SLUB_DEBUG_ON=y
+# end modify by zhaofei for debug slub issue FAQ18276
 CONFIG_PROFILING=y
 # CONFIG_BLK_DEV_BSG is not set
 CONFIG_ARCH_MT6735M=y
@@ -536,3 +539,5 @@ CONFIG_LCT_RPMB_TRIGGER=y
 CONFIG_LCT_CABC_MODE_SUPPORT=y
 # add by longcheer yufangfang for hbm
 CONFIG_LCT_HBM_SUPPORT=y
+# add by longcheer zhaofei for slub debug by FAQ18276
+CONFIG_LCT_SLUB_DEBUG=y

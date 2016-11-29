@@ -310,9 +310,25 @@ static inline int slab_index(void *p, struct kmem_cache *s, void *addr)
 	return (p - addr) / s->size;
 }
 
+//modify by zhaofei for slub issue by FAQ18276
+#ifdef CONFIG_LCT_SLUB_DEBUG
+static inline size_t slab_ksize(const struct kmem_cache *s, const void *object)
+#else
 static inline size_t slab_ksize(const struct kmem_cache *s)
+#endif
 {
 #ifdef CONFIG_SLUB_DEBUG
+//modify by zhaofei for slub issue by FAQ18276
+#ifdef CONFIG_LCT_SLUB_DEBUG
+	if((s->flags&SLAB_RED_ZONE) && object)
+	{
+		size_t remain = (size_t)get_freepointer((void *)s, (void *)object);
+
+		BUG_ON(remain >= s->object_size);
+		return s->object_size -remain;
+	}
+#endif
+//end modify by zhaofei for slub issue by FAQ18276
 	/*
 	 * Debugging requires use of the padding between object
 	 * and whatever may come after it.
@@ -930,6 +946,22 @@ static int check_object(struct kmem_cache *s, struct page *page,
 		 */
 		return 1;
 
+//modify by zhaofei for slub issue by FAQ18276
+#ifdef CONFIG_LCT_SLUB_DEBUG
+	if(val == SLUB_RED_ACTIVE)
+	{
+		if( s->flags & SLAB_RED_ZONE)
+		{
+			size_t remain = (size_t)get_freepointer(s,p);
+
+			BUG_ON(remain >= s->object_size);
+			if( remain && !check_bytes_and_report(s,page, object, "Redzone", object + s->object_size - remain, val, remain))
+				return 0;
+		}
+	}
+	else
+#endif
+//modify by zhaofei for slub issue by FAQ18276
 	/* Check free pointer validity */
 	if (!check_valid_pointer(s, page, get_freepointer(s, p))) {
 		object_err(s, page, p, "Freepointer corrupt");
@@ -1359,7 +1391,12 @@ static inline void slab_post_alloc_hook(struct kmem_cache *s,
 					gfp_t flags, void *object)
 {
 	flags &= gfp_allowed_mask;
+//modify by zhaofei for slub issue by FAQ18276
+#ifdef CONFIG_LCT_SLUB_DEBUG
+	kmemcheck_slab_alloc(s, flags, object, slab_ksize(s,object));
+#else
 	kmemcheck_slab_alloc(s, flags, object, slab_ksize(s));
+#endif
 	kmemleak_alloc_recursive(object, s->object_size, 1, s->flags, flags);
 }
 
@@ -2485,8 +2522,14 @@ new_slab:
  *
  * Otherwise we can simply pick the next object from the lockless free list.
  */
+//modify by zhaofei for slub issue by FAQ18276
+#ifdef CONFIG_LCT_SLUB_DEBUG
+static __always_inline void *slab_alloc_node(struct kmem_cache *s, size_t size,
+		gfp_t gfpflags, int node, unsigned long addr)
+#else
 static __always_inline void *slab_alloc_node(struct kmem_cache *s,
 		gfp_t gfpflags, int node, unsigned long addr)
+#endif
 {
 	void **object;
 	struct kmem_cache_cpu *c;
@@ -2523,12 +2566,30 @@ redo:
 
 	object = c->freelist;
 	page = c->page;
+//modify by zhaofei for slub issue by FAQ18276
+#ifdef CONFIG_LCT_SLUB_DEBUG
+	if(object && !virt_addr_valid(object))
+	{
+		printk("ERROR freelist in kmem_cache_cpu is invalid\n");
+		BUG();
+	}
+#endif
+//modify by zhaofei for slub issue by FAQ18276
 	if (unlikely(!object || !node_match(page, node))) {
 		object = __slab_alloc(s, gfpflags, node, addr, c);
 		stat(s, ALLOC_SLOWPATH);
 	} else {
 		void *next_object = get_freepointer_safe(s, object);
 
+//modify by zhaofei for slub issue by FAQ18276
+#ifdef CONFIG_LCT_SLUB_DEBUG
+		if(next_object && !virt_addr_valid(next_object))
+		{
+			printk("ERROR next_object in kmem_cache_cpu is invalid\n");
+			BUG();
+		}
+#endif
+//modify by zhaofei for slub issue by FAQ18276
 		/*
 		 * The cmpxchg will only match if there was no additional
 		 * operation and if we are on the right processor.
@@ -2558,20 +2619,44 @@ redo:
 	if (unlikely(gfpflags & __GFP_ZERO) && object)
 		memset(object, 0, s->object_size);
 
+//modify by zhaofei for slub issue by FAQ18276
+#ifdef CONFIG_LCT_SLUB_DEBUG
+	if (object && (s->flags&SLAB_RED_ZONE)){
+		size = s->object_size - size;
+		set_freepointer(s, object, (void *)(uintptr_t)size);
+		if (size)
+			memset((void *)object + s->object_size - size, SLUB_RED_ACTIVE,size);//init red zone
+	}
+#endif
+//end modify by zhaofei for slub issue by FAQ18276
+
 	slab_post_alloc_hook(s, gfpflags, object);
 
 	return object;
 }
-
+//modify by zhaofei for slub issue by FAQ18276
+#ifdef CONFIG_LCT_SLUB_DEBUG
+static __always_inline void *slab_alloc(struct kmem_cache *s,size_t size,
+		gfp_t gfpflags, unsigned long addr)
+{
+	return slab_alloc_node(s, size, gfpflags, NUMA_NO_NODE, addr);
+}
+#else
 static __always_inline void *slab_alloc(struct kmem_cache *s,
 		gfp_t gfpflags, unsigned long addr)
 {
 	return slab_alloc_node(s, gfpflags, NUMA_NO_NODE, addr);
 }
+#endif
 
 void *kmem_cache_alloc(struct kmem_cache *s, gfp_t gfpflags)
 {
+//modify by zhaofei for slub issue by FAQ18276
+#ifdef CONFIG_LCT_SLUB_DEBUG
+	void *ret = slab_alloc(s,s->object_size, gfpflags, _RET_IP_);
+#else
 	void *ret = slab_alloc(s, gfpflags, _RET_IP_);
+#endif
 
 	trace_kmem_cache_alloc(_RET_IP_, ret, s->object_size,
 				s->size, gfpflags);
@@ -2583,7 +2668,12 @@ EXPORT_SYMBOL(kmem_cache_alloc);
 #ifdef CONFIG_TRACING
 void *kmem_cache_alloc_trace(struct kmem_cache *s, gfp_t gfpflags, size_t size)
 {
+//modify by zhaofei for slub issue by FAQ18276
+#ifdef CONFIG_LCT_SLUB_DEBUG
+	void *ret = slab_alloc(s, size, gfpflags, _RET_IP_);
+#else
 	void *ret = slab_alloc(s, gfpflags, _RET_IP_);
+#endif
 	trace_kmalloc(_RET_IP_, ret, size, s->size, gfpflags);
 	return ret;
 }
@@ -2593,7 +2683,12 @@ EXPORT_SYMBOL(kmem_cache_alloc_trace);
 #ifdef CONFIG_NUMA
 void *kmem_cache_alloc_node(struct kmem_cache *s, gfp_t gfpflags, int node)
 {
+//modify by zhaofei for slub issue by FAQ18276
+#ifdef CONFIG_LCT_SLUB_DEBUG
+	void *ret = slab_alloc_node(s, s->object_size, gfpflags, node, _RET_IP_);
+#else
 	void *ret = slab_alloc_node(s, gfpflags, node, _RET_IP_);
+#endif
 
 	trace_kmem_cache_alloc_node(_RET_IP_, ret,
 				    s->object_size, s->size, gfpflags, node);
@@ -2601,13 +2696,19 @@ void *kmem_cache_alloc_node(struct kmem_cache *s, gfp_t gfpflags, int node)
 	return ret;
 }
 EXPORT_SYMBOL(kmem_cache_alloc_node);
+//modify by zhaofei for slub issue by FAQ18276
 
 #ifdef CONFIG_TRACING
 void *kmem_cache_alloc_node_trace(struct kmem_cache *s,
 				    gfp_t gfpflags,
 				    int node, size_t size)
 {
+//modify by zhaofei for slub issue by FAQ18276
+#ifdef CONFIG_LCT_SLUB_DEBUG
+	void *ret = slab_alloc_node(s,size, gfpflags, node, _RET_IP_);
+#else
 	void *ret = slab_alloc_node(s, gfpflags, node, _RET_IP_);
+#endif
 
 	trace_kmalloc_node(_RET_IP_, ret,
 			   size, s->size, gfpflags, node);
@@ -2991,6 +3092,12 @@ static void early_kmem_cache_node_alloc(int node)
 	page->frozen = 0;
 	kmem_cache_node->node[node] = n;
 #ifdef CONFIG_SLUB_DEBUG
+
+//modify by zhaofei for slub issue by FAQ18276
+#ifdef CONFIG_LCT_SLUB_DEBUG
+	set_freepointer(kmem_cache_node, n, NULL);
+#endif
+//end modify by zhaofei for slub issue by FAQ18276
 	init_object(kmem_cache_node, n, SLUB_RED_ACTIVE);
 	init_tracking(kmem_cache_node, n);
 #endif
@@ -3363,7 +3470,12 @@ void *__kmalloc(size_t size, gfp_t flags)
 	if (unlikely(ZERO_OR_NULL_PTR(s)))
 		return s;
 
+//modify by zhaofei for slub issue by FAQ18276
+#ifdef CONFIG_LCT_SLUB_DEBUG
+	ret = slab_alloc(s, size, flags, _RET_IP_);
+#else
 	ret = slab_alloc(s, flags, _RET_IP_);
+#endif
 
 	trace_kmalloc(_RET_IP_, ret, size, s->size, flags);
 
@@ -3406,7 +3518,12 @@ void *__kmalloc_node(size_t size, gfp_t flags, int node)
 	if (unlikely(ZERO_OR_NULL_PTR(s)))
 		return s;
 
+//modify by zhaofei for slub issue by FAQ18276
+#ifdef CONFIG_LCT_SLUB_DEBUG
+	ret = slab_alloc_node(s, size, flags, node, _RET_IP_);
+#else
 	ret = slab_alloc_node(s, flags, node, _RET_IP_);
+#endif
 
 	trace_kmalloc_node(_RET_IP_, ret, size, s->size, flags, node);
 
@@ -3429,7 +3546,12 @@ size_t ksize(const void *object)
 		return PAGE_SIZE << compound_order(page);
 	}
 
+//modify by zhaofei for slub issue by FAQ18276
+#ifdef CONFIG_LCT_SLUB_DEBUG
+	return slab_ksize(page->slab_cache, object);
+#else
 	return slab_ksize(page->slab_cache);
+#endif
 }
 EXPORT_SYMBOL(ksize);
 
@@ -3835,7 +3957,12 @@ void *__kmalloc_track_caller(size_t size, gfp_t gfpflags, unsigned long caller)
 	if (unlikely(ZERO_OR_NULL_PTR(s)))
 		return s;
 
+//modify by zhaofei for slub issue by FAQ18276
+#ifdef CONFIG_LCT_SLUB_DEBUG
+	ret = slab_alloc(s, size, gfpflags, caller);
+#else
 	ret = slab_alloc(s, gfpflags, caller);
+#endif
 
 	/* Honor the call site pointer we received. */
 	trace_kmalloc(caller, ret, size, s->size, gfpflags);
@@ -3865,7 +3992,12 @@ void *__kmalloc_node_track_caller(size_t size, gfp_t gfpflags,
 	if (unlikely(ZERO_OR_NULL_PTR(s)))
 		return s;
 
+//modify by zhaofei for slub issue by FAQ18276
+#ifdef CONFIG_LCT_SLUB_DEBUG
+	ret = slab_alloc_node(s,size, gfpflags, node, caller);
+#else
 	ret = slab_alloc_node(s, gfpflags, node, caller);
+#endif
 
 	/* Honor the call site pointer we received. */
 	trace_kmalloc_node(caller, ret, size, s->size, gfpflags, node);

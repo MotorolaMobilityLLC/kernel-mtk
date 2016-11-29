@@ -651,3 +651,7 @@ config ZNDSWAP
 	  2ndswap with dynamic selection can help kernel to identify which swap
 	  area is better for swapped-out pages presently. This will be valid only
 	  when we have 2 or more swap areas in the system.
+# modify by zhaofei for slub issue by FAQ18276
+config LCT_SLUB_DEBUG
+	bool " Enabel longcheer debug slub "
+	default n
