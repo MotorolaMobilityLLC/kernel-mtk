@@ -232,10 +232,8 @@ static int pn544_platform_pinctrl_select(struct pinctrl *p, struct pinctrl_state
 static ssize_t pn544_dev_read(struct file *filp, char __user *buf,
 			       size_t count, loff_t *offset)
 {
-	//int i;
 	struct pn544_dev *pn544_dev = filp->private_data;
-	int ret=0;//baker_mod;
-	char tmp_buf[256] = {0};
+	int ret=0,i;//baker_mod;
 	printk("%s\n", __func__);
 
 	if (count > MAX_BUFFER_SIZE)
@@ -276,7 +274,7 @@ static ssize_t pn544_dev_read(struct file *filp, char __user *buf,
     if (count < 8) {
          pn544_dev->client->addr = ((pn544_dev->client->addr & I2C_MASK_FLAG) | (I2C_ENEXT_FLAG));
          pn544_dev->client->timing = 400;
-          ret = i2c_master_recv(pn544_dev->client, tmp_buf, count);
+          ret = i2c_master_recv(pn544_dev->client, buf, count);
           printk("[fangzhihua] %s ,defined  CONFIG_MTK_I2C_EXTENSION  R1 \n",__func__);
     }
     else
@@ -286,34 +284,26 @@ static ssize_t pn544_dev_read(struct file *filp, char __user *buf,
        ret = i2c_master_recv(pn544_dev->client, (unsigned char *)(uintptr_t)I2CDMAReadBuf_pa, count);
 	if (ret < 0)
            return ret;
-	memcpy(tmp_buf,I2CDMAReadBuf,count);
-//	for (i = 0; i < count; i++)// add by zhaofei - 2016-11-29-10-43
-//           tmp_buf[i] = I2CDMAReadBuf[i];
+	for (i = 0; i < count; i++)
+           buf[i] = I2CDMAReadBuf[i];
     printk("[fangzhihua] %s ,defined  CONFIG_MTK_I2C_EXTENSION R2 \n",__func__);
    }
 
 #else
     if (count < 8)
-          ret = i2c_master_recv(pn544_dev->client, tmp_buf, count);
+          ret = i2c_master_recv(pn544_dev->client, buf, count);
          printk("[fangzhihua] %s ,defined  CONFIG_MTK_I2C_EXTENSION R3 \n",__func__);
     {
         ret = i2c_master_recv(pn544_dev->client, (unsigned char *)(uintptr_t)I2CDMAReadBuf, count);
        if (ret < 0)
                return ret;
 	   
-	memcpy(tmp_buf,I2CDMAReadBuf,count);
-//       for (i = 0; i < count; i++)
-//              tmp_buf[i] = I2CDMAReadBuf[i];
+       for (i = 0; i < count; i++)
+              buf[i] = I2CDMAReadBuf[i];
       printk("[fangzhihua] %s ,defined  CONFIG_MTK_I2C_EXTENSION R4 \n",__func__);
 
     }
 #endif                            /* CONFIG_MTK_I2C_EXTENSION */
-
-	if(copy_to_user(buf,tmp_buf,ret))// add by zhaofei - 2016-11-29-10-44
-	{
-		pr_err("%s failed to copy to user space, line = %d\n",__FUNCTION__,__LINE__);
-		goto fail;
-	}
 
 	mutex_unlock(&pn544_dev->read_mutex);
 
