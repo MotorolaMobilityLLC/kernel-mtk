@@ -309,7 +309,7 @@ static int SX9311_i2c_read(struct i2c_client *client, uint8_t regaddr, uint8_t r
 
 static irqreturn_t SX9311_eint_func(int irq, void *desc)
 {
-        //lct_pr_debug("[%s] irq=[%d]",__func__,irq);
+        lct_pr_debug("[%s] irq=[%d]",__func__,irq);
  
  	disable_irq_nosync(captouch_irq);
 	schedule_work(&captouch_eint_work);
@@ -390,6 +390,7 @@ int SX9311_gpio_config(void)
 		}else{
                         lct_pr_info("IRQ LINE NOT AVAILABLE!! ---FALLING  success\n");	
 
+			enable_irq(captouch_irq); //add enable 
 		}
 
 	}
@@ -457,7 +458,7 @@ static void SX9311_eint_work(struct work_struct *work)
         //read_regStat();        
         value = sx9310_interrupt_state();
 
-        //lct_pr_info("[%s]  entry!\n",__func__);        
+        lct_pr_info("[%s]  entry!\n",__func__);        
 
 	mutex_lock(&mtx_eint_status);
 
