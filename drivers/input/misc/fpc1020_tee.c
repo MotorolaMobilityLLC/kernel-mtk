@@ -219,6 +219,20 @@ static ssize_t irq_ack(struct device *device,
 
 static DEVICE_ATTR(irq, S_IRUSR | S_IWUSR, irq_get, irq_ack);
 
+static ssize_t irq_set_set(struct device *dev,struct device_attribute *attr, const char *buf, size_t count)
+{
+	struct  fpc1020_data *fpc1020 = dev_get_drvdata(dev);
+	if (*buf == 0x30) {
+		disable_irq(fpc1020->irq);
+		pr_info("%s: disable\n", __func__);
+	} else {
+		enable_irq(fpc1020->irq);
+		pr_info("%s: enable\n", __func__);
+	}
+	return count;
+}
+static DEVICE_ATTR(irq_set, S_IWUSR|S_IWGRP, NULL, irq_set_set);
+
 int fpc_irq_navigation_event(struct  fpc1020_data *fpc1020, int val)
 {
     //pr_info("fpc_irq_navigation_event:%d \n", val);
@@ -293,6 +307,7 @@ static struct attribute *attributes[] = {
     &dev_attr_clk_enable.attr,
     &dev_attr_irq.attr,
     &dev_attr_navigation_event.attr,
+    &dev_attr_irq_set.attr,
     NULL
 };
 
@@ -321,7 +336,7 @@ static irqreturn_t fpc1020_irq_handler(int irq, void *handle)
 	struct fpc1020_data *fpc1020 = handle;
 
 	schedule_work(&fpc1020->irq_worker);
-
+	//printk_ratelimited("enter into fpc1020_irq_handler\n");
 	return IRQ_HANDLED;
 }
 
