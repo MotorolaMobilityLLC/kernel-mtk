@@ -52,39 +52,6 @@ void set_ack_vdrv_cmd(unsigned int sys_num)
 }
 
 
-/*
-static void secondary_invoke_fastcall(void *info)
-{
-	unsigned long smc_type = 2;
-	n_invoke_t_fast_call(&smc_type, 0, 0);
-
-	while (smc_type == 1){
-		udelay(IRQ_DELAY);
-		nt_sched_t(&smc_type);
-	}
-}
-
-void invoke_fastcall(void)
-{
-        int cpu_id = 0;
-        forward_call_flag = GLSCH_LOW;
-	/* get_online_cpus(); */
-
-#if 1
-
-	add_work_entry(INVOKE_FASTCALL, NULL);
-
-#else
-
-	cpu_id = get_current_cpuid();
-
-	smp_call_function_single(cpu_id, secondary_invoke_fastcall, NULL, 1);
-
-#endif
-
-	/* put_online_cpus(); */
-}
-*/
 void secondary_invoke_fastcall(void *info)
 {
 	unsigned long smc_type = 2;

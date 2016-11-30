@@ -264,19 +264,6 @@ static void load_tee(void)
 #endif
 	/* put_online_cpus(); */
 }
-// tee_xuzhifeng@wind-mobi.com 20161117 end
-=======
-	/* get_online_cpus(); */
-#if 1
-	add_work_entry(LOAD_TEE, NULL);
-#else
- 	cpu_id = get_current_cpuid();
- 	smp_call_function_single(cpu_id, secondary_load_tee, NULL, 1);
-#endif
-	/* put_online_cpus(); */
-}
-/* doujia modify end */
->>>>>>> 211f057... [Purp][nicklaus][FPC] doujia patch for FPC
 
 void set_sch_load_img_cmd(void)
 {
