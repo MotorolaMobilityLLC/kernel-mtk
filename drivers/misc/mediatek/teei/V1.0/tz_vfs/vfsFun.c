@@ -79,7 +79,7 @@ int tz_vfs_release(struct inode *inode, struct file *filp)
 	filp->private_data = NULL;
 	return 0;
 }
-// tee_xuzhifeng@wind-mobi.com 20161117 begin
+
 static long tz_vfs_ioctl(struct file *filp,
 			unsigned int cmd, unsigned long arg)
 {
@@ -126,56 +126,6 @@ static long tz_vfs_ioctl(struct file *filp,
 #endif
 	return 0;
 }
-// tee_xuzhifeng@wind-mobi.com 20161117 end
-
-/* doujia add start */
-static long tz_vfs_ioctl(struct file *filp,
-			unsigned int cmd, unsigned long arg)
-{
-#if 0
-	int ret = 0;
-
-	switch (cmd) {
-
-	case SOTER_TUI_ENTER:
-		printk("***************SOTER_TUI_ENTER\n");
-		ret = tui_i2c_enable_clock();
-		if(ret)
-			printk("tui_i2c_enable_clock failed!!\n");
-
-		mt_deint_leave();
-
-		ret = display_enter_tui();
-		if(ret)
-			printk("display_enter_tui failed!!\n");
-
-		break;
-
-	case SOTER_TUI_LEAVE:
-		printk("***************SOTER_TUI_LEAVE\n");
-		/*
-		ret = tui_i2c_disable_clock();
-		if(ret)	
-			printk("tui_i2c_disable_clock failed!!\n");		
-		*/
-		mt_deint_restore();
-
-		ret = display_exit_tui();
-		if(ret)
-			printk("display_exit_tui failed!!\n");
-		/* primary_display_trigger(0, NULL, 0); */
-
-		break;	
-		
-	default:
-		return -EINVAL;
-	}
-
-	return ret;
-#endif
-	return 0;
-}
-/* doujia add end */
 
 static ssize_t tz_vfs_read(struct file *filp, char __user *buf,
 			size_t size, loff_t *ppos)
