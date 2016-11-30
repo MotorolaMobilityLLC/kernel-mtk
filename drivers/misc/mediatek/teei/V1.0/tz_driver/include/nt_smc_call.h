@@ -696,21 +696,6 @@ static inline void smc_in(
 
 
 /*  ==================  NT FAST CALL ================   */
-/*
-static inline void n_init_t_boot_stage1(
-		uint32_t p0,
-		uint32_t p1,
-		uint32_t *p2)
-{
-	smc_inout(N_INIT_T_BOOT_STAGE1_32, p0, p1, 0,p2);
-
-}
-
-static inline void n_switch_to_t_os_stage2(uint32_t *p0)
-{
-	smc_inout(N_SWITCH_TO_T_OS_STAGE2_32, 0, 0, 0,p0);
-}
-*/
 static inline void n_init_t_boot_stage1(
 		uint32_t p0,
 		uint32_t p1,
@@ -741,16 +726,7 @@ static inline void n_get_param_in(
 
 }
 
-/*
-static inline void n_init_t_fc_buf(
-		uint32_t p0,
-		uint32_t p1,
-		uint32_t *p2)
-{
-	smc_inout(N_INIT_T_FC_BUF_32, p0, p1, 0,p2);
 
-}
-*/
 static inline void n_init_t_fc_buf(
 		uint32_t p0,
 		uint32_t p1,
@@ -760,15 +736,7 @@ static inline void n_init_t_fc_buf(
 
 }
 
-/*
-static inline void n_invoke_t_fast_call(
-		uint32_t *p0,
-		uint32_t p1,
-		uint32_t p2)
-{
-	smc_inout(N_INVOKE_T_FAST_CALL_32, *p0, p1, p2,p0);
-}
-*/
+
 static inline void n_invoke_t_fast_call(
 		uint32_t *p0,
 		uint32_t p1,
@@ -778,17 +746,7 @@ static inline void n_invoke_t_fast_call(
 }
 
 /*  ==================  NT STANDARD CALL ================   */
-/*
-static inline void nt_sched_t(void)
-{
-	uint32_t p0;
-	uint32_t p1;
-	uint32_t p2;
 
-	smc_inout(NT_SCHED_T_32, p0, p1, p2,p);
-
-}
-*/
 static inline void nt_sched_t(uint32_t *p)
 {
 	uint32_t p0;
@@ -817,16 +775,7 @@ static inline void n_invoke_t_nq(
 
 }
 
-/*
-static inline void n_invoke_t_drv(
-		uint32_t *p0,
-		uint32_t p1,
-		uint32_t p2)
-{
-	smc_inout(N_INVOKE_T_DRV_32, *p0, p1, p2,p0);
 
-}
-*/
 static inline void n_invoke_t_drv(
 		uint32_t *p0,
 		uint32_t p1,
@@ -836,16 +785,7 @@ static inline void n_invoke_t_drv(
 
 }
 
-/*
-static inline void n_raise_t_event(
-		uint32_t p0,
-		uint32_t p1,
-		uint32_t p2)
-{
-	smc_out(N_RAISE_T_EVENT_32, p0, p1, p2);
 
-}
-*/
 
 static inline void n_raise_t_event(
 		uint32_t p0,
@@ -856,16 +796,7 @@ static inline void n_raise_t_event(
 
 }
 
-/*
-static inline void n_ack_t_invoke_drv(
-		uint32_t *p0,
-		uint32_t p1,
-		uint32_t p2)
-{
-	smc_inout(N_ACK_T_INVOKE_DRV_32, *p0, p1, p2,p0);
 
-}
-*/
 static inline void n_ack_t_invoke_drv(
 		uint32_t *p0,
 		uint32_t p1,
@@ -875,16 +806,7 @@ static inline void n_ack_t_invoke_drv(
 
 }
 
-/*
-static inline void n_invoke_t_load_tee(
-		uint32_t *p0,
-		uint32_t p1,
-		uint32_t p2)
-{
-	smc_inout(N_INVOKE_T_LOAD_TEE_32, *p0, p1, p2,p0);
 
-}
-*/
 static inline void n_invoke_t_load_tee(
 		uint32_t *p0,
 		uint32_t p1,

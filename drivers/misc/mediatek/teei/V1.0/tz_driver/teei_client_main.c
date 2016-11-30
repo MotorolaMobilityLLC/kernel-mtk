@@ -140,9 +140,6 @@ struct timeval stime;
 struct timeval etime;
 // tee_xuzhifeng@wind-mobi.com 20161117 end
 
-/* doujia modify start */
-struct timeval stime;
-struct timeval etime;
 /* doujia modify end */
 
 DECLARE_COMPLETION(global_down_lock);
@@ -230,7 +227,7 @@ static void boot_stage2(void)
 int switch_to_t_os_stages2(void)
 {
 	down(&(smc_lock));
-  forward_call_flag = GLSCH_LOW;
+	forward_call_flag = GLSCH_LOW;
 	boot_stage2();
 	down(&(boot_sema));
 

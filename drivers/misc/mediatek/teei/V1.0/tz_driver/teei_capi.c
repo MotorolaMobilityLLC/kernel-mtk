@@ -1,12 +1,8 @@
 #include <linux/kernel.h>
 #include <linux/slab.h>
 #include <asm/uaccess.h>
-// tee_xuzhifeng@wind-mobi.com 20161117 begin
 #include <linux/compat.h>
-// tee_xuzhifeng@wind-mobi.com 20161117 end
 
-/* doujia modify start */
-#include <linux/compat.h>
 /* doujia modify end */
 
 #include "teei_smc_struct.h"
