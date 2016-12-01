@@ -896,26 +896,26 @@ static struct platform_driver flashlight_platform_driver = {
 #endif
 		   },
 };
-
+#if !defined(CONFIG_OF)/*jijin.wang delet flashlight code*/
 static struct platform_device flashlight_platform_device = {
 	.name = FLASHLIGHT_DEVNAME,
 	.id = 0,
 	.dev = {
 		}
 };
-
+#endif
 static int __init flashlight_init(void)
 {
 	int ret = 0;
 
 	logI("[flashlight_probe] start ~");
-
+#if !defined(CONFIG_OF)/*jijin.wang delet flashlight code*/
 	ret = platform_device_register(&flashlight_platform_device);
 	if (ret) {
 		logI("[flashlight_probe] platform_device_register fail ~");
 		return ret;
 	}
-
+#endif
 	ret = platform_driver_register(&flashlight_platform_driver);
 	if (ret) {
 		logI("[flashlight_probe] platform_driver_register fail ~");
