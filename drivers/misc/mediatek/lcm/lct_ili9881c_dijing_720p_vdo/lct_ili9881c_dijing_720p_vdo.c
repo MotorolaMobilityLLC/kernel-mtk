@@ -314,7 +314,7 @@ static struct LCM_setting_table lcm_initialization_setting[] = {
 {0x89,1,{0x02}},
 {0x8A,1,{0x02}},
 {0xFF,3,{0x98,0x81,0x04}},
-{0x00,1,{0x00}}, 
+{0x00,1,{0x80}}, 
 {0x6C,1,{0x15}},                //Set VCORE voltage =1.5V);
 {0x6E,1,{0x3b}},              //di_pwr_reg=0 for power mode 
 {0x6F,1,{0x53}},                // reg vcl + pumping ratio 
@@ -466,7 +466,7 @@ static void lcm_get_params(LCM_PARAMS *params)
 
 	/* DSI */
 	/* Command mode setting */
-	params->dsi.LANE_NUM = LCM_THREE_LANE;
+	params->dsi.LANE_NUM = LCM_FOUR_LANE;
 	/* The following defined the fomat for data coming from LCD engine. */
 	params->dsi.data_format.color_order = LCM_COLOR_ORDER_RGB;
 	params->dsi.data_format.trans_seq = LCM_DSI_TRANS_SEQ_MSB_FIRST;
@@ -478,12 +478,12 @@ static void lcm_get_params(LCM_PARAMS *params)
 	params->dsi.packet_size = 512;
 	params->dsi.PS = LCM_PACKED_PS_24BIT_RGB888;
 
-	params->dsi.vertical_sync_active				= 6;//15
-	params->dsi.vertical_backporch					= 16;//20
-	params->dsi.vertical_frontporch					= 16; //20
+	params->dsi.vertical_sync_active				= 15;//15
+	params->dsi.vertical_backporch					= 20;//20
+	params->dsi.vertical_frontporch					= 20; //20
 	params->dsi.vertical_active_line				= FRAME_HEIGHT;
 
-	params->dsi.horizontal_sync_active				= 8; //20
+	params->dsi.horizontal_sync_active				= 30; //20
 	params->dsi.horizontal_backporch				= 80;  //140
 	params->dsi.horizontal_frontporch				= 80;  //100
 	params->dsi.horizontal_active_pixel				= FRAME_WIDTH;
@@ -491,7 +491,7 @@ static void lcm_get_params(LCM_PARAMS *params)
 #if (LCM_DSI_CMD_MODE)
 	params->dsi.PLL_CLOCK = 150;	/* this value must be in MTK suggested table */
 #else
-	params->dsi.PLL_CLOCK = 275;	/* this value must be in MTK suggested table */
+	params->dsi.PLL_CLOCK = 220;	/* this value must be in MTK suggested table */
 #endif
 	params->dsi.cont_clock = 0;
 	params->dsi.clk_lp_per_line_enable = 0;
@@ -506,8 +506,7 @@ static void tps65132_enable(char en)
 {
 	if (en)
 	{
-		set_gpio_led_en(1);
-		MDELAY(5);
+		
 		set_gpio_lcd_enp(1);
 		MDELAY(12);
 		set_gpio_lcd_enn(1);
@@ -517,9 +516,7 @@ static void tps65132_enable(char en)
 	}
 	else
 	{
-		tps65132_write_bytes(0x03, 0x40);
-		set_gpio_led_en(0);
-		MDELAY(5);
+		tps65132_write_bytes(0x03, 0x40);		
 		set_gpio_lcd_enp(0);
 		MDELAY(12);
 		set_gpio_lcd_enn(0);
@@ -544,6 +541,8 @@ static void lcm_init(void)
 
 static void lcm_suspend(void)
 {
+	set_gpio_led_en(0);
+	MDELAY(5);
 	push_table(lcm_deep_sleep_mode_in_setting,
 		   sizeof(lcm_deep_sleep_mode_in_setting) / sizeof(struct LCM_setting_table), 1);
 	tps65132_enable(0);
@@ -560,17 +559,23 @@ static void lcm_resume(void)
 
 static void lcm_setbacklight(unsigned int level)
 {
-	
+	unsigned int level_hight,level_low=0;
     #if(LCT_LCM_MAPP_BACKLIGHT)
 	unsigned int mapped_level = 0;
-	if (level > 255)
+	if (level >= 200)
 		level = 200;
 	if (level > 102)
 		mapped_level = (641*level + 36667)/(1000);
 	else
 		mapped_level=level;
-	#endif
-	lcm_backlight_level_setting[0].para_list[1] = mapped_level;
+	#endif	
+	set_gpio_led_en(1);
+	MDELAY(5);
+	level_hight=(mapped_level | 0xf0)>>4;
+	level_low=(mapped_level | 0x0f)<<4;
+	lcm_backlight_level_setting[0].para_list[0] = level_hight;
+	lcm_backlight_level_setting[0].para_list[1] = level_low;
+	//lcm_backlight_level_setting[0].para_list[1] = mapped_level;
 	push_table(lcm_backlight_level_setting,
 		   sizeof(lcm_backlight_level_setting) / sizeof(struct LCM_setting_table), 1);
 }
