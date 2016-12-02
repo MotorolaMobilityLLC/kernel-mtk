@@ -610,6 +610,31 @@ static ssize_t SX9311_show_chipid(struct device_driver *ddri, char *buf)
 	return sprintf(buf, "%u\n", buffer[0]);
 }
 
+//read  sarvalue  for engineer
+static ssize_t sx9310_show_sar(struct device_driver *ddri, char *buf)
+{
+    uint8_t buffer[8]={0};
+    int err = 0; 
+    ssize_t len;
+	#if defined(SX9311_SUPPORT_I2C_DMA)
+	err = SX9311_i2c_read_dma(SX9311_i2c_client, 0x35, 1, buffer);
+	#else
+	err = SX9311_i2c_read(SX9311_i2c_client, 0x42, 1, buffer);
+	#endif
+
+        len = sprintf(buf,"0x35=0x%x ," ,buffer[0]);    
+
+        #if defined(SX9311_SUPPORT_I2C_DMA)
+	err = SX9311_i2c_read_dma(SX9311_i2c_client, 0x36, 1, buffer);
+	#else
+	err = SX9311_i2c_read(SX9311_i2c_client, 0x42, 1, buffer);
+	#endif
+
+	len += sprintf(buf + len,"0x36=0x%x \r\n" ,buffer[0]);    
+
+	return len ;
+}
+
 
 static ssize_t sx9311_show_reg(struct device_driver *ddri, char *buf){
 
@@ -708,6 +733,8 @@ static ssize_t sx9311_store_reg_echo(struct device_driver *ddri, const char *buf
 }
 
 
+
+static DRIVER_ATTR(sarvalue, S_IWUSR | S_IRUGO, sx9310_show_sar, NULL); //add for sarvalue 
 static DRIVER_ATTR(reg, S_IWUSR | S_IRUGO, sx9311_store_reg, sx9311_store_reg_echo);
 static DRIVER_ATTR(sx9310_disable, S_IWUSR | S_IRUGO, SX9311_show_disable, NULL);
 static DRIVER_ATTR(sx9310_chipid, S_IWUSR | S_IRUGO, SX9311_show_chipid, NULL);
@@ -721,6 +748,7 @@ static struct driver_attribute *SX9311_attr_list[] =
         &driver_attr_sx9310_chipid,
         &driver_attr_sx9310_reg,
         &driver_attr_reg,
+        &driver_attr_sarvalue,
 };
 /*----------------------------------------------------------------------------*/
 static int SX9311_create_attr(struct device_driver *driver)
