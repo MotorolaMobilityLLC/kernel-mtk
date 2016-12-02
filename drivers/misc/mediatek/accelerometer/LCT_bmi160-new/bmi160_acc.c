@@ -170,6 +170,11 @@ static atomic_t vg_flag = ATOMIC_INIT(0);
 static atomic_t driver_suspend_flag = ATOMIC_INIT(0);
 #endif //BMC050_BLOCK_DAEMON_ON_SUSPEND
 
+/*add for combine BMI160, bma253  by cly 20161202*/
+#ifdef CONFIG_LCT_BOOT_REASON
+extern int lct_get_sku(void);
+static int sku = 0;
+#endif  
 struct mutex uplink_event_flag_mutex;
 /* uplink event flag */
 volatile u32 uplink_event_flag = 0;
@@ -4240,9 +4245,20 @@ static int __init bmi160_acc_init(void)
 	GSE_FUN();
 
 	hw = get_accel_dts_func(COMPATIABLE_NAME, hw);
-	if (!hw)
+	if (!hw){
 		GSE_ERR("get dts info fail\n");
+                return 0; 
+        }
 	GSE_LOG("%s: i2c_number=%d,addr = 0x%x\n", __func__, hw->i2c_num,*hw->i2c_addr);
+/*sku  A01,B01,D01,not support bmi160, return,  D01,E01 support bmi160*/
+#ifdef CONFIG_LCT_BOOT_REASON
+        sku = lct_get_sku()%5;
+
+        if (0==sku || 1==sku|| 2==sku){
+           return 0;
+        }
+#endif 
+/*end*/
 	acc_driver_add(&bmi160_acc_init_info);
 	return 0;
 }

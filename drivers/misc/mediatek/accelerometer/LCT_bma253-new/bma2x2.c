@@ -216,6 +216,12 @@ static int CHIP_TYPE;
 	((regvar & ~bitname##__MSK) | ((val<<bitname##__POS)&bitname##__MSK))
 
 
+//add for combine BMI160, bma253  by cly
+#ifdef CONFIG_LCT_BOOT_REASON
+extern int lct_get_sku(void);
+static int sku = 0;
+
+#endif 
 
 /*----------------------------------------------------------------------------*/
 
@@ -2822,6 +2828,18 @@ static int __init bma2x2_init(void)
 {
 	hw = get_accel_dts_func(COMPATIABLE_NAME, hw);
 
+/*sku  A01,B01,D01,not support bmi160,   D01,E01 support bmi160  */
+#ifdef CONFIG_LCT_BOOT_REASON
+
+        sku = lct_get_sku()%5;
+
+        if (3==sku || 4==sku){
+           GSE_ERR(" bma253 not support ");
+           return 0;
+        }
+
+#endif 
+        
 	GSE_FUN();
 	i2c_register_board_info(hw->i2c_num, &bma2x2_i2c_info, 1);
 	GSE_ERR("!!!!bma2x2_init i2c_register_board_info finishes\n");
