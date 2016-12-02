@@ -72,6 +72,51 @@ static int __init dt_get_boot_common(unsigned long node, const char *uname, int 
 	/* break now */
 	return 1;
 }
+#ifdef CONFIG_LCT_BOOT_REASON
+struct tag_bootsku{
+	u32 size;
+	u32 tag;
+	u32 skumode;
+};
+static int skuinfo = 0;
+
+static int __init dt_get_lct_sku(unsigned long node, const char *uname, int depth, void *data)
+{
+	struct tag_bootsku *tags = NULL;
+
+	if (depth != 1 || (strcmp(uname, "chosen") != 0 && strcmp(uname, "chosen@0") != 0))
+		return 0;
+
+	tags = (struct tag_bootsku*)of_get_flat_dt_prop(node, "atag,skuinfo", NULL);
+
+	if (tags) {
+		skuinfo = tags->skumode;
+		//g_boot_mode = tags->bootmode;
+		//atomic_set(&g_boot_status, 1);
+	} else {
+		pr_warn("'atag,boot' is not found\n");
+	}
+
+	/* break now */
+	return 1;
+}
+
+int lct_get_sku(void)
+{
+	int rc;
+
+	rc = of_scan_flat_dt(dt_get_lct_sku, NULL);
+	if (0 != rc)
+		printk("func=%s,line=%d\n",__FUNCTION__,__LINE__);
+	else
+	{
+		printk("func=%s,line=%d\n",__FUNCTION__,__LINE__);
+		pr_warn("of_scan_flat_dt() = %d", rc);
+	}
+
+	return skuinfo;
+}
+#endif
 #endif
 
 
@@ -104,6 +149,11 @@ void init_boot_common(unsigned int line)
 		atomic_set(&g_boot_init, BM_INITIALIZED);
 	else
 		pr_warn("of_scan_flat_dt() = %d", rc);
+// add by zhaofei - 2016-12-01-14-35
+#ifdef CONFIG_LCT_BOOT_REASON
+	lct_get_sku();
+#endif
+// add by zhaofei - 2016-12-01-14-35
 	pr_debug("%s %d %d %d\n", __func__, line, g_boot_mode, atomic_read(&g_boot_init));
 #endif
 }
@@ -271,12 +321,58 @@ static const struct file_operations boot_mode_proc_fops = {
 	.release = single_release,
 };
 
+#ifdef CONFIG_LCT_BOOT_REASON
+static int boot_reason_proc_show(struct seq_file *p, void *v)
+{
+	char lct_boot_reason[64] = {0};
+	char *substr1 = "androidboot.bootreason=";
+	char *substr2 = " ";
+	char *s1 = strstr(saved_command_line,substr1);
+	int length = 0;
+	if( s1 != NULL)
+	{
+		char *s2 = strstr(s1,substr2);
+		if( s2 != NULL)
+		{
+			length = s2 - s1 - strlen(substr1);
+			s1 += strlen(substr1);
+			memcpy(lct_boot_reason,s1,length);
+		}
+	}
+
+	snprintf(lct_boot_reason, 64, "%s\n",lct_boot_reason);
+	seq_puts(p, "MTK BOOT MODE : ");
+	seq_puts(p, lct_boot_reason);
+//	seq_puts(p,"\n\r");
+	
+	return 0;
+}
+
+static int boot_reason_proc_open(struct inode *inode, struct file *file)
+{
+	return single_open(file, boot_reason_proc_show, NULL);
+}
+
+static const struct file_operations boot_reason_proc_fops = {
+	.open = boot_reason_proc_open,
+	.read = seq_read,
+	.llseek = seq_lseek,
+	.release = single_release,
+};
+
+
+#endif
+
 static int __init boot_common_core(void)
 {
 	init_boot_common(__LINE__);
 	/* create proc entry at /proc/boot_mode */
 	if (NULL == proc_create_data("boot_mode", S_IRUGO, NULL, &boot_mode_proc_fops, NULL))
 		pr_warn("create procfs fail");
+#ifdef CONFIG_LCT_BOOT_REASON	
+	if (NULL == proc_create_data("boot_reason", S_IRUGO, NULL, &boot_reason_proc_fops, NULL))
+		pr_warn("create procfs fail");
+#endif
 
 	/* create sysfs entry at /sys/class/BOOT/BOOT/boot */
 	create_sysfs();

@@ -4,3 +4,6 @@ config MTK_BOOT
 	help
 	  Boot information driver includes specific information about booting process, such as boot mode.
 
+config LCT_BOOT_REASON
+	bool "enable lct boot reason"
+	default n
