@@ -47,6 +47,13 @@
 #include <linux/of_address.h>
 #endif
 
+/* add lct_sku by changjingyang start */ 
+#define LCT_SKU_REQ
+#ifdef LCT_SKU_REQ
+extern int lct_get_sku(void);
+#endif
+/* add lct_sku by changjingyang end */ 
+
 // add by zhaofei - 2016-11-09-17-31
 //#define LCT_NFC_CLK_REQ
 #define LCT_SYS_CLK
@@ -918,8 +925,26 @@ static struct platform_driver pn544_platform_driver = {
 static int __init pn544_dev_init(void)
 {
 	int ret;
+/* add lct_sku by changjingyang start */
+#ifdef LCT_SKU_REQ
+	int lct_sku = 0;
+#endif
+/* add lct_sku by changjingyang end */ 
+
 	printk("pn544_dev_init\n");
 
+/* add lct_sku by changjingyang start */ 
+#ifdef LCT_SKU_REQ
+	lct_sku = lct_get_sku()%5;
+	printk("[sku] pn544_dev_init  lct_sku = %d \n", lct_sku);
+	if((lct_sku!=1)&&(lct_sku!=2))
+	{
+		lct_sku = 0;
+		printk("pn544_dev_init fail\n");
+		return -1;
+	}	
+#endif
+/* add lct_sku by changjingyang end */ 
 	platform_driver_register(&pn544_platform_driver);
 
 	ret = i2c_add_driver(&pn544_i2c_driver);
