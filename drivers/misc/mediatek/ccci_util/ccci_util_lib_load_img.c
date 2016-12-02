@@ -646,6 +646,9 @@ char *ccci_get_md_info_str(int md_id)
 	return md_img_info_str[md_id];
 }
 
+#ifdef CONFIG_LCT_MULTI_MD_IMAGE
+extern int sku ;// add by zhaofei - 2016-12-02-10-47
+#endif
 void get_md_postfix(int md_id, char k[], char buf[], char buf_ex[])
 {
 	/* name format: modem_X_YY_K_Ex.img */
@@ -663,7 +666,10 @@ void get_md_postfix(int md_id, char k[], char buf[], char buf_ex[])
 
 	if ((curr_ubin_id != 0) && (md_id == MD_SYS1)) {
 		if (buf) {
-			snprintf(buf, IMG_POSTFIX_LEN, "%d_%s_n", X, type_str[curr_ubin_id]);
+//add by MTK for multi-md image by LC
+			snprintf(buf, IMG_POSTFIX_LEN, "%d_%s_1", X, type_str[curr_ubin_id]);
+//end add by MTK for multi-md image
+
 			CCCI_UTIL_ERR_MSG_WITH_ID(md_id, "MD%d image postfix=%s\n", md_id + 1, buf);
 		}
 
@@ -700,9 +706,22 @@ void get_md_postfix(int md_id, char k[], char buf[], char buf_ex[])
 
 	/* K */
 	if (k == NULL)
-		snprintf(YY_K, IMG_POSTFIX_LEN, "_%s_n", type_str[feature_val]);
+//add by MTK for multi-md image by LC 
+		snprintf(YY_K, IMG_POSTFIX_LEN, "_%s_1", type_str[feature_val]);
+//end add by MTK for multi-md image
 	else
 		snprintf(YY_K, IMG_POSTFIX_LEN, "_%s_%s", type_str[feature_val], k);
+// add by zhaofei - 2016-12-02-10-53
+#ifdef CONFIG_LCT_MULTI_MD_IMAGE
+	printk("sku is %d\n",sku);
+	if(sku == 0)
+		snprintf(YY_K, IMG_POSTFIX_LEN, "_%s_1", type_str[feature_val]);
+	else if((sku == 1) || (sku == 2))
+		snprintf(YY_K, IMG_POSTFIX_LEN, "_%s_2", type_str[feature_val]);
+	else if((sku == 3) || (sku == 4))
+		snprintf(YY_K, IMG_POSTFIX_LEN, "_%s_3", type_str[feature_val]);
+#endif
+// add by zhaofei - 2016-12-02-10-53
 
 	/* [_Ex] Get chip version */
 #if 0
@@ -801,8 +820,11 @@ TRY_LOAD_IMG:
 			i++;
 			goto TRY_LOAD_IMG;
 		} else {
+//add by MTK for multi-md image by LC
 			CCCI_UTIL_ERR_MSG_WITH_ID(md_id,
-			     "Try to load all md image failed:ret=%d!\n", ret);
+			     "Try to load all md image failed:ret=%d!%s\n", ret,img_name);
+//end add by MTK for multi-md image
+
 #if defined(CONFIG_MTK_AEE_FEATURE)
 			aed_md_exception_api(NULL, 0, NULL, 0, "Try to load all md image failed!", DB_OPT_DEFAULT);
 #endif

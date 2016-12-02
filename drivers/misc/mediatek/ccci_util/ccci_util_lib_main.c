@@ -36,8 +36,17 @@
 
 #include "ccci_util_lib_main.h"
 
+// add by zhaofei - 2016-12-02-14-12
+#ifdef CONFIG_LCT_BOOT_REASON
+int sku;
+extern int lct_get_sku(void);
+#endif
+// add by zhaofei - 2016-12-02-14-12
 static int __init ccci_util_init(void)
 {
+#ifdef CONFIG_LCT_BOOT_REASON
+	sku = lct_get_sku()%5;
+#endif
 	ccci_log_init();
 	ccci_util_fo_init();
 	ccci_common_sysfs_init();

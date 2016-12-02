@@ -543,6 +543,9 @@ int swtp_init(int md_id);
 #define CCCI_IOC_ENTER_UPLOAD		_IO(CCCI_IOC_MAGIC, 61) /* modem log for S */
 #define CCCI_IOC_GET_RAT_STR			_IOR(CCCI_IOC_MAGIC, 62, unsigned int[16])
 #define CCCI_IOC_SET_RAT_STR			_IOW(CCCI_IOC_MAGIC, 63, unsigned int[16])
+//add by MTK for multi-md image by LC
+#define CCCI_IOC_GET_MD_SUB_ID			_IOR(CCCI_IOC_MAGIC, 64, unsigned int)
+//end add by MTK for multi-md image
 
 #define CCCI_IOC_SET_HEADER				_IO(CCCI_IOC_MAGIC,  112) /* emcs_va */
 #define CCCI_IOC_CLR_HEADER				_IO(CCCI_IOC_MAGIC,  113) /* emcs_va */

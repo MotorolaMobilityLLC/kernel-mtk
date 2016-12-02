@@ -543,3 +543,5 @@ CONFIG_LCT_HBM_SUPPORT=y
 CONFIG_LCT_SLUB_DEBUG=y
 # add by longcheer zhaofei for boot reason
 CONFIG_LCT_BOOT_REASON=y
+# add by longcheer zhaofei for multi image
+CONFIG_LCT_MULTI_MD_IMAGE=y

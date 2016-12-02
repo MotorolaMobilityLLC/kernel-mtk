@@ -101,17 +101,22 @@ static int __init dt_get_lct_sku(unsigned long node, const char *uname, int dept
 	return 1;
 }
 
+static int first_flag = 0;
 int lct_get_sku(void)
 {
 	int rc;
 
-	rc = of_scan_flat_dt(dt_get_lct_sku, NULL);
-	if (0 != rc)
-		printk("func=%s,line=%d\n",__FUNCTION__,__LINE__);
-	else
+	if( first_flag == 0)
 	{
-		printk("func=%s,line=%d\n",__FUNCTION__,__LINE__);
-		pr_warn("of_scan_flat_dt() = %d", rc);
+		rc = of_scan_flat_dt(dt_get_lct_sku, NULL);
+		if (0 != rc)
+			printk("func=%s,line=%d\n",__FUNCTION__,__LINE__);
+		else
+		{
+			printk("func=%s,line=%d\n",__FUNCTION__,__LINE__);
+			pr_warn("of_scan_flat_dt() = %d", rc);
+		}
+		first_flag = 1;
 	}
 
 	return skuinfo;

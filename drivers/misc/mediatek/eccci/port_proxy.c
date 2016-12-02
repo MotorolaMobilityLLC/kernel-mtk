@@ -1102,7 +1102,9 @@ long port_proxy_user_ioctl(struct port_proxy *proxy_p, int ch, unsigned int cmd,
 	unsigned int val;
 	char magic_pattern[64];
 #endif
-
+//add by MTK for multi-md image by LC
+	char md_sub_id[4];
+//end add by MTK for multi-md image
 	switch (cmd) {
 	case CCCI_IOC_GET_MD_PROTOCOL_TYPE:
 		CCCI_ERROR_LOG(md_id, CHAR, "Call CCCI_IOC_GET_MD_PROTOCOL_TYPE!\n");
@@ -1397,6 +1399,15 @@ long port_proxy_user_ioctl(struct port_proxy *proxy_p, int ch, unsigned int cmd,
 			ret = -EFAULT;
 		}
 		break;
+//add by MTK for multi-md image by LC
+	case CCCI_IOC_GET_MD_SUB_ID:
+		snprintf(md_sub_id, sizeof(md_sub_id), "%d", 1);
+		if (copy_to_user((void __user *)arg, md_sub_id, sizeof(md_sub_id))) {
+			CCCI_BOOTUP_LOG(md_id, CHAR, "CCCI_IOC_GET_EXT_MD_POST_FIX: copy_to_user fail\n");
+			ret = -EFAULT;
+		}
+		break;
+//end add by MTK for multi-md image
 	case CCCI_IOC_SEND_ICUSB_NOTIFY:
 		if (copy_from_user(&sim_id, (void __user *)arg, sizeof(unsigned int))) {
 			CCCI_NORMAL_LOG(md_id, CHAR, "CCCI_IOC_SEND_ICUSB_NOTIFY: copy_from_user fail!\n");

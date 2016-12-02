@@ -106,3 +106,6 @@ config MTK_C2K_LTE_MODE
 	  1=>svlte mode,
 	  2=>srlte mode
 
+config LCT_MULTI_MD_IMAGE
+	bool "LCT MULTI MD image"
+	default n
