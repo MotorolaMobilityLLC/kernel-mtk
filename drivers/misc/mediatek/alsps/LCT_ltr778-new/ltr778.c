@@ -165,7 +165,7 @@ static struct i2c_driver ltr778_i2c_driver = {
 /*----------------------------------------------------------------------------*/
 #ifdef GN_MTK_BSP_PS_DYNAMIC_CALI
 static int ltr778_dynamic_calibrate(void);
-static int dynamic_calibrate = 0;
+static int dynamic_calibrate = 2047;
 #endif
 /*-----------------------------------------------------------------------------*/
 /* add LCT_DEVINFO by dingleilei*/
@@ -470,6 +470,11 @@ static int ltr778_dynamic_calibrate(void)
 	int ps_persist_val_low, ps_persist_val_high;
 	struct ltr778_priv *obj = ltr778_obj;
 
+	ps_thd_val_low = 0;
+	ps_thd_val_high = 0;
+	ps_persist_val_low = 0;
+	ps_persist_val_high = 0;
+
 	if (!ltr778_obj)
 	{
 		APS_ERR("ltr778_obj is null!!\n");
@@ -490,7 +495,10 @@ static int ltr778_dynamic_calibrate(void)
 	}
 
 	noise = data_total / count;
-	dynamic_calibrate = noise;
+
+	if(noise < dynamic_calibrate + 100)  // modified by steven
+	{
+		dynamic_calibrate = noise;
 
 	if (noise < 100) {
 		ps_thd_val_high = noise + 65;
@@ -538,9 +546,9 @@ static int ltr778_dynamic_calibrate(void)
 	atomic_set(&obj->ps_thd_val_high, ps_thd_val_high);
 	atomic_set(&obj->ps_thd_val_low, ps_thd_val_low);
 	
-	atomic_set(&obj->ps_persist_val_high, ps_thd_val_high);
-	atomic_set(&obj->ps_persist_val_low, ps_thd_val_low);
-
+	atomic_set(&obj->ps_persist_val_high, ps_persist_val_high);
+	atomic_set(&obj->ps_persist_val_low, ps_persist_val_low);
+	}
 	
 	
 	APS_LOG("%s:noise = %d\n", __func__, noise);
@@ -1377,7 +1385,7 @@ static void ltr778_eint_work(struct work_struct *work)
 				goto EXIT_INTR;
 			}
 		} else if (intr_flag_value == 0){	
-#if 0  //def GN_MTK_BSP_PS_DYNAMIC_CALI
+  //def GN_MTK_BSP_PS_DYNAMIC_CALI
 			if(obj->ps > 20 && obj->ps < (dynamic_calibrate - 300)){ 
         		if(obj->ps < 100){			
         			atomic_set(&obj->ps_thd_val_high,  obj->ps+65);
@@ -1408,7 +1416,6 @@ static void ltr778_eint_work(struct work_struct *work)
         		
         		dynamic_calibrate = obj->ps;
         	}	        
-#endif        	
 
 			res = ltr778_i2c_write_reg( LTR778_PS_THRES_LOW_0, 0x00);
 			if(res < 0)
