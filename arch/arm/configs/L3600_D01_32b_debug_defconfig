@@ -563,3 +563,7 @@ CONFIG_LCT_RPMB_TRIGGER=y
 CONFIG_LCT_CABC_MODE_SUPPORT=y
 # add by longcheer yufangfang for hbm
 CONFIG_LCT_HBM_SUPPORT=y
+# add by longcheer zhaofei for slub debug by FAQ18276
+CONFIG_LCT_SLUB_DEBUG=y
+# add by longcheer zhaofei for boot reason
+CONFIG_LCT_BOOT_REASON=y
