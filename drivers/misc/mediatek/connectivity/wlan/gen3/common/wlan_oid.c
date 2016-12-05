@@ -5162,19 +5162,46 @@ wlanoidSetSwCtrlWrite(IN P_ADAPTER_T prAdapter,
 				rWlanStatus = nicEnterCtiaModeOfFIFOFullNoAck(prAdapter, FALSE, TRUE);
 			}
 #endif
+/* START, sunyue5 add for set band feature */
 #if CFG_MTK_STAGE_SCAN
-			else if (u2SubId == 0x1250)
+			else if (u2SubId == 0x1250) {
 				prAdapter->aePreferBand[KAL_NETWORK_TYPE_AIS_INDEX] = BAND_NULL;
-			else if (u2SubId == 0x1251)
+			} else if (u2SubId == 0x1251) {
 				prAdapter->aePreferBand[KAL_NETWORK_TYPE_AIS_INDEX] = BAND_2G4;
-			else if (u2SubId == 0x1252) {
-				if (prAdapter->fgEnable5GBand)
+				if (kalGetMediaStateIndicated(prAdapter->prGlueInfo) == PARAM_MEDIA_STATE_CONNECTED) {
+					DBGLOG(INIT, TRACE, "current ssid %s, bssid "MACSTR", freq is %d\n",
+					prAdapter->rWlanInfo.rCurrBssId.rSsid.aucSsid,
+					MAC2STR(prAdapter->rWlanInfo.rCurrBssId.arMacAddress),
+					prAdapter->rWlanInfo.rCurrBssId.rConfiguration.u4DSConfig);
+					if (prAdapter->rWlanInfo.rCurrBssId.rConfiguration.u4DSConfig <= 5825000 &&
+						prAdapter->rWlanInfo.rCurrBssId.rConfiguration.u4DSConfig >= 5180000) {
+						kalIndicateStatusAndComplete(prAdapter->prGlueInfo,
+							WLAN_STATUS_MEDIA_DISCONNECT, NULL, 0);
+					}
+				}
+			} else if (u2SubId == 0x1252) {
+				if(prAdapter->fgEnable5GBand) {
 					prAdapter->aePreferBand[KAL_NETWORK_TYPE_AIS_INDEX] = BAND_5G;
-				else
-					/* Skip this setting if 5G band is disabled */
-					DBGLOG(SCN, INFO, "Skip 5G stage scan request due to " "5G is disabled\n");
+				if (kalGetMediaStateIndicated(prAdapter->prGlueInfo) == PARAM_MEDIA_STATE_CONNECTED) {
+					DBGLOG(INIT, TRACE, "current ssid %s, bssid "MACSTR", freq is %d\n",
+					prAdapter->rWlanInfo.rCurrBssId.rSsid.aucSsid,
+					MAC2STR(prAdapter->rWlanInfo.rCurrBssId.arMacAddress),
+					prAdapter->rWlanInfo.rCurrBssId.rConfiguration.u4DSConfig);
+					if (prAdapter->rWlanInfo.rCurrBssId.rConfiguration.u4DSConfig <= 2484000 &&
+						prAdapter->rWlanInfo.rCurrBssId.rConfiguration.u4DSConfig >= 2412000) {
+						kalIndicateStatusAndComplete(prAdapter->prGlueInfo,
+							WLAN_STATUS_MEDIA_DISCONNECT, NULL, 0);
+					}
+				}
+			}
+                else {
+                    /* Skip this setting if 5G band is disabled */
+                    DBGLOG(SCN, INFO, "Skip 5G stage scan request due to "
+                        "5G is disabled\n");
+                }
 			}
 #endif
+/* END, sunyue5 add for set band feature */
 		}
 		break;
 

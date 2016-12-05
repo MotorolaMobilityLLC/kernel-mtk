@@ -499,6 +499,10 @@ BOOLEAN rlmDomainIsValidRfSetting(P_ADAPTER_T prAdapter, ENUM_BAND_T eBand,
 				  UINT_8 ucPriChannel, ENUM_CHNL_EXT_T eExtend,
 				  ENUM_CHANNEL_WIDTH_T eChannelWidth, UINT_8 ucChannelS1, UINT_8 ucChannelS2);
 
+/* BEGIN lenovo-sw sunyue5 for auto disable 11ac */
+BOOLEAN rlmCountryIs11acDisabled(P_ADAPTER_T prAdapter);
+/* END lenovo-sw sunyue5 for auto disable 11ac */
+
 #if CFG_SUPPORT_PWR_LIMIT_COUNTRY
 
 BOOLEAN
