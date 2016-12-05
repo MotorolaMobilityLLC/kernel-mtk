@@ -269,6 +269,9 @@ CONFIG_MTK_GPS_SUPPORT=y
 CONFIG_MTK_FM=y
 CONFIG_MTK_FM_SUPPORT=y
 # liaohj modify for 6630 N end
+#lenovo-sw sunyue5 start
+# CONFIG_MTK_WAPI_SUPPORT is not set
+#lenovo-sw sunyue5 end
 CONFIG_MTK_FMRADIO=y
 # liaohj modify for 6630 N begin
 CONFIG_MTK_FM_CHIP="MT6630_FM"
