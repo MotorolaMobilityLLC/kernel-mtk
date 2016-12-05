@@ -34,7 +34,7 @@
 #define APS_TAG					"[ALS/PS] "
 #define APS_FUN(f)              printk(KERN_INFO 	APS_TAG"%s\n", __FUNCTION__)
 #define APS_ERR(fmt, args...)   printk(KERN_ERR  	APS_TAG"%s %d : "fmt, __FUNCTION__, __LINE__, ##args)
-#define APS_LOG(fmt, args...)   printk(KERN_NOTICE	APS_TAG fmt, ##args)
+#define APS_LOG(fmt, args...)   printk(KERN_ERR		APS_TAG fmt, ##args)
 #define APS_DBG(fmt, args...)   printk(KERN_ERR 	APS_TAG fmt, ##args)
 
 /*----------------------------------------------------------------------------*/
@@ -104,6 +104,8 @@ struct ltr778_priv {
 	atomic_t	ps_cmd_val; 	/*the cmd value can't be read, stored in ram*/
 	atomic_t	ps_thd_val_high;	 /*the cmd value can't be read, stored in ram*/
 	atomic_t	ps_thd_val_low; 	/*the cmd value can't be read, stored in ram*/
+	atomic_t	ps_persist_val_high;
+	atomic_t	ps_persist_val_low;
 	atomic_t	als_thd_val_high;	 /*the cmd value can't be read, stored in ram*/
 	atomic_t	als_thd_val_low; 	/*the cmd value can't be read, stored in ram*/
 	atomic_t	ps_thd_val;
@@ -293,7 +295,7 @@ static int ltr778_ps_set_thres(void)
 
 	APS_FUN();
 
-	APS_DBG("ps_cali.valid: %d\n", ps_cali.valid);
+	APS_DBG("ps_cali.valid %d\n", ps_cali.valid);
 
 	if(1 == ps_cali.valid)
 	{
@@ -372,8 +374,15 @@ static int ltr778_ps_enable(struct i2c_client *client, int enable)
 {
 	u8 regdata;
 	int err;
+	struct ltr778_priv *obj = ltr778_obj;
 
-	APS_LOG("ltr778_ps_enable() ...start!\n");
+
+	APS_LOG("ltr778_ps_enable(%d) ...start!\n",enable);
+	
+	atomic_set(&obj->ps_thd_val_high, 2047);
+	atomic_set(&obj->ps_thd_val_low, 0);
+	
+	ltr778_ps_set_thres();	
 
 	regdata = ltr778_i2c_read_reg(LTR778_PS_CONTR);
 	if (enable != 0) {
@@ -393,8 +402,11 @@ static int ltr778_ps_enable(struct i2c_client *client, int enable)
 	}
 
 	mdelay(WAKEUP_DELAY);	
+		
+	regdata = ltr778_i2c_read_reg(LTR778_PS_CONTR);
 
-	if (0 == ltr778_obj->hw->polling_mode_ps && enable != 0)
+
+	if (0 == ltr778_obj->hw->polling_mode_ps && ((regdata & 0x02) == 0x02))
 	{
 #ifdef GN_MTK_BSP_PS_DYNAMIC_CALI
 		err = ltr778_dynamic_calibrate();
@@ -405,10 +417,13 @@ static int ltr778_ps_enable(struct i2c_client *client, int enable)
 #endif
 		ltr778_ps_set_thres();
 	}
-	else if (0 == ltr778_obj->hw->polling_mode_ps && enable == 0)
+	else if (0 == ltr778_obj->hw->polling_mode_ps && ((regdata & 0x02) == 0x00))
 	{
 		cancel_work_sync(&ltr778_obj->eint_work);
 	}
+	
+	APS_LOG("ltr778_ps_enable(%d) ...done!\n",enable);
+
 
 	return err;
 }
@@ -452,6 +467,7 @@ static int ltr778_dynamic_calibrate(void)
 	int noise = 0;
 	int count = 5;
 	int ps_thd_val_low, ps_thd_val_high;
+	int ps_persist_val_low, ps_persist_val_high;
 	struct ltr778_priv *obj = ltr778_obj;
 
 	if (!ltr778_obj)
@@ -479,38 +495,60 @@ static int ltr778_dynamic_calibrate(void)
 	if (noise < 100) {
 		ps_thd_val_high = noise + 65;
 		ps_thd_val_low  = noise + 30;
+		ps_persist_val_high = noise + 500;
+		ps_persist_val_low  = noise + 55;
 	}
 	else if (noise < 200) {
 		ps_thd_val_high = noise + 70;
 		ps_thd_val_low  = noise + 35;
+		ps_persist_val_high = noise + 500;
+		ps_persist_val_low  = noise + 60;
 	}
 	else if (noise < 300) {
 		ps_thd_val_high = noise + 80;
 		ps_thd_val_low  = noise + 40;
+		ps_persist_val_high = noise + 500;
+		ps_persist_val_low  = noise + 70;
 	}
 	else if (noise < 400) {
 		ps_thd_val_high = noise + 100;
 		ps_thd_val_low  = noise + 50;
+		ps_persist_val_high = noise + 500;
+		ps_persist_val_low  = noise + 80;
 	}
 	else if (noise < 600) {
 		ps_thd_val_high = noise + 180;
 		ps_thd_val_low  = noise + 90;
+		ps_persist_val_high = noise + 500;
+		ps_persist_val_low  = noise + 100;
 	}
 	else if (noise < 1500) {
 		ps_thd_val_high = noise + 300;
 		ps_thd_val_low  = noise + 180;
+		ps_persist_val_high = noise + 500;
+		ps_persist_val_low  = noise + 280;
 	}
 	else {
 		ps_thd_val_high = 1900;
-		ps_thd_val_low  = 1700;		
+		ps_thd_val_low  = 1700;	
+		ps_persist_val_high = 2046;
+		ps_persist_val_low  = 1800;		
 	}
 
 	atomic_set(&obj->ps_thd_val_high, ps_thd_val_high);
 	atomic_set(&obj->ps_thd_val_low, ps_thd_val_low);
 	
+	atomic_set(&obj->ps_persist_val_high, ps_thd_val_high);
+	atomic_set(&obj->ps_persist_val_low, ps_thd_val_low);
+
+	
+	
 	APS_LOG("%s:noise = %d\n", __func__, noise);
 	APS_LOG("%s:obj->ps_thd_val_high = %d\n", __func__, ps_thd_val_high);
 	APS_LOG("%s:obj->ps_thd_val_low = %d\n", __func__, ps_thd_val_low);
+	APS_LOG("%s:obj->ps_persist_val_high = %d\n", __func__, ps_persist_val_high);
+	APS_LOG("%s:obj->ps_persist_val_low = %d\n", __func__, ps_persist_val_low);
+
 
 	return 0;
 }
@@ -617,12 +655,14 @@ static int ltr778_als_read(struct i2c_client *client, u16* data)
 
 	luxdata_int = ((ch0_coeff * alsval_ch0) + (ch1_coeff * alsval_ch1)) / coeff_factor / als_gain_factor / als_integration_factor * WIN_FACTOR*winfac_1/winfac_2;
 	
-	APS_DBG("ltr778_als_read: als_value_lux = %d\n", luxdata_int);
+	APS_DBG("ltr778_als_read als_value_lux = %d\n", luxdata_int);
 out:
 	*data = luxdata_int;
 	final_lux_val = luxdata_int;
 	return luxdata_int;
 }
+
+static int oil_far_cal = 0;
 /********************************************************************/
 static int ltr778_get_ps_value(struct ltr778_priv *obj, u16 ps)
 {
@@ -630,20 +670,50 @@ static int ltr778_get_ps_value(struct ltr778_priv *obj, u16 ps)
 	int invalid = 0;
 
 	static int val_temp = 1;
-	if((ps > atomic_read(&obj->ps_thd_val_high)))
+	if((ps > atomic_read(&obj->ps_persist_val_high)))
+	{
+		val = 2;  /* persist oil close*/
+		val_temp = 2;
+		intr_flag_value = 2;
+		oil_far_cal = 0;
+	}
+	else if((ps > atomic_read(&obj->ps_thd_val_high)))
 	{
 		val = 0;  /*close*/
 		val_temp = 0;
 		intr_flag_value = 1;
-	}
+		oil_far_cal = 0;
+	}	
 	else if((ps < atomic_read(&obj->ps_thd_val_low)))
 	{
 		val = 1;  /*far away*/
 		val_temp = 1;
 		intr_flag_value = 0;
+		oil_far_cal = 0;
+	}
+	else if((ps < atomic_read(&obj->ps_persist_val_low)))
+	{
+		val = 3;  /* persist oil far away*/
+		val_temp = 3;
+		intr_flag_value = 3;
 	}
 	else
-		val = val_temp;			
+	{	val = val_temp;	
+	
+		oil_far_cal = 0;
+
+	}
+
+	if(val == 3  && oil_far_cal <= 3)
+	{		
+		oil_far_cal ++;
+		val = 2;  /* persist oil close*/
+		val_temp = 2;
+		intr_flag_value = 2;		
+	}
+	
+
+	
 	
 	if(atomic_read(&obj->ps_suspend))
 	{
@@ -671,7 +741,7 @@ static int ltr778_get_ps_value(struct ltr778_priv *obj, u16 ps)
 
 	if(!invalid)
 	{
-		APS_DBG("PS:  %05d => %05d\n", ps, val);
+		APS_DBG("PS  %05d => %05d\n", ps, val);
 		return val;
 	}	
 	else
@@ -715,12 +785,12 @@ static int ltr778_get_als_value(struct ltr778_priv *obj, u16 als)
 
 	if(!invalid)
 	{
-		APS_DBG("ALS: %05d => %05d\n", als, obj->hw->als_value[idx-1]);	
+		APS_DBG("ALS %05d => %05d\n", als, obj->hw->als_value[idx-1]);	
 		return obj->hw->als_value[idx-1];
 	}
 	else
 	{
-		APS_ERR("ALS: %05d => %05d (-1)\n", als, obj->hw->als_value[idx]);    
+		APS_ERR("ALS %05d => %05d (-1)\n", als, obj->hw->als_value[idx]);    
 		return -1;
 	}
 }
@@ -1208,12 +1278,38 @@ EXIT_ERR:
 static void ltr778_eint_work(struct work_struct *work)
 {
 	struct ltr778_priv *obj = (struct ltr778_priv *)container_of(work, struct ltr778_priv, eint_work);
-	u8 databuf[2];
+	//u8 databuf[2];
 	int res = 0;
 	int err;
 	int value = 1;
+	
+	APS_FUN();
 
 	/* Read fault detection status */
+			res = ltr778_i2c_write_reg( LTR778_PS_THRES_LOW_0, 0x00);
+			if(res < 0)
+			{
+				goto EXIT_INTR;
+			}
+			
+			res = ltr778_i2c_write_reg( LTR778_PS_THRES_LOW_1, 0x00);
+			if(res < 0)
+			{
+				goto EXIT_INTR;
+			}
+			
+			res = ltr778_i2c_write_reg( LTR778_PS_THRES_UP_0, 0xFF);
+			if(res < 0)
+			{
+				goto EXIT_INTR;
+			}
+			
+			res = ltr778_i2c_write_reg( LTR778_PS_THRES_UP_1, 0x07);
+			if(res < 0)
+			{
+				goto EXIT_INTR;
+			}
+	
 	value = ltr778_i2c_read_reg(LTR778_FAULT_DET_STATUS);	
 
 //APS_ERR("ltr778_eint_work  value:  %d\n", value);	
@@ -1246,41 +1342,42 @@ static void ltr778_eint_work(struct work_struct *work)
 			goto EXIT_INTR;
 		}
 				
-		APS_DBG("ltr778_eint_work: rawdata ps=%d!\n",obj->ps);
+		APS_DBG("ltr778_eint_work rawdata ps=%d!\n",obj->ps);
 		value = ltr778_get_ps_value(obj, obj->ps);
+		
+		if(value == 0 || value == 2)
+			value = 0;
+		else
+			value = 1;
+		
 		APS_DBG("intr_flag_value=%d    value = %d \n",intr_flag_value, value);
-		if(intr_flag_value){
-			databuf[0] = LTR778_PS_THRES_LOW_0;	
-			databuf[1] = (u8)((atomic_read(&obj->ps_thd_val_low)) & 0x00FF);
-			res = i2c_master_send(obj->client, databuf, 0x2);
-			if(res <= 0)
+		if(intr_flag_value == 1){
+			
+			res = ltr778_i2c_write_reg( LTR778_PS_THRES_LOW_0,(u8)((atomic_read(&obj->ps_thd_val_low)) & 0x00FF) );
+			if(res < 0)
 			{
 				goto EXIT_INTR;
 			}
-			databuf[0] = LTR778_PS_THRES_LOW_1;	
-			databuf[1] = (u8)(((atomic_read(&obj->ps_thd_val_low)) & 0xFF00) >> 8);
-			res = i2c_master_send(obj->client, databuf, 0x2);
-			if(res <= 0)
+			
+			res = ltr778_i2c_write_reg( LTR778_PS_THRES_LOW_1, (u8)(((atomic_read(&obj->ps_thd_val_low)) & 0x7F00) >> 8));
+			if(res < 0)
 			{
 				goto EXIT_INTR;
 			}
-			databuf[0] = LTR778_PS_THRES_UP_0;	
-			databuf[1] = (u8)(0x00FF);
-			res = i2c_master_send(obj->client, databuf, 0x2);
-			if(res <= 0)
+			
+			res = ltr778_i2c_write_reg( LTR778_PS_THRES_UP_0,   (u8)((atomic_read(&obj->ps_persist_val_high)) & 0x00FF) );
+			if(res < 0)
 			{
 				goto EXIT_INTR;
 			}
-			databuf[0] = LTR778_PS_THRES_UP_1; 
-			databuf[1] = (u8)((0xFF00) >> 8);;
-			res = i2c_master_send(obj->client, databuf, 0x2);
-			if(res <= 0)
+			
+			res = ltr778_i2c_write_reg( LTR778_PS_THRES_UP_1, (u8)(((atomic_read(&obj->ps_persist_val_high)) & 0x7F00) >> 8));
+			if(res < 0)
 			{
 				goto EXIT_INTR;
 			}
-		}
-		else{	
-#ifdef GN_MTK_BSP_PS_DYNAMIC_CALI
+		} else if (intr_flag_value == 0){	
+#if 0  //def GN_MTK_BSP_PS_DYNAMIC_CALI
 			if(obj->ps > 20 && obj->ps < (dynamic_calibrate - 300)){ 
         		if(obj->ps < 100){			
         			atomic_set(&obj->ps_thd_val_high,  obj->ps+65);
@@ -1312,31 +1409,84 @@ static void ltr778_eint_work(struct work_struct *work)
         		dynamic_calibrate = obj->ps;
         	}	        
 #endif        	
-			databuf[0] = LTR778_PS_THRES_LOW_0;	
-			databuf[1] = (u8)(0 & 0x00FF);
-			res = i2c_master_send(obj->client, databuf, 0x2);
-			if(res <= 0)
+
+			res = ltr778_i2c_write_reg( LTR778_PS_THRES_LOW_0, 0x00);
+			if(res < 0)
 			{
 				goto EXIT_INTR;
 			}
-			databuf[0] = LTR778_PS_THRES_LOW_1;	
-			databuf[1] = (u8)((0 & 0xFF00) >> 8);
-			res = i2c_master_send(obj->client, databuf, 0x2);
-			if(res <= 0)
+			
+			res = ltr778_i2c_write_reg( LTR778_PS_THRES_LOW_1, 0x00);
+			if(res < 0)
 			{
 				goto EXIT_INTR;
 			}
-			databuf[0] = LTR778_PS_THRES_UP_0;	
-			databuf[1] = (u8)((atomic_read(&obj->ps_thd_val_high)) & 0x00FF);
-			res = i2c_master_send(obj->client, databuf, 0x2);
-			if(res <= 0)
+			
+			res = ltr778_i2c_write_reg( LTR778_PS_THRES_UP_0, (u8)((atomic_read(&obj->ps_thd_val_high)) & 0x00FF));
+			if(res < 0)
 			{
 				goto EXIT_INTR;
 			}
-			databuf[0] = LTR778_PS_THRES_UP_1; 
-			databuf[1] = (u8)(((atomic_read(&obj->ps_thd_val_high)) & 0xFF00) >> 8);;
-			res = i2c_master_send(obj->client, databuf, 0x2);
-			if(res <= 0)
+			
+			res = ltr778_i2c_write_reg( LTR778_PS_THRES_UP_1, (u8)(((atomic_read(&obj->ps_thd_val_high)) & 0x7F00) >> 8));
+			if(res < 0)
+			{
+				goto EXIT_INTR;
+			}
+		}else if(intr_flag_value == 2)  // hypothesis oil close
+		{
+			res = ltr778_i2c_write_reg( LTR778_PS_THRES_LOW_0,(u8)((atomic_read(&obj->ps_persist_val_low)) & 0x00FF) );
+			//APS_ERR();
+			if(res < 0)
+			{
+				goto EXIT_INTR;
+			}
+			
+			res = ltr778_i2c_write_reg( LTR778_PS_THRES_LOW_1, (u8)(((atomic_read(&obj->ps_persist_val_low)) & 0x7F00) >> 8));
+			//APS_ERR();
+
+			if(res < 0)
+			{
+				goto EXIT_INTR;
+			}
+			
+			res = ltr778_i2c_write_reg( LTR778_PS_THRES_UP_0, 0xFF );
+			//APS_ERR();
+
+			if(res < 0)
+			{
+				goto EXIT_INTR;
+			}
+			
+			res = ltr778_i2c_write_reg( LTR778_PS_THRES_UP_1, 0x07 );
+			//APS_ERR();
+			if(res < 0)
+			{
+				goto EXIT_INTR;
+			}
+			
+		}else if(intr_flag_value == 3)  //  oil far  
+		{
+			res = ltr778_i2c_write_reg( LTR778_PS_THRES_LOW_0,(u8)((atomic_read(&obj->ps_persist_val_low)) & 0x00FF) );
+			if(res < 0)
+			{
+				goto EXIT_INTR;
+			}
+			
+			res = ltr778_i2c_write_reg( LTR778_PS_THRES_LOW_1, (u8)(((atomic_read(&obj->ps_persist_val_low)) & 0x7F00) >> 8));
+			if(res < 0)
+			{
+				goto EXIT_INTR;
+			}
+			
+			res = ltr778_i2c_write_reg( LTR778_PS_THRES_UP_0, (u8)((atomic_read(&obj->ps_thd_val_high)) & 0x00FF) );
+			if(res < 0)
+			{
+				goto EXIT_INTR;
+			}
+			
+			res = ltr778_i2c_write_reg( LTR778_PS_THRES_UP_1, (u8)(((atomic_read(&obj->ps_thd_val_high)) & 0x7F00) >> 8) );
+			if(res < 0)
 			{
 				goto EXIT_INTR;
 			}
@@ -1344,10 +1494,15 @@ static void ltr778_eint_work(struct work_struct *work)
 		//let up layer to know
    
 		res = ps_report_interrupt_data(value);
+		//APS_DBG("ltr778_eint_work ps_report_interrupt_data 111 intr_flag_value=%d!\n",intr_flag_value);
+
 	}
+		APS_DBG("ltr778_eint_work ps_report_interrupt_data 222 intr_flag_value=%d!\n",intr_flag_value);
+
 
 EXIT_INTR:	
 #ifdef CONFIG_OF
+	APS_DBG("ltr778_eint_work ps_report_interrupt_data 333 intr_flag_value=%d!\n",intr_flag_value);
 	enable_irq(obj->irq);
 #endif
 }
@@ -1360,7 +1515,8 @@ static void ltr778_eint_func(void)
 	if(!obj)
 	{
 		return;
-	}	
+	}
+	//APS_FUN();
 	int_top_time = sched_clock();
 	schedule_work(&obj->eint_work);
 }
@@ -1368,6 +1524,8 @@ static void ltr778_eint_func(void)
 #ifdef CONFIG_OF
 static irqreturn_t ltr778_eint_handler(int irq, void *desc)
 {
+	//APS_FUN();
+
 	disable_irq_nosync(ltr778_obj->irq);
 	ltr778_eint_func();
 	
@@ -1504,6 +1662,11 @@ static long ltr778_unlocked_ioctl(struct file *file, unsigned int cmd,
 			}
 			
 			dat = ltr778_get_ps_value(obj, obj->ps);
+			if(dat == 0 || dat ==2)
+				dat = 0;
+			else
+				dat = 1;
+			
 			if (copy_to_user(ptr, &dat, sizeof(dat)))
 			{
 				err = -EFAULT;
@@ -1938,6 +2101,12 @@ static int ps_get_data(int* value, int* status)
 		*value = ltr778_get_ps_value(ltr778_obj, ltr778_obj->ps);
 		if (*value < 0)
 			err = -1;
+		
+		if(*value == 0 || *value == 2)
+			*value = 0;
+		else
+			*value = 1;
+				
 		*status = SENSOR_STATUS_ACCURACY_MEDIUM;
 	}
     
@@ -2161,7 +2330,7 @@ static int ltr778_i2c_suspend(struct i2c_client *client, pm_message_t msg)
 			APS_ERR("disable als: %d\n", err);
 			return err;
 		}
-
+#if 0
 		atomic_set(&obj->ps_suspend, 1);
 		err = ltr778_ps_enable(obj->client, 0);
 		if(err < 0)
@@ -2171,6 +2340,7 @@ static int ltr778_i2c_suspend(struct i2c_client *client, pm_message_t msg)
 		}
 		
 		ltr778_power(obj->hw, 0);
+#endif
 	}
 	return 0;
 }
@@ -2198,6 +2368,7 @@ static int ltr778_i2c_resume(struct i2c_client *client)
 			APS_ERR("enable als fail: %d\n", err);        
 		}
 	}
+#if 0	
 	atomic_set(&obj->ps_suspend, 0);
 	if(test_bit(CMC_BIT_PS,  &obj->enable))
 	{
@@ -2207,6 +2378,7 @@ static int ltr778_i2c_resume(struct i2c_client *client)
 			APS_ERR("enable ps fail: %d\n", err);                
 		}
 	}
+#endif
 
 	return 0;
 }
