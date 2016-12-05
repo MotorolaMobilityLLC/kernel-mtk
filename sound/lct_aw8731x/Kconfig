@@ -1,5 +1,5 @@
 
-config EXTPA_AW87319
+config EXTPA_AW87318_AW87319_SWITCH
 	tristate "Exteral Audio Amp driver"
 	help
 	  add exteral amp aw87319 driver.

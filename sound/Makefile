@@ -13,7 +13,7 @@ obj-$(CONFIG_SND_AOA) += aoa/
 
 # This one must be compilable even if sound is configured out
 obj-$(CONFIG_AC97_BUS) += ac97_bus.o
-obj-$(CONFIG_EXTPA_AW87319) += lct_aw87319/
+obj-$(CONFIG_EXTPA_AW87318_AW87319_SWITCH) += lct_aw8731x/
 ifeq ($(CONFIG_SND),y)
   obj-y += last.o
 endif

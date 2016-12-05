@@ -36,17 +36,36 @@
 #define AW87319_I2C_BUS		0
 #define AW87319_I2C_ADDR		0x58
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
+#define MODE 3 	//the number of output pulse
+#define GAP (2)			/* unit: us */
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////
+unsigned char AW87318_AW87319_Switch_Audio_Speaker(void);
+unsigned char AW87318_AW87319_Switch_Audio_OFF(void);
+
 unsigned char AW87319_Audio_Reciver(void);
 unsigned char AW87319_Audio_Speaker(void);
 unsigned char AW87319_Audio_OFF(void);
-//add by wangyongfu
-void SGM3718_SWITCH_ON(void);
-void SGM3718_SWITCH_OFF(void);
+
+unsigned char AW87318_Audio_Speaker(void);
+unsigned char AW87318_Audio_OFF(void);
+
+///////////////sgm3718 switch key
+static void Sgm3718_Switch_On(void);
+static void Sgm3718_Switch_Off(void);
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 unsigned char AW87319_HW_ON(void);
 unsigned char AW87319_HW_OFF(void);
 unsigned char AW87319_SW_ON(void);
 unsigned char AW87319_SW_OFF(void);
+//////////////aw87318 mode  mode1~mode7 -- 1.2~0.6w
+static void AW87318_OFF(void);
+static void AW87318_MODE1(void);
+static void AW87318_MODE2(void);
+static void AW87318_MODE3(void);
+static void AW87318_MODE4(void);
+static void AW87318_MODE5(void);
+static void AW87318_MODE6(void);
+static void AW87318_MODE7(void);
 
 static ssize_t AW87319_get_reg(struct device* cd,struct device_attribute *attr, char* buf);
 static ssize_t AW87319_set_reg(struct device* cd, struct device_attribute *attr,const char* buf, size_t len);
@@ -60,6 +79,7 @@ static DEVICE_ATTR(swen, 0660, AW87319_get_swen,  AW87319_set_swen);
 static DEVICE_ATTR(hwen, 0660, AW87319_get_hwen,  AW87319_set_hwen);
 
 static int flag = 0;
+static int switchkey = 0;
 
 struct i2c_client *AW87319_pa_client;
 
@@ -124,18 +144,21 @@ static void AW87319_pa_pwroff(void)
 	msleep(1);
 }
 //add by wangyongfu
-void SGM3718_SWITCH_ON(void)
+static void Sgm3718_Switch_On(void)
 {
-    printk("%s enter\n", __func__);
-    pinctrl_select_state(aw87319ctrl, sgm3718_switch_high);
-    msleep(1);
+    	printk("%s enter\n", __func__);
+    	pinctrl_select_state(aw87319ctrl, sgm3718_switch_high);
+    	msleep(1);
 }
 
-void SGM3718_SWITCH_OFF(void)
+static void Sgm3718_Switch_Off(void)
 {
+	printk("%s enter\n", __func__);    
 	pinctrl_select_state(aw87319ctrl, sgm3718_switch_low);
-	msleep(1);
+    	msleep(1);
+	printk("%s out\n", __func__);
 }
+
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // i2c write and read
@@ -246,7 +269,8 @@ unsigned char AW87319_Audio_Speaker(void)
 	
 	I2C_write_reg(0x01, 0x03);		// Class D Enable; Boost Enable
 	I2C_write_reg(0x01, 0x07);		// CHIP Enable; Class D Enable; Boost Enable
-	
+
+	Sgm3718_Switch_On();	
 	return 0;
 }
 
@@ -260,7 +284,8 @@ unsigned char AW87319_Audio_OFF(void)
 	}
 	I2C_write_reg(0x01, 0x00);		// CHIP Disable
 	AW87319_HW_OFF();
-
+	
+	Sgm3718_Switch_Off();
 	return 0;
 }
 
@@ -313,6 +338,250 @@ unsigned char AW87319_HW_OFF(void)
 	
 	return 0;
 }
+
+/***************Start AW87318 Code****************** 
+*	add by wangyongfu
+**********************************************/
+static void AW87318_OFF(void)
+{
+    printk("%s enter\n", __func__);
+    pinctrl_select_state(aw87319ctrl, aw87319_rst_low);
+    //udelay(1200);
+	msleep(1);    
+	printk("%s out\n", __func__);
+}
+
+//1.2w~0.6w
+/*1.2w*/
+static void AW87318_MODE1(void)
+{
+    printk("%s enter\n", __func__);
+    pinctrl_select_state(aw87319ctrl, aw87319_rst_low);
+    udelay(GAP);
+    pinctrl_select_state(aw87319ctrl, aw87319_rst_high);
+    printk("%s out\n", __func__);
+}
+/*1.1w*/
+static void AW87318_MODE2(void)
+{
+	do {
+		printk("%s enter\n", __func__);
+		pinctrl_select_state(aw87319ctrl, aw87319_rst_low);
+		udelay(GAP);
+		pinctrl_select_state(aw87319ctrl, aw87319_rst_high);
+		udelay(GAP);
+		pinctrl_select_state(aw87319ctrl, aw87319_rst_low);
+		udelay(GAP);
+		pinctrl_select_state(aw87319ctrl, aw87319_rst_high);
+		printk("%s out\n", __func__);
+	} while (0);
+}
+/*1.0w*/
+static void AW87318_MODE3(void)
+{
+	do {
+		printk("%s enter\n", __func__);
+		pinctrl_select_state(aw87319ctrl, aw87319_rst_low);
+		udelay(GAP);
+		pinctrl_select_state(aw87319ctrl, aw87319_rst_high);
+		udelay(GAP);
+		pinctrl_select_state(aw87319ctrl, aw87319_rst_low);
+		udelay(GAP);
+		pinctrl_select_state(aw87319ctrl, aw87319_rst_high);
+		udelay(GAP);
+		pinctrl_select_state(aw87319ctrl, aw87319_rst_low);
+		udelay(GAP);
+		pinctrl_select_state(aw87319ctrl, aw87319_rst_high);
+		printk("%s out\n", __func__);
+	} while (0);
+}
+
+/*0.9w*/
+static void AW87318_MODE4(void)
+{
+	do {
+		printk("%s enter\n", __func__);
+		pinctrl_select_state(aw87319ctrl, aw87319_rst_low);
+		udelay(GAP);
+		pinctrl_select_state(aw87319ctrl, aw87319_rst_high);
+		udelay(GAP);
+		pinctrl_select_state(aw87319ctrl, aw87319_rst_low);
+		udelay(GAP);
+		pinctrl_select_state(aw87319ctrl, aw87319_rst_high);
+		udelay(GAP);
+		pinctrl_select_state(aw87319ctrl, aw87319_rst_low);
+		udelay(GAP);
+		pinctrl_select_state(aw87319ctrl, aw87319_rst_high);
+		udelay(GAP);
+		pinctrl_select_state(aw87319ctrl, aw87319_rst_low);
+		udelay(GAP);
+		pinctrl_select_state(aw87319ctrl, aw87319_rst_high);
+		printk("%s out\n", __func__);
+	} while (0);
+}
+/*0.8w*/
+static void AW87318_MODE5(void)
+{
+	do {
+		printk("%s enter\n", __func__);
+		pinctrl_select_state(aw87319ctrl, aw87319_rst_low);
+		udelay(GAP);
+		pinctrl_select_state(aw87319ctrl, aw87319_rst_high);
+		udelay(GAP);
+		pinctrl_select_state(aw87319ctrl, aw87319_rst_low);
+		udelay(GAP);
+		pinctrl_select_state(aw87319ctrl, aw87319_rst_high);
+		udelay(GAP);
+		pinctrl_select_state(aw87319ctrl, aw87319_rst_low);
+		udelay(GAP);
+		pinctrl_select_state(aw87319ctrl, aw87319_rst_high);
+		udelay(GAP);
+		pinctrl_select_state(aw87319ctrl, aw87319_rst_low);
+		udelay(GAP);
+		pinctrl_select_state(aw87319ctrl, aw87319_rst_high);
+		udelay(GAP);
+		pinctrl_select_state(aw87319ctrl, aw87319_rst_low);
+		udelay(GAP);
+		pinctrl_select_state(aw87319ctrl, aw87319_rst_high);
+		printk("%s out\n", __func__);
+	} while (0);
+}
+/*0.7w*/
+static void AW87318_MODE6(void)
+{
+	do {
+		printk("%s enter\n", __func__);
+		pinctrl_select_state(aw87319ctrl, aw87319_rst_low);
+		udelay(GAP);
+		pinctrl_select_state(aw87319ctrl, aw87319_rst_high);
+		udelay(GAP);
+		pinctrl_select_state(aw87319ctrl, aw87319_rst_low);
+		udelay(GAP);
+		pinctrl_select_state(aw87319ctrl, aw87319_rst_high);
+		udelay(GAP);
+		pinctrl_select_state(aw87319ctrl, aw87319_rst_low);
+		udelay(GAP);
+		pinctrl_select_state(aw87319ctrl, aw87319_rst_high);
+		udelay(GAP);
+		pinctrl_select_state(aw87319ctrl, aw87319_rst_low);
+		udelay(GAP);
+		pinctrl_select_state(aw87319ctrl, aw87319_rst_high);
+		udelay(GAP);
+		pinctrl_select_state(aw87319ctrl, aw87319_rst_low);
+		udelay(GAP);
+		pinctrl_select_state(aw87319ctrl, aw87319_rst_high);
+		udelay(GAP);
+		pinctrl_select_state(aw87319ctrl, aw87319_rst_low);
+		udelay(GAP);
+		pinctrl_select_state(aw87319ctrl, aw87319_rst_high);
+		printk("%s out\n", __func__);
+	} while (0);
+}
+/*0.6w*/
+static void AW87318_MODE7(void)
+{
+	do {
+		printk("%s enter\n", __func__);
+		pinctrl_select_state(aw87319ctrl, aw87319_rst_low);
+		udelay(GAP);
+		pinctrl_select_state(aw87319ctrl, aw87319_rst_high);
+		udelay(GAP);
+		pinctrl_select_state(aw87319ctrl, aw87319_rst_low);
+		udelay(GAP);
+		pinctrl_select_state(aw87319ctrl, aw87319_rst_high);
+		udelay(GAP);
+		pinctrl_select_state(aw87319ctrl, aw87319_rst_low);
+		udelay(GAP);
+		pinctrl_select_state(aw87319ctrl, aw87319_rst_high);
+		udelay(GAP);
+		pinctrl_select_state(aw87319ctrl, aw87319_rst_low);
+		udelay(GAP);
+		pinctrl_select_state(aw87319ctrl, aw87319_rst_high);
+		udelay(GAP);
+		pinctrl_select_state(aw87319ctrl, aw87319_rst_low);
+		udelay(GAP);
+		pinctrl_select_state(aw87319ctrl, aw87319_rst_high);
+		udelay(GAP);
+		pinctrl_select_state(aw87319ctrl, aw87319_rst_low);
+		udelay(GAP);
+		pinctrl_select_state(aw87319ctrl, aw87319_rst_high);
+		udelay(GAP);
+		pinctrl_select_state(aw87319ctrl, aw87319_rst_low);
+		udelay(GAP);
+		pinctrl_select_state(aw87319ctrl, aw87319_rst_high);
+		printk("%s out\n", __func__);
+	} while (0);
+}
+
+unsigned char AW87318_Audio_Speaker(void)
+{
+	switch(MODE){
+		case 1:	AW87318_MODE1();
+			printk("aw87318 output mode 1\n");
+			break;
+		case 2:	AW87318_MODE2();
+			printk("aw87318 output mode 2\n");
+			break;
+		case 3:	AW87318_MODE3();
+			printk("aw87318 output mode 3\n");			
+			break;
+		case 4:	AW87318_MODE4();
+			printk("aw87318 output mode 4\n");
+			break;
+		case 5:	AW87318_MODE5();
+			printk("aw87318 output mode 5\n");
+			break;
+		case 6:	AW87318_MODE6();
+			printk("aw87318 output mode 6\n");
+			break;
+		case 7:	AW87318_MODE7();
+			printk("aw87318 output mode 7\n");
+			break;
+		default:printk("aw87318 output mode error\n");
+	}
+	Sgm3718_Switch_On();
+	return 0;
+}
+
+
+unsigned char AW87318_Audio_OFF(void)
+{
+	AW87318_OFF();
+	Sgm3718_Switch_Off();
+	return 0;
+}
+
+/***************End AW87318 Code****************** 
+*	add by wangyongfu
+**********************************************/
+
+
+
+/*****Start AW87318 and AW87319 compatible Code**
+*	add by wangyongfu
+************************************************/
+unsigned char AW87318_AW87319_Switch_Audio_Speaker(void)
+{
+	if(switchkey == 0)
+		AW87318_Audio_Speaker();
+	else
+		AW87319_Audio_Speaker();
+	return 0;
+}
+unsigned char AW87318_AW87319_Switch_Audio_OFF(void)
+{
+	if(switchkey == 0)
+		AW87318_Audio_OFF();
+	else
+		AW87319_Audio_OFF();
+	return 0;
+}
+
+/*****End AW87318 and AW87319 compatible Code**
+*	add by wangyongfu
+************************************************/
+
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //AW87319 Debug
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -415,8 +684,18 @@ static int AW87319_i2c_probe(struct i2c_client *client, const struct i2c_device_
 	unsigned char reg_value;
 	unsigned char cnt = 5;
 	int err = 0;
+	int i = 0;
 	printk("AW87319_i2c_Probe");
-
+	switchkey = 1;
+	if(switchkey != 1)
+	{
+		while(i < 5)
+		{
+			switchkey = 1;
+			i ++;	
+		}		
+	}
+		
 	if (!i2c_check_functionality(client->adapter, I2C_FUNC_I2C)) {
 		err = -ENODEV;
 		goto exit_check_functionality_failed;
@@ -500,7 +779,7 @@ static int AW87319_pa_remove(struct platform_device *pdev)
 static int AW87319_pa_probe(struct platform_device *pdev)
 {
 	int ret;
-
+	int i = 0;
 	printk("%s start!\n", __func__);
 	
 	ret = AW87319_pinctrl_init(pdev);
@@ -513,8 +792,17 @@ static int AW87319_pa_probe(struct platform_device *pdev)
 	
 	ret = i2c_add_driver(&AW87319_i2c_driver);
 	if (ret != 0) {
-		printk("[%s] failed to register AW87319 i2c driver.\n", __func__);
-		return ret;
+		switchkey = 0;
+		if(switchkey != 0)
+		{
+			while(i < 5)
+			{
+				switchkey = 0;
+				i ++;	
+			}		
+		}
+		printk("[%s] Success to register AW87318 driver.\n", __func__);
+		//return ret;
 	} else {
 		printk("[%s] Success to register AW87319 i2c driver.\n", __func__);
 	}
