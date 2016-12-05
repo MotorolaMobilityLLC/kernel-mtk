@@ -48,8 +48,7 @@
 #endif
 
 /* add lct_sku by changjingyang start */ 
-#define LCT_SKU_REQ
-#ifdef LCT_SKU_REQ
+#ifdef CONFIG_LCT_BOOT_REASON
 extern int lct_get_sku(void);
 #endif
 /* add lct_sku by changjingyang end */ 
@@ -926,7 +925,7 @@ static int __init pn544_dev_init(void)
 {
 	int ret;
 /* add lct_sku by changjingyang start */
-#ifdef LCT_SKU_REQ
+#ifdef CONFIG_LCT_BOOT_REASON
 	int lct_sku = 0;
 #endif
 /* add lct_sku by changjingyang end */ 
@@ -934,7 +933,7 @@ static int __init pn544_dev_init(void)
 	printk("pn544_dev_init\n");
 
 /* add lct_sku by changjingyang start */ 
-#ifdef LCT_SKU_REQ
+#ifdef CONFIG_LCT_BOOT_REASON
 	lct_sku = lct_get_sku()%5;
 	printk("[sku] pn544_dev_init  lct_sku = %d \n", lct_sku);
 	if((lct_sku!=1)&&(lct_sku!=2))
