@@ -34,7 +34,8 @@ static u8 g_proximity_en = 0;
 			//#include "LQ_L3600_LX_C03_2016-11-01_0937.i"
 			//#include "LQ_L3600_OFG_C04_2016-11-15_0937.i"
 			//#include "LQ_L3600_OFG_C05_2016-11-21_0937.i"
-			#include "LQ_L3600_OFG_C06_2016-11-25_0937.i"
+			//#include "LQ_L3600_OFG_C06_2016-11-25_0937.i"
+			#include "LQ_L3600_OFG_C07_2016-12-03.i"
 	};
 #endif
 #ifdef MTK
@@ -1470,6 +1471,12 @@ static void himax_read_TP_info(struct i2c_client *client)
 #ifdef HX_ESD_WORKAROUND
 	void ESD_HW_REST(void)
 	{
+		#ifdef HX_TP_SELF_TEST_DRIVER
+		if(Selftest_flag == 1){
+			I("START_Himax TP:ESD - return self_test_inter_flag\n");
+			return;
+		}//modify by hxl
+		#endif
 		ESD_RESET_ACTIVATE = 1;
 		ESD_COUNTER = 0;
 		ESD_R36_FAIL = 0;
@@ -2410,8 +2417,8 @@ static int touch_event_handler(void *ptr)
 
 		if (private_ts->debug_log_level & BIT(2)) {
 				getnstimeofday(&timeStart);
-				/*I(" Irq start time = %ld.%06ld s\n",
-					timeStart.tv_sec, timeStart.tv_nsec/1000);*/
+				I(" Irq start time = %ld.%06ld s\n",
+					timeStart.tv_sec, timeStart.tv_nsec/1000);//modify by hxl
 		}
 #ifdef HX_SMART_WAKEUP
 	if (atomic_read(&private_ts->suspend_mode)&&(!FAKE_POWER_KEY_SEND)&&(private_ts->SMWP_enable)) {
@@ -2495,8 +2502,8 @@ static int touch_event_handler(void *ptr)
 				getnstimeofday(&timeEnd);
 					timeDelta.tv_nsec = (timeEnd.tv_sec*1000000000+timeEnd.tv_nsec)
 					-(timeStart.tv_sec*1000000000+timeStart.tv_nsec);
-				/*I("Irq finish time = %ld.%06ld s\n",
-					timeEnd.tv_sec, timeEnd.tv_nsec/1000);*/
+				I("Irq finish time = %ld.%06ld s\n",
+					timeEnd.tv_sec, timeEnd.tv_nsec/1000);//modify by hxl
 				I("Touch latency = %ld us\n", timeDelta.tv_nsec/1000);
 		}
 #endif
@@ -4912,18 +4919,24 @@ test_retry:
 	i2c_himax_write(private_ts->client, 0xB1, &RB1H[0], 1, DEFAULT_RETRY_CNT);
 #else
 	cmdbuf[0] = 0x00;
-	i2c_himax_write(private_ts->client, 0xF1,&cmdbuf[0], 1, DEFAULT_RETRY_CNT);
+	if(i2c_himax_write(private_ts->client, 0xF1,&cmdbuf[0], 1, DEFAULT_RETRY_CNT)<0){
+		E("huixiaolong%s i2c write 43 fail.\n",__func__);
+	};
+	
 	msleep(120);
 
-	i2c_himax_read(private_ts->client, 0xB1, valuebuf, 8, DEFAULT_RETRY_CNT);
-	msleep(10);
+	if(i2c_himax_read(private_ts->client, 0xB1, valuebuf, 8, DEFAULT_RETRY_CNT)<0){
+		E("huixiaolong%s i2c read 43 fail.\n",__func__);
+	};
+
+	msleep(120);
 
 	for(i=0;i<8;i++) {
 		I("[Himax]: After slf test 0xB1 buff_back[%d] = 0x%x\n",i,valuebuf[i]);
-	}
-
-	msleep(30);
+	}//modify by hxl
 #endif
+	msleep(30);
+
 	if (valuebuf[0]==0xAA) {
 		I("[Himax]: self-test pass\n");
 		pf_value = 0x0;
@@ -6000,7 +6013,8 @@ static int himax852xes_probe(struct i2c_client *client, const struct i2c_device_
 	int err = -ENOMEM;
 	struct himax_ts_data *ts;
 	struct himax_i2c_platform_data *pdata;
-    printk("xljadd hx8527 i2c_client i2c_addr=0x%x\n",client->addr);
+    //printk("xljadd hx8527 i2c_client i2c_addr=0x%x,i2c_speed=%ld\n",client->addr,(long int)(client->timing));
+	client->timing = 400;
 	//Check I2C functionality
 	if (!i2c_check_functionality(client->adapter, I2C_FUNC_I2C)) {
 		E("%s: i2c check functionality error\n", __func__);

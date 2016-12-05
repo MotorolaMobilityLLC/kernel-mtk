@@ -617,6 +617,7 @@ static int HX_POLLING_TIMES		=2;//ex:5(timer)x2(times)=10sec(polling time)
 static int HX_ON_HAND_SHAKING   =0;//
 #endif
 
+
 #ifdef HX_TP_SELF_TEST_DRIVER
 static int Selftest_flag = 0;
 static uint8_t *mutual_bank;
