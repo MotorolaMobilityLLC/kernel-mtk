@@ -41,6 +41,16 @@
 #define LCT_LCM_MAPP_BACKLIGHT						  1
 
 #define LCT_LCM_ATA_TEST						  
+#ifdef CONFIG_LCT_CABC_MODE_SUPPORT
+extern int cabc_mode_mode;
+#define CABC_MODE_SETTING_UI	1
+#define CABC_MODE_SETTING_MV	2
+#define CABC_MODE_SETTING_DIS	3
+#define CABC_MODE_SETTING_NULL	0
+//static int reg_mode = 0;
+#define dsi_set_cmdq_V22(cmdq, cmd, count, ppara, force_update) \
+lcm_util.dsi_set_cmdq_V22(cmdq, cmd, count, ppara, force_update)
+#endif
 
 /* --------------------------------------------------------------------------- */
 /* Local Variables */
@@ -388,6 +398,24 @@ static struct LCM_setting_table lcm_initialization_setting[] = {
 	{REGFLAG_END_OF_TABLE, 0x00, {}}
 };
 
+static struct LCM_setting_table lcm_setting_ui[] = {
+
+{0x55,2,{0x01,0x01}},
+{REGFLAG_END_OF_TABLE, 0x00, {}}
+};
+
+static struct LCM_setting_table lcm_setting_dis[] = {
+
+{0x55,2,{0x01,0x00}},
+{REGFLAG_END_OF_TABLE, 0x00, {}}
+};
+
+static struct LCM_setting_table lcm_setting_mv[] = {
+
+{0x55,2,{0x01,0x03}},
+{REGFLAG_END_OF_TABLE, 0x00, {}}
+};
+
 static struct LCM_setting_table lcm_deep_sleep_mode_in_setting[] = {
 	/* Sleep Mode On */
 	{ 0x28, 0, {} },
@@ -556,6 +584,88 @@ static void lcm_resume(void)
 	MDELAY(10);
 }
 
+//add by yufangfang for hbm
+#ifdef CONFIG_LCT_HBM_SUPPORT
+static unsigned int last_level=0;
+
+static void lcm_setbacklight_hbm(unsigned int level)
+{
+	unsigned int level_hight,level_low=0;
+	if(level==0)
+	{
+		level = last_level;
+	}
+	level_hight=(level & 0xf0)>>4;
+	level_low=(level & 0x0f)<<4;
+	lcm_backlight_level_setting[0].para_list[0] = level_hight;
+	lcm_backlight_level_setting[0].para_list[1] = level_low;
+	push_table(lcm_backlight_level_setting,
+		   sizeof(lcm_backlight_level_setting) / sizeof(struct LCM_setting_table), 1);
+}
+
+#endif
+
+#ifdef CONFIG_LCT_CABC_MODE_SUPPORT
+static void push_table_v22(void *handle, struct LCM_setting_table *table, unsigned int count,
+		       unsigned char force_update)
+{
+	unsigned int i;
+
+	for (i = 0; i < count; i++) {
+
+		unsigned cmd;
+		void *cmdq = handle;
+		cmd = table[i].cmd;
+
+		switch (cmd) {
+
+		case REGFLAG_DELAY:
+			MDELAY(table[i].count);
+			break;
+
+		case REGFLAG_END_OF_TABLE:
+			break;
+
+		default:
+			dsi_set_cmdq_V22(cmdq, cmd, table[i].count, table[i].para_list, force_update);
+		}
+	}
+
+}
+
+
+static void lcm_cabc_cmdq(void *handle, unsigned int mode)
+{
+
+	switch(mode)
+	{
+		case CABC_MODE_SETTING_UI:
+			{
+				push_table_v22(handle,lcm_setting_ui,
+			   sizeof(lcm_setting_ui) / sizeof(struct LCM_setting_table), 1);
+			}
+		break;
+		case CABC_MODE_SETTING_MV:
+			{
+				push_table_v22(handle,lcm_setting_mv,
+			   sizeof(lcm_setting_mv) / sizeof(struct LCM_setting_table), 1);
+			}
+		break;
+		case CABC_MODE_SETTING_DIS:
+			{
+				push_table_v22(handle,lcm_setting_dis,
+			   sizeof(lcm_setting_dis) / sizeof(struct LCM_setting_table), 1);
+			}
+		break;
+		default:
+		{
+			push_table_v22(handle,lcm_setting_dis,
+			   sizeof(lcm_setting_dis) / sizeof(struct LCM_setting_table), 1);
+		}
+
+	}
+}
+#endif
 
 static void lcm_setbacklight(unsigned int level)
 {
@@ -571,13 +681,15 @@ static void lcm_setbacklight(unsigned int level)
 	#endif	
 	set_gpio_led_en(1);
 	MDELAY(5);
-	level_hight=(mapped_level | 0xf0)>>4;
-	level_low=(mapped_level | 0x0f)<<4;
+	level_hight=(mapped_level & 0xf0)>>4;
+	level_low=(mapped_level & 0x0f)<<4;
 	lcm_backlight_level_setting[0].para_list[0] = level_hight;
 	lcm_backlight_level_setting[0].para_list[1] = level_low;
-	//lcm_backlight_level_setting[0].para_list[1] = mapped_level;
 	push_table(lcm_backlight_level_setting,
 		   sizeof(lcm_backlight_level_setting) / sizeof(struct LCM_setting_table), 1);
+	#ifdef CONFIG_LCT_HBM_SUPPORT
+	last_level = mapped_level;
+#endif
 }
 
 /* add LCM ATA by changjingyang start */
@@ -630,4 +742,10 @@ LCM_DRIVER lct_ili9881c_dijing_720p_vdo_lcm_drv = {
 	.ata_check = lcm_ata_check,
 #endif
 /* add LCM ATA by changjingyang end */
+#ifdef CONFIG_LCT_CABC_MODE_SUPPORT
+	.set_cabc_cmdq = lcm_cabc_cmdq,
+#endif
+#ifdef CONFIG_LCT_HBM_SUPPORT
+	.set_backlight_hbm = lcm_setbacklight_hbm,
+#endif
 };
