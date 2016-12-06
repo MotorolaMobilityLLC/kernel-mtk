@@ -1,4 +1,7 @@
 [GPIO_variables]
+/*Lenovo-sw add for hwid begin*/
+GPIO_HARDWARE_ID0
+/*Lenovo-sw add for hwid end*/
 GPIO_AST_RST_PIN
 GPIO_AST_CS_PIN
 GPIO_AST_CLK32K_PIN
