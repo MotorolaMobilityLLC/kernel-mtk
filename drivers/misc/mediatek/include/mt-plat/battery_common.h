@@ -63,6 +63,11 @@
 #define BATTERY_OVER_TEMP		(3)
 #define ADC_SAMPLE_TIMES        (5)
 
+//zhangchao@wind-mobi.com 20161128 begin
+#ifdef CONFIG_WIND_BATTERY_MODIFY
+#define charger_UNDER_VOL 6
+#endif
+//zhangchao@wind-mobi.com 20161128 end
 /*****************************************************************************
  *  Pulse Charging State
  ****************************************************************************/
