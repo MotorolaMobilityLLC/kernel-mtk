@@ -715,6 +715,11 @@ static int AW87319_i2c_probe(struct i2c_client *client, const struct i2c_device_
 		{
 			break;
 		}
+		else
+		{
+			switchkey = 0;
+		}
+
 		cnt --;
 		msleep(10);
 	}
