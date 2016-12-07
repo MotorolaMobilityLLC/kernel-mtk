@@ -81,6 +81,11 @@
 #include "mt_smi.h"
 #include <mach/mt_freqhopping.h>
 
+//add this file for device info --sunsiyuan@wind-mobi.com add 20161129 begin
+#ifdef CONFIG_WIND_DEVICE_INFO
+		extern char *g_lcm_name;
+#endif
+//add this file for device info --sunsiyuan@wind-mobi.com add 20161129 end
 typedef void (*fence_release_callback) (unsigned int data);
 unsigned int is_hwc_enabled = 0;
 static int is_hwc_update_frame;
@@ -5244,6 +5249,12 @@ int primary_display_init(char *lcm_name, unsigned int lcm_fps, int is_lcm_inited
 		ret = DISP_STATUS_ERROR;
 		goto done;
 	}
+	//add this file for device info --sunsiyuan@wind-mobi.com add 20161129 begin
+	#ifdef CONFIG_WIND_DEVICE_INFO
+	g_lcm_name = (char *)pgc->plcm->drv->name;
+	#endif
+	//add this file for device info --sunsiyuan@wind-mobi.com add 20161129 end
+
 #ifndef MTK_FB_DFO_DISABLE
 	if ((0 == dfo_query("LCM_FAKE_WIDTH", &lcm_fake_width))
 	    && (0 == dfo_query("LCM_FAKE_HEIGHT", &lcm_fake_height))) {

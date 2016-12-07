@@ -228,3 +228,6 @@ obj-$(CONFIG_LCT_DEVINFO_SUPPORT) += lct_meminfo/
 #add for SIM & sku check
 obj-$(CONFIG_LCT_SIM_CHECK) += sim_check/
 #end add for SIM & sku check
+#add wind_device_info --sunsiyuan@wind-mobi.com at 20161129 begin
+obj-$(CONFIG_WIND_DEVICE_INFO) += wind_device_info/
+#add wind_device_info --sunsiyuan@wind-mobi.com at 20161129 end

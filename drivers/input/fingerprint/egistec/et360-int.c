@@ -69,6 +69,11 @@
 #define LCT_LOG_MOD "[FPS]" 
 #endif
 /* Lct add end */
+//add this file for device info --sunsiyuan@wind-mobi.com add 20161129 begin
+#ifdef CONFIG_WIND_DEVICE_INFO
+extern char *g_fingerprint_name; 
+#endif
+//add this file for device info --sunsiyuan@wind-mobi.com add 20161129 end
 
 #define EGIS_NAVI_INPUT 1 // 1:open ; 0:close
 
@@ -1127,10 +1132,13 @@ static int __init egis360_init(void)
 	mt_spi_enable_clk(egistec_mt_spi_t);//temp
 	printk(KERN_ERR "spi enabled----\n");
 
-
-
-
-
+	//add this file for device info --sunsiyuan@wind-mobi.com add 20161129 begin
+	#ifdef CONFIG_WIND_DEVICE_INFO	
+	/*Get Chip name*/
+	g_fingerprint_name = "et360";	 	
+	#endif
+	//add this file for device info --sunsiyuan@wind-mobi.com add 20161129 end
+	
      return status;
 }
 

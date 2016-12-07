@@ -413,6 +413,14 @@ config MTK_TUI_RAM_SIZE
 	depends on MTK_SVP
 	default 0
 
+#wangkangmin@wind-mobi.com add for wind camera 20161207 begin
+config WIND_CAMERA_CUSTOM
+	bool "a value for different ODM camera"
+	default n
+	help
+	  a value for different ODM camera
+#wangkangmin@wind-mobi.com add for wind camera 20161207 end
+
 source "drivers/misc/mediatek/aee/Kconfig"
 source "drivers/misc/mediatek/atf_log/Kconfig"
 source "drivers/misc/mediatek/boot/Kconfig"
@@ -444,6 +452,9 @@ source "drivers/misc/mediatek/watchpoint/Kconfig"
 source "drivers/misc/mediatek/rt-regmap/Kconfig"
 source "drivers/misc/mediatek/pd/Kconfig"
 
+#add wind_device_info --sunsiyuan@wind-mobi.com at 20161129 begin
+source "drivers/misc/mediatek/wind_device_info/Kconfig"
+#add wind_device_info --sunsiyuan@wind-mobi.com at 20161129 end
 endmenu    # Misc
 
 # Following section is added by Longcheer

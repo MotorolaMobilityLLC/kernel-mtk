@@ -147,6 +147,13 @@
 
 #define F12_UDG_DETECT 0x0f
 
+//add this file for device info --sunsiyuan@wind-mobi.com add 20161129 begin
+#ifdef CONFIG_WIND_DEVICE_INFO
+extern char g_ctp_id_str[21];
+extern unsigned int g_ctp_fwvr; 
+#endif
+//add this file for device info --sunsiyuan@wind-mobi.com add 20161129 end
+
 //for MTK DMA
 #define USE_I2C_DMA    //twz modify
 #ifdef USE_I2C_DMA
@@ -3592,6 +3599,17 @@ static int synaptics_rmi4_probe(struct i2c_client *client,
 
 	tpd_load_status = 1;
 	g_dev = &rmi4_data->input_dev->dev;
+	
+	//add this file for device info --sunsiyuan@wind-mobi.com add 20161129 begin
+	#ifdef CONFIG_WIND_DEVICE_INFO	
+	/*Get Chip name*/
+	sprintf(g_ctp_id_str,"synaptics_dsx");	 
+	
+	/*Get firmware id*/
+	g_ctp_fwvr = rmi4_data->firmware_id;
+	
+	#endif
+	//add this file for device info --sunsiyuan@wind-mobi.com add 20161129 begin
 
 	return retval;
 
