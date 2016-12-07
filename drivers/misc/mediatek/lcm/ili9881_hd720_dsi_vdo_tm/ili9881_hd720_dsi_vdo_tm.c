@@ -25,6 +25,10 @@
 #define FRAME_HEIGHT 										(1280)
 #define LCM_ID_ILI9881                                                              (0x9800)    
 
+//sunsiyuan@wind-mobi.com add ata_check at 20161128 begin
+extern atomic_t ESDCheck_byCPU;
+//sunsiyuan@wind-mobi.com add ata_check at 20161128 end
+
 #define REGFLAG_DELAY             								0xFC
 #define REGFLAG_END_OF_TABLE      							0xFD   // END OF REGISTERS MARKER
 
@@ -444,6 +448,75 @@ static void lcm_resume(void)
 
 }
 
+//sunsiyuan@wind-mobi.com add ata_check at 20161128 begin
+static unsigned int lcm_ata_check(unsigned char *buf)
+{
+unsigned int id=0,id1=0,id2=0;
+	unsigned char buffer[3];
+	unsigned int array[16];
+	unsigned char LCD_ID_value = 0;
+#ifdef GPIO_LCD_BIAS_ENP_PIN	
+	mt_set_gpio_mode(GPIO_LCD_BIAS_ENP_PIN, GPIO_MODE_00);	
+	mt_set_gpio_dir(GPIO_LCD_BIAS_ENP_PIN, GPIO_DIR_OUT);	
+	mt_set_gpio_out(GPIO_LCD_BIAS_ENP_PIN, GPIO_OUT_ONE);
+#endif
+	MDELAY(10);
+
+	SET_RESET_PIN(1);
+	SET_RESET_PIN(0);
+	MDELAY(1);
+	
+	SET_RESET_PIN(1);
+	MDELAY(120); 
+
+
+    array[0]=0x00053902;
+    array[1]=0x8198FFFF;
+    array[2]=0x00000001;
+    dsi_set_cmdq(array, 3, 1);
+    MDELAY(10); 
+    
+    array[0] = 0x00023700;// read id return two byte,version and id
+    dsi_set_cmdq(array, 1, 1);
+    MDELAY(10); 
+    
+	atomic_set(&ESDCheck_byCPU,1);
+    read_reg_v2(0x00, buffer, 1);
+    id1 = buffer[0]; 
+    
+    read_reg_v2(0x01, buffer, 1);
+    id2 = buffer[1];  
+    
+	id = (id1 << 8) | id2;
+
+    #ifdef BUILD_LK
+		printf("%s, LK ili9881 debug: ili9881 id = %x,%x,%x\n", __func__, id,id1,id2);
+    #else
+		printk("%s, kernel ili9881 horse debug: ili9881 id = 0x%08x\n", __func__, id);
+    #endif
+
+	if(id == LCM_ID_ILI9881)
+	{
+		#ifdef BUILD_LK
+			printf("%s, LCD_ID_value = %d\n", __func__, LCD_ID_value);
+   	 	#else
+			printk("%s, LCD_ID_value = %d\n", __func__, LCD_ID_value);
+   		#endif
+		if(LCD_ID_value == 0x11)
+		{
+			return 1;
+		}
+		else
+		{
+			return 1;
+		}
+	}
+    else
+    {
+        return 1;
+    }
+}
+//sunsiyuan@wind-mobi.com add ata_check at 20161128 end
 //extern unsigned char which_lcd_module_triple_cust(void); 
 static unsigned int lcm_compare_id(void)
 {
@@ -510,10 +583,12 @@ static unsigned int lcm_compare_id(void)
 			return 1;
 		}
 	}
+ 	//liujinzhou@wind-mobi.com modify at 20161130 begin
     else
     {
-        return 1;
+        return 0;//1->0
     }
+	//liujinzhou@wind-mobi.com modify at 20161130 end
 }
 //static int err_count = 0;
 static unsigned int lcm_esd_check(void)
@@ -617,6 +692,7 @@ LCM_DRIVER ili9881_hd720_dsi_vdo_tm_lcm_drv =
     .compare_id     	= lcm_compare_id,
 	.esd_check = lcm_esd_check,
 	.esd_recover = lcm_esd_recover,
+	.ata_check          = lcm_ata_check,    //sunsiyuan@wind-mobi.com add ata_check at 20161128
 };
 //late_initcall(lcm_init);
 //xuzhifeng@wind-mobi.com add at 20161108 end
