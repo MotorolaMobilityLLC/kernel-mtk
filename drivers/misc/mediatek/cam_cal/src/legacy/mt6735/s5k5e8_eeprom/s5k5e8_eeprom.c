@@ -162,12 +162,13 @@ int read_s5k5e8_eeprom_mtk_fmt(void)
 #endif
 	return 0;
 }
-u8 read_s5k5e8_eeprom_vendor_id(void)
+#if 0
+static u8 read_s5k5e8_eeprom_vendor_id(void)
 {
   CAM_CALINF("wangkangmin s5k5e8 vendor id =%x \n",s5k5e8_eeprom_data.Data[3956]);
   return s5k5e8_eeprom_data.Data[3956];
 }
-
+#endif
 #ifdef CONFIG_COMPAT
 static int compat_put_cal_info_struct(
             COMPAT_stCAM_CAL_INFO_STRUCT __user *data32,

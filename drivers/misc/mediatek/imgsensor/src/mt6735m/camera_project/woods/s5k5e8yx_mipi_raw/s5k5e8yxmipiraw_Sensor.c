@@ -1116,12 +1116,24 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 				//wangkangmin@wind-mobi.com 20161116 bgein
 				#ifdef S5K5E8_OTP_SUPPORT
 				read_otp_s5k5e8(otp_ptr1);
-				read_s5k5e8_eeprom_mtk_fmt();
-				kfree(otp_ptr1);
-				#endif
-				//wangkangmin@wind-mobi.com 20161116 end				
-				LOG_INF("i2c write id: 0x%x, sensor id: 0x%x\n", imgsensor.i2c_write_id,*sensor_id);	  
+				if(otp_ptr1->MID == 0x37)
+				{
+					read_s5k5e8_eeprom_mtk_fmt();
+					LOG_INF("i2c write id: 0x%x, sensor id: 0x%x\n", imgsensor.i2c_write_id,*sensor_id);
+					kfree(otp_ptr1);
+					return ERROR_NONE;
+				}
+				else{
+					LOG_INF("Read sensor is xy 0x%x, id: 0x%x\n", imgsensor.i2c_write_id,*sensor_id);
+					kfree(otp_ptr1);
+					*sensor_id = 0xFFFFFFFF;
+					return ERROR_SENSOR_CONNECT_FAIL;
+				}
+				#else
+				LOG_INF("i2c write id: 0x%x, sensor id: 0x%x\n", imgsensor.i2c_write_id,*sensor_id);
 				return ERROR_NONE;
+				#endif
+				//wangkangmin@wind-mobi.com 20161116 end
 			}	
 			LOG_INF("Read sensor id fail  0x%x, id: 0x%x\n", imgsensor.i2c_write_id,*sensor_id);
 			retry--;
@@ -1702,7 +1714,9 @@ static kal_uint32 get_default_framerate_by_scenario(MSDK_SCENARIO_ID_ENUM scenar
 static kal_uint32 set_test_pattern_mode(kal_bool enable)
 {
 	LOG_INF("enable: %d\n", enable);
-    enable = false;
+	//deal with ATA test sub camera fail --sunsiyuan@wind-mobi.com at 20161130 begin
+   	// enable = false;
+   	//deal with ATA test sub camera fail --sunsiyuan@wind-mobi.com at 20161130 end
 	if (enable) {
 		
 		// 0x0601[2:0]; 0=no pattern,1=solid colour,2 = 100% colour bar ,3 = Fade to gray' colour bar
