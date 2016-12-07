@@ -1837,7 +1837,8 @@
 		hwmsensor@0 {
 			compatible = "mediatek,hwmsensor";
 		};
-		gsensor@0 {
+/*LCT modify  gsensor@0 -> gsensor:gsensor@0  by cly*/		
+		gsensor:gsensor@0 {
 			compatible = "mediatek,gsensor";
 		};
 		alsps:als_ps@0 {

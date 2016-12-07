@@ -35,6 +35,7 @@
 #include <accel.h>
 #include <linux/kernel.h>
 
+#include <linux/of_irq.h>
 
 #define POWER_NONE_MACRO MT65XX_POWER_NONE
 
@@ -44,6 +45,7 @@
 #include "bmi160_acc.h"
 #include <hwmsen_helper.h>
 
+#include <linux/gpio.h>
 
 //extern struct hwm_sensor_data;
 
@@ -58,6 +60,9 @@
 #define BMM050_DEFAULT_DELAY	100
 #define CALIBRATION_DATA_SIZE	12
 
+#ifdef CONFIG_LCT_GSENSOR_ADD_EINT  //add cly for gsensor eint
+#define CONFIG_GSENSOR_IRQ_ENABLE 
+#endif
 /*----------------------------------------------------------------------------*/
 /*
 * Enable the driver to block e-compass daemon on suspend
@@ -175,6 +180,16 @@ static atomic_t driver_suspend_flag = ATOMIC_INIT(0);
 extern int lct_get_sku(void);
 static int sku = 0;
 #endif  
+#ifdef CONFIG_GSENSOR_IRQ_ENABLE 
+static struct platform_device *gsensorPltFmDev;
+static struct work_struct gsensor_eint_work;
+static struct work_struct gsensor_eint_work2;
+static int gsensor_irq=0;
+static int gsensor_irq2=0;
+
+extern struct platform_device *get_gsensor_platformdev(void);
+
+#endif 
 struct mutex uplink_event_flag_mutex;
 /* uplink event flag */
 volatile u32 uplink_event_flag = 0;
@@ -1279,6 +1294,180 @@ static int bmi160_acc_set_range(struct i2c_client *client, unsigned char range)
 	}
 }
 */
+//add gsensor interrupt 
+#ifdef CONFIG_GSENSOR_IRQ_ENABLE 
+
+static irqreturn_t gsensor_eint_func(int irq, void *desc)
+{
+       GSE_ERR("[%s] irq=[%d]",__func__,irq);
+ 
+ 	disable_irq_nosync(gsensor_irq);
+        //for temp need LENOVO to add eint condition
+	//schedule_work(&gsensor_eint_work);
+
+	return IRQ_HANDLED;
+}
+
+static irqreturn_t gsensor_eint_func2(int irq, void *desc)
+{
+       GSE_ERR("[%s] irq=[%d]",__func__,irq);
+ 
+ 	disable_irq_nosync(gsensor_irq2);
+        //for temp need LENOVO to add eint condition
+	//schedule_work(&gsensor_eint_work2);
+
+	return IRQ_HANDLED;
+}
+
+
+int bmi160_setup_irq(struct i2c_client *client)
+{
+	int ret;
+	u32 ints[2] = { 0, 0 };	
+	struct pinctrl *pinctrl;
+	struct pinctrl_state *pins_cfg;
+	struct device_node *node = NULL;
+
+	GSE_FUN();
+   
+	gsensorPltFmDev = get_gsensor_platformdev();
+        node = of_find_compatible_node(NULL, NULL, "mediatek, gse_1-eint");
+	
+	/* gpio setting */
+	pinctrl = devm_pinctrl_get(&gsensorPltFmDev->dev);
+
+	if (IS_ERR(pinctrl)) {
+		ret = PTR_ERR(pinctrl);
+		GSE_ERR("Cannot find gsensor bma160 pinctrl!\n");
+	}
+	
+	pins_cfg = pinctrl_lookup_state(pinctrl, "state_eint_as_int");
+	if (IS_ERR(pins_cfg)) {
+		ret = PTR_ERR(pins_cfg);
+		GSE_ERR("Cannot find gsensor pinctrl pin_cfg!\n");
+	}
+	
+	/* eint request */
+	if (node) {
+
+		of_property_read_u32_array(node, "debounce", ints, ARRAY_SIZE(ints));
+		gpio_set_debounce(ints[0], ints[1]);
+
+		GSE_LOG("ints[0] = %d, ints[1] = %d!!\n", ints[0], ints[1]);
+
+		pinctrl_select_state(pinctrl, pins_cfg);
+		gsensor_irq = irq_of_parse_and_map(node, 0);
+
+		GSE_LOG("gsensor_irq = %d\n", gsensor_irq);
+
+		if (!gsensor_irq) {
+			GSE_ERR("irq_of_parse_and_map fail!!\n");
+			return -EINVAL;
+		}
+
+		if (request_irq(gsensor_irq, gsensor_eint_func, IRQF_TRIGGER_NONE, "gse_1-eint", NULL)) {
+			GSE_ERR("gsensor IRQ LINE NOT AVAILABLE!!\n");
+			return -EINVAL;
+		}
+                GSE_LOG("gsensor IRQ LINE success!!\n");
+
+		enable_irq(gsensor_irq);		
+	}
+	else {
+		GSE_ERR("null irq node!!\n");
+		return -EINVAL;
+	}
+
+	return 0;
+}
+
+
+int bmi160_setup_irq2(struct i2c_client *client)
+{
+	int ret;
+	u32 ints[2] = { 0, 0 };	
+	struct pinctrl *pinctrl;
+	struct pinctrl_state *pins_cfg;
+	struct device_node *node = NULL;
+
+	GSE_FUN();
+   
+	gsensorPltFmDev = get_gsensor_platformdev();
+        node = of_find_compatible_node(NULL, NULL, "mediatek, gse_2-eint");
+	
+	/* gpio setting */
+	pinctrl = devm_pinctrl_get(&gsensorPltFmDev->dev);
+
+	if (IS_ERR(pinctrl)) {
+		ret = PTR_ERR(pinctrl);
+		GSE_ERR("Cannot find gsensor bma160 pinctrl!\n");
+	}
+	
+	pins_cfg = pinctrl_lookup_state(pinctrl, "state_eint_as_int2");
+	if (IS_ERR(pins_cfg)) {
+		ret = PTR_ERR(pins_cfg);
+		GSE_ERR("Cannot find gsensor pinctrl pin_cfg!\n");
+	}
+	
+	/* eint request */
+	if (node) {
+
+		of_property_read_u32_array(node, "debounce", ints, ARRAY_SIZE(ints));
+		gpio_set_debounce(ints[0], ints[1]);
+
+		GSE_LOG("ints[0] = %d, ints[1] = %d!!\n", ints[0], ints[1]);
+
+		pinctrl_select_state(pinctrl, pins_cfg);
+		gsensor_irq2 = irq_of_parse_and_map(node, 0);
+
+		GSE_LOG("gsensor_irq2 = %d\n", gsensor_irq2);
+
+		if (!gsensor_irq2) {
+			GSE_ERR("irq_of_parse_and_map fail!!\n");
+			return -EINVAL;
+		}
+
+		if (request_irq(gsensor_irq2, gsensor_eint_func2, IRQF_TRIGGER_NONE, "gse_2-eint", NULL)) {
+			GSE_ERR("gsensor IRQ LINE NOT AVAILABLE!!\n");
+			return -EINVAL;
+		}
+                GSE_LOG("gsensor IRQ LINE success!!\n");
+
+		enable_irq(gsensor_irq2);		
+	}
+	else {
+		GSE_ERR("null irq node!!\n");
+		return -EINVAL;
+	}
+
+	return 0;
+}
+
+static void bmi160_eint_work(struct work_struct *work)
+{
+  /*example*/
+        uint8_t value = 0;
+        value = 0;
+        GSE_LOG("[%s]  entry!\n",__func__);        
+
+	//switch_set_state((struct switch_dev *)&capsensor_data, value); 	
+	enable_irq(gsensor_irq);
+}
+
+static void bmi160_eint_work2(struct work_struct *work)
+{
+  /*example*/
+        uint8_t value = 0;
+        value = 0;
+        GSE_LOG("[%s]  entry!\n",__func__);        
+
+	//switch_set_state((struct switch_dev *)&capsensor_data, value); 	
+	enable_irq(gsensor_irq2);
+}
+
+#endif 
+/*************/
+
 /*----------------------------------------------------------------------------*/
 static int bmi160_acc_get_range(struct i2c_client *client, unsigned char *range)
 {
@@ -4042,6 +4231,11 @@ static int bmi160_acc_i2c_probe(struct i2c_client *client, const struct i2c_devi
     
     GSE_LOG("%s:   --new_client_addr=0x%x\n", __func__, client->addr);
 
+#ifdef CONFIG_GSENSOR_IRQ_ENABLE 
+        INIT_WORK(&gsensor_eint_work,bmi160_eint_work);
+        INIT_WORK(&gsensor_eint_work2,bmi160_eint_work2);
+#endif
+
 	atomic_set(&obj->trace, 0);
 	atomic_set(&obj->suspend, 0);
 	mutex_init(&obj->lock);
@@ -4075,6 +4269,12 @@ static int bmi160_acc_i2c_probe(struct i2c_client *client, const struct i2c_devi
 	if(err) {
 		goto exit_init_failed;
 	}
+
+#ifdef CONFIG_GSENSOR_IRQ_ENABLE        
+        bmi160_setup_irq(bmi160_acc_i2c_client); 
+
+        bmi160_setup_irq2(bmi160_acc_i2c_client); 
+#endif
 
 #ifdef MISC_FOR_DAEMON
 	err = misc_register(&bmi160_acc_device);

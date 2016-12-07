@@ -549,3 +549,5 @@ CONFIG_LCT_SLUB_DEBUG=y
 CONFIG_LCT_BOOT_REASON=y
 # add by longcheer zhaofei for multi image
 CONFIG_LCT_MULTI_MD_IMAGE=y
+#add by LCT for gsensor eint by moto request cly 
+CONFIG_LCT_GSENSOR_ADD_EINT=y
