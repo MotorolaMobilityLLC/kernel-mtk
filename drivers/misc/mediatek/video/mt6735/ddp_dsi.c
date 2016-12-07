@@ -3914,18 +3914,45 @@ int ddp_dsi_dump(DISP_MODULE_ENUM module, int level)
 	DSI_DumpRegisters(module, level);
 	return 0;
 }
+//liujinzhou@wind-mobi.com add at 20161205 begin
+unsigned int DSI_esd_check_times(LCM_DSI_PARAMS *dsi_params)
+{
+	int i = 0;
+	static unsigned int esd_check_times;
+
+	if (esd_check_times)
+		return esd_check_times;
+	esd_check_times = 0;
+	for (i = 0; i < ESD_CHECK_NUM; i++) {
+	if (dsi_params->lcm_esd_check_table[i].cmd == 0)
+		break;
+		esd_check_times++;
+		}
+//	DISPCHECK("1.ESD times %d\n", esd_check_times);
+		return esd_check_times;
+}
+//liujinzhou@wind-mobi.com add at 20161205 end
+
+
+
 
 int ddp_dsi_build_cmdq(DISP_MODULE_ENUM module, void *cmdq_trigger_handle, CMDQ_STATE state)
 {
-	int ret = 0;
-	int i = 0;
+    //liujinzhou@wind-mobi.com modify at 20161205 begin
+	int ret = 0,result = 0;
+	int i = 0,j=0;
 	int dsi_i = 0;
 	LCM_DSI_PARAMS *dsi_params = NULL;
-	DSI_T0_INS t0;
-	struct DSI_RX_DATA_REG read_data0;
+	DSI_T0_INS t0,t1;
+	struct DSI_RX_DATA_REG read_data0,read_data1,read_data2,read_data3;
+	unsigned char buffer[20];
+	uint32_t recv_data_cnt;
+	unsigned char packet_type;
+	
+	
 
-	static cmdqBackupSlotHandle hSlot;
-
+	static cmdqBackupSlotHandle hSlot[4] = {0,0,0,0};
+	//liujinzhou@wind-mobi.com modify at 20161205 end
 	if (DISP_MODULE_DSIDUAL == module)
 		dsi_i = 0;
 	else
@@ -3934,7 +3961,7 @@ int ddp_dsi_build_cmdq(DISP_MODULE_ENUM module, void *cmdq_trigger_handle, CMDQ_
 	dsi_params = &_dsi_context[dsi_i].dsi_params;
 
 	if (cmdq_trigger_handle == NULL) {
-		DISPMSG("cmdq_trigger_handle is NULL\n");
+		printk("cmdq_trigger_handle is NULL\n");
 		return -1;
 	}
 
@@ -4011,10 +4038,17 @@ int ddp_dsi_build_cmdq(DISP_MODULE_ENUM module, void *cmdq_trigger_handle, CMDQ_
 			     0xB0) ? DSI_DCS_READ_PACKET_ID :
 			    DSI_GERNERIC_READ_LONG_PACKET_ID;
 			t0.Data1 = 0;
+			
+			//liujinzhou@wind-mobi.com add  at 20161205 begin
+			t1.CONFG = 0x00;
+			t1.Data0 = dsi_params->lcm_esd_check_table[i].count;
+			t1.Data1 = 0x00;
+			t1.Data_ID = 0x37;
+			//liujinzhou@wind-mobi.com add at 20161205 end
 
 			/* write DSI CMDQ */
 			DSI_OUTREG32(cmdq_trigger_handle, &DSI_CMDQ_REG[dsi_i]->data[0],
-				     0x00013700);
+				     AS_UINT32(&t1));//liujinzhou@wind-mobi.com modify at 20161205
 			DSI_OUTREG32(cmdq_trigger_handle, &DSI_CMDQ_REG[dsi_i]->data[1],
 				     AS_UINT32(&t0));
 			DSI_OUTREG32(cmdq_trigger_handle, &DSI_REG[dsi_i]->DSI_CMDQ_SIZE,
@@ -4040,10 +4074,19 @@ int ddp_dsi_build_cmdq(DISP_MODULE_ENUM module, void *cmdq_trigger_handle, CMDQ_
 			}
 #endif
 			/* 2. save RX data */
-			if (hSlot) {
-				DSI_BACKUPREG32(cmdq_trigger_handle, hSlot, i,
-						&DSI_REG[0]->DSI_RX_DATA0);
+			//liujinzhou@wind-mobi.com modify at 20161205 begin
+		//	if (hSlot[0]&&hSlot[1]&&hSlot[2]&&hSlot[3]) {
+			if(hSlot[0]){
+				DSI_BACKUPREG32(cmdq_trigger_handle, hSlot[0], i,
+						&DSI_REG[dsi_i]->DSI_RX_DATA0);
+				DSI_BACKUPREG32(cmdq_trigger_handle, hSlot[1], i,
+						&DSI_REG[dsi_i]->DSI_RX_DATA1);
+				DSI_BACKUPREG32(cmdq_trigger_handle, hSlot[2], i,
+						&DSI_REG[dsi_i]->DSI_RX_DATA2);
+				DSI_BACKUPREG32(cmdq_trigger_handle, hSlot[3], i,
+						&DSI_REG[dsi_i]->DSI_RX_DATA3);
 			}
+			//liujinzhou@wind-mobi.com modify at 20161205 end
 
 			/* 3. write RX_RACK */
 			DSI_OUTREGBIT(cmdq_trigger_handle, struct DSI_RACK_REG,
@@ -4066,23 +4109,30 @@ int ddp_dsi_build_cmdq(DISP_MODULE_ENUM module, void *cmdq_trigger_handle, CMDQ_
 		/* DSI_OUTREGBIT(cmdq_trigger_handle, struct DSI_INT_ENABLE_REG,DSI_REG[dsi_i]->DSI_INTEN,RD_RDY,0); */
 	} else if (state == CMDQ_ESD_CHECK_CMP) {
 
-		DISPMSG("[DSI]enter cmp\n");
+		printk("[DSI]enter cmp\n");
 		/* cmp just once and only 1 return value */
 		for (i = 0; i < 3; i++) {
 			if (dsi_params->lcm_esd_check_table[i].cmd == 0)
 				break;
 
-			DISPMSG("[DSI]enter cmp i=%d\n", i);
-
+			printk("[DSI]enter cmp i=%d\n", i);
+            //liujinzhou@wind-mobi.com modify at 20161205 begin
 			/* read data */
-			if (hSlot) {
+		//	if (hSlot[0]&&hSlot[1]&&hSlot[2]&&hSlot[3]) {
+			if(hSlot[0]){
 				/* read from slot */
-				cmdqBackupReadSlot(hSlot, i, ((uint32_t *) &read_data0));
+				cmdqBackupReadSlot(hSlot[0], i, ((uint32_t *) &read_data0));
+				cmdqBackupReadSlot(hSlot[1], i, ((uint32_t *) &read_data1));
+				cmdqBackupReadSlot(hSlot[2], i, ((uint32_t *) &read_data2));
+				cmdqBackupReadSlot(hSlot[3], i, ((uint32_t *) &read_data3));
+				
 			} else {
 				/* read from dsi , support only one cmd read */
 				if (i == 0) {
-					DSI_OUTREG32(NULL, &read_data0,
-						     AS_UINT32(&DSI_REG[dsi_i]->DSI_RX_DATA0));
+					DSI_OUTREG32(NULL, &read_data0,AS_UINT32(&DSI_REG[dsi_i]->DSI_RX_DATA0));
+					DSI_OUTREG32(NULL, &read_data1,AS_UINT32(&DSI_REG[dsi_i]->DSI_RX_DATA1));
+					DSI_OUTREG32(NULL, &read_data2,AS_UINT32(&DSI_REG[dsi_i]->DSI_RX_DATA2));
+					DSI_OUTREG32(NULL, &read_data3,AS_UINT32(&DSI_REG[dsi_i]->DSI_RX_DATA3));
 				}
 			}
 
@@ -4095,11 +4145,12 @@ int ddp_dsi_build_cmdq(DISP_MODULE_ENUM module, void *cmdq_trigger_handle, CMDQ_
 			     read_data0.byte0, read_data0.byte1, read_data0.byte2,
 			     read_data0.byte3);
 			DISPDBG
-			    ("[DSI]cmp check_table cmd=0x%x,count=0x%x,para_list[0]=0x%x,para_list[1]=0x%x\n",
+			    ("[DSI]cmp check_table cmd=0x%x,count=0x%x,para_list[0]=0x%x,para_list[1]=0x%x,para_list[2]=0x%x\n",
 			     dsi_params->lcm_esd_check_table[i].cmd,
 			     dsi_params->lcm_esd_check_table[i].count,
 			     dsi_params->lcm_esd_check_table[i].para_list[0],
-			     dsi_params->lcm_esd_check_table[i].para_list[1]);
+			     dsi_params->lcm_esd_check_table[i].para_list[1],
+				 dsi_params->lcm_esd_check_table[i].para_list[2]);
 			DISPDBG("[DSI]enter cmp DSI+0x200=0x%x\n",
 				AS_UINT32(DDP_REG_BASE_DSI0 + 0x200));
 			DISPDBG("[DSI]enter cmp DSI+0x204=0x%x\n",
@@ -4113,25 +4164,106 @@ int ddp_dsi_build_cmdq(DISP_MODULE_ENUM module, void *cmdq_trigger_handle, CMDQ_
 			DISPDBG("[DSI]enter cmp DSI+0x0c=0x%x\n",
 				AS_UINT32(DDP_REG_BASE_DSI0 + 0x0c));
 
-			if (read_data0.byte1 ==
-			    dsi_params->lcm_esd_check_table[i].para_list[0]) {
+			packet_type = read_data0.byte0;
+			printk("packet_type = %d\n",packet_type);			
+			
+			if (packet_type == 0x1A || packet_type == 0x1C) 
+			{
+				recv_data_cnt = read_data0.byte1 + read_data0.byte2 * 16;
+				printk("packet_type=0x%x,recv_data_cnt = %d\n", packet_type, recv_data_cnt);
+				if(recv_data_cnt > RT_MAX_NUM)
+				{
+			//	DISPCHECK("DSI read long packet data exceeds 10 bytes \n");
+					recv_data_cnt = RT_MAX_NUM;
+				} 
+
+				if (recv_data_cnt > dsi_params->lcm_esd_check_table[i].count) {
+					recv_data_cnt = dsi_params->lcm_esd_check_table[i].count;
+				}
+
+				if (recv_data_cnt <= 4) {
+				memcpy((void *)buffer, (void *)&read_data1, recv_data_cnt);
+				} 
+				else if (recv_data_cnt <= 8) {
+				memcpy((void *)buffer, (void *)&read_data1, 4);
+				memcpy((void *)(buffer + 4), (void *)&read_data2, recv_data_cnt - 4);
+				} 
+				else {
+				memcpy((void *)buffer, (void *)&read_data1, 4);
+				memcpy((void *)(buffer + 4), (void *)&read_data2, 4);
+				memcpy((void *)(buffer + 8), (void *)&read_data3, recv_data_cnt - 8);
+				}
+
+				for (j = 0; j < recv_data_cnt; j++) {
+				printk("liujinzhou2---buffer[%d]=0x%x\n", j, buffer[j]);
+				if (buffer[j] != dsi_params->lcm_esd_check_table[i].para_list[j]) {
+				result= 1;
+				//DISPCHECK("[ESD]CMP i %d return value 0x%x,para_list[%d]=0x%x\n", i,
+				//buffer[j], j, dsi_params->lcm_esd_check_table[i].para_list[j]);
+				break;
+				}
+				}
+				} else if (packet_type == 0x11 || packet_type == 0x12 || packet_type == 0x21 || packet_type == 0x22) {
+				/* short read response */
+				if (packet_type == 0x11 || packet_type == 0x21)
+				recv_data_cnt = 1;
+				else
+				recv_data_cnt = 2;
+ 
+				if (recv_data_cnt > dsi_params->lcm_esd_check_table[i].count) {
+				recv_data_cnt = dsi_params->lcm_esd_check_table[i].count;
+				}
+
+				memcpy((void *)buffer, (void *)&read_data0.byte1, recv_data_cnt);
+				DISPDBG("packet_type=0x%x,recv_data_cnt = %d\n", packet_type, recv_data_cnt);
+
+				for (j = 0; j < recv_data_cnt; j++) {
+				printk("liujinzhou1---buffer[%d]=0x%x\n", j, buffer[j]);
+					if (buffer[j] != dsi_params->lcm_esd_check_table[i].para_list[j]) {
+					result= 1;
+					//DISPCHECK("[ESD]CMP i %d return value 0x%x,para_list[%d]=0x%x\n", i,
+					//buffer[j], j, dsi_params->lcm_esd_check_table[i].para_list[j]);
+					break;
+				}
+					}
+				} else if (packet_type == 0x02) {
+				//DISPCHECK("read return type is 0x02\n");
+				result = 1;
+					} else {
+				//DISPCHECK("read return type is non-recognite, type = 0x%x\n", packet_type);
+				result = 1;
+				}
+
+				if (result == 0) {
 				/* clear rx data */
 				/* DSI_OUTREG32(NULL, &DSI_REG[dsi_i]->DSI_RX_DATA0,0); */
-				ret = 0;	/* esd pass */
-			} else {
-				ret = 1;	/* esd fail */
+					ret = 0; /* esd pass */
+				} else {
+				ret = 1; /* esd fail */
 				break;
+				}
+			//liujinzhou@wind-mobi.com add at 20161205 end
+			}
+
+		} else if (state == CMDQ_ESD_ALLC_SLOT) {
+			//liujinzhou@wind-mobi.com modify at 20161205 begin
+				/* create 3 slot */
+			unsigned int h = 0;
+		//	n = DSI_esd_check_times(dsi_params);
+			for(h=0;h<4;h++){
+				cmdqBackupAllocateSlot(&hSlot[h],3);
+			}
+		   //liujinzhou@wind-mobi.com modify at 20161205 end
+		} else if (state == CMDQ_ESD_FREE_SLOT) {
+		   //liujinzhou@wind-mobi.com modify at 20161205 begin
+		unsigned int h = 0;
+		for(h=0;h<4;h++){
+			if(hSlot[h]){
+				cmdqBackupFreeSlot(hSlot[h]);
+				hSlot[h] = 0;
 			}
 		}
-
-	} else if (state == CMDQ_ESD_ALLC_SLOT) {
-		/* create 3 slot */
-		cmdqBackupAllocateSlot(&hSlot, 3);
-	} else if (state == CMDQ_ESD_FREE_SLOT) {
-		if (hSlot) {
-			cmdqBackupFreeSlot(hSlot);
-			hSlot = 0;
-		}
+		  //liujinzhou@wind-mobi.com modify at 20161205 end
 	} else if (state == CMDQ_STOP_VDO_MODE) {
 		/* use cmdq to stop dsi vdo mode */
 		/* -1. stop TE_RDY IRQ */
