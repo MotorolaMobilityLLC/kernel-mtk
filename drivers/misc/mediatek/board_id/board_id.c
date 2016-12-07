@@ -55,7 +55,7 @@ int get_bid_gpio(void)
 	}
 	
 
-	if(strncmp(tmp,"00011",5)!=0||!strncmp(tmp,"01001",5)!=0)
+	if(strncmp(tmp,"00011",5)!=0||strncmp(tmp,"01001",5)!=0)
 		ret =1;
 
 	return ret;
