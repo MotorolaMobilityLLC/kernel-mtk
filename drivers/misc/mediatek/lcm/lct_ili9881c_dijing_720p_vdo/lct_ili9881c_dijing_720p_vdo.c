@@ -303,10 +303,10 @@ static struct LCM_setting_table lcm_initialization_setting[] = {
 {0x74,1,{0x02}},
 {0x75,1,{0x14}},
 {0x76,1,{0x15}},
-{0x77,1,{0x0f}},
-{0x78,1,{0x0e}},
-{0x79,1,{0x0d}},
-{0x7a,1,{0x0c}},
+{0x77,1,{0x0F}},
+{0x78,1,{0x0E}},
+{0x79,1,{0x0D}},
+{0x7a,1,{0x0C}},
 {0x7b,1,{0x11}},
 {0x7c,1,{0x10}},
 {0x7d,1,{0x06}},
@@ -323,95 +323,97 @@ static struct LCM_setting_table lcm_initialization_setting[] = {
 {0x88,1,{0x08}},
 {0x89,1,{0x02}},
 {0x8A,1,{0x02}},
-{0xFF,3,{0x98,0x81,0x04}},
-{0x00,1,{0x80}}, 
+{0xFF,3,{ 0x98,0x81,0x04}},
+{0x00,1,{0x80}},           // 00-3LANE   80-4LANE 
 {0x6C,1,{0x15}},                //Set VCORE voltage =1.5V);
-{0x6E,1,{0x3b}},              //di_pwr_reg=0 for power mode 
-{0x6F,1,{0x53}},                // reg vcl + pumping ratio 
+{0x6E,1,{0x2F}},              //di_pwr_reg=0 for power mode 
+{0x6F,1,{0x55}},                // reg vcl + pumping ratio 
 {0x3A,1,{0xA4}},                //POWER SAVING);
-{0x8D,1,{0x15}},              //VGL clamp -10
+{0x8D,1,{0x1F}},              //VGL clamp -10
 {0x87,1,{0xBA}},               //ESD               );
 {0x26,1,{0x76}},            
 {0xB2,1,{0xD1}},
 {0x88,1,{0x0B}},
-{0xFF,3,{0x98,0x81,0x02}},
-{0x06,1,{0x40}}, 
-{0x07,1,{0x04}}, 
-{0xFF,3,{0x98,0x81,0x01}},
+{0xFF,3,{ 0x98,0x81,0x01}},
 {0x22,1,{0x0A}},               //BGR,0x SS);
 {0x31,1,{0x00}},               //column inversion);
-{0x53,1,{0x72}},               //VCOM1);
+{0x34,1,{0x01}},
+{0x55,1,{0x88}},               //VCOM1);  7c
+{0x56,1,{0x00}},       // FOR ²âÊÔÓÃ  ÓÃR53 ÉèÖÃµÄVCOMÖµ   
 {0x50,1,{0xC0}},               // VREG1OUT=4.7V);
 {0x51,1,{0xC0}},               // VREG2OUT=-4.7V);
-{0x60,1,{0x14}},               //SDT);
+{0x60,1,{0x2B}},               //SDT);
 {0xA0,1,{0x08}},               //VP255 Gamma P);
-{0xA1,1,{0x1E}},               //VP251);
-{0xA2,1,{0x2C}},               //VP247);
-{0xA3,1,{0x15}},               //VP243);
-{0xA4,1,{0x18}},               //VP239);
-{0xA5,1,{0x2A}},               //VP231);
-{0xA6,1,{0x1F}},               //VP219);
-{0xA7,1,{0x1F}},               //VP203);
-{0xA8,1,{0x85}},               //VP175);
-{0xA9,1,{0x1C}},               //VP144);
+{0xA1,1,{0x28}},               //VP251);
+{0xA2,1,{0x37}},               //VP247);
+{0xA3,1,{0x16}},               //VP243);
+{0xA4,1,{0x1A}},               //VP239);
+{0xA5,1,{0x2E}},               //VP231);
+{0xA6,1,{0x20}},               //VP219);
+{0xA7,1,{0x20}},               //VP203);
+{0xA8,1,{0xA1}},               //VP175);
+{0xA9,1,{0x1D}},               //VP144);
 {0xAA,1,{0x2A}},               //VP111);
-{0xAB,1,{0x72}},              //VP80);
-{0xAC,1,{0x1A}},              //VP52);
-{0xAD,1,{0x18}},              //VP36);
-{0xAE,1,{0x4C}},              //VP24);
+{0xAB,1,{0x89}},              //VP80);
+{0xAC,1,{0x17}},              //VP52);
+{0xAD,1,{0x14}},              //VP36);
+{0xAE,1,{0x49}},              //VP24);
 {0xAF,1,{0x20}},              //VP16);
 {0xB0,1,{0x26}},               //VP12);
-{0xB1,1,{0x4A}},               //VP8);
-{0xB2,1,{0x57}},              //VP4);
+{0xB1,1,{0x50}},               //VP8);
+{0xB2,1,{0x5F}},              //VP4);
 {0xB3,1,{0x2C}},              //VP0);
 {0xC0,1,{0x08}},              //VN255 GAMMA N);
-{0xC1,1,{0x1B}},              //VN251);
-{0xC2,1,{0x27}},              //VN247);
-{0xC3,1,{0x12}},              //VN243);
-{0xC4,1,{0x14}},              //VN239);
-{0xC5,1,{0x25}},              //VN231);
-{0xC6,1,{0x1A}},              //VN219);
-{0xC7,1,{0x1D}},              //VN203);
-{0xC8,1,{0x7A}},              //VN175); 
-{0xC9,1,{0x1A}},               //VN144);
+{0xC1,1,{0x25}},              //VN251);
+{0xC2,1,{0x32}},              //VN247);
+{0xC3,1,{0x13}},              //VN243);
+{0xC4,1,{0x16}},              //VN239);
+{0xC5,1,{0x29}},              //VN231);
+{0xC6,1,{0x1B}},              //VN219);
+{0xC7,1,{0x1E}},              //VN203);
+{0xC8,1,{0x98}},              //VN175); 
+{0xC9,1,{0x1B}},               //VN144);
 {0xCA,1,{0x28}},               //VN111);
-{0xCB,1,{0x6B}},               //VN80);
-{0xCC,1,{0x1F}},               //VN52);
-{0xCD,1,{0x1D}},               //VN36);
-{0xCE,1,{0x52}},               //VN24);
+{0xCB,1,{0x82}},               //VN80);
+{0xCC,1,{0x1C}},               //VN52);
+{0xCD,1,{0x19}},               //VN36);
+{0xCE,1,{0x4F}},               //VN24);
 {0xCF,1,{0x24}},               //VN16);
 {0xD0,1,{0x2D}},               //VN12);
-{0xD1,1,{0x47}},               //VN8);
-{0xD2,1,{0x55}},               //VN4);
+{0xD1,1,{0x4E}},               //VN8);
+{0xD2,1,{0x5D}},               //VN4);
 {0xD3,1,{0x2C}},
+{0xFF,3,{0x98,0x81,0x02}},
+{0x06,1,{0x40}},
+{0x07,1,{0x05}}, //pwm  20K
 {0xFF,3,{0x98,0x81,0x00}},
+{0x68,2,{0x04,0x01}},
 {0x36,1,{0x03}},
-{0x68,1,{0x05}},
-{0x11,0,{}},  
+{0x11,1,{}},  
 {REGFLAG_DELAY, 120, {}},            
-{0x29,0,{}},       
+{0x29,1,{}},       
 {REGFLAG_DELAY, 10, {}},     
 {0x35,1,{0x00}},   // te on
-	{0x51,2,{0x0f,0xff}},
+	{0x51,2,{0x0f,0xf0}},   
 	{0x53,1,{0x2C}},
 	{0x55,1,{0x00}},
 	{REGFLAG_END_OF_TABLE, 0x00, {}}
 };
 
 static struct LCM_setting_table lcm_setting_ui[] = {
-
+{0xFF,3,{0x98,0x81,0x00}},
 {0x55,2,{0x01,0x01}},
 {REGFLAG_END_OF_TABLE, 0x00, {}}
 };
 
 static struct LCM_setting_table lcm_setting_dis[] = {
-
+{0xFF,3,{0x98,0x81,0x00}},
 {0x55,2,{0x01,0x00}},
 {REGFLAG_END_OF_TABLE, 0x00, {}}
 };
 
 static struct LCM_setting_table lcm_setting_mv[] = {
-
+{0xFF,3,{0x98,0x81,0x00}},
 {0x55,2,{0x01,0x03}},
 {REGFLAG_END_OF_TABLE, 0x00, {}}
 };
@@ -447,7 +449,6 @@ static void push_table(struct LCM_setting_table *table, unsigned int count,
 		case REGFLAG_DELAY:
 			MDELAY(table[i].count);
 			break;
-
 		case REGFLAG_END_OF_TABLE:
 			break;
 
@@ -523,11 +524,11 @@ static void lcm_get_params(LCM_PARAMS *params)
 #endif
 	params->dsi.cont_clock = 0;
 	params->dsi.clk_lp_per_line_enable = 0;
-	params->dsi.esd_check_enable = 0;
-	params->dsi.customization_esd_check_enable = 0;
-	params->dsi.lcm_esd_check_table[0].cmd = 0x53;
+	params->dsi.esd_check_enable = 1;
+	params->dsi.customization_esd_check_enable = 1;
+	params->dsi.lcm_esd_check_table[0].cmd = 0x0a;
 	params->dsi.lcm_esd_check_table[0].count = 1;
-	params->dsi.lcm_esd_check_table[0].para_list[0] = 0x24;
+	params->dsi.lcm_esd_check_table[0].para_list[0] = 0x9c;
 }
 
 static void tps65132_enable(char en)
@@ -564,6 +565,8 @@ static void lcm_init(void)
 	MDELAY(120);
 	push_table(lcm_initialization_setting,
 		   sizeof(lcm_initialization_setting) / sizeof(struct LCM_setting_table), 1);
+	set_gpio_led_en(1);
+	MDELAY(5);
 }
 
 
@@ -678,9 +681,7 @@ static void lcm_setbacklight(unsigned int level)
 		mapped_level = (641*level + 36667)/(1000);
 	else
 		mapped_level=level;
-	#endif	
-	set_gpio_led_en(1);
-	MDELAY(5);
+	#endif		
 	level_hight=(mapped_level & 0xf0)>>4;
 	level_low=(mapped_level & 0x0f)<<4;
 	lcm_backlight_level_setting[0].para_list[0] = level_hight;

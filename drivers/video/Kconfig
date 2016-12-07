@@ -54,6 +54,11 @@ config LCT_HBM_SUPPORT
 	bool "LCT_HBM_SUPPORT"
 # yufangfang add end
 
+# add by longhceer yufangfang for esd check
+config LCT_ESD_CHECK_MULTI_REG
+	bool "LCT_ESD_CHECK_MULTI_REG"
+# yufangfang add end
+
 config HDMI
 	bool
 

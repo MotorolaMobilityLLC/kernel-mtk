@@ -442,6 +442,16 @@ static void lcm_get_params(LCM_PARAMS *params)
 	params->dsi.lcm_esd_check_table[0].cmd          = 0xD9;
 	params->dsi.lcm_esd_check_table[0].count        = 1;
 	params->dsi.lcm_esd_check_table[0].para_list[0] = 0x80;
+	params->dsi.lcm_esd_check_table[1].cmd          = 0x09;
+	params->dsi.lcm_esd_check_table[1].count        = 3;
+	params->dsi.lcm_esd_check_table[1].para_list[0] = 0x80;
+	params->dsi.lcm_esd_check_table[1].para_list[1] = 0x73;
+	params->dsi.lcm_esd_check_table[1].para_list[2] = 0x06;
+	params->dsi.lcm_esd_check_table[2].cmd          = 0x45;
+	params->dsi.lcm_esd_check_table[2].count        = 2;
+	params->dsi.lcm_esd_check_table[2].para_list[0] = 0x05;
+	params->dsi.lcm_esd_check_table[2].para_list[1] = 0x1B;
+	
 }
 
 void tps65132_enable(char en)
@@ -481,7 +491,8 @@ static void lcm_init(void)
 	MDELAY(120);
 	push_table(lcm_initialization_setting,
 		   sizeof(lcm_initialization_setting) / sizeof(struct LCM_setting_table), 1);
-	
+	set_gpio_led_en(1);
+	MDELAY(5);
 }
 
 
@@ -515,9 +526,7 @@ static void lcm_setbacklight(unsigned int level)
 		mapped_level = (641*level + 36667)/(1000);
 	else
 		mapped_level=level;
-	#endif
-	set_gpio_led_en(1);
-	MDELAY(5);
+	#endif	
 	printk("yufangfang lcm set backlight\n");
 	/* Refresh value of backlight level. */
 	lcm_backlight_level_setting[0].para_list[0] = mapped_level;
