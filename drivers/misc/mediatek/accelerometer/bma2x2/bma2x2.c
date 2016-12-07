@@ -211,8 +211,10 @@ static int CHIP_TYPE;
 #define BMA2x2_SET_BITSLICE(regvar, bitname, val)\
 	((regvar & ~bitname##__MSK) | ((val<<bitname##__POS)&bitname##__MSK))
 
-
-
+//tuwenzan@wind-mobi.com add at 20161128 begin
+int cali_flag = 0;
+struct i2c_client *bma2x2_client;
+//tuwenzan@wind-mobi.com add at 20161128 end
 /*----------------------------------------------------------------------------*/
 
 /*----------------------------------------------------------------------------*/
@@ -473,8 +475,7 @@ static int bma_i2c_dma_read(struct i2c_client *client,
 }
 #endif
 
-static int bma_i2c_read_block(struct i2c_client *client,
-			u8 addr, u8 *data, u8 len)
+int bma_i2c_read_block(struct i2c_client *client,u8 addr, u8 *data, u8 len)  //tuwenzan@wind-mobi.com modify at 20161128
 {
 	u8 beg = addr;
 	struct i2c_msg msgs[2] = {
@@ -508,8 +509,7 @@ static int bma_i2c_read_block(struct i2c_client *client,
 	return err;
 }
 #define I2C_BUFFER_SIZE 256
-static int bma_i2c_write_block(struct i2c_client *client, u8 addr,
-			u8 *data, u8 len)
+int bma_i2c_write_block(struct i2c_client *client, u8 addr,u8 *data, u8 len)  //tuwenzan@wind-mobi.com modify at 20161128
 {
 	/*
 	*because address also occupies one byte,
@@ -1053,7 +1053,7 @@ exit_BMA2x2_CheckDeviceID:
 	return BMA2x2_SUCCESS;
 }
 /*----------------------------------------------------------------------------*/
-static int BMA2x2_SetPowerMode(struct i2c_client *client, bool enable)
+int BMA2x2_SetPowerMode(struct i2c_client *client, bool enable) //tuwenzan@wind-mobi.com modify at 20161128
 {
 	u8 databuf[2] = {0};
 	int res = 0;
@@ -1553,7 +1553,7 @@ static int bma2x2_get_mode(struct i2c_client *client, unsigned char *mode)
 }
 
 /*----------------------------------------------------------------------------*/
-static int bma2x2_set_range(struct i2c_client *client, unsigned char range)
+int bma2x2_set_range(struct i2c_client *client, unsigned char range) //tuwenzan@wind-mobi.com modify at 20161128
 {
 	int comres = 0;
 	unsigned char data[2] = {BMA2x2_RANGE_SEL__REG};
@@ -1597,8 +1597,7 @@ static int bma2x2_get_range(struct i2c_client *client, unsigned char *range)
 	return comres;
 }
 /*----------------------------------------------------------------------------*/
-static int bma2x2_set_bandwidth(struct i2c_client *client,
-	 unsigned char bandwidth)
+int bma2x2_set_bandwidth(struct i2c_client *client,unsigned char bandwidth)  //tuwenzan@wind-mobi.com modify at 20161128
 {
 	int comres = 0;
 	unsigned char data[2] = {BMA2x2_BANDWIDTH__REG};
@@ -2238,6 +2237,34 @@ static ssize_t show_softreset(struct device_driver *ddri, char *buf)
 
 }
 
+//tuwenzan@wind-mobi.com add at 20161128 begin
+#ifdef BMA2XX_OFFSET_CALI
+static ssize_t show_calibration_state(struct device_driver *ddri, char *buf)
+{
+	int len = 0;
+	len = sprintf(buf,"%d",cali_flag);
+	printk("tuwenzan cali_flag = %d\n",cali_flag);
+	return len;
+}
+
+static ssize_t store_calibration_value(struct device_driver *ddri,
+	 const char *buf, size_t count)
+{
+	int ret = 0;
+	ret = simple_strtoul(buf,0,10);
+	if(1 == ret){
+		ret = bma2xx_offset_fast_cali(0,0,1);
+		printk("tuwenzan ret = %d\n",ret);
+		if(0 == ret){
+			cali_flag = 1;
+			printk("tuwenzan cali_flag = %d,ret = %d",cali_flag,ret);
+		}else
+			printk("calibration fail\n");
+	}
+	return count;
+}
+#endif
+//tuwenzan@wind-mobi.com add at 20161128 end
 /*----------------------------------------------------------------------------*/
 static DRIVER_ATTR(chipinfo, S_IWUSR | S_IRUGO, show_chipinfo_value, NULL);
 static DRIVER_ATTR(cpsdata, S_IWUSR | S_IRUGO, show_cpsdata_value, NULL);
@@ -2264,6 +2291,10 @@ static DRIVER_ATTR(fifo_data_frame, S_IRUGO, show_fifo_data_out_frame_value,
 	 NULL);
 static DRIVER_ATTR(dump_registers, S_IRUGO, show_registers, NULL);
 static DRIVER_ATTR(softreset, S_IRUGO, show_softreset, NULL);
+//tuwenzan@wind-mobi.com add at 20161128 begin
+#ifdef BMA2XX_OFFSET_CALI
+static DRIVER_ATTR(start_fast_calibration, 0644, show_calibration_state,store_calibration_value);
+#endif
 /*----------------------------------------------------------------------------*/
 static struct driver_attribute *bma2x2_attr_list[] = {
 	/*chip information*/
@@ -2291,7 +2322,11 @@ static struct driver_attribute *bma2x2_attr_list[] = {
 	 &driver_attr_fifo_data_frame,
 	 &driver_attr_dump_registers,
 	 &driver_attr_softreset,
+#ifdef BMA2XX_OFFSET_CALI
+	 &driver_attr_start_fast_calibration,
+#endif
 };
+//tuwenzan@wind-mobi.com add at 20161128 end
 /*----------------------------------------------------------------------------*/
 static int bma2x2_create_attr(struct device_driver *driver)
 {
@@ -2699,6 +2734,7 @@ static int bma2x2_i2c_probe(struct i2c_client *client,
 
 	obj_i2c_data = obj;
 	obj->client = client;
+	bma2x2_client = client; //tuwenzan@wind-mobi.com add at 20161128
 	new_client = obj->client;
 	i2c_set_clientdata(new_client, obj);
 #ifdef DMAREAD

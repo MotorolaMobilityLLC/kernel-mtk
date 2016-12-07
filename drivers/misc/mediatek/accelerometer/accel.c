@@ -14,6 +14,12 @@
 #include "inc/accel.h"
 #include "inc/accel_factory.h"
 
+//add this file for device info --sunsiyuan@wind-mobi.com add 20161129 begin
+#ifdef CONFIG_WIND_DEVICE_INFO
+		extern char *g_gsensor_name;
+#endif
+//add this file for device info --sunsiyuan@wind-mobi.com add 20161129 end
+
 struct acc_context *acc_context_obj = NULL;
 
 
@@ -520,6 +526,11 @@ static int acc_real_driver_init(void)
 			if (0 == err) {
 				ACC_LOG(" acc real driver %s probe ok\n",
 					gsensor_init_list[i]->name);
+				//add this file for device info --sunsiyuan@wind-mobi.com add 20161129 begin
+				#ifdef CONFIG_WIND_DEVICE_INFO
+				g_gsensor_name = gsensor_init_list[i]->name;
+				#endif
+				//add this file for device info --sunsiyuan@wind-mobi.com add 20161129 end
 				break;
 			}
 		}
