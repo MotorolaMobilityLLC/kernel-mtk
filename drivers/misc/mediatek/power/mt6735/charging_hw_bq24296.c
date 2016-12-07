@@ -35,6 +35,26 @@
 /* Global variable */
 /* ============================================================ // */
 
+//zhangchao@wind-mobi.com 20161130 begin
+#ifdef CONFIG_WIND_Z168_BATTERY_MODIFY
+const unsigned int VBAT_CV_VTH[] = {
+	3504000, 3520000, 3536000, 3552000,
+	3568000, 3584000, 3600000, 3616000,
+	3632000, 3648000, 3664000, 3680000,
+	3696000, 3712000, 3728000, 3744000,
+	3760000, 3776000, 3792000, 3808000,
+	3824000, 3840000, 3856000, 3872000,
+	3888000, 3904000, 3920000, 3936000,
+	3952000, 3968000, 3984000, 4000000,
+	4016000, 4032000, 4048000, 4064000,
+	4080000, 4096000, 4112000, 4128000,
+	4144000, 4160000, 4176000, 4192000,
+	4208000, 4224000, 4240000, 4256000,
+	4272000, 4288000, 4304000, 4320000,
+	4336000, 4352000, 4375000, 4375000,
+	4400000
+};
+#else
 const unsigned int VBAT_CV_VTH[] = {
 	3504000, 3520000, 3536000, 3552000,
 	3568000, 3584000, 3600000, 3616000,
@@ -51,6 +71,8 @@ const unsigned int VBAT_CV_VTH[] = {
 	4272000, 4288000, 4304000, 4320000,
 	4336000, 4352000
 };
+#endif
+//zhangchao@wind-mobi.com 20161130 begin
 
 const unsigned int CS_VTH[] = {
 	51200, 57600, 64000, 70400,
@@ -210,7 +232,13 @@ static unsigned int charging_hw_init(void *data)
 	bq24296_set_iterm(0x0);	/* Termination current 128mA */
 
 	if (batt_cust_data.high_battery_voltage_support)
+		//zhangchao@wind-mobi.com 20161130 begin
+		#ifdef CONFIG_WIND_Z168_BATTERY_MODIFY
+		bq24296_set_vreg(0x38);	/* VREG 4.400V by zhangchao */
+		#else
 		bq24296_set_vreg(0x35);	/* VREG 4.352V */
+		#endif
+		//zhangchao@wind-mobi.com 20161130 end
 	else
 		bq24296_set_vreg(0x2C);	/* VREG 4.208V */
 
@@ -283,10 +311,19 @@ static unsigned int charging_set_cv_voltage(void *data)
 
 	static short pre_register_value = -1;
 
+	//zhangchao@wind-mobi.com 20161130 begin
+	#ifdef CONFIG_WIND_Z168_BATTERY_MODIFY
+	if (batt_cust_data.high_battery_voltage_support) {
+		if (cv_value >= BATTERY_VOLT_04_400000_V)
+			cv_value = 4400000;
+	}
+	#else
 	if (batt_cust_data.high_battery_voltage_support) {
 		if (cv_value >= BATTERY_VOLT_04_300000_V)
 			cv_value = 4304000;
 	}
+	#endif
+	//zhangchao@wind-mobi.com 20161130 end
 
 	/* use nearest value */
 	if (BATTERY_VOLT_04_200000_V == cv_value)
