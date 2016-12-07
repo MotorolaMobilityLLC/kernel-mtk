@@ -69,9 +69,9 @@ enum {
  *   KEY_RELEASE : Release key button
  *   KEY_PRESS_RELEASE : Combined action of press-then-release
  */
-#define	KEYEVENT_UP				KEY_UP
+#define	KEYEVENT_UP				KEY_DOWN
 #define	KEYEVENT_UP_ACTION		KEY_PRESS_RELEASE
-#define	KEYEVENT_DOWN			KEY_DOWN
+#define	KEYEVENT_DOWN			KEY_UP
 #define	KEYEVENT_DOWN_ACTION	KEY_PRESS_RELEASE
 
 
@@ -92,9 +92,9 @@ enum {
  *   KEY_RELEASE : Release key button
  *   KEY_PRESS_RELEASE : Combined action of press-then-release
  */
-#define	KEYEVENT_RIGHT			KEY_RIGHT
+#define	KEYEVENT_RIGHT			KEY_LEFT
 #define	KEYEVENT_RIGHT_ACTION	KEY_PRESS_RELEASE
-#define	KEYEVENT_LEFT			KEY_LEFT
+#define	KEYEVENT_LEFT			KEY_RIGHT
 #define	KEYEVENT_LEFT_ACTION		KEY_PRESS_RELEASE
 
 
