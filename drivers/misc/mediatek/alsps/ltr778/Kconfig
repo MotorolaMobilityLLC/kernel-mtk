@@ -1,0 +1,10 @@
+#tuwenzan@wind-mobi.com modify at 20161108 begin
+config MTK_LTR778
+	bool "MTK_LTR778 for MediaTek package"
+	default n
+	help
+	It support different type sensor
+	in this platform. If this option
+	is set, it will support ambient
+	and light sensor MTK_LTR778.
+#tuwenzan@wind-mobi.com modify at 20161108 end

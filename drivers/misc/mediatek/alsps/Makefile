@@ -9,6 +9,7 @@ obj-y   +=  alsps_factory.o
 obj-y   +=  aal_control.o
 #tuwenzan@wind-mobi.com add at 20161108 begin
 obj-$(CONFIG_MTK_MN66238TKDN)	+=  mn66238tkdn/
+obj-$(CONFIG_MTK_LTR778)	+=  ltr778/
 #tuwenzan@wind-mobi.com add at 20161108 end
 ifeq ($(CONFIG_MTK_SCP_SENSORHUB_V1),y)
 obj-$(CONFIG_MTK_ALSPSHUB)      +=  alspshub/
