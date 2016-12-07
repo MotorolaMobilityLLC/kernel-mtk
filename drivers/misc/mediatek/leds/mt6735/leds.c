@@ -705,12 +705,13 @@ int mt_backlight_set_pwm(int pwm_num, u32 level, u32 div,
 }
 
 //wangkangmin@wind-mobi.com 20161108 begin
+#ifdef CONFIG_WIND_CAMERA_CUSTOM
 int flashlight_set_pwm(u32 hduration, u32 lduration, u32 level)
 {
 	struct pwm_spec_config pwm_setting;
-//wangkangmin@wind-mobi.com 20161116 begin
-	pwm_setting.pwm_no = 3;
-//wangkangmin@wind-mobi.com 20161108 end
+//wangkangmin@wind-mobi.com 20161202 begin
+	pwm_setting.pwm_no = 4;
+//wangkangmin@wind-mobi.com 20161202 end
 	pwm_setting.mode = PWM_MODE_FIFO;//PWM_MODE_FIFO; // New mode fifo and periodical mode
 	pwm_setting.pmic_pad = false;
 	pwm_setting.clk_div = CLK_DIV2;	//liuying@wind-mobi.com 20140929 for mt6732 use 26Mhz clk source
@@ -755,9 +756,9 @@ int flashlight_set_pwm(u32 hduration, u32 lduration, u32 level)
 int flashlight_set_pwm_old(u32 hduration, u32 lduration, u32 level)
 {
 	struct pwm_spec_config pwm_setting;
-//wangkangmin@wind-mobi.com 20161116 begin
-	pwm_setting.pwm_no = 3;
-//wangkangmin@wind-mobi.com 20161116 begin
+//wangkangmin@wind-mobi.com 20161202 begin
+	pwm_setting.pwm_no = 4;
+//wangkangmin@wind-mobi.com 20161202 begin
 	pwm_setting.mode = PWM_MODE_OLD;//PWM_MODE_FIFO; // New mode fifo and periodical mode
 	pwm_setting.pmic_pad = false;
 	pwm_setting.clk_div = CLK_DIV2;	//liuying@wind-mobi.com 20150312 for mt6732 use 26Mhz clk source
@@ -786,7 +787,8 @@ int flashlight_set_pwm_old(u32 hduration, u32 lduration, u32 level)
 
 	return 0;
 }
-//wangkangmin@wind-mobi.com 20161108 begin
+#endif
+//wangkangmin@wind-mobi.com 20161108 end
 
 void mt_led_pwm_disable(int pwm_num)
 {

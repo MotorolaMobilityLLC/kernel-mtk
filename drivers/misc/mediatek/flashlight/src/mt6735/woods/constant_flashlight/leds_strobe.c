@@ -94,7 +94,7 @@ static struct work_struct workTimeOut;
 /* #define FLASH_GPIO_ENF GPIO12 */
 /* #define FLASH_GPIO_ENT GPIO13 */
 
-//wangkangmin@wind-mobi.com 20161109 begin
+//wangkangmin@wind-mobi.com 20161202 begin
 int FL_Enable(void)
 {
 	int level =0;
@@ -108,14 +108,15 @@ int FL_Enable(void)
 
 	mtkcam_gpio_set(0, 5, 1);
 
-	}else{
+	}
+	else if(g_duty >= 1 && g_duty <= 9)
+	{
 	
 	printk("enable flash mode \n");
 	mtkcam_gpio_set(0, 7, 0);
 	
-	mtkcam_gpio_set(0, 5, 1);
 	mdelay(6);
-	mt_set_gpio_mode(GPIO80 | 0x80000000, GPIO_MODE_02);
+	mt_set_gpio_mode(GPIO80 | 0x80000000, GPIO_MODE_05);
 	mt_set_gpio_dir(GPIO80 | 0x80000000,1);
 
 	switch(g_duty){
@@ -180,9 +181,16 @@ int FL_Enable(void)
 			level = 98;
 			break;
 		}
-	flashlight_set_pwm_old(hduration,lduration,level);
-	
-	mtkcam_gpio_set(0, 7, 1);
+			flashlight_set_pwm_old(hduration,lduration,level);
+			//mtkcam_gpio_set(0, 5, 1);
+			mdelay(6);
+			mtkcam_gpio_set(0, 7, 1);
+	}
+	else{
+		mtkcam_gpio_set(0, 7, 0);
+		mtkcam_gpio_set(0, 5, 1);
+		mdelay(6);
+		mtkcam_gpio_set(0, 7, 1);
 	}
 	PK_DBG(" FL_Enable line=%d\n", __LINE__);
 	return 0;
@@ -203,7 +211,7 @@ int FL_Disable(void)
 	return 0;
 
 }
-//wangkangmin@wind-mobi.com 20161109 end
+//wangkangmin@wind-mobi.com 20161202 end
 int FL_dim_duty(kal_uint32 duty)
 {
 	PK_DBG(" FL_dim_duty line=%d\n", __LINE__);
