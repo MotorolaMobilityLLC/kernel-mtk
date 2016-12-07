@@ -44,9 +44,9 @@
 
 #define FW_IMAGE_NAME "synaptics/startup_fw_update.img"
 
-#define DO_STARTUP_FW_UPDATE
+//#define DO_STARTUP_FW_UPDATE //tuwenzan@wind-mobi.com close this feature at 20161207
 #ifdef DO_STARTUP_FW_UPDATE
-#include "SynaImage.h"
+#include "SynapticsImage_GD.h"  //tuwenzan@wind-mobi.com modify at 20161202
 #endif
 
 
@@ -126,6 +126,12 @@
 
 #define INT_DISABLE_WAIT_MS 20
 #define ENTER_FLASH_PROG_WAIT_MS 20
+
+//add this file for device info --sunsiyuan@wind-mobi.com add 20161130 begin
+#ifdef CONFIG_WIND_DEVICE_INFO
+extern unsigned int g_ctp_vendor;
+#endif
+//add this file for device info --sunsiyuan@wind-mobi.com add 20161130 end
 
 static int fwu_do_reflash(void);
 
@@ -2264,18 +2270,24 @@ static int fwu_get_device_config_id(void)
 
 	fwu->rmi4_data->config_id = be_to_uint(fwu->config_id);
 	
+	//add this file for device info --sunsiyuan@wind-mobi.com add 20161129 begin
+	#ifdef CONFIG_WIND_DEVICE_INFO
+	g_ctp_vendor = fwu->rmi4_data->config_id;
+	#endif
+	//add this file for device info --sunsiyuan@wind-mobi.com add 20161129 end
+	
 	return 0;
 }
-
+//tuwenzan@wind-mobi.com add at 20161202 begin
 static enum flash_area fwu_go_nogo(void)
 {
 	int retval;
 	enum flash_area flash_area = NONE;
 	unsigned char ii;
 	unsigned char config_id_size;
-	unsigned int device_fw_id;
-	unsigned int image_fw_id;
-	struct synaptics_rmi4_data *rmi4_data = fwu->rmi4_data;
+	//unsigned int device_fw_id;
+	//unsigned int image_fw_id;
+	//struct synaptics_rmi4_data *rmi4_data = fwu->rmi4_data;
 
 	if (fwu->force_update) {
 		flash_area = UI_FIRMWARE;
@@ -2287,7 +2299,7 @@ static enum flash_area fwu_go_nogo(void)
 		flash_area = UI_FIRMWARE;
 		goto exit;
 	}
-
+	#if 0
 	/* Get device firmware ID */
 	device_fw_id = rmi4_data->firmware_id;
 	dev_info(&fwu->rmi4_data->i2c_client->dev,
@@ -2314,7 +2326,7 @@ static enum flash_area fwu_go_nogo(void)
 		flash_area = NONE;
 		goto exit;
 	}
-
+	#endif
 	/* Get device config ID */
 	retval = fwu_get_device_config_id();
 	if (retval < 0) {
@@ -2331,8 +2343,8 @@ static enum flash_area fwu_go_nogo(void)
 		config_id_size = V5V6_CONFIG_ID_SIZE;
 
 	for (ii = 0; ii < config_id_size; ii++) {
-		if (fwu->img.ui_config.data[ii] > fwu->config_id[ii]) {
-			flash_area = UI_CONFIG;
+		if (fwu->img.ui_config.data[ii] != fwu->config_id[ii]) {     // >
+			flash_area = UI_FIRMWARE;
 			goto exit;
 		} else if (fwu->img.ui_config.data[ii] < fwu->config_id[ii]) {
 			flash_area = NONE;
@@ -2358,7 +2370,7 @@ exit:
 
 	return flash_area;
 }
-
+//tuwenzan@wind-mobi.com add at 20161202 begin
 static int fwu_scan_pdt(void)
 {
 	int retval;
