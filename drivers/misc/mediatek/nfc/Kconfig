@@ -29,7 +29,6 @@ config ODM1_NFC_PN548
 	default n
 	help
 	  Y means NFC_PN548 define if use MSTAR NFC Function to provide reader
-	  Card emulation or P2P function. If you are not sure about this, set n.
 
 config ODM2_NFC_PN548
 	tristate "ODM WIND-MOBI used PN548 NFC driver"

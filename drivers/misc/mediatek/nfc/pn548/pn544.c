@@ -70,6 +70,11 @@
 //extern void mt_eint_unmask(unsigned int eint_num);
 //extern void mt_eint_set_hw_debounce(unsigned int eint_num, unsigned int ms);
 //extern void mt_eint_set_polarity(unsigned int eint_num, unsigned int pol);
+
+#ifdef CONFIG_MTK_BOARD_ID
+extern int get_bid_gpio(void);
+#endif
+
 extern void mt_eint_registration(unsigned int eint_num, unsigned int flow, void (EINT_FUNC_PTR)(void), unsigned int is_auto_umask);
 
 struct pn544_dev	
@@ -726,7 +731,13 @@ static int __init pn544_dev_init(void)
 {
 	int ret;
 	printk("pn544_dev_init\n");
-
+#ifdef CONFIG_MTK_BOARD_ID
+	ret=get_bid_gpio();
+	if(ret==1){
+		printk("this board is not support NFC\n");
+		return 0;
+	}
+#endif
 	platform_driver_register(&pn544_platform_driver);
 
 	ret = i2c_add_driver(&pn544_i2c_driver);
