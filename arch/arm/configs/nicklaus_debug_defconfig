@@ -572,3 +572,5 @@ CONFIG_LCT_BOOT_REASON=y
 CONFIG_LCT_MULTI_MD_IMAGE=y
 #add by LCT for gsensor eint by moto request cly 
 CONFIG_LCT_GSENSOR_ADD_EINT=y
+# add by longcheer yufangfang for hx8394f esd check
+CONFIG_LCT_ESD_CHECK_MULTI_REG=y
