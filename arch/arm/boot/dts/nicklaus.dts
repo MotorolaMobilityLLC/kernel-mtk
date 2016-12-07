@@ -338,7 +338,41 @@
 	};  
 /*end LCT */
 
+/*LCT add gsensor eint by cly*/
+	gsensor_intpin_default: gsensordefaultcfg {
+
+	};
+
+	gsensor_pins_eint_as_int: eint@57 {
+	    pins_cmd_dat {
+			pins = <PINMUX_GPIO57__FUNC_GPIO57>;
+			slew-rate = <0>;
+			bias-pull-up = <00>;
+		};
+	};
+
+	gsensor_pins_eint_as_int2: eint@58 {
+	    pins_cmd_dat {
+			pins = <PINMUX_GPIO58__FUNC_GPIO58>;
+			slew-rate = <0>;
+			bias-pull-up = <00>;
+		};
+	};
+/*end LCT*/
 };
+/*LCT add gsensor eint by cly*/
+
+&gsensor {
+
+	pinctrl-names = "pin_default", "state_eint_as_int","state_eint_as_int2";
+	pinctrl-0 = <&gsensor_intpin_default>;
+	pinctrl-1 = <&gsensor_pins_eint_as_int>;
+	pinctrl-2 = <&gsensor_pins_eint_as_int2>;
+
+	status = "okay";
+};
+
+/*end cly */
 &alsps {
 	pinctrl-names = "pin_default", "pin_cfg";
 	pinctrl-0 = <&alsps_intpin_default>;

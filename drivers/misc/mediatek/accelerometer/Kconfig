@@ -23,6 +23,12 @@ config CUSTOM_KERNEL_ACCELEROMETER_MODULE
 	  If the config is set, it means sensor
 	  will build ko module.
 	  This is request fromo Google about odm driver.
+#lct add for gsensor interrupt by cly  
+config LCT_GSENSOR_ADD_EINT
+	bool "LCT_GSENSOR_ADD_EINT"
+	help
+	  add gsensor add  interrupt.
+#end cly
 source "drivers/misc/mediatek/accelerometer/LCT_bmi160-new/Kconfig"
 source "drivers/misc/mediatek/accelerometer/LCT_bma253-new/Kconfig"
 #tuwenzan@wind-mobi.com modify at 20161108 begin
