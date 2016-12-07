@@ -230,7 +230,7 @@ static struct smtc_reg_data sx9310_i2c_reg_setup[] = {
 
 static struct _buttonInfo psmtcButtons[] = {
   {
-    .keycode = KEY_0,
+    .keycode = KEY_UNKNOWN,  //tuwenzan@wind-mobi.com modify at 20161130
     .mask = SX9310_TCHCMPSTAT_TCHSTAT0_FLAG,
   },
   {
