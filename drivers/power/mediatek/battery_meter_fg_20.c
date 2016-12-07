@@ -1699,7 +1699,14 @@ int force_get_tbat(kal_bool update)
 	} else {
 		bat_temperature_val = pre_bat_temperature_val;
 	}
+	//zhangchao@wind-mobi.com 20161217 begin
+	#ifdef CONFIG_WIND_Z168_TEST
+	battery_log(BAT_LOG_CRTI, "[BATTERY]fix batteryTemp=25!!\r\n");
+	return 25;
+	#else
 	return bat_temperature_val;
+	#endif
+	//zhangchao@wind-mobi.com 20161217 end
 #endif
 }
 EXPORT_SYMBOL(force_get_tbat);
