@@ -605,7 +605,7 @@ int kdCISModulePowerOn(CAMERA_DUAL_CAMERA_SENSOR_ENUM SensorIdx, char *currSenso
 			mdelay(5);
 
 		} 
-//wangkangmin@wind-mobi.com 20161206 begin
+//wangkangmin@wind-mobi.com 20161207 begin
 		else if (currSensorName
 			   && (pinSetIdx == 1) && (0 == strcmp(SENSOR_DRVNAME_S5K5E8YX_MIPI_RAW, currSensorName))) {
 			/* First Power Pin low and Reset Pin Low */
@@ -749,7 +749,7 @@ int kdCISModulePowerOn(CAMERA_DUAL_CAMERA_SENSOR_ENUM SensorIdx, char *currSenso
 			mdelay(5);
 
 		}else if (currSensorName
-			   && pinSetIdx == 0 &&(0 == strcmp(SENSOR_DRVNAME_IMX219_MIPI_RAW, currSensorName))) {
+			   && (pinSetIdx == 0) &&(0 == strcmp(SENSOR_DRVNAME_IMX219_MIPI_RAW, currSensorName))) {
 			/* First Power Pin low and Reset Pin Low */
 			if (GPIO_CAMERA_INVALID != pinSet[pinSetIdx][IDX_PS_CMPDN])
 				mtkcam_gpio_set(pinSetIdx, CAMPDN,
@@ -871,7 +871,7 @@ int kdCISModulePowerOn(CAMERA_DUAL_CAMERA_SENSOR_ENUM SensorIdx, char *currSenso
 			}
 
 			mdelay(10);
-#if 1
+
 			if (TRUE != _hwPowerOn(VCAMD, VOL_1200)) {
 				PK_DBG
 				    ("[CAMERA SENSOR] Fail to enable digital power (VCAM_D),power id = %d\n",
@@ -880,7 +880,7 @@ int kdCISModulePowerOn(CAMERA_DUAL_CAMERA_SENSOR_ENUM SensorIdx, char *currSenso
 			}
 
 			mdelay(10);
-#endif
+
 			if (GPIO_CAMERA_INVALID != pinSet[1-pinSetIdx][IDX_PS_CMRST]) {
 				mtkcam_gpio_set(1-pinSetIdx, CAMRST,
 						pinSet[1-pinSetIdx][IDX_PS_CMRST + IDX_PS_OFF]);
@@ -913,7 +913,7 @@ int kdCISModulePowerOn(CAMERA_DUAL_CAMERA_SENSOR_ENUM SensorIdx, char *currSenso
 			mdelay(5);
 
 		}
-//wangkangmin@wind-mobi.com 20161206 end
+//wangkangmin@wind-mobi.com 20161207 end
 		else {
 			/* First Power Pin low and Reset Pin Low */
 			if (GPIO_CAMERA_INVALID != pinSet[pinSetIdx][IDX_PS_CMPDN]) {
@@ -1115,7 +1115,7 @@ int kdCISModulePowerOn(CAMERA_DUAL_CAMERA_SENSOR_ENUM SensorIdx, char *currSenso
 			}
 
 		} 
-//wangkangmin@wind-mobi.com 20161206 begin
+//wangkangmin@wind-mobi.com 20161207 begin
 		else if (currSensorName
 			   && (pinSetIdx == 1) && (0 == strcmp(SENSOR_DRVNAME_S5K5E8YX_MIPI_RAW, currSensorName))) {
 			/* Set Power Pin low and Reset Pin Low */
@@ -1189,7 +1189,7 @@ int kdCISModulePowerOn(CAMERA_DUAL_CAMERA_SENSOR_ENUM SensorIdx, char *currSenso
 			}
 
 		} else if (currSensorName
-			   && pinSetIdx == 0 &&(0 == strcmp(SENSOR_DRVNAME_IMX219_MIPI_RAW, currSensorName))) {
+			   && (pinSetIdx == 0) &&(0 == strcmp(SENSOR_DRVNAME_IMX219_MIPI_RAW, currSensorName))) {
 			/* Set Power Pin low and Reset Pin Low */
 			if (GPIO_CAMERA_INVALID != pinSet[pinSetIdx][IDX_PS_CMPDN]) {
 				mtkcam_gpio_set(pinSetIdx, CAMPDN,
@@ -1238,7 +1238,7 @@ int kdCISModulePowerOn(CAMERA_DUAL_CAMERA_SENSOR_ENUM SensorIdx, char *currSenso
 			/* Set Power Pin low and Reset Pin Low */
 			if (GPIO_CAMERA_INVALID != pinSet[pinSetIdx][IDX_PS_CMPDN]) {
 				mtkcam_gpio_set(pinSetIdx, CAMPDN,
-						pinSet[pinSetIdx][IDX_PS_CMPDN + IDX_PS_ON]);
+						pinSet[pinSetIdx][IDX_PS_CMPDN + IDX_PS_OFF]);
 			}
 			/* Set Reset Pin Low */
 			if (GPIO_CAMERA_INVALID != pinSet[pinSetIdx][IDX_PS_CMRST]) {
@@ -1279,7 +1279,7 @@ int kdCISModulePowerOn(CAMERA_DUAL_CAMERA_SENSOR_ENUM SensorIdx, char *currSenso
 				goto _kdCISModulePowerOn_exit_;
 			}
 		}
-//wangkangmin@wind-mobi.com 20161206 end
+//wangkangmin@wind-mobi.com 20161207 end
 		else {
 			if (GPIO_CAMERA_INVALID != pinSet[pinSetIdx][IDX_PS_CMPDN]) {
 				mtkcam_gpio_set(pinSetIdx, CAMPDN,
