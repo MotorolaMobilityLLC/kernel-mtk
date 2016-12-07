@@ -40,6 +40,12 @@ LCM_DRIVER *lcm_driver_list[] = {
 #endif
 //xuzhifeng@wind-mobi.com 20161108 end
 
+//liujinzhou@wind-mobi.com add at 20161130 begin
+#if defined(HX8394F_HD720_DSI_VDO_BOE)
+   &hx8394f_hd720_dsi_vdo_boe_lcm_drv,
+#endif
+//liujinzhou@wind-mobi.com add at 20161130 end
+
 #if defined(OTM1284A_HD720_DSI_VDO_TM)
 	&otm1284a_hd720_dsi_vdo_tm_lcm_drv,
 #endif
