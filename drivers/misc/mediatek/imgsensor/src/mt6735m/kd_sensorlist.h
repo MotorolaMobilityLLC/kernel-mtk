@@ -130,10 +130,14 @@ UINT32 T4KA7_MIPI_RAW_SensorInit(PSENSOR_FUNCTION_STRUCT *pfFunc);
 /*Others*/
 UINT32 ISX012_MIPI_YUV_SensorInit(PSENSOR_FUNCTION_STRUCT *pfFunc);
 UINT32 T8EV5_YUV_SensorInit(PSENSOR_FUNCTION_STRUCT *pfFunc);
-//wangkangmin@wind-mobi.com 20161108 begin
+//wangkangmin@wind-mobi.com 20161206 begin
+#ifdef CONFIG_WIND_CAMERA_CUSTOM
 /*project*/
 UINT32 S5K5E8YX_MIPI_RAW_SensorInit(PSENSOR_FUNCTION_STRUCT *pfFunc);
-//wangkangmin@wind-mobi.com 20161108 end
+UINT32 S5K4H8_MIPI_RAW_SensorInit(PSENSOR_FUNCTION_STRUCT *pfFunc);
+UINT32 S5K5E8YX_MIPI_RAW_SensorInit_xy(PSENSOR_FUNCTION_STRUCT *pfFunc);
+#endif
+//wangkangmin@wind-mobi.com 20161206 end
 //! Add Sensor Init function here
 //! Note:
 //! 1. Add by the resolution from ""large to small"", due to large sensor
@@ -151,16 +155,21 @@ ACDK_KD_SENSOR_INIT_FUNCTION_STRUCT kdSensorList[MAX_NUM_OF_SUPPORT_SENSOR+1] =
     {HI553_SENSOR_ID, SENSOR_DRVNAME_HI553_MIPI_RAW, HI553MIPI_RAW_SensorInit},
 #endif
 #endif  
-//add end  
-//wangkangmin@wind-mobi.com 20161108 begin
+#ifdef CONFIG_WIND_CAMERA_CUSTOM
 /*project*/
 #if defined(IMX219_MIPI_RAW)
     {IMX219_SENSOR_ID, SENSOR_DRVNAME_IMX219_MIPI_RAW, IMX219_MIPI_RAW_SensorInit},
 #endif
+#if defined(S5K4H8_MIPI_RAW)
+    {S5K4H8_SENSOR_ID, SENSOR_DRVNAME_S5K4H8_MIPI_RAW, S5K4H8_MIPI_RAW_SensorInit},
+#endif
 #if defined(S5K5E8YX_MIPI_RAW)
     {S5K5E8YX_SENSOR_ID, SENSOR_DRVNAME_S5K5E8YX_MIPI_RAW, S5K5E8YX_MIPI_RAW_SensorInit},
 #endif
-//wangkangmin@wind-mobi.com 20161108 end
+#if defined(S5K5E8YX_MIPI_RAW_XY)
+    {S5K5E8YX_SENSOR_ID_XY, SENSOR_DRVNAME_S5K5E8YX_MIPI_RAW_XY, S5K5E8YX_MIPI_RAW_SensorInit_xy},
+#endif
+#endif
 /*IMX*/
 #if defined(IMX220_MIPI_RAW)
     {IMX220_SENSOR_ID, SENSOR_DRVNAME_IMX220_MIPI_RAW, IMX220_MIPI_RAW_SensorInit},

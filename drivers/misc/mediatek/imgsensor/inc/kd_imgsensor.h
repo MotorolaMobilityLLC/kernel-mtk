@@ -288,7 +288,13 @@ NSFeature :  : RAWSensorInfo < _id >  :  : getFlickerPara \
 /*Others*/
 #define SHARP3D_SENSOR_ID                       0x003d
 #define T8EV5_SENSOR_ID                         0x1011
-
+//wangkangmin@wind-mobi.com 20161128 begin
+#ifdef CONFIG_WIND_CAMERA_CUSTOM
+/*project*/
+#define S5K4H8_SENSOR_ID                        0x4088
+#define S5K5E8YX_SENSOR_ID_XY                   0x5e80+1
+#endif
+//wangkangmin@wind-mobi.com 20161128 end
 /* CAMERA DRIVER NAME */
 #define CAMERA_HW_DEVNAME                       "kd_camera_hw"
 /* SENSOR DEVICE DRIVER NAME */
@@ -436,6 +442,13 @@ NSFeature :  : RAWSensorInfo < _id >  :  : getFlickerPara \
 /*Test*/
 #define SENSOR_DRVNAME_IMX135_MIPI_RAW_5MP      "imx135mipiraw5mp"
 #define SENSOR_DRVNAME_IMX135_MIPI_RAW_8MP      "imx135mipiraw8mp"
+//wangkangmin@wind-mobi add for camera 20161205 begin
+#ifdef CONFIG_WIND_CAMERA_CUSTOM
+/*project*/
+#define SENSOR_DRVNAME_S5K4H8_MIPI_RAW          "s5k4h8mipiraw"
+#define SENSOR_DRVNAME_S5K5E8YX_MIPI_RAW_XY     "s5k5e8yxmipirawxy"
+#endif
+//wangkangmin@wind-mobi add for camera 20161205 end
 /*******************************************************************************
 *
 ********************************************************************************/
