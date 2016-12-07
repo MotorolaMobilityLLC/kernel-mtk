@@ -14,6 +14,29 @@ config POWER_SUPPLY_DEBUG
 	  Say Y here to enable debugging messages for power supply class
 	  and drivers.
 
+# zhangchao@wind-mobi.com 20161128 begin
+config WIND_Z168_BATTERY_MODIFY
+	bool "Z168 battery modify"
+	help
+	  Say Y here to enable debugging messages for Z168 battery
+	  and drivers.
+# zhangchao@wind-mobi.com 20161128 end
+
+# zhangchao@wind-mobi.com 20161128 begin
+config WIND_BATTERY_MODIFY
+	bool "Wind battery modify"
+	help
+	  Say Y here to enable debugging messages for wind battery
+	  and drivers.
+# zhangchao@wind-mobi.com 20161128 end
+
+# zhangchao@wind-mobi.com 20161202 begin
+config WIND_THREMAL_CURRENT
+	bool "charging current management"
+	help
+		Say Y here to use wind code
+# zhangchao@wind-mobi.com 20161202 end
+		
 config PDA_POWER
 	tristate "Generic PDA/phone power driver"
 	depends on !S390

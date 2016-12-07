@@ -55,8 +55,18 @@
 #define BATTERY_AVERAGE_DATA_NUMBER	3
 #define BATTERY_AVERAGE_SIZE 30
 
+//zhangchao@wind-mobi.com 20161128 begin
+#define BAT_LOW_TEMP_PROTECT_ENABLE
+//zhangchao@wind-mobi.com 20161128 end
+
 /* charger error check */
+//zhangchao@wind-mobi.com 20161128 begin
+#ifdef CONFIG_WIND_BATTERY_MODIFY
+#define V_CHARGER_ENABLE 1				/* 1:ON , 0:OFF	*/
+#else
 #define V_CHARGER_ENABLE 0				/* 1:ON , 0:OFF	*/
+#endif
+//zhangchao@wind-mobi.com 20161128 end
 #define V_CHARGER_MAX 6500				/* 6.5 V	*/
 #define V_CHARGER_MIN 4400				/* 4.4 V	*/
 
@@ -76,6 +86,11 @@
 */
 /* High battery support */
 /*#define HIGH_BATTERY_VOLTAGE_SUPPORT*/
+//zhangchao@wind-mobi.com 20161130 begin
+#ifdef CONFIG_WIND_Z168_BATTERY_MODIFY
+#define HIGH_BATTERY_VOLTAGE_SUPPORT
+#endif
+//zhangchao@wind-mobi.com 20161130 end
 
 /* JEITA parameter */
 /*#define MTK_JEITA_STANDARD_SUPPORT*/

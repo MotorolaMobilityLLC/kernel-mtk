@@ -89,11 +89,13 @@ unsigned int g_usb_state = USB_UNCONFIGURED;
 static bool usb_unlimited;
 #if defined(CONFIG_MTK_HAFG_20)
 #ifdef HIGH_BATTERY_VOLTAGE_SUPPORT
-BATTERY_VOLTAGE_ENUM g_cv_voltage = BATTERY_VOLT_04_340000_V;
+//zhangchao@wind-mobi.com 20161130 begin
+#ifdef CONFIG_WIND_Z168_BATTERY_MODIFY
+BATTERY_VOLTAGE_ENUM g_cv_voltage = BATTERY_VOLT_04_400000_V;
 #elif defined(CONFIG_LCT_CHR_HIGH_BATTERY_VOLTAGE_SUPPORT)
 BATTERY_VOLTAGE_ENUM g_cv_voltage = BATTERY_VOLT_04_400000_V;
 #else
-BATTERY_VOLTAGE_ENUM g_cv_voltage = BATTERY_VOLT_04_200000_V;
+BATTERY_VOLTAGE_ENUM g_cv_voltage = BATTERY_VOLT_04_340000_V;
 #endif
 unsigned int get_cv_voltage(void)
 {
@@ -486,6 +488,12 @@ unsigned int set_bat_charging_current_limit(int current_limit)
 {
 	CHR_CURRENT_ENUM chr_type_ichg = 0;
 	CHR_CURRENT_ENUM chr_type_aicr = 0;
+	
+	//zhangchao@wind-mobi.com 20161202 begin
+	#ifdef CONFIG_WIND_THREMAL_CURRENT
+        return 0;
+        #endif
+	//zhangchao@wind-mobi.com 20161202 end
 
 	mutex_lock(&g_ichg_access_mutex);
 	if (current_limit != -1) {
@@ -943,8 +951,10 @@ static void mtk_select_cv(void)
 	if (batt_cust_data.high_battery_voltage_support)
 #ifdef CONFIG_LCT_CHR_HIGH_BATTERY_VOLTAGE_SUPPORT
 		cv_voltage = BATTERY_VOLT_04_400000_V;
+#elif defined(CONFIG_WIND_Z168_BATTERY_MODIFY)
+		cv_voltage = BATTERY_VOLT_04_400000_V;
 #else
-		cv_voltage = BATTERY_VOLT_04_340000_V;
+        cv_voltage = BATTERY_VOLT_04_340000_V;
 #endif
 	else
 		cv_voltage = BATTERY_VOLT_04_200000_V;
@@ -1164,10 +1174,21 @@ PMU_STATUS BAT_BatteryHoldAction(void)
 	return PMU_STATUS_OK;
 }
 
+//zhangchao@wind-mobi.com 20161128 begin
+#ifdef CONFIG_WIND_BATTERY_MODIFY 
+extern unsigned int g_batt_temp_status ;
+#endif
+//zhangchao@wind-mobi.com 20161128 end
 
 PMU_STATUS BAT_BatteryStatusFailAction(void)
 {
+	 //zhangchao@wind-mobi.com 20161128 begin
+	#ifdef CONFIG_WIND_BATTERY_MODIFY
+	unsigned int charging_enable = KAL_FALSE;
+	#else
 	unsigned int charging_enable;
+	#endif
+	//zhangchao@wind-mobi.com 20161128 begin
 
 	battery_log(BAT_LOG_CRTI, "[BATTERY] BAD Battery status... Charging Stop !!\n\r");
 
@@ -1189,7 +1210,29 @@ PMU_STATUS BAT_BatteryStatusFailAction(void)
 	BMT_status.POSTFULL_charging_time = 0;
 
 	/*  Disable charger */
+	//zhangchao@wind-mobi.com 20161128 begin
+	#ifdef CONFIG_WIND_BATTERY_MODIFY
+	BMT_status.charger_vol=battery_meter_get_charger_voltage();
+	if((BMT_status.charger_vol < ( batt_cust_data.v_charger_max-300))&&(BMT_status.charger_protect_status == charger_OVER_VOL)&&(g_batt_temp_status ==TEMP_POS_NORMAL))
+	{			
+		BMT_status.bat_charging_state = CHR_CC;
+		charging_enable = KAL_TRUE;
+		BMT_status.charger_protect_status = 0;
+	}
+	else if((BMT_status.charger_vol > ( batt_cust_data.v_charger_min+300))&&(BMT_status.charger_protect_status == charger_UNDER_VOL)&&(g_batt_temp_status ==TEMP_POS_NORMAL))
+	{
+		BMT_status.bat_charging_state = CHR_CC;
+		charging_enable = KAL_TRUE;
+		BMT_status.charger_protect_status = 0;
+	}
+	else 
+	{
+		charging_enable = KAL_FALSE;
+	}
+	#else
 	charging_enable = KAL_FALSE;
+	#endif
+	//zhangchao@wind-mobi.com 20161128 end
 	battery_charging_control(CHARGING_CMD_ENABLE, &charging_enable);
 
 	/* Disable PE+/PE+20 */
