@@ -30,24 +30,52 @@ static int board_id_mojar=789;
 static int board_id_minor=0;
 static int num=0;
 char num1,num2,num3,num4,num5=0;
-char *board_str=NULL;
+static char *board_str=NULL;
+extern char* saved_command_line;
+
 //class node ,DEV
 static struct class *bid_class=NULL;
 static struct board_id_dev *biddev=NULL;
+/* for test lk pid param is ok??*/
+// parse bid param
+int get_bid_gpio(void)
+{
+	int ret=0;
+	char *p= NULL;
+	char tmp[10];
+	p = strstr(saved_command_line, "bid_num=");
+	p +=strlen("bid_num=");
 
+	memset(tmp,0,10);
+	strncpy(tmp,p,6);
+	if (p == NULL) {
+		printk("[NFC driver]can not get bid size from lk\n");
+	} else {
+		printk("[NFC driver] bid is %s\n",tmp);
+	}
+	
+
+	if(strncmp(tmp,"00011",5)!=0||!strncmp(tmp,"01001",5)!=0)
+		ret =1;
+
+	return ret;
+}
 //file ops
 static ssize_t  bid_dev_read(struct file *filp, char __user *buf, size_t count, loff_t *offset){
 	//int ret =0;
+	//char *bid_num=NULL;
 	struct board_id_dev *biddev=filp->private_data;
 	if(count>BID_MAX_SIZE){
 		printk("dev max size >128 \n");
 	}
 	mutex_lock(&biddev->board_mutex);
-	if(board_str==NULL){
+	/*if(board_str==NULL){
 		printk("board id is NULL \n");
 		return 0;
-	}
-	if(copy_to_user(buf,board_str,sizeof(*board_str))){
+	}*/
+	////
+	//sprintf(bid_num,"%s",num);
+	if(copy_to_user(buf,&num,sizeof(num))){
 		return 0;
 	}
 	mutex_unlock(&biddev->board_mutex);
@@ -209,7 +237,7 @@ static int bid_platform_probe(struct platform_device *pdev){
 	num2=mt_get_gpio_in(GPIO_TYPE_ID2);
 	#endif
 	
-	#ifdef GPIO_TYPE_ID5	
+	#ifdef GPIO_TYPE_ID1	
 	mt_set_gpio_mode(GPIO_TYPE_ID1, GPIO_MODE_00);	
 	mt_set_gpio_dir(GPIO_TYPE_ID1, GPIO_DIR_IN);
 	num1=mt_get_gpio_in(GPIO_TYPE_ID1);
@@ -254,7 +282,7 @@ static int bid_platform_probe(struct platform_device *pdev){
 		board_str="01010";
 		break;
 	case ROLA_SS_NA_DVT:		//0B
-		board_str="001011";
+		board_str="01011";
 		break;
 	default:
 		break;
