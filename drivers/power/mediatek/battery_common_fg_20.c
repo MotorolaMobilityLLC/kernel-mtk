@@ -253,6 +253,11 @@ unsigned char fg_ipoh_reset;
 
 static struct workqueue_struct *battery_init_workqueue;
 static struct work_struct battery_init_work;
+//zhangchao@wind-mobi.com 20161128 begin
+#ifdef CONFIG_WIND_Z168_BATTERY_MODIFY
+signed int mt_battery_GetBatteryCurrent(void);
+#endif
+//zhangchao@wind-mobi.com 20161128 end
 
 /* ////////////////////////////////////////////////////////////////////////////// */
 /* FOR ADB CMD */
@@ -339,6 +344,11 @@ static enum power_supply_property battery_props[] = {
 	/* Add for Battery Service */
 	POWER_SUPPLY_PROP_batt_vol,
 	POWER_SUPPLY_PROP_batt_temp,
+	//zhangchao@wind-mobi.com 20161128 begin
+	#ifdef CONFIG_WIND_Z168_BATTERY_MODIFY
+	POWER_SUPPLY_PROP_CURRENT_AVG,
+	#endif
+	//zhangchao@wind-mobi.com 20161128 end
 	/* Add for EM */
 	POWER_SUPPLY_PROP_TemperatureR,
 	POWER_SUPPLY_PROP_TempBattVoltage,
@@ -651,6 +661,13 @@ static int battery_get_property(struct power_supply *psy,
 	case POWER_SUPPLY_PROP_TemperatureR:
 		val->intval = data->BAT_TemperatureR;
 		break;
+	//zhangchao@wind-mobi.com 20161128 begin
+	#ifdef CONFIG_WIND_Z168_BATTERY_MODIFY
+	case POWER_SUPPLY_PROP_CURRENT_AVG:
+		val->intval = mt_battery_GetBatteryCurrent();
+		break;
+	#endif
+	//zhangchao@wind-mobi.com 20161128 end
 	case POWER_SUPPLY_PROP_TempBattVoltage:
 		val->intval = data->BAT_TempBattVoltage;
 		break;
@@ -1733,7 +1750,32 @@ static ssize_t store_BatteryPercent(struct device *dev,struct device_attribute *
 }
 static DEVICE_ATTR(BatteryPercent, 0664, show_BatteryPercent, store_BatteryPercent);
 #endif
+//zhangchao@wind-mobi.com 20161128 begin
+#ifdef CONFIG_WIND_Z168_BATTERY_MODIFY
+static ssize_t show_Charging_disable(struct device *dev, struct device_attribute *attr, char *buf)
+{
+	int chr_sign;
+	chr_sign = cmd_discharging;
+	battery_log(BAT_LOG_CRTI, "zhangchao cmd_discharging = %d\n", chr_sign);
+	return sprintf(buf, "%d\n", chr_sign);
+}
 
+static ssize_t store_Charging_disable(struct device *dev, struct device_attribute *attr,
+				  const char *buf, size_t size)
+{
+       if (kstrtouint(buf, 10, &cmd_discharging) == 1) {
+		battery_log(BAT_LOG_CRTI, "zhangchao not charging cmd_discharging = %d\n", cmd_discharging);
+	}
+	else
+	   {
+	   	battery_log(BAT_LOG_CRTI, "zhangchao 00 be charging cmd_discharging = %d\n", cmd_discharging);
+	   }
+	return cmd_discharging;
+}
+
+static DEVICE_ATTR(Charging_disable, 0664, show_Charging_disable, store_Charging_disable);
+#endif
+//zhangchao@wind-mobi.com 20161128 end
 
 static void mt_battery_update_EM(struct battery_data *bat_data)
 {
@@ -2240,6 +2282,22 @@ static unsigned int mt_battery_average_method(BATTERY_AVG_ENUM type, unsigned in
 	return avgdata;
 }
 
+//zhangchao@wind-mobi.com 20161128 begin
+#ifdef CONFIG_WIND_Z168_BATTERY_MODIFY
+signed int mt_battery_GetBatteryCurrent(void)
+{
+       int i ,avg,ret,sum=0,count=60;
+	for(i=0;i<count;i++)
+		{
+	          ret = battery_meter_get_battery_current();
+		   sum=sum+ret;
+		}
+	avg=sum/count;
+	battery_log(BAT_LOG_CRTI, "zhangchao battery avgcurrent= (%d)\n",avg);
+	return avg/10;
+}
+#endif
+//zhangchao@wind-mobi.com 20161128 begin
 void mt_battery_GetBatteryData(void)
 {
 	unsigned int bat_vol, charger_vol, Vsense, ZCV;
@@ -2401,6 +2459,11 @@ static PMU_STATUS mt_battery_CheckChargerVoltage(void)
 #if (V_CHARGER_ENABLE == 1)
 		if (BMT_status.charger_vol <= batt_cust_data.v_charger_min) {
 			battery_log(BAT_LOG_CRTI, "[BATTERY]Charger under voltage!!\r\n");
+			//zhangchao@wind-mobi.com 20161128 begin
+			#ifdef CONFIG_WIND_BATTERY_MODIFY
+			BMT_status.charger_protect_status = charger_UNDER_VOL;
+			#endif
+			//zhangchao@wind-mobi.com 20161128 end
 			BMT_status.bat_charging_state = CHR_ERROR;
 			status = PMU_STATUS_FAIL;
 		}
@@ -2576,7 +2639,133 @@ static void mt_battery_notify_ICharging_check(void)
 #endif
 }
 
+//zhangchao@wind-mobi.com 20161128 begin
+#ifdef CONFIG_WIND_BATTERY_MODIFY
+static int temperature_num_0=0;
+//static int temperature_num_1=0;
+static int temperature_num_2=0;
+static int temperature_num_3=0;
+static int temperature_num_4=0;
 
+static int temp_over_first_time_0=0;
+//static int temp_over_first_time_1=0;
+static int temp_over_first_time_2=0;
+static int temp_over_first_time_3=0;
+static int temp_over_first_time_4=0;
+static void mt_battery_notify_VBatTemp_check(void)
+{
+#if defined(BATTERY_NOTIFY_CASE_0002_VBATTEMP)
+
+#if defined(MTK_JEITA_STANDARD_SUPPORT)
+	if((BMT_status.temperature >= MAX_CHARGE_TEMPERATURE) || (BMT_status.temperature < TEMP_NEG_10_THRESHOLD))
+#else
+	if(BMT_status.temperature >= batt_cust_data.max_charge_temperature  && BMT_status.temperature <= 57)
+#endif	//#if defined(MTK_JEITA_STANDARD_SUPPORT)
+	{
+		if(BMT_status.charger_exist == KAL_TRUE)
+		{
+			temperature_num_0++;
+			if ((temperature_num_0>=18)||(temp_over_first_time_0==0))
+			{
+				g_BatteryNotifyCode |= 0x0002;
+				battery_log(BAT_LOG_CRTI, "[BATTERY] bat_temp(%d) out of range(too high) with charging\n", BMT_status.temperature);
+				temperature_num_0=0;
+				temp_over_first_time_0=1;
+			}
+		}
+		else
+		{
+			g_BatteryNotifyCode &= ~(0x0002);
+			temp_over_first_time_0=0;
+			temperature_num_0=0;
+		}
+		/*
+		if(BMT_status.charger_exist != KAL_TRUE)
+		{
+			temperature_num_1++;
+			if ((temperature_num_1>=18)||(temp_over_first_time_1==0))
+			{
+				g_BatteryNotifyCode |= 0x0040;
+				battery_log(BAT_LOG_CRTI, "[BATTERY] bat_temp(%d) out of range(too high) with nocharging\n", BMT_status.temperature);
+				temperature_num_1=0;
+				temp_over_first_time_1=1;
+			}
+		}
+		else
+		{
+			g_BatteryNotifyCode &= ~(0x0040);
+			temp_over_first_time_1=0;
+			temperature_num_1=0;
+		}
+		*/
+	}
+
+	//zhangchao@wind-mobi.com 20161128 begin
+	if(BMT_status.temperature > 57 && BMT_status.temperature <= 60)
+	{
+		temperature_num_2++;
+		if ((temperature_num_2>=18)||(temp_over_first_time_2==0))
+		{
+			g_BatteryNotifyCode |= 0x0100;
+			battery_log(BAT_LOG_CRTI, "[BATTERY] bat_temp(%d) out of range(too high), it will poweroff!!!\n", BMT_status.temperature);
+            temperature_num_2=0;
+			temp_over_first_time_2=1;
+		}
+	}
+		else
+		{
+			g_BatteryNotifyCode &= ~(0x0100);
+			temp_over_first_time_2=0;
+			temperature_num_2=0;
+		}
+	//zhangchao@wiind-mobi.com 20161128 end
+
+#ifdef BAT_LOW_TEMP_PROTECT_ENABLE
+	if(BMT_status.temperature < batt_cust_data.min_charge_temperature)
+	{
+		if(BMT_status.charger_exist == KAL_TRUE && BMT_status.temperature > -10)
+		{
+			temperature_num_3++;
+			if ((temperature_num_3>=18)||(temp_over_first_time_3==0))
+			{
+				g_BatteryNotifyCode |= 0x0020;
+				battery_log(BAT_LOG_CRTI, "[BATTERY] bat_temp(%d) out of range(too low) with charging\n", BMT_status.temperature);
+				temperature_num_3=0;
+				temp_over_first_time_3=1;
+			}
+		}
+		else
+		{
+			g_BatteryNotifyCode &= ~(0x0020);
+			temp_over_first_time_3=0;
+			temperature_num_3=0;
+		}
+
+		if(BMT_status.temperature <= -10)
+		{
+			temperature_num_4++;
+			if ((temperature_num_4>=18)||(temp_over_first_time_4==0))
+			{
+				g_BatteryNotifyCode |= 0x0080;
+				battery_log(BAT_LOG_CRTI, "[BATTERY] bat_temp(%d) out of range(too low) ,it will suspend", BMT_status.temperature);
+				temperature_num_4=0;
+				temp_over_first_time_4=1;
+			}
+		}
+		else
+		{
+			g_BatteryNotifyCode &= ~(0x0080);
+			temp_over_first_time_4=0;
+			temperature_num_4=0;
+		}
+	}
+#endif
+	battery_log(BAT_LOG_CRTI, "[BATTERY] BATTERY_NOTIFY_CASE_0002_VBATTEMP (%x)\n", g_BatteryNotifyCode);
+
+#endif
+}
+#else
+//zhangchao@wind-mobi.com 20161128 end
 static void mt_battery_notify_VBatTemp_check(void)
 {
 #if defined(BATTERY_NOTIFY_CASE_0002_VBATTEMP)
@@ -2607,8 +2796,42 @@ static void mt_battery_notify_VBatTemp_check(void)
 
 #endif
 }
+//zhangchao@wind-mobi.com 20161128 begin
+#endif
+//zhangchao@wind-mobi.com 20161128 end
 
+//zhangchao@wind-mobi.com 20161206 begin
+#ifdef CONFIG_WIND_BATTERY_MODIFY
+static int vcharger_num=0;
+static int vchg_over_first_time=0;
+static void mt_battery_notify_VCharger_check(void)
+{
+#if defined(BATTERY_NOTIFY_CASE_0001_VCHARGER)
+	battery_log(BAT_LOG_CRTI, "[BATTERY] mt_battery_notify_VCharger_check charger_vol(%d) \n", BMT_status.charger_vol);
+	if(BMT_status.charger_vol > batt_cust_data.v_charger_max)
+	{
+		vcharger_num++;
+		if((vcharger_num>=18)||(vchg_over_first_time==0))
+		{
+			g_BatteryNotifyCode |= 0x0001;
+			battery_log(BAT_LOG_CRTI, "[BATTERY] BMT_status.charger_vol(%d) > %d mV\n", BMT_status.charger_vol, V_CHARGER_MAX);
+			vcharger_num=0;
+			vchg_over_first_time=1;
+			
+		}
+	}
+	else
+	{
+		g_BatteryNotifyCode &= ~(0x0001);
+		vcharger_num=0;
+		vchg_over_first_time=0;
+	}
 
+	battery_log(BAT_LOG_CRTI,"[BATTERY] BATTERY_NOTIFY_CASE_0001_VCHARGER (%x)\n", g_BatteryNotifyCode);
+#endif
+}
+#else
+//zhangchao@wind-mobi.com 20161206 end
 static void mt_battery_notify_VCharger_check(void)
 {
 #if defined(BATTERY_NOTIFY_CASE_0001_VCHARGER)
@@ -2649,7 +2872,9 @@ static void mt_battery_notify_VCharger_check(void)
 #endif
 #endif
 }
-
+//zhangchao@wind-mobi.com 20161206 begin
+#endif
+//zhangchao@wind-mobi.com 20161206 end
 
 static void mt_battery_notify_UI_test(void)
 {
@@ -3497,7 +3722,13 @@ int charger_hv_detect_sw_thread_handler(void *unused)
 {
 	ktime_t ktime;
 	unsigned int charging_enable;
+	//zhangchao@wind-mobi.com 20161206 begin
+	#ifdef CONFIG_WIND_BATTERY_MODIFY
+	unsigned int hv_voltage = 7000 * 1000;
+	#else
 	unsigned int hv_voltage = batt_cust_data.v_charger_max * 1000;
+	#endif
+	//zhangchao@wind-mobi.com 20161206 end
 	kal_bool hv_status;
 
 
@@ -4190,6 +4421,11 @@ static int battery_probe(struct platform_device *dev)
 	    ret_device_file = device_create_file(&(dev->dev), &dev_attr_BatteryPercent);
 #endif
 		ret_device_file = device_create_file(&(dev->dev), &dev_attr_Pump_Express);
+		//zhangchao@wind-mobi.com 20161128 begin
+		#ifdef CONFIG_WIND_Z168_BATTERY_MODIFY
+		ret_device_file = device_create_file(&(dev->dev), &dev_attr_Charging_disable);
+		#endif
+		//zhangchao@wind-mobi.com 20161128 end
 
 	}
 
