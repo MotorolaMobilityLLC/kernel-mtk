@@ -1955,10 +1955,8 @@ static void Ext_Speaker_Amp_Change(bool enable)
 		AudDrv_GPIO_EXTAMP2_Select(true);
     #endif
 #endif /*CONFIG_MTK_LEGACY*/
-        #ifdef AW8737_MODE_CTRL
-        //ext amp for Z168 ---sunsiyuan@wind-mobi.com add at 20161109 end
         msleep(SPK_WARM_UP_TIME);
-        #endif
+#endif
 		pr_debug("Ext_Speaker_Amp_Change ON-\n");
 	} else {
 		pr_debug("Ext_Speaker_Amp_Change OFF+\n");
@@ -1988,6 +1986,7 @@ static void Ext_Speaker_Amp_Change(bool enable)
 #endif
 		pr_debug("Ext_Speaker_Amp_Change OFF-\n");
 	}
+#endif
 }
 
 #else /*CONFIG_OF*/
