@@ -374,15 +374,40 @@ static int ltr778_ps_enable(struct i2c_client *client, int enable)
 {
 	u8 regdata;
 	int err;
-	struct ltr778_priv *obj = ltr778_obj;
+	int res = 0;
+	//struct ltr778_priv *obj = ltr778_obj;
 
 
 	APS_LOG("ltr778_ps_enable(%d) ...start!\n",enable);
-	
-	atomic_set(&obj->ps_thd_val_high, 2047);
-	atomic_set(&obj->ps_thd_val_low, 0);
-	
-	ltr778_ps_set_thres();	
+
+	// modified by steven
+			res = ltr778_i2c_write_reg( LTR778_PS_THRES_LOW_0, 0x00);
+			if(res < 0)
+			{
+				APS_ERR("PS: enable ps res: %d en: %d \n", res, enable);
+				return res;
+			}
+			
+			res = ltr778_i2c_write_reg( LTR778_PS_THRES_LOW_1, 0x00);
+			if(res < 0)
+			{
+				APS_ERR("PS: enable ps res: %d en: %d \n", res, enable);
+				return res;
+			}
+			
+			res = ltr778_i2c_write_reg( LTR778_PS_THRES_UP_0, 0xFF);
+			if(res < 0)
+			{
+				APS_ERR("PS: enable ps res: %d en: %d \n", res, enable);
+				return res;
+			}
+			
+			res = ltr778_i2c_write_reg( LTR778_PS_THRES_UP_1, 0x07);
+			if(res < 0)
+			{
+				APS_ERR("PS: enable ps res: %d en: %d \n", res, enable);
+				return res;
+			}
 
 	regdata = ltr778_i2c_read_reg(LTR778_PS_CONTR);
 	if (enable != 0) {
@@ -539,7 +564,7 @@ static int ltr778_dynamic_calibrate(void)
 	else {
 		ps_thd_val_high = 1900;
 		ps_thd_val_low  = 1700;	
-		ps_persist_val_high = 2046;
+		ps_persist_val_high = 2047;
 		ps_persist_val_low  = 1800;		
 	}
 
