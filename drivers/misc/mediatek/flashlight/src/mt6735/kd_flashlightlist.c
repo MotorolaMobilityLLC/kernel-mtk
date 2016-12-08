@@ -157,7 +157,7 @@ int flashlight_gpio_set(int pin , int state)
 
 	switch (pin) {
 	case MAIN_FLASHLIGHT_ENT_PIN:
-			printk("mainent MAIN_FLASHLIGHT_ent_PIN state(%d)\n", state);
+			//printk("mainent MAIN_FLASHLIGHT_ent_PIN state(%d)\n", state);
 		if (state == STATE_LOW && !IS_ERR(main_flashlight_ent_low))
 			pinctrl_select_state(flashlight_pinctrl, main_flashlight_ent_low);
 		else if (state == STATE_HIGH && !IS_ERR(main_flashlight_ent_high))
@@ -166,7 +166,7 @@ int flashlight_gpio_set(int pin , int state)
 			logI("%s : set err, pin(%d) state(%d)\n", __func__, pin, state);
 		break;
 	case MAIN_FLASHLIGHT_ENF_PIN:
-		printk("mainenf MAIN_FLASHLIGHT_ENF_PIN state(%d)\n", state);
+		//printk("mainenf MAIN_FLASHLIGHT_ENF_PIN state(%d)\n", state);
 		if (state == STATE_LOW && !IS_ERR(main_flashlight_enf_low))
 			pinctrl_select_state(flashlight_pinctrl, main_flashlight_enf_low);
 		else if (state == STATE_HIGH && !IS_ERR(main_flashlight_enf_high))
@@ -175,7 +175,7 @@ int flashlight_gpio_set(int pin , int state)
 			logI("%s : set err, pin(%d) state(%d)\n", __func__, pin, state);
 		break;
 	case SUB_FLASHLIGHT_ENF_PIN:
-		printk("subenf MAIN_FLASHLIGHT_ENF_PIN state(%d)\n", state);
+		//printk("subenf MAIN_FLASHLIGHT_ENF_PIN state(%d)\n", state);
 		if (state == STATE_LOW && !IS_ERR(sub_flashlight_enf_low))
 			pinctrl_select_state(flashlight_pinctrl, sub_flashlight_enf_low);
 		else if (state == STATE_HIGH && !IS_ERR(sub_flashlight_enf_high))
