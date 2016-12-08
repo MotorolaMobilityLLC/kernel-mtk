@@ -61,14 +61,14 @@ config TWOKEY_REBOOT_OTHER_MODE
 
 	  To compile this driver as a module, choose M here: the
 	  module will be called long_press_reboot_function_setting.
-# tuwenzan@wind-mobi.com modify at 20161207 begin
+
 config KPD_PMIC_LPRST_TD
 	int "Long press reboot timeout period"
 	range 0 3
-	default "0"
+	default "1"
 	---help---
 	  0->8s, 1->11s, 2->14s, 3->5s
-# tuwenzan@wind-mobi.com modify at 20161207 end
+
 config KPD_PWRKEY_USE_EINT
 	bool "power key use keypad key"
 	default n
