@@ -37,6 +37,7 @@
 #include <linux/fs.h>
 #include <linux/compat.h>
 #endif
+#include <linux/delay.h>
 #include "kd_flashlight.h"
 /******************************************************************************
  * Debug configuration
@@ -121,19 +122,37 @@ static bool g_strobe_On;
 static int g_timeOutTimeMs;
 static struct work_struct workTimeOut;
 static void work_timeOutFunc(struct work_struct *data);
+static void open_AM3640_pluse(void);
 enum
 {
 	e_DutyNum = 17,
 };
 
 static int g_duty1 = -1;
+/***************************************************************
+*open_AM3640_pluse jijin.wang add for AW3640
+*duty2 is pluse num(0~15)
+*ILED is LED current
+*ILED = 12.5(16 - duty2)
+****************************************************************/
+void open_AM3640_pluse(void){
+	int i = 0,duty2 = 11;
+	for(i = 0;i< duty2;i++){
+		flashlight_gpio_set(SUB_FLASHLIGHT_ENF_PIN,STATE_HIGH);
+		udelay(1);
+		flashlight_gpio_set(SUB_FLASHLIGHT_ENF_PIN,STATE_LOW);	
+		udelay(1);
+	}
+	flashlight_gpio_set(SUB_FLASHLIGHT_ENF_PIN,STATE_HIGH);
+}
 //static int g_duty2 = -1;
 #if 1//wangjijin add for sub flashlight node
 int FL_set_subflashlight(unsigned int onoff)
 {
 	PK_DBG("<%s:%d>%d\n", __func__, __LINE__, onoff);
 	if(onoff){
-		flashlight_gpio_set(SUB_FLASHLIGHT_ENF_PIN,STATE_HIGH);
+		open_AM3640_pluse();
+		//flashlight_gpio_set(SUB_FLASHLIGHT_ENF_PIN,STATE_HIGH);
 	}else{
 		flashlight_gpio_set(SUB_FLASHLIGHT_ENF_PIN,STATE_LOW);
 	}
@@ -143,7 +162,8 @@ EXPORT_SYMBOL(FL_set_subflashlight);
 #endif 
 int SUB_FL_Enable(void)
 {
-	flashlight_gpio_set(SUB_FLASHLIGHT_ENF_PIN,STATE_HIGH);
+	open_AM3640_pluse();
+	//flashlight_gpio_set(SUB_FLASHLIGHT_ENF_PIN,STATE_HIGH);
 	return 0;
 }
 
