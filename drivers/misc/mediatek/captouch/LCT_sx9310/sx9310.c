@@ -995,6 +995,15 @@ static int SX9311_i2c_detect(struct i2c_client *client, struct i2c_board_info *i
 }
 /*----------------------------------------------------------------------------*/
 
+ void sx9310_calibration(void){
+   uint8_t buffer[8]={0};
+   int err = 0; 
+	//cly add for  0x00=0xff, do re calibrate  20161128
+    buffer[0] = 0xff;
+    err = SX9311_i2c_write_dma(SX9311_i2c_client, 0x00, 1, buffer);
+
+
+}
 /*for 0x41 reg  captouch  1->active, 0->sleep mode cly add 20161117*/
 static void sx9310_sleep(void){
 

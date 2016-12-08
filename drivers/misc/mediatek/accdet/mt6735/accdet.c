@@ -338,6 +338,10 @@ static void disable_micbias_callback(struct work_struct *work)
 	}
 #endif
 }
+//add cly for capsensor do cali  
+#ifdef CONFIG_LCT_CUSTOM_KERNEL_CAPSENSOR
+  extern void sx9310_calibration(void);
+#endif 
 
 static void accdet_eint_work_callback(struct work_struct *work)
 {
@@ -483,6 +487,9 @@ static void accdet_eint_work_callback(struct work_struct *work)
 	enable_irq(accdet_irq);
 	ACCDET_DEBUG("[Accdet]enable_irq  !!!!!!\n");
 #endif
+#ifdef CONFIG_LCT_CUSTOM_KERNEL_CAPSENSOR
+		sx9310_calibration();
+#endif 
 }
 
 static irqreturn_t accdet_eint_func(int irq, void *data)
