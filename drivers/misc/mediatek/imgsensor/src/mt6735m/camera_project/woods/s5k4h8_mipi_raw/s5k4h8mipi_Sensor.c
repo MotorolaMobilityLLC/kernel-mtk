@@ -67,7 +67,7 @@ int OTP_map_id;
 static DEFINE_SPINLOCK(imgsensor_drv_lock);
 static imgsensor_info_struct imgsensor_info = { 
 	.sensor_id = S5K4H8_SENSOR_ID,
-	.checksum_value = 0x45aad8c8,
+	.checksum_value = 0x31f55cce,
 	.pre = {
 		.pclk = 280000000,				//record different mode's pclk
 		.linelength = 3744,				//record different mode's linelength
@@ -909,7 +909,7 @@ static void sensor_init(void)
 	
 	// LSC enable
 	write_cmos_sensor(0x6028, 0x4000);
-	write_cmos_sensor(0x0B00, 0x0180);// liukun@wind-mobi.com 20151120 LSC enable
+	write_cmos_sensor(0x0B00, 0x0080);
  
 }	/*	sensor_init  */
 /**********************************************************************************************************************/
