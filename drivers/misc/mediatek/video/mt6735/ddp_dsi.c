@@ -4100,11 +4100,8 @@ if (hSlot[0] && hSlot[1] && hSlot[2] && hSlot[3]) {
 		DISPMSG("[DSI]enter cmp\n");
 		/* cmp just once and only 1 return value */
 		for (i = 0; i < 3; i++) {
-			printk("yufangfang cmp i=%d\n",i);
 			if (dsi_params->lcm_esd_check_table[i].cmd == 0)
 				break;
-
-			printk("[DSI]enter cmp i=%d\n", i);
 
 			/* read data */
 			//if (hSlot) {
@@ -4181,7 +4178,7 @@ AS_UINT32(DDP_REG_BASE_DSI0 + 0x0c)); */
 			memcpy((void *)(buffer + 4), (void *)&read_data2, 4);
 			memcpy((void *)(buffer + 8), (void *)&read_data3, recv_data_cnt - 8);
 		}
-
+#if 0
 		for (j = 0; j < recv_data_cnt; j++) {
 			DISPDBG("buffer[%d]=0x%x\n", j, buffer[j]);
 		if (buffer[j] != dsi_params->lcm_esd_check_table[i].para_list[j]) {
@@ -4191,6 +4188,55 @@ AS_UINT32(DDP_REG_BASE_DSI0 + 0x0c)); */
 		break;
 		}
 		}
+#else
+switch(recv_data_cnt) 
+                { 
+
+                case 1:                           
+                        if((read_data1.byte0 == dsi_params->lcm_esd_check_table[i].para_list[0]) ) 
+                                { 
+          
+                                result = 0; // esd pass 
+                                } 
+                                else 
+                                {                 
+                                
+                                result = 1; // esd fail 
+                                goto lable; 
+                                } 
+                                break; 
+
+                case 2: 
+                                if((read_data1.byte0==0x0f&&read_data1.byte1==0xf0)||((read_data1.byte0 == dsi_params->lcm_esd_check_table[i].para_list[0]) && (read_data1.byte1 == dsi_params->lcm_esd_check_table[i].para_list[1]))) 
+                                { 
+                                      result = 0; // esd pass 
+                                } 
+                                else 
+                                { 
+                             
+                               		 result = 1; // esd fail 
+                                goto lable; 
+                                } 
+                                break; 
+ 
+                case 3: 
+                                if((read_data1.byte0 == dsi_params->lcm_esd_check_table[i].para_list[0]) && (read_data1.byte1 == dsi_params->lcm_esd_check_table[i].para_list[1]) 
+                                && (read_data1.byte2 == dsi_params->lcm_esd_check_table[i].para_list[2])) 
+                                { 
+           
+                                     result = 0; // esd pass 
+                                } 
+                                else 
+                                { 
+                                     result = 1; // esd fail 
+                                	 goto lable; 
+                                } 
+                                break; 
+        default: 
+                        break; 
+                        }  //switch case 
+#endif
+		
 		} else if (packet_type == 0x11 ||
 			packet_type == 0x12 ||
 			packet_type == 0x21 ||
@@ -4331,7 +4377,7 @@ AS_UINT32(DDP_REG_BASE_DSI0 + 0x0c)); */
 		DSI_DumpRegisters(module, 1);
 		DSI_Reset(module, NULL);
 	}
-
+	lable:
 	return ret;
 }
 #else

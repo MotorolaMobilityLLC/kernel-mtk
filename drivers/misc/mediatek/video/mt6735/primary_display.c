@@ -3823,6 +3823,9 @@ static int primary_display_esd_check_worker_kthread(void *data)
 		}
 #endif
 		ret = primary_display_esd_check();
+#ifdef CONFIG_LCT_ESD_CHECK_MULTI_REG
+		mdelay(50);
+#endif
 		if (ret == 1) {
 			DISPMSG("[ESD]esd check fail, will do esd recovery %d\n", ret);
 			i = esd_try_cnt;
@@ -3830,6 +3833,9 @@ static int primary_display_esd_check_worker_kthread(void *data)
 				DISPMSG("[ESD]esd recovery try:%d\n", i);
 				primary_display_esd_recovery();
 				ret = primary_display_esd_check();
+#ifdef CONFIG_LCT_ESD_CHECK_MULTI_REG
+				mdelay(50);
+#endif
 				if (ret == 0) {
 					DISPMSG("[ESD]esd recovery success\n");
 					break;
@@ -3841,6 +3847,9 @@ static int primary_display_esd_check_worker_kthread(void *data)
 					DISPMSG("disable esd check\n");
 					primary_display_esd_check_enable(0);
 					primary_display_esd_recovery();
+#ifdef CONFIG_LCT_ESD_CHECK_MULTI_REG
+					mdelay(50);
+#endif
 				}
 			}
 		}
