@@ -40,6 +40,8 @@ static u8 g_proximity_en = 0;
 #endif
 #ifdef MTK
 #ifdef MTK_KERNEL_318
+extern u8 *gpDMABuf_va;
+extern u8 *gpDMABuf_pa;
 unsigned int himax_touch_irq = 0;
 int himax_tpd_rst_gpio_number = 2;
 int himax_tpd_int_gpio_number = 1;
@@ -1811,7 +1813,7 @@ inline void himax_ts_work(void)
 #ifdef HX_CHIP_STATUS_MONITOR
 		int j=0;
 #endif
-
+	
 	memset(buf, 0x00, sizeof(buf));
 	memset(hw_reset_check, 0x00, sizeof(hw_reset_check));
 #ifdef MTK
@@ -1883,6 +1885,7 @@ if((diag_cmd) || (HW_RESET_ACTIVATE))
 			ret = i2c_himax_read(ts->client, 0x86, buf, hx_touch_info_size,DEFAULT_RETRY_CNT);
 		}
 	}
+	
 	if (ret < 0)
 #else
 	if (i2c_himax_read(ts->client, 0x86, buf, hx_touch_info_size,DEFAULT_RETRY_CNT))
@@ -1993,8 +1996,16 @@ if((diag_cmd) || (HW_RESET_ACTIVATE))
 		{
 			check_sum_cal += buf[i];
 		}
-		if (check_sum_cal % 0x100 != 0)
+		if (check_sum_cal % 0x100 != 0)//modify by hxl
 		{
+		if (ts->debug_log_level & BIT(0)) {
+			I("%s:Debug raw data:\n", __func__);
+			for (loop_i = 0; loop_i < 128; loop_i++) {
+				I("0x%2.2X ", buf[loop_i]);
+				if (loop_i % 8 == 7)
+					I("\n");
+			}
+		}
 			goto bypass_checksum_failed_packet;
 		}
 #ifdef HX_TP_PROC_2T2R
@@ -2066,7 +2077,15 @@ if((diag_cmd) || (HW_RESET_ACTIVATE))
 		}
 		else
 		{
-			I("[HIMAX TP MSG]%s: header format is wrong!\n", __func__);
+			I("[HIMAX TP MSG]%s: header format is wrong!\n", __func__);//modify by hxl
+			if (ts->debug_log_level & BIT(0)) {
+				I("%s:Debug raw data:\n", __func__);
+				for (loop_i = 0; loop_i < 128; loop_i++) {
+					I("0x%2.2X ", buf[loop_i]);
+					if (loop_i % 8 == 7)
+						I("\n");
+				}
+			}
 		}
 	}
 	else if (diag_cmd == 8)
@@ -2117,6 +2136,7 @@ bypass_checksum_failed_packet:
 			if(vk_press == 0x00)
 				{
 					uint16_t old_finger = ts->pre_finger_mask;
+
 					finger_num = buf[coordInfoSize - 4] & 0x0F;
 					finger_pressed = buf[coordInfoSize - 2] << 8 | buf[coordInfoSize - 3];
 					finger_on = 1;
@@ -2226,6 +2246,7 @@ bypass_checksum_failed_packet:
 					himax_ts_button_func(tpd_key,ts);
 					finger_on = 0;
 				}
+
 #ifdef HX_ESD_WORKAROUND
 				ESD_COUNTER = 0;
 #endif
@@ -2318,6 +2339,7 @@ bypass_checksum_failed_packet:
 				himax_ts_button_func(tpd_key,ts);
 				finger_on = 0;
 			}
+
 #ifdef HX_ESD_WORKAROUND
 				ESD_COUNTER = 0;
 #endif
@@ -2342,14 +2364,11 @@ err_workqueue_out:
 #ifdef HX_TOUCH_REC
 	err_need2recover:
 
-	while(checktouch>0)
-	{
-		if(check_touchData()==1)  //check data which is like MXPT,RX NUM,TX NUM and so on... if it's need torecover
-		{
+	while(checktouch>0){
+		if(check_touchData()==1){  //check data which is like MXPT,RX NUM,TX NUM and so on... if it's need torecover
 			TP_REC();
 			checktouch--;
-		}
-		else{
+		}else{
 			I("Recover Success!!!");
 			break;
 		}
@@ -2357,7 +2376,6 @@ err_workqueue_out:
 	I("%s: Recover FAIL!!!",__func__);
 	goto workqueue_out;
 #endif
-	
 }
 
 static enum hrtimer_restart himax_ts_timer_func(struct hrtimer *timer)
@@ -2400,7 +2418,7 @@ static int touch_event_handler(void *ptr)
 	int ret_event = 0, KEY_EVENT = 0;
 #endif
 #if __WORDSIZE==32
-	struct timespec timeStart;
+	struct timespec timeStart, timeEnd, timeDelta;//modify by hxl
 #elif __WORDSIZE==64
 	struct timespec timeStart, timeEnd, timeDelta;
 #endif
@@ -2415,11 +2433,11 @@ static int touch_event_handler(void *ptr)
 		tpd_flag = 0;
 		set_current_state(TASK_RUNNING);
 
-		if (private_ts->debug_log_level & BIT(2)) {
+//		if (private_ts->debug_log_level & BIT(2)) {
 				getnstimeofday(&timeStart);
 				I(" Irq start time = %ld.%06ld s\n",
 					timeStart.tv_sec, timeStart.tv_nsec/1000);//modify by hxl
-		}
+//		}
 #ifdef HX_SMART_WAKEUP
 	if (atomic_read(&private_ts->suspend_mode)&&(!FAKE_POWER_KEY_SEND)&&(private_ts->SMWP_enable)) {
 		I("Start to parse wake event\n");
@@ -2497,7 +2515,7 @@ static int touch_event_handler(void *ptr)
 #endif
 		himax_ts_work();
 // add by zhaofei - 2016-11-15-19-11
-#if __WORDSIZE==64
+#if __WORDSIZE==32
 		if(private_ts->debug_log_level & BIT(2)) {
 				getnstimeofday(&timeEnd);
 					timeDelta.tv_nsec = (timeEnd.tv_sec*1000000000+timeEnd.tv_nsec)
@@ -2525,17 +2543,14 @@ int himax_ts_register_interrupt(struct i2c_client *client)
 	u32 ints[2] = {0,0};
 	
 	node = of_find_compatible_node(NULL, NULL, "mediatek,mt6735-touch");
-	if (node) 
-	{
+	if (node) {
 		of_property_read_u32_array(node,"debounce", ints, ARRAY_SIZE(ints));
 		gpio_set_debounce(ints[0], ints[1]);
 		himax_touch_irq = irq_of_parse_and_map(node, 0);
 		I("himax_touch_irq=%ud \n",himax_touch_irq);
 		client->irq = himax_touch_irq;
 		ts->client->irq = himax_touch_irq;
-	} 
-	else 
-	{
+	} else {
 		I("[%s] tpd request_irq can not find touch eint device node!.", __func__);
 		
 	}
@@ -2543,14 +2558,11 @@ int himax_ts_register_interrupt(struct i2c_client *client)
 	
 	ts->irq_enabled = 0;
 	ts->use_irq = 0;
-	if(himax_int_gpio_read(ts->pdata->gpio_irq)==0)
-	{
-		for (i=0;i<50;i++)
-		{
+	if(himax_int_gpio_read(ts->pdata->gpio_irq)==0){
+		for (i=0;i<50;i++){
 			ret = i2c_himax_read(ts->client, 0x86, buf, 128,DEFAULT_RETRY_CNT);
 			msleep(10);
-			if(himax_int_gpio_read(ts->pdata->gpio_irq))
-			{
+			if(himax_int_gpio_read(ts->pdata->gpio_irq)){
 				I("%s event stack has been clear\n ",__func__);
 				j++;
 				if(j>5)
@@ -2562,8 +2574,7 @@ int himax_ts_register_interrupt(struct i2c_client *client)
 	//Work functon
 	if (client->irq) {/*INT mode*/
 		ts->use_irq = 1;
-		if(HX_INT_IS_EDGE)
-			{
+		if(HX_INT_IS_EDGE){
 				I("%s edge triiger falling\n ",__func__);
 #ifdef CONFIG_OF_TOUCH
 #ifdef MTK_KERNEL_318
@@ -2579,9 +2590,7 @@ int himax_ts_register_interrupt(struct i2c_client *client)
 				//mt_eint_set_hw_debounce(CUST_EINT_TOUCH_PANEL_NUM, CUST_EINT_TOUCH_PANEL_DEBOUNCE_CN);
 				mt_eint_registration(client->irq, EINTF_TRIGGER_FALLING, tpd_eint_interrupt_handler, 1);
 #endif
-			}
-		else
-			{
+			}else{
 				I("%s level trigger low\n ",__func__);
 #ifdef CONFIG_OF_TOUCH
 #ifdef MTK_KERNEL_318
@@ -2606,8 +2615,7 @@ int himax_ts_register_interrupt(struct i2c_client *client)
 		irq_set_irq_wake(client->irq, 1);
 #endif		
 		touch_thread = kthread_run(touch_event_handler, 0, TPD_DEVICE);
-		if (IS_ERR(touch_thread))
-		{
+		if (IS_ERR(touch_thread)){
 			ret = PTR_ERR(touch_thread);
 			E(" Failed to create kernel thread: %d\n", ret);
 			return ret;
@@ -2720,16 +2728,13 @@ static void himax_fb_register(struct work_struct *work)
 int proximity_enable_from_ps(int on)
 {
 	char buf_tmp[5];
-	if (on)
-	{
+	if (on){
 		touch_report_psensor_input_event(1);//Workaround for screen off on phone APP
 		buf_tmp[0] = 0x92;
 		buf_tmp[1] = 0x01;
 		g_proximity_en=1;
 		enable_irq_wake(private_ts->client->irq);
-	}
-	else
-	{
+	}else{
 		buf_tmp[0] = 0x92;
 		buf_tmp[1] = 0x00;
 		g_proximity_en=0;
@@ -2758,12 +2763,10 @@ static ssize_t himax_debug_level_read(struct file *file, char *buf,
 	ssize_t ret = 0;
 
 	ts_data = private_ts;
-	if(!HX_PROC_SEND_FLAG)
-		{
+	if(!HX_PROC_SEND_FLAG){
 			ret += sprintf(buf, "%d\n", ts_data->debug_log_level);
 			HX_PROC_SEND_FLAG=1;
-		}
-	else
+	}else
 		HX_PROC_SEND_FLAG=0;
 
 	return ret;
@@ -2788,8 +2791,7 @@ static ssize_t himax_debug_level_write(struct file *file, const char *buff,
 	ts = private_ts;
 
 	ts->debug_log_level = 0;
-	for(i=0; i<len-1; i++)
-	{
+	for(i=0; i<len-1; i++){
 		if( buf_tmp[i]>='0' && buf_tmp[i]<='9' )
 			ts->debug_log_level |= (buf_tmp[i]-'0');
 		else if( buf_tmp[i]>='A' && buf_tmp[i]<='F' )
@@ -2838,13 +2840,11 @@ static ssize_t himax_vendor_read(struct file *file, char *buf,
 	ssize_t ret = 0;
 	struct himax_ts_data *ts_data;
 	ts_data = private_ts;
-	if(!HX_PROC_SEND_FLAG)
-		{
+	if(!HX_PROC_SEND_FLAG){
 			ret += sprintf(buf, "%s_FW:%#x,%x_CFG:%#x_SensorId:%#x\n", HIMAX852xes_NAME,
 				ts_data->vendor_fw_ver_H, ts_data->vendor_fw_ver_L, ts_data->vendor_config_ver, ts_data->vendor_sensor_id);
 			HX_PROC_SEND_FLAG=1;
-		}
-	else
+	}else
 		HX_PROC_SEND_FLAG=0;
 
 	return ret;
@@ -2863,13 +2863,11 @@ static ssize_t himax_attn_read(struct file *file, char *buf,
 	struct himax_ts_data *ts_data;
 	ts_data = private_ts;
 
-	if(!HX_PROC_SEND_FLAG)
-		{
+	if(!HX_PROC_SEND_FLAG){
 			sprintf(buf, "attn = %x\n", himax_int_gpio_read(ts_data->pdata->gpio_irq));
 			ret = strlen(buf) + 1;
 			HX_PROC_SEND_FLAG=1;
-		}
-	else
+	}else
 		HX_PROC_SEND_FLAG=0;
 
 	return ret;
@@ -2887,13 +2885,11 @@ static ssize_t himax_int_en_read(struct file *file, char *buf,
 	struct himax_ts_data *ts = private_ts;
 	size_t ret = 0;
 
-	if(!HX_PROC_SEND_FLAG)
-		{
+	if(!HX_PROC_SEND_FLAG){
 			ret += sprintf(buf + ret, "%d ", ts->irq_enabled);
 			ret += sprintf(buf + ret, "\n");
 			HX_PROC_SEND_FLAG=1;
-		}
-		else
+	}else
 			HX_PROC_SEND_FLAG=0;
 
 	return ret;
@@ -2906,13 +2902,11 @@ static ssize_t himax_int_en_write(struct file *file, const char *buff,
 	char buf_tmp[12]= {0};
 	int value, ret=0;
 
-	if (len >= 12)
-	{
+	if (len >= 12){
 		I("%s: no command exceeds 12 chars.\n", __func__);
 		return -EFAULT;
 	}
-	if (copy_from_user(buf_tmp, buff, len))
-	{
+	if (copy_from_user(buf_tmp, buff, len)){
 		return -EFAULT;
 	}
 
@@ -2923,8 +2917,7 @@ static ssize_t himax_int_en_write(struct file *file, const char *buff,
 	else
 		return -EINVAL;
 	if (value) {
-				if(HX_INT_IS_EDGE)
-				{
+				if(HX_INT_IS_EDGE){
 #ifdef MTK
 #ifdef CONFIG_OF_TOUCH
 					himax_int_enable(ts->client->irq,1,true);
@@ -2935,9 +2928,7 @@ static ssize_t himax_int_en_write(struct file *file, const char *buff,
 #endif
 #endif
 
-				}
-				else
-				{
+				}else{
 #ifdef MTK
 #ifdef CONFIG_OF_TOUCH
 					himax_int_enable(ts->client->irq,1,true);
@@ -2975,16 +2966,14 @@ static ssize_t himax_layout_read(struct file *file, char *buf,
 	struct himax_ts_data *ts = private_ts;
 	size_t ret = 0;
 	
-	if(!HX_PROC_SEND_FLAG)
-		{
+	if(!HX_PROC_SEND_FLAG){
 			ret += sprintf(buf + ret, "%d ", ts->pdata->abs_x_min);
 			ret += sprintf(buf + ret, "%d ", ts->pdata->abs_x_max);
 			ret += sprintf(buf + ret, "%d ", ts->pdata->abs_y_min);
 			ret += sprintf(buf + ret, "%d ", ts->pdata->abs_y_max);
 			ret += sprintf(buf + ret, "\n");
 			HX_PROC_SEND_FLAG=1;
-		}
-	else
+	}else
 		HX_PROC_SEND_FLAG=0;
 
 	return ret;
@@ -3000,13 +2989,11 @@ static ssize_t himax_layout_write(struct file *file, const char *buff,
 	int layout[4] = {0};
 	char buf[80] = {0};
 
-	if (len >= 80)
-	{
+	if (len >= 80){
 		I("%s: no command exceeds 80 chars.\n", __func__);
 		return -EFAULT;
 	}
-	if (copy_from_user(buf, buff, len))
-	{
+	if (copy_from_user(buf, buff, len)){
 		return -EFAULT;
 	}
 
@@ -3056,10 +3043,8 @@ static ssize_t himax_fw_debug_read(struct file *file, char *buf,
 	uint16_t loop_i,loop_j;
 	ssize_t ret = 0;
 
-	if(!HX_PROC_SEND_FLAG)
-		{
-			for(loop_j =0; loop_j<3; loop_j++)
-				{
+	if(!HX_PROC_SEND_FLAG){
+			for(loop_j =0; loop_j<3; loop_j++){
 					if(loop_j == 0)
 						register_cmd=0xB1;
 					else if(loop_j == 1)
@@ -3098,13 +3083,11 @@ static ssize_t himax_reset_write(struct file *file, const char *buff,
 {
 	char buf_tmp[12];
 
-	if (len >= 12)
-	{
+	if (len >= 12){
 		I("%s: no command exceeds 12 chars.\n", __func__);
 		return -EFAULT;
 	}
-	if (copy_from_user(buf_tmp, buff, len))
-	{
+	if (copy_from_user(buf_tmp, buff, len)){
 		return -EFAULT;
 	}
 
@@ -3205,8 +3188,7 @@ static int himax_diag_seq_read(struct seq_file *s, void *v)
 	uint32_t loop_i;
 	uint16_t mutual_num, self_num, width;
 #ifdef HX_TP_PROC_2T2R
-	if(Is_2T2R &&(diag_command >= 4 && diag_command <= 6))
-	{
+	if(Is_2T2R &&(diag_command >= 4 && diag_command <= 6)){
 		mutual_num	= x_channel_2 * y_channel_2;
 		self_num	= x_channel_2 + y_channel_2; //don't add KEY_COUNT
 		width		= x_channel_2;
@@ -3303,22 +3285,19 @@ static ssize_t himax_diag_write(struct file *filp, const char __user *buff, size
 	uint8_t flag_debug = 0;
 	char messages[80] = {0};
 
-	if (len >= 80)
-	{
+	if (len >= 80){
 		I("%s: no command exceeds 80 chars.\n", __func__);
 		return -EFAULT;
 	}
-	if (copy_from_user(messages, buff, len))
-	{
+	if (copy_from_user(messages, buff, len)){
 		return -EFAULT;
 	}
 
 	diag_command = messages[0] - '0';
-	if(diag_command > 8)
-		{
+	if(diag_command > 8){
 			E("[Himax]Diag command error!diag_command=0x%x\n",diag_command);
 			return -EFAULT;
-		}
+	}
 	I("[Himax]debug_level_cmd=0x%x\n",debug_level_cmd);
 	if(debug_level_cmd == 'a')
 		flag_debug = 1; 
@@ -3358,8 +3337,7 @@ static ssize_t himax_register_read(struct file *file, char *buf,
 	memset(inData, 0x00, sizeof(inData));
 
 	I("Himax multi_register_command = %d \n",multi_register_command);
-	if(!HX_PROC_SEND_FLAG)
-		{
+	if(!HX_PROC_SEND_FLAG){
 			if (multi_register_command == 1) {
 				base = 0;
 
@@ -5026,28 +5004,21 @@ static ssize_t himax_hitouch_write(struct file *file, const char *buff,
 {
 	char buf[80] = {0};
 
-	if (len >= 80)
-	{
+	if (len >= 80){
 		I("%s: no command exceeds 80 chars.\n", __func__);
 		return -EFAULT;
 	}
-	if (copy_from_user(buf, buff, len))
-	{
+	if (copy_from_user(buf, buff, len)){
 		return -EFAULT;
 	}
 
-	if(buf[0] == '0')
-	{
+	if(buf[0] == '0'){
 		hitouch_command = 0;
-	}
-	else if(buf[0] == '1')
-	{
+	}else if(buf[0] == '1'){
 		hitouch_command = 1;
 		hitouch_is_connect = true;	
 		I("hitouch_is_connect = true\n");	
-	}
-	else if(buf[0] == '2')
-	{
+	}else if(buf[0] == '2'){
 		hitouch_command = 2;
 		hitouch_is_connect = false;
 		I("hitouch_is_connect = false\n"); 
@@ -5070,12 +5041,10 @@ static ssize_t himax_cover_read(struct file *file, char *buf,
 	struct himax_ts_data *ts = private_ts;
 	size_t ret = 0;
 
-	if(!HX_PROC_SEND_FLAG)
-	{
+	if(!HX_PROC_SEND_FLAG){
 		ret = snprintf(buf, PAGE_SIZE, "%d\n", ts->cover_enable);
 		HX_PROC_SEND_FLAG=1;
-	}
-	else
+	}else
 		HX_PROC_SEND_FLAG=0;
 
 	return ret;
@@ -5087,13 +5056,11 @@ static ssize_t himax_cover_write(struct file *file, const char *buff,
 	struct himax_ts_data *ts = private_ts;
 	char buf[80] = {0};
 
-	if (len >= 80)
-	{
+	if (len >= 80){
 		I("%s: no command exceeds 80 chars.\n", __func__);
 		return -EFAULT;
 	}
-	if (copy_from_user(buf, buff, len))
-	{
+	if (copy_from_user(buf, buff, len)){
 		return -EFAULT;
 	}
 
@@ -5125,12 +5092,10 @@ static ssize_t himax_SMWP_read(struct file *file, char *buf,
 	struct himax_ts_data *ts = private_ts;
 	size_t ret = 0;
 
-	if(!HX_PROC_SEND_FLAG)
-	{
+	if(!HX_PROC_SEND_FLAG){
 		ret = snprintf(buf, PAGE_SIZE, "%d\n", ts->SMWP_enable);
 		HX_PROC_SEND_FLAG=1;
-	}
-	else
+	}else
 		HX_PROC_SEND_FLAG=0;
 
 	return ret;
@@ -5142,13 +5107,11 @@ static ssize_t himax_SMWP_write(struct file *file, const char *buff,
 	struct himax_ts_data *ts = private_ts;
 	char buf[80] = {0};
 
-	if (len >= 80)
-	{
+	if (len >= 80){
 		I("%s: no command exceeds 80 chars.\n", __func__);
 		return -EFAULT;
 	}
-	if (copy_from_user(buf, buff, len))
-	{
+	if (copy_from_user(buf, buff, len)){
 		return -EFAULT;
 	}
 
@@ -5177,13 +5140,10 @@ static ssize_t himax_GESTURE_read(struct file *file, char *buf,
 	struct himax_ts_data *ts = private_ts;
 	size_t ret = 0;
 
-	if(HX_PROC_SEND_FLAG<16)
-	{
+	if(HX_PROC_SEND_FLAG<16){
 		ret = sprintf(buf, "ges_en[%d]=%d \n",HX_PROC_SEND_FLAG ,ts->gesture_cust_en[HX_PROC_SEND_FLAG]);
 		HX_PROC_SEND_FLAG++;
-	}
-	else
-	{
+	}else{
 		HX_PROC_SEND_FLAG = 0;
 		ret = 0;
 	}
@@ -5197,18 +5157,15 @@ static ssize_t himax_GESTURE_write(struct file *file, const char *buff,
 	int i =0;
 	char buf[80] = {0};
 
-	if (len >= 80)
-	{
+	if (len >= 80){
 		I("%s: no command exceeds 80 chars.\n", __func__);
 		return -EFAULT;
 	}
-	if (copy_from_user(buf, buff, len))
-	{
+	if (copy_from_user(buf, buff, len)){
 		return -EFAULT;
 	}
 
-	for (i=0;i<16;i++)
-		{
+	for (i=0;i<16;i++){
 			if (buf[i] == '0')
 				ts->gesture_cust_en[i]= 0;
 			else if (buf[i] == '1')
@@ -5216,7 +5173,7 @@ static ssize_t himax_GESTURE_write(struct file *file, const char *buff,
 			else
 				ts->gesture_cust_en[i]= 0;
 			I("gesture en[%d]=%d \n", i, ts->gesture_cust_en[i]);
-		}
+	}
 	return len;
 }
 
@@ -5233,65 +5190,56 @@ static int himax_touch_proc_init(void)
 {
 	printk("xljadd himax_touch_proc_init\n");  
 	himax_touch_proc_dir = proc_mkdir( HIMAX_PROC_TOUCH_FOLDER, NULL);
-	if (himax_touch_proc_dir == NULL)
-	{
-
+	if (himax_touch_proc_dir == NULL){
 		E(" %s: himax_touch_proc_dir file create failed!\n", __func__);
 		return -ENOMEM;
 	}
 
 	himax_proc_debug_level_file = proc_create(HIMAX_PROC_DEBUG_LEVEL_FILE, (S_IWUSR|S_IRUGO),
 		himax_touch_proc_dir, &himax_proc_debug_level_ops);
-	if (himax_proc_debug_level_file == NULL)
-	{
+	if (himax_proc_debug_level_file == NULL){
 		E(" %s: proc debug_level file create failed!\n", __func__);
 		goto fail_1;
 	}
 
 	himax_proc_vendor_file = proc_create(HIMAX_PROC_VENDOR_FILE, (S_IRUGO),
 		himax_touch_proc_dir, &himax_proc_vendor_ops);
-	if(himax_proc_vendor_file == NULL)
-	{
+	if(himax_proc_vendor_file == NULL){
 		E(" %s: proc vendor file create failed!\n", __func__);
 		goto fail_2;
 	}
 
 	himax_proc_attn_file = proc_create(HIMAX_PROC_ATTN_FILE, (S_IRUGO),
 		himax_touch_proc_dir, &himax_proc_attn_ops);
-	if(himax_proc_attn_file == NULL)	
-	{
+	if(himax_proc_attn_file == NULL)	{
 		E(" %s: proc attn file create failed!\n", __func__);
 		goto fail_3;
 	}
 
 	himax_proc_int_en_file = proc_create(HIMAX_PROC_INT_EN_FILE, (S_IWUSR|S_IRUGO),
 		himax_touch_proc_dir, &himax_proc_int_en_ops);
-	if(himax_proc_int_en_file == NULL)
-	{
+	if(himax_proc_int_en_file == NULL){
 		E(" %s: proc int en file create failed!\n", __func__);
 		goto fail_4;
 	}
 
 	himax_proc_layout_file = proc_create(HIMAX_PROC_LAYOUT_FILE, (S_IWUSR|S_IRUGO),
 		himax_touch_proc_dir, &himax_proc_layout_ops);
-	if(himax_proc_layout_file == NULL)
-	{
+	if(himax_proc_layout_file == NULL){
 		E(" %s: proc layout file create failed!\n", __func__);
 		goto fail_5;
 	}
 
 	himax_proc_fw_debug_file = proc_create(HIMAX_PROC_FW_DEBUG_FILE, (S_IRUGO),
 		himax_touch_proc_dir, &himax_proc_fw_debug_ops);
-	if(himax_proc_fw_debug_file == NULL)
-	{
+	if(himax_proc_fw_debug_file == NULL){
 		E(" %s: proc fw debug file create failed!\n", __func__);
 		goto fail_6;
 	}
 #ifdef HX_TP_PROC_RESET
 	himax_proc_reset_file = proc_create(HIMAX_PROC_RESET_FILE, (S_IWUSR),
 		himax_touch_proc_dir, &himax_proc_reset_ops);
-	if(himax_proc_reset_file == NULL)
-	{
+	if(himax_proc_reset_file == NULL){
 		E(" %s: proc reset file create failed!\n", __func__);
 		goto fail_7;
 	}
@@ -5300,8 +5248,7 @@ static int himax_touch_proc_init(void)
 #ifdef HX_TP_PROC_DIAG
 	himax_proc_diag_file = proc_create(HIMAX_PROC_DIAG_FILE, (S_IWUSR|S_IRUGO),
 		himax_touch_proc_dir, &himax_proc_diag_ops);
-	if(himax_proc_diag_file == NULL)
-	{
+	if(himax_proc_diag_file == NULL){
 		E(" %s: proc diag file create failed!\n", __func__);
 		goto fail_8;
 	}
@@ -5310,8 +5257,7 @@ static int himax_touch_proc_init(void)
 #ifdef HX_TP_PROC_REGISTER
 	himax_proc_register_file = proc_create(HIMAX_PROC_REGISTER_FILE, (S_IWUSR|S_IRUGO),
 		himax_touch_proc_dir, &himax_proc_register_ops);
-	if(himax_proc_register_file == NULL)
-	{
+	if(himax_proc_register_file == NULL){
 		E(" %s: proc register file create failed!\n", __func__);
 		goto fail_9;
 	}
@@ -5320,8 +5266,7 @@ static int himax_touch_proc_init(void)
 #ifdef HX_TP_PROC_DEBUG
 	himax_proc_debug_file = proc_create(HIMAX_PROC_DEBUG_FILE, (S_IWUSR|S_IRUGO),
 		himax_touch_proc_dir, &himax_proc_debug_ops);
-	if(himax_proc_debug_file == NULL)
-	{
+	if(himax_proc_debug_file == NULL){
 		E(" %s: proc debug file create failed!\n", __func__);
 		goto fail_10;
 	}
@@ -5330,8 +5275,7 @@ static int himax_touch_proc_init(void)
 #ifdef HX_TP_PROC_FLASH_DUMP
 	himax_proc_flash_dump_file = proc_create(HIMAX_PROC_FLASH_DUMP_FILE, (S_IWUSR|S_IRUGO),
 		himax_touch_proc_dir, &himax_proc_flash_ops);
-	if(himax_proc_flash_dump_file == NULL)
-	{
+	if(himax_proc_flash_dump_file == NULL){
 		E(" %s: proc flash dump file create failed!\n", __func__);
 		goto fail_11;
 	}
@@ -5339,8 +5283,7 @@ static int himax_touch_proc_init(void)
 #ifdef HX_TP_PROC_SELF_TEST
 	himax_proc_self_test_file = proc_create(HIMAX_PROC_SELF_TEST_FILE, (S_IRUGO),
 		himax_touch_proc_dir, &himax_proc_self_test_ops);
-	if(himax_proc_self_test_file == NULL)
-	{
+	if(himax_proc_self_test_file == NULL){
 		E(" %s: proc self_test file create failed!\n", __func__);
 		goto fail_12;
 	}
@@ -5349,8 +5292,7 @@ static int himax_touch_proc_init(void)
 #ifdef HX_TP_PROC_HITOUCH
 	himax_proc_hitouch_file = proc_create(HIMAX_PROC_HITOUCH_FILE, (S_IWUSR|S_IRUGO),
 		himax_touch_proc_dir, &himax_proc_hitouch_ops);
-	if(himax_proc_hitouch_file == NULL)
-	{
+	if(himax_proc_hitouch_file == NULL){
 		E(" %s: proc hitouch file create failed!\n", __func__);
 		goto fail_13;
 	}
@@ -5359,8 +5301,7 @@ static int himax_touch_proc_init(void)
 #ifdef HX_DOT_VIEW
 	himax_proc_cover_file = proc_create(HIMAX_PROC_COVER_FILE, (S_IWUSR|S_IRUGO|S_IWUGO),
 		himax_touch_proc_dir, &himax_proc_cover_ops);
-	if(himax_proc_cover_file == NULL)
-	{
+	if(himax_proc_cover_file == NULL){
 		E(" %s: proc cover file create failed!\n", __func__);
 		goto fail_14;
 	}
@@ -5369,15 +5310,13 @@ static int himax_touch_proc_init(void)
 #ifdef HX_SMART_WAKEUP
 	himax_proc_SMWP_file = proc_create(HIMAX_PROC_SMWP_FILE, (S_IWUSR|S_IRUGO|S_IWUGO),
 		himax_touch_proc_dir, &himax_proc_SMWP_ops);
-	if(himax_proc_SMWP_file == NULL)
-	{
+	if(himax_proc_SMWP_file == NULL){
 		E(" %s: proc SMWP file create failed!\n", __func__);
 		goto fail_15;
 	}
 	himax_proc_GESTURE_file = proc_create(HIMAX_PROC_GESTURE_FILE, (S_IWUSR|S_IRUGO|S_IWUGO),
 		himax_touch_proc_dir, &himax_proc_Gesture_ops);
-	if(himax_proc_GESTURE_file == NULL)
-	{
+	if(himax_proc_GESTURE_file == NULL){
 		E(" %s: proc GESTURE file create failed!\n", __func__);
 		goto fail_16;
 	}
@@ -6031,6 +5970,17 @@ static int himax852xes_probe(struct i2c_client *client, const struct i2c_device_
 	i2c_set_clientdata(client, ts);
 	ts->client = client;
 	ts->dev = &client->dev;
+	
+#ifdef MTK_KERNEL_318// Allocate the MTK's DMA memory
+	client->dev.coherent_dma_mask = DMA_BIT_MASK(32);
+	gpDMABuf_va = (u8 *)dma_alloc_coherent(&client->dev, 4096, (dma_addr_t *)&gpDMABuf_pa, GFP_KERNEL);
+	if(!gpDMABuf_va)
+	{
+		E("Allocate DMA I2C Buffer failed\n");
+		goto err_alloc_MTK_DMA_failed;
+	}
+	memset(gpDMABuf_va, 0, 4096);
+#endif
 
 #if 0
 	/* Remove this since this will cause request_firmware fail.
@@ -6083,7 +6033,7 @@ if (pdata == NULL) { /*Allocate Platform data space*/
 #endif
 
 #ifdef MTK_KERNEL_318
-msg_dma_alloct();
+//msg_dma_alloct();
 himax_gpio_power_config(ts->client);
 #endif
 
@@ -6108,8 +6058,7 @@ himax_gpio_power_config(ts->client);
 		ts->button = pdata->virtual_key;
 #ifdef  HX_TP_PROC_FLASH_DUMP
 		ts->flash_wq = create_singlethread_workqueue("himax_flash_wq");
-		if (!ts->flash_wq)
-		{
+		if (!ts->flash_wq){
 			E("%s: create flash workqueue failed\n", __func__);
 			err = -ENOMEM;
 			goto err_create_flash_wq_failed;
@@ -6344,7 +6293,14 @@ err_dt_platform_data_fail:
 	kfree(ts);
 
 err_alloc_data_failed:
-
+	if(gpDMABuf_va){
+		dma_free_coherent(&client->dev, 4096, gpDMABuf_va, (dma_addr_t)gpDMABuf_pa);
+		gpDMABuf_va = NULL;
+		gpDMABuf_pa = NULL;
+	}
+	
+err_alloc_MTK_DMA_failed:
+	
 err_check_functionality_failed:
 	HX_DRIVER_PROBE_Fial=1;
 	return err;
@@ -6391,6 +6347,13 @@ static int himax852xes_remove(struct i2c_client *client)
 #endif
 		kfree(ts);
 
+#ifdef MTK_KERNEL_318
+		if(gpDMABuf_va){
+			dma_free_coherent(&client->dev, 4096, gpDMABuf_va, (dma_addr_t)gpDMABuf_pa);
+			gpDMABuf_va = NULL;
+			gpDMABuf_pa = NULL;
+		}
+#endif
 	return 0;
 
 }
@@ -6413,13 +6376,10 @@ static void himax852xes_suspend(struct device *dev)
 			return ;
 		}
 	I("%s: Enter suspended. \n", __func__);
-	if(ts->suspended)
-	{
+	if(ts->suspended){
 		I("%s: Already suspended. Skipped. \n", __func__);
 		return ;
-	}
-	else
-	{
+	}else{
 		ts->suspended = true;
 		I("%s: enter \n", __func__);
 	}
@@ -6442,27 +6402,22 @@ static void himax852xes_suspend(struct device *dev)
 		}
 #endif
 #ifdef HX_TP_PROC_FLASH_DUMP
-	if (getFlashDumpGoing())
-	{
+	if (getFlashDumpGoing()){
 		I("[himax] %s: Flash dump is going, reject suspend\n",__func__);
 		return ;
 	}
 #endif
 #ifdef HX_TP_PROC_HITOUCH
-	if(hitouch_is_connect)
-	{
+	if(hitouch_is_connect){
 		I("[himax] %s: Hitouch connect, reject suspend\n",__func__);
 		return ;
 	}
 #endif
 
 #ifdef HX_CHIP_STATUS_MONITOR
-	if(HX_ON_HAND_SHAKING)//chip on hand shaking,wait hand shaking
-	{
-		for(t=0; t<100; t++)
-			{
-				if(HX_ON_HAND_SHAKING==0)//chip on hand shaking end
-					{
+	if(HX_ON_HAND_SHAKING){//chip on hand shaking,wait hand shaking
+		for(t=0; t<100; t++){
+				if(HX_ON_HAND_SHAKING==0){//chip on hand shaking end
 						I("%s:HX_ON_HAND_SHAKING OK check %d times\n",__func__,t);
 						break;
 					}
@@ -6488,8 +6443,7 @@ static void himax852xes_suspend(struct device *dev)
 		buf[0] = 0x8F;
 		buf[1] = 0x20;
 		ret = i2c_himax_master_write(ts->client, buf, 2, DEFAULT_RETRY_CNT);
-		if (ret < 0)
-		{
+		if (ret < 0){
 			E("[himax] %s: I2C access failed addr = 0x%x\n", __func__, ts->client->addr);
 		}
 		I("Enable GESTURE and DOUBLE CLICK, reject suspend \n");
@@ -6502,16 +6456,14 @@ static void himax852xes_suspend(struct device *dev)
 	//Himax 852xes IC enter sleep mode
 	buf[0] = HX_CMD_TSSOFF;
 	ret = i2c_himax_master_write(ts->client, buf, 1, DEFAULT_RETRY_CNT);
-	if (ret < 0)
-	{
+	if (ret < 0){
 		E("[himax] %s: I2C access failed addr = 0x%x\n", __func__, ts->client->addr);
 	}
 	msleep(40);
 
 	buf[0] = HX_CMD_TSSLPIN;
 	ret = i2c_himax_master_write(ts->client, buf, 1, DEFAULT_RETRY_CNT);
-	if (ret < 0)
-	{
+	if (ret < 0){
 		E("[himax] %s: I2C access failed addr = 0x%x\n", __func__, ts->client->addr);
 	}
 	
@@ -6539,22 +6491,18 @@ static void himax852xes_resume(struct device *dev)
 	int t=0;
 #endif
 	struct himax_ts_data *ts = dev_get_drvdata(&hx_i2c_client_point->dev);
-	if(HX_DRIVER_PROBE_Fial)
-		{
+	if(HX_DRIVER_PROBE_Fial){
 			I("%s: Driver probe fail. \n", __func__);
 			return ;
-		}
+	}
 
-	if(ts->resumed)
-		{
+	if(ts->resumed){
 			I("%s: Already resumed. Skipped. \n", __func__);
 			return ;
-		}
-	else
-		{
+	}else{
 			ts->resumed = true;
 			I("%s: enter \n", __func__);
-		}
+	}
 	ts->suspended = false;
 	atomic_set(&ts->suspend_mode, 0);
 
@@ -6563,26 +6511,21 @@ static void himax852xes_resume(struct device *dev)
 #ifdef HX_CHIP_STATUS_MONITOR
 	if(HX_ON_HAND_SHAKING)//chip on hand shaking,wait hand shaking
 	{
-		for(t=0; t<100; t++)
-			{
-				if(HX_ON_HAND_SHAKING==0)//chip on hand shaking end
-					{
+		for(t=0; t<100; t++){
+				if(HX_ON_HAND_SHAKING==0){//chip on hand shaking end
 						I("%s:HX_ON_HAND_SHAKING OK check %d times\n",__func__,t);
 						break;
-					}
-				else
+				}else
 					msleep(1);
 			}
-		if(t==100)
-			{
-				E("%s:HX_ON_HAND_SHAKING timeout reject resume\n",__func__);
+		if(t==100){
+			E("%s:HX_ON_HAND_SHAKING timeout reject resume\n",__func__);
 				return ;
-			}
+		}
 	}
 #endif
 #ifdef HX_SMART_WAKEUP
-	if(ts->SMWP_enable)
-	{
+	if(ts->SMWP_enable){
 		//Sense Off
 		i2c_himax_write_command(ts->client, HX_CMD_TSSOFF, DEFAULT_RETRY_CNT);
 		msleep(40);
@@ -6594,8 +6537,7 @@ static void himax852xes_resume(struct device *dev)
 		buf[0] = 0x8F;
 		buf[1] = 0x00;
 		ret = i2c_himax_master_write(ts->client, buf, 2, DEFAULT_RETRY_CNT);
-		if (ret < 0)
-		{
+		if (ret < 0){
 			E("[himax] %s: I2C access failed addr = 0x%x\n", __func__, ts->client->addr);
 		}
 		msleep(5);
@@ -6704,8 +6646,7 @@ static int himax852xes_local_init(void)
     	return -1;
     } 
 #endif
-    if (i2c_add_driver(&tpd_i2c_driver) != 0)
-    {
+    if (i2c_add_driver(&tpd_i2c_driver) != 0){
         I("unable to add i2c driver.\n");        
         return -1;
     }

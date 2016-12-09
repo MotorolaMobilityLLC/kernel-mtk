@@ -113,7 +113,7 @@
 //#define HX_DOT_VIEW
 //#define HX_PALM_REPORT
 #define HX_ESD_WORKAROUND
-//#define HX_CHIP_STATUS_MONITOR		//for ESD 2nd solution,default off
+#define HX_CHIP_STATUS_MONITOR		//for ESD 2nd solution,default off
 //#define HX_USB_DETECT
 #define HX_USB_DETECT2
 #define HX_TOUCH_REC //if it is enabled,touch panel will auto recover touch data like MXPT
@@ -612,7 +612,7 @@ static int		CFB_INFO_LENGTH 				= 0;
 
 #ifdef HX_CHIP_STATUS_MONITOR
 static int HX_CHIP_POLLING_COUNT;
-static int HX_POLLING_TIMER		=5;//unit:sec
+static int HX_POLLING_TIMER		=3;//unit:sec
 static int HX_POLLING_TIMES		=2;//ex:5(timer)x2(times)=10sec(polling time)
 static int HX_ON_HAND_SHAKING   =0;//
 #endif
