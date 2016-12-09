@@ -499,7 +499,11 @@ unsigned int set_bat_charging_current_limit(int current_limit)
 
 	mutex_lock(&g_ichg_access_mutex);
 	if (current_limit != -1) {
+#ifdef 	CONFIG_LCT_CHR_HIGH_BATTERY_VOLTAGE_SUPPORT
+		g_bcct_flag = 0;//modify by zhangyh to close bcct detect for temp
+#else
 		g_bcct_flag = 1;
+#endif
 		switch (BMT_status.charger_type) {
 		case STANDARD_HOST:
 			chr_type_ichg = batt_cust_data.usb_charger_current;
