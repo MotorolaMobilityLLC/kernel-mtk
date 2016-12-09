@@ -72,6 +72,7 @@
 //extern void mt_eint_set_polarity(unsigned int eint_num, unsigned int pol);
 
 #ifdef CONFIG_MTK_BOARD_ID
+#include "../../board_id/board_id.h"//huyunge@wind-mobi.com 20161209
 extern int get_bid_gpio(void);
 #endif
 
@@ -733,10 +734,27 @@ static int __init pn544_dev_init(void)
 	printk("pn544_dev_init\n");
 #ifdef CONFIG_MTK_BOARD_ID
 	ret=get_bid_gpio();
-	if(ret==1){
-		printk("this board is not support NFC\n");
-		return 0;
+	//huyunge@wind-mobi.com 20161209 start
+	switch(ret){
+			case EMEA_DS_NA_EVT:
+			case EMEA_SS_NA_EVT:
+			case EMEA_DS_NA_DVT:
+			case EMEA_SS_NA_DVT:
+			case LATAM_DS_NA_EVT:
+			case LATAM_DS_NA_DVT:
+			case ROLA_SS_NA_EVT:
+			case ROLA_SS_NA_DVT:
+					printk("this board is not support NFC\n");
+				return 0;
+			case EMEA_SS_NFC_DVT:
+			case EMEA_SS_NFC_EVT:
+				printk("this board is support NFC\n");
+				break;
+			default:
+				printk("this board is no support NFC\n");
+				return 0;
 	}
+	//huyunge@wind-mobi.com 20161209 end
 #endif
 	platform_driver_register(&pn544_platform_driver);
 

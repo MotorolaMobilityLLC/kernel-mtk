@@ -40,7 +40,7 @@ static struct board_id_dev *biddev=NULL;
 // parse bid param
 int get_bid_gpio(void)
 {
-	int ret=0;
+	int ret=0xff;
 	char *p= NULL;
 	char tmp[10];
 	p = strstr(saved_command_line, "bid_num=");
@@ -48,16 +48,61 @@ int get_bid_gpio(void)
 
 	memset(tmp,0,10);
 	strncpy(tmp,p,6);
+	//huyunge@wind-mobi.com 20161208 stat
 	if (p == NULL) {
-		printk("[NFC driver]can not get bid size from lk\n");
+		printk("[get_bid_gpio]can not get bid size from lk\n");
 	} else {
-		printk("[NFC driver] bid is %s\n",tmp);
+		printk("[get_bid_gpio] bid is %s\n",tmp);
 	}
-	
-
-	if(strncmp(tmp,"00011",5)!=0||strncmp(tmp,"01001",5)!=0)
-		ret =1;
-
+	if(strncmp(tmp,"00000",5)==0)
+	{
+		ret = (int)AP_DS_NA_EVT;
+	}
+	else if(strncmp(tmp,"00001",5)==0)
+	{
+		ret = (int)EMEA_DS_NA_EVT;
+	}
+	else if(strncmp(tmp,"00010",5)==0)
+	{
+		ret = (int)EMEA_SS_NA_EVT;
+	}
+	else if(strncmp(tmp,"00011",5)==0)
+	{
+		ret = (int)EMEA_SS_NFC_EVT;
+	}
+	else if(strncmp(tmp,"00100",5)==0)
+	{
+		ret = (int)LATAM_DS_NA_EVT;
+	}
+	else if(strncmp(tmp,"00101",5)==0)
+	{
+		ret = (int)ROLA_SS_NA_EVT;
+	}
+	else if(strncmp(tmp,"00110",5)==0)
+	{
+		ret = (int)AP_DS_NA_DVT;
+	}
+	else if(strncmp(tmp,"00111",5)==0)
+	{
+		ret = (int)EMEA_DS_NA_DVT;
+	}
+	else if(strncmp(tmp,"01000",5)==0)
+	{
+		ret = (int)EMEA_SS_NA_DVT;
+	}
+	else if(strncmp(tmp,"01001",5)==0)
+	{
+		ret = (int)EMEA_SS_NFC_DVT;
+	}
+	else if(strncmp(tmp,"01010",5)==0)
+	{
+		ret = (int)LATAM_DS_NA_DVT;
+	}
+	else if(strncmp(tmp,"01011",5)==0)
+	{
+		ret = (int)ROLA_SS_NA_DVT;
+	}
+	//huyunge@wind-mobi.com 20161208 end
 	return ret;
 }
 //file ops
