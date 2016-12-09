@@ -64,7 +64,150 @@ uint8_t himax_int_gpio_read(int pinnum)
 	return  gpio_get_value(himax_tpd_int_gpio);
 #endif
 }
+
 #ifdef MTK_KERNEL_318
+int i2c_himax_read(struct i2c_client *client, uint8_t command, uint8_t *data, uint8_t length, uint8_t toRetry)
+{
+	int ret=0;
+	s32 retry = 0;
+	u8 buffer[1];
+
+	struct i2c_msg msg[] =
+	{
+		{
+			.addr = (client->addr & I2C_MASK_FLAG),
+			.flags = 0,
+			.buf = buffer,
+			.len = 1,
+			.timing = 400
+		},
+		{
+			.addr = (client->addr & I2C_MASK_FLAG),
+			.ext_flag = (client->ext_flag | I2C_ENEXT_FLAG | I2C_DMA_FLAG),
+			.flags = I2C_M_RD,
+			.buf = gpDMABuf_pa,
+			.len = length,
+			.timing = 400
+		},
+	};
+	mutex_lock(&hx_wr_access);
+	buffer[0] = command;
+
+	if (data == NULL){
+		mutex_unlock(&hx_wr_access);
+		return -1;
+	}
+	for (retry = 0; retry < toRetry; ++retry)
+	{
+		ret = i2c_transfer(client->adapter, &msg[0], 2);
+		if (ret < 0)
+		{
+			continue;
+		}
+		memcpy(data, gpDMABuf_va, length);
+		mutex_unlock(&hx_wr_access);
+		return 0;
+	}
+	printk("Dma I2C Read Error: %d byte(s), err-code: %d", length, ret);//E
+	mutex_unlock(&hx_wr_access);
+	return ret;
+}
+
+int i2c_himax_write(struct i2c_client *client, uint8_t command, uint8_t *buf, uint8_t len, uint8_t toRetry)
+{
+	int rc=0,retry=0;
+	u8 *pWriteData = gpDMABuf_va;
+
+	struct i2c_msg msg[]={
+		{
+		.addr = (client->addr & I2C_MASK_FLAG),
+		.ext_flag = (client->ext_flag | I2C_ENEXT_FLAG | I2C_DMA_FLAG),
+		.flags = 0,
+		.buf = gpDMABuf_pa,
+		.len = len+1,
+		.timing = 400
+		},
+	};
+	mutex_lock(&hx_wr_access);
+	if(!pWriteData)
+	{
+		printk("dma_alloc_coherent failed!\n");//E
+		mutex_unlock(&hx_wr_access);
+		return -1;
+	}
+
+	gpDMABuf_va[0] = command;
+
+	memcpy(gpDMABuf_va+1, buf, len);
+
+	for (retry = 0; retry < toRetry; ++retry)
+	{
+		rc = i2c_transfer(client->adapter, &msg[0], 1);
+		if (rc < 0)
+		{
+			continue;
+		}
+		mutex_unlock(&hx_wr_access);
+		return 0;
+	}
+
+	printk("Dma I2C master write Error: %d byte(s), err-code: %d", len, rc);//
+	mutex_unlock(&hx_wr_access);
+	return rc;
+}
+
+int i2c_himax_read_command(struct i2c_client *client, uint8_t len, uint8_t *buf, uint8_t *readlength, uint8_t toRetry)
+{
+	return 0;
+}
+
+int i2c_himax_write_command(struct i2c_client *client, uint8_t command, uint8_t toRetry)
+{
+	return i2c_himax_write(client, command, NULL, 0, toRetry);
+}
+
+int i2c_himax_master_write(struct i2c_client *client, uint8_t *buf, uint8_t len, uint8_t toRetry)
+{
+	int rc=0, retry=0;
+	u8 *pWriteData = gpDMABuf_va;
+
+	struct i2c_msg msg[] ={
+		{
+		.addr = (client->addr & I2C_MASK_FLAG),
+		.ext_flag = (client->ext_flag | I2C_ENEXT_FLAG | I2C_DMA_FLAG),
+		.flags = 0,
+		.buf = gpDMABuf_pa,
+		.len = len,
+		.timing = 400
+		},
+	};
+
+	mutex_lock(&hx_wr_access);
+	if(!pWriteData)
+	{
+		printk("dma_alloc_coherent failed!\n");//E
+		mutex_unlock(&hx_wr_access);
+		return -1;
+	}
+
+	memcpy(gpDMABuf_va, buf, len);
+	for (retry = 0; retry < toRetry; ++retry)
+	{
+		rc = i2c_transfer(client->adapter, &msg[0], 1);
+		if (rc < 0)
+		{
+			continue;
+		}
+		mutex_unlock(&hx_wr_access);
+		return 0;
+	}
+	printk("Dma I2C master write Error: %d byte(s), err-code: %d", len, rc);//E
+	mutex_unlock(&hx_wr_access);
+	return rc;
+}
+#endif
+
+#if 0 //MTK_KERNEL_318
 int i2c_himax_read(struct i2c_client *client, uint8_t command, uint8_t *data, uint8_t length, uint8_t toRetry)
 {
 	#ifdef I2C_USE_AUTO_DMA 
