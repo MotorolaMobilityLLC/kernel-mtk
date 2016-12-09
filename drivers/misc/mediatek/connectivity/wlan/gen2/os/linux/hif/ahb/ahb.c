@@ -322,9 +322,15 @@ VOID glSetHifInfo(GLUE_INFO_T *GlueInfo, ULONG ulCookie)
 #endif /* CONF_HIF_DEV_MISC */
 	SET_NETDEV_DEV(GlueInfo->prDevHandler, HifInfo->Dev);
 
-	HifInfo->HifRegBaseAddr = ioremap(HIF_DRV_BASE, HIF_DRV_LENGTH);
-	HifInfo->McuRegBaseAddr = ioremap(CONN_MCU_DRV_BASE, CONN_MCU_REG_LENGTH);
-	HifInfo->APMcuRegBaseAddr = ioremap(AP_MCU_DRV_BASE, AP_MCU_TX_RX_LENGTH);
+	if (HifInfo->HifRegBaseAddr == NULL)
+		HifInfo->HifRegBaseAddr = ioremap(HIF_DRV_BASE, HIF_DRV_LENGTH);
+
+	if (HifInfo->McuRegBaseAddr == NULL)
+		HifInfo->McuRegBaseAddr = ioremap(CONN_MCU_DRV_BASE, CONN_MCU_REG_LENGTH);
+
+	if (HifInfo->APMcuRegBaseAddr == NULL)
+		HifInfo->APMcuRegBaseAddr = ioremap(AP_MCU_DRV_BASE, AP_MCU_TX_RX_LENGTH);
+
 	DBGLOG(INIT, INFO, "[WiFi/HIF]HifInfo->HifRegBaseAddr=0x%p, HifInfo->McuRegBaseAddr=0x%p\n",
 	       HifInfo->HifRegBaseAddr, HifInfo->McuRegBaseAddr);
 
@@ -402,6 +408,12 @@ VOID glClearHifInfo(GLUE_INFO_T *GlueInfo)
 	iounmap(GlueInfo->rHifInfo.HifRegBaseAddr);
 	iounmap(GlueInfo->rHifInfo.DmaRegBaseAddr);
 	iounmap(GlueInfo->rHifInfo.McuRegBaseAddr);
+	iounmap(GlueInfo->rHifInfo.APMcuRegBaseAddr);
+	GlueInfo->rHifInfo.HifRegBaseAddr = NULL;
+	GlueInfo->rHifInfo.DmaRegBaseAddr = NULL;
+	GlueInfo->rHifInfo.McuRegBaseAddr = NULL;
+	GlueInfo->rHifInfo.APMcuRegBaseAddr = NULL;
+
 	return;
 
 } /* end of glClearHifInfo() */
