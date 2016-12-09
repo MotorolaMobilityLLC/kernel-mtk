@@ -218,8 +218,11 @@
 #define OCV_BOARD_COMPESATE	0 /*mV */
 #define R_FG_BOARD_BASE 1000
 #define R_FG_BOARD_SLOPE 1000 /*slope*/
+#ifdef CONFIG_LCT_FUG_CUSTOMIZATION
+#define CAR_TUNE_VALUE 100 /*1.00*/
+#else
 #define CAR_TUNE_VALUE 101 /*1.00*/
-
+#endif
 
 /* HW Fuel gague  */
 #define CURRENT_DETECT_R_FG 10  /*1mA*/

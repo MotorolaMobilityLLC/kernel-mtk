@@ -410,3 +410,9 @@ config LCT_CHR_MIDTEST_CURRENT_CHECK
 	help
 	  Set yes to support MIDTEST CURRENT CHECK.
 	  Set no to not support MIDTEST CURRENT CHECK.
+config LCT_FUG_CUSTOMIZATION
+    bool "LCT_FUG_CUSTOMIZATION"
+    default n
+    help
+	  Set yes to support fuegauge customization.
+	  Set no to not support fuegauge customization.
