@@ -4,3 +4,9 @@ config MTK_BOOT_REASON
 	help
 	  MTK Boot Reason Driver is in charge of returning boot reason passing from early booting stage
 
+config LCT_BOOTINFO_SUPPORT
+	bool "Enable LCT boot info"
+	default n
+	help
+	  Based MTK Boot Reason Driver, designed for Lenovo(Moto).
+
