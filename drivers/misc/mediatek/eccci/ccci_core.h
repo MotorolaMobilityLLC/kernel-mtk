@@ -967,4 +967,13 @@ struct c2k_ctrl_port_msg {
 	unsigned char option;
 } __packed; /* not necessary, but it's a good gesture, :) */
 
+// add by zhaofei for SWTP - 2016-12-05-17-17
+#define FEATURE_MTK_SWITCH_TX_POWER
+
+#ifdef FEATURE_MTK_SWITCH_TX_POWER
+#define SWTP_COMPATIBLE_DEVICE_ID "mediatek, swtp-eint"
+extern int swtp_init(int md_id);
+#endif
+// add by zhaofei - 2016-12-05-17-17
+
 #endif	/* __CCCI_CORE_H__ */
