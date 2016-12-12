@@ -1128,8 +1128,8 @@ static int __init egis360_init(void)
 		return -EINVAL;
 	}
 
-
-	mt_spi_enable_clk(egistec_mt_spi_t);//temp
+	//Lct modify by zl for fpc
+	//mt_spi_enable_clk(egistec_mt_spi_t);//temp
 	printk(KERN_ERR "spi enabled----\n");
 
 	//add this file for device info --sunsiyuan@wind-mobi.com add 20161129 begin
