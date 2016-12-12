@@ -92,7 +92,12 @@ static struct md_check_header_v5 md_img_header_v5[MAX_MD_NUM];
 static struct md_check_header_v6 md_img_header_v6[MAX_MD_NUM];
 /*static struct ccci_image_info		img_info[MAX_MD_NUM][IMG_NUM]; */
 char md_img_info_str[MAX_MD_NUM][256];
-
+//huyunge@wind-mobi.com 20161208 for one image start
+#ifdef CONFIG_WIND_MULTI_MD_ONE_IMAGE
+#include "../board_id/board_id.h"
+extern int get_bid_gpio(void);
+#endif
+//huyunge@wind-mobi.com 20161208 for one image end
 /*--- MD header check ------------ */
 static int check_dsp_header(int md_id, void *parse_addr, struct ccci_image_info *image)
 {
@@ -666,10 +671,33 @@ void get_md_postfix(int md_id, char k[], char buf[], char buf_ex[])
 
 	if ((curr_ubin_id != 0) && (md_id == MD_SYS1)) {
 		if (buf) {
-//add by MTK for multi-md image by LC
-			snprintf(buf, IMG_POSTFIX_LEN, "%d_%s_1", X, type_str[curr_ubin_id]);
-//end add by MTK for multi-md image
-
+			#ifdef CONFIG_WIND_MULTI_MD_ONE_IMAGE
+				switch(get_bid_gpio()){
+					case EMEA_DS_NA_EVT:
+					case EMEA_SS_NA_EVT:
+					case EMEA_SS_NFC_EVT:
+					case EMEA_DS_NA_DVT:
+					case EMEA_SS_NA_DVT:
+					case EMEA_SS_NFC_DVT:
+						snprintf(buf, IMG_POSTFIX_LEN, "%d_%s_1", X, type_str[curr_ubin_id]);
+						break;
+					case LATAM_DS_NA_EVT:
+					case LATAM_DS_NA_DVT:
+					case ROLA_SS_NA_DVT:
+					case ROLA_SS_NA_EVT:
+						snprintf(buf, IMG_POSTFIX_LEN, "%d_%s_2", X, type_str[curr_ubin_id]);
+						break;
+					case AP_DS_NA_EVT:
+					case AP_DS_NA_DVT:
+						snprintf(buf, IMG_POSTFIX_LEN, "%d_%s_3", X, type_str[curr_ubin_id]);
+						break;
+					default:
+						snprintf(buf, IMG_POSTFIX_LEN, "%d_%s_1", X, type_str[curr_ubin_id]);
+						break;
+				}
+			#else
+				snprintf(buf, IMG_POSTFIX_LEN, "%d_%s_n", X, type_str[curr_ubin_id]);
+			#endif
 			CCCI_UTIL_ERR_MSG_WITH_ID(md_id, "MD%d image postfix=%s\n", md_id + 1, buf);
 		}
 
@@ -706,10 +734,38 @@ void get_md_postfix(int md_id, char k[], char buf[], char buf_ex[])
 
 	/* K */
 	if (k == NULL)
-//add by MTK for multi-md image by LC 
-		snprintf(YY_K, IMG_POSTFIX_LEN, "_%s_1", type_str[feature_val]);
-//end add by MTK for multi-md image
+	{
+	//huyunge@wind-mobi.com 20161208 start
+	#ifdef CONFIG_WIND_MULTI_MD_ONE_IMAGE
+		switch(get_bid_gpio()){
+			case EMEA_DS_NA_EVT:
+			case EMEA_SS_NA_EVT:
+			case EMEA_SS_NFC_EVT:
+			case EMEA_DS_NA_DVT:
+			case EMEA_SS_NA_DVT:
+			case EMEA_SS_NFC_DVT:
+				snprintf(YY_K, IMG_POSTFIX_LEN, "_%s_1", type_str[feature_val]);
+				break;
+			case LATAM_DS_NA_EVT:
+			case LATAM_DS_NA_DVT:
+			case ROLA_SS_NA_DVT:
+			case ROLA_SS_NA_EVT:
+				snprintf(YY_K, IMG_POSTFIX_LEN, "_%s_2", type_str[feature_val]);
+				break;
+			case AP_DS_NA_EVT:
+			case AP_DS_NA_DVT:
+				snprintf(YY_K, IMG_POSTFIX_LEN, "_%s_3", type_str[feature_val]);
+				break;
+			default:
+				snprintf(YY_K, IMG_POSTFIX_LEN, "_%s_1", type_str[feature_val]);
+				break;
+		}
+	#else
+		snprintf(YY_K, IMG_POSTFIX_LEN, "_%s_n", type_str[feature_val]);
+	#endif
+	}
 	else
+	{
 		snprintf(YY_K, IMG_POSTFIX_LEN, "_%s_%s", type_str[feature_val], k);
 // add by zhaofei - 2016-12-02-10-53
 #ifdef CONFIG_LCT_MULTI_MD_IMAGE
@@ -723,6 +779,7 @@ void get_md_postfix(int md_id, char k[], char buf[], char buf_ex[])
 #endif
 // add by zhaofei - 2016-12-02-10-53
 
+	}
 	/* [_Ex] Get chip version */
 #if 0
 	if (get_chip_version() == CHIP_SW_VER_01)

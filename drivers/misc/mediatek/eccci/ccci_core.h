@@ -547,6 +547,8 @@ int swtp_init(int md_id);
 #define CCCI_IOC_GET_MD_SUB_ID			_IOR(CCCI_IOC_MAGIC, 64, unsigned int)
 //end add by MTK for multi-md image
 
+#define CCCI_IOC_GET_MD_SUB_ID			_IOR(CCCI_IOC_MAGIC, 64, unsigned int)//huyunge@wind-mobi.com 20161206 MTK PATCH multi-md one imag
+
 #define CCCI_IOC_SET_HEADER				_IO(CCCI_IOC_MAGIC,  112) /* emcs_va */
 #define CCCI_IOC_CLR_HEADER				_IO(CCCI_IOC_MAGIC,  113) /* emcs_va */
 #define CCCI_IOC_DL_TRAFFIC_CONTROL		_IOW(CCCI_IOC_MAGIC, 119, unsigned int) /* mdlogger */

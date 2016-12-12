@@ -550,3 +550,6 @@ CONFIG_LIBCRC32C=y
 CONFIG_MTK_FINGERPRINT_SUPPORT=y
 CONFIG_EGISTEC_FINGERPRINT=y
 #xuzhifeng@wind-mobi.com 20161123 end
+#huyunge@wind-mobi.com 20161208 begin
+CONFIG_WIND_MULTI_MD_ONE_IMAGE=y
+#huyunge@wind-mobi.com 20161123 end

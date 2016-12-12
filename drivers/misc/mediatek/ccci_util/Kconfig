@@ -109,3 +109,9 @@ config MTK_C2K_LTE_MODE
 config LCT_MULTI_MD_IMAGE
 	bool "LCT MULTI MD image"
 	default n
+
+config WIND_MULTI_MD_ONE_IMAGE
+	bool "configure multi Modem one image"
+	default n
+	help
+      y=>enable
