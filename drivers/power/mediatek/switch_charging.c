@@ -102,6 +102,7 @@ unsigned int get_cv_voltage(void)
 	return g_cv_voltage;
 }
 #endif
+#endif
 DEFINE_MUTEX(g_ichg_aicr_access_mutex);
 DEFINE_MUTEX(g_aicr_access_mutex);
 DEFINE_MUTEX(g_ichg_access_mutex);
