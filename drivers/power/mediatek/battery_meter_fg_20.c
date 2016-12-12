@@ -845,8 +845,12 @@ static int __batt_meter_init_cust_data_from_cust_header(void)
 	batt_meter_cust_data.fixed_tbat_25 = 0;
 #endif				/* #if defined(FIXED_TBAT_25) */
 
+#ifdef CONFIG_LCT_FUG_MULTI_BAT_SUPPORT
+	batt_meter_cust_data.batterypseudo100 = g_BATTERYPSEUDO100[g_fg_battery_id];
+#else
 	batt_meter_cust_data.batterypseudo100 = BATTERYPSEUDO100;
-#ifdef CONFIG_MTK_MULTI_BAT_PROFILE_SUPPORT
+#endif
+#if defined(CONFIG_MTK_MULTI_BAT_PROFILE_SUPPORT) || defined(CONFIG_LCT_FUG_MULTI_BAT_SUPPORT)
 	batt_meter_cust_data.batterypseudo1 = g_BATTERYPSEUDO1[g_fg_battery_id];
 #else
 	batt_meter_cust_data.batterypseudo1 = BATTERYPSEUDO1;
@@ -887,7 +891,7 @@ static int __batt_meter_init_cust_data_from_cust_header(void)
 #else				/* #if defined(Q_MAX_BY_CURRENT) */
 	batt_meter_cust_data.q_max_by_current = 0;
 #endif				/* #if defined(Q_MAX_BY_CURRENT) */
-#ifdef CONFIG_MTK_MULTI_BAT_PROFILE_SUPPORT
+#if defined(CONFIG_MTK_MULTI_BAT_PROFILE_SUPPORT) || defined(CONFIG_LCT_FUG_MULTI_BAT_SUPPORT)
 	batt_meter_cust_data.q_max_sys_voltage = g_Q_MAX_SYS_VOLTAGE[g_fg_battery_id];
 #else
 	batt_meter_cust_data.q_max_sys_voltage = Q_MAX_SYS_VOLTAGE;
@@ -1145,6 +1149,10 @@ int __batt_meter_init_cust_data_from_dt(void)
 
 	__batt_meter_parse_node(np, "car_tune_value",
 		&batt_meter_cust_data.car_tune_value);
+#ifndef CONFIG_LCT_FUG_MULTI_BAT_SUPPORT
+	batt_meter_cust_data.batterypseudo100 = BATTERYPSEUDO100;
+	batt_meter_cust_data.batterypseudo1 = BATTERYPSEUDO1;
+#endif
 
 	__batt_meter_parse_node(np, "current_detect_r_fg",
 		&batt_meter_cust_data.current_detect_r_fg);
