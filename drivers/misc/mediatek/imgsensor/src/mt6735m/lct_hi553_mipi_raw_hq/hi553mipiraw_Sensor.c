@@ -70,7 +70,7 @@ static imgsensor_info_struct imgsensor_info = {
 	.checksum_value = 0xe48556a,		//checksum value for Camera Auto Test
 
 	.pre = {
-		.pclk = 176000000,				//record different mode's pclk
+		.pclk = 169600000,				//record different mode's pclk
 		.linelength  = 2816,				//record different mode's linelength
 		.framelength = 2049,			//record different mode's framelength
 		.startx= 0,					//record different mode's startx of grabwindow
@@ -84,7 +84,7 @@ static imgsensor_info_struct imgsensor_info = {
 	},
 #ifdef NONCONTINUEMODE
 	.cap = {
-		.pclk = 176000000,				//record different mode's pclk
+		.pclk = 169600000,				//record different mode's pclk
 		.linelength  = 2816,//5808,				//record different mode's linelength
 		.framelength = 2083,			//record different mode's framelength
 		.startx = 0,					//record different mode's startx of grabwindow
@@ -98,7 +98,7 @@ static imgsensor_info_struct imgsensor_info = {
 	},
 #else //CONTINUEMODE
 	.cap = {
-		.pclk = 176000000,				//record different mode's pclk
+		.pclk = 169600000,				//record different mode's pclk
 		.linelength  = 2816,//5808,				//record different mode's linelength
 		.framelength = 2049,			//record different mode's framelength
 		.startx = 0,					//record different mode's startx of grabwindow
@@ -114,7 +114,7 @@ static imgsensor_info_struct imgsensor_info = {
 
 #if 1 //fps 15
 	.cap1 = {							//capture for PIP 15ps relative information, capture1 mode must use same framelength, linelength with Capture mode for shutter calculate
-		.pclk = 176000000,				//record different mode's pclk
+		.pclk = 169600000,				//record different mode's pclk
 		.linelength  = 2816,//,				//record different mode's linelength
 		.framelength = 4166,			//record different mode's framelength
 		.startx = 0,					//record different mode's startx of grabwindow
@@ -128,7 +128,7 @@ static imgsensor_info_struct imgsensor_info = {
 	},
 #endif
 	.normal_video = {
-		.pclk = 176000000,				//record different mode's pclk
+		.pclk = 169600000,				//record different mode's pclk
 		.linelength  = 2816,//5808,				//record different mode's linelength
 		.framelength = 2083,			//record different mode's framelength
 		.startx = 0,					//record different mode's startx of grabwindow
@@ -141,7 +141,7 @@ static imgsensor_info_struct imgsensor_info = {
 		.max_framerate = 300,	
 	},
 	.hs_video = {
-		.pclk = 176000000,				//record different mode's pclk
+		.pclk = 169600000,				//record different mode's pclk
 		.linelength  = 2816,				//record different mode's linelength
 		.framelength = 520,			//record different mode's framelength
 		.startx = 0,					//record different mode's startx of grabwindow
@@ -154,7 +154,7 @@ static imgsensor_info_struct imgsensor_info = {
 		.max_framerate = 1200,	
 	},
 	.slim_video = {
-		.pclk = 176000000,				//record different mode's pclk
+		.pclk = 169600000,				//record different mode's pclk
 		.linelength  = 2816,				//record different mode's linelength
 		.framelength = 2049,			//record different mode's framelength
 		.startx= 0,					//record different mode's startx of grabwindow
@@ -2071,7 +2071,7 @@ static void sensor_init(void)
 	write_cmos_sensor(0x0b10, 0xac20); 
 	write_cmos_sensor(0x0b12, 0x0000); 
 	write_cmos_sensor(0x0b14, 0x404c); //0x404c); -- Terry 20161104 Modified for MIPI test
-	write_cmos_sensor(0x0b16, 0x6e0b); 
+	write_cmos_sensor(0x0b16, 0x6a0b); 
 	write_cmos_sensor(0x0b18, 0xf20b); 
 	write_cmos_sensor(0x0b1a, 0x0000); 
 	write_cmos_sensor(0x0b1c, 0x0000); 
@@ -2179,7 +2179,7 @@ static void preview_setting(void)
 
 	write_cmos_sensor(0x0a00, 0x0000); //stream on         
 	//write_cmos_sensor(0x0b14, 0x404c);
-	write_cmos_sensor(0x0b16, 0x6e0b);                     
+        write_cmos_sensor(0x0b16, 0x6a0b);                     
 	write_cmos_sensor(0x0b18, 0xf20b);                     
 	write_cmos_sensor(0x004a, 0x0100);                     
 	write_cmos_sensor(0x000c, 0x0022);                     
@@ -2243,7 +2243,7 @@ static void capture_setting(kal_uint16 currefps)
 
 		write_cmos_sensor(0x0a00, 0x0000); //stream on         
 		//write_cmos_sensor(0x0b14, 0x404c);
-		write_cmos_sensor(0x0b16, 0x6e0b);                     
+        write_cmos_sensor(0x0b16, 0x6a0b);                     
 		write_cmos_sensor(0x0b18, 0xf20b);                     
 		write_cmos_sensor(0x004a, 0x0100);                     
 		write_cmos_sensor(0x000c, 0x0022);                     
@@ -2287,7 +2287,7 @@ static void capture_setting(kal_uint16 currefps)
 	else if (currefps == 150) {
 		write_cmos_sensor(0x0a00, 0x0000); //stream on
 		//write_cmos_sensor(0x0b14, 0x404c);
-		write_cmos_sensor(0x0b16, 0x6e0b);
+		write_cmos_sensor(0x0b16, 0x6a0b);
 		write_cmos_sensor(0x0b18, 0xf20b);
 		write_cmos_sensor(0x004a, 0x0100);
 		write_cmos_sensor(0x000c, 0x0022);
@@ -2346,7 +2346,7 @@ static void capture_setting(kal_uint16 currefps)
 
 		write_cmos_sensor(0x0a00, 0x0000); //stream on         
 		//write_cmos_sensor(0x0b14, 0x404c);
-		write_cmos_sensor(0x0b16, 0x6e0b);                     
+        write_cmos_sensor(0x0b16, 0x6a0b);                     
 		write_cmos_sensor(0x0b18, 0xf20b);                     
 		write_cmos_sensor(0x004a, 0x0100);                     
 		write_cmos_sensor(0x000c, 0x0022);                     
@@ -2401,7 +2401,7 @@ static void hs_video_setting(void)
 
 	write_cmos_sensor(0x0a00, 0x0000); //stream on
 	//write_cmos_sensor(0x0b14, 0x404c);
-	write_cmos_sensor(0x0b16, 0x6e0b);
+	write_cmos_sensor(0x0b16, 0x6a0b);
 	write_cmos_sensor(0x0b18, 0xf28b);
 	write_cmos_sensor(0x004a, 0x0100);
 	write_cmos_sensor(0x000c, 0x0022);
@@ -2613,8 +2613,8 @@ static int hi553_otp_apply(struct hi553_otp_struct *otp_ptr)
 	int R_gain = 1, G_gain = 1, B_gain = 1;
 	int RG_ratio_unit = 0;
 	int BG_ratio_unit = 0;
-	int RG_ratio_golden = 0x149; 
-	int BG_ratio_golden = 0x136;
+	int RG_ratio_golden = 0x16F;//0x149; 
+	int BG_ratio_golden = 0x144;//0x136;
 	LOG_INF("HI553 hi553_otp_apply \n");
 
 	RG_ratio_unit = (hi553_otp.wb_data[0] << 8) | (hi553_otp.wb_data[1] & 0x03FF);
