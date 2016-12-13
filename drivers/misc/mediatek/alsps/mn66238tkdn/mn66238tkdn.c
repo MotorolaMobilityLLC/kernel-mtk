@@ -1229,6 +1229,8 @@ static int set_lsensor_intr_threshold(uint16_t low_thd, uint16_t high_thd)
 
 
 /*----------------------------------------------------------------------------*/
+/*
+sunjingtao@wind-mobi.com modify at 20161213
 static void epl_sensor_dumpReg(struct i2c_client *client)
 {
     APS_LOG("chip id REG 0x00 value = 0x%x\n", i2c_smbus_read_byte_data(client, 0x00));
@@ -1249,7 +1251,8 @@ static void epl_sensor_dumpReg(struct i2c_client *client)
     APS_LOG("chip id REG 0xfb value = 0x%x\n", i2c_smbus_read_byte_data(client, 0xfb));
     APS_LOG("chip id REG 0xfc value = 0x%x\n", i2c_smbus_read_byte_data(client, 0xfc));
 }
-
+sunjingtao@wind-mobi.com modify at 20161213
+*/
 int hw8k_init_device(struct i2c_client *client)
 {
     APS_LOG("hw8k_init_device.........\r\n");
@@ -3932,7 +3935,7 @@ static int epl_sensor_i2c_probe(struct i2c_client *client, const struct i2c_devi
 
     APS_FUN();
 	//printk("twz enter epl_sensor probe client addr = %x\n",client->addr);
-    epl_sensor_dumpReg(client);
+    //epl_sensor_dumpReg(client);    //sunjingtao@wind-mobi.com modify at 20161213
 
     renvo = i2c_smbus_read_byte_data(client, 0x21);
 	if(renvo != 0x81 && renvo != 0x91 && renvo != 0xa1){
