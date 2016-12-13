@@ -565,8 +565,7 @@ static void lcm_init(void)
 	MDELAY(120);
 	push_table(lcm_initialization_setting,
 		   sizeof(lcm_initialization_setting) / sizeof(struct LCM_setting_table), 1);
-	set_gpio_led_en(1);
-	MDELAY(5);
+
 }
 
 
@@ -681,7 +680,9 @@ static void lcm_setbacklight(unsigned int level)
 		mapped_level = (641*level + 36667)/(1000);
 	else
 		mapped_level=level;
-	#endif		
+	#endif	
+	set_gpio_led_en(1);
+	MDELAY(5);	
 	level_hight=(mapped_level & 0xf0)>>4;
 	level_low=(mapped_level & 0x0f)<<4;
 	lcm_backlight_level_setting[0].para_list[0] = level_hight;

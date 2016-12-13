@@ -100,6 +100,14 @@ DISP_PRIMARY_PATH_MODE primary_display_mode = DECOUPLE_MODE;
 DISP_PRIMARY_PATH_MODE primary_display_mode = DIRECT_LINK_MODE;
 #endif
 
+//add by longcheer yufangfang for esd recover backlight
+#ifdef CONFIG_LCT_ESD_CHECK_MULTI_REG
+#ifdef CONFIG_LCT_LCM_GPIO_UTIL
+#include "lcm_drv.h"
+static LCM_UTIL_FUNCS lcm_util = { 0 };
+#define set_gpio_led_en(cmd) lcm_util.set_gpio_led_en_bias(cmd)
+#endif
+#endif
 static unsigned long dim_layer_mva;
 /* wdma dump thread */
 static unsigned int primary_dump_wdma;
@@ -3941,6 +3949,12 @@ int primary_display_esd_recovery(void)
 
 	DISPMSG("[ESD]lcm force init[begin]\n");
 	disp_lcm_init(pgc->plcm, 1);
+#ifdef CONFIG_LCT_ESD_CHECK_MULTI_REG
+#ifdef CONFIG_LCT_LCM_GPIO_UTIL
+	set_gpio_led_en(1);
+	mdelay(5);
+#endif
+#endif
 	DISPMSG("[ESD]lcm force init[end]\n");
 
 	MMProfileLogEx(ddp_mmp_get_events()->esd_recovery_t, MMProfileFlagPulse, 0, 9);
