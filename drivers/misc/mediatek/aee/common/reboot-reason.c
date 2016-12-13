@@ -52,11 +52,19 @@ enum boot_reason_t {
 	BR_KERNEL_PANIC,
 	BR_WDT_SW,
 	BR_WDT_HW
+#if CONFIG_LCT_BOOTINFO_SUPPORT// By shaohui - 2016-12-13-18-32
+	,BR_CHR,
+	BR_PWR_RST
+#endif
 };
 
 #define REBOOT_REASON_LEN	16
 char boot_reason[][REBOOT_REASON_LEN] = { "keypad", "usb_chg", "rtc", "wdt", "reboot",
-	"tool reboot", "smpl", "others", "kpanic", "wdt_sw", "wdt_hw" };
+	"tool reboot", "smpl", "others", "kpanic", "wdt_sw", "wdt_hw"
+#ifdef CONFIG_LCT_BOOTINFO_SUPPORT// By shaohui - 2016-12-13-18-32
+	,"charge","powerkey_force"
+#endif
+};
 
 int __weak aee_rr_reboot_reason_show(struct seq_file *m, void *v)
 {
@@ -102,6 +110,10 @@ static ssize_t powerup_reason_show(struct kobject *kobj, struct kobj_attribute *
 	if (br_ptr != 0) {
 		/* get boot reason */
 		g_boot_reason = br_ptr[12] - '0';
+#ifdef CONFIG_LCT_BOOTINFO_SUPPORT
+			if(br_ptr[13]>='0' && br_ptr[13]<='9')
+				g_boot_reason = g_boot_reason*10 + (br_ptr[13] - '0');
+#endif
 		LOGE("g_boot_reason=%d\n", g_boot_reason);
 #ifdef CONFIG_MTK_RAM_CONSOLE
 		if (aee_rr_last_fiq_step() != 0)
