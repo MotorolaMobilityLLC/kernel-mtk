@@ -124,6 +124,12 @@ u16 rtc_spare_reg[][3] = {
 	{RTC_SPAR0, 0x1, 8}
 #endif
 	/*shaohui add end*/
+/*caozhg add for alt status*/
+#ifdef CONFIG_LCT_CHR_ALT_TEST_SUPPORT
+	,
+	{RTC_SPAR0, 0x1, 9}
+#endif
+/*caozhg add end*/
 };
 
 void hal_rtc_set_abb_32k(u16 enable)

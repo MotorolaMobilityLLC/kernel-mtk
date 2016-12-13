@@ -192,6 +192,11 @@ unsigned int g_batt_soc_status = SOC_NORMAL;
 #if defined(CONFIG_LCT_FUG_DIS_CHECK_NTC)
 unsigned int lct_battery_ntc_missing = 0;
 #endif
+#ifdef  CONFIG_LCT_CHR_ALT_TEST_SUPPORT
+unsigned int lct_alt_status = 0;
+extern void rtc_clear_alt(void);
+extern int get_rtc_mark_alt(void);
+#endif
 /* ////////////////////////////////////////////////////////////////////////////// */
 /* Integrate with NVRAM */
 /* ////////////////////////////////////////////////////////////////////////////// */
@@ -2401,9 +2406,14 @@ void mt_battery_GetBatteryData(void)
 	}
 
 	#ifdef CONFIG_LCT_FUG_DIS_CHECK_NTC
+	#ifdef CONFIG_LCT_CHR_ALT_TEST_SUPPORT
+	if (1 == lct_alt_status || 1 == lct_battery_ntc_missing)
+	#else
 	if( 1 == lct_battery_ntc_missing)
+	#endif
 	{
 		BMT_status.temperature = 25;
+		temperature_sum =  BMT_status.temperature * BATTERY_AVERAGE_SIZE;
 	}
 	else
 		BMT_status.temperature = mt_battery_average_method(BATTERY_AVG_TEMP, &batteryTempBuffer[0], temperature, &temperature_sum, batteryIndex);
@@ -2581,11 +2591,21 @@ static void mt_battery_CheckBatteryStatus(void)
 			    "[mt_battery_CheckBatteryStatus] cmd_discharging=(%d)\n",
 			    cmd_discharging);
 		BMT_status.bat_charging_state = CHR_ERROR;
+		#ifdef CONFIG_LCT_CHR_ALT_TEST_SUPPORT
+		if (lct_alt_status != 1)
 		battery_charging_control(CHARGING_CMD_SET_ERROR_STATE, &cmd_discharging);
+		#else
+		battery_charging_control(CHARGING_CMD_SET_ERROR_STATE, &cmd_discharging);
+		#endif
 		return;
 	} else if (cmd_discharging == 0) {
 		BMT_status.bat_charging_state = CHR_PRE;
+		#ifdef CONFIG_LCT_CHR_ALT_TEST_SUPPORT
+		if (lct_alt_status != 1)
 		battery_charging_control(CHARGING_CMD_SET_ERROR_STATE, &cmd_discharging);
+		#else
+		battery_charging_control(CHARGING_CMD_SET_ERROR_STATE, &cmd_discharging);
+		#endif
 		cmd_discharging = -1;
 	}
 	if (mt_battery_CheckBatteryTemp() != PMU_STATUS_OK) {
@@ -4324,6 +4344,13 @@ static int battery_probe(struct platform_device *dev)
 {
 	struct class_device *class_dev = NULL;
 	int ret = 0;
+	#ifdef  CONFIG_LCT_CHR_ALT_TEST_SUPPORT
+	lct_alt_status = get_rtc_mark_alt();
+	if (lct_alt_status == 1){
+		cmd_discharging = 1;
+		rtc_clear_alt();
+	}
+	#endif
 
 	battery_log(BAT_LOG_CRTI, "******** battery driver probe!! ********\n");
 
@@ -4795,6 +4822,55 @@ static const struct file_operations battery_cmd_proc_fops = {
 	.write = battery_cmd_write,
 };
 
+#ifdef CONFIG_LCT_CHR_ALT_TEST_SUPPORT
+static ssize_t current_cmd_write(struct file *file, const char *buffer, size_t count, loff_t *data)
+{
+	int len = 0;
+	char desc[32];
+	int cmd_current_unlimited = false;
+	unsigned int charging_enable = false;
+
+	len = (count < (sizeof(desc) - 1)) ? count : (sizeof(desc) - 1);
+	if (copy_from_user(desc, buffer, len))
+		return 0;
+
+	desc[len] = '\0';
+
+	if (sscanf(desc, "%d %d", &cmd_current_unlimited, &cmd_discharging) == 2) {
+		set_usb_current_unlimited(cmd_current_unlimited);
+		if (cmd_discharging == 1) {
+			lct_alt_status = 1;
+			charging_enable = false;
+			adjust_power = -1;
+		} else if (cmd_discharging == 0) {
+			lct_alt_status = 0;
+			charging_enable = true;
+			adjust_power = -1;
+		}
+		battery_charging_control(CHARGING_CMD_ENABLE, &charging_enable);
+
+		battery_log(BAT_LOG_CRTI,
+		"[current_cmd_write] cmd_current_unlimited=%d, cmd_discharging=%d\n",
+			    cmd_current_unlimited, cmd_discharging);
+		return count;
+	}
+
+	/* hidden else, for sscanf format error */
+	{
+		battery_log(BAT_LOG_CRTI, "  bad argument, echo [enable] > current_cmd\n");
+	}
+
+	return -EINVAL;
+}
+
+static int current_cmd_read(struct seq_file *m, void *v)
+{
+	int cmd_current_unlimited = false;
+	seq_printf(m, "%d %d\n",cmd_current_unlimited, cmd_discharging);
+
+	return 0;
+}
+#else
 static ssize_t current_cmd_write(struct file *file, const char *buffer, size_t count, loff_t *data)
 {
 	int len = 0;
@@ -4847,7 +4923,7 @@ static int current_cmd_read(struct seq_file *m, void *v)
 
 	return 0;
 }
-
+#endif
 static int proc_utilization_open_cur_stop(struct inode *inode, struct file *file)
 {
 	return single_open(file, current_cmd_read, NULL);

@@ -52,6 +52,12 @@ extern void rtc_mark_recovery(void);
 extern void rtc_mark_rpmb(void);
 #endif
 /*shaohui add end`*/
+/*caozhg add for alt status*/
+#ifdef CONFIG_LCT_CHR_ALT_TEST_SUPPORT
+extern void rtc_mark_alt(void);
+extern int get_rtc_mark_alt(void);
+#endif
+/*caozhg add end*/
 #if defined(CONFIG_MTK_KERNEL_POWER_OFF_CHARGING)
 extern void rtc_mark_kpoc(void);
 #endif/*if defined(CONFIG_MTK_KERNEL_POWER_OFF_CHARGING)*/

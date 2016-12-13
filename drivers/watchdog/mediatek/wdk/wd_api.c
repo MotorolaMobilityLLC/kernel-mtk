@@ -623,6 +623,14 @@ void arch_reset(char mode, const char *cmd)
 		printk("get rpmg flag:%d\n",get_rtc_mark_rpmb());
 		/*shaohui add end*/
 #endif
+/*cazhg add for alt status*/
+#ifdef CONFIG_LCT_CHR_ALT_TEST_SUPPORT
+	}else if(cmd && !strcmp(cmd,"alt")){
+		reboot = 1;
+		rtc_mark_alt();
+		printk("get alt flag:%d\n",get_rtc_mark_alt());
+#endif
+/*caozhg add end*/
 	} else {
 		reboot = 1;
 	}

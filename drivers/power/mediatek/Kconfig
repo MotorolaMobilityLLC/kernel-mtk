@@ -416,3 +416,9 @@ config LCT_FUG_CUSTOMIZATION
     help
 	  Set yes to support fuegauge customization.
 	  Set no to not support fuegauge customization.
+
+config LCT_CHR_ALT_TEST_SUPPORT
+	bool "LCT_CHR_ALT_TEST_SUPPORT"
+	default n
+	help
+	  Set yes to support ALT test.
