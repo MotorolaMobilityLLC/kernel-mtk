@@ -38,6 +38,11 @@ typedef enum {
 	RTC_RPMB_BOOT,
 #endif
 /*shaohui add end`*/
+/*caozhg add for alt status*/
+#ifdef CONFIG_LCT_CHR_ALT_TEST_SUPPORT
+	RTC_ALT_BOOT,
+#endif
+/*caozhg add end*/
 	RTC_SPAR_NUM
 } rtc_spare_enum;
 

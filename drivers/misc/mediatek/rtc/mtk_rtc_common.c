@@ -396,6 +396,49 @@ EXPORT_SYMBOL(get_rtc_mark_rpmb);
 #endif
 /*shaohui add end*/
 
+/*caozhg add for alt status*/
+#ifdef CONFIG_LCT_CHR_ALT_TEST_SUPPORT
+void rtc_mark_alt(void)
+{
+	unsigned long flags;
+
+	rtc_xinfo("rtc_mark_alt\n");
+	spin_lock_irqsave(&rtc_lock, flags);
+	hal_rtc_set_spare_register(RTC_ALT_BOOT, 0x1);
+	spin_unlock_irqrestore(&rtc_lock, flags);
+}
+
+
+void rtc_clear_alt(void)
+{
+	unsigned long flags;
+
+	rtc_xinfo("rtc_clear_alt\n");
+	spin_lock_irqsave(&rtc_lock, flags);
+	hal_rtc_set_spare_register(RTC_ALT_BOOT, 0x0);
+	spin_unlock_irqrestore(&rtc_lock, flags);
+}
+
+
+int get_rtc_mark_alt(void)
+{
+	unsigned long flags;
+	u16 ret;
+
+	spin_lock_irqsave(&rtc_lock, flags);
+	ret = hal_rtc_get_spare_register(RTC_ALT_BOOT);
+	spin_unlock_irqrestore(&rtc_lock, flags);
+
+	printk("%s,ret:%d\n",__func__,ret);
+	if (ret)
+		return 1;
+	else
+		return 0;
+
+}
+EXPORT_SYMBOL(get_rtc_mark_alt);
+#endif
+/*shaohui add end*/
 #if defined(CONFIG_MTK_KERNEL_POWER_OFF_CHARGING)
 void rtc_mark_kpoc(void)
 {
