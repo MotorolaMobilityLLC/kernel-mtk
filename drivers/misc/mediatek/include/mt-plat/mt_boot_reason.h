@@ -23,6 +23,13 @@ enum boot_reason_t {
 	BR_TOOL_BY_PASS_PWK,
 	BR_2SEC_REBOOT,
 	BR_UNKNOWN
+#if CONFIG_LCT_BOOTINFO_SUPPORT// By shaohui - 2016-12-13-18-32
+	,BR_KERNEL_PANIC,
+	BR_WDT_SW,
+	BR_WDT_HW
+	,BR_CHR,
+	BR_PWR_RST
+#endif
 };
 
 extern enum boot_reason_t get_boot_reason(void);

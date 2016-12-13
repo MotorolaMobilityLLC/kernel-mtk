@@ -78,7 +78,6 @@ typedef enum {
     BR_KERNEL_PANIC,
     BR_WDT_SW,
     BR_WDT_HW
-	//shaohui add ,feature to be added
 	,BR_CHR,
 	BR_PWR_RST
 } boot_reason_t;
@@ -88,18 +87,18 @@ static int bootinfo_map[]={
 	PWR_KEY_PRESS,			/*BR_POWER_KEY*/
 	USB_CABLE,				/*BR_USB*/
 	TIME_OF_DAY_ALARM,		/*BR_RTC*/
-	WDOG_AP_RESET,			/*BR_WDT*/
+	SW_AP_RESET,			/*BR_WDT*/
 	SW_AP_RESET,			/*BR_WDT_BY_PASS_PWK*/
 	SW_AP_RESET,			/*BR_TOOL_BY_PASS_PWK*/
 	POWER_CUT,				/*BR_2SEC_REBOOT*/
-	INVALID_TURN_ON,		/*BR_UNKNOWN*/
+	SW_AP_RESET,			/*BR_UNKNOWN*/
 	AP_KERNEL_PANIC,		/*BR_KERNEL_PANIC*/
-	WDOG_AP_RESET,			/*BR_WDT_SW*/
-	HW_RESET,				/*BR_WDT_HW*/
+	SW_AP_RESET,			/*BR_WDT_SW*/
+	SW_AP_RESET,			/*BR_WDT_HW*/
 	CHARGE,					/*BR_CHR*/
 	HW_RESET				/*BR_PWR_RST*/
 };
-
+extern int aee_rr_last_fiq_step(void);
 static int proc_bootinfo_show(struct seq_file *m, void *v)
 {
 	char ret[16];
@@ -107,6 +106,10 @@ static int proc_bootinfo_show(struct seq_file *m, void *v)
 	if (BOOT_REASON_INITIALIZED != atomic_read(&g_br_state))
 		return 0;
 	bootnum=(int)get_boot_reason();
+#ifdef CONFIG_MTK_RAM_CONSOLE
+		if (aee_rr_last_fiq_step() != 0)
+			bootnum = 8;//BR_KERNEL_PANIC;
+#endif
 	printk("boot reason num:%d\n",bootnum);
 	snprintf(ret,16,"0x%08x\n",bootinfo_map[bootnum]);
 	seq_puts(m, ret);
