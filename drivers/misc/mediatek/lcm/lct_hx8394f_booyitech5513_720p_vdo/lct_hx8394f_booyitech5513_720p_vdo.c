@@ -483,7 +483,6 @@ void tps65132_enable_5513(char en)
 static void lcm_init(void)
 {
 	tps65132_enable_5513(1);
-	printk("yufangfang lcm init 5513\n");
 	SET_RESET_PIN(1);
 	MDELAY(20);
 	SET_RESET_PIN(0);
@@ -491,9 +490,7 @@ static void lcm_init(void)
 	SET_RESET_PIN(1);
 	MDELAY(120);
 	push_table(lcm_initialization_setting,
-		   sizeof(lcm_initialization_setting) / sizeof(struct LCM_setting_table), 1);
-	set_gpio_led_en(1);	
-	MDELAY(5);
+		   sizeof(lcm_initialization_setting) / sizeof(struct LCM_setting_table), 1);	
 }
 
 
@@ -511,7 +508,6 @@ static void lcm_resume(void)
 {
 	MDELAY(10);
 	lcm_init();
-	printk("yufangfang lcm resume in kernel\n");
 	MDELAY(10);
 }
 
@@ -528,8 +524,8 @@ static void lcm_setbacklight(unsigned int level)
 	else
 		mapped_level=level;
 	#endif
-	
-	printk("yufangfang lcm set backlight\n");
+	set_gpio_led_en(1);	
+	MDELAY(5);
 	/* Refresh value of backlight level. */
 	lcm_backlight_level_setting[0].para_list[0] = mapped_level;
 	push_table(lcm_backlight_level_setting,

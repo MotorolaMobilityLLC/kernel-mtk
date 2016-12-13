@@ -491,8 +491,7 @@ static void lcm_init(void)
 	MDELAY(120);
 	push_table(lcm_initialization_setting,
 		   sizeof(lcm_initialization_setting) / sizeof(struct LCM_setting_table), 1);
-	set_gpio_led_en(1);
-	MDELAY(5);
+
 }
 
 
@@ -510,7 +509,6 @@ static void lcm_resume(void)
 {
 	MDELAY(10);
 	lcm_init();
-	printk("yufangfang lcm resume in kernel\n");
 	MDELAY(10);
 }
 
@@ -527,7 +525,8 @@ static void lcm_setbacklight(unsigned int level)
 	else
 		mapped_level=level;
 	#endif	
-	printk("yufangfang lcm set backlight\n");
+	set_gpio_led_en(1);
+	MDELAY(5);
 	/* Refresh value of backlight level. */
 	lcm_backlight_level_setting[0].para_list[0] = mapped_level;
 	push_table(lcm_backlight_level_setting,
