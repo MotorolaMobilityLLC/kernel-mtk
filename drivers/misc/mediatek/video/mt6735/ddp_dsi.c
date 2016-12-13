@@ -4554,13 +4554,13 @@ int ddp_dsi_build_cmdq(DISP_MODULE_ENUM module, void *cmdq_trigger_handle, CMDQ_
 		/* DSI_OUTREGBIT(cmdq_trigger_handle, struct DSI_INT_ENABLE_REG,DSI_REG[dsi_i]->DSI_INTEN,RD_RDY,0); */
 	} else if (state == CMDQ_ESD_CHECK_CMP) {
 
-		printk("[DSI]enter cmp\n");
+		//printk("[DSI]enter cmp\n");    //sunjingtao@wind-mobi.com modify at 20161213
 		/* cmp just once and only 1 return value */
 		for (i = 0; i < 3; i++) {
 			if (dsi_params->lcm_esd_check_table[i].cmd == 0)
 				break;
 
-			printk("[DSI]enter cmp i=%d\n", i);
+			//printk("[DSI]enter cmp i=%d\n", i);    //sunjingtao@wind-mobi.com modify at 20161213
             //liujinzhou@wind-mobi.com modify at 20161205 begin
 			/* read data */
 		//	if (hSlot[0]&&hSlot[1]&&hSlot[2]&&hSlot[3]) {
@@ -4584,7 +4584,8 @@ int ddp_dsi_build_cmdq(DISP_MODULE_ENUM module, void *cmdq_trigger_handle, CMDQ_
 			MMProfileLogEx(ddp_mmp_get_events()->esd_rdlcm, MMProfileFlagPulse,
 				       AS_UINT32(&read_data0),
 				       AS_UINT32(&(dsi_params->lcm_esd_check_table[i])));
-
+/*
+sunjingtao@wind-mobi.com modify at 20161213 begin
 			DISPDBG
 			    ("[DSI]enter cmp read_data0 byte0=0x%x byte1=0x%x byte2=0x%x byte3=0x%x\n",
 			     read_data0.byte0, read_data0.byte1, read_data0.byte2,
@@ -4608,14 +4609,15 @@ int ddp_dsi_build_cmdq(DISP_MODULE_ENUM module, void *cmdq_trigger_handle, CMDQ_
 				AS_UINT32(DDP_REG_BASE_DSI0 + 0x88));
 			DISPDBG("[DSI]enter cmp DSI+0x0c=0x%x\n",
 				AS_UINT32(DDP_REG_BASE_DSI0 + 0x0c));
-
+sunjingtao@wind-mobi.com modify at 20161213 end
+*/
 			packet_type = read_data0.byte0;
-			printk("packet_type = %d\n",packet_type);			
+			//printk("packet_type = %d\n",packet_type);		//sunjingtao@wind-mobi.com modify at 20161212
 			
 			if (packet_type == 0x1A || packet_type == 0x1C) 
 			{
 				recv_data_cnt = read_data0.byte1 + read_data0.byte2 * 16;
-				printk("packet_type=0x%x,recv_data_cnt = %d\n", packet_type, recv_data_cnt);
+				//printk("packet_type=0x%x,recv_data_cnt = %d\n", packet_type, recv_data_cnt);    //sunjingtao@wind-mobi.com modify at 20161213
 				if(recv_data_cnt > RT_MAX_NUM)
 				{
 			//	DISPCHECK("DSI read long packet data exceeds 10 bytes \n");
@@ -4640,7 +4642,7 @@ int ddp_dsi_build_cmdq(DISP_MODULE_ENUM module, void *cmdq_trigger_handle, CMDQ_
 				}
 
 				for (j = 0; j < recv_data_cnt; j++) {
-				printk("liujinzhou2---buffer[%d]=0x%x\n", j, buffer[j]);
+				//printk("liujinzhou2---buffer[%d]=0x%x\n", j, buffer[j]);    //sunjingtao@wind-mobi.com modify at 20161213
 				if (buffer[j] != dsi_params->lcm_esd_check_table[i].para_list[j]) {
 				result= 1;
 				//DISPCHECK("[ESD]CMP i %d return value 0x%x,para_list[%d]=0x%x\n", i,
@@ -4663,7 +4665,7 @@ int ddp_dsi_build_cmdq(DISP_MODULE_ENUM module, void *cmdq_trigger_handle, CMDQ_
 				DISPDBG("packet_type=0x%x,recv_data_cnt = %d\n", packet_type, recv_data_cnt);
 
 				for (j = 0; j < recv_data_cnt; j++) {
-				printk("liujinzhou1---buffer[%d]=0x%x\n", j, buffer[j]);
+				//printk("liujinzhou1---buffer[%d]=0x%x\n", j, buffer[j]);    //sunjingtao@wind-mobi.com modify at 20161213
 					if (buffer[j] != dsi_params->lcm_esd_check_table[i].para_list[j]) {
 					result= 1;
 					//DISPCHECK("[ESD]CMP i %d return value 0x%x,para_list[%d]=0x%x\n", i,
