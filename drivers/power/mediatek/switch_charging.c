@@ -89,13 +89,11 @@ unsigned int g_usb_state = USB_UNCONFIGURED;
 static bool usb_unlimited;
 #if defined(CONFIG_MTK_HAFG_20)
 #ifdef HIGH_BATTERY_VOLTAGE_SUPPORT
-//zhangchao@wind-mobi.com 20161130 begin
-#elif defined(CONFIG_WIND_Z168_BATTERY_MODIFY)
-BATTERY_VOLTAGE_ENUM g_cv_voltage = BATTERY_VOLT_04_400000_V;
-#elif defined(CONFIG_LCT_CHR_HIGH_BATTERY_VOLTAGE_SUPPORT)
+BATTERY_VOLTAGE_ENUM g_cv_voltage = BATTERY_VOLT_04_340000_V;
+#elif defined(CONFIG_LCT_CHR_HIGH_BATTERY_VOLTAGE_SUPPORT) || defined(CONFIG_WIND_Z168_BATTERY_MODIFY)
 BATTERY_VOLTAGE_ENUM g_cv_voltage = BATTERY_VOLT_04_400000_V;
 #else
-BATTERY_VOLTAGE_ENUM g_cv_voltage = BATTERY_VOLT_04_340000_V;
+BATTERY_VOLTAGE_ENUM g_cv_voltage = BATTERY_VOLT_04_200000_V;
 #endif
 unsigned int get_cv_voltage(void)
 {
