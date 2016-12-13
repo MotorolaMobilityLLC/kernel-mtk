@@ -767,6 +767,7 @@ void get_md_postfix(int md_id, char k[], char buf[], char buf_ex[])
 	else
 	{
 		snprintf(YY_K, IMG_POSTFIX_LEN, "_%s_%s", type_str[feature_val], k);
+    }
 // add by zhaofei - 2016-12-02-10-53
 #ifdef CONFIG_LCT_MULTI_MD_IMAGE
 	printk("sku is %d\n",sku);
@@ -778,8 +779,6 @@ void get_md_postfix(int md_id, char k[], char buf[], char buf_ex[])
 		snprintf(YY_K, IMG_POSTFIX_LEN, "_%s_3", type_str[feature_val]);
 #endif
 // add by zhaofei - 2016-12-02-10-53
-
-	}
 	/* [_Ex] Get chip version */
 #if 0
 	if (get_chip_version() == CHIP_SW_VER_01)
