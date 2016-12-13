@@ -367,7 +367,8 @@ CONFIG_MTK_HAFG_20=y
 CONFIG_WIND_Z168_BATTERY_MODIFY=y
 CONFIG_WIND_BATTERY_MODIFY=y
 CONFIG_WIND_THREMAL_CURRENT=y
-CONFIG_WIND_Z168_TEST=y
+# CONFIG_WIND_Z168_TEST is temperature protection macro control.If CONFIG_WIND_Z168_TEST is not set,the temperature is actual temperature.If CONFIG_WIND_Z168_TEST is y,the temperature is fixed at 25 for test.
+# CONFIG_WIND_Z168_TEST is not set
 # zhangchao@wind-mobi.com 20161118 end
 # CONFIG_HWMON is not set
 CONFIG_THERMAL=y
