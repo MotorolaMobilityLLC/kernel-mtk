@@ -422,3 +422,17 @@ config LCT_CHR_ALT_TEST_SUPPORT
 	default n
 	help
 	  Set yes to support ALT test.
+
+config MTK_SWITCH_INPUT_OUTPUT_CURRENT_SUPPORT
+    bool "MTK_SWITCH_INPUT_OUTPUT_CURRENT_SUPPORT"
+    default n
+    help
+	  Set yes to support switch input output current.
+	  Set no to not support switch input output current.
+
+config LCT_CHR_THERMAL_INPUT_CURRENT_CONTROL
+    bool "LCT_CHR_THERMAL_INPUT_CURRENT_CONTROL"
+    default n
+    help
+	  Set yes to support thermal input current control.
+	  Set no to not support thermal input current control.

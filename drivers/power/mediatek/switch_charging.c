@@ -456,6 +456,9 @@ unsigned int set_chr_input_current_limit(int current_limit)
 				break;
 			}
 			chr_type_aicr /= 100;
+#ifdef CONFIG_LCT_CHR_JEITA_STANDARD_SUPPORT
+		if(BMT_status.charger_exist == 1)
+#endif
 			if (current_limit > chr_type_aicr)
 				current_limit = chr_type_aicr;
 		}
@@ -499,11 +502,7 @@ unsigned int set_bat_charging_current_limit(int current_limit)
 
 	mutex_lock(&g_ichg_access_mutex);
 	if (current_limit != -1) {
-#ifdef 	CONFIG_LCT_CHR_HIGH_BATTERY_VOLTAGE_SUPPORT
-		g_bcct_flag = 0;//modify by zhangyh to close bcct detect for temp
-#else
 		g_bcct_flag = 1;
-#endif
 		switch (BMT_status.charger_type) {
 		case STANDARD_HOST:
 			chr_type_ichg = batt_cust_data.usb_charger_current;
@@ -533,6 +532,9 @@ unsigned int set_bat_charging_current_limit(int current_limit)
 			break;
 		}
 		chr_type_ichg /= 100;
+#ifdef CONFIG_LCT_CHR_JEITA_STANDARD_SUPPORT
+		if(BMT_status.charger_exist == 1)
+#endif
 		if (current_limit > chr_type_ichg)
 			current_limit = chr_type_ichg;
 		g_bcct_value = current_limit;

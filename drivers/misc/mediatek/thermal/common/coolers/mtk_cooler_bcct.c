@@ -203,7 +203,9 @@ static void chrlmt_set_limit_handler(struct work_struct *work)
 
 	mtk_cooler_bcct_dprintk_always("%s %d %d\n", __func__
 		, chrlmt_chr_input_curr_limit, chrlmt_bat_chr_curr_limit);
-
+#ifdef CONFIG_LCT_CHR_THERMAL_INPUT_CURRENT_CONTROL
+	chrlmt_chr_input_curr_limit = chrlmt_bat_chr_curr_limit;
+#endif
 #ifdef CONFIG_MTK_SWITCH_INPUT_OUTPUT_CURRENT_SUPPORT
 		set_chr_input_current_limit(chrlmt_chr_input_curr_limit);
 #endif
