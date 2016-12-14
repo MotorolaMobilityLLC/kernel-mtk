@@ -674,8 +674,6 @@ static void lcm_setbacklight(unsigned int level)
 	unsigned int level_hight,level_low=0;
     #if(LCT_LCM_MAPP_BACKLIGHT)
 	unsigned int mapped_level = 0;
-	if (level >= 200)
-		level = 200;
 	if (level > 102)
 		mapped_level = (641*level + 36667)/(1000);
 	else
