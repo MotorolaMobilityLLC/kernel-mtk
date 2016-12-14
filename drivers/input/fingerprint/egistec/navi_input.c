@@ -46,10 +46,11 @@ enum {
  */
 #ifndef CONFIG_LCT_FPC_TEE_EGIS
 #define ENABLE_SWIPE_UP_DOWN	ENABLE
+#define ENABLE_SWIPE_LEFT_RIGHT	ENABLE
 #else
 #define ENABLE_SWIPE_UP_DOWN	DISABLE
+#define ENABLE_SWIPE_LEFT_RIGHT	DISABLE
 #endif
-#define ENABLE_SWIPE_LEFT_RIGHT	ENABLE
 
 
 /*
@@ -92,10 +93,12 @@ enum {
  *   KEY_RELEASE : Release key button
  *   KEY_PRESS_RELEASE : Combined action of press-then-release
  */
+
+//Lct modify by zl for navi
 #define	KEYEVENT_RIGHT			KEY_LEFT
 #define	KEYEVENT_RIGHT_ACTION	KEY_PRESS_RELEASE
 #define	KEYEVENT_LEFT			KEY_RIGHT
-#define	KEYEVENT_LEFT_ACTION		KEY_PRESS_RELEASE
+#define	KEYEVENT_LEFT_ACTION	KEY_PRESS_RELEASE
 
 
 
