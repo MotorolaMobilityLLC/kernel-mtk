@@ -264,7 +264,7 @@ static struct LCM_setting_table lcm_initialization_setting[] = {
 
 	    {0x29, 0, {}},
         {REGFLAG_DELAY, 20, {}},
-
+		{0xC9, 3, {0x13,0x00,0x14}},//pwm 20k
         {0x51, 1, {0xFF}},
         {REGFLAG_DELAY, 5, {}},
         {0x53, 1, {0x24}},
@@ -517,8 +517,6 @@ static void lcm_setbacklight(unsigned int level)
 	
     #if(LCT_LCM_MAPP_BACKLIGHT)
 	unsigned int mapped_level = 0;
-	if (level >= 200)
-		level = 200;
 	if (level > 102)
 		mapped_level = (641*level + 36667)/(1000);
 	else
