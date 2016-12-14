@@ -194,6 +194,7 @@ unsigned int lct_battery_ntc_missing = 0;
 #endif
 #ifdef  CONFIG_LCT_CHR_ALT_TEST_SUPPORT
 unsigned int lct_alt_status = 0;
+static unsigned int lct_alt_input_CC_value = 0;
 extern void rtc_clear_alt(void);
 extern int get_rtc_mark_alt(void);
 #endif
@@ -2592,7 +2593,27 @@ static void mt_battery_CheckBatteryStatus(void)
 			    cmd_discharging);
 		BMT_status.bat_charging_state = CHR_ERROR;
 		#ifdef CONFIG_LCT_CHR_ALT_TEST_SUPPORT
-		if (lct_alt_status != 1)
+		if (lct_alt_status == 1){
+			switch (BMT_status.charger_type) {
+				case STANDARD_HOST:
+					lct_alt_input_CC_value = batt_cust_data.usb_charger_current;
+					break;
+				case NONSTANDARD_CHARGER:
+					lct_alt_input_CC_value = batt_cust_data.non_std_ac_charger_current;
+					break;
+				case STANDARD_CHARGER:
+					lct_alt_input_CC_value = batt_cust_data.ac_charger_current;
+					break;
+				case CHARGING_HOST:
+					lct_alt_input_CC_value = batt_cust_data.charging_host_charger_current;
+					break;
+				default:
+					lct_alt_input_CC_value = CHARGE_CURRENT_500_00_MA;
+					break;
+			}
+			battery_charging_control(CHARGING_CMD_SET_INPUT_CURRENT, &lct_alt_input_CC_value);
+		}
+		else
 		battery_charging_control(CHARGING_CMD_SET_ERROR_STATE, &cmd_discharging);
 		#else
 		battery_charging_control(CHARGING_CMD_SET_ERROR_STATE, &cmd_discharging);
