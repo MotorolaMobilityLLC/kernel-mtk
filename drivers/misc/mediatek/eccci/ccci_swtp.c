@@ -176,7 +176,7 @@ int swtp_init(int md_id)
 		gpio_set_debounce(swtp_data[md_id].gpiopin, swtp_data[md_id].setdebounce);
 		swtp_data[md_id].irq = irq_of_parse_and_map(node, 0);
 		ret = request_irq(swtp_data[md_id].irq, swtp_irq_func,
-			IRQF_TRIGGER_NONE, "swtp-eint", &swtp_data[md_id]);
+			IRQF_TRIGGER_HIGH, "swtp-eint", &swtp_data[md_id]);
 		if (ret != 0) {
 			CCCI_LEGACY_ERR_LOG(md_id, KERN, "swtp-eint IRQ LINE NOT AVAILABLE\n");
 		} else {
