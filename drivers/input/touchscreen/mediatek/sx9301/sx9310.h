@@ -142,7 +142,7 @@ static struct smtc_reg_data sx9310_i2c_reg_setup[] = {
 	},
 	{
 		.reg = SX9310_CPS_CTRL3_REG,
-		.val = 0x0E,
+		.val = 0x0A,
 	},
 	{
 		.reg = SX9310_CPS_CTRL4_REG,
@@ -150,7 +150,7 @@ static struct smtc_reg_data sx9310_i2c_reg_setup[] = {
 	},
 	{
 		.reg = SX9310_CPS_CTRL5_REG,
-		.val = 0xC1,
+		.val = 0x41,
 	},
 	{
 		.reg = SX9310_CPS_CTRL6_REG,
@@ -162,7 +162,7 @@ static struct smtc_reg_data sx9310_i2c_reg_setup[] = {
 	},
 	{
 		.reg = SX9310_CPS_CTRL8_REG,
-		.val = 0x1e,
+		.val = 0x26,
 	},
 	{
 		.reg = SX9310_CPS_CTRL9_REG,
@@ -222,7 +222,7 @@ static struct smtc_reg_data sx9310_i2c_reg_setup[] = {
 	},
 	{
 		.reg = SX9310_CPS_CTRL0_REG,
-		.val = 0x51,
+		.val = 0x21,
 	},
 };
 
