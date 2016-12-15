@@ -360,18 +360,36 @@ static int ltr778_ps_enable(struct i2c_client *client, int enable)
 {
 	u8 regdata;
 	int err;
-	//liujinzhou@wind-mobi.com modify at 20161205 begin
-	struct ltr778_priv *obj = ltr778_obj;
-
-
+	//liujinzhou@wind-mobi.com modify at 20161215 begin
+	int res;
+	
 	APS_LOG("ltr778_ps_enable(%d) ...start!\n",enable);
 
-	// modified by steven
-	atomic_set(&obj->ps_thd_val_high, 2047);
-	atomic_set(&obj->ps_thd_val_low, 0);
-	
-	ltr778_ps_set_thres();
-	//liujinzhou@wind-mobi.com modify at 20161205 end
+	// modified by steven	
+	res = ltr778_i2c_write_reg( LTR778_PS_THRES_LOW_0, 0x00);
+			if(res < 0)
+			{
+				return res;
+			}
+			
+			res = ltr778_i2c_write_reg( LTR778_PS_THRES_LOW_1, 0x00);
+			if(res < 0)
+			{
+				return res;
+			}
+			
+			res = ltr778_i2c_write_reg( LTR778_PS_THRES_UP_0, 0xFF);
+			if(res < 0)
+			{
+				return res;
+			}
+			
+			res = ltr778_i2c_write_reg( LTR778_PS_THRES_UP_1, 0x07);
+			if(res < 0)
+			{
+				return res;
+			}
+	//liujinzhou@wind-mobi.com modify at 20161215 end
 
 	regdata = ltr778_i2c_read_reg(LTR778_PS_CONTR);
 	if (enable != 0) {
@@ -489,16 +507,18 @@ static int ltr778_dynamic_calibrate(void)
 		dynamic_calibrate = noise;
 
 		if (noise < 100) {
-			ps_thd_val_high = noise + 65;
-			ps_thd_val_low  = noise + 30;
+		//liujinzhou@wind-mobi.com modify at 20161215 begin
+			ps_thd_val_high = noise + 55;
+			ps_thd_val_low  = noise + 22;
 			ps_persist_val_high = noise + 500;  // modified by steven
-			ps_persist_val_low  = noise + 55;
+			ps_persist_val_low  = noise + 45;
 		}
 		else if (noise < 200) {
-			ps_thd_val_high = noise + 70;
-			ps_thd_val_low  = noise + 35;
+			ps_thd_val_high = noise + 60;
+			ps_thd_val_low  = noise + 25;
 			ps_persist_val_high = noise + 500;
-			ps_persist_val_low  = noise + 60;
+			ps_persist_val_low  = noise + 50;
+		//liujinzhou@wind-mobi.com modify at 20161215 end
 		}
 		else if (noise < 300) {
 			ps_thd_val_high = noise + 80;
