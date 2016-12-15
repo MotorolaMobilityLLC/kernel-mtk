@@ -45,7 +45,7 @@
 //#define LOG_INF(format, args...) xlog_printk(ANDROID_LOG_INFO ,PFX, "[%s] " format, __FUNCTION__, ##args)
 //#define LOG_DBG(format, args...) xlog_printk(ANDROID_LOG_DEBUG ,PFX, "[%S] " format, __FUNCTION__, ##args)
 #define LOG_INF(format, args...)    pr_debug(PFX "[%s] " format, __FUNCTION__, ##args)
-//#define S5K4H8_OTP_SUPPORT
+#define S5K4H8_OTP_SUPPORT
 #ifdef S5K4H8_OTP_SUPPORT
 struct S5K4H8_otp_struct {
 int flag;
@@ -54,15 +54,20 @@ int LID;
 int RGr_ratio;
 int BGr_ratio;
 int GbGr_ratio;
+int RGr_ratio_gd;
+int BGr_ratio_gd;
+int GbGr_ratio_gd;
 int VCM_start;
 int VCM_end;
 int VCM_id;
 int VCM_driver_id;
 int OTP_map_id;
 };
-#define tRG_Ratio_typical 0x10B
-#define tBG_Ratio_typical 0x102
-#define GbGr_ratio_Typical 0x204
+//#define tRG_Ratio_typical 0x10B
+//#define tBG_Ratio_typical 0x102
+//#define GbGr_ratio_Typical 0x204
+extern int read_s5k4h8_eeprom_mtk_fmt(void);
+kal_uint16 R_gain_4h8,B_gain_4h8,R_gain_4h8_gd,B_gain_4h8_gd,vender_id_4h8,inf,mac;
 #endif
 static DEFINE_SPINLOCK(imgsensor_drv_lock);
 static imgsensor_info_struct imgsensor_info = { 
@@ -283,7 +288,7 @@ static void write_cmos_sensor(kal_uint16 addr, kal_uint16 para)
 	kdSetI2CSpeed(imgsensor_info.i2c_speed); // Add this func to set i2c speed by each sensor
     iWriteRegI2C(pusendcmd , 4, imgsensor.i2c_write_id);
 }
-/*
+#ifdef S5K4H8_OTP_SUPPORT
 static kal_uint16 read_cmos_sensor_8(kal_uint16 addr)
 {
     kal_uint16 get_byte = 0;
@@ -291,7 +296,8 @@ static kal_uint16 read_cmos_sensor_8(kal_uint16 addr)
 	kdSetI2CSpeed(imgsensor_info.i2c_speed); // Add this func to set i2c speed by each sensor
     iReadRegI2C(pusendcmd , 2, (u8*)&get_byte,1,imgsensor.i2c_write_id);
     return get_byte;
-*/
+}
+#endif
 static void write_cmos_sensor_8(kal_uint16 addr, kal_uint8 para)
 {
     char pusendcmd[4] = {(char)(addr >> 8) , (char)(addr & 0xFF) ,(char)(para & 0xFF)};
@@ -517,36 +523,45 @@ static void ihdr_write_shutter(kal_uint16 le, kal_uint16 se)
 #ifdef S5K4H8_OTP_SUPPORT
 static int read_otp_s5k4h8(struct S5K4H8_otp_struct *otp_ptr)
 {
-    int otp_flag,addr,temp;
+    int otp_flag,addr,checksum,checksum_read,i;
+	checksum=0;
+	checksum_read=0;
 	write_cmos_sensor_8(0x0100,0x01);
     mDELAY(10);
 	write_cmos_sensor_8(0x0A02,0x0f);
 	write_cmos_sensor_8(0x0A00,0x01);
 	addr = 0;
-    otp_flag=read_cmos_sensor_8(0x0A04);//flag of info and awb
-    LOG_INF("liukun s5k4h8 read flag=%x\n",otp_flag);
-    otp_ptr->MID=read_cmos_sensor_8(0x0A05);//vendor id
-    LOG_INF("liukun geer s5k4h8 vendor id=%x\n",otp_ptr->MID);
+    otp_flag=read_cmos_sensor_8(0x0A04);//flag of module info
+    LOG_INF("wangkangmin s5k4h8 read flag=%x\n",otp_flag);
     if((otp_flag & 0xc0) == 0x40) 
 	{
-	  addr = 0x0A07; // group 1
-	  LOG_INF("liukun s5k4h8 group1\n");
+	  addr = 0x0A05; // group 1
+	  LOG_INF("wangkangmin s5k4h8 group1\n");
 	}
 	else if((otp_flag & 0x30) == 0x10) 
 	{
-	  addr = 0x0A0D; // group 2
-	  LOG_INF("liukun s5k4h8 group2\n");
+	  addr = 0x0A0F; // group 2
+	  LOG_INF("wangkangmin s5k4h8 group2\n");
 	}
 	if(addr != 0)
 	{
 	 otp_ptr->flag=0x01;
-	 temp = read_cmos_sensor_8(addr+3);
-	 LOG_INF("liukun s5k4h8 read temp=%x\n",temp);
-     otp_ptr->RGr_ratio = (read_cmos_sensor_8(addr)<<2)+((read_cmos_sensor_8(addr+4)&0xc0)>>6);
-     otp_ptr->BGr_ratio = (read_cmos_sensor_8(addr+1)<<2)+((read_cmos_sensor_8(addr+4)&0x30)>>4);
-     otp_ptr->GbGr_ratio = (read_cmos_sensor_8(addr+2)<<2)+((read_cmos_sensor_8(addr+4)&0x0c)>>2);
-	 LOG_INF("liukun s5k4h8 read R_G_B=%x,%x,%x\n",read_cmos_sensor_8(addr),read_cmos_sensor_8(addr+1),read_cmos_sensor_8(addr+2));
-	 LOG_INF("liukun s5k4h8 RG_ratio=%x,BG_ratio=%x,BGBR_ratio=%x\n",otp_ptr->RGr_ratio,otp_ptr->BGr_ratio,otp_ptr->GbGr_ratio);
+     otp_ptr->MID = read_cmos_sensor_8(addr);
+	 vender_id_4h8=otp_ptr->MID;
+	 LOG_INF("wangkangmin s5k4h8 otp_ptr->MID %x\n",otp_ptr->MID);
+
+	 checksum_read=read_cmos_sensor_8(addr+9);
+	 for(i=0;i<9;i++)
+	 {
+		 checksum+=read_cmos_sensor_8(addr+i);
+		 LOG_INF("wangkangmin s5k4h8 read info %x\n",read_cmos_sensor_8(addr+i));
+	 }
+	 checksum = checksum%255+1;
+	 LOG_INF("wangkangmin s5k4h8 read module info checksum_read %x checksum %x\n",checksum_read,checksum);
+	 if(checksum_read != checksum)
+	 {
+		LOG_INF("wangkangmin s5k4h8 module info otp fail \n");
+	 }
 	}
 	else
 	{
@@ -555,24 +570,90 @@ static int read_otp_s5k4h8(struct S5K4H8_otp_struct *otp_ptr)
 	 otp_ptr->BGr_ratio = 0x00;
 	 otp_ptr->GbGr_ratio = 0x00;
 	}
-	otp_flag=read_cmos_sensor_8(0x0A11);//flag of VCM
-	addr = 0;
+
+	checksum=0;
+    otp_flag=read_cmos_sensor_8(0x0A26);//flag of awb
+    LOG_INF("wangkangmin s5k4h8 read flag=%x\n",otp_flag);
     if((otp_flag & 0xc0) == 0x40) 
 	{
-	  addr = 0x0A12; // group 1
-	  LOG_INF("liukun s5k4h8 group1\n");
+	  addr = 0x0A27; // group 1
+	  LOG_INF("wangkangmin s5k4h8 group1\n");
 	}
 	else if((otp_flag & 0x30) == 0x10) 
 	{
-	  addr = 0x0A15; // group 2
-	  LOG_INF("liukun s5k4h8 group1\n");
+	  addr = 0x0A34; // group 2
+	  LOG_INF("wangkangmin s5k4h8 group2\n");
+	}
+	if(addr != 0)
+	{
+	 otp_ptr->flag=0x01;
+     otp_ptr->RGr_ratio = (read_cmos_sensor_8(addr)<<8)|(read_cmos_sensor_8(addr+1));
+     otp_ptr->BGr_ratio = (read_cmos_sensor_8(addr+2)<<8)|(read_cmos_sensor_8(addr+3));
+     otp_ptr->GbGr_ratio = (read_cmos_sensor_8(addr+4)<<8)|(read_cmos_sensor_8(addr+5));
+     otp_ptr->RGr_ratio_gd = (read_cmos_sensor_8(addr+6)<<8)|(read_cmos_sensor_8(addr+7));
+     otp_ptr->BGr_ratio_gd = (read_cmos_sensor_8(addr+8)<<8)|(read_cmos_sensor_8(addr+9));
+     otp_ptr->GbGr_ratio_gd = (read_cmos_sensor_8(addr+10)<<8)|(read_cmos_sensor_8(addr+11));
+	 LOG_INF("wangkangmin s5k4h8 RG_ratio=%x,BG_ratio=%x,BGBR_ratio=%x\n",otp_ptr->RGr_ratio,otp_ptr->BGr_ratio,otp_ptr->GbGr_ratio);
+	 LOG_INF("wangkangmin s5k4h8 GOLDEN RG_ratio=%x,BG_ratio=%x,BGBR_ratio=%x\n",otp_ptr->RGr_ratio_gd,otp_ptr->BGr_ratio_gd,otp_ptr->GbGr_ratio_gd);
+	 R_gain_4h8=otp_ptr->RGr_ratio;
+	 B_gain_4h8=otp_ptr->BGr_ratio;
+	 R_gain_4h8_gd=otp_ptr->RGr_ratio_gd;
+	 B_gain_4h8_gd=otp_ptr->BGr_ratio_gd;
+	 checksum_read=read_cmos_sensor_8(addr+12);
+	 for(i=0;i<12;i++)
+	 {
+		 checksum+=read_cmos_sensor_8(addr+i);
+		 LOG_INF("wangkangmin s5k4h8 read info %x\n",read_cmos_sensor_8(addr+i));
+	 }
+	 checksum = checksum%255+1;
+	 LOG_INF("wangkangmin s5k4h8 read awb info checksum_read %x checksum %x\n",checksum_read,checksum);
+	 if(checksum_read != checksum)
+	 {
+		LOG_INF("wangkangmin s5k4h8 awb otp fail \n");
+	 }
+	}
+	else
+	{
+	 otp_ptr->flag=0x00;
+	 otp_ptr->RGr_ratio = 0x00;
+	 otp_ptr->BGr_ratio = 0x00;
+	 otp_ptr->GbGr_ratio = 0x00;
+	}
+	
+	checksum=0;
+	otp_flag=read_cmos_sensor_8(0x0A19);//flag of VCM
+	addr = 0;
+    if((otp_flag & 0xc0) == 0x40) 
+	{
+	  addr = 0x0A1A; // group 1
+	  LOG_INF("wangkangmin s5k4h8 group1\n");
+	}
+	else if((otp_flag & 0x30) == 0x10) 
+	{
+	  addr = 0x0A20; // group 2
+	  LOG_INF("wangkangmin s5k4h8 group2\n");
 	}
 	if(addr != 0)
 	{
 	 otp_ptr->flag += 0x04;
-	 otp_ptr->VCM_start = (read_cmos_sensor_8(addr)<<2)+((read_cmos_sensor_8(addr+2)&0xc0)>>6);
-	 otp_ptr->VCM_end = (read_cmos_sensor_8(addr+1)<<2)+((read_cmos_sensor_8(addr+2)&0x30)>>4);
-	 LOG_INF("liukun s5k4h8 VCM_start=%x,VCM_end=%x\n",otp_ptr->VCM_start,otp_ptr->VCM_end);
+	 otp_ptr->VCM_start = (read_cmos_sensor_8(addr+1)<<2)|((read_cmos_sensor_8(addr+2)&0xc0)>>6);
+	 otp_ptr->VCM_end = (read_cmos_sensor_8(addr+3)<<2)|((read_cmos_sensor_8(addr+4)&0xc0)>>6);
+	 LOG_INF("wangkangmin s5k4h8 VCM_start=%x,VCM_end=%x\n",otp_ptr->VCM_start,otp_ptr->VCM_end);
+	 inf = otp_ptr->VCM_start;
+	 mac = otp_ptr->VCM_end;
+	 checksum_read=read_cmos_sensor_8(addr+5);
+	 for(i=0;i<5;i++)
+	 {
+		 checksum+=read_cmos_sensor_8(addr+i);
+		 LOG_INF("wangkangmin s5k4h8 read af info %x\n",read_cmos_sensor_8(addr+i));
+	 }
+	 checksum = checksum%255+1;
+	 LOG_INF("wangkangmin s5k4h8 read af info checksum_read %x checksum %x\n",checksum_read,checksum);
+	 if(checksum_read != checksum)
+	 {
+		LOG_INF("wangkangmin s5k4h8 af otp fail \n");
+	 }
+	 
 	}
 	else
 	{
@@ -584,7 +665,7 @@ static int read_otp_s5k4h8(struct S5K4H8_otp_struct *otp_ptr)
    
    return 0;
 }
-
+#if 0
 static int apply_otp_s5k4H8(struct S5K4H8_otp_struct *otp_ptr)
 {
  kal_uint32 R_to_G, B_to_G, G_to_G, R_Gain, B_Gain, G_Gain, G_gain_R, G_gain_B; 
@@ -635,7 +716,7 @@ static int apply_otp_s5k4H8(struct S5K4H8_otp_struct *otp_ptr)
 			}                                                                                                                                                                                                                                                                                                                                            
 		}	                                                                                                                                                                                                                                                                                                                                             
 	} 
-	LOG_INF("liukun write s5k4h8 R_Gain=%x,B_Gain=%x,G_Gain=%x\n",R_Gain,B_Gain,G_Gain);
+	LOG_INF("wangkangmin write s5k4h8 R_Gain=%x,B_Gain=%x,G_Gain=%x\n",R_Gain,B_Gain,G_Gain);
 	write_cmos_sensor_8(0x020E,G_Gain>>8);
 	write_cmos_sensor_8(0x020F,G_Gain&0xff);
 	write_cmos_sensor_8(0x0210,R_Gain>>8);
@@ -644,23 +725,17 @@ static int apply_otp_s5k4H8(struct S5K4H8_otp_struct *otp_ptr)
     write_cmos_sensor_8(0x0213,B_Gain&0xff);
 	write_cmos_sensor_8(0x0214,G_Gain>>8);
     write_cmos_sensor_8(0x0215,G_Gain&0xff);
-	LOG_INF("liukun read s5k4h8 R_Gain=%x\n",(read_cmos_sensor_8(0x0210)<<8) | read_cmos_sensor_8(0x0211));
-	LOG_INF("liukun read s5k4h8 B_Gain=%x\n",(read_cmos_sensor_8(0x0212)<<8) | read_cmos_sensor_8(0x0213));
-	LOG_INF("liukun read s5k4h8 G_Gain=%x\n",(read_cmos_sensor_8(0x020E)<<8) | read_cmos_sensor_8(0x020F));
-	LOG_INF("liukun read s5k4h8 G_Gain=%x\n",(read_cmos_sensor_8(0x0214)<<8) | read_cmos_sensor_8(0x0215));
+	LOG_INF("wangkangmin read s5k4h8 R_Gain=%x\n",(read_cmos_sensor_8(0x0210)<<8) | read_cmos_sensor_8(0x0211));
+	LOG_INF("wangkangmin read s5k4h8 B_Gain=%x\n",(read_cmos_sensor_8(0x0212)<<8) | read_cmos_sensor_8(0x0213));
+	LOG_INF("wangkangmin read s5k4h8 G_Gain=%x\n",(read_cmos_sensor_8(0x020E)<<8) | read_cmos_sensor_8(0x020F));
+	LOG_INF("wangkangmin read s5k4h8 G_Gain=%x\n",(read_cmos_sensor_8(0x0214)<<8) | read_cmos_sensor_8(0x0215));
 	
 	return 0;
 }
 #endif
+#endif
 static void set_mirror_flip(kal_uint8 image_mirror)
 {
-#if 1
-#ifdef S5K4H8_OTP_SUPPORT
-	int size;
-	struct S5K4H8_otp_struct *otp_ptr1;
-	size = sizeof(struct S5K4H8_otp_struct);
-    otp_ptr1 = (struct S5K4H8_otp_struct *)kzalloc(size, GFP_KERNEL);
-#endif
 	LOG_INF("image_mirror = %d", image_mirror);
 
     /********************************************************
@@ -695,12 +770,6 @@ static void set_mirror_flip(kal_uint8 image_mirror)
         default:
 			LOG_INF("Error image_mirror setting\n");
     }
-#ifdef S5K4H8_OTP_SUPPORT
-    read_otp_s5k4h8(otp_ptr1);
-	apply_otp_s5k4H8(otp_ptr1);
-	kfree(otp_ptr1);
-#endif
-#endif
 }
 
 /*************************************************************************
@@ -909,7 +978,7 @@ static void sensor_init(void)
 	
 	// LSC enable
 	write_cmos_sensor(0x6028, 0x4000);
-	write_cmos_sensor(0x0B00, 0x0080);
+	write_cmos_sensor(0x0B00, 0x0180);
  
 }	/*	sensor_init  */
 /**********************************************************************************************************************/
@@ -1347,22 +1416,13 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 			*sensor_id = read_cmos_sensor(0x6F12);
 			//*sensor_id = imgsensor_info.sensor_id;
             if (*sensor_id == imgsensor_info.sensor_id) {               
-				#ifdef S5K4H8_OTP_SUPPORT
-				struct S5K4H8_otp_struct *otp_ptr1 = (struct S5K4H8_otp_struct *)kzalloc(sizeof(struct S5K4H8_otp_struct), GFP_KERNEL);
-				read_otp_s5k4h8(otp_ptr1);
-                LOG_INF("liukun s5k4h8 geer read otp vendor id=%x\n",(*otp_ptr1).MID);
-				 if((*otp_ptr1).MID == 0x00)
-			 	 {
-                   kfree(otp_ptr1);
-				   LOG_INF("i2c write id: 0x%x, sensor id: 0x%x\n", imgsensor.i2c_write_id,*sensor_id);	   
-				   return ERROR_NONE;
-				 }
-				 else
-			 	 {
-			 	  kfree(otp_ptr1);
-				  *sensor_id = 0xFFFFFFFF;
-		           return ERROR_SENSOR_CONNECT_FAIL;
-			 	 }
+                #ifdef S5K4H8_OTP_SUPPORT
+                struct S5K4H8_otp_struct *otp_ptr1 = (struct S5K4H8_otp_struct *)kzalloc(sizeof(struct S5K4H8_otp_struct), GFP_KERNEL);
+                read_otp_s5k4h8(otp_ptr1);
+                read_s5k4h8_eeprom_mtk_fmt();
+                kfree(otp_ptr1);
+                LOG_INF("i2c write id: 0x%x, sensor id: 0x%x\n", imgsensor.i2c_write_id,*sensor_id);	   
+                return ERROR_NONE;
                 #else   
                 LOG_INF("i2c write id: 0x%x, sensor id: 0x%x\n", imgsensor.i2c_write_id,*sensor_id);      
                 return ERROR_NONE; 
