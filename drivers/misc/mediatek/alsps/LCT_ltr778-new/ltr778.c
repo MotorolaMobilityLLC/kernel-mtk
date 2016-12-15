@@ -601,7 +601,7 @@ static int ltr778_als_enable(struct i2c_client *client, int enable)
 	//regdata = ltr778_i2c_read_reg(LTR778_ALS_CONTR);
 	if (enable != 0) {
 		APS_LOG("ALS(1): enable als only \n");
-		regdata = 0x05;
+		regdata = 0x01;
 	}
 	else {
 		APS_LOG("ALS(1): disable als only \n");
@@ -660,21 +660,21 @@ static int ltr778_als_read(struct i2c_client *client, u16* data)
 	{//A light
 		ch0_coeff = 379;
 		ch1_coeff = 1520;
-		winfac_1 = 1;
+		winfac_1 = 4;
 		winfac_2 = 3;
 	}
 	else if ((ratio >= 19) && (ratio < 30))
 	{// D6500K 
 		ch0_coeff = 379;
 		ch1_coeff = 1520;
-		winfac_1 = 5;
+		winfac_1 = 20;
 		winfac_2 = 7;
 	}
 	else if ((ratio >= 30) && (ratio < 51))
 	{//CWF
 		ch0_coeff = -4910;
 		ch1_coeff = 19950;
-		winfac_1 = 4;
+		winfac_1 = 16;
 		winfac_2 = 3;
 		
 	}
