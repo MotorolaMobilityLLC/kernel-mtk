@@ -17,6 +17,7 @@
 #include <linux/of_fdt.h>
 #include <linux/of_irq.h>
 #include <linux/of_address.h>
+#include <linux/switch.h>
 
 #include <mt-plat/mt_boot_common.h>
 #include "ccci_config.h"
@@ -31,6 +32,7 @@ const struct of_device_id swtp_of_match[] = {
 #define SWTP_MAX_SUPPORT_MD 1
 struct swtp_t swtp_data[SWTP_MAX_SUPPORT_MD];
 
+struct switch_dev g_sdev;
 
 static int swtp_switch_mode(struct swtp_t *swtp)
 {
@@ -50,12 +52,16 @@ static int swtp_switch_mode(struct swtp_t *swtp)
 			irq_set_irq_type(swtp->irq, IRQ_TYPE_LEVEL_LOW);
 
 		swtp->curr_mode = SWTP_EINT_PIN_PLUG_OUT;
+        if (strcmp(g_sdev.name, "dumb"))
+            switch_set_state(&g_sdev, 0);
 	} else {
 		if (swtp->eint_type == IRQ_TYPE_LEVEL_HIGH)
 			irq_set_irq_type(swtp->irq, IRQ_TYPE_LEVEL_LOW);
 		else
 			irq_set_irq_type(swtp->irq, IRQ_TYPE_LEVEL_HIGH);
 		swtp->curr_mode = SWTP_EINT_PIN_PLUG_IN;
+        if (strcmp(g_sdev.name, "dumb"))
+            switch_set_state(&g_sdev, 1);
 	}
 	CCCI_LEGACY_ALWAYS_LOG(swtp->md_id, KERN, "%s mode %d\n", __func__, swtp->curr_mode);
 	spin_unlock_irqrestore(&swtp->spinlock, flags);
@@ -149,6 +155,20 @@ int swtp_md_tx_power_req_hdlr(int md_id, int data)
 	return 0;
 }
 
+static ssize_t switch_rf_print_state(struct switch_dev *sdev, char *buf)
+{
+    const char *state;
+
+    if (switch_get_state(sdev))
+        state = "1";
+    else
+        state = "0";
+
+    if (state) return sprintf(buf, "%s\n", state);
+
+    return 0;
+}
+
 int swtp_init(int md_id)
 {
 	int ret = 0;
@@ -176,13 +196,25 @@ int swtp_init(int md_id)
 		gpio_set_debounce(swtp_data[md_id].gpiopin, swtp_data[md_id].setdebounce);
 		swtp_data[md_id].irq = irq_of_parse_and_map(node, 0);
 		ret = request_irq(swtp_data[md_id].irq, swtp_irq_func,
-			IRQF_TRIGGER_HIGH, "swtp-eint", &swtp_data[md_id]);
+			(swtp_data[md_id].eint_type == IRQ_TYPE_LEVEL_HIGH) ? IRQF_TRIGGER_HIGH : IRQF_TRIGGER_LOW, 
+            "swtp-eint", &swtp_data[md_id]);
 		if (ret != 0) {
 			CCCI_LEGACY_ERR_LOG(md_id, KERN, "swtp-eint IRQ LINE NOT AVAILABLE\n");
 		} else {
 			CCCI_LEGACY_ALWAYS_LOG(md_id, KERN,
 				"swtp-eint set EINT finished, irq=%d, setdebounce=%d, eint_type=%d\n",
 				swtp_data[md_id].irq, swtp_data[md_id].setdebounce, swtp_data[md_id].eint_type);
+
+            g_sdev.name = "rfswitch";
+            g_sdev.print_state = switch_rf_print_state;
+            if (switch_dev_register(&g_sdev)) {
+                ret = -1;
+                g_sdev.name = "dumb";
+                CCCI_LEGACY_ERR_LOG(md_id, KERN, "switch device register failure\n");
+            }
+            else {
+                switch_set_state(&g_sdev, 0);
+            }
 		}
 	} else {
 		CCCI_LEGACY_ERR_LOG(md_id, KERN, "%s can't find compatible node\n", __func__);
