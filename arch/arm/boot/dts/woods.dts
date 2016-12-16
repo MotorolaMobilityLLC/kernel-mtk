@@ -242,6 +242,12 @@ et360spi@0 {
 		status ="okay";
 		};
 //liupeng@wind-mobi.com 20161121 end
+        cust_capsensor@0{
+        compatible = "mediatek,sx9311";
+        i2c_num	= <2>;
+        i2c_addr = <0x28 0 0 0>;
+        };          
+
 };
 
 //tuwenzan@wind-mobi.com add at 20161130 begin
@@ -283,6 +289,17 @@ et360spi@0 {
 	gyro_intpin_default: gyrodefaultcfg {
 
 	};
+
+	capsensor_pins_default: eint61default {
+	};
+	capsensor_pins_eint_as_int: eint@61 {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO61__FUNC_GPIO61>;
+			slew-rate = <0>;
+			bias-pull-up = <00>;
+		};
+	};  
+    
 };
 //liupeng@wind-mobi.com 20161121 begin
 &pio {
@@ -339,6 +356,14 @@ et360spi@0 {
 	status = "okay";
 
 };
+
+&capsensor {
+	pinctrl-names = "default", "state_eint_as_int";
+	pinctrl-0 = <&capsensor_pins_default>;
+	pinctrl-1 = <&capsensor_pins_eint_as_int>;
+	status = "okay";
+}; 
+
 /* sensor end */
 //tuwenzan@wind-mobi.com modify at 20161108 begin
 &pio {
