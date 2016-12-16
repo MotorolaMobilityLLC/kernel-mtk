@@ -161,6 +161,7 @@
 //#define TPD_HAVE_CALIBRATION
 //#define TPD_HAVE_TREMBLE_ELIMINATION
 //#define TPD_CLOSE_POWER_IN_SLEEP
+#define TPD_FT8716_NO_POWER_CTRL_IN_TOUCH
 /******************************************************************************/
 /*Chip Device Type*/
 #define IC_FT5X06							0				/*x=2,3,4*/

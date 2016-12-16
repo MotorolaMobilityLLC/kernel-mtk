@@ -775,6 +775,10 @@ static void lcm_init(void)
 	MDELAY(2);
 
 	SET_RESET_PIN(1);
+	/*focal touch  add touch rst pull up*/
+	mt_set_gpio_mode_base(10, GPIO_MODE_00);
+	mt_set_gpio_dir_base(10, GPIO_DIR_OUT);
+	mt_set_gpio_out_base(10, GPIO_OUT_ONE);	
 	MDELAY(8);
 	//lcm init code
 	init_lcm_registers();

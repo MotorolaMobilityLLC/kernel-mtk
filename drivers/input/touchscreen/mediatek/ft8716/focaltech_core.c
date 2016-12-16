@@ -1921,6 +1921,35 @@ static int fts_init_gpio_hw(void)
 	return ret;
 }
 /************************************************************************
+* Name: fts_wait_tp_to_valid
+* Brief: wait for tp ready
+* Input: i2c_client
+* Output: no
+* Return: reg_value
+***********************************************************************/
+static int fts_wait_tp_to_valid(struct i2c_client *client)
+{
+	int ret = 0;
+   	int cnt = 0;
+   	u8  reg_value = 0;
+
+	do{
+		ret = fts_read_reg(client, 0xA3, &reg_value);
+       		 if (ret < 0){
+			 	dev_err(&client->dev,"%s i2c_transfer error, ret=%d", __func__, ret);
+       		 }
+		else if (reg_value == 0x87){
+			dev_err(&client->dev,"Device ID = %02x , cnt=%d", reg_value, cnt);
+            		return 0;
+        		}
+        		cnt++;
+        		mdelay(20);
+	}while ((cnt * 20) < 300);
+    /* error: not get correct reg data */
+   	 dev_err(&client->dev,"Device ID =  %02x ", reg_value);
+    	 return reg_value;
+}
+/************************************************************************
 * Name: tpd_probe
 * Brief: driver entrance function for initial/power on/create channel
 * Input: i2c info, device id
@@ -2474,6 +2503,7 @@ static void tpd_resume(struct device *dev)
 		dev_err(&fts_i2c_client->dev, "[fts][ahe] exit  gesture $$$$$$$ ");
 	}
 #endif
+#ifndef TPD_FT8716_NO_POWER_CTRL_IN_TOUCH
 #ifdef TPD_CLOSE_POWER_IN_SLEEP
 	tpd_gpio_output(GTP_RST_PORT, 0);
 	mdelay(10);
@@ -2488,7 +2518,11 @@ static void tpd_resume(struct device *dev)
 	mdelay(10);
 #endif
 	tpd_gpio_output(GTP_RST_PORT, 1);
-	mdelay(150);/*why delay ?? */
+	mdelay(150);/*wait touch ic init */
+#else
+	tpd_gpio_output(GTP_RST_PORT, 1);
+	fts_wait_tp_to_valid(fts_i2c_client);
+#endif 
 	tpd_halt = 0;
 #ifdef FTS_GLOVE_EN
 	if (fts_glove_flag)
@@ -2523,8 +2557,10 @@ static void tpd_resume(struct device *dev)
 static void tpd_suspend(struct device *dev)
 {
 	int ret = 0;
+#ifndef TPD_FT8716_NO_POWER_CTRL_IN_TOUCH
 #ifndef TPD_CLOSE_POWER_IN_SLEEP
 	char data =  0x00 ;
+#endif 
 #endif 
 
 	dev_err(&fts_i2c_client->dev, "fts  enter sleep~~~~\n");
@@ -2561,7 +2597,7 @@ static void tpd_suspend(struct device *dev)
 		dev_err(&fts_i2c_client->dev, "[fts][ahe] no gesture will enter normal sleep ~~~~ ");
 		tpd_halt = 1;
 		disable_irq(touch_irq);
-
+#ifndef TPD_FT8716_NO_POWER_CTRL_IN_TOUCH
 #ifdef TPD_CLOSE_POWER_IN_SLEEP
 		tpd_gpio_output(GTP_RST_PORT, 0);
 		mdelay(10)
@@ -2589,9 +2625,10 @@ static void tpd_suspend(struct device *dev)
 		dev_err(&fts_i2c_client->dev, "[fts] ft8716 cut lcm power off   !! ");
 		}
 #endif
-		lcm_power_off();
+#else
 		tpd_gpio_output(GTP_RST_PORT, 0);
-
+		lcm_power_off();
+#endif
 #if FTS_GESTRUE_EN
 	}
 #endif
