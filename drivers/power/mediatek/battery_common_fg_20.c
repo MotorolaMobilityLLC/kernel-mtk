@@ -255,7 +255,12 @@ static struct workqueue_struct *battery_init_workqueue;
 static struct work_struct battery_init_work;
 //zhangchao@wind-mobi.com 20161128 begin
 #ifdef CONFIG_WIND_Z168_BATTERY_MODIFY
+extern signed int fgauge_get_Q_max(signed short temperature);
+extern int force_get_tbat(kal_bool update);
 signed int mt_battery_GetBatteryCurrent(void);
+signed int mt_battery_GetBatteryCapacity(void);
+signed int mt_battery_GetBatteryCoulombs(void);
+signed int mt_battery_GetBatteryDesignedCapacity(void);
 #endif
 //zhangchao@wind-mobi.com 20161128 end
 
@@ -347,6 +352,9 @@ static enum power_supply_property battery_props[] = {
 	//zhangchao@wind-mobi.com 20161128 begin
 	#ifdef CONFIG_WIND_Z168_BATTERY_MODIFY
 	POWER_SUPPLY_PROP_CURRENT_AVG,
+	POWER_SUPPLY_PROP_full_bat,
+	POWER_SUPPLY_PROP_energy_full,
+	POWER_SUPPLY_PROP_charger_full_design,
 	#endif
 	//zhangchao@wind-mobi.com 20161128 end
 	/* Add for EM */
@@ -665,6 +673,15 @@ static int battery_get_property(struct power_supply *psy,
 	#ifdef CONFIG_WIND_Z168_BATTERY_MODIFY
 	case POWER_SUPPLY_PROP_CURRENT_AVG:
 		val->intval = mt_battery_GetBatteryCurrent();
+		break;
+	case POWER_SUPPLY_PROP_full_bat:
+		val->intval = mt_battery_GetBatteryCapacity();
+		break;
+	case POWER_SUPPLY_PROP_energy_full:
+		val->intval = mt_battery_GetBatteryCoulombs();
+		break;
+	case POWER_SUPPLY_PROP_charger_full_design:
+		val->intval = mt_battery_GetBatteryDesignedCapacity();
 		break;
 	#endif
 	//zhangchao@wind-mobi.com 20161128 end
@@ -2295,6 +2312,28 @@ signed int mt_battery_GetBatteryCurrent(void)
 	avg=sum/count;
 	battery_log(BAT_LOG_CRTI, "zhangchao battery avgcurrent= (%d)\n",avg);
 	return avg/10;
+}
+signed int mt_battery_GetBatteryCapacity(void)
+{
+    	int temp, Qmax;
+	temp = force_get_tbat(KAL_TRUE);
+	Qmax = fgauge_get_Q_max(temp);
+	battery_log(BAT_LOG_CRTI, "zhangchao1 BatteryCapacity= (%d)\n",Qmax);
+	return Qmax;
+}
+signed int mt_battery_GetBatteryCoulombs(void)
+{
+	int coulombs;
+	coulombs = 3600*mt_battery_GetBatteryCapacity();
+	battery_log(BAT_LOG_CRTI, "zhangchao2 battery Coulombs= (%d)\n",coulombs);
+	return coulombs;
+}
+signed int mt_battery_GetBatteryDesignedCapacity(void)
+{
+	int i;
+	i = 2800;
+	battery_log(BAT_LOG_CRTI, "zhangchao2 battery DesignedCapacity= (%d)\n",i);
+	return i;
 }
 #endif
 //zhangchao@wind-mobi.com 20161128 begin

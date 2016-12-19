@@ -166,6 +166,13 @@ enum power_supply_property {
 	POWER_SUPPLY_PROP_BatterySenseVoltage,
 	POWER_SUPPLY_PROP_ISenseVoltage,
 	POWER_SUPPLY_PROP_ChargerVoltage,
+	//zhangchao@wind-mobi.com 20161219 begin
+	#ifdef CONFIG_WIND_Z168_BATTERY_MODIFY
+	POWER_SUPPLY_PROP_full_bat,
+	POWER_SUPPLY_PROP_energy_full,
+	POWER_SUPPLY_PROP_charger_full_design,
+	#endif
+	//zhangchao@wind-mobi.com 20161219 end
 	/* Dual battery */
 	POWER_SUPPLY_PROP_status_smb,
 	POWER_SUPPLY_PROP_capacity_smb,
