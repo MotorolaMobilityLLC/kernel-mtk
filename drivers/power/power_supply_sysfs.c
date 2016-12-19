@@ -217,6 +217,13 @@ static struct device_attribute power_supply_attrs[] = {
 	POWER_SUPPLY_ATTR(BatterySenseVoltage),
 	POWER_SUPPLY_ATTR(ISenseVoltage),
 	POWER_SUPPLY_ATTR(ChargerVoltage),
+	//zhangchao@wind-mobi.com 20161219 begin
+	#ifdef CONFIG_WIND_Z168_BATTERY_MODIFY
+	POWER_SUPPLY_ATTR(full_bat),
+	POWER_SUPPLY_ATTR(energy_full),
+	POWER_SUPPLY_ATTR(charger_full_design),
+	#endif
+	//zhangchao@wind-mobi.com 20161219 end
 	/* Dual battery */
 	POWER_SUPPLY_ATTR(status_smb),
 	POWER_SUPPLY_ATTR(capacity_smb),
