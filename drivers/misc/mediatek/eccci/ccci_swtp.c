@@ -188,33 +188,39 @@ int swtp_init(int md_id)
 
 	node = of_find_matching_node(NULL, swtp_of_match);
 	if (node) {
+        g_sdev.name = "rfswitch";
+        g_sdev.print_state = switch_rf_print_state;
+        g_sdev.state = 0;
+        if (switch_dev_register(&g_sdev)) {
+            ret = -1;
+            g_sdev.name = "dumb";
+            CCCI_LEGACY_ERR_LOG(md_id, KERN, "switch device register failure\n");
+        }
+    
 		of_property_read_u32_array(node, "debounce", ints, ARRAY_SIZE(ints));
 		of_property_read_u32_array(node, "interrupts", ints1, ARRAY_SIZE(ints1));
 		swtp_data[md_id].gpiopin = ints[0];
 		swtp_data[md_id].setdebounce = ints[1];
 		swtp_data[md_id].eint_type = ints1[1];
+
+        /* reverse SWTP logic cause Modem thinks in reversed order */
+        if (swtp_data[md_id].eint_type == IRQ_TYPE_LEVEL_HIGH)
+            swtp_data[md_id].eint_type = IRQ_TYPE_LEVEL_LOW;
+        else if (swtp_data[md_id].eint_type == IRQ_TYPE_LEVEL_LOW)
+            swtp_data[md_id].eint_type = IRQ_TYPE_LEVEL_HIGH;
+
 		gpio_set_debounce(swtp_data[md_id].gpiopin, swtp_data[md_id].setdebounce);
 		swtp_data[md_id].irq = irq_of_parse_and_map(node, 0);
 		ret = request_irq(swtp_data[md_id].irq, swtp_irq_func,
-			(swtp_data[md_id].eint_type == IRQ_TYPE_LEVEL_HIGH) ? IRQF_TRIGGER_LOW : IRQF_TRIGGER_HIGH, 
+			(swtp_data[md_id].eint_type == IRQ_TYPE_LEVEL_HIGH) ? IRQF_TRIGGER_HIGH : IRQF_TRIGGER_LOW, 
             "swtp-eint", &swtp_data[md_id]);
 		if (ret != 0) {
 			CCCI_LEGACY_ERR_LOG(md_id, KERN, "swtp-eint IRQ LINE NOT AVAILABLE\n");
 		} else {
+            enable_irq(swtp_data[md_id].irq);
 			CCCI_LEGACY_ALWAYS_LOG(md_id, KERN,
 				"swtp-eint set EINT finished, irq=%d, setdebounce=%d, eint_type=%d\n",
 				swtp_data[md_id].irq, swtp_data[md_id].setdebounce, swtp_data[md_id].eint_type);
-
-            g_sdev.name = "rfswitch";
-            g_sdev.print_state = switch_rf_print_state;
-            if (switch_dev_register(&g_sdev)) {
-                ret = -1;
-                g_sdev.name = "dumb";
-                CCCI_LEGACY_ERR_LOG(md_id, KERN, "switch device register failure\n");
-            }
-            else {
-                switch_set_state(&g_sdev, 0);
-            }
 		}
 	} else {
 		CCCI_LEGACY_ERR_LOG(md_id, KERN, "%s can't find compatible node\n", __func__);
