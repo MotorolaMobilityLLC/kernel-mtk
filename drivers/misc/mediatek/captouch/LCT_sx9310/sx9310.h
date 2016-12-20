@@ -125,11 +125,19 @@ static struct smtc_reg_data sx9310_i2c_reg_setup[] = {
 	},
 	{
 		.reg = SX9310_CPS_CTRL4_REG,
+#ifdef 	CONFIG_WIND_DEVICE_INFO
+		.val = 0x15,
+#else	
 		.val = 0x0D,
+#endif
 	},
 	{
 		.reg = SX9310_CPS_CTRL5_REG,
+#ifdef 	CONFIG_WIND_DEVICE_INFO
+		.val = 0x41,
+#else	
 		.val = 0xD1,   //0xC1 -> 0XD1  8*30ma read cycle 
+#endif		
 	},
 	{
 		.reg = SX9310_CPS_CTRL6_REG,
@@ -141,7 +149,11 @@ static struct smtc_reg_data sx9310_i2c_reg_setup[] = {
 	},
 	{
 		.reg = SX9310_CPS_CTRL8_REG,
+#ifdef 	CONFIG_WIND_DEVICE_INFO
+		.val = 0x26,
+#else	
 		.val = 0x7E,
+#endif		
 	},
 	{
 		.reg = SX9310_CPS_CTRL9_REG,
@@ -201,7 +213,11 @@ static struct smtc_reg_data sx9310_i2c_reg_setup[] = {
 	},
 	{
 		.reg = SX9310_CPS_CTRL0_REG,
+#ifdef 	CONFIG_WIND_DEVICE_INFO
+		.val = 0x21,
+#else			
 		.val = 0x22, //0x57  0x22 for cs1 only 
+#endif		
 	},
 };
 
