@@ -52,7 +52,7 @@ enum boot_reason_t {
 	BR_KERNEL_PANIC,
 	BR_WDT_SW,
 	BR_WDT_HW
-#if CONFIG_LCT_BOOTINFO_SUPPORT// By shaohui - 2016-12-13-18-32
+#ifdef CONFIG_LCT_BOOTINFO_SUPPORT// By shaohui - 2016-12-13-18-32
 	,BR_CHR,
 	BR_PWR_RST
 #endif
