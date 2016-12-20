@@ -1,0 +1,71 @@
+RT5081 Charger Driver Device Tree Node Property
+Author: ShuFan Lee <shufan_lee@richtek.com>
+
+1. compatible(str):
+	compatible = "richtek,rt5081_pmu_charger";
+
+2. interrupt-names:	(name of interrupts)
+	interrupt-names =
+				"adc_donei",
+			 	"chg_mivr",
+			  	"chg_aiclmeasi",
+				"ssfinishi",
+				"pumpx_donei",
+
+For 2. , enable the interrupt you want to use by adding its name.
+
+3. charger_name(str):	this charger's name
+	charger_name = "rt5081_charger";
+
+4. ichg(u32):	initial setting of charging current
+	ichg = <200000>;        /* 10uA */
+
+5. aicr(u32):	initial setting of input current
+	aicr = <50000>;         /* 10uA */
+
+6. mivr(u32):	initial setting of mivr
+	mivr = <4400>;          /* mV */
+
+7. cv(u32):		initial setting of battery cv
+	cv = <4350000>;         /* uA */
+
+8. ieoc(u32):	initial setting of current for end of charging
+	ieoc = <250>;           /* mA */
+
+9. safety_timer(u32):	initial setting of safety timer
+	safety_timer = <12>;    /* hour */
+
+10. dc_wdt(u32):		initial setting of watch dog timer for direct charge
+	dc_wdt = <4000>;        /* ms */
+
+11. ircmp_resistor(u32):		initial setting of resistor for IR compensation
+	ircmp_resistor = <25>;  /* mohm */
+
+12. ircmp_vclamp(u32):	initial setting of vclamp for IR compensation
+	ircmp_vclamp = <32>;    /* mV */
+
+13. enable_te(bool):	enable TE function or not
+	enable_te;
+
+14. enable_wdt(bool):	enable watch dog timer or not
+	enable_wdt;
+
+
+EX:
+	charger {
+			compatible = "richtek,rt5081_pmu_charger";
+			interrupt-names = "adc_donei", "chg_mivr",
+					"chg_aiclmeasi", "ssfinishi", "pumpx_donei";
+			charger_name = "rt5081_charger";
+			ichg = <200000>;        /* 10uA */
+			aicr = <50000>;         /* 10uA */
+			mivr = <4400>;          /* mV */
+			cv = <4350000>;         /* uA */
+			ieoc = <250>;           /* mA */
+			safety_timer = <12>;    /* hour */
+			dc_wdt = <4000>;        /* ms */
+			ircmp_resistor = <25>;  /* mohm */
+			ircmp_vclamp = <32>;    /* mV */
+			enable_te;
+			enable_wdt;
+	};

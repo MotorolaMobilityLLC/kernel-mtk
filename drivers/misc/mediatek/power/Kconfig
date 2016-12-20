@@ -1,0 +1,97 @@
+# Power Related
+config MTK_PMIC
+	bool "MediaTek PMIC driver"
+	default y
+	---help---
+	  MediaTek PMIC driver.
+	  Set y to support this driver.
+	  Set n and choose other chargers.
+	  This driver uses MTK_PWRAP.
+
+config MTK_CHARGER_INTERFACE
+	bool "Mediatek Charger Interface"
+	default n
+	---help---
+	  Mediatek Charger Interface.
+	  Say y to support this module.
+	  Say n and choose other chargers and interface.
+	  Do not select this module if you've ported your own interface.
+
+config MTK_RT9466_SUPPORT
+	bool "Mediatek Richtek RT9466 driver"
+	select MTK_SWITCH_INPUT_OUTPUT_CURRENT_SUPPORT
+	select MTK_CHARGER_INTERFACE
+	default n
+	---help---
+	  Mediatek Richtek RT9466 driver.
+	  Say y to support this driver.
+	  Say n and choose other chargers.
+	  This driver uses I2C bus.
+
+config MTK_RT9468_SUPPORT
+	bool "Mediatek Richtek RT9466 driver"
+	select MTK_SWITCH_INPUT_OUTPUT_CURRENT_SUPPORT
+	select MTK_CHARGER_INTERFACE
+	default n
+	---help---
+	  Mediatek Richtek RT9468 driver.
+	  Say y to support this driver.
+	  Say n and choose other chargers.
+	  This driver uses I2C bus.
+
+config MTK_BQ25890_SUPPORT
+	bool "Mediatek TI BQ25890 driver"
+	select MTK_SWITCH_INPUT_OUTPUT_CURRENT_SUPPORT
+	default n
+	---help---
+	  Mediatek TI BQ25890 driver.
+	  Set y to support this driver.
+	  Set n and choose other chargers.
+	  This driver uses I2c bus.
+
+config MTK_BQ25896_SUPPORT
+	bool "Mediatek TI BQ25896 driver"
+	select MTK_SWITCH_INPUT_OUTPUT_CURRENT_SUPPORT
+	default n
+	---help---
+	Mediatek TI BQ25896 driver.
+	Set y to support this driver.
+	Set n and choose other chargers.
+	This driver uses I2c bus.
+
+config MTK_BQ25898_DUAL_SUPPORT
+	bool "Mediatek dual TI BQ25896 driver"
+	select MTK_SWITCH_INPUT_OUTPUT_CURRENT_SUPPORT
+	default n
+	---help---
+	Mediatek TI BQ25898D driver.
+	Set y to support this driver.
+	Set n and choose other chargers.
+	This driver uses I2c bus.
+
+config MTK_SWITCH_INPUT_OUTPUT_CURRENT_SUPPORT
+	bool "Mediatek allow to configure input/charging current"
+	default n
+	---help---
+	Mediatek switch charger input output current.
+	Set y to support.
+	Set n to disable.
+	switch charger often supports this feature.
+
+config MTK_WIRELESS_CHARGER_SUPPORT
+	bool "Mediatek Wireless charger driver"
+	default n
+	---help---
+	yes : support wireless charger feature, it can show the wireless
+	charging animation and charging icon when receive wireless charger
+	plug-in. no: not support wireless charger feature, stay with
+	legancy feature, which cannot sense the exist of the wireles
+	charger.
+
+config MTK_POWER_EXT_DETECT
+	bool "MediaTek Power Ext detect"
+	default n
+	---help---
+	EVB/Phone share load configration.
+	Require one GPIO to do detection,
+	GPIO high mean EVB, otherwise mean phone platform.

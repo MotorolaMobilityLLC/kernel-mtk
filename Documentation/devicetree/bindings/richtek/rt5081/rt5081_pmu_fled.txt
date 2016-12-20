@@ -1,0 +1,31 @@
+Richtek RT5081 flashligh led subdev
+RT5081 flashlight led control.
+
+Required properties:
+- compatible : Must be "richtek,rt5081_pmu_fled";
+- interrupt-names : RT5081 fled enabled interrupts.
+
+Optional node:
+- fled_ctrl_sel : 0 -> none, 1 -> control led1, 2 -> control led2, 3 -> control both
+- torch_cur : 25000 ~ 400000 uA
+- strobe_cur : 100000 ~  1500000 uA
+- strobe_timeout : 64 ~ 2432 ms
+
+Example:
+rt5081_pmu@34 {
+	status = "ok";
+	compatible = "richtek,rt5081_pmu";
+	reg = <0x34>;
+	interrupt-controller;
+	#interrupt-cells = <1>;
+	rt,intr_gpio = <&msmgpio 66 0>;
+	fled {
+		compatible = "richtek,rt5081_pmu_fled";
+		interrupt-names = "fled_lvf", "fled2_short",
+				  "fled1_short";
+		fled_ctrl_sel = <2>;
+		torch_cur = <25000>;
+		strobe_cur = <100000>;
+		strobe_timeout = <96>;
+	};
+};

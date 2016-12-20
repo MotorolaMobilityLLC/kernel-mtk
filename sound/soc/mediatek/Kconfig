@@ -1,0 +1,108 @@
+config SND_SOC_MEDIATEK
+	tristate "ASoC support for Mediatek chip"
+	depends on ARCH_MEDIATEK
+	help
+	  This adds ASoC platform driver support for Mediatek chip
+	  that can be used with other codecs.
+	  Select Y if you have such device.
+	  Ex: MT8173
+
+config SND_SOC_MT8173_MAX98090
+	tristate "ASoC Audio driver for MT8173 with MAX98090 codec"
+	depends on SND_SOC_MEDIATEK
+	select SND_SOC_MAX98090
+	help
+	  This adds ASoC driver for Mediatek MT8173 boards
+	  with the MAX98090 audio codec.
+	  Select Y if you have such device.
+	  If unsure select "N".
+
+config SND_SOC_MT8173_RT5650_RT5676
+	tristate "ASoC Audio driver for MT8173 with RT5650 RT5676 codecs"
+	depends on SND_SOC_MEDIATEK
+	select SND_SOC_RT5645
+	select SND_SOC_RT5677
+	help
+	  This adds ASoC driver for Mediatek MT8173 boards
+	  with the RT5650 and RT5676 codecs.
+	  Select Y if you have such device.
+	  If unsure select "N".
+
+config MT_SND_SOC_6797
+	bool "MT 6797 PLATFORM AUDIO DRIVER"
+	default n
+	help
+	  If you say Y, enable MTK 6797 audio driver.
+	  Must enable this to use medatek audio driver.
+	  The default value is y for MT6797.
+	  It's recommended no to change this.
+
+config SND_SOC_MT8167
+	tristate
+
+config SND_SOC_MT8167_MT6392_MACH
+	tristate "ASoC Audio driver for MT8167 with internal codec"
+	depends on MACH_MT8167
+	select SND_SOC_MT8167
+	select SND_SOC_MT8167_CODEC
+	help
+	  This adds support for ASoC machine driver for Mediatek MT8167
+	  platforms with internal audio codec and speaker amplifier MT6392.
+	  Select Y if you have such device.
+	  If unsure select "N".
+
+config MT_SND_SOC_CODEC
+	string "String for Mediatek audio codec"
+	help
+	  Specify Mediatek audio codec.
+	  Say "mt6351" if you have mt6351 audio codec.
+
+config MTK_SPEAKER
+	bool "MTK SPEAKER AMP"
+	default n
+	help
+	  If you say Y, enable MTK_SPEAKER_AMP
+
+config MTK_NXP_TFA9890
+	bool "MTK NXP TFA9890 SMART PA DRIVER"
+	default n
+	help
+	  If you say Y, enable MTK_NXP_TFA9890 driver.
+
+config MTK_SPKGPIO_REWORK
+	bool "MTK SPEAKER GPIO REWORK"
+	default n
+	help
+	  This is only for MTK internal phone only
+	  Enable SPKGPIO REWORK check functionality
+	  Will choose the correct GPIO for external AMP
+          If you say Y, enable MTK_SPKGPIO_REWORK
+
+config MTK_HP_ANASWITCH
+	bool "MTK HEADPHONE ANALOG SWITCH"
+	default n
+	help
+	  This will enable headphone analog switch control
+	  for de-pop functionality
+	  Only enable this when you have headphone analog switch
+          If you say Y, enable MTK_HP_ANASWITCH
+
+config MTK_BTCVSD_ALSA
+	bool "MTK BT CVSD ALSA ARICHITECTURE"
+	default n
+	help
+	  If you say Y, enable MTK_BTCVSD_ALSA.
+
+config MTK_SND_SOC_NEW_ARCH
+	bool "Support new audio architecture"
+	help
+	  If you say Y, enable MTK_SND_SOC_NEW_ARCH.
+	  Only enable this when you use refactored audio driver architecture.
+
+config MTK_OFFLOAD_PLAYBACK
+	bool "Audio playback through dsp"
+	help
+	  If you say Y, enable MTK_OFFLOAD_PLAYBACK.
+	  Only enable this when we have DSP.
+	  This makes audio out pass bitstream, and decoding process is done in DSP.
+

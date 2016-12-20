@@ -1,0 +1,10 @@
+
+config CUSTOM_KERNEL_RGBW
+	bool "KERNEL RGBW Sensor Driver Configure"
+	help
+	  ALSPS color sensor driver to detect RGBW light.
+	  After configure this configuration,
+	  the specific RGBW color sensor driver configuration
+	  should be configured as well.
+
+source "drivers/misc/mediatek/rgbw/cm36652-new/Kconfig"

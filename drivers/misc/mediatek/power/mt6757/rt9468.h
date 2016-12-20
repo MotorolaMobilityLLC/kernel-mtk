@@ -1,0 +1,390 @@
+/*
+ * Copyright (C) 2016 MediaTek Inc.
+ * ShuFanLee <shufan_lee@richtek.com>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
+ */
+
+#ifndef __RT9468_CHARGER_H
+#define __RT9468_CHARGER_H
+
+#define RT9468_SLAVE_ADDR	0x5C
+#define RT9468_VENDOR_ID	0xA0
+#define RT9468_CHIP_REV_E1	0x01
+#define RT9468_CHIP_REV_E2	0x02
+#define RT9468_CHIP_REV_E3	0x03
+
+enum rt9468_reg_addr {
+	RT9468_REG_CORE_CTRL0,
+	RT9468_REG_CHG_CTRL1,
+	RT9468_REG_CHG_CTRL2,
+	RT9468_REG_CHG_CTRL3,
+	RT9468_REG_CHG_CTRL4,
+	RT9468_REG_CHG_CTRL5,
+	RT9468_REG_CHG_CTRL6,
+	RT9468_REG_CHG_CTRL7,
+	RT9468_REG_CHG_CTRL8,
+	RT9468_REG_CHG_CTRL9,
+	RT9468_REG_CHG_CTRL10,
+	RT9468_REG_CHG_CTRL11,
+	RT9468_REG_CHG_CTRL12,
+	RT9468_REG_CHG_CTRL13,
+	RT9468_REG_CHG_CTRL14,
+	RT9468_REG_CHG_CTRL15,
+	RT9468_REG_CHG_CTRL16,
+	RT9468_REG_CHG_ADC,
+	RT9468_REG_CHG_DPDM1,
+	RT9468_REG_CHG_DPDM2,
+	RT9468_REG_CHG_DPDM3,
+	RT9468_REG_CHG_DPDM4,
+	RT9468_REG_CHG_DPDM5,
+	RT9468_REG_CHG_DPDM6,
+	RT9468_REG_CHG_PUMP,
+	RT9468_REG_CHG_CTRL17,
+	RT9468_REG_CHG_CTRL18,
+	RT9468_REG_CHG_DIRCHG1,
+	RT9468_REG_CHG_DIRCHG2,
+	RT9468_REG_CHG_DIRCHG3,
+	RT9468_REG_CHG_DPDM7,
+	RT9468_REG_CHG_DPDM8,
+	RT9468_REG_DEVICE_ID = 0x40,
+	RT9468_REG_CHG_STAT = 0x42,
+	RT9468_REG_CHG_NTC,
+	RT9468_REG_ADC_DATA_H,
+	RT9468_REG_ADC_DATA_L,
+	RT9468_REG_CHG_STATC = 0x50,
+	RT9468_REG_CHG_FAULT,
+	RT9468_REG_TS_STATC,
+	RT9468_REG_CHG_IRQ1,
+	RT9468_REG_CHG_IRQ2,
+	RT9468_REG_CHG_IRQ3,
+	RT9468_REG_DPDM_IRQ,
+	RT9468_REG_CHG_IRQ5 = 0x58,
+	RT9468_REG_CHG_STATC_CTRL = 0x60,
+	RT9468_REG_CHG_FAULT_CTRL,
+	RT9468_REG_TS_STATC_CTRL,
+	RT9468_REG_CHG_IRQ1_CTRL,
+	RT9468_REG_CHG_IRQ2_CTRL,
+	RT9468_REG_CHG_IRQ3_CTRL,
+	RT9468_REG_DPDM_IRQ_CTRL,
+	RT9468_REG_CHG_IRQ5_CTRL = 0x68,
+	RT9468_REG_MAX,
+};
+
+/* Parameter */
+#define RT9468_ICHG_NUM		64
+#define RT9468_ICHG_MIN		100  /* mA */
+#define RT9468_ICHG_MAX		5000 /* mA */
+#define RT9468_ICHG_STEP	100 /* mA */
+
+#define RT9468_IEOC_NUM		16
+#define RT9468_IEOC_MIN		100 /* mA */
+#define RT9468_IEOC_MAX		850 /* mA */
+#define RT9468_IEOC_STEP	50 /* mA */
+
+#define RT9468_MIVR_NUM		128
+#define RT9468_MIVR_MIN		3900   /* mV */
+#define RT9468_MIVR_MAX		13400  /* mV */
+#define RT9468_MIVR_STEP	100   /* mV */
+
+#define RT9468_AICR_NUM		64
+#define RT9468_AICR_MIN		100  /* mA */
+#define RT9468_AICR_MAX		3250 /* mA */
+#define RT9468_AICR_STEP	50  /* mA */
+
+#define RT9468_BAT_VOREG_NUM	128
+#define RT9468_BAT_VOREG_MIN	3900 /* mV */
+#define RT9468_BAT_VOREG_MAX	4710 /* mV */
+#define RT9468_BAT_VOREG_STEP	10  /* mV */
+
+#define RT9468_BOOST_VOREG_NUM	64
+#define RT9468_BOOST_VOREG_MIN	4425 /* mV */
+#define RT9468_BOOST_VOREG_MAX	5825 /* mV */
+#define RT9468_BOOST_VOREG_STEP	25  /* mV */
+
+#define RT9468_VPREC_NUM	16
+#define RT9468_VPREC_MIN	2000 /* mV */
+#define RT9468_VPREC_MAX	3500 /* mV */
+#define RT9468_VPREC_STEP	100 /* mV */
+
+#define RT9468_IPREC_NUM	16
+#define RT9468_IPREC_MIN	100 /* mA */
+#define RT9468_IPREC_MAX	850 /* mA */
+#define RT9468_IPREC_STEP	50 /* mA */
+
+/* Watchdog fast-charge timer */
+#define RT9468_WT_FC_NUM	8
+#define RT9468_WT_FC_MIN	4  /* hour */
+#define RT9468_WT_FC_MAX	20 /* hour */
+#define RT9468_WT_FC_STEP	2 /* hour */
+
+/* IR compensation */
+/* ohm */
+#define RT9468_IRCMP_RES_NUM	8
+#define RT9468_IRCMP_RES_MIN	0
+#define RT9468_IRCMP_RES_MAX	175
+#define RT9468_IRCMP_RES_STEP	25
+
+/* IR compensation maximum voltage clamp */
+/* mV */
+#define RT9468_IRCMP_VCLAMP_NUM		8
+#define RT9468_IRCMP_VCLAMP_MIN		0
+#define RT9468_IRCMP_VCLAMP_MAX		224
+#define RT9468_IRCMP_VCLAMP_STEP	32
+
+/* PE+20 voltage */
+/* mV */
+#define RT9468_PEP20_VOLT_NUM	30
+#define RT9468_PEP20_VOLT_MIN	5500
+#define RT9468_PEP20_VOLT_MAX	20000
+#define RT9468_PEP20_VOLT_STEP	500
+
+/* IIN VTH */
+/* mV */
+#define RT9468_IIN_VTH_NUM	8
+#define RT9468_IIN_VTH_MIN	4100
+#define RT9468_IIN_VTH_MAX	4800
+#define RT9468_IIN_VTH_STEP	100
+
+/* VBUSOV LVL */
+#define RT9468_DC_VBUSOV_LVL_NUM	32
+#define RT9468_DC_VBUSOV_LVL_MIN	3900
+#define RT9468_DC_VBUSOV_LVL_MAX	7000
+#define RT9468_DC_VBUSOV_LVL_STEP	100
+
+/* VBUSOC LVL */
+#define RT9468_DC_VBUSOC_LVL_NUM	8
+#define RT9468_DC_VBUSOC_LVL_MIN	4000
+#define RT9468_DC_VBUSOC_LVL_MAX	6500
+#define RT9468_DC_VBUSOC_LVL_STEP	500
+
+/* ADC unit/offset */
+#define RT9468_ADC_UNIT_VBUS_DIV5	25 /* mV */
+#define RT9468_ADC_UNIT_VBUS_DIV2	10 /* mV */
+#define RT9468_ADC_UNIT_VBAT		5  /* mV */
+#define RT9468_ADC_UNIT_VBATS		5  /* mV */
+#define RT9468_ADC_UNIT_VSYS		5  /* mV */
+#define RT9468_ADC_UNIT_REGN		5  /* mV */
+#define RT9468_ADC_UNIT_TS_BAT		25 /* 0.01% */
+#define RT9468_ADC_UNIT_TS_BUS		25 /* 0.01% */
+#define RT9468_ADC_UNIT_IBAT		50 /* mA */
+#define RT9468_ADC_UNIT_IBATS		50 /* mA */
+#define RT9468_ADC_UNIT_IBUS		50 /* mA */
+#define RT9468_ADC_UNIT_TEMP_JC		2  /* degree */
+
+#define RT9468_ADC_OFFSET_VBUS_DIV5	0 /* mV */
+#define RT9468_ADC_OFFSET_VBUS_DIV2	0 /* mV */
+#define RT9468_ADC_OFFSET_VBAT		0 /* mV */
+#define RT9468_ADC_OFFSET_VBATS		0 /* mV */
+#define RT9468_ADC_OFFSET_VSYS		0 /* mV */
+#define RT9468_ADC_OFFSET_REGN		0 /* mV */
+#define RT9468_ADC_OFFSET_TS_BAT	0 /* % */
+#define RT9468_ADC_OFFSET_TS_BUS	0 /* % */
+#define RT9468_ADC_OFFSET_IBAT		0 /* mA */
+#define RT9468_ADC_OFFSET_IBATS		0 /* mA */
+#define RT9468_ADC_OFFSET_IBUS		0 /* mA */
+#define RT9468_ADC_OFFSET_TEMP_JC	(-40)  /* degree */
+
+/* ========== CORE_CTRL0 0x00 ============ */
+#define RT9468_SHIFT_RST	7
+#define RT9468_MASK_RST		(1 << RT9468_SHIFT_RST)
+
+/* ========== CHG_CTRL1 0x01 ============ */
+#define RT9468_SHIFT_OPA_MODE   0
+#define RT9468_SHIFT_HZ_EN      2
+
+#define RT9468_MASK_OPA_MODE   (1 << RT9468_SHIFT_OPA_MODE)
+#define RT9468_MASK_HZ_EN      (1 << RT9468_SHIFT_HZ_EN)
+
+/* ========== CHG_CTRL2 0x02 ============ */
+#define RT9468_SHIFT_CHG_EN		0
+#define RT9468_SHIFT_CFO_EN		1
+#define RT9468_SHIFT_IINLMTSEL		2
+#define RT9468_SHIFT_TE_EN		4
+#define RT9468_SHIFT_BYPASS_MODE	5
+
+#define RT9468_MASK_CHG_EN	(1 << RT9468_SHIFT_CHG_EN)
+#define RT9468_MASK_CFO_EN	(1 << RT9468_SHIFT_CFO_EN)
+#define RT9468_MASK_IINLMTSEL	0x0C
+#define RT9468_MASK_TE_EN	(1 << RT9468_SHIFT_TE_EN)
+#define RT9468_MASK_BYPASS_MODE	(1 << RT9468_SHIFT_BYPASS_MODE)
+
+
+/* ========== CHG_CTRL3 0x03 ============ */
+#define RT9468_SHIFT_AICR	2
+#define RT9468_SHIFT_AICR_EN	1
+#define RT9468_SHIFT_ILIM_EN	0
+
+#define RT9468_MASK_AICR	0xFC
+#define RT9468_MASK_AICR_EN	(1 << RT9468_SHIFT_AICR_EN)
+#define RT9468_MASK_ILIM_EN	(1 << RT9468_SHIFT_ILIM_EN)
+
+/* ========== CHG_CTRL4 0x04 ============ */
+#define RT9468_SHIFT_BAT_VOREG	1
+
+#define RT9468_MASK_BAT_VOREG	0xFE
+
+/* ========== CHG_CTRL5 0x05 ============ */
+#define RT9468_SHIFT_BOOST_VOREG	2
+
+#define RT9468_MASK_BOOST_VOREG		0xFC
+
+/* ========== CHG_CTRL6 0x06 ============ */
+#define RT9468_SHIFT_MIVR	1
+#define RT9468_SHIFT_MIVR_EN	0
+
+#define RT9468_MASK_MIVR	0xFE
+#define RT9468_MASK_MIVR_EN	(1 << RT9468_SHIFT_MIVR_EN)
+
+/* ========== CHG_CTRL7 0x07 ============ */
+#define RT9468_SHIFT_ICHG	2
+
+#define RT9468_MASK_ICHG	0xFC
+
+/* ========== CHG_CTRL8 0x08 ============ */
+#define RT9468_SHIFT_VPREC	4
+#define RT9468_SHIFT_IPREC	0
+
+#define RT9468_MASK_VPREC	0xF0
+#define RT9468_MASK_IPREC	0x0F
+
+/* ========== CHG_CTRL9 0x09 ============ */
+#define RT9468_SHIFT_IEOC	4
+
+#define RT9468_MASK_IEOC	0xF0
+
+/* ========== CHG_CTRL10 0x0A ============ */
+#define RT9468_SHIFT_BOOST_OC	0
+
+#define RT9468_MASK_BOOST_OC	0x07
+
+/* ========== CHG_CTRL12 0x0C ============ */
+#define RT9468_SHIFT_TMR_EN	1
+#define RT9468_SHIFT_WT_FC	5
+
+#define RT9468_MASK_TMR_EN	(1 << RT9468_SHIFT_TMR_EN)
+#define RT9468_MASK_WT_FC	0xE0
+
+/* ========== CHG_CTRL13 0x0D ============ */
+#define RT9468_SHIFT_WDT_EN	7
+
+#define RT9468_MASK_WDT_EN	(1 << RT9468_SHIFT_WDT_EN)
+
+/* ========== CHG_CTRL14 0x0E ============ */
+#define RT9468_SHIFT_IIN_MEAS	7
+#define RT9468_SHIFT_IIN_VTH	0
+
+#define RT9468_MASK_IIN_MEAS	(1 << RT9468_SHIFT_IIN_MEAS)
+#define RT9468_MASK_IIN_VTH	0x07
+
+/* ========== CHG_ADC 0x11 ============ */
+#define RT9468_SHIFT_ADC_IN_SEL	4
+#define RT9468_SHIFT_ADC_START	0
+
+#define RT9468_MASK_ADC_IN_SEL	0xF0
+#define RT9468_MASK_ADC_START	(1 << RT9468_SHIFT_ADC_START)
+
+/* ========== CHG_DPDM1 0x12 ============ */
+#define RT9468_SHIFT_USBCHGEN	7
+
+#define RT9468_MASK_USBCHGEN	(1 << RT9468_SHIFT_USBCHGEN)
+
+/* ========== CHG_PUMP 0x18 ============ */
+#define RT9468_SHIFT_VG_LVL_SEL	1
+#define RT9468_SHIFT_VG_EN	0
+
+#define RT9468_MASK_VG_LVL_SEL	(1 << RT9468_SHIFT_LVL_SEL)
+#define RT9468_MASK_VG_EN	(1 << RT9468_SHIFT_VG_EN)
+
+/* ========== CHG_CTRL17 0x19 ============ */
+#define RT9468_SHIFT_PUMPX_EN		7
+#define RT9468_SHIFT_PUMPX_20_10	6
+#define RT9468_SHIFT_PUMPX_UP_DN	5
+#define RT9468_SHIFT_PUMPX_DEC		0
+
+#define RT9468_MASK_PUMPX_EN	(1 << RT9468_SHIFT_PUMPX_EN)
+#define RT9468_MASK_PUMPX_20_10	(1 << RT9468_SHIFT_PUMPX_20_10)
+#define RT9468_MASK_PUMPX_UP_DN	(1 << RT9468_SHIFT_PUMPX_UP_DN)
+#define RT9468_MASK_PUMPX_DEC	0x1F
+
+/* ========== CHG_CTRL18 0x1A ============ */
+#define RT9468_SHIFT_IRCMP_RES		3
+#define RT9468_SHIFT_IRCMP_VCLAMP	0
+
+#define RT9468_MASK_IRCMP_RES		0x38
+#define RT9468_MASK_IRCMP_VCLAMP	0x07
+
+
+/* ========== CHG_DIRCHG1 0x1B ============ */
+#define RT9468_SHIFT_DC_VBATOV_EN	6
+#define RT9468_SHIFT_DC_VBATOV_LVL	4
+#define RT9468_SHIFT_DC_VBUSOC_EN	3
+#define RT9468_SHIFT_DC_VBUSOC_LVL	0
+
+#define RT9468_MASK_DC_VBATOV_EN	(1 << RT9468_SHIFT_DC_VBATOV_EN)
+#define RT9468_MASK_DC_VBATOV_LVL	0x30
+#define RT9468_MASK_DC_VBUSOC_EN	(1 << RT9468_SHIFT_DC_VBUSOC_EN)
+#define RT9468_MASK_DC_VBUSOC_LVL	0x07
+
+/* ========== CHG_DIRCHG1 0x1C ============ */
+#define RT9468_SHIFT_DC_WDT	4
+
+#define RT9468_MASK_DC_WDT	0x70
+
+/* ========== CHG_DIRCHG1 0x1D ============ */
+#define RT9468_SHIFT_DC_VBUSOV_EN	7
+#define RT9468_SHIFT_DC_VBUSOV_LVL	2
+
+#define RT9468_MASK_DC_VBUSOV_EN	(1 << RT9468_SHIFT_DC_VBUSOV_EN)
+#define RT9468_MASK_DC_VBUSOV_LVL	0x7C
+
+/* ========== CHG_STAT 0x42 ============ */
+#define RT9468_SHIFT_ADC_STAT	0
+#define RT9468_SHIFT_CHG_STAT	6
+
+#define RT9468_MASK_ADC_STAT	(1 << RT9468_SHIFT_ADC_STAT)
+#define RT9468_MASK_CHG_STAT	0xC0
+
+/* ========== CHG_STATC 0x50 ============ */
+#define RT9468_SHIFT_CHG_MIVR	6
+
+#define RT9468_MASK_CHG_MIVR	(1 << RT9468_SHIFT_CHG_MIVR)
+
+/* ========== CHG_IRQ2 0x54 ============ */
+#define RT9468_SHIFT_CHG_IIN_MEASI	0
+#define RT9468_SHIFT_SSFINISHI		4
+
+#define RT9468_MASK_CHG_IIN_MEASI	(1 << RT9468_SHIFT_CHG_IIN_MEASI)
+#define RT9468_MASK_SSFINISHI		(1 << RT9468_SHIFT_SSFINISHI)
+
+/* ========== CHG_IRQ3 0x55 ============ */
+#define RT9468_SHIFT_ADC_DONEI		0
+#define RT9468_SHIFT_PUMPX_DONEI	1
+
+#define RT9468_MASK_ADC_DONEI		(1 << RT9468_SHIFT_ADC_DONEI)
+#define RT9468_MASK_PUMPX_DONEI		(1 << RT9468_SHIFT_PUMPX_DONEI)
+
+/* ========== CHG_STATC_CTRL 0x60 ============ */
+#define RT9468_SHIFT_CHG_AICRM	5
+
+#define RT9468_MASK_CHG_AICRM	(1 << RT9468_SHIFT_CHG_AICRM)
+
+/* ========== CHG_IRQ1_CTRL 0x63 ============ */
+#define RT9468_SHIFT_CHG_RVPM	6
+
+#define RT9468_MASK_CHG_RVPM	(1 << RT9468_SHIFT_CHG_RVPM)
+
+
+/* ========== CHG_IRQ2_CTRL 0x64 ============ */
+#define RT9468_SHIFT_SSFINISHM	4
+
+#define RT9468_MASK_SSFINISHM	(1 << RT9468_SHIFT_SSFINISHM)
+
+#endif /* __RT9468_CHARGER_H */

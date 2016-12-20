@@ -1,0 +1,37 @@
+Richtek RT5081 rgb led subdev
+RT5081 rgb led control.
+
+Required properties:
+- compatible : Must be "richtek,rt5081_pmu_rgbled";
+- interrupt-names : RT5081 rgbled enabled interrupts.
+- rt,led_name : led classdev name for each led channel.
+- rt,led_default_trigger : default led trigger mode. cc_mode -> constant current mode,
+			   pwm_mode -> pwm mode, breath_mode -> breath mode.
+
+Optional node:
+
+Example:
+rt5081_pmu@34 {
+	status = "ok";
+	compatible = "richtek,rt5081_pmu";
+	reg = <0x34>;
+	interrupt-controller;
+	#interrupt-cells = <1>;
+	rt,intr_gpio = <&msmgpio 66 0>;
+	rgbled {
+		compatible = "richtek,rt5081_pmu_rgbled";
+		interrupt-names = "isink4_short", "isink3_short",
+				  "isink2_short", "isink1_short",
+				  "isink4_open", "isink3_open",
+				  "isink2_open", "isink1_open";
+		/* name cnt must be 4 */
+		rt,led_name = "rt5081_pmu_led1", "rt5081_pmu_led2",
+			      "rt5081_pmu_led3", "rt5081_pmu_led4";
+		/* trigger cnt must be 4, mode can be selected as */
+		/* cc_mode -> const current mode */
+		/* pwm_mode -> pwm dimming mode */
+		/* breath_mode -> as the name */
+		rt,led_default_trigger = "cc_mode", "cc_mode",
+					 "cc_mode", "cc_mode";
+	};
+};
