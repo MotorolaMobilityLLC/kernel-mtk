@@ -58,9 +58,9 @@ static imgsensor_info_struct imgsensor_info = {
 	.checksum_value = 0xa7f3e34,//0x722b3840,        //checksum value for Camera Auto Test
 
 	.pre = {
-		.pclk = 375000000,                //record different mode's pclk
+		.pclk = 330000000,                //record different mode's pclk
 		.linelength = 4608,                //record different mode's linelength
-		.framelength = 2786,            //record different mode's framelength
+		.framelength = 2386,            //record different mode's framelength
 		.startx = 0,                    //record different mode's startx of grabwindow
 		.starty = 0,                    //record different mode's starty of grabwindow
 		.grabwindow_width = 2104,        //record different mode's width of grabwindow
@@ -72,25 +72,25 @@ static imgsensor_info_struct imgsensor_info = {
 	},
 	.cap = {
 		.pclk = 438000000,
-		.linelength = 4672,
+		.linelength = 5728,
 		.framelength = 3186,
 		.startx = 0,
 		.starty = 0,
 		.grabwindow_width = 4208,
 		.grabwindow_height = 3120,
 		.mipi_data_lp2hs_settle_dc = 85,//unit , ns
-		.max_framerate = 300,
+		.max_framerate = 240,
 	},
 	.cap1 = {                            //capture for PIP 24fps relative information, capture1 mode must use same framelength, linelength with Capture mode for shutter calculate
 		.pclk = 438000000,
-		.linelength = 4672,
+		.linelength = 5728,
 		.framelength = 3186,
 		.startx = 0,
 		.starty = 0,
 		.grabwindow_width = 4208,
 		.grabwindow_height = 3120,
 		.mipi_data_lp2hs_settle_dc = 85,//unit , ns
-		.max_framerate = 300,    //less than 24 fps13M(include 13M),cap1 max framerate is 24fps,16M max framerate is 20fps, 20M max framerate is 15fps
+		.max_framerate = 240,    //less than 24 fps13M(include 13M),cap1 max framerate is 24fps,16M max framerate is 20fps, 20M max framerate is 15fps
 	},
 	.normal_video = {
 		.pclk = 330000000,
@@ -665,23 +665,23 @@ static void sensor_init(void)
 	write_cmos_sensor_2byte(0x3D36, 0x438A); 	// DYNAMIC_SEQRAM_36
 	write_cmos_sensor_2byte(0x3D38, 0x4592); 	// DYNAMIC_SEQRAM_38
 	write_cmos_sensor_2byte(0x3D3A, 0x458A); 	// DYNAMIC_SEQRAM_3A
-	write_cmos_sensor_2byte(0x3D3C,  0x4389); 	// DYNAMIC_SEQRAM_3C
-	write_cmos_sensor_2byte(0x3D3E,  0x51FF); 	// DYNAMIC_SEQRAM_3E
-	write_cmos_sensor_2byte(0x3D40,  0x8451); 	// DYNAMIC_SEQRAM_40
-	write_cmos_sensor_2byte(0x3D42,  0x8410); 	// DYNAMIC_SEQRAM_42
-	write_cmos_sensor_2byte(0x3D44,  0x0C88); 	// DYNAMIC_SEQRAM_44
-	write_cmos_sensor_2byte(0x3D46,  0x5959); 	// DYNAMIC_SEQRAM_46
-	write_cmos_sensor_2byte(0x3D48,  0x8A5F); 	// DYNAMIC_SEQRAM_48
-	write_cmos_sensor_2byte(0x3D4A,  0xDA42); 	// DYNAMIC_SEQRAM_4A
-	write_cmos_sensor_2byte(0x3D4C,  0x9361); 	// DYNAMIC_SEQRAM_4C
-	write_cmos_sensor_2byte(0x3D4E,  0x8262); 	// DYNAMIC_SEQRAM_4E
-	write_cmos_sensor_2byte(0x3D50,  0x8342); 	// DYNAMIC_SEQRAM_50
-	write_cmos_sensor_2byte(0x3D52,  0x8010); 	// DYNAMIC_SEQRAM_52
-	write_cmos_sensor_2byte(0x3D54,  0xC041); 	// DYNAMIC_SEQRAM_54
-	write_cmos_sensor_2byte(0x3D56,  0x64FF); 	// DYNAMIC_SEQRAM_56
-	write_cmos_sensor_2byte(0x3D58,  0xFFB7); 	// DYNAMIC_SEQRAM_58
-	write_cmos_sensor_2byte(0x3D5A,  0x4081); 	// DYNAMIC_SEQRAM_5A
-	write_cmos_sensor_2byte(0x3D5C,  0x4080); 	// DYNAMIC_SEQRAM_5C
+	write_cmos_sensor_2byte(0x3D3C, 0x439D); 	// DYNAMIC_SEQRAM_3C
+	write_cmos_sensor_2byte(0x3D3E, 0x51CA); 	// DYNAMIC_SEQRAM_3E
+	write_cmos_sensor_2byte(0x3D40, 0x5182); 	// DYNAMIC_SEQRAM_40
+	write_cmos_sensor_2byte(0x3D42, 0x100C); 	// DYNAMIC_SEQRAM_42
+	write_cmos_sensor_2byte(0x3D44, 0x9259); 	// DYNAMIC_SEQRAM_44
+	write_cmos_sensor_2byte(0x3D46, 0x5982); 	// DYNAMIC_SEQRAM_46
+	write_cmos_sensor_2byte(0x3D48, 0x5FF7); 	// DYNAMIC_SEQRAM_48
+	write_cmos_sensor_2byte(0x3D4A, 0x6182); 	// DYNAMIC_SEQRAM_4A
+	write_cmos_sensor_2byte(0x3D4C, 0x6283); 	// DYNAMIC_SEQRAM_4C
+	write_cmos_sensor_2byte(0x3D4E, 0x4281); 	// DYNAMIC_SEQRAM_4E
+	write_cmos_sensor_2byte(0x3D50, 0x10C0); 	// DYNAMIC_SEQRAM_50
+	write_cmos_sensor_2byte(0x3D52, 0x6498); 	// DYNAMIC_SEQRAM_52
+	write_cmos_sensor_2byte(0x3D54, 0x4281); 	// DYNAMIC_SEQRAM_54
+	write_cmos_sensor_2byte(0x3D56, 0x41FF); 	// DYNAMIC_SEQRAM_56
+	write_cmos_sensor_2byte(0x3D58, 0xFFB8); 	// DYNAMIC_SEQRAM_58
+	write_cmos_sensor_2byte(0x3D5A, 0x4081); 	// DYNAMIC_SEQRAM_5A
+	write_cmos_sensor_2byte(0x3D5C, 0x4080); 	// DYNAMIC_SEQRAM_5C
 	write_cmos_sensor_2byte(0x3D5E, 0x4180); 	// DYNAMIC_SEQRAM_5E
 	write_cmos_sensor_2byte(0x3D60, 0x4280); 	// DYNAMIC_SEQRAM_60
 	write_cmos_sensor_2byte(0x3D62, 0x438D); 	// DYNAMIC_SEQRAM_62
@@ -856,54 +856,55 @@ static void sensor_init(void)
 	write_cmos_sensor_2byte(0x3EB4, 0x0000); 	// DYNAMIC_SEQRAM_1B4
 
 	////analog_setup_recommended in here
-	write_cmos_sensor_2byte(0x3EB6,0x004D ); 	// DAC_LD_0_1 write_cmos_sensor_2byte(0x3EB8, ); 	// DAC_LD_2_3
-	write_cmos_sensor_2byte(0x3EBC,0xAA06 ); 	// DAC_LD_6_7
-	write_cmos_sensor_2byte(0x3EC0,0x2E02 ); 	// DAC_LD_10_11
-	write_cmos_sensor_2byte(0x3EC2,0x7700 ); 	// DAC_LD_12_13
-	write_cmos_sensor_2byte(0x3EC4,0x1C08 ); 	// DAC_LD_14_15
-	write_cmos_sensor_2byte(0x3EC6,0xEA44 ); 	// DAC_LD_16_17
-	write_cmos_sensor_2byte(0x3EC8,0x0F0F ); 	// DAC_LD_18_19
-	write_cmos_sensor_2byte(0x3ECA,0x0F4A ); 	// DAC_LD_20_21
-	write_cmos_sensor_2byte(0x3ECC,0x0706 ); 	// DAC_LD_22_23
-	write_cmos_sensor_2byte(0x3ECE,0x443B ); 	// DAC_LD_24_25
-	write_cmos_sensor_2byte(0x3ED0,0x12F0 ); 	// DAC_LD_26_27
-	write_cmos_sensor_2byte(0x3ED2,0x0039 ); 	// DAC_LD_28_29
-	write_cmos_sensor_2byte(0x3ED4,0x862F ); 	// DAC_LD_30_31
-	write_cmos_sensor_2byte(0x3ED6,0x4080 ); 	// DAC_LD_32_33
-	write_cmos_sensor_2byte(0x3ED8,0x0523 ); 	// DAC_LD_34_35
-	write_cmos_sensor_2byte(0x3EDA,0xF8AA ); 	// DAC_LD_36_37
-	write_cmos_sensor_2byte(0x3EDC,0x5078 ); 	// DAC_LD_38_39  0x5096
-	write_cmos_sensor_2byte(0x3EDE,0x5005 ); 	// DAC_LD_40_41
-	write_cmos_sensor_2byte(0x316A,0x8200 ); 	// DAC_RSTLO
-	write_cmos_sensor_2byte(0x316E,0x8200 ); 	// DAC_ECL
-	write_cmos_sensor_2byte(0x316C,0x8200 ); 	// DAC_TXLO
-	write_cmos_sensor_2byte(0x3EF0,0x414D ); 	// DAC_LD_ECL 0x4d4d 
-	write_cmos_sensor_2byte(0x3EF2,0x0101 ); 	// DAC_LD_ECL2
-	write_cmos_sensor_2byte(0x3EF6,0x0307 ); 	// DAC_LD_RSTLO2
-	write_cmos_sensor_2byte(0x3EFA,0x0F0F ); 	// DAC_LD_TXLO
-	write_cmos_sensor_2byte(0x3EFC,0x0F0F ); 	// DAC_LD_TXLO2
-	write_cmos_sensor_2byte(0x3EFE,0x0F0F ); 	// DAC_LD_TXLO3
+	write_cmos_sensor_2byte(0x3EB6, 0x004D); 	// DAC_LD_0_1
+	write_cmos_sensor_2byte(0x3EB8, 0x010B); 	// DAC_LD_2_3
+	write_cmos_sensor_2byte(0x3EBC, 0xAA06); 	// DAC_LD_6_7
+	write_cmos_sensor_2byte(0x3EC0, 0x1E02); 	// DAC_LD_10_11
+	write_cmos_sensor_2byte(0x3EC2, 0x7700); 	// DAC_LD_12_13
+	write_cmos_sensor_2byte(0x3EC4, 0x1308); 	// DAC_LD_14_15
+	write_cmos_sensor_2byte(0x3EC6, 0xEA44); 	// DAC_LD_16_17
+	write_cmos_sensor_2byte(0x3EC8, 0x0F0F); 	// DAC_LD_18_19
+	write_cmos_sensor_2byte(0x3ECA, 0x0F4A); 	// DAC_LD_20_21
+	write_cmos_sensor_2byte(0x3ECC, 0x0706); 	// DAC_LD_22_23
+	write_cmos_sensor_2byte(0x3ECE, 0x443B); 	// DAC_LD_24_25
+	write_cmos_sensor_2byte(0x3ED0, 0x12F0); 	// DAC_LD_26_27
+	write_cmos_sensor_2byte(0x3ED2, 0x0039); 	// DAC_LD_28_29
+	write_cmos_sensor_2byte(0x3ED4, 0x862F); 	// DAC_LD_30_31
+	write_cmos_sensor_2byte(0x3ED6, 0x4080); 	// DAC_LD_32_33
+	write_cmos_sensor_2byte(0x3ED8, 0x0523); 	// DAC_LD_34_35
+	write_cmos_sensor_2byte(0x3EDA, 0xF896); 	// DAC_LD_36_37
+	write_cmos_sensor_2byte(0x3EDC, 0x508C); 	// DAC_LD_38_39  0x5096
+	write_cmos_sensor_2byte(0x3EDE, 0x5005); 	// DAC_LD_40_41
+	write_cmos_sensor_2byte(0x316A, 0x8200); 	// DAC_RSTLO
+	write_cmos_sensor_2byte(0x316E, 0x8200); 	// DAC_ECL
+	write_cmos_sensor_2byte(0x316C, 0x8200); 	// DAC_TXLO
+	write_cmos_sensor_2byte(0x3EF0, 0x414D); 	// DAC_LD_ECL 0x4d4d 
+	write_cmos_sensor_2byte(0x3EF2, 0x0101); 	// DAC_LD_ECL2
+	write_cmos_sensor_2byte(0x3EF6, 0x0307); 	// DAC_LD_RSTLO2
+	write_cmos_sensor_2byte(0x3EFA, 0x0F0F); 	// DAC_LD_TXLO
+	write_cmos_sensor_2byte(0x3EFC, 0x0F0F); 	// DAC_LD_TXLO2
+	write_cmos_sensor_2byte(0x3EFE, 0x0F0F); 	// DAC_LD_TXLO3
 
 	// Defect_correction in here 
-    //write_cmos_sensor_2byte(0x30FE, 0x0060); 	// CTREE_OFF
-    write_cmos_sensor_2byte(0x31E0, 0x0781); 	// PIX_DEF_ID
-    write_cmos_sensor_2byte(0x3F00, 0x004F); 	// BM_T0
-    write_cmos_sensor_2byte(0x3F02, 0x0125); 	// BM_T1
-    write_cmos_sensor_2byte(0x3F04, 0x0020); 	// NOISE_GAIN_THRESHOLD0
-    write_cmos_sensor_2byte(0x3F06, 0x0040); 	// NOISE_GAIN_THRESHOLD1
-    write_cmos_sensor_2byte(0x3F08, 0x0070); 	// NOISE_GAIN_THRESHOLD2
-    write_cmos_sensor_2byte(0x3F0A, 0x0101); 	// NOISE_FLOOR10
-    write_cmos_sensor_2byte(0x3F0C, 0x0302); 	// NOISE_FLOOR32
-    write_cmos_sensor_2byte(0x3F1E, 0x0022); 	// NOISE_COEF
-    write_cmos_sensor_2byte(0x3F1A, 0x01FF); 	// CROSSFACTOR2
-    write_cmos_sensor_2byte(0x3F14, 0x0101); 	// SINGLE_K_FACTOR2
-    write_cmos_sensor_2byte(0x3F44, 0x0707); 	// COUPLE_K_FACTOR2
-    write_cmos_sensor_2byte(0x3F18, 0x011E); 	// CROSSFACTOR1
-    write_cmos_sensor_2byte(0x3F12, 0x0303); 	// SINGLE_K_FACTOR1
-    write_cmos_sensor_2byte(0x3F42, 0x1511); 	// COUPLE_K_FACTOR1
-    write_cmos_sensor_2byte(0x3F16, 0x011E); 	// CROSSFACTOR0
-    write_cmos_sensor_2byte(0x3F10, 0x0505); 	// SINGLE_K_FACTOR0
-    write_cmos_sensor_2byte(0x3F40, 0x1511); 	// COUPLE_K_FACTOR0
+	write_cmos_sensor_2byte(0x30FE, 0x0060); 	// CTREE_OFF
+	write_cmos_sensor_2byte(0x31E0, 0x0781); 	// PIX_DEF_ID
+	write_cmos_sensor_2byte(0x3F00, 0x004F); 	// BM_T0
+	write_cmos_sensor_2byte(0x3F02, 0x0125); 	// BM_T1
+	write_cmos_sensor_2byte(0x3F04, 0x0020); 	// NOISE_GAIN_THRESHOLD0
+	write_cmos_sensor_2byte(0x3F06, 0x0040); 	// NOISE_GAIN_THRESHOLD1
+	write_cmos_sensor_2byte(0x3F08, 0x0070); 	// NOISE_GAIN_THRESHOLD2
+	write_cmos_sensor_2byte(0x3F0A, 0x0101); 	// NOISE_FLOOR10
+	write_cmos_sensor_2byte(0x3F0C, 0x0302); 	// NOISE_FLOOR32
+	write_cmos_sensor_2byte(0x3F1E, 0x0022); 	// NOISE_COEF
+	write_cmos_sensor_2byte(0x3F1A, 0x01FF); 	// CROSSFACTOR2
+	write_cmos_sensor_2byte(0x3F14, 0x0101); 	// SINGLE_K_FACTOR2
+	write_cmos_sensor_2byte(0x3F44, 0x0707); 	// COUPLE_K_FACTOR2
+	write_cmos_sensor_2byte(0x3F18, 0x011E); 	// CROSSFACTOR1
+	write_cmos_sensor_2byte(0x3F12, 0x0303); 	// SINGLE_K_FACTOR1
+	write_cmos_sensor_2byte(0x3F42, 0x1511); 	// COUPLE_K_FACTOR1
+	write_cmos_sensor_2byte(0x3F16, 0x011E); 	// CROSSFACTOR0
+	write_cmos_sensor_2byte(0x3F10, 0x0505); 	// SINGLE_K_FACTOR0
+	write_cmos_sensor_2byte(0x3F40, 0x1511); 	// COUPLE_K_FACTOR0
 
 
 	write_cmos_sensor_2byte(0x0300, 0x0004); 	// VT_PIX_CLK_DIV
@@ -1046,7 +1047,7 @@ static void capture_setting(kal_uint16 currefps)
 
 	write_cmos_sensor_2byte(0x0400, 0x0000); 	// SCALING_MODE
 	write_cmos_sensor_2byte(0x0404, 0x0010); 	// SCALE_M
-	write_cmos_sensor_2byte(0x0342, 0x1240); 	// LINE_LENGTH_PCK
+	write_cmos_sensor_2byte(0x0342, 0x1660); 	// LINE_LENGTH_PCK
 	write_cmos_sensor_2byte(0x0340, 0x0C72); 	// FRAME_LENGTH_LINES
 	write_cmos_sensor_2byte(0x0202, 0x0C60); 	// COARSE_INTEGRATION_TIME
 	/// MIPI_TIMING in here
