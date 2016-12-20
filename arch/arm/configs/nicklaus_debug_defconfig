@@ -582,3 +582,5 @@ CONFIG_LCT_ESD_CHECK_MULTI_REG=y
 # add by LCT shaohui for Lenovo bootinfo requirement
 CONFIG_LCT_BOOTINFO_SUPPORT=y
 CONFIG_MTK_EMMC_SUPPORT_OTP=y
+#wangxiqiang add to check efuse status 20161218
+CONFIG_LCT_CHECK_EFUSE_STATUS=y
