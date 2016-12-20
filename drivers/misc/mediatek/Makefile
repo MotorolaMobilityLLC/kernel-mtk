@@ -231,3 +231,5 @@ obj-$(CONFIG_LCT_SIM_CHECK) += sim_check/
 #add wind_device_info --sunsiyuan@wind-mobi.com at 20161129 begin
 obj-$(CONFIG_WIND_DEVICE_INFO) += wind_device_info/
 #add wind_device_info --sunsiyuan@wind-mobi.com at 20161129 end
+#wangxiqiang add to efuse status check 20161218
+obj-$(CONFIG_LCT_CHECK_EFUSE_STATUS) += lct_efuseinfo/  
