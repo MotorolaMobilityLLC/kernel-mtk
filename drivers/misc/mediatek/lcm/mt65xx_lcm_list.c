@@ -68,6 +68,11 @@ LCM_DRIVER *lcm_driver_list[] = {
 	&lct_ili9881c_dijing_720p_vdo_lcm_drv,
 #endif
 
+//add by LCT yufangfang for otm1289a
+#if defined(LCT_OTM1289A_WISTRON_720P_VDO)
+	&lct_otm1289a_wistron_720p_vdo_lcm_drv,
+#endif
+
 #if defined(NT35595_FHD_DSI_CMD_TRULY_8163)
 	&nt35595_fhd_dsi_cmd_truly_8163_lcm_drv,
 #endif
