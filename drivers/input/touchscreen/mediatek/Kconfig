@@ -40,6 +40,19 @@ config TOUCHSCREEN_MTK_LCT_HX8527
 
 source "drivers/input/touchscreen/mediatek/lct_hx8527/Kconfig"
 
+config TOUCHSCREEN_MTK_LCT_FT5446
+	tristate "MediaTek Touch Panel Driver"
+	default n
+	help
+	  Say Y here if you have MediaTek touch panel.
+
+	  If unsure, say N.
+
+	  To compile this dirver as a module, choose M here: the
+	  module will be called.
+
+source "drivers/input/touchscreen/mediatek/lct_ft5446/Kconfig"
+
 config TOUCHSCREEN_MTK_GT1151TB
 	bool "GT1151 for Mediatek package"
 	default n
