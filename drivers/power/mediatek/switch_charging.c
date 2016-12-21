@@ -412,11 +412,14 @@ unsigned int set_chr_input_current_limit(int current_limit)
 
 	mutex_lock(&g_aicr_access_mutex);
 	if (current_limit != -1) {
+#ifdef CONFIG_LCT_CHR_JEITA_STANDARD_SUPPORT
 		if(BMT_status.charger_exist == 1)
 		g_bcct_input_flag = 1;
 		else
 		g_bcct_input_flag = 0;
-		
+#else
+		g_bcct_input_flag = 1;
+
 		if (current_limit < 100) {
 			/* limit < 100, turn off power path */
 			current_limit = 0;
@@ -503,10 +506,13 @@ unsigned int set_bat_charging_current_limit(int current_limit)
 
 	mutex_lock(&g_ichg_access_mutex);
 	if (current_limit != -1) {
+#ifdef CONFIG_LCT_CHR_JEITA_STANDARD_SUPPORT
 		if(BMT_status.charger_exist == 1)
 		g_bcct_flag = 1;
 		else
 		g_bcct_flag = 0;
+#else
+		g_bcct_flag = 1;
 
 		switch (BMT_status.charger_type) {
 		case STANDARD_HOST:
