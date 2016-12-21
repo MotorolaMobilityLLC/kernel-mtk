@@ -404,6 +404,9 @@ CONFIG_MTK_LEGACY_EXTSPK=y
 #add wind_device_info --sunsiyuan@wind-mobi.com 20161129 begin
 CONFIG_WIND_DEVICE_INFO=y
 #add wind_device_info --sunsiyuan@wind-mobi.com 20161129 end
+#solve headset pull out leads to music playback --sunsiyuan@wind-mobi.com 20161221 begin
+CONFIG_WIND_HEADSET_LEAD_MUSIC_PLAY=y
+#solve headset pull out leads to music playback --sunsiyuan@wind-mobi.com 20161221 end
 CONFIG_SND_SIMPLE_CARD=y
 CONFIG_SOUND_PRIME=y
 CONFIG_HIDRAW=y
