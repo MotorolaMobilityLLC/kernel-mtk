@@ -412,39 +412,31 @@ static uint8_t  sx9310_interrupt_state(void){
 	err = SX9311_i2c_read_dma(SX9311_i2c_client, SX9310_IRQSTAT_REG, 1, buffer); //SX9310_IRQSTAT_REG  0x00
 	
   
-        valstate = buffer[0]; /*0x00   0010 0000  6bit far,  5bit 0001 0000  near  */
+        valstate = buffer[0]; 
 
         
-        lct_pr_debug("[%s] 0x00  buffer[0]=[%x],  valstate=[%x],  op1=[%x] \r\n",__func__,
-         buffer[0], valstate, valstate>>4);
+        lct_pr_debug("[%s] 0x00  buffer[0]=[%x],  valstate=[%x] \r\n",__func__,buffer[0], valstate);
 
         err = SX9311_i2c_read_dma(SX9311_i2c_client, SX9310_STAT0_REG, 1, buffer); //SX9310_IRQSTAT_REG  0x01
+        lct_pr_info("[%s] 0x01  buffer[0]=[%x],   \r\n",__func__,buffer[0]);
         
 
         valtype = buffer[0];  /*0x01  bit2 cs2,  bit1 cs1*/
-        lct_pr_debug("[%s] 0x01  buffer[0]=[%x],  valtype=[%x], result=[%x] \n",__func__,buffer[0], 
-valtype, (valtype & 0x02));
+        lct_pr_info("[%s] 0x01  valtype = [%x],   \r\n",__func__,valtype);
 
          /*
-            0x00     0x40 near    0x20 far
-            0x01     0x02 cs2     0x01 cs1
+            reg 0x00: eint  0x40 near  0x20 far,only read one time,and set 00 
+            reg 0x01: 
+                     0x00: channl no data mean FAR
+                     0x02/0x42: near
+         */              
 
-         */
          
-         valstate  = valstate>>4;
-
-         
-        if (valstate & 0x02){  //far
+     if (valtype == 0x2 || valtype == 0x42){
+  	   state = CAPSENSOR_NEAR_WIFI;
+     }else{
            state = CAPSENSOR_FAR;
-        }else  if ((valstate & 0x04) && (valtype & 0x02)&& (valtype & 0x01)){ //
-           state= CAPSENSOR_NEAR_WIFI_ATTENA;
-        }else if((valstate & 0x04) && (valtype & 0x02)){
-	   state= CAPSENSOR_NEAR_WIFI;
-        }else if((valstate & 0x04) && (valtype & 0x01)){
-	   state= CAPSENSOR_NEAR_ATTENA;
-        }else{
-           state= CAPSENSOR_OTHER;
-        }     
+     }
  
         lct_pr_info("[%s]  state=[%x]\n",__func__, state);
 
@@ -622,7 +614,7 @@ static ssize_t sx9310_show_sar(struct device_driver *ddri, char *buf)
 	err = SX9311_i2c_read(SX9311_i2c_client, 0x42, 1, buffer);
 	#endif
 
-        len = sprintf(buf,"0x35=0x%x ," ,buffer[0]);    
+        len = sprintf(buf,"0x35= %d," ,buffer[0]);    
 
         #if defined(SX9311_SUPPORT_I2C_DMA)
 	err = SX9311_i2c_read_dma(SX9311_i2c_client, 0x36, 1, buffer);
@@ -630,7 +622,7 @@ static ssize_t sx9310_show_sar(struct device_driver *ddri, char *buf)
 	err = SX9311_i2c_read(SX9311_i2c_client, 0x42, 1, buffer);
 	#endif
 
-	len += sprintf(buf + len,"0x36=0x%x \r\n" ,buffer[0]);    
+	len += sprintf(buf + len,"0x36= %d \r\n" ,buffer[0]);    
 
 	return len ;
 }
@@ -649,11 +641,11 @@ static ssize_t sx9311_show_reg(struct device_driver *ddri, char *buf){
 
     err = SX9311_i2c_read_dma(SX9311_i2c_client, 0x00, 1,buffer);
 
-    lct_pr_debug("%s  0x00=%x \n",__func__,buffer[0]);
+    lct_pr_info("%s  0x00=%x \n",__func__,buffer[0]);
 
     err = SX9311_i2c_read_dma(SX9311_i2c_client, 0x01, 1,buffer);
 
-    lct_pr_debug("%s  0x01=%x \n",__func__,buffer[0]);
+    lct_pr_info("%s  0x01=%x \n",__func__,buffer[0]);
 
     err = SX9311_i2c_read_dma(SX9311_i2c_client, 0x02, 1,buffer);
     lct_pr_debug("%s  0x02=%x \n",__func__,buffer[0]);
