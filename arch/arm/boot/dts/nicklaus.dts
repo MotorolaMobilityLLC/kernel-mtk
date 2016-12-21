@@ -347,7 +347,8 @@
 	    pins_cmd_dat {
 			pins = <PINMUX_GPIO57__FUNC_GPIO57>;
 			slew-rate = <0>;
-			bias-pull-up = <00>;
+			/*remove cly for EINT disable pull up */
+			//bias-pull-up = <00>;
 		};
 	};
 
@@ -355,19 +356,30 @@
 	    pins_cmd_dat {
 			pins = <PINMUX_GPIO58__FUNC_GPIO58>;
 			slew-rate = <0>;
-			bias-pull-up = <00>;
+			/*remove cly for EINT disable pull up */
+			//bias-pull-up = <00>;
 		};
 	};
+        /*cly add bmi160 eint config*/
+	gsensor_pins_eint_as_int_bmi160: eint@76 {
+	    pins_cmd_dat {
+			pins = <PINMUX_GPIO76__FUNC_GPIO76>;
+			slew-rate = <0>;
+			
+		};
+	};	
 /*end LCT*/
 };
 /*LCT add gsensor eint by cly*/
 
 &gsensor {
 
-	pinctrl-names = "pin_default", "state_eint_as_int","state_eint_as_int2";
+	pinctrl-names = "pin_default", "state_eint_as_int","state_eint_as_int2","state_eint_as_int_bmi160";
 	pinctrl-0 = <&gsensor_intpin_default>;
 	pinctrl-1 = <&gsensor_pins_eint_as_int>;
 	pinctrl-2 = <&gsensor_pins_eint_as_int2>;
+	/*cly add bmi160 acce  eint config */ 
+        pinctrl-3 = <&gsensor_pins_eint_as_int_bmi160>;
 
 	status = "okay";
 };
