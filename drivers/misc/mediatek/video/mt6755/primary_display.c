@@ -5497,7 +5497,6 @@ int primary_display_setbacklight(unsigned int level)
 {
 	int ret = 0;
 	static unsigned int last_level;
-	int need_lock = 0;
 
 	if (disp_helper_get_stage() != DISP_HELPER_STAGE_NORMAL) {
 		DISPMSG("%s skip due to stage %s\n", __func__, disp_helper_stage_spy());
@@ -5510,21 +5509,10 @@ int primary_display_setbacklight(unsigned int level)
 	MMProfileLogEx(ddp_mmp_get_events()->primary_set_bl, MMProfileFlagStart, 0, 0);
 
 #ifndef CONFIG_MTK_AAL_SUPPORT
-	/* backlight setting from led driver : need lock */
-	need_lock = 1;
-#else
-	/* In AAL feature on case
-	     if backlight value not equal to zero, setting if from AAL : need not lock because
-	     already locked at user command function (primary_display_user_cmd)
-	     if backlight value equal to zero, setting if from led driver : need lock because
-	     not lock applied before
-	*/
-	need_lock = aal_is_need_lock();
+	_primary_path_switch_dst_lock();
+
+	_primary_path_lock(__func__);
 #endif
-	if (need_lock) {
-		_primary_path_switch_dst_lock();
-		_primary_path_lock(__func__);
-	}
 	if (pgc->state == DISP_SLEPT) {
 		DISPERR("Sleep State set backlight invald\n");
 	} else {
@@ -5557,10 +5545,11 @@ int primary_display_setbacklight(unsigned int level)
 		}
 		last_level = level;
 	}
-	if (need_lock) {
-		_primary_path_unlock(__func__);
-		_primary_path_switch_dst_unlock();
-	}
+#ifndef CONFIG_MTK_AAL_SUPPORT
+	_primary_path_unlock(__func__);
+
+	_primary_path_switch_dst_unlock();
+#endif
 	MMProfileLogEx(ddp_mmp_get_events()->primary_set_bl, MMProfileFlagEnd, 0, 0);
 	return ret;
 }
