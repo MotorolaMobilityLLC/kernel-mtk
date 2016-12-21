@@ -419,7 +419,7 @@ unsigned int set_chr_input_current_limit(int current_limit)
 		g_bcct_input_flag = 0;
 #else
 		g_bcct_input_flag = 1;
-
+#endif
 		if (current_limit < 100) {
 			/* limit < 100, turn off power path */
 			current_limit = 0;
@@ -513,7 +513,7 @@ unsigned int set_bat_charging_current_limit(int current_limit)
 		g_bcct_flag = 0;
 #else
 		g_bcct_flag = 1;
-
+#endif
 		switch (BMT_status.charger_type) {
 		case STANDARD_HOST:
 			chr_type_ichg = batt_cust_data.usb_charger_current;
