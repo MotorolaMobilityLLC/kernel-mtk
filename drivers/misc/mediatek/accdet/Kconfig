@@ -85,3 +85,10 @@ config TS3A225E_ACCDET
 	  If you want to use TS3A225E
 	  say Y or M here.
 	  If unsure, say N.
+#solve headset pull out leads to music playback --sunsiyuan@wind-mobi.com 20161221 begin
+config WIND_HEADSET_LEAD_MUSIC_PLAY
+	tristate "WIND ACCDET CONFIG_WIND_HEADSET_LEAD_MUSIC_PLAY"
+	---help---
+	  WIND_HEADSET_LEAD_MUSIC_PLAY use to solve 
+	  headset pull out leads to music playback.
+#solve headset pull out leads to music playback --sunsiyuan@wind-mobi.com 20161221 end
