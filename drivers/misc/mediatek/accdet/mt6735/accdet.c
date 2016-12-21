@@ -27,7 +27,13 @@ static variable defination
 ----------------------------------------------------------------------*/
 
 #define REGISTER_VALUE(x)   (x - 1)
+//solve headset pull out leads to music playback ---sunsiyuan@wind-mobi.com modify at 20161221 begin
+#ifdef CONFIG_WIND_HEADSET_LEAD_MUSIC_PLAY
+//static int button_press_debounce = 0x400;
+#else
 static int button_press_debounce = 0x400;
+#endif
+//solve headset pull out leads to music playback ---sunsiyuan@wind-mobi.com modify at 20161221 end
 int cur_key = 0;
 struct head_dts_data accdet_dts_data;
 s8 accdet_auxadc_offset;
@@ -882,7 +888,13 @@ static inline void check_cable_type(void)
 				ACCDET_DEBUG("[Accdet] Headset has plugged out\n");
 			}
 			mutex_unlock(&accdet_eint_irq_sync_mutex);
+			//solve headset pull out leads to music playback ---sunsiyuan@wind-mobi.com modify at 20161221 begin
+			#ifdef CONFIG_WIND_HEADSET_LEAD_MUSIC_PLAY
+			pmic_pwrap_write(ACCDET_DEBOUNCE0, cust_headset_settings->debounce0);
+			#else
 			pmic_pwrap_write(ACCDET_DEBOUNCE0, button_press_debounce);
+			#endif
+			//solve headset pull out leads to music playback ---sunsiyuan@wind-mobi.com modify at 20161221 end
 			/*recover polling set AB 00-01*/
 #ifdef CONFIG_ACCDET_PIN_RECOGNIZATION
 			pmic_pwrap_write(ACCDET_PWM_WIDTH, REGISTER_VALUE(cust_headset_settings->pwm_width));
@@ -1006,7 +1018,13 @@ static inline void check_cable_type(void)
 			pmic_pwrap_write(ACCDET_PWM_THRESH, REGISTER_VALUE(cust_headset_settings->pwm_thresh));
 #endif
 			/*solution: reduce hook switch debounce time to 0x400*/
+			//solve headset pull out leads to music playback ---sunsiyuan@wind-mobi.com modify at 20161221 begin
+			#ifdef CONFIG_WIND_HEADSET_LEAD_MUSIC_PLAY
+			pmic_pwrap_write(ACCDET_DEBOUNCE0, cust_headset_settings->debounce0);
+			#else
 			pmic_pwrap_write(ACCDET_DEBOUNCE0, button_press_debounce);
+			#endif
+			//solve headset pull out leads to music playback ---sunsiyuan@wind-mobi.com modify at 20161221 end
 		} else if (current_status == 3) {
 
 #ifdef CONFIG_ACCDET_PIN_RECOGNIZATION
