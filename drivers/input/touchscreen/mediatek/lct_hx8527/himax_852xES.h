@@ -644,7 +644,7 @@ static const unsigned short *const forces[] = { force, NULL };
 //Custom set some config
 static int hx_panel_coords[4] = {0,720,0,1280};//[1]=X resolution, [3]=Y resolution
 static int hx_display_coords[4] = {0,720,0,1280};
-static int report_type = PROTOCOL_TYPE_A;//modify by hxl
+static int report_type = PROTOCOL_TYPE_B;//modify by hxl
 
 static int himax852xes_probe(struct i2c_client *client, const struct i2c_device_id *id);
 static int himax852xes_detect(struct i2c_client *client, struct i2c_board_info *info);

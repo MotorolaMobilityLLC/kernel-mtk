@@ -52,6 +52,7 @@
 #define TIMEOUT_READ_REG                    300 //timeout of read reg unit:ms
 #define FTS_I2C_SLAVE_ADDR                  0x38
 #define FTS_READ_TOUCH_BUFFER_DIVIDED       1
+#define MTK_CTP_NODE						1	//add by hxl tp_infp node
 /*****************************************************************************
 * Static variables
 *****************************************************************************/
@@ -88,6 +89,40 @@ static int tpd_remove(struct i2c_client *client);
 static void tpd_resume(struct device *h);
 static void tpd_suspend(struct device *h);
 static void fts_release_all_finger(void);
+
+//add by hxl dev_info
+u8 ver;
+static u8 ctp_fw_version;
+#ifdef CONFIG_LCT_DEVINFO_SUPPORT
+#define SLT_DEVINFO_CTP_DEBUG
+#include  <dev_info.h>
+u8 ver_id;
+u8 ver_module;
+//static int devinfo_first=0;
+static char* temp_ver;
+static struct devinfo_struct s_DEVINFO_ctp;   //suppose 10 max lcm device 
+//The followd code is for GTP style
+static void devinfo_ctp_regchar(char *module,char * vendor,char *version,char *used)
+{
+	//s_DEVINFO_ctp =(struct devinfo_struct*) kmalloc(sizeof(struct devinfo_struct), GFP_KERNEL);	
+	s_DEVINFO_ctp.device_type="CTP";
+	s_DEVINFO_ctp.device_module=module;
+	s_DEVINFO_ctp.device_vendor=vendor;
+	s_DEVINFO_ctp.device_ic="FT5446";
+	s_DEVINFO_ctp.device_info=DEVINFO_NULL;
+	s_DEVINFO_ctp.device_version=version;
+	s_DEVINFO_ctp.device_used=used;
+#ifdef SLT_DEVINFO_CTP_DEBUG
+	printk("[DEVINFO CTP]registe CTP device! type:<%s> module:<%s> vendor<%s> ic<%s> version<%s> info<%s> used<%s> \n",
+		s_DEVINFO_ctp.device_type,s_DEVINFO_ctp.device_module,s_DEVINFO_ctp.device_vendor,
+		s_DEVINFO_ctp.device_ic,s_DEVINFO_ctp.device_version,s_DEVINFO_ctp.device_info,
+                s_DEVINFO_ctp.device_used);
+#endif
+       DEVINFO_CHECK_DECLARE(s_DEVINFO_ctp.device_type,s_DEVINFO_ctp.device_module,s_DEVINFO_ctp.device_vendor,
+                                    s_DEVINFO_ctp.device_ic,s_DEVINFO_ctp.device_version,s_DEVINFO_ctp.device_info,
+                                    s_DEVINFO_ctp.device_used);
+}
+#endif
 
 /*****************************************************************************
 * Focaltech ts i2c driver configuration
@@ -840,6 +875,30 @@ static int tpd_i2c_detect(struct i2c_client *client,
     return 0;
 }
 
+//add by hxl /proc/tp_info
+#ifdef MTK_CTP_NODE 
+#define CTP_PROC_FILE "tp_info"
+
+static int ctp_proc_read_show (struct seq_file* m, void* data)
+{
+	char temp[40] = {0};
+	sprintf(temp, "[Vendor]wistron,[Fw]0x%02x,[IC]FT5446\n",ctp_fw_version); 
+	seq_printf(m, "%s\n", temp);
+	return 0;
+}
+
+static int ctp_proc_open (struct inode* inode, struct file* file) 
+{
+    return single_open(file, ctp_proc_read_show, inode->i_private);
+}
+
+static const struct file_operations g_ctp_proc = 
+{
+    .open = ctp_proc_open,
+    .read = seq_read,
+};
+#endif
+
 /************************************************************************
 * Name: fts_probe
 * Brief:
@@ -865,6 +924,12 @@ static int tpd_probe(struct i2c_client *client, const struct i2c_device_id *id)
     /* Configure gpio to irq and request irq */
     tpd_gpio_as_int(tpd_int_gpio_number);
     tpd_irq_registration();
+
+#ifdef MTK_CTP_NODE
+	if((proc_create(CTP_PROC_FILE,0444,NULL,&g_ctp_proc)) == NULL){
+		printk("proc_create tp version node error\n");
+	}
+#endif
 
     /* Init I2C */
     fts_i2c_init();
@@ -905,6 +970,17 @@ static int tpd_probe(struct i2c_client *client, const struct i2c_device_id *id)
 
     printk("[TPD]Touch Panel Device Probe %s!",
               (retval < 0) ? "FAIL" : "PASS");
+
+//add by hxl dev_info
+	fts_i2c_read_reg(client, 0xA6, &ver);
+	ctp_fw_version = ver;
+#ifdef CONFIG_LCT_DEVINFO_SUPPORT
+   	ver_id = ctp_fw_version;
+	ver_module = ver;
+	temp_ver=(char*) kmalloc(8, GFP_KERNEL);	
+	sprintf(temp_ver,"0x%x",ver_id);
+	devinfo_ctp_regchar("unknown","wistron",temp_ver,DEVINFO_USED);
+#endif
 
 #ifdef CONFIG_MTK_SENSOR_HUB_SUPPORT
     fts_sensor_init();
