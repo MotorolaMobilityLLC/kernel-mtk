@@ -113,6 +113,14 @@
 #if defined(CONFIG_MTK_PUMP_EXPRESS_PLUS_SUPPORT)
 #include <mach/mt_pe.h>
 #endif
+
+//zhangchao@wind-mobi.com 20161221 begin
+#ifdef CONFIG_WIND_Z168_BATTERY_MODIFY
+#include "../../../misc/mediatek/board_id/board_id.h"
+extern int get_bid_gpio(void);
+#endif
+//zhangchao@wind-mobi.com 20161221 end
+
 /* ////////////////////////////////////////////////////////////////////////////// */
 /* Battery Logging Entry */
 /* ////////////////////////////////////////////////////////////////////////////// */
@@ -4164,6 +4172,11 @@ static int __batt_init_cust_data_from_dt(void)
 {
 	/* struct device_node *np = dev->dev.of_node; */
 	struct device_node *np;
+	//zhangchao@wind-mobi.com 20161221 begin
+	#ifdef CONFIG_WIND_Z168_BATTERY_MODIFY
+	int ret;
+	#endif
+	//zhangchao@wind-mobi.com 20161221 end
 
 	/* check customer setting */
 	np = of_find_compatible_node(NULL, NULL, "mediatek,battery");
@@ -4228,9 +4241,25 @@ static int __batt_init_cust_data_from_dt(void)
 
 	__batt_parse_node(np, "ac_charger_input_current",
 		&batt_cust_data.ac_charger_input_current);
-
+	
+	//zhangchao@wind-mobi.com 20161221 begin
+	#ifdef CONFIG_WIND_Z168_BATTERY_MODIFY
+	ret=get_bid_gpio();
+	if(ret==LATAM_DS_NA_EVT || ret==LATAM_DS_NA_DVT || ret==ROLA_SS_NA_EVT || ret==ROLA_SS_NA_DVT)
+	{
 	__batt_parse_node(np, "ac_charger_current",
 		&batt_cust_data.ac_charger_current);
+	}
+	else
+	{
+	__batt_parse_node(np, "ac_charger_current_AP_EMEA",
+		&batt_cust_data.ac_charger_current);
+	}
+	#else
+	__batt_parse_node(np, "ac_charger_current",
+		&batt_cust_data.ac_charger_current);
+	#endif
+	//zhangchao@wind-mobi.com 20161221 end
 
 	__batt_parse_node(np, "non_std_ac_charger_current",
 		&batt_cust_data.non_std_ac_charger_current);
