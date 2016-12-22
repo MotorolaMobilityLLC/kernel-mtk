@@ -1,0 +1,7 @@
+config MTK_NET_CCMNI
+	bool "MediaTek CCMNI driver"
+	depends on MTK_CCCI_DEVICES
+	default n
+	select WIRELESS_EXT
+	select WEXT_PRIV
+

@@ -1,0 +1,4 @@
+
+config MTK_MOTION_DETECT_HUB
+	bool "motion detect hub for MediaTek package"
+	default n
