@@ -115,12 +115,14 @@
 		data = <1>;
 		pwm_config = <0 0 0 0 0>;
 	};
+    //xuzhifeng@wind-mobi.com 20161222 begin
 	vibrator0:vibrator@0 {
 		compatible = "mediatek,vibrator";
 		vib_timer = <25>;
 		vib_limit = <9>;
-		vib_vol= <5>;
+		vib_vol= <6>;
 	};
+    //xuzhifeng@wind-mobi.com 20161222 begin
 //tee_xuzhifeng@wind-mobi.com 20161117 begin
 et360spi@0 {
 		compatible = "egistec,et360spi";
