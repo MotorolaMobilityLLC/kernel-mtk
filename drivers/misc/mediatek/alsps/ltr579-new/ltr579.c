@@ -776,8 +776,9 @@ static int ltr579_ps_enable(void)
 	struct i2c_client *client = ltr579_obj->client;
 	struct ltr579_priv *obj = ltr579_obj;
 	u8 databuf[2];	
-	int res;
-
+	int res = 1;
+	int data = 0;
+	int val = 1;
 	int error;
 	int setctrl;
     APS_LOG("ltr579_ps_enable() ...start!\n");
@@ -854,6 +855,23 @@ static int ltr579_ps_enable(void)
 	set_bit(CMC_BIT_PS, &obj->enable);
 	
 	APS_LOG("ltr579_ps_enable ...OK!\n");
+
+
+	msleep(10);
+	data = ltr579_ps_read();
+
+	if(data > atomic_read(&obj->ps_thd_val_high)) //Near
+	{
+		intr_flag_value =1;
+		val = 0;
+	}
+	else if(data <= atomic_read(&obj->ps_thd_val_high)) //Far
+	{
+		intr_flag_value =0;
+		val = 1;
+	}
+
+	ps_report_interrupt_data(val);
 	
 	#ifdef GN_MTK_BSP_PS_DYNAMIC_CALI
 	ltr579_dynamic_calibrate();
@@ -863,7 +881,7 @@ static int ltr579_ps_enable(void)
 	return error;
 
 	EXIT_ERR:
-	APS_ERR("set thres: %d\n", res);
+	APS_ERR("res: %d\n", res);
 	return res;
 }
 
