@@ -35,6 +35,9 @@ char *g_lcm_name ="";
 char *g_gsensor_name ="";
 
 char *g_fingerprint_name ="";
+//liujinzhou@wind-mobi.com add at 20161221 begin
+char *g_psensor_name ="";
+//liujinzhou@wind-mobi.com add at 20161221 end
 
 //char *g_msensor_name = "";
 
@@ -52,7 +55,21 @@ static ssize_t show_msensor_info(struct device *dev,struct device_attribute *att
     return size;
 }
 */
-
+//liujinzhou@wind-mobi.com add at 20161221 begin
+static ssize_t show_psensor_info(struct device *dev,struct device_attribute *attr, char *buf)
+{
+	size_t size = 0;
+	DEVICE_INFO_FUN();
+	if(NULL != g_psensor_name)
+		size = sprintf(buf, "%s\n", g_psensor_name);
+    return size;
+}
+static ssize_t store_psensor_info(struct device *dev,struct device_attribute *attr, const char *buf, size_t size)
+{
+	DEVICE_INFO_FUN();
+   	return size;
+}
+//liujinzhou@wind-mobi.com add at 20161221 end
 static ssize_t show_lcm_info(struct device *dev,struct device_attribute *attr, char *buf)
 {
 	size_t size = 0;
@@ -167,6 +184,9 @@ static ssize_t store_battery_boot_info(struct device *dev,struct device_attribut
 
 static DEVICE_ATTR(lcm_info, 0664, show_lcm_info, store_lcm_info);
 static DEVICE_ATTR(gsensor_info, 0664, show_gsensor_info, store_gsensor_info);
+//liujinzhou@wind-mobi.com add at 20161221 begin
+static DEVICE_ATTR(psensor_info, 0664, show_psensor_info, store_psensor_info);
+//liujinzhou@wind-mobi.com add at 20161221 end
 //static DEVICE_ATTR(msensor_info, 0664, show_msensor_info, NULL);
 static DEVICE_ATTR(ctp_info, 0664, show_ctp_info, store_ctp_info);
 static DEVICE_ATTR(fp_info, 0664, show_fp_info, store_fp_info);
@@ -177,6 +197,9 @@ static void attr_files_create(struct device *device)
 {	
 	device_create_file(device, &dev_attr_lcm_info);	
 	device_create_file(device, &dev_attr_gsensor_info);	
+	//liujinzhou@wind-mobi.com add at 20161221 begin
+	device_create_file(device, &dev_attr_psensor_info);	
+	//liujinzhou@wind-mobi.com add at 20161221 end
 //	device_create_file(device, &dev_attr_msensor_info);	
 	device_create_file(device, &dev_attr_ctp_info);	
 	device_create_file(device, &dev_attr_fp_info);	

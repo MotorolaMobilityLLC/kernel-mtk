@@ -15,7 +15,11 @@
 #include "inc/aal_control.h"
 struct alsps_context *alsps_context_obj = NULL;
 struct platform_device *pltfm_dev;
-
+//liujinzhou@wind-mobi.com add at 20161221 begin
+#ifdef CONFIG_WIND_DEVICE_INFO
+	extern char *g_psensor_name;
+#endif
+//liujinzhou@wind-mobi.com add at 20161221 end
 
 static struct alsps_init_info *alsps_init_list[MAX_CHOOSE_ALSPS_NUM] = {0};
 
@@ -703,6 +707,11 @@ static int alsps_real_driver_init(void)
 			ALSPS_LOG(" alsps try to init driver %s\n", alsps_init_list[i]->name);
 			err = alsps_init_list[i]->init();
 			if (0 == err) {
+				//liujinzhou@wind-mobi.com add at 20161221 begin
+				#ifdef CONFIG_WIND_DEVICE_INFO
+				g_psensor_name = alsps_init_list[i]->name;
+				#endif
+				//liujinzhou@wind-mobi.com add at 20161221 end
 				ALSPS_LOG(" alsps real driver %s probe ok\n", alsps_init_list[i]->name);
 				break;
 			}
