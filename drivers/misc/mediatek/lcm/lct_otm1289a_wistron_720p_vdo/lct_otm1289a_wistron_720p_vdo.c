@@ -200,6 +200,11 @@ static struct LCM_setting_table lcm_initialization_setting[] = {
         {0x00,1,{0x80}},
         {0xc0,8,{0x4a,0x00,0x10,0x10,0x96,0x01,0x68,0x40}},
 
+        {0x00,1,{0x00}},
+        {0xe1,16,{0x00,0x27,0x38,0x4c,0x5b,0x76,0x75,0x8a,0x6d,0x5b,0x64,0x4d,0x37,0x27,0x16,0x00}},
+        {0x00,1,{0x00}},
+        {0xe2,16,{0x00,0x27,0x38,0x4c,0x5b,0x76,0x75,0x8a,0x6d,0x5b,0x64,0x4d,0x37,0x27,0x16,0x00}},
+        
         {0x00,1,{0x90}},
         {0xc0,3,{0x3b,0x01,0x09}},
         {0x00,1,{0x8c}},
@@ -421,13 +426,13 @@ static void lcm_get_params(LCM_PARAMS *params)
 	params->dsi.PS = LCM_PACKED_PS_24BIT_RGB888;
 
 	params->dsi.vertical_sync_active				= 2;
-	params->dsi.vertical_backporch					= 14;
-	params->dsi.vertical_frontporch					= 16; 
+	params->dsi.vertical_backporch					= 40;//14
+	params->dsi.vertical_frontporch					= 40; //16
 	params->dsi.vertical_active_line				= FRAME_HEIGHT;
 
 	params->dsi.horizontal_sync_active				= 2; //2
-	params->dsi.horizontal_backporch				= 80;  //42
-	params->dsi.horizontal_frontporch				= 80;  //44
+	params->dsi.horizontal_backporch				= 55;  //42
+	params->dsi.horizontal_frontporch				= 55;  //44
 	params->dsi.horizontal_active_pixel				= FRAME_WIDTH;
 
 #if (LCM_DSI_CMD_MODE)
