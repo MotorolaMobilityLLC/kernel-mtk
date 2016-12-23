@@ -124,8 +124,15 @@ static inline int getAFInfo(__user stAF_MotorInfo *pstMotorInfo)
 
 static void initdrv(void)
 {
+//wangkangmin@wind-mobi.com modify AF SAC parameters 20161223 begin
+	#ifdef CONFIG_WIND_CAMERA_CUSTOM
 	char puSendCmd2[2] = { 0x01, 0x3B };
 	char puSendCmd3[2] = { 0x05, 0x62 };
+	#else
+	char puSendCmd2[2] = { 0x01, 0x39 };
+	char puSendCmd3[2] = { 0x05, 0x65 };
+	#endif
+//wangkangmin@wind-mobi.com modify AF SAC parameters 20161223 end
 	i2c_master_send(g_pstAF_I2Cclient, puSendCmd2, 2);
 	i2c_master_send(g_pstAF_I2Cclient, puSendCmd3, 2);
 }
