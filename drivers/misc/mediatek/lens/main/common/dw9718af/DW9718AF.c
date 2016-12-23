@@ -124,8 +124,8 @@ static inline int getAFInfo(__user stAF_MotorInfo *pstMotorInfo)
 
 static void initdrv(void)
 {
-	char puSendCmd2[2] = { 0x01, 0x39 };
-	char puSendCmd3[2] = { 0x05, 0x65 };
+	char puSendCmd2[2] = { 0x01, 0x3B };
+	char puSendCmd3[2] = { 0x05, 0x62 };
 	i2c_master_send(g_pstAF_I2Cclient, puSendCmd2, 2);
 	i2c_master_send(g_pstAF_I2Cclient, puSendCmd3, 2);
 }
