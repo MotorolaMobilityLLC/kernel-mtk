@@ -52,17 +52,14 @@ static int swtp_switch_mode(struct swtp_t *swtp)
 			irq_set_irq_type(swtp->irq, IRQ_TYPE_LEVEL_LOW);
 
 		swtp->curr_mode = SWTP_EINT_PIN_PLUG_OUT;
-        if (strcmp(g_sdev.name, "dumb"))
-            switch_set_state(&g_sdev, 0);
 	} else {
 		if (swtp->eint_type == IRQ_TYPE_LEVEL_HIGH)
 			irq_set_irq_type(swtp->irq, IRQ_TYPE_LEVEL_LOW);
 		else
 			irq_set_irq_type(swtp->irq, IRQ_TYPE_LEVEL_HIGH);
 		swtp->curr_mode = SWTP_EINT_PIN_PLUG_IN;
-        if (strcmp(g_sdev.name, "dumb"))
-            switch_set_state(&g_sdev, 1);
 	}
+	schedule_delayed_work(&swtp->switch_work, 0);
 	CCCI_LEGACY_ALWAYS_LOG(swtp->md_id, KERN, "%s mode %d\n", __func__, swtp->curr_mode);
 	spin_unlock_irqrestore(&swtp->spinlock, flags);
 
@@ -138,6 +135,21 @@ static void swtp_tx_work(struct work_struct *work)
 
 	ret = swtp_send_tx_power_mode(swtp);
 }
+
+static void swtp_switch_work(struct work_struct *work)
+{
+	struct swtp_t *swtp = container_of(to_delayed_work(work), struct swtp_t, switch_work);
+
+    if (swtp->curr_mode == SWTP_EINT_PIN_PLUG_OUT) {
+        if (strcmp(g_sdev.name, "dumb"))
+            switch_set_state(&g_sdev, 0);
+    }
+    else {
+        if (strcmp(g_sdev.name, "dumb"))
+            switch_set_state(&g_sdev, 1);
+    }
+}
+
 void ccci_swtp_test(int irq)
 {
 	swtp_irq_func(irq, &swtp_data[0]);
@@ -185,6 +197,7 @@ int swtp_init(int md_id)
 	swtp_data[md_id].curr_mode = SWTP_EINT_PIN_PLUG_OUT;
 	spin_lock_init(&swtp_data[md_id].spinlock);
 	INIT_DELAYED_WORK(&swtp_data[md_id].delayed_work, swtp_tx_work);
+	INIT_DELAYED_WORK(&swtp_data[md_id].switch_work, swtp_switch_work);
 
 	node = of_find_matching_node(NULL, swtp_of_match);
 	if (node) {

@@ -29,6 +29,7 @@ struct swtp_t {
 	unsigned int	retry_cnt;
 	spinlock_t		spinlock;
 	struct delayed_work delayed_work;
+    struct delayed_work switch_work;
 };
 /****************************************************************************************************************/
 /* External API Region called by ccci_swtp object */
