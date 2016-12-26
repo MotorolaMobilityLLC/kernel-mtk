@@ -130,7 +130,7 @@ static void devinfo_ctp_regchar(char *module,char * vendor,char *version,char *u
 static const struct i2c_device_id fts_tpd_id[] = { {FTS_DRIVER_NAME, 0}, {} };
 
 static const struct of_device_id fts_dt_match[] = {
-    {.compatible = "mediatek,gt_cap_touch"},
+    {.compatible = "mediatek,ft_cap_touch"},
     {},
 };
 
@@ -914,16 +914,12 @@ static int tpd_probe(struct i2c_client *client, const struct i2c_device_id *id)
 
     fts_i2c_client = client;
     fts_input_dev = tpd->dev;
-	printk("gt5446 probe\n");
+	printk("ft5446 probe\n");
     if (fts_i2c_client->addr != FTS_I2C_SLAVE_ADDR) {
         printk("[TPD]Change i2c addr 0x%02x to 0x38", fts_i2c_client->addr);
-        fts_i2c_client->addr = FTS_I2C_SLAVE_ADDR;
+        //fts_i2c_client->addr = FTS_I2C_SLAVE_ADDR;
         printk("[TPD]fts_i2c_client->addr=0x%x\n", fts_i2c_client->addr);
     }
-
-    /* Configure gpio to irq and request irq */
-    tpd_gpio_as_int(tpd_int_gpio_number);
-    tpd_irq_registration();
 
 #ifdef MTK_CTP_NODE
 	if((proc_create(CTP_PROC_FILE,0444,NULL,&g_ctp_proc)) == NULL){
@@ -933,6 +929,14 @@ static int tpd_probe(struct i2c_client *client, const struct i2c_device_id *id)
 
     /* Init I2C */
     fts_i2c_init();
+    fts_reset_proc(200);
+    retval = fts_wait_tp_to_valid(client);
+	if(retval)
+		goto err_read_device_id;
+
+    /* Configure gpio to irq and request irq */
+	tpd_gpio_as_int(tpd_int_gpio_number);
+    tpd_irq_registration();
 #if FTS_GESTURE_EN
     fts_gesture_init(tpd->dev, client);
 #endif
@@ -944,11 +948,6 @@ static int tpd_probe(struct i2c_client *client, const struct i2c_device_id *id)
 #if FTS_MT_PROTOCOL_B_EN
     input_mt_init_slots(tpd->dev, FTS_MAX_POINTS, INPUT_MT_DIRECT);
 #endif
-
-    fts_reset_proc(200);
-    fts_wait_tp_to_valid(client);
-
-    tpd_load_status = 1;
 
     fts_ctpm_get_upgrade_array();
 
@@ -998,9 +997,15 @@ static int tpd_probe(struct i2c_client *client, const struct i2c_device_id *id)
     fts_test_init(client);
 #endif
 
+ tpd_load_status = 1;
     FTS_FUNC_EXIT();
 
     return 0;
+
+err_read_device_id:
+	FTS_ERROR("[TPD][ft5446_probe]Failed to read Device ID,retval=%d!",retval);
+	tpd_load_status = 0;
+	return -1;
 }
 
 /*****************************************************************************
