@@ -515,7 +515,7 @@ unsigned int id=0,id1=0,id2=0;
 	}
     else
     {
-        return 1;
+        return -1;	//1:-1 <=> ata test pass:ata test fail ---sunsiyuan@wind-mobi.com modify at 20161226
     }
 }
 //sunsiyuan@wind-mobi.com add ata_check at 20161128 end
