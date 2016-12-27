@@ -460,7 +460,7 @@ void tps65132_enable_5513(char en)
 	{
 		
 		set_gpio_lcd_enp(1);
-		MDELAY(12);
+		MDELAY(5);
 		set_gpio_lcd_enn(1);
 		MDELAY(12);
 		tps65132_write_bytes_5513(0x00, 0x0f);//5.5->5.2
@@ -484,11 +484,11 @@ static void lcm_init(void)
 {
 	tps65132_enable_5513(1);
 	SET_RESET_PIN(1);
-	MDELAY(20);
+	MDELAY(5);
 	SET_RESET_PIN(0);
 	MDELAY(10);
 	SET_RESET_PIN(1);
-	MDELAY(120);
+	MDELAY(55);
 	push_table(lcm_initialization_setting,
 		   sizeof(lcm_initialization_setting) / sizeof(struct LCM_setting_table), 1);	
 }
@@ -506,9 +506,7 @@ static void lcm_suspend(void)
 
 static void lcm_resume(void)
 {
-	MDELAY(10);
 	lcm_init();
-	MDELAY(10);
 }
 
 static unsigned int last_level=0;
