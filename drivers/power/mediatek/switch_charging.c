@@ -867,6 +867,13 @@ void select_charging_current_bcct(void)
 		g_temp_input_CC_value = g_bcct_input_value * 100;
 #endif
 
+#ifdef CONFIG_LCT_CHR_JEITA_STANDARD_SUPPORT
+	if(g_temp_status == TEMP_POS_0_TO_POS_10) {
+		if(g_temp_CC_value > CHARGE_CURRENT_1000_00_MA)
+			g_temp_CC_value = CHARGE_CURRENT_1000_00_MA;
+		if(g_temp_input_CC_value > CHARGE_CURRENT_1000_00_MA)
+			g_temp_input_CC_value = CHARGE_CURRENT_1000_00_MA;
+#endif
 	mtk_check_aicr_upper_bound();
 }
 
