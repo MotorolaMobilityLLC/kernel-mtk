@@ -873,6 +873,7 @@ void select_charging_current_bcct(void)
 			g_temp_CC_value = CHARGE_CURRENT_1000_00_MA;
 		if(g_temp_input_CC_value > CHARGE_CURRENT_1000_00_MA)
 			g_temp_input_CC_value = CHARGE_CURRENT_1000_00_MA;
+	}
 #endif
 	mtk_check_aicr_upper_bound();
 }
