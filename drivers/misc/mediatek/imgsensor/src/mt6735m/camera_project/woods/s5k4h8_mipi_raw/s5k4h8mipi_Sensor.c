@@ -41,10 +41,13 @@
 #define PFX "S5K4H8_camera_sensor"
 #define LOG_1 LOG_INF("S5K4H8,MIPI 4LANE\n")
 #define LOG_2 LOG_INF("preview 2096*1552@30fps,1260Mbps/lane; video 4192*3104@30fps,1260Mbps/lane; capture 13M@30fps,1260Mbps/lane\n")
-//#define LOG_DBG(format, args...) xlog_printk(ANDROID_LOG_DEBUG ,PFX, "[%S] " format, __FUNCTION__, ##args)
-//#define LOG_INF(format, args...) xlog_printk(ANDROID_LOG_INFO ,PFX, "[%s] " format, __FUNCTION__, ##args)
-//#define LOG_DBG(format, args...) xlog_printk(ANDROID_LOG_DEBUG ,PFX, "[%S] " format, __FUNCTION__, ##args)
+
+//#define DEBUG_CAMERA_INFO
+#ifdef DEBUG_CAMERA_INFO
 #define LOG_INF(format, args...)    pr_debug(PFX "[%s] " format, __FUNCTION__, ##args)
+#else
+#define LOG_INF(a, ...)
+#endif
 #define S5K4H8_OTP_SUPPORT
 #ifdef S5K4H8_OTP_SUPPORT
 struct S5K4H8_otp_struct {
@@ -219,16 +222,16 @@ static imgsensor_info_struct imgsensor_info = {
 	.ihdr_le_firstline = 0,  //1,le first ; 0, se first
 	.sensor_mode_num = 5,	  //support sensor mode num
 	
-	.cap_delay_frame = 2, 
-	.pre_delay_frame = 2,  
-	.video_delay_frame = 2,
-	.hs_video_delay_frame = 2,
-	.slim_video_delay_frame = 2,
-    .custom1_delay_frame = 2,
-    .custom2_delay_frame = 2, 
-    .custom3_delay_frame = 2, 
-    .custom4_delay_frame = 2, 
-    .custom5_delay_frame = 2,
+	.cap_delay_frame = 1, 
+	.pre_delay_frame = 1,  
+	.video_delay_frame = 1,
+	.hs_video_delay_frame = 1,
+	.slim_video_delay_frame = 1,
+    .custom1_delay_frame = 1,
+    .custom2_delay_frame = 1, 
+    .custom3_delay_frame = 1, 
+    .custom4_delay_frame = 1, 
+    .custom5_delay_frame = 1,
 	
 	.isp_driving_current = ISP_DRIVING_8MA,
 	.sensor_interface_type = SENSOR_INTERFACE_TYPE_MIPI,
@@ -238,7 +241,7 @@ static imgsensor_info_struct imgsensor_info = {
 	.mclk = 24,
 	.mipi_lane_num = SENSOR_MIPI_4_LANE,
 	.i2c_addr_table = {0x5A, 0xff},
-    .i2c_speed = 300, // i2c read/write speed
+    .i2c_speed = 400, // i2c read/write speed
 };
 
 
@@ -799,7 +802,7 @@ static void check_output_stream_on(void)
 		if(read_register0005_value != 0xff)			
 			break;		
 		
-		mdelay(50);
+		mdelay(10);
 		
 		if(read_count == 4)			
 			LOG_INF("[error][0x0005, 0xff]sensor not output\n");	
@@ -818,7 +821,7 @@ static void check_output_stream_off(void)
 
 		if(read_register0005_value == 0xff)			
 			break;		
-		mdelay(50);
+		mdelay(10);
 		
 		if(read_count == 4)			
 			LOG_INF("stream off error\n");	
