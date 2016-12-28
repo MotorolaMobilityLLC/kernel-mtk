@@ -51,6 +51,19 @@ enum {
 #define ENABLE_SWIPE_UP_DOWN	DISABLE
 #define ENABLE_SWIPE_LEFT_RIGHT	DISABLE
 #endif
+/* 
+ * Lct modify by zl for navi 
+ * date:2016-1228
+ */
+#define KEY_FPS_DOWN   614
+#define KEY_FPS_UP     615
+#define KEY_FPS_TAP    616
+#define KEY_FPS_HOLD   617
+#define KEY_FPS_YPLUS  618
+#define KEY_FPS_YMINUS 619
+#define KEY_FPS_XPLUS  620
+#define KEY_FPS_XMINUS 621
+/* Lct modify end */
 
 
 /*
@@ -70,9 +83,10 @@ enum {
  *   KEY_RELEASE : Release key button
  *   KEY_PRESS_RELEASE : Combined action of press-then-release
  */
-#define	KEYEVENT_UP				KEY_DOWN
+//Lct modify by zl for navi
+#define	KEYEVENT_UP				KEY_FPS_XPLUS /*KEY_DOWN*/ //KEY_UP
 #define	KEYEVENT_UP_ACTION		KEY_PRESS_RELEASE
-#define	KEYEVENT_DOWN			KEY_UP
+#define	KEYEVENT_DOWN			KEY_FPS_XMINUS /*KEY_UP*/ //KEY_DOWN
 #define	KEYEVENT_DOWN_ACTION	KEY_PRESS_RELEASE
 
 
@@ -95,13 +109,17 @@ enum {
  */
 
 //Lct modify by zl for navi
-#define	KEYEVENT_RIGHT			KEY_LEFT
+#define	KEYEVENT_RIGHT			KEY_FPS_YPLUS  /* KEY_LEFT */ //KEY_RIGHT
 #define	KEYEVENT_RIGHT_ACTION	KEY_PRESS_RELEASE
-#define	KEYEVENT_LEFT			KEY_RIGHT
+#define	KEYEVENT_LEFT			KEY_FPS_YMINUS /* KEY_RIGHT */ //KEY_LEFT
 #define	KEYEVENT_LEFT_ACTION	KEY_PRESS_RELEASE
 
-
-
+/* 
+ * Lct modify by zl for navi 
+ * date:2016-1228
+ */
+unsigned int prev_keycode = 0 ;
+/* Lct modify end */
 
 /*
  * @ TRANSLATED_COMMAND
@@ -133,7 +151,9 @@ enum {
  *     ENABLE/DISABLE : enable/disable long-touch event.
  */
 #define ENABLE_TRANSLATED_SINGLE_CLICK	ENABLE
-#define ENABLE_TRANSLATED_DOUBLE_CLICK	ENABLE
+//Lct modify by zl date:2016-1228
+#define ENABLE_TRANSLATED_DOUBLE_CLICK	DISABLE
+
 #define ENABLE_TRANSLATED_LONG_TOUCH	ENABLE
 
 
@@ -163,16 +183,25 @@ enum {
  *   KEY_RELEASE : Release key button
  *   KEY_PRESS_RELEASE : Combined action of press-then-release
  */
-#define LONGTOUCH_INTERVAL		1000
+/* 
+ * Lct modify by zl for navi 
+ * date:2016-1228
+ */
+#define LONGTOUCH_INTERVAL			400
 #define DOUBLECLICK_INTERVAL		500
-#define	KEYEVENT_CLICK			0x232
+#define	KEYEVENT_CLICK				KEY_FPS_TAP /* 0x232 */
 #define	KEYEVENT_CLICK_ACTION		KEY_PRESS_RELEASE
 #define	KEYEVENT_DOUBLECLICK		KEY_DELETE
 #define	KEYEVENT_DOUBLECLICK_ACTION	KEY_PRESS_RELEASE
-#define	KEYEVENT_LONGTOUCH			0x233
+#define	KEYEVENT_LONGTOUCH			KEY_FPS_HOLD /* 0x233 */
 #define	KEYEVENT_LONGTOUCH_ACTION	KEY_PRESS_RELEASE
 
+#define KEYEVENT_ON					KEY_FPS_DOWN
+#define KEYEVENT_ON_ACTION			KEY_PRESS_RELEASE
+#define	KEYEVENT_OFF				KEY_FPS_UP
+#define	KEYEVENT_OFF_ACTION			KEY_PRESS_RELEASE
 
+/* Lct modify end */
 //---------------End of TRANSLATED properties-----------------
 
 
@@ -274,6 +303,13 @@ void init_event_enable(struct egistec_data *egistec)
 	set_bit(EV_KEY, egistec->input_dev->evbit);
 	set_bit(EV_SYN, egistec->input_dev->evbit);
 #if TRANSLATED_COMMAND
+/* 
+ * Lct modify by zl for navi 
+ * date:2016-1228
+ */
+	set_bit(KEYEVENT_ON, egistec->input_dev->keybit);
+	set_bit(KEYEVENT_OFF, egistec->input_dev->keybit);
+/* Lct modify end */
 	set_bit(KEYEVENT_CLICK, egistec->input_dev->keybit);
 	set_bit(KEYEVENT_DOUBLECLICK, egistec->input_dev->keybit);
 	set_bit(KEYEVENT_LONGTOUCH, egistec->input_dev->keybit);
@@ -302,7 +338,9 @@ static void send_key_event(struct egistec_data *egistec, unsigned int code, int 
 		input_sync(obj->input_dev);
 		input_report_key(obj->input_dev, code, 0);	// 0 is release
 		input_sync(obj->input_dev);
-	}else{
+		//Lct modify by zl date:2016-1228
+		prev_keycode = code ;
+	} else {
 		input_report_key(obj->input_dev, code, value);
 		input_sync(obj->input_dev);
 	}
@@ -341,6 +379,9 @@ void translated_command_converter(char cmd, struct egistec_data *egistec)
 
 		case NAVI_EVENT_ON:
             g_KeyEventRaised = false;
+			//Lct modify by zl date:2016-1228
+            send_key_event(egistec, KEYEVENT_ON, KEYEVENT_ON_ACTION);  //20161227, for fingerON
+			
 #if ENABLE_TRANSLATED_LONG_TOUCH
             long_touch_timer.data = (unsigned long)egistec;
             mod_timer(&long_touch_timer, jiffies + (HZ * LONGTOUCH_INTERVAL / 1000));
@@ -370,7 +411,15 @@ void translated_command_converter(char cmd, struct egistec_data *egistec)
 				send_key_event(egistec, KEYEVENT_CLICK, KEYEVENT_CLICK_ACTION);
 	#endif
 
-#endif	//end of ENABLE_DOUBLE_CLICK
+#endif	/* end of ENABLE_DOUBLE_CLICK */
+/* 
+ * Lct modify by zl for navi 
+ * date:2016-1228
+ */
+			} else {
+			if(prev_keycode == KEYEVENT_LONGTOUCH)
+				send_key_event(egistec, KEYEVENT_OFF, KEYEVENT_OFF_ACTION);	//20161227, for fingerON
+/* Lct modify end */	
             }
 #if ENABLE_TRANSLATED_LONG_TOUCH
 			del_timer(&long_touch_timer);
