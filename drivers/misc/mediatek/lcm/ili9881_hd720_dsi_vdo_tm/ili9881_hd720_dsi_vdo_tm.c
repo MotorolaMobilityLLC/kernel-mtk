@@ -450,27 +450,12 @@ static void lcm_resume(void)
 
 }
 
-//sunsiyuan@wind-mobi.com add ata_check at 20161128 begin
+//sunsiyuan@wind-mobi.com modify ata_check at 20161228 begin
 static unsigned int lcm_ata_check(unsigned char *buf)
 {
-unsigned int id=0,id1=0,id2=0;
+	unsigned int id=0,id1=0,id2=0;
 	unsigned char buffer[3];
 	unsigned int array[16];
-	unsigned char LCD_ID_value = 0;
-#ifdef GPIO_LCD_BIAS_ENP_PIN	
-	mt_set_gpio_mode(GPIO_LCD_BIAS_ENP_PIN, GPIO_MODE_00);	
-	mt_set_gpio_dir(GPIO_LCD_BIAS_ENP_PIN, GPIO_DIR_OUT);	
-	mt_set_gpio_out(GPIO_LCD_BIAS_ENP_PIN, GPIO_OUT_ONE);
-#endif
-	MDELAY(10);
-
-	SET_RESET_PIN(1);
-	SET_RESET_PIN(0);
-	MDELAY(1);
-	
-	SET_RESET_PIN(1);
-	MDELAY(120); 
-
 
     array[0]=0x00053902;
     array[1]=0x8198FFFF;
@@ -490,35 +475,16 @@ unsigned int id=0,id1=0,id2=0;
     id2 = buffer[1];  
     
 	id = (id1 << 8) | id2;
+  
+	printk("%s, kernel ili9881 horse debug: ili9881 id = 0x%08x\n", __func__, id);
 
-    #ifdef BUILD_LK
-		printf("%s, LK ili9881 debug: ili9881 id = %x,%x,%x\n", __func__, id,id1,id2);
-    #else
-		printk("%s, kernel ili9881 horse debug: ili9881 id = 0x%08x\n", __func__, id);
-    #endif
-
-	if(id == LCM_ID_ILI9881)
-	{
-		#ifdef BUILD_LK
-			printf("%s, LCD_ID_value = %d\n", __func__, LCD_ID_value);
-   	 	#else
-			printk("%s, LCD_ID_value = %d\n", __func__, LCD_ID_value);
-   		#endif
-		if(LCD_ID_value == 0x11)
-		{
-			return 1;
-		}
-		else
-		{
-			return 1;
-		}
-	}
-    else
-    {
-        return -1;	//1:-1 <=> ata test pass:ata test fail ---sunsiyuan@wind-mobi.com modify at 20161226
+	if(id == LCM_ID_ILI9881){
+		return 1;	//ATA test pass
+	}else{
+        return -1;	//ATA test fail
     }
 }
-//sunsiyuan@wind-mobi.com add ata_check at 20161128 end
+//sunsiyuan@wind-mobi.com modify ata_check at 20161228 end
 //extern unsigned char which_lcd_module_triple_cust(void); 
 static unsigned int lcm_compare_id(void)
 {
