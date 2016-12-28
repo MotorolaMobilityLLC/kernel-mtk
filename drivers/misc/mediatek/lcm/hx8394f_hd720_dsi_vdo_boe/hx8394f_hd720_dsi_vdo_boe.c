@@ -581,25 +581,12 @@ static unsigned int lcm_esd_recover(void)
 	return TRUE;
 }
 
-//sunsiyuan@wind-mobi.com add ata_check at 20161226 begin
+//sunsiyuan@wind-mobi.com modify ata_check at 20161228 begin
 static unsigned int lcm_ata_check(unsigned char *buf)
 {
 	unsigned int id=0,id1=0,id2=0;
 	unsigned char buffer[3];
 	unsigned int data_array[16];  
-
-#ifdef GPIO_LCD_BIAS_ENP_PIN
-	mt_set_gpio_mode(GPIO_LCD_BIAS_ENP_PIN, GPIO_MODE_00);
-	mt_set_gpio_dir(GPIO_LCD_BIAS_ENP_PIN, GPIO_DIR_OUT);
-	mt_set_gpio_out(GPIO_LCD_BIAS_ENP_PIN, GPIO_OUT_ONE);
-#endif
-
-	SET_RESET_PIN(1);  //NOTE:should reset LCM firstly
-	MDELAY(10);
-	SET_RESET_PIN(0);
-	MDELAY(10);
-	SET_RESET_PIN(1);
-	MDELAY(120); 
 
 	data_array[0]=0x00043902;
 	data_array[1]=0x9483FFB9;
@@ -622,15 +609,15 @@ static unsigned int lcm_ata_check(unsigned char *buf)
 
 	id=(id1 << 8) | id2;
 
-	printk("%s id=%x  \n",__func__,id);
-
+	printk("%s id1=%x,id2=%x  \n",__func__,id1,id2);
+	
 	if(LCM_ID_HX8394==id){
 		return 1; //ATA test pass
     }else{
 		return -1;	//ATA test fail
 	}
 }
-//sunsiyuan@wind-mobi.com add ata_check at 20161226 end
+//sunsiyuan@wind-mobi.com modify ata_check at 20161228 end
 
 #ifdef WIND_LCD_POWER_SUPPLY_SUPPORT
 extern void lcm_init_power(void);
