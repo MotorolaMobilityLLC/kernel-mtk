@@ -37,7 +37,7 @@ static ssize_t efusestatus_show(struct device *dev, struct device_attribute *att
 	
 }
 
-static DEVICE_ATTR(efusestatus, S_IWUSR | S_IRUGO, efusestatus_show, 	NULL);
+static DEVICE_ATTR(efusestatus, S_IRUGO, efusestatus_show, 	NULL);
 static struct device_attribute *dev_attr_efuse[] = {
 	&dev_attr_efusestatus,
 	NULL

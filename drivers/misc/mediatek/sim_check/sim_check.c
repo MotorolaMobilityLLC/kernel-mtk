@@ -125,8 +125,8 @@ static ssize_t sku_check_show(struct device *dev, struct device_attribute *attr,
 	return snprintf(buf, PAGE_SIZE, "%d\n", sku_id_value);
 }
 
-DEVICE_ATTR(sim_check, S_IWUSR | S_IRUGO, dual_sim_check_show, NULL);
-DEVICE_ATTR(sku_check, S_IWUSR | S_IRUGO, sku_check_show, NULL);
+DEVICE_ATTR(sim_check, S_IRUGO, dual_sim_check_show, NULL);
+DEVICE_ATTR(sku_check, S_IRUGO, sku_check_show, NULL);
 
 static struct device_attribute *sim_sku_attr_list[] = {
 	&dev_attr_sim_check,
