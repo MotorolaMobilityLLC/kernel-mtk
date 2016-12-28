@@ -1614,7 +1614,8 @@ int ltr778_setup_eint(struct i2c_client *client)
 			APS_ERR("IRQ LINE NOT AVAILABLE!!\n");
 			return -EINVAL;
 		}
-		enable_irq(ltr778_obj->irq);
+		//enable_irq(ltr778_obj->irq);
+// add by zhaofei - 2016-12-27-20-11
 	}
 	else {
 		APS_ERR("null irq node!!\n");

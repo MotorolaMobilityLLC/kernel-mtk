@@ -390,7 +390,8 @@ int SX9311_gpio_config(void)
 		}else{
                         lct_pr_info("IRQ LINE NOT AVAILABLE!! ---FALLING  success\n");	
 
-			enable_irq(captouch_irq); //add enable 
+			//enable_irq(captouch_irq); //add enable 
+// add by zhaofei - 2016-12-27-20-12
 		}
 
 	}
