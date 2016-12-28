@@ -43,7 +43,12 @@
 #define LOG_1 LOG_INF("s5k5e8yx,MIPI 2LANE\n")
 #define LOG_2 LOG_INF("preview 1280*960@30fps,864Mbps/lane; video 1280*960@30fps,864Mbps/lane; capture 5M@30fps,864Mbps/lane\n")
 /****************************   Modify end    *******************************************/
+//#define DEBUG_CAMERA_INFO
+#ifdef DEBUG_CAMERA_INFO
 #define LOG_INF(format, args...)    pr_debug(PFX "[%s] " format, __FUNCTION__, ##args)
+#else
+#define LOG_INF(a, ...)
+#endif
 //static int first_flag = 1;
 #define S5K5E8_OTP_SUPPORT
 #ifdef S5K5E8_OTP_SUPPORT
@@ -160,11 +165,11 @@ static imgsensor_info_struct imgsensor_info = {
 	.ihdr_le_firstline = 0,  //1,le first ; 0, se first
 	.sensor_mode_num = 7,	  //support sensor mode num
 	
-	.cap_delay_frame = 3, 
-	.pre_delay_frame = 3, 
-	.video_delay_frame = 3,
-	.hs_video_delay_frame = 3,
-	.slim_video_delay_frame = 3,
+	.cap_delay_frame = 1, 
+	.pre_delay_frame = 1, 
+	.video_delay_frame = 1,
+	.hs_video_delay_frame = 1,
+	.slim_video_delay_frame = 1,
 	
 	.isp_driving_current = ISP_DRIVING_6MA,
 	.sensor_interface_type = SENSOR_INTERFACE_TYPE_MIPI,
@@ -176,6 +181,7 @@ static imgsensor_info_struct imgsensor_info = {
 	.mclk = 24,
 	.mipi_lane_num = SENSOR_MIPI_2_LANE,
 	.i2c_addr_table = {0x5a,0xff},
+    .i2c_speed = 400, // i2c read/write speed
 };
 
 
@@ -211,6 +217,7 @@ static kal_uint16 read_cmos_sensor(kal_uint32 addr)
 	kal_uint16 get_byte=0;
 
 	char pu_send_cmd[2] = {(char)(addr >> 8), (char)(addr & 0xFF) };
+    kdSetI2CSpeed(imgsensor_info.i2c_speed); // Add this func to set i2c speed by each sensor
 	iReadRegI2C(pu_send_cmd, 2, (u8*)&get_byte, 1, imgsensor.i2c_write_id);
 
 	return get_byte;
@@ -219,12 +226,14 @@ static kal_uint16 read_cmos_sensor(kal_uint32 addr)
 static void write_cmos_sensor(kal_uint32 addr, kal_uint32 para)
 {
 	char pu_send_cmd[3] = {(char)(addr >> 8), (char)(addr & 0xFF), (char)(para & 0xFF)};
+	kdSetI2CSpeed(imgsensor_info.i2c_speed); // Add this func to set i2c speed by each sensor
 	iWriteRegI2C(pu_send_cmd, 3, imgsensor.i2c_write_id);
 }
 
 static void write_cmos_sensor_8(kal_uint16 addr, kal_uint8 para)
 {
     char pusendcmd[4] = {(char)(addr >> 8) , (char)(addr & 0xFF) ,(char)(para & 0xFF)};
+    kdSetI2CSpeed(imgsensor_info.i2c_speed); // Add this func to set i2c speed by each sensor
     iWriteRegI2C(pusendcmd , 3, imgsensor.i2c_write_id);
 }
 
@@ -558,7 +567,7 @@ static void preview_setting(void)
 	//Streaming off
 	write_cmos_sensor(0x0100,0x00);
 	//Delay 1 frame
-	mDELAY(33);    
+	mDELAY(10);    
 	//Extclk_frequency_mhz
 	write_cmos_sensor(0x0136,0x18);
 	write_cmos_sensor(0x0137,0x00);

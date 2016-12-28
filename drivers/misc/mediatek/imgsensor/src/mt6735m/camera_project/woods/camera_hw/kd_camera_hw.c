@@ -32,7 +32,7 @@
 #define PK_DBG_NONE(fmt, arg...)    do {} while (0)
 #define PK_DBG_FUNC(fmt, args...)    pr_debug(PFX  fmt, ##args)
 
-#define DEBUG_CAMERA_HW_K
+//#define DEBUG_CAMERA_HW_K
 #ifdef DEBUG_CAMERA_HW_K
 #define PK_DBG PK_DBG_FUNC
 #define PK_ERR(fmt, arg...) pr_err(fmt, ##arg)
@@ -617,7 +617,7 @@ int kdCISModulePowerOn(CAMERA_DUAL_CAMERA_SENSOR_ENUM SensorIdx, char *currSenso
 				mtkcam_gpio_set(pinSetIdx, CAMRST,
 						pinSet[pinSetIdx][IDX_PS_CMRST + IDX_PS_OFF]);
 
-			mdelay(50);
+			mdelay(5);
 
 			/* VCAM_A */
 			if (TRUE != _hwPowerOnCnt(VCAMA, VOL_2800, mode_name)) {
@@ -627,7 +627,7 @@ int kdCISModulePowerOn(CAMERA_DUAL_CAMERA_SENSOR_ENUM SensorIdx, char *currSenso
 				goto _kdCISModulePowerOn_exit_;
 			}
 
-			mdelay(10);
+			mdelay(5);
 
 			/* VCAM_IO */
 			if (TRUE != _hwPowerOnCnt(VCAMIO, VOL_1800, mode_name)) {
@@ -637,7 +637,7 @@ int kdCISModulePowerOn(CAMERA_DUAL_CAMERA_SENSOR_ENUM SensorIdx, char *currSenso
 				goto _kdCISModulePowerOn_exit_;
 			}
 
-			mdelay(10);
+			mdelay(5);
 
 			if (TRUE != _hwPowerOnCnt(VCAMD, VOL_1200, mode_name)) {
 				PK_DBG
@@ -646,7 +646,7 @@ int kdCISModulePowerOn(CAMERA_DUAL_CAMERA_SENSOR_ENUM SensorIdx, char *currSenso
 				goto _kdCISModulePowerOn_exit_;
 			}
 
-			mdelay(10);
+			mdelay(5);
 
 			/*disable other sensor*/
 			if (GPIO_CAMERA_INVALID != pinSet[1-pinSetIdx][IDX_PS_CMPDN])
@@ -661,7 +661,6 @@ int kdCISModulePowerOn(CAMERA_DUAL_CAMERA_SENSOR_ENUM SensorIdx, char *currSenso
 			if (GPIO_CAMERA_INVALID != pinSet[pinSetIdx][IDX_PS_CMRST]) {
 				mtkcam_gpio_set(pinSetIdx, CAMRST,
 						pinSet[pinSetIdx][IDX_PS_CMRST + IDX_PS_OFF]);
-				mdelay(5);
 				mtkcam_gpio_set(pinSetIdx, CAMRST,
 						pinSet[pinSetIdx][IDX_PS_CMRST + IDX_PS_ON]);
 			}
@@ -670,7 +669,6 @@ int kdCISModulePowerOn(CAMERA_DUAL_CAMERA_SENSOR_ENUM SensorIdx, char *currSenso
 			if (GPIO_CAMERA_INVALID != pinSet[pinSetIdx][IDX_PS_CMPDN]) {
 				mtkcam_gpio_set(pinSetIdx, CAMPDN,
 						pinSet[pinSetIdx][IDX_PS_CMPDN + IDX_PS_OFF]);
-				mdelay(5);
 				mtkcam_gpio_set(pinSetIdx, CAMPDN,
 						pinSet[pinSetIdx][IDX_PS_CMPDN + IDX_PS_ON]);
 			}
@@ -688,7 +686,7 @@ int kdCISModulePowerOn(CAMERA_DUAL_CAMERA_SENSOR_ENUM SensorIdx, char *currSenso
 				mtkcam_gpio_set(pinSetIdx, CAMRST,
 						pinSet[pinSetIdx][IDX_PS_CMRST + IDX_PS_OFF]);
 
-			mdelay(50);
+			mdelay(5);
 
 			/* VCAM_A */
 			if (TRUE != _hwPowerOnCnt(VCAMA, VOL_2800, mode_name)) {
@@ -698,7 +696,7 @@ int kdCISModulePowerOn(CAMERA_DUAL_CAMERA_SENSOR_ENUM SensorIdx, char *currSenso
 				goto _kdCISModulePowerOn_exit_;
 			}
 
-			mdelay(10);
+			mdelay(5);
 
 			/* VCAM_IO */
 			if (TRUE != _hwPowerOnCnt(VCAMIO, VOL_1800, mode_name)) {
@@ -708,7 +706,7 @@ int kdCISModulePowerOn(CAMERA_DUAL_CAMERA_SENSOR_ENUM SensorIdx, char *currSenso
 				goto _kdCISModulePowerOn_exit_;
 			}
 
-			mdelay(10);
+			mdelay(5);
 
 			if (TRUE != _hwPowerOnCnt(VCAMD, VOL_1200, mode_name)) {
 				PK_DBG
@@ -717,7 +715,7 @@ int kdCISModulePowerOn(CAMERA_DUAL_CAMERA_SENSOR_ENUM SensorIdx, char *currSenso
 				goto _kdCISModulePowerOn_exit_;
 			}
 
-			mdelay(10);
+			mdelay(5);
 
 			/*disable other sensor*/
 			if (GPIO_CAMERA_INVALID != pinSet[1-pinSetIdx][IDX_PS_CMPDN])
@@ -732,7 +730,6 @@ int kdCISModulePowerOn(CAMERA_DUAL_CAMERA_SENSOR_ENUM SensorIdx, char *currSenso
 			if (GPIO_CAMERA_INVALID != pinSet[pinSetIdx][IDX_PS_CMRST]) {
 				mtkcam_gpio_set(pinSetIdx, CAMRST,
 						pinSet[pinSetIdx][IDX_PS_CMRST + IDX_PS_OFF]);
-				mdelay(5);
 				mtkcam_gpio_set(pinSetIdx, CAMRST,
 						pinSet[pinSetIdx][IDX_PS_CMRST + IDX_PS_ON]);
 			}
@@ -741,7 +738,6 @@ int kdCISModulePowerOn(CAMERA_DUAL_CAMERA_SENSOR_ENUM SensorIdx, char *currSenso
 			if (GPIO_CAMERA_INVALID != pinSet[pinSetIdx][IDX_PS_CMPDN]) {
 				mtkcam_gpio_set(pinSetIdx, CAMPDN,
 						pinSet[pinSetIdx][IDX_PS_CMPDN + IDX_PS_OFF]);
-				mdelay(5);
 				mtkcam_gpio_set(pinSetIdx, CAMPDN,
 						pinSet[pinSetIdx][IDX_PS_CMPDN + IDX_PS_ON]);
 			}
@@ -755,7 +751,7 @@ int kdCISModulePowerOn(CAMERA_DUAL_CAMERA_SENSOR_ENUM SensorIdx, char *currSenso
 				mtkcam_gpio_set(pinSetIdx, CAMPDN,
 						pinSet[pinSetIdx][IDX_PS_CMPDN + IDX_PS_OFF]);
 
-			mdelay(50);
+			mdelay(10);
 
 			/* VCAM_IO */
 			if (TRUE != _hwPowerOnCnt(VCAMIO, VOL_1800, mode_name)) {
@@ -796,7 +792,7 @@ int kdCISModulePowerOn(CAMERA_DUAL_CAMERA_SENSOR_ENUM SensorIdx, char *currSenso
 			}
 
 
-			mdelay(50);
+			mdelay(10);
 			/*disable other sensor*/
 			if (GPIO_CAMERA_INVALID != pinSet[1-pinSetIdx][IDX_PS_CMPDN])
 				mtkcam_gpio_set(1-pinSetIdx, CAMPDN,
@@ -827,7 +823,7 @@ int kdCISModulePowerOn(CAMERA_DUAL_CAMERA_SENSOR_ENUM SensorIdx, char *currSenso
 				mtkcam_gpio_set(pinSetIdx, CAMPDN,
 						pinSet[pinSetIdx][IDX_PS_CMPDN + IDX_PS_OFF]);
 
-			mdelay(50);
+			mdelay(5);
 			/* AF_VCC */
 			if (TRUE != _hwPowerOn(VCAMAF, VOL_2800)) {
 				PK_DBG
@@ -835,7 +831,7 @@ int kdCISModulePowerOn(CAMERA_DUAL_CAMERA_SENSOR_ENUM SensorIdx, char *currSenso
 				     VCAMAF);
 				goto _kdCISModulePowerOn_exit_;
 			}
-			mdelay(10);
+			mdelay(5);
 			/* VCAM_A */
 			mtkcam_gpio_set(pinSetIdx, CAMLDO, 1);
 			if (TRUE != _hwPowerOn(VCAMA, VOL_2800)) {
@@ -845,7 +841,7 @@ int kdCISModulePowerOn(CAMERA_DUAL_CAMERA_SENSOR_ENUM SensorIdx, char *currSenso
 				goto _kdCISModulePowerOn_exit_;
 			}
 
-			mdelay(10);
+			mdelay(5);
 
 			/* VCAM_IO */
 			if (TRUE != _hwPowerOn(VCAMIO, VOL_1800)) {
@@ -855,7 +851,7 @@ int kdCISModulePowerOn(CAMERA_DUAL_CAMERA_SENSOR_ENUM SensorIdx, char *currSenso
 				goto _kdCISModulePowerOn_exit_;
 			}
 
-			mdelay(10);
+			mdelay(5);
 
 			if (TRUE != _hwPowerOn(VCAMD, VOL_1200)) {
 				PK_DBG
@@ -864,7 +860,7 @@ int kdCISModulePowerOn(CAMERA_DUAL_CAMERA_SENSOR_ENUM SensorIdx, char *currSenso
 				goto _kdCISModulePowerOn_exit_;
 			}
 
-			mdelay(10);
+			mdelay(5);
 
 			if (GPIO_CAMERA_INVALID != pinSet[1-pinSetIdx][IDX_PS_CMRST]) {
 				mtkcam_gpio_set(1-pinSetIdx, CAMRST,
@@ -882,7 +878,6 @@ int kdCISModulePowerOn(CAMERA_DUAL_CAMERA_SENSOR_ENUM SensorIdx, char *currSenso
 			if (GPIO_CAMERA_INVALID != pinSet[pinSetIdx][IDX_PS_CMPDN]) {
 				mtkcam_gpio_set(pinSetIdx, CAMPDN,
 						pinSet[pinSetIdx][IDX_PS_CMPDN + IDX_PS_OFF]);
-				mdelay(5);
 				mtkcam_gpio_set(pinSetIdx, CAMPDN,
 						pinSet[pinSetIdx][IDX_PS_CMPDN + IDX_PS_ON]);
 			}
