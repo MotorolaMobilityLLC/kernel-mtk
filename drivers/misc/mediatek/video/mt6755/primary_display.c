@@ -5410,7 +5410,6 @@ int _set_backlight_by_cmdq(unsigned int level)
 //mtk add
         _cmdq_insert_wait_frame_done_token_mira(cmdq_handle_backlight);
 		disp_lcm_set_backlight(pgc->plcm, cmdq_handle_backlight, level);
-//mtk modify
 		_cmdq_flush_config_handle_mira(cmdq_handle_backlight, 0);
 		DISPDBG("[BL]_set_backlight_by_cmdq ret=%d\n", ret);
 	} else {
@@ -5574,12 +5573,8 @@ int _set_cabc_by_cmdq(unsigned int mode)
 	if (primary_display_is_video_mode()) {
 		MMProfileLogEx(ddp_mmp_get_events()->primary_set_bl, MMProfileFlagPulse, 1, 2);
 		cmdqRecReset(cmdq_handle_backlight);
-//mtk add
-		cmdqRecWaitNoClear(cmdq_handle_backlight, CMDQ_EVENT_DISP_RDMA0_EOF);
-		cmdqRecWaitNoClear(cmdq_handle_backlight, CMDQ_EVENT_MUTEX0_STREAM_EOF);
-//mtk add
+		_cmdq_insert_wait_frame_done_token_mira(cmdq_handle_backlight);
 		disp_lcm_set_cabc(pgc->plcm, cmdq_handle_backlight, mode);
-//mtk modify
 		_cmdq_flush_config_handle_mira(cmdq_handle_backlight, 0);
 		DISPDBG("[BL]_set_cabc_by_cmdq ret=%d\n", ret);
 	} else {
@@ -5666,12 +5661,8 @@ int _set_hbm_by_cmdq(unsigned int mode)
 	if (primary_display_is_video_mode()) {
 		MMProfileLogEx(ddp_mmp_get_events()->primary_set_bl, MMProfileFlagPulse, 1, 2);
 		cmdqRecReset(cmdq_handle_backlight);
-//mtk add
-		cmdqRecWaitNoClear(cmdq_handle_backlight, CMDQ_EVENT_DISP_RDMA0_EOF);
-		cmdqRecWaitNoClear(cmdq_handle_backlight, CMDQ_EVENT_MUTEX0_STREAM_EOF);
-//mtk add
+		_cmdq_insert_wait_frame_done_token_mira(cmdq_handle_backlight);
 		disp_lcm_set_hbm(pgc->plcm, cmdq_handle_backlight, mode);
-//mtk modify
 		_cmdq_flush_config_handle_mira(cmdq_handle_backlight, 0);
 		DISPDBG("[BL]_set_hbm_by_cmdq ret=%d\n", ret);
 	} else {
