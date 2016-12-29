@@ -34,6 +34,7 @@ LCM_DSI_MODE_CON lcm_dsi_mode;
 #endif
 
 LCM_DRIVER *lcm_driver_list[] = {
+
 #if defined(OTM1284A_HD720_DSI_VDO_TM)
 	&otm1284a_hd720_dsi_vdo_tm_lcm_drv,
 #endif
@@ -619,6 +620,10 @@ LCM_DRIVER *lcm_driver_list[] = {
 
 #if defined(NT35596_FHD_DSI_VDO_YASSY)
 	&nt35596_fhd_dsi_vdo_yassy_lcm_drv,
+#endif
+
+#if defined(NT35596_FHD_DSI_VDO_TIANMA)
+	&nt35596_fhd_dsi_vdo_tianma_lcm_drv,
 #endif
 
 #if defined(NT35596_HD720_DSI_VDO_TRULY_TPS65132)
