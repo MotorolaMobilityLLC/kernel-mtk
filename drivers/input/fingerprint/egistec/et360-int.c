@@ -59,9 +59,7 @@
 #include <mt_spi.h>
 #include <mt_spi_hal.h>
 #include <mt-plat/mt_gpio.h>
-/* Lct add by zl for fpc */
 #include <linux/wakelock.h>
-/* Lct add end */
 #include "et360.h"
 #include "navi_input.h"
 
@@ -80,9 +78,7 @@ extern char *g_fingerprint_name;
 
 #define EGIS_NAVI_INPUT 1 // 1:open ; 0:close
 
-/* Lct add by zl for fpc */
 struct wake_lock et360_wake_lock;
-/* Lct add end */
 
 #define FP_SPI_DEBUG
 #define EDGE_TRIGGER_FALLING    0x0
@@ -237,9 +233,7 @@ static irqreturn_t fp_eint_func(int irq, void *dev_id)
 		mod_timer(&fps_ints.timer,jiffies + msecs_to_jiffies(fps_ints.detect_period));
 	fps_ints.int_count++;
 //	DEBUG_PRINT("-----------   zq fp fp_eint_func  , fps_ints.int_count=%d",fps_ints.int_count);
-	/* Lct add by zl for fpc */
   	wake_lock_timeout(&et360_wake_lock, msecs_to_jiffies(900));
-	/* Lct add end */
 	return IRQ_HANDLED;
 }
 
@@ -251,9 +245,7 @@ static irqreturn_t fp_eint_func_ll(int irq , void *dev_id)
 	disable_irq_nosync(gpio_irq);
 	fps_ints.drdy_irq_flag = DRDY_IRQ_DISABLE;
 	wake_up_interruptible(&interrupt_waitq);
-	/* Lct add by zl for fpc */
 	wake_lock_timeout(&et360_wake_lock, msecs_to_jiffies(900));
-	/* Lct add end */
 	return IRQ_RETVAL(IRQ_HANDLED);
 }
 
@@ -675,7 +667,10 @@ int egistec_platformInit(struct egistec_data *egistec)
         
         gpio_direction_output(egistec->vcc_33v_Pin, 1);    // modify by irick
 		gpio_set_value(egistec->vcc_33v_Pin, 1);      // modify by irick
+
+		msleep(2);
 #endif 
+		
 		gpio_set_value(GPIO_PIN_RESET, 0);
 		msleep(30);
 		gpio_set_value(GPIO_PIN_RESET, 1);
@@ -926,9 +921,7 @@ static int egistec_remove(struct platform_device *pdev)
 	#endif
 	
 	del_timer_sync(&fps_ints.timer);
-	/* Lct add by zl for fpc */
 	wake_lock_destroy(&et360_wake_lock);
-	/* Lct add end */
 	request_irq_done = 0;
     return 0;
 }
@@ -1046,9 +1039,7 @@ static int egistec_probe(struct platform_device *pdev)
 	/* the timer is for ET310 */
 	setup_timer(&fps_ints.timer, interrupt_timer_routine,(unsigned long)&fps_ints);
 	add_timer(&fps_ints.timer);
-	/* Lct add by zl for fpc */
 	wake_lock_init(&et360_wake_lock, WAKE_LOCK_SUSPEND, "et360_wake_lock");
-	/* Lct add end*/
 
 	
 	#if EGIS_NAVI_INPUT
