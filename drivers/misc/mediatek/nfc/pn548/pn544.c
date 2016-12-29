@@ -750,7 +750,7 @@ static int __init pn544_dev_init(void)
 			case ROLA_SS_NA_SKY77643_DVT2:         //10
 			case LATAM_DS_NA_SKY77638_DVT2:      //11 
 			case ROLA_SS_NA_SKY77638_DVT2:	//12
-			case AP_B28_DS_NA_DVT:
+			case AP_B28_DS_NA_DVT2:
 					printk("this board is not support NFC\n");
 				return 0;
 			case EMEA_SS_NFC_DVT:
