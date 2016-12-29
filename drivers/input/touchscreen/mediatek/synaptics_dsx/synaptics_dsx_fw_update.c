@@ -44,7 +44,7 @@
 
 #define FW_IMAGE_NAME "synaptics/startup_fw_update.img"
 
-//#define DO_STARTUP_FW_UPDATE //tuwenzan@wind-mobi.com close this feature at 20161207
+#define DO_STARTUP_FW_UPDATE //tuwenzan@wind-mobi.com close this feature at 20161229
 #ifdef DO_STARTUP_FW_UPDATE
 #include "SynapticsImage_GD.h"  //tuwenzan@wind-mobi.com modify at 20161202
 #endif
@@ -3821,9 +3821,14 @@ int synaptics_fw_updater(const unsigned char *fw_data)
 EXPORT_SYMBOL(synaptics_fw_updater);
 
 #ifdef DO_STARTUP_FW_UPDATE
+//tuwenzan@wind-mobi.com add at 20161229 begin
 static void fwu_startup_fw_update_work(struct work_struct *work)
 {
 	static unsigned char do_once = 1;
+	unsigned short my_config_area;
+	unsigned char *my_read_config_buf;
+	unsigned char *GD_lockdown = "WOODs360302";
+	unsigned char *Biel_lockdown = "WOODs360304";
 #ifdef WAIT_FOR_FB_READY
 	unsigned int timeout;
 	struct synaptics_rmi4_data *rmi4_data = fwu->rmi4_data;
@@ -3847,13 +3852,27 @@ static void fwu_startup_fw_update_work(struct work_struct *work)
 		}
 	}
 #endif
-
-	synaptics_fw_updater(FirmwareImage);
-
+//	printk("twz start enter synaptics_fw_updater\n");
+	my_config_area = fwu->config_area;
+	fwu->config_area = PM_CONFIG_AREA;
+	fwu_do_read_config();
+	my_read_config_buf = fwu->read_config_buf;
+//	printk("twz lockdown fwu->read_config_buf %s\n",fwu->read_config_buf);
+	fwu->config_area = my_config_area;
+	if(!strcmp(GD_lockdown,my_read_config_buf)){
+		printk("twz enter GD_lockdown WOODs360302\n");
+		synaptics_fw_updater(FirmwareImage);
+	}else if(!strcmp(Biel_lockdown,my_read_config_buf)){
+		printk("twz enter Biel_lockdown WOODs360304\n");
+		//synaptics_fw_updater(FirmwareImage);
+	}else{
+		printk("fail get TP lockdown info\n");
+	}
+	 
 	return;
 }
 #endif
-
+//tuwenzan@wind-mobi.com add at 20161229 end
 static ssize_t fwu_sysfs_show_image(struct file *data_file,
 		struct kobject *kobj, struct bin_attribute *attributes,
 		char *buf, loff_t pos, size_t count)
