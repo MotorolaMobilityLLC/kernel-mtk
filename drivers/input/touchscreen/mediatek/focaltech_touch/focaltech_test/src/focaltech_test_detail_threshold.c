@@ -314,16 +314,16 @@ void free_struct_DetailThreshold(void)
 
 	if (NULL !=
 	    g_stCfg_Incell_DetailThreshold.CBUniformityTest_CHX_Linearity) {
-		fts_free
-		    (g_stCfg_Incell_DetailThreshold.CBUniformityTest_CHX_Linearity);
+		fts_free(g_stCfg_Incell_DetailThreshold.
+			 CBUniformityTest_CHX_Linearity);
 		g_stCfg_Incell_DetailThreshold.CBUniformityTest_CHX_Linearity =
 		    NULL;
 	}
 
 	if (NULL !=
 	    g_stCfg_Incell_DetailThreshold.CBUniformityTest_CHY_Linearity) {
-		fts_free
-		    (g_stCfg_Incell_DetailThreshold.CBUniformityTest_CHY_Linearity);
+		fts_free(g_stCfg_Incell_DetailThreshold.
+			 CBUniformityTest_CHY_Linearity);
 		g_stCfg_Incell_DetailThreshold.CBUniformityTest_CHY_Linearity =
 		    NULL;
 	}
@@ -518,21 +518,21 @@ void OnInit_InvalidNode(char *strIniFile)
 			if (fts_atoi(str) == 0) {
 				g_stCfg_MCap_DetailThreshold.InvalidNode[i][j] =
 				    0;
-				g_stCfg_Incell_DetailThreshold.InvalidNode[i][j]
-;
+				g_stCfg_Incell_DetailThreshold.
+				    InvalidNode[i][j] = 0;
 				FTS_TEST_DBG("node (%d, %d)\n", (i + 1),
 					     (j + 1));
 
 			} else if (fts_atoi(str) == 2) {
 				g_stCfg_MCap_DetailThreshold.InvalidNode[i][j] =
 				    2;
-				g_stCfg_Incell_DetailThreshold.InvalidNode[i][j]
-				    = 2;
+				g_stCfg_Incell_DetailThreshold.
+				    InvalidNode[i][j] = 2;
 			} else {
 				g_stCfg_MCap_DetailThreshold.InvalidNode[i][j] =
 				    1;
-				g_stCfg_Incell_DetailThreshold.InvalidNode[i][j]
-				    = 1;
+				g_stCfg_Incell_DetailThreshold.
+				    InvalidNode[i][j] = 1;
 			}
 
 		}
@@ -545,14 +545,14 @@ void OnInit_InvalidNode(char *strIniFile)
 			GetPrivateProfileString("INVALID_NODES", strTemp, "1",
 						str, strIniFile);
 			if (fts_atoi(str) == 0) {
-				g_stCfg_MCap_DetailThreshold.InvalidNode_SC[i]
-				    [j] = 0;
+				g_stCfg_MCap_DetailThreshold.
+				    InvalidNode_SC[i][j] = 0;
 			} else if (fts_atoi(str) == 2) {
-				g_stCfg_MCap_DetailThreshold.InvalidNode_SC[i]
-				    [j] = 2;
+				g_stCfg_MCap_DetailThreshold.
+				    InvalidNode_SC[i][j] = 2;
 			} else
-				g_stCfg_MCap_DetailThreshold.InvalidNode_SC[i]
-				    [j] = 1;
+				g_stCfg_MCap_DetailThreshold.
+				    InvalidNode_SC[i][j] = 1;
 		}
 
 	}
@@ -609,10 +609,12 @@ void OnInit_DThreshold_RawDataTest(char *strIniFile)
 		memset(str_tmp, 0, sizeof(str_tmp));
 		for (j = 0; j < dividerPos; j++) {
 			if (',' == strValue[j]) {
-				g_stCfg_MCap_DetailThreshold.RawDataTest_Max[i]
-				    [k] = (short)(fts_atoi(str_tmp));
-				g_stCfg_Incell_DetailThreshold.RawDataTest_Max
-				    [i][k] = (short)(fts_atoi(str_tmp));
+				g_stCfg_MCap_DetailThreshold.
+				    RawDataTest_Max[i][k] =
+				    (short)(fts_atoi(str_tmp));
+				g_stCfg_Incell_DetailThreshold.
+				    RawDataTest_Max[i][k] =
+				    (short)(fts_atoi(str_tmp));
 				index = 0;
 				memset(str_tmp, 0x00, sizeof(str_tmp));
 				k++;
@@ -651,10 +653,12 @@ void OnInit_DThreshold_RawDataTest(char *strIniFile)
 		memset(str_tmp, 0x00, sizeof(str_tmp));
 		for (j = 0; j < dividerPos; j++) {
 			if (',' == strValue[j]) {
-				g_stCfg_MCap_DetailThreshold.RawDataTest_Min[i]
-				    [k] = (short)(fts_atoi(str_tmp));
-				g_stCfg_Incell_DetailThreshold.RawDataTest_Min
-				    [i][k] = (short)(fts_atoi(str_tmp));
+				g_stCfg_MCap_DetailThreshold.
+				    RawDataTest_Min[i][k] =
+				    (short)(fts_atoi(str_tmp));
+				g_stCfg_Incell_DetailThreshold.
+				    RawDataTest_Min[i][k] =
+				    (short)(fts_atoi(str_tmp));
 				index = 0;
 				memset(str_tmp, 0x00, sizeof(str_tmp));
 				k++;
@@ -691,8 +695,9 @@ void OnInit_DThreshold_RawDataTest(char *strIniFile)
 		memset(str_tmp, 0x00, sizeof(str_tmp));
 		for (j = 0; j < dividerPos; j++) {
 			if (',' == strValue[j]) {
-				g_stCfg_MCap_DetailThreshold.RawDataTest_Low_Max
-				    [i][k] = (short)(fts_atoi(str_tmp));
+				g_stCfg_MCap_DetailThreshold.
+				    RawDataTest_Low_Max[i][k] =
+				    (short)(fts_atoi(str_tmp));
 				index = 0;
 				memset(str_tmp, 0x00, sizeof(str_tmp));
 				k++;
@@ -728,8 +733,9 @@ void OnInit_DThreshold_RawDataTest(char *strIniFile)
 		memset(str_tmp, 0x00, sizeof(str_tmp));
 		for (j = 0; j < dividerPos; j++) {
 			if (',' == strValue[j]) {
-				g_stCfg_MCap_DetailThreshold.RawDataTest_Low_Min
-				    [i][k] = (short)(fts_atoi(str_tmp));
+				g_stCfg_MCap_DetailThreshold.
+				    RawDataTest_Low_Min[i][k] =
+				    (short)(fts_atoi(str_tmp));
 				index = 0;
 				memset(str_tmp, 0x00, sizeof(str_tmp));
 				k++;
@@ -749,8 +755,8 @@ void OnInit_DThreshold_RawDataTest(char *strIniFile)
 
 	for (i = 0; i < g_ScreenSetParam.iUsedMaxTxNum; i++) {
 		for (j = 0; j < g_ScreenSetParam.iUsedMaxRxNum; j++) {
-			g_stCfg_MCap_DetailThreshold.RawDataTest_High_Max[i][j]
-			    = MaxValue;
+			g_stCfg_MCap_DetailThreshold.
+			    RawDataTest_High_Max[i][j] = MaxValue;
 		}
 	}
 	GetPrivateProfileString("Basic_Threshold", "RawDataTest_High_Min",
@@ -759,8 +765,8 @@ void OnInit_DThreshold_RawDataTest(char *strIniFile)
 
 	for (i = 0; i < g_ScreenSetParam.iUsedMaxTxNum; i++) {
 		for (j = 0; j < g_ScreenSetParam.iUsedMaxRxNum; j++) {
-			g_stCfg_MCap_DetailThreshold.RawDataTest_High_Min[i][j]
-			    = MinValue;
+			g_stCfg_MCap_DetailThreshold.
+			    RawDataTest_High_Min[i][j] = MinValue;
 		}
 	}
 	for (i = 0; i < g_ScreenSetParam.iUsedMaxTxNum; i++) {
@@ -776,8 +782,9 @@ void OnInit_DThreshold_RawDataTest(char *strIniFile)
 		memset(str_tmp, 0x00, sizeof(str_tmp));
 		for (j = 0; j < dividerPos; j++) {
 			if (',' == strValue[j]) {
-				g_stCfg_MCap_DetailThreshold.RawDataTest_High_Max
-				    [i][k] = (short)(fts_atoi(str_tmp));
+				g_stCfg_MCap_DetailThreshold.
+				    RawDataTest_High_Max[i][k] =
+				    (short)(fts_atoi(str_tmp));
 				index = 0;
 				memset(str_tmp, 0x00, sizeof(str_tmp));
 				k++;
@@ -803,8 +810,9 @@ void OnInit_DThreshold_RawDataTest(char *strIniFile)
 		memset(str_tmp, 0x00, sizeof(str_tmp));
 		for (j = 0; j < dividerPos; j++) {
 			if (',' == strValue[j]) {
-				g_stCfg_MCap_DetailThreshold.RawDataTest_High_Min
-				    [i][k] = (short)(fts_atoi(str_tmp));
+				g_stCfg_MCap_DetailThreshold.
+				    RawDataTest_High_Min[i][k] =
+				    (short)(fts_atoi(str_tmp));
 				index = 0;
 				memset(str_tmp, 0x00, sizeof(str_tmp));
 				k++;
@@ -842,8 +850,8 @@ void OnInit_DThreshold_SCapRawDataTest(char *strIniFile)
 	/* /Max */
 	for (i = 0; i < 2; i++) {
 		for (j = 0; j < g_ScreenSetParam.iUsedMaxRxNum; j++) {
-			g_stCfg_MCap_DetailThreshold.SCapRawDataTest_OFF_Max[i]
-			    [j] = MaxValue;
+			g_stCfg_MCap_DetailThreshold.
+			    SCapRawDataTest_OFF_Max[i][j] = MaxValue;
 		}
 	}
 	for (i = 0; i < 2; i++) {
@@ -859,8 +867,9 @@ void OnInit_DThreshold_SCapRawDataTest(char *strIniFile)
 		memset(str_tmp, 0x00, sizeof(str_tmp));
 		for (j = 0; j < dividerPos; j++) {
 			if (',' == strValue[j]) {
-				g_stCfg_MCap_DetailThreshold.SCapRawDataTest_OFF_Max
-				    [i][k] = (short)(fts_atoi(str_tmp));
+				g_stCfg_MCap_DetailThreshold.
+				    SCapRawDataTest_OFF_Max[i][k] =
+				    (short)(fts_atoi(str_tmp));
 				index = 0;
 				memset(str_tmp, 0x00, sizeof(str_tmp));
 				k++;
@@ -875,8 +884,8 @@ void OnInit_DThreshold_SCapRawDataTest(char *strIniFile)
 	/* //Min */
 	for (i = 0; i < 2; i++) {
 		for (j = 0; j < g_ScreenSetParam.iUsedMaxRxNum; j++) {
-			g_stCfg_MCap_DetailThreshold.SCapRawDataTest_OFF_Min[i]
-			    [j] = MinValue;
+			g_stCfg_MCap_DetailThreshold.
+			    SCapRawDataTest_OFF_Min[i][j] = MinValue;
 		}
 	}
 	for (i = 0; i < 2; i++) {
@@ -892,8 +901,9 @@ void OnInit_DThreshold_SCapRawDataTest(char *strIniFile)
 		memset(str_tmp, 0x00, sizeof(str_tmp));
 		for (j = 0; j < dividerPos; j++) {
 			if (',' == strValue[j]) {
-				g_stCfg_MCap_DetailThreshold.SCapRawDataTest_OFF_Min
-				    [i][k] = (short)(fts_atoi(str_tmp));
+				g_stCfg_MCap_DetailThreshold.
+				    SCapRawDataTest_OFF_Min[i][k] =
+				    (short)(fts_atoi(str_tmp));
 				index = 0;
 				memset(str_tmp, 0x00, sizeof(str_tmp));
 				k++;
@@ -917,8 +927,8 @@ void OnInit_DThreshold_SCapRawDataTest(char *strIniFile)
 	/* /Max */
 	for (i = 0; i < 2; i++) {
 		for (j = 0; j < g_ScreenSetParam.iUsedMaxRxNum; j++) {
-			g_stCfg_MCap_DetailThreshold.SCapRawDataTest_ON_Max[i]
-			    [j] = MaxValue;
+			g_stCfg_MCap_DetailThreshold.
+			    SCapRawDataTest_ON_Max[i][j] = MaxValue;
 		}
 	}
 	for (i = 0; i < 2; i++) {
@@ -934,8 +944,9 @@ void OnInit_DThreshold_SCapRawDataTest(char *strIniFile)
 		memset(str_tmp, 0x00, sizeof(str_tmp));
 		for (j = 0; j < dividerPos; j++) {
 			if (',' == strValue[j]) {
-				g_stCfg_MCap_DetailThreshold.SCapRawDataTest_ON_Max
-				    [i][k] = (short)(fts_atoi(str_tmp));
+				g_stCfg_MCap_DetailThreshold.
+				    SCapRawDataTest_ON_Max[i][k] =
+				    (short)(fts_atoi(str_tmp));
 				index = 0;
 				memset(str_tmp, 0x00, sizeof(str_tmp));
 				k++;
@@ -950,8 +961,8 @@ void OnInit_DThreshold_SCapRawDataTest(char *strIniFile)
 	/* //Min */
 	for (i = 0; i < 2; i++) {
 		for (j = 0; j < g_ScreenSetParam.iUsedMaxRxNum; j++) {
-			g_stCfg_MCap_DetailThreshold.SCapRawDataTest_ON_Min[i]
-			    [j] = MinValue;
+			g_stCfg_MCap_DetailThreshold.
+			    SCapRawDataTest_ON_Min[i][j] = MinValue;
 		}
 	}
 	for (i = 0; i < 2; i++) {
@@ -967,8 +978,9 @@ void OnInit_DThreshold_SCapRawDataTest(char *strIniFile)
 		memset(str_tmp, 0x00, sizeof(str_tmp));
 		for (j = 0; j < dividerPos; j++) {
 			if (',' == strValue[j]) {
-				g_stCfg_MCap_DetailThreshold.SCapRawDataTest_ON_Min
-				    [i][k] = (short)(fts_atoi(str_tmp));
+				g_stCfg_MCap_DetailThreshold.
+				    SCapRawDataTest_ON_Min[i][k] =
+				    (short)(fts_atoi(str_tmp));
 				index = 0;
 				memset(str_tmp, 0x00, sizeof(str_tmp));
 				k++;
@@ -1024,8 +1036,9 @@ void OnInit_DThreshold_SCapCbTest(char *strIniFile)
 		memset(str_tmp, 0x00, sizeof(str_tmp));
 		for (j = 0; j < dividerPos; j++) {
 			if (',' == strValue[j]) {
-				g_stCfg_MCap_DetailThreshold.SCapCbTest_ON_Max
-				    [i][k] = (short)(fts_atoi(str_tmp));
+				g_stCfg_MCap_DetailThreshold.
+				    SCapCbTest_ON_Max[i][k] =
+				    (short)(fts_atoi(str_tmp));
 				index = 0;
 				memset(str_tmp, 0x00, sizeof(str_tmp));
 				k++;
@@ -1057,8 +1070,9 @@ void OnInit_DThreshold_SCapCbTest(char *strIniFile)
 		memset(str_tmp, 0x00, sizeof(str_tmp));
 		for (j = 0; j < dividerPos; j++) {
 			if (',' == strValue[j]) {
-				g_stCfg_MCap_DetailThreshold.SCapCbTest_ON_Min
-				    [i][k] = (short)(fts_atoi(str_tmp));
+				g_stCfg_MCap_DetailThreshold.
+				    SCapCbTest_ON_Min[i][k] =
+				    (short)(fts_atoi(str_tmp));
 				index = 0;
 				memset(str_tmp, 0x00, sizeof(str_tmp));
 				k++;
@@ -1098,8 +1112,9 @@ void OnInit_DThreshold_SCapCbTest(char *strIniFile)
 		memset(str_tmp, 0x00, sizeof(str_tmp));
 		for (j = 0; j < dividerPos; j++) {
 			if (',' == strValue[j]) {
-				g_stCfg_MCap_DetailThreshold.SCapCbTest_OFF_Max
-				    [i][k] = (short)(fts_atoi(str_tmp));
+				g_stCfg_MCap_DetailThreshold.
+				    SCapCbTest_OFF_Max[i][k] =
+				    (short)(fts_atoi(str_tmp));
 				index = 0;
 				memset(str_tmp, 0x00, sizeof(str_tmp));
 				k++;
@@ -1131,8 +1146,9 @@ void OnInit_DThreshold_SCapCbTest(char *strIniFile)
 		memset(str_tmp, 0x00, sizeof(str_tmp));
 		for (j = 0; j < dividerPos; j++) {
 			if (',' == strValue[j]) {
-				g_stCfg_MCap_DetailThreshold.SCapCbTest_OFF_Min
-				    [i][k] = (short)(fts_atoi(str_tmp));
+				g_stCfg_MCap_DetailThreshold.
+				    SCapCbTest_OFF_Min[i][k] =
+				    (short)(fts_atoi(str_tmp));
 				index = 0;
 				memset(str_tmp, 0x00, sizeof(str_tmp));
 				k++;
@@ -1183,8 +1199,9 @@ void OnInit_DThreshold_PanelDifferTest(char *strIniFile)
 		memset(str_tmp, 0, sizeof(str_tmp));
 		for (j = 0; j < dividerPos; j++) {
 			if (',' == strValue[j]) {
-				g_stCfg_MCap_DetailThreshold.PanelDifferTest_Max
-				    [i][k] = (short)(fts_atoi(str_tmp));
+				g_stCfg_MCap_DetailThreshold.
+				    PanelDifferTest_Max[i][k] =
+				    (short)(fts_atoi(str_tmp));
 				index = 0;
 				memset(str_tmp, 0x00, sizeof(str_tmp));
 				k++;
@@ -1220,8 +1237,9 @@ void OnInit_DThreshold_PanelDifferTest(char *strIniFile)
 		memset(str_tmp, 0, sizeof(str_tmp));
 		for (j = 0; j < dividerPos; j++) {
 			if (',' == strValue[j]) {
-				g_stCfg_MCap_DetailThreshold.PanelDifferTest_Min
-				    [i][k] = (short)(fts_atoi(str_tmp));
+				g_stCfg_MCap_DetailThreshold.
+				    PanelDifferTest_Min[i][k] =
+				    (short)(fts_atoi(str_tmp));
 				index = 0;
 				memset(str_tmp, 0x00, sizeof(str_tmp));
 				k++;
@@ -1278,8 +1296,9 @@ void OnInit_DThreshold_RxLinearityTest(char *strIniFile)
 		memset(str_tmp, 0, sizeof(str_tmp));
 		for (j = 0; j < dividerPos; j++) {
 			if (',' == strValue[j]) {
-				g_stCfg_MCap_DetailThreshold.RxLinearityTest_Max
-				    [i][k] = (short)(fts_atoi(str_tmp));
+				g_stCfg_MCap_DetailThreshold.
+				    RxLinearityTest_Max[i][k] =
+				    (short)(fts_atoi(str_tmp));
 				index = 0;
 				memset(str_tmp, 0x00, sizeof(str_tmp));
 				k++;
@@ -1336,8 +1355,9 @@ void OnInit_DThreshold_TxLinearityTest(char *strIniFile)
 		memset(str_tmp, 0, sizeof(str_tmp));
 		for (j = 0; j < dividerPos; j++) {
 			if (',' == strValue[j]) {
-				g_stCfg_MCap_DetailThreshold.TxLinearityTest_Max
-				    [i][k] = (short)(fts_atoi(str_tmp));
+				g_stCfg_MCap_DetailThreshold.
+				    TxLinearityTest_Max[i][k] =
+				    (short)(fts_atoi(str_tmp));
 				index = 0;
 				memset(str_tmp, 0x00, sizeof(str_tmp));
 				k++;
@@ -1378,8 +1398,8 @@ void OnInit_DThreshold_ForceTouch_SCapRawDataTest(char *strIniFile)
 	/* /Max */
 	for (i = 0; i < 1; i++) {
 		for (j = 0; j < g_ScreenSetParam.iUsedMaxRxNum; j++) {
-			g_stCfg_MCap_DetailThreshold.
-			    ForceTouch_SCapRawDataTest_OFF_Max[i][j] = MaxValue;
+			g_stCfg_MCap_DetailThreshold.ForceTouch_SCapRawDataTest_OFF_Max
+			    [i][j] = MaxValue;
 		}
 	}
 	for (i = 0; i < 1; i++) {
@@ -1395,9 +1415,8 @@ void OnInit_DThreshold_ForceTouch_SCapRawDataTest(char *strIniFile)
 		memset(str_tmp, 0x00, sizeof(str_tmp));
 		for (j = 0; j < dividerPos; j++) {
 			if (',' == strValue[j]) {
-				g_stCfg_MCap_DetailThreshold.
-				    ForceTouch_SCapRawDataTest_OFF_Max[i][k] =
-				    (short)(fts_atoi(str_tmp));
+				g_stCfg_MCap_DetailThreshold.ForceTouch_SCapRawDataTest_OFF_Max
+				    [i][k] = (short)(fts_atoi(str_tmp));
 				index = 0;
 				memset(str_tmp, 0x00, sizeof(str_tmp));
 				k++;
@@ -1412,8 +1431,8 @@ void OnInit_DThreshold_ForceTouch_SCapRawDataTest(char *strIniFile)
 	/* //Min */
 	for (i = 0; i < 1; i++) {
 		for (j = 0; j < g_ScreenSetParam.iUsedMaxRxNum; j++) {
-			g_stCfg_MCap_DetailThreshold.
-			    ForceTouch_SCapRawDataTest_OFF_Min[i][j] = MinValue;
+			g_stCfg_MCap_DetailThreshold.ForceTouch_SCapRawDataTest_OFF_Min
+			    [i][j] = MinValue;
 		}
 	}
 	for (i = 0; i < 1; i++) {
@@ -1429,9 +1448,8 @@ void OnInit_DThreshold_ForceTouch_SCapRawDataTest(char *strIniFile)
 		memset(str_tmp, 0x00, sizeof(str_tmp));
 		for (j = 0; j < dividerPos; j++) {
 			if (',' == strValue[j]) {
-				g_stCfg_MCap_DetailThreshold.
-				    ForceTouch_SCapRawDataTest_OFF_Min[i][k] =
-				    (short)(fts_atoi(str_tmp));
+				g_stCfg_MCap_DetailThreshold.ForceTouch_SCapRawDataTest_OFF_Min
+				    [i][k] = (short)(fts_atoi(str_tmp));
 				index = 0;
 				memset(str_tmp, 0x00, sizeof(str_tmp));
 				k++;
@@ -1460,8 +1478,8 @@ void OnInit_DThreshold_ForceTouch_SCapRawDataTest(char *strIniFile)
 	/* /Max */
 	for (i = 0; i < 1; i++) {
 		for (j = 0; j < g_ScreenSetParam.iUsedMaxRxNum; j++) {
-			g_stCfg_MCap_DetailThreshold.
-			    ForceTouch_SCapRawDataTest_ON_Max[i][j] = MaxValue;
+			g_stCfg_MCap_DetailThreshold.ForceTouch_SCapRawDataTest_ON_Max
+			    [i][j] = MaxValue;
 		}
 	}
 	for (i = 0; i < 1; i++) {
@@ -1477,9 +1495,8 @@ void OnInit_DThreshold_ForceTouch_SCapRawDataTest(char *strIniFile)
 		memset(str_tmp, 0x00, sizeof(str_tmp));
 		for (j = 0; j < dividerPos; j++) {
 			if (',' == strValue[j]) {
-				g_stCfg_MCap_DetailThreshold.
-				    ForceTouch_SCapRawDataTest_ON_Max[i][k] =
-				    (short)(fts_atoi(str_tmp));
+				g_stCfg_MCap_DetailThreshold.ForceTouch_SCapRawDataTest_ON_Max
+				    [i][k] = (short)(fts_atoi(str_tmp));
 				index = 0;
 				memset(str_tmp, 0x00, sizeof(str_tmp));
 				k++;
@@ -1494,8 +1511,8 @@ void OnInit_DThreshold_ForceTouch_SCapRawDataTest(char *strIniFile)
 	/* //Min */
 	for (i = 0; i < 1; i++) {
 		for (j = 0; j < g_ScreenSetParam.iUsedMaxRxNum; j++) {
-			g_stCfg_MCap_DetailThreshold.
-			    ForceTouch_SCapRawDataTest_ON_Min[i][j] = MinValue;
+			g_stCfg_MCap_DetailThreshold.ForceTouch_SCapRawDataTest_ON_Min
+			    [i][j] = MinValue;
 		}
 	}
 	for (i = 0; i < 1; i++) {
@@ -1511,9 +1528,8 @@ void OnInit_DThreshold_ForceTouch_SCapRawDataTest(char *strIniFile)
 		memset(str_tmp, 0x00, sizeof(str_tmp));
 		for (j = 0; j < dividerPos; j++) {
 			if (',' == strValue[j]) {
-				g_stCfg_MCap_DetailThreshold.
-				    ForceTouch_SCapRawDataTest_ON_Min[i][k] =
-				    (short)(fts_atoi(str_tmp));
+				g_stCfg_MCap_DetailThreshold.ForceTouch_SCapRawDataTest_ON_Min
+				    [i][k] = (short)(fts_atoi(str_tmp));
 				index = 0;
 				memset(str_tmp, 0x00, sizeof(str_tmp));
 				k++;
@@ -1556,8 +1572,8 @@ void OnInit_DThreshold_ForceTouch_SCapCbTest(char *strIniFile)
 	/* /Max */
 	for (i = 0; i < 1; i++) {
 		for (j = 0; j < g_ScreenSetParam.iUsedMaxRxNum; j++) {
-			g_stCfg_MCap_DetailThreshold.ForceTouch_SCapCbTest_ON_Max
-			    [i][j] = MaxValue;
+			g_stCfg_MCap_DetailThreshold.
+			    ForceTouch_SCapCbTest_ON_Max[i][j] = MaxValue;
 		}
 	}
 	for (i = 0; i < 1; i++) {
@@ -1573,9 +1589,8 @@ void OnInit_DThreshold_ForceTouch_SCapCbTest(char *strIniFile)
 		memset(str_tmp, 0x00, sizeof(str_tmp));
 		for (j = 0; j < dividerPos; j++) {
 			if (',' == strValue[j]) {
-				g_stCfg_MCap_DetailThreshold.
-				    ForceTouch_SCapCbTest_ON_Max[i][k] =
-				    (short)(fts_atoi(str_tmp));
+				g_stCfg_MCap_DetailThreshold.ForceTouch_SCapCbTest_ON_Max
+				    [i][k] = (short)(fts_atoi(str_tmp));
 				index = 0;
 				memset(str_tmp, 0x00, sizeof(str_tmp));
 				k++;
@@ -1590,8 +1605,8 @@ void OnInit_DThreshold_ForceTouch_SCapCbTest(char *strIniFile)
 	/* //Min */
 	for (i = 0; i < 1; i++) {
 		for (j = 0; j < g_ScreenSetParam.iUsedMaxRxNum; j++) {
-			g_stCfg_MCap_DetailThreshold.ForceTouch_SCapCbTest_ON_Min
-			    [i][j] = MinValue;
+			g_stCfg_MCap_DetailThreshold.
+			    ForceTouch_SCapCbTest_ON_Min[i][j] = MinValue;
 		}
 	}
 	for (i = 0; i < 1; i++) {
@@ -1608,9 +1623,8 @@ void OnInit_DThreshold_ForceTouch_SCapCbTest(char *strIniFile)
 		memset(str_tmp, 0x00, sizeof(str_tmp));
 		for (j = 0; j < dividerPos; j++) {
 			if (',' == strValue[j]) {
-				g_stCfg_MCap_DetailThreshold.
-				    ForceTouch_SCapCbTest_ON_Min[i][k] =
-				    (short)(fts_atoi(str_tmp));
+				g_stCfg_MCap_DetailThreshold.ForceTouch_SCapCbTest_ON_Min
+				    [i][k] = (short)(fts_atoi(str_tmp));
 				index = 0;
 				memset(str_tmp, 0x00, sizeof(str_tmp));
 				k++;
@@ -1635,8 +1649,8 @@ void OnInit_DThreshold_ForceTouch_SCapCbTest(char *strIniFile)
 	/* /Max */
 	for (i = 0; i < 1; i++) {
 		for (j = 0; j < g_ScreenSetParam.iUsedMaxRxNum; j++) {
-			g_stCfg_MCap_DetailThreshold.ForceTouch_SCapCbTest_OFF_Max
-			    [i][j] = MaxValue;
+			g_stCfg_MCap_DetailThreshold.
+			    ForceTouch_SCapCbTest_OFF_Max[i][j] = MaxValue;
 		}
 	}
 	for (i = 0; i < 1; i++) {
@@ -1652,9 +1666,8 @@ void OnInit_DThreshold_ForceTouch_SCapCbTest(char *strIniFile)
 		memset(str_tmp, 0x00, sizeof(str_tmp));
 		for (j = 0; j < dividerPos; j++) {
 			if (',' == strValue[j]) {
-				g_stCfg_MCap_DetailThreshold.
-				    ForceTouch_SCapCbTest_OFF_Max[i][k] =
-				    (short)(fts_atoi(str_tmp));
+				g_stCfg_MCap_DetailThreshold.ForceTouch_SCapCbTest_OFF_Max
+				    [i][k] = (short)(fts_atoi(str_tmp));
 				index = 0;
 				memset(str_tmp, 0x00, sizeof(str_tmp));
 				k++;
@@ -1669,8 +1682,8 @@ void OnInit_DThreshold_ForceTouch_SCapCbTest(char *strIniFile)
 	/* //Min */
 	for (i = 0; i < 1; i++) {
 		for (j = 0; j < g_ScreenSetParam.iUsedMaxRxNum; j++) {
-			g_stCfg_MCap_DetailThreshold.ForceTouch_SCapCbTest_OFF_Min
-			    [i][j] = MinValue;
+			g_stCfg_MCap_DetailThreshold.
+			    ForceTouch_SCapCbTest_OFF_Min[i][j] = MinValue;
 		}
 	}
 	for (i = 0; i < 1; i++) {
@@ -1686,9 +1699,8 @@ void OnInit_DThreshold_ForceTouch_SCapCbTest(char *strIniFile)
 		memset(str_tmp, 0x00, sizeof(str_tmp));
 		for (j = 0; j < dividerPos; j++) {
 			if (',' == strValue[j]) {
-				g_stCfg_MCap_DetailThreshold.
-				    ForceTouch_SCapCbTest_OFF_Min[i][k] =
-				    (short)(fts_atoi(str_tmp));
+				g_stCfg_MCap_DetailThreshold.ForceTouch_SCapCbTest_OFF_Min
+				    [i][k] = (short)(fts_atoi(str_tmp));
 				index = 0;
 				memset(str_tmp, 0x00, sizeof(str_tmp));
 				k++;
@@ -1759,8 +1771,8 @@ void OnInit_DThreshold_CBTest(char *strIniFile)
 
 		if (i == ChannelNumTest_ChannelXNum) {
 			for (j = 0; j < RX_NUM_MAX; j++) {
-				g_stCfg_Incell_DetailThreshold.CBTest_Max[i][j]
-				    = MaxValue_Vkey;
+				g_stCfg_Incell_DetailThreshold.
+				    CBTest_Max[i][j] = MaxValue_Vkey;
 			}
 		}
 	}
@@ -1780,8 +1792,9 @@ void OnInit_DThreshold_CBTest(char *strIniFile)
 		memset(str_tmp, 0, sizeof(str_tmp));
 		for (j = 0; j < dividerPos; j++) {
 			if (',' == strValue[j]) {
-				g_stCfg_Incell_DetailThreshold.CBTest_Max[i][k]
-				    = (short)(fts_atoi(str_tmp));
+				g_stCfg_Incell_DetailThreshold.
+				    CBTest_Max[i][k] =
+				    (short)(fts_atoi(str_tmp));
 				/* FTS_TEST_DBG("node (%d, %d) value = %d\n", (i+1), (k+1), g_stCfg_Incell_DetailThreshold.CBTest_Max[i][k]); */
 				index = 0;
 				memset(str_tmp, 0x00, sizeof(str_tmp));
@@ -1811,8 +1824,8 @@ void OnInit_DThreshold_CBTest(char *strIniFile)
 
 		if (i == ChannelNumTest_ChannelXNum) {
 			for (j = 0; j < RX_NUM_MAX; j++) {
-				g_stCfg_Incell_DetailThreshold.CBTest_Min[i][j]
-				    = MinValue_Vkey;
+				g_stCfg_Incell_DetailThreshold.
+				    CBTest_Min[i][j] = MinValue_Vkey;
 			}
 		}
 	}
@@ -1831,8 +1844,9 @@ void OnInit_DThreshold_CBTest(char *strIniFile)
 		memset(str_tmp, 0, sizeof(str_tmp));
 		for (j = 0; j < dividerPos; j++) {
 			if (',' == strValue[j]) {
-				g_stCfg_Incell_DetailThreshold.CBTest_Min[i][k]
-				    = (short)(fts_atoi(str_tmp));
+				g_stCfg_Incell_DetailThreshold.
+				    CBTest_Min[i][k] =
+				    (short)(fts_atoi(str_tmp));
 				/* FTS_TEST_DBG("node (%d, %d) value = %d\n", (i+1), (k+1), g_stCfg_Incell_DetailThreshold.CBTest_Min[i][k]); */
 				index = 0;
 				memset(str_tmp, 0x00, sizeof(str_tmp));
@@ -1891,8 +1905,8 @@ void OnThreshold_VkAndVaRawDataSeparateTest(char *strIniFile)
 
 		if (i == ChannelNumTest_ChannelXNum) {
 			for (j = 0; j < RX_NUM_MAX; j++) {
-				g_stCfg_Incell_DetailThreshold.RawDataTest_Max
-				    [i][j] = MaxValue_Vkey;
+				g_stCfg_Incell_DetailThreshold.
+				    RawDataTest_Max[i][j] = MaxValue_Vkey;
 			}
 		}
 	}
@@ -1911,8 +1925,9 @@ void OnThreshold_VkAndVaRawDataSeparateTest(char *strIniFile)
 		memset(str_tmp, 0, sizeof(str_tmp));
 		for (j = 0; j < dividerPos; j++) {
 			if (',' == strValue[j]) {
-				g_stCfg_Incell_DetailThreshold.RawDataTest_Max
-				    [i][k] = (short)(fts_atoi(str_tmp));
+				g_stCfg_Incell_DetailThreshold.
+				    RawDataTest_Max[i][k] =
+				    (short)(fts_atoi(str_tmp));
 				/* FTS_TEST_DBG("node (%d, %d) value = %d\n", (i+1), (k+1), g_stCfg_Incell_DetailThreshold.RawDataTest_Max[i][k]); */
 				index = 0;
 				memset(str_tmp, 0x00, sizeof(str_tmp));
@@ -1942,8 +1957,8 @@ void OnThreshold_VkAndVaRawDataSeparateTest(char *strIniFile)
 
 		if (i == ChannelNumTest_ChannelXNum) {
 			for (j = 0; j < RX_NUM_MAX; j++) {
-				g_stCfg_Incell_DetailThreshold.RawDataTest_Min
-				    [i][j] = MinValue_Vkey;
+				g_stCfg_Incell_DetailThreshold.
+				    RawDataTest_Min[i][j] = MinValue_Vkey;
 			}
 		}
 	}
@@ -1962,8 +1977,9 @@ void OnThreshold_VkAndVaRawDataSeparateTest(char *strIniFile)
 		memset(str_tmp, 0, sizeof(str_tmp));
 		for (j = 0; j < dividerPos; j++) {
 			if (',' == strValue[j]) {
-				g_stCfg_Incell_DetailThreshold.RawDataTest_Min
-				    [i][k] = (short)(fts_atoi(str_tmp));
+				g_stCfg_Incell_DetailThreshold.
+				    RawDataTest_Min[i][k] =
+				    (short)(fts_atoi(str_tmp));
 				/* FTS_TEST_DBG("node (%d, %d) value = %d\n", (i+1), (k+1), g_stCfg_Incell_DetailThreshold.RawDataTest_Min[i][k]); */
 				index = 0;
 				memset(str_tmp, 0x00, sizeof(str_tmp));

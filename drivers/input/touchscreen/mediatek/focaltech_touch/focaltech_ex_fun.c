@@ -149,8 +149,9 @@ static ssize_t fts_debug_write(struct file *filp, const char __user *buff,
 			fts_esdcheck_switch(DISABLE);
 #endif
 			ret =
-			    fts_updatefun_curr.upgrade_with_app_bin_file
-			    (fts_i2c_client, upgrade_file_path);
+			    fts_updatefun_curr.
+			    upgrade_with_app_bin_file(fts_i2c_client,
+						      upgrade_file_path);
 #if FTS_ESDCHECK_EN
 			fts_esdcheck_switch(ENABLE);
 #endif
@@ -338,8 +339,9 @@ static int fts_debug_write(struct file *filp,
 			fts_esdcheck_switch(DISABLE);
 #endif
 			ret =
-			    fts_updatefun_curr.upgrade_with_app_bin_file
-			    (fts_i2c_client, upgrade_file_path);
+			    fts_updatefun_curr.
+			    upgrade_with_app_bin_file(fts_i2c_client,
+						      upgrade_file_path);
 #if FTS_ESDCHECK_EN
 			fts_esdcheck_switch(ENABLE);
 #endif

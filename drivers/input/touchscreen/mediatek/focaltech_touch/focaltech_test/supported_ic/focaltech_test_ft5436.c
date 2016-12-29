@@ -398,15 +398,15 @@ unsigned char FT5X46_TestItem_RawDataTest(bool *bTestResult)
 		/* //////////////////////////////To Determine RawData if in Range or not */
 		for (iRow = 0; iRow < g_ScreenSetParam.iTxNum; iRow++) {
 			for (iCol = 0; iCol < g_ScreenSetParam.iRxNum; iCol++) {
-				if (g_stCfg_MCap_DetailThreshold.InvalidNode
-				    [iRow][iCol] == 0)
+				if (g_stCfg_MCap_DetailThreshold.
+				    InvalidNode[iRow][iCol] == 0)
 					continue;	/* Invalid Node */
 				RawDataMin =
-				    g_stCfg_MCap_DetailThreshold.
-				    RawDataTest_High_Min[iRow][iCol];
+				    g_stCfg_MCap_DetailThreshold.RawDataTest_High_Min
+				    [iRow][iCol];
 				RawDataMax =
-				    g_stCfg_MCap_DetailThreshold.
-				    RawDataTest_High_Max[iRow][iCol];
+				    g_stCfg_MCap_DetailThreshold.RawDataTest_High_Max
+				    [iRow][iCol];
 				iValue = m_RawData[iRow][iCol];
 				if (iValue < RawDataMin || iValue > RawDataMax) {
 					btmpresult = false;
@@ -492,14 +492,15 @@ unsigned char FT5X46_TestItem_RawDataTest(bool *bTestResult)
 
 				for (iCol = 0; iCol < g_ScreenSetParam.iRxNum;
 				     iCol++) {
-					if (g_stCfg_MCap_DetailThreshold.InvalidNode[iRow][iCol] == 0)
+					if (g_stCfg_MCap_DetailThreshold.
+					    InvalidNode[iRow][iCol] == 0)
 						continue;	/* Invalid Node */
 					RawDataMin =
-					    g_stCfg_MCap_DetailThreshold.
-					    RawDataTest_Low_Min[iRow][iCol];
+					    g_stCfg_MCap_DetailThreshold.RawDataTest_Low_Min
+					    [iRow][iCol];
 					RawDataMax =
-					    g_stCfg_MCap_DetailThreshold.
-					    RawDataTest_Low_Max[iRow][iCol];
+					    g_stCfg_MCap_DetailThreshold.RawDataTest_Low_Max
+					    [iRow][iCol];
 					iValue = m_RawData[iRow][iCol];
 					if (iValue < RawDataMin
 					    || iValue > RawDataMax) {
@@ -559,14 +560,15 @@ unsigned char FT5X46_TestItem_RawDataTest(bool *bTestResult)
 
 				for (iCol = 0; iCol < g_ScreenSetParam.iRxNum;
 				     iCol++) {
-					if (g_stCfg_MCap_DetailThreshold.InvalidNode[iRow][iCol] == 0)
+					if (g_stCfg_MCap_DetailThreshold.
+					    InvalidNode[iRow][iCol] == 0)
 						continue;	/* Invalid Node */
 					RawDataMin =
-					    g_stCfg_MCap_DetailThreshold.
-					    RawDataTest_High_Min[iRow][iCol];
+					    g_stCfg_MCap_DetailThreshold.RawDataTest_High_Min
+					    [iRow][iCol];
 					RawDataMax =
-					    g_stCfg_MCap_DetailThreshold.
-					    RawDataTest_High_Max[iRow][iCol];
+					    g_stCfg_MCap_DetailThreshold.RawDataTest_High_Max
+					    [iRow][iCol];
 					iValue = m_RawData[iRow][iCol];
 					if (iValue < RawDataMin
 					    || iValue > RawDataMax) {
@@ -747,11 +749,11 @@ unsigned char FT5X46_TestItem_SCapRawDataTest(bool *bTestResult)
 			    0)
 				continue;
 			RawDataMin =
-			    g_stCfg_MCap_DetailThreshold.SCapRawDataTest_ON_Min
-			    [0][i];
+			    g_stCfg_MCap_DetailThreshold.
+			    SCapRawDataTest_ON_Min[0][i];
 			RawDataMax =
-			    g_stCfg_MCap_DetailThreshold.SCapRawDataTest_ON_Max
-			    [0][i];
+			    g_stCfg_MCap_DetailThreshold.
+			    SCapRawDataTest_ON_Max[0][i];
 			Value = m_RawData[0 + g_ScreenSetParam.iTxNum][i];
 			iAvg += Value;
 			if (iMax < Value)
@@ -775,11 +777,11 @@ unsigned char FT5X46_TestItem_SCapRawDataTest(bool *bTestResult)
 			    0)
 				continue;
 			RawDataMin =
-			    g_stCfg_MCap_DetailThreshold.SCapRawDataTest_ON_Min
-			    [1][i];
+			    g_stCfg_MCap_DetailThreshold.
+			    SCapRawDataTest_ON_Min[1][i];
 			RawDataMax =
-			    g_stCfg_MCap_DetailThreshold.SCapRawDataTest_ON_Max
-			    [1][i];
+			    g_stCfg_MCap_DetailThreshold.
+			    SCapRawDataTest_ON_Max[1][i];
 			Value = m_RawData[1 + g_ScreenSetParam.iTxNum][i];
 			iAvg += Value;
 			if (iMax < Value)
@@ -832,11 +834,11 @@ unsigned char FT5X46_TestItem_SCapRawDataTest(bool *bTestResult)
 			    0)
 				continue;
 			RawDataMin =
-			    g_stCfg_MCap_DetailThreshold.SCapRawDataTest_OFF_Min
-			    [0][i];
+			    g_stCfg_MCap_DetailThreshold.
+			    SCapRawDataTest_OFF_Min[0][i];
 			RawDataMax =
-			    g_stCfg_MCap_DetailThreshold.SCapRawDataTest_OFF_Max
-			    [0][i];
+			    g_stCfg_MCap_DetailThreshold.
+			    SCapRawDataTest_OFF_Max[0][i];
 			Value = m_RawData[2 + g_ScreenSetParam.iTxNum][i];
 			iAvg += Value;
 
@@ -865,11 +867,11 @@ unsigned char FT5X46_TestItem_SCapRawDataTest(bool *bTestResult)
 
 			Value = m_RawData[3 + g_ScreenSetParam.iTxNum][i];
 			RawDataMin =
-			    g_stCfg_MCap_DetailThreshold.SCapRawDataTest_OFF_Min
-			    [1][i];
+			    g_stCfg_MCap_DetailThreshold.
+			    SCapRawDataTest_OFF_Min[1][i];
 			RawDataMax =
-			    g_stCfg_MCap_DetailThreshold.SCapRawDataTest_OFF_Max
-			    [1][i];
+			    g_stCfg_MCap_DetailThreshold.
+			    SCapRawDataTest_OFF_Max[1][i];
 			/* FTS_TEST_DBG("zaxzax4 Value %d RawDataMin %d  RawDataMax %d  ",  Value, RawDataMin, RawDataMax); */
 			iAvg += Value;
 			if (iMax < Value)
@@ -1111,11 +1113,11 @@ unsigned char FT5X46_TestItem_SCapCbTest(bool *bTestResult)
 			    0)
 				continue;
 			CBMin =
-			    g_stCfg_MCap_DetailThreshold.SCapCbTest_ON_Min[0]
-			    [i];
+			    g_stCfg_MCap_DetailThreshold.
+			    SCapCbTest_ON_Min[0][i];
 			CBMax =
-			    g_stCfg_MCap_DetailThreshold.SCapCbTest_ON_Max[0]
-			    [i];
+			    g_stCfg_MCap_DetailThreshold.
+			    SCapCbTest_ON_Max[0][i];
 			Value = m_RawData[0 + g_ScreenSetParam.iTxNum][i];
 			iAvg += Value;
 
@@ -1140,11 +1142,11 @@ unsigned char FT5X46_TestItem_SCapCbTest(bool *bTestResult)
 			    0)
 				continue;
 			CBMin =
-			    g_stCfg_MCap_DetailThreshold.SCapCbTest_ON_Min[1]
-			    [i];
+			    g_stCfg_MCap_DetailThreshold.
+			    SCapCbTest_ON_Min[1][i];
 			CBMax =
-			    g_stCfg_MCap_DetailThreshold.SCapCbTest_ON_Max[1]
-			    [i];
+			    g_stCfg_MCap_DetailThreshold.
+			    SCapCbTest_ON_Max[1][i];
 			Value = m_RawData[1 + g_ScreenSetParam.iTxNum][i];
 			iAvg += Value;
 			if (iMax < Value)
@@ -1193,11 +1195,11 @@ unsigned char FT5X46_TestItem_SCapCbTest(bool *bTestResult)
 			    0)
 				continue;
 			CBMin =
-			    g_stCfg_MCap_DetailThreshold.SCapCbTest_OFF_Min[0]
-			    [i];
+			    g_stCfg_MCap_DetailThreshold.
+			    SCapCbTest_OFF_Min[0][i];
 			CBMax =
-			    g_stCfg_MCap_DetailThreshold.SCapCbTest_OFF_Max[0]
-			    [i];
+			    g_stCfg_MCap_DetailThreshold.
+			    SCapCbTest_OFF_Max[0][i];
 			Value = m_RawData[2 + g_ScreenSetParam.iTxNum][i];
 			iAvg += Value;
 
@@ -1223,11 +1225,11 @@ unsigned char FT5X46_TestItem_SCapCbTest(bool *bTestResult)
 			    0)
 				continue;
 			CBMin =
-			    g_stCfg_MCap_DetailThreshold.SCapCbTest_OFF_Min[1]
-			    [i];
+			    g_stCfg_MCap_DetailThreshold.
+			    SCapCbTest_OFF_Min[1][i];
 			CBMax =
-			    g_stCfg_MCap_DetailThreshold.SCapCbTest_OFF_Max[1]
-			    [i];
+			    g_stCfg_MCap_DetailThreshold.
+			    SCapCbTest_OFF_Max[1][i];
 			Value = m_RawData[3 + g_ScreenSetParam.iTxNum][i];
 
 			iAvg += Value;
@@ -1945,17 +1947,17 @@ unsigned char FT5X46_TestItem_PanelDifferTest(bool *bTestResult)
 
 	for (iRow = 0; iRow < g_ScreenSetParam.iTxNum; iRow++) {	/* iRow = 1 ??? */
 		for (iCol = 0; iCol < g_ScreenSetParam.iRxNum; iCol++) {
-			if (g_stCfg_MCap_DetailThreshold.InvalidNode[iRow][iCol]
-			    == 0)
+			if (g_stCfg_MCap_DetailThreshold.
+			    InvalidNode[iRow][iCol] == 0)
 				continue;	/* Invalid Node */
 
 			iValue = m_DifferData[iRow][iCol];
 			iMin =
-			    g_stCfg_MCap_DetailThreshold.PanelDifferTest_Min
-			    [iRow][iCol];
+			    g_stCfg_MCap_DetailThreshold.
+			    PanelDifferTest_Min[iRow][iCol];
 			iMax =
-			    g_stCfg_MCap_DetailThreshold.PanelDifferTest_Max
-			    [iRow][iCol];
+			    g_stCfg_MCap_DetailThreshold.
+			    PanelDifferTest_Max[iRow][iCol];
 			if (iValue < iMin || iValue > iMax) {
 				btmpresult = false;
 				FTS_TEST_DBG

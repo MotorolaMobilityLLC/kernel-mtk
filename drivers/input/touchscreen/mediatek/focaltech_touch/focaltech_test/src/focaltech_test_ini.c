@@ -369,7 +369,8 @@ int ini_get_key_data(char *filedata)
 			g_st_ini_file_data[g_used_key_num].iSectionNameLen =
 			    n - 2;
 			if (MAX_KEY_NAME_LEN <
-			    g_st_ini_file_data[g_used_key_num].iSectionNameLen) {
+			    g_st_ini_file_data[g_used_key_num].
+			    iSectionNameLen) {
 				ret = CFG_ERR_OUT_OF_LEN;
 				FTS_TEST_DBG
 				    ("MAX_KEY_NAME_LEN: CFG_ERR_OUT_OF_LEN\n");

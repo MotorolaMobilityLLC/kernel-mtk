@@ -84,19 +84,19 @@ struct ft_chip_t {
 struct fts_Upgrade_Fun {
 	unsigned char chip_idh;
 	unsigned char chip_idl;
-	int (*get_app_bin_file_ver)(char *);
-	int (*get_app_i_file_ver)(void);
-	int (*upgrade_with_app_i_file)(struct i2c_client *);
-	int (*upgrade_with_app_bin_file)(struct i2c_client *, char *);
-	int (*upgrade_with_lcd_cfg_i_file)(struct i2c_client *);
-	int (*upgrade_with_lcd_cfg_bin_file)(struct i2c_client *, char *);
-	unsigned char (*get_vendorid_from_boot)(struct i2c_client *);
+	int (*get_app_bin_file_ver) (char *);
+	int (*get_app_i_file_ver) (void);
+	int (*upgrade_with_app_i_file) (struct i2c_client *);
+	int (*upgrade_with_app_bin_file) (struct i2c_client *, char *);
+	int (*upgrade_with_lcd_cfg_i_file) (struct i2c_client *);
+	int (*upgrade_with_lcd_cfg_bin_file) (struct i2c_client *, char *);
+	unsigned char (*get_vendorid_from_boot) (struct i2c_client *);
 };
 extern struct fts_Upgrade_Fun fts_updatefun;
 
 /* i2c communication*/
 int fts_i2c_write_reg(struct i2c_client *client, u8 regaddr, u8 regvalue);
-int fts_i2c_read_reg(struct i2c_client *client, u8 regaddr, u8 *regvalue);
+int fts_i2c_read_reg(struct i2c_client *client, u8 regaddr, u8 * regvalue);
 int fts_i2c_read(struct i2c_client *client, char *writebuf, int writelen,
 		 char *readbuf, int readlen);
 int fts_i2c_write(struct i2c_client *client, char *writebuf, int writelen);

@@ -94,11 +94,11 @@ read write max bytes per time
 
 extern void fts_test_funcs(void);
 struct StTestFuncs {
-	void (*OnInit_TestItem)(char *);
-	void (*OnInit_BasicThreshold)(char *);
-	void (*SetTestItem)(void);
-	 boolean (*Start_Test)(void);
-	int (*Get_test_data)(char *);
+	void (*OnInit_TestItem) (char *);
+	void (*OnInit_BasicThreshold) (char *);
+	void (*SetTestItem) (void);
+	 boolean(*Start_Test) (void);
+	int (*Get_test_data) (char *);
 };
 extern struct StTestFuncs g_stTestFuncs;
 

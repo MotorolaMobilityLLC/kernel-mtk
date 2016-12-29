@@ -52,7 +52,6 @@
 #include <linux/sched.h>
 #include <linux/kthread.h>
 #include <linux/kernel.h>
-/* #include <linux/rtpm_prio.h> */
 #include <linux/fs.h>
 #include <linux/device.h>
 #include "tpd.h"

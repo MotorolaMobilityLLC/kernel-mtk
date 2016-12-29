@@ -790,8 +790,8 @@ static int touch_event_handler(void *unused)
 								FTS_DEBUG
 								    ("Key(%d,%d) Down",
 								     pinfo.x[0],
-								     pinfo.y
-								     [0]);
+								     pinfo.
+								     y[0]);
 								tpd_button
 								    (pinfo.x[0],
 								     pinfo.y[0],
@@ -802,13 +802,14 @@ static int touch_event_handler(void *unused)
 								&&
 								((pinfo.p[0] ==
 								  0)
-								 || (pinfo.p[0]
-								     == 2))) {
+								 || (pinfo.
+								     p[0] ==
+								     2))) {
 								FTS_DEBUG
 								    ("Key(%d,%d) Up!",
 								     pinfo.x[0],
-								     pinfo.y
-								     [0]);
+								     pinfo.
+								     y[0]);
 								tpd_button
 								    (pinfo.x[0],
 								     pinfo.y[0],
