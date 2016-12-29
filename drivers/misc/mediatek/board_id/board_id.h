@@ -21,7 +21,15 @@
 	EMEA_SS_NA_DVT,		//08
 	EMEA_SS_NFC_DVT,	//09
 	LATAM_DS_NA_DVT,	//0a
-	ROLA_SS_NA_DVT		//0B
+	ROLA_SS_NA_DVT,		//0B
+	AP_DS_NA_DVT2,           //0c
+	EMEA_DS_NA_DVT2,         //0d
+	EMEA_SS_NFC_DVT2,        //0e
+	LATAM_DS_NA_SKY77643_DVT2,        //0f
+	ROLA_SS_NA_SKY77643_DVT2,          //10
+	LATAM_DS_NA_SKY77638_DVT2,      //11 
+	ROLA_SS_NA_SKY77638_DVT2,	//12
+	AP_B28_DS_NA_DVT2        //13
  };
  
  enum{
@@ -43,11 +51,12 @@
  #define BOARD_ID_SET_PWR		_IOW(BOARD_ID_MAGIC, 0x01, unsigned int)
  #define BID_MAX_SIZE 				256
  
-#define GPIO_TYPE_ID5         (GPIO59 | 0x80000000)
-#define GPIO_TYPE_ID4         (GPIO60 | 0x80000000)
+#define GPIO_TYPE_ID5         (GPIO73 | 0x80000000)
+#define GPIO_TYPE_ID4         (GPIO70 | 0x80000000)
 #define GPIO_TYPE_ID3         (GPIO71 | 0x80000000)
-#define GPIO_TYPE_ID2         (GPIO70 | 0x80000000)
-#define GPIO_TYPE_ID1         (GPIO99 | 0x80000000)
+#define GPIO_TYPE_ID2         (GPIO60 | 0x80000000)
+#define GPIO_TYPE_ID1         (GPIO59 | 0x80000000)
+#define GPIO_TYPE_ID0         (GPIO99 | 0x80000000)
  /*
  static ssize_t  bid_dev_read(struct file *filp, char __user *buf, size_t count, loff_t *offset);
  static ssize_t bid_dev_write(struct file *filp, const char __user *buf, size_t count, loff_t *offset);

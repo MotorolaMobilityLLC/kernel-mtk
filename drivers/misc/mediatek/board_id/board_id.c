@@ -29,10 +29,24 @@ static dev_t devno;
 static int board_id_mojar=789;
 static int board_id_minor=0;
 static int num=0;
-char num1,num2,num3,num4,num5=0;
+char num0,num1,num2,num3,num4,num5=0;
 static char *board_str=NULL;
 extern char* saved_command_line;
-
+//huyunge@wind-mobi.com 20161227 start
+static int bid_atoi(char *nptr)
+ {
+	int value=0;
+	printk("hyg --atoi--start %s\n",nptr);
+	while(*nptr>='0' && *nptr<='1')
+	{
+		value *= 2;
+		value += *nptr - '0';
+		nptr++;
+	}
+	printk("hyg --atoi--end %d\n",value);
+	 return value;
+ }
+ //huyunge@wind-mobi.com 20161227 end*/
 //class node ,DEV
 static struct class *bid_class=NULL;
 static struct board_id_dev *biddev=NULL;
@@ -42,65 +56,23 @@ int get_bid_gpio(void)
 {
 	int ret=0xff;
 	char *p= NULL;
-	char tmp[10];
+	unsigned char len=6;
+	unsigned char tmp[]="xxxxxx\n";
+	//memset(p,0,len);
 	p = strstr(saved_command_line, "bid_num=");
 	p +=strlen("bid_num=");
-
-	memset(tmp,0,10);
-	strncpy(tmp,p,6);
+	
+	printk("[get_bid_gpio]can not get bid size strlen(tmp) %d\n",strlen(tmp));
+	
+	memset(tmp,0,strlen(tmp));
+	strncpy(tmp,p,len);
 	//huyunge@wind-mobi.com 20161208 stat
 	if (p == NULL) {
 		printk("[get_bid_gpio]can not get bid size from lk\n");
 	} else {
-		printk("[get_bid_gpio] bid is %s\n",tmp);
-	}
-	if(strncmp(tmp,"00000",5)==0)
-	{
-		ret = (int)AP_DS_NA_EVT;
-	}
-	else if(strncmp(tmp,"00001",5)==0)
-	{
-		ret = (int)EMEA_DS_NA_EVT;
-	}
-	else if(strncmp(tmp,"00010",5)==0)
-	{
-		ret = (int)EMEA_SS_NA_EVT;
-	}
-	else if(strncmp(tmp,"00011",5)==0)
-	{
-		ret = (int)EMEA_SS_NFC_EVT;
-	}
-	else if(strncmp(tmp,"00100",5)==0)
-	{
-		ret = (int)LATAM_DS_NA_EVT;
-	}
-	else if(strncmp(tmp,"00101",5)==0)
-	{
-		ret = (int)ROLA_SS_NA_EVT;
-	}
-	else if(strncmp(tmp,"00110",5)==0)
-	{
-		ret = (int)AP_DS_NA_DVT;
-	}
-	else if(strncmp(tmp,"00111",5)==0)
-	{
-		ret = (int)EMEA_DS_NA_DVT;
-	}
-	else if(strncmp(tmp,"01000",5)==0)
-	{
-		ret = (int)EMEA_SS_NA_DVT;
-	}
-	else if(strncmp(tmp,"01001",5)==0)
-	{
-		ret = (int)EMEA_SS_NFC_DVT;
-	}
-	else if(strncmp(tmp,"01010",5)==0)
-	{
-		ret = (int)LATAM_DS_NA_DVT;
-	}
-	else if(strncmp(tmp,"01011",5)==0)
-	{
-		ret = (int)ROLA_SS_NA_DVT;
+		printk("[get_bid_gpio] bid is tmp %s\n",tmp);
+		ret = bid_atoi(tmp);
+		printk("[get_bid_gpio] bid is 0x%x\n",ret);
 	}
 	//huyunge@wind-mobi.com 20161208 end
 	return ret;
@@ -173,6 +145,22 @@ static long  bid_dev_unlocked_ioctl(struct file *filp ,unsigned int cmd ,unsigne
 				printk("this board is LATAM_DS_NA_DVT");
 			else if(args==ROLA_SS_NA_DVT)
 				printk("this board is ROLA_SS_NA_DVT");
+			else if(args==AP_DS_NA_DVT2)
+				printk("this board is AP_DS_NA_DVT2");
+			else if(args==EMEA_DS_NA_DVT2)
+				printk("this board is EMEA_DS_NA_DVT2");
+			else if(args==EMEA_SS_NFC_DVT2)
+				printk("this board is EMEA_SS_NFC_DVT2");
+			else if(args==LATAM_DS_NA_SKY77643_DVT2)
+				printk("this board is LATAM_DS_NA_SKY77643_DVT2");
+			else if(args==ROLA_SS_NA_SKY77643_DVT2)
+				printk("this board is ROLA_SS_NA_SKY77643_DVT2");
+			else if(args==LATAM_DS_NA_SKY77638_DVT2)
+				printk("this board is LATAM_DS_NA_SKY77638_DVT2");
+			else if(args==ROLA_SS_NA_SKY77638_DVT2)
+				printk("this board is ROLA_SS_NA_SKY77638_DVT2");
+			else if(args==AP_B28_DS_NA_DVT2)
+				printk("this board is AP_B28_DS_NA_DVT2");
 			break;
 		default:
 			break;
@@ -288,10 +276,16 @@ static int bid_platform_probe(struct platform_device *pdev){
 	num1=mt_get_gpio_in(GPIO_TYPE_ID1);
 	#endif
 	
-	num=(num5<<1)|(num4<<2)|(num3<<3)|(num2<<4)|num1;
+	#ifdef GPIO_TYPE_ID0	
+	mt_set_gpio_mode(GPIO_TYPE_ID0, GPIO_MODE_00);	
+	mt_set_gpio_dir(GPIO_TYPE_ID0, GPIO_DIR_IN);
+	num0=mt_get_gpio_in(GPIO_TYPE_ID0);
+	#endif
 	
-	printk("the board id is num==%x\n",num);
 	
+	num=(num5<<5)|(num4<<4)|(num3<<3)|(num2<<2)|(num1<<1)|(num0<<0);
+	printk("the board id is num=%x\n",num);
+
 	switch(num){
 	case AP_DS_NA_EVT: //00
 		board_str="00000";
@@ -329,6 +323,29 @@ static int bid_platform_probe(struct platform_device *pdev){
 	case ROLA_SS_NA_DVT:		//0B
 		board_str="01011";
 		break;
+		case AP_DS_NA_DVT2:		//0c
+		board_str="01100";
+		break;
+	case EMEA_DS_NA_DVT2:		//0d
+		board_str="01101";
+		break;
+	case EMEA_SS_NFC_DVT2:	//0e
+		board_str="01110";
+		break;
+	case LATAM_DS_NA_SKY77643_DVT2:	//0f
+		board_str="01111";
+		break;
+	case ROLA_SS_NA_SKY77643_DVT2:		//10
+		board_str="10000";
+		break;
+	case LATAM_DS_NA_SKY77638_DVT2:	//11
+		board_str="10001";
+		break;
+	case ROLA_SS_NA_SKY77638_DVT2:		//12
+		board_str="10010";
+		break;
+	case AP_B28_DS_NA_DVT2:		//13
+		board_str="010011";	
 	default:
 		break;
 	}
