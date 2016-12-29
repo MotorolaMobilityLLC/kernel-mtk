@@ -49,6 +49,9 @@
  #define BOARD_ID_DRVNAME		"board_id_z168"
  #define BOARD_ID_MAGIC        86
  #define BOARD_ID_SET_PWR		_IOW(BOARD_ID_MAGIC, 0x01, unsigned int)
+ //use to read board_id  --sunsiyuan@wind-mobi.com add at 20161229 begin
+ #define BOARD_ID_GET_VALUE		_IOR(BOARD_ID_MAGIC, 0x02, unsigned int)
+ //use to read board_id  --sunsiyuan@wind-mobi.com add at 20161229 end
  #define BID_MAX_SIZE 				256
  
 #define GPIO_TYPE_ID5         (GPIO73 | 0x80000000)

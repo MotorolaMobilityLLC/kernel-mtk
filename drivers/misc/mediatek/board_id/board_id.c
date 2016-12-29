@@ -122,6 +122,13 @@ static long  bid_dev_unlocked_ioctl(struct file *filp ,unsigned int cmd ,unsigne
 	//struct board_id_dev *biddev=filp->private_data;
 	
 	switch(cmd){ //if you need do somesthing for board id ,please add func at here.
+		//read board_id --sunsiyuan@wind-mobi.com add at 20161229 begin
+		case BOARD_ID_GET_VALUE:
+			if (copy_to_user((void __user *)args, (void *)&num, sizeof(num))) {
+				return -EFAULT;
+			}
+			break;
+		//read board_id --sunsiyuan@wind-mobi.com add at 20161229 end
 		case BOARD_ID_SET_PWR:
 			if(args==AP_DS_NA_EVT)
 				printk("this board is AP_DS_NA_EVT");
