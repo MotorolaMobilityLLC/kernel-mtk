@@ -36,9 +36,9 @@
 #include "kd_imgsensor_define.h"
 #include "kd_imgsensor_errcode.h"
 #include <linux/slab.h>
-#include "s5k4h8mipi_Sensor.h"
+#include "s5k4h8mipi_Sensor_qt.h"
 
-#define PFX "S5K4H8_camera_sensor"
+#define PFX "S5K4H8_camera_sensor_qt"
 #define LOG_1 LOG_INF("S5K4H8,MIPI 4LANE\n")
 #define LOG_2 LOG_INF("preview 2096*1552@30fps,1260Mbps/lane; video 4192*3104@30fps,1260Mbps/lane; capture 13M@30fps,1260Mbps/lane\n")
 
@@ -69,8 +69,8 @@ int OTP_map_id;
 //#define tRG_Ratio_typical 0x10B
 //#define tBG_Ratio_typical 0x102
 //#define GbGr_ratio_Typical 0x204
-extern int read_s5k4h8_eeprom_mtk_fmt(void);
-kal_uint16 R_gain_4h8,B_gain_4h8,R_gain_4h8_gd,B_gain_4h8_gd,vender_id_4h8,inf,mac;
+extern int read_s5k4h8_eeprom_mtk_fmt_qt(void);
+kal_uint16 R_gain_4h8_qt,B_gain_4h8_qt,R_gain_4h8_gd_qt,B_gain_4h8_gd_qt,vender_id_4h8_qt,inf_qt,mac_qt;
 #endif
 static DEFINE_SPINLOCK(imgsensor_drv_lock);
 static imgsensor_info_struct imgsensor_info = { 
@@ -550,7 +550,7 @@ static int read_otp_s5k4h8(struct S5K4H8_otp_struct *otp_ptr)
 	{
 	 otp_ptr->flag=0x01;
      otp_ptr->MID = read_cmos_sensor_8(addr);
-	 vender_id_4h8=otp_ptr->MID;
+	 vender_id_4h8_qt=otp_ptr->MID;
 	 LOG_INF("wangkangmin s5k4h8 otp_ptr->MID %x\n",otp_ptr->MID);
 
 	 checksum_read=read_cmos_sensor_8(addr+9);
@@ -572,7 +572,7 @@ static int read_otp_s5k4h8(struct S5K4H8_otp_struct *otp_ptr)
 	 otp_ptr->RGr_ratio = 0x00;
 	 otp_ptr->BGr_ratio = 0x00;
 	 otp_ptr->GbGr_ratio = 0x00;
-	 vender_id_4h8 = 0x00;
+	 vender_id_4h8_qt = 0x00;
 	}
 
 	checksum=0;
@@ -599,10 +599,10 @@ static int read_otp_s5k4h8(struct S5K4H8_otp_struct *otp_ptr)
      otp_ptr->GbGr_ratio_gd = (read_cmos_sensor_8(addr+10)<<8)|(read_cmos_sensor_8(addr+11));
 	 LOG_INF("wangkangmin s5k4h8 RG_ratio=%x,BG_ratio=%x,BGBR_ratio=%x\n",otp_ptr->RGr_ratio,otp_ptr->BGr_ratio,otp_ptr->GbGr_ratio);
 	 LOG_INF("wangkangmin s5k4h8 GOLDEN RG_ratio=%x,BG_ratio=%x,BGBR_ratio=%x\n",otp_ptr->RGr_ratio_gd,otp_ptr->BGr_ratio_gd,otp_ptr->GbGr_ratio_gd);
-	 R_gain_4h8=otp_ptr->RGr_ratio;
-	 B_gain_4h8=otp_ptr->BGr_ratio;
-	 R_gain_4h8_gd=otp_ptr->RGr_ratio_gd;
-	 B_gain_4h8_gd=otp_ptr->BGr_ratio_gd;
+	 R_gain_4h8_qt=otp_ptr->RGr_ratio;
+	 B_gain_4h8_qt=otp_ptr->BGr_ratio;
+	 R_gain_4h8_gd_qt=otp_ptr->RGr_ratio_gd;
+	 B_gain_4h8_gd_qt=otp_ptr->BGr_ratio_gd;
 	 checksum_read=read_cmos_sensor_8(addr+12);
 	 for(i=0;i<12;i++)
 	 {
@@ -622,10 +622,10 @@ static int read_otp_s5k4h8(struct S5K4H8_otp_struct *otp_ptr)
 	 otp_ptr->RGr_ratio = 0x00;
 	 otp_ptr->BGr_ratio = 0x00;
 	 otp_ptr->GbGr_ratio = 0x00;
-	 R_gain_4h8=0x00;
-	 B_gain_4h8=0x00;
-	 R_gain_4h8_gd=0x00;
-	 B_gain_4h8_gd=0x00;
+	 R_gain_4h8_qt=0x00;
+	 B_gain_4h8_qt=0x00;
+	 R_gain_4h8_gd_qt=0x00;
+	 B_gain_4h8_gd_qt=0x00;
 	}
 	
 	checksum=0;
@@ -647,8 +647,8 @@ static int read_otp_s5k4h8(struct S5K4H8_otp_struct *otp_ptr)
 	 otp_ptr->VCM_start = (read_cmos_sensor_8(addr+1)<<2)|((read_cmos_sensor_8(addr+2)&0xc0)>>6);
 	 otp_ptr->VCM_end = (read_cmos_sensor_8(addr+3)<<2)|((read_cmos_sensor_8(addr+4)&0xc0)>>6);
 	 LOG_INF("wangkangmin s5k4h8 VCM_start=%x,VCM_end=%x\n",otp_ptr->VCM_start,otp_ptr->VCM_end);
-	 inf = otp_ptr->VCM_start;
-	 mac = otp_ptr->VCM_end;
+	 inf_qt = otp_ptr->VCM_start;
+	 mac_qt = otp_ptr->VCM_end;
 	 checksum_read=read_cmos_sensor_8(addr+5);
 	 for(i=0;i<5;i++)
 	 {
@@ -668,8 +668,8 @@ static int read_otp_s5k4h8(struct S5K4H8_otp_struct *otp_ptr)
 	 otp_ptr->flag += 0x00;
 	 otp_ptr->VCM_start = 0x00;
 	 otp_ptr->VCM_end = 0x00;
-	 inf = 0x00;
-	 mac = 0x00;
+	 inf_qt = 0x00;
+	 mac_qt = 0x00;
 	}
    write_cmos_sensor_8(0x0A00,0x00);
    
@@ -1413,7 +1413,7 @@ static void slim_video_setting(void)
 *************************************************************************/
 static kal_uint32 get_imgsensor_id(UINT32 *sensor_id) 
 {
-	kal_uint8 i = 0;
+    kal_uint8 i = 0;
     kal_uint8 retry = 1;
     /*sensor have two i2c address 0x6c 0x6d & 0x21 0x20, we should detect the module used i2c address*/
     while (imgsensor_info.i2c_addr_table[i] != 0xff) {
@@ -1429,8 +1429,8 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
                 #ifdef S5K4H8_OTP_SUPPORT
                 struct S5K4H8_otp_struct *otp_ptr1 = (struct S5K4H8_otp_struct *)kzalloc(sizeof(struct S5K4H8_otp_struct), GFP_KERNEL);
                 read_otp_s5k4h8(otp_ptr1);
-                if(vender_id_4h8 == 0x07){
-                    read_s5k4h8_eeprom_mtk_fmt();
+                if(vender_id_4h8_qt == 0x06){
+                    read_s5k4h8_eeprom_mtk_fmt_qt();
                     kfree(otp_ptr1);
                     LOG_INF("i2c write id: 0x%x, sensor id: 0x%x\n", imgsensor.i2c_write_id,*sensor_id);	   
                     return ERROR_NONE;
@@ -2392,7 +2392,7 @@ static SENSOR_FUNCTION_STRUCT sensor_func = {
 	close
 };
 
-UINT32 S5K4H8_MIPI_RAW_SensorInit(PSENSOR_FUNCTION_STRUCT *pfFunc)
+UINT32 S5K4H8_MIPI_RAW_SensorInit_qt(PSENSOR_FUNCTION_STRUCT *pfFunc)
 {
 	/* To Do : Check Sensor status here */
 	if (pfFunc!=NULL)

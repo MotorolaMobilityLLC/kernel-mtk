@@ -89,6 +89,13 @@ static stAF_DrvList g_stAF_DrvList[MAX_NUM_OF_LENS] = {
 #ifdef CONFIG_MTK_LENS_DW9718AF_SUPPORT
 	{1, AFDRV_DW9718AF, DW9718AF_SetI2Cclient, DW9718AF_Ioctl, DW9718AF_Release},
 #endif
+//wangkangmin@wind-mobi.com add for qt 4h8 begin
+#ifdef CONFIG_WIND_CAMERA_CUSTOM
+#ifdef CONFIG_MTK_LENS_DW9718QTAF_SUPPORT
+	{1, AFDRV_DW9718QTAF, DW9718QTAF_SetI2Cclient, DW9718QTAF_Ioctl, DW9718QTAF_Release},
+#endif
+#endif
+//wangkangmin@wind-mobi.com add for qt 4h8 END
 #ifdef CONFIG_MTK_LENS_DW9719TAF_SUPPORT
 	{1, AFDRV_DW9719TAF, DW9719TAF_SetI2Cclient, DW9719TAF_Ioctl, DW9719TAF_Release},
 #endif
