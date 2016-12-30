@@ -310,6 +310,11 @@
 	};
 
 	capsensor_pins_default: eint61default {
+        pins_swtp {
+            pins = <PINMUX_GPIO87__FUNC_GPIO87>;
+            slew-rate = <0>;
+            bias-pull-up = <00>;
+        };
 	};
 	capsensor_pins_eint_as_int: eint@61 {
 		pins_cmd_dat {
@@ -317,6 +322,11 @@
 			slew-rate = <0>;
 			bias-pull-up = <00>;
 		};
+        pins_swtp {
+            pins = <PINMUX_GPIO87__FUNC_GPIO87>;
+            slew-rate = <0>;
+            bias-pull-up = <00>;
+        };
 	};  
     
 };
