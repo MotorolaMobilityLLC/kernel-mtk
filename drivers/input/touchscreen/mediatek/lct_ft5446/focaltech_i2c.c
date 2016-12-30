@@ -175,6 +175,7 @@ static void fts_i2c_msg_dma_release(void)
 {
     FTS_FUNC_ENTER();
     if (g_dma_buff_va) {
+        tpd->dev->dev.coherent_dma_mask = ~DMA_BIT_MASK(32);
         dma_free_coherent(NULL, DMA_BUFFER_LENGTH, g_dma_buff_va,
                           g_dma_buff_pa);
         g_dma_buff_va = NULL;
