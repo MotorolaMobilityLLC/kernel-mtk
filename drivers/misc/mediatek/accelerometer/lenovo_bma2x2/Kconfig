@@ -1,0 +1,3 @@
+config LENOVO_BMA2X2
+	bool "LENOVO_BMA2X2 for MediaTek package"
+	default n

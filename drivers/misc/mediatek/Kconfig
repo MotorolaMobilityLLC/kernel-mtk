@@ -419,6 +419,10 @@ config MTK_TUI_RAM_SIZE
 	depends on MTK_SVP
 	default 0
 
+config MOTO_AOD_BASE_ON_AP_SENSORS
+	bool "Support moto AOD feature base on AP sensors's built-in algos"
+	default n
+
 #wangkangmin@wind-mobi.com add for wind camera 20161207 begin
 config WIND_CAMERA_CUSTOM
 	bool "a value for different ODM camera"
