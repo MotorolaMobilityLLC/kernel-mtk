@@ -106,6 +106,21 @@ extern long DW9718AF_Ioctl(struct file *a_pstFile, unsigned int a_u4Command,
 extern int DW9718AF_Release(struct inode *a_pstInode, struct file *a_pstFile);
 #endif
 
+//wangkangmin@wind-mobi.com add for qt 4h8 begin
+#ifdef CONFIG_WIND_CAMERA_CUSTOM
+#ifdef CONFIG_MTK_LENS_DW9718QTAF_SUPPORT
+#define DW9718QTAF_SetI2Cclient DW9718QTAF_SetI2Cclient_Main
+#define DW9718QTAF_Ioctl DW9718QTAF_Ioctl_Main
+#define DW9718QTAF_Release DW9718QTAF_Release_Main
+extern void DW9718QTAF_SetI2Cclient(struct i2c_client *pstAF_I2Cclient, spinlock_t *pAF_SpinLock,
+				  int *pAF_Opened);
+extern long DW9718QTAF_Ioctl(struct file *a_pstFile, unsigned int a_u4Command,
+			   unsigned long a_u4Param);
+extern int DW9718QTAF_Release(struct inode *a_pstInode, struct file *a_pstFile);
+#endif
+#endif
+//wangkangmin@wind-mobi.com add for qt 4h8 end
+
 #ifdef CONFIG_MTK_LENS_DW9719TAF_SUPPORT
 #define DW9719TAF_SetI2Cclient DW9719TAF_SetI2Cclient_Main
 #define DW9719TAF_Ioctl DW9719TAF_Ioctl_Main

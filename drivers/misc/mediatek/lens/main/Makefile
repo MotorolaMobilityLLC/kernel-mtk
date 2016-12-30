@@ -83,5 +83,8 @@ obj-$(CONFIG_MTK_LENS_AD5820AF_SUPPORT)    += common/ad5820af/
 obj-$(CONFIG_MTK_LENS_WV511AAF_SUPPORT)    += common/wv511aaf/
 obj-$(CONFIG_MTK_LENS_AK7371AF_SUPPORT)    += common/ak7371af/
 obj-$(CONFIG_MTK_LENS_LCT_DW9763AF_SUPPORT) += common/lct_dw9763af/
+ifeq ($(CONFIG_WIND_CAMERA_CUSTOM),y)
+obj-$(CONFIG_MTK_LENS_DW9718QTAF_SUPPORT)    += common/dw9718qtaf/
+endif
 
 endif

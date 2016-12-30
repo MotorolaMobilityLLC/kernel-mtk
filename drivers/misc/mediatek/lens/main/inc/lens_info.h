@@ -36,6 +36,11 @@
 #define AFDRV_DW9714AF "DW9714AF"
 #define AFDRV_LCT_DW9763AF "LCT_DW9763AF"/*jijin.wang lct add dw9763 for ar1335*/
 #define AFDRV_DW9718AF "DW9718AF"
+//wangkangmin@wind-mobi.com add for qt 4h8 begin
+#ifdef CONFIG_WIND_CAMERA_CUSTOM
+#define AFDRV_DW9718QTAF "DW9718QTAF"
+#endif
+//wangkangmin@wind-mobi.com add for qt 4h8 end
 #define AFDRV_DW9719TAF "DW9719TAF"
 #define AFDRV_DW9814AF "DW9814AF"
 #define AFDRV_FM50AF "FM50AF"

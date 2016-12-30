@@ -83,10 +83,17 @@ static struct work_struct workTimeOut;
 
 static int FL_Enable(void)
 {
-//wangkangmin@wind-mobi.com 20161109 begin
-	PK_DBG(" purple torch mode \n");
+	int i;
 	mtkcam_gpio_set(0, 6, 1);
-//wangkangmin@wind-mobi.com 20161109 end
+	udelay(30);
+	for(i=0;i<12;i++)
+	{
+		mtkcam_gpio_set(0, 6, 0);
+		udelay(5);
+		mtkcam_gpio_set(0, 6, 1);
+		udelay(5);
+	}
+
 	PK_DBG(" FL_Enable line=%d\n", __LINE__);
 	return 0;
 }
