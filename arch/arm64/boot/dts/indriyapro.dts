@@ -673,9 +673,11 @@
 		sd-uhs-sdr50;
 		sd-uhs-sdr104;
 		/* sd-uhs-ddr50; */
-		pinctrl-names = "default","insert_cfg";
+		pinctrl-names = "default","insert_cfg","power_output0","power_output1";
 		pinctrl-0 = <&mmc1_pins_insert_default>;
 		pinctrl-1 = <&mmc1_pins_insert_cfg>;
+		pinctrl-2 = <&mmc1_pins_power_output0>;
+		pinctrl-3 = <&mmc1_pins_power_output1>;
 
 		pinctl = <&mmc1_pins_default>;
 		pinctl_sdr104 = <&mmc1_pins_sdr104>;
@@ -684,7 +686,7 @@
 		register_setting = <&mmc1_register_setting_default>;
 		host_function = /bits/ 8 <MSDC_SD>;
 		cd_level = /bits/ 8 <MSDC_CD_LOW>;
-		cd-gpios = <&pio 67 0>;
+		cd-gpios = <&pio 87 0>;
 		status = "okay";
 };
 
@@ -693,13 +695,26 @@
 	};
 	mmc1_pins_insert_cfg: mmc1_ins_cfg {
 		pins_insert {
-			pins = <PINMUX_GPIO67__FUNC_EINT6>;
+			pins = <PINMUX_GPIO87__FUNC_EINT10>;
 			input-schmitt-enable =<1>;
 			slew-rate = <0>;
 			bias-pull-up =<00>;
 		};
 	};
-
+	mmc1_pins_power_output0: mmc1_power_output0 {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO40__FUNC_GPIO40>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+	mmc1_pins_power_output1: mmc1_power_output1 {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO40__FUNC_GPIO40>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
 };
 /* AUDIO GPIO standardization */
 &audgpio {
