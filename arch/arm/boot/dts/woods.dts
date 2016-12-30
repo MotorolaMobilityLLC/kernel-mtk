@@ -357,8 +357,32 @@
 			bias-pull-down = <00>;
 		};
 	};
+	gsensor_pins_default: gsensordefaultcfg {
+
+	};
+	gsensor_pins_int1: eint@63 {
+	    pins_cmd_dat {
+			pins = <PINMUX_GPIO63__FUNC_GPIO63>;
+			slew-rate = <0>;
+		};
+	};
+
+	gsensor_pins_int2: eint@105 {
+	    pins_cmd_dat {
+			pins = <PINMUX_GPIO105__FUNC_GPIO105>;
+			slew-rate = <0>;
+		};
+	};
 };
 //liupeng@wind-mobi.com 20161121 end
+
+&gsensor {
+	pinctrl-names = "pin_default", "pin_state_int1","pin_state_int2";
+	pinctrl-0 = <&gsensor_pins_default>;
+	pinctrl-1 = <&gsensor_pins_int1>;
+	pinctrl-2 = <&gsensor_pins_int2>;
+	status = "okay";
+};
 
 &alsps {
 	pinctrl-names = "pin_default", "pin_cfg";
