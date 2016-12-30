@@ -11,6 +11,7 @@
 #include <linux/kernel.h>
 #include <asm/uaccess.h>
 #include <asm/atomic.h>
+#include <linux/slab.h>   //tuwenzan@wind-mobi.com add at 20161230
 
 struct device_info_dev{
 	struct cdev dev;
@@ -38,7 +39,7 @@ char *g_fingerprint_name ="";
 //liujinzhou@wind-mobi.com add at 20161221 begin
 char *g_psensor_name ="";
 //liujinzhou@wind-mobi.com add at 20161221 end
-
+char *g_flash_id_str = "";	//tuwenzan@wind-mobi.com add at 20161230
 //char *g_msensor_name = "";
 
 unsigned int g_ctp_fwvr; 
@@ -207,6 +208,36 @@ static void attr_files_create(struct device *device)
 	device_create_file(device, &dev_attr_battery_boot_info);	
 }
 
+//tuwenzan@wind-mobi.com add devicesinfo proc interface at 20161229 begin
+extern int emmc_id_get(void);
+static int devicesinfo_stats_show(struct seq_file *m, void *unused)
+{
+	DEVICE_INFO_FUN();
+	if(0 != emmc_id_get()){
+		printk("%s emmc_id_get error\n",__func__);
+	}
+	if(NULL != g_flash_id_str){
+    	seq_printf(m, "Type: MCP(eMMC+LPDDR3)\n%s\n",g_flash_id_str);
+		kfree(g_flash_id_str);
+		return 0;
+	}
+	kfree(g_flash_id_str);
+    return -1;
+}
+static int devicesinfo_stats_open(struct inode *inode, struct file *file)
+{
+    return single_open(file, devicesinfo_stats_show, NULL);
+}
+
+
+static const struct file_operations devicesinfo_stats_fops = {
+    .owner = THIS_MODULE,
+    .open = devicesinfo_stats_open,
+    .read = seq_read,
+    .llseek = seq_lseek,
+    .release = single_release,
+};
+//tuwenzan@wind-mobi.com add devicesinfo proc interface at 20161229 end
 static int device_info_open(struct inode *inode, struct file *filp)
 {
 	struct device_info_dev *device_info_dev = NULL;
@@ -305,6 +336,8 @@ static int  device_info_init(void)
 //5. Create attr files
 	attr_files_create(class_dev);
 
+	proc_create("devicesinfo", S_IRUGO, NULL, &devicesinfo_stats_fops); //tuwenzan@wind-mobi.com add devicesinfo proc interface at 20161229 
+	
 	return 0;
 	
 err0:

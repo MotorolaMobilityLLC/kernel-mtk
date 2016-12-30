@@ -8644,6 +8644,44 @@ int msdc_of_parse(struct mmc_host *mmc)
 	return ret;
 }
 
+//tuwenzan@wind-mobi.com add for flash message at 2016.12.30 begin
+#ifdef CONFIG_WIND_DEVICE_INFO
+extern char *g_flash_id_str;
+static u8 *emmc_spt_tab[][4] = {
+	{"150100514531334D42", "KMQE10013M_B318",		"Samsung",		"8G+1G"},
+	{"90014A484147346132", "H9TQ17ABJTBCUR_KUM",		"Hynix",		"8G+1G"},
+	{NULL}
+};
+int emmc_id_get(void)
+{
+	struct mmc_card *card = mtk_msdc_host[0]->mmc->card;
+		int index = 0;
+		u8 emmc_id[32]; 	/* store the emmc id. */
+		//printk("%s:step1\n",__func__);
+		g_flash_id_str = (char *)kmalloc(250,GFP_KERNEL);
+		memset(g_flash_id_str,0,250);
+		sprintf(emmc_id, "%08X%08X%08X", card->raw_cid[0], card->raw_cid[1], 
+				card->raw_cid[2]);
+		//printk("%s:step2\n",__func__);
+
+		while(emmc_spt_tab[index][0] != NULL) {
+			if(!strncmp(emmc_spt_tab[index][0], emmc_id, 18)) {
+				sprintf(g_flash_id_str, "Vendor: %s\nPart Number: %s\nSize: %s\n", 
+						emmc_spt_tab[index][2],
+							emmc_spt_tab[index][1],
+						emmc_spt_tab[index][3]);
+				return 0;
+			}
+			index++;
+		}
+		sprintf(g_flash_id_str, "%s:Unknown:Unknown:Unknown\n", emmc_id);
+		return -1;
+
+}
+EXPORT_SYMBOL(emmc_id_get);
+#endif
+//tuwenzan@wind-mobi.com add for flash message at 2016.12.28 end
+
 static int msdc_drv_probe(struct platform_device *pdev)
 {
 	struct mmc_host *mmc;
