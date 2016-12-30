@@ -180,16 +180,12 @@ static atomic_t driver_suspend_flag = ATOMIC_INIT(0);
 extern int lct_get_sku(void);
 static int sku = 0;
 #endif  
-#ifdef CONFIG_GSENSOR_IRQ_ENABLE 
+
+#ifdef CONFIG_MOTO_AOD_BASE_ON_AP_SENSORS
 static struct platform_device *gsensorPltFmDev;
-static struct work_struct gsensor_eint_work;
-
-static int gsensor_irq=0;
-
-
 extern struct platform_device *get_gsensor_platformdev(void);
-
 #endif 
+
 struct mutex uplink_event_flag_mutex;
 /* uplink event flag */
 volatile u32 uplink_event_flag = 0;
@@ -232,6 +228,277 @@ enum {
 #define BMI160_ACC_MODE_NORMAL      0
 #define BMI160_ACC_MODE_LOWPOWER    1
 #define BMI160_ACC_MODE_SUSPEND     2
+
+#ifdef CONFIG_MOTO_AOD_BASE_ON_AP_SENSORS
+
+#define ENABLE_ISR_DEBUG_MSG
+#ifdef ENABLE_ISR_DEBUG_MSG
+#define ISR_INFO(dev, fmt, arg...) dev_err(dev, fmt, ##arg)
+#else
+#define ISR_INFO(dev, fmt, arg...)
+#endif
+
+#define ABSMIN                      -512
+#define ABSMAX                      512
+
+#define LOW_G_INTERRUPT            ABS_DISTANCE
+#define HIGH_G_INTERRUPT            REL_HWHEEL
+#define SLOP_INTERRUPT              REL_DIAL
+#define DOUBLE_TAP_INTERRUPT        REL_WHEEL
+#define SINGLE_TAP_INTERRUPT        REL_MISC
+#define ORIENT_INTERRUPT            ABS_PRESSURE
+#define FLAT_INTERRUPT               REL_Z
+#define SLOW_NO_MOTION_INTERRUPT    REL_Y
+#define REL_TIME_SEC		REL_RX
+#define REL_TIME_NSEC	REL_RY
+#define REL_FLUSH	REL_RZ
+#define REL_INT_FLUSH	REL_X
+
+#define FLATUP_GESTURE 0xF2
+#define FLATDOWN_GESTURE 0xF4
+#define EXIT_FLATUP_GESTURE 0xE2
+#define EXIT_FLATDOWN_GESTURE 0xE4
+#define GLANCE_EXIT_FLATUP_GESTURE 0x02
+#define GLANCE_EXIT_FLATDOWN_GESTURE 0x04
+#define GLANCE_MOVEMENT_GESTURE 0x10
+
+#define PAD_LOWG                    0
+#define PAD_HIGHG                   1
+#define PAD_SLOP                    2
+#define PAD_SLOW_NO_MOTION          3
+#define PAD_DOUBLE_TAP              4
+#define PAD_SINGLE_TAP              5
+#define PAD_ORIENT                  6
+#define PAD_FLAT                    7
+
+#define BMI160_THETA_FLAT_REG                   0x67
+
+#define BMI160_THETA_FLAT__POS                  0
+#define BMI160_THETA_FLAT__LEN                  6
+#define BMI160_THETA_FLAT__MSK                  0x3F
+#define BMI160_THETA_FLAT__REG                  BMI160_THETA_FLAT_REG
+
+#define BMI160_FLAT_HOLD_TIME_REG               0x68
+
+#define BMI160_FLAT_HOLD_TIME__POS              4
+#define BMI160_FLAT_HOLD_TIME__LEN              2
+#define BMI160_FLAT_HOLD_TIME__MSK              0x30
+#define BMI160_FLAT_HOLD_TIME__REG              BMI160_FLAT_HOLD_TIME_REG
+
+#define BMI160_SLOPE_DURN_REG                   0x5f
+
+#define BMI160_SLO_NO_MOT_DUR__POS   2
+#define BMI160_SLO_NO_MOT_DUR__LEN   6
+#define BMI160_SLO_NO_MOT_DUR__MSK   0xFC
+#define BMI160_SLO_NO_MOT_DUR__REG   BMI160_SLOPE_DURN_REG
+
+#define BMI160_SLO_NO_MOT_THRES_REG             0x61
+
+#define BMI160_INT_SLO_NO_MOT_REG               0x52
+
+#define BMI160_INT_SLO_NO_MOT_EN_X_INT__POS        0
+#define BMI160_INT_SLO_NO_MOT_EN_X_INT__LEN        1
+#define BMI160_INT_SLO_NO_MOT_EN_X_INT__MSK        0x01
+#define BMI160_INT_SLO_NO_MOT_EN_X_INT__REG        BMI160_INT_SLO_NO_MOT_REG
+
+#define BMI160_INT_SLO_NO_MOT_EN_Y_INT__POS        1
+#define BMI160_INT_SLO_NO_MOT_EN_Y_INT__LEN        1
+#define BMI160_INT_SLO_NO_MOT_EN_Y_INT__MSK        0x02
+#define BMI160_INT_SLO_NO_MOT_EN_Y_INT__REG        BMI160_INT_SLO_NO_MOT_REG
+
+#define BMI160_INT_SLO_NO_MOT_EN_Z_INT__POS        2
+#define BMI160_INT_SLO_NO_MOT_EN_Z_INT__LEN        1
+#define BMI160_INT_SLO_NO_MOT_EN_Z_INT__MSK        0x04
+#define BMI160_INT_SLO_NO_MOT_EN_Z_INT__REG        BMI160_INT_SLO_NO_MOT_REG
+
+#define BMI160_INT_MOTION_3              0X62
+
+#define BMI160_INT_SLO_NO_MOT_EN_SEL_INT__POS      0
+#define BMI160_INT_SLO_NO_MOT_EN_SEL_INT__LEN      1
+#define BMI160_INT_SLO_NO_MOT_EN_SEL_INT__MSK      0x01
+#define BMI160_INT_SLO_NO_MOT_EN_SEL_INT__REG      BMI160_INT_MOTION_3
+
+#define BMI160_STATUS3_REG           0x1F
+
+#define BMI160_FLAT_S__POS               7
+#define BMI160_FLAT_S__LEN               1
+#define BMI160_FLAT_S__MSK               0x80
+#define BMI160_FLAT_S__REG               BMI160_STATUS3_REG
+
+#define BMI160_STATUS1_REG                      0x1D
+#define BMI160_STATUS0_REG                      0x1C
+
+#define BMI160_INT_EN_0              0x50
+
+#define BMI160_EN_FLAT_INT__POS            7
+#define BMI160_EN_FLAT_INT__LEN            1
+#define BMI160_EN_FLAT_INT__MSK            0x80
+#define BMI160_EN_FLAT_INT__REG            BMI160_INT_EN_0
+
+#define BMI160_INT_OUT_CTRL_REG    0x53
+
+#define BMI160_INT1_EDAGE_CTRL__POS        0
+#define BMI160_INT1_EDAGE_CTRL__LEN        1
+#define BMI160_INT1_EDAGE_CTRL__MSK        0x01
+#define BMI160_INT1_EDAGE_CTRL__REG        BMI160_INT_OUT_CTRL_REG
+
+#define BMI160_INT1_LVL__POS               1
+#define BMI160_INT1_LVL__LEN               1
+#define BMI160_INT1_LVL__MSK               0x02
+#define BMI160_INT1_LVL__REG               BMI160_INT_OUT_CTRL_REG
+
+#define BMI160_INT1_OD__POS                2
+#define BMI160_INT1_OD__LEN                1
+#define BMI160_INT1_OD__MSK                0x04
+#define BMI160_INT1_OD__REG                BMI160_INT_OUT_CTRL_REG
+
+#define BMI160_INT1_OUTPUT_EN__POS         3
+#define BMI160_INT1_OUTPUT_EN__LEN         1
+#define BMI160_INT1_OUTPUT_EN__MSK         0x08
+#define BMI160_INT1_OUTPUT_EN__REG         BMI160_INT_OUT_CTRL_REG
+
+#define BMI160_INT2_EDAGE_CTRL__POS        4
+#define BMI160_INT2_EDAGE_CTRL__LEN        1
+#define BMI160_INT2_EDAGE_CTRL__MSK        0x10
+#define BMI160_INT2_EDAGE_CTRL__REG        BMI160_INT_OUT_CTRL_REG
+
+#define BMI160_INT2_LVL__POS               5
+#define BMI160_INT2_LVL__LEN               1
+#define BMI160_INT2_LVL__MSK               0x20
+#define BMI160_INT2_LVL__REG               BMI160_INT_OUT_CTRL_REG
+
+#define BMI160_INT2_OD__POS                6
+#define BMI160_INT2_OD__LEN                1
+#define BMI160_INT2_OD__MSK                0x40
+#define BMI160_INT2_OD__REG                BMI160_INT_OUT_CTRL_REG
+
+#define BMI160_INT2_OUTPUT_EN__POS         7
+#define BMI160_INT2_OUTPUT_EN__LEN         1
+#define BMI160_INT2_OUTPUT_EN__MSK         0x80
+#define BMI160_INT2_OUTPUT_EN__REG         BMI160_INT_OUT_CTRL_REG
+
+#define BMI160_INT_LATCH_REG                    0x54
+
+#define BMI160_INT_MODE_SEL__POS                0
+#define BMI160_INT_MODE_SEL__LEN                4
+#define BMI160_INT_MODE_SEL__MSK                0x0F
+#define BMI160_INT_MODE_SEL__REG                BMI160_INT_LATCH_REG
+
+#define BMI160_INT_MODE_INT1_EN__POS                4
+#define BMI160_INT_MODE_INT1_EN__LEN                1
+#define BMI160_INT_MODE_INT1_EN__MSK                0x10
+#define BMI160_INT_MODE_INT1_EN__REG                BMI160_INT_LATCH_REG
+
+#define BMI160_INT_MODE_INT2_EN__POS                5
+#define BMI160_INT_MODE_INT2_EN__LEN                1
+#define BMI160_INT_MODE_INT2_EN__MSK                0x20
+#define BMI160_INT_MODE_INT2_EN__REG                BMI160_INT_LATCH_REG
+
+#define BMI160_INT1_PAD_SEL_REG                 0x55
+
+#define BMI160_EN_INT1_PAD_LOWG__POS        0
+#define BMI160_EN_INT1_PAD_LOWG__LEN        1
+#define BMI160_EN_INT1_PAD_LOWG__MSK        0x01
+#define BMI160_EN_INT1_PAD_LOWG__REG        BMI160_INT1_PAD_SEL_REG
+
+#define BMI160_EN_INT1_PAD_HIGHG__POS       1
+#define BMI160_EN_INT1_PAD_HIGHG__LEN       1
+#define BMI160_EN_INT1_PAD_HIGHG__MSK       0x02
+#define BMI160_EN_INT1_PAD_HIGHG__REG       BMI160_INT1_PAD_SEL_REG
+
+#define BMI160_EN_INT1_PAD_SLOPE__POS       2
+#define BMI160_EN_INT1_PAD_SLOPE__LEN       1
+#define BMI160_EN_INT1_PAD_SLOPE__MSK       0x04
+#define BMI160_EN_INT1_PAD_SLOPE__REG       BMI160_INT1_PAD_SEL_REG
+
+#define BMI160_EN_INT1_PAD_SLO_NO_MOT__POS        3
+#define BMI160_EN_INT1_PAD_SLO_NO_MOT__LEN        1
+#define BMI160_EN_INT1_PAD_SLO_NO_MOT__MSK        0x08
+#define BMI160_EN_INT1_PAD_SLO_NO_MOT__REG        BMI160_INT1_PAD_SEL_REG
+
+#define BMI160_EN_INT1_PAD_DB_TAP__POS      4
+#define BMI160_EN_INT1_PAD_DB_TAP__LEN      1
+#define BMI160_EN_INT1_PAD_DB_TAP__MSK      0x10
+#define BMI160_EN_INT1_PAD_DB_TAP__REG      BMI160_INT1_PAD_SEL_REG
+
+#define BMI160_EN_INT1_PAD_SNG_TAP__POS     5
+#define BMI160_EN_INT1_PAD_SNG_TAP__LEN     1
+#define BMI160_EN_INT1_PAD_SNG_TAP__MSK     0x20
+#define BMI160_EN_INT1_PAD_SNG_TAP__REG     BMI160_INT1_PAD_SEL_REG
+
+#define BMI160_EN_INT1_PAD_ORIENT__POS      6
+#define BMI160_EN_INT1_PAD_ORIENT__LEN      1
+#define BMI160_EN_INT1_PAD_ORIENT__MSK      0x40
+#define BMI160_EN_INT1_PAD_ORIENT__REG      BMI160_INT1_PAD_SEL_REG
+
+#define BMI160_EN_INT1_PAD_FLAT__POS        7
+#define BMI160_EN_INT1_PAD_FLAT__LEN        1
+#define BMI160_EN_INT1_PAD_FLAT__MSK        0x80
+#define BMI160_EN_INT1_PAD_FLAT__REG        BMI160_INT1_PAD_SEL_REG
+
+#define BMI160_INT2_PAD_SEL_REG                 0x57
+
+#define BMI160_EN_INT2_PAD_LOWG__POS        0
+#define BMI160_EN_INT2_PAD_LOWG__LEN        1
+#define BMI160_EN_INT2_PAD_LOWG__MSK        0x01
+#define BMI160_EN_INT2_PAD_LOWG__REG        BMI160_INT2_PAD_SEL_REG
+
+#define BMI160_EN_INT2_PAD_HIGHG__POS       1
+#define BMI160_EN_INT2_PAD_HIGHG__LEN       1
+#define BMI160_EN_INT2_PAD_HIGHG__MSK       0x02
+#define BMI160_EN_INT2_PAD_HIGHG__REG       BMI160_INT2_PAD_SEL_REG
+
+#define BMI160_EN_INT2_PAD_SLOPE__POS       2
+#define BMI160_EN_INT2_PAD_SLOPE__LEN       1
+#define BMI160_EN_INT2_PAD_SLOPE__MSK       0x04
+#define BMI160_EN_INT2_PAD_SLOPE__REG       BMI160_INT2_PAD_SEL_REG
+
+#define BMI160_EN_INT2_PAD_SLO_NO_MOT__POS        3
+#define BMI160_EN_INT2_PAD_SLO_NO_MOT__LEN        1
+#define BMI160_EN_INT2_PAD_SLO_NO_MOT__MSK        0x08
+#define BMI160_EN_INT2_PAD_SLO_NO_MOT__REG        BMI160_INT2_PAD_SEL_REG
+
+#define BMI160_EN_INT2_PAD_DB_TAP__POS      4
+#define BMI160_EN_INT2_PAD_DB_TAP__LEN      1
+#define BMI160_EN_INT2_PAD_DB_TAP__MSK      0x10
+#define BMI160_EN_INT2_PAD_DB_TAP__REG      BMI160_INT2_PAD_SEL_REG
+
+#define BMI160_EN_INT2_PAD_SNG_TAP__POS     5
+#define BMI160_EN_INT2_PAD_SNG_TAP__LEN     1
+#define BMI160_EN_INT2_PAD_SNG_TAP__MSK     0x20
+#define BMI160_EN_INT2_PAD_SNG_TAP__REG     BMI160_INT2_PAD_SEL_REG
+
+#define BMI160_EN_INT2_PAD_ORIENT__POS      6
+#define BMI160_EN_INT2_PAD_ORIENT__LEN      1
+#define BMI160_EN_INT2_PAD_ORIENT__MSK      0x40
+#define BMI160_EN_INT2_PAD_ORIENT__REG      BMI160_INT2_PAD_SEL_REG
+
+#define BMI160_EN_INT2_PAD_FLAT__POS        7
+#define BMI160_EN_INT2_PAD_FLAT__LEN        1
+#define BMI160_EN_INT2_PAD_FLAT__MSK        0x80
+#define BMI160_EN_INT2_PAD_FLAT__REG        BMI160_INT2_PAD_SEL_REG
+
+#define TEST_BIT(pos, number) (number & (1 << pos))
+
+enum {
+	FlatUp = 0,
+	FlatDown,
+	Motion,
+	numSensors   /* This needs to be at the end of the list */
+};
+
+struct bmi160acc {
+	int x;
+	int y;
+	int z;
+};
+
+static int bmi160_aod_set_Int_Enable(struct i2c_client *client, unsigned char
+		InterruptType , unsigned char value);
+
+#endif//CONFIG_MOTO_AOD_BASE_ON_AP_SENSORS
+
+static int bmi160_acc_get_data(int* x ,int* y,int* z, int* status);
 
 /*----------------------------------------------------------------------------*/
 static const struct i2c_device_id bmi160_acc_i2c_id[] = {{BMI160_DEV_NAME,0},{}};
@@ -306,6 +573,23 @@ struct bmi160_acc_i2c_data {
     /*early suspend*/
 #if defined(CONFIG_HAS_EARLYSUSPEND)
     struct early_suspend    early_drv;
+#endif
+
+#ifdef CONFIG_MOTO_AOD_BASE_ON_AP_SENSORS
+	int IRQ1;
+	int IRQ2;
+	struct mutex int_mode_mutex;
+	atomic_t flat_flag;
+	int mEnabled;
+	int flat_threshold;
+	int aod_flag;
+	int flat_up_value;
+	int flat_down_value;
+	struct delayed_work flat_work;
+	struct input_dev *dev_interrupt;
+	struct work_struct int1_irq_work;
+	struct work_struct int2_irq_work;
+	struct workqueue_struct *data_wq;
 #endif
 };
 
@@ -1294,98 +1578,142 @@ static int bmi160_acc_set_range(struct i2c_client *client, unsigned char range)
 	}
 }
 */
-//add gsensor interrupt  by cly
-#ifdef CONFIG_GSENSOR_IRQ_ENABLE 
-
+//add gsensor interrupt 
+#ifdef CONFIG_MOTO_AOD_BASE_ON_AP_SENSORS
 static irqreturn_t gsensor_eint_func(int irq, void *desc)
 {
-       GSE_ERR("[%s] irq=[%d]",__func__,irq);
- 
- 	disable_irq_nosync(gsensor_irq);
-        //for temp need LENOVO to add eint condition
-	//schedule_work(&gsensor_eint_work);
+#ifdef DEBUG
+	int64_t ns;
+	struct timespec time;
+
+	time.tv_sec = time.tv_nsec = 0;
+	get_monotonic_boottime(&time);
+	ns = time.tv_sec * 1000000000LL + time.tv_nsec;
+	ISR_INFO(&obj_i2c_data->client->dev, "tick0:%lx", (long unsigned int)ns);
+#endif
+
+	schedule_work((struct work_struct *)desc);
 
 	return IRQ_HANDLED;
 }
 
-
-
-int bmi160_setup_irq(struct i2c_client *client)
+int bmi160_setup_int1(struct i2c_client *client)
 {
 	int ret;
-	u32 ints[2] = { 0, 0 };	
+	u32 debounce[2] = {0, 0};	
 	struct pinctrl *pinctrl;
 	struct pinctrl_state *pins_cfg;
 	struct device_node *node = NULL;
 
 	GSE_FUN();
-   
-	gsensorPltFmDev = get_gsensor_platformdev();
-        node = of_find_compatible_node(NULL, NULL, "mediatek, gse_3-eint");
-	
-	/* gpio setting */
-	pinctrl = devm_pinctrl_get(&gsensorPltFmDev->dev);
 
-	if (IS_ERR(pinctrl)) {
-		ret = PTR_ERR(pinctrl);
-		GSE_ERR("Cannot find gsensor bma160 pinctrl!\n");
-	}
-	
-	pins_cfg = pinctrl_lookup_state(pinctrl, "state_eint_as_int_bmi160");
-	if (IS_ERR(pins_cfg)) {
-		ret = PTR_ERR(pins_cfg);
-		GSE_ERR("Cannot find gsensor pinctrl pin_cfg!\n");
-	}
-	
-	/* eint request */
+	/* parse irq */
+	node = of_find_compatible_node(NULL, NULL, "mediatek, gse_3-eint");
 	if (node) {
-
-		of_property_read_u32_array(node, "debounce", ints, ARRAY_SIZE(ints));
-		gpio_set_debounce(ints[0], ints[1]);
-
-		GSE_LOG("ints[0] = %d, ints[1] = %d!!\n", ints[0], ints[1]);
-
-		pinctrl_select_state(pinctrl, pins_cfg);
-		gsensor_irq = irq_of_parse_and_map(node, 0);
-
-		GSE_LOG("gsensor_irq = %d\n", gsensor_irq);
-
-		if (!gsensor_irq) {
-			GSE_ERR("irq_of_parse_and_map fail!!\n");
+		/* parse irq num */
+		obj_i2c_data->IRQ1 = irq_of_parse_and_map(node, 0);
+		if (!obj_i2c_data->IRQ1) {
+			GSE_ERR("can't parse irq num for gse_3-eint\n");
 			return -EINVAL;
 		}
+		GSE_LOG("gse_3-eint = %d\n", obj_i2c_data->IRQ1);
 
-		if (request_irq(gsensor_irq, gsensor_eint_func, IRQF_TRIGGER_NONE, "gse_3-eint", NULL)) {
-			GSE_ERR("gsensor IRQ LINE NOT AVAILABLE!!\n");
-			return -EINVAL;
-		}
-                GSE_LOG("gsensor IRQ LINE success!!\n");
-
-		enable_irq(gsensor_irq);		
-	}
-	else {
-		GSE_ERR("null irq node!!\n");
+		/* parse debounce settings */
+		of_property_read_u32_array(node, "debounce", debounce, ARRAY_SIZE(debounce));
+		gpio_request(debounce[0], "gse_3-eint");
+		gpio_set_debounce(debounce[0], debounce[1]);
+		GSE_LOG("gse_3-eint:gpio = %d, debounce = %d\n", debounce[0], debounce[1]);
+	} else {
+		GSE_ERR("can't find node for gse_3-eint\n");
 		return -EINVAL;
 	}
+
+	/* parse pinctrl */
+	gsensorPltFmDev = get_gsensor_platformdev();
+	pinctrl = devm_pinctrl_get(&gsensorPltFmDev->dev);
+	if (IS_ERR(pinctrl)) {
+		ret = PTR_ERR(pinctrl);
+		GSE_ERR("can't find pinctrl for gse_3-eint\n");
+		return ret;
+	}
+	pins_cfg = pinctrl_lookup_state(pinctrl, "pin_state_int3");
+	if (IS_ERR(pins_cfg)) {
+		ret = PTR_ERR(pins_cfg);
+		GSE_ERR("can't find pin_cfg for gse_3-eint\n");
+		return ret;
+	}
+	pinctrl_select_state(pinctrl, pins_cfg);
+
+	/* request irq for gse_3-eint */
+	if (request_irq(obj_i2c_data->IRQ1, gsensor_eint_func, IRQF_TRIGGER_RISING, "gse_3-eint", &obj_i2c_data->int1_irq_work)) {
+		GSE_ERR("request irq for gse_3-eint\n");
+		return -EINVAL;
+	}
+
+	/* enable irq */
+	enable_irq(obj_i2c_data->IRQ1);
 
 	return 0;
 }
 
-
-
-static void bmi160_eint_work(struct work_struct *work)
+int bmi160_setup_int2(struct i2c_client *client)
 {
-  /*example*/
-        uint8_t value = 0;
-        value = 0;
-        GSE_LOG("[%s]  entry!\n",__func__);        
+	int ret;
+	u32 debounce[2] = {0, 0};	
+	struct pinctrl *pinctrl;
+	struct pinctrl_state *pins_cfg;
+	struct device_node *node = NULL;
 
-	//switch_set_state((struct switch_dev *)&capsensor_data, value); 	
-	enable_irq(gsensor_irq);
+	GSE_FUN();
+
+	/* parse irq */
+	node = of_find_compatible_node(NULL, NULL, "mediatek, gse_4-eint");
+	if (node) {
+		/* parse irq num */
+		obj_i2c_data->IRQ2 = irq_of_parse_and_map(node, 0);
+		if (!obj_i2c_data->IRQ2) {
+			GSE_ERR("can't parse irq num for gse_4-eint\n");
+			return -EINVAL;
+		}
+		GSE_LOG("gse_4-eint = %d\n", obj_i2c_data->IRQ2);
+
+		/* parse debounce settings */
+		of_property_read_u32_array(node, "debounce", debounce, ARRAY_SIZE(debounce));
+		gpio_request(debounce[0], "gse_4-eint");
+		gpio_set_debounce(debounce[0], debounce[1]);
+		GSE_LOG("gse_4-eint:gpio = %d, debounce = %d\n", debounce[0], debounce[1]);
+	} else {
+		GSE_ERR("can't find node for gse_4-eint\n");
+		return -EINVAL;
+	}
+
+	/* parse pinctrl */
+	gsensorPltFmDev = get_gsensor_platformdev();
+	pinctrl = devm_pinctrl_get(&gsensorPltFmDev->dev);
+	if (IS_ERR(pinctrl)) {
+		ret = PTR_ERR(pinctrl);
+		GSE_ERR("can't find pinctrl for gse_4-eint\n");
+		return ret;
+	}
+	pins_cfg = pinctrl_lookup_state(pinctrl, "pin_state_int4");
+	if (IS_ERR(pins_cfg)) {
+		ret = PTR_ERR(pins_cfg);
+		GSE_ERR("can't find pin_cfg for gse_4-eint\n");
+		return ret;
+	}
+	pinctrl_select_state(pinctrl, pins_cfg);
+
+	/* request irq for gse_4-eint */
+	if (request_irq(obj_i2c_data->IRQ2, gsensor_eint_func, IRQF_TRIGGER_RISING, "gse_4-eint", &obj_i2c_data->int2_irq_work)) {
+		GSE_ERR("request irq for gse_4-eint\n");
+		return -EINVAL;
+	}
+
+	/* enable irq */
+	enable_irq(obj_i2c_data->IRQ2);
+
+	return 0;
 }
-
-
-
 #endif 
 /*************/
 
@@ -1532,6 +1860,755 @@ static int ECS_SaveData(int buf[CALIBRATION_DATA_SIZE])
 	return 0;
 }
 #endif
+
+#ifdef CONFIG_MOTO_AOD_BASE_ON_AP_SENSORS
+static int bmi160_aod_smbus_read_byte(struct i2c_client *client,
+		unsigned char reg_addr, unsigned char *data)
+{
+	s32 dummy;
+	dummy = i2c_smbus_read_byte_data(client, reg_addr);
+	if (dummy < 0)
+		return -EIO;
+	*data = dummy & 0x000000ff;
+
+	return 0;
+}
+
+static int bmi160_aod_smbus_write_byte(struct i2c_client *client,
+		unsigned char reg_addr, unsigned char *data)
+{
+	s32 dummy;
+
+	dummy = i2c_smbus_write_byte_data(client, reg_addr, *data);
+	if (dummy < 0)
+		return -EIO;
+	udelay(2);
+	return 0;
+}
+
+static int bmi160_aod_set_theta_flat(struct i2c_client *client, unsigned char
+		thetaflat)
+{
+	int comres = 0;
+	unsigned char data = 0;
+
+	comres = bmi160_aod_smbus_read_byte(client, BMI160_THETA_FLAT__REG, &data);
+	data = BMI160_SET_BITSLICE(data, BMI160_THETA_FLAT, thetaflat);
+	comres = bmi160_aod_smbus_write_byte(client, BMI160_THETA_FLAT__REG, &data);
+
+	return comres;
+}
+
+static int bmi160_aod_set_flat_hold_time(struct i2c_client *client, unsigned char
+		holdtime)
+{
+	int comres = 0;
+	unsigned char data = 0;
+
+	comres = bmi160_aod_smbus_read_byte(client, BMI160_FLAT_HOLD_TIME__REG,
+			&data);
+	data = BMI160_SET_BITSLICE(data, BMI160_FLAT_HOLD_TIME, holdtime);
+	comres = bmi160_aod_smbus_write_byte(client, BMI160_FLAT_HOLD_TIME__REG,
+			&data);
+
+	return comres;
+}
+
+static int bmi160_aod_set_slope_no_mot_duration(struct i2c_client *client,
+			unsigned char duration)
+{
+	int comres = 0;
+	unsigned char data = 0;
+
+	comres = bmi160_aod_smbus_read_byte(client,
+			BMI160_SLO_NO_MOT_DUR__REG, &data);
+	data = BMI160_SET_BITSLICE(data, BMI160_SLO_NO_MOT_DUR, duration);
+	comres = bmi160_aod_smbus_write_byte(client,
+			BMI160_SLO_NO_MOT_DUR__REG, &data);
+
+	return comres;
+}
+
+static int bmi160_aod_set_slope_no_mot_threshold(struct i2c_client *client,
+		unsigned char threshold)
+{
+	int comres = 0;
+	unsigned char data = 0;
+
+	data = threshold;
+	comres = bmi160_aod_smbus_write_byte(client,
+			BMI160_SLO_NO_MOT_THRES_REG, &data);
+
+	return comres;
+}
+
+static int bmi160_aod_set_en_no_motion_int(struct bmi160_acc_i2c_data *bmi160,
+		int en)
+{
+	int err = 0;
+	struct i2c_client *client = bmi160->client;
+
+	if (en) {
+		/*dur: 192 samples ~= 3s, threshold: 32.25mg, no motion select*/
+		err = bmi160_aod_set_slope_no_mot_duration(client, 0x02);
+		err += bmi160_aod_set_slope_no_mot_threshold(client, 0x09);
+		/*Enable the interrupts*/
+		err += bmi160_aod_set_Int_Enable(client, 12, 1);/*slow/no motion X*/
+		err += bmi160_aod_set_Int_Enable(client, 13, 1);/*slow/no motion Y*/
+		err += bmi160_aod_set_Int_Enable(client, 15, 1);
+	} else {
+		err = bmi160_aod_set_Int_Enable(client, 12, 0);/*slow/no motion X*/
+		err += bmi160_aod_set_Int_Enable(client, 13, 0);/*slow/no motion Y*/
+	}
+	return err;
+}
+
+static int bmi160_aod_flat_update(struct bmi160_acc_i2c_data *bmi160)
+{
+	static struct bmi160acc acc;
+	int status;
+
+	bmi160_acc_get_data(&acc.x , &acc.y, &acc.z, &status);
+
+	//bmi160_aod_read_accel_xyz(bmi160->client,
+	//		bmi160->sensor_type, &acc);
+	ISR_INFO(&bmi160->client->dev,
+		"bmi160_flat_updatez value = %d,%d\n", acc.z, bmi160->flat_threshold);
+	if (acc.z > bmi160->flat_threshold)
+		bmi160->flat_up_value = FLATUP_GESTURE;
+	else
+		bmi160->flat_up_value = EXIT_FLATUP_GESTURE;
+	if (acc.z < (-1 * bmi160->flat_threshold))
+		bmi160->flat_down_value = FLATDOWN_GESTURE;
+	else
+		bmi160->flat_down_value = EXIT_FLATDOWN_GESTURE;
+	return 0;
+}
+
+static int bmi160_aod_set_en_sig_int_mode(struct bmi160_acc_i2c_data *bmi160,
+		int en)
+{
+	int err = 0;
+	int newstatus = en;
+
+	ISR_INFO(&bmi160->client->dev,
+			"int_mode entry value = %x  %x\n",
+			bmi160->mEnabled, newstatus);
+	mutex_lock(&bmi160->int_mode_mutex);
+	if (!bmi160->mEnabled && newstatus) {
+		BMI160_ACC_SetBWRate(bmi160->client,
+			BMI160_ACCEL_ODR_800HZ);
+		usleep_range(5000, 5000);
+		bmi160_aod_flat_update(bmi160);
+	} else if (bmi160->mEnabled && !newstatus) {
+		disable_irq(bmi160->IRQ1);
+		BMI160_ACC_SetBWRate(bmi160->client,
+			BMI160_ACCEL_ODR_200HZ);
+	}
+	if (TEST_BIT(FlatUp, newstatus) &&
+			!TEST_BIT(FlatUp, bmi160->mEnabled)) {
+		ISR_INFO(&bmi160->client->dev,
+		"int_mode FlatUp value =%d\n", bmi160->flat_up_value);
+		input_report_rel(bmi160->dev_interrupt,
+		FLAT_INTERRUPT, bmi160->flat_up_value);
+		input_sync(bmi160->dev_interrupt);
+	}
+	if (TEST_BIT(FlatDown, newstatus) &&
+			!TEST_BIT(FlatDown, bmi160->mEnabled)) {
+		ISR_INFO(&bmi160->client->dev,
+		"int_mode FlatDown value =%d\n", bmi160->flat_down_value);
+		input_report_rel(bmi160->dev_interrupt,
+		FLAT_INTERRUPT, bmi160->flat_down_value);
+		input_sync(bmi160->dev_interrupt);
+	}
+	if (newstatus) {
+		if ((bmi160->flat_up_value == FLATUP_GESTURE) ||
+			(bmi160->flat_down_value == FLATDOWN_GESTURE))
+			bmi160_aod_set_flat_hold_time(bmi160->client, 0x00);
+		else
+			bmi160_aod_set_flat_hold_time(bmi160->client, 0x03);
+		if (TEST_BIT(Motion, newstatus) && bmi160->mEnabled) {
+			bmi160_aod_set_Int_Enable(bmi160->client, 11, 0);
+			bmi160->aod_flag = 1;
+		} else {
+			bmi160_aod_set_theta_flat(bmi160->client, 0x20);
+			bmi160_aod_set_Int_Enable(bmi160->client, 11, 1);
+		}
+	} else
+		bmi160_aod_set_Int_Enable(bmi160->client, 11, 0);
+
+	if (TEST_BIT(Motion, newstatus) &&
+			!TEST_BIT(Motion, bmi160->mEnabled))
+		err = bmi160_aod_set_en_no_motion_int(bmi160, 1);
+	else if (!TEST_BIT(Motion, newstatus) &&
+			TEST_BIT(Motion, bmi160->mEnabled))
+		err = bmi160_aod_set_en_no_motion_int(bmi160, 0);
+
+	if (!bmi160->mEnabled && newstatus)
+		enable_irq(bmi160->IRQ1);
+	bmi160->mEnabled = newstatus;
+	mutex_unlock(&bmi160->int_mode_mutex);
+	ISR_INFO(&bmi160->client->dev, "int_mode finished!!!\n");
+	return err;
+}
+
+static int bmi160_aod_get_flat_status(struct i2c_client *client, unsigned
+		char *intstatus)
+{
+	int comres = 0;
+	unsigned char data = 0;
+
+	comres = bmi160_aod_smbus_read_byte(client, BMI160_STATUS3_REG,
+			&data);
+	data = BMI160_GET_BITSLICE(data, BMI160_FLAT_S);
+	*intstatus = data;
+
+	return comres;
+}
+
+static void bmi160_aod_flat_work_func(struct work_struct *work)
+{
+	struct bmi160_acc_i2c_data *data = container_of((struct delayed_work *)work,
+		struct bmi160_acc_i2c_data, flat_work);
+	static struct bmi160acc acc;
+	unsigned char sign_value = 0;
+	int flat_up_value = 0;
+	int flat_down_value = 0;
+	int status;
+	ISR_INFO(&data->client->dev, "bmi160_aod_flat_work_func entry\n");
+	flat_up_value = data->flat_up_value;
+	flat_down_value = data->flat_down_value;
+	bmi160_aod_get_flat_status(data->client,
+			&sign_value);
+	ISR_INFO(&data->client->dev,
+	"flat interrupt sign_value=%d\n", sign_value);
+	//bmi160_aod_read_accel_xyz(data->client,
+	//		data->sensor_type, &acc);
+	bmi160_acc_get_data(&acc.x , &acc.y, &acc.z, &status);
+
+	ISR_INFO(&data->client->dev,
+	"flat interrupt acc x,y,z=%d %d %d\n", acc.x, acc.y, acc.z);
+	if (1 == sign_value) {
+		if (acc.z > 0)
+			data->flat_up_value = FLATUP_GESTURE;
+		else
+			data->flat_up_value = EXIT_FLATUP_GESTURE;
+		if (acc.z < 0)
+			data->flat_down_value = FLATDOWN_GESTURE;
+		else
+			data->flat_down_value = EXIT_FLATDOWN_GESTURE;
+		bmi160_aod_set_flat_hold_time(data->client, 0x00);
+	} else {
+		data->flat_up_value = EXIT_FLATUP_GESTURE;
+		data->flat_down_value = EXIT_FLATDOWN_GESTURE;
+		bmi160_aod_set_flat_hold_time(data->client, 0x03);
+	}
+	if (TEST_BIT(FlatUp, data->mEnabled) &&
+		(data->flat_up_value != flat_up_value)) {
+		input_report_rel(data->dev_interrupt,
+				FLAT_INTERRUPT, data->flat_up_value);
+		input_sync(data->dev_interrupt);
+	}
+	if (TEST_BIT(FlatDown, data->mEnabled) &&
+		(data->flat_down_value != flat_down_value)) {
+		input_report_rel(data->dev_interrupt,
+				FLAT_INTERRUPT, data->flat_down_value);
+		input_sync(data->dev_interrupt);
+	}
+	if (TEST_BIT(Motion, data->mEnabled)) {
+		if ((data->flat_up_value != flat_up_value) &&
+			(flat_up_value == FLATUP_GESTURE)) {
+			dev_info(&data->client->dev,
+				"glance exit flat up interrupt happened\n");
+			input_report_rel(data->dev_interrupt,
+					FLAT_INTERRUPT,
+					GLANCE_EXIT_FLATUP_GESTURE);
+			input_sync(data->dev_interrupt);
+		}
+		if ((data->flat_down_value != flat_down_value) &&
+			(flat_down_value == FLATDOWN_GESTURE)) {
+			dev_info(&data->client->dev,
+				"glance exit flat down interrupt happened\n");
+			input_report_rel(data->dev_interrupt,
+					FLAT_INTERRUPT,
+					GLANCE_EXIT_FLATDOWN_GESTURE);
+			input_sync(data->dev_interrupt);
+		}
+	}
+	ISR_INFO(&data->client->dev, "bmi160_aod_flat_work_func finished\n");
+}
+
+static void bmi160_aod_int1_irq_work_func(struct work_struct *work)
+{
+	struct bmi160_acc_i2c_data *data = obj_i2c_data;
+	unsigned short status = 0;
+	unsigned char st1 = 0,st2 = 0;
+
+	bmi160_aod_smbus_read_byte(data->client,
+		BMI160_STATUS0_REG, &st1);
+	bmi160_aod_smbus_read_byte(data->client,
+		BMI160_STATUS1_REG, &st2);
+
+	status = st1 | (st2<<8);
+	ISR_INFO(&data->client->dev,
+		"bmi160_aod_int2_irq_work_func entry status=0x%04x(%02x,%02x)\n", status, st1, st2);
+	if (0 == data->mEnabled) {
+		dev_info(&data->client->dev,
+		"flat interrupt mEnabled=%d\n", data->mEnabled);
+		goto exit;
+	}
+	queue_delayed_work(data->data_wq,
+		&data->flat_work, msecs_to_jiffies(50));
+
+exit:
+	ISR_INFO(&data->client->dev,
+		"bmi160_aod_int2_irq_work_func finished!!\n");
+}
+
+static void bmi160_aod_int2_irq_work_func(struct work_struct *work)
+{
+	struct bmi160_acc_i2c_data *data = obj_i2c_data;
+	unsigned short status = 0;
+	unsigned char slow_data = 0, st1 = 0,st2 = 0;
+
+{
+	int64_t ns;
+	struct timespec time;
+
+	time.tv_sec = time.tv_nsec = 0;
+	get_monotonic_boottime(&time);
+	ns = time.tv_sec * 1000000000LL + time.tv_nsec;
+	ISR_INFO(&data->client->dev, "tick1:%lx", (long unsigned int)ns);
+
+}
+	bmi160_aod_smbus_read_byte(data->client,
+		BMI160_STATUS0_REG, &st1);
+	bmi160_aod_smbus_read_byte(data->client,
+		BMI160_STATUS1_REG, &st2);
+#if 0
+	bmi160_aod_i2c_read_block(data->client,
+		BMI160_STATUS0_REG, (u8 *)&status, sizeof(status));
+#endif
+	status = st1 | (st2<<8);
+	ISR_INFO(&data->client->dev,
+		"bmi160_aod_int1_irq_work_func entry status=0x%04x(%02x,%02x)\n", status, st1, st2);
+	if (0 == data->mEnabled) {
+		dev_info(&data->client->dev,
+		"flat interrupt mEnabled=%d\n", data->mEnabled);
+		goto exit;
+	}
+	switch (status&0x8080) {
+	case 0x0080:
+		queue_delayed_work(data->data_wq,
+		&data->flat_work, msecs_to_jiffies(50));
+		break;
+	case 0x8080:
+	case 0x8000:
+		bmi160_aod_smbus_read_byte(
+		data->client, BMI160_INT_MOTION_3, &slow_data);
+		if (TEST_BIT(0, slow_data)) {
+			dev_info(&data->client->dev,
+				"no motion interrupt happened\n");
+			bmi160_aod_set_Int_Enable(
+				data->client, 12, 0);
+			bmi160_aod_set_Int_Enable(
+				data->client, 13, 0);
+			bmi160_aod_set_slope_no_mot_duration(
+				data->client, 0x00);
+			bmi160_aod_set_slope_no_mot_threshold(
+				data->client, 0x32);
+			bmi160_aod_set_Int_Enable(
+				data->client, 12, 1);
+			bmi160_aod_set_Int_Enable(
+				data->client, 13, 1);
+			bmi160_aod_set_Int_Enable(
+				data->client, 15, 0);
+			bmi160_aod_flat_update(data);
+			bmi160_aod_set_flat_hold_time(
+				data->client, 0x00);
+			bmi160_aod_set_Int_Enable(
+				data->client, 11, 1);
+		} else {
+			dev_info(&data->client->dev,
+				"glance slow motion interrupt happened\n");
+			input_report_rel(data->dev_interrupt,
+				SLOW_NO_MOTION_INTERRUPT,
+				GLANCE_MOVEMENT_GESTURE);
+			input_sync(data->dev_interrupt);
+			bmi160_aod_set_Int_Enable(
+				data->client, 12, 0);
+			bmi160_aod_set_Int_Enable(
+				data->client, 13, 0);
+			bmi160_aod_set_slope_no_mot_duration(
+				data->client, 0x01);
+			if (data->aod_flag) {
+				cancel_delayed_work_sync(&data->flat_work);
+				data->aod_flag = 0;
+			}
+			bmi160_aod_set_slope_no_mot_threshold(
+				data->client, 0x09);
+			bmi160_aod_set_Int_Enable(
+				data->client, 12, 1);
+			bmi160_aod_set_Int_Enable(
+				data->client, 13, 1);
+			bmi160_aod_set_Int_Enable(
+				data->client, 15, 1);
+		}
+		break;
+	default:
+		break;
+	}
+exit:
+	ISR_INFO(&data->client->dev,
+		"bmi160_aod_int1_irq_work_func finished!!\n");
+}
+
+static int bmi160_aod_set_Int_Enable(struct i2c_client *client, unsigned char
+		InterruptType , unsigned char value)
+{
+	int comres = 0;
+	unsigned char data1 = 0;
+	unsigned char data2 = 0;
+
+	if ((11 < InterruptType) && (InterruptType < 16)) {
+		switch (InterruptType) {
+		case 12:
+			/* slow/no motion X Interrupt  */
+			comres = bmi160_aod_smbus_read_byte(client,
+				BMI160_INT_SLO_NO_MOT_EN_X_INT__REG, &data1);
+			data1 = BMI160_SET_BITSLICE(data1,
+				BMI160_INT_SLO_NO_MOT_EN_X_INT, value);
+			comres = bmi160_aod_smbus_write_byte(client,
+				BMI160_INT_SLO_NO_MOT_EN_X_INT__REG, &data1);
+			break;
+		case 13:
+			/* slow/no motion Y Interrupt  */
+			comres = bmi160_aod_smbus_read_byte(client,
+				BMI160_INT_SLO_NO_MOT_EN_Y_INT__REG, &data1);
+			data1 = BMI160_SET_BITSLICE(data1,
+				BMI160_INT_SLO_NO_MOT_EN_Y_INT, value);
+			comres = bmi160_aod_smbus_write_byte(client,
+				BMI160_INT_SLO_NO_MOT_EN_Y_INT__REG, &data1);
+			break;
+		case 14:
+			/* slow/no motion Z Interrupt  */
+			comres = bmi160_aod_smbus_read_byte(client,
+				BMI160_INT_SLO_NO_MOT_EN_Z_INT__REG, &data1);
+			data1 = BMI160_SET_BITSLICE(data1,
+				BMI160_INT_SLO_NO_MOT_EN_Z_INT, value);
+			comres = bmi160_aod_smbus_write_byte(client,
+				BMI160_INT_SLO_NO_MOT_EN_Z_INT__REG, &data1);
+			break;
+		case 15:
+			/* slow / no motion Interrupt select */
+			comres = bmi160_aod_smbus_read_byte(client,
+				BMI160_INT_SLO_NO_MOT_EN_SEL_INT__REG, &data1);
+			data1 = BMI160_SET_BITSLICE(data1,
+				BMI160_INT_SLO_NO_MOT_EN_SEL_INT, value);
+			comres = bmi160_aod_smbus_write_byte(client,
+				BMI160_INT_SLO_NO_MOT_EN_SEL_INT__REG, &data1);
+		}
+
+	return comres;
+	}
+
+	comres = bmi160_aod_smbus_read_byte(client, BMI160_INT_EN_0, &data2);
+
+	value = value & 1;
+	switch (InterruptType) {
+#if 0
+	case 0:
+		/* Low G Interrupt  */
+		data2 = BMA25X_SET_BITSLICE(data2, BMA25X_EN_LOWG_INT,
+				value);
+		break;
+	case 1:
+		/* High G X Interrupt */
+		data2 = BMA25X_SET_BITSLICE(data2, BMA25X_EN_HIGHG_X_INT,
+				value);
+		break;
+	case 2:
+		/* High G Y Interrupt */
+		data2 = BMA25X_SET_BITSLICE(data2, BMA25X_EN_HIGHG_Y_INT,
+				value);
+		break;
+	case 3:
+		/* High G Z Interrupt */
+		data2 = BMA25X_SET_BITSLICE(data2, BMA25X_EN_HIGHG_Z_INT,
+				value);
+		break;
+	case 4:
+		/* New Data Interrupt  */
+		data2 = BMA25X_SET_BITSLICE(data2, BMA25X_EN_NEW_DATA_INT,
+				value);
+		break;
+	case 5:
+		/* Slope X Interrupt */
+		data1 = BMA25X_SET_BITSLICE(data1, BMA25X_EN_SLOPE_X_INT,
+				value);
+		break;
+	case 6:
+		/* Slope Y Interrupt */
+		data1 = BMA25X_SET_BITSLICE(data1, BMA25X_EN_SLOPE_Y_INT,
+				value);
+		break;
+
+	case 7:
+		/* Slope Z Interrupt */
+		data1 = BMA25X_SET_BITSLICE(data1, BMA25X_EN_SLOPE_Z_INT,
+				value);
+		break;
+	case 8:
+		/* Single Tap Interrupt */
+		data1 = BMA25X_SET_BITSLICE(data1, BMA25X_EN_SINGLE_TAP_INT,
+				value);
+		break;
+	case 9:
+		/* Double Tap Interrupt */
+		data1 = BMA25X_SET_BITSLICE(data1, BMA25X_EN_DOUBLE_TAP_INT,
+				value);
+		break;
+	case 10:
+		/* Orient Interrupt  */
+		data1 = BMA25X_SET_BITSLICE(data1, BMA25X_EN_ORIENT_INT, value);
+		break;
+#endif
+	case 11:
+		/* Flat Interrupt */
+		data2 = BMI160_SET_BITSLICE(data2, BMI160_EN_FLAT_INT, value);
+		break;
+	default:
+		break;
+	}
+	comres = bmi160_aod_smbus_write_byte(client, BMI160_INT_EN_0,
+			&data2);
+
+	return comres;
+}
+
+static int bmi160_aod_set_int_latch(struct i2c_client *client)
+{
+	int comres = 0;
+	unsigned char data = 0;
+
+	comres = bmi160_aod_smbus_read_byte(client,
+			BMI160_INT_MODE_SEL__REG, &data);
+	data = BMI160_SET_BITSLICE(data, BMI160_INT_MODE_SEL, 0xc);/*latch interrupt 320mS*/
+	comres = bmi160_aod_smbus_write_byte(client,
+			BMI160_INT_MODE_SEL__REG, &data);
+
+	return comres;
+}
+
+static int bmi160_aod_config_int1(struct i2c_client *client)
+{
+	int comres = 0;
+	unsigned char data = 0;
+
+	comres = bmi160_aod_smbus_read_byte(client,
+			BMI160_INT_OUT_CTRL_REG, &data);
+	data = BMI160_SET_BITSLICE(data, BMI160_INT1_EDAGE_CTRL, 1);/* edage */
+	data = BMI160_SET_BITSLICE(data, BMI160_INT1_LVL, 1);/* active high */
+	data = BMI160_SET_BITSLICE(data, BMI160_INT1_OD, 0)/* push pull */;
+	data = BMI160_SET_BITSLICE(data, BMI160_INT1_OUTPUT_EN, 1);/* enable */
+	comres = bmi160_aod_smbus_write_byte(client,
+			BMI160_INT_OUT_CTRL_REG, &data);
+
+	comres = bmi160_aod_smbus_read_byte(client,
+			BMI160_INT_MODE_INT1_EN__REG, &data);
+	data = BMI160_SET_BITSLICE(data, BMI160_INT_MODE_INT1_EN, 0x0b);/*latch interrupt 320mS*/
+	comres = bmi160_aod_smbus_write_byte(client,
+			BMI160_INT_MODE_INT1_EN__REG, &data);
+
+	return comres;
+}
+
+static int bmi160_aod_set_int1_pad_sel(struct i2c_client *client,
+		unsigned char int1sel)
+{
+	int comres = 0;
+	unsigned char data = 0;
+	unsigned char state = 0;
+	state = 0x01;
+
+	switch (int1sel) {
+	case PAD_LOWG:
+		comres = bmi160_aod_smbus_read_byte(client,
+				BMI160_INT1_PAD_SEL_REG, &data);
+		data = BMI160_SET_BITSLICE(data, BMI160_EN_INT1_PAD_LOWG,
+				state);
+		comres = bmi160_aod_smbus_write_byte(client,
+				BMI160_INT1_PAD_SEL_REG, &data);
+		break;
+	case PAD_HIGHG:
+		comres = bmi160_aod_smbus_read_byte(client,
+				BMI160_INT1_PAD_SEL_REG, &data);
+		data = BMI160_SET_BITSLICE(data, BMI160_EN_INT1_PAD_HIGHG,
+				state);
+		comres = bmi160_aod_smbus_write_byte(client,
+				BMI160_INT1_PAD_SEL_REG, &data);
+		break;
+	case PAD_SLOP:
+		comres = bmi160_aod_smbus_read_byte(client,
+				BMI160_INT1_PAD_SEL_REG, &data);
+		data = BMI160_SET_BITSLICE(data, BMI160_EN_INT1_PAD_SLOPE,
+				state);
+		comres = bmi160_aod_smbus_write_byte(client,
+				BMI160_INT1_PAD_SEL_REG, &data);
+		break;
+	case PAD_SLOW_NO_MOTION:
+		comres = bmi160_aod_smbus_read_byte(client,
+				BMI160_INT1_PAD_SEL_REG, &data);
+		data = BMI160_SET_BITSLICE(data, BMI160_EN_INT1_PAD_SLO_NO_MOT,
+				state);
+		comres = bmi160_aod_smbus_write_byte(client,
+				BMI160_INT1_PAD_SEL_REG, &data);
+		break;
+	case PAD_DOUBLE_TAP:
+		comres = bmi160_aod_smbus_read_byte(client,
+				BMI160_INT1_PAD_SEL_REG, &data);
+		data = BMI160_SET_BITSLICE(data, BMI160_EN_INT1_PAD_DB_TAP,
+				state);
+		comres = bmi160_aod_smbus_write_byte(client,
+				BMI160_INT1_PAD_SEL_REG, &data);
+		break;
+	case PAD_SINGLE_TAP:
+		comres = bmi160_aod_smbus_read_byte(client,
+				BMI160_INT1_PAD_SEL_REG, &data);
+		data = BMI160_SET_BITSLICE(data, BMI160_EN_INT1_PAD_SNG_TAP,
+				state);
+		comres = bmi160_aod_smbus_write_byte(client,
+				BMI160_INT1_PAD_SEL_REG, &data);
+		break;
+	case PAD_ORIENT:
+		comres = bmi160_aod_smbus_read_byte(client,
+				BMI160_INT1_PAD_SEL_REG, &data);
+		data = BMI160_SET_BITSLICE(data, BMI160_EN_INT1_PAD_ORIENT,
+				state);
+		comres = bmi160_aod_smbus_write_byte(client,
+				BMI160_INT1_PAD_SEL_REG, &data);
+		break;
+	case PAD_FLAT:
+		comres = bmi160_aod_smbus_read_byte(client,
+				BMI160_INT1_PAD_SEL_REG, &data);
+		data = BMI160_SET_BITSLICE(data, BMI160_EN_INT1_PAD_FLAT,
+				state);
+		comres = bmi160_aod_smbus_write_byte(client,
+				BMI160_INT1_PAD_SEL_REG, &data);
+		break;
+	default:
+		break;
+	}
+
+	return comres;
+}
+
+//#else
+static int bmi160_aod_config_int2(struct i2c_client *client)
+{
+	int comres = 0;
+	unsigned char data = 0;
+
+	comres = bmi160_aod_smbus_read_byte(client,
+			BMI160_INT_OUT_CTRL_REG, &data);
+	data = BMI160_SET_BITSLICE(data, BMI160_INT2_EDAGE_CTRL, 1);/* edage */
+	data = BMI160_SET_BITSLICE(data, BMI160_INT2_LVL, 1);/* active high */
+	data = BMI160_SET_BITSLICE(data, BMI160_INT2_OD, 0)/* push pull */;
+	data = BMI160_SET_BITSLICE(data, BMI160_INT2_OUTPUT_EN, 1);/* enable */
+	comres = bmi160_aod_smbus_write_byte(client,
+			BMI160_INT_OUT_CTRL_REG, &data);
+
+	comres = bmi160_aod_smbus_read_byte(client,
+			BMI160_INT_MODE_INT2_EN__REG, &data);
+	data = BMI160_SET_BITSLICE(data, BMI160_INT_MODE_INT2_EN, 0x0b);/*latch interrupt 320mS*/
+	comres = bmi160_aod_smbus_write_byte(client,
+			BMI160_INT_MODE_INT2_EN__REG, &data);
+
+	return comres;
+}
+
+static int bmi160_aod_set_int2_pad_sel(struct i2c_client *client,
+		unsigned char int2sel)
+{
+	int comres = 0;
+	unsigned char data = 0;
+	unsigned char state = 0;
+	state = 0x01;
+
+	switch (int2sel) {
+	case PAD_LOWG:
+		comres = bmi160_aod_smbus_read_byte(client,
+				BMI160_INT2_PAD_SEL_REG, &data);
+		data = BMI160_SET_BITSLICE(data, BMI160_EN_INT2_PAD_LOWG,
+				state);
+		comres = bmi160_aod_smbus_write_byte(client,
+				BMI160_INT2_PAD_SEL_REG, &data);
+		break;
+	case PAD_HIGHG:
+		comres = bmi160_aod_smbus_read_byte(client,
+				BMI160_INT2_PAD_SEL_REG, &data);
+		data = BMI160_SET_BITSLICE(data, BMI160_EN_INT2_PAD_HIGHG,
+				state);
+		comres = bmi160_aod_smbus_write_byte(client,
+				BMI160_INT2_PAD_SEL_REG, &data);
+		break;
+	case PAD_SLOP:
+		comres = bmi160_aod_smbus_read_byte(client,
+				BMI160_INT2_PAD_SEL_REG, &data);
+		data = BMI160_SET_BITSLICE(data, BMI160_EN_INT2_PAD_SLOPE,
+				state);
+		comres = bmi160_aod_smbus_write_byte(client,
+				BMI160_INT2_PAD_SEL_REG, &data);
+		break;
+	case PAD_SLOW_NO_MOTION:
+		comres = bmi160_aod_smbus_read_byte(client,
+				BMI160_INT2_PAD_SEL_REG, &data);
+		data = BMI160_SET_BITSLICE(data, BMI160_EN_INT2_PAD_SLO_NO_MOT,
+				state);
+		comres = bmi160_aod_smbus_write_byte(client,
+				BMI160_INT2_PAD_SEL_REG, &data);
+		break;
+	case PAD_DOUBLE_TAP:
+		comres = bmi160_aod_smbus_read_byte(client,
+				BMI160_INT2_PAD_SEL_REG, &data);
+		data = BMI160_SET_BITSLICE(data, BMI160_EN_INT2_PAD_DB_TAP,
+				state);
+		comres = bmi160_aod_smbus_write_byte(client,
+				BMI160_INT2_PAD_SEL_REG, &data);
+		break;
+	case PAD_SINGLE_TAP:
+		comres = bmi160_aod_smbus_read_byte(client,
+				BMI160_INT2_PAD_SEL_REG, &data);
+		data = BMI160_SET_BITSLICE(data, BMI160_EN_INT2_PAD_SNG_TAP,
+				state);
+		comres = bmi160_aod_smbus_write_byte(client,
+				BMI160_INT2_PAD_SEL_REG, &data);
+		break;
+	case PAD_ORIENT:
+		comres = bmi160_aod_smbus_read_byte(client,
+				BMI160_INT2_PAD_SEL_REG, &data);
+		data = BMI160_SET_BITSLICE(data, BMI160_EN_INT2_PAD_ORIENT,
+				state);
+		comres = bmi160_aod_smbus_write_byte(client,
+				BMI160_INT2_PAD_SEL_REG, &data);
+		break;
+	case PAD_FLAT:
+		comres = bmi160_aod_smbus_read_byte(client,
+				BMI160_INT2_PAD_SEL_REG, &data);
+		data = BMI160_SET_BITSLICE(data, BMI160_EN_INT2_PAD_FLAT,
+				state);
+		comres = bmi160_aod_smbus_write_byte(client,
+				BMI160_INT2_PAD_SEL_REG, &data);
+		break;
+	default:
+		break;
+	}
+
+	return comres;
+}
+
+//#endif
+#endif//CONFIG_MOTO_AOD_BASE_ON_AP_SENSORS
 
 //tad3sgh add--
 /*----------------------------------------------------------------------------*/
@@ -2502,6 +3579,138 @@ static ssize_t store_layout_value(struct device_driver *ddri, const char *buf, s
 	return count;            
 }
 
+#ifdef CONFIG_MOTO_AOD_BASE_ON_AP_SENSORS
+static int read_flag = 0;
+static u8 read_reg;
+static ssize_t reg_dump_show(struct device_driver *ddri, char *buf)
+{
+	u8 data[20];
+	char *p = buf;
+
+	if (read_flag) {
+		read_flag = 0;
+		bma_i2c_read_block(bmi160_acc_i2c_client, read_reg, data, 1);
+		p += snprintf(p, PAGE_SIZE, "%02x\n", data[0]);
+		return (p-buf);
+	}
+
+	bma_i2c_read_block(bmi160_acc_i2c_client, 0x50, data, 3);
+	p += snprintf(p, PAGE_SIZE, "INT EN(50~52)=%02x,%02x,%02x\n",
+			data[0], data[1], data[2]);
+
+	bma_i2c_read_block(bmi160_acc_i2c_client, 0x53, data, 1);
+	p += snprintf(p, PAGE_SIZE, "INT OUT CTRL(53)=%02x\n",
+			data[0]);
+
+	bma_i2c_read_block(bmi160_acc_i2c_client, 0x54, data, 1);
+	p += snprintf(p, PAGE_SIZE, "INT LATCH(54)=%02x\n",
+			data[0]);
+
+	bma_i2c_read_block(bmi160_acc_i2c_client, 0x55, data, 3);
+	p += snprintf(p, PAGE_SIZE, "INT MAP(55~57)=%02x,%02x,%02x\n",
+			data[0], data[1], data[2]);
+
+	bma_i2c_read_block(bmi160_acc_i2c_client, 0x58, data, 2);
+	p += snprintf(p, PAGE_SIZE, "INT DATA(58~59)=%02x,%02x\n",
+			data[0], data[1]);
+
+	bma_i2c_read_block(bmi160_acc_i2c_client, 0x5a, data, 5);
+	p += snprintf(p, PAGE_SIZE, "INT LOWHIGH(5a~5e)=%02x,%02x,%02x,%02x,%02x\n",
+			data[0], data[1], data[2], data[3], data[4]);
+
+	bma_i2c_read_block(bmi160_acc_i2c_client, 0x5f, data, 4);
+	p += snprintf(p, PAGE_SIZE, "INT MOTION(5f~62)=%02x,%02x,%02x,%02x\n",
+			data[0], data[1], data[2], data[3]);
+
+	bma_i2c_read_block(bmi160_acc_i2c_client, 0x63, data, 2);
+	p += snprintf(p, PAGE_SIZE, "INT TAP(63~64)=%02x,%02x\n",
+			data[0], data[1]);
+
+	bma_i2c_read_block(bmi160_acc_i2c_client, 0x65, data, 2);
+	p += snprintf(p, PAGE_SIZE, "INT ORI(65~66)=%02x,%02x\n",
+			data[0], data[1]);
+	bma_i2c_read_block(bmi160_acc_i2c_client, 0x67, data, 2);
+	p += snprintf(p, PAGE_SIZE, "INT FLT(67~68)=%02x,%02x\n",
+			data[0], data[1]);
+	bma_i2c_read_block(bmi160_acc_i2c_client, 0x1b, data, 5);
+	p += snprintf(p, PAGE_SIZE, "INT STS(1b~1f)=%02x,%02x,%02x,%02x,%02x\n",
+			data[0], data[1], data[2], data[3], data[4]);
+
+	return (p-buf);
+}
+
+static ssize_t reg_dump_store(struct device_driver *ddri, const char *buf, size_t count)
+{
+	unsigned int val, reg, opt;
+
+	if (sscanf(buf, "%x,%x,%x", &reg, &val, &opt) == 3) {
+		read_reg = *((u8 *)&reg);
+		read_flag = 1;
+	} else if (sscanf(buf, "%x,%x", &reg, &val) == 2) {
+		GSE_ERR("%s,reg = 0x%02x, val = 0x%02x\n",
+			__func__, *(u8 *)&reg, *(u8 *)&val);
+		bma_i2c_write_block(bmi160_acc_i2c_client, *(u8 *)&reg,
+			(u8 *)&val, 1);
+	}
+
+	return count;
+}
+
+static ssize_t bmi160_aod_flatdown_show(struct device_driver *ddri, char *buf)
+{
+	int databuf = 0;
+	struct bmi160_acc_i2c_data *obj = obj_i2c_data;
+	if (FLATDOWN_GESTURE == obj->flat_down_value)
+		databuf = 1;
+	else if (EXIT_FLATDOWN_GESTURE == obj->flat_down_value)
+		databuf = 0;
+	return snprintf(buf, PAGE_SIZE, "%d\n", databuf);
+}
+
+static ssize_t bmi160_aod_flat_threshold_show(struct device_driver *ddri, char *buf)
+{
+	struct bmi160_acc_i2c_data *obj = obj_i2c_data;
+
+	return snprintf(buf, PAGE_SIZE, "%d\n", obj->flat_threshold);
+}
+
+static ssize_t bmi160_aod_flat_threshold_store(struct device_driver *ddri, const char *buf, size_t count)
+{
+	unsigned long data;
+	int error;
+	struct bmi160_acc_i2c_data *obj = obj_i2c_data;
+
+	error = kstrtoul(buf, 10, &data);
+	if (error)
+		return error;
+	obj->flat_threshold = data;
+
+	return count;
+}
+
+static ssize_t bmi160_aod_int_mode_show(struct device_driver *ddri, char *buf)
+{
+	struct bmi160_acc_i2c_data *obj = obj_i2c_data;
+
+	return snprintf(buf, PAGE_SIZE, "%d\n", obj->mEnabled);
+}
+
+static ssize_t bmi160_aod_int_mode_store(struct device_driver *ddri,
+		const char *buf, size_t count)
+{
+	unsigned long data = 0;
+	int error = 0;
+	struct bmi160_acc_i2c_data *obj = obj_i2c_data;
+
+	error = kstrtoul(buf, 10, &data);
+	if (error)
+		return error;
+	bmi160_aod_set_en_sig_int_mode(obj, data);
+
+	return count;
+}
+#endif
+
 /*----------------------------------------------------------------------------*/
 static DRIVER_ATTR(chipinfo,   S_IWUSR | S_IRUGO, show_chipinfo_value,      NULL);
 static DRIVER_ATTR(cpsdata, 	 S_IWUSR | S_IRUGO, show_cpsdata_value,    NULL);
@@ -2519,6 +3728,14 @@ static DRIVER_ATTR(fifo_bytecount, S_IRUGO | S_IWUSR, bmi160_fifo_bytecount_show
 static DRIVER_ATTR(fifo_data_sel, S_IRUGO | S_IWUSR, bmi160_fifo_data_sel_show, bmi160_fifo_data_sel_store);
 static DRIVER_ATTR(fifo_data_frame, S_IRUGO, bmi160_fifo_data_out_frame_show, NULL);
 static DRIVER_ATTR(layout,      S_IRUGO | S_IWUSR, show_layout_value, store_layout_value );
+#ifdef CONFIG_MOTO_AOD_BASE_ON_AP_SENSORS
+static DRIVER_ATTR(reg, S_IRUGO | S_IWUSR, reg_dump_show, reg_dump_store );
+static DRIVER_ATTR(flatdown, S_IRUGO, bmi160_aod_flatdown_show, NULL);
+static DRIVER_ATTR(flat_threshold, S_IWUSR | S_IRUGO, bmi160_aod_flat_threshold_show,
+	 bmi160_aod_flat_threshold_store);
+static DRIVER_ATTR(int_mode, S_IWUSR | S_IRUGO, bmi160_aod_int_mode_show,
+	 bmi160_aod_int_mode_store);
+#endif
 /*----------------------------------------------------------------------------*/
 static struct driver_attribute *bmi160_acc_attr_list[] = {
 	&driver_attr_chipinfo,     /*chip information*/
@@ -2537,6 +3754,12 @@ static struct driver_attribute *bmi160_acc_attr_list[] = {
 	&driver_attr_fifo_data_sel,
 	&driver_attr_fifo_data_frame,
 	&driver_attr_layout,
+#ifdef CONFIG_MOTO_AOD_BASE_ON_AP_SENSORS
+	&driver_attr_reg,
+	&driver_attr_flatdown,
+	&driver_attr_flat_threshold,
+	&driver_attr_int_mode,
+#endif
 };
 /*----------------------------------------------------------------------------*/
 static int bmi160_acc_create_attr(struct device_driver *driver)
@@ -4123,6 +5346,9 @@ static int bmi160_acc_i2c_probe(struct i2c_client *client, const struct i2c_devi
 #endif //BMC050_VG //tad3sgh add --
 
 	int err = 0;
+#ifdef CONFIG_MOTO_AOD_BASE_ON_AP_SENSORS
+	struct input_dev *dev_interrupt;
+#endif
 
 	GSE_FUN();
 
@@ -4151,11 +5377,6 @@ static int bmi160_acc_i2c_probe(struct i2c_client *client, const struct i2c_devi
 	i2c_set_clientdata(new_client,obj);
     
     GSE_LOG("%s:   --new_client_addr=0x%x\n", __func__, client->addr);
-
-#ifdef CONFIG_GSENSOR_IRQ_ENABLE 
-        INIT_WORK(&gsensor_eint_work,bmi160_eint_work);
-
-#endif
 
 	atomic_set(&obj->trace, 0);
 	atomic_set(&obj->suspend, 0);
@@ -4191,11 +5412,61 @@ static int bmi160_acc_i2c_probe(struct i2c_client *client, const struct i2c_devi
 		goto exit_init_failed;
 	}
 
-#ifdef CONFIG_GSENSOR_IRQ_ENABLE        
-        bmi160_setup_irq(bmi160_acc_i2c_client); 
+#ifdef CONFIG_MOTO_AOD_BASE_ON_AP_SENSORS
+	dev_interrupt = input_allocate_device();
+	if (!dev_interrupt) {
+		kfree(obj);
+		return -ENOMEM;
+	}
 
-     //   bmi160_setup_irq2(bmi160_acc_i2c_client); 
-#endif
+	/* all interrupt generated events are moved to interrupt input devices*/
+	dev_interrupt->name = "bmi160-interrupt";
+	dev_interrupt->id.bustype = BUS_I2C;
+	input_set_abs_params(dev_interrupt, ABS_X, ABSMIN, ABSMAX, 0, 0);
+	input_set_abs_params(dev_interrupt, ABS_Y, ABSMIN, ABSMAX, 0, 0);
+	input_set_abs_params(dev_interrupt, ABS_Z, ABSMIN, ABSMAX, 0, 0);
+	input_set_capability(dev_interrupt, EV_REL,
+		SLOW_NO_MOTION_INTERRUPT);
+	input_set_capability(dev_interrupt, EV_ABS,
+		ORIENT_INTERRUPT);
+	input_set_capability(dev_interrupt, EV_REL,
+		FLAT_INTERRUPT);
+	input_set_capability(dev_interrupt, EV_REL,
+		REL_INT_FLUSH);
+	input_set_drvdata(dev_interrupt, obj);
+	err = input_register_device(dev_interrupt);
+	if (err < 0)
+		goto exit_register_input_device_interrupt_failed;
+
+	obj->dev_interrupt = dev_interrupt;
+	obj->flat_threshold = 15400*GRAVITY_EARTH_1000/obj->reso->sensitivity;
+	obj->aod_flag = 0;
+	obj->flat_up_value = 0;
+	obj->flat_down_value = 0;
+	obj->mEnabled = 0;
+	atomic_set(&obj->flat_flag, 0);
+	mutex_init(&obj->int_mode_mutex);
+
+	bmi160_aod_set_int_latch(client);
+	bmi160_aod_set_int1_pad_sel(client, PAD_FLAT);
+	bmi160_aod_config_int1(client);
+
+	bmi160_aod_set_int2_pad_sel(client, PAD_SLOP);
+	bmi160_aod_set_int2_pad_sel(client, PAD_SLOW_NO_MOTION);
+	bmi160_aod_config_int2(client);
+
+	INIT_WORK(&obj->int1_irq_work, bmi160_aod_int1_irq_work_func);
+	INIT_WORK(&obj->int2_irq_work, bmi160_aod_int2_irq_work_func);
+	INIT_DELAYED_WORK(&obj->flat_work, bmi160_aod_flat_work_func);
+	obj->data_wq = create_freezable_workqueue("bmi160_acc_aod_data_work");
+	if (!obj->data_wq) {
+		dev_err(&client->dev, "Cannot get create workqueue!\n");
+		goto exit_create_aod_workqueue_failed;
+	}
+
+	bmi160_setup_int1(bmi160_acc_i2c_client); 
+	bmi160_setup_int2(bmi160_acc_i2c_client); 
+#endif//CONFIG_MOTO_AOD_BASE_ON_AP_SENSORS
 
 #ifdef MISC_FOR_DAEMON
 	err = misc_register(&bmi160_acc_device);
@@ -4290,6 +5561,14 @@ static int bmi160_acc_i2c_probe(struct i2c_client *client, const struct i2c_devi
 	misc_deregister(&bmi160_acc_device);
 	exit_misc_device_register_failed:
 #endif
+
+#ifdef CONFIG_MOTO_AOD_BASE_ON_AP_SENSORS
+	exit_create_aod_workqueue_failed:
+	input_unregister_device(dev_interrupt);
+	exit_register_input_device_interrupt_failed:
+	input_free_device(dev_interrupt);
+#endif
+
 	exit_init_failed:
 	exit_kfree:
 	kfree(obj);
