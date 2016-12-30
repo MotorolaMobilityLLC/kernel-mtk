@@ -1532,10 +1532,16 @@ static long bmg_unlocked_ioctl(struct file *file, unsigned int cmd,
 	err = bmg_read_calibration(client, cali, raw_offset);
 	if (err)
 		break;
-
-	sensor_data.x = cali[BMG_AXIS_X] * obj->sensitivity;
-	sensor_data.y = cali[BMG_AXIS_Y] * obj->sensitivity;
-	sensor_data.z = cali[BMG_AXIS_Z] * obj->sensitivity;
+   /* change for sp_META tool calibration by dingleilei*/
+	sensor_data.x = cali[BMG_AXIS_X]/obj->sensitivity;
+	sensor_data.y = cali[BMG_AXIS_Y]/obj->sensitivity;
+	sensor_data.z = cali[BMG_AXIS_Z]/obj->sensitivity;
+	
+	/*
+	GYRO_ERR("Meidong:Gyro get cali:[%5d %5d %5d]\n",
+	sensor_data.x, sensor_data.y, sensor_data.z);
+	*/
+	
 	if (copy_to_user(data, &sensor_data, sizeof(sensor_data))) {
 		err = -EFAULT;
 		break;
