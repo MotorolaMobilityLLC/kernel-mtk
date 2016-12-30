@@ -9,12 +9,10 @@ obj-y   +=  alsps_factory.o
 obj-y   +=  aal_control.o
 #tuwenzan@wind-mobi.com add at 20161108 begin
 obj-$(CONFIG_MTK_MN66238TKDN)	+=  mn66238tkdn/
-obj-$(CONFIG_MTK_LTR778)	+=  ltr778/
 #tuwenzan@wind-mobi.com add at 20161108 end
 ifeq ($(CONFIG_MTK_SCP_SENSORHUB_V1),y)
 obj-$(CONFIG_MTK_ALSPSHUB)      +=  alspshub/
 else
-obj-$(CONFIG_LCT_LTR778_NEW)	+=  LCT_ltr778-new/
 obj-$(CONFIG_LCT_MTK_MN66238T_NEW)	+=  LCT_MN66238T-new/
 obj-$(CONFIG_MTK_GP2AP002S00F)	+=  gp2ap002s00f/
 obj-$(CONFIG_MTK_CM36283)	+=  cm36283/
@@ -34,4 +32,12 @@ obj-$(CONFIG_MTK_RPR410)	+=  rpr410/
 obj-$(CONFIG_MTK_TMD2771)	+=  tmd2771/
 obj-$(CONFIG_MTK_TMD2771_AUTO)	+=  tmd2771_auto/
 obj-$(CONFIG_MTK_STK3X1X_NEW)	+=  stk3x1x-new/
+endif
+
+ifeq ($(CONFIG_LENOVO_LTR778),y)
+obj-y				+=  lenovo_ltr778/
+else ifeq ($(CONFIG_MTK_LTR778),y)
+obj-y				+=  ltr778/
+else ifeq ($(CONFIG_LCT_LTR778_NEW),y)
+obj-y				+=  LCT_ltr778-new/
 endif
