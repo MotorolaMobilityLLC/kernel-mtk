@@ -40,6 +40,9 @@ u32 g_msdc2_flash;
 u32 g_msdc3_io;
 u32 g_msdc3_flash;
 
+static struct pinctrl *g_pinctrl;
+static struct pinctrl_state *g_pin_power_out0;
+static struct pinctrl_state *g_pin_power_out1;
 /**************************************************************/
 /* Section 1: Power                                           */
 /**************************************************************/
@@ -305,8 +308,12 @@ void msdc_sd_power(struct msdc_host *host, u32 on)
 		if (host->hw->flags & MSDC_SD_NEED_POWER)
 			card_on = 1;
 		/* VMCH VOLSEL */
+		if (card_on)
+			pinctrl_select_state(g_pinctrl, g_pin_power_out1);
+/*
 		msdc_ldo_power(card_on, POWER_LDO_VMCH, VOL_3000,
 			&g_msdc1_flash);
+*/
 		/* VMC VOLSEL */
 		msdc_ldo_power(on, POWER_LDO_VMC, VOL_3000, &g_msdc1_io);
 		break;
@@ -335,7 +342,10 @@ void msdc_sd_power_off(void)
 
 	/* power off */
 	msdc_ldo_power(0, POWER_LDO_VMC, VOL_3000, &g_msdc1_io);
+	pinctrl_select_state(g_pinctrl, g_pin_power_out0);
+/*
 	msdc_ldo_power(0, POWER_LDO_VMCH, VOL_3000, &g_msdc1_flash);
+*/
 
 	if (host != NULL)
 		msdc_set_bad_card_and_remove(host);
@@ -753,6 +763,25 @@ int msdc_dt_init(struct platform_device *pdev, struct mmc_host *mmc,
 		}
 
 		pinctrl_select_state(pinctrl, pins_ins);
+
+		g_pinctrl = pinctrl;
+		g_pin_power_out0 = pinctrl_lookup_state(g_pinctrl,
+			"power_output0");
+		if (IS_ERR(pins_ins)) {
+			ret = PTR_ERR(pins_ins);
+			dev_err(&pdev->dev, "Cannot find pinctrl power_output0!\n");
+		return -1;
+		}
+
+		g_pin_power_out1 = pinctrl_lookup_state(g_pinctrl,
+			"power_output1");
+		if (IS_ERR(pins_ins)) {
+			ret = PTR_ERR(pins_ins);
+			dev_err(&pdev->dev, "Cannot find pinctrl power_output1!\n");
+		return -1;
+		}
+
+		pinctrl_select_state(g_pinctrl, g_pin_power_out0);
 		pr_err("msdc1 pinctl select state\n");
 	}
 
