@@ -36,7 +36,8 @@ static u8 g_proximity_en = 0;
 			//#include "LQ_L3600_OFG_C05_2016-11-21_0937.i"
 			//#include "LQ_L3600_OFG_C06_2016-11-25_0937.i"
 			//#include "LQ_L3600_OFG_C07_2016-12-03.i"
-			#include "LQ_L3600_OFG_C08_2016-12-22.i"
+			//#include "LQ_L3600_OFG_C08_2016-12-22.i"
+			#include "LQ_L3600_OFG_C09_2016-12-28.i"
 	};
 #endif
 #ifdef MTK
@@ -6683,7 +6684,7 @@ static struct tpd_driver_t tpd_device_driver =
 #endif
 };
 #endif
-
+/*
 static void __init himax852xes_init_async(void *unused, async_cookie_t cookie)
 {
 	I("%s:Enter \n", __func__);
@@ -6699,11 +6700,18 @@ static void __init himax852xes_init_async(void *unused, async_cookie_t cookie)
 #endif
 
 }
-
+*/
 static int __init himax852xes_init(void)
 {
 	I("Himax 852xES touch panel driver init\n");
-	async_schedule(himax852xes_init_async, NULL);
+	#if defined(MTK_KERNEL_318)
+	tpd_get_dts_info();
+	#endif
+
+	if(tpd_driver_add(&tpd_device_driver)<0){
+		I("Failed to add Driver!\n");
+	}
+//async_schedule(himax852xes_init_async, NULL);
 	return 0;
 }
 

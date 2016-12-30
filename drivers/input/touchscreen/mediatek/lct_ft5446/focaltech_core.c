@@ -921,12 +921,6 @@ static int tpd_probe(struct i2c_client *client, const struct i2c_device_id *id)
         printk("[TPD]fts_i2c_client->addr=0x%x\n", fts_i2c_client->addr);
     }
 
-#ifdef MTK_CTP_NODE
-	if((proc_create(CTP_PROC_FILE,0444,NULL,&g_ctp_proc)) == NULL){
-		printk("proc_create tp version node error\n");
-	}
-#endif
-
     /* Init I2C */
     fts_i2c_init();
     fts_reset_proc(200);
@@ -937,6 +931,7 @@ static int tpd_probe(struct i2c_client *client, const struct i2c_device_id *id)
     /* Configure gpio to irq and request irq */
 	tpd_gpio_as_int(tpd_int_gpio_number);
     tpd_irq_registration();
+
 #if FTS_GESTURE_EN
     fts_gesture_init(tpd->dev, client);
 #endif
@@ -970,6 +965,12 @@ static int tpd_probe(struct i2c_client *client, const struct i2c_device_id *id)
     printk("[TPD]Touch Panel Device Probe %s!",
               (retval < 0) ? "FAIL" : "PASS");
 
+#ifdef MTK_CTP_NODE
+	if((proc_create(CTP_PROC_FILE,0444,NULL,&g_ctp_proc)) == NULL){
+		printk("proc_create tp version node error\n");
+	}
+#endif
+
 //add by hxl dev_info
 	fts_i2c_read_reg(client, 0xA6, &ver);
 	ctp_fw_version = ver;
@@ -997,13 +998,14 @@ static int tpd_probe(struct i2c_client *client, const struct i2c_device_id *id)
     fts_test_init(client);
 #endif
 
- tpd_load_status = 1;
+	tpd_load_status = 1;
     FTS_FUNC_EXIT();
-
+	
     return 0;
 
 err_read_device_id:
 	FTS_ERROR("[TPD][ft5446_probe]Failed to read Device ID,retval=%d!",retval);
+	fts_i2c_exit();
 	tpd_load_status = 0;
 	return -1;
 }
