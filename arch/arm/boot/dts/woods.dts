@@ -124,7 +124,7 @@
 	};
     //xuzhifeng@wind-mobi.com 20161222 begin
 //tee_xuzhifeng@wind-mobi.com 20161117 begin
-et360spi@0 {
+    et360spi@0 {
 		compatible = "egistec,et360spi";
 		reg = <0>;
 		spi-max-frequency = <16000000>;
@@ -137,7 +137,8 @@ et360spi@0 {
             status = "okay";
             debounce = <251 1000>;
 		};
-        
+
+
   //tee_xuzhifeng@wind-mobi.com 20161117 end 
  /* sensor standardization */
  //tuwenzan@wind-mobi.com modify at 20161130 begin
@@ -250,7 +251,23 @@ et360spi@0 {
         i2c_addr = <0x28 0 0 0>;
         };          
 
+    /* override mt6737m.dtsi definition */
+
+
 };
+
+&pcm {
+    extspkamp-gpio = <103 0>;
+};
+
+&nfc {
+    compatible = "mediatek,nfc-gpio-v2";
+    gpio-ven = <4>;
+    gpio-rst = <3>;
+    gpio-eint = <1>;
+    gpio-irq = <2>;
+};
+
 
 //tuwenzan@wind-mobi.com add at 20161130 begin
 &i2c2 {

@@ -48,7 +48,7 @@
 #include <linux/of_address.h>
 #endif
 
-#define PN544_DRVNAME		"pn544"
+#define PN544_DRVNAME		"pn547"
 
 //#define PN544_I2C_ADDR      0x28
 #define MAX_BUFFER_SIZE		512

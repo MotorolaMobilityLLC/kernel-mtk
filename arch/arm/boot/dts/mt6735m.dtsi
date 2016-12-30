@@ -1339,7 +1339,8 @@
 			interrupts = <GIC_SPI 144 IRQ_TYPE_LEVEL_LOW>;
 		};
 
-		audgpio:mt_soc_dl1_pcm@11220000 {
+#		audgpio:mt_soc_dl1_pcm@11220000 {
+		pcm:mt_soc_dl1_pcm@11220000 {
 			compatible = "mediatek,mt-soc-dl1-pcm";
 			reg = <0x11220000 0x1000>;
 			interrupts = <GIC_SPI 144 IRQ_TYPE_LEVEL_LOW>;
@@ -1347,7 +1348,7 @@
 			audmiso-gpio = <144 0>;
 			audmosi-gpio = <145 0>;
 			vowclk-gpio = <148 0>;
-			extspkamp-gpio = <103 0>; /*ext amp for Z168 ---sunsiyuan@wind-mobi.com add at 20161109*/
+			extspkamp-gpio = <117 0>;
 			i2s1clk-gpio = <80 0>;
 			i2s1dat-gpio = <78 0>;
 			i2s1mclk-gpio = <9 0>;

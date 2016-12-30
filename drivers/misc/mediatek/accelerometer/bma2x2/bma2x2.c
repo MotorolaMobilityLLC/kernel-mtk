@@ -1469,10 +1469,6 @@ static int BMA2x2_ReadSensorData(struct i2c_client *client,
 		 obj->cvt.sign[BMA2x2_AXIS_Y]*databuf[BMA2x2_AXIS_Y];
 		acc[obj->cvt.map[BMA2x2_AXIS_Z]] =
 		 obj->cvt.sign[BMA2x2_AXIS_Z]*databuf[BMA2x2_AXIS_Z];
-		GSE_LOG("cvt x=%d, y=%d, z=%d\n",
-		 obj->cvt.sign[BMA2x2_AXIS_X],
-		 obj->cvt.sign[BMA2x2_AXIS_Y],
-		 obj->cvt.sign[BMA2x2_AXIS_Z]);
 
 		acc[BMA2x2_AXIS_X] =
 		 acc[BMA2x2_AXIS_X] * GRAVITY_EARTH_1000
@@ -1483,17 +1479,6 @@ static int BMA2x2_ReadSensorData(struct i2c_client *client,
 		acc[BMA2x2_AXIS_Z] =
 		 acc[BMA2x2_AXIS_Z] * GRAVITY_EARTH_1000
 		 / obj->reso->sensitivity;
-
-		GSE_ERR("Mapped gsensor data: %d, %d, %d!\n",
-		 acc[BMA2x2_AXIS_X],
-		 acc[BMA2x2_AXIS_Y],
-		 acc[BMA2x2_AXIS_Z]);
-		snprintf(buf, BMA2x2_BUFSIZE, "%04x %04x %04x",
-		 acc[BMA2x2_AXIS_X],
-		 acc[BMA2x2_AXIS_Y],
-		 acc[BMA2x2_AXIS_Z]);
-		if (atomic_read(&obj->trace) & BMA_TRC_IOCTL)
-			GSE_LOG("gsensor data: %s!\n", buf);
 
 	}
 	return 0;
