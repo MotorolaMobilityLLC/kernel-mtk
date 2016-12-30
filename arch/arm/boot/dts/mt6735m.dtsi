@@ -661,15 +661,16 @@
 			compatible = "mediatek, gse_1-eint";
 			status = "disabled";
 		};
-	/* LCT ADD For bmi160 acce eint  by cly*/
+		gse_2: gse_2 {
+			compatible = "mediatek, gse_2-eint";
+			status = "disabled";
+		};
 		gse_3: gse_3 {
 			compatible = "mediatek, gse_3-eint";
 			status = "disabled";
 		};
-        /*LCD Add end*/
-	/* LCT ADD For dws config*/	
-		gse_2: gse_2 {
-			compatible = "mediatek, gse_2-eint";
+		gse_4: gse_4 {
+			compatible = "mediatek, gse_4-eint";
 			status = "disabled";
 		};
 		fpc1145: fpc1145{
