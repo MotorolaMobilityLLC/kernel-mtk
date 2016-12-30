@@ -22,7 +22,7 @@
 
 struct acc_context *acc_context_obj = NULL;
 //add by LCT for gsensor eint by moto request cly 
-#ifdef CONFIG_LCT_GSENSOR_ADD_EINT
+#ifdef CONFIG_MOTO_AOD_BASE_ON_AP_SENSORS
 struct platform_device *pltform_dev;
 #endif 
 
@@ -495,12 +495,12 @@ static int gsensor_remove(struct platform_device *pdev)
 static int gsensor_probe(struct platform_device *pdev)
 {
 	ACC_LOG("gsensor_probe\n");
-#ifdef CONFIG_LCT_GSENSOR_ADD_EINT
+#ifdef CONFIG_MOTO_AOD_BASE_ON_AP_SENSORS
         pltform_dev=pdev;
 #endif	
 	return 0;
 }
-#ifdef CONFIG_LCT_GSENSOR_ADD_EINT
+#ifdef CONFIG_MOTO_AOD_BASE_ON_AP_SENSORS
 struct platform_device *get_gsensor_platformdev(void)
 {
 	return pltform_dev;
