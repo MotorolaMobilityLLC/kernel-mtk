@@ -1,0 +1,9 @@
+
+config MTK_ICM206XX_SC
+	bool "ICM206XX for MediaTek package"
+	default n
+	help
+	It support different step_counter sensor.
+	If this option is set,
+	it will support
+	ICM206XX step_counter.

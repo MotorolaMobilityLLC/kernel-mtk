@@ -18,6 +18,8 @@ obj-y	+= step_counter.o
 
 ifeq ($(CONFIG_MTK_SCP_SENSORHUB_V1),y)
 obj-$(CONFIG_MTK_STEPSIGNHUB)		+=	stepsignhub/
+else
+obj-$(CONFIG_MTK_ICM206XX_SC)   +=  icm206xx_sc/
 endif
 
 ifeq ($(CONFIG_CUSTOM_KERNEL_STEP_COUNTER),"OTHER_VENDOR")

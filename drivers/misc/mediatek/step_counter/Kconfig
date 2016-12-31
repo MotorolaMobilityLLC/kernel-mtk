@@ -11,3 +11,4 @@ config CUSTOM_KERNEL_SIGNIFICANT_MOTION
 	help
 	  Kernel space sigificant motion sensor driver.
 source "drivers/misc/mediatek/step_counter/stepsignhub/Kconfig"
+source "drivers/misc/mediatek/step_counter/icm206xx_sc/Kconfig"
