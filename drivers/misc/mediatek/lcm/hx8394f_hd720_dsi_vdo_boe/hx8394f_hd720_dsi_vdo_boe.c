@@ -51,6 +51,12 @@
     #define FALSE 0
 #endif
 
+//sunsiyuan@wind-mobi.com modify ata_check at 20161231 begin
+#ifdef CONFIG_WIND_DEVICE_INFO
+		extern char *g_lcm_name;
+#endif
+//sunsiyuan@wind-mobi.com modify ata_check at 20161231 end
+
 //liujinzhou@wind-mobi.com at 20161201 begin
 #define GPIO_LCD_BIAS_ENP_PIN         (GPIO78 | 0x80000000)
 //liujinzhou@wind-mobi.com at 20161201 end
@@ -581,43 +587,18 @@ static unsigned int lcm_esd_recover(void)
 	return TRUE;
 }
 
-//sunsiyuan@wind-mobi.com modify ata_check at 20161228 begin
+//sunsiyuan@wind-mobi.com modify ata_check at 20161231 begin
 static unsigned int lcm_ata_check(unsigned char *buf)
 {
-	unsigned int id=0,id1=0,id2=0;
-	unsigned char buffer[3];
-	unsigned int data_array[16];  
-
-	data_array[0]=0x00043902;
-	data_array[1]=0x9483FFB9;
-	dsi_set_cmdq(data_array, 2, 1);
-	MDELAY(10);
-
-	data_array[0]=0x00023902;
-	data_array[1]=0x000013ba;
-	dsi_set_cmdq(data_array, 2, 1);
-	MDELAY(10);
-
-	data_array[0] = 0x00023700;// return byte number
-	dsi_set_cmdq(data_array, 1, 1);
-	MDELAY(10);
-
-	read_reg_v2(0xDA, buffer, 1);
-	id1= buffer[0]; //should be 0x83
-	read_reg_v2(0xDB, buffer, 1);
-	id2= buffer[0]; //should be 0x94
-
-	id=(id1 << 8) | id2;
-
-	printk("%s id1=%x,id2=%x  \n",__func__,id1,id2);
-	
-	if(LCM_ID_HX8394==id){
-		return 1; //ATA test pass
-    }else{
-		return -1;	//ATA test fail
+	#ifdef CONFIG_WIND_DEVICE_INFO
+	if(!strcmp(g_lcm_name,"hx8394f_hd720_dsi_vdo_boe")){
+		return 1;
+	}else{
+		return -1;
 	}
+	#endif
 }
-//sunsiyuan@wind-mobi.com modify ata_check at 20161228 end
+//sunsiyuan@wind-mobi.com modify ata_check at 20161231 end
 
 #ifdef WIND_LCD_POWER_SUPPLY_SUPPORT
 extern void lcm_init_power(void);
