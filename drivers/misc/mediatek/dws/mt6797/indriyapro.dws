@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!--dct_version="2.5" buid_sn="161025" dws_modification_time="12.30.2016.19:10:16"-->
+<!--dct_version="2.5" buid_sn="161025" dws_modification_time="12.31.2016.15:53:48"-->
 <dct_cfg>
     <general chip="MT6797">
         <proj>k97_v1</proj>
@@ -3691,7 +3691,7 @@
             <device11>
                 <varName>ALSPS</varName>
                 <channel>I2C_CHANNEL_1</channel>
-                <address>0x51</address>
+                <address>0x53</address>
             </device11>
             <device12>
                 <varName>HUMIDITY</varName>
@@ -3829,6 +3829,7 @@
 				NC NC NC NC NC NC NC NC NC
 				NC NC NC NC NC NC NC NC NC
 				NC NC NC NC NC NC NC NC NC</keyMatrix>
+            <keyMatrix_ext></keyMatrix_ext>
             <downloadKey>VOLUMEUP VOLUMEDOWN POWER</downloadKey>
             <modeKey>NC VOLUMEUP VOLUMEDOWN</modeKey>
             <pwrKeyEint_gpioNum>0</pwrKeyEint_gpioNum>
