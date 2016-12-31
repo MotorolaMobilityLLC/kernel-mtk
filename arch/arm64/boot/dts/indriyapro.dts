@@ -225,6 +225,22 @@
 		is_batch_supported_als	= <0>;
 	};
 
+	cust_alsps@1 {
+		compatible				= "mediatek,ltr578-new";
+		i2c_num					= <1>;
+		i2c_addr				= <0x53 0 0 0>;
+		polling_mode_ps				= <0>;
+		polling_mode_als			= <1>;
+		power_id				= <0xffff>;
+		power_vol				= <0>;
+		als_level = <0 8 15 30 70 180 300 500 800 1200 3000 5000 10000 57694 65535>;
+		als_value = <0 8 15 30 70 180 300 500 800 1200 3000 5000 10000 20000 30000 50000>;
+		ps_threshold_high		=  <170>;
+		ps_threshold_low		=  <50>;
+		is_batch_supported_ps	= <0>;
+		is_batch_supported_als	= <0>;
+	};
+
 	cust_mag@0 {
 		compatible				= "mediatek,akm09912";
 		i2c_num					= <1>;
