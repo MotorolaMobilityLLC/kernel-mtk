@@ -198,6 +198,16 @@
 		firlen					= <0>;
 		is_batch_supported		= <0>;
 	};
+	cust_accel@1 {
+		compatible 				= "mediatek,icm206xx_accel";
+		i2c_num					= <1>;
+		i2c_addr 				= <0x68 0 0 0>;
+		direction 				= <5>;
+		power_id 				= <0xffff>;
+		power_vol 				= <0>;
+		firlen 					= <16>;
+		is_batch_supported 			= <0>;
+	};
 
 	cust_alsps@0 {
 		compatible				= "mediatek,cm36558";
@@ -233,6 +243,17 @@
 		power_id				= <0xffff>;
 		power_vol				= <0>;
 		firlen					= <0>;
+		is_batch_supported		= <0>;
+	};
+
+	cust_gyro@1 {
+		compatible			= "mediatek,icm206xx_gyro";
+		i2c_num				= <1>;
+		i2c_addr			= <0x69 0 0 0>;
+		direction			= <5>;
+		power_id			= <0xffff>;
+		power_vol			= <0>;
+		firlen				= <0>;
 		is_batch_supported		= <0>;
 	};
 
