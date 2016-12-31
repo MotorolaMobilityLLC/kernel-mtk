@@ -25,9 +25,11 @@
 #define FRAME_HEIGHT 										(1280)
 #define LCM_ID_ILI9881                                                              (0x9800)    
 
-//sunsiyuan@wind-mobi.com add ata_check at 20161128 begin
-extern atomic_t ESDCheck_byCPU;
-//sunsiyuan@wind-mobi.com add ata_check at 20161128 end
+//sunsiyuan@wind-mobi.com modify ata_check at 20161231 begin
+#ifdef CONFIG_WIND_DEVICE_INFO
+		extern char *g_lcm_name;
+#endif
+//sunsiyuan@wind-mobi.com modify ata_check at 20161231 end
 
 #define REGFLAG_DELAY             								0xFC
 #define REGFLAG_END_OF_TABLE      							0xFD   // END OF REGISTERS MARKER
@@ -453,36 +455,13 @@ static void lcm_resume(void)
 //sunsiyuan@wind-mobi.com modify ata_check at 20161228 begin
 static unsigned int lcm_ata_check(unsigned char *buf)
 {
-	unsigned int id=0,id1=0,id2=0;
-	unsigned char buffer[3];
-	unsigned int array[16];
-
-    array[0]=0x00053902;
-    array[1]=0x8198FFFF;
-    array[2]=0x00000001;
-    dsi_set_cmdq(array, 3, 1);
-    MDELAY(10); 
-    
-    array[0] = 0x00023700;// read id return two byte,version and id
-    dsi_set_cmdq(array, 1, 1);
-    MDELAY(10); 
-    
-	atomic_set(&ESDCheck_byCPU,1);
-    read_reg_v2(0x00, buffer, 1);
-    id1 = buffer[0]; 
-    
-    read_reg_v2(0x01, buffer, 1);
-    id2 = buffer[1];  
-    
-	id = (id1 << 8) | id2;
-  
-	printk("%s, kernel ili9881 horse debug: ili9881 id = 0x%08x\n", __func__, id);
-
-	if(id == LCM_ID_ILI9881){
-		return 1;	//ATA test pass
+	#ifdef CONFIG_WIND_DEVICE_INFO
+	if(!strcmp(g_lcm_name,"ili9881_hd720_dsi_vdo_tm")){
+		return 1;
 	}else{
-        return -1;	//ATA test fail
-    }
+		return -1;
+	}
+	#endif
 }
 //sunsiyuan@wind-mobi.com modify ata_check at 20161228 end
 //extern unsigned char which_lcd_module_triple_cust(void); 
