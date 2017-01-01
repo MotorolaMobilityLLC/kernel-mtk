@@ -2009,9 +2009,9 @@ static int akm09912_o_get_data(int *x, int *y, int *z, int *status)
 {
 	mutex_lock(&sensor_data_mutex);
 
-	*x = sensor_data[13] * CONVERT_M;
-	*y = sensor_data[14] * CONVERT_M;
-	*z = sensor_data[15] * CONVERT_M;
+	*x = sensor_data[13] * CONVERT_O;
+	*y = sensor_data[14] * CONVERT_O;
+	*z = sensor_data[15] * CONVERT_O;
 	*status = sensor_data[8];
 
 	mutex_unlock(&sensor_data_mutex);
