@@ -521,7 +521,7 @@ static int ltr778_dynamic_calibrate(void)
 
 	noise = data_total / count;
 
-	if(noise < dynamic_calibrate + 100)  // modified by steven
+	if(noise < dynamic_calibrate + 280)  // modified by steven
 	{
 		dynamic_calibrate = noise;
 
