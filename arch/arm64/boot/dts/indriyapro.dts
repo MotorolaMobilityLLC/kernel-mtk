@@ -1110,42 +1110,28 @@
 	};
 	camera_pins_cam_ldo_vcama_0: cam0@vcama0 {
 		pins_cmd_dat {
-			pins = <PINMUX_GPIO253__FUNC_GPIO253>;
+			pins = <PINMUX_GPIO243__FUNC_GPIO243>;
 			slew-rate = <1>;
 			output-low;
 		};
 	};
-	camera_pins_cam_ldo_vcama_1: cam1@vcama1 {
+	camera_pins_cam_ldo_vcama_1: cam0@vcama1 {
 		pins_cmd_dat {
-			pins = <PINMUX_GPIO253__FUNC_GPIO253>;
+			pins = <PINMUX_GPIO243__FUNC_GPIO243>;
 			slew-rate = <1>;
 			output-high;
 		};
 	};
-	camera_pins_cam_ldo_vcamd_0: cam0@vcamd0 {
+	camera_pins_cam_sub_ldo_vcama_0: cam1@vcama0 {
 		pins_cmd_dat {
-			pins = <PINMUX_GPIO110__FUNC_GPIO110>;
+			pins = <PINMUX_GPIO252__FUNC_GPIO252>;
 			slew-rate = <1>;
 			output-low;
 		};
 	};
-	camera_pins_cam_ldo_vcamd_1: cam1@vcamd1 {
+	camera_pins_cam_sub_ldo_vcama_1: cam1@vcama1 {
 		pins_cmd_dat {
-			pins = <PINMUX_GPIO110__FUNC_GPIO110>;
-			slew-rate = <1>;
-			output-high;
-		};
-	};
-	camera_pins_cam_ldo_e2_vcamd_0: cam0@vcamd2 {
-		pins_cmd_dat {
-			pins = <PINMUX_GPIO140__FUNC_GPIO140>;
-			slew-rate = <1>;
-			output-low;
-		};
-	};
-	camera_pins_cam_ldo_e2_vcamd_1: cam1@vcamd3 {
-		pins_cmd_dat {
-			pins = <PINMUX_GPIO140__FUNC_GPIO140>;
+			pins = <PINMUX_GPIO252__FUNC_GPIO252>;
 			slew-rate = <1>;
 			output-high;
 		};
@@ -1159,8 +1145,7 @@
 			"cam0_rst0", "cam0_rst1", "cam0_pnd0", "cam0_pnd1",
 			"cam1_rst0", "cam1_rst1", "cam1_pnd0", "cam1_pnd1",
 			"cam2_rst0", "cam2_rst1", "cam2_pnd0", "cam2_pnd1",
-			"cam_ldo_vcama_0", "cam_ldo_vcama_1", "cam_ldo_vcamd_0", "cam_ldo_vcamd_1",
-			"cam_ldo_vcamd2_0", "cam_ldo_vcamd2_1";
+			"cam_ldo_vcama_0", "cam_ldo_vcama_1", "cam_ldo_sub_vcama_0", "cam_ldo_sub_vcama_1";
 	pinctrl-0 = <&camera_pins_default>;
 	pinctrl-1 = <&camera_pins_cam0_rst0>;
 	pinctrl-2 = <&camera_pins_cam0_rst1>;
@@ -1178,10 +1163,8 @@
 	/* for ldo control by gpio */
 	pinctrl-13 = <&camera_pins_cam_ldo_vcama_0>;
 	pinctrl-14 = <&camera_pins_cam_ldo_vcama_1>;
-	pinctrl-15 = <&camera_pins_cam_ldo_vcamd_0>;
-	pinctrl-16 = <&camera_pins_cam_ldo_vcamd_1>;
-	pinctrl-17 = <&camera_pins_cam_ldo_e2_vcamd_0>;
-	pinctrl-18 = <&camera_pins_cam_ldo_e2_vcamd_1>;
+	pinctrl-15 = <&camera_pins_cam_sub_ldo_vcama_0>;
+	pinctrl-16 = <&camera_pins_cam_sub_ldo_vcama_1>;
 	status = "okay";
 };
 /* CAMERA GPIO end */
