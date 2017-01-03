@@ -27,6 +27,7 @@
 #include "mtk_drm_crtc.h"
 #include "mtk_drm_ddp.h"
 #include "mtk_drm_ddp_comp.h"
+#include "mtk_drm_debugfs.h"
 #include "mtk_drm_drv.h"
 #include "mtk_drm_fb.h"
 #include "mtk_drm_gem.h"
@@ -276,6 +277,8 @@ static int mtk_drm_kms_init(struct drm_device *drm)
 
 	drm_kms_helper_poll_init(drm);
 	drm_mode_config_reset(drm);
+
+	mtk_drm_debugfs_init(drm, private);
 
 	return 0;
 

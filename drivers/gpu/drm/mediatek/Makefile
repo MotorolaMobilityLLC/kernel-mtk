@@ -15,6 +15,10 @@ mediatek-drm-y := mtk_disp_ovl.o \
 		  mtk_lvds.o \
 		  mtk_lvds_phy.o
 
+ifeq ($(CONFIG_DEBUG_FS),y)
+mediatek-drm-y += mtk_drm_debugfs.o
+endif
+
 obj-$(CONFIG_DRM_MEDIATEK) += mediatek-drm.o
 
 mediatek-drm-hdmi-objs := mtk_cec.o \
