@@ -54,6 +54,12 @@ config MT_SND_SOC_6797
 	  The default value is y for MT6797.
 	  It's recommended no to change this.
 
+config AW87319_SMARTPA_SUPPORT
+	bool "AW87319_SMARTPA_SUPPORT"
+	default n
+	help
+	  support for aw87319 smart pa.
+
 config MT_SND_SOC_CODEC
 	string "String for Mediatek audio codec"
 	help
