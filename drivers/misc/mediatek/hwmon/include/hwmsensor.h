@@ -116,7 +116,18 @@
 #define ID_BRINGTOSEE                                   (ID_BASE+SENSOR_TYPE_BRINGTOSEE-1)
 #define ID_ANSWER_CALL                                   (ID_BASE+SENSOR_TYPE_ANSWER_CALL-1)
 #define ID_STATIONARY                                   (ID_BASE+SENSOR_TYPE_STATIONARY-1)
+
+#ifndef CONFIG_MOTO_AOD_BASE_ON_AP_SENSORS
 #define ID_SENSOR_MAX_HANDLE	  (ID_BASE+SENSOR_TYPE_STATIONARY-1)
+#else
+#define ID_FU (ID_STATIONARY+1)
+#define ID_FD (ID_STATIONARY+2)
+#define ID_S (ID_STATIONARY+3)
+#define ID_MOTO_GLANCE_GESTURE (ID_STATIONARY+4)
+
+#define ID_SENSOR_MAX_HANDLE	  (ID_MOTO_GLANCE_GESTURE)
+#endif
+
 #define ID_NONE							    (ID_SENSOR_MAX_HANDLE+1)
 
 #define ID_OFFSET                           (1)
