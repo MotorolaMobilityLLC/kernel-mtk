@@ -53,7 +53,7 @@
 #define LOG_1 LOG_INF("s5k5e2ya,MIPI 2LANE\n")
 #define LOG_2 LOG_INF("preview 1280*960@30fps,864Mbps/lane; video 1280*960@30fps,864Mbps/lane; capture 5M@30fps,864Mbps/lane\n")
 /****************************   Modify end    *******************************************/
-#define LOG_INF(format, args...)	pr_debug(PFX "[%s] " format, __FUNCTION__, ##args)
+#define LOG_INF(format, args...)	pr_err(PFX "[%s] " format, __FUNCTION__, ##args)
 
 static DEFINE_SPINLOCK(imgsensor_drv_lock);
 
@@ -158,10 +158,10 @@ static imgsensor_info_struct imgsensor_info = {
 	.sensor_interface_type = SENSOR_INTERFACE_TYPE_MIPI,
 	.mipi_sensor_type = MIPI_OPHY_NCSI2, //0,MIPI_OPHY_NCSI2;  1,MIPI_OPHY_CSI2
 	.mipi_settle_delay_mode = MIPI_SETTLEDELAY_AUTO,//0,MIPI_SETTLEDELAY_AUTO; 1,MIPI_SETTLEDELAY_MANNUAL
-	.sensor_output_dataformat = SENSOR_OUTPUT_FORMAT_RAW_Gb, //SENSOR_OUTPUT_FORMAT_RAW_B, //SENSOR_OUTPUT_FORMAT_RAW_Gr,
+	.sensor_output_dataformat = SENSOR_OUTPUT_FORMAT_RAW_Gr, //SENSOR_OUTPUT_FORMAT_RAW_B, //SENSOR_OUTPUT_FORMAT_RAW_Gr,
 	.mclk = 24,
 	.mipi_lane_num = SENSOR_MIPI_2_LANE,
-	.i2c_addr_table = {0x20, 0x6c, 0xff},
+	.i2c_addr_table = {0x20, 0x21, 0xff},
 };
 
 
