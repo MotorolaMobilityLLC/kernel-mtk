@@ -328,6 +328,11 @@
 
 /*LCT  add  cap sensor by cly*/	
 	capsensor_pins_default: eint100default {
+        pins_swtp {
+            pins = <PINMUX_GPIO80__FUNC_GPIO80>;
+            slew-rate = <0>;
+            bias-pull-up = <00>;
+        };    
 	};
 	capsensor_pins_eint_as_int: eint@100 {
 		pins_cmd_dat {
@@ -335,6 +340,11 @@
 			slew-rate = <0>;
 			bias-pull-up = <00>;
 		};
+        pins_swtp {
+            pins = <PINMUX_GPIO80__FUNC_GPIO80>;
+            slew-rate = <0>;
+            bias-pull-up = <00>;
+        };    
 	};  
 /*end LCT */
 
