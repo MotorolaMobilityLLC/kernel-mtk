@@ -1133,8 +1133,6 @@ static void fusb301_work_handler(struct work_struct *work)
 	int rc;
 	u8 int_sts;
 
-	//Do not use interrupt handler so far.
-	return;
 	mutex_lock(&chip->mlock);
 	/* get interrupt */
 	rc = i2c_smbus_read_byte_data(chip->client, FUSB301_REG_INT);
@@ -1144,6 +1142,10 @@ static void fusb301_work_handler(struct work_struct *work)
 	}
 	int_sts = rc & FUSB301_INT_STS_MASK;
 	dev_info(cdev, "%s: int_sts[0x%02x]\n", __func__, int_sts);
+
+	/* Dont need to handler the interrupts but we should clear interrupts */
+	goto work_unlock;
+
 	if (int_sts & FUSB301_INT_DETACH) {
 		fusb301_detach(chip);
 	} else {

@@ -644,9 +644,6 @@ static void tusb320_work_handler(struct work_struct *work)
 	int ret;
 	u8 reg09, reg08, state;
 
-	//Do not use interrupt handler so far.
-	return;
-
 	wake_lock(&chip->wlock);
 
 	/* Get status (reg8/reg9) */
@@ -675,6 +672,9 @@ static void tusb320_work_handler(struct work_struct *work)
 
 	dev_dbg(cdev, "%s: [state %d] [direction: %d]\n",
 				__func__, state, chip->cable_direction);
+
+	/* Dont need to handler the interrupts but we should clear interrupts */
+	goto work_unlock;
 
 	switch (state) {
 	case TUBS320_NOT_ATTACH:
