@@ -8644,12 +8644,12 @@ int msdc_of_parse(struct mmc_host *mmc)
 	return ret;
 }
 
-//tuwenzan@wind-mobi.com add for flash message at 2016.12.30 begin
+//tuwenzan@wind-mobi.com add for flash message at 2017.01.03 begin
 #ifdef CONFIG_WIND_DEVICE_INFO
 extern char *g_flash_id_str;
 static u8 *emmc_spt_tab[][4] = {
-	{"150100514531334D42", "KMQE10013M_B318",		"Samsung",		"8G+1G"},
-	{"90014A484147346132", "H9TQ17ABJTBCUR_KUM",		"Hynix",		"8G+1G"},
+	{"150100514531334D42", "KMQE10013M_B318",		"Samsung",		"16G+2G"},
+	{"90014A484147346132", "H9TQ17ABJTBCUR_KUM",		"Hynix",		"16G+2G"},
 	{NULL}
 };
 int emmc_id_get(void)
@@ -8680,7 +8680,7 @@ int emmc_id_get(void)
 }
 EXPORT_SYMBOL(emmc_id_get);
 #endif
-//tuwenzan@wind-mobi.com add for flash message at 2016.12.28 end
+//tuwenzan@wind-mobi.com add for flash message at 2017.01.03 end
 
 static int msdc_drv_probe(struct platform_device *pdev)
 {
