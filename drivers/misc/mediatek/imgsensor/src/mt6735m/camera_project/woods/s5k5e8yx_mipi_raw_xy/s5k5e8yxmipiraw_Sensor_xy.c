@@ -165,11 +165,11 @@ static imgsensor_info_struct imgsensor_info = {
 	.ihdr_le_firstline = 0,  //1,le first ; 0, se first
 	.sensor_mode_num = 7,	  //support sensor mode num
 	
-	.cap_delay_frame = 1, 
-	.pre_delay_frame = 1, 
-	.video_delay_frame = 1,
-	.hs_video_delay_frame = 1,
-	.slim_video_delay_frame = 1,
+	.cap_delay_frame = 3, 
+	.pre_delay_frame = 3, 
+	.video_delay_frame = 3,
+	.hs_video_delay_frame = 3,
+	.slim_video_delay_frame = 3,
 	
 	.isp_driving_current = ISP_DRIVING_6MA,
 	.sensor_interface_type = SENSOR_INTERFACE_TYPE_MIPI,
@@ -567,7 +567,7 @@ static void preview_setting(void)
 	//Streaming off
 	write_cmos_sensor(0x0100,0x00);
 	//Delay 1 frame
-	mDELAY(10);    
+	mDELAY(33);    
 	//Extclk_frequency_mhz
 	write_cmos_sensor(0x0136,0x18);
 	write_cmos_sensor(0x0137,0x00);
