@@ -239,12 +239,24 @@
 #define DIFFERENCE_VOLTAGE_UPDATE	20
 #define AGING1_LOAD_SOC			70
 #define AGING1_UPDATE_SOC		30
+//zhangchao@wind-mobi.com 20170103 begin
+#ifdef CONFIG_WIND_Z168_BATTERY_MODIFY
+#define BATTERYPSEUDO100		100
+#else
 #define BATTERYPSEUDO100		95
+#endif
+//zhangchao@wind-mobi.com 20170103 end
 #define BATTERYPSEUDO1 0
 
 /* #define Q_MAX_BY_SYS */
 #define Q_MAX_SYS_VOLTAGE 3350
+//zhangchao@wind-mobi.com 20170103 begin
+#ifdef CONFIG_WIND_Z168_BATTERY_MODIFY
+//#define SHUTDOWN_GAUGE0
+#else
 #define SHUTDOWN_GAUGE0
+#endif
+//zhangchao@wind-mobi.com 20170103 end
 #define SHUTDOWN_GAUGE1_XMINS
 #define SHUTDOWN_GAUGE1_MINS		60
 
