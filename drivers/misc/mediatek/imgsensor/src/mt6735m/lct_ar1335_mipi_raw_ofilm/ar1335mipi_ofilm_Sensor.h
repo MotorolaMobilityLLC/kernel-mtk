@@ -16,6 +16,10 @@
 #ifndef _AR1335MIPI_SENSOR_H
 #define _AR1335MIPI_SENSOR_H
 
+typedef struct OTP_LSC_Struct{
+	u16 Lsc_data;
+} Lsc_Struct;
+
 
 typedef enum{
     IMGSENSOR_MODE_INIT,
@@ -122,5 +126,5 @@ extern int iWriteRegI2C(u8 *a_pSendData , u16 a_sizeSendData, u16 i2cId);
 extern void AR1335_OTP_AUTO_LOAD_LSC(void);
 extern int Sunwin_AR1335_read_OTP(void);
 //extern OTP_AWB_VALUE g_AWB_Value;
-extern u8 OTP_KEY;
+//extern u8 OTP_KEY;
 #endif
