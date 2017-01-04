@@ -467,7 +467,11 @@ typedef struct {
 
 /* --------------------------------------------------------------------------- */
 #define RT_MAX_NUM 10
+#ifdef CONFIG_LCT_ESD_CHECK_MULTI_REG
+#define ESD_CHECK_NUM 4
+#else
 #define ESD_CHECK_NUM 3
+#endif
 typedef struct {
 	unsigned char cmd;
 	unsigned char count;

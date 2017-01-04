@@ -207,6 +207,10 @@ static struct LCM_setting_table lcm_initialization_setting[] = {
         
         {0x00,1,{0x90}},
         {0xc0,3,{0x3b,0x01,0x09}},
+        
+        {0x00,1,{0xb0}},
+        {0xca,3,{0x06,0x06,0x01}}, // adjust PWM frequence to 19.5Khz by zhuxiaming 0103
+        
         {0x00,1,{0x8c}},
         {0xc0,1,{0x00}},
         {0x00,1,{0x80}},
