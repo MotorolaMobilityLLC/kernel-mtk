@@ -216,6 +216,7 @@ irqreturn_t disp_irq_handler(int irq, void *dev_id)
 		/* rd_rdy don't clear and wait for ESD & Read LCM will clear the bit. */
 		if (disp_irq_esd_cust_get() == 0)
 			reg_temp_val = reg_val&0xfffe;
+		reg_temp_val = reg_temp_val&0xffdf;
 		DISP_CPU_REG_SET(dsi_reg_va + 0xC, ~reg_temp_val);
 	} else if (irq == dispsys_irq[DISP_REG_OVL0] ||
 		   irq == dispsys_irq[DISP_REG_OVL1] ||

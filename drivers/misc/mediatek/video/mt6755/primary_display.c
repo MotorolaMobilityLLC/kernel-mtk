@@ -5408,6 +5408,7 @@ int _set_backlight_by_cmdq(unsigned int level)
 		cmdqRecWaitNoClear(cmdq_handle_backlight, CMDQ_EVENT_DISP_RDMA0_EOF);
 		cmdqRecWaitNoClear(cmdq_handle_backlight, CMDQ_EVENT_MUTEX0_STREAM_EOF);
 //mtk add
+        _cmdq_insert_wait_frame_done_token_mira(cmdq_handle_backlight);
 		disp_lcm_set_backlight(pgc->plcm, cmdq_handle_backlight, level);
 //mtk modify
 		_cmdq_flush_config_handle_mira(cmdq_handle_backlight, 0);
@@ -5536,6 +5537,7 @@ int primary_display_setbacklight(unsigned int level)
 				disp_lcm_set_backlight(pgc->plcm, NULL, level);
 #endif
 //lenovo-sw wuwl10 20161010 add for lcm hbm func end
+
 			} else {
 				_set_backlight_by_cmdq(level);
 			}
