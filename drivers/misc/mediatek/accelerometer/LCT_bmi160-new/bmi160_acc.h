@@ -134,6 +134,7 @@
 
 #define CMD_PMU_ACC_SUSPEND           0x10
 #define CMD_PMU_ACC_NORMAL            0x11
+#define CMD_PMU_ACC_LOWPOWER          0x12
 
 #define BMI160_CMD_COMMANDS_ADDR				0X7E
 /* Command description address - Reg Addr --> 0x7E, Bit -->  0....7 */
