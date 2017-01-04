@@ -103,7 +103,7 @@ u32 pinSet[3][8] = {
 #define CUST_SUB_DOVDD SUB_DOVDD - AVDD
 #define CUST_MAIN2_AVDD MAIN2_AVDD - AVDD
 #define CUST_MAIN2_DVDD MAIN2_DVDD - AVDD
-#define CUST_MAIN2_DOVDD MAIN2_DVDD - AVDD
+#define CUST_MAIN2_DOVDD MAIN2_DOVDD - AVDD
 
 #endif
 
@@ -846,11 +846,6 @@ BOOL hwpoweron(PowerInformation pwInfo, char *mode_name)
 		if (pinSetIdx == 2) {
 			if (PowerCustList.PowerCustInfo[CUST_MAIN2_DVDD].Gpio_Pin == GPIO_UNSUPPORTED) {
 				PK_DBG("[CAMERA SENSOR] Sub camera VCAM_D power on");
-				/*vcamd: unsupportable voltage range: 1500000-1210000uV*/
-				if (pwInfo.Voltage == Vol_1200) {
-					//pwInfo.Voltage = Vol_1210;
-					//PK_INFO("[CAMERA SENSOR] Main2 camera VCAM_D power 1.2V to 1.21V\n");
-				}
 				if (TRUE != _hwPowerOn(MAIN2_DVDD, pwInfo.Voltage)) {
 					PK_ERR("[CAMERA SENSOR] Fail to enable digital power\n");
 					return FALSE;
@@ -1127,7 +1122,7 @@ int kdCISModulePowerOn(CAMERA_DUAL_CAMERA_SENSOR_ENUM SensorIdx, char *currSenso
 
 	/* power ON */
 	if (On) {
-		PK_INFO("huangsh4 22 PowerOn:SensorName=%s, pinSetIdx=%d, sensorIdx:%d\n", currSensorName, pinSetIdx, SensorIdx);
+		PK_INFO("PowerOn:SensorName=%s, pinSetIdx=%d, sensorIdx:%d\n", currSensorName, pinSetIdx, SensorIdx);
 		//PK_INFO("kdCISModulePowerOn -on:pinSetIdx=%d\n", pinSetIdx);
 
 		for (pwListIdx = 0; pwListIdx < 16; pwListIdx++) {

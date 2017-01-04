@@ -3683,7 +3683,7 @@ bool Get_Cam_Regulator(void)
 				    regSubVCAMD = regulator_get(sensor_device, "vcamd_sub");
 			    }
 				if (regMain2VCAMD == NULL) {
-				    regMain2VCAMD = regulator_get(sensor_device, "vcamd_main2");
+				    regMain2VCAMD = regulator_get(sensor_device, "vcamdmain2");
 			    }
 			    if (regVCAMIO == NULL) {
 				    regVCAMIO = regulator_get(sensor_device, "vcamio");

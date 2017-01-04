@@ -3857,7 +3857,7 @@
 			vcamd-supply = <&mt_pmic_vcamd_ldo_reg>;
 			vcamaf-supply = <&mt_pmic_vldo28_ldo_reg>;
 			vcamio-supply = <&mt_pmic_vcamio_ldo_reg>;
-			vcamd_main2-supply = <&mt_pmic_vgp3_ldo_reg>;
+			vcamdmain2-supply = <&mt_pmic_vgp3_ldo_reg>;
 			/* Camera Common Clock Framework (CCF) */
 			clocks = <&topckgen TOP_MUX_CAMTG>,
 			<&topckgen TOP_UNIVPLL_D26>,
