@@ -1099,6 +1099,17 @@ static int BMI160_ACC_SetPowerMode(struct i2c_client *client, bool enable)
 	else
 	{
 		databuf[0] = CMD_PMU_ACC_SUSPEND;
+#ifdef CONFIG_MOTO_AOD_BASE_ON_AP_SENSORS
+		if (obj->mEnabled) {
+			res = bma_i2c_read_block(client, 0x40, &databuf[1], 1);
+			if (res>=0) {
+				databuf[1] |= 0x80;
+				res = bma_i2c_write_block(client, 0x40, &databuf[1], 1);
+				if (res>=0)
+					databuf[0] = CMD_PMU_ACC_LOWPOWER;
+			}
+		}
+#endif
 	}
 
 	res = bma_i2c_write_block(client,
@@ -1250,6 +1261,11 @@ static int bmi160_acc_init_client(struct i2c_client *client, int reset_cali)
 	struct bmi160_acc_i2c_data *obj = obj_i2c_data;
 	int res = 0;
 	GSE_LOG("bmi160_acc_init_client \n");
+
+	if (obj->mEnabled) {
+		GSE_LOG("bmi160_acc_init_client: skip for aod is on\n");
+		return BMI160_ACC_SUCCESS;
+	}
 
 	res = BMI160_ACC_CheckDeviceID(client);
 	if(res != BMI160_ACC_SUCCESS)
@@ -1996,6 +2012,8 @@ static int bmi160_aod_set_en_sig_int_mode(struct bmi160_acc_i2c_data *bmi160,
 			bmi160->mEnabled, newstatus);
 	mutex_lock(&bmi160->int_mode_mutex);
 	if (!bmi160->mEnabled && newstatus) {
+		/* set normal mode at first if needed */
+		BMI160_ACC_SetPowerMode(bmi160->client, true);
 		BMI160_ACC_SetBWRate(bmi160->client,
 			BMI160_ACCEL_ODR_800HZ);
 		usleep_range(5000, 5000);
@@ -2046,6 +2064,13 @@ static int bmi160_aod_set_en_sig_int_mode(struct bmi160_acc_i2c_data *bmi160,
 
 	if (!bmi160->mEnabled && newstatus)
 		enable_irq(bmi160->IRQ1);
+
+	/* set low power mode at the end if no need */
+	if (bmi160->mEnabled && !newstatus) {
+		bmi160->mEnabled = newstatus;/* mEnabled will be used in below func */
+		BMI160_ACC_SetPowerMode(bmi160->client, false);
+	}
+
 	bmi160->mEnabled = newstatus;
 	mutex_unlock(&bmi160->int_mode_mutex);
 	ISR_INFO(&bmi160->client->dev, "int_mode finished!!!\n");
