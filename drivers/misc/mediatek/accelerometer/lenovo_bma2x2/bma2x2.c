@@ -2638,6 +2638,7 @@ static int bma2x2_init_client(struct i2c_client *client, int reset_cali)
 
 #ifdef CONFIG_MOTO_AOD_BASE_ON_AP_SENSORS
 	if (obj->mEnabled) {/* aod is on */
+		GSE_LOG("bma2x2_init_client: skip for aod is on\n");
 		return BMA2x2_SUCCESS;
 	}
 #endif
@@ -3273,9 +3274,11 @@ static int bma25x_set_en_sig_int_mode(bma25x_data *bma25x,
 	if (!bma25x->mEnabled && newstatus)
 		enable_irq(bma25x->IRQ1);
 
-	/* set suspend mode at the end if no need */
-	if (bma25x->mEnabled && !newstatus)
+	/* set low power mode at the end if no need */
+	if (bma25x->mEnabled && !newstatus) {
+		bma25x->mEnabled = newstatus;/* mEnabled will be used in below func */
 		BMA2x2_SetPowerMode(bma25x->client, false);
+	}
 
 	bma25x->mEnabled = newstatus;
 	mutex_unlock(&bma25x->int_mode_mutex);
