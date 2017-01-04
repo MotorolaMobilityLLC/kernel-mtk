@@ -12,6 +12,7 @@
 #define BMA2x2_H
 
 #include <linux/ioctl.h>
+#include <linux/i2c.h> //tuwenzan@wind-mobi.com add at 20161128
 
 /*ChipIDs for BMA2x2 seriers*/
 #define BMA222E_CHIPID              0xF8
@@ -129,4 +130,19 @@ enum BMA_TYPE {
 #define CONVERT_VLA_DIV	16384
 #define CONVERT_VG_DIV 16384
 
+//tuwenzan@wind-mobi.com add at 20161128 begin
+//#define BACKUP_OFFSET_OUTSIDE
+#define BMA2XX_OFFSET_CALI
+extern int BMA2x2_SetPowerMode(struct i2c_client *client, bool enable);
+extern int bma2x2_set_range(struct i2c_client *client, unsigned char range);
+extern int bma2x2_set_bandwidth(struct i2c_client *client,unsigned char bandwidth);
+extern int bma_i2c_read_block(struct i2c_client *client,u8 addr, u8 *data, u8 len);
+extern int bma_i2c_write_block(struct i2c_client *client, u8 addr,u8 *data, u8 len);
+extern int bma2xx_offset_fast_cali(unsigned char target_x, unsigned char target_y, unsigned char target_z);
+
+#ifdef BACKUP_OFFSET_OUTSIDE
+extern int bma2xx_restore_offset(void);
+#endif 
+
+//tuwenzan@wind-mobi.com add at 20161128 end
 #endif

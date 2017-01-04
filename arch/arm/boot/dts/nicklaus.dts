@@ -348,7 +348,6 @@
 	};  
 /*end LCT */
 
-/*LCT add gsensor eint by cly*/
 	gsensor_pins_default: gsensordefaultcfg {
 
 	};
@@ -359,7 +358,6 @@
 			slew-rate = <0>;
 		};
 	};
-
 	gsensor_pins_int2: eint@57 {
 	    pins_cmd_dat {
 			pins = <PINMUX_GPIO57__FUNC_GPIO57>;
@@ -382,7 +380,7 @@
 	};
 /*end LCT*/
 };
-/*LCT add gsensor eint by cly*/
+/*LCT add gsensor eint by cly  update coding */
 
 &gsensor {
 	pinctrl-names = "pin_default", "pin_state_int1","pin_state_int2","pin_state_int3","pin_state_int4";
