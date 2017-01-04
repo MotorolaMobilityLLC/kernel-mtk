@@ -1120,6 +1120,17 @@ static int BMI160_ACC_SetPowerMode(struct i2c_client *client, bool enable)
 		mutex_unlock(&obj->lock);
 		return BMI160_ACC_ERR_I2C;
 	}
+
+#ifdef CONFIG_MOTO_AOD_BASE_ON_AP_SENSORS
+	if (databuf[0] == CMD_PMU_ACC_NORMAL) {
+		res = bma_i2c_read_block(client, 0x40, &databuf[1], 1);
+		if (res>=0) {
+			databuf[1] &= (u8)(~0x80);
+			res = bma_i2c_write_block(client, 0x40, &databuf[1], 1);
+		}
+	}
+#endif
+
 	sensor_power = enable;
 	mdelay(4);
 	mutex_unlock(&obj->lock);
