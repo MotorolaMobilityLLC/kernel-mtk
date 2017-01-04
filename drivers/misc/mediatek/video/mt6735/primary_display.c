@@ -103,9 +103,8 @@ DISP_PRIMARY_PATH_MODE primary_display_mode = DIRECT_LINK_MODE;
 //add by longcheer yufangfang for esd recover backlight
 #ifdef CONFIG_LCT_ESD_CHECK_MULTI_REG
 #ifdef CONFIG_LCT_LCM_GPIO_UTIL
-#include "lcm_drv.h"
-static LCM_UTIL_FUNCS lcm_util = { 0 };
-#define set_gpio_led_en(cmd) lcm_util.set_gpio_led_en_bias(cmd)
+#include <lcm_drv.h>
+extern void lcm_led_en_settting(unsigned int value);
 #endif
 #endif
 static unsigned long dim_layer_mva;
@@ -3808,7 +3807,11 @@ static int primary_display_esd_check_worker_kthread(void *data)
 			count++;
 			msleep(3000);
 		}
-		msleep(2000);	/* esd check every 2s */
+#ifdef CONFIG_LCT_ESD_CHECK_MULTI_REG
+		msleep(1000);	/* esd check every 2s */
+#else
+		msleep(2000);
+#endif
 		ret = wait_event_interruptible(esd_check_task_wq, atomic_read(&esd_check_task_wakeup));
 		if (ret < 0) {
 			DISPMSG("[ESD]esd check thread waked up accidently\n");
@@ -3831,19 +3834,18 @@ static int primary_display_esd_check_worker_kthread(void *data)
 		}
 #endif
 		ret = primary_display_esd_check();
-#ifdef CONFIG_LCT_ESD_CHECK_MULTI_REG
-		mdelay(50);
-#endif
+
 		if (ret == 1) {
 			DISPMSG("[ESD]esd check fail, will do esd recovery %d\n", ret);
 			i = esd_try_cnt;
 			while (i--) {
 				DISPMSG("[ESD]esd recovery try:%d\n", i);
 				primary_display_esd_recovery();
-				ret = primary_display_esd_check();
 #ifdef CONFIG_LCT_ESD_CHECK_MULTI_REG
 				mdelay(50);
 #endif
+				ret = primary_display_esd_check();
+
 				if (ret == 0) {
 					DISPMSG("[ESD]esd recovery success\n");
 					break;
@@ -3951,7 +3953,7 @@ int primary_display_esd_recovery(void)
 	disp_lcm_init(pgc->plcm, 1);
 #ifdef CONFIG_LCT_ESD_CHECK_MULTI_REG
 #ifdef CONFIG_LCT_LCM_GPIO_UTIL
-	set_gpio_led_en(1);
+	lcm_led_en_settting(1);
 	mdelay(5);
 #endif
 #endif

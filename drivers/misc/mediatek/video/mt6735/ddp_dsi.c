@@ -1232,7 +1232,11 @@ DSI_STATUS DSI_TXRX_Control(DISP_MODULE_ENUM module, cmdqRecHandle cmdq,
 	bool null_packet_en = false;
 	/*bool err_correction_en = false; */
 	bool dis_eotp_en = false;
+#ifdef CONFIG_LCT_ESD_CHECK_MULTI_REG
+	bool hstx_cklp_en = true;
+#else
 	bool hstx_cklp_en = false;
+#endif
 	int max_return_size = 0;
 
 	switch (lane_num) {
@@ -2776,7 +2780,7 @@ static void lcm_reset_settting(unsigned int value)
 #endif
 }
 
-static void lcm_led_en_settting(unsigned int value)
+void lcm_led_en_settting(unsigned int value)
 {
 #if !defined(CONFIG_MTK_LEGACY)
 	if (value)
@@ -2785,7 +2789,7 @@ static void lcm_led_en_settting(unsigned int value)
 		lcm_pinctl_gpio_output (3, 0);
 #endif
 }
-
+EXPORT_SYMBOL_GPL(lcm_led_en_settting)
 #endif
 
 int ddp_dsi_set_lcm_utils(DISP_MODULE_ENUM module, LCM_DRIVER *lcm_drv)
@@ -4019,18 +4023,19 @@ int ddp_dsi_build_cmdq(DISP_MODULE_ENUM module, void *cmdq_trigger_handle, CMDQ_
 		DSI_OUTREGBIT(cmdq_trigger_handle, struct DSI_INT_ENABLE_REG,
 			      DSI_REG[dsi_i]->DSI_INTEN, CMD_DONE, 1);
 
-		for (i = 0; i < 3; i++) {
-			printk("i= %d\n",i);
+		for (i = 0; i < 4; i++) {
+			//printk("[ESD] i= %d\n",i);
 			if (dsi_params->lcm_esd_check_table[i].cmd == 0)
 				break;
 
 			/* 0. send read lcm command(short packet) */
 			t0.CONFG = 0x04;	/* BTA */
 			t0.Data0 = dsi_params->lcm_esd_check_table[i].cmd;
+			
 			/* / 0xB0 is used to distinguish DCS cmd or Gerneric cmd, is that Right??? */
 			t0.Data_ID =
 			    (t0.Data0 <
-			     0xB0) ? DSI_DCS_READ_PACKET_ID :
+			     0xFF) ? DSI_DCS_READ_PACKET_ID :
 			    DSI_GERNERIC_READ_LONG_PACKET_ID;
 			t0.Data1 = 0;
 
@@ -4058,17 +4063,9 @@ int ddp_dsi_build_cmdq(DISP_MODULE_ENUM module, void *cmdq_trigger_handle, CMDQ_
 				DSI_OUTREGBIT(cmdq_trigger_handle, struct DSI_INT_STATUS_REG,
 					      DSI_REG[dsi_i]->DSI_INTSTA, RD_RDY, 0);
 			}
-#if 0
-			else {	/* DSI1 */
-				DSI_POLLREG32(cmdq_trigger_handle,
-					      &DSI_REG[dsi_i]->DSI_INTSTA, 0x00000001, 0x1);
-				DSI_OUTREGBIT(cmdq_trigger_handle, struct DSI_INT_STATUS_REG,
-					      DSI_REG[dsi_i]->DSI_INTSTA, RD_RDY, 0);
-			}
-#endif
-			/* 2. save RX data */
-         //if(hSlot)
-if (hSlot[0] && hSlot[1] && hSlot[2] && hSlot[3]) { 
+
+		if (hSlot[0] && hSlot[1] && hSlot[2] && hSlot[3]) 
+		{ 
           DSI_BACKUPREG32(cmdq_trigger_handle, hSlot[0], i,&DSI_REG[dsi_i]->DSI_RX_DATA0);
           DSI_BACKUPREG32(cmdq_trigger_handle, hSlot[1], i, &DSI_REG[dsi_i]->DSI_RX_DATA1);
           DSI_BACKUPREG32(cmdq_trigger_handle, hSlot[2], i, &DSI_REG[dsi_i]->DSI_RX_DATA2);
@@ -4085,12 +4082,7 @@ if (hSlot[0] && hSlot[1] && hSlot[2] && hSlot[3]) {
 				DSI_POLLREG32(cmdq_trigger_handle,
 					      &DSI_REG[dsi_i]->DSI_INTSTA, 0x80000000, 0);
 			}
-#if 0
-			else {	/* DSI1 */
-				DSI_POLLREG32(cmdq_trigger_handle,
-					      &DSI_REG[dsi_i]->DSI_INTSTA, 0x80000000, 0);
-			}
-#endif
+
 			/* loop: 0~4 */
 		}
 
@@ -4099,7 +4091,8 @@ if (hSlot[0] && hSlot[1] && hSlot[2] && hSlot[3]) {
 
 		DISPMSG("[DSI]enter cmp\n");
 		/* cmp just once and only 1 return value */
-		for (i = 0; i < 3; i++) {
+		for (i = 0; i < 4; i++) 
+		{
 			if (dsi_params->lcm_esd_check_table[i].cmd == 0)
 				break;
 
@@ -4111,15 +4104,18 @@ if (hSlot[0] && hSlot[1] && hSlot[2] && hSlot[3]) {
     			cmdqBackupReadSlot(hSlot[1], i, ((uint32_t *)&read_data1)); //add by haitao
     			cmdqBackupReadSlot(hSlot[2], i, ((uint32_t *)&read_data2));
    			    cmdqBackupReadSlot(hSlot[3], i, ((uint32_t *)&read_data3));
-			} else {
+			} 
+			else 
+			{
 				/* read from dsi , support only one cmd read */
-				if (i == 0) {
+				if (i == 0) 
+				{
 					DSI_OUTREG32(NULL, (uint32_t *)&read_data0,AS_UINT32(&DSI_REG[dsi_i]->DSI_RX_DATA0));
      				DSI_OUTREG32(NULL, (uint32_t *)&read_data1, AS_UINT32(&DSI_REG[dsi_i]->DSI_RX_DATA1));
      				DSI_OUTREG32(NULL, (uint32_t *)&read_data2, AS_UINT32(&DSI_REG[dsi_i]->DSI_RX_DATA2));
     				DSI_OUTREG32(NULL, (uint32_t *)&read_data3, AS_UINT32(&DSI_REG[dsi_i]->DSI_RX_DATA3));
 				}
-                        } 
+             } 
 
 			MMProfileLogEx(ddp_mmp_get_events()->esd_rdlcm, MMProfileFlagPulse,
 				       AS_UINT32((uint32_t *)&read_data0),
@@ -4134,26 +4130,7 @@ if (hSlot[0] && hSlot[1] && hSlot[2] && hSlot[3]) {
 			    ("[DSI]enter cmp read_data1 byte0=0x%x byte1=0x%x byte2=0x%x byte3=0x%x\n",
 			     read_data1.byte0, read_data1.byte1, read_data1.byte2,
 			     read_data1.byte3);
-/* DISPDBG("[DSI]enter cmp DSI+0x200=0x%x\n", 
-AS_UINT32(DDP_REG_BASE_DSI0 + 0x200)); 
-DISPDBG("[DSI]enter cmp DSI+0x204=0x%x\n", 
-AS_UINT32(DDP_REG_BASE_DSI0 + 0x204)); 
-DISPDBG("[DSI]enter cmp DSI+0x60=0x%x\n", 
-AS_UINT32(DDP_REG_BASE_DSI0 + 0x60)); 
-DISPDBG("[DSI]enter cmp DSI+0x74=0x%x\n", 
-AS_UINT32(DDP_REG_BASE_DSI0 + 0x74)); 
-DISPDBG("[DSI]enter cmp DSI+0x88=0x%x\n", 
-AS_UINT32(DDP_REG_BASE_DSI0 + 0x88)); 
-DISPDBG("[DSI]enter cmp DSI+0x0c=0x%x\n", 
-AS_UINT32(DDP_REG_BASE_DSI0 + 0x0c)); */ 
 
-/* 0x02: acknowledge & error report */
-/* 0x11: generic short read response(1 byte return) */
-/* 0x12: generic short read response(2 byte return) */
-/* 0x1a: generic long read response */
-/* 0x1c: dcs long read response */
-/* 0x21: dcs short read response(1 byte return) */
-/* 0x22: dcs short read response(2 byte return) */
 		packet_type = read_data0.byte0;
 		if (packet_type == 0x1A || packet_type == 0x1C) {
 			recv_data_cnt = read_data0.byte1 + read_data0.byte2 * 16;
@@ -4164,60 +4141,58 @@ AS_UINT32(DDP_REG_BASE_DSI0 + 0x0c)); */
 			recv_data_cnt = RT_MAX_NUM;
 		} 
 
-		if (recv_data_cnt > dsi_params->lcm_esd_check_table[i].count) {
-			recv_data_cnt = dsi_params->lcm_esd_check_table[i].count;
-		}
+			if (recv_data_cnt > dsi_params->lcm_esd_check_table[i].count) 
+			{
+				recv_data_cnt = dsi_params->lcm_esd_check_table[i].count;
+			}
 
-		if (recv_data_cnt <= 4) {
-			memcpy((void *)buffer, (void *)&read_data1, recv_data_cnt);
-		} else if (recv_data_cnt <= 8) {
-			memcpy((void *)buffer, (void *)&read_data1, 4);
-			memcpy((void *)(buffer + 4), (void *)&read_data2, recv_data_cnt - 4);
-		} else {
-			memcpy((void *)buffer, (void *)&read_data1, 4);
-			memcpy((void *)(buffer + 4), (void *)&read_data2, 4);
-			memcpy((void *)(buffer + 8), (void *)&read_data3, recv_data_cnt - 8);
-		}
-#if 0
-		for (j = 0; j < recv_data_cnt; j++) {
-			DISPDBG("buffer[%d]=0x%x\n", j, buffer[j]);
-		if (buffer[j] != dsi_params->lcm_esd_check_table[i].para_list[j]) {
-			result= 1;
-			DISPMSG("[ESD]CMP i %d return value 0x%x,para_list[%d]=0x%x\n", i,
-			buffer[j], j, dsi_params->lcm_esd_check_table[i].para_list[j]);
-		break;
-		}
-		}
-#else
+			if (recv_data_cnt <= 4) 
+			{
+				memcpy((void *)buffer, (void *)&read_data1, recv_data_cnt);
+			} 
+			else if (recv_data_cnt <= 8) 
+			{
+				memcpy((void *)buffer, (void *)&read_data1, 4);
+				memcpy((void *)(buffer + 4), (void *)&read_data2, recv_data_cnt - 4);
+			} 
+			else 
+			{
+				memcpy((void *)buffer, (void *)&read_data1, 4);
+				memcpy((void *)(buffer + 4), (void *)&read_data2, 4);
+				memcpy((void *)(buffer + 8), (void *)&read_data3, recv_data_cnt - 8);
+			}
+
 switch(recv_data_cnt) 
                 { 
 
                 case 1:                           
                         if((read_data1.byte0 == dsi_params->lcm_esd_check_table[i].para_list[0]) ) 
                                 { 
-          
-                                result = 0; // esd pass 
+          							//printk("[ESD] esd recv_data_cnt = %d pass\n",recv_data_cnt);
+                                ret = 0; // esd pass 
                                 } 
                                 else 
                                 {                 
-                                
-                                result = 1; // esd fail 
+                                //printk("[ESD] esd recv_data_cnt = %d fail\n",recv_data_cnt);
+                                ret = 1; // esd fail 
                                 goto lable; 
                                 } 
                                 break; 
-
+#if 0
                 case 2: 
                                 if((read_data1.byte0==0x0f&&read_data1.byte1==0xf0)||((read_data1.byte0 == dsi_params->lcm_esd_check_table[i].para_list[0]) && (read_data1.byte1 == dsi_params->lcm_esd_check_table[i].para_list[1]))) 
                                 { 
-                                      result = 0; // esd pass 
+									 //printk("[ESD] esd recv_data_cnt = %d pass\n",recv_data_cnt);
+                                      ret = 0; // esd pass 
                                 } 
                                 else 
                                 { 
-                             
-                               		 result = 1; // esd fail 
-                                goto lable; 
+                             		//printk("[ESD] esd recv_data_cnt = %d fail\n",recv_data_cnt);
+                               		 ret = 1; // esd fail 
+                                    goto lable; 
                                 } 
                                 break; 
+#endif
  
                 case 3: 
                                 if((read_data1.byte0 == dsi_params->lcm_esd_check_table[i].para_list[0]) && (read_data1.byte1 == dsi_params->lcm_esd_check_table[i].para_list[1]) 
@@ -4232,24 +4207,60 @@ switch(recv_data_cnt)
                                 	 goto lable; 
                                 } 
                                 break; 
+				case 10:
+				if((read_data1.byte0 == dsi_params->lcm_esd_check_table[i].para_list[0]) && (read_data1.byte1 == dsi_params->lcm_esd_check_table[i].para_list[1]) 
+				&& (read_data1.byte2 == dsi_params->lcm_esd_check_table[i].para_list[2]) && (read_data1.byte3 == dsi_params->lcm_esd_check_table[i].para_list[3]) 
+				&& (read_data2.byte0 == dsi_params->lcm_esd_check_table[i].para_list[4]) && (read_data2.byte1 == dsi_params->lcm_esd_check_table[i].para_list[5])
+				&& (read_data2.byte2 == dsi_params->lcm_esd_check_table[i].para_list[6]) && (read_data2.byte3 == dsi_params->lcm_esd_check_table[i].para_list[7]) 
+				&& (read_data3.byte0 == dsi_params->lcm_esd_check_table[i].para_list[8]) && (read_data3.byte1 == dsi_params->lcm_esd_check_table[i].para_list[9]))
+				{
+
+#if 0
+					printk("esd_check: %#x, %#x, %#x, %#x, %#x, %#x, %#x, %#x, %#x, %#x, %#x, %#x, %#x, %#x, %#x, %#x, %#x, %#x,%#x, %#x\n", 
+					read_data1.byte0, dsi_params->lcm_esd_check_table[i].para_list[0], read_data1.byte1,dsi_params->lcm_esd_check_table[i].para_list[1],
+					read_data1.byte2, dsi_params->lcm_esd_check_table[i].para_list[2], read_data1.byte3, dsi_params->lcm_esd_check_table[i].para_list[3],
+					read_data2.byte0, dsi_params->lcm_esd_check_table[i].para_list[4], read_data2.byte1, dsi_params->lcm_esd_check_table[i].para_list[5],
+					read_data2.byte2, dsi_params->lcm_esd_check_table[i].para_list[6], read_data2.byte3, dsi_params->lcm_esd_check_table[i].para_list[7],
+					read_data3.byte0, dsi_params->lcm_esd_check_table[i].para_list[8], read_data3.byte1, dsi_params->lcm_esd_check_table[i].para_list[9]);
+#endif			
+					ret = 0; // esd pass
+					//printk("hebiao func==%s line=%d ret5=%d\n", __func__, __LINE__, ret);
+				}
+				else
+				{
+#if 0
+				printk("esd_check: %#x, %#x, %#x, %#x, %#x, %#x, %#x, %#x, %#x, %#x, %#x, %#x, %#x, %#x, %#x, %#x, %#x, %#x,%#x, %#x\n", 
+					read_data1.byte0, dsi_params->lcm_esd_check_table[i].para_list[0], read_data1.byte1,dsi_params->lcm_esd_check_table[i].para_list[1],
+					read_data1.byte2, dsi_params->lcm_esd_check_table[i].para_list[2], read_data1.byte3, dsi_params->lcm_esd_check_table[i].para_list[3],
+					read_data2.byte0, dsi_params->lcm_esd_check_table[i].para_list[4], read_data2.byte1, dsi_params->lcm_esd_check_table[i].para_list[5],
+					read_data2.byte2, dsi_params->lcm_esd_check_table[i].para_list[6], read_data2.byte3, dsi_params->lcm_esd_check_table[i].para_list[7],
+					read_data3.byte0, dsi_params->lcm_esd_check_table[i].para_list[8], read_data3.byte1, dsi_params->lcm_esd_check_table[i].para_list[9]);
+#endif
+				ret = 1; // esd fail
+				//printk("hebiao func==%s line=%d ret6=%d esd fail\n", __func__, __LINE__, ret);
+				goto lable;
+				}
+				break;
         default: 
                         break; 
-                        }  //switch case 
-#endif
+     }  //switch case 
+
 		
-		} else if (packet_type == 0x11 ||
+		} 
+		else if (packet_type == 0x11 ||
 			packet_type == 0x12 ||
 			packet_type == 0x21 ||
-			packet_type == 0x22) {
+			packet_type == 0x22) 
+		{
 		/* short read response */
-		if (packet_type == 0x11 || packet_type == 0x21)
-			recv_data_cnt = 1;
-		else
-			recv_data_cnt = 2;
-		 
-		if (recv_data_cnt > dsi_params->lcm_esd_check_table[i].count) {
-			recv_data_cnt = dsi_params->lcm_esd_check_table[i].count;
-		}
+			if (packet_type == 0x11 || packet_type == 0x21)
+				recv_data_cnt = 1;
+			else
+				recv_data_cnt = 2;
+			 
+			if (recv_data_cnt > dsi_params->lcm_esd_check_table[i].count) {
+				recv_data_cnt = dsi_params->lcm_esd_check_table[i].count;
+			}
 
 		memcpy((void *)buffer, (void *)&read_data0.byte1, recv_data_cnt);
 		DISPDBG("packet_type=0x%x,recv_data_cnt = %d\n", packet_type, recv_data_cnt);

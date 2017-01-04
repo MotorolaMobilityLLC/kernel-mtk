@@ -445,10 +445,18 @@ static void lcm_get_params(LCM_PARAMS *params)
 	params->dsi.lcm_esd_check_table[1].para_list[0] = 0x80;
 	params->dsi.lcm_esd_check_table[1].para_list[1] = 0x73;
 	params->dsi.lcm_esd_check_table[1].para_list[2] = 0x06;
-	params->dsi.lcm_esd_check_table[2].cmd          = 0x45;
-	params->dsi.lcm_esd_check_table[2].count        = 2;
-	params->dsi.lcm_esd_check_table[2].para_list[0] = 0x05;
-	params->dsi.lcm_esd_check_table[2].para_list[1] = 0x1B;
+	params->dsi.lcm_esd_check_table[2].cmd          = 0xE0;
+	params->dsi.lcm_esd_check_table[2].count        = 10;
+	params->dsi.lcm_esd_check_table[2].para_list[0] = 0x00;
+	params->dsi.lcm_esd_check_table[2].para_list[1] = 0x00;
+	params->dsi.lcm_esd_check_table[2].para_list[2] = 0x02;
+	params->dsi.lcm_esd_check_table[2].para_list[3] = 0x06;
+	params->dsi.lcm_esd_check_table[2].para_list[4] = 0x06;
+	params->dsi.lcm_esd_check_table[2].para_list[5] = 0x08;
+	params->dsi.lcm_esd_check_table[2].para_list[6] = 0x0a;
+	params->dsi.lcm_esd_check_table[2].para_list[7] = 0x08;
+	params->dsi.lcm_esd_check_table[2].para_list[8] = 0x0e;
+	params->dsi.lcm_esd_check_table[2].para_list[9] = 0x1C;
 	
 }
 
