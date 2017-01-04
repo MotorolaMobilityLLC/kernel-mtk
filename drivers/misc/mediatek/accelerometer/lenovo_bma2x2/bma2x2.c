@@ -2375,8 +2375,11 @@ int BMA2x2_SetPowerMode(struct i2c_client *client, bool enable) //tuwenzan@wind-
 	if (enable == true)
 		actual_power_mode = BMA2x2_MODE_NORMAL;
 	else
+#ifdef CONFIG_MOTO_AOD_BASE_ON_AP_SENSORS
+		actual_power_mode = BMA2x2_MODE_LOWPOWER;
+#else
 		actual_power_mode = BMA2x2_MODE_SUSPEND;
-
+#endif
 	res = bma_i2c_read_block(client, 0x3E, &temp, 0x1);
 	udelay(1000);
 	if (res < 0)
@@ -2423,6 +2426,53 @@ int BMA2x2_SetPowerMode(struct i2c_client *client, bool enable) //tuwenzan@wind-
 		break;
 	case BMA2x2_MODE_SUSPEND:
 		databuf[0] = 0x80;
+		databuf[1] = 0x00;
+		while (count < 10) {
+			res = bma_i2c_write_block(client,
+				BMA2x2_LOW_POWER_CTRL_REG, &databuf[1], 1);
+			udelay(1000);
+			if (res < 0)
+				GSE_LOG("write LOW_POWER_CTRL_REG failed!\n");
+			res = bma_i2c_write_block(client,
+				BMA2x2_MODE_CTRL_REG, &databuf[0], 1);
+			udelay(1000);
+			res = bma_i2c_write_block(client, 0x3E, &temp, 0x1);
+			if (res < 0)
+				GSE_LOG("write  config failed!\n");
+			udelay(1000);
+			res = bma_i2c_write_block(client, 0x3E, &temp, 0x1);
+			if (res < 0)
+				GSE_LOG("write  config failed!\n");
+			udelay(2000);
+			if (res < 0)
+				GSE_LOG("write BMA2x2_MODE_CTRL_REG failed!\n");
+			res =
+			bma_i2c_read_block(client,
+			 BMA2x2_MODE_CTRL_REG, &temp0, 0x1);
+			if (res < 0)
+				GSE_LOG("read BMA2x2_MODE_CTRL_REG failed!\n");
+			res =
+			bma_i2c_read_block(client,
+			 BMA2x2_LOW_POWER_CTRL_REG, &temp1, 0x1);
+			if (res < 0)
+				GSE_LOG("read BLOW_POWER_CTRL_REG failed!\n");
+			if (temp0 != databuf[0]) {
+				GSE_LOG("readback MODE_CTRL failed!\n");
+				count++;
+				continue;
+			} else if (temp1 != databuf[1]) {
+				GSE_LOG("readback LOW_POWER_CTRL failed!\n");
+				count++;
+				continue;
+			} else {
+				GSE_LOG("configure powermode success\n");
+				break;
+			}
+		}
+		udelay(1000);
+	break;
+	case BMA2x2_MODE_LOWPOWER:
+		databuf[0] = 0x40;
 		databuf[1] = 0x00;
 		while (count < 10) {
 			res = bma_i2c_write_block(client,
@@ -2585,6 +2635,13 @@ static int bma2x2_init_client(struct i2c_client *client, int reset_cali)
 	int res = 0;
 
 	GSE_LOG("bma2x2_init_client\n");
+
+#ifdef CONFIG_MOTO_AOD_BASE_ON_AP_SENSORS
+	if (obj->mEnabled) {/* aod is on */
+		return BMA2x2_SUCCESS;
+	}
+#endif
+
 	/*should add normal mode setting*/
 	res = BMA2x2_SetPowerMode(client, true);
 	if (res != BMA2x2_SUCCESS)
@@ -3156,14 +3213,10 @@ static int bma25x_set_en_sig_int_mode(bma25x_data *bma25x,
 			bma25x->mEnabled, newstatus);
 	mutex_lock(&bma25x->int_mode_mutex);
 	if (!bma25x->mEnabled && newstatus) {
+		/* set normal mode at first if needed */
+		BMA2x2_SetPowerMode(bma25x->client, true);
 		bma2x2_set_bandwidth(
 			bma25x->client, BMA25X_BW_500HZ);
-#if 0
-		databuf = 0x00;
-		bma25x_smbus_write_byte(bma25x->client,
-			BMA25X_MODE_CTRL_REG, &databuf);
-		usleep_range(5000, 5000);
-#endif
 		bma25x_flat_update(bma25x);
 	} else if (bma25x->mEnabled && !newstatus) {
 #if 0
@@ -3219,6 +3272,11 @@ static int bma25x_set_en_sig_int_mode(bma25x_data *bma25x,
 
 	if (!bma25x->mEnabled && newstatus)
 		enable_irq(bma25x->IRQ1);
+
+	/* set suspend mode at the end if no need */
+	if (bma25x->mEnabled && !newstatus)
+		BMA2x2_SetPowerMode(bma25x->client, false);
+
 	bma25x->mEnabled = newstatus;
 	mutex_unlock(&bma25x->int_mode_mutex);
 	ISR_INFO(&bma25x->client->dev, "int_mode finished!!!\n");
@@ -3654,7 +3712,6 @@ static ssize_t store_cpsopmode_value(struct device_driver *ddri,
 	error = kstrtoul(buf, 10, &data);
 	if (error)
 		return error;
-
 	if (data == BMA2x2_MODE_NORMAL)
 		BMA2x2_SetPowerMode(bma2x2_i2c_client, true);
 	else if (data == BMA2x2_MODE_SUSPEND)
@@ -4136,6 +4193,72 @@ static ssize_t show_softreset(struct device_driver *ddri, char *buf)
 }
 
 #ifdef CONFIG_MOTO_AOD_BASE_ON_AP_SENSORS
+static int read_flag = 0;
+static u8 read_reg;
+static ssize_t bma25x_reg_dump_show(struct device_driver *ddri, char *buf)
+{
+	u8 data[20];
+	char *p = buf;
+
+	if (read_flag) {
+		read_flag = 0;
+		bma_i2c_read_block(bma2x2_client, read_reg, data, 1);
+		p += snprintf(p, PAGE_SIZE, "%02x\n", data[0]);
+		return (p-buf);
+	}
+
+	bma_i2c_read_block(bma2x2_client, 0x09, data, 4);
+	p += snprintf(p, PAGE_SIZE, "INT DATA(09~0c)=%02x,%02x,%02x,%02x\n",
+			data[0], data[1], data[2], data[3]);
+
+	bma_i2c_read_block(bma2x2_client, 0x16, data, 3);
+	p += snprintf(p, PAGE_SIZE, "INT EN(16~18)=%02x,%02x,%02x\n",
+			data[0], data[1], data[2]);
+
+	bma_i2c_read_block(bma2x2_client, 0x19, data, 3);
+	p += snprintf(p, PAGE_SIZE, "INT MAP(19~1b)=%02x,%02x,%02x\n",
+			data[0], data[1], data[2]);
+
+	bma_i2c_read_block(bma2x2_client, 0x1e, data, 1);
+	p += snprintf(p, PAGE_SIZE, "INT SRC(1e)=%02x\n",
+			data[0]);
+
+	bma_i2c_read_block(bma2x2_client, 0x20, data, 1);
+	p += snprintf(p, PAGE_SIZE, "INT OUT CTRL(20)=%02x\n",
+			data[0]);
+
+	bma_i2c_read_block(bma2x2_client, 0x21, data, 1);
+	p += snprintf(p, PAGE_SIZE, "INT LATCH(21)=%02x\n",
+			data[0]);
+
+	bma_i2c_read_block(bma2x2_client, 0x27, data, 3);
+	p += snprintf(p, PAGE_SIZE, "SLO NOMOT SET(27~29)=%02x,%02x,%02x\n",
+			data[0], data[1], data[2]);
+
+	bma_i2c_read_block(bma2x2_client, 0x2e, data, 2);
+	p += snprintf(p, PAGE_SIZE, "FLAT SET(2E~2F)=%02x,%02x\n",
+			data[0], data[1]);
+
+	return (p-buf);
+}
+
+static ssize_t bma25x_reg_dump_store(struct device_driver *ddri, const char *buf, size_t count)
+{
+	unsigned int val, reg, opt;
+
+	if (sscanf(buf, "%x,%x,%x", &reg, &val, &opt) == 3) {
+		read_reg = *((u8 *)&reg);
+		read_flag = 1;
+	} else if (sscanf(buf, "%x,%x", &reg, &val) == 2) {
+		GSE_ERR("%s,reg = 0x%02x, val = 0x%02x\n",
+			__func__, *(u8 *)&reg, *(u8 *)&val);
+		bma_i2c_write_block(bma2x2_client, *(u8 *)&reg,
+			(u8 *)&val, 1);
+	}
+
+	return count;
+}
+
 static ssize_t bma25x_flatdown_show(struct device_driver *ddri, char *buf)
 {
 	int databuf = 0;
@@ -4247,6 +4370,7 @@ static DRIVER_ATTR(dump_registers, S_IRUGO, show_registers, NULL);
 static DRIVER_ATTR(softreset, S_IRUGO, show_softreset, NULL);
 
 #ifdef CONFIG_MOTO_AOD_BASE_ON_AP_SENSORS
+static DRIVER_ATTR(reg, S_IRUGO | S_IWUSR, bma25x_reg_dump_show, bma25x_reg_dump_store );
 static DRIVER_ATTR(flatdown, S_IRUGO, bma25x_flatdown_show, NULL);
 static DRIVER_ATTR(flat_threshold, S_IWUSR | S_IRUGO, bma25x_flat_threshold_show,
 	 bma25x_flat_threshold_store);
@@ -4285,6 +4409,7 @@ static struct driver_attribute *bma2x2_attr_list[] = {
 	 &driver_attr_dump_registers,
 	 &driver_attr_softreset,
 #ifdef CONFIG_MOTO_AOD_BASE_ON_AP_SENSORS
+	 &driver_attr_reg,
 	 &driver_attr_flatdown,
 	 &driver_attr_flat_threshold,
 	 &driver_attr_int_mode,
