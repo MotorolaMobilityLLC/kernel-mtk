@@ -431,6 +431,11 @@ config WIND_CAMERA_CUSTOM
 	  a value for different ODM camera
 #wangkangmin@wind-mobi.com add for wind camera 20161207 end
 
+#merge from moto  by cly  20170104
+config MOTO_AOD_BASE_ON_AP_SENSORS
+	bool "Support moto AOD feature base on AP sensors's built-in algos"
+	default n
+
 source "drivers/misc/mediatek/aee/Kconfig"
 source "drivers/misc/mediatek/atf_log/Kconfig"
 source "drivers/misc/mediatek/boot/Kconfig"
