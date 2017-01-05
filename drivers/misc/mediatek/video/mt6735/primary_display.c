@@ -3807,11 +3807,8 @@ static int primary_display_esd_check_worker_kthread(void *data)
 			count++;
 			msleep(3000);
 		}
-#ifdef CONFIG_LCT_ESD_CHECK_MULTI_REG
-		msleep(1000);	/* esd check every 2s */
-#else
-		msleep(2000);
-#endif
+	
+		msleep(2000); /* esd check every 2s */
 		ret = wait_event_interruptible(esd_check_task_wq, atomic_read(&esd_check_task_wakeup));
 		if (ret < 0) {
 			DISPMSG("[ESD]esd check thread waked up accidently\n");
