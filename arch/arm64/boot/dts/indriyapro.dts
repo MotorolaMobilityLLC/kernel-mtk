@@ -294,6 +294,14 @@
 		firlen					= <0>;
 		is_batch_supported		= <0>;
 	};
+
+	cust_smartpa@0 {
+		compatible				= "mediatek,smart_pa";
+		pinctrl-names = "smartpa_rst_low", "smartpa_rst_high";
+		pinctrl-0 = <&smartpa_rst_low>;
+		pinctrl-1 = <&smartpa_rst_high>;
+		status = "okay";
+	};
 };
 /* sensor gpio standization */
 &pio {
@@ -321,6 +329,22 @@
 
 	gyro_intpin_default: gyrodefaultcfg {
 
+	};
+
+	smartpa_rst_low: smartpa_rst_low {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO39__FUNC_GPIO39>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+
+	smartpa_rst_high: smartpa_rst_high {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO39__FUNC_GPIO39>;
+			slew-rate = <1>;
+			output-high;
+		};
 	};
 };
 &als {
@@ -967,15 +991,6 @@
 		pins_cmd4_dat {
 			pins = <PINMUX_GPIO150__FUNC_ANC_DAT_MOSI>;
 		};
-	};
-
-	/* external amp support */
-	max98926L@31 {
-		compatible = "maxim,max98926L";
-		reg = <0x31>;
-		vmon-slot-no = <1>;
-		imon-slot-no = <5>;
-		status = "ok";
 	};
 };
 /* AUDIO end */
