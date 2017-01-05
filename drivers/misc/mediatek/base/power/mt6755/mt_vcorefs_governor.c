@@ -395,7 +395,7 @@ vcorefs_fb_notifier_callback(struct notifier_block *self, unsigned long event, v
 /*
  *  sram debug info
  */
-static u32 sram_debug_info[7];
+static u32 sram_debug_info[8]; /* add VCOREFS_SRAM_DRAM_GATING_CHECK */
 char *vcorefs_get_sram_debug_info(char *p)
 {
 	if (p) {
@@ -411,6 +411,8 @@ char *vcorefs_get_sram_debug_info(char *p)
 			     spm_read(VCOREFS_SRAM_DVFS_DOWN_LATENCY));
 		p += sprintf(p, "dvfs_latency_spec : 0x%x\n",
 			     spm_read(VCOREFS_SRAM_DVFS_LATENCY_SPEC));
+		p += sprintf(p, "dram_gating_check : 0x%x\n",
+			     spm_read(VCOREFS_SRAM_DRAM_GATING_CHECK));
 		p += sprintf(p, "\n");
 	} else {
 		sram_debug_info[0] = spm_read(VCOREFS_SRAM_DVS_UP_COUNT);
@@ -420,6 +422,7 @@ char *vcorefs_get_sram_debug_info(char *p)
 		sram_debug_info[4] = spm_read(VCOREFS_SRAM_DVFS_UP_LATENCY);
 		sram_debug_info[5] = spm_read(VCOREFS_SRAM_DVFS_DOWN_LATENCY);
 		sram_debug_info[6] = spm_read(VCOREFS_SRAM_DVFS_LATENCY_SPEC);
+		sram_debug_info[7] = spm_read(VCOREFS_SRAM_DRAM_GATING_CHECK);
 		vcorefs_info("dvs_up_count     : 0x%x\n", sram_debug_info[0]);
 		vcorefs_info("dfs_up_count     : 0x%x\n", sram_debug_info[1]);
 		vcorefs_info("dvs_down_count   : 0x%x\n", sram_debug_info[2]);
@@ -427,6 +430,7 @@ char *vcorefs_get_sram_debug_info(char *p)
 		vcorefs_info("dvfs_up_latency  : 0x%x\n", sram_debug_info[4]);
 		vcorefs_info("dvfs_down_latency: 0x%x\n", sram_debug_info[5]);
 		vcorefs_info("dvfs_latency spec: 0x%x\n", sram_debug_info[6]);
+		vcorefs_info("dram_gating_check: 0x%x\n", sram_debug_info[7]);
 	}
 
 	return p;
@@ -456,6 +460,7 @@ static void vcorefs_init_sram_debug(void)
 	spm_write(VCOREFS_SRAM_DVFS_UP_LATENCY, 0);
 	spm_write(VCOREFS_SRAM_DVFS_DOWN_LATENCY, 0);
 	spm_write(VCOREFS_SRAM_DVFS_LATENCY_SPEC, dbg_ctrl->dvfs_latency_spec);
+	spm_write(VCOREFS_SRAM_DRAM_GATING_CHECK, 0);
 	vcorefs_info("dvfs_latency spec set to 0x%x\n", spm_read(VCOREFS_SRAM_DVFS_LATENCY_SPEC));
 }
 
@@ -544,7 +549,7 @@ uint32_t get_vcore_dvfs_sram_debug_regs(uint32_t index)
 
 	switch (index) {
 	case 0:
-		value = 7;
+		value = 8; /* add VCOREFS_SRAM_DRAM_GATING_CHECK */
 		vcorefs_err("get vcore dvfs sram debug regs count = 0x%.8x\n", value);
 		break;
 	case 1:
@@ -574,6 +579,10 @@ uint32_t get_vcore_dvfs_sram_debug_regs(uint32_t index)
 	case 7:
 		value = sram_debug_info[6];
 		vcorefs_err("DVFS DOWN LATENCY(0x%x) = 0x%x\n", index, value);
+		break;
+	case 8:
+		value = sram_debug_info[7];
+		vcorefs_err("DRAM_GATING_CHECK(0x%x) = 0x%x\n", index, value);
 		break;
 	}
 
