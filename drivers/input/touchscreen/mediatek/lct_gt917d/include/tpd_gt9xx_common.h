@@ -289,7 +289,6 @@ enum CHIP_TYPE_T {
 #endif
 
 /* Log define */
-#define GTP_DEBUG_ON 1
 #define GTP_INFO(fmt,arg...)           printk("<<-GTP-INFO->> "fmt"\n",##arg)
 #define GTP_ERROR(fmt,arg...)          printk("<<-GTP-ERROR->> "fmt"\n",##arg)
 #define GTP_DEBUG(fmt,arg...)          do{\
