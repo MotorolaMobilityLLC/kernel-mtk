@@ -90,7 +90,7 @@ extern s32 gup_load_hotknot_system(void);
 extern unsigned char gtp_default_FW[];
 extern unsigned char gtp_default_FW_fl[];
 /* ***************************PART1:ON/OFF define******************************* */
-/*
+
 #define GTP_CUSTOM_CFG        0
 #define GTP_DRIVER_SEND_CFG   1       //driver send config to TP on intilization (for no config built in TP flash)
 #define GTP_HAVE_TOUCH_KEY    0
@@ -101,10 +101,10 @@ extern unsigned char gtp_default_FW_fl[];
 #define GTP_AUTO_UPDATE_CFG   0       // auto update config by .cfg file, function together with GTP_AUTO_UPDATE
 
 #define GTP_SUPPORT_I2C_DMA   0       // if gt9xxf, better enable it if hardware platform supported
-#define GTP_COMPATIBLE_MODE   1       // compatible with GT9XXF
+#define GTP_COMPATIBLE_MODE   0       // compatible with GT9XXF
 
 #define GTP_CREATE_WR_NODE    1
-#define GTP_ESD_PROTECT       0       // esd protection with a cycle of 2 seconds
+#define GTP_ESD_PROTECT       1       // esd protection with a cycle of 2 seconds
 #define GUP_USE_HEADER_FILE   0
 #define GTP_FW_DOWNLOAD       0       //update FW to TP SRAM
 //#define GTP_CHARGER_DETECT
@@ -122,10 +122,10 @@ extern unsigned char gtp_default_FW_fl[];
 //#define TPD_WARP_X
 //#define TPD_WARP_Y
 
-#define GTP_DEBUG_ON          0 
+#define GTP_DEBUG_ON          0
 #define GTP_DEBUG_ARRAY_ON    0
 #define GTP_DEBUG_FUNC_ON     0
-*/
+
 #define CFG_GROUP_LEN(p_cfg_grp)  (sizeof(p_cfg_grp) / sizeof(p_cfg_grp[0]))
 #define FLASHLESS_FLASH_WORKROUND  0
 
