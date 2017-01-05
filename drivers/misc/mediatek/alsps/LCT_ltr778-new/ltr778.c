@@ -426,7 +426,7 @@ static int ltr778_ps_enable(struct i2c_client *client, int enable)
 		return err;
 	}
 
-	mdelay(WAKEUP_DELAY);	
+	mdelay(WAKEUP_DELAY);	//10s
 		
 	regdata = ltr778_i2c_read_reg(LTR778_PS_CONTR);
 
@@ -490,7 +490,7 @@ static int ltr778_dynamic_calibrate(void)
 	int data;
 	int data_total = 0;
 	int noise = 0;
-	int count = 5;
+	int count = 3;  // 5->3
 	int ps_thd_val_low, ps_thd_val_high;
 	int ps_persist_val_low, ps_persist_val_high;
 	struct ltr778_priv *obj = ltr778_obj;
@@ -500,15 +500,22 @@ static int ltr778_dynamic_calibrate(void)
 	ps_persist_val_low = 0;
 	ps_persist_val_high = 0;
 
+	ltr778_i2c_write_reg(LTR778_PS_MEAS_RATE, 0x01);	// 12.25 ms time 
 	if (!ltr778_obj)
 	{
 		APS_ERR("ltr778_obj is null!!\n");
 		return -1;
-	}	
+	}
+
+	for(i = 0; i < 3 ; i++)
+		{		
+		msleep(13);
+		ltr778_ps_read(ltr778_obj->client, &ltr778_obj->ps);
+		}
 
 	for (i = 0; i < count; i++) {
 		// wait for ps value be stable
-		msleep(60);
+		msleep(13);
 
 		data = ltr778_ps_read(ltr778_obj->client, &ltr778_obj->ps);
 		if (data < 0) {
@@ -524,42 +531,42 @@ static int ltr778_dynamic_calibrate(void)
 	if(noise < dynamic_calibrate + 280)  // modified by steven
 	{
 		dynamic_calibrate = noise;
-
-	if (noise < 100) {
-		ps_thd_val_high = noise + 65;
-		ps_thd_val_low  = noise + 30;
-		ps_persist_val_high = noise + 500;
-		ps_persist_val_low  = noise + 55;
-	}
-	else if (noise < 200) {
-		ps_thd_val_high = noise + 70;
-		ps_thd_val_low  = noise + 35;
-		ps_persist_val_high = noise + 500;
-		ps_persist_val_low  = noise + 60;
-	}
-	else if (noise < 300) {
-		ps_thd_val_high = noise + 80;
-		ps_thd_val_low  = noise + 40;
-		ps_persist_val_high = noise + 500;
-		ps_persist_val_low  = noise + 70;
-	}
-	else if (noise < 400) {
-		ps_thd_val_high = noise + 100;
-		ps_thd_val_low  = noise + 50;
-		ps_persist_val_high = noise + 500;
-		ps_persist_val_low  = noise + 80;
-	}
-	else if (noise < 600) {
-		ps_thd_val_high = noise + 180;
-		ps_thd_val_low  = noise + 90;
-		ps_persist_val_high = noise + 500;
-		ps_persist_val_low  = noise + 100;
+// change 2.0cm  ->  2.5cm gray 18%
+		if (noise < 100) {
+			ps_thd_val_high = noise + 45;
+			ps_thd_val_low  = noise + 30;
+			ps_persist_val_high = noise + 500;  // modified by steven
+			ps_persist_val_low  = noise + 44;
+		}
+		else if (noise < 200) {
+			ps_thd_val_high = noise + 46;
+			ps_thd_val_low  = noise + 32;
+			ps_persist_val_high = noise + 500;
+			ps_persist_val_low  = noise + 45;
+		}
+		else if (noise < 300) {
+			ps_thd_val_high = noise + 47;
+			ps_thd_val_low  = noise + 33;
+			ps_persist_val_high = noise + 500;
+			ps_persist_val_low  = noise + 46;
+		}
+		else if (noise < 400) {
+			ps_thd_val_high = noise + 48;
+			ps_thd_val_low  = noise + 34;
+			ps_persist_val_high = noise + 500;
+			ps_persist_val_low  = noise + 47;
+		}
+		else if (noise < 600) {
+			ps_thd_val_high = noise + 50;
+			ps_thd_val_low  = noise + 35;
+			ps_persist_val_high = noise + 500;
+			ps_persist_val_low  = noise + 79;
 	}
 	else if (noise < 1500) {
-		ps_thd_val_high = noise + 300;
-		ps_thd_val_low  = noise + 180;
-		ps_persist_val_high = noise + 500;
-		ps_persist_val_low  = noise + 280;
+			ps_thd_val_high = noise + 80;
+			ps_thd_val_low  = noise + 65;
+			ps_persist_val_high = noise + 500;
+			ps_persist_val_low  = noise + 79;
 	}
 	else {
 		ps_thd_val_high = 1900;
@@ -582,6 +589,7 @@ static int ltr778_dynamic_calibrate(void)
 	APS_LOG("%s:obj->ps_persist_val_high = %d\n", __func__, ps_persist_val_high);
 	APS_LOG("%s:obj->ps_persist_val_low = %d\n", __func__, ps_persist_val_low);
 
+	ltr778_i2c_write_reg(LTR778_PS_MEAS_RATE, 0x03);	// 50ms time 
 
 	return 0;
 }
@@ -696,6 +704,7 @@ out:
 }
 
 static int oil_far_cal = 0;
+static int oil_close = 0;
 /********************************************************************/
 static int ltr778_get_ps_value(struct ltr778_priv *obj, u16 ps)
 {
@@ -709,6 +718,7 @@ static int ltr778_get_ps_value(struct ltr778_priv *obj, u16 ps)
 		val_temp = 2;
 		intr_flag_value = 2;
 		oil_far_cal = 0;
+		oil_close = 1;
 	}
 	else if((ps > atomic_read(&obj->ps_thd_val_high)))
 	{
@@ -723,8 +733,10 @@ static int ltr778_get_ps_value(struct ltr778_priv *obj, u16 ps)
 		val_temp = 1;
 		intr_flag_value = 0;
 		oil_far_cal = 0;
+		
+		oil_close = 0;
 	}
-	else if((ps < atomic_read(&obj->ps_persist_val_low)))
+	else if((ps < atomic_read(&obj->ps_persist_val_low)) && (oil_close == 1))  // modified by steven
 	{
 		val = 3;  /* persist oil far away*/
 		val_temp = 3;
@@ -737,7 +749,7 @@ static int ltr778_get_ps_value(struct ltr778_priv *obj, u16 ps)
 
 	}
 
-	if(val == 3  && oil_far_cal <= 3)
+	if(val == 3  && oil_far_cal <= 4)  // modified by steven
 	{		
 		oil_far_cal ++;
 		val = 2;  /* persist oil close*/
@@ -1413,30 +1425,54 @@ static void ltr778_eint_work(struct work_struct *work)
   //def GN_MTK_BSP_PS_DYNAMIC_CALI
 			if(obj->ps > 20 && obj->ps < (dynamic_calibrate - 300)){ 
         		if(obj->ps < 100){			
-        			atomic_set(&obj->ps_thd_val_high,  obj->ps+65);
+        			atomic_set(&obj->ps_thd_val_high,  obj->ps+45);
         			atomic_set(&obj->ps_thd_val_low, obj->ps+30);
+					
+        			atomic_set(&obj->ps_persist_val_high,  obj->ps+500);
+        			atomic_set(&obj->ps_persist_val_low, obj->ps+44);
         		}else if(obj->ps < 200){
-        			atomic_set(&obj->ps_thd_val_high,  obj->ps+70);
+        			atomic_set(&obj->ps_thd_val_high,  obj->ps+50);
         			atomic_set(&obj->ps_thd_val_low, obj->ps+35);
+					
+        			atomic_set(&obj->ps_persist_val_high,  obj->ps+500);
+        			atomic_set(&obj->ps_persist_val_low, obj->ps+49);
         		}else if(obj->ps < 300){
-        			atomic_set(&obj->ps_thd_val_high,  obj->ps+80);
+        			atomic_set(&obj->ps_thd_val_high,  obj->ps+60);
         			atomic_set(&obj->ps_thd_val_low, obj->ps+40);
+					
+        			atomic_set(&obj->ps_persist_val_high,  obj->ps+500);
+        			atomic_set(&obj->ps_persist_val_low, obj->ps+55);
         		}else if(obj->ps < 400){
-        			atomic_set(&obj->ps_thd_val_high,  obj->ps+100);
+        			atomic_set(&obj->ps_thd_val_high,  obj->ps+70);
         			atomic_set(&obj->ps_thd_val_low, obj->ps+50);
+					
+        			atomic_set(&obj->ps_persist_val_high,  obj->ps+500);
+        			atomic_set(&obj->ps_persist_val_low, obj->ps+80);
         		}else if(obj->ps < 600){
-        			atomic_set(&obj->ps_thd_val_high,  obj->ps+180);
-        			atomic_set(&obj->ps_thd_val_low, obj->ps+90);
+        			atomic_set(&obj->ps_thd_val_high,  obj->ps+80);
+        			atomic_set(&obj->ps_thd_val_low, obj->ps+60);
+					
+        			atomic_set(&obj->ps_persist_val_high,  obj->ps+500);
+        			atomic_set(&obj->ps_persist_val_low, obj->ps+79);
         		}else if(obj->ps < 1000){
-        			atomic_set(&obj->ps_thd_val_high,  obj->ps+300);
-        			atomic_set(&obj->ps_thd_val_low, obj->ps+180);	
+        			atomic_set(&obj->ps_thd_val_high,  obj->ps+100);
+        			atomic_set(&obj->ps_thd_val_low, obj->ps+70);
+					
+        			atomic_set(&obj->ps_persist_val_high,  obj->ps+500);
+        			atomic_set(&obj->ps_persist_val_low, obj->ps+95);
         		}else if(obj->ps < 1500){
-        			atomic_set(&obj->ps_thd_val_high,  obj->ps+400);
-        			atomic_set(&obj->ps_thd_val_low, obj->ps+300);
+        			atomic_set(&obj->ps_thd_val_high,  obj->ps+200);
+        			atomic_set(&obj->ps_thd_val_low, obj->ps+100);
+					
+        			atomic_set(&obj->ps_persist_val_high,  obj->ps+500);
+        			atomic_set(&obj->ps_persist_val_low, obj->ps+190);
         		}
         		else{
-        			atomic_set(&obj->ps_thd_val_high,  1800);
-        			atomic_set(&obj->ps_thd_val_low, 1700);        			
+        			atomic_set(&obj->ps_thd_val_high,  1900);
+        			atomic_set(&obj->ps_thd_val_low, 1800);
+					
+        			atomic_set(&obj->ps_persist_val_high, 2047 );
+        			atomic_set(&obj->ps_persist_val_low, 1850);
         		}
         		
         		dynamic_calibrate = obj->ps;
