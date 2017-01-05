@@ -2150,6 +2150,10 @@ static int Speaker_Amp_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_va
 	} while (0)
 #endif
 
+#ifdef CONFIG_AW87319_SMARTPA_SUPPORT
+extern unsigned char AW87319_Audio_OFF(void);
+extern unsigned char AW87319_Audio_Speaker(void);
+#endif
 #define NULL_PIN_DEFINITION    (-1)
 static void Ext_Speaker_Amp_Change(bool enable)
 {
@@ -2160,6 +2164,9 @@ static void Ext_Speaker_Amp_Change(bool enable)
 #ifndef CONFIG_MTK_SPEAKER
 
 #ifndef MT6755_AW8736_REWORK
+#ifdef CONFIG_AW87319_SMARTPA_SUPPORT
+		AW87319_Audio_OFF();
+#endif
 		AudDrv_GPIO_EXTAMP_Select(false, 3);
 #else
 		if (pin_extspkamp != 54)
@@ -2184,6 +2191,9 @@ static void Ext_Speaker_Amp_Change(bool enable)
 			mt_set_gpio_out(pin_extspkamp_2, GPIO_OUT_ONE);	/* high enable */
 #else
 #ifndef MT6755_AW8736_REWORK
+#ifdef CONFIG_AW87319_SMARTPA_SUPPORT
+		AW87319_Audio_Speaker();
+#endif
 		AudDrv_GPIO_EXTAMP_Select(true, 3);
 #else
 		if (pin_extspkamp != 54)
@@ -2200,6 +2210,9 @@ static void Ext_Speaker_Amp_Change(bool enable)
 #ifndef CONFIG_MTK_SPEAKER
 
 #ifndef MT6755_AW8736_REWORK
+#ifdef CONFIG_AW87319_SMARTPA_SUPPORT
+		AW87319_Audio_OFF();
+#endif
 		AudDrv_GPIO_EXTAMP_Select(false, 3);
 #else
 		if (pin_extspkamp != 54)
