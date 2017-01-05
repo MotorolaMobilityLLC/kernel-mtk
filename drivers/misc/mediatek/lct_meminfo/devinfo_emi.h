@@ -64,10 +64,6 @@ Re-update Discreate info
 
 typedef struct
 {
-//shaohui add this section for eMCP info
-	char DEVINFO_MCP[30];	//30 charactors 
-//  //shaohui add end
-
     int   sub_version;            // sub_version: 0x1 for new version
     int  type;                /* 0x0000 : Invalid
                                  0x0001 : Discrete DDR1

@@ -119,6 +119,22 @@ DEVINFO_EMMC_s devinfo_emmc_list[]=
 	{{0x44,0x46,0x34,0x30,0x36,0x34},"SDINANF4-64G-H",},
 };
 
+// add by zhaofei - 2017-01-05-14-21
+typedef struct{
+	char *vendor_name;
+	char *cid;
+}lct_emmc_info;
+
+static lct_emmc_info lct_emmc_info_str[] = {
+	{"H9TQ17ABJTBCUR_KUM","90014a4841473461"},
+	{"H9TQ26ADFTBCUR_KUM","90014A4842473461"},
+	{"KMRE1000BM_B512",	  "150100524531424D"},
+	{"H9TQ17ADFTACUR_KUM","90014A4841473461"},
+	{"KMQE10013M_B318",	  "150100514531334D"},
+	{"KMRX1000BM_B614",	  "150100525831424D"}
+};
+
+extern unsigned char cid_str[sizeof(u32)*4+1];
 #define DEVINFO_EMMC_LIST_SIZE (sizeof(devinfo_emmc_list)/sizeof(devinfo_emmc_list[0]))
 
 
@@ -196,7 +212,7 @@ static int devinfo_register_emcp(struct msdc_host *host)
 		//type = "RAM DDR2      "";
 		
 		//device module
-		dev_list[i]->device_module=	emi_settings[i].DEVINFO_MCP;
+			dev_list[i]->device_module=	lct_emmc_info_str[i].vendor_name;
 		#ifdef LCT_DEVINFO_DEBUG_EMCP
     	lct_pr_debug("device type:%s!\n",dev_list[i]->device_type);
     	lct_pr_debug("device module:%s!\n",dev_list[i]->device_module);
@@ -330,37 +346,38 @@ static int devinfo_register_emcp(struct msdc_host *host)
 #else
 			DEVINFO_CHECK_DECLARE("eMMC","unknown",dev_list[i]->device_vendor,devinfo_emmc_list[j].manufactor,dev_list[i]->device_version,info1,DEVINFO_USED);	//we can not judge  used or not
 #endif
-		}
-		else{
-			dev_list[i]->device_info = (char *)kmalloc(sizeof(dev_list[i]->device_info),GFP_KERNEL);
-		//Check if used on this board
-		if((emi_settings[i].ID[0]== host->mmc->card->cid.manfid) && (emi_settings[i].ID[1]==(host->mmc->card->raw_cid[0]&0x00FF0000)>>16) && (emi_settings[i].ID[2]==(host->mmc->card->raw_cid[0]&0x0000FF00)>>8) && (emi_settings[i].ID[3]==(host->mmc->card->raw_cid[0]&0x000000FF)>>0)
-				//shaohui add the code to enhance ability of detecting more devices,for same seriers products
-			&&	(emi_settings[i].ID[4]==(host->mmc->card->raw_cid[1]&0xFF000000)>>24) && (emi_settings[i].ID[5]==(host->mmc->card->raw_cid[1]&0x00FF0000)>>16) && (emi_settings[i].ID[6]==(host->mmc->card->raw_cid[1]&0x0000FF00)>>8)
-				)
-		{
-		//sprintf(info,"ram:%dMB",ram_size);
-			switch(ram_size)
-			{
-				case 2048:
-					sprintf(dev_list[i]->device_info,"ram:2048MB+rom:%dMB",rom_size);
-					break;
-				case 1536:
-					sprintf(dev_list[i]->device_info,"ram:1536MB+rom:%dMB",rom_size);
-					break;
-				case 1024:
-					sprintf(dev_list[i]->device_info,"ram:1024MB+rom:%dMB",rom_size);
-					break;
-				case 768:
-					sprintf(dev_list[i]->device_info,"ram:768 MB+rom:%dMB",rom_size);
-					break;
-				case 512:
-					sprintf(dev_list[i]->device_info,"ram:512 MB+rom:%dMB",rom_size);
-					break;
-				default:
-					sprintf(dev_list[i]->device_info,"ram:512 MB+rom:%dMB",rom_size);
-					break;
 			}
+			else{
+				dev_list[i]->device_info = (char *)kmalloc(sizeof(dev_list[i]->device_info),GFP_KERNEL);
+			//Check if used on this board// add by zhaofei - 2017-01-05-15-26
+//			if((emi_settings[i].ID[0]== host->mmc->card->cid.manfid) && (emi_settings[i].ID[1]==(host->mmc->card->raw_cid[0]&0x00FF0000)>>16) && (emi_settings[i].ID[2]==(host->mmc->card->raw_cid[0]&0x0000FF00)>>8) && (emi_settings[i].ID[3]==(host->mmc->card->raw_cid[0]&0x000000FF)>>0)
+//					//shaohui add the code to enhance ability of detecting more devices,for same seriers products
+//				&&	(emi_settings[i].ID[4]==(host->mmc->card->raw_cid[1]&0xFF000000)>>24) && (emi_settings[i].ID[5]==(host->mmc->card->raw_cid[1]&0x00FF0000)>>16) && (emi_settings[i].ID[6]==(host->mmc->card->raw_cid[1]&0x0000FF00)>>8)
+//					)
+			if(0==memcmp(lct_emmc_info_str[i].cid,cid_str,15))
+			{
+			//sprintf(info,"ram:%dMB",ram_size);
+				switch(ram_size)
+				{
+					case 2048:
+						sprintf(dev_list[i]->device_info,"ram:2048MB+rom:%dMB",rom_size);
+						break;
+					case 1536:
+						sprintf(dev_list[i]->device_info,"ram:1536MB+rom:%dMB",rom_size);
+						break;
+					case 1024:
+						sprintf(dev_list[i]->device_info,"ram:1024MB+rom:%dMB",rom_size);
+						break;
+					case 768:
+						sprintf(dev_list[i]->device_info,"ram:768 MB+rom:%dMB",rom_size);
+						break;
+					case 512:
+						sprintf(dev_list[i]->device_info,"ram:512 MB+rom:%dMB",rom_size);
+						break;
+					default:
+						sprintf(dev_list[i]->device_info,"ram:512 MB+rom:%dMB",rom_size);
+						break;
+				}
 
 
 			#ifdef LCT_DEVINFO_DEBUG_EMCP

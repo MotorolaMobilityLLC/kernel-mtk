@@ -59,7 +59,6 @@ EMI_SETTINGS emi_settings[] =
      
 	//H9TQ17ABJTBCUR_KUM
 	{
-		"H9TQ17ABJTBCUR_KUM",/*shaohui add This Section for eMCP DEVinfo */ 
 		0x0,		/* sub_version */
 		0x0203,		/* TYPE */
 		9,		/* EMMC ID/FW ID checking length */
@@ -94,7 +93,6 @@ EMI_SETTINGS emi_settings[] =
 	} ,
 	//H9TQ26ADFTBCUR_KUM
 	{
-		"H9TQ26ADFTBCUR_KUM",/*shaohui add This Section for eMCP DEVinfo */ 
 		0x0,		/* sub_version */
 		0x0203,		/* TYPE */
 		9,		/* EMMC ID/FW ID checking length */
@@ -129,7 +127,6 @@ EMI_SETTINGS emi_settings[] =
 	} ,
 	//KMRE1000BM_B512
 	{
-		"KMRE1000BM_B512",/*shaohui add This Section for eMCP DEVinfo */ 
 		0x0,		/* sub_version */
 		0x0203,		/* TYPE */
 		9,		/* EMMC ID/FW ID checking length */
@@ -164,7 +161,6 @@ EMI_SETTINGS emi_settings[] =
 	} ,
 	//H9TQ17ADFTACUR_KUM
 	{
-		"H9TQ17ADFTACUR_KUM",/*shaohui add This Section for eMCP DEVinfo */ 
 		0x0,		/* sub_version */
 		0x0203,		/* TYPE */
 		9,		/* EMMC ID/FW ID checking length */
@@ -199,7 +195,6 @@ EMI_SETTINGS emi_settings[] =
 	} ,
 	//KMQE10013M_B318
 	{
-		"KMQE10013M_B318",/*shaohui add This Section for eMCP DEVinfo */ 
 		0x0,		/* sub_version */
 		0x0203,		/* TYPE */
 		9,		/* EMMC ID/FW ID checking length */
@@ -234,7 +229,6 @@ EMI_SETTINGS emi_settings[] =
 	} ,
 	//KMRX1000BM_B614
 	{
-		"KMRX1000BM_B614",/*shaohui add This Section for eMCP DEVinfo */ 
 		0x0,		/* sub_version */
 		0x0203,		/* TYPE */
 		9,		/* EMMC ID/FW ID checking length */
