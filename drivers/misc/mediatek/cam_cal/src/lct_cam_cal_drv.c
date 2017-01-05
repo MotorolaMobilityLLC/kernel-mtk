@@ -58,7 +58,7 @@ static struct cdev *g_charDrv;
 static struct class *g_drvClass;
 static unsigned int g_drvOpened;
 static DEFINE_SPINLOCK(g_spinLock); /*for SMP*/
-
+extern unsigned int OTP_Read_Lsc(unsigned int addr,unsigned char *data, unsigned int size);/*jijin.wang add for front camera otp*/
 typedef enum {
 	I2C_DEV_1 = 0,
 	I2C_DEV_2,
@@ -423,7 +423,7 @@ static long cam_cal_drv_ioctl(
 	/*u8 *tempP = NULL;*/
 	stCAM_CAL_INFO_STRUCT *ptempbuf = NULL;
 	stCAM_CAL_CMD_INFO_STRUCT *pcmdInf = NULL;
-
+     
 
 #ifdef CAM_CALGETDLT_DEBUG
 	struct timeval ktv1, ktv2;
@@ -511,39 +511,47 @@ static long cam_cal_drv_ioctl(
 		case CAM_CALIOC_G_READ:
 			CAM_CALDB("CAM_CALIOC_G_READ start! offset=%d, length=%d\n", ptempbuf->u4Offset,
 					ptempbuf->u4Length);
-
-#ifdef CAM_CALGETDLT_DEBUG
-			do_gettimeofday(&ktv1);
-#endif
-
-			if (g_lastDevID != ptempbuf->deviceID) {
-				g_lastDevID = ptempbuf->deviceID;
-				cam_cal_set_i2c_bus(ptempbuf->deviceID);
+/*jijn.wang add for front camera read lsc-shading OTP*/
+			if((ptempbuf->deviceID == 2)&&(ptempbuf->sensorID == 0x553))
+			{
+				i4RetValue = OTP_Read_Lsc(ptempbuf->u4Offset,pu1Params,ptempbuf->u4Length);
+				CAM_CALDB("i4RetValue = %d\n",i4RetValue);
 			}
-
-			pcmdInf = cam_cal_get_cmd_info_ex(ptempbuf->sensorID);
-
-			if (pcmdInf != NULL) {
-				CAM_CALDB("pcmdInf != NULL\n");
-				if (pcmdInf->readCMDFunc != NULL)
-					i4RetValue = pcmdInf->readCMDFunc(pcmdInf->client,
-							ptempbuf->u4Offset, pu1Params, ptempbuf->u4Length);
-				else {
-					CAM_CALDB("pcmdInf->readCMDFunc == NULL\n");
-				}
-			}
-
-#ifdef CAM_CALGETDLT_DEBUG
-			do_gettimeofday(&ktv2);
-			if (ktv2.tv_sec > ktv1.tv_sec)
-				TimeIntervalUS = ktv1.tv_usec + 1000000 - ktv2.tv_usec;
 			else
-				TimeIntervalUS = ktv2.tv_usec - ktv1.tv_usec;
-
-
-			CAM_CALDB("Read data %d bytes take %lu us\n", ptempbuf->u4Length, TimeIntervalUS);
+			{
+#ifdef CAM_CALGETDLT_DEBUG
+				do_gettimeofday(&ktv1);
 #endif
-			CAM_CALDB("CAM_CALIOC_G_READ End!\n");
+
+				if (g_lastDevID != ptempbuf->deviceID) {
+					g_lastDevID = ptempbuf->deviceID;
+					cam_cal_set_i2c_bus(ptempbuf->deviceID);
+				}
+
+				pcmdInf = cam_cal_get_cmd_info_ex(ptempbuf->sensorID);
+
+				if (pcmdInf != NULL) {
+					CAM_CALDB("pcmdInf != NULL\n");
+					if (pcmdInf->readCMDFunc != NULL)
+					  i4RetValue = pcmdInf->readCMDFunc(pcmdInf->client,
+								  ptempbuf->u4Offset, pu1Params, ptempbuf->u4Length);
+					else {
+						CAM_CALDB("pcmdInf->readCMDFunc == NULL\n");
+					}
+				}
+
+#ifdef CAM_CALGETDLT_DEBUG
+				do_gettimeofday(&ktv2);
+				if (ktv2.tv_sec > ktv1.tv_sec)
+				  TimeIntervalUS = ktv1.tv_usec + 1000000 - ktv2.tv_usec;
+				else
+				  TimeIntervalUS = ktv2.tv_usec - ktv1.tv_usec;
+
+
+				CAM_CALDB("Read data %d bytes take %lu us\n", ptempbuf->u4Length, TimeIntervalUS);
+#endif
+				CAM_CALDB("CAM_CALIOC_G_READ End!\n");
+			}
 			break;
 
 		default:

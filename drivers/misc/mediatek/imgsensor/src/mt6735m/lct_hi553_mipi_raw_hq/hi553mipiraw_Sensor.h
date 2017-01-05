@@ -137,6 +137,7 @@ typedef struct imgsensor_info_struct {
 //#define IMGSENSOR_READ_ID_2  (0x21)
 
 extern int iReadRegI2C(u8 *a_pSendData , u16 a_sizeSendData, u8 * a_pRecvData, u16 a_sizeRecvData, u16 i2cId);
+extern int iReadRegI2C_OTP(u8 *a_pSendData , u16 a_sizeSendData, u8 * a_pRecvData, u16 a_sizeRecvData, u16 i2cId);/*jijin.wang add for front camera read lsc-shading*/
 extern int iWriteRegI2C(u8 *a_pSendData , u16 a_sizeSendData, u16 i2cId);
 extern void kdSetI2CSpeed(u16 i2cSpeed);
 //extern bool hi553_read_eeprom( kal_uint16 addr, BYTE* data, kal_uint32 size);
