@@ -166,7 +166,7 @@ static imgsensor_info_struct imgsensor_info = {
 		/*	 following for GetDefaultFramerateByScenario()	*/
 		.max_framerate = 300,	
 	},
-	
+
 	.margin = 6,			//sensor framelength & shutter margin
 	.min_shutter = 6,		//min shutter
 	.max_frame_length = 0x7FFF,//REG0x0202 <=REG0x0340-5//max framelength by sensor register's limitation
@@ -233,12 +233,13 @@ static kal_uint16 read_cmos_sensor(kal_uint32 addr)
 }
 static kal_uint16 read_cmos_sensor_byte(kal_uint16 addr)
 {
-    kal_uint16 get_byte=0;
-    char pu_send_cmd[2] = {(char)(addr >> 8) , (char)(addr & 0xFF) };
+	kal_uint16 get_byte=0;
+	char pu_send_cmd[2] = {(char)(addr >> 8) , (char)(addr & 0xFF) };
 
-    kdSetI2CSpeed(imgsensor_info.i2c_speed); // Add this func to set i2c speed by each sensor
-    iReadRegI2C(pu_send_cmd , 2, (u8*)&get_byte,1,imgsensor.i2c_write_id);
-    return get_byte;
+	kdSetI2CSpeed(imgsensor_info.i2c_speed); // Add this func to set i2c speed by each sensor
+	//iReadRegI2C(pu_send_cmd , 2, (u8*)&get_byte,1,imgsensor.i2c_write_id);
+	iReadRegI2C_OTP(pu_send_cmd , 2, (u8*)&get_byte,1,imgsensor.i2c_write_id);
+	return get_byte;
 }
 
 static void write_cmos_sensor(kal_uint16 addr, kal_uint16 para)
@@ -250,19 +251,19 @@ static void write_cmos_sensor(kal_uint16 addr, kal_uint16 para)
 }
 static void write_cmos_sensor_byte(kal_uint32 addr, kal_uint32 para)
 {
-    char pu_send_cmd[3] = {(char)(addr >> 8), (char)(addr & 0xFF), (char)(para & 0xFF)};
+	char pu_send_cmd[3] = {(char)(addr >> 8), (char)(addr & 0xFF), (char)(para & 0xFF)};
 
-    kdSetI2CSpeed(imgsensor_info.i2c_speed); // Add this func to set i2c speed by each sensor
-    iWriteRegI2C(pu_send_cmd, 3, imgsensor.i2c_write_id);
+	kdSetI2CSpeed(imgsensor_info.i2c_speed); // Add this func to set i2c speed by each sensor
+	iWriteRegI2C(pu_send_cmd, 3, imgsensor.i2c_write_id);
 }
 static kal_uint16 OTP_read_cmos_sensor(kal_uint16 otp_addr)
 {
-    kal_uint16 data;	
-    write_cmos_sensor_byte(0x010a, (otp_addr & 0xff00)>> 8); //start address H        
-    write_cmos_sensor_byte(0x010b, otp_addr& 0x00ff); //start address L
-    write_cmos_sensor_byte(0x0102, 0x01); //single read
- //   	mDELAY(10);
-    data = read_cmos_sensor_byte(0x0108); //OTP data read  
+	kal_uint16 data;	
+	write_cmos_sensor_byte(0x010a, (otp_addr & 0xff00)>> 8); //start address H        
+	write_cmos_sensor_byte(0x010b, otp_addr& 0x00ff); //start address L
+	write_cmos_sensor_byte(0x0102, 0x01); //single read
+	//   	mDELAY(10);
+	data = read_cmos_sensor_byte(0x0108); //OTP data read  
 	return data;
 }
 static void set_dummy(void)
@@ -298,7 +299,7 @@ static void set_max_framerate(UINT16 framerate,kal_bool min_framelength_en)
 		imgsensor.dummy_line = imgsensor.frame_length - imgsensor.min_frame_length;
 	}
 	if (min_framelength_en)
-		imgsensor.min_frame_length = imgsensor.frame_length;
+	  imgsensor.min_frame_length = imgsensor.frame_length;
 	spin_unlock(&imgsensor_drv_lock);
 	set_dummy();
 }	/*	set_max_framerate  */
@@ -337,11 +338,11 @@ static void set_shutter(kal_uint16 shutter)
 	// if shutter bigger than frame_length, should extend frame length first
 	spin_lock(&imgsensor_drv_lock);
 	if (shutter > imgsensor.min_frame_length - imgsensor_info.margin)		
-		imgsensor.frame_length = shutter + imgsensor_info.margin;
+	  imgsensor.frame_length = shutter + imgsensor_info.margin;
 	else
-		imgsensor.frame_length = imgsensor.min_frame_length;
+	  imgsensor.frame_length = imgsensor.min_frame_length;
 	if (imgsensor.frame_length > imgsensor_info.max_frame_length)
-		imgsensor.frame_length = imgsensor_info.max_frame_length;
+	  imgsensor.frame_length = imgsensor_info.max_frame_length;
 	spin_unlock(&imgsensor_drv_lock);
 	shutter = (shutter < imgsensor_info.min_shutter) ? imgsensor_info.min_shutter : shutter;
 	shutter = (shutter > (imgsensor_info.max_frame_length - imgsensor_info.margin)) ? (imgsensor_info.max_frame_length - imgsensor_info.margin) : shutter;
@@ -349,9 +350,9 @@ static void set_shutter(kal_uint16 shutter)
 	if (imgsensor.autoflicker_en) { 
 		realtime_fps = imgsensor.pclk / imgsensor.line_length * 10 / imgsensor.frame_length;
 		if(realtime_fps >= 297 && realtime_fps <= 305)
-			set_max_framerate(296,0);
+		  set_max_framerate(296,0);
 		else if(realtime_fps >= 147 && realtime_fps <= 150)
-			set_max_framerate(146,0);	
+		  set_max_framerate(146,0);	
 		else {
 			// Extend frame length
 			write_cmos_sensor(0x0046, 0x0100); //group para hold on
@@ -404,9 +405,9 @@ static kal_uint16 set_gain(kal_uint16 gain)
 	if (gain < BASEGAIN || gain > 16 * BASEGAIN) {
 		LOG_INF("Error gain setting");
 		if (gain < BASEGAIN)
-			gain = BASEGAIN;
+		  gain = BASEGAIN;
 		else if (gain > 16 * BASEGAIN)
-			gain = 16 * BASEGAIN;		 
+		  gain = 16 * BASEGAIN;		 
 	}
 
 	reg_gain = gain2reg(gain);
@@ -428,11 +429,11 @@ static void ihdr_write_shutter_gain(kal_uint16 le, kal_uint16 se, kal_uint16 gai
 
 		spin_lock(&imgsensor_drv_lock);
 		if (le > imgsensor.min_frame_length - imgsensor_info.margin)		
-			imgsensor.frame_length = le + imgsensor_info.margin;
+		  imgsensor.frame_length = le + imgsensor_info.margin;
 		else
-			imgsensor.frame_length = imgsensor.min_frame_length;
+		  imgsensor.frame_length = imgsensor.min_frame_length;
 		if (imgsensor.frame_length > imgsensor_info.max_frame_length)
-			imgsensor.frame_length = imgsensor_info.max_frame_length;
+		  imgsensor.frame_length = imgsensor_info.max_frame_length;
 		spin_unlock(&imgsensor_drv_lock);
 		if (le < imgsensor_info.min_shutter) le = imgsensor_info.min_shutter;
 		if (se < imgsensor_info.min_shutter) se = imgsensor_info.min_shutter;
@@ -2179,7 +2180,7 @@ static void preview_setting(void)
 
 	write_cmos_sensor(0x0a00, 0x0000); //stream on         
 	//write_cmos_sensor(0x0b14, 0x404c);
-        write_cmos_sensor(0x0b16, 0x6a0b);                     
+	write_cmos_sensor(0x0b16, 0x6a0b);                     
 	write_cmos_sensor(0x0b18, 0xf20b);                     
 	write_cmos_sensor(0x004a, 0x0100);                     
 	write_cmos_sensor(0x000c, 0x0022);                     
@@ -2243,7 +2244,7 @@ static void capture_setting(kal_uint16 currefps)
 
 		write_cmos_sensor(0x0a00, 0x0000); //stream on         
 		//write_cmos_sensor(0x0b14, 0x404c);
-        write_cmos_sensor(0x0b16, 0x6a0b);                     
+		write_cmos_sensor(0x0b16, 0x6a0b);                     
 		write_cmos_sensor(0x0b18, 0xf20b);                     
 		write_cmos_sensor(0x004a, 0x0100);                     
 		write_cmos_sensor(0x000c, 0x0022);                     
@@ -2346,7 +2347,7 @@ static void capture_setting(kal_uint16 currefps)
 
 		write_cmos_sensor(0x0a00, 0x0000); //stream on         
 		//write_cmos_sensor(0x0b14, 0x404c);
-        write_cmos_sensor(0x0b16, 0x6a0b);                     
+		write_cmos_sensor(0x0b16, 0x6a0b);                     
 		write_cmos_sensor(0x0b18, 0xf20b);                     
 		write_cmos_sensor(0x004a, 0x0100);                     
 		write_cmos_sensor(0x000c, 0x0022);                     
@@ -2472,7 +2473,7 @@ static kal_uint32 return_sensor_id(void)
  * GLOBALS AFFECTED
  *
  *************************************************************************/
- struct hi553_otp_struct 
+struct hi553_otp_struct 
 {
 	int Base_Info_Flag;	//bit[7]:info, bit[6]:wb
 	int module_integrator_id;
@@ -2486,7 +2487,9 @@ static kal_uint32 return_sensor_id(void)
 	//int Driver_ic_id;
 	//int F_num_id;
 	int WB_FLAG;
+	int LSC_FLAG;/*jijin.wang add lSC-shading read flag*/
 	int wb_data[30];
+	char lsc_data[965];/*add lsc-shading data struct*/
 	int AF_FLAG;
 	int af_data[5];
 	int infocheck;
@@ -2500,9 +2503,9 @@ static kal_uint32 return_sensor_id(void)
 struct hi553_otp_struct hi553_otp;
 #if 0
 unsigned int readSubCamCalData(struct i2c_client *client, unsigned int addr,
-	unsigned char *data, unsigned int size)
+			unsigned char *data, unsigned int size)
 {
-    
+
 	return 0;
 }
 #endif
@@ -2523,22 +2526,23 @@ static void otp_init_setting(void)
 
 static int hi553_otp_read(void)
 {
-	int i, addr = 0, wb_start_addr = 0;
+	int i, addr = 0, wb_start_addr = 0,lsc_start_addr=0;
 	int  checksum = 0; //wb_data[28];
+	int  checksum_lsc = 0;
 	LOG_INF("HI553 hi553_otp_read \n");
 
 	//otp_init_setting();
 
 	hi553_otp.Base_Info_Flag = OTP_read_cmos_sensor(0x501);
 	if (hi553_otp.Base_Info_Flag == 0x01)	//Base Info Group1 valid
-		addr = 0x502;
+	  addr = 0x502;
 	else if (hi553_otp.Base_Info_Flag == 0x13)	//Base Info Group2 valid
-		addr = 0x513;
+	  addr = 0x513;
 	else if (hi553_otp.Base_Info_Flag == 0x37)	//Base Info Group3 valid
-		addr = 0x524;
+	  addr = 0x524;
 	else
-		addr = 0;
-LOG_INF("HI553 addr = 0x%x \n", addr);
+	  addr = 0;
+	LOG_INF("HI553 addr = 0x%x \n", addr);
 	if (addr == 0) {
 		hi553_otp.module_integrator_id = 0;
 		hi553_otp.AF_Flag = 0;
@@ -2567,32 +2571,32 @@ LOG_INF("HI553 addr = 0x%x \n", addr);
 
 	checksum = (hi553_otp.module_integrator_id + hi553_otp.AF_Flag + hi553_otp.prodyction_year + hi553_otp.production_month + hi553_otp.production_day + hi553_otp.sensor_id + hi553_otp.lens_id) % 0xFF + 1;
 
-if (checksum == hi553_otp.infocheck)
-			{
+	if (checksum == hi553_otp.infocheck)
+	{
 		LOG_INF("HI553_Sensor: Module information checksum PASS\n ");
-		}
+	}
 	else
-		{
+	{
 		LOG_INF("HI553_Sensor: Module information checksum Fail\n ");
-		}
-	
-LOG_INF("HI553 module_integrator_id = 0x%x, AF_Flag = 0x%x, prodyction_year = 0x%x, production_month = 0x%x, production_day = 0x%x, sensor_id = 0x%x, lens_id = 0x%x, infocheck = 0x%x \n",\
-		hi553_otp.module_integrator_id,hi553_otp.AF_Flag, hi553_otp.prodyction_year, hi553_otp.production_month, hi553_otp.production_day, hi553_otp.sensor_id, hi553_otp.lens_id, hi553_otp.infocheck);
+	}
+
+	LOG_INF("HI553 module_integrator_id = 0x%x, AF_Flag = 0x%x, prodyction_year = 0x%x, production_month = 0x%x, production_day = 0x%x, sensor_id = 0x%x, lens_id = 0x%x, infocheck = 0x%x \n",\
+				hi553_otp.module_integrator_id,hi553_otp.AF_Flag, hi553_otp.prodyction_year, hi553_otp.production_month, hi553_otp.production_day, hi553_otp.sensor_id, hi553_otp.lens_id, hi553_otp.infocheck);
 
 
 
 	hi553_otp.WB_FLAG = OTP_read_cmos_sensor(0x535);
 	if (hi553_otp.WB_FLAG == 0x01)
-		wb_start_addr = 0x536;
+	  wb_start_addr = 0x536;
 	else if (hi553_otp.WB_FLAG == 0x13)
-		wb_start_addr = 0x554;
+	  wb_start_addr = 0x554;
 	else if (hi553_otp.WB_FLAG == 0x37)
-		wb_start_addr = 0x572;
+	  wb_start_addr = 0x572;
 	else
-		LOG_INF("HI553 WB data invalid \n");
+	  LOG_INF("HI553 WB data invalid \n");
 
-LOG_INF("HI553 WB_FLAG = 0x%x \n", hi553_otp.WB_FLAG);
-LOG_INF("HI553 wb_start_addr = 0x%x \n", wb_start_addr);
+	LOG_INF("HI553 WB_FLAG = 0x%x \n", hi553_otp.WB_FLAG);
+	LOG_INF("HI553 wb_start_addr = 0x%x \n", wb_start_addr);
 
 	if (wb_start_addr != 0) {
 		write_cmos_sensor_byte(0x10a, (wb_start_addr >> 8) & 0xff);	//start addr H
@@ -2602,6 +2606,30 @@ LOG_INF("HI553 wb_start_addr = 0x%x \n", wb_start_addr);
 			hi553_otp.wb_data[i] = read_cmos_sensor_byte(0x108);	//otp data read
 			LOG_INF("HI553 wb_data[%d] = 0x%x  ", i, hi553_otp.wb_data[i]);
 		}
+	}
+
+	hi553_otp.LSC_FLAG = OTP_read_cmos_sensor(0x590);
+	if (hi553_otp.LSC_FLAG == 0x01)
+	  lsc_start_addr = 0x591;
+	else if (hi553_otp.LSC_FLAG == 0x13)
+	  lsc_start_addr = 0x956;
+	else
+	  LOG_INF("HI553 LSC data invalid \n");
+	LOG_INF("HI553 lsc_FLAG = 0x%x \n", hi553_otp.LSC_FLAG);
+	LOG_INF("HI553 lsc_start_addr = 0x%x \n", lsc_start_addr);
+	if (lsc_start_addr != 0) {
+		write_cmos_sensor_byte(0x10a, (lsc_start_addr >> 8) & 0xff);	//start addr H
+		write_cmos_sensor_byte(0x10b, lsc_start_addr & 0xff);	//start addr L
+		write_cmos_sensor_byte(0x102, 0x01);	//single mode
+		for (i = 0; i < 965; i++) {
+			hi553_otp.lsc_data[i] = read_cmos_sensor_byte(0x108);	//otp data read
+			printk("HI553 lsc_data[%d] = 0x%x\n", i, hi553_otp.lsc_data[i]);
+			checksum_lsc += hi553_otp.lsc_data[i];
+		}
+
+		printk("HI553 xljadd checksum_lsc = 0x%x\n", checksum_lsc);
+		checksum_lsc = (checksum_lsc - hi553_otp.lsc_data[964])%255+1;
+		printk("HI553 xljadd after calculator checksum_lsc = 0x%x\n", checksum_lsc);
 	}
 
 	return hi553_otp.WB_FLAG;
@@ -2623,22 +2651,22 @@ static int hi553_otp_apply(struct hi553_otp_struct *otp_ptr)
 	//BG_ratio_golden = (hi553_otp.wb_data[8] << 8) | (hi553_otp.wb_data[9] & 0x03FF);
 	wbcheck = hi553_otp.wb_data[29];
 	checksum = (hi553_otp.wb_data[0] + hi553_otp.wb_data[1] + hi553_otp.wb_data[2] + hi553_otp.wb_data[3] + hi553_otp.wb_data[4] + hi553_otp.wb_data[5] ) % 0xFF+ 1;
-    LOG_INF("HI553_Sensor: WB checksum checksum = 0x%x,wbcheck= 0x%x\n ",checksum,wbcheck);
-if (checksum == wbcheck)
-		{
+	LOG_INF("HI553_Sensor: WB checksum checksum = 0x%x,wbcheck= 0x%x\n ",checksum,wbcheck);
+	if (checksum == wbcheck)
+	{
 		LOG_INF("HI553_Sensor: WB checksum PASS\n ");
-		}
-else
-		{
+	}
+	else
+	{
 		LOG_INF("HI553_Sensor: WB checksum Fail\n ");
-		}
+	}
 
-LOG_INF("HI553 RG_ratio_unit = 0x%x, BG_ratio_unit = 0x%x, RG_ratio_golden = 0x%x, BG_ratio_golden = 0x%x, wbcheck = 0x%x \n",\
-		RG_ratio_unit, BG_ratio_unit, RG_ratio_golden, BG_ratio_golden, wbcheck);
+	LOG_INF("HI553 RG_ratio_unit = 0x%x, BG_ratio_unit = 0x%x, RG_ratio_golden = 0x%x, BG_ratio_golden = 0x%x, wbcheck = 0x%x \n",\
+				RG_ratio_unit, BG_ratio_unit, RG_ratio_golden, BG_ratio_golden, wbcheck);
 
 	R_gain = (0x100 * RG_ratio_golden / RG_ratio_unit);
 	B_gain = (0x100 * BG_ratio_golden / BG_ratio_unit);
-    G_gain = 0x100;
+	G_gain = 0x100;
 
 	if (R_gain < B_gain) {
 		if(R_gain < 0x100) {
@@ -2654,13 +2682,13 @@ LOG_INF("HI553 RG_ratio_unit = 0x%x, BG_ratio_unit = 0x%x, RG_ratio_golden = 0x%
 		}
 	}
 	//R_gain = 0x11111111;
-LOG_INF("HI553 Before apply otp G_gain = 0x%x, R_gain = 0x%x, B_gain = 0x%x \n",(read_cmos_sensor_byte(0x0126) << 8) | (read_cmos_sensor_byte(0x0127) & 0xFFFF),(read_cmos_sensor_byte(0x012a) << 8) | (read_cmos_sensor_byte(0x012b) & 0xFFFF),(read_cmos_sensor_byte(0x012c) << 8) | (read_cmos_sensor_byte(0x012d) & 0xFFFF));
+	LOG_INF("HI553 Before apply otp G_gain = 0x%x, R_gain = 0x%x, B_gain = 0x%x \n",(read_cmos_sensor_byte(0x0126) << 8) | (read_cmos_sensor_byte(0x0127) & 0xFFFF),(read_cmos_sensor_byte(0x012a) << 8) | (read_cmos_sensor_byte(0x012b) & 0xFFFF),(read_cmos_sensor_byte(0x012c) << 8) | (read_cmos_sensor_byte(0x012d) & 0xFFFF));
 
-   write_cmos_sensor_byte(0x0a00, 0x00); //sleep On
+	write_cmos_sensor_byte(0x0a00, 0x00); //sleep On
 	mdelay(100);
-    write_cmos_sensor_byte(0x003f, 0x00); //OTP mode off
-    write_cmos_sensor_byte(0x0a00, 0x01); //sleep Off
-    
+	write_cmos_sensor_byte(0x003f, 0x00); //OTP mode off
+	write_cmos_sensor_byte(0x0a00, 0x01); //sleep Off
+
 	//G_gain = (read_cmos_sensor_byte(0x0126) << 8) | (read_cmos_sensor_byte(0x0127) & 0xFFFF);
 	//R_gain = (read_cmos_sensor_byte(0x012a) << 8) | (read_cmos_sensor_byte(0x012b) & 0xFFFF);
 	//B_gain = (read_cmos_sensor_byte(0x012c) << 8) | (read_cmos_sensor_byte(0x012d) & 0xFFFF);
@@ -2672,20 +2700,29 @@ LOG_INF("HI553 Before apply otp G_gain = 0x%x, R_gain = 0x%x, B_gain = 0x%x \n",
 	write_cmos_sensor_byte(0x012b, (R_gain) & 0xFFFF);
 	write_cmos_sensor_byte(0x012c, (B_gain) >> 8);
 	write_cmos_sensor_byte(0x012d, (B_gain) & 0xFFFF);
-LOG_INF("HI553 after apply otp G_gain = 0x%x, R_gain = 0x%x, B_gain = 0x%x \n",(read_cmos_sensor_byte(0x0126) << 8) | (read_cmos_sensor_byte(0x0127) & 0xFFFF), (read_cmos_sensor_byte(0x012a) << 8) | (read_cmos_sensor_byte(0x012b) & 0xFFFF), (read_cmos_sensor_byte(0x012c) << 8) | (read_cmos_sensor_byte(0x012d) & 0xFFFF));
+	LOG_INF("HI553 after apply otp G_gain = 0x%x, R_gain = 0x%x, B_gain = 0x%x \n",(read_cmos_sensor_byte(0x0126) << 8) | (read_cmos_sensor_byte(0x0127) & 0xFFFF), (read_cmos_sensor_byte(0x012a) << 8) | (read_cmos_sensor_byte(0x012b) & 0xFFFF), (read_cmos_sensor_byte(0x012c) << 8) | (read_cmos_sensor_byte(0x012d) & 0xFFFF));
 
 	return hi553_otp.WB_FLAG;
 }
 static void hi553_otp_cali_read(void)
 {
-    
-    LOG_INF("HI553 huaquan_otp_cali \n");
-    LOG_INF("hi553_otp_read_flag : 0x%d\n", hi553_otp_read_flag);
-    otp_init_setting();
-    hi553_otp_read();
-    hi553_otp_read_flag = 1;
-    //hi553_otp_apply(&hi553_otp);
 
+	LOG_INF("HI553 huaquan_otp_cali \n");
+	LOG_INF("hi553_otp_read_flag : 0x%d\n", hi553_otp_read_flag);
+	otp_init_setting();
+	hi553_otp_read();
+	hi553_otp_read_flag = 1;
+	//hi553_otp_apply(&hi553_otp);
+
+}
+unsigned int OTP_Read_Lsc(unsigned int addr,unsigned char *data, unsigned int size)
+{
+
+	LOG_INF(" start copy lsc_data size = %d\n",size);  
+
+	LOG_INF(" hi553_otp.lsc_data[963]=0x%x\n",hi553_otp.lsc_data[963]);    		
+	memcpy(data,hi553_otp.lsc_data,size);
+	return size;
 }
 #ifdef CONFIG_LCT_DEVINFO_SUPPORT/*jijin.wang add for dev_info*/
 #include  "dev_info.h"
@@ -2697,7 +2734,7 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 	kal_uint8 retry = 2;
 	//sensor have two i2c address 0x6c 0x6d & 0x21 0x20, we should detect the module used i2c address
 #ifdef CONFIG_LCT_DEVINFO_SUPPORT
-	s_DEVINFO_ccm.device_type = "CCM";
+	s_DEVINFO_ccm.device_type = "CCM-S";
 	s_DEVINFO_ccm.device_module = "NULL";//can change if got module id
 	s_DEVINFO_ccm.device_vendor = "oflim";
 	s_DEVINFO_ccm.device_ic = "hi553";
@@ -2716,13 +2753,20 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 			if (*sensor_id == imgsensor_info.sensor_id) {
 #ifdef CONFIG_LCT_DEVINFO_SUPPORT		
 				DEVINFO_CHECK_DECLARE(s_DEVINFO_ccm.device_type,s_DEVINFO_ccm.device_module,
-						s_DEVINFO_ccm.device_vendor,s_DEVINFO_ccm.device_ic,s_DEVINFO_ccm.device_version,
-						s_DEVINFO_ccm.device_info,s_DEVINFO_ccm.device_used);
+							s_DEVINFO_ccm.device_vendor,s_DEVINFO_ccm.device_ic,s_DEVINFO_ccm.device_version,
+							s_DEVINFO_ccm.device_info,s_DEVINFO_ccm.device_used);
 #endif
 #ifdef CONFIG_MTK_CAM_CAL
 				//read_imx135_otp_mtk_fmt();
-#endif           
+#endif
+				/* initail sequence write in  */
+				sensor_init();
+				if(hi553_otp_read_flag == 0)
+				{
+					hi553_otp_cali_read();
+				}           
 				LOG_INF("i2c write id: 0x%x, ReadOut sensor id: 0x%x, imgsensor_info.sensor_id:0x%x.\n", imgsensor.i2c_write_id,*sensor_id,imgsensor_info.sensor_id);	
+
 				return ERROR_NONE;
 			}
 			LOG_INF("Read sensor id fail, i2c write id: 0x%x, ReadOut sensor id: 0x%x, imgsensor_info.sensor_id:0x%x.\n", imgsensor.i2c_write_id,*sensor_id,imgsensor_info.sensor_id);	
@@ -2735,8 +2779,8 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 #ifdef CONFIG_LCT_DEVINFO_SUPPORT	
 		s_DEVINFO_ccm.device_used=DEVINFO_UNUSED;	
 		DEVINFO_CHECK_DECLARE(s_DEVINFO_ccm.device_type,s_DEVINFO_ccm.device_module,
-				s_DEVINFO_ccm.device_vendor,s_DEVINFO_ccm.device_ic,s_DEVINFO_ccm.device_version,
-				s_DEVINFO_ccm.device_info,s_DEVINFO_ccm.device_used);
+					s_DEVINFO_ccm.device_vendor,s_DEVINFO_ccm.device_ic,s_DEVINFO_ccm.device_version,
+					s_DEVINFO_ccm.device_info,s_DEVINFO_ccm.device_used);
 #endif
 		// if Sensor ID is not correct, Must set *sensor_id to 0xFFFFFFFF
 		*sensor_id = 0xFFFFFFFF;
@@ -2785,18 +2829,18 @@ static kal_uint32 open(void)
 		} while(retry > 0);
 		i++;
 		if (sensor_id == imgsensor_info.sensor_id)
-			break;
+		  break;
 		retry = 2;
 	}
 	if (imgsensor_info.sensor_id != sensor_id)
-		return ERROR_SENSOR_CONNECT_FAIL;
+	  return ERROR_SENSOR_CONNECT_FAIL;
 
 	/* initail sequence write in  */
 	sensor_init();
 	if(hi553_otp_read_flag == 0)
-    {
-        hi553_otp_cali_read();
-    }
+	{
+		hi553_otp_cali_read();
+	}
 	hi553_otp_apply(&hi553_otp);
 
 	spin_lock(&imgsensor_drv_lock);
@@ -2865,7 +2909,7 @@ static kal_uint32 close(void)
  *
  *************************************************************************/
 static kal_uint32 preview(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
-		MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
+			MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
 {
 	LOG_INF("E\n");
 
@@ -2879,7 +2923,7 @@ static kal_uint32 preview(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 	imgsensor.autoflicker_en = KAL_FALSE;
 	spin_unlock(&imgsensor_drv_lock);
 	preview_setting();
-	//set_mirror_flip(IMAGE_NORMAL);	
+	//set_mirror_flip(imgsensor.mirror);	
 	mdelay(10);
 #ifdef FANPENGTAO
 	int i=0;
@@ -2907,7 +2951,7 @@ static kal_uint32 preview(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
  *
  *************************************************************************/
 static kal_uint32 capture(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
-		MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
+			MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
 {
 	LOG_INF("E\n");
 	spin_lock(&imgsensor_drv_lock);
@@ -2921,23 +2965,23 @@ static kal_uint32 capture(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 		imgsensor.autoflicker_en = KAL_FALSE;
 	} 
 	else  
-		if (imgsensor.current_fps == imgsensor_info.cap1.max_framerate) {
-			//PIP capture: 24fps for less than 13M, 20fps for 16M,15fps for 20M
-			LOG_INF("cap115fps: use cap1's setting: %d fps!\n",imgsensor.current_fps/10);
-			imgsensor.pclk = imgsensor_info.cap1.pclk;
-			imgsensor.line_length = imgsensor_info.cap1.linelength;
-			imgsensor.frame_length = imgsensor_info.cap1.framelength;  
-			imgsensor.min_frame_length = imgsensor_info.cap1.framelength;
-			imgsensor.autoflicker_en = KAL_FALSE;
-		}
-		else  { //PIP capture: 24fps for less than 13M, 20fps for 16M,15fps for 20M
-			LOG_INF("Warning:=== current_fps %d fps is not support, so use cap1's setting\n",imgsensor.current_fps/10);
-			imgsensor.pclk = imgsensor_info.cap1.pclk;
-			imgsensor.line_length = imgsensor_info.cap1.linelength;
-			imgsensor.frame_length = imgsensor_info.cap1.framelength;  
-			imgsensor.min_frame_length = imgsensor_info.cap1.framelength;
-			imgsensor.autoflicker_en = KAL_FALSE;
-		}
+	  if (imgsensor.current_fps == imgsensor_info.cap1.max_framerate) {
+		  //PIP capture: 24fps for less than 13M, 20fps for 16M,15fps for 20M
+		  LOG_INF("cap115fps: use cap1's setting: %d fps!\n",imgsensor.current_fps/10);
+		  imgsensor.pclk = imgsensor_info.cap1.pclk;
+		  imgsensor.line_length = imgsensor_info.cap1.linelength;
+		  imgsensor.frame_length = imgsensor_info.cap1.framelength;  
+		  imgsensor.min_frame_length = imgsensor_info.cap1.framelength;
+		  imgsensor.autoflicker_en = KAL_FALSE;
+	  }
+	  else  { //PIP capture: 24fps for less than 13M, 20fps for 16M,15fps for 20M
+		  LOG_INF("Warning:=== current_fps %d fps is not support, so use cap1's setting\n",imgsensor.current_fps/10);
+		  imgsensor.pclk = imgsensor_info.cap1.pclk;
+		  imgsensor.line_length = imgsensor_info.cap1.linelength;
+		  imgsensor.frame_length = imgsensor_info.cap1.framelength;  
+		  imgsensor.min_frame_length = imgsensor_info.cap1.framelength;
+		  imgsensor.autoflicker_en = KAL_FALSE;
+	  }
 	spin_unlock(&imgsensor_drv_lock);
 	capture_setting(imgsensor.current_fps); 
 	//set_mirror_flip(IMAGE_NORMAL);	
@@ -3064,8 +3108,8 @@ static kal_uint32 get_resolution(MSDK_SENSOR_RESOLUTION_INFO_STRUCT *sensor_reso
 }	/*	get_resolution	*/
 
 static kal_uint32 get_info(MSDK_SCENARIO_ID_ENUM scenario_id,
-		MSDK_SENSOR_INFO_STRUCT *sensor_info,
-		MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
+			MSDK_SENSOR_INFO_STRUCT *sensor_info,
+			MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
 {
 	LOG_INF("scenario_id = %d\n", scenario_id);
 
@@ -3173,7 +3217,7 @@ static kal_uint32 get_info(MSDK_SCENARIO_ID_ENUM scenario_id,
 
 
 static kal_uint32 control(MSDK_SCENARIO_ID_ENUM scenario_id, MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
-		MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
+			MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
 {
 	LOG_INF("scenario_id = %d\n", scenario_id);
 	spin_lock(&imgsensor_drv_lock);
@@ -3210,15 +3254,15 @@ static kal_uint32 set_video_mode(UINT16 framerate)
 	LOG_INF("framerate = %d\n ", framerate);
 	// SetVideoMode Function should fix framerate
 	if (framerate == 0)
-		// Dynamic frame rate
-		return ERROR_NONE;
+	  // Dynamic frame rate
+	  return ERROR_NONE;
 	spin_lock(&imgsensor_drv_lock);
 	if ((framerate == 300) && (imgsensor.autoflicker_en == KAL_TRUE))
-		imgsensor.current_fps = 296;
+	  imgsensor.current_fps = 296;
 	else if ((framerate == 150) && (imgsensor.autoflicker_en == KAL_TRUE))
-		imgsensor.current_fps = 146;
+	  imgsensor.current_fps = 146;
 	else
-		imgsensor.current_fps = framerate;
+	  imgsensor.current_fps = framerate;
 	spin_unlock(&imgsensor_drv_lock);
 	set_max_framerate(imgsensor.current_fps,1);
 
@@ -3230,9 +3274,9 @@ static kal_uint32 set_auto_flicker_mode(kal_bool enable, UINT16 framerate)
 	LOG_INF("enable = %d, framerate = %d \n", enable, framerate);
 	spin_lock(&imgsensor_drv_lock);
 	if (enable) //enable auto flicker	  
-		imgsensor.autoflicker_en = KAL_TRUE;
+	  imgsensor.autoflicker_en = KAL_TRUE;
 	else //Cancel Auto flick
-		imgsensor.autoflicker_en = KAL_FALSE;
+	  imgsensor.autoflicker_en = KAL_FALSE;
 	spin_unlock(&imgsensor_drv_lock);
 	return ERROR_NONE;
 }
@@ -3255,7 +3299,7 @@ static kal_uint32 set_max_framerate_by_scenario(MSDK_SCENARIO_ID_ENUM scenario_i
 			break;			
 		case MSDK_SCENARIO_ID_VIDEO_PREVIEW:
 			if(framerate == 0)
-				return ERROR_NONE;
+			  return ERROR_NONE;
 			frame_length = imgsensor_info.normal_video.pclk / framerate * 10 / imgsensor_info.normal_video.linelength;
 			spin_lock(&imgsensor_drv_lock);
 			imgsensor.dummy_line = (frame_length > imgsensor_info.normal_video.framelength) ? (frame_length - imgsensor_info.normal_video.framelength) : 0;			
@@ -3365,7 +3409,7 @@ static kal_uint32 set_test_pattern_mode(kal_bool enable)
 }
 
 static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
-		UINT8 *feature_para,UINT32 *feature_para_len)
+			UINT8 *feature_para,UINT32 *feature_para_len)
 {
 	UINT16 *feature_return_para_16=(UINT16 *) feature_para;
 	UINT16 *feature_data_16=(UINT16 *) feature_para;
@@ -3498,7 +3542,7 @@ UINT32 HI553MIPI_RAW_SensorInit(PSENSOR_FUNCTION_STRUCT *pfFunc)
 {
 	/* To Do : Check Sensor status here */
 	if (pfFunc!=NULL)
-		*pfFunc=&sensor_func;
+	  *pfFunc=&sensor_func;
 	return ERROR_NONE;
 }	/*	hi553_MIPI_RAW_SensorInit	*/
 

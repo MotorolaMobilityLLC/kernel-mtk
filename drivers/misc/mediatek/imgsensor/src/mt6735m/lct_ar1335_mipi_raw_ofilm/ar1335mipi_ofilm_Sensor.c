@@ -626,7 +626,7 @@ int Read_And_Write_Lsc_Otp_Value(void)
 	for(i = 0;i < 106;i++)
 	{
 		Lsc_Struct_data[i].Lsc_data = ((Read_cmos_sensor(0xDF + j)&0x00ff)<<8)|(Read_cmos_sensor(0xDF + j +1)&0x00ff);
-		printk("hl[%d] = %x\n",i,Lsc_Struct_data[i].Lsc_data);
+		//LOG_INF("hl[%d] = %x\n",i,Lsc_Struct_data[i].Lsc_data);
 		j += 2;
 	}
 	/*checksum*/
@@ -635,7 +635,7 @@ int Read_And_Write_Lsc_Otp_Value(void)
 		CheckSum += (Read_cmos_sensor(i)&0x00ff);
 	}
 #ifdef OPEN_OTP_DEBUG
-	printk("checksum value CheckSum = %x,0x09EF = %x,0x09F0 = %x\n"
+	LOG_INF("checksum value CheckSum = %x,0x09EF = %x,0x09F0 = %x\n"
 				,CheckSum
 				,Read_cmos_sensor(0x09EF),Read_cmos_sensor(0x09F0));
 #endif
@@ -645,14 +645,14 @@ int Read_And_Write_Lsc_Otp_Value(void)
 		Write_Lsc_Otp_Value();
 	}else
 	{
-		printk("return Camera LSC-shading CheckSum fail!\n");
+		LOG_INF("return Camera LSC-shading CheckSum fail!\n");
 		return 0;
 	}
 #ifdef OPEN_OTP_DEBUG
 	j = 0;
 	i = 0;
 	for(i = 0;i < 20;i++){
-		printk("read-hl[%d] = %x\n",i,Read_cmos_sensor_2byte(0x3600 + j));
+		LOG_INF("read-hl[%d] = %x\n",i,Read_cmos_sensor_2byte(0x3600 + j));
 		j += 2;
 	}
 #endif
@@ -669,7 +669,7 @@ void AR1335_OTP_ENABLE_LOAD_LSC(void)
 	if(Read_And_Write_Lsc_Otp_Value())
 	{
 		OTP_KEY = 1;
-		printk("return Camera LSC-shading CheckSum Pass!\n");
+		LOG_INF("return Camera LSC-shading CheckSum Pass!\n");
 	}
 }
 
@@ -1065,8 +1065,8 @@ static void sensor_init(void)
 		write_cmos_sensor(0x3780,0x80);
 		write_cmos_sensor(0x3781,0x00);
 		//write_cmos_sensor_2byte(0x3780,0x8000);
-		printk("enable init(3780) = %x\n",read_cmos_sensor(0x3780)); 
-		printk("enable init(3781) = %x\n",read_cmos_sensor(0x3781));   
+		LOG_INF("enable init(3780) = %x\n",read_cmos_sensor(0x3780)); 
+		LOG_INF("enable init(3781) = %x\n",read_cmos_sensor(0x3781));   
 	}
 
 }    /*    sensor_init  */
@@ -1123,8 +1123,8 @@ static void preview_setting(void)
 		write_cmos_sensor(0x3780,0x80);
 		write_cmos_sensor(0x3781,0x00);
 		//write_cmos_sensor_2byte(0x3780,0x8000);
-		printk("enable preview(3780) = %x\n",read_cmos_sensor(0x3780)); 
-		printk("enable preview(3781) = %x\n",read_cmos_sensor(0x3781));
+		LOG_INF("enable preview(3780) = %x\n",read_cmos_sensor(0x3780)); 
+		LOG_INF("enable preview(3781) = %x\n",read_cmos_sensor(0x3781));
 	}
 }    /*    preview_setting  */
 
@@ -1187,8 +1187,8 @@ static void capture_setting(kal_uint16 currefps)
 		write_cmos_sensor(0x3780,0x80);
 		write_cmos_sensor(0x3781,0x00);
 		//write_cmos_sensor_2byte(0x3780,0x8000);
-		printk("enable capture(3780) = %x\n",read_cmos_sensor(0x3780)); 
-		printk("enable capture(3781) = %x\n",read_cmos_sensor(0x3781)); 
+		LOG_INF("enable capture(3780) = %x\n",read_cmos_sensor(0x3780)); 
+		LOG_INF("enable capture(3781) = %x\n",read_cmos_sensor(0x3781)); 
 	}
 
 }
@@ -1196,7 +1196,7 @@ static void capture_setting(kal_uint16 currefps)
 static void normal_video_setting(kal_uint16 currefps)
 {
 
-	printk("E---hs_video 1080p 30fps \n");
+	LOG_INF("E---hs_video 1080p 30fps \n");
 	/// stop_streaming
 	write_cmos_sensor_2byte(0x3F3C, 0x0002);
 	write_cmos_sensor_2byte(0x3FE0, 0x0001);
