@@ -433,7 +433,7 @@ static void lcm_get_params(LCM_PARAMS *params)
 	params->dsi.PLL_CLOCK = 220; //this value must be in MTK suggested table
 #endif
 
-	params->dsi.cont_clock=0;
+	params->dsi.cont_clock=1;
 	params->dsi.clk_lp_per_line_enable = 1;
 	params->dsi.esd_check_enable = 1;
 	params->dsi.customization_esd_check_enable = 1;

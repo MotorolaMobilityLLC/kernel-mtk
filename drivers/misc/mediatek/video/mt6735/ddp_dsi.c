@@ -1233,7 +1233,7 @@ DSI_STATUS DSI_TXRX_Control(DISP_MODULE_ENUM module, cmdqRecHandle cmdq,
 	/*bool err_correction_en = false; */
 	bool dis_eotp_en = false;
 #ifdef CONFIG_LCT_ESD_CHECK_MULTI_REG
-	bool hstx_cklp_en = true;
+	bool hstx_cklp_en = dsi_params->cont_clock?true:false;
 #else
 	bool hstx_cklp_en = false;
 #endif
