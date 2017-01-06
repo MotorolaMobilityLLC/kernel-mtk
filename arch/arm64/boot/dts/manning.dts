@@ -452,25 +452,79 @@
 	/* UART GPIO Settings - End */
 };
 
+
+/* FINGERPRINT start */
 &spi1 {
 	#address-cells = <1>;
 	#size-cells = <0>;
 
-	fpc1145@0 {
-		compatible = "fpc,fpc1020";
+	fingerprint@0 {
+		compatible = "goodix,goodix-fp";
 		reg = <0>;
-		spi-max-frequency = <16000000>;
-		/* fpc,gpio_irq = <0>; */
-		fpc,gpio_reset = <256>;
-		/* fpc,gpio_cs = <85>; */
-		/* fpc,vddtx_mv = <3300>;  */
-		/* fpc,txout_boost_enable; */
-		/* fpc,force_hwid = <0x1234> */
-		/* vcc_spi-supply = <&pm8941_s3>; */
-		/* vdd_ana-supply = <&pm8941_lvs1>; */
-		/* vdd_io-supply = <&pm8941_lvs1>; */
+		spi-max-frequency = <8000000>;
+		status = "okay";
 	};
 };
+
+&goodix_fp {
+	pinctrl-names = "fingerprint_irq", "miso_spi", "miso_pullhigh", "miso_pulllow", "reset_high", "reset_low";
+	pinctrl-0 = <&fingerprint_irq>;
+	pinctrl-1 = <&fingerprint_miso_spi>;
+	pinctrl-2 = <&fingerprint_miso_pullhigh>;
+	pinctrl-3 = <&fingerprint_miso_pulllow>;
+	pinctrl-4 = <&fingerprint_reset_high>;
+	pinctrl-5 = <&fingerprint_reset_low>;
+	status = "okay";
+};
+
+&pio {
+	fingerprint_irq: fingerprint_irq {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO86__FUNC_EINT9>;
+			slew-rate = <0>;
+			bias-disable;
+		};
+	};
+
+	fingerprint_miso_spi: state_miso_spi {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO235__FUNC_SPI1_MI_B>;
+		};
+	};
+
+	fingerprint_miso_pullhigh: state_miso_pullhigh {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO235__FUNC_GPIO235>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+
+	fingerprint_miso_pulllow: state_miso_pulllow {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO235__FUNC_GPIO235>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+
+	fingerprint_reset_high: state_reset_high {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO253__FUNC_GPIO253>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+
+	fingerprint_reset_low: state_reset_low {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO253__FUNC_GPIO253>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+};
+/* FINGERPRINT end */
 
 /* NFC GPIO standardization */
 &pio {
