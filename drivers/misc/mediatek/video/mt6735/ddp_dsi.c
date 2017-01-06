@@ -4198,12 +4198,13 @@ switch(recv_data_cnt)
                                 if((read_data1.byte0 == dsi_params->lcm_esd_check_table[i].para_list[0]) && (read_data1.byte1 == dsi_params->lcm_esd_check_table[i].para_list[1]) 
                                 && (read_data1.byte2 == dsi_params->lcm_esd_check_table[i].para_list[2])) 
                                 { 
-           
-                                     result = 0; // esd pass 
+           							//printk("[ESD] esd recv_data_cnt = %d pass\n",recv_data_cnt);
+                                     ret = 0; // esd pass 
                                 } 
                                 else 
                                 { 
-                                     result = 1; // esd fail 
+									printk("[ESD] esd recv_data_cnt = %d fail\n",recv_data_cnt);
+                                     ret = 1; // esd fail 
                                 	 goto lable; 
                                 } 
                                 break; 
