@@ -432,13 +432,14 @@ static uint8_t  sx9310_interrupt_state(void){
                      0x02/0x42: near
          */              
 
-         
-     if (valtype == 0x2 || valtype == 0x42){
-  	   state = CAPSENSOR_NEAR_WIFI;
-     }else{
-           state = CAPSENSOR_FAR;
-     }
- 
+     
+        if (valtype == 0x0) {
+            state = CAPSENSOR_FAR;
+        }
+        else {
+            state = CAPSENSOR_NEAR_WIFI;
+        }
+
         lct_pr_info("[%s]  state=[%x]\n",__func__, state);
 
         return state;      
