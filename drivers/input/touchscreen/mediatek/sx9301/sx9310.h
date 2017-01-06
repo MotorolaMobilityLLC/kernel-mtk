@@ -142,7 +142,7 @@ static struct smtc_reg_data sx9310_i2c_reg_setup[] = {
 	},
 	{
 		.reg = SX9310_CPS_CTRL3_REG,
-		.val = 0x0A,
+		.val = 0x0E,
 	},
 	{
 		.reg = SX9310_CPS_CTRL4_REG,
