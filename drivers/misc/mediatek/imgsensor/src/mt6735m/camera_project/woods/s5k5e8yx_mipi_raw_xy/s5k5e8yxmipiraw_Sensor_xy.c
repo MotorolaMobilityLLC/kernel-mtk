@@ -626,6 +626,10 @@ static void preview_setting(void)
 	//coarse_integration_time
 	write_cmos_sensor(0x0202,0x03);
 	write_cmos_sensor(0x0203,0xDE);
+	write_cmos_sensor(0x392F,0x01);  //TrTf 
+	write_cmos_sensor(0x3930,0x00);  //TrTf   0x0000 --> 190ps; 0x0080 --> 180ps ; 0x0100 --> 280ps ; 0x0180 --> 210ps  
+	write_cmos_sensor(0x3931,0x02);  //VOD    0x00 --> 427mV ; 0x01 --> 374mV ; 0x02 --> 470mV ; 0x03 --> 411mV
+	write_cmos_sensor(0x3932,0x80);  // Tx    0x00 --> no change ; 0x80 --> slew rate up ; 0x20 --> decrease 15%; 0x60 --> decrease 30%
 	
 	write_cmos_sensor(0x3303,0x02); //bpmarker_allcure_en[1], bpmarker_flat2bit_bypass[0]
 	//luminjie@wind-mobi.com 20160818 bgein
@@ -693,6 +697,10 @@ static void capture_setting(kal_uint16 currefps)
 		write_cmos_sensor(0x0202,0X03);
 		write_cmos_sensor(0x0203,0XDE);
 		write_cmos_sensor(0x3303,0X02);
+		write_cmos_sensor(0x392F,0x01);  //TrTf 
+	  write_cmos_sensor(0x3930,0x00);  //TrTf   0x0000 --> 190ps; 0x0080 --> 180ps ; 0x0100 --> 280ps ; 0x0180 --> 210ps  
+	  write_cmos_sensor(0x3931,0x02);  //VOD    0x00 --> 427mV ; 0x01 --> 374mV ; 0x02 --> 470mV ; 0x03 --> 411mV
+	  write_cmos_sensor(0x3932,0x80);  // Tx    0x00 --> no change ; 0x80 --> slew rate up ; 0x20 --> decrease 15%; 0x60 --> decrease 30%
 		//luminjie@wind-mobi.com 20160818 bgein
 		write_cmos_sensor(0x3400,0X01);//shade_bypass LSC off wangkangmin@wind-mobi.com 20160617
 		//luminjie@wind-mobi.com 20160818 end
@@ -754,6 +762,10 @@ static void capture_setting(kal_uint16 currefps)
 		write_cmos_sensor(0x0202,0X03);
 		write_cmos_sensor(0x0203,0XDE);
 		write_cmos_sensor(0x3303,0X02);
+		write_cmos_sensor(0x392F,0x01);  //TrTf 
+	  write_cmos_sensor(0x3930,0x00);  //TrTf   0x0000 --> 190ps; 0x0080 --> 180ps ; 0x0100 --> 280ps ; 0x0180 --> 210ps  
+	  write_cmos_sensor(0x3931,0x02);  //VOD    0x00 --> 427mV ; 0x01 --> 374mV ; 0x02 --> 470mV ; 0x03 --> 411mV
+	  write_cmos_sensor(0x3932,0x80);  // Tx    0x00 --> no change ; 0x80 --> slew rate up ; 0x20 --> decrease 15%; 0x60 --> decrease 30%
 		//luminjie@wind-mobi.com 20160818 bgein
 		write_cmos_sensor(0x3400,0X01);//shade_bypass LSC off wangkangmin@wind-mobi.com 20160617
 		//luminjie@wind-mobi.com 20160818 end
@@ -817,6 +829,10 @@ static void capture_setting(kal_uint16 currefps)
 	write_cmos_sensor(0x0202,0x03);
 	write_cmos_sensor(0x0203,0xDE);
 	write_cmos_sensor(0x3303,0x02);
+	write_cmos_sensor(0x392F,0x01);  //TrTf 
+	write_cmos_sensor(0x3930,0x00);  //TrTf   0x0000 --> 190ps; 0x0080 --> 180ps ; 0x0100 --> 280ps ; 0x0180 --> 210ps  
+	write_cmos_sensor(0x3931,0x02);  //VOD    0x00 --> 427mV ; 0x01 --> 374mV ; 0x02 --> 470mV ; 0x03 --> 411mV
+	write_cmos_sensor(0x3932,0x80);  // Tx    0x00 --> no change ; 0x80 --> slew rate up ; 0x20 --> decrease 15%; 0x60 --> decrease 30%
 	//luminjie@wind-mobi.com 20160818 bgein
 	write_cmos_sensor(0x3400,0x01);//shade_bypass LSC off wangkangmin@wind-mobi.com 20160617
 	//luminjie@wind-mobi.com 20160818 end
@@ -884,6 +900,10 @@ static void normal_video_setting(kal_uint16 currefps)
 	write_cmos_sensor(0x0202,0x03);
 	write_cmos_sensor(0x0203,0xDE);
 	write_cmos_sensor(0x3303,0x02);
+	write_cmos_sensor(0x392F,0x01);  //TrTf 
+	write_cmos_sensor(0x3930,0x00);  //TrTf   0x0000 --> 190ps; 0x0080 --> 180ps ; 0x0100 --> 280ps ; 0x0180 --> 210ps  
+	write_cmos_sensor(0x3931,0x02);  //VOD    0x00 --> 427mV ; 0x01 --> 374mV ; 0x02 --> 470mV ; 0x03 --> 411mV
+	write_cmos_sensor(0x3932,0x80);  // Tx    0x00 --> no change ; 0x80 --> slew rate up ; 0x20 --> decrease 15%; 0x60 --> decrease 30%
 	//luminjie@wind-mobi.com 20160818 bgein
 	write_cmos_sensor(0x3400,0x01);//shade_bypass LSC off wangkangmin@wind-mobi.com 20160617
 	//luminjie@wind-mobi.com 20160818 end
@@ -952,6 +972,10 @@ static void hs_video_setting(void)
 	write_cmos_sensor(0x0202,0x01);
 	write_cmos_sensor(0x0203,0xEC);
 	write_cmos_sensor(0x3303,0x02);
+	write_cmos_sensor(0x392F,0x01);  //TrTf 
+	write_cmos_sensor(0x3930,0x00);  //TrTf   0x0000 --> 190ps; 0x0080 --> 180ps ; 0x0100 --> 280ps ; 0x0180 --> 210ps  
+	write_cmos_sensor(0x3931,0x02);  //VOD    0x00 --> 427mV ; 0x01 --> 374mV ; 0x02 --> 470mV ; 0x03 --> 411mV
+	write_cmos_sensor(0x3932,0x80);  // Tx    0x00 --> no change ; 0x80 --> slew rate up ; 0x20 --> decrease 15%; 0x60 --> decrease 30%
 	//luminjie@wind-mobi.com 20160818 bgein
 	write_cmos_sensor(0x3400,0x01);//shade_bypass LSC off wangkangmin@wind-mobi.com 20160617
 	//luminjie@wind-mobi.com 20160818 end
@@ -1019,6 +1043,10 @@ static void slim_video_setting(void)
 	write_cmos_sensor(0x0202,0x03);
 	write_cmos_sensor(0x0203,0xDE);
 	write_cmos_sensor(0x3303,0x02);
+	write_cmos_sensor(0x392F,0x01);  //TrTf 
+	write_cmos_sensor(0x3930,0x00);  //TrTf   0x0000 --> 190ps; 0x0080 --> 180ps ; 0x0100 --> 280ps ; 0x0180 --> 210ps  
+	write_cmos_sensor(0x3931,0x02);  //VOD    0x00 --> 427mV ; 0x01 --> 374mV ; 0x02 --> 470mV ; 0x03 --> 411mV
+	write_cmos_sensor(0x3932,0x80);  // Tx    0x00 --> no change ; 0x80 --> slew rate up ; 0x20 --> decrease 15%; 0x60 --> decrease 30%
 	//luminjie@wind-mobi.com 20160818 bgein
 	write_cmos_sensor(0x3400,0x01);//shade_bypass LSC off wangkangmin@wind-mobi.com 20160617
 	//luminjie@wind-mobi.com 20160818 end
