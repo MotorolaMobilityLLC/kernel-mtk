@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!--dct_version="2.5" buid_sn="161025" dws_modification_time="01.04.2017.16:01:43"-->
+<!--dct_version="2.5" buid_sn="161025" dws_modification_time="01.06.2017.23:21:08"-->
 <dct_cfg>
     <general chip="MT6797">
         <proj>k97_v1</proj>
@@ -65,9 +65,9 @@
                 <debounce_en>Disable</debounce_en>
             </eint7>
             <eint9>
-                <varName>FPC1145</varName>
+                <varName>GOODIX_FP</varName>
                 <debounce_time>0</debounce_time>
-                <polarity>Low</polarity>
+                <polarity>High</polarity>
                 <sensitive_level>Level</sensitive_level>
                 <debounce_en>Disable</debounce_en>
             </eint9>
@@ -1273,14 +1273,14 @@
                 <ies>true</ies>
             </gpio85>
             <gpio86>
-                <eint_mode>false</eint_mode>
+                <eint_mode>true</eint_mode>
                 <def_mode>1</def_mode>
-                <mode_arr>11000000</mode_arr>
+                <mode_arr>01000000</mode_arr>
                 <inpull_en>true</inpull_en>
                 <inpull_selhigh>false</inpull_selhigh>
                 <def_dir>IN</def_dir>
                 <in>true</in>
-                <out>true</out>
+                <out>false</out>
                 <out_high>false</out_high>
                 <varName0>GPIO_FP_EINT_PIN</varName0>
                 <smt>true</smt>
@@ -3481,7 +3481,7 @@
                 <in>true</in>
                 <out>true</out>
                 <out_high>false</out_high>
-                <varName0>GPIO_CAMERA_VCAMA_ENABLE_PIN</varName0>
+                <varName0>GPIO_FINGERPRINT_RST_PIN</varName0>
                 <smt>true</smt>
                 <ies>true</ies>
             </gpio253>
@@ -3521,7 +3521,6 @@
                 <in>true</in>
                 <out>true</out>
                 <out_high>false</out_high>
-                <varName0>GPIO_FINGERPRINT_RST_PIN</varName0>
                 <smt>true</smt>
                 <ies>true</ies>
             </gpio256>
