@@ -34,7 +34,7 @@
 #define INFO_LOG (1)
 #define DEBUG_LOG (2)
 
-extern u8 g_debug_level;
+
 #define gf_debug(level, fmt, args...) do { \
 			if (g_debug_level >= level) {\
 				pr_warn("[gf] " fmt, ##args); \
@@ -171,8 +171,6 @@ typedef struct {
 #define GF_IOC_CHIP_INFO	_IOW(GF_IOC_MAGIC, 13, struct gf_ioc_chip_info)
 
 #define GF_IOC_NAV_EVENT	_IOW(GF_IOC_MAGIC, 14, gf_nav_event_t)
-/*goodix SMT*/
-#define GF_IOC_FTM		_IOR(GF_IOC_MAGIC, 14, u8)
 
 /* for SPI REE transfer */
 #define GF_IOC_TRANSFER_CMD		_IOWR(GF_IOC_MAGIC, 15, struct gf_ioc_transfer)
@@ -229,7 +227,7 @@ struct gf_device {
 
 #ifdef CONFIG_OF
 	struct pinctrl *pinctrl_gpios;
-	struct pinctrl_state *pins_default;
+	struct pinctrl_state *pins_irq;
 	struct pinctrl_state *pins_miso_spi, *pins_miso_pullhigh, *pins_miso_pulllow;
 	struct pinctrl_state *pins_reset_high, *pins_reset_low;
 #endif
@@ -242,8 +240,6 @@ struct gf_device {
 #endif
 
 #ifdef SUPPORT_REE_SPI
-
-#define SUPPORT_REE_OSWEGO
 
 #define HIGH_SPEED 6
 #define LOW_SPEED  1
