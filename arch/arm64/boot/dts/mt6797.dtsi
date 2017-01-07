@@ -4214,6 +4214,10 @@
 	scp_sensorHub@0 {
 			compatible = "mediatek,sensorHub";
 	};
+
+	sar_sensor:sar_sensor@0 {
+			compatible = "mediatek,sar_sensor";
+	};
 /* sensor end */
 	shf{
 			compatible = "mediatek,shf";
