@@ -255,6 +255,7 @@ source "drivers/misc/mediatek/tilt_detector_sensor/Kconfig"
 source "drivers/misc/mediatek/uncali_gyro/Kconfig"
 source "drivers/misc/mediatek/uncali_mag/Kconfig"
 source "drivers/misc/mediatek/wake_gesture_sensor/Kconfig"
+source "drivers/misc/mediatek/sar_sensor/Kconfig"
 endif
 if MTK_SENSOR_BIO
 source "drivers/misc/mediatek/sensor_bio/Kconfig"
