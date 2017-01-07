@@ -1,0 +1,3 @@
+
+obj-$(CONFIG_SAR_SENSOR_SX9310) += sx9310/
+

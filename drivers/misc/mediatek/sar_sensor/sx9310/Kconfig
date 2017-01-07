@@ -1,0 +1,10 @@
+
+
+config SAR_SENSOR_SX9310
+	tristate "SX9310_SAR_sensor"
+	depends on I2C
+	default y
+	help
+	  Say Y to enable the SAR detection application, if N here not to use the
+	  this SAR sensor
+

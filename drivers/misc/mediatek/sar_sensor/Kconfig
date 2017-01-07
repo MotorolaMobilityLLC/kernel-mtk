@@ -1,0 +1,2 @@
+
+source "drivers/misc/mediatek/sar_sensor/sx9310/Kconfig"
