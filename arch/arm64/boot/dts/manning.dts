@@ -330,6 +330,17 @@
 	gyro_intpin_default: gyrodefaultcfg {
 
 	};
+	sar_intpin_cfg: sarpincfg {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO85__FUNC_EINT8>;
+			slew-rate = <0>;
+			bias-pull-up = <00>;
+		};
+	};
+
+	sar_intpin_default: sardefaultcfg {
+
+	};
 
 	smartpa_rst_low: smartpa_rst_low {
 		pins_cmd_dat {
@@ -359,6 +370,14 @@
 	pinctrl-names = "pin_default", "pin_cfg";
 	pinctrl-0 = <&gyro_intpin_default>;
 	pinctrl-1 = <&gyro_intpin_cfg>;
+	status = "okay";
+
+};
+
+&sar_sensor {
+	pinctrl-names = "pin_default", "pin_cfg";
+	pinctrl-0 = <&sar_intpin_default>;
+	pinctrl-1 = <&sar_intpin_cfg>;
 	status = "okay";
 
 };
