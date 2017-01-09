@@ -398,9 +398,9 @@ config LCT_FUG_DIS_CHECK_NTC
 	  Enable this config if device could be active without battery.
 
 config LCT_CHR_FULL_CHECK
-	bool "LCT_CHR_FULL_CHECK"
-	default n
-	help
+    bool "LCT_CHR_FULL_CHECK"
+    default n
+    help
 	  Set yes to check battery full status.
 	  Set No to not Check battery full status.
 
