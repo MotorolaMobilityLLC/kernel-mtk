@@ -167,6 +167,33 @@ static struct i2c_driver ltr778_i2c_driver = {
 static int ltr778_dynamic_calibrate(void);
 static int dynamic_calibrate = 2047;
 #endif
+#define MAX_ELM 3
+static unsigned int record[MAX_ELM];
+static int rct=0,full=0;
+static long lux_sum=0;
+
+
+/*----------------modified by hongguang for avgps function-----------------------*/		
+static int get_ps_avg(unsigned int lux)
+{
+	int lux_a;
+	if(rct >= MAX_ELM)
+		full=1;
+
+	if(full){
+		rct %= MAX_ELM;
+		lux_sum -= record[rct];
+	}
+	lux_sum += lux;
+	record[rct]=lux;
+	rct++;
+	if(full){
+	lux_a = lux_sum / MAX_ELM;
+	}else{
+	lux_a = lux_sum /rct;
+	}
+	return lux_a;
+}
 /*-----------------------------------------------------------------------------*/
 /* add LCT_DEVINFO by dingleilei*/
 #ifdef CONFIG_LCT_DEVINFO_SUPPORT
@@ -370,6 +397,8 @@ EXIT_ERR:
 	return res;
 }
 
+static int ps_en = 0;
+
 static int ltr778_ps_enable(struct i2c_client *client, int enable)
 {
 	u8 regdata;
@@ -412,11 +441,11 @@ static int ltr778_ps_enable(struct i2c_client *client, int enable)
 	regdata = ltr778_i2c_read_reg(LTR778_PS_CONTR);
 	if (enable != 0) {
 		APS_LOG("PS: enable ps only \n");
-		regdata |= 0x02;
+		regdata = 0xC2;
 	}
 	else {
 		APS_LOG("PS: disable ps only \n");
-		regdata &= 0xfd;
+		regdata = 0x00;
 	}
 
 	err = ltr778_i2c_write_reg(LTR778_PS_CONTR, regdata);
@@ -453,10 +482,14 @@ static int ltr778_ps_enable(struct i2c_client *client, int enable)
 	return err;
 }
 
+static int ps_offen = 0;
+
 /********************************************************************/
 static int ltr778_ps_read(struct i2c_client *client, u16 *data)
 {
 	int psval_lo, psval_hi, psdata;
+	int ps_offd , ps_offdl, ps_offdh;
+	int ps_offr , ps_offrl, ps_offrh;
 
 	psval_lo = ltr778_i2c_read_reg(LTR778_PS_DATA_0);
 	APS_DBG("ps_rawdata_psval_lo = %d\n", psval_lo);
@@ -473,7 +506,48 @@ static int ltr778_ps_read(struct i2c_client *client, u16 *data)
 		psdata = psval_hi;
 		goto out;
 	}
+	/* by steven   decress   power */	
+	psdata = ((psval_hi & 7)* 256) + psval_lo;
+
+	ps_offrl = ltr778_i2c_read_reg(0x99);
+	ps_offrh = ltr778_i2c_read_reg(0x9A);
+	ps_offr = ((ps_offrh & 7)* 256) + ps_offrl;
+
+
+	if(ps_offen == 0 && ps_offr == 0){
+		
+		if(ps_en == 1 && psdata > 80){
+
+			//ps_offen = 1;
+
+			ps_offd = psdata-60;
+
+			ps_offdl = ps_offd & 0x00ff;
+			ps_offdh = ps_offd & 0x0700;
+
+			ltr778_i2c_write_reg(0x99, ps_offdl);
+			ltr778_i2c_write_reg(0x9A, ps_offdh);
+
+		}
+	}
+
+
 	
+	psval_lo = ltr778_i2c_read_reg(LTR778_PS_DATA_0);
+	APS_DBG("ps_rawdata_psval_lo = %d\n", psval_lo);
+	if (psval_lo < 0){	    
+	    APS_DBG("psval_lo error\n");
+		psdata = psval_lo;
+		goto out;
+	}
+
+	psval_hi = ltr778_i2c_read_reg(LTR778_PS_DATA_1);
+    APS_DBG("ps_rawdata_psval_hi = %d\n", psval_hi);
+	if (psval_hi < 0){
+	    APS_DBG("psval_hi error\n");
+		psdata = psval_hi;
+		goto out;
+	}
 	psdata = ((psval_hi & 7)* 256) + psval_lo;
 	*data = psdata;
     APS_DBG("ltr778_ps_read: ps_rawdata = %d\n", psdata);
@@ -515,6 +589,7 @@ static int ltr778_dynamic_calibrate(void)
 
 	for (i = 0; i < count; i++) {
 		// wait for ps value be stable
+		ps_en = 1;
 		msleep(13);
 
 		data = ltr778_ps_read(ltr778_obj->client, &ltr778_obj->ps);
@@ -525,6 +600,7 @@ static int ltr778_dynamic_calibrate(void)
 
 		data_total += data;
 	}
+	ps_en = 0;
 
 	noise = data_total / count;
 
@@ -534,38 +610,38 @@ static int ltr778_dynamic_calibrate(void)
 // change 2.0cm  ->  2.5cm gray 18%
 		if (noise < 100) {
 			ps_thd_val_high = noise + 45;
-			ps_thd_val_low  = noise + 30;
-			ps_persist_val_high = noise + 500;  // modified by steven
+			ps_thd_val_low  = noise + 25;
+			ps_persist_val_high = noise + 800;  // modified by steven
 			ps_persist_val_low  = noise + 44;
 		}
 		else if (noise < 200) {
 			ps_thd_val_high = noise + 46;
-			ps_thd_val_low  = noise + 32;
-			ps_persist_val_high = noise + 500;
+			ps_thd_val_low  = noise + 27;
+			ps_persist_val_high = noise + 900;
 			ps_persist_val_low  = noise + 45;
 		}
 		else if (noise < 300) {
 			ps_thd_val_high = noise + 47;
-			ps_thd_val_low  = noise + 33;
-			ps_persist_val_high = noise + 500;
+			ps_thd_val_low  = noise + 30;
+			ps_persist_val_high = noise + 900;
 			ps_persist_val_low  = noise + 46;
 		}
 		else if (noise < 400) {
 			ps_thd_val_high = noise + 48;
 			ps_thd_val_low  = noise + 34;
-			ps_persist_val_high = noise + 500;
+			ps_persist_val_high = noise + 900;
 			ps_persist_val_low  = noise + 47;
 		}
 		else if (noise < 600) {
 			ps_thd_val_high = noise + 50;
 			ps_thd_val_low  = noise + 35;
-			ps_persist_val_high = noise + 500;
+			ps_persist_val_high = noise + 1000;
 			ps_persist_val_low  = noise + 79;
-	}
+		}
 	else if (noise < 1500) {
 			ps_thd_val_high = noise + 80;
 			ps_thd_val_low  = noise + 65;
-			ps_persist_val_high = noise + 500;
+			ps_persist_val_high = 2047;
 			ps_persist_val_low  = noise + 79;
 	}
 	else {
@@ -710,9 +786,44 @@ static int ltr778_get_ps_value(struct ltr778_priv *obj, u16 ps)
 {
 	int val;
 	int invalid = 0;
+/* by steven   decress   power & cross talk jump to big 20170106*/	
+	int ps_offr , ps_offrl, ps_offrh;
+	int ps_offd , ps_offdl, ps_offdh;
+	int ps_data;
 
 	static int val_temp = 1;
-	if((ps > atomic_read(&obj->ps_persist_val_high)))
+
+
+	if(ps <= 10){
+
+	ps_offrl = ltr778_i2c_read_reg(0x99);
+	ps_offrh = ltr778_i2c_read_reg(0x9A);
+	ps_offr = ((ps_offrh & 7)* 256) + ps_offrl;
+
+	ps_data = ps + ps_offr;
+
+	
+
+		if(ps_offr >= 8){
+			
+			ps_offd = ps_data -60;
+
+			ps_offdl = ps_offd & 0x00ff;
+			ps_offdh = ps_offd & 0x0700;
+
+			ltr778_i2c_write_reg(0x99, ps_offdl);
+			ltr778_i2c_write_reg(0x9A, ps_offdh);			
+
+
+		}
+
+
+	}
+
+/*end*/
+
+	
+	if((ps > atomic_read(&obj->ps_persist_val_high)))  // modified by steven
 	{
 		val = 2;  /* persist oil close*/
 		val_temp = 2;
@@ -1016,7 +1127,8 @@ static ssize_t ltr778_show_ps(struct device_driver *ddri, char *buf)
 		return 0;
 	}
 	res = ltr778_ps_read(ltr778_obj->client, &ltr778_obj->ps);
-    return snprintf(buf, PAGE_SIZE, "0x%04X(%d)\n", res, res);
+ //   return snprintf(buf, PAGE_SIZE, "0x%04X(%d)\n", res, res);
+   return snprintf(buf, PAGE_SIZE, "%d \n", res);
 }
 /*----------------------------------------------------------------------------*/
 static ssize_t ltr778_show_reg(struct device_driver *ddri, char *buf)
@@ -1652,6 +1764,8 @@ int ltr778_setup_eint(struct i2c_client *client)
 		}
 		//enable_irq(ltr778_obj->irq);
 // add by zhaofei - 2016-12-27-20-11
+
+/* by steven   decress   power */	
 	}
 	else {
 		APS_ERR("null irq node!!\n");
@@ -1932,14 +2046,14 @@ static int ltr778_init_client(void)
 		goto EXIT_ERR;
 	}
 
-	res = ltr778_i2c_write_reg(LTR778_PS_LED, 0x53);		// 3mA 
+	res = ltr778_i2c_write_reg(LTR778_PS_LED, 0x56);		// 8mA 
 	if (res<0)
 	{
 		APS_LOG("ltr778 set ps led error\n");
 		goto EXIT_ERR;
 	}
 
-	res = ltr778_i2c_write_reg(LTR778_PS_PULSES, 0x0A);		// 10 pulses
+	res = ltr778_i2c_write_reg(LTR778_PS_PULSES, 0x06);		// 6 pulses
 	if (res<0)
 	{
 		APS_LOG("ltr778 set ps pulse error\n");
@@ -2164,6 +2278,7 @@ static int ps_get_data(int* value, int* status)
 	}
     
 	ltr778_obj->ps = ltr778_ps_read(ltr778_obj->client, &ltr778_obj->ps);
+	ltr778_obj->ps = get_ps_avg(ltr778_obj->ps);//add steven
 	if (ltr778_obj->ps < 0)
 		err = -1;
 	else {
