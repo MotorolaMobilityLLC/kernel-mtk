@@ -965,7 +965,14 @@ static void mtk_select_cv(void)
 #ifdef CONFIG_MTK_JEITA_STANDARD_SUPPORT
 	/* If temperautre is abnormal, return not permitted */
 	if (g_temp_status != TEMP_POS_10_TO_POS_45)
+	{
+#ifdef CONFIG_LCT_CHR_JEITA_STANDARD_SUPPORT
+		cv_voltage = select_jeita_cv();
+		battery_charging_control(CHARGING_CMD_SET_CV_VOLTAGE,
+			&cv_voltage);
+#endif
 		return;
+	}
 #endif
 
 	if (batt_cust_data.high_battery_voltage_support)
