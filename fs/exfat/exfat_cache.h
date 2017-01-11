@@ -76,7 +76,7 @@ void   FAT_release_all(struct super_block *sb);
 void   FAT_sync(struct super_block *sb);
 u8 *buf_getblk(struct super_block *sb, u32 sec);
 void   buf_modify(struct super_block *sb, u32 sec);
-void   buf_lock(struct super_block *sb, u32 sec);
+void   exfat_buf_lock(struct super_block *sb, u32 sec);
 void   buf_unlock(struct super_block *sb, u32 sec);
 void   buf_release(struct super_block *sb, u32 sec);
 void   buf_release_all(struct super_block *sb);
