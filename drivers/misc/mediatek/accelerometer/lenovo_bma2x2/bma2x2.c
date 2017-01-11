@@ -2847,6 +2847,7 @@ static int BMA2x2_ReadSensorData(struct i2c_client *client,
 		 acc[BMA2x2_AXIS_Z] * GRAVITY_EARTH_1000
 		 / obj->reso->sensitivity;
 
+#if 0
 		GSE_ERR("Mapped gsensor data: %d, %d, %d!\n",
 		 acc[BMA2x2_AXIS_X],
 		 acc[BMA2x2_AXIS_Y],
@@ -2857,7 +2858,7 @@ static int BMA2x2_ReadSensorData(struct i2c_client *client,
 		 acc[BMA2x2_AXIS_Z]);
 		if (atomic_read(&obj->trace) & BMA_TRC_IOCTL)
 			GSE_LOG("gsensor data: %s!\n", buf);
-
+#endif
 	}
 	return 0;
 }

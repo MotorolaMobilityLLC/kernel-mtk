@@ -12,6 +12,6 @@
 #
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat/
 
-obj-$(CONFIG_NFC_PN548)   += pn548.o
+obj-y   += pn548.o
 
-ccflags-$(CONFIG_NFC_PN548) +=  -DDEBUG
+ccflags-y +=  -DDEBUG
