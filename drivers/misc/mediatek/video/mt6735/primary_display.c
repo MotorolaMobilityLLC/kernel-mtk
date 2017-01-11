@@ -8393,7 +8393,10 @@ int primary_display_setbacklight_hbm(unsigned int level)
 
 	if (last_level == level)
 		return 0;
-
+	if(level==255)
+	hbm_backlight_level = 1;
+	else
+	hbm_backlight_level = 0;
 	MMProfileLogEx(ddp_mmp_get_events()->primary_set_bl, MMProfileFlagStart, 0, 0);
 #ifdef DISP_SWITCH_DST_MODE
 	_primary_path_switch_dst_lock();

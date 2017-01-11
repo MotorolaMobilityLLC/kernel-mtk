@@ -599,7 +599,7 @@ static ssize_t show_cabc_mode(struct device *device,
 #ifdef CONFIG_LCT_HBM_SUPPORT
 #include "disp_lcm.h"
 #include "primary_display.h"
-#define HBM_ENABLE	255
+#define HBM_ENABLE	1
 #define HBM_DISABLE	0
 extern int primary_display_setbacklight_hbm(unsigned int level);
 extern int primary_recognition_hbm_level(void);
@@ -622,7 +622,8 @@ static ssize_t show_hbm(struct device *device,
 	char n ='0';
 	int a = primary_recognition_hbm_level();
 	printk("show_hbm a = %d\n",a);
-	switch(primary_recognition_hbm_level())//(recognition_hbm())
+
+	switch(a)//(recognition_hbm())
 	{
 		case HBM_ENABLE:
 				n='1';

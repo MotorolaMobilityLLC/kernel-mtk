@@ -387,7 +387,7 @@ static struct LCM_setting_table lcm_initialization_setting[] = {
 {0x06,1,{0x40}},
 {0x07,1,{0x05}}, //pwm  20K
 {0xFF,3,{0x98,0x81,0x00}},
-{0x68,2,{0x04,0x01}},
+{0x68,2,{0x06,0x01}},
 {0x36,1,{0x03}},
 {0x11,1,{}},  
 {REGFLAG_DELAY, 120, {}},            
@@ -537,9 +537,9 @@ static void tps65132_enable(char en)
 	{
 		
 		set_gpio_lcd_enp(1);
-		MDELAY(12);
+		MDELAY(5);
 		set_gpio_lcd_enn(1);
-		MDELAY(12);
+		MDELAY(5);
 		tps65132_write_bytes(0x00, 0x0f);
 		tps65132_write_bytes(0x01, 0x0f);
 	}
@@ -547,9 +547,9 @@ static void tps65132_enable(char en)
 	{
 		tps65132_write_bytes(0x03, 0x40);		
 		set_gpio_lcd_enp(0);
-		MDELAY(12);
+		MDELAY(5);
 		set_gpio_lcd_enn(0);
-		MDELAY(12);
+		MDELAY(5);
 
 	}	
 }
@@ -558,7 +558,7 @@ static void lcm_init(void)
 {
 	tps65132_enable(1);
 	SET_RESET_PIN(1);
-	MDELAY(20);
+	MDELAY(1);
 	SET_RESET_PIN(0);
 	MDELAY(10);
 	SET_RESET_PIN(1);
@@ -581,22 +581,33 @@ static void lcm_suspend(void)
 
 static void lcm_resume(void)
 {
+	tps65132_enable(1);
+	SET_RESET_PIN(1);
+	MDELAY(1);
+	SET_RESET_PIN(0);
 	MDELAY(10);
-	lcm_init();
+	SET_RESET_PIN(1);
 	MDELAY(10);
+	push_table(lcm_initialization_setting,
+		   sizeof(lcm_initialization_setting) / sizeof(struct LCM_setting_table), 1);
 }
 
 //add by yufangfang for hbm
 #ifdef CONFIG_LCT_HBM_SUPPORT
 static unsigned int last_level=0;
-
+static unsigned int hbm_enable=0;
 static void lcm_setbacklight_hbm(unsigned int level)
 {
+
 	unsigned int level_hight,level_low=0;
+	
 	if(level==0)
 	{
 		level = last_level;
+		hbm_enable = 0;
 	}
+	else
+		hbm_enable = 1;
 	level_hight=(level & 0xf0)>>4;
 	level_low=(level & 0x0f)<<4;
 	lcm_backlight_level_setting[0].para_list[0] = level_hight;
@@ -672,24 +683,36 @@ static void lcm_cabc_cmdq(void *handle, unsigned int mode)
 static void lcm_setbacklight(unsigned int level)
 {
 	unsigned int level_hight,level_low=0;
-    #if(LCT_LCM_MAPP_BACKLIGHT)
-	unsigned int mapped_level = 0;
-	if (level > 102)
-		mapped_level = (641*level + 36667)/(1000);
+	if(hbm_enable==0)
+	{		
+		#if(LCT_LCM_MAPP_BACKLIGHT)
+		unsigned int mapped_level = 0;
+		mapped_level = (7835*level + 2165)/(10000);
+		#endif	
+	//	printk("ili9881c setbacklight level = %d\n",level);
+		set_gpio_led_en(1);
+		MDELAY(5);	
+		level_hight=(mapped_level & 0xf0)>>4;
+		level_low=(mapped_level & 0x0f)<<4;
+		lcm_backlight_level_setting[0].para_list[0] = level_hight;
+		lcm_backlight_level_setting[0].para_list[1] = level_low;
+		push_table(lcm_backlight_level_setting,
+			   sizeof(lcm_backlight_level_setting) / sizeof(struct LCM_setting_table), 1);
+		#ifdef CONFIG_LCT_HBM_SUPPORT
+		last_level = mapped_level;
+    	#endif
+	}
 	else
-		mapped_level=level;
-	#endif	
-	set_gpio_led_en(1);
-	MDELAY(5);	
-	level_hight=(mapped_level & 0xf0)>>4;
-	level_low=(mapped_level & 0x0f)<<4;
-	lcm_backlight_level_setting[0].para_list[0] = level_hight;
-	lcm_backlight_level_setting[0].para_list[1] = level_low;
-	push_table(lcm_backlight_level_setting,
-		   sizeof(lcm_backlight_level_setting) / sizeof(struct LCM_setting_table), 1);
-	#ifdef CONFIG_LCT_HBM_SUPPORT
-	last_level = mapped_level;
-#endif
+	{
+		set_gpio_led_en(1);
+		MDELAY(5);
+		level_hight=(255 & 0xf0)>>4;
+		level_low=(255 & 0x0f)<<4;
+		lcm_backlight_level_setting[0].para_list[0] = level_hight;
+		lcm_backlight_level_setting[0].para_list[1] = level_low;
+		push_table(lcm_backlight_level_setting,
+			   sizeof(lcm_backlight_level_setting) / sizeof(struct LCM_setting_table), 1);
+	}
 }
 
 /* add LCM ATA by changjingyang start */
