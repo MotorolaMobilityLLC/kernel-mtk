@@ -468,7 +468,7 @@ void tps65132_enable_5513(char en)
 		set_gpio_lcd_enp(1);
 		MDELAY(5);
 		set_gpio_lcd_enn(1);
-		MDELAY(12);
+		MDELAY(5);
 		tps65132_write_bytes_5513(0x00, 0x0f);//5.5->5.2
 		tps65132_write_bytes_5513(0x01, 0x0f);
 		
@@ -479,9 +479,9 @@ void tps65132_enable_5513(char en)
 		//set_gpio_led_en(0);
 		//MDELAY(5);		
 		set_gpio_lcd_enn(0);
-		MDELAY(12);
+		MDELAY(5);
 		set_gpio_lcd_enp(0);
-		MDELAY(12);
+		MDELAY(5);
 
 	}	
 }
@@ -516,23 +516,33 @@ static void lcm_resume(void)
 }
 
 static unsigned int last_level=0;
+static unsigned int hbm_enable=0;
 static void lcm_setbacklight(unsigned int level)
 {
-	
-    #if(LCT_LCM_MAPP_BACKLIGHT)
-	unsigned int mapped_level = 0;
-	if (level > 102)
-		mapped_level = (641*level + 36667)/(1000);
+	if(hbm_enable ==0)
+	{		
+		#if(LCT_LCM_MAPP_BACKLIGHT)
+		unsigned int mapped_level = 0;
+			mapped_level = (7835*level + 2165)/(10000);
+		#endif	
+		set_gpio_led_en(1);
+		MDELAY(5);
+		/* Refresh value of backlight level. */
+		lcm_backlight_level_setting[0].para_list[0] = mapped_level;
+		push_table(lcm_backlight_level_setting,
+			   sizeof(lcm_backlight_level_setting) / sizeof(struct LCM_setting_table), 1);
+		last_level = mapped_level;
+		
+	}
 	else
-		mapped_level=level;
-	#endif
-	set_gpio_led_en(1);	
-	MDELAY(5);
-	/* Refresh value of backlight level. */
-	lcm_backlight_level_setting[0].para_list[0] = mapped_level;
-	push_table(lcm_backlight_level_setting,
+	{    
+		set_gpio_led_en(1);
+		MDELAY(5);
+		lcm_backlight_level_setting[0].para_list[0] = 255;
+    	push_table(lcm_backlight_level_setting,
 		   sizeof(lcm_backlight_level_setting) / sizeof(struct LCM_setting_table), 1);
-	last_level = mapped_level;
+		printk("yufangfang lcm_setbacklight hbm_enable1\n");
+	}
 }
 
 //add for ATA test by liuzhen
@@ -588,14 +598,16 @@ static unsigned int lcm_ata_check(unsigned char *buffer)
 
 //add by yufangfang for hbm
 #ifdef CONFIG_LCT_HBM_SUPPORT
-//static unsigned int hbm_enable=0;
+
 static void lcm_setbacklight_hbm(unsigned int level)
 {
 	if(level==0)
 	{
 		level = last_level;
-		//hbm_enable = 0;
+		hbm_enable = 0;
 	}
+	else
+		hbm_enable = 1;
 	
 	lcm_backlight_level_setting[0].para_list[0] = level;
 	push_table(lcm_backlight_level_setting,

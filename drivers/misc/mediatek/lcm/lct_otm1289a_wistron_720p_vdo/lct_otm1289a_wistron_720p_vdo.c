@@ -222,7 +222,7 @@ static struct LCM_setting_table lcm_initialization_setting[] = {
         {0x00,1,{0x00}},
         {0xd8,2,{0x29,0x29}}, //0x29
         {0x00,1,{0x00}},
-        {0xd9,2,{0x00,0x47}},        
+        {0xd9,2,{0x00,0x5f}},        
         {0x00,1,{0x84}},
         {0xC4,1,{0x02}},
         {0x00,1,{0x93}},
@@ -468,11 +468,11 @@ static void tps65132_enable_otm1289(char en)
 {
 	if (en)
 	{
-		
+		MDELAY(5);
 		set_gpio_lcd_enp(1);
-		MDELAY(12);
+		MDELAY(5);
 		set_gpio_lcd_enn(1);
-		MDELAY(12);
+		MDELAY(5);
 		tps65132_write_bytes_otm1289(0x00, 0x0f);//5.5->5.2
 		tps65132_write_bytes_otm1289(0x01, 0x0f);
 		
@@ -481,9 +481,9 @@ static void tps65132_enable_otm1289(char en)
 	{
 		tps65132_write_bytes_otm1289(0x03, 0x40);
 		set_gpio_lcd_enn(0);
-		MDELAY(12);
+		MDELAY(5);
 		set_gpio_lcd_enp(0);
-		MDELAY(12);
+		MDELAY(5);
 
 	}	
 }
@@ -492,11 +492,11 @@ static void lcm_init(void)
 {
 	tps65132_enable_otm1289(1);
 	SET_RESET_PIN(1);
-	MDELAY(20);
+	MDELAY(5);
 	SET_RESET_PIN(0);
-	MDELAY(10);
+	MDELAY(5);
 	SET_RESET_PIN(1);
-	MDELAY(120);
+	MDELAY(10);
 	push_table(lcm_initialization_setting,
 		   sizeof(lcm_initialization_setting) / sizeof(struct LCM_setting_table), 1);	
 }
@@ -514,26 +514,35 @@ static void lcm_suspend(void)
 
 static void lcm_resume(void)
 {
-	MDELAY(10);
 	lcm_init();
-	MDELAY(10);
 }
 
 static unsigned int last_level=0;
+static unsigned int hbm_enable=0;
 static void lcm_setbacklight(unsigned int level)
 {
-	
-    #if(LCT_LCM_MAPP_BACKLIGHT)
-	unsigned int mapped_level = 0;
-	mapped_level = (7835*level + 2165)/(10000);
-	#endif
-	set_gpio_led_en(1);	
-	MDELAY(5);
-	/* Refresh value of backlight level. */
-	lcm_backlight_level_setting[0].para_list[0] = mapped_level;
+	if(hbm_enable==0)
+	{
+		#if(LCT_LCM_MAPP_BACKLIGHT)
+		unsigned int mapped_level = 0;
+		mapped_level = (7835*level + 2165)/(10000);
+		#endif
+		set_gpio_led_en(1);	
+		MDELAY(5);
+		/* Refresh value of backlight level. */
+		lcm_backlight_level_setting[0].para_list[0] = mapped_level;
+		push_table(lcm_backlight_level_setting,
+			   sizeof(lcm_backlight_level_setting) / sizeof(struct LCM_setting_table), 1);
+		last_level = mapped_level;
+	}
+	else
+	{
+		set_gpio_led_en(1);	
+		MDELAY(5);
+		lcm_backlight_level_setting[0].para_list[0] = 255;
 	push_table(lcm_backlight_level_setting,
 		   sizeof(lcm_backlight_level_setting) / sizeof(struct LCM_setting_table), 1);
-	last_level = mapped_level;
+	}
 }
 
 //add for ATA test by liuzhen
@@ -594,7 +603,10 @@ static void lcm_setbacklight_hbm(unsigned int level)
 	if(level==0)
 	{
 		level = last_level;
+		hbm_enable = 0;
 	}
+	else
+		hbm_enable = 1;
 	
 	lcm_backlight_level_setting[0].para_list[0] = level;
 	push_table(lcm_backlight_level_setting,
