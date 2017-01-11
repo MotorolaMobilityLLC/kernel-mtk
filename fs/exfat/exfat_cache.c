@@ -593,7 +593,7 @@ void buf_modify(struct super_block *sb, u32 sec)
 	sm_V(&b_sem);
 } /* end of buf_modify */
 
-void buf_lock(struct super_block *sb, u32 sec)
+void exfat_buf_lock(struct super_block *sb, u32 sec)
 {
 	BUF_CACHE_T *bp;
 
@@ -606,7 +606,7 @@ void buf_lock(struct super_block *sb, u32 sec)
 	WARN(!bp, "[EXFAT] failed to find buffer_cache(sector:%u).\n", sec);
 
 	sm_V(&b_sem);
-} /* end of buf_lock */
+} /* end of exfat_buf_lock */
 
 void buf_unlock(struct super_block *sb, u32 sec)
 {
