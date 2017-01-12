@@ -85,6 +85,12 @@ extern int lct_get_sku(void);
 //extern void mt_eint_unmask(unsigned int eint_num);
 //extern void mt_eint_set_hw_debounce(unsigned int eint_num, unsigned int ms);
 //extern void mt_eint_set_polarity(unsigned int eint_num, unsigned int pol);
+
+#ifdef CONFIG_MTK_BOARD_ID
+#include "../../board_id/board_id.h"//huyunge@wind-mobi.com 20161209
+extern int get_bid_gpio(void);
+#endif
+
 extern void mt_eint_registration(unsigned int eint_num, unsigned int flow, void (EINT_FUNC_PTR)(void), unsigned int is_auto_umask);
 
 struct pn544_dev	
@@ -130,8 +136,10 @@ static int transfer_clk_onoff = 0;
 struct platform_device *nfc_clk_req_dev;
 static struct work_struct  eint1_work;
 #endif
+#ifndef CONFIG_WIND_DEVICE_INFO
 struct pinctrl_state *nfc_ldo_low_pinctrl = NULL;
 struct pinctrl_state *nfc_ldo_high_pinctrl = NULL;
+#endif
 //end add by zhaofei - 2016-11-09-17-31
 
 /* add LCT_DEVINFO by changjingyang start */
@@ -457,14 +465,20 @@ static long pn544_dev_unlocked_ioctl(struct file *filp, unsigned int cmd,
 			if (arg == 2) {
 				/* power on with firmware download (requires hw reset) */
 				printk("pn544 %s power on with firmware\n", __func__);
+#ifndef CONFIG_WIND_DEVICE_INFO                
 				ret = pn544_platform_pinctrl_select(gpctrl, nfc_ldo_high_pinctrl); // add by zhaofei - 2016-11-17-18-17
+#endif                
 				ret = pn544_platform_pinctrl_select(gpctrl, st_ven_h);
 				ret = pn544_platform_pinctrl_select(gpctrl, st_dwn_h);
 				msleep(10);
+#ifndef CONFIG_WIND_DEVICE_INFO                
 				ret = pn544_platform_pinctrl_select(gpctrl, nfc_ldo_low_pinctrl); // add by zhaofei - 2016-11-17-18-17
+#endif                
 				ret = pn544_platform_pinctrl_select(gpctrl, st_ven_l);
 				msleep(50);
+#ifndef CONFIG_WIND_DEVICE_INFO                
 				ret = pn544_platform_pinctrl_select(gpctrl, nfc_ldo_high_pinctrl); // add by zhaofei - 2016-11-17-18-17
+#endif                
 				ret = pn544_platform_pinctrl_select(gpctrl, st_ven_h);
 				msleep(10);
 			} else if (arg == 1) {
@@ -473,7 +487,9 @@ static long pn544_dev_unlocked_ioctl(struct file *filp, unsigned int cmd,
 #ifdef LCT_SYS_CLK
 				clk_buf_ctrl(CLK_BUF_NFC, 1);
 #endif
+#ifndef CONFIG_WIND_DEVICE_INFO
 				ret = pn544_platform_pinctrl_select(gpctrl, nfc_ldo_high_pinctrl); // add by zhaofei - 2016-11-17-18-17
+#endif                
 				msleep(1);
 				ret = pn544_platform_pinctrl_select(gpctrl, st_dwn_l);
 				ret = pn544_platform_pinctrl_select(gpctrl, st_ven_h); 
@@ -484,7 +500,9 @@ static long pn544_dev_unlocked_ioctl(struct file *filp, unsigned int cmd,
 				ret = pn544_platform_pinctrl_select(gpctrl, st_dwn_l);
 				ret = pn544_platform_pinctrl_select(gpctrl, st_ven_l);
 				msleep(1);
+#ifndef CONFIG_WIND_DEVICE_INFO                
 				ret = pn544_platform_pinctrl_select(gpctrl, nfc_ldo_low_pinctrl); // add by zhaofei - 2016-11-17-18-17
+#endif                
 #ifdef LCT_SYS_CLK
 				clk_buf_ctrl(CLK_BUF_NFC, 0);
 #endif
@@ -693,8 +711,6 @@ static int pn544_probe(struct i2c_client *client,
 		return -1;
 	}
 
-//	node = of_find_compatible_node(NULL, NULL, "mediatek, irq_nfc-eint");
-	node = of_find_compatible_node(NULL, NULL, "mediatek,nfc-gpio-v2");
 	if (node) {
 		client->irq = irq_of_parse_and_map(node, 0);
 		printk("pn544 client->irq = %d\n", client->irq);
@@ -830,6 +846,7 @@ static int pn544_platform_pinctrl_init(struct platform_device *pdev)
 		ret = PTR_ERR(st_ven_l);
 		printk("%s: pinctrl err, ven_low\n", __func__);
 	}
+#ifndef CONFIG_WIND_DEVICE_INFO    
 //modify by tzf@meitu.begin
 	st_dwn_h = pinctrl_lookup_state(gpctrl, "dwn_high");
     if (IS_ERR(st_dwn_h)) {
@@ -851,6 +868,28 @@ static int pn544_platform_pinctrl_init(struct platform_device *pdev)
     	printk("%s: pinctrl err, st_eint_int\n", __func__);
     }
     pn544_platform_pinctrl_select(gpctrl, st_eint_int);
+#else
+	st_dwn_h = pinctrl_lookup_state(gpctrl, "rst_high");
+    if (IS_ERR(st_dwn_h)) {
+    	ret = PTR_ERR(st_dwn_h);
+    	printk("%s: pinctrl err, dwn_high\n", __func__);
+    }
+    
+    
+	st_dwn_l = pinctrl_lookup_state(gpctrl, "rst_low");
+    if (IS_ERR(st_dwn_l)) {
+    	ret = PTR_ERR(st_dwn_l);
+    	printk("%s: pinctrl err, dwn_low\n", __func__);
+    }
+    
+    
+	st_eint_int = pinctrl_lookup_state(gpctrl, "irq_init");
+    if (IS_ERR(st_eint_int)) {
+    	ret = PTR_ERR(st_eint_int);
+    	printk("%s: pinctrl err, st_eint_pn548_int\n", __func__);
+    }
+    pn544_platform_pinctrl_select(gpctrl, st_eint_int);
+#endif
 
 // add by zhaofei - 2016-11-09-16-23
 #ifdef LCT_NFC_CLK_REQ
@@ -862,6 +901,7 @@ static int pn544_platform_pinctrl_init(struct platform_device *pdev)
     pn544_platform_pinctrl_select(gpctrl, clk_req_int);
 #endif
 
+#ifndef CONFIG_WIND_DEVICE_INFO
 	nfc_ldo_high_pinctrl = pinctrl_lookup_state(gpctrl, "nfc_ldo_high");
     if (IS_ERR(nfc_ldo_high_pinctrl)) {
     	ret = PTR_ERR(nfc_ldo_high_pinctrl);
@@ -874,6 +914,7 @@ static int pn544_platform_pinctrl_init(struct platform_device *pdev)
     	ret = PTR_ERR(nfc_ldo_low_pinctrl);
     	printk("%s: pinctrl err, nfc_ldo_low_pinctrl\n", __func__);
     }
+#endif    
     //pn544_platform_pinctrl_select(gpctrl, nfc_ldo_low_pinctrl);
 //end add by zhaofei - 2016-11-09-16-23
 	
@@ -943,6 +984,40 @@ static int __init pn544_dev_init(void)
 		return -1;
 	}	
 #endif
+
+#ifdef CONFIG_MTK_BOARD_ID
+	ret=get_bid_gpio();
+	//huyunge@wind-mobi.com 20161209 start
+	switch(ret){
+			case EMEA_DS_NA_EVT:
+			case EMEA_SS_NA_EVT:
+			case EMEA_DS_NA_DVT:
+			case EMEA_SS_NA_DVT:
+			case LATAM_DS_NA_EVT:
+			case LATAM_DS_NA_DVT:
+			case ROLA_SS_NA_EVT:
+			case ROLA_SS_NA_DVT:
+			case AP_DS_NA_DVT2:
+			case EMEA_DS_NA_DVT2:
+			case LATAM_DS_NA_SKY77643_DVT2:       //0f
+			case ROLA_SS_NA_SKY77643_DVT2:         //10
+			case LATAM_DS_NA_SKY77638_DVT2:      //11 
+			case ROLA_SS_NA_SKY77638_DVT2:	//12
+			case AP_B28_DS_NA_DVT2:
+					printk("this board is not support NFC\n");
+				return 0;
+			case EMEA_SS_NFC_DVT:
+			case EMEA_SS_NFC_EVT:
+			case EMEA_SS_NFC_DVT2:
+				printk("this board is support NFC\n");
+				break;
+			default:
+				printk("this board is no support NFC\n");
+				return 0;
+	}
+	//huyunge@wind-mobi.com 20161209 end
+#endif
+
 /* add lct_sku by changjingyang end */ 
 	platform_driver_register(&pn544_platform_driver);
 
