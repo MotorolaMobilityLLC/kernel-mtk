@@ -516,11 +516,13 @@ static int ltr778_ps_read(struct i2c_client *client, u16 *data)
 
 	if(ps_offen == 0 && ps_offr == 0){
 		
-		if(ps_en == 1 && psdata > 80){
+		if(ps_en == 1 && psdata > 80 && psdata < 1024){
 
-			//ps_offen = 1;
+			ps_offen = 1;
 
 			ps_offd = psdata-60;
+			
+			//APS_DBG("ltr778_ps_read:  ps_offd= %d\n", ps_offd);
 
 			ps_offdl = ps_offd & 0x00ff;
 			ps_offdh = ps_offd & 0x0700;
@@ -528,6 +530,13 @@ static int ltr778_ps_read(struct i2c_client *client, u16 *data)
 			ltr778_i2c_write_reg(0x99, ps_offdl);
 			ltr778_i2c_write_reg(0x9A, ps_offdh);
 
+		}else if(ps_en == 1 && psdata >= 1024 && psdata < 1400){
+			
+			ps_offen = 1;
+			
+			ltr778_i2c_write_reg(0x99, 0xff);
+			ltr778_i2c_write_reg(0x9A, 0x03);			
+			
 		}
 	}
 
@@ -549,6 +558,47 @@ static int ltr778_ps_read(struct i2c_client *client, u16 *data)
 		goto out;
 	}
 	psdata = ((psval_hi & 7)* 256) + psval_lo;
+	
+	
+	if(psdata == 0  && ps_offen == 1 )
+	{
+		
+		ps_offrl = ltr778_i2c_read_reg(0x99);
+		ps_offrh = ltr778_i2c_read_reg(0x9A);
+		ps_offr = ((ps_offrh & 7)* 256) + ps_offrl;
+		
+		if(ps_offr < 100){
+		ltr778_i2c_write_reg(0x99, 0x00);
+		ltr778_i2c_write_reg(0x9A, 0x00);
+			
+		}else{
+		
+			ps_offd = ps_offr-60;
+			
+			//APS_DBG("ltr778_ps_read:  ps_offd= %d\n", ps_offd);
+
+			ps_offdl = ps_offd & 0x00ff;
+			ps_offdh = ps_offd & 0x0700;
+
+			ltr778_i2c_write_reg(0x99, ps_offdl);
+			ltr778_i2c_write_reg(0x9A, ps_offdh);
+			
+		}
+		
+			psval_lo = ltr778_i2c_read_reg(LTR778_PS_DATA_0);
+			//APS_DBG("ps_rawdata_psval_lo1 = %d\n", psval_lo);
+			psval_hi = ltr778_i2c_read_reg(LTR778_PS_DATA_1);
+			//APS_DBG("ps_rawdata_psval_hi1 = %d\n", psval_hi);
+			if (psval_hi < 0){
+				APS_DBG("psval_hi error\n");
+				psdata = psval_hi;
+				goto out;
+			}
+			psdata = ((psval_hi & 7)* 256) + psval_lo;
+
+	}
+
+	
 	*data = psdata;
     APS_DBG("ltr778_ps_read: ps_rawdata = %d\n", psdata);
     
@@ -794,7 +844,7 @@ static int ltr778_get_ps_value(struct ltr778_priv *obj, u16 ps)
 	static int val_temp = 1;
 
 
-	if(ps <= 10){
+	if(ps <= 10 && ps_offen == 1){
 
 	ps_offrl = ltr778_i2c_read_reg(0x99);
 	ps_offrh = ltr778_i2c_read_reg(0x9A);
@@ -802,7 +852,7 @@ static int ltr778_get_ps_value(struct ltr778_priv *obj, u16 ps)
 
 	ps_data = ps + ps_offr;
 
-	
+	//APS_DBG("ltr778_get_ps_value  ps_data2 = %d\n", ps_data);
 
 		if(ps_offr >= 8){
 			
