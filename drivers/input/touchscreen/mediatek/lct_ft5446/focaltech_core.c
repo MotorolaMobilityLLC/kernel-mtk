@@ -166,6 +166,7 @@ int fts_wait_tp_to_valid(struct i2c_client *client)
         ret = fts_i2c_read_reg(client, FTS_REG_CHIP_ID, &reg_value);
         if ((ret < 0) || (reg_value != chip_types.chip_idh)) {
             FTS_INFO("TP Not Ready, ReadData = 0x%x", reg_value);
+    		fts_reset_proc(300);
         }
         else if (reg_value == chip_types.chip_idh) {
             FTS_INFO("TP Ready, Device ID = 0x%x", reg_value);
@@ -217,8 +218,24 @@ void fts_tp_state_recovery(struct i2c_client *client)
 *****************************************************************************/
 int fts_reset_proc(int hdelayms)
 {
+	int retval;
+
+    retval = regulator_disable(tpd->reg);
+    if (retval != 0) {
+        FTS_ERROR("[POWER]Fail to enable regulator when init,ret=%d!", retval);
+        return retval;
+    }
+
     tpd_gpio_output(tpd_rst_gpio_number, 0);
-    msleep(20);
+    msleep(2);
+
+	retval = regulator_enable(tpd->reg);
+    if (retval != 0) {
+        FTS_ERROR("[POWER]Fail to enable regulator when init,ret=%d!", retval);
+        return retval;
+    }
+
+    msleep(5);
     tpd_gpio_output(tpd_rst_gpio_number, 1);
     msleep(hdelayms);
 
@@ -233,19 +250,23 @@ int fts_power_init(void)
 {
     int retval;
     /*set TP volt */
-    tpd->reg = regulator_get(tpd->tpd_dev, "vtouch");
-    retval = regulator_set_voltage(tpd->reg, 2800000, 2800000);
-    if (retval != 0) {
-        FTS_ERROR("[POWER]Failed to set voltage of regulator,ret=%d!", retval);
-        return retval;
-    }
+	if( tpd->reg == NULL)
+	{
+		tpd->reg = regulator_get(tpd->tpd_dev, "vtouch");
+		if (IS_ERR(tpd->reg))
+			FTS_ERROR("regulator_get() failed!\n");
+		retval = regulator_set_voltage(tpd->reg, 2800000, 2800000);
+		if (retval != 0) {
+			FTS_ERROR("[POWER]Failed to set voltage of regulator,ret=%d!", retval);
+			return retval;
+		}
 
-    retval = regulator_enable(tpd->reg);
-    if (retval != 0) {
-        FTS_ERROR("[POWER]Fail to enable regulator when init,ret=%d!", retval);
-        return retval;
-    }
-
+//		retval = regulator_enable(tpd->reg);
+//		if (retval != 0) {
+//			FTS_ERROR("[POWER]Fail to enable regulator when init,ret=%d!", retval);
+//			return retval;
+//		}
+	}
     return 0;
 }
 
@@ -259,17 +280,17 @@ void fts_power_suspend(void)
                   retval);
 }
 
-int fts_power_resume(void)
-{
-    int retval = 0;
-
-    retval = regulator_enable(tpd->reg);
-    if (retval != 0)
-        FTS_ERROR("[POWER]Failed to enable regulator when resume,ret=%d!",
-                  retval);
-
-    return retval;
-}
+//int fts_power_resume(void)
+//{
+//    int retval = 0;
+//
+//    retval = regulator_enable(tpd->reg);
+//    if (retval != 0)
+//        FTS_ERROR("[POWER]Failed to enable regulator when resume,ret=%d!",
+//                  retval);
+//
+//    return retval;
+//}
 #endif
 
 /*****************************************************************************
@@ -923,7 +944,7 @@ static int tpd_probe(struct i2c_client *client, const struct i2c_device_id *id)
 
     /* Init I2C */
     fts_i2c_init();
-    fts_reset_proc(200);
+    fts_reset_proc(300);
     retval = fts_wait_tp_to_valid(client);
 	if(retval)
 		goto err_read_device_id;
@@ -1196,11 +1217,11 @@ static void tpd_resume(struct device *h)
 #endif
 
 #if FTS_POWER_SOURCE_CUST_EN
-    fts_power_resume();
+    //fts_power_resume();
 #endif
 
 #if (!FTS_CHIP_IDC)
-    fts_reset_proc(200);
+    fts_reset_proc(300);
 #endif
 
     fts_tp_state_recovery(fts_i2c_client);
