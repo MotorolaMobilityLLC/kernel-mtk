@@ -2739,7 +2739,7 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 	s_DEVINFO_ccm.device_vendor = "oflim";
 	s_DEVINFO_ccm.device_ic = "hi553";
 	s_DEVINFO_ccm.device_version = "hynix";
-	s_DEVINFO_ccm.device_info = "500W";
+	s_DEVINFO_ccm.device_info = "500W-Gr";
 	s_DEVINFO_ccm.device_used=DEVINFO_USED;
 	// add by jijin.wang - 2016-11-17-10-53
 #endif
@@ -2751,11 +2751,6 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 		do {
 			*sensor_id = return_sensor_id();
 			if (*sensor_id == imgsensor_info.sensor_id) {
-#ifdef CONFIG_LCT_DEVINFO_SUPPORT		
-				DEVINFO_CHECK_DECLARE(s_DEVINFO_ccm.device_type,s_DEVINFO_ccm.device_module,
-							s_DEVINFO_ccm.device_vendor,s_DEVINFO_ccm.device_ic,s_DEVINFO_ccm.device_version,
-							s_DEVINFO_ccm.device_info,s_DEVINFO_ccm.device_used);
-#endif
 #ifdef CONFIG_MTK_CAM_CAL
 				//read_imx135_otp_mtk_fmt();
 #endif
@@ -2764,7 +2759,23 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 				if(hi553_otp_read_flag == 0)
 				{
 					hi553_otp_cali_read();
-				}           
+				}
+				/*jijin.wang add for different first piexl start*/
+				if(hi553_otp.prodyction_year < 0x11)
+				{
+					s_DEVINFO_ccm.device_info = "500W-Gb";
+				}
+				else if((hi553_otp.prodyction_year >= 0x11)&&(hi553_otp.production_month = 0x1))
+				{
+					if(hi553_otp.production_day <= 0xD)
+						s_DEVINFO_ccm.device_info = "500W-Gb";
+				}
+				/*jijin.wang add for different first piexl end*/
+#ifdef CONFIG_LCT_DEVINFO_SUPPORT		
+				DEVINFO_CHECK_DECLARE(s_DEVINFO_ccm.device_type,s_DEVINFO_ccm.device_module,
+							s_DEVINFO_ccm.device_vendor,s_DEVINFO_ccm.device_ic,s_DEVINFO_ccm.device_version,
+							s_DEVINFO_ccm.device_info,s_DEVINFO_ccm.device_used);
+#endif
 				LOG_INF("i2c write id: 0x%x, ReadOut sensor id: 0x%x, imgsensor_info.sensor_id:0x%x.\n", imgsensor.i2c_write_id,*sensor_id,imgsensor_info.sensor_id);	
 
 				return ERROR_NONE;
