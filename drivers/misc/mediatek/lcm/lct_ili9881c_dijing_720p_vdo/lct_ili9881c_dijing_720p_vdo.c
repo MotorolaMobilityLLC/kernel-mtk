@@ -395,8 +395,8 @@ static struct LCM_setting_table lcm_initialization_setting[] = {
 {REGFLAG_DELAY, 10, {}},     
 {0x35,1,{0x00}},   // te on
 	{0x51,2,{0x0f,0xf0}},   
-	{0x53,1,{0x2C}},
-	{0x55,1,{0x00}},
+	{0x53,1,{0x24}},
+	{0x55,1,{0x01}},
 	{REGFLAG_END_OF_TABLE, 0x00, {}}
 };
 
@@ -672,8 +672,8 @@ static void lcm_cabc_cmdq(void *handle, unsigned int mode)
 		break;
 		default:
 		{
-			push_table_v22(handle,lcm_setting_dis,
-			   sizeof(lcm_setting_dis) / sizeof(struct LCM_setting_table), 1);
+			push_table_v22(handle,lcm_setting_ui,
+			   sizeof(lcm_setting_ui) / sizeof(struct LCM_setting_table), 1);
 		}
 
 	}

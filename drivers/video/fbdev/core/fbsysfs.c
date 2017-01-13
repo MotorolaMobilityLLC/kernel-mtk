@@ -584,10 +584,8 @@ static ssize_t show_cabc_mode(struct device *device,
 			break;
 		default:
 			{
-				m[0]='N';
-				m[1]='U';
-				m[2]='L';
-				m[3]='L';
+				m[0]='U';
+				m[1]='I';
 			}
 		
 	}
@@ -612,7 +610,7 @@ static ssize_t store_hbm(struct device *device, struct device_attribute *attr,
 		primary_display_setbacklight_hbm(255);
 	if(strncmp(echo_hbm+1,buf,1)==0)
 		primary_display_setbacklight_hbm(0);
-	printk("yufangfang buf = %s\n",buf);
+	printk("buf = %s\n",buf);
 	return count;
 
 }
@@ -620,10 +618,9 @@ static ssize_t show_hbm(struct device *device,
 			   struct device_attribute *attr, char *buf)
 {
 	char n ='0';
-	int a = primary_recognition_hbm_level();
-	printk("show_hbm a = %d\n",a);
+	int hbm_state = primary_recognition_hbm_level();
 
-	switch(a)//(recognition_hbm())
+	switch(hbm_state)//(recognition_hbm())
 	{
 		case HBM_ENABLE:
 				n='1';
