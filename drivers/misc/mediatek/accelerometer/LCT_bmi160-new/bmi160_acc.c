@@ -1605,14 +1605,8 @@ static int bmi160_acc_set_range(struct i2c_client *client, unsigned char range)
 	}
 }
 */
-<<<<<<< HEAD
-//add gsensor interrupt 
-#ifdef CONFIG_MOTO_AOD_BASE_ON_AP_SENSORS
-=======
-//add gsensor interrupt  by cly
 #ifdef CONFIG_MOTO_AOD_BASE_ON_AP_SENSORS
 
->>>>>>> 57c4bca... [Purp][Nicklaus][gsensor] sync moto gsensor code & eint config
 static irqreturn_t gsensor_eint_func(int irq, void *desc)
 {
 #ifdef DEBUG
@@ -1630,11 +1624,6 @@ static irqreturn_t gsensor_eint_func(int irq, void *desc)
 	return IRQ_HANDLED;
 }
 
-<<<<<<< HEAD
-=======
-
-
->>>>>>> 57c4bca... [Purp][Nicklaus][gsensor] sync moto gsensor code & eint config
 int bmi160_setup_int1(struct i2c_client *client)
 {
 	int ret;
@@ -1688,12 +1677,6 @@ int bmi160_setup_int1(struct i2c_client *client)
 		return -EINVAL;
 	}
 
-	/* enable irq */
-<<<<<<< HEAD
-	enable_irq(obj_i2c_data->IRQ1);
-=======
-	//enable_irq(obj_i2c_data->IRQ1);
->>>>>>> 57c4bca... [Purp][Nicklaus][gsensor] sync moto gsensor code & eint config
 
 	return 0;
 }
@@ -1751,12 +1734,6 @@ int bmi160_setup_int2(struct i2c_client *client)
 		return -EINVAL;
 	}
 
-	/* enable irq */
-<<<<<<< HEAD
-	enable_irq(obj_i2c_data->IRQ2);
-=======
-	//enable_irq(obj_i2c_data->IRQ2);
->>>>>>> 57c4bca... [Purp][Nicklaus][gsensor] sync moto gsensor code & eint config
 
 	return 0;
 }
@@ -2042,11 +2019,6 @@ static int bmi160_aod_set_en_sig_int_mode(struct bmi160_acc_i2c_data *bmi160,
 			bmi160->mEnabled, newstatus);
 	mutex_lock(&bmi160->int_mode_mutex);
 	if (!bmi160->mEnabled && newstatus) {
-<<<<<<< HEAD
-		/* set normal mode at first if needed */
-		BMI160_ACC_SetPowerMode(bmi160->client, true);
-=======
->>>>>>> 57c4bca... [Purp][Nicklaus][gsensor] sync moto gsensor code & eint config
 		BMI160_ACC_SetBWRate(bmi160->client,
 			BMI160_ACCEL_ODR_800HZ);
 		usleep_range(5000, 5000);
@@ -2097,16 +2069,6 @@ static int bmi160_aod_set_en_sig_int_mode(struct bmi160_acc_i2c_data *bmi160,
 
 	if (!bmi160->mEnabled && newstatus)
 		enable_irq(bmi160->IRQ1);
-<<<<<<< HEAD
-
-	/* set low power mode at the end if no need */
-	if (bmi160->mEnabled && !newstatus) {
-		bmi160->mEnabled = newstatus;/* mEnabled will be used in below func */
-		BMI160_ACC_SetPowerMode(bmi160->client, false);
-	}
-
-=======
->>>>>>> 57c4bca... [Purp][Nicklaus][gsensor] sync moto gsensor code & eint config
 	bmi160->mEnabled = newstatus;
 	mutex_unlock(&bmi160->int_mode_mutex);
 	ISR_INFO(&bmi160->client->dev, "int_mode finished!!!\n");
