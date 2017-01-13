@@ -42,6 +42,9 @@ int disp_lcm_set_cabc(disp_lcm_handle *plcm, void *handle, unsigned int enable);
 #ifdef CONFIG_LCT_HBM_SUPPORT
 int disp_lcm_set_backlight_hbm(disp_lcm_handle *plcm, int level);
 #endif
+#ifdef CONFIG_WIND_CABC_MODE_SUPPORT
+int disp_lcm_set_cabc(disp_lcm_handle *plcm, void *handle, unsigned int enable);
+#endif
 disp_lcm_handle *disp_lcm_probe(char *plcm_name, LCM_INTERFACE_ID lcm_id, int is_lcm_inited);
 int disp_lcm_init(disp_lcm_handle *plcm, int force);
 LCM_PARAMS *disp_lcm_get_params(disp_lcm_handle *plcm);

@@ -6342,7 +6342,52 @@ int primary_display_ipoh_restore(void)
 	DISPMSG("primary_display_ipoh_restore Out\n");
 	return 0;
 }
+//tuwenzan@wind-mobi.com add for init cabc ctrl backlight at 20170105 begin
+#ifdef CONFIG_WIND_CABC_MODE_SUPPORT
+static unsigned int cabc_mode_value = 0;
+int primary_recognition_cabc_mode(void)
+{
+	return cabc_mode_value;
+}
+EXPORT_SYMBOL_GPL(primary_recognition_cabc_mode)
 
+int _set_cabc_by_cmdq(unsigned int enbale)
+{
+	int ret = 0;
+	cmdqRecHandle cmdq_handle_cabc = NULL;
+
+	ret = cmdqRecCreate(CMDQ_SCENARIO_PRIMARY_DISP, &cmdq_handle_cabc);
+	DISPDBG("primary cabc, handle=%p\n", cmdq_handle_cabc);
+	if (ret != 0) 
+	{
+		DISPERR("fail to create primary cmdq handle for cabc\n");
+		return -1;
+	}
+
+	if (primary_display_is_video_mode()) 
+	{
+		cmdqRecReset(cmdq_handle_cabc);
+		disp_lcm_set_cabc(pgc->plcm, cmdq_handle_cabc, enbale);
+		_cmdq_flush_config_handle_mira(cmdq_handle_cabc, 1);
+		//DISPCHECK("[BL]_set_cabc_by_cmdq ret=%d\n", ret);
+	} 
+	else 
+	{
+		cmdqRecReset(cmdq_handle_cabc);
+		cmdqRecWait(cmdq_handle_cabc, CMDQ_SYNC_TOKEN_CABC_EOF);
+		//_cmdq_handle_clear_dirty(cmdq_handle_cabc);
+		_cmdq_insert_wait_frame_done_token_mira(cmdq_handle_cabc);
+		disp_lcm_set_cabc(pgc->plcm, cmdq_handle_cabc, enbale);
+		cmdqRecSetEventToken(cmdq_handle_cabc, CMDQ_SYNC_TOKEN_CONFIG_DIRTY);
+		cmdqRecSetEventToken(cmdq_handle_cabc, CMDQ_SYNC_TOKEN_CABC_EOF);
+		_cmdq_flush_config_handle_mira(cmdq_handle_cabc, 1);
+		//DISPCHECK("[BL]_set_cabc_by_cmdq ret=%d\n", ret);
+	}
+	cmdqRecDestroy(cmdq_handle_cabc);
+	cmdq_handle_cabc = NULL;
+	return ret;
+}
+#endif
 //add by lct yufangfang for cabc mode setting
 #ifdef CONFIG_LCT_CABC_MODE_SUPPORT
 static unsigned int cabc_mode_value = 0;
@@ -6389,6 +6434,7 @@ int _set_cabc_by_cmdq(unsigned int enbale)
 
 	return ret;
 }
+#endif
 
 int primary_display_setcabc(unsigned int enbale)
 {
@@ -6429,7 +6475,6 @@ int primary_display_setcabc(unsigned int enbale)
 	return 0;
 }
 EXPORT_SYMBOL_GPL(primary_display_setcabc)
-#endif
 
 int primary_display_ipoh_recover(void)
 {

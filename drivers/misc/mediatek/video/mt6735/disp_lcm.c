@@ -1227,6 +1227,7 @@ int disp_lcm_set_backlight(disp_lcm_handle *plcm, int level)
 	DISPERR("lcm_drv is null\n");
 	return -1;
 }
+//tuwenzan@wind-mobi.com add for init cabc ctrl backlight at 20170105 begin
 
 #ifdef CONFIG_LCT_HBM_SUPPORT
 //add by yufangfang for hbm
@@ -1278,7 +1279,34 @@ int disp_lcm_set_cabc(disp_lcm_handle *plcm, void *handle, unsigned int enable)
 	}
 }
 #endif
+#ifdef CONFIG_WIND_CABC_MODE_SUPPORT
+int disp_lcm_set_cabc(disp_lcm_handle *plcm, void *handle, unsigned int enable)
+{
+	LCM_DRIVER *lcm_drv = NULL;
 
+	DISPFUNC();
+	printk("tuwenzan enter disp_lcm_set_cabc\n");
+	if (_is_lcm_inited(plcm)) 
+	{
+		lcm_drv = plcm->drv;
+		if (lcm_drv->set_cabc_cmdq) 
+		{
+			lcm_drv->set_cabc_cmdq(handle, enable);
+		} 
+		else 
+		{
+			DISPERR("FATAL ERROR, lcm_drv->set_cabc is null\n");
+			return -1;
+		}
+		return 0;
+	}
+	else 
+	{
+		DISPERR("lcm_drv is null\n");
+		return -1;
+	}
+}
+#endif
 int disp_lcm_ioctl(disp_lcm_handle *plcm, LCM_IOCTL ioctl, unsigned int arg)
 {
 	return 0;

@@ -44,6 +44,16 @@
     #define FALSE 0
 #endif
 
+//tuwenzan@wind-mobi.com add for init cabc ctrl backlight at 20170106 begin
+#ifdef CONFIG_WIND_CABC_MODE_SUPPORT
+extern int cabc_mode_mode;
+#define CABC_MODE_SETTING_UI	1
+#define CABC_MODE_SETTING_MV	2
+#define CABC_MODE_SETTING_DIS	3
+#define CABC_MODE_SETTING_NULL	0
+#endif
+//tuwenzan@wind-mobi.com add for init cabc ctrl backlight at 20170106 end
+
 static unsigned int lcm_esd_test = FALSE;      ///only for ESD test
 // ---------------------------------------------------------------------------
 //  Local Variables
@@ -276,14 +286,19 @@ static struct LCM_setting_table lcm_initialization_setting[] = {
 	
 		//CMD_Page 0        
 	{0xFF,3,{0x98,0x81,0x00}},
-	{0x51,2,{0xFF,0xFF}},
-	{0x53,1,{0x24}},
-	{0x55,1,{0x00}},
+//tuwenzan@wind-mobi.com add for init cabc ctrl backlight at 20170105 begin
 	{0x35,1,{0x00}},
 	{0x11,1,{0x00}},
 	{REGFLAG_DELAY, 120, {}},		//120 
 	{0x29,1,{0x00}},
 	{REGFLAG_DELAY, 20, {}},	   //20
+
+#ifdef  CONFIG_WIND_CABC_BACKLIGHT_CTRL
+	{0x51,2,{0x00,0x00}}, 
+	{0x53,1,{0x2C}},
+	{0x55,1,{0x00}},
+#endif
+//tuwenzan@wind-mobi.com add for init cabc ctrl backlight at 20170105 end
 	{REGFLAG_END_OF_TABLE, 0x00, {}}
 	//liujinzhou@wind-mobi.com modify at 20161223 end
 };
@@ -312,6 +327,38 @@ static struct LCM_setting_table lcm_deep_sleep_mode_in_setting[] = {
     {REGFLAG_DELAY, 20, {}},
     {REGFLAG_END_OF_TABLE, 0x00, {}}
 };
+//tuwenzan@wind-mobi.com add for init cabc ctrl backlight at 20170105 begin
+#ifdef CONFIG_WIND_CABC_MODE_SUPPORT
+static struct LCM_setting_table lcm_setting_ui[] = {
+{0x55,1,{0x01}},
+{REGFLAG_END_OF_TABLE, 0x00, {}}
+};
+
+static struct LCM_setting_table lcm_setting_dis[] = {
+{0x55,1,{0x00}},
+{REGFLAG_END_OF_TABLE, 0x00, {}}
+};
+
+static struct LCM_setting_table lcm_setting_mv[] = {
+{0x55,1,{0x03}},
+{REGFLAG_END_OF_TABLE, 0x00, {}}
+};
+#endif
+
+#ifdef  CONFIG_WIND_CABC_BACKLIGHT_CTRL
+extern int wind_board_id;
+static struct LCM_setting_table lcm_backlight_level_setting[] = {
+	{ 0x51, 2, {0x0f,0xFF} },
+	{ REGFLAG_END_OF_TABLE, 0x00, {} }
+};
+static struct LCM_setting_table close_lcm_backlight_setting[] = {
+	{0x51,2,{0x00,0x00}},
+	{0x53,1,{0x00}},
+	{0x55,1,{0x00}},
+	{REGFLAG_END_OF_TABLE, 0x00, {}}
+};
+#endif
+//tuwenzan@wind-mobi.com add for init cabc ctrl backlight at 20170105 end
 
 static void push_table(struct LCM_setting_table *table, unsigned int count, unsigned char force_update)
 {
@@ -426,6 +473,13 @@ static void lcm_init(void)
 	MDELAY(120);		
 
 	push_table(lcm_initialization_setting, sizeof(lcm_initialization_setting) / sizeof(struct LCM_setting_table), 1); 
+	//tuwenzan@wind-mobi.com add for init cabc ctrl backlight at 20170105 begin
+	#ifdef  CONFIG_WIND_CABC_BACKLIGHT_CTRL
+	if(wind_board_id <= 0x13){
+		push_table(close_lcm_backlight_setting, sizeof(close_lcm_backlight_setting) / sizeof(struct LCM_setting_table), 1);
+	}
+	#endif
+	//tuwenzan@wind-mobi.com add for init cabc ctrl backlight at 20170105 end
 }
 
 static void lcm_suspend(void) 
@@ -453,6 +507,67 @@ static void lcm_resume(void)
 }
 
 //sunsiyuan@wind-mobi.com modify ata_check at 20161228 begin
+//tuwenzan@wind-mobi.com add for init cabc ctrl backlight at 20170105 begin
+#ifdef CONFIG_WIND_CABC_MODE_SUPPORT
+static void lcm_cabc_cmdq(void *handle, unsigned int mode)
+{
+	printk("tuwenzan enter lcm_cabc_cmdq mode = %d\n",mode);
+	if(wind_board_id > 0x13){
+	switch(mode)
+	{
+		case CABC_MODE_SETTING_UI:
+			{
+				push_table(lcm_setting_ui,
+			   sizeof(lcm_setting_ui) / sizeof(struct LCM_setting_table), 1);
+			}
+		break;
+		case CABC_MODE_SETTING_MV:
+			{
+				push_table(lcm_setting_mv,
+			   sizeof(lcm_setting_mv) / sizeof(struct LCM_setting_table), 1);
+			}
+		break;
+		case CABC_MODE_SETTING_DIS:
+			{
+				push_table(lcm_setting_dis,
+			   sizeof(lcm_setting_dis) / sizeof(struct LCM_setting_table), 1);
+			}
+		break;
+		default:
+		{
+			push_table(lcm_setting_dis,
+			   sizeof(lcm_setting_dis) / sizeof(struct LCM_setting_table), 1);
+		}
+
+	}
+		}
+}
+#endif
+
+
+#ifdef  CONFIG_WIND_CABC_BACKLIGHT_CTRL
+static void lcm_setbacklight(unsigned int level)
+{
+	unsigned int level_hight,level_low=0;
+	unsigned int mapped_level = 0;
+	if(wind_board_id > 0x13){
+    #ifdef WIND_LCM_MAPP_BACKLIGHT
+	if (level > 102)
+		mapped_level = (641*level + 36667)/(1000);
+	#else
+		mapped_level=level;
+	#endif
+	MDELAY(5);	
+	level_hight=(mapped_level & 0xf0)>>4;
+	level_low=(mapped_level & 0x0f)<<4;
+	lcm_backlight_level_setting[0].para_list[0] = level_hight;
+	lcm_backlight_level_setting[0].para_list[1] = level_low;
+	push_table(lcm_backlight_level_setting,
+		   sizeof(lcm_backlight_level_setting) / sizeof(struct LCM_setting_table), 1);
+	}
+}
+#endif
+//tuwenzan@wind-mobi.com add for init cabc ctrl backlight at 20170105 end
 static unsigned int lcm_ata_check(unsigned char *buf)
 {
 	#ifdef CONFIG_WIND_DEVICE_INFO
@@ -639,6 +754,15 @@ LCM_DRIVER ili9881_hd720_dsi_vdo_tm_lcm_drv =
     .compare_id     	= lcm_compare_id,
 	.esd_check = lcm_esd_check,
 	.esd_recover = lcm_esd_recover,
+//tuwenzan@wind-mobi.com add for init cabc ctrl backlight at 20170105 begin
+#ifdef  CONFIG_WIND_CABC_BACKLIGHT_CTRL
+	.set_backlight = lcm_setbacklight,
+#endif
+#ifdef CONFIG_WIND_CABC_MODE_SUPPORT
+	.set_cabc_cmdq = lcm_cabc_cmdq,
+#endif
+
+//tuwenzan@wind-mobi.com add for init cabc ctrl backlight at 20170105 end
 	.ata_check          = lcm_ata_check,    //sunsiyuan@wind-mobi.com add ata_check at 20161128
 };
 //late_initcall(lcm_init);

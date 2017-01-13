@@ -47,7 +47,11 @@
 #include "leds_hal.h"
 #include "ddp_pwm.h"
 #include "mtkfb.h"
-
+//tuwenzan@wind-mobi.com add for init cabc ctrl backlight at 20170105 begin
+#ifdef  CONFIG_WIND_CABC_BACKLIGHT_CTRL
+extern int wind_board_id;
+#endif
+//tuwenzan@wind-mobi.com add for init cabc ctrl backlight at 20170105 end
 /* for LED&Backlight bringup, define the dummy API */
 #ifndef CONFIG_MTK_PMIC
 u16 pmic_set_register_value(u32 flagname, u32 val)
@@ -261,7 +265,16 @@ struct cust_mt65xx_led *get_cust_led_dtsi(void)
 				} else
 					LEDS_DEBUG
 					    ("led dts can not get pwm config data.\n");
-
+				//tuwenzan@wind-mobi.com add for init cabc ctrl backlight at 20170105 begin
+				#ifdef  CONFIG_WIND_CABC_BACKLIGHT_CTRL
+		
+				if(pled_dtsi[i].mode == MT65XX_LED_MODE_CUST_BLS_PWM){
+					if(wind_board_id > 0x13){
+						pled_dtsi[i].mode = MT65XX_LED_MODE_CUST_LCM;
+					}
+				}
+				#endif
+				//tuwenzan@wind-mobi.com add for init cabc ctrl backlight at 20170105 end
 				switch (pled_dtsi[i].mode) {
 #if defined(CONFIG_LCT_CAMERA_KERNEL)/*jijin.wang add for LCT*/
 				case MT65XX_LED_MODE_GPIO:/*jijin.wang add for camera flashlight*/
@@ -901,7 +914,15 @@ int mt_mt65xx_led_set_cust(struct cust_mt65xx_led *cust, int level)
 	static bool button_flag;
 	unsigned int BacklightLevelSupport =
 	    Cust_GetBacklightLevelSupport_byPWM();
-
+	//tuwenzan@wind-mobi.com add for init cabc ctrl backlight at 20170105 begin
+	#ifdef WIND_CABC_BACKLIGHT_CTRL
+	if(cust->mode == MT65XX_LED_MODE_CUST_BLS_PWM){
+		if(wind_board_id > 0x13 ){
+			cust->mode = MT65XX_LED_MODE_CUST_LCM;
+		}
+	}
+	#endif
+	//tuwenzan@wind-mobi.com add for init cabc ctrl backlight at 20170105 end
 	switch (cust->mode) {
 
 	case MT65XX_LED_MODE_PWM:
@@ -966,7 +987,19 @@ int mt_mt65xx_led_set_cust(struct cust_mt65xx_led *cust, int level)
 			}
 		}
 		return mt_brightness_set_pmic(cust->data, level, bl_div_hal);
+	#ifdef WIND_CABC_BACKLIGHT_CTRL
+	case MT65XX_LED_MODE_CUST_LCM:
+		if (strcmp(cust->name, "lcd-backlight") == 0)
+			bl_brightness_hal = level;
+		LEDS_DEBUG("brightness_set_cust:backlight control by LCM\n");
+		/* warning for this API revork */
+		return mtkfb_set_backlight_level(level);
 
+	case MT65XX_LED_MODE_CUST_BLS_PWM:
+		if (strcmp(cust->name, "lcd-backlight") == 0)
+			bl_brightness_hal = level;
+		return disp_bls_set_backlight(level);
+	#else
 	case MT65XX_LED_MODE_CUST_LCM:
 		if (strcmp(cust->name, "lcd-backlight") == 0)
 			bl_brightness_hal = level;
@@ -978,7 +1011,7 @@ int mt_mt65xx_led_set_cust(struct cust_mt65xx_led *cust, int level)
 		if (strcmp(cust->name, "lcd-backlight") == 0)
 			bl_brightness_hal = level;
 		return ((cust_set_brightness) (cust->data)) (level);
-
+	#endif
 	case MT65XX_LED_MODE_NONE:
 	default:
 		break;
