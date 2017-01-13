@@ -169,7 +169,7 @@
  * FW_APP.i file for upgrade
  * define your own fw_app, the sample one is invalid
  */
-#define FTS_UPGRADE_FW_APP                      "include/firmware/FT5446_LQ_L3600_V0f_D01_20161220_app.i"
+#define FTS_UPGRADE_FW_APP                      "include/firmware/FT5446_LQ_L3600_V10_D01_20170112_app.i"
 
 /*
  * auto upgrade with app.bin in sdcard
