@@ -222,7 +222,7 @@ int fts_reset_proc(int hdelayms)
 
     retval = regulator_disable(tpd->reg);
     if (retval != 0) {
-        FTS_ERROR("[POWER]Fail to enable regulator when init,ret=%d!", retval);
+        FTS_ERROR("[POWER]Fail to disable regulator when init,ret=%d!", retval);
         return retval;
     }
 
@@ -1203,6 +1203,8 @@ static void tpd_suspend(struct device *h)
 *****************************************************************************/
 static void tpd_resume(struct device *h)
 {
+	int retval;
+
     FTS_FUNC_ENTER();
 #if FTS_PSENSOR_EN
     if (fts_proximity_resume() == 0)
@@ -1221,7 +1223,18 @@ static void tpd_resume(struct device *h)
 #endif
 
 #if (!FTS_CHIP_IDC)
-    fts_reset_proc(300);
+//    fts_reset_proc(300);
+    tpd_gpio_output(tpd_rst_gpio_number, 0);
+    msleep(2);
+	retval = regulator_enable(tpd->reg);
+    if (retval != 0) {
+        FTS_ERROR("[POWER]Fail to enable regulator when init,ret=%d!", retval);
+        return;
+    }
+    msleep(5);
+    tpd_gpio_output(tpd_rst_gpio_number, 1);
+    msleep(300);
+
 #endif
 
     fts_tp_state_recovery(fts_i2c_client);
