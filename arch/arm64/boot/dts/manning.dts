@@ -675,10 +675,10 @@
 
 &touch {
 	tpd-resolution = <1080 1920>;
-	use-tpd-button = <0>;
+	use-tpd-button = <1>;
 	tpd-key-num = <3>;
-	tpd-key-local= <139 172 158 0>;
-	tpd-key-dim-local = <90 883 100 40 230 883 100 40 370 883 100 40 0 0 0 0>;
+	tpd-key-local= <158 172 139 0>;
+	tpd-key-dim-local = <160 2030 100 40 360 2030 100 40 570 2030 100 40 0 0 0 0>;
 	tpd-max-touch-num = <5>;
 	tpd-filter-enable = <1>;
 	tpd-filter-pixel-density = <144>;
