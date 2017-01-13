@@ -32,6 +32,7 @@ static int num=0;
 char num0,num1,num2,num3,num4,num5=0;
 static char *board_str=NULL;
 extern char* saved_command_line;
+int wind_board_id = 0;	//tuwenzan@wind-mobi.com modify at 20170112
 //huyunge@wind-mobi.com 20161227 start
 static int bid_atoi(char *nptr)
  {
@@ -292,7 +293,7 @@ static int bid_platform_probe(struct platform_device *pdev){
 	
 	num=(num5<<5)|(num4<<4)|(num3<<3)|(num2<<2)|(num1<<1)|(num0<<0);
 	printk("the board id is num=%x\n",num);
-
+	wind_board_id = num;	//tuwenzan@wind-mobi.com add at 20170112
 	switch(num){
 	case AP_DS_NA_EVT: //00
 		board_str="00000";
@@ -450,7 +451,7 @@ static int __init bid_dev_init(void){
 		
 	return 0;
 }
-module_init(bid_dev_init);
+arch_initcall(bid_dev_init); //tuwenzan@wind-mobi.com add at 20170112
 
 
 static void __exit bid_dev_exit(void){

@@ -90,6 +90,11 @@ static int debug_enable_led = 1;
 #ifdef LED_INCREASE_LED_LEVEL_MTKPATCH
 #define LED_INTERNAL_LEVEL_BIT_CNT 10
 #endif
+//tuwenzan@wind-mobi.com modify at 20170112 begin
+#ifdef CONFIG_WIND_HBM_SUPPORT
+struct led_classdev	*lcd_backlight_hbm;
+#endif
+//tuwenzan@wind-mobi.com modify at 20170112 end
 
 static int mt65xx_led_set_cust(struct cust_mt65xx_led *cust, int level);
 
@@ -673,7 +678,13 @@ static int mt65xx_leds_probe(struct platform_device *pdev)
 		g_leds_data[i]->cdev.blink_set = mt65xx_blink_set;
 
 		INIT_WORK(&g_leds_data[i]->work, mt_mt65xx_led_work);
-
+		//tuwenzan@wind-mobi.com modify at 20170112 begin
+		#ifdef CONFIG_WIND_HBM_SUPPORT
+		if(i == MT65XX_LED_TYPE_LCD){
+			lcd_backlight_hbm = &g_leds_data[i]->cdev;
+		}
+		#endif
+		//tuwenzan@wind-mobi.com modify at 20170112 end
 		ret = led_classdev_register(&pdev->dev, &g_leds_data[i]->cdev);
 		#if 0
 		if (strcmp(g_leds_data[i]->cdev.name, "lcd-backlight") == 0) {

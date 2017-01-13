@@ -26,4 +26,13 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/cmdq/v2/mt6735
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/lcm/lct_hx8394f_booyitech_720p_vdo
 endif
 
+ifeq ($(CONFIG_WIND_CABC_MODE_SUPPORT),y)
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/video/mt6735
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/leds/mt6735
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/lcm/inc
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/video/include
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/video/mt6735/mt6735
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/cmdq/v2
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/cmdq/v2/mt6735
+endif
 

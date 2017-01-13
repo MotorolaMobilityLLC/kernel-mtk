@@ -839,6 +839,10 @@ typedef struct {
 #ifdef CONFIG_LCT_HBM_SUPPORT
 	void (*set_backlight_hbm)(unsigned int level);
 #endif
+#ifdef CONFIG_WIND_CABC_MODE_SUPPORT
+	void (*set_cabc_cmdq)(void *handle, unsigned int enable);
+	
+#endif
 	void (*set_backlight_cmdq)(void *handle, unsigned int level);
 	void (*set_pwm)(unsigned int divider);
 	unsigned int (*get_pwm)(unsigned int divider);

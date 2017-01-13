@@ -492,6 +492,37 @@ static ssize_t show_bl_curve(struct device *device,
 	return len;
 }
 #endif
+//tuwenzan@wind-mobi.com add for init cabc ctrl backlight at 20170105 begin
+#ifdef CONFIG_WIND_CABC_MODE_SUPPORT
+#include "disp_lcm.h"
+#include "primary_display.h"
+
+#define CABC_MODE_UI	1
+#define CABC_MODE_MV	2
+#define CABC_MODE_DIS	3
+extern int primary_display_setcabc(unsigned int enable);
+extern int primary_recognition_cabc_mode(void);
+static ssize_t store_cabc_mode(struct device *device, struct device_attribute *attr,
+			  const char *buf, size_t count)
+{	
+	unsigned int cabc_mode_mode = 0;	
+	printk("tuwenzan store cabc_mode buf = %s\n",buf);
+	if((strncmp(buf,"UI",2)==0)||(strncmp(buf,"ui",2)==0))
+	{
+		cabc_mode_mode = CABC_MODE_UI;	
+	}	
+	if((strncmp(buf,"MV",2)==0)||(strncmp(buf,"mv",2)==0))	
+	{
+		cabc_mode_mode = CABC_MODE_MV;
+	}
+	if((strncmp(buf,"DIS",3)==0)||(strncmp(buf,"dis",3)==0))
+	{
+		cabc_mode_mode = CABC_MODE_DIS;
+	}
+	primary_display_setcabc(cabc_mode_mode);
+	return count;
+}
+#endif
 
 //add by LCT yufangfang for cabc
 #ifdef CONFIG_LCT_CABC_MODE_SUPPORT
@@ -524,6 +555,7 @@ static ssize_t store_cabc_mode(struct device *device, struct device_attribute *a
 	return count;
 
 }
+#endif
 
 static ssize_t show_cabc_mode(struct device *device,
 			   struct device_attribute *attr, char *buf)
@@ -562,7 +594,6 @@ static ssize_t show_cabc_mode(struct device *device,
 	return snprintf(buf, PAGE_SIZE, "%s\n",
 	                m);
 }
-#endif
 
 //add by lct yufangfang for hbm
 #ifdef CONFIG_LCT_HBM_SUPPORT
@@ -572,6 +603,7 @@ static ssize_t show_cabc_mode(struct device *device,
 #define HBM_DISABLE	0
 extern int primary_display_setbacklight_hbm(unsigned int level);
 extern int primary_recognition_hbm_level(void);
+
 static ssize_t store_hbm(struct device *device, struct device_attribute *attr,
 			  const char *buf, size_t count)
 {
@@ -606,6 +638,46 @@ static ssize_t show_hbm(struct device *device,
 	                n);
 }
 #endif
+
+#ifdef CONFIG_WIND_HBM_SUPPORT
+#include <linux/leds.h>
+static int hbm_flag = 1;
+static int last_level = 0;
+static int hbm_level = 255;
+extern struct led_classdev	*lcd_backlight_hbm;
+extern void led_set_brightness(struct led_classdev *led_cdev,enum led_brightness brightness);
+extern int led_update_brightness(struct led_classdev *led_cdev);
+
+
+static ssize_t store_hbm(struct device *device, struct device_attribute *attr,
+			  const char *buf, size_t count)
+{
+	char echo_hbm[2]={'1','0'};
+	led_update_brightness(lcd_backlight_hbm);
+	if(hbm_flag ||  lcd_backlight_hbm->brightness != hbm_level){
+		 last_level = lcd_backlight_hbm->brightness;
+		 printk("tuwenzan hbm lcd_backlight_hbm->brightness = %d last_level = %d\n",lcd_backlight_hbm->brightness,last_level);
+	}
+	if(strncmp(echo_hbm,buf,1)==0){
+		
+		led_set_brightness(lcd_backlight_hbm,hbm_level);
+		hbm_flag = 0;
+	}
+	if(strncmp(echo_hbm+1,buf,1)==0){
+		printk("tuwenzan enter echo hbm 0\n");
+		led_set_brightness(lcd_backlight_hbm,last_level);
+		hbm_flag = 1;
+	}
+	return count;
+
+}
+
+static ssize_t show_hbm(struct device *device,
+			   struct device_attribute *attr, char *buf)
+{
+	return snprintf(buf, PAGE_SIZE, "%d\n",!hbm_flag);
+}
+#endif
 /* When cmap is added back in it should be a binary attribute
  * not a text one. Consideration should also be given to converting
  * fbdev to use configfs instead of sysfs */
@@ -626,6 +698,12 @@ static struct device_attribute device_attrs[] = {
 	__ATTR(cabc_mode, S_IRUGO|S_IWUSR, show_cabc_mode, store_cabc_mode),
 #endif
 #ifdef CONFIG_LCT_HBM_SUPPORT
+	__ATTR(hbm, S_IRUGO|S_IWUSR, show_hbm, store_hbm),
+#endif
+#ifdef CONFIG_WIND_CABC_MODE_SUPPORT
+	__ATTR(cabc_mode, S_IRUGO|S_IWUSR, show_cabc_mode, store_cabc_mode),
+#endif
+#ifdef CONFIG_WIND_HBM_SUPPORT
 	__ATTR(hbm, S_IRUGO|S_IWUSR, show_hbm, store_hbm),
 #endif
 #ifdef CONFIG_FB_BACKLIGHT

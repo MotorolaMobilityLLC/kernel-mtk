@@ -146,6 +146,27 @@ config MTK_PERIODIC_DATA_COLLECTION
 	  It tries to compact memory periodically and
 	  to create a unused contiguous memory. The
 	  DRAM can enter low power state if it is idle.
+	  
+#tuwenzan@wind-mobi.com add for init cabc ctrl backlight at 20170105 begin
+config WIND_CABC_BACKLIGHT_CTRL
+	bool "Support IC CABC ctrl backlight"
+	default n
+	help
+	  this macro for contrl lcd backlight by IC CABC output pwm.
+	  
+config WIND_CABC_MODE_SUPPORT
+	bool "Support ui mv dis mode"
+	default n
+	help
+	  this macro for contrl CABC output mode.
+	  
+config WIND_HBM_SUPPORT
+	bool "Support HBM backlight"
+	default n
+	help
+	  this macro for contrl lcd backlight up to HBM.
+#tuwenzan@wind-mobi.com add for init cabc ctrl backlight at 20170105 end
+
 #liupeng@wind-mobi.com 20161121 begin
 config MTK_BOARD_ID
 	bool "BOARD ID"
