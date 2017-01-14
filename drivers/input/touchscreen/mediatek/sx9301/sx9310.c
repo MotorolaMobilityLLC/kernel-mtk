@@ -48,7 +48,7 @@
 #define IDLE 0
 #define ACTIVE 1
 #define USED 0
-
+static int flag_mode = 1;	//tuwenzan@wind-mobi.com add at 20170114 begin
 /*! \struct sx9310
  * Specialized struct containing input event data, platform data, and
  * last cap state read if needed.
@@ -239,7 +239,7 @@ static ssize_t manual_offset_calibration_show(struct device *dev,
 //  	printk("twz reg_calue = 0x%x\n",reg_value);
 	return snprintf(buf, 2,"0x%x\n", reg_value);  //sprintf(buf, "0x%x\n", reg_value);
 }
-//tuwenzan@wind-mobi.com add at 20161121 begin
+//tuwenzan@wind-mobi.com add at 20170114 begin
 static ssize_t all_register_value_show(struct device *dev,
 					struct device_attribute *attr, char *buf)
 {
@@ -249,6 +249,11 @@ static ssize_t all_register_value_show(struct device *dev,
 	char* cache_buf = NULL;
 	char* single_buf;
 	u8 reg_value = 0;
+	unsigned char reg_addr[] = {0x00,0x01,0x02,0x03,0x04,0x10,0x11,0x12,0x13,0x14,
+					 0x15,0x16,0x17,0x18,0x19,0x1A,0x1B,0x1C,0x1D,0x1E,
+					 0x1F,0x20,0x21,0x22,0x23,0x2A,0x2B,0x2C,0x30,0x31,
+					 0x32,0x33,0x34,0x35,0x36,0x37,0x38,0x39,0x3A,0x40,
+					 0x41,0x42,0x7F};
 	psx93XX_t this = dev_get_drvdata(dev);
 	//printk("twz enter all_register_value_show\n");
 	cache_buf = (char *)kmalloc(1024,GFP_KERNEL);
@@ -257,12 +262,10 @@ static ssize_t all_register_value_show(struct device *dev,
 	memset(single_buf,0,20);
   	if (this && (pDevice = this->pDevice) && (pdata = pDevice->hw))
   	{
-   	   while ( i < pdata->i2c_reg_num) {
-      	/* read all registers/values contained in i2c_reg */
-      	printk("twz Going to read Reg: 0x%x Value: 0x%x\n",
-                pdata->pi2c_reg[i].reg,pdata->pi2c_reg[i].val);      
-      read_register(this, pdata->pi2c_reg[i].reg,&reg_value);
-	  sprintf(single_buf,"REG[0x%x] = 0x%x\n",pdata->pi2c_reg[i].reg,reg_value);
+   	   while ( i < ARRAY_SIZE(reg_addr)) {
+      	/* read all registers/values contained in i2c_reg */    
+      read_register(this, reg_addr[i],&reg_value);
+	  sprintf(single_buf,"REG[0x%x] = 0x%x\n",reg_addr[i],reg_value);
 	  strcat(cache_buf,single_buf);
       i++;
     }
@@ -271,7 +274,14 @@ static ssize_t all_register_value_show(struct device *dev,
   	}
  	return sprintf(buf,"As follow is SX9301 all init reg list:\n%s\n",cache_buf);
 }
-//tuwenzan@wind-mobi.com add at 20161121 end
+
+static ssize_t sar_enable_show(struct device *dev,
+					struct device_attribute *attr, char *buf)
+{
+	return sprintf(buf,"%d\n",flag_mode);
+}
+
+//tuwenzan@wind-mobi.com add at 20170114 end
 
 
 /*! \brief sysfs store function for manual calibration
@@ -290,7 +300,7 @@ static ssize_t manual_offset_calibration_store(struct device *dev,
   }
 	return count;
 }
-//tuwenzan@wind-mobi.com add at 20161121 begin
+//tuwenzan@wind-mobi.com add at 20170114 begin
 static ssize_t operation_single_store(struct device *dev,
 					struct device_attribute *attr,const char *buf, size_t count)
 {
@@ -308,18 +318,44 @@ static ssize_t operation_single_store(struct device *dev,
 	return count;
 }
 
+static ssize_t sar_enable_store(struct device *dev,
+					struct device_attribute *attr,const char *buf, size_t count)
+{
+	u8 enable = 1;
+	u8 disable = 0;
+	psx93XX_t this = dev_get_drvdata(dev);
+	if(strncmp(buf,"1",1) == 0){
+		printk("tuwenzan sar you echo 1\n");
+		write_register(this,SX9310_SAR_MODE_REG,enable);
+		enable_irq(this->irq);
+		flag_mode = 1;
+		return count;
+	}
+	if(strncmp(buf,"0",1) == 0){
+		printk("tuwenzan sar you echo 0\n");
+		write_register(this,SX9310_SAR_MODE_REG,disable);
+		disable_irq(this->irq);
+		flag_mode = 0;
+		return count;
+	}
+	return count;
+}
+
 static DEVICE_ATTR(calibrate, 0644, manual_offset_calibration_show,
                                 manual_offset_calibration_store);
 static DEVICE_ATTR(all_register_value,0644,all_register_value_show,NULL);
 static DEVICE_ATTR(operation_single_reg,0644,NULL,operation_single_store);
+static DEVICE_ATTR(sar_enable,0644,sar_enable_show,sar_enable_store);
+
 
 static struct attribute *sx9310_attributes[] = {
 	&dev_attr_calibrate.attr,
 	&dev_attr_all_register_value.attr,
 	&dev_attr_operation_single_reg.attr,
+	&dev_attr_sar_enable.attr,
 	NULL,
 };
-//tuwenzan@wind-mobi.com add at 20161121 end
+//tuwenzan@wind-mobi.com add at 20170114 end
 static struct attribute_group sx9310_attr_group = {
 	.attrs = sx9310_attributes,
 };
@@ -457,6 +493,11 @@ static void touchProcess(psx93XX_t this)
             /* User pressed button */
             dev_info(this->pdev, "cap button %d touched\n", counter);
             input_report_key(input, pCurrentButton->keycode, 1);
+/******add by tuwenzan@wind-mobi.cm----20170114----start************/			
+			input_sync(input);
+			input_report_key(input, pCurrentButton->keycode, 0);
+			input_sync(input);
+/******add by tuwenzan@wind-mobi.cm----20170114----end************/			
             pCurrentButton->state = ACTIVE;
           } else {
             dev_dbg(this->pdev, "Button %d already released.\n",counter);
@@ -466,7 +507,13 @@ static void touchProcess(psx93XX_t this)
           if (((i & pCurrentButton->mask) != pCurrentButton->mask)) {
             /* User released button */
             dev_info(this->pdev, "cap button %d released\n",counter);
-            input_report_key(input, pCurrentButton->keycode, 0);
+/******add by tuwenzan@wind-mobi.cm----20170114----start************/			
+			input_report_key(input, KEY_BRL_DOT6, 1);
+			input_sync(input);
+            input_report_key(input, KEY_BRL_DOT6, 0);
+			input_sync(input);
+			//input_report_key(input, pCurrentButton->keycode, 0);
+/******add by tuwenzan@wind-mobi.cm----20170114----end************/			
             pCurrentButton->state = IDLE;
           } else {
             dev_dbg(this->pdev, "Button %d still touched.\n",counter);
@@ -476,8 +523,9 @@ static void touchProcess(psx93XX_t this)
           break;
       };
     }
-    input_sync(input);
-
+/******add by tuwenzan@wind-mobi.cm----20170114----start************/		
+//    input_sync(input);
+/******add by tuwenzan@wind-mobi.cm----20170114----end************/	
 	  dev_dbg(this->pdev, "Leaving touchProcess()\n");
   }
 }
@@ -828,16 +876,18 @@ int sx93XX_remove(psx93XX_t this)
   return -ENOMEM;
 }
 
-
+//tuwenzan@wind-mobi.com modify at 20170114 begin
 void sx93XX_suspend(psx93XX_t this)
 {
-  if (this)
+  if (this){
+  	write_register(this,SX9310_SAR_MODE_REG,0);
     disable_irq(this->irq);
+ }
 }
 
 void sx93XX_resume(psx93XX_t this)
 {
-  if (this) {
+  if (this && flag_mode) {
 #ifdef USE_THREADED_IRQ
   mutex_lock(&this->mutex);
   /* Just in case need to reset any uncaught interrupts */
@@ -851,6 +901,7 @@ void sx93XX_resume(psx93XX_t this)
     enable_irq(this->irq);
   }
 }
+//tuwenzan@wind-mobi.com modify at 20170114 end
 
 
 int sx93XX_init(psx93XX_t this)

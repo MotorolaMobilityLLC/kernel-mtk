@@ -46,6 +46,7 @@
 
 #define DO_STARTUP_FW_UPDATE //tuwenzan@wind-mobi.com close this feature at 20161229
 #ifdef DO_STARTUP_FW_UPDATE
+#include "SynapticsImage_Biel.h" //tuwenzan@wind-mobi.com add at 20170113
 #include "SynapticsImage_GD.h"  //tuwenzan@wind-mobi.com modify at 20161202
 #endif
 
@@ -3864,7 +3865,7 @@ static void fwu_startup_fw_update_work(struct work_struct *work)
 		synaptics_fw_updater(FirmwareImage);
 	}else if(!strcmp(Biel_lockdown,my_read_config_buf)){
 		printk("twz enter Biel_lockdown WOODs360304\n");
-		//synaptics_fw_updater(FirmwareImage);
+		synaptics_fw_updater(FirmwareImage_Beil);
 	}else{
 		printk("fail get TP lockdown info\n");
 	}

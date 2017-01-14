@@ -45,6 +45,8 @@
 #define SX9310_SAR_CTRL1_REG	0x2B
 #define SX9310_SAR_CTRL2_REG	0x2C
 
+#define SX9310_SAR_MODE_REG		0x41	//tuwenzan@wind-mobi.com add at 20170114 begin
+
 #define SX9310_SOFTRESET_REG  0x7F
 
 /*      Sensor Readback */
@@ -230,11 +232,11 @@ static struct smtc_reg_data sx9310_i2c_reg_setup[] = {
 
 static struct _buttonInfo psmtcButtons[] = {
   {
-    .keycode = KEY_UNKNOWN,  //tuwenzan@wind-mobi.com modify at 20161130
+    .keycode = KEY_BRL_DOT5,    //modify by tuwenzan@wind-mobi.com at 2017.01.14
     .mask = SX9310_TCHCMPSTAT_TCHSTAT0_FLAG,
   },
   {
-    .keycode = KEY_1,
+    .keycode = KEY_BRL_DOT6,	//modify by tuwenzan@wind-mobi.com at 2017.01.14
     .mask = SX9310_TCHCMPSTAT_TCHSTAT1_FLAG,
   },
   {
