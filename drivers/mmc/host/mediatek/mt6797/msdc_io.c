@@ -767,18 +767,18 @@ int msdc_dt_init(struct platform_device *pdev, struct mmc_host *mmc,
 		g_pinctrl = pinctrl;
 		g_pin_power_out0 = pinctrl_lookup_state(g_pinctrl,
 			"power_output0");
-		if (IS_ERR(pins_ins)) {
-			ret = PTR_ERR(pins_ins);
+		if (IS_ERR(g_pin_power_out0)) {
+			ret = PTR_ERR(g_pin_power_out0);
 			dev_err(&pdev->dev, "Cannot find pinctrl power_output0!\n");
-		return -1;
+			return -1;
 		}
 
 		g_pin_power_out1 = pinctrl_lookup_state(g_pinctrl,
 			"power_output1");
-		if (IS_ERR(pins_ins)) {
-			ret = PTR_ERR(pins_ins);
+		if (IS_ERR(g_pin_power_out1)) {
+			ret = PTR_ERR(g_pin_power_out1);
 			dev_err(&pdev->dev, "Cannot find pinctrl power_output1!\n");
-		return -1;
+			return -1;
 		}
 
 		pinctrl_select_state(g_pinctrl, g_pin_power_out0);
