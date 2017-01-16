@@ -523,19 +523,19 @@ static unsigned int last_level=0;
 static unsigned int hbm_enable=0;
 static void lcm_setbacklight(unsigned int level)
 {
-	if(hbm_enable==0)
-	{
-		#if(LCT_LCM_MAPP_BACKLIGHT)
-		unsigned int mapped_level = 0;
+	#if(LCT_LCM_MAPP_BACKLIGHT)
+			static unsigned int mapped_level = 0;
 			mapped_level = (7835*level + 2165)/(10000);
-		#endif	
+	#endif	
+	if(hbm_enable==0)
+	{		
 		set_gpio_led_en(1);
 		MDELAY(5);
 		/* Refresh value of backlight level. */
 		lcm_backlight_level_setting[0].para_list[0] = mapped_level;
 		push_table(lcm_backlight_level_setting,
 			   sizeof(lcm_backlight_level_setting) / sizeof(struct LCM_setting_table), 1);
-		last_level = mapped_level;
+		
 	}
 	else
 	{
@@ -545,6 +545,7 @@ static void lcm_setbacklight(unsigned int level)
 	    push_table(lcm_backlight_level_setting,
 		   sizeof(lcm_backlight_level_setting) / sizeof(struct LCM_setting_table), 1);
 	}
+	last_level = mapped_level;
 }
 
 //add for ATA test by liuzhen

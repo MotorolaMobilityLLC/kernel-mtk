@@ -683,12 +683,12 @@ static void lcm_cabc_cmdq(void *handle, unsigned int mode)
 static void lcm_setbacklight(unsigned int level)
 {
 	unsigned int level_hight,level_low=0;
+	#if(LCT_LCM_MAPP_BACKLIGHT)
+	static unsigned int mapped_level = 0;
+	mapped_level = (7835*level + 2165)/(10000);
+	#endif
 	if(hbm_enable==0)
 	{		
-		#if(LCT_LCM_MAPP_BACKLIGHT)
-		unsigned int mapped_level = 0;
-		mapped_level = (7835*level + 2165)/(10000);
-		#endif	
 	//	printk("ili9881c setbacklight level = %d\n",level);
 		set_gpio_led_en(1);
 		MDELAY(5);	
@@ -698,9 +698,6 @@ static void lcm_setbacklight(unsigned int level)
 		lcm_backlight_level_setting[0].para_list[1] = level_low;
 		push_table(lcm_backlight_level_setting,
 			   sizeof(lcm_backlight_level_setting) / sizeof(struct LCM_setting_table), 1);
-		#ifdef CONFIG_LCT_HBM_SUPPORT
-		last_level = mapped_level;
-    	#endif
 	}
 	else
 	{
@@ -713,6 +710,9 @@ static void lcm_setbacklight(unsigned int level)
 		push_table(lcm_backlight_level_setting,
 			   sizeof(lcm_backlight_level_setting) / sizeof(struct LCM_setting_table), 1);
 	}
+	#ifdef CONFIG_LCT_HBM_SUPPORT
+		last_level = mapped_level;
+	#endif
 }
 
 /* add LCM ATA by changjingyang start */
