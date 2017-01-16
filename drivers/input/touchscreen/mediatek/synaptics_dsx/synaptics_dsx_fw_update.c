@@ -3823,7 +3823,9 @@ EXPORT_SYMBOL(synaptics_fw_updater);
 
 #ifdef DO_STARTUP_FW_UPDATE
 //tuwenzan@wind-mobi.com add at 20170116 begin
+#ifdef CONFIG_WIND_DEVICE_INFO
 extern char ctp_vendor[5];
+#endif
 static void fwu_startup_fw_update_work(struct work_struct *work)
 {
 	static unsigned char do_once = 1;
@@ -3863,11 +3865,15 @@ static void fwu_startup_fw_update_work(struct work_struct *work)
 	fwu->config_area = my_config_area;
 	if(!strcmp(GD_lockdown,my_read_config_buf)){
 		printk("twz enter GD_lockdown WOODs360302\n");
+#ifdef CONFIG_WIND_DEVICE_INFO
 		sprintf(ctp_vendor,"GD");
+#endif
 		synaptics_fw_updater(FirmwareImage);
 	}else if(!strcmp(Biel_lockdown,my_read_config_buf)){
 		printk("twz enter Biel_lockdown WOODs360304\n");
+#ifdef CONFIG_WIND_DEVICE_INFO
 		sprintf(ctp_vendor,"Biel");
+#endif
 		synaptics_fw_updater(FirmwareImage_Beil);
 	}else{
 		printk("fail get TP lockdown info\n");
