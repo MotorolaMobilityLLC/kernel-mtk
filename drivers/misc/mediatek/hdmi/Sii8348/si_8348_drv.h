@@ -45,7 +45,7 @@ struct drv_hw_context {
 	uint8_t		valid_3d_fs;
 #ifdef MHL2_ENHANCED_MODE_SUPPORT
 	bool		mhl2_em_enabled;
-	bool		mhl2_em_input;
+	uint8_t		mhl2_em_input;
 	uint8_t 	mhl2_em_sm;
 	uint8_t 	mhl2_em_request_mode;
 	uint8_t 	mhl2_em_current_mode;

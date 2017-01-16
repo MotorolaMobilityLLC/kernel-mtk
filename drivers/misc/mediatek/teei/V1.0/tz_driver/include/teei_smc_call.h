@@ -1,3 +1,16 @@
+/*
+ * Copyright (c) 2015-2016 MICROTRUST Incorporated
+ * All Rights Reserved.
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * version 2 as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ */
 
 #include "teei_smc_struct.h"
 #include "sched_status.h"
@@ -55,5 +68,5 @@ extern unsigned long teei_config_flag;
 extern void tz_free_shared_mem(void *addr, size_t size);
 extern void *tz_malloc_shared_mem(size_t size, int flags);
 extern int get_current_cpuid(void);
-extern int add_nq_entry(unsigned char *command_buff, int command_length, int valid_flag);
-extern int add_work_entry(int work_type, unsigned long buff);
+extern int add_nq_entry(unsigned int command_buff, int command_length, int valid_flag);
+extern int add_work_entry(int work_type, unsigned char *buff);

@@ -52,12 +52,22 @@ struct TEEI_vfs_command {
 			int mode;
 		} func_mkdir_args;
 
+		struct func_readdir {
+			unsigned long p_dir;
+			unsigned int read_count;
+		} func_readdir_args;
+
+		struct func_closedir {
+			unsigned long p_dir;
+		}func_closedir_args;
+
 	} args;
 
 };
 
 union TEEI_vfs_response {
 	int value;
+        unsigned long p_dir;
 };
 
 extern char *daulOS_VFS_share_mem;

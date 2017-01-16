@@ -897,7 +897,7 @@ VOID kalP2PIndicateScanDone(IN P_GLUE_INFO_T prGlueInfo, IN UINT_8 ucRoleIndex, 
 			ASSERT(FALSE);
 			break;
 		}
-		DBGLOG(P2P, INFO, "scan complete, cfg80211 scan request is %p\n", prGlueInfo->prScanRequest);
+		DBGLOG(P2P, TRACE, "scan complete, cfg80211 scan request is %p\n", prGlueP2pInfo->prScanRequest);
 
 		GLUE_ACQUIRE_SPIN_LOCK(prGlueInfo, SPIN_LOCK_NET_DEV);
 
@@ -945,7 +945,7 @@ kalP2PIndicateBssInfo(IN P_GLUE_INFO_T prGlueInfo,
 		prChannelEntry = kalP2pFuncGetChannelEntry(prGlueP2pInfo, prChannelInfo);
 
 		if (prChannelEntry == NULL) {
-			DBGLOG(P2P, TRACE, "Unknown channel info\n");
+			DBGLOG(P2P, WARN, "Unknown channel info\n");
 			break;
 		}
 
@@ -954,10 +954,11 @@ kalP2PIndicateBssInfo(IN P_GLUE_INFO_T prGlueInfo,
 		prCfg80211Bss = cfg80211_inform_bss_frame(prGlueP2pInfo->prWdev->wiphy,	/* struct wiphy * wiphy, */
 							  prChannelEntry,
 							  prBcnProbeRspFrame, u4BufLen, i4SignalStrength, GFP_KERNEL);
-
 		/* Return this structure. */
-		cfg80211_put_bss(prGlueP2pInfo->prWdev->wiphy, prCfg80211Bss);
-
+		if (prCfg80211Bss)
+			cfg80211_put_bss(prGlueP2pInfo->prWdev->wiphy, prCfg80211Bss);
+		else
+			DBGLOG(P2P, WARN, "Indicate bss to cfg80211 failed\n");
 	} while (FALSE);
 
 	return;

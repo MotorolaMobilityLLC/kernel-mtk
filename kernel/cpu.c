@@ -380,7 +380,7 @@ static int __ref take_cpu_down(void *_param)
 	aee_rr_rec_cpu_dying_ktime(ktime_to_us(ktime_get()));
 #endif
 	/* Park the stopper thread */
-	kthread_park(current);
+	stop_machine_park((long)param->hcpu);
 	return 0;
 }
 

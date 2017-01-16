@@ -1510,11 +1510,9 @@ static inline void _m4u_port_clock_toggle(int m4u_index, int larb, int on)
 	if (m4u_index == 0) {
 		start = sched_clock();
 		if (on) {
-			smi_common_clock_on();
 			larb_clock_on(larb, 1);
 		} else {
 			larb_clock_off(larb, 1);
-			smi_common_clock_off();
 		}
 		end = sched_clock();
 
@@ -1998,7 +1996,6 @@ void m4u_print_port_status(struct seq_file *seq, int only_print_active)
 
 	M4U_PRINT_LOG_OR_SEQ(seq, "m4u_print_port_status ========>\n");
 
-	smi_common_clock_on();
 	larb_clock_all_on();
 
 	for (port = 0; port < gM4u_port_num; port++) {
@@ -2040,7 +2037,6 @@ void m4u_print_port_status(struct seq_file *seq, int only_print_active)
 	}
 
 	larb_clock_all_off();
-	smi_common_clock_off();
 
 	M4U_PRINT_LOG_OR_SEQ(seq, "\n");
 }

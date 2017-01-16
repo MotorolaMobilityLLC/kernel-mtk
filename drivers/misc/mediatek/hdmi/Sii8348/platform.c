@@ -198,8 +198,8 @@ uint8_t reGetI2cAddress(uint8_t device_ID)
 	return address;
 }
 /****************************Platform I2C Read/Write*****************************/
-#define MAX_I2C_READ_NUM 8
-#define MAX_I2C_WRITE_NUM 7
+#define MAX_I2C_READ_NUM 16
+#define MAX_I2C_WRITE_NUM 16
 
 uint8_t mhl_i2c_read_len_bytes(struct i2c_client *client, uint8_t offset, uint8_t *buf, uint8_t len)
 {

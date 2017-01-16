@@ -5025,8 +5025,6 @@ int set_cpus_allowed_ptr(struct task_struct *p, const struct cpumask *new_mask)
 
 	if (!cpumask_intersects(new_mask, cpu_active_mask)) {
 		ret = -EINVAL;
-		printk_deferred("[name:core&]SCHED: intersects new_mask: %lu, cpu_active_mask: %lu\n",
-			new_mask->bits[0], cpu_active_mask->bits[0]);
 		goto out;
 	}
 

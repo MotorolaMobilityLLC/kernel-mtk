@@ -1,4 +1,17 @@
-static int print_context(void);
+/*
+ * Copyright (c) 2015-2016 MICROTRUST Incorporated
+ * All Rights Reserved.
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * version 2 as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ */
+
 
 struct NQ_head {
 	unsigned int start_index;
@@ -22,21 +35,21 @@ struct teei_contexts_head {
 extern struct teei_contexts_head teei_contexts_head;
 extern void *tz_malloc_shared_mem(size_t size, int flags);
 extern int teei_smc_call(u32 teei_cmd_type,
-		u32 dev_file_id,
-		u32 svc_id,
-		u32 cmd_id,
-		u32 context,
-		u32 enc_id,
-		const void *cmd_buf,
-		size_t cmd_len,
-		void *resp_buf,
-		size_t resp_len,
-		const void *meta_data,
-		const void *info_data,
-		size_t info_len,
-		int *ret_resp_len,
-		int *error_code,
-		struct semaphore *psema);
+                         u32 dev_file_id,
+                         u32 svc_id,
+                         u32 cmd_id,
+                         u32 context,
+                         u32 enc_id,
+                         const void *cmd_buf,
+                         size_t cmd_len,
+                         void *resp_buf,
+                         size_t resp_len,
+                         const void *meta_data,
+                         const void *info_data,
+                         size_t info_len,
+                         int *ret_resp_len,
+                         int *error_code,
+                         struct semaphore *psema);
 
 extern void tz_free_shared_mem(void *addr, size_t size);
 extern void *tz_malloc_shared_mem(size_t size, int flags);

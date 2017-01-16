@@ -217,12 +217,12 @@ VOID p2pFsmStateTransition(IN P_ADAPTER_T prAdapter, IN P_P2P_FSM_INFO_T prP2pFs
 	P_BSS_INFO_T prP2pBssInfo = (P_BSS_INFO_T) NULL;
 	P_P2P_SPECIFIC_BSS_INFO_T prP2pSpecificBssInfo = (P_P2P_SPECIFIC_BSS_INFO_T) NULL;
 
+	ASSERT((prAdapter != NULL) && (prP2pFsmInfo != NULL));
+
+	prP2pBssInfo = &(prAdapter->rWifiVar.arBssInfo[NETWORK_TYPE_P2P_INDEX]);
+	prP2pSpecificBssInfo = prAdapter->rWifiVar.prP2pSpecificBssInfo;
+
 	do {
-		ASSERT_BREAK((prAdapter != NULL) && (prP2pFsmInfo != NULL));
-
-		prP2pBssInfo = &(prAdapter->rWifiVar.arBssInfo[NETWORK_TYPE_P2P_INDEX]);
-		prP2pSpecificBssInfo = prAdapter->rWifiVar.prP2pSpecificBssInfo;
-
 		if (!IS_BSS_ACTIVE(prP2pBssInfo)) {
 			if (!cnmP2PIsPermitted(prAdapter))
 				return;
@@ -608,14 +608,14 @@ VOID p2pFsmRunEventStartAP(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHdr)
 		prP2pSpecificBssInfo = prAdapter->rWifiVar.prP2pSpecificBssInfo;
 
 		if (prP2pStartAPMsg->u4BcnInterval) {
-			DBGLOG(P2P, TRACE, "Beacon interval updated to :%ld\n", prP2pStartAPMsg->u4BcnInterval);
+			DBGLOG(P2P, TRACE, "Beacon interval updated to %ld\n", prP2pStartAPMsg->u4BcnInterval);
 			prP2pBssInfo->u2BeaconInterval = (UINT_16) prP2pStartAPMsg->u4BcnInterval;
 		} else if (prP2pBssInfo->u2BeaconInterval == 0) {
 			prP2pBssInfo->u2BeaconInterval = DOT11_BEACON_PERIOD_DEFAULT;
 		}
 
 		if (prP2pStartAPMsg->u4DtimPeriod) {
-			DBGLOG(P2P, TRACE, "DTIM interval updated to :%ld\n", prP2pStartAPMsg->u4DtimPeriod);
+			DBGLOG(P2P, TRACE, "DTIM interval updated to %ld\n", prP2pStartAPMsg->u4DtimPeriod);
 			prP2pBssInfo->ucDTIMPeriod = (UINT_8) prP2pStartAPMsg->u4DtimPeriod;
 		} else if (prP2pBssInfo->ucDTIMPeriod == 0) {
 			prP2pBssInfo->ucDTIMPeriod = DOT11_DTIM_PERIOD_DEFAULT;
@@ -628,9 +628,8 @@ VOID p2pFsmRunEventStartAP(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHdr)
 			prP2pBssInfo->ucSSIDLen = prP2pSpecificBssInfo->u2GroupSsidLen = prP2pStartAPMsg->u2SsidLen;
 		}
 
-		prP2pBssInfo->eHiddenSsidType = prP2pStartAPMsg->ucHiddenSsidType;
+		prP2pBssInfo->eHiddenSsidType = prP2pStartAPMsg->eHiddenSsidType;
 
-		/* TODO: JB */
 		/* Privacy & inactive timeout. */
 
 		if ((prP2pBssInfo->eCurrentOPMode != OP_MODE_ACCESS_POINT) ||
@@ -638,7 +637,7 @@ VOID p2pFsmRunEventStartAP(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHdr)
 			UINT_8 ucPreferedChnl = 0;
 			ENUM_BAND_T eBand = BAND_NULL;
 			ENUM_CHNL_EXT_T eSco = CHNL_EXT_SCN;
-			ENUM_P2P_STATE_T eNextState = P2P_STATE_SCAN;
+			ENUM_P2P_STATE_T eNextState = P2P_STATE_NUM;
 			P_P2P_CONNECTION_SETTINGS_T prP2pConnSettings = prAdapter->rWifiVar.prP2PConnSettings;
 
 			if (prP2pFsmInfo->eCurrentState != P2P_STATE_SCAN &&
@@ -646,32 +645,23 @@ VOID p2pFsmRunEventStartAP(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHdr)
 				/* Make sure the state is in IDLE state. */
 				p2pFsmRunEventAbort(prAdapter, prP2pFsmInfo);
 			}
-			/* 20120118: Moved to p2pFuncSwitchOPMode(). */
-			/* SET_NET_ACTIVE(prAdapter, NETWORK_TYPE_P2P_INDEX); */
 
 			/* Leave IDLE state. */
 			SET_NET_PWR_STATE_ACTIVE(prAdapter, NETWORK_TYPE_P2P_INDEX);
 
-			/* sync with firmware */
-			/* DBGLOG(P2P, INFO, ("Activate P2P Network.\n")); */
-			/* nicActivateNetwork(prAdapter, NETWORK_TYPE_P2P_INDEX); */
-
-			/* Key to trigger P2P FSM to allocate channel for AP mode. */
+			/* Trigger P2P FSM to allocate channel for AP mode. */
 			prP2pBssInfo->eIntendOPMode = OP_MODE_ACCESS_POINT;
 
-			/* Sparse Channel to decide which channel to use. */
 			if ((cnmPreferredChannel(prAdapter, &eBand, &ucPreferedChnl, &eSco) == FALSE)
 			    && (prP2pConnSettings->ucOperatingChnl == 0)) {
-				/* Sparse Channel Detection using passive mode. */
+				/* Sparse channel detection using passive mode. */
 				eNextState = P2P_STATE_AP_CHANNEL_DETECT;
 			} else {
 				P_P2P_SPECIFIC_BSS_INFO_T prP2pSpecificBssInfo =
 				    prAdapter->rWifiVar.prP2pSpecificBssInfo;
 				P_P2P_CHNL_REQ_INFO_T prChnlReqInfo = &prP2pFsmInfo->rChnlReqInfo;
 
-#if 1
-				/* 2012-01-27: frog - Channel set from upper layer is the first priority. */
-				/* Because the channel & beacon is decided by p2p_supplicant. */
+				/* Channel set from upper layer is the first priority. */
 				if (prP2pConnSettings->ucOperatingChnl != 0) {
 					prP2pSpecificBssInfo->ucPreferredChannel = prP2pConnSettings->ucOperatingChnl;
 					prP2pSpecificBssInfo->eRfBand = prP2pConnSettings->eBand;
@@ -680,24 +670,15 @@ VOID p2pFsmRunEventStartAP(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHdr)
 					prP2pSpecificBssInfo->ucPreferredChannel = ucPreferedChnl;
 					prP2pSpecificBssInfo->eRfBand = eBand;
 				}
-#else
-				if (ucPreferedChnl) {
-					prP2pSpecificBssInfo->ucPreferredChannel = ucPreferedChnl;
-					prP2pSpecificBssInfo->eRfBand = eBand;
-				} else {
-					ASSERT(prP2pConnSettings->ucOperatingChnl != 0);
-					prP2pSpecificBssInfo->ucPreferredChannel = prP2pConnSettings->ucOperatingChnl;
-					prP2pSpecificBssInfo->eRfBand = prP2pConnSettings->eBand;
-				}
 
-#endif
 				prChnlReqInfo->ucReqChnlNum = prP2pSpecificBssInfo->ucPreferredChannel;
 				prChnlReqInfo->eBand = prP2pSpecificBssInfo->eRfBand;
 				prChnlReqInfo->eChannelReqType = CHANNEL_REQ_TYPE_GO_START_BSS;
+				eNextState = P2P_STATE_SCAN;
 			}
 
 			/* If channel is specified, use active scan to shorten the scan time. */
-			p2pFsmStateTransition(prAdapter, prAdapter->rWifiVar.prP2pFsmInfo, eNextState);
+			p2pFsmStateTransition(prAdapter, prP2pFsmInfo, eNextState);
 		}
 	} while (FALSE);
 
@@ -983,7 +964,7 @@ p2pFsmRunEventDeauthTxDone(IN P_ADAPTER_T prAdapter,
 		/* Reset Station Record Status. */
 		p2pFuncResetStaRecStatus(prAdapter, prStaRec);
 
-		 /**/ cnmStaRecFree(prAdapter, prStaRec);
+		cnmStaRecFree(prAdapter, prStaRec);
 
 		if ((prP2pBssInfo->eCurrentOPMode != OP_MODE_ACCESS_POINT) ||
 		    (prP2pBssInfo->rStaRecOfClientList.u4NumElem == 0)) {

@@ -228,7 +228,7 @@ int epd_get_dev_info(int is_sf, void *info)
 		epd_info.isConnected = 1;
 		epd_info.displayMode = DISP_IF_MODE_VIDEO;
 		epd_info.displayType = DISP_IF_EPD;
-		epd_info.vsyncFPS = 60;
+		epd_info.vsyncFPS = 6000;
 		epd_info.isHwVsyncAvailable = 1;
 
 		if (copy_to_user(info, &epd_info, sizeof(mtk_dispif_info_t))) {
@@ -249,7 +249,7 @@ int epd_get_dev_info(int is_sf, void *info)
 		dispif_info->displayMode = DISP_IF_MODE_VIDEO;
 		dispif_info->isConnected = 1;
 		dispif_info->displayType = DISP_IF_EPD;
-		dispif_info->vsyncFPS = extd_epd_params.fps;
+		dispif_info->vsyncFPS = extd_epd_params.fps * 100;
 		dispif_info->isHwVsyncAvailable = 1;
 
 		EPD_LOG("epd_get_dev_info lays:%d, type:%d, W:%d, H:%d\n", dispif_info->maxLayerNum,

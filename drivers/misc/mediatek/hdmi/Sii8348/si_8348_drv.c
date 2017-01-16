@@ -105,7 +105,7 @@ static	int	start_video(struct drv_hw_context *hw_context, void *edid_parser_cont
 
 #ifdef MHL2_ENHANCED_MODE_SUPPORT
 static void	mhl2_em_query(struct drv_hw_context *hw_context);
-static void	mhl2_em_request(struct drv_hw_context *hw_context, bool em);
+static void	mhl2_em_request(struct drv_hw_context *hw_context, uint8_t em);
 #endif // MHL2_ENHANCED_MODE_SUPPORT
 
 /* Local data */
@@ -118,7 +118,9 @@ static uint8_t gen2_packet[GEN2_BUFFER_LENGTH];
 #endif // ENABLE_GEN2
 
 #ifdef MHL2_ENHANCED_MODE_SUPPORT
-#define MHL2_ENHANCED_MODE_RESERVED_VIC 93
+#define MHL2_ENHANCED_MODE_RESERVED_VIC_4K24 93
+#define MHL2_ENHANCED_MODE_RESERVED_VIC_4K30 95
+
 
 enum mhl2_enhanced_mode_sm {
 	MHL2_EM_SM_INIT = 0,
@@ -905,10 +907,11 @@ static int set_hdmi_params(struct mhl_dev_context *dev_context)
 		{
 #ifdef MHL2_ENHANCED_MODE_SUPPORT
 			/* no VSIF or EM Mode */
-			if (0 == input_video_code.VIC || MHL2_EM_VIC_4K24 == input_video_code.VIC || MHL2_EM_VIC_4K30 == input_video_code.VIC)
+			if (0 == input_video_code.VIC || MHL2_EM_VIC_4K24 == input_video_code.VIC
+			|| MHL2_EM_VIC_4K30 == input_video_code.VIC || MAX_VIC_SUPPORTED < input_video_code.VIC)
 #else
 			/* no VSIF */
-			if (0 == input_video_code.VIC) 
+			if (0 == input_video_code.VIC || MAX_VIC_SUPPORTED < input_video_code.VIC)
 #endif // MHL2_ENHANCED_MODE_SUPPORT
 				{
 
@@ -1069,13 +1072,53 @@ static int set_hdmi_params(struct mhl_dev_context *dev_context)
 		
 	}
 
-	/* Set input color space */
-	mhl_tx_write_reg(hw_context , REG_TPI_INPUT , colorSpaceTranslateInfoFrameToHw[input_clr_spc]);
+		/* Set input color space */
+		/* Set quantity range, force to use auto range here,
+		* would better to use proper one if input quantity range can be known */
+		mhl_tx_write_reg(hw_context , REG_TPI_INPUT ,
+		colorSpaceTranslateInfoFrameToHw[input_clr_spc] | BIT_TPI_INPUT_QUAN_RANGE_AUTO);
 
-	/* Set output color space */
-	mhl_tx_write_reg(hw_context , REG_TPI_OUTPUT , colorSpaceTranslateInfoFrameToHw[output_clr_spc]);
+		/* Set output color space */
+		/* Set quantity range, force to use auto range here,
+		* would better to use proper one if input quantity range can be known */
+		mhl_tx_write_reg(hw_context , REG_TPI_OUTPUT ,
+		colorSpaceTranslateInfoFrameToHw[output_clr_spc] | BIT_TPI_OUTPUT_QUAN_RANGE_AUTO);
 
-	set_mhl_zone_settings(dev_context,pixel_clock_frequency);
+#if 0
+		/* Set input color space */
+		/* Set quantity range, force to use limited range here,
+		* would better to use proper one if input quantity range can be known */
+		mhl_tx_write_reg(hw_context , REG_TPI_INPUT ,
+		colorSpaceTranslateInfoFrameToHw[input_clr_spc] | BIT_TPI_INPUT_QUAN_RANGE_LIMITED);
+
+		/* Set output color space */
+		/* Set quantity range, force to use limited range here,
+		* would better to use proper one if input quantity range can be known */
+		mhl_tx_write_reg(hw_context , REG_TPI_OUTPUT ,
+		colorSpaceTranslateInfoFrameToHw[output_clr_spc] | BIT_TPI_OUTPUT_QUAN_RANGE_LIMITED);
+
+		/* Set input color space */
+		/* Set quantity range, force to use full range here,
+		* would better to use proper one if input quantity range can be known */
+		mhl_tx_write_reg(hw_context , REG_TPI_INPUT ,
+		colorSpaceTranslateInfoFrameToHw[input_clr_spc] | BIT_TPI_INPUT_QUAN_RANGE_FULL);
+
+		/* Set output color space */
+		/* Set quantity range, force to use full range here,
+		* would better to use proper one if input quantity range can be known */
+		mhl_tx_write_reg(hw_context , REG_TPI_OUTPUT ,
+		colorSpaceTranslateInfoFrameToHw[output_clr_spc] | BIT_TPI_OUTPUT_QUAN_RANGE_FULL);
+#endif
+
+#ifdef MHL2_ENHANCED_MODE_SUPPORT
+		/* Enhanced Mode Protocol adopter will use correct mode,
+		 * no need to specify this */
+		if (false == hw_context->mhl2_em_enabled)
+			set_mhl_zone_settings(dev_context, pixel_clock_frequency);
+#else
+		set_mhl_zone_settings(dev_context, pixel_clock_frequency);
+#endif /* MHL2_ENHANCED_MODE_SUPPORT */
+
 
 	/*
 	 * Prepare outgoing AVIF for later programming the registers
@@ -3464,6 +3507,7 @@ int si_mhl_tx_chip_initialize(struct drv_hw_context *hw_context)
 		hw_context->valid_3d_fs = 0;
 #ifdef MHL2_ENHANCED_MODE_SUPPORT
 		mhl2_em_init(hw_context);
+		hw_context->mhl2_em_input = MHL2_EM_MODE_NORMAL;
 #endif // MHL2_ENHANCED_MODE_SUPPORT
 
 		//hw_context->current_audio_configure = 0;
@@ -3883,7 +3927,8 @@ bool si_mhl_tx_em_process_packet(struct mhl_dev_context *dev_context,void *pkt)
 
 		MHL_TX_DBG_INFO(hw_context, "Current EM Mode is : %d\n", hw_context->mhl2_em_sm);	// FD: TBD, debug
 
-		if (MHL2_EM_SM_REQ_MODE_EM == hw_context->mhl2_em_sm)
+		if (MHL2_EM_SM_REQ_MODE_EM == hw_context->mhl2_em_sm
+			|| MHL2_EM_SM_MODE_EM == hw_context->mhl2_em_sm)
 		{
 			hw_context->mhl2_em_sm = MHL2_EM_SM_MODE_EM;
 			hw_context->mhl2_em_enabled = true;
@@ -3911,6 +3956,7 @@ bool si_mhl_tx_em_process_packet(struct mhl_dev_context *dev_context,void *pkt)
 
 			// Process both AVI infoframe and VSIF
 			//process_info_frame_change(hw_context, &(hw_context->current_vs_info_frame), &(hw_context->current_avi_info_frame));
+			start_video(hw_context, dev_context->edid_parser_context);/* for fix 4k->720P no video issue */
 
 			process_status = true;
 		}
@@ -4024,25 +4070,27 @@ void si_mhl_tx_em_query(struct mhl_dev_context *dev_context)
 	mhl2_em_query(hw_context);
 }
 
-static void mhl2_em_request(struct drv_hw_context *hw_context, bool em)
+static void	mhl2_em_request(struct drv_hw_context *hw_context, uint8_t em)
 {
 	uint8_t i=0;
 	uint8_t req_msg[MHL2_EM_CMD_REQ_MODE_MSG_LEN] = {0};
 	uint8_t req_pkt[MHL2_EM_PACKET_FRAME_LEN + MHL2_EM_CMD_REQ_MODE_MSG_LEN] = {0};
 	bool send_status = false;
 
-	MHL_TX_DBG_INFO(hw_context, "called: %s\n", em ? "true":"false");
+	MHL_TX_DBG_INFO(hw_context, "called, em: %d\n", em);
 
 	// Prepare the Message - Specific Data
-	if (true == em)
+	if (MHL2_EM_MODE_ONE == em)
 	{
 		// Request to go to MHL2 Enhanced Mode
 		hw_context->mhl2_em_sm = MHL2_EM_SM_REQ_MODE_EM;
 		hw_context->mhl2_em_request_mode = MHL2_EM_MODE_ONE;
-		if(video_data.inputVideoCode == HDMI_4k30_DSC)
-			req_msg[3] = MHL2_EM_CMD_REQ_MODE_TWO;
-		else
-			req_msg[3] = MHL2_EM_CMD_REQ_MODE_ONE;
+		req_msg[3] = MHL2_EM_CMD_REQ_MODE_ONE;
+	} else if (MHL2_EM_MODE_TWO == em) {
+		/* Request to go to MHL2 Enhanced Mode */
+		hw_context->mhl2_em_sm = MHL2_EM_SM_REQ_MODE_EM;
+		hw_context->mhl2_em_request_mode = MHL2_EM_MODE_TWO;
+		req_msg[3] = MHL2_EM_CMD_REQ_MODE_TWO;
 	}
 	else
 	{
@@ -4089,10 +4137,21 @@ void si_mhl_tx_drv_video_3d(struct mhl_dev_context *dev_context, int video_3d)
 		
 	//hw_context->mhl2_em_input = false;
 #ifdef MHL2_ENHANCED_MODE_SUPPORT	
-	if ((MHL2_EM_SM_CAP_QUERIED <= hw_context->mhl2_em_sm)&&(video_data.inputVideoCode > 90))
-		mhl2_em_request(hw_context, true);
-	else if(0x30 <= si_get_peer_mhl_version(dev_context))
-		mhl2_em_request(hw_context, false);
+	hw_context->mhl2_em_input = MHL2_EM_MODE_NORMAL;
+	if (MHL2_ENHANCED_MODE_RESERVED_VIC_4K24 == video_data.inputVideoCode) {
+		hw_context->mhl2_em_input = MHL2_EM_MODE_ONE;
+		if (MHL2_EM_SM_CAP_QUERIED <= hw_context->mhl2_em_sm)
+			mhl2_em_request(hw_context, hw_context->mhl2_em_input);
+	} else if (MHL2_ENHANCED_MODE_RESERVED_VIC_4K30 == video_data.inputVideoCode) {
+		hw_context->mhl2_em_input = MHL2_EM_MODE_TWO;
+		if (MHL2_EM_SM_CAP_QUERIED <= hw_context->mhl2_em_sm)
+			mhl2_em_request(hw_context, hw_context->mhl2_em_input);
+	} else if (true == hw_context->mhl2_em_enabled) {
+		hw_context->mhl2_em_input = MHL2_EM_MODE_NORMAL;
+		mhl2_em_request(hw_context, hw_context->mhl2_em_input);
+	} else if (false == hw_context->mhl2_em_enabled)
+		si_mhl_tx_set_path_en_I(dev_context);
+
 #endif
 	memset( &vsif, 0, sizeof(vendor_specific_info_frame_t) );
 

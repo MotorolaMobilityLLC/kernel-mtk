@@ -349,11 +349,15 @@ void mt_idle_dump_cnt_in_interval(void)
 	idle_cnt_dump_prev_time = idle_cnt_dump_curr_time;
 }
 
+static DEFINE_SPINLOCK(idle_blocking_spin_lock);
+
 bool mt_idle_state_pick(int type, int cpu, int reason)
 {
 	struct mt_idle_block *p_idle;
 	u64 curr_time;
 	int i;
+	unsigned long flags;
+	bool dump_block_info;
 
 	if (unlikely(type < 0 || type >= NR_TYPES))
 		return false;
@@ -372,10 +376,19 @@ bool mt_idle_state_pick(int type, int cpu, int reason)
 	if (p_idle->prev_time == 0)
 		p_idle->prev_time = curr_time;
 
-	if (((curr_time - p_idle->prev_time) > p_idle->time_critera)
-		&& ((curr_time - idle_block_log_prev_time) > idle_block_log_time_criteria)) {
+	spin_lock_irqsave(&idle_blocking_spin_lock, flags);
 
-		if ((cpu % 4) == 0) {
+	dump_block_info	= ((curr_time - p_idle->prev_time) > p_idle->time_critera)
+			    && ((curr_time - idle_block_log_prev_time) > idle_block_log_time_criteria);
+
+	if (dump_block_info) {
+		p_idle->prev_time = curr_time;
+		idle_block_log_prev_time = curr_time;
+	}
+
+	spin_unlock_irqrestore(&idle_blocking_spin_lock, flags);
+
+	if (dump_block_info) {
 			/* xxidle, rgidle count */
 			reset_log();
 
@@ -400,9 +413,6 @@ bool mt_idle_state_pick(int type, int cpu, int reason)
 			idle_prof_warn("%s\n", get_log());
 
 			memset(p_idle->block_cnt, 0, NR_REASONS * sizeof(p_idle->block_cnt[0]));
-			p_idle->prev_time = idle_get_current_time_ms();
-			idle_block_log_prev_time = p_idle->prev_time;
-		}
 	}
 	p_idle->block_cnt[reason]++;
 	return false;

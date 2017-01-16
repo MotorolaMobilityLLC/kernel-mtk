@@ -66,6 +66,11 @@ extern unsigned int hps_get_hvytsk(unsigned int cluster_id);
 #define PPM_CLUSTER_MIGRATION_BOOST	(1)
 #endif
 
+#define PPM_DEFAULT_LIMIT_B_FREQ	(1)
+#ifdef PPM_DEFAULT_LIMIT_B_FREQ
+#define PPM_HICA_BIG_LIMIT_FREQ	(1500000)
+#endif
+
 #define PPM_DISABLE_BIG_FOR_LP_MODE	(1)
 
 #define PPM_USE_EFFICIENCY_TABLE	(1)

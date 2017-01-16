@@ -1,9 +1,22 @@
+/*
+ * Copyright (c) 2015-2016 MICROTRUST Incorporated
+ * All Rights Reserved.
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * version 2 as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ */
+
 #include "utdriver_macro.h"
 
 extern unsigned long boot_soter_flag;
 extern unsigned long message_buff;
 extern unsigned long bdrv_message_buff;
-unsigned long teei_vfs_flag;
 extern struct semaphore smc_lock;
 
 extern struct completion VFS_rd_comp;
@@ -12,8 +25,6 @@ extern struct completion VFS_wr_comp;
 unsigned char *daulOS_VFS_share_mem;
 
 static unsigned char *vfs_flush_address;
-static unsigned char *printer_share_mem;
-static unsigned int printer_shmem_flags;
 
 
 extern struct semaphore boot_sema;
@@ -46,12 +57,12 @@ struct ack_fast_call_struct {
 };
 
 struct service_handler {
-	unsigned int sysno; /*! 服务调用号 */
-	void *param_buf; /*! 双系统通信缓冲区 */
-	unsigned size;
-	long (*init)(struct service_handler *handler); /*! 服务初始化处理 */
-	void (*deinit)(struct service_handler *handler); /*! 服务停止处理 */
-	int (*handle)(struct service_handler *handler); /*! 服务调用 */
+        unsigned int sysno;
+        void *param_buf;
+        unsigned size;
+        long (*init)(struct service_handler *handler);
+        void (*deinit)(struct service_handler *handler);
+        int (*handle)(struct service_handler *handler);
 };
 
 enum {

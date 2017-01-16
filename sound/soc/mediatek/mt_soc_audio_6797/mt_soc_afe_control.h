@@ -266,6 +266,6 @@ bool SetHighAddr(Soc_Aud_Digital_Block MemBlock, bool usingdram);
 
 /* low latency debug */
 int get_LowLatencyDebug(void);
-void set_LowLatencyDebug(bool bFlag);
+void set_LowLatencyDebug(uint32 bFlag);
 
 #endif
