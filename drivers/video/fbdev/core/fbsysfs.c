@@ -560,37 +560,37 @@ static ssize_t store_cabc_mode(struct device *device, struct device_attribute *a
 static ssize_t show_cabc_mode(struct device *device,
 			   struct device_attribute *attr, char *buf)
 {
-	char m[5] = "0";
+	char cabc_show[5] = "0";
 	switch(primary_recognition_cabc_mode())
 	{
 		case CABC_MODE_UI:
 			{
-				m[0]='U';
-				m[1]='I';
+				cabc_show[0]='U';
+				cabc_show[1]='I';
 			}
 			break;
 		case CABC_MODE_MV:
 			{
-				m[0]='M';
-				m[1]='V';
+				cabc_show[0]='M';
+				cabc_show[1]='V';
 			}
 			break;
 		case CABC_MODE_DIS:
 			{
-				m[0]='D';
-				m[1]='I';
-				m[2]='S';
+				cabc_show[0]='D';
+				cabc_show[1]='I';
+				cabc_show[2]='S';
 			}
 			break;
 		default:
 			{
-				m[0]='U';
-				m[1]='I';
+				cabc_show[0]='U';
+				cabc_show[1]='I';
 			}
 		
 	}
 	return snprintf(buf, PAGE_SIZE, "%s\n",
-	                m);
+	                cabc_show);
 }
 
 //add by lct yufangfang for hbm
@@ -617,23 +617,23 @@ static ssize_t store_hbm(struct device *device, struct device_attribute *attr,
 static ssize_t show_hbm(struct device *device,
 			   struct device_attribute *attr, char *buf)
 {
-	char n ='0';
+	char hbm_show ='0';
 	int hbm_state = primary_recognition_hbm_level();
 
 	switch(hbm_state)//(recognition_hbm())
 	{
 		case HBM_ENABLE:
-				n='1';
+				hbm_show='1';
 		break;
 		case HBM_DISABLE:
-				n='0';
+				hbm_show='0';
 		break;
 		default:
-				n='0';
+				hbm_show='0';
 			
 	}
 	return snprintf(buf, PAGE_SIZE, "%c\n",
-	                n);
+	                hbm_show);
 }
 #endif
 
