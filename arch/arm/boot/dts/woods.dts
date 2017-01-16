@@ -1016,8 +1016,8 @@
 
 			/* Battery Temperature Protection */
 			mtk_temperature_recharge_support = <1 >;
-			max_charge_temperature = <45 >;
-			max_charge_temperature_minus_x_degree = <42 >;
+			max_charge_temperature = <52 >;
+			max_charge_temperature_minus_x_degree = <47 >;
 			min_charge_temperature = <0 >;
 			min_charge_temperature_plus_x_degree = <3 >;
 			err_charge_temperature = <0xff >;
