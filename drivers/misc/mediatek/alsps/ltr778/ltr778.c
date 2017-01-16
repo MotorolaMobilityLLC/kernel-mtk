@@ -467,6 +467,7 @@ out:
 	return psdata;
 }
 
+//tuwenzan@wind-mobi.com modify at 20170116 begin
 #ifdef GN_MTK_BSP_PS_DYNAMIC_CALI
 static int ltr778_dynamic_calibrate(void)
 {
@@ -502,45 +503,45 @@ static int ltr778_dynamic_calibrate(void)
 
 	noise = data_total / count;
     //liujinzhou@wind-mobi.com modify at 20161205 begin
-	if(noise < dynamic_calibrate + 100)  // modified by steven
+	if(noise < dynamic_calibrate + 280)  // modified by steven
 	{
 		dynamic_calibrate = noise;
 
 		if (noise < 100) {
 		//liujinzhou@wind-mobi.com modify at 20161215 begin
-			ps_thd_val_high = noise + 55;
+			ps_thd_val_high = noise + 47;
 			ps_thd_val_low  = noise + 22;
 			ps_persist_val_high = noise + 500;  // modified by steven
 			ps_persist_val_low  = noise + 45;
 		}
 		else if (noise < 200) {
-			ps_thd_val_high = noise + 60;
+			ps_thd_val_high = noise + 47;
 			ps_thd_val_low  = noise + 25;
 			ps_persist_val_high = noise + 500;
 			ps_persist_val_low  = noise + 50;
 		//liujinzhou@wind-mobi.com modify at 20161215 end
 		}
 		else if (noise < 300) {
-			ps_thd_val_high = noise + 80;
-			ps_thd_val_low  = noise + 40;
+			ps_thd_val_high = noise + 47;
+			ps_thd_val_low  = noise + 25;
 			ps_persist_val_high = noise + 500;
 			ps_persist_val_low  = noise + 70;
 		}
 		else if (noise < 400) {
-			ps_thd_val_high = noise + 100;
-			ps_thd_val_low  = noise + 50;
+			ps_thd_val_high = noise + 47;
+			ps_thd_val_low  = noise + 30;
 			ps_persist_val_high = noise + 500;
 			ps_persist_val_low  = noise + 80;
 		}
 		else if (noise < 600) {
-			ps_thd_val_high = noise + 180;
-			ps_thd_val_low  = noise + 90;
+			ps_thd_val_high = noise + 47;
+			ps_thd_val_low  = noise + 30;
 			ps_persist_val_high = noise + 500;
 			ps_persist_val_low  = noise + 100;
 		}
 		else if (noise < 1500) {
-			ps_thd_val_high = noise + 300;
-			ps_thd_val_low  = noise + 180;
+			ps_thd_val_high = noise + 47;
+			ps_thd_val_low  = noise + 30;
 			ps_persist_val_high = noise + 500;
 			ps_persist_val_low  = noise + 280;
 		}
@@ -570,6 +571,8 @@ static int ltr778_dynamic_calibrate(void)
 	return 0;
 }
 #endif
+//tuwenzan@wind-mobi.com modify at 20170116 end
+
 /********************************************************************/
 /* 
  * ################
