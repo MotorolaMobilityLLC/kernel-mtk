@@ -386,8 +386,9 @@ static int hdmi_drv_video_config(enum HDMI_VIDEO_RESOLUTION vformat, enum HDMI_V
 		{
 		    	///if(MHL_3D_Support && (MHL_3D_format > 0))
 		    	si_mhl_tx_drv_video_3d(si_dev_context, MHL_3D_format);	
-		    	if(vformat <= HDMI_VIDEO_1920x1080p_60Hz)
-            			si_mhl_tx_set_path_en_I(si_dev_context);
+			/*if(vformat <= HDMI_VIDEO_1920x1080p_60Hz)
+			*	si_mhl_tx_set_path_en_I(si_dev_context);
+			*/
 		}
 		else
 		    	si_mhl_tx_drv_video_3d_update(si_dev_context, MHL_3D_format);
@@ -619,6 +620,9 @@ void hdmi_GetEdidInfo(void *pv_get_info)
 			ptr->ui4_pal_resolution |= SINK_1080P30;
 		}
 #endif
+
+	if (ptr->ui4_pal_resolution & SINK_2160p30)
+		ptr->ui4_pal_resolution &= (~SINK_2160p24);
 
     if(si_dev_context)
     {

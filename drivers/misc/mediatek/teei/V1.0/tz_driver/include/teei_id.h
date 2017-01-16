@@ -1,3 +1,16 @@
+/*
+ * Copyright (c) 2015-2016 MICROTRUST Incorporated
+ * All Rights Reserved.
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * version 2 as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ */
 
 #ifndef __TEEI_ID_H_
 #define __TEEI_ID_H_
@@ -11,7 +24,9 @@
 #define SMC_INTERRUPTED     2
 #define SMC_PENDING         1
 #define SMC_SUCCESS         0
-extern void __flush_dcache_area(void *addr, size_t len);
+
+extern unsigned long boot_soter_flag;
+#define START_STATUS    (0)
 /**
  * @brief Encoding data type
  */
@@ -81,7 +96,10 @@ static inline void Flush_Dcache_By_Area(unsigned long start, unsigned long end)
 {
 
 #ifdef CONFIG_ARM64
-	__flush_dcache_area((void *)start, (end - start));
+//	__flush_dcache_area((void *)start, (end - start));
+	if (boot_soter_flag == START_STATUS) {
+		__flush_dcache_area((void *)start, (end - start));
+	}
 #else
 
 	__asm__ __volatile__ ("dsb" : : : "memory"); /* dsb */
@@ -111,7 +129,7 @@ static inline void Flush_Dcache_By_Area(unsigned long start, unsigned long end)
  *     end   - mva end
  * @return:
  * *****************************************************************/
-static inline void Invalidate_Dcache_By_Area(unsigned long start, unsigned long end)
+static inline void __Invalidate_Dcache_By_Area(unsigned long start, unsigned long end)
 {
 
 #ifdef CONFIG_ARM64
@@ -163,6 +181,14 @@ static inline void Invalidate_Dcache_By_Area(unsigned long start, unsigned long 
 
 
 #endif
+}
+
+static inline void Invalidate_Dcache_By_Area(unsigned long start, unsigned long end)
+{
+	if (boot_soter_flag == START_STATUS) {
+		__Invalidate_Dcache_By_Area(start, end);
+	}
+
 }
 
 /* add end */

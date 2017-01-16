@@ -209,7 +209,7 @@ ktime_t dvfs_cb_step_delta[16];
 
 /* 750Mhz */
 #define DEFAULT_B_FREQ_IDX 13
-#define BOOST_B_FREQ_IDX 0
+#define BOOST_B_FREQ_IDX 9 /* 1.5G */
 
 /* for DVFS OPP table LL/FY */
 #define CPU_DVFS_FREQ0_LL_FY    (1391000)	/* KHz */
@@ -992,6 +992,7 @@ int release_dvfs = 0;
 int thres_ll = 0;
 int thres_l = 0;
 int thres_b = 0;
+int smart = 0;
 
 #define CPUFREQ_EFUSE_INDEX     (3)
 #define FUNC_CODE_EFUSE_INDEX	(22)
@@ -4347,7 +4348,9 @@ static int __cpuinit _mt_cpufreq_cpu_CB(struct notifier_block *nfb, unsigned lon
 				if (cpu_dvfs_is(p, MT_CPU_DVFS_B) && (action == CPU_ONLINE)) {
 					aee_record_cpu_dvfs_cb(4);
 
+					/* if (smart) */
 					new_opp_idx = BOOST_B_FREQ_IDX;
+
 					new_opp_idx = MAX(new_opp_idx, _calc_new_opp_idx(p, new_opp_idx));
 
 					/* Get cci opp idx */
@@ -6420,6 +6423,43 @@ static ssize_t cpufreq_up_threshold_b_proc_write(struct file *file,
 	return count;
 }
 
+static int cpufreq_smart_detect_proc_show(struct seq_file *m, void *v)
+{
+	unsigned long flags;
+
+	cpufreq_lock(flags);
+	seq_printf(m, "smart_detect = %d\n", smart);
+	cpufreq_unlock(flags);
+
+	return 0;
+}
+
+static ssize_t cpufreq_smart_detect_proc_write(struct file *file,
+	const char __user *buffer, size_t count, loff_t *pos)
+{
+	unsigned long flags;
+	int mv;
+	int rc;
+
+	char *buf = _copy_from_user_for_proc(buffer, count);
+
+	if (!buf)
+		return -EINVAL;
+	rc = kstrtoint(buf, 10, &mv);
+	if (rc < 0) {
+		cpufreq_err("echo 1 or 0 > /proc/cpufreq/smart_detect\n");
+	} else {
+		cpufreq_lock(flags);
+		cpufreq_ver("smart_detect change to %d\n", smart);
+		smart = mv;
+		cpufreq_unlock(flags);
+	}
+
+	free_page((unsigned long)buf);
+
+	return count;
+}
+
 /* cpufreq_time_profile */
 static int cpufreq_dvfs_time_profile_proc_show(struct seq_file *m, void *v)
 {
@@ -6505,6 +6545,7 @@ PROC_FOPS_RW(cpufreq_idvfs_mode);
 PROC_FOPS_RW(cpufreq_up_threshold_ll);
 PROC_FOPS_RW(cpufreq_up_threshold_l);
 PROC_FOPS_RW(cpufreq_up_threshold_b);
+PROC_FOPS_RW(cpufreq_smart_detect);
 
 static int _create_procfs(void)
 {
@@ -6529,6 +6570,7 @@ static int _create_procfs(void)
 		PROC_ENTRY(cpufreq_up_threshold_ll),
 		PROC_ENTRY(cpufreq_up_threshold_l),
 		PROC_ENTRY(cpufreq_up_threshold_b),
+		PROC_ENTRY(cpufreq_smart_detect),
 		PROC_ENTRY(cpufreq_idvfs_mode),
 		PROC_ENTRY(cpufreq_dvfs_time_profile),
 	};

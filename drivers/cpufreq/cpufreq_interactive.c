@@ -370,6 +370,7 @@ static void cpufreq_interactive_timer(unsigned long data)
 	int freq_idx[4] = {2, 6, 4, 0};
 #endif
 	int ppb_idx;
+	int cluster_id;
 	int min_sample_t[4] = {80, 20, 20, 80};
 #endif
 
@@ -395,24 +396,25 @@ static void cpufreq_interactive_timer(unsigned long data)
 
 #if (defined CONFIG_ARCH_MT6755) || (defined CONFIG_ARCH_MT6797)
 	ppb_idx = mt_cpufreq_get_ppb_state();
+	cluster_id = arch_get_cluster_id(pcpu->policy->cpu);
 
-	/* Not to modify if L in default mode */
-#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
-	if (ppb_idx == 0 && (arch_get_cluster_id(pcpu->policy->cpu) >= 1) && !mt_cpufreq_get_chip_id_38()) {
-#else
+	tunables->hispeed_freq = pcpu->freq_table[freq_idx[ppb_idx]].frequency;
+	tunables->min_sample_time = min_sample_t[ppb_idx] * USEC_PER_MSEC;
+
 	if (ppb_idx == 0 && (arch_get_cluster_id(pcpu->policy->cpu) >= 1)) {
-#endif
 		tunables->hispeed_freq = pcpu->freq_table[0].frequency;
 		tunables->min_sample_time = DEFAULT_MIN_SAMPLE_TIME;
-	} else {
-		tunables->hispeed_freq = pcpu->freq_table[freq_idx[ppb_idx]].frequency;
-		tunables->min_sample_time = min_sample_t[ppb_idx] * USEC_PER_MSEC;
-
-		if (hispeed_freq_perf != 0)
-			tunables->hispeed_freq = hispeed_freq_perf;
-		if (min_sample_time_perf != 0)
-			tunables->min_sample_time = min_sample_time_perf;
 	}
+
+#ifdef CONFIG_ARCH_MT6797
+	if (ppb_idx == 0)
+		tunables->min_sample_time = (20 * USEC_PER_MSEC);
+#endif
+
+	if (hispeed_freq_perf != 0)
+		tunables->hispeed_freq = hispeed_freq_perf;
+	if (min_sample_time_perf != 0)
+		tunables->min_sample_time = min_sample_time_perf;
 #endif
 
 	if (cpu_load >= tunables->go_hispeed_load || tunables->boosted) {

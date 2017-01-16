@@ -1,3 +1,17 @@
+/*
+ * Copyright (c) 2015-2016 MICROTRUST Incorporated
+ * All Rights Reserved.
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * version 2 as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ */
+
 #include <linux/types.h>
 #include <linux/delay.h>
 #include <linux/mutex.h>
@@ -10,41 +24,34 @@
 #include "utdriver_macro.h"
 #define SCHED_CALL      0x04
 
-extern int add_work_entry(int work_type, unsigned long buff);
+#define IMSG_TAG "[tz_driver]"
+#include <imsg_log.h>
+extern int add_work_entry(int work_type, unsigned char *buff);
 
 static void secondary_nt_sched_t(void *info)
 {
 	unsigned long smc_type = 2;
 
-	nt_sched_t(&smc_type);
+	nt_sched_t((uint64_t *)(&smc_type));
 
-	while (smc_type == 1) {
+	while (smc_type == 0x54) {
 		udelay(IRQ_DELAY);
-		nt_sched_t(&smc_type);
+		nt_sched_t((uint64_t *)(&smc_type));
 	}
 }
 
 
 void nt_sched_t_call(void)
 {
-	int cpu_id = 0;
-#if 0
-	get_online_cpus();
-	cpu_id = get_current_cpuid();
-	smp_call_function_single(cpu_id, secondary_nt_sched_t, NULL, 1);
-	put_online_cpus();
-#else
 	int retVal = 0;
 
 	retVal = add_work_entry(SCHED_CALL, NULL);
-	if (retVal != 0)
-		pr_err("[%s][%d] add_work_entry function failed!\n", __func__, __LINE__);
-
-#endif
+        if (retVal != 0) {
+		IMSG_ERROR("[%s][%d] add_work_entry function failed!\n", __func__, __LINE__);
+        }
 
 	return;
 }
-
 
 int global_fn(void)
 {
@@ -57,14 +64,14 @@ int global_fn(void)
 		if (teei_config_flag == 1) {
 			retVal = wait_for_completion_interruptible(&global_down_lock);
 			if (retVal == -ERESTARTSYS) {
-				pr_err("[%s][%d]*********down &global_down_lock failed *****************\n", __func__, __LINE__);
+				pr_err("[%s][%d]*********down &global_down_lock failed *****************\n", __func__, __LINE__ );
 				continue;
 			}
 		}
 #endif
 		retVal = down_interruptible(&smc_lock);
 		if (retVal != 0) {
-			pr_err("[%s][%d]*********down &smc_lock failed *****************\n", __func__, __LINE__);
+			pr_err("[%s][%d]*********down &smc_lock failed *****************\n", __func__, __LINE__ );
 			complete(&global_down_lock);
 			continue;
 		}

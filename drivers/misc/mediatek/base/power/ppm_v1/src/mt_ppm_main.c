@@ -870,6 +870,7 @@ static enum ppm_power_state ppm_main_hica_state_decision(void)
 				}
 				break;
 			case PPM_POLICY_USER_LIMIT:
+			case PPM_POLICY_FORCE_LIMIT:
 				if (pos->get_power_state_cb) {
 					enum ppm_power_state state = (perf_state == PPM_POWER_STATE_NONE)
 									? pos->get_power_state_cb(cur_hica_state)

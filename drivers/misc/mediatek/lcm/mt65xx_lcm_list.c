@@ -986,6 +986,10 @@ LCM_DRIVER *lcm_driver_list[] = {
 	&s6e3ha3_wqhd_2k_cmd_lcm_drv,
 #endif
 
+#if defined(S6E3FA3_FHD_CMD)
+	&s6e3fa3_fhd_cmd_lcm_drv,
+#endif
+
 #if defined(NT35595_FHD_DSI_CMD_TRULY_NT50358_720P_EXTERN)
 	&nt35595_fhd_dsi_cmd_truly_nt50358_720p_extern_lcm_drv,
 #endif

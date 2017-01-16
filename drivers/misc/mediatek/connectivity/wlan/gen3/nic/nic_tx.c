@@ -1741,13 +1741,14 @@ WLAN_STATUS nicTxCmd(IN P_ADAPTER_T prAdapter, IN P_CMD_INFO_T prCmdInfo, IN UIN
 		} else
 			DBGLOG(TX, WARN, "prNativePacket is NULL!\n");
 
-		DBGLOG(TX, INFO, "TX SEC Frame: BSS[%u] WIDX:PID[%u:%u] STA[%u] LEN[%u] ENC[%u] RSP[%u]\n",
+		DBGLOG(TX, INFO, "TX SEC Frame: BSS[%u] WIDX:PID[%u:%u] STA[%u] LEN[%u] ENC[%u] RSP[%u] SEQ[%d]\n",
 		       prCmdInfo->ucBssIndex,
 		       HAL_MAC_TX_DESC_GET_WLAN_INDEX((P_HW_MAC_TX_DESC_T)&pucOutputBuf[0]),
 		       prMsduInfo->ucPID, prCmdInfo->ucStaRecIndex,
 		       ucTxDescLength + prCmdInfo->u2InfoBufLen,
 		       HAL_MAC_TX_DESC_IS_PROTECTION((P_HW_MAC_TX_DESC_T)&pucOutputBuf[0]),
-		       prMsduInfo->pfTxDoneHandler ? TRUE : FALSE);
+		       prMsduInfo->pfTxDoneHandler ? TRUE : FALSE,
+		       prMsduInfo->ucTxSeqNum);
 
 		prMsduInfo->prPacket = NULL;
 
