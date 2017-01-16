@@ -44,6 +44,7 @@ char *g_flash_id_str = "";	//tuwenzan@wind-mobi.com add at 20161230
 
 unsigned int g_ctp_fwvr; 
 unsigned int g_ctp_vendor;	//sunsiyuan@wind-mobi.com add at 20161130
+char ctp_vendor[5];	//tuwenzan@wind-mobi.com add at 20170116
 char g_ctp_id_str[21];
 
 /*
@@ -100,17 +101,18 @@ static ssize_t store_gsensor_info(struct device *dev,struct device_attribute *at
 	DEVICE_INFO_FUN();
    	return size;
 }
-
+//tuwenzan@wind-mobi.com modify at 20170116 begin
 static ssize_t show_ctp_info(struct device *dev,struct device_attribute *attr, char *buf)
 {
 	char *buf_temp = buf;
 	DEVICE_INFO_FUN();
 	buf_temp += sprintf(buf_temp, "IC:%s-", g_ctp_id_str);
-	buf_temp += sprintf(buf_temp, "vendor:0x%x-",g_ctp_vendor);
+	buf_temp += sprintf(buf_temp, "vendor:%s-",ctp_vendor);
+	buf_temp += sprintf(buf_temp, "config_id:0x%x-",g_ctp_vendor);
 	buf_temp += sprintf(buf_temp, "fwvr:0x%3x(%u)\n", g_ctp_fwvr,g_ctp_fwvr);
     return (buf_temp - buf);
 }
-
+//tuwenzan@wind-mobi.com modify at 20170116 end
 static ssize_t store_ctp_info(struct device *dev,struct device_attribute *attr, const char *buf, size_t size)
 {
 	DEVICE_INFO_FUN();
