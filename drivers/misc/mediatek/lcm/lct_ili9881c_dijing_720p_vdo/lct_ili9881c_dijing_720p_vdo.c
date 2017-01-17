@@ -339,7 +339,7 @@ static struct LCM_setting_table lcm_initialization_setting[] = {
 {0x31,1,{0x00}},               //column inversion);
 {0x34,1,{0x01}},
 {0x55,1,{0x92}},               //VCOM1);  7c
-{0x56,1,{0x00}},       // FOR ²âÊÔÓÃ  ÓÃR53 ÉèÖÃµÄVCOMÖµ   
+//{0x56,1,{0x00}},       // FOR ²âÊÔÓÃ  ÓÃR53 ÉèÖÃµÄVCOMÖµ   
 {0x50,1,{0xC0}},               // VREG1OUT=4.7V);
 {0x51,1,{0xC0}},               // VREG2OUT=-4.7V);
 {0x60,1,{0x2B}},               //SDT);
