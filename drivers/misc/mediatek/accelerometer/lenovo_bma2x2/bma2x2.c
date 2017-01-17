@@ -2852,13 +2852,13 @@ static int BMA2x2_ReadSensorData(struct i2c_client *client,
 		 acc[BMA2x2_AXIS_X],
 		 acc[BMA2x2_AXIS_Y],
 		 acc[BMA2x2_AXIS_Z]);
+#endif
 		snprintf(buf, BMA2x2_BUFSIZE, "%04x %04x %04x",
 		 acc[BMA2x2_AXIS_X],
 		 acc[BMA2x2_AXIS_Y],
 		 acc[BMA2x2_AXIS_Z]);
 		if (atomic_read(&obj->trace) & BMA_TRC_IOCTL)
 			GSE_LOG("gsensor data: %s!\n", buf);
-#endif
 	}
 	return 0;
 }
@@ -3220,7 +3220,15 @@ static int bma25x_set_en_sig_int_mode(bma25x_data *bma25x,
 		bma2x2_set_bandwidth(
 			bma25x->client, BMA25X_BW_500HZ);
 		bma25x_flat_update(bma25x);
+		bma25x_set_theta_flat(bma25x->client, 0x08);
+		if ((bma25x->flat_up_value == FLATUP_GESTURE) ||
+			(bma25x->flat_down_value == FLATDOWN_GESTURE))
+			bma25x_set_flat_hold_time(bma25x->client, 0x00);
+		else
+			bma25x_set_flat_hold_time(bma25x->client, 0x03);
+		bma25x_set_Int_Enable(bma25x->client, 11, 1);
 	} else if (bma25x->mEnabled && !newstatus) {
+		bma25x_set_Int_Enable(bma25x->client, 11, 0);
 #if 0
 		//if (atomic_read(&bma25x->enable) == 0) {
 		if (sensor_power == false) {
@@ -3249,21 +3257,6 @@ static int bma25x_set_en_sig_int_mode(bma25x_data *bma25x,
 		FLAT_INTERRUPT, bma25x->flat_down_value);
 		input_sync(bma25x->dev_interrupt);
 	}
-	if (newstatus) {
-		if ((bma25x->flat_up_value == FLATUP_GESTURE) ||
-			(bma25x->flat_down_value == FLATDOWN_GESTURE))
-			bma25x_set_flat_hold_time(bma25x->client, 0x00);
-		else
-			bma25x_set_flat_hold_time(bma25x->client, 0x03);
-		if (TEST_BIT(Motion, newstatus) && bma25x->mEnabled) {
-			bma25x_set_Int_Enable(bma25x->client, 11, 0);
-			bma25x->aod_flag = 1;
-		} else {
-			bma25x_set_theta_flat(bma25x->client, 0x08);
-			bma25x_set_Int_Enable(bma25x->client, 11, 1);
-		}
-	} else
-		bma25x_set_Int_Enable(bma25x->client, 11, 0);
 
 	if (TEST_BIT(Motion, newstatus) &&
 			!TEST_BIT(Motion, bma25x->mEnabled))
