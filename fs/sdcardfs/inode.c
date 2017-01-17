@@ -52,12 +52,19 @@ void revert_fsids(const struct cred * old_cred)
 static int sdcardfs_create(struct inode *dir, struct dentry *dentry,
 			 umode_t mode, bool want_excl)
 {
+	struct sdcardfs_sb_info *sbi = SDCARDFS_SB(dentry->d_sb);
+
 	if(!check_caller_access_to_name(dir, dentry->d_name.name)) {
 		printk(KERN_INFO "%s: need to check the caller's gid in packages.list\n"
 						 "  dentry: %s, task:%s\n",
 						 __func__, dentry->d_name.name, current->comm);
 		return -EACCES;
 	}
+
+	if (sbi->flag && SDCARDFS_MOUNT_ACCESS_DISABLE) {
+		return -ENOENT;
+	}
+
 	return sdcardfs_work_dispatch_create(dir, dentry, mode, want_excl);
 }
 
@@ -105,11 +112,17 @@ out:
 
 static int sdcardfs_unlink(struct inode *dir, struct dentry *dentry)
 {
+	struct sdcardfs_sb_info *sbi = SDCARDFS_SB(dentry->d_sb);
+
 	if(!check_caller_access_to_name(dir, dentry->d_name.name)) {
 		printk(KERN_INFO "%s: need to check the caller's gid in packages.list\n"
 						 "  dentry: %s, task:%s\n",
 						 __func__, dentry->d_name.name, current->comm);
 		return -EACCES;
+	}
+
+	if (sbi->flag && SDCARDFS_MOUNT_ACCESS_DISABLE) {
+		return -ENOENT;
 	}
 
 	return sdcardfs_work_dispatch_unlink(dir, dentry);
@@ -149,12 +162,19 @@ out:
 
 static int sdcardfs_mkdir(struct inode *dir, struct dentry *dentry, umode_t mode)
 {
+	struct sdcardfs_sb_info *sbi = SDCARDFS_SB(dentry->d_sb);
+
 	if(!check_caller_access_to_name(dir, dentry->d_name.name)) {
 		printk(KERN_INFO "%s: need to check the caller's gid in packages.list\n"
 						 "  dentry: %s, task:%s\n",
 						 __func__, dentry->d_name.name, current->comm);
 		return -EACCES;
 	}
+
+	if (sbi->flag && SDCARDFS_MOUNT_ACCESS_DISABLE) {
+		return -ENOENT;
+	}
+
 	return sdcardfs_work_dispatch_mkdir(dir, dentry, mode);
 }
 
@@ -251,6 +271,7 @@ static int sdcardfs_rename(struct inode *old_dir, struct dentry *old_dentry,
 	struct dentry *trap = NULL;
 	struct dentry *new_parent = NULL;
 	struct path lower_old_path, lower_new_path;
+	struct sdcardfs_sb_info *sbi = SDCARDFS_SB(old_dentry->d_sb);
 	const struct cred *saved_cred = NULL;
 
 	if(!check_caller_access_to_name(old_dir, old_dentry->d_name.name) ||
@@ -259,6 +280,11 @@ static int sdcardfs_rename(struct inode *old_dir, struct dentry *old_dentry,
 						 "  new_dentry: %s, task:%s\n",
 						 __func__, new_dentry->d_name.name, current->comm);
 		err = -EACCES;
+		goto out_eacces;
+	}
+
+	if (sbi->flag && SDCARDFS_MOUNT_ACCESS_DISABLE) {
+		err = -ENOENT;
 		goto out_eacces;
 	}
 
@@ -439,8 +465,14 @@ static int sdcardfs_setattr(struct dentry *dentry, struct iattr *ia)
 	struct inode *lower_inode;
 	struct path lower_path;
 	struct iattr lower_ia;
+	struct sdcardfs_sb_info *sbi = SDCARDFS_SB(dentry->d_sb);
 	struct dentry *parent;
 
+
+	if (sbi->flag && SDCARDFS_MOUNT_ACCESS_DISABLE) {
+		err = -ENOENT;
+		goto out_err;
+	}
 	inode = dentry->d_inode;
 
 	/*

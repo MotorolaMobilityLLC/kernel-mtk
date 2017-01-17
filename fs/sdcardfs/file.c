@@ -104,7 +104,17 @@ static long sdcardfs_unlocked_ioctl(struct file *file, unsigned int cmd,
 {
 	long err = -ENOTTY;
 	struct file *lower_file;
+	struct sdcardfs_sb_info *sbi = SDCARDFS_SB(file->f_path.dentry->d_sb);
 
+	if (cmd == SDCARDFS_IOC_DIS_ACCESS) {
+		if (!capable(CAP_SYS_ADMIN)) {
+			err = -EPERM;
+			goto out;
+		}
+		sbi->flag |= SDCARDFS_MOUNT_ACCESS_DISABLE;
+		err = 0;
+		goto out;
+	}
 	lower_file = sdcardfs_lower_file(file);
 
 	/* XXX: use vfs_ioctl if/when VFS exports it */
@@ -226,6 +236,11 @@ static int sdcardfs_open(struct inode *inode, struct file *file)
 
 	/* save current_cred and override it */
 	OVERRIDE_CRED(sbi, saved_cred);
+
+	if (sbi->flag && SDCARDFS_MOUNT_ACCESS_DISABLE) {
+		err = -ENOENT;
+		goto out_revert_cred;
+	}
 
 	file->private_data =
 		kzalloc(sizeof(struct sdcardfs_file_info), GFP_KERNEL);
