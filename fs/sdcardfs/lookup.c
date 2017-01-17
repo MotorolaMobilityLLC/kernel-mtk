@@ -222,7 +222,7 @@ out:
 /* The dir context used by  sdcardfs_lower_filldir() */
 struct sdcardfs_lower_getent_cb {
 	struct dir_context ctx;
-	loff_t pos;
+	int count;
 	const char *target; /* search target */
 	int target_len;
 	char alias[NAME_MAX+1]; /* alias name found in lower dir */
@@ -242,7 +242,7 @@ sdcardfs_lower_filldir(void *dirent, const char *name, int namelen,
 	if (!buf->result)  /* entry already found, skip search */
 		return 0;
 
-	buf->pos = buf->ctx.pos;
+	buf->count++;
 	if (!strncasecmp(name, buf->target, namelen) && namelen == buf->target_len) {
 		strncpy(buf->alias, name, namelen);
 		buf->alias_len = namelen;
@@ -264,11 +264,9 @@ static int sdcardfs_ci_path_lookup(struct path *folder, const char *name, struct
 {
 	int ret = 0;
 	struct file *filp;
-	loff_t last_pos;
 	struct sdcardfs_lower_getent_cb buf = {
 			.ctx.actor = sdcardfs_lower_filldir,
 			.ctx.pos = 0,
-			.pos = 0,
 			.target = name,
 			.alias_len = 0,
 			.result = -ENOENT
@@ -283,9 +281,9 @@ static int sdcardfs_ci_path_lookup(struct path *folder, const char *name, struct
 		return -ENOENT;
 
 	while (ret >= 0) {
-		last_pos = filp->f_pos;
+		buf.count = 0;
 		ret = iterate_dir(filp, &buf.ctx);
-		if (last_pos == filp->f_pos || !buf.result)  /* reaches end or found matching entry */
+		if (!buf.count || !buf.result)  /* reaches end or found matching entry */
 			break;
 	}
 
