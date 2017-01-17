@@ -1158,6 +1158,10 @@ kalIndicateStatusAndComplete(IN P_GLUE_INFO_T prGlueInfo, IN WLAN_STATUS eStatus
 					    (P_PARAM_PMKID_CANDIDATE_T) &pPmkid->arCandidateList[0];
 
 					for (i = 0; i < pPmkid->u4NumCandidates; i++) {
+						cfg80211_pmksa_candidate_notify(prGlueInfo->prDevHandler, 1000,
+										pPmkid->arCandidateList[i].arBSSID,
+										pPmkid->arCandidateList[i].u4Flags,
+										GFP_KERNEL);
 						wext_indicate_wext_event(prGlueInfo,
 									 IWEVPMKIDCAND,
 									 (unsigned char *)&pPmkid->arCandidateList[i],

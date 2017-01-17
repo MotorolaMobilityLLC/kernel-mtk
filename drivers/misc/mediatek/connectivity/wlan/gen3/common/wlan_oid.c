@@ -3302,6 +3302,28 @@ wlanoidSetPmkid(IN P_ADAPTER_T prAdapter, IN PVOID pvSetBuffer, IN UINT_32 u4Set
 			prAisSpecBssInfo->arPmkidCache[j].fgPmkidExist = TRUE;
 		}
 	}
+	if (prAdapter->rWifiVar.rConnSettings.fgUseOkc) {
+		P_BSS_DESC_T prBssDesc = prAdapter->rWifiVar.rAisFsmInfo.prTargetBssDesc;
+		P_UINT_8 pucPmkID = NULL;
+
+		if ((prPmkid->u4Length & BIT(31)) || (prBssDesc &&
+				EQUAL_MAC_ADDR(prPmkid->arBSSIDInfo[0].arBSSID, prBssDesc->aucBSSID))) {
+			if (j == CFG_MAX_PMKID_CACHE) {
+				j = 0;
+				kalMemCopy(prAisSpecBssInfo->arPmkidCache[0].rBssidInfo.arBSSID,
+					   prPmkid->arBSSIDInfo[0].arBSSID, sizeof(PARAM_MAC_ADDRESS));
+				kalMemCopy(prAisSpecBssInfo->arPmkidCache[0].rBssidInfo.arPMKID,
+				   prPmkid->arBSSIDInfo[0].arPMKID, sizeof(PARAM_PMKID_VALUE));
+			}
+			pucPmkID = prAisSpecBssInfo->arPmkidCache[j].rBssidInfo.arPMKID;
+			DBGLOG(RSN, INFO,
+				"%pM OKC PMKID %02x%02x%02x%02x%02x%02x%02x%02x...\n",
+				prAisSpecBssInfo->arPmkidCache[j].rBssidInfo.arBSSID,
+				pucPmkID[0], pucPmkID[1], pucPmkID[2], pucPmkID[3],
+				pucPmkID[4], pucPmkID[5], pucPmkID[6], pucPmkID[7]);
+		}
+		aisFsmRunEventSetOkcPmk(prAdapter);
+	}
 
 	return WLAN_STATUS_SUCCESS;
 

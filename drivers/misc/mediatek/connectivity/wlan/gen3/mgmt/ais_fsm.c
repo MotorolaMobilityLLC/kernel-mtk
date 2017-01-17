@@ -94,6 +94,7 @@ static PUINT_8 apucDebugAisState[AIS_STATE_NUM] = {
 *                   F U N C T I O N   D E C L A R A T I O N S
 ********************************************************************************
 */
+static VOID aisFsmSetOkcTimeout(IN P_ADAPTER_T prAdapter, ULONG ulParam);
 static VOID aisFsmRunEventScanDoneTimeOut(IN P_ADAPTER_T prAdapter, ULONG ulParam);
 static VOID aisRemoveOldestBcnTimeout(P_AIS_FSM_INFO_T prAisFsmInfo);
 static VOID aisRemoveDisappearedBlacklist(P_ADAPTER_T prAdapter);
@@ -281,6 +282,9 @@ VOID aisFsmInit(IN P_ADAPTER_T prAdapter)
 			  &prAisFsmInfo->rSecModeChangeTimer,
 			  (PFN_MGMT_TIMEOUT_FUNC) aisFsmRunEventSecModeChangeTimeout, (ULONG) NULL);
 #endif
+	cnmTimerInitTimer(prAdapter,
+				  &prAisFsmInfo->rWaitOkcPMKTimer,
+				  (PFN_MGMT_TIMEOUT_FUNC)aisFsmSetOkcTimeout, (ULONG) NULL);
 
 	/* 4 <1.2> Initiate PWR STATE */
 	SET_NET_PWR_STATE_IDLE(prAdapter, prAisBssInfo->ucBssIndex);
@@ -370,6 +374,7 @@ VOID aisFsmUninit(IN P_ADAPTER_T prAdapter)
 #if CFG_SUPPORT_DETECT_SECURITY_MODE_CHANGE
 	cnmTimerStopTimer(prAdapter, &prAisFsmInfo->rSecModeChangeTimer);
 #endif
+	cnmTimerStopTimer(prAdapter, &prAisFsmInfo->rWaitOkcPMKTimer);
 
 	/* 4 <2> flush pending request */
 	aisFsmFlushRequest(prAdapter);
@@ -1248,6 +1253,26 @@ VOID aisFsmSteps(IN P_ADAPTER_T prAdapter, ENUM_AIS_STATE_T eNextState)
 						fgIsTransition = TRUE;
 					}
 				}
+			}
+			if (prConnSettings->fgUseOkc && prBssDesc) {
+				UINT_8 aucBuf[sizeof(PARAM_PMKID_CANDIDATE_LIST_T) + sizeof(PARAM_STATUS_INDICATION_T)];
+				P_PARAM_STATUS_INDICATION_T prStatusEvent = (P_PARAM_STATUS_INDICATION_T)aucBuf;
+				P_PARAM_PMKID_CANDIDATE_LIST_T prPmkidCandicate =
+					(P_PARAM_PMKID_CANDIDATE_LIST_T)(prStatusEvent+1);
+				UINT_32 u4Entry = 0;
+
+				if (rsnSearchPmkidEntry(prAdapter, prBssDesc->aucBSSID, &u4Entry) &&
+					prAdapter->rWifiVar.rAisSpecificBssInfo.arPmkidCache[u4Entry].fgPmkidExist)
+					break;
+				DBGLOG(AIS, INFO, "No PMK for %pM, try to generate a OKC PMK\n", prBssDesc->aucBSSID);
+				prStatusEvent->eStatusType = ENUM_STATUS_TYPE_CANDIDATE_LIST;
+				prPmkidCandicate->u4Version = 1;
+				prPmkidCandicate->u4NumCandidates = 1;
+				prPmkidCandicate->arCandidateList[0].u4Flags = 0; /* don't request preauth */
+				COPY_MAC_ADDR(prPmkidCandicate->arCandidateList[0].arBSSID, prBssDesc->aucBSSID);
+				kalIndicateStatusAndComplete(prAdapter->prGlueInfo,
+					 WLAN_STATUS_MEDIA_SPECIFIC_INDICATION, (PVOID)aucBuf, sizeof(aucBuf));
+				cnmTimerStartTimer(prAdapter, &prAisFsmInfo->rWaitOkcPMKTimer, AIS_WAIT_OKC_PMKID_SEC);
 			}
 
 			break;
@@ -3801,6 +3826,7 @@ VOID aisFsmRunEventChGrant(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHdr)
 	P_MSG_CH_GRANT_T prMsgChGrant;
 	UINT_8 ucTokenID;
 	UINT_32 u4GrantInterval;
+	UINT_32 u4Entry = 0;
 
 	ASSERT(prAdapter);
 	ASSERT(prMsgHdr);
@@ -3828,7 +3854,10 @@ VOID aisFsmRunEventChGrant(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHdr)
 		prAisFsmInfo->fgIsInfraChannelFinished = FALSE;
 
 		/* 3.3 switch to join state */
-		aisFsmSteps(prAdapter, AIS_STATE_JOIN);
+		if (!prAdapter->rWifiVar.rConnSettings.fgUseOkc ||
+			(rsnSearchPmkidEntry(prAdapter, prAisFsmInfo->prTargetBssDesc->aucBSSID, &u4Entry) &&
+			prAdapter->rWifiVar.rAisSpecificBssInfo.arPmkidCache[u4Entry].fgPmkidExist))
+			aisFsmSteps(prAdapter, AIS_STATE_JOIN);
 
 		prAisFsmInfo->fgIsChannelGranted = TRUE;
 	} else if (prAisFsmInfo->eCurrentState == AIS_STATE_REQ_REMAIN_ON_CHANNEL &&
@@ -4500,6 +4529,22 @@ aisFsmRunEventMgmtFrameTxDone(IN P_ADAPTER_T prAdapter,
 	return WLAN_STATUS_SUCCESS;
 
 }				/* aisFsmRunEventMgmtFrameTxDone */
+
+VOID aisFsmRunEventSetOkcPmk(IN P_ADAPTER_T prAdapter)
+{
+	P_AIS_FSM_INFO_T prAisFsmInfo = &prAdapter->rWifiVar.rAisFsmInfo;
+
+	if (prAisFsmInfo->eCurrentState == AIS_STATE_REQ_CHANNEL_JOIN &&
+		prAisFsmInfo->fgIsChannelGranted)
+		aisFsmSteps(prAdapter, AIS_STATE_JOIN);
+	cnmTimerStopTimer(prAdapter, &prAisFsmInfo->rWaitOkcPMKTimer);
+}
+
+static VOID aisFsmSetOkcTimeout(IN P_ADAPTER_T prAdapter, ULONG ulParam)
+{
+	DBGLOG(AIS, WARN, "Wait OKC PMKID timeout\n");
+	aisFsmSteps(prAdapter, AIS_STATE_JOIN);
+}
 
 WLAN_STATUS
 aisFuncTxMgmtFrame(IN P_ADAPTER_T prAdapter,

@@ -58,6 +58,7 @@
 #define AIS_AUTORN_MIN_INTERVAL			20
 #define AIS_BLACKLIST_TIMEOUT               15 /* seconds */
 
+#define AIS_WAIT_OKC_PMKID_SEC              1000 /* unit: ms */
 /*******************************************************************************
 *                             D A T A   T Y P E S
 ********************************************************************************
@@ -192,6 +193,8 @@ typedef struct _AIS_FSM_INFO_T {
 	TIMER_T rScanDoneTimer;
 
 	TIMER_T rDeauthDoneTimer;
+
+	TIMER_T rWaitOkcPMKTimer;
 
 	UINT_8 ucSeqNumOfReqMsg;
 	UINT_8 ucSeqNumOfChReq;
@@ -404,6 +407,8 @@ aisFuncTxMgmtFrame(IN P_ADAPTER_T prAdapter,
 VOID aisFsmRunEventMgmtFrameTx(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHdr);
 
 VOID aisFuncValidateRxActionFrame(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfb);
+
+VOID aisFsmRunEventSetOkcPmk(IN P_ADAPTER_T prAdapter);
 
 #if defined(CFG_TEST_MGMT_FSM) && (CFG_TEST_MGMT_FSM != 0)
 VOID aisTest(VOID);

@@ -576,7 +576,6 @@ BOOLEAN wextSrchDesiredRoamingConsortiumIE(IN PUINT_8 pucIEStart, IN INT_32 i4To
 }				/* wextSrchDesiredRoamingConsortiumIE */
 #endif
 
-#if CFG_SUPPORT_OKC
 BOOLEAN wextSrchOkcAndPMKID(IN PUINT_8 pucIEStart, IN INT_32 i4TotalIeLen, OUT PUINT_8 *ppucPMKID, OUT PUINT_8 okc)
 {
 	INT_32 i4InfoElemLen;
@@ -633,7 +632,6 @@ check_next:
 	}
 	return FALSE;
 }
-#endif
 #if CFG_SUPPORT_WPS
 /*----------------------------------------------------------------------------*/
 /*!
