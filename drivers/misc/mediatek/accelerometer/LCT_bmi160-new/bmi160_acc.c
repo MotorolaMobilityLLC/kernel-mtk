@@ -2023,8 +2023,17 @@ static int bmi160_aod_set_en_sig_int_mode(struct bmi160_acc_i2c_data *bmi160,
 			BMI160_ACCEL_ODR_800HZ);
 		usleep_range(5000, 5000);
 		bmi160_aod_flat_update(bmi160);
+		bmi160_aod_set_theta_flat(bmi160->client, 0x08);
+		if ((bmi160->flat_up_value == FLATUP_GESTURE) ||
+			(bmi160->flat_down_value == FLATDOWN_GESTURE))
+			bmi160_aod_set_flat_hold_time(bmi160->client, 0x00);
+		else
+			bmi160_aod_set_flat_hold_time(bmi160->client, 0x03);
+		bmi160_aod_set_Int_Enable(bmi160->client, 11, 1);
 	} else if (bmi160->mEnabled && !newstatus) {
+		bmi160_aod_set_Int_Enable(bmi160->client, 11, 0);
 		disable_irq(bmi160->IRQ1);
+		disable_irq(bmi160->IRQ2);
 		BMI160_ACC_SetBWRate(bmi160->client,
 			BMI160_ACCEL_ODR_200HZ);
 	}
@@ -2044,21 +2053,6 @@ static int bmi160_aod_set_en_sig_int_mode(struct bmi160_acc_i2c_data *bmi160,
 		FLAT_INTERRUPT, bmi160->flat_down_value);
 		input_sync(bmi160->dev_interrupt);
 	}
-	if (newstatus) {
-		if ((bmi160->flat_up_value == FLATUP_GESTURE) ||
-			(bmi160->flat_down_value == FLATDOWN_GESTURE))
-			bmi160_aod_set_flat_hold_time(bmi160->client, 0x00);
-		else
-			bmi160_aod_set_flat_hold_time(bmi160->client, 0x03);
-		if (TEST_BIT(Motion, newstatus) && bmi160->mEnabled) {
-			bmi160_aod_set_Int_Enable(bmi160->client, 11, 0);
-			bmi160->aod_flag = 1;
-		} else {
-			bmi160_aod_set_theta_flat(bmi160->client, 0x20);
-			bmi160_aod_set_Int_Enable(bmi160->client, 11, 1);
-		}
-	} else
-		bmi160_aod_set_Int_Enable(bmi160->client, 11, 0);
 
 	if (TEST_BIT(Motion, newstatus) &&
 			!TEST_BIT(Motion, bmi160->mEnabled))
@@ -2067,8 +2061,10 @@ static int bmi160_aod_set_en_sig_int_mode(struct bmi160_acc_i2c_data *bmi160,
 			TEST_BIT(Motion, bmi160->mEnabled))
 		err = bmi160_aod_set_en_no_motion_int(bmi160, 0);
 
-	if (!bmi160->mEnabled && newstatus)
+	if (!bmi160->mEnabled && newstatus) {
 		enable_irq(bmi160->IRQ1);
+		enable_irq(bmi160->IRQ2);
+	}
 	bmi160->mEnabled = newstatus;
 	mutex_unlock(&bmi160->int_mode_mutex);
 	ISR_INFO(&bmi160->client->dev, "int_mode finished!!!\n");
