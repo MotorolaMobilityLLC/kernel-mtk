@@ -45,6 +45,12 @@
 #include <linux/list.h>
 #include "multiuser.h"
 
+/* ioctl command */
+#define SDCARDFS_IOCTL_MAGIC	'e'
+#define SDCARDFS_IOC_DIS_ACCESS	_IO(SDCARDFS_IOCTL_MAGIC, 1)
+
+#define SDCARDFS_MOUNT_ACCESS_DISABLE	0x00000020
+
 /* the file system name */
 #define SDCARDFS_NAME "sdcardfs"
 
@@ -206,6 +212,7 @@ struct sdcardfs_sb_info {
 	struct path obbpath;
 	void *pkgl_id;
 	struct list_head list;
+	unsigned int flag;
 };
 
 /*
