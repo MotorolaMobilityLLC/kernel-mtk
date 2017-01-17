@@ -56,6 +56,9 @@
 
 #define SDCARDFS_DIRENT_SIZE 256
 
+/*default reserved size*/
+#define LOWER_FS_MIN_FREE_SIZE  50 /* 50MB */
+
 /* temporary static uid settings for development */
 #define AID_ROOT             0	/* uid for accessing /mnt/sdcard & extSdcard */
 #define AID_MEDIA_RW      1023	/* internal media storage write access */
