@@ -522,6 +522,44 @@ static ssize_t store_cabc_mode(struct device *device, struct device_attribute *a
 	primary_display_setcabc(cabc_mode_mode);
 	return count;
 }
+
+static ssize_t show_cabc_mode(struct device *device,
+			   struct device_attribute *attr, char *buf)
+{
+	char m[5] = "0";
+	switch(primary_recognition_cabc_mode())
+	{
+		case CABC_MODE_UI:
+			{
+				m[0]='U';
+				m[1]='I';
+			}
+			break;
+		case CABC_MODE_MV:
+			{
+				m[0]='M';
+				m[1]='V';
+			}
+			break;
+		case CABC_MODE_DIS:
+			{
+				m[0]='D';
+				m[1]='I';
+				m[2]='S';
+			}
+			break;
+		default:
+			{
+				m[0]='N';
+				m[1]='U';
+				m[2]='L';
+				m[3]='L';
+			}
+		
+	}
+	return snprintf(buf, PAGE_SIZE, "%s\n",
+	                m);
+}
 #endif
 
 //add by LCT yufangfang for cabc
@@ -555,7 +593,6 @@ static ssize_t store_cabc_mode(struct device *device, struct device_attribute *a
 	return count;
 
 }
-#endif
 
 static ssize_t show_cabc_mode(struct device *device,
 			   struct device_attribute *attr, char *buf)
@@ -592,6 +629,9 @@ static ssize_t show_cabc_mode(struct device *device,
 	return snprintf(buf, PAGE_SIZE, "%s\n",
 	                cabc_show);
 }
+#endif
+
+
 
 //add by lct yufangfang for hbm
 #ifdef CONFIG_LCT_HBM_SUPPORT
