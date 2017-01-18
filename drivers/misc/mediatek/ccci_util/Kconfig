@@ -115,3 +115,9 @@ config WIND_MULTI_MD_ONE_IMAGE
 	default n
 	help
       y=>enable
+	  
+config WIND_CO_CLK
+	bool "configure co_clock"
+	default n
+	help
+      y=>enable
