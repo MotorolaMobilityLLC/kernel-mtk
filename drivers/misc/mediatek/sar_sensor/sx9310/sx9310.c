@@ -48,20 +48,8 @@ int sar_debug_en = 1;
 
 static struct _buttonInfo psmtcButtons[] = {
 	{
-	 .keycode = KEY_0,
+	 .keycode = KEY_SAR,
 	 .mask = SX9310_TCHCMPSTAT_TCHSTAT0_FLAG,
-	 },
-	{
-	 .keycode = KEY_1,
-	 .mask = SX9310_TCHCMPSTAT_TCHSTAT1_FLAG,
-	 },
-	{
-	 .keycode = KEY_2,
-	 .mask = SX9310_TCHCMPSTAT_TCHSTAT2_FLAG,
-	 },
-	{
-	 .keycode = KEY_3,
-	 .mask = SX9310_TCHCMPSTAT_TCHCOMB_FLAG,
 	 },
 };
 
