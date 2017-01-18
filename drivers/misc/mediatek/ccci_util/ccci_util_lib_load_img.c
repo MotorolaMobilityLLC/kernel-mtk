@@ -672,41 +672,45 @@ void get_md_postfix(int md_id, char k[], char buf[], char buf_ex[])
 	if ((curr_ubin_id != 0) && (md_id == MD_SYS1)) {
 		if (buf) {
 			#ifdef CONFIG_WIND_MULTI_MD_ONE_IMAGE
-				switch(get_bid_gpio()){
-					case EMEA_DS_NA_EVT:
-					case EMEA_SS_NA_EVT:
-					case EMEA_SS_NFC_EVT:
-					case EMEA_DS_NA_DVT:
-					case EMEA_SS_NA_DVT:
-					case EMEA_SS_NFC_DVT:
-					case EMEA_DS_NA_DVT2:
-					case EMEA_SS_NFC_DVT2:
-						snprintf(buf, IMG_POSTFIX_LEN, "%d_%s_1", X, type_str[curr_ubin_id]);
-						break;
-					case LATAM_DS_NA_EVT:
-					case LATAM_DS_NA_DVT:
-					case ROLA_SS_NA_DVT:
-					case ROLA_SS_NA_EVT:
-					case LATAM_DS_NA_SKY77643_DVT2:
-					case ROLA_SS_NA_SKY77643_DVT2:
-						snprintf(buf, IMG_POSTFIX_LEN, "%d_%s_2", X, type_str[curr_ubin_id]);
-						break;
-					case AP_DS_NA_EVT:
-					case AP_DS_NA_DVT:
-					case AP_DS_NA_DVT2:
-						snprintf(buf, IMG_POSTFIX_LEN, "%d_%s_3", X, type_str[curr_ubin_id]);
-						break;
-					case LATAM_DS_NA_SKY77638_DVT2:
-					case ROLA_SS_NA_SKY77638_DVT2:
-						snprintf(buf, IMG_POSTFIX_LEN, "%d_%s_4", X, type_str[curr_ubin_id]);
-						break;
-					case AP_B28_DS_NA_DVT2:
-						snprintf(buf, IMG_POSTFIX_LEN, "%d_%s_5", X, type_str[curr_ubin_id]);
-						break;
-					default:
-						snprintf(buf, IMG_POSTFIX_LEN, "%d_%s_1", X, type_str[curr_ubin_id]);
-						break;
-				}
+				#ifdef CONFIG_WIND_CO_CLK
+					snprintf(buf, IMG_POSTFIX_LEN, "%d_%s_1", X, type_str[curr_ubin_id]);
+				#else
+					switch(get_bid_gpio()){
+						case EMEA_DS_NA_EVT:
+						case EMEA_SS_NA_EVT:
+						case EMEA_SS_NFC_EVT:
+						case EMEA_DS_NA_DVT:
+						case EMEA_SS_NA_DVT:
+						case EMEA_SS_NFC_DVT:
+						case EMEA_DS_NA_DVT2:
+						case EMEA_SS_NFC_DVT2:
+							snprintf(buf, IMG_POSTFIX_LEN, "%d_%s_1", X, type_str[curr_ubin_id]);
+							break;
+						case LATAM_DS_NA_EVT:
+						case LATAM_DS_NA_DVT:
+						case ROLA_SS_NA_DVT:
+						case ROLA_SS_NA_EVT:
+						case LATAM_DS_NA_SKY77643_DVT2:
+						case ROLA_SS_NA_SKY77643_DVT2:
+							snprintf(buf, IMG_POSTFIX_LEN, "%d_%s_2", X, type_str[curr_ubin_id]);
+							break;
+						case AP_DS_NA_EVT:
+						case AP_DS_NA_DVT:
+						case AP_DS_NA_DVT2:
+							snprintf(buf, IMG_POSTFIX_LEN, "%d_%s_3", X, type_str[curr_ubin_id]);
+							break;
+						case LATAM_DS_NA_SKY77638_DVT2:
+						case ROLA_SS_NA_SKY77638_DVT2:
+							snprintf(buf, IMG_POSTFIX_LEN, "%d_%s_4", X, type_str[curr_ubin_id]);
+							break;
+						case AP_B28_DS_NA_DVT2:
+							snprintf(buf, IMG_POSTFIX_LEN, "%d_%s_5", X, type_str[curr_ubin_id]);
+							break;
+						default:
+							snprintf(buf, IMG_POSTFIX_LEN, "%d_%s_1", X, type_str[curr_ubin_id]);
+							break;
+					}
+				#endif
 			#else
 				snprintf(buf, IMG_POSTFIX_LEN, "%d_%s_n", X, type_str[curr_ubin_id]);
 			#endif
@@ -749,40 +753,44 @@ void get_md_postfix(int md_id, char k[], char buf[], char buf_ex[])
 	{
 	//huyunge@wind-mobi.com 20161208 start
 	#ifdef CONFIG_WIND_MULTI_MD_ONE_IMAGE
-		switch(get_bid_gpio()){
-			case EMEA_DS_NA_EVT:
-			case EMEA_SS_NA_EVT:
-			case EMEA_SS_NFC_EVT:
-			case EMEA_DS_NA_DVT:
-			case EMEA_SS_NA_DVT:
-			case EMEA_SS_NFC_DVT:
-			case EMEA_DS_NA_DVT2:
-			case EMEA_SS_NFC_DVT2:
-				snprintf(YY_K, IMG_POSTFIX_LEN, "_%s_1", type_str[feature_val]);
-				break;
-			case LATAM_DS_NA_EVT:
-			case LATAM_DS_NA_DVT:
-			case ROLA_SS_NA_DVT:
-			case ROLA_SS_NA_EVT:
-			case LATAM_DS_NA_SKY77643_DVT2:
-			case ROLA_SS_NA_SKY77643_DVT2:
-				snprintf(YY_K, IMG_POSTFIX_LEN, "_%s_2", type_str[feature_val]);
-				break;
-			case AP_DS_NA_EVT:
-			case AP_DS_NA_DVT:
-			case AP_DS_NA_DVT2:
-				snprintf(YY_K, IMG_POSTFIX_LEN, "_%s_3", type_str[feature_val]);
-				break;
-			case LATAM_DS_NA_SKY77638_DVT2:
-			case ROLA_SS_NA_SKY77638_DVT2:
-				snprintf(YY_K, IMG_POSTFIX_LEN, "_%s_4", type_str[feature_val]);
-			case AP_B28_DS_NA_DVT2:
-				snprintf(YY_K, IMG_POSTFIX_LEN, "_%s_5", type_str[feature_val]);				
-				break;	
-			default:
-				snprintf(YY_K, IMG_POSTFIX_LEN, "_%s_1", type_str[feature_val]);
-				break;
-		}
+		#ifdef CONFIG_WIND_CO_CLK
+			snprintf(YY_K, IMG_POSTFIX_LEN, "_%s_1", type_str[feature_val]);
+		#else
+			switch(get_bid_gpio()){
+				case EMEA_DS_NA_EVT:
+				case EMEA_SS_NA_EVT:
+				case EMEA_SS_NFC_EVT:
+				case EMEA_DS_NA_DVT:
+				case EMEA_SS_NA_DVT:
+				case EMEA_SS_NFC_DVT:
+				case EMEA_DS_NA_DVT2:
+				case EMEA_SS_NFC_DVT2:
+					snprintf(YY_K, IMG_POSTFIX_LEN, "_%s_1", type_str[feature_val]);
+					break;
+				case LATAM_DS_NA_EVT:
+				case LATAM_DS_NA_DVT:
+				case ROLA_SS_NA_DVT:
+				case ROLA_SS_NA_EVT:
+				case LATAM_DS_NA_SKY77643_DVT2:
+				case ROLA_SS_NA_SKY77643_DVT2:
+					snprintf(YY_K, IMG_POSTFIX_LEN, "_%s_2", type_str[feature_val]);
+					break;
+				case AP_DS_NA_EVT:
+				case AP_DS_NA_DVT:
+				case AP_DS_NA_DVT2:
+					snprintf(YY_K, IMG_POSTFIX_LEN, "_%s_3", type_str[feature_val]);
+					break;
+				case LATAM_DS_NA_SKY77638_DVT2:
+				case ROLA_SS_NA_SKY77638_DVT2:
+					snprintf(YY_K, IMG_POSTFIX_LEN, "_%s_4", type_str[feature_val]);
+				case AP_B28_DS_NA_DVT2:
+					snprintf(YY_K, IMG_POSTFIX_LEN, "_%s_5", type_str[feature_val]);				
+					break;	
+				default:
+					snprintf(YY_K, IMG_POSTFIX_LEN, "_%s_1", type_str[feature_val]);
+					break;
+			}
+		#endif
 	#else
 		snprintf(YY_K, IMG_POSTFIX_LEN, "_%s_n", type_str[feature_val]);
 	#endif
