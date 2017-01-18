@@ -353,6 +353,18 @@ void rtc_mark_recovery(void)
 	spin_unlock_irqrestore(&rtc_lock, flags);
 }
 
+void rtc_mark_reboot(void)
+{
+#ifdef CONFIG_F2FS_FS
+	unsigned long flags;
+
+	rtc_xinfo("rtc_mark_reboot\n");
+	spin_lock_irqsave(&rtc_lock, flags);
+	hal_rtc_set_spare_register(RTC_FAC_RESET, 0x2);
+	spin_unlock_irqrestore(&rtc_lock, flags);
+#endif
+}
+
 #if defined(CONFIG_MTK_KERNEL_POWER_OFF_CHARGING)
 void rtc_mark_kpoc(void)
 {
