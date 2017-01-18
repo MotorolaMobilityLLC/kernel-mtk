@@ -6387,6 +6387,47 @@ int _set_cabc_by_cmdq(unsigned int enbale)
 	cmdq_handle_cabc = NULL;
 	return ret;
 }
+
+int primary_display_setcabc(unsigned int enbale)
+{
+	//int ret = 0;
+	static unsigned int last_enable;
+	cabc_mode_value = enbale;
+	if (last_enable == enbale)
+	return 0;
+
+	//_primary_path_switch_dst_lock();
+	_primary_path_lock(__func__);
+
+	if (pgc->state == DISP_SLEPT) 
+	{
+		DISPERR("Sleep State set cabc invald\n");
+	}
+	else 
+	{
+		//primary_display_idlemgr_kick(__func__, 0);
+		primary_display_idlemgr_kick((char *)__func__);
+		if (primary_display_cmdq_enabled()) 
+			{
+				if (primary_display_is_video_mode()) 
+					{
+						disp_lcm_set_cabc(pgc->plcm, NULL, enbale);
+					} 
+					else 
+					{
+						_set_cabc_by_cmdq(enbale);
+					}
+			}
+		last_enable = enbale;
+	}
+
+	_primary_path_unlock(__func__);
+	//_primary_path_switch_dst_unlock();
+
+	return 0;
+}
+EXPORT_SYMBOL_GPL(primary_display_setcabc)
+
 #endif
 //add by lct yufangfang for cabc mode setting
 #ifdef CONFIG_LCT_CABC_MODE_SUPPORT
@@ -6434,7 +6475,6 @@ int _set_cabc_by_cmdq(unsigned int enbale)
 
 	return ret;
 }
-#endif
 
 int primary_display_setcabc(unsigned int enbale)
 {
@@ -6475,6 +6515,9 @@ int primary_display_setcabc(unsigned int enbale)
 	return 0;
 }
 EXPORT_SYMBOL_GPL(primary_display_setcabc)
+
+#endif
+
 
 int primary_display_ipoh_recover(void)
 {
