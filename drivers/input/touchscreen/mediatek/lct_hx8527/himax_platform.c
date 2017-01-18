@@ -491,14 +491,14 @@ int himax_gpio_power_config(struct i2c_client *client )
 	error = regulator_enable(tpd->reg);
 	if (error != 0)
 		TPD_DMESG("Failed to enable reg-vgp6: %d\n", error);
-	msleep(100);
+	msleep(50);//100
 	
     tpd_gpio_output(himax_tpd_rst_gpio_number, 1);
 	msleep(30);
 	tpd_gpio_output(himax_tpd_rst_gpio_number, 0);
 	msleep(30);
 	tpd_gpio_output(himax_tpd_rst_gpio_number, 1);
-	msleep(120);
+	msleep(50);//120
 
 	TPD_DMESG("mtk_tpd: himax reset over \n");
 	
