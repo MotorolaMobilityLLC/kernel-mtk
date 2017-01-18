@@ -6642,12 +6642,14 @@ static int himax852xes_local_init(void)
 #endif
 		I("[Himax] Himax_ts I2C Touchscreen Driver local init\n");
 #ifdef MTK_KERNEL_318
-	tpd->reg = regulator_get(tpd->tpd_dev, "vtouch");
-    retval = regulator_set_voltage(tpd->reg, 2800000, 2800000);
-    if (retval != 0) {
-    	TPD_DMESG("Failed to set reg-vgp6 voltage: %d\n", retval);
-    	return -1;
-    } 
+	if(NULL == tpd->reg){
+		tpd->reg = regulator_get(tpd->tpd_dev, "vtouch");
+    	retval = regulator_set_voltage(tpd->reg, 2800000, 2800000);
+    	if (retval != 0) {
+    		TPD_DMESG("Failed to set reg-vgp6 voltage: %d\n", retval);
+    		return -1;
+   		}
+	}
 #endif
     if (i2c_add_driver(&tpd_i2c_driver) != 0){
         I("unable to add i2c driver.\n");        
