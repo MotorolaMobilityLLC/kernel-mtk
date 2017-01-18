@@ -202,7 +202,7 @@
 		compatible 				= "mediatek,icm206xx_accel";
 		i2c_num					= <1>;
 		i2c_addr 				= <0x68 0 0 0>;
-		direction 				= <5>;
+		direction 				= <2>;
 		power_id 				= <0xffff>;
 		power_vol 				= <0>;
 		firlen 					= <16>;
@@ -266,7 +266,7 @@
 		compatible			= "mediatek,icm206xx_gyro";
 		i2c_num				= <1>;
 		i2c_addr			= <0x69 0 0 0>;
-		direction			= <5>;
+		direction			= <2>;
 		power_id			= <0xffff>;
 		power_vol			= <0>;
 		firlen				= <0>;

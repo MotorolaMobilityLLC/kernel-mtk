@@ -2831,17 +2831,28 @@ long lcd_enp_bias_setting(unsigned int value)
 	long ret = 0;
 
 #if !defined(CONFIG_MTK_LEGACY)
-	if (value) {
+	if (value)
 		ret = disp_dts_gpio_select_state(DTS_GPIO_STATE_LCD_BIAS_ENP1);
-		ret = disp_dts_gpio_select_state(DTS_GPIO_STATE_LCD_BIAS_ENN1);
-	} else {
+	else
 		ret = disp_dts_gpio_select_state(DTS_GPIO_STATE_LCD_BIAS_ENP0);
-		ret = disp_dts_gpio_select_state(DTS_GPIO_STATE_LCD_BIAS_ENN0);
-	}
 #endif
 
 	return ret;
 }
+long lcd_enn_bias_setting(unsigned int value)
+{
+	long ret = 0;
+
+#if !defined(CONFIG_MTK_LEGACY)
+	if (value)
+		ret = disp_dts_gpio_select_state(DTS_GPIO_STATE_LCD_BIAS_ENN1);
+	else
+		ret = disp_dts_gpio_select_state(DTS_GPIO_STATE_LCD_BIAS_ENN0);
+#endif
+
+	return ret;
+}
+
 int ddp_dsi_set_lcm_utils(DISP_MODULE_ENUM module, LCM_DRIVER *lcm_drv)
 {
 	LCM_UTIL_FUNCS *utils = NULL;
@@ -2917,6 +2928,7 @@ int ddp_dsi_set_lcm_utils(DISP_MODULE_ENUM module, LCM_DRIVER *lcm_drv)
 	utils->set_gpio_pull_enable = (int (*)(unsigned int, unsigned char))mt_set_gpio_pull_enable;
 #else
 	utils->set_gpio_lcd_enp_bias = lcd_enp_bias_setting;
+	utils->set_gpio_lcd_enn_bias = lcd_enn_bias_setting;
 #endif
 #endif
 

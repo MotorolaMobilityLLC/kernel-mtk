@@ -56,6 +56,8 @@ static LCM_UTIL_FUNCS lcm_util;
 
 #ifndef BUILD_LK
 #define set_gpio_lcd_enp(cmd) lcm_util.set_gpio_lcd_enp_bias(cmd)
+#define set_gpio_lcd_enn(cmd) lcm_util.set_gpio_lcd_enn_bias(cmd)
+
 #endif
 
 #ifdef BUILD_LK
@@ -89,6 +91,20 @@ static void init_lcm_registers(void)
 {
 
 	unsigned int data_array[16];
+
+	data_array[0] = 0x00023902;
+	data_array[1] = 0x0000EEFF;
+	dsi_set_cmdq(data_array, 2, 1);
+
+	data_array[0] = 0x00023902;
+	data_array[1] = 0x00004018;
+	dsi_set_cmdq(data_array, 2, 1);
+	MDELAY(10);
+
+	data_array[0] = 0x00023902;
+	data_array[1] = 0x00000018;
+	dsi_set_cmdq(data_array, 2, 1);
+	MDELAY(20);
 
 	data_array[0] = 0x00023902;
 	data_array[1] = 0x000000FF;
@@ -205,13 +221,19 @@ static void lcm_init(void)
 	mt_set_gpio_out(GPIO_LP3101_ENN, GPIO_OUT_ONE);
 #else
 	set_gpio_lcd_enp(1);
+	MDELAY(5);
+	set_gpio_lcd_enn(1);
 #endif
 	SET_RESET_PIN(1);
-	MDELAY(10);
+	MDELAY(5);
 	SET_RESET_PIN(0);
-	MDELAY(10);
+	MDELAY(5);
 	SET_RESET_PIN(1);
-	MDELAY(10);
+	MDELAY(5);
+	SET_RESET_PIN(0);
+	MDELAY(5);
+	SET_RESET_PIN(1);
+	MDELAY(20);
 	init_lcm_registers();
 }
 
@@ -221,10 +243,15 @@ static void lcm_suspend(void)
 
 	data_array[0] = 0x00280500;	/* Display Off */
 	dsi_set_cmdq(data_array, 1, 1);
-	MDELAY(120);
+	MDELAY(20);
 
 	data_array[0] = 0x00100500;	/* Sleep In */
 	dsi_set_cmdq(data_array, 1, 1);
+	MDELAY(120);
+
+	set_gpio_lcd_enn(0);
+	MDELAY(5);
+	set_gpio_lcd_enp(0);
 
 	SET_RESET_PIN(0);
 	MDELAY(10);
