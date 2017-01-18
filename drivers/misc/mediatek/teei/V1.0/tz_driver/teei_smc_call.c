@@ -1,33 +1,50 @@
+/*
+ * Copyright (c) 2015-2016 MICROTRUST Incorporated
+ * All Rights Reserved.
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * version 2 as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ */
+
 #include <linux/kernel.h>
 #include <linux/types.h>
 #include <linux/sched.h>
 #include <linux/io.h>
 #include <linux/delay.h>
+#include <linux/cpu.h>
 #include "teei_id.h"
 #include "teei_common.h"
 #include "teei_smc_call.h"
-#include "teei_debug.h"
 #include "nt_smc_call.h"
 #include "utdriver_macro.h"
 
+#define IMSG_TAG "[tz_driver]"
+#include <imsg_log.h>
+
 #define CAPI_CALL       0x01
 
-extern int add_work_entry(int work_type, unsigned long buff);
+extern int add_work_entry(int work_type, unsigned char *buff);
 
 void set_sch_nq_cmd(void)
 {
-	struct message_head msg_head;
+        struct message_head msg_head;
 
-	memset(&msg_head, 0, sizeof(struct message_head));
+        memset((void *)(&msg_head), 0, sizeof(struct message_head));
 
-	msg_head.invalid_flag = VALID_TYPE;
-	msg_head.message_type = STANDARD_CALL_TYPE;
-	msg_head.child_type = N_INVOKE_T_NQ;
+        msg_head.invalid_flag = VALID_TYPE;
+        msg_head.message_type = STANDARD_CALL_TYPE;
+        msg_head.child_type = N_INVOKE_T_NQ;
 
-	memcpy(message_buff, &msg_head, sizeof(struct message_head));
-	Flush_Dcache_By_Area((unsigned long)message_buff, (unsigned long)message_buff + MESSAGE_SIZE);
+        memcpy((void *)message_buff, (void *)(&msg_head), sizeof(struct message_head));
+        Flush_Dcache_By_Area((unsigned long)message_buff, (unsigned long)message_buff + MESSAGE_SIZE);
 
-	return;
+        return;
 
 }
 
@@ -42,16 +59,15 @@ void set_sch_nq_cmd(void)
 static u32 teei_smc(u32 cmd_addr, int size, int valid_flag)
 {
 	unsigned long smc_type = 2;
-        int retVal = 0;
 
 	add_nq_entry(cmd_addr, size, valid_flag);
 	set_sch_nq_cmd();
 	Flush_Dcache_By_Area((unsigned long)t_nt_buffer, (unsigned long)t_nt_buffer + 0x1000);
 
-	n_invoke_t_nq(&smc_type, 0, 0);
-	while(smc_type == 1) {
+	n_invoke_t_nq((uint64_t *)(&smc_type), 0, 0);
+	while(smc_type == 0x54) {
 		udelay(IRQ_DELAY);
-		nt_sched_t(&smc_type);
+		nt_sched_t((uint64_t *)(&smc_type));
 	}
 	return 0;
 }
@@ -68,22 +84,21 @@ static u32 teei_smc(u32 cmd_addr, int size, int valid_flag)
 static u32 teei_smc(u32 cmd_addr, int size, int valid_flag)
 {
 #if 0
-	int cpu_id = smp_processor_id();
-	/* int cpu_id = raw_smp_processor_id(); */
+        int cpu_id = smp_processor_id();
+        /* int cpu_id = raw_smp_processor_id(); */
 
-	if (cpu_id != 0) {
-		/* with mb */
-		mb();
-		pr_debug("[%s][%d]\n", __func__, __LINE__);
-		return post_teei_smc(0, cmd_addr, size, valid_flag); /* post it to primary */
-	} else {
-		pr_debug("[%s][%d]\n", __func__, __LINE__);
-		return _teei_smc(cmd_addr, size, valid_flag); /* called directly on primary core */
-	}
-
+        if (cpu_id != 0) {
+                /* with mb */
+                mb();
+                IMSG_DEBUG("[%s][%d]\n", __func__, __LINE__);
+                return post_teei_smc(0, cmd_addr, size, valid_flag); /* post it to primary */
+        } else {
+                IMSG_DEBUG("[%s][%d]\n", __func__, __LINE__);
+                return _teei_smc(cmd_addr, size, valid_flag); /* called directly on primary core */
+        }
 #else
-	return _teei_smc(cmd_addr, size, valid_flag);
-	/* return post_teei_smc(0, cmd_addr, size, valid_flag); */
+        return _teei_smc(cmd_addr, size, valid_flag);
+        /* return post_teei_smc(0, cmd_addr, size, valid_flag); */
 #endif
 }
 
@@ -106,22 +121,22 @@ static u32 teei_smc(u32 cmd_addr, int size, int valid_flag)
  * @return
  */
 int __teei_smc_call(unsigned long local_smc_cmd,
-			u32 teei_cmd_type,
-			u32 dev_file_id,
-			u32 svc_id,
-			u32 cmd_id,
-			u32 context,
-			u32 enc_id,
-			const void *cmd_buf,
-			size_t cmd_len,
-			void *resp_buf,
-			size_t resp_len,
-			const void *meta_data,
-			const void *info_data,
-			size_t info_len,
-			int *ret_resp_len,
-			int *error_code,
-			struct semaphore *psema)
+		u32 teei_cmd_type,
+		u32 dev_file_id,
+		u32 svc_id,
+		u32 cmd_id,
+		u32 context,
+		u32 enc_id,
+		const void *cmd_buf,
+		size_t cmd_len,
+		void *resp_buf,
+		size_t resp_len,
+		const void *meta_data,
+		const void *info_data,
+		size_t info_len,
+		int *ret_resp_len,
+		int *error_code,
+		struct semaphore *psema)
 {
 	int ret = 50;
 	void *smc_cmd_phys = 0;
@@ -134,11 +149,10 @@ int __teei_smc_call(unsigned long local_smc_cmd,
 	smc_cmd = (struct teei_smc_cmd *)tz_malloc_shared_mem(sizeof(struct teei_smc_cmd), GFP_KERNEL);
 
 	if (!smc_cmd) {
-		pr_err("tz_malloc failed for smc command");
+		IMSG_ERROR("tz_malloc failed for smc command");
 		ret = -ENOMEM;
 		goto out;
 	}
-
 #else
 	smc_cmd = (struct teei_smc_cmd *)local_smc_cmd;
 #endif
@@ -182,7 +196,7 @@ int __teei_smc_call(unsigned long local_smc_cmd,
 	if (meta_data) {
 		smc_cmd->meta_data_phys = virt_to_phys(meta_data);
 		Flush_Dcache_By_Area((unsigned long)meta_data, (unsigned long)meta_data +
-					sizeof(struct teei_encode_meta) * (TEEI_MAX_RES_PARAMS + TEEI_MAX_REQ_PARAMS));
+				sizeof(struct teei_encode_meta) * (TEEI_MAX_RES_PARAMS + TEEI_MAX_REQ_PARAMS));
 	} else
 		smc_cmd->meta_data_phys = 0;
 
@@ -192,7 +206,7 @@ int __teei_smc_call(unsigned long local_smc_cmd,
 	} else
 		smc_cmd->info_buf_phys = 0;
 
-	smc_cmd_phys = virt_to_phys((void *)smc_cmd);
+	smc_cmd_phys = (void *)virt_to_phys(smc_cmd);
 
 	smc_cmd->error_code = 0;
 
@@ -202,55 +216,24 @@ int __teei_smc_call(unsigned long local_smc_cmd,
 	/* down(&smc_lock); */
 
 	list_for_each_entry(temp_cont,
-			&teei_contexts_head.context_list,
-			link) {
-		if (temp_cont->cont_id == dev_file_id) {
-			list_for_each_entry(temp_shared_mem,
-					&temp_cont->shared_mem_list,
-					head) {
-				Flush_Dcache_By_Area((unsigned long)temp_shared_mem->k_addr, (unsigned long)temp_shared_mem->k_addr + temp_shared_mem->len);
-			}
-		}
-	}
+                        &teei_contexts_head.context_list,
+                        link) {
+                if (temp_cont->cont_id == dev_file_id) {
+                        list_for_each_entry(temp_shared_mem,
+                                        &temp_cont->shared_mem_list,
+                                        head) {
+                                Flush_Dcache_By_Area((unsigned long)temp_shared_mem->k_addr, (unsigned long)temp_shared_mem->k_addr + temp_shared_mem->len);
+                        }
+                }
+        }
 
 	forward_call_flag = GLSCH_LOW;
-	ret = teei_smc(smc_cmd_phys, sizeof(struct teei_smc_cmd), NQ_VALID);
+	ret = teei_smc((unsigned int)((unsigned long)smc_cmd_phys), sizeof(struct teei_smc_cmd), NQ_VALID);
 
 	/* down(psema); */
 
 	return 0;
 }
-
-static void secondary_teei_smc_call(void *info)
-{
-	struct smc_call_struct *cd = (struct smc_call_struct *)info;
-
-	/* with a rmb() */
-	rmb();
-
-	cd->retVal = __teei_smc_call(cd->local_cmd,
-				cd->teei_cmd_type,
-				cd->dev_file_id,
-				cd->svc_id,
-				cd->cmd_id,
-				cd->context,
-				cd->enc_id,
-				cd->cmd_buf,
-				cd->cmd_len,
-				cd->resp_buf,
-				cd->resp_len,
-				cd->meta_data,
-				cd->info_data,
-				cd->info_len,
-				cd->ret_resp_len,
-				cd->error_code,
-				cd->psema);
-
-	/* with a wmb() */
-	wmb();
-}
-
-
 
 int teei_smc_call(u32 teei_cmd_type,
 		u32 dev_file_id,
@@ -258,28 +241,26 @@ int teei_smc_call(u32 teei_cmd_type,
 		u32 cmd_id,
 		u32 context,
 		u32 enc_id,
-		const void *cmd_buf,
+		void *cmd_buf,
 		size_t cmd_len,
 		void *resp_buf,
 		size_t resp_len,
-		const void *meta_data,
-		const void *info_data,
+		void *meta_data,
+		void *info_data,
 		size_t info_len,
 		int *ret_resp_len,
 		int *error_code,
 		struct semaphore *psema)
 {
-	int cpu_id = 0;
 	int retVal = 0;
 
 	struct teei_smc_cmd *local_smc_cmd = (struct teei_smc_cmd *)tz_malloc_shared_mem(sizeof(struct teei_smc_cmd), GFP_KERNEL);
-
-	if (local_smc_cmd == NULL) {
-		pr_err("[%s][%d] tz_malloc_shared_mem failed!\n", __func__, __LINE__);
+	if ((unsigned char *)local_smc_cmd == NULL) {
+		IMSG_ERROR("[%s][%d] tz_malloc_shared_mem failed!\n", __func__, __LINE__);
 		return -1;
 	}
 
-	smc_call_entry.local_cmd = local_smc_cmd;
+	smc_call_entry.local_cmd = (unsigned long)local_smc_cmd;
 	smc_call_entry.teei_cmd_type = teei_cmd_type;
 	smc_call_entry.dev_file_id = dev_file_id;
 	smc_call_entry.svc_id = svc_id;
@@ -305,26 +286,16 @@ int teei_smc_call(u32 teei_cmd_type,
 	/* with a wmb() */
 	wmb();
 
-#if 0
-	get_online_cpus();
-	cpu_id = get_current_cpuid();
-	smp_call_function_single(cpu_id, secondary_teei_smc_call, (void *)(&smc_call_entry), 1);
-	put_online_cpus();
-#else
 	Flush_Dcache_By_Area((unsigned long)&smc_call_entry, (unsigned long)&smc_call_entry + sizeof(smc_call_entry));
-	retVal = add_work_entry(CAPI_CALL, (unsigned long)&smc_call_entry);
-
+	retVal = add_work_entry(CAPI_CALL, (unsigned char *)(&smc_call_entry));
 	if (retVal != 0) {
 		tz_free_shared_mem(local_smc_cmd, sizeof(struct teei_smc_cmd));
 		return retVal;
 	}
 
-#endif
-
 	down(psema);
 
 	Invalidate_Dcache_By_Area((unsigned long)local_smc_cmd, (unsigned long)local_smc_cmd + sizeof(struct teei_smc_cmd));
-	Invalidate_Dcache_By_Area((unsigned long)&smc_call_entry, (unsigned long)&smc_call_entry + sizeof(smc_call_entry));
 
 	if (cmd_buf)
 		Invalidate_Dcache_By_Area((unsigned long)cmd_buf, (unsigned long)cmd_buf + cmd_len);
@@ -334,7 +305,7 @@ int teei_smc_call(u32 teei_cmd_type,
 
 	if (meta_data)
 		Invalidate_Dcache_By_Area((unsigned long)meta_data, (unsigned long)meta_data +
-					sizeof(struct teei_encode_meta) * (TEEI_MAX_RES_PARAMS + TEEI_MAX_REQ_PARAMS));
+				sizeof(struct teei_encode_meta) * (TEEI_MAX_RES_PARAMS + TEEI_MAX_REQ_PARAMS));
 
 	if (info_data)
 		Invalidate_Dcache_By_Area((unsigned long)info_data, (unsigned long)info_data + info_len);

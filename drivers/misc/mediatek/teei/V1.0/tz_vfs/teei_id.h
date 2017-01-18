@@ -81,7 +81,7 @@ static inline void Flush_Dcache_By_Area(unsigned long start, unsigned long end)
 {
 
 #ifdef CONFIG_ARM64
-	__flush_dcache_area((void *)start, (end - start));
+	//__flush_dcache_area((void *)start, (end - start));
 #else
 
 	__asm__ __volatile__ ("dsb" : : : "memory"); /* dsb */

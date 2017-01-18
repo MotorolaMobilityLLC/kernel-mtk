@@ -11,22 +11,17 @@
  * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
 
-#include <mach/charging.h>
-#include <mach/upmu_common.h>
-#include <mach/upmu_sw.h>
-#include <mach/upmu_hw.h>
-#include <linux/xlog.h>
 #include <linux/delay.h>
 #include <linux/reboot.h>
-
+#include <linux/kernel.h>
+#include <mt-plat/charging.h>
+#include <mt-plat/upmu_common.h>
+#include <mt-plat/mt_boot.h>
+#include <mt-plat/battery_meter.h>
+#include <mach/mt_battery_meter.h>
+#include <mach/mt_charging.h>
+#include <mach/mt_pmic.h>
 #include <mach/mt_sleep.h>
-#include <mach/mt_boot.h>
-#include <mach/system.h>
-
-#include "cust_battery_meter.h"
-#include <cust_charging.h>
-#include <cust_pmic.h>
-#include <mach/mt6311.h>
 
 
 /* ============================================================  */
@@ -44,10 +39,10 @@ kal_bool charging_type_det_done = KAL_TRUE;
 
 unsigned int Default_VBAT_CV_VTH;
 
-kal_uint32 const *VBAT_CV_VTH;
+unsigned int const *VBAT_CV_VTH;
 
 
-const kal_uint32 VBAT_CV_VTH_F[] = {
+const unsigned int VBAT_CV_VTH_F[] = {
 	BATTERY_VOLT_03_500000_V, BATTERY_VOLT_03_600000_V, BATTERY_VOLT_03_700000_V,
 	    BATTERY_VOLT_03_800000_V,
 	BATTERY_VOLT_03_850000_V, BATTERY_VOLT_03_900000_V, BATTERY_VOLT_04_000000_V,
@@ -76,7 +71,7 @@ const kal_uint32 VBAT_CV_VTH_F[] = {
 	    BATTERY_VOLT_10_500000_V
 };
 
-const kal_uint32 VBAT_CV_VTH_E[] = {
+const unsigned int VBAT_CV_VTH_E[] = {
 	BATTERY_VOLT_03_500000_V, BATTERY_VOLT_03_600000_V, BATTERY_VOLT_03_700000_V,
 	    BATTERY_VOLT_03_800000_V,
 	BATTERY_VOLT_03_850000_V, BATTERY_VOLT_03_900000_V, BATTERY_VOLT_04_000000_V,
@@ -105,7 +100,7 @@ const kal_uint32 VBAT_CV_VTH_E[] = {
 	    BATTERY_VOLT_10_500000_V
 };
 
-const kal_uint32 VBAT_CV_VTH_D[] = {
+const unsigned int VBAT_CV_VTH_D[] = {
 	BATTERY_VOLT_03_500000_V, BATTERY_VOLT_03_600000_V, BATTERY_VOLT_03_700000_V,
 	    BATTERY_VOLT_03_800000_V,
 	BATTERY_VOLT_03_850000_V, BATTERY_VOLT_03_900000_V, BATTERY_VOLT_04_000000_V,
@@ -134,7 +129,7 @@ const kal_uint32 VBAT_CV_VTH_D[] = {
 	    BATTERY_VOLT_10_500000_V
 };
 
-const kal_uint32 VBAT_CV_VTH_C[] = {
+const unsigned int VBAT_CV_VTH_C[] = {
 	BATTERY_VOLT_03_500000_V, BATTERY_VOLT_03_600000_V, BATTERY_VOLT_03_700000_V,
 	    BATTERY_VOLT_03_800000_V,
 	BATTERY_VOLT_03_850000_V, BATTERY_VOLT_03_900000_V, BATTERY_VOLT_04_000000_V,
@@ -163,7 +158,7 @@ const kal_uint32 VBAT_CV_VTH_C[] = {
 	    BATTERY_VOLT_10_500000_V
 };
 
-const kal_uint32 VBAT_CV_VTH_10[] = {
+const unsigned int VBAT_CV_VTH_10[] = {
 	BATTERY_VOLT_03_500000_V, BATTERY_VOLT_03_600000_V, BATTERY_VOLT_03_700000_V,
 	    BATTERY_VOLT_03_800000_V,
 	BATTERY_VOLT_03_850000_V, BATTERY_VOLT_03_900000_V, BATTERY_VOLT_04_000000_V,
@@ -192,7 +187,7 @@ const kal_uint32 VBAT_CV_VTH_10[] = {
 	    BATTERY_VOLT_10_500000_V
 };
 
-const kal_uint32 VBAT_CV_VTH_11[] = {
+const unsigned int VBAT_CV_VTH_11[] = {
 	BATTERY_VOLT_03_500000_V, BATTERY_VOLT_03_600000_V, BATTERY_VOLT_03_700000_V,
 	    BATTERY_VOLT_03_800000_V,
 	BATTERY_VOLT_03_850000_V, BATTERY_VOLT_03_900000_V, BATTERY_VOLT_04_000000_V,
@@ -221,7 +216,7 @@ const kal_uint32 VBAT_CV_VTH_11[] = {
 	    BATTERY_VOLT_10_500000_V
 };
 
-const kal_uint32 VBAT_CV_VTH_12[] = {
+const unsigned int VBAT_CV_VTH_12[] = {
 	BATTERY_VOLT_03_500000_V, BATTERY_VOLT_03_600000_V, BATTERY_VOLT_03_700000_V,
 	    BATTERY_VOLT_03_800000_V,
 	BATTERY_VOLT_03_850000_V, BATTERY_VOLT_03_900000_V, BATTERY_VOLT_04_000000_V,
@@ -251,7 +246,7 @@ const kal_uint32 VBAT_CV_VTH_12[] = {
 };
 
 
-const kal_uint32 CS_VTH[] = {
+const unsigned int CS_VTH[] = {
 	CHARGE_CURRENT_2000_00_MA, CHARGE_CURRENT_1600_00_MA, CHARGE_CURRENT_1500_00_MA,
 	    CHARGE_CURRENT_1350_00_MA,
 	CHARGE_CURRENT_1200_00_MA, CHARGE_CURRENT_1100_00_MA, CHARGE_CURRENT_1000_00_MA,
@@ -263,7 +258,7 @@ const kal_uint32 CS_VTH[] = {
 };
 
 
-const kal_uint32 VCDT_HV_VTH[] = {
+const unsigned int VCDT_HV_VTH[] = {
 	BATTERY_VOLT_04_000000_V, BATTERY_VOLT_04_100000_V, BATTERY_VOLT_04_150000_V,
 	    BATTERY_VOLT_04_200000_V,
 	BATTERY_VOLT_04_250000_V, BATTERY_VOLT_04_300000_V, BATTERY_VOLT_04_350000_V,
@@ -274,21 +269,22 @@ const kal_uint32 VCDT_HV_VTH[] = {
 	    BATTERY_VOLT_10_500000_V
 };
 
-kal_uint32 charging_value_to_parameter(const kal_uint32 * parameter, const kal_uint32 array_size,
-				       const kal_uint32 val)
+unsigned int charging_value_to_parameter(const unsigned int *parameter,
+					 const unsigned int array_size, const unsigned int val)
 {
-	if (val < array_size)
+	if (val < array_size) {
 		return parameter[val];
-
-	battery_log(BAT_LOG_CRTI, "Can't find the parameter \r\n");
-	return parameter[0];
+	} else {
+		battery_log(BAT_LOG_CRTI, "Can't find the parameter \r\n");
+		return parameter[0];
+	}
 }
 
 
-kal_uint32 charging_parameter_to_value(const kal_uint32 * parameter, const kal_uint32 array_size,
-				       const kal_uint32 val)
+unsigned int charging_parameter_to_value(const unsigned int *parameter,
+					 const unsigned int array_size, const unsigned int val)
 {
-	kal_uint32 i;
+	unsigned int i;
 
 	for (i = 0; i < array_size; i++) {
 		if (val == *(parameter + i))
@@ -302,11 +298,11 @@ kal_uint32 charging_parameter_to_value(const kal_uint32 * parameter, const kal_u
 }
 
 
-static kal_uint32 bmt_find_closest_level(const kal_uint32 * pList, kal_uint32 number,
-					 kal_uint32 level)
+static unsigned int bmt_find_closest_level(const unsigned int *pList, unsigned int number,
+					   unsigned int level)
 {
-	kal_uint32 i;
-	kal_uint32 max_value_in_last_element;
+	unsigned int i;
+	unsigned int max_value_in_last_element;
 
 	if (pList[0] < pList[1])
 		max_value_in_last_element = KAL_TRUE;
@@ -321,7 +317,7 @@ static kal_uint32 bmt_find_closest_level(const kal_uint32 * pList, kal_uint32 nu
 
 		battery_log(BAT_LOG_CRTI, "Can't find closest level \r\n");
 		return pList[0];
-	}
+	} else {
 		for (i = 0; i < number; i++) {
 			if (pList[i] <= level)
 				return pList[i];
@@ -329,11 +325,12 @@ static kal_uint32 bmt_find_closest_level(const kal_uint32 * pList, kal_uint32 nu
 
 		battery_log(BAT_LOG_CRTI, "Can't find closest level \r\n");
 		return pList[number - 1];
+	}
 }
 
-static kal_uint32 charging_hw_init(void *data)
+static unsigned int charging_hw_init(void *data)
 {
-	kal_uint32 status = STATUS_OK;
+	unsigned int status = STATUS_OK;
 
 	pmic_set_register_value(MT6351_PMIC_RG_CHRWDT_TD, 0);	/* CHRWDT_TD, 4s */
 	pmic_set_register_value(MT6351_PMIC_RG_CHRWDT_INT_EN, 1);	/* CHRWDT_INT_EN */
@@ -352,11 +349,14 @@ static kal_uint32 charging_hw_init(void *data)
 	pmic_set_register_value(MT6351_PMIC_RG_CSDAC_MODE, 1);	/* CSDAC_MODE */
 	pmic_set_register_value(MT6351_PMIC_RG_VBAT_OV_EN, 1);	/* VBAT_OV_EN */
 
+#if 0
 #ifdef HIGH_BATTERY_VOLTAGE_SUPPORT
-	pmic_set_register_value(MT6351_PMIC_RG_VBAT_OV_VTH, 4);	/* VBAT_OV_VTH, 4.4V, */
+	pmic_set_register_value(MT6351_PMIC_RG_VBAT_OV_VTH, 4);/* VBAT_OV_VTH, 4.4V, */
 #else
-	pmic_set_register_value(MT6351_PMIC_RG_VBAT_OV_VTH, 2);	/* VBAT_OV_VTH, 4.3V, */
+	pmic_set_register_value(MT6351_PMIC_RG_VBAT_OV_VTH, 2);/* VBAT_OV_VTH, 4.3V, */
 #endif
+#endif
+
 	pmic_set_register_value(MT6351_PMIC_RG_BATON_EN, 1);	/* BATON_EN */
 
 	/* Tim, for TBAT */
@@ -384,11 +384,10 @@ static kal_uint32 charging_hw_init(void *data)
 }
 
 
-static kal_uint32 charging_dump_register(void *data)
+static unsigned int charging_dump_register(void *data)
 {
-	kal_uint32 status = STATUS_OK;
-	kal_uint32 reg_val = 0;
-	kal_uint32 i = 0;
+	unsigned int status = STATUS_OK;
+	unsigned int i = 0;
 
 	for (i = MT6351_CHR_CON0; i <= MT6351_CHR_CON40; i += 10)
 		battery_log(BAT_LOG_CRTI,
@@ -412,10 +411,10 @@ static kal_uint32 charging_dump_register(void *data)
 }
 
 
-static kal_uint32 charging_enable(void *data)
+static unsigned int charging_enable(void *data)
 {
-	kal_uint32 status = STATUS_OK;
-	kal_uint32 enable = *(kal_uint32 *) (data);
+	unsigned int status = STATUS_OK;
+	unsigned int enable = *(unsigned int *)(data);
 
 	if (KAL_TRUE == enable) {
 		pmic_set_register_value(MT6351_PMIC_RG_CSDAC_DLY, 4);	/* CSDAC_DLY */
@@ -452,58 +451,58 @@ static kal_uint32 charging_enable(void *data)
 
 
 
-static kal_uint32 charging_set_cv_voltage(void *data)
+static unsigned int charging_set_cv_voltage(void *data)
 {
-	kal_uint32 status = STATUS_OK;
-	kal_uint16 register_value;
+	unsigned int status = STATUS_OK;
+	short int register_value;
 
 
-	kal_uint32 set_cv_voltage;
-	kal_uint32 array_size;
+	unsigned int set_cv_voltage;
+	unsigned int array_size;
 
 	array_size = GETARRAYNUM(VBAT_CV_VTH_F);
-	set_cv_voltage = bmt_find_closest_level(VBAT_CV_VTH, array_size, *(kal_uint32 *) data);
+	set_cv_voltage = bmt_find_closest_level(VBAT_CV_VTH, array_size, *(unsigned int *)data);
 
 
 	register_value = charging_parameter_to_value(VBAT_CV_VTH, array_size, set_cv_voltage);
 
-	battery_set_cv_voltage(VBAT_CV_VTH[register_value]);
+	/* battery_set_cv_voltage(VBAT_CV_VTH[register_value]); */
 
 	pmic_set_register_value(MT6351_PMIC_RG_VBAT_NORM_CV_VTH, register_value);
 
 	battery_log(BAT_LOG_CRTI,
 		    "[charging_set_cv_voltage] [0x%x]=0x%x, [0x%x]=0x%x input:%d output:%d\n",
 		    0xf7e, upmu_get_reg_value(0xf7e), 0xf84, upmu_get_reg_value(0xf84),
-		    *(kal_uint32 *) data, set_cv_voltage);
+		    *(unsigned int *)data, set_cv_voltage);
 
 
 	return status;
 }
 
 
-static kal_uint32 charging_get_current(void *data)
+static unsigned int charging_get_current(void *data)
 {
-	kal_uint32 status = STATUS_OK;
-	kal_uint32 array_size;
-	kal_uint32 reg_value;
+	unsigned int status = STATUS_OK;
+	unsigned int array_size;
+	unsigned int reg_value;
 
 	array_size = GETARRAYNUM(CS_VTH);
 	reg_value = pmic_get_register_value(MT6351_PMIC_RG_NORM_CS_VTH);	/*RG_CS_VTH */
-	*(kal_uint32 *) data = charging_value_to_parameter(CS_VTH, array_size, reg_value);
+	*(unsigned int *)data = charging_value_to_parameter(CS_VTH, array_size, reg_value);
 
 	return status;
 }
 
 
-static kal_uint32 charging_set_current(void *data)
+static unsigned int charging_set_current(void *data)
 {
-	kal_uint32 status = STATUS_OK;
-	kal_uint32 set_chr_current;
-	kal_uint32 array_size;
-	kal_uint32 register_value;
+	unsigned int status = STATUS_OK;
+	unsigned int set_chr_current;
+	unsigned int array_size;
+	unsigned int register_value;
 
 	array_size = GETARRAYNUM(CS_VTH);
-	set_chr_current = bmt_find_closest_level(CS_VTH, array_size, *(kal_uint32 *) data);
+	set_chr_current = bmt_find_closest_level(CS_VTH, array_size, *(unsigned int *)data);
 	register_value = charging_parameter_to_value(CS_VTH, array_size, set_chr_current);
 	pmic_set_register_value(MT6351_PMIC_RG_NORM_CS_VTH, register_value);
 
@@ -511,22 +510,22 @@ static kal_uint32 charging_set_current(void *data)
 }
 
 
-static kal_uint32 charging_set_input_current(void *data)
+static unsigned int charging_set_input_current(void *data)
 {
-	kal_uint32 status = STATUS_OK;
+	unsigned int status = STATUS_OK;
 	return status;
 }
 
-static kal_uint32 charging_get_charging_status(void *data)
+static unsigned int charging_get_charging_status(void *data)
 {
-	kal_uint32 status = STATUS_OK;
+	unsigned int status = STATUS_OK;
 	return status;
 }
 
 
-static kal_uint32 charging_reset_watch_dog_timer(void *data)
+static unsigned int charging_reset_watch_dog_timer(void *data)
 {
-	kal_uint32 status = STATUS_OK;
+	unsigned int status = STATUS_OK;
 
 	pmic_set_register_value(MT6351_PMIC_RG_CHRWDT_TD, 0);	/* CHRWDT_TD, 4s */
 	pmic_set_register_value(MT6351_PMIC_RG_CHRWDT_WR, 1);	/* CHRWDT_WR */
@@ -538,14 +537,14 @@ static kal_uint32 charging_reset_watch_dog_timer(void *data)
 }
 
 
-static kal_uint32 charging_set_hv_threshold(void *data)
+static unsigned int charging_set_hv_threshold(void *data)
 {
-	kal_uint32 status = STATUS_OK;
+	unsigned int status = STATUS_OK;
 
-	kal_uint32 set_hv_voltage;
-	kal_uint32 array_size;
-	kal_uint16 register_value;
-	kal_uint32 voltage = *(kal_uint32 *) (data);
+	unsigned int set_hv_voltage;
+	unsigned int array_size;
+	short int register_value;
+	unsigned int voltage = *(unsigned int *)(data);
 
 	array_size = GETARRAYNUM(VCDT_HV_VTH);
 	set_hv_voltage = bmt_find_closest_level(VCDT_HV_VTH, array_size, voltage);
@@ -556,19 +555,19 @@ static kal_uint32 charging_set_hv_threshold(void *data)
 }
 
 
-static kal_uint32 charging_get_hv_status(void *data)
+static unsigned int charging_get_hv_status(void *data)
 {
-	kal_uint32 status = STATUS_OK;
+	unsigned int status = STATUS_OK;
 
 	*(kal_bool *) (data) = pmic_get_register_value(MT6351_PMIC_RGS_VCDT_HV_DET);
 	return status;
 }
 
 
-static kal_uint32 charging_get_battery_status(void *data)
+static unsigned int charging_get_battery_status(void *data)
 {
-	kal_uint32 status = STATUS_OK;
-	kal_uint32 val = 0;
+	unsigned int status = STATUS_OK;
+	unsigned int val = 0;
 #if defined(CONFIG_POWER_EXT) || defined(CONFIG_MTK_FPGA)
 	*(kal_bool *) (data) = 0;
 	battery_log(BAT_LOG_CRTI, "bat exist for evb\n");
@@ -588,9 +587,9 @@ static kal_uint32 charging_get_battery_status(void *data)
 }
 
 
-static kal_uint32 charging_get_charger_det_status(void *data)
+static unsigned int charging_get_charger_det_status(void *data)
 {
-	kal_uint32 status = STATUS_OK;
+	unsigned int status = STATUS_OK;
 
 #if defined(CONFIG_MTK_FPGA)
 	*(kal_bool *) (data) = 1;
@@ -608,9 +607,9 @@ kal_bool charging_type_detection_done(void)
 }
 
 
-static kal_uint32 charging_get_charger_type(void *data)
+static unsigned int charging_get_charger_type(void *data)
 {
-	kal_uint32 status = STATUS_OK;
+	unsigned int status = STATUS_OK;
 
 #if defined(CONFIG_POWER_EXT) || defined(CONFIG_MTK_FPGA)
 	*(CHARGER_TYPE *) (data) = STANDARD_HOST;
@@ -621,9 +620,9 @@ static kal_uint32 charging_get_charger_type(void *data)
 	return status;
 }
 
-static kal_uint32 charging_get_is_pcm_timer_trigger(void *data)
+static unsigned int charging_get_is_pcm_timer_trigger(void *data)
 {
-	kal_uint32 status = STATUS_OK;
+	unsigned int status = STATUS_OK;
 
 #if defined(CONFIG_POWER_EXT) || defined(CONFIG_MTK_FPGA)
 	*(kal_bool *) (data) = KAL_FALSE;
@@ -639,9 +638,9 @@ static kal_uint32 charging_get_is_pcm_timer_trigger(void *data)
 	return status;
 }
 
-static kal_uint32 charging_set_platform_reset(void *data)
+static unsigned int charging_set_platform_reset(void *data)
 {
-	kal_uint32 status = STATUS_OK;
+	unsigned int status = STATUS_OK;
 
 #if defined(CONFIG_POWER_EXT) || defined(CONFIG_MTK_FPGA)
 #else
@@ -652,13 +651,13 @@ static kal_uint32 charging_set_platform_reset(void *data)
 	return status;
 }
 
-static kal_uint32 charging_get_platform_boot_mode(void *data)
+static unsigned int charging_get_platform_boot_mode(void *data)
 {
-	kal_uint32 status = STATUS_OK;
+	unsigned int status = STATUS_OK;
 
 #if defined(CONFIG_POWER_EXT) || defined(CONFIG_MTK_FPGA)
 #else
-	*(kal_uint32 *) (data) = get_boot_mode();
+	*(unsigned int *)(data) = get_boot_mode();
 
 	battery_log(BAT_LOG_CRTI, "get_boot_mode=%d\n", get_boot_mode());
 #endif
@@ -666,9 +665,9 @@ static kal_uint32 charging_get_platform_boot_mode(void *data)
 	return status;
 }
 
-static kal_uint32 charging_set_power_off(void *data)
+static unsigned int charging_set_power_off(void *data)
 {
-	kal_uint32 status = STATUS_OK;
+	unsigned int status = STATUS_OK;
 
 #if defined(CONFIG_POWER_EXT) || defined(CONFIG_MTK_FPGA)
 #else
@@ -679,28 +678,28 @@ static kal_uint32 charging_set_power_off(void *data)
 	return status;
 }
 
-static kal_uint32 charging_get_power_source(void *data)
+static unsigned int charging_get_power_source(void *data)
 {
-	kal_uint32 status = STATUS_OK;
+	unsigned int status = STATUS_OK;
 
 	*(kal_bool *) data = KAL_FALSE;
 
 	return status;
 }
 
-static kal_uint32 charging_get_csdac_full_flag(void *data)
+static unsigned int charging_get_csdac_full_flag(void *data)
 {
-	kal_uint32 status = STATUS_OK;
+	unsigned int status = STATUS_OK;
 	*(kal_bool *) data = KAL_FALSE;
 	return status;
 }
 
-static kal_uint32 charging_set_ta_current_pattern(void *data)
+static unsigned int charging_set_ta_current_pattern(void *data)
 {
-	kal_uint32 status = STATUS_OK;
-	kal_uint32 increase = *(kal_uint32 *) (data);
-	kal_uint32 debug_val = 0;
-	U8 count = 0;
+	unsigned int status = STATUS_OK;
+	unsigned int increase = *(unsigned int *)(data);
+	unsigned int debug_val = 0;
+	unsigned char count = 0;
 
 	pmic_set_register_value(MT6351_PMIC_RG_NORM_CS_VTH, 0xc);
 
@@ -790,17 +789,12 @@ static kal_uint32 charging_set_ta_current_pattern(void *data)
 	return status;
 }
 
-static kal_uint32 charging_get_error_state(void *data)
+static unsigned int charging_set_error_state(void *data)
 {
 	return STATUS_UNSUPPORTED;
 }
 
-static kal_uint32 charging_set_error_state(void *data)
-{
-	return STATUS_UNSUPPORTED;
-}
-
-static kal_uint32 charging_sw_init(void *data)
+static unsigned int charging_sw_init(void *data)
 {
 	unsigned int regValue;
 
@@ -828,7 +822,7 @@ static kal_uint32 charging_sw_init(void *data)
 }
 
 
-static kal_uint32(*charging_func[CHARGING_CMD_NUMBER]) (void *data);
+static unsigned int (*charging_func[CHARGING_CMD_NUMBER]) (void *data);
 
 
  /*
@@ -849,9 +843,9 @@ static kal_uint32(*charging_func[CHARGING_CMD_NUMBER]) (void *data);
   * GLOBALS AFFECTED
   *       None
   */
-kal_int32 chr_control_interface(CHARGING_CTRL_CMD cmd, void *data)
+signed int chr_control_interface(CHARGING_CTRL_CMD cmd, void *data)
 {
-	kal_int32 status;
+	signed int status;
 	static signed int init = -1;
 
 	if (init == -1) {

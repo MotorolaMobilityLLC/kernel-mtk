@@ -22,6 +22,7 @@
 #include <linux/atomic.h>
 #include <linux/types.h>
 #include <linux/module.h>
+#include <linux/suspend.h>
 #include <scp_ipi.h>
 #include "scp_helper.h"
 #include "scp_excep.h"
@@ -1376,14 +1377,14 @@ static int sensorHub_remove(struct platform_device *pdev)
 
 static int sensorHub_suspend(struct platform_device *pdev, pm_message_t msg)
 {
-	sensor_send_ap_timetamp();
+	/* sensor_send_ap_timetamp(); */
 	SCP_sensorHub_mask_notify();
 	return 0;
 }
 
 static int sensorHub_resume(struct platform_device *pdev)
 {
-	sensor_send_ap_timetamp();
+	/* sensor_send_ap_timetamp(); */
 	SCP_sensorHub_unmask_notify();
 	return 0;
 }
@@ -1402,6 +1403,30 @@ static struct platform_driver sensorHub_driver = {
 	.suspend = sensorHub_suspend,
 	.resume = sensorHub_resume,
 };
+#ifdef CONFIG_PM
+static int sensorHub_pm_event(struct notifier_block *notifier, unsigned long pm_event,
+			void *unused)
+{
+	switch (pm_event) {
+	case PM_POST_SUSPEND:
+		SCP_ERR("resume\n");
+		sensor_send_ap_timetamp();
+		return NOTIFY_DONE;
+	case PM_SUSPEND_PREPARE:
+		SCP_ERR("suspend\n");
+		sensor_send_ap_timetamp();
+		return NOTIFY_DONE;
+	default:
+		return NOTIFY_OK;
+	}
+	return NOTIFY_OK;
+}
+
+static struct notifier_block sensorHub_pm_notifier_func = {
+	.notifier_call = sensorHub_pm_event,
+	.priority = 0,
+};
+#endif /* CONFIG_PM */
 
 static int __init SCP_sensorHub_init(void)
 {
@@ -1414,6 +1439,13 @@ static int __init SCP_sensorHub_init(void)
 		SCP_ERR("SCP_sensorHub platform driver error\n");
 		return -1;
 	}
+
+#ifdef CONFIG_PM
+	if (register_pm_notifier(&sensorHub_pm_notifier_func)) {
+		SCP_ERR("Failed to register PM notifier.\n");
+		return -1;
+	}
+#endif /* CONFIG_PM */
 	return 0;
 }
 

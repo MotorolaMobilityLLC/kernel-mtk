@@ -20,6 +20,12 @@ the GNU General Public License for more details at http://www.gnu.org/licenses/g
 #define BIT_EDID_FIELD_FORMAT_YCbCr444      0x02
 #define BIT_EDID_FIELD_FORMAT_DVI_TO_RGB    0x03
 
+#define MAX_VIC_SUPPORTED		64
+#define VIC_4K_24			93
+#define VIC_4K_30			95
+#define MAX_VIC_SUPPORTED_EXTENDED	VIC_4K_30	/* 4K24, 4K30 */
+
+
 typedef struct
 {
 	unsigned parse_3d_in_progress			:1;
@@ -66,6 +72,7 @@ typedef struct _edid_parse_data_t
 	bool	YCbCr_4_4_4;							/* Sink supports YCbCr 4:4:4 */
 	bool	YCbCr_4_2_2;							/* Sink supports YCbCr 4:2:2 */
 	bool	HDMI_sink;								/* "1" if HDMI signature found */
+	bool	HDMI_vsdb_found;
 	uint8_t CEC_A_B;								/* CEC Physical address. See HDMI 1.3 Table 8-6 */
 	uint8_t CEC_C_D;
 	uint8_t video_capability_flags;

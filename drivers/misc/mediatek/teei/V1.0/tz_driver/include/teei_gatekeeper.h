@@ -1,3 +1,17 @@
+/*
+ * Copyright (c) 2015-2016 MICROTRUST Incorporated
+ * All Rights Reserved.
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * version 2 as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ */
+
 #ifndef __TEEI_GATEKEEPER_H__
 #define __TEEI_GATEKEEPER_H__
 #include "utdriver_macro.h"
@@ -46,7 +60,7 @@ extern struct completion global_down_lock;
 extern unsigned long teei_config_flag;
 extern int fp_call_flag;
 extern struct semaphore fdrv_lock;
-extern struct fdrv_call_struct {
+struct fdrv_call_struct {
 	int fdrv_call_type;
 	int fdrv_call_buff_size;
 	int retVal;
@@ -54,6 +68,6 @@ extern struct fdrv_call_struct {
 
 extern int get_current_cpuid(void);
 extern void invoke_fastcall(void);
-extern int add_work_entry(int work_type, unsigned long buff);
+extern int add_work_entry(int work_type, unsigned char *buff);
 
 #endif /*__TEEI_GATEKEEPER_H__*/

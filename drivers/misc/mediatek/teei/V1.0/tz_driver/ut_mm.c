@@ -1,3 +1,17 @@
+/*
+ * Copyright (c) 2015-2016 MICROTRUST Incorporated
+ * All Rights Reserved.
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * version 2 as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ */
+
 #include <linux/stddef.h>
 #include <linux/mm.h>
 #include <linux/swap.h>
@@ -51,6 +65,8 @@
 #include <asm/div64.h>
 #include <linux/mmzone.h>
 
+#define IMSG_TAG "[tz_driver]"
+#include <imsg_log.h>
 #define ALLOC_NO_WATERMARKS     0x04
 #define ALLOC_WMARK_MASK        (ALLOC_NO_WATERMARKS-1)
 #define ALLOC_WMARK_LOW         WMARK_LOW
@@ -125,12 +141,12 @@ struct page *ut_rmqueue_smallest(struct zone *zone, unsigned int order,
 			page = list_entry(free_list_ent, struct page, lru);
 
 			if ((unsigned long)(page_to_phys(page)) >= UT_MAX_MEM) {
-				pr_err("[%s][%d] FAILED! ORDER = %d page_to_phys(page) = %lx\n", __func__, __LINE__, current_order, (unsigned long)page_to_phys(page));
+				IMSG_DEBUG("[%s][%d] FAILED! ORDER = %d page_to_phys(page) = %lx\n", __func__, __LINE__, current_order, (unsigned long)page_to_phys(page));
 				page_found = 0;
 				free_list_ent = free_list_ent->next;
 
 			} else {
-				pr_debug("[%s][%d] SUCCESS! ORDER = %d page_to_phys(page) = %lx\n", __func__, __LINE__, current_order, (unsigned long)page_to_phys(page));
+				IMSG_DEBUG("[%s][%d] SUCCESS! ORDER = %d page_to_phys(page) = %lx\n", __func__, __LINE__, current_order, (unsigned long)page_to_phys(page));
 				page_found = 1;
 				break;
 			}
@@ -408,8 +424,8 @@ zonelist_scan:
 #endif
 
 try_this_zone:
-		page = ut_buffered_rmqueue(preferred_zone, zone, order, gfp_mask, migratetype);
-
+		page = ut_buffered_rmqueue(preferred_zone, zone, order,
+						gfp_mask, migratetype);
 		if (page)
 			break;
 
@@ -446,7 +462,7 @@ this_zone_full:
 			unsigned long vpfn = page_to_pfn(page);
 
 			if (svp_is_in_range(vpfn)) {
-				pr_alert("%s %d: pfn: %lu in _forbid_cma_alloc %d\n",
+				IMSG_ERROR("%s %d: pfn: %lu in _forbid_cma_alloc %d\n",
 						__func__, __LINE__, vpfn, _forbid_cma_alloc);
 				dump_stack();
 			}
@@ -587,12 +603,14 @@ out:
 
 
 static inline struct page *
-ut_alloc_pages(gfp_t gfp_mask, unsigned int order, struct zonelist *zonelist)
+ut_alloc_pages(gfp_t gfp_mask, unsigned int order,
+                struct zonelist *zonelist)
 {
 	return ut_alloc_pages_nodemask(gfp_mask, order, zonelist, NULL);
 }
 
-static inline struct page *__ut_alloc_pages_node(int nid, gfp_t gfp_mask, unsigned int order)
+static inline struct page *__ut_alloc_pages_node(int nid, gfp_t gfp_mask,
+                                                unsigned int order)
 {
 	/* Unknown node is current node */
 	if (nid < 0)

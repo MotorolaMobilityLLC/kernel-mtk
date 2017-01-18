@@ -1,5 +1,21 @@
+/*
+ * Copyright (c) 2015-2016 MICROTRUST Incorporated
+ * All Rights Reserved.
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * version 2 as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ */
+
 #ifndef __TEEI_CLIENT_MAIN_H__
 #define __TEEI_CLIENT_MAIN_H__
+
+#include "teei_smc_struct.h"
 
 #define TLOG_SIZE	(256 * 1024)
 
@@ -7,9 +23,15 @@ extern int create_nq_buffer(void);
 extern unsigned long create_fp_fdrv(int buff_size);
 extern unsigned long create_keymaster_fdrv(int buff_size);
 extern unsigned long create_gatekeeper_fdrv(int buff_size);
+extern unsigned long create_cancel_fdrv(int buff_size);
+#ifdef TUI_SUPPORT
+unsigned long create_tui_buff(int buff_size,unsigned int fdrv_type);
+int wait_for_power_down(void);
+int tui_notify_reboot(struct notifier_block* this,unsigned long code,void *x);
+#endif
 extern long init_all_service_handlers(void);
 extern int register_sched_irq_handler(void);
-extern int register_soter_irq_handler(void);
+extern int register_soter_irq_handler(int irq);
 extern int register_error_irq_handler(void);
 extern int register_fp_ack_handler(void);
 extern int register_keymaster_ack_handler(void);
@@ -18,7 +40,7 @@ extern int register_tlog_handler(void);
 extern int register_boot_irq_handler(void);
 extern int register_switch_irq_handler(void);
 
-extern int register_ut_irq_handler(void);
+extern int register_ut_irq_handler(int irq);
 
 extern struct teei_context *teei_create_context(int dev_count);
 extern struct teei_session *teei_create_session(struct teei_context *cont);
@@ -55,15 +77,28 @@ extern void init_tlog_entry(void);
 extern int global_fn(void);
 
 extern long create_tlog_thread(unsigned long tlog_virt_addr, unsigned long buff_size);
-extern int add_work_entry(int work_type, unsigned long buff);
+extern int add_work_entry(int work_type, unsigned char *buff);
 extern long create_utgate_log_thread(unsigned long tlog_virt_addr, unsigned long buff_size);
+extern void init_sched_work_ent(void);
 
 struct semaphore api_lock;
+#ifdef TUI_SUPPORT
+struct semaphore tui_notify_sema;
+#endif
 extern unsigned long fp_buff_addr;
+extern unsigned long cancel_message_buff;
 extern unsigned long keymaster_buff_addr;
 extern unsigned long gatekeeper_buff_addr;
 
-struct work_queue *secure_wq;
+extern struct semaphore fp_api_lock;
+extern struct semaphore keymaster_api_lock;
+
+#ifdef TUI_SUPPORT
+extern unsigned long tui_display_message_buff;
+extern unsigned long tui_notice_message_buff;
+#endif
+struct workqueue_struct *secure_wq;
+struct workqueue_struct *bdrv_wq;
 
 unsigned long fdrv_message_buff;
 unsigned long bdrv_message_buff;

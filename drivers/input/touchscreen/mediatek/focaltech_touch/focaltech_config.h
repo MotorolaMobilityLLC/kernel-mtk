@@ -169,7 +169,7 @@
  * FW_APP.i file for upgrade
  * define your own fw_app, the sample one is invalid
  */
-#define FTS_UPGRADE_FW_APP                      "include/firmware/FT8716_app_sample.i"
+#define FTS_UPGRADE_FW_APP                      "include/firmware/HQ_Moto_AL1570_Toptouch0xa0_Ver0x03_20170105_app.i"
 
 /*
  * auto upgrade with app.bin in sdcard

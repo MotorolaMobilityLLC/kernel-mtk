@@ -1,12 +1,17 @@
-/***********************************************************
- *  @ file : smc_call.h
- *  @ brief :  monitor call interface for user,
- * this implement  is updated to SMC Calling Convention doc
- * from arm ,Document number: ARM DEN 0028A 2013
- *  @ author: luocl
- *  @ author: Steven Meng
- *  @ copyright microtrust  Corporation
- *************************************************************/
+/*
+ * Copyright (c) 2015-2016 MICROTRUST Incorporated
+ * All Rights Reserved.
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * version 2 as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ */
+
 #ifndef SMC_CALL_H_
 #define SMC_CALL_H_
 
@@ -108,7 +113,8 @@
 		MAKE_SMC_CALL_ID(ID_FIELD_F_FAST_SMC_CALL, ID_FIELD_W_64, ID_FIELD_T_TRUSTED_OS_SERVICE2, 8)
 #define N_GET_NON_IRQ_NUM      \
 		MAKE_SMC_CALL_ID(ID_FIELD_F_FAST_SMC_CALL, ID_FIELD_W_64, ID_FIELD_T_TRUSTED_OS_SERVICE2, 9)
-
+#define N_GET_SE_OS_STATE     \
+		MAKE_SMC_CALL_ID(ID_FIELD_F_FAST_SMC_CALL, ID_FIELD_W_64, ID_FIELD_T_TRUSTED_OS_SERVICE2, 10)
 
 /*For nt side Standard Call*/
 #define NT_SCHED_T		\
@@ -129,7 +135,10 @@
 		MAKE_SMC_CALL_ID(ID_FIELD_F_STANDARD_SMC_CALL, ID_FIELD_W_64, ID_FIELD_T_TRUSTED_OS_SERVICE3, 7)
 #define NT_SCHED_T_FIQ	\
 		MAKE_SMC_CALL_ID(ID_FIELD_F_STANDARD_SMC_CALL, ID_FIELD_W_64, ID_FIELD_T_TRUSTED_OS_SERVICE3, 8)
-
+#ifdef TUI_SUPPORT
+#define NT_CANCEL_T_TUI	\
+		MAKE_SMC_CALL_ID(ID_FIELD_F_STANDARD_SMC_CALL, ID_FIELD_W_64, ID_FIELD_T_TRUSTED_OS_SERVICE3, 9)
+#endif
 /*For nt side Fast Call*/
 #define N_SWITCH_TO_T_OS_STAGE2_32	\
 	MAKE_SMC_CALL_ID(ID_FIELD_F_FAST_SMC_CALL, ID_FIELD_W_32, ID_FIELD_T_TRUSTED_OS_SERVICE2, 0)
@@ -282,7 +291,7 @@ static inline void n_init_t_fc_buf(
 	uint64_t temp[3];
 	temp[0] = p0;
 	temp[1] = p1;
-	//temp[2] = p2;
+	temp[2] = *p2;
 
 	__asm__ volatile(
 	/* ".arch_extension sec\n" */
@@ -575,9 +584,62 @@ static inline void nt_get_non_irq_num (uint64_t *p0)
 	: "x0", "x1", "memory");
 	*p0 = temp[0];
 }
+static inline void nt_get_secure_os_state (uint64_t *p0)
+{
+	uint64_t temp[3];
+	__asm__ volatile(
+	/* ".arch_extension sec\n" */
+	"mov x0, %[fun_id]\n\t"
+	"smc 0\n\t"
+	"str x1, [%[temp], #0]\n\t"
+	"nop"
+	: :
+	[fun_id] "r" (N_GET_SE_OS_STATE), [temp] "r" (temp)
+	: "x0", "x1", "memory");
+	*p0 = temp[0];
+}
 
+static inline void nt_dump_t(void)
+{
+	__asm__ volatile(
+	/* ".arch_extension sec\n" */
+	"mov x0, %[fun_id]\n\t"
+	"mov x1, #0x9527\n\t"
+	"mov x2, #0\n\t"
+	"mov x3, #0\n\t"
+	"smc 0\n\t"
+	"nop"
+	: :
+	[fun_id] "r" (NT_SCHED_T)
+	: "x0", "x1", "x2", "x3", "memory");
+}
 
+#ifdef TUI_SUPPORT
+static inline void nt_cancel_t_tui(
+	uint64_t *p0,
+	uint64_t p1,
+	uint64_t p2)
+{
+	uint64_t temp[3];
+	temp[0] = *p0;
+	temp[1] = p1;
+	temp[2] = p2;
 
+	__asm__ volatile(
+	/* ".arch_extension sec\n" */
+	"mov x0, %[fun_id]\n\t"
+	"ldr x1, [%[temp], #0]\n\t"
+	"ldr x2, [%[temp], #8]\n\t"
+	"ldr x3, [%[temp], #16]\n\t"
+	"smc 0\n\t"
+	"str x2, [%[temp], #0]\n\t"
+	"nop"
+	: :
+	[fun_id] "r" (NT_CANCEL_T_TUI), [temp] "r" (temp)
+	: "x0", "x1", "x2", "x3", "memory");
+	*p0 = temp[0];
+}
+#endif
 
 
 /* ///////////////////////////////////////////////////////////////////////////////////////////////////////////// */
