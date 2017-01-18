@@ -1,9 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<<<<<<< HEAD
-<!--dct_version="2.5" buid_sn="161025" dws_modification_time="01.09.2017.16:49:50"-->
-=======
 <!--dct_version="2.5" buid_sn="161025" dws_modification_time="01.17.2017.15:48:50"-->
->>>>>>> origin_partner/huaqin/mt6797_n_drvonly
 <dct_cfg>
     <general chip="MT6797">
         <proj>k97_v1</proj>
