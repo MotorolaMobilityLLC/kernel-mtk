@@ -152,7 +152,7 @@
 /*
  * auto upgrade, please keep enable
  */
-#define FTS_AUTO_UPGRADE_EN                     0
+#define FTS_AUTO_UPGRADE_EN                     1
 
 /*
  * auto upgrade for lcd cfg
@@ -169,7 +169,7 @@
  * FW_APP.i file for upgrade
  * define your own fw_app, the sample one is invalid
  */
-#define FTS_UPGRADE_FW_APP                      "include/firmware/HQ_Moto_AL1570_Toptouch0xa0_Ver0x03_20170105_app.i"
+#define FTS_UPGRADE_FW_APP                      "include/firmware/HQ_Lenovo_AL1570_Ofilm0x51_Ver0x02_20170118_app.i"
 
 /*
  * auto upgrade with app.bin in sdcard
@@ -206,7 +206,7 @@
  * if only one vendor, ignore vendor_2_id, otherwise
  * you need define both of them
  */
-#define FTS_VENDOR_1_ID                         0x8d
+#define FTS_VENDOR_1_ID                         0x01
 #define FTS_VENDOR_2_ID                         0x8d
 
 /* show upgrade time in log

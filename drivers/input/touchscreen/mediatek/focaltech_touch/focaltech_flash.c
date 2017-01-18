@@ -834,7 +834,7 @@ bool fts_ctpm_check_need_upgrade(struct i2c_client *client)
 	int i = 0;
 	u8 fw_status = 0;
 	bool bUpgradeFlag = false;
-	u8 uc_tp_fm_ver;
+	u8 uc_tp_fm_ver, uc_tp_vendor_id;
 	u8 uc_host_fm_ver = 0;
 
 	FTS_FUNC_ENTER();
@@ -847,6 +847,11 @@ bool fts_ctpm_check_need_upgrade(struct i2c_client *client)
 			break;
 		}
 		FTS_DEBUG("[UPGRADE]: fw_status = %d!!", fw_status);
+	}
+
+	fts_i2c_read_reg(client, FTS_REG_VENDOR_ID, &uc_tp_vendor_id);
+	if (uc_tp_vendor_id != 0x01) {
+		return bUpgradeFlag;
 	}
 
 	if (fw_status == FTS_RUN_IN_APP) {	/* call fts_flash_get_upgrade_info in probe function firstly. */
