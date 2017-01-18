@@ -59,6 +59,9 @@ static int final_lux_val;
 
 static int winfac_1;
 static int winfac_2;
+#ifdef CONFIG_MOTO_AOD_BASE_ON_AP_SENSORS
+static bool ps_stowed_start = false;
+#endif
 /*----------------------------------------------------------------------------*/
 typedef enum {
     CMC_BIT_ALS    = 1,
@@ -142,7 +145,11 @@ static struct alsps_init_info ltr778_init_info = {
 
 #ifdef CONFIG_OF
 static const struct of_device_id alsps_of_match[] = {
+#ifdef CONFIG_LCT_LTR778_NEW
 	{.compatible = "mediatek,alsps"},
+#else
+	{.compatible = "mediatek,driver-ltr778"},
+#endif
 	{},
 };
 #endif
@@ -397,6 +404,95 @@ EXIT_ERR:
 	return res;
 }
 
+
+#ifdef CONFIG_MOTO_AOD_BASE_ON_AP_SENSORS
+
+static int ltr778_ps_stowed_enable(struct i2c_client *client, int enable)
+{
+	u8 regdata;
+	int err;
+	int res = 0;
+//	struct ltr778_priv *obj = ltr778_obj;
+
+
+	APS_LOG("ltr778_ps_stowed_enable(%d) ...start!\n",enable);
+
+	// modified by steven
+	res = ltr778_i2c_write_reg( LTR778_PS_THRES_LOW_0, 0x00);
+	if(res < 0)
+	{
+		APS_ERR("PS: enable ps res: %d en: %d \n", res, enable);
+		return res;
+	}
+
+	res = ltr778_i2c_write_reg( LTR778_PS_THRES_LOW_1, 0x00);
+	if(res < 0)
+	{
+		APS_ERR("PS: enable ps res: %d en: %d \n", res, enable);
+		return res;
+	}
+
+	res = ltr778_i2c_write_reg( LTR778_PS_THRES_UP_0, 0xFF);
+	if(res < 0)
+	{
+		APS_ERR("PS: enable ps res: %d en: %d \n", res, enable);
+		return res;
+	}
+
+	res = ltr778_i2c_write_reg( LTR778_PS_THRES_UP_1, 0x07);
+	if(res < 0)
+	{
+		APS_ERR("PS: enable ps res: %d en: %d \n", res, enable);
+		return res;
+	}
+
+	ltr778_i2c_write_reg(LTR778_PS_MEAS_RATE, 0x05);// 200ms measurement time
+	ltr778_i2c_write_reg(LTR778_INTERRUPT_PRST, 0xE0);// 15 persist
+
+	regdata = ltr778_i2c_read_reg(LTR778_PS_CONTR);
+	if (enable != 0) {
+		APS_LOG("PS: stowed enable ps only \n");
+		regdata |= 0x02;
+		ps_stowed_start = 1;
+	}
+	else {
+		APS_LOG("PS: stowed disable ps only \n");
+		regdata &= 0xfd;
+		ps_stowed_start = 0;
+	}
+
+	err = ltr778_i2c_write_reg(LTR778_PS_CONTR, regdata);
+	if (err < 0)
+	{
+		APS_ERR("PS: enable ps err: %d en: %d \n", err, enable);
+		return err;
+	}
+
+	mdelay(WAKEUP_DELAY);
+
+	if (0 == ltr778_obj->hw->polling_mode_ps && ((regdata & 0x02) == 0x02))
+	{
+//#ifdef GN_MTK_BSP_PS_DYNAMIC_CALI
+#if 0
+		err = ltr778_dynamic_calibrate();
+		if (err < 0)
+		{
+			APS_LOG("ltr778_dynamic_calibrate() failed\n");
+		}
+#endif
+		ltr778_ps_set_thres();
+	}
+	else if (0 == ltr778_obj->hw->polling_mode_ps && ((regdata & 0x02) == 0x00))
+	{
+		cancel_work_sync(&ltr778_obj->eint_work);
+	}
+
+	APS_LOG("ltr778_ps_stowed_enable(%d) ...done!\n",enable);
+
+	return err;
+}
+#endif
+
 static int ps_en = 0;
 
 static int ltr778_ps_enable(struct i2c_client *client, int enable)
@@ -438,6 +534,10 @@ static int ltr778_ps_enable(struct i2c_client *client, int enable)
 				return res;
 			}
 
+#ifdef CONFIG_MOTO_AOD_BASE_ON_AP_SENSORS
+	ltr778_i2c_write_reg(LTR778_PS_MEAS_RATE, 0x02);// 25ms measurement time
+	ltr778_i2c_write_reg(LTR778_INTERRUPT_PRST, 0x20);// 2 persist
+#endif
 	regdata = ltr778_i2c_read_reg(LTR778_PS_CONTR);
 	if (enable != 0) {
 		APS_LOG("PS: enable ps only \n");
@@ -735,7 +835,11 @@ static int ltr778_als_enable(struct i2c_client *client, int enable)
 	//regdata = ltr778_i2c_read_reg(LTR778_ALS_CONTR);
 	if (enable != 0) {
 		APS_LOG("ALS(1): enable als only \n");
+#ifdef CONFIG_LCT_LTR778_NEW
 		regdata = 0x01;
+#else
+		regdata = 0x05;
+#endif
 	}
 	else {
 		APS_LOG("ALS(1): disable als only \n");
@@ -792,24 +896,46 @@ static int ltr778_als_read(struct i2c_client *client, u16* data)
 	}
 	else if ((ratio >= 14) && (ratio < 19))
 	{//A light
+#ifdef CONFIG_LCT_LTR778_NEW
 		ch0_coeff = 379;
 		ch1_coeff = 1520;
 		winfac_1 = 4;
 		winfac_2 = 3;
+#else
+		ch0_coeff = 379;
+		ch1_coeff = 1520;
+		winfac_1 = 1;
+		winfac_2 = 3;
+#endif
 	}
 	else if ((ratio >= 19) && (ratio < 30))
 	{// D6500K 
+#ifdef CONFIG_LCT_LTR778_NEW
 		ch0_coeff = 379;
 		ch1_coeff = 1520;
 		winfac_1 = 20;
 		winfac_2 = 7;
+#else
+		ch0_coeff = 379;
+		ch1_coeff = 1520;
+		winfac_1 = 5;
+		winfac_2 = 7;
+#endif
 	}
 	else if ((ratio >= 30) && (ratio < 51))
 	{//CWF
+#ifdef CONFIG_LCT_LTR778_NEW
 		ch0_coeff = -4910;
 		ch1_coeff = 19950;
 		winfac_1 = 16;
 		winfac_2 = 3;
+
+#else
+		ch0_coeff = -4910;
+		ch1_coeff = 19950;
+		winfac_1 = 4;
+		winfac_2 = 3;
+#endif
 		
 	}
 	else if (ratio >= 51)
@@ -1371,6 +1497,23 @@ static ssize_t ltr778_store_alsval(struct device_driver *ddri, const char *buf, 
 	}    
 	return count;
 }
+
+#ifdef CONFIG_MOTO_AOD_BASE_ON_AP_SENSORS
+static ssize_t ltr778_store_stowed(struct device_driver *ddri, const char *buf, size_t count)
+{
+	uint16_t mode = 0;
+	int ret = 0;
+
+	ret = sscanf(buf, "%hu", &mode);
+	if (ret != 1)
+		return -EINVAL;
+
+	ltr778_ps_stowed_enable(ltr778_i2c_client, mode?true:false);
+
+	return count;
+}
+#endif
+
 /*---------------------------------------------------------------------------------------*/
 static DRIVER_ATTR(als,     S_IWUSR | S_IRUGO, ltr778_show_als,		NULL);
 static DRIVER_ATTR(ps,      S_IWUSR | S_IRUGO, ltr778_show_ps,		NULL);
@@ -1382,6 +1525,10 @@ static DRIVER_ATTR(status,  S_IWUSR | S_IRUGO, ltr778_show_status,	NULL);
 static DRIVER_ATTR(send,    S_IWUSR | S_IRUGO, ltr778_show_send,	ltr778_store_send);
 static DRIVER_ATTR(recv,    S_IWUSR | S_IRUGO, ltr778_show_recv,	ltr778_store_recv);
 static DRIVER_ATTR(reg,     S_IWUSR | S_IRUGO, ltr778_show_reg,		NULL);
+#ifdef CONFIG_MOTO_AOD_BASE_ON_AP_SENSORS
+static DRIVER_ATTR(stowed,    S_IWUSR | S_IRUGO, NULL,				ltr778_store_stowed);
+#endif
+
 /*----------------------------------------------------------------------------*/
 static struct driver_attribute *ltr778_attr_list[] = {
     &driver_attr_als,
@@ -1394,6 +1541,9 @@ static struct driver_attribute *ltr778_attr_list[] = {
     &driver_attr_send,
     &driver_attr_recv,
     &driver_attr_reg,
+#ifdef CONFIG_MOTO_AOD_BASE_ON_AP_SENSORS
+    &driver_attr_stowed,
+#endif
 };
 
 /*----------------------------------------------------------------------------*/
@@ -1556,7 +1706,23 @@ static void ltr778_eint_work(struct work_struct *work)
 			value = 0;
 		else
 			value = 1;
-		
+
+#ifdef CONFIG_MOTO_AOD_BASE_ON_AP_SENSORS
+		if(ps_stowed_start == 1)
+		{
+			if(value == 1){
+				APS_DBG("stowed: set 3000 mS persist");
+				ltr778_i2c_write_reg(LTR778_PS_MEAS_RATE, 0x05);// 200ms measurement time
+				ltr778_i2c_write_reg(LTR778_INTERRUPT_PRST, 0xE0);// 15 persist
+			}else{
+				APS_DBG("stowed: set 100 mS persist");
+				ltr778_i2c_write_reg(LTR778_PS_MEAS_RATE, 0x03);// 50ms measurement time
+				ltr778_i2c_write_reg(LTR778_INTERRUPT_PRST, 0x20);// 2 persist
+			}
+			value += 2;//stowed:2,unstowed:3
+		}
+#endif
+
 		APS_DBG("intr_flag_value=%d    value = %d \n",intr_flag_value, value);
 		if(intr_flag_value == 1){
 			
@@ -1808,10 +1974,17 @@ int ltr778_setup_eint(struct i2c_client *client)
 #if __WORDSIZE==64
 		APS_ERR("irq to gpio = %d \n", irq_to_gpio(ltr778_obj->irq));
 #endif
+#ifdef CONFIG_LCT_LTR778_NEW
 		if (request_irq(ltr778_obj->irq, ltr778_eint_handler, IRQF_TRIGGER_NONE, "ALS-eint", NULL)) {
 			APS_ERR("IRQ LINE NOT AVAILABLE!!\n");
 			return -EINVAL;
 		}
+#else
+		if (request_irq(ltr778_obj->irq, ltr778_eint_handler, IRQF_TRIGGER_LOW, "ALS-eint", NULL)) {
+			APS_ERR("IRQ LINE NOT AVAILABLE!!\n");
+			return -EINVAL;
+		}
+#endif
 		//enable_irq(ltr778_obj->irq);
 // add by zhaofei - 2016-12-27-20-11
 
@@ -2102,8 +2275,12 @@ static int ltr778_init_client(void)
 		APS_LOG("ltr778 set ps led error\n");
 		goto EXIT_ERR;
 	}
+#ifdef CONFIG_LCT_LTR778_NEW
 
 	res = ltr778_i2c_write_reg(LTR778_PS_PULSES, 0x06);		// 6 pulses
+#else
+	res = ltr778_i2c_write_reg(LTR778_PS_PULSES, 0x08);		// 48 pulses
+#endif
 	if (res<0)
 	{
 		APS_LOG("ltr778 set ps pulse error\n");
