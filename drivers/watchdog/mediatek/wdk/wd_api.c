@@ -658,6 +658,7 @@ void arch_reset(char mode, const char *cmd)
 		printk("get alt flag:%d\n",get_rtc_mark_alt());
 #endif
 	} else {
+		rtc_mark_reboot();
 		reboot = 1;
 	}
 
