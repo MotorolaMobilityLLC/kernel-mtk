@@ -1921,7 +1921,6 @@ static s32 tpd_i2c_probe(struct i2c_client *client, const struct i2c_device_id *
 #endif
 
 	tpd_load_status = 1;
-
 	return 0;
 }
 
@@ -2498,12 +2497,12 @@ static int touch_event_handler(void *unused)
 				/* mt_eint_unmask(CUST_EINT_TOUCH_PANEL_NUM); */
 				/* enable_irq(touch_irq); */
 				mutex_unlock(&i2c_access);
-				GTP_ERROR("buffer not ready");
+				//GTP_ERROR("buffer not ready");
 				continue;
 			}
 #else
 			mutex_unlock(&i2c_access);
-			GTP_ERROR("buffer not ready");
+			//GTP_ERROR("buffer not ready");
 			continue;
 #endif
 		}
@@ -3089,6 +3088,7 @@ static s8 gtp_wakeup_sleep(struct i2c_client *client)
 /* Function to manage low power suspend */
 static void tpd_suspend(struct device *h)
 {
+	int retval;
 	s32 ret = -1;
 	u8 buf[3] = { 0x81, 0xaa, 0 };
 
@@ -3143,14 +3143,25 @@ static void tpd_suspend(struct device *h)
 	mutex_unlock(&i2c_access);
 
 	msleep(58);
+	
+	retval = regulator_disable(tpd->reg);//add by hxl
+	if(retval != 0){
+		GTP_ERROR("[GT917D][power] Failed to disable regulator when suspend ret=%d",retval);
+	}
 }
 
 /* Function to manage power-on resume */
 static void tpd_resume(struct device *h)
 {
 	s32 ret = -1;
+	int retval;
 
 	GTP_DEBUG("mtk-tpd: %s start\n", __func__);
+
+	retval = regulator_enable(tpd->reg);//add by hxl
+	if(retval != 0){
+		GTP_ERROR("[GT917D][power] Failed to disable regulator when resume ret=%d",retval);
+	}
 #if defined(CONFIG_TPD_PROXIMITY)
 
 	if (tpd_proximity_flag == 1)
