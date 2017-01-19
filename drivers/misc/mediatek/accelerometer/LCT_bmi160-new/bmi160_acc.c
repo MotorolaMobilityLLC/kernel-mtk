@@ -2019,6 +2019,8 @@ static int bmi160_aod_set_en_sig_int_mode(struct bmi160_acc_i2c_data *bmi160,
 			bmi160->mEnabled, newstatus);
 	mutex_lock(&bmi160->int_mode_mutex);
 	if (!bmi160->mEnabled && newstatus) {
+		/* set normal mode at first if needed */
+		BMI160_ACC_SetPowerMode(bmi160->client, true);
 		BMI160_ACC_SetBWRate(bmi160->client,
 			BMI160_ACCEL_ODR_800HZ);
 		usleep_range(5000, 5000);
@@ -2065,6 +2067,13 @@ static int bmi160_aod_set_en_sig_int_mode(struct bmi160_acc_i2c_data *bmi160,
 		enable_irq(bmi160->IRQ1);
 		enable_irq(bmi160->IRQ2);
 	}
+
+	/* set low power mode at the end if no need */
+	if (bmi160->mEnabled && !newstatus) {
+		bmi160->mEnabled = newstatus;/* mEnabled will be used in below func */
+		BMI160_ACC_SetPowerMode(bmi160->client, false);
+	}
+
 	bmi160->mEnabled = newstatus;
 	mutex_unlock(&bmi160->int_mode_mutex);
 	ISR_INFO(&bmi160->client->dev, "int_mode finished!!!\n");
