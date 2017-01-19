@@ -499,7 +499,7 @@ unsigned int set_bat_charging_current_limit(int current_limit)
 	CHR_CURRENT_ENUM chr_type_aicr = 0;
 	
 	//zhangchao@wind-mobi.com 20161202 begin
-	#ifdef CONFIG_WIND_THREMAL_CURRENT
+	#ifndef CONFIG_WIND_THREMAL_CURRENT
         return 0;
         #endif
 	//zhangchao@wind-mobi.com 20161202 end
