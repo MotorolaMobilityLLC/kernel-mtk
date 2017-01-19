@@ -263,6 +263,14 @@ static const char *session_mode_spy(unsigned int mode)
 	}
 }
 
+int primary_display_set_cabc_mode(int mode)
+{
+	if (NULL == pgc->plcm->drv->set_cabc_mode)
+		return -EINVAL;
+
+	return pgc->plcm->drv->set_cabc_mode(mode);
+}
+
 int primary_display_is_directlink_mode(void)
 {
 	DISP_MODE mode = pgc->session_mode;
