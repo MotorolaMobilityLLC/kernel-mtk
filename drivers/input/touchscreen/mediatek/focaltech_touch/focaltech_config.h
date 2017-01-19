@@ -169,7 +169,7 @@
  * FW_APP.i file for upgrade
  * define your own fw_app, the sample one is invalid
  */
-#define FTS_UPGRADE_FW_APP                      "include/firmware/HQ_Lenovo_AL1570_Ofilm0x51_Ver0x02_20170118_app.i"
+#define FTS_UPGRADE_FW_APP                      "include/firmware/HQ_Lenovo_AL1570_Ofilm0x01_Ver0x03_20170119_app.i"
 
 /*
  * auto upgrade with app.bin in sdcard
