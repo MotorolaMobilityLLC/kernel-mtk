@@ -2436,11 +2436,11 @@ static int touch_event_handler(void *ptr)
 		tpd_flag = 0;
 		set_current_state(TASK_RUNNING);
 
-//		if (private_ts->debug_log_level & BIT(2)) {
+		//if (private_ts->debug_log_level & BIT(2)) {
 				getnstimeofday(&timeStart);
 				I(" Irq start time = %ld.%06ld s\n",
 					timeStart.tv_sec, timeStart.tv_nsec/1000);//modify by hxl
-//		}
+		//}
 #ifdef HX_SMART_WAKEUP
 	if (atomic_read(&private_ts->suspend_mode)&&(!FAKE_POWER_KEY_SEND)&&(private_ts->SMWP_enable)) {
 		I("Start to parse wake event\n");
@@ -6366,6 +6366,7 @@ static int himax852xes_remove(struct i2c_client *client)
 static void himax852xes_suspend(struct device *dev)
 {
 	int ret;
+	int retval;
 	uint8_t buf[2] = {0};
 #ifdef HX_CHIP_STATUS_MONITOR
 	int t=0;
@@ -6479,13 +6480,17 @@ static void himax852xes_suspend(struct device *dev)
 	//ts->first_pressed = 0;
 	atomic_set(&ts->suspend_mode, 1);
 	ts->pre_finger_mask = 0;
-	if (ts->pdata->powerOff3V3 && ts->pdata->power)
-		ts->pdata->power(0);
-		
+	//if (ts->pdata->powerOff3V3 && ts->pdata->power)
+	//	ts->pdata->power(0);//modify by hxl
+	retval = regulator_disable(tpd->reg);
+	if (retval != 0){
+		E("[himax][power]Failed to disable regulator when suspend ret=%d",retval);
+	}
 	return ;
 }
 static void himax852xes_resume(struct device *dev)
 {
+	int retval;
 #ifdef HX_SMART_WAKEUP
 	int ret;
 	uint8_t buf[2] = {0};
@@ -6509,8 +6514,13 @@ static void himax852xes_resume(struct device *dev)
 	ts->suspended = false;
 	atomic_set(&ts->suspend_mode, 0);
 
-	if (ts->pdata->powerOff3V3 && ts->pdata->power)
-		ts->pdata->power(1);
+	//if (ts->pdata->powerOff3V3 && ts->pdata->power)
+	//	ts->pdata->power(1);//modify by hxl
+	retval = regulator_enable(tpd->reg);
+	if (retval != 0){
+		E("[himax][power]Failed to disable regulator when resume ret=%d",retval);
+	}
+
 #ifdef HX_CHIP_STATUS_MONITOR
 	if(HX_ON_HAND_SHAKING)//chip on hand shaking,wait hand shaking
 	{
