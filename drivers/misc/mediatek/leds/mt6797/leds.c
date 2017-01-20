@@ -547,10 +547,10 @@ static int led_switch_breath_pmic(enum mt65xx_led_pmic pmic_type,
 
 #define PMIC_PERIOD_NUM 8
 /* 100 * period, ex: 0.01 Hz -> 0.01 * 100 = 1 */
-int pmic_period_array[] = { 250, 500, 1000, 1250, 1666, 2000, 2500, 10000 };
+int pmic_period_array[] = { 250, 500, 1000, 1250, 1666, 2000, 5000, 10000 };
 
 /* int pmic_freqsel_array[] = {99999, 9999, 4999, 1999, 999, 499, 199, 4, 0}; */
-int pmic_freqsel_array[] = { 0, 4, 199, 499, 999, 1999, 1999, 1999 };
+int pmic_freqsel_array[] = { 0, 4, 199, 499, 999, 1999, 4999, 9999 };
 
 static int find_time_index_pmic(int time_ms)
 {
