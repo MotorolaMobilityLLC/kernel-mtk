@@ -8,6 +8,9 @@ ccflags-y += -DCFG_SUPPORT_TSF_USING_BOOTTIME=1
 ccflags-y += -DCFG_P2P_LEGACY_COEX_REVISE=1
 ccflags-y += -DARP_MONITER_ENABLE=1
 
+# Moto read MACs from boot params
+ccflags-y += -DMOTO_UTAGS_MAC=1
+
 ifeq ($(CONFIG_MTK_WAPI_SUPPORT), y)
     ccflags-y += -DCFG_SUPPORT_WAPI=1
 else
