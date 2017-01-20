@@ -1526,7 +1526,7 @@ static DRIVER_ATTR(send,    S_IWUSR | S_IRUGO, ltr778_show_send,	ltr778_store_se
 static DRIVER_ATTR(recv,    S_IWUSR | S_IRUGO, ltr778_show_recv,	ltr778_store_recv);
 static DRIVER_ATTR(reg,     S_IWUSR | S_IRUGO, ltr778_show_reg,		NULL);
 #ifdef CONFIG_MOTO_AOD_BASE_ON_AP_SENSORS
-static DRIVER_ATTR(stowed,    S_IWUSR | S_IRUGO, NULL,				ltr778_store_stowed);
+static DRIVER_ATTR(stowed,    S_IWUSR , NULL,				ltr778_store_stowed);
 #endif
 
 /*----------------------------------------------------------------------------*/
@@ -2330,6 +2330,8 @@ static int ltr778_init_client(void)
 		goto EXIT_ERR;
 	}
 
+//add cly  for  reboot  do reset . 20170120
+        ltr778_i2c_write_reg(LTR778_ALS_CONTR, MODE_ON_Reset);
 	// Enable ALS to Full Range at startup
 	als_gainrange = ALS_RANGE_1;	
 	APS_ERR("ALS sensor gainrange %d!\n", als_gainrange);
