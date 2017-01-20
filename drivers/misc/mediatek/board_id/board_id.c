@@ -169,6 +169,24 @@ static long  bid_dev_unlocked_ioctl(struct file *filp ,unsigned int cmd ,unsigne
 				printk("this board is ROLA_SS_NA_SKY77638_DVT2");
 			else if(args==AP_B28_DS_NA_DVT2)
 				printk("this board is AP_B28_DS_NA_DVT2");
+//sunjingtao@wind-mobi.com at 20170119 begin
+			else if(args==AP_DS_NA_DVT2_1)
+				printk("this board is AP_DS_NA_DVT2_1");
+			else if(args==EMEA_DS_NA_DVT2_1)
+				printk("this board is EMEA_DS_NA_DVT2_1");
+			else if(args==EMEA_SS_NFC_DVT2_1)
+				printk("this board is EMEA_SS_NFC_DVT2_1");
+			else if(args==LATAM_DS_NA_SKY77643_DVT2_1)
+				printk("this board is LATAM_DS_NA_SKY77643_DVT2_1");
+			else if(args==ROLA_SS_NA_SKY77643_DVT2_1)
+				printk("this board is ROLA_SS_NA_SKY77643_DVT2_1");
+			else if(args==LATAM_DS_NA_SKY77638_DVT2_1)
+				printk("this board is LATAM_DS_NA_SKY77638_DVT2_1");
+			else if(args==ROLA_SS_NA_SKY77638_DVT2_1)
+				printk("this board is ROLA_SS_NA_SKY77638_DVT2_1");
+			else if(args==AP_B28_DS_NA_DVT2_1)
+				printk("this board is AP_B28_DS_NA_DVT2_1");
+//sunjingtao@wind-mobi.com at 20170119 end
 			break;
 		default:
 			break;
@@ -331,7 +349,7 @@ static int bid_platform_probe(struct platform_device *pdev){
 	case ROLA_SS_NA_DVT:		//0B
 		board_str="01011";
 		break;
-		case AP_DS_NA_DVT2:		//0c
+	case AP_DS_NA_DVT2:		//0c
 		board_str="01100";
 		break;
 	case EMEA_DS_NA_DVT2:		//0d
@@ -353,7 +371,32 @@ static int bid_platform_probe(struct platform_device *pdev){
 		board_str="10010";
 		break;
 	case AP_B28_DS_NA_DVT2:		//13
-		board_str="010011";	
+		board_str="10011";
+//sunjingtao@wind-mobi.com at 20170119 begin
+	case AP_DS_NA_DVT2_1:		//14
+		board_str="10100";
+		break;
+	case EMEA_DS_NA_DVT2_1:		//15
+		board_str="10101";
+		break;
+	case EMEA_SS_NFC_DVT2_1:	//16
+		board_str="10110";
+		break;
+	case LATAM_DS_NA_SKY77643_DVT2_1:	//17
+		board_str="10111";
+		break;
+	case ROLA_SS_NA_SKY77643_DVT2_1:		//18
+		board_str="11000";
+		break;
+	case LATAM_DS_NA_SKY77638_DVT2_1:	//19
+		board_str="11001";
+		break;
+	case ROLA_SS_NA_SKY77638_DVT2_1:		//1a
+		board_str="11010";
+		break;
+	case AP_B28_DS_NA_DVT2_1:		//1b
+		board_str="11011";
+//sunjingtao@wind-mobi.com at 20170119 end
 	default:
 		break;
 	}
