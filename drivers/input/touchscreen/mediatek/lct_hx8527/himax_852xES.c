@@ -6366,7 +6366,7 @@ static int himax852xes_remove(struct i2c_client *client)
 static void himax852xes_suspend(struct device *dev)
 {
 	int ret;
-	int retval;
+	//int retval;
 	uint8_t buf[2] = {0};
 #ifdef HX_CHIP_STATUS_MONITOR
 	int t=0;
@@ -6480,17 +6480,17 @@ static void himax852xes_suspend(struct device *dev)
 	//ts->first_pressed = 0;
 	atomic_set(&ts->suspend_mode, 1);
 	ts->pre_finger_mask = 0;
-	//if (ts->pdata->powerOff3V3 && ts->pdata->power)
-	//	ts->pdata->power(0);//modify by hxl
-	retval = regulator_disable(tpd->reg);
+	if (ts->pdata->powerOff3V3 && ts->pdata->power)
+		ts->pdata->power(0);//modify by hxl
+	/*retval = regulator_disable(tpd->reg);
 	if (retval != 0){
 		E("[himax][power]Failed to disable regulator when suspend ret=%d",retval);
-	}
+	}*/
 	return ;
 }
 static void himax852xes_resume(struct device *dev)
 {
-	int retval;
+	//int retval;
 #ifdef HX_SMART_WAKEUP
 	int ret;
 	uint8_t buf[2] = {0};
@@ -6514,12 +6514,12 @@ static void himax852xes_resume(struct device *dev)
 	ts->suspended = false;
 	atomic_set(&ts->suspend_mode, 0);
 
-	//if (ts->pdata->powerOff3V3 && ts->pdata->power)
-	//	ts->pdata->power(1);//modify by hxl
-	retval = regulator_enable(tpd->reg);
+	if (ts->pdata->powerOff3V3 && ts->pdata->power)
+		ts->pdata->power(1);//modify by hxl
+	/*retval = regulator_enable(tpd->reg);
 	if (retval != 0){
 		E("[himax][power]Failed to disable regulator when resume ret=%d",retval);
-	}
+	}*/
 
 #ifdef HX_CHIP_STATUS_MONITOR
 	if(HX_ON_HAND_SHAKING)//chip on hand shaking,wait hand shaking
