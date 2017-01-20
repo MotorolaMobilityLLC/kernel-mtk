@@ -23,6 +23,14 @@
 #include "precomp.h"
 #include "mgmt/ais_fsm.h"
 
+//Moto, read MACs from boot params
+#include <linux/of.h>
+#include <linux/of_address.h>
+#ifdef MOTO_UTAGS_MAC
+#define WIFI_MAC_BOOTARG "androidboot.wifimacaddr="
+#define MACSTRLEN 17
+#endif
+
 /*******************************************************************************
 *                              C O N S T A N T S
 ********************************************************************************
@@ -2525,6 +2533,19 @@ VOID wlanoidClearTimeoutCheck(IN P_ADAPTER_T prAdapter)
 	cnmTimerStopTimer(prAdapter, &(prAdapter->rOidTimeoutTimer));
 }
 
+#ifdef MOTO_UTAGS_MAC
+static inline void strtomac(char * buf, unsigned char macaddr[6]) {
+        if (strchr(buf, ':'))
+                sscanf(buf, "%hhx:%hhx:%hhx:%hhx:%hhx:%hhx",
+                        &macaddr[0],&macaddr[1], &macaddr[2], &macaddr[3], &macaddr[4], &macaddr[5]);
+        else if (strchr(buf, '-'))
+                sscanf(buf, "%hhx-%hhx-%hhx-%hhx-%hhx-%hhx",
+                        &macaddr[0],&macaddr[1], &macaddr[2], &macaddr[3], &macaddr[4], &macaddr[5]);
+        else
+                DBGLOG(INIT, ERROR, "%s,Can not parse mac address: %s", __func__,buf);
+}
+#endif
+
 /*----------------------------------------------------------------------------*/
 /*!
 * @brief This function is called to update network address in firmware domain
@@ -2546,9 +2567,47 @@ WLAN_STATUS wlanUpdateNetworkAddress(IN P_ADAPTER_T prAdapter)
 	P_CMD_BASIC_CONFIG prCmdBasicConfig;
 	UINT_32 u4SysTime;
 
+#ifdef MOTO_UTAGS_MAC
+        struct device_node *chosen_node = NULL;
+        char macStr[MACSTRLEN+1] ={0};
+        BOOLEAN utagMac = FALSE;
+#endif
+
 	DEBUGFUNC("wlanUpdateNetworkAddress");
 
 	ASSERT(prAdapter);
+
+#ifdef MOTO_UTAGS_MAC
+        //Moto, read MACs from bootparams
+        chosen_node = of_find_node_by_name(NULL, "chosen");
+        if (!chosen_node) {
+                DBGLOG(INIT, ERROR, "%s: get chosen node read failed\n", __func__);
+        } else {
+                int len=0;
+                const char *cmd_line = NULL;
+                cmd_line = of_get_property(chosen_node, "bootargs", &len);
+                if (!cmd_line || len <= 0) {
+                        DBGLOG(INIT, ERROR, "%s: get wlan MACs bootargs failed\n", __func__);
+                } else {
+                        char * mac_idx = NULL;
+                        mac_idx = strstr(cmd_line, WIFI_MAC_BOOTARG);
+                        if (mac_idx == NULL) {
+                                DBGLOG(INIT, ERROR, "%s: " WIFI_MAC_BOOTARG " not present in bootargs", __func__);
+                        } else {
+
+                                mac_idx += strlen(WIFI_MAC_BOOTARG);
+                                memcpy(macStr,mac_idx,MACSTRLEN);
+                                utagMac = TRUE;
+                        }
+                }
+        }
+        if (utagMac == TRUE) {
+#if CFG_SHOW_MACADDR_SOURCE
+                DBGLOG(INIT, INFO, " Using MAC from boot params=%s\n", macStr);
+#endif
+                strtomac(macStr,rMacAddr);
+        } else
+#endif
 
 	if (kalRetrieveNetworkAddress(prAdapter->prGlueInfo, &rMacAddr) == FALSE || IS_BMCAST_MAC_ADDR(rMacAddr)
 	    || EQUAL_MAC_ADDR(aucZeroMacAddr, rMacAddr)) {
