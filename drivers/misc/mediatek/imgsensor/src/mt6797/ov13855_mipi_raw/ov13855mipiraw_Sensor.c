@@ -58,6 +58,7 @@
 /*Enable PDAF function */
 //#define ENABLE_PDAF_VC
 //#define HW_DESKEW_ENABLE
+extern bool read_ov13855_eeprom( kal_uint16 addr, BYTE* data, kal_uint32 size);
 static DEFINE_SPINLOCK(imgsensor_drv_lock);
 
 
@@ -236,7 +237,7 @@ static imgsensor_struct imgsensor = {
 	.test_pattern = KAL_FALSE,
 	.current_scenario_id = MSDK_SCENARIO_ID_CAMERA_PREVIEW,
 	.ihdr_en = 0,
-	.i2c_write_id = 0x6C,
+	.i2c_write_id = 0x6c,
 };
 
 /* Sensor output window information */
@@ -277,15 +278,15 @@ static SENSOR_VC_INFO_STRUCT SENSOR_VC_INFO[3]=
  /*PD information*/
  static SET_PD_BLOCK_INFO_T imgsensor_pd_info =
  {
-	 .i4OffsetX = 96,
-	 .i4OffsetY = 88,
+	 .i4OffsetX = 0,
+	 .i4OffsetY = 0,
 	 .i4PitchX	= 32,
 	 .i4PitchY	= 32,
 	 .i4PairNum  =8,//32*32 is cropped into 16*8 sub block of 8 pairnum, per sub block includes just only one pd pair pixels
 	 .i4SubBlkW  =16,
 	 .i4SubBlkH  =8,
-	 .i4PosL = {{102,102},{110, 90},{118, 102},{ 126,  90},{102, 118},{110, 106},{118,  118},{126 , 106},{0,0},{0,0},{0,0},{0,0},{0,0},{0,0},{0,0},{0,0}},
-	 .i4PosR = {{102,98},{110,  94},{118, 98},{ 126,  94},{102, 114},{110, 110},{118,  114},{126 , 110},{0,0},{0,0},{0,0},{0,0},{0,0},{0,0},{0,0},{0,0}},
+	 .i4PosL = {{14,6},{30, 6},{6, 10},{ 22,  10},{14, 22},{30, 22},{6,  26},{22 , 26}},
+	 .i4PosR = {{14,2},{30,  2},{6, 14},{ 22,  14},{14, 18},{30, 18},{6,  30},{22 , 30}},
  };
 
 #define ov13855_MIPI_table_write_cmos_sensor ov13855_MIPI_table_write_cmos_sensor_multi
@@ -1604,6 +1605,7 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 {
 	kal_uint8 i = 0;
     kal_uint8 retry = 2;
+  //  char data[1] = {0};
 	LOG_INF("get_imgsensor_id Enter\n");
     while (imgsensor_info.i2c_addr_table[i] != 0xff) {
         spin_lock(&imgsensor_drv_lock);
@@ -1613,6 +1615,8 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
             *sensor_id = return_sensor_id();
             if (*sensor_id == imgsensor_info.sensor_id) {
                 LOG_INF("i2c write id: 0x%x, sensor id: 0x%x\n", imgsensor.i2c_write_id,*sensor_id);
+	//	 read_ov13855_eeprom(0,data,1440);
+		 LOG_INF("get_imgsensor_id End\n");
                 return ERROR_NONE;
             }
             LOG_INF("Read sensor id fail:0x%x, id: 0x%x\n", imgsensor.i2c_write_id,*sensor_id);
@@ -2021,7 +2025,7 @@ static kal_uint32 get_info(MSDK_SCENARIO_ID_ENUM scenario_id,
 #else
 	sensor_info->PDAF_Support = 1; /*0: NO PDAF, 1: PDAF Raw Data mode, 2:PDAF VC mode*/
 #endif
-    sensor_info->PDAF_Support = 0;
+    sensor_info->PDAF_Support = 1;
 	sensor_info->HDR_Support = 0; /*0: NO HDR, 1: iHDR, 2:mvHDR, 3:zHDR*/
     sensor_info->SensorMIPILaneNumber = imgsensor_info.mipi_lane_num;
     sensor_info->SensorClockFreq = imgsensor_info.mclk;
@@ -2471,6 +2475,10 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
             get_default_framerate_by_scenario((MSDK_SCENARIO_ID_ENUM)*(feature_data), (MUINT32 *)(uintptr_t)(*(feature_data+1)));
             //get_default_framerate_by_scenario((MSDK_SCENARIO_ID_ENUM)*feature_data_32, (MUINT32 *)(*(feature_data_32+1)));
             break;
+	case SENSOR_FEATURE_GET_PDAF_DATA:
+	    LOG_INF("SENSOR_FEATURE_GET_PDAF_DATA\n");
+	    read_ov13855_eeprom((kal_uint16 )(*feature_data),(char*)(uintptr_t)(*(feature_data+1)),(kal_uint32)(*(feature_data+2)));
+	    break;
         case SENSOR_FEATURE_SET_TEST_PATTERN:
             set_test_pattern_mode((BOOL)*feature_data);
             break;
