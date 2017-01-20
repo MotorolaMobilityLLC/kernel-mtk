@@ -73,6 +73,11 @@ LCM_DRIVER *lcm_driver_list[] = {
 	&lct_otm1289a_wistron_720p_vdo_lcm_drv,
 #endif
 
+//add by LCT yufangfang for s6d7aa6x01
+#if defined(LCT_S6D7AA6X01_HELITECH_720P_VDO)
+	&lct_s6d7aa6x01_helitech_720p_vdo_lcm_drv,
+#endif
+
 #if defined(NT35595_FHD_DSI_CMD_TRULY_8163)
 	&nt35595_fhd_dsi_cmd_truly_8163_lcm_drv,
 #endif
