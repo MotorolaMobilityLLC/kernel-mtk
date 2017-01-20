@@ -255,11 +255,13 @@ unsigned int prev_keycode = 0 ;
 
 
 
-
+#define NAVI_WQ_SIZE  20		//Jerry add for keycodelost 20170120
 
 
 
 #define PROPERTY_NAVIGATION_ENABLE_DEFAULT  true
+
+int navi_wq_index = 0;		//Jerry add for keycodelost 20170120
 
 struct navi_struct {
     char cmd;
@@ -280,7 +282,7 @@ enum navi_event
 };
 
 static struct timer_list long_touch_timer;
-struct navi_struct navi_work_queue;
+struct navi_struct navi_work_queue[NAVI_WQ_SIZE]; //Jerry add for keycodelost 20170120
 static bool g_KeyEventRaised = true;
 static unsigned long g_DoubleClickJiffies = 0;
 
@@ -548,6 +550,7 @@ static ssize_t navigation_event_func(struct device *dev,
 	struct device_attribute *attr, const char *buf, size_t count)
 {
 	struct egistec_data *egistec = dev_get_drvdata(dev);
+	bool  return_value;		//Jerry add for keycodelost 20170120
 	pr_debug("Egis navigation driver, %s echo :'%d'\n", __func__, *buf);
 
 	if (egistec) {
@@ -560,13 +563,25 @@ static ssize_t navigation_event_func(struct device *dev,
 
 	if (egistec->input_dev == NULL)
 		pr_err("Egis navigation driver, egistec->input_dev is NULL\n");
-
-	navi_work_queue.cmd = *buf;
-    navi_work_queue.egistec = egistec;
+	do{						//Jerry add for keycodelost 20170120
+		navi_work_queue[navi_wq_index].cmd = *buf;
+    	navi_work_queue[navi_wq_index].egistec = egistec;
+	/*
     if (schedule_work(&(navi_work_queue.workq)) == 0)
         pr_err("Egis navigation driver, egistec is NULL\n");
+	*/
 
-
+	// Jerry add for keycodelost 20170120
+		return_value = schedule_work(&(navi_work_queue[navi_wq_index].workq));
+		if ( return_value == 0)
+			pr_err("Egis navigation driver, egistec is NULL---- navi_wq_index = %d \n", navi_wq_index);
+		else
+			pr_err("Egis navi_wq_index = %d \n", navi_wq_index);
+		navi_wq_index++;
+		if (navi_wq_index >= NAVI_WQ_SIZE)
+			navi_wq_index = 0;
+	} while(return_value == false);
+//end Jerry add for keycodelost 20170120
 	return count;
 }
 static DEVICE_ATTR(navigation_event, S_IWUSR, NULL, navigation_event_func);
@@ -624,7 +639,7 @@ static const struct attribute_group attribute_group = {
 
 void uinput_egis_init(struct egistec_data *egistec)
 {
-	int error = 0;
+	int error = 0, i;
 
 	pr_debug("Egis navigation driver, %s\n", __func__);
 
@@ -636,8 +651,11 @@ void uinput_egis_init(struct egistec_data *egistec)
 		return;
 	}
 
-
-	INIT_WORK(&(navi_work_queue.workq), navi_operator);
+//Jerry add for keycodelost 20170120
+	for (i = 0; i < NAVI_WQ_SIZE; i++) {
+		INIT_WORK(&(navi_work_queue[i].workq), navi_operator);
+	}
+//end Jerry add for keycodelost 20170120
 
 #if ENABLE_TRANSLATED_LONG_TOUCH
 	init_timer(&long_touch_timer);
@@ -660,9 +678,14 @@ void uinput_egis_init(struct egistec_data *egistec)
 
 void uinput_egis_destroy(struct egistec_data *egistec)
 {
+	int i = 0;
 	pr_debug("Egis navigation driver, %s\n", __func__);
 
-	destroy_workqueue((void *) &(navi_work_queue.workq));
+//Jerry add for keycodelost 20170120
+	for(i = 0; i < NAVI_WQ_SIZE; i++) {
+		destroy_workqueue((void *) &(navi_work_queue[i].workq));
+	}
+//end Jerry add for keycodelost 20170120
 
 #if ENABLE_TRANSLATED_LONG_TOUCH
 	del_timer(&long_touch_timer);
