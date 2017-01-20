@@ -4665,7 +4665,7 @@ static ssize_t current_cmd_write(struct file *file, const char *buffer, size_t c
 	desc[len] = '\0';
 
 	if (sscanf(desc, "%d %d", &cmd_current_unlimited, &cmd_discharging) == 2) {
-		set_usb_current_unlimited(cmd_current_unlimited);
+		//set_usb_current_unlimited(cmd_current_unlimited);
 		if (cmd_discharging == 1) {
 			charging_enable = false;
 			adjust_power = -1;
@@ -4760,7 +4760,7 @@ static int mt_batteryNotify_probe(struct platform_device *dev)
 		proc_create("battery_cmd", S_IRUGO | S_IWUSR, battery_dir, &battery_cmd_proc_fops);
 		battery_log(BAT_LOG_CRTI, "proc_create battery_cmd_proc_fops\n");
 
-		proc_create("current_cmd", S_IRUGO | S_IWUSR, battery_dir, &current_cmd_proc_fops);
+		proc_create("current_cmd", S_IRUGO | /*S_IWUSR*/ S_IWUGO, battery_dir, &current_cmd_proc_fops);
 		battery_log(BAT_LOG_CRTI, "proc_create current_cmd_proc_fops\n");
 		proc_create("discharging_cmd", S_IRUGO | S_IWUSR, battery_dir,
 			    &discharging_cmd_proc_fops);
