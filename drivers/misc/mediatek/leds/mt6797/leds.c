@@ -589,7 +589,7 @@ int mt_led_blink_pmic(enum mt65xx_led_pmic pmic_type, struct nled_setting *led)
 		pmic_set_register_value(PMIC_RG_DRV_ISINK0_CK_PDN, 0);
 		pmic_set_register_value(PMIC_RG_DRV_ISINK0_CK_CKSEL, 0);
 		pmic_set_register_value(PMIC_ISINK_CH0_MODE, ISINK_PWM_MODE);
-		pmic_set_register_value(PMIC_ISINK_CH0_STEP, ISINK_3);	/* 16mA */
+		pmic_set_register_value(PMIC_ISINK_CH0_STEP, ISINK_0);	/* 4mA */
 		pmic_set_register_value(PMIC_ISINK_DIM0_DUTY, duty);
 		pmic_set_register_value(PMIC_ISINK_DIM0_FSEL,
 					pmic_freqsel_array[time_index]);
