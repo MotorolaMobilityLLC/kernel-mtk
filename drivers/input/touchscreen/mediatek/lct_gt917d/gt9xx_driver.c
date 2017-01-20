@@ -59,7 +59,7 @@ static int ctp_proc_read_show (struct seq_file* m, void* data)
 		sprintf(vendor_name,"%s","Reserve");
 	}
 	//sprintf(temp, "[Vendor]O-Film,[Fw]%s,[IC]GT915\n",temp_ver); //changed by cao
-	sprintf(temp, "[Vendor]%s,[Fw]%s,[IC]GT915\n",vendor_name,temp_ver); 
+	sprintf(temp, "[Vendor]%s,[Fw]%s,[IC]GT917d\n",vendor_name,temp_ver); 
 	seq_printf(m, "%s\n", temp);
 	printk("vid:%s,firmware:0x%04x\n",temp_ver, temp_pid);
 	return 0;
