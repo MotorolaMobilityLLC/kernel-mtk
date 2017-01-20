@@ -91,7 +91,13 @@
  * Gesture function enable
  * default: disable
  */
-#define FTS_GESTURE_EN                          0
+#define FTS_GESTURE_EN                          1
+
+/*
+ * Gesture function as lenovo define
+ * default: disable
+ */
+#define FTS_GESTURE_DOUBLETAP_ONLY                1
 
 /*
  * ESD check & protection

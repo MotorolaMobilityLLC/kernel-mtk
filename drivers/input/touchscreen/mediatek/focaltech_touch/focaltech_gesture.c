@@ -33,6 +33,7 @@
 * 1.Included header files
 *****************************************************************************/
 #include "focaltech_core.h"
+#include <linux/input.h>
 #if FTS_GESTURE_EN
 /******************************************************************************
 * Private constant and macro definitions using #define
@@ -258,12 +259,16 @@ void fts_gesture_recovery(struct i2c_client *client)
 {
 	if (fts_gesture_data.mode && fts_gesture_data.active) {
 		fts_i2c_write_reg(client, FTS_REG_GESTURE_EN, ENABLE);
+#if FTS_GESTURE_DOUBLETAP_ONLY
+		fts_i2c_write_reg(fts_i2c_client, 0xD1, 0x10);
+#else
 		fts_i2c_write_reg(fts_i2c_client, 0xD1, 0xff);
 		fts_i2c_write_reg(fts_i2c_client, 0xD2, 0xff);
 		fts_i2c_write_reg(fts_i2c_client, 0xD5, 0xff);
 		fts_i2c_write_reg(fts_i2c_client, 0xD6, 0xff);
 		fts_i2c_write_reg(fts_i2c_client, 0xD7, 0xff);
 		fts_i2c_write_reg(fts_i2c_client, 0xD8, 0xff);
+#endif
 	}
 }
 
@@ -277,7 +282,7 @@ void fts_gesture_recovery(struct i2c_client *client)
 int fts_gesture_init(struct input_dev *input_dev, struct i2c_client *client)
 {
 	FTS_FUNC_ENTER();
-	input_set_capability(input_dev, EV_KEY, KEY_POWER);
+	input_set_capability(input_dev, EV_KEY, KEY_SLIDE);
 	input_set_capability(input_dev, EV_KEY, KEY_GESTURE_U);
 	input_set_capability(input_dev, EV_KEY, KEY_GESTURE_UP);
 	input_set_capability(input_dev, EV_KEY, KEY_GESTURE_DOWN);
@@ -293,6 +298,7 @@ int fts_gesture_init(struct input_dev *input_dev, struct i2c_client *client)
 	input_set_capability(input_dev, EV_KEY, KEY_GESTURE_Z);
 	input_set_capability(input_dev, EV_KEY, KEY_GESTURE_C);
 
+	__set_bit(KEY_SLIDE, input_dev->keybit);
 	__set_bit(KEY_GESTURE_RIGHT, input_dev->keybit);
 	__set_bit(KEY_GESTURE_LEFT, input_dev->keybit);
 	__set_bit(KEY_GESTURE_UP, input_dev->keybit);
@@ -360,7 +366,7 @@ static void fts_check_gesture(struct input_dev *input_dev, int gesture_id)
 		break;
 	case GESTURE_DOUBLECLICK:
 		envp[0] = "GESTURE=DOUBLE_CLICK";
-		gesture = KEY_POWER;
+		gesture = KEY_SLIDE;
 		break;
 	case GESTURE_O:
 		envp[0] = "GESTURE=O";
@@ -405,17 +411,17 @@ static void fts_check_gesture(struct input_dev *input_dev, int gesture_id)
 	}
 	FTS_DEBUG("envp[0]: %s", envp[0]);
 	/* report event key */
-	/*if (gesture != -1)
-	   {
-	   input_report_key(input_dev, gesture, 1);
-	   input_sync(input_dev);
-	   input_report_key(input_dev, gesture, 0);
-	   input_sync(input_dev);
-	   } */
-
+	if (gesture != -1) {
+		input_report_key(input_dev, gesture, 1);
+		input_sync(input_dev);
+		input_report_key(input_dev, gesture, 0);
+		input_sync(input_dev);
+	}
+	/*
 	envp[1] = NULL;
 	kobject_uevent_env(&tpd->tpd_dev->kobj, KOBJ_CHANGE, envp);
 	sysfs_notify(&tpd->tpd_dev->kobj, NULL, "GESTURE_ID");
+	*/
 
 }
 
@@ -583,13 +589,16 @@ int fts_gesture_suspend(struct i2c_client *i2c_client)
 
 	for (i = 0; i < 5; i++) {
 		fts_i2c_write_reg(i2c_client, FTS_REG_GESTURE_EN, 0x01);
-		fts_i2c_write_reg(i2c_client, 0xd1, 0xff);
+#if FTS_GESTURE_DOUBLETAP_ONLY
+		fts_i2c_write_reg(i2c_client, 0xd1, 0x10);
+#else
+		fts_i2c_write_reg(i2c_client, 0xd1, 0x10);
 		fts_i2c_write_reg(i2c_client, 0xd2, 0xff);
 		fts_i2c_write_reg(i2c_client, 0xd5, 0xff);
 		fts_i2c_write_reg(i2c_client, 0xd6, 0xff);
 		fts_i2c_write_reg(i2c_client, 0xd7, 0xff);
 		fts_i2c_write_reg(i2c_client, 0xd8, 0xff);
-
+#endif
 		fts_i2c_read_reg(i2c_client, FTS_REG_GESTURE_EN, &state);
 		if (state == 1)
 			break;
