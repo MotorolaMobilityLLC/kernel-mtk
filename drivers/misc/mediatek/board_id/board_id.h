@@ -29,7 +29,17 @@
 	ROLA_SS_NA_SKY77643_DVT2,          //10
 	LATAM_DS_NA_SKY77638_DVT2,      //11 
 	ROLA_SS_NA_SKY77638_DVT2,	//12
-	AP_B28_DS_NA_DVT2        //13
+	AP_B28_DS_NA_DVT2,        //13
+//sunjingtao@wind-mobi.com at 20170119 begin
+	AP_DS_NA_DVT2_1,		//14
+	EMEA_DS_NA_DVT2_1,		//15
+	EMEA_SS_NFC_DVT2_1,     //16
+	LATAM_DS_NA_SKY77643_DVT2_1,        //17
+	ROLA_SS_NA_SKY77643_DVT2_1,          //18
+	LATAM_DS_NA_SKY77638_DVT2_1,      //19
+	ROLA_SS_NA_SKY77638_DVT2_1,	//1a
+	AP_B28_DS_NA_DVT2_1		//1b
+//sunjingtao@wind-mobi.com at 20170119 end
  };
  
  enum{
