@@ -1,0 +1,8 @@
+config CPU_DVFS_SYSTEM_BOOTUP_BOOST
+	bool "cpu dvfs system bootup boost"
+	default y
+	depends on MT_BOOT_TIME_CPU_BOOST
+	help
+		CPU_DVFS_SYSTEM_BOOTUP_BOOST is used to enhance system bootup time by fixing
+		CPU at max CPU frequency before bootup procedure finished. Say y here to enable
+		it and say n to disable it.
