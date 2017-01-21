@@ -1702,6 +1702,25 @@
 };
 /* FLASHLIGHT GPIO end */
 
+&i2c2 {
+
+GT24c64a@50 {
+			compatible = "mediatek,GT24c64a";
+			reg = <0x50>;
+			status = "okay";
+		};
+};
+
+
+&i2c3 {
+
+GT24c32a@54 {
+			compatible = "mediatek,GT24c32a";
+			reg = <0x54>;
+			status = "okay";
+		};
+};
+
 /* irtx GPIO standardization */
 &irtx {
 	pinctrl-names = "irtx_gpio_default",

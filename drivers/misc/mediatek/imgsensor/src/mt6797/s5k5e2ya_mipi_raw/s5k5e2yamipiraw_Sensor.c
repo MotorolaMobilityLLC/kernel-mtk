@@ -339,10 +339,10 @@ BYTE S5K5E2YA_Get_OTP_Info(void)
     S5K5E2YA_get_otp_date(useGroupIndex);
    if((AWB_Flag_group1& 0xc0) == 0x40)
      {
-         useGroupIndex = 3;
+         useGroupIndex = 4;
          S5K5E2YA_OTP_Infor.AWB_Flag=AWB_Flag_group1;
       } else if ((AWB_Flag_group2& 0xc0) == 0x40) {
-         useGroupIndex = 4;
+         useGroupIndex = 5;
           S5K5E2YA_OTP_Infor.AWB_Flag=AWB_Flag_group2;
       } else {
       printk("S5K5E2YA AWB data read failed\n");
@@ -479,9 +479,7 @@ bool S5K5E2YA_OTP_LSC_update(struct S5K5E2YA_MIPI_otp_struct *otp)
 	}
 	   }
         stop_read_otp();
-    	Temp_Checksum=Temp_Checksum%256;
     	    }
-    	Temp_Checksum=Temp_Checksum%256;
     	printk("S5K5E2YA: LSC Temp_Checksum 0x%X\n",Temp_Checksum);
     	if(Temp_Checksum==LSC_Checksum)
   	{
