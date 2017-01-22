@@ -799,6 +799,13 @@ typedef enum {
 	LCM_DRV_IOCTL_ENABLE_CMD_MODE = 0x100,
 } LCM_DRV_IOCTL_CMD;
 
+typedef enum {
+	OFF,
+	UI,
+	STILL_IMAGE,
+	MOVING_IMAGE,
+} LCM_CABC_MODE;
+
 typedef struct {
 	const char *name;
 	void (*set_util_funcs)(const LCM_UTIL_FUNCS *util);
@@ -850,6 +857,7 @@ typedef struct {
 			     unsigned int *lcm_value);
 	/* /////////////PWM///////////////////////////// */
 	void (*set_pwm_for_mix)(int enable);
+	int (*set_cabc_mode)(int mode);
 } LCM_DRIVER;
 
 #if	defined(CONFIG_ARCH_MT6735) ||\
