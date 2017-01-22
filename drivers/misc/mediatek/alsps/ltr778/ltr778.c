@@ -467,7 +467,7 @@ out:
 	return psdata;
 }
 
-//tuwenzan@wind-mobi.com modify at 20170116 begin
+//tuwenzan@wind-mobi.com modify at 20170120 begin
 #ifdef GN_MTK_BSP_PS_DYNAMIC_CALI
 static int ltr778_dynamic_calibrate(void)
 {
@@ -503,33 +503,33 @@ static int ltr778_dynamic_calibrate(void)
 
 	noise = data_total / count;
     //liujinzhou@wind-mobi.com modify at 20161205 begin
-	if(noise < dynamic_calibrate + 280)  // modified by steven
+	if(noise < dynamic_calibrate + 450)  // modified by steven
 	{
 		dynamic_calibrate = noise;
 
 		if (noise < 100) {
 		//liujinzhou@wind-mobi.com modify at 20161215 begin
-			ps_thd_val_high = noise + 47;
-			ps_thd_val_low  = noise + 22;
+			ps_thd_val_high = noise + 30;
+			ps_thd_val_low  = noise + 15;
 			ps_persist_val_high = noise + 500;  // modified by steven
 			ps_persist_val_low  = noise + 45;
 		}
 		else if (noise < 200) {
-			ps_thd_val_high = noise + 47;
-			ps_thd_val_low  = noise + 25;
+			ps_thd_val_high = noise + 30;
+			ps_thd_val_low  = noise + 15;
 			ps_persist_val_high = noise + 500;
 			ps_persist_val_low  = noise + 50;
 		//liujinzhou@wind-mobi.com modify at 20161215 end
 		}
 		else if (noise < 300) {
-			ps_thd_val_high = noise + 47;
-			ps_thd_val_low  = noise + 25;
+			ps_thd_val_high = noise + 30;
+			ps_thd_val_low  = noise + 15;
 			ps_persist_val_high = noise + 500;
 			ps_persist_val_low  = noise + 70;
 		}
 		else if (noise < 400) {
-			ps_thd_val_high = noise + 47;
-			ps_thd_val_low  = noise + 30;
+			ps_thd_val_high = noise + 30;
+			ps_thd_val_low  = noise + 15;
 			ps_persist_val_high = noise + 500;
 			ps_persist_val_low  = noise + 80;
 		}
@@ -571,7 +571,7 @@ static int ltr778_dynamic_calibrate(void)
 	return 0;
 }
 #endif
-//tuwenzan@wind-mobi.com modify at 20170116 end
+//tuwenzan@wind-mobi.com modify at 20170120 end
 
 /********************************************************************/
 /* 
