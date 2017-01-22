@@ -13,4 +13,4 @@
 
 
 obj-y += ar1335mipi_ofilm_Sensor.o
-
+obj-y += GT24c32a.o

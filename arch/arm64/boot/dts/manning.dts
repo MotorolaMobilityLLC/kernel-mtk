@@ -245,7 +245,7 @@
 		compatible				= "mediatek,akm09912";
 		i2c_num					= <1>;
 		i2c_addr				= <0x0C 0 0 0>;
-		direction				= <7>;
+		direction				= <2>;
 		power_id				= <0xffff>;
 		power_vol				= <0>;
 		is_batch_supported		= <0>;
@@ -1701,6 +1701,25 @@
 
 };
 /* FLASHLIGHT GPIO end */
+
+&i2c2 {
+
+GT24c64a@50 {
+			compatible = "mediatek,GT24c64a";
+			reg = <0x50>;
+			status = "okay";
+		};
+};
+
+
+&i2c3 {
+
+GT24c32a@54 {
+			compatible = "mediatek,GT24c32a";
+			reg = <0x54>;
+			status = "okay";
+		};
+};
 
 /* irtx GPIO standardization */
 &irtx {
