@@ -302,7 +302,6 @@ static void lcm_update(unsigned int x, unsigned int y,
 
 }
 #endif
-
 static unsigned int lcm_compare_id(void)
 {
 	unsigned int id = 0;
@@ -335,6 +334,45 @@ static unsigned int lcm_compare_id(void)
 }
 
 
+static int lcm_set_cabc_mode(int mode)
+{
+	unsigned int data_array[16];
+
+	data_array[0] = 0x00023902;
+	data_array[1] = 0x000000FF;
+	dsi_set_cmdq(data_array, 2, 1);
+
+	data_array[0] = 0x00023902;
+	data_array[1] = 0x000001FB;
+	dsi_set_cmdq(data_array, 2, 1);
+	pr_debug("call %s, mode=%d\n", __func__, mode);
+
+	switch (mode) {
+	case OFF:
+	data_array[0] = 0x00023902;
+	data_array[1] = 0x00000055;
+	dsi_set_cmdq(data_array, 2, 1);
+		break;
+	case UI:
+	data_array[0] = 0x00023902;
+	data_array[1] = 0x00000155;
+	dsi_set_cmdq(data_array, 2, 1);
+		break;
+	case STILL_IMAGE:
+	data_array[0] = 0x00023902;
+	data_array[1] = 0x00000255;
+	dsi_set_cmdq(data_array, 2, 1);
+		break;
+	case MOVING_IMAGE:
+	data_array[0] = 0x00023902;
+	data_array[1] = 0x00000355;
+	dsi_set_cmdq(data_array, 2, 1);
+		break;
+	}
+
+	return 0;
+}
+
 LCM_DRIVER nt35596_fhd_dsi_vdo_tianma_lcm_drv = {
 	.name = "nt35596_fhd_dsi_vdo_tianma",
 	.set_util_funcs = lcm_set_util_funcs,
@@ -346,4 +384,5 @@ LCM_DRIVER nt35596_fhd_dsi_vdo_tianma_lcm_drv = {
 #if (LCM_DSI_CMD_MODE)
 	.update = lcm_update,
 #endif
+	.set_cabc_mode = lcm_set_cabc_mode,
 };
