@@ -675,11 +675,7 @@ static unsigned int charging_full_check(void)
 	unsigned int status;
 
 	battery_charging_control(CHARGING_CMD_GET_CHARGING_STATUS, &status);
-#ifdef CONFIG_LCT_CHR_FULL_CHECK
-	if (status == KAL_TRUE && BMT_status.UI_SOC == 100) {
-#else
 	if (status == KAL_TRUE) {
-#endif
 		g_full_check_count++;
 		if (g_full_check_count >= FULL_CHECK_TIMES)
 			return KAL_TRUE;

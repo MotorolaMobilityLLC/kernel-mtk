@@ -210,11 +210,6 @@ static unsigned int charging_hw_init(void *data)
 	bq24296_set_iprechg(0x3);	/* Precharge current 512mA */
 	bq24296_set_iterm(0x0);	/* Termination current 128mA */
 
-	if (batt_cust_data.high_battery_voltage_support)
-		bq24296_set_vreg(0x38);	/* VREG 4.352V -> 0x35  4.4 -> 0x38 */
-	else
-		bq24296_set_vreg(0x2C);	/* VREG 4.208V */
-
 	bq24296_set_batlowv(0x1);	/* BATLOWV 3.0V */
 	bq24296_set_vrechg(0x0);	/* VRECHG 0.1V (4.108V) */
 	bq24296_set_en_term(0x1);	/* Enable termination */
