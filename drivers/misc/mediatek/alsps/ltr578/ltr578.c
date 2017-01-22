@@ -666,7 +666,8 @@ static int ltr578_dynamic_calibrate(void)
 	ps_thd_val_high = atomic_read(&obj->ps_thd_val_high);
 	APS_DBG(" ltr578_dynamic_calibrate end:noise=%d, obj->ps_thd_val_low= %d , obj->ps_thd_val_high = %d\n", noise, ps_thd_val_low, ps_thd_val_high);
 	/* / */
-
+	if ((ltr578_ps_read()) < (atomic_read(&obj->ps_thd_val_low)))
+		ps_report_interrupt_data(1);
 	return 0;
 err:
 	APS_ERR("ltr578_dynamic_calibrate fail!!!\n");
