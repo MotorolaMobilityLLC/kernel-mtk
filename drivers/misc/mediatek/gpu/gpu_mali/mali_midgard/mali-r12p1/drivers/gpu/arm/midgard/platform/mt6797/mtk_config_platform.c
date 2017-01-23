@@ -481,7 +481,7 @@ int kbase_platform_early_init(void)
 	}
 
 	/* Make sure the power control is ready */
-	if (is_fan53555_exist() || !is_fan53555_sw_ready())
+	if (is_fan53555_exist() && !is_fan53555_sw_ready())
 	{
 		pr_warn("fan53555 is not ready\n");
 		return -EPROBE_DEFER;
