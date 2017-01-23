@@ -25,6 +25,8 @@
 #define FRAME_HEIGHT (1920)
 
 #define LCM_ID_NT35596 (0x96)
+#define REGFLAG_DELAY               (0xAB)
+#define REGFLAG_END_OF_TABLE        (0xAA)	/* END OF REGISTERS MARKER */
 /* --------------------------------------------------------------------------- */
 /* Local Variables */
 /* --------------------------------------------------------------------------- */
@@ -369,9 +371,59 @@ static int lcm_set_cabc_mode(int mode)
 	dsi_set_cmdq(data_array, 2, 1);
 		break;
 	}
-
 	return 0;
 }
+
+struct LCM_setting_table {
+	unsigned cmd;
+	unsigned char count;
+	unsigned char para_list[64];
+};
+
+
+static struct LCM_setting_table lcm_backlight_level_setting[] = {
+	{0x51, 1, {0xFF} } ,
+	{REGFLAG_END_OF_TABLE, 0x00, {} }
+};
+
+
+
+
+static void push_table(struct LCM_setting_table *table, unsigned int count, unsigned char force_update)
+{
+	unsigned int i;
+
+	for (i = 0; i < count; i++) {
+		unsigned cmd;
+
+		cmd = table[i].cmd;
+
+		switch (cmd) {
+		case REGFLAG_DELAY:
+			MDELAY(table[i].count);
+			break;
+
+		case REGFLAG_END_OF_TABLE:
+#ifdef BUILD_LK
+			dprintf(0, "[LK]push_table end\n");
+#endif
+			break;
+		default:
+			dsi_set_cmdq_V2(cmd, table[i].count, table[i].para_list, force_update);
+		}
+	}
+}
+
+
+void lcm_set_backlight_cmdq(void *handle, unsigned int level)
+{
+	unsigned int value = level;
+
+	lcm_backlight_level_setting[0].para_list[0] = value;
+	push_table(lcm_backlight_level_setting, sizeof(lcm_backlight_level_setting) / sizeof(struct LCM_setting_table), 1);
+
+}
+
 
 LCM_DRIVER nt35596_fhd_dsi_vdo_tianma_lcm_drv = {
 	.name = "nt35596_fhd_dsi_vdo_tianma",
@@ -384,5 +436,6 @@ LCM_DRIVER nt35596_fhd_dsi_vdo_tianma_lcm_drv = {
 #if (LCM_DSI_CMD_MODE)
 	.update = lcm_update,
 #endif
+	.set_backlight_cmdq = lcm_set_backlight_cmdq,
 	.set_cabc_mode = lcm_set_cabc_mode,
 };
