@@ -1039,8 +1039,8 @@ int __batt_meter_init_cust_data_from_dt(void)
 		if (!of_property_read_u32_index(np, "batt_temperature_table", idx, &val))
 			bm_debug("batt_temperature_table: addr: %d, val: %d\n", addr, val);
 
-		Batt_Temperature_Table[idx / 2].BatteryTemp = addr;
-		Batt_Temperature_Table[idx / 2].TemperatureR = val;
+		Batt_Temperature_Table[g_fg_battery_id][idx / 2].BatteryTemp = addr;
+		Batt_Temperature_Table[g_fg_battery_id][idx / 2].TemperatureR = val;
 
 		idx++;
 		if (idx >= num * 2)
