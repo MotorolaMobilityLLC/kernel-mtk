@@ -351,24 +351,24 @@ static int lcm_set_cabc_mode(int mode)
 
 	switch (mode) {
 	case OFF:
-	data_array[0] = 0x00023902;
-	data_array[1] = 0x00000055;
-	dsi_set_cmdq(data_array, 2, 1);
+		data_array[0] = 0x00023902;
+		data_array[1] = 0x00000055;
+		dsi_set_cmdq(data_array, 2, 1);
 		break;
 	case UI:
-	data_array[0] = 0x00023902;
-	data_array[1] = 0x00000155;
-	dsi_set_cmdq(data_array, 2, 1);
+		data_array[0] = 0x00023902;
+		data_array[1] = 0x00000155;
+		dsi_set_cmdq(data_array, 2, 1);
 		break;
 	case STILL_IMAGE:
-	data_array[0] = 0x00023902;
-	data_array[1] = 0x00000255;
-	dsi_set_cmdq(data_array, 2, 1);
+		data_array[0] = 0x00023902;
+		data_array[1] = 0x00000255;
+		dsi_set_cmdq(data_array, 2, 1);
 		break;
 	case MOVING_IMAGE:
-	data_array[0] = 0x00023902;
-	data_array[1] = 0x00000355;
-	dsi_set_cmdq(data_array, 2, 1);
+		data_array[0] = 0x00023902;
+		data_array[1] = 0x00000355;
+		dsi_set_cmdq(data_array, 2, 1);
 		break;
 	}
 	return 0;
