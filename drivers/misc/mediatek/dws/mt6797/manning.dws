@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!--dct_version="2.5" buid_sn="161025" dws_modification_time="01.21.2017.13:56:11"-->
+<!--dct_version="2.5" buid_sn="161025" dws_modification_time="01.23.2017.19:57:28"-->
 <dct_cfg>
     <general chip="MT6797">
         <proj>k97_v1</proj>
@@ -3655,7 +3655,7 @@
             <device0>
                 <varName>SW_CHARGER</varName>
                 <channel>I2C_CHANNEL_0</channel>
-                <address>0x6B</address>
+                <address>0x6A</address>
             </device0>
             <device1>
                 <varName>I2C_LCD_BIAS</varName>
