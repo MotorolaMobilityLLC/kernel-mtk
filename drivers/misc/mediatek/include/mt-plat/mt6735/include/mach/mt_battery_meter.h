@@ -185,7 +185,11 @@
 #define TEMPERATURE_T3 50
 #define TEMPERATURE_T 255 /* This should be fixed, never change the value*/
 
+#ifdef CONFIG_LCT_CHR_BQ24296_SUPPORT
+#define FG_METER_RESISTANCE 5
+#else
 #define FG_METER_RESISTANCE 0
+#endif
 
 /* Qmax for battery  */
 #define Q_MAX_POS_50 2752
