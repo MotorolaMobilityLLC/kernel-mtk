@@ -251,17 +251,10 @@ unsigned int prev_keycode = 0 ;
 ****************************************************************/
 
 
-
-
-
-
-#define NAVI_WQ_SIZE  20		//Jerry add for keycodelost 20170120
-
-
-
+#define NAVI_WQ_SIZE  20		//tuwenzan@wind-mobi.com add for keycodelost 20170118
 #define PROPERTY_NAVIGATION_ENABLE_DEFAULT  true
 
-int navi_wq_index = 0;		//Jerry add for keycodelost 20170120
+int navi_wq_index = 0;		//tuwenzan@wind-mobi.com add for keycodelost 20170118
 
 struct navi_struct {
     char cmd;
@@ -550,7 +543,7 @@ static ssize_t navigation_event_func(struct device *dev,
 	struct device_attribute *attr, const char *buf, size_t count)
 {
 	struct egistec_data *egistec = dev_get_drvdata(dev);
-	bool  return_value;		//Jerry add for keycodelost 20170120
+	bool  return_value;		//tuwenzan@wind-mobi.com add for keycodelost 20170118
 	pr_debug("Egis navigation driver, %s echo :'%d'\n", __func__, *buf);
 
 	if (egistec) {
