@@ -1004,7 +1004,9 @@ int __batt_meter_init_cust_data_from_dt(void)
 	struct device_node *np;
 	int num;
 	unsigned int idx, addr, val;
-
+#ifdef CONFIG_LCT_FUG_MULTI_BAT_SUPPORT
+	BATT_TEMPERATURE *batt_temperature_table = (BATT_TEMPERATURE *)&Batt_Temperature_Table[g_fg_battery_id];
+#endif
 	/* check customer setting */
 	np = of_find_compatible_node(NULL, NULL, "mediatek,bat_meter");
 	if (!np) {
@@ -1038,14 +1040,14 @@ int __batt_meter_init_cust_data_from_dt(void)
 		idx++;
 		if (!of_property_read_u32_index(np, "batt_temperature_table", idx, &val))
 			bm_debug("batt_temperature_table: addr: %d, val: %d\n", addr, val);
-#ifdef MTK_MULTI_BAT_PROFILE_SUPPORT
-		Batt_Temperature_Table[g_fg_battery_id][idx / 2].BatteryTemp = addr;
-		Batt_Temperature_Table[g_fg_battery_id][idx / 2].TemperatureR = val;
+
+#ifdef CONFIG_LCT_FUG_MULTI_BAT_SUPPORT
+		batt_temperature_table[idx/2].TemperatureR = val;
+		batt_temperature_table[idx/2].BatteryTemp = addr;
 #else
 		Batt_Temperature_Table[idx / 2].BatteryTemp = addr;
 		Batt_Temperature_Table[idx / 2].TemperatureR = val;
 #endif
-
 		idx++;
 		if (idx >= num * 2)
 			break;
@@ -1282,7 +1284,9 @@ int batt_meter_init_cust_data(struct platform_device *dev)
 	__batt_meter_init_cust_data_from_cust_header();
 
 #if defined(BATTERY_DTS_SUPPORT) && defined(CONFIG_OF)
+#ifndef CONFIG_LCT_FUG_MULTI_BAT_SUPPORT
 	__batt_meter_init_cust_data_from_dt();
+#endif
 #endif
 
 	return 0;
