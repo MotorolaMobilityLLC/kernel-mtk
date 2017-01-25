@@ -1882,7 +1882,7 @@ GT24c32a@54 {
 		pins_cmd_dat {
 			pins = <PINMUX_GPIO181__FUNC_IDDIG>;
 			slew-rate = <0>;
-			bias-pull-up = <00>;
+			bias-pull-up = <11>;
 		};
 	};
 };
