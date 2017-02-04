@@ -587,7 +587,9 @@ CONFIG_LCT_CHECK_EFUSE_STATUS=y
 CONFIG_MOTO_AOD_BASE_ON_AP_SENSORS=y
 CONFIG_LENOVO_LTR778=y
 CONFIG_LENOVO_BMA2X2=y
-
+#Lenovo-sw quebs2 added 20150510 begin,support efuse inquiry for secboot
+CONFIG_EFUSE_SBC_CHECK=y
+#Lenovo-sw quebs2 added 20150510 end,support efuse inquiry for secboot
 CONFIG_ODM1_NFC_PN548=y
 #cly merge from  moto  for gsensor 20170104
 CONFIG_MOTO_AOD_BASE_ON_AP_SENSORS=y
