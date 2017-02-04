@@ -595,3 +595,4 @@ CONFIG_SDCARD_FS=y
 #add by longcheer zhaofei for vibr in  factory mode
 CONFIG_LCT_VIBR_FACTORY_SUPPORT=y
 CONFIG_INPUT_KEYCHORD=y
+CONFIG_EXFAT_FS=y
