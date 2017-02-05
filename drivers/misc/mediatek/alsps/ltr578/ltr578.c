@@ -312,6 +312,14 @@ static int ltr578_i2c_write_reg(u8 regnum, u8 value)
 	return 0;
 }
 
+static ssize_t ltr578_show_chipinfo(struct device_driver *ddri, char *buf)
+{
+	if (!ltr578_obj) {
+		APS_ERR("ltr578_obj is null!!\n");
+		return 0;
+	}
+	return sprintf(buf, "%s\n", "ltr578Chip");
+}
 
 /*----------------------------------------------------------------------------*/
 static ssize_t ltr578_show_als(struct device_driver *ddri, char *buf)
@@ -523,6 +531,7 @@ static ssize_t ltr578_show_distance(struct device_driver *ddri, char *buf)
 
 #if 1
 /*----------------------------------------------------------------------------*/
+static DRIVER_ATTR(chipinfo, S_IRUGO, ltr578_show_chipinfo, NULL);
 static DRIVER_ATTR(als,	S_IWUSR | S_IRUGO, ltr578_show_als,   NULL);
 static DRIVER_ATTR(ps,		S_IWUSR | S_IRUGO, ltr578_show_ps,	  NULL);
 static DRIVER_ATTR(ps_info,	 S_IWUSR | S_IRUGO, ltr578_show_ps_info,	NULL);
@@ -533,6 +542,7 @@ static DRIVER_ATTR(reg,	S_IWUSR | S_IRUGO, ltr578_show_reg,   ltr578_store_reg);
 
 /*----------------------------------------------------------------------------*/
 static struct driver_attribute *ltr578_attr_list[] = {
+	&driver_attr_chipinfo,
 	&driver_attr_als,
 	&driver_attr_ps,
 	&driver_attr_ps_info,
