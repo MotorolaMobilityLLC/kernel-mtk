@@ -119,8 +119,5 @@ typedef struct imgsensor_info_struct {
 
 extern int iReadRegI2C(u8 *a_pSendData , u16 a_sizeSendData, u8 * a_pRecvData, u16 a_sizeRecvData, u16 i2cId);
 extern int iWriteRegI2C(u8 *a_pSendData , u16 a_sizeSendData, u16 i2cId);
-extern void AR1335_OTP_AUTO_LOAD_LSC(void);
-extern int Sunwin_AR1335_read_OTP(void);
-//extern OTP_AWB_VALUE g_AWB_Value;
-extern u8 OTP_KEY;
+
 #endif
