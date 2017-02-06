@@ -2268,7 +2268,8 @@ static int ltr778_init_client(void)
 		APS_LOG("ltr778 Fault detection check Fail...\n");
 		goto EXIT_ERR;
 	}
-
+	//add cly  for  reboot  do reset . 20170206
+        ltr778_i2c_write_reg(LTR778_ALS_CONTR, MODE_ON_Reset);
 	res = ltr778_i2c_write_reg(LTR778_PS_LED, 0x56);		// 8mA 
 	if (res<0)
 	{
@@ -2329,9 +2330,6 @@ static int ltr778_init_client(void)
 		APS_ERR("enable ps fail: %d\n", res);
 		goto EXIT_ERR;
 	}
-
-//add cly  for  reboot  do reset . 20170120
-        //ltr778_i2c_write_reg(LTR778_ALS_CONTR, MODE_ON_Reset);
 	// Enable ALS to Full Range at startup
 	als_gainrange = ALS_RANGE_1;	
 	APS_ERR("ALS sensor gainrange %d!\n", als_gainrange);
