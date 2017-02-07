@@ -20,8 +20,7 @@ enum {
 #define	DISABLE		0
 #define	ENABLE		1
 
-
-
+//solve keycode lose --sunsiyuan@wind-mobi.com modify at 20170207 end
 /*****************************************************************
 *                                                                *
 *                         Configuration                          *
@@ -45,11 +44,13 @@ enum {
  *               Don't care properties.
  */
 #ifndef CONFIG_LCT_FPC_TEE_EGIS
-#define ENABLE_SWIPE_UP_DOWN	ENABLE
+#define ENABLE_SWIPE_UP_DOWN	DISABLE
 #define ENABLE_SWIPE_LEFT_RIGHT	ENABLE
+#define ENABLE_FINGER_DOWN_UP	DISABLE
 #else
 #define ENABLE_SWIPE_UP_DOWN	DISABLE
 #define ENABLE_SWIPE_LEFT_RIGHT	DISABLE
+#define ENABLE_FINGER_DOWN_UP	ENABLE
 #endif
 #define KEY_FPS_DOWN   614
 #define KEY_FPS_UP     615
@@ -106,14 +107,11 @@ enum {
 #define	KEYEVENT_RIGHT_ACTION	KEY_PRESS_RELEASE
 #define	KEYEVENT_LEFT			KEY_FPS_YMINUS /* KEY_RIGHT */ //KEY_LEFT
 #define	KEYEVENT_LEFT_ACTION	KEY_PRESS_RELEASE
-
-/* 
- * Lct modify by zl for navi 
- * date:2016-1228
- */
-unsigned int prev_keycode = 0 ;
-/* Lct modify end */
-
+//remove UP/DOWN event --sunsiyuan@wind-mobi.com modify at 20170207 begin
+#if ENABLE_FINGER_DOWN_UP
+unsigned int prev_keycode = 0;
+#endif
+//remove UP/DOWN event --sunsiyuan@wind-mobi.com modify at 20170207 end
 /*
  * @ TRANSLATED_COMMAND
  *     ENABLE : TRANSLATED command. Navigation events will be translated to
@@ -251,10 +249,10 @@ unsigned int prev_keycode = 0 ;
 ****************************************************************/
 
 
-#define NAVI_WQ_SIZE  20		//tuwenzan@wind-mobi.com add for keycodelost 20170118
+//#define NAVI_WQ_SIZE  20		//sunsiyuan@wind-mobi.com modify at 20170207
 #define PROPERTY_NAVIGATION_ENABLE_DEFAULT  true
 
-int navi_wq_index = 0;		//tuwenzan@wind-mobi.com add for keycodelost 20170118
+//int navi_wq_index = 0;		//sunsiyuan@wind-mobi.com modify at 20170207
 
 struct navi_struct {
     char cmd;
@@ -277,7 +275,7 @@ enum navi_event
 static struct timer_list long_touch_timer;
 struct navi_struct navi_work_queue[NAVI_WQ_SIZE]; //Jerry add for keycodelost 20170120
 static bool g_KeyEventRaised = true;
-static unsigned long g_DoubleClickJiffies = 0;
+static unsigned long g_DoubleClickJiffies;  //sunsiyuan@wind-mobi.com modify at 20170207
 
 
 /* Set event bits according to what events we would generate */
@@ -286,13 +284,12 @@ void init_event_enable(struct egistec_data *egistec)
 	set_bit(EV_KEY, egistec->input_dev->evbit);
 	set_bit(EV_SYN, egistec->input_dev->evbit);
 #if TRANSLATED_COMMAND
-/* 
- * Lct modify by zl for navi 
- * date:2016-1228
- */
-	set_bit(KEYEVENT_ON, egistec->input_dev->keybit);
-	set_bit(KEYEVENT_OFF, egistec->input_dev->keybit);
-/* Lct modify end */
+//remove UP/DOWN event --sunsiyuan@wind-mobi.com modify at 20170207 begin
+#if ENABLE_FINGER_DOWN_UP
+    set_bit(KEYEVENT_ON, egistec->input_dev->keybit);
+    set_bit(KEYEVENT_OFF, egistec->input_dev->keybit);
+#endif
+//remove UP/DOWN event --sunsiyuan@wind-mobi.com modify at 20170207 end
 	set_bit(KEYEVENT_CLICK, egistec->input_dev->keybit);
 	set_bit(KEYEVENT_DOUBLECLICK, egistec->input_dev->keybit);
 	set_bit(KEYEVENT_LONGTOUCH, egistec->input_dev->keybit);
@@ -321,9 +318,10 @@ static void send_key_event(struct egistec_data *egistec, unsigned int code, int 
 		input_sync(obj->input_dev);
 		input_report_key(obj->input_dev, code, 0);	// 0 is release
 		input_sync(obj->input_dev);
-		//Lct modify by zl date:2016-1228
-		prev_keycode = code ;
-	} else {
+#if ENABLE_FINGER_DOWN_UP
+		prev_keycode = code;
+#endif
+	}else{
 		input_report_key(obj->input_dev, code, value);
 		input_sync(obj->input_dev);
 	}
@@ -362,8 +360,9 @@ void translated_command_converter(char cmd, struct egistec_data *egistec)
 
 		case NAVI_EVENT_ON:
             g_KeyEventRaised = false;
-			//Lct modify by zl date:2016-1228
+#if ENABLE_FINGER_DOWN_UP
             send_key_event(egistec, KEYEVENT_ON, KEYEVENT_ON_ACTION);  //20161227, for fingerON
+#endif
 #if ENABLE_TRANSLATED_LONG_TOUCH
             long_touch_timer.data = (unsigned long)egistec;
             mod_timer(&long_touch_timer, jiffies + (HZ * LONGTOUCH_INTERVAL / 1000));
@@ -394,15 +393,13 @@ void translated_command_converter(char cmd, struct egistec_data *egistec)
 	#endif
 
 #endif	/* end of ENABLE_DOUBLE_CLICK */
-/* 
- * Lct modify by zl for navi 
- * date:2016-1228
- */
-			} else {
+		}
+#if ENABLE_FINGER_DOWN_UP
+		 else {
 			if(prev_keycode == KEYEVENT_LONGTOUCH)
 				send_key_event(egistec, KEYEVENT_OFF, KEYEVENT_OFF_ACTION);	//20161227, for fingerON
-/* Lct modify end */	
             }
+#endif
 #if ENABLE_TRANSLATED_LONG_TOUCH
 			del_timer(&long_touch_timer);
 #endif
@@ -410,23 +407,27 @@ void translated_command_converter(char cmd, struct egistec_data *egistec)
 
 		case NAVI_EVENT_UP:
 
-			#if ENABLE_SWIPE_UP_DOWN
+
 			if(g_KeyEventRaised == false){
 				g_KeyEventRaised = true;
+#if ENABLE_SWIPE_UP_DOWN
 				send_key_event(egistec, KEYEVENT_UP, KEYEVENT_UP_ACTION);
+#endif
 			}
-			#endif
+
             break;
 
 		case NAVI_EVENT_DOWN:
 
-			#if ENABLE_SWIPE_UP_DOWN
+
 			if(g_KeyEventRaised == false){
 				g_KeyEventRaised = true;
+#if ENABLE_SWIPE_UP_DOWN
 				send_key_event(egistec, KEYEVENT_DOWN, KEYEVENT_DOWN_ACTION);
-			}
-			#endif
 
+#endif
+			}
+//remove UP/DOWN event --sunsiyuan@wind-mobi.com modify at 20170207 end
             break;
 
 		case NAVI_EVENT_RIGHT:
@@ -543,7 +544,9 @@ static ssize_t navigation_event_func(struct device *dev,
 	struct device_attribute *attr, const char *buf, size_t count)
 {
 	struct egistec_data *egistec = dev_get_drvdata(dev);
-	bool  return_value;		//tuwenzan@wind-mobi.com add for keycodelost 20170118
+	//solve keycode lose --sunsiyuan@wind-mobi.com modify at 20170207 begin
+	struct navi_cmd_struct *tempcmd;
+	//solve keycode lose --sunsiyuan@wind-mobi.com modify at 20170207 end
 	pr_debug("Egis navigation driver, %s echo :'%d'\n", __func__, *buf);
 
 	if (egistec) {
@@ -628,8 +631,6 @@ static const struct attribute_group attribute_group = {
 
 
 /*-------------------------------------------------------------------------*/
-
-
 void uinput_egis_init(struct egistec_data *egistec)
 {
 	int error = 0, i;
@@ -668,10 +669,9 @@ void uinput_egis_init(struct egistec_data *egistec)
 		egistec->input_dev = NULL;
 	}
 }
-
+//solve keycode lose --sunsiyuan@wind-mobi.com modify at 20170207 begin
 void uinput_egis_destroy(struct egistec_data *egistec)
 {
-	int i = 0;
 	pr_debug("Egis navigation driver, %s\n", __func__);
 
 //Jerry add for keycodelost 20170120
@@ -686,8 +686,9 @@ void uinput_egis_destroy(struct egistec_data *egistec)
 
 	if (egistec->input_dev != NULL)
 		input_free_device(egistec->input_dev);
-}
 
+}
+//solve keycode lose --sunsiyuan@wind-mobi.com modify at 20170207 end
 
 void sysfs_egis_init(struct egistec_data *egistec)
 {
