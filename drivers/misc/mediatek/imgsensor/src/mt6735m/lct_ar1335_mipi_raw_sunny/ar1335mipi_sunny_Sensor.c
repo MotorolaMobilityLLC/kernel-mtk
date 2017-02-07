@@ -34,12 +34,12 @@
 #include "kd_imgsensor.h"
 #include "kd_imgsensor_define.h"
 #include "kd_imgsensor_errcode.h"
-#include "ar1335mipi_ofilm_Sensor.h"
+#include "ar1335mipi_sunny_Sensor.h"
 
 #define PK_DBG_FUNC(fmt, args...)    pr_debug(PFX  fmt, ##args)
 //#define OPEN_OTP_DEBUG
 /****************************Modify Following Strings for Debug****************************/
-#define PFX "ar1335_ofilm_camera_sensor"
+#define PFX "ar1335_sunny_camera_sensor"
 #define LOG_1 LOG_INF("AR1335,MIPI 4LANE\n")
 #define LOG_2 LOG_INF("preview 2456*1842@30fps,533.33Mbps/lane; video 3840*2160@30fps,533.33Mbps/lane; capture 18M@15fps,533.33Mbps/lane\n")
 /****************************   Modify end    *******************************************/
@@ -51,7 +51,7 @@ static DEFINE_SPINLOCK(imgsensor_drv_lock);
 static int OTP_KEY = 0;
 
 static imgsensor_info_struct imgsensor_info = {
-	.sensor_id = AR1335_SENSOR_ID,        //record sensor id defined in Kd_imgsensor.h
+	.sensor_id = AR1335_SENSOR_ID_SUNNY,        //record sensor id defined in Kd_imgsensor.h
 
 	.checksum_value = 0xa7f3e34,//0x722b3840,        //checksum value for Camera Auto Test
 
@@ -69,7 +69,7 @@ static imgsensor_info_struct imgsensor_info = {
 		.max_framerate = 300,
 	},
 	.cap = {
-		.pclk = 438000000,
+		.pclk = 375000000,
 		.linelength = 5728,
 		.framelength = 3186,
 		.startx = 0,
@@ -483,12 +483,12 @@ static void set_mirror_flip(kal_uint8 image_mirror)
 
 /*************************************************************************
  *FUNCTION
- *Write_Lsc_Otp_Value()
+ *Write_Lsc_Otp_Value_Sunny()
  *
  **************************************************************************/
 static  Lsc_Struct Lsc_Struct_data[106] = {{0}};
 
-void Write_Lsc_Otp_Value(void)
+void Write_Lsc_Otp_Value_Sunny(void)
 {
 	write_cmos_sensor_2byte(0x3600, Lsc_Struct_data[0].Lsc_data);//  P_GR_P0Q0
 	write_cmos_sensor_2byte(0x3602, Lsc_Struct_data[1].Lsc_data);// P_GR_P0Q1
@@ -618,7 +618,7 @@ static kal_uint16 Read_cmos_sensor(kal_uint32 addr)
  *Read_Lsc_Otp_Value
  *************************************************************************/
 /*jijin.wang add for LSC OTP start */
-int Read_And_Write_Lsc_Otp_Value(void)
+int Read_And_Write_Lsc_Otp_Value_SUNNY(void)
 {
 	int i = 0,j = 0;
 	int CheckSum = 0;
@@ -641,7 +641,7 @@ int Read_And_Write_Lsc_Otp_Value(void)
 	/*write eeprom value to register*/
 	if(CheckSum == (((Read_cmos_sensor(0x09EF)&0x00ff)<<8)|(Read_cmos_sensor(0x09F0)&0x00ff)))
 	{
-		Write_Lsc_Otp_Value();
+		Write_Lsc_Otp_Value_Sunny();
 	}else
 	{
 		LOG_INF("return Camera LSC-shading CheckSum fail!\n");
@@ -661,11 +661,11 @@ int Read_And_Write_Lsc_Otp_Value(void)
 
 /*************************************************************************
  * FUNCTION
- *AR1335_OTP_ENABLE_LOAD_LSC
+ *AR1335_OTP_ENABLE_LOAD_LSC_SUNNY
  **************************************************************************/
-void AR1335_OTP_ENABLE_LOAD_LSC(void)
+void AR1335_OTP_ENABLE_LOAD_LSC_SUNNY(void)
 {
-	if(Read_And_Write_Lsc_Otp_Value())
+	if(Read_And_Write_Lsc_Otp_Value_SUNNY())
 	{
 		OTP_KEY = 1;
 		LOG_INF("return Camera LSC-shading CheckSum Pass!\n");
@@ -673,9 +673,9 @@ void AR1335_OTP_ENABLE_LOAD_LSC(void)
 }
 /*************************************************************************
  * FUNCTION
- *is_ofilm_camera_module
+ *is_sunny_camera_module
  **************************************************************************/
-static int is_ofilm_camera_module(void)
+static int is_sunny_camera_module(void)
 {
 	LOG_INF("return Camera Module-id = 0x%d\n",Read_cmos_sensor(0x000C));	
 	return Read_cmos_sensor(0x000C);
@@ -1059,7 +1059,7 @@ static void sensor_init(void)
 	write_cmos_sensor_2byte(0x31AE, 0x0204);   //SERIAL_FORMAT
 	if(1)
 	{
-		AR1335_OTP_ENABLE_LOAD_LSC();
+		AR1335_OTP_ENABLE_LOAD_LSC_SUNNY();
 	}
 
 	/// enable_streaming
@@ -1387,8 +1387,8 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 	//sensor have two i2c address 0x6c 0x6d & 0x21 0x20, we should detect the module used i2c address
 #ifdef CONFIG_LCT_DEVINFO_SUPPORT
 	s_DEVINFO_ccm.device_type = "CCM";
-	s_DEVINFO_ccm.device_module = "NULL";//can change if got module id
-	s_DEVINFO_ccm.device_vendor = "oflim";
+	s_DEVINFO_ccm.device_module = "F13M02C-1";//can change if got module id
+	s_DEVINFO_ccm.device_vendor = "Sunny";
 	s_DEVINFO_ccm.device_ic = "ar1335";
 	s_DEVINFO_ccm.device_version = "ON-Semiconductor";
 	s_DEVINFO_ccm.device_info = "1300W";
@@ -1402,10 +1402,10 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 		do {
 			*sensor_id = return_sensor_id();
 			//LOG_INF("ar1335 read sensor id =0x%x\n",*sensor_id);
-			*sensor_id = *sensor_id + 1;
+			*sensor_id = *sensor_id + 2;
 			if (*sensor_id == imgsensor_info.sensor_id) {
 				LOG_INF("i2c write id: 0x%x, sensor id: 0x%x\n", imgsensor.i2c_write_id,*sensor_id);
-				if(is_ofilm_camera_module() == 0x07)/*can change if got OTP module*/
+				if(is_sunny_camera_module() == 0x01)/*can change if got OTP module*/
 				{      
 #ifdef CONFIG_LCT_DEVINFO_SUPPORT	
 					LOG_INF("jijin.wang add for camera devices info\n");	
@@ -1413,7 +1413,7 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 								s_DEVINFO_ccm.device_vendor,s_DEVINFO_ccm.device_ic,s_DEVINFO_ccm.device_version,
 								s_DEVINFO_ccm.device_info,s_DEVINFO_ccm.device_used);
 #endif
-					//Ofilm_AR1335_read_OTP(); //read otp data
+					//Sunny_AR1335_read_OTP(); //read otp data
 					return ERROR_NONE;
 				}
 				else 
@@ -1481,7 +1481,7 @@ static kal_uint32 open(void)
 		spin_unlock(&imgsensor_drv_lock);
 		do {
 			sensor_id = return_sensor_id();
-			if ((sensor_id + 1) == imgsensor_info.sensor_id) {
+			if ((sensor_id + 2) == imgsensor_info.sensor_id) {
 
 				LOG_INF("i2c write id: 0x%x, sensor id: 0x%x\n", imgsensor.i2c_write_id,sensor_id);
 				break;
@@ -1490,18 +1490,18 @@ static kal_uint32 open(void)
 			retry--;
 		} while(retry > 0);
 		i++;
-		if ((sensor_id + 1) == imgsensor_info.sensor_id)
+		if ((sensor_id + 2) == imgsensor_info.sensor_id)
 		  break;
 		retry = 2;
 	}
-	if ((imgsensor_info.sensor_id != (sensor_id +1 ))||(is_ofilm_camera_module() != 0x07)){
+	if ((imgsensor_info.sensor_id != (sensor_id + 2 ))||(is_sunny_camera_module() != 0x01)){
 		sensor_id = 0xFFFFFFFF;
 		return ERROR_SENSOR_CONNECT_FAIL;
 	}
 	/* initail sequence write in  */
 	sensor_init();
-	LOG_INF("ofilm version(%x)\n", is_ofilm_camera_module());
-	//if ((imgsensor_info.sensor_id != (sensor_id +1 ))||(!is_ofilm_camera_module()))
+	LOG_INF("sunny version(%x)\n", is_sunny_camera_module());
+	//if ((imgsensor_info.sensor_id != (sensor_id +1 ))||(!is_sunny_camera_module()))
 	//return ERROR_SENSOR_CONNECT_FAIL;
 
 	spin_lock(&imgsensor_drv_lock);
@@ -2115,10 +2115,10 @@ static SENSOR_FUNCTION_STRUCT sensor_func = {
 	close
 };
 
-UINT32 AR1335_MIPI_RAW_SensorInit(PSENSOR_FUNCTION_STRUCT *pfFunc)
+UINT32 AR1335_MIPI_RAW_SensorInit_Sunny(PSENSOR_FUNCTION_STRUCT *pfFunc)
 {
 	/* To Do : Check Sensor status here */
 	if (pfFunc!=NULL)
 	  *pfFunc=&sensor_func;
 	return ERROR_NONE;
-}    /*    AR1335_MIPI_RAW_SensorInit    */
+}    /*    AR1335_MIPI_RAW_SensorInit_Sunny    */

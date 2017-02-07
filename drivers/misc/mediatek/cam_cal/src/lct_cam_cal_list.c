@@ -24,9 +24,10 @@
 #endif
 
 
-#define MTK_MAX_CID_NUM 4
+#define MTK_MAX_CID_NUM 5
 unsigned int mtkCidList[MTK_MAX_CID_NUM] = {
 	0x00000007,/*jijin.wang add for custom checkout layout*/
+	0x00000001,/*jijin.wang add for custom checkout layout*/
 	0x010b00ff,/*Single MTK Format*/
 	0x020b00ff,/*Double MTK Format in One OTP/EEPRom - Legacy*/
 	0x030b00ff /*Double MTK Format in One OTP/EEPRom*/
@@ -42,7 +43,8 @@ stCAM_CAL_FUNC_STRUCT g_camCalCMDFunc[] = {
 };
 
 stCAM_CAL_LIST_STRUCT g_camCalList[] = {
-	{AR1335_SENSOR_ID,  0xB0, CMD_AUTO, cam_cal_check_mtk_cid},/*jijin.wang add ar1335 camera OTP*/
+	{AR1335_SENSOR_ID,  0xB0, CMD_AUTO, cam_cal_check_mtk_cid},/*jijin.wang add ar1335 ofilm  camera OTP*/
+	{AR1335_SENSOR_ID_SUNNY,  0xB0, CMD_AUTO, cam_cal_check_mtk_cid},/*jijin.wang add ar1335 sunny camera OTP*/
 	{OV23850_SENSOR_ID, 0xA0, CMD_AUTO, cam_cal_check_mtk_cid},
 	{OV23850_SENSOR_ID, 0xA8, CMD_AUTO, cam_cal_check_mtk_cid},
 	{S5K3M2_SENSOR_ID,  0xA0, CMD_AUTO, cam_cal_check_mtk_cid},
