@@ -263,6 +263,7 @@ NSFeature :  : RAWSensorInfo < _id >  :  : getFlickerPara \
 #define AR0833_SENSOR_ID                        0x4B03
 #if defined(CONFIG_LCT_CAMERA_KERNEL)/*jijin.wang add for LCT*/
 #define AR1335_SENSOR_ID                        0x0154
+#define AR1335_SENSOR_ID_SUNNY                  0x0155
 #endif
 /*SIV*/
 #define SID020A_SENSOR_ID                       0x12B4
@@ -427,6 +428,7 @@ NSFeature :  : RAWSensorInfo < _id >  :  : getFlickerPara \
 #define SENSOR_DRVNAME_AR0833_MIPI_RAW          "ar0833mipiraw"
 #if defined(CONFIG_LCT_CAMERA_KERNEL)/*jijin.wang add for LCT*/
 #define SENSOR_DRVNAME_AR1335_MIPI_RAW          "ar1335mipiraw"
+#define SENSOR_DRVNAME_AR1335_MIPI_RAW_SUNNY    "ar1335mipirawsunny"
 #endif
 /*SIV*/
 #define SENSOR_DRVNAME_SIV121D_YUV              "siv121dyuv"
