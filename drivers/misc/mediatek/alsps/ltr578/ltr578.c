@@ -641,32 +641,32 @@ static int ltr578_dynamic_calibrate(void)
 				isadjust = 1;
 
 	if (noise < 100) {
-			atomic_set(&obj->ps_thd_val_high,  noise+273);
-			atomic_set(&obj->ps_thd_val_low, noise+105);
+		atomic_set(&obj->ps_thd_val_high,  noise+30);
+		atomic_set(&obj->ps_thd_val_low, noise+20);
 	} else if (noise < 200) {
-			atomic_set(&obj->ps_thd_val_high,  noise+273);
-			atomic_set(&obj->ps_thd_val_low, noise+105);
+		atomic_set(&obj->ps_thd_val_high,  noise+35);
+		atomic_set(&obj->ps_thd_val_low, noise+25);
 	} else if (noise < 300) {
-			atomic_set(&obj->ps_thd_val_high,  noise+273);
-			atomic_set(&obj->ps_thd_val_low, noise+105);
+		atomic_set(&obj->ps_thd_val_high,  noise+40);
+		atomic_set(&obj->ps_thd_val_low, noise+30);
 	} else if (noise < 400) {
-			atomic_set(&obj->ps_thd_val_high,  noise+273);
-			atomic_set(&obj->ps_thd_val_low, noise+105);
+		atomic_set(&obj->ps_thd_val_high,  noise+45);
+		atomic_set(&obj->ps_thd_val_low, noise+35);
 	} else if (noise < 600) {
-			atomic_set(&obj->ps_thd_val_high,  noise+273);
-			atomic_set(&obj->ps_thd_val_low, noise+105);
+		atomic_set(&obj->ps_thd_val_high,  noise+50);
+		atomic_set(&obj->ps_thd_val_low, noise+40);
 	} else if (noise < 800) {
-			atomic_set(&obj->ps_thd_val_high,  noise+273);
-			atomic_set(&obj->ps_thd_val_low, noise+105);
+		atomic_set(&obj->ps_thd_val_high,  noise+80);
+		atomic_set(&obj->ps_thd_val_low, noise+60);
 	} else if (noise < 1000) {
-			atomic_set(&obj->ps_thd_val_high,  noise+273);
-			atomic_set(&obj->ps_thd_val_low, noise+105);
+		atomic_set(&obj->ps_thd_val_high,  noise+273);
+		atomic_set(&obj->ps_thd_val_low, noise+105);
 	} else{
-			atomic_set(&obj->ps_thd_val_high,  1200);
-			atomic_set(&obj->ps_thd_val_low, 1150);
-			isadjust = 0;
-			APS_DBG("ltr578 the proximity sensor ps raw data\n");
-			}
+		atomic_set(&obj->ps_thd_val_high,  1200);
+		atomic_set(&obj->ps_thd_val_low, 1150);
+		isadjust = 0;
+		APS_DBG("ltr578 the proximity sensor ps raw data\n");
+		}
 
 	}
 
@@ -769,6 +769,7 @@ EXIT_ERR:
 
 }
 
+static int enable_flag;
 
 static int ltr578_ps_enable(void)
 {
@@ -791,7 +792,7 @@ static int ltr578_ps_enable(void)
 	 * Other settings like timing and threshold to be set here, if required.
 	 * Not set and kept as device default for now.
 	 */
-	error = ltr578_i2c_write_reg(LTR578_PS_PULSES, 32); /* 32pulses -->12 */
+	error = ltr578_i2c_write_reg(LTR578_PS_PULSES, 8); /* 32pulses -->8 */
 	if (error < 0) {
 	APS_LOG("ltr578_ps_enable() PS Pulses error2\n");
 	return error;
@@ -844,6 +845,40 @@ static int ltr578_ps_enable(void)
 	}
 	}
 
+	/* set threshold 00*/
+
+	enable_flag = 1;
+
+	databuf[0] = LTR578_PS_THRES_LOW_0;
+	databuf[1] = (u8)(0x0001 & 0x00FF);
+	res = i2c_master_send(client, databuf, 0x2);
+	if (res <= 0) {
+		goto EXIT_ERR;
+		return LTR578_ERR_I2C;
+	}
+	databuf[0] = LTR578_PS_THRES_LOW_1;
+	databuf[1] = (u8)((0x0000 & 0xFF00) >> 8);
+	res = i2c_master_send(client, databuf, 0x2);
+	if (res <= 0) {
+		goto EXIT_ERR;
+		return LTR578_ERR_I2C;
+	}
+	databuf[0] = LTR578_PS_THRES_UP_0;
+	databuf[1] = (u8)(0x0000 & 0x00FF);
+	res = i2c_master_send(client, databuf, 0x2);
+	if (res <= 0) {
+		goto EXIT_ERR;
+		return LTR578_ERR_I2C;
+	}
+	databuf[0] = LTR578_PS_THRES_UP_1;
+	databuf[1] = (u8)((0x0000 & 0xFF00) >> 8);
+	res = i2c_master_send(client, databuf, 0x2);
+	if (res <= 0) {
+		goto EXIT_ERR;
+		return LTR578_ERR_I2C;
+	}
+
+
 	APS_LOG("ltr578_ps_enable ...OK!\n");
 
 #ifdef GN_MTK_BSP_PS_DYNAMIC_CALI
@@ -857,7 +892,7 @@ static int ltr578_ps_enable(void)
 	return error;
 
 EXIT_ERR:
-	APS_ERR("set thres: %d\n", res);
+	APS_ERR("ltr578_ps_enable error : %d\n", res);
 	return res;
 }
 
@@ -1376,57 +1411,68 @@ static void ltr578_eint_work(struct work_struct *work)
 		noise = obj->ps;
 		if (ps_value == 1) {
 			if (noise < (dynamic_cali - 100)) {
-					dynamic_cali = noise;
-					isadjust = 1;
-					if (noise < 100) {
-							atomic_set(&obj->ps_thd_val_high,  noise+65);
-							atomic_set(&obj->ps_thd_val_low, noise+20);
-					} else if (noise < 200) {
-							atomic_set(&obj->ps_thd_val_high,  noise+80);
-							atomic_set(&obj->ps_thd_val_low, noise+40);
-					} else if (noise < 300) {
-							atomic_set(&obj->ps_thd_val_high,  noise+110);
-							atomic_set(&obj->ps_thd_val_low, noise+60);
-					} else if (noise < 400) {
-							atomic_set(&obj->ps_thd_val_high,  noise+150);
-							atomic_set(&obj->ps_thd_val_low, noise+90);
-					} else if (noise < 600) {
-							atomic_set(&obj->ps_thd_val_high,  noise+170);
-							atomic_set(&obj->ps_thd_val_low, noise+110);
-					} else if (noise < 800) {
-						atomic_set(&obj->ps_thd_val_high,  noise+180);
-						atomic_set(&obj->ps_thd_val_low, noise+130);
-					} else if (noise < 1000) {
-							atomic_set(&obj->ps_thd_val_high,  noise+220);
-							atomic_set(&obj->ps_thd_val_low, noise+100);
-					} else{
-							atomic_set(&obj->ps_thd_val_high,  1200);
-							atomic_set(&obj->ps_thd_val_low, 1150);
-							isadjust = 0;
-						printk("ltr578 the proximity ps_raw_data\n");
-					}
-
-					ltr578_ps_set_thres();
-
+				dynamic_cali = noise;
+				isadjust = 1;
+				if (noise < 100) {
+					atomic_set(&obj->ps_thd_val_high,  noise+120);
+					atomic_set(&obj->ps_thd_val_low, noise+70);
+				} else if (noise < 200) {
+					atomic_set(&obj->ps_thd_val_high,  noise+130);
+					atomic_set(&obj->ps_thd_val_low, noise+80);
+				} else if (noise < 300) {
+					atomic_set(&obj->ps_thd_val_high,  noise+140);
+					atomic_set(&obj->ps_thd_val_low, noise+90);
+				} else if (noise < 400) {
+					atomic_set(&obj->ps_thd_val_high,  noise+150);
+					atomic_set(&obj->ps_thd_val_low, noise+90);
+				} else if (noise < 600) {
+					atomic_set(&obj->ps_thd_val_high,  noise+170);
+					atomic_set(&obj->ps_thd_val_low, noise+110);
+				} else if (noise < 800) {
+					atomic_set(&obj->ps_thd_val_high,  noise+180);
+					atomic_set(&obj->ps_thd_val_low, noise+130);
+				} else if (noise < 1000) {
+					atomic_set(&obj->ps_thd_val_high,  noise+220);
+					atomic_set(&obj->ps_thd_val_low, noise+100);
+				} else{
+					atomic_set(&obj->ps_thd_val_high,  1200);
+					atomic_set(&obj->ps_thd_val_low, 1150);
+					isadjust = 0;
+					printk("ltr578 the proximity ps_raw_data\n");
 				}
+
+				ltr578_ps_set_thres();
+
+			}
 
 
 	}
 
 	APS_DBG("ltr578_eint_work rawdata ps=%d als=%d!\n", obj->ps, obj->als);
-	sensor_data.values[0] = ps_value;
+	if (enable_flag == 1) {
+		enable_flag = 0;
+		if (obj->ps < atomic_read(&obj->ps_thd_val_low))
+			sensor_data.values[0] = 1;
+		else if (obj->ps > atomic_read(&obj->ps_thd_val_high))
+			sensor_data.values[0] = 0;
+		else
+			sensor_data.values[0] = 1;
+	} else {
+		sensor_data.values[0] = ps_value;
+	}
+
 	sensor_data.value_divide = 1;
 	sensor_data.status = SENSOR_STATUS_ACCURACY_MEDIUM;
 	/*singal interrupt function add*/
 	APS_DBG("intr_flag_value=%d\n", intr_flag_value);
-	/*-------------------modified by hongguang@wecorp---------------------------------
-	//let up layer to know
+	/*---------modified by hongguang@wecorp---------*/
+	/*let up layer to know*/
 	if((err = hwmsen_get_interrupt_data(ID_PROXIMITY, &sensor_data)))
 	{
 	  APS_ERR("call hwmsen_get_interrupt_data fail = %d\n", err);
 	}
-	------------------------------------------------------*/
-	/*-------------------modified by hongguang@wecorp-------------------------------*/
+	/*-----------------------------------------------------*/
+	/*--------modified by hongguang@wecorp---------*/
 	if (ps_report_interrupt_data(sensor_data.values[0])) {
 		APS_ERR("call ps_report_interrupt_data fail\n");
 	}
@@ -2010,7 +2056,8 @@ static int als_get_data(int *value, int *status)
 	if (obj->als < 0) {
 	err = -1;
 	} else{
-	*value = ltr578_get_als_value(obj, obj->als);
+	/* *value = ltr578_get_als_value(obj, obj->als); */
+	*value = ltr578_obj->als;
 	*status = SENSOR_STATUS_ACCURACY_MEDIUM;
 	}
 #endif /* #ifdef CUSTOM_KERNEL_SENSORHUB */
