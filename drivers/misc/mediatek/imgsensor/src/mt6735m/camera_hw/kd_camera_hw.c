@@ -413,6 +413,53 @@ int kdCISModulePowerOn(CAMERA_DUAL_CAMERA_SENSOR_ENUM SensorIdx, char *currSenso
 
 		}
 #if defined(CONFIG_LCT_CAMERA_KERNEL)/*jijin.wang add for LCT*/
+else if(currSensorName && (0 == strcmp(currSensorName, SENSOR_DRVNAME_AR1335_MIPI_RAW_SUNNY)))
+		{
+          //1.set xshutdown low
+            //if (GPIO_CAMERA_INVALID != pinSet[pinSetIdx][IDX_PS_CMPDN])
+				//mtkcam_gpio_set(pinSetIdx, CAMPDN, pinSet[pinSetIdx][IDX_PS_CMPDN + IDX_PS_OFF]);
+			/*add for non-read sub-camera ID*/
+			mtkcam_gpio_set(1-pinSetIdx, CAMPDN, pinSet[1-pinSetIdx][IDX_PS_CMPDN + IDX_PS_OFF]);
+			mtkcam_gpio_set(1-pinSetIdx, CAMRST, pinSet[1-pinSetIdx][IDX_PS_CMRST + IDX_PS_OFF]);
+
+			if (GPIO_CAMERA_INVALID != pinSet[pinSetIdx][IDX_PS_CMRST])
+				mtkcam_gpio_set(pinSetIdx, CAMRST, pinSet[pinSetIdx][IDX_PS_CMRST + IDX_PS_OFF]);
+	     //set af
+	        if (TRUE != _hwPowerOnCnt(VCAMAF, VOL_2800, mode_name)) {
+				PK_DBG
+				    ("[CAMERA SENSOR] Fail to enable analog power (VCAM_AF), power id = %d\n",
+				     VCAMAF);
+				goto _kdCISModulePowerOn_exit_;
+			}
+
+			mdelay(1);
+	    
+		  //2.power up Vdd_IO(1.8v)
+            if (TRUE != _hwPowerOn(VCAMIO, VOL_1800)) {
+				PK_DBG("[CAMERA SENSOR] Fail to enable IO power (VCAM_IO), power id = %d\n", VCAMIO);
+				goto _kdCISModulePowerOn_exit_;
+			}
+			mdelay(2);
+          //3.after 1-500ms,power up Vdd,Vdd_PLL,Vdd_PHY(1.2V) and Vaa,Vaa_PIX(2.7V) (any order)
+            if (TRUE != _hwPowerOn(VCAMD, VOL_1200)) {
+				PK_DBG("[CAMERA SENSOR] Fail to enable digital power (VCAM_D), power id = %d\n", VCAMD);				
+				goto _kdCISModulePowerOn_exit_;
+			}  
+			mdelay(1);
+            if (TRUE != _hwPowerOn(VCAMA, VOL_2800)) {
+				PK_DBG("[CAMERA SENSOR] Fail to enable analog power (VCAM_A), power id = %d\n", VCAMA);
+				goto _kdCISModulePowerOn_exit_;
+			}
+            mdelay(2);   
+            ISP_MCLK1_EN(1);   
+		  //4.after 1-500ms,set xshutdown high
+            if (GPIO_CAMERA_INVALID != pinSet[pinSetIdx][IDX_PS_CMRST])
+				mtkcam_gpio_set(pinSetIdx, CAMRST, pinSet[pinSetIdx][IDX_PS_CMRST + IDX_PS_ON]);
+
+			//if (GPIO_CAMERA_INVALID != pinSet[pinSetIdx][IDX_PS_CMPDN])
+				//mtkcam_gpio_set(pinSetIdx, CAMPDN, pinSet[pinSetIdx][IDX_PS_CMPDN + IDX_PS_ON]);
+
+		}
 		else if(currSensorName && (0 == strcmp(currSensorName, SENSOR_DRVNAME_AR1335_MIPI_RAW)))
 		{
           //1.set xshutdown low
@@ -783,7 +830,44 @@ int kdCISModulePowerOn(CAMERA_DUAL_CAMERA_SENSOR_ENUM SensorIdx, char *currSenso
 
 		}
 #if defined(CONFIG_LCT_CAMERA_KERNEL)/*jijin.wang add for LCT*/
-		else if(currSensorName && (0 == strcmp(currSensorName, SENSOR_DRVNAME_AR1335_MIPI_RAW)))
+	else if(currSensorName && (0 == strcmp(currSensorName, SENSOR_DRVNAME_AR1335_MIPI_RAW_SUNNY)))
+        {
+           //1.set software standby mode(mode_select=0)register  
+    
+           //2.wait till the end of the current frame
+
+           //3.set xshutdown low
+        	ISP_MCLK1_EN(0);
+        	mdelay(1);
+			if (GPIO_CAMERA_INVALID != pinSet[pinSetIdx][IDX_PS_CMRST])
+				mtkcam_gpio_set(pinSetIdx, CAMRST, pinSet[pinSetIdx][IDX_PS_CMRST + IDX_PS_OFF]);
+			mdelay(10);
+           //4.power off Vdd,Vdd_PLL,Vdd_PHY(1.2V) and Vaa,Vaa_PIX(2.7V)(any order)
+             if (TRUE != _hwPowerDown(VCAMA)) {
+				PK_DBG("[CAMERA SENSOR] Fail to OFF analog power (VCAM_A),power id= (%d)\n", VCAMA);
+				/* return -EIO; */
+				goto _kdCISModulePowerOn_exit_;
+			 }
+             mdelay(10);
+			 if (TRUE != _hwPowerDown(VCAMD)) {
+				PK_DBG("[CAMERA SENSOR] Fail to OFF core power (VCAM_D),power id = %d\n", VCAMD);
+				goto _kdCISModulePowerOn_exit_;
+			 } 
+			 mdelay(30);
+           //5.power off Vdd_IO(1.8V)
+             if (TRUE != _hwPowerDown(VCAMIO)) {
+				PK_DBG("[CAMERA SENSOR] Fail to OFF digital power (VCAM_IO),power id = %d\n", VCAMIO);
+				/* return -EIO; */
+				goto _kdCISModulePowerOn_exit_;
+			 } 
+		   //6.power off AF	 
+			 if (TRUE != _hwPowerDownCnt(VCAMAF,mode_name)) {
+				PK_DBG("[CAMERA SENSOR] Fail to OFF AF power (VCAM_AF),power id = %d\n", VCAMAF);
+				/* return -EIO; */
+				goto _kdCISModulePowerOn_exit_;
+			}
+        }
+	else if(currSensorName && (0 == strcmp(currSensorName, SENSOR_DRVNAME_AR1335_MIPI_RAW)))
         {
            //1.set software standby mode(mode_select=0)register  
     
