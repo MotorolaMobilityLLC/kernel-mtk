@@ -145,6 +145,7 @@ static struct workqueue_struct *wq_init;
 #define MAX_SGMT_SZ             (MAX_DMA_CNT)
 #define MAX_SGMT_SZ_SDIO        (MAX_DMA_CNT_SDIO)
 
+#define HQ_READ_FLASH
 static void msdc_init_hw(struct msdc_host *host);
 u8 g_emmc_id;
 static unsigned int cd_irq;
@@ -5565,6 +5566,17 @@ static void msdc_add_host(struct work_struct *work)
 	}
 
 }
+
+#if defined(HQ_READ_FLASH)
+u32 g_emmc_raw_cid[4]; /* raw card CID */
+struct mmc_host *g_emmc_host = NULL;
+void msdc_emmc_id_check(void)
+{
+	memset(g_emmc_raw_cid, 0, sizeof(g_emmc_host->card->raw_cid));
+	memcpy(g_emmc_raw_cid, g_emmc_host->card->raw_cid, sizeof(g_emmc_host->card->raw_cid));
+}
+#endif
+
 static int msdc_drv_probe(struct platform_device *pdev)
 {
 	struct mmc_host *mmc = NULL;
@@ -5800,6 +5812,13 @@ static int msdc_drv_probe(struct platform_device *pdev)
 
 	if (ret)
 		goto free_irq;
+
+        #if defined(HQ_READ_FLASH)
+		if(0 == pdev->id){ // eMMC host
+		g_emmc_host = mmc;
+	}
+	#endif
+
 	if (host->hw->flags & MSDC_SDIO_IRQ) {
 		ghost = host;
 		/* enable sdio detection */
