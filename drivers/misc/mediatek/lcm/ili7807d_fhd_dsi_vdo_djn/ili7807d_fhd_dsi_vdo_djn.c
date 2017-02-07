@@ -106,6 +106,18 @@ static void init_lcm_registers(void)
 	unsigned int data_array[16];
 
 	data_array[0] = 0x00043902;
+	data_array[1] = 0x050778FF;
+	dsi_set_cmdq(data_array, 2, 1);
+
+	data_array[0] = 0x00023902;
+	data_array[1] = 0x00006003;
+	dsi_set_cmdq(data_array, 2, 1);
+
+	data_array[0] = 0x00023902;
+	data_array[1] = 0x00000204;
+	dsi_set_cmdq(data_array, 2, 1);
+
+	data_array[0] = 0x00043902;
 	data_array[1] = 0x000778FF;
 	dsi_set_cmdq(data_array, 2, 1);
 
@@ -409,8 +421,8 @@ static void lcm_set_backlight_cmdq(void *handle, unsigned int level)
 {
 	unsigned int value = level;
 	if (value > 0) {
-		lcm_backlight_level_setting[0].para_list[0] = ((value>>5)&0x0f)|0x08;
-		lcm_backlight_level_setting[0].para_list[1] = (value<<3)&0xf8;
+		lcm_backlight_level_setting[0].para_list[0] = ((value>>4)&0x0f);
+		lcm_backlight_level_setting[0].para_list[1] = (value<<4)&0xf0;
 	} else {
 		lcm_backlight_level_setting[0].para_list[0] = 0;
 		lcm_backlight_level_setting[0].para_list[1] = 0;
