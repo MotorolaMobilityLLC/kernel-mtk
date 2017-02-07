@@ -123,6 +123,8 @@ extern unsigned char aucFW_PRAM_BOOT[];
 extern struct fts_Upgrade_Info fts_updateinfo_curr;
 extern struct fts_Upgrade_Fun fts_updatefun_curr;
 extern struct ft_chip_t chip_types;
+extern int fts_vid_to_fw_len(void);
+extern unsigned char *fts_vid_to_fw(void);
 
 #if FTS_AUTO_UPGRADE_EN
 extern struct workqueue_struct *touch_wq;

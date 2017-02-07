@@ -169,7 +169,15 @@
  * FW_APP.i file for upgrade
  * define your own fw_app, the sample one is invalid
  */
-#define FTS_UPGRADE_FW_APP                      "include/firmware/HQ_Lenovo_AL1570_Ofilm0x01_Ver0x03_20170119_app.i"
+#define FTS_UPGRADE_FW_APP                      "include/firmware/FT8716_app_sample.i"
+
+#define FTS_UPGRADE_COMP_VENDORS_NUM			3
+#define FTS_UPGRADE_FW_APP_VID1\
+	"include/firmware/HQ_Lenovo_AL1570_Ofilm0x01_Ver0x03_20170119_app.i"
+#define FTS_UPGRADE_FW_APP_VID2\
+	"include/firmware/HQ_Moto_AL1570_Toptouch0xa0_Ver0x03_20170105_app.i"
+#define FTS_UPGRADE_FW_APP_VID3\
+	"include/firmware/HQ_Lenovo_AL1570_DJ0x10_Ver0x03_20170207_app.i"
 
 /*
  * auto upgrade with app.bin in sdcard
@@ -206,8 +214,9 @@
  * if only one vendor, ignore vendor_2_id, otherwise
  * you need define both of them
  */
-#define FTS_VENDOR_1_ID                         0x01
-#define FTS_VENDOR_2_ID                         0x8d
+#define FTS_VENDOR_1_ID                         0x01 /* Ofilm */
+#define FTS_VENDOR_2_ID                         0xA0 /* TopTouch */
+#define FTS_VENDOR_3_ID                         0x10 /* DJN */
 
 /* show upgrade time in log
  * default: disable

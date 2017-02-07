@@ -370,7 +370,7 @@ static int fts_ctpm_fw_upgrade_with_app_i_file(struct i2c_client *client)
 	}
 	FTS_DEBUG("[UPGRADE]: firmware size ok: fw_len == %x!!", fw_len);
 	/*FW upgrade */
-	pbt_buf = CTPM_FW;
+	pbt_buf =  fts_vid_to_fw();
 	i_ret = fts_ctpm_fw_upgrade_use_buf(client, pbt_buf, fw_len);
 	if (i_ret != 0) {
 		dev_err(&client->dev, "[FTS] upgrade failed. err=%d.\n", i_ret);
