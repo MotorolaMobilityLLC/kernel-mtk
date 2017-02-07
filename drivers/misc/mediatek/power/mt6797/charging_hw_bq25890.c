@@ -566,6 +566,15 @@ static int charging_get_charger_type(void *data)
 	*(CHARGER_TYPE *) (data) = hw_charging_get_charger_type();
 	charging_type_det_done = KAL_TRUE;
 	g_charger_type = *(CHARGER_TYPE *) (data);
+	if (g_charger_type == STANDARD_HOST) {
+		g_usb_type_flag = 1;
+		bq2589x_set_dpdm(0);
+		bq25890_config_interface(bq25890_CON2, 0x0, 0x1, 1);
+	} else {
+		g_usb_type_flag = 0;
+		bq2589x_set_dpdm(1);
+		bq25890_config_interface(bq25890_CON2, 0x1, 0x1, 1);
+	}
 
 #endif
 
@@ -1007,7 +1016,8 @@ static int charging_sw_init(void *data)
 	mtk_bif_init();
 
 	bq25890_config_interface(bq25890_CON0, 0x01, 0x01, 6);	/* enable ilimit Pin */
-	 /*DPM*/ bq25890_config_interface(bq25890_CON1, 0x6, 0xF, 0);	/* Vindpm offset  600MV */
+	 /*DPM*/
+	/*bq25890_config_interface(bq25890_CON1, 0x6, 0xF, 0);*/	/* Vindpm offset  600MV */
 	bq25890_config_interface(bq25890_COND, 0x1, 0x1, 7);	/* vindpm vth 0:relative 1:absolute */
 
 	/*CC mode */
@@ -1025,9 +1035,10 @@ static int charging_sw_init(void *data)
 
 	/* The following setting is moved from HW_INIT */
 	bq25890_config_interface(bq25890_CON2, 0x1, 0x1, 4);	/* disable ico Algorithm -->bear:en */
-	bq25890_config_interface(bq25890_CON2, 0x0, 0x1, 3);	/* disable HV DCP for gq25897 */
-	bq25890_config_interface(bq25890_CON2, 0x0, 0x1, 2);	/* disbale MaxCharge for gq25897 */
+	bq25890_config_interface(bq25890_CON2, 0x1, 0x1, 3);	/* disable HV DCP for gq25897 */
+	bq25890_config_interface(bq25890_CON2, 0x1, 0x1, 2);	/* disbale MaxCharge for gq25897 */
 	bq25890_config_interface(bq25890_CON2, 0x0, 0x1, 1);	/* disable DPDM detection */
+	bq25890_config_interface(bq25890_CON2, 0x0, 0x1, 0);
 
 	bq25890_config_interface(bq25890_CON7, 0x1, 0x3, 4);	/* enable  watch dog 40 secs 0x1 */
 	bq25890_config_interface(bq25890_CON7, 0x1, 0x1, 3);	/* enable charging timer safety timer */

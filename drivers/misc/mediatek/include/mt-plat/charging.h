@@ -597,6 +597,7 @@ typedef enum {
 extern int Enable_BATDRV_LOG;
 extern kal_bool chargin_hw_init_done;
 extern unsigned int g_bcct_flag;
+extern unsigned int g_usb_type_flag;
 
 /* ============================================================ */
 /* External function */
