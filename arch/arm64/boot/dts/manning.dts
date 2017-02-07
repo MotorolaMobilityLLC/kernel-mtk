@@ -778,6 +778,38 @@
 	};
 };
 /*ACCDET end*/
+
+/* chr_eint start */
+&pio {
+	chr_eint_pins_default: default {
+	};
+	ap_dpdm_low: chr_stat@67_0 {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO67__FUNC_GPIO67>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+	chr_dpdm_high: chr_stat@67_1 {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO67__FUNC_GPIO67>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+};
+/* chr_eint start */
+&chr_stat {
+		/* CHARGER EINT  GPIO standardization ACC mode use */
+		pinctrl-names = "default","ap_dpdm_low","chr_dpdm_high";
+		pinctrl-0 = <&chr_eint_pins_default>;
+		pinctrl-1 = <&ap_dpdm_low>;
+		pinctrl-2 = <&chr_dpdm_high>;
+		gpio_dpdm = <&pio 67 0x0>;
+		status = "okay";
+};
+
+
 /* mmc start */
 &mmc0 {
 		clk_src = /bits/ 8 <MSDC0_CLKSRC_400MHZ>;
