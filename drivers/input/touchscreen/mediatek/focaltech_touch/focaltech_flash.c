@@ -140,6 +140,69 @@ int fts_ctpm_i2c_hid2std(struct i2c_client *client)
 	return bRet;
 #endif
 }
+/************************************************************************
+* Name: fts_ctpm_fw_ReadChipID
+* Brief:  read Chip ID
+* Input: i2c info, Chip ID
+* Output: no
+* Return: fail <0
+***********************************************************************/
+int fts_ctpm_fw_ReadChipID(struct i2c_client *client , u8 *ucChipID)
+{
+	u8 reg_val[4] = { 0 };
+	u32 i = 0;
+	u8 auc_i2c_write_buf[10];
+	int i_ret;
+
+	*ucChipID = 0;
+	fts_ctpm_i2c_hid2std(client);
+
+	for (i = 0; i < FTS_UPGRADE_LOOP; i++) {
+		/*********Step 1:Reset  CTPM *****/
+		fts_i2c_write_reg(client, 0xfc, FTS_UPGRADE_AA);
+		msleep(fts_updateinfo_curr.delay_aa);
+		fts_i2c_write_reg(client, 0xfc, FTS_UPGRADE_55);
+		msleep(200);
+		/*********Step 2:Enter upgrade mode *****/
+		fts_ctpm_i2c_hid2std(client);
+		msleep(20);
+		auc_i2c_write_buf[0] = FTS_UPGRADE_55;
+		auc_i2c_write_buf[1] = FTS_UPGRADE_AA;
+		i_ret = fts_i2c_write(client, auc_i2c_write_buf, 2);
+		if (i_ret < 0) {
+			FTS_DEBUG("failed writing  0x55 and 0xaa!!");
+			continue;
+		}
+		/*********Step 3:check READ-ID***********************/
+		msleep(20);
+		auc_i2c_write_buf[0] = 0x90;
+		auc_i2c_write_buf[1] = auc_i2c_write_buf[2] =
+		    auc_i2c_write_buf[3] = 0x00;
+		reg_val[0] = reg_val[1] = 0x00;
+		fts_i2c_read(client, auc_i2c_write_buf, 4, reg_val, 2);
+		if (reg_val[0] == chip_types.rom_idh) {
+			FTS_DEBUG("[FTS] Step 3: READ OK CTPM ID,ID1 = 0x%x,ID2 = 0x%x!!",
+			     reg_val[0], reg_val[1]);
+			*ucChipID = reg_val[0];
+			break;
+		}
+		FTS_DEBUG("[FTS] Step 3: CTPM ID,ID1 = 0x%x,ID2 = 0x%x!!",
+			     reg_val[0], reg_val[1]);
+	}
+	if (i >= FTS_UPGRADE_LOOP)
+		return -EIO;
+	/*********Step 4: read vendor id from app param area***********************/
+	msleep(50);
+	/*********Step 5: reset the new FW***********************/
+	FTS_DEBUG("Step 5: reset the new FW!!");
+	auc_i2c_write_buf[0] = 0x07;
+	fts_i2c_write(client, auc_i2c_write_buf, 1);
+	msleep(200);
+	fts_ctpm_i2c_hid2std(client);
+	msleep(20);
+
+	return 0;
+}
 
 /************************************************************************
 * Name: fts_ctpm_fw_upgrade_ReadVendorID
@@ -183,7 +246,7 @@ int fts_ctpm_fw_upgrade_ReadVendorID(struct i2c_client *client,
 		reg_val[0] = reg_val[1] = 0x00;
 		fts_i2c_read(client, auc_i2c_write_buf, 4, reg_val, 2);
 		if (reg_val[0] == chip_types.rom_idh
-		    && reg_val[1] == chip_types.rom_idl) {
+		    && reg_val[1] != 0) {
 			FTS_DEBUG
 			    ("[FTS] Step 3: READ OK CTPM ID,ID1 = 0x%x,ID2 = 0x%x!!",
 			     reg_val[0], reg_val[1]);
@@ -202,19 +265,19 @@ int fts_ctpm_fw_upgrade_ReadVendorID(struct i2c_client *client,
 	auc_i2c_write_buf[0] = 0x03;
 	auc_i2c_write_buf[1] = 0x00;
 	auc_i2c_write_buf[2] = 0xd7;
-	auc_i2c_write_buf[3] = 0x84;
+	auc_i2c_write_buf[3] = 0x83;
 	for (i = 0; i < FTS_UPGRADE_LOOP; i++) {
 		fts_i2c_write(client, auc_i2c_write_buf, 4);
 		msleep(5);
 		reg_val[0] = reg_val[1] = 0x00;
 		i_ret = fts_i2c_read(client, auc_i2c_write_buf, 0, reg_val, 2);
-		if (0 != reg_val[0]) {
+		if (0 == reg_val[0]) {
 			*ucPVendorID = 0;
 			FTS_DEBUG
 			    ("In upgrade Vendor ID Mismatch, REG1 = 0x%x, REG2 = 0x%x, Definition:0x%x, i_ret=%d!!",
 			     reg_val[0], reg_val[1], 0, i_ret);
 		} else {
-			*ucPVendorID = reg_val[0];
+			*ucPVendorID = reg_val[1];
 			FTS_DEBUG
 			    ("In upgrade Vendor ID, REG1 = 0x%x, REG2 = 0x%x!!",
 			     reg_val[0], reg_val[1]);
@@ -850,8 +913,13 @@ bool fts_ctpm_check_need_upgrade(struct i2c_client *client)
 	}
 
 	fts_i2c_read_reg(client, FTS_REG_VENDOR_ID, &uc_tp_vendor_id);
-	if (uc_tp_vendor_id != 0x01) {
-		return bUpgradeFlag;
+
+	if ((uc_tp_vendor_id != FTS_VENDOR_1_ID) && (uc_tp_vendor_id != FTS_VENDOR_2_ID)) {
+		fts_ctpm_fw_upgrade_ReadVendorID(client, &uc_tp_vendor_id);
+		FTS_DEBUG("[FTS] Vendor ID = 0x%x\n", uc_tp_vendor_id);
+		if (uc_tp_vendor_id != FTS_VENDOR_1_ID) {
+			return bUpgradeFlag;
+		}
 	}
 
 	if (fw_status == FTS_RUN_IN_APP) {	/* call fts_flash_get_upgrade_info in probe function firstly. */

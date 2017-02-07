@@ -127,11 +127,19 @@ int fts_wait_tp_to_valid(struct i2c_client *client)
 	int ret = 0;
 	int cnt = 0;
 	u8 reg_value = 0;
+	u8 uc_tp_chip_id;
 
 	do {
 		ret = fts_i2c_read_reg(client, FTS_REG_CHIP_ID, &reg_value);
-		if ((ret < 0) || (reg_value != chip_types.chip_idh)) {
+		if (ret < 0) {
+			FTS_INFO("TP Not Ready,I2C Error");
+		} else if (reg_value != chip_types.chip_idh) {
 			FTS_INFO("TP Not Ready, ReadData = 0x%x", reg_value);
+			fts_ctpm_fw_ReadChipID(client, &uc_tp_chip_id);
+			if (uc_tp_chip_id == chip_types.chip_idh) {
+				FTS_INFO("FW is not  Ready, Device ID = 0x%x", uc_tp_chip_id);
+				return 0;
+			}
 		} else if (reg_value == chip_types.chip_idh) {
 			FTS_INFO("TP Ready, Device ID = 0x%x", reg_value);
 			return 0;
