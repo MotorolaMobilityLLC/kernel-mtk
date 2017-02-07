@@ -57,6 +57,7 @@
 
 #include <mt-plat/upmu_common.h>
 #include "pmic.h"
+#include "pmic_irq.h"
 /*#include <mach/eint.h> TBD*/
 #include <mach/mt_pmic_wrap.h>
 #include <mt-plat/mtk_rtc.h>
