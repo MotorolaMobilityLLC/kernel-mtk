@@ -41,4 +41,8 @@ extern bool is_meta_mode(void);
 extern bool is_advanced_meta_mode(void);
 extern void set_boot_mode(unsigned int bm);
 
+/* add for proc/bootinfo,20170206 begin */
+extern char *saved_command_line;
+/* end */
+
 #endif

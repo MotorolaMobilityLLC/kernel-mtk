@@ -55,6 +55,7 @@
 
 #include "mtk_pep_intf.h"
 #include "mtk_pep20_intf.h"
+#include <bq25890.h>
 
 #ifdef CONFIG_MTK_DUAL_INPUT_CHARGER_SUPPORT
 #include <mt-plat/diso.h>
@@ -83,6 +84,7 @@ unsigned int g_bcct_value = 0;
 unsigned int g_bcct_input_flag = 0;
 unsigned int g_bcct_input_value = 0;
 unsigned int g_full_check_count = 0;
+unsigned int g_usb_type_flag = 1;
 CHR_CURRENT_ENUM g_temp_CC_value = CHARGE_CURRENT_0_00_MA;
 CHR_CURRENT_ENUM g_temp_input_CC_value = CHARGE_CURRENT_0_00_MA;
 unsigned int g_usb_state = USB_UNCONFIGURED;
@@ -843,11 +845,15 @@ static void mtk_select_ichg_aicr(void)
 #else
 	else if (g_bcct_flag == 1 || g_bcct_input_flag == 1) {
 		select_charging_current();
+		if (g_usb_type_flag == 0)
+			g_temp_CC_value = bq25890_set_current();
 		select_charging_current_bcct();
 		battery_log(BAT_LOG_FULL,
 			"[BATTERY] select_charging_curret_bcct !\n");
 	} else {
 		select_charging_current();
+		if (g_usb_type_flag == 0)
+			g_temp_CC_value = bq25890_set_current();
 		battery_log(BAT_LOG_FULL,
 			"[BATTERY] select_charging_curret !\n");
 	}
@@ -855,7 +861,6 @@ static void mtk_select_ichg_aicr(void)
 	battery_log(BAT_LOG_CRTI,
 		"[BATTERY] Default CC mode charging : %d, input current = %d\n",
 		g_temp_CC_value, g_temp_input_CC_value);
-
 	battery_charging_control(CHARGING_CMD_SET_INPUT_CURRENT,
 		&g_temp_input_CC_value);
 	battery_charging_control(CHARGING_CMD_SET_CURRENT,

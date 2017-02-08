@@ -26,5 +26,6 @@ extern struct pmic_interrupts interrupts[];
 /* pmic irq extern functions */
 extern void PMIC_EINT_SETTING(void);
 extern int pmic_thread_kthread(void *x);
+extern void kernel_power_off(void);
 
 #endif /*--PMIC_IRQ_H--*/

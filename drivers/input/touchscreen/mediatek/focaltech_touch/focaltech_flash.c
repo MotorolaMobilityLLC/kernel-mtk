@@ -60,8 +60,43 @@ struct fts_Upgrade_Info fts_updateinfo[] = {
 	{0x0E, FTS_MAX_POINTS_2, AUTO_CLB_NONEED, 10, 10, 0x79, 0x18, 10, 2000},	/* ,"FT3x07" */
 };
 
+struct ctpm_fw_info_t {
+	unsigned char *pFW;
+	int fw_len;
+	unsigned char vendor_id;
+};
+
 unsigned char CTPM_FW[] = {
 #include FTS_UPGRADE_FW_APP
+};
+
+unsigned char CTPM_FW1[] = {
+#include FTS_UPGRADE_FW_APP_VID1
+};
+unsigned char CTPM_FW2[] = {
+#include FTS_UPGRADE_FW_APP_VID2
+};
+unsigned char CTPM_FW3[] = {
+#include FTS_UPGRADE_FW_APP_VID3
+};
+
+unsigned char g_fts_vendor_id;
+struct ctpm_fw_info_t CTPM_FWS[FTS_UPGRADE_COMP_VENDORS_NUM] = {
+	[0] =  {
+		.pFW = CTPM_FW1,
+		.fw_len = sizeof(CTPM_FW1),
+		.vendor_id = FTS_VENDOR_1_ID,
+	},
+	[1] = {
+		.pFW = CTPM_FW2,
+		.fw_len = sizeof(CTPM_FW2),
+		.vendor_id = FTS_VENDOR_2_ID,
+	},
+	[2] = {
+		.pFW = CTPM_FW3,
+		.fw_len = sizeof(CTPM_FW3),
+		.vendor_id = FTS_VENDOR_3_ID,
+	},
 };
 
 unsigned char aucFW_PRAM_BOOT[] = {
@@ -91,6 +126,51 @@ struct work_struct fw_update_work;
 #if  FTS_AUTO_UPGRADE_EN
 static int fts_ctpm_workqueue_init(void);
 #endif
+
+int fts_vid_to_fw_len(void)
+{
+	int i = 0;
+
+	for (i = 0; i < FTS_UPGRADE_COMP_VENDORS_NUM; i++) {
+		if (g_fts_vendor_id == CTPM_FWS[i].vendor_id)
+			return CTPM_FWS[i].fw_len;
+	}
+	return 0;
+}
+
+unsigned char *fts_vid_to_fw(void)
+{
+	int i = 0;
+
+	for (i = 0; i < FTS_UPGRADE_COMP_VENDORS_NUM; i++) {
+		if (g_fts_vendor_id == CTPM_FWS[i].vendor_id)
+			return CTPM_FWS[i].pFW;
+	}
+	return NULL;
+}
+
+static int fts_vid_is_compatible(unsigned char vid)
+{
+	int i = 0;
+
+	for (i = 0; i < FTS_UPGRADE_COMP_VENDORS_NUM; i++) {
+		if (vid == CTPM_FWS[i].vendor_id)
+			return true;
+	}
+	return false;
+}
+
+static int fts_vid_get_app_i_ver(void)
+{
+	int i = 0;
+
+	for (i = 0; i < FTS_UPGRADE_COMP_VENDORS_NUM; i++) {
+		if (g_fts_vendor_id == CTPM_FWS[i].vendor_id)
+			return *(CTPM_FWS[i].pFW + CTPM_FWS[i].fw_len - 2);
+	}
+	return 0x00;
+}
+
 /************************************************************************
 * Name: fts_ctpm_upgrade_delay
 * Brief: 0
@@ -140,6 +220,69 @@ int fts_ctpm_i2c_hid2std(struct i2c_client *client)
 	return bRet;
 #endif
 }
+/************************************************************************
+* Name: fts_ctpm_fw_ReadChipID
+* Brief:  read Chip ID
+* Input: i2c info, Chip ID
+* Output: no
+* Return: fail <0
+***********************************************************************/
+int fts_ctpm_fw_ReadChipID(struct i2c_client *client , u8 *ucChipID)
+{
+	u8 reg_val[4] = { 0 };
+	u32 i = 0;
+	u8 auc_i2c_write_buf[10];
+	int i_ret;
+
+	*ucChipID = 0;
+	fts_ctpm_i2c_hid2std(client);
+
+	for (i = 0; i < FTS_UPGRADE_LOOP; i++) {
+		/*********Step 1:Reset  CTPM *****/
+		fts_i2c_write_reg(client, 0xfc, FTS_UPGRADE_AA);
+		msleep(fts_updateinfo_curr.delay_aa);
+		fts_i2c_write_reg(client, 0xfc, FTS_UPGRADE_55);
+		msleep(200);
+		/*********Step 2:Enter upgrade mode *****/
+		fts_ctpm_i2c_hid2std(client);
+		msleep(20);
+		auc_i2c_write_buf[0] = FTS_UPGRADE_55;
+		auc_i2c_write_buf[1] = FTS_UPGRADE_AA;
+		i_ret = fts_i2c_write(client, auc_i2c_write_buf, 2);
+		if (i_ret < 0) {
+			FTS_DEBUG("failed writing  0x55 and 0xaa!!");
+			continue;
+		}
+		/*********Step 3:check READ-ID***********************/
+		msleep(20);
+		auc_i2c_write_buf[0] = 0x90;
+		auc_i2c_write_buf[1] = auc_i2c_write_buf[2] =
+		    auc_i2c_write_buf[3] = 0x00;
+		reg_val[0] = reg_val[1] = 0x00;
+		fts_i2c_read(client, auc_i2c_write_buf, 4, reg_val, 2);
+		if (reg_val[0] == chip_types.rom_idh) {
+			FTS_DEBUG("[FTS] Step 3: READ OK CTPM ID,ID1 = 0x%x,ID2 = 0x%x!!",
+			     reg_val[0], reg_val[1]);
+			*ucChipID = reg_val[0];
+			break;
+		}
+		FTS_DEBUG("[FTS] Step 3: CTPM ID,ID1 = 0x%x,ID2 = 0x%x!!",
+			     reg_val[0], reg_val[1]);
+	}
+	if (i >= FTS_UPGRADE_LOOP)
+		return -EIO;
+	/*********Step 4: read vendor id from app param area***********************/
+	msleep(50);
+	/*********Step 5: reset the new FW***********************/
+	FTS_DEBUG("Step 5: reset the new FW!!");
+	auc_i2c_write_buf[0] = 0x07;
+	fts_i2c_write(client, auc_i2c_write_buf, 1);
+	msleep(200);
+	fts_ctpm_i2c_hid2std(client);
+	msleep(20);
+
+	return 0;
+}
 
 /************************************************************************
 * Name: fts_ctpm_fw_upgrade_ReadVendorID
@@ -183,7 +326,7 @@ int fts_ctpm_fw_upgrade_ReadVendorID(struct i2c_client *client,
 		reg_val[0] = reg_val[1] = 0x00;
 		fts_i2c_read(client, auc_i2c_write_buf, 4, reg_val, 2);
 		if (reg_val[0] == chip_types.rom_idh
-		    && reg_val[1] == chip_types.rom_idl) {
+		    && reg_val[1] != 0) {
 			FTS_DEBUG
 			    ("[FTS] Step 3: READ OK CTPM ID,ID1 = 0x%x,ID2 = 0x%x!!",
 			     reg_val[0], reg_val[1]);
@@ -202,19 +345,19 @@ int fts_ctpm_fw_upgrade_ReadVendorID(struct i2c_client *client,
 	auc_i2c_write_buf[0] = 0x03;
 	auc_i2c_write_buf[1] = 0x00;
 	auc_i2c_write_buf[2] = 0xd7;
-	auc_i2c_write_buf[3] = 0x84;
+	auc_i2c_write_buf[3] = 0x83;
 	for (i = 0; i < FTS_UPGRADE_LOOP; i++) {
 		fts_i2c_write(client, auc_i2c_write_buf, 4);
 		msleep(5);
 		reg_val[0] = reg_val[1] = 0x00;
 		i_ret = fts_i2c_read(client, auc_i2c_write_buf, 0, reg_val, 2);
-		if (0 != reg_val[0]) {
+		if (0 == reg_val[0]) {
 			*ucPVendorID = 0;
 			FTS_DEBUG
 			    ("In upgrade Vendor ID Mismatch, REG1 = 0x%x, REG2 = 0x%x, Definition:0x%x, i_ret=%d!!",
 			     reg_val[0], reg_val[1], 0, i_ret);
 		} else {
-			*ucPVendorID = reg_val[0];
+			*ucPVendorID = reg_val[1];
 			FTS_DEBUG
 			    ("In upgrade Vendor ID, REG1 = 0x%x, REG2 = 0x%x!!",
 			     reg_val[0], reg_val[1]);
@@ -563,6 +706,11 @@ int fts_getsize(u8 fw_type)
 {
 	int fw_len = 0;
 
+	if (FTS_UPGRADE_COMP_VENDORS_NUM > 0) {
+		fw_len = fts_vid_to_fw_len();
+		return fw_len;
+	}
+
 #if ((FTS_CHIP_TYPE == _FT8716) || (FTS_CHIP_TYPE == _FT8607))
 	if (fw_type == FW_SIZE) {
 		fw_len = sizeof(CTPM_FW);
@@ -771,25 +919,28 @@ u8 fts_ctpm_check_fw_status(struct i2c_client *client)
 		fts_i2c_read_reg(client, FTS_REG_VENDOR_ID, &uc_tp_vendor_id);
 		fts_i2c_read_reg(client, FTS_REG_CHIP_ID, &uc_chip_id);
 
-		if ((uc_chip_id != chip_types.chip_idh) ||
-		    ((uc_tp_vendor_id != FTS_VENDOR_1_ID)
-		     || (uc_tp_vendor_id != FTS_VENDOR_2_ID))) {
-			continue;
-		} else {
+		if ((uc_chip_id == chip_types.chip_idh) && fts_vid_is_compatible(uc_tp_vendor_id))
 			break;
+	}
+	if (!fts_vid_is_compatible(uc_tp_vendor_id)) {
+		i = fts_ctpm_fw_upgrade_ReadVendorID(client, &uc_tp_vendor_id);
+		if (i < 0) {
+			FTS_ERROR("ReadVendorID failed!(ret: %d)", i);
+			return -1;
 		}
 	}
+	g_fts_vendor_id = uc_tp_vendor_id;
 	FTS_DEBUG
 	    ("[UPGRADE]: uc_tp_vendor_id = %x, uc_chip_id = %x, chip_types.chip_idh = %x, FTS_VENDOR_1_ID = %x!!",
 	     uc_tp_vendor_id, uc_chip_id, chip_types.chip_idh, FTS_VENDOR_1_ID);
 
+	if ((uc_tp_vendor_id != FTS_VENDOR_1_ID) && (uc_tp_vendor_id != FTS_VENDOR_3_ID))
+		return -1;
 	if ((uc_chip_id == chip_types.chip_idh)
-	    && ((uc_tp_vendor_id == FTS_VENDOR_1_ID)
-		|| (uc_tp_vendor_id == FTS_VENDOR_2_ID))) {	/* call fts_flash_get_upgrade_info in probe function firstly. */
+	    && (fts_vid_is_compatible(uc_tp_vendor_id))) {
 		fw_status = FTS_RUN_IN_APP;
 		FTS_INFO("[UPGRADE]: APP OK!!");
-	} else if ((uc_tp_vendor_id == FTS_VENDOR_1_ID)
-		   || (uc_tp_vendor_id == FTS_VENDOR_2_ID)) {
+	} else if (fts_vid_is_compatible(uc_tp_vendor_id)) {
 		inRomBoot = fts_ctpm_get_pram_or_rom_id(client);
 		FTS_DEBUG("[UPGRADE]: inRomBoot = %d!!", inRomBoot);
 		if (inRomBoot == FTS_RUN_IN_ROM) {
@@ -850,8 +1001,12 @@ bool fts_ctpm_check_need_upgrade(struct i2c_client *client)
 	}
 
 	fts_i2c_read_reg(client, FTS_REG_VENDOR_ID, &uc_tp_vendor_id);
-	if (uc_tp_vendor_id != 0x01) {
-		return bUpgradeFlag;
+
+	if ((uc_tp_vendor_id != FTS_VENDOR_1_ID) && (uc_tp_vendor_id != FTS_VENDOR_3_ID)) {
+		fts_ctpm_fw_upgrade_ReadVendorID(client, &uc_tp_vendor_id);
+		FTS_DEBUG("[FTS] Vendor ID = 0x%x\n", uc_tp_vendor_id);
+		if ((uc_tp_vendor_id != FTS_VENDOR_1_ID) && (uc_tp_vendor_id != FTS_VENDOR_3_ID))
+			return bUpgradeFlag;
 	}
 
 	if (fw_status == FTS_RUN_IN_APP) {	/* call fts_flash_get_upgrade_info in probe function firstly. */
@@ -919,6 +1074,8 @@ int fts_ctpm_fw_upgrade(struct i2c_client *client)
 ***********************************************************************/
 int fts_ctpm_get_app_ver(void)
 {
+	if (FTS_UPGRADE_COMP_VENDORS_NUM > 0)
+		return fts_vid_get_app_i_ver();
 	return fts_updatefun_curr.get_app_i_file_ver();
 }
 

@@ -57,6 +57,7 @@
 
 #include <mt-plat/upmu_common.h>
 #include "pmic.h"
+#include "pmic_irq.h"
 /*#include <mach/eint.h> TBD*/
 #include <mach/mt_pmic_wrap.h>
 #include <mt-plat/mtk_rtc.h>
@@ -92,8 +93,8 @@ unsigned int g_cust_eint_mt_pmic_debounce_en = 1;
  ******************************************************************************/
 #if defined(CONFIG_MTK_KERNEL_POWER_OFF_CHARGING)
 static bool long_pwrkey_press;
-static unsigned long timer_pre;
-static unsigned long timer_pos;
+static long long timer_pre;
+static long long timer_pos;
 #define LONG_PWRKEY_PRESS_TIME_UNIT     500     /*500ms */
 #define LONG_PWRKEY_PRESS_TIME_US       1000000 /*500ms */
 #endif
@@ -220,7 +221,7 @@ void pwrkey_int_handler(void)
 		pmic_get_register_value(PMIC_PWRKEY_DEB));
 
 #if defined(CONFIG_MTK_KERNEL_POWER_OFF_CHARGING)
-	if (get_boot_mode() == KERNEL_POWER_OFF_CHARGING_BOOT)
+	if ((get_boot_mode() == KERNEL_POWER_OFF_CHARGING_BOOT) || (get_boot_mode() == META_BOOT))
 		timer_pre = sched_clock();
 #endif
 #if defined(CONFIG_MTK_FPGA)
@@ -228,7 +229,7 @@ void pwrkey_int_handler(void)
 	kpd_pwrkey_pmic_handler(0x1);
 #endif
 }
-
+#define META_MODE_LONG_PRESS_POWERKEY_SHUTDOWN
 void pwrkey_int_handler_r(void)
 {
 	PMICLOG("[pwrkey_int_handler_r] Release pwrkey %d\n",
@@ -247,6 +248,21 @@ void pwrkey_int_handler_r(void)
 			PMICLOG
 			    ("Power Key Pressed during kernel power off charging, reboot OS\r\n");
 			arch_reset(0, NULL);
+		}
+	}
+#endif
+#if defined(META_MODE_LONG_PRESS_POWERKEY_SHUTDOWN)
+	if (get_boot_mode() == META_BOOT && timer_pre != 0) {
+		timer_pos = sched_clock();
+		if (timer_pos - timer_pre >= 3000000000)
+			long_pwrkey_press = true;
+		PMICLOG
+		    ("timer_pos = %ld, timer_pre = %ld, timer_pos-timer_pre = %ld, long_pwrkey_press = %d\r\n",
+		     timer_pos, timer_pre, timer_pos - timer_pre, long_pwrkey_press);
+		if (long_pwrkey_press) {	/*500ms */
+			PMICLOG
+			    ("Power Key Pressed during meta mode, shutdown phone\r\n");
+			kernel_power_off();
 		}
 	}
 #endif

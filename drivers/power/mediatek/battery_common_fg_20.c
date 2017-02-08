@@ -258,6 +258,7 @@ static int cmd_discharging = -1;
 static int adjust_power = -1;
 static int suspend_discharging = -1;
 #define HQ_CHARGER_FOR_MOTO
+#define HQ_READ_FLASH
 
 #if defined(HQ_CHARGER_FOR_MOTO)
 #define HQ_Get_BAT_VOL _IOW('k', 7, int)
@@ -2914,6 +2915,12 @@ void BAT_thread(void)
 /* ///////////////////////////////////////////////////////////////////////////////////////// */
 /* // Internal API */
 /* ///////////////////////////////////////////////////////////////////////////////////////// */
+
+#if defined(HQ_READ_FLASH)
+extern unsigned int g_emmc_raw_cid[4]; /* raw card CID */
+extern void msdc_emmc_id_check(void);
+#endif
+
 int bat_routine_thread(void *x)
 {
 	ktime_t ktime = ktime_set(3, 0);	/* 10s, 10* 1000 ms */
@@ -3011,7 +3018,12 @@ static long adc_cali_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 	int i = 0;
 	int ret = 0;
 	int adc_in_data[2] = { 1, 1 };
-	int adc_out_data[2] = { 1, 1 };
+	int adc_out_data[4] = { 1, 1, 1, 1 };
+
+        #if defined(HQ_READ_FLASH)
+        char temp_buf[10];
+        #endif
+
 	int temp_car_tune;
 
 	mutex_lock(&bat_mutex);
@@ -3164,9 +3176,50 @@ static long adc_cali_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 		break;
 		/* add for meta tool------------------------------- */
 	case Get_META_BAT_VOL:
+                #if defined(HQ_READ_FLASH)
+                msdc_emmc_id_check();
+                #endif
+
 		user_data_addr = (int *)arg;
 		ret = copy_from_user(adc_in_data, user_data_addr, 8);
 		adc_out_data[0] = BMT_status.bat_vol;
+
+                #if defined(HQ_READ_FLASH)
+                printk("**** unlocked_ioctl : BAT_VOL:%d\n", adc_out_data[0]);
+                printk("****g_emmc_raw_cid 00 :0x%x\n", g_emmc_raw_cid[0]);
+                printk("****g_emmc_raw_cid 01 :0x%x\n", g_emmc_raw_cid[1]);
+                printk("****g_emmc_raw_cid 02 :0x%x\n", g_emmc_raw_cid[2]);
+                printk("****g_emmc_raw_cid 03 :0x%x\n", g_emmc_raw_cid[3]);
+
+                temp_buf[0] = (g_emmc_raw_cid[0]) & 0xFF; /* Manufacturer ID */
+                temp_buf[1] = (g_emmc_raw_cid[0] >> 16) & 0xFF; /* Reserved(6)+Card/BGA(2) */
+                temp_buf[2] = (g_emmc_raw_cid[0] >> 8 ) & 0xFF; /* OEM/Application ID */
+                temp_buf[3] = (g_emmc_raw_cid[0] >> 0 ) & 0xFF; /* Product name [0] */
+                temp_buf[4] = (g_emmc_raw_cid[1] >> 24) & 0xFF; /* Product name [1] */
+                temp_buf[5] = (g_emmc_raw_cid[1] >> 16) & 0xFF; /* Product name [2] */
+                temp_buf[6] = (g_emmc_raw_cid[1] >> 8 ) & 0xFF; /* Product name [3] */
+                temp_buf[7] = (g_emmc_raw_cid[1] >> 0 ) & 0xFF; /* Product name [4] */
+                temp_buf[8] = (g_emmc_raw_cid[2] >> 24) & 0xFF; /* Product name [5] */
+                //temp_buf[9] = (g_emmc_raw_cid[2] >> 16) & 0xFF; /* Product revision */
+                temp_buf[9] = (g_emmc_raw_cid[0] >> 24) & 0xFF;
+                printk("****g_emmc_raw_cid 01 after :0x%x\n", temp_buf[0]);
+                printk("****g_emmc_raw_cid 02 after :0x%x\n", temp_buf[1]);
+                printk("****g_emmc_raw_cid 03 after :0x%x\n", temp_buf[2]);
+                printk("****g_emmc_raw_cid 04 after :0x%x\n", temp_buf[3]);
+                printk("****g_emmc_raw_cid 05 after :0x%x\n", temp_buf[4]);
+                printk("****g_emmc_raw_cid 06 after :0x%x\n", temp_buf[5]);
+                printk("****g_emmc_raw_cid 07 after :0x%x\n", temp_buf[6]);
+                printk("****g_emmc_raw_cid 08 after :0x%x\n", temp_buf[7]);
+                printk("****g_emmc_raw_cid 09 after :0x%x\n", temp_buf[8]);
+                printk("****g_emmc_raw_cid 10 after :0x%x\n", temp_buf[4]<<8);
+                printk("****g_emmc_raw_cid 11 after :0x%x\n", temp_buf[4]<<8 | temp_buf[5]);
+                printk("****g_emmc_raw_cid 12 after :0x%x\n", temp_buf[9]);
+
+                adc_out_data[1] = (temp_buf[4]<<8 | temp_buf[9]);
+                printk("****g_emmc_raw_cid adc_out_data[1] :0x%x\n", adc_out_data[1]);
+                //xlog_printk(ANDROID_LOG_DEBUG, "Power/Battery", "****g_emmc_raw_cid all123 :0x%x\n", ((g_emmc_raw_cid[0]<<10) | (g_emmc_raw_cid[1]<<2) | (g_emmc_raw_cid[2]&0xff000000>>6)));
+                #endif
+
 		ret = copy_to_user(user_data_addr, adc_out_data, 8);
 
 		break;
