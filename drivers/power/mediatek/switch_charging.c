@@ -821,6 +821,12 @@ static void mtk_select_ichg_aicr(void)
 
 	mutex_lock(&g_ichg_aicr_access_mutex);
 
+	if (BMT_status.charger_type == STANDARD_HOST) {
+		g_usb_type_flag = 1;
+		bq2589x_set_dpdm(0);
+	} else {
+		g_usb_type_flag = 0;
+	}
 	/* Set Ichg, AICR */
 	if (get_usb_current_unlimited()) {
 		if (batt_cust_data.ac_charger_input_current != 0)
