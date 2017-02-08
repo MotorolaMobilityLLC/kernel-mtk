@@ -116,6 +116,7 @@
 
 //zhangchao@wind-mobi.com 20161221 begin
 #ifdef CONFIG_WIND_Z168_BATTERY_MODIFY
+#include "../../../misc/mediatek/power/mt6735/bq24296.h"
 #include "../../../misc/mediatek/board_id/board_id.h"
 extern int get_bid_gpio(void);
 #endif
@@ -269,6 +270,7 @@ static struct workqueue_struct *battery_init_workqueue;
 static struct work_struct battery_init_work;
 //zhangchao@wind-mobi.com 20161128 begin
 #ifdef CONFIG_WIND_Z168_BATTERY_MODIFY
+static int ChrBat_disable = -1;
 extern signed int fgauge_get_Q_max(signed short temperature);
 extern int force_get_tbat(kal_bool update);
 signed int mt_battery_GetBatteryCurrent(void);
@@ -1805,6 +1807,39 @@ static ssize_t store_Charging_disable(struct device *dev, struct device_attribut
 }
 
 static DEVICE_ATTR(Charging_disable, 0664, show_Charging_disable, store_Charging_disable);
+
+static ssize_t show_ChargingBat_disable(struct device *dev, struct device_attribute *attr, char *buf)
+{
+	int chrbat_sign;
+	chrbat_sign = bq24296_get_batfet_disable();
+	battery_log(BAT_LOG_CRTI, "zhangchao chrbat_sign = %d\n", chrbat_sign);
+	return sprintf(buf, "%d\n", chrbat_sign);
+}
+
+static ssize_t store_ChargingBat_disable(struct device *dev, struct device_attribute *attr,
+				  const char *buf, size_t size)
+{
+	int ret = 0;
+	ret = kstrtouint(buf, 10, &ChrBat_disable);
+	battery_log(BAT_LOG_CRTI, "zhangchao Q4 ChrBat_disable = %d\n", ChrBat_disable);
+    if (ChrBat_disable == 1) {
+	   	bq24296_set_batfet_disable(0x01);
+		battery_log(BAT_LOG_CRTI, "zhangchao turn off Q4 ChrBat_disable = %d\n", ChrBat_disable);
+		return size;
+	}
+	else if(ChrBat_disable == 0)
+	{
+	   	bq24296_set_batfet_disable(0x00);
+	   	battery_log(BAT_LOG_CRTI, "zhangchao 00 turn on Q4 ChrBat_disable = %d\n", ChrBat_disable);
+		return size;
+	}
+	else{
+		battery_log(BAT_LOG_CRTI, "zhangchao 01 show ChrBat_disable = %d\n", ChrBat_disable);
+	}
+	return 0;
+}
+
+static DEVICE_ATTR(ChargingBat_disable, 0664, show_ChargingBat_disable, store_ChargingBat_disable);
 #endif
 //zhangchao@wind-mobi.com 20161128 end
 
@@ -4540,6 +4575,7 @@ static int battery_probe(struct platform_device *dev)
 		//zhangchao@wind-mobi.com 20161128 begin
 		#ifdef CONFIG_WIND_Z168_BATTERY_MODIFY
 		ret_device_file = device_create_file(&(dev->dev), &dev_attr_Charging_disable);
+		ret_device_file = device_create_file(&(dev->dev), &dev_attr_ChargingBat_disable);
 		#endif
 		//zhangchao@wind-mobi.com 20161128 end
 
