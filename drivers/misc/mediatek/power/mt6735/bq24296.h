@@ -220,6 +220,11 @@ extern void bq24296_set_bhot(unsigned int val);
 extern void bq24296_set_tmr2x_en(unsigned int val);
 extern void bq24296_set_batfet_disable(unsigned int val);
 extern void bq24296_set_int_mask(unsigned int val);
+//zhangchao@wind-mobi.com 20170208 begin
+#ifdef CONFIG_WIND_Z168_BATTERY_MODIFY
+unsigned int bq24296_get_batfet_disable(void);
+#endif
+//zhangchao@wind-mobi.com 20170208 end
 /* CON8---------------------------------------------------- */
 extern unsigned int bq24296_get_system_status(void);
 extern unsigned int bq24296_get_vbus_stat(void);
