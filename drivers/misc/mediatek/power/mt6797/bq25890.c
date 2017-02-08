@@ -1282,6 +1282,7 @@ static int __init bq25890_init(void)
 			    ret);
 		return ret;
 	}
+	bq2589x_set_dpdm(0);
 	bq2589x_get_gpio_info();
 
 	return 0;
