@@ -58,9 +58,9 @@ static imgsensor_info_struct imgsensor_info = {
     .checksum_value = 0xa7f3e34,//0x722b3840,        //checksum value for Camera Auto Test
 
     .pre = {
-        .pclk = 440000000,                //record different mode's pclk
-        .linelength = 4608,                //record different mode's linelength
-        .framelength = 3182,            //record different mode's framelength
+        .pclk = 452000000,              //record different mode's pclk 440000000
+        .linelength = 4672,             //record different mode's linelength
+        .framelength = 3300,            //record different mode's framelength
         .startx = 0,                    //record different mode's startx of grabwindow
         .starty = 0,                    //record different mode's starty of grabwindow
         .grabwindow_width = 2104,        //record different mode's width of grabwindow
@@ -72,14 +72,14 @@ static imgsensor_info_struct imgsensor_info = {
     },
     .cap = {
         .pclk = 440000000,
-        .linelength = 5726,
+        .linelength = 4672,//5726
         .framelength = 3200,
         .startx = 0,
         .starty = 0,
         .grabwindow_width = 4208,
         .grabwindow_height = 3120,
         .mipi_data_lp2hs_settle_dc = 85,//unit , ns
-        .max_framerate = 240,
+        .max_framerate = 300,
     },
     .cap1 = {                            //capture for PIP 24fps relative information, capture1 mode must use same framelength, linelength with Capture mode for shutter calculate
         .pclk = 440000000,
@@ -972,7 +972,7 @@ static void preview_setting(void)
 	write_cmos_sensor_2byte(0x0300, 0x0004); 	// VT_PIX_CLK_DIV
 	write_cmos_sensor_2byte(0x0302, 0x0001); 	// VT_SYS_CLK_DIV
 	write_cmos_sensor_2byte(0x0304, 0x0303); 	// PRE_PLL_CLK_DIV
-	write_cmos_sensor_2byte(0x0306, 0x6E6E); 	// PLL_MULTIPLIER
+	write_cmos_sensor_2byte(0x0306, 0x7171); 	// PLL_MULTIPLIER 0x6E6E
 	write_cmos_sensor_2byte(0x0308, 0x000A); 	// OP_PIX_CLK_DIV
 	write_cmos_sensor_2byte(0x030A, 0x0001); 	// OP_SYS_CLK_DIV
 	write_cmos_sensor_2byte(0x0112, 0x0A0A); 	// CCP_DATA_FORMAT
@@ -989,8 +989,8 @@ static void preview_setting(void)
 	write_cmos_sensor_2byte(0x3F3C, 0x0003); 	// ANALOG_CONTROL9
 	write_cmos_sensor_2byte(0x0400, 0x0001); 	// SCALING_MODE
 	write_cmos_sensor_2byte(0x0404, 0x0020); 	// SCALE_M
-	write_cmos_sensor_2byte(0x0342, 0x1200); 	// LINE_LENGTH_PCK
-	write_cmos_sensor_2byte(0x0340, 0x0C6E); 	// FRAME_LENGTH_LINES
+	write_cmos_sensor_2byte(0x0342, 0x1240); 	// LINE_LENGTH_PCK
+	write_cmos_sensor_2byte(0x0340, 0x0CE4); 	// FRAME_LENGTH_LINES 0x0C6E
 	write_cmos_sensor_2byte(0x0202, 0x0C4F); 	// COARSE_INTEGRATION_TIME
 /*
 	write_cmos_sensor_2byte(0x31B0, 0x004D);   //Frame preamble 4D
@@ -1002,13 +1002,13 @@ static void preview_setting(void)
 	write_cmos_sensor_2byte(0x31BC, 0x8509);   //MIPI timing4 8509
 	write_cmos_sensor_2byte(0x31AE, 0x0204);   //SERIAL_FORMAT
 */
-	write_cmos_sensor_2byte(0x31B0, 0x004D);   //Frame preamble 4D
-	write_cmos_sensor_2byte(0x31B2, 0x0028);   //Line preamble 28
-	write_cmos_sensor_2byte(0x31B4, 0x52ce);   //MIPI timing0 230E
-	write_cmos_sensor_2byte(0x31B6, 0x5308);   //MIPI timing1 1348
-	write_cmos_sensor_2byte(0x31B8, 0x1c12);   //MIPI timing2 1C12
-	write_cmos_sensor_2byte(0x31BA, 0x185B);   //MIPI timing3 185B
-	write_cmos_sensor_2byte(0x31BC, 0x8509);   //MIPI timing4 8509
+	write_cmos_sensor_2byte(0x31B0, 0x005c);   //Frame preamble 4D
+	write_cmos_sensor_2byte(0x31B2, 0x002d);   //Line preamble 28
+	write_cmos_sensor_2byte(0x31B4, 0x4392);   //MIPI timing0 230E
+	write_cmos_sensor_2byte(0x31B6, 0x43ca);   //MIPI timing1 1348
+	write_cmos_sensor_2byte(0x31B8, 0x2413);   //MIPI timing2 1C12
+	write_cmos_sensor_2byte(0x31BA, 0x1c70);   //MIPI timing3 185B
+	write_cmos_sensor_2byte(0x31BC, 0x868b);   //MIPI timing4 8509
 	write_cmos_sensor_2byte(0x31AE, 0x0204);   //SERIAL_FORMAT
 	
 	write_cmos_sensor_2byte(0x3F3C, 0x0003);
@@ -1030,10 +1030,10 @@ static void capture_setting(kal_uint16 currefps)
 	/// Mclk = 24Mhz , vt_clk = 441.6Mhz
 	////// vt_clk = 441.6mhz pclk = 110.4mhz data rate = 1104mhz  4208*3120@30fps
 	write_cmos_sensor_2byte(0x31AE, 0x0204); 	// SERIAL_FORMAT
-	write_cmos_sensor_2byte(0x0300, 0x0004); 	// VT_PIX_CLK_DIV
+	write_cmos_sensor_2byte(0x0300, 0x0005); 	// VT_PIX_CLK_DIV
 	write_cmos_sensor_2byte(0x0302, 0x0001); 	// VT_SYS_CLK_DIV
-	write_cmos_sensor_2byte(0x0304, 0x0303); 	// PRE_PLL_CLK_DIV
-	write_cmos_sensor_2byte(0x0306, 0x6E6E); 	// PLL_MULTIPLIER
+	write_cmos_sensor_2byte(0x0304, 0x0101); 	// PRE_PLL_CLK_DIV
+	write_cmos_sensor_2byte(0x0306, 0x2E2E); 	// PLL_MULTIPLIER 0x6E6E
 	write_cmos_sensor_2byte(0x0308, 0x000A); 	// OP_PIX_CLK_DIV
 	write_cmos_sensor_2byte(0x030A, 0x0001); 	// OP_SYS_CLK_DIV
 	write_cmos_sensor_2byte(0x0112, 0x0A0A); 	// CCP_DATA_FORMAT
@@ -1053,18 +1053,9 @@ static void capture_setting(kal_uint16 currefps)
 
 	write_cmos_sensor_2byte(0x0400, 0x0000); 	// SCALING_MODE
 	write_cmos_sensor_2byte(0x0404, 0x0010); 	// SCALE_M
-	write_cmos_sensor_2byte(0x0342, 0x165E); 	// LINE_LENGTH_PCK
+	write_cmos_sensor_2byte(0x0342, 0x1240); 	// LINE_LENGTH_PCK 0x165E
 	write_cmos_sensor_2byte(0x0340, 0x0C80); 	// FRAME_LENGTH_LINES
 	write_cmos_sensor_2byte(0x0202, 0x0C7A); 	// COARSE_INTEGRATION_TIME
-	write_cmos_sensor_2byte(0x31B0, 0x004D);   //Frame preamble 4D
-	write_cmos_sensor_2byte(0x31B2, 0x0028);   //Line preamble 28
-	write_cmos_sensor_2byte(0x31B4, 0x52ce);   //MIPI timing0 230E
-	write_cmos_sensor_2byte(0x31B6, 0x5308);   //MIPI timing1 1348
-	write_cmos_sensor_2byte(0x31B8, 0x1c12);   //MIPI timing2 1C12
-	write_cmos_sensor_2byte(0x31BA, 0x185B);   //MIPI timing3 185B
-	write_cmos_sensor_2byte(0x31BC, 0x8509);   //MIPI timing4 8509
-	write_cmos_sensor_2byte(0x31AE, 0x0204);   //SERIAL_FORMAT
-	/// MIPI_TIMING in here
 	/*
 	write_cmos_sensor_2byte(0x31B0, 0x004D);    //Frame preamble 5C
 	write_cmos_sensor_2byte(0x31B2, 0x0028);   //Line preamble 2D
@@ -1074,7 +1065,16 @@ static void capture_setting(kal_uint16 currefps)
 	write_cmos_sensor_2byte(0x31BA, 0x185B);   //MIPI timing3 1C70
 	write_cmos_sensor_2byte(0x31BC, 0x8509);   //MIPI timing4 868B
 	write_cmos_sensor_2byte(0x31AE, 0x0204);    //SERIAL_FORMAT
-	*/ 
+	*/
+	write_cmos_sensor_2byte(0x31B0, 0x005c);   //Frame preamble 4D
+	write_cmos_sensor_2byte(0x31B2, 0x002d);   //Line preamble 28
+	write_cmos_sensor_2byte(0x31B4, 0x4392);   //MIPI timing0 230E
+	write_cmos_sensor_2byte(0x31B6, 0x43ca);   //MIPI timing1 1348
+	write_cmos_sensor_2byte(0x31B8, 0x2413);   //MIPI timing2 1C12
+	write_cmos_sensor_2byte(0x31BA, 0x1c70);   //MIPI timing3 185B
+	write_cmos_sensor_2byte(0x31BC, 0x868b);   //MIPI timing4 8509
+	write_cmos_sensor_2byte(0x31AE, 0x0204);   //SERIAL_FORMAT
+
 	//start streaming
 	write_cmos_sensor_2byte(0x3F3C, 0x0003);
 	write_cmos_sensor(0x0100, 0x01);      //mode_select  8-bit   
