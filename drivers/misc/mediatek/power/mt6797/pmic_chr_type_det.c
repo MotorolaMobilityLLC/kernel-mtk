@@ -35,6 +35,7 @@
 #include <linux/writeback.h>
 #include <linux/seq_file.h>
 
+#include "bq25890.h"
 #include <asm/uaccess.h>
 #include <mt-plat/charging.h>
 #include <mt-plat/upmu_common.h>
@@ -331,6 +332,8 @@ int hw_charging_get_charger_type(void)
 			if (1 == hw_bc11_stepB2()) {
 				is_dcp_type = true;
 				CHR_Type_num = STANDARD_CHARGER;
+				bq2589x_set_dpdm(1);
+				bq25890_config_interface(bq25890_CON2, 0x1, 0x1, 1);
 				/*battery_log(1, "step B2 : STANDARD CHARGER!\r\n");*/
 			} else {
 				CHR_Type_num = CHARGING_HOST;

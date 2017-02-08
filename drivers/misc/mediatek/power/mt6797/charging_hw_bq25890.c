@@ -566,15 +566,6 @@ static int charging_get_charger_type(void *data)
 	*(CHARGER_TYPE *) (data) = hw_charging_get_charger_type();
 	charging_type_det_done = KAL_TRUE;
 	g_charger_type = *(CHARGER_TYPE *) (data);
-	if (g_charger_type == STANDARD_HOST) {
-		g_usb_type_flag = 1;
-		bq2589x_set_dpdm(0);
-		bq25890_config_interface(bq25890_CON2, 0x0, 0x1, 1);
-	} else {
-		g_usb_type_flag = 0;
-		bq2589x_set_dpdm(1);
-		bq25890_config_interface(bq25890_CON2, 0x1, 0x1, 1);
-	}
 
 #endif
 

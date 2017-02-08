@@ -198,6 +198,7 @@ void PMIC_INIT_SETTING_V1(void)
 	ret_val = pmic_config_interface(MT6351_BUCK_OC_CON0, 0xFFFF, 0xFFFF, 0);
 	udelay(200);
 
+ret = pmic_config_interface(0xf78, 0x0, 0x1, 0); /*colse hvdet*/
 ret = pmic_config_interface(0x8, 0x1, 0x1, 0);
 ret = pmic_config_interface(0xA, 0x1, 0x1, 1);
 ret = pmic_config_interface(0xA, 0x1, 0x1, 2);
