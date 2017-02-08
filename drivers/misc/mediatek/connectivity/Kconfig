@@ -359,3 +359,8 @@ config MTK_MERGE_INTERFACE_SUPPORT
 		path. FM audio path will use PCM/I2S merge
 		interface is set to 'y',
 		otherwise merge interface is not used.
+config LCT_OPEN_WIFI_40MHZ
+	bool "LCT_OPEN_WIFI_40MHZ"
+	help
+		This config is used to control WIFI bandrate
+		for 40MHz
