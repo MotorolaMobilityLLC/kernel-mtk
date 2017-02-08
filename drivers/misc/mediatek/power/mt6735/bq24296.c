@@ -531,6 +531,24 @@ void bq24296_set_batfet_disable(unsigned int val)
 	    );
 }
 
+//zhangchao@wind-mobi.com 20170208 begin
+#ifdef CONFIG_WIND_Z168_BATTERY_MODIFY
+unsigned int bq24296_get_batfet_disable(void)
+{
+	unsigned int ret = 0;
+	unsigned char val = 0;
+
+	ret = bq24296_read_interface((unsigned char) (bq24296_CON7),
+				       (&val),
+				       (unsigned char) (CON7_BATFET_Disable_MASK),
+				       (unsigned char) (CON7_BATFET_Disable_SHIFT)
+	    );
+	battery_log(BAT_LOG_CRTI, "zhangchao BATFET = %d\n", val);
+	return val;
+}
+#endif
+//zhangchao@wind-mobi.com 20170208 end
+
 void bq24296_set_int_mask(unsigned int val)
 {
 	unsigned int ret = 0;
