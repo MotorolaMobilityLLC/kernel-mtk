@@ -88,6 +88,7 @@
 #include <mach/mt_battery_meter.h>
 #include <mach/mt_charging.h>
 #include <mach/mt_pmic.h>
+#include "bq25890.h"
 
 #include "mtk_pep_intf.h"
 #include "mtk_pep20_intf.h"
@@ -2784,6 +2785,8 @@ void do_chrdet_int_task(void)
 			battery_log(BAT_LOG_CRTI, "[do_chrdet_int_task] charger NOT exist!\n");
 			BMT_status.charger_exist = KAL_FALSE;
 
+			bq2589x_set_dpdm(0);
+			bq25890_config_interface(bq25890_CON2, 0x0, 0x1, 1);
 			/* Set AICR to 500mA if it is plugged out */
 			battery_charging_control(CHARGING_CMD_SET_INPUT_CURRENT,
 				&plug_out_aicr);
