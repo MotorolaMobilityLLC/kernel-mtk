@@ -114,6 +114,13 @@
 #define CFG_SUPPORT_PERSIST_NETDEV		0	/* create NETDEV when system bootup */
 
 #define CFG_FORCE_USE_20BW			0//huyunge@wind-mobi.com 20170209 for 11n 40M
+/*liuhuan add for LXF_L3600_D01-48 20170208 ALPS03105812 start*/
+#ifdef  CONFIG_LCT_OPEN_WIFI_40MHZ
+#define CFG_FORCE_USE_20BW			0  
+#else
+#define CFG_FORCE_USE_20BW			1    
+#endif
+/*liuhuan add for LXF_L3600_D01-48 20170208 ALPS03105812 end*/
 
 #define CFG_SUPPORT_RN				1
 /*------------------------------------------------------------------------------
