@@ -2397,6 +2397,9 @@ void mt_battery_GetBatteryData(void)
 	static unsigned char batteryIndex = 0xff;
 	static signed int previous_SOC = -1;
 	kal_bool current_sign;
+	#ifdef CONFIG_LCT_CHR_ALT_TEST_SUPPORT
+	unsigned int i;
+	#endif
 
 	if (batteryIndex == 0xff)
 		batteryIndex = 0;
@@ -2458,6 +2461,8 @@ void mt_battery_GetBatteryData(void)
 	{
 		BMT_status.temperature = 25;
 		temperature_sum =  BMT_status.temperature * BATTERY_AVERAGE_SIZE;
+		for (i = 0; i < BATTERY_AVERAGE_SIZE; i++)
+			batteryTempBuffer[i] = BMT_status.temperature;
 	}
 	else
 		BMT_status.temperature = mt_battery_average_method(BATTERY_AVG_TEMP, &batteryTempBuffer[0], temperature, &temperature_sum, batteryIndex);
@@ -4928,16 +4933,20 @@ static ssize_t current_cmd_write(struct file *file, const char *buffer, size_t c
 			lct_alt_status = 1;
 			charging_enable = false;
 			adjust_power = -1;
+			BMT_status.bat_charging_state = CHR_ERROR;
 		} else if (cmd_discharging == 0) {
 			lct_alt_status = 0;
 			charging_enable = true;
 			adjust_power = -1;
+			BMT_status.bat_charging_state = CHR_PRE;
 		}
 		battery_charging_control(CHARGING_CMD_ENABLE, &charging_enable);
 
 		battery_log(BAT_LOG_CRTI,
 		"[current_cmd_write] cmd_current_unlimited=%d, cmd_discharging=%d\n",
 			    cmd_current_unlimited, cmd_discharging);
+		wake_up_bat();
+		battery_log(BAT_LOG_CRTI, "[current_cmd_write] wake up bat thread.\n");
 		return count;
 	}
 
