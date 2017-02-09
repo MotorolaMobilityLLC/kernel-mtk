@@ -296,7 +296,7 @@ static struct LCM_setting_table lcm_setting_ui[] = {
 
 static struct LCM_setting_table lcm_setting_mv[] = {
 	//{0x51,1,{0xff}},
-	{0x53,1,{0x24}},
+	{0x53,1,{0x2c}},
 	{0x55,1,{0x03}},
 	{REGFLAG_END_OF_TABLE, 0x00, {}}
 
