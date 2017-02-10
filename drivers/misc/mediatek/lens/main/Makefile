@@ -58,7 +58,10 @@ ifeq ($(CONFIG_MTK_LENS_LC898212AF_SUPPORT),y)
 MAIN_CFILES += common/lc898212af/LC898212AF.c
 endif
 ifeq ($(CONFIG_MTK_LENS_LCT_DW9763AF_SUPPORT),y)
-MAIN_CFILES += common/lct_dw9763af/LCT_DW9763.c
+MAIN_CFILES += common/lct_dw9763af/LCT_DW9763AF.c
+endif
+ifeq ($(CONFIG_MTK_LENS_LCT_DW9763AF_SUNNY_SUPPORT),y)
+MAIN_CFILES += common/lct_dw9763af_sunny/LCT_DW9763AF_SUNNY.c
 endif
 
 obj-m := mainaf.o
@@ -86,5 +89,6 @@ obj-$(CONFIG_MTK_LENS_LCT_DW9763AF_SUPPORT) += common/lct_dw9763af/
 ifeq ($(CONFIG_WIND_CAMERA_CUSTOM),y)
 obj-$(CONFIG_MTK_LENS_DW9718QTAF_SUPPORT)    += common/dw9718qtaf/
 endif
+obj-$(CONFIG_MTK_LENS_LCT_DW9763AF_SUNNY_SUPPORT) += common/lct_dw9763af_sunny/
 
 endif
