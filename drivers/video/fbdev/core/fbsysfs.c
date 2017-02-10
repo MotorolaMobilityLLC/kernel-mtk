@@ -679,7 +679,7 @@ static ssize_t show_hbm(struct device *device,
 
 #ifdef CONFIG_WIND_HBM_SUPPORT
 #include <linux/leds.h>
-static int hbm_flag = 1;
+int wind_hbm_flag = 1;
 static int last_level = 0;
 static int hbm_level = 255;
 extern struct led_classdev	*lcd_backlight_hbm;
@@ -691,20 +691,21 @@ static ssize_t store_hbm(struct device *device, struct device_attribute *attr,
 			  const char *buf, size_t count)
 {
 	char echo_hbm[2]={'1','0'};
+	int chang_level;
 	led_update_brightness(lcd_backlight_hbm);
-	if(hbm_flag ||  lcd_backlight_hbm->brightness != hbm_level){
+	if(wind_hbm_flag ||  lcd_backlight_hbm->brightness != hbm_level){
 		 last_level = lcd_backlight_hbm->brightness;
 		 printk("tuwenzan hbm lcd_backlight_hbm->brightness = %d last_level = %d\n",lcd_backlight_hbm->brightness,last_level);
 	}
 	if(strncmp(echo_hbm,buf,1)==0){
-		
+		wind_hbm_flag = 0;
 		led_set_brightness(lcd_backlight_hbm,hbm_level);
-		hbm_flag = 0;
 	}
 	if(strncmp(echo_hbm+1,buf,1)==0){
 		printk("tuwenzan enter echo hbm 0\n");
-		led_set_brightness(lcd_backlight_hbm,last_level);
-		hbm_flag = 1;
+		wind_hbm_flag = 1;
+		chang_level = last_level + 1;
+		led_set_brightness(lcd_backlight_hbm,chang_level);
 	}
 	return count;
 
@@ -713,7 +714,7 @@ static ssize_t store_hbm(struct device *device, struct device_attribute *attr,
 static ssize_t show_hbm(struct device *device,
 			   struct device_attribute *attr, char *buf)
 {
-	return snprintf(buf, PAGE_SIZE, "%d\n",!hbm_flag);
+	return snprintf(buf, PAGE_SIZE, "%d\n",!wind_hbm_flag);
 }
 #endif
 /* When cmap is added back in it should be a binary attribute
