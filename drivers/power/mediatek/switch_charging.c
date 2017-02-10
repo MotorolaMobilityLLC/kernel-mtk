@@ -91,7 +91,7 @@ unsigned int g_usb_state = USB_UNCONFIGURED;
 static bool usb_unlimited;
 #if defined(CONFIG_MTK_HAFG_20)
 #ifdef HIGH_BATTERY_VOLTAGE_SUPPORT
-BATTERY_VOLTAGE_ENUM g_cv_voltage = BATTERY_VOLT_04_340000_V;
+BATTERY_VOLTAGE_ENUM g_cv_voltage = BATTERY_VOLT_04_400000_V;
 #else
 BATTERY_VOLTAGE_ENUM g_cv_voltage = BATTERY_VOLT_04_200000_V;
 #endif
@@ -151,7 +151,7 @@ int mtk_get_dynamic_cv(unsigned int *cv)
 
 	if (!g_enable_dynamic_cv) {
 		if (batt_cust_data.high_battery_voltage_support)
-			_cv = BATTERY_VOLT_04_340000_V / 1000;
+			_cv = BATTERY_VOLT_04_400000_V / 1000;
 		else
 			_cv = BATTERY_VOLT_04_200000_V / 1000;
 		goto _out;
@@ -190,7 +190,7 @@ int mtk_get_dynamic_cv(unsigned int *cv)
 			&ircmp_resistor);
 	} else {
 		if (batt_cust_data.high_battery_voltage_support)
-			_cv = BATTERY_VOLT_04_340000_V / 1000;
+			_cv = BATTERY_VOLT_04_400000_V / 1000;
 		else
 			_cv = BATTERY_VOLT_04_200000_V / 1000;
 
@@ -228,7 +228,7 @@ static BATTERY_VOLTAGE_ENUM select_jeita_cv(void)
 		cv_voltage = JEITA_TEMP_POS_45_TO_POS_60_CV_VOLTAGE;
 	} else if (g_temp_status == TEMP_POS_10_TO_POS_45) {
 		if (batt_cust_data.high_battery_voltage_support)
-			cv_voltage = BATTERY_VOLT_04_340000_V;
+			cv_voltage = BATTERY_VOLT_04_400000_V;
 		else
 			cv_voltage = JEITA_TEMP_POS_10_TO_POS_45_CV_VOLTAGE;
 	} else if (g_temp_status == TEMP_POS_0_TO_POS_10) {
@@ -915,7 +915,7 @@ static void mtk_select_cv(void)
 #endif
 
 	if (batt_cust_data.high_battery_voltage_support)
-		cv_voltage = BATTERY_VOLT_04_340000_V;
+		cv_voltage = BATTERY_VOLT_04_400000_V;
 	else
 		cv_voltage = BATTERY_VOLT_04_200000_V;
 
