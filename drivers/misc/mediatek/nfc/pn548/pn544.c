@@ -48,7 +48,12 @@
 #include <linux/of_address.h>
 #endif
 
+//add nfc clkbuf control --sunsiyuan@wind-mobi.com modify at 20170210 begin
+#define WIND_SYS_CLK
+#include <mt_clkbuf_ctl.h>	/*  for clock buffer */
+//add nfc clkbuf contrl --sunsiyuan@wind-mobi.com modify at 20170210 end
 #define PN544_DRVNAME		"pn547"
+
 
 //#define PN544_I2C_ADDR      0x28
 #define MAX_BUFFER_SIZE		512
@@ -389,6 +394,12 @@ static long pn544_dev_unlocked_ioctl(struct file *filp, unsigned int cmd,
 			} else if (arg == 1) {
 				/* power on */
 				printk("pn544 %s power on\n", __func__);
+//add nfc clkbuf control --sunsiyuan@wind-mobi.com modify at 20170210 begin
+#ifdef WIND_SYS_CLK
+				clk_buf_ctrl(CLK_BUF_NFC, 1);
+				msleep(1);
+#endif
+//add nfc clkbuf control --sunsiyuan@wind-mobi.com modify at 20170210 end
 				ret = pn544_platform_pinctrl_select(gpctrl_pn548, st_dwn_pn548_l);
 				ret = pn544_platform_pinctrl_select(gpctrl_pn548, st_ven_pn548_h); 
 				msleep(10);
@@ -397,6 +408,12 @@ static long pn544_dev_unlocked_ioctl(struct file *filp, unsigned int cmd,
 				printk("pn544 %s power off\n", __func__);
 				ret = pn544_platform_pinctrl_select(gpctrl_pn548, st_dwn_pn548_l);
 				ret = pn544_platform_pinctrl_select(gpctrl_pn548, st_ven_pn548_l);
+//add nfc clkbuf control --sunsiyuan@wind-mobi.com modify at 20170210 begin
+#ifdef WIND_SYS_CLK
+				msleep(1);
+				clk_buf_ctrl(CLK_BUF_NFC, 0);
+#endif
+//add nfc clkbuf control --sunsiyuan@wind-mobi.com modify at 20170210 end
 				msleep(50);
 			} else {
 				printk("pn544 %s bad arg %lu\n", __func__, arg);
