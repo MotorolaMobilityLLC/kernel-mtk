@@ -763,7 +763,8 @@ static int ltr778_als_read(struct i2c_client *client, u16* data)
 		winfac_2 = 3;
 		
 	}
-	else if (ratio >= 51)
+	//liujinzhou@wind-mobi.com modify at 20170210 begin
+	else if ((ratio >= 51) && (ratio < 90))
 	{
 		ch0_coeff = 8000;
 		ch1_coeff = -5760;
@@ -771,7 +772,14 @@ static int ltr778_als_read(struct i2c_client *client, u16* data)
 		winfac_2 = 1;
 	
 	}
-
+	else if (ratio >= 90)
+	{
+		ch0_coeff = 8000;
+		ch1_coeff = -5760;
+		winfac_1 = 13;
+		winfac_2 = 4;
+	}
+	//liujinzhou@wind-mobi.com modify at 20170210 end
 	luxdata_int = ((ch0_coeff * alsval_ch0) + (ch1_coeff * alsval_ch1)) / coeff_factor / als_gain_factor / als_integration_factor * WIN_FACTOR*winfac_1/winfac_2;
 	//liujinzhou@wind-mobi.com modify at 20161205 end
 	APS_DBG("ltr778_als_read als_value_lux = %d\n", luxdata_int);
