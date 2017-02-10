@@ -432,10 +432,12 @@ static void lcm_get_params(LCM_PARAMS *params)
 		params->dsi.vertical_sync_active				= 6; //4   
 		params->dsi.vertical_backporch				       = 20;  //14  
 		params->dsi.vertical_frontporch				       = 14;  //16  
-		params->dsi.vertical_active_line				       = FRAME_HEIGHT;     
-		params->dsi.horizontal_sync_active				= 60;   //4
-		params->dsi.horizontal_backporch				= 100;  //60  
-		params->dsi.horizontal_frontporch				= 100;    //60
+		params->dsi.vertical_active_line				       = FRAME_HEIGHT; 
+		//tuwenzan@wind-mobi.com modify for frame rate at 20170210 begin
+		params->dsi.horizontal_sync_active				= 40;   //4
+		params->dsi.horizontal_backporch				= 40;  //60  
+		params->dsi.horizontal_frontporch				= 40;    //60
+		//tuwenzan@wind-mobi.com modify for frame rate at 20170210 end
 		params->dsi.horizontal_blanking_pixel				= 60;   
 		params->dsi.horizontal_active_pixel				= FRAME_WIDTH;  
 		
