@@ -165,6 +165,11 @@ config WIND_HBM_SUPPORT
 	default n
 	help
 	  this macro for contrl lcd backlight up to HBM.
+config WIND_BACKLIGHT_CURVE
+	bool "backlight curve"
+	default n
+	help 
+		backlight curve.
 #tuwenzan@wind-mobi.com add for init cabc ctrl backlight at 20170105 end
 
 #liupeng@wind-mobi.com 20161121 begin
