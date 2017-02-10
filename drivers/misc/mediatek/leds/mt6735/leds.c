@@ -1030,15 +1030,42 @@ void mt_mt65xx_led_work(struct work_struct *work)
 	mutex_unlock(&leds_mutex);
 }
 
+ //tuwenzan@wind-mobi.com modify at 20170209 begin
+#ifdef CONFIG_WIND_BACKLIGHT_CURVE
+extern int wind_hbm_flag;
+extern int wind_standby_flag;
+static int standby_level = 0;
+#endif
+
 void mt_mt65xx_led_set(struct led_classdev *led_cdev, enum led_brightness level)
 {
 	struct mt65xx_led_data *led_data =
 	    container_of(led_cdev, struct mt65xx_led_data, cdev);
+	#ifdef CONFIG_WIND_BACKLIGHT_CURVE
+	int temp = led_data->level;
+	if(wind_hbm_flag == 0){
+		if(led_data->level > level){
+			wind_standby_flag = 1;
+		}
+	}
+//	printk("tuwenzanled led_data->level =%d,level = %d\n",led_data->level,level);
+	#endif
 	/* unsigned long flags; */
 	/* spin_lock_irqsave(&leds_lock, flags); */
-
+	
 #ifdef CONFIG_MTK_AAL_SUPPORT
 	if (led_data->level != level) {
+		#ifdef CONFIG_WIND_BACKLIGHT_CURVE
+		if(wind_standby_flag == 1 && wind_hbm_flag == 0){
+			if(level == 0){
+				standby_level = temp;
+			}else if(temp== 0){
+				level = standby_level;
+			}else{
+				level = temp;
+			}
+		}
+		#endif
 		led_data->level = level;
 		if (strcmp(led_data->cust.name, "lcd-backlight") != 0) {
 			LEDS_DEBUG("Set NLED directly %d at time %lu\n",
@@ -1066,6 +1093,17 @@ void mt_mt65xx_led_set(struct led_classdev *led_cdev, enum led_brightness level)
 #else
 	/* do something only when level is changed */
 	if (led_data->level != level) {
+		#ifdef CONFIG_WIND_BACKLIGHT_CURVE
+		if(wind_standby_flag == 1 && wind_hbm_flag == 0){
+			if(level == 0){
+				standby_level = temp;
+			}else if(temp== 0){
+				level = standby_level;
+			}else{
+				level = temp;
+			}
+		}
+		#endif
 		led_data->level = level;
 		if (strcmp(led_data->cust.name, "lcd-backlight") != 0) {
 			LEDS_DEBUG("Set NLED directly %d at time %lu\n",
@@ -1099,6 +1137,7 @@ void mt_mt65xx_led_set(struct led_classdev *led_cdev, enum led_brightness level)
 /* if(0!=aee_kernel_Powerkey_is_press()) */
 /* aee_kernel_wdt_kick_Powkey_api("mt_mt65xx_led_set",WDT_SETBY_Backlight); */
 }
+//tuwenzan@wind-mobi.com modify at 20170209 end
 
 int mt_mt65xx_blink_set(struct led_classdev *led_cdev,
 			unsigned long *delay_on, unsigned long *delay_off)
