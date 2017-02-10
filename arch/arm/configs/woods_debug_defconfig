@@ -260,6 +260,9 @@ CONFIG_MTK_GPS_SUPPORT=y
 CONFIG_MTK_FMRADIO=y
 CONFIG_MTK_FM_CHIP="MT6625_FM"
 CONFIG_MTK_ECCCI_DRIVER=y
+#lenovo-sw sunyue5 start
+# CONFIG_MTK_WAPI_SUPPORT is not set
+#lenovo-sw sunyue5 end
 # liupeng@wind-mobi.com 20161118 begin
 CONFIG_MTK_NFC=y
 CONFIG_ODM2_NFC_PN548=y
@@ -570,10 +573,15 @@ CONFIG_EGISTEC_FINGERPRINT=y
 #huyunge@wind-mobi.com 20161208 begin
 CONFIG_WIND_MULTI_MD_ONE_IMAGE=y
 #huyunge@wind-mobi.com 20161123 end
+CONFIG_EXFAT_FS=y
+#lenovo-sw yangqing2 merge Kungfu change start
 CONFIG_MTK_EMMC_SUPPORT_OTP=y
 CONFIG_MOTO_AOD_BASE_ON_AP_SENSORS=y
+CONFIG_LENOVO_LTR778=y
 CONFIG_LENOVO_BMA2X2=y
-CONFIG_SDCARD_FS=y
+#lenovo-sw yangqing2 merge Kungfu change end
+#wangxiqiang add to check efuse status
+CONFIG_CHECK_EFUSE_STATUS=y
 #Lenovo-sw quebs2 added 20150510 begin,support efuse inquiry for secboot
 CONFIG_EFUSE_SBC_CHECK=y
 #Lenovo-sw quebs2 added 20150510 end,support efuse inquiry for secboot
@@ -586,3 +594,5 @@ CONFIG_F2FS_FS_XATTR=y
 #huyunge@wind-mobi.com add 20170328 start
 CONFIG_WIND_OTG_HDD_SUPPORT=y
 #huyunge@wind-mobi.com add 20170328 end
+CONFIG_INPUT_KEYCHORD=y
+CONFIG_SDCARD_FS=y
