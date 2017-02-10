@@ -26,6 +26,18 @@ extern long LCT_DW9763AF_Ioctl(struct file *a_pstFile, unsigned int a_u4Command,
 			   unsigned long a_u4Param);
 extern int LCT_DW9763AF_Release(struct inode *a_pstInode, struct file *a_pstFile);
 #endif
+/*jijin.wang lct add for ar1335 2nd*/
+#ifdef CONFIG_MTK_LENS_LCT_DW9763AF_SUNNY_SUPPORT
+#define LCT_DW9763AF_SUNNY_SetI2Cclient LCT_DW9763AF_SUNNY_SetI2Cclient_Main
+#define LCT_DW9763AF_SUNNY_Ioctl LCT_DW9763AF_SUNNY_Ioctl_Main
+#define LCT_DW9763AF_SUNNY_Release LCT_DW9763AF_SUNNY_Release_Main
+extern void LCT_DW9763AF_SUNNY_SetI2Cclient(struct i2c_client *pstAF_I2Cclient, spinlock_t *pAF_SpinLock,
+				  int *pAF_Opened);
+extern long LCT_DW9763AF_SUNNY_Ioctl(struct file *a_pstFile, unsigned int a_u4Command,
+			   unsigned long a_u4Param);
+extern int LCT_DW9763AF_SUNNY_Release(struct inode *a_pstInode, struct file *a_pstFile);
+#endif
+
 /*jijin.wang lct add for ar1335 end*/
 
 #ifdef CONFIG_MTK_LENS_AK7371AF_SUPPORT
