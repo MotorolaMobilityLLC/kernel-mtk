@@ -51,6 +51,12 @@
     #define FALSE 0
 #endif
 
+//sunsiyuan@wind-mobi.com modify ata_check at 20170210 begin
+#ifdef CONFIG_WIND_DEVICE_INFO
+               extern char *g_lcm_name;
+#endif
+//sunsiyuan@wind-mobi.com modify ata_check at 20170210 end
+
 //liujinzhou@wind-mobi.com at 20161201 begin
 #define GPIO_LCD_BIAS_ENP_PIN         (GPIO78 | 0x80000000)
 //liujinzhou@wind-mobi.com at 20161201 end
@@ -576,6 +582,19 @@ static unsigned int lcm_esd_recover(void)
 	return TRUE;
 }
 
+//sunsiyuan@wind-mobi.com modify ata_check at 20170210 begin
+static unsigned int lcm_ata_check(unsigned char *buf)
+{
+       #ifdef CONFIG_WIND_DEVICE_INFO
+       if(!strcmp(g_lcm_name,"hx8394f_hd720_dsi_vdo_boe")){
+               return 1;
+       }else{
+               return -1;
+       }
+       #endif
+}
+//sunsiyuan@wind-mobi.com modify ata_check at 20170210 end
+
 #ifdef WIND_LCD_POWER_SUPPLY_SUPPORT
 extern void lcm_init_power(void);
 extern void lcm_resume_power(void);
@@ -593,6 +612,7 @@ LCM_DRIVER hx8394f_hd720_dsi_vdo_boe_lcm_drv =
 	.compare_id     	= lcm_compare_id,
 	.esd_check = lcm_esd_check,
 	.esd_recover = lcm_esd_recover,
+	.ata_check          = lcm_ata_check,    //sunsiyuan@wind-mobi.com add ata_check at 20170210
 
 #ifdef WIND_LCD_POWER_SUPPLY_SUPPORT
 	.init_power		= lcm_init_power,
