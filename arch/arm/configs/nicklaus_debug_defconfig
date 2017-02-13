@@ -623,3 +623,7 @@ CONFIG_F2FS_FS_XATTR=y
 #add by duanlongfei for close headphone pa when open speaker
 CONFIG_LCT_CLOSE_HEADPHONE_PA=y
 CONFIG_SDCARD_FS=y
+#lenovo-sw sunyue5 start
+# CONFIG_MTK_WAPI_SUPPORT is not set
+#lenovo-sw sunyue5 end
+
