@@ -109,6 +109,18 @@ static void init_lcm_registers(void)
 	MDELAY(20);
 
 	data_array[0] = 0x00023902;
+	data_array[1] = 0x000004FF;
+	dsi_set_cmdq(data_array, 2, 1);
+
+	data_array[0] = 0x00023902;
+	data_array[1] = 0x000001FB;
+	dsi_set_cmdq(data_array, 2, 1);
+
+	data_array[0] = 0x00023902;
+	data_array[1] = 0x00000408;
+	dsi_set_cmdq(data_array, 2, 1);
+
+	data_array[0] = 0x00023902;
 	data_array[1] = 0x000000FF;
 	dsi_set_cmdq(data_array, 2, 1);
 
