@@ -190,12 +190,12 @@ static void lcm_get_params(LCM_PARAMS *params)
 
 	params->dsi.vertical_sync_active = 2;
 	params->dsi.vertical_backporch = 4;
-	params->dsi.vertical_frontporch = 4;
+	params->dsi.vertical_frontporch = 14;
 	params->dsi.vertical_active_line = FRAME_HEIGHT;
 
 	params->dsi.horizontal_sync_active = 20;
-	params->dsi.horizontal_backporch = 100;
-	params->dsi.horizontal_frontporch = 100;
+	params->dsi.horizontal_backporch = 120;
+	params->dsi.horizontal_frontporch = 120;
 	params->dsi.horizontal_active_pixel = FRAME_WIDTH;
 	/* params->dsi.pll_select=1;     //0: MIPI_PLL; 1: LVDS_PLL */
 	/* Bit rate calculation */
