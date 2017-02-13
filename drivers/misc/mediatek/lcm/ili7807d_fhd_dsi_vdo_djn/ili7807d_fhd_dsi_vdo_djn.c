@@ -198,7 +198,7 @@ static void lcm_get_params(LCM_PARAMS *params)
 	/* Bit rate calculation */
 	/* 1 Every lane speed */
 	params->dsi.PLL_CLOCK = 500;
-	/* params->dsi.ssc_disable = 1; */
+	params->dsi.ssc_disable = 1;
 	params->dsi.ssc_range = 4;
 	params->dsi.pll_div1 = 0;	/* div1=0,1,2,3;div1_real=1,2,4,4 ----0: 546Mbps  1:273Mbps */
 	params->dsi.pll_div2 = 0;	/* div2=0,1,2,3;div1_real=1,2,4,4 */
