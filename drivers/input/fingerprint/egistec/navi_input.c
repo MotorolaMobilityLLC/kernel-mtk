@@ -65,7 +65,7 @@ struct navi_cmd_struct cmd_list;
 #define KEY_FPS_YMINUS 618
 #define KEY_FPS_XPLUS  621
 #define KEY_FPS_XMINUS 620
-//sunsiyuan@wind-mobi.com modify at 20170331 end
+
 /*
  * ENABLE_SWIPE_UP_DOWN properties
  *
