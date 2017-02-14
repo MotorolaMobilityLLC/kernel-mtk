@@ -143,7 +143,7 @@ static int tps65132_remove(struct i2c_client *client)
 }
 
 
-int tps65132_write_bytes_5513(unsigned char addr, unsigned char value)
+static int tps65132_write_bytes_5513(unsigned char addr, unsigned char value)
 {	
 	int ret = 0;
     char write_data[2];	
@@ -159,7 +159,7 @@ int tps65132_write_bytes_5513(unsigned char addr, unsigned char value)
     ret=i2c_master_send(client, write_data, 2);
     return ret ;
 }
-EXPORT_SYMBOL_GPL(tps65132_write_bytes_5513);
+//EXPORT_SYMBOL_GPL(tps65132_write_bytes_5513);
 
 
 static int __init tps65132_iic_init(void)
