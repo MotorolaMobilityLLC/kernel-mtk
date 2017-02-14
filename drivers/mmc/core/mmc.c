@@ -28,6 +28,8 @@
 #include <linux/kthread.h>
 #endif
 
+unsigned int emmc_raw_cid[2] = {0};
+
 static const unsigned int tran_exp[] = {
 	10000,		100000,		1000000,	10000000,
 	0,		0,		0,		0
@@ -1641,6 +1643,9 @@ skip_cache:
 
 	if (!oldcard)
 		host->card = card;
+
+	emmc_raw_cid[0] = card->raw_cid[0];
+	emmc_raw_cid[1] = card->raw_cid[1];
 
 	return 0;
 
