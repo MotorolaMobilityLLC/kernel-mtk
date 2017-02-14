@@ -13,4 +13,4 @@
 
 
 obj-y += s5k5e2yamipiraw_Sensor.o
-
+obj-y += s5k5e2_eeprom.o
