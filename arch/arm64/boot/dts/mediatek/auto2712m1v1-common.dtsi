@@ -19,11 +19,33 @@
 	model = "MediaTek MT2712m1v1 board";
 	compatible = "mediatek,mt2712m1v1", "mediatek,mt2712";
 
-
 	alsps:als_ps@0 {
 		compatible = "mediatek,als_ps";
 		status = "okay";
 	};
+
+	backlight_lcd0: backlight_lcd0 {
+		compatible = "pwm-backlight";
+		pwms = <&pwm0 0 1000000>;
+		brightness-levels = <
+			128 136 144 152 160 168 176 184
+			192 200 208 216 224 232 240 248
+			255
+		>;
+		default-brightness-level = <9>;
+	};
+
+	backlight_lcd1: backlight_lcd1 {
+		compatible = "pwm-backlight";
+		pwms = <&pwm1 0 1000000>;
+		brightness-levels = <
+			128 136 144 152 160 168 176 184
+			192 200 208 216 224 232 240 248
+			255
+		>;
+		default-brightness-level = <9>;
+	};
+
 	barometer@0 {
 		compatible = "mediatek,barometer";
 	};
@@ -153,6 +175,26 @@
 		compatible = "mediatek,orientation";
 	};
 
+	panel: panel {
+		compatible = "auo,g133han01";
+		backlight = <&backlight_lcd0>;
+		port {
+			panel_in: endpoint {
+			remote-endpoint = <&lvds0_out>;
+			};
+		};
+	};
+
+	panel1: panel1 {
+		compatible = "auo,g133han01";
+		backlight = <&backlight_lcd1>;
+		port {
+			panel1_in: endpoint {
+			remote-endpoint = <&lvds1_out>;
+			};
+		};
+	};
+
 	usb_p0_vbus: regulator@2 {
 		compatible = "regulator-fixed";
 		regulator-name = "p0_vbus";
@@ -198,6 +240,24 @@
 
 &auxadc {
 	status = "okay";
+};
+
+&dpi0 {
+	status = "okay";
+	port {
+		dpi0_out: endpoint {
+			remote-endpoint = <&lvds0_in>;
+		};
+	};
+};
+
+&dpi1 {
+	status = "okay";
+	port {
+		dpi1_out: endpoint {
+			remote-endpoint = <&lvds1_in>;
+		};
+	};
 };
 
 &eth {
@@ -281,6 +341,55 @@
 	mediatek,kpd-hw-factory-key  = <0>;
 };
 
+&lvds0 {
+	status = "okay";
+	mediatek,dual-channel;
+	ports {
+		#address-cells = <1>;
+		#size-cells = <0>;
+		port@0 {
+			reg = <0>;
+			lvds0_in: endpoint {
+				remote-endpoint = <&dpi0_out>;
+			};
+		};
+		port@1 {
+			reg = <1>;
+			lvds0_out: endpoint {
+				remote-endpoint = <&panel_in>;
+			};
+		};
+	};
+};
+
+&lvds1 {
+	status = "okay";
+	mediatek,dual-channel;
+	ports {
+		#address-cells = <1>;
+		#size-cells = <0>;
+		port@0 {
+			reg = <0>;
+			lvds1_in: endpoint {
+				remote-endpoint = <&dpi1_out>;
+			};
+		};
+		port@1 {
+			reg = <1>;
+			lvds1_out: endpoint {
+				remote-endpoint = <&panel1_in>;
+			};
+		};
+	};
+};
+
+&lvds_tx0 {
+	status = "okay";
+};
+
+&lvds_tx1 {
+	status = "okay";
+};
 
 &mmc1 {
 	pinctrl-names = "default", "state_uhs";
@@ -340,6 +449,28 @@
 };
 
 &pio {
+	disp_pwm0_pins: disp_pwm0_pins {
+		pins1 {
+			pinmux = <MT2712_PIN_4_PWM0__FUNC_DISP0_PWM>;
+		};
+
+		pins2 {
+			pinmux = <MT2712_PIN_6_PWM2__FUNC_GPIO6>;
+			output-high;
+		};
+	};
+
+	disp_pwm1_pins: disp_pwm1_pins {
+		pins1 {
+			pinmux = <MT2712_PIN_5_PWM1__FUNC_DISP1_PWM>;
+		};
+
+		pins2 {
+			pinmux = <MT2712_PIN_7_PWM3__FUNC_GPIO7>;
+			output-high;
+		};
+	};
+
 	ethphy_rst: ethphy_rst {
 		rest_pin {
 			pinmux = <MT2712_PIN_87_GBE_COL__FUNC_GPIO87>;
@@ -651,6 +782,18 @@
 			bias-pull-down;
 		};
 	};
+};
+
+&pwm0 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&disp_pwm0_pins>;
+	status = "okay";
+};
+
+&pwm1 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&disp_pwm1_pins>;
+	status = "okay";
 };
 
 &spi0 {
