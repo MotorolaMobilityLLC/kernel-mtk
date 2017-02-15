@@ -55,6 +55,10 @@
 /****************************   Modify end    *******************************************/
 #define LOG_INF(format, args...)	pr_err(PFX "[%s] " format, __FUNCTION__, ##args)
 #define Sleep(ms) mdelay(ms)
+UINT32 R_CalGain_B = 0;
+UINT32 Gr_CalGain_Gb = 0; 
+UINT32 R_FacGain_B = 0; 
+UINT32 Gr_FacGain_Gb = 0; 
 BYTE otpinfo_page2 = 2;
 BYTE otpinfo_page3 = 3;
 BYTE otpawb_page4 = 4;
@@ -163,7 +167,7 @@ static imgsensor_info_struct imgsensor_info = {
 	.sensor_interface_type = SENSOR_INTERFACE_TYPE_MIPI,
 	.mipi_sensor_type = MIPI_OPHY_NCSI2, //0,MIPI_OPHY_NCSI2;  1,MIPI_OPHY_CSI2
 	.mipi_settle_delay_mode = MIPI_SETTLEDELAY_AUTO,//0,MIPI_SETTLEDELAY_AUTO; 1,MIPI_SETTLEDELAY_MANNUAL
-	.sensor_output_dataformat = SENSOR_OUTPUT_FORMAT_RAW_B, //SENSOR_OUTPUT_FORMAT_RAW_B, //SENSOR_OUTPUT_FORMAT_RAW_Gr,
+	.sensor_output_dataformat = SENSOR_OUTPUT_FORMAT_RAW_Gr, //SENSOR_OUTPUT_FORMAT_RAW_B, //SENSOR_OUTPUT_FORMAT_RAW_Gr,
 	.mclk = 24,
 	.mipi_lane_num = SENSOR_MIPI_2_LANE,
 	.i2c_addr_table = {0x20, 0x21, 0xff},
@@ -171,7 +175,7 @@ static imgsensor_info_struct imgsensor_info = {
 
 
 static imgsensor_struct imgsensor = {
-	.mirror = IMAGE_NORMAL,				//mirrorflip information
+	.mirror = IMAGE_HV_MIRROR,				//mirrorflip information
 	.sensor_mode = IMGSENSOR_MODE_INIT, //IMGSENSOR_MODE enum value,record current sensor mode,such as: INIT, Preview, Capture, Video,High Speed Video, Slim Video
 	.shutter = 0x3D0,					//current shutter
 	.gain = 0x100,						//current gain
@@ -361,10 +365,34 @@ bool S5K5E2YA_get_otp_awb(BYTE Page)
 {
 	BYTE awb_rg_msb  = 0, awb_rg_lsb = 0, awb_bg_msb   = 0, awb_bg_lsb = 0;
 	BYTE awb_GbGr_msb  = 0, awb_GbGr_lsb = 0;
-
+	BYTE awb_r_msb  = 0, awb_r_lsb = 0, awb_b_msb   = 0, awb_b_lsb = 0;
+	BYTE awb_Gb_msb  = 0, awb_Gb_lsb = 0, awb_Gr_msb  = 0, awb_Gr_lsb = 0;
+	BYTE r_msb_golden  = 0, r_lsb_golden = 0, b_msb_golden   = 0, b_lsb_golden = 0;
+	BYTE Gb_msb_golden  = 0, Gb_lsb_golden = 0, Gr_msb_golden = 0, Gr_lsb_golden= 0;
 	kal_uint16 awb_rg = 0,awb_bg = 0, awb_gbgr = 0, AWB_Checksum=0;
 	BYTE AWB_Checksum_msb = 0, AWB_Checksum_lsb = 0;
 	start_read_otp(Page);
+	awb_r_msb   = read_cmos_sensor(0x0A1c);
+	awb_r_lsb   = read_cmos_sensor(0x0A1b);
+	awb_b_msb   = read_cmos_sensor(0x0A22);
+	awb_b_lsb   = read_cmos_sensor(0x0A21);
+	awb_Gb_msb = read_cmos_sensor(0x0A20);
+	awb_Gb_lsb = read_cmos_sensor(0x0A1f);
+	awb_Gr_msb   = read_cmos_sensor(0x0A1e);
+	awb_Gr_lsb   = read_cmos_sensor(0x0A1d);
+	r_msb_golden   = read_cmos_sensor(0x0A2a);
+	r_lsb_golden   = read_cmos_sensor(0x0A29);
+	b_msb_golden = read_cmos_sensor(0x0A30);
+	b_lsb_golden = read_cmos_sensor(0x0A2f);
+	Gb_msb_golden   = read_cmos_sensor(0x0A2e);
+	Gb_lsb_golden   = read_cmos_sensor(0x0A2d);
+	Gr_msb_golden = read_cmos_sensor(0x0A2c);
+	Gr_lsb_golden = read_cmos_sensor(0x0A2b);
+	R_CalGain_B = (awb_r_msb&0x000000ff)|((awb_r_lsb<<8)&0x0000ff00)|((awb_b_msb<<16)&0x00ff0000)|((awb_b_lsb<<24)&0xff000000);
+	Gr_CalGain_Gb= (awb_Gb_msb&0x000000ff)|((awb_Gb_lsb<<8)&0x0000ff00)|((awb_Gr_msb<<16)&0x00ff0000)|((awb_Gr_lsb<<24)&0xff000000);
+	R_FacGain_B = (r_msb_golden&0x000000ff)|((r_lsb_golden<<8)&0x0000ff00)|((b_msb_golden<<16)&0x00ff0000)|((b_lsb_golden<<24)&0xff000000);
+	Gr_FacGain_Gb = (Gb_msb_golden&0x000000ff)|((Gb_lsb_golden<<8)&0x0000ff00)|((Gr_msb_golden<<16)&0x00ff0000)|((Gr_lsb_golden<<24)&0xff000000);
+	
 	awb_rg_msb   = read_cmos_sensor(0x0A24);
 	awb_rg_lsb   = read_cmos_sensor(0x0A23);
 	awb_bg_msb   = read_cmos_sensor(0x0A26);
@@ -2886,7 +2914,7 @@ static void sensor_init(void)
 	// streaming ON
 	write_cmos_sensor(0x0100,0x01);
 
-    set_mirror_flip(IMAGE_V_MIRROR);
+                  set_mirror_flip(IMAGE_NORMAL);
 }	/*	sensor_init  */
 
 
@@ -3532,7 +3560,7 @@ static kal_uint32 open(void)
         #if 1 //Lens shading
         S5K5E2YA_OTP_LSC_update(&S5K5E2YA_OTP_Infor);
         #endif
-        #if 1 //awb using
+        #if 0 //awb using
         S5K5E2YA_OTP_AWB_update(&S5K5E2YA_OTP_Infor);
         #endif
 	#endif

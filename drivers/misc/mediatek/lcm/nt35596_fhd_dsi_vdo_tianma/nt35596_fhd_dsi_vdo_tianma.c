@@ -109,6 +109,18 @@ static void init_lcm_registers(void)
 	MDELAY(20);
 
 	data_array[0] = 0x00023902;
+	data_array[1] = 0x000004FF;
+	dsi_set_cmdq(data_array, 2, 1);
+
+	data_array[0] = 0x00023902;
+	data_array[1] = 0x000001FB;
+	dsi_set_cmdq(data_array, 2, 1);
+
+	data_array[0] = 0x00023902;
+	data_array[1] = 0x00000408;
+	dsi_set_cmdq(data_array, 2, 1);
+
+	data_array[0] = 0x00023902;
 	data_array[1] = 0x000000FF;
 	dsi_set_cmdq(data_array, 2, 1);
 
@@ -190,18 +202,18 @@ static void lcm_get_params(LCM_PARAMS *params)
 
 	params->dsi.vertical_sync_active = 2;
 	params->dsi.vertical_backporch = 4;
-	params->dsi.vertical_frontporch = 4;
+	params->dsi.vertical_frontporch = 14;
 	params->dsi.vertical_active_line = FRAME_HEIGHT;
 
 	params->dsi.horizontal_sync_active = 20;
-	params->dsi.horizontal_backporch = 100;
-	params->dsi.horizontal_frontporch = 100;
+	params->dsi.horizontal_backporch = 120;
+	params->dsi.horizontal_frontporch = 120;
 	params->dsi.horizontal_active_pixel = FRAME_WIDTH;
 	/* params->dsi.pll_select=1;     //0: MIPI_PLL; 1: LVDS_PLL */
 	/* Bit rate calculation */
 	/* 1 Every lane speed */
 	params->dsi.PLL_CLOCK = 500;
-	/* params->dsi.ssc_disable = 1; */
+	params->dsi.ssc_disable = 1;
 	params->dsi.ssc_range = 4;
 	params->dsi.pll_div1 = 0;	/* div1=0,1,2,3;div1_real=1,2,4,4 ----0: 546Mbps  1:273Mbps */
 	params->dsi.pll_div2 = 0;	/* div2=0,1,2,3;div1_real=1,2,4,4 */

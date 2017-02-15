@@ -2922,6 +2922,8 @@ void BAT_thread(void)
 #if defined(HQ_READ_FLASH)
 extern unsigned int g_emmc_raw_cid[4]; /* raw card CID */
 extern void msdc_emmc_id_check(void);
+extern phys_addr_t get_max_DRAM_size(void);
+extern u64 msdc_get_capacity(int get_emmc_total);
 #endif
 
 int bat_routine_thread(void *x)
@@ -3025,6 +3027,8 @@ static long adc_cali_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 
         #if defined(HQ_READ_FLASH)
         char temp_buf[10];
+	int dram_size;
+	int emmc_size;
         #endif
 
 	int temp_car_tune;
@@ -3179,9 +3183,19 @@ static long adc_cali_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 		break;
 		/* add for meta tool------------------------------- */
 	case Get_META_BAT_VOL:
-                #if defined(HQ_READ_FLASH)
-                msdc_emmc_id_check();
-                #endif
+#if defined(HQ_READ_FLASH)
+		msdc_emmc_id_check();
+		dram_size = get_max_DRAM_size() / 1024 / 1024 / 1024;
+		emmc_size = msdc_get_capacity(0) / 1024 / 1024 / 2;
+
+		if (emmc_size > 32 && emmc_size < 64)
+			emmc_size = 64;
+		else if (emmc_size > 16 && emmc_size < 32)
+			emmc_size = 32;
+		else if (emmc_size > 8 && emmc_size < 16)
+			emmc_size = 16;
+
+#endif
 
 		user_data_addr = (int *)arg;
 		ret = copy_from_user(adc_in_data, user_data_addr, 8);
@@ -3218,7 +3232,8 @@ static long adc_cali_ioctl(struct file *file, unsigned int cmd, unsigned long ar
                 printk("****g_emmc_raw_cid 11 after :0x%x\n", temp_buf[4]<<8 | temp_buf[5]);
                 printk("****g_emmc_raw_cid 12 after :0x%x\n", temp_buf[9]);
 
-                adc_out_data[1] = (temp_buf[4]<<8 | temp_buf[9]);
+                //adc_out_data[1] = (temp_buf[4]<<8 | temp_buf[9]);
+                adc_out_data[1] = dram_size<<8|emmc_size;
                 printk("****g_emmc_raw_cid adc_out_data[1] :0x%x\n", adc_out_data[1]);
                 //xlog_printk(ANDROID_LOG_DEBUG, "Power/Battery", "****g_emmc_raw_cid all123 :0x%x\n", ((g_emmc_raw_cid[0]<<10) | (g_emmc_raw_cid[1]<<2) | (g_emmc_raw_cid[2]&0xff000000>>6)));
                 #endif

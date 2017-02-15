@@ -348,9 +348,15 @@ static int ReadOV13855AWBData(unsigned short ui4_offset, unsigned int  ui4_lengt
 		CAM_CALDB("AWBdatabuf[0]:0x%x\n", AWBdatabuf[0]);
 		CAM_CALDB("OV13855_OTP AWB data invalid!\n");
 	}
-	for(i = 21; i < 29; i++)
+/*read r/g/b chanel value */
+	for(i = 0; i < 8; i++)
 	{
-		pinputdata[i-21] = AWBdatabuf[i];
+		pinputdata[i] = AWBdatabuf[i+7];
+	}
+/*read golden r/g/b value*/
+	for(i = 8; i < 16; i++)
+	{
+		pinputdata[i] = AWBdatabuf[i+13];
 	}
 	
 	return 0;
@@ -541,7 +547,7 @@ static long CAM_CAL_Ioctl(
             //CAM_CALDB("[CAM_CAL] Before read Working buffer address 0x%p \n", pu1Params);
 
             //i4RetValue = selective_read_region(ptempbuf->u4Offset, pu1Params, GT24c64_DEVICE_ID,ptempbuf->u4Length);  
-            if((ptempbuf->u4Offset == AWB_ADDR) && (ptempbuf->u4Length == 8) )
+            if((ptempbuf->u4Offset == AWB_ADDR) && (ptempbuf->u4Length == 16) )
             {
             	i4RetValue = ReadOV13855AWBData((u16)ptempbuf->u4Offset, ptempbuf->u4Length, pu1Params);
             }
