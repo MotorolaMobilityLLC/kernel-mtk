@@ -3847,7 +3847,7 @@
         <module name="kpd">
             <row>8</row>
             <column>9</column>
-            <keyMatrix>VOLUMEUP PLAYPAUSE NC NC NC NC NC NC NC
+            <keyMatrix>VOLUMEUP MUSICKEY NC NC NC NC NC NC NC
 				NC NC NC NC NC NC NC NC NC
 				NC NC NC NC NC NC NC NC NC
 				NC NC NC NC NC NC NC NC NC
