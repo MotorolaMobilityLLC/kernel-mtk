@@ -168,6 +168,8 @@ static int Aud_APLL_DIV_APLL2_cntr;
 static int irqcount;
 static int APLL1Counter;
 static int APLL2Counter;
+static int APLL1TunerCounter;
+static int APLL2TunerCounter;
 static bool mExternalModemStatus;
 
 static struct irq_manager irq_managers[Soc_Aud_IRQ_MCU_MODE_NUM_OF_IRQ_MODE];
@@ -683,7 +685,6 @@ void EnableALLbySampleRate(uint32 SampleRate)
 		if (APLL1Counter == 1) {
 			AudDrv_Clk_On();
 			EnableApll1(true);
-			EnableI2SDivPower(AUDIO_APLL1_DIV0, true);
 			AudDrv_APLL1Tuner_Clk_On();
 		}
 	} else if (GetApllbySampleRate(SampleRate) == Soc_Aud_APLL2) {
@@ -692,7 +693,6 @@ void EnableALLbySampleRate(uint32 SampleRate)
 		if (APLL2Counter == 1) {
 			AudDrv_Clk_On();
 			EnableApll2(true);
-			EnableI2SDivPower(AUDIO_APLL2_DIV0, true);
 			AudDrv_APLL2Tuner_Clk_On();
 		}
 	}
@@ -710,7 +710,6 @@ void DisableALLbySampleRate(uint32 SampleRate)
 		APLL1Counter--;
 		if (APLL1Counter == 0) {
 			/* disable APLL1 */
-			EnableI2SDivPower(AUDIO_APLL1_DIV0, false);
 			AudDrv_APLL1Tuner_Clk_Off();
 			EnableApll1(false);
 			AudDrv_Clk_Off();
@@ -720,7 +719,6 @@ void DisableALLbySampleRate(uint32 SampleRate)
 		APLL2Counter--;
 		if (APLL2Counter == 0) {
 			/* disable APLL2 */
-			EnableI2SDivPower(AUDIO_APLL2_DIV0, false);
 			AudDrv_APLL2Tuner_Clk_Off();
 			EnableApll2(false);
 			AudDrv_Clk_Off();
@@ -729,6 +727,44 @@ void DisableALLbySampleRate(uint32 SampleRate)
 
 }
 
+void EnableAPLLTunerbySampleRate(uint32 SampleRate)
+{
+	pr_debug("%s APLL1Counter = %d APLL2Counter = %d SampleRate = %d\n", __func__, APLL1TunerCounter,
+		APLL2TunerCounter, SampleRate);
+
+	if (GetApllbySampleRate(SampleRate) == Soc_Aud_APLL1) {
+		/* enable APLL1 Tuner*/
+		APLL1TunerCounter++;
+		if (APLL1TunerCounter == 1)
+			AudDrv_APLL1Tuner_On();
+	} else if (GetApllbySampleRate(SampleRate) == Soc_Aud_APLL2) {
+		/* enable APLL2 Tuner*/
+		APLL2TunerCounter++;
+		if (APLL2TunerCounter == 1)
+			AudDrv_APLL2Tuner_On();
+	}
+
+}
+
+void DisableAPLLTunerbySampleRate(uint32 SampleRate)
+{
+	pr_debug("%s APLL1Counter = %d APLL2Counter = %d SampleRate = %d\n", __func__, APLL1TunerCounter,
+		APLL2TunerCounter, SampleRate);
+
+	if (GetApllbySampleRate(SampleRate) == Soc_Aud_APLL1) {
+		/* disable APLL1 */
+		APLL1TunerCounter--;
+		if (APLL1TunerCounter == 0)
+			AudDrv_APLL1Tuner_Off();
+	} else if (GetApllbySampleRate(SampleRate) == Soc_Aud_APLL2) {
+		/* disable APLL2 */
+		APLL2TunerCounter--;
+		if (APLL2TunerCounter == 0)
+			AudDrv_APLL2Tuner_Off();
+
+	}
+
+}
 
 uint32 SetCLkMclk(uint32 I2snum, uint32 SampleRate)
 {
@@ -809,10 +845,10 @@ void EnableApll1(bool bEnable)
 
 	if (bEnable) {
 		if (Aud_APLL_DIV_APLL1_cntr == 0) {
-			Afe_Set_Reg(AUDIO_CLK_AUDDIV_0, 0x3, 0x3);
+			Afe_Set_Reg(AUDIO_CLK_AUDDIV_0, 0x1, 0x1);
 			Afe_Set_Reg(AUDIO_CLK_AUDDIV_0, 0x07000000, 0x0f000000);
 			AudDrv_APLL22M_Clk_On();
-			Afe_Set_Reg(AUDIO_CLK_AUDDIV_0, 0x0, 0x3);
+			Afe_Set_Reg(AUDIO_CLK_AUDDIV_0, 0x0, 0x1);
 			/* SetClkCfg(AUDIO_CLK_CFG_6, 0x00010000, 0x00810000); */
 		}
 		Aud_APLL_DIV_APLL1_cntr++;
@@ -833,10 +869,10 @@ void EnableApll2(bool bEnable)
 
 	if (bEnable) {
 		if (Aud_APLL_DIV_APLL2_cntr == 0) {
-			Afe_Set_Reg(AUDIO_CLK_AUDDIV_0, 0x3, 0x3);
+			Afe_Set_Reg(AUDIO_CLK_AUDDIV_0, 0x2, 0x2);
 			Afe_Set_Reg(AUDIO_CLK_AUDDIV_0, 0x70000000, 0xf0000000);
 			AudDrv_APLL24M_Clk_On();
-			Afe_Set_Reg(AUDIO_CLK_AUDDIV_0, 0x0, 0x3);
+			Afe_Set_Reg(AUDIO_CLK_AUDDIV_0, 0x0, 0x2);
 			/* SetClkCfg(AUDIO_CLK_CFG_6, 0x01000000, 0x81000000); */
 		}
 		Aud_APLL_DIV_APLL2_cntr++;
@@ -898,6 +934,7 @@ static unsigned int pin_mode_audclk, pin_mode_audmosi, pin_mode_audmiso;
 #endif
 #endif				/*
 				 */
+static bool afe_on;
 void EnableAfe(bool bEnable)
 {
 	unsigned long flags;
@@ -930,7 +967,17 @@ void EnableAfe(bool bEnable)
 	MemEnable = CheckMemIfEnable();
 
 	if (false == bEnable && false == MemEnable) {
+		if (afe_on && mtk_soc_always_hd) {
+			DisableAPLLTunerbySampleRate(44100);
+			DisableAPLLTunerbySampleRate(48000);
+		}
 		Afe_Set_Reg(AFE_DAC_CON0, 0x0, 0x1);
+
+		if (afe_on && mtk_soc_always_hd) {
+			DisableALLbySampleRate(44100);
+			DisableALLbySampleRate(48000);
+		}
+		afe_on = false;
 #ifndef CONFIG_FPGA_EARLY_PORTING
 #ifdef CONFIG_OF
 #if defined(CONFIG_MTK_LEGACY)
@@ -978,7 +1025,15 @@ void EnableAfe(bool bEnable)
 
 #endif
 #endif
+		if (!afe_on && mtk_soc_always_hd) {
+			EnableALLbySampleRate(44100);
+			EnableALLbySampleRate(48000);
+		}
 		Afe_Set_Reg(AFE_DAC_CON0, 0x1, 0x1);
+		if (!afe_on && mtk_soc_always_hd) {
+			EnableAPLLTunerbySampleRate(44100);
+			EnableAPLLTunerbySampleRate(48000);
+		}
 	}
 	spin_unlock_irqrestore(&afe_control_lock, flags);
 }
