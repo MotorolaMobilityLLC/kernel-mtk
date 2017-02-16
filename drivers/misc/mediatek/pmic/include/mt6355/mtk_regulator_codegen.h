@@ -21,7 +21,7 @@ extern int pmic_regulator_ldo_matches_size, pmic_regulator_buck_matches_size;
 
 /* -------Code Gen Start-------*/
 /* Non regular voltage regulator */
-#define NON_REGULAR_VOLTAGE_REGULATOR_GEN(_name, _type, array, mode, use)	\
+#define NON_REGULAR_VOLTAGE_REGULATOR_GEN(_name, _type, array, array_idx, mode, use)	\
 {	\
 	.desc = {	\
 		.name = #_name,	\
@@ -35,6 +35,7 @@ extern int pmic_regulator_ldo_matches_size, pmic_regulator_buck_matches_size;
 		},	\
 	},	\
 	.pvoltages = (void *)(array),	\
+	.idxs = (void *)(array_idx),	\
 	.en_att = __ATTR(_type##_##_name##_status, 0664, show_regulator_status, store_regulator_status), \
 	.voltage_att = __ATTR(_type##_##_name##_voltage, 0664, show_regulator_voltage, store_regulator_voltage), \
 	.en_cb = mt6355_upmu_set_rg_##_type##_##_name##_en,	\

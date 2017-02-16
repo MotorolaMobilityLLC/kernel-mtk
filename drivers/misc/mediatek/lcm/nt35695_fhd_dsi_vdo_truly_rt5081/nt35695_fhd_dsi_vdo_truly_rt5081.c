@@ -1523,6 +1523,7 @@ static void lcm_suspend_power(void)
 static void lcm_resume_power(void)
 {
 #ifndef CONFIG_FPGA_EARLY_PORTING
+	SET_RESET_PIN(0);
 	display_bias_enable();
 #endif
 
@@ -1531,7 +1532,7 @@ static void lcm_resume_power(void)
 static void lcm_init(void)
 {
 	SET_RESET_PIN(0);
-	MDELAY(5);
+	MDELAY(15);
 	SET_RESET_PIN(1);
 	MDELAY(1);
 	SET_RESET_PIN(0);

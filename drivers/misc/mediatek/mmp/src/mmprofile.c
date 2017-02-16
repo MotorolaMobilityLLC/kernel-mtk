@@ -678,7 +678,7 @@ static void MMProfileLog_Int(mmp_event event, mmp_log_type type, unsigned long d
 
 	if (!MMProfileGlobals.enable)
 		return;
-	if (event >= MMProfileMaxEventCount)
+	if ((event >= MMProfileMaxEventCount) || (event == MMP_InvalidEvent))
 		return;
 	if (bMMProfileInitBuffer && MMProfileGlobals.start
 	    && (MMProfileGlobals.event_state[event] & MMP_EVENT_STATE_ENABLED)) {
@@ -758,7 +758,7 @@ static long MMProfileLogMetaInt(mmp_event event, mmp_log_type type, mmp_metadata
 
 	if (!MMProfileGlobals.enable)
 		return 0;
-	if (event >= MMProfileMaxEventCount)
+	if ((event >= MMProfileMaxEventCount) || (event == MMP_InvalidEvent))
 		return -3;
 	if (bMMProfileInitBuffer && MMProfileGlobals.start
 	    && (MMProfileGlobals.event_state[event] & MMP_EVENT_STATE_ENABLED)) {
@@ -981,7 +981,7 @@ long mmprofile_query_enable(mmp_event event)
 {
 	if (!MMProfileGlobals.enable)
 		return 0;
-	if (event >= MMProfileMaxEventCount)
+	if ((event >= MMProfileMaxEventCount) || (event == MMP_InvalidEvent))
 		return 0;
 	if (event == MMP_InvalidEvent)
 		return MMProfileGlobals.enable;
@@ -1022,6 +1022,8 @@ long mmprofile_log_meta_structure(mmp_event event, mmp_log_type type,
 		return -3;
 	if (in_interrupt())
 		return 0;
+	if (event == MMP_InvalidEvent)
+		return 0;
 	if (bMMProfileInitBuffer && MMProfileGlobals.start
 	    && (MMProfileGlobals.event_state[event] & MMP_EVENT_STATE_ENABLED)) {
 		mmp_metadata_t MetaData;
@@ -1053,6 +1055,8 @@ long mmprofile_log_meta_string_ex(mmp_event event, mmp_log_type type, unsigned l
 	if (event >= MMProfileMaxEventCount)
 		return -3;
 	if (in_interrupt())
+		return 0;
+	if (event == MMP_InvalidEvent)
 		return 0;
 	if (bMMProfileInitBuffer && MMProfileGlobals.start
 	    && (MMProfileGlobals.event_state[event] & MMP_EVENT_STATE_ENABLED)) {
@@ -1088,6 +1092,8 @@ long mmprofile_log_meta_bitmap(mmp_event event, mmp_log_type type, mmp_metadata_
 	if (event >= MMProfileMaxEventCount)
 		return -3;
 	if (in_interrupt())
+		return 0;
+	if (event == MMP_InvalidEvent)
 		return 0;
 	if (bMMProfileInitBuffer && MMProfileGlobals.start
 	    && (MMProfileGlobals.event_state[event] & MMP_EVENT_STATE_ENABLED)) {
@@ -1578,7 +1584,9 @@ static long mmprofile_ioctl(struct file *file, unsigned int cmd, unsigned long a
 		    (!bMMProfileInitBuffer) ||
 		    (!MMProfileGlobals.start) ||
 		    (arg >= MMProfileMaxEventCount) ||
-		    (!(MMProfileGlobals.event_state[arg] & MMP_EVENT_STATE_ENABLED)))
+		    (arg == MMP_InvalidEvent))
+			ret = -EINVAL;
+		else if (!(MMProfileGlobals.event_state[arg] & MMP_EVENT_STATE_ENABLED))
 			ret = -EINVAL;
 		break;
 	case MMP_IOC_ISENABLE:

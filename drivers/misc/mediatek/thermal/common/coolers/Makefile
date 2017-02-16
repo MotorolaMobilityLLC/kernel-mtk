@@ -120,8 +120,18 @@ ifeq ($(CONFIG_MTK_THERMAL_PA_VIA_ATCMD),y)
     #obj-$(CONFIG_THERMAL) += mtk_cooler_mdulthro.o
     obj-$(CONFIG_THERMAL) += mtk_cooler_mutt.o
 endif
-obj-$(CONFIG_THERMAL) += mtk_cooler_fps.o
-obj-$(CONFIG_THERMAL) += mtk_cooler_bcct.o
+    obj-$(CONFIG_THERMAL) += mtk_cooler_fps.o
+
+ifeq ($(CONFIG_MTK_PUMP_EXPRESS_PLUS_30_SUPPORT),y)
+	obj-$(CONFIG_THERMAL) += mtk_cooler_bcct_v1.o
+else
+	ifeq ($(CONFIG_MTK_GAUGE_VERSION),30)
+		obj-$(CONFIG_THERMAL) += mtk_cooler_bcct_v1.o
+	else
+		obj-$(CONFIG_THERMAL) += mtk_cooler_bcct.o
+	endif
+endif
+
 obj-$(CONFIG_THERMAL) += mtk_cooler_atm.o
 obj-$(CONFIG_THERMAL) += mtk_cooler_dtm.o
 obj-$(CONFIG_THERMAL) += mtk_cooler_sysrst.o

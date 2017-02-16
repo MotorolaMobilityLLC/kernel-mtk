@@ -98,6 +98,8 @@ struct compat_ion_mm_config_buffer_param {
 	compat_uint_t module_id;
 	compat_uint_t security;
 	compat_uint_t coherent;
+	compat_uint_t reserve_iova_start;
+	compat_uint_t reserve_iova_end;
 };
 
 struct compat_ion_mm_buf_debug_info {
@@ -203,6 +205,8 @@ static int compat_get_ion_mm_config_buffer_param(
 	compat_uint_t module_id;
 	compat_uint_t security;
 	compat_uint_t coherent;
+	compat_uint_t iova_start;
+	compat_uint_t iova_end;
 
 	int err;
 
@@ -214,6 +218,10 @@ static int compat_get_ion_mm_config_buffer_param(
 	err |= put_user(security, &data->security);
 	err |= get_user(coherent, &data32->coherent);
 	err |= put_user(coherent, &data->coherent);
+	err |= get_user(iova_start, &data32->reserve_iova_start);
+	err |= put_user(iova_start, &data->reserve_iova_start);
+	err |= get_user(iova_end, &data32->reserve_iova_end);
+	err |= put_user(iova_end, &data->reserve_iova_end);
 
 	return err;
 }
@@ -358,6 +366,7 @@ static int compat_get_ion_mm_data(struct compat_ion_mm_data *data32, struct ion_
 
 	switch (mm_cmd) {
 	case ION_MM_CONFIG_BUFFER:
+	case ION_MM_CONFIG_BUFFER_EXT:
 	{
 		err |= compat_get_ion_mm_config_buffer_param(&data32->config_buffer_param, &data->config_buffer_param);
 		break;

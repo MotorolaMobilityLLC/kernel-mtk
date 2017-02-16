@@ -62,8 +62,7 @@
 /* Define our driver version */
 #define NIC_DRIVER_MAJOR_VERSION        2
 #define NIC_DRIVER_MINOR_VERSION        0
-#define NIC_DRIVER_VERSION              (2, 0, 1, 1)
-#define NIC_DRIVER_VERSION_STRING       "2.0.1.1"
+#define NIC_DRIVER_VERSION_STRING       "201607271200"
 
 /*******************************************************************************
 *                             D A T A   T Y P E S

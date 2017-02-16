@@ -2641,7 +2641,8 @@ VOID aisCheckPostponedDisconnTimeout(IN P_ADAPTER_T prAdapter, P_AIS_FSM_INFO_T 
 	/* if we're in	req channel/join/search state, don't report disconnect. */
 	if (prAisFsmInfo->eCurrentState == AIS_STATE_JOIN ||
 		prAisFsmInfo->eCurrentState == AIS_STATE_SEARCH ||
-		prAisFsmInfo->eCurrentState == AIS_STATE_REQ_CHANNEL_JOIN)
+		prAisFsmInfo->eCurrentState == AIS_STATE_REQ_CHANNEL_JOIN ||
+		prAisFsmInfo->eCurrentState == AIS_STATE_COLLECT_ESS_INFO)
 		return;
 
 	prAisBssInfo = prAdapter->prAisBssInfo;

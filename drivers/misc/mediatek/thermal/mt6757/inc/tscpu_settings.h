@@ -284,6 +284,10 @@ extern int tscpu_cur_fp_factor;
 extern int tscpu_next_fp_factor;
 #endif
 
+extern int tscpu_fake_temp;
+extern int tscpu_fake_temp_enable;
+
+
 /*In common/thermal_zones/mtk_ts_cpu.c*/
 extern long long thermal_get_current_time_us(void);
 extern void tscpu_workqueue_cancel_timer(void);

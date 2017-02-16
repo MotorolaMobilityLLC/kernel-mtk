@@ -707,6 +707,7 @@ INT32 _stp_psm_release_data(MTKSTP_PSM_T *stp_psm)
 	UINT8 type = 0;
 	UINT32 len = 0;
 	UINT8 delimiter[2];
+	INT32 winspace_flag = 0;
 
 	/* STP_PSM_ERR_FUNC("++++++++++release data++len=%d\n", osal_fifo_len(&stp_psm->hold_fifo)); */
 	while (osal_fifo_len(&stp_psm->hold_fifo) && i > 0) {
@@ -714,31 +715,46 @@ INT32 _stp_psm_release_data(MTKSTP_PSM_T *stp_psm)
 		/* psm_fifo_lock(stp_psm); */
 		osal_lock_sleepable_lock(&stp_psm->hold_fifo_spinlock_global);
 
-		ret = osal_fifo_out(&stp_psm->hold_fifo, (PUINT8) &type, sizeof(UINT8));
-		ret = osal_fifo_out(&stp_psm->hold_fifo, (PUINT8) &len, sizeof(UINT32));
+		if (winspace_flag == 0) {
+			ret = osal_fifo_out(&stp_psm->hold_fifo, (PUINT8)&type, sizeof(UINT8));
+			ret = osal_fifo_out(&stp_psm->hold_fifo, (PUINT8)&len, sizeof(UINT32));
 
-		if (len > STP_PSM_PACKET_SIZE_MAX) {
-			STP_PSM_ERR_FUNC("***psm packet's length too Long!****\n");
-			STP_PSM_INFO_FUNC("***reset psm's fifo***\n");
-		} else {
-			osal_memset(stp_psm->out_buf, 0, STP_PSM_TX_SIZE);
-			ret = osal_fifo_out(&stp_psm->hold_fifo, (PUINT8) stp_psm->out_buf, len);
+			if (len > STP_PSM_PACKET_SIZE_MAX) {
+				STP_PSM_ERR_FUNC("***psm packet's length too Long!****\n");
+				STP_PSM_INFO_FUNC("***reset psm's fifo***\n");
+			} else {
+				osal_memset(stp_psm->out_buf, 0, STP_PSM_TX_SIZE);
+				ret = osal_fifo_out(&stp_psm->hold_fifo, (PUINT8) stp_psm->out_buf, len);
+			}
+
+			ret = osal_fifo_out(&stp_psm->hold_fifo, (PUINT8)delimiter, 2);
 		}
-
-		ret = osal_fifo_out(&stp_psm->hold_fifo, (PUINT8) delimiter, 2);
 
 		if (delimiter[0] == 0xbb && delimiter[1] == 0xbb) {
 			/* osal_buffer_dump(stp_psm->out_buf, "psm->out_buf", len, 32); */
-			stp_send_data_no_ps(stp_psm->out_buf, len, type);
+			ret = stp_send_data_no_ps(stp_psm->out_buf, len, type);
+			if (ret == 0)
+				winspace_flag++;
+			else
+				winspace_flag = 0;
 		} else {
 			STP_PSM_ERR_FUNC("***psm packet fifo parsing fail****\n");
 			STP_PSM_INFO_FUNC("***reset psm's fifo***\n");
 
 			osal_fifo_reset(&stp_psm->hold_fifo);
 		}
-		i--;
+
+		if (winspace_flag == 0)
+			i--;
 		/* psm_fifo_unlock(stp_psm); */
 		osal_unlock_sleepable_lock(&stp_psm->hold_fifo_spinlock_global);
+
+		if (winspace_flag > 0 && winspace_flag < 10)
+			osal_sleep_ms(2);
+		else if (winspace_flag >= 10) {
+			STP_PSM_ERR_FUNC("***More than 20ms no winspace available***\n");
+			break;
+		}
 	}
 	return STP_PSM_OPERATION_SUCCESS;
 }

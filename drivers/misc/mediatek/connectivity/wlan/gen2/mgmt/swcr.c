@@ -214,6 +214,9 @@ void dumpQueue(P_ADAPTER_T prAdapter)
 	DBGLOG(SW4, INFO, " rIndicatedRfbList %u\n", prAdapter->rRxCtrl.rIndicatedRfbList.u4NumElem);
 	DBGLOG(SW4, INFO, " ucNumIndPacket %u\n", prAdapter->rRxCtrl.ucNumIndPacket);
 	DBGLOG(SW4, INFO, " ucNumRetainedPacket %u\n", prAdapter->rRxCtrl.ucNumRetainedPacket);
+#if CFG_SUPPORT_MULTITHREAD
+	DBGLOG(SW4, INFO, " ucNumRxDataPacket %9u\n", prAdapter->rRxCtrl.rRxDataRfbList.u4NumElem);
+#endif
 
 }
 

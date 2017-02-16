@@ -137,12 +137,19 @@ VOID secInit(IN P_ADAPTER_T prAdapter, IN UINT_8 ucNetTypeIdx)
 	prAdapter->rMib.dot11RSNAConfigAuthenticationSuitesTable[7].dot11RSNAConfigAuthenticationSuite =
 	    RSN_AKM_SUITE_PSK_SHA256;
 	prAdapter->rMib.dot11RSNAConfigAuthenticationSuitesTable[8].dot11RSNAConfigAuthenticationSuite =
-	    WFA_AKM_SUITE_OSEN;
+		RSN_AKM_SUITE_FT_802_1X;
+	prAdapter->rMib.dot11RSNAConfigAuthenticationSuitesTable[9].dot11RSNAConfigAuthenticationSuite =
+		RSN_AKM_SUITE_FT_PSK;
+	prAdapter->rMib.dot11RSNAConfigAuthenticationSuitesTable[10].dot11RSNAConfigAuthenticationSuite =
+		WFA_AKM_SUITE_OSEN;
 #else
 	prAdapter->rMib.dot11RSNAConfigAuthenticationSuitesTable[6].dot11RSNAConfigAuthenticationSuite =
-	    WFA_AKM_SUITE_OSEN;
+		RSN_AKM_SUITE_FT_802_1X;
+	prAdapter->rMib.dot11RSNAConfigAuthenticationSuitesTable[7].dot11RSNAConfigAuthenticationSuite =
+		RSN_AKM_SUITE_FT_PSK;
+	prAdapter->rMib.dot11RSNAConfigAuthenticationSuitesTable[8].dot11RSNAConfigAuthenticationSuite =
+		WFA_AKM_SUITE_OSEN;
 #endif
-
 	for (i = 0; i < MAX_NUM_SUPPORTED_AKM_SUITES; i++) {
 		prAdapter->rMib.dot11RSNAConfigAuthenticationSuitesTable[i].dot11RSNAConfigAuthenticationSuiteEnabled =
 		    FALSE;
@@ -699,6 +706,26 @@ BOOLEAN secEnabledInAis(IN P_ADAPTER_T prAdapter)
 	}
 	return FALSE;
 }				/* secEnabled */
+
+BOOLEAN secWpaEnabledInAis(IN P_ADAPTER_T prAdapter)
+{
+	DEBUGFUNC("secEnabled");
+
+	ASSERT(prAdapter->rWifiVar.rConnSettings.eEncStatus < ENUM_ENCRYPTION3_KEY_ABSENT);
+
+	switch (prAdapter->rWifiVar.rConnSettings.eEncStatus) {
+	case ENUM_ENCRYPTION_DISABLED:
+	case ENUM_ENCRYPTION1_ENABLED:
+		return FALSE;
+	case ENUM_ENCRYPTION2_ENABLED:
+	case ENUM_ENCRYPTION3_ENABLED:
+		return TRUE;
+	default:
+		DBGLOG(RSN, TRACE, "Unknown encryption setting %d\n", prAdapter->rWifiVar.rConnSettings.eEncStatus);
+		break;
+	}
+	return FALSE;
+}
 
 /*----------------------------------------------------------------------------*/
 /*!

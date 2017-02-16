@@ -133,6 +133,10 @@ typedef unsigned char           BOOL;
 /*#define ENABLE_WAITIRQ_LOG*/ /* wait irq debug logs */
 /*#define ENABLE_STT_IRQ_LOG*/  /*show STT irq debug logs */
 /* Queue timestamp for deque. Update when non-drop frame @SOF */
+/* NOTE:
+* HW timestamp actually control by gEnableSwTimestamp
+* TIMESTAMP_QUEUE_EN & TSTMP_SUBSAMPLE_INTPL must be 1
+*/
 #define TIMESTAMP_QUEUE_EN          (1)
 #if (TIMESTAMP_QUEUE_EN == 1)
 #define TSTMP_SUBSAMPLE_INTPL		(1)
@@ -4864,6 +4868,7 @@ volatile int Vsync_cnt[2] = {0, 0};
 static volatile CAM_FrameST FrameStatus[ISP_IRQ_TYPE_AMOUNT] = {0};
 
 /* current invoked time is at 1st sof or not during each streaming, reset when streaming off */
+static volatile MBOOL gEnableSwTimestamp = 1;
 static volatile MBOOL g1stSof[ISP_IRQ_TYPE_AMOUNT] = {0};
 #if (TSTMP_SUBSAMPLE_INTPL == 1)
 static volatile MBOOL g1stSwP1Done[ISP_IRQ_TYPE_AMOUNT] = {0};
@@ -4953,9 +4958,13 @@ static long ISP_Buf_CTRL_FUNC(unsigned long Param)
 				(pstRTBuf[rt_buf_ctrl.module]->ring_buf[_rrzo_].active == MFALSE)) {
 					sof_count[rt_buf_ctrl.module] = 0;
 					g1stSof[rt_buf_ctrl.module] = MTRUE;
+					gSTime[rt_buf_ctrl.module].sec = ISP_HW_TS_UNDEFINED;
+					gSTime[rt_buf_ctrl.module].usec = ISP_HW_TS_UNDEFINED;
 					#if (TSTMP_SUBSAMPLE_INTPL == 1)
-					g1stSwP1Done[rt_buf_ctrl.module] = MTRUE;
-					gPrevSofTimestp[rt_buf_ctrl.module] = 0;
+					if (gEnableSwTimestamp) {
+						g1stSwP1Done[rt_buf_ctrl.module] = MTRUE;
+						gPrevSofTimestp[rt_buf_ctrl.module] = 0;
+					}
 					#endif
 					g_ISPIntErr[rt_buf_ctrl.module] = 0;
 					pstRTBuf[rt_buf_ctrl.module]->dropCnt = 0;
@@ -4973,6 +4982,8 @@ static long ISP_Buf_CTRL_FUNC(unsigned long Param)
 				if (pstRTBuf[rt_buf_ctrl.module]->ring_buf[_camsv_imgo_].active == MFALSE) {
 					sof_count[rt_buf_ctrl.module] = 0;
 					g1stSof[rt_buf_ctrl.module] = MTRUE;
+					gSTime[rt_buf_ctrl.module].sec = ISP_HW_TS_UNDEFINED;
+					gSTime[rt_buf_ctrl.module].usec = ISP_HW_TS_UNDEFINED;
 					g_ISPIntErr[rt_buf_ctrl.module] = 0;
 					pstRTBuf[rt_buf_ctrl.module]->dropCnt = 0;
 					pstRTBuf[rt_buf_ctrl.module]->state = 0;
@@ -4984,6 +4995,8 @@ static long ISP_Buf_CTRL_FUNC(unsigned long Param)
 			case ISP_IRQ_TYPE_INT_UNI_A_ST:
 				sof_count[rt_buf_ctrl.module] = 0;
 				g1stSof[rt_buf_ctrl.module] = MTRUE;
+				gSTime[rt_buf_ctrl.module].sec = ISP_HW_TS_UNDEFINED;
+				gSTime[rt_buf_ctrl.module].usec = ISP_HW_TS_UNDEFINED;
 				g_ISPIntErr[rt_buf_ctrl.module] = 0;
 				pstRTBuf[rt_buf_ctrl.module]->dropCnt = 0;
 				pstRTBuf[rt_buf_ctrl.module]->state = 0;
@@ -6669,6 +6682,14 @@ static MINT32 ISP_ResetResume_Cam(ISP_IRQ_TYPE_ENUM module, MUINT32 flag)
 	/* Adjust S/W start time when using H/W timestamp */
 	#if (TIMESTAMP_QUEUE_EN == 0)
 	g1stSof[module] = MTRUE;
+	gSTime[module].sec = ISP_HW_TS_UNDEFINED;
+	gSTime[module].usec = ISP_HW_TS_UNDEFINED;
+	#else
+	if (!gEnableSwTimestamp) {
+		g1stSof[module] = MTRUE;
+		gSTime[module].sec = ISP_HW_TS_UNDEFINED;
+		gSTime[module].usec = ISP_HW_TS_UNDEFINED;
+	}
 	#endif
 
 	return 0;
@@ -7320,6 +7341,15 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 			Ret = -EFAULT;
 		}
 		break;
+	case ISP_TS_MODE:
+		if (copy_from_user(DebugFlag, (void *)Param, sizeof(MUINT32)) == 0) {
+			LOG_INF("enable %s Timestamp\n", DebugFlag[0] ? "SW" : "HW");
+			gEnableSwTimestamp = DebugFlag[0];
+		} else {
+			LOG_ERR("copy_from_user failed\n");
+			Ret = -EFAULT;
+		}
+		break;
 	case ISP_VF_LOG:
 		if (copy_from_user(DebugFlag, (void *)Param, sizeof(MUINT32) * 2) == 0) {
 			switch (DebugFlag[0]) {
@@ -7331,7 +7361,8 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 
 				switch (DebugFlag[1]) {
 				case 0:
-					LOG_INF("CAM_A viewFinder is ON\n");
+					LOG_INF("CAM_A viewFinder is ON, %s timestamp\n",
+						    gEnableSwTimestamp ? "SW" : "HW");
 					cam_dmao = ISP_RD32(CAM_REG_CTL_DMA_EN(ISP_CAM_A_IDX));
 					LOG_INF("CAM_A:[DMA_EN]:0x%x\n", cam_dmao);
 
@@ -7347,13 +7378,16 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 					module = ISP_IRQ_TYPE_INT_CAM_A_ST;
 
 					#if (TIMESTAMP_QUEUE_EN == 1)
-					memset((void *)&(IspInfo.TstpQInfo[ISP_IRQ_TYPE_INT_CAM_A_ST]), 0,
+					if (gEnableSwTimestamp) {
+						memset((void *)&(IspInfo.TstpQInfo[ISP_IRQ_TYPE_INT_CAM_A_ST]), 0,
 							sizeof(ISP_TIMESTPQ_INFO_STRUCT));
+					}
 					#endif
 
 					break;
 				case 1:
-					LOG_INF("CAM_B viewFinder is ON\n");
+					LOG_INF("CAM_B viewFinder is ON, %s timestamp\n",
+						    gEnableSwTimestamp ? "SW" : "HW");
 					cam_dmao = ISP_RD32(CAM_REG_CTL_DMA_EN(ISP_CAM_B_IDX));
 					LOG_INF("CAM_B:[DMA_EN]:0x%x\n", cam_dmao);
 
@@ -7370,8 +7404,10 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 					module = ISP_IRQ_TYPE_INT_CAM_B_ST;
 
 					#if (TIMESTAMP_QUEUE_EN == 1)
-					memset((void *)&(IspInfo.TstpQInfo[ISP_IRQ_TYPE_INT_CAM_B_ST]), 0,
+					if (gEnableSwTimestamp) {
+						memset((void *)&(IspInfo.TstpQInfo[ISP_IRQ_TYPE_INT_CAM_B_ST]), 0,
 							sizeof(ISP_TIMESTPQ_INFO_STRUCT));
+					}
 					#endif
 
 					break;
@@ -7482,40 +7518,45 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 	case ISP_GET_START_TIME:
 		if (copy_from_user(DebugFlag, (void *)Param, sizeof(MUINT32) * 3) == 0) {
 			#if (TIMESTAMP_QUEUE_EN == 1)
-			S_START_T tstp;
 			S_START_T *pTstp = NULL;
-			MUINT32 dma_id = DebugFlag[1];
+			S_START_T tstp;
 
-			if (_cam_max_ == DebugFlag[1]) {
-				/* only for wait timestamp to ready */
-				Ret = ISP_WaitTimestampReady(DebugFlag[0], DebugFlag[2]);
-				break;
-			}
+			if (gEnableSwTimestamp) {
+				MUINT32 dma_id = DebugFlag[1];
 
-			switch (DebugFlag[0]) {
-			case ISP_IRQ_TYPE_INT_CAM_A_ST:
-			case ISP_IRQ_TYPE_INT_CAM_B_ST:
-				pTstp = &tstp;
+				if (_cam_max_ == DebugFlag[1]) {
+					/* only for wait timestamp to ready */
+					Ret = ISP_WaitTimestampReady(DebugFlag[0], DebugFlag[2]);
+					break;
+				}
 
-				if (ISP_PopBufTimestamp(DebugFlag[0], dma_id, pTstp) != 0)
-					LOG_ERR("Get Buf sof timestamp fail");
+				switch (DebugFlag[0]) {
+				case ISP_IRQ_TYPE_INT_CAM_A_ST:
+				case ISP_IRQ_TYPE_INT_CAM_B_ST:
+					pTstp = &tstp;
 
-				break;
-			case ISP_IRQ_TYPE_INT_CAMSV_0_ST:
-			case ISP_IRQ_TYPE_INT_CAMSV_1_ST:
-			case ISP_IRQ_TYPE_INT_CAMSV_2_ST:
-			case ISP_IRQ_TYPE_INT_CAMSV_3_ST:
-			case ISP_IRQ_TYPE_INT_CAMSV_4_ST:
-			case ISP_IRQ_TYPE_INT_CAMSV_5_ST:
+					if (ISP_PopBufTimestamp(DebugFlag[0], dma_id, pTstp) != 0)
+						LOG_ERR("Get Buf sof timestamp fail");
+
+					break;
+				case ISP_IRQ_TYPE_INT_CAMSV_0_ST:
+				case ISP_IRQ_TYPE_INT_CAMSV_1_ST:
+				case ISP_IRQ_TYPE_INT_CAMSV_2_ST:
+				case ISP_IRQ_TYPE_INT_CAMSV_3_ST:
+				case ISP_IRQ_TYPE_INT_CAMSV_4_ST:
+				case ISP_IRQ_TYPE_INT_CAMSV_5_ST:
+					pTstp = &gSTime[DebugFlag[0]];
+					break;
+				default:
+					LOG_ERR("unsupported module:0x%x\n", DebugFlag[0]);
+					Ret = -EFAULT;
+					break;
+				}
+				if (Ret != 0)
+					break;
+			} else {
 				pTstp = &gSTime[DebugFlag[0]];
-				break;
-			default:
-				LOG_ERR("unsupported module:0x%x\n", DebugFlag[0]);
-				Ret = -EFAULT;
-				break;
 			}
-			if (Ret != 0)
-				break;
 			#else
 			S_START_T *pTstp = &gSTime[DebugFlag[0]];
 			#endif
@@ -8162,6 +8203,7 @@ static long ISP_ioctl_compat(struct file *filp, unsigned int cmd, unsigned long 
 	case ISP_ION_FREE:
 	case ISP_ION_FREE_BY_HWMODULE:
 	case ISP_CQ_SW_PATCH:
+	case ISP_TS_MODE:
 		return filp->f_op->unlocked_ioctl(filp, cmd, arg);
 	default:
 		return -ENOIOCTLCMD;
@@ -13686,7 +13728,7 @@ static irqreturn_t ISP_Irq_CAM_A(MINT32 Irq, void *DeviceId)
 		}
 
 		#if (TSTMP_SUBSAMPLE_INTPL == 1)
-		if (g1stSwP1Done[module] == MTRUE) {
+		if (gEnableSwTimestamp && g1stSwP1Done[module] == MTRUE) {
 			unsigned long long cur_timestp = (unsigned long long)sec*1000000 + usec;
 			MUINT32 frmPeriod = ((ISP_RD32(CAM_REG_TG_SUB_PERIOD(reg_module)) >> 8) & 0x1F) + 1;
 
@@ -13773,7 +13815,7 @@ static irqreturn_t ISP_Irq_CAM_A(MINT32 Irq, void *DeviceId)
 			}
 
 			#if (TIMESTAMP_QUEUE_EN == 1)
-			{
+			if (gEnableSwTimestamp) {
 			unsigned long long cur_timestp = (unsigned long long)sec*1000000 + usec;
 			MUINT32 subFrm = 0;
 			CAM_FrameST FrmStat_aao, FrmStat_afo, FrmStat_flko, FrmStat_pdo;
@@ -13921,7 +13963,7 @@ static irqreturn_t ISP_Irq_CAM_A(MINT32 Irq, void *DeviceId)
 			#endif /* (TIMESTAMP_QUEUE_EN == 1) */
 
 			IRQ_LOG_KEEPER(module, m_CurrentPPB, _LOG_INF,
-				"CAMA P1_SOF_%d_%d(0x%x_0x%x,0x%x_0x%x,0x%x,0x%x,0x%x),int_us:%d,cq:0x%x\n",
+				"CAMA P1_SOF_%d_%d(0x%x_0x%x,0x%x_0x%x,0x%x,0x%x,0x%x)(0x%x,0x%x,0x%x),int_us:%d,cq:0x%x\n",
 				       sof_count[module], cur_v_cnt,
 				       (unsigned int)(ISP_RD32(CAM_REG_FBC_IMGO_CTL1(reg_module))),
 				       (unsigned int)(ISP_RD32(CAM_REG_FBC_IMGO_CTL2(reg_module))),
@@ -13930,6 +13972,9 @@ static irqreturn_t ISP_Irq_CAM_A(MINT32 Irq, void *DeviceId)
 				       ISP_RD32(CAM_REG_IMGO_BASE_ADDR(reg_module)),
 				       ISP_RD32(CAM_REG_RRZO_BASE_ADDR(reg_module)),
 				       magic_num,
+				       ISP_RD32(CAM_REG_FBC_AAO_CTL2(reg_module)),
+				       ISP_RD32(CAM_REG_FBC_AFO_CTL2(reg_module)),
+				       ISP_RD32(CAM_UNI_REG_FBC_FLKO_A_CTL2(ISP_UNI_A_IDX)),
 				       (MUINT32)((sec * 1000000 + usec) - (1000000 * m_sec + m_usec)),
 				       ISP_RD32(CAM_REG_CQ_THR0_BASEADDR(reg_module)));
 
@@ -14159,7 +14204,7 @@ static irqreturn_t ISP_Irq_CAM_B(MINT32  Irq, void *DeviceId)
 		}
 
 		#if (TSTMP_SUBSAMPLE_INTPL == 1)
-		if (g1stSwP1Done[module] == MTRUE) {
+		if (gEnableSwTimestamp && g1stSwP1Done[module] == MTRUE) {
 			unsigned long long cur_timestp = (unsigned long long)sec*1000000 + usec;
 			MUINT32 frmPeriod = ((ISP_RD32(CAM_REG_TG_SUB_PERIOD(reg_module)) >> 8) & 0x1F) + 1;
 
@@ -14245,7 +14290,7 @@ static irqreturn_t ISP_Irq_CAM_B(MINT32  Irq, void *DeviceId)
 			}
 
 			#if (TIMESTAMP_QUEUE_EN == 1)
-			{
+			if (gEnableSwTimestamp) {
 			unsigned long long cur_timestp = (unsigned long long)sec*1000000 + usec;
 			MUINT32 subFrm = 0;
 			CAM_FrameST FrmStat_aao, FrmStat_afo, FrmStat_flko, FrmStat_pdo;
@@ -14393,7 +14438,7 @@ static irqreturn_t ISP_Irq_CAM_B(MINT32  Irq, void *DeviceId)
 			#endif /* (TIMESTAMP_QUEUE_EN == 1) */
 
 			IRQ_LOG_KEEPER(module, m_CurrentPPB, _LOG_INF,
-				"CAMB P1_SOF_%d_%d(0x%x_0x%x,0x%x_0x%x,0x%x,0x%x,0x%x),int_us:%d,cq:0x%x\n",
+				"CAMB P1_SOF_%d_%d(0x%x_0x%x,0x%x_0x%x,0x%x,0x%x,0x%x)(0x%x,0x%x,0x%x),int_us:%d,cq:0x%x\n",
 				       sof_count[module], cur_v_cnt,
 				       (unsigned int)(ISP_RD32(CAM_REG_FBC_IMGO_CTL1(reg_module))),
 				       (unsigned int)(ISP_RD32(CAM_REG_FBC_IMGO_CTL2(reg_module))),
@@ -14402,6 +14447,9 @@ static irqreturn_t ISP_Irq_CAM_B(MINT32  Irq, void *DeviceId)
 				       ISP_RD32(CAM_REG_IMGO_BASE_ADDR(reg_module)),
 				       ISP_RD32(CAM_REG_RRZO_BASE_ADDR(reg_module)),
 				       magic_num,
+				       ISP_RD32(CAM_REG_FBC_AAO_CTL2(reg_module)),
+				       ISP_RD32(CAM_REG_FBC_AFO_CTL2(reg_module)),
+				       ISP_RD32(CAM_UNI_REG_FBC_FLKO_A_CTL2(ISP_UNI_A_IDX)),
 				       (MUINT32)((sec * 1000000 + usec) - (1000000 * m_sec + m_usec)),
 				       ISP_RD32(CAM_REG_CQ_THR0_BASEADDR(reg_module)));
 

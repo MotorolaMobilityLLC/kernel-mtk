@@ -47,7 +47,6 @@ stCAM_CAL_FUNC_STRUCT g_camCalCMDFunc[] = {
 	{CMD_BRCB032GWZ, brcb032gwz_selective_read_region},
 	{CMD_CAT24C16, cat24c16_selective_read_region},
 	{CMD_GT24C32A, gt24c32a_selective_read_region},
-
 	/*      ADD before this line */
 	{0, 0} /*end of list*/
 };
@@ -57,7 +56,7 @@ stCAM_CAL_LIST_STRUCT g_camCalList[] = {
 	{IMX318_SENSOR_ID, 0xA0, CMD_AUTO, cam_cal_check_mtk_cid},
 	{S5K2L7_SENSOR_ID, 0xA0, CMD_AUTO, cam_cal_check_mtk_cid},
 	{S5K2P8_SENSOR_ID, 0xA0, CMD_AUTO, cam_cal_check_mtk_cid},
-	{IMX258_SENSOR_ID, 0xA0, CMD_AUTO, cam_cal_check_mtk_cid},
+	{IMX258_SENSOR_ID, 0xA0, CMD_BRCB032GWZ, cam_cal_check_mtk_cid},
 	{IMX258_MONO_SENSOR_ID, 0xA0, CMD_AUTO, cam_cal_check_mtk_cid},
 	{IMX386_SENSOR_ID, 0xA0, CMD_AUTO, cam_cal_check_mtk_cid},
 	{OV8858_SENSOR_ID, 0xA8, CMD_AUTO, cam_cal_check_mtk_cid},

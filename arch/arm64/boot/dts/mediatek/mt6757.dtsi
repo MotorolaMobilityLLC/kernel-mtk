@@ -1199,7 +1199,11 @@
 	};
 
 #if (CONFIG_MTK_GAUGE_VERSION == 30)
-	#include "battery_prop.dtsi"
+	#if (CONFIG_MTK_ADDITIONAL_BATTERY_TABLE == 1)
+		#include "bat_setting/mt6757_battery_prop_ext.dtsi"
+	#else
+		#include "bat_setting/mt6757_battery_prop.dtsi"
+	#endif
 #endif
 
 	mt_charger: mt_charger {
@@ -1243,7 +1247,7 @@
 		compatible = "mediatek,dfd";
 		reg = <0 0x0c600000 0 0x100000>;
 
-		mediatek,enabled = <0>;
+		mediatek,enabled = <1>;
 		mediatek,chain_length = <0x000061a8>;
 		mediatek,rg_dfd_timeout = <0x2>;
 	};
@@ -2251,12 +2255,6 @@
 		clock-names = "main", "dma";
 		clock-div = <5>;
 		mediatek,appm_used;
-
-		usb_type_c@4e {
-			compatible = "mediatek,usb_type_c";
-			reg = <0x4e>;
-			status = "okay";
-		};
 	};
 
 	spi2: spi@11012000 {
@@ -3410,6 +3408,30 @@
 			"TSF_CAMSYS_TSF_CGPDN";
 	};
 
+	ccu@1A057400 {
+		compatible = "mediatek,ccu";
+		reg = <0 0x1A057400 0 0x1000>;
+		interrupts = <GIC_SPI 235 IRQ_TYPE_LEVEL_LOW>;
+		ccu_hw_offset = <0x400>;
+		ccu_pmem_base = <0x1A0A0000>;
+		ccu_pmem_size = <0x5000>;
+		ccu_dmem_base = <0x1A080000>;
+		ccu_dmem_size = <0x3000>;
+		ccu_dmem_offset = <0x1680>;
+		ccu_log_base = <0x500>;
+		ccu_log_size = <0x200>;
+		ccu_hw_dump_size = <0x3C0>;
+		ccu_camsys_base = <0x1A000000>;
+		ccu_camsys_size = <0x1000>;
+		ccu_n3d_a_base = <0x1A03FFC0>;
+		ccu_n3d_a_size = <0x1000>;
+		ccu_sensor_pm_size = <0x800>;
+		ccu_sensor_dm_size = <0x600>;
+
+		clocks = <&camsys CAMSYS_TSF_CGPDN>;
+		clock-names = "CCU_CLK_CAM_CCU";
+	};
+
 	gpufreq {
 		compatible = "mediatek,mt6757-gpufreq";
 		clocks =
@@ -3660,8 +3682,12 @@
 	};
 
 
+	usb_boost_manager {
+		compatible = "mediatek,usb_boost_manager";
+	};
+
 	ssusb_ip_sleep {
-		compatible = "mediatek,usb_ipsleep_bi_eint";
+		compatible = "mediatek,usb_ipsleep";
 		interrupt-parent = <&eintc>;
 		interrupts = <209 IRQ_TYPE_LEVEL_LOW>;
 		debounce = <209 0>;
@@ -3719,6 +3745,7 @@
 		compatible = "mediatek,cam_cal_drv";
 		main_bus = <2>;
 		sub_bus = <4>;
+		main2_bus = <4>;
 	};
 
 	charger: charger {
@@ -3729,21 +3756,64 @@
 		enable_pe_2;
 		enable_pe_3;
 
+		/* common */
+		battery_cv = <4350000>;
+		max_charger_voltage = <6500000>;
+
+		/* charging current */
+		usb_charger_current_suspend = <0>;
+		usb_charger_current_unconfigured = <70000>;
+		usb_charger_current_configured = <500000>;
+		usb_charger_current = <500000>;
+		ac_charger_current = <2050000>;
+		ac_charger_input_current = <3200000>;
+		non_std_ac_charger_current = <500000>;
+		charging_host_charger_current = <500000>;
+		ta_ac_charger_current = <3000000>;
+
+		/* sw jeita */
+		jeita_temp_above_t4_cv_voltage = <4240000>;
+		jeita_temp_t3_to_t4_cv_voltage = <4240000>;
+		jeita_temp_t2_to_t3_cv_voltage = <4340000>;
+		jeita_temp_t1_to_t2_cv_voltage = <4240000>;
+		jeita_temp_t0_to_t1_cv_voltage = <4040000>;
+		jeita_temp_below_t0_cv_voltage = <4040000>;
+		temp_t4_threshold = <50>;
+		temp_t4_thres_minus_x_degree = <47>;
+		temp_t3_threshold = <45>;
+		temp_t3_thres_minus_x_degree = <39>;
+		temp_t2_threshold = <10>;
+		temp_t2_thres_plus_x_degree = <16>;
+		temp_t1_threshold = <0>;
+		temp_t1_thres_plus_x_degree = <6>;
+		temp_t0_threshold = <0>;
+		temp_t0_thres_plus_x_degree = <0>;
+		temp_neg_10_threshold = <0>;
+
+		/* battery temperature protection */
 		enable_min_charge_temperature;
-		min_charge_temperature = <0 >;
-		min_charge_temperature_plus_x_degree = <6 >;
-		max_charge_temperature = <50 >;
-		max_charge_temperature_minus_x_degree = <47 >;
+		min_charge_temperature = <0>;
+		min_charge_temperature_plus_x_degree = <6>;
+		max_charge_temperature = <50>;
+		max_charge_temperature_minus_x_degree = <47>;
 
-		usb_charger_current_suspend = <0 >;
-		usb_charger_current_unconfigured = <70000 >;
-		usb_charger_current_configured = <500000 >;
-		usb_charger_current = <500000 >;
-		ac_charger_current = <2050000 >;
-		ac_charger_input_current = <3200000 >;
-		non_std_ac_charger_current = <500000 >;
-		charging_host_charger_current = <500000 >;
+		/* PE 2.0 */
+		pe20_ichg_level_threshold = <1000>;
+		ta_start_battery_soc = <0>;
+		ta_stop_battery_soc = <85>;
 
+		/* dual charger */
+		chg1_ta_ac_charger_current = <1500000>;
+		chg2_ta_ac_charger_current = <1500000>;
+
+		/* cable measurement impedance */
+		cable_imp_threshold = <699>;
+		vbat_cable_imp_threshold = <3900>;
+
+		/* bif */
+		bif_threshold1 = <4250000>;
+		bif_threshold2 = <4300000>;
+		bif_cv_under_threshold2 = <4450000>;
 	};
 
 	rt5081_pmu_eint: rt5081_pmu_eint {

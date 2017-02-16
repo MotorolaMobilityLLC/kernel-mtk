@@ -64,7 +64,7 @@ static const char * const spm_resource_name[] = {
 };
 
 static const char * const spm_resource_user_name[NF_SPM_USER_USAGE_STRUCT][32] = {
-	{"SPM", "UFS", "SSUSB", "AUDIO", "UART"},
+	{"SPM", "UFS", "SSUSB", "AUDIO", "UART", "CONN"},
 	{NULL}
 };
 
@@ -189,7 +189,8 @@ static ssize_t resource_req_read(struct file *filp,
 		}
 		p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "\n");
 	}
-	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "user bits : [0]SPM, [1]UFS, [2]SSUSB, [3]AUDIO, [4]UART\n");
+	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf),
+			"user bits : [0]SPM, [1]UFS, [2]SSUSB, [3]AUDIO, [4]UART [5]CONN\n");
 	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "enable:\n");
 	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "echo enable [bit] > /d/spm/resource_req\n");
 	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "bypass:\n");

@@ -218,8 +218,10 @@ int set_rtc_spare_fg_value(int val)
 	/* RTC_AL_HOU bit8~14 */
 	unsigned long flags;
 
+#if (CONFIG_MTK_GAUGE_VERSION != 30)
 	if (val > 100)
 		return 1;
+#endif
 
 	spin_lock_irqsave(&rtc_lock, flags);
 	hal_rtc_set_spare_register(RTC_FGSOC, val);

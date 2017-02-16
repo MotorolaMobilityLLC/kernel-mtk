@@ -342,7 +342,7 @@ out:				/* Add base value of per-cluster by default */
 	for (i = 0; i < hps_sys->cluster_num; i++)
 		hps_sys->cluster_info[i].target_core_num += hps_sys->cluster_info[i].base_value;
 
-#if TURBO_CORE_SUPPORT
+#if 0
 	if (hps_sys->turbo_core_supp && !hps_sys->smart_dect_hint && root_cluster == 1 &&
 	    hps_sys->cluster_info[1].target_core_num > hps_sys->cluster_info[1].base_value &&
 	    hps_sys->cluster_info[1].target_core_num == hps_sys->cluster_info[1].core_num &&

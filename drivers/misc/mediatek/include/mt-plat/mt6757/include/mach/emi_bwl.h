@@ -26,6 +26,7 @@
 #define EMI_CONF		(EMI_BASE_ADDR + 0x0028)
 #define EMI_CONG		(EMI_BASE_ADDR + 0x0030)
 #define EMI_CONH		(EMI_BASE_ADDR + 0x0038)
+#define EMI_CONM		(EMI_BASE_ADDR + 0x0060)
 #define EMI_TESTB		(EMI_BASE_ADDR + 0x00E8)
 #define EMI_TESTD		(EMI_BASE_ADDR + 0x00F8)
 #define EMI_ARBA		(EMI_BASE_ADDR + 0x0100)
@@ -45,43 +46,14 @@
 #define EMI_ARBK_2ND	(EMI_BASE_ADDR + 0x0154)
 #define EMI_SLCT		(EMI_BASE_ADDR + 0x0158)
 
-#define DRAMC_CONF1     (0x004)
-#define DRAMC_LPDDR2    (0x1e0)
-#define DRAMC_PADCTL4   (0x0e4)
-#define DRAMC_ACTIM1    (0x1e8)
-#define DRAMC_DQSCAL0   (0x1c0)
-
-#define DRAMC_READ(offset) ( \
-				readl(IOMEM(DRAMC0_BASE + (offset)))| \
-				readl(IOMEM(DDRPHY_BASE + (offset)))| \
-				readl(IOMEM(DRAMC_NAO_BASE + (offset))))
-
-#define DRAMC_WRITE(offset, data) do { \
-				writel((unsigned int) (data), \
-				(DRAMC0_BASE + (offset))); \
-				writel((unsigned int) (data), \
-				(DDRPHY_BASE + (offset))); \
-				mt65xx_reg_sync_writel((unsigned int) (data), \
-				(DRAMC_NAO_BASE + (offset))); \
-} while (0)
-
-
-
 /*
  * Define constants.
  */
 
-/* define supported DRAM types */
-enum {
-	LPDDR2_1066 = 0,
-	LPDDR3_1866,
-	mDDR,
-};
-
 /* define concurrency scenario ID */
 enum {
 #define X_CON_SCE(con_sce, arba, arbb, arbc, arbd, arbe, \
-arbf, arbg, arbh) con_sce,
+arbf, arbg, arbh, conm) con_sce,
 #include "mach/con_sce_lpddr3_1866.h"
 #undef X_CON_SCE
 		NR_CON_SCE
@@ -111,7 +83,6 @@ struct emi_bwl_ctrl {
 
 extern int mtk_mem_bw_ctrl(int sce, int op);
 extern int get_ddr_type(void);
-extern unsigned int ucDram_Register_Read(unsigned long u4reg_addr);
 
 extern void __iomem *EMI_BASE_ADDR;
 #endif  /* !__MT_EMI_BWL_H__ */

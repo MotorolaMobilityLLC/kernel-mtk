@@ -3318,6 +3318,8 @@ struct lb_env {
 #define LB_RESET                0
 #define LB_AFFINITY             0x10
 #define LB_FORK                 0x30
+#define LB_IDLE_SHIFT	8
+#define LB_IDLE			0x4000
 #define LB_SMP_SHIFT    16
 #define LB_SMP                  0x500000
 #define LB_HMP_SHIFT    24

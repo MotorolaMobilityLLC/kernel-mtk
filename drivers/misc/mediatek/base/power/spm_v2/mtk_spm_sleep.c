@@ -65,6 +65,8 @@
 #endif
 #endif
 
+#include <linux/wakeup_reason.h>
+
 /**************************************
  * only for internal debug
  **************************************/
@@ -532,20 +534,20 @@ static void spm_suspend_pre_process(struct pwr_ctrl *pwrctrl)
 	pmic_read_interface_nolock(PMIC_RG_LDO_VSRAM_PROC_EN_ADDR, &temp, 0xFFFF, 0);
 	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_SUSPEND,
 			IDX_SP_VSRAM_PWR_ON,
-			temp | (1 << PMIC_RG_LDO_VSRAM_PROC_EN_SHIFT));
+			0x1);
 	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_SUSPEND,
 			IDX_SP_VSRAM_SHUTDOWN,
-			temp & ~(1 << PMIC_RG_LDO_VSRAM_PROC_EN_SHIFT));
+			0x3);
 
 	pmic_read_interface_nolock(PMIC_RG_BUCK_VPROC11_EN_ADDR, &temp, 0xFFFF, 0);
 	mt_spm_pmic_wrap_set_cmd_full(PMIC_WRAP_PHASE_SUSPEND,
 			IDX_SP_VPROC_PWR_ON,
 			PMIC_RG_BUCK_VPROC11_EN_ADDR,
-			temp | (1 << PMIC_RG_BUCK_VPROC11_EN_SHIFT));
+			0x1);
 	mt_spm_pmic_wrap_set_cmd_full(PMIC_WRAP_PHASE_SUSPEND,
 			IDX_SP_VPROC_SHUTDOWN,
 			PMIC_RG_BUCK_VPROC11_EN_ADDR,
-			temp & ~(1 << PMIC_RG_BUCK_VPROC11_EN_SHIFT));
+			0x3);
 #else
 	/* set PMIC WRAP table for suspend power control */
 	pmic_read_interface_nolock(MT6351_PMIC_RG_VSRAM_PROC_EN_ADDR, &temp, 0xFFFF, 0);
@@ -773,6 +775,9 @@ static wake_reason_t spm_output_wake_reason(struct wake_status *wakesta, struct 
 		exec_ccci_kern_func_by_md_id(2, ID_GET_MD_WAKEUP_SRC, NULL, 0);
 #endif
 #endif
+
+	log_wakeup_reason(SPM_IRQ0_ID);
+
 	return wr;
 }
 

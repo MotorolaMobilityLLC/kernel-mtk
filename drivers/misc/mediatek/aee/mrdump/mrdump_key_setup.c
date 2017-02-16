@@ -13,22 +13,30 @@
 
 #include <linux/kconfig.h>
 #include <linux/module.h>
+#include <mt-plat/mtk_chip.h>
 #ifdef CONFIG_MTK_WATCHDOG
 #include <mach/wd_api.h>
+
 static int __init mrdump_key_init(void)
 {
 	int res;
 	struct wd_api *wd_api = NULL;
+	enum chip_sw_ver ver;
 
 	res = get_wd_api(&wd_api);
 	if (res < 0) {
 		pr_alert("%s: get wd api error %d\n", __func__, res);
 	} else {
-		res = wd_api->wd_debug_key_eint_config(1, 0);
-		if (res == -1)
-			pr_alert("%s: MRDUMP_KEY not supported\n", __func__);
-		else
-			pr_alert("%s: MRDUMP_KEY enabled\n", __func__);
+		ver = mt_get_chip_sw_ver();
+		if (ver >= CHIP_SW_VER_02) {
+			res = wd_api->wd_debug_key_eint_config(1, 0);
+			if (res == -1)
+				pr_alert("%s: MRDUMP_KEY not supported\n", __func__);
+			else
+				pr_alert("%s: MRDUMP_KEY enabled\n", __func__);
+		} else {
+			pr_alert("MRDUMP_KEY is not supported on this chip");
+		}
 	}
 	return 0;
 }

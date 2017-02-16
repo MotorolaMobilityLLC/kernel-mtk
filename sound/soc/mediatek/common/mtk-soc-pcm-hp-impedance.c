@@ -84,6 +84,8 @@ static const char * const switch_function[] = { "Off", "On" };
 #define AUXADC_BIT_RESOLUTION (1 << 12)
 #define AUXADC_VOLTAGE_RANGE 1800
 
+#define DPD_DEFAULT_IMPEDANCE (32)
+
 /*
  *    function implementation
  */
@@ -347,7 +349,7 @@ static int Audio_HP_ImpeDance_Set(struct snd_kcontrol *kcontrol,
 		OpenHeadPhoneImpedanceSetting(false);
 		setOffsetTrimMux(AUDIO_OFFSET_TRIM_MUX_GROUND);
 		EnableTrimbuffer(false);
-		SetSdmLevel(AUDIO_SDM_LEVEL_NORMAL);
+		/* SetSdmLevel(AUDIO_SDM_LEVEL_NORMAL); */
 	} else {
 		unsigned short  value = 0;
 
@@ -412,25 +414,25 @@ static unsigned short mtk_calculate_hp_impedance(int dc_init, int dc_input, shor
 	if (dc_input < dc_init) {
 		pr_warn("Wrong[%d] : dc_input(%d) > dc_init(%d)\n", pcm_offset, dc_input, dc_init);
 		return 0;
-		}
+	}
 
 	dc_value = (unsigned int)(dc_input - dc_init);
-	pr_aud("mtk_calculate_hp_impedance: dc_input(%d) ,dc_init(%d) , dc_value(%d)\n",
-	       dc_input, dc_init, dc_value);
+	pr_aud("mtk_calculate_hp_impedance: dc_input(%d), dc_init(%d) , dc_value(%d)\n",
+			dc_input, dc_init, dc_value);
 
 	r_tmp = mtk_calculate_impedance_formula(pcm_offset, dc_value);
 	r_tmp = (r_tmp + (detect_times / 2)) / detect_times;
 
 	/* Efuse calibration */
 	if ((EfuseCurrentCalibration != 0) && (r_tmp != 0)) {
-		r_tmp = r_tmp * 128 / (128 + EfuseCurrentCalibration);
-		pr_debug("%s After Calibration from EFUSE: %d, R: %d\n",
-			__func__, EfuseCurrentCalibration, r_tmp);
+		r_tmp = (r_tmp * 128 + (128 + EfuseCurrentCalibration) / 2) / (128 + EfuseCurrentCalibration);
+		pr_aud("%s After Calibration from EFUSE: %d, R: %d\n",
+				__func__, EfuseCurrentCalibration, r_tmp);
 	}
 
 	r_hp = (unsigned short)r_tmp;
 	pr_aud("%s pcm_offset %d dcoffset %d detected resistor is %d\n",
-	       __func__, pcm_offset, dc_value, r_hp);
+			__func__, pcm_offset, dc_value, r_hp);
 
 	return r_hp;
 }
@@ -540,7 +542,7 @@ static void ApplyDctoDl(void)
 			       detectSum, kDetectTimes, mhp_impedance);
 			break;
 		}
-		usleep_range(1*200, 1*200);
+		udelay(600);
 	}
 
 	/* Ramp-Down */
@@ -551,7 +553,7 @@ static void ApplyDctoDl(void)
 		/* apply to dram */
 		FillDatatoDlmemory(Sramdata, Dl1_Hp_Playback_dma_buf->bytes, dcValue);
 
-		usleep_range(1*200, 1*200);
+		udelay(600);
 	}
 #endif
 }
@@ -559,7 +561,7 @@ static void ApplyDctoDl(void)
 static int Audio_HP_ImpeDance_Get(struct snd_kcontrol *kcontrol,
 				  struct snd_ctl_elem_value *ucontrol)
 {
-	pr_aud("+ %s()\n", __func__);
+	pr_warn("+ %s()\n", __func__);
 	if (mPrepareDone == false)
 		pr_warn("Audio_HP_ImpeDance driver is not prepared");
 
@@ -572,20 +574,20 @@ static int Audio_HP_ImpeDance_Get(struct snd_kcontrol *kcontrol,
 		setHpGainZero();
 		Afe_Set_Reg(AFE_ADDA_DL_SRC2_CON1, 0xffff0000, MASK_ALL);
 		/*set AP DL gain to 0db*/
-
+		/* SetSdmLevel(AUDIO_SDM_LEVEL_MUTE); */
 		ApplyDctoDl();
-		SetSdmLevel(AUDIO_SDM_LEVEL_MUTE);
 		/* usleep_range(0.5*1000, 1*1000); */
 
 		OpenHeadPhoneImpedanceSetting(false);
 		setOffsetTrimMux(AUDIO_OFFSET_TRIM_MUX_GROUND);
 		EnableTrimbuffer(false);
-		SetSdmLevel(AUDIO_SDM_LEVEL_NORMAL);
+		/* SetSdmLevel(AUDIO_SDM_LEVEL_NORMAL); */
 	} else
 		pr_warn("Audio_HP_ImpeDance_Get just do nothing\n");
 	AudDrv_Clk_Off();
 	ucontrol->value.integer.value[0] = mhp_impedance;
-	pr_aud("- %s(), mhp_impedance = %d\n", __func__, mhp_impedance);
+	pr_debug("- %s(), mhp_impedance = %d, efuse = %d\n",
+		 __func__, mhp_impedance, EfuseCurrentCalibration);
 	return 0;
 }
 
@@ -599,6 +601,7 @@ static int audio_dpd_get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_valu
 static int audio_dpd_set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
 	int enable = ucontrol->value.integer.value[0];
+	int dpd_impedance = DPD_DEFAULT_IMPEDANCE;
 
 	pr_warn("%s() enable = %d, mhp_impedance = %d\n", __func__, enable, mhp_impedance);
 	if (ucontrol->value.enumerated.item[0] > ARRAY_SIZE(switch_function)) {
@@ -610,9 +613,12 @@ static int audio_dpd_set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_valu
 		pr_warn("%s() ,set_dpd_module not implement\n", __func__);
 		return 0;
 	}
-	get_afe_platform_ops()->set_dpd_module(enable, mhp_impedance);
-	audio_dpd_switch = enable;
 
+	if (mhp_impedance != 0)
+		dpd_impedance = mhp_impedance;
+
+	get_afe_platform_ops()->set_dpd_module(enable, dpd_impedance);
+	audio_dpd_switch = enable;
 	return 0;
 }
 

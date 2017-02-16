@@ -43,7 +43,7 @@
 #include <linux/sched/rt.h>
 #endif /* #if (LINUX_VERSION_CODE >= KERNEL_VERSION(3, 9, 0)) */
 
-#define RT5081_DRV_VERSION	"1.1.3_MTK"
+#define RT5081_DRV_VERSION	"1.1.5_MTK"
 
 struct rt5081_chip {
 	struct i2c_client *client;
@@ -97,7 +97,8 @@ RT_REG_DECL(TCPC_V10_REG_TRANSMIT, 1, RT_VOLATILE, {});
 RT_REG_DECL(TCPC_V10_REG_TX_BYTE_CNT, 1, RT_VOLATILE, {});
 RT_REG_DECL(TCPC_V10_REG_TX_HDR, 2, RT_VOLATILE, {});
 RT_REG_DECL(TCPC_V10_REG_TX_DATA, 1, RT_VOLATILE, {});
-RT_REG_DECL(RT5081_REG_HIDDEN_CTRL, 1, RT_VOLATILE, {});
+RT_REG_DECL(RT5081_REG_PHY_CTRL1, 1, RT_VOLATILE, {});
+RT_REG_DECL(RT5081_REG_PHY_CTRL3, 1, RT_VOLATILE, {});
 RT_REG_DECL(RT5081_REG_CLK_CTRL2, 1, RT_VOLATILE, {});
 RT_REG_DECL(RT5081_REG_CLK_CTRL3, 1, RT_VOLATILE, {});
 RT_REG_DECL(RT5081_REG_BMC_CTRL, 1, RT_VOLATILE, {});
@@ -144,7 +145,8 @@ static const rt_register_map_t rt5081_chip_regmap[] = {
 	RT_REG(TCPC_V10_REG_TX_BYTE_CNT),
 	RT_REG(TCPC_V10_REG_TX_HDR),
 	RT_REG(TCPC_V10_REG_TX_DATA),
-	RT_REG(RT5081_REG_HIDDEN_CTRL),
+	RT_REG(RT5081_REG_PHY_CTRL1),
+	RT_REG(RT5081_REG_PHY_CTRL3),
 	RT_REG(RT5081_REG_CLK_CTRL2),
 	RT_REG(RT5081_REG_CLK_CTRL3),
 	RT_REG(RT5081_REG_BMC_CTRL),
@@ -705,18 +707,23 @@ static inline int rt5081_init_cc_params(
 			struct tcpc_device *tcpc, uint8_t cc_res)
 {
 	int rv = 0;
+	struct rt5081_chip *chip = tcpc_get_dev_data(tcpc);
 
 #ifdef CONFIG_USB_POWER_DELIVERY
 #ifdef CONFIG_USB_PD_SNK_DFT_NO_GOOD_CRC
 	uint8_t en, sel;
 
-	if (cc_res == TYPEC_CC_VOLT_SNK_DFT) {
+	if (cc_res == TYPEC_CC_VOLT_SNK_DFT) { /* 0.55 */
 		en = 1;
 		sel = 0x81;
-	} else {
-		en = 0;
+	} else if (chip->chip_id >= RT1715_DID_D) { /* 0.35 & 0.75 */
+		en = 1;
 		sel = 0x81;
+	} else { /* 0.4 & 0.7 */
+		en = 0;
+		sel = 0x80;
 	}
+
 	rv = rt5081_i2c_write8(tcpc, RT5081_REG_BMCIO_RXDZEN, en);
 	if (rv == 0)
 		rv = rt5081_i2c_write8(tcpc, RT5081_REG_BMCIO_RXDZSEL, sel);
@@ -729,6 +736,7 @@ static inline int rt5081_init_cc_params(
 static int rt5081_tcpc_init(struct tcpc_device *tcpc, bool sw_reset)
 {
 	int ret;
+	bool retry_discard_old = false;
 	struct rt5081_chip *chip = tcpc_get_dev_data(tcpc);
 
 	RT5081_INFO("\n");
@@ -739,11 +747,14 @@ static int rt5081_tcpc_init(struct tcpc_device *tcpc, bool sw_reset)
 			return ret;
 	}
 
-	rt5081_i2c_write8(tcpc, RT5081_REG_HIDDEN_CTRL, 0x70);
-
 	/* CK_300K from 320K, SHIPPING off, AUTOIDLE enable, TIMEOUT = 32ms */
 	rt5081_i2c_write8(tcpc, RT5081_REG_IDLE_CTRL,
 		RT5081_REG_IDLE_SET(0, 1, 1, 2));
+
+	/* For No-GoodCRC Case (0x70) */
+	rt5081_i2c_write8(tcpc, RT5081_REG_PHY_CTRL3, 0x70);
+	/* For BIST, Change Transition Toggle Counter (Noise) from 3 to 7 */
+	rt5081_i2c_write8(tcpc, RT5081_REG_PHY_CTRL1, 0x71);
 
 #ifdef CONFIG_TCPC_I2CRST_EN
 	rt5081_i2c_write8(tcpc,
@@ -778,6 +789,12 @@ static int rt5081_tcpc_init(struct tcpc_device *tcpc, bool sw_reset)
 	/* RX/TX Clock Gating (Auto Mode)*/
 	if (!sw_reset)
 		rt5081_set_clock_gating(tcpc, true);
+
+	if (!(tcpc->tcpc_flags & TCPC_FLAGS_RETRY_CRC_DISCARD))
+		retry_discard_old = true;
+
+	rt5081_i2c_write8(tcpc, RT5081_REG_PHY_CTRL1,
+		RT5081_REG_PHY_CTRL1_SET(retry_discard_old, 7, 0, 1));
 
 	tcpci_alert_status_clear(tcpc, 0xffffffff);
 
@@ -816,6 +833,8 @@ int rt5081_fault_status_clear(struct tcpc_device *tcpc, uint8_t status)
 
 	if (status & TCPC_V10_REG_FAULT_STATUS_VCONN_OV)
 		ret = rt5081_fault_status_vconn_ov(tcpc);
+	if (status & TCPC_V10_REG_FAULT_STATUS_VCONN_OC)
+		ret = rt5081_fault_status_vconn_oc(tcpc);
 
 	rt5081_i2c_write8(tcpc, TCPC_V10_REG_FAULT_STATUS, status);
 	return 0;
@@ -1621,4 +1640,8 @@ MODULE_VERSION(RT5081_DRV_VERSION);
  *	-- sync to rt1711h pd driver v014
  * 1.1.3_MTK
  *	-- sync to rt1711h pd driver v015
+ * 1.1.4_MTK
+ *	-- modify dws name rt5081_pd->usb_type_c
+ * 1.1.5_MTK
+ *	-- sync to rt1711h pd driver v017
  */

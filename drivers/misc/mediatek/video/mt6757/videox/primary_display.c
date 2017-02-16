@@ -1737,6 +1737,111 @@ void disp_enable_emi_force_on(unsigned int enable, void *cmdq_handle)
 {
 }
 
+static struct ion_client *ion_client;
+static struct ion_handle *sec_ion_handle;
+static u32 sec_mva;
+
+static int sec_buf_ion_alloc(int buf_size)
+{
+	size_t mva_size = 0;
+	unsigned long int sec_hnd = 0;
+	/*ion_phys_addr_t sec_hnd = 0;*/
+	unsigned long align = 0;/*4096 align*/
+	struct ion_mm_data mm_data;
+
+	memset((void *)&mm_data, 0, sizeof(struct ion_mm_data));
+	ion_client = ion_client_create(g_ion_device, "display_dc_secmem");
+
+	if (!ion_client) {
+		DISPERR("create ion client failed!\n");
+		return -1;
+	}
+
+	sec_ion_handle = ion_alloc(ion_client, buf_size, align, ION_HEAP_MULTIMEDIA_SEC_MASK, 0);
+
+	if (IS_ERR_OR_NULL(sec_ion_handle)) {
+		DISPERR("Fatal Error, ion_alloc for size %d failed\n", buf_size);
+		ion_free(ion_client, sec_ion_handle);
+		ion_client_destroy(ion_client);
+		return -1;
+	}
+
+	/*Query (PA/mva addr)/ sec_hnd*/
+	/*1. config buffer param for ion debug*/
+	mm_data.mm_cmd = ION_MM_CONFIG_BUFFER;
+	mm_data.config_buffer_param.kernel_handle = sec_ion_handle;
+	mm_data.config_buffer_param.module_id = M4U_PORT_DISP_WDMA0;
+	mm_data.config_buffer_param.security = 1;
+	mm_data.config_buffer_param.coherent = 0;
+
+	if (ion_kernel_ioctl(ion_client, ION_CMD_MULTIMEDIA_SEC, (unsigned long)&mm_data) < 0) {
+		DISPERR("ion_test_drv: Config buffer failed.\n");
+		ion_free(ion_client, sec_ion_handle);
+		ion_client_destroy(ion_client);
+		return -1;
+	}
+
+	/*2. query sec hnd*/
+	if (ion_phys(ion_client, sec_ion_handle, (unsigned long int *)&sec_hnd, (size_t *)&mva_size)) {
+		DISPERR("can't query ion buffer physical address!\n");
+		ion_free(ion_client, sec_ion_handle);
+		ion_client_destroy(ion_client);
+		return -1;
+	}
+
+	if (sec_hnd == 0) {
+		DISPERR("Fatal Error, get mva failed\n");
+		ion_free(ion_client, sec_ion_handle);
+		ion_client_destroy(ion_client);
+		return -1;
+	}
+	sec_mva = sec_hnd;
+	/*DISPMSG("create ion sec_mva 0x%x\n", sec_mva);*/
+
+	return 0;
+}
+
+static int sec_buf_ion_free(void)
+{
+	ion_free(ion_client, sec_ion_handle);
+	ion_client_destroy(ion_client);
+	return 0;
+}
+
+static int init_sec_buf(void)
+{
+	/*int height = primary_display_get_height();*/
+	/*int width  = primary_display_get_width();*/
+	int height = disp_helper_get_option(DISP_OPT_FAKE_LCM_HEIGHT);
+	int width = disp_helper_get_option(DISP_OPT_FAKE_LCM_WIDTH);
+	int Bpp = primary_display_get_bpp() / 8;
+	int buffer_size = width * height * Bpp;
+	int ret  = 0;
+
+	if (sec_mva != 0)
+		return 0;
+	ret = sec_buf_ion_alloc(buffer_size);
+	if (ret) {
+		DISPERR("sec_buf_ion_alloc failed!\n");
+		return -1;
+	}
+
+	return 0;
+}
+
+static int deinit_sec_buf(void)
+{
+	int ret  = 0;
+
+	if (sec_mva != 0) {
+		ret  = sec_buf_ion_free();
+		sec_mva = 0;
+		/*DISPMSG("deinit_sec_mva 0x%x\n", sec_mva);*/
+	}
+
+	return 0;
+}
+
 static int _DL_switch_to_DC_fast(void)
 {
 	int ret = 0;
@@ -1746,15 +1851,27 @@ static int _DL_switch_to_DC_fast(void)
 
 	struct disp_ddp_path_config *data_config_dl = NULL;
 	struct disp_ddp_path_config *data_config_dc = NULL;
-	unsigned int mva = pgc->dc_buf[pgc->dc_buf_id];	/* mva for 1. ovl->wdma and 2.Rdma->dsi , */
+	/*unsigned int mva = pgc->dc_buf[pgc->dc_buf_id];*/	/* mva for 1. ovl->wdma and 2.Rdma->dsi , */
+	unsigned int mva;
 	struct ddp_io_golden_setting_arg gset_arg;
+
+	if ((primary_is_sec() == 1)) {
+		init_sec_buf();
+		mva = sec_mva;
+		wdma_config.security = DISP_SECURE_BUFFER;
+
+	} else {
+		mva = pgc->dc_buf[pgc->dc_buf_id];
+		wdma_config.security = DISP_NORMAL_BUFFER;
+
+	}
 
 	if (mva == 0) {
 		DISPERR("%s, dc buffer does not exist\n", __func__);
 		return -1;
 	}
 	wdma_config.dstAddress = mva;
-	wdma_config.security = DISP_NORMAL_BUFFER;
+	/*wdma_config.security = DISP_NORMAL_BUFFER;*/
 
 	/* 1.save a temp frame to intermediate buffer */
 	directlink_path_add_memory(&wdma_config, DISP_MODULE_OVL0);
@@ -1788,7 +1905,7 @@ static int _DL_switch_to_DC_fast(void)
 
 	/* 4.config rdma from directlink mode to memory mode */
 	rdma_config.address = mva;
-	rdma_config.security = DISP_NORMAL_BUFFER;
+	rdma_config.security = wdma_config.security;
 
 	data_config_dl = dpmgr_path_get_last_config(pgc->dpmgr_handle);
 	data_config_dl->rdma_config = rdma_config;
@@ -1924,6 +2041,8 @@ static int _DL_switch_to_DC_fast(void)
 	dpmgr_enable_event(pgc->dpmgr_handle, DISP_PATH_EVENT_FRAME_START);
 
 	MMProfileLogEx(ddp_mmp_get_events()->primary_switch_mode, MMProfileFlagPulse, 4, 0);
+
+	deinit_sec_buf();
 
 	return ret;
 }
@@ -5289,7 +5408,7 @@ static int _config_ovl_input(struct disp_frame_cfg_t *cfg,
 		else
 			aal_request_partial_support(1);
 
-		if (!aal_is_partial_support() && !ddp_debug_force_roi())
+		if ((!aal_is_partial_support() || PanelMaster_is_enable() == 1) && !ddp_debug_force_roi())
 			assign_full_lcm_roi(&total_dirty_roi);
 
 		DISPDBG("frame partial roi(%d,%d,%d,%d)\n", total_dirty_roi.x, total_dirty_roi.y,
@@ -7030,6 +7149,8 @@ int Panel_Master_dsi_config_entry(const char *name, void *config_value)
 	 * 4: unlock path
 	 * 1: stop path
 	 */
+	_blocking_flush();
+	/* blocking flush before stop trigger loop */
 	_cmdq_stop_trigger_loop();
 
 	if (dpmgr_path_is_busy(pgc->dpmgr_handle)) {

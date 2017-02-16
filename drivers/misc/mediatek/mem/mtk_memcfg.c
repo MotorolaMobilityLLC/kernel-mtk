@@ -64,8 +64,8 @@ struct mtk_memcfg_layout_info {
 	unsigned long long size;
 };
 
-static struct mtk_memcfg_layout_info mtk_memcfg_layout_info_phy[20];
-static struct mtk_memcfg_layout_info mtk_memcfg_layout_info_debug[20];
+static struct mtk_memcfg_layout_info mtk_memcfg_layout_info_phy[30];
+static struct mtk_memcfg_layout_info mtk_memcfg_layout_info_debug[30];
 
 int mtk_memcfg_memory_layout_info_compare(const void *p1, const void *p2)
 {

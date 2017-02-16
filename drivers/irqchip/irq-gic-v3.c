@@ -712,6 +712,17 @@ static int gic_set_affinity(struct irq_data *d, const struct cpumask *mask_val,
 	gic_write_irouter(val, reg);
 
 	/*
+	 * defensive programming here.
+	 * if the val is not GICD_IROUTER_SPI_MODE_ANY or reasonable affinity,
+	 * trigger BUG_ON()
+	 */
+	if ((val != GICD_IROUTER_SPI_MODE_ANY) &&
+	    (val > gic_mpidr_to_affinity(cpu_logical_map(num_possible_cpus()-1)))) {
+		pr_err("[GIC] cpu_logical_map(%d) = %llu\n", cpu, cpu_logical_map(cpu));
+		BUG_ON(1);
+	}
+
+	/*
 	 * If the interrupt was enabled, enabled it again. Otherwise,
 	 * just wait for the distributor to have digested our changes.
 	 */

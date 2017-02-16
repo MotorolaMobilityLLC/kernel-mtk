@@ -672,6 +672,9 @@ struct usb_otg_descriptor {
 	__u8  bDescriptorType;
 
 	__u8  bmAttributes;	/* support for HNP, SRP, etc */
+#ifdef CONFIG_USBIF_COMPLIANCE
+	__le16 bcdOTG;
+#endif
 } __attribute__ ((packed));
 
 /* USB_DT_OTG (from OTG 2.0 supplement) */

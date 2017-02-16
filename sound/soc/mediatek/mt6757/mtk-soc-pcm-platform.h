@@ -97,6 +97,8 @@
 /* #define EFUSE_HP_TRIM */
 #define CHIP_SRAM_SIZE (60*1024)
 
+#define SramBlockSize (48*1024)
+
 /*
   *    PCM buffer size and period size setting
   */

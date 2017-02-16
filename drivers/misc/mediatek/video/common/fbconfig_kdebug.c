@@ -486,6 +486,11 @@ static long fbconfig_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 			pr_debug("[FB_LAYER_GET_INFO]: copy_from_user failed! line:%d\n", __LINE__);
 			return -EFAULT;
 		}
+		if ((layer_info.index < 0 || layer_info.index > TOTAL_OVL_LAYER_NUM)) {
+			pr_debug("%d:Error,layer_en.index is invalid,index=%d!!\n", __LINE__, layer_info.index);
+			return -1;
+		}
+
 		global_layer_id = layer_info.index;
 #ifdef PRIMARY_OVL0_OVL0_2L_CASCADE
 				ovl_get_info(DISP_MODULE_OVL0, ovl_all);

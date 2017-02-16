@@ -1,3 +1,17 @@
+/*
+ * Copyright (c) 2015-2016 MICROTRUST Incorporated
+ * All Rights Reserved.
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * version 2 as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ */
+
 #include "utdriver_macro.h"
 
 struct message_head {
@@ -43,4 +57,5 @@ extern unsigned long teei_config_flag;
 
 extern int get_current_cpuid(void);
 extern void invoke_fastcall(void);
-
+extern void ut_pm_mutex_lock(struct mutex *lock);
+extern void ut_pm_mutex_unlock(struct mutex *lock);

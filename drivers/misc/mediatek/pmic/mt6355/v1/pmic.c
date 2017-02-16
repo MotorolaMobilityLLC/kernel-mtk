@@ -47,27 +47,27 @@ static unsigned int vmd1_trim;
 
 void vmd1_pmic_trim_setting(bool enable)
 {
-	unsigned int hwcid = pmic_get_register_value(PMIC_HWCID_ADDR);
+	unsigned int hwcid = pmic_get_register_value(PMIC_HWCID);
 
 	PMICLOG("vmd1_pmic_trim_setting HWCID: 0x%X\n", hwcid);
 	if (hwcid != 0x5520)
 		return;
 
 	if (vmd1_trim == 0)
-		vmd1_trim = pmic_get_register_value(PMIC_RG_VMODEM_ZXOS_TRIM_ADDR);
+		vmd1_trim = pmic_get_register_value(PMIC_RG_VMODEM_ZXOS_TRIM);
 
 	/*Set Trim Value*/
 	if (enable) {
 		unsigned int vmd1_trim_new = vmd1_trim+9;
 
-		pmic_set_register_value(PMIC_RG_VMODEM_ZXOS_TRIM_ADDR, vmd1_trim_new);
+		pmic_set_register_value(PMIC_RG_VMODEM_ZXOS_TRIM, vmd1_trim_new);
 		PMICLOG("vmd1_pmic_trim_setting ON, zxos trim 0x%X, new_value: 0x%X\n",
 			vmd1_trim,
 			vmd1_trim_new
 			);
 	} else {
 		/*Set Trim Value*/
-		pmic_set_register_value(PMIC_RG_VMODEM_ZXOS_TRIM_ADDR, vmd1_trim);
+		pmic_set_register_value(PMIC_RG_VMODEM_ZXOS_TRIM, vmd1_trim);
 		PMICLOG("vmd1_pmic_trim_setting OFF, zxos trim 0x%X, new_value: 0x%X\n",
 			vmd1_trim,
 			vmd1_trim
@@ -79,8 +79,8 @@ void vmd1_pmic_setting_on(void)
 {
 	/* 1.Call PMIC driver API configure VMODEM voltage as 0.8V */
 	pmic_set_register_value(PMIC_RG_BUCK_VMODEM_VOSEL, 0x40); /* set to 0.8V */
-	/* 2.Call PMIC driver API configure VSRAM_MD voltage as 0.9V */
-	pmic_set_register_value(PMIC_RG_LDO_VSRAM_MD_VOSEL, 0x3D); /* set to 0.9V */
+	/* 2.Call PMIC driver API configure VSRAM_MD voltage as 0.9V -> 0.93125V */
+	pmic_set_register_value(PMIC_RG_LDO_VSRAM_MD_VOSEL, 0x42); /* set to 0.93125V */
 	/* Apply new trim value */
 	vmd1_pmic_trim_setting(true);
 
@@ -102,7 +102,7 @@ void vmd1_pmic_setting_on(void)
 			pmic_get_register_value(PMIC_RG_BUCK_VMODEM_VOSEL),
 			pmic_get_register_value(PMIC_DA_VMODEM_VOSEL));
 
-	if (pmic_get_register_value(PMIC_DA_QI_VSRAM_MD_VOSEL) != 0x3D)
+	if (pmic_get_register_value(PMIC_DA_QI_VSRAM_MD_VOSEL) != 0x42)
 		pr_err("vmd1_pmic_setting_on vsram_md vosel = 0x%x, da_vosel = 0x%x",
 			pmic_get_register_value(PMIC_RG_LDO_VSRAM_MD_VOSEL),
 			pmic_get_register_value(PMIC_DA_QI_VSRAM_MD_VOSEL));

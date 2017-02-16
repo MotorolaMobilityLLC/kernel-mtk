@@ -438,7 +438,7 @@ static int cldma_gpd_rx_collect(struct md_cd_queue *queue, int budget, int block
 	unsigned long flags;
 	char is_net_queue = IS_NET_QUE(md, queue->index);
 	char using_napi = is_net_queue ? (md->capability & MODEM_CAP_NAPI) : 0;
-	unsigned int L2RISAR0 = 0, cldma_rx_active = 0;
+	unsigned int L2RISAR0 = 0;
 #ifdef CLDMA_TRACE
 	unsigned long long port_recv_time = 0;
 	unsigned long long skb_alloc_time = 0;
@@ -594,9 +594,7 @@ again:
 		cldma_read32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_SO_RESUME_CMD); /* dummy read */
 		/* greedy mode */
 		L2RISAR0 = cldma_read32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_L2RISAR0);
-		cldma_rx_active = cldma_read32(md_ctrl->cldma_md_pdn_base, CLDMA_AP_UL_STATUS);
-		if ((L2RISAR0 & CLDMA_BM_INT_DONE & (1 << queue->index)) ||
-			(cldma_rx_active & CLDMA_BM_INT_DONE & (1 << queue->index)))
+		if (L2RISAR0 & CLDMA_BM_INT_DONE & (1 << queue->index))
 			retry = 1;
 		else
 			retry = 0;

@@ -29,7 +29,6 @@
 #include <mt-plat/sync_write.h>
 #include "systracker_v2.h"
 
-#define TRACKER_DEBUG 1
 
 #ifdef CONFIG_ARM64
 #define IOMEM(a)	((void __force __iomem *)((a)))
@@ -75,6 +74,7 @@ static struct mt_systracker_driver mt_systracker_drv = {
 	.systracker_remove		= NULL,
 	.systracker_suspend		= NULL,
 	.systracker_resume		= NULL,
+	.systracker_debug_dump		= NULL,
 };
 
 static int systracker_platform_probe_default(struct platform_device *pdev)
@@ -254,6 +254,8 @@ irqreturn_t systracker_isr(void)
 		pr_err("[TRAKER] Write time out trigger\n");
 		tracker_print();
 	}
+	if (mt_systracker_drv.systracker_debug_dump)
+		mt_systracker_drv.systracker_debug_dump();
 
 	return IRQ_HANDLED;
 }

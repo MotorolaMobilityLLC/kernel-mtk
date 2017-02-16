@@ -20,8 +20,8 @@ ccflags-y += -I$(srctree)/arch/arm/
 
 ifeq ($(CONFIG_MTK_ENG_BUILD), y)
 ccflags-y += -DION_RUNTIME_DEBUGGER=1
-#ccflags-y += -DION_HISTORY_RECORD
-#obj-$(CONFIG_ION_MTK) += ion_history.o
+ccflags-y += -DION_HISTORY_RECORD
+obj-$(CONFIG_MTK_ION) += ion_history.o
 else
 ccflags-y += -DION_RUNTIME_DEBUGGER=0
 endif
@@ -32,7 +32,6 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/secmem/$(MTK_PLATFORM)/
 endif
 
 ifeq ($(CONFIG_MTK_IN_HOUSE_TEE_SUPPORT),y)
-ccflags-y += -I$(srctree)/include/trustzone
-ccflags-y += -I$(srctree)/include
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat/trustzone
 endif
 

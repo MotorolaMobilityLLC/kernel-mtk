@@ -4,6 +4,9 @@ RT5081 Vibrator ldo control.
 Required properties:
 - compatible : Must be "richtek,rt5081_pmu_ldo";
 - interrupt-names : RT5081 ldo enabled interrupts.
+	(R:required, O:optional)
+	1. (O)ldo_oc: report whether the event of LDO over current occurs.
+
 - ldo_oms : ldo oms function, 0 -> floating, 1 -> discharge to ground for off mode.
 
 Optional node:

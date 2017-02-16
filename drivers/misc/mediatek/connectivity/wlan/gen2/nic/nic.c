@@ -44,6 +44,7 @@ const UINT_8 aucPhyCfg2PhyTypeSet[PHY_CONFIG_NUM] = {
 
 #define GATING_CONTROL_POLL_LIMIT   64
 #endif
+#define QUEUE_CMD_TIMEOUT_MS 10000
 
 /*******************************************************************************
 *                             D A T A   T Y P E S
@@ -242,6 +243,9 @@ VOID nicReleaseAdapterMemory(IN P_ADAPTER_T prAdapter)
 {
 	P_TX_CTRL_T prTxCtrl;
 	P_RX_CTRL_T prRxCtrl;
+#if CFG_DBG_MGT_BUF
+	P_BUF_INFO_T prBufInfo;
+#endif
 
 	ASSERT(prAdapter);
 	prTxCtrl = &prAdapter->rTxCtrl;
@@ -277,6 +281,8 @@ VOID nicReleaseAdapterMemory(IN P_ADAPTER_T prAdapter)
 	}
 #if CFG_DBG_MGT_BUF
 	/* Check if all allocated memories are free */
+	prBufInfo = &prAdapter->rMgtBufInfo;
+	DBGLOG(CNM, INFO, "freeCnt:%d,AllocCnt:%d\n", prBufInfo->u4FreeCount, prBufInfo->u4AllocCount);
 	ASSERT(prAdapter->u4MemFreeDynamicCount == prAdapter->u4MemAllocDynamicCount);
 #endif
 
@@ -804,6 +810,7 @@ P_CMD_INFO_T nicGetPendingCmdInfo(IN P_ADAPTER_T prAdapter, IN UINT_8 ucSeqNum)
 	P_QUE_T prTempCmdQue = &rTempCmdQue;
 	P_QUE_ENTRY_T prQueueEntry = (P_QUE_ENTRY_T) NULL;
 	P_CMD_INFO_T prCmdInfo = (P_CMD_INFO_T) NULL;
+	UINT_32 u4CurrTick = 0;
 
 	GLUE_SPIN_LOCK_DECLARATION();
 
@@ -817,6 +824,12 @@ P_CMD_INFO_T nicGetPendingCmdInfo(IN P_ADAPTER_T prAdapter, IN UINT_8 ucSeqNum)
 	QUEUE_REMOVE_HEAD(prTempCmdQue, prQueueEntry, P_QUE_ENTRY_T);
 	while (prQueueEntry) {
 		prCmdInfo = (P_CMD_INFO_T) prQueueEntry;
+
+		u4CurrTick = kalGetTimeTick();
+		if ((prCmdInfo->u4InqueTime != 0) &&
+			(u4CurrTick - prCmdInfo->u4InqueTime) > QUEUE_CMD_TIMEOUT_MS)
+			DBGLOG(REQ, WARN, "CMD que is pending too long (%u)-(%u),CmdSeq=%d,ucSeq=%d\n"
+			, u4CurrTick, prCmdInfo->u4InqueTime, prCmdInfo->ucCmdSeqNum, ucSeqNum);
 
 		if (prCmdInfo->ucCmdSeqNum == ucSeqNum)
 			break;
@@ -1403,13 +1416,22 @@ WLAN_STATUS nicUpdateBss(IN P_ADAPTER_T prAdapter, IN ENUM_NETWORK_TYPE_INDEX_T 
 
 	if (rCmdSetBssInfo.ucNetTypeIndex == NETWORK_TYPE_AIS_INDEX) {
 		P_CONNECTION_SETTINGS_T prConnSettings = &(prAdapter->rWifiVar.rConnSettings);
+
 #if CFG_SUPPORT_HOTSPOT_2_0
 		/* mapping OSEN to WPA2, due to firmware no need to know current is OSEN */
 		if (prConnSettings->eAuthMode == AUTH_MODE_WPA_OSEN)
 			rCmdSetBssInfo.ucAuthMode = AUTH_MODE_WPA2;
 		else
 #endif
-		rCmdSetBssInfo.ucAuthMode = (UINT_8) prConnSettings->eAuthMode;
+		/* Firmware didn't define AUTH_MODE_NON_RSN_FT, so AUTH_MODE_OPEN is zero in firmware,
+		** but it is 1 in driver. so we need to minus 1 for all authmode except AUTH_MODE_NON_RSN_FT,
+		** because AUTH_MODE_NON_RSN_FT will be same as AUTH_MODE_OPEN in firmware
+		**/
+		if (prConnSettings->eAuthMode != AUTH_MODE_NON_RSN_FT)
+			rCmdSetBssInfo.ucAuthMode = (UINT_8)prConnSettings->eAuthMode - 1;
+		else
+			rCmdSetBssInfo.ucAuthMode = (UINT_8) prConnSettings->eAuthMode;
+
 		rCmdSetBssInfo.ucEncStatus = (UINT_8) prConnSettings->eEncStatus;
 		rCmdSetBssInfo.fgWapiMode = (UINT_8) prConnSettings->fgWapiMode;
 	}
@@ -1564,6 +1586,11 @@ WLAN_STATUS nicPmIndicateBssConnected(IN P_ADAPTER_T prAdapter, IN ENUM_NETWORK_
 #endif
 	    ) {
 		if (prBssInfo->eCurrentOPMode == OP_MODE_INFRASTRUCTURE && prBssInfo->prStaRecOfAP) {
+			UINT_8 ucUapsd = wmmCalculateUapsdSetting(prAdapter);
+
+			/* should sync Tspec uapsd settings */
+			rCmdIndicatePmBssConnected.ucBmpDeliveryAC = (ucUapsd >> 4) & 0xf;
+			rCmdIndicatePmBssConnected.ucBmpTriggerAC = ucUapsd & 0xf;
 			rCmdIndicatePmBssConnected.fgIsUapsdConnection =
 			    (UINT_8) prBssInfo->prStaRecOfAP->fgIsUapsdSupported;
 		} else {
@@ -1614,6 +1641,14 @@ WLAN_STATUS nicPmIndicateBssAbort(IN P_ADAPTER_T prAdapter, IN ENUM_NETWORK_TYPE
 				   sizeof(CMD_INDICATE_PM_BSS_ABORT), (PUINT_8)&rCmdIndicatePmBssAbort, NULL, 0);
 }
 
+#if CFG_SUPPORT_SET_CAM_BY_PROC
+static BOOLEAN fgForceSetCAM = FALSE;
+VOID nicForceSetCAM(BOOLEAN enabled)
+{
+	fgForceSetCAM = enabled;
+}
+#endif
+
 WLAN_STATUS
 nicConfigPowerSaveProfile(IN P_ADAPTER_T prAdapter,
 			  ENUM_NETWORK_TYPE_INDEX_T eNetTypeIndex, PARAM_POWER_MODE ePwrMode, BOOLEAN fgEnCmdEvent)
@@ -1632,6 +1667,11 @@ nicConfigPowerSaveProfile(IN P_ADAPTER_T prAdapter,
 /* prAdapter->rWlanInfo.ePowerSaveMode.ucPsProfile = (UINT_8)ePwrMode; */
 	prAdapter->rWlanInfo.arPowerSaveMode[eNetTypeIndex].ucNetTypeIndex = eNetTypeIndex;
 	prAdapter->rWlanInfo.arPowerSaveMode[eNetTypeIndex].ucPsProfile = (UINT_8) ePwrMode;
+
+#if CFG_SUPPORT_SET_CAM_BY_PROC
+	if (fgForceSetCAM && (eNetTypeIndex == NETWORK_TYPE_AIS_INDEX))
+		return WLAN_STATUS_SUCCESS;
+#endif
 
 	return wlanSendSetQueryCmd(prAdapter,
 				   CMD_ID_POWER_SAVE_MODE,
@@ -1815,7 +1855,14 @@ nicUpdateBeaconIETemplate(IN P_ADAPTER_T prAdapter,
 		u2CmdBufLen = OFFSET_OF(CMD_BEACON_TEMPLATE_UPDATE, aucIE) + u2IELen;
 	} else if (eIeUpdMethod == IE_UPD_METHOD_DELETE_ALL) {
 		u2CmdBufLen = OFFSET_OF(CMD_BEACON_TEMPLATE_UPDATE, u2IELen);
-	} else {
+	}
+#if CFG_SUPPORT_P2P_GO_OFFLOAD_PROBE_RSP
+	else if (eIeUpdMethod == IE_UPD_METHOD_UPDATE_PROBE_RSP) {
+		DBGLOG(NIC, INFO, "update probe response temp for probe response offload to firmware\n");
+		u2CmdBufLen = OFFSET_OF(CMD_BEACON_TEMPLATE_UPDATE, aucIE) + u2IELen;
+	}
+#endif
+	else {
 		ASSERT(0);
 		return WLAN_STATUS_FAILURE;
 	}
@@ -1959,6 +2006,83 @@ WLAN_STATUS nicQmSetRxBASize(IN P_ADAPTER_T prAdapter, BOOLEAN enable, UINT32 si
 				   NULL, NULL, sizeof(CMD_SPECIFIC_RX_BA_WIN_SIZE_T), (PUINT_8)&rCmdRxBASize, NULL, 0);
 }
 
+WLAN_STATUS nicSetUApsdParam(IN P_ADAPTER_T prAdapter,
+	IN PARAM_CUSTOM_UAPSD_PARAM_STRUCT_T rUapsdParams, IN ENUM_NETWORK_TYPE_INDEX_T eNetworkTypeIdx)
+{
+	CMD_CUSTOM_UAPSD_PARAM_STRUCT_T rCmdUapsdParam;
+	P_PM_PROFILE_SETUP_INFO_T prPmProfSetupInfo;
+	P_BSS_INFO_T prBssInfo;
+	WLAN_STATUS ret;
+
+	DEBUGFUNC("nicSetUApsdParam");
+
+	ASSERT(prAdapter);
+
+	if (eNetworkTypeIdx >= NETWORK_TYPE_INDEX_NUM) {
+		DBGLOG(NIC, ERROR, "nicSetUApsdParam Invalid eNetworkTypeIdx\n");
+		return WLAN_STATUS_FAILURE;
+	}
+
+	prBssInfo = &(prAdapter->rWifiVar.arBssInfo[eNetworkTypeIdx]);
+	prPmProfSetupInfo = &prBssInfo->rPmProfSetupInfo;
+
+	kalMemZero(&rCmdUapsdParam, sizeof(CMD_CUSTOM_UAPSD_PARAM_STRUCT_T));
+
+	rCmdUapsdParam.fgEnAPSD = rUapsdParams.fgEnAPSD;
+	rCmdUapsdParam.fgEnAPSD_AcBe = rUapsdParams.fgEnAPSD_AcBe;
+	rCmdUapsdParam.fgEnAPSD_AcBk = rUapsdParams.fgEnAPSD_AcBk;
+	rCmdUapsdParam.fgEnAPSD_AcVo = rUapsdParams.fgEnAPSD_AcVo;
+	rCmdUapsdParam.fgEnAPSD_AcVi = rUapsdParams.fgEnAPSD_AcVi;
+	rCmdUapsdParam.ucMaxSpLen = rUapsdParams.ucMaxSpLen;
+
+	/* Fill BmpDeliveryAC and BmpTriggerAC by UapsdParams */
+	prPmProfSetupInfo->ucBmpDeliveryAC =
+	    ((rUapsdParams.fgEnAPSD_AcBe << 0) |
+	     (rUapsdParams.fgEnAPSD_AcBk << 1) |
+	     (rUapsdParams.fgEnAPSD_AcVi << 2) | (rUapsdParams.fgEnAPSD_AcVo << 3));
+	prPmProfSetupInfo->ucBmpTriggerAC =
+	    ((rUapsdParams.fgEnAPSD_AcBe << 0) |
+	     (rUapsdParams.fgEnAPSD_AcBk << 1) |
+	     (rUapsdParams.fgEnAPSD_AcVi << 2) | (rUapsdParams.fgEnAPSD_AcVo << 3));
+	prPmProfSetupInfo->ucUapsdSp = rUapsdParams.ucMaxSpLen;
+
+	DBGLOG(NIC, INFO, "nicSetUApsdParam EnAPSD[%d] Be[%d] Bk[%d] Vo[%d] Vi[%d] SPLen[%d]\n",
+		rCmdUapsdParam.fgEnAPSD, rCmdUapsdParam.fgEnAPSD_AcBe, rCmdUapsdParam.fgEnAPSD_AcBk,
+		rCmdUapsdParam.fgEnAPSD_AcVo, rCmdUapsdParam.fgEnAPSD_AcVi, rCmdUapsdParam.ucMaxSpLen);
+
+	switch (eNetworkTypeIdx) {
+	case NETWORK_TYPE_AIS_INDEX:
+		ret = wlanSendSetQueryCmd(prAdapter,
+			CMD_ID_SET_UAPSD_PARAM,
+			TRUE,
+			FALSE,
+			FALSE,
+			NULL,
+			NULL,
+			sizeof(CMD_CUSTOM_UAPSD_PARAM_STRUCT_T),
+			(PUINT_8)&rCmdUapsdParam, NULL, 0);
+			break;
+
+	case NETWORK_TYPE_P2P_INDEX:
+		ret = wlanoidSendSetQueryP2PCmd(prAdapter,
+			CMD_ID_SET_UAPSD_PARAM,
+			TRUE,
+			FALSE,
+			FALSE,
+			NULL,
+			NULL,
+			sizeof(CMD_CUSTOM_UAPSD_PARAM_STRUCT_T),
+			(PUINT_8)&rCmdUapsdParam, NULL, 0);
+			break;
+
+	default:
+		ret = WLAN_STATUS_FAILURE;
+		break;
+	}
+
+	return ret;
+}
+
 /*----------------------------------------------------------------------------*/
 /*!
 * @brief This utility function is used to update TX power gain corresponding to
@@ -1982,7 +2106,7 @@ WLAN_STATUS nicUpdateTxPower(IN P_ADAPTER_T prAdapter, IN P_CMD_TX_PWR_T prTxPwr
 				   TRUE,
 				   FALSE, FALSE, NULL, NULL, sizeof(CMD_TX_PWR_T), (PUINT_8) prTxPwrParam, NULL, 0);
 }
-#if CFG_SUPPORT_TX_BACKOFF
+#if CFG_SUPPORT_TX_POWER_BACK_OFF
 /*----------------------------------------------------------------------------*/
 /*!
 * @brief This utility function is used to update TX power offset corresponding to
@@ -2217,6 +2341,7 @@ VOID nicInitMGMT(IN P_ADAPTER_T prAdapter, IN P_REG_INFO_T prRegInfo)
 	/* CNM Module - initialization */
 	cnmInit(prAdapter);
 
+	wmmInit(prAdapter);
 	/* RLM Module - initialization */
 	rlmFsmEventInit(prAdapter);
 
@@ -2270,6 +2395,7 @@ VOID nicUninitMGMT(IN P_ADAPTER_T prAdapter)
 	/* SCN Module - unintiailization */
 	scnUninit(prAdapter);
 
+	wmmUnInit(prAdapter);
 	/* RLM Module - uninitialization */
 	rlmFsmEventUninit(prAdapter);
 
@@ -2377,7 +2503,7 @@ WLAN_STATUS nicDisableClockGating(IN P_ADAPTER_T prAdapter)
 * @return (none)
 */
 /*----------------------------------------------------------------------------*/
-VOID
+UINT_32
 nicAddScanResult(IN P_ADAPTER_T prAdapter,
 		 IN PARAM_MAC_ADDRESS rMacAddr,
 		 IN P_PARAM_SSID_T prSsid,
@@ -2567,7 +2693,9 @@ nicAddScanResult(IN P_ADAPTER_T prAdapter,
 				prAdapter->rWlanInfo.apucScanResultIEs[i] = NULL;
 			}
 		}
+		return i;
 	}
+	return i - 1;
 }
 
 /*----------------------------------------------------------------------------*/

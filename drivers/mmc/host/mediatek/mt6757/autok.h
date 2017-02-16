@@ -26,7 +26,7 @@
 #include <linux/mmc/sdio.h>
 #include <mt-plat/mtk_chip.h>
 
-#define AUTOK_VERSION                   (0x16120111)
+#define AUTOK_VERSION                   (0x16121915)
 struct msdc_host;
 
 #define E_RESULT_PASS     (0)

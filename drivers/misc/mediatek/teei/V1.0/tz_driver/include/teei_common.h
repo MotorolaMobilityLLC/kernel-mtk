@@ -1,3 +1,16 @@
+/*
+ * Copyright (c) 2015-2016 MICROTRUST Incorporated
+ * All Rights Reserved.
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * version 2 as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ */
 
 #ifndef __TEEI_COMMON_H_
 #define __TEEI_COMMON_H_
@@ -56,7 +69,7 @@ enum teeic_param_pos {
 struct teei_encode_meta {
 	int type;
 	int len;			/* data length */
-	unsigned  long long usr_addr;		/* data address in user space */
+	unsigned long usr_addr;		/* data address in user space */
 	int ret_len;			/* return sizeof data */
 	int value_flag;			/* value of a or b */
 	int param_pos;			/* param order */

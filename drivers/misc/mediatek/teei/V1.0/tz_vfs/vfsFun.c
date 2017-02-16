@@ -1,3 +1,17 @@
+/*
+ * Copyright (c) 2015-2016 MICROTRUST Incorporated
+ * All Rights Reserved.
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * version 2 as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ */
+
 #include<linux/kernel.h>
 #include <linux/platform_device.h>
 #include<linux/module.h>
@@ -15,13 +29,20 @@
 #include"TEEI.h"
 #include"teei_id.h"
 
-#define VFS_SIZE	0x80000
-#define MEM_CLEAR	0x1
-#define VFS_MAJOR	253
+#define VFS_SIZE        0x80000
+#define MEM_CLEAR       0x1
+#define VFS_MAJOR       253
+
+#define TEEI_CONFIG_IOC_MAGIC 0x775B777E
+
+#define TEEI_CONFIG_IOCTL_INIT_TEEI             _IOWR(TEEI_CONFIG_IOC_MAGIC, 3, int)
+#define SOTER_TUI_ENTER                         _IOWR(TEEI_CONFIG_IOC_MAGIC, 0x70, int)
+#define SOTER_TUI_LEAVE                         _IOWR(TEEI_CONFIG_IOC_MAGIC, 0x71, int)
 
 static int vfs_major = VFS_MAJOR;
 static struct class *driver_class;
 static dev_t devno;
+int enter_tui_flag = 0;
 
 struct vfs_dev {
 	struct cdev cdev;
@@ -30,6 +51,16 @@ struct vfs_dev {
 };
 
 extern struct completion global_down_lock;
+
+#ifdef CONFIG_MICROTRUST_TUI_DRIVER
+extern int display_enter_tui(void);
+extern int display_exit_tui(void);
+extern int primary_display_trigger(int blocking, void *callback, int need_merge);
+extern void mt_deint_leave(void);
+extern void mt_deint_restore(void);
+extern int tui_i2c_enable_clock(void);
+extern int tui_i2c_disable_clock(void);
+#endif
 
 #ifdef VFS_RDWR_SEM
 struct semaphore VFS_rd_sem;
@@ -69,8 +100,53 @@ int tz_vfs_release(struct inode *inode, struct file *filp)
 	return 0;
 }
 
+static long tz_vfs_ioctl(struct file *filp,
+                         unsigned int cmd, unsigned long arg)
+{
+	int ret = 0;
+
+	switch (cmd) {
+#ifdef CONFIG_MICROTRUST_TUI_DRIVER
+		case SOTER_TUI_ENTER:
+			pr_debug("***************SOTER_TUI_ENTER\n");
+		enter_tui_flag = 1;
+			ret = tui_i2c_enable_clock();
+			if (ret)
+				pr_err("tui_i2c_enable_clock failed!!\n");
+
+			mt_deint_leave();
+
+			ret = display_enter_tui();
+			if (ret)
+				pr_err("display_enter_tui failed!!\n");
+
+			break;
+
+		case SOTER_TUI_LEAVE:
+			pr_debug("***************SOTER_TUI_LEAVE\n");
+			/*
+			ret = tui_i2c_disable_clock();
+			if(ret)
+			        pr_debug("tui_i2c_disable_clock failed!!\n");
+			*/
+			mt_deint_restore();
+
+			ret = display_exit_tui();
+			if (ret)
+				pr_err("display_exit_tui failed!!\n");
+			/* primary_display_trigger(0, NULL, 0); */
+
+			break;
+#endif
+		default:
+			return -EINVAL;
+	}
+
+	return ret;
+}
+
 static ssize_t tz_vfs_read(struct file *filp, char __user *buf,
-			size_t size, loff_t *ppos)
+                           size_t size, loff_t *ppos)
 {
 	struct TEEI_vfs_command *vfs_p = NULL;
 	int length = 0;
@@ -119,7 +195,7 @@ static ssize_t tz_vfs_read(struct file *filp, char __user *buf,
 }
 
 static ssize_t tz_vfs_write(struct file *filp, const char __user *buf,
-			size_t size, loff_t *ppos)
+                            size_t size, loff_t *ppos)
 {
 	if (buf == NULL)
 		return -EINVAL;
@@ -144,12 +220,60 @@ static ssize_t tz_vfs_write(struct file *filp, const char __user *buf,
 	return 0;
 }
 
+static loff_t tz_vfs_llseek(struct file *filp, loff_t offset, int orig)
+{
+	loff_t ret = 0;
+
+	switch (orig) {
+		case 0:
+			if (offset < 0) {
+				ret = -EINVAL;
+				break;
+			}
+
+			if ((unsigned int)offset > VFS_SIZE) {
+				ret = -EINVAL;
+				break;
+			}
+
+			filp->f_pos = (unsigned int)offset;
+			ret = filp->f_pos;
+			break;
+
+		case 1:
+			if ((filp->f_pos + offset) > VFS_SIZE) {
+				ret = -EINVAL;
+				break;
+			}
+
+			if ((filp->f_pos + offset) < 0) {
+				ret = -EINVAL;
+				break;
+			}
+
+			filp->f_pos += offset;
+			ret = filp->f_pos;
+			break;
+
+		default:
+			ret = -EINVAL;
+			break;
+	}
+
+	return ret;
+}
+
 static const struct file_operations vfs_fops = {
-	.owner =		THIS_MODULE,
-	.read =			tz_vfs_read,
-	.write =		tz_vfs_write,
-	.open =			tz_vfs_open,
-	.release =		tz_vfs_release,
+	.owner =                THIS_MODULE,
+	.llseek =               tz_vfs_llseek,
+	.read =                 tz_vfs_read,
+	.write =                tz_vfs_write,
+	.unlocked_ioctl = tz_vfs_ioctl,
+#ifdef CONFIG_COMPAT
+	.compat_ioctl   = tz_vfs_ioctl,
+#endif
+	.open =                 tz_vfs_open,
+	.release =              tz_vfs_release,
 };
 
 static void vfs_setup_cdev(struct vfs_dev *dev, int index)

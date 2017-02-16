@@ -31,6 +31,8 @@ typedef int M4U_PORT_ID;
 #define M4U_FLAGS_SEQ_ACCESS (1<<0) /* engine access this buffer in sequncial way. */
 #define M4U_FLAGS_FIX_MVA   (1<<1)  /* fix allocation, we will use mva user specified. */
 #define M4U_FLAGS_SEC_SHAREABLE   (1<<2)  /* the mva will share in SWd */
+#define M4U_FLAGS_START_FROM   (1<<3)  /* the allocator will search free mva from user specified.  */
+#define M4U_FLAGS_SG_READY   (1<<4)  /* ion_alloc have allocated sg_table with m4u_create_sgtable.*/
 
 /* m4u internal flags (DO NOT use them for other purpers) */
 #define M4U_FLAGS_MVA_IN_FREE (1<<8) /* this mva is in deallocating. */
@@ -45,6 +47,7 @@ typedef enum {
 /* port related: virtuality, security, distance */
 typedef struct _M4U_PORT {
 	M4U_PORT_ID ePortID;		   /* hardware port ID, defined in M4U_PORT_ID */
+	unsigned long va;
 	unsigned int Virtuality;
 	unsigned int Security;
 	unsigned int domain;            /* domain : 0 1 2 3 */
@@ -91,6 +94,18 @@ typedef struct {
 	struct list_head mvaList;
 } m4u_client_t;
 
+typedef struct {
+	int eModuleID;
+	unsigned long va;
+	unsigned int BufSize;
+	int security;
+	int cache_coherent;
+	unsigned int flags;
+	unsigned int iova_start;
+	unsigned int iova_end;
+	unsigned int mva;
+} port_mva_info_t;
+
 int m4u_dump_info(int m4u_index);
 int m4u_power_on(int m4u_index);
 int m4u_power_off(int m4u_index);
@@ -101,13 +116,11 @@ int m4u_alloc_mva(m4u_client_t *client, M4U_PORT_ID port,
 					unsigned int *pMva);
 
 int m4u_dealloc_mva(m4u_client_t *client, M4U_PORT_ID port, unsigned int mva);
+struct sg_table *m4u_create_sgtable(unsigned long va, unsigned int size);
 
-int m4u_alloc_mva_sg(int eModuleID,
-						struct sg_table *sg_table,
-						const unsigned int BufSize,
-						int security,
-						int cache_coherent,
-						unsigned int *pRetMVABuf);
+int m4u_alloc_mva_sg(port_mva_info_t *port_info,
+		struct sg_table *sg_table);
+
 
 int m4u_dealloc_mva_sg(int eModuleID,
 						struct sg_table *sg_table,

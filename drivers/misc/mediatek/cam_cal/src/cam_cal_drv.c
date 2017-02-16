@@ -66,6 +66,7 @@ static struct class *g_drvClass;
 static unsigned int g_drvOpened;
 static DEFINE_SPINLOCK(g_spinLock); /*for SMP*/
 
+
 typedef enum {
 	I2C_DEV_1 = 0,
 	I2C_DEV_2,
@@ -171,7 +172,10 @@ static int cam_cal_get_i2c_client(struct i2c_board_info *i2c_info,
 			ret = 0;
 		} else {
 			CAM_CALDB("g_adapt!=NULL, register i2c %d start !\n", g_curBusIdx);
+
+			mutex_lock(&EEPROM_Mutex);
 			*client = i2c_new_probed_device(adapt, i2c_info, addr_list, NULL);
+			mutex_unlock(&EEPROM_Mutex);
 
 			i2c_put_adapter(adapt);
 
@@ -179,6 +183,7 @@ static int cam_cal_get_i2c_client(struct i2c_board_info *i2c_info,
 				CAM_CALDB("failed to get client i2c busID=%d\n", g_busNum[g_curBusIdx]);
 				ret = 0;
 			}
+
 		}
 	}
 	return ret;

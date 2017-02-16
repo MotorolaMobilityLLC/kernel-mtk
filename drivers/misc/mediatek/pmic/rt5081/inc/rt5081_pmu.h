@@ -120,6 +120,12 @@ struct rt5081_pmu_chip {
 #define RT5081_PMU_REG_CHGNTC		(0x4B)
 #define RT5081_PMU_REG_ADCDATAH		(0x4C)
 #define RT5081_PMU_REG_ADCDATAL		(0x4D)
+#define RT5081_PMU_REG_ADCDATATUNEH	(0x4E)
+#define RT5081_PMU_REG_ADCDATATUNEL	(0x4F)
+#define RT5081_PMU_REG_ADCDATAORGH	(0x50)
+#define RT5081_PMU_REG_ADCDATAORGL	(0x51)
+#define RT5081_PMU_REG_ADCBATDATAH	(0x52)
+#define RT5081_PMU_REG_ADCBATDATAL	(0x53)
 #define RT5081_PMU_REG_CHGCTRL19	(0x60)
 #define RT5081_PMU_REG_OVPCTRL		(0x61)
 /* flashled control */
@@ -263,6 +269,8 @@ extern int rt5081_pmu_regmap_register(struct rt5081_pmu_chip *chip,
 extern void rt5081_pmu_regmap_unregister(struct rt5081_pmu_chip *chip);
 extern int rt5081_pmu_get_virq_number(struct rt5081_pmu_chip *chip,
 	const char *name);
+extern const char *rt5081_pmu_get_hwirq_name(struct rt5081_pmu_chip *chip,
+	int id);
 extern int rt5081_pmu_irq_register(struct rt5081_pmu_chip *chip);
 extern void rt5081_pmu_irq_unregister(struct rt5081_pmu_chip *chip);
 extern void rt5081_pmu_irq_suspend(struct rt5081_pmu_chip *chip);

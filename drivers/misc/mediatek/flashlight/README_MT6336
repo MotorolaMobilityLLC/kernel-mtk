@@ -20,7 +20,7 @@ This is a introduction for flashlight chip MT6336
 	* Flash mode step up/down timeing (default: 10 us)
 	* Flash mode output regulation voltage (default: 5.0 V)
 
-- Channel depoule:
+- Channel decouple:
 	* Flash/Torch mode enable
 	* Brightness level
 

@@ -456,7 +456,8 @@ static int _convert_fb_layer_to_disp_input(struct fb_overlay_layer *src, struct 
 		break;
 
 	default:
-		DISPERR("Invalid color format: 0x%x\n", src->src_fmt);
+		dst->src_fmt = DISP_FORMAT_ARGB8888;
+		DISPERR("Invalid color format: 0x%x, force set to argb8888\n", src->src_fmt);
 		return -1;
 	}
 
@@ -1148,6 +1149,7 @@ static int mtkfb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long arg
 
 			return r;
 		}
+
 	case MTKFB_SET_AOD_POWER_MODE:
 	{
 		enum mtkfb_aod_power_mode aod_pm = MTKFB_AOD_POWER_MODE_ERROR;
@@ -1190,6 +1192,7 @@ static int mtkfb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long arg
 
 		break;
 	}
+
 	case MTKFB_POWEROFF:
 		{
 			MTKFB_FUNC();
@@ -1216,11 +1219,14 @@ static int mtkfb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long arg
 				return r;
 			}
 			DISPDBG("[FB Driver] enter MTKFB_POWERON\n");
-			primary_display_resume();
+			ret = primary_display_resume();
+			if (ret < 0)
+				DISPERR("primary display resume failed\n");
 			DISPDBG("[FB Driver] leave MTKFB_POWERON\n");
 			is_early_suspended = FALSE;	/* no care */
 			return r;
 		}
+
 	case MTKFB_GET_POWERSTATE:
 		{
 			int power_state;
@@ -1256,15 +1262,32 @@ static int mtkfb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long arg
 
 	case MTKFB_CAPTURE_FRAMEBUFFER:
 		{
-			unsigned long pbuf = 0;
+			unsigned long dst_pbuf = 0;
+			unsigned long *src_pbuf = 0;
+			unsigned int pixel_bpp = primary_display_get_bpp() / 8;
+			unsigned int fbsize = DISP_GetScreenHeight() * DISP_GetScreenWidth() * pixel_bpp;
 
-			if (copy_from_user(&pbuf, (void __user *)arg, sizeof(pbuf))) {
+			if (copy_from_user(&dst_pbuf, (void __user *)arg, sizeof(dst_pbuf))) {
 				MTKFB_LOG("[FB]: copy_from_user failed! line:%d\n", __LINE__);
 				r = -EFAULT;
 			} else {
-				dprec_logger_start(DPREC_LOGGER_WDMA_DUMP, 0, 0);
-				primary_display_capture_framebuffer_ovl(pbuf, UFMT_BGRA8888);
-				dprec_logger_done(DPREC_LOGGER_WDMA_DUMP, 0, 0);
+				src_pbuf = vmalloc(fbsize);
+				if (!src_pbuf) {
+					MTKFB_LOG("[FB]: vmalloc capture src_pbuf failed! line:%d\n", __LINE__);
+					r = -EFAULT;
+				} else {
+					dprec_logger_start(DPREC_LOGGER_WDMA_DUMP, 0, 0);
+					r = primary_display_capture_framebuffer_ovl((unsigned long)src_pbuf,
+						UFMT_BGRA8888);
+					if (r < 0)
+						DISPERR("primary display capture framebuffer failed!\n");
+					dprec_logger_done(DPREC_LOGGER_WDMA_DUMP, 0, 0);
+					if (copy_to_user((unsigned long *)dst_pbuf, src_pbuf, fbsize)) {
+						MTKFB_LOG("[FB]: copy_to_user failed! line:%d\n", __LINE__);
+						r = -EFAULT;
+					}
+					vfree(src_pbuf);
+				}
 			}
 
 			return r;
@@ -1273,6 +1296,9 @@ static int mtkfb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long arg
 	case MTKFB_SLT_AUTO_CAPTURE:
 		{
 			struct fb_slt_catpure capConfig;
+			unsigned long *src_pbuf = 0;
+			unsigned int pixel_bpp = primary_display_get_bpp() / 8;
+			unsigned int fbsize = DISP_GetScreenHeight() * DISP_GetScreenWidth() * pixel_bpp;
 
 			if (copy_from_user(&capConfig, (void __user *)arg, sizeof(capConfig))) {
 				MTKFB_LOG("[FB]: copy_from_user failed! line:%d\n", __LINE__);
@@ -1301,13 +1327,27 @@ static int mtkfb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long arg
 					format = UFMT_ABGR8888;
 					break;
 				}
-				primary_display_capture_framebuffer_ovl((unsigned long)
-									capConfig.outputBuffer,
+				src_pbuf = vmalloc(fbsize);
+				if (!src_pbuf) {
+					MTKFB_LOG("[FB]: vmalloc capture src_pbuf failed! line:%d\n", __LINE__);
+					return -EFAULT;
+				}
+
+				r = primary_display_capture_framebuffer_ovl((unsigned long)src_pbuf,
 									format);
+				if (r < 0)
+					DISPERR("primary display capture framebuffer failed!\n");
+
+				if (copy_to_user((unsigned long *)capConfig.outputBuffer, src_pbuf, fbsize)) {
+					MTKFB_LOG("[FB]: copy_to_user failed! line:%d\n", __LINE__);
+					r = -EFAULT;
+				}
+				vfree(src_pbuf);
 			}
 
 			return r;
 		}
+
 	case MTKFB_GET_OVERLAY_LAYER_INFO:
 		{
 			struct fb_overlay_layer_info layerInfo;
@@ -1328,6 +1368,7 @@ static int mtkfb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long arg
 			}
 			return r;
 		}
+
 	case MTKFB_SET_OVERLAY_LAYER:
 		{		/* no function */
 			struct fb_overlay_layer *layerInfo;
@@ -1353,9 +1394,22 @@ static int mtkfb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long arg
 
 				memset((void *)&session_input, 0, sizeof(session_input));
 				input = &session_input.config[session_input.config_layer_num++];
-				_convert_fb_layer_to_disp_input(layerInfo, input);
-				primary_display_config_input_multiple(&session_input);
-				primary_display_trigger(1, NULL, 0);
+
+				if (layerInfo->layer_id >= TOTAL_OVL_LAYER_NUM) {
+					DISPERR("[FB] error, layer_id invalid=%d, line:%d\n",
+						     layerInfo->layer_id, __LINE__);
+					kfree(layerInfo);
+					return -EFAULT;
+				}
+
+				r = _convert_fb_layer_to_disp_input(layerInfo, input);
+				if (r < 0) {
+					DISPERR("[FB] error, _convert_fb_layer failed! line:%d\n", __LINE__);
+					kfree(layerInfo);
+					return -EFAULT;
+				}
+				r |= primary_display_config_input_multiple(&session_input);
+				r |= primary_display_trigger(1, NULL, 0);
 			}
 
 			kfree(layerInfo);
@@ -1414,7 +1468,12 @@ static int mtkfb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long arg
 					}
 
 					input = &session_input.config[session_input.config_layer_num++];
-					_convert_fb_layer_to_disp_input(&layerInfo[i], input);
+					r = _convert_fb_layer_to_disp_input(&layerInfo[i], input);
+					if (r < 0) {
+						DISPERR("[FB] error, _convert_fb_layer_to_disp_input failed!\n");
+						kfree(layerInfo);
+						return -EFAULT;
+					}
 				}
 				primary_display_config_input_multiple(&session_input);
 				primary_display_trigger(1, NULL, 0);

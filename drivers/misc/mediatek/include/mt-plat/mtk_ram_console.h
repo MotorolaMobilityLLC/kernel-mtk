@@ -67,6 +67,7 @@ extern void aee_rr_rec_hotplug_footprint(int cpu, u8 fp);
 extern void aee_rr_rec_hotplug_cpu_event(u8 val);
 extern void aee_rr_rec_hotplug_cb_index(u8 val);
 extern void aee_rr_rec_hotplug_cb_fp(unsigned long val);
+extern void aee_rr_rec_last_init_func(unsigned long val);
 #ifdef CONFIG_MTK_EMMC_SUPPORT
 extern void last_kmsg_store_to_emmc(void);
 #endif

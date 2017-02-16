@@ -215,7 +215,9 @@ int mau_start_monitor(int m4u_id, int m4u_slave_id, int mau_set,
 		      int wr, int vir, int io, int bit32,
 		      unsigned int start, unsigned int end, unsigned int port_mask, unsigned int larb_mask)
 {
-	unsigned long m4u_base = gM4UBaseAddr[m4u_id];
+	unsigned long m4u_base;
+
+	m4u_base = gM4UBaseAddr[m4u_id];
 
 	if (m4u_base == 0)
 		return -1;
@@ -1388,6 +1390,8 @@ static int _m4u_config_port(int port, int virt, int sec, int dis, int dir)
 	if (virt == 0 || sec == 1)
 		M4ULOG_HIGH("config_port:%s,v%d,s%d\n", m4u_get_port_name(port), virt, sec);
 
+	if (port < 0 || port >= M4U_PORT_NR)
+		return -1;
 	/* MMProfileLogEx(M4U_MMP_Events[M4U_MMP_CONFIG_PORT], MMProfileFlagStart, port, virt); */
 
 	/* Prefetch Distance & Direction, one bit for each port, 1:-, 0:+ */
@@ -1464,6 +1468,11 @@ int m4u_config_port(M4U_PORT_STRUCT *pM4uPort)	/* native */
 #ifdef M4U_TEE_SERVICE_ENABLE
 	unsigned int larb_port, mmu_en = 0, sec_en = 0;
 #endif
+
+	if (pM4uPort->ePortID < 0 || pM4uPort->ePortID >= M4U_PORT_NR) {
+		M4UMSG("%s port is unknown,%d\n", __func__, pM4uPort->ePortID);
+		return -1;
+	}
 
 	_m4u_port_clock_toggle(m4u_index, larb, 1);
 
@@ -1614,8 +1623,12 @@ void m4u_get_perf_counter(int m4u_index, int m4u_slave_id, M4U_PERF_COUNT *pM4U_
 int m4u_monitor_start(int m4u_id)
 {
 	unsigned long m4u_base = gM4UBaseAddr[m4u_id];
+;
 
 	M4UINFO("====m4u_monitor_start: %d======\n", m4u_id);
+	if (m4u_base == 0)
+		return -1;
+
 	/* clear GMC performance counter */
 	m4uHw_set_field_by_mask(m4u_base, REG_MMU_CTRL_REG,
 				F_MMU_CTRL_MONITOR_CLR(1), F_MMU_CTRL_MONITOR_CLR(1));
@@ -1635,6 +1648,9 @@ int m4u_monitor_stop(int m4u_id)
 	unsigned long m4u_base = gM4UBaseAddr[m4u_index];
 
 	M4UINFO("====m4u_monitor_stop: %d======\n", m4u_id);
+	if (m4u_base == 0)
+		return -1;
+
 	/* disable GMC performance monitor */
 	m4uHw_set_field_by_mask(m4u_base, REG_MMU_CTRL_REG,
 				F_MMU_CTRL_MONITOR_EN(1), F_MMU_CTRL_MONITOR_EN(0));
@@ -2012,8 +2028,12 @@ int m4u_unregister_fault_callback(int port)
 
 int m4u_enable_tf(int port, bool fgenable)
 {
-	gM4uPort[port].enable_tf = fgenable;
-	return 0;
+	if (port >= 0 && port < M4U_PORT_UNKNOWN) {
+		gM4uPort[port].enable_tf = fgenable;
+		return 0;
+	}
+	M4UMSG("%s fail, port=%d\n", __func__, port);
+	return -1;
 }
 
 /* ============================================================================== */

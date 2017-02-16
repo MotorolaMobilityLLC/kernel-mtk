@@ -1,14 +1,28 @@
+/*
+ * Copyright (c) 2015-2016 MICROTRUST Incorporated
+ * All Rights Reserved.
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * version 2 as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ */
+
 #include <linux/kernel.h>
 #include <linux/slab.h>
 #include <linux/semaphore.h>
-
+#include <linux/delay.h>
 #include "teei_gatekeeper.h"
 #include "teei_id.h"
 #include "sched_status.h"
 #include "nt_smc_call.h"
 
-#define GK_BUFF_SIZE		(4 * 1024)
-#define GK_SYS_NO		(120)
+#define GK_BUFF_SIZE            (4 * 1024)
+#define GK_SYS_NO               (120)
 
 unsigned long gatekeeper_buff_addr = NULL;
 
@@ -113,11 +127,19 @@ unsigned long create_gatekeeper_fdrv(int buff_size)
 int __send_gatekeeper_command(unsigned long share_memory_size)
 {
 
+	unsigned long smc_type = 2;
+
 	set_gatekeeper_command(share_memory_size);
 	Flush_Dcache_By_Area((unsigned long)gatekeeper_buff_addr, gatekeeper_buff_addr + GK_BUFF_SIZE);
 
 	fp_call_flag = GLSCH_HIGH;
-	n_invoke_t_drv(0, 0, 0);
+
+	n_invoke_t_drv(&smc_type, 0, 0);
+
+	while (smc_type == 1) {
+		udelay(IRQ_DELAY);
+		nt_sched_t(&smc_type);
+	}
 
 	return 0;
 }
@@ -169,7 +191,6 @@ int send_gatekeeper_command(unsigned long share_memory_size)
 	rmb();
 
 	Invalidate_Dcache_By_Area((unsigned long)gatekeeper_buff_addr, gatekeeper_buff_addr + GK_BUFF_SIZE);
-	Invalidate_Dcache_By_Area((unsigned long)&fdrv_ent, (unsigned long)&fdrv_ent + sizeof(struct fdrv_call_struct));
 
 	mutex_unlock(&pm_mutex);
 	up(&fdrv_lock);

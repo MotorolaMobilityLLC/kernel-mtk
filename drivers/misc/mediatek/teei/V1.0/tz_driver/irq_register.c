@@ -1,3 +1,17 @@
+/*
+ * Copyright (c) 2015-2016 MICROTRUST Incorporated
+ * All Rights Reserved.
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * version 2 as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ */
+
 #include <linux/irq.h>
 #include <linux/types.h>
 #include <linux/delay.h>
@@ -14,6 +28,11 @@
 #include "teei_id.h"
 #include "teei_common.h"
 
+
+extern int add_work_entry(int work_type, unsigned long buff);
+
+extern struct timeval stime;
+
 static struct teei_smc_cmd *get_response_smc_cmd(void)
 {
 	struct NQ_entry *nq_ent = NULL;
@@ -26,9 +45,25 @@ static struct teei_smc_cmd *get_response_smc_cmd(void)
 	return (struct teei_smc_cmd *)phys_to_virt((unsigned long)(nq_ent->buffer_addr));
 }
 
+void sched_func(struct work_struct *entry)
+{
+	down(&(smc_lock));
+	nt_sched_t_call();
+
+	return;
+}
+
+void add_sched_queue(void)
+{
+	INIT_WORK(&(sched_work_ent.work), sched_func);
+	queue_work(secure_wq, &(sched_work_ent.work));
+
+	return;
+}
 
 static irqreturn_t nt_sched_irq_handler(void)
 {
+#if 0
 	if (boot_soter_flag == START_STATUS) {
 		forward_call_flag = GLSCH_FOR_SOTER;
 		up(&smc_lock);
@@ -40,7 +75,11 @@ static irqreturn_t nt_sched_irq_handler(void)
 		up(&smc_lock);
 		return IRQ_HANDLED;
 	}
-
+#else
+	up(&(smc_lock));
+	add_sched_queue();
+	return IRQ_HANDLED;
+#endif
 }
 
 
@@ -271,12 +310,9 @@ static irqreturn_t nt_bdrv_handler(void)
 {
 	int bdrv_id = 0;
 
+	up(&(smc_lock));
 	bdrv_id = get_bdrv_id();
-
-	teei_vfs_flag = 1;
-
 	add_bdrv_queue(bdrv_id);
-	up(&smc_lock);
 
 	return IRQ_HANDLED;
 }
@@ -327,10 +363,8 @@ static irqreturn_t nt_boot_irq_handler(void)
 	} else {
 		pr_debug("boot irq hanler else\n");
 
-		if (forward_call_flag == GLSCH_NONE)
-			forward_call_flag = GLSCH_NEG;
-		else
-			forward_call_flag = GLSCH_NONE;
+
+		forward_call_flag = GLSCH_NONE;
 
 		up(&smc_lock);
 		up(&(boot_sema));
@@ -404,12 +438,16 @@ int register_boot_irq_handler(void)
 }
 
 
-static void secondary_load_func(void)
+void secondary_load_func(void)
 {
+	unsigned long smc_type = 2;
 	Flush_Dcache_By_Area((unsigned long)boot_vfs_addr, (unsigned long)boot_vfs_addr + VFS_SIZE);
-	pr_debug("[%s][%d]: %s end.\n", __func__, __LINE__, __func__);
-	n_ack_t_load_img(0, 0, 0);
-
+	/* pr_debug("[%s][%d]: %s end.\n", __func__, __LINE__, __func__); */
+	n_ack_t_load_img(&smc_type, 0, 0);
+	while (smc_type == 0x54) {
+		udelay(IRQ_DELAY);
+		nt_sched_t(&smc_type);
+	}
 	return ;
 }
 
@@ -417,16 +455,19 @@ static void secondary_load_func(void)
 void load_func(struct work_struct *entry)
 {
 	int cpu_id = 0;
+	int retVal = 0;
 
 	vfs_thread_function(boot_vfs_addr, NULL, NULL);
 
 	down(&smc_lock);
 
-	get_online_cpus();
+#if 1
+	retVal = add_work_entry(LOAD_FUNC, NULL);
+#else
 	cpu_id = get_current_cpuid();
 	smp_call_function_single(cpu_id, secondary_load_func, NULL, 1);
-	put_online_cpus();
 
+#endif
 	return;
 }
 
@@ -438,10 +479,8 @@ void work_func(struct work_struct *entry)
 
 	if (sys_call_num == reetime.sysno) {
 		reetime.handle(&reetime);
-		Flush_Dcache_By_Area(reetime.param_buf, reetime.param_buf + reetime.size);
 	} else if (sys_call_num == vfs_handler.sysno) {
 		vfs_handler.handle(&vfs_handler);
-		Flush_Dcache_By_Area(vfs_handler.param_buf, vfs_handler.param_buf + vfs_handler.size);
 	}
 
 	return;
@@ -464,6 +503,7 @@ static irqreturn_t nt_switch_irq_handler(void)
 		return IRQ_HANDLED;
 
 	} else {
+		Invalidate_Dcache_By_Area(message_buff, message_buff + MESSAGE_LENGTH);
 		msg_head = (struct message_head *)message_buff;
 
 		if (FAST_CALL_TYPE == msg_head->message_type) {
@@ -482,14 +522,14 @@ static irqreturn_t nt_switch_irq_handler(void)
 				/* pr_debug("[%s][%d] ==== FDRV_ACK_TYPE ========\n", __func__, __LINE__); */
 				/*
 				if(forward_call_flag == GLSCH_NONE)
-					forward_call_flag = GLSCH_NEG;
+				        forward_call_flag = GLSCH_NEG;
 				else
-					forward_call_flag = GLSCH_NONE;
+				        forward_call_flag = GLSCH_NONE;
 				*/
 				up(&boot_sema);
 				up(&smc_lock);
 #endif
-			} else {
+			} else if (msg_head->child_type == NQ_CALL_TYPE) {
 				/* pr_debug("[%s][%d] ==== STANDARD_CALL_TYPE ACK ========\n", __func__, __LINE__); */
 
 				forward_call_flag = GLSCH_NONE;
@@ -500,12 +540,21 @@ static irqreturn_t nt_switch_irq_handler(void)
 					return IRQ_NONE;
 				}
 
+				Invalidate_Dcache_By_Area((unsigned long)command, (unsigned long)command + MESSAGE_LENGTH);
 				/* Get the semaphore */
 				cmd_sema = (struct semaphore *)(command->teei_sema);
 
 				/* Up the semaphore */
 				up(cmd_sema);
 				up(&smc_lock);
+#ifdef TUI_SUPPORT
+			} else if (msg_head->child_type == TUI_NOTICE_SYS_NO) {
+				forward_call_flag = GLSCH_NONE;
+				up(&(tui_notify_sema));
+				up(&(smc_lock));
+#endif
+			} else {
+				pr_debug("[%s][%d] ==== Unknown child_type ========\n", __func__, __LINE__);
 			}
 
 			return IRQ_HANDLED;
@@ -558,37 +607,37 @@ static irqreturn_t ut_drv_irq_handler(void)
 	nt_get_non_irq_num(&irq_id);
 
 	switch (irq_id) {
-	case SCHED_IRQ:
-		retVal = nt_sched_irq_handler();
-		break;
+		case SCHED_IRQ:
+			retVal = nt_sched_irq_handler();
+			break;
 
-	case SWITCH_IRQ:
-		retVal = nt_switch_irq_handler();
-		break;
+		case SWITCH_IRQ:
+			retVal = nt_switch_irq_handler();
+			break;
 
-	case BDRV_IRQ:
-		retVal = nt_bdrv_handler();
-		break;
+		case BDRV_IRQ:
+			retVal = nt_bdrv_handler();
+			break;
 
-	case TEEI_LOG_IRQ:
-		retVal = tlog_handler();
-		break;
+		case TEEI_LOG_IRQ:
+			retVal = tlog_handler();
+			break;
 
-	case FP_ACK_IRQ:
-		retVal = nt_fp_ack_handler();
-		break;
+		case FP_ACK_IRQ:
+			retVal = nt_fp_ack_handler();
+			break;
 
-	case SOTER_ERROR_IRQ:
-		retVal = nt_error_irq_handler();
-		break;
+		case SOTER_ERROR_IRQ:
+			retVal = nt_error_irq_handler();
+			break;
 
-	case BOOT_IRQ:
-		retVal = nt_boot_irq_handler();
-		break;
+		case BOOT_IRQ:
+			retVal = nt_boot_irq_handler();
+			break;
 
-	default:
-		retVal = -EINVAL;
-		pr_err("get undefine IRQ from secure OS!\n");
+		default:
+			retVal = -EINVAL;
+			pr_err("get undefine IRQ from secure OS!\n");
 	}
 
 	return retVal;

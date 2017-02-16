@@ -52,21 +52,21 @@ static void spm_dpidle_pmic_before_wfi(void)
 	mt_spm_pmic_wrap_set_cmd_full(PMIC_WRAP_PHASE_DEEPIDLE,
 								IDX_DI_VSRAM_NORMAL,
 								PMIC_RG_LDO_VSRAM_PROC_EN_ADDR,
-								value | (1 << PMIC_RG_LDO_VSRAM_PROC_EN_SHIFT));
+								0x1);
 	mt_spm_pmic_wrap_set_cmd_full(PMIC_WRAP_PHASE_DEEPIDLE,
 								IDX_DI_VSRAM_SLEEP,
 								PMIC_RG_LDO_VSRAM_PROC_EN_ADDR,
-								value & ~(1 << PMIC_RG_LDO_VSRAM_PROC_EN_SHIFT));
+								0x3);
 	value = 0;
 	pmic_read_interface_nolock(PMIC_RG_BUCK_VPROC11_EN_ADDR, &value, 0xFFFF, 0);
 	mt_spm_pmic_wrap_set_cmd_full(PMIC_WRAP_PHASE_DEEPIDLE,
 								IDX_DI_VPROC_NORMAL,
 								PMIC_RG_BUCK_VPROC11_EN_ADDR,
-								value | (1 << PMIC_RG_BUCK_VPROC11_EN_SHIFT));
+								0x1);
 	mt_spm_pmic_wrap_set_cmd_full(PMIC_WRAP_PHASE_DEEPIDLE,
 								IDX_DI_VPROC_SLEEP,
 								PMIC_RG_BUCK_VPROC11_EN_ADDR,
-								value & ~(1 << PMIC_RG_BUCK_VPROC11_EN_SHIFT));
+								0x3);
 #else
 	/* set PMIC wrap table for Vproc/Vsram voltage decreased */
 	value = 0;

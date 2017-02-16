@@ -42,9 +42,6 @@
 #include <mach/wd_api.h>
 #include <mt-plat/upmu_common.h>
 #include <linux/irqchip/mtk-eic.h>
-#ifdef CONFIG_MTK_DFD_INTERNAL_DUMP
-#include <mt-plat/mtk_platform_debug.h>
-#endif
 
 #ifdef CONFIG_OF
 void __iomem *toprgu_base;
@@ -329,10 +326,6 @@ void wdt_arch_reset(char mode)
 	struct device_node *np_rgu;
 #endif
 
-#ifdef CONFIG_MTK_DFD_INTERNAL_DUMP
-	if (dfd30_SW_reset_workaround)
-		dfd30_SW_reset_workaround();
-#endif
 
 	pr_debug("wdt_arch_reset called@Kernel mode =%c\n", mode);
 #ifdef CONFIG_OF
@@ -530,15 +523,13 @@ int mtk_wdt_request_en_set(int mark_bit, WD_REQ_CTL en)
 		if (en == WD_REQ_DIS)
 			tmp &= ~(MTK_WDT_REQ_MODE_EINT);
 	} else if (mark_bit == MTK_WDT_REQ_MODE_SYSRST) {
-		/*
-		 *if (WD_REQ_EN == en) {
-		 *	DRV_WriteReg32(MTK_WDT_SYSDBG_DEG_EN1, MTK_WDT_SYSDBG_DEG_EN1_KEY);
-		 *	DRV_WriteReg32(MTK_WDT_SYSDBG_DEG_EN2, MTK_WDT_SYSDBG_DEG_EN2_KEY);
-		 *	tmp |= (MTK_WDT_REQ_MODE_SYSRST);
-		 *}
-		 *if (WD_REQ_DIS == en)
-		 *	tmp &= ~(MTK_WDT_REQ_MODE_SYSRST);
-		 */
+		if (en == WD_REQ_EN) {
+			mt_reg_sync_writel(MTK_WDT_SYSDBG_DEG_EN1_KEY, MTK_WDT_SYSDBG_DEG_EN1);
+			mt_reg_sync_writel(MTK_WDT_SYSDBG_DEG_EN2_KEY, MTK_WDT_SYSDBG_DEG_EN2);
+			tmp |= (MTK_WDT_REQ_MODE_SYSRST);
+		}
+		if (en == WD_REQ_DIS)
+			tmp &= ~(MTK_WDT_REQ_MODE_SYSRST);
 	} else if (mark_bit == MTK_WDT_REQ_MODE_THERMAL) {
 		if (en == WD_REQ_EN)
 			tmp |= (MTK_WDT_REQ_MODE_THERMAL);
@@ -586,12 +577,10 @@ int mtk_wdt_request_mode_set(int mark_bit, WD_REQ_MODE mode)
 		if (mode == WD_REQ_RST_MODE)
 			tmp &= ~(MTK_WDT_REQ_IRQ_EINT_EN);
 	} else if (mark_bit == MTK_WDT_REQ_MODE_SYSRST) {
-		/*
-		 *if (WD_REQ_IRQ_MODE == mode)
-		 *	tmp |= (MTK_WDT_REQ_IRQ_SYSRST_EN);
-		 *if (WD_REQ_RST_MODE == mode)
-		 *	tmp &= ~(MTK_WDT_REQ_IRQ_SYSRST_EN);
-		*/
+		if (mode == WD_REQ_IRQ_MODE)
+			tmp |= (MTK_WDT_REQ_IRQ_SYSRST_EN);
+		if (mode == WD_REQ_RST_MODE)
+			tmp &= ~(MTK_WDT_REQ_IRQ_SYSRST_EN);
 	} else if (mark_bit == MTK_WDT_REQ_MODE_THERMAL) {
 		if (mode == WD_REQ_IRQ_MODE)
 			tmp |= (MTK_WDT_REQ_IRQ_THERMAL_EN);
@@ -839,7 +828,7 @@ static int mtk_wdt_probe(struct platform_device *dev)
 #endif
 
 	node = of_find_compatible_node(NULL, NULL, "mediatek, mrdump_ext_rst-eint");
-	if (node) {
+	if (node && of_device_is_available(node)) {
 		of_property_read_u32_array(node, "debounce", ints, ARRAY_SIZE(ints));
 		ext_debugkey_io = ints[0];
 	}

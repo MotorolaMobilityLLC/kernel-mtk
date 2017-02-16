@@ -138,7 +138,7 @@ struct pmic_auxadc_channel mt6355_auxadc_channel[] = {
 		PMIC_AUXADC_ADC_RDY_CH5, PMIC_AUXADC_ADC_OUT_CH5},
 	{15, 1, PMIC_AUXADC_RQST_CH7, /* TSX */
 		PMIC_AUXADC_ADC_RDY_CH7_BY_AP, PMIC_AUXADC_ADC_OUT_CH7_BY_AP},
-	{12, 1, PMIC_AUXADC_RQST_CH9, /* HP OFFSET CAL */
+	{15, 1, PMIC_AUXADC_RQST_CH9, /* HP OFFSET CAL */
 		PMIC_AUXADC_ADC_RDY_CH9, PMIC_AUXADC_ADC_OUT_CH9},
 };
 #define MT6355_AUXADC_CHANNEL_MAX	ARRAY_SIZE(mt6355_auxadc_channel)
@@ -200,7 +200,12 @@ int mt6355_get_auxadc_value(u8 channel)
 
 	pr_info("[%s] ch = %d, reg_val = 0x%x, adc_result = %d\n",
 				__func__, channel, reg_val, adc_result);
-	return adc_result;
+
+	/* Audio request HPOPS to return raw data */
+	if (channel == AUXADC_LIST_HPOFS_CAL)
+		return reg_val * auxadc_channel->r_val;
+	else
+		return adc_result;
 }
 
 void mt6355_auxadc_init(void)
@@ -228,6 +233,7 @@ void mt6355_auxadc_init(void)
 	pmic_set_register_value(PMIC_AUXADC_DATA_REUSE_SEL, 0);
 	pmic_set_register_value(PMIC_AUXADC_DATA_REUSE_EN, 1);
 	pmic_set_register_value(PMIC_AUXADC_TRIM_CH0_SEL, 0);
+	pmic_config_interface(0x3370, 0x1, 0x1, 0); /*IMP DCM WK Peter-SW 12/21--*/
 
 	pr_info("****[%s] DONE\n", __func__);
 
@@ -244,6 +250,44 @@ EXPORT_SYMBOL(mt6355_auxadc_init);
 	pr_err("[%s] %s = 0x%x\n", __func__, #_reg,			\
 		pmic_get_register_value(_reg));			\
 }
+
+void mt6355_auxadc_dump_setting_regs(void)
+{
+	pr_err("Dump Basic RG\n");
+	pr_err("[0x%x] 0x%x\n", MT6355_STRUP_CON6, upmu_get_reg_value(MT6355_STRUP_CON6));
+	pr_err("[0x%x] 0x%x\n", MT6355_AUXADC_MDRT_0, upmu_get_reg_value(MT6355_AUXADC_MDRT_0));
+	pr_err("[0x%x] 0x%x\n", MT6355_AUXADC_MDRT_2, upmu_get_reg_value(MT6355_AUXADC_MDRT_2));
+	pr_err("[0x%x] 0x%x\n", MT6355_AUXADC_CON0, upmu_get_reg_value(MT6355_AUXADC_CON0));
+	pr_err("[0x%x] 0x%x\n", MT6355_AUXADC_CON23, upmu_get_reg_value(MT6355_AUXADC_CON23));
+	pr_err("[0x%x] 0x%x\n", MT6355_AUXADC_CON11, upmu_get_reg_value(MT6355_AUXADC_CON11));
+	pr_err("Done\n");
+}
+EXPORT_SYMBOL(mt6355_auxadc_dump_setting_regs);
+
+void mt6355_auxadc_dump_clk_regs(void)
+{
+	pr_err("Dump Clk RG\n");
+	pr_err("[0x%x] 0x%x\n", MT6355_TOP_CKPDN_CON0, upmu_get_reg_value(MT6355_TOP_CKPDN_CON0));
+	pr_err("[0x%x] 0x%x\n", MT6355_TOP_CKPDN_CON3, upmu_get_reg_value(MT6355_TOP_CKPDN_CON3));
+	pr_err("[0x%x] 0x%x\n", MT6355_TOP_CKHWEN_CON0, upmu_get_reg_value(MT6355_TOP_CKHWEN_CON0));
+	pr_err("[0x%x] 0x%x\n", MT6355_TOP_CKHWEN_CON1, upmu_get_reg_value(MT6355_TOP_CKHWEN_CON1));
+	pr_err("[0x%x] 0x%x\n", MT6355_TOP_CKTST_CON1, upmu_get_reg_value(MT6355_TOP_CKTST_CON1));
+	pr_err("[0x%x] 0x%x\n", MT6355_TOP_CKDIVSEL_CON0, upmu_get_reg_value(MT6355_TOP_CKDIVSEL_CON0));
+	pr_err("Done\n");
+}
+EXPORT_SYMBOL(mt6355_auxadc_dump_clk_regs);
+
+void mt6355_auxadc_dump_channel_regs(void)
+{
+/*
+ *	u8 list = 0;
+ *
+ *	for (list = AUXADC_LIST_MT6355_START; list <= AUXADC_LIST_MT6355_END; list++)
+ *		pr_err("[auxadc list %d] %d\n", list, mt6355_get_auxadc_value(list));
+ */
+}
+EXPORT_SYMBOL(mt6355_auxadc_channel_regs);
+
 
 void mt6355_auxadc_dump_regs(char *buf)
 {

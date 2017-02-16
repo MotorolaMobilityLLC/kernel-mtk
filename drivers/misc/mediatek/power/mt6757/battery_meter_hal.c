@@ -1067,8 +1067,8 @@ static signed int fgauge_read_columb_internal(void *data, int reset, int precise
 	uvalue32_CAR_MSB = (pmic_get_register_value(MT6351_PMIC_FG_CAR_34_19) & 0x8000) >> 15;
 #endif
 
-	bm_print(BM_LOG_FULL, "[fgauge_read_columb_internal] FG_CAR = 0x%x\r\n",
-		 uvalue32_CAR);
+	bm_print(BM_LOG_FULL,
+		"[fgauge_read_columb_internal] FG_CAR = 0x%x\r\n", uvalue32_CAR);
 	bm_print(BM_LOG_FULL,
 		 "[fgauge_read_columb_internal] uvalue32_CAR_MSB = 0x%x\r\n",
 		 uvalue32_CAR_MSB);
@@ -1128,7 +1128,8 @@ static signed int fgauge_read_columb_internal(void *data, int reset, int precise
 		Temp_Value = 0;
 	} else if (uvalue32_CAR_MSB == 0x1) {
 		/* dis-charging */
-		Temp_Value = (long long) (dvalue_CAR - 0x3ffff);	/* keep negative value */
+		/*Temp_Value = (long long) (dvalue_CAR - 0x3ffff);*/	/* mt6355 use 0x3ffff */
+		Temp_Value = (long long) (dvalue_CAR - 0x1ffff);	/* keep negative value */
 		Temp_Value = Temp_Value - (Temp_Value * 2);
 	} else {
 		/*charging */
@@ -1160,6 +1161,9 @@ static signed int fgauge_read_columb_internal(void *data, int reset, int precise
 		dvalue_CAR = (signed int) (Temp_Value - (Temp_Value * 2));	/* keep negative value */
 	else
 		dvalue_CAR = (signed int) Temp_Value;
+	bm_print(BM_LOG_FULL,
+		"uvalue32_CAR %d uvalue32_CAR_MSB %d Temp_Value %lld dvalue_CAR %d\n",
+			uvalue32_CAR, uvalue32_CAR_MSB, Temp_Value, dvalue_CAR);
 #endif
 
 	bm_print(BM_LOG_FULL, "[fgauge_read_columb_internal] dvalue_CAR = %d\r\n",
@@ -1183,7 +1187,8 @@ static signed int fgauge_read_columb_internal(void *data, int reset, int precise
 
 	dvalue_CAR = use_chip_trim_value(dvalue_CAR);
 
-	bm_print(BM_LOG_FULL, "[fgauge_read_columb_internal] final dvalue_CAR = %d\r\n",
+	bm_print(BM_LOG_FULL,
+		"[fgauge_read_columb_internal] final dvalue_CAR = %d\r\n",
 		 dvalue_CAR);
 
 	dump_nter();

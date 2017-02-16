@@ -15,7 +15,7 @@ This is a introduction for flashlight chip RT5081
 	* Torch/Strobe mode
 	* Strobe mode watchdog timer
 
-- Channel depoule:
+- Channel decouple:
 	* Current source
 	* Brightness level
 

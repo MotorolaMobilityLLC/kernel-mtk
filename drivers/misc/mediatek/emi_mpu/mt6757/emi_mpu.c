@@ -866,11 +866,16 @@ void acquire_dram_setting(struct basic_dram_setting *pasrdpd)
 	unsigned int emi_cona, emi_conh, col_bit, row_bit;
 	unsigned int ch0_rank0_size, ch0_rank1_size;
 	unsigned int ch1_rank0_size, ch1_rank1_size;
+	unsigned int shift_for_16bit = 1;
 
 	pasrdpd->channel_nr = ch_nr;
 
 	emi_cona = readl(IOMEM(EMI_CONA));
 	emi_conh = readl(IOMEM(EMI_CONH));
+
+	/* Is it 32-bit or 16-bit I/O */
+	if (emi_cona & 0x2)
+		shift_for_16bit = 0;
 
 	ch0_rank0_size = (emi_conh >> 16) & 0xf;
 	ch0_rank1_size = (emi_conh >> 20) & 0xf;
@@ -882,9 +887,9 @@ void acquire_dram_setting(struct basic_dram_setting *pasrdpd)
 
 		if (ch0_rank0_size == 0) {
 			col_bit = ((emi_cona >> 4) & 0x03) + 9;
-			row_bit = ((emi_cona >> 12) & 0x03) + 13;
+			row_bit = (((emi_cona >> 24) & 0x1) << 2) + ((emi_cona >> 12) & 0x03) + 13;
 			pasrdpd->channel[0].rank[0].rank_size =
-			(1 << (row_bit + col_bit)) >> 22;
+			(1 << (row_bit + col_bit)) >> (22 + shift_for_16bit);
 			pasrdpd->channel[0].rank[0].segment_nr = 8;
 		} else {
 			pasrdpd->channel[0].rank[0].rank_size =
@@ -897,9 +902,9 @@ void acquire_dram_setting(struct basic_dram_setting *pasrdpd)
 
 			if (ch0_rank1_size == 0) {
 				col_bit = ((emi_cona >> 6) & 0x03) + 9;
-				row_bit = ((emi_cona >> 14) & 0x03) + 13;
+				row_bit = (((emi_cona >> 25) & 0x1) << 2) + ((emi_cona >> 14) & 0x03) + 13;
 				pasrdpd->channel[0].rank[1].rank_size =
-				(1 << (row_bit + col_bit)) >> 22;
+				(1 << (row_bit + col_bit)) >> (22 + shift_for_16bit);
 				pasrdpd->channel[0].rank[1].segment_nr = 8;
 			} else {
 				pasrdpd->channel[0].rank[1].rank_size =
@@ -913,15 +918,15 @@ void acquire_dram_setting(struct basic_dram_setting *pasrdpd)
 		}
 	}
 
-	if (0 != (emi_cona & 0x01)) {
+	if (0 != ((emi_cona >> 8) & 0x01)) {
 
 		pasrdpd->channel[1].rank[0].valid_rank = true;
 
 		if (ch1_rank0_size == 0) {
 			col_bit = ((emi_cona >> 20) & 0x03) + 9;
-			row_bit = ((emi_cona >> 28) & 0x03) + 13;
+			row_bit = (((emi_conh >> 4) & 0x1) << 2) + ((emi_cona >> 28) & 0x03) + 13;
 			pasrdpd->channel[1].rank[0].rank_size =
-			(1 << (row_bit + col_bit)) >> 22;
+			(1 << (row_bit + col_bit)) >> (22 + shift_for_16bit);
 			pasrdpd->channel[1].rank[0].segment_nr = 8;
 		} else {
 			pasrdpd->channel[1].rank[0].rank_size =
@@ -934,9 +939,9 @@ void acquire_dram_setting(struct basic_dram_setting *pasrdpd)
 
 			if (ch1_rank1_size == 0) {
 				col_bit = ((emi_cona >> 22) & 0x03) + 9;
-				row_bit = ((emi_cona >> 30) & 0x03) + 13;
+				row_bit = (((emi_conh >> 5) & 0x1) << 2) + ((emi_cona >> 30) & 0x03) + 13;
 				pasrdpd->channel[1].rank[1].rank_size =
-				(1 << (row_bit + col_bit)) >> 22;
+				(1 << (row_bit + col_bit)) >> (22 + shift_for_16bit);
 				pasrdpd->channel[1].rank[1].segment_nr = 8;
 			} else {
 				pasrdpd->channel[1].rank[1].rank_size =
@@ -1615,7 +1620,7 @@ out:
 DRIVER_ATTR(emi_wp_vio, 0644, emi_wp_vio_show, emi_wp_vio_store);
 #endif /* #ifdef ENABLE_EMI_WATCH_POINT */
 
-#if 0
+#if 1
 #define AP_REGION_ID   23
 static void protect_ap_region(void)
 {
@@ -1791,7 +1796,7 @@ static int __init emi_mpu_mod_init(void)
 		}
 	}
 
-#if 0
+#if 1
 	protect_ap_region();
 #endif
 

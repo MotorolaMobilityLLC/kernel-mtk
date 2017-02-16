@@ -233,6 +233,9 @@ extern BOOLEAN fgIsBusAccessFailed;
 #define GLUE_FLAG_FRAME_FILTER_BIT  (8)
 #define GLUE_FLAG_FRAME_FILTER_AIS_BIT  (9)
 #define GLUE_FLAG_HIF_LOOPBK_AUTO_BIT   (10)
+#define GLUE_FLAG_RX_BIT            (11)
+#define GLUE_FLAG_RX             BIT(GLUE_FLAG_RX_BIT)
+#define GLUE_FLAG_RX_PROCESS (GLUE_FLAG_HALT | GLUE_FLAG_RX)
 
 #define GLUE_BOW_KFIFO_DEPTH        (1024)
 /* #define GLUE_BOW_DEVICE_NAME        "MT6620 802.11 AMP" */
@@ -242,6 +245,9 @@ extern BOOLEAN fgIsBusAccessFailed;
 #define UPDATE_FULL_TO_PARTIAL_SCAN_TIMEOUT     60 /* s */
 
 #define FULL_SCAN_MAX_CHANNEL_NUM               40
+
+#define WAKE_LOCK_RX_TIMEOUT         300 /* ms */
+
 /*******************************************************************************
 *                             D A T A   T Y P E S
 ********************************************************************************
@@ -367,6 +373,15 @@ typedef struct _TDLS_INFO_T {
 } TDLS_INFO_T;
 #endif /* CFG_SUPPORT_TDLS */
 
+struct FT_IES {
+	UINT_16 u2MDID;
+	struct IE_MOBILITY_DOMAIN_T *prMDIE;
+	struct IE_FAST_TRANSITION_T *prFTIE;
+	IE_TIMEOUT_INTERVAL_T *prTIE;
+	P_RSN_INFO_ELEM_T prRsnIE;
+	PUINT_8 pucIEBuf;
+	UINT_32 u4IeLength;
+};
 /*
 * type definition of pointer to p2p structure
 */
@@ -442,10 +457,14 @@ struct _GLUE_INFO_T {
 
 	struct completion rScanComp;	/* indicate scan complete */
 	struct completion rHaltComp;	/* indicate main thread halt complete */
+	struct completion rRxHaltComp;	/* indicate hif_thread halt complete */
 	struct completion rPendComp;	/* indicate main thread halt complete */
 	struct completion rP2pReq;	/* indicate p2p request(request channel/frame tx)
 					 * complete
 					 */
+#if CFG_SUPPORT_NCHO
+	struct completion rAisChGrntComp;	/* indicate Ais channel grant complete */
+#endif
 #if CFG_ENABLE_WIFI_DIRECT
 	struct completion rSubModComp;	/*indicate sub module init or exit complete */
 #endif
@@ -464,6 +483,9 @@ struct _GLUE_INFO_T {
 
 	wait_queue_head_t waitq;
 	struct task_struct *main_thread;
+	wait_queue_head_t waitq_rx;
+	struct task_struct *rx_thread;
+	KAL_WAKE_LOCK_T rTimeoutWakeLock;
 
 	struct timer_list tickfn;
 
@@ -594,6 +616,11 @@ struct _GLUE_INFO_T {
 	UINT_8     ucChannelNum[FULL_SCAN_MAX_CHANNEL_NUM];
 	/**/
 	PUINT_8    puFullScan2PartialChannel;
+
+	struct FT_IES rFtIeForTx;
+	struct cfg80211_ft_event_params rFtEventParam;
+	UINT_32 i4Priority;
+
 };
 
 typedef irqreturn_t(*PFN_WLANISR) (int irq, void *dev_id, struct pt_regs *regs);

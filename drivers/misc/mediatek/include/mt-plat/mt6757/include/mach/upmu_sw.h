@@ -48,7 +48,7 @@
 #define FG_IAVG_H_NO 88
 #define FG_IAVG_L_NO 89
 #define FG_TIME_NO 90
-#define FG_BAT_PLUGOUT_NO 106
+#define FG_BAT_PLUGOUT_NO 10
 
 /*==============================================================================
  * Low battery level define

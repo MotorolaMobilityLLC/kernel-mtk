@@ -56,7 +56,10 @@ u4HueAdj:{9, 9, 9, 9},
 u4SatAdj:{0, 0, 0, 0},
 u4Contrast:4,
 u4Brightness:4,
-u4Ccorr:0
+u4Ccorr:0,
+#if defined(COLOR_3_0)
+u4ColorLUT:0
+#endif
 	 },
 	{
 u4SHPGain:2,
@@ -66,7 +69,10 @@ u4HueAdj:{9, 9, 9, 9},
 u4SatAdj:{0, 0, 0, 0},
 u4Contrast:4,
 u4Brightness:4,
-u4Ccorr:1
+u4Ccorr:1,
+#if defined(COLOR_3_0)
+u4ColorLUT:0
+#endif
 	}
 };
 
@@ -78,7 +84,10 @@ u4HueAdj:{9, 9, 9, 9},
 u4SatAdj:{0, 0, 0, 0},
 u4Contrast:4,
 u4Brightness:4,
-u4Ccorr:2
+u4Ccorr:2,
+#if defined(COLOR_3_0)
+u4ColorLUT:0
+#endif
 };
 
 static struct DISP_PQ_PARAM g_Color_Gal_Param = {
@@ -89,7 +98,10 @@ u4HueAdj:{9, 9, 9, 9},
 u4SatAdj:{0, 0, 0, 0},
 u4Contrast:4,
 u4Brightness:4,
-u4Ccorr:3
+u4Ccorr:3,
+#if defined(COLOR_3_0)
+u4ColorLUT:0
+#endif
 };
 
 static struct DISP_PQ_DC_PARAM g_PQ_DC_Param = {
@@ -893,7 +905,7 @@ CCORR_COEF : /* ccorr feature */
 	 {0x0, 0x0, 0x400},
 	 },
 	},
-#if defined(CONFIG_ARCH_MT6797)
+#if defined(COLOR_2_1)
 S_GAIN_BY_Y :
 {
 	{0x80, 0x80, 0x80, 0x80,
@@ -930,7 +942,71 @@ S_GAIN_BY_Y :
 
 S_GAIN_BY_Y_EN:0,
 
-LSP_EN:0
+LSP_EN:0,
+
+LSP :
+{0x0, 0x0, 0x7F, 0x7F, 0x7F, 0x0, 0x7F, 0x7F},
+#endif
+#if defined(COLOR_3_0)
+COLOR_3D :
+{
+	{			/* 0 */
+		/* Windows  1 */
+		{0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x3FF, 0x3FF, 0x000, 0x050, 0x100, 0x200, 0x300, 0x350, 0x3FF,
+		 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x3FF, 0x3FF, 0x000, 0x050, 0x100, 0x200, 0x300, 0x350, 0x3FF,
+		 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x3FF, 0x3FF, 0x000, 0x050, 0x100, 0x200, 0x300, 0x350, 0x3FF},
+		/* Windows  2 */
+		{0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x3FF, 0x3FF, 0x000, 0x050, 0x100, 0x200, 0x300, 0x350, 0x3FF,
+		 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x3FF, 0x3FF, 0x000, 0x050, 0x100, 0x200, 0x300, 0x350, 0x3FF,
+		 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x3FF, 0x3FF, 0x000, 0x050, 0x100, 0x200, 0x300, 0x350, 0x3FF},
+		/* Windows  3 */
+		{0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x3FF, 0x3FF, 0x000, 0x050, 0x100, 0x200, 0x300, 0x350, 0x3FF,
+		 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x3FF, 0x3FF, 0x000, 0x050, 0x100, 0x200, 0x300, 0x350, 0x3FF,
+		 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x3FF, 0x3FF, 0x000, 0x050, 0x100, 0x200, 0x300, 0x350, 0x3FF},
+	},
+	{			/* 1 */
+		/* Windows  1 */
+		{0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x3FF, 0x3FF, 0x000, 0x050, 0x100, 0x200, 0x300, 0x350, 0x3FF,
+		 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x3FF, 0x3FF, 0x000, 0x050, 0x100, 0x200, 0x300, 0x350, 0x3FF,
+		 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x3FF, 0x3FF, 0x000, 0x050, 0x100, 0x200, 0x300, 0x350, 0x3FF},
+		/* Windows  2 */
+		{0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x3FF, 0x3FF, 0x000, 0x050, 0x100, 0x200, 0x300, 0x350, 0x3FF,
+		 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x3FF, 0x3FF, 0x000, 0x050, 0x100, 0x200, 0x300, 0x350, 0x3FF,
+		 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x3FF, 0x3FF, 0x000, 0x050, 0x100, 0x200, 0x300, 0x350, 0x3FF},
+		/* Windows  3 */
+		{0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x3FF, 0x3FF, 0x000, 0x050, 0x100, 0x200, 0x300, 0x350, 0x3FF,
+		 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x3FF, 0x3FF, 0x000, 0x050, 0x100, 0x200, 0x300, 0x350, 0x3FF,
+		 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x3FF, 0x3FF, 0x000, 0x050, 0x100, 0x200, 0x300, 0x350, 0x3FF},
+	},
+	{			/* 2 */
+		/* Windows  1 */
+		{0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x3FF, 0x3FF, 0x000, 0x050, 0x100, 0x200, 0x300, 0x350, 0x3FF,
+		 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x3FF, 0x3FF, 0x000, 0x050, 0x100, 0x200, 0x300, 0x350, 0x3FF,
+		 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x3FF, 0x3FF, 0x000, 0x050, 0x100, 0x200, 0x300, 0x350, 0x3FF},
+		/* Windows  2 */
+		{0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x3FF, 0x3FF, 0x000, 0x050, 0x100, 0x200, 0x300, 0x350, 0x3FF,
+		 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x3FF, 0x3FF, 0x000, 0x050, 0x100, 0x200, 0x300, 0x350, 0x3FF,
+		 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x3FF, 0x3FF, 0x000, 0x050, 0x100, 0x200, 0x300, 0x350, 0x3FF},
+		/* Windows  3 */
+		{0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x3FF, 0x3FF, 0x000, 0x050, 0x100, 0x200, 0x300, 0x350, 0x3FF,
+		 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x3FF, 0x3FF, 0x000, 0x050, 0x100, 0x200, 0x300, 0x350, 0x3FF,
+		 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x3FF, 0x3FF, 0x000, 0x050, 0x100, 0x200, 0x300, 0x350, 0x3FF},
+	},
+	{			/* 3 */
+		/* Windows  1 */
+		{0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x3FF, 0x3FF, 0x000, 0x050, 0x100, 0x200, 0x300, 0x350, 0x3FF,
+		 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x3FF, 0x3FF, 0x000, 0x050, 0x100, 0x200, 0x300, 0x350, 0x3FF,
+		 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x3FF, 0x3FF, 0x000, 0x050, 0x100, 0x200, 0x300, 0x350, 0x3FF},
+		/* Windows  2 */
+		{0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x3FF, 0x3FF, 0x000, 0x050, 0x100, 0x200, 0x300, 0x350, 0x3FF,
+		 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x3FF, 0x3FF, 0x000, 0x050, 0x100, 0x200, 0x300, 0x350, 0x3FF,
+		 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x3FF, 0x3FF, 0x000, 0x050, 0x100, 0x200, 0x300, 0x350, 0x3FF},
+		/* Windows  3 */
+		{0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x3FF, 0x3FF, 0x000, 0x050, 0x100, 0x200, 0x300, 0x350, 0x3FF,
+		 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x3FF, 0x3FF, 0x000, 0x050, 0x100, 0x200, 0x300, 0x350, 0x3FF,
+		 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x3FF, 0x3FF, 0x000, 0x050, 0x100, 0x200, 0x300, 0x350, 0x3FF},
+	},
+}
 #endif
 };
 
@@ -954,7 +1030,7 @@ static unsigned int g_split_en;
 static unsigned int g_split_window_x = 0xFFFF0000;
 static unsigned int g_split_window_y = 0xFFFF0000;
 
-#if defined(CONFIG_ARCH_MT6797)
+#if defined(COLOR_2_1)
 	static unsigned long g_color_window = 0x40185E57;
 #else
 	static unsigned long g_color_window = 0x40106051;
@@ -1009,13 +1085,12 @@ static unsigned long g_mdp_rsz2_va;
 static unsigned long g_tdshp_va;
 
 /* set cboost_en = 0 for projects before 6755 to resolve contour in some special color pattern */
-#if defined(CONFIG_MACH_MT6797)
-static bool g_config_cboost_en = true;
+#if defined(COLOR_2_1)
+static bool g_config_color21 = true;
 #else
-static bool g_config_cboost_en;
+static bool g_config_color21;
 #endif
-
-#if defined(CONFIG_MACH_MT6757)
+#if defined(COLOR_3_0)
 static bool g_config_color30;
 #endif
 
@@ -1123,9 +1198,13 @@ void DpEngine_COLORonConfig(enum DISP_MODULE_ENUM module, void *__cmdq)
 	int offset = C0_OFFSET;
 	struct DISP_PQ_PARAM *pq_param_p = &g_Color_Param[COLOR_ID_0];
 	void *cmdq = __cmdq;
-#if defined(CONFIG_ARCH_MT6797)
+#if defined(COLOR_2_1) || defined(COLOR_3_0)
 	int i, j, reg_index;
+#if defined(COLOR_3_0)
+	unsigned int pq_index;
 #endif
+#endif
+	int wide_gamut_en = 0;
 
 	if (module == DISP_MODULE_COLOR1) {
 		offset = C1_OFFSET;
@@ -1147,25 +1226,27 @@ void DpEngine_COLORonConfig(enum DISP_MODULE_ENUM module, void *__cmdq)
 	/* COLOR_ERR("DpEngine_COLORonConfig(%d)", module); */
 
 	if (g_color_bypass == 0) {
-#if defined(CONFIG_ARCH_MT6797)
-		_color_reg_mask(cmdq, DISP_COLOR_CFG_MAIN + offset, (1 << 21)
+#if defined(COLOR_2_1)
+		if (g_config_color21 == true) {
+			_color_reg_mask(cmdq, DISP_COLOR_CFG_MAIN + offset, (1 << 21)
 						| (g_Color_Index.LSP_EN << 20)
-						| (g_Color_Index.S_GAIN_BY_Y_EN << 15) | (0 << 8)
+						| (g_Color_Index.S_GAIN_BY_Y_EN << 15) | (wide_gamut_en << 8)
 						| (0 << 7), 0x003081FF);
-#else
-		_color_reg_mask(cmdq, DISP_COLOR_CFG_MAIN + offset, (0 << 8) | (0 << 7)
-						, 0x000001FF);	/* disable wide_gamut */
+		}
 #endif
+		if (g_config_color21 == false) {
+			_color_reg_mask(cmdq, DISP_COLOR_CFG_MAIN + offset, (0 << 8) | (0 << 7)
+						, 0x000001FF);	/* disable wide_gamut */
+		}
 		_color_reg_mask(cmdq, DISP_COLOR_START + offset, 0x1, 0x3);	/* color start */
 		/* enable R2Y/Y2R in Color Wrapper */
-#if defined(CONFIG_ARCH_MT6797)
-		/* RDMA & OVL will enable wide-gamut function*/
-		/* disable rgb clipping function in CM1 to keep the wide-gamut range */
-		_color_reg_mask(cmdq, DISP_COLOR_CM1_EN + offset, 0x01, 0x03);
-#else
-		_color_reg_mask(cmdq, DISP_COLOR_CM1_EN + offset, 0x01, 0x01);
-#endif
-
+		if (g_config_color21 == true) {
+			/* RDMA & OVL will enable wide-gamut function*/
+			/* disable rgb clipping function in CM1 to keep the wide-gamut range */
+			_color_reg_mask(cmdq, DISP_COLOR_CM1_EN + offset, 0x01, 0x03);
+		} else {
+			_color_reg_mask(cmdq, DISP_COLOR_CM1_EN + offset, 0x01, 0x01);
+		}
 #if defined(CONFIG_ARCH_MT6595) || defined(CONFIG_ARCH_MT6795)
 		_color_reg_mask(cmdq, DISP_COLOR_CM2_EN + offset, 0x01, 0x11);
 #else
@@ -1179,11 +1260,10 @@ void DpEngine_COLORonConfig(enum DISP_MODULE_ENUM module, void *__cmdq)
 	}
 
 	/* for partial Y contour issue */
-#if defined(CONFIG_ARCH_MT6797)
-	_color_reg_mask(cmdq, DISP_COLOR_LUMA_ADJ + offset, 0x40, 0x0000007F);
-#else
-	_color_reg_mask(cmdq, DISP_COLOR_LUMA_ADJ + offset, 0x0, 0x0000007F);
-#endif
+	if (wide_gamut_en == 0)
+		_color_reg_mask(cmdq, DISP_COLOR_LUMA_ADJ + offset, 0x40, 0x0000007F);
+	else if (wide_gamut_en == 1)
+		_color_reg_mask(cmdq, DISP_COLOR_LUMA_ADJ + offset, 0x0, 0x0000007F);
 
 	/* config parameter from customer color_index.h */
 	_color_reg_mask(cmdq, DISP_COLOR_G_PIC_ADJ_MAIN_1 + offset,
@@ -1205,12 +1285,10 @@ void DpEngine_COLORonConfig(enum DISP_MODULE_ENUM module, void *__cmdq)
 	_color_reg_mask(cmdq, DISP_COLOR_C_BOOST_MAIN + offset, 0x80 << 16, 0x00FF0000);
 #endif
 
-	if (g_config_cboost_en == false)
+	if (g_config_color21 == false)
 		_color_reg_mask(cmdq, DISP_COLOR_C_BOOST_MAIN + offset, 0 << 13, 0x00002000);
-
-#if defined(CONFIG_ARCH_MT6797)
-	_color_reg_mask(cmdq, DISP_COLOR_C_BOOST_MAIN_2 + offset, 0x40 << 24, 0xFF000000);
-#endif
+	else if (g_config_color21 == true)
+		_color_reg_mask(cmdq, DISP_COLOR_C_BOOST_MAIN_2 + offset, 0x40 << 24, 0xFF000000);
 
 	/* Partial Saturation Function */
 
@@ -1401,32 +1479,79 @@ void DpEngine_COLORonConfig(enum DISP_MODULE_ENUM module, void *__cmdq)
 		_color_reg_set(cmdq, DISP_COLOR_LOCAL_HUE_CD_0 + offset + 4 * index, u4Temp);
 	}
 
-#if defined(CONFIG_ARCH_MT6797)
-	/* S Gain By Y */
-	u4Temp = 0;
+#if defined(COLOR_2_1)
+	if (g_config_color21 == true) {
+		/* S Gain By Y */
+		u4Temp = 0;
 
-	reg_index = 0;
-	for (i = 0; i < S_GAIN_BY_Y_CONTROL_CNT; i++) {
-		for (j = 0; j < S_GAIN_BY_Y_HUE_PHASE_CNT; j += 4) {
-			u4Temp = (g_Color_Index.S_GAIN_BY_Y[i][j]) +
-				(g_Color_Index.S_GAIN_BY_Y[i][j + 1] << 8) +
-				(g_Color_Index.S_GAIN_BY_Y[i][j + 2] << 16) +
-				(g_Color_Index.S_GAIN_BY_Y[i][j + 3] << 24);
+		reg_index = 0;
+		for (i = 0; i < S_GAIN_BY_Y_CONTROL_CNT; i++) {
+			for (j = 0; j < S_GAIN_BY_Y_HUE_PHASE_CNT; j += 4) {
+				u4Temp = (g_Color_Index.S_GAIN_BY_Y[i][j]) +
+					(g_Color_Index.S_GAIN_BY_Y[i][j + 1] << 8) +
+					(g_Color_Index.S_GAIN_BY_Y[i][j + 2] << 16) +
+					(g_Color_Index.S_GAIN_BY_Y[i][j + 3] << 24);
 
-			_color_reg_set(cmdq, DISP_COLOR_S_GAIN_BY_Y0_0 + offset + reg_index, u4Temp);
-			reg_index += 4;
+				_color_reg_set(cmdq, DISP_COLOR_S_GAIN_BY_Y0_0 + offset + reg_index, u4Temp);
+				reg_index += 4;
+			}
 		}
+		/* LSP */
+		_color_reg_mask(cmdq, DISP_COLOR_LSP_1 + offset, (g_Color_Index.LSP[3] << 0) |
+			(g_Color_Index.LSP[2] << 7) | (g_Color_Index.LSP[1] << 14) | (g_Color_Index.LSP[0] << 22)
+			, 0x1FFFFFFF);
+		_color_reg_mask(cmdq, DISP_COLOR_LSP_2 + offset, (g_Color_Index.LSP[7] << 0) |
+			(g_Color_Index.LSP[6] << 8) | (g_Color_Index.LSP[5] << 16) | (g_Color_Index.LSP[4] << 23)
+			, 0x3FFF7F7F);
 	}
-	/* LSP */
-	_color_reg_mask(cmdq, DISP_COLOR_LSP_1 + offset, (0x7F << 0) | (0x7F << 7) | (0x0 << 14) | (0x0 << 22)
-				, 0x1FFFFFFF);
-	_color_reg_mask(cmdq, DISP_COLOR_LSP_2 + offset, (0x7F << 0) | (0x7F << 8) | (0x0 << 16) | (0x7F << 23)
-				, 0x3FFF7F7F);
 #endif
 
 	/* color window */
 
 	_color_reg_set(cmdq, DISP_COLOR_TWO_D_WINDOW_1 + offset, g_color_window);
+#if defined(COLOR_3_0)
+	if (g_config_color30 == true) {
+		_color_reg_mask(cmdq, DISP_COLOR_CM_CONTROL + offset,
+			0x0 |
+			(0x3 << 1) |	/* enable window 1 */
+			(0x3 << 4) |	/* enable window 2 */
+			(0x3 << 7)		/* enable window 3 */
+			, 0x1B7);
+
+		pq_index = pq_param_p->u4ColorLUT;
+		for (i = 0; i < WIN_TOTAL; i++) {
+			reg_index = i * 4 * (LUT_TOTAL * 5);
+			for (j = 0; j < LUT_TOTAL; j++) {
+				_color_reg_set(cmdq, DISP_COLOR_CM_W1_HUE_0 + offset + reg_index,
+					(g_Color_Index.COLOR_3D[pq_index][i][j*LUT_REG_TOTAL+REG_L]) |
+					(g_Color_Index.COLOR_3D[pq_index][i][j*LUT_REG_TOTAL+REG_U] << 10) |
+					(g_Color_Index.COLOR_3D[pq_index][i][j*LUT_REG_TOTAL+REG_POINT0] << 20));
+
+				_color_reg_set(cmdq, DISP_COLOR_CM_W1_HUE_1 + offset + reg_index,
+					(g_Color_Index.COLOR_3D[pq_index][i][j*LUT_REG_TOTAL+REG_POINT1]) |
+					(g_Color_Index.COLOR_3D[pq_index][i][j*LUT_REG_TOTAL+REG_POINT2] << 10) |
+					(g_Color_Index.COLOR_3D[pq_index][i][j*LUT_REG_TOTAL+REG_POINT3] << 20));
+
+				_color_reg_set(cmdq, DISP_COLOR_CM_W1_HUE_2 + offset + reg_index,
+					(g_Color_Index.COLOR_3D[pq_index][i][j*LUT_REG_TOTAL+REG_POINT4]) |
+					(g_Color_Index.COLOR_3D[pq_index][i][j*LUT_REG_TOTAL+REG_SLOPE0] << 10) |
+					(g_Color_Index.COLOR_3D[pq_index][i][j*LUT_REG_TOTAL+REG_SLOPE1] << 20));
+
+				_color_reg_set(cmdq, DISP_COLOR_CM_W1_HUE_3 + offset + reg_index,
+					(g_Color_Index.COLOR_3D[pq_index][i][j*LUT_REG_TOTAL+REG_SLOPE2]) |
+					(g_Color_Index.COLOR_3D[pq_index][i][j*LUT_REG_TOTAL+REG_SLOPE3] << 8) |
+					(g_Color_Index.COLOR_3D[pq_index][i][j*LUT_REG_TOTAL+REG_SLOPE4] << 16) |
+					(g_Color_Index.COLOR_3D[pq_index][i][j*LUT_REG_TOTAL+REG_SLOPE5] << 24));
+
+				_color_reg_set(cmdq, DISP_COLOR_CM_W1_HUE_4 + offset + reg_index,
+					(g_Color_Index.COLOR_3D[pq_index][i][j*LUT_REG_TOTAL+REG_WGT_LSLOPE]) |
+					(g_Color_Index.COLOR_3D[pq_index][i][j*LUT_REG_TOTAL+REG_WGT_USLOPE] << 16));
+
+				reg_index += (4 * 5);
+			}
+		}
+	}
+#endif
 }
 
 static void color_write_hw_reg(enum DISP_MODULE_ENUM module,
@@ -1436,32 +1561,36 @@ static void color_write_hw_reg(enum DISP_MODULE_ENUM module,
 	int index;
 	unsigned char h_series[20] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 	unsigned int u4Temp = 0;
-#if defined(CONFIG_ARCH_MT6797)
+#if defined(COLOR_2_1) || defined(COLOR_3_0)
 	int i, j, reg_index;
 #endif
+	int wide_gamut_en = 0;
 
 	if (module == DISP_MODULE_COLOR1)
 		offset = C1_OFFSET;
 
 	if (g_color_bypass == 0) {
-#if defined(CONFIG_ARCH_MT6797)
-		_color_reg_mask(cmdq, DISP_COLOR_CFG_MAIN + offset, (1 << 21)
-						| (g_Color_Index.LSP_EN << 20)
-						| (g_Color_Index.S_GAIN_BY_Y_EN << 15) | (0 << 8)
-						| (0 << 7), 0x003081FF);
-#else
-		_color_reg_mask(cmdq, DISP_COLOR_CFG_MAIN + offset, (0 << 8) | (0 << 7)
-						, 0x000001FF);	/* enable wide_gamut */
+#if defined(COLOR_2_1)
+		if (g_config_color21 == true) {
+			_color_reg_mask(cmdq, DISP_COLOR_CFG_MAIN + offset, (1 << 21)
+							| (g_Color_Index.LSP_EN << 20)
+							| (g_Color_Index.S_GAIN_BY_Y_EN << 15) | (wide_gamut_en << 8)
+							| (0 << 7), 0x003081FF);
+		}
 #endif
+		if (g_config_color21 == false) {
+			_color_reg_mask(cmdq, DISP_COLOR_CFG_MAIN + offset, (0 << 8) | (0 << 7)
+						, 0x000001FF);	/* enable wide_gamut */
+		}
 		_color_reg_mask(cmdq, DISP_COLOR_START + offset, 0x1, 0x3);	/* color start */
 		/* enable R2Y/Y2R in Color Wrapper */
-#if defined(CONFIG_ARCH_MT6797)
-		/* RDMA & OVL will enable wide-gamut function*/
-		/* disable rgb clipping function in CM1 to keep the wide-gamut range */
-		_color_reg_mask(cmdq, DISP_COLOR_CM1_EN + offset, 0x01, 0x03);
-#else
-		_color_reg_mask(cmdq, DISP_COLOR_CM1_EN + offset, 0x01, 0x01);
-#endif
+		if (g_config_color21 == true) {
+			/* RDMA & OVL will enable wide-gamut function*/
+			/* disable rgb clipping function in CM1 to keep the wide-gamut range */
+			_color_reg_mask(cmdq, DISP_COLOR_CM1_EN + offset, 0x01, 0x03);
+		} else {
+			_color_reg_mask(cmdq, DISP_COLOR_CM1_EN + offset, 0x01, 0x01);
+		}
 
 #if defined(CONFIG_ARCH_MT6595) || defined(CONFIG_ARCH_MT6795)
 		_color_reg_mask(cmdq, DISP_COLOR_CM2_EN + offset, 0x01, 0x11);
@@ -1476,11 +1605,10 @@ static void color_write_hw_reg(enum DISP_MODULE_ENUM module,
 	}
 
 	/* for partial Y contour issue */
-#if defined(CONFIG_ARCH_MT6797)
-	_color_reg_mask(cmdq, DISP_COLOR_LUMA_ADJ + offset, 0x40, 0x0000007F);
-#else
-	_color_reg_mask(cmdq, DISP_COLOR_LUMA_ADJ + offset, 0x0, 0x0000007F);
-#endif
+	if (wide_gamut_en == 0)
+		_color_reg_mask(cmdq, DISP_COLOR_LUMA_ADJ + offset, 0x40, 0x0000007F);
+	else if (wide_gamut_en == 1)
+		_color_reg_mask(cmdq, DISP_COLOR_LUMA_ADJ + offset, 0x0, 0x0000007F);
 
 	_color_reg_mask(cmdq, DISP_COLOR_G_PIC_ADJ_MAIN_1 + offset,
 		(color_reg->BRIGHTNESS << 16) | color_reg->CONTRAST, 0x07FF01FF);
@@ -1499,12 +1627,10 @@ static void color_write_hw_reg(enum DISP_MODULE_ENUM module,
 	_color_reg_mask(cmdq, DISP_COLOR_C_BOOST_MAIN + offset, 0x80 << 16, 0x00FF0000);
 #endif
 
-	if (g_config_cboost_en == false)
+	if (g_config_color21 == false)
 		_color_reg_mask(cmdq, DISP_COLOR_C_BOOST_MAIN + offset, 0 << 13, 0x00002000);
-
-#if defined(CONFIG_ARCH_MT6797)
-	_color_reg_mask(cmdq, DISP_COLOR_C_BOOST_MAIN_2 + offset, 0x40 << 24, 0xFF000000);
-#endif
+	else if (g_config_color21 == true)
+		_color_reg_mask(cmdq, DISP_COLOR_C_BOOST_MAIN_2 + offset, 0x40 << 24, 0xFF000000);
 
 	/* Partial Saturation Function */
 
@@ -1658,31 +1784,76 @@ static void color_write_hw_reg(enum DISP_MODULE_ENUM module,
 		_color_reg_set(cmdq, DISP_COLOR_LOCAL_HUE_CD_0 + offset + 4 * index, u4Temp);
 	}
 
-#if defined(CONFIG_ARCH_MT6797)
-	/* S Gain By Y */
-	u4Temp = 0;
+#if defined(COLOR_2_1)
+	if (g_config_color21 == true) {
+		/* S Gain By Y */
+		u4Temp = 0;
 
-	reg_index = 0;
-	for (i = 0; i < S_GAIN_BY_Y_CONTROL_CNT; i++) {
-		for (j = 0; j < S_GAIN_BY_Y_HUE_PHASE_CNT; j += 4) {
-			u4Temp = (g_Color_Index.S_GAIN_BY_Y[i][j]) +
-				(g_Color_Index.S_GAIN_BY_Y[i][j + 1] << 8) +
-				(g_Color_Index.S_GAIN_BY_Y[i][j + 2] << 16) +
-				(g_Color_Index.S_GAIN_BY_Y[i][j + 3] << 24);
+		reg_index = 0;
+		for (i = 0; i < S_GAIN_BY_Y_CONTROL_CNT; i++) {
+			for (j = 0; j < S_GAIN_BY_Y_HUE_PHASE_CNT; j += 4) {
+				u4Temp = (g_Color_Index.S_GAIN_BY_Y[i][j]) +
+					(g_Color_Index.S_GAIN_BY_Y[i][j + 1] << 8) +
+					(g_Color_Index.S_GAIN_BY_Y[i][j + 2] << 16) +
+					(g_Color_Index.S_GAIN_BY_Y[i][j + 3] << 24);
 
-			_color_reg_set(cmdq, DISP_COLOR_S_GAIN_BY_Y0_0 + offset + reg_index, u4Temp);
-			reg_index += 4;
+				_color_reg_set(cmdq, DISP_COLOR_S_GAIN_BY_Y0_0 + offset + reg_index, u4Temp);
+				reg_index += 4;
+			}
 		}
+		/* LSP */
+		_color_reg_mask(cmdq, DISP_COLOR_LSP_1 + offset, (g_Color_Index.LSP[3] << 0) |
+			(g_Color_Index.LSP[2] << 7) | (g_Color_Index.LSP[1] << 14) | (g_Color_Index.LSP[0] << 22)
+			, 0x1FFFFFFF);
+		_color_reg_mask(cmdq, DISP_COLOR_LSP_2 + offset, (g_Color_Index.LSP[7] << 0) |
+			(g_Color_Index.LSP[6] << 8) | (g_Color_Index.LSP[5] << 16) | (g_Color_Index.LSP[4] << 23)
+			, 0x3FFF7F7F);
 	}
-	/* LSP */
-	_color_reg_mask(cmdq, DISP_COLOR_LSP_1 + offset, (0x7F << 0) | (0x7F << 7) | (0x0 << 14) | (0x0 << 22)
-					, 0x1FFFFFFF);
-	_color_reg_mask(cmdq, DISP_COLOR_LSP_2 + offset, (0x7F << 0) | (0x7F << 8) | (0x50 << 16) | (0x7 << 23)
-					, 0x3FFF7F7F);
 #endif
-
 	/* color window */
 	_color_reg_set(cmdq, DISP_COLOR_TWO_D_WINDOW_1 + offset, g_color_window);
+#if defined(COLOR_3_0)
+	if (g_config_color30 == true) {
+		_color_reg_mask(cmdq, DISP_COLOR_CM_CONTROL + offset,
+			0x0 |
+			(0x3 << 1) |	/* enable window 1 */
+			(0x3 << 4) |	/* enable window 2 */
+			(0x3 << 7)		/* enable window 3 */
+			, 0x1B7);
+
+		for (i = 0; i < WIN_TOTAL; i++) {
+			reg_index = i * 4 * (LUT_TOTAL * 5);
+			for (j = 0; j < LUT_TOTAL; j++) {
+				_color_reg_set(cmdq, DISP_COLOR_CM_W1_HUE_0 + offset + reg_index,
+					(color_reg->COLOR_3D[i][j*LUT_REG_TOTAL+REG_L]) |
+					(color_reg->COLOR_3D[i][j*LUT_REG_TOTAL+REG_U] << 10) |
+					(color_reg->COLOR_3D[i][j*LUT_REG_TOTAL+REG_POINT0] << 20));
+
+				_color_reg_set(cmdq, DISP_COLOR_CM_W1_HUE_1 + offset + reg_index,
+					(color_reg->COLOR_3D[i][j*LUT_REG_TOTAL+REG_POINT1]) |
+					(color_reg->COLOR_3D[i][j*LUT_REG_TOTAL+REG_POINT2] << 10) |
+					(color_reg->COLOR_3D[i][j*LUT_REG_TOTAL+REG_POINT3] << 20));
+
+				_color_reg_set(cmdq, DISP_COLOR_CM_W1_HUE_2 + offset + reg_index,
+					(color_reg->COLOR_3D[i][j*LUT_REG_TOTAL+REG_POINT4]) |
+					(color_reg->COLOR_3D[i][j*LUT_REG_TOTAL+REG_SLOPE0] << 10) |
+					(color_reg->COLOR_3D[i][j*LUT_REG_TOTAL+REG_SLOPE1] << 20));
+
+				_color_reg_set(cmdq, DISP_COLOR_CM_W1_HUE_3 + offset + reg_index,
+					(color_reg->COLOR_3D[i][j*LUT_REG_TOTAL+REG_SLOPE2]) |
+					(color_reg->COLOR_3D[i][j*LUT_REG_TOTAL+REG_SLOPE3] << 8) |
+					(color_reg->COLOR_3D[i][j*LUT_REG_TOTAL+REG_SLOPE4] << 16) |
+					(color_reg->COLOR_3D[i][j*LUT_REG_TOTAL+REG_SLOPE5] << 24));
+
+				_color_reg_set(cmdq, DISP_COLOR_CM_W1_HUE_4 + offset + reg_index,
+					(color_reg->COLOR_3D[i][j*LUT_REG_TOTAL+REG_WGT_LSLOPE]) |
+					(color_reg->COLOR_3D[i][j*LUT_REG_TOTAL+REG_WGT_USLOPE] << 16));
+
+				reg_index += (4 * 5);
+			}
+		}
+	}
+#endif
 }
 
 static void color_trigger_refresh(enum DISP_MODULE_ENUM module)
@@ -1973,7 +2144,7 @@ static unsigned int color_read_sw_reg(unsigned int reg_id)
 
 	case SWREG_GAMMA_BASE_ADDRESS:
 		{
-#if defined(CONFIG_ARCH_ELBRUS) || defined(CONFIG_MACHMT6757) || defined(CONFIG_MACH_MT6799)
+#if defined(CONFIG_ARCH_ELBRUS) || defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_MT6799)
 			ret = ddp_reg_pa_base[DISP_REG_GAMMA0];
 #else
 		/* ret = ddp_reg_pa_base[DISP_REG_GAMMA]; */
@@ -2214,10 +2385,10 @@ static int _color_init(enum DISP_MODULE_ENUM module, void *cmq_handle)
 	g_mdp_rsz2_va = color_get_MDP_RSZ2_VA();
 #endif
 #if defined(CONFIG_MACH_MT6757)
-	if (mt_get_chip_hw_ver() >= 0xCB00) {
-		g_config_cboost_en = true;
+	if (mt_get_chip_hw_ver() >= 0xCB00)
 		g_config_color30 = true;
-	}
+	else
+		g_config_color21 = false;
 #endif
 
 	return 0;
@@ -2813,13 +2984,13 @@ void set_color_bypass(enum DISP_MODULE_ENUM module, int bypass, void *cmdq_handl
 		_color_reg_mask(cmdq_handle, DISP_COLOR_START + offset, 0x00000001, 0x3);	/* color start */
 
 		/* enable R2Y/Y2R in Color Wrapper */
-#if defined(CONFIG_ARCH_MT6797)
-		/* RDMA & OVL will enable wide-gamut function*/
-		/* disable rgb clipping function in CM1 to keep the wide-gamut range */
-		_color_reg_mask(cmdq_handle, DISP_COLOR_CM1_EN + offset, 0x01, 0x03);
-#else
-		_color_reg_mask(cmdq_handle, DISP_COLOR_CM1_EN + offset, 0x01, 0x01);
-#endif
+		if (g_config_color21 == true) {
+			/* RDMA & OVL will enable wide-gamut function*/
+			/* disable rgb clipping function in CM1 to keep the wide-gamut range */
+			_color_reg_mask(cmdq_handle, DISP_COLOR_CM1_EN + offset, 0x01, 0x03);
+		} else {
+			_color_reg_mask(cmdq_handle, DISP_COLOR_CM1_EN + offset, 0x01, 0x01);
+		}
 		/* also set no rounding on Y2R */
 		_color_reg_mask(cmdq_handle, DISP_COLOR_CM2_EN + offset, 0x11, 0x11);
 	}
@@ -2857,13 +3028,13 @@ static int _color_bypass(enum DISP_MODULE_ENUM module, int bypass)
 		_color_reg_mask(NULL, DISP_COLOR_START + offset, 0x00000001, 0x3);	/* color start */
 
 		/* enable R2Y/Y2R in Color Wrapper */
-#if defined(CONFIG_ARCH_MT6797)
-		/* RDMA & OVL will enable wide-gamut function*/
-		/* disable rgb clipping function in CM1 to keep the wide-gamut range */
-		_color_reg_mask(NULL, DISP_COLOR_CM1_EN + offset, 0x01, 0x03);
-#else
-		_color_reg_mask(NULL, DISP_COLOR_CM1_EN + offset, 0x01, 0x01);
-#endif
+		if (g_config_color21 == true) {
+			/* RDMA & OVL will enable wide-gamut function*/
+			/* disable rgb clipping function in CM1 to keep the wide-gamut range */
+			_color_reg_mask(NULL, DISP_COLOR_CM1_EN + offset, 0x01, 0x03);
+		} else {
+			_color_reg_mask(NULL, DISP_COLOR_CM1_EN + offset, 0x01, 0x01);
+		}
 
 #if defined(CONFIG_ARCH_MT6595) || defined(CONFIG_ARCH_MT6795)
 		_color_reg_mask(NULL, DISP_COLOR_CM2_EN + offset, 0x01, 0x11);	/* also set no rounding on Y2R */

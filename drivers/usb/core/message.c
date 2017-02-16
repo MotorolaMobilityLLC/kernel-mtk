@@ -1821,6 +1821,36 @@ free_interfaces:
 		ret = -ENOMEM;
 		goto free_interfaces;
 	}
+#ifdef CONFIG_MTK_UAC_POWER_SAVING
+	if (cp) {
+		struct usb_host_interface *alt = NULL;
+		int audio_flag = 0;
+
+		for (i = 0; i < nintf; ++i) {
+			struct usb_host_interface *first_alt;
+			int iface_num;
+
+			first_alt = &cp->intf_cache[i]->altsetting[0];
+			iface_num = first_alt->desc.bInterfaceNumber;
+			/* Set up endpoints for alternate interface setting 0 */
+			alt = usb_find_alt_setting(cp, iface_num, 0);
+			if (!alt)
+				/* No alt setting 0? Pick the first setting. */
+				alt = first_alt;
+
+		if (alt->desc.bInterfaceClass == USB_CLASS_AUDIO)
+			audio_flag |= 1;
+		else if (alt->desc.bInterfaceClass == USB_CLASS_HID)
+			audio_flag |= 2;
+		else
+			audio_flag |= 4;
+		}
+
+		if (audio_flag == 3 || audio_flag == 1)
+			dev->usb_audio_enabled = 1;
+
+	}
+#endif
 	ret = usb_hcd_alloc_bandwidth(dev, cp, NULL, NULL);
 	if (ret < 0) {
 		if (dev->actconfig)

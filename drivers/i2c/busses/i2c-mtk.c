@@ -53,33 +53,96 @@ static inline u16 i2c_readw(struct mt_i2c *i2c, u8 offset)
 	return readw(i2c->base + offset);
 }
 
-void __iomem *infra_base;
+void __iomem *cg_base;
+void __iomem *clk_mux_base;
 
-s32 map_cg_regs(void)
+s32 map_cg_regs(struct mt_i2c *i2c)
 {
-	struct device_node *infrasys_node;
+	struct device_node *cg_node;
+	int ret = -1;
 
-	infrasys_node = of_find_compatible_node(NULL, NULL, "mediatek,infracfg_ao");
-	if (!infrasys_node) {
-		pr_err("Cannot find infrasys_node\n");
-		return -ENODEV;
+	if (!cg_base && i2c->dev_comp->clk_compatible[0]) {
+		cg_node = of_find_compatible_node(NULL, NULL,
+			i2c->dev_comp->clk_compatible);
+		if (!cg_node) {
+			pr_err("Cannot find cg_node\n");
+			return -ENODEV;
+		}
+		cg_base = of_iomap(cg_node, 0);
+		if (!cg_base) {
+			pr_err("cg_base iomap failed\n");
+			return -ENOMEM;
+		}
+		ret = 0;
 	}
-	infra_base = of_iomap(infrasys_node, 0);
-	if (!infra_base) {
-		pr_err("infra_base iomap failed\n");
-		return -ENOMEM;
-	}
-	return 0;
+
+	return ret;
 }
 
 void dump_cg_regs(void)
 {
-	pr_err("[I2C] cg regs dump:\n"
-		"%8s : 0x%08x 0x%08x 0x%08x\n%8s : 0x%08x 0x%08x 0x%08x\n",
-		"Address", 0x10001090, 0x10001094, 0x100010b0,
-		"Values", readw(infra_base + 0x90), readw(infra_base + 0x94),
-		readw(infra_base + 0xb0));
+	u16 clk_sta_offset[2];
+
+	if (!cg_base) {
+		pr_err("cg_base NULL\n");
+		return;
+	}
+
+	clk_sta_offset[0] = 0x90;
+	clk_sta_offset[1] = 0xac;
+
+	pr_err("[I2C] cg regs dump: offset 0x%x: value = 0x%08x, offset 0x%x: value = 0x%08x\n",
+		clk_sta_offset[0],
+		readl(cg_base + clk_sta_offset[0]),
+		clk_sta_offset[1],
+		readl(cg_base + clk_sta_offset[1]));
 }
+
+s32 map_clk_mux_regs(struct mt_i2c *i2c)
+{
+	struct device_node *clk_mux_node;
+	int ret = -1;
+
+	if (!clk_mux_base && i2c->dev_comp->clk_mux_compatible[0]) {
+		clk_mux_node = of_find_compatible_node(NULL, NULL,
+			i2c->dev_comp->clk_mux_compatible);
+		if (!clk_mux_node) {
+			pr_err("Cannot find clk_mux_node\n");
+			return -ENODEV;
+		}
+		clk_mux_base = of_iomap(clk_mux_node, 0);
+		if (!clk_mux_base) {
+			pr_err("clk_mux_base iomap failed\n");
+			return -ENOMEM;
+		}
+		ret = 0;
+	}
+
+	return ret;
+}
+
+void dump_clk_mux_regs(void)
+{
+	u16 clk_mux_sta_offset;
+
+	if (!clk_mux_base) {
+		pr_err("clk_mux_base NULL\n");
+		return;
+	}
+
+	clk_mux_sta_offset = 0xc0;
+
+	pr_err("[I2C] clk mux regs dump: offset 0x%x: value = 0x%08x\n",
+		clk_mux_sta_offset,
+		readl(clk_mux_base + clk_mux_sta_offset));
+}
+
+void dump_i2c_cg_clk(void)
+{
+	dump_cg_regs();
+	dump_clk_mux_regs();
+}
+EXPORT_SYMBOL(dump_i2c_cg_clk);
 
 void __iomem *dma_base;
 
@@ -104,6 +167,11 @@ void dump_dma_regs(void)
 {
 	int status;
 	int i;
+
+	if (!dma_base) {
+		pr_err("dma_base NULL\n");
+		return;
+	}
 
 	status =  readl(dma_base + 8);
 	pr_err("DMA RUNNING STATUS : 0x%x .\n", status);
@@ -146,6 +214,50 @@ static void record_i2c_dma_info(struct mt_i2c *i2c)
 	g_dma_regs[i2c->id].rx_mem_addr2 = i2c_readl_dma(i2c, OFFSET_RX_MEM_ADDR2);
 }
 
+static void record_i2c_info(struct mt_i2c *i2c, int tmo)
+{
+	int idx = i2c->rec_idx;
+
+	i2c->rec_info[idx].slave_addr = i2c_readw(i2c, OFFSET_SLAVE_ADDR);
+	i2c->rec_info[idx].intr_stat = i2c->irq_stat;
+	i2c->rec_info[idx].fifo_stat = i2c_readw(i2c, OFFSET_FIFO_STAT);
+	i2c->rec_info[idx].debug_stat = i2c_readw(i2c, OFFSET_DEBUGSTAT);
+	i2c->rec_info[idx].tmo = tmo;
+	get_monotonic_boottime(&i2c->rec_info[idx].endtime);
+
+	i2c->rec_idx++;
+	if (i2c->rec_idx == I2C_RECORD_LEN)
+		i2c->rec_idx = 0;
+}
+
+static void dump_i2c_info(struct mt_i2c *i2c)
+{
+	int i;
+	int idx = i2c->rec_idx;
+
+	if (i2c->buffermode) /* no i2c history @ buffermode */
+		return;
+
+	dev_err(i2c->dev, "last transfer info:\n");
+
+	for (i = 0; i < I2C_RECORD_LEN; i++) {
+		if (idx == 0)
+			idx = I2C_RECORD_LEN;
+		idx--;
+		dev_err(i2c->dev,
+			"[%02d] [%5d.%06lu] SLAVE_ADDR=%x,INTR_STAT=%x,FIFO_STAT=%x,DEBUGSTAT=%x, tmo=%d\n",
+			i,
+			(int)i2c->rec_info[idx].endtime.tv_sec,
+			i2c->rec_info[idx].endtime.tv_nsec/1000,
+			i2c->rec_info[idx].slave_addr,
+			i2c->rec_info[idx].intr_stat,
+			i2c->rec_info[idx].fifo_stat,
+			i2c->rec_info[idx].debug_stat,
+			i2c->rec_info[idx].tmo
+		);
+	}
+}
+
 static int mt_i2c_clock_enable(struct mt_i2c *i2c)
 {
 #if !defined(CONFIG_MT_I2C_FPGA_ENABLE)
@@ -169,6 +281,9 @@ static int mt_i2c_clock_enable(struct mt_i2c *i2c)
 		if (ret)
 			goto err_pmic;
 	}
+	spin_lock(&i2c->cg_lock);
+	i2c->cg_cnt++;
+	spin_unlock(&i2c->cg_lock);
 	return 0;
 
 err_pmic:
@@ -192,6 +307,9 @@ static void mt_i2c_clock_disable(struct mt_i2c *i2c)
 		clk_disable_unprepare(i2c->clk_arb);
 
 	clk_disable_unprepare(i2c->clk_dma);
+	spin_lock(&i2c->cg_lock);
+	i2c->cg_cnt--;
+	spin_unlock(&i2c->cg_lock);
 #endif
 }
 
@@ -265,8 +383,36 @@ static void free_i2c_dma_bufs(struct mt_i2c *i2c)
 		i2c->dma_buf.vaddr, i2c->dma_buf.paddr);
 }
 
+static inline void mt_i2c_wait_done(struct mt_i2c *i2c)
+{
+	u16 start, tmo;
+
+	start = i2c_readw(i2c, OFFSET_START) & I2C_TRANSAC_START;
+	if (start) {
+		dev_err(i2c->dev, "wait transfer done before cg off.\n");
+
+		tmo = 100;
+		do {
+			msleep(20);
+			start = i2c_readw(i2c, OFFSET_START) & I2C_TRANSAC_START;
+			tmo--;
+		} while (start && tmo);
+
+		if (start && !tmo) {
+			dev_err(i2c->dev, "wait transfer timeout.\n");
+			i2c_dump_info(i2c);
+		}
+	}
+}
+
 static inline void mt_i2c_init_hw(struct mt_i2c *i2c)
 {
+	/* clear interrupt status */
+	i2c_writew(~(I2C_HS_NACKERR | I2C_ACKERR | I2C_TRANSAC_COMP),
+		i2c, OFFSET_INTR_MASK);
+	i2c_writew(I2C_HS_NACKERR | I2C_ACKERR | I2C_TRANSAC_COMP,
+		i2c, OFFSET_INTR_STAT);
+
 	i2c_writew(I2C_SOFT_RST, i2c, OFFSET_SOFTRESET);
 	/* Set ioconfig */
 	if (i2c->use_push_pull)
@@ -420,9 +566,9 @@ void i2c_dump_info(struct mt_i2c *i2c)
 	pr_err("I2C structure:\n"
 	       I2CTAG "Clk=%d,Id=%d,Op=%x,Irq_stat=%x,Total_len=%x\n"
 	       I2CTAG "Trans_len=%x,Trans_num=%x,Trans_auxlen=%x,speed=%d\n"
-	       I2CTAG "Trans_stop=%u\n",
+	       I2CTAG "Trans_stop=%u,cg_cnt=%d\n",
 	       15600, i2c->id, i2c->op, i2c->irq_stat, i2c->total_len,
-			i2c->msg_len, 1, i2c->msg_aux_len, i2c->speed_hz, i2c->trans_stop);
+			i2c->msg_len, 1, i2c->msg_aux_len, i2c->speed_hz, i2c->trans_stop, i2c->cg_cnt);
 
 	pr_err("base address 0x%p\n", i2c->base);
 	pr_err("I2C register:\n"
@@ -488,6 +634,7 @@ void i2c_dump_info(struct mt_i2c *i2c)
 	       (i2c_readl_dma(i2c, OFFSET_RX_MEM_ADDR2)));
 	pr_err("i2c_dump_info ------------------------------------------\n");
 
+	dump_i2c_info(i2c);
 }
 #else
 void i2c_dump_info(struct mt_i2c *i2c)
@@ -498,6 +645,7 @@ static int mt_i2c_do_transfer(struct mt_i2c *i2c)
 {
 	u16 addr_reg;
 	u16 control_reg;
+	u16 start_reg;
 	int tmo = i2c->adap.timeout;
 	unsigned int speed_hz;
 	bool isDMA = false;
@@ -637,21 +785,30 @@ static int mt_i2c_do_transfer(struct mt_i2c *i2c)
 	}
 	/* flush before sending start */
 	mb();
-	if (!i2c->is_hw_trig)
+	if (!i2c->is_hw_trig) {
 		i2c_writew(I2C_TRANSAC_START, i2c, OFFSET_START);
-	else {
+		start_reg = i2c_readw(i2c, OFFSET_START);
+	} else {
 		dev_err(i2c->dev, "I2C hw trig.\n");
 		return 0;
 	}
 
 	tmo = wait_event_timeout(i2c->wait, i2c->trans_stop, tmo);
 
+	record_i2c_info(i2c, tmo);
+
 	if (tmo == 0) {
-		dev_err(i2c->dev, "addr: %x, transfer timeout\n", i2c->addr);
+		dev_err(i2c->dev, "addr: %x, transfer timeout, START=0x%x after trigger\n",
+			i2c->addr, start_reg);
+		start_reg = i2c_readw(i2c, OFFSET_START);
 		i2c_dump_info(i2c);
 		mt_irq_dump_status(i2c->irqnr);
 		dump_cg_regs();
 		mt_i2c_init_hw(i2c);
+		if (start_reg & I2C_TRANSAC_START) {
+			dev_err(i2c->dev, "bus tied low/high\n");
+			return -EIO;
+		}
 		return -ETIMEDOUT;
 	}
 	if (i2c->irq_stat & (I2C_HS_NACKERR | I2C_ACKERR)) {
@@ -1017,6 +1174,7 @@ int hw_trig_i2c_disable(struct i2c_adapter *adap)
 	mutex_lock(&i2c->i2c_mutex);
 	i2c->is_hw_trig = false;
 	mutex_unlock(&i2c->i2c_mutex);
+	mt_i2c_wait_done(i2c);
 	mt_i2c_clock_disable(i2c);
 	return 0;
 }
@@ -1104,6 +1262,11 @@ static const struct mtk_i2c_compatible mt6757_compat = {
 	.dma_support = 2,
 	.idvfs_i2c = 0,
 	.ext_time_config = 0x201,
+	.clk_mux_compatible = "mediatek,topckgen",
+	.clk_mux_sta_offset = 0xc0,
+	.clk_compatible = "mediatek,infracfg_ao",
+	.clk_sta_offset[0] = 0x90,
+	.clk_sta_offset[1] = 0xac,
 };
 
 static const struct mtk_i2c_compatible elbrus_compat = {
@@ -1157,7 +1320,7 @@ static int mt_i2c_probe(struct platform_device *pdev)
 	init_waitqueue_head(&i2c->wait);
 
 	ret = devm_request_irq(&pdev->dev, i2c->irqnr, mt_i2c_irq,
-		IRQF_TRIGGER_NONE, I2C_DRV_NAME, i2c);
+		IRQF_NO_SUSPEND | IRQF_TRIGGER_NONE, I2C_DRV_NAME, i2c);
 	if (ret < 0) {
 		dev_err(&pdev->dev,
 			"Request I2C IRQ %d fail\n", i2c->irqnr);
@@ -1177,6 +1340,7 @@ static int mt_i2c_probe(struct platform_device *pdev)
 	i2c->adap.timeout = 2 * HZ;
 	i2c->adap.retries = 1;
 	i2c->adap.nr = i2c->id;
+	spin_lock_init(&i2c->cg_lock);
 
 	if (i2c->dev_comp->dma_support == 2) {
 		if (dma_set_mask(&pdev->dev, DMA_BIT_MASK(33))) {
@@ -1250,6 +1414,13 @@ static int mt_i2c_probe(struct platform_device *pdev)
 		return ret;
 	}
 	platform_set_drvdata(pdev, i2c);
+
+	if (!map_cg_regs(i2c))
+		pr_warn("Map cg regs successfully.\n");
+
+	if (!map_clk_mux_regs(i2c))
+		pr_warn("Map clk mux regs successfully.\n");
+
 	return 0;
 }
 
@@ -1309,8 +1480,6 @@ static s32 __init mt_i2c_init(void)
 		return ret;
 	}
 #endif
-	if (!map_cg_regs())
-		pr_warn("Mapp cg regs successfully.\n");
 
 	if (!map_dma_regs())
 		pr_warn("Mapp dma regs successfully.\n");

@@ -51,4 +51,16 @@ bool mtk_is_charger_4_vol(void);
 extern void bq25896_set_wd_timer(unsigned int val);
 extern void bq25896_wd_reset(unsigned int val);
 #endif
+#ifdef CONFIG_MTK_BQ25890_SUPPORT
+extern void bq25890_set_boost_ilim(unsigned int val);
+extern void bq25890_otg_en(unsigned int val);
+extern void bq25890_set_wd_timer(unsigned int val);
+extern void bq25890_wd_reset(unsigned int val);
+
+#endif
+
+#if CONFIG_MTK_GAUGE_VERSION == 30
+extern void enable_boost_polling(bool poll_en);
+#endif
+
 #endif

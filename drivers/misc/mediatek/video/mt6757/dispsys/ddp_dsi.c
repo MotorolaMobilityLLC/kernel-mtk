@@ -5159,6 +5159,14 @@ UINT32 PanelMaster_get_dsi_timing(UINT32 dsi_index, enum MIPI_SETTING_TYPE type)
 	return dsi_val;
 }
 
+unsigned int PanelMaster_is_enable(void)
+{
+	if (atomic_read(&PMaster_enable) == 1)
+		return 1;
+	else
+		return 0;
+}
+
 unsigned int PanelMaster_set_PM_enable(unsigned int value)
 {
 	atomic_set(&PMaster_enable, value);

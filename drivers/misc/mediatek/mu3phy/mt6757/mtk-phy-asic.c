@@ -96,7 +96,7 @@ void usb_hal_dpidle_request(int mode)
 		break;
 	case USB_DPIDLE_SRAM:
 		spm_resource_req(SPM_RESOURCE_USER_SSUSB,
-						SPM_RESOURCE_CK_26M);
+						SPM_RESOURCE_CK_26M | SPM_RESOURCE_MAINPLL);
 		{
 			static DEFINE_RATELIMIT_STATE(ratelimit, 1 * HZ, 3);
 			static int skip_cnt;
@@ -909,8 +909,8 @@ void usb_phy_savecurrent(unsigned int clk_on)
 	/*DP/DM BC1.1 path Disable */
 	/* RG_USB20_BC11_SW_EN 1'b0 */
 	/* U3D_USBPHYACR6 RG_USB20_BC11_SW_EN */
-	U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_USBPHYACR6, RG_USB20_BC11_SW_EN_OFST,
-			  RG_USB20_BC11_SW_EN, 0);
+	/* U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_USBPHYACR6, RG_USB20_BC11_SW_EN_OFST, */
+	/*		  RG_USB20_BC11_SW_EN, 0); */
 
 	/*OTG Disable */
 	/* RG_USB20_OTG_VBUSCMP_EN 1b0 */
@@ -1291,13 +1291,17 @@ void Charger_Detect_Init(void)
 
 		/* wait 50 usec. */
 		udelay(50);
-
+#ifdef CONFIG_MTK_UART_USB_SWITCH
+		if (in_uart_mode != true) {
+#endif
 		/* RG_USB20_BC11_SW_EN = 1'b1 */
 		U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_USBPHYACR6, RG_USB20_BC11_SW_EN_OFST,
 				  RG_USB20_BC11_SW_EN, 1);
 
 		udelay(1);
-
+#ifdef CONFIG_MTK_UART_USB_SWITCH
+		}
+#endif
 		/* 4 14. turn off internal 48Mhz PLL. */
 		usb_enable_clock(false);
 

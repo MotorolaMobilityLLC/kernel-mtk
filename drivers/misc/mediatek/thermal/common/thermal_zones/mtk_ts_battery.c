@@ -32,22 +32,54 @@
 #include <tmp_battery.h>
 #include <linux/uidgid.h>
 #include <linux/slab.h>
+#include "tzbatt_initcfg.h"
 
+/* ************************************ */
+/* Function prototype*/
+/* ************************************ */
+static void __exit mtktsbattery_exit(void);
 /* ************************************ */
 /* Weak functions */
 /* ************************************ */
 int __attribute__ ((weak))
 read_tbat_value(void)
 {
-	pr_err("E_WF: %s doesn't exist\n", __func__);
+	pr_err("[Thermal] E_WF: %s doesn't exist\n", __func__);
 	return 30;
+}
+
+signed int __attribute__ ((weak))
+battery_get_bat_temperature(void)
+{
+	int i;
+
+	for (i = 0; i < 5; i++)
+		pr_err("[Thermal] E_WF: %s doesn't exist\n", __func__);
+
+	mtktsbattery_exit();
+	return -127000;
 }
 /* ************************************ */
 static kuid_t uid = KUIDT_INIT(0);
 static kgid_t gid = KGIDT_INIT(1000);
 
+#if TZBATT_SET_INIT_CFG == 1
+static unsigned int interval = TZBATT_INITCFG_INTERVAL;
+static int trip_temp[10] = {
+	TZBATT_INITCFG_TRIP_0_TEMP,
+	TZBATT_INITCFG_TRIP_1_TEMP,
+	TZBATT_INITCFG_TRIP_2_TEMP,
+	TZBATT_INITCFG_TRIP_3_TEMP,
+	TZBATT_INITCFG_TRIP_4_TEMP,
+	TZBATT_INITCFG_TRIP_5_TEMP,
+	TZBATT_INITCFG_TRIP_6_TEMP,
+	TZBATT_INITCFG_TRIP_7_TEMP,
+	TZBATT_INITCFG_TRIP_8_TEMP,
+	TZBATT_INITCFG_TRIP_9_TEMP };
+#else
 static unsigned int interval;	/* seconds, 0 : no auto polling */
 static int trip_temp[10] = { 120000, 110000, 100000, 90000, 80000, 70000, 65000, 60000, 55000, 50000 };
+#endif
 /* static unsigned int cl_dev_dis_charge_state = 0; */
 static unsigned int cl_dev_sysrst_state;
 static struct thermal_zone_device *thz_dev;
@@ -57,6 +89,19 @@ static int mtktsbattery_debug_log;
 static int kernelmode;
 static int g_THERMAL_TRIP[10] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 
+#if TZBATT_SET_INIT_CFG == 1
+static int num_trip = TZBATT_INITCFG_NUM_TRIPS;
+static char g_bind0[20] = TZBATT_INITCFG_TRIP_0_COOLER;
+static char g_bind1[20] = TZBATT_INITCFG_TRIP_1_COOLER;
+static char g_bind2[20] = TZBATT_INITCFG_TRIP_2_COOLER;
+static char g_bind3[20] = TZBATT_INITCFG_TRIP_3_COOLER;
+static char g_bind4[20] = TZBATT_INITCFG_TRIP_4_COOLER;
+static char g_bind5[20] = TZBATT_INITCFG_TRIP_5_COOLER;
+static char g_bind6[20] = TZBATT_INITCFG_TRIP_6_COOLER;
+static char g_bind7[20] = TZBATT_INITCFG_TRIP_7_COOLER;
+static char g_bind8[20] = TZBATT_INITCFG_TRIP_8_COOLER;
+static char g_bind9[20] = TZBATT_INITCFG_TRIP_9_COOLER;
+#else
 static int num_trip;
 static char g_bind0[20] = { 0 };
 static char g_bind1[20] = { 0 };
@@ -68,6 +113,7 @@ static char g_bind6[20] = { 0 };
 static char g_bind7[20] = { 0 };
 static char g_bind8[20] = { 0 };
 static char g_bind9[20] = { 0 };
+#endif
 
 /**
  * If curr_temp >= polling_trip_temp1, use interval
@@ -147,7 +193,13 @@ static int get_hw_battery_temp(void)
 	ret = -1270;
 #else
 	/* Phone */
+
+/* TO-DO: Use CONFIG MT6799 or GM3.0 */
+#if (CONFIG_MTK_GAUGE_VERSION == 30)
+	ret = battery_get_bat_temperature();
+#else
 	ret = read_tbat_value();
+#endif
 	ret = ret * 10;
 #endif
 

@@ -4,6 +4,10 @@ RT5081 backlight led control.
 Required properties:
 - compatible : Must be "richtek,rt5081_pmu_bled";
 - interrupt-names : RT5081 bled enabled interrupts.
+	(R: required, O: optional)
+	1. (O)bled_ocp: Backlight over current flag.
+	2. (O)bled_ovp: Backlight over voltage protection flag.
+
 - rt,bled_name : led classdev name.
 - rt,chan_en : channel enabled bit 0 1 2 3 -> chan 1 2 3 4.
 	       ex. enable all 4 channal 0xf. only enable channel 1 and 3 configure 0x5.

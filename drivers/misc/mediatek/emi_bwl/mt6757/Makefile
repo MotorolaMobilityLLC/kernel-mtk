@@ -11,4 +11,5 @@
 # GNU General Public License for more details.
 #
 
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/dramc/$(MTK_PLATFORM)/
 obj-y += emi_bwl.o

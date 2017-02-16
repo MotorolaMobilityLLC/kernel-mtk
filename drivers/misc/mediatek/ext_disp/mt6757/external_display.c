@@ -696,9 +696,7 @@ static int _convert_disp_input_to_ovl(struct OVL_CONFIG_STRUCT *dst, struct disp
 		EXT_DISP_ERR("unknown source = %d", src->buffer_source);
 		dst->source = OVL_LAYER_SOURCE_MEM;
 	}
-#ifdef EXTD_SMART_OVL_SUPPORT
 	dst->ext_sel_layer = src->ext_sel_layer;
-#endif
 
 	return 0;
 }

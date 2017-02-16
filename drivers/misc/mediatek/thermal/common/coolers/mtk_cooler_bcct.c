@@ -27,6 +27,7 @@
 #include <linux/uidgid.h>
 #include <linux/notifier.h>
 #include <linux/fb.h>
+#include "mach/mtk_thermal.h"
 
 /* ************************************ */
 /* Weak functions */
@@ -47,6 +48,61 @@ mt_get_charger_type(void)
 
 int __attribute__ ((weak))
 set_bat_charging_current_limit(int current_limit)
+{
+	pr_err("E_WF: %s doesn't exist\n", __func__);
+	return 0;
+}
+unsigned int __attribute__ ((weak))
+set_chr_input_current_limit(int current_limit)
+{
+	pr_err("E_WF: %s doesn't exist\n", __func__);
+	return 0;
+}
+
+int __attribute__ ((weak))
+mtk_chr_get_soc(unsigned int *soc)
+{
+	pr_err("E_WF: %s doesn't exist\n", __func__);
+	return 0;
+}
+
+int __attribute__ ((weak))
+mtk_chr_get_ui_soc(unsigned int *ui_soc)
+{
+	pr_err("E_WF: %s doesn't exist\n", __func__);
+	return 0;
+}
+
+int __attribute__ ((weak))
+mtk_chr_get_vbat(unsigned int *vbat)
+{
+	pr_err("E_WF: %s doesn't exist\n", __func__);
+	return 0;
+}
+
+int __attribute__ ((weak))
+mtk_chr_get_ibat(unsigned int *ibat)
+{
+	pr_err("E_WF: %s doesn't exist\n", __func__);
+	return 0;
+}
+
+int __attribute__ ((weak))
+mtk_chr_get_vbus(unsigned int *vbus)
+{
+	pr_err("E_WF: %s doesn't exist\n", __func__);
+	return 0;
+}
+
+int __attribute__ ((weak))
+mtk_chr_get_aicr(unsigned int *aicr)
+{
+	pr_err("E_WF: %s doesn't exist\n", __func__);
+	return 0;
+}
+
+int __attribute__ ((weak))
+mtk_chr_get_tchr(int *min_temp, int *max_temp)
 {
 	pr_err("E_WF: %s doesn't exist\n", __func__);
 	return 0;
@@ -86,6 +142,17 @@ static kgid_t gid = KGIDT_INIT(1000);
 
 #define MIN(_a_, _b_) ((_a_) > (_b_) ? (_b_) : (_a_))
 #define MAX(_a_, _b_) ((_a_) > (_b_) ? (_a_) : (_b_))
+
+/* Battery & Charger Status*/
+static int bat_info_soc; /* battery soc */
+static int bat_info_uisoc; /* battery UI soc */
+static int bat_info_vbat; /* battery voltage */
+static int bat_info_ibat; /* charging current */
+static int bat_info_mintchr; /* charger min temp */
+static int bat_info_maxtchr; /* charger max temp */
+static int bat_info_vbus; /* Vbus */
+static int bat_info_aicr; /* input current */
+
 
 /* Charger Limiter
  * Charger Limiter provides API to limit charger IC input current and
@@ -326,7 +393,13 @@ static long abcct_kd = 10000;
 static int abcct_max_bat_chr_curr_limit = 3000;
 static int abcct_min_bat_chr_curr_limit = 200;
 static int abcct_cur_bat_chr_curr_limit;
+static int abcct_input_current_limit_on;
+static int abcct_HW_thermal_solution = 3000;
+static int abcct_max_chr_input_curr_limit = 3000;
+static int abcct_min_chr_input_curr_limit = 200;
+static int abcct_cur_chr_input_curr_limit;
 static long abcct_iterm;
+static int abcct_times_of_ts_polling_interval = 1;
 
 static int mtk_cl_abcct_get_max_state(struct thermal_cooling_device *cdev, unsigned long *state)
 {
@@ -344,11 +417,40 @@ static int mtk_cl_abcct_get_cur_state(struct thermal_cooling_device *cdev, unsig
 
 static int mtk_cl_abcct_set_cur_state(struct thermal_cooling_device *cdev, unsigned long state)
 {
+	int ret = 0;
+
 	cl_abcct_state = state;
 
 	/*Only active while lcm not off */
 	if (chrlmt_is_lcmoff)
 		cl_abcct_state = 0;
+
+	if (cl_bcct_klog_on == 1) {
+		ret = mtk_chr_get_soc(&bat_info_soc);
+		if (ret)
+			mtk_cooler_bcct_dprintk("mtk_chr_get_soc: %d err: %d\n", bat_info_soc, ret);
+		ret = mtk_chr_get_ui_soc(&bat_info_uisoc);
+		if (ret)
+			mtk_cooler_bcct_dprintk("bat_info_uisoc: %d err: %d\n", bat_info_uisoc, ret);
+		ret = mtk_chr_get_vbat(&bat_info_vbat);
+		if (ret)
+			mtk_cooler_bcct_dprintk("bat_info_vbat: %d err: %d\n", bat_info_vbat, ret);
+		ret = mtk_chr_get_ibat(&bat_info_ibat);
+		if (ret)
+			mtk_cooler_bcct_dprintk("bat_info_ibat: %d err: %d\n", bat_info_ibat, ret);
+		ret = mtk_chr_get_vbus(&bat_info_vbus);
+		if (ret)
+			mtk_cooler_bcct_dprintk("bat_info_vbus: %d err: %d\n", bat_info_vbus, ret);
+		ret = mtk_chr_get_aicr(&bat_info_aicr);
+		if (ret)
+			mtk_cooler_bcct_dprintk("bat_info_aicr: %d err: %d\n", bat_info_aicr, ret);
+	/*
+	*	ret = mtk_chr_get_tchr(&bat_info_mintchr, &bat_info_maxtchr);
+	*	if (ret)
+	*		mtk_cooler_bcct_dprintk("mtk_chr_get_tchr: %d %d err: %d\n",
+	*			bat_info_mintchr, bat_info_maxtchr, ret);
+	*/
+	}
 
 	mtk_cooler_bcct_dprintk("%s %s %lu\n", __func__, cdev->type, cl_abcct_state);
 	return 0;
@@ -365,6 +467,12 @@ static int mtk_cl_abcct_set_cur_temp(struct thermal_cooling_device *cdev, unsign
 {
 	long delta, pterm, dterm;
 	int limit;
+	static int i;
+
+	if (++i < abcct_times_of_ts_polling_interval)
+		return 0;
+
+	i = 0;
 
 	/* based on temp and state to do ATM */
 	abcct_prev_temp = abcct_curr_temp;
@@ -373,26 +481,60 @@ static int mtk_cl_abcct_set_cur_temp(struct thermal_cooling_device *cdev, unsign
 	if (cl_abcct_state == 0) {
 		abcct_iterm = 0;
 		abcct_cur_bat_chr_curr_limit = abcct_max_bat_chr_curr_limit;
+		abcct_cur_chr_input_curr_limit = -1;
 		chrlmt_set_limit(&abcct_chrlmt_handle, -1, -1);
 		return 0;
 	}
 
 	pterm = abcct_target_temp - abcct_curr_temp;
+
 	abcct_iterm += pterm;
-	dterm = abcct_prev_temp - abcct_curr_temp;
+	if (((abcct_curr_temp < abcct_target_temp) && (abcct_iterm < 0)) ||
+		((abcct_curr_temp > abcct_target_temp) && (abcct_iterm > 0)))
+		abcct_iterm = 0;
+
+	if (((abcct_curr_temp < abcct_target_temp) && (abcct_curr_temp < abcct_prev_temp)) ||
+		((abcct_curr_temp > abcct_target_temp) && (abcct_curr_temp > abcct_prev_temp)))
+		dterm = abcct_prev_temp - abcct_curr_temp;
+	else
+		dterm = 0;
 
 	delta = pterm/abcct_kp + abcct_iterm/abcct_ki + dterm/abcct_kd;
 
-	limit = abcct_cur_bat_chr_curr_limit + (int) delta;
-	limit = (limit / 50) * 50; /* Align limit to 50mA to avoid redundant calls to chrlmt. */
-	limit = MIN(abcct_max_bat_chr_curr_limit, limit);
-	limit = MAX(abcct_min_bat_chr_curr_limit, limit);
-	abcct_cur_bat_chr_curr_limit = limit;
+	/* Align limit to 50mA to avoid redundant calls to chrlmt. */
+	if (delta > 0 && delta < 50)
+		delta = 50;
+	else if (delta > -50 && delta < 0)
+		delta = -50;
 
-	mtk_cooler_bcct_dprintk("%s %ld %ld %ld %ld %ld %d\n"
-		, __func__, abcct_curr_temp, pterm, abcct_iterm, dterm, delta, limit);
+	if (abcct_cur_chr_input_curr_limit == -1) {
+		limit = abcct_cur_bat_chr_curr_limit + (int) delta;
+		limit = (limit / 50) * 50; /* Align limit to 50mA to avoid redundant calls to chrlmt. */
+		limit = MIN(abcct_max_bat_chr_curr_limit, limit);
+		limit = MAX(abcct_min_bat_chr_curr_limit, limit);
 
-	chrlmt_set_limit(&abcct_chrlmt_handle, -1, limit);
+		abcct_cur_bat_chr_curr_limit = limit;
+
+		if ((abcct_input_current_limit_on) && (abcct_cur_bat_chr_curr_limit == 0)) {
+			abcct_max_chr_input_curr_limit = abcct_HW_thermal_solution / 5; /* mA = mW/5V */
+			abcct_cur_chr_input_curr_limit = abcct_max_chr_input_curr_limit;
+		}
+	} else {
+		limit = abcct_cur_chr_input_curr_limit + (int) delta;
+		limit = (limit / 50) * 50; /* Align limit to 50mA to avoid redundant calls to chrlmt. */
+		limit = MIN(abcct_max_chr_input_curr_limit, limit);
+		limit = MAX(abcct_min_chr_input_curr_limit, limit);
+		abcct_cur_chr_input_curr_limit = limit;
+
+		if (abcct_cur_chr_input_curr_limit == abcct_max_chr_input_curr_limit)
+			abcct_cur_chr_input_curr_limit = -1;
+	}
+
+	mtk_cooler_bcct_dprintk("%s %ld %ld %ld %ld %ld %d %d\n"
+		, __func__, abcct_curr_temp, pterm, abcct_iterm, dterm, delta,
+		abcct_cur_chr_input_curr_limit, abcct_cur_bat_chr_curr_limit);
+
+	chrlmt_set_limit(&abcct_chrlmt_handle, abcct_cur_chr_input_curr_limit, abcct_cur_bat_chr_curr_limit);
 
 	return 0;
 }
@@ -464,10 +606,27 @@ static int mtk_cl_abcct_lcmoff_set_cur_temp(struct thermal_cooling_device *cdev,
 	}
 
 	pterm = abcct_lcmoff_target_temp - abcct_lcmoff_curr_temp;
+
 	abcct_lcmoff_iterm += pterm;
-	dterm = abcct_lcmoff_prev_temp - abcct_lcmoff_curr_temp;
+	if (((abcct_lcmoff_curr_temp < abcct_target_temp) && (abcct_lcmoff_iterm < 0)) ||
+		((abcct_lcmoff_curr_temp > abcct_target_temp) && (abcct_lcmoff_iterm > 0)))
+		abcct_lcmoff_iterm = 0;
+
+	if (((abcct_lcmoff_curr_temp < abcct_target_temp)
+		&& (abcct_lcmoff_curr_temp < abcct_lcmoff_prev_temp)) ||
+		((abcct_lcmoff_curr_temp > abcct_target_temp)
+		&& (abcct_lcmoff_curr_temp > abcct_lcmoff_prev_temp)))
+		dterm = abcct_lcmoff_prev_temp - abcct_lcmoff_curr_temp;
+	else
+		dterm = 0;
 
 	delta = pterm/abcct_lcmoff_kp + abcct_lcmoff_iterm/abcct_lcmoff_ki + dterm/abcct_lcmoff_kd;
+
+	/* Align limit to 50mA to avoid redundant calls to chrlmt. */
+	if (delta > 0 && delta < 50)
+		delta = 50;
+	else if (delta > -50 && delta < 0)
+		delta = -50;
 
 	limit = abcct_lcmoff_cur_bat_chr_curr_limit + (int) delta;
 	limit = (limit / 50) * 50; /* Align limit to 50mA to avoid redundant calls to chrlmt. */
@@ -637,7 +796,8 @@ static ssize_t _cl_abcct_write(struct file *filp, const char __user *buf, size_t
 	/* int ret = 0; */
 	char tmp[128] = { 0 };
 	long _abcct_target_temp, _abcct_kp, _abcct_ki, _abcct_kd;
-	int _max_cur, _min_cur;
+	int _max_cur, _min_cur, _input_current_limit_on, _HW_thermal_sol, _min_input, _times_of_ts_polling_inteval;
+	int scan_count = 0;
 
 	len = (len < (128 - 1)) ? len : (128 - 1);
 	/* write data to the buffer */
@@ -649,17 +809,29 @@ static ssize_t _cl_abcct_write(struct file *filp, const char __user *buf, size_t
 		return -EINVAL;
 	}
 
-	if (sscanf(tmp, "%ld %ld %ld %ld %d %d"
+	scan_count = sscanf(tmp, "%ld %ld %ld %ld %d %d %d %d %d %d"
 		, &_abcct_target_temp, &_abcct_kp, &_abcct_ki, &_abcct_kd
-		, &_max_cur, &_min_cur) >= 6) {
+		, &_max_cur, &_min_cur, &_input_current_limit_on
+		, &_HW_thermal_sol, &_min_input, &_times_of_ts_polling_inteval);
 
+	if (scan_count >= 6) {
 		abcct_target_temp = _abcct_target_temp;
 		abcct_kp = _abcct_kp;
 		abcct_ki = _abcct_ki;
 		abcct_kd = _abcct_kd;
 		abcct_max_bat_chr_curr_limit = _max_cur;
 		abcct_min_bat_chr_curr_limit = _min_cur;
+
+		if (scan_count > 6) {
+			abcct_input_current_limit_on = _input_current_limit_on;
+			abcct_HW_thermal_solution = _HW_thermal_sol;
+			abcct_min_chr_input_curr_limit = _min_input;
+			abcct_times_of_ts_polling_interval = _times_of_ts_polling_inteval;
+		}
+
+		abcct_cur_chr_input_curr_limit = -1;
 		abcct_cur_bat_chr_curr_limit = abcct_max_bat_chr_curr_limit;
+
 		abcct_iterm = 0;
 
 		return len;
@@ -675,12 +847,17 @@ static int _cl_abcct_read(struct seq_file *m, void *v)
 
 	seq_printf(m, "%d\n", abcct_cur_bat_chr_curr_limit);
 	seq_printf(m, "abcct_cur_bat_chr_curr_limit %d\n", abcct_cur_bat_chr_curr_limit);
+	seq_printf(m, "abcct_cur_chr_input_curr_limit %d\n", abcct_cur_chr_input_curr_limit);
 	seq_printf(m, "abcct_target_temp %ld\n", abcct_target_temp);
 	seq_printf(m, "abcct_kp %ld\n", abcct_kp);
 	seq_printf(m, "abcct_ki %ld\n", abcct_ki);
 	seq_printf(m, "abcct_kd %ld\n", abcct_kd);
 	seq_printf(m, "abcct_max_bat_chr_curr_limit %d\n", abcct_max_bat_chr_curr_limit);
 	seq_printf(m, "abcct_min_bat_chr_curr_limit %d\n", abcct_min_bat_chr_curr_limit);
+	seq_printf(m, "abcct_input_current_limit_on %d\n", abcct_input_current_limit_on);
+	seq_printf(m, "abcct_HW_thermal_solution %d\n", abcct_HW_thermal_solution);
+	seq_printf(m, "abcct_min_chr_input_curr_limit %d\n", abcct_min_chr_input_curr_limit);
+	seq_printf(m, "abcct_times_of_ts_polling_interval %d\n", abcct_times_of_ts_polling_interval);
 
 	return 0;
 }
@@ -847,6 +1024,30 @@ static const struct file_operations _cl_chrlmt_fops = {
 	.release = single_release,
 };
 
+static int _cl_battery_status_read(struct seq_file *m, void *v)
+{
+	mtk_cooler_bcct_dprintk("%s\n", __func__);
+
+	seq_printf(m, "%d,%d,%d,%d,%d,%d,%d,%d\n",
+		bat_info_soc, bat_info_uisoc, bat_info_vbat, bat_info_ibat,
+		bat_info_mintchr, bat_info_maxtchr, bat_info_vbus, bat_info_aicr);
+
+	return 0;
+}
+
+static int _cl_battery_status_open(struct inode *inode, struct file *file)
+{
+	return single_open(file, _cl_battery_status_read, PDE_DATA(inode));
+}
+
+static const struct file_operations _cl_battery_status_fops = {
+	.owner = THIS_MODULE,
+	.open = _cl_battery_status_open,
+	.read = seq_read,
+	.llseek = seq_lseek,
+	.release = single_release,
+};
+
 static int __init mtk_cooler_bcct_init(void)
 {
 	int err = 0;
@@ -912,6 +1113,8 @@ static int __init mtk_cooler_bcct_init(void)
 			proc_set_user(entry, uid, gid);
 
 		entry = proc_create("bcctlmt", S_IRUGO, NULL, &_cl_chrlmt_fops);
+
+		entry = proc_create("battery_status", S_IRUGO, NULL, &_cl_battery_status_fops);
 	}
 
 	bcct_chrlmt_queue = alloc_workqueue("bcct_chrlmt_work",

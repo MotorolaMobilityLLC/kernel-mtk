@@ -35,6 +35,14 @@ ifeq (y, $(filter y, $(CONFIG_ARCH_MT6755) $(CONFIG_ARCH_MT6797) $(CONFIG_MACH_M
     ccflags-y += -DCCORR_SUPPORT
 endif
 
+ifeq (y, $(filter y, $(CONFIG_MACH_MT6797) $(CONFIG_MACH_MT6757)))
+    ccflags-y += -DCOLOR_2_1
+endif
+
+ifeq (y, $(filter y, $(CONFIG_MACH_MT6757)))
+    ccflags-y += -DCOLOR_3_0
+endif
+
 ifeq ($(strip $(CONFIG_MTK_PQ_COLOR_MODE)),"MDP")
     ccflags-y += -DMDP_COLOR_ON
 else ifeq ($(strip $(CONFIG_MTK_PQ_COLOR_MODE)),"DISP_MDP")

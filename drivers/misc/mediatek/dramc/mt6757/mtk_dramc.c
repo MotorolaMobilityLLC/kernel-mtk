@@ -1244,6 +1244,8 @@ unsigned int get_dram_data_rate(void)
 	} else if ((DRAM_TYPE == TYPE_LPDDR4) || (DRAM_TYPE == TYPE_LPDDR4X)) {
 		if (u4DataRate == 3198)
 			u4DataRate = 3200;
+		else if (u4DataRate == 2990)
+			u4DataRate = 3000;
 		else if (u4DataRate == 2652)
 			u4DataRate = 2667;
 		else if (u4DataRate == 1599)
@@ -1292,7 +1294,8 @@ int dram_steps_freq(unsigned int step)
 		if (DRAM_TYPE == TYPE_LPDDR3)
 			freq = get_dram_data_rate();	/* DDR1800 or DDR1866 */
 		else if ((DRAM_TYPE == TYPE_LPDDR4) || (DRAM_TYPE == TYPE_LPDDR4X))
-			freq = 3200;
+			/* freq = 3200; */
+			freq = get_dram_data_rate();	/* DDR3000 or DDR3200 */
 		break;
 	case 1:
 		if (DRAM_TYPE == TYPE_LPDDR3)

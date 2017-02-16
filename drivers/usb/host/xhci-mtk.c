@@ -172,36 +172,6 @@ static int xhci_mtk_host_disable(struct xhci_hcd_mtk *mtk)
 }
 
 
-static int xhci_mtk_host_power_down(struct xhci_hcd_mtk *mtk)
-{
-	struct mu3c_ippc_regs __iomem *ippc = mtk->ippc_regs;
-	u32 value;
-	int i;
-	struct device_node *of_node = mtk->dev->of_node;
-
-	if (ippc == NULL)
-		return 0;
-
-	if (of_device_is_compatible(of_node, "mediatek,mt67xx-xhci")) {
-		/* power down all u3 ports */
-		for (i = 0; i < mtk->num_u3_ports; i++) {
-			value = readl(&ippc->u3_ctrl_p[i]);
-			value |= (CTRL_U3_PORT_PDN | CTRL_U3_PORT_DIS);
-			writel(value, &ippc->u3_ctrl_p[i]);
-		}
-
-		/* power down all u2 ports */
-		for (i = 0; i < mtk->num_u2_ports; i++) {
-			value = readl(&ippc->u2_ctrl_p[i]);
-			value |= (CTRL_U2_PORT_PDN | CTRL_U2_PORT_DIS);
-			writel(value, &ippc->u2_ctrl_p[i]);
-		}
-	} else {
-		;	/* TODO LIST */
-	}
-	return 0;
-}
-
 static int xhci_mtk_ssusb_config(struct xhci_hcd_mtk *mtk)
 {
 	struct mu3c_ippc_regs __iomem *ippc = mtk->ippc_regs;
@@ -231,6 +201,23 @@ static int xhci_mtk_ssusb_config(struct xhci_hcd_mtk *mtk)
 			mtk->num_u2_ports, mtk->num_u3_ports);
 
 	return xhci_mtk_host_enable(mtk);
+}
+
+static void xhci_mtk_ssusb_ip_sleep(struct xhci_hcd_mtk *mtk)
+{
+	struct device_node *of_node = mtk->dev->of_node;
+	struct mu3c_ippc_regs __iomem *ippc = mtk->ippc_regs;
+	u32 value;
+
+	if (of_device_is_compatible(of_node, "mediatek,mt67xx-xhci")) {
+		/* Set below sequence to avoid power leakage */
+		xhci_mtk_host_disable(mtk);
+		udelay(50);
+		/* reset whole ip */
+		value = readl(&ippc->ip_pw_ctr0);
+		value |= CTRL0_IP_SW_RST;
+		writel(value, &ippc->ip_pw_ctr0);
+	}
 }
 
 static int xhci_mtk_clks_enable(struct xhci_hcd_mtk *mtk)
@@ -876,6 +863,7 @@ disable_clk:
 
 disable_ldos:
 	xhci_mtk_ldos_disable(mtk);
+	xhci_mtk_ssusb_ip_sleep(mtk);
 
 disable_pm:
 	pm_runtime_put_sync(dev);
@@ -889,14 +877,7 @@ static int xhci_mtk_remove(struct platform_device *dev)
 	struct usb_hcd	*hcd = mtk->hcd;
 	struct xhci_hcd	*xhci = hcd_to_xhci(hcd);
 
-#ifdef CONFIG_USB_XHCI_MTK_SUSPEND_SUPPORT
 	xhci_mtk_host_enable(mtk);
-	set_bit(HCD_FLAG_POLL_RH, &hcd->flags);
-	usb_hcd_poll_rh_status(hcd);
-	set_bit(HCD_FLAG_POLL_RH, &xhci->shared_hcd->flags);
-	usb_hcd_poll_rh_status(xhci->shared_hcd);
-#endif
-
 	usb_remove_hcd(xhci->shared_hcd);
 	xhci_mtk_phy_power_off(mtk);
 	xhci_mtk_phy_exit(mtk);
@@ -906,15 +887,263 @@ static int xhci_mtk_remove(struct platform_device *dev)
 	usb_put_hcd(xhci->shared_hcd);
 	usb_put_hcd(hcd);
 	xhci_mtk_sch_exit(mtk);
-	xhci_mtk_host_power_down(mtk);
 	xhci_mtk_clks_disable(mtk);
 	xhci_mtk_ldos_disable(mtk);
 	pm_runtime_put_sync(&dev->dev);
 	pm_runtime_disable(&dev->dev);
+	xhci_mtk_ssusb_ip_sleep(mtk);
 
 	return 0;
 }
+/* USB Audio Power Saving */
+#ifdef CONFIG_MTK_UAC_POWER_SAVING
+#define MIN_SLEEP_MS 10
 
+static struct xhci_mtk_sram_block xhci_sram[XHCI_SRAM_BLOCK_NUM] = {
+	[XHCI_EVENTRING] = {0, NULL, TRB_SEGMENT_SIZE, STATE_UNINIT},
+	[XHCI_EPTX] = {0, NULL, TRB_SEGMENT_SIZE, STATE_UNINIT},
+	[XHCI_EPRX] = {0, NULL, TRB_SEGMENT_SIZE, STATE_UNINIT},
+	/* add 56 bytes for alignment */
+	[XHCI_DCBAA] = {0, NULL, 8 * MAX_HC_SLOTS + 8 + 56, STATE_UNINIT},
+	/* add 48 bytes for alignment */
+	[XHCI_ERST] = {0, NULL, 16 * ERST_NUM_SEGS + 48, STATE_UNINIT},
+	[XHCI_AUDIO_INTR] = {0, NULL, TRB_AUDIO_INTR_SIZE, STATE_UNINIT},
+	[XHCI_AUDIO_FEEDBACK_TX] = {0, NULL, TRB_AUDIO_FEEDBACK_SIZE, STATE_UNINIT},
+	[XHCI_AUDIO_FEEDBACK_RX] = {0, NULL, TRB_AUDIO_FEEDBACK_SIZE, STATE_UNINIT},
+	[XHCI_AUDIO_INTR_DATA] = {0, NULL, FEEDBACK_DATA_SIZE, STATE_UNINIT},
+	[XHCI_AUDIO_FEEDBACK_TX_DATA] = {0, NULL, FEEDBACK_DATA_SIZE, STATE_UNINIT},
+	[XHCI_AUDIO_FEEDBACK_RX_DATA] = {0, NULL, FEEDBACK_DATA_SIZE, STATE_UNINIT},
+};
+
+static struct xhci_mtk_sram_block usb_audio_sram[USB_AUDIO_DATA_BLOCK_NUM] = {
+	[USB_AUDIO_DATA_OUT_EP] = {0, NULL, 0, STATE_UNINIT},
+	[USB_AUDIO_DATA_IN_EP] = {0, NULL, 0, STATE_UNINIT},
+	[USB_AUDIO_DATA_SYNC_EP_TX] = {0, NULL, 0, STATE_UNINIT},
+	[USB_AUDIO_DATA_SYNC_EP_RX] = {0, NULL, 0, STATE_UNINIT},
+	[USB_AUDIO_HID_INTERRUPT] = {0, NULL, 0, STATE_UNINIT},
+};
+
+static void xhci_mtk_wakeup_timer_func(unsigned long data)
+{
+	xhci_mtk_set_power_mode(USB_DPIDLE_FORBIDDEN);
+}
+
+static DEFINE_TIMER(xhci_wakeup_timer, xhci_mtk_wakeup_timer_func,
+					0, 0);
+
+void xhci_mtk_allow_sleep(unsigned int sleep_ms)
+{
+	int i;
+	bool data_sram = false;
+
+	/* step1: check if have enough sleep time */
+	if (unlikely(sleep_ms <= MIN_SLEEP_MS))
+		goto not_sleep;
+
+	/* step2: check if xhci state is normal */
+	for (i = 0; i < XHCI_SRAM_BLOCK_NUM; i++)
+		if (unlikely(xhci_sram[i].state == STATE_NOMEM))
+			goto not_sleep;
+
+	/* setp3: check if usb audio data on sram */
+	for (i = 0; i < USB_AUDIO_DATA_BLOCK_NUM; i++) {
+		if (unlikely(usb_audio_sram[i].state == STATE_NOMEM))
+			goto not_sleep;
+		else if (usb_audio_sram[i].state == STATE_USE)
+			data_sram = true;
+	}
+
+	if (likely(data_sram)) {
+		static DEFINE_RATELIMIT_STATE(ratelimit, 2 * HZ, 1);
+
+		if (__ratelimit(&ratelimit))
+			pr_info("mtk_xhci_allow_sleep (%d) ms\n", sleep_ms);
+		mod_timer(&xhci_wakeup_timer,
+				  jiffies + msecs_to_jiffies(sleep_ms));
+		xhci_mtk_set_power_mode(USB_DPIDLE_SRAM);
+	}
+	return;
+
+not_sleep:
+	xhci_mtk_set_power_mode(USB_DPIDLE_FORBIDDEN);
+}
+
+int xhci_mtk_init_sram(struct xhci_hcd *xhci)
+{
+	int i;
+	int offset = 0;
+	unsigned int xhci_sram_size = 0;
+
+	/* init xhci sram */
+	for (i = 0; i < XHCI_SRAM_BLOCK_NUM; i++)
+		xhci_sram_size += xhci_sram[i].mlength;
+
+	pr_info("%s size=%d\n", __func__, xhci_sram_size);
+
+	if (mtk_audio_request_sram(&xhci->msram_phys_addr,
+			(unsigned char **) &xhci->msram_virt_addr,
+							   xhci_sram_size, &xhci_sram)) {
+
+		for (i = 0; i < XHCI_SRAM_BLOCK_NUM; i++)
+			xhci_sram[i].state = STATE_NOMEM;
+
+		pr_err("mtk_audio_request_sram fail\n");
+		return -ENOMEM;
+	}
+
+	for (i = 0; i < XHCI_SRAM_BLOCK_NUM; i++) {
+		xhci_sram[i].msram_phys_addr =
+			xhci->msram_phys_addr + offset;
+		xhci_sram[i].msram_virt_addr =
+			(void *)((char *)xhci->msram_virt_addr + offset);
+		offset += xhci_sram[i].mlength;
+		memset_io(xhci_sram[i].msram_virt_addr,
+				  0, xhci_sram[i].mlength);
+		xhci_sram[i].state = STATE_INIT;
+
+		pr_debug("[%d] p :%llx, v=%p, len=%d\n",
+				 i, xhci_sram[i].msram_phys_addr,
+				 xhci_sram[i].msram_virt_addr,
+				 xhci_sram[i].mlength);
+	}
+	return 0;
+}
+
+int xhci_mtk_deinit_sram(struct xhci_hcd *xhci)
+{
+	int i;
+
+	if (xhci->msram_virt_addr)
+		mtk_audio_free_sram(&xhci_sram);
+
+	for (i = 0; i < XHCI_SRAM_BLOCK_NUM; i++) {
+		xhci_sram[i].msram_phys_addr = 0;
+		xhci_sram[i].msram_virt_addr = NULL;
+		xhci_sram[i].state = STATE_UNINIT;
+	}
+	xhci->msram_virt_addr = NULL;
+
+	pr_info("%s\n", __func__);
+	return 0;
+}
+
+int xhci_mtk_allocate_sram(int id, dma_addr_t *sram_phys_addr,
+						   unsigned char **msram_virt_addr)
+{
+	if (xhci_sram[id].state == STATE_NOMEM)
+		return -ENOMEM;
+
+	if (xhci_sram[id].state == STATE_USE) {
+		/* use the same sram block, set state to nomem*/
+		xhci_sram[id].state = STATE_NOMEM;
+		return -ENOMEM;
+	}
+
+	*sram_phys_addr = xhci_sram[id].msram_phys_addr;
+	*msram_virt_addr =
+		(unsigned char *)xhci_sram[id].msram_virt_addr;
+
+	memset_io(xhci_sram[id].msram_virt_addr,
+			  0, xhci_sram[id].mlength);
+
+	xhci_sram[id].state = STATE_USE;
+
+	pr_info("%s get [%d] p :%llx, v=%p, len=%d\n",
+			__func__, id, xhci_sram[id].msram_phys_addr,
+			xhci_sram[id].msram_virt_addr,
+			xhci_sram[id].mlength);
+	return 0;
+}
+
+int xhci_mtk_free_sram(int id)
+{
+	xhci_sram[id].state = STATE_INIT;
+	pr_info("%s, id=%d\n", __func__, id);
+	return 0;
+}
+
+void *mtk_usb_alloc_sram(int id, size_t size, dma_addr_t *dma)
+{
+	void *sram_virt_addr = NULL;
+
+	/* check if xhci control buffer on sram */
+	if (xhci_sram[0].state != STATE_USE)
+		return NULL;
+
+	switch (id) {
+	case USB_AUDIO_DATA_OUT_EP:
+	case USB_AUDIO_DATA_IN_EP:
+		mtk_audio_request_sram(dma, (unsigned char **)&sram_virt_addr,
+			size, &usb_audio_sram[id]);
+	break;
+	case USB_AUDIO_DATA_SYNC_EP_TX:
+		if (size <= FEEDBACK_DATA_SIZE)
+			xhci_mtk_allocate_sram(XHCI_AUDIO_FEEDBACK_TX_DATA, dma,
+				(unsigned char **)&sram_virt_addr);
+	break;
+	case USB_AUDIO_DATA_SYNC_EP_RX:
+		if (size <= FEEDBACK_DATA_SIZE)
+			xhci_mtk_allocate_sram(XHCI_AUDIO_FEEDBACK_RX_DATA, dma,
+				(unsigned char **)&sram_virt_addr);
+	break;
+	case USB_AUDIO_HID_INTERRUPT:
+		if (size <= FEEDBACK_DATA_SIZE)
+			xhci_mtk_allocate_sram(XHCI_AUDIO_INTR_DATA, dma,
+				(unsigned char **)&sram_virt_addr);
+	break;
+	default:
+		return NULL;
+	}
+
+
+	if (sram_virt_addr) {
+		usb_audio_sram[id].mlength = size;
+		usb_audio_sram[id].msram_phys_addr = *dma;
+		usb_audio_sram[id].msram_virt_addr =  sram_virt_addr;
+		usb_audio_sram[id].state = STATE_USE;
+		pr_err("%s get [%d] p :%llx, v=%p, len=%d\n",
+			__func__, id, usb_audio_sram[id].msram_phys_addr,
+			usb_audio_sram[id].msram_virt_addr,
+			usb_audio_sram[id].mlength);
+	} else {
+		usb_audio_sram[id].state = STATE_NOMEM;
+		pr_err("%s fail id=%d\n", __func__, id);
+	}
+
+	return sram_virt_addr;
+}
+
+void mtk_usb_free_sram(id)
+{
+	if (id >= USB_AUDIO_DATA_BLOCK_NUM)
+		return;
+
+	if (usb_audio_sram[id].state == STATE_USE) {
+		switch (id) {
+		case USB_AUDIO_DATA_OUT_EP:
+		case USB_AUDIO_DATA_IN_EP:
+			mtk_audio_free_sram(&usb_audio_sram[id]);
+		break;
+		case USB_AUDIO_DATA_SYNC_EP_TX:
+			xhci_mtk_free_sram(XHCI_AUDIO_FEEDBACK_TX_DATA);
+		break;
+		case USB_AUDIO_DATA_SYNC_EP_RX:
+			xhci_mtk_free_sram(XHCI_AUDIO_FEEDBACK_RX_DATA);
+		break;
+		case USB_AUDIO_HID_INTERRUPT:
+			xhci_mtk_free_sram(XHCI_AUDIO_INTR_DATA);
+		break;
+		}
+		usb_audio_sram[id].mlength = 0;
+		usb_audio_sram[id].msram_phys_addr = 0;
+		usb_audio_sram[id].msram_virt_addr =  NULL;
+		pr_debug("%s, id=%d\n", __func__, id);
+	} else {
+		pr_err("%s, fail id=%d\n", __func__, id);
+	}
+	usb_audio_sram[id].state = STATE_UNINIT;
+}
+#endif
 
 /*
  * if ip sleep fails, and all clocks are disabled, access register will hang
@@ -946,9 +1175,7 @@ static int __maybe_unused xhci_mtk_suspend(struct device *dev)
 	clear_bit(HCD_FLAG_POLL_RH, &xhci->shared_hcd->flags);
 	del_timer_sync(&xhci->shared_hcd->rh_timer);
 
-#ifdef CONFIG_USB_XHCI_MTK_SUSPEND_SUPPORT
-	/*xhci_mtk_host_disable(mtk);*/
-#else
+#ifndef CONFIG_USB_XHCI_MTK_SUSPEND_SUPPORT
 	xhci_mtk_host_disable(mtk);
 #endif
 	xhci_mtk_phy_power_off(mtk);
@@ -963,6 +1190,7 @@ static int __maybe_unused xhci_mtk_resume(struct device *dev)
 	struct usb_hcd *hcd = mtk->hcd;
 	struct xhci_hcd *xhci = hcd_to_xhci(hcd);
 
+	xhci_info(xhci, "xhci_plat_resume\n");
 	usb_wakeup_disable(mtk);
 	xhci_mtk_clks_enable(mtk);
 	xhci_mtk_phy_power_on(mtk);
@@ -976,23 +1204,12 @@ static int __maybe_unused xhci_mtk_resume(struct device *dev)
 	return 0;
 }
 
-#ifdef CONFIG_USB_XHCI_MTK_SUSPEND_SUPPORT
-static int xhci_plat_resume_noirq(struct device *dev)
-{
-	struct xhci_hcd_mtk *mtk = dev_get_drvdata(dev);
-	struct usb_hcd *hcd = mtk->hcd;
-	struct xhci_hcd *xhci = hcd_to_xhci(hcd);
-
-	xhci_info(xhci, "xhci_plat_resume_noirq\n");
-	xhci_mtk_host_enable(mtk);
-	return 0;
-}
-#endif
-
 static const struct dev_pm_ops xhci_mtk_pm_ops = {
+#ifndef CONFIG_USB_XHCI_MTK_SUSPEND_SUPPORT
 	SET_SYSTEM_SLEEP_PM_OPS(xhci_mtk_suspend, xhci_mtk_resume)
-#ifdef CONFIG_USB_XHCI_MTK_SUSPEND_SUPPORT
-	.resume_noirq = xhci_plat_resume_noirq,
+#else
+	.resume_noirq = xhci_mtk_resume,
+	.suspend_noirq = xhci_mtk_suspend,
 #endif
 };
 

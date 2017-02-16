@@ -162,6 +162,7 @@ P_CMD_INFO_T cmdBufAllocateCmdInfo(IN P_ADAPTER_T prAdapter, IN UINT_32 u4Length
 			prCmdInfo->u2InfoBufLen = 0;
 			prCmdInfo->fgIsOid = FALSE;
 			prCmdInfo->fgDriverDomainMCR = FALSE;
+			prCmdInfo->u4InqueTime = 0;
 		}
 		fgCmdDumpIsDone = FALSE;
 	} else if (!fgCmdDumpIsDone) {

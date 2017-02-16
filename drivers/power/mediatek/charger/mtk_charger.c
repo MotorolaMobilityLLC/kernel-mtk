@@ -63,6 +63,7 @@
 #include <linux/of.h>
 #include <linux/of_irq.h>
 #include <linux/of_address.h>
+#include <linux/reboot.h>
 
 #include "mtk_charger_intf.h"
 #include <mt-plat/charger_type.h>
@@ -240,6 +241,46 @@ int charger_manager_enable_high_voltage_charging(struct charger_consumer *consum
 	_wake_up_charger(info);
 
 	return 0;
+}
+
+int charger_manager_enable_power_path(struct charger_consumer *consumer,
+	int idx, bool en)
+{
+	int ret = 0;
+	bool is_en = true;
+	struct charger_manager *info = consumer->cm;
+	struct charger_device *chg_dev;
+
+
+	if (!info)
+		return -EINVAL;
+
+	switch (idx) {
+	case MAIN_CHARGER:
+		chg_dev = info->chg1_dev;
+		break;
+	case SLAVE_CHARGER:
+		chg_dev = info->chg2_dev;
+		break;
+	case DIRECT_CHARGER:
+		chg_dev = info->dc_chg;
+		break;
+	default:
+		return -EINVAL;
+	}
+
+	ret = charger_dev_is_powerpath_enabled(chg_dev, &is_en);
+	if (ret < 0) {
+		pr_err("%s: get is power path enabled failed\n", __func__);
+		return ret;
+	}
+	if (is_en == en) {
+		pr_err("%s: power path is already en = %d\n", __func__, is_en);
+		return 0;
+	}
+
+	pr_info("%s: enable power path = %d\n", __func__, en);
+	return charger_dev_enable_powerpath(chg_dev, en);
 }
 
 static int _charger_manager_enable_charging(struct charger_consumer *consumer,
@@ -432,6 +473,30 @@ int charger_manager_get_current_charging_type(struct charger_consumer *consumer)
 	return 0;
 }
 
+int charger_manager_get_zcv(struct charger_consumer *consumer, int idx, u32 *uV)
+{
+	struct charger_manager *info = consumer->cm;
+	int ret = 0;
+	struct charger_device *pchg;
+
+
+	if (info != NULL) {
+		if (idx == MAIN_CHARGER) {
+			pchg = info->chg1_dev;
+			ret = charger_dev_get_zcv(pchg, uV);
+		} else if (idx == SLAVE_CHARGER) {
+			pchg = info->chg2_dev;
+			ret = charger_dev_get_zcv(pchg, uV);
+		} else
+			ret = -1;
+
+	} else {
+		pr_err("charger_manager_get_zcv info is null\n");
+	}
+	pr_err("charger_manager_get_zcv zcv:%d ret:%d\n", *uV, ret);
+
+	return 0;
+}
 
 int register_charger_manager_notifier(struct charger_consumer *consumer,
 	struct notifier_block *nb)
@@ -734,8 +799,7 @@ out:
 
 int charger_manager_notifier(struct charger_manager *info, int event)
 {
-	return srcu_notifier_call_chain(
-		&info->evt_nh, event, NULL);
+	return srcu_notifier_call_chain(&info->evt_nh, event, NULL);
 }
 
 int charger_psy_event(struct notifier_block *nb, unsigned long event, void *v)
@@ -811,6 +875,7 @@ static int mtk_charger_plug_out(struct charger_manager *info)
 	if (info->plug_out != NULL)
 		info->plug_out(info);
 
+	charger_dev_set_input_current(info->chg1_dev, 500000);
 	charger_dev_plug_out(info->chg1_dev);
 	return 0;
 }
@@ -988,6 +1053,8 @@ static void charger_check_status(struct charger_manager *info)
 		charging = false;
 	if (info->safety_timeout)
 		charging = false;
+	if (info->vbusov_stat)
+		charging = false;
 
 stop_charging:
 	mtk_battery_notify_check(info);
@@ -1002,6 +1069,24 @@ stop_charging:
 
 	info->can_charging = charging;
 
+}
+
+static void kpoc_power_off_check(struct charger_manager *info)
+{
+#ifdef CONFIG_MTK_KERNEL_POWER_OFF_CHARGING
+	unsigned int boot_mode = get_boot_mode();
+	int vbus = battery_get_vbus();
+
+	if (boot_mode == KERNEL_POWER_OFF_CHARGING_BOOT
+	    || boot_mode == LOW_POWER_OFF_CHARGING_BOOT) {
+		pr_debug("[%s] vchr=%d, boot_mode=%d\n",
+			__func__, vbus, boot_mode);
+		if (!mtk_is_pe30_running(info) && vbus < 2500) {
+			pr_err("Unplug Charger/USB in KPOC mode, shutdown\n");
+			kernel_power_off();
+		}
+	}
+#endif
 }
 
 enum hrtimer_restart charger_kthread_hrtimer_func(struct hrtimer *timer)
@@ -1060,6 +1145,7 @@ static int charger_routine_thread(void *arg)
 	static int i;
 	unsigned long flags;
 	bool curr_sign, is_charger_on;
+	int bat_current;
 
 	while (1) {
 		wait_event(info->wait_que, (info->charger_thread_timeout == true));
@@ -1068,9 +1154,9 @@ static int charger_routine_thread(void *arg)
 		info->charger_thread_timeout = false;
 		i++;
 		curr_sign = battery_get_bat_current_sign();
+		bat_current = battery_get_bat_current();
 		pr_err("Vbat=%d,I=%d,VChr=%d,T=%d,Soc=%d:%d,CT:%d:%d\n", battery_get_bat_voltage(),
-			curr_sign ? battery_get_bat_current() :
-					-1 * battery_get_bat_current(),
+			curr_sign ? bat_current : -1 * bat_current,
 			battery_get_vbus(), battery_get_bat_temperature(),
 			battery_get_bat_soc(), battery_get_bat_uisoc(),
 			mt_get_charger_type(), info->chr_type);
@@ -1079,6 +1165,7 @@ static int charger_routine_thread(void *arg)
 
 		charger_update_data(info);
 		charger_check_status(info);
+		kpoc_power_off_check(info);
 
 		if (is_charger_on == true) {
 			if (info->do_algorithm)
@@ -1227,6 +1314,22 @@ static int mtk_charger_parse_dt(struct charger_manager *info, struct device *dev
 			"use default CHARGING_HOST_CHARGER_CURRENT:%d\n",
 			CHARGING_HOST_CHARGER_CURRENT);
 		info->data.charging_host_charger_current = CHARGING_HOST_CHARGER_CURRENT;
+	}
+
+	if (of_property_read_u32(np, "apple_1_0a_charger_current", &val) >= 0) {
+		info->data.apple_1_0a_charger_current = val;
+	} else {
+		pr_err("use default APPLE_1_0A_CHARGER_CURRENT:%d\n",
+			APPLE_1_0A_CHARGER_CURRENT);
+		info->data.apple_1_0a_charger_current = APPLE_1_0A_CHARGER_CURRENT;
+	}
+
+	if (of_property_read_u32(np, "apple_2_1a_charger_current", &val) >= 0) {
+		info->data.apple_2_1a_charger_current = val;
+	} else {
+		pr_err("use default APPLE_2_1A_CHARGER_CURRENT:%d\n",
+			APPLE_2_1A_CHARGER_CURRENT);
+		info->data.apple_2_1a_charger_current = APPLE_2_1A_CHARGER_CURRENT;
 	}
 
 	if (of_property_read_u32(np, "ta_ac_charger_current", &val) >= 0) {

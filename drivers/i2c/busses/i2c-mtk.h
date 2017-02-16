@@ -85,6 +85,8 @@
 #define I2C_DRV_NAME		"mt-i2c"
 #define I2CTAG          "[I2C]"
 
+#define I2C_RECORD_LEN 10
+
 enum DMA_REGS_OFFSET {
 	OFFSET_INT_FLAG = 0x0,
 	OFFSET_INT_EN = 0x04,
@@ -163,6 +165,16 @@ enum I2C_REGS_OFFSET {
 	OFFSET_DEBUGSTAT = 0x64,
 	OFFSET_DEBUGCTRL = 0x68,
 	OFFSET_TRANSFER_LEN_AUX = 0x6c,
+	OFFSET_CLOCK_DIV = 0x70,
+};
+
+struct i2c_info {
+	unsigned int slave_addr;
+	unsigned int intr_stat;
+	unsigned int fifo_stat;
+	unsigned int debug_stat;
+	unsigned int tmo;
+	struct timespec endtime;
 };
 
 enum PERICFG_OFFSET {
@@ -191,6 +203,10 @@ struct mtk_i2c_compatible {
 	unsigned char dma_support;  /* 0 : original; 1: 4gb  support 2: 33bit support; 3: 36 bit support */
 	unsigned char idvfs_i2c;
 	u16 ext_time_config;
+	char clk_compatible[128];
+	u16 clk_sta_offset[2];
+	char clk_mux_compatible[128];
+	u16 clk_mux_sta_offset;
 };
 
 struct mt_i2c {
@@ -217,6 +233,8 @@ struct mt_i2c {
 	u16 irq_stat;			/* interrupt status */
 	unsigned int speed_hz;		/* The speed in transfer */
 	unsigned int clk_src_div;
+	spinlock_t cg_lock;
+	int cg_cnt;
 	bool trans_stop;		/* i2c transfer stop */
 	enum mt_trans_op op;
 	u16 total_len;
@@ -230,6 +248,8 @@ struct mt_i2c {
 	struct mt_i2c_ext ext_data;
 	bool is_hw_trig;
 	const struct mtk_i2c_compatible *dev_comp;
+	int rec_idx; /* next record idx */
+	struct i2c_info rec_info[I2C_RECORD_LEN];
 };
 
 #if defined(CONFIG_MTK_FPGA) || defined(CONFIG_FPGA_EARLY_PORTING)

@@ -186,6 +186,7 @@ source "drivers/misc/mediatek/cqdma/Kconfig"
 source "drivers/misc/mediatek/ext_disp/Kconfig"
 source "drivers/misc/mediatek/flashlight/Kconfig"
 source "drivers/misc/mediatek/flashlight/richtek/Kconfig"
+source "drivers/misc/mediatek/ccu/src/Kconfig"
 source "drivers/misc/mediatek/gpu/Kconfig"
 source "drivers/misc/mediatek/hdmi/Kconfig"
 source "drivers/misc/mediatek/imgsensor/Kconfig"
@@ -209,6 +210,15 @@ config MTK_SENSOR_SUPPORT
 	help
 	  sensor config to sensor port sensor feature in project.
 
+config MTK_SENSOR_BIO
+	bool "MTK SENSOR driver BOOST IO(BIO) SUPPORT"
+	help
+	  This is an option for MTK SENSOR BIO driver.
+	  we use BIO architecture instead of linux input
+	  architecture, BIO means boost io transfer data
+	  between kernel space and user space.
+
+if !MTK_SENSOR_BIO
 source "drivers/misc/mediatek/accelerometer/Kconfig"
 #source "drivers/misc/mediatek/activity_sensor/Kconfig"
 source "drivers/misc/mediatek/alsps/Kconfig"
@@ -239,7 +249,10 @@ source "drivers/misc/mediatek/magnetometer/Kconfig"
 #source "drivers/misc/mediatek/uncali_gyro/Kconfig"
 #source "drivers/misc/mediatek/uncali_mag/Kconfig"
 #source "drivers/misc/mediatek/wake_gesture_sensor/Kconfig"
-
+endif
+if MTK_SENSOR_BIO
+source "drivers/misc/mediatek/sensor_bio/Kconfig"
+endif
 endmenu  # Sensors
 
 
@@ -400,7 +413,7 @@ source "drivers/misc/mediatek/masp/Kconfig"
 source "drivers/misc/mediatek/mlog/Kconfig"
 source "drivers/misc/mediatek/mtprintk/Kconfig"
 source "drivers/misc/mediatek/mtprof/Kconfig"
-#source "drivers/misc/mediatek/performance/Kconfig"
+source "drivers/misc/mediatek/performance/Kconfig"
 source "drivers/misc/mediatek/ram_console/Kconfig"
 source "drivers/misc/mediatek/sched/Kconfig"
 source "drivers/misc/mediatek/selinux_warning/Kconfig"

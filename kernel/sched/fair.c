@@ -93,7 +93,12 @@ unsigned int sysctl_sched_child_runs_first __read_mostly;
 unsigned int sysctl_sched_wakeup_granularity = 1000000UL;
 unsigned int normalized_sysctl_sched_wakeup_granularity = 1000000UL;
 
+#ifdef CONFIG_MTK_LOAD_BALANCE_ENHANCEMENT
+/* shorten the schedule migration cost and let the idle balance more aggregative */
+const_debug unsigned int sysctl_sched_migration_cost = 33000UL;
+#else
 const_debug unsigned int sysctl_sched_migration_cost = 500000UL;
+#endif
 
 /*
  * The exponential sliding  window over which load is averaged for shares
@@ -5044,6 +5049,52 @@ done:
 }
 
 /*
+ * @p: the task want to be located at.
+ * @prev_cpu: last cpu p located at.
+ *
+ * Return:
+ *
+ * cpu id or
+ * nr_cpu_ids if target CPU is not found
+ */
+static int find_best_idle_cpu(struct task_struct *p, int prev_cpu)
+{
+	int j = 0, found = nr_cpu_ids;
+	struct cpumask allowed_mask;
+	unsigned long cap, max_cap = 0;
+
+	/* single cluster SMP architecture */
+	if (!arch_is_multi_cluster() && idle_cpu(prev_cpu))
+		return prev_cpu;
+
+	/* return nr_cpu_ids to go cluster-based cpu selection for multi-cluster SMP architecture */
+	if (arch_is_multi_cluster() && arch_is_smp())
+		return nr_cpu_ids;
+
+	cpumask_and(&allowed_mask, cpu_online_mask, tsk_cpus_allowed(p));
+	for_each_cpu(j, &allowed_mask) {
+		if (!idle_cpu(j))
+			continue;
+
+		if (!arch_is_smp()) { /* multi-cluster HMP architecture */
+			cap = arch_get_max_cpu_capacity(j);
+			if (cap > max_cap) {
+				found = j;
+				max_cap = cap;
+				mt_sched_printf(sched_log,
+					"found=%d max_cap=%lu allowed_mask=%lu",
+					found, max_cap, allowed_mask.bits[0]);
+			}
+		} else {
+			found = j;
+			break;
+		}
+	}
+
+	return found;
+}
+
+/*
  * cpu_util returns the amount of capacity of a CPU that is used by CFS
  * tasks. The unit of the return value must be the one of capacity so we can
  * compare the utilization with the capacity of the CPU that is available for
@@ -5076,6 +5127,11 @@ static int cpu_util(int cpu)
 
 	return (util >= capacity) ? capacity : util;
 }
+static int mt_select_task_rq_fair(struct task_struct *p, int prev_cpu)
+{
+	return find_best_idle_cpu(p, prev_cpu);
+}
+
 
 /*
  * select_task_rq_fair: Select target runqueue for the waking task in domains
@@ -5097,6 +5153,7 @@ select_task_rq_fair(struct task_struct *p, int prev_cpu, int sd_flag, int wake_f
 	int new_cpu = prev_cpu;
 	int want_affine = 0;
 	int sync = wake_flags & WF_SYNC;
+	int prefer_cpu;
 #ifdef CONFIG_MTK_SCHED_TRACERS
 	int policy = 0;
 #endif
@@ -5120,6 +5177,19 @@ select_task_rq_fair(struct task_struct *p, int prev_cpu, int sd_flag, int wake_f
 
 	if (sd_flag & SD_BALANCE_WAKE)
 		want_affine = !wake_wide(p) && cpumask_test_cpu(cpu, tsk_cpus_allowed(p));
+
+	prefer_cpu = mt_select_task_rq_fair(p, prev_cpu);
+	if (prefer_cpu < nr_cpu_ids) {
+		cpu = prefer_cpu;
+		new_cpu = prefer_cpu;
+#ifdef CONFIG_MTK_SCHED_TRACERS
+		policy |= (new_cpu << LB_IDLE_SHIFT);
+		policy |= LB_IDLE;
+#endif
+		mt_sched_printf(sched_log, "prefer idle wakeup %d %s to cpu %d",
+				p->pid, p->comm, cpu);
+		goto mt_found;
+	}
 
 	rcu_read_lock();
 	for_each_domain(cpu, tmp) {
@@ -5197,6 +5267,7 @@ select_task_rq_fair(struct task_struct *p, int prev_cpu, int sd_flag, int wake_f
 
 	rcu_read_unlock();
 
+mt_found:
 	if (sched_feat(SCHED_HMP)) {
 		new_cpu = hmp_select_task_rq_fair(sd_flag, p, prev_cpu, new_cpu);
 #ifdef CONFIG_MTK_SCHED_TRACERS
@@ -6497,7 +6568,15 @@ static inline void update_sg_lb_stats(struct lb_env *env,
 		else
 			load = source_load(i, load_idx);
 
+#ifdef CONFIG_MTK_SCHED_INTEROP
+		load += mt_rt_load(i);
+#endif
+
+#ifdef CONFIG_MTK_LOAD_BALANCE_ENHANCEMENT
+		sgs->group_load += (load * capacity_orig_of(i)) >> SCHED_CAPACITY_SHIFT;
+#else
 		sgs->group_load += load;
+#endif
 		sgs->group_util += cpu_util(i);
 		sgs->sum_nr_running += rq->cfs.h_nr_running;
 
@@ -6545,6 +6624,14 @@ static bool update_sd_pick_busiest(struct lb_env *env,
 				   struct sg_lb_stats *sgs)
 {
 	struct sg_lb_stats *busiest = &sds->busiest_stat;
+
+#ifdef CONFIG_MTK_LOAD_BALANCE_ENHANCEMENT
+	if (sgs->sum_nr_running == 0) {
+		mt_sched_printf(sched_log, "[%s] sgs->sum_nr_running=%d",
+			__func__, sgs->sum_nr_running);
+		return false;
+	}
+#endif
 
 	if (sgs->group_type > busiest->group_type)
 		return true;
@@ -6944,7 +7031,12 @@ static struct sched_group *find_busiest_group(struct lb_env *env)
 	if (local->avg_load >= sds.avg_load)
 		goto out_balanced;
 
+#ifdef CONFIG_MTK_LOAD_BALANCE_ENHANCEMENT
+	if ((env->idle == CPU_IDLE) || (env->idle == CPU_NEWLY_IDLE)) {
+		int i = (env->idle == CPU_IDLE) ? 1:0;
+#else
 	if (env->idle == CPU_IDLE) {
+#endif
 		/*
 		 * This cpu is idle. If the busiest group is not overloaded
 		 * and there is no imbalance between this and busiest group
@@ -6952,8 +7044,13 @@ static struct sched_group *find_busiest_group(struct lb_env *env)
 		 * significant if the diff is greater than 1 otherwise we
 		 * might end up to just move the imbalance on another group
 		 */
+#ifdef CONFIG_MTK_LOAD_BALANCE_ENHANCEMENT
+		if ((busiest->group_type != group_overloaded) &&
+			(local->idle_cpus < (busiest->idle_cpus + i)))
+#else
 		if ((busiest->group_type != group_overloaded) &&
 				(local->idle_cpus <= (busiest->idle_cpus + 1)))
+#endif
 			goto out_balanced;
 	} else {
 		/*
@@ -6968,6 +7065,11 @@ static struct sched_group *find_busiest_group(struct lb_env *env)
 force_balance:
 	/* Looks like there is an imbalance. Compute it */
 	calculate_imbalance(env, &sds);
+#ifdef CONFIG_MTK_LOAD_BALANCE_ENHANCEMENT
+	env->imbalance = env->imbalance * SCHED_CAPACITY_SCALE
+		/ (sds.busiest->sgc->capacity / cpumask_weight(sched_group_cpus(sds.busiest)));
+#endif
+
 	return sds.busiest;
 
 out_balanced:
@@ -7017,6 +7119,10 @@ static struct rq *find_busiest_queue(struct lb_env *env,
 		capacity = capacity_of(i);
 
 		wl = weighted_cpuload(i);
+
+#ifdef CONFIG_MTK_SCHED_INTEROP
+		wl += mt_rt_load(i);
+#endif
 
 		/*
 		 * When comparing with imbalance, use weighted_cpuload()

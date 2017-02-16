@@ -27,6 +27,7 @@
 
 #define SHUTDOWN_GAUGE0 1
 #define SHUTDOWN_GAUGE1_XMINS 1
+#define SHUTDOWN_GAUGE0_VOLTAGE 35000
 
 #define POWERON_SYSTEM_IBOOT 1000	/* mA */
 
@@ -42,7 +43,7 @@
 
 #define QMAX_SEL 1
 #define IBOOT_SEL 0
-#define SHUTDOWN_SYSTEM_IBOOT 10000	/* 0.1mA */
+#define SHUTDOWN_SYSTEM_IBOOT 15000	/* 0.1mA */
 #define PMIC_MIN_VOL 32000
 
 /*ui_soc related */
@@ -68,7 +69,7 @@
 #define VBAT2_DET_VOLTAGE3	35000
 
 /* PCB setting */
-#define CALIBRATE_CAR_TUNE_VALUE_BY_META_TOOL
+/* #define CALIBRATE_CAR_TUNE_VALUE_BY_META_TOOL */
 #define CALI_CAR_TUNE_AVG_NUM	60
 
 /* Aging Compensation 1*/
@@ -89,15 +90,20 @@
 
 /* threshold */
 #define HWOCV_SWOCV_DIFF	300
+#define HWOCV_SWOCV_DIFF_LT	1500
+#define HWOCV_SWOCV_DIFF_LT_TEMP	5
 #define HWOCV_OLDOCV_DIFF	300
 #define SWOCV_OLDOCV_DIFF	300
 #define VBAT_OLDOCV_DIFF	1000
+#define SWOCV_OLDOCV_DIFF_EMB	1000
 
 #define TNEW_TOLD_PON_DIFF	5
 #define TNEW_TOLD_PON_DIFF2	15
 #define PMIC_SHUTDOWN_TIME	30
 #define BAT_PLUG_OUT_TIME	32
 #define EXT_HWOCV_SWOCV		300
+#define EXT_HWOCV_SWOCV_LT		1500
+#define EXT_HWOCV_SWOCV_LT_TEMP		5
 
 /* fgc & fgv threshold */
 #define DIFFERENCE_FGC_FGV_TH1 500
@@ -107,6 +113,8 @@
 #define DIFFERENCE_FGC_FGV_TH_SOC2 3000
 #define NAFG_TIME_SETTING 10
 #define NAFG_RATIO 80
+#define NAFG_RATIO_EN 0
+#define NAFG_RESISTANCE 1500
 
 #define PMIC_SHUTDOWN_SW_EN 1
 #define FORCE_VC_MODE 0	/* 0: mix, 1:Coulomb, 2:voltage */
@@ -116,16 +124,14 @@
 #define DIFF_IAVG_TH 3000
 
 /* ZCV INTR */
-/*#define ZCV_SUSPEND_TIME 6*/
-/*#define SLEEP_CURRENT_AVG 100*/ /*0.1mA*/
 #define ZCV_SUSPEND_TIME 6
-#define SLEEP_CURRENT_AVG 200 /*0.1mA*/
+#define SLEEP_CURRENT_AVG 100 /*0.1mA*/
 
 /* Additional battery table */
 #define ADDITIONAL_BATTERY_TABLE_EN 0
 
 #define DC_RATIO_SEL	5
-#define DC_R_CNT	0
+#define DC_R_CNT	1000	/* if set 0, dcr_start will not be 1*/
 
 #define BAT_PAR_I 4000	/* not implement */
 
@@ -133,6 +139,9 @@
 
 #define FG_TRACKING_CURRENT	10000	/* not implement */
 #define FG_TRACKING_CURRENT_IBOOT_EN	1	/* not implement */
+#define UI_FAST_TRACKING_EN 0
+#define UI_FAST_TRACKING_GAP 300
+#define KEEP_100_PERCENT_MINSOC 9000
 
 #define UNIT_FGCURRENT     (381470)		/* mt6335 381.470 uA */
 #define UNIT_FGCAR         (108506)		/* unit 2^11 LSB*/
@@ -141,9 +150,14 @@
 #define UNIT_TIME          (50)
 #define UNIT_FGCAR_ZCV     (190735)     /* unit 2^0 LSB */
 #define UNIT_FG_IAVG		(190735)
-#define CAR_TO_REG_FACTOR  (0x49BD)
+#define CAR_TO_REG_FACTOR  (0x49BA)
 
-/*#define SHUTDOWN_CONDITION_LOW_BAT_VOLT*/
+#define SHUTDOWN_CONDITION_LOW_BAT_VOLT
+
+#define BATTERY_TMP_TO_DISABLE_GM30 -50
+#define BATTERY_TMP_TO_DISABLE_NAFG -50
+
+/* #define GM30_DISABLE_NAFG */
 
 /* extern function */
 extern int get_rac(void);

@@ -3922,8 +3922,12 @@
 		compatible = "mediatek,usb_iddig_bi_eint";
 	};
 
+	usb_boostmanager {
+		compatible = "mediatek,usb_boost_manager";
+	};
+
 	ssusb_ip_sleep {
-		compatible = "mediatek,usb_ipsleep_bi_eint";
+		compatible = "mediatek,usb_ipsleep";
 		interrupt-parent = <&eintc>;
 		interrupts = <209 IRQ_TYPE_LEVEL_LOW>;
 		debounce = <209 0>;

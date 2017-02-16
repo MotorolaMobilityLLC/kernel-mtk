@@ -1,3 +1,17 @@
+/*
+ * Copyright (c) 2015-2016 MICROTRUST Incorporated
+ * All Rights Reserved.
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * version 2 as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ */
+
 #include<linux/kernel.h>
 #include <linux/platform_device.h>
 #include<linux/module.h>
@@ -21,12 +35,12 @@
 
 /* #define FP_DEBUG */
 
-#define MICROTRUST_FP_SIZE	0x80000
-#define CMD_MEM_CLEAR	_IO(0x775A777E, 0x1)
+#define MICROTRUST_FP_SIZE      0x80000
+#define CMD_MEM_CLEAR   _IO(0x775A777E, 0x1)
 #define CMD_FP_CMD      _IO(0x775A777E, 0x2)
-#define CMD_GATEKEEPER_CMD	_IO(0x775A777E, 0x3)
-#define CMD_LOAD_TEE			_IO(0x775A777E, 0x4)
-#define FP_MAJOR	254
+#define CMD_GATEKEEPER_CMD      _IO(0x775A777E, 0x3)
+#define CMD_LOAD_TEE                    _IO(0x775A777E, 0x4)
+#define FP_MAJOR        254
 #define SHMEM_ENABLE    0
 #define SHMEM_DISABLE   1
 #define DEV_NAME "teei_fp"
@@ -107,118 +121,118 @@ static long fp_ioctl(struct file *filp, unsigned cmd, unsigned long arg)
 #endif
 
 	switch (cmd) {
-	case CMD_MEM_CLEAR:
-		pr_debug(KERN_INFO "CMD MEM CLEAR. \n");
-		break;
+		case CMD_MEM_CLEAR:
+			pr_debug(KERN_INFO "CMD MEM CLEAR. \n");
+			break;
 
-	case CMD_FP_CMD:
-		/*TODO compute args length*/
-		/*[11-15] is the length of data*/
-		args_len = *((unsigned int *)(arg + 12));
-		/*[0-3] is cmd id*/
-		fp_cid = *((unsigned int *)(arg));
-		/*[4-7] is fuction id*/
-		fp_fid = *((unsigned int *)(arg + 4));
+		case CMD_FP_CMD:
+			/*TODO compute args length*/
+			/*[11-15] is the length of data*/
+			args_len = *((unsigned int *)(arg + 12));
+			/*[0-3] is cmd id*/
+			fp_cid = *((unsigned int *)(arg));
+			/*[4-7] is fuction id*/
+			fp_fid = *((unsigned int *)(arg + 4));
 #ifdef FP_DEBUG
-		pr_debug("invoke fp cmd CMD_FP_CMD: arg's address is %x, args's length %d\n", (unsigned int)arg, args_len);
-		pr_debug("invoke fp cmd fp_cid is %d fp_fid is %d \n", fp_cid, fp_fid);
+			pr_debug("invoke fp cmd CMD_FP_CMD: arg's address is %x, args's length %d\n", (unsigned int)arg, args_len);
+			pr_debug("invoke fp cmd fp_cid is %d fp_fid is %d \n", fp_cid, fp_fid);
 #endif
 
-		if (!fp_buff_addr) {
-			pr_err("fp_buiff_addr is invalid!. \n");
+			if (!fp_buff_addr) {
+				pr_err("fp_buiff_addr is invalid!. \n");
+				up(&fp_api_lock);
+				return -EFAULT;
+			}
+
+			memset((void *)fp_buff_addr, 0, args_len + 16);
+
+			if (copy_from_user((void *)fp_buff_addr, (void *)arg, args_len + 16)) {
+				pr_err(KERN_INFO "copy from user failed. \n");
+				up(&fp_api_lock);
+				return -EFAULT;
+			}
+
+			Flush_Dcache_By_Area((unsigned long)fp_buff_addr, (unsigned long)fp_buff_addr + MICROTRUST_FP_SIZE);
+			/*send command data to TEEI*/
+			send_fp_command(FP_DRIVER_ID);
+#ifdef FP_DEBUG
+			pr_debug("back from TEEI try copy share mem to user \n");
+			pr_debug("result in share memory %d  \n", *((unsigned int *)fp_buff_addr));
+			pr_debug("[%s][%d] fp_buff_addr 88 - 91 = %d\n", __func__, args_len, *((unsigned int *)(fp_buff_addr + 88)));
+#endif
+
+			if (copy_to_user((void *)arg, fp_buff_addr, args_len + 16)) {
+				pr_err("copy from user failed. \n");
+				up(&fp_api_lock);
+				return -EFAULT;
+			}
+
+#ifdef FP_DEBUG
+			pr_debug("result after copy %d  \n", *((unsigned int *)arg));
+			pr_debug("invoke fp cmd end. \n");
+#endif
+			break;
+
+		case CMD_GATEKEEPER_CMD:
+#ifdef FP_DEBUG
+			pr_debug("case CMD_GATEKEEPER_CMD\n");
+#endif
+
+			if (!gatekeeper_buff_addr) {
+				pr_err("gatekeeper_buff_addr is invalid!. \n");
+				up(&fp_api_lock);
+				return -EFAULT;
+			}
+
+#ifdef FP_DEBUG
+			pr_debug("varify gatekeeper_buff_addr  ok\n");
+			pr_debug("the value of gatekeeper_buff_addr is %lu\n", gatekeeper_buff_addr);
+#endif
+			memset((void *)gatekeeper_buff_addr, 0, 0x1000);
+#ifdef FP_DEBUG
+			pr_debug("memset  ok\n");
+#endif
+
+			if (copy_from_user((void *)gatekeeper_buff_addr, (void *)arg, 0x1000)) {
+				pr_err(KERN_INFO "copy from user failed. \n");
+				up(&fp_api_lock);
+				return -EFAULT;
+			}
+
+#ifdef FP_DEBUG
+			pr_debug("copy_from_user  ok\n");
+#endif
+			Flush_Dcache_By_Area((unsigned long)gatekeeper_buff_addr,
+			                     (unsigned long)gatekeeper_buff_addr + 0x1000);
+#ifdef FP_DEBUG
+			pr_debug("Flush_Dcache_By_Area  ok\n");
+#endif
+			send_gatekeeper_command(GK_DRIVER_ID);
+#ifdef FP_DEBUG
+			pr_debug("send_gatekeeper_command  ok\n");
+#endif
+
+			if (copy_to_user((void *)arg, (void *)gatekeeper_buff_addr, 0x1000)) {
+				pr_err("copy from user failed. \n");
+				up(&fp_api_lock);
+				return -EFAULT;
+			}
+
+#ifdef FP_DEBUG
+			pr_debug("copy_to_user  ok\n");
+#endif
+			break;
+
+		case CMD_LOAD_TEE:
+#ifdef FP_DEBUG
+			pr_debug("case CMD_LOAD_TEE\n");
+#endif
+			up(&boot_decryto_lock);
+			break;
+
+		default:
 			up(&fp_api_lock);
-			return -EFAULT;
-		}
-
-		memset((void *)fp_buff_addr, 0, args_len + 16);
-
-		if (copy_from_user((void *)fp_buff_addr, (void *)arg, args_len + 16)) {
-			pr_err(KERN_INFO "copy from user failed. \n");
-			up(&fp_api_lock);
-			return -EFAULT;
-		}
-
-		Flush_Dcache_By_Area((unsigned long)fp_buff_addr, (unsigned long)fp_buff_addr + MICROTRUST_FP_SIZE);
-		/*send command data to TEEI*/
-		send_fp_command(FP_DRIVER_ID);
-#ifdef FP_DEBUG
-		pr_debug("back from TEEI try copy share mem to user \n");
-		pr_debug("result in share memory %d  \n", *((unsigned int *)fp_buff_addr));
-		pr_debug("[%s][%d] fp_buff_addr 88 - 91 = %d\n", __func__, args_len, *((unsigned int *)(fp_buff_addr + 88)));
-#endif
-
-		if (copy_to_user((void *)arg, fp_buff_addr, args_len + 16)) {
-			pr_err("copy from user failed. \n");
-			up(&fp_api_lock);
-			return -EFAULT;
-		}
-
-#ifdef FP_DEBUG
-		pr_debug("result after copy %d  \n", *((unsigned int *)arg));
-		pr_debug("invoke fp cmd end. \n");
-#endif
-		break;
-
-	case CMD_GATEKEEPER_CMD:
-#ifdef FP_DEBUG
-		pr_debug("case CMD_GATEKEEPER_CMD\n");
-#endif
-
-		if (!gatekeeper_buff_addr) {
-			pr_err("gatekeeper_buff_addr is invalid!. \n");
-			up(&fp_api_lock);
-			return -EFAULT;
-		}
-
-#ifdef FP_DEBUG
-		pr_debug("varify gatekeeper_buff_addr  ok\n");
-		pr_debug("the value of gatekeeper_buff_addr is %lu\n", gatekeeper_buff_addr);
-#endif
-		memset((void *)gatekeeper_buff_addr, 0, 0x1000);
-#ifdef FP_DEBUG
-		pr_debug("memset  ok\n");
-#endif
-
-		if (copy_from_user((void *)gatekeeper_buff_addr, (void *)arg, 0x1000)) {
-			pr_err(KERN_INFO "copy from user failed. \n");
-			up(&fp_api_lock);
-			return -EFAULT;
-		}
-
-#ifdef FP_DEBUG
-		pr_debug("copy_from_user  ok\n");
-#endif
-		Flush_Dcache_By_Area((unsigned long)gatekeeper_buff_addr,
-					(unsigned long)gatekeeper_buff_addr + 0x1000);
-#ifdef FP_DEBUG
-		pr_debug("Flush_Dcache_By_Area  ok\n");
-#endif
-		send_gatekeeper_command(GK_DRIVER_ID);
-#ifdef FP_DEBUG
-		pr_debug("send_gatekeeper_command  ok\n");
-#endif
-
-		if (copy_to_user((void *)arg, (void *)gatekeeper_buff_addr, 0x1000)) {
-			pr_err("copy from user failed. \n");
-			up(&fp_api_lock);
-			return -EFAULT;
-		}
-
-#ifdef FP_DEBUG
-		pr_debug("copy_to_user  ok\n");
-#endif
-		break;
-
-	case CMD_LOAD_TEE:
-#ifdef FP_DEBUG
-		pr_debug("case CMD_LOAD_TEE\n");
-#endif
-		up(&boot_decryto_lock);
-		break;
-
-	default:
-		up(&fp_api_lock);
-		return -EINVAL;
+			return -EINVAL;
 	}
 
 	up(&fp_api_lock);
@@ -226,14 +240,14 @@ static long fp_ioctl(struct file *filp, unsigned cmd, unsigned long arg)
 }
 
 static ssize_t fp_read(struct file *filp, char __user *buf,
-			size_t size, loff_t *ppos)
+                       size_t size, loff_t *ppos)
 {
 	int ret = 0;
 	return ret;
 }
 
 static ssize_t fp_write(struct file *filp, const char __user *buf,
-			size_t size, loff_t *ppos)
+                        size_t size, loff_t *ppos)
 {
 	return 0;
 }

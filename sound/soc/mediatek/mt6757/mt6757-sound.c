@@ -49,10 +49,12 @@
 #include "mtk-auddrv-afe.h"
 #include "mtk-auddrv-ana.h"
 #include "mtk-auddrv-clk.h"
+#include "mtk-auddrv-gpio.h"
 #include "mtk-auddrv-kernel.h"
 #include "mtk-soc-afe-control.h"
 #include "mtk-soc-pcm-platform.h"
 #include "mtk-soc-digital-type.h"
+#include "mtk-soc-analog-type.h"
 #include "mtk-soc-codec-63xx.h"
 
 #include <linux/kernel.h>
@@ -82,6 +84,8 @@
 #include <linux/irq.h>
 #include <linux/io.h>
 #include <asm/div64.h>
+#include <mt-plat/mtk_devinfo.h>
+#include <mtk_dramc.h>
 
 #if defined(CONFIG_MTK_PASR)
 #include <mt-plat/mtk_lpae.h>
@@ -2059,6 +2063,117 @@ bool SetAncRecordReg(uint32 value, uint32 mask)
 	return false;
 }
 
+int get_trim_buffer_diff(int channels)
+{
+	int diffValue = 0, onValue = 0, offValue = 0;
+
+	if (channels != AUDIO_OFFSET_TRIM_MUX_HPL &&
+	    channels != AUDIO_OFFSET_TRIM_MUX_HPR){
+		pr_warn("%s Not support this channels = %d\n", __func__, channels);
+		return 0;
+	}
+
+	/* Buffer Off and Get Auxadc value */
+	setHpGainZero();
+
+	/* setOffsetTrimMux(AUDIO_OFFSET_TRIM_MUX_HSP); */
+	/* Set Trim mux to HP */
+	setOffsetTrimMux(channels);
+	setOffsetTrimBufferGain(3); /* TrimBufferGain 18db */
+	EnableTrimbuffer(true);
+
+	/* Setting for HP OFF trim */
+	/* Pull-down HPL/R to AVSS30_AUD for de-pop noise */
+	Ana_Set_Reg(AUDDEC_ANA_CON2, 0x8000, 0x8000);
+	/* disable headphone main output stage */
+	Ana_Set_Reg(AUDDEC_ANA_CON1, 0x0, 0x3);
+	/* set HP input mux to open, not iDAC.  Disable hp buffer and iDAC */
+	Ana_Set_Reg(AUDDEC_ANA_CON0, 0x0000, 0x0fff);
+	/* enable HP driver positive output stage short to AU_REFN. */
+	/* HPLN/HPRN SHORT2VCM enable. HPL/HPR output stage STB enhance enable */
+	Ana_Set_Reg(AUDDEC_ANA_CON2, 0x8033, 0x8033);
+
+	usleep_range(10 * 1000, 20 * 1000);
+
+	offValue = audio_get_auxadc_value();
+
+	EnableTrimbuffer(false);
+	setOffsetTrimMux(AUDIO_OFFSET_TRIM_MUX_GROUND);
+
+	/* Buffer On and Get Auxadc values */
+	setOffsetTrimMux(channels);
+	setOffsetTrimBufferGain(3); /* TrimBufferGain 18db */
+	EnableTrimbuffer(true);
+
+	/* Setting for HP ON trim */
+	/* disable HP driver positive output stage short to AU_REFN. */
+	/* HPLN/HPRN SHORT2VCM disable. HPL/HPR output stage STB enhance disable */
+	Ana_Set_Reg(AUDDEC_ANA_CON2, 0x0000, 0x0033);
+	/* enable headphone main output stage */
+	Ana_Set_Reg(AUDDEC_ANA_CON1, 0x3, 0x3);
+	/* set HP input mux iDAC.  enable hp buffer and iDAC */
+	Ana_Set_Reg(AUDDEC_ANA_CON0, 0x0aff, 0x0fff);
+	/* No Pull-down HPL/R to AVSS30_AUD for de-pop noise */
+	Ana_Set_Reg(AUDDEC_ANA_CON2, 0x0000, 0x8000);
+
+	usleep_range(10 * 1000, 20 * 1000);
+
+	onValue = audio_get_auxadc_value();
+
+	EnableTrimbuffer(false);
+	setOffsetTrimMux(AUDIO_OFFSET_TRIM_MUX_GROUND);
+
+	diffValue = onValue - offValue;
+	pr_debug("#diffValue(%d), onValue(%d), offValue(%d)\n", diffValue, onValue, offValue);
+
+	return diffValue;
+}
+
+int get_audio_trim_offset(int channel)
+{
+#ifndef CONFIG_FPGA_EARLY_PORTING
+	const int kTrimTimes = 20;
+	int counter = 0, averageOffset = 0;
+	int trimOffset[kTrimTimes];
+
+	if (channel != AUDIO_OFFSET_TRIM_MUX_HPL &&
+	    channel != AUDIO_OFFSET_TRIM_MUX_HPR){
+		pr_warn("%s Not support channel(%d)\n", __func__, channel);
+		return 0;
+	}
+
+	pr_warn("%s channels = %d\n", __func__, channel);
+
+	/* open headphone and digital part */
+	AudDrv_Clk_On();
+	AudDrv_Emi_Clk_On();
+	OpenAfeDigitaldl1(true);
+	/* No need to set SDM mute */
+	/* SetSdmLevel(AUDIO_SDM_LEVEL_MUTE); */
+	OpenTrimBufferHardware(true);
+
+	for (counter = 0; counter < kTrimTimes; counter++)
+		trimOffset[counter] = get_trim_buffer_diff(channel);
+
+	OpenTrimBufferHardware(false);
+	OpenAfeDigitaldl1(false);
+	/* No need to restore SDM level */
+	/* SetSdmLevel(AUDIO_SDM_LEVEL_NORMAL); */
+	AudDrv_Emi_Clk_Off();
+	AudDrv_Clk_Off();
+
+	for (counter = 0; counter < kTrimTimes; counter++)
+		averageOffset = averageOffset + trimOffset[counter];
+
+	averageOffset = (averageOffset + (kTrimTimes / 2)) / kTrimTimes;
+	pr_warn("[Average %d times] averageOffset = %d\n", kTrimTimes, averageOffset);
+
+	return averageOffset;
+#else
+	return 0;
+#endif
+}
+
 const struct Aud_IRQ_CTRL_REG *GetIRQCtrlReg(enum Soc_Aud_IRQ_MCU_MODE irqIndex)
 {
 	return &mIRQCtrlRegs[irqIndex];
@@ -2200,9 +2315,44 @@ static bool platform_set_dpd_module(bool enable, int impedance)
 	return true;
 }
 
+static bool platform_set_sram_format(int format)
+{
+	bool ret = false;
+
+	switch (format) {
+	case AUDIO_SRAM_FORMAT_24BIT:
+		Afe_Set_Reg(AFE_DAC_CON2, 0x0 << 2, 0x1 << 2);
+		ret = true;
+		break;
+	case AUDIO_SRAM_FORMAT_32BIT:
+		Afe_Set_Reg(AFE_DAC_CON2, 0x1 << 2, 0x1 << 2);
+		ret = true;
+		break;
+	default:
+		break;
+	}
+	return ret;
+}
+
+static bool platform_handle_suspend(bool suspend)
+{
+	bool ret = false;
+	uint32 segment = (get_devinfo_with_index(30) & 0x000000E0) >> 5;
+	int ddr_type = get_ddr_type();
+
+	pr_warn("%s(), segment = %d, ddr_type = %d", __func__, segment, ddr_type);
+	/* mt6757p LP3 low power */
+	if (((segment == 0x3) || (segment == 0x7)) && (ddr_type == TYPE_LPDDR3))
+		ret = audio_drv_gpio_aud_clk_pull(suspend);
+
+	return ret;
+}
+
 static struct mtk_afe_platform_ops afe_platform_ops = {
 	.set_sinegen = set_chip_sine_gen_enable,
 	.set_dpd_module = platform_set_dpd_module,
+	.set_sram_format = platform_set_sram_format,
+	.handle_suspend = platform_handle_suspend,
 };
 
 /* plaform dependent ops should implement here*/

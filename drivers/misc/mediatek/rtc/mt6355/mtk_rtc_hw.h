@@ -105,6 +105,7 @@ extern unsigned int pmic_config_interface_nolock(unsigned int RegNum,
  * bit 8 ~ 15 : For design used, can't be overwrited.
  */
 #define RTC_AL_HOU            (RTC_BASE + 0x001E)
+#define RTC_NEW_SPARE0            0xff00
 #define RTC_AL_HOU_MASK         0x001f
 #define RTC_AL_HOU_FG_SHIFT		8
 #define RTC_AL_HOU_FG_MASK		0xff00
@@ -129,13 +130,13 @@ extern unsigned int pmic_config_interface_nolock(unsigned int RegNum,
 
 /*
  * RTC_NEW_SPARE3: RTC_AL_MTH bit0~3
- * bit 8 ~ 14 : Fuel Gauge
+ * bit 8 ~ 15 : Fuel Gauge
  */
 #define RTC_AL_MTH            (RTC_BASE + 0x0024)
 #define RTC_NEW_SPARE3    0xff00
 #define RTC_AL_MTH_MASK 0x000f
 #define RTC_AL_MTH_FG_SHIFT	8
-#define RTC_AL_MTH_FG_MASK	0x7f00
+#define RTC_AL_MTH_FG_MASK	0xff00
 
 #define RTC_AL_YEA            (RTC_BASE + 0x0026)
 #define RTC_K_EOSC_RSV_7        (1U << 15)

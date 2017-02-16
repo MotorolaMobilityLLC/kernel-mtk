@@ -53,6 +53,14 @@ else
     ccflags-y += -DCFG_SUPPORT_MET_PROFILING=0
 endif
 
+ifeq ($(CONFIG_MTK_TC10_FEATURE), y)
+    ccflags-y += -DCFG_TC10_FEATURE=1
+    ccflags-y += -DCFG_SKIP_MAC_INFO_CHECK
+    ccflags-y += -DCFG_SUPPORT_TX_POWER_BACK_OFF
+else
+    ccflags-y += -DCFG_TC10_FEATURE=0
+endif
+
 ifeq ($(CONFIG_MTK_TC1_FEATURE), y)
 ifeq ($(CONFIG_MTK_GPT_SCHEME_SUPPORT), y)
     ccflags-y += -I$(srctree)/drivers/misc/mediatek/tc1_interface/gpt
@@ -60,7 +68,8 @@ else
     ccflags-y += -I$(srctree)/drivers/misc/mediatek/tc1_interface/pmt
 endif
     ccflags-y += -DCFG_TC1_FEATURE=1
-	ccflags-y += -DCFG_SUPPORT_CFG_FILE=1
+    ccflags-y += -DCFG_SUPPORT_CFG_FILE=1
+    ccflags-y += -DCFG_SUPPORT_TX_POWER_BACK_OFF
 else
     ccflags-y += -DCFG_TC1_FEATURE=0
 endif
@@ -227,8 +236,9 @@ MGMT_OBJS += $(MGMT_DIR)p2p_assoc.o \
              $(MGMT_DIR)p2p_rlm_obss.o \
              $(MGMT_DIR)p2p_scan.o \
              $(MGMT_DIR)p2p_ie.o \
-             $(MGMT_DIR)p2p_state.o
-
+             $(MGMT_DIR)p2p_state.o \
+             $(MGMT_DIR)wnm.o \
+			 $(MGMT_DIR)wmm.o
 
 ifeq ($(CONFIG_MTK_WAPI_SUPPORT), y)
 MGMT_OBJS += $(MGMT_DIR)wapi.o
@@ -290,6 +300,26 @@ ifeq ($(FW_CUSTOMIZATION), y)
 endif
 # ---------------------------------------------------
 
+# ---------------------------------------------------
+# FW customization
+# ---------------------------------------------------
+FW_CUSTOMIZATION = y
+ifeq ($(FW_CUSTOMIZATION), y)
+$(warning fw_config, $(FWCFG_DIR)fw_config.c)
+ifneq ($(wildcard $(FWCFG_DIR)fw_config.c),)
+$(warning fw_config exist, $(FWCFG_DIR))
+	COMMON_OBJS += $(MTK_PROJECT)/fw_config.o
+endif
+	COMMON_OBJS += $(COMMON_DIR)fwcfg.o
+	ccflags-y += -DFW_CFG_SUPPORT
+ifeq ($(TARGET_BUILD_VARIANT), eng)
+    ccflags-y += -DENABLED_IN_ENGUSERDEBUG
+endif
+ifeq ($(TARGET_BUILD_VARIANT), userdebug)
+    ccflags-y += -DENABLED_IN_ENGUSERDEBUG
+endif
+endif
+# ---------------------------------------------------
 $(MODULE_NAME)-objs  += $(COMMON_OBJS)
 $(MODULE_NAME)-objs  += $(NIC_OBJS)
 $(MODULE_NAME)-objs  += $(OS_OBJS)

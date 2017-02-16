@@ -66,7 +66,7 @@ typedef enum _ENUM_BUFFER_TYPE_T {
 
 typedef enum _ENUM_HIDDEN_SSID_TYPE_T {
 	ENUM_HIDDEN_SSID_NONE,
-	ENUM_HIDDEN_SSID_LEN,
+	ENUM_HIDDEN_SSID_ZERO_LEN,
 	ENUM_HIDDEN_SSID_ZERO_CONTENT,
 	ENUM_HIDDEN_SSID_NUM
 } ENUM_HIDDEN_SSID_TYPE_T, *P_ENUM_HIDDEN_SSID_TYPE_T;
@@ -348,7 +348,7 @@ typedef struct _MSG_P2P_START_AP_T {
 	UINT_32 u4BcnInterval;
 	UINT_8 aucSsid[32];
 	UINT_16 u2SsidLen;
-	UINT_8 ucHiddenSsidType;
+	ENUM_HIDDEN_SSID_TYPE_T eHiddenSsidType;
 	BOOLEAN fgIsPrivacy;
 	AP_CRYPTO_SETTINGS_T rEncryptionSettings;
 	INT_32 i4InactiveTimeout;
@@ -359,6 +359,10 @@ typedef struct _MSG_P2P_BEACON_UPDATE_T {
 	UINT_32 u4BcnHdrLen;
 	UINT_32 u4BcnBodyLen;
 	PUINT_8 pucBcnHdr;
+#if CFG_SUPPORT_P2P_GO_OFFLOAD_PROBE_RSP
+	PUINT_8 pucProbeRsp;
+	UINT_32 u4ProbeRsp_len;
+#endif
 	PUINT_8 pucBcnBody;
 	UINT_8 aucBuffer[1];	/* Header & Body are put here. */
 } MSG_P2P_BEACON_UPDATE_T, *P_MSG_P2P_BEACON_UPDATE_T;
@@ -386,6 +390,19 @@ typedef struct _MSG_P2P_NETDEV_REGISTER_T {
 	BOOLEAN fgIsEnable;
 	UINT_8 ucMode;
 } MSG_P2P_NETDEV_REGISTER_T, *P_MSG_P2P_NETDEV_REGISTER_T;
+
+typedef struct _P2P_ECSA_SETTING_T {
+	u8 mode;
+	u8 channel;
+	u8 sco;
+	u8 op_class;
+	u8 count;
+} P2P_ECSA_SETTING_T, *P_P2P_ECSA_SETTING_T;
+
+typedef struct _MSG_P2P_ECSA_T {
+	MSG_HDR_T rMsgHdr;	/* Must be the first member */
+	P2P_ECSA_SETTING_T rP2pECSA;
+} MSG_P2P_ECSA_T, *P_MSG_P2P_ECSA_T;
 
 #if CFG_SUPPORT_WFD
 typedef struct _MSG_WFD_CONFIG_SETTINGS_CHANGED_T {
@@ -435,6 +452,9 @@ VOID p2pFsmRunEventMgmtFrameRegister(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T pr
 #if CFG_SUPPORT_WFD
 VOID p2pFsmRunEventWfdSettingUpdate(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHdr);
 #endif
+
+VOID p2pFsmRunEventSendCSA(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHdr);
+VOID p2pFsmRunEventSendECSA(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHdr);
 
 #if 0
 /* ////////////////////////////////////////////////////////////////////////////////////////////////////// */
@@ -1703,6 +1723,8 @@ BOOLEAN scanMatchFilterOfP2P(IN P_SW_RFB_T prSWRfb, IN PP_BSS_DESC_T pprBssDesc)
 VOID
 p2pProcessEvent_UpdateNOAParam(IN P_ADAPTER_T prAdapter,
 			       UINT_8 ucNetTypeIndex, P_EVENT_UPDATE_NOA_PARAMS_T prEventUpdateNoaParam);
+
+WLAN_STATUS p2pUpdateBeaconEcsaIE(IN P_ADAPTER_T prAdapter, IN UINT_8 ucNetTypeIndex);
 
 VOID p2pFuncCompleteIOCTL(IN P_ADAPTER_T prAdapter, IN WLAN_STATUS rWlanStatus);
 

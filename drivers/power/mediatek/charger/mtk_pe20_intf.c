@@ -242,6 +242,8 @@ static int pe20_set_ta_vchr(struct charger_manager *pinfo, u32 chr_volt)
 		else
 			sw_retry_cnt++;
 
+		pe20_set_mivr(pinfo, 4500000);
+
 		pr_err("%s: retry_cnt = (%d, %d), vchr = (%d, %d), vchr_target = %dmV\n",
 			__func__, sw_retry_cnt, retry_cnt, vchr_before / 1000,
 			vchr_after / 1000, chr_volt / 1000);
@@ -268,7 +270,7 @@ static void mtk_pe20_check_cable_impedance(struct charger_manager *pinfo)
 
 	pr_debug("%s: starts\n", __func__);
 
-	if (pe20->vbat_orig > pinfo->data.vbat_cable_imp_threshold) {
+	if (pe20->vbat_orig > pinfo->data.vbat_cable_imp_threshold * 1000) {
 		pr_err("VBAT > %dmV, directly set aicr to %dmA\n",
 			pinfo->data.vbat_cable_imp_threshold,
 			pinfo->data.ac_charger_input_current);
@@ -338,13 +340,13 @@ static void mtk_pe20_check_cable_impedance(struct charger_manager *pinfo)
 		pr_err("Bad cable\n");
 	}
 
-	pr_info("%s: set aicr:%dmA, vbat:%d, mivr_state:%d\n",
+	pr_info("%s: set aicr:%dmA, vbat:%dmV, mivr_state:%d\n",
 		__func__, pe20->aicr_cable_imp / 1000,
 		pe20->vbat_orig / 1000, mivr_state);
 	return;
 
 end:
-	pr_err("%s not started: set aicr:%dmA, vbat:%d, mivr_state:%d\n",
+	pr_err("%s not started: set aicr:%dmA, vbat:%dmV, mivr_state:%d\n",
 		__func__, pe20->aicr_cable_imp / 1000,
 		pe20->vbat_orig / 1000, mivr_state);
 }
@@ -616,7 +618,7 @@ int mtk_pe20_start_algorithm(struct charger_manager *pinfo)
 		if (tune != 0) {
 			ret = pe20_set_ta_vchr(pinfo, pe20->vbus);
 			if (ret == 0)
-				pe20_set_mivr(pinfo, pe20->vbus - 1000000);
+				pe20_set_mivr(pinfo, pe20->vbus - 500000);
 			else
 				pe20_leave(pinfo);
 		}

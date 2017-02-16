@@ -133,6 +133,12 @@ static void swchg_select_charging_current_limit(struct charger_manager *info)
 	} else if (info->chr_type == CHARGING_HOST) {
 		pdata->input_current_limit = info->data.charging_host_charger_current;
 		pdata->charging_current_limit = info->data.charging_host_charger_current;
+	} else if (info->chr_type == APPLE_1_0A_CHARGER) {
+		pdata->input_current_limit = info->data.apple_1_0a_charger_current;
+		pdata->charging_current_limit = info->data.apple_1_0a_charger_current;
+	} else if (info->chr_type == APPLE_2_1A_CHARGER) {
+		pdata->input_current_limit = info->data.apple_2_1a_charger_current;
+		pdata->charging_current_limit = info->data.apple_2_1a_charger_current;
 	}
 
 	if (info->enable_sw_jeita) {
@@ -172,7 +178,8 @@ done:
 				mtk_pe20_reset_ta_vchr(info);
 		}
 	}
-	if (pdata->input_current_limit > 0 && pdata->charging_current_limit > 0)
+	if (pdata->input_current_limit > 0 && pdata->charging_current_limit > 0
+		&& info->can_charging)
 		charger_dev_enable(info->chg1_dev, true);
 	mutex_unlock(&swchgalg->ichg_aicr_access_mutex);
 }
@@ -225,6 +232,7 @@ static int mtk_switch_charging_plug_in(struct charger_manager *info)
 	struct switch_charging_alg_data *swchgalg = info->algorithm_data;
 
 	swchgalg->state = CHR_CC;
+	info->polling_interval = 10;
 	swchgalg->disable_charging = false;
 	charger_manager_notifier(info, CHARGER_NOTIFY_START_CHARGING);
 
@@ -330,7 +338,7 @@ int mtk_switch_chr_full(struct charger_manager *info)
 	 * Reset CV to normal value if temperture is in normal zone
 	 */
 	swchg_select_cv(info);
-
+	info->polling_interval = 20;
 	charger_dev_is_charging_done(info->chg1_dev, &chg_done);
 	if (!chg_done) {
 		swchgalg->state = CHR_CC;
@@ -338,6 +346,7 @@ int mtk_switch_chr_full(struct charger_manager *info)
 		mtk_pe20_set_to_check_chr_type(info, true);
 		info->enable_dynamic_cv = true;
 		pr_err("battery recharging!\n");
+		info->polling_interval = 10;
 	}
 
 	return 0;
@@ -397,21 +406,33 @@ static int mtk_switch_charging_run(struct charger_manager *info)
 int charger_dev_event(struct notifier_block *nb, unsigned long event, void *v)
 {
 	struct charger_manager *info = container_of(nb, struct charger_manager, chg1_nb);
-	/*struct charger_device *charger_dev = v;*/
+	struct chgdev_notify *data = v;
 
-	pr_err("charger_dev_event %ld", event);
+	pr_err("%s %ld", __func__, event);
 
-	if (event == CHARGER_DEV_NOTIFY_EOC) {
+	switch (event) {
+	case CHARGER_DEV_NOTIFY_EOC:
 		charger_manager_notifier(info, CHARGER_NOTIFY_EOC);
-		if (info->chg1_dev->is_polling_mode == false)
-			_wake_up_charger(info);
+		pr_info("%s: end of charge\n", __func__);
+		break;
+	case CHARGER_DEV_NOTIFY_RECHG:
+		charger_manager_notifier(info, CHARGER_NOTIFY_START_CHARGING);
+		pr_info("%s: recharge\n", __func__);
+		break;
+	case CHARGER_DEV_NOTIFY_SAFETY_TIMEOUT:
+		info->safety_timeout = true;
+		pr_err("%s: safety timer timeout\n", __func__);
+		break;
+	case CHARGER_DEV_NOTIFY_VBUS_OVP:
+		info->vbusov_stat = data->vbusov_stat;
+		pr_err("%s: vbus ovp = %d\n", __func__, info->vbusov_stat);
+		break;
+	default:
+		return NOTIFY_DONE;
 	}
 
-	if (event == CHARGER_DEV_NOTIFY_SAFETY_TIMEOUT) {
-		info->safety_timeout = true;
-		if (info->chg1_dev->is_polling_mode == false)
-			_wake_up_charger(info);
-	}
+	if (info->chg1_dev->is_polling_mode == false)
+		_wake_up_charger(info);
 
 	return NOTIFY_DONE;
 }
@@ -425,11 +446,11 @@ int mtk_switch_charging_init(struct charger_manager *info)
 	if (!swch_alg)
 		return -ENOMEM;
 
-	info->chg1_dev = get_charger_by_name("PrimarySWCHG");
+	info->chg1_dev = get_charger_by_name("primary_chg");
 	if (info->chg1_dev)
 		pr_err("Found primary charger [%s]\n", info->chg1_dev->props.alias_name);
 	else
-		pr_err("*** Error : can't find primary charger [%s]***\n", "PrimarySWCHG");
+		pr_err("*** Error : can't find primary charger [%s]***\n", "primary_chg");
 
 	mutex_init(&swch_alg->ichg_aicr_access_mutex);
 

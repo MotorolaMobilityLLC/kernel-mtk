@@ -302,8 +302,9 @@ struct mtk_afe_platform_ops {
 	bool (*set_smartpa_i2s)(int sidegen_control, int hdoutput_control, int extcodec_echoref_control,
 				int mtk_soc_always_hd);
 	bool (*set_smartpa_echo_ref)(int sample_rate, int extcodec_echoref_control, int enable);
+	bool (*set_sram_format)(int format);
+	bool (*handle_suspend)(bool suspend);
 };
-
 
 void set_mem_blk_ops(struct mtk_mem_blk_ops *ops);
 
@@ -328,5 +329,15 @@ struct mtk_afe_platform_ops *get_afe_platform_ops(void);
 /* for vcore dvfs */
 int vcore_dvfs(bool *enable, bool reset);
 void set_screen_state(bool state);
+
+/* DC trim API, implement by platform */
+int get_audio_trim_offset(int channel);
+
+/* low latency debug */
+int get_LowLatencyDebug(void);
+void set_LowLatencyDebug(uint32 bFlag);
+
+/* For handling suspend */
+bool handle_suspend(bool suspend);
 
 #endif

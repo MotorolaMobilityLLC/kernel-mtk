@@ -1270,7 +1270,7 @@ int msdc_switch_part(struct msdc_host *host, char part_id)
 
 	if ((part_id >= 0) && (part_id != (l_buf[EXT_CSD_PART_CONFIG] & 0x7))) {
 		l_buf[EXT_CSD_PART_CONFIG] &= ~0x7;
-		l_buf[EXT_CSD_PART_CONFIG] |= 0x0;
+		l_buf[EXT_CSD_PART_CONFIG] |= part_id;
 		ret = mmc_switch(host->mmc->card, 0, EXT_CSD_PART_CONFIG,
 			l_buf[EXT_CSD_PART_CONFIG], 1000);
 	}
@@ -3244,9 +3244,14 @@ int msdc_do_request_prepare(struct msdc_host *host, struct mmc_request *mrq)
 	void __iomem *base = host->base;
 #endif
 
+#if defined(CONFIG_MTK_EMMC_CQ_SUPPORT) || defined(MTK_MSDC_USE_CACHE) || defined(CONFIG_MTK_EMMC_SUPPORT_OTP)
 	struct mmc_command *cmd = mrq->cmd;
+#endif
 	struct mmc_data *data = mrq->cmd->data;
+
+#ifdef MTK_MSDC_USE_CACHE
 	u32 l_force_prg = 0;
+#endif
 
 #ifdef MTK_MSDC_USE_CMD23
 	u32 l_card_no_cmd23 = 0;
@@ -4681,6 +4686,7 @@ static void msdc_ops_card_event(struct mmc_host *mmc)
 {
 	struct msdc_host *host = mmc_priv(mmc);
 
+	host->power_cycle_cnt = 0;
 	host->block_bad_card = 0;
 	host->is_autok_done = 0;
 	msdc_ops_get_cd(mmc);

@@ -10,18 +10,53 @@
 */
 
 #include "mach/mtk_ppm_api.h"
-#include "gl_typedef.h"
-INT32 kalBoostCpu(UINT_32 core_num)
+#include "mtk_spm_resource_req.h"
+
+#define MAX_CPU_CORE_NUM 8
+#define MAX_CPU_FREQ     1500000000
+
+static unsigned int g_force_core_num;
+static unsigned int g_force_core_freq;
+
+int kalBoostCpu(unsigned int core_num)
 {
-	pr_warn("enter kalBoostCpu, core_num:%d\n", core_num);
-	/* mt_ppm_sysboost_core(BOOST_BY_WIFI, core_num); */
-	if (core_num == 0) {
-		mt_ppm_sysboost_set_core_limit(BOOST_BY_WIFI, 0, -1, -1);
-		mt_ppm_sysboost_set_core_limit(BOOST_BY_WIFI, 1, -1, -1);
+	unsigned long freq = MAX_CPU_FREQ;
+
+	if (core_num >= 2)
+		/* Disable deepidle/SODI when throughput > 40Mbps */
+		spm_resource_req(SPM_RESOURCE_USER_CONN, SPM_RESOURCE_ALL);
+	else
+		spm_resource_req(SPM_RESOURCE_USER_CONN, SPM_RESOURCE_RELEASE);/* Enable deepidle/SODI */
+
+	if (g_force_core_num || g_force_core_freq) {
+		core_num = g_force_core_num;
+		freq = g_force_core_freq;
 	} else {
-		mt_ppm_sysboost_set_core_limit(BOOST_BY_WIFI, 0, 4, 4);
-		mt_ppm_sysboost_set_core_limit(BOOST_BY_WIFI, 1, core_num, 4);
+		if (core_num == 1)
+			core_num++;
+		freq = core_num == 0 ? 0 : freq;
 	}
+
+	if (core_num > MAX_CPU_CORE_NUM)
+		core_num = MAX_CPU_CORE_NUM;
+	pr_warn("enter kalBoostCpu, core_num:%d, freq:%ld\n", core_num, freq);
+
+	mt_ppm_sysboost_core(BOOST_BY_WIFI, core_num);
+	mt_ppm_sysboost_freq(BOOST_BY_WIFI, freq);
+
 	return 0;
 }
+
+int kalSetCpuNumFreq(unsigned int core_num, unsigned int freq)
+{
+	pr_warn("enter kalSetCpuNumFreq, core_num:%d, freq:%d\n", core_num, freq);
+
+	g_force_core_num = core_num;
+	g_force_core_freq = freq;
+
+	kalBoostCpu(g_force_core_num);
+
+	return 0;
+}
+
 

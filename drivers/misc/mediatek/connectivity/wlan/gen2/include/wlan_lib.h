@@ -72,8 +72,11 @@ extern BOOLEAN fgIsResetting;
 #endif
 
 #define NUM_TC_RESOURCE_TO_STATISTICS       4
-
+#if CFG_SUPPORT_NCHO
+#define WLAN_CFG_ARGV_MAX 64
+#else
 #define WLAN_CFG_ARGV_MAX 8
+#endif
 #define WLAN_CFG_ENTRY_NUM_MAX 128
 #define WLAN_CFG_KEY_LEN_MAX 32	/* include \x00  EOL */
 #define WLAN_CFG_VALUE_LEN_MAX 32	/* include \x00 EOL */
@@ -222,7 +225,7 @@ typedef struct _SET_TXPWR_CTRL_T {
 	INT_8 acTxPwrLimit2G[14];	/* Channel 1~14, Unit: 0.5dBm */
 	INT_8 acTxPwrLimit5G[4];	/* UNII 1~4 */
 	INT_8 acReserved2[2];	/* Must be zero */
-#if CFG_SUPPORT_TX_BACKOFF
+#if CFG_SUPPORT_TX_POWER_BACK_OFF
 	MITIGATED_PWR_BY_CH_BY_MODE arRlmMitigatedPwrByChByMode[40];
 #endif
 } SET_TXPWR_CTRL_T, *P_SET_TXPWR_CTRL_T;
@@ -292,9 +295,12 @@ typedef struct _REG_INFO_T {
 	UINT_8 uc5GRssiCompensation;
 	UINT_8 fgRssiCompensationValidbit;
 	UINT_8 ucRxAntennanumber;
-#if CFG_SUPPORT_TX_BACKOFF
+#if CFG_SUPPORT_TX_POWER_BACK_OFF
 	MITIGATED_PWR_BY_CH_BY_MODE arRlmMitigatedPwrByChByMode[40];
 	UINT_8 fgRlmMitigatedPwrByChByMode;
+#endif
+#if CFG_SUPPORT_FCC_POWER_BACK_OFF
+	FCC_TX_PWR_ADJUST rFccTxPwrAdjust;
 #endif
 	/* NVRAM - Functional Data -END- */
 
@@ -619,6 +625,13 @@ UINT_8 wlanGetChannelNumberByNetwork(IN P_ADAPTER_T prAdapter, IN ENUM_NETWORK_T
 /*----------------------------------------------------------------------------*/
 P_BSS_DESC_T wlanGetTargetBssDescByNetwork(IN P_ADAPTER_T prAdapter, IN ENUM_NETWORK_TYPE_INDEX_T eNetTypeIndex);
 
+#if CFG_SUPPORT_ADD_CONN_AP
+/*----------------------------------------------------------------------------*/
+/* check for system configuration to generate message on scan list            */
+/*----------------------------------------------------------------------------*/
+WLAN_STATUS wlanCheckConnectedAP(IN P_ADAPTER_T prAdapter);
+#endif
+
 /*----------------------------------------------------------------------------*/
 /* check for system configuration to generate message on scan list            */
 /*----------------------------------------------------------------------------*/
@@ -658,4 +671,5 @@ VOID wlanCfgApply(IN P_ADAPTER_T prAdapter);
 extern VOID mtk_wcn_wmt_set_wifi_ver(UINT_32 Value);
 VOID wlanReleasePendingCmdById(P_ADAPTER_T prAdapter, UINT_8 ucCid);
 
+UINT_32 wlanDecimalStr2Hexadecimals(PUINT_8 pucDecimalStr, PUINT_16 pu2Out);
 #endif /* _WLAN_LIB_H */

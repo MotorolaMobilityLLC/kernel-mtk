@@ -9,6 +9,16 @@ config MT_CPU_AFFINITY
 endmenu
 
 menu "MT load balance and schedule enhancement"
+config MTK_LOAD_BALANCE_ENHANCEMENT
+	bool "mtk load balance enhancement"
+	depends on SMP
+	default n
+	help
+	  Mediatek aggressive load balance, include
+	   1. shorten the schedule migration cost and let the idle balance more aggregative,
+	   2. aggressive load balance in hmp noHz.
+	   3. aggressive cluster-migration in idle balancing & GTS balacing
+
 config MT_SCHED_INTEROP
 	bool "mtk scheduling interopation enhancement"
 	default n

@@ -179,7 +179,7 @@ unsigned int charging_value_to_parameter(const unsigned int *parameter, const un
 	if (val < array_size)
 		return parameter[val];
 
-		pr_info("Can't find the parameter \r\n");
+		pr_info("Can't find the parameter\n");
 		return parameter[0];
 
 }
@@ -189,14 +189,14 @@ unsigned int charging_parameter_to_value(const unsigned int *parameter, const un
 {
 	unsigned int i;
 
-	pr_debug("array_size = %d \r\n", array_size);
+	pr_debug_ratelimited("array_size = %d\n", array_size);
 
 	for (i = 0; i < array_size; i++) {
 		if (val == *(parameter + i))
 			return i;
 	}
 
-	pr_info("NO register value match \r\n");
+	pr_info("NO register value match\n");
 	/* TODO: ASSERT(0);    // not find the value */
 	return 0;
 }
@@ -215,12 +215,12 @@ static unsigned int bmt_find_closest_level(const unsigned int *pList, unsigned i
 	if (max_value_in_last_element == 1) {
 		for (i = (number - 1); i != 0; i--) {	/* max value in the last element */
 			if (pList[i] <= level) {
-				pr_info("zzf_%d<=%d     i=%d\n", pList[i], level, i);
+				pr_debug_ratelimited("zzf_%d<=%d, i=%d\n", pList[i], level, i);
 				return pList[i];
 			}
 		}
 
-		pr_info("Can't find closest level \r\n");
+		pr_info("Can't find closest level\n");
 		return pList[0];
 		/* return CHARGE_CURRENT_0_00_MA; */
 	} else {
@@ -229,7 +229,7 @@ static unsigned int bmt_find_closest_level(const unsigned int *pList, unsigned i
 				return pList[i];
 		}
 
-		pr_info("Can't find closest level \r\n");
+		pr_info("Can't find closest level\n");
 		return pList[number - 1];
 		/* return CHARGE_CURRENT_0_00_MA; */
 	}
@@ -402,12 +402,12 @@ unsigned int bq25890_read_interface(unsigned char RegNum, unsigned char *val, un
 
 	ret = bq25890_read_byte(RegNum, &bq25890_reg);
 
-	pr_debug("[bq25890_read_interface] Reg[%x]=0x%x\n", RegNum, bq25890_reg);
+	pr_debug_ratelimited("[bq25890_read_interface] Reg[%x]=0x%x\n", RegNum, bq25890_reg);
 
 	bq25890_reg &= (MASK << SHIFT);
 	*val = (bq25890_reg >> SHIFT);
 
-	pr_debug("[bq25890_read_interface] val=0x%x\n", *val);
+	pr_debug_ratelimited("[bq25890_read_interface] val=0x%x\n", *val);
 
 	return ret;
 }
@@ -428,7 +428,7 @@ unsigned int bq25890_config_interface(unsigned char RegNum, unsigned char val, u
 
 	ret = bq25890_write_byte(RegNum, bq25890_reg);
 	mutex_unlock(&bq25890_access_lock);
-	pr_debug("[bq25890_config_interface] write Reg[%x]=0x%x from 0x%x\n", RegNum,
+	pr_debug_ratelimited("[bq25890_config_interface] write Reg[%x]=0x%x from 0x%x\n", RegNum,
 		    bq25890_reg, bq25890_reg_ori);
 
 	/* Check */
@@ -613,6 +613,22 @@ void bq25890_otg_en(unsigned int val)
 				       (unsigned char) (CON3_OTG_CONFIG_SHIFT)
 	    );
 
+}
+
+static int bq25890_is_otg_en(bool *en)
+{
+	unsigned int ret = 0;
+	unsigned char val = 0;
+
+	ret = bq25890_read_interface((unsigned char) (bq25890_CON3),
+				     (&val),
+				     (unsigned char) (CON3_OTG_CONFIG_MASK),
+				     (unsigned char) (CON3_OTG_CONFIG_SHIFT)
+	    );
+
+	*en = (val == 0 ? false : true);
+
+	return ret;
 }
 
 void bq25890_chg_en(unsigned int val)
@@ -1217,11 +1233,21 @@ static int bq25890_set_charger_type(struct bq25890_info *info)
 		Charger_Detect_Release();
 #endif
 
+	if (info->chg_type != CHARGER_UNKNOWN)
+		propval.intval = 1;
+	else
+		propval.intval = 0;
+	ret = power_supply_set_property(info->psy,
+		POWER_SUPPLY_PROP_ONLINE, &propval);
+	if (ret < 0)
+		pr_err("%s: inform power supply online failed, ret = %d\n",
+			__func__, ret);
+
 	propval.intval = info->chg_type;
 	ret = power_supply_set_property(info->psy,
 		POWER_SUPPLY_PROP_CHARGE_TYPE, &propval);
 	if (ret < 0)
-		pr_err("%s: inform power supply failed, ret = %d\n",
+		pr_err("%s: inform power supply type failed, ret = %d\n",
 			__func__, ret);
 
 	return ret;
@@ -1811,9 +1837,19 @@ static irqreturn_t bq25890_irq_handler(int irq, void *data)
 {
 	u8 pg_stat = 0;
 	CHARGER_TYPE org_chg_type;
+	bool en = false;
 	struct bq25890_info *info = (struct bq25890_info *)data;
 
 	pr_info("%s\n", __func__);
+
+	/* Skip irq if in OTG mode */
+	bq25890_is_otg_en(&en);
+	if (en)
+		return IRQ_HANDLED;
+
+	/* Set vindpm to 4.5V */
+	bq25890_set_force_vindpm(1);
+	bq25890_set_vindpm(0x13);
 
 	pg_stat = bq25890_get_pg_state();
 
@@ -1879,7 +1915,7 @@ static int bq25890_parse_dt(struct bq25890_info *info, struct device *dev)
 	}
 
 	if (of_property_read_string(np, "charger_name", &info->chg_dev_name) < 0) {
-		info->chg_dev_name = "PrimarySWCHG";
+		info->chg_dev_name = "primary_chg";
 		pr_err("%s: no charger name\n", __func__);
 	}
 
@@ -1896,6 +1932,25 @@ static int bq25890_parse_dt(struct bq25890_info *info, struct device *dev)
 	return 0;
 }
 
+static int bq25890_do_event(struct charger_device *chg_dev, u32 event, u32 args)
+{
+	if (chg_dev == NULL)
+		return -EINVAL;
+
+	pr_info("%s: event = %d\n", __func__, event);
+	switch (event) {
+	case EVENT_EOC:
+		charger_dev_notify(chg_dev, CHARGER_DEV_NOTIFY_EOC);
+		break;
+	case EVENT_RECHARGE:
+		charger_dev_notify(chg_dev, CHARGER_DEV_NOTIFY_RECHG);
+		break;
+	default:
+		break;
+	}
+
+	return 0;
+}
 
 static struct charger_ops bq25890_chg_ops = {
 #if 0
@@ -1945,7 +2000,7 @@ static struct charger_ops bq25890_chg_ops = {
 #endif
 	.send_ta20_current_pattern = bq25890_set_ta20_current_pattern,
 	.set_ta20_reset = bq25890_set_ta20_reset,
-
+	.event = bq25890_do_event,
 };
 
 
@@ -1954,6 +2009,7 @@ static int bq25890_driver_probe(struct i2c_client *client, const struct i2c_devi
 	int ret = 0, i = 0;
 	struct bq25890_info *info = NULL;
 	bool force_dpdm = false;
+	unsigned int pg_stat = 0;
 
 	pr_info("[bq25890_driver_probe]\n");
 
@@ -1968,8 +2024,6 @@ static int bq25890_driver_probe(struct i2c_client *client, const struct i2c_devi
 	if (ret < 0)
 		return ret;
 
-	bq25890_register_irq(info);
-
 	/* Register charger device */
 	info->chg_dev = charger_device_register(info->chg_dev_name,
 		&client->dev, info, &bq25890_chg_ops, &info->chg_props);
@@ -1981,7 +2035,6 @@ static int bq25890_driver_probe(struct i2c_client *client, const struct i2c_devi
 
 	/* --------------------- */
 	bq25890_hw_component_detect();
-	bq25890_dump_register(info->chg_dev);
 	/* bq25890_hw_init(); //move to charging_hw_xxx.c */
 
 	info->psy = power_supply_get_by_name("charger");
@@ -1992,22 +2045,31 @@ static int bq25890_driver_probe(struct i2c_client *client, const struct i2c_devi
 
 	/* Force charger type detection */
 
-	pr_info("%s: force charger type detection\n", __func__);
 #ifdef CONFIG_PROJECT_PHY
 	Charger_Detect_Init();
 #endif
-	/* Force dpdm will become 0 after detecting is finished */
-	bq25890_set_force_dpdm(1);
-	for (i = 0; i < 10; i++) {
-		mdelay(1000);
-		bq25890_get_force_dpdm(&force_dpdm);
-		if (!force_dpdm)
-			break;
+	msleep(50);
+
+	pg_stat = bq25890_get_pg_state();
+	if (pg_stat) {
+		pr_info("%s: force charger type detection\n", __func__);
+		/* Force dpdm will become 0 after detecting is finished */
+		bq25890_set_force_dpdm(1);
+		for (i = 0; i < 10; i++) {
+			msleep(500);
+			bq25890_get_force_dpdm(&force_dpdm);
+			if (!force_dpdm)
+				break;
+		}
+		info->chg_type = bq25890_get_charger_type(info);
+		bq25890_set_charger_type(info);
 	}
-	info->chg_type = bq25890_get_charger_type(info);
-	bq25890_set_charger_type(info);
 
 	bq25890_set_auto_dpdm(1);
+	bq25890_register_irq(info);
+
+	bq25890_dump_register(info->chg_dev);
+
 	return 0;
 }
 
@@ -2057,7 +2119,7 @@ static ssize_t store_bq25890_access(struct device *dev, struct device_attribute 
 				    "[store_bq25890_access] read bq25890 reg 0x%x with value 0x%x !\n",
 				    (unsigned int) reg_address, g_reg_value_bq25890);
 			pr_info(
-				    "[store_bq25890_access] Please use \"cat bq25890_access\" to get value\r\n");
+				    "[store_bq25890_access] Please use \"cat bq25890_access\" to get value\n");
 		}
 	}
 	return size;

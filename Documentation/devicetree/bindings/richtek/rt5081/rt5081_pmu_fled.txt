@@ -4,6 +4,20 @@ RT5081 flashlight led control.
 Required properties:
 - compatible : Must be "richtek,rt5081_pmu_fled";
 - interrupt-names : RT5081 fled enabled interrupts.
+	(R: required, O: optional)
+	1.  (O)fled_strbpin: report whether the event of FLED strobe pin occurs.
+	2.  (O)fled_torpin: report whether the event of FLED torch pin occures.
+	3.  (O)fled_tx: report whether the event of FLED TX occurs.
+	4.  (O)fled_lvp: report whether the event of FLED low VF occurs.
+	5.  (R)fled2_short: report whether the event of FLED2 short occurs.
+	6.  (R)fled1_short: report whether the event of FLED1 short occurs.
+	7.  (O)fled2_strb: report whether the event of FLED2 strobe occurs.
+	8.  (O)fled1_strb: report whether the event of FLED1 strobe occurs.
+	9.  (O)fled2_strb_to: report whether the event of FLED2 strobe timeout occurs.
+	10. (O)fled1_strb_to: report whether the event of FLED1 strobe timeout occurs.
+	11. (O)fled2_tor: report whether the event of FLED2 torch occurs.
+	12. (O)fled1_tor: repower whether the event of FLED1 torch occurs.
+
 
 Optional node:
 - fled_ctrl_sel : 0 -> none, 1 -> control led1, 2 -> control led2, 3 -> control both

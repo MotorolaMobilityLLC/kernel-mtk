@@ -2447,6 +2447,11 @@ int autok_init_sdr104(struct msdc_host *host)
 		MSDC_SET_FIELD(MSDC_PATCH_BIT2, MSDC_PB2_POPENCNT, platform_para_rx.new_water_sdr104);
 		MSDC_SET_FIELD(SDC_FIFO_CFG, SDC_FIFO_CFG_WR_VALID_SEL, 0);
 		MSDC_SET_FIELD(SDC_FIFO_CFG, SDC_FIFO_CFG_RD_VALID_SEL, 0);
+		if (platform_para_rx.chip_hw_ver == 0xcb00) {
+			MSDC_SET_FIELD(MSDC_PATCH_BIT1, MSDC_PB1_STOP_DLY_SEL, 3);
+			MSDC_SET_FIELD(MSDC_PATCH_BIT2, MSDC_PB2_POPENCNT, 8);
+			MSDC_SET_FIELD(MSDC_PATCH_BIT1, 0x3 << 19, 3);
+		}
 	} else if (platform_para_func.new_path_sdr104 == 0) {
 		/* use default setting */
 		MSDC_SET_FIELD(MSDC_PATCH_BIT1, MSDC_PB1_STOP_DLY_SEL, platform_para_rx.old_stop_sdr104);

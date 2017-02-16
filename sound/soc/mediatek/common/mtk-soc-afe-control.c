@@ -142,9 +142,11 @@ static struct mtk_mem_blk_ops *s_mem_blk_ops;
 static struct mtk_afe_platform_ops *s_afe_platform_ops;
 
 #define IrqShortCounter  512
-#define SramBlockSize (4096)
 
 static bool ScreenState;
+
+static uint32 LowLatencyDebug;
+
 
 /*
  * Function Forward Declaration
@@ -2198,95 +2200,20 @@ void Auddrv_DL2_Interrupt_Handler(void)
 {
 	/* irq2 ISR handler */
 	AFE_MEM_CONTROL_T *Mem_Block = AFE_Mem_Control_context[Soc_Aud_Digital_Block_MEM_DL2];
-	kal_int32 Afe_consumed_bytes = 0;
-	kal_int32 HW_memory_index = 0;
-	kal_int32 HW_Cur_ReadIdx = 0;
-	AFE_BLOCK_T *Afe_Block = &(AFE_Mem_Control_context[Soc_Aud_Digital_Block_MEM_DL2]->rBlock);
-
-	/* substreamList *Temp = NULL; */
 	unsigned long flags;
 
-	if (Mem_Block == NULL) {
-		pr_err("-%s(), Mem_Block == NULL\n", __func__);
+	if (Mem_Block == NULL)
 		return;
-	}
 
 	Auddrv_Dl2_Spinlock_lock();
 	spin_lock_irqsave(&Mem_Block->substream_lock, flags);
 
 	if (GetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_DL2) == false) {
-		PRINTK_AUD_DL2
-		    ("%s(), GetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_DL2) == false, return\n ",
-		     __func__);
+		/* printk("%s(), GetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_DL2) == false, return\n ", __func__); */
 		spin_unlock_irqrestore(&Mem_Block->substream_lock, flags);
 		Auddrv_Dl2_Spinlock_unlock();
 		return;
 	}
-
-	HW_Cur_ReadIdx = Afe_Get_Reg(AFE_DL2_CUR);
-
-	if (HW_Cur_ReadIdx == 0) {
-		PRINTK_AUD_DL2("[Auddrv] DL2 HW_Cur_ReadIdx ==0\n");
-		HW_Cur_ReadIdx = Afe_Block->pucPhysBufAddr;
-	}
-
-	HW_memory_index = (HW_Cur_ReadIdx - Afe_Block->pucPhysBufAddr);
-
-	PRINTK_AUD_DL2
-	    ("[Auddrv] DL2 HW_Cur_ReadIdx=0x%x HW_memory_index = 0x%x Afe_Block->pucPhysBufAddr = 0x%x\n",
-	     HW_Cur_ReadIdx, HW_memory_index, Afe_Block->pucPhysBufAddr);
-
-	/* get hw consume bytes */
-	if (HW_memory_index > Afe_Block->u4DMAReadIdx) {
-		Afe_consumed_bytes = HW_memory_index - Afe_Block->u4DMAReadIdx;
-	} else {
-		Afe_consumed_bytes =
-		    Afe_Block->u4BufferSize + HW_memory_index - Afe_Block->u4DMAReadIdx;
-	}
-
-	Afe_consumed_bytes = word_size_align(Afe_consumed_bytes);
-
-	PRINTK_AUD_DL2("+%s ReadIdx:%x WriteIdx:%x,Remained:%x, consumed_bytes:%x HW_memory_index = %x\n",
-	__func__, Afe_Block->u4DMAReadIdx, Afe_Block->u4WriteIdx,
-	Afe_Block->u4DataRemained, Afe_consumed_bytes, HW_memory_index);
-
-	if (Afe_Block->u4DataRemained < Afe_consumed_bytes
-	    || Afe_Block->u4DataRemained <= 0 || Afe_Block->u4DataRemained >
-	    Afe_Block->u4BufferSize) {
-#if 0
-	/* DL2 have false alarm about underflow, so temporarily disable */
-		if (AFE_dL_Abnormal_context.u4UnderflowCnt < DL_ABNORMAL_CONTROL_MAX) {
-			AFE_dL_Abnormal_context.pucPhysBufAddr[AFE_dL_Abnormal_context.u4UnderflowCnt] =
-									Afe_Block->pucPhysBufAddr;
-			AFE_dL_Abnormal_context.u4BufferSize[AFE_dL_Abnormal_context.u4UnderflowCnt] =
-									Afe_Block->u4BufferSize;
-			AFE_dL_Abnormal_context.u4ConsumedBytes[AFE_dL_Abnormal_context.u4UnderflowCnt] =
-									Afe_consumed_bytes;
-			AFE_dL_Abnormal_context.u4DataRemained[AFE_dL_Abnormal_context.u4UnderflowCnt] =
-									Afe_Block->u4DataRemained;
-			AFE_dL_Abnormal_context.u4DMAReadIdx[AFE_dL_Abnormal_context.u4UnderflowCnt] =
-									Afe_Block->u4DMAReadIdx;
-			AFE_dL_Abnormal_context.u4HwMemoryIndex[AFE_dL_Abnormal_context.u4UnderflowCnt] =
-									HW_memory_index;
-			AFE_dL_Abnormal_context.u4WriteIdx[AFE_dL_Abnormal_context.u4UnderflowCnt] =
-									Afe_Block->u4WriteIdx;
-			AFE_dL_Abnormal_context.MemIfNum[AFE_dL_Abnormal_context.u4UnderflowCnt] =
-									Soc_Aud_Digital_Block_MEM_DL2;
-		}
-		AFE_dL_Abnormal_context.u4UnderflowCnt++;
-#endif
-	} else {
-		PRINTK_AUD_DL2("+DL2_Handling normal ReadIdx:%x ,DataRemained:%x, WriteIdx:%x\n",
-			       Afe_Block->u4DMAReadIdx, Afe_Block->u4DataRemained,
-			       Afe_Block->u4WriteIdx);
-		Afe_Block->u4DataRemained -= Afe_consumed_bytes;
-		Afe_Block->u4DMAReadIdx += Afe_consumed_bytes;
-		Afe_Block->u4DMAReadIdx %= Afe_Block->u4BufferSize;
-	}
-
-	AFE_Mem_Control_context[Soc_Aud_Digital_Block_MEM_DL2]->interruptTrigger = 1;
-	PRINTK_AUD_DL2("-DL2_Handling normal ReadIdx:%x ,DataRemained:%x, WriteIdx:%x\n",
-		       Afe_Block->u4DMAReadIdx, Afe_Block->u4DataRemained, Afe_Block->u4WriteIdx);
 
 	if (Mem_Block->substreamL != NULL) {
 		if (Mem_Block->substreamL->substream != NULL) {
@@ -2297,7 +2224,6 @@ void Auddrv_DL2_Interrupt_Handler(void)
 			spin_lock_irqsave(&Mem_Block->substream_lock, flags);
 		}
 	}
-
 	spin_unlock_irqrestore(&Mem_Block->substream_lock, flags);
 
 #ifdef AUDIO_DL2_ISR_COPY_SUPPORT
@@ -3361,7 +3287,7 @@ int audio_get_auxadc_value(void)
 {
 #ifdef _GIT318_PMIC_READY
 #ifdef CONFIG_MTK_AUXADC_INTF
-	return pmic_get_auxadc_value(AUXADC_LIST_HP);
+	return pmic_get_auxadc_value(AUXADC_LIST_HPOFS_CAL);
 #else
 	return PMIC_IMM_GetOneChannelValue(PMIC_AUX_CH9, 20, 0);
 #endif
@@ -3525,13 +3451,14 @@ int ext_sync_signal(void)
 
 	ext_time_diff = ext_diff(ext_time_prev, ext_time);
 	ext_time_prev = ext_time;
+#if 0
 	pr_warn("%s(), irq_from_ext_module = %d, dl1_state = %d, time diff= %ld, %ld\n",
 		__func__,
 		irq_from_ext_module,
 		dl1_state,
 		ext_time_diff.tv_sec,
 		ext_time_diff.tv_usec);
-
+#endif
 	if (irq_from_ext_module && dl1_state == true)
 		Auddrv_DL1_Interrupt_Handler();
 
@@ -3563,6 +3490,7 @@ int mtk_audio_request_sram(dma_addr_t *phys_addr,
 
 	pr_debug("%s(), user = %p, length = %d, count = %d\n",
 		 __func__, user, length, request_sram_count);
+
 	ret = AllocateAudioSram(phys_addr, virt_addr, length, user);
 	if (ret) {
 		pr_warn("%s(), allocate sram fail, ret %d\n", __func__, ret);
@@ -3571,6 +3499,9 @@ int mtk_audio_request_sram(dma_addr_t *phys_addr,
 
 	request_sram_count++;
 	AudDrv_Clk_On();
+
+	if (s_afe_platform_ops->set_sram_format != NULL)
+		s_afe_platform_ops->set_sram_format(AUDIO_SRAM_FORMAT_32BIT);
 
 	pr_debug("%s(), return 0, count = %d\n", __func__, request_sram_count);
 	return 0;
@@ -3583,8 +3514,14 @@ void mtk_audio_free_sram(void *user)
 		 __func__, user, request_sram_count);
 
 	freeAudioSram(user);
-	AudDrv_Clk_Off();
 	request_sram_count--;
+
+	if (request_sram_count == 0) {
+		if (s_afe_platform_ops->set_sram_format != NULL)
+			s_afe_platform_ops->set_sram_format(AUDIO_SRAM_FORMAT_24BIT);
+	}
+
+	AudDrv_Clk_Off();
 
 	pr_debug("%s(), return, count = %d\n", __func__, request_sram_count);
 }
@@ -4235,6 +4172,17 @@ void trigger_mtkaif_calibration(void)
 	pr_warn("%s(), not support this platform", __func__);
 }
 
+bool handle_suspend(bool suspend)
+{
+	bool ret = false;
+
+	if (s_afe_platform_ops->handle_suspend != NULL) {
+		s_afe_platform_ops->handle_suspend(suspend);
+		ret = true;
+	}
+	return ret;
+}
+
 void set_mem_blk_ops(struct mtk_mem_blk_ops *ops)
 {
 	s_mem_blk_ops = ops;
@@ -4248,5 +4196,17 @@ void set_afe_platform_ops(struct mtk_afe_platform_ops *ops)
 struct mtk_afe_platform_ops *get_afe_platform_ops(void)
 {
 	return s_afe_platform_ops;
+}
+
+/* low latency debug */
+int get_LowLatencyDebug(void)
+{
+	return LowLatencyDebug;
+}
+
+void set_LowLatencyDebug(uint32 bFlag)
+{
+	LowLatencyDebug = bFlag;
+	pr_warn("%s LowLatencyDebug = %d\n", __func__, LowLatencyDebug);
 }
 

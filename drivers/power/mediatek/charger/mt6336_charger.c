@@ -68,6 +68,9 @@
 
 #include "mtk_charger_intf.h"
 #include <mt6336.h>
+#include <upmu_common.h>
+
+#define MTK_CHARGER_USE_POLLING
 
 static struct mt6336_ctrl *lowq_ctrl;
 
@@ -131,6 +134,100 @@ static const unsigned int VBAT_CV_VTH[] = {
 	4700000, 4712500, 4725000, 4737500,
 	4750000, 4762500, 4775000, 4787500,
 	4800000,
+};
+
+/* mt6336 VRECHG_AUXADC, uV */
+static const unsigned int VRECHG_AUXADC[2][169] = {
+	{
+	2600000, 2612500, 2625000, 2637500,
+	2650000, 2662500, 2675000, 2687500,
+	2700000, 2712500, 2725000, 2737500,
+	2750000, 2762500, 2775000, 2787500,
+	2800000, 2812500, 2825000, 2837500,
+	2850000, 2862500, 2875000, 2887500,
+	2900000, 2912500, 2925000, 2937500,
+	2950000, 2962500, 2975000, 2987500,
+	3000000, 3012500, 3025000, 3037500,
+	3050000, 3062500, 3075000, 3087500,
+	3100000, 3112500, 3125000, 3137500,
+	3150000, 3162500, 3175000, 3187500,
+	3200000, 3212500, 3225000, 3237500,
+	3250000, 3262500, 3275000, 3287500,
+	3300000, 3312500, 3325000, 3337500,
+	3350000, 3362500, 3375000, 3387500,
+	3400000, 3412500, 3425000, 3437500,
+	3450000, 3462500, 3475000, 3487500,
+	3500000, 3512500, 3525000, 3537500,
+	3550000, 3562500, 3575000, 3587500,
+	3600000, 3612500, 3625000, 3637500,
+	3650000, 3662500, 3675000, 3687500,
+	3700000, 3712500, 3725000, 3737500,
+	3750000, 3762500, 3775000, 3787500,
+	3800000, 3812500, 3825000, 3837500,
+	3850000, 3862500, 3875000, 3887500,
+	3900000, 3912500, 3925000, 3937500,
+	3950000, 3962500, 3975000, 3987500,
+	4000000, 4012500, 4025000, 4037500,
+	4050000, 4062500, 4075000, 4087500,
+	4100000, 4112500, 4125000, 4137500,
+	4150000, 4162500, 4175000, 4187500,
+	4200000, 4212500, 4225000, 4237500,
+	4250000, 4262500, 4275000, 4287500,
+	4300000, 4312500, 4325000, 4337500,
+	4350000, 4362500, 4375000, 4387500,
+	4400000, 4412500, 4425000, 4437500,
+	4450000, 4462500, 4475000, 4487500,
+	4500000, 4512500, 4525000, 4537500,
+	4550000, 4562500, 4575000, 4587500,
+	4600000, 4612500, 4625000, 4637500,
+	4650000, 4662500, 4675000, 4687500,
+	4700000,
+	},
+	{
+	1972, 1982, 1991, 2001,
+	2010, 2020, 2029, 2039,
+	2048, 2057, 2067, 2076,
+	2086, 2095, 2105, 2114,
+	2124, 2133, 2143, 2152,
+	2162, 2171, 2181, 2190,
+	2200, 2209, 2219, 2228,
+	2238, 2247, 2257, 2266,
+	2276, 2285, 2295, 2304,
+	2313, 2323, 2332, 2342,
+	2351, 2361, 2370, 2380,
+	2389, 2399, 2408, 2418,
+	2427, 2437, 2446, 2456,
+	2465, 2475, 2484, 2494,
+	2503, 2513, 2522, 2532,
+	2541, 2551, 2560, 2569,
+	2579, 2588, 2598, 2607,
+	2617, 2626, 2636, 2645,
+	2655, 2664, 2674, 2683,
+	2693, 2702, 2712, 2721,
+	2731, 2740, 2750, 2759,
+	2769, 2778, 2788, 2797,
+	2807, 2816, 2825, 2835,
+	2844, 2854, 2863, 2873,
+	2882, 2892, 2901, 2911,
+	2920, 2930, 2939, 2949,
+	2958, 2968, 2977, 2987,
+	2996, 3006, 3015, 3025,
+	3034, 3044, 3053, 3063,
+	3072, 3081, 3091, 3100,
+	3110, 3119, 3129, 3138,
+	3148, 3157, 3167, 3176,
+	3186, 3195, 3205, 3214,
+	3224, 3233, 3243, 3252,
+	3262, 3271, 3281, 3290,
+	3300, 3309, 3319, 3328,
+	3337, 3347, 3356, 3366,
+	3375, 3385, 3394, 3404,
+	3413, 3423, 3432, 3442,
+	3451, 3461, 3470, 3480,
+	3489, 3499, 3508, 3518,
+	3527, 3537, 3546, 3556,
+	3565,
+	},
 };
 
 /* mt6336 ICC_CON0[6:0], uA */
@@ -254,7 +351,7 @@ static unsigned int bmt_find_closest_level(const unsigned int *pList,
 			}
 		}
 
-		pr_err("Can't find closest level\n");
+		pr_debug("Can't find closest level\n");
 		return pList[0];
 	}
 
@@ -264,7 +361,7 @@ static unsigned int bmt_find_closest_level(const unsigned int *pList,
 			return pList[i];
 	}
 
-	pr_err("Can't find closest level\n");
+	pr_debug("Can't find closest level\n");
 	return pList[number - 1];
 }
 
@@ -282,7 +379,7 @@ static int mt6336_parse_dt(struct mt6336_charger *info, struct device *dev)
 	if (of_property_read_string(np, "charger_name",
 		&info->charger_dev_name) < 0) {
 		pr_err("%s: no charger name\n", __func__);
-		info->charger_dev_name = "PrimarySWCHG";
+		info->charger_dev_name = "primary_chg";
 	}
 
 	if (of_property_read_string(np, "alias_name",
@@ -361,18 +458,6 @@ int mt6336_plug_in_setting(struct charger_device *chg_dev)
 	mt6336_set_flag_register_value(MT6336_RG_EN_TERM, 1);
 	mt6336_set_flag_register_value(MT6336_RG_A_EN_ITERM, 1);
 
-	mt6336_unmask_interrupt(MT6336_INT_CHR_BAT_OVP, "mt6336 charger");
-	mt6336_unmask_interrupt(MT6336_INT_CHR_VBUS_OVP, "mt6336 charger");
-	mt6336_unmask_interrupt(MT6336_INT_STATE_BUCK_EOC, "mt6336 charger");
-	mt6336_unmask_interrupt(MT6336_INT_CHR_BAT_RECHG, "mt6336 charger");
-	mt6336_unmask_interrupt(MT6336_INT_SAFETY_TIMEOUT, "mt6336 charger");
-
-	mt6336_enable_interrupt(MT6336_INT_CHR_BAT_OVP, "mt6336 charger");
-	mt6336_enable_interrupt(MT6336_INT_CHR_VBUS_OVP, "mt6336 charger");
-	mt6336_enable_interrupt(MT6336_INT_STATE_BUCK_EOC, "mt6336 charger");
-	/* mt6336_enable_interrupt(MT6336_INT_CHR_BAT_RECHG, "mt6336 charger"); */
-	mt6336_enable_interrupt(MT6336_INT_SAFETY_TIMEOUT, "mt6336 charger");
-
 	return 0;
 }
 
@@ -380,8 +465,9 @@ int mt6336_plug_out_setting(struct charger_device *chg_dev)
 {
 	/* Enable ctrl to lock power, keeping MT6336 in normal mode */
 	mt6336_ctrl_enable(lowq_ctrl);
-
+#ifndef MTK_CHARGER_USE_POLLING
 	mt6336_disable_interrupt(MT6336_INT_CHR_BAT_RECHG, "mt6336 charger");
+#endif
 	mt6336_set_flag_register_value(MT6336_AUXADC_VBAT_IRQ_EN, 0);
 	mt6336_set_flag_register_value(MT6336_RG_EN_RECHARGE, 0);
 	mt6336_set_flag_register_value(MT6336_RG_EN_TERM, 0);
@@ -395,12 +481,40 @@ int mt6336_plug_out_setting(struct charger_device *chg_dev)
 
 static int mt6336_enable_charging(struct charger_device *chg_dev, bool en)
 {
-	pr_err("%s: enable = %d\n", __func__, en);
+	pr_err_ratelimited("%s: enable = %d\n", __func__, en);
 
-	if (en)
+	/* Enable ctrl to lock power, keeping MT6336 in normal mode */
+	mt6336_ctrl_enable(lowq_ctrl);
+
+	if (en) {
 		mt6336_set_flag_register_value(MT6336_RG_EN_CHARGE, 1);
-	else
+		mt6336_set_flag_register_value(MT6336_RG_A_LOOP_CLAMP_EN, 0);
+		mt6336_set_flag_register_value(MT6336_RG_EN_TERM, 1);
+		mt6336_set_flag_register_value(MT6336_RG_A_EN_ITERM, 1);
+	} else {
 		mt6336_set_flag_register_value(MT6336_RG_EN_CHARGE, 0);
+#if 0
+		mt6336_disable_interrupt(MT6336_INT_CHR_BAT_RECHG, "mt6336 charger");
+		mt6336_set_flag_register_value(MT6336_AUXADC_VBAT_IRQ_EN, 0);
+		mt6336_set_flag_register_value(MT6336_RG_EN_RECHARGE, 0);
+		mt6336_set_flag_register_value(MT6336_RG_EN_TERM, 0);
+		mt6336_set_flag_register_value(MT6336_AUXADC_VBAT_VTH_MODE_SEL, 0);
+#endif
+	}
+
+	/* enter low power mode */
+	mt6336_ctrl_disable(lowq_ctrl);
+
+	return 0;
+}
+
+static int mt6336_is_charging_enabled(struct charger_device *chg_dev, bool *en)
+{
+	unsigned short val;
+
+	pr_err("%s\n", __func__);
+	val = mt6336_get_flag_register_value(MT6336_RG_EN_CHARGE);
+	*en = (val == 0) ? false : true;
 
 	return 0;
 }
@@ -428,6 +542,14 @@ static int mt6336_is_powerpath_enabled(struct charger_device *chg_dev, bool *en)
 	return 0;
 }
 
+static int pmic_enable_vbus_ovp(struct charger_device *chg_dev, bool en)
+{
+	pr_debug("%s %d\n", __func__, en);
+	pmic_set_register_value(PMIC_RG_VCDT_HV_EN, en);
+
+	return 0;
+}
+
 static int mt6336_get_ichg(struct charger_device *chg_dev, u32 *uA)
 {
 	unsigned int array_size;
@@ -450,10 +572,34 @@ static int mt6336_set_ichg(struct charger_device *chg_dev, u32 ichg)
 	array_size = ARRAY_SIZE(CS_VTH);
 	set_ichg = bmt_find_closest_level(CS_VTH, array_size, ichg);
 	register_value = charging_parameter_to_value(CS_VTH, array_size, set_ichg);
-	mt6336_set_flag_register_value(MT6336_RG_ICC, 0x1);
+	if (register_value != 0x0)
+		mt6336_set_flag_register_value(MT6336_RG_ICC, register_value - 1);
 	mt6336_set_flag_register_value(MT6336_RG_ICC, register_value);
 
-	pr_debug("%s: 0x%x %d %d\n", __func__, register_value, ichg, set_ichg);
+	pr_debug_ratelimited("%s: 0x%x %d %d\n", __func__, register_value, ichg, set_ichg);
+
+	return 0;
+}
+
+static int mt6336_get_min_ichg(struct charger_device *chg_dev, u32 *uA)
+{
+	unsigned int array_size;
+
+	array_size = ARRAY_SIZE(CS_VTH);
+	*uA = charging_value_to_parameter(CS_VTH, array_size, 0);
+
+	return 0;
+}
+
+
+static int mt6336_get_cv(struct charger_device *chg_dev, u32 *uV)
+{
+	unsigned int array_size;
+	unsigned int val;
+
+	array_size = ARRAY_SIZE(VBAT_CV_VTH);
+	val = mt6336_get_flag_register_value(MT6336_RG_VCV);
+	*uV = charging_value_to_parameter(VBAT_CV_VTH, array_size, val);
 
 	return 0;
 }
@@ -463,14 +609,28 @@ static int mt6336_set_cv(struct charger_device *chg_dev, u32 cv)
 	unsigned short int array_size;
 	unsigned int set_cv;
 	unsigned short int register_value;
+	unsigned int idx;
 
 	array_size = ARRAY_SIZE(VBAT_CV_VTH);
 	set_cv = bmt_find_closest_level(VBAT_CV_VTH, array_size, cv);
 	register_value = charging_parameter_to_value(VBAT_CV_VTH, array_size, set_cv);
 	mt6336_set_flag_register_value(MT6336_RG_VCV, register_value);
 
-	pr_debug("%s: 0x%x %d %d\n", __func__, register_value, cv, set_cv);
+	/* pr_debug("%s: 0x%x %d %d\n", __func__, register_value, cv, set_cv); */
 
+	/* Set VRECHG_AUXADC to 30mV less than CV */
+	array_size = ARRAY_SIZE(VRECHG_AUXADC[0]);
+	set_cv = bmt_find_closest_level(VRECHG_AUXADC[0], array_size, set_cv - 30000);
+	idx = charging_parameter_to_value(VRECHG_AUXADC[0], array_size, set_cv);
+	register_value = VRECHG_AUXADC[1][idx];
+
+	mt6336_set_flag_register_value(MT6336_AUXADC_VBAT_DET_VOLT_11_0_H, 0xF);
+	mt6336_set_flag_register_value(MT6336_AUXADC_VBAT_DET_VOLT_11_0_L,
+					register_value & 0xFF);
+	mt6336_set_flag_register_value(MT6336_AUXADC_VBAT_DET_VOLT_11_0_H,
+					(register_value >> 8) & 0xF);
+
+	pr_err("%s: rechg 0x%x %d %d\n", __func__, register_value, cv, set_cv);
 	return 0;
 }
 
@@ -497,7 +657,17 @@ static int mt6336_set_aicr(struct charger_device *chg_dev, u32 aicr)
 	register_value = charging_parameter_to_value(INPUT_CS_VTH, array_size, set_aicr);
 	mt6336_set_flag_register_value(MT6336_RG_ICL, register_value);
 
-	pr_debug("%s: 0x%x %d %d\n", __func__, register_value, aicr, set_aicr);
+	pr_debug_ratelimited("%s: 0x%x %d %d\n", __func__, register_value, aicr, set_aicr);
+
+	return 0;
+}
+
+static int mt6336_get_min_aicr(struct charger_device *chg_dev, u32 *uA)
+{
+	unsigned int array_size;
+
+	array_size = ARRAY_SIZE(INPUT_CS_VTH);
+	*uA = charging_value_to_parameter(INPUT_CS_VTH, array_size, 0);
 
 	return 0;
 }
@@ -532,8 +702,11 @@ static int mt6336_set_iterm(struct charger_device *chg_dev, u32 iterm)
 
 static int mt6336_get_eoc(struct charger_device *chr_dev, bool *is_eoc)
 {
+	unsigned short vth_mode;
+
 	*is_eoc = mt6336_get_flag_register_value(MT6336_DA_QI_EOC_STAT_MUX);
-	pr_err("mt6336_get_eoc: %d\n", *is_eoc);
+	vth_mode = mt6336_get_flag_register_value(MT6336_AUXADC_VBAT_VTH_MODE_SEL);
+	pr_err("mt6336_get_eoc: %d %d\n", *is_eoc, vth_mode);
 	return 0;
 }
 
@@ -545,6 +718,7 @@ static int mt6336_dump_register(struct charger_device *chg_dev)
 	unsigned short chg_en;
 	unsigned short state;
 	unsigned short pam_state;
+	unsigned short vth_mode;
 	u32 vpam;
 	u32 iterm;
 
@@ -556,10 +730,11 @@ static int mt6336_dump_register(struct charger_device *chg_dev)
 	state = mt6336_get_register_value(MT6336_PMIC_ANA_CORE_DA_RGS13);
 	pam_state = mt6336_get_flag_register_value(MT6336_AD_QI_PAM_MODE);
 	vpam = mt6336_get_mivr(chg_dev);
+	vth_mode = mt6336_get_flag_register_value(MT6336_AUXADC_VBAT_VTH_MODE_SEL);
 
-	pr_err("[MT6336] ICC:%dmA,ICL:%dmA,VCV:%dmV,Iterm:%dmA,VPAM:%dmV,EN=%d,state=%x,PAM:%d\n",
+	pr_err("ICC:%dmA,ICL:%dmA,VCV:%dmV,Iterm:%dmA,VPAM:%dmV,EN=%d,state=%x,PAM:%d,mode:%d\n",
 		icc * 50 + 500, aicr / 1000, (vcv * 125 + 26000) / 10, iterm / 1000,
-		vpam / 1000, chg_en, state, pam_state);
+		vpam / 1000, chg_en, state, pam_state, vth_mode);
 
 	return 0;
 }
@@ -623,11 +798,27 @@ static int mt6336_send_ta20_current_pattern(struct charger_device *chg_dev, u32 
 
 static int mt6336_set_ta20_reset(struct charger_device *chg_dev)
 {
+	unsigned int val;
+
+	mt6336_set_flag_register_value(MT6336_RG_EN_TERM, 0);
+
+	val = mt6336_get_flag_register_value(MT6336_RG_ICL);
 	mt6336_set_flag_register_value(MT6336_RG_ICL, 0x0);
 	msleep(250);
-	mt6336_set_flag_register_value(MT6336_RG_ICL, 0x3);
+	mt6336_set_flag_register_value(MT6336_RG_ICL, val);
 
 	return 0;
+}
+
+static int mt6336_enable_cable_drop_comp(struct charger_device *chg_dev, bool en)
+{
+	int ret = 0;
+
+	pr_info("%s: en = %d\n", __func__, en);
+	if (!en)
+		ret = mt6336_send_ta20_current_pattern(chg_dev, 25000000);
+
+	return ret;
 }
 
 static int mt6336_set_mivr(struct charger_device *chg_dev, u32 uV)
@@ -685,6 +876,147 @@ static int mt6336_is_safety_timer_enabled(struct charger_device *chg_dev, bool *
 	return 0;
 }
 
+static int mt6336_enable_term(struct charger_device *chg_dev, bool en)
+{
+	pr_err("%s: enable = %d\n", __func__, en);
+
+	if (en) {
+		mt6336_disable_interrupt(MT6336_INT_CHR_ICHR_ITERM, "mt6336 charger");
+#ifndef MTK_CHARGER_USE_POLLING
+		mt6336_enable_interrupt(MT6336_INT_STATE_BUCK_EOC, "mt6336 charger");
+#endif
+		mt6336_set_flag_register_value(MT6336_RG_EN_TERM, 1);
+	} else {
+		mt6336_set_flag_register_value(MT6336_RG_EN_TERM, 0);
+		mt6336_set_flag_register_value(MT6336_RG_A_EN_ITERM, 0);
+		mt6336_set_flag_register_value(MT6336_RG_A_EN_ITERM, 1);
+#ifndef MTK_CHARGER_USE_POLLING
+		mt6336_disable_interrupt(MT6336_INT_STATE_BUCK_EOC, "mt6336 charger");
+#endif
+		mt6336_enable_interrupt(MT6336_INT_CHR_ICHR_ITERM, "mt6336 charger");
+	}
+
+	return 0;
+}
+
+static int mt6336_enable_otg(struct charger_device *chg_dev, bool en)
+{
+	int ret = 0;
+	unsigned short flash_sta, vbus_plugin;
+
+	pr_debug("%s: en = %d\n", __func__, en);
+
+	flash_sta = mt6336_get_flag_register_value(MT6336_DA_QI_FLASH_MODE_MUX);
+	if (flash_sta) {
+		pr_err("At Flash mode, cannot turn on OTG\n");
+		return -EBUSY;
+	}
+
+	vbus_plugin = mt6336_get_flag_register_value(MT6336_DA_QI_VBUS_PLUGIN_MUX);
+
+	if (vbus_plugin) {
+		pr_err("VBUS present, cannot turn on OTG\n");
+		return -EBUSY;
+	}
+
+	/* Enable ctrl to lock power, keeping MT6336 in normal mode */
+	mt6336_ctrl_enable(lowq_ctrl);
+
+	if (en) {
+		mt6336_config_interface(0x519, 0x0D, 0xFF, 0);
+		mt6336_config_interface(0x520, 0x00, 0xFF, 0);
+		mt6336_config_interface(0x55A, 0x01, 0xFF, 0);
+		mt6336_config_interface(0x455, 0x00, 0xFF, 0);
+		mt6336_config_interface(0x3C9, 0x00, 0xFF, 0);
+		mt6336_config_interface(0x3CF, 0x00, 0xFF, 0);
+		mt6336_config_interface(0x553, 0x14, 0xFF, 0);
+		mt6336_config_interface(0x55F, 0xE6, 0xFF, 0);
+		mt6336_config_interface(0x53D, 0x47, 0xFF, 0);
+		mt6336_config_interface(0x529, 0x8E, 0xFF, 0);
+		mt6336_config_interface(0x560, 0x0C, 0xFF, 0);
+		mt6336_config_interface(0x40F, 0x04, 0xFF, 0);
+
+		mt6336_set_flag_register_value(MT6336_RG_EN_OTG, 1);
+	} else {
+		mt6336_config_interface(0x52A, 0x88, 0xFF, 0);
+		mt6336_config_interface(0x553, 0x14, 0xFF, 0);
+		mt6336_config_interface(0x519, 0x3F, 0xFF, 0);
+		mt6336_config_interface(0x51E, 0x02, 0xFF, 0);
+		mt6336_config_interface(0x520, 0x04, 0xFF, 0);
+		mt6336_config_interface(0x55A, 0x00, 0xFF, 0);
+		mt6336_config_interface(0x455, 0x01, 0xFF, 0);
+		mt6336_config_interface(0x3C9, 0x10, 0xFF, 0);
+		mt6336_config_interface(0x3CF, 0x03, 0xFF, 0);
+		/* mt6336_config_interface(0x5AF, 0x02, 0xFF, 0); */
+		/* mt6336_config_interface(0x64E, 0x02, 0xFF, 0); */
+		mt6336_config_interface(0x402, 0x03, 0xFF, 0);
+		mt6336_config_interface(0x529, 0x88, 0xFF, 0);
+
+		mt6336_set_flag_register_value(MT6336_RG_EN_OTG, 0);
+	}
+
+	/* enter low power mode */
+	mt6336_ctrl_disable(lowq_ctrl);
+
+	return ret;
+}
+
+static int mt6336_set_boost_current_limit(struct charger_device *chg_dev, u32 uA)
+{
+	int ret = 0;
+	u32 array_size = 0;
+	u32 boost_ilimit = 0, boost_reg = 0;
+
+	array_size = ARRAY_SIZE(BOOST_CURRENT_LIMIT);
+	boost_ilimit = bmt_find_closest_level(BOOST_CURRENT_LIMIT, array_size, uA);
+	boost_reg = charging_parameter_to_value(BOOST_CURRENT_LIMIT, array_size, boost_ilimit);
+	mt6336_set_flag_register_value(MT6336_RG_OTG_IOLP, boost_reg);
+
+	return ret;
+}
+
+void mt6336_buck_power_on_callback(void)
+{
+	pr_err("mt6336_buck_power_on_callback\n");
+	mt6336_set_flag_register_value(MT6336_RG_EN_TERM, 1);
+	mt6336_set_flag_register_value(MT6336_RG_A_EN_ITERM, 1);
+}
+
+void mt6336_buck_protect_callback(void)
+{
+	pr_err("mt6336_buck_protect_callback\n");
+#ifndef MTK_CHARGER_USE_POLLING
+	mt6336_disable_interrupt(MT6336_INT_CHR_BAT_RECHG, "mt6336 charger");
+#endif
+	mt6336_set_flag_register_value(MT6336_AUXADC_VBAT_IRQ_EN, 0);
+	mt6336_set_flag_register_value(MT6336_RG_EN_RECHARGE, 0);
+	mt6336_set_flag_register_value(MT6336_AUXADC_VBAT_VTH_MODE_SEL, 0);
+	usleep_range(2000, 3000);
+	mt6336_set_flag_register_value(MT6336_RG_A_EN_ITERM, 1);
+}
+
+void mt6336_chr_suspend_callback(void)
+{
+	pr_err("mt6336_chr_suspend_callback\n");
+#ifndef MTK_CHARGER_USE_POLLING
+	mt6336_disable_interrupt(MT6336_INT_CHR_BAT_RECHG, "mt6336 charger");
+#endif
+	mt6336_set_flag_register_value(MT6336_AUXADC_VBAT_IRQ_EN, 0);
+	mt6336_set_flag_register_value(MT6336_RG_EN_RECHARGE, 0);
+	mt6336_set_flag_register_value(MT6336_RG_EN_TERM, 0);
+	mt6336_set_flag_register_value(MT6336_AUXADC_VBAT_VTH_MODE_SEL, 0);
+}
+
+void mt6336_chr_iterm_callback(void)
+{
+	pr_err("mt6336_chr_iterm_callback\n");
+
+	if (info != NULL)
+		charger_dev_notify(info->charger_dev, CHARGER_DEV_NOTIFY_EOC);
+	else
+		pr_err("do not call chain\n");
+}
+
 void mt6336_vbat_ovp_callback(void)
 {
 	pr_err("mt6336_vbat_ovp_callback\n");
@@ -711,7 +1043,9 @@ void mt6336_eoc_callback(void)
 	mt6336_set_flag_register_value(MT6336_AUXADC_VBAT_EN_MODE_SEL, 1);
 	mt6336_set_flag_register_value(MT6336_RG_EN_RECHARGE, 1);
 	mt6336_set_flag_register_value(MT6336_AUXADC_VBAT_IRQ_EN, 1);
+#ifndef MTK_CHARGER_USE_POLLING
 	mt6336_enable_interrupt(MT6336_INT_CHR_BAT_RECHG, "mt6336 charger");
+#endif
 
 	if (info != NULL)
 		charger_dev_notify(info->charger_dev, CHARGER_DEV_NOTIFY_EOC);
@@ -722,12 +1056,13 @@ void mt6336_eoc_callback(void)
 void mt6336_rechg_callback(void)
 {
 	pr_err("mt6336_rechg_callback\n");
-
+#ifndef MTK_CHARGER_USE_POLLING
 	mt6336_disable_interrupt(MT6336_INT_CHR_BAT_RECHG, "mt6336 charger");
+#endif
 	mt6336_set_flag_register_value(MT6336_AUXADC_VBAT_IRQ_EN, 0);
 	mt6336_set_flag_register_value(MT6336_RG_EN_RECHARGE, 0);
 	mt6336_set_flag_register_value(MT6336_AUXADC_VBAT_VTH_MODE_SEL, 0);
-	usleep_range(1000, 2000);
+	usleep_range(2000, 3000);
 	mt6336_set_flag_register_value(MT6336_RG_A_EN_ITERM, 1);
 
 	if (info != NULL)
@@ -739,10 +1074,28 @@ void mt6336_rechg_callback(void)
 void mt6336_safety_timeout_callback(void)
 {
 	pr_err("mt6336_safety_timeout_callback\n");
+	mt6336_set_flag_register_value(MT6336_CLK_REG_6M_W1C_CK_PDN, 0x0);
+	mt6336_set_flag_register_value(MT6336_RG_CHR_SAFETMR_CLEAR, 1);
+
 	if (info != NULL)
 		charger_dev_notify(info->charger_dev, CHARGER_DEV_NOTIFY_SAFETY_TIMEOUT);
 	else
 		pr_err("do not call chain\n");
+}
+
+int mt6336_event(struct charger_device *chg_dev, u32 event, u32 args)
+{
+	switch (event) {
+	case EVENT_EOC:
+			mt6336_eoc_callback();
+		break;
+	case EVENT_RECHARGE:
+			mt6336_rechg_callback();
+		break;
+	default:
+		break;
+	}
+	return 0;
 }
 
 static struct charger_ops mt6366_charger_dev_ops = {
@@ -751,13 +1104,18 @@ static struct charger_ops mt6366_charger_dev_ops = {
 	.plug_in = mt6336_plug_in_setting,
 	.plug_out = mt6336_plug_out_setting,
 	.enable = mt6336_enable_charging,
+	.is_enabled = mt6336_is_charging_enabled,
 	.enable_powerpath = mt6336_enable_powerpath,
 	.is_powerpath_enabled = mt6336_is_powerpath_enabled,
+	.enable_vbus_ovp = pmic_enable_vbus_ovp,
 	.get_charging_current = mt6336_get_ichg,
 	.set_charging_current = mt6336_set_ichg,
+	.get_min_charging_current = mt6336_get_min_ichg,
+	.get_constant_voltage = mt6336_get_cv,
 	.set_constant_voltage = mt6336_set_cv,
 	.get_input_current = mt6336_get_aicr,
 	.set_input_current = mt6336_set_aicr,
+	.get_min_input_current = mt6336_get_min_aicr,
 	.get_eoc_current = mt6336_get_iterm,
 	.set_eoc_current = mt6336_set_iterm,
 	.dump_registers = mt6336_dump_register,
@@ -765,10 +1123,15 @@ static struct charger_ops mt6366_charger_dev_ops = {
 	.set_pe20_efficiency_table = mt6336_set_pe20_efficiency_table,
 	.send_ta20_current_pattern = mt6336_send_ta20_current_pattern,
 	.set_ta20_reset = mt6336_set_ta20_reset,
+	.enable_cable_drop_comp = mt6336_enable_cable_drop_comp,
 	.set_mivr = mt6336_set_mivr,
 	.get_mivr_state = mt6336_get_mivr_state,
 	.enable_safety_timer = mt6336_enable_safety_timer,
 	.is_safety_timer_enabled = mt6336_is_safety_timer_enabled,
+	.enable_termination = mt6336_enable_term,
+	.event = mt6336_event,
+	.enable_otg = mt6336_enable_otg,
+	.set_boost_current_limit = mt6336_set_boost_current_limit,
 };
 
 static int mt6336_charger_probe(struct platform_device *pdev)
@@ -819,6 +1182,8 @@ static int mt6336_charger_probe(struct platform_device *pdev)
 		goto err_register_charger_dev;
 	}
 
+	info->charger_dev->is_polling_mode = true;
+
 	lowq_ctrl = mt6336_ctrl_get("mt6336_charger");
 
 	/* Enable ctrl to lock power, keeping MT6336 in normal mode */
@@ -830,9 +1195,39 @@ static int mt6336_charger_probe(struct platform_device *pdev)
 
 	mt6336_register_interrupt_callback(MT6336_INT_CHR_BAT_OVP, mt6336_vbat_ovp_callback);
 	mt6336_register_interrupt_callback(MT6336_INT_CHR_VBUS_OVP, mt6336_vbus_ovp_callback);
+#ifndef MTK_CHARGER_USE_POLLING
 	mt6336_register_interrupt_callback(MT6336_INT_STATE_BUCK_EOC, mt6336_eoc_callback);
 	mt6336_register_interrupt_callback(MT6336_INT_CHR_BAT_RECHG, mt6336_rechg_callback);
+#endif
 	mt6336_register_interrupt_callback(MT6336_INT_SAFETY_TIMEOUT, mt6336_safety_timeout_callback);
+	mt6336_register_interrupt_callback(MT6336_INT_DD_SWCHR_BUCK_MODE, mt6336_buck_power_on_callback);
+	mt6336_register_interrupt_callback(MT6336_INT_DD_SWCHR_BUCK_PROTECT_STATE, mt6336_buck_protect_callback);
+	mt6336_register_interrupt_callback(MT6336_INT_DD_SWCHR_CHR_SUSPEND_STATE, mt6336_chr_suspend_callback);
+	mt6336_register_interrupt_callback(MT6336_INT_CHR_ICHR_ITERM, mt6336_chr_iterm_callback);
+
+	mt6336_unmask_interrupt(MT6336_INT_CHR_BAT_OVP, "mt6336 charger");
+	mt6336_unmask_interrupt(MT6336_INT_CHR_VBUS_OVP, "mt6336 charger");
+#ifndef MTK_CHARGER_USE_POLLING
+	mt6336_unmask_interrupt(MT6336_INT_STATE_BUCK_EOC, "mt6336 charger");
+	mt6336_unmask_interrupt(MT6336_INT_CHR_BAT_RECHG, "mt6336 charger");
+#endif
+	mt6336_unmask_interrupt(MT6336_INT_SAFETY_TIMEOUT, "mt6336 charger");
+	mt6336_unmask_interrupt(MT6336_INT_DD_SWCHR_BUCK_MODE, "mt6336 charger");
+	mt6336_unmask_interrupt(MT6336_INT_DD_SWCHR_BUCK_PROTECT_STATE, "mt6336 charger");
+	mt6336_unmask_interrupt(MT6336_INT_DD_SWCHR_CHR_SUSPEND_STATE, "mt6336 charger");
+	mt6336_unmask_interrupt(MT6336_INT_CHR_ICHR_ITERM, "mt6336 charger");
+
+	mt6336_enable_interrupt(MT6336_INT_CHR_BAT_OVP, "mt6336 charger");
+	mt6336_enable_interrupt(MT6336_INT_CHR_VBUS_OVP, "mt6336 charger");
+#ifndef MTK_CHARGER_USE_POLLING
+	mt6336_enable_interrupt(MT6336_INT_STATE_BUCK_EOC, "mt6336 charger");
+	/* mt6336_enable_interrupt(MT6336_INT_CHR_BAT_RECHG, "mt6336 charger"); */
+#endif
+	mt6336_enable_interrupt(MT6336_INT_SAFETY_TIMEOUT, "mt6336 charger");
+	mt6336_enable_interrupt(MT6336_INT_DD_SWCHR_BUCK_MODE, "mt6336 charger");
+	mt6336_enable_interrupt(MT6336_INT_DD_SWCHR_BUCK_PROTECT_STATE, "mt6336 charger");
+	mt6336_enable_interrupt(MT6336_INT_DD_SWCHR_CHR_SUSPEND_STATE, "mt6336 charger");
+	mt6336_disable_interrupt(MT6336_INT_CHR_ICHR_ITERM, "mt6336 charger");
 
 	/* enter low power mode */
 	mt6336_ctrl_disable(lowq_ctrl);

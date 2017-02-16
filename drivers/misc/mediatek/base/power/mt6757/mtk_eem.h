@@ -199,6 +199,7 @@ extern int get_ptpod_status(void);
 extern int is_have_550(void);
 extern unsigned int get_vcore_ptp_volt(int uv);
 extern void eem_set_pi_offset(enum eem_ctrl_id id, int step);
+extern void eem_set_pi_efuse(enum eem_ctrl_id id, unsigned int pi_efuse);
 extern int pmic_force_vgpu_pwm(bool enable);
 #ifdef EEM_DVT_TEST
 extern void otp_fake_temp_test(void);

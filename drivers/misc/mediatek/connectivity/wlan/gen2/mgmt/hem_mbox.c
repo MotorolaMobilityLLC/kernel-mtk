@@ -68,6 +68,7 @@ static PUINT_8 apucDebugMsg[] = {
 	(PUINT_8) DISP_STRING("MID_OID_AIS_FSM_JOIN_REQ"),
 	(PUINT_8) DISP_STRING("MID_OID_AIS_FSM_ABORT"),
 	(PUINT_8) DISP_STRING("MID_AIS_SAA_FSM_START"),
+	(PUINT_8) DISP_STRING("MID_OID_SAA_FSM_CONTINUE"),
 	(PUINT_8) DISP_STRING("MID_AIS_SAA_FSM_ABORT"),
 	(PUINT_8) DISP_STRING("MID_SAA_AIS_JOIN_COMPLETE"),
 
@@ -109,7 +110,8 @@ static PUINT_8 apucDebugMsg[] = {
 	(PUINT_8) DISP_STRING("MID_SAA_AIS_FSM_ABORT"),
 	(PUINT_8) DISP_STRING("MID_MNY_AIS_REMAIN_ON_CHANNEL"),
 	(PUINT_8) DISP_STRING("MID_MNY_AIS_CANCEL_REMAIN_ON_CHANNEL"),
-	(PUINT_8) DISP_STRING("MID_MNY_AIS_MGMT_TX")
+	(PUINT_8) DISP_STRING("MID_MNY_AIS_MGMT_TX"),
+	(PUINT_8) DISP_STRING("MID_WNM_AIS_BSS_TRANSITION"),
 };
 
 /*lint -restore */
@@ -169,6 +171,7 @@ static MSG_HNDL_ENTRY_T arMsgMapTable[] = {
 	{MID_OID_AIS_FSM_JOIN_REQ, aisFsmRunEventAbort},
 	{MID_OID_AIS_FSM_ABORT, aisFsmRunEventAbort},
 	{MID_AIS_SAA_FSM_START, saaFsmRunEventStart},
+	{MID_OID_SAA_FSM_CONTINUE, saaFsmRunEventFTContinue},
 	{MID_AIS_SAA_FSM_ABORT, saaFsmRunEventAbort},
 	{MID_SAA_AIS_JOIN_COMPLETE, aisFsmRunEventJoinComplete},
 
@@ -201,6 +204,10 @@ static MSG_HNDL_ENTRY_T arMsgMapTable[] = {
 	{MID_MNY_P2P_START_AP, p2pFsmRunEventStartAP},
 	{MID_MNY_P2P_MGMT_FRAME_UPDATE, p2pFsmRunEventUpdateMgmtFrame},
 	{MID_MNY_P2P_EXTEND_LISTEN_INTERVAL, p2pFsmRunEventExtendListen},
+#if CFG_SUPPORT_P2P_ECSA
+	{MID_MNY_P2P_CSA, p2pFsmRunEventSendCSA},
+	{MID_MNY_P2P_ECSA, p2pFsmRunEventSendECSA},
+#endif
 #if CFG_SUPPORT_WFD
 	{MID_MNY_P2P_WFD_CFG_UPDATE, p2pFsmRunEventWfdSettingUpdate},
 #endif
@@ -218,6 +225,13 @@ static MSG_HNDL_ENTRY_T arMsgMapTable[] = {
 	{MID_MNY_CNM_REQ_CH_UTIL, cnmRequestChannelUtilization},
 	{MID_CNM_AIS_RSP_CH_UTIL, aisRunEventChnlUtilRsp},
 	{MID_MNY_CNM_SCAN_CONTINUE, scnFsmMsgStart},
+	{MID_WNM_AIS_BSS_TRANSITION, aisFsmRunEventBssTransition},
+	{MID_OID_WMM_TSPEC_OPERATE, wmmRunEventTSOperate},
+#if CFG_SUPPORT_NCHO
+	{MID_MNY_AIS_NCHO_ACTION_FRAME, aisFsmRunEventNchoActionFrameTx},
+#endif
+	{MID_RLM_RM_SCHEDULE, rlmRunEventProcessNextRm},
+
 };
 
 /*******************************************************************************
@@ -346,13 +360,19 @@ mboxSendMsg(IN P_ADAPTER_T prAdapter,
 	    IN ENUM_MBOX_ID_T eMboxId, IN P_MSG_HDR_T prMsg, IN EUNM_MSG_SEND_METHOD_T eMethod)
 {
 	P_MBOX_T prMbox;
-
+#if CFG_DBG_MGT_BUF
+	P_BUF_INFO_T prBufInfo;
+#endif
 	KAL_SPIN_LOCK_DECLARATION();
 
 	ASSERT(eMboxId < MBOX_ID_TOTAL_NUM);
 	ASSERT(prMsg);
 	ASSERT(prAdapter);
-
+#if CFG_DBG_MGT_BUF
+	prBufInfo = &prAdapter->rMgtBufInfo;
+	DBGLOG(CNM, INFO, "MSG [%d],freeCnt:%d,AllocCnt:%d\n", prMsg->eMsgId
+		, prBufInfo->u4FreeCount, prBufInfo->u4AllocCount);
+#endif
 	prMbox = &(prAdapter->arMbox[eMboxId]);
 
 	switch (eMethod) {

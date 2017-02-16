@@ -54,7 +54,7 @@ static int __init mrdump_get_ddr_reserve_status(char *str)
 	return 0;
 }
 
-early_param("mrdump_ddr_reserve_ready", mrdump_get_ddr_reserve_status);
+early_param("mrdump_ddrsv", mrdump_get_ddr_reserve_status);
 
 static bool mrdump_ddr_reserve_is_ready(void)
 {

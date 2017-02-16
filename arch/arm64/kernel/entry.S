@@ -30,6 +30,8 @@
 #include <asm/thread_info.h>
 #include <asm/unistd.h>
 
+#define RESERVE_SIZE 256
+
 /*
  * Context tracking subsystem.  Used to instrument transitions
  * between user and kernel mode.
@@ -66,6 +68,9 @@
 #define BAD_ERROR	3
 
 	.macro	kernel_entry, el, regsize = 64
+	.if	\el == 1
+	sub	sp, sp, #RESERVE_SIZE
+	.endif
 	sub	sp, sp, #S_FRAME_SIZE
 	.if	\regsize == 32
 	mov	w0, w0				// zero upper 32 bits of x0
@@ -96,6 +101,9 @@
 	.endif
 	mrs	x22, elr_el1
 	mrs	x23, spsr_el1
+	.if	\el == 1
+	add	x21, x21, #RESERVE_SIZE
+	.endif
 	stp	lr, x21, [sp, #S_LR]
 	stp	x22, x23, [sp, #S_PC]
 
@@ -160,6 +168,9 @@ alternative_endif
 	ldp	x28, x29, [sp, #16 * 14]
 	ldr	lr, [sp, #S_LR]
 	add	sp, sp, #S_FRAME_SIZE		// restore sp
+	.if	\el == 1
+	add	sp, sp, #RESERVE_SIZE
+	.endif
 	eret					// return to kernel
 	.endm
 

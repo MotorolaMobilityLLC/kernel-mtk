@@ -53,6 +53,8 @@ m4u_callback_ret_t ISP_M4U_TranslationFault_callback(int port, unsigned int mva,
 #define ISP_REG_RANGE           (PAGE_SIZE)
 #define ISP_REG_PER_DIP_RANGE   (PAGE_SIZE*5)
 
+#define ISP_HW_TS_UNDEFINED     (0xFFFFFFFF)
+
 /* In order with the suquence of device nodes defined in dtsi */
 typedef enum {
 	ISP_IMGSYS_CONFIG_IDX = 0,
@@ -543,7 +545,8 @@ typedef enum {
 	ISP_CMD_ION_IMPORT, /* get ion handle */
 	ISP_CMD_ION_FREE,  /* free ion handle */
 	ISP_CMD_CQ_SW_PATCH,  /* sim cq update behavior as atomic behavior */
-	ISP_CMD_ION_FREE_BY_HWMODULE  /* free all ion handle */
+	ISP_CMD_ION_FREE_BY_HWMODULE,  /* free all ion handle */
+	ISP_CMD_TS_MODE  /*set sw timestamp or hw timestamp */
 } ISP_CMD_ENUM;
 
 typedef enum {
@@ -610,6 +613,7 @@ typedef enum {
 #define ISP_ION_FREE                _IOW(ISP_MAGIC, ISP_CMD_ION_FREE,   ISP_DEV_ION_NODE_STRUCT)
 #define ISP_ION_FREE_BY_HWMODULE    _IOW(ISP_MAGIC, ISP_CMD_ION_FREE_BY_HWMODULE, unsigned int)
 #define ISP_CQ_SW_PATCH             _IOW(ISP_MAGIC, ISP_CMD_CQ_SW_PATCH, unsigned int)
+#define ISP_TS_MODE                 _IOWR(ISP_MAGIC, ISP_CMD_TS_MODE, unsigned int)
 
 #ifdef CONFIG_COMPAT
 #define COMPAT_ISP_READ_REGISTER    _IOWR(ISP_MAGIC, ISP_CMD_READ_REG,      compat_ISP_REG_IO_STRUCT)

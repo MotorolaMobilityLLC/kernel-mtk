@@ -101,7 +101,7 @@ typedef struct _PWR_PARAM_T {
 	UINT_32 u4RefValue2;
 } PWR_PARAM_T, *P_PWR_PARAM_T;
 
-#if CFG_SUPPORT_TX_BACKOFF
+#if CFG_SUPPORT_TX_POWER_BACK_OFF || CFG_SUPPORT_FCC_POWER_BACK_OFF
 typedef struct _MITIGATED_PWR_BY_CH_BY_MODE {
 	UINT_8 channel;
 	INT_8 mitigatedCckDsss;
@@ -109,6 +109,18 @@ typedef struct _MITIGATED_PWR_BY_CH_BY_MODE {
 	INT_8 mitigatedHt20;
 	INT_8 mitigatedHt40;
 } MITIGATED_PWR_BY_CH_BY_MODE, *P_MITIGATED_PWR_BY_CH_BY_MODE;
+#endif
+
+#if CFG_SUPPORT_FCC_POWER_BACK_OFF
+typedef struct _FCC_TX_PWR_ADJUST_T {
+	UINT_8 fgFccTxPwrAdjust;
+	UINT_8 uOffsetCCK;
+	UINT_8 uOffsetHT20;
+	UINT_8 uOffsetHT40;
+	UINT_8 aucChannelCCK[2];
+	UINT_8 aucChannelHT20[2];
+	UINT_8 aucChannelHT40[2];
+} FCC_TX_PWR_ADJUST, *P_FCC_TX_PWR_ADJUST;
 #endif
 
 typedef struct _MT6620_CFG_PARAM_STRUCT {
@@ -125,7 +137,8 @@ typedef struct _MT6620_CFG_PARAM_STRUCT {
 	INT_8 cBandEdgeMaxPwrCCK;
 	INT_8 cBandEdgeMaxPwrOFDM20;
 	INT_8 cBandEdgeMaxPwrOFDM40;
-#if CFG_SUPPORT_TX_BACKOFF
+
+#if CFG_SUPPORT_TX_POWER_BACK_OFF || CFG_SUPPORT_FCC_POWER_BACK_OFF
 	INT_8 bTxPowerLimitEnable2G;
 	INT_8 cTxBackOffMaxPower2G;
 	INT_8 bTxPowerLimitEnable5G;
@@ -135,7 +148,7 @@ typedef struct _MT6620_CFG_PARAM_STRUCT {
 	UINT_8 ucRegChannelListMap;
 	UINT_8 ucRegChannelListIndex;
 	UINT_8 aucRegSubbandInfo[36];
-#if CFG_SUPPORT_TX_BACKOFF
+#if CFG_SUPPORT_TX_POWER_BACK_OFF || CFG_SUPPORT_FCC_POWER_BACK_OFF
 	UINT_8 ucDefaultTestMode;
 	UINT_8 aucReserved2[256-245];
 #else
@@ -153,11 +166,12 @@ typedef struct _MT6620_CFG_PARAM_STRUCT {
 	UINT_8 uc5GRssiCompensation;
 	UINT_8 fgRssiCompensationValidbit;
 	UINT_8 ucRxAntennanumber;
-#if CFG_SUPPORT_TX_BACKOFF
+#if CFG_SUPPORT_FCC_POWER_BACK_OFF
 	MITIGATED_PWR_BY_CH_BY_MODE arRlmMitigatedPwrByChByMode[40];
 	UINT_8 fgRlmMitigatedPwrByChByMode;
-	UINT_8 aucReserved3[3];
-	UINT_8 aucTailReserved[256-12-204];
+	FCC_TX_PWR_ADJUST rFccTxPwrAdjust;
+	UINT_8 aucReserved3[1];
+	UINT_8 aucTailReserved[256-12-204-8];
 #else
 	UINT_8 aucTailReserved[256 - 12];
 #endif

@@ -1,7 +1,21 @@
+/*
+ * Copyright (c) 2015-2016 MICROTRUST Incorporated
+ * All Rights Reserved.
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * version 2 as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ */
+
 #include <linux/kernel.h>
 #include <linux/slab.h>
 #include <linux/semaphore.h>
-
+#include <linux/delay.h>
 #include "teei_fp.h"
 #include "teei_id.h"
 #include "sched_status.h"
@@ -121,11 +135,17 @@ void set_fp_command(unsigned long memory_size)
 
 int __send_fp_command(unsigned long share_memory_size)
 {
+	unsigned long smc_type = 2;
 	set_fp_command(share_memory_size);
 	Flush_Dcache_By_Area((unsigned long)fp_buff_addr, fp_buff_addr + FP_BUFF_SIZE);
 
 	fp_call_flag = GLSCH_HIGH;
-	n_invoke_t_drv(0, 0, 0);
+	n_invoke_t_drv(&smc_type, 0, 0);
+
+	while (smc_type == 1) {
+		udelay(IRQ_DELAY);
+		nt_sched_t(&smc_type);
+	}
 
 	return 0;
 
@@ -155,7 +175,7 @@ int send_fp_command(unsigned long share_memory_size)
 	int retVal = 0;
 
 	down(&fdrv_lock);
-	mutex_lock(&pm_mutex);
+	ut_pm_mutex_lock(&pm_mutex);
 
 	down(&smc_lock);
 
@@ -181,7 +201,7 @@ int send_fp_command(unsigned long share_memory_size)
 	Flush_Dcache_By_Area((unsigned long)&fdrv_ent, (unsigned long)&fdrv_ent + sizeof(struct fdrv_call_struct));
 	retVal = add_work_entry(FDRV_CALL, (unsigned long)&fdrv_ent);
 	if (retVal != 0) {
-		mutex_unlock(&pm_mutex);
+		ut_pm_mutex_unlock(&pm_mutex);
 		up(&fdrv_lock);
 		return retVal;
 	}
@@ -193,9 +213,8 @@ int send_fp_command(unsigned long share_memory_size)
 	rmb();
 
 	Invalidate_Dcache_By_Area((unsigned long)fp_buff_addr, fp_buff_addr + FP_BUFF_SIZE);
-	Invalidate_Dcache_By_Area((unsigned long)&fdrv_ent, (unsigned long)&fdrv_ent + sizeof(struct fdrv_call_struct));
 
-	mutex_unlock(&pm_mutex);
+	ut_pm_mutex_unlock(&pm_mutex);
 	up(&fdrv_lock);
 
 #if 0

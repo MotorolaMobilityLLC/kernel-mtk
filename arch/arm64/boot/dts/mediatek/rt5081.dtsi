@@ -11,19 +11,11 @@
  */
 
 / {
-	i2c5: i2c@11011000 {
-		status = "ok";
-		rt5081_pmu: rt5081_pmu@34 {
-			status = "ok";
-			compatible = "richtek,rt5081_pmu";
-			reg = <0x34>;
-		};
-	};
-
 	rt5081_pmu_dts {
 		interrupt-controller;
 		#interrupt-cells = <1>;
 		rt,intr_gpio_num = <101>; /* direct defined GPIO num */
+		rt,intr_gpio = <&pio 101 0x0>; /* GPIO */
 		core {
 			compatible = "richtek,rt5081_pmu_core";
 			interrupt-names = "otp", "vdda_ovp", "vdda_uv";
@@ -37,22 +29,23 @@
 		};
 		charger {
 			compatible = "richtek,rt5081_pmu_charger";
-			interrupt-names = "adc_donei", "chg_mivr",
-				"chg_aiclmeasi", "ssfinishi", "pumpx_donei",
-				"attachi", "ovpctrl_uvp_d_evt", "chg_wdtmri";
-			charger_name = "PrimarySWCHG";
-			load_switch_name = "load_switch";
+			interrupt-names = "chg_mivr", "chg_aiclmeasi", "attachi",
+				"ovpctrl_uvp_d_evt", "chg_wdtmri", "chg_vbusov",
+				"chg_ieoci", "chg_tmri", "chg_rechgi", "chg_treg";
+			charger_name = "primary_chg";
+			load_switch_name = "primary_load_switch";
 			ichg = <2000000>;	/* uA */
 			aicr = <500000>;	/* uA */
 			mivr = <4400000>;	/* uV */
 			cv = <4350000>;		/* uA */
-			ieoc = <250000>;	/* uA */
+			ieoc = <150000>;	/* uA */
 			safety_timer = <12>;	/* hour */
 			dc_wdt = <4000000>;	/* us */
 			ircmp_resistor = <25000>;	/* uohm */
 			ircmp_vclamp = <32000>;		/* uV */
 			enable_te;
 			enable_wdt;
+			/* enable_polling; */	/* is this charger needs polling */
 		};
 		rt5081_pmu_fled1 {
 			compatible = "richtek,rt5081_pmu_fled1";

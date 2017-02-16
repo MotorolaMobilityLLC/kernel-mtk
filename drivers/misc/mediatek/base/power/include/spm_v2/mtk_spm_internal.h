@@ -265,9 +265,13 @@ struct pwr_ctrl {
 	u8 emi_boost_dvfs_req_mask_b;
 	u8 cpu_md_emi_dvfs_req_prot_dis;
 	u8 dramc_spcmd_apsrc_req_mask_b;
+	u8 emi_boost_dvfs_req_2_mask_b;
+	u8 emi_bw_dvfs_req_2_mask;
 
 	/* SW_CRTL_EVENT */
 	u8 sw_ctrl_event_on;
+	/* SW_CRTL_EVENT_2 */
+	u8 sw_ctrl_event_on_2;
 
 	/* SPM_SW_RSV_6 */
 	u8 md_srcclkena_0_2d_dvfs_req_mask_b;
@@ -581,6 +585,11 @@ extern struct dram_info *g_dram_info_dummy_read;
 
 #if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 extern int can_spm_pmic_set_vcore_voltage(void);
+#endif
+
+#if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
+extern void spm_set_dfd_wakeup_src(bool enable);
+extern bool spm_get_dfd_wakeup_src(void);
 #endif
 
 #if defined(CONFIG_ARCH_MT6797)

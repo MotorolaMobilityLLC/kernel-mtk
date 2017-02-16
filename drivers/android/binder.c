@@ -14,7 +14,7 @@
  * GNU General Public License for more details.
  *
  */
-
+#define DEBUG 1
 #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
 
 #include <asm/cacheflush.h>
@@ -234,7 +234,7 @@ module_param_call(stop_on_user_error, binder_set_stop_on_user_error,
 #define binder_user_error(x...) \
 	do { \
 		if (binder_debug_mask & BINDER_DEBUG_USER_ERROR) \
-			pr_err(x); \
+			pr_err_ratelimited(x); \
 		if (binder_stop_on_user_error) \
 			binder_stop_on_user_error = 2; \
 	} while (0)
@@ -657,18 +657,27 @@ static void binder_print_bwdog(struct binder_transaction *t,
 	sub_t = timespec_sub(cur, *startime);
 
 	rtc_time_to_tm(t->tv.tv_sec, &tm);
-	pr_debug("%d %s %d:%d to %d:%d %s %u.%03ld sec (%s) dex_code %u",
-		 t->debug_id, binder_wait_on_str[r],
-		 t->fproc, t->fthrd, t->tproc, t->tthrd,
-		 (cur_in && e) ? "over" : "total",
-		 (unsigned)sub_t.tv_sec, (sub_t.tv_nsec / NSEC_PER_MSEC),
-		 t->service, t->code);
-	pr_debug(" start_at %lu.%03ld android %d-%02d-%02d %02d:%02d:%02d.%03lu\n",
-		 (unsigned long)startime->tv_sec,
-		 (startime->tv_nsec / NSEC_PER_MSEC),
-		 (tm.tm_year + 1900), (tm.tm_mon + 1), tm.tm_mday,
-		 tm.tm_hour, tm.tm_min, tm.tm_sec, (unsigned long)(t->tv.tv_usec / USEC_PER_MSEC));
-
+	if (cur_in && e) {
+		pr_debug("%d %s %d:%d to %d:%d %s %u.%03ld s (%s) dex %u at %lu.%03ld android %d-%02d-%02d %02d:%02d:%02d.%03lu\n",
+			t->debug_id, binder_wait_on_str[r],
+			t->fproc, t->fthrd, t->tproc, t->tthrd, "over",
+			(unsigned)sub_t.tv_sec, (sub_t.tv_nsec / NSEC_PER_MSEC),
+			t->service, t->code,
+			(unsigned long)startime->tv_sec,
+			(startime->tv_nsec / NSEC_PER_MSEC),
+			(tm.tm_year + 1900), (tm.tm_mon + 1), tm.tm_mday,
+			tm.tm_hour, tm.tm_min, tm.tm_sec, (unsigned long)(t->tv.tv_usec / USEC_PER_MSEC));
+	} else {
+		pr_debug_ratelimited("%d %s %d:%d to %d:%d %s %u.%03ld s (%s) dex %u at %lu.%03ld android %d-%02d-%02d %02d:%02d:%02d.%03lu\n",
+			t->debug_id, binder_wait_on_str[r],
+			t->fproc, t->fthrd, t->tproc, t->tthrd, "total",
+			(unsigned)sub_t.tv_sec, (sub_t.tv_nsec / NSEC_PER_MSEC),
+			t->service, t->code,
+			(unsigned long)startime->tv_sec,
+			(startime->tv_nsec / NSEC_PER_MSEC),
+			(tm.tm_year + 1900), (tm.tm_mon + 1), tm.tm_mday,
+			tm.tm_hour, tm.tm_min, tm.tm_sec, (unsigned long)(t->tv.tv_usec / USEC_PER_MSEC));
+	}
 	if (e) {
 		e->over_sec = sub_t.tv_sec;
 		memcpy(&e->ts, startime, sizeof(struct timespec));
@@ -986,6 +995,31 @@ out:
 	return res;
 }
 
+/*
+ * binder_check_is_javap - check if tsk is a java process
+ * @tsk:task_struct of process which to check
+ */
+static int binder_check_is_javap(struct task_struct *tsk)
+{
+	char parent_name[256];
+	struct task_struct *parent_task;
+	int len_parent;
+
+	if (tsk == NULL)
+		return -1;
+
+	if (tsk->real_parent) {
+		parent_task = find_process_by_pid(tsk->real_parent->pid);
+		len_parent = binder_proc_pid_cmdline(parent_task, parent_name);
+
+		if (len_parent) {
+			if (!strcmp(parent_name, "zygote64") || !strcmp(parent_name, "zygote"))
+				return 1;
+		}
+	}
+	return 0;
+}
+
 /**
  * binder_print_buf - Print buffer info
  * @t:		transaction
@@ -1118,7 +1152,7 @@ static void binder_check_buf(struct binder_proc *target_proc, size_t size, int i
 	struct timeval tv;
 	struct rtc_time tm;
 #if defined(CONFIG_MTK_AEE_FEATURE)
-	int db_flag = DB_OPT_BINDER_INFO;
+	int db_flag = DB_OPT_BINDER_INFO | DB_OPT_SWT_JBT_TRACES | DB_OPT_PRINTK_TOO_MUCH;
 #endif
 	int len_s, len_r;
 	int ptr = 0;
@@ -1198,6 +1232,8 @@ static void binder_check_buf(struct binder_proc *target_proc, size_t size, int i
 		ptr += snprintf(aee_msg+ptr, sizeof(aee_msg)-ptr,
 			"large data size,check sender %d(%s)! check kernel log\n",
 			binder_check_buf_pid, sender ? sender->comm : "");
+			if (binder_check_is_javap(sender) > 0)
+				kill_pid(find_vpid(binder_check_buf_pid), SIGQUIT, 1);
 	} else {
 		if (target_proc->large_buffer) {
 			pr_debug("on %d:0 the largest pending trans is:\n", target_proc->pid);
@@ -1259,12 +1295,16 @@ static void binder_check_buf(struct binder_proc *target_proc, size_t size, int i
 				"%d small trans pending, check receiver %d(%s)! check kernel log\n",
 				i, target_proc->pid,
 				target_proc->tsk ? target_proc->tsk->comm : "");
+			if (binder_check_is_javap(sender) > 0)
+				kill_pid(find_vpid(binder_check_buf_pid), SIGQUIT, 1);
 		}
 
 	}
 
 	binder_check_buf_pid = -1;
 	binder_check_buf_tid = -1;
+	if (binder_check_is_javap(target_proc->tsk) > 0)
+		kill_pid(find_vpid(target_proc->pid), SIGQUIT, 1);
 #if defined(CONFIG_MTK_AEE_FEATURE)
 	aee_kernel_warning_api(__FILE__, __LINE__, db_flag, &aee_word[0], &aee_msg[0]);
 #endif
@@ -4481,6 +4521,7 @@ static int binder_node_release(struct binder_node *node, int refs)
 	int death = 0;
 #ifdef BINDER_MONITOR
 	int sys_reg = 0;
+	static DEFINE_RATELIMIT_STATE(node_release_ratelimit, 2*HZ, 30);
 #endif
 #if defined(MTK_DEATH_NOTIFY_MONITOR) || defined(MTK_BINDER_DEBUG)
 	int dead_pid = node->proc ? node->proc->pid : 0;
@@ -4537,10 +4578,11 @@ static int binder_node_release(struct binder_node *node, int refs)
 	}
 
 #if defined(BINDER_MONITOR) && defined(MTK_BINDER_DEBUG)
-	if (sys_reg)
+	if (sys_reg && __ratelimit(&node_release_ratelimit)) {
 		pr_debug
 		    ("%d:%s node %d:%s exits with %d:system_server DeathNotify\n",
 		     dead_pid, dead_pname, node->debug_id, node->name, system_server_pid);
+	}
 #endif
 
 	binder_debug(BINDER_DEBUG_DEAD_BINDER,

@@ -1,3 +1,17 @@
+/*
+ * Copyright (c) 2015-2016 MICROTRUST Incorporated
+ * All Rights Reserved.
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * version 2 as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ */
+
 #include <linux/slab.h>
 #include <linux/delay.h>
 #include <linux/mutex.h>
@@ -12,13 +26,14 @@
 
 #define VFS_SYS_NO      0x08
 #define REETIME_SYS_NO  0x07
+#define GLSCH_LOW      0x01
 
 struct bdrv_call_struct {
 	int bdrv_call_type;
 	struct service_handler *handler;
 	int retVal;
 };
-
+extern int forward_call_flag;
 extern int add_work_entry(int work_type, unsigned long buff);
 static long register_shared_param_buf(struct service_handler *handler);
 
@@ -52,20 +67,23 @@ void set_ack_vdrv_cmd(unsigned int sys_num)
 
 
 
-static void secondary_invoke_fastcall(void *info)
+void secondary_invoke_fastcall(void *info)
 {
-	n_invoke_t_fast_call(0, 0, 0);
+	unsigned long smc_type = 2;
+	n_invoke_t_fast_call(&smc_type, 0, 0);
+
+	while (smc_type == 1) {
+		udelay(IRQ_DELAY);
+		nt_sched_t(&smc_type);
+	}
 }
 
 
 void invoke_fastcall(void)
 {
-	int cpu_id = 0;
-
-	get_online_cpus();
-	cpu_id = get_current_cpuid();
-	smp_call_function_single(cpu_id, secondary_invoke_fastcall, NULL, 1);
-	put_online_cpus();
+  int cpu_id = 0;
+  forward_call_flag = GLSCH_LOW;
+	add_work_entry(INVOKE_FASTCALL, NULL);
 }
 
 static long register_shared_param_buf(struct service_handler *handler)
@@ -168,6 +186,8 @@ int __reetime_handle(struct service_handler *handler)
 	void *ptr = NULL;
 	int tv_sec;
 	int tv_usec;
+	unsigned long smc_type = 2;
+
 	do_gettimeofday(&tv);
 	ptr = handler->param_buf;
 	tv_sec = tv.tv_sec;
@@ -178,9 +198,11 @@ int __reetime_handle(struct service_handler *handler)
 	Flush_Dcache_By_Area((unsigned long)handler->param_buf, (unsigned long)handler->param_buf + handler->size);
 
 	set_ack_vdrv_cmd(handler->sysno);
-	teei_vfs_flag = 0;
-
-	n_ack_t_invoke_drv(0, 0, 0);
+	n_ack_t_invoke_drv(&smc_type, 0, 0);
+	while (smc_type == 1) {
+		udelay(IRQ_DELAY);
+		nt_sched_t(&smc_type);
+	}
 
 	return 0;
 }
@@ -206,35 +228,20 @@ static int reetime_handle(struct service_handler *handler)
 
 	down(&smc_lock);
 
-#if 0
-	reetime_handle_entry.handler = handler;
-#else
 	reetime_bdrv_ent = (struct bdrv_call_struct *)kmalloc(sizeof(struct bdrv_call_struct), GFP_KERNEL);
 	reetime_bdrv_ent->handler = handler;
 	reetime_bdrv_ent->bdrv_call_type = REETIME_SYS_NO;
-#endif
 	/* with a wmb() */
 	wmb();
 
-#if 0
-	get_online_cpus();
-	cpu_id = get_current_cpuid();
-	smp_call_function_single(cpu_id, secondary_reetime_handle, (void *)(&reetime_handle_entry), 1);
-	put_online_cpus();
-#else
 	retVal = add_work_entry(BDRV_CALL, (unsigned long)reetime_bdrv_ent);
 	if (retVal != 0) {
 		up(&smc_lock);
 		return retVal;
 	}
-#endif
 	/* with a rmb() */
 	rmb();
-#if 0
-	return reetime_handle_entry.retVal;
-#else
 	return 0;
-#endif
 }
 
 /********************************************************************
@@ -276,12 +283,16 @@ static void vfs_deinit(struct service_handler *handler) /*! stop service  */
 
 int __vfs_handle(struct service_handler *handler) /*! invoke handler */
 {
+	unsigned long smc_type = 2;
 	Flush_Dcache_By_Area((unsigned long)handler->param_buf, (unsigned long)handler->param_buf + handler->size);
 
 	set_ack_vdrv_cmd(handler->sysno);
-	teei_vfs_flag = 0;
+	n_ack_t_invoke_drv(&smc_type, 0, 0);
 
-	n_ack_t_invoke_drv(0, 0, 0);
+	while (smc_type == 1) {
+		udelay(IRQ_DELAY);
+		nt_sched_t(&smc_type);
+	}
 
 	return 0;
 }
@@ -318,10 +329,8 @@ static int vfs_handle(struct service_handler *handler)
 	/* with a wmb() */
 	wmb();
 #if 0
-	get_online_cpus();
 	cpu_id = get_current_cpuid();
 	smp_call_function_single(cpu_id, secondary_vfs_handle, (void *)(&vfs_handle_entry), 1);
-	put_online_cpus();
 #else
 	Flush_Dcache_By_Area((unsigned long)vfs_bdrv_ent, (unsigned long)vfs_bdrv_ent + sizeof(struct bdrv_call_struct));
 	retVal = add_work_entry(BDRV_CALL, (unsigned long)vfs_bdrv_ent);

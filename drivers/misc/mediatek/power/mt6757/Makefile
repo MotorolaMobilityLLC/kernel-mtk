@@ -41,6 +41,7 @@ else
 			obj-$(CONFIG_MTK_BQ25896_SUPPORT) += bq25896.o charging_hw_bq25896.o
 			obj-$(CONFIG_MTK_BQ25890_SUPPORT) += bq25890.o charging_hw_bq25890.o
 			obj-$(CONFIG_MTK_RT9466_SUPPORT) += rt9466.o
+			obj-$(CONFIG_MTK_RT9467_SUPPORT) += rt9467.o
 			obj-$(CONFIG_MTK_RT9468_SUPPORT) += rt9468.o rt9468_shuttle.o
 		else
 			obj-$(CONFIG_MTK_SMART_BATTERY) += charging_hw_pmic.o

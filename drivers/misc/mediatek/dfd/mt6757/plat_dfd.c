@@ -24,7 +24,7 @@ unsigned int check_dfd_support(void)
 
 	is_kibop = 0;
 	segment = (get_devinfo_with_index(30) & 0x000000E0) >> 5;
-	if (segment == 0x3) {
+	if (segment == 0x3 || segment == 0x7) {
 		is_kibop = 1;
 		pr_err("[dfd] Kibo+ enable DFD\n");
 		return 1;

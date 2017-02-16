@@ -160,6 +160,65 @@ static inline void xhci_mtk_drop_ep_quirk(struct usb_hcd *hcd,
 	struct usb_device *udev, struct usb_host_endpoint *ep)
 {
 }
+
+#if defined(CONFIG_USB_XHCI_MTK)
+int xhci_mtk_register_plat(void);
+void xhci_mtk_unregister_plat(void);
+#endif
+
+#endif
+
+#ifdef CONFIG_MTK_UAC_POWER_SAVING
+enum xhci_mtk_sram_id {
+	/* memmory interfrace */
+	XHCI_EVENTRING = 0,
+	XHCI_EPTX,
+	XHCI_EPRX,
+	XHCI_DCBAA,
+	XHCI_ERST,
+	XHCI_AUDIO_INTR,
+	XHCI_AUDIO_FEEDBACK_TX,
+	XHCI_AUDIO_FEEDBACK_RX,
+	XHCI_AUDIO_INTR_DATA,
+	XHCI_AUDIO_FEEDBACK_TX_DATA,
+	XHCI_AUDIO_FEEDBACK_RX_DATA,
+	XHCI_SRAM_BLOCK_NUM
+};
+enum xhci_mtk_sram_state {
+	STATE_UNINIT = 0,
+	STATE_INIT,
+	STATE_USE,
+	STATE_NOMEM,
+};
+
+struct xhci_mtk_sram_block {
+	dma_addr_t msram_phys_addr;
+	void *msram_virt_addr;
+	unsigned int mlength;
+	enum xhci_mtk_sram_state state;
+};
+enum usb_data_id {
+	USB_AUDIO_DATA_OUT_EP = 0,
+	USB_AUDIO_DATA_IN_EP,
+	USB_AUDIO_DATA_SYNC_EP_TX,
+	USB_AUDIO_DATA_SYNC_EP_RX,
+	USB_AUDIO_HID_INTERRUPT,
+	USB_AUDIO_DATA_BLOCK_NUM,
+};
+
+#define FEEDBACK_DATA_SIZE 64
+
+extern int mtk_audio_request_sram(dma_addr_t *phys_addr, unsigned char **virt_addr,
+	unsigned int length, void *user);
+extern void mtk_audio_free_sram(void *user);
+extern int xhci_mtk_init_sram(struct xhci_hcd *xhci);
+extern int xhci_mtk_deinit_sram(struct xhci_hcd *xhci);
+extern int xhci_mtk_allocate_sram(int id, dma_addr_t *sram_phys_addr,
+	unsigned char **msram_virt_addr);
+extern int xhci_mtk_free_sram(int id);
+extern void *mtk_usb_alloc_sram(int id, size_t size, dma_addr_t *dma);
+extern void mtk_usb_free_sram(int id);
+extern void xhci_mtk_allow_sleep(unsigned int sleep_ms);
 #endif
 
 #endif		/* _XHCI_MTK_H_ */

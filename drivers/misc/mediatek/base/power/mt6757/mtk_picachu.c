@@ -48,6 +48,8 @@
 #define PICACHU_BARRIER_END	0x0011C210
 #define PICACHU_BARRIER_SIZE	(PICACHU_BARRIER_END - PICACHU_BARRIER_START)
 
+#define PICACHU_SUPPORT_CLUSTERS 3
+
 #define PARA_PATH       "/dev/block/platform/mtk-msdc.0/11230000.msdc0/by-name/para"
 #define CFG_ENV_SIZE    0x1000
 #define CFG_ENV_OFFSET  0x40000
@@ -88,19 +90,34 @@ struct picachu_info {
 	unsigned int checksum;
 	unsigned int udi_mbist_max_cpus;
 	unsigned int clear_emmc;
+
+	/*
+	 * Bit[7:0]: BDES
+	 * Bit[15:8]: MDES
+	 * Bit[23:16]: MTDES
+	 */
+	unsigned int ptp1_efuse[PICACHU_SUPPORT_CLUSTERS]; /* 2L, L and CCI */
+
 	int enable;
 };
 
 static struct picachu_info *picachu_data;
 static unsigned int picachu_debug;
 
+/*
+ * Since PICACHU is enabled internally/externally, there is no need to check
+ * the kernel config option.
+ */
+#if 0
 #if defined(CONFIG_MTK_DISABLE_PICACHU)
 static int picachu_enable;
 #else
-/* FIXME: Disable Picachu temporarily. */
-/* static int picachu_enable = 1; */
-static int picachu_enable;
+static int picachu_enable = 1;
 #endif
+#else
+static int picachu_enable = 1;
+#endif
+
 
 static void dump_picachu_info(struct seq_file *m, struct picachu_info *info)
 {
@@ -115,6 +132,8 @@ static void dump_picachu_info(struct seq_file *m, struct picachu_info *info)
 	seq_printf(m, "0x%X\n", info->timestamp);
 	seq_printf(m, "0x%X\n", info->checksum);
 	seq_printf(m, "0x%X\n", info->clear_emmc);
+	for (i = EEM_CTRL_2L; i <= EEM_CTRL_CCI; i++)
+		seq_printf(m, "0x%X\n", info->ptp1_efuse[i]);
 	seq_printf(m, "0x%X\n", info->enable);
 	seq_printf(m, "0x%X\n", info->udi_mbist_max_cpus);
 }
@@ -249,6 +268,7 @@ static ssize_t picachu_offset_proc_write(struct file *file,
 			picachu_data->offset = offset;
 			eem_set_pi_offset(EEM_CTRL_2L, offset);
 			eem_set_pi_offset(EEM_CTRL_L, offset);
+			eem_set_pi_offset(EEM_CTRL_CCI, offset);
 		}
 	}
 
@@ -324,13 +344,13 @@ static int create_procfs(void)
 
 	if (!dir) {
 		picachu_dbg("[%s]: mkdir /proc/picachu failed\n", __func__);
-		return -1;
+		return -ENOMEM;
 	}
 
 	for (i = 0; i < ARRAY_SIZE(entries); i++) {
 		if (!proc_create(entries[i].name, S_IRUGO | S_IWUSR | S_IWGRP, dir, entries[i].fops)) {
 			picachu_dbg("[%s]: create /proc/picachu/%s failed\n", __func__, entries[i].name);
-			return -3;
+			return -ENOMEM;
 		}
 	}
 
@@ -339,7 +359,7 @@ static int create_procfs(void)
 
 static int __init picachu_init(void)
 {
-	int offset = 0;
+	int i;
 
 	picachu_data = (struct picachu_info *) ioremap_nocache(PICACHU_BASE,
 								PICACHU_SIZE);
@@ -351,18 +371,24 @@ static int __init picachu_init(void)
 
 	picachu_data->enable = picachu_enable;
 
-	if (picachu_enable == 1) {
-		offset = picachu_data->offset;
-		picachu_info("pi_off = %d\n", picachu_data->offset);
-	}
-
-	eem_set_pi_offset(EEM_CTRL_2L, offset);
-	eem_set_pi_offset(EEM_CTRL_L, offset);
-
 	create_procfs();
 
+	if (!picachu_enable)
+		return 0;
+
+	/* Update Picachu calibration data if the data is valid. */
+	for (i = EEM_CTRL_2L; i <= EEM_CTRL_CCI; i++) {
+
+		if (!picachu_data->ptp1_efuse[i])
+			continue;
+
+		eem_set_pi_efuse(i, picachu_data->ptp1_efuse[i]);
+	}
+
+#if 0
 	if (picachu_data->udi_mbist_max_cpus == 4)
 		aee_kernel_warning("PICACHU", "CPU truncate to 4 only");
+#endif
 
 	return 0;
 }

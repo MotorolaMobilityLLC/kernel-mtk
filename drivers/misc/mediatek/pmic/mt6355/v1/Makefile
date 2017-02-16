@@ -1,6 +1,7 @@
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/pmic
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/pmic_wrap/$(CONFIG_MTK_PLATFORM)
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include/spm_v2/
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/$(CONFIG_MTK_PLATFORM)
 
 ifeq ($(CONFIG_MTK_TINYSYS_SSPM_SUPPORT), y)
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/sspm/

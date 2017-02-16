@@ -80,6 +80,9 @@
 static kuid_t uid = KUIDT_INIT(0);
 static kgid_t gid = KGIDT_INIT(1000);
 
+int tscpu_fake_temp_enable; /*fake temperature flag*/
+int tscpu_fake_temp = 0x7FFFFFFF; /*fake temperature*/
+
 #if !defined(CONFIG_MTK_CLKMGR)
 struct clk *therm_main;		/* main clock for Thermal */
 #endif
@@ -641,12 +644,12 @@ static int tscpu_get_temp(struct thermal_zone_device *thermal, int *t)
 #if THERMAL_LT_SET_HPM
 	if (enable_hpm_temp) {
 		ts_temp = get_immediate_ts4_wrap();
-		if (ts_temp > leave_hpm_temp) {
+		if (ts_temp > leave_hpm_temp && ts_temp != CLEAR_TEMP) {
 			if (vcorefs_get_kicker_opp(KIR_THERMAL) != OPPI_UNREQ) {
 				tscpu_warn("ts4: temp=%d leave HPM\n", ts_temp);
 				r = vcorefs_request_dvfs_opp(KIR_THERMAL, OPPI_UNREQ);
 			}
-		} else if (ts_temp < enter_hpm_temp) {
+		} else if (ts_temp < enter_hpm_temp && ts_temp != CLEAR_TEMP) {
 			if (vcorefs_get_kicker_opp(KIR_THERMAL) != OPPI_PERF) {
 				tscpu_warn("ts4: temp=%d enter HPM\n", ts_temp);
 				r = vcorefs_request_dvfs_opp(KIR_THERMAL, OPPI_PERF);
@@ -1051,6 +1054,48 @@ static ssize_t tscpu_pmic_current_limit_write(struct file *file, const char __us
 	return -EINVAL;
 }
 #endif
+
+
+
+static int tscpu_read_fake_temp(struct seq_file *m, void *v)
+{
+	seq_printf(m, "[tscpu_read_fake_temp] %d %d\n", tscpu_fake_temp, tscpu_fake_temp_enable);
+	return 0;
+}
+
+static ssize_t tscpu_write_fake_temp(struct file *file, const char __user *buffer, size_t count,
+	loff_t *data)
+{
+	char desc[128];
+	int len = 0;
+
+	int set_enable = 0;
+	int temperature = -1, enable = 1;
+
+	len = (count < (sizeof(desc) - 1)) ? count : (sizeof(desc) - 1);
+	if (copy_from_user(desc, buffer, len))
+		return 0;
+
+	desc[len] = '\0';
+
+	if (sscanf(desc, "%d %d", &temperature, &enable) == 2) {
+		set_enable = 1;
+	} else {
+		tscpu_warn("tscpu_write_fake_temp bad argument\n");
+		return -EINVAL;
+	}
+
+	if (set_enable) {
+		tscpu_fake_temp_enable = !!(enable);
+
+		tscpu_fake_temp = temperature;
+
+		tscpu_warn("tscpu_write_fake_temp enable: %d %d(%d)\n",
+			tscpu_fake_temp_enable, tscpu_fake_temp_enable, enable);
+	}
+
+	return count;
+}
 
 
 static int tscpu_read_log(struct seq_file *m, void *v)
@@ -2039,6 +2084,22 @@ static const struct file_operations mtktscpu_ts4_fops = {
 };
 #endif
 
+
+static int tscpu_open_fake_temp(struct inode *inode, struct file *file)
+{
+	return single_open(file, tscpu_read_fake_temp, NULL);
+}
+
+static const struct file_operations mtktscpu_fake_temp = {
+	.owner = THIS_MODULE,
+	.open = tscpu_open_fake_temp,
+	.read = seq_read,
+	.llseek = seq_lseek,
+	.write = tscpu_write_fake_temp,
+	.release = single_release,
+};
+
+
 static int tscpu_read_ttpct(struct seq_file *m, void *v)
 {
 	unsigned int cpu_power, gpu_power, max_cpu_pwr, max_gpu_pwr;
@@ -2600,6 +2661,12 @@ static void tscpu_create_fs(void)
 		if (entry)
 			proc_set_user(entry, uid, gid);
 #endif
+
+		entry =
+			proc_create("tzcpu_fake_temp", S_IRUGO | S_IWUSR, mtktscpu_dir, &mtktscpu_fake_temp);
+		if (entry)
+			proc_set_user(entry, uid, gid);
+
 	}
 }
 

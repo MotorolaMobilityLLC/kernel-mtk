@@ -171,6 +171,7 @@ struct last_reboot_reason {
 	uint8_t ocp_2_enable;
 	uint32_t scp_pc;
 	uint32_t scp_lr;
+	unsigned long last_init_func;
 
 	void *kparams;
 };
@@ -458,6 +459,19 @@ static int ram_console_lastk_show(struct ram_console_buffer *buffer, struct seq_
 	return 0;
 }
 
+static void aee_rr_show_in_log(void)
+{
+	if (ram_console_check_header(ram_console_old))
+		pr_err("ram_console: no valid data\n");
+	else {
+		pr_err("ram_console: CPU notifier status: %d, %d, 0x%llx\n",
+				LAST_RRR_VAL(hotplug_cpu_event),
+				LAST_RRR_VAL(hotplug_cb_index),
+				LAST_RRR_VAL(hotplug_cb_fp));
+		pr_err("ram_console: last init function: 0x%lx\n", LAST_RRR_VAL(last_init_func));
+	}
+}
+
 static int __init ram_console_save_old(struct ram_console_buffer *buffer, size_t buffer_size)
 {
 	ram_console_old = kmalloc(buffer_size, GFP_KERNEL);
@@ -466,6 +480,7 @@ static int __init ram_console_save_old(struct ram_console_buffer *buffer, size_t
 		return -1;
 	}
 	memcpy(ram_console_old, buffer, buffer_size);
+	aee_rr_show_in_log();
 	return 0;
 }
 
@@ -1862,6 +1877,14 @@ void aee_rr_rec_scp(void)
 	aee_rr_rec_scp_lr(lr);
 }
 
+void aee_rr_rec_last_init_func(unsigned long val)
+{
+	if (!ram_console_init_done || !ram_console_buffer)
+		return;
+	LAST_RR_SET(last_init_func, val);
+}
+
+
 void aee_rr_rec_suspend_debug_flag(u32 val)
 {
 	if (!ram_console_init_done || !ram_console_buffer)
@@ -2533,6 +2556,11 @@ void aee_rr_show_scp_lr(struct seq_file *m)
 	seq_printf(m, "scp_lr: 0x%x\n", LAST_RRR_VAL(scp_lr));
 }
 
+void aee_rr_show_last_init_func(struct seq_file *m)
+{
+	seq_printf(m, "last init function: 0x%lx\n", LAST_RRR_VAL(last_init_func));
+}
+
 void aee_rr_show_isr_el1(struct seq_file *m)
 {
 	seq_printf(m, "isr_el1: %d\n", LAST_RRR_VAL(isr_el1));
@@ -2700,6 +2728,8 @@ last_rr_show_t aee_rr_show[] = {
 	aee_rr_show_ptp_cpu_cci_volt_2,
 	aee_rr_show_ptp_cpu_cci_volt_3,
 	aee_rr_show_ptp_gpu_volt,
+	aee_rr_show_ptp_gpu_volt_2,
+	aee_rr_show_ptp_gpu_volt_3,
 	aee_rr_show_ptp_temp,
 	aee_rr_show_ptp_status,
 	aee_rr_show_eem_pi_offset,
@@ -2721,6 +2751,7 @@ last_rr_show_t aee_rr_show[] = {
 	aee_rr_show_ocp_2_enable,
 	aee_rr_show_scp_pc,
 	aee_rr_show_scp_lr,
+	aee_rr_show_last_init_func,
 	aee_rr_show_hotplug_status,
 	aee_rr_show_hotplug_caller_callee_status,
 	aee_rr_show_hotplug_up_prepare_ktime,

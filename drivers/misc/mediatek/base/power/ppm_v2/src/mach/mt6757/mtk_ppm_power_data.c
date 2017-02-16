@@ -37,7 +37,7 @@ static struct ppm_pwr_idx_ref_tbl_data pwr_idx_ref_tbl_##name = {	\
 	.nr_pwr_idx_ref_tbl = ARRAY_SIZE(cpu_pwr_idx_ref_tbl_##name),	\
 }
 
-#ifdef PPM_L_PLUS_SUPPORT
+#ifdef PPM_TURBO_CORE_SUPPORT
 PWR_IDX_REF_TABLE(FY_v2);
 PWR_IDX_REF_TABLE(FY_v3);
 PWR_IDX_REF_TABLE(SB_v2);
@@ -49,8 +49,8 @@ PWR_IDX_REF_TABLE(SB);
 
 struct ppm_pwr_idx_ref_tbl_data ppm_get_pwr_idx_ref_tbl(void)
 {
-#ifdef PPM_L_PLUS_SUPPORT
-	if (ppm_main_info.has_L_plus)
+#ifdef PPM_TURBO_CORE_SUPPORT
+	if (ppm_main_info.is_turbo_core)
 		return (ppm_main_info.dvfs_tbl_type == DVFS_TABLE_TYPE_SB)
 			? pwr_idx_ref_tbl_SB_v3 : pwr_idx_ref_tbl_FY_v3;
 	else
@@ -67,8 +67,8 @@ int *ppm_get_perf_idx_ref_tbl(enum ppm_cluster cluster)
 	if (cluster >= NR_PPM_CLUSTERS)
 		return NULL;
 
-#ifdef PPM_L_PLUS_SUPPORT
-	if (ppm_main_info.has_L_plus)
+#ifdef PPM_TURBO_CORE_SUPPORT
+	if (ppm_main_info.is_turbo_core)
 		return (ppm_main_info.dvfs_tbl_type == DVFS_TABLE_TYPE_SB)
 			? cpu_perf_idx_ref_tbl_SB_v3[cluster] : cpu_perf_idx_ref_tbl_FY_v3[cluster];
 	else

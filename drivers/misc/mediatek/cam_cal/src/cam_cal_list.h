@@ -75,5 +75,7 @@ unsigned int cam_cal_check_mtk_cid(struct i2c_client *client, cam_cal_cmd_func r
 unsigned int cam_cal_check_double_eeprom(struct i2c_client *client,
 	cam_cal_cmd_func readCamCalData);
 
+extern struct mutex EEPROM_Mutex;
+
 #endif /* __CAM_CAL_LIST_H */
 

@@ -50,7 +50,8 @@ MODULE_LICENSE("GPL");
 #define COMBO_IOC_D1_EFUSE_GET       9
 #define COMBO_IOC_RTC_FLAG	     10
 #define COMBO_IOC_CO_CLOCK_FLAG	     11
-
+#define COMBO_IOC_TRIGGER_WMT_ASSERT 12
+#define COMBO_IOC_WMT_STATUS         13
 
 static UINT32 gDbgLevel = GPS_LOG_DBG;
 
@@ -93,7 +94,7 @@ static unsigned char o_buf[STP_GPS_BUFFER_SIZE];	/* output buffer of write() */
 static struct semaphore wr_mtx, rd_mtx;
 static DECLARE_WAIT_QUEUE_HEAD(GPS_wq);
 static int flag;
-static volatile int retflag;
+static volatile int rstflag;
 
 static void GPS_event_cb(void);
 
@@ -192,7 +193,14 @@ ssize_t GPS_read(struct file *filp, char __user *buf, size_t count, loff_t *f_po
 
 	down(&rd_mtx);
 
-/*    pr_warn("GPS_read(): count %d pos %lld\n", count, *f_pos);*/
+    /* pr_debug("GPS_read(): count %d pos %lld\n", count, *f_pos); */
+	if (rstflag == 1) {
+		if (filp->f_flags & O_NONBLOCK) {
+			/* GPS_DBG_FUNC("Non-blocking read, whole chip reset occurs! rstflag=%d\n", rstflag); */
+			retval = -EIO;
+			goto OUT;
+		}
+	}
 
 	if (count > MTKSTP_BUFFER_SIZE)
 		count = MTKSTP_BUFFER_SIZE;
@@ -207,7 +215,13 @@ ssize_t GPS_read(struct file *filp, char __user *buf, size_t count, loff_t *f_po
 
 	while (retval == 0) {
 		/* got nothing, wait for STP's signal */
-		/*wait_event(GPS_wq, flag != 0); *//* George: let signal wake up */
+		/* wait_event(GPS_wq, flag != 0); *//* George: let signal wake up */
+		if (filp->f_flags & O_NONBLOCK) {
+			/* GPS_DBG_FUNC("Non-blocking read, no data is available!\n"); */
+			retval = -EAGAIN;
+			goto OUT;
+		}
+
 		val = wait_event_interruptible(GPS_wq, flag != 0);
 		flag = 0;
 
@@ -346,6 +360,32 @@ long GPS_unlocked_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 #endif
 		break;
 
+	case COMBO_IOC_TRIGGER_WMT_ASSERT:
+		/* Trigger FW assert for debug */
+		GPS_INFO_FUNC("%s: Host trigger FW assert......, reason:%lu\n", __func__, arg);
+		retval = mtk_wcn_wmt_assert(WMTDRV_TYPE_GPS, arg);
+		if (retval == MTK_WCN_BOOL_TRUE) {
+			GPS_INFO_FUNC("Host trigger FW assert succeed\n");
+			retval = 0;
+		} else {
+			GPS_ERR_FUNC("Host trigger FW assert Failed\n");
+			retval = (-EBUSY);
+		}
+		break;
+	case COMBO_IOC_WMT_STATUS:
+		if (rstflag == 1) {
+			/* chip resetting */
+			retval = -888;
+		} else if (rstflag == 2) {
+			/* chip reset end */
+			retval = -889;
+			rstflag = 0;
+		} else {
+			/* normal */
+			retval = 0;
+		}
+		GPS_DBG_FUNC("rstflag(%d), retval(%d)\n", rstflag, retval);
+		break;
 	default:
 		retval = -EFAULT;
 		GPS_DBG_FUNC("GPS_ioctl(): unknown cmd (%d)\n", cmd);
@@ -378,23 +418,28 @@ static void gps_cdev_rst_cb(ENUM_WMTDRV_TYPE_T src,
 		memcpy((char *)&rst_msg, (char *)buf, sz);
 		GPS_DBG_FUNC("src = %d, dst = %d, type = %d, buf = 0x%x sz = %d, max = %d\n", src,
 			      dst, type, rst_msg, sz, WMTRSTMSG_RESET_MAX);
-		if ((src == WMTDRV_TYPE_WMT) && (dst == WMTDRV_TYPE_GPS)
-		    && (type == WMTMSG_TYPE_RESET)) {
-			if (rst_msg == WMTRSTMSG_RESET_START) {
-				GPS_DBG_FUNC("gps restart start!\n");
 
-				/*reset_start message handling */
-				retflag = 1;
-
-			} else if ((rst_msg == WMTRSTMSG_RESET_END) || (rst_msg == WMTRSTMSG_RESET_END_FAIL)) {
-				GPS_DBG_FUNC("gps restart end!\n");
-
-				/*reset_end message handling */
-				retflag = 0;
+		if ((src == WMTDRV_TYPE_WMT) && (dst == WMTDRV_TYPE_GPS) && (type == WMTMSG_TYPE_RESET)) {
+			switch (rst_msg) {
+			case WMTRSTMSG_RESET_START:
+				GPS_INFO_FUNC("Whole chip reset start!\n");
+				rstflag = 1;
+				break;
+			case WMTRSTMSG_RESET_END:
+			case WMTRSTMSG_RESET_END_FAIL:
+				if (rst_msg == WMTRSTMSG_RESET_END)
+					GPS_INFO_FUNC("Whole chip reset end!\n");
+				else
+					GPS_INFO_FUNC("Whole chip reset fail!\n");
+				rstflag = 2;
+				break;
+			default:
+				break;
 			}
 		}
 	} else {
 		/*message format invalid */
+		GPS_WARN_FUNC("Invalid message format!\n");
 	}
 }
 
@@ -403,7 +448,7 @@ static int GPS_open(struct inode *inode, struct file *file)
 	pr_debug("%s: major %d minor %d (pid %d)\n", __func__, imajor(inode), iminor(inode), current->pid);
 	if (current->pid == 1)
 		return 0;
-	if (retflag == 1) {
+	if (rstflag == 1) {
 		GPS_WARN_FUNC("whole chip resetting...\n");
 		return -EPERM;
 	}
@@ -418,6 +463,7 @@ static int GPS_open(struct inode *inode, struct file *file)
 
 	mtk_wcn_wmt_msgcb_reg(WMTDRV_TYPE_GPS, gps_cdev_rst_cb);
 	GPS_DBG_FUNC("WMT turn on GPS OK!\n");
+	rstflag = 0;
 
 #endif
 
@@ -454,14 +500,10 @@ static int GPS_close(struct inode *inode, struct file *file)
 	pr_debug("%s: major %d minor %d (pid %d)\n", __func__, imajor(inode), iminor(inode), current->pid);
 	if (current->pid == 1)
 		return 0;
-	if (retflag == 1) {
+	if (rstflag == 1) {
 		GPS_WARN_FUNC("whole chip resetting...\n");
 		return -EPERM;
 	}
-
-	/*Flush Rx Queue */
-	mtk_wcn_stp_register_event_cb(GPS_TASK_INDX, 0x0);	/* unregister event callback function */
-	mtk_wcn_wmt_msgcb_unreg(WMTDRV_TYPE_GPS);
 
 	if (mtk_wcn_wmt_func_off(WMTDRV_TYPE_GPS) == MTK_WCN_BOOL_FALSE) {
 		GPS_WARN_FUNC("WMT turn off GPS fail!\n");
@@ -469,6 +511,10 @@ static int GPS_close(struct inode *inode, struct file *file)
 				/* but we still return error code. */
 	}
 	GPS_DBG_FUNC("WMT turn off GPS OK!\n");
+	rstflag = 0;
+	/*Flush Rx Queue */
+	mtk_wcn_stp_register_event_cb(GPS_TASK_INDX, 0x0);	/* unregister event callback function */
+	mtk_wcn_wmt_msgcb_unreg(WMTDRV_TYPE_GPS);
 
 	gps_hold_wake_lock(0);
 	GPS_DBG_FUNC("gps_hold_wake_lock(0)\n");

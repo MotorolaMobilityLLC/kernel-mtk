@@ -152,6 +152,8 @@ BOOLEAN secTransmitKeyExist(IN P_ADAPTER_T prAdapter, IN P_STA_RECORD_T prSta);
 
 BOOLEAN secEnabledInAis(IN P_ADAPTER_T prAdapter);
 
+BOOLEAN secWpaEnabledInAis(IN P_ADAPTER_T prAdapter);
+
 /*******************************************************************************
 *                              F U N C T I O N S
 ********************************************************************************

@@ -440,6 +440,20 @@ int can_spm_pmic_set_vcore_voltage(void)
 }
 #endif
 
+#if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
+static bool is_dfd_wakeup_src_enable;
+void spm_set_dfd_wakeup_src(bool enable)
+{
+	is_dfd_wakeup_src_enable = !!enable;
+	spm_crit("DFD_WAKEUP_SRC ENABLE: %d\n", is_dfd_wakeup_src_enable);
+}
+
+bool spm_get_dfd_wakeup_src(void)
+{
+	return is_dfd_wakeup_src_enable;
+}
+#endif
+
 void __spm_kick_im_to_fetch(const struct pcm_desc *pcmdesc)
 {
 	u32 ptr, len, con0;
@@ -612,10 +626,14 @@ void __spm_set_power_control(const struct pwr_ctrl *pwrctrl)
 		((pwrctrl->sdio_on_dvfs_req_mask_b & 0x1) << 24) |
 		((pwrctrl->emi_boost_dvfs_req_mask_b & 0x1) << 25) |
 		((pwrctrl->cpu_md_emi_dvfs_req_prot_dis & 0x1) << 26) |
-		((pwrctrl->dramc_spcmd_apsrc_req_mask_b & 0x1) << 27));
-
+		((pwrctrl->dramc_spcmd_apsrc_req_mask_b & 0x1) << 27) |
+		((pwrctrl->emi_boost_dvfs_req_2_mask_b & 0x1) << 28) |
+		((pwrctrl->emi_bw_dvfs_req_2_mask & 0x1) << 29));
 	/* SW_CRTL_EVENT */
 	spm_write(SW_CRTL_EVENT, (pwrctrl->sw_ctrl_event_on & 0x1) << 0);
+
+	/* SW_CRTL_EVENT_2 */
+	spm_write(SW_CRTL_EVENT_2, (pwrctrl->sw_ctrl_event_on_2 & 0x1) << 0);
 
 	/* SPM_SW_RSV_6 */
 	if (pwrctrl->rsv6_legacy_version == 1)
@@ -863,6 +881,14 @@ void __spm_set_wakeup_event(const struct pwr_ctrl *pwrctrl)
 	if (pwrctrl->syspwreq_mask)
 #endif
 		mask &= ~WAKE_SRC_R12_CSYSPWREQ_B;
+
+#if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
+	if (is_dfd_wakeup_src_enable)
+		mask |= WAKE_SRC_R12_APWDT_EVENT_B;
+	else
+		mask &= ~WAKE_SRC_R12_APWDT_EVENT_B;
+#endif
+
 	spm_write(SPM_WAKEUP_EVENT_MASK, ~mask);
 
 #if 0
@@ -933,6 +959,9 @@ void __spm_get_wakeup_status(struct wake_status *wakesta)
 
 void __spm_clean_after_wakeup(void)
 {
+#if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
+	u32 mask = 0;
+#endif
 	/* [Vcorefs] can not switch back to POWER_ON_VAL0 here,
 	 * the FW stays in VCORE DVFS which use r0 to Ctrl MEM
 	 */
@@ -947,10 +976,18 @@ void __spm_clean_after_wakeup(void)
 	 */
 	/* clean PCM timer event */
 	/* spm_write(PCM_CON1, SPM_REGWR_CFG_KEY | (spm_read(PCM_CON1) & ~PCM_TIMER_EN_LSB)); */
+#if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
+	if (is_dfd_wakeup_src_enable)
+		mask |= WAKE_SRC_R12_APWDT_EVENT_B;
+	else
+		mask &= ~WAKE_SRC_R12_APWDT_EVENT_B;
 
 	/* clean wakeup event raw status (for edge trigger event) */
+	spm_write(SPM_WAKEUP_EVENT_MASK, ~mask);
+#else
+	/* clean wakeup event raw status (for edge trigger event) */
 	spm_write(SPM_WAKEUP_EVENT_MASK, ~0);
-
+#endif
 	/* clean ISR status (except TWAM) */
 	spm_write(SPM_IRQ_MASK, spm_read(SPM_IRQ_MASK) | ISRM_ALL_EXC_TWAM);
 	spm_write(SPM_IRQ_STA, ISRC_ALL_EXC_TWAM);
@@ -1101,6 +1138,10 @@ void __spm_sync_vcore_dvfs_power_control(struct pwr_ctrl *dest_pwr_ctrl, const s
 	dest_pwr_ctrl->disable_off_load_lpm		= src_pwr_ctrl->disable_off_load_lpm;
 	dest_pwr_ctrl->en_sdio_dvfs_setting		= src_pwr_ctrl->en_sdio_dvfs_setting;
 	dest_pwr_ctrl->rsv6_legacy_version		= src_pwr_ctrl->rsv6_legacy_version;
+	dest_pwr_ctrl->en_emi_grouping			= src_pwr_ctrl->en_emi_grouping;
+	dest_pwr_ctrl->sw_ctrl_event_on_2		= src_pwr_ctrl->sw_ctrl_event_on_2;
+	dest_pwr_ctrl->emi_bw_dvfs_req_2_mask		= src_pwr_ctrl->emi_bw_dvfs_req_2_mask;
+	dest_pwr_ctrl->emi_boost_dvfs_req_2_mask_b	= src_pwr_ctrl->emi_boost_dvfs_req_2_mask_b;
 #else
 	dest_pwr_ctrl->cpu_md_dvfs_erq_merge_mask_b	= src_pwr_ctrl->cpu_md_dvfs_erq_merge_mask_b;
 	dest_pwr_ctrl->md1_ddr_en_dvfs_halt_mask_b	= src_pwr_ctrl->md1_ddr_en_dvfs_halt_mask_b;
@@ -1548,7 +1589,7 @@ void __spm_set_pcm_wdt(int en)
 int __attribute__ ((weak)) get_dynamic_period(int first_use, int first_wakeup_time,
 					      int battery_capacity_level)
 {
-	return 60;
+	return 5401;
 }
 
 u32 _spm_get_wake_period(int pwake_time, wake_reason_t last_wr)

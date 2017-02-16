@@ -58,8 +58,8 @@
 #define MTK_MSDC_DMA_RETRY
 /*retry for all case*/
 #define MTK_MSDC_DMA_RETRY_ALL_FLAVOR
-/*should not set over 10*/
-#define MTK_MAX_RETRY_CNT    8
+/*should not set over 5*/
+#define MTK_MAX_RETRY_CNT    3
 /*for speacial case*/
 #define MTK_MAX_RETRY_CNT_LP 2
 
@@ -395,6 +395,7 @@ struct msdc_host {
 	u32                     need_tune;
 	int                     autok_error;
 	int                     reautok_times;
+	int                     power_cycle_cnt;
 	bool                    is_autok_done;
 	bool                    use_hw_dvfs;
 

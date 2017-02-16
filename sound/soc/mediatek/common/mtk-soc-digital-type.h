@@ -760,6 +760,11 @@ typedef struct {
 } AudioSramManager;
 
 typedef enum {
+	AUDIO_SRAM_FORMAT_24BIT = 0,
+	AUDIO_SRAM_FORMAT_32BIT,
+} AUDIO_SRAM_FORMAT;
+
+typedef enum {
 	AUDIO_ANC_ON = 0,
 	AUDIO_ANC_OFF,
 } AUDIO_ANC_MODE;

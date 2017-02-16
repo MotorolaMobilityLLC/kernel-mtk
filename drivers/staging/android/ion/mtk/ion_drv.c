@@ -282,9 +282,9 @@ int ion_sys_copy_client_name(const char *src, char *dst)
 static int ion_cache_sync_flush(unsigned long start, size_t size,
 				enum ION_DMA_TYPE dma_type) {
 	mmprofile_log_ex(ion_mmp_events[PROFILE_DMA_FLUSH_RANGE],
-			 MMPROFILE_FLAG_START, start, size);
+			 MMPROFILE_FLAG_START, size, 0);
 	dmac_flush_range((void *)start, (void *)(start + size - 1));
-	mmprofile_log_ex(ion_mmp_events[PROFILE_DMA_FLUSH_RANGE], MMPROFILE_FLAG_END, start, size);
+	mmprofile_log_ex(ion_mmp_events[PROFILE_DMA_FLUSH_RANGE], MMPROFILE_FLAG_END, size, 0);
 
 	return 0;
 }
@@ -768,6 +768,15 @@ static struct ion_platform_heap ion_drv_platform_heaps[] = {
 				.type = ION_HEAP_TYPE_MULTIMEDIA_SEC,
 				.id = ION_HEAP_TYPE_MULTIMEDIA_SEC,
 				.name = "ion_sec_heap",
+				.base = 0,
+				.size = 0,
+				.align = 0,
+				.priv = NULL,
+		},
+		{
+				.type = ION_HEAP_TYPE_MULTIMEDIA,
+				.id = ION_HEAP_TYPE_MULTIMEDIA_MAP_MVA,
+				.name = "ion_mm_heap_for_va2mva",
 				.base = 0,
 				.size = 0,
 				.align = 0,

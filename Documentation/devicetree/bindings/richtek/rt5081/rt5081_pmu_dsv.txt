@@ -4,6 +4,13 @@ RT5081 display bias control.
 Required properties:
 - compatible : Must be "richtek,rt5081_pmu_dsv";
 - interrupt-names : RT5081 dsv enabled interrupts.
+	(R:required, O:optional)
+	1. dsv_vneg_ocp: vneg's over current flag.
+	2. dsv_vpos_ocp: vpos's over current flag.
+	3. dsv_bst_ocp: boost voltage of DB's over circuit.
+	4. dsv_vneg_scp: vneg's short circuit protection.
+	5. dsv_vpos_scp: vpos's short circuit protection.
+
 - db_ext_en : 0 for i2c control, 1 for external pin control.
 - db_periodic_fix : 0 disable, 1 -> prevent from voltage drop when db is restart.
 - db_single_pin : 0 -> vpos and vneg are controlled by db_enp and db_enm,

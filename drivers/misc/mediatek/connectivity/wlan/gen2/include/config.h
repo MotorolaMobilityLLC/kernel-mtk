@@ -105,6 +105,7 @@
 #define CFG_SUPPORT_RX_HT_GF        1	/* 802.11n RX HT green-field capability */
 
 #define CFG_SUPPORT_ROAMING_ENC		0	/* enahnced roaming */
+#define CFG_SUPPORT_ROAMING_RETRY	1	/* enahnced roaming */
 
 #define CFG_SUPPORT_TDLS			1	/* IEEE802.11z TDLS */
 #define CFG_SUPPORT_TDLS_DBG		0	/* TDLS debug */
@@ -118,6 +119,9 @@
 #define CFG_FORCE_USE_20BW			1
 
 #define CFG_SUPPORT_RN				1
+
+#define CFG_SUPPORT_SET_CAM_BY_PROC	1
+
 /*------------------------------------------------------------------------------
  * SLT Option
  *------------------------------------------------------------------------------
@@ -463,6 +467,13 @@
 #define CFG_SCAN_SSID_MATCH_MAX_NUM             (16)
 
 /*------------------------------------------------------------------------------
+ * Flags and Parameters for Support EMI DEBUG
+ *------------------------------------------------------------------------------
+ */
+#define CFG_SUPPORT_EMI_DEBUG                   1
+
+
+/*------------------------------------------------------------------------------
  * Flags and Parameters for Load Setup Default
  *------------------------------------------------------------------------------
  */
@@ -690,6 +701,7 @@
  * Flags of Features
  *------------------------------------------------------------------------------
  */
+#define CFG_SUPPORT_MULTITHREAD     0
 
 #define CFG_SUPPORT_QOS             1	/* Enable/disable QoS TX, AMPDU */
 #define CFG_SUPPORT_AMPDU_TX        1
@@ -699,6 +711,7 @@
 #define CFG_SUPPORT_UL_PSMP         0
 
 #define CFG_SUPPORT_ROAMING         1	/* Roaming System */
+#define CFG_SUPPORT_DYNAMOC_ROAM    0
 #define CFG_SUPPORT_SWCR            1
 
 #define CFG_SUPPORT_ANTI_PIRACY     1
@@ -715,17 +728,29 @@
 #define CFG_MAX_NUM_OF_CHNL_INFO				50
 #define CFG_SELECT_BSS_BASE_ON_MULTI_PARAM		1
 #define CFG_SELECT_BSS_BASE_ON_RSSI				0
-#define CFG_SUPPORT_802_11K			0
 
-#define CFG_SUPPORT_802_11V                    0	/* Support 802.11v Wireless Network Management */
-#define CFG_SUPPORT_802_11V_TIMING_MEASUREMENT 0
-#define CFG_SUPPORT_OKC							1
-#if (CFG_SUPPORT_802_11V_TIMING_MEASUREMENT == 1) && (CFG_SUPPORT_802_11V == 0)
+#define CFG_SUPPORT_VO_ENTERPRISE               1
+#define CFG_NEIGHBOR_AP_CHANNEL_NUM             50
+#define CFG_SUPPORT_WMM_AC                      1
+#if CFG_SUPPORT_VO_ENTERPRISE
+#define CFG_SUPPORT_802_11V_BSS_TRANSITION_MGT  1
+#define CFG_SUPPORT_802_11R                     1
+#define CFG_SUPPORT_802_11V                     1
+#define CFG_SUPPORT_802_11K                     1
+#else
+#define CFG_SUPPORT_802_11V_BSS_TRANSITION_MGT  0
+#define CFG_SUPPORT_802_11R                     0
+#define CFG_SUPPORT_802_11V                     0
+#define CFG_SUPPORT_802_11K                     0
+#endif
+#define CFG_SUPPORT_802_11V_TIMING_MEASUREMENT  0
+#define CFG_SUPPORT_OKC                         1
+
+#if (CFG_SUPPORT_802_11V_TIMING_MEASUREMENT == 1 || CFG_SUPPORT_802_11V_BSS_TRANSITION_MGT == 1) \
+	&& (CFG_SUPPORT_802_11V == 0)
 #error "CFG_SUPPORT_802_11V should be 1 once CFG_SUPPORT_802_11V_TIMING_MEASUREMENT equals to 1"
 #endif
-#if (CFG_SUPPORT_802_11V == 0)
 #define WNM_UNIT_TEST 0
-#endif
 
 #define CFG_SUPPORT_PPR2	1
 #define CFG_DRIVER_COMPOSE_ASSOC_REQ   1
@@ -738,7 +763,14 @@
 
 #define CFG_SUPPORT_CPU_BOOST			0
 
-#define CFG_SUPPORT_TX_BACKOFF              0
+#define CFG_SUPPORT_TX_POWER_BACK_OFF              1
+
+#define CFG_SUPPORT_FCC_POWER_BACK_OFF             1
+
+
+#define CFG_SUPPORT_P2P_ECSA                       1
+
+#define CFG_SUPPORT_P2P_GO_OFFLOAD_PROBE_RSP       1
 /*------------------------------------------------------------------------------
  * Flags of Packet Lifetime Profiling Mechanism
  *------------------------------------------------------------------------------
@@ -811,6 +843,15 @@
  *------------------------------------------------------------------------------
  */
 #define CFG_SUPPORT_DROP_MC_PACKET		0
+
+/*------------------------------------------------------------------------------
+ * Flags of NCHO SUPPORT
+ *------------------------------------------------------------------------------
+ */
+#define CFG_SUPPORT_NCHO		1
+
+#define CFG_SUPPORT_ADD_CONN_AP		1
+
 /*******************************************************************************
 *                             D A T A   T Y P E S
 ********************************************************************************

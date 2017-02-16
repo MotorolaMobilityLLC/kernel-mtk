@@ -188,9 +188,15 @@ void msdc_sd_power_switch(struct msdc_host *host, u32 on)
 
 	if (host->id == 1) {
 		if (on) {
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6355)
+			/* VMC calibration +60mV. According to SA's request. */
+			reg_val = 6;
+#else
 			/* VMC calibration +40mV. According to SA's request. */
 			reg_val = host->vmc_cal_default - 2;
-
+			/* 5 bit, if overflow such as 00000 -> 11110 is okay*/
+			reg_val = reg_val & 0x1F;
+#endif
 			pmic_config_interface(REG_VMC_VOSEL_CAL,
 				reg_val,
 				MASK_VMC_VOSEL_CAL,

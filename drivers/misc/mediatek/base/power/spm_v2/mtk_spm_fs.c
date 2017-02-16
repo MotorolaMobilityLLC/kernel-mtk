@@ -260,10 +260,17 @@ static ssize_t show_pwr_ctrl(const struct pwr_ctrl *pwrctrl, char *buf)
 		pwrctrl->cpu_md_emi_dvfs_req_prot_dis);
 	p += sprintf(p, "dramc_spcmd_apsrc_req_mask_b = %u\n",
 		pwrctrl->dramc_spcmd_apsrc_req_mask_b);
+	p += sprintf(p, "emi_boost_dvfs_req_2_mask_b = %u\n",
+		pwrctrl->emi_boost_dvfs_req_2_mask_b);
+	p += sprintf(p, "emi_bw_dvfs_req_2_mask = %u\n",
+		pwrctrl->emi_bw_dvfs_req_2_mask);
 
 	/* SW_CRTL_EVENT */
 	p += sprintf(p, "sw_ctrl_event_on = %u\n",
 		pwrctrl->sw_ctrl_event_on);
+	/* SW_CRTL_EVENT_2 */
+	p += sprintf(p, "sw_ctrl_event_on_2 = %u\n",
+		pwrctrl->sw_ctrl_event_on_2);
 
 	/* SPM_SW_RSV_6 */
 	p += sprintf(p, "md_srcclkena_0_2d_dvfs_req_mask_b = %u\n",
@@ -658,6 +665,9 @@ static ssize_t store_pwr_ctrl(struct pwr_ctrl *pwrctrl, const char *buf, size_t 
 	/* SW_CRTL_EVENT */
 	else if (!strcmp(cmd, "sw_ctrl_event_on"))
 		pwrctrl->sw_ctrl_event_on = val;
+	/* SW_CRTL_EVENT_2 */
+	else if (!strcmp(cmd, "sw_ctrl_event_on_2"))
+		pwrctrl->sw_ctrl_event_on_2 = val;
 
 	/* SPM_SW_RSV_6 */
 	else if (!strcmp(cmd, "md_srcclkena_0_2d_dvfs_req_mask_b"))

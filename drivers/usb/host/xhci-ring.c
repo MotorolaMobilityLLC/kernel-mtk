@@ -260,6 +260,9 @@ static inline int room_on_ring(struct xhci_hcd *xhci, struct xhci_ring *ring,
 	if (ring->num_trbs_free < num_trbs)
 		return 0;
 
+#ifdef CONFIG_MTK_UAC_POWER_SAVING
+	if (!(xhci->quirks & XHCI_MTK_HOST))
+#endif
 	if (ring->type != TYPE_COMMAND && ring->type != TYPE_EVENT) {
 		num_trbs_in_deq_seg = ring->dequeue - ring->deq_seg->trbs;
 		if (ring->num_trbs_free < num_trbs + num_trbs_in_deq_seg)
@@ -3886,6 +3889,32 @@ static int xhci_queue_isoc_tx(struct xhci_hcd *xhci, gfp_t mem_flags,
 
 	giveback_first_trb(xhci, slot_id, ep_index, urb->stream_id,
 			start_cycle, start_trb);
+
+#if 1
+#ifdef CONFIG_MTK_UAC_POWER_SAVING
+	if ((!list_empty(&ep_ring->td_list)) &&
+		((urb->ep->desc.bmAttributes & USB_ENDPOINT_USAGE_MASK) != USB_ENDPOINT_USAGE_FEEDBACK)) {
+		unsigned int idle_ms = 0;
+		unsigned int left_trbs;
+
+		left_trbs = (ep_ring->num_segs * (TRBS_PER_SEGMENT - 1) - 1) -
+				ep_ring->num_trbs_free;
+
+		switch (urb->dev->speed) {
+		case USB_SPEED_SUPER:
+		case USB_SPEED_HIGH:
+			idle_ms = left_trbs * 2 / 3 / 8;
+			break;
+		case USB_SPEED_FULL:
+		case USB_SPEED_LOW:
+		default:
+			idle_ms = left_trbs * 2 / 3;
+			break;
+		}
+		xhci_mtk_allow_sleep(idle_ms);
+	}
+#endif
+#endif
 	return 0;
 cleanup:
 	/* Clean up a partially enqueued isoc transfer. */

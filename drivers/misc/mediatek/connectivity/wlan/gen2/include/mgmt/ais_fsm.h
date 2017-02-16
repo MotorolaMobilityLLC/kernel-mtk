@@ -233,12 +233,27 @@ typedef struct _AIS_FSM_INFO_T {
 
 	/* Packet filter for AIS module. */
 	UINT_32 u4AisPacketFilter;
+
 	struct LINK_MGMT rBcnTimeout;
 	UINT_8 ucJoinFailCntAfterScan;
 
 	UINT_8 aucNeighborAPChnl[CFG_NEIGHBOR_AP_CHANNEL_NUM];
+#if CFG_SUPPORT_DYNAMOC_ROAM
+	INT_8 cRoamTriggerThreshold;
+#endif
 } AIS_FSM_INFO_T, *P_AIS_FSM_INFO_T;
 
+enum WNM_AIS_BSS_TRANSITION {
+	BSS_TRANSITION_NO_MORE_ACTION,
+	BSS_TRANSITION_REQ_ROAMING,
+	BSS_TRANSITION_DISASSOC,
+	BSS_TRANSITION_MAX_NUM
+};
+struct MSG_AIS_BSS_TRANSITION_T {
+	MSG_HDR_T rMsgHdr;	/* Must be the first member */
+	BOOLEAN fgNeedResponse;
+	enum WNM_AIS_BSS_TRANSITION	eTransitionType;
+};
 /*******************************************************************************
 *                            P U B L I C   D A T A
 ********************************************************************************
@@ -411,10 +426,18 @@ aisFuncTxMgmtFrame(IN P_ADAPTER_T prAdapter,
 		   IN P_AIS_MGMT_TX_REQ_INFO_T prMgmtTxReqInfo, IN P_MSDU_INFO_T prMgmtTxMsdu, IN UINT_64 u8Cookie);
 
 VOID aisFsmRunEventMgmtFrameTx(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHdr);
+#if CFG_SUPPORT_NCHO
+VOID aisFsmRunEventNchoActionFrameTx(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHdr);
+#endif
 
 VOID aisFuncValidateRxActionFrame(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfb);
 
 VOID aisFsmRunEventSetOkcPmk(IN P_ADAPTER_T prAdapter);
+
+VOID aisFsmRunEventBssTransition(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHdr);
+
+VOID aisCollectNeighborAPChannel(P_ADAPTER_T prAdapter, struct IE_NEIGHBOR_REPORT_T *prNeiRep, UINT_16 u2Length);
+
 
 #if defined(CFG_TEST_MGMT_FSM) && (CFG_TEST_MGMT_FSM != 0)
 VOID aisTest(VOID);

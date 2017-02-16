@@ -21,6 +21,12 @@
 
 #if defined(CONFIG_TRUSTONIC_TEE_SUPPORT)
 #include "secmem.h"
+#include "secmem_plat.h"
+#elif defined(CONFIG_MTK_IN_HOUSE_TEE_SUPPORT)
+#include "tz_cross/trustzone.h"
+#include "tz_cross/ta_mem.h"
+#include "trustzone/kree/system.h"
+#include "trustzone/kree/mem.h"
 #endif
 
 #define ION_PRINT_LOG_OR_SEQ(seq_file, fmt, args...) \
@@ -36,6 +42,24 @@ struct ion_sec_heap {
 	void *priv;
 };
 
+#ifdef CONFIG_MTK_IN_HOUSE_TEE_SUPPORT
+static KREE_SESSION_HANDLE ion_session;
+KREE_SESSION_HANDLE ion_session_handle(void)
+{
+	if (ion_session == KREE_SESSION_HANDLE_NULL) {
+		TZ_RESULT ret;
+
+		ret = KREE_CreateSession(TZ_TA_MEM_UUID, &ion_session);
+		if (ret != TZ_RESULT_SUCCESS) {
+			IONMSG("KREE_CreateSession fail, ret=%d\n", ret);
+			return KREE_SESSION_HANDLE_NULL;
+		}
+	}
+
+	return ion_session;
+}
+#endif
+
 static int ion_sec_heap_allocate(struct ion_heap *heap,
 				 struct ion_buffer *buffer, unsigned long size, unsigned long align,
 		unsigned long flags) {
@@ -43,7 +67,7 @@ static int ion_sec_heap_allocate(struct ion_heap *heap,
 	struct ion_sec_buffer_info *pbufferinfo = NULL;
 	u32 refcount = 0;
 
-	IONMSG("%s enter id %d size 0x%lx align %ld flags 0x%lx\n", __func__, heap->id, size, align, flags);
+	IONDBG("%s enter id %d size 0x%lx align %ld flags 0x%lx\n", __func__, heap->id, size, align, flags);
 
 	pbufferinfo = kzalloc(sizeof(*pbufferinfo), GFP_KERNEL);
 	if (IS_ERR_OR_NULL(pbufferinfo)) {
@@ -56,17 +80,36 @@ static int ion_sec_heap_allocate(struct ion_heap *heap,
 		secmem_api_alloc_zero(align, size, &refcount, &sec_handle, (uint8_t *)heap->name, heap->id);
 	else
 		secmem_api_alloc(align, size, &refcount, &sec_handle, (uint8_t *)heap->name, heap->id);
+#elif defined(CONFIG_MTK_IN_HOUSE_TEE_SUPPORT) && defined(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT)
+	{
+		int ret = 0;
+
+		if (flags & ION_FLAG_MM_HEAP_INIT_ZERO)
+			ret = KREE_ZallocSecurechunkmemWithTag(ion_session_handle(),
+							       &sec_handle, align, size, heap->name);
+		else
+			ret = KREE_AllocSecurechunkmemWithTag(ion_session_handle(),
+							      &sec_handle, align, size, heap->name);
+		if (ret != TZ_RESULT_SUCCESS) {
+			IONMSG("KREE_AllocSecurechunkmemWithTag failed, ret is 0x%x\n", ret);
+			return -ENOMEM;
+		}
+	}
+	refcount = 0;
 #else
 	refcount = 0;
 #endif
 	if (sec_handle <= 0) {
-		IONMSG("%s alloc security memory failed\n", __func__);
+		IONMSG("%s alloc security memory failed, handle(0x%x)\n", __func__, sec_handle);
 		return -ENOMEM;
 	}
 
 	pbufferinfo->priv_phys = sec_handle;
 	pbufferinfo->VA = 0;
 	pbufferinfo->MVA = 0;
+	pbufferinfo->FIXED_MVA = 0;
+	pbufferinfo->iova_start = 0;
+	pbufferinfo->iova_end = 0;
 	pbufferinfo->module_id = -1;
 	pbufferinfo->dbg_info.value1 = 0;
 	pbufferinfo->dbg_info.value2 = 0;
@@ -78,7 +121,7 @@ static int ion_sec_heap_allocate(struct ion_heap *heap,
 	buffer->flags &= ~ION_FLAG_CACHED;
 	buffer->size = size;
 
-	IONMSG("%s exit priv_virt %p pa 0x%lx(%zu)\n", __func__, buffer->priv_virt,
+	IONDBG("%s exit priv_virt %p pa 0x%lx(%zu)\n", __func__, buffer->priv_virt,
 	       pbufferinfo->priv_phys, buffer->size);
 	return 0;
 }
@@ -89,16 +132,25 @@ void ion_sec_heap_free(struct ion_buffer *buffer)
 	struct ion_sec_buffer_info *pbufferinfo = (struct ion_sec_buffer_info *)buffer->priv_virt;
 	u32 sec_handle = 0;
 
-	IONMSG("%s enter priv_virt %p\n", __func__, buffer->priv_virt);
+	IONDBG("%s enter priv_virt %p\n", __func__, buffer->priv_virt);
 	sec_handle = ((struct ion_sec_buffer_info *)buffer->priv_virt)->priv_phys;
 #if defined(CONFIG_TRUSTONIC_TEE_SUPPORT)
 	secmem_api_unref(sec_handle, (uint8_t *)buffer->heap->name, buffer->heap->id);
+
+#elif defined(CONFIG_MTK_IN_HOUSE_TEE_SUPPORT) && defined(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT)
+	{
+		TZ_RESULT ret = 0;
+
+		ret = KREE_UnreferenceSecurechunkmem(ion_session_handle(), sec_handle);
+		if (ret != TZ_RESULT_SUCCESS)
+			IONMSG("KREE_UnreferenceSecurechunkmem failed, ret is 0x%x\n", ret);
+	}
 #endif
 	kfree(table);
 	buffer->priv_virt = NULL;
 	kfree(pbufferinfo);
 
-	IONMSG("%s exit\n", __func__);
+	IONDBG("%s exit\n", __func__);
 }
 
 struct sg_table *ion_sec_heap_map_dma(struct ion_heap *heap,
@@ -108,7 +160,7 @@ struct sg_table *ion_sec_heap_map_dma(struct ion_heap *heap,
 #if ION_RUNTIME_DEBUGGER
 	struct ion_sec_buffer_info *pbufferinfo = (struct ion_sec_buffer_info *)buffer->priv_virt;
 #endif
-	IONMSG("%s enter priv_virt %p\n", __func__, buffer->priv_virt);
+	IONDBG("%s enter priv_virt %p\n", __func__, buffer->priv_virt);
 
 	table = kzalloc(sizeof(*table), GFP_KERNEL);
 	if (!table)
@@ -120,17 +172,21 @@ struct sg_table *ion_sec_heap_map_dma(struct ion_heap *heap,
 	}
 
 #if ION_RUNTIME_DEBUGGER
+#ifdef SECMEM_64BIT_PHYS_SHIFT
+	sg_set_page(table->sgl, phys_to_page(pbufferinfo->priv_phys << SECMEM_64BIT_PHYS_SHIFT), buffer->size, 0);
+#else
 	sg_set_page(table->sgl, phys_to_page(pbufferinfo->priv_phys), buffer->size, 0);
+#endif
 #else
 	sg_set_page(table->sgl, 0, 0, 0);
 #endif
-	IONMSG("%s exit\n", __func__);
+	IONDBG("%s exit\n", __func__);
 	return table;
 }
 
 static void ion_sec_heap_unmap_dma(struct ion_heap *heap, struct ion_buffer *buffer)
 {
-	IONMSG("%s priv_virt %p\n", __func__, buffer->priv_virt);
+	IONDBG("%s priv_virt %p\n", __func__, buffer->priv_virt);
 	sg_free_table(buffer->sg_table);
 }
 
@@ -144,10 +200,10 @@ static int ion_sec_heap_phys(struct ion_heap *heap, struct ion_buffer *buffer,
 {
 	struct ion_sec_buffer_info *pbufferinfo = (struct ion_sec_buffer_info *)buffer->priv_virt;
 
-	IONMSG("%s priv_virt %p\n", __func__, buffer->priv_virt);
+	IONDBG("%s priv_virt %p\n", __func__, buffer->priv_virt);
 	*addr = pbufferinfo->priv_phys;
 	*len = buffer->size;
-	IONMSG("%s exit pa 0x%lx(%zu)\n", __func__, pbufferinfo->priv_phys, buffer->size);
+	IONDBG("%s exit pa 0x%lx(%zu)\n", __func__, pbufferinfo->priv_phys, buffer->size);
 
 	return 0;
 }
@@ -321,8 +377,8 @@ static int ion_sec_heap_debug_show(struct ion_heap *heap, struct seq_file *s, vo
 
 struct ion_heap *ion_sec_heap_create(struct ion_platform_heap *heap_data)
 {
-#if (defined(CONFIG_TRUSTONIC_TEE_SUPPORT) ||\
-	defined(CONFIG_MTK_IN_HOUSE_TEE_SUPPORT))
+#if (defined(CONFIG_TRUSTONIC_TEE_SUPPORT) && defined(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT)) || \
+	(defined(CONFIG_MTK_IN_HOUSE_TEE_SUPPORT) && defined(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT))
 
 	struct ion_sec_heap *heap;
 
@@ -352,8 +408,8 @@ struct ion_heap *ion_sec_heap_create(struct ion_platform_heap *heap_data)
 
 void ion_sec_heap_destroy(struct ion_heap *heap)
 {
-#if (defined(CONFIG_TRUSTONIC_TEE_SUPPORT) ||\
-	defined(CONFIG_MTK_IN_HOUSE_TEE_SUPPORT))
+#if (defined(CONFIG_TRUSTONIC_TEE_SUPPORT) && defined(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT)) || \
+	(defined(CONFIG_MTK_IN_HOUSE_TEE_SUPPORT) && defined(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT))
 
 	struct ion_sec_heap *sec_heap;
 

@@ -36,18 +36,10 @@ void ion_profile_init(void)
 	ion_mmp_events[PROFILE_DMA_CLEAN_ALL] = mmprofile_register_event(ion_event, "clean_all");
 	ion_mmp_events[PROFILE_DMA_FLUSH_ALL] = mmprofile_register_event(ion_event, "flush_all");
 	ion_mmp_events[PROFILE_DMA_INVALID_ALL] = mmprofile_register_event(ion_event, "inv_all");
-	ion_mmp_events[PROFILE_MM_HEAP_DEBUG] = mmprofile_register_event(ion_event, "mm_heap");
 
 	/* enable events by default */
 
 	mmprofile_enable_event(ion_mmp_events[PROFILE_ALLOC], 1);
-	mmprofile_enable_event(ion_mmp_events[PROFILE_FREE], 1);
-	/*mmprofile_enable_event(ion_mmp_events[PROFILE_SHARE], 1);*/
-	/*mmprofile_enable_event(ion_mmp_events[PROFILE_IMPORT], 1);*/
-	mmprofile_enable_event(ion_mmp_events[PROFILE_UNMAP_KERNEL], 1);
-	mmprofile_enable_event(ion_mmp_events[PROFILE_UNMAP_USER], 1);
-	mmprofile_enable_event(ion_mmp_events[PROFILE_CUSTOM_IOC], 1);
-	mmprofile_enable_event(ion_mmp_events[PROFILE_GET_PHYS], 1);
 	mmprofile_enable_event(ion_mmp_events[PROFILE_MAP_KERNEL], 1);
 	mmprofile_enable_event(ion_mmp_events[PROFILE_MAP_USER], 1);
 	/*mmprofile_enable_event(ion_mmp_events[PROFILE_DMA_CLEAN_RANGE], 1);*/

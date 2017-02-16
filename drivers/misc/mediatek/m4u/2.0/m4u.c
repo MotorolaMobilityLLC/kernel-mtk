@@ -547,14 +547,14 @@ struct sg_table *m4u_create_sgtable(unsigned long va, unsigned int size)
 	M4ULOG_LOW("%s va=0x%lx, PAGE_OFFSET=0x%lx, VMALLOC_START=0x%lx, VMALLOC_END=0x%lx\n",
 		   __func__, va, PAGE_OFFSET, VMALLOC_START, VMALLOC_END);
 
-	if (va < PAGE_OFFSET) {	/* from user space */
-		if (va >= VMALLOC_START && va <= VMALLOC_END) {	/* vmalloc */
+	if (va < PAGE_OFFSET) { /* from user space */
+		if (va >= VMALLOC_START && va <= VMALLOC_END) { /* vmalloc */
 			M4ULOG_MID(" from user space vmalloc, va = 0x%lx", va);
 			for_each_sg(table->sgl, sg, table->nents, i) {
 				page = vmalloc_to_page((void *)(va_align + i * PAGE_SIZE));
 				if (!page) {
 					M4UMSG("vmalloc_to_page fail, va=0x%lx\n",
-					       va_align + i * PAGE_SIZE);
+						   va_align + i * PAGE_SIZE);
 					goto err;
 				}
 				sg_set_page(sg, page, PAGE_SIZE, 0);
@@ -567,13 +567,13 @@ struct sg_table *m4u_create_sgtable(unsigned long va, unsigned int size)
 			}
 		}
 	} else {		/* from kernel space */
-		if (va >= VMALLOC_START && va <= VMALLOC_END) {	/* vmalloc */
+		if (va >= VMALLOC_START && va <= VMALLOC_END) { /* vmalloc */
 			M4ULOG_MID(" from kernel space vmalloc, va = 0x%lx", va);
 			for_each_sg(table->sgl, sg, table->nents, i) {
 				page = vmalloc_to_page((void *)(va_align + i * PAGE_SIZE));
 				if (!page) {
 					M4UMSG("vmalloc_to_page fail, va=0x%lx\n",
-					       va_align + i * PAGE_SIZE);
+						   va_align + i * PAGE_SIZE);
 					goto err;
 				}
 				sg_set_page(sg, page, PAGE_SIZE, 0);
@@ -655,7 +655,9 @@ int m4u_alloc_mva(m4u_client_t *client, M4U_PORT_ID port,
 	pMvaInfo->sg_table = sg_table;
 
 	if (flags & M4U_FLAGS_FIX_MVA)
-		mva = m4u_do_mva_alloc_fix(*pMva, size, pMvaInfo);
+		mva = m4u_do_mva_alloc_fix(va, *pMva, size, pMvaInfo);
+	else if (flags & M4U_FLAGS_START_FROM)
+		mva = m4u_do_mva_alloc_start_from(va, *pMva, size, pMvaInfo);
 	else
 		mva = m4u_do_mva_alloc(va, size, pMvaInfo);
 
@@ -737,12 +739,11 @@ err:
 /* interface for ion */
 static m4u_client_t *ion_m4u_client;
 
-int m4u_alloc_mva_sg(int eModuleID,
-		     struct sg_table *sg_table,
-		     const unsigned int BufSize,
-		     int security, int cache_coherent, unsigned int *pRetMVABuf)
+int m4u_alloc_mva_sg(port_mva_info_t *port_info,
+		struct sg_table *sg_table)
 {
 	int prot;
+	unsigned int flags = 0;
 
 	if (!ion_m4u_client) {
 		ion_m4u_client = m4u_create_client();
@@ -753,11 +754,25 @@ int m4u_alloc_mva_sg(int eModuleID,
 	}
 
 	prot = M4U_PROT_READ | M4U_PROT_WRITE
-	    | (cache_coherent ? (M4U_PROT_SHARE | M4U_PROT_CACHE) : 0)
-	    | (security ? M4U_PROT_SEC : 0);
+		| (port_info->cache_coherent ? (M4U_PROT_SHARE | M4U_PROT_CACHE) : 0)
+		| (port_info->security ? M4U_PROT_SEC : 0);
 
-	return m4u_alloc_mva(ion_m4u_client, eModuleID, 0, sg_table, BufSize, prot, 0, pRetMVABuf);
+	if (port_info->flags & M4U_FLAGS_FIX_MVA) {
+		if (port_info->iova_end > port_info->iova_start + port_info->BufSize) {
+			port_info->mva = port_info->iova_start;
+			flags = M4U_FLAGS_START_FROM;
+		} else
+			flags = M4U_FLAGS_FIX_MVA;
+	}
+	if (port_info->flags & M4U_FLAGS_SG_READY)
+		flags |= M4U_FLAGS_SG_READY;
+	else
+		port_info->va = 0;
+
+	return m4u_alloc_mva(ion_m4u_client, port_info->eModuleID, 0, sg_table,
+				port_info->BufSize, prot, flags, &port_info->mva);
 }
+
 
 #ifdef M4U_TEE_SERVICE_ENABLE
 static int m4u_unmap_nonsec_buffer(unsigned int mva, unsigned int size);

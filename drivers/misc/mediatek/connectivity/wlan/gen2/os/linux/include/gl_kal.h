@@ -57,6 +57,8 @@ extern struct delayed_work sched_workq;
 #if defined(MT6620) && CFG_MULTI_ECOVER_SUPPORT
 extern ENUM_WMTHWVER_TYPE_T mtk_wcn_wmt_hwver_get(VOID);
 #endif
+extern PUINT8 wmt_lib_get_fwinfor_from_emi(UINT8 section, UINT32 offset, PUINT8 buff, UINT32 len);
+extern PUINT8 mtk_wcn_consys_emi_virt_addr_get(UINT32 ctrl_state_offset);
 
 extern BOOLEAN fgIsUnderSuspend;
 /*******************************************************************************
@@ -86,7 +88,6 @@ typedef enum _ENUM_SPIN_LOCK_CATEGORY_E {
 	SPIN_LOCK_TX_SEQ_NUM,
 	SPIN_LOCK_TX_COUNT,
 	SPIN_LOCK_TXS_COUNT,
-	/* end    */
 	SPIN_LOCK_TX,
 	SPIN_LOCK_IO_REQ,
 	SPIN_LOCK_INT,
@@ -102,6 +103,10 @@ typedef enum _ENUM_SPIN_LOCK_CATEGORY_E {
 
 	SPIN_LOCK_EHPI_BUS,	/* only for EHPI */
 	SPIN_LOCK_NET_DEV,
+
+#if CFG_SUPPORT_MULTITHREAD
+	SPIN_LOCK_RX_DATA_QUE,
+#endif
 	SPIN_LOCK_NUM
 } ENUM_SPIN_LOCK_CATEGORY_E;
 
@@ -249,12 +254,21 @@ struct KAL_HALT_CTRL_T {
 #define KAL_WAKE_UNLOCK(_prAdapter, _prWakeLock) \
 	wake_unlock(_prWakeLock)
 
+#define KAL_WAKE_LOCK_ACTIVE(_prAdapter, _prWakeLock) \
+	wake_lock_active(_prWakeLock)
+	typedef struct wake_lock KAL_WAKE_LOCK_T, *P_KAL_WAKE_LOCK_T;
+#define KAL_WAKELOCK_DECLARE(_lock) \
+	struct wake_lock _lock
+
 #else
 #define KAL_WAKE_LOCK_INIT(_prAdapter, _prWakeLock, _pcName)
 #define KAL_WAKE_LOCK_DESTROY(_prAdapter, _prWakeLock)
 #define KAL_WAKE_LOCK(_prAdapter, _prWakeLock)
 #define KAL_WAKE_LOCK_TIMEOUT(_prAdapter, _prWakeLock, _u4Timeout)
 #define KAL_WAKE_UNLOCK(_prAdapter, _prWakeLock)
+typedef UINT_32 KAL_WAKE_LOCK_T, *P_KAL_WAKE_LOCK_T;
+#define KAL_WAKELOCK_DECLARE(_lock)
+#define KAL_WAKE_LOCK_ACTIVE(_prAdapter, _prWakeLock)
 #endif
 
 /*----------------------------------------------------------------------------*/
@@ -1042,12 +1056,21 @@ VOID kalSchedScanResults(IN P_GLUE_INFO_T prGlueInfo);
 
 VOID kalSchedScanStopped(IN P_GLUE_INFO_T prGlueInfo);
 
+#if CFG_SUPPORT_EMI_DEBUG
+/*----------------------------------------------------------------------------*/
+/* WMT Support                                                                 */
+/*----------------------------------------------------------------------------*/
+PINT8 kalGetFwInfoFormEmi(UINT8 section, UINT32 offset, PUINT8 buff, UINT32 len);
+#endif
+
 /*******************************************************************************
 *                              F U N C T I O N S
 ********************************************************************************
 */
 
 int tx_thread(void *data);
+int rx_thread(void *data);
+VOID kalWakeupRxThread(P_GLUE_INFO_T prGlueInfo);
 
 VOID kalHifAhbKalWakeLockTimeout(IN P_GLUE_INFO_T prGlueInfo);
 VOID kalMetProfilingStart(IN P_GLUE_INFO_T prGlueInfo, IN struct sk_buff *prSkb);
@@ -1077,6 +1100,13 @@ INT_32 kalPerMonStop(IN P_GLUE_INFO_T prGlueInfo);
 INT_32 kalPerMonDestroy(IN P_GLUE_INFO_T prGlueInfo);
 VOID kalPerMonHandler(IN P_ADAPTER_T prAdapter, ULONG ulParam);
 INT_32 kalBoostCpu(UINT_32 core_num);
+INT32 kalSetCpuNumFreq(UINT_32 core_num, UINT_32 freq);
 INT_32 kalFbNotifierReg(IN P_GLUE_INFO_T prGlueInfo);
 VOID kalFbNotifierUnReg(VOID);
+VOID kalChangeSchedParams(P_GLUE_INFO_T prGlueInfo, BOOLEAN fgNormalThread);
+
+#if CFG_SUPPORT_SET_CAM_BY_PROC
+VOID nicConfigProcSetCamCfgWrite(BOOLEAN enabled);
+#endif
+
 #endif /* _GL_KAL_H */

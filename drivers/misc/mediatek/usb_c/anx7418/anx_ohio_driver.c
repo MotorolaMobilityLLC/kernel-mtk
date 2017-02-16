@@ -356,6 +356,10 @@ static int ohio_init_gpio(struct ohio_data *ohio)
 	pinctrl_select_state(g_exttypec->pinctrl,
 		g_exttypec->pin_cfg->intp_init);
 
+	pinctrl_select_state(g_exttypec->pinctrl,
+		g_exttypec->pin_cfg->cbl_det_init);
+
+
 	anx_printk(K_INFO, "rst_n=%d, p_on=%d\n",
 		gpio_get_value(ohio->pdata->gpio_reset),
 		gpio_get_value(ohio->pdata->gpio_p_on));
@@ -1059,7 +1063,7 @@ static int ohio_i2c_probe(struct i2c_client *client,
 				   "ohio-cbl-det", ohio);
 	if (ret < 0) {
 		pr_err("%s : failed to request irq\n", __func__);
-		goto err3;
+		goto exit;
 	}
 
 #ifdef NEVER
@@ -1145,7 +1149,6 @@ static int ohio_i2c_probe(struct i2c_client *client,
 
 err4:
 	free_irq(client->irq, ohio);
-err3:
 	free_irq(cbl_det_irq, ohio);
 err2:
 	destroy_workqueue(ohio->workqueue);

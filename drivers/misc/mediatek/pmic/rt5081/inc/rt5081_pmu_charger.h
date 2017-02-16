@@ -13,6 +13,9 @@
 #ifndef __LINUX_MFD_RT5081_PMU_CHARGER_H
 #define __LINUX_MFD_RT5081_PMU_CHARGER_H
 
+/* Define this macro if detecting apple samsung TA is needed */
+/* #define RT5081_APPLE_SAMSUNG_TA_SUPPORT */
+
 /* Parameter */
 /* uA */
 #define RT5081_ICHG_NUM		64
@@ -261,6 +264,11 @@
 
 #define RT5081_MASK_EN_DCP	(1 << RT5081_SHIFT_EN_DCP)
 
+/* ========== USBSTATUS1 0x27 ============ */
+#define RT5081_SHIFT_USB_STATUS	4
+
+#define RT5081_MASK_USB_STATUS	0x70
+
 /* ========== CHG_PUMP 0x2A ============ */
 #define RT5081_SHIFT_VG_LVL_SEL	1
 #define RT5081_SHIFT_VG_EN	0
@@ -378,6 +386,21 @@
 #define RT5081_SHIFT_MIVR_STAT	6
 
 #define RT5081_MASK_MIVR_STAT	(1 << RT5081_SHIFT_MIVR_STAT)
+
+/* ========== CHG_STAT2 0xD1 ============ */
+#define RT5081_SHIFT_CHG_VBUSOV_STAT	7
+
+#define RT5081_MASK_CHG_VBUSOV_STAT	(1 << RT5081_SHIFT_CHG_VBUSOV_STAT)
+
+/* ========== CHG_STAT4 0xD3 ============ */
+#define RT5081_SHIFT_CHG_TMRI_STAT	3
+
+#define RT5081_MASK_CHG_TMRI_STAT	(1 << RT5081_SHIFT_CHG_TMRI_STAT)
+
+/* ========== CHG_STAT5 0xD4 ============ */
+#define RT5081_SHIFT_CHG_IEOCI_STAT	7
+
+#define RT5081_MASK_CHG_IEOCI_STAT	(1 << RT5081_SHIFT_CHG_IEOCI_STAT)
 
 /* ========== DPDM_STAT 0xD6 ============ */
 #define RT5081_SHIFT_DCDTI_STAT	7

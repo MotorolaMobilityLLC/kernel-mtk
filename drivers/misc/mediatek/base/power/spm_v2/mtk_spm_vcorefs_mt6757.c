@@ -118,6 +118,10 @@ static struct pwr_ctrl vcore_dvfs_ctrl = {
 	.emi_bw_dvfs_req_mask = 1,	/* default disable, enable by fliper */
 	.emi_boost_dvfs_req_mask_b = 0,	/* default disable, enable by fliper */
 
+	.emi_bw_dvfs_req_2_mask = 1, /* default disable */
+	.emi_boost_dvfs_req_2_mask_b = 0, /* default disable */
+	.sw_ctrl_event_on_2 = 0, /* default disable */
+
 	.dvfs_halt_src_chk = 1,
 
 	.md_srcclkena_0_2d_dvfs_req_mask_b = 1,
@@ -400,8 +404,8 @@ char *spm_vcorefs_dump_dvfs_regs(char *p)
 		p += sprintf(p, "R12: 0x%x, R12_STA: 0x%x, R12_EXT: 0x%x, R12_EXT_STA: 0x%x\n",
 				spm_read(PCM_REG12_DATA), spm_read(PCM_REG12_MASK_B_STA),
 				spm_read(PCM_REG12_EXT_DATA), spm_read(PCM_REG12_EXT_MASK_B_STA));
-		p += sprintf(p, "SPM_RSV_CON: 0x%x, SPM_RSV_STA: 0x%x\n",
-				spm_read(SPM_RSV_CON), spm_read(SPM_RSV_STA));
+		p += sprintf(p, "SPM_RSV_CON: 0x%x, SPM_RSV_STA: 0x%x SW_CRTL_EVENT_2: 0x%x\n",
+				spm_read(SPM_RSV_CON), spm_read(SPM_RSV_STA), spm_read(SW_CRTL_EVENT_2));
 	} else {
 		spm_vcorefs_info("PCM_IM_PTR    : 0x%x (%u)\n", spm_read(PCM_IM_PTR), spm_read(PCM_IM_LEN));
 		spm_vcorefs_info("SPM_SW_FLAG: 0x%x, SPM_SW_DEBUG: 0x%x, MD2SPM_DVFS_CON: 0x%x, CPU_DVFS_REQ: 0x%x\n",
@@ -428,8 +432,8 @@ char *spm_vcorefs_dump_dvfs_regs(char *p)
 		spm_vcorefs_info("R12_STA: 0x%x, R12_EXT: 0x%x, R12_EXT_STA: 0x%x\n",
 					spm_read(PCM_REG12_MASK_B_STA), spm_read(PCM_REG12_EXT_DATA),
 					spm_read(PCM_REG12_EXT_MASK_B_STA));
-		spm_vcorefs_info("SPM_RSV_CON: 0x%x, SPM_RSV_STA: 0x%x\n",
-				spm_read(SPM_RSV_CON), spm_read(SPM_RSV_STA));
+		spm_vcorefs_info("SPM_RSV_CON: 0x%x, SPM_RSV_STA: 0x%x SW_CRTL_EVENT_2: 0x%x\n",
+				spm_read(SPM_RSV_CON), spm_read(SPM_RSV_STA), spm_read(SW_CRTL_EVENT_2));
 	}
 
 	return p;
@@ -549,6 +553,56 @@ int spm_vcorefs_set_total_bw_threshold(u32 ulpm_threshold, u32 lpm_threshold, u3
 	spm_vcorefs_crit("total BW threshold, ULPM: %u LPM: %u, HPM: %u, SPM_SW_RSV_4: 0x%x\n",
 				ulpm_threshold, lpm_threshold, hpm_threshold, spm_read(SPM_SW_RSV_3));
 	return 0;
+}
+
+void spm_vcorefs_enable_ulpm_perform_bw(bool enable, bool lock)
+{
+	struct pwr_ctrl *pwrctrl = __spm_vcore_dvfs.pwrctrl;
+	unsigned long flags;
+
+	if (lock == true)
+		spin_lock_irqsave(&__spm_lock, flags);
+
+	if (enable == true) {
+		pwrctrl->emi_boost_dvfs_req_2_mask_b = 1;
+		spm_write(SPM_SRC2_MASK, spm_read(SPM_SRC2_MASK) | EMI_BOOST_DVFS_REQ_2_MASK_B_LSB);
+	} else {
+		pwrctrl->emi_boost_dvfs_req_2_mask_b = 0;
+		spm_write(SPM_SRC2_MASK,
+			  spm_read(SPM_SRC2_MASK) & (~EMI_BOOST_DVFS_REQ_2_MASK_B_LSB));
+	}
+
+	if (lock == true)
+		spin_unlock_irqrestore(&__spm_lock, flags);
+
+	spm_vcorefs_crit("ulpm perform BW enable: %d, SPM_SRC2_MASK: 0x%x\n", enable, spm_read(SPM_SRC2_MASK));
+}
+
+void spm_vcorefs_enable_ulpm_total_bw(bool enable, bool lock)
+{
+	struct pwr_ctrl *pwrctrl = __spm_vcore_dvfs.pwrctrl;
+	unsigned long flags;
+
+	if (lock == true)
+		spin_lock_irqsave(&__spm_lock, flags);
+
+	if (enable == true) {
+		pwrctrl->emi_bw_dvfs_req_2_mask = 0;
+		spm_write(SPM_SRC2_MASK, spm_read(SPM_SRC2_MASK) & (~EMI_BW_DVFS_REQ_2_MASK_LSB));
+		pwrctrl->sw_ctrl_event_on_2 = 1;
+		spm_write(SW_CRTL_EVENT_2, spm_read(SW_CRTL_EVENT_2) | SW_CRTL_EVENT_ON_LSB);
+
+	} else {
+		pwrctrl->sw_ctrl_event_on_2 = 0;
+		spm_write(SW_CRTL_EVENT_2, spm_read(SW_CRTL_EVENT_2) & (~SW_CRTL_EVENT_ON_LSB));
+		pwrctrl->emi_bw_dvfs_req_2_mask = 1;
+		spm_write(SPM_SRC2_MASK, spm_read(SPM_SRC2_MASK) | EMI_BW_DVFS_REQ_2_MASK_LSB);
+	}
+
+	if (lock == true)
+		spin_unlock_irqrestore(&__spm_lock, flags);
+
+	spm_vcorefs_crit("ulpm total BW enable: %d, SPM_SRC2_MASK: 0x%x\n", enable, spm_read(SPM_SRC2_MASK));
 }
 
 static void spm_vcorefs_config_hpm(int opp)
@@ -901,6 +955,21 @@ void spm_vcoefs_MD_LPM_req(bool enable)
 	spin_unlock_irqrestore(&__spm_lock, flags);
 
 	spm_vcorefs_info("spm_vcoefs_MD_LPM_req(%d) sw_rsv_6=0x%x\n", enable, spm_read(SPM_SW_RSV_6));
+}
+
+void spm_vcorefs_off_load_lpm_req(bool enable)
+{
+	unsigned long flags;
+	struct pwr_ctrl *pwrctrl = __spm_vcore_dvfs.pwrctrl;
+
+	spin_lock_irqsave(&__spm_lock, flags);
+
+	pwrctrl->disable_off_load_lpm = !enable;
+
+	spm_update_rsv_6();
+	spin_unlock_irqrestore(&__spm_lock, flags);
+
+	spm_vcorefs_info("spm_vcorefs_off_load_lpm_req(%d) sw_rsv_6=0x%x\n", enable, spm_read(SPM_SW_RSV_6));
 }
 
 void spm_vcorefs_emi_grouping_req(bool enable)

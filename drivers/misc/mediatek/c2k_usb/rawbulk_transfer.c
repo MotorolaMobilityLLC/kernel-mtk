@@ -378,7 +378,15 @@ reget:
 	}
 
 	if (retry) {
-		C2K_NOTE("%s: up request is buzy, try to get usb request\n", __func__);
+		static DEFINE_RATELIMIT_STATE(ratelimit, 1 * HZ, 20);
+		static int skip_cnt;
+
+		if (__ratelimit(&ratelimit)) {
+			C2K_NOTE("%s: up request is buzy, reget, skip_cnt<%d>\n", __func__, skip_cnt);
+			skip_cnt = 0;
+		} else
+			skip_cnt++;
+
 		goto reget;
 	}
 	if (!t->req || got == 0)

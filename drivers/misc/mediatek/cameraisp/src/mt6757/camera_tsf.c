@@ -868,38 +868,50 @@ static MINT32 TSF_ReadReg(TSF_REG_IO_STRUCT *pRegIo)
 	MUINT32 i;
 	MINT32 Ret = 0;
 	/*  */
-	TSF_REG_STRUCT reg;
 	/* MUINT32* pData = (MUINT32*)pRegIo->Data; */
-	TSF_REG_STRUCT *pData = (TSF_REG_STRUCT *) pRegIo->pData;
+	TSF_REG_STRUCT *pData = NULL, *pTmpData = NULL;
 
-	for (i = 0; i < pRegIo->Count; i++) {
-		if (get_user(reg.Addr, (MUINT32 *) &pData->Addr) != 0) {
-			LOG_ERR("get_user failed");
-			Ret = -EFAULT;
-			goto EXIT;
-		}
-		/* pData++; */
-		/*  */
-		if ((ISP_TSF_BASE + reg.Addr >= ISP_TSF_BASE)
-		    && (ISP_TSF_BASE + reg.Addr < (ISP_TSF_BASE + TSF_REG_RANGE))) {
-			reg.Val = TSF_RD32(ISP_TSF_BASE + reg.Addr);
-		} else {
-			LOG_ERR("Wrong tsf address(0x%p)", (ISP_TSF_BASE + reg.Addr));
-			reg.Val = 0;
-		}
-		/*  */
-		/* printk("[KernelRDReg]addr(0x%x),value()0x%x\n",TSF_ADDR_CAMINF + reg.Addr,reg.Val); */
-
-		if (put_user(reg.Val, (MUINT32 *) &(pData->Val)) != 0) {
-			LOG_ERR("put_user failed");
-			Ret = -EFAULT;
-			goto EXIT;
-		}
-		pData++;
-		/*  */
+	if ((pRegIo->pData == NULL) || (pRegIo->Count == 0) || (pRegIo->Count > (TSF_REG_RANGE>>2))) {
+		LOG_ERR("TSF_ReadReg pRegIo->pData is NULL, Count:%d!!", pRegIo->Count);
+		Ret = -EFAULT;
+		goto EXIT;
 	}
+	pData = kmalloc((pRegIo->Count) * sizeof(TSF_REG_STRUCT), GFP_KERNEL);
+	if (pData == NULL) {
+		LOG_ERR("ERROR: TSF_ReadReg kmalloc failed, cnt:%d\n", pRegIo->Count);
+		Ret = -ENOMEM;
+		goto EXIT;
+	}
+	pTmpData = pData;
+	if (copy_from_user(pData, (void *)pRegIo->pData, (pRegIo->Count) * sizeof(TSF_REG_STRUCT)) == 0) {
+		for (i = 0; i < pRegIo->Count; i++) {
+			if ((ISP_TSF_BASE + pData->Addr >= ISP_TSF_BASE)
+			    && (ISP_TSF_BASE + pData->Addr < (ISP_TSF_BASE + TSF_REG_RANGE))) {
+				pData->Val = TSF_RD32(ISP_TSF_BASE + pData->Addr);
+			} else {
+				LOG_ERR("Wrong address(0x%p)", (ISP_TSF_BASE + pData->Addr));
+				pData->Val = 0;
+			}
+			pData++;
+		}
+		pData = pTmpData;
+		if (copy_to_user((void *)pRegIo->pData, pData, (pRegIo->Count) * sizeof(TSF_REG_STRUCT)) != 0) {
+			LOG_ERR("copy_to_user failed\n");
+			Ret = -EFAULT;
+			goto EXIT;
+		}
+	} else {
+		LOG_ERR("TSF_READ_REGISTER copy_from_user failed");
+		Ret = -EFAULT;
+		goto EXIT;
+	}
+
 	/*  */
 EXIT:
+	if (pData != NULL) {
+		kfree(pData);
+		pData = NULL;
+	}
 	return Ret;
 }
 
@@ -962,8 +974,13 @@ static MINT32 TSF_WriteReg(TSF_REG_IO_STRUCT *pRegIo)
 	if (TSFInfo.DebugMask & TSF_DBG_WRITE_REG)
 		LOG_DBG("Data(0x%p), Count(%d)\n", (pRegIo->pData), (pRegIo->Count));
 
+	if ((pRegIo->pData == NULL) || (pRegIo->Count == 0) || (pRegIo->Count > (TSF_REG_RANGE>>2))) {
+		LOG_ERR("ERROR: pRegIo->pData is NULL or Count:%d\n", pRegIo->Count);
+		Ret = -EFAULT;
+		goto EXIT;
+	}
 	/* pData = (MUINT8*)kmalloc((pRegIo->Count)*sizeof(TSF_REG_STRUCT), GFP_ATOMIC); */
-	pData = kmalloc((pRegIo->Count) * sizeof(TSF_REG_STRUCT), GFP_ATOMIC);
+	pData = kmalloc((pRegIo->Count) * sizeof(TSF_REG_STRUCT), GFP_KERNEL);
 	if (pData == NULL) {
 		LOG_DBG("ERROR: kmalloc failed, (process, pid, tgid)=(%s, %d, %d)\n", current->comm,
 			current->pid, current->tgid);

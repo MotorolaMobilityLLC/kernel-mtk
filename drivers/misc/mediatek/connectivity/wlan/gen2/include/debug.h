@@ -92,6 +92,8 @@ typedef enum _ENUM_DBG_MODULE_T {
 	DBG_TDLS_IDX,		/* TDLS *//* CFG_SUPPORT_TDLS */
 	DBG_OID_IDX,
 	DBG_NIC_IDX,
+	DBG_WNM_IDX,
+	DBG_WMM_IDX,
 
 	DBG_MODULE_NUM		/* Notice the XLOG check */
 } ENUM_DBG_MODULE_T;
@@ -421,6 +423,9 @@ VOID wlanPktStatusDebugTraceInfoIP(UINT_8 status, UINT_8 eventType, UINT_8 ucIpP
 	, PUINT_8 pucPkt);
 VOID wlanPktStatusDebugTraceInfo(UINT_8 status, UINT_8 eventType
 	, UINT_16 u2EtherType, UINT_8 ucIpProto, UINT_16 u2IpId, UINT_16 u2ArpOpCode, PUINT_8 pucPkt);
+#if CFG_SUPPORT_EMI_DEBUG
+VOID wlanReadFwInfoFromEmi(IN PUINT_32 pAddr);
+#endif
 /*******************************************************************************
 *                              F U N C T I O N S
 ********************************************************************************

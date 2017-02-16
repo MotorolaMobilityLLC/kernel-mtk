@@ -578,6 +578,19 @@ void pmic_auxadc_unlock(void)
 	mt6355_auxadc_unlock();
 }
 
+void pmic_dump_adc_impedance(void)
+{
+	pr_err("Dump Impedence Value\n");
+	pr_err("AUXADC_IMP0:   0x%x\n", upmu_get_reg_value(MT6355_AUXADC_IMP0));
+	pr_err("AUXADC_IMP1:   0x%x\n", upmu_get_reg_value(MT6355_AUXADC_IMP1));
+	pr_err("AUXADC_ADC33:  0x%x\n", upmu_get_reg_value(MT6355_AUXADC_ADC33));
+	pr_err("AUXADC_ADC34:  0x%x\n", upmu_get_reg_value(MT6355_AUXADC_ADC34));
+	pr_err("[0x%x] 0x%x\n", MT6355_AUXADC_IMP_CG0, upmu_get_reg_value(MT6355_AUXADC_IMP_CG0));
+	mt6355_auxadc_dump_setting_regs();
+	mt6355_auxadc_dump_clk_regs();
+	mt6355_auxadc_dump_channel_regs();
+}
+
 int do_ptim_internal(bool isSuspend, unsigned int *bat, signed int *cur)
 {
 	unsigned int vbat_reg;
@@ -627,6 +640,7 @@ int do_ptim_internal(bool isSuspend, unsigned int *bat, signed int *cur)
 	while (pmic_get_register_value(PMIC_AUXADC_IMPEDANCE_IRQ_STATUS) == 0) {
 		if ((count_adc_imp++) > count_time_out_adc_imp) {
 			pr_err("do_ptim over %d times/ms\n", count_adc_imp);
+			pmic_dump_adc_impedance();
 			ret = 1;
 			break;
 		}
@@ -936,7 +950,7 @@ int get_rac_val(void)
 
 		/*Calculate Rac------------------------------------------------------ */
 		if ((curr_2 - curr_1) >= 700 && (curr_2 - curr_1) <= 1200
-		    && (volt_1 - volt_2) >= 80) {
+		    && (volt_1 - volt_2) >= 80 && (volt_1 - volt_2) <= 2000) {
 			/*40.0mA */
 			rac_cal = ((volt_1 - volt_2) * 1000) / (curr_2 - curr_1);	/*m-ohm */
 

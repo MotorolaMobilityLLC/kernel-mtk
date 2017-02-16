@@ -1444,11 +1444,9 @@ static int mmc_blk_cmd_error(struct request *req, const char *name, int error,
 	switch (error) {
 	case -EILSEQ:
 		/* response crc error, retry the r/w cmd */
-		/* marked for force retry */
-		/* pr_err("%s: %s sending %s command, card status %#x\n",
-		 *		req->rq_disk->disk_name, "response CRC error",
-		 *		name, status);
-		 */
+		pr_err("%s: %s sending %s command, card status %#x\n",
+				req->rq_disk->disk_name, "response CRC error",
+				name, status);
 		return ERR_RETRY;
 
 	case -ETIMEDOUT:
@@ -2683,9 +2681,7 @@ static int mmc_blk_issue_rw_rq(struct mmc_queue *mq, struct request *rqc)
 			break;
 		case MMC_BLK_RETRY:
 			retune_retry_done = brq->retune_retry_done;
-			/* orginal was 5 times */
-			/* modify for force retry */
-			if (retry++ < 10)
+			if (retry++ < 5)
 				break;
 			/* Fall through */
 		case MMC_BLK_ABORT:

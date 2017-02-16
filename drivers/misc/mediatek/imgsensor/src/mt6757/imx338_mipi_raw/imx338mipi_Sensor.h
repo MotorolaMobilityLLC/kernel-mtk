@@ -114,6 +114,7 @@ typedef struct imgsensor_info_struct {
 	kal_uint8 ae_ispGain_delay_frame;	/* isp gain delay frame for AE cycle */
 	kal_uint8 ihdr_support;	/* 1, support; 0,not support */
 	kal_uint8 ihdr_le_firstline;	/* 1,le first ; 0, se first */
+	/*kal_uint8  temperature_support;*/		/*1, support; 0,not support*/
 	kal_uint8 sensor_mode_num;	/* support sensor mode num */
 
 	kal_uint8 cap_delay_frame;	/* enter capture delay frame num */
@@ -153,7 +154,10 @@ extern void read_imx338_DCC(kal_uint16 addr, BYTE *data, kal_uint32 size);
 
 extern int iReadRegI2C(u8 *a_pSendData, u16 a_sizeSendData, u8 *a_pRecvData, u16 a_sizeRecvData,
 		       u16 i2cId);
+extern int iReadRegI2CTiming(u8 *a_pSendData, u16 a_sizeSendData, u8 *a_pRecvData, u16 a_sizeRecvData,
+	u16 i2cId, u16 timing);
 extern int iWriteRegI2C(u8 *a_pSendData, u16 a_sizeSendData, u16 i2cId);
+extern int iWriteRegI2CTiming(u8 *a_pSendData, u16 a_sizeSendData, u16 i2cId, u16 timing);
 
 extern void read_imx230_eeprom(void);
 int iBurstWriteReg_multi(u8 *pData, u32 bytes, u16 i2cId, u16 transfer_length, u16 timing);

@@ -240,6 +240,9 @@ static int krtatm_prev_maxtj;
 static struct task_struct *krtatm_thread_handle;
 #endif
 
+static int tscpu_fake_pollingdelay_enable; /*fake polling delay flag*/
+static int tscpu_fake_polling_delay = 0x7FFFFFFF; /*fake polling delay*/
+
 /*=============================================================
  *Local function prototype
  *=============================================================
@@ -636,6 +639,7 @@ static int P_adaptive(int total_power, unsigned int gpu_loading)
 				gpu_power = MAX(gpu_power, MINIMUM_GPU_POWER);
 			} else {
 				gpu_power = MIN(highest_possible_gpu_power, cur_gpu_power);
+				gpu_power = MAX(gpu_power, MINIMUM_GPU_POWER);
 			}
 		}  else {
 			gpu_power = 0;
@@ -1187,6 +1191,49 @@ static struct thermal_cooling_device_ops mtktscpu_cooler_adp_cpu_ops = {
 };
 #endif
 
+
+static int tscpu_read_fake_pollingdelay(struct seq_file *m, void *v)
+{
+	seq_printf(m, "[tscpu_read_fake_pollingdelay] %d %d\n",  tscpu_fake_polling_delay,
+		tscpu_fake_pollingdelay_enable);
+	return 0;
+}
+
+static ssize_t tscpu_write_fake_pollingdelay(struct file *file, const char __user *buffer, size_t count,
+	loff_t *data)
+{
+	char desc[128];
+	int len = 0;
+
+	int set_enable = 0;
+	int polling_delay = -1, enable = 1;
+
+	len = (count < (sizeof(desc) - 1)) ? count : (sizeof(desc) - 1);
+	if (copy_from_user(desc, buffer, len))
+		return 0;
+
+	desc[len] = '\0';
+
+	if (sscanf(desc, "%d %d", &polling_delay, &enable) == 2) {
+		set_enable = 1;
+	} else {
+		tscpu_warn("tscpu_write_fake_pollingdelay bad argument\n");
+		return -EINVAL;
+	}
+
+	if (set_enable) {
+		tscpu_fake_pollingdelay_enable = !!(enable);
+
+		tscpu_fake_polling_delay = polling_delay;
+
+		tscpu_warn("tscpu_write_fake_pollingdelay enable:%d %d (%d)\n",
+			 tscpu_fake_polling_delay, tscpu_fake_pollingdelay_enable, enable);
+	}
+
+	return count;
+}
+
+
 #if CPT_ADAPTIVE_AP_COOLER
 static int tscpu_read_atm_setting(struct seq_file *m, void *v)
 {
@@ -1722,6 +1769,23 @@ static void phpb_params_init(void)
 
 #endif	/* CPT_ADAPTIVE_AP_COOLER */
 
+
+
+static int tscpu_open_fake_pollingdelay(struct inode *inode, struct file *file)
+{
+	return single_open(file, tscpu_read_fake_pollingdelay, NULL);
+}
+
+static const struct file_operations mtktscpu_fake_pollingdelay = {
+	.owner = THIS_MODULE,
+	.open = tscpu_open_fake_pollingdelay,
+	.read = seq_read,
+	.llseek = seq_lseek,
+	.write = tscpu_write_fake_pollingdelay,
+	.release = single_release,
+};
+
+
 #if CPT_ADAPTIVE_AP_COOLER
 static int tscpu_atm_setting_open(struct inode *inode, struct file *file)
 {
@@ -1838,9 +1902,17 @@ static void tscpu_cooler_create_fs(void)
 	if (!mtktscpu_dir) {
 		tscpu_printk("[%s]: mkdir /proc/driver/thermal failed\n", __func__);
 	} else {
+
+		entry =
+			proc_create("tzcpu_fake_pollingdelay", S_IRUGO | S_IWUSR, mtktscpu_dir,
+				&mtktscpu_fake_pollingdelay);
+		if (entry)
+			proc_set_user(entry, uid, gid);
+
+
 #if CPT_ADAPTIVE_AP_COOLER
 		entry =
-		    proc_create("clatm_setting", S_IRUGO | S_IWUSR | S_IWGRP, mtktscpu_dir,
+			proc_create("clatm_setting", S_IRUGO | S_IWUSR | S_IWGRP, mtktscpu_dir,
 				&mtktscpu_atm_setting_fops);
 		if (entry)
 			proc_set_user(entry, uid, gid);
@@ -1887,12 +1959,27 @@ void atm_restart_hrtimer(void)
 {
 	ktime_t ktime;
 
+	/*fake polling delay for testing*/
+	if ((tscpu_fake_pollingdelay_enable == 1) && (tscpu_fake_polling_delay != 0x7FFFFFFF))
+		atm_hrtimer_polling_delay = TS_MS_TO_NS(tscpu_fake_polling_delay);
+
+
 	ktime = ktime_set(0, atm_hrtimer_polling_delay);
 	hrtimer_start(&atm_hrtimer, ktime, HRTIMER_MODE_REL);
 }
 
 static unsigned long atm_get_timeout_time(int curr_temp)
 {
+	/*fake polling delay for testing*/
+	if ((tscpu_fake_pollingdelay_enable == 1) && (tscpu_fake_polling_delay != 0x7FFFFFFF)) {
+		atm_hrtimer_polling_delay = TS_MS_TO_NS(tscpu_fake_polling_delay);
+		/*tscpu_warn("%s atm_hrtimer_polling_delay=%ld\n", __func__, atm_hrtimer_polling_delay);*/
+	}
+
+	/*100000000 = 100 ms,polling delay can't larger than 100ms*/
+	atm_hrtimer_polling_delay = (atm_hrtimer_polling_delay < TS_MS_TO_NS(100)) ?
+		atm_hrtimer_polling_delay : TS_MS_TO_NS(100);
+
 
 	/*
 	* curr_temp can't smaller than -30'C
@@ -1981,8 +2068,10 @@ static void atm_hrtimer_init(void)
 	tscpu_dprintk("%s\n", __func__);
 
 	/*100000000 = 100 ms,polling delay can't larger than 100ms*/
-	atm_hrtimer_polling_delay = (atm_hrtimer_polling_delay < 100000000) ?
-		atm_hrtimer_polling_delay : 100000000;
+	atm_hrtimer_polling_delay = (atm_hrtimer_polling_delay < TS_MS_TO_NS(100)) ?
+		atm_hrtimer_polling_delay : TS_MS_TO_NS(100);
+
+	/*tscpu_warn("%s atm_hrtimer_polling_delay=%ld\n", __func__,atm_hrtimer_polling_delay);*/
 
 	ktime = ktime_set(0, atm_hrtimer_polling_delay);
 

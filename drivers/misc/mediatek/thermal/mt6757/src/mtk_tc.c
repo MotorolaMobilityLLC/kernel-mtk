@@ -925,6 +925,14 @@ static int read_tc_raw_and_temp(volatile u32 *tempmsr_name, ts_e ts_name,
 	*ts_raw = raw;
 	tscpu_dprintk("read_tc_raw_temp,ts_raw=%d,temp=%d\n", *ts_raw, temp * 100);
 
+	/*fake temperature for testing*/
+	if ((tscpu_fake_temp_enable == 1) && (tscpu_fake_temp != 0x7FFFFFFF)) {
+		/*printk_ratelimited(TSCPU_LOG_TAG "tscpu_fake_temp=%d enable=%d\n",
+		*	tscpu_fake_temp, tscpu_fake_temp_enable);
+		*/
+		return tscpu_fake_temp;
+	}
+
 	return temp * 100;
 }
 

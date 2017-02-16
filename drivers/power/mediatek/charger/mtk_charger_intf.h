@@ -83,6 +83,11 @@ enum {
 	CHARGER_DEV_NOTIFY_SAFETY_TIMEOUT,
 };
 
+/* Data of notifier from charger device */
+struct chgdev_notify {
+	bool vbusov_stat;
+};
+
 /*
 *Software Jeita
 *T0:-10
@@ -135,6 +140,8 @@ struct charger_custom_data {
 	int ac_charger_input_current;
 	int non_std_ac_charger_current;
 	int charging_host_charger_current;
+	int apple_1_0a_charger_current;
+	int apple_2_1a_charger_current;
 	int ta_ac_charger_current;
 
 	/* sw jeita */
@@ -272,6 +279,7 @@ struct charger_manager {
 
 	bool cmd_discharging;
 	bool safety_timeout;
+	bool vbusov_stat;
 
 	/* battery warning */
 	unsigned int notify_code;

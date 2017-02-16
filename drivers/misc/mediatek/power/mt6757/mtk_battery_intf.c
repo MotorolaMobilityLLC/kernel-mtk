@@ -13,7 +13,8 @@
 #include <linux/types.h>
 #include <mt-plat/mtk_battery.h>
 #include "mtk_charger_intf.h"
-
+#include <mt-plat/mtk_boot.h>
+#include <mach/mtk_battery_property.h>
 
 /************** New Interface *******************/
 bool battery_get_bat_current_sign(void)
@@ -68,6 +69,14 @@ signed int battery_get_bat_soc(void)
 
 signed int battery_get_bat_uisoc(void)
 {
+	int boot_mode = get_boot_mode();
+
+	if ((boot_mode == META_BOOT) ||
+		(boot_mode == ADVMETA_BOOT) ||
+		(boot_mode == FACTORY_BOOT) ||
+		(boot_mode == ATE_FACTORY_BOOT))
+		return 75;
+
 	return FG_status.ui_soc;
 }
 
@@ -129,7 +138,10 @@ unsigned long BAT_Get_Battery_Current(int polling_mode)
 
 unsigned long BAT_Get_Battery_Voltage(int polling_mode)
 {
-	return (long)battery_get_bat_avg_voltage();
+	long int ret;
+
+	ret = (long)battery_get_bat_avg_voltage() / 10;
+	return ret;
 }
 
 unsigned int bat_get_ui_percentage(void)

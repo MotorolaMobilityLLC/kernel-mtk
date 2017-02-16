@@ -1905,6 +1905,7 @@ errdad:
 	spin_unlock_bh(&ifp->lock);
 
 	addrconf_mod_dad_work(ifp, 0);
+	in6_ifa_put(ifp);
 }
 
 /* Join to solicited addr multicast group.
@@ -3658,6 +3659,7 @@ static void addrconf_dad_work(struct work_struct *w)
 		addrconf_dad_begin(ifp);
 		goto out;
 	} else if (action == DAD_ABORT) {
+		in6_ifa_hold(ifp);
 		addrconf_dad_stop(ifp, 1);
 		goto out;
 	}
@@ -6010,9 +6012,14 @@ static int __net_init addrconf_init_net(struct net *net)
 	dflt->autoconf = ipv6_defaults.autoconf;
 	dflt->disable_ipv6 = ipv6_defaults.disable_ipv6;
 
+#ifdef CONFIG_MTK_NET_RFC7217
 	/* MTK_NET:Enable stable address */
 	dflt->stable_secret.initialized = true;
 	all->stable_secret.initialized = true;
+#else
+	dflt->stable_secret.initialized = false;
+	all->stable_secret.initialized = false;
+#endif
 
 	net->ipv6.devconf_all = all;
 	net->ipv6.devconf_dflt = dflt;

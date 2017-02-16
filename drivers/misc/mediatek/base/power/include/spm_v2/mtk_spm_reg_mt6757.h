@@ -280,6 +280,7 @@
 #define SPM_SW_RSV_18                  (SPM_BASE + 0x67C)
 #define SPM_SW_RSV_19                  (SPM_BASE + 0x680)
 #define SW_CRTL_EVENT                  (SPM_BASE + 0x690)
+#define SW_CRTL_EVENT_2                (SPM_BASE + 0x694)
 
 #define SPM_INFRA_MISC			(SPM_INFRACFG_AO_BASE + 0xf0c)
 #define MD_SRC_REQ_BIT			0
@@ -549,6 +550,8 @@
 #define EMI_BOOST_DVFS_REQ_MASK_B_LSB       (1U << 25)      /* 1b */
 #define CPU_MD_EMI_DVFS_REQ_PROT_DIS_LSB    (1U << 26)      /* 1b */
 #define DRAMC_SPCMD_APSRC_REQ_MASK_B_LSB    (1U << 27)      /* 1b */
+#define EMI_BOOST_DVFS_REQ_2_MASK_B_LSB     (1U << 28)      /* 1b */
+#define EMI_BW_DVFS_REQ_2_MASK_LSB          (1U << 29)      /* 1b */
 /* SPM_WAKEUP_EVENT_MASK (0x10006000+0x0C4) */
 #define SPM_WAKEUP_EVENT_MASK_LSB           (1U << 0)       /* 32b */
 /* SPM_WAKEUP_EVENT_EXT_MASK (0x10006000+0x0C8) */
@@ -1361,6 +1364,8 @@
 #define SPM_SW_RSV_19_LSB                   (1U << 0)       /* 32b */
 /* SW_CRTL_EVENT (0x10006000+0x690) */
 #define SW_CRTL_EVENT_ON_LSB                (1U << 0)       /* 1b */
+/* SW_CRTL_EVENT_2 (0x10006000+0x694) */
+#define SW_CRTL_EVENT_2_ON_LSB              (1U << 0)       /* 1b */
 
 #define SPM_PROJECT_CODE	0xb16
 #define SPM_REGWR_CFG_KEY	(SPM_PROJECT_CODE << 16)

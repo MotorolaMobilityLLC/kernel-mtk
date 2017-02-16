@@ -50,4 +50,13 @@ extern void bat_h_int_handler(void);
 extern void bat_l_int_handler(void);
 extern void fg_cur_h_int_handler(void);
 extern void fg_cur_l_int_handler(void);
+
+
+#ifdef CONFIG_MTK_PMIC_CHIP_MT6355
+extern void mt6355_auxadc_dump_setting_regs(void);
+extern void mt6355_auxadc_dump_clk_regs(void);
+extern void mt6355_auxadc_dump_channel_regs(void);
+#endif
+
+
 #endif				/* _PMIC_THROTTLING_DLPT_H_ */

@@ -56,6 +56,10 @@ extern int spm_vcorefs_set_total_bw_threshold(u32 ulpm_threshold, u32 lpm_thresh
 extern void spm_vcorefs_enable_total_bw(bool enable, bool lock);
 extern void spm_vcorefs_enable_perform_bw(bool enable, bool lock);
 
+/* 2nd ulpm bw monitor */
+void spm_vcorefs_enable_ulpm_perform_bw(bool enable, bool lock);
+void spm_vcorefs_enable_ulpm_total_bw(bool enable, bool lock);
+
 /* msdc dvfs setting api */
 #define MSDC0_DVFS 0
 #define MSDC1_DVFS 1
@@ -79,5 +83,5 @@ extern void ISP_Halt_Mask(int);
 
 extern void spm_vcoefs_MD_LPM_req(bool enable);
 extern void spm_vcorefs_emi_grouping_req(bool enable);
-
+extern void spm_vcorefs_off_load_lpm_req(bool enable);
 #endif				/* _MT_SPM_VCORE_DVFS_H */

@@ -618,6 +618,10 @@ struct usb_device {
 	struct usb3_lpm_parameters u1_params;
 	struct usb3_lpm_parameters u2_params;
 	unsigned lpm_disable_count;
+#ifdef CONFIG_MTK_UAC_POWER_SAVING
+	int usb_audio_enabled;
+#endif
+
 };
 #define	to_usb_device(d) container_of(d, struct usb_device, dev)
 

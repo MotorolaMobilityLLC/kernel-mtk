@@ -50,24 +50,21 @@ u8 *imx386_primax_otp_buf;
 #define	OTP_DATA_SIZE	0x891
 #define	OTP_START_ADDR	0x0000
 #define	E2PROM_WRITE_ID	0xA0
-#define SPC_START_ADDR	0x7C3
+#define SPC_START_ADDR	0x763
 #define SPC_DATA_SIZE	96
 #define PDAF_CAL_DATA_SIZE	96
-#define PDAF_CAL_DATA_OFFSET	0x763
+#define PDAF_CAL_DATA_OFFSET	0x7C3
 
 struct imx386_write_buffer {
 	u8 addr[2];
 	u8 data[MAX_READ_WRITE_SIZE];
 };
 
-extern int main_module_id;
-extern int AF_Inf_pos;
-extern int AF_Macro_pos;
 static kal_uint8 mode_change;
 static imgsensor_info_struct imgsensor_info = {
 	.sensor_id = IMX386_SENSOR_ID,	/* Sensor ID Value: 0x30C8//record sensor id defined in Kd_imgsensor.h */
 
-	.checksum_value = 0xe1b26f6c,	/* checksum value for Camera Auto Test */
+	.checksum_value = 0xa353fed,	/* checksum value for Camera Auto Test */
 
 	.pre = {
 		.pclk = 233300000,	/* record different mode's pclk */
@@ -392,7 +389,7 @@ static void imx386_get_pdaf_reg_setting(MUINT32 regNum, kal_uint16 *regDa)
 	for (i = 0; i < regNum; i++) {
 		idx = 2 * i;
 		regDa[idx + 1] = read_cmos_sensor(regDa[idx]);
-		LOG_INF("%x %x", regDa[idx], regDa[idx + 1]);
+		/* LOG_INF("%x %x", regDa[idx], regDa[idx + 1]); */
 	}
 }
 
@@ -403,7 +400,7 @@ static void imx386_set_pdaf_reg_setting(MUINT32 regNum, kal_uint16 *regDa)
 	for (i = 0; i < regNum; i++) {
 		idx = 2 * i;
 		write_cmos_sensor(regDa[idx], regDa[idx + 1]);
-		LOG_INF("%x %x", regDa[idx], regDa[idx + 1]);
+		/* LOG_INF("%x %x", regDa[idx], regDa[idx + 1]); */
 	}
 }
 
@@ -413,7 +410,7 @@ static void load_imx386_spc_data(void)
 
 	for (i = 0; i < SPC_DATA_SIZE; i++) {
 		write_cmos_sensor(0x7D4C + i, imx386_primax_otp_buf[SPC_START_ADDR + i]);
-		LOG_INF("SPC_Data[%d] = 0x%x\n", i, imx386_primax_otp_buf[SPC_START_ADDR + i]);
+		/* LOG_INF("SPC_Data[%d] = 0x%x\n", i, imx386_primax_otp_buf[SPC_START_ADDR + i]); */
 	}
 #if 0
 	for (i = 0; i < OTP_DATA_SIZE; i++) {
@@ -586,6 +583,267 @@ static void set_shutter(kal_uint32 shutter)
 		shutter, imgsensor.frame_length, line_length, long_exp_shift);
 }
 
+#define IMX386MIPI_MaxGainIndex (255)
+
+kal_uint16 IMX386MIPI_sensorGainMapping[IMX386MIPI_MaxGainIndex][2] = {
+	{64, 0},
+	{65, 6},
+	{66, 12},
+	{67, 20},
+	{68, 27},
+	{69, 34},
+	{70, 43},
+	{71, 51},
+	{72, 55},
+	{73, 63},
+	{74, 67},
+	{75, 75},
+	{76, 79},
+	{77, 85},
+	{78, 92},
+	{79, 96},
+	{80, 100},
+	{81, 106},
+	{82, 112},
+	{83, 116},
+	{84, 122},
+	{85, 125},
+	{86, 130},
+	{87, 136},
+	{88, 139},
+	{89, 144},
+	{90, 146},
+	{91, 152},
+	{92, 154},
+	{93, 159},
+	{94, 162},
+	{95, 167},
+	{96, 169},
+	{97, 173},
+	{98, 176},
+	{100, 184},
+	{101, 186},
+	{102, 190},
+	{103, 193},
+	{104, 196},
+	{105, 200},
+	{106, 202},
+	{107, 206},
+	{108, 208},
+	{110, 213},
+	{111, 216},
+	{112, 220},
+	{113, 221},
+	{114, 224},
+	{115, 226},
+	{116, 230},
+	{117, 231},
+	{118, 234},
+	{120, 239},
+	{121, 242},
+	{122, 243},
+	{123, 246},
+	{124, 247},
+	{125, 249},
+	{126, 251},
+	{127, 253},
+	{128, 255},
+	{130, 259},
+	{131, 261},
+	{132, 263},
+	{133, 265},
+	{134, 267},
+	{135, 269},
+	{136, 271},
+	{137, 272},
+	{138, 274},
+	{140, 278},
+	{141, 279},
+	{142, 281},
+	{143, 283},
+	{144, 284},
+	{145, 286},
+	{146, 287},
+	{147, 289},
+	{148, 290},
+	{150, 293},
+	{151, 295},
+	{152, 296},
+	{153, 298},
+	{154, 299},
+	{155, 300},
+	{156, 302},
+	{157, 303},
+	{158, 304},
+	{160, 307},
+	{161, 308},
+	{162, 310},
+	{163, 311},
+	{164, 312},
+	{165, 313},
+	{166, 315},
+	{167, 316},
+	{168, 317},
+	{170, 319},
+	{171, 320},
+	{172, 321},
+	{173, 323},
+	{174, 324},
+	{175, 325},
+	{176, 326},
+	{177, 327},
+	{178, 328},
+	{180, 330},
+	{181, 331},
+	{182, 332},
+	{183, 333},
+	{184, 334},
+	{185, 335},
+	{186, 336},
+	{187, 337},
+	{188, 338},
+	{191, 340},
+	{192, 341},
+	{193, 342},
+	{194, 343},
+	{195, 344},
+	{196, 345},
+	{197, 346},
+	{199, 347},
+	{200, 348},
+	{202, 350},
+	{204, 351},
+	{205, 352},
+	{206, 353},
+	{207, 354},
+	{209, 355},
+	{210, 356},
+	{211, 357},
+	{213, 358},
+	{216, 360},
+	{217, 361},
+	{218, 362},
+	{220, 363},
+	{221, 364},
+	{223, 365},
+	{224, 366},
+	{226, 367},
+	{228, 368},
+	{229, 369},
+	{231, 370},
+	{232, 371},
+	{234, 372},
+	{236, 373},
+	{237, 374},
+	{239, 375},
+	{241, 376},
+	{243, 377},
+	{245, 378},
+	{246, 379},
+	{248, 380},
+	{250, 381},
+	{252, 382},
+	{254, 383},
+	{256, 384},
+	{258, 385},
+	{260, 386},
+	{262, 387},
+	{264, 388},
+	{266, 389},
+	{269, 390},
+	{271, 391},
+	{273, 392},
+	{275, 393},
+	{278, 394},
+	{280, 395},
+	{282, 396},
+	{285, 397},
+	{287, 398},
+	{290, 399},
+	{293, 400},
+	{295, 401},
+	{298, 402},
+	{301, 403},
+	{303, 404},
+	{306, 405},
+	{309, 406},
+	{312, 407},
+	{315, 408},
+	{318, 409},
+	{321, 410},
+	{324, 411},
+	{328, 412},
+	{331, 413},
+	{334, 414},
+	{338, 415},
+	{341, 416},
+	{345, 417},
+	{349, 418},
+	{352, 419},
+	{356, 420},
+	{360, 421},
+	{364, 422},
+	{368, 423},
+	{372, 424},
+	{377, 425},
+	{381, 426},
+	{386, 427},
+	{390, 428},
+	{395, 429},
+	{400, 430},
+	{405, 431},
+	{410, 432},
+	{415, 433},
+	{420, 434},
+	{426, 435},
+	{431, 436},
+	{437, 437},
+	{443, 438},
+	{449, 439},
+	{455, 440},
+	{462, 441},
+	{468, 442},
+	{475, 443},
+	{482, 444},
+	{489, 445},
+	{496, 446},
+	{504, 447},
+	{512, 448},
+	{520, 449},
+	{529, 450},
+	{537, 451},
+	{546, 452},
+	{555, 453},
+	{565, 454},
+	{575, 455},
+	{585, 456},
+	{596, 457},
+	{607, 458},
+	{618, 459},
+	{630, 460},
+	{643, 461},
+	{655, 462},
+	{669, 463},
+	{683, 464},
+	{697, 465},
+	{712, 466},
+	{728, 467},
+	{745, 468},
+	{762, 469},
+	{780, 470},
+	{799, 471},
+	{819, 472},
+	{840, 473},
+	{862, 474},
+	{886, 475},
+	{910, 476},
+	{936, 477},
+	{964, 478},
+	{993, 479},
+	{1024, 480},
+};
+
+#if 0
 static kal_uint16 gain2reg(const kal_uint16 gain)
 {
 	kal_uint16 reg_gain = 0x0000;
@@ -593,6 +851,20 @@ static kal_uint16 gain2reg(const kal_uint16 gain)
 	reg_gain = 512 - (512 * 64 / gain);
 	return (kal_uint16) reg_gain;
 }
+#else
+
+static kal_uint16 gain2reg(const kal_uint16 gain)
+{
+	kal_uint16 iI = 0;
+
+	for (iI = 0; iI < IMX386MIPI_MaxGainIndex; iI++) {
+		if (gain <= IMX386MIPI_sensorGainMapping[iI][0])
+			return IMX386MIPI_sensorGainMapping[iI][1];
+	}
+	LOG_INF("exit IMX386MIPI_sensorGainMapping function\n");
+	return IMX386MIPI_sensorGainMapping[iI-1][1];
+}
+#endif
 
 /*************************************************************************
  * FUNCTION
@@ -615,7 +887,6 @@ static kal_uint16 set_gain(kal_uint16 gain)
 
 	kal_uint16 reg_gain;
 
-	LOG_INF("set_gain %d\n", gain);
 	if (gain < BASEGAIN || gain > 16 * BASEGAIN) {
 		LOG_INF("Error gain setting");
 		if (gain < BASEGAIN)

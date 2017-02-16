@@ -1,3 +1,17 @@
+/*
+ * Copyright (c) 2015-2016 MICROTRUST Incorporated
+ * All Rights Reserved.
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * version 2 as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ */
+
 #include <linux/kernel.h>
 #include <linux/slab.h>
 #include <linux/module.h>
@@ -52,8 +66,8 @@ static void secondary_init_keymaster_cmdbuf(void *info)
 	rmb();
 
 	pr_debug("[%s][%d] keymaster addr= %lx,  keymaster f addr = %lx, keymaster b addr = %lx\n", __func__, __LINE__,
-		(unsigned long)cd->phy_addr, (unsigned long)cd->f_phy_addr,
-		(unsigned long)cd->b_phy_addr);
+	         (unsigned long)cd->phy_addr, (unsigned long)cd->f_phy_addr,
+	         (unsigned long)cd->b_phy_addr);
 
 	/*
 	n_init_t_fc_buf(cd->phy_addr, cd->fdrv_phy_addr, 0);
@@ -67,7 +81,7 @@ static void secondary_init_keymaster_cmdbuf(void *info)
 
 
 static void init_keymaster_cmd_buf(unsigned long phy_address, unsigned long f_phy_address,
-				unsigned long b_phy_address)
+                                   unsigned long b_phy_address)
 {
 	int cpu_id = 0;
 	keymaster_cmdbuf_entry.phy_addr = phy_address;
@@ -118,12 +132,12 @@ long create_keymaster_cmd_buf(void)
 
 
 	pr_debug("[%s][%d] message = %lx,  fdrv message = %lx, bdrv_message = %lx\n", __func__, __LINE__,
-		(unsigned long)virt_to_phys(ut_keymaster_message_buf),
-		(unsigned long)virt_to_phys(ut_keymaster_fmessage_buf),
-		(unsigned long)virt_to_phys(ut_keymaster_bmessage_buf));
+	         (unsigned long)virt_to_phys(ut_keymaster_message_buf),
+	         (unsigned long)virt_to_phys(ut_keymaster_fmessage_buf),
+	         (unsigned long)virt_to_phys(ut_keymaster_bmessage_buf));
 
 	init_keymaster_cmd_buf((unsigned long)virt_to_phys(ut_keymaster_message_buf), (unsigned long)virt_to_phys(ut_keymaster_fmessage_buf),
-				(unsigned long)virt_to_phys(ut_keymaster_bmessage_buf));
+	                       (unsigned long)virt_to_phys(ut_keymaster_bmessage_buf));
 
 	return 0;
 }

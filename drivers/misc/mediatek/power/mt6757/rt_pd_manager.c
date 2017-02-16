@@ -286,7 +286,7 @@ static int pd_tcp_notifier_call(struct notifier_block *nb,
 			if (pd_sink_voltage_new) {
 				/* enable charger */
 #if CONFIG_MTK_GAUGE_VERSION == 30
-				charger_dev_enable_powerpath(primary_charger, true);
+				charger_manager_enable_power_path(chg_consumer, MAIN_CHARGER, true);
 #else
 				mtk_chr_pd_enable_power_path(1);
 #endif
@@ -296,7 +296,7 @@ static int pd_tcp_notifier_call(struct notifier_block *nb,
 				if (tcpc_kpoc)
 					break;
 #if CONFIG_MTK_GAUGE_VERSION == 30
-				charger_dev_enable_powerpath(primary_charger, false);
+				charger_manager_enable_power_path(chg_consumer, MAIN_CHARGER, false);
 #else
 				mtk_chr_pd_enable_power_path(0);
 #endif
@@ -311,7 +311,7 @@ static int pd_tcp_notifier_call(struct notifier_block *nb,
 					break;
 				/* disable charge */
 #if CONFIG_MTK_GAUGE_VERSION == 30
-				charger_dev_enable_powerpath(primary_charger, false);
+				charger_manager_enable_power_path(chg_consumer, MAIN_CHARGER, false);
 #else
 				mtk_chr_pd_enable_power_path(0);
 #endif
@@ -466,12 +466,12 @@ static int rt_pd_manager_probe(struct platform_device *pdev)
 
 	/* Get charger device */
 #if CONFIG_MTK_GAUGE_VERSION == 30
-	primary_charger = get_charger_by_name("PrimarySWCHG");
+	primary_charger = get_charger_by_name("primary_chg");
 	if (!primary_charger) {
 		pr_err("%s: get primary charger device failed\n", __func__);
 		return -ENODEV;
 	}
-	chg_consumer = charger_manager_get_by_name(&pdev->dev, "pd_manager");
+	chg_consumer = charger_manager_get_by_name(&pdev->dev, "charger_port1");
 	if (!chg_consumer) {
 		pr_err("%s: get charger consumer device failed\n", __func__);
 		return -ENODEV;

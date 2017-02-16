@@ -257,10 +257,11 @@ enum {
 #ifdef CONFIG_PROJECT_PHY
 extern void enable_ipsleep_wakeup(void);
 extern void disable_ipsleep_wakeup(void);
-
 extern void usb_hal_dpidle_request(int mode);
 #else
 static inline void usb_hal_dpidle_request(int mode) { };
+static inline void enable_ipsleep_wakeup(void) { };
+static inline void disable_ipsleep_wakeup(void) { };
 #endif
 /***********************************/
 #endif

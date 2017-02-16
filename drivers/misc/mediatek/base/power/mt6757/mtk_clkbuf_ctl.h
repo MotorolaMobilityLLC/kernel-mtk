@@ -89,12 +89,16 @@ typedef enum {
 
 #if defined(CONFIG_MTK_PMIC_CHIP_MT6355)
 #define CLKBUF_NUM      7
+#define RF_CLKBUF_NUM   4
 #else
 #define CLKBUF_NUM      4
+#define RF_CLKBUF_NUM   4
 #endif
 
 #define STA_CLK_ON      1
 #define STA_CLK_OFF     0
+
+/* #define CLKBUF_COVCTCXO_MODE */
 
 bool clk_buf_ctrl(enum clk_buf_id id, bool onoff);
 void clk_buf_get_swctrl_status(CLK_BUF_SWCTRL_STATUS_T *status);

@@ -1,0 +1,8 @@
+source "drivers/misc/mediatek/sensor_bio/accelerometer/Kconfig"
+source "drivers/misc/mediatek/sensor_bio/alsps/Kconfig"
+source "drivers/misc/mediatek/sensor_bio/gyroscope/Kconfig"
+source "drivers/misc/mediatek/sensor_bio/magnetometer/Kconfig"
+source "drivers/misc/mediatek/sensor_bio/hwmon/Kconfig"
+source "drivers/misc/mediatek/sensor_bio/barometer/Kconfig"
+#source "drivers/misc/mediatek/sensor_bio/humidity/Kconfig"
+source "drivers/misc/mediatek/sensor_bio/biometric/Kconfig"

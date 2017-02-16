@@ -12,6 +12,7 @@
  */
 
 extern unsigned int abist_meter(int ID);
+extern MULTI_SENSOR_FUNCTION_STRUCT2 kd_MultiSensorFunc;
 /* s_add new sensor driver here */
 /* export functions */
 /*IMX*/

@@ -106,6 +106,7 @@ struct mt_systracker_driver {
 	void	(*systracker_write_timeout_test)(void);
 	void	(*systracker_withrecord_test)(void);
 	void	(*systracker_notimeout_test)(void);
+	void    (*systracker_debug_dump)(void);
 };
 
 struct systracker_entry_t {
@@ -158,6 +159,7 @@ extern void systracker_enable(void);
 extern void systracker_test_cleanup(void);
 
 
-/* #define SYSTRACKER_TEST_SUIT */  /* enable for driver poring test suit */
-/* #define TRACKER_DEBUG 0 */
+/* #define SYSTRACKER_TEST_SUIT */   /* enable for driver poring test suit */
+#define TRACKER_DEBUG 1
+
 #endif

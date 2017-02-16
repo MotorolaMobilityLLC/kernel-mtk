@@ -176,6 +176,7 @@ static void __iomem *pwrap_base;
 /*#define MT6355_PMIC_CW00_INIT_VAL		0x4DFD from mt6335 */
 /*#define MT6355_PMIC_CW00_INIT_VAL		0x4F35  XO3_mode=00, XO2_mode=10*/
 #define MT6355_PMIC_CW00_INIT_VAL		0x4FFD /*XO3_mode=11, XO2_mode=11*/
+#define MT6355_PMIC_CW00_INIT_VAL_OFF	0x4000 /*XO234_mode=00, XO1_mode=00*/
 #define MT6355_PMIC_CW00_INIT_VAL_MAN	0x4925 /*XO234_mode=00, XO1_mode=01*/
 /*#define MT6355_PMIC_CW02_INIT_VAL	0xB86A porting from Elbrus, need this!? */
 #define MT6355_PMIC_CW11_INIT_VAL	0x8000 /*XO7_mode=00, XO6_mode=00*/
@@ -303,7 +304,7 @@ static void spm_clk_buf_ctrl(CLK_BUF_SWCTRL_STATUS_T *status)
 
 	spm_val = spm_read(SPM_MDBSI_CON) & ~0x7;
 
-	for (i = 1; i < CLKBUF_NUM; i++)
+	for (i = 1; i < RF_CLKBUF_NUM; i++)
 		spm_val |= status[i] << (i - 1);
 
 	spm_write(SPM_MDBSI_CON, spm_val);
@@ -541,16 +542,20 @@ bool clk_buf_ctrl(enum clk_buf_id id, bool onoff)
 	if (id >= CLK_BUF_INVALID) /* TODO: need check DCT tool for CLK BUF SW control */
 		return false;
 
-	if ((id == CLK_BUF_BB_MD) && (CLK_BUF1_STATUS == CLOCK_BUFFER_HW_CONTROL))
+	if ((id == CLK_BUF_BB_MD) &&
+		(CLK_BUF1_STATUS == CLOCK_BUFFER_HW_CONTROL || CLK_BUF1_STATUS == CLOCK_BUFFER_DISABLE))
 		return false;
 
-	if ((id == CLK_BUF_CONN) && (CLK_BUF2_STATUS == CLOCK_BUFFER_HW_CONTROL))
+	if ((id == CLK_BUF_CONN) &&
+		(CLK_BUF2_STATUS == CLOCK_BUFFER_HW_CONTROL || CLK_BUF2_STATUS == CLOCK_BUFFER_DISABLE))
 		return false;
 
-	if ((id == CLK_BUF_NFC) && (CLK_BUF3_STATUS == CLOCK_BUFFER_HW_CONTROL))
+	if ((id == CLK_BUF_NFC) &&
+		(CLK_BUF3_STATUS == CLOCK_BUFFER_HW_CONTROL || CLK_BUF3_STATUS == CLOCK_BUFFER_DISABLE))
 		return false;
 
-	if ((id == CLK_BUF_AUDIO) && (CLK_BUF4_STATUS == CLOCK_BUFFER_HW_CONTROL))
+	if ((id == CLK_BUF_AUDIO) &&
+		(CLK_BUF4_STATUS == CLOCK_BUFFER_HW_CONTROL || CLK_BUF4_STATUS == CLOCK_BUFFER_DISABLE))
 		return false;
 
 #if 0
@@ -582,7 +587,7 @@ void clk_buf_get_swctrl_status(CLK_BUF_SWCTRL_STATUS_T *status)
 		     clk_buf_swctrl[2], clk_buf_swctrl_modem_on[2],
 		     clk_buf_swctrl[3], clk_buf_swctrl_modem_on[3]);
 
-	for (i = 0; i < CLKBUF_NUM; i++) {
+	for (i = 0; i < RF_CLKBUF_NUM; i++) {
 		if (g_is_flightmode_on)
 			status[i] = clk_buf_swctrl[i];
 		else
@@ -723,7 +728,7 @@ static ssize_t clk_buf_ctrl_store(struct kobject *kobj, struct kobj_attribute *a
 
 		mutex_lock(&clk_buf_ctrl_lock);
 
-		for (i = 0; i < CLKBUF_NUM; i++)
+		for (i = 0; i < RF_CLKBUF_NUM; i++)
 			clk_buf_swctrl[i] = clk_buf_en[i];
 
 		if (g_is_flightmode_on)
@@ -1006,7 +1011,13 @@ bool is_clk_buf_from_pmic(void)
 */
 
 #if defined(CONFIG_MTK_PMIC_CHIP_MT6355)
+
+#ifdef CLKBUF_COVCTCXO_MODE
+	ret = false;
+#else
 	ret = true;
+#endif
+
 #else /* defined(CONFIG_MTK_PMIC_CHIP_MT6355) */
 	pmic_config_interface(0x208, 0x11, 0x1F, 8);
 	pmic_read_interface(0x206, &reg,
@@ -1134,53 +1145,76 @@ static void clk_buf_pmic_wrap_init(void)
 			~(PMIC_XO_EXTBUF3_EN_M_MASK << PMIC_XO_EXTBUF3_EN_M_SHIFT); /*clkbuf3 en_m = 0*/
 #endif
 
-	/* Setup initial PMIC clock buffer setting */
-	pmic_config_interface(MT6355_DCXO_CW00, g_pmic_cw00_rg_val,
+	if (is_pmic_clkbuf == true) {
+		/* Setup initial PMIC clock buffer setting */
+		pmic_config_interface(MT6355_DCXO_CW00, g_pmic_cw00_rg_val,
 			    PMIC_REG_MASK, PMIC_REG_SHIFT);
 
-	pmic_config_interface(MT6355_DCXO_CW11, MT6355_PMIC_CW11_INIT_VAL,
+		pmic_config_interface(MT6355_DCXO_CW11, MT6355_PMIC_CW11_INIT_VAL,
 			    PMIC_REG_MASK, PMIC_REG_SHIFT);
 
-	/* set XO_EXTBUF2_CLKSEL_MAN=1 for controlling CLKBUF2 by PMIC_XO_EXTBUF2_EN_M */
-	pmic_config_interface(MT6355_DCXO_CW14, 0x1,
+
+		/* set XO_EXTBUF2_CLKSEL_MAN=1 for controlling CLKBUF2 by PMIC_XO_EXTBUF2_EN_M */
+		pmic_config_interface(MT6355_DCXO_CW14, 0x1,
 			    PMIC_XO_EXTBUF2_CLKSEL_MAN_MASK, PMIC_XO_EXTBUF2_CLKSEL_MAN_SHIFT);
 
-	pmic_config_interface(MT6355_DCXO_CW16, g_pmic_cw16_rg_val,
+		pmic_config_interface(MT6355_DCXO_CW16, g_pmic_cw16_rg_val,
 			    PMIC_REG_MASK, PMIC_REG_SHIFT);
 
-	/* Check if the setting is ok */
-	pmic_read_interface(MT6355_DCXO_CW00, &pmic_cw00,
+		/* Check if the setting is ok */
+		pmic_read_interface(MT6355_DCXO_CW00, &pmic_cw00,
 			    PMIC_REG_MASK, PMIC_REG_SHIFT);
-	pmic_read_interface(MT6355_DCXO_CW11, &pmic_cw11,
+		pmic_read_interface(MT6355_DCXO_CW11, &pmic_cw11,
 			    PMIC_REG_MASK, PMIC_REG_SHIFT);
-	pmic_read_interface(MT6355_DCXO_CW14, &pmic_cw14,
+		pmic_read_interface(MT6355_DCXO_CW14, &pmic_cw14,
 			    PMIC_REG_MASK, PMIC_REG_SHIFT);
-	pmic_read_interface(MT6355_DCXO_CW16, &pmic_cw16,
+		pmic_read_interface(MT6355_DCXO_CW16, &pmic_cw16,
 			    PMIC_REG_MASK, PMIC_REG_SHIFT);
-	clk_buf_warn("%s DCXO_CW00=0x%x, CW11=0x%x, CW14=0x%x, CW16=0x%x\n",
+		clk_buf_warn("%s DCXO_CW00=0x%x, CW11=0x%x, CW14=0x%x, CW16=0x%x\n",
 		     __func__, pmic_cw00, pmic_cw11, pmic_cw14, pmic_cw16);
 
-
-	/* Setup PMIC_WRAP setting for XO2 & XO3 */
-	clkbuf_writel(DCXO_CONN_ADR0, MT6355_DCXO_CW00_CLR);
-	clkbuf_writel(DCXO_CONN_WDATA0,
+		/* Setup PMIC_WRAP setting for XO2 & XO3 */
+		clkbuf_writel(DCXO_CONN_ADR0, MT6355_DCXO_CW00_CLR);
+		clkbuf_writel(DCXO_CONN_WDATA0,
 		      PMIC_XO_EXTBUF2_EN_M_MASK << PMIC_XO_EXTBUF2_EN_M_SHIFT);	/* bit5 = 0 */
-	clkbuf_writel(DCXO_CONN_ADR1, MT6355_DCXO_CW00_SET);
-	clkbuf_writel(DCXO_CONN_WDATA1,
+		clkbuf_writel(DCXO_CONN_ADR1, MT6355_DCXO_CW00_SET);
+		clkbuf_writel(DCXO_CONN_WDATA1,
 		      PMIC_XO_EXTBUF2_EN_M_MASK << PMIC_XO_EXTBUF2_EN_M_SHIFT);	/* bit5 = 1 */
 
-	clkbuf_writel(DCXO_ENABLE, clkbuf_readl(DCXO_ENABLE) | DCXO_CONN_ENABLE);
+		clkbuf_writel(DCXO_ENABLE, clkbuf_readl(DCXO_ENABLE) | DCXO_CONN_ENABLE);
 
 #if !defined(DISABLE_PMIC_CLKBUF3)
-	clkbuf_writel(DCXO_NFC_ADR0, MT6355_DCXO_CW00_CLR);
-	clkbuf_writel(DCXO_NFC_WDATA0,
+		clkbuf_writel(DCXO_NFC_ADR0, MT6355_DCXO_CW00_CLR);
+		clkbuf_writel(DCXO_NFC_WDATA0,
 		      PMIC_XO_EXTBUF3_EN_M_MASK << PMIC_XO_EXTBUF3_EN_M_SHIFT);	/* bit8 = 0 */
-	clkbuf_writel(DCXO_NFC_ADR1, MT6355_DCXO_CW00_SET);
-	clkbuf_writel(DCXO_NFC_WDATA1,
+		clkbuf_writel(DCXO_NFC_ADR1, MT6355_DCXO_CW00_SET);
+		clkbuf_writel(DCXO_NFC_WDATA1,
 		      PMIC_XO_EXTBUF3_EN_M_MASK << PMIC_XO_EXTBUF3_EN_M_SHIFT);	/* bit8 = 1 */
 
-	clkbuf_writel(DCXO_ENABLE, clkbuf_readl(DCXO_ENABLE) | DCXO_NFC_ENABLE);
+		clkbuf_writel(DCXO_ENABLE, clkbuf_readl(DCXO_ENABLE) | DCXO_NFC_ENABLE);
 #endif /* !defined(DYNAMIC_ENABLE_PMIC_CLKBU2) */
+	} else {
+		/* turn off all pmic clock buffer */
+		g_pmic_cw00_rg_val = MT6355_PMIC_CW00_INIT_VAL_OFF;
+
+		pmic_config_interface(MT6355_DCXO_CW00, g_pmic_cw00_rg_val,
+			PMIC_REG_MASK, PMIC_REG_SHIFT);
+
+		pmic_config_interface(MT6355_DCXO_CW11, MT6355_PMIC_CW11_INIT_VAL,
+			PMIC_REG_MASK, PMIC_REG_SHIFT);
+
+		/* Check if the setting is ok */
+		pmic_read_interface(MT6355_DCXO_CW00, &pmic_cw00,
+			PMIC_REG_MASK, PMIC_REG_SHIFT);
+		pmic_read_interface(MT6355_DCXO_CW11, &pmic_cw11,
+			PMIC_REG_MASK, PMIC_REG_SHIFT);
+		pmic_read_interface(MT6355_DCXO_CW14, &pmic_cw14,
+			PMIC_REG_MASK, PMIC_REG_SHIFT);
+		pmic_read_interface(MT6355_DCXO_CW16, &pmic_cw16,
+			PMIC_REG_MASK, PMIC_REG_SHIFT);
+		clk_buf_warn("%s DCXO_CW00=0x%x, CW11=0x%x, CW14=0x%x, CW16=0x%x because pmic clock buffer = 0\n",
+			__func__, pmic_cw00, pmic_cw11, pmic_cw14, pmic_cw16);
+	}
 
 	clk_buf_warn("%s: DCXO_CONN_ADR0/WDATA0/ADR1/WDATA1/EN=0x%x/%x/%x/%x/%x\n",
 		     __func__, clkbuf_readl(DCXO_CONN_ADR0),
@@ -1336,19 +1370,25 @@ bool clk_buf_init(void)
 	node = of_find_compatible_node(NULL, NULL, "mediatek,rf_clock_buffer");
 	if (node) {
 		of_property_read_u32_array(node, "mediatek,clkbuf-config",
-					   vals, CLKBUF_NUM);
+					   vals, RF_CLKBUF_NUM);
 		CLK_BUF1_STATUS = vals[0];
 		CLK_BUF2_STATUS = vals[1];
 		CLK_BUF3_STATUS = vals[2];
 		CLK_BUF4_STATUS = vals[3];
 		ret = of_property_read_u32_array(node, "mediatek,clkbuf-driving-current",
-						 vals, CLKBUF_NUM);
+						 vals, RF_CLKBUF_NUM);
 		if (!ret) {
 			RF_CLK_BUF1_DRIVING_CURR = vals[0];
 			RF_CLK_BUF2_DRIVING_CURR = vals[1];
 			RF_CLK_BUF3_DRIVING_CURR = vals[2];
 			RF_CLK_BUF4_DRIVING_CURR = vals[3];
 		}
+
+		clk_buf_warn("%s RF clkbuf Status:  %d, %d, %d, %d\n",
+			__func__, CLK_BUF1_STATUS, CLK_BUF2_STATUS, CLK_BUF3_STATUS, CLK_BUF4_STATUS);
+		clk_buf_warn("%s RF clkbuf Current: %d, %d, %d, %d\n",
+			__func__, RF_CLK_BUF1_DRIVING_CURR, RF_CLK_BUF2_DRIVING_CURR,
+			RF_CLK_BUF3_DRIVING_CURR, RF_CLK_BUF4_DRIVING_CURR);
 	} else {
 		clk_buf_err("%s can't find compatible node for rf_clock_buffer\n", __func__);
 		WARN_ON(1);
@@ -1405,7 +1445,9 @@ bool clk_buf_init(void)
 		clk_buf_pmic_wrap_init();
 		clk_buf_clear_rf_setting();
 	} else { /* VCTCXO @RF */
+		is_pmic_clkbuf = false;
 
+		clk_buf_pmic_wrap_init();
 		spm_write(SPM_BSI_EN_SR, afcdac_val);
 		clk_buf_warn("%s: afcdac=0x%x, SPM_BSI_EN_SR=0x%x\n", __func__,
 			     afcdac_val, spm_read(SPM_BSI_EN_SR));
