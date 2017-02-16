@@ -388,6 +388,8 @@ static void lcm_get_params(LCM_PARAMS *params)
 	params->type = LCM_TYPE_DSI;
 	params->width = FRAME_WIDTH;
 	params->height = FRAME_HEIGHT;
+	params->physical_width = 68;
+	params->physical_height = 121;
 
 #if (LCM_DSI_CMD_MODE)
 	params->dsi.mode = CMD_MODE;
@@ -615,7 +617,7 @@ static void lcm_setbacklight_hbm(unsigned int level)
 	lcm_backlight_level_setting[0].para_list[0] = level;
 	push_table(lcm_backlight_level_setting,
 		   sizeof(lcm_backlight_level_setting) / sizeof(struct LCM_setting_table), 1);
-	printk("yufangfang setbacklight lcm level hbm = %d\n",level);
+	printk("setbacklight lcm level hbm = %d\n",level);
 }
 /*
 int recognition_hbm(void)
