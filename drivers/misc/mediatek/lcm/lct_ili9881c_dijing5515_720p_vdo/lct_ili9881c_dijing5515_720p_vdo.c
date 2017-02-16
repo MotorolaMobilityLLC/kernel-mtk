@@ -480,6 +480,8 @@ static void lcm_get_params(LCM_PARAMS *params)
 	params->type = LCM_TYPE_DSI;
 	params->width = FRAME_WIDTH;
 	params->height = FRAME_HEIGHT;
+	params->physical_width = 68;
+	params->physical_height = 121;
 
 #if (LCM_DSI_CMD_MODE)
 	params->dsi.mode = CMD_MODE;
@@ -754,9 +756,9 @@ static unsigned int lcm_ata_check(unsigned char *buffer)
 #endif
 /* add LCM ATA by changjingyang end */
 
-LCM_DRIVER lct_ili9881c_dijing_720p_vdo_lcm_drv = {
+LCM_DRIVER lct_ili9881c_dijing5515_720p_vdo_lcm_drv = {
 
-	.name = "lct_ili9881c_dijing_720p_vdo",
+	.name = "lct_ili9881c_dijing5515_720p_vdo",
 	.set_util_funcs = lcm_set_util_funcs,
 	.get_params = lcm_get_params,
 	.init = lcm_init,

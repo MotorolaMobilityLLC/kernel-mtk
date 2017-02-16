@@ -611,7 +611,7 @@ static void lcm_setbacklight_hbm(unsigned int level)
 	lcm_backlight_level_setting[0].para_list[0] = level;
 	push_table(lcm_backlight_level_setting,
 		   sizeof(lcm_backlight_level_setting) / sizeof(struct LCM_setting_table), 1);
-	printk("yufangfang setbacklight lcm level hbm = %d\n",level);
+	printk("setbacklight lcm level hbm = %d\n",level);
 }
 #endif
 #ifdef CONFIG_LCT_CABC_MODE_SUPPORT

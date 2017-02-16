@@ -16,6 +16,6 @@
 #
 
 
-obj-y += lct_ili9881c_dijing_720p_vdo.o
+obj-y += lct_ili9881c_dijing5513_720p_vdo.o
 
 ccflags-$(CONFIG_MTK_LCM) += -I$(srctree)/drivers/misc/mediatek/lcm/inc
