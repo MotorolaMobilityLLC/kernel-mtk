@@ -208,6 +208,7 @@ NSFeature :  : RAWSensorInfo < _id >  :  : getFlickerPara \
 #if defined(CONFIG_LCT_CAMERA_KERNEL)/*jijin.wang add for LCT*/
 #define HI553_SENSOR_ID                         0x0553
 #endif
+#define HI556_SENSOR_ID                         0x0556
 #define HI545MIPI_SENSOR_ID                     0x0545
 #define HI544MIPI_SENSOR_ID                     0x0544
 #define HI542_SENSOR_ID                         0x00B1
@@ -387,6 +388,7 @@ NSFeature :  : RAWSensorInfo < _id >  :  : getFlickerPara \
 #define SENSOR_DRVNAME_HI551_MIPI_RAW           "hi551mipiraw"
 #if defined(CONFIG_LCT_CAMERA_KERNEL)/*jijin.wang add for LCT*/
 #define SENSOR_DRVNAME_HI553_MIPI_RAW           "hi553mipiraw"
+#define SENSOR_DRVNAME_HI556_MIPI_RAW           "hi556mipiraw"
 #endif
 #define SENSOR_DRVNAME_HI545_MIPI_RAW           "hi545mipiraw"
 #define SENSOR_DRVNAME_HI542_RAW                "hi542raw"
