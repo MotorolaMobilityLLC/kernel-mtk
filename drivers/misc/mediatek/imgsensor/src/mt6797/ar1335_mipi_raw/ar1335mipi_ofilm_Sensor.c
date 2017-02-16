@@ -47,7 +47,8 @@
 //define LOG_INF(format, args...)    printk(PFX, "[%s] " format, __FUNCTION__, ##args)
 #define LOG_INF(format, args...)	pr_err(PFX "[%s] " format, __FUNCTION__, ##args)
 //#define LOG_INF(format, args...)    pr_debug(PFX  fmt, ##args)
-
+//extern u8 ar1335_LSCdatabuf[214];
+extern int ReadAR1335LSCData(unsigned short ui4_offset, unsigned int  ui4_length, unsigned char * pinputdata);
 static DEFINE_SPINLOCK(imgsensor_drv_lock);
 
 //#define AR1335_OTP
@@ -227,6 +228,54 @@ static void set_dummy(void)
 static kal_uint32 return_sensor_id(void)
 {
     return ((read_cmos_sensor(0x0000) << 8) | read_cmos_sensor(0x0001));
+}
+static void AR1335_OTP_READ_LOAD_LSC(void)
+{
+	kal_uint32 lsc_value[200] = {0};
+	int i,addr= 0xDE,length = 0xD4;
+	u8 ar1335_LSCdatabuf[214];
+	kal_uint32 lsc_add1 = 0x3600;
+	kal_uint32 lsc_add2 = 0x3640;
+	kal_uint32 lsc_add3 = 0x3680;
+	kal_uint32 lsc_add4 = 0x36C0;
+	kal_uint32 lsc_add5 = 0x3700;
+	kal_uint32 lsc_add6 = 0x3782;
+	kal_uint32 lsc_add7 = 0x37c0;
+	ReadAR1335LSCData(addr,length,ar1335_LSCdatabuf);
+	for (i = 0;i < 106;i++) {	
+	lsc_value[i]= ( (ar1335_LSCdatabuf[2*i] << 8 ) + ar1335_LSCdatabuf[2*i+1]) ;
+	//printk("huangsh i = %d,lsc_value = 0x%x ar1335_LSCdatabuf = %x,ar1335_LSCdatabuf11 = 0x%x\n",i,lsc_value[i],ar1335_LSCdatabuf[2*i],ar1335_LSCdatabuf[2*i+1]);
+	}
+	for(i =0;i< 20;i++)  {
+	write_cmos_sensor_2byte((lsc_add1+2*i),lsc_value[i]);  /// 
+	//printk("huangsh i = %d ,lsc_add1 = 0x%x ,lsc value =0x%x\n",i,(lsc_add1+2*i),lsc_value[i]);
+		}
+	for(i =0;i< 20;i++)  {
+	write_cmos_sensor_2byte((lsc_add2+2*i),lsc_value[i+20]);  /// 
+	//printk("huangsh i = %d ,lsc_add1 = 0x%x ,lsc value =0x%x\n",i,(lsc_add2+2*i),lsc_value[i+20]);
+		}
+	for(i =0;i< 20;i++)  {
+	write_cmos_sensor_2byte((lsc_add3+2*i),lsc_value[i+40]);  /// 
+	//printk("huangsh i = %d ,lsc_add1 = 0x%x ,lsc value =0x%x\n",i,(lsc_add3+2*i),lsc_value[i+40]);
+		}
+	for(i =0;i< 20;i++)  {
+	write_cmos_sensor_2byte((lsc_add4+2*i),lsc_value[i+60]);  /// 
+	//printk("huangsh i = %d ,lsc_add1 = 0x%x ,lsc value =0x%x\n",i,(lsc_add4+2*i),lsc_value[i+60]);
+		}
+	for(i =0;i< 20;i++)  {
+	write_cmos_sensor_2byte((lsc_add5+2*i),lsc_value[i+80]);  /// 
+	//printk("huangsh i = %d ,lsc_add1 = 0x%x ,lsc value =0x%x\n",i,(lsc_add5+2*i),lsc_value[i+80]);
+		}
+	for(i =0;i< 2;i++)  {
+	write_cmos_sensor_2byte((lsc_add6+2*i),lsc_value[i+100]);  /// 
+	//printk("huangsh i = %d ,lsc_add1 = 0x%x ,lsc value =0x%x\n",i,(lsc_add6+2*i),lsc_value[i+100]);
+		}
+	for(i =0;i< 4;i++)  {
+	write_cmos_sensor_2byte((lsc_add7+2*i),lsc_value[i+102]);  /// 
+	//printk("huangsh i = %d ,lsc_add1 = 0x%x ,lsc value =0x%x\n",i,(lsc_add7+2*i),lsc_value[i+102]);
+		}
+                 write_cmos_sensor_2byte(0x3780,0x8000);  
+               LOG_INF("AR1335 load lsc  successful\n");	 
 }
 
 #if defined(AR1335_OTP)
@@ -941,8 +990,7 @@ write_cmos_sensor_2byte(0x3F3C, 0x0003); 	// ANALOG_CONTROL9
 write_cmos_sensor_2byte(0x301A, 0x021C); 	// RESET_REGISTER 0x021C
 
 //// end init
-
-
+AR1335_OTP_READ_LOAD_LSC();
 #if 1
 #if defined(AR1335_OTP)
 	//AR1335_otp_read(0x30);
