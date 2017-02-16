@@ -478,6 +478,42 @@ int iReadReg(u16 a_u2Addr , u8 *a_puBuff , u16 i2cId)
 /*******************************************************************************
 * iReadRegI2C
 ********************************************************************************/
+int iReadRegI2C_gt24c64(u8 *a_pSendData , u16 a_sizeSendData, u8 *a_pRecvData, u16 a_sizeRecvData, u16 i2cId)
+{
+    		int  i4RetValue = 0;
+			spin_lock(&kdsensor_drv_lock);
+			g_pstI2Cclient->addr = (i2cId >> 1);
+#ifdef CONFIG_MTK_I2C_EXTENSION
+			g_pstI2Cclient->ext_flag = (g_pstI2Cclient->ext_flag)&(~I2C_DMA_FLAG);
+
+			/* Remove i2c ack error log during search sensor */
+			/* PK_ERR("g_pstI2Cclient->ext_flag: %d", g_IsSearchSensor); */
+			if (g_IsSearchSensor == 1)
+				g_pstI2Cclient->ext_flag = (g_pstI2Cclient->ext_flag) | I2C_A_FILTER_MSG;
+			else
+				g_pstI2Cclient->ext_flag = (g_pstI2Cclient->ext_flag)&(~I2C_A_FILTER_MSG);
+#endif
+			spin_unlock(&kdsensor_drv_lock);
+			/*	*/
+			i4RetValue = i2c_master_send(g_pstI2Cclient, a_pSendData, a_sizeSendData);
+			if (i4RetValue != a_sizeSendData) {
+				PK_ERR("[CAMERA SENSOR] I2C send failed!!, Addr = 0x%x\n", a_pSendData[0]);
+				return -1;
+			}
+
+			i4RetValue = i2c_master_recv(g_pstI2Cclient, (char *)a_pRecvData, a_sizeRecvData);
+			if (i4RetValue != a_sizeRecvData) {
+				PK_ERR("[CAMERA SENSOR] I2C read failed!!\n");
+				return -1;
+			}
+			    return 0;
+}
+
+
+
+/*******************************************************************************
+* iReadRegI2C
+********************************************************************************/
 int iReadRegI2C(u8 *a_pSendData , u16 a_sizeSendData, u8 *a_pRecvData, u16 a_sizeRecvData, u16 i2cId)
 {
     int  i4RetValue = 0;
