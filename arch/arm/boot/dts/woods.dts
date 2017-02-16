@@ -261,6 +261,12 @@
                  mmi,dir-name = "hw";
                  mmi,main-utags = "/dev/block/platform/mtk-msdc.0/11230000.msdc0/by-name/hw";
         };
+		//wangkangmin@wind-mobi.com 20170215 add for flashlight gpio begin
+		flashlight:flashlight@{
+			compatible = "mediatek,camera_flashlight";
+		};
+		//wangkangmin@wind-mobi.com 20170215 add for flashlight gpio end
+       
 };
 
 &pcm {
@@ -596,61 +602,13 @@
 	//wangkangmin@wind-mobi.com 20161203 end
 	camera_pins_default: camdefault {
 	};
-//wangkangmin@wind-mobi.com 20161203 begin
-	camera_pins_cam_strobe0: strobe@0 {
-	    pins_cmd_dat {
-			pins = <PINMUX_GPIO80__FUNC_GPIO80>;/*GPIO_CAMERA_FLASH_EN_PIN*/
-			slew-rate = <1>;
-			output-low;
-		};
-	};
-	camera_pins_cam_strobe1: strobe@1 {
-	    pins_cmd_dat {
-			pins = <PINMUX_GPIO80__FUNC_GPIO80>;/*GPIO_CAMERA_FLASH_EN_PIN*/
-			slew-rate = <1>;
-			output-high;
-		};
-	};
-	camera_pins_cam_strobe_en0: strobe1@0 {
-	    pins_cmd_dat {
-			pins = <PINMUX_GPIO58__FUNC_GPIO58>;/*GPIO_CAMERA_FLASH_EN_PIN*/
-			slew-rate = <1>;
-			output-low;
-		};
-	};
-		//luminjie@wind-mobi.com 20160408 end
-	camera_pins_cam_strobe_en1: strobe1@1 {
-	    pins_cmd_dat {
-			pins = <PINMUX_GPIO58__FUNC_GPIO58>;/*GPIO_CAMERA_FLASH_EN_PIN*/
-			slew-rate = <1>;
-			output-high;
-		};
-	};
-	camera_pins_cam_substrobe0: substrobe@0 {
-	    pins_cmd_dat {
-			pins = <PINMUX_GPIO77__FUNC_GPIO77>;/*GPIO_CAMERA_FLASH_MODE_PIN*/
-			slew-rate = <1>;
-			output-low;
-		};
-	};
-	camera_pins_cam_substrobe1: substrobe@1 {
-	    pins_cmd_dat {
-			pins = <PINMUX_GPIO77__FUNC_GPIO77>;/*GPIO_CAMERA_FLASH_MODE_PIN*/
-			slew-rate = <1>;
-			output-high;
-		};
-	};
-//wangkangmin@wind-mobi.com 20161203 end
 
-};
-//wangkangmin@wind-mobi.com 20160118 begin
+	};
+
 &kd_camera_hw1 {
 	pinctrl-names = "default", "cam0_rst0", "cam0_rst1", "cam0_pnd0", "cam0_pnd1",
-			"cam1_rst0", "cam1_rst1", "cam1_pnd0", "cam1_pnd1","cam_ldo0_0", "cam_ldo0_1",
-				   "cam_strobe0","cam_strobe1",
-				   "cam_strobe_en0","cam_strobe_en1",
-				   "cam_substrobe0","cam_substrobe1";
-//wangkangmin@wind-mobi.com 20160118 end
+			"cam1_rst0", "cam1_rst1", "cam1_pnd0", "cam1_pnd1","cam_ldo0_0", "cam_ldo0_1";
+
 	pinctrl-0 = <&camera_pins_default>;
 	pinctrl-1 = <&camera_pins_cam0_rst0>;
 	pinctrl-2 = <&camera_pins_cam0_rst1>;
@@ -662,18 +620,74 @@
 	pinctrl-8 = <&camera_pins_cam1_pnd1>;
 	pinctrl-9 = <&camera_pins_cam_ldo0_0>;
 	pinctrl-10 = <&camera_pins_cam_ldo0_1>;
-//wangkangmin@wind-mobi.com 20160118 begin
-	pinctrl-11 = <&camera_pins_cam_strobe0>;
-	pinctrl-12 = <&camera_pins_cam_strobe1>;
-	pinctrl-13 = <&camera_pins_cam_strobe_en0>;
-	pinctrl-14 = <&camera_pins_cam_strobe_en1>;	
-	pinctrl-15 = <&camera_pins_cam_substrobe0>;
-	pinctrl-16 = <&camera_pins_cam_substrobe1>;	
-//wangkangmin@wind-mobi.com 20160118 end
 	status = "okay";
-
 };
 /* CAMERA GPIO end */
+//wangkangmin@wind-mobi.com 20170215 begin
+/* FLASHLIGHT GPIO begin */
+&pio{
+	flashlight_pins_default: default{
+	};
+	flashlight_pins_cam_strobe0: strobe@0 {
+	    pins_cmd_dat {
+			pins = <PINMUX_GPIO80__FUNC_GPIO80>;/*GPIO_CAMERA_FLASH_EN_PIN*/
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+	flashlight_pins_cam_strobe1: strobe@1 {
+	    pins_cmd_dat {
+			pins = <PINMUX_GPIO80__FUNC_GPIO80>;/*GPIO_CAMERA_FLASH_EN_PIN*/
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+	flashlight_pins_cam_strobe_en0: strobe1@0 {
+	    pins_cmd_dat {
+			pins = <PINMUX_GPIO58__FUNC_GPIO58>;/*GPIO_CAMERA_FLASH_EN_PIN*/
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+	flashlight_pins_cam_strobe_en1: strobe1@1 {
+	    pins_cmd_dat {
+			pins = <PINMUX_GPIO58__FUNC_GPIO58>;/*GPIO_CAMERA_FLASH_EN_PIN*/
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+	flashlight_pins_cam_substrobe0: substrobe@0 {
+	    pins_cmd_dat {
+			pins = <PINMUX_GPIO77__FUNC_GPIO77>;/*GPIO_CAMERA_FLASH_MODE_PIN*/
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+	flashlight_pins_cam_substrobe1: substrobe@1 {
+	    pins_cmd_dat {
+			pins = <PINMUX_GPIO77__FUNC_GPIO77>;/*GPIO_CAMERA_FLASH_MODE_PIN*/
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+};
+
+&flashlight {
+	pinctrl-names = "default","cam_strobe0","cam_strobe1","cam_strobe_en0",
+					"cam_strobe_en1","cam_substrobe0","cam_substrobe1";
+
+	pinctrl-0 = <&flashlight_pins_default>;
+	pinctrl-1 = <&flashlight_pins_cam_strobe0>;
+	pinctrl-2 = <&flashlight_pins_cam_strobe1>;
+	pinctrl-3 = <&flashlight_pins_cam_strobe_en0>;
+	pinctrl-4 = <&flashlight_pins_cam_strobe_en1>;
+	pinctrl-5 = <&flashlight_pins_cam_substrobe0>;
+	pinctrl-6 = <&flashlight_pins_cam_substrobe1>;
+	
+	status = "okay";
+};
+/* FLASHLIGHT GPIO end * /
+//wangkangmin@wind-mobi.com 20170215 end
 
 /* CONSYS GPIO standardization */
 &pio {
