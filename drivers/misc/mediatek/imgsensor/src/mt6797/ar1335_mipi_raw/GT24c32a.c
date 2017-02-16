@@ -44,7 +44,7 @@
 #define PAGE_SIZE_ 256
 #define BUFF_SIZE 8
 
-static u8 LSCdatabuf[LSC_SIZE+2];
+u8 ar1335_LSCdatabuf[LSC_SIZE+2];
 
 static int is_firstboot = 1;
 static DEFINE_SPINLOCK(g_CAM_CALLock); // for SMP
@@ -393,14 +393,14 @@ static int ReadAR1335AFData(unsigned short ui4_offset, unsigned int  ui4_length,
 	return 0;
 }
 #endif 
-static int ReadAR1335LSCData(unsigned short ui4_offset, unsigned int  ui4_length, unsigned char * pinputdata)
+int ReadAR1335LSCData(unsigned short ui4_offset, unsigned int  ui4_length, unsigned char * pinputdata)
 {
 	int i = 0;
 	int addr = ui4_offset;
 	CAM_CALDB("ReadAR1335LSCData\n");
 	
 	for(i = 0; i < LSC_SIZE + 2; i++) {  // LSC data 1868 + 2 byte
-		if(!selective_read_eeprom(addr, &LSCdatabuf[i])){
+		if(!selective_read_eeprom(addr, &ar1335_LSCdatabuf[i])){
 			return -1;
 		}
 		/* huangsh4 to print lsc data with kungfu */
@@ -408,15 +408,15 @@ static int ReadAR1335LSCData(unsigned short ui4_offset, unsigned int  ui4_length
 		addr++;
 	}
 
-	if( LSCdatabuf[0] != 0x40)
+	if( ar1335_LSCdatabuf[0] != 0x40)
 	{
-		CAM_CALDB("LSCdatabuf[0]:0x%x\n", LSCdatabuf[0]);
+		CAM_CALDB("LSCdatabuf[0]:0x%x\n", ar1335_LSCdatabuf[0]);
 		CAM_CALDB("AR1335_OTP LSC data invalid!\n");
 	}
 	
 	for(i = 1; i < LSC_SIZE + 1; i++)
 	{
-		pinputdata[i-1] = LSCdatabuf[i];
+		pinputdata[i-1] = ar1335_LSCdatabuf[i];
 	}
 	return 0;
 }
