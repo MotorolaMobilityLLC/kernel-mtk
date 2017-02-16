@@ -1811,7 +1811,7 @@ static DEVICE_ATTR(Charging_disable, 0664, show_Charging_disable, store_Charging
 static ssize_t show_ChargingBat_disable(struct device *dev, struct device_attribute *attr, char *buf)
 {
 	int chrbat_sign;
-	chrbat_sign = bq24296_get_batfet_disable();
+	chrbat_sign = bq24296_get_chg_config();
 	battery_log(BAT_LOG_CRTI, "zhangchao chrbat_sign = %d\n", chrbat_sign);
 	return sprintf(buf, "%d\n", chrbat_sign);
 }
@@ -1821,20 +1821,21 @@ static ssize_t store_ChargingBat_disable(struct device *dev, struct device_attri
 {
 	int ret = 0;
 	ret = kstrtouint(buf, 10, &ChrBat_disable);
-	battery_log(BAT_LOG_CRTI, "zhangchao Q4 ChrBat_disable = %d\n", ChrBat_disable);
-    if (ChrBat_disable == 1) {
-	   	bq24296_set_batfet_disable(0x01);
-		battery_log(BAT_LOG_CRTI, "zhangchao turn off Q4 ChrBat_disable = %d\n", ChrBat_disable);
+	battery_log(BAT_LOG_CRTI, "zhangchao ChrBat_disable = %d\n", ChrBat_disable);
+    if (ChrBat_disable == 0) {
+	   	bq24296_set_chg_config_ext(0x1,0);
+		battery_log(BAT_LOG_CRTI, "zhangchao charge battery enable ChrBat_disable = %d\n", ChrBat_disable);
 		return size;
 	}
-	else if(ChrBat_disable == 0)
+	else if(ChrBat_disable == 1)
 	{
-	   	bq24296_set_batfet_disable(0x00);
-	   	battery_log(BAT_LOG_CRTI, "zhangchao 00 turn on Q4 ChrBat_disable = %d\n", ChrBat_disable);
+	   	bq24296_set_chg_config_ext(0x0,1);
+	   	battery_log(BAT_LOG_CRTI, "zhangchao 00 charge battery disable ChrBat_disable = %d\n", ChrBat_disable);
 		return size;
 	}
 	else{
 		battery_log(BAT_LOG_CRTI, "zhangchao 01 show ChrBat_disable = %d\n", ChrBat_disable);
+		return size;
 	}
 	return 0;
 }

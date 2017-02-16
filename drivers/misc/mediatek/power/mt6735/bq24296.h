@@ -193,6 +193,12 @@ extern void bq24296_set_iinlim(unsigned int val);
 extern void bq24296_set_reg_rst(unsigned int val);
 extern void bq24296_set_wdt_rst(unsigned int val);
 extern void bq24296_set_chg_config(unsigned int val);
+//zhangchao@wind-mobi.com 20170216 begin
+#ifdef CONFIG_WIND_Z168_BATTERY_MODIFY
+unsigned int bq24296_get_chg_config(void);
+void bq24296_set_chg_config_ext(unsigned int val, int i);
+#endif
+//zhangchao@wind-mobi.com 20170216 end
 extern void bq24296_set_otg_config(unsigned int val);
 extern void bq24296_set_sys_min(unsigned int val);
 extern void bq24296_set_boost_lim(unsigned int val);
