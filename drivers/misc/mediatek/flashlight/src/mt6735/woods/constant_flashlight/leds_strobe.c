@@ -87,7 +87,7 @@ static DEFINE_MUTEX(g_strobeSem);
 
 #define STROBE_DEVICE_ID 0xC6
 //wangkangmin@wind-mobi.com 20161108 begin
-extern int mtkcam_gpio_set(int PinIdx, int PwrType, int Val);
+extern int flashlight_gpio_set(int Flashstate, int Val);
 //wangkangmin@wind-mobi.com 20161108 end
 static struct work_struct workTimeOut;
 
@@ -106,14 +106,14 @@ int FL_Enable(void)
 	
 	printk("enable torch mode \n");
 
-	mtkcam_gpio_set(0, 5, 1);
+	flashlight_gpio_set(0, 1);
 
 	}
 	else if(g_duty >= 1 && g_duty <= 9)
 	{
 	
 	printk("enable flash mode \n");
-	mtkcam_gpio_set(0, 7, 0);
+	flashlight_gpio_set(1, 0);
 	
 	mdelay(6);
 	mt_set_gpio_mode(GPIO80 | 0x80000000, GPIO_MODE_05);
@@ -184,13 +184,13 @@ int FL_Enable(void)
 			flashlight_set_pwm_old(hduration,lduration,level);
 			//mtkcam_gpio_set(0, 5, 1);
 			mdelay(6);
-			mtkcam_gpio_set(0, 7, 1);
+			flashlight_gpio_set(1, 1);
 	}
 	else{
-		mtkcam_gpio_set(0, 7, 0);
-		mtkcam_gpio_set(0, 5, 1);
+		flashlight_gpio_set(1, 0);
+		flashlight_gpio_set(0, 1);
 		mdelay(6);
-		mtkcam_gpio_set(0, 7, 1);
+		flashlight_gpio_set(1, 1);
 	}
 	PK_DBG(" FL_Enable line=%d\n", __LINE__);
 	return 0;
@@ -201,11 +201,11 @@ int FL_Enable(void)
 
 int FL_Disable(void)
 {
-	mtkcam_gpio_set(0, 7, 0);
+	flashlight_gpio_set(1, 0);
 	
 	mt_set_gpio_mode(GPIO80 | 0x80000000, GPIO_MODE_00);
 	mt_set_gpio_dir(GPIO80 | 0x80000000,1);
-	mtkcam_gpio_set(0, 5, 0);
+	flashlight_gpio_set(0, 0);
 
 	PK_DBG(" FL_Disable line=%d\n", __LINE__);
 	return 0;
@@ -222,7 +222,7 @@ int FL_dim_duty(kal_uint32 duty)
 //wangkangmin@wind-mobi.com 20161108 begin
 int FL_Init(void)
 {
-	mtkcam_gpio_set(0, 5, 0);
+	flashlight_gpio_set(0, 0);
 	PK_DBG(" FL_Init line=%d\n", __LINE__); 
 	return 0;
 }

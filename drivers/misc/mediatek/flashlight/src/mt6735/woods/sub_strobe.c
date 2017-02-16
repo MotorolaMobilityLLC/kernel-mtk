@@ -75,7 +75,7 @@ static int g_timeOutTimeMs;
 
 static DEFINE_MUTEX(g_strobeSem);
 
-extern int mtkcam_gpio_set(int PinIdx, int PwrType, int Val);
+extern int flashlight_gpio_set(int Flashstate, int Val);
 static struct work_struct workTimeOut;
 
 /* #define FLASH_GPIO_ENF GPIO12 */
@@ -84,13 +84,13 @@ static struct work_struct workTimeOut;
 static int FL_Enable(void)
 {
 	int i;
-	mtkcam_gpio_set(0, 6, 1);
+	flashlight_gpio_set(2, 1);
 	udelay(30);
 	for(i=0;i<12;i++)
 	{
-		mtkcam_gpio_set(0, 6, 0);
+		flashlight_gpio_set(2, 0);
 		udelay(5);
-		mtkcam_gpio_set(0, 6, 1);
+		flashlight_gpio_set(2, 1);
 		udelay(5);
 	}
 
@@ -100,10 +100,9 @@ static int FL_Enable(void)
 
 static int FL_Disable(void)
 {
-//wangkangmin@wind-mobi.com 20161109 begin
 	PK_DBG(" purple torch mode \n");
-	mtkcam_gpio_set(0, 6, 0);
-//wangkangmin@wind-mobi.com 20161109 end
+	flashlight_gpio_set(2, 0);
+
 	PK_DBG(" FL_Disable line=%d\n", __LINE__);
 	return 0;
 }
@@ -117,7 +116,7 @@ static int FL_dim_duty(kal_uint32 duty)
 
 static int FL_Init(void)
 {
-	mtkcam_gpio_set(0, 6, 0);
+	flashlight_gpio_set(2, 0);
 	PK_DBG(" FL_Init line=%d\n", __LINE__); 
 	return 0;
 }

@@ -90,18 +90,15 @@ typedef enum KD_REGULATOR_TYPE_TAG {
 	VCAMAF,
 	SUB_VCAMD,
 } KD_REGULATOR_TYPE_T;
-//wangkangmin@wind-mobi.com 20161108 begin
+
 typedef enum {
 	CAMPDN,
 	CAMRST,
 	CAM1PDN,
 	CAM1RST,
 	CAMLDO,
-	CAMSTROBE,
-	CAMSUBSTROBE,
-	CAMSTROBE_EN
 } CAMPowerType;
-//wangkangmin@wind-mobi.com 20161108 end
+
 extern bool _hwPowerDown(KD_REGULATOR_TYPE_T type);
 extern bool _hwPowerOn(KD_REGULATOR_TYPE_T type, int powerVolt);
 

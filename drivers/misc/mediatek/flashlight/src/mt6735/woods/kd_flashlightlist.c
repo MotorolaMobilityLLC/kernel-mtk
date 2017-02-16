@@ -85,6 +85,98 @@ static FLASHLIGHT_FUNCTION_STRUCT
 static int gLowBatDuty[e_Max_Sensor_Dev_Num][e_Max_Strobe_Num_Per_Dev];
 static int g_strobePartId[e_Max_Sensor_Dev_Num][e_Max_Strobe_Num_Per_Dev];
 
+//wangkangmin@wind-mobi.com 20170215 begin
+/* ============================== */
+/* gpio init*/
+/* ============================== */
+struct pinctrl *flashlightctrl = NULL;
+struct pinctrl_state *cam_strobe0_l = NULL;
+struct pinctrl_state *cam_strobe0_h = NULL;
+struct pinctrl_state *cam_substrobe0_l = NULL;
+struct pinctrl_state *cam_substrobe0_h = NULL;
+struct pinctrl_state *cam_strobe_en0_l = NULL;
+struct pinctrl_state *cam_strobe_en0_h = NULL;
+
+typedef enum {
+	CAMSTROBE,
+	CAMSTROBE_EN,
+	CAMSUBSTROBE
+} FLASHLIGHT_GPIO_PIN_STATE;
+
+int flashlight_gpio_init(struct platform_device *pdev)
+{
+	int ret = 0;
+
+	flashlightctrl = devm_pinctrl_get(&pdev->dev);
+
+	/*main flashlight enable*/
+	cam_strobe0_l = pinctrl_lookup_state(flashlightctrl, "cam_strobe0");
+	if (IS_ERR(cam_strobe0_l)) {
+		ret = PTR_ERR(cam_strobe0_l);
+		pr_debug("%s : pinctrl err, cam_strobe0_l\n", __func__);
+	}
+	cam_strobe0_h = pinctrl_lookup_state(flashlightctrl, "cam_strobe1");
+	if (IS_ERR(cam_strobe0_h)) {
+		ret = PTR_ERR(cam_strobe0_h);
+		pr_debug("%s : pinctrl err, cam_strobe0_h\n", __func__);
+	}
+	cam_strobe_en0_l = pinctrl_lookup_state(flashlightctrl, "cam_strobe_en0");
+	if (IS_ERR(cam_strobe_en0_l)) {
+		ret = PTR_ERR(cam_strobe_en0_l);
+		pr_debug("%s : pinctrl err, cam_strobe_en0_l\n", __func__);
+	}
+	cam_strobe_en0_h = pinctrl_lookup_state(flashlightctrl, "cam_strobe_en1");
+	if (IS_ERR(cam_strobe_en0_h)) {
+		ret = PTR_ERR(cam_strobe_en0_h);
+		pr_debug("%s : pinctrl err, cam_strobe_en0_h\n", __func__);
+	}
+	/*sub flashlight enable*/
+	cam_substrobe0_l = pinctrl_lookup_state(flashlightctrl, "cam_substrobe0");
+	if (IS_ERR(cam_substrobe0_l)) {
+		ret = PTR_ERR(cam_substrobe0_l);
+		pr_debug("%s : pinctrl err, cam_substrobe0_l\n", __func__);
+	}
+	cam_substrobe0_h = pinctrl_lookup_state(flashlightctrl, "cam_substrobe1");
+	if (IS_ERR(cam_substrobe0_h)) {
+		ret = PTR_ERR(cam_substrobe0_h);
+		pr_debug("%s : pinctrl err, cam_substrobe0_h\n", __func__);
+	}
+	
+	return ret;
+
+}
+
+int flashlight_gpio_set(int Flashstate, int Val)
+{
+	int ret = 0;
+
+	switch (Flashstate) {
+	case CAMSTROBE:
+		if (Val == 0)
+			pinctrl_select_state(flashlightctrl, cam_strobe0_l);
+		else
+			pinctrl_select_state(flashlightctrl, cam_strobe0_h);
+		break;
+	case CAMSTROBE_EN:
+		if (Val == 0)
+			pinctrl_select_state(flashlightctrl, cam_strobe_en0_l);
+		else
+			pinctrl_select_state(flashlightctrl, cam_strobe_en0_h);
+		break;
+	case CAMSUBSTROBE:
+		if (Val == 0)
+			pinctrl_select_state(flashlightctrl, cam_substrobe0_l);
+		else
+			pinctrl_select_state(flashlightctrl, cam_substrobe0_h);
+		break;
+	default:
+		break;
+	};
+
+	return ret;
+}
+//wangkangmin@wind-mobi.com 20170215 end
+
 /* ============================== */
 /* functions */
 /* ============================== */
@@ -722,6 +814,12 @@ static int flashlight_probe(struct platform_device *dev)
 	/* init_MUTEX(&flashlight_private.sem); */
 	sema_init(&flashlight_private.sem, 1);
 
+	//wangkangmin@wind-mobi.com 20170215 begin
+	#if !defined(CONFIG_MTK_LEGACY)
+	flashlight_gpio_init(dev);
+	#endif
+	//wangkangmin@wind-mobi.com 20170215 end
+
 	logI("[flashlight_probe] Done ~");
 	return 0;
 
@@ -764,6 +862,13 @@ static void flashlight_shutdown(struct platform_device *dev)
 	logI("[flashlight_shutdown] Done ~");
 }
 
+//wangkangmin@wind-mobi.com 20170215 begin
+static const struct of_device_id FLASHLIGHT_of_match[] =
+{
+	{.compatible  = "mediatek,camera_flashlight"},
+	{},
+};
+
 static struct platform_driver flashlight_platform_driver = {
 	.probe = flashlight_probe,
 	.remove = flashlight_remove,
@@ -771,8 +876,12 @@ static struct platform_driver flashlight_platform_driver = {
 	.driver = {
 		   .name = FLASHLIGHT_DEVNAME,
 		   .owner = THIS_MODULE,
+		   #ifdef CONFIG_OF
+		   .of_match_table = FLASHLIGHT_of_match,
+		   #endif
 		   },
 };
+//wangkangmin@wind-mobi.com 20170215 end
 
 static struct platform_device flashlight_platform_device = {
 	.name = FLASHLIGHT_DEVNAME,
