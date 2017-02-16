@@ -99,6 +99,11 @@ unsigned char bq24296_reg[bq24296_REG_NUM] = { 0 };
 static DEFINE_MUTEX(bq24296_i2c_access);
 
 int g_bq24296_hw_exist = 0;
+//zhangchao@wind-mobi.com 20170216 begin
+#ifdef CONFIG_WIND_Z168_BATTERY_MODIFY
+static int g_bat_charge_sign = 0;
+#endif
+//zhangchao@wind-mobi.com 20170216 end
 
 /**********************************************************
   *
@@ -308,13 +313,47 @@ void bq24296_set_otg_config(unsigned int val)
 void bq24296_set_chg_config(unsigned int val)
 {
 	unsigned int ret = 0;
-
+	//zhangchao@wind-mobi.com 20170216 begin
+	#ifdef CONFIG_WIND_Z168_BATTERY_MODIFY
+	if (g_bat_charge_sign == 1)
+		return;
+	#endif
+	//zhangchao@wind-mobi.com 20170216 end
 	ret = bq24296_config_interface((unsigned char) (bq24296_CON1),
 				       (unsigned char) (val),
 				       (unsigned char) (CON1_CHG_CONFIG_MASK),
 				       (unsigned char) (CON1_CHG_CONFIG_SHIFT)
 	    );
 }
+
+//zhangchao@wind-mobi.com 20170216 begin
+#ifdef CONFIG_WIND_Z168_BATTERY_MODIFY
+void bq24296_set_chg_config_ext(unsigned int val, int i)
+{
+	unsigned int ret = 0;
+	g_bat_charge_sign = i;
+	ret = bq24296_config_interface((unsigned char) (bq24296_CON1),
+				       (unsigned char) (val),
+				       (unsigned char) (CON1_CHG_CONFIG_MASK),
+				       (unsigned char) (CON1_CHG_CONFIG_SHIFT)
+	    );
+}
+
+unsigned int bq24296_get_chg_config(void)
+{
+	unsigned int ret = 0;
+	unsigned char val = 0;
+
+	ret = bq24296_read_interface((unsigned char) (bq24296_CON1),
+				       (&val),
+				       (unsigned char) (CON1_CHG_CONFIG_MASK),
+				       (unsigned char) (CON1_CHG_CONFIG_SHIFT)
+	    );
+	battery_log(BAT_LOG_CRTI, "zhangchao battery charge state = %d\n", val);
+	return val;
+}
+#endif
+//zhangchao@wind-mobi.com 20170216 end
 
 void bq24296_set_sys_min(unsigned int val)
 {
