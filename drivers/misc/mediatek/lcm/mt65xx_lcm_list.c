@@ -64,8 +64,13 @@ LCM_DRIVER *lcm_driver_list[] = {
 #endif
 
 //add by yufangfang for ili9881c-0d
-#if defined(LCT_ILI9881C_DIJING_720P_VDO)
-	&lct_ili9881c_dijing_720p_vdo_lcm_drv,
+#if defined(LCT_ILI9881C_DIJING5513_720P_VDO)
+	&lct_ili9881c_dijing5513_720p_vdo_lcm_drv,
+#endif
+
+//add by yufangfang for ili9881c-0d
+#if defined(LCT_ILI9881C_DIJING5515_720P_VDO)
+	&lct_ili9881c_dijing5515_720p_vdo_lcm_drv,
 #endif
 
 //add by LCT yufangfang for otm1289a
