@@ -60,14 +60,6 @@ struct pinctrl_state *cam1_rst_h = NULL;
 struct pinctrl_state *cam1_rst_l = NULL;
 struct pinctrl_state *cam_ldo0_h = NULL;
 struct pinctrl_state *cam_ldo0_l = NULL;
-//wangkangmin@wind-mobi.com 20161108 begin
-struct pinctrl_state *cam_strobe0_l = NULL;
-struct pinctrl_state *cam_strobe0_h = NULL;
-struct pinctrl_state *cam_substrobe0_l = NULL;
-struct pinctrl_state *cam_substrobe0_h = NULL;
-struct pinctrl_state *cam_strobe_en0_l = NULL;
-struct pinctrl_state *cam_strobe_en0_h = NULL;
-//wangkangmin@wind-mobi.com 20161108 end
 
 int mtkcam_gpio_init(struct platform_device *pdev)
 {
@@ -143,40 +135,7 @@ int mtkcam_gpio_init(struct platform_device *pdev)
 		ret = PTR_ERR(cam_ldo0_l);
 		pr_debug("%s : pinctrl err, cam_ldo0_l\n", __func__);
 	}
-//wangkangmin@wind-mobi.com 20161108 end
-	/*main flashlight enable*/
-	cam_strobe0_l = pinctrl_lookup_state(camctrl, "cam_strobe0");
-	if (IS_ERR(cam_strobe0_l)) {
-		ret = PTR_ERR(cam_strobe0_l);
-		pr_debug("%s : pinctrl err, cam_strobe0_l\n", __func__);
-	}
-	cam_strobe0_h = pinctrl_lookup_state(camctrl, "cam_strobe1");
-	if (IS_ERR(cam_strobe0_h)) {
-		ret = PTR_ERR(cam_strobe0_h);
-		pr_debug("%s : pinctrl err, cam_strobe0_h\n", __func__);
-	}
-	cam_strobe_en0_l = pinctrl_lookup_state(camctrl, "cam_strobe_en0");
-	if (IS_ERR(cam_strobe_en0_l)) {
-		ret = PTR_ERR(cam_strobe_en0_l);
-		pr_debug("%s : pinctrl err, cam_strobe_en0_l\n", __func__);
-	}
-	cam_strobe_en0_h = pinctrl_lookup_state(camctrl, "cam_strobe_en1");
-	if (IS_ERR(cam_strobe_en0_h)) {
-		ret = PTR_ERR(cam_strobe_en0_h);
-		pr_debug("%s : pinctrl err, cam_strobe_en0_h\n", __func__);
-	}
-	/*sub flashlight enable*/
-	cam_substrobe0_l = pinctrl_lookup_state(camctrl, "cam_substrobe0");
-	if (IS_ERR(cam_substrobe0_l)) {
-		ret = PTR_ERR(cam_substrobe0_l);
-		pr_debug("%s : pinctrl err, cam_substrobe0_l\n", __func__);
-	}
-	cam_substrobe0_h = pinctrl_lookup_state(camctrl, "cam_substrobe1");
-	if (IS_ERR(cam_substrobe0_h)) {
-		ret = PTR_ERR(cam_substrobe0_h);
-		pr_debug("%s : pinctrl err, cam_substrobe0_h\n", __func__);
-	}
-//wangkangmin@wind-mobi.com 20161108 end
+
 	return ret;
 }
 EXPORT_SYMBOL(mtkcam_gpio_init);
@@ -219,24 +178,6 @@ int mtkcam_gpio_set(int PinIdx, int PwrType, int Val)
 			pinctrl_select_state(camctrl, cam_ldo0_l);
 		else
 			pinctrl_select_state(camctrl, cam_ldo0_h);
-		break;
-	case CAMSTROBE:
-		if (Val == 0)
-			pinctrl_select_state(camctrl, cam_strobe0_l);
-		else
-			pinctrl_select_state(camctrl, cam_strobe0_h);
-		break;
-	case CAMSUBSTROBE:
-		if (Val == 0)
-			pinctrl_select_state(camctrl, cam_substrobe0_l);
-		else
-			pinctrl_select_state(camctrl, cam_substrobe0_h);
-		break;
-	case CAMSTROBE_EN:
-		if (Val == 0)
-			pinctrl_select_state(camctrl, cam_strobe_en0_l);
-		else
-			pinctrl_select_state(camctrl, cam_strobe_en0_h);
 		break;
 //wangkangmin@wind-mobi.com 20161108 end
 	default:
