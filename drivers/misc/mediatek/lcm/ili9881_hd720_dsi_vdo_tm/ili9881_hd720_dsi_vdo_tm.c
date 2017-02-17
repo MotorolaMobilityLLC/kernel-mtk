@@ -456,6 +456,10 @@ static void lcm_get_params(LCM_PARAMS *params)
 		params->dsi.lcm_esd_check_table[0].cmd                  = 0x0a;
 		params->dsi.lcm_esd_check_table[0].count                = 1;
 		params->dsi.lcm_esd_check_table[0].para_list[0] = 0x9C;
+		//tuwenzan@wind-mobi.com add physical size at 20170217 begin
+		params->physical_width  = 118;
+		params->physical_height = 65;
+		//tuwenzan@wind-mobi.com add physical size at 20170217 begin
 }
 
 static void lcm_init(void)
