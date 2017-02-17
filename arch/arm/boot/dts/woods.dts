@@ -252,8 +252,15 @@
         };          
 
     /* override mt6737m.dtsi definition */
-
-
+        utags {
+                 compatible = "mmi,utags";
+                 mmi,main-utags = "/dev/block/platform/mtk-msdc.0/11230000.msdc0/by-name/utags";
+        };
+        hw {
+                 compatible = "mmi,utags";
+                 mmi,dir-name = "hw";
+                 mmi,main-utags = "/dev/block/platform/mtk-msdc.0/11230000.msdc0/by-name/hw";
+        };
 };
 
 &pcm {
@@ -278,17 +285,6 @@
 		reg = <0x23>;
 		status = "okay";
 	};
-
-		utags {
-			compatible = "mmi,utags";
-			mmi,main-utags = "/dev/block/platform/mtk-msdc.0/11230000.msdc0/by-name/utags";
-		};
-		hw {
-			compatible = "mmi,utags";
-			mmi,dir-name = "hw";
-			mmi,main-utags = "/dev/block/platform/mtk-msdc.0/11230000.msdc0/by-name/hw";
-		};
-
 };
 //tuwenzan@wind-mobi.com add at 20161130 end
 /* sensor gpio standization */
