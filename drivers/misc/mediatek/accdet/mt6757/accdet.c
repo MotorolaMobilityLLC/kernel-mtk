@@ -33,15 +33,7 @@
 #include <linux/of.h>
 #include <linux/of_irq.h>
 
-#ifdef CONFIG_MTK_PMIC_CHIP_MT6355
-/* just use on kibo+ */
-/* fix record no voice when press key */
-#include "mtk-soc-codec-63xx.h"
-#endif
-
-
 #define DEBUG_THREAD 1
-#define HW_MODE_SUPPORT		1/* HW path */
 
 /*
  * static variable defination
@@ -54,7 +46,7 @@
 static int button_press_debounce = 0x400;
 int cur_key;
 struct head_dts_data accdet_dts_data;
-int accdet_auxadc_offset;
+s8 accdet_auxadc_offset;
 int accdet_irq;
 unsigned int gpiopin, headsetdebounce;
 unsigned int accdet_eint_type = IRQ_TYPE_LEVEL_LOW;/* default low_level trigger */
@@ -249,15 +241,12 @@ static void pmic_pwrap_write(unsigned int addr, unsigned int wdata)
 
 static int Accdet_PMIC_IMM_GetOneChannelValue(int deCount)
 {
-	unsigned int reg_val = 0;
 	unsigned int vol_val = 0;
 
 	pmic_pwrap_write(ACCDET_AUXADC_CTL_SET, ACCDET_CH_REQ_EN);
 	mdelay(3);
-	reg_val = pmic_pwrap_read(ACCDET_AUXADC_REG);
-	while ((reg_val & ACCDET_DATA_READY) != ACCDET_DATA_READY)
-		reg_val = pmic_pwrap_read(ACCDET_AUXADC_REG);
-
+	while ((pmic_pwrap_read(ACCDET_AUXADC_REG) & ACCDET_DATA_READY) != ACCDET_DATA_READY)
+		;
 	/* wait AUXADC data ready */
 	vol_val = (pmic_pwrap_read(ACCDET_AUXADC_REG) & ACCDET_DATA_MASK);
 	vol_val = (vol_val * 1800) / 4096;	/* mv */
@@ -267,6 +256,7 @@ static int Accdet_PMIC_IMM_GetOneChannelValue(int deCount)
 }
 
 #ifdef CONFIG_ACCDET_PIN_SWAP
+
 static void accdet_FSA8049_enable(void)
 {
 	mt_set_gpio_mode(GPIO_FSA8049_PIN, GPIO_FSA8049_PIN_M_GPIO);
@@ -280,6 +270,7 @@ static void accdet_FSA8049_disable(void)
 	mt_set_gpio_dir(GPIO_FSA8049_PIN, GPIO_DIR_OUT);
 	mt_set_gpio_out(GPIO_FSA8049_PIN, GPIO_OUT_ZERO);
 }
+
 #endif
 static inline void headset_plug_out(void)
 {
@@ -413,11 +404,8 @@ static void accdet_eint_work_callback(struct work_struct *work)
 		pmic_pwrap_write(ACCDET_PWM_THRESH, cust_headset_settings->pwm_width);
 		ACCDET_DEBUG("[Accdet]pin recog start!  micbias always on!\n");
 #endif
-	#if HW_MODE_SUPPORT
-	#else
 		/* set PWM IDLE  on */
 		pmic_pwrap_write(ACCDET_STATE_SWCTRL, (pmic_pwrap_read(ACCDET_STATE_SWCTRL) | ACCDET_SWCTRL_IDLE_EN));
-	#endif
 		/* enable ACCDET unit */
 		enable_accdet(ACCDET_SWCTRL_EN);
 	} else {
@@ -777,10 +765,8 @@ int accdet_irq_handler(void)
 	}
 	accdet_workqueue_func();
 	while (((pmic_pwrap_read(ACCDET_IRQ_STS) & IRQ_STATUS_BIT)
-		&& (accdet_timeout_ns(cur_time, ACCDET_TIME_OUT))));
-	/* clear accdet int, modify  for fix interrupt trigger twice error */
-	pmic_pwrap_write(ACCDET_IRQ_STS, pmic_pwrap_read(ACCDET_IRQ_STS) & (~IRQ_CLR_BIT));
-	pmic_pwrap_write(INT_STATUS_ACCDET, RG_INT_STATUS_ACCDET);
+		&& (accdet_timeout_ns(cur_time, ACCDET_TIME_OUT))))
+		;
 #endif
 #ifdef ACCDET_NEGV_IRQ
 	cur_time = accdet_get_current_time();
@@ -1028,13 +1014,6 @@ static inline void check_cable_type(void)
 #endif
 			/* solution: reduce hook switch debounce time to 0x400 */
 			pmic_pwrap_write(ACCDET_DEBOUNCE0, button_press_debounce);
-#ifdef CONFIG_MTK_PMIC_CHIP_MT6355
-		/* just use on kibo+ */
-		/* fix record no voice when press key */
-		/* notify audio when bit0=1,bit1=1,bit6=0,bit7=1 */
-		if ((0xC3 & (pmic_pwrap_read(0x361E))) == 0x83)
-			mtk_audio_reset_input_precharge();/* call audio to reset record */
-#endif
 		} else if (current_status == 3) {
 
 #ifdef CONFIG_ACCDET_PIN_RECOGNIZATION
@@ -1195,54 +1174,12 @@ int accdet_get_dts_data(void)
 }
 void accdet_pmic_Read_Efuse_HPOffset(void)
 {
-	unsigned int efusevalue = 0;
-	unsigned int tmp_val = 0;
+	s16 efusevalue;
 
-	efusevalue = 0;
-	tmp_val = 0;
-
-#if defined(CONFIG_MTK_PMIC_CHIP_MT6355)/* support mt6355, default open HW mode */
-#ifdef CONFIG_FOUR_KEY_HEADSET/* Just for 4-key, 2.7V, internal bias for mt6337*/
-		/* [Notice] must confirm the bias vol is 2.7v */
-		/* get 8bit from efuse rigister, so need extend to 12bit, shift right 2*/
-		/* AD */
-		tmp_val = pmic_pwrap_read(REG_ACCDET_AD_CALI_1);
-		efusevalue = (tmp_val>>RG_ACCDET_BIT_SHIFT)&ACCDET_CALI_MASK2;
-		tmp_val = pmic_pwrap_read(REG_ACCDET_AD_CALI_2);
-		efusevalue = efusevalue | ((tmp_val & 0x01) << RG_ACCDET_HIGH_BIT_SHIFT);
-		accdet_dts_data.four_key.mid_key_four = efusevalue;
-
-		/* DB */
-		tmp_val = pmic_pwrap_read(REG_ACCDET_AD_CALI_2);
-		efusevalue = (tmp_val>>0x01)&ACCDET_CALI_MASK3;
-		accdet_dts_data.four_key.voice_key_four = efusevalue;
-
-		/* BC */
-		tmp_val = pmic_pwrap_read(REG_ACCDET_AD_CALI_2);
-		efusevalue = (tmp_val>>RG_ACCDET_BIT_SHIFT)&ACCDET_CALI_MASK4;
-		tmp_val = pmic_pwrap_read(REG_ACCDET_AD_CALI_3);
-		efusevalue = efusevalue | ((tmp_val & 0x01) << RG_ACCDET_HIGH_BIT_SHIFT);
-		accdet_dts_data.four_key.up_key_four = efusevalue;
-		accdet_dts_data.four_key.down_key_four = 1000;/* ?? need check */
-		accdet_auxadc_offset = 0;
-#else/* 3-key, not same with mt6351 */
-	tmp_val = pmic_pwrap_read(REG_ACCDET_AD_CALI_0);/* read HW reg */
-	efusevalue = (int)((tmp_val>>RG_ACCDET_BIT_SHIFT)&ACCDET_CALI_MASK0);
-	tmp_val = pmic_pwrap_read(REG_ACCDET_AD_CALI_1);/* read HW reg */
-	accdet_auxadc_offset = efusevalue | ((tmp_val & 0x01) << RG_ACCDET_HIGH_BIT_SHIFT);
-	if (accdet_auxadc_offset > 128)
-		accdet_auxadc_offset -= 256;
-	accdet_auxadc_offset = (accdet_auxadc_offset / 2);
-	ACCDET_INFO("[accdet_Efuse]--efuse=0x%x,auxadc_value=%d mv\n", efusevalue, accdet_auxadc_offset);
-#endif
-#else/* used on mt6351 */
-	efusevalue =  pmic_Read_Efuse_HPOffset(RG_OTP_PA_ADDR_WORD_INDEX);
-	accdet_auxadc_offset = (int)((efusevalue >> RG_OTP_PA_ACCDET_BIT_SHIFT) & 0xFF);
-	if (accdet_auxadc_offset > 128)/* modify to solve the sign data issue */
-		accdet_auxadc_offset -= 256;
+	efusevalue = (s16) pmic_Read_Efuse_HPOffset(RG_OTP_PA_ADDR_WORD_INDEX);
+	accdet_auxadc_offset = (efusevalue >> RG_OTP_PA_ACCDET_BIT_SHIFT) & 0xFF;
 	accdet_auxadc_offset = (accdet_auxadc_offset / 2);
 	ACCDET_INFO(" efusevalue = 0x%x, accdet_auxadc_offset = %d\n", efusevalue, accdet_auxadc_offset);
-#endif
 }
 
 static inline void accdet_init(void)
@@ -1347,13 +1284,10 @@ static inline void accdet_init(void)
 	}
 
 #if defined(CONFIG_MTK_PMIC_CHIP_MT6355)/* support mt6355, default open HW mode */
-#if HW_MODE_SUPPORT/* HW path */
+	/* HW path */
 	pmic_pwrap_write(ACCDET_HW_MODE_DFF, 0x8000|ACCDET_HWMODE_SEL|ACCDET_EINT_DEB_OUT_DFF);
-#else
-	pmic_pwrap_write(ACCDET_HW_MODE_DFF, 0x8000);/* SW path */
+	/* pmic_pwrap_write(ACCDET_HW_MODE_DFF, 0x8000); *//* SW path, */
 #endif
-#endif
-
 
 #if defined CONFIG_ACCDET_EINT
 	/* disable ACCDET unit */

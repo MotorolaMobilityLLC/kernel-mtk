@@ -99,6 +99,8 @@ struct regulator *_reg_VDRAM1;
 struct regulator *_reg_VDRAM2;
 #endif
 
+static unsigned int cbt_mode_rank[2];
+
 #define DRAMC_RSV_TAG "[DRAMC_RSV]"
 #define dramc_rsv_aee_warn(string, args...) do {\
 	pr_err("[ERR]"string, ##args); \
@@ -456,6 +458,12 @@ static tx_result dramc_tx_tracking(int channel)
 	if (CBT_MODE == BYTE_MODE) {
 		mr1819_base[0][1] = (Reg_Readl(DRAMC_AO_SHU1RK0_DQSOSC + shu_offset_dramc) >> 16) & 0xFFFF;
 		mr1819_base[1][1] = (Reg_Readl(DRAMC_AO_SHU1RK1_DQSOSC + shu_offset_dramc) >> 16) & 0xFFFF;
+	} else if (CBT_MODE == R0_NORMAL_R1_BYTE) {
+		mr1819_base[0][1] = mr1819_base[0][0];
+		mr1819_base[1][1] = (Reg_Readl(DRAMC_AO_SHU1RK1_DQSOSC + shu_offset_dramc) >> 16) & 0xFFFF;
+	} else if (CBT_MODE == R0_BYTE_R1_NORMAL) {
+		mr1819_base[0][1] = (Reg_Readl(DRAMC_AO_SHU1RK0_DQSOSC + shu_offset_dramc) >> 16) & 0xFFFF;
+		mr1819_base[1][1] = mr1819_base[1][0];
 	} else { /* normal mode */
 		mr1819_base[0][1] = mr1819_base[0][0];
 		mr1819_base[1][1] = mr1819_base[1][0];
@@ -478,7 +486,7 @@ static tx_result dramc_tx_tracking(int channel)
 		if (res != TX_DONE)
 			return res;
 		mr1819_cur[0] = (mr18_cur & 0xFF) | ((mr19_cur & 0xFF) << 8);
-		if (CBT_MODE == BYTE_MODE)
+		if (cbt_mode_rank[rank] == RANK_BYTE)
 			mr1819_cur[1] = (mr18_cur >> 8) | (mr19_cur & 0xFF00);
 		else /* Normal Mode */
 			mr1819_cur[1] = mr1819_cur[0];
@@ -1871,8 +1879,30 @@ static int __init dram_test_init(void)
 	DRAM_TYPE = (readl(PDEF_DRAMC0_CHA_REG_010) & 0x1C00) >> 10;
 	pr_err("[DRAMC Driver] dram type =%d\n", get_ddr_type());
 
-	CBT_MODE = (readl(PDEF_DRAMC0_CHA_REG_010) & 0x2000) >> 13;
+	CBT_MODE = (readl(PDEF_DRAMC0_CHA_REG_01C) & 0xF000) >> 12;
 	pr_err("[DRAMC Driver] cbt mode =%d\n", CBT_MODE);
+
+	switch (CBT_MODE) {
+	case NORMAL_MODE:
+		cbt_mode_rank[0] = RANK_NORMAL;
+		cbt_mode_rank[1] = RANK_NORMAL;
+		break;
+	case BYTE_MODE:
+		cbt_mode_rank[0] = RANK_BYTE;
+		cbt_mode_rank[1] = RANK_BYTE;
+		break;
+	case R0_NORMAL_R1_BYTE:
+		cbt_mode_rank[0] = RANK_NORMAL;
+		cbt_mode_rank[1] = RANK_BYTE;
+		break;
+	case R0_BYTE_R1_NORMAL:
+		cbt_mode_rank[0] = RANK_BYTE;
+		cbt_mode_rank[1] = RANK_NORMAL;
+		break;
+	default:
+		pr_err("[DRAMC] CBT mode error!!!\n");
+		break;
+	}
 
 	pr_err("[DRAMC Driver] Dram Data Rate = %d\n", get_dram_data_rate());
 	pr_err("[DRAMC Driver] shuffle_status = %d\n", get_shuffle_status());

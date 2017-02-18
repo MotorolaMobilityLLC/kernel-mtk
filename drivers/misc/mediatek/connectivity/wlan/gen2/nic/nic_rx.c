@@ -922,9 +922,7 @@ VOID nicRxProcessEventPacket(IN P_ADAPTER_T prAdapter, IN OUT P_SW_RFB_T prSwRfb
 			}
 			/* return prCmdInfo */
 			cmdBufFreeCmdInfo(prAdapter, prCmdInfo);
-		} else
-			DBGLOG(RX, WARN, "prCmdInfo is null ,ucEID = 0x%02x ucSeqNum = 0x%02x\n"
-			, prEvent->ucEID, prEvent->ucSeqNum);
+		}
 
 		break;
 
@@ -1797,9 +1795,12 @@ static VOID nicRxCheckWakeupReason(P_SW_RFB_T prSwRfb)
 		switch (u2Temp) {
 		case ETH_P_IPV4:
 			u2Temp = *(UINT_16 *) &pvHeader[ETH_HLEN + 4];
-			DBGLOG(RX, INFO, "IP Packet from:%d.%d.%d.%d, IP ID 0x%04x wakeup host\n",
+			DBGLOG(RX, INFO, "IP Packet:%d.%d.%d.%d, to:%d.%d.%d.%d,ID 0x%04x wakeup host\n",
 				pvHeader[ETH_HLEN + 12], pvHeader[ETH_HLEN + 13],
-				pvHeader[ETH_HLEN + 14], pvHeader[ETH_HLEN + 15], u2Temp);
+				pvHeader[ETH_HLEN + 14], pvHeader[ETH_HLEN + 15],
+				pvHeader[ETH_HLEN + 16], pvHeader[ETH_HLEN + 17],
+				pvHeader[ETH_HLEN + 18], pvHeader[ETH_HLEN + 19],
+				u2Temp);
 			break;
 		case ETH_P_ARP:
 		{

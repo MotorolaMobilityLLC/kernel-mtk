@@ -892,6 +892,15 @@ void bq25890_pumpx_up(unsigned int val)
 {
 	unsigned int ret = 0;
 
+	/* Input current limit = 500 mA, changes after PE+ detection */
+	bq25890_set_iinlim(0x08);
+
+	/* CC mode current = 2048 mA */
+	bq25890_set_ichg(0x20);
+
+	bq25890_chg_en(1);
+
+
 	bq25890_en_pumpx(1);
 	if (val == 1) {
 		ret = bq25890_config_interface((unsigned char) (bq25890_CON9),

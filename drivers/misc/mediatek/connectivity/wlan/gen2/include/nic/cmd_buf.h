@@ -74,7 +74,6 @@ struct _CMD_INFO_T {
 
 	/* private data */
 	UINT_32 u4PrivateData;
-	UINT_32 u4InqueTime;
 };
 
 /*******************************************************************************

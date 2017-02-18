@@ -44,10 +44,8 @@ MODULE_LICENSE("Dual BSD/GPL");
 #define BT_LOG_INFO                 2
 #define BT_LOG_WARN                 1
 #define BT_LOG_ERR                  0
-#define BT_LOG_NUM_MAX       5
 
-static UINT32 gDbgLevel = BT_LOG_DBG;
-static UINT32 gDbgCounter = BT_LOG_NUM_MAX;
+static UINT32 gDbgLevel = BT_LOG_INFO;
 
 #define BT_DBG_FUNC(fmt, arg...)	\
 	do { if (gDbgLevel >= BT_LOG_DBG) pr_debug(PFX "%s: " fmt, __func__, ##arg); } while (0)
@@ -158,7 +156,6 @@ unsigned int BT_poll(struct file *filp, poll_table *wait)
 		 * BT rx queue is empty, or whole chip reset start, or already sent Hardware Error event
 		 * for whole chip reset end, add to wait queue.
 		 */
-		BT_DBG_FUNC("poll_wait\n");
 		poll_wait(filp, &inq, wait);
 		/*
 		 * Check if condition changes before poll_wait return, in case of
@@ -170,13 +167,11 @@ unsigned int BT_poll(struct file *filp, poll_table *wait)
 			mask |= POLLIN | POLLRDNORM;	/* Readable */
 	} else {
 		/* BT rx queue has valid data, or whole chip reset end, have not sent Hardware Error event yet */
-		BT_DBG_FUNC("Readable\n");
 		mask |= POLLIN | POLLRDNORM;	/* Readable */
 	}
 
 	/* Do we need condition here? */
 	mask |= POLLOUT | POLLWRNORM;	/* Writable */
-	BT_DBG_FUNC("mask = %d\n", mask);
 
 	return mask;
 }
@@ -184,14 +179,6 @@ unsigned int BT_poll(struct file *filp, poll_table *wait)
 ssize_t BT_write(struct file *filp, const char __user *buf, size_t count, loff_t *f_pos)
 {
 	INT32 retval = 0;
-
-	if (gDbgCounter > 0)
-		gDbgLevel = BT_LOG_DBG;
-	else
-		gDbgLevel = BT_LOG_INFO;
-
-	if (gDbgCounter > 0)
-		gDbgCounter--;
 
 	down(&wr_mtx);
 
@@ -401,8 +388,6 @@ static int BT_open(struct inode *inode, struct file *file)
 
 	BT_INFO_FUNC("WMT turn on BT OK!\n");
 	rstflag = 0;
-	gDbgLevel = BT_LOG_DBG;
-	gDbgCounter = BT_LOG_NUM_MAX;
 
 	if (mtk_wcn_stp_is_ready()) {
 
@@ -432,10 +417,6 @@ static int BT_close(struct inode *inode, struct file *file)
 {
 	BT_INFO_FUNC("major %d minor %d (pid %d)\n", imajor(inode), iminor(inode), current->pid);
 	rstflag = 0;
-
-	gDbgLevel = BT_LOG_DBG;
-	gDbgCounter = BT_LOG_NUM_MAX;
-
 	mtk_wcn_wmt_msgcb_unreg(WMTDRV_TYPE_BT);
 	mtk_wcn_stp_register_event_cb(BT_TASK_INDX, NULL);
 

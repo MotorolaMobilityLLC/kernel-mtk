@@ -25,6 +25,8 @@
 ********************************************************************************
 */
 
+#define FIX_P2P_HT20	0
+
 /*******************************************************************************
 *                             D A T A   T Y P E S
 ********************************************************************************
@@ -1423,7 +1425,7 @@ VOID rlmProcessAssocRsp(P_ADAPTER_T prAdapter, P_SW_RFB_T prSwRfb, PUINT_8 pucIE
 	 *       shall be invoked afterwards.
 	 *       Update channel, bandwidth and protection mode by nicUpdateBss()
 	 */
-#if 1
+#if FIX_P2P_HT20
 	if (prStaRec->ucNetTypeIndex == NETWORK_TYPE_P2P_INDEX) {
 
 		DBGLOG(P2P, WARN, "Force P2P BW to 20\n");

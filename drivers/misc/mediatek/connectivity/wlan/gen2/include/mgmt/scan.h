@@ -280,6 +280,7 @@ struct _BSS_DESC_T {
 #if CFG_SUPPORT_ROAMING_RETRY
 	BOOLEAN fgIsRoamFail;
 #endif
+
 };
 
 struct _ROAM_BSS_DESC_T {

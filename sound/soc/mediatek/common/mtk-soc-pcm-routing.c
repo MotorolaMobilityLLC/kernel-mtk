@@ -644,6 +644,7 @@ static int Audio_Hpl_Offset_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_el
 	pr_warn("%s()\n", __func__);
 	mHplOffset = ucontrol->value.integer.value[0];
 	SetHplTrimOffset(mHplOffset);
+	CalculateDCCompenForEachdB_L();
 #else
 	mHplOffset = ucontrol->value.integer.value[0];
 #endif
@@ -675,6 +676,7 @@ static int Audio_Hpr_Offset_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_el
 	pr_warn("%s()\n", __func__);
 	mHprOffset = ucontrol->value.integer.value[0];
 	SetHprTrimOffset(mHprOffset);
+	CalculateDCCompenForEachdB_R();
 #else
 	mHprOffset = ucontrol->value.integer.value[0];
 #endif

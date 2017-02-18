@@ -869,7 +869,7 @@ void AudDrv_APLL22M_Clk_On(void)
 	int ret = 0;
 	unsigned long flags = 0;
 
-	PRINTK_AUD_CLK("+%s counter = %d\n, AUDIO_CLK_CFG_6 = 0x%x\n",
+	PRINTK_AUD_CLK("+%s, counter = %d\n, AUDIO_CLK_CFG_6 = 0x%x\n",
 			__func__, Aud_APLL22M_Clk_cntr, GetClkCfg(AUDIO_CLK_CFG_6));
 
 	spin_lock_irqsave(&auddrv_Clk_lock, flags);
@@ -882,13 +882,13 @@ void AudDrv_APLL22M_Clk_On(void)
 		if (aud_clks[CLOCK_TOP_AD_APLL1_CK].clk_prepare) {
 			ret = clk_enable(aud_clks[CLOCK_TOP_AD_APLL1_CK].clock);
 			if (ret) {
-				pr_err("%s [CCF]Aud enable_clock CLOCK_TOP_AD_APLL1_CK fail\n",
+				pr_err("%s, [CCF] clk_enable CLOCK_TOP_AD_APLL1_CK fail\n",
 						__func__);
 				AUDIO_AEE("");
 				goto EXIT;
 			}
 		} else {
-			pr_err("%s [CCF]clk_prepare error Aud CLOCK_TOP_AD_APLL1_CK fail\n",
+			pr_err("%s, [CCF] clk_prepare CLOCK_TOP_AD_APLL1_CK fail\n",
 					__func__);
 			AUDIO_AEE("");
 			goto EXIT;
@@ -897,13 +897,13 @@ void AudDrv_APLL22M_Clk_On(void)
 		if (aud_clks[CLOCK_TOP_AUD_MUX1].clk_prepare) {
 			ret = clk_enable(aud_clks[CLOCK_TOP_AUD_MUX1].clock);
 			if (ret) {
-				pr_err("%s [CCF]Aud enable_clock enable_clock CLOCK_TOP_AUD_MUX1 fail\n",
+				pr_err("%s, [CCF] clk_enable CLOCK_TOP_AUD_MUX1 fail\n",
 						__func__);
 				AUDIO_AEE("");
 				goto EXIT;
 			}
 		} else {
-			pr_err("%s [CCF]clk_prepare error Aud enable_clock CLOCK_TOP_AUD_MUX1 fail\n",
+			pr_err("%s, [CCF] clk_prepare CLOCK_TOP_AUD_MUX1 fail\n",
 					__func__);
 			AUDIO_AEE("");
 			goto EXIT;
@@ -913,13 +913,13 @@ void AudDrv_APLL22M_Clk_On(void)
 
 			ret = clk_enable(aud_clks[CLOCK_APLL22M].clock);
 			if (ret) {
-				pr_err("%s [CCF]Aud enable_clock enable_clock aud_apll22m_clk fail\n",
+				pr_err("%s, [CCF] clk_enable CLOCK_APLL22M fail\n",
 						__func__);
 				AUDIO_AEE("");
 				goto EXIT;
 			}
 		} else {
-			pr_err("%s [CCF]clk_prepare error Aud enable_clock aud_apll22m_clk fail\n",
+			pr_err("%s, [CCF] clk_prepare CLOCK_APLL22M fail\n",
 					__func__);
 			AUDIO_AEE("");
 			goto EXIT;
@@ -929,7 +929,7 @@ void AudDrv_APLL22M_Clk_On(void)
 	Aud_APLL22M_Clk_cntr++;
 EXIT:
 
-	PRINTK_AUD_CLK("-%s: counter = %d, AUDIO_CLK_CFG_6 = 0x%x\n",
+	PRINTK_AUD_CLK("-%s, counter = %d, AUDIO_CLK_CFG_6 = 0x%x\n",
 			__func__, Aud_APLL22M_Clk_cntr, GetClkCfg(AUDIO_CLK_CFG_6));
 
 	spin_unlock_irqrestore(&auddrv_Clk_lock, flags);
@@ -939,7 +939,7 @@ void AudDrv_APLL22M_Clk_Off(void)
 {
 	unsigned long flags = 0;
 
-	PRINTK_AUD_CLK("+%s: counter = %d, AUDIO_CLK_CFG_6 = 0x%x\n",
+	PRINTK_AUD_CLK("+%s, counter = %d, AUDIO_CLK_CFG_6 = 0x%x\n",
 			__func__, Aud_APLL22M_Clk_cntr, GetClkCfg(AUDIO_CLK_CFG_6));
 
 	spin_lock_irqsave(&auddrv_Clk_lock, flags);
@@ -953,10 +953,10 @@ void AudDrv_APLL22M_Clk_Off(void)
 
 		if (aud_clks[CLOCK_TOP_AUD_MUX1].clk_prepare) {
 			clk_disable(aud_clks[CLOCK_TOP_AUD_MUX1].clock);
-			pr_debug("%s [CCF]Aud clk_disable CLOCK_TOP_AUD_MUX1\n",
+			pr_debug("%s, [CCF] clk_disable CLOCK_TOP_AUD_MUX1\n",
 					__func__);
 		} else {
-			pr_err("%s [CCF]clk_prepare error clk_disable CLOCK_TOP_AUD_MUX1 fail\n",
+			pr_err("%s, [CCF] clk_prepare CLOCK_TOP_AUD_MUX1 fail\n",
 					__func__);
 			AUDIO_AEE("");
 			goto EXIT;
@@ -964,10 +964,10 @@ void AudDrv_APLL22M_Clk_Off(void)
 
 		if (aud_clks[CLOCK_TOP_AD_APLL1_CK].clk_prepare) {
 			clk_disable(aud_clks[CLOCK_TOP_AD_APLL1_CK].clock);
-			pr_debug("%s [CCF]Aud clk_disable CLOCK_TOP_AD_APLL1_CK\n",
+			pr_debug("%s, [CCF] clk_disable CLOCK_TOP_AD_APLL1_CK\n",
 					__func__);
 		} else {
-			pr_err("%s [CCF]clk_prepare error CLOCK_TOP_AD_APLL1_CK fail\n",
+			pr_err("%s, [CCF] clk_prepare CLOCK_TOP_AD_APLL1_CK fail\n",
 					__func__);
 			AUDIO_AEE("");
 			goto EXIT;
@@ -982,7 +982,7 @@ EXIT:
 		Aud_APLL22M_Clk_cntr = 0;
 	}
 
-	PRINTK_AUD_CLK("-%s: counter = %d, AUDIO_CLK_CFG_6 = 0x%x\n",
+	PRINTK_AUD_CLK("-%s, counter = %d, AUDIO_CLK_CFG_6 = 0x%x\n",
 			__func__, Aud_APLL22M_Clk_cntr, GetClkCfg(AUDIO_CLK_CFG_6));
 
 	spin_unlock_irqrestore(&auddrv_Clk_lock, flags);
@@ -1004,7 +1004,7 @@ void AudDrv_APLL24M_Clk_On(void)
 	int ret = 0;
 	unsigned long flags = 0;
 
-	PRINTK_AUD_CLK("+%s counter = %d\n", __func__, Aud_APLL24M_Clk_cntr);
+	PRINTK_AUD_CLK("+%s, counter = %d\n", __func__, Aud_APLL24M_Clk_cntr);
 
 	spin_lock_irqsave(&auddrv_Clk_lock, flags);
 
@@ -1014,13 +1014,13 @@ void AudDrv_APLL24M_Clk_On(void)
 			ret = clk_enable(aud_clks[CLOCK_TOP_AD_APLL2_CK].clock);
 			if (ret) {
 				pr_err
-				("%s [CCF]Aud enable_clock CLOCK_TOP_AD_APLL2_CK fail\n",
+				("%s, [CCF] clk_enable CLOCK_TOP_AD_APLL2_CK fail\n",
 				 __func__);
 				AUDIO_AEE("");
 				goto EXIT;
 			}
 		} else {
-			pr_err("%s [CCF]clk_prepare error Aud CLOCK_TOP_AD_APLL2_CK fail\n",
+			pr_err("%s, [CCF] clk_prepare CLOCK_TOP_AD_APLL2_CK fail\n",
 			       __func__);
 			AUDIO_AEE("");
 			goto EXIT;
@@ -1030,13 +1030,13 @@ void AudDrv_APLL24M_Clk_On(void)
 			ret = clk_enable(aud_clks[CLOCK_TOP_AUD_MUX2].clock);
 			if (ret) {
 				pr_err
-				("%s [CCF]Aud enable_clock enable_clock CLOCK_TOP_AUD_MUX2 fail\n",
+				("%s, [CCF] clk_enable CLOCK_TOP_AUD_MUX2 fail\n",
 				 __func__);
 				AUDIO_AEE("");
 				goto EXIT;
 			}
 		} else {
-			pr_err("%s [CCF]clk_prepare error Aud enable_clock CLOCK_TOP_AUD_MUX2 fail\n",
+			pr_err("%s, [CCF] clk_prepare CLOCK_TOP_AUD_MUX2 fail\n",
 			       __func__);
 			AUDIO_AEE("");
 			goto EXIT;
@@ -1045,13 +1045,13 @@ void AudDrv_APLL24M_Clk_On(void)
 		if (aud_clks[CLOCK_APLL24M].clk_prepare) {
 			ret = clk_enable(aud_clks[CLOCK_APLL24M].clock);
 			if (ret) {
-				pr_err("%s [CCF]Aud enable_clock enable_clock aud_apll24m_clk fail\n",
+				pr_err("%s, [CCF] clk_enable CLOCK_APLL24M fail\n",
 				       __func__);
 				AUDIO_AEE("");
 				goto EXIT;
 			}
 		} else {
-			pr_err("%s [CCF]clk_prepare error Aud enable_clock aud_apll24m_clk fail\n",
+			pr_err("%s, [CCF] clk_prepare CLOCK_APLL24M fail\n",
 			       __func__);
 			AUDIO_AEE("");
 			goto EXIT;
@@ -1067,7 +1067,7 @@ void AudDrv_APLL24M_Clk_Off(void)
 {
 	unsigned long flags = 0;
 
-	PRINTK_AUD_CLK("+%s counter = %d\n", __func__, Aud_APLL24M_Clk_cntr);
+	PRINTK_AUD_CLK("+%s, counter = %d\n", __func__, Aud_APLL24M_Clk_cntr);
 
 	spin_lock_irqsave(&auddrv_Clk_lock, flags);
 
@@ -1080,13 +1080,11 @@ void AudDrv_APLL24M_Clk_Off(void)
 
 		if (aud_clks[CLOCK_TOP_AUD_MUX2].clk_prepare) {
 			clk_disable(aud_clks[CLOCK_TOP_AUD_MUX2].clock);
-
-			pr_err("%s [CCF]Aud clk_disable CLOCK_TOP_AUD_MUX2 fail\n",
-			       __func__);
-
+			pr_debug("%s, [CCF] clk_disable CLOCK_TOP_AUD_MUX2\n",
+					__func__);
 		} else {
 			pr_err
-			("%s [CCF]clk_prepare error clk_disable CLOCK_TOP_AUD_MUX2 fail\n",
+			("%s, [CCF] clk_prepare CLOCK_TOP_AUD_MUX2 fail\n",
 			 __func__);
 			AUDIO_AEE("");
 			goto EXIT;
@@ -1094,12 +1092,11 @@ void AudDrv_APLL24M_Clk_Off(void)
 
 		if (aud_clks[CLOCK_TOP_AD_APLL2_CK].clk_prepare) {
 			clk_disable(aud_clks[CLOCK_TOP_AD_APLL2_CK].clock);
-			pr_debug("%s [CCF]Aud clk_disable CLOCK_TOP_AD_APLL2_CK fail\n",
-				 __func__);
-
+			pr_debug("%s, [CCF] clk_disable CLOCK_TOP_AD_APLL2_CK\n",
+					__func__);
 		} else {
 			pr_err
-			("%s [CCF]clk_prepare error CLOCK_TOP_AD_APLL2_CK fail\n",
+			("%s, [CCF] clk_prepare CLOCK_TOP_AD_APLL2_CK fail\n",
 			 __func__);
 			AUDIO_AEE("");
 			goto EXIT;

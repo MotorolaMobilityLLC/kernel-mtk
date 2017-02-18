@@ -36,6 +36,7 @@
 ********************************************************************************
 */
 
+
 #define OPEN_FIRMWARE_BY_REQUEST		1
 #define ENHANCE_AP_MODE_THROUGHPUT	1
 
@@ -709,16 +710,26 @@ kalProcessRxPacket(IN P_GLUE_INFO_T prGlueInfo, IN PVOID pvPacket, IN PUINT_8 pu
 		   IN BOOLEAN fgIsRetain, IN ENUM_CSUM_RESULT_T aerCSUM[])
 {
 	WLAN_STATUS rStatus = WLAN_STATUS_SUCCESS;
-	struct sk_buff *skb = (struct sk_buff *)pvPacket;
 
-	skb->data = pucPacketStart;
-	skb_reset_tail_pointer(skb);	/* reset tail pointer first, for 64bit kernel,we should call linux kernel API */
-	skb_trim(skb, 0);	/* only if skb->len > len, then skb_trim has effect */
-	skb_put(skb, u4PacketLen);	/* shift tail and skb->len to correct value */
+	if (pvPacket == NULL) {
+		DBGLOG(INIT, WARN, "%s: pvPacket is a null value\n", __func__);
+		rStatus = WLAN_STATUS_FAILURE;
+	} else {
+
+		struct sk_buff *skb = (struct sk_buff *)pvPacket;
+
+		skb->data = pucPacketStart;
+		/* reset tail pointer first, for 64bit kernel,we should call linux kernel API */
+		skb_reset_tail_pointer(skb);
+		/* only if skb->len > len, then skb_trim has effect */
+		skb_trim(skb, 0);
+		/* shift tail and skb->len to correct value */
+		skb_put(skb, u4PacketLen);
 
 #if CFG_TCP_IP_CHKSUM_OFFLOAD
-	kalUpdateRxCSUMOffloadParam(skb, aerCSUM);
+		kalUpdateRxCSUMOffloadParam(skb, aerCSUM);
 #endif
+	}
 
 	return rStatus;
 }
@@ -1073,7 +1084,7 @@ kalIndicateStatusAndComplete(IN P_GLUE_INFO_T prGlueInfo, IN WLAN_STATUS eStatus
 
 			/* ensure BSS exists */
 			bss = cfg80211_get_bss(priv_to_wiphy(prGlueInfo), prChannel, arBssid,
-				ssid.aucSsid, ssid.u4SsidLen, IEEE80211_BSS_TYPE_ESS, IEEE80211_PRIVACY_ANY);
+				ssid.aucSsid, ssid.u4SsidLen, 0, 0);
 
 			if (bss == NULL) {
 				/* create BSS on-the-fly */
@@ -1099,7 +1110,7 @@ kalIndicateStatusAndComplete(IN P_GLUE_INFO_T prGlueInfo, IN WLAN_STATUS eStatus
 			 */
 			while (ucLoopCnt--) {
 				bss_others = cfg80211_get_bss(priv_to_wiphy(prGlueInfo), NULL, arBssid,
-					ssid.aucSsid, ssid.u4SsidLen, IEEE80211_BSS_TYPE_ESS, IEEE80211_PRIVACY_ANY);
+					ssid.aucSsid, ssid.u4SsidLen, 0, 0);
 				if (bss && bss_others && bss_others != bss) {
 					DBGLOG(SCN, INFO, "remove BSSes that only channel different\n");
 					cfg80211_unlink_bss(priv_to_wiphy(prGlueInfo), bss_others);
@@ -1823,17 +1834,12 @@ kalIoctl(IN P_GLUE_INFO_T prGlueInfo,
 {
 	P_GL_IO_REQ_T prIoReq = NULL;
 	WLAN_STATUS ret = WLAN_STATUS_SUCCESS;
-	P_ADAPTER_T prAdapter = NULL;
 
 	if (fgIsResetting == TRUE)
 		return WLAN_STATUS_SUCCESS;
 
 	/* GLUE_SPIN_LOCK_DECLARATION(); */
 	ASSERT(prGlueInfo);
-
-	prAdapter = prGlueInfo->prAdapter;
-
-	ASSERT(prAdapter);
 
 	/* <1> Check if driver is halt */
 	/* if (prGlueInfo->u4Flag & GLUE_FLAG_HALT) { */
@@ -1844,6 +1850,7 @@ kalIoctl(IN P_GLUE_INFO_T prGlueInfo,
 	 * if wait longer than double OID timeout timer, then will show backtrace who held halt lock.
 	 * at this case, we will return kalIoctl failure because tx_thread may be hung
 	 */
+
 	if (kalHaltLock(2 * WLAN_OID_TIMEOUT_THRESHOLD)) {
 		DBGLOG(OID, WARN, "kalIoctl: WLAN_STATUS_FAILURE\n");
 		return WLAN_STATUS_FAILURE;
@@ -1916,19 +1923,8 @@ kalIoctl(IN P_GLUE_INFO_T prGlueInfo,
 	else {
 		/* Case 2: timeout */
 		/* clear pending OID's cmd in CMD queue */
-		DBGLOG(OID, WARN, "kalIoctl: wait_for_completion_timeout occurred!\n");
+		DBGLOG(OID, WARN, "kalIoctl: wait_for_completion_interruptible_timeout occurred!\n");
 		DBGLOG(OID, WARN, "kalIoctl: do whole chip reset!\n");
-		DBGLOG(OID, WARN, "OidHandler 0x%p pvInfoBuf 0x%p,Buflen =%d,InfoLen=%p fgRead=%d,fgWaitRsp=%d\n"
-		, pfnOidHandler
-		, pvInfoBuf
-		, u4InfoBufLen
-		, pu4QryInfoLen
-		, fgRead
-		, fgWaitResp);
-		wlanDumpTcResAndTxedCmd(NULL, 0);
-		cmdBufDumpCmdQueue(&prAdapter->rPendingCmdQueue, "waiting response CMD queue");
-		/* dump TC4[0] ~ TC4[3] TX_DESC */
-		wlanDebugHifDescriptorDump(prAdapter, MTK_AMPDU_TX_DESC, DEBUG_TC4_INDEX);
 		glDoChipReset();
 #if 0
 		if (fgCmd) {
@@ -2756,7 +2752,6 @@ VOID kalEnqueueCommand(IN P_GLUE_INFO_T prGlueInfo, IN P_QUE_ENTRY_T prQueueEntr
 		prMsduInfo->ucCID = prCmdInfo->ucCID;
 		prMsduInfo->u4InqueTime = kalGetTimeTick();
 	}
-	prCmdInfo->u4InqueTime = kalGetTimeTick();
 
 	GLUE_ACQUIRE_SPIN_LOCK(prGlueInfo, SPIN_LOCK_CMD_QUE);
 	QUEUE_INSERT_TAIL(prCmdQue, prQueueEntry);

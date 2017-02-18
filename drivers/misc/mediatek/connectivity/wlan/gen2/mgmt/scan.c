@@ -3399,7 +3399,8 @@ static UINT_16 scanCalculateScoreBySnrRssi(P_BSS_DESC_T prBssDesc)
 		u2Score = 20;
 	else if (cRssi <= HARD_TO_CONNECT_RSSI_THRESOLD)
 		u2Score = 0;
-	u2Score = 8 * ((cRssi + 69)/5) + 28;
+	else
+		u2Score = 8 * ((cRssi + 69)/5) + 28;
 	u2Score *= WEIGHT_IDX_RSSI;
 
 	/* TODO: we don't know the valid value for SNR, so don't take it into account */

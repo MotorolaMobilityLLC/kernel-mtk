@@ -188,6 +188,29 @@ static int dpd_a2[DPD_FAB_NUM][DPD_IMPEDANCE_NUM] = {
 };
 static int dpd_a3[DPD_CHANNEL_NUM][DPD_IMPEDANCE_NUM];
 
+static const char *const amp_function[] = { "Off", "On" };
+static const char *const aud_clk_buf_function[] = { "Off", "On" };
+
+/* static const char *DAC_SampleRate_function[] = {"8000", "11025", "16000", "24000", "32000", "44100", "48000"}; */
+static const char *const DAC_DL_PGA_Headset_GAIN[] = {
+	"8Db", "7Db", "6Db", "5Db", "4Db", "3Db", "2Db", "1Db",
+	"0Db", "-1Db", "-2Db", "-3Db", "-4Db", "-5Db", "-6Db", "-7Db",
+	"-8Db", "-9Db", "-10Db", "-11Db", "-12Db", "-13Db", "-14Db", "-15Db",
+	"-16Db", "-17Db", "-18Db", "-19Db", "-20Db", "-21Db", "-22Db", "-40Db"
+};
+
+static const char *const DAC_DL_PGA_Handset_GAIN[] = {
+	"8Db", "7Db", "6Db", "5Db", "4Db", "3Db", "2Db", "1Db", "0Db",
+	"-1Db", "-2Db", "-3Db",
+	"-4Db", "-5Db", "-6Db", "-7Db", "-8Db", "-9Db", "-10Db", "-40Db"
+};
+
+static const char *const DAC_DL_PGA_Speaker_GAIN[] = {
+	"8Db", "7Db", "6Db", "5Db", "4Db", "3Db", "2Db", "1Db", "0Db",
+	"-1Db", "-2Db", "-3Db",
+	"-4Db", "-5Db", "-6Db", "-7Db", "-8Db", "-9Db", "-10Db", "-40Db"
+};
+
 #ifndef CONFIG_FPGA_EARLY_PORTING
 #ifdef EFUSE_HP_TRIM
 static unsigned int RG_AUDHPLTRIM_VAUDP15, RG_AUDHPRTRIM_VAUDP15, RG_AUDHPLFINETRIM_VAUDP15,
@@ -1062,7 +1085,7 @@ void OpenTrimBufferHardware(bool enable)
 		Ana_Set_Reg(AUDDEC_ANA_CON0, 0x0A00, 0x0f00);
 		/* Switch HPL/R MUX to audio DAC  */
 
-		/* Frim DE's setting */
+		/* From DE's setting */
 		Ana_Set_Reg(AUDDEC_ANA_CON6, 0x0090, 0xffff);
 		/* Set HS STB enhance circuits */
 
@@ -1072,8 +1095,8 @@ void OpenTrimBufferHardware(bool enable)
 	} else {
 		pr_warn("%s Disable\n", __func__);
 
-		Ana_Set_Reg(AUDDEC_ANA_CON6, 0x0000, 0xffff);
-		/* Disable HS STB enhance circuit */
+		/* Ana_Set_Reg(AUDDEC_ANA_CON6, 0x0000, 0xffff); */
+		/* Keep HS STB enhance circuit setting */
 
 		Ana_Set_Reg(AUDDEC_ANA_CON2, 0x8000, 0x8000);
 		/* Pull-down HPL/R to AVSS30_AUD for de-pop noise */
@@ -1249,7 +1272,7 @@ bool OpenHeadPhoneImpedanceSetting(bool bEnable)
 		Ana_Set_Reg(AUDDEC_ANA_CON0, 0x0000, 0xffff);
 		Ana_Set_Reg(AUDDEC_ANA_CON3, 0x0000, 0xffff);
 		Ana_Set_Reg(AUDDEC_ANA_CON4, 0x0000, 0xffff);
-		Ana_Set_Reg(AUDDEC_ANA_CON7, 0x0000, 0xffff);
+		Ana_Set_Reg(AUDDEC_ANA_CON7, 0x0110, 0xffff);
 		/* reset other register to default, influence the output voltage */
 
 		Ana_Set_Reg(ZCD_CON0, 0x0000, 0x0001);
@@ -1261,6 +1284,9 @@ bool OpenHeadPhoneImpedanceSetting(bool bEnable)
 		Ana_Set_Reg(AUDDEC_ANA_CON2, 0x0000, 0x0077);
 		/* Disable HPP/N STB enhance circuits */
 
+		/* HP Aux loop gain setting */
+		Ana_Set_Reg(AUDDEC_ANA_CON9, 0x0200, 0x8200);
+
 		Ana_Set_Reg(AUDDEC_ANA_CON10, 0x0000, 0x0003);
 		/* Disable HPR/L main CMFB loop modulation control */
 
@@ -1270,16 +1296,13 @@ bool OpenHeadPhoneImpedanceSetting(bool bEnable)
 		/* Enable LCH Audio DAC */
 		Ana_Set_Reg(AUDDEC_ANA_CON8, 0x1900, 0x1f00);
 		/* Enable HPDET circuit, select DACLP as HPDET input and HPR as HPDET output */
-
-		/* HP Aux loop gain setting */
-		Ana_Set_Reg(AUDDEC_ANA_CON9, 0x0200, 0x0200);
-
 	} else {
-		/* HP Aux loop gain setting */
-		Ana_Set_Reg(AUDDEC_ANA_CON9, 0x0000, 0x0200);
-
 		Ana_Set_Reg(AUDDEC_ANA_CON8, 0x0000, 0x1f00);
 		/* Disable HPDET circuit */
+
+		/* HP Aux loop gain setting */
+		Ana_Set_Reg(AUDDEC_ANA_CON9, 0x8200, 0x8200);
+
 		Ana_Set_Reg(AUDDEC_ANA_CON0, 0x0000, 0x0009);
 		/* Disable Audio DAC */
 		Ana_Set_Reg(AUDDEC_ANA_CON13, 0x0000, 0x0001);
@@ -1356,7 +1379,11 @@ static int calOffsetToDcComp(int TrimOffset)
 	/* The formula is from DE programming guide */
 	/* should be mantain by pmic owner */
 	/* 32768/2 is rounded value */
-	return (TrimOffset * 2804225 + (32768 / 2)) / 32768;
+	/* Use 64 bit int for avoid overflow */
+	int64 tmp;
+
+	tmp = TrimOffset;
+	return (tmp * 2804225 + (32768 / 2)) / 32768;
 }
 
 static void EnableDcCompensation(bool bEnable)
@@ -1374,11 +1401,20 @@ static void SetDcCompenSation(bool enable)
 	int abs_lch = 0, abs_rch = 0;
 	unsigned short dcCompRchHigh = 0, dcCompRchLow = 0;
 	unsigned short dcCompLchHigh = 0, dcCompLchLow = 0;
+	unsigned short comp_indexL, comp_indexR;
 
-	lch_value = calOffsetToDcComp(mHplOffset_CompenBydB[
-		mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_HPOUTL]]);
-	rch_value = calOffsetToDcComp(mHprOffset_CompenBydB[
-		mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_HPOUTR]]);
+	comp_indexL = mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_HPOUTL];
+	if (mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_HPOUTL] > (ARRAY_SIZE(DAC_DL_PGA_Headset_GAIN) - 2))
+		comp_indexL = (ARRAY_SIZE(DAC_DL_PGA_Headset_GAIN) - 2);
+
+	comp_indexR = mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_HPOUTR];
+	if (mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_HPOUTR] > (ARRAY_SIZE(DAC_DL_PGA_Headset_GAIN) - 2))
+		comp_indexR = (ARRAY_SIZE(DAC_DL_PGA_Headset_GAIN) - 2);
+
+	pr_warn("%s() comp_indexL = %d, comp_indexR = %d\n", __func__, comp_indexL, comp_indexR);
+
+	lch_value = calOffsetToDcComp(mHplOffset_CompenBydB[comp_indexL]);
+	rch_value = calOffsetToDcComp(mHprOffset_CompenBydB[comp_indexR]);
 
 	sign_lch = lch_value < 0 ? -1 : 1;
 	sign_rch = rch_value < 0 ? -1 : 1;
@@ -1981,11 +2017,15 @@ static void restore_headset_volume(void)
 {
 	int index = 0, oldindex = 0, offset = 0, count = 1, reg_idx = 0;
 
-	/* pr_warn("%s\n", __func__); */
+	/*pr_warn("%s\n", __func__);*/
 	index = 0x1e;
 	oldindex = mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_HPOUTR];
+
+	if (oldindex > (ARRAY_SIZE(DAC_DL_PGA_Headset_GAIN) - 1))
+		oldindex = (ARRAY_SIZE(DAC_DL_PGA_Headset_GAIN) - 1);
+
+	pr_warn("%s(), index = %d, oldindex = %d\n", __func__, index, oldindex);
 	if (index > oldindex) {
-		pr_aud("index = %d, oldindex = %d\n", index, oldindex);
 		offset = index - oldindex;
 		while (offset > 0) {
 			reg_idx = oldindex + count;
@@ -1998,7 +2038,6 @@ static void restore_headset_volume(void)
 			udelay(600);
 		}
 	} else {
-		pr_aud("index = %d, oldindex = %d\n", index, oldindex);
 		offset = oldindex - index;
 		while (offset > 0) {
 			reg_idx = oldindex - count;
@@ -2020,9 +2059,13 @@ static void set_headset_volume(void)
 	int index = 0, oldindex = 0, offset = 0, count = 1, reg_idx = 0;
 	/* pr_warn("%s\n", __func__); */
 	index = mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_HPOUTR];
+
+	if (index > (ARRAY_SIZE(DAC_DL_PGA_Headset_GAIN) - 1))
+		index = (ARRAY_SIZE(DAC_DL_PGA_Headset_GAIN) - 1);
+
 	oldindex = 0x1e;
+	pr_warn("%s(), index = %d, oldindex = %d\n", __func__, index, oldindex);
 	if (index > oldindex) {
-		pr_warn("%s(), index = %d, oldindex = %d\n", __func__, index, oldindex);
 		offset = index - oldindex;
 		while (offset > 0) {
 			reg_idx = oldindex + count;
@@ -2035,7 +2078,6 @@ static void set_headset_volume(void)
 			udelay(600);
 		}
 	} else {
-		pr_warn("%s(), index = %d, oldindex = %d\n", __func__, index, oldindex);
 		offset = oldindex - index;
 		while (offset > 0) {
 			reg_idx = oldindex - count;
@@ -2066,8 +2108,9 @@ static void headset_volume_ramp(int source, int target)
 
 	oldindex = source == 63 ? 31 : source;
 	index = target == 63 ? 31 : target;
+	pr_warn("%s, index = %d, oldindex = %d\n", __func__, index, oldindex);
+
 	if (index > oldindex) {
-		pr_warn("%s, index = %d, oldindex = %d\n", __func__, index, oldindex);
 		offset = index - oldindex;
 		while (offset > 0) {
 			reg_idx = oldindex + count;
@@ -2091,7 +2134,6 @@ static void headset_volume_ramp(int source, int target)
 			udelay(600);
 		}
 	} else {
-		pr_warn("%s, index = %d, oldindex = %d\n", __func__, index, oldindex);
 		offset = oldindex - index;
 		while (offset > 0) {
 			reg_idx = oldindex - count;
@@ -3306,30 +3348,6 @@ static const struct snd_kcontrol_new Audio_snd_auxadc_controls[] = {
 		       Audio_AuxAdcData_Set),
 };
 
-
-static const char *const amp_function[] = { "Off", "On" };
-static const char *const aud_clk_buf_function[] = { "Off", "On" };
-
-/* static const char *DAC_SampleRate_function[] = {"8000", "11025", "16000", "24000", "32000", "44100", "48000"}; */
-static const char *const DAC_DL_PGA_Headset_GAIN[] = {
-	"8Db", "7Db", "6Db", "5Db", "4Db", "3Db", "2Db", "1Db",
-	"0Db", "-1Db", "-2Db", "-3Db", "-4Db", "-5Db", "-6Db", "-7Db",
-	"-8Db", "-9Db", "-10Db", "-11Db", "-12Db", "-13Db", "-14Db", "-15Db",
-	"-16Db", "-17Db", "-18Db", "-19Db", "-20Db", "-21Db", "-22Db", "-40Db"
-};
-
-static const char *const DAC_DL_PGA_Handset_GAIN[] = {
-	"8Db", "7Db", "6Db", "5Db", "4Db", "3Db", "2Db", "1Db", "0Db",
-	"-1Db", "-2Db", "-3Db",
-	"-4Db", "-5Db", "-6Db", "-7Db", "-8Db", "-9Db", "-10Db", "-40Db"
-};
-
-static const char *const DAC_DL_PGA_Speaker_GAIN[] = {
-	"8Db", "7Db", "6Db", "5Db", "4Db", "3Db", "2Db", "1Db", "0Db",
-	"-1Db", "-2Db", "-3Db",
-	"-4Db", "-5Db", "-6Db", "-7Db", "-8Db", "-9Db", "-10Db", "-40Db"
-};
-
 /* static const char *Voice_Mux_function[] = {"Voice", "Speaker"}; */
 
 static int Lineout_PGAL_Get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
@@ -3443,7 +3461,9 @@ static int Headset_PGAL_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_v
 	if (index == (ARRAY_SIZE(DAC_DL_PGA_Headset_GAIN) - 1))
 		index = 0x3f;
 
-	headset_volume_ramp(oldindex, index);
+	if (mCodec_data->mAudio_Ana_DevicePower[AUDIO_ANALOG_DEVICE_OUT_HEADSETL])
+		headset_volume_ramp(oldindex, index);
+
 	mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_HPOUTL] = index;
 	mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_HPOUTR] = index;
 	return 0;
@@ -3475,7 +3495,9 @@ static int Headset_PGAR_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_v
 	if (index == (ARRAY_SIZE(DAC_DL_PGA_Headset_GAIN) - 1))
 		index = 0x3f;
 
-	headset_volume_ramp(oldindex, index);
+	if (mCodec_data->mAudio_Ana_DevicePower[AUDIO_ANALOG_DEVICE_OUT_HEADSETR])
+		headset_volume_ramp(oldindex, index);
+
 	mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_HPOUTL] = index;
 	mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_HPOUTR] = index;
 	return 0;
@@ -7801,7 +7823,7 @@ static void mt6331_codec_init_reg(struct snd_soc_codec *codec)
 	/* Turn off AUDNCP_CLKDIV engine clock,Turn off AUD 26M */
 #ifdef MT6355_PORTING
 	Ana_Set_Reg(AUDDEC_ANA_CON0, 0x3000, 0x3000);
-	Ana_Set_Reg(AUDDEC_ANA_CON6, 0x0010, 0x0010);
+	Ana_Set_Reg(AUDDEC_ANA_CON6, 0x0090, 0x0090);
 
 	/* Ana_Set_Reg(AUDDEC_ANA_CON0, 0xe000, 0xe000); */
 	/* Disable HeadphoneL/HeadphoneR/voice short circuit protection */
@@ -7809,7 +7831,7 @@ static void mt6331_codec_init_reg(struct snd_soc_codec *codec)
 	/* Ana_Set_Reg(AUDENC_ANA_CON9, 0x0000, 0x0010); */
 	/* power off mic bias1 */
 #ifdef MT6355_PORTING
-	Ana_Set_Reg(AUDDEC_ANA_CON7, 0x0010, 0x0010);
+	Ana_Set_Reg(AUDDEC_ANA_CON7, 0x0110, 0x0110);
 	/* Ana_Set_Reg(AUDDEC_ANA_CON3, 0x4228, 0xffff); */
 	/* [5] = 1, disable LO buffer left short circuit protection */
 #endif

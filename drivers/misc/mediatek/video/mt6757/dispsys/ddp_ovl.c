@@ -389,6 +389,18 @@ static int ovl_layer_config(enum DISP_MODULE_ENUM module,
 	input_fmt = ufmt_get_format(format);
 	is_rgb = ufmt_get_rgb(format);
 
+	if (rotate) {
+		unsigned int bg_h, bg_w;
+
+		bg_h = DISP_REG_GET(ovl_base + DISP_REG_OVL_ROI_SIZE);
+		bg_w = bg_h & 0xFFFF;
+		bg_h = bg_h >> 16;
+		DISP_REG_SET(handle, DISP_REG_OVL_L0_OFFSET + layer_offset,
+			     ((bg_h - dst_h - dst_y) << 16) | (bg_w - dst_w - dst_x));
+	} else {
+		DISP_REG_SET(handle, DISP_REG_OVL_L0_OFFSET + layer_offset, (dst_y << 16) | dst_x);
+	}
+
 	if (format == UFMT_UYVY || format == UFMT_VYUY ||
 	    format == UFMT_YUYV || format == UFMT_YVYU) {
 		unsigned int regval = 0;
@@ -451,23 +463,10 @@ static int ovl_layer_config(enum DISP_MODULE_ENUM module,
 
 	DISP_REG_SET(handle, DISP_REG_OVL_L0_SRC_SIZE + layer_offset, dst_h << 16 | dst_w);
 
-	if (rotate) {
-		unsigned int bg_h, bg_w;
-
-		bg_h = DISP_REG_GET(ovl_base + DISP_REG_OVL_ROI_SIZE);
-		bg_w = bg_h & 0xFFFF;
-		bg_h = bg_h >> 16;
-		DISP_REG_SET(handle, DISP_REG_OVL_L0_OFFSET + layer_offset,
-			     ((bg_h - dst_h - dst_y) << 16) | (bg_w - dst_w - dst_x));
-		DISP_REG_SET(handle, DISP_REG_OVL_L0_ADDR + layer_offset_addr,
-			     cfg->addr + cfg->src_pitch * (dst_h + src_y - 1) + (src_x + dst_w) * Bpp - 1);
+	if (rotate)
 		offset = (src_x + dst_w) * Bpp + (src_y + dst_h - 1) * cfg->src_pitch - 1;
-	} else {
-		DISP_REG_SET(handle, DISP_REG_OVL_L0_OFFSET + layer_offset, (dst_y << 16) | dst_x);
-		DISP_REG_SET(handle, DISP_REG_OVL_L0_ADDR + layer_offset_addr,
-			cfg->addr + src_x * Bpp + src_y * cfg->src_pitch);
+	else
 		offset = src_x * Bpp + src_y * cfg->src_pitch;
-	}
 
 	if (!is_engine_sec) {
 		DISP_REG_SET(handle, DISP_REG_OVL_L0_ADDR + layer_offset_addr, cfg->addr + offset);

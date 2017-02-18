@@ -1469,11 +1469,6 @@ int m4u_config_port(M4U_PORT_STRUCT *pM4uPort)	/* native */
 	unsigned int larb_port, mmu_en = 0, sec_en = 0;
 #endif
 
-	if (pM4uPort->ePortID < 0 || pM4uPort->ePortID >= M4U_PORT_NR) {
-		M4UMSG("%s port is unknown,%d\n", __func__, pM4uPort->ePortID);
-		return -1;
-	}
-
 	_m4u_port_clock_toggle(m4u_index, larb, 1);
 
 #ifdef M4U_TEE_SERVICE_ENABLE
@@ -1622,12 +1617,13 @@ void m4u_get_perf_counter(int m4u_index, int m4u_slave_id, M4U_PERF_COUNT *pM4U_
 
 int m4u_monitor_start(int m4u_id)
 {
-	unsigned long m4u_base = gM4UBaseAddr[m4u_id];
-;
+	unsigned long m4u_base;
 
 	M4UINFO("====m4u_monitor_start: %d======\n", m4u_id);
-	if (m4u_base == 0)
+	if (m4u_id < 0)
 		return -1;
+
+	m4u_base = gM4UBaseAddr[m4u_id];
 
 	/* clear GMC performance counter */
 	m4uHw_set_field_by_mask(m4u_base, REG_MMU_CTRL_REG,
@@ -1648,9 +1644,8 @@ int m4u_monitor_stop(int m4u_id)
 	unsigned long m4u_base = gM4UBaseAddr[m4u_index];
 
 	M4UINFO("====m4u_monitor_stop: %d======\n", m4u_id);
-	if (m4u_base == 0)
+	if (m4u_id < 0)
 		return -1;
-
 	/* disable GMC performance monitor */
 	m4uHw_set_field_by_mask(m4u_base, REG_MMU_CTRL_REG,
 				F_MMU_CTRL_MONITOR_EN(1), F_MMU_CTRL_MONITOR_EN(0));

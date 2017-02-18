@@ -735,6 +735,16 @@ void ccci_power_off(void)
 #define RAnd2W(a, b, c)  ccci_write32(a, b, (ccci_read32(a, b)&c))
 #define RabIsc(a, b, c) ((ccci_read32(a, b)&c) != c)
 
+void md1_sleep_timeout_proc(void)
+{
+	void __iomem *md_hwpor = ioremap_nocache(0x1021F608, 4);
+	/*disable HWPOR 0x1021_F608[0]=0*/
+
+	RAnd2W(md_hwpor, 0, ~(0x1<<0));
+	CCCI_ERROR_LOG(1, TAG, "md1_sleep_timeout_proc  0x%X\n", ccci_read32(md_hwpor, 0));
+	iounmap(md_hwpor);
+}
+
 void md1_pll_on_1(struct ccci_modem *md)
 {
 	struct md_cd_ctrl *md_ctrl = (struct md_cd_ctrl *)md->private_data;

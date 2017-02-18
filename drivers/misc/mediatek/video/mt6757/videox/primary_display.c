@@ -5408,7 +5408,7 @@ static int _config_ovl_input(struct disp_frame_cfg_t *cfg,
 		else
 			aal_request_partial_support(1);
 
-		if ((!aal_is_partial_support() || PanelMaster_is_enable() == 1) && !ddp_debug_force_roi())
+		if (!aal_is_partial_support() && !ddp_debug_force_roi())
 			assign_full_lcm_roi(&total_dirty_roi);
 
 		DISPDBG("frame partial roi(%d,%d,%d,%d)\n", total_dirty_roi.x, total_dirty_roi.y,
@@ -7149,8 +7149,6 @@ int Panel_Master_dsi_config_entry(const char *name, void *config_value)
 	 * 4: unlock path
 	 * 1: stop path
 	 */
-	_blocking_flush();
-	/* blocking flush before stop trigger loop */
 	_cmdq_stop_trigger_loop();
 
 	if (dpmgr_path_is_busy(pgc->dpmgr_handle)) {

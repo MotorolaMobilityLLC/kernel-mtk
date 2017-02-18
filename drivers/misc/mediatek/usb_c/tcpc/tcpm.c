@@ -196,10 +196,11 @@ int tcpm_typec_role_swap(struct tcpc_device *tcpc_dev)
 		return TCPM_ERROR_UNATTACHED;
 
 #ifdef CONFIG_TYPEC_CAP_ROLE_SWAP
-	return tcpc_typec_swap_role(tcpc_dev);
-#else
-	return TCPM_ERROR_NO_SUPPORT;
+	if (tcpc_typec_swap_role(tcpc_dev) == 0)
+		return TCPM_SUCCESS;
 #endif /* CONFIG_TYPEC_CAP_ROLE_SWAP */
+
+	return TCPM_ERROR_NO_SUPPORT;
 }
 
 int tcpm_typec_change_role(

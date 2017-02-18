@@ -146,6 +146,7 @@ void md_cldma_hw_reset(struct ccci_modem *md);
 int ccci_modem_syssuspend(void);
 void ccci_modem_sysresume(void);
 void md_cd_check_md_DCM(struct ccci_modem *md);
+void md1_sleep_timeout_proc(void);
 
 extern unsigned long infra_ao_base;
 extern void ccci_mem_dump(int md_id, void *start_addr, int len);

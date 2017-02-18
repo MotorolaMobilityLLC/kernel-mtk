@@ -909,8 +909,8 @@ void usb_phy_savecurrent(unsigned int clk_on)
 	/*DP/DM BC1.1 path Disable */
 	/* RG_USB20_BC11_SW_EN 1'b0 */
 	/* U3D_USBPHYACR6 RG_USB20_BC11_SW_EN */
-	/* U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_USBPHYACR6, RG_USB20_BC11_SW_EN_OFST, */
-	/*		  RG_USB20_BC11_SW_EN, 0); */
+	U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_USBPHYACR6, RG_USB20_BC11_SW_EN_OFST,
+			  RG_USB20_BC11_SW_EN, 0);
 
 	/*OTG Disable */
 	/* RG_USB20_OTG_VBUSCMP_EN 1b0 */

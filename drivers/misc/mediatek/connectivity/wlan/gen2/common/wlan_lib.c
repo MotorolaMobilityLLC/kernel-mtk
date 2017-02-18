@@ -4635,11 +4635,17 @@ wlanoidQueryStaStatistics(IN P_ADAPTER_T prAdapter,
 	P_STA_RECORD_T prStaRec, prTempStaRec;
 	P_PARAM_GET_STA_STATISTICS prQueryStaStatistics;
 	UINT_8 ucStaRecIdx;
-	P_QUE_MGT_T prQM = &prAdapter->rQM;
+	P_QUE_MGT_T prQM;
 	CMD_GET_STA_STATISTICS_T rQueryCmdStaStatistics;
 	UINT_8 ucIdx;
 	P_GLUE_INFO_T prGlueInfo;
 
+	if (prAdapter == NULL) {
+		DBGLOG(INIT, ERROR, "prAdapter is Null\n");
+		return rResult;
+	}
+	prQM = &prAdapter->rQM;
+	prGlueInfo = prAdapter->prGlueInfo;
 	do {
 		ASSERT(pvQueryBuffer);
 

@@ -1517,6 +1517,31 @@ static int mtk_charger_parse_dt(struct charger_manager *info, struct device *dev
 		info->thermal.max_charge_temperature_minus_x_degree = MAX_CHARGE_TEMPERATURE_MINUS_X_DEGREE;
 	}
 
+	/* PE */
+	if (of_property_read_u32(np, "pe_ichg_level_threshold", &val) >= 0) {
+		info->data.pe_ichg_level_threshold = val;
+	} else {
+		pr_err(
+			"use default PE_ICHG_LEAVE_THRESHOLD:%d\n",
+			PE20_ICHG_LEAVE_THRESHOLD);
+		info->data.pe_ichg_level_threshold = PE_ICHG_LEAVE_THRESHOLD;
+	}
+	info->data.ta_ac_12v_input_current = TA_AC_12V_INPUT_CURRENT;
+	info->data.ta_ac_9v_input_current = TA_AC_9V_INPUT_CURRENT;
+	info->data.ta_ac_7v_input_current = TA_AC_7V_INPUT_CURRENT;
+#ifdef TA_12V_SUPPORT
+	info->data.ta_12v_support = true;
+#else
+	info->data.ta_12v_support = false;
+#endif
+
+#ifdef TA_9V_SUPPORT
+	info->data.ta_9v_support = true;
+#else
+	info->data.ta_9v_support = false;
+#endif
+
+
 	/* PE 2.0 */
 	if (of_property_read_u32(np, "pe20_ichg_level_threshold", &val) >= 0) {
 		info->data.pe20_ichg_level_threshold = val;
@@ -1950,6 +1975,9 @@ static int mtk_charger_probe(struct platform_device *pdev)
 	ret = mtk_charger_setup_files(pdev);
 	if (ret)
 		pr_err("Error creating sysfs interface\n");
+
+	if (mtk_pe_init(info) < 0)
+		info->enable_pe_plus = false;
 
 	if (mtk_pe20_init(info) < 0)
 		info->enable_pe_2 = false;

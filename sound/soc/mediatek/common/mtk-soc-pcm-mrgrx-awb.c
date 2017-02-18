@@ -104,6 +104,10 @@ static void StopAudioAWBHardware(struct snd_pcm_substream *substream)
 	SetIntfConnection(Soc_Aud_InterCon_DisConnect,
 			Soc_Aud_AFE_IO_Block_MRG_I2S_IN, Soc_Aud_AFE_IO_Block_MEM_AWB);
 
+	SetMemoryPathEnable(Soc_Aud_Digital_Block_MRG_I2S_OUT, false);
+	if (GetMemoryPathEnable(Soc_Aud_Digital_Block_MRG_I2S_OUT) == false)
+		SetMrgI2SEnable(false, substream->runtime->rate);
+
 	EnableAfe(false);
 }
 
@@ -147,9 +151,6 @@ static int mtk_mrgrx_awb_alsa_stop(struct snd_pcm_substream *substream)
 	StopAudioAWBHardware(substream);
 	RemoveMemifSubStream(Soc_Aud_Digital_Block_MEM_AWB, substream);
 
-	SetMemoryPathEnable(Soc_Aud_Digital_Block_MRG_I2S_OUT, false);
-	if (GetMemoryPathEnable(Soc_Aud_Digital_Block_MRG_I2S_OUT) == false)
-		SetMrgI2SEnable(false, substream->runtime->rate);
 	return 0;
 }
 

@@ -234,7 +234,6 @@ bool usb_cable_connected(void)
 	}
 #endif
 #endif
-
 #ifdef USB_FORCE_ON
 	/* FORCE USB ON */
 	chg_type = _mu3d_musb->charger_mode = STANDARD_HOST;

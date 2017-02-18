@@ -73,12 +73,6 @@
 #define ACCDET_ADC_REG					((unsigned int)(ACCDET_BASE+0x3636))
 #define ACCDET_MICBIAS_REG				((unsigned int)(ACCDET_BASE+0x3634))
 
-#define REG_ACCDET_AD_CALI_0			((unsigned int)(ACCDET_BASE+0x1E84))
-#define REG_ACCDET_AD_CALI_1			((unsigned int)(ACCDET_BASE+0x1E86))
-#define REG_ACCDET_AD_CALI_2			((unsigned int)(ACCDET_BASE+0x1E88))
-#define REG_ACCDET_AD_CALI_3			((unsigned int)(ACCDET_BASE+0x1E8A))
-
-
 #define PMIC_REG_BASE_START		(0x0000)/* MT6355 register base address start */
 #define PMIC_REG_BASE_END		(0x380A)/* MT6355 register base address end */
 
@@ -126,16 +120,6 @@
 /* Bit Define:  ACCDET_HW_MODE_DFF */
 #define ACCDET_HWMODE_SEL	(0x01<<0)/* Enable HW mode */
 #define ACCDET_EINT_DEB_OUT_DFF	(0x01<<1)/* 1, modified for path mt6355;0,path to mt6337 */
-
-/* [0x1E84]--[0x1E8A] */
-#define RG_ACCDET_BIT_SHIFT			(0x09)
-#define RG_ACCDET_HIGH_BIT_SHIFT		(0x07)
-
-#define ACCDET_CALI_MASK0			(0x7F)/* offset mask */
-#define ACCDET_CALI_MASK1			(0xFF)/* reserve */
-#define ACCDET_CALI_MASK2			(0x7F)/* AD efuse mask */
-#define ACCDET_CALI_MASK3			(0xFF)/* DB efuse mask */
-#define ACCDET_CALI_MASK4			(0x7F)/* BC efuse mask */
 
 #else/* support mt6351 */
 /* Register address define */

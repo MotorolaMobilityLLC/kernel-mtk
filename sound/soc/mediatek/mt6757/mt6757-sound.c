@@ -647,6 +647,7 @@ void Afe_Log_Print(void)
 	pr_debug("AFE_IRQ1_MCU_CNT_MON = 0x%x\n", Afe_Get_Reg(AFE_IRQ1_MCU_CNT_MON));
 	pr_debug("AFE_IRQ2_MCU_CNT_MON = 0x%x\n", Afe_Get_Reg(AFE_IRQ2_MCU_CNT_MON));
 	pr_debug("AFE_IRQ1_MCU_EN_CNT_MON= 0x%x\n", Afe_Get_Reg(AFE_IRQ1_MCU_EN_CNT_MON));
+	pr_debug("AFE_MEMIF_MINLEN = 0x%x\n", Afe_Get_Reg(AFE_MEMIF_MINLEN));
 	pr_debug("AFE_MEMIF_MAXLEN = 0x%x\n", Afe_Get_Reg(AFE_MEMIF_MAXLEN));
 	pr_debug("AFE_MEMIF_PBUF_SIZE = 0x%x\n", Afe_Get_Reg(AFE_MEMIF_PBUF_SIZE));
 	pr_debug("AFE_IRQ_MCU_CNT7 = 0x%x\n", Afe_Get_Reg(AFE_IRQ_MCU_CNT7));
@@ -2065,6 +2066,57 @@ bool SetAncRecordReg(uint32 value, uint32 mask)
 
 int get_trim_buffer_diff(int channels)
 {
+#if 0 /* For 6351 */
+	int diffValue = 0, onValue = 0, offValue = 0;
+
+	if (channels != AUDIO_OFFSET_TRIM_MUX_HPL &&
+	    channels != AUDIO_OFFSET_TRIM_MUX_HPR){
+		pr_warn("%s Not support this channels = %d\n", __func__, channels);
+		return 0;
+	}
+
+	/* Buffer Off and Get Auxadc value */
+	OpenTrimBufferHardware(true); /* buffer off setting */
+	setHpGainZero();
+
+	SetSdmLevel(AUDIO_SDM_LEVEL_MUTE);
+	setOffsetTrimMux(channels);
+	setOffsetTrimBufferGain(3); /* TrimBufferGain 18db */
+	EnableTrimbuffer(true);
+	usleep_range(1 * 1000, 10 * 1000);
+
+	offValue = audio_get_auxadc_value();
+
+	EnableTrimbuffer(false);
+	setOffsetTrimMux(AUDIO_OFFSET_TRIM_MUX_GROUND);
+	SetSdmLevel(AUDIO_SDM_LEVEL_NORMAL);
+
+	OpenTrimBufferHardware(false);
+
+	/* Buffer On and Get Auxadc values */
+	OpenAnalogHeadphone(true); /* buffer on setting */
+	setHpGainZero();
+
+	SetSdmLevel(AUDIO_SDM_LEVEL_MUTE);
+	setOffsetTrimMux(channels);
+	setOffsetTrimBufferGain(3); /* TrimBufferGain 18db */
+	EnableTrimbuffer(true);
+	usleep_range(1 * 1000, 10 * 1000);
+
+	onValue = audio_get_auxadc_value();
+
+	EnableTrimbuffer(false);
+	setOffsetTrimMux(AUDIO_OFFSET_TRIM_MUX_GROUND);
+	SetSdmLevel(AUDIO_SDM_LEVEL_NORMAL);
+
+	OpenAnalogHeadphone(false);
+
+	diffValue = onValue - offValue;
+	pr_debug("#diffValue(%d), onValue(%d), offValue(%d)\n", diffValue, onValue, offValue);
+
+	return diffValue;
+#endif
+
 	int diffValue = 0, onValue = 0, offValue = 0;
 
 	if (channels != AUDIO_OFFSET_TRIM_MUX_HPL &&
@@ -2131,6 +2183,44 @@ int get_trim_buffer_diff(int channels)
 
 int get_audio_trim_offset(int channel)
 {
+#if 0 /* For 6351 */
+#ifndef CONFIG_FPGA_EARLY_PORTING
+	const int kTrimTimes = 20;
+	int counter = 0, averageOffset = 0;
+	int trimOffset[kTrimTimes];
+
+	if (channel != AUDIO_OFFSET_TRIM_MUX_HPL &&
+	    channel != AUDIO_OFFSET_TRIM_MUX_HPR){
+		pr_warn("%s Not support channel(%d)\n", __func__, channel);
+		return 0;
+	}
+
+	pr_warn("%s channels = %d\n", __func__, channel);
+
+	/* open headphone and digital part */
+	AudDrv_Clk_On();
+	AudDrv_Emi_Clk_On();
+	OpenAfeDigitaldl1(true);
+
+	for (counter = 0; counter < kTrimTimes; counter++)
+		trimOffset[counter] = get_trim_buffer_diff(channel);
+
+	OpenAfeDigitaldl1(false);
+	AudDrv_Emi_Clk_Off();
+	AudDrv_Clk_Off();
+
+	for (counter = 0; counter < kTrimTimes; counter++)
+		averageOffset = averageOffset + trimOffset[counter];
+
+	averageOffset = (averageOffset + (kTrimTimes / 2)) / kTrimTimes;
+	pr_warn("[Average %d times] averageOffset = %d\n", kTrimTimes, averageOffset);
+
+	return averageOffset;
+#else
+	return 0;
+#endif
+#endif
+
 #ifndef CONFIG_FPGA_EARLY_PORTING
 	const int kTrimTimes = 20;
 	int counter = 0, averageOffset = 0;

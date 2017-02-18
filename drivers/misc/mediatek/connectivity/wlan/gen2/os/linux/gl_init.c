@@ -1995,7 +1995,7 @@ void wlanHandleSystemSuspend(void)
 	UINT_32 u4PacketFilter = 0;
 	UINT_32 u4SetInfoLen = 0;
 #endif
-
+	DBGLOG(INIT, INFO, "******wlan System Suspend*******.\n");
 	/* <1> Sanity check and acquire the net_device */
 	ASSERT(u4WlanDevNum <= CFG_MAX_WLAN_DEVICES);
 	if (u4WlanDevNum == 0) {
@@ -2023,6 +2023,7 @@ void wlanHandleSystemSuspend(void)
 	if (!prDev || !(prDev->ip_ptr) ||
 	    !((struct in_device *)(prDev->ip_ptr))->ifa_list ||
 	    !(&(((struct in_device *)(prDev->ip_ptr))->ifa_list->ifa_local))) {
+		DBGLOG(INIT, INFO, "ip is not available.\n");
 		goto notify_suspend;
 	}
 	kalMemCopy(ip, &(((struct in_device *)(prDev->ip_ptr))->ifa_list->ifa_local), sizeof(ip));
@@ -2034,6 +2035,7 @@ void wlanHandleSystemSuspend(void)
 	if (!prDev || !(prDev->ip6_ptr) ||
 	    !((struct in_device *)(prDev->ip6_ptr))->ifa_list ||
 	    !(&(((struct in_device *)(prDev->ip6_ptr))->ifa_list->ifa_local))) {
+		DBGLOG(INIT, INFO, "ipv6 is not available.\n");
 		goto notify_suspend;
 	}
 	kalMemCopy(ip6, &(((struct in_device *)(prDev->ip6_ptr))->ifa_list->ifa_local), sizeof(ip6));
@@ -2091,7 +2093,6 @@ void wlanHandleSystemSuspend(void)
 
 notify_suspend:
 	DBGLOG(INIT, INFO, "IP: %d.%d.%d.%d, rStatus: %u\n", ip[0], ip[1], ip[2], ip[3], rStatus);
-	/* if (rStatus != WLAN_STATUS_SUCCESS) */
 	wlanNotifyFwSuspend(prGlueInfo, TRUE);
 }
 
@@ -2110,7 +2111,7 @@ void wlanHandleSystemResume(void)
 	UINT_32 u4PacketFilter = 0;
 	UINT_32 u4SetInfoLen = 0;
 #endif
-
+	DBGLOG(INIT, INFO, "************wlan System Resume.\n");
 	/* <1> Sanity check and acquire the net_device */
 	ASSERT(u4WlanDevNum <= CFG_MAX_WLAN_DEVICES);
 	if (u4WlanDevNum == 0) {
@@ -2160,7 +2161,9 @@ void wlanHandleSystemResume(void)
 	    !((struct in_device *)(prDev->ip_ptr))->ifa_list ||
 	    !(&(((struct in_device *)(prDev->ip_ptr))->ifa_list->ifa_local))) {
 		DBGLOG(INIT, INFO, "ip is not avalible.\n");
+
 		rStatus = WLAN_STATUS_FAILURE;
+
 		goto notify_resume;
 	}
 	/* <4> copy the IPv4 address */
@@ -2172,7 +2175,9 @@ void wlanHandleSystemResume(void)
 	    !((struct in_device *)(prDev->ip6_ptr))->ifa_list ||
 	    !(&(((struct in_device *)(prDev->ip6_ptr))->ifa_list->ifa_local))) {
 		DBGLOG(INIT, INFO, "ipv6 is not avalible.\n");
+
 		rStatus = WLAN_STATUS_FAILURE;
+
 		goto notify_resume;
 	}
 	/* <6> copy the IPv6 address */
@@ -2207,7 +2212,6 @@ notify_resume:
 		       rParam.eConnectionState, rParam.eCurrentOPMode, rParam.fgIsNetActive,
 		       ip[0], ip[1], ip[2], ip[3], rStatus);
 
-	/* if (rStatus != WLAN_STATUS_SUCCESS) */
 	wlanNotifyFwSuspend(prGlueInfo, FALSE);
 }
 #endif /* ! CONFIG_X86 */
@@ -2721,6 +2725,26 @@ bailout:
 				DBGLOG(INIT, WARN, "set 11k Capabilities fail 0x%x\n", rStatus);
 		}
 #endif
+#if CFG_SUPPORT_EMI_DEBUG
+		{
+			/* set Driver Read EMI	*/
+			WLAN_STATUS rStatus = WLAN_STATUS_FAILURE;
+			CMD_DRIVER_DUMP_EMI_LOG_T rDriverDumpEmiLog;
+			UINT_32 u4SetInfoLen = 0;
+
+			kalMemZero(&rDriverDumpEmiLog, sizeof(CMD_DRIVER_DUMP_EMI_LOG_T));
+			rDriverDumpEmiLog.fgIsDriverDumpEmiLogEnable = TRUE;
+
+			rStatus = kalIoctl(prGlueInfo,
+					   wlanoidSetEnableDumpEMILog,
+					   (PVOID)&rDriverDumpEmiLog,
+					   sizeof(UINT_32), FALSE, FALSE, TRUE, FALSE, &u4SetInfoLen);
+
+			if (rStatus != WLAN_STATUS_SUCCESS)
+				DBGLOG(INIT, WARN, "set Driver read EMI address fail 0x%x\n", rStatus);
+		}
+#endif
+
 #if CFG_SUPPORT_EMI_DEBUG
 		{
 			/* set Driver Read EMI	*/
@@ -3277,7 +3301,8 @@ VOID nicConfigProcSetCamCfgWrite(BOOLEAN enabled)
 			    (fgEnCmdEvent ? nicCmdEventSetCommon : NULL),
 			    (fgEnCmdEvent ? nicOidCmdTimeoutCommon : NULL),
 			    sizeof(CMD_PS_PROFILE_T),
-			    (PUINT_8) & (arPowerSaveMode[ucBssIndex]),
+			    (PUINT_8)&(arPowerSaveMode[ucBssIndex]),
+
 			    NULL, sizeof(PARAM_POWER_MODE));
 }
 #endif
