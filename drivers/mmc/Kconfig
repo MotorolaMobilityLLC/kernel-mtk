@@ -19,6 +19,13 @@ config MMC_DEBUG
 	  This is an option for use by developers; most people should
 	  say N here.  This enables MMC core and driver debugging.
 
+config SLT_DEVINFO
+	bool "SLT_DEVINFO"
+	default n
+	help
+		this is a module for factory mode to get dev info
+		add by dingyin
+
 if MMC
 
 source "drivers/mmc/core/Kconfig"

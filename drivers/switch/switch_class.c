@@ -18,6 +18,7 @@
 #include <linux/module.h>
 #include <linux/types.h>
 #include <linux/init.h>
+#include <linux/version.h>
 #include <linux/device.h>
 #include <linux/fs.h>
 #include <linux/err.h>
@@ -73,7 +74,7 @@ void switch_set_state(struct switch_dev *sdev, int state)
 		if (ret >= 0)
 			sdev->state = sw_state;
 	}
-
+printk("~~liml  %s(%s):state=%d;sdev->state=%d\n",__func__,sdev->name,state,sdev->state);
 	if (sdev->state != state) {
 		sdev->state = state;
 		if (sdev->set_state)
@@ -101,7 +102,7 @@ void switch_set_state(struct switch_dev *sdev, int state)
 			kobject_uevent_env(&sdev->dev->kobj, KOBJ_CHANGE, envp);
 			free_page((unsigned long)prop_buf);
 		} else {
-			printk(KERN_ERR "out of memory in switch_set_state\n");
+			printk(KERN_ERR "~~liml out of memory in switch_set_state\n");
 			kobject_uevent(&sdev->dev->kobj, KOBJ_CHANGE);
 		}
 	}

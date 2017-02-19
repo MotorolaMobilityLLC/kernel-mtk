@@ -123,6 +123,47 @@ PowerCust PowerCustList = {
 
 PowerUp PowerOnList = {
 	{
+#if defined(S5K3L8_MIPI_RAW)
+{SENSOR_DRVNAME_S5K3L8_MIPI_RAW,
+			{
+	   {SensorMCLK, Vol_High, 0},
+	   {DOVDD, Vol_1800, 0},
+	   {AVDD, Vol_2800, 0},
+	   {DVDD, Vol_1200, 0},
+	   {AFVDD, Vol_2800, 5},
+	   {PDN, Vol_Low, 4},
+	   {PDN, Vol_High, 0},
+	   //{RST, Vol_Low, 1},
+	  // {RST, Vol_High, 0},
+			},
+		},
+#endif
+#if defined(OV13855_MIPI_RAW)
+	 {SENSOR_DRVNAME_OV13855_MIPI_RAW,
+	  {
+	   {SensorMCLK, Vol_High, 0},
+	   {DOVDD, Vol_1800, 0},
+	   {AVDD, Vol_2800, 0},
+	   {DVDD, Vol_1200, 0},
+	   {AFVDD, Vol_2800, 2},
+	   {PDN, Vol_Low, 0},
+	   {PDN, Vol_High, 0},
+	   },
+	  },
+#endif
+#if defined(S5K4H8_MIPI_RAW)
+	 {SENSOR_DRVNAME_S5K4H8_MIPI_RAW,
+	  {
+	   {SensorMCLK, Vol_High, 0},
+	   {DOVDD, Vol_1800, 1},
+	   {DVDD, Vol_1200, 1},
+	   {AVDD, Vol_2800, 1},
+	   {PDN, Vol_Low, 0},
+	   {PDN, Vol_High, 0},
+	   },
+	  },
+#endif
+#if 0
 #if defined(IMX386_MIPI_RAW)
 		{SENSOR_DRVNAME_IMX386_MIPI_RAW,
 			{
@@ -439,6 +480,7 @@ PowerUp PowerOnList = {
 				{RST, Vol_High, 0}
 			},
 		},
+#endif
 #endif
 		/* add new sensor before this line */
 		{NULL,},

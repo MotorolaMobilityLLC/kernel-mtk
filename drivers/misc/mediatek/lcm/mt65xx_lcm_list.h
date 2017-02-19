@@ -262,6 +262,10 @@ extern LCM_DRIVER nt35695B_fhd_dsi_cmd_auo_nt50358_720p_lcm_drv;
 extern LCM_DRIVER nt35695B_fhd_dsi_cmd_auo_nt50358_qhd_lcm_drv;
 extern LCM_DRIVER nt35695B_fhd_dsi_cmd_auo_rt5081_lcm_drv;
 extern LCM_DRIVER nt35695B_fhd_dsi_vdo_auo_rt5081_lcm_drv;
+extern LCM_DRIVER lct_ili9881c_dijing_720p_vdo_lcm_drv;//add by jiatianbao
+extern LCM_DRIVER lct_ili9881c_dijing_cmi_720p_vdo_lcm_drv;
+extern LCM_DRIVER lct_r63350_tianma_720p_vdo_lcm_drv;//add by jiatianbao
+extern LCM_DRIVER lct_s6d7aa6x01_helitech_720p_vdo_lcm_drv;
 
 #ifdef BUILD_LK
 extern void mdelay(unsigned long msec);

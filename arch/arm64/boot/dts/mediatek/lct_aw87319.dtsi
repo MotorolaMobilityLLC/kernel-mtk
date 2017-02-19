@@ -1,0 +1,47 @@
+/* Copyright (c) 2016, The Linux Foundation. All rights reserved.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 and
+ * only version 2 as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ */
+/* LCT add ext speaker pa @duanlongfei 20170119 */
+
+&i2c3 {
+	aw87319_pa@58 {
+		compatible = "mediatek,ext_speaker_amp";
+		reg = <0x58>;
+		status = "okay";
+	};
+};
+
+&aw87319_pa {
+	pinctrl-names = "aw87319_rst_high",
+			"aw87319_rst_low";
+	pinctrl-0 = <&aw87319_rst_high>;
+	pinctrl-1 = <&aw87319_rst_low>;
+	status = "okay";
+};
+&pio {
+    aw87319_rst_high: aw87319_rst_high{
+        pins_cmd_dat {
+            pins = <PINMUX_GPIO2__FUNC_GPIO2>;
+            slew-rate = <1>;
+            output-high;
+        };
+    };
+
+    /*add by longcheer_liml_2016_02_22*/
+    aw87319_rst_low: aw87319_rst_low{
+        pins_cmd_dat {
+            pins = <PINMUX_GPIO2__FUNC_GPIO2>;
+            slew-rate = <1>;
+            output-low;
+        };
+    };
+};
+

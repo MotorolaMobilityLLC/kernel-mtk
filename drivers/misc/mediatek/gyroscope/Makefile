@@ -6,4 +6,5 @@ ifeq ($(CONFIG_MTK_SCP_SENSORHUB_V1),y)
 obj-$(CONFIG_MTK_GYROHUB)      +=  gyrohub/
 else
 obj-$(CONFIG_MTK_LSM6DS3HGY)   +=  lsm6ds3hgy/
+obj-$(CONFIG_MTK_BMI160GY_NEW)   +=  bmi160_gyro/
 endif

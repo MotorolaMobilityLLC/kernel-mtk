@@ -20,7 +20,15 @@
 #include <linux/err.h>
 #include <linux/slab.h>
 #include "rt-flashlight.h"
-
+//add by ameng start
+#include<linux/delay.h>
+//add by ameng end
+//add by ameng start
+extern int rt5081_operate(int ct_index, int enable);
+extern int rt5081_set_level(int ct_index, int level);
+extern struct flashlight_device *flashlight_dev_ht;
+extern struct flashlight_device *flashlight_dev_lt;
+//add by ameng end
 static const char * const flashlight_type_string[] = {
 	[FLASHLIGHT_TYPE_XENON] = "Xenon",
 	[FLASHLIGHT_TYPE_LED] = "LED",
@@ -195,6 +203,7 @@ static ssize_t flashlight_store_strobe_brightness(struct device *dev,
 	mutex_unlock(&flashlight_dev->ops_lock);
 	return rc;
 }
+
 
 static ssize_t flashlight_show_strobe_brightness(struct device *dev,
 		struct device_attribute *attr, char *buf)
@@ -559,6 +568,95 @@ int flashlight_strobe_charge(struct flashlight_device *flashlight_dev,
 	return -EINVAL;
 }
 EXPORT_SYMBOL(flashlight_strobe_charge);
+//LCSH ADD by dingyin for flashlight factory test start
+#include <linux/proc_fs.h> 
+#include <linux/uaccess.h>
+unsigned int atoi(const char *buf)
+{
+	char buf_t = 0;
+	unsigned rc = 0;
+	if (buf == NULL)
+		return 0;
+	printk("<%s:%d>buf[%s]\n", __func__, __LINE__, buf);
+	while (*buf != '\0')
+	{
+		if ((*buf >= '0') && (*buf <= '9'))
+			buf_t = *buf - '0';
+		if ((*buf >= 'a') && (*buf <= 'f'))
+			buf_t = *buf - 'a' + 10;
+		if ((*buf >= 'A') && (*buf <= 'F'))
+			buf_t = *buf - 'A' + 10;
+		rc = rc * 16 + buf_t;
+		buf++;
+		printk("<%s:%d>rc[%d]\n", __func__, __LINE__, rc);
+	}
+	return rc;
+}
+static ssize_t flash_factory_write_proc(struct file *file, const char *buffer, size_t count,
+					loff_t *ppos)
+{
+    char temp[5];
+    int rc = 0x30;
+	printk("write count %ld\n", (unsigned long)count);
+
+	if (count > 3) {
+		printk("size not match [%ld]", (unsigned long)count);
+		return -EFAULT;
+	}
+
+    /**********************************************/
+	/* for store special format cmd  */
+	if (copy_from_user(temp, buffer, sizeof(count))) {
+		printk("copy from user fail 2");
+		return -EFAULT;
+	}
+	temp[count - 1] = '\0';
+	rc = atoi(temp);
+	if (!flashlight_dev_ht) {
+		printk("Failed to enable since no flashlight device.\n");
+		//return -1;
+	}
+	printk("<%s:%d>rc[%d]\n", __func__, __LINE__, rc);
+	switch (rc)
+	{
+		case 0x33:
+			flashlight_set_torch_brightness(flashlight_dev_ht,2);
+			flashlight_set_torch_brightness(flashlight_dev_lt,2);
+			msleep(5);
+			flashlight_set_mode(flashlight_dev_ht, FLASHLIGHT_MODE_TORCH);
+			flashlight_set_mode(flashlight_dev_lt, FLASHLIGHT_MODE_TORCH);
+			break;
+		case 0x30:
+			flashlight_set_torch_brightness(flashlight_dev_ht,2);
+			flashlight_set_torch_brightness(flashlight_dev_lt,0);
+			msleep(5);
+			flashlight_set_mode(flashlight_dev_ht, FLASHLIGHT_MODE_TORCH);
+			flashlight_set_mode(flashlight_dev_lt, FLASHLIGHT_MODE_OFF);
+			break;
+		case 0x03:
+			flashlight_set_torch_brightness(flashlight_dev_ht,0);
+			flashlight_set_torch_brightness(flashlight_dev_lt,2);
+			msleep(5);
+			flashlight_set_mode(flashlight_dev_lt, FLASHLIGHT_MODE_TORCH);
+			flashlight_set_mode(flashlight_dev_ht, FLASHLIGHT_MODE_OFF);
+			break;
+		default:
+			flashlight_set_mode(flashlight_dev_ht, FLASHLIGHT_MODE_OFF);
+			flashlight_set_mode(flashlight_dev_lt, FLASHLIGHT_MODE_OFF);
+			break;
+	}
+	//seq_printf(m, "%x\n", rc);
+
+	return count;
+
+}
+
+
+static const struct file_operations proc_fac_operations = {
+	.write = flash_factory_write_proc
+	//.read = flash_factory_read_proc
+};
+//LCSH ADD by dingyin for flashlight factory test end
 
 static void __exit flashlight_class_exit(void)
 {
@@ -576,6 +674,7 @@ static int __init flashlight_class_init(void)
 	flashlight_class->dev_groups = flashlight_groups;
 	flashlight_class->suspend = flashlight_suspend;
 	flashlight_class->resume = flashlight_resume;
+	 proc_create("flashlight_fac", 0660, NULL, &proc_fac_operations);//LCSH ADD by dingyin for flashlight factory test
 	return 0;
 }
 

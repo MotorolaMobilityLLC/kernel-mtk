@@ -9,4 +9,7 @@ ifeq ($(CONFIG_MTK_SCP_SENSORHUB_V1),y)
 obj-$(CONFIG_MTK_MAGHUB)        +=  maghub/
 else
 obj-$(CONFIG_MTK_AKM09911_NEW)   +=  akm09911-new/
+#add by wangshuai for add new driver
+obj-$(CONFIG_MTK_MMC3630X)   +=  mmc3630x/
+#end
 endif

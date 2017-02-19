@@ -11,6 +11,15 @@
  */
 
 / {
+	i2c5: i2c@11011000 {
+		status = "ok";
+		rt5081_pmu: rt5081_pmu@34 {
+			status = "ok";
+			compatible = "mediatek,rt5081_pmu";
+			reg = <0x34>;
+		};
+	};
+
 	rt5081_pmu_dts {
 		interrupt-controller;
 		#interrupt-cells = <1>;

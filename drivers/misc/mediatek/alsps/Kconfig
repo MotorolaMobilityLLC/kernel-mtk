@@ -18,3 +18,6 @@ config MTK_AUTO_DETECT_ALSPS
 source "drivers/misc/mediatek/alsps/cm36652-new/Kconfig"
 source "drivers/misc/mediatek/alsps/cm36558/Kconfig"
 source "drivers/misc/mediatek/alsps/alspshub/Kconfig"
+#add by wangshuai for add new driver
+source "drivers/misc/mediatek/alsps/ltr578/Kconfig"
+#end

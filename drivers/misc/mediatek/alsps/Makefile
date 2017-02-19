@@ -9,4 +9,7 @@ obj-$(CONFIG_MTK_ALSPSHUB)      +=  alspshub/
 else
 obj-$(CONFIG_MTK_CM36558)	+=  cm36558/
 obj-$(CONFIG_MTK_CM36652_NEW)	+=  cm36652-new/
+#add by wangshuai for add new driver
+obj-$(CONFIG_MTK_LTR578)	+=  ltr578/
+#end
 endif

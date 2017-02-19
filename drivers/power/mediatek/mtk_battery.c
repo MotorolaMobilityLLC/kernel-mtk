@@ -281,7 +281,11 @@ void battery_update_psd(struct battery_data *bat_data)
 	bat_data->BAT_batt_temp = battery_get_bat_temperature();
 	bat_data->BAT_TempBattVoltage = battery_meter_get_tempV();
 	bat_data->BAT_TemperatureR = battery_meter_get_tempR(bat_data->BAT_TempBattVoltage);
+#if defined(CONFIG_RT5081_PMU_CHARGER) //add by longcheer_liml_2017_02_07
+	bat_data->BAT_BatteryAverageCurrent = battery_get_bat_current()/10;
+#else
 	bat_data->BAT_BatteryAverageCurrent = battery_get_ibus();
+#endif
 	bat_data->BAT_ISenseVoltage = battery_meter_get_VSense();
 	bat_data->BAT_ChargerVoltage = battery_get_vbus();
 }
@@ -3820,6 +3824,29 @@ static ssize_t store_BAT_EC(struct device *dev, struct device_attribute *attr, c
 }
 static DEVICE_ATTR(BAT_EC, 0664, show_BAT_EC, store_BAT_EC);
 
+
+//========================modify_longcheer_liml_2017_02_08 for add battery voltage start=======
+static ssize_t show_FG_Battery_Voltage(struct device *dev, struct device_attribute *attr,
+						  char *buf)
+{
+	int ret_value = 0;
+
+	ret_value = battery_get_vbus();
+	bm_err("[EM] FG_Battery_Voltage : %d mA\n", ret_value);
+	return sprintf(buf, "%d\n", ret_value);
+}
+
+static ssize_t store_FG_Battery_Voltage(struct device *dev,
+						   struct device_attribute *attr, const char *buf,
+						   size_t size)
+{
+	bm_err("[EM] Not Support Write Function\n");
+	return size;
+}
+
+static DEVICE_ATTR(FG_Battery_Voltage, 0664, show_FG_Battery_Voltage,  store_FG_Battery_Voltage);
+//========================add_longcheer_liml_2017_02_08 for add battery voltage end=======
+
 static ssize_t show_FG_Battery_CurrentConsumption(struct device *dev, struct device_attribute *attr,
 						  char *buf)
 {
@@ -4293,6 +4320,7 @@ static int battery_probe(struct platform_device *dev)
 	ret_device_file = device_create_file(&(dev->dev), &dev_attr_FG_daemon_disable);
 	ret_device_file = device_create_file(&(dev->dev), &dev_attr_BAT_EC);
 	ret_device_file = device_create_file(&(dev->dev), &dev_attr_FG_Battery_CurrentConsumption);
+	ret_device_file = device_create_file(&(dev->dev), &dev_attr_FG_Battery_Voltage);//add_longcheer_liml_2017_02_08 for add battery voltage
 	ret_device_file = device_create_file(&(dev->dev), &dev_attr_Power_On_Voltage);
 	ret_device_file = device_create_file(&(dev->dev), &dev_attr_Power_Off_Voltage);
 	ret_device_file = device_create_file(&(dev->dev), &dev_attr_shutdown_condition_enable);

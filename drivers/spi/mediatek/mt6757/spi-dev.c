@@ -397,7 +397,8 @@ static ssize_t spi_store(struct device *dev,
 	struct mt_chip_conf *chip_config;
 
 	u32 setuptime, holdtime, high_time, low_time;
-#ifdef CONFIG_TRUSTONIC_TEE_SUPPORT
+//LCSH TQQ MODIF FINGER PEE
+#ifdef CONFIG_TRUSTONIC_TEE_SUPPORT_N
 	u32 spinum;
 #endif
 	u32 cs_idletime, ulthgh_thrsh;
@@ -421,7 +422,8 @@ static ssize_t spi_store(struct device *dev,
 		SPIDEV_LOG("buf is NULL.\n");
 		goto out;
 	}
-#ifdef CONFIG_TRUSTONIC_TEE_SUPPORT
+//LCSH TQQ MODIF FINGER PEE
+#ifdef CONFIG_TRUSTONIC_TEE_SUPPORT_N
 	if (!strncmp(buf, "send", 4) && (sscanf(buf + 4, "%d", &spinum) == 1)) { /*TRANSFER*/
 		SPIDEV_MSG("start to access TL SPI driver.\n");
 		secspi_session_open(spinum);

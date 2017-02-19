@@ -125,9 +125,9 @@ static int rt5081_is_charger_ready(void)
 static int rt5081_is_torch(int level)
 {
 	if (level >= RT5081_LEVEL_TORCH)
-		return -1;
+		return 0;
 
-	return 0;
+	return 1;
 }
 
 #if 0
@@ -221,7 +221,7 @@ static int rt5081_set_level_ch1(int level)
 	}
 
 	/* set brightness level */
-	if (!rt5081_is_torch(level))
+	if (rt5081_is_torch(level))
 		flashlight_set_torch_brightness(
 				flashlight_dev_ch1, rt5081_torch_level[level]);
 	flashlight_set_strobe_brightness(
@@ -241,7 +241,7 @@ int rt5081_set_level_ch2(int level)
 	}
 
 	/* set brightness level */
-	if (!rt5081_is_torch(level))
+	if (rt5081_is_torch(level))
 		flashlight_set_torch_brightness(
 				flashlight_dev_ch2, rt5081_torch_level[level]);
 	flashlight_set_strobe_brightness(

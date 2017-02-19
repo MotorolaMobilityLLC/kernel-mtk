@@ -17,10 +17,13 @@
 
 #include <linux/types.h>
 #include <linux/io.h>
+
+//LCSH TQQ MODIF FINGER PEE
 #ifdef CONFIG_TRUSTONIC_TEE_SUPPORT
-#include <mobicore_driver_api.h>
-#include <tlspi_Api.h>
+//#include <mobicore_driver_api.h>
+//#include <tlspi_Api.h>
 #endif
+//end
 /*******************************************************************************
 * define struct for spi driver
 ********************************************************************************/
@@ -109,10 +112,11 @@ struct mt_chip_conf {
 	enum spi_tckdly tckdly;
 };
 
-void secspi_enable_clk(struct spi_device *spidev);
+//LCSH TQQ MODIF FINGER PEE
 #ifdef CONFIG_TRUSTONIC_TEE_SUPPORT
-int secspi_session_open(u32 spinum);
-int secspi_execute(u32 cmd, tciSpiMessage_t *param);
+//void secspi_enable_clk(struct spi_device *spidev);
+//int secspi_session_open(u32 spinum);
+//int secspi_execute(u32 cmd, tciSpiMessage_t *param);
 #endif
 
 #endif

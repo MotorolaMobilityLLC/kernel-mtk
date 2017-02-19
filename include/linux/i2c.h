@@ -230,6 +230,10 @@ struct i2c_client {
 #if IS_ENABLED(CONFIG_I2C_SLAVE)
 	i2c_slave_cb_t slave_cb;	/* callback for slave mode	*/
 #endif
+//Add I2C_EXTENSION by jiatianbao 20170216
+	__u32 timing;			/* parameters of timings		*/
+	__u32 ext_flag;
+//Add I2C_EXTENSION by jiatianbao 20170216
 };
 #define to_i2c_client(d) container_of(d, struct i2c_client, dev)
 

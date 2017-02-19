@@ -46,6 +46,13 @@
 #define VERSION					        "v 0.1"
 #define VIB_DEVICE				"mtk_vibrator"
 
+/*add by longcheer liuzhenhe for vibrator factory flag*/
+#ifdef CONFIG_LCT_VIBR_FACTORY_SUPPORT
+static int lct_vibr_factory_flag = 0;
+module_param(lct_vibr_factory_flag,int,0220);
+
+#endif
+
 static int debug_enable_vib_hal = 1;
 /* #define pr_fmt(fmt) "[vibrator]"fmt */
 #define VIB_DEBUG(format, args...) do { \
@@ -158,7 +165,10 @@ static void vibrator_enable(struct timed_output_dev *dev, int value)
 		if (value >= 10 && value < hw->vib_timer)
 #endif
 			value = hw->vib_timer;
-
+/*add by longcheer liuzhenhe for vibrator factory flag*/
+#ifdef CONFIG_LCT_VIBR_FACTORY_SUPPORT
+		if(lct_vibr_factory_flag != 1)
+#endif
 		value = (value > 15000 ? 15000 : value);
 		vibe_state = 1;
 		hrtimer_start(&vibe_timer,

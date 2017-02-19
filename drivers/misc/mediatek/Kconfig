@@ -13,6 +13,9 @@ config MTK_PLATFORM
 config ARCH_MTK_PROJECT
 	string "MTK project name"
 
+config ARCH_MTK_CUSTOM_DCT
+	string "MTK dct name"
+
 config MTK_INTERNAL
 	bool "Enable MTK internal debug feature"
 	help
@@ -429,4 +432,10 @@ source "drivers/misc/mediatek/reg_monitor/Kconfig"
 
 endmenu    # Misc
 
+# Following section is added by Longcheer
+# LCT_DEVINFO module start
+menu "LCT (Longcheer) devinfo"
+source "drivers/misc/mediatek/lct_devinfo/Kconfig"
+endmenu
+# LCT_DEVINFO module add end
 endif

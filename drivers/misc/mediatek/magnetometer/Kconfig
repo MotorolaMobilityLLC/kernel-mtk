@@ -16,4 +16,7 @@ config CUSTOM_KERNEL_MAGNETOMETER
           cardinal directions, or "points".
 
 source "drivers/misc/mediatek/magnetometer/akm09911-new/Kconfig"
+#add by wangshuai for add new driver
+source "drivers/misc/mediatek/magnetometer/mmc3630x/Kconfig"
+#end
 source "drivers/misc/mediatek/magnetometer/maghub/Kconfig"

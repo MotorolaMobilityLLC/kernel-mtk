@@ -355,7 +355,7 @@ int mtk_power_misc_psy_event(struct notifier_block *nb, unsigned long event, voi
 			tmp = val.intval / 10;
 			if (tmp >= BATTERY_SHUTDOWN_TEMPERATURE) {
 				bm_err("battery temperature >= %d , shutdown", tmp);
-				kernel_power_off();
+				//kernel_power_off(); //remove this to solve device power off issue for L3510 by tqq
 			}
 		}
 	}

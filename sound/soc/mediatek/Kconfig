@@ -57,6 +57,14 @@ config MT_SND_SOC_CODEC
 	  Specify Mediatek audio codec.
 	  Say "mt6351" if you have mt6351 audio codec.
 
+# LCT add ext speaker pa @duanlongfei 20170119 Start
+config LCT_AW87319_PA
+	bool "AW87319 PA"
+	default n
+	help
+	  If you say Y, enable AW87319_PA driver.
+# LCT add ext speaker pa @duanlongfei End
+
 config MTK_SPEAKER
 	bool "MTK SPEAKER AMP"
 	default n

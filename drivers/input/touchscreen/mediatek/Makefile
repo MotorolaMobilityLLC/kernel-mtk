@@ -12,3 +12,6 @@ obj-y   +=  tpd_misc.o
 obj-y   +=  tpd_setting.o
 
 obj-$(CONFIG_TOUCHSCREEN_MTK_GT1151)	+=  GT1151/
+obj-$(CONFIG_TOUCHSCREEN_MTK_GT917D)	+=  lct_gt917d/
+obj-$(CONFIG_TOUCHSCREEN_MTK_GT917D_L3510)	+=  lct_gt917d_l3510/
+obj-$(CONFIG_TOUCHSCREEN_MTK_LCT_HX8527)	+=  lct_hx8527/

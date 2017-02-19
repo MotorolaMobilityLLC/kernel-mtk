@@ -39,5 +39,13 @@ config GOODIX_SENSOR_TYPE
 	---help---
 	Must input sensor type, or default is GF316M GF318M GF3118M GF518M GF5118M GF516M GF816M GF3208 GF5216
 endif
+
+if MTK_FINGERPRINT_SELECT = "GF3208"
+config GOODIX_FINGERPRINT_GF3208
+	bool "Goodix Fingerprint"
+	default n
+	---help---
+	LC goodix fp.
+endif
 endif
 endmenu

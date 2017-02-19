@@ -88,6 +88,13 @@
 #include "../../../../drivers/misc/mediatek/auxadc/mt6755/mt_auxadc_sw.h"
 #endif
 
+/* LCT add speaker ext pa @duanlongfei 20170119 Start */
+#ifdef CONFIG_LCT_AW87319_PA
+extern unsigned char AW87319_Audio_Speaker(void);
+extern unsigned char AW87319_Audio_OFF(void);
+#endif
+/* LCT add speaker ext pa @duanlongfei End */
+
 /* static function declaration */
 static bool get_analog_input_status(void);
 static void Apply_Speaker_Gain(void);
@@ -2766,6 +2773,11 @@ static void Ext_Speaker_Amp_Change(bool enable)
 
 #ifndef MT6755_AW8736_REWORK
 		AudDrv_GPIO_EXTAMP_Select(false, 3);
+/* LCT add speaker ext pa @duanlongfei 20170119 Start */
+#ifdef CONFIG_LCT_AW87319_PA
+        AW87319_Audio_OFF();
+#endif
+/* LCT add speaker ext pa @duanlongfei End */
 #else
 		if (pin_extspkamp != 54)
 			AudDrv_GPIO_EXTAMP_Select(false, 3);
@@ -2790,6 +2802,11 @@ static void Ext_Speaker_Amp_Change(bool enable)
 #else
 #ifndef MT6755_AW8736_REWORK
 		AudDrv_GPIO_EXTAMP_Select(true, 3);
+/* LCT add speaker ext pa @duanlongfei 20170119 Start */
+#ifdef CONFIG_LCT_AW87319_PA
+        AW87319_Audio_Speaker();
+#endif
+/* LCT add speaker ext pa @duanlongfei End */
 #else
 		if (pin_extspkamp != 54)
 			AudDrv_GPIO_EXTAMP_Select(true, 3);
@@ -2806,6 +2823,11 @@ static void Ext_Speaker_Amp_Change(bool enable)
 
 #ifndef MT6755_AW8736_REWORK
 		AudDrv_GPIO_EXTAMP_Select(false, 3);
+/* LCT add speaker ext pa @duanlongfei 20170119 Start */
+#ifdef CONFIG_LCT_AW87319_PA
+        AW87319_Audio_OFF();
+#endif
+/* LCT add speaker ext pa @duanlongfei End */
 #else
 		if (pin_extspkamp != 54)
 			AudDrv_GPIO_EXTAMP_Select(false, 3);

@@ -3336,9 +3336,14 @@
 		<&topckgen TOP_UNIVPLL_192M_D4>,
 		<&topckgen TOP_UNIVPLL2_D2>;
 		clock-names = "TOP_CAMTG_SEL","TOP_MUX_SCAM","TOP_UNIVPLL_192M_D4","TOP_UNIVPLL2_D2";
-		vcama-supply = <&mt_pmic_vcama_ldo_reg>;
-		vcamd-supply = <&mt_pmic_vcamd_ldo_reg>;
+		/*add by guoameng  longcheer start */
+		vcama-supply = <&mt_pmic_vcama1_ldo_reg>;
+		vcamd-supply = <&mt_pmic_vcamd1_ldo_reg>;
 		vcamio-supply = <&mt_pmic_vcamio_ldo_reg>;
+                 vcamaf-supply = <&mt_pmic_vcamaf_ldo_reg>;
+		 vcamasub-supply = <&mt_pmic_vcama2_ldo_reg>;
+		vcamdsub-supply = <&mt_pmic_vcamd2_ldo_reg>;
+		 /*add by guoameng  longcheer end */
 	};
 
 	kd_camera_hw2:kd_camera_hw2@1a040000 {
@@ -3559,6 +3564,11 @@
 		use_hp_depop_flow = <0>; /* select 1: use, 0: not use */
 		use_ul_260k = <0>; /* select 1: use, 0: not use */
 	};
+/* LCT add ext speaker pa @duanlongfei 20170119 Start */
+	aw87319_pa: aw87319_pa@ {
+		compatible = "mediatek,aw87319_pa";
+	};
+/* LCT add ext speaker pa @duanlongfei End */
 
 	mt_soc_dummy_pcm {
 		compatible = "mediatek,mt_soc_pcm_dummy";
@@ -3639,6 +3649,18 @@
 		compatible = "mediatek,gyroscope";
 		/* vgyro-supply = <&mt_pmic_vio28_ldo_reg>; */
 	};
+
+	/*LCT  add for cap sensor  by cly  */
+	capsensor:cap_touch@0 {
+		compatible = "mediatek,cap_touch";
+	};  
+	m_captouch_pl@0 {
+		compatible = "mediatek,m_captouch_pl";
+	};
+	capsenso:capsenso{
+			compatible = "mediatek, capsenso-eint";
+	};
+	/*end LCT*/
 
 	barometer@0 {
 		compatible = "mediatek,barometer";
@@ -3757,16 +3779,19 @@
 		enable_pe_3;
 
 		/* common */
-		battery_cv = <4350000>;
-		max_charger_voltage = <6500000>;
-
+		/***charg by liminglong longcheer start******/
+		battery_cv =<4400000>;
+		//max_charger_voltage=<6500000>;
+               /***charg by liminglong longcheer end******/
 		/* charging current */
 		usb_charger_current_suspend = <0>;
 		usb_charger_current_unconfigured = <70000>;
 		usb_charger_current_configured = <500000>;
 		usb_charger_current = <500000>;
-		ac_charger_current = <2050000>;
-		ac_charger_input_current = <3200000>;
+		/***charg by liminglong longcheer start******/
+		ac_charger_current = <3000000 >;
+		ac_charger_input_current = <2050000 >;
+		/***charg by liminglong longcheer end******/
 		non_std_ac_charger_current = <500000>;
 		charging_host_charger_current = <500000>;
 		ta_ac_charger_current = <3000000>;
@@ -3825,7 +3850,18 @@
 	rt1711h_pd: rt1711h_pd_eint {
 	};
 };
-
+/* LCT add eliminglong  Start */
+#ifdef  CONFIG_SWITCH_USB_RT8973
+&i2c5 {
+	rt8973@14 {
+		compatible = "richtek,rt8973-usbsw";
+		reg = <0x14>;
+		status = "okay";
+		usb_switch_name = "usb_switch";
+	};
+};
+#endif
+/* LCT add eliminglong  end */
 #include "cust_mt6757_msdc.dtsi"
 
 #ifdef CONFIG_MTK_PMIC_CHIP_MT6355
@@ -3833,5 +3869,11 @@
 #else
 #include "mt6351.dtsi"
 #endif
+
+/* LCT add ext speaker pa @duanlongfei 20170119 Start */
+#ifdef CONFIG_LCT_AW87319_PA
+#include "lct_aw87319.dtsi"
+#endif
+/* LCT add ext speaker pa @duanlongfei End */
 
 #include "rt5081.dtsi"

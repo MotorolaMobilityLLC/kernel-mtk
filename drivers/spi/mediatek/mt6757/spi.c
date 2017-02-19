@@ -389,7 +389,8 @@ int secspi_session_open(u32 spinum)
 
 	return 0;
 }
-
+//LCSH TQQ MODIF FINGER PEE
+#if 0
 void secspi_enable_clk(struct spi_device *spidev)
 {
 #if !defined(CONFIG_MTK_CLKMGR)
@@ -409,7 +410,8 @@ void secspi_enable_clk(struct spi_device *spidev)
 #endif
 	enable_clk(ms);
 }
-
+#endif
+//LCSH TQQ MODIF FINGER PEE end
 int secspi_execute(u32 cmd, tciSpiMessage_t *param)
 {
 	enum mc_result mc_ret;
