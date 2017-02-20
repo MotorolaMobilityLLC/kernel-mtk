@@ -29,6 +29,17 @@ const struct of_device_id swtp_of_match[] = {
 	{},
 };
 #define SWTP_MAX_SUPPORT_MD 1
+
+/* add swtp input-dev for sar power backoff by huqinmin 20170216 begin */
+#ifdef CONFIG_SWTP_INT_INPUT_DEV
+#include <linux/input.h>
+static struct input_dev *rfcable_input_dev;
+static struct delayed_work swtp_register_input_device_work;
+static struct workqueue_struct *swtp_register_input_device_workqueue;
+int swtp_input_registered = 0;
+#endif
+/* add swtp input-dev for sar power backoff by huqinmin 20170216 end */
+
 struct swtp_t swtp_data[SWTP_MAX_SUPPORT_MD];
 
 
@@ -60,6 +71,17 @@ static int swtp_switch_mode(struct swtp_t *swtp)
 	CCCI_LEGACY_ALWAYS_LOG(swtp->md_id, KERN, "%s mode %d\n", __func__, swtp->curr_mode);
 	spin_unlock_irqrestore(&swtp->spinlock, flags);
 
+/* add swtp input-dev for sar power backoff by huqinmin 20170216 begin */
+#ifdef CONFIG_SWTP_INT_INPUT_DEV
+	if ((swtp->curr_mode == SWTP_EINT_PIN_PLUG_IN) && (1 == swtp_input_registered)) {
+		input_report_key(rfcable_input_dev, KEY_SWTP, 0);
+		input_sync(rfcable_input_dev);
+	} else if ((swtp->curr_mode == SWTP_EINT_PIN_PLUG_OUT) && (1 == swtp_input_registered)) {
+		input_report_key(rfcable_input_dev, KEY_SWTP, 1);
+		input_sync(rfcable_input_dev);
+	}
+#endif
+/* add swtp input-dev for sar power backoff by huqinmin 20170216 end */
 	return ret;
 }
 
@@ -149,6 +171,51 @@ int swtp_md_tx_power_req_hdlr(int md_id, int data)
 	return 0;
 }
 
+/* add swtp input-dev for sar power backoff by huqinmin 20170216 begin */
+#ifdef CONFIG_SWTP_INT_INPUT_DEV
+static void swtp_register_input_device_func(struct work_struct *work)
+{
+	int ret = 0;
+	struct input_dev *input = NULL;
+	struct swtp_t *swtp = NULL;
+
+	if (0 == swtp_input_registered) {
+		input = input_allocate_device();
+		if (!input) {
+			CCCI_LEGACY_ERR_LOG(1, KERN, "swtp Can not allocate input device!\n");
+			ret = -ENODEV;
+		} else {
+			CCCI_LEGACY_ALWAYS_LOG(1, KERN, "swtp begin to register input device\n");
+			input->name = "swtp-eint";
+			__set_bit(EV_KEY, input->evbit);
+			__set_bit(KEY_SWTP, input->keybit);
+			ret = input_register_device(input);
+			if (ret < 0) {
+				CCCI_LEGACY_ERR_LOG(1, KERN, "swtp Can not register input device!\n");
+				input_free_device(input);
+				ret = -ENODEV;
+			} else {
+				rfcable_input_dev = input;
+				swtp_input_registered = 1;
+				swtp = &swtp_data[0];
+				if ((swtp->curr_mode == SWTP_EINT_PIN_PLUG_IN) && (1 == swtp_input_registered)) {
+					input_report_key(rfcable_input_dev, KEY_SWTP, 0);
+					input_sync(rfcable_input_dev);
+				} else if ((swtp->curr_mode == SWTP_EINT_PIN_PLUG_OUT) &&
+						(1 == swtp_input_registered)) {
+					input_report_key(rfcable_input_dev, KEY_SWTP, 1);
+					input_sync(rfcable_input_dev);
+				}
+				CCCI_LEGACY_ALWAYS_LOG(1, KERN, "swtp register input device success!\n");
+			}
+		}
+	} else {
+		CCCI_LEGACY_ALWAYS_LOG(1, KERN, "swtp input device has been registered before!\n");
+	}
+}
+#endif
+/* add swtp input-dev for sar power backoff by huqinmin 20170216 end */
+
 int swtp_init(int md_id)
 {
 	int ret = 0;
@@ -183,6 +250,15 @@ int swtp_init(int md_id)
 			CCCI_LEGACY_ALWAYS_LOG(md_id, KERN,
 				"swtp-eint set EINT finished, irq=%d, setdebounce=%d, eint_type=%d\n",
 				swtp_data[md_id].irq, swtp_data[md_id].setdebounce, swtp_data[md_id].eint_type);
+			/* add swtp input-dev for sar power backoff by huqinmin 20170216 begin */
+			#ifdef CONFIG_SWTP_INT_INPUT_DEV
+			CCCI_LEGACY_ALWAYS_LOG(md_id, KERN, "swtp init register input device delayed work queue.\n");
+			INIT_DELAYED_WORK(&swtp_register_input_device_work, swtp_register_input_device_func);
+			swtp_register_input_device_workqueue = create_workqueue("swtp_register_input");
+			queue_delayed_work(swtp_register_input_device_workqueue,
+								&swtp_register_input_device_work, 2*HZ);
+			#endif
+			/* add swtp input-dev for sar power backoff by huqinmin 20170216 end */
 		}
 	} else {
 		CCCI_LEGACY_ERR_LOG(md_id, KERN, "%s can't find compatible node\n", __func__);

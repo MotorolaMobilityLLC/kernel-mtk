@@ -52,6 +52,7 @@ static DEFINE_SPINLOCK(g_CAM_CALLock); // for SMP
 #define CAM_CAL_I2C_BUSNUM 2  //lenovo.sw wangsx3 change fro K5
 extern u8 OTPData[];
 extern int iReadRegI2C(u8 *a_pSendData , u16 a_sizeSendData, u8 * a_pRecvData, u16 a_sizeRecvData, u16 i2cId);
+extern int iReadRegI2C_gt24c64(u8 *a_pSendData , u16 a_sizeSendData, u8 * a_pRecvData, u16 a_sizeRecvData, u16 i2cId);
 
 /*******************************************************************************
 *
@@ -309,7 +310,7 @@ static bool selective_read_eeprom(unsigned short addr, unsigned char * data)
 {
 	char pu_send_cmd[2] = {(char)(addr >> 8) , (char)(addr & 0xFF) };
 	
-	if(iReadRegI2C(pu_send_cmd, 2, (u8*)data, 1, GT24c64_DEVICE_ID)<0)
+	if(iReadRegI2C_gt24c64(pu_send_cmd, 2, (u8*)data, 1, GT24c64_DEVICE_ID)<0)
 		return false;
     return true;
 }
