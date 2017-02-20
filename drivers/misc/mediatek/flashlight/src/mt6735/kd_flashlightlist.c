@@ -98,6 +98,50 @@ static struct pinctrl_state *main_flashlight_enf_low;
 /*sub flashlight*/
 static struct pinctrl_state *sub_flashlight_enf_high;
 static struct pinctrl_state *sub_flashlight_enf_low;
+//add by ameng start
+static void open_AM3640_pluse(void){
+	int i = 0,duty2 = 11;
+	for(i = 0;i< duty2;i++){
+		flashlight_gpio_set(SUB_FLASHLIGHT_ENF_PIN,STATE_HIGH);
+		udelay(1);
+		flashlight_gpio_set(SUB_FLASHLIGHT_ENF_PIN,STATE_LOW);	
+		udelay(1);
+	}
+	flashlight_gpio_set(SUB_FLASHLIGHT_ENF_PIN,STATE_HIGH);
+}
+static ssize_t lenovo_sub_strobe_show(struct device *dev,
+                struct device_attribute *attr, char *buf)
+{
+	return sprintf(buf,"enter lenovo_sub_strobe_show\n");
+}
+
+static ssize_t lenovo_sub_strobe_store(struct device *dev,
+                struct device_attribute *attr,
+                const char *buf,
+                size_t count)
+{
+
+        int tmp = 0;
+        int error = 0;
+
+        error = kstrtoint(buf, 0, &tmp);
+        if (error) {
+                pr_err("%s[%d]: kstrtoul fails, error = %d\n", __func__, __LINE__, error);
+        }else {
+        	if(tmp>0)
+		{
+			open_AM3640_pluse();
+		}
+		else
+			{
+				flashlight_gpio_set(SUB_FLASHLIGHT_ENF_PIN,STATE_LOW);
+			};
+        }
+
+        return 0;
+}
+static DEVICE_ATTR(lenovo_sub_strobe, 0664, lenovo_sub_strobe_show, lenovo_sub_strobe_store);
+//add by ameng end
 int flashlight_gpio_init(struct platform_device *pdev)
 {
 	int ret = 0;
@@ -821,7 +865,13 @@ static int flashlight_probe(struct platform_device *dev)
 		logI("[flashlight_probe] device_create fail ~");
 		goto flashlight_probe_error;
 	}
-
+//add by ameng start
+  ret = device_create_file(flashlight_device, &dev_attr_lenovo_sub_strobe);
+        if (ret) {
+                pr_err("%s,failed to create laser xtalk calibrate file!\n", __func__);
+                return -EIO;
+        }
+//add by ameng end
 	/* initialize members */
 	spin_lock_init(&flashlight_private.lock);
 	init_waitqueue_head(&flashlight_private.read_wait);
