@@ -114,4 +114,13 @@ extern long WV511AAF_Ioctl(struct file *a_pstFile, unsigned int a_u4Command, uns
 extern int WV511AAF_Release(struct inode *a_pstInode, struct file *a_pstFile);
 #endif
 
+#ifdef CONFIG_MTK_LENS_LC898212XDAF_SUPPORT
+#define LC898212XDAF_F_SetI2Cclient LC898212XDAF_F_SetI2Cclient_Sub
+#define LC898212XDAF_F_Ioctl LC898212XDAF_F_Ioctl_Sub
+#define LC898212XDAF_F_Release LC898212XDAF_F_Release_Sub
+extern void LC898212XDAF_F_SetI2Cclient(struct i2c_client *pstAF_I2Cclient, spinlock_t *pAF_SpinLock, int *pAF_Opened);
+extern long LC898212XDAF_F_Ioctl(struct file *a_pstFile, unsigned int a_u4Command, unsigned long a_u4Param);
+extern int LC898212XDAF_F_Release(struct inode *a_pstInode, struct file *a_pstFile);
+#endif
+
 #endif

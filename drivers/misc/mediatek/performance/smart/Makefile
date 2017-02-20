@@ -11,6 +11,4 @@
 # GNU General Public License for more details.
 #
 
-obj-y += fliper/
-obj-y += perfmgr/
-obj-y += smart/
+obj-$(CONFIG_ARCH_MT6797) += $(subst ",,$(CONFIG_MTK_PLATFORM))/

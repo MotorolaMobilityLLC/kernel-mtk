@@ -84,6 +84,9 @@ static stAF_DrvList g_stAF_DrvList[MAX_NUM_OF_LENS] = {
 	#ifdef CONFIG_MTK_LENS_FM50AF_SUPPORT
 	{1, AFDRV_FM50AF, FM50AF_SetI2Cclient, FM50AF_Ioctl, FM50AF_Release},
 	#endif
+	#ifdef CONFIG_MTK_LENS_LC898212XDAF_SUPPORT
+	{1, AFDRV_LC898212XDAF_F, LC898212XDAF_F_SetI2Cclient, LC898212XDAF_F_Ioctl, LC898212XDAF_F_Release},
+	#endif
 };
 
 static stAF_DrvList *g_pstAF_CurDrv;

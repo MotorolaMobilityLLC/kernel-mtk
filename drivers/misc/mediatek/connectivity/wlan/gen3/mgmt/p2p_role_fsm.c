@@ -479,8 +479,6 @@ VOID p2pRoleFsmRunEventRxDeauthentication(IN P_ADAPTER_T prAdapter, IN P_STA_REC
 				prStaRec->u2ReasonCode = u2ReasonCode;
 				u2IELength = prSwRfb->u2PacketLen - (WLAN_MAC_HEADER_LEN + REASON_CODE_FIELD_LEN);
 
-				ASSERT(prP2pBssInfo->prStaRecOfAP == prStaRec);
-
 				/* Indicate disconnect to Host. */
 				kalP2PGCIndicateConnectionStatus(prAdapter->prGlueInfo,
 								 (UINT_8) prP2pBssInfo->u4PrivateData, NULL,
@@ -592,8 +590,6 @@ VOID p2pRoleFsmRunEventRxDisassociation(IN P_ADAPTER_T prAdapter, IN P_STA_RECOR
 							&prStaRec->u2ReasonCode) == WLAN_STATUS_SUCCESS) {
 				P_WLAN_DISASSOC_FRAME_T prDisassocFrame = (P_WLAN_DISASSOC_FRAME_T) prSwRfb->pvHeader;
 				UINT_16 u2IELength = 0;
-
-				ASSERT(prP2pBssInfo->prStaRecOfAP == prStaRec);
 
 				if (prP2pBssInfo->prStaRecOfAP != prStaRec)
 					break;

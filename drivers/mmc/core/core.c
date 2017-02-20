@@ -1134,6 +1134,7 @@ void mmc_wait_cmdq_done(struct mmc_request *mrq)
 				    host->task_queue_time[i] + TASK_READY_TMO)) {
 					pr_err("[CQ] ERROR Task ready TMO ID: %d ready time is %ld ticks\n", i,
 						  (long)(jiffies) - (long)(host->task_queue_time[i]));
+					BUG_ON(1);
 			       }
 			}
 		}

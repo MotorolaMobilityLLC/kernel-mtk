@@ -481,18 +481,16 @@ int kbase_platform_early_init(void)
 	}
 
 	/* Make sure the power control is ready */
-	if (is_fan53555_exist() && !is_fan53555_sw_ready())
-	{
+	if (is_fan53555_exist() && !is_fan53555_sw_ready()) {
 		pr_warn("fan53555 is not ready\n");
 		return -EPROBE_DEFER;
 	}
-	#ifdef CONFIG_REGULATOR_RT5735
+#ifdef CONFIG_REGULATOR_RT5735
 	if (rt_is_hw_exist() && !rt_is_sw_ready()) {
 		pr_warn("rt5735 is not ready\n");
 		return -EPROBE_DEFER;
 	}
-	#endif
-
+#endif
 
 	return 0;
 }

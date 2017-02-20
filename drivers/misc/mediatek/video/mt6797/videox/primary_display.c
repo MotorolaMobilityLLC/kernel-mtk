@@ -1596,11 +1596,27 @@ static int _DL_switch_to_DC_fast(void)
 		DISPERR("%s, dc buffer does not exist\n", __func__);
 		return -1;
 	}
+
+	MMProfileLogEx(ddp_mmp_get_events()->primary_switch_mode, MMProfileFlagPulse, 0, 0);
+
 	wdma_config.dstAddress = mva;
 	wdma_config.security = DISP_NORMAL_BUFFER;
 
 	/* 1.save a temp frame to intermediate buffer */
 	directlink_path_add_memory(&wdma_config, DISP_MODULE_OVL0);
+
+	/*
+	 * Update wdma_config to mem_config in case that trigger in DC
+	 * mode, like Smart_OVL.
+	 */
+	mem_config.addr = wdma_config.dstAddress;
+	mem_config.fmt = wdma_config.outputFormat;
+	mem_config.pitch = wdma_config.dstPitch;
+	mem_config.security = DISP_NORMAL_BUFFER;
+	mem_config.buff_idx = -1;
+	mem_config.interface_idx = -1;
+	MMProfileLogEx(ddp_mmp_get_events()->primary_wdma_config, MMProfileFlagPulse,
+		       pgc->dc_buf_id, mva);
 
 	MMProfileLogEx(ddp_mmp_get_events()->primary_switch_mode, MMProfileFlagPulse, 1, 0);
 
@@ -5024,7 +5040,7 @@ int primary_display_config_input_multiple(disp_session_input_config *session_inp
 	frame_cfg->session_id = session_input->session_id;
 	frame_cfg->setter = session_input->setter;
 	frame_cfg->input_layer_num = session_input->config_layer_num;
-	frame_cfg->overlap_layer_num = 4;
+	frame_cfg->overlap_layer_num = HRT_LEVEL_HIGH;
 	memcpy(frame_cfg->input_cfg, session_input->config, sizeof(frame_cfg->input_cfg));
 
 	_primary_path_lock(__func__);
@@ -5247,6 +5263,13 @@ int do_primary_display_switch_mode(int sess_mode, unsigned int session, int need
 		if (ret)
 			goto err;
 	} else if (pgc->session_mode == DISP_SESSION_RDMA_MODE && sess_mode == DISP_SESSION_DECOUPLE_MIRROR_MODE) {
+		/* switch to DL mode first */
+		ret = rdma_mode_switch_to_DL(NULL, 0);
+		if (ret)
+			goto err;
+		MMProfileLogEx(ddp_mmp_get_events()->primary_switch_mode, MMProfileFlagPulse, pgc->session_mode, 0);
+		DL_switch_to_DC_fast(0);
+	} else if (pgc->session_mode == DISP_SESSION_RDMA_MODE && sess_mode == DISP_SESSION_DECOUPLE_MODE) {
 		/* switch to DL mode first */
 		ret = rdma_mode_switch_to_DL(NULL, 0);
 		if (ret)
@@ -7071,6 +7094,29 @@ void restart_smart_ovl_nolock(void)
 static DISP_POWER_STATE tui_power_stat_backup;
 static int tui_session_mode_backup;
 
+/*Now the normal display vsync is DDP_IRQ_RDMA0_DONE in vdo mode, but when enter TUI,
+ *we must protect the rdma0, then, should
+ * switch it to the DDP_IRQ_DSI0_FRAME_DONE.
+ */
+int display_vsync_switch_to_dsi(unsigned int flg)
+{
+	if (!primary_display_is_video_mode())
+		return 0;
+
+	if (!flg) {
+		dpmgr_map_event_to_irq(pgc->dpmgr_handle, DISP_PATH_EVENT_IF_VSYNC,
+								DDP_IRQ_RDMA0_DONE);
+		dsi_enable_irq(DISP_MODULE_DSI0, NULL, 0);
+
+	} else {
+		dpmgr_map_event_to_irq(pgc->dpmgr_handle, DISP_PATH_EVENT_IF_VSYNC,
+								DDP_IRQ_DSI0_FRAME_DONE);
+		dsi_enable_irq(DISP_MODULE_DSI0, NULL, 1);
+	}
+
+	return 0;
+}
+
 int display_enter_tui(void)
 {
 	msleep(500);
@@ -7096,10 +7142,12 @@ int display_enter_tui(void)
 
 	stop_smart_ovl_nolock();
 
-	tui_session_mode_backup = pgc->session_mode;
+	tui_session_mode_backup = (pgc->session_mode == DISP_SESSION_RDMA_MODE) ?
+		DISP_SESSION_DIRECT_LINK_MODE : pgc->session_mode;
 
 	do_primary_display_switch_mode(DISP_SESSION_DECOUPLE_MODE, pgc->session_id, 0, NULL, 0);
 
+	display_vsync_switch_to_dsi(1);
 	MMProfileLogEx(ddp_mmp_get_events()->tui, MMProfileFlagPulse, 0, 1);
 
 	_primary_path_unlock(__func__);
@@ -7131,6 +7179,7 @@ int display_exit_tui(void)
 	/* DISP_REG_SET(NULL, DISP_REG_RDMA_INT_ENABLE, 0xffffffff); */
 
 	restart_smart_ovl_nolock();
+	display_vsync_switch_to_dsi(0);
 	_primary_path_unlock(__func__);
 
 	MMProfileLogEx(ddp_mmp_get_events()->tui, MMProfileFlagEnd, 0, 0);

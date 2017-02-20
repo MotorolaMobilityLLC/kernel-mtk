@@ -19,6 +19,8 @@
 #ifndef __ASM_PMU_H
 #define __ASM_PMU_H
 
+#include <linux/notifier.h>
+
 #ifdef CONFIG_HW_PERF_EVENTS
 
 /* The events for a given PMU register set. */
@@ -45,6 +47,7 @@ struct arm_pmu {
 	struct pmu		pmu;
 	cpumask_t		active_irqs;
 	const char		*name;
+	int			ppi_irq;
 	irqreturn_t		(*handle_irq)(int irq_num, void *dev);
 	void			(*enable)(struct hw_perf_event *evt, int idx);
 	void			(*disable)(struct hw_perf_event *evt, int idx);
@@ -64,6 +67,7 @@ struct arm_pmu {
 	u64			max_period;
 	struct platform_device	*plat_device;
 	struct pmu_hw_events	*(*get_hw_events)(void);
+	struct notifier_block   hotplug_nb;
 };
 
 #define to_arm_pmu(p) (container_of(p, struct arm_pmu, pmu))

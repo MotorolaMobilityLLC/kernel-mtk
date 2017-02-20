@@ -1650,7 +1650,7 @@ int musb_gadget_setup(struct musb *musb)
 	 */
 
 	musb->g.ops = &musb_gadget_operations;
-#if !defined(CONFIG_USB_MU3D_ONLY_U2_MODE)
+#ifdef SUPPORT_U3
 	musb->g.max_speed = USB_SPEED_SUPER;
 #else
 	musb->g.max_speed = USB_SPEED_HIGH;
