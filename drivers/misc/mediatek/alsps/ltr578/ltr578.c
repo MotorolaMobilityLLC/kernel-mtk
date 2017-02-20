@@ -640,29 +640,32 @@ static int ltr578_dynamic_calibrate(void)
 				dynamic_cali = noise;
 				isadjust = 1;
 
-	if (noise < 100) {
-		atomic_set(&obj->ps_thd_val_high,  noise+30);
+	if (noise < 25) {
+		atomic_set(&obj->ps_thd_val_high, noise+25);
+		atomic_set(&obj->ps_thd_val_low, noise+15);
+	} else if (noise < 100) {
+		atomic_set(&obj->ps_thd_val_high, noise+30);
 		atomic_set(&obj->ps_thd_val_low, noise+20);
 	} else if (noise < 200) {
-		atomic_set(&obj->ps_thd_val_high,  noise+35);
+		atomic_set(&obj->ps_thd_val_high, noise+35);
 		atomic_set(&obj->ps_thd_val_low, noise+25);
 	} else if (noise < 300) {
-		atomic_set(&obj->ps_thd_val_high,  noise+40);
+		atomic_set(&obj->ps_thd_val_high, noise+40);
 		atomic_set(&obj->ps_thd_val_low, noise+30);
 	} else if (noise < 400) {
-		atomic_set(&obj->ps_thd_val_high,  noise+45);
+		atomic_set(&obj->ps_thd_val_high, noise+45);
 		atomic_set(&obj->ps_thd_val_low, noise+35);
 	} else if (noise < 600) {
-		atomic_set(&obj->ps_thd_val_high,  noise+50);
+		atomic_set(&obj->ps_thd_val_high, noise+50);
 		atomic_set(&obj->ps_thd_val_low, noise+40);
 	} else if (noise < 800) {
-		atomic_set(&obj->ps_thd_val_high,  noise+80);
+		atomic_set(&obj->ps_thd_val_high, noise+80);
 		atomic_set(&obj->ps_thd_val_low, noise+60);
 	} else if (noise < 1000) {
-		atomic_set(&obj->ps_thd_val_high,  noise+273);
+		atomic_set(&obj->ps_thd_val_high, noise+273);
 		atomic_set(&obj->ps_thd_val_low, noise+105);
-	} else{
-		atomic_set(&obj->ps_thd_val_high,  1200);
+	} else {
+		atomic_set(&obj->ps_thd_val_high, 1200);
 		atomic_set(&obj->ps_thd_val_low, 1150);
 		isadjust = 0;
 		APS_DBG("ltr578 the proximity sensor ps raw data\n");
@@ -1413,29 +1416,32 @@ static void ltr578_eint_work(struct work_struct *work)
 			if (noise < (dynamic_cali - 100)) {
 				dynamic_cali = noise;
 				isadjust = 1;
-				if (noise < 100) {
-					atomic_set(&obj->ps_thd_val_high,  noise+120);
-					atomic_set(&obj->ps_thd_val_low, noise+70);
+				if (noise < 25) {
+					atomic_set(&obj->ps_thd_val_high, noise+25);
+					atomic_set(&obj->ps_thd_val_low, noise+15);
+				} else if (noise < 100) {
+					atomic_set(&obj->ps_thd_val_high, noise+30);
+					atomic_set(&obj->ps_thd_val_low, noise+20);
 				} else if (noise < 200) {
-					atomic_set(&obj->ps_thd_val_high,  noise+130);
-					atomic_set(&obj->ps_thd_val_low, noise+80);
+					atomic_set(&obj->ps_thd_val_high, noise+35);
+					atomic_set(&obj->ps_thd_val_low, noise+25);
 				} else if (noise < 300) {
-					atomic_set(&obj->ps_thd_val_high,  noise+140);
-					atomic_set(&obj->ps_thd_val_low, noise+90);
+					atomic_set(&obj->ps_thd_val_high, noise+40);
+					atomic_set(&obj->ps_thd_val_low, noise+30);
 				} else if (noise < 400) {
-					atomic_set(&obj->ps_thd_val_high,  noise+150);
-					atomic_set(&obj->ps_thd_val_low, noise+90);
+					atomic_set(&obj->ps_thd_val_high, noise+45);
+					atomic_set(&obj->ps_thd_val_low, noise+35);
 				} else if (noise < 600) {
-					atomic_set(&obj->ps_thd_val_high,  noise+170);
-					atomic_set(&obj->ps_thd_val_low, noise+110);
+					atomic_set(&obj->ps_thd_val_high, noise+50);
+					atomic_set(&obj->ps_thd_val_low, noise+40);
 				} else if (noise < 800) {
-					atomic_set(&obj->ps_thd_val_high,  noise+180);
-					atomic_set(&obj->ps_thd_val_low, noise+130);
+					atomic_set(&obj->ps_thd_val_high, noise+80);
+					atomic_set(&obj->ps_thd_val_low, noise+60);
 				} else if (noise < 1000) {
-					atomic_set(&obj->ps_thd_val_high,  noise+220);
-					atomic_set(&obj->ps_thd_val_low, noise+100);
-				} else{
-					atomic_set(&obj->ps_thd_val_high,  1200);
+					atomic_set(&obj->ps_thd_val_high, noise+273);
+					atomic_set(&obj->ps_thd_val_low, noise+105);
+				} else {
+					atomic_set(&obj->ps_thd_val_high, 1200);
 					atomic_set(&obj->ps_thd_val_low, 1150);
 					isadjust = 0;
 					printk("ltr578 the proximity ps_raw_data\n");
