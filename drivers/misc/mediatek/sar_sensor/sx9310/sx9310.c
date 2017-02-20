@@ -279,9 +279,49 @@ static ssize_t manual_offset_calibration_store(struct device *dev, struct device
 	return count;
 }
 
+static ssize_t noise_register_show(struct device *dev, struct device_attribute *attr, char *buf)
+{
+	u8 noise_reg_high = 0;
+	u8 noise_reg_low = 0;
+	u16 noise_val = 0;
+	struct sx9310_data *this = dev_get_drvdata(dev);
+
+	read_register(this, SX9310_DIFFMSB, &noise_reg_high);
+	read_register(this, SX9310_DIFFLSB, &noise_reg_low);
+	noise_val = ((u16)noise_reg_high << 8) + noise_reg_low;
+	return sprintf(buf, "%u\n", noise_val);
+}
+
+static ssize_t reg_show(struct device *dev, struct device_attribute *attr, char *buf)
+{
+	u8 reg_value = 0;
+	int i, j = 0;
+	struct sx9310_data *this = dev_get_drvdata(dev);
+
+	for (i = 0; i < 64; i++) {
+		read_register(this, i, &reg_value);
+		j += snprintf(buf + j, 4096, "reg:0x%02x is 0x%02x\n", i, reg_value);
+	}
+	return j;
+}
+
+static ssize_t reg_store(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
+{
+	struct sx9310_data *this = dev_get_drvdata(dev);
+	int reg_address = 0;
+	int reg_val = 0;
+	int ret;
+
+	ret = sscanf(buf, "%x %x", &reg_address, &reg_val);
+	if (ret == 2)
+		write_register(this, reg_address, reg_val);
+	return count;
+}
 static DEVICE_ATTR(calibrate, 0660, manual_offset_calibration_show, manual_offset_calibration_store);
-static struct attribute *sx9310_attributes[] = { &dev_attr_calibrate.attr, NULL,
-};
+static DEVICE_ATTR(noise, 0440, noise_register_show, NULL);
+static DEVICE_ATTR(reg, 0660, reg_show, reg_store);
+static struct attribute *sx9310_attributes[] = { &dev_attr_calibrate.attr,  &dev_attr_reg.attr, &dev_attr_noise.attr
+, NULL,};
 
 static struct attribute_group sx9310_attr_group = {.attrs = sx9310_attributes,
 };
