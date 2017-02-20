@@ -79,7 +79,7 @@ do {									\
 } while (0)
 
 
-#define BM_DAEMON_DEFAULT_LOG_LEVEL 3
+#define BM_DAEMON_DEFAULT_LOG_LEVEL 5
 
 
 /* ============================================================ */
