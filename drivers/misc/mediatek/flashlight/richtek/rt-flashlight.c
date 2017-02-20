@@ -26,8 +26,8 @@
 //add by ameng start
 extern int rt5081_operate(int ct_index, int enable);
 extern int rt5081_set_level(int ct_index, int level);
-extern struct flashlight_device *flashlight_dev_ht;
-extern struct flashlight_device *flashlight_dev_lt;
+extern struct flashlight_device *flashlight_dev_ch1;
+extern struct flashlight_device *flashlight_dev_ch2;
 //add by ameng end
 static const char * const flashlight_type_string[] = {
 	[FLASHLIGHT_TYPE_XENON] = "Xenon",
@@ -612,7 +612,7 @@ static ssize_t flash_factory_write_proc(struct file *file, const char *buffer, s
 	}
 	temp[count - 1] = '\0';
 	rc = atoi(temp);
-	if (!flashlight_dev_ht) {
+	if (!flashlight_dev_ch1) {
 		printk("Failed to enable since no flashlight device.\n");
 		//return -1;
 	}
@@ -620,29 +620,29 @@ static ssize_t flash_factory_write_proc(struct file *file, const char *buffer, s
 	switch (rc)
 	{
 		case 0x33:
-			flashlight_set_torch_brightness(flashlight_dev_ht,2);
-			flashlight_set_torch_brightness(flashlight_dev_lt,2);
+			flashlight_set_torch_brightness(flashlight_dev_ch1,2);
+			flashlight_set_torch_brightness(flashlight_dev_ch2,2);
 			msleep(5);
-			flashlight_set_mode(flashlight_dev_ht, FLASHLIGHT_MODE_TORCH);
-			flashlight_set_mode(flashlight_dev_lt, FLASHLIGHT_MODE_TORCH);
+			flashlight_set_mode(flashlight_dev_ch1, FLASHLIGHT_MODE_TORCH);
+			flashlight_set_mode(flashlight_dev_ch2, FLASHLIGHT_MODE_TORCH);
 			break;
 		case 0x30:
-			flashlight_set_torch_brightness(flashlight_dev_ht,2);
-			flashlight_set_torch_brightness(flashlight_dev_lt,0);
+			flashlight_set_torch_brightness(flashlight_dev_ch1,2);
+			flashlight_set_torch_brightness(flashlight_dev_ch2,0);
 			msleep(5);
-			flashlight_set_mode(flashlight_dev_ht, FLASHLIGHT_MODE_TORCH);
-			flashlight_set_mode(flashlight_dev_lt, FLASHLIGHT_MODE_OFF);
+			flashlight_set_mode(flashlight_dev_ch1, FLASHLIGHT_MODE_TORCH);
+			flashlight_set_mode(flashlight_dev_ch2, FLASHLIGHT_MODE_OFF);
 			break;
 		case 0x03:
-			flashlight_set_torch_brightness(flashlight_dev_ht,0);
-			flashlight_set_torch_brightness(flashlight_dev_lt,2);
+			flashlight_set_torch_brightness(flashlight_dev_ch1,0);
+			flashlight_set_torch_brightness(flashlight_dev_ch2,2);
 			msleep(5);
-			flashlight_set_mode(flashlight_dev_lt, FLASHLIGHT_MODE_TORCH);
-			flashlight_set_mode(flashlight_dev_ht, FLASHLIGHT_MODE_OFF);
+			flashlight_set_mode(flashlight_dev_ch2, FLASHLIGHT_MODE_TORCH);
+			flashlight_set_mode(flashlight_dev_ch1, FLASHLIGHT_MODE_OFF);
 			break;
 		default:
-			flashlight_set_mode(flashlight_dev_ht, FLASHLIGHT_MODE_OFF);
-			flashlight_set_mode(flashlight_dev_lt, FLASHLIGHT_MODE_OFF);
+			flashlight_set_mode(flashlight_dev_ch1, FLASHLIGHT_MODE_OFF);
+			flashlight_set_mode(flashlight_dev_ch2, FLASHLIGHT_MODE_OFF);
 			break;
 	}
 	//seq_printf(m, "%x\n", rc);
