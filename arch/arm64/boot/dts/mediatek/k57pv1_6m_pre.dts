@@ -216,8 +216,17 @@
 		power_vol			= <0>;
 		/* is_batch_supported		= <0>; */
 	};
-	/*end*/
 	cust_mag@1 {
+		compatible			= "mediatek,qmcX983";
+		i2c_num				= <1>;
+		i2c_addr			= <0x2D 0 0 0>;
+		direction			= <6>;
+		power_id			= <0xffff>;
+		power_vol			= <0>;
+		/* is_batch_supported		= <0>; */
+	};
+	/*end*/
+	cust_mag@2 {
 		compatible			= "mediatek,akm09911";
 		i2c_num				= <1>;
 		/* i2c_addr			= <0x0D 0 0 0>; */

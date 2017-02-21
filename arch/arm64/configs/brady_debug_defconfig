@@ -264,6 +264,7 @@ CONFIG_CUSTOM_KERNEL_MAGNETOMETER=y
 #add by longcheer wangshuai for add new msensor start
 #CONFIG_MTK_AKM09911_NEW is not set
 CONFIG_MTK_MMC3630X=y
+CONFIG_MTK_QMCX983=y
 #add by longcheer wangshuai for add new msensor end
 CONFIG_MTK_BTIF=y
 #LCSH MOD BY TQQ FOR FINGER start
