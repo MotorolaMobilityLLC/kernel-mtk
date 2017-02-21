@@ -94,6 +94,7 @@ typedef struct imgsensor_info_struct {
 	imgsensor_mode_struct pre;		//preview scenario relative information
 	imgsensor_mode_struct cap;		//capture scenario relative information
 	imgsensor_mode_struct cap1;		//capture for PIP 24fps relative information, capture1 mode must use same framelength, linelength with Capture mode for shutter calculate
+	imgsensor_mode_struct cap2;		//capture scenario relative information for 24fps
 	imgsensor_mode_struct normal_video;//normal video  scenario relative information
 	imgsensor_mode_struct hs_video;	//high speed video scenario relative information
 	imgsensor_mode_struct slim_video;	//slim video for VT scenario relative information

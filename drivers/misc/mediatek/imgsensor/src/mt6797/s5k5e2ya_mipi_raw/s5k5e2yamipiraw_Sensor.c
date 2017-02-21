@@ -113,6 +113,17 @@ static imgsensor_info_struct imgsensor_info = {
 		.mipi_data_lp2hs_settle_dc = 23,
 		.max_framerate = 150,
 	},
+	.cap2 = {
+		.pclk = 140200000,
+		.linelength = 2950,
+		.framelength = 1980,
+		.startx = 0,
+		.starty = 0,
+		.grabwindow_width = 2560,
+		.grabwindow_height = 1920,
+		.mipi_data_lp2hs_settle_dc = 23,
+		.max_framerate = 240,
+	},
 	.normal_video = {
 		.pclk = 179200000,
 		.linelength = 2950,
@@ -484,6 +495,7 @@ bool S5K5E2YA_OTP_LSC_update(struct S5K5E2YA_MIPI_otp_struct *otp)
     start_read_otp(Page);
     LSC_Checksum=otp->LSC_Checksum;
     flag_LSC =otp->LSC_Flag ;
+    Temp_Checksum = flag_LSC;
    printk("S5K5E2YA_OTP  LSC_Checksum = 0x%X\n",LSC_Checksum);
     if((flag_LSC& 0xc0) == 0x40)
     {
@@ -2986,7 +2998,7 @@ static void preview_setting(void)
 	write_cmos_sensor(0x3459,0x33);
 	write_cmos_sensor(0x345A,0x04);
 	write_cmos_sensor(0x345B,0x44);
-	write_cmos_sensor(0x3400,0x01);
+	write_cmos_sensor(0x3400,0x00);
 
 	// streaming ON
 	write_cmos_sensor(0x0100,0x01);
@@ -3065,12 +3077,12 @@ static void capture_setting(kal_uint16 currefps)
 	write_cmos_sensor(0x3459,0x33);
 	write_cmos_sensor(0x345A,0x04);
 	write_cmos_sensor(0x345B,0x44);
-	write_cmos_sensor(0x3400,0x01);
+	write_cmos_sensor(0x3400,0x00);
 
 	// streaming ON
 	write_cmos_sensor(0x0100,0x01);
 	}
-	else{// Reset for operation     30fps for normal capture
+	else if( currefps==300 ) {// Reset for operation     30fps for normal capture
 	write_cmos_sensor(0x0100,0x00); //stream off
 	mdelay(40);
 
@@ -3138,7 +3150,81 @@ static void capture_setting(kal_uint16 currefps)
 	write_cmos_sensor(0x3459,0x33);
 	write_cmos_sensor(0x345A,0x04);
 	write_cmos_sensor(0x345B,0x44);
-	write_cmos_sensor(0x3400,0x01);
+	write_cmos_sensor(0x3400,0x00);
+
+	// streaming ON
+	write_cmos_sensor(0x0100,0x01);
+	}else {
+	write_cmos_sensor(0x0100,0x00); //stream off
+	mdelay(40);
+
+	// Clock Setting
+	write_cmos_sensor(0x0305,0x05); //PLLP (def:5)
+	write_cmos_sensor(0x0306,0x00);
+	write_cmos_sensor(0x0307,0x92); //PLLM (def:CCh 204d --> B3h 179d)
+	write_cmos_sensor(0x3C1F,0x00); //PLLS
+
+	//S3CC0 //dphy_band_ctrl
+
+	write_cmos_sensor(0x0820,0x02); // requested link bit rate mbps : (def:3D3h 979d --> 35Bh 859d)
+	write_cmos_sensor(0x0821,0xBC);
+	write_cmos_sensor(0x3C1C,0x57); //dbr_div
+
+	write_cmos_sensor(0x0114,0x01);  //Lane mode
+
+	// Size Setting
+	write_cmos_sensor(0x0340,0x07); // frame_length_lines : def. 1962d (7C2 --> 7A6 Mimnimum 22 lines)
+	write_cmos_sensor(0x0341,0xBC);
+	write_cmos_sensor(0x0342,0x0B); // line_length_pck : def. 2900d
+	write_cmos_sensor(0x0343,0x86);
+
+	write_cmos_sensor(0x0344,0x00); // x_addr_start
+	write_cmos_sensor(0x0345,0x08);
+	write_cmos_sensor(0x0346,0x00); // y_addr_start
+	write_cmos_sensor(0x0347,0x08);
+	write_cmos_sensor(0x0348,0x0A); // x_addr_end : def. 2575d
+	write_cmos_sensor(0x0349,0x07);
+	write_cmos_sensor(0x034A,0x07); // y_addr_end : def. 1936d
+	write_cmos_sensor(0x034B,0x87);
+	write_cmos_sensor(0x034C,0x0A); // x_output size : def. 2560d
+	write_cmos_sensor(0x034D,0x00);
+	write_cmos_sensor(0x034E,0x07); // y_output size : def. 1920d
+	write_cmos_sensor(0x034F,0x80);
+
+	//Digital Binning(default)
+	write_cmos_sensor(0x0900,0x00);	//0x0 Binning
+	write_cmos_sensor(0x0901,0x20);
+	write_cmos_sensor(0x0387,0x01);
+
+	write_cmos_sensor(0x0204,0x00);
+	write_cmos_sensor(0x0205,0x20);
+
+
+	//Integration time
+	write_cmos_sensor(0x0202,0x02);  // coarse integration
+	write_cmos_sensor(0x0203,0x00);
+	write_cmos_sensor(0x0200,0x04);  // fine integration (AA8h --> AC4h)
+	write_cmos_sensor(0x0201,0x98);
+
+	write_cmos_sensor(0x3407,0x00);
+	write_cmos_sensor(0x3408,0x00);
+	write_cmos_sensor(0x3409,0x00);
+	write_cmos_sensor(0x340A,0x00);
+	write_cmos_sensor(0x340B,0x00);
+	write_cmos_sensor(0x340C,0x00);
+	write_cmos_sensor(0x340D,0x00);
+	write_cmos_sensor(0x340E,0x00);
+	write_cmos_sensor(0x3401,0x50);
+	write_cmos_sensor(0x3402,0x3C);
+	write_cmos_sensor(0x3403,0x03);
+	write_cmos_sensor(0x3404,0x33);
+	write_cmos_sensor(0x3405,0x04);
+	write_cmos_sensor(0x3406,0x44);
+	write_cmos_sensor(0x3458,0x03);
+	write_cmos_sensor(0x3459,0x33);
+	write_cmos_sensor(0x345A,0x04);
+	write_cmos_sensor(0x345B,0x44);
+	write_cmos_sensor(0x3400,0x00);
 
 	// streaming ON
 	write_cmos_sensor(0x0100,0x01);
@@ -3219,7 +3305,7 @@ static void normal_video_setting(kal_uint16 currefps)
 	write_cmos_sensor(0x3459,0x33);
 	write_cmos_sensor(0x345A,0x04);
 	write_cmos_sensor(0x345B,0x44);
-	write_cmos_sensor(0x3400,0x01);
+	write_cmos_sensor(0x3400,0x00);
 
 	// streaming ON
 	write_cmos_sensor(0x0100,0x01);
@@ -3453,7 +3539,7 @@ static void slim_video_setting(void)
 	write_cmos_sensor(0x3459,0x33);
 	write_cmos_sensor(0x345A,0x04);
 	write_cmos_sensor(0x345B,0x44);
-	write_cmos_sensor(0x3400,0x01);
+	write_cmos_sensor(0x3400,0x00);
 
 	// streaming ON
 	write_cmos_sensor(0x0100,0x01);
@@ -3667,11 +3753,19 @@ static kal_uint32 capture(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 	LOG_INF("E\n");
 	spin_lock(&imgsensor_drv_lock);
 	imgsensor.sensor_mode = IMGSENSOR_MODE_CAPTURE;
+	imgsensor.current_fps = 240;
 	if (imgsensor.current_fps == imgsensor_info.cap1.max_framerate) {//PIP capture: 24fps for less than 13M, 20fps for 16M,15fps for 20M
 		imgsensor.pclk = imgsensor_info.cap1.pclk;
 		imgsensor.line_length = imgsensor_info.cap1.linelength;
 		imgsensor.frame_length = imgsensor_info.cap1.framelength;
 		imgsensor.min_frame_length = imgsensor_info.cap1.framelength;
+		imgsensor.autoflicker_en = KAL_FALSE;
+	} else if(imgsensor.current_fps == imgsensor_info.cap2.max_framerate){
+	LOG_INF("24 fps E\n");
+		imgsensor.pclk = imgsensor_info.cap2.pclk;
+		imgsensor.line_length = imgsensor_info.cap2.linelength;
+		imgsensor.frame_length = imgsensor_info.cap2.framelength;
+		imgsensor.min_frame_length = imgsensor_info.cap2.framelength;
 		imgsensor.autoflicker_en = KAL_FALSE;
 	} else {
 		if (imgsensor.current_fps != imgsensor_info.cap.max_framerate)
