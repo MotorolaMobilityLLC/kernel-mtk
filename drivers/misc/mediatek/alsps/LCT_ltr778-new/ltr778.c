@@ -211,7 +211,7 @@ static int get_stable_ps(unsigned int ps_data_c_1)
 	ps_d_low = ps_d_1 - 20;
 
 
-	for(i=0,i<=MAX_ELM_PS_1,i++)
+	for(i=0;i<=MAX_ELM_PS_1;i++)
 	{
 		if(record_ps_1[i]< ps_d_high)
 			j_ps++;
