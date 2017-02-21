@@ -93,6 +93,7 @@ struct navi_cmd_struct cmd_list;
 #define	KEYEVENT_UP_ACTION		KEY_PRESS_RELEASE
 #define	KEYEVENT_DOWN			KEY_FPS_XMINUS /*KEY_UP*/ //KEY_DOWN
 #define	KEYEVENT_DOWN_ACTION	KEY_PRESS_RELEASE
+//sunsiyuan@wind-mobi.com modify at 20170221 end
 
 
 /*
