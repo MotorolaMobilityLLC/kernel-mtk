@@ -85,7 +85,7 @@ static int dummy_pinctrl_init(struct platform_device *pdev)
 		ret = PTR_ERR(dummy_pinctrl);
 	}
 
-	/* TODO: Flashlight XXX pin initialization */
+	/* Flashlight XXX pin initialization */
 	dummy_xxx_high = pinctrl_lookup_state(dummy_pinctrl, DUMMY_PINCTRL_STATE_XXX_HIGH);
 	if (IS_ERR(dummy_xxx_high)) {
 		fl_err("Failed to init (%s)\n", DUMMY_PINCTRL_STATE_XXX_HIGH);
@@ -162,7 +162,7 @@ static int dummy_set_level(int level)
 }
 
 /* flashlight init */
-static int dummy_init(void)
+int dummy_init(void)
 {
 	int pin = 0, state = 0;
 
@@ -172,7 +172,7 @@ static int dummy_init(void)
 }
 
 /* flashlight uninit */
-static int dummy_uninit(void)
+int dummy_uninit(void)
 {
 	int pin = 0, state = 0;
 
@@ -184,8 +184,8 @@ static int dummy_uninit(void)
 /******************************************************************************
  * Timer and work queue
  *****************************************************************************/
-static struct hrtimer dummy_timer;
-static unsigned int dummy_timeout_ms;
+static struct hrtimer fl_timer;
+static unsigned int fl_timeout_ms;
 
 static void dummy_work_disable(struct work_struct *data)
 {
@@ -193,7 +193,7 @@ static void dummy_work_disable(struct work_struct *data)
 	dummy_disable();
 }
 
-static enum hrtimer_restart dummy_timer_func(struct hrtimer *timer)
+static enum hrtimer_restart fl_timer_func(struct hrtimer *timer)
 {
 	schedule_work(&dummy_work);
 	return HRTIMER_NORESTART;
@@ -205,44 +205,53 @@ static enum hrtimer_restart dummy_timer_func(struct hrtimer *timer)
  *****************************************************************************/
 static int dummy_ioctl(unsigned int cmd, unsigned long arg)
 {
-	struct flashlight_dev_arg *fl_arg;
-	int channel;
+	struct flashlight_user_arg *fl_arg;
+	int ct_index;
 	ktime_t ktime;
 
-	fl_arg = (struct flashlight_dev_arg *)arg;
-	channel = fl_arg->channel;
+	fl_arg = (struct flashlight_user_arg *)arg;
+	ct_index = fl_get_ct_index(fl_arg->ct_id);
+	if (flashlight_ct_index_verify(ct_index)) {
+		fl_err("Failed with error index\n");
+		return -EINVAL;
+	}
 
 	switch (cmd) {
 	case FLASH_IOC_SET_TIME_OUT_TIME_MS:
 		fl_dbg("FLASH_IOC_SET_TIME_OUT_TIME_MS(%d): %d\n",
-				channel, (int)fl_arg->arg);
-		dummy_timeout_ms = fl_arg->arg;
+				ct_index, (int)fl_arg->arg);
+		fl_timeout_ms = fl_arg->arg;
 		break;
 
 	case FLASH_IOC_SET_DUTY:
 		fl_dbg("FLASH_IOC_SET_DUTY(%d): %d\n",
-				channel, (int)fl_arg->arg);
+				ct_index, (int)fl_arg->arg);
 		dummy_set_level(fl_arg->arg);
+		break;
+
+	case FLASH_IOC_SET_STEP:
+		fl_dbg("FLASH_IOC_SET_STEP(%d): %d\n",
+				ct_index, (int)fl_arg->arg);
 		break;
 
 	case FLASH_IOC_SET_ONOFF:
 		fl_dbg("FLASH_IOC_SET_ONOFF(%d): %d\n",
-				channel, (int)fl_arg->arg);
+				ct_index, (int)fl_arg->arg);
 		if (fl_arg->arg == 1) {
-			if (dummy_timeout_ms) {
-				ktime = ktime_set(dummy_timeout_ms / 1000,
-						(dummy_timeout_ms % 1000) * 1000000);
-				hrtimer_start(&dummy_timer, ktime, HRTIMER_MODE_REL);
+			if (fl_timeout_ms) {
+				ktime = ktime_set(fl_timeout_ms / 1000,
+						(fl_timeout_ms % 1000) * 1000000);
+				hrtimer_start(&fl_timer, ktime, HRTIMER_MODE_REL);
 			}
 			dummy_enable();
 		} else {
 			dummy_disable();
-			hrtimer_cancel(&dummy_timer);
+			hrtimer_cancel(&fl_timer);
 		}
 		break;
 	default:
 		fl_info("No such command and arg(%d): (%d, %d)\n",
-				channel, _IOC_NR(cmd), (int)fl_arg->arg);
+				ct_index, _IOC_NR(cmd), (int)fl_arg->arg);
 		return -ENOTTY;
 	}
 
@@ -271,7 +280,7 @@ static int dummy_release(void *pArg)
 	return 0;
 }
 
-static int dummy_set_driver(void)
+static int dummy_set_driver(int scenario)
 {
 	/* init chip and set usage count */
 	mutex_lock(&dummy_mutex);
@@ -287,7 +296,7 @@ static int dummy_set_driver(void)
 
 static ssize_t dummy_strobe_store(struct flashlight_arg arg)
 {
-	dummy_set_driver();
+	dummy_set_driver(FLASHLIGHT_SCENARIO_CAMERA);
 	dummy_set_level(arg.level);
 	dummy_enable();
 	msleep(arg.dur);
@@ -335,9 +344,9 @@ static int dummy_probe(struct platform_device *dev)
 	INIT_WORK(&dummy_work, dummy_work_disable);
 
 	/* init timer */
-	hrtimer_init(&dummy_timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
-	dummy_timer.function = dummy_timer_func;
-	dummy_timeout_ms = 100;
+	hrtimer_init(&fl_timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
+	fl_timer.function = fl_timer_func;
+	fl_timeout_ms = 100;
 
 	/* init chip hw */
 	dummy_chip_init();
