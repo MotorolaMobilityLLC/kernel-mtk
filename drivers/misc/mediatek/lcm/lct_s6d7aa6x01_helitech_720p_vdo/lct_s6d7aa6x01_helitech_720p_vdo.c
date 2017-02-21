@@ -217,7 +217,7 @@ static struct LCM_setting_table lcm_initialization_setting[] = {
 	    {0x29, 0, {}},
         {REGFLAG_DELAY, 20, {}},
 		//{0xC9, 3, {0x13,0x00,0x14}},//pwm 20k
-        {0x51, 1, {0xFF}},
+        {0x51, 2, {0xFF,0x0f}},
         {0x53, 1, {0x24}},
         {0x55, 1, {0x01}},
         {REGFLAG_DELAY, 5, {}},
@@ -262,7 +262,7 @@ static struct LCM_setting_table lcm_deep_sleep_mode_in_setting[] = {
 };
 
 static struct LCM_setting_table lcm_backlight_level_setting[] = {
-	{ 0x51, 1, {0xFF} },
+	{ 0x51, 2, {0xff,0x0f} },
 	{ REGFLAG_END_OF_TABLE, 0x00, {} }
 };
 
@@ -473,16 +473,22 @@ static unsigned int last_level=0;
 static unsigned int hbm_enable=0;
 static void lcm_setbacklight(unsigned int level)
 {
+	unsigned int high_level;
+	unsigned int low_level;
 	#if(LCT_LCM_MAPP_BACKLIGHT)
-			static unsigned int mapped_level = 0;
-			mapped_level = (7835*level + 2165)/(10000);
+	static int mapped_level = 0;
+	mapped_level = (7835*level + 2165)*16/(10000);
 	#endif
 	if(hbm_enable ==0)
 	{				
 		set_gpio_led_en(1);
 		MDELAY(5);
 		/* Refresh value of backlight level. */
-		lcm_backlight_level_setting[0].para_list[0] = mapped_level;
+		high_level = (0xff | mapped_level);
+		low_level = mapped_level>>8;
+		lcm_backlight_level_setting[0].para_list[0] = high_level;
+		lcm_backlight_level_setting[0].para_list[1] = low_level;
+		//lcm_backlight_level_setting[0].para_list[0] = mapped_level;
 		push_table(lcm_backlight_level_setting,
 			   sizeof(lcm_backlight_level_setting) / sizeof(struct LCM_setting_table), 1);
 		
@@ -492,7 +498,11 @@ static void lcm_setbacklight(unsigned int level)
 	{    
 		set_gpio_led_en(1);
 		MDELAY(5);
-		lcm_backlight_level_setting[0].para_list[0] = 255;
+		//lcm_backlight_level_setting[0].para_list[0] = 255;
+		high_level = (0xff | 3200);
+		low_level = 3200 >> 8;
+		lcm_backlight_level_setting[0].para_list[0] = high_level;
+		lcm_backlight_level_setting[0].para_list[1] = low_level;
 	push_table(lcm_backlight_level_setting,
 		   sizeof(lcm_backlight_level_setting) / sizeof(struct LCM_setting_table), 1);
 		printk("lcm_setbacklight hbm_enable1\n");
@@ -556,15 +566,21 @@ static unsigned int lcm_ata_check(unsigned char *buffer)
 
 static void lcm_setbacklight_hbm(unsigned int level)
 {
+	unsigned int high_level,low_level;
 	if(level==0)
 	{
 		level = last_level;
 		hbm_enable = 0;
 	}
 	else
+	{
 		hbm_enable = 1;
-	
-	lcm_backlight_level_setting[0].para_list[0] = level;
+		level = level*16;
+	}
+	high_level = (0xff | level);
+	low_level = level >> 8;
+	lcm_backlight_level_setting[0].para_list[0] = high_level;
+	lcm_backlight_level_setting[0].para_list[1] = low_level;
 	push_table(lcm_backlight_level_setting,
 		   sizeof(lcm_backlight_level_setting) / sizeof(struct LCM_setting_table), 1);
 	printk("yufangfang setbacklight lcm level hbm = %d\n",level);
