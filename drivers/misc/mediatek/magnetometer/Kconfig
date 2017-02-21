@@ -18,5 +18,6 @@ config CUSTOM_KERNEL_MAGNETOMETER
 source "drivers/misc/mediatek/magnetometer/akm09911-new/Kconfig"
 #add by wangshuai for add new driver
 source "drivers/misc/mediatek/magnetometer/mmc3630x/Kconfig"
+source "drivers/misc/mediatek/magnetometer/qmcX983/Kconfig"
 #end
 source "drivers/misc/mediatek/magnetometer/maghub/Kconfig"
