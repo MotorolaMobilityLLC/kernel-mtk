@@ -351,7 +351,7 @@ int fts_ctpm_fw_upgrade_ReadVendorID(struct i2c_client *client,
 		msleep(5);
 		reg_val[0] = reg_val[1] = 0x00;
 		i_ret = fts_i2c_read(client, auc_i2c_write_buf, 0, reg_val, 2);
-		if (0 == reg_val[0]) {
+		if (0 > i_ret) {
 			*ucPVendorID = 0;
 			FTS_DEBUG
 			    ("In upgrade Vendor ID Mismatch, REG1 = 0x%x, REG2 = 0x%x, Definition:0x%x, i_ret=%d!!",
@@ -946,8 +946,11 @@ u8 fts_ctpm_check_fw_status(struct i2c_client *client)
 		if (inRomBoot == FTS_RUN_IN_ROM) {
 			fw_status = FTS_RUN_IN_ROM;
 			FTS_INFO("[UPGRADE]: run in rom!!");
+		} else if (inRomBoot == FTS_RUN_IN_BOOTLOADER) {
+			fw_status = FTS_RUN_IN_BOOTLOADER;
+			FTS_INFO("[UPGRADE]: run in bootloader!!");
 		} else {
-			FTS_INFO("[UPGRADE]: not run in rom!!");
+			FTS_INFO("[UPGRADE]: not run in rom or bootloader !!");
 		}
 
 		FTS_INFO("[UPGRADE]: APP invalid!!");
