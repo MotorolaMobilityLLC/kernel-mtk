@@ -373,8 +373,8 @@ static void lcm_resume(void)
 static unsigned int lcm_compare_id(void)
 {
   	int   array[4];
-	char  buffer[3];
-	char  id0,id1,id=0;
+	char  buffer[10];
+	char  id0,id1,id2,id3,id4,id5=0;
 	
 	SET_RESET_PIN(1);
 	SET_RESET_PIN(0);
@@ -383,32 +383,27 @@ static unsigned int lcm_compare_id(void)
 	SET_RESET_PIN(1);
 	MDELAY(20);
 	
-	array[0] = 0x00043902; 						 
-		array[1] = 0x018198ff; 				
-	    dsi_set_cmdq(array, 2, 1); 
+	//array[0] = 0x04B01500;
+	//dsi_set_cmdq(array, 1, 1);
 
-		array[0] = 0x00013700;// read id return two byte,version and id
-		dsi_set_cmdq(array, 1, 1);
-		read_reg_v2(0x00, buffer, 1);
-		id0  =  buffer[0];
+	array[0] = 0x00063700;
+	dsi_set_cmdq(array, 1, 1);
+	read_reg_v2(0xA1, buffer, 6);
+	id0  =  buffer[0];
+	id1  =  buffer[1];
+	id2  =  buffer[2];
+	id3  =  buffer[3];
+	id4  =  buffer[4];
+	id5  =  buffer[5];
 
-		array[0] = 0x00013700;// read id return two byte,version and id
-		dsi_set_cmdq(array, 1, 1);
-		read_reg_v2(0x01, buffer, 1);
-		id1  =  buffer[0]; 
+	printk("R63350 %s, id4 = 0x%08x , id5 = 0x%08x\n", __func__, id4, id5);
 
-	
-		    id = (id0 << 8) | id1;
-		printk("[Simon]ili9881-c %s, id0 = 0x%08x , id1 = 0x%08x, id = 0x%08x\n", __func__, id0, id1, id);
-
-        if ((id0 == 0x98)&&(id1 == 0x81)) //cpt    
-	   		return 1;
-        else
-           return 0;
-
+	if ((id4 == 0x33)&&(id5 == 0x50))
+		return 1;
+	else
+        return 0;
 
 }
-
 
 static unsigned int lcm_ata_check(unsigned char *buffer)
 {
