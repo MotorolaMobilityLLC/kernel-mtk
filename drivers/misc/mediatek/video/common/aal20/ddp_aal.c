@@ -110,8 +110,10 @@ static int disp_aal_get_cust_led(void)
 		else
 			AAL_ERR("led dts can not get led mode data.\n");
 	/**** add by wangjiaxing 20170218 start ****/
+#ifndef CONFIG_L3510_MAINBOARD
 		if(lct_read_boardid()>=10)
 			g_led_mode = 4;
+#endif
 	/**** add by wangjiaxing 20170218 end ****/
 		ret = of_property_read_u32_array(led_node, "pwm_config", pwm_config,
 						       ARRAY_SIZE(pwm_config));

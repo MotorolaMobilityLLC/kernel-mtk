@@ -121,8 +121,10 @@ int disp_pwm_get_cust_led(unsigned int *clocksource, unsigned int *clockdiv)
 				PWM_ERR("led dts can not get led mode data.\n");
 			}
 		/**** add by wangjiaxing 20170218 start ****/
+#ifndef CONFIG_L3510_MAINBOARD
 		       if(lct_read_boardid() >= 10)
 			   		g_pwm_led_mode = 4;
+#endif
 		/**** add by wangjiaxing 20170218 end ****/
 		}
 	}

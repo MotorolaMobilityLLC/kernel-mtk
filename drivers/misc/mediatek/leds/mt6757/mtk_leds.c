@@ -238,8 +238,11 @@ struct cust_mt65xx_led *get_cust_led_dtsi(void)
 				if (!ret) {
 					pled_dtsi[i].mode = mode;
 					/**** add by wangjiaxing 20170218 start ****/
+#ifndef CONFIG_L3510_MAINBOARD
+
 					  if(lct_read_boardid() >= 10)
 			      		 pled_dtsi[i].mode = 4;
+#endif
 			             //printk("kls 2 board_id = %d\n",ret);
 					/**** add by wangjiaxing 20170218 end ****/
 					LEDS_DEBUG
