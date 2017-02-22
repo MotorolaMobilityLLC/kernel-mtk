@@ -90,6 +90,7 @@ static volatile int g_aal_backlight_notified = 1023;
 static volatile int g_aal_initialed;
 static atomic_t g_aal_allowPartial = ATOMIC_INIT(0);
 static volatile int g_led_mode = MT65XX_LED_MODE_NONE;
+extern int lct_read_boardid(void);
 
 static int disp_aal_get_cust_led(void)
 {
@@ -108,7 +109,10 @@ static int disp_aal_get_cust_led(void)
 			g_led_mode = led_mode;
 		else
 			AAL_ERR("led dts can not get led mode data.\n");
-
+	/**** add by wangjiaxing 20170218 start ****/
+		if(lct_read_boardid()>=10)
+			g_led_mode = 4;
+	/**** add by wangjiaxing 20170218 end ****/
 		ret = of_property_read_u32_array(led_node, "pwm_config", pwm_config,
 						       ARRAY_SIZE(pwm_config));
 	}

@@ -231,6 +231,28 @@ void dump_mmc(void)
 						}
 }
 #endif
+
+/**** add by wangjiaxing 20170219 start ****/
+int lct_read_boardid(void)
+{
+    char *p_boardid = strstr(saved_command_line, "BoardID=");
+
+    int boardid[2];
+
+    if (p_boardid == NULL)
+    {
+      return -1;
+
+    }
+    boardid[0] = *(p_boardid + 8)-'0';
+
+    boardid[1] = *(p_boardid + 9)-'0';
+
+    return (boardid[0]*10+boardid[1]);
+
+}
+/**** add by wangjiaxing 20170219 end ****/
+
 //LCSH ADD by dingyin for boardid start
 static int cf_show(struct seq_file *m, void *v)
 {
