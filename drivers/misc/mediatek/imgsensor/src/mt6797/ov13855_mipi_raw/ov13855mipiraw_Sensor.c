@@ -64,36 +64,36 @@ static imgsensor_info_struct imgsensor_info = {
 	.pre = {
 		.pclk = 108250560,//vts*hts*fps
 		.linelength = 2244,
-		.framelength = 1608,
+		.framelength = 1608,//1608,
 		.startx = 0,
 		.starty = 0,
 		.grabwindow_width = 2112,
 		.grabwindow_height = 1568,
 		.mipi_data_lp2hs_settle_dc = 90,
-		.max_framerate = 300,
+		.max_framerate = 300,//300,
 	},
 	.cap = {
-		.pclk = 108183240,
+		.pclk = 108183240,//,
 		.linelength = 1122,
-		.framelength = 3214,
+		.framelength = 3214,//3214,
 		.startx = 0,
 		.starty = 0,
 		.grabwindow_width = 4224,
 		.grabwindow_height = 3136,
 		.mipi_data_lp2hs_settle_dc = 90,
-		.max_framerate = 300,
+		.max_framerate = 300,//300,
 	},
 	/*same as capture*/
 	.cap1 = {
-		.pclk = 108183240,//vts*hts*fps
+		.pclk = 107981280,//108183240,
 		.linelength = 1122,
-		.framelength = 3214,
+		.framelength = 4010,//3214,
 		.startx = 0,
 		.starty = 0,
 		.grabwindow_width = 4224,
 		.grabwindow_height = 3136,
 		.mipi_data_lp2hs_settle_dc = 90,
-		.max_framerate = 300,
+		.max_framerate = 240,//300,
 	},
 	.normal_video = {
 		.pclk = 108183240,
@@ -807,7 +807,7 @@ static void sensor_init(void)
 
 	ov13855_MIPI_table_write_cmos_sensor(addr_data_pair_init, sizeof(addr_data_pair_init)/sizeof(kal_uint16));
 #else
-	int i = 0 ;
+//	int i = 0 ;
 	LOG_INF("sensor_init MULTI_WRITE");
 	write_cmos_sensor(0x0103, 0x01);//SW Reset, need delay 
 	mdelay(10);
@@ -974,7 +974,7 @@ static void sensor_init(void)
 	write_cmos_sensor(0x5408, 0x4a);
 	write_cmos_sensor(0x0100, 0x00);
 
-#if 1 //for debug
+#if 0 //for debug
 //	for(i=0;i<(sizeof(addr_data_pair_init)/sizeof(kal_uint16));i+=2){		
 	for(i=0; i<20; i+=2){
 		LOG_INF("read_cmos_sensor(0x%x)     0x%x\n",addr_data_pair_init[i],read_cmos_sensor(addr_data_pair_init[i]));
@@ -1029,9 +1029,9 @@ static void preview_setting(void)
 	write_cmos_sensor(0x380b, 0x20);//o_y=0x620=1568
 
 	write_cmos_sensor(0x380c, 0x08);
-	write_cmos_sensor(0x380d, 0xC4);//vts=0x8c4=2244
+	write_cmos_sensor(0x380d, 0xC4);//hts=0x8c4=2244
 
-	write_cmos_sensor(0x380e, 0x06);//hts=0x648=1608
+	write_cmos_sensor(0x380e, 0x06);//hts=0x648=1608 
 	write_cmos_sensor(0x380f, 0x48);
 
 	write_cmos_sensor(0x3811, 0x08);//x_offset=8
@@ -1067,6 +1067,8 @@ static void capture_setting(kal_uint16 currefps)
 	write_cmos_sensor(0x0100, 0x01);
 #else
 	LOG_INF("capture_setting 4224x3136\n");
+	if ( currefps==300 ) {
+
 	write_cmos_sensor(0x0100,0x00);
 	mdelay(1);
 
@@ -1101,8 +1103,8 @@ static void capture_setting(kal_uint16 currefps)
 	write_cmos_sensor(0x380c, 0x04);
 	write_cmos_sensor(0x380d, 0x62);//hts=1122
 
-	write_cmos_sensor(0x380e, 0x0C);
-	write_cmos_sensor(0x380f, 0x8E);//vts=3214
+	write_cmos_sensor(0x380e, 0x0c);
+	write_cmos_sensor(0x380f, 0x8e);//vts=4010 
 
 	write_cmos_sensor(0x3811, 0x10);//x_offset=16
 	write_cmos_sensor(0x3813, 0x08);//y_offset=8
@@ -1119,6 +1121,62 @@ static void capture_setting(kal_uint16 currefps)
 	write_cmos_sensor(0x4837, 0x0e);
 	write_cmos_sensor(0x4902, 0x01);
 	write_cmos_sensor(0x0100, 0x01);
+		}
+	else if ( currefps==240 ) {
+
+	write_cmos_sensor(0x0100,0x00);
+	mdelay(1);
+
+	write_cmos_sensor(0x0303, 0x00);
+	write_cmos_sensor(0x3501, 0x80);
+	write_cmos_sensor(0x3662, 0x12);
+	write_cmos_sensor(0x3714, 0x24);
+	write_cmos_sensor(0x3737, 0x04);
+	write_cmos_sensor(0x3739, 0x12);
+	write_cmos_sensor(0x37c2, 0x04);
+	write_cmos_sensor(0x37d9, 0x0c);
+	write_cmos_sensor(0x37e3, 0x04);
+	write_cmos_sensor(0x37e4, 0x26);
+	write_cmos_sensor(0x37e6, 0x04);
+
+	write_cmos_sensor(0x3801, 0x00);//s_x =0
+	
+	write_cmos_sensor(0x3802, 0x00);
+	write_cmos_sensor(0x3803, 0x08);//s_y = 8
+
+	write_cmos_sensor(0x3805, 0x9f);//e_x = 4255;s_y-s_x=4255;4255+1=4256-2*x_offset=4224
+	
+	write_cmos_sensor(0x3806, 0x0c);
+	write_cmos_sensor(0x3807, 0x57);//e_y = 3159;e_y-e_x=3151;3151+1=3152-2*y_offset=3136
+
+	write_cmos_sensor(0x3808, 0x10);
+	write_cmos_sensor(0x3809, 0x80);//o_x=4224
+
+	write_cmos_sensor(0x380a, 0x0c);
+	write_cmos_sensor(0x380b, 0x40);//o_y=3136
+	
+	write_cmos_sensor(0x380c, 0x04);
+	write_cmos_sensor(0x380d, 0x62);//hts=1122
+
+	write_cmos_sensor(0x380e, 0x0f);
+	write_cmos_sensor(0x380f, 0xaa);//vts=4010 Yajun For 24fps //vts=3214
+
+	write_cmos_sensor(0x3811, 0x10);//x_offset=16
+	write_cmos_sensor(0x3813, 0x08);//y_offset=8
+
+	write_cmos_sensor(0x3814, 0x01);
+	write_cmos_sensor(0x3816, 0x01);
+	write_cmos_sensor(0x3820, 0xa8);
+	write_cmos_sensor(0x3826, 0x11);
+	write_cmos_sensor(0x3827, 0x1c);
+	write_cmos_sensor(0x3829, 0x03);
+	write_cmos_sensor(0x4009, 0x0f);
+	write_cmos_sensor(0x4050, 0x04);
+	write_cmos_sensor(0x4051, 0x0b);
+	write_cmos_sensor(0x4837, 0x0e);
+	write_cmos_sensor(0x4902, 0x01);
+	write_cmos_sensor(0x0100, 0x01);
+		}
 #endif
 }
 
@@ -1423,10 +1481,11 @@ static kal_uint32 preview(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 static kal_uint32 capture(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
                           MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
 {
-    LOG_INF("shen E\n");
+    LOG_INF("E\n");
     spin_lock(&imgsensor_drv_lock);
     imgsensor.sensor_mode = IMGSENSOR_MODE_CAPTURE;
     if (imgsensor.current_fps == imgsensor_info.cap1.max_framerate) {//PIP capture: 24fps for less than 13M, 20fps for 16M,15fps for 20M
+        LOG_INF("24 fps enter E\n");
         imgsensor.pclk = imgsensor_info.cap1.pclk;
         imgsensor.line_length = imgsensor_info.cap1.linelength;
         imgsensor.frame_length = imgsensor_info.cap1.framelength;
