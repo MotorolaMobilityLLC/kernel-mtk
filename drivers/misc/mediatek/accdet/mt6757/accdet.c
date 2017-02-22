@@ -1284,9 +1284,11 @@ static inline void accdet_init(void)
 	}
 
 #if defined(CONFIG_MTK_PMIC_CHIP_MT6355)/* support mt6355, default open HW mode */
+	/* LCSH MOD Change to SW path for fix the bug Headset can't recognition @duanlongfei 20170222 */
 	/* HW path */
-	pmic_pwrap_write(ACCDET_HW_MODE_DFF, 0x8000|ACCDET_HWMODE_SEL|ACCDET_EINT_DEB_OUT_DFF);
-	/* pmic_pwrap_write(ACCDET_HW_MODE_DFF, 0x8000); *//* SW path, */
+	//pmic_pwrap_write(ACCDET_HW_MODE_DFF, 0x8000|ACCDET_HWMODE_SEL|ACCDET_EINT_DEB_OUT_DFF);
+	/* SW path, */
+	pmic_pwrap_write(ACCDET_HW_MODE_DFF, 0x8000);
 #endif
 
 #if defined CONFIG_ACCDET_EINT
