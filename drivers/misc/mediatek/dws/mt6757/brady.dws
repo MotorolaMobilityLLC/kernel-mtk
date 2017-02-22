@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!--dct_version="2.5" buid_sn="160817" dws_modification_time="10.03.2016.16:12:34"-->
+<!--dct_version="2.2" buid_sn="160113" dws_modification_time="02.22.2017.11:10:42"-->
 <dct_cfg>
     <general chip="MT6757-P25">
         <proj>KIBOPLUS_DEMO</proj>
@@ -33,18 +33,6 @@
                 <varName>HW_CONTROL</varName>
                 <current>3.0</current>
             </pmic_clk4>
-            <rf_clk1>
-                <varName>HW_CONTROL</varName>
-                <current>1.4</current>
-            </rf_clk1>
-            <rf_clk3>
-                <varName>SW_CONTROL</varName>
-                <current>1.4</current>
-            </rf_clk3>
-            <rf_clk4>
-                <varName>SW_CONTROL</varName>
-                <current>1.4</current>
-            </rf_clk4>
         </module>
         <module name="eint">
             <count>153</count>
@@ -104,6 +92,13 @@
                 <sensitive_level>Level</sensitive_level>
                 <debounce_en>Enable</debounce_en>
             </eint24>
+            <eint42>
+                <varName>OTG_IDDIG</varName>
+                <debounce_time>0</debounce_time>
+                <polarity>Low</polarity>
+                <sensitive_level>Level</sensitive_level>
+                <debounce_en>Disable</debounce_en>
+            </eint42>
             <eint44>
                 <varName>DSI_TE</varName>
                 <debounce_time>0</debounce_time>
@@ -711,30 +706,31 @@
                 <ies>true</ies>
             </gpio41>
             <gpio42>
-                <eint_mode>false</eint_mode>
+                <eint_mode>true</eint_mode>
                 <def_mode>0</def_mode>
-                <mode_arr>11010000</mode_arr>
-                <inpull_en>false</inpull_en>
-                <inpull_selhigh>false</inpull_selhigh>
-                <def_dir>OUT</def_dir>
-                <in>false</in>
-                <out>true</out>
+                <mode_arr>20000000</mode_arr>
+                <inpull_en>true</inpull_en>
+                <inpull_selhigh>true</inpull_selhigh>
+                <def_dir>IN</def_dir>
+                <in>true</in>
+                <out>false</out>
                 <out_high>false</out_high>
+                <varName0>GPIO_OTG_IDDIG_EINT_PIN</varName0>
                 <varName1>GPIO_RT5081_VCONN_EN_PIN</varName1>
                 <smt>false</smt>
                 <ies>true</ies>
             </gpio42>
             <gpio43>
                 <eint_mode>false</eint_mode>
-                <def_mode>1</def_mode>
-                <mode_arr>11010000</mode_arr>
-                <inpull_en>true</inpull_en>
+                <def_mode>0</def_mode>
+                <mode_arr>11101111</mode_arr>
+                <inpull_en>false</inpull_en>
                 <inpull_selhigh>false</inpull_selhigh>
-                <def_dir>IN</def_dir>
+                <def_dir>OUT</def_dir>
                 <in>true</in>
                 <out>true</out>
-                <out_high>false</out_high>
-                <varName0>GPIO_UART_URTS0_PIN</varName0>
+                <out_high>true</out_high>
+                <varName0>GPIO_OTG_DRVVBUS_PIN</varName0>
                 <smt>false</smt>
                 <ies>true</ies>
             </gpio43>
@@ -1109,7 +1105,7 @@
                 <smt>false</smt>
                 <ies>true</ies>
             </gpio81>
-	    <gpio82>
+            <gpio82>
                 <eint_mode>false</eint_mode>
                 <def_mode>1</def_mode>
                 <mode_arr>11000000</mode_arr>
@@ -2222,7 +2218,7 @@
                 <channel>I2C_CHANNEL_1</channel>
                 <address>0x34</address>
             </device6>
-              <device7>
+            <device7>
                 <varName>HIMAX_TOUCH</varName>
                 <channel>I2C_CHANNEL_0</channel>
                 <address>0x48</address>
@@ -2232,7 +2228,7 @@
                 <channel>I2C_CHANNEL_1</channel>
                 <address>0x50</address>
             </device8>
-	    <device9>
+            <device9>
                 <varName>GYRO</varName>
                 <channel>I2C_CHANNEL_1</channel>
                 <address>0x69</address>
@@ -2384,7 +2380,6 @@
 				NC NC NC NC NC NC NC NC NC
 				NC NC NC NC NC NC NC NC NC
 				NC NC NC NC NC NC NC NC NC</keyMatrix>
-            <keyMatrix_ext></keyMatrix_ext>
             <downloadKey>VOLUMEUP VOLUMEDOWN POWER</downloadKey>
             <modeKey>NC VOLUMEUP VOLUMEDOWN</modeKey>
             <pwrKeyEint_gpioNum>0</pwrKeyEint_gpioNum>
