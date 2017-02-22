@@ -72,6 +72,9 @@
 #define CMD_OKC_SET_PMK		"SET_PMK"
 #define CMD_OKC_ENABLE		"OKC_ENABLE"
 
+#define CMD_ADD_TS          "addts"
+#define CMD_DELETE_TS		"delts"
+
 /* miracast related definition */
 #define MIRACAST_MODE_OFF	0
 #define MIRACAST_MODE_SOURCE	1
@@ -493,6 +496,9 @@ int priv_support_ioctl(IN struct net_device *prNetDev, IN OUT struct ifreq *prIf
 	/* Prepare the call */
 	rIwReqInfo.cmd = (__u16) i4Cmd;
 	rIwReqInfo.flags = 0;
+
+	if ((i4Cmd == IOCTL_SET_STRUCT_FOR_EM) && !capable(CAP_NET_ADMIN))
+		return -EPERM;
 
 	switch (i4Cmd) {
 	case IOCTL_SET_INT:
@@ -1373,63 +1379,165 @@ _priv_set_ints(IN struct net_device *prNetDev,
 
 	switch (u4SubCmd) {
 	case PRIV_CMD_SET_TX_POWER:
-		{
-			if (u4CmdLen > 4)
-				return -EINVAL;
-			if (copy_from_user(setting, prIwReqData->data.pointer, u4CmdLen))
-				return -EFAULT;
-			prTxpwr = &prGlueInfo->rTxPwr;
-			if (setting[0] == 0 && prIwReqData->data.length == 4 /* argc num */) {
-				/* 0 (All networks), 1 (legacy STA), 2 (Hotspot AP), 3 (P2P), 4 (BT over Wi-Fi) */
-				if (setting[1] == 1 || setting[1] == 0) {
-					if (setting[2] == 0 || setting[2] == 1)
-						prTxpwr->c2GLegacyStaPwrOffset = setting[3];
-					if (setting[2] == 0 || setting[2] == 2)
-						prTxpwr->c5GLegacyStaPwrOffset = setting[3];
+#if !(CFG_SUPPORT_TX_BACKOFF)
+	{
+		if (u4CmdLen > 4)
+			return -EINVAL;
+		if (copy_from_user(setting, prIwReqData->data.pointer, u4CmdLen))
+			return -EFAULT;
+		prTxpwr = &prGlueInfo->rTxPwr;
+		if (setting[0] == 0 && prIwReqData->data.length == 4 /* argc num */) {
+			/* 0 (All networks), 1 (legacy STA), 2 (Hotspot AP), 3 (P2P), 4 (BT over Wi-Fi) */
+			if (setting[1] == 1 || setting[1] == 0) {
+				if (setting[2] == 0 || setting[2] == 1)
+					prTxpwr->c2GLegacyStaPwrOffset = setting[3];
+				if (setting[2] == 0 || setting[2] == 2)
+					prTxpwr->c5GLegacyStaPwrOffset = setting[3];
+			}
+			if (setting[1] == 2 || setting[1] == 0) {
+				if (setting[2] == 0 || setting[2] == 1)
+					prTxpwr->c2GHotspotPwrOffset = setting[3];
+				if (setting[2] == 0 || setting[2] == 2)
+					prTxpwr->c5GHotspotPwrOffset = setting[3];
+			}
+			if (setting[1] == 3 || setting[1] == 0) {
+				if (setting[2] == 0 || setting[2] == 1)
+					prTxpwr->c2GP2pPwrOffset = setting[3];
+				if (setting[2] == 0 || setting[2] == 2)
+					prTxpwr->c5GP2pPwrOffset = setting[3];
+			}
+			if (setting[1] == 4 || setting[1] == 0) {
+				if (setting[2] == 0 || setting[2] == 1)
+					prTxpwr->c2GBowPwrOffset = setting[3];
+				if (setting[2] == 0 || setting[2] == 2)
+					prTxpwr->c5GBowPwrOffset = setting[3];
+			}
+		} else if (setting[0] == 1 && prIwReqData->data.length == 2) {
+			prTxpwr->ucConcurrencePolicy = setting[1];
+		} else if (setting[0] == 2 && prIwReqData->data.length == 3) {
+			if (setting[1] == 0) {
+				for (i = 0; i < 14; i++)
+					prTxpwr->acTxPwrLimit2G[i] = setting[2];
+			} else if (setting[1] <= 14)
+				prTxpwr->acTxPwrLimit2G[setting[1] - 1] = setting[2];
+		} else if (setting[0] == 3 && prIwReqData->data.length == 3) {
+			if (setting[1] == 0) {
+				for (i = 0; i < 4; i++)
+					prTxpwr->acTxPwrLimit5G[i] = setting[2];
+			} else if (setting[1] <= 4)
+				prTxpwr->acTxPwrLimit5G[setting[1] - 1] = setting[2];
+		} else if (setting[0] == 4 && prIwReqData->data.length == 2) {
+			if (setting[1] == 0)
+				wlanDefTxPowerCfg(prGlueInfo->prAdapter);
+			rStatus = kalIoctl(prGlueInfo,
+					   wlanoidSetTxPower,
+					   prTxpwr,
+					   sizeof(SET_TXPWR_CTRL_T), TRUE, FALSE, FALSE, FALSE, &u4BufLen);
+		} else
+			return -EFAULT;
+	}
+#else
+	{
+		INT_32 *setting = prIwReqData->data.pointer;
+		UINT_16 i, j;
+
+#if 0
+		DBGLOG(REQ, INFO, "Tx power num = %d\n", prIwReqData->data.length);
+
+		DBGLOG(REQ, INFO, "Tx power setting = %d %d %d %d\n",
+			setting[0], setting[1], setting[2], setting[3]);
+#endif
+		prTxpwr = &prGlueInfo->rTxPwr;
+		if (setting[0] == 0 && prIwReqData->data.length == 4 /* argc num */) {
+			/* 0 (All networks), 1 (legacy STA), 2 (Hotspot AP), 3 (P2P), 4 (BT over Wi-Fi) */
+			if (setting[1] == 1 || setting[1] == 0) {
+				if (setting[2] == 0 || setting[2] == 1)
+					prTxpwr->c2GLegacyStaPwrOffset = setting[3];
+				if (setting[2] == 0 || setting[2] == 2)
+					prTxpwr->c5GLegacyStaPwrOffset = setting[3];
+			}
+			if (setting[1] == 2 || setting[1] == 0) {
+				if (setting[2] == 0 || setting[2] == 1)
+					prTxpwr->c2GHotspotPwrOffset = setting[3];
+				if (setting[2] == 0 || setting[2] == 2)
+					prTxpwr->c5GHotspotPwrOffset = setting[3];
+			}
+			if (setting[1] == 3 || setting[1] == 0) {
+				if (setting[2] == 0 || setting[2] == 1)
+					prTxpwr->c2GP2pPwrOffset = setting[3];
+				if (setting[2] == 0 || setting[2] == 2)
+					prTxpwr->c5GP2pPwrOffset = setting[3];
+			}
+			if (setting[1] == 4 || setting[1] == 0) {
+				if (setting[2] == 0 || setting[2] == 1)
+					prTxpwr->c2GBowPwrOffset = setting[3];
+				if (setting[2] == 0 || setting[2] == 2)
+					prTxpwr->c5GBowPwrOffset = setting[3];
+			}
+		} else if (setting[0] == 1 && prIwReqData->data.length == 2) {
+			prTxpwr->ucConcurrencePolicy = setting[1];
+		} else if (setting[0] == 2 && prIwReqData->data.length == 3) {
+			if (setting[1] == 0) {
+				for (i = 0; i < 14; i++)
+					prTxpwr->acTxPwrLimit2G[i] = setting[2];
+			} else if (setting[1] <= 14)
+				prTxpwr->acTxPwrLimit2G[setting[1] - 1] = setting[2];
+		} else if (setting[0] == 3 && prIwReqData->data.length == 3) {
+			if (setting[1] == 0) {
+				for (i = 0; i < 4; i++)
+					prTxpwr->acTxPwrLimit5G[i] = setting[2];
+			} else if (setting[1] <= 4)
+				prTxpwr->acTxPwrLimit5G[setting[1] - 1] = setting[2];
+		} else if (setting[0] == 4 && prIwReqData->data.length == 2) {
+			if (setting[1] == 0)
+				wlanDefTxPowerCfg(prGlueInfo->prAdapter);
+			rStatus = kalIoctl(prGlueInfo,
+				wlanoidSetTxPower,
+				prTxpwr,
+				sizeof(SET_TXPWR_CTRL_T), TRUE, FALSE, FALSE, FALSE, &u4BufLen);
+		} else if (setting[0] == 5 && prIwReqData->data.length == 4) {
+			UINT_8 ch = setting[1];
+			UINT_8 modulation = setting[2];
+			INT_8 offset = setting[3];
+			P_MITIGATED_PWR_BY_CH_BY_MODE pOffsetEntry;
+
+			j = 0;
+			do {
+				pOffsetEntry = &(prTxpwr->arRlmMitigatedPwrByChByMode[j++]);
+				if (ch == 0)
+					break;
+
+				if (ch == pOffsetEntry->channel) {
+					switch (modulation) {
+					case 0:
+						pOffsetEntry->mitigatedCckDsss = offset;
+						pOffsetEntry->mitigatedOfdm = offset;
+						pOffsetEntry->mitigatedHt20 = offset;
+						pOffsetEntry->mitigatedHt40 = offset;
+					break;
+					case 1:
+						pOffsetEntry->mitigatedCckDsss = offset;
+					break;
+					case 2:
+						pOffsetEntry->mitigatedOfdm = offset;
+					break;
+					case 3:
+						pOffsetEntry->mitigatedHt20 = offset;
+					break;
+					case 4:
+						pOffsetEntry->mitigatedHt40 = offset;
+					break;
+					default:
+						return -EFAULT;
+					}
 				}
-				if (setting[1] == 2 || setting[1] == 0) {
-					if (setting[2] == 0 || setting[2] == 1)
-						prTxpwr->c2GHotspotPwrOffset = setting[3];
-					if (setting[2] == 0 || setting[2] == 2)
-						prTxpwr->c5GHotspotPwrOffset = setting[3];
-				}
-				if (setting[1] == 3 || setting[1] == 0) {
-					if (setting[2] == 0 || setting[2] == 1)
-						prTxpwr->c2GP2pPwrOffset = setting[3];
-					if (setting[2] == 0 || setting[2] == 2)
-						prTxpwr->c5GP2pPwrOffset = setting[3];
-				}
-				if (setting[1] == 4 || setting[1] == 0) {
-					if (setting[2] == 0 || setting[2] == 1)
-						prTxpwr->c2GBowPwrOffset = setting[3];
-					if (setting[2] == 0 || setting[2] == 2)
-						prTxpwr->c5GBowPwrOffset = setting[3];
-				}
-			} else if (setting[0] == 1 && prIwReqData->data.length == 2) {
-				prTxpwr->ucConcurrencePolicy = setting[1];
-			} else if (setting[0] == 2 && prIwReqData->data.length == 3) {
-				if (setting[1] == 0) {
-					for (i = 0; i < 14; i++)
-						prTxpwr->acTxPwrLimit2G[i] = setting[2];
-				} else if (setting[1] <= 14)
-					prTxpwr->acTxPwrLimit2G[setting[1] - 1] = setting[2];
-			} else if (setting[0] == 3 && prIwReqData->data.length == 3) {
-				if (setting[1] == 0) {
-					for (i = 0; i < 4; i++)
-						prTxpwr->acTxPwrLimit5G[i] = setting[2];
-				} else if (setting[1] <= 4)
-					prTxpwr->acTxPwrLimit5G[setting[1] - 1] = setting[2];
-			} else if (setting[0] == 4 && prIwReqData->data.length == 2) {
-				if (setting[1] == 0)
-					wlanDefTxPowerCfg(prGlueInfo->prAdapter);
-				rStatus = kalIoctl(prGlueInfo,
-						   wlanoidSetTxPower,
-						   prTxpwr,
-						   sizeof(SET_TXPWR_CTRL_T), TRUE, FALSE, FALSE, FALSE, &u4BufLen);
-			} else
-				return -EFAULT;
-		}
-		return status;
+			} while (j < 40);
+		} else
+			return -EFAULT;
+	}
+#endif
+
+	return status;
 	default:
 		break;
 	}
@@ -1534,6 +1642,9 @@ _priv_set_struct(IN struct net_device *prNetDev,
 	/* WLAN_STATUS rStatus = WLAN_STATUS_SUCCESS; */
 	UINT_32 u4CmdLen = 0;
 	P_NDIS_TRANSPORT_STRUCT prNdisReq;
+#if CFG_SUPPORT_TX_BACKOFF
+	P_PARAM_MTK_WIFI_TEST_STRUCT_T prTestStruct;
+#endif
 
 	P_GLUE_INFO_T prGlueInfo = NULL;
 	UINT_32 u4BufLen = 0;
@@ -1553,7 +1664,7 @@ _priv_set_struct(IN struct net_device *prNetDev,
 
 #if 0
 	DBGLOG(REQ, INFO, "priv_set_struct(): prIwReqInfo->cmd(0x%X), u4SubCmd(%ld)\n",
-	       prIwReqInfo->cmd, u4SubCmd);
+		prIwReqInfo->cmd, u4SubCmd);
 #endif
 
 	switch (u4SubCmd) {
@@ -1670,7 +1781,7 @@ _priv_set_struct(IN struct net_device *prNetDev,
 		u4CmdLen = prIwReqData->data.length;
 		prNdisReq = (P_NDIS_TRANSPORT_STRUCT) &aucOidBuf[0];
 
-		if (u4CmdLen > sizeof(prNdisReq->ndisOidContent)) {
+		if (u4CmdLen > (sizeof(aucOidBuf) - OFFSET_OF(NDIS_TRANSPORT_STRUCT, ndisOidContent))) {
 			DBGLOG(REQ, ERROR, "Input data length is invalid %u\n", u4CmdLen);
 			return -EINVAL;
 		}
@@ -1687,6 +1798,70 @@ _priv_set_struct(IN struct net_device *prNetDev,
 		status = priv_set_ndis(prNetDev, prNdisReq, &u4BufLen);
 		break;
 
+#if CFG_SUPPORT_TX_BACKOFF
+	case PRIV_CMD_SET_TX_POWER:
+		{
+			WLAN_STATUS rStatus = WLAN_STATUS_SUCCESS;
+			BOOLEAN bTxPowerLimitEnable2G = FALSE;
+			BOOLEAN bTxPowerLimitEnable5G = FALSE;
+			UINT8 cStartTxBackOff = 0;
+			UINT8 cTxBackOffMaxPower2G = 0x00;
+			UINT8 cTxBackOffMaxPower5G = 0x00;
+			UINT8 aucTmp[2];
+			/* TxPwrBackOffParam's 0th byte contains enable/disable TxPowerBackOff for 2G */
+			/* TxPwrBackOffParam's 1st byte contains default TxPowerBackOff value for 2G */
+			/* TxPwrBackOffParam's 2nd byte contains enable/disable TxPowerBackOff for 5G */
+			/* TxPwrBackOffParam's 3rd byte contains default TxPowerBackOff value for 5G */
+
+			ULONG TxPwrBackOffParam = 0;
+
+			DBGLOG(REQ, INFO, "Entered case PRIV_CMD_SET_TX_POWER\n");
+			prTestStruct = prIwReqData->data.pointer;
+#if 1
+			DBGLOG(REQ, INFO, "prTestStruct->u4FuncIndex = %u, prTestStruct->u4FuncData = %u[0x%x]\n",
+				prTestStruct->u4FuncIndex, prTestStruct->u4FuncData, prTestStruct->u4FuncData);
+#endif
+			cStartTxBackOff = prTestStruct->u4FuncData;
+
+			/* load TxPower for 2.4G Band from nvram */
+			kalCfgDataRead16(prGlueInfo, OFFSET_OF(WIFI_CFG_PARAM_STRUCT,
+				bTxPowerLimitEnable2G), (PUINT_16) aucTmp);
+			bTxPowerLimitEnable2G = (BOOLEAN)aucTmp[0];
+			cTxBackOffMaxPower2G = aucTmp[1];
+
+			/* load TxPower for 5G Band from nvram */
+			kalCfgDataRead16(prGlueInfo, OFFSET_OF(WIFI_CFG_PARAM_STRUCT,
+				bTxPowerLimitEnable5G), (PUINT_16) aucTmp);
+			bTxPowerLimitEnable5G = (BOOLEAN)aucTmp[0];
+			cTxBackOffMaxPower5G = aucTmp[1];
+
+			DBGLOG(REQ, INFO, "%s: %d, %d, %d, %d\n", __func__,
+				bTxPowerLimitEnable2G,
+				cTxBackOffMaxPower2G,
+				bTxPowerLimitEnable5G,
+				cTxBackOffMaxPower5G);
+
+			if ((TRUE == bTxPowerLimitEnable2G) || (TRUE == bTxPowerLimitEnable5G)) {
+				if (1 ==  cStartTxBackOff) {
+					DBGLOG(REQ, INFO, "Start BackOff\n");
+					TxPwrBackOffParam |= bTxPowerLimitEnable2G;
+					TxPwrBackOffParam |= cTxBackOffMaxPower2G << 8;
+					TxPwrBackOffParam |= bTxPowerLimitEnable5G << 16;
+					TxPwrBackOffParam |= cTxBackOffMaxPower5G << 24;
+					rStatus = nicTxPowerBackOff(prGlueInfo->prAdapter, TxPwrBackOffParam);
+				} else {
+					DBGLOG(REQ, INFO, "Stop BackOff\n");
+					TxPwrBackOffParam = 0; /* First byte is start/stop */
+					rStatus = nicTxPowerBackOff(prGlueInfo->prAdapter, TxPwrBackOffParam);
+				}
+				if (WLAN_STATUS_PENDING == rStatus)
+					status = 0;
+				else
+					status = -EINVAL;
+			}
+		}
+		break;
+#endif
 	default:
 		return -EOPNOTSUPP;
 	}
@@ -2231,7 +2406,9 @@ _priv_set_string(IN struct net_device *prNetDev,
 	if (copy_from_user(pucInBuf, prIwReqData->data.pointer, u4BufLen))
 		return -EFAULT;
 
-	subcmd = CmdStringDecParse(prIwReqData->data.pointer, &pucInBuf, &u4BufLen);
+	DBGLOG(REQ, INFO, "orig str cmd %s, %u\n", pucInBuf, u4BufLen);
+
+	subcmd = CmdStringDecParse(pucInBuf, &pucInBuf, &u4BufLen);
 	DBGLOG(REQ, INFO, "priv_set_string> command = %u\n", (UINT32) subcmd);
 
 	/* handle the command */
@@ -2249,10 +2426,84 @@ _priv_set_string(IN struct net_device *prNetDev,
 		break;
 	}
 #endif /* CFG_SUPPORT_TXR_ENC */
+	case PRIV_CMD_OTHER:
+	{
+		INT_32 i4BytesWritten;
+
+		if (!strnicmp(pucInBuf, "addts", 5) || !strnicmp(pucInBuf, "delts", 5))
+			kalIoctl(GlueInfo, wlanoidTspecOperation, (PVOID)pucInBuf,
+					 u4BufLen, FALSE, FALSE, FALSE, FALSE, &i4BytesWritten);
+		else if (!strnicmp(pucInBuf, "RM-IT", 5))
+			kalIoctl(GlueInfo, wlanoidRadioMeasurementIT, (PVOID)(pucInBuf+6),
+					 u4BufLen, FALSE, FALSE, FALSE, FALSE, &i4BytesWritten);
+		break;
+	}
 	default:
 		break;
 	}
 
+	return status;
+}
+
+/*----------------------------------------------------------------------------*/
+/*!
+* \brief The routine handles a get operation for a single OID.
+*
+* \param[in] pDev Net device requested.
+* \param[in] ndisReq Ndis request OID information copy from user.
+* \param[out] outputLen_p If the call is successful, returns the number of
+*                         bytes written into the query buffer. If the
+*                         call failed due to invalid length of the query
+*                         buffer, returns the amount of storage needed..
+*
+* \retval 0 On success.
+* \retval -EOPNOTSUPP If cmd is not supported.
+*
+*/
+/*----------------------------------------------------------------------------*/
+static int
+_priv_get_string(IN struct net_device *prNetDev,
+		IN struct iw_request_info *prIwReqInfo, IN union iwreq_data *prIwReqData, IN char *pcExtra)
+{
+	UINT_32 u4SubCmd = 0;
+	P_GLUE_INFO_T prGlueInfo = NULL;
+	int status = 0;
+
+	if (!prNetDev || !prIwReqData || !pcExtra) {
+		DBGLOG(REQ, INFO, "priv_get_struct(): invalid param(0x%p, 0x%p)\n", prNetDev, prIwReqData);
+		return -EINVAL;
+	}
+
+	u4SubCmd = (UINT_32) prIwReqData->data.flags;
+	prGlueInfo = *((P_GLUE_INFO_T *) netdev_priv(prNetDev));
+	if (!prGlueInfo) {
+		DBGLOG(REQ, INFO, "priv_get_struct(): invalid prGlueInfo(0x%p, 0x%p)\n",
+				   prNetDev, *((P_GLUE_INFO_T *) netdev_priv(prNetDev)));
+		return -EINVAL;
+	}
+	if (copy_from_user(pcExtra, prIwReqData->data.pointer, prIwReqData->data.length)) {
+		DBGLOG(REQ, INFO, "copy from user failed\n");
+		return -EFAULT;
+	}
+	switch (u4SubCmd) {
+	case PRIV_CMD_DUMP_DRIVER:
+	{
+		INT_32 i4BytesWritten = 0;
+
+		if (!strnicmp(pcExtra, "dumpts", 6))
+			kalIoctl(prGlueInfo, wlanoidTspecOperation, (PVOID)pcExtra,
+					 512, FALSE, FALSE, FALSE, FALSE, &i4BytesWritten);
+		else if (!strnicmp(pcExtra, "dumpuapsd", 9))
+			kalIoctl(prGlueInfo, wlanoidDumpUapsdSetting, (PVOID)pcExtra,
+					 512, FALSE, FALSE, FALSE, FALSE, &i4BytesWritten);
+		prIwReqData->data.length = i4BytesWritten;
+		DBGLOG(REQ, INFO, "returned Bytes %d\n", i4BytesWritten);
+		break;
+	}
+	default:
+		DBGLOG(REQ, WARN, "Unknown SubCmd %u with param %s\n", u4SubCmd, pcExtra);
+		break;
+	}
 	return status;
 }
 
@@ -2760,7 +3011,11 @@ INT_32 priv_driver_cmds(IN struct net_device *prNetDev, IN PCHAR pcCommand, IN I
 		else if (strnicmp(pcCommand, CMD_CH_ENV_GET, strlen(CMD_CH_ENV_GET)) == 0)
 			scanEnvResult(prGlueInfo, pcCommand, i4TotalLen, &i4BytesWritten);
 #endif
-
+		else if (strnicmp(pcCommand, CMD_ADD_TS, strlen(CMD_ADD_TS)) == 0 ||
+			strnicmp(pcCommand, CMD_DELETE_TS, strlen(CMD_DELETE_TS)) == 0) {
+			kalIoctl(prGlueInfo, wlanoidTspecOperation, (PVOID)pcCommand,
+					 i4TotalLen, FALSE, FALSE, FALSE, FALSE, &i4BytesWritten);
+		}
 #if 0
 
 		else if (strnicmp(pcCommand, CMD_RSSI, strlen(CMD_RSSI)) == 0) {
@@ -2965,6 +3220,15 @@ int
 priv_set_string(IN struct net_device *prNetDev,
 		IN struct iw_request_info *prIwReqInfo, IN union iwreq_data *prIwReqData, IN char *pcExtra)
 {
-	return compat_priv(prNetDev, prIwReqInfo, prIwReqData, pcExtra, _priv_set_string);
+	return _priv_set_string(prNetDev, prIwReqInfo, prIwReqData, pcExtra);
+	/*return compat_priv(prNetDev, prIwReqInfo, prIwReqData, pcExtra, _priv_set_string);*/
+}
+
+int
+priv_get_string(IN struct net_device *prNetDev,
+		IN struct iw_request_info *prIwReqInfo, IN union iwreq_data *prIwReqData, IN char *pcExtra)
+{
+	return _priv_get_string(prNetDev, prIwReqInfo, prIwReqData, pcExtra);
+	/*return compat_priv(prNetDev, prIwReqInfo, prIwReqData, pcExtra, _priv_get_string);*/
 }
 

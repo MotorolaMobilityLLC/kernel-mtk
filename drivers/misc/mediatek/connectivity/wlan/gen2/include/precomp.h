@@ -113,9 +113,8 @@
 #include "rlm_protection.h"
 #include "rlm_obss.h"
 #include "rate.h"
-#if CFG_SUPPORT_802_11V
 #include "wnm.h"
-#endif
+
 #include "qosmap.h"
 
 #include "aa_fsm.h"
@@ -123,6 +122,8 @@
 #include "cnm_timer.h"
 
 #include "que_mgt.h"
+
+#include "wmm.h"
 
 #if CFG_ENABLE_BT_OVER_WIFI
 #include "bow.h"

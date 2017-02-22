@@ -40,6 +40,8 @@ const UINT_8 aucPriorityParam2TC[] = {
 	TC3_INDEX
 };
 
+#define WLAN_WAIT_READY_BIT_TIMEOUT		3000
+
 /*******************************************************************************
 *                             D A T A   T Y P E S
 ********************************************************************************
@@ -270,9 +272,11 @@ wlanAdapterStart(IN P_ADAPTER_T prAdapter,
 	WLAN_STATUS u4Status = WLAN_STATUS_SUCCESS;
 	UINT_32 i, u4Value = 0;
 	UINT_32 u4WHISR = 0;
+	UINT_32 u4Time, u4Current;
 	UINT_8 aucTxCount[8];
 #if CFG_ENABLE_FW_DOWNLOAD
 	UINT_32 u4FwLoadAddr, u4ImgSecSize;
+	BOOLEAN fgFWDLDumped = FALSE;
 #if CFG_ENABLE_FW_DIVIDED_DOWNLOAD
 	UINT_32 j;
 	P_FIRMWARE_DIVIDED_DOWNLOAD_T prFwHead;
@@ -288,6 +292,7 @@ wlanAdapterStart(IN P_ADAPTER_T prAdapter,
 		WAIT_FIRMWARE_READY_FAIL,
 		FAIL_REASON_MAX
 	} eFailReason;
+
 	ASSERT(prAdapter);
 
 	DEBUGFUNC("wlanAdapterStart");
@@ -353,6 +358,9 @@ wlanAdapterStart(IN P_ADAPTER_T prAdapter,
 		nicRxInitialize(prAdapter);
 
 #if CFG_ENABLE_FW_DOWNLOAD
+
+		wlanFWDLDebugInit();
+
 		if (pvFwImageMapFile == NULL) {
 			DBGLOG(INIT, ERROR, "No Firmware found!\n");
 			u4Status = WLAN_STATUS_FAILURE;
@@ -381,10 +389,15 @@ wlanAdapterStart(IN P_ADAPTER_T prAdapter,
 			fgValidHead = FALSE;
 		}
 
+		u4Time = kalGetTimeTick();
+
+		DBGLOG(INIT, INFO, "<wifi> Start to download firmware, time=%u\n",
+			u4Time);
+
 		/* 3b. engage divided firmware downloading */
 		if (fgValidHead == TRUE) {
 			DBGLOG(INIT, TRACE, "wlanAdapterStart(): fgValidHead == TRUE\n");
-
+			wlanDumpMcuChipId(prAdapter);
 			for (i = 0; i < prFwHead->u4NumOfEntries; i++) {
 
 #if CFG_START_ADDRESS_IS_1ST_SECTION_ADDR
@@ -413,6 +426,8 @@ wlanAdapterStart(IN P_ADAPTER_T prAdapter,
 					else
 						u4ImgSecSize = prFwHead->arSection[i].u4Length - j;
 
+					wlanFWDLDebugStartSectionPacketInfo(i, j, kalGetTimeTick());
+
 					if (wlanImageSectionDownload(prAdapter,
 								     prFwHead->arSection[i].u4DestAddr + j,
 								     u4ImgSecSize,
@@ -424,9 +439,18 @@ wlanAdapterStart(IN P_ADAPTER_T prAdapter,
 						u4Status = WLAN_STATUS_FAILURE;
 						break;
 					}
+
+					/* timeout exceeding check, dump FWDL log if timeout (>2.5s) */
+					u4Current = kalGetTimeTick();
+					if ((u4Current > u4Time) &&
+						((u4Current - u4Time) > WLAN_DOWNLOAD_IMAGE_TIMEOUT) &&
+						(fgFWDLDumped == FALSE)) {
+						DBGLOG(INIT, ERROR, "FW download timeout > 2.5s, FWDL dump info!\n");
+						wlanFWDLDebugDumpInfo();
+						fgFWDLDumped = TRUE;
+					}
 				}
 #endif
-
 				/* escape from loop if any pending error occurs */
 				if (u4Status == WLAN_STATUS_FAILURE)
 					break;
@@ -449,6 +473,8 @@ wlanAdapterStart(IN P_ADAPTER_T prAdapter,
 				else
 					u4ImgSecSize = u4FwImageFileLength - i;
 
+				wlanFWDLDebugStartSectionPacketInfo(0, i, kalGetTimeTick());
+
 				if (wlanImageSectionDownload(prAdapter,
 							     u4FwLoadAddr + i,
 							     u4ImgSecSize,
@@ -458,8 +484,20 @@ wlanAdapterStart(IN P_ADAPTER_T prAdapter,
 					u4Status = WLAN_STATUS_FAILURE;
 					break;
 				}
+
+				/* timeout exceeding check, dump FWDL log if timeout (>2.5s) */
+				u4Current = kalGetTimeTick();
+				if ((u4Current > u4Time) &&
+					((u4Current - u4Time) > WLAN_DOWNLOAD_IMAGE_TIMEOUT) &&
+					(fgFWDLDumped == FALSE)) {
+					DBGLOG(INIT, ERROR, "FW download timeout > 2.5s, FWDL dump info!\n");
+					wlanFWDLDebugDumpInfo();
+					fgFWDLDumped = TRUE;
+				}
 			}
 #endif
+
+		wlanFWDLDebugUninit();
 
 		if (u4Status != WLAN_STATUS_SUCCESS) {
 			eFailReason = RAM_CODE_DOWNLOAD_FAIL;
@@ -622,8 +660,17 @@ wlanAdapterStart(IN P_ADAPTER_T prAdapter,
 		/* Enable Short Slot Time */
 		prAdapter->rWifiVar.fgIsShortSlotTimeOptionEnable = TRUE;
 
+#if CFG_RX_BA_REORDERING_ENHANCEMENT
+		/* Enable drop independent packets with Rx Ba reordering */
+		prAdapter->rWifiVar.fgEnableReportIndependentPkt = TRUE;
+#endif
+
 		/* configure available PHY type set */
 		nicSetAvailablePhyTypeSet(prAdapter);
+
+#ifdef CFG_TC1_FEATURE /* for Passive Scan */
+		prAdapter->ucScanType = SCAN_TYPE_ACTIVE_SCAN;
+#endif
 
 #if 1				/* set PM parameters */
 		{
@@ -746,6 +793,7 @@ wlanAdapterStart(IN P_ADAPTER_T prAdapter,
 WLAN_STATUS wlanAdapterStop(IN P_ADAPTER_T prAdapter)
 {
 	UINT_32 i, u4Value = 0;
+	UINT_32 u4CurrTick;
 	WLAN_STATUS u4Status = WLAN_STATUS_SUCCESS;
 
 	ASSERT(prAdapter);
@@ -754,9 +802,6 @@ WLAN_STATUS wlanAdapterStop(IN P_ADAPTER_T prAdapter)
 	if (prAdapter->fgIsClockGatingEnabled == TRUE)
 		nicDisableClockGating(prAdapter);
 #endif
-
-	/* MGMT - unitialization */
-	nicUninitMGMT(prAdapter);
 
 	if (prAdapter->rAcpiState == ACPI_STATE_D0 &&
 #if (CFG_CHIP_RESET_SUPPORT == 1)
@@ -779,20 +824,25 @@ WLAN_STATUS wlanAdapterStop(IN P_ADAPTER_T prAdapter)
 			};
 
 			/* 3. Wait til RDY bit has been cleaerd */
-			i = 0;
+			u4CurrTick = kalGetTimeTick();
 			while (1) {
 				HAL_MCR_RD(prAdapter, MCR_WCIR, &u4Value);
 
 				if ((u4Value & WCIR_WLAN_READY) == 0)
 					break;
 				else if (kalIsCardRemoved(prAdapter->prGlueInfo) == TRUE
-					 || fgIsBusAccessFailed == TRUE || i >= CFG_RESPONSE_POLLING_TIMEOUT) {
+					 || fgIsBusAccessFailed == TRUE ||
+					CHECK_FOR_TIMEOUT(kalGetTimeTick(), u4CurrTick, WLAN_WAIT_READY_BIT_TIMEOUT)) {
 					g_IsNeedDoChipReset = 1;
+					wlanDumpCommandFwStatus();
+					wlanDumpTcResAndTxedCmd(NULL, 0);
+					cmdBufDumpCmdQueue(&prAdapter->rPendingCmdQueue, "waiting response CMD queue");
+					glDumpConnSysCpuInfo(prAdapter->prGlueInfo);
+					/* dump TC4[0] ~ TC4[3] TX_DESC */
+					wlanDebugHifDescriptorDump(prAdapter, MTK_AMPDU_TX_DESC, DEBUG_TC4_INDEX);
 					kalSendAeeWarning("[Read WCIR_WLAN_READY fail!]", __func__);
 					break;
 				}
-				i++;
-				kalMsleep(10);
 			}
 		}
 
@@ -821,6 +871,9 @@ WLAN_STATUS wlanAdapterStop(IN P_ADAPTER_T prAdapter)
 	nicRxUninitialize(prAdapter);
 
 	nicTxRelease(prAdapter);
+
+	/* MGMT - unitialization */
+	nicUninitMGMT(prAdapter);
 
 	/* System Service Uninitialization */
 	nicUninitSystemService(prAdapter);
@@ -1968,11 +2021,16 @@ wlanImageSectionDownload(IN P_ADAPTER_T prAdapter,
 			}
 			continue;
 		}
+
+		wlanFWDLDebugAddTxStartTime(kalGetTimeTick());
+
 		/* 6.2 Send CMD Info Packet */
 		if (nicTxInitCmd(prAdapter, prCmdInfo, ucTC) != WLAN_STATUS_SUCCESS) {
 			u4Status = WLAN_STATUS_FAILURE;
 			DBGLOG(INIT, ERROR, "Fail to transmit image download command\n");
 		}
+
+		wlanFWDLDebugAddTxDoneTime(kalGetTimeTick());
 
 		break;
 	};
@@ -2338,6 +2396,7 @@ WLAN_STATUS wlanProcessQueuedSwRfb(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwR
 	P_SW_RFB_T prSwRfb, prNextSwRfb;
 	P_TX_CTRL_T prTxCtrl;
 	P_RX_CTRL_T prRxCtrl;
+	P_STA_RECORD_T prStaRec;
 
 	ASSERT(prAdapter);
 	ASSERT(prSwRfbListHead);
@@ -2354,6 +2413,12 @@ WLAN_STATUS wlanProcessQueuedSwRfb(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwR
 		switch (prSwRfb->eDst) {
 		case RX_PKT_DESTINATION_HOST:
 			/* to host */
+			prStaRec = cnmGetStaRecByIndex(prAdapter, prSwRfb->ucStaRecIdx);
+			if (prStaRec && IS_STA_IN_AIS(prStaRec)) {
+#if ARP_MONITER_ENABLE
+				qmHandleRxArpPackets(prAdapter, prSwRfb);
+#endif
+			}
 			nicRxProcessPktWithoutReorder(prAdapter, prSwRfb);
 			break;
 
@@ -2735,7 +2800,7 @@ VOID wlanSecurityFrameTxDone(IN P_ADAPTER_T prAdapter, IN P_CMD_INFO_T prCmdInfo
 
 	/* free the packet */
 	kalSecurityFrameSendComplete(prAdapter->prGlueInfo, prCmdInfo->prPacket, WLAN_STATUS_SUCCESS);
-	DBGLOG(TX, INFO, "Security frame tx done, SeqNum: %d\n", prCmdInfo->ucCmdSeqNum);
+	DBGLOG(TX, TRACE, "Security frame tx done, SeqNum: %d\n", prCmdInfo->ucCmdSeqNum);
 }
 
 /*----------------------------------------------------------------------------*/
@@ -3105,10 +3170,11 @@ WLAN_STATUS wlanQueryNicCapability(IN P_ADAPTER_T prAdapter)
 	u4FwIDVersion = (prAdapter->rVerInfo.u2FwProductID << 16) | (prAdapter->rVerInfo.u2FwOwnVersion);
 	mtk_wcn_wmt_set_wifi_ver(u4FwIDVersion);
 
-	DBGLOG(INIT, INFO, "<wifi> ProductID: 0x%x FwVer: 0x%x.%x\n"
+	DBGLOG(INIT, INFO, "<wifi> ProductID: 0x%x FwVer: 0x%x.%x DriVer:%s\n"
 		, prAdapter->rVerInfo.u2FwProductID
 		, prAdapter->rVerInfo.u2FwOwnVersion
-		, prAdapter->rVerInfo.u2FwOwnVersionExtend);
+		, prAdapter->rVerInfo.u2FwOwnVersionExtend
+		, WIFI_DRIVER_VERSION);
 
 #if (CFG_SUPPORT_TDLS == 1)
 	if (prEventNicCapability->ucFeatureSet & (1 << FEATURE_SET_OFFSET_TDLS))
@@ -3599,6 +3665,10 @@ WLAN_STATUS wlanLoadManufactureData(IN P_ADAPTER_T prAdapter, IN P_REG_INFO_T pr
 		if (prRegInfo->ucTxPwrValid != 0) {
 			/* send to F/W */
 			nicUpdateTxPower(prAdapter, (P_CMD_TX_PWR_T) (&(prRegInfo->rTxPwr)));
+#if CFG_SUPPORT_TX_BACKOFF
+			nicUpdateTxPowerOffset(prAdapter,
+				(P_CMD_MITIGATED_PWR_OFFSET_T) (prRegInfo->arRlmMitigatedPwrByChByMode));
+#endif
 		}
 	}
 
@@ -4093,9 +4163,15 @@ VOID wlanDefTxPowerCfg(IN P_ADAPTER_T prAdapter)
 	UINT_8 i;
 	P_GLUE_INFO_T prGlueInfo = prAdapter->prGlueInfo;
 	P_SET_TXPWR_CTRL_T prTxpwr;
-
+#if CFG_SUPPORT_TX_BACKOFF
+	P_REG_INFO_T prRegInfo;
+#endif
 	ASSERT(prGlueInfo);
 
+#if CFG_SUPPORT_TX_BACKOFF
+	prRegInfo = &prGlueInfo->rRegInfo;
+	ASSERT(prRegInfo);
+#endif
 	prTxpwr = &prGlueInfo->rTxPwr;
 
 	prTxpwr->c2GLegacyStaPwrOffset = 0;
@@ -4119,6 +4195,21 @@ VOID wlanDefTxPowerCfg(IN P_ADAPTER_T prAdapter)
 	for (i = 0; i < 2; i++)
 		prTxpwr->acReserved2[i] = 0;
 
+#if CFG_SUPPORT_TX_BACKOFF
+	for (i = 0; i < 40; i++) {
+		/* 40 : MAXNUM_MITIGATED_PWR_BY_CH_BY_MODE */
+		prTxpwr->arRlmMitigatedPwrByChByMode[i].channel =
+			prRegInfo->arRlmMitigatedPwrByChByMode[i].channel;
+		prTxpwr->arRlmMitigatedPwrByChByMode[i].mitigatedCckDsss =
+			prRegInfo->arRlmMitigatedPwrByChByMode[i].mitigatedCckDsss;
+		prTxpwr->arRlmMitigatedPwrByChByMode[i].mitigatedOfdm =
+			prRegInfo->arRlmMitigatedPwrByChByMode[i].mitigatedOfdm;
+		prTxpwr->arRlmMitigatedPwrByChByMode[i].mitigatedHt20 =
+			prRegInfo->arRlmMitigatedPwrByChByMode[i].mitigatedHt20;
+		prTxpwr->arRlmMitigatedPwrByChByMode[i].mitigatedHt40 =
+			prRegInfo->arRlmMitigatedPwrByChByMode[i].mitigatedHt40;
+	}
+#endif
 }
 
 /*----------------------------------------------------------------------------*/
@@ -4386,11 +4477,17 @@ wlanoidQueryStaStatistics(IN P_ADAPTER_T prAdapter,
 	P_STA_RECORD_T prStaRec, prTempStaRec;
 	P_PARAM_GET_STA_STATISTICS prQueryStaStatistics;
 	UINT_8 ucStaRecIdx;
-	P_QUE_MGT_T prQM = &prAdapter->rQM;
+	P_QUE_MGT_T prQM;
 	CMD_GET_STA_STATISTICS_T rQueryCmdStaStatistics;
 	UINT_8 ucIdx;
 	P_GLUE_INFO_T prGlueInfo;
 
+	if (prAdapter == NULL) {
+		DBGLOG(INIT, ERROR, "prAdapter is Null\n");
+		return rResult;
+	}
+	prQM = &prAdapter->rQM;
+	prGlueInfo = prAdapter->prGlueInfo;
 	do {
 		ASSERT(pvQueryBuffer);
 
@@ -5199,6 +5296,14 @@ VOID wlanCfgApply(IN P_ADAPTER_T prAdapter)
 	if (prWifiVar->ucCert11nMode == 1)
 		nicWriteMcr(prAdapter, 0x11111115 , 1);
 #endif
+#if CFG_SUPPORT_MTK_SYNERGY
+	prWifiVar->ucMtkOui = (UINT_8) wlanCfgGetUint32(prAdapter, "MtkOui", 1);
+	prWifiVar->u4MtkOuiCap = (UINT_32) wlanCfgGetUint32(prAdapter, "MtkOuiCap", 0);
+	prWifiVar->aucMtkFeature[0] = 0xff;
+	prWifiVar->aucMtkFeature[1] = 0xff;
+	prWifiVar->aucMtkFeature[2] = 0xff;
+	prWifiVar->aucMtkFeature[3] = 0xff;
+#endif
 
 	if (wlanCfgGet(prAdapter, "5G_support", aucValue, "", 0) == WLAN_STATUS_SUCCESS)
 		prRegInfo->ucSupport5GBand = (*aucValue == 'y') ? 1 : 0;
@@ -5283,6 +5388,15 @@ VOID wlanCfgApply(IN P_ADAPTER_T prAdapter)
 			prTxPwr->cTxPwr5GHT40_16QAM, prTxPwr->cTxPwr5GHT40_MCS5, prTxPwr->cTxPwr5GHT40_MCS6,
 			prTxPwr->cTxPwr5GHT40_MCS7);
 	}
+	if (wlanCfgGet(prAdapter, "MacAddr", aucValue, "", 0) == WLAN_STATUS_SUCCESS) {
+		PUINT_8 pucMac = &prRegInfo->aucMacAddr[0];
+
+		if (sscanf(aucValue, "%hhx:%hhx:%hhx:%hhx:%hhx:%hhx",
+			pucMac, pucMac+1, pucMac+2, pucMac+3, pucMac+4, pucMac+5) != 6) {
+			DBGLOG(INIT, ERROR, "Parse mac address failed, macstr %s\n", aucValue);
+			kalMemZero(pucMac, MAC_ADDR_LEN);
+		}
+	}
 	/* TODO: Apply other Config */
 }
 #endif /* CFG_SUPPORT_CFG_FILE */
@@ -5326,5 +5440,94 @@ VOID wlanReleasePendingCmdById(P_ADAPTER_T prAdapter, UINT_8 ucCid)
 	}
 
 	KAL_RELEASE_SPIN_LOCK(prAdapter, SPIN_LOCK_CMD_PENDING);
+}
+
+/* Translate Decimals string to Hex
+** The result will be put in a 2bytes variable.
+** Integer part will occupy the left most 3 bits, and decimal part is in the left 13 bits
+** Integer part can be parsed by kstrtou16, decimal part should be translated by mutiplying
+** 16 and then pick integer part.
+** For example
+*/
+UINT_32 wlanDecimalStr2Hexadecimals(PUINT_8 pucDecimalStr, PUINT_16 pu2Out)
+{
+	UINT_8 aucDecimalStr[32] = {0,};
+	PUINT_8 pucDecimalPart = NULL;
+	PUINT_8 tmp = NULL;
+	UINT_32 u4Result = 0;
+	UINT_32 u4Ret = 0;
+
+	if (!pu2Out || !pucDecimalStr)
+		return 1;
+
+	while (*pucDecimalStr == '0')
+		pucDecimalStr++;
+	kalStrnCpy(aucDecimalStr, pucDecimalStr, sizeof(aucDecimalStr) - 1);
+	pucDecimalPart = strchr(aucDecimalStr, '.');
+	if (!pucDecimalPart) {
+		u4Ret = kstrtou16(aucDecimalStr, 0, pu2Out);
+		*pu2Out <<= 13;
+		DBGLOG(INIT, INFO, "No decimal, result=%d\n", *pu2Out);
+		return u4Ret;
+	}
+	*pucDecimalPart++ = 0;
+	/* get decimal degree */
+	tmp = pucDecimalPart + strlen(pucDecimalPart) - 1;
+	do {
+		if (tmp == pucDecimalPart) {
+			u4Ret = kstrtou32(aucDecimalStr, 0, &u4Result);
+			u4Result <<= 13;
+			break;
+		}
+		if (*tmp != '0') {
+			UINT_32 u4Degree = 0;
+			UINT_32 u4Remain = 0;
+			UINT_8 ucAccuracy = 4; /* Hex decimals accuarcy is 4 bytes */
+			UINT_32 u4Base = 1;
+
+			*(++tmp) = 0;
+			u4Degree = (UINT_32)(tmp - pucDecimalPart);
+			/* if decimal part is not 0, translate it to hexadecimal decimals */
+			/* Power(10, degree) */
+			for (; u4Remain < u4Degree; u4Remain++)
+				u4Base *= 10;
+
+			while (*pucDecimalPart == '0')
+				pucDecimalPart++;
+			u4Ret = kstrtou32(pucDecimalPart, 0, &u4Remain);
+			if (u4Ret) {
+				DBGLOG(INIT, ERROR, "Parse decimal str %s error, degree %u\n",
+					   pucDecimalPart, u4Degree);
+				return u4Ret;
+			}
+
+			do {
+				u4Remain *= 16;
+				u4Result |= (u4Remain / u4Base) << ((ucAccuracy-1) * 4);
+				u4Remain %= u4Base;
+				ucAccuracy--;
+			} while (u4Remain && ucAccuracy > 0);
+			/* Each Hex Decimal byte was left shift more than 3 bits, so need
+			** right shift 3 bits at last
+			** For example, mmmnnnnnnnnnnnnn.
+			** mmm is integer part, n represents decimals part.
+			** the left most 4 n are shift 9 bits. But in for loop, we shift 12 bits
+			**/
+			u4Result >>= 3;
+			u4Remain = 0;
+			u4Ret = kstrtou32(aucDecimalStr, 0, &u4Remain);
+			u4Result |= u4Remain << 13;
+			break;
+		}
+		tmp--;
+	} while (TRUE);
+
+	if (u4Ret)
+		DBGLOG(INIT, ERROR, "Parse integer str %s error\n", aucDecimalStr);
+	else {
+		*pu2Out = u4Result & 0xffff;
+		DBGLOG(INIT, TRACE, "Result 0x%04x\n", *pu2Out);
+	}
+	return u4Ret;
 }
 

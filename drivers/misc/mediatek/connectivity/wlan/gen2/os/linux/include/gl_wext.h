@@ -230,6 +230,7 @@ enum {
 #define IW_AUTH_KEY_MGMT_PSK_SHA256 8
 #endif
 
+#define IW_AUTH_ALG_FT			0x00000008
 /*******************************************************************************
 *                            P U B L I C   D A T A
 ********************************************************************************
@@ -281,6 +282,7 @@ BOOLEAN wextSrchDesiredInterworkingIE(IN PUINT_8 pucIEStart, IN INT_32 i4TotalIe
 BOOLEAN wextSrchDesiredAdvProtocolIE(IN PUINT_8 pucIEStart, IN INT_32 i4TotalIeLen, OUT PUINT_8 *ppucDesiredIE);
 
 BOOLEAN wextSrchDesiredRoamingConsortiumIE(IN PUINT_8 pucIEStart, IN INT_32 i4TotalIeLen, OUT PUINT_8 *ppucDesiredIE);
+BOOLEAN wextSrchDesiredOsenIE(IN PUINT_8 pucIEStart, IN INT_32 i4TotalIeLen, OUT PUINT_8 *ppucDesiredIE);
 #endif
 
 #if CFG_SUPPORT_WAPI

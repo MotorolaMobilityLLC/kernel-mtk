@@ -51,7 +51,7 @@
 #define AIS_BMC_MIN_TIMEOUT_VALID           TRUE
 
 #define AIS_JOIN_CH_GRANT_THRESHOLD         10
-#define AIS_JOIN_CH_REQUEST_INTERVAL        3000
+#define AIS_JOIN_CH_REQUEST_INTERVAL        4000
 
 #define AIS_SCN_DONE_TIMEOUT_SEC            30	/* 15 for 2.4G + 5G */ /* 5 */
 
@@ -196,6 +196,9 @@ typedef struct _AIS_FSM_INFO_T {
 
 	TIMER_T rWaitOkcPMKTimer;
 
+#if CFG_SUPPORT_DETECT_SECURITY_MODE_CHANGE
+		TIMER_T rSecModeChangeTimer;
+#endif
 	UINT_8 ucSeqNumOfReqMsg;
 	UINT_8 ucSeqNumOfChReq;
 	UINT_8 ucSeqNumOfScanReq;
@@ -238,6 +241,17 @@ typedef struct _AIS_FSM_INFO_T {
 	UINT_8 aucNeighborAPChnl[CFG_NEIGHBOR_AP_CHANNEL_NUM];
 } AIS_FSM_INFO_T, *P_AIS_FSM_INFO_T;
 
+enum WNM_AIS_BSS_TRANSITION {
+	BSS_TRANSITION_NO_MORE_ACTION,
+	BSS_TRANSITION_REQ_ROAMING,
+	BSS_TRANSITION_DISASSOC,
+	BSS_TRANSITION_MAX_NUM
+};
+struct MSG_AIS_BSS_TRANSITION_T {
+	MSG_HDR_T rMsgHdr;	/* Must be the first member */
+	BOOLEAN fgNeedResponse;
+	enum WNM_AIS_BSS_TRANSITION	eTransitionType;
+};
 /*******************************************************************************
 *                            P U B L I C   D A T A
 ********************************************************************************
@@ -326,6 +340,8 @@ VOID
 aisIndicationOfMediaStateToHost(IN P_ADAPTER_T prAdapter,
 				ENUM_PARAM_MEDIA_STATE_T eConnectionState, BOOLEAN fgDelayIndication);
 
+VOID aisPostponedEventOfSchedScanReq(IN P_ADAPTER_T prAdapter, P_AIS_FSM_INFO_T prAisFsmInfo);
+
 VOID aisPostponedEventOfDisconnTimeout(IN P_ADAPTER_T prAdapter, P_AIS_FSM_INFO_T prAisFsmInfo);
 
 VOID aisUpdateBssInfoForJOIN(IN P_ADAPTER_T prAdapter, P_STA_RECORD_T prStaRec, P_SW_RFB_T prAssocRspSwRfb);
@@ -379,6 +395,9 @@ VOID aisFsmRunEventChannelTimeout(IN P_ADAPTER_T prAdapter, ULONG ulParam);
 VOID aisFsmRunEventScanDoneTimeOut(IN P_ADAPTER_T prAdapter, ULONG ulParam);
 
 VOID aisFsmRunEventDeauthTimeout(IN P_ADAPTER_T prAdapter, ULONG ulParam);
+#if CFG_SUPPORT_DETECT_SECURITY_MODE_CHANGE
+VOID aisFsmRunEventSecModeChangeTimeout(IN P_ADAPTER_T prAdapter, ULONG ulParamPtr);
+#endif
 
 /*----------------------------------------------------------------------------*/
 /* OID/IOCTL Handling                                                         */
@@ -409,6 +428,10 @@ VOID aisFsmRunEventMgmtFrameTx(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHdr
 VOID aisFuncValidateRxActionFrame(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfb);
 
 VOID aisFsmRunEventSetOkcPmk(IN P_ADAPTER_T prAdapter);
+
+VOID aisFsmRunEventBssTransition(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHdr);
+
+VOID aisCollectNeighborAPChannel(P_ADAPTER_T prAdapter, struct IE_NEIGHBOR_REPORT_T *prNeiRep, UINT_16 u2Length);
 
 #if defined(CFG_TEST_MGMT_FSM) && (CFG_TEST_MGMT_FSM != 0)
 VOID aisTest(VOID);

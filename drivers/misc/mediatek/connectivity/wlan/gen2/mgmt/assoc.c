@@ -37,6 +37,10 @@
 ********************************************************************************
 */
 APPEND_VAR_IE_ENTRY_T txAssocReqIETable[] = {
+#if CFG_SUPPORT_802_11K
+	{(ELEM_HDR_LEN + 2), NULL, rlmGerneratePowerCapIE}, /* Element ID: 33 */
+#endif
+
 	{(ELEM_HDR_LEN + ELEM_MAX_LEN_HT_CAP), NULL, rlmReqGenerateHtCapIE}
 	,			/* 45 */
 #if CFG_SUPPORT_WPS2
@@ -47,9 +51,15 @@ APPEND_VAR_IE_ENTRY_T txAssocReqIETable[] = {
 	{(ELEM_HDR_LEN + ELEM_MAX_LEN_RSN), NULL, rsnGenerateRSNIE}
 	,			/* 48 */
 #endif
+	{(ELEM_HDR_LEN + 1), NULL, assocGenerateMDIE}, /* Element ID: 54 */
+	{0, rsnCalculateFTIELen, rsnGenerateFTIE}, /* Element ID: 55 */
+
 #if CFG_SUPPORT_WAPI
 	{(ELEM_HDR_LEN + ELEM_MAX_LEN_WAPI), NULL, wapiGenerateWAPIIE}
 	,			/* 68 */
+#endif
+#if CFG_SUPPORT_802_11K
+	{(ELEM_HDR_LEN + 5), NULL, rlmGernerateRRMEnabledCapIE}, /* Element ID: 70 */
 #endif
 #if CFG_SUPPORT_HOTSPOT_2_0
 	{(ELEM_HDR_LEN + ELEM_MAX_LEN_INTERWORKING), NULL, hs20GenerateInterworkingIE}
@@ -69,6 +79,10 @@ APPEND_VAR_IE_ENTRY_T txAssocReqIETable[] = {
 	{(ELEM_HDR_LEN + ELEM_MAX_LEN_WPA), NULL, rsnGenerateWPAIE}
 	,			/* 221 */
 #endif
+#if CFG_SUPPORT_MTK_SYNERGY
+	{(ELEM_HDR_LEN + ELEM_MIN_LEN_MTK_OUI), NULL, rlmGenerateMTKOuiIE}	/* 221 */
+#endif
+
 };
 
 #if CFG_SUPPORT_AAA
@@ -97,6 +111,10 @@ APPEND_VAR_IE_ENTRY_T txAssocRespIETable[] = {
 	,			/* 127 */
 	{(ELEM_HDR_LEN + ELEM_MAX_LEN_WMM_PARAM), NULL, mqmGenerateWmmParamIE}
 	,			/* 221 */
+#if CFG_SUPPORT_MTK_SYNERGY
+	{(ELEM_HDR_LEN + ELEM_MIN_LEN_MTK_OUI), NULL, rlmGenerateMTKOuiIE}
+	,			/* 221 */
+#endif
 
 	{(0), p2pFuncCalculateWSC_IELenForAssocRsp, p2pFuncGenerateWSC_IEForAssocRsp}	/* 221 */
 
@@ -140,6 +158,9 @@ assocBuildCapabilityInfo(IN P_ADAPTER_T prAdapter, IN P_STA_RECORD_T prStaRec)
 	/* Set up our requested capabilities. */
 	u2CapInfo = CAP_INFO_ESS;
 	u2CapInfo |= CAP_CF_STA_NOT_POLLABLE;
+#if CFG_SUPPORT_802_11K
+	u2CapInfo |= CAP_INFO_RADIO_MEASUREMENT;
+#endif
 
 	if (prStaRec == NULL)
 		u2CapInfo |= CAP_INFO_PRIVACY;
@@ -969,8 +990,7 @@ WLAN_STATUS assocSendDisAssocFrame(IN P_ADAPTER_T prAdapter, IN P_STA_RECORD_T p
 		P_WLAN_DISASSOC_FRAME_T prDisassocFrame;
 
 		prDisassocFrame =
-		    (P_WLAN_DEAUTH_FRAME_T) (PUINT_8) ((ULONG) (prMsduInfo->prPacket) + MAC_TX_RESERVED_FIELD);
-
+		    (P_WLAN_DISASSOC_FRAME_T) (PUINT_8) ((ULONG) (prMsduInfo->prPacket) + MAC_TX_RESERVED_FIELD);
 		prDisassocFrame->u2FrameCtrl |= MASK_FC_PROTECTED_FRAME;
 		DBGLOG(TX, WARN, "assocSendDisAssocFrame with protection\n");
 	}
@@ -1574,3 +1594,34 @@ WLAN_STATUS assocSendReAssocRespFrame(IN P_ADAPTER_T prAdapter, IN P_STA_RECORD_
 
 }				/* end of assocSendReAssocRespFrame() */
 #endif /* CFG_SUPPORT_AAA */
+
+VOID assocGenerateMDIE(IN P_ADAPTER_T prAdapter, IN OUT P_MSDU_INFO_T prMsduInfo)
+{
+	struct FT_IES *prFtIEs = &prAdapter->prGlueInfo->rFtIeForTx;
+	PUINT_8 pucBuffer = (PUINT_8)prMsduInfo->prPacket + prMsduInfo->u2FrameLength;
+	ENUM_PARAM_AUTH_MODE_T eAuthMode = prAdapter->rWifiVar.rConnSettings.eAuthMode;
+
+	/* don't include MDIE in assoc request frame if auth mode is not FT related */
+	if (eAuthMode != AUTH_MODE_NON_RSN_FT && eAuthMode != AUTH_MODE_WPA2_FT &&
+		eAuthMode != AUTH_MODE_WPA2_FT_PSK)
+		return;
+
+	if (!prFtIEs->prMDIE) {
+		P_BSS_DESC_T prBssDesc = prAdapter->rWifiVar.rAisFsmInfo.prTargetBssDesc;
+		PUINT_8 pucIE = &prBssDesc->aucIEBuf[0];
+		UINT_16 u2IeLen = prBssDesc->u2IELength;
+		UINT_16 u2IeOffSet = 0;
+
+		IE_FOR_EACH(pucIE, u2IeLen, u2IeOffSet) {
+			if (IE_ID(pucIE) == ELEM_ID_MOBILITY_DOMAIN) {
+				prMsduInfo->u2FrameLength += 5; /* IE size for MD IE is fixed, it is 5 */
+				kalMemCopy(pucBuffer, pucIE, 5);
+				break;
+			}
+		}
+		return;
+	}
+	prMsduInfo->u2FrameLength += 5; /* IE size for MD IE is fixed, it is 5 */
+	kalMemCopy(pucBuffer, prFtIEs->prMDIE, 5);
+}
+

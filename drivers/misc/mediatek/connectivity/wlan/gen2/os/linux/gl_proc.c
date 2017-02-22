@@ -41,7 +41,7 @@
 #define PROC_TX_STATISTICS                      "tx_statistics"
 #define PROC_DBG_LEVEL_NAME						"dbgLevel"
 #define PROC_NEED_TX_DONE						"TxDoneCfg"
-#define PROC_AUTO_PER_CFG						"autoPerCfg"
+#define PROC_AUTO_PERF_CFG						"autoPerfCfg"
 #define PROC_ROOT_NAME			"wlan"
 #define PROC_CMD_DEBUG_NAME		"cmdDebug"
 #define PROC_CFG_NAME			"cfg"
@@ -421,7 +421,7 @@ static UINT_8 aucDbModuleName[][PROC_DBG_LEVEL_MAX_DISPLAY_STR_LEN] = {
 	"INIT", "HAL", "INTR", "REQ", "TX", "RX", "RFTEST", "EMU", "SW1", "SW2",
 	"SW3", "SW4", "HEM", "AIS", "RLM", "MEM", "CNM", "RSN", "BSS", "SCN",
 	"SAA", "AAA", "P2P", "QM", "SEC", "BOW", "WAPI", "ROAMING", "TDLS", "OID",
-	"NIC"
+	"NIC", "WNM", "WMM"
 };
 static UINT_8 aucProcBuf[1536];
 static ssize_t procDbgLevelRead(struct file *filp, char __user *buf, size_t count, loff_t *f_pos)
@@ -594,7 +594,7 @@ static const struct file_operations proc_txdone_ops = {
 	.write = procTxDoneCfgWrite,
 };
 
-static ssize_t procAutoPerCfgRead(struct file *filp, char __user *buf, size_t count, loff_t *f_pos)
+static ssize_t procAutoPerfCfgRead(struct file *filp, char __user *buf, size_t count, loff_t *f_pos)
 {
 	UINT_8 *temp = &aucProcBuf[0];
 	UINT_32 u4CopySize = 0;
@@ -603,7 +603,7 @@ static ssize_t procAutoPerCfgRead(struct file *filp, char __user *buf, size_t co
 	if (*f_pos > 0)
 		return 0;
 
-	SPRINTF(temp, ("Auto Performance Configure:\nperiod\tL1\nL2\tL3\n"));
+	SPRINTF(temp, ("Auto Performance Configure:\ncore_num:frequence\n"));
 
 	u4CopySize = kalStrLen(aucProcBuf);
 	if (u4CopySize > count)
@@ -617,16 +617,42 @@ static ssize_t procAutoPerCfgRead(struct file *filp, char __user *buf, size_t co
 	return (ssize_t)u4CopySize;
 }
 
-static ssize_t procAutoPerCfgWrite(struct file *file, const char *buffer, size_t count, loff_t *data)
+static ssize_t procAutoPerfCfgWrite(struct file *file, const char *buffer, size_t count, loff_t *data)
 {
+	UINT_32 u4CoreNum = 0;
+	UINT_32 u4CoreFreq = 0;
+	UINT_8 *temp = &aucProcBuf[0];
+	UINT_32 u4CopySize = count;
+
 	DBGLOG(INIT, WARN, "%s\n", __func__);
-	return 0;
+
+	if (u4CopySize >= sizeof(aucProcBuf))
+		u4CopySize = sizeof(aucProcBuf) - 1;
+
+	kalMemSet(aucProcBuf, 0, u4CopySize);
+
+	if (copy_from_user(aucProcBuf, buffer, u4CopySize)) {
+		kalPrint("error of copy from user\n");
+		return -EFAULT;
+	}
+
+	aucProcBuf[u4CopySize] = '\0';
+
+	if (sscanf(temp, "%d:%d", &u4CoreNum, &u4CoreFreq) != 2)  {
+		DBGLOG(INIT, WARN, "parameter format should be u4CoreNum:u4CoreFreq\n");
+		return -EFAULT;
+	}
+	DBGLOG(INIT, WARN, "u4CoreNum:%d, u4CoreFreq:%d\n", u4CoreNum, u4CoreFreq);
+
+	kalSetCpuNumFreq(u4CoreNum, u4CoreFreq);
+
+	return u4CopySize;
 }
 
-static const struct file_operations auto_per_ops = {
+static const struct file_operations auto_perf_ops = {
 	.owner = THIS_MODULE,
-	.read = procAutoPerCfgRead,
-	.write = procAutoPerCfgWrite,
+	.read = procAutoPerfCfgRead,
+	.write = procAutoPerfCfgWrite,
 };
 
 
@@ -656,6 +682,7 @@ static const struct file_operations proc_CmdDebug_ops = {
 	.owner = THIS_MODULE,
 	.read = procCmdDebug,
 };
+
 
 /*----------------------------------------------------------------------------*/
 /*!
@@ -937,7 +964,7 @@ INT_32 procInitFs(VOID)
 	}
 	proc_set_user(prEntry, KUIDT_INIT(PROC_UID_SHELL), KGIDT_INIT(PROC_GID_WIFI));
 
-	prEntry = proc_create(PROC_AUTO_PER_CFG, 0664, gprProcRoot, &auto_per_ops);
+	prEntry = proc_create(PROC_AUTO_PERF_CFG, 0664, gprProcRoot, &auto_perf_ops);
 	if (prEntry == NULL) {
 		kalPrint("Unable to create /proc entry autoPerCfg\n\r");
 		return -1;
@@ -956,7 +983,7 @@ INT_32 procUninitProcFs(VOID)
 {
 	remove_proc_entry(PROC_DBG_LEVEL_NAME, gprProcRoot);
 	remove_proc_subtree(PROC_ROOT_NAME, init_net.proc_net);
-	remove_proc_entry(PROC_AUTO_PER_CFG, gprProcRoot);
+	remove_proc_entry(PROC_AUTO_PERF_CFG, gprProcRoot);
 	return 0;
 }
 
@@ -976,6 +1003,7 @@ INT_32 procRemoveProcfs(VOID)
 	/* remove_proc_entry(pucDevName, init_net.proc_net); */
 	remove_proc_entry(PROC_WLAN_THERMO, gprProcRoot);
 	remove_proc_entry(PROC_CMD_DEBUG_NAME, gprProcRoot);
+
 #if CFG_SUPPORT_THERMO_THROTTLING
 	g_prGlueInfo_proc = NULL;
 #endif
@@ -1006,6 +1034,7 @@ INT_32 procCreateFsEntry(P_GLUE_INFO_T prGlueInfo)
 		return -1;
 	}
 	proc_set_user(prEntry, KUIDT_INIT(PROC_UID_SHELL), KGIDT_INIT(PROC_GID_WIFI));
+
 	return 0;
 }
 
@@ -1020,6 +1049,8 @@ static ssize_t cfgRead(struct file *filp, char __user *buf, size_t count, loff_t
 	WLAN_STATUS rStatus = WLAN_STATUS_FAILURE;
 	UINT_8 *temp = &aucCfgOutputBuf[0];
 	UINT_32 u4CopySize = 0;
+	UINT_32 u4Offset = 0;
+	PCHAR pHeadOutputString = "\nprocCfgRead() ";
 	struct _CMD_HEADER_T cmdV1Header;
 	struct _CMD_FORMAT_V1_T *pr_cmd_v1 = (struct _CMD_FORMAT_V1_T *) cmdV1Header.buffer;
 
@@ -1028,7 +1059,11 @@ static ssize_t cfgRead(struct file *filp, char __user *buf, size_t count, loff_t
 		return 0;
 
 	kalMemSet(aucCfgOutputBuf, '\0', MAX_CFG_OUTPUT_BUF_LENGTH);
-	temp += kalSnprintf(temp, sizeof(aucCfgQueryKey), "\nprocCfgRead() %s:\n",
+
+	u4Offset += kalSnprintf(temp + u4Offset, MAX_CFG_OUTPUT_BUF_LENGTH - u4Offset, "%s",
+		  pHeadOutputString);
+
+	u4Offset += kalSnprintf(temp + u4Offset, MAX_CFG_OUTPUT_BUF_LENGTH - u4Offset, "%s:\n",
 			  aucCfgQueryKey);
 
 	/* send to FW */
@@ -1053,9 +1088,11 @@ static ssize_t cfgRead(struct file *filp, char __user *buf, size_t count, loff_t
 	if (rStatus == WLAN_STATUS_FAILURE)
 		DBGLOG(INIT, ERROR, "prCmdV1Header kalIoctl wlanoidQueryCfgRead fail 0x%x\n", rStatus);
 
-	temp += kalSnprintf(temp, sizeof(cmdV1Header.buffer), "%s\n", cmdV1Header.buffer);
+	u4Offset += kalSnprintf(temp + u4Offset, MAX_CFG_OUTPUT_BUF_LENGTH - u4Offset, "%s\n",
+		  cmdV1Header.buffer);
 
 	u4CopySize = kalStrLen(aucCfgOutputBuf);
+	DBGLOG(INIT, INFO, "cfgRead: count:%zu  u4CopySize:%d,[%s]\n", count, u4CopySize, aucCfgOutputBuf);
 	if (u4CopySize > count)
 		u4CopySize = count;
 
@@ -1097,18 +1134,12 @@ static ssize_t cfgWrite(struct file *filp, const char __user *buf, size_t count,
 		, aucCfgBuf, token_num, count);
 
 	if (token_num == 1) {
-		/*set cfg Query key*/
-		kalMemSet(aucCfgQueryKey, '\0', sizeof(aucCfgQueryKey));
-
-		if (u4CopySize > (MAX_CMD_NAME_MAX_LENGTH - 1))
-			u4CopySize = MAX_CMD_NAME_MAX_LENGTH - 1;
-
+		kalMemSet(aucCfgQueryKey, 0, sizeof(aucCfgQueryKey));
+		u4CopySize = ((u4CopySize > sizeof(aucCfgQueryKey)) ? sizeof(aucCfgQueryKey) : u4CopySize);
 		memcpy(aucCfgQueryKey, aucCfgBuf, u4CopySize);
-
 		/*replace Carriage Return (0x0a) to string end of terminal */
 		if ((u4CopySize > 0) && (aucCfgQueryKey[u4CopySize - 1] == 0x0a))
 			aucCfgQueryKey[u4CopySize - 1] = '\0';
-
 	} else {
 		if (u4CopySize)
 			wlanFwCfgParse(gprGlueInfo->prAdapter, aucCfgBuf);

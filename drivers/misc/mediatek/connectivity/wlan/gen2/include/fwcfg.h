@@ -44,7 +44,10 @@
 
 #define MAX_CMD_BUFFER_LENGTH		(CMD_FORMAT_V1_LENGTH * MAX_CMD_ITEM_MAX)
 
-#define FW_CFG_FILE "/etc/firmware/wifi_fw.cfg"
+#define FW_CFG_FILE_1 "/etc/firmware/wifi_fw.cfg"
+#define FW_CFG_FILE_2 "/vendor/firmware/wifi_fw.cfg"
+#define FW_CFG_FILE_3 "/data/misc/wifi/wifi_fw.cfg"
+
 /*******************************************************************************
 *                             D A T A   T Y P E S
 ********************************************************************************

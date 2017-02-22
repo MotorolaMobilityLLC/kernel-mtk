@@ -35,8 +35,8 @@
 
 #define CFG_TX_STOP_NETIF_QUEUE_THRESHOLD	256	/* packets */
 
-#define CFG_TX_STOP_NETIF_PER_QUEUE_THRESHOLD	256	/* packets */
-#define CFG_TX_START_NETIF_PER_QUEUE_THRESHOLD	128	/* packets */
+#define CFG_TX_STOP_NETIF_PER_QUEUE_THRESHOLD	(CFG_TX_MAX_PKT_NUM / 2)
+#define CFG_TX_START_NETIF_PER_QUEUE_THRESHOLD	(CFG_TX_MAX_PKT_NUM / 8)
 
 #define ETH_P_1X				0x888E
 #define IPTOS_PREC_OFFSET			5
@@ -366,6 +366,16 @@ typedef struct _TDLS_INFO_T {
 } TDLS_INFO_T;
 #endif /* CFG_SUPPORT_TDLS */
 
+struct FT_IES {
+	UINT_16 u2MDID;
+	struct IE_MOBILITY_DOMAIN_T *prMDIE;
+	struct IE_FAST_TRANSITION_T *prFTIE;
+	IE_TIMEOUT_INTERVAL_T *prTIE;
+	P_RSN_INFO_ELEM_T prRsnIE;
+	PUINT_8 pucIEBuf;
+	UINT_32 u4IeLength;
+};
+
 /*
 * type definition of pointer to p2p structure
 */
@@ -593,6 +603,9 @@ struct _GLUE_INFO_T {
 	UINT_8     ucChannelNum[FULL_SCAN_MAX_CHANNEL_NUM];
 	/**/
 	PUINT_8    puFullScan2PartialChannel;
+
+	struct FT_IES rFtIeForTx;
+	struct cfg80211_ft_event_params rFtEventParam;
 };
 
 typedef irqreturn_t(*PFN_WLANISR) (int irq, void *dev_id, struct pt_regs *regs);

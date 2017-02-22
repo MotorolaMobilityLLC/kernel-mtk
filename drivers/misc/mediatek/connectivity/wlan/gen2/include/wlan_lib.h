@@ -94,6 +94,8 @@ extern BOOLEAN fgIsResetting;
 #define WLAN_TX_THREAD_TASK_PRIORITY        0	/* If not setting the priority, 0 is the default */
 #define WLAN_TX_THREAD_TASK_NICE            (-10)	/* If not setting the nice, -10 is the default */
 
+#define WLAN_DOWNLOAD_IMAGE_TIMEOUT         2500	/*ms*/
+
 /*******************************************************************************
 *                             D A T A   T Y P E S
 ********************************************************************************
@@ -220,6 +222,9 @@ typedef struct _SET_TXPWR_CTRL_T {
 	INT_8 acTxPwrLimit2G[14];	/* Channel 1~14, Unit: 0.5dBm */
 	INT_8 acTxPwrLimit5G[4];	/* UNII 1~4 */
 	INT_8 acReserved2[2];	/* Must be zero */
+#if CFG_SUPPORT_TX_BACKOFF
+	MITIGATED_PWR_BY_CH_BY_MODE arRlmMitigatedPwrByChByMode[40];
+#endif
 } SET_TXPWR_CTRL_T, *P_SET_TXPWR_CTRL_T;
 
 /* For storing driver initialization value from glue layer */
@@ -287,6 +292,10 @@ typedef struct _REG_INFO_T {
 	UINT_8 uc5GRssiCompensation;
 	UINT_8 fgRssiCompensationValidbit;
 	UINT_8 ucRxAntennanumber;
+#if CFG_SUPPORT_TX_BACKOFF
+	MITIGATED_PWR_BY_CH_BY_MODE arRlmMitigatedPwrByChByMode[40];
+	UINT_8 fgRlmMitigatedPwrByChByMode;
+#endif
 	/* NVRAM - Functional Data -END- */
 
 } REG_INFO_T, *P_REG_INFO_T;
@@ -649,4 +658,5 @@ VOID wlanCfgApply(IN P_ADAPTER_T prAdapter);
 extern VOID mtk_wcn_wmt_set_wifi_ver(UINT_32 Value);
 VOID wlanReleasePendingCmdById(P_ADAPTER_T prAdapter, UINT_8 ucCid);
 
+UINT_32 wlanDecimalStr2Hexadecimals(PUINT_8 pucDecimalStr, PUINT_16 pu2Out);
 #endif /* _WLAN_LIB_H */

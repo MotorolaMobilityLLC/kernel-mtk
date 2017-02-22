@@ -144,6 +144,8 @@ WLAN_STATUS nicTxAcquireResource(IN P_ADAPTER_T prAdapter, IN UINT_8 ucTC, IN BO
 	P_TX_CTRL_T prTxCtrl;
 	WLAN_STATUS u4Status = WLAN_STATUS_RESOURCES;
 	P_QUE_MGT_T prQM;
+	BOOLEAN fgWmtCoreDump = FALSE;
+
 
 	KAL_SPIN_LOCK_DECLARATION();
 
@@ -200,9 +202,16 @@ WLAN_STATUS nicTxAcquireResource(IN P_ADAPTER_T prAdapter, IN UINT_8 ucTC, IN BO
 			cmdBufDumpCmdQueue(&prAdapter->rPendingCmdQueue, "waiting response CMD queue");
 			glDumpConnSysCpuInfo(prAdapter->prGlueInfo);
 			/* dump TC4[0] ~ TC4[3] TX_DESC */
-			wlanDebugHifDescriptorDump(prAdapter , MTK_AMPDU_TX_DESC, DEBUG_TC4_INDEX);
-			kalSendAeeWarning("[TC4 no resource delay 5s!]", __func__);
-			glDoChipReset();
+			wlanDebugHifDescriptorDump(prAdapter, MTK_AMPDU_TX_DESC, DEBUG_TC4_INDEX);
+
+			fgWmtCoreDump = glIsWmtCodeDump();
+			if (fgWmtCoreDump == FALSE) {
+				kalSendAeeWarning("[TC4 no resource delay 5s!]", __func__);
+				glDoChipReset();
+			} else
+				DBGLOG(TX, WARN,
+					"[TC4 no resource delay 5s!] WMT is code dumping! STOP AEE & chip reset\n");
+
 			u4CurrTick = 0;
 		}
 
@@ -1090,7 +1099,7 @@ WLAN_STATUS nicTxMsduQueue(IN P_ADAPTER_T prAdapter, UINT_8 ucPortIdx, P_QUE_T p
 
 			/* record the queue time in driver */
 			STATS_TX_TIME_TO_HIF(prMsduInfo, &rHwTxHeader);
-
+			wlanFillTimestamp(prAdapter, prMsduInfo->prPacket, PHASE_HIF_TX);
 #if CFG_SDIO_TX_AGG
 			/* attach to coalescing buffer */
 			kalMemCopy(pucOutputBuf + u4TotalLength, &rHwTxHeader, u4TxHdrSize);
@@ -1218,6 +1227,7 @@ WLAN_STATUS nicTxCmd(IN P_ADAPTER_T prAdapter, IN P_CMD_INFO_T prCmdInfo, IN UIN
 	UINT_8 ucEtherTypeOffsetInWord;
 	P_MSDU_INFO_T prMsduInfo;
 	P_TX_CTRL_T prTxCtrl;
+	BOOLEAN fgScanReqCmd = FALSE;
 
 	KAL_SPIN_LOCK_DECLARATION();
 
@@ -1365,8 +1375,14 @@ WLAN_STATUS nicTxCmd(IN P_ADAPTER_T prAdapter, IN P_CMD_INFO_T prCmdInfo, IN UIN
 
 		if ((prCmdInfo->ucCID == CMD_ID_SCAN_REQ) ||
 			(prCmdInfo->ucCID == CMD_ID_SCAN_CANCEL) ||
-			(prCmdInfo->ucCID == CMD_ID_SCAN_REQ_V2))
+			(prCmdInfo->ucCID == CMD_ID_SCAN_REQ_V2)) {
 			DBGLOG(TX, INFO, "ucCmdSeqNum =%d, ucCID =%d\n", prCmdInfo->ucCmdSeqNum, prCmdInfo->ucCID);
+			/*record scan request tx_desciption*/
+			wlanDebugScanRecord(prAdapter
+				, DBG_SCAN_WRITE_BEFORE);
+			fgScanReqCmd = TRUE;
+
+		}
 	}
 
 	/* <4> Write frame to data port */
@@ -1374,6 +1390,10 @@ WLAN_STATUS nicTxCmd(IN P_ADAPTER_T prAdapter, IN P_CMD_INFO_T prCmdInfo, IN UIN
 			  ucPortIdx,
 			  (UINT_32) u2OverallBufferLength,
 			  (PUINT_8) pucOutputBuf, (UINT_32) prAdapter->u4CoalescingBufCachedSize);
+	if (fgScanReqCmd == TRUE)
+		/*record scan request tx_desciption*/
+		wlanDebugScanRecord(prAdapter
+			, DBG_SCAN_WRITE_DONE);
 
 	return WLAN_STATUS_SUCCESS;
 }				/* end of nicTxCmd() */

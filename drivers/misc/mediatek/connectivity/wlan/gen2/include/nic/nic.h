@@ -188,7 +188,11 @@ WLAN_STATUS nicSetAutoTxPower(IN P_ADAPTER_T prAdapter, IN P_CMD_AUTO_POWER_PARA
 /* Calibration Control                                                        */
 /*----------------------------------------------------------------------------*/
 WLAN_STATUS nicUpdateTxPower(IN P_ADAPTER_T prAdapter, IN P_CMD_TX_PWR_T prTxPwrParam);
-
+#if CFG_SUPPORT_TX_BACKOFF
+WLAN_STATUS nicUpdateTxPowerOffset(IN P_ADAPTER_T prAdapter,
+		IN P_CMD_MITIGATED_PWR_OFFSET_T prTxPwrOffsetParam);
+WLAN_STATUS nicTxPowerBackOff(IN P_ADAPTER_T prAdapter, IN UINT32 TxPowerBackOffParam);
+#endif
 WLAN_STATUS nicUpdate5GOffset(IN P_ADAPTER_T prAdapter, IN P_CMD_5G_PWR_OFFSET_T pr5GPwrOffset);
 
 WLAN_STATUS nicUpdateDPD(IN P_ADAPTER_T prAdapter, IN P_CMD_PWR_PARAM_T prDpdCalResult);
@@ -219,7 +223,7 @@ WLAN_STATUS nicEnterCtiaMode(IN P_ADAPTER_T prAdapter, BOOLEAN fgEnterCtia, BOOL
 /*----------------------------------------------------------------------------*/
 /* Scan Result Processing                                                     */
 /*----------------------------------------------------------------------------*/
-VOID
+UINT_32
 nicAddScanResult(IN P_ADAPTER_T prAdapter,
 		 IN PARAM_MAC_ADDRESS rMacAddr,
 		 IN P_PARAM_SSID_T prSsid,

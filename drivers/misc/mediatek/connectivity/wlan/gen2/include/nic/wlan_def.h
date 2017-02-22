@@ -627,11 +627,11 @@ typedef enum _ENUM_BSS_TYPE_T {
 /* #pragma pack(1) */
 /* #endif */
 
-#define MAX_NUM_SUPPORTED_CIPHER_SUITES 8	/* max number of supported cipher suites */
+#define MAX_NUM_SUPPORTED_CIPHER_SUITES 9	/* max number of supported cipher suites */
 #if CFG_SUPPORT_802_11W
-#define MAX_NUM_SUPPORTED_AKM_SUITES    8	/* max number of supported AKM suites */
+#define MAX_NUM_SUPPORTED_AKM_SUITES    11	/* max number of supported AKM suites */
 #else
-#define MAX_NUM_SUPPORTED_AKM_SUITES    6	/* max number of supported AKM suites */
+#define MAX_NUM_SUPPORTED_AKM_SUITES    9	/* max number of supported AKM suites */
 #endif
 
 /* Structure of RSN Information */
@@ -790,6 +790,14 @@ static const UINT_8 aucRateTableSize[PREAMBLE_OPTION_NUM] = {
 	    PUINT_8 __cp = (PUINT_8) (_memAddr_p); \
 	    *(PUINT_32)(_value_p) = ((UINT_32) __cp[0])       | ((UINT_32) __cp[1] << 8) | \
 				    ((UINT_32) __cp[2] << 16) | ((UINT_32) __cp[3] << 24); \
+	}
+
+#define WLAN_GET_FIELD_BE32(_memAddr_p, _value_p) \
+	{ \
+		PUINT_8 __cp = (PUINT_8)(_memAddr_p); \
+		*(PUINT_32)(_value_p) = ((UINT_32)__cp[0] << 24) | \
+		    ((UINT_32)__cp[1] << 16) | ((UINT_32)__cp[2] << 8) | \
+		    ((UINT_32)__cp[3]); \
 	}
 
 #define WLAN_GET_FIELD_64(_memAddr_p, _value_p) \

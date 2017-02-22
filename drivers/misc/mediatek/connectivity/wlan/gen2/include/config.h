@@ -279,7 +279,7 @@
  */
 
 /*! Maximum number of SW TX packet queue */
-#define CFG_TX_MAX_PKT_NUM                      512	/* 256 must >= CFG_TX_STOP_NETIF_PER_QUEUE_THRESHOLD * 2;
+#define CFG_TX_MAX_PKT_NUM                      4096	/* 256 must >= CFG_TX_STOP_NETIF_PER_QUEUE_THRESHOLD * 2;
 							   or wmm will fail when queue is full */
 
 /*! Maximum number of SW TX CMD packet buffer */
@@ -302,7 +302,7 @@
 #define CFG_NUM_OF_RX1_HIF_DESC                 2
 
 /*! Max. buffer hold by QM */
-#define CFG_NUM_OF_QM_RX_PKT_NUM                120
+#define CFG_NUM_OF_QM_RX_PKT_NUM                4096
 
 /*! Maximum number of SW RX packet buffer */
 #define CFG_RX_MAX_PKT_NUM                      ((CFG_NUM_OF_RX0_HIF_DESC + CFG_NUM_OF_RX1_HIF_DESC) * 3 \
@@ -339,6 +339,7 @@
 #define CFG_RX_BA_INC_SIZE                      4
 #define CFG_RX_MAX_BA_TID_NUM                   8
 #define CFG_RX_REORDERING_ENABLED               1
+#define CFG_RX_BA_REORDERING_ENHANCEMENT		1
 
 /*------------------------------------------------------------------------------
  * Flags and Parameters for CMD/RESPONSE
@@ -430,8 +431,16 @@
  *------------------------------------------------------------------------------
  */
 #define CFG_MULTI_SSID_SCAN			1
+#define CFG_NLO_MSP 0 /* NLO/PNO Multiple Scan Plan */
 #define CFG_SCAN_SSID_MAX_NUM                   (10)
 #define CFG_SCAN_SSID_MATCH_MAX_NUM             (16)
+
+/*------------------------------------------------------------------------------
+ * Flags and Parameters for Support EMI DEBUG
+ *------------------------------------------------------------------------------
+ */
+#define CFG_SUPPORT_EMI_DEBUG                   1
+
 
 /*------------------------------------------------------------------------------
  * Flags and Parameters for Load Setup Default
@@ -547,7 +556,7 @@
 #define CFG_SUPPORT_802_11W             0
 #else
 #define CFG_ENABLE_WIFI_DIRECT          1
-#define CFG_SUPPORT_802_11W             0	/*!< 0(default): Disable 802.11W */
+#define CFG_SUPPORT_802_11W             1
 #endif
 #else
 #define CFG_ENABLE_WIFI_DIRECT              0
@@ -684,17 +693,31 @@
 #define CFG_MAX_NUM_OF_CHNL_INFO				50
 #define CFG_SELECT_BSS_BASE_ON_MULTI_PARAM		1
 #define CFG_SELECT_BSS_BASE_ON_RSSI				0
-#define CFG_SUPPORT_802_11K			0
+#define CFG_SUPPORT_VO_ENTERPRISE               1
+#define CFG_NEIGHBOR_AP_CHANNEL_NUM             50
+#define CFG_SUPPORT_WMM_AC                      1
 
-#define CFG_SUPPORT_802_11V                    0	/* Support 802.11v Wireless Network Management */
-#define CFG_SUPPORT_802_11V_TIMING_MEASUREMENT 0
-#define CFG_SUPPORT_OKC							1
-#if (CFG_SUPPORT_802_11V_TIMING_MEASUREMENT == 1) && (CFG_SUPPORT_802_11V == 0)
+#if CFG_SUPPORT_VO_ENTERPRISE
+#define CFG_SUPPORT_802_11V_BSS_TRANSITION_MGT  1
+#define CFG_SUPPORT_802_11R                     1
+#define CFG_SUPPORT_802_11V                     1
+#define CFG_SUPPORT_802_11K                     1
+#else
+#define CFG_SUPPORT_802_11V_BSS_TRANSITION_MGT  0
+#define CFG_SUPPORT_802_11R                     0
+#define CFG_SUPPORT_802_11V                     0
+#define CFG_SUPPORT_802_11K                     0
+#endif
+
+#define CFG_SUPPORT_802_11V_TIMING_MEASUREMENT  0
+#define CFG_SUPPORT_OKC                         1
+
+#if (CFG_SUPPORT_802_11V_TIMING_MEASUREMENT == 1) || CFG_SUPPORT_802_11V_BSS_TRANSITION_MGT == 1 \
+	&& (CFG_SUPPORT_802_11V == 0)
 #error "CFG_SUPPORT_802_11V should be 1 once CFG_SUPPORT_802_11V_TIMING_MEASUREMENT equals to 1"
 #endif
-#if (CFG_SUPPORT_802_11V == 0)
+
 #define WNM_UNIT_TEST 0
-#endif
 
 #define CFG_SUPPORT_PPR2	1
 #define CFG_DRIVER_COMPOSE_ASSOC_REQ   1
@@ -705,6 +728,9 @@
 
 #define CFG_SUPPORT_WFD_COMPOSE_IE          1
 
+#define CFG_SUPPORT_CPU_BOOST			0
+
+#define CFG_SUPPORT_TX_BACKOFF              0
 /*------------------------------------------------------------------------------
  * Flags of Packet Lifetime Profiling Mechanism
  *------------------------------------------------------------------------------
@@ -717,6 +743,7 @@
 #define CFG_PRINT_RTP_SN_SKIP               0
 
 #define CFG_SUPPORT_PWR_LIMIT_COUNTRY       1
+#define CFG_SUPPORT_MTK_SYNERGY             1
 /*------------------------------------------------------------------------------
  * Flags of bus error tolerance
  *------------------------------------------------------------------------------
@@ -785,6 +812,13 @@
 *                            P U B L I C   D A T A
 ********************************************************************************
 */
+/*Driver naming rule: Mdoule_AndroidVersion_Branch_Date_SerialNum*/
+/*Module: Gen2(0x01)/Gen3(0x02) |  kernel-3.10(x00)/3.18(0x10),kernel-4.4(0x20)*/
+/*AndroidVersion:7.0->70*/
+/*Branch: 00 for Trunk, 01->mp1,02->mp2*/
+/*Date: relase date*/
+/*Serial Number :start form 1*/
+#define WIFI_DRIVER_VERSION		"11_70_00_20170104_1"
 
 /*******************************************************************************
 *                           P R I V A T E   D A T A

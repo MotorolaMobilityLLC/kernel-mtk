@@ -59,6 +59,8 @@ extern struct delayed_work sched_workq;
 #if defined(MT6620) && CFG_MULTI_ECOVER_SUPPORT
 extern ENUM_WMTHWVER_TYPE_T mtk_wcn_wmt_hwver_get(VOID);
 #endif
+extern PUINT8 wmt_lib_get_fwinfor_from_emi(UINT8 section, UINT32 offset, PUINT8 buff, UINT32 len);
+extern PUINT8 mtk_wcn_consys_emi_virt_addr_get(UINT32 ctrl_state_offset);
 
 extern BOOLEAN fgIsUnderSuspend;
 /*******************************************************************************
@@ -125,6 +127,23 @@ typedef enum _ENUM_KAL_NETWORK_TYPE_INDEX_T {
 #endif
 	KAL_NETWORK_TYPE_INDEX_NUM
 } ENUM_KAL_NETWORK_TYPE_INDEX_T;
+
+typedef enum _ENUM_PKT_TYPE_T {
+	ENUM_PKT_802_11,	/* 802.11 or non-802.11 */
+	ENUM_PKT_802_3,		/* 802.3 or ethernetII */
+	ENUM_PKT_1X,		/* 1x frame or not */
+	ENUM_PKT_PROTECTED_1X,	/* prtected 1x frame */
+	ENUM_PKT_WPI_1X,	/* WAPI */
+	ENUM_PKT_VLAN_EXIST,	/* VLAN tag exist */
+	ENUM_PKT_DHCP,		/* DHCP frame */
+	ENUM_PKT_ARP,		/* ARP */
+	ENUM_PKT_ICMP,		/* ICMP */
+	ENUM_PKT_TDLS,		/* TDLS */
+	ENUM_PKT_DNS,		/* DNS */
+
+	ENUM_PKT_FLAG_NUM
+} ENUM_PKT_TYPE_T;
+
 
 typedef enum _ENUM_AMPDU_TYPE_E {
 	MTK_AMPDU_TX_DESC,
@@ -560,6 +579,8 @@ void kalDevLoopbkAuto(IN GLUE_INFO_T *GlueInfo);
 UINT_32 kalReadExtCfg(IN P_GLUE_INFO_T prGlueInfo);
 #endif
 
+UINT_8 kalGetPktEtherType(IN PUINT_8 pucPkt);
+
 BOOLEAN
 kalQoSFrameClassifierAndPacketInfo(IN P_GLUE_INFO_T prGlueInfo,
 				   IN P_NATIVE_PACKET prPacket,
@@ -698,6 +719,9 @@ kalGetConfigurationVersion(IN P_GLUE_INFO_T prGlueInfo,
 			   OUT PUINT_16 pu2Part1CfgPeerVersion,
 			   OUT PUINT_16 pu2Part2CfgOwnVersion, OUT PUINT_16 pu2Part2CfgPeerVersion);
 
+BOOLEAN kalCfgDataRead(IN P_GLUE_INFO_T prGlueInfo, IN UINT_32 u4Offset,
+							IN UINT_32 u4Len, OUT PUINT_16 pu2Data);
+
 BOOLEAN kalCfgDataRead16(IN P_GLUE_INFO_T prGlueInfo, IN UINT_32 u4Offset, OUT PUINT_16 pu2Data);
 
 BOOLEAN kalCfgDataWrite16(IN P_GLUE_INFO_T prGlueInfo, IN UINT_32 u4Offset, IN UINT_16 u2Data);
@@ -759,6 +783,13 @@ VOID kalSchedScanResults(IN P_GLUE_INFO_T prGlueInfo);
 
 VOID kalSchedScanStopped(IN P_GLUE_INFO_T prGlueInfo);
 
+#if CFG_SUPPORT_EMI_DEBUG
+/*----------------------------------------------------------------------------*/
+/* WMT Support                                                                 */
+/*----------------------------------------------------------------------------*/
+PINT8 kalGetFwInfoFormEmi(UINT8 section, UINT32 offset, PUINT8 buff, UINT32 len);
+#endif
+
 /*******************************************************************************
 *                              F U N C T I O N S
 ********************************************************************************
@@ -796,6 +827,7 @@ INT_32 kalPerMonStop(IN P_GLUE_INFO_T prGlueInfo);
 INT_32 kalPerMonDestroy(IN P_GLUE_INFO_T prGlueInfo);
 VOID kalPerMonHandler(IN P_ADAPTER_T prAdapter, ULONG ulParam);
 INT_32 kalBoostCpu(UINT_32 core_num);
+INT32 kalSetCpuNumFreq(UINT_32 core_num, UINT_32 freq);
 INT_32 kalFbNotifierReg(IN P_GLUE_INFO_T prGlueInfo);
 VOID kalFbNotifierUnReg(VOID);
 #endif /* _GL_KAL_H */

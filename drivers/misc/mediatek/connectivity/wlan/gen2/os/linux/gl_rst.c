@@ -55,6 +55,16 @@ static void *glResetCallback(ENUM_WMTDRV_TYPE_T eSrcType,
 *                              F U N C T I O N S
 ********************************************************************************
 */
+
+/*0= f/w assert flag is not set, others=f/w assert flag is set */
+BOOLEAN glIsWmtCodeDump(VOID)
+{
+	if (mtk_wcn_stp_coredump_start_get() == 0)
+		return FALSE;
+	else
+		return TRUE;
+}
+
 /*----------------------------------------------------------------------------*/
 /*!
  * @brief This routine is responsible for

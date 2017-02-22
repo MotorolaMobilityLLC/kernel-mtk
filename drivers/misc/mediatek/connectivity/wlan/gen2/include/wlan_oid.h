@@ -95,6 +95,7 @@
 /*----------------------------------------------------------------------------*/
 /* NDIS_802_11_AUTHENTICATION_MODE */
 typedef enum _ENUM_PARAM_AUTH_MODE_T {
+	AUTH_MODE_NON_RSN_FT, /* Fast Bss Transition in a Non FT */
 	AUTH_MODE_OPEN,		/*!< Open system */
 	AUTH_MODE_SHARED,	/*!< Shared key */
 	AUTH_MODE_AUTO_SWITCH,	/*!< Either open system or shared key */
@@ -103,6 +104,9 @@ typedef enum _ENUM_PARAM_AUTH_MODE_T {
 	AUTH_MODE_WPA_NONE,	/*!< For Ad hoc */
 	AUTH_MODE_WPA2,
 	AUTH_MODE_WPA2_PSK,
+	AUTH_MODE_WPA_OSEN,
+	AUTH_MODE_WPA2_FT, /* Fast Bss Transition for 802.1x */
+	AUTH_MODE_WPA2_FT_PSK, /* Fast Bss Transition for WPA2 PSK */
 	AUTH_MODE_NUM		/*!< Upper bound, not real case */
 } ENUM_PARAM_AUTH_MODE_T, *P_ENUM_PARAM_AUTH_MODE_T;
 
@@ -185,7 +189,8 @@ typedef enum _ENUM_PARAM_AD_HOC_MODE_T {
 typedef enum _ENUM_PARAM_MEDIA_STATE_T {
 	PARAM_MEDIA_STATE_CONNECTED,
 	PARAM_MEDIA_STATE_DISCONNECTED,
-	PARAM_MEDIA_STATE_TO_BE_INDICATED	/* for following MSDN re-association behavior */
+	PARAM_MEDIA_STATE_DISCONNECT_PREV,
+	PARAM_MEDIA_STATE_TO_BE_INDICATED,	/* for following MSDN re-association behavior */
 } ENUM_PARAM_MEDIA_STATE_T, *P_ENUM_PARAM_MEDIA_STATE_T;
 
 typedef enum _ENUM_PARAM_NETWORK_TYPE_T {
@@ -229,6 +234,7 @@ typedef enum _ENUM_STATUS_TYPE_T {
 	ENUM_STATUS_TYPE_AUTHENTICATION,
 	ENUM_STATUS_TYPE_MEDIA_STREAM_MODE,
 	ENUM_STATUS_TYPE_CANDIDATE_LIST,
+	ENUM_STATUS_TYPE_FT_AUTH_STATUS,
 	ENUM_STATUS_TYPE_NUM	/*!< Upper bound, not real case */
 } ENUM_STATUS_TYPE_T, *P_ENUM_STATUS_TYPE_T;
 
@@ -559,6 +565,7 @@ typedef struct _PARAM_QOS_TSPEC {
 	UINT_32 u4MinPHYRate;	/* minimum PHY rate */
 	UINT_16 u2Sba;		/* surplus bandwidth allowance */
 	UINT_16 u2MediumTime;	/* medium time */
+	UINT_8 ucDialogToken;
 } PARAM_QOS_TSPEC, *P_PARAM_QOS_TSPEC;
 
 typedef struct _PARAM_QOS_ADDTS_REQ_INFO {
@@ -1457,6 +1464,12 @@ WLAN_STATUS
 wlanoidSetCountryCode(IN P_ADAPTER_T prAdapter,
 		      IN PVOID pvSetBuffer, IN UINT_32 u4SetBufferLen, OUT PUINT_32 pu4SetInfoLen);
 
+#ifdef CFG_TC1_FEATURE /* for Passive Scan */
+WLAN_STATUS
+wlanoidSetPassiveScan(IN P_ADAPTER_T  prAdapter,
+		      IN PVOID pvSetBuffer, IN UINT_32 u4SetBufferLen, OUT PUINT_32 pu4SetInfoLen);
+#endif
+
 WLAN_STATUS wlanSendMemDumpCmd(IN P_ADAPTER_T prAdapter, IN PVOID pvQueryBuffer, IN UINT_32 u4QueryBufferLen);
 
 #if CFG_SLT_SUPPORT
@@ -1614,10 +1627,59 @@ wlanoidQueryLteSafeChannel(IN P_ADAPTER_T prAdapter,
 WLAN_STATUS wlanoidQueryCfgRead(IN P_ADAPTER_T prAdapter,
 				IN PVOID pvQueryBuffer, IN UINT_32 u4QueryBufferLen, OUT PUINT_32 pu4QueryInfoLen);
 #endif
+#if CFG_SUPPORT_EMI_DEBUG
+WLAN_STATUS
+wlanoidSetEnableDumpEMILog(IN P_ADAPTER_T prAdapter,
+				IN PVOID pvSetBuffer, IN UINT_32 u4SetBufferLen, OUT PUINT_32 pu4SetInfoLen);
+#endif
+
+WLAN_STATUS
+wlanoidUpdateFtIes(IN P_ADAPTER_T prAdapter,
+			IN PVOID pvSetBuffer, IN UINT_32 u4SetBufferLen, OUT PUINT_32 pu4SetInfoLen);
+
+WLAN_STATUS
+wlanoidSync11kCapbilities(IN P_ADAPTER_T prAdapter,
+			IN PVOID pvSetBuffer, IN UINT_32 u4SetBufferLen, OUT PUINT_32 pu4SetInfoLen);
+
+WLAN_STATUS
+wlanoidSendNeighborRequest(IN P_ADAPTER_T prAdapter,
+			IN PVOID pvSetBuffer, IN UINT_32 u4SetBufferLen, OUT PUINT_32 pu4SetInfoLen);
+
+WLAN_STATUS wlanoidSendBTMQuery(IN P_ADAPTER_T prAdapter,
+			IN PVOID pvSetBuffer, IN UINT_32 u4SetBufferLen, OUT PUINT_32 pu4SetInfoLen);
+
+WLAN_STATUS wlanoidTspecOperation(
+	IN  P_ADAPTER_T prAdapter, IN  PVOID pvBuffer, IN  UINT_32 u4BufferLen, OUT PUINT_32 pu4InfoLen);
+
 #endif /* _WLAN_OID_H */
+WLAN_STATUS
+wlanoidSetChipConfig(IN P_ADAPTER_T prAdapter,
+		     IN PVOID pvSetBuffer, IN UINT_32 u4SetBufferLen, OUT PUINT_32 pu4SetInfoLen);
+WLAN_STATUS
+wlanoidNotifyFwSuspend(IN P_ADAPTER_T prAdapter,
+								IN PVOID pvSetBuffer,
+								IN UINT_32 u4SetBufferLen,
+								OUT PUINT_32 pu4SetInfoLen);
+
+WLAN_STATUS
+wlanoidSetAlwaysScan(IN  P_ADAPTER_T prAdapter, IN PVOID pvSetBuffer,
+			IN UINT_32 u4SetBufferLen, OUT PUINT_32 pu4SetInfoLen);
+
+
+WLAN_STATUS
+wlanoidDisableTdlsPs(IN P_ADAPTER_T prAdapter,
+			 IN PVOID pvSetBuffer, IN UINT_32 u4SetBufferLen, OUT PUINT_32 pu4SetInfoLen);
+
 WLAN_STATUS wlanoidSetPacketFilter(P_ADAPTER_T prAdapter, UINT_32 u4PacketFilter,
 				BOOLEAN fgIsOid, PVOID pvSetBuffer, UINT_32 u4SetBufferLen);
 
 WLAN_STATUS wlanoidSetDrvRoamingPolicy(IN P_ADAPTER_T prAdapter,
 			 IN PVOID pvSetBuffer, IN UINT_32 u4SetBufferLen, OUT PUINT_32 pu4SetInfoLen);
+
+WLAN_STATUS wlanoidRadioMeasurementIT(
+	P_ADAPTER_T prAdapter, PVOID pvBuffer, UINT_32 u4BufferLen, PUINT_32 pu4InfoLen);
+
+WLAN_STATUS
+wlanoidDumpUapsdSetting(P_ADAPTER_T prAdapter, PVOID pvBuffer, UINT_32 u4BufferLen,
+									  PUINT_32 pu4InfoLen);
 

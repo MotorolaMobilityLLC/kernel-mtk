@@ -65,8 +65,20 @@ else
     ccflags-y += -DCFG_TC1_FEATURE=0
 endif
 
+ifeq ($(CONFIG_MTK_TC10_FEATURE), y)
+    ccflags-y += -DCFG_TC10_FEATURE=1
+    ccflags-y += -DCFG_SKIP_MAC_INFO_CHECK
+    ccflags-y += -DCFG_SUPPORT_TX_POWER_BACK_OFF
+    ccflags-y += -DCFG_USE_AOSP_TETHERING_NAME
+else
+    ccflags-y += -DCFG_TC10_FEATURE=0
+endif
+
 MTK_SRAM_SIZE_OPTION=0
 ifeq ($(CONFIG_ARCH_MT6755), y)
+    MTK_SRAM_SIZE_OPTION=2
+endif
+ifeq ($(CONFIG_MACH_MT6757), y)
     MTK_SRAM_SIZE_OPTION=2
 endif
 ifeq ($(CONFIG_ARCH_MT6735), y)
@@ -79,6 +91,9 @@ ifeq ($(CONFIG_ARCH_MT6753), y)
     MTK_SRAM_SIZE_OPTION=1
 endif
 ifeq ($(CONFIG_ARCH_MT6580), y)
+    MTK_SRAM_SIZE_OPTION=1
+endif
+ifeq ($(CONFIG_ARCH_MT6570), y)
     MTK_SRAM_SIZE_OPTION=1
 endif
 ifeq ($(CONFIG_ARCH_MT8163), y)
@@ -102,6 +117,7 @@ ccflags-y += -DDBG=0
 ccflags-y += -I$(src)/os -I$(src)/os/linux/include -I$(src)/os/linux/hif/ahb/include
 ccflags-y += -I$(src)/include -I$(src)/include/nic -I$(src)/include/mgmt
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/$(MTK_PLATFORM)/
 
 MODULE_NAME := wlan_gen2
 obj-$(CONFIG_MTK_COMBO_WIFI) += $(MODULE_NAME).o
@@ -211,7 +227,9 @@ MGMT_OBJS += $(MGMT_DIR)p2p_assoc.o \
              $(MGMT_DIR)p2p_rlm_obss.o \
              $(MGMT_DIR)p2p_scan.o \
              $(MGMT_DIR)p2p_ie.o \
-             $(MGMT_DIR)p2p_state.o
+             $(MGMT_DIR)p2p_state.o \
+             $(MGMT_DIR)wnm.o \
+             $(MGMT_DIR)wmm.o
 
 
 ifeq ($(CONFIG_MTK_WAPI_SUPPORT), y)
@@ -233,7 +251,22 @@ PLAT_OBJS := $(PLAT_DIR)plat_priv.o
 $(MODULE_NAME)-objs  += $(PLAT_OBJS)
 endif
 
-ifeq ($(CONFIG_ARCH_MT6757), y)
+ifeq ($(CONFIG_MACH_MT6757), y)
+PLAT_OBJS := $(PLAT_DIR)plat_priv.o
+$(MODULE_NAME)-objs  += $(PLAT_OBJS)
+endif
+
+ifeq ($(CONFIG_ARCH_MT6570), y)
+PLAT_OBJS := $(PLAT_DIR)plat_priv.o
+$(MODULE_NAME)-objs  += $(PLAT_OBJS)
+endif
+
+ifeq ($(CONFIG_ARCH_MT6735), y)
+PLAT_OBJS := $(PLAT_DIR)plat_priv.o
+$(MODULE_NAME)-objs  += $(PLAT_OBJS)
+endif
+
+ifeq ($(CONFIG_ARCH_MT6735M), y)
 PLAT_OBJS := $(PLAT_DIR)plat_priv.o
 $(MODULE_NAME)-objs  += $(PLAT_OBJS)
 endif

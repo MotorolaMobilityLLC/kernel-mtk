@@ -348,6 +348,8 @@ VOID glSetHifInfo(GLUE_INFO_T *GlueInfo, ULONG ulCookie)
 			HifInfo->ChipID = 0x6735;	/* Denali ChipID transition */
 		if (HifInfo->ChipID == 0x0326)
 			HifInfo->ChipID = 0x6755;
+		if (HifInfo->ChipID == 0x0633)
+			HifInfo->ChipID = 0x6570;
 	}
 	DBGLOG(INIT, INFO, "[WiFi/HIF] ChipID = 0x%x\n", HifInfo->ChipID);
 #ifdef CONFIG_OF
@@ -413,7 +415,6 @@ VOID glClearHifInfo(GLUE_INFO_T *GlueInfo)
 	GlueInfo->rHifInfo.DmaRegBaseAddr = NULL;
 	GlueInfo->rHifInfo.McuRegBaseAddr = NULL;
 	GlueInfo->rHifInfo.APMcuRegBaseAddr = NULL;
-
 	return;
 
 } /* end of glClearHifInfo() */
@@ -440,6 +441,7 @@ VOID glGetChipInfo(GLUE_INFO_T *GlueInfo, UINT_8 *pucChipBuf)
 	case MTK_CHIP_ID_8163:
 	case MTK_CHIP_ID_8160:
 	case MTK_CHIP_ID_6735:
+	case MTK_CHIP_ID_6570:
 	case MTK_CHIP_ID_6580:
 	case MTK_CHIP_ID_6755:
 	case MTK_CHIP_ID_7623:

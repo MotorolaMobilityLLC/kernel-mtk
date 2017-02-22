@@ -79,7 +79,9 @@ static const struct iw_priv_args rIwPrivTable[] = {
 	{IOCTL_GET_INT, 0, IW_PRIV_TYPE_INT | 50, ""},
 	{IOCTL_GET_INT, 0, IW_PRIV_TYPE_CHAR | 16, ""},
 
-	{IOCTL_SET_STRING, IW_PRIV_TYPE_CHAR | 256, 0, ""},
+	{IOCTL_SET_STRING, IW_PRIV_TYPE_CHAR | 512, 0, ""},
+
+	{IOCTL_GET_STRING, IW_PRIV_TYPE_CHAR | 128, IW_PRIV_TYPE_CHAR | 512, ""},
 
 	/* added for set_oid and get_oid */
 	{IOCTL_SET_STRUCT, 256, 0, ""},
@@ -139,7 +141,9 @@ static const struct iw_priv_args rIwPrivTable[] = {
 	{PRIV_CMD_GET_BUILD_DATE_CODE, 0, IW_PRIV_TYPE_CHAR | 16, "get_date_code"},
 	{PRIV_CMD_GET_DEBUG_CODE, 0, IW_PRIV_TYPE_CHAR | 16, "get_dbg_code"},
 	/* handle any command with many input parameters */
-	{PRIV_CMD_OTHER, IW_PRIV_TYPE_CHAR | 256, 0, "set_str_cmd"},
+	{PRIV_CMD_OTHER, IW_PRIV_TYPE_CHAR | 512, 0, "set_str_cmd"},
+
+	{PRIV_CMD_DUMP_DRIVER, IW_PRIV_TYPE_CHAR | 128, IW_PRIV_TYPE_CHAR | 512, "dump_driver"},
 
 	{PRIV_CMD_WFD_DEBUG_CODE, IW_PRIV_TYPE_INT | IW_PRIV_SIZE_FIXED | 2, 0, "set_wfd_dbg_code"},
 };
@@ -159,6 +163,7 @@ static const iw_handler rIwPrivHandler[] = {
 	[IOCTL_SET_INTS - SIOCIWFIRSTPRIV] = priv_set_ints,
 	[IOCTL_GET_INTS - SIOCIWFIRSTPRIV] = priv_get_ints,
 	[IOCTL_SET_STRING - SIOCIWFIRSTPRIV] = priv_set_string,
+	[IOCTL_GET_STRING - SIOCIWFIRSTPRIV] = priv_get_string,
 };
 
 const struct iw_handler_def wext_handler_def = {
@@ -460,6 +465,48 @@ BOOLEAN wextSrchDesiredHS20IE(IN PUINT_8 pucIEStart, IN INT_32 i4TotalIeLen, OUT
 
 /*----------------------------------------------------------------------------*/
 /*!
+* \brief Find the desired HS2.0 Information Element according to desiredElemID.
+*
+* \param[in] pucIEStart IE starting address.
+* \param[in] i4TotalIeLen Total length of all the IE.
+* \param[in] ucDesiredElemId Desired element ID.
+* \param[out] ppucDesiredIE Pointer to the desired IE.
+*
+* \retval TRUE Find the desired IE.
+* \retval FALSE Desired IE not found.
+*
+* \note
+*/
+/*----------------------------------------------------------------------------*/
+BOOLEAN wextSrchDesiredOsenIE(IN PUINT_8 pucIEStart, IN INT_32 i4TotalIeLen, OUT PUINT_8 *ppucDesiredIE)
+{
+	INT_32 i4InfoElemLen;
+
+	ASSERT(pucIEStart);
+	ASSERT(ppucDesiredIE);
+
+	while (i4TotalIeLen >= 2) {
+		i4InfoElemLen = (INT_32) pucIEStart[1] + 2;
+		if (pucIEStart[0] == ELEM_ID_VENDOR && i4InfoElemLen <= i4TotalIeLen) {
+			if (pucIEStart[1] >= 4) {
+				if (memcmp(&pucIEStart[2], "\x50\x6f\x9a\x12", 4) == 0) {
+					*ppucDesiredIE = &pucIEStart[0];
+					return TRUE;
+				}
+			}
+		}
+
+		/* check desired EID */
+		/* Select next information element. */
+		i4TotalIeLen -= i4InfoElemLen;
+		pucIEStart += i4InfoElemLen;
+	}
+
+	return FALSE;
+}
+
+/*----------------------------------------------------------------------------*/
+/*!
 * \brief Find the desired interworking Information Element according to desiredElemID.
 *
 * \param[in] pucIEStart IE starting address.
@@ -615,6 +662,7 @@ BOOLEAN wextSrchOkcAndPMKID(IN PUINT_8 pucIEStart, IN INT_32 i4TotalIeLen, OUT P
 			u2AkmCnt = *(PUINT_16)&pucIEStart[i4LenToCheck];
 			i4LenToCheck += 2; /* include length of AKM Count */
 			i4LenToCheck += u2AkmCnt * 4 + 2; /* include akm list field */
+
 			/* if IE length is 10 + u2CipherCnt * 4 + 2 + u2AkmCnt * 4 + 2 + 6,
 			means PMKID count field is zero, and Group Mgmt Cipher may be exist */
 			if (i4InfoElemLen <= i4LenToCheck + 6)
@@ -3041,6 +3089,44 @@ static int wext_set_country(IN struct net_device *prNetDev, IN struct iw_point *
 	return 0;
 }
 
+#if CFG_TC1_FEATURE /* for Passive Scan */
+/*----------------------------------------------------------------------------*/
+/*!
+* \brief Set passive scan
+*
+* \param[in] prDev Net device requested.
+* \param[in] prIwrInfo NULL.
+* \param[in] pu4Mode Pointer to new operation mode.
+* \param[in] pcExtra NULL.
+*
+* \retval 0 For success.
+* \retval -EOPNOTSUPP If new mode is not supported.
+*
+* \note Device will run in new operation mode if it is valid.
+*/
+/*----------------------------------------------------------------------------*/
+static int wext_set_passive_scan(IN struct net_device *prNetDev, IN struct iw_point *prData)
+{
+	P_GLUE_INFO_T prGlueInfo;
+	WLAN_STATUS rStatus;
+	UINT_32 u4BufLen;
+	UINT_8 passivescan;
+
+	ASSERT(prNetDev);
+
+	/* prData->pointer should be like SCAN-PASSIVE or SCAN-ACTIVE*/
+	if (FALSE == GLUE_CHK_PR2(prNetDev, prData) || !prData->pointer || prData->length < 11)
+		return -EINVAL;
+	prGlueInfo = *((P_GLUE_INFO_T *) netdev_priv(prNetDev));
+
+	passivescan = prData->flags;
+
+	rStatus = kalIoctl(prGlueInfo, wlanoidSetPassiveScan, &passivescan, 1, FALSE, FALSE, TRUE, FALSE, &u4BufLen);
+
+	return 0;
+}
+#endif /* CONFIG_MTK_TC1_FEATURE */
+
 /*----------------------------------------------------------------------------*/
 /*!
 * \brief To report the iw private args table to user space.
@@ -3163,11 +3249,20 @@ int wext_support_ioctl(IN struct net_device *prDev, IN struct ifreq *prIfReq, IN
 			ret = -EINVAL;
 		}
 		break;
-
+#if CFG_TC1_FEATURE /* for Passive Scan */
+	case SIOCSIWPRIV: /* 0x8B0C, flags 1 : Country, flag2 : passive scan */
+		if (iwr->u.data.flags == 0x0001 || iwr->u.data.flags == 0x0000)
+			ret = wext_set_country(prDev, &iwr->u.data);
+		else if (iwr->u.data.flags == 0x0002)
+			ret = wext_set_passive_scan(prDev, &iwr->u.data);
+		else if (iwr->u.data.flags == 0x0003)
+			ret = wext_set_passive_scan(prDev, &iwr->u.data);
+		break;
+#else
 	case SIOCSIWPRIV:	/* 0x8B0C, set country code */
 		ret = wext_set_country(prDev, &iwr->u.data);
 		break;
-
+#endif
 	case SIOCGIWPRIV:	/* 0x8B0D, get private args table */
 		ret = wext_get_priv(prDev, &iwr->u.data);
 		break;

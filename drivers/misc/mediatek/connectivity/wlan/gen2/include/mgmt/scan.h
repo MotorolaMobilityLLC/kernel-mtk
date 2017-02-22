@@ -72,8 +72,8 @@ extern UINT8 aucTdlsTestExtCapElm[];
 /*----------------------------------------------------------------------------*/
 #define SCAN_REQ_SSID_WILDCARD              BIT(0)
 #define SCAN_REQ_SSID_P2P_WILDCARD          BIT(1)
-#define SCAN_REQ_SSID_SPECIFIED             BIT(2)
-
+#define SCAN_REQ_SSID_SPECIFIED             BIT(2) /* two probe req will be sent, wildcard and specified */
+#define SCAN_REQ_SSID_SPECIFIED_ONLY        BIT(3) /* only a specified ssid probe request will be sent */
 /*----------------------------------------------------------------------------*/
 /* Support Multiple SSID SCAN                                                 */
 /*----------------------------------------------------------------------------*/
@@ -133,6 +133,13 @@ typedef struct _MSG_SCN_FSM_T {
 	UINT_32 u4Dummy;
 } MSG_SCN_FSM_T, *P_MSG_SCN_FSM_T;
 
+typedef enum _ENUM_POSTPONE_SCHED_SCAN_REQUEST_T {
+	SCHED_SCAN_POSTPONE_START = 0,
+	SCHED_SCAN_POSTPONE_STOP,
+	SCHED_SCAN_POSTPONE_NUM
+} ENUM_POSTPONE_SCHED_SCAN_REQUEST_T;
+
+
 typedef enum _ENUM_PSCAN_STATE_T {
 	PSCN_IDLE = 0,
 	PSCN_RESET,
@@ -158,6 +165,7 @@ struct _BSS_DESC_T {
 				 * don't removed this record from BSS list.
 				 */
 
+	BOOLEAN fgIsValidSSID; /* This flag is TRUE if the SSID is not hidden */
 	BOOLEAN fgIsHiddenSSID;	/* When this flag is TRUE, means the SSID
 				 * of this BSS is not known yet.
 				 */
@@ -214,6 +222,7 @@ struct _BSS_DESC_T {
 #endif
 	BOOLEAN fgIERSN;
 	BOOLEAN fgIEWPA;
+	BOOLEAN fgIEOsen;
 
 	/*! \brief RSN parameters selected for connection */
 	/*! \brief The Select score for final AP selection,
@@ -263,6 +272,7 @@ struct _BSS_DESC_T {
 	BOOLEAN fgMultiAnttenaAndSTBC;
 	BOOLEAN fgDeauthLastTime;
 	UINT_32 u4UpdateIdx;
+	INT_8 cPowerLimit;
 };
 
 struct _ROAM_BSS_DESC_T {
@@ -298,7 +308,9 @@ typedef struct _SCAN_PARAM_T {	/* Used by SCAN FSM */
 	UINT_16 u2PassiveListenInterval;
 	/* TODO: Find Specific Device Type. */
 #endif				/* CFG_SUPPORT_P2P */
-
+	UINT_16 u2ChannelDwellTime;
+	UINT_16 u2MinChannelDwellTime;
+	UINT_8 aucBSSID[MAC_ADDR_LEN];
 	BOOLEAN fgIsObssScan;
 	BOOLEAN fgIsScanV2;
 
@@ -467,6 +479,9 @@ typedef struct _SCAN_INFO_T {
 	BOOLEAN fgGScnParamSet;
 	BOOLEAN fgGScnAction;
 	P_CMD_SET_PSCAN_PARAM prPscnParam;
+	BOOLEAN fgIsPostponeSchedScan;
+	ENUM_POSTPONE_SCHED_SCAN_REQUEST_T eCurrendSchedScanReq;
+	PARAM_SCHED_SCAN_REQUEST rSchedScanRequest;
 	ENUM_PSCAN_STATE_T eCurrentPSCNState;
 #endif
 #if CFG_SUPPORT_GSCN
@@ -491,12 +506,12 @@ typedef struct _MSG_SCN_SCAN_REQ_T {
 	UINT_8 ucSSIDType;	/* BIT(0) wildcard / BIT(1) P2P-wildcard / BIT(2) specific */
 	UINT_8 ucSSIDLength;
 	UINT_8 aucSSID[PARAM_MAX_LEN_SSID];
-#if CFG_ENABLE_WIFI_DIRECT
 	UINT_16 u2ChannelDwellTime;	/* In TU. 1024us. */
-#endif
-#if CFG_MULTI_SSID_SCAN
-	UINT_16 u2TimeoutValue; /* ms unit */
-#endif
+
+	UINT_16 u2TimeoutValue; /* ms unit */ /* MULTI SSID */
+	UINT_16 u2MinChannelDwellTime;	/* In TU. 1024us. */
+	UINT_8 aucBSSID[MAC_ADDR_LEN];
+
 	ENUM_SCAN_CHANNEL eScanChannel;
 	UINT_8 ucChannelListNum;
 	RF_CHANNEL_INFO_T arChnlInfoList[MAXIMUM_OPERATION_CHANNEL_LIST];
@@ -589,6 +604,19 @@ typedef struct _CMD_SET_PSCAN_MAC_ADDR {
 	UINT_8 aucReserved[8];
 } CMD_SET_PSCAN_MAC_ADDR, *P_CMD_SET_PSCAN_MAC_ADDR;
 
+struct RM_BEACON_REPORT_PARAMS {
+	UINT_8 ucChannel;
+	UINT_8 ucRCPI;
+	UINT_8 ucRSNI;
+	UINT_8 ucAntennaID;
+	UINT_8 ucFrameInfo;
+	UINT_8 aucBcnFixedField[12];
+};
+
+struct RM_MEASURE_REPORT_ENTRY {
+	LINK_ENTRY_T rLinkEntry;
+	UINT_8 aucMeasReport[260];
+};
 /*******************************************************************************
 *                            P U B L I C   D A T A
 ********************************************************************************
@@ -769,7 +797,9 @@ BOOLEAN scnCombineParamsIntoPSCN(IN P_ADAPTER_T prAdapter,
 
 VOID scnPSCNFsm(IN P_ADAPTER_T prAdapter, IN ENUM_PSCAN_STATE_T eNextPSCNState);
 #endif
-
+#if CFG_NLO_MSP
+VOID scnSetMspParameterIntoPSCN(IN P_ADAPTER_T prAdapter, IN P_CMD_SET_PSCAN_PARAM prCmdPscnParam);
+#endif
 #if CFG_SUPPORT_GSCN
 BOOLEAN scnSetGSCNParam(IN P_ADAPTER_T prAdapter, IN P_PARAM_WIFI_GSCAN_CMD_PARAMS prCmdGscnParam);
 
@@ -789,3 +819,5 @@ VOID scanGetCurrentEssChnlList(P_ADAPTER_T prAdapter);
 
 #endif /* _SCAN_H */
 
+VOID scanCollectBeaconReport(IN P_ADAPTER_T prAdapter, PUINT_8 pucIEBuf,
+			     UINT_16 u2Length, PUINT_8 pucBssid, struct RM_BEACON_REPORT_PARAMS *prRepParams);
