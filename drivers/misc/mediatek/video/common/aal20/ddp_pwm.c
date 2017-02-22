@@ -52,6 +52,7 @@
 #define index_of_pwm(id) (0)
 #define PWM_LOG_BUFFER_SIZE 8
 
+extern int lct_read_boardid(void);
 
 static disp_pwm_id_t g_pwm_main_id = DISP_PWM0;
 static atomic_t g_pwm_backlight[1] = { ATOMIC_INIT(-1) };
@@ -119,6 +120,10 @@ int disp_pwm_get_cust_led(unsigned int *clocksource, unsigned int *clockdiv)
 			} else {
 				PWM_ERR("led dts can not get led mode data.\n");
 			}
+		/**** add by wangjiaxing 20170218 start ****/
+		       if(lct_read_boardid() >= 10)
+			   		g_pwm_led_mode = 4;
+		/**** add by wangjiaxing 20170218 end ****/
 		}
 	}
 
