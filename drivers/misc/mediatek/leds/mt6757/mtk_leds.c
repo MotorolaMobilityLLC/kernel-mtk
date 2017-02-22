@@ -44,6 +44,8 @@
 #include <mt-plat/met_drv.h>
 #endif
 
+extern int lct_read_boardid(void);
+
 /* #ifndef CONFIG_BACKLIGHT_SUPPORT_LM3697 */
 #if 0
 static int mtkfb_set_backlight_level(unsigned int level)
@@ -235,6 +237,11 @@ struct cust_mt65xx_led *get_cust_led_dtsi(void)
 							 &mode);
 				if (!ret) {
 					pled_dtsi[i].mode = mode;
+					/**** add by wangjiaxing 20170218 start ****/
+					  if(lct_read_boardid() >= 10)
+			      		 pled_dtsi[i].mode = 4;
+			             //printk("kls 2 board_id = %d\n",ret);
+					/**** add by wangjiaxing 20170218 end ****/
 					LEDS_DEBUG
 					    ("The %s's led mode is : %d\n",
 					     pled_dtsi[i].name,
