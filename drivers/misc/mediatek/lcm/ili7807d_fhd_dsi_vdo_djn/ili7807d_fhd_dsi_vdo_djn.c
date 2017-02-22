@@ -228,10 +228,6 @@ static void lcm_init(void)
 	SET_RESET_PIN(0);
 	MDELAY(5);
 	SET_RESET_PIN(1);
-	MDELAY(5);
-	SET_RESET_PIN(0);
-	MDELAY(5);
-	SET_RESET_PIN(1);
 	MDELAY(20);
 	init_lcm_registers();
 }
@@ -251,9 +247,6 @@ static void lcm_suspend(void)
 	set_gpio_lcd_enn(0);
 	MDELAY(5);
 	set_gpio_lcd_enp(0);
-
-	SET_RESET_PIN(0);
-	MDELAY(10);
 }
 
 
