@@ -1194,7 +1194,7 @@ gdfp_fp_ldo3v3_off: state_fp_ldo3v3_off{
                         };
                     };
 };
-&spi1{
+&spi0{
     #address-cells = <1>;
     #size-cells = <0>;
 
