@@ -146,6 +146,59 @@ int fts_ctpm_i2c_hid2std(struct i2c_client *client)
 }
 
 /************************************************************************
+* Name: fts_ctpm_fw_upgrade_ReadBootloadorID
+* Brief:  read Bootloador ID
+* Input: i2c info, Bootload ID
+* Output: no
+* Return: fail <0
+***********************************************************************/
+ int fts_ctpm_fw_upgrade_ReadBootloadorID(struct i2c_client *client)
+{
+    int i_ret=0;
+    u8 reg_val[4] = { 0 };
+    u32 i = 0;
+    u8 auc_i2c_write_buf[10];
+    fts_ctpm_i2c_hid2std(client);
+	
+
+    for (i = 0; i < FTS_UPGRADE_LOOP; i++) {
+        /*********Step 1:Reset  CTPM *****/
+        fts_i2c_write_reg(client, 0xfc, FTS_UPGRADE_AA);
+        msleep(fts_updateinfo_curr.delay_aa);
+        fts_i2c_write_reg(client, 0xfc, FTS_UPGRADE_55);
+        msleep(200);
+        /*********Step 2:Enter upgrade mode *****/
+        fts_ctpm_i2c_hid2std(client);
+        msleep(10);
+        auc_i2c_write_buf[0] = FTS_UPGRADE_55;
+        auc_i2c_write_buf[1] = FTS_UPGRADE_AA;
+        i_ret = fts_i2c_write(client, auc_i2c_write_buf, 2);
+        if (i_ret < 0) {
+            FTS_DEBUG("failed writing  0x55 and 0xaa!!");
+            continue;
+        }
+        /*********Step 3:check READ-ID***********************/
+        msleep(10);
+        auc_i2c_write_buf[0] = 0x90;
+        auc_i2c_write_buf[1] = auc_i2c_write_buf[2] = auc_i2c_write_buf[3] =
+            0x00;
+        reg_val[0] = reg_val[1] = 0x00;
+        fts_i2c_read(client, auc_i2c_write_buf, 4, reg_val, 2);
+        if (reg_val[0] == 0x54) {
+            FTS_DEBUG("[FTS] Step 3: READ OK CTPM ID,ID1 = 0x%x,ID2 = 0x%x!!",
+                      reg_val[0], reg_val[1]);
+            return 0;
+        }
+        else {
+            FTS_DEBUG("yufangfang [FTS] Step 3: CTPM ID,ID1 = 0x%x,ID2 = 0x%x!!",
+                      reg_val[0], reg_val[1]);
+            continue;
+        }
+    }
+	 return 1 ;
+
+}
+/************************************************************************
 * Name: fts_ctpm_fw_upgrade_ReadVendorID
 * Brief:  read vendor ID
 * Input: i2c info, vendor ID

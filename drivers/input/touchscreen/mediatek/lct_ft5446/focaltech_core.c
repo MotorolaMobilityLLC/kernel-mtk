@@ -158,13 +158,14 @@ static struct i2c_driver tpd_i2c_driver = {
 *****************************************************************************/
 int fts_wait_tp_to_valid(struct i2c_client *client)
 {
-    int ret = 0;
+    int ret1 = 0;
+	int ret2 = 0;
     int cnt = 0;
     u8 reg_value = 0;
 
     do {
-        ret = fts_i2c_read_reg(client, FTS_REG_CHIP_ID, &reg_value);
-        if ((ret < 0) || (reg_value != chip_types.chip_idh)) {
+        ret1 = fts_i2c_read_reg(client, FTS_REG_CHIP_ID, &reg_value);
+        if ((ret1 < 0) || (reg_value != chip_types.chip_idh)) {
             FTS_INFO("TP Not Ready, ReadData = 0x%x", reg_value);
     		fts_reset_proc(300);
         }
@@ -176,7 +177,12 @@ int fts_wait_tp_to_valid(struct i2c_client *client)
         msleep(INTERVAL_READ_REG);
     }
     while ((cnt * INTERVAL_READ_REG) < TIMEOUT_READ_REG);
-
+   ret2 = fts_ctpm_fw_upgrade_ReadBootloadorID(client);
+   if(!ret2)
+   {
+      FTS_INFO("TP Need Upgrade, ret2 = 0x%x", ret2);
+      return 0;
+   }
     /* error: not get correct reg data */
     return -1;
 }
