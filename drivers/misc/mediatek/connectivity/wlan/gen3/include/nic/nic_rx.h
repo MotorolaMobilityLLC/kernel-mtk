@@ -559,6 +559,7 @@ struct _SW_RFB_T {
 	ENUM_CSUM_RESULT_T aeCSUM[CSUM_TYPE_NUM];
 	ENUM_RX_PKT_DESTINATION_T eDst;
 	ENUM_TRAFFIC_CLASS_INDEX_T eTC;	/* only valid when eDst == FORWARD */
+	UINT_64 rIntTime;
 };
 
 /*! RX configuration type structure */

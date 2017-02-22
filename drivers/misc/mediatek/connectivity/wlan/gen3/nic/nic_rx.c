@@ -3151,6 +3151,7 @@ VOID nicRxSDIOAggReceiveRFBs(IN P_ADAPTER_T prAdapter)
 #if CFG_SDIO_RX_ENHANCE
 	UINT_32 u4MaxLoopCount = CFG_MAX_RX_ENHANCE_LOOP_COUNT;
 #endif
+	UINT_64 u8Current = 0;
 
 	KAL_SPIN_LOCK_DECLARATION();
 
@@ -3240,6 +3241,7 @@ VOID nicRxSDIOAggReceiveRFBs(IN P_ADAPTER_T prAdapter)
 					 prRxCtrl->pucRxCoalescingBufPtr, CFG_RX_COALESCING_BUFFER_SIZE);
 
 			pucSrcAddr = prRxCtrl->pucRxCoalescingBufPtr;
+			u8Current = sched_clock();
 			for (i = 0; i < u2RxPktNum; i++) {
 				u4RxLength = ALIGN_4((rxNum == 0 ?
 					       prEnhDataStr->rRxInfo.u.au2Rx0Len[i] :
@@ -3279,7 +3281,8 @@ VOID nicRxSDIOAggReceiveRFBs(IN P_ADAPTER_T prAdapter)
 				       prRxStatus->u2StatusFlag, prRxStatus->ucWlanIdx,
 				       HAL_RX_STATUS_GET_SEC_MODE(prRxStatus));
 #endif
-
+				GLUE_RX_SET_PKT_INT_TIME(prSwRfb->pvPacket, prAdapter->prGlueInfo->u8HifIntTime);
+				GLUE_RX_SET_PKT_RX_TIME(prSwRfb->pvPacket, u8Current);
 				KAL_ACQUIRE_SPIN_LOCK(prAdapter, SPIN_LOCK_RX_QUE);
 				QUEUE_INSERT_TAIL(&prRxCtrl->rReceivedRfbList, &prSwRfb->rQueEntry);
 				RX_INC_CNT(prRxCtrl, RX_MPDU_TOTAL_COUNT);

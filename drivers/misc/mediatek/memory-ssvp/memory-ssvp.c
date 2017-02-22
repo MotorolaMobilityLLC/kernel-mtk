@@ -255,6 +255,8 @@ int tui_region_offline(phys_addr_t *pa, unsigned long *size)
 {
 	struct page *page;
 	int retval = 0;
+	int offline_retry;
+	int ret_map;
 
 	pr_alert("%s %d: tui to offline enter state: %s\n", __func__, __LINE__,
 			svp_state_text[_svpregs[SSVP_TUI].state]);
@@ -262,50 +264,78 @@ int tui_region_offline(phys_addr_t *pa, unsigned long *size)
 	if (_svpregs[SSVP_TUI].state == SVP_STATE_ON) {
 		_svpregs[SSVP_TUI].state = SVP_STATE_OFFING;
 
-		if (no_release_memory)
+		if (no_release_memory) {
 			page = wrap_tui_pages;
-		else {
+			goto offline_done;
+		}
+
+		offline_retry = 0;
+		do {
+			pr_info("[SSVP-ALLOCATION]: retry: %d\n", offline_retry);
 			page = zmc_cma_alloc(cma, _svpregs[SSVP_TUI].count,
 					SSVP_CMA_ALIGN_PAGE_ORDER, &memory_ssvp_registration);
 
+			offline_retry++;
+			msleep(100);
+		} while (page == NULL && offline_retry < 20);
+
 #ifdef SSVP_UPPER_LIMIT
-			if (page) {
-				phys_addr_t start = page_to_phys(page);
-				phys_addr_t end = start + (_svpregs[SSVP_TUI].count << PAGE_SHIFT);
-
-				if (end > SSVP_UPPER_LIMIT) {
-					pr_err("[Reserve Over Limit]: Get region(%pa) over limit(0x%lx)\n",
-							&end, SSVP_UPPER_LIMIT);
-					cma_release(cma, page, _svpregs[SSVP_TUI].count);
-					page = NULL;
-				}
-			}
-#endif
-			if (page)
-				svp_usage_count += _svpregs[SSVP_TUI].count;
-		}
-
 		if (page) {
-			_svpregs[SSVP_TUI].page = page;
-			_svpregs[SSVP_TUI].state = SVP_STATE_OFF;
+			phys_addr_t start = page_to_phys(page);
+			phys_addr_t end = start + (_svpregs[SSVP_TUI].count << PAGE_SHIFT);
 
-			if (pa)
-				*pa = page_to_phys(page);
-			if (size)
-				*size = _svpregs[SSVP_TUI].count << PAGE_SHIFT;
-
-			pr_alert("%s %d: pa %llx, size 0x%lx\n",
-					__func__, __LINE__,
-					page_to_phys(page),
+			if (end > SSVP_UPPER_LIMIT) {
+				pr_err("[Reserve Over Limit]: Get region(%pa) over limit(0x%lx)\n",
+						&end, SSVP_UPPER_LIMIT);
+				cma_release(cma, page, _svpregs[SSVP_TUI].count);
+				page = NULL;
+			}
+		}
+#endif
+		if (page) {
+			svp_usage_count += _svpregs[SSVP_TUI].count;
+			ret_map = pmd_unmapping((unsigned long)__va((page_to_phys(page))),
 					_svpregs[SSVP_TUI].count << PAGE_SHIFT);
+
+			if (ret_map < 0) {
+				pr_alert("[unmapping fail]: virt:0x%lx, size:0x%lx",
+						(unsigned long)__va((page_to_phys(page))),
+						_svpregs[SSVP_TUI].count << PAGE_SHIFT);
+
+				aee_kernel_warning_api("SVP", 0, DB_OPT_DEFAULT|DB_OPT_DUMPSYS_ACTIVITY
+						| DB_OPT_LOW_MEMORY_KILLER
+						| DB_OPT_PID_MEMORY_INFO /*for smaps and hprof*/
+						| DB_OPT_PROCESS_COREDUMP
+						| DB_OPT_PAGETYPE_INFO
+						| DB_OPT_DUMPSYS_PROCSTATS,
+						"SSVP unmapping fail:\nCRDISPATCH_KEY:SVP_SS1",
+						"[unmapping fail]: virt:0x%lx, size:0x%lx",
+						(unsigned long)__va((page_to_phys(page))),
+						_svpregs[SSVP_TUI].count << PAGE_SHIFT);
+
+				_svpregs[SSVP_TUI].is_unmapping = false;
+			} else
+				_svpregs[SSVP_TUI].is_unmapping = true;
+			goto offline_done;
 		} else {
 			_svpregs[SSVP_TUI].state = SVP_STATE_ON;
 			retval = -EAGAIN;
+			goto out;
 		}
 	} else {
 		retval = -EBUSY;
+		goto out;
 	}
+offline_done:
+	_svpregs[SSVP_TUI].page = page;
+	_svpregs[SSVP_TUI].state = SVP_STATE_OFF;
 
+	if (pa)
+		*pa = page_to_phys(page);
+	if (size)
+		*size = _svpregs[SSVP_TUI].count << PAGE_SHIFT;
+
+out:
 	pr_alert("%s %d: tui to offline leave state: %s, retval: %d\n",
 			__func__, __LINE__,
 			svp_state_text[_svpregs[SSVP_TUI].state], retval);
@@ -317,34 +347,56 @@ EXPORT_SYMBOL(tui_region_offline);
 int tui_region_online(void)
 {
 	int retval = 0;
-	bool retb;
 
 	pr_alert("%s %d: tui to online enter state: %s\n", __func__, __LINE__,
 			svp_state_text[_svpregs[SSVP_TUI].state]);
 
 	if (_svpregs[SSVP_TUI].state == SVP_STATE_OFF) {
-		_svpregs[SSVP_TUI].state = SVP_STATE_ONING_WAIT;
+		int ret_map = 0;
 
 		if (no_release_memory)
-			retb = true;
-		else {
-			retb = cma_release(cma, _svpregs[SSVP_TUI].page, _svpregs[SSVP_TUI].count);
+			goto online_done;
 
-			if (retb == true)
-				svp_usage_count -= _svpregs[SSVP_TUI].count;
+		if (_svpregs[SSVP_TUI].is_unmapping)
+			ret_map = pmd_mapping((unsigned long)__va((page_to_phys(_svpregs[SSVP_TUI].page))),
+					_svpregs[SSVP_TUI].count << PAGE_SHIFT);
+
+		if (ret_map < 0) {
+			pr_alert("[remapping fail]: virt:0x%lx, size:0x%lx",
+					(unsigned long)__va((page_to_phys(_svpregs[SSVP_TUI].page))),
+					_svpregs[SSVP_TUI].count << PAGE_SHIFT);
+
+			aee_kernel_warning_api("SVP", 0, DB_OPT_DEFAULT|DB_OPT_DUMPSYS_ACTIVITY|DB_OPT_LOW_MEMORY_KILLER
+					| DB_OPT_PID_MEMORY_INFO /* for smaps and hprof */
+					| DB_OPT_PROCESS_COREDUMP
+					| DB_OPT_PAGETYPE_INFO
+					| DB_OPT_DUMPSYS_PROCSTATS,
+					"\nCRDISPATCH_KEY:SVP_SS1\n",
+					"[remapping fail]: virt:0x%lx, size:0x%lx",
+					(unsigned long)__va((page_to_phys(_svpregs[SSVP_TUI].page))),
+					_svpregs[SSVP_TUI].count << PAGE_SHIFT);
+
+			no_release_memory = true;
+			svp_usage_count = _svpregs[SSVP_TUI].count;
+			wrap_tui_pages = _svpregs[SSVP_TUI].page;
+			goto online_done;
 		}
 
-		if (retb == true) {
-			_svpregs[SSVP_TUI].page = NULL;
-			_svpregs[SSVP_TUI].state = SVP_STATE_ON;
-		}
+		_svpregs[SSVP_TUI].is_unmapping = false;
+		cma_release(cma, _svpregs[SSVP_TUI].page, _svpregs[SSVP_TUI].count);
+		svp_usage_count -= _svpregs[SSVP_TUI].count;
+
 	} else {
 		retval = -EBUSY;
+		goto out;
 	}
 
+online_done:
+			_svpregs[SSVP_TUI].page = NULL;
+			_svpregs[SSVP_TUI].state = SVP_STATE_ON;
+out:
 	pr_alert("%s %d: tui to online leave state: %s, retval: %d\n",
-			__func__, __LINE__,
-			svp_state_text[_svpregs[SSVP_TUI].state], retval);
+			__func__, __LINE__,	svp_state_text[_svpregs[SSVP_TUI].state], retval);
 
 	return retval;
 }

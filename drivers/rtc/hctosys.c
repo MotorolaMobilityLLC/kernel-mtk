@@ -53,7 +53,7 @@ static int __init rtc_hctosys(void)
 	}
 
 	rtc_tm_to_time(&tm, &tv.tv_sec);
-
+	tv.tv_nsec = tm.tm_cnt * (1000000000 / 32768);
 	err = do_settimeofday(&tv);
 
 	dev_info(rtc->dev.parent,
