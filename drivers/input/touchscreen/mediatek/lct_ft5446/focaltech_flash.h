@@ -147,6 +147,7 @@ int fts_GetFirmwareSize(char *firmware_name);
 int fts_ctpm_i2c_hid2std(struct i2c_client *client);
 bool fts_ctpm_check_need_upgrade(struct i2c_client *client);
 int fts_ReadFirmware(char *firmware_name, unsigned char *firmware_buf);
+int fts_ctpm_fw_upgrade_ReadBootloadorID(struct i2c_client *client);
 void fts_ctpm_rom_or_pram_reset(struct i2c_client *client, bool needupgrade);
 unsigned char fts_ctpm_get_pram_or_rom_id(struct i2c_client *client);
 
