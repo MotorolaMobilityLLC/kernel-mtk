@@ -197,6 +197,10 @@ static enum power_supply_property battery_props[] = {
 	POWER_SUPPLY_PROP_present_smb,
 	/* ADB CMD Discharging */
 	POWER_SUPPLY_PROP_adjust_power,
+//add by longcheer_liml_2017_02_22 for add battery capacity start
+    POWER_SUPPLY_PROP_CHARGE_FULL,
+    POWER_SUPPLY_PROP_CHARGE_FULL_DESIGN,
+//add by longcheer_liml_2017_02_22 for add battery capacity end
 };
 
 
@@ -352,7 +356,14 @@ static int battery_get_property(struct power_supply *psy,
 	case POWER_SUPPLY_PROP_adjust_power:
 		val->intval = data->adjust_power;
 		break;
-
+//add by longcheer_liml_2017_02_22 for add battery capacity start
+	case POWER_SUPPLY_PROP_CHARGE_FULL:
+		val->intval = 4000000;
+		break;
+	case POWER_SUPPLY_PROP_CHARGE_FULL_DESIGN:
+		val->intval = 4000000;
+		break;
+//add by longcheer_liml_2017_02_22 for add battery capacity end
 	default:
 		ret = -EINVAL;
 		break;
