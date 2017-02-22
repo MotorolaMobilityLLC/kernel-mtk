@@ -30,7 +30,9 @@
 #define STATUS_UNSUPPORTED    -1
 #define STATUS_FAIL -2
 #define GETARRAYNUM(array) (sizeof(array)/sizeof(array[0]))
-
+#ifdef LENOVO_TEMP_POS_45_TO_POS_50_CV_LiMIT_SUPPORT
+extern kal_bool lenovo_battery_is_temp_45_to_pos_50(void);
+#endif
 /* ============================================================ // */
 /* Global variable */
 /* ============================================================ // */
@@ -1020,8 +1022,25 @@ static int charging_sw_init(void *data)
 	bq25890_config_interface(bq25890_COND, 0x13, 0x7F, 0);
 
 	/*CV mode */
-	bq25890_config_interface(bq25890_CON6, 0x20, 0x3F, 2);	/* VREG=CV 4.352V (default 4.208V) */
-
+#ifdef LENOVO_TEMP_POS_45_TO_POS_50_CV_LiMIT_SUPPORT
+      if(lenovo_battery_is_temp_45_to_pos_50())
+	{
+		bq25890_config_interface(bq25890_CON6,
+			LENOVO_TEMP_POS_45_TO_POS_50_CV_REG, 0x3F, 2);//4.2V
+	}
+       else
+#endif
+	{
+		#if defined(HIGH_BATTERY_VOLTAGE_SUPPORT)
+			    #if defined(HIGH_BATTERY_VOLTAGE_4400MV_SUPPORT)
+					bq25890_config_interface(bq25890_CON6, 0x23, 0x3F, 2);//4.4v
+			    #else
+					bq25890_config_interface(bq25890_CON6, 0x20, 0x3F, 2); //4.352
+			    #endif
+		#else
+			bq25890_config_interface(bq25890_CON6, 0x17, 0x3F, 2); //4.2V
+		#endif
+	}
 	/* upmu_set_rg_vcdt_hv_en(0); */
 
 	/* The following setting is moved from HW_INIT */

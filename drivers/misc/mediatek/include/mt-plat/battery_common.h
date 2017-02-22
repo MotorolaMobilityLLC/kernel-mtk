@@ -375,6 +375,9 @@ extern void mt_battery_charging_algorithm(void);
 extern PMU_STATUS do_jeita_state_machine(void);
 #endif
 
+#ifdef LENOVO_TEMP_POS_45_TO_POS_50_CV_LiMIT_SUPPORT
+ extern   void lenovo_battery_cv_set(void);
+#endif
 #else
 
 #define wake_up_bat()			do {} while (0)
