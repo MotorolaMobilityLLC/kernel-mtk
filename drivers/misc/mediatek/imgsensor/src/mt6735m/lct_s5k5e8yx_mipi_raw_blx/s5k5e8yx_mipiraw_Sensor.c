@@ -1025,7 +1025,7 @@ static void preview_setting(void)
 
 	write_cmos_sensor(0x3303,0x02); //bpmarker_allcure_en[1], bpmarker_flat2bit_bypass[0]	
 #ifdef S5K5E8_OTP_ENABLE	
-	write_cmos_sensor(0x3400,0x01); //shade_bypass LSC on
+	write_cmos_sensor(0x3400,0x00); //shade_bypass LSC on
 #else
 	write_cmos_sensor(0x3400,0x01); //shade_bypass LSC off
 #endif
@@ -1093,7 +1093,7 @@ static void capture_setting(kal_uint16 currefps)
 		write_cmos_sensor(0x0203,0xDE);
 		write_cmos_sensor(0x3303,0x02);
 #ifdef S5K5E8_OTP_ENABLE	
-		write_cmos_sensor(0x3400,0x01); //shade_bypass LSC on
+		write_cmos_sensor(0x3400,0x00); //shade_bypass LSC on
 #else
 		write_cmos_sensor(0x3400,0x01); //shade_bypass LSC off
 #endif
@@ -1157,7 +1157,7 @@ static void capture_setting(kal_uint16 currefps)
 		write_cmos_sensor(0x0203,0xDE);
 		write_cmos_sensor(0x3303,0x02);
 #ifdef S5K5E8_OTP_ENABLE	
-		write_cmos_sensor(0x3400,0x01); //shade_bypass LSC on
+		write_cmos_sensor(0x3400,0x00); //shade_bypass LSC on
 #else
 		write_cmos_sensor(0x3400,0x01); //shade_bypass LSC off
 #endif
@@ -1222,7 +1222,7 @@ static void capture_setting(kal_uint16 currefps)
 		write_cmos_sensor(0x0203,0xDE);
 		write_cmos_sensor(0x3303,0x02);
 #ifdef S5K5E8_OTP_ENABLE	
-		write_cmos_sensor(0x3400,0x01); //shade_bypass LSC on
+		write_cmos_sensor(0x3400,0x00); //shade_bypass LSC on
 #else
 		write_cmos_sensor(0x3400,0x01); //shade_bypass LSC off
 #endif
@@ -1292,7 +1292,7 @@ static void normal_video_setting(kal_uint16 currefps)
 	write_cmos_sensor(0x0203,0xDE);
 	write_cmos_sensor(0x3303,0x02);
 #ifdef S5K5E8_OTP_ENABLE	
-	write_cmos_sensor(0x3400,0x01); //shade_bypass LSC on
+	write_cmos_sensor(0x3400,0x00); //shade_bypass LSC on
 #else
 	write_cmos_sensor(0x3400,0x01); //shade_bypass LSC off
 #endif
@@ -1362,7 +1362,7 @@ static void hs_video_setting(void)
 	write_cmos_sensor(0x0203,0xEC);
 	write_cmos_sensor(0x3303,0x02);
 #ifdef S5K5E8_OTP_ENABLE	
-	write_cmos_sensor(0x3400,0x01); //shade_bypass LSC on
+	write_cmos_sensor(0x3400,0x00); //shade_bypass LSC on
 #else
 	write_cmos_sensor(0x3400,0x01); //shade_bypass LSC off
 #endif
@@ -1431,7 +1431,7 @@ static void slim_video_setting(void)
 	write_cmos_sensor(0x0203,0xDE);
 	write_cmos_sensor(0x3303,0x02);
 #ifdef S5K5E8_OTP_ENABLE	
-	write_cmos_sensor(0x3400,0x01); //shade_bypass LSC on
+	write_cmos_sensor(0x3400,0x00); //shade_bypass LSC on
 #else
 	write_cmos_sensor(0x3400,0x01); //shade_bypass LSC off
 #endif
