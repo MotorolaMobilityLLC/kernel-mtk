@@ -198,6 +198,8 @@ static const uint16_t kSideToneCoefficientTable32k[] = {
 	0x0e96
 };
 
+static uint32 LowLatencyDebug;
+
 
 /*
  *    function implementation
@@ -3163,99 +3165,21 @@ void Auddrv_DL2_Interrupt_Handler(void)
 	/* irq2 ISR handler */
 #define MAGIC_NUMBER 0xFFFFFFC0
 	AFE_MEM_CONTROL_T *Mem_Block = AFE_Mem_Control_context[Soc_Aud_Digital_Block_MEM_DL2];
-	kal_int32 Afe_consumed_bytes = 0;
-	kal_int32 HW_memory_index = 0;
-	kal_int32 HW_Cur_ReadIdx = 0;
-	AFE_BLOCK_T *Afe_Block = &(AFE_Mem_Control_context[Soc_Aud_Digital_Block_MEM_DL2]->rBlock);
-
-	/* substreamList *Temp = NULL; */
 	unsigned long flags;
 
-	if (Mem_Block == NULL) {
-		pr_err("-%s(), Mem_Block == NULL\n", __func__);
+	if (Mem_Block == NULL)
 		return;
-	}
 
 	Auddrv_Dl2_Spinlock_lock();
 	spin_lock_irqsave(&Mem_Block->substream_lock, flags);
 
 	if (GetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_DL2) == false) {
-		PRINTK_AUD_DL2
-		    ("%s(), GetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_DL2) == false, return\n ",
-		     __func__);
+		/* printk("%s(), GetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_DL2) == false, return\n ", __func__); */
 		spin_unlock_irqrestore(&Mem_Block->substream_lock, flags);
 		Auddrv_Dl2_Spinlock_unlock();
 		return;
 	}
 
-	HW_Cur_ReadIdx = Afe_Get_Reg(AFE_DL2_CUR);
-
-	if (HW_Cur_ReadIdx == 0) {
-		PRINTK_AUD_DL2("[Auddrv] DL2 HW_Cur_ReadIdx ==0\n");
-		HW_Cur_ReadIdx = Afe_Block->pucPhysBufAddr;
-	}
-
-	HW_memory_index = (HW_Cur_ReadIdx - Afe_Block->pucPhysBufAddr);
-
-	PRINTK_AUD_DL2
-	    ("[Auddrv] DL2 HW_Cur_ReadIdx=0x%x HW_memory_index = 0x%x Afe_Block->pucPhysBufAddr = 0x%x\n",
-	     HW_Cur_ReadIdx, HW_memory_index, Afe_Block->pucPhysBufAddr);
-
-	/* get hw consume bytes */
-	if (HW_memory_index > Afe_Block->u4DMAReadIdx) {
-		Afe_consumed_bytes = HW_memory_index - Afe_Block->u4DMAReadIdx;
-	} else {
-		Afe_consumed_bytes =
-		    Afe_Block->u4BufferSize + HW_memory_index - Afe_Block->u4DMAReadIdx;
-	}
-
-	Afe_consumed_bytes = Afe_consumed_bytes & MAGIC_NUMBER;	/* 64 bytes align */
-
-	/*
-	   if ((Afe_consumed_bytes & 0x1f) != 0)
-	   {
-	   pr_debug("[Auddrv] DMA address is not aligned 32 bytes\n");
-	   } */
-
-	PRINTK_AUD_DL2("+%s ReadIdx:%x WriteIdx:%x,Remained:%x, consumed_bytes:%x HW_memory_index = %x\n",
-	__func__, Afe_Block->u4DMAReadIdx, Afe_Block->u4WriteIdx,
-	Afe_Block->u4DataRemained, Afe_consumed_bytes, HW_memory_index);
-
-	if (Afe_Block->u4DataRemained < Afe_consumed_bytes
-	    || Afe_Block->u4DataRemained <= 0 || Afe_Block->u4DataRemained >
-	    Afe_Block->u4BufferSize) {
-#if 0  /* DL2 have false alarm about underflow, so temporarily disable */
-		if (AFE_dL_Abnormal_context.u4UnderflowCnt < DL_ABNORMAL_CONTROL_MAX) {
-			AFE_dL_Abnormal_context.pucPhysBufAddr[AFE_dL_Abnormal_context.u4UnderflowCnt] =
-									Afe_Block->pucPhysBufAddr;
-			AFE_dL_Abnormal_context.u4BufferSize[AFE_dL_Abnormal_context.u4UnderflowCnt] =
-									Afe_Block->u4BufferSize;
-			AFE_dL_Abnormal_context.u4ConsumedBytes[AFE_dL_Abnormal_context.u4UnderflowCnt] =
-									Afe_consumed_bytes;
-			AFE_dL_Abnormal_context.u4DataRemained[AFE_dL_Abnormal_context.u4UnderflowCnt] =
-									Afe_Block->u4DataRemained;
-			AFE_dL_Abnormal_context.u4DMAReadIdx[AFE_dL_Abnormal_context.u4UnderflowCnt] =
-									Afe_Block->u4DMAReadIdx;
-			AFE_dL_Abnormal_context.u4HwMemoryIndex[AFE_dL_Abnormal_context.u4UnderflowCnt] =
-									HW_memory_index;
-			AFE_dL_Abnormal_context.u4WriteIdx[AFE_dL_Abnormal_context.u4UnderflowCnt] =
-									Afe_Block->u4WriteIdx;
-			AFE_dL_Abnormal_context.MemIfNum[AFE_dL_Abnormal_context.u4UnderflowCnt] = MEM_DL2;
-		}
-		AFE_dL_Abnormal_context.u4UnderflowCnt++;
-#endif
-	} else {
-		PRINTK_AUD_DL2("+DL2_Handling normal ReadIdx:%x ,DataRemained:%x, WriteIdx:%x\n",
-			       Afe_Block->u4DMAReadIdx, Afe_Block->u4DataRemained,
-			       Afe_Block->u4WriteIdx);
-		Afe_Block->u4DataRemained -= Afe_consumed_bytes;
-		Afe_Block->u4DMAReadIdx += Afe_consumed_bytes;
-		Afe_Block->u4DMAReadIdx %= Afe_Block->u4BufferSize;
-	}
-
-	AFE_Mem_Control_context[Soc_Aud_Digital_Block_MEM_DL2]->interruptTrigger = 1;
-	PRINTK_AUD_DL2("-DL2_Handling normal ReadIdx:%x ,DataRemained:%x, WriteIdx:%x\n",
-		       Afe_Block->u4DMAReadIdx, Afe_Block->u4DataRemained, Afe_Block->u4WriteIdx);
 
 	if (Mem_Block->substreamL != NULL) {
 		if (Mem_Block->substreamL->substream != NULL) {
@@ -4204,4 +4128,15 @@ int irq_update_user(const void *_user,
 }
 /* IRQ Manager END*/
 
+/* low latency debug */
+int get_LowLatencyDebug(void)
+{
+	return LowLatencyDebug;
+}
+
+void set_LowLatencyDebug(uint32 bFlag)
+{
+	LowLatencyDebug = bFlag;
+	pr_warn("%s LowLatencyDebug = %d\n", __func__, LowLatencyDebug);
+}
 

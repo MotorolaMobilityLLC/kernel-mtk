@@ -1386,6 +1386,10 @@ skip_routeinfo:
 		pr_info("[mtk_net]receive RA with m bit!\n");
 		in6_dev->cnf.ra_info_flag = 2;
 	}
+	if (in6_dev->cnf.ra_info_flag == 0) {
+		pr_info("[mtk_net][ipv6]receive RA neither O nor M bit is set!\n");
+		in6_dev->cnf.ra_info_flag = 4;
+	}
 #endif
 	if (ndopts.nd_useropts) {
 		struct nd_opt_hdr *p;

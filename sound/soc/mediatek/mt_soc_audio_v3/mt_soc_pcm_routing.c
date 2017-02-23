@@ -621,6 +621,20 @@ static int Audio_DL2_DataTransfer(struct snd_kcontrol *kcontrol,
 
 #endif
 
+static int Audio_LowLatencyDebug_Get(struct snd_kcontrol *kcontrol,
+				struct snd_ctl_elem_value *ucontrol)
+{
+	ucontrol->value.integer.value[0] = get_LowLatencyDebug();
+	return 0;
+}
+
+static int Audio_LowLatencyDebug_Set(struct snd_kcontrol *kcontrol,
+				struct snd_ctl_elem_value *ucontrol)
+{
+	set_LowLatencyDebug(ucontrol->value.integer.value[0]);
+	return 0;
+}
+
 /* static struct snd_dma_buffer *Dl1_Playback_dma_buf  = NULL; */
 
 static void GetAudioTrimOffset(int channels)
@@ -840,6 +854,8 @@ static const struct snd_kcontrol_new Audio_snd_routing_controls[] = {
 	SOC_DOUBLE_EXT("Audio_DL2_DataTransfer", SND_SOC_NOPM, 0, 1, 65536, 0,
 	NULL, Audio_DL2_DataTransfer),
 #endif
+	SOC_SINGLE_EXT("Audio_LowLatency_Debug", SND_SOC_NOPM, 0, 0x20000, 0,
+	Audio_LowLatencyDebug_Get, Audio_LowLatencyDebug_Set),
 };
 
 

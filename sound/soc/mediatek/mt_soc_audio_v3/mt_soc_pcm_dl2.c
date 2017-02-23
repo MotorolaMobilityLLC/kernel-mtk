@@ -65,7 +65,11 @@ static AFE_MEM_CONTROL_T *pMemControl;
 static int mPlaybackSramState;
 static struct snd_dma_buffer *Dl2_Playback_dma_buf;
 
+static uint32 UnderflowTime;
 
+static bool StartCheckTime;
+static unsigned long PrevTime;
+static unsigned long NowTime;
 
 #ifdef AUDIO_DL2_ISR_COPY_SUPPORT
 static const int ISRCopyMaxSize = 256*2*4;     /* 256 frames, stereo, 32bit */
@@ -74,6 +78,19 @@ static AFE_DL_ISR_COPY_T ISRCopyBuffer = {0};
 
 static int dataTransfer(void *dest, const void *src, uint32_t size);
 
+enum DEBUG_DL2 {
+	DEBUG_DL2_LOG               = 1,
+	DEBUG_DL2_LOG_DETECT_DTAT   = 2,
+	DEBUG_DL2_AEE_UNDERFLOW     = 4,
+	DEBUG_DL2_AEE_OTHERS        = 8
+};
+
+
+#define PRINTK_DEBUG_LOG(format, args...) \
+{\
+	if (unlikely(get_LowLatencyDebug() & DEBUG_DL2_LOG)) \
+		pr_debug(format, ##args); \
+}
 
 /*
  *    function implementation
@@ -115,7 +132,19 @@ static struct snd_pcm_hardware mtk_pcm_dl2_hardware = {
 
 static int mtk_pcm_dl2_stop(struct snd_pcm_substream *substream)
 {
-	pr_warn("%s\n", __func__);
+	PRINTK_DEBUG_LOG("%s\n", __func__);
+
+	StartCheckTime = false;
+	if (unlikely(get_LowLatencyDebug())) {
+		AFE_BLOCK_T *Afe_Block = &pMemControl->rBlock;
+
+		if (Afe_Block->u4DataRemained < 0) {
+			pr_warn("%s, dl2 underflow\n", __func__);
+			if (get_LowLatencyDebug() & DEBUG_DL2_AEE_UNDERFLOW)
+				AUDIO_AEE("mtk_pcm_dl2_stop - dl2 underflow");
+		}
+	}
+
 	SetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_DL2, false);
 
 	irq_remove_user(substream, Soc_Aud_IRQ_MCU_MODE_IRQ1_MCU_MODE);
@@ -151,7 +180,7 @@ static snd_pcm_uframes_t mtk_pcm_dl2_pointer(struct snd_pcm_substream *substream
 	if (GetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_DL2) == true) {
 		HW_Cur_ReadIdx = Afe_Get_Reg(AFE_DL2_CUR);
 		if (HW_Cur_ReadIdx == 0) {
-			PRINTK_AUD_DL2("[Auddrv] HW_Cur_ReadIdx ==0\n");
+			pr_warn("[Auddrv] HW_Cur_ReadIdx ==0\n");
 			HW_Cur_ReadIdx = Afe_Block->pucPhysBufAddr;
 		}
 
@@ -167,15 +196,23 @@ static snd_pcm_uframes_t mtk_pcm_dl2_pointer(struct snd_pcm_substream *substream
 		Afe_consumed_bytes = Align64ByteSize(Afe_consumed_bytes);
 #endif
 
+		PRINTK_DEBUG_LOG
+		("+%s DataRemained:%d, consumed_bytes:%d, HW_memory_index = %d, ReadIdx:%d, WriteIdx:%d\n",
+		__func__, Afe_Block->u4DataRemained, Afe_consumed_bytes, HW_memory_index,
+		Afe_Block->u4DMAReadIdx, Afe_Block->u4WriteIdx);
+
 		Afe_Block->u4DataRemained -= Afe_consumed_bytes;
 		Afe_Block->u4DMAReadIdx += Afe_consumed_bytes;
 		Afe_Block->u4DMAReadIdx %= Afe_Block->u4BufferSize;
-		PRINTK_AUD_DL2
-		    ("[Auddrv] HW_Cur_ReadIdx =0x%x HW_memory_index = 0x%x\n",
-		     HW_Cur_ReadIdx, HW_memory_index);
-		PRINTK_AUD_DL2
-		    ("[Auddrv] Afe_consumed_bytes  = %d, u4DataRemained %d\n",
-		     Afe_consumed_bytes, Afe_Block->u4DataRemained);
+
+		PRINTK_DEBUG_LOG
+		("-%s DataRemained:%d, consumed_bytes:%d, HW_memory_index = %d, ReadIdx:%d, WriteIdx:%d\n",
+		__func__, Afe_Block->u4DataRemained, Afe_consumed_bytes, HW_memory_index,
+		Afe_Block->u4DMAReadIdx, Afe_Block->u4WriteIdx);
+
+		if (Afe_Block->u4DataRemained < 0)
+			PRINTK_DEBUG_LOG("[AudioWarn] u4DataRemained=0x%x\n", Afe_Block->u4DataRemained);
+
 		spin_unlock_irqrestore(&pMemControl->substream_lock, flags);
 
 		return audio_bytes_to_frame(substream, Afe_Block->u4DMAReadIdx);
@@ -299,7 +336,7 @@ static int mtk_pcm_dl2_open(struct snd_pcm_substream *substream)
 
 static int mtk_soc_pcm_dl2_close(struct snd_pcm_substream *substream)
 {
-	pr_warn("%s\n", __func__);
+	PRINTK_DEBUG_LOG("%s\n", __func__);
 
 	if (mPrepareDone == true) {
 		/* stop DAC output */
@@ -336,6 +373,8 @@ static int mtk_pcm_dl2_prepare(struct snd_pcm_substream *substream)
 {
 	bool mI2SWLen = Soc_Aud_I2S_WLEN_WLEN_16BITS;
 	struct snd_pcm_runtime *runtime = substream->runtime;
+
+	PRINTK_DEBUG_LOG("%s\n", __func__);
 
 	if (mPrepareDone == false) {
 		pr_warn
@@ -390,7 +429,7 @@ static int mtk_pcm_dl2_start(struct snd_pcm_substream *substream)
 {
 	struct snd_pcm_runtime *runtime = substream->runtime;
 
-	pr_warn("%s\n", __func__);
+	PRINTK_DEBUG_LOG("%s\n", __func__);
 	/* here start digital part */
 
 	SetConnection(Soc_Aud_InterCon_Connection, Soc_Aud_InterConnectionInput_I07,
@@ -409,14 +448,19 @@ static int mtk_pcm_dl2_start(struct snd_pcm_substream *substream)
 	/* here to set interrupt */
 	irq_add_user(substream,
 		     Soc_Aud_IRQ_MCU_MODE_IRQ1_MCU_MODE,
-		     substream->runtime->rate,
-		     substream->runtime->period_size);
+		     runtime->rate, runtime->period_size);
 
 	SetSampleRate(Soc_Aud_Digital_Block_MEM_DL2, runtime->rate);
 	SetChannels(Soc_Aud_Digital_Block_MEM_DL2, runtime->channels);
 	SetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_DL2, true);
 
 	EnableAfe(true);
+
+	StartCheckTime = true;
+	PrevTime = NowTime = 0;
+
+	UnderflowTime = runtime->period_size * runtime->periods * 1000000000 / runtime->rate;
+
 	return 0;
 }
 
@@ -450,8 +494,6 @@ static int mtk_pcm_dl2_copy_(void __user *dst, snd_pcm_uframes_t *size, AFE_BLOC
 		return 0;
 	}
 
-	AudDrv_checkDLISRStatus();
-
 	spin_lock_irqsave(&pMemControl->substream_lock, flags);
 	copy_size = Afe_Block->u4BufferSize - Afe_Block->u4DataRemained;	/* free space of the buffer */
 	spin_unlock_irqrestore(&pMemControl->substream_lock, flags);
@@ -460,14 +502,23 @@ static int mtk_pcm_dl2_copy_(void __user *dst, snd_pcm_uframes_t *size, AFE_BLOC
 			copy_size = 0;
 		else
 			copy_size = count;
+	} else {
+		pr_warn("%s, Insufficient data !\n", __func__);
+		if (unlikely(get_LowLatencyDebug()) & DEBUG_DL2_AEE_OTHERS)
+			AUDIO_AEE("ISRCopy has remaining data !!");
 	}
 
 #ifdef AUDIO_64BYTE_ALIGN	/* no need to do 64byte align */
 	copy_size = Align64ByteSize(copy_size);
 #endif
 	*size = copy_size;
-	PRINTK_AUD_DL2("copy_size=%d, count=%d, bCopy %d, %pf %pf %pf %pf\n", copy_size, (unsigned int)count,
-			bCopy, (void *)CALLER_ADDR0, (void *)CALLER_ADDR1, (void *)CALLER_ADDR2, (void *)CALLER_ADDR3);
+	PRINTK_DEBUG_LOG("%s, copy_size=%d, count=%d, bCopy %d, %pf %pf %pf %pf\n", __func__, copy_size,
+		(unsigned int)count, bCopy, (void *)CALLER_ADDR0, (void *)CALLER_ADDR1,
+		(void *)CALLER_ADDR2, (void *)CALLER_ADDR3);
+
+	PRINTK_DEBUG_LOG("AudDrv_write DataRemained:%d, ReadIdx=%d, WriteIdx:%d\r\n",
+		Afe_Block->u4DataRemained, Afe_Block->u4DMAReadIdx, Afe_Block->u4WriteIdx);
+
 
 	if (copy_size != 0) {
 		spin_lock_irqsave(&pMemControl->substream_lock, flags);
@@ -491,10 +542,8 @@ static int mtk_pcm_dl2_copy_(void __user *dst, snd_pcm_uframes_t *size, AFE_BLOC
 			data_w_ptr += copy_size;
 			count -= copy_size;
 
-			PRINTK_AUD_DL2
-			    ("AudDrv_write finish1, copy:%x, WriteIdx:%x,ReadIdx=%x,Remained:%d, count=%d \r\n",
-			     copy_size, Afe_Block->u4WriteIdx, Afe_Block->u4DMAReadIdx,
-			     Afe_Block->u4DataRemained, (int)count);
+			PRINTK_DEBUG_LOG("AudDrv_write finish1, DataRemained:%d, ReadIdx=%d, WriteIdx:%d\r\n",
+				Afe_Block->u4DataRemained, Afe_Block->u4DMAReadIdx, Afe_Block->u4WriteIdx);
 
 		} else {	/* copy twice */
 			kal_uint32 size_1 = 0, size_2 = 0;
@@ -532,16 +581,30 @@ static int mtk_pcm_dl2_copy_(void __user *dst, snd_pcm_uframes_t *size, AFE_BLOC
 			count -= copy_size;
 			data_w_ptr += copy_size;
 
-			PRINTK_AUD_DL2
-			    ("AudDrv_write finish2, copy size:%x, WriteIdx:%x,ReadIdx=%x DataRemained:%d \r\n",
-			     copy_size, Afe_Block->u4WriteIdx, Afe_Block->u4DMAReadIdx,
-			     Afe_Block->u4DataRemained);
+			PRINTK_DEBUG_LOG("AudDrv_write finish2, DataRemained:%d, ReadIdx=%d, WriteIdx:%d\r\n",
+				Afe_Block->u4DataRemained, Afe_Block->u4DMAReadIdx, Afe_Block->u4WriteIdx);
 		}
 	}
 	return 0;
 }
 
 #ifdef AUDIO_DL2_ISR_COPY_SUPPORT
+
+static void detectData(char *ptr, unsigned long count)
+{
+	if (get_LowLatencyDebug() & DEBUG_DL2_LOG_DETECT_DTAT) {
+		int i;
+
+		for (i = 0; i < count; i++) {
+			if (ptr[i]) {
+				pr_debug("mtk_pcm_dl2_copy has data, i %d /%ld\n", i, count);
+				break;
+			}
+		}
+		if (i == count)
+			pr_debug("mtk_pcm_dl2_copy no data\n");
+	}
+}
 
 static int dataTransfer(void *dest, const void *src, uint32_t size)
 {
@@ -558,8 +621,8 @@ void mtk_dl2_copy2buffer(const void *addr, uint32_t size)
 {
 	bool again = false;
 
-	PRINTK_AUD_DL2("%s, addr 0x%p 0x%p, size %d %d\n", __func__, (int)addr,
-			(int)ISRCopyBuffer.pBufferBase, size, ISRCopyBuffer.u4BufferSize);
+	PRINTK_DEBUG_LOG("%s, addr 0x%p 0x%p, size %d %d\n", __func__, addr,
+			ISRCopyBuffer.pBufferBase, size, ISRCopyBuffer.u4BufferSize);
 
 #ifdef AUDIO_64BYTE_ALIGN	/* no need to do 64byte align */
 	size = Align64ByteSize(size);
@@ -568,8 +631,12 @@ void mtk_dl2_copy2buffer(const void *addr, uint32_t size)
 	Auddrv_Dl2_Spinlock_lock();
 retry:
 
-	if (unlikely(ISRCopyBuffer.u4BufferSize))
-		pr_err("%s, remaining data %d\n", __func__, ISRCopyBuffer.u4BufferSize);
+	if (unlikely(ISRCopyBuffer.u4BufferSize)) {
+		pr_warn("%s, remaining data %d\n", __func__, ISRCopyBuffer.u4BufferSize);
+		if (unlikely(get_LowLatencyDebug()) & DEBUG_DL2_AEE_OTHERS) {
+			AUDIO_AEE("ISRCopy has remaining data !!");
+		}
+	}
 
 	if (unlikely(!ISRCopyBuffer.pBufferBase || size > ISRCopyBuffer.u4BufferSizeMax)) {
 		if (!again) {
@@ -607,6 +674,9 @@ void mtk_dl2_copy_l(void)
 	if (unlikely(!ISRCopyBuffer.u4BufferSize || !ISRCopyBuffer.pBufferIndx))
 		return;
 
+	/* for debug */
+	detectData((char *)ISRCopyBuffer.pBufferIndx, count);
+
 	mtk_pcm_dl2_copy_((void *)ISRCopyBuffer.pBufferIndx, &count, &Afe_Block, true);
 
 	ISRCopyBuffer.pBufferIndx += count;
@@ -632,6 +702,23 @@ static int mtk_pcm_dl2_copy(struct snd_pcm_substream *substream,
 	if (unlikely(!ISRCopyBuffer.pBufferIndx))
 		goto exit;
 
+	if (unlikely(get_LowLatencyDebug())) {
+		/* check underflow */
+		if (StartCheckTime) {
+			if (PrevTime == 0)
+				PrevTime = sched_clock();
+			NowTime = sched_clock();
+
+			if ((NowTime - PrevTime) > UnderflowTime) {
+				pr_warn("%s, dl2 underflow, UnderflowTime %d, start %ld, end %ld\n",
+					__func__, UnderflowTime, PrevTime, NowTime);
+				if (get_LowLatencyDebug() & DEBUG_DL2_AEE_UNDERFLOW)
+					AUDIO_AEE("mtk_pcm_dl2_copy - dl2 underflow");
+			}
+			PrevTime = NowTime;
+		}
+	}
+
 retry:
 	if (!ISRCopyBuffer.u4IsrConsumeSize) {
 		if (!ISRCopyBuffer.u4BufferSize)
@@ -639,6 +726,9 @@ retry:
 
 		if (unlikely(ISRCopyBuffer.u4BufferSize < count))
 			count = ISRCopyBuffer.u4BufferSize;
+
+		/* for debug */
+		detectData((char *)ISRCopyBuffer.pBufferIndx, count);
 
 		ret = mtk_pcm_dl2_copy_((void *)ISRCopyBuffer.pBufferIndx, &count, Afe_Block, true);
 

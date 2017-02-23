@@ -1218,7 +1218,7 @@ wlanoidSetUApsdParam(IN P_ADAPTER_T prAdapter,
 
 	prUapsdParam = (P_PARAM_CUSTOM_UAPSD_PARAM_STRUCT_T) pvSetBuffer;
 
-	kalMemZero(&rCmdUapsdParam, sizeof(CMD_CUSTOM_OPPPS_PARAM_STRUCT_T));
+	kalMemZero(&rCmdUapsdParam, sizeof(CMD_CUSTOM_UAPSD_PARAM_STRUCT_T));
 	rCmdUapsdParam.fgEnAPSD = prUapsdParam->fgEnAPSD;
 	prAdapter->rWifiVar.fgSupportUAPSD = prUapsdParam->fgEnAPSD;
 
@@ -1238,6 +1238,10 @@ wlanoidSetUApsdParam(IN P_ADAPTER_T prAdapter,
 	rCmdUapsdParam.ucMaxSpLen = prUapsdParam->ucMaxSpLen;
 	prPmProfSetupInfo->ucUapsdSp = prUapsdParam->ucMaxSpLen;
 
+	DBGLOG(P2P, INFO, "wlanoidSetUApsdParam EnAPSD[%d] Be[%d] Bk[%d] Vo[%d] Vi[%d] SPLen[%d]\n",
+		rCmdUapsdParam.fgEnAPSD, rCmdUapsdParam.fgEnAPSD_AcBe, rCmdUapsdParam.fgEnAPSD_AcBk,
+		rCmdUapsdParam.fgEnAPSD_AcVo, rCmdUapsdParam.fgEnAPSD_AcVi, rCmdUapsdParam.ucMaxSpLen);
+
 #if 0
 	return wlanSendSetQueryCmd(prAdapter,
 				   CMD_ID_SET_UAPSD_PARAM,
@@ -1246,7 +1250,7 @@ wlanoidSetUApsdParam(IN P_ADAPTER_T prAdapter,
 				   TRUE,
 				   nicCmdEventSetCommon,
 				   nicOidCmdTimeoutCommon,
-				   sizeof(CMD_CUSTOM_OPPPS_PARAM_STRUCT_T),
+				   sizeof(CMD_CUSTOM_UAPSD_PARAM_STRUCT_T),
 				   (PUINT_8) &rCmdUapsdParam, pvSetBuffer, u4SetBufferLen);
 #else
 	return wlanoidSendSetQueryP2PCmd(prAdapter,
@@ -1256,7 +1260,7 @@ wlanoidSetUApsdParam(IN P_ADAPTER_T prAdapter,
 					 TRUE,
 					 nicCmdEventSetCommon,
 					 nicOidCmdTimeoutCommon,
-					 sizeof(CMD_CUSTOM_OPPPS_PARAM_STRUCT_T),
+					 sizeof(CMD_CUSTOM_UAPSD_PARAM_STRUCT_T),
 					 (PUINT_8) &rCmdUapsdParam, pvSetBuffer, u4SetBufferLen);
 
 #endif

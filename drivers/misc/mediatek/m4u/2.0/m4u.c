@@ -615,6 +615,10 @@ int m4u_alloc_mva(m4u_client_t *client, M4U_PORT_ID port,
 
 	MMProfileLogEx(M4U_MMP_Events[M4U_MMP_ALLOC_MVA], MMProfileFlagStart, va, size);
 
+	if (port < 0 || port >= M4U_PORT_NR) {
+		M4UMSG("%s,unknown port %d\n", __func__, port);
+		return -1;
+	}
 
 	if (va && sg_table) {
 		M4UMSG("%s, va or sg_table are both valid: va=0x%lx, sg=0x%p\n", __func__,
@@ -797,7 +801,10 @@ int m4u_dealloc_mva(m4u_client_t *client, M4U_PORT_ID port, unsigned int mva)
 	unsigned int size;
 
 	MMProfileLogEx(M4U_MMP_Events[M4U_MMP_DEALLOC_MVA], MMProfileFlagStart, port, mva);
-
+	if (port < 0 || port >= M4U_PORT_NR) {
+		M4UMSG("%s,unknown port %d\n", __func__, port);
+		return -1;
+	}
 	pMvaInfo = m4u_client_find_buf(client, mva, 1);
 	if (unlikely(!pMvaInfo)) {
 		M4UMSG("error: m4u_dealloc_mva no mva found in client! module=%s, mva=0x%x\n",
@@ -2011,7 +2018,6 @@ static long MTK_M4U_ioctl(struct file *filp, unsigned int cmd, unsigned long arg
 	int ret = 0;
 	M4U_MOUDLE_STRUCT m4u_module;
 	M4U_PORT_STRUCT m4u_port;
-	M4U_PORT_ID PortID;
 	M4U_PORT_ID ModuleID;
 	M4U_CACHE_STRUCT m4u_cache_data;
 	M4U_DMA_STRUCT m4u_dma_data;
@@ -2120,6 +2126,7 @@ static long MTK_M4U_ioctl(struct file *filp, unsigned int cmd, unsigned long arg
 		mutex_unlock(&gM4u_sec_init);
 #endif
 		break;
+#if 0
 	case MTK_M4U_T_MONITOR_START:
 		ret = copy_from_user(&PortID, (void *)arg, sizeof(unsigned int));
 		if (ret) {
@@ -2137,6 +2144,7 @@ static long MTK_M4U_ioctl(struct file *filp, unsigned int cmd, unsigned long arg
 		}
 		ret = m4u_monitor_stop(m4u_port_2_m4u_id(PortID));
 		break;
+#endif
 	case MTK_M4U_T_CACHE_FLUSH_ALL:
 		m4u_dma_cache_flush_all();
 		break;
@@ -2159,6 +2167,7 @@ static long MTK_M4U_ioctl(struct file *filp, unsigned int cmd, unsigned long arg
 #endif
 		}
 		break;
+#if 0
 	case MTK_M4U_T_CONFIG_MAU:
 		{
 			M4U_MAU_STRUCT rMAU;
@@ -2172,6 +2181,7 @@ static long MTK_M4U_ioctl(struct file *filp, unsigned int cmd, unsigned long arg
 			ret = config_mau(rMAU);
 		}
 		break;
+
 	case MTK_M4U_T_CONFIG_TF:
 		{
 			M4U_TF_STRUCT rM4UTF;
@@ -2185,6 +2195,7 @@ static long MTK_M4U_ioctl(struct file *filp, unsigned int cmd, unsigned long arg
 			ret = m4u_enable_tf(rM4UTF.port, rM4UTF.fgEnable);
 		}
 		break;
+#endif
 #ifdef M4U_TEE_SERVICE_ENABLE
 	case MTK_M4U_T_SEC_INIT:
 		{

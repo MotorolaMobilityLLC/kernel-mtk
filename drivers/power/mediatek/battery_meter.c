@@ -181,7 +181,7 @@ signed int d5_count_time_rate = 1;
 signed int g_d_hw_ocv = 0;
 signed int g_vol_bat_hw_ocv = 0;
 signed int g_hw_ocv_before_sleep = 0;
-struct timespec g_rtc_time_before_sleep, xts_before_sleep;
+struct timespec g_rtc_time_before_sleep, xts_before_sleep, g_sleep_total_time;
 signed int g_sw_vbat_temp = 0;
 struct timespec last_oam_run_time;
 
@@ -254,7 +254,8 @@ kal_bool gFG_Is_offset_init = KAL_FALSE;
 
 void battery_meter_reset_sleep_time(void)
 {
-	_g_bat_sleep_total_time = 0;
+	g_sleep_total_time.tv_sec = 0;
+	g_sleep_total_time.tv_nsec = 0;
 }
 
 
@@ -2172,7 +2173,8 @@ void oam_run(void)
 	signed int delta_time = 0;
 
 	/* now_time = rtc_read_hw_time(); */
-	getrawmonotonic(&now_time);
+	/*get_monotonic_boottime(&now_time);*/	/*This api includes suspend_time*/
+	getrawmonotonic(&now_time);		/*This api does NOT include suspend_time*/
 
 	/* delta_time = now_time - last_oam_run_time; */
 	delta_time = now_time.tv_sec - last_oam_run_time.tv_sec;
@@ -2955,6 +2957,7 @@ void fgauge_algo_run_init(void)
 unsigned char reset_fg_bat_int = KAL_TRUE;
 void fg_bat_int_handler(void)
 {
+	pr_err("[fg_bat_int_handler] Detect\n");
 	reset_fg_bat_int = KAL_TRUE;
 	wake_up_bat2();
 }
@@ -3014,6 +3017,7 @@ void fgauge_initialization(void)
 #if defined(FG_BAT_INT)
 	pmic_register_interrupt_callback(FG_BAT_INT_L_NO, fg_bat_int_handler);
 	pmic_register_interrupt_callback(FG_BAT_INT_H_NO, fg_bat_int_handler);
+	bm_print(BM_LOG_CRTI, "[fgauge_initialization] fg_bat_int_handler register\n");
 #endif
 #endif
 }
@@ -3360,7 +3364,7 @@ signed int battery_meter_get_charger_voltage(void)
 #if defined(FG_BAT_INT)
 signed int battery_meter_set_columb_interrupt(unsigned int val)
 {
-	battery_log(BAT_LOG_FULL, "battery_meter_set_columb_interrupt=%d\n", val);
+	battery_log(BAT_LOG_CRTI, "battery_meter_set_columb_interrupt=%d\n", val);
 	battery_meter_ctrl(BATTERY_METER_CMD_SET_COLUMB_INTERRUPT, &val);
 	return 0;
 }
@@ -4284,6 +4288,8 @@ static int battery_meter_suspend(struct platform_device *dev, pm_message_t state
 	}
 #endif
 #endif				/* #if defined(FG_BAT_INT) */
+	bm_print(BM_LOG_CRTI, "[battery_meter_suspend] sleep time = %d,%ld %ld\n",
+	_g_bat_sleep_total_time, g_sleep_total_time.tv_sec, g_sleep_total_time.tv_nsec);
 
 	/* -- hibernation path */
 	if (state.event == PM_EVENT_FREEZE) {
@@ -4301,12 +4307,19 @@ static int battery_meter_suspend(struct platform_device *dev, pm_message_t state
 #endif
 		get_monotonic_boottime(&xts_before_sleep);
 		get_monotonic_boottime(&g_rtc_time_before_sleep);
-		if (_g_bat_sleep_total_time >= g_spm_timer)
-			_g_bat_sleep_total_time = 0;
+		if (_g_bat_sleep_total_time < g_spm_timer)
+			return 0;
+
+
+		g_sleep_total_time.tv_sec = 0;
+		g_sleep_total_time.tv_nsec = 0;
 
 		battery_meter_ctrl(BATTERY_METER_CMD_GET_HW_OCV, &g_hw_ocv_before_sleep);
 	}
 #endif
+	bm_print(BM_LOG_CRTI, "[battery_meter_suspend]2 sleep time = %d,%ld %ld\n", _g_bat_sleep_total_time,
+	g_sleep_total_time.tv_sec, g_sleep_total_time.tv_nsec);
+
 	bm_print(BM_LOG_CRTI, "[battery_meter_suspend]\n");
 	return 0;
 }
@@ -4509,7 +4522,6 @@ static int battery_meter_resume(struct platform_device *dev)
 	signed int DOD_hwocv;
 	struct timespec now_time;
 #endif
-	signed int sleep_interval;
 	struct timespec rtc_time_after_sleep;
 #ifdef MTK_POWER_EXT_DETECT
 	if (KAL_TRUE == bat_is_ext_power())
@@ -4517,13 +4529,17 @@ static int battery_meter_resume(struct platform_device *dev)
 #endif
 
 	get_monotonic_boottime(&rtc_time_after_sleep);
-	sleep_interval =
-		rtc_time_after_sleep.tv_sec - g_rtc_time_before_sleep.tv_sec;
 
-	_g_bat_sleep_total_time += sleep_interval;
+	g_sleep_total_time = timespec_add(g_sleep_total_time,
+		timespec_sub(rtc_time_after_sleep, g_rtc_time_before_sleep));
+	_g_bat_sleep_total_time = g_sleep_total_time.tv_sec;
+
 	battery_log(BAT_LOG_CRTI,
-		"[battery_meter_resume]sleep interval=%d sleep time = %d, g_spm_timer = %d\n",
-		sleep_interval, _g_bat_sleep_total_time, g_spm_timer);
+			"[battery_meter_resume] sleep time = %d, g_spm_timer = %d , %ld %ld %ld %ld %ld %ld\n",
+			_g_bat_sleep_total_time, g_spm_timer,
+			g_rtc_time_before_sleep.tv_sec, g_rtc_time_before_sleep.tv_nsec,
+			rtc_time_after_sleep.tv_sec, rtc_time_after_sleep.tv_nsec,
+			g_sleep_total_time.tv_sec, g_sleep_total_time.tv_nsec);
 
 #if defined(SOC_BY_HW_FG)
 #ifdef MTK_ENABLE_AGING_ALGORITHM

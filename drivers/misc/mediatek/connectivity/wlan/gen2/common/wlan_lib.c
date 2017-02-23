@@ -870,9 +870,6 @@ WLAN_STATUS wlanAdapterStop(IN P_ADAPTER_T prAdapter)
 
 	nicRxUninitialize(prAdapter);
 
-	/* MGMT - unitialization */
-	nicUninitMGMT(prAdapter);
-
 	nicTxRelease(prAdapter);
 
 	/* MGMT - unitialization */
@@ -5390,6 +5387,14 @@ VOID wlanCfgApply(IN P_ADAPTER_T prAdapter)
 			prTxPwr->cTxPwr5GHT40_BPSK, prTxPwr->cTxPwr5GHT40_QPSK,
 			prTxPwr->cTxPwr5GHT40_16QAM, prTxPwr->cTxPwr5GHT40_MCS5, prTxPwr->cTxPwr5GHT40_MCS6,
 			prTxPwr->cTxPwr5GHT40_MCS7);
+	}
+	if (wlanCfgGet(prAdapter, "ApUapsd", aucValue, "", 0) == WLAN_STATUS_SUCCESS) {
+		if (*aucValue == '1')
+			prAdapter->rWifiVar.fgSupportUAPSD = TRUE;
+		else if (*aucValue == '0')
+			prAdapter->rWifiVar.fgSupportUAPSD = FALSE;
+
+		DBGLOG(INIT, INFO, "Ap Mode Uapsd Status: %s\n", aucValue);
 	}
 	/* TODO: Apply other Config */
 }

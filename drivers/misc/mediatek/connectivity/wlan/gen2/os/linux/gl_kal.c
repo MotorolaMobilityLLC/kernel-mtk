@@ -1858,7 +1858,7 @@ kalIoctl(IN P_GLUE_INFO_T prGlueInfo,
 	wake_up_interruptible(&prGlueInfo->waitq);
 
 	/* <9> Block and wait for event or timeout, current the timeout is 30 secs */
-	if (wait_for_completion_interruptible_timeout(&prGlueInfo->rPendComp, 30 * KAL_HZ)) {
+	if (wait_for_completion_timeout(&prGlueInfo->rPendComp, 30 * KAL_HZ)) {
 		/* if (!wait_for_completion_interruptible(&prGlueInfo->rPendComp)) { */
 		DBGLOG(OID, TEMP, "kalIoctl: before wait, caller: %p\n", __builtin_return_address(0));
 		/*wait_for_completion(&prGlueInfo->rPendComp); {*/
@@ -2230,6 +2230,9 @@ int tx_thread(void *data)
 				{
 					if (!completion_done(&prGlueInfo->rPendComp))
 						fgAllowOidHandle = TRUE;
+					else
+						fgAllowOidHandle = FALSE;
+
 					if (fgAllowOidHandle && (FALSE == prIoReq->fgRead)) {
 						prIoReq->rStatus = wlanSetInformation(prIoReq->prAdapter,
 										      prIoReq->pfnOidHandler,

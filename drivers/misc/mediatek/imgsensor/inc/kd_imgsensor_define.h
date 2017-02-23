@@ -673,6 +673,7 @@ typedef struct {
 typedef enum {
 	MCLK_48MHZ_GROUP = 0x1,
 	MCLK_52MHZ_GROUP = 0x2,
+	MCLK_MAX_GROUP = 0x3,
 } ACKD_SENSOR_MCLK_ENUM;
 
 typedef struct {

@@ -1330,7 +1330,7 @@ s32 pwrap_init(void)
 	WRAP_WR32(PMIC_WRAP_WDT_UNIT, 0xf);
 	WRAP_WR32(PMIC_WRAP_WDT_SRC_EN, 0xfffffbff);
 	WRAP_WR32(PMIC_WRAP_TIMER_EN, 0x1);
-	WRAP_WR32(PMIC_WRAP_INT_EN, 0xfffffbff);
+	WRAP_WR32(PMIC_WRAP_INT_EN, 0xfffffbf9);
 	PWRAPLOG("mt_pwrap_init---- debug12++\n");
 	/* no ok */
 

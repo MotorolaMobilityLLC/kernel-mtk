@@ -125,9 +125,9 @@ static imgsensor_info_struct imgsensor_info = {
     .slim_video = {
         .pclk = 42000000,
         .linelength = 1120,
-        .framelength = 1246,
-        .startx = 0,
-        .starty = 0,
+		.framelength = 1246,
+		.startx = 160,
+		.starty = 240,
         .grabwindow_width = 1280,
         .grabwindow_height = 720,
         .mipi_data_lp2hs_settle_dc = 14,//unit , ns
@@ -183,7 +183,8 @@ static SENSOR_WINSIZE_INFO_STRUCT imgsensor_winsize_info[5] =
 	{ 1600, 1200,	 0,    0, 1600, 1200, 1600,  1200, 0000, 0000, 1600,  1200, 	 0,    0, 1600,  1200}, // capture
 	{ 1600, 1200,	 0,    0, 1600, 1200, 1600,  1200, 0000, 0000, 1600,  1200, 	 0,    0, 1600,  1200}, // video
 	{ 1600, 1200,	 0,    0, 1600, 1200, 1600,  1200, 0000, 0000, 1600,  1200, 	 0,    0, 1600,  1200}, //hight speed video
-	{ 1600, 1200,	 0,    0, 1600, 1200, 1600,  1200, 0000, 0000, 1600,  1200, 	 0,    0, 1280,  720}};// slim video
+	/*slim video*/
+	{ 1600, 1200,	 0,    0, 1600, 1200, 1600,  1200, 0000, 0000, 1600,  1200,    160,  240, 1280,  720} };
 
 
 

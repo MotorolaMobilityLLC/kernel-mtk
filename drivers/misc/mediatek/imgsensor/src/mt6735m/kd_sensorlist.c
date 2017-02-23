@@ -2762,11 +2762,8 @@ inline static int kdSetSensorMclk(int *pBuf)
 	PK_INFO("[CAMERA SENSOR] kdSetSensorMclk on=%d, freq= %d\n", pSensorCtrl->on,
 		pSensorCtrl->freq);
 	if (1 == pSensorCtrl->on) {
-		enable_mux(MT_MUX_CAMTG, "CAMERA_SENSOR");
-		clkmux_sel(MT_MUX_CAMTG, pSensorCtrl->freq, "CAMERA_SENSOR");
-	} else {
-
-		disable_mux(MT_MUX_CAMTG, "CAMERA_SENSOR");
+		if (0 < (pSensorCtrl->freq) && (pSensorCtrl->freq) < MCLK_MAX_GROUP)
+			clkmux_sel(MT_MUX_CAMTG, pSensorCtrl->freq, "CAMERA_SENSOR");
 	}
 	return ret;
 /* #endif */
@@ -3431,7 +3428,7 @@ static long CAMERA_HW_Ioctl(struct file *a_pstFile,
 		break;
 
 	case KDIMGSENSORIOC_X_SET_SHUTTER_GAIN_WAIT_DONE:
-		i4RetValue = kdSensorSetExpGainWaitDone((int *)pBuff);
+		/*i4RetValue = kdSensorSetExpGainWaitDone((int *)pBuff);*/
 		break;
 
 	case KDIMGSENSORIOC_X_SET_CURRENT_SENSOR:
@@ -3520,6 +3517,7 @@ static int CAMERA_HW_Open(struct inode *a_pstInode, struct file *a_pstFile)
 
 	/*  */
 	atomic_inc(&g_CamDrvOpenCnt);
+	enable_mux(MT_MUX_CAMTG, "CAMERA_SENSOR");
 	return 0;
 }
 
@@ -3537,6 +3535,7 @@ static int CAMERA_HW_Release(struct inode *a_pstInode, struct file *a_pstFile)
 /* PK_DBG("[CAMERA_HW_Release] g_CamDrvOpenCnt %d\n",g_CamDrvOpenCnt); */
 	/* if (atomic_read(&g_CamDrvOpenCnt) == 0) */
 	checkPowerBeforClose(CAMERA_HW_DRVNAME1);
+	disable_mux(MT_MUX_CAMTG, "CAMERA_SENSOR");
 
 	return 0;
 }

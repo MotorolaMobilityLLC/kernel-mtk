@@ -2864,7 +2864,7 @@ static VOID wlanRemove(VOID)
 	DBGLOG(INIT, TRACE, "wait_for_completion_interruptible\n");
 
 	/* wait main thread stops */
-	wait_for_completion_interruptible(&prGlueInfo->rHaltComp);
+	wait_for_completion(&prGlueInfo->rHaltComp);
 
 	DBGLOG(INIT, TRACE, "mtk_sdiod stopped\n");
 
