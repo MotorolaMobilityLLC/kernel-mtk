@@ -221,8 +221,7 @@ obj-$(CONFIG_USB)	+= usb_boost/
 #obj-$(CONFIG_RT_REGMAP) += rt-regmap/
 obj-$(CONFIG_MEDIATEK_SOLUTION)	+= cmo/
 obj-y += mtprintk/
-#obj-y += captouch/
-
+obj-$(CONFIG_LCT_CAPTOUCH) += captouch/
 #shaohui add for LCT DEVINFO start
 obj-$(CONFIG_LCT_DEVINFO_SUPPORT) += lct_devinfo/
 #obj-$(CONFIG_LCT_DEVINFO_SUPPORT) += lct_meminfo/

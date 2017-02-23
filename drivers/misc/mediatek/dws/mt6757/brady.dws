@@ -33,6 +33,18 @@
                 <varName>HW_CONTROL</varName>
                 <current>3.0</current>
             </pmic_clk4>
+            <rf_clk1>
+                <varName>HW_CONTROL</varName>
+                <current>1.4</current>
+            </rf_clk1>
+            <rf_clk3>
+                <varName>SW_CONTROL</varName>
+                <current>1.4</current>
+            </rf_clk3>
+            <rf_clk4>
+                <varName>SW_CONTROL</varName>
+                <current>1.4</current>
+            </rf_clk4>
         </module>
         <module name="eint">
             <count>153</count>
@@ -106,6 +118,13 @@
                 <sensitive_level>Edge</sensitive_level>
                 <debounce_en>Disable</debounce_en>
             </eint44>
+            <eint58>
+                <varName>CAPSENSO</varName>
+                <debounce_time>1</debounce_time>
+                <polarity>Low</polarity>
+                <sensitive_level>Edge</sensitive_level>
+                <debounce_en>Disable</debounce_en>
+            </eint58>
             <eint101>
                 <varName>RT5081_PMU_EINT</varName>
                 <debounce_time>0</debounce_time>
@@ -897,6 +916,20 @@
                 <smt>false</smt>
                 <ies>true</ies>
             </gpio56>
+            <gpio58>
+                <eint_mode>false</eint_mode>
+                <def_mode>0</def_mode>
+                <mode_arr>10000000</mode_arr>
+                <inpull_en>true</inpull_en>
+                <inpull_selhigh>false</inpull_selhigh>
+                <def_dir>IN</def_dir>
+                <in>true</in>
+                <out>false</out>
+                <out_high>false</out_high>
+                <varName0>GPIO_CAPSENSOR_EINT_PIN</varName0>
+                <smt>true</smt>
+                <ies>true</ies>
+            </gpio58>
             <gpio59>
                 <eint_mode>false</eint_mode>
                 <def_mode>1</def_mode>
@@ -2225,9 +2258,9 @@
                 <address>0x50</address>
             </device8>
             <device9>
-                <varName>GYRO</varName>
+                <varName>CAPSENSOR</varName>
                 <channel>I2C_CHANNEL_1</channel>
-                <address>0x69</address>
+                <address>0x28</address>
             </device9>
             <device11>
                 <varName>CAMERA_MAIN</varName>
@@ -2376,6 +2409,7 @@
 				NC NC NC NC NC NC NC NC NC
 				NC NC NC NC NC NC NC NC NC
 				NC NC NC NC NC NC NC NC NC</keyMatrix>
+            <keyMatrix_ext></keyMatrix_ext>
             <downloadKey>VOLUMEUP VOLUMEDOWN POWER</downloadKey>
             <modeKey>NC VOLUMEUP VOLUMEDOWN</modeKey>
             <pwrKeyEint_gpioNum>0</pwrKeyEint_gpioNum>
