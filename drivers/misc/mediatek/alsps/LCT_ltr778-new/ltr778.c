@@ -175,7 +175,7 @@ static int get_avg_ps(unsigned int ps_data_c)
 }
 
 
-#define MAX_ELM_PS_1 6
+#define MAX_ELM_PS_1 20
 static unsigned int record_ps_1[MAX_ELM_PS_1];
 static int rct_ps_1=0,full_ps_1=0;
 static long ps_sum_1=0;
@@ -203,7 +203,7 @@ static int get_stable_ps(unsigned int ps_data_c_1)
 	if(full_ps_1){
 	ps_d_1 = ps_sum_1 / MAX_ELM_PS_1;
 	}else{
-	ps_d_1 = ps_sum_1 /rct_ps;
+	ps_d_1 = ps_sum_1 /rct_ps_1;
 	}
 
 	ps_d_high = ps_d_1 + 20;
@@ -859,17 +859,17 @@ static int ltr778_dynamic_calibrate(void)
 
 	noise = data_total / count;
 
-	if(noise < dynamic_calibrate + 280)  // modified by steven
+	if(noise < dynamic_calibrate + 120)  // modified by steven
 	{
 		dynamic_calibrate = noise;
 // change 2.0cm  ->  2.5cm gray 18%
-		if (noise < 100) {
-			ps_thd_val_high = noise + 45;
-			ps_thd_val_low  = noise + 25;
-			ps_persist_val_high = noise + 1750;  // modified by steven
+		if (noise < 10) {
+			ps_thd_val_high = noise + 40;
+			ps_thd_val_low  = noise + 20;
+			ps_persist_val_high = 2046;// modified by steven
 			ps_persist_val_low  = noise + 60;
 		}
-		else if (noise < 200) {
+		else if (noise < 150) {
 			ps_thd_val_high = noise + 46;
 			ps_thd_val_low  = noise + 27;
 			ps_persist_val_high = noise + 1700;
@@ -921,6 +921,8 @@ static int ltr778_dynamic_calibrate(void)
 	APS_LOG("%s:obj->ps_persist_val_low = %d\n", __func__, ps_persist_val_low);
 
 	ltr778_i2c_write_reg(LTR778_PS_MEAS_RATE, 0x03);	// 50ms time 
+	
+	ltr778_i2c_write_reg(LTR778_INTERRUPT_PRST, 0x00);// 0 persist
 
 	return 0;
 }
@@ -1072,7 +1074,7 @@ static int ltr778_get_ps_value(struct ltr778_priv *obj, u16 ps)
 	
 	APS_DBG("ALS/PS ltr778_get_ps_value oil_close= %d\n", oil_close);
 	
-	if((ps > atomic_read(&obj->ps_persist_val_high)))  // modified by steven
+	if((ps >= atomic_read(&obj->ps_persist_val_high)))  // modified by steven
 	{
 		val = 2;  /* persist oil close*/
 		val_temp = 2;
@@ -1080,7 +1082,7 @@ static int ltr778_get_ps_value(struct ltr778_priv *obj, u16 ps)
 		oil_far_cal = 0;
 		oil_close = 1;
 	}
-	else if((ps > atomic_read(&obj->ps_thd_val_high)))
+	else if((ps >= atomic_read(&obj->ps_thd_val_high)))
 	{
 		if(oil_close == 0)
 			{
@@ -1090,14 +1092,14 @@ static int ltr778_get_ps_value(struct ltr778_priv *obj, u16 ps)
 				oil_far_cal = 0;
 			}
 
-		if((ps < atomic_read(&obj->ps_persist_val_low)) && (oil_close == 1) )
+		if((ps <= atomic_read(&obj->ps_persist_val_low)) && (oil_close == 1) )
 			{
 				val = 3;  /* persist oil far away*/
 				val_temp = 3;
 				intr_flag_value = 3;
 			}
 	}	
-	else if((ps < atomic_read(&obj->ps_thd_val_low)))
+	else if((ps <= atomic_read(&obj->ps_thd_val_low)))
 	{
 		val = 1;  /*far away*/
 		val_temp = 1;
@@ -1850,7 +1852,7 @@ static void ltr778_eint_work(struct work_struct *work)
 			}
 		} else if (intr_flag_value == 0){	
   //def GN_MTK_BSP_PS_DYNAMIC_CALI
-  #if 0
+  #if 1
 			if(obj->ps > 20 && obj->ps < (dynamic_calibrate - 300)){ 
         		if(obj->ps < 100){			
         			atomic_set(&obj->ps_thd_val_high,  obj->ps+45);
@@ -2411,7 +2413,7 @@ static int ltr778_init_client(void)
 	}
 	//add cly  for  reboot  do reset . 20170206
         ltr778_i2c_write_reg(LTR778_ALS_CONTR, MODE_ON_Reset);
-	res = ltr778_i2c_write_reg(LTR778_PS_LED, 0x56);		// 8mA 
+	res = ltr778_i2c_write_reg(LTR778_PS_LED, 0x54);		// 6mA 
 	if (res<0)
 	{
 		APS_LOG("ltr778 set ps led error\n");
@@ -2419,7 +2421,7 @@ static int ltr778_init_client(void)
 	}
 #ifdef CONFIG_LCT_LTR778_NEW
 
-	res = ltr778_i2c_write_reg(LTR778_PS_PULSES, 0x06);		// 6 pulses
+	res = ltr778_i2c_write_reg(LTR778_PS_PULSES, 0x08);		// 8 pulses
 #else
 	res = ltr778_i2c_write_reg(LTR778_PS_PULSES, 0x08);		// 48 pulses
 #endif
