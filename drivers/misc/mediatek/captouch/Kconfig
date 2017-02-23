@@ -7,6 +7,14 @@ config LCT_CUSTOM_KERNEL_CAPSENSOR
 	is set, it will support ambient
 	and light sensor MTK_SX9310.
 
+#add by dingjian 20170220 start 
+config LCT_CAPTOUCH
+	bool "lct captuoch method"
+	default n
+	help
+	  Select if you want to enable lct captouch method on MTK platform.
+#add end by dingjian 20170220
+
 source "drivers/misc/mediatek/captouch/LCT_sx9310/Kconfig"
 
 
