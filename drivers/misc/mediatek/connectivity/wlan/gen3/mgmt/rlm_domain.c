@@ -583,38 +583,38 @@ DOMAIN_INFO_ENTRY arSupportedRegDomains_Passive[] = {
 	{
 	 (PUINT_16) g_u2CountryGroup0_Passive, sizeof(g_u2CountryGroup0_Passive) / 2,
 	 {
-	  {81, BAND_2G4, CHNL_SPAN_5, 1, 0, 0}
+	  {81, BAND_2G4, CHNL_SPAN_5, 1, 0, FALSE}
 	  ,			/* CH_SET_2G4_1_14_NA */
-	  {82, BAND_2G4, CHNL_SPAN_5, 14, 0, 0}
+	  {82, BAND_2G4, CHNL_SPAN_5, 14, 0, FALSE}
 	  ,
 
-	  {115, BAND_5G, CHNL_SPAN_20, 36, 4, 0}
-	  ,			/* CH_SET_UNII_LOW_36_48 */
-	  {118, BAND_5G, CHNL_SPAN_20, 52, 4, 0}
-	  ,			/* CH_SET_UNII_MID_52_64 */
-	  {121, BAND_5G, CHNL_SPAN_20, 100, 11, 0}
+	  {115, BAND_5G, CHNL_SPAN_20, 36, 0, FALSE}
+	  ,			/* CH_SET_UNII_LOW_NA */
+	  {118, BAND_5G, CHNL_SPAN_20, 52, 0, FALSE}
+	  ,			/* CH_SET_UNII_MID_NA */
+	  {121, BAND_5G, CHNL_SPAN_20, 100, 11, TRUE}
 	  ,			/* CH_SET_UNII_WW_100_140 */
-	  {125, BAND_5G, CHNL_SPAN_20, 149, 0, 0}
+	  {125, BAND_5G, CHNL_SPAN_20, 149, 0, FALSE}
 	  ,			/* CH_SET_UNII_UPPER_NA */
 	 }
 	}
 	,
 	{
-	 /* Default passive channel table is empty */
-	 COUNTRY_CODE_NULL, 0,
+	 /* Default passive scan channel table: ch52~64, ch100~144 */
+	 NULL, 0,
 	 {
-	  {81, BAND_2G4, CHNL_SPAN_5, 1, 0, 0}
+	  {81, BAND_2G4, CHNL_SPAN_5, 1, 0, FALSE}
 	  ,			/* CH_SET_2G4_1_14_NA */
-	  {82, BAND_2G4, CHNL_SPAN_5, 14, 0, 0}
+	  {82, BAND_2G4, CHNL_SPAN_5, 14, 0, FALSE}
 	  ,
 
-	  {115, BAND_5G, CHNL_SPAN_20, 36, 0, 0}
+	  {115, BAND_5G, CHNL_SPAN_20, 36, 0, FALSE}
 	  ,			/* CH_SET_UNII_LOW_NA */
-	  {118, BAND_5G, CHNL_SPAN_20, 52, 4, 0}
+	  {118, BAND_5G, CHNL_SPAN_20, 52, 4, TRUE}
 	  ,			/* CH_SET_UNII_MID_52_64 */
-	  {121, BAND_5G, CHNL_SPAN_20, 100, 12, 0}
+	  {121, BAND_5G, CHNL_SPAN_20, 100, 12, TRUE}
 	  ,			/* CH_SET_UNII_WW_100_144 */
-	  {125, BAND_5G, CHNL_SPAN_20, 149, 0, 0}
+	  {125, BAND_5G, CHNL_SPAN_20, 149, 0, FALSE}
 	  ,			/* CH_SET_UNII_UPPER_NA */
 	 }
 	}

@@ -1402,7 +1402,7 @@ int msdc_switch_part(struct msdc_host *host, char part_id)
 
 	if ((part_id >= 0) && (part_id != (l_buf[EXT_CSD_PART_CONFIG] & 0x7))) {
 		l_buf[EXT_CSD_PART_CONFIG] &= ~0x7;
-		l_buf[EXT_CSD_PART_CONFIG] |= 0x0;
+		l_buf[EXT_CSD_PART_CONFIG] |= part_id;
 		ret = mmc_switch(host->mmc->card, 0, EXT_CSD_PART_CONFIG,
 			l_buf[EXT_CSD_PART_CONFIG], 1000);
 	}

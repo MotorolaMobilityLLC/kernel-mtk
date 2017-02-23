@@ -559,12 +559,14 @@ static irqreturn_t generic_interrupt(int irq, void *__hci)
 		os_printk(K_INFO, "===L1[%x] DMA[%x]\n", dwL1Value, dwDmaIntrValue);
 	}
 
-	if (dwL1Value & MAC3_INTR) {
+#ifdef SUPPORT_U3
+	if (musb_speed && (dwL1Value & MAC3_INTR)) {
 		dwLtssmValue = os_readl(U3D_LTSSM_INTR) & os_readl(U3D_LTSSM_INTR_ENABLE);
 		/* Write 1 clear */
 		os_writel(U3D_LTSSM_INTR, dwLtssmValue);
 		os_printk(K_DEBUG, "===L1[%x] LTSSM[%x]\n", dwL1Value, dwLtssmValue);
 	}
+#endif
 #ifdef USE_SSUSB_QMU
 	if (dwL1Value & QMU_INTR) {
 		wIntrQMUValue = os_readl(U3D_QISAR1) & os_readl(U3D_QIER1);

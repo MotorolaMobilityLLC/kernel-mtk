@@ -396,19 +396,27 @@ struct pg_callbacks *register_pg_callback(struct pg_callbacks *pgcb)
 }
 
 #ifdef TOPAXI_PROTECT_LOCK
-#define _TOPAXI_TIMEOUT_CNT_ 4000
+#define _TOPAXI_TIMEOUT_CNT_ 20000
 int spm_topaxi_protect(unsigned int mask_value, int en)
 {
 	unsigned long flags;
 	int count = 0;
 	struct timeval tm_s, tm_e;
 	unsigned int tm_val = 0;
+	unsigned int local_en = 0;
 
 	do_gettimeofday(&tm_s);
 	spm_mtcmos_noncpu_lock(flags);
 
 	if (en == 1) {
 		spm_write(INFRA_TOPAXI_PROTECTEN, spm_read(INFRA_TOPAXI_PROTECTEN) | (mask_value));
+		local_en = clk_readl(INFRA_TOPAXI_PROTECTEN);
+		if ((local_en & mask_value) != mask_value) {
+			spm_mtcmos_noncpu_unlock(flags);
+			pr_err("INFRA_TOPAXI_PROTECTEN = 0x%x, local = 0x%x != mask=0x%x\n",
+				clk_readl(INFRA_TOPAXI_PROTECTEN), local_en, mask_value);
+			BUG();
+		}
 		while ((spm_read(INFRA_TOPAXI_PROTECTSTA1) & (mask_value)) != (mask_value)) {
 			#ifdef CONFIG_MTK_RAM_CONSOLE
 			aee_rr_rec_clk(0, spm_read(INFRA_TOPAXI_PROTECTSTA1));
@@ -435,7 +443,8 @@ int spm_topaxi_protect(unsigned int mask_value, int en)
 		do_gettimeofday(&tm_e);
 		tm_val = (tm_e.tv_sec - tm_s.tv_sec) * 1000000 + (tm_e.tv_usec - tm_s.tv_usec);
 		pr_err("TOPAXI Bus Protect Timeout Error (%d us)(%d) !!\n", tm_val, count);
-		pr_err("INFRA_TOPAXI_PROTECTEN = 0x%x\n", clk_readl(INFRA_TOPAXI_PROTECTEN));
+		pr_err("INFRA_TOPAXI_PROTECTEN = 0x%x, local = 0x%x, mask=0x%x, en=%d\n",
+			clk_readl(INFRA_TOPAXI_PROTECTEN), local_en, mask_value, en);
 		pr_err("INFRA_TOPAXI_PROTECTSTA0 = 0x%x\n", clk_readl(INFRA_TOPAXI_PROTECTSTA0));
 		pr_err("INFRA_TOPAXI_PROTECTSTA1 = 0x%x\n", clk_readl(INFRA_TOPAXI_PROTECTSTA1));
 		pr_err("INFRA_BUS_IDLE_STA5 = 0x%x\n", clk_readl(INFRA_BUS_IDLE_STA5));

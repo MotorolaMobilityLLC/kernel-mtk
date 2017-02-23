@@ -47,7 +47,7 @@ struct ion_heap *ion_drv_get_heap(struct ion_device *dev, int heap_id, int need_
 int ion_drv_create_heap(struct ion_platform_heap *heap_data);
 
 #ifdef CONFIG_PM
-extern void shrink_ion_by_scenario(void);
+extern void shrink_ion_by_scenario(int need_lock);
 #endif
 
 #if defined(CONFIG_TRUSTONIC_TEE_SUPPORT) && defined(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT)

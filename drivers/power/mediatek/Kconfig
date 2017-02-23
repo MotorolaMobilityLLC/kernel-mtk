@@ -329,3 +329,9 @@ config MTK_BIF_SUPPORT
 	  smart battery.
 	  Set No to disable BIF feature of a
 	  smart battery.
+
+config LENOVO_CHARGING_STANDARD_SUPPORT
+	bool "LENOVO_CHARGING_STANDARD_SUPPORT"
+	help
+	  Add lenovo charging standard support.
+	default n

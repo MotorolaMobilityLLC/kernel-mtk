@@ -93,20 +93,21 @@ static struct snd_pcm_hardware mtk_I2S2_adc2_hardware = {
 
 static void StopAudioI2S2adc2Hardware(struct snd_pcm_substream *substream)
 {
-	pr_warn("StopAudioI2S2adc2Hardware\n");
+	AFE_BLOCK_T *pblock = &I2S2_ADC2_Control_context->rBlock;
+
+	pr_debug("StopAudioI2S2adc2Hardware\n");
 
 	SetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_VUL_DATA2, false);
 
 	irq_remove_user(substream, Soc_Aud_IRQ_MCU_MODE_IRQ2_MCU_MODE);
+
+	memset_io((void *)pblock->pucVirtBufAddr, 0, pblock->u4BufferSize);
 }
 
 static void StartAudioI2S2ADC2Hardware(struct snd_pcm_substream *substream)
 {
-	pr_warn("+StartAudioI2S2ADC2Hardware\n");
-
 	if (substream->runtime->format == SNDRV_PCM_FORMAT_S32_LE ||
 		substream->runtime->format == SNDRV_PCM_FORMAT_U32_LE) {
-		pr_warn("+StartAudioI2S2ADC2Hardware SNDRV_PCM_FORMAT_U32_LE\n");
 		SetoutputConnectionFormat(OUTPUT_DATA_FORMAT_24BIT, Soc_Aud_InterConnectionOutput_O21);
 		SetoutputConnectionFormat(OUTPUT_DATA_FORMAT_24BIT, Soc_Aud_InterConnectionOutput_O22);
 		SetMemIfFetchFormatPerSample(Soc_Aud_Digital_Block_MEM_VUL_DATA2,
@@ -130,7 +131,6 @@ static void StartAudioI2S2ADC2Hardware(struct snd_pcm_substream *substream)
 
 static int mtk_i2s2_adc2_alsa_stop(struct snd_pcm_substream *substream)
 {
-	pr_warn("mtk_i2s2_adc2_alsa_stop\n");
 	StopAudioI2S2adc2Hardware(substream);
 	RemoveMemifSubStream(Soc_Aud_Digital_Block_MEM_VUL_DATA2, substream);
 	return 0;
@@ -293,7 +293,6 @@ static int mtk_i2s2_adc2_pcm_close(struct snd_pcm_substream *substream)
 
 static int mtk_i2s2_adc2_alsa_start(struct snd_pcm_substream *substream)
 {
-	pr_debug("mtk_i2s2_adc2_alsa_start\n");
 	SetMemifSubStream(Soc_Aud_Digital_Block_MEM_VUL_DATA2, substream);
 	StartAudioI2S2ADC2Hardware(substream);
 	return 0;
@@ -340,12 +339,12 @@ static int mtk_i2s2_adc2_pcm_copy(struct snd_pcm_substream *substream,
 
 	if (pADC_Data2_MEM_ConTrol == NULL) {
 		pr_err("cannot find MEM control !!!!!!!\n");
-		msleep(50);
+		msleep(20);
 		return 0;
 	}
 
 	if (adc2_Block->u4BufferSize <= 0) {
-		msleep(50);
+		msleep(20);
 		return 0;
 	}
 
@@ -360,6 +359,8 @@ static int mtk_i2s2_adc2_pcm_copy(struct snd_pcm_substream *substream,
 			adc2_Block->u4DataRemained, adc2_Block->u4BufferSize);
 		adc2_Block->u4DataRemained = 0;
 		adc2_Block->u4DMAReadIdx   = adc2_Block->u4WriteIdx;
+		spin_unlock_irqrestore(&auddrv_I2s2adc2InCtl_lock, flags);
+		return 0;
 	}
 	if (count >  adc2_Block->u4DataRemained)
 		read_size = adc2_Block->u4DataRemained;
@@ -438,7 +439,7 @@ static int mtk_i2s2_adc2_pcm_copy(struct snd_pcm_substream *substream,
 			pr_err("Fail 3 Read_Data_Ptr:%p, VirtBufAddr:%p, ReadIdx:0x%x ,Read_Ptr:%d, read_size:%d",
 			       Read_Data_Ptr, adc2_Block->pucVirtBufAddr, adc2_Block->u4DMAReadIdx,
 			       DMA_Read_Ptr, read_size);
-			return read_count << 2;
+			return read_count >> 2;
 		}
 
 		read_count += size_2;

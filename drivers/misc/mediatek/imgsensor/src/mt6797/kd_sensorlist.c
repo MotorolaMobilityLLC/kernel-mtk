@@ -2832,6 +2832,7 @@ inline static int  adopt_CAMERA_HW_FeatureControl(void *pBuf)
     case SENSOR_FEATURE_GET_PDAF_INFO:
     case SENSOR_FEATURE_GET_PDAF_DATA:
     case SENSOR_FEATURE_GET_SENSOR_PDAF_CAPACITY:
+	case SENSOR_FEATURE_GET_SENSOR_HDR_CAPACITY:
     case SENSOR_FEATURE_SET_PDAF:
     case SENSOR_FEATURE_SET_SHUTTER_FRAME_TIME:
 	case SENSOR_FEATURE_SET_PDFOCUS_AREA:
@@ -2860,6 +2861,7 @@ inline static int  adopt_CAMERA_HW_FeatureControl(void *pBuf)
     g_NewSensorExpGain.uSensorExpDelayFrame = pSensorSyncInfo->uSensorExpDelayFrame;
     g_NewSensorExpGain.uSensorGainDelayFrame = pSensorSyncInfo->uSensorGainDelayFrame;
     g_NewSensorExpGain.uISPGainDelayFrame = pSensorSyncInfo->uISPGainDelayFrame;
+	spin_unlock(&kdsensor_drv_lock);
     /* AE smooth not change shutter to speed up */
     if ((0 == g_NewSensorExpGain.u2SensorNewExpTime) || (0xFFFF == g_NewSensorExpGain.u2SensorNewExpTime)) {
         g_NewSensorExpGain.uSensorExpDelayFrame = 0xFF;
@@ -2884,7 +2886,9 @@ inline static int  adopt_CAMERA_HW_FeatureControl(void *pBuf)
     }
     /* if the delay frame is 0 or 0xFF, stop to count */
     if ((g_NewSensorExpGain.uISPGainDelayFrame != 0xFF) && (g_NewSensorExpGain.uISPGainDelayFrame != 0)) {
+	spin_lock(&kdsensor_drv_lock);
         g_NewSensorExpGain.uISPGainDelayFrame--;
+	spin_unlock(&kdsensor_drv_lock);
     }
 
 
@@ -2944,12 +2948,14 @@ inline static int  adopt_CAMERA_HW_FeatureControl(void *pBuf)
 	switch (pFeatureCtrl->FeatureId) {
 	case SENSOR_FEATURE_GET_DEFAULT_FRAME_RATE_BY_SCENARIO:
 	case SENSOR_FEATURE_GET_SENSOR_PDAF_CAPACITY:
+	case SENSOR_FEATURE_GET_SENSOR_HDR_CAPACITY:
 		{
 			MUINT32 *pValue = NULL;
 			unsigned long long *pFeaturePara_64 = (unsigned long long *)pFeaturePara;
 			pValue = kmalloc(sizeof(MUINT32), GFP_KERNEL);
 			if (pValue == NULL) {
 				PK_ERR(" ioctl allocate mem failed\n");
+				kfree(pFeaturePara);
 				return -ENOMEM;
 			}
 
@@ -3048,6 +3054,7 @@ inline static int  adopt_CAMERA_HW_FeatureControl(void *pBuf)
 			void *usr_ptr = (void*)(uintptr_t)(*(pFeaturePara_64));
 			pAeAwbRef = kmalloc(sizeof(SENSOR_AE_AWB_REF_STRUCT), GFP_KERNEL);
 			if (pAeAwbRef == NULL) {
+				kfree(pFeaturePara);
 				PK_ERR(" ioctl allocate mem failed\n");
 				return -ENOMEM;
 			}
@@ -3081,6 +3088,7 @@ inline static int  adopt_CAMERA_HW_FeatureControl(void *pBuf)
 			void *usr_ptr = (void *)(uintptr_t) (*(pFeaturePara_64 + 1));
 			pCrop = kmalloc(sizeof(SENSOR_WINSIZE_INFO_STRUCT), GFP_KERNEL);
 			if (pCrop == NULL) {
+				kfree(pFeaturePara);
 				PK_ERR(" ioctl allocate mem failed\n");
 				return -ENOMEM;
 			}
@@ -3117,6 +3125,7 @@ inline static int  adopt_CAMERA_HW_FeatureControl(void *pBuf)
 			pVcInfo = kmalloc(sizeof(SENSOR_VC_INFO_STRUCT), GFP_KERNEL);
 			if (pVcInfo == NULL) {
 				PK_ERR(" ioctl allocate mem failed\n");
+				kfree(pFeaturePara);
 				return -ENOMEM;
 			}
 			memset(pVcInfo, 0x0, sizeof(SENSOR_VC_INFO_STRUCT));
@@ -3152,6 +3161,7 @@ inline static int  adopt_CAMERA_HW_FeatureControl(void *pBuf)
 			void *usr_ptr = (void *)(uintptr_t) (*(pFeaturePara_64 + 1));
 			pPdInfo = kmalloc(sizeof(SET_PD_BLOCK_INFO_T), GFP_KERNEL);
 			if (pPdInfo == NULL) {
+				kfree(pFeaturePara);
 				PK_ERR(" ioctl allocate mem failed\n");
 				return -ENOMEM;
 			}
@@ -3188,6 +3198,7 @@ inline static int  adopt_CAMERA_HW_FeatureControl(void *pBuf)
 			void *usr_ptr = (void *)(uintptr_t) (*(pFeaturePara_64));
 			pApWindows = kmalloc(sizeof(MUINT32) * 6, GFP_KERNEL);
 			if (pApWindows == NULL) {
+				kfree(pFeaturePara);
 				PK_ERR(" ioctl allocate mem failed\n");
 				return -ENOMEM;
 			}
@@ -3221,6 +3232,7 @@ inline static int  adopt_CAMERA_HW_FeatureControl(void *pBuf)
 			void *usr_ptr =  (void *)(uintptr_t) (*(pFeaturePara_64));
 			pExif = kmalloc(sizeof(SENSOR_EXIF_INFO_STRUCT), GFP_KERNEL);
 			if (pExif == NULL) {
+				kfree(pFeaturePara);
 				PK_ERR(" ioctl allocate mem failed\n");
 				return -ENOMEM;
 			}
@@ -3257,6 +3269,7 @@ inline static int  adopt_CAMERA_HW_FeatureControl(void *pBuf)
 			void *usr_ptr = (void *)(uintptr_t) (*(pFeaturePara_64));
 			pCurAEAWB = kmalloc(sizeof(SENSOR_AE_AWB_CUR_STRUCT), GFP_KERNEL);
 			if (pCurAEAWB == NULL) {
+				kfree(pFeaturePara);
 				PK_ERR(" ioctl allocate mem failed\n");
 				return -ENOMEM;
 			}
@@ -3292,6 +3305,7 @@ inline static int  adopt_CAMERA_HW_FeatureControl(void *pBuf)
 			pDelayInfo = kmalloc(sizeof(SENSOR_DELAY_INFO_STRUCT), GFP_KERNEL);
 
 			if (pDelayInfo == NULL) {
+				kfree(pFeaturePara);
 				PK_ERR(" ioctl allocate mem failed\n");
 				return -ENOMEM;
 			}
@@ -3329,6 +3343,7 @@ inline static int  adopt_CAMERA_HW_FeatureControl(void *pBuf)
 			pFlashInfo = kmalloc(sizeof(SENSOR_FLASHLIGHT_AE_INFO_STRUCT), GFP_KERNEL);
 
 			if (pFlashInfo == NULL) {
+				kfree(pFeaturePara);
 				PK_ERR(" ioctl allocate mem failed\n");
 				return -ENOMEM;
 			}
@@ -3367,6 +3382,7 @@ inline static int  adopt_CAMERA_HW_FeatureControl(void *pBuf)
 			#if 1
 			pPdaf_data = kmalloc(sizeof(char) * PDAF_DATA_SIZE, GFP_KERNEL);
 			if (pPdaf_data == NULL) {
+				kfree(pFeaturePara);
 				PK_ERR(" ioctl allocate mem failed\n");
 				return -ENOMEM;
 			}
@@ -3473,6 +3489,7 @@ inline static int  adopt_CAMERA_HW_FeatureControl(void *pBuf)
     case SENSOR_FEATURE_SET_MIN_MAX_FPS:
     case SENSOR_FEATURE_GET_PDAF_INFO:
     case SENSOR_FEATURE_GET_SENSOR_PDAF_CAPACITY:
+	case SENSOR_FEATURE_GET_SENSOR_HDR_CAPACITY:
 	case SENSOR_FEATURE_SET_ISO:
     case SENSOR_FEATURE_SET_PDAF:
     case SENSOR_FEATURE_SET_SHUTTER_FRAME_TIME:

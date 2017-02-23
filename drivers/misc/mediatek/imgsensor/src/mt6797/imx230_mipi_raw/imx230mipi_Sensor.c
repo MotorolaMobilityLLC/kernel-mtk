@@ -2289,7 +2289,7 @@ static void normal_video_setting_30fps_HDR(void)
 	write_cmos_sensor(0x3000,0x75);
 	write_cmos_sensor(0x3001,0x00);
 	write_cmos_sensor(0x305C,0x11);
-	
+
 	write_cmos_sensor(0x0112,0x0A);
 	write_cmos_sensor(0x0113,0x0A);
 	write_cmos_sensor(0x034C,0x14);
@@ -2307,7 +2307,7 @@ static void normal_video_setting_30fps_HDR(void)
 	write_cmos_sensor(0x040D,0xE0);
 	write_cmos_sensor(0x040E,0x0B);
 	write_cmos_sensor(0x040F,0xBE);
-	
+
 	write_cmos_sensor(0x0301,0x04);
 	write_cmos_sensor(0x0303,0x02);
 	write_cmos_sensor(0x0305,0x04);
@@ -2319,17 +2319,17 @@ static void normal_video_setting_30fps_HDR(void)
 	write_cmos_sensor(0x030E,0x02);
 	write_cmos_sensor(0x030F,0x99);
 	write_cmos_sensor(0x0310,0x01);
-	
+
 	write_cmos_sensor(0x0820,0x14);
 	write_cmos_sensor(0x0821,0xC8);
 	write_cmos_sensor(0x0822,0x00);
 	write_cmos_sensor(0x0823,0x00);
-	
+
 	write_cmos_sensor(0x0202,0x0C);
 	write_cmos_sensor(0x0203,0x26);
 	write_cmos_sensor(0x0224,0x0C);
 	write_cmos_sensor(0x0225,0x26);
-	
+
 	write_cmos_sensor(0x0204,0x00);
 	write_cmos_sensor(0x0205,0x00);
 	write_cmos_sensor(0x0216,0x00);
@@ -2342,13 +2342,13 @@ static void normal_video_setting_30fps_HDR(void)
 	write_cmos_sensor(0x0213,0x00);
 	write_cmos_sensor(0x0214,0x01);
 	write_cmos_sensor(0x0215,0x00);
-	
+
 	write_cmos_sensor(0x3006,0x01);
 	write_cmos_sensor(0x3007,0x01);
 	write_cmos_sensor(0x31E0,0x3F);
 	write_cmos_sensor(0x31E1,0xFF);
 	write_cmos_sensor(0x31E4,0x02);
-	
+
 	write_cmos_sensor(0x3A23,0x14);
 	write_cmos_sensor(0x3A24,0xE0);
 	write_cmos_sensor(0x3A25,0x0B);
@@ -2364,9 +2364,9 @@ static void normal_video_setting_30fps_HDR(void)
 	write_cmos_sensor(0x3A37,0x00);
 	write_cmos_sensor(0x3A38,0x00);
 	write_cmos_sensor(0x3A39,0x00);
-	
+
 	write_cmos_sensor(0x3A21,0x02);
-	
+
 	write_cmos_sensor(0x3011,0x00);
 	write_cmos_sensor(0x3013,0x01);
 
@@ -3382,6 +3382,31 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 		case SENSOR_FEATURE_SET_AWB_GAIN:
             imx230_awb_gain(pSetSensorAWB);
             break;
+		case SENSOR_FEATURE_GET_SENSOR_HDR_CAPACITY:
+			LOG_INF("SENSOR_FEATURE_GET_SENSOR_HDR_CAPACITY scenarioId:%llu\n", *feature_data);
+
+			switch (*feature_data) {
+			case MSDK_SCENARIO_ID_CAMERA_CAPTURE_JPEG:
+				*(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 0x2;
+				break;
+			case MSDK_SCENARIO_ID_VIDEO_PREVIEW:
+				*(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 0x2;
+				break;
+			case MSDK_SCENARIO_ID_HIGH_SPEED_VIDEO:
+				*(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 0x0;
+				break;
+			case MSDK_SCENARIO_ID_SLIM_VIDEO:
+				*(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 0x0;
+				break;
+			case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
+				*(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 0x2;
+				break;
+			default:
+				*(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 0x0;
+				break;
+			}
+			break;
+
 		/*END OF HDR CMD*/
 		/*PDAF CMD*/
 		case SENSOR_FEATURE_GET_SENSOR_PDAF_CAPACITY:

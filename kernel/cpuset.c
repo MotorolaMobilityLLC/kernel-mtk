@@ -1509,6 +1509,7 @@ static void cpuset_attach(struct cgroup_subsys_state *css,
 	struct cpuset *oldcs = cpuset_attach_old_cs;
 
 	mutex_lock(&cpuset_mutex);
+	get_online_cpus();
 
 	/* prepare for attach */
 	if (cs == &top_cpuset)
@@ -1528,6 +1529,7 @@ static void cpuset_attach(struct cgroup_subsys_state *css,
 		cpuset_change_task_nodemask(task, &cpuset_attach_nodemask_to);
 		cpuset_update_task_spread_flag(cs, task);
 	}
+	put_online_cpus();
 
 	/*
 	 * Change mm, possibly for multiple threads in a threadgroup. This is
