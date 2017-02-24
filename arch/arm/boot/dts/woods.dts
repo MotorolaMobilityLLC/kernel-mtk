@@ -1054,7 +1054,7 @@
 			usb_charger_current_suspend = <0 >;	/* Unit: 0.01 mA */
 			usb_charger_current_unconfigured = <7000 >;	/* Unit: 0.01 mA */
 			usb_charger_current_configured = <50000 >;	/* Unit: 0.01 mA */
-			usb_charger_current = <50000 >;	/* Unit: 0.01 mA */
+			usb_charger_current = <102400 >;	/* Unit: 0.01 mA */
 			ac_charger_input_current = <200000 >;	/* Unit: 0.01 mA */
 			ac_charger_current = <179200 >;	/* Unit: 0.01 mA */
 			ac_charger_current_AP_EMEA = <102400 >;	/* Unit: 0.01 mA */
