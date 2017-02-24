@@ -157,6 +157,9 @@ void bootprof_pdev_register(unsigned long long ts, struct platform_device *pdev)
 	log_boot(msgbuf);
 }
 
+#ifdef CONFIG_MICROTRUST_TEE_SUPPORT
+EXPORT_SYMBOL(log_boot);
+#endif
 static void bootup_finish(void)
 {
 	initcall_debug = 0;

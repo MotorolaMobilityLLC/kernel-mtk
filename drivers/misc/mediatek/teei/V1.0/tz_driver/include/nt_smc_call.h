@@ -108,7 +108,8 @@
 		MAKE_SMC_CALL_ID(ID_FIELD_F_FAST_SMC_CALL, ID_FIELD_W_64, ID_FIELD_T_TRUSTED_OS_SERVICE2, 8)
 #define N_GET_NON_IRQ_NUM      \
 		MAKE_SMC_CALL_ID(ID_FIELD_F_FAST_SMC_CALL, ID_FIELD_W_64, ID_FIELD_T_TRUSTED_OS_SERVICE2, 9)
-
+#define N_GET_SE_OS_STATE     \
+		MAKE_SMC_CALL_ID(ID_FIELD_F_FAST_SMC_CALL, ID_FIELD_W_64, ID_FIELD_T_TRUSTED_OS_SERVICE2, 10)
 
 /*For nt side Standard Call*/
 #define NT_SCHED_T		\
@@ -130,62 +131,64 @@
 #define NT_SCHED_T_FIQ	\
 		MAKE_SMC_CALL_ID(ID_FIELD_F_STANDARD_SMC_CALL, ID_FIELD_W_64, ID_FIELD_T_TRUSTED_OS_SERVICE3, 8)
 
+
+
+
 /*For nt side Fast Call*/
 #define N_SWITCH_TO_T_OS_STAGE2_32	\
-	MAKE_SMC_CALL_ID(ID_FIELD_F_FAST_SMC_CALL, ID_FIELD_W_32, ID_FIELD_T_TRUSTED_OS_SERVICE2, 0)
+		MAKE_SMC_CALL_ID(ID_FIELD_F_FAST_SMC_CALL, ID_FIELD_W_32, ID_FIELD_T_TRUSTED_OS_SERVICE2, 0)
 #define N_CPU_CBOOT_32		\
-	MAKE_SMC_CALL_ID(ID_FIELD_F_FAST_SMC_CALL, ID_FIELD_W_32, ID_FIELD_T_CPU_SERVICE, 0)
+		MAKE_SMC_CALL_ID(ID_FIELD_F_FAST_SMC_CALL, ID_FIELD_W_32, ID_FIELD_T_CPU_SERVICE, 0)
 #define N_CPU_SUSPEND_32		\
-	MAKE_SMC_CALL_ID(ID_FIELD_F_FAST_SMC_CALL, ID_FIELD_W_32, ID_FIELD_T_CPU_SERVICE, 1)
+		MAKE_SMC_CALL_ID(ID_FIELD_F_FAST_SMC_CALL, ID_FIELD_W_32, ID_FIELD_T_CPU_SERVICE, 1)
 #define N_CPU_ON_32		\
-	MAKE_SMC_CALL_ID(ID_FIELD_F_FAST_SMC_CALL, ID_FIELD_W_32, ID_FIELD_T_CPU_SERVICE, 2)
+		MAKE_SMC_CALL_ID(ID_FIELD_F_FAST_SMC_CALL, ID_FIELD_W_32, ID_FIELD_T_CPU_SERVICE, 2)
 #define N_CPU_OFF_32		\
-	MAKE_SMC_CALL_ID(ID_FIELD_F_FAST_SMC_CALL, ID_FIELD_W_32, ID_FIELD_T_CPU_SERVICE, 3)
+		MAKE_SMC_CALL_ID(ID_FIELD_F_FAST_SMC_CALL, ID_FIELD_W_32, ID_FIELD_T_CPU_SERVICE, 3)
 #define N_GET_PARAM_IN_32		\
-	MAKE_SMC_CALL_ID(ID_FIELD_F_FAST_SMC_CALL, ID_FIELD_W_32, ID_FIELD_T_TRUSTED_OS_SERVICE2, 1)
+		MAKE_SMC_CALL_ID(ID_FIELD_F_FAST_SMC_CALL, ID_FIELD_W_32, ID_FIELD_T_TRUSTED_OS_SERVICE2, 1)
 #define N_INIT_T_FC_BUF_32	\
-	MAKE_SMC_CALL_ID(ID_FIELD_F_FAST_SMC_CALL, ID_FIELD_W_32, ID_FIELD_T_TRUSTED_OS_SERVICE2, 2)
+		MAKE_SMC_CALL_ID(ID_FIELD_F_FAST_SMC_CALL, ID_FIELD_W_32, ID_FIELD_T_TRUSTED_OS_SERVICE2, 2)
 #define N_INVOKE_T_FAST_CALL_32	\
-	MAKE_SMC_CALL_ID(ID_FIELD_F_FAST_SMC_CALL, ID_FIELD_W_32, ID_FIELD_T_TRUSTED_OS_SERVICE2, 3)
+		MAKE_SMC_CALL_ID(ID_FIELD_F_FAST_SMC_CALL, ID_FIELD_W_32, ID_FIELD_T_TRUSTED_OS_SERVICE2, 3)
 #define NT_DUMP_STATE_32		\
-	MAKE_SMC_CALL_ID(ID_FIELD_F_FAST_SMC_CALL, ID_FIELD_W_32, ID_FIELD_T_TRUSTED_OS_SERVICE2, 4)
+		MAKE_SMC_CALL_ID(ID_FIELD_F_FAST_SMC_CALL, ID_FIELD_W_32, ID_FIELD_T_TRUSTED_OS_SERVICE2, 4)
 #define N_ACK_T_FOREGROUND_32	\
-	MAKE_SMC_CALL_ID(ID_FIELD_F_FAST_SMC_CALL, ID_FIELD_W_32, ID_FIELD_T_TRUSTED_OS_SERVICE2, 5)
+		MAKE_SMC_CALL_ID(ID_FIELD_F_FAST_SMC_CALL, ID_FIELD_W_32, ID_FIELD_T_TRUSTED_OS_SERVICE2, 5)
 #define N_ACK_T_BACKSTAGE_32	\
-	MAKE_SMC_CALL_ID(ID_FIELD_F_FAST_SMC_CALL, ID_FIELD_W_32, ID_FIELD_T_TRUSTED_OS_SERVICE2, 6)
+		MAKE_SMC_CALL_ID(ID_FIELD_F_FAST_SMC_CALL, ID_FIELD_W_32, ID_FIELD_T_TRUSTED_OS_SERVICE2, 6)
 #define N_INIT_T_BOOT_STAGE1_32	\
-	MAKE_SMC_CALL_ID(ID_FIELD_F_FAST_SMC_CALL, ID_FIELD_W_32, ID_FIELD_T_TRUSTED_OS_SERVICE2, 7)
+		MAKE_SMC_CALL_ID(ID_FIELD_F_FAST_SMC_CALL, ID_FIELD_W_32, ID_FIELD_T_TRUSTED_OS_SERVICE2, 7)
 #define N_SWITCH_CORE_32 \
-	MAKE_SMC_CALL_ID(ID_FIELD_F_FAST_SMC_CALL, ID_FIELD_W_32, ID_FIELD_T_TRUSTED_OS_SERVICE2, 8)
+		MAKE_SMC_CALL_ID(ID_FIELD_F_FAST_SMC_CALL, ID_FIELD_W_32, ID_FIELD_T_TRUSTED_OS_SERVICE2, 8)
 #define N_GET_NON_IRQ_NUM_32      \
-	MAKE_SMC_CALL_ID(ID_FIELD_F_FAST_SMC_CALL, ID_FIELD_W_32, ID_FIELD_T_TRUSTED_OS_SERVICE2, 9)
-
+		MAKE_SMC_CALL_ID(ID_FIELD_F_FAST_SMC_CALL, ID_FIELD_W_32, ID_FIELD_T_TRUSTED_OS_SERVICE2, 9)
+#define N_GET_SE_OS_STATE_32    \
+		MAKE_SMC_CALL_ID(ID_FIELD_F_FAST_SMC_CALL, ID_FIELD_W_32, ID_FIELD_T_TRUSTED_OS_SERVICE2, 10)
 
 /*For nt side Standard Call*/
 #define NT_SCHED_T_32		\
-	MAKE_SMC_CALL_ID(ID_FIELD_F_STANDARD_SMC_CALL, ID_FIELD_W_32, ID_FIELD_T_TRUSTED_OS_SERVICE3, 0)
+		MAKE_SMC_CALL_ID(ID_FIELD_F_STANDARD_SMC_CALL, ID_FIELD_W_32, ID_FIELD_T_TRUSTED_OS_SERVICE3, 0)
 #define N_INVOKE_T_SYS_CTL_32	\
-	MAKE_SMC_CALL_ID(ID_FIELD_F_STANDARD_SMC_CALL, ID_FIELD_W_32, ID_FIELD_T_TRUSTED_OS_SERVICE3, 1)
+		MAKE_SMC_CALL_ID(ID_FIELD_F_STANDARD_SMC_CALL, ID_FIELD_W_32, ID_FIELD_T_TRUSTED_OS_SERVICE3, 1)
 #define N_INVOKE_T_NQ_32		\
-	MAKE_SMC_CALL_ID(ID_FIELD_F_STANDARD_SMC_CALL, ID_FIELD_W_32, ID_FIELD_T_TRUSTED_OS_SERVICE3, 2)
+		MAKE_SMC_CALL_ID(ID_FIELD_F_STANDARD_SMC_CALL, ID_FIELD_W_32, ID_FIELD_T_TRUSTED_OS_SERVICE3, 2)
 #define N_INVOKE_T_DRV_32		\
-	MAKE_SMC_CALL_ID(ID_FIELD_F_STANDARD_SMC_CALL, ID_FIELD_W_32, ID_FIELD_T_TRUSTED_OS_SERVICE3, 3)
+		MAKE_SMC_CALL_ID(ID_FIELD_F_STANDARD_SMC_CALL, ID_FIELD_W_32, ID_FIELD_T_TRUSTED_OS_SERVICE3, 3)
 #define N_RAISE_T_EVENT_32		\
-	MAKE_SMC_CALL_ID(ID_FIELD_F_STANDARD_SMC_CALL, ID_FIELD_W_32, ID_FIELD_T_TRUSTED_OS_SERVICE3, 4)
+		MAKE_SMC_CALL_ID(ID_FIELD_F_STANDARD_SMC_CALL, ID_FIELD_W_32, ID_FIELD_T_TRUSTED_OS_SERVICE3, 4)
 #define N_ACK_T_INVOKE_DRV_32	\
-	MAKE_SMC_CALL_ID(ID_FIELD_F_STANDARD_SMC_CALL, ID_FIELD_W_32, ID_FIELD_T_TRUSTED_OS_SERVICE3, 5)
+		MAKE_SMC_CALL_ID(ID_FIELD_F_STANDARD_SMC_CALL, ID_FIELD_W_32, ID_FIELD_T_TRUSTED_OS_SERVICE3, 5)
 #define N_INVOKE_T_LOAD_TEE_32	\
-	MAKE_SMC_CALL_ID(ID_FIELD_F_STANDARD_SMC_CALL, ID_FIELD_W_32, ID_FIELD_T_TRUSTED_OS_SERVICE3, 6)
+		MAKE_SMC_CALL_ID(ID_FIELD_F_STANDARD_SMC_CALL, ID_FIELD_W_32, ID_FIELD_T_TRUSTED_OS_SERVICE3, 6)
 #define N_ACK_T_LOAD_IMG_32	\
-	MAKE_SMC_CALL_ID(ID_FIELD_F_STANDARD_SMC_CALL, ID_FIELD_W_32, ID_FIELD_T_TRUSTED_OS_SERVICE3, 7)
+		MAKE_SMC_CALL_ID(ID_FIELD_F_STANDARD_SMC_CALL, ID_FIELD_W_32, ID_FIELD_T_TRUSTED_OS_SERVICE3, 7)
 #define NT_SCHED_T_FIQ_32	\
-	MAKE_SMC_CALL_ID(ID_FIELD_F_STANDARD_SMC_CALL, ID_FIELD_W_32, ID_FIELD_T_TRUSTED_OS_SERVICE3, 8)
-
-
-/* ////////////////////////////////////////////////////////////////////////////////////////////////////////////// */
+		MAKE_SMC_CALL_ID(ID_FIELD_F_STANDARD_SMC_CALL, ID_FIELD_W_32, ID_FIELD_T_TRUSTED_OS_SERVICE3, 8)
+   
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 #ifdef CONFIG_ARM64
 /*  ==================  NT FAST CALL ================   */
-/* doujia modify start */
 static inline void n_init_t_boot_stage1(
 	uint64_t p0,
 	uint64_t p1,
@@ -207,7 +210,8 @@ static inline void n_init_t_boot_stage1(
 	"nop"
 	: :
 	[fun_id] "r" (N_INIT_T_BOOT_STAGE1), [temp] "r" (temp)
-	: "x0", "x1", "x2", "x3", "memory");
+	: "x0", "x1", "x2", "x3","x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12",
+			"x13", "x14", "x15", "x16", "x17","memory");
 	*p2 = temp[0];
 }
 
@@ -226,10 +230,10 @@ static inline void n_switch_to_t_os_stage2(uint64_t *p0)
 	"nop"
 	: :
 	[fun_id] "r" (N_SWITCH_TO_T_OS_STAGE2), [temp] "r" (temp)
-	: "x0", "x1", "x2", "x3",  "memory");
+	: "x0", "x1", "x2", "x3","x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12",
+			"x13", "x14", "x15", "x16", "x17","memory");
 	*p0 = temp[0];
 }
-/* doujia modify end */
 
 static inline void nt_dump_state(void)
 {
@@ -243,7 +247,8 @@ static inline void nt_dump_state(void)
 	"nop"
 	: :
 	[fun_id] "r" (NT_DUMP_STATE)
-	: "x0", "x1", "x2", "x3",  "memory");
+	: "x0", "x1", "x2", "x3","x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12",
+			"x13", "x14", "x15", "x16", "x17","memory");
 }
 
 static inline void n_get_param_in(
@@ -256,7 +261,7 @@ static inline void n_get_param_in(
 
 	__asm__ volatile(
 	/* ".arch_extension sec\n" */
-	"mov r0, %[fun_id]\n\t"
+	"mov x0, %[fun_id]\n\t"
 	"mov x1, #0\n\t"
 	"mov x2, #0\n\t"
 	"mov x3, #0\n\t"
@@ -268,7 +273,8 @@ static inline void n_get_param_in(
 	"str x3, [%[temp], #24]\n\t"
 	: :
 	[fun_id] "r" (N_GET_PARAM_IN), [temp] "r" (temp)
-	: "x0", "x1", "x2", "x3", "memory");
+	:  "x0", "x1", "x2", "x3","x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12",
+			"x13", "x14", "x15", "x16", "x17","memory");
 
 	*rtc0 = temp[0];
 	*rtc1 = temp[1];
@@ -276,7 +282,6 @@ static inline void n_get_param_in(
 	*rtc3 = temp[3];
 
 }
-/* doujia modify start */
 static inline void n_init_t_fc_buf(
 	uint64_t p0,
 	uint64_t p1,
@@ -285,7 +290,7 @@ static inline void n_init_t_fc_buf(
 	uint64_t temp[3];
 	temp[0] = p0;
 	temp[1] = p1;
-	//temp[2] = p2;
+	temp[2] = *p2;
 
 	__asm__ volatile(
 	/* ".arch_extension sec\n" */
@@ -298,7 +303,8 @@ static inline void n_init_t_fc_buf(
 	"nop"
 	: :
 	[fun_id] "r" (N_INIT_T_FC_BUF), [temp] "r" (temp)
-	: "x0", "x1", "x2", "x3", "memory");
+	: "x0", "x1", "x2", "x3","x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12",
+			"x13", "x14", "x15", "x16", "x17","memory");
 	*p2 = temp[0];
 }
 static inline void n_invoke_t_fast_call(
@@ -322,7 +328,8 @@ static inline void n_invoke_t_fast_call(
 	"nop"
 	: :
 	[fun_id] "r" (N_INVOKE_T_FAST_CALL), [temp] "r" (temp)
-	: "x0", "x1", "x2", "x3", "memory");
+	: "x0", "x1", "x2", "x3","x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12",
+			"x13", "x14", "x15", "x16", "x17","memory");
 	*p0 = temp[0];
 }
 
@@ -342,10 +349,10 @@ static inline void nt_sched_t(uint64_t *p)
 	"nop"
 	: :
 	[fun_id] "r" (NT_SCHED_T), [temp] "r" (temp)
-	: "x0", "x1", "x2", "x3", "memory");
+	:  "x0", "x1", "x2", "x3","x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12",
+			"x13", "x14", "x15", "x16", "x17","memory");
 	*p = temp[0];
 }
-/* doujia modify end */
 
 static inline void n_invoke_t_sys_ctl(
 	uint64_t p0,
@@ -367,10 +374,10 @@ static inline void n_invoke_t_sys_ctl(
 	"nop"
 	: :
 	[fun_id] "r" (N_INVOKE_T_SYS_CTL), [temp] "r" (temp)
-	: "x0", "x1", "x2", "x3", "memory");
+	:  "x0", "x1", "x2", "x3","x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12",
+			"x13", "x14", "x15", "x16", "x17","memory");
 }
 
-/* doujia modify start */
 static inline void n_invoke_t_nq(
 	uint64_t *p0,
 	uint64_t p1,
@@ -392,7 +399,8 @@ static inline void n_invoke_t_nq(
 	"nop"
 	: :
 	[fun_id] "r" (N_INVOKE_T_NQ), [temp] "r" (temp)
-	: "x0", "x1", "x2", "x3", "memory");
+	:  "x0", "x1", "x2", "x3","x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12",
+			"x13", "x14", "x15", "x16", "x17","memory");
 	*p0 = temp[0];
 }
 
@@ -417,10 +425,10 @@ static inline void n_invoke_t_drv(
 	"nop"
 	: :
 	[fun_id] "r" (N_INVOKE_T_DRV), [temp] "r" (temp)
-	: "x0", "x1", "x2", "x3", "memory");
+	: "x0", "x1", "x2", "x3","x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12",
+			"x13", "x14", "x15", "x16", "x17","memory");
 	*p0 = temp[0];
 }
-/* doujia modify end */
 
 static inline void n_raise_t_event(
 	uint64_t p0,
@@ -442,10 +450,10 @@ static inline void n_raise_t_event(
 	"nop"
 	: :
 	[fun_id] "r" (N_RAISE_T_EVENT), [temp] "r" (temp)
-	: "x0", "x1", "x2", "x3", "memory");
+	:  "x0", "x1", "x2", "x3","x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12",
+			"x13", "x14", "x15", "x16", "x17","memory");
 }
 
-/* doujia modify start */
 static inline void n_ack_t_invoke_drv(
 	uint64_t *p0,
 	uint64_t p1,
@@ -467,7 +475,8 @@ static inline void n_ack_t_invoke_drv(
 	"nop"
 	: :
 	[fun_id] "r" (N_ACK_T_INVOKE_DRV), [temp] "r" (temp)
-	: "x0", "x1", "x2", "x3", "memory");
+	: "x0", "x1", "x2", "x3","x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12",
+			"x13", "x14", "x15", "x16", "x17","memory");
 	*p0 = temp[0];
 }
 
@@ -492,7 +501,8 @@ static inline void n_invoke_t_load_tee(
 	"nop"
 	: :
 	[fun_id] "r" (N_INVOKE_T_LOAD_TEE), [temp] "r" (temp)
-	: "x0", "x1", "x2", "x3", "memory");
+	:  "x0", "x1", "x2", "x3","x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12",
+			"x13", "x14", "x15", "x16", "x17","memory");
 	*p0 = temp[0];
 }
 
@@ -517,10 +527,10 @@ static inline void n_ack_t_load_img(
 	"nop"
 	: :
 	[fun_id] "r" (N_ACK_T_LOAD_IMG), [temp] "r" (temp)
-	: "x0", "x1", "x2", "x3", "memory");
+	:  "x0", "x1", "x2", "x3","x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12",
+			"x13", "x14", "x15", "x16", "x17","memory");
 	*p0 = temp[0];
 }
-/* doujia modify start */
 
 static inline void nt_sched_t_fiq(
 	uint64_t p0,
@@ -542,7 +552,8 @@ static inline void nt_sched_t_fiq(
 	"nop"
 	: :
 	[fun_id] "r" (NT_SCHED_T_FIQ), [temp] "r" (temp)
-	: "x0", "x1", "x2", "x3", "memory");
+	:  "x0", "x1", "x2", "x3","x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12",
+			"x13", "x14", "x15", "x16", "x17","memory");
 }
 
 
@@ -566,7 +577,8 @@ static inline void nt_sched_core(
 	"nop"
 	: :
 	[fun_id] "r" (N_SWITCH_CORE), [temp] "r" (temp)
-	: "x0", "x1", "x2", "x3", "memory");
+	:  "x0", "x1", "x2", "x3","x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12",
+			"x13", "x14", "x15", "x16", "x17","memory");
 }
 
 static inline void nt_get_non_irq_num (uint64_t *p0)
@@ -583,12 +595,68 @@ static inline void nt_get_non_irq_num (uint64_t *p0)
 	: "x0", "x1", "memory");
 	*p0 = temp[0];
 }
+static inline void nt_get_secure_os_state (uint64_t *p0)
+{
+	uint64_t temp[3];
+	__asm__ volatile(
+	/* ".arch_extension sec\n" */
+	"mov x0, %[fun_id]\n\t"
+	"smc 0\n\t"
+	"str x1, [%[temp], #0]\n\t"
+	"nop"
+	: :
+	[fun_id] "r" (N_GET_SE_OS_STATE), [temp] "r" (temp)
+	: "x0", "x1", "x2", "x3","x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12",
+			"x13", "x14", "x15", "x16", "x17","memory");
+	*p0 = temp[0];
+}
 
+static inline void nt_dump_t(void)
+{
+	__asm__ volatile(
+	/* ".arch_extension sec\n" */
+	"mov x0, %[fun_id]\n\t"
+	"mov x1, #0x9527\n\t"
+	"mov x2, #0\n\t"
+	"mov x3, #0\n\t"
+	"smc 0\n\t"
+	"nop"
+	: :
+	[fun_id] "r" (NT_SCHED_T)
+	: "x0", "x1", "x2", "x3","x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12",
+			"x13", "x14", "x15", "x16", "x17","memory");
+}
 
+#ifdef TUI_SUPPORT
+static inline void nt_cancel_t_tui(
+	uint64_t *p0,
+	uint64_t p1,
+	uint64_t p2)
+{
+	uint64_t temp[3];
+	temp[0] = *p0;
+	temp[1] = p1;
+	temp[2] = p2;
 
+	__asm__ volatile(
+	/* ".arch_extension sec\n" */
+	"mov x0, %[fun_id]\n\t"
+	"ldr x1, [%[temp], #0]\n\t"
+	"ldr x2, [%[temp], #8]\n\t"
+	"ldr x3, [%[temp], #16]\n\t"
+	"smc 0\n\t"
+	"str x2, [%[temp], #0]\n\t"
+	"nop"
+	: :
+	[fun_id] "r" (NT_CANCEL_T_TUI), [temp] "r" (temp)
+	: "x0", "x1", "x2", "x3","x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12",
+			"x13", "x14", "x15", "x16", "x17","memory");
+	*p0 = temp[0];
+}
 
+#endif
 
-/* ///////////////////////////////////////////////////////////////////////////////////////////////////////////// */
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
 #else
@@ -620,7 +688,6 @@ static inline void smc_out(uint32_t id,
 			[fun_id] "r" (fun_id), [temp] "r" (temp)
 			: "r0", "r1", "r2", "r3",  "memory");
 }
-
 static inline void smc_inout(uint32_t id,
 		uint32_t p0,
 		uint32_t p1,
@@ -725,6 +792,16 @@ static inline void n_get_param_in(
 	smc_in(N_GET_PARAM_IN_32, rtc0, rtc1, rtc2, rtc3);
 
 }
+#if 0
+static inline void get_t_device_id(uint32_t *p0)
+{
+	uint32_t rtc1;
+	uint32_t rtc2;
+	uint32_t rtc3;
+
+    smc_in(N_GET_T_FP_DEVICE_ID_32, &rtc1,p0,  &rtc2, &rtc3);
+}
+#endif
 
 
 static inline void n_init_t_fc_buf(
@@ -850,9 +927,32 @@ static inline void nt_get_non_irq_num(uint32_t *p0)
 	uint32_t rtc2;
 	uint32_t rtc3;
 
-	smc_in(N_GET_NON_IRQ_NUM_32, &rtc1, p0, &rtc2, &rtc3);
+	//smc_in(N_GET_SE_OS_STATE_32, &rtc1, p0, &rtc2, &rtc3);
+smc_in(N_GET_NON_IRQ_NUM_32, &rtc1, p0, &rtc2, &rtc3);
+}
+static inline void nt_get_secure_os_state (uint32_t *p0)
+{
+	uint32_t rtc1;
+	uint32_t rtc2;
+	uint32_t rtc3;
+    smc_in(N_GET_SE_OS_STATE_32, &rtc1, p0, &rtc2, &rtc3);
+}
+static inline void nt_dump_t(void)
+{
+	smc_out(NT_SCHED_T_32, 0,0, 0);
 }
 
+
+#ifdef TUI_SUPPORT
+static inline void nt_cancel_t_tui(
+	uint32_t *p0,
+	uint32_t p1,
+	uint32_t p2)
+{
+	smc_inout(NT_CANCEL_T_TUI_32, *p0, p1, p2,p0);
+}
+
+#endif
 
 #endif
 #endif /* SMC_CALL_H_ */

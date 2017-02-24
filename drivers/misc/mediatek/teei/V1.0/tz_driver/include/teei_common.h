@@ -56,7 +56,7 @@ enum teeic_param_pos {
 struct teei_encode_meta {
 	int type;
 	int len;			/* data length */
-	unsigned  long long usr_addr;		/* data address in user space */
+	unsigned long long usr_addr;		/* data address in user space */
 	int ret_len;			/* return sizeof data */
 	int value_flag;			/* value of a or b */
 	int param_pos;			/* param order */
@@ -88,4 +88,5 @@ struct teei_smc_cmd {
 	unsigned int     error_code;
 	struct semaphore *teei_sema;
 };
+
 #endif /* __TEEI_COMMON_H_ */

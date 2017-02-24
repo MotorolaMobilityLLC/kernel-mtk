@@ -11,7 +11,7 @@
 #define SMC_INTERRUPTED     2
 #define SMC_PENDING         1
 #define SMC_SUCCESS         0
-extern void __flush_dcache_area(void *addr, size_t len);
+/*extern void __flush_dcache_area(void *addr, size_t len);*/
 /**
  * @brief Encoding data type
  */
@@ -81,9 +81,9 @@ static inline void Flush_Dcache_By_Area(unsigned long start, unsigned long end)
 {
 
 #ifdef CONFIG_ARM64
-	__flush_dcache_area((void *)start, (end - start));
+	//__flush_dcache_area((void *)start, (end - start));
 #else
-
+#if 0
 	__asm__ __volatile__ ("dsb" : : : "memory"); /* dsb */
 
 	__asm__ __volatile__ (
@@ -102,6 +102,7 @@ static inline void Flush_Dcache_By_Area(unsigned long start, unsigned long end)
 
 	__asm__ __volatile__ ("dsb" : : : "memory"); /* dsb */
 #endif
+#endif
 }
 /******************************************************************
  * @brief:
@@ -115,7 +116,7 @@ static inline void Invalidate_Dcache_By_Area(unsigned long start, unsigned long 
 {
 
 #ifdef CONFIG_ARM64
-
+#if 0
 
 	uint64_t temp[2];
 
@@ -143,8 +144,9 @@ static inline void Invalidate_Dcache_By_Area(unsigned long start, unsigned long 
 
 
 
-
+#endif 
 #else
+#if 0
 	__asm__ __volatile__ ("dsb" : : : "memory"); /* dsb */
 	__asm__ __volatile__ (
 		"1:  mcr p15, 0, %[i], c7, c6, 1\n" /* Invalidate Data Cache Line (using MVA) Register */
@@ -161,7 +163,7 @@ static inline void Invalidate_Dcache_By_Area(unsigned long start, unsigned long 
 	asm volatile ("mcr p15, 0, %0, c7, c5, 0" : : "r" (0) : "memory"); /* invalidate btc */
 	__asm__ __volatile__ ("dsb" : : : "memory"); /* dsb */
 
-
+#endif 
 
 #endif
 }
