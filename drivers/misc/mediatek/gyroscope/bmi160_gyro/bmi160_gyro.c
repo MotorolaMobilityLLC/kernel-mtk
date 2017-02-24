@@ -448,21 +448,21 @@ static int bmg_write_calibration(struct i2c_client *client,
 		obj->cvt.sign[BMG_AXIS_Z]*(cali[obj->cvt.map[BMG_AXIS_Z]]);
 #else
 	/* divisor = sensor sensitivity / offset sensitivity */
-	int divisor = 1;
+//	int divisor = 1;
 	obj->offset[BMG_AXIS_X] = (s8)(obj->cvt.sign[BMG_AXIS_X]*
-		(cali[obj->cvt.map[BMG_AXIS_X]])/(divisor));
+		(cali[obj->cvt.map[BMG_AXIS_X]])/(1));
 	obj->offset[BMG_AXIS_Y] = (s8)(obj->cvt.sign[BMG_AXIS_Y]*
-		(cali[obj->cvt.map[BMG_AXIS_Y]])/(divisor));
+		(cali[obj->cvt.map[BMG_AXIS_Y]])/(1));
 	obj->offset[BMG_AXIS_Z] = (s8)(obj->cvt.sign[BMG_AXIS_Z]*
-		(cali[obj->cvt.map[BMG_AXIS_Z]])/(divisor));
+		(cali[obj->cvt.map[BMG_AXIS_Z]])/(1));
 
 	/*convert software calibration using standard calibration*/
 	obj->cali_sw[BMG_AXIS_X] = obj->cvt.sign[BMG_AXIS_X]*
-		(cali[obj->cvt.map[BMG_AXIS_X]])%(divisor);
+		(cali[obj->cvt.map[BMG_AXIS_X]])%(1);
 	obj->cali_sw[BMG_AXIS_Y] = obj->cvt.sign[BMG_AXIS_Y]*
-		(cali[obj->cvt.map[BMG_AXIS_Y]])%(divisor);
+		(cali[obj->cvt.map[BMG_AXIS_Y]])%(1);
 	obj->cali_sw[BMG_AXIS_Z] = obj->cvt.sign[BMG_AXIS_Z]*
-		(cali[obj->cvt.map[BMG_AXIS_Z]])%(divisor);
+		(cali[obj->cvt.map[BMG_AXIS_Z]])%(1);
 	/* HW calibration is under construction */
 	err = bmg_set_hw_offset(client, obj->offset);
 	if (err) {
