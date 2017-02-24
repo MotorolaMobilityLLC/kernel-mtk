@@ -34,6 +34,12 @@ config WIND_Z168_TEST
 	help
 	  Say Y here to enable debugging messages for wind battery
 	  and drivers.
+	  
+config WIND_Z168_DEF_NO
+	bool "Wind Z168 battery for user"
+	help
+	  Say Y here to enable debugging messages for wind battery
+	  and drivers.
 # zhangchao@wind-mobi.com 20161128 end
 
 # zhangchao@wind-mobi.com 20161202 begin
