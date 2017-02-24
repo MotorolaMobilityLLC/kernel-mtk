@@ -753,7 +753,13 @@ void select_charging_current(void)
 			}
 #else
 			{
+				//zhangchao@wind-mobi.com 20170222 begin
+				#ifdef CONFIG_WIND_Z168_BATTERY_MODIFY
+				g_temp_input_CC_value = 50000;
+				#else
 				g_temp_input_CC_value = batt_cust_data.usb_charger_current;
+				#endif
+				//zhangchao@wind-mobi.com 20170222 end
 				g_temp_CC_value = batt_cust_data.usb_charger_current;
 			}
 #endif
