@@ -375,6 +375,8 @@ CONFIG_WIND_BATTERY_MODIFY=y
 CONFIG_WIND_THREMAL_CURRENT=y
 # CONFIG_WIND_Z168_TEST is temperature protection macro control.If CONFIG_WIND_Z168_TEST is not set,the temperature is actual temperature.If CONFIG_WIND_Z168_TEST is y,the temperature is fixed at 25 for test.
 # CONFIG_WIND_Z168_TEST is not set
+# The CONFIG_WIND_Z168_DEF_NO macro is default no for user version.If the CONFIG_WIND_Z168_DEF_NO macro is set to yes,the version is for factory test.
+# CONFIG_WIND_Z168_DEF_NO is not set
 # zhangchao@wind-mobi.com 20161118 end
 # CONFIG_HWMON is not set
 CONFIG_THERMAL=y

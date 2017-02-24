@@ -853,8 +853,15 @@ static signed int read_adc_v_bat_sense(void *data)
 	*(signed int *) (data) = 4201;
 #else
 #if defined(SWCHR_POWER_PATH)
+	//zhangchao@wind-mobi.com 20170222 begin
+	#ifdef CONFIG_WIND_Z168_DEF_NO
+	*(signed int *) (data) =
+	    PMIC_IMM_GetOneChannelValue(MT6328_AUX_BATSNS_AP, *(signed int *) (data), 1);
+	#else
 	*(signed int *) (data) =
 	    PMIC_IMM_GetOneChannelValue(MT6328_AUX_ISENSE_AP, *(signed int *) (data), 1);
+	#endif
+	//zhangchao@wind-mobi.com 20170222 end
 #else
 	*(signed int *) (data) =
 	    PMIC_IMM_GetOneChannelValue(MT6328_AUX_BATSNS_AP, *(signed int *) (data), 1);
