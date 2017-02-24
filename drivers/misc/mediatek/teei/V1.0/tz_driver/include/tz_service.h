@@ -49,6 +49,7 @@ void set_sch_nq_cmd(void);
 void set_sch_load_img_cmd(void);
 long create_cmd_buff(void);
 void set_fp_command(unsigned long memory_size);
+void set_cancel_command(unsigned long memory_size);
 /* int send_fp_command(unsigned long share_memory_size); */
 void set_keymaster_command(unsigned long memory_size);
 int send_keymaster_command(unsigned long share_memory_size);

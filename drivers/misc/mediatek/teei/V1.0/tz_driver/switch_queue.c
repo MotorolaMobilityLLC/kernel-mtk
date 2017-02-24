@@ -1,6 +1,10 @@
 #include <linux/kernel.h>
 #include <linux/slab.h>
+#include <linux/cpu.h>
+#include <linux/freezer.h>
 #include <linux/list.h>
+#include <linux/mutex.h>
+#include <linux/semaphore.h>
 #include <linux/kthread.h>
 #include <linux/delay.h>
 #include <linux/cpu.h>
@@ -8,15 +12,10 @@
 #include "utdriver_macro.h"
 #include "sched_status.h"
 
-/*
-#define CAPI_CALL	0x01
-#define FDRV_CALL	0x02
-#define BDRV_CALL	0x03
-#define SCHED_CALL	0x04
-*/
+#define IMSG_TAG "[tz_driver]"
+#include <imsg_log.h>
 
-#define FP_SYS_NO	100
-#define KEYMASTER_SYS_NO	101
+#define CANCEL_SYS_NO	110
 #define GK_SYS_NO 	120
 
 #define VFS_SYS_NO	0x08
@@ -32,13 +31,23 @@ extern void secondary_invoke_fastcall(void *info);
 extern void secondary_load_tee(void *info);
 extern void secondary_boot_stage1(void *info);
 extern void secondary_load_func(void);
+extern int handle_switch_core(int cpu);
 
 struct switch_head_struct
 {
 	struct list_head head;
 };
+struct service_handler {
+	unsigned int sysno;
+	void *param_buf;
+	unsigned size;
+	long (*init)(struct service_handler *handler); 
+	void (*deinit)(struct service_handler *handler);
+	int (*handle)(struct service_handler *handler); 
+};
 
-struct switch_call_struct {
+struct switch_call_struct
+{
 	int switch_type;
 	unsigned long buff_addr;
 };
@@ -74,11 +83,11 @@ extern struct kthread_worker ut_fastcall_worker;
 extern int forward_call_flag;
 extern int fp_call_flag;
 extern int keymaster_call_flag;
-extern int teei_vfs_flag;
 extern int irq_call_flag;
 
 extern void nt_sched_t_call(void);
 extern int __send_fp_command(unsigned long share_memory_size);
+extern int __send_cancel_command(unsigned long share_memory_size);
 extern int __send_gatekeeper_command(unsigned long share_memory_size);
 extern int __send_keymaster_command(unsigned long share_memory_size);
 extern int __vfs_handle(struct service_handler *handler);
@@ -112,20 +121,20 @@ static struct switch_call_struct *create_switch_call_struct(void)
 	tmp_entry = kmalloc(sizeof(struct switch_call_struct), GFP_KERNEL);
 
 	if (tmp_entry == NULL)
-		pr_err("[%s][%d] kmalloc failed!!!\n", __func__, __LINE__);
+		IMSG_ERROR("[%s][%d] kmalloc failed!!!\n", __func__, __LINE__);
 
 	return tmp_entry;
 }
 
-static int init_switch_call_struct(struct switch_call_struct *ent, int work_type, unsigned long buff)
+static int init_switch_call_struct(struct switch_call_struct *ent, int work_type, unsigned char *buff)
 {
 	if (ent == NULL) {
-		pr_err("[%s][%d] the paraments are wrong!\n", __func__, __LINE__);
+		IMSG_ERROR("[%s][%d] the paraments are wrong!\n", __func__, __LINE__);
 		return -EINVAL;
 	}
 
 	ent->switch_type = work_type;
-	ent->buff_addr = buff;
+	ent->buff_addr = (unsigned long)buff;
 
 	return 0;
 }
@@ -171,11 +180,21 @@ static int check_work_type(int work_type)
 	case LOAD_TEE:
 	case LOCK_PM_MUTEX:
 	case UNLOCK_PM_MUTEX:
+	case SWITCH_CORE:
+	case NT_DUMP_T:	
 		return 0;
 
 	default:
 		return -EINVAL;
 	}
+}
+
+int handle_dump_call(void *buff)
+{
+	IMSG_DEBUG("[%s][%d] handle_dump_call begin.\n", __func__, __LINE__);
+	nt_dump_t();
+	IMSG_DEBUG("[%s][%d] handle_dump_call end.\n", __func__, __LINE__);
+	return 0;
 }
 void handle_lock_pm_mutex(struct mutex *lock)
 {
@@ -196,7 +215,7 @@ void handle_unlock_pm_mutex(struct mutex *lock)
 	}
 }
 
-int add_work_entry(int work_type, unsigned long buff)
+int add_work_entry(int work_type, unsigned char *buff)
 {
 	struct switch_call_struct *work_entry = NULL;
 	int retVal = 0;
@@ -204,21 +223,21 @@ int add_work_entry(int work_type, unsigned long buff)
 	retVal = check_work_type(work_type);
 
 	if (retVal != 0) {
-		pr_err("[%s][%d] with wrong work_type!\n", __func__, __LINE__);
+		IMSG_ERROR("[%s][%d] with wrong work_type!\n", __func__, __LINE__);
 		return retVal;
 	}
 
 	work_entry = create_switch_call_struct();
 
 	if (work_entry == NULL) {
-		pr_err("[%s][%d] There is no enough memory!\n", __func__, __LINE__);
+		IMSG_ERROR("[%s][%d] There is no enough memory!\n", __func__, __LINE__);
 		return -ENOMEM;
 	}
 
 	retVal = init_switch_call_struct(work_entry, work_type, buff);
 
 	if (retVal != 0) {
-		pr_err("[%s][%d] init_switch_call_struct failed!\n", __func__, __LINE__);
+		IMSG_ERROR("[%s][%d] init_switch_call_struct failed!\n", __func__, __LINE__);
 		destroy_switch_call_struct(work_entry);
 		return retVal;
 	}
@@ -236,19 +255,18 @@ int get_call_type(struct switch_call_struct *ent)
 	return ent->switch_type;
 }
 
-/* doujia modify start */
 int handle_sched_call(void *buff)
 {
-	unsigned long smc_type = 2;
+	volatile unsigned long smc_type = 2;
 
-	nt_sched_t(&smc_type);
-	while(smc_type == 1) {
+	nt_sched_t((uint64_t *)(&smc_type));
+	while(smc_type == 0x54) {
 		udelay(IRQ_DELAY);
-		nt_sched_t(&smc_type);
+		nt_sched_t((uint64_t *)(&smc_type));
 	}
 	return 0;
 }
-/* doujia modify end */
+
 
 int handle_capi_call(void *buff)
 {
@@ -298,7 +316,7 @@ int handle_fdrv_call(void *buff)
 	rmb();
 
 	switch (cd->fdrv_call_type) {
-		pr_debug("cd->fdrv_call_type = %d \n", cd->fdrv_call_type);
+	IMSG_DEBUG("cd->fdrv_call_type = %d \n", cd->fdrv_call_type);
 
 	case FP_SYS_NO:
 		cd->retVal = __send_fp_command(cd->fdrv_call_buff_size);
@@ -311,7 +329,17 @@ int handle_fdrv_call(void *buff)
 	case GK_SYS_NO:
 		cd->retVal = __send_gatekeeper_command(cd->fdrv_call_buff_size);
 		break;
-
+	case CANCEL_SYS_NO:
+		cd->retVal = __send_cancel_command(cd->fdrv_call_buff_size);
+		break;
+	#ifdef TUI_SUPPORT
+	case TUI_DISPLAY_SYS_NO:
+		cd->retVal = __send_tui_display_command(cd->fdrv_call_buff_size);
+		break;
+	case TUI_NOTICE_SYS_NO:
+		cd->retVal = __send_tui_notice_command(cd->fdrv_call_buff_size);
+		break;
+	#endif
 	default:
 		cd->retVal = -EINVAL;
 	}
@@ -360,47 +388,15 @@ int handle_bdrv_call(void *buff)
 int handle_switch_call(void *buff)
 {
 
-#if 0
 
-	if (forward_call_flag == GLSCH_FOR_SOTER) {
-		forward_call_flag = GLSCH_NONE;
-		msleep(10);
-		nt_sched_t_call();
-	} else if (irq_call_flag == GLSCH_HIGH) {
-		/* pr_debug("[%s][%d]**************************\n", __func__, __LINE__ ); */
-		irq_call_flag = GLSCH_NONE;
-		nt_sched_t_call();
-		/*msleep_interruptible(10);*/
-	} else if (fp_call_flag == GLSCH_HIGH) {
-		/* pr_debug("[%s][%d]**************************\n", __func__, __LINE__ ); */
-		if (teei_vfs_flag == 0) {
-			nt_sched_t_call();
-		} else {
-			msleep_interruptible(1);
-		}
-	} else if (forward_call_flag == GLSCH_LOW) {
-		/* pr_debug("[%s][%d]**************************\n", __func__, __LINE__ ); */
-		if (teei_vfs_flag == 0) {
-			nt_sched_t_call();
-		} else {
-			msleep_interruptible(1);
-		}
-	} else {
-		/* pr_debug("[%s][%d]**************************\n", __func__, __LINE__ ); */
-		msleep_interruptible(1);
-	}
-
-#else
 	unsigned long smc_type = 2;
 
-	nt_sched_t(&smc_type);
+	nt_sched_t((uint64_t *)(&smc_type));
 
-	while (smc_type == 1) {
+	while (smc_type == 0x54) {
 		udelay(IRQ_DELAY);
-		nt_sched_t(&smc_type);
+		nt_sched_t((uint64_t *)(&smc_type));
 	}
-	printk("[%s][%d] smc_type = %lu\n", __func__, __LINE__, smc_type);
-#endif
 	return 0;
 }
 
@@ -423,10 +419,10 @@ static void switch_fn(struct kthread_work *work)
 		secondary_load_func();
 		break;		
 	case BOOT_STAGE1:
-		secondary_boot_stage1(switch_ent->buff_addr);	
+		secondary_boot_stage1((void *)(switch_ent->buff_addr));
 		break;
 	case INIT_CMD_CALL:
-		secondary_init_cmdbuf(switch_ent->buff_addr);
+		secondary_init_cmdbuf((void *)(switch_ent->buff_addr));
 		break;
 	case BOOT_STAGE2:
 		secondary_boot_stage2(NULL);
@@ -438,56 +434,65 @@ static void switch_fn(struct kthread_work *work)
 		secondary_load_tee(NULL);
 		break;
 	case CAPI_CALL:
-		retVal = handle_capi_call(switch_ent->buff_addr);
+		retVal = handle_capi_call((void *)(switch_ent->buff_addr));
 
 		if (retVal < 0) {
-			pr_err("[%s][%d] fail to handle ClientAPI!\n", __func__, __LINE__);
+			IMSG_ERROR("[%s][%d] fail to handle ClientAPI!\n", __func__, __LINE__);
 		}
 
 		break;
 
 	case FDRV_CALL:
-		retVal = handle_fdrv_call(switch_ent->buff_addr);
+		retVal = handle_fdrv_call((void *)(switch_ent->buff_addr));
 
 		if (retVal < 0) {
-			pr_err("[%s][%d] fail to handle F-driver!\n", __func__, __LINE__);
+			IMSG_ERROR("[%s][%d] fail to handle F-driver!\n", __func__, __LINE__);
 		}
 
 		break;
 
 	case BDRV_CALL:
-		retVal = handle_bdrv_call(switch_ent->buff_addr);
+		retVal = handle_bdrv_call((void *)(switch_ent->buff_addr));
 
 		if (retVal < 0) {
-			pr_err("[%s][%d] fail to handle B-driver!\n", __func__, __LINE__);
+			IMSG_ERROR("[%s][%d] fail to handle B-driver!\n", __func__, __LINE__);
 		}
 
 		break;
 
 	case SCHED_CALL:
-		retVal = handle_sched_call(switch_ent->buff_addr);
+		retVal = handle_sched_call((void *)(switch_ent->buff_addr));
 
 		if (retVal < 0) {
-			pr_err("[%s][%d] fail to handle sched-Call!\n", __func__, __LINE__);
+			IMSG_ERROR("[%s][%d] fail to handle sched-Call!\n", __func__, __LINE__);
 		}
 		break;
 	case LOCK_PM_MUTEX:
-		handle_lock_pm_mutex((struct mutext *)(switch_ent->buff_addr));
+		handle_lock_pm_mutex((struct mutex *)(switch_ent->buff_addr));
 		break;
 	case UNLOCK_PM_MUTEX:
-		handle_unlock_pm_mutex((struct mutext *)(switch_ent->buff_addr));
+		handle_unlock_pm_mutex((struct mutex *)(switch_ent->buff_addr));
 		break;
+	case SWITCH_CORE:
+		handle_switch_core((int)(switch_ent->buff_addr));
+		break;
+	case NT_DUMP_T:
+		retVal = handle_dump_call((void *)(switch_ent->buff_addr));
+		if (retVal < 0) {
+			IMSG_ERROR("[%s][%d] fail to handle dump-Call!\n", __func__, __LINE__);
+		}
+		break;		
 	default:
-		pr_err("switch fn handles a undefined call!\n");
+		IMSG_ERROR("switch fn handles a undefined call!\n");
 		break;
 	}
 
 	retVal = destroy_switch_call_struct(switch_ent);
 
 	if (retVal != 0) {
-		pr_err("[%s][%d] destroy_switch_call_struct failed %d!\n", __func__, __LINE__, retVal);
-		return retVal;
+                IMSG_ERROR("[%s][%d] destroy_switch_call_struct failed %d!\n", __func__, __LINE__, retVal);
+                return;
 	}
 
-	return 0;
+	return;
 }

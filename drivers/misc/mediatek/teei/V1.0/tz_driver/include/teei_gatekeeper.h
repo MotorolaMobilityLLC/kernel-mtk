@@ -40,13 +40,11 @@ extern struct semaphore smc_lock;
 extern struct semaphore boot_sema;
 extern struct semaphore fdrv_sema;
 extern struct mutex pm_mutex;
-extern void ut_pm_mutex_lock(struct mutex *lock);
-extern void ut_pm_mutex_unlock(struct mutex *lock);
 extern struct completion global_down_lock;
 extern unsigned long teei_config_flag;
 extern int fp_call_flag;
 extern struct semaphore fdrv_lock;
-extern struct fdrv_call_struct {
+struct fdrv_call_struct {
 	int fdrv_call_type;
 	int fdrv_call_buff_size;
 	int retVal;
@@ -54,6 +52,8 @@ extern struct fdrv_call_struct {
 
 extern int get_current_cpuid(void);
 extern void invoke_fastcall(void);
-extern int add_work_entry(int work_type, unsigned long buff);
+extern int add_work_entry(int work_type, unsigned char *buff);
+extern void ut_pm_mutex_lock(struct mutex *lock);
+extern void ut_pm_mutex_unlock(struct mutex *lock);
 
 #endif /*__TEEI_GATEKEEPER_H__*/

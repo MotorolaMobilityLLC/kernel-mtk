@@ -31,3 +31,9 @@ config MICROTRUST_KEYMASTER_DRIVER
 	default y
 	---help---
 	  Enable TEEI Keymaster Driver
+config MICROTRUST_DEBUG
+	bool "Enable Microtrust Debug Message"
+	depends on MICROTRUST_TEE_SUPPORT
+	default n
+	---help---
+	  Enable debug messages output from Microtrust Linux drivers
