@@ -42,6 +42,7 @@
 #define FP_SYS_NO               (100)
 #define FP_BUFF_SIZE            (512 * 1024)
 
+#define CANCEL_MESSAGE_SIZE	(4096)
 #define KEYMASTER_SYS_NO               (101)
 #define KEYMASTER_BUFF_SIZE            (512 * 1024)
 
@@ -66,13 +67,9 @@
 #define LOAD_FUNC	0x0A
 #define LOCK_PM_MUTEX   0x0C
 #define UNLOCK_PM_MUTEX 0x0D
-#define IRQ_DELAY	1000
+#define SWITCH_CORE	0x0E
+#define NT_DUMP_T	(0x10)
 #define VFS_SYS_NO 	0x08
 #define REETIME_SYS_NO	0x07
+#define IRQ_DELAY	1000
 
-
-
-
-
-
-#define UT_DMA_ZONE

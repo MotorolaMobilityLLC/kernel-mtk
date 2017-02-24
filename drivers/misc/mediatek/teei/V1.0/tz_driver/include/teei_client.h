@@ -120,4 +120,6 @@ struct teei_smc_cdata {
 #define TEEI_GET_TEEI_CONFIG_STAT \
 	_IO(TEEI_CLIENT_IOC_MAGIC, 0x1001)
 
+#define TEEI_CANCEL_COMMAND \
+	_IO(TEEI_CLIENT_IOC_MAGIC, 0x1002)
 #endif /* __TEEI_CLIENT_H_ */

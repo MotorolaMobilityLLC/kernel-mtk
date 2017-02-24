@@ -18,7 +18,9 @@
 #include <linux/irq.h>
 
 #include "ut_keymaster_service.h"
-#include "../tz_driver/teei_id.h"
+#include "../tz_driver/include/teei_id.h"
+#define IMSG_TAG "[ut_km]"
+#include <imsg_log.h>
 
 #define MESSAGE_LENGTH 4096
 
@@ -51,7 +53,7 @@ static void secondary_init_keymaster_cmdbuf(void *info)
 	/* with a rmb() */
 	rmb();
 
-	pr_debug("[%s][%d] keymaster addr= %lx,  keymaster f addr = %lx, keymaster b addr = %lx\n", __func__, __LINE__,
+        IMSG_DEBUG("[%s][%d] keymaster addr= %lx,  keymaster f addr = %lx, keymaster b addr = %lx\n", __func__, __LINE__,
 		(unsigned long)cd->phy_addr, (unsigned long)cd->f_phy_addr,
 		(unsigned long)cd->b_phy_addr);
 
@@ -76,14 +78,9 @@ static void init_keymaster_cmd_buf(unsigned long phy_address, unsigned long f_ph
 
 	/* with a wmb() */
 	wmb();
-	
-	/* doujia modify start */
-	//get_online_cpus();
-	//cpu_id = get_current_cpuid();
+
 	smp_call_function_single(0, secondary_init_keymaster_cmdbuf, (void *)(&keymaster_cmdbuf_entry), 1);
-	//put_online_cpus();
-	/* doujia modify end */
-	
+
 	/* with a rmb() */
 	rmb();
 }
@@ -96,14 +93,14 @@ long create_keymaster_cmd_buf(void)
 	ut_keymaster_message_buf =  (unsigned long) __get_free_pages(GFP_KERNEL, get_order(ROUND_UP(MESSAGE_LENGTH, SZ_4K)));
 
 	if (ut_keymaster_message_buf == NULL) {
-		pr_err("[%s][%d] Create message buffer failed!\n", __FILE__, __LINE__);
+		IMSG_ERROR("[%s][%d] Create message buffer failed!\n", __FILE__, __LINE__);
 		return -ENOMEM;
 	}
 
 	ut_keymaster_fmessage_buf =  (unsigned long) __get_free_pages(GFP_KERNEL, get_order(ROUND_UP(MESSAGE_LENGTH, SZ_4K)));
 
 	if (ut_keymaster_fmessage_buf == NULL) {
-		pr_err("[%s][%d] Create fdrv message buffer failed!\n", __FILE__, __LINE__);
+                IMSG_ERROR("[%s][%d] Create fdrv message buffer failed!\n", __FILE__, __LINE__);
 		free_pages(ut_keymaster_message_buf, get_order(ROUND_UP(MESSAGE_LENGTH, SZ_4K)));
 		return -ENOMEM;
 	}
@@ -111,14 +108,14 @@ long create_keymaster_cmd_buf(void)
 	ut_keymaster_bmessage_buf = (unsigned long) __get_free_pages(GFP_KERNEL, get_order(ROUND_UP(MESSAGE_LENGTH, SZ_4K)));
 
 	if (ut_keymaster_bmessage_buf == NULL) {
-		pr_err("[%s][%d] Create bdrv message buffer failed!\n", __FILE__, __LINE__);
+    	IMSG_ERROR("[%s][%d] Create bdrv message buffer failed!\n", __FILE__, __LINE__);
 		free_pages(ut_keymaster_message_buf, get_order(ROUND_UP(MESSAGE_LENGTH, SZ_4K)));
 		free_pages(ut_keymaster_fmessage_buf, get_order(ROUND_UP(MESSAGE_LENGTH, SZ_4K)));
 		return -ENOMEM;
 	}
 
 
-	pr_debug("[%s][%d] message = %lx,  fdrv message = %lx, bdrv_message = %lx\n", __func__, __LINE__,
+        IMSG_DEBUG("[%s][%d] message = %lx,  fdrv message = %lx, bdrv_message = %lx\n", __func__, __LINE__,
 		(unsigned long)virt_to_phys(ut_keymaster_message_buf),
 		(unsigned long)virt_to_phys(ut_keymaster_fmessage_buf),
 		(unsigned long)virt_to_phys(ut_keymaster_bmessage_buf));
