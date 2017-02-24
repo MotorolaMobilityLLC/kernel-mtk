@@ -54,7 +54,6 @@
 /* Discharge Percentage */
 #define OAM_D5	1		/*  1 : D5,   0: D2*/
 
-
 /* battery meter parameter */
 #define CHANGE_TRACKING_POINT
 #ifdef CONFIG_MTK_HAFG_20
@@ -172,5 +171,5 @@
 #define  CHARGER_CURRENT_ADC 14
 #endif
 /* Multi battery */
-/* #define MTK_MULTI_BAT_PROFILE_SUPPORT */
+#define MTK_MULTI_BAT_PROFILE_SUPPORT
 #endif
