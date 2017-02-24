@@ -41,7 +41,7 @@ extern struct i2c_client *bmi160_acc_i2c_client;
 *1 degree = rad*180/PI, about rad*180/3.1416
 */
 #define DEGREE_TO_RAD				57000
-#define SW_CALIBRATION
+//#define SW_CALIBRATION
 #define BMG_DEV_NAME				"bmi160_gyro"
 #define UNKNOWN_DEV					"unknown sensor"
 #define BMI160_GYRO_I2C_ADDRESS		0x66
