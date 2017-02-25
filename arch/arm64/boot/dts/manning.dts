@@ -1421,6 +1421,13 @@
 };
 /* FLASHLIGHT GPIO end */
 
+&i2c0 {
+
+strobe_main1@6f{
+		compatible = "mediatek,strobe_main1";
+		reg = <0x6f>;
+	};
+};
 &i2c2 {
 
 GT24c64a@50 {

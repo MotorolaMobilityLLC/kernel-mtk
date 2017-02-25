@@ -35,23 +35,43 @@
 #include <linux/time.h>
 #include <asm/io.h>
 #include <asm/uaccess.h>
-#include "kd_flashlight_type.h"
+#include "kd_camera_typedef.h"
 #include <linux/hrtimer.h>
 #include <linux/ktime.h>
 #include <linux/version.h>
+/* #include <mach/mt6333.h> */
 
 #include "kd_flashlight.h"
 /******************************************************************************
  * Debug configuration
 ******************************************************************************/
+/* availible parameter */
+/* ANDROID_LOG_ASSERT */
+/* ANDROID_LOG_ERROR */
+/* ANDROID_LOG_WARNING */
+/* ANDROID_LOG_INFO */
+/* ANDROID_LOG_DEBUG */
+/* ANDROID_LOG_VERBOSE */
 #define TAG_NAME "[strobe_main_sid2_part1.c]"
+#define PK_DBG_NONE(fmt, arg...)    do {} while (0)
 #define PK_DBG_FUNC(fmt, arg...)    pr_debug(TAG_NAME "%s: " fmt, __func__ , ##arg)
+#define PK_WARN(fmt, arg...)        pr_warn(TAG_NAME "%s: " fmt, __func__ , ##arg)
+#define PK_NOTICE(fmt, arg...)      pr_notice(TAG_NAME "%s: " fmt, __func__ , ##arg)
+#define PK_INFO(fmt, arg...)        pr_info(TAG_NAME "%s: " fmt, __func__ , ##arg)
+#define PK_TRC_FUNC(f)              pr_debug(TAG_NAME "<%s>\n", __func__)
+#define PK_TRC_VERBOSE(fmt, arg...) pr_debug(TAG_NAME fmt, ##arg)
+#define PK_ERROR(fmt, arg...)       pr_err(TAG_NAME "%s: " fmt, __func__ , ##arg)
 
-/*#define DEBUG_LEDS_STROBE*/
+
+#define DEBUG_LEDS_STROBE
 #ifdef DEBUG_LEDS_STROBE
 #define PK_DBG PK_DBG_FUNC
+#define PK_VER PK_TRC_VERBOSE
+#define PK_ERR PK_ERROR
 #else
 #define PK_DBG(a, ...)
+#define PK_VER(a, ...)
+#define PK_ERR(a, ...)
 #endif
 
 /******************************************************************************
@@ -66,28 +86,50 @@ Functions
 *****************************************************************************/
 static void work_timeOutFunc(struct work_struct *data);
 
+/* extern int flashEnable_sky81296_2(void); */
+/* extern int flashDisable_sky81296_2(void); */
+/* extern int setDuty_sky81296_2(int duty); */
+/* int init_sky81296(); */
+
+
+
 static int FL_Enable(void)
 {
-	flashEnable_lm3643_2();
+/* flashEnable_sky81296_1(); */
+	PK_DBG("FL_Enable-");
+
 	return 0;
 }
 
 static int FL_Disable(void)
 {
-	flashDisable_lm3643_2();
+	/* flashDisable_sky81296_1(); */
+
 	return 0;
 }
 
 static int FL_dim_duty(kal_uint32 duty)
 {
-	setDuty_lm3643_2(duty);
+	/* setDuty_sky81296_1(duty); */
 	return 0;
 }
+
+/*
+static int g_lowPowerLevel=LOW_BATTERY_LEVEL_0;
+static void lowPowerCB(LOW_BATTERY_LEVEL lev)
+{
+	g_lowPowerLevel=lev;
+}*/
 
 static int FL_Init(void)
 {
 	PK_DBG(" FL_Init line=%d\n", __LINE__);
 	INIT_WORK(&workTimeOut, work_timeOutFunc);
+	/* register_low_battery_callback(&lowPowerCB, LOW_BATTERY_PRIO_FLASHLIGHT); */
+	/* register_low_battery_notify(&lowPowerCB, LOW_BATTERY_PRIO_FLASHLIGHT); */
+
+
+
 	return 0;
 }
 
@@ -105,12 +147,15 @@ static int FL_hasLowPowerDetect(void)
 
 static int detLowPowerStart(void)
 {
+
+/* g_lowPowerLevel=LOW_BATTERY_LEVEL_0; */
 	return 0;
 }
 
 
 static int detLowPowerEnd(void)
 {
+
 	return 0;
 }
 
@@ -286,7 +331,7 @@ static int constant_flashlight_open(void *pArg)
 
 
 	if (strobe_Res) {
-		PK_DBG(" busy!\n");
+		PK_ERR(" busy!\n");
 		i4RetValue = -EBUSY;
 	} else {
 		strobe_Res += 1;
