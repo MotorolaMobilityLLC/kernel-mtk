@@ -2719,7 +2719,7 @@ static irqreturn_t rt5081_pmu_attachi_irq_handler(int irq, void *data)
 		chg_data->chg_type = CHARGER_UNKNOWN;
 		break;
 	}
-
+chg_data->chg_type = STANDARD_HOST;//add by longcheer_liml_2017_02_20 for new bom test
 #ifdef RT5081_APPLE_SAMSUNG_TA_SUPPORT
 	ret = rt5081_detect_apple_samsung_ta(chg_data);
 	if (ret < 0)
