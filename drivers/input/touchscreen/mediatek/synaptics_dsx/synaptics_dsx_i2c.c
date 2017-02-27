@@ -670,7 +670,7 @@ static int tpd_irq_registration(void)
 
 		touch_irq = irq_of_parse_and_map(node, 0);
 
-		ret = request_irq(touch_irq, (irq_handler_t) tpd_eint_handler, IRQF_TRIGGER_FALLING,   //IRQF_TRIGGER_LOW 
+		ret = request_irq(touch_irq, (irq_handler_t) tpd_eint_handler, IRQF_TRIGGER_LOW,   //IRQF_TRIGGER_LOW //tuwenzan@wind-mobi.com modify at 20170227  
 				"TOUCH_PANEL-eint", NULL);
 		if (ret > 0) {
 			printk("tpd request_irq IRQ LINE NOT AVAILABLE!.");
@@ -1662,6 +1662,8 @@ static void synaptics_rmi4_sensor_report(struct synaptics_rmi4_data *rmi4_data)
 			rmi4_data->f01_data_base_addr,
 			data,
 			rmi4_data->num_of_intr_regs + 1);
+	printk("wind_tp data[0] =0x%0x,data[1] =0x%0x,data[2] =0x%0x,data[3] =0x%0x,data[4] =0x%0x\n",
+		       data[0],data[1],data[2],data[3],data[4]); //tuwenzan@wind-mobi.com add log at 20170227
 	if (retval < 0) {
 		dev_err(&rmi4_data->i2c_client->dev,
 				"%s: Failed to read interrupt status\n",
@@ -3805,7 +3807,7 @@ static void synaptics_rmi4_suspend(struct device *dev)
 {
 	struct synaptics_rmi4_exp_fhandler *exp_fhandler;
 	struct synaptics_rmi4_data *rmi4_data = dev_get_drvdata(g_dev);
-
+	printk("wind_tp enter synaptics_rmi4_suspend\n");  //tuwenzan@wind-mobi.com add log at 20170227
 	if (rmi4_data->staying_awake)
 		return ;
 
@@ -3853,10 +3855,17 @@ static void synaptics_rmi4_resume(struct device *dev)
 	int retval;
 	struct synaptics_rmi4_exp_fhandler *exp_fhandler;
 	struct synaptics_rmi4_data *rmi4_data = dev_get_drvdata(g_dev);
-
+	printk("wind_tp enter synaptics_rmi4_resume\n"); //tuwenzan@wind-mobi.com add log at 20170227
 	if (rmi4_data->staying_awake)
 		return ;
+	//tuwenzan@wind-mobi.com add reset opration for tp at 20170227 begin
+	tpd_gpio_output(0,0);// reset pin low
+	msleep(DELAY_RESET_LOW);
 
+	tpd_gpio_output(0,1);// reset pin high
+	msleep(DELAY_UI_READY);
+	//tuwenzan@wind-mobi.com add reset opration for tp at 20170227 end
+	
 	if (rmi4_data->enable_wakeup_gesture) {
 		synaptics_rmi4_wakeup_gesture(rmi4_data, false);
 		goto exit;
