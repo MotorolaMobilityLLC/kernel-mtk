@@ -1,4 +1,4 @@
-/*****************************************************************************
+﻿/*****************************************************************************
  *
  * Filename:
  * ---------
@@ -62,8 +62,8 @@ static imgsensor_info_struct imgsensor_info = {
 	.checksum_value = 0x2ae69154,
 
 	.pre = {
-		.pclk = 168000000,				//record different mode's pclk
-		.linelength = 5200,				//record different mode's linelength
+		.pclk = 182000000,				//record different mode's pclk
+		.linelength = 5632,//5200				//record different mode's linelength
 		.framelength = 1062,			//record different mode's framelength
 		.startx = 0,					//record different mode's startx of grabwindow
 		.starty = 0,					//record different mode's starty of grabwindow
@@ -76,8 +76,8 @@ static imgsensor_info_struct imgsensor_info = {
 	},
 
 	.cap = {
-		.pclk = 168000000,
-		.linelength = 2856,
+		.pclk = 182000000,
+		.linelength = 3096,//2856
 		.framelength = 1968,
 		.startx = 0,
 		.starty = 0,
@@ -109,8 +109,8 @@ static imgsensor_info_struct imgsensor_info = {
 		.max_framerate = 240,	
 	},
 	.normal_video = {
-		.pclk = 168000000,
-		.linelength = 2856,
+		.pclk = 182000000,
+		.linelength = 3096,//2856
 		.framelength = 1968,
 		.startx = 0,
 		.starty = 0,
@@ -162,7 +162,7 @@ static imgsensor_info_struct imgsensor_info = {
 	.mipi_sensor_type = MIPI_OPHY_NCSI2, //0,MIPI_OPHY_NCSI2;  1,MIPI_OPHY_CSI2
 	.mipi_settle_delay_mode = MIPI_SETTLEDELAY_MANUAL,//0,MIPI_SETTLEDELAY_AUTO; 1,MIPI_SETTLEDELAY_MANNUAL
 	.sensor_output_dataformat = SENSOR_OUTPUT_FORMAT_RAW_Gb,
-	.mclk = 24,
+	.mclk = 26,
 	.mipi_lane_num = SENSOR_MIPI_2_LANE,
 	.i2c_addr_table = {0x20, 0x5a,0xff},
 };
@@ -946,10 +946,6 @@ static void sensor_init(void)
 	write_cmos_sensor(0x3C31,0x0D);
 	write_cmos_sensor(0x3C32,0xAC);
 
-	//sensor otp bpc
-	write_cmos_sensor(0x323b,0x02); //20151120 add  carl
-
-
 }	/*	sensor_init  */
 
 
@@ -1014,8 +1010,8 @@ static void preview_setting(void)
 	write_cmos_sensor(0x0340,0x04);
 	write_cmos_sensor(0x0341,0x26);
 	//line_length_pck
-	write_cmos_sensor(0x0342,0x14);
-	write_cmos_sensor(0x0343,0x50);
+	write_cmos_sensor(0x0342,0x16);
+	write_cmos_sensor(0x0343,0x00);
 	//fine_integration_time
 	write_cmos_sensor(0x0200,0x00);
 	write_cmos_sensor(0x0201,0x00);
@@ -1029,8 +1025,21 @@ static void preview_setting(void)
 #else
 	write_cmos_sensor(0x3400,0x01); //shade_bypass LSC off
 #endif
+	//Bp marker position
+	write_cmos_sensor(0x3306,0x00); //	8 	
+    write_cmos_sensor(0x3307,0x08); //		
+    write_cmos_sensor(0x3308,0x0A); //	2599 	
+    write_cmos_sensor(0x3309,0x27); //		
+    write_cmos_sensor(0x330A,0x01); //		
+    write_cmos_sensor(0x330B,0x01); //		
+    write_cmos_sensor(0x330E,0x00); //	8 	
+    write_cmos_sensor(0x330F,0x08); //		
+    write_cmos_sensor(0x3310,0x07); //	1951 	
+    write_cmos_sensor(0x3311,0x9F); //		
+    write_cmos_sensor(0x3312,0x03); //		
+    write_cmos_sensor(0x3313,0x01); //	
 	//Streaming on
-	//write_cmos_sensor(0x3C16,0x00);//Streaming ON (revised on 07.30)
+	write_cmos_sensor(0x3C16,0x00);//Streaming ON (revised on 07.30)
 	write_cmos_sensor(0x3C0D,0x04);
 	write_cmos_sensor(0x0100,0x01);
 	write_cmos_sensor(0x3C22,0x00);
@@ -1097,7 +1106,21 @@ static void capture_setting(kal_uint16 currefps)
 #else
 		write_cmos_sensor(0x3400,0x01); //shade_bypass LSC off
 #endif
-		//write_cmos_sensor(0x3C16,0x00);//Streaming ON (revised on 07.30)
+			//Bp marker position
+	  write_cmos_sensor(0x3306,0x00); //	8 	
+    write_cmos_sensor(0x3307,0x08); //		
+    write_cmos_sensor(0x3308,0x0A); //	2599 	
+    write_cmos_sensor(0x3309,0x27); //		
+    write_cmos_sensor(0x330A,0x01); //		
+    write_cmos_sensor(0x330B,0x01); //		
+    write_cmos_sensor(0x330E,0x00); //	8 	
+    write_cmos_sensor(0x330F,0x08); //		
+    write_cmos_sensor(0x3310,0x07); //	1951 	
+    write_cmos_sensor(0x3311,0x9F); //		
+    write_cmos_sensor(0x3312,0x01); //		
+    write_cmos_sensor(0x3313,0x01); //	
+    	//Streaming on
+    write_cmos_sensor(0x3C16,0x00);//Streaming ON (revised on 07.30)
 		write_cmos_sensor(0x3C0D,0x04);
 		write_cmos_sensor(0x0100,0x01);
 		write_cmos_sensor(0x3C22,0x00);
@@ -1161,7 +1184,21 @@ static void capture_setting(kal_uint16 currefps)
 #else
 		write_cmos_sensor(0x3400,0x01); //shade_bypass LSC off
 #endif
-		//write_cmos_sensor(0x3C16,0x00);//Streaming ON (revised on 07.30)
+					//Bp marker position
+	  write_cmos_sensor(0x3306,0x00); //	8 	
+    write_cmos_sensor(0x3307,0x08); //		
+    write_cmos_sensor(0x3308,0x0A); //	2599 	
+    write_cmos_sensor(0x3309,0x27); //		
+    write_cmos_sensor(0x330A,0x01); //		
+    write_cmos_sensor(0x330B,0x01); //		
+    write_cmos_sensor(0x330E,0x00); //	8 	
+    write_cmos_sensor(0x330F,0x08); //		
+    write_cmos_sensor(0x3310,0x07); //	1951 	
+    write_cmos_sensor(0x3311,0x9F); //		
+    write_cmos_sensor(0x3312,0x01); //		
+    write_cmos_sensor(0x3313,0x01); // 
+    	//Streaming on
+    write_cmos_sensor(0x3C16,0x00);//Streaming ON (revised on 07.30)
 		write_cmos_sensor(0x3C0D,0x04);
 		write_cmos_sensor(0x0100,0x01);
 		write_cmos_sensor(0x3C22,0x00);
@@ -1182,8 +1219,8 @@ static void capture_setting(kal_uint16 currefps)
 		write_cmos_sensor(0x0305,0x06);
 		write_cmos_sensor(0x0306,0x18);
 		write_cmos_sensor(0x0307,0xA8);
-		write_cmos_sensor(0x0308,0x34);
-		write_cmos_sensor(0x0309,0x42);
+		write_cmos_sensor(0x0308,0x37);
+		write_cmos_sensor(0x0309,0x02);
 		write_cmos_sensor(0x3C1F,0x00);
 		write_cmos_sensor(0x3C17,0x00);
 		write_cmos_sensor(0x3C0B,0x04);
@@ -1214,20 +1251,33 @@ static void capture_setting(kal_uint16 currefps)
 		write_cmos_sensor(0x0387,0x01);
 		write_cmos_sensor(0x0340,0x07);
 		write_cmos_sensor(0x0341,0xB0);
-		write_cmos_sensor(0x0342,0x0B);
-		write_cmos_sensor(0x0343,0x28);
+		write_cmos_sensor(0x0342,0x0c);
+		write_cmos_sensor(0x0343,0x18);
 		write_cmos_sensor(0x0200,0x00);
 		write_cmos_sensor(0x0201,0x00);
 		write_cmos_sensor(0x0202,0x03);
 		write_cmos_sensor(0x0203,0xDE);
 		write_cmos_sensor(0x3303,0x02);
 #ifdef S5K5E8_OTP_ENABLE	
-		write_cmos_sensor(0x3400,0x00); //shade_bypass LSC on
-#else
-		write_cmos_sensor(0x3400,0x01); //shade_bypass LSC off
-#endif
-		// streaming ON
-		//write_cmos_sensor(0x3C16,0x00);//Streaming ON (revised on 07.30)
+	write_cmos_sensor(0x3400,0x00); //shade_bypass LSC on
+	#else
+	write_cmos_sensor(0x3400,0x01); //shade_bypass LSC off
+	#endif
+				//Bp marker position
+	write_cmos_sensor(0x3306,0x00); //	8 	
+  write_cmos_sensor(0x3307,0x08); //		
+  write_cmos_sensor(0x3308,0x0A); //	2599 	
+  write_cmos_sensor(0x3309,0x27); //		
+  write_cmos_sensor(0x330A,0x01); //		
+  write_cmos_sensor(0x330B,0x01); //		
+  write_cmos_sensor(0x330E,0x00); //	8 	
+  write_cmos_sensor(0x330F,0x08); //		
+  write_cmos_sensor(0x3310,0x07); //	1951 	
+  write_cmos_sensor(0x3311,0x9F); //		
+  write_cmos_sensor(0x3312,0x01); //		
+  write_cmos_sensor(0x3313,0x01); //
+ 	//Streaming on
+    write_cmos_sensor(0x3C16,0x00);//Streaming ON (revised on 07.30)
 		write_cmos_sensor(0x3C0D,0x04);
 		write_cmos_sensor(0x0100,0x01);
 		write_cmos_sensor(0x3C22,0x00);
@@ -1252,8 +1302,8 @@ static void normal_video_setting(kal_uint16 currefps)
 	write_cmos_sensor(0x0305,0x06);
 	write_cmos_sensor(0x0306,0x18);
 	write_cmos_sensor(0x0307,0xA8);
-	write_cmos_sensor(0x0308,0x34);
-	write_cmos_sensor(0x0309,0x42);
+	write_cmos_sensor(0x0308,0x37);
+	write_cmos_sensor(0x0309,0x02);
 	write_cmos_sensor(0x3C1F,0x00);
 	write_cmos_sensor(0x3C17,0x00);
 	write_cmos_sensor(0x3C0B,0x04);
@@ -1284,8 +1334,8 @@ static void normal_video_setting(kal_uint16 currefps)
 	write_cmos_sensor(0x0387,0x01);
 	write_cmos_sensor(0x0340,0x07);
 	write_cmos_sensor(0x0341,0xB0);
-	write_cmos_sensor(0x0342,0x0B);
-	write_cmos_sensor(0x0343,0x28);
+	write_cmos_sensor(0x0342,0x0c);
+	write_cmos_sensor(0x0343,0x18);
 	write_cmos_sensor(0x0200,0x00);
 	write_cmos_sensor(0x0201,0x00);
 	write_cmos_sensor(0x0202,0x03);
@@ -1293,11 +1343,24 @@ static void normal_video_setting(kal_uint16 currefps)
 	write_cmos_sensor(0x3303,0x02);
 #ifdef S5K5E8_OTP_ENABLE	
 	write_cmos_sensor(0x3400,0x00); //shade_bypass LSC on
-#else
+	#else
 	write_cmos_sensor(0x3400,0x01); //shade_bypass LSC off
-#endif
-	// streaming ON
-	//write_cmos_sensor(0x3C16,0x00);//Streaming ON (revised on 07.30)
+	#endif
+				//Bp marker position
+	  write_cmos_sensor(0x3306,0x00); //	8 	
+    write_cmos_sensor(0x3307,0x08); //		
+    write_cmos_sensor(0x3308,0x0A); //	2599 	
+    write_cmos_sensor(0x3309,0x27); //		
+    write_cmos_sensor(0x330A,0x01); //		
+    write_cmos_sensor(0x330B,0x01); //		
+    write_cmos_sensor(0x330E,0x00); //	8 	
+    write_cmos_sensor(0x330F,0x08); //		
+    write_cmos_sensor(0x3310,0x07); //	1951 	
+    write_cmos_sensor(0x3311,0x9F); //		
+    write_cmos_sensor(0x3312,0x01); //		
+    write_cmos_sensor(0x3313,0x01); //
+		// streaming ON
+	write_cmos_sensor(0x3C16,0x00);//Streaming ON (revised on 07.30)
 	write_cmos_sensor(0x3C0D,0x04);
 	write_cmos_sensor(0x0100,0x01);
 	write_cmos_sensor(0x3C22,0x00);
@@ -1363,11 +1426,24 @@ static void hs_video_setting(void)
 	write_cmos_sensor(0x3303,0x02);
 #ifdef S5K5E8_OTP_ENABLE	
 	write_cmos_sensor(0x3400,0x00); //shade_bypass LSC on
-#else
+	#else
 	write_cmos_sensor(0x3400,0x01); //shade_bypass LSC off
-#endif
+	#endif
+					//Bp marker position
+	write_cmos_sensor(0x3306,0x00); //	24 	
+  write_cmos_sensor(0x3307,0x18); //		
+  write_cmos_sensor(0x3308,0x0A); //	2583 	
+  write_cmos_sensor(0x3309,0x17); //		
+  write_cmos_sensor(0x330A,0x03); //		
+  write_cmos_sensor(0x330B,0x00); //		
+  write_cmos_sensor(0x330E,0x00); //	20 	
+  write_cmos_sensor(0x330F,0x14); //		
+  write_cmos_sensor(0x3310,0x07); //	1939 	
+  write_cmos_sensor(0x3311,0x93); //		
+  write_cmos_sensor(0x3312,0x07); //		
+  write_cmos_sensor(0x3313,0x01); //
 	// streaming ON
-	//write_cmos_sensor(0x3C16,0x00);//Streaming ON (revised on 07.30)
+	write_cmos_sensor(0x3C16,0x00);//Streaming ON (revised on 07.30)
 	write_cmos_sensor(0x3C0D,0x04);
 	write_cmos_sensor(0x0100,0x01);
 	write_cmos_sensor(0x3C22,0x00);
@@ -1432,11 +1508,24 @@ static void slim_video_setting(void)
 	write_cmos_sensor(0x3303,0x02);
 #ifdef S5K5E8_OTP_ENABLE	
 	write_cmos_sensor(0x3400,0x00); //shade_bypass LSC on
-#else
+	#else
 	write_cmos_sensor(0x3400,0x01); //shade_bypass LSC off
-#endif
+	#endif
+					//Bp marker position
+	write_cmos_sensor(0x3306,0x00); //	24 	
+  write_cmos_sensor(0x3307,0x18); //		
+  write_cmos_sensor(0x3308,0x0A); //	2583 	
+  write_cmos_sensor(0x3309,0x17); //		
+  write_cmos_sensor(0x330A,0x01); //		
+  write_cmos_sensor(0x330B,0x01); //		
+  write_cmos_sensor(0x330E,0x01); //	260 	
+  write_cmos_sensor(0x330F,0x04); //		
+  write_cmos_sensor(0x3310,0x06); //	1699 	
+  write_cmos_sensor(0x3311,0xA3); //		
+  write_cmos_sensor(0x3312,0x03); //		
+  write_cmos_sensor(0x3313,0x01); //
 	// streaming ON
-	//write_cmos_sensor(0x3C16,0x00);//Streaming ON (revised on 07.30)
+	write_cmos_sensor(0x3C16,0x00);//Streaming ON (revised on 07.30)
 	write_cmos_sensor(0x3C0D,0x04);
 	write_cmos_sensor(0x0100,0x01);
 	write_cmos_sensor(0x3C22,0x00);
