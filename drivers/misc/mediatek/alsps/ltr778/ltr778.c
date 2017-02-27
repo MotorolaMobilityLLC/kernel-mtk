@@ -675,16 +675,18 @@ static int ltr778_dynamic_calibrate(void)
  * ## ALS CONFIG ##
  * ################
  */
-
+ 
+//tuwenzan@wind-mobi.com modify at 20170222 begin
 static int ltr778_als_enable(struct i2c_client *client, int enable)
 {
 	int err = 0;
 	u8 regdata = 0;
+	u8 regvalue = 0;
 	//liujinzhou@wind-mobi.com modify at 20161205 begin
 	//regdata = ltr778_i2c_read_reg(LTR778_ALS_CONTR);
 	if (enable != 0) {
 		APS_LOG("ALS(1): enable als only \n");
-		regdata = 0x05;
+		regdata = 0x01;
 	}
 	else {
 		APS_LOG("ALS(1): disable als only \n");
@@ -700,6 +702,12 @@ static int ltr778_als_enable(struct i2c_client *client, int enable)
 
 	mdelay(WAKEUP_DELAY);
 
+	regvalue = ltr778_i2c_read_reg(LTR778_ALS_CONTR);
+	if(regvalue == 0x01){
+		printk("twz test regvalue = %x\n",regvalue);
+	}else{
+		printk("twz test  regvalue = %x\n",regvalue);
+	}
 	return 0;
 }
 
@@ -711,9 +719,12 @@ static int ltr778_als_read(struct i2c_client *client, u16* data)
 	int ratio;
 	int ch0_coeff;
 	int ch1_coeff;
+	u8 status_value = 0;
 	//liujinzhou@wind-mobi.com modify at 20161205 begin
 	int coeff_factor = 10000;
     //liujinzhou@wind-mobi.com modify at 20161205 end
+    status_value = ltr778_i2c_read_reg(LTR778_ALS_PS_STATUS);
+	printk("twz test status_value = %x\n",status_value);
 	alsval_ch1_lo = ltr778_i2c_read_reg(LTR778_ALS_DATA_CH1_0);
 	alsval_ch1_hi = ltr778_i2c_read_reg(LTR778_ALS_DATA_CH1_1);
 	alsval_ch1 = (alsval_ch1_hi * 256) + alsval_ch1_lo;
@@ -738,37 +749,45 @@ static int ltr778_als_read(struct i2c_client *client, u16* data)
 		ch0_coeff = 0;
 		ch1_coeff = 0;
 	//liujinzhou@wind-mobi.com modify at 20161205 begin
-		winfac_1 = 1;
+		winfac_1 = 3; // 1
 		winfac_2 = 1;
 	}
-	else if ((ratio >= 14) && (ratio < 19)) // modified by steven
+	else if ((ratio >= 14) && (ratio < 18)) // modified by steven
 	{//A light
 		ch0_coeff = 379;
 		ch1_coeff = 1520;
-		winfac_1 = 1;
+		winfac_1 = 5; // 1
 		winfac_2 = 3;
 	}
-	else if ((ratio >= 19) && (ratio < 30))  
+	else if ((ratio >= 18) && (ratio < 30))  
 	{// D6500K 
 		ch0_coeff = 379;
 		ch1_coeff = 1520;
-		winfac_1 = 5;
+		winfac_1 = 32;
 		winfac_2 = 7;
 	}
-	else if ((ratio >= 30) && (ratio < 51))
+	else if ((ratio >= 30) && (ratio < 49))
 	{//CWF
 		ch0_coeff = -4910;
 		ch1_coeff = 19950;
-		winfac_1 = 4;
+		winfac_1 = 24;
 		winfac_2 = 3;
 		
 	}
-	//liujinzhou@wind-mobi.com modify at 20170210 begin
-	else if ((ratio >= 51) && (ratio < 90))
+	else if ((ratio >= 49) && (ratio < 53))
 	{
 		ch0_coeff = 8000;
 		ch1_coeff = -5760;
-		winfac_1 = 1;
+		winfac_1 = 6;
+		winfac_2 = 1;
+	
+	}
+	//liujinzhou@wind-mobi.com modify at 20170210 begin
+	else if ((ratio >= 53) && (ratio < 90))
+	{
+		ch0_coeff = 8000;
+		ch1_coeff = -5760;
+		winfac_1 = 9;
 		winfac_2 = 1;
 	
 	}
@@ -788,6 +807,8 @@ out:
 	final_lux_val = luxdata_int;
 	return luxdata_int;
 }
+//tuwenzan@wind-mobi.com modify at 20170222 end
+
 //liujinzhou@wind-mobi.com add at 20161205 begin
 static int oil_far_cal = 0;
 //liujinzhou@wind-mobi.com add at 20161205 end
@@ -1552,37 +1573,36 @@ static void ltr778_eint_work(struct work_struct *work)
 			}
 		} else if (intr_flag_value == 0){	
   //def GN_MTK_BSP_PS_DYNAMIC_CALI
-			if(obj->ps > 20 && obj->ps < (dynamic_calibrate - 300)){ 
+  			//tuwenzan@wind-mobi.com modify at 20170222 begin
+			if(obj->ps > 20 && obj->ps < (dynamic_calibrate - 50)){ 
+			//	ltr778_dynamic_calibrate();
         		if(obj->ps < 100){			
-        			atomic_set(&obj->ps_thd_val_high,  obj->ps+65);
-        			atomic_set(&obj->ps_thd_val_low, obj->ps+30);
+        			atomic_set(&obj->ps_thd_val_high,  obj->ps+30);
+        			atomic_set(&obj->ps_thd_val_low, obj->ps+15);
         		}else if(obj->ps < 200){
-        			atomic_set(&obj->ps_thd_val_high,  obj->ps+70);
-        			atomic_set(&obj->ps_thd_val_low, obj->ps+35);
+        			atomic_set(&obj->ps_thd_val_high,  obj->ps+30);
+        			atomic_set(&obj->ps_thd_val_low, obj->ps+15);
         		}else if(obj->ps < 300){
-        			atomic_set(&obj->ps_thd_val_high,  obj->ps+80);
-        			atomic_set(&obj->ps_thd_val_low, obj->ps+40);
+        			atomic_set(&obj->ps_thd_val_high,  obj->ps+30);
+        			atomic_set(&obj->ps_thd_val_low, obj->ps+15);
         		}else if(obj->ps < 400){
-        			atomic_set(&obj->ps_thd_val_high,  obj->ps+100);
-        			atomic_set(&obj->ps_thd_val_low, obj->ps+50);
+        			atomic_set(&obj->ps_thd_val_high,  obj->ps+30);
+        			atomic_set(&obj->ps_thd_val_low, obj->ps+15);
         		}else if(obj->ps < 600){
-        			atomic_set(&obj->ps_thd_val_high,  obj->ps+180);
-        			atomic_set(&obj->ps_thd_val_low, obj->ps+90);
-        		}else if(obj->ps < 1000){
-        			atomic_set(&obj->ps_thd_val_high,  obj->ps+300);
-        			atomic_set(&obj->ps_thd_val_low, obj->ps+180);	
+        			atomic_set(&obj->ps_thd_val_high,  obj->ps+47);
+        			atomic_set(&obj->ps_thd_val_low, obj->ps+30);
         		}else if(obj->ps < 1500){
-        			atomic_set(&obj->ps_thd_val_high,  obj->ps+400);
-        			atomic_set(&obj->ps_thd_val_low, obj->ps+300);
+        			atomic_set(&obj->ps_thd_val_high,  obj->ps+47);
+        			atomic_set(&obj->ps_thd_val_low, obj->ps+30);
         		}
         		else{
-        			atomic_set(&obj->ps_thd_val_high,  1800);
+        			atomic_set(&obj->ps_thd_val_high,  1900);
         			atomic_set(&obj->ps_thd_val_low, 1700);        			
         		}
         		
         		dynamic_calibrate = obj->ps;
         	}	        
-
+			//tuwenzan@wind-mobi.com modify at 20170222 end
 			res = ltr778_i2c_write_reg( LTR778_PS_THRES_LOW_0, 0x00);
 			if(res < 0)
 			{
@@ -2049,7 +2069,7 @@ static int ltr778_init_client(void)
 		goto EXIT_ERR;
 	}
 
-	res = ltr778_i2c_write_reg(LTR778_PS_MEAS_RATE, 0x03);	// 50ms time 
+	res = ltr778_i2c_write_reg(LTR778_PS_MEAS_RATE, 0x03);	// 3 -> 50ms time  1-> 12.5ms
 	if (res<0)
 	{
 		APS_LOG("ltr778 set ps meas rate error\n");
