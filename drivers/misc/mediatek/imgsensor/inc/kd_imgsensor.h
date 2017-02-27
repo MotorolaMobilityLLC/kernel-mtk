@@ -296,6 +296,7 @@ NSFeature :  : RAWSensorInfo < _id >  :  : getFlickerPara \
 #define S5K4H8_SENSOR_ID                        0x4088
 #define S5K4H8_SENSOR_ID_QT                     0x4088+1
 #define S5K5E8YX_SENSOR_ID_XY                   0x5e80+1
+#define GC5005_SENSOR_ID                        0x5005
 #endif
 //wangkangmin@wind-mobi.com 20161128 end
 /* CAMERA DRIVER NAME */
@@ -453,6 +454,7 @@ NSFeature :  : RAWSensorInfo < _id >  :  : getFlickerPara \
 #define SENSOR_DRVNAME_S5K4H8_MIPI_RAW          "s5k4h8mipiraw"
 #define SENSOR_DRVNAME_S5K4H8_MIPI_RAW_QT       "s5k4h8mipirawqt"
 #define SENSOR_DRVNAME_S5K5E8YX_MIPI_RAW_XY     "s5k5e8yxmipirawxy"
+#define SENSOR_DRVNAME_GC5005_MIPI_RAW          "gc5005mipiraw"
 #endif
 //wangkangmin@wind-mobi add for camera 20161205 end
 /*******************************************************************************
