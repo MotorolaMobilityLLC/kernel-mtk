@@ -57,11 +57,11 @@
 #define KEYMASTER_MAJOR			254
 #define KEYMASTER_SIZE			(128 * 1024)
 #define DEV_NAME			"ut_keymaster"
-
-#define CMD_MEM_CLEAR	_IO(0x775B777E, 0x1)
-#define CMD_MEM_SEND      _IO(0x775B777E, 0x2)
-#define CMD_NOTIFY_UTD	_IO(0x775B777E, 0x3)
-#define CMD_FIRST_TIME_BOOT  _IO(0x775B777E, 0x4)
+//zhuhailin for TEE V9
+#define CMD_MEM_CLEAR	_IO(0x5B777E, 0x1)
+#define CMD_MEM_SEND      _IO(0x5B777E, 0x2)
+#define CMD_NOTIFY_UTD	_IO(0x5B777E, 0x3)
+#define CMD_FIRST_TIME_BOOT  _IO(0x5B777E, 0x4)
 
 extern char *keymaster_buff_addr;
 extern struct semaphore boot_decryto_lock;
