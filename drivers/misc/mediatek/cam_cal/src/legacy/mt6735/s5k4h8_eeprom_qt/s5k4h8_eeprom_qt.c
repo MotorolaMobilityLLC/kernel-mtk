@@ -76,7 +76,7 @@ static atomic_t g_CAM_CALatomic;
 #define MAX_OTP_SIZE 4096
 #define GAIN_DEFAULT       	     0x0100
 
-static int s5k4h8_eeprom_read = 0;
+static int s5k4h8_eeprom_qt_read = 0;
 //int read_s5k4h8_eeprom_size(u8 slv_id, u16 offset, u8* data,int size);
 //kal_uint16 s5k4h8_read_cmos_sensor_eeprom(kal_uint32 addr);
 typedef struct {
@@ -124,53 +124,54 @@ void otp_clear_flag(void){
 }
 #endif
 
-OTP_DATA s5k4h8_eeprom_data_qt = {{0}};
+OTP_DATA s5k4h8_eeprom_qt_data = {{0}};
 //u8 af_inf_data=0;
 
-extern kal_uint16 R_gain_4h8_qt,B_gain_4h8_qt,R_gain_4h8_gd_qt,B_gain_4h8_gd_qt,inf_qt,mac_qt; 
-extern kal_uint8  vender_id_4h8_qt;
+extern kal_uint16 qt_R_gain,qt_B_gain,qt_gd_R_gain,qt_gd_B_gain,qt_in_af,qt_ma_af; 
+extern kal_uint8  qt_vendor_id;
 #define CAL_VERSION_MAGIC ""
-int read_s5k4h8_eeprom_mtk_fmt_qt(void)
+int read_s5k4h8_eeprom_qt_mtk_fmt(void)
 {
 #if 1
 	//int i = 0;
 	int offset = 0;
 	//kal_uint32 checksum1 = 0;	
 	//kal_uint32	checksum2 = 0;
-	CAM_CALINF("OTP readed =%d \n",s5k4h8_eeprom_read);
-	if(1 == s5k4h8_eeprom_read ) {
+	CAM_CALINF("OTP readed =%d \n",s5k4h8_eeprom_qt_read);
+	if(1 == s5k4h8_eeprom_qt_read ) {
 		CAM_CALDB("OTP readed ! skip\n");
 		return 1;
 	}
 	spin_lock(&g_CAM_CALLock);
-	s5k4h8_eeprom_read = 1;
+	s5k4h8_eeprom_qt_read = 1;
 	spin_unlock(&g_CAM_CALLock);
 	offset = 0;
-	s5k4h8_eeprom_data_qt.Data[2] = vender_id_4h8_qt;
-	s5k4h8_eeprom_data_qt.Data[3] = R_gain_4h8_qt & 0xFF; 
-	s5k4h8_eeprom_data_qt.Data[4] = R_gain_4h8_qt >> 8;
-	s5k4h8_eeprom_data_qt.Data[5] = B_gain_4h8_qt & 0xFF;
-	s5k4h8_eeprom_data_qt.Data[6] = B_gain_4h8_qt >> 8;
-	s5k4h8_eeprom_data_qt.Data[7] = R_gain_4h8_gd_qt & 0xFF;
-	s5k4h8_eeprom_data_qt.Data[8] = R_gain_4h8_gd_qt >> 8;
-	s5k4h8_eeprom_data_qt.Data[9] = B_gain_4h8_gd_qt & 0xFF;
-	s5k4h8_eeprom_data_qt.Data[10] = B_gain_4h8_gd_qt >> 8;
-	s5k4h8_eeprom_data_qt.Data[11] = inf_qt & 0xFF;
-	s5k4h8_eeprom_data_qt.Data[12] = inf_qt >> 8;
-	s5k4h8_eeprom_data_qt.Data[13] = mac_qt & 0xFF;
-	s5k4h8_eeprom_data_qt.Data[14] = mac_qt >> 8;
-	CAM_CALINF("wangkangmin s5k4h8 vendor_id_4h8 =%x\n",vender_id_4h8_qt);
-	CAM_CALINF("wangkangmin s5k4h8 R_gain_4h8_h =%x,R_gain_4h8_l=%x\n",s5k4h8_eeprom_data_qt.Data[4],s5k4h8_eeprom_data_qt.Data[3]);
-	CAM_CALINF("wangkangmin s5k4h8 B_gain_4h8_h =%x,B_gain_4h8_l=%x\n",s5k4h8_eeprom_data_qt.Data[6],s5k4h8_eeprom_data_qt.Data[5]);
-	CAM_CALINF("wangkangmin s5k4h8 R_gain_4h8 =%x,B_gain_4h8=%x,R_gain_4h8_gd =%x,B_gain_4h8_gd=%x\n",R_gain_4h8_qt,B_gain_4h8_qt,R_gain_4h8_gd_qt,B_gain_4h8_gd_qt);	
+	s5k4h8_eeprom_qt_data.Data[2] = qt_vendor_id;
+	s5k4h8_eeprom_qt_data.Data[3] = qt_R_gain & 0xFF; 
+	s5k4h8_eeprom_qt_data.Data[4] = qt_R_gain >> 8;
+	s5k4h8_eeprom_qt_data.Data[5] = qt_B_gain & 0xFF;
+	s5k4h8_eeprom_qt_data.Data[6] = qt_B_gain >> 8;
+	s5k4h8_eeprom_qt_data.Data[7] = qt_gd_R_gain & 0xFF; 
+	s5k4h8_eeprom_qt_data.Data[8] = qt_gd_R_gain >> 8;
+	s5k4h8_eeprom_qt_data.Data[9] = qt_gd_B_gain & 0xFF;
+	s5k4h8_eeprom_qt_data.Data[10] = qt_gd_B_gain >> 8;
+	s5k4h8_eeprom_qt_data.Data[11] = qt_in_af & 0xFF;
+	s5k4h8_eeprom_qt_data.Data[12] = qt_in_af >> 8;
+	s5k4h8_eeprom_qt_data.Data[13] = qt_ma_af & 0xFF;
+	s5k4h8_eeprom_qt_data.Data[14] = qt_ma_af >> 8;
+	CAM_CALINF("luminjie s5k4h8 vendor_id =%x\n",qt_vendor_id);
+	CAM_CALINF("luminjie s5k4h8 R_gain_h =%x,R_gain_l=%x\n",s5k4h8_eeprom_qt_data.Data[4],s5k4h8_eeprom_qt_data.Data[3]);
+	CAM_CALINF("luminjie s5k4h8 B_gain_h =%x,B_gain_l=%x\n",s5k4h8_eeprom_qt_data.Data[6],s5k4h8_eeprom_qt_data.Data[5]);
+	CAM_CALINF("luminjie s5k4h8 in_af_h =%x,in_af_l=%x\n",s5k4h8_eeprom_qt_data.Data[12],s5k4h8_eeprom_qt_data.Data[12]);
+	CAM_CALINF("luminjie s5k4h8 R_gain_h =%x,B_gain_l=%x\n",s5k4h8_eeprom_qt_data.Data[14],s5k4h8_eeprom_qt_data.Data[13]);
 #endif
 	return 0;
 }
 #if 0
-static u8 read_s5k4h8_eeprom_vendor_id(void)
+static u8 read_s5k4h8_eeprom_qt_vendor_id(void)
 {
-  CAM_CALINF("wangkangmin s5k4h8 vendor id =%x \n",s5k4h8_eeprom_data_qt.Data[3956]);
-  return s5k4h8_eeprom_data_qt.Data[3956];
+  CAM_CALINF("wangkangmin s5k4h8 vendor id =%x \n",s5k4h8_eeprom_qt_data.Data[3956]);
+  return s5k4h8_eeprom_qt_data.Data[3956];
 }
 #endif
 #ifdef CONFIG_COMPAT
@@ -253,7 +254,7 @@ static long s5k4h8eeprom_Ioctl_Compat(struct file *filp, unsigned int cmd, unsig
 
 static int selective_read_region(u32 offset, BYTE* data,u16 i2c_id,u32 size)
 {
-    memcpy((void *)data,(void *)&s5k4h8_eeprom_data_qt.Data[offset],size);
+    memcpy((void *)data,(void *)&s5k4h8_eeprom_qt_data.Data[offset],size);
 	CAM_CALDB("selective_read_region offset =%x size %d data read = %d\n", offset,size, *data);
     return size;
 }
