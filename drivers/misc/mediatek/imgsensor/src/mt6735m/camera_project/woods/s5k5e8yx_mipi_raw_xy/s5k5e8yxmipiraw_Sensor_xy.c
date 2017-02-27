@@ -1751,13 +1751,39 @@ static kal_uint32 get_default_framerate_by_scenario(MSDK_SCENARIO_ID_ENUM scenar
 static kal_uint32 set_test_pattern_mode(kal_bool enable)
 {
 	LOG_INF("enable: %d\n", enable);
-    enable = false;
+   	// enable = false;
 	if (enable) {
 		
 		// 0x0601[2:0]; 0=no pattern,1=solid colour,2 = 100% colour bar ,3 = Fade to gray' colour bar
- 		write_cmos_sensor(0x0601, 0x02);
+		
+		write_cmos_sensor(0x0200, 0x0D);
+		write_cmos_sensor(0x0201, 0x78);
+		write_cmos_sensor(0x0202, 0x04);
+		write_cmos_sensor(0x0203, 0xE2);
+		write_cmos_sensor(0x0204, 0x00);
+		write_cmos_sensor(0x0205, 0x20);
+		
+		write_cmos_sensor(0x020E, 0x01);
+		write_cmos_sensor(0x020F, 0x00);
+		write_cmos_sensor(0x0210, 0x01);
+		write_cmos_sensor(0x0211, 0x00);
+		write_cmos_sensor(0x0212, 0x01);
+		write_cmos_sensor(0x0213, 0x00);
+		write_cmos_sensor(0x0214, 0x01);
+		write_cmos_sensor(0x0215, 0x00);
+		
+		write_cmos_sensor(0x3400, 0x01);  //LSC OFF
+ 		write_cmos_sensor(0x0601, 0x01);  //solid color 
+ 		write_cmos_sensor(0x0602, 0x00);  // all black
+ 		write_cmos_sensor(0x0603, 0x00);
+ 		write_cmos_sensor(0x0604, 0x00);
+ 		write_cmos_sensor(0x0605, 0x00);
+ 		write_cmos_sensor(0x0606, 0x00);
+ 		write_cmos_sensor(0x0607, 0x00);
+ 		write_cmos_sensor(0x0608, 0x00);
+ 		write_cmos_sensor(0x0609, 0x00);
 	} else {
-		write_cmos_sensor(0x0601, 0x02);
+		write_cmos_sensor(0x0601, 0x00);
 	}	 
 	write_cmos_sensor(0x3200, 0x00);
 	spin_lock(&imgsensor_drv_lock);
