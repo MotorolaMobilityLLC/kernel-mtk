@@ -127,8 +127,8 @@ void otp_clear_flag(void){
 OTP_DATA s5k4h8_eeprom_data = {{0}};
 //u8 af_inf_data=0;
 
-extern kal_uint16 R_gain_4h8,B_gain_4h8,R_gain_4h8_gd,B_gain_4h8_gd,inf,mac; 
-extern kal_uint8  vender_id_4h8;
+extern kal_uint16 R_gain_of,B_gain_of,gd_R_gain,gd_B_gain,in_af,ma_af; 
+extern kal_uint8  vendor_id_of;
 #define CAL_VERSION_MAGIC ""
 int read_s5k4h8_eeprom_mtk_fmt(void)
 {
@@ -146,23 +146,24 @@ int read_s5k4h8_eeprom_mtk_fmt(void)
 	s5k4h8_eeprom_read = 1;
 	spin_unlock(&g_CAM_CALLock);
 	offset = 0;
-	s5k4h8_eeprom_data.Data[2] = vender_id_4h8;
-	s5k4h8_eeprom_data.Data[3] = R_gain_4h8 & 0xFF; 
-	s5k4h8_eeprom_data.Data[4] = R_gain_4h8 >> 8;
-	s5k4h8_eeprom_data.Data[5] = B_gain_4h8 & 0xFF;
-	s5k4h8_eeprom_data.Data[6] = B_gain_4h8 >> 8;
-	s5k4h8_eeprom_data.Data[7] = R_gain_4h8_gd & 0xFF;
-	s5k4h8_eeprom_data.Data[8] = R_gain_4h8_gd >> 8;
-	s5k4h8_eeprom_data.Data[9] = B_gain_4h8_gd & 0xFF;
-	s5k4h8_eeprom_data.Data[10] = B_gain_4h8_gd >> 8;
-	s5k4h8_eeprom_data.Data[11] = inf & 0xFF;
-	s5k4h8_eeprom_data.Data[12] = inf >> 8;
-	s5k4h8_eeprom_data.Data[13] = mac & 0xFF;
-	s5k4h8_eeprom_data.Data[14] = mac >> 8;
-	CAM_CALINF("wangkangmin s5k4h8 vendor_id_4h8 =%x\n",vender_id_4h8);
-	CAM_CALINF("wangkangmin s5k4h8 R_gain_4h8_h =%x,R_gain_4h8_l=%x\n",s5k4h8_eeprom_data.Data[4],s5k4h8_eeprom_data.Data[3]);
-	CAM_CALINF("wangkangmin s5k4h8 B_gain_4h8_h =%x,B_gain_4h8_l=%x\n",s5k4h8_eeprom_data.Data[6],s5k4h8_eeprom_data.Data[5]);
-	CAM_CALINF("wangkangmin s5k4h8 R_gain_4h8 =%x,B_gain_4h8=%x,R_gain_4h8_gd =%x,B_gain_4h8_gd=%x\n",R_gain_4h8,B_gain_4h8,R_gain_4h8_gd,B_gain_4h8_gd);	
+	s5k4h8_eeprom_data.Data[2] = vendor_id_of;
+	s5k4h8_eeprom_data.Data[3] = R_gain_of & 0xFF; 
+	s5k4h8_eeprom_data.Data[4] = R_gain_of >> 8;
+	s5k4h8_eeprom_data.Data[5] = B_gain_of & 0xFF;
+	s5k4h8_eeprom_data.Data[6] = B_gain_of >> 8;
+	s5k4h8_eeprom_data.Data[7] = gd_R_gain & 0xFF; 
+	s5k4h8_eeprom_data.Data[8] = gd_R_gain >> 8;
+	s5k4h8_eeprom_data.Data[9] = gd_B_gain & 0xFF;
+	s5k4h8_eeprom_data.Data[10] = gd_B_gain >> 8;
+	s5k4h8_eeprom_data.Data[11] = in_af & 0xFF;
+	s5k4h8_eeprom_data.Data[12] = in_af >> 8;
+	s5k4h8_eeprom_data.Data[13] = ma_af & 0xFF;
+	s5k4h8_eeprom_data.Data[14] = ma_af >> 8;
+	CAM_CALINF("luminjie s5k4h8 vendor_id =%x\n",vendor_id_of);
+	CAM_CALINF("luminjie s5k4h8 R_gain_h =%x,R_gain_l=%x\n",s5k4h8_eeprom_data.Data[4],s5k4h8_eeprom_data.Data[3]);
+	CAM_CALINF("luminjie s5k4h8 B_gain_h =%x,B_gain_l=%x\n",s5k4h8_eeprom_data.Data[6],s5k4h8_eeprom_data.Data[5]);
+	CAM_CALINF("luminjie s5k4h8 in_af_h =%x,in_af_l=%x\n",s5k4h8_eeprom_data.Data[12],s5k4h8_eeprom_data.Data[12]);
+	CAM_CALINF("luminjie s5k4h8 R_gain_h =%x,B_gain_l=%x\n",s5k4h8_eeprom_data.Data[14],s5k4h8_eeprom_data.Data[13]);
 #endif
 	return 0;
 }
