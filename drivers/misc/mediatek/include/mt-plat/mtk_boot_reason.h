@@ -30,6 +30,7 @@ enum boot_reason_t {
     ,BR_CHR,
     BR_PWR_RST
 #endif
+
 };
 
 extern enum boot_reason_t get_boot_reason(void);

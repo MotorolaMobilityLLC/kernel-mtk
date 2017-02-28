@@ -8,8 +8,9 @@ config MTK_BOOT_REASON
 	  needs to press power key. If users trigger reboot in kernel, device should boot up even
 	  if power key is not pressed.
 
-config LCT_BOOTINFO_SUPPORT
-	bool "Enable LCT boot info"
-	default n
-	help
-	  Based MTK Boot Reason Driver, designed for Lenovo(Moto).
+config LCT_BOOTINFO_SUPPORT                                                                                                                                                                             
+    bool "Enable LCT boot info"
+    default n
+    help
+      Based MTK Boot Reason Driver, designed for Lenovo(Moto).
+

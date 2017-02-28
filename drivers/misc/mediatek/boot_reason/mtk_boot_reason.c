@@ -151,7 +151,7 @@ static int __init dt_get_boot_reason(unsigned long node, const char *uname, int 
                printk("liuzhenhe boot reason is usb pulg in\n");
                 lct_chager_led = g_boot_reason; 
             #endif
-/*add by longcheer liuzhenhe for shutdown charge led on end*/                
+/*add by longcheer liuzhenhe for shutdown charge led on end*/ 
 #endif
 			atomic_set(&g_br_status, 1);
 		} else {
