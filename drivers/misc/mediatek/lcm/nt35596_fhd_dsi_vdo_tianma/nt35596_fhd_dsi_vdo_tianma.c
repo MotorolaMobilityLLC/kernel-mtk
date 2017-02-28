@@ -136,7 +136,7 @@ static void init_lcm_registers(void)
 	dsi_set_cmdq(data_array, 2, 1);
 
 	data_array[0] = 0x00023902;
-	data_array[1] = 0x0000FF51;
+	data_array[1] = 0x00000051;
 	dsi_set_cmdq(data_array, 2, 1);
 
 	data_array[0] = 0x00023902;
@@ -459,6 +459,15 @@ static void push_table(struct LCM_setting_table *table, unsigned int count, unsi
 	}
 }
 
+void lcm_set_backlight(unsigned int level)
+{
+	unsigned int value = level;
+
+	lcm_backlight_level_setting[0].para_list[0] = value;
+	push_table(lcm_backlight_level_setting, sizeof(lcm_backlight_level_setting) / sizeof(struct LCM_setting_table), 1);
+
+}
+
 
 void lcm_set_backlight_cmdq(void *handle, unsigned int level)
 {
@@ -481,6 +490,7 @@ LCM_DRIVER nt35596_fhd_dsi_vdo_tianma_lcm_drv = {
 #if (LCM_DSI_CMD_MODE)
 	.update = lcm_update,
 #endif
+	.set_backlight = lcm_set_backlight,
 	.set_backlight_cmdq = lcm_set_backlight_cmdq,
 #ifndef BUILD_LK
 	.set_cabc_mode = lcm_set_cabc_mode,
