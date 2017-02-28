@@ -75,7 +75,7 @@ extern int read_s5k4h8_eeprom_qt_mtk_fmt(void);
 static DEFINE_SPINLOCK(imgsensor_drv_lock);
 static imgsensor_info_struct imgsensor_info = { 
 	.sensor_id = S5K4H8_SENSOR_ID_QT,
-	.checksum_value = 0x31f55cce,
+	.checksum_value = 0xfa16fff,
 	.pre = {
 		.pclk = 280000000,				//record different mode's pclk
 		.linelength = 3744,				//record different mode's linelength
