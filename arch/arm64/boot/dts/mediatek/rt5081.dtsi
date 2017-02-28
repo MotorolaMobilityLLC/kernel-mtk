@@ -105,7 +105,7 @@
 			/* pwm_mode -> pwm dimming mode */
 			/* breath_mode -> as the name */
 			rt,led_default_trigger = "cc_mode", "cc_mode",
-						 "cc_mode", "none";
+						 "cc_mode", "cc_mode";
 		};
 		bled {
 			compatible = "richtek,rt5081_pmu_bled";
