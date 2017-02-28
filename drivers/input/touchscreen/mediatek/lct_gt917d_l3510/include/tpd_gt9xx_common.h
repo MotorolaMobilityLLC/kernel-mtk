@@ -107,7 +107,7 @@ extern unsigned char gtp_default_FW_fl[];
 #define GTP_COMPATIBLE_MODE   0       // compatible with GT9XXF
 
 #define GTP_CREATE_WR_NODE    1
-#define GTP_ESD_PROTECT       1       // esd protection with a cycle of 2 seconds
+#define CONFIG_GTP_ESD_PROTECT       1       // esd protection with a cycle of 2 seconds
 #define GUP_USE_HEADER_FILE   0
 #define GTP_FW_DOWNLOAD       0       //update FW to TP SRAM
 //#define GTP_CHARGER_DETECT
