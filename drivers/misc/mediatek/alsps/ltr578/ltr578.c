@@ -642,28 +642,28 @@ static int ltr578_dynamic_calibrate(void)
 
 	if (noise < 25) {
 		atomic_set(&obj->ps_thd_val_high, noise+25);
-		atomic_set(&obj->ps_thd_val_low, noise+15);
+		atomic_set(&obj->ps_thd_val_low, noise+12);
 	} else if (noise < 100) {
 		atomic_set(&obj->ps_thd_val_high, noise+30);
-		atomic_set(&obj->ps_thd_val_low, noise+20);
+		atomic_set(&obj->ps_thd_val_low, noise+15);
 	} else if (noise < 200) {
 		atomic_set(&obj->ps_thd_val_high, noise+35);
-		atomic_set(&obj->ps_thd_val_low, noise+25);
+		atomic_set(&obj->ps_thd_val_low, noise+20);
 	} else if (noise < 300) {
 		atomic_set(&obj->ps_thd_val_high, noise+40);
-		atomic_set(&obj->ps_thd_val_low, noise+30);
+		atomic_set(&obj->ps_thd_val_low, noise+25);
 	} else if (noise < 400) {
 		atomic_set(&obj->ps_thd_val_high, noise+45);
-		atomic_set(&obj->ps_thd_val_low, noise+35);
+		atomic_set(&obj->ps_thd_val_low, noise+30);
 	} else if (noise < 600) {
 		atomic_set(&obj->ps_thd_val_high, noise+50);
-		atomic_set(&obj->ps_thd_val_low, noise+40);
+		atomic_set(&obj->ps_thd_val_low, noise+35);
 	} else if (noise < 800) {
 		atomic_set(&obj->ps_thd_val_high, noise+80);
-		atomic_set(&obj->ps_thd_val_low, noise+60);
+		atomic_set(&obj->ps_thd_val_low, noise+55);
 	} else if (noise < 1000) {
 		atomic_set(&obj->ps_thd_val_high, noise+273);
-		atomic_set(&obj->ps_thd_val_low, noise+105);
+		atomic_set(&obj->ps_thd_val_low, noise+100);
 	} else {
 		atomic_set(&obj->ps_thd_val_high, 1200);
 		atomic_set(&obj->ps_thd_val_low, 1150);
@@ -1418,28 +1418,28 @@ static void ltr578_eint_work(struct work_struct *work)
 				isadjust = 1;
 				if (noise < 25) {
 					atomic_set(&obj->ps_thd_val_high, noise+25);
-					atomic_set(&obj->ps_thd_val_low, noise+15);
+					atomic_set(&obj->ps_thd_val_low, noise+12);
 				} else if (noise < 100) {
 					atomic_set(&obj->ps_thd_val_high, noise+30);
-					atomic_set(&obj->ps_thd_val_low, noise+20);
+					atomic_set(&obj->ps_thd_val_low, noise+15);
 				} else if (noise < 200) {
 					atomic_set(&obj->ps_thd_val_high, noise+35);
-					atomic_set(&obj->ps_thd_val_low, noise+25);
+					atomic_set(&obj->ps_thd_val_low, noise+20);
 				} else if (noise < 300) {
 					atomic_set(&obj->ps_thd_val_high, noise+40);
-					atomic_set(&obj->ps_thd_val_low, noise+30);
+					atomic_set(&obj->ps_thd_val_low, noise+25);
 				} else if (noise < 400) {
 					atomic_set(&obj->ps_thd_val_high, noise+45);
-					atomic_set(&obj->ps_thd_val_low, noise+35);
+					atomic_set(&obj->ps_thd_val_low, noise+30);
 				} else if (noise < 600) {
 					atomic_set(&obj->ps_thd_val_high, noise+50);
-					atomic_set(&obj->ps_thd_val_low, noise+40);
+					atomic_set(&obj->ps_thd_val_low, noise+35);
 				} else if (noise < 800) {
 					atomic_set(&obj->ps_thd_val_high, noise+80);
-					atomic_set(&obj->ps_thd_val_low, noise+60);
+					atomic_set(&obj->ps_thd_val_low, noise+55);
 				} else if (noise < 1000) {
 					atomic_set(&obj->ps_thd_val_high, noise+273);
-					atomic_set(&obj->ps_thd_val_low, noise+105);
+					atomic_set(&obj->ps_thd_val_low, noise+100);
 				} else {
 					atomic_set(&obj->ps_thd_val_high, 1200);
 					atomic_set(&obj->ps_thd_val_low, 1150);
