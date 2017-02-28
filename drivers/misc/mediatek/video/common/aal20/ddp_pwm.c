@@ -120,12 +120,12 @@ int disp_pwm_get_cust_led(unsigned int *clocksource, unsigned int *clockdiv)
 			} else {
 				PWM_ERR("led dts can not get led mode data.\n");
 			}
-		/**** add by wangjiaxing 20170218 start ****/
-#ifndef CONFIG_L3510_MAINBOARD
-		       if(lct_read_boardid() >= 10)
-			   		g_pwm_led_mode = 4;
+		/**** add by wangjiaxing 20170227 start ****/
+#ifdef CONFIG_LCT_L3500_EVT_LCM_BACKLIGHT_BLS_PWM
+		       if(lct_read_boardid() < 10)
+			   		g_pwm_led_mode = MT65XX_LED_MODE_CUST_BLS_PWM;
 #endif
-		/**** add by wangjiaxing 20170218 end ****/
+		/**** add by wangjiaxing 20170227 end ****/
 		}
 	}
 

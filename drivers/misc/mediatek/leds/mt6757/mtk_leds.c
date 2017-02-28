@@ -238,10 +238,9 @@ struct cust_mt65xx_led *get_cust_led_dtsi(void)
 				if (!ret) {
 					pled_dtsi[i].mode = mode;
 					/**** add by wangjiaxing 20170218 start ****/
-#ifndef CONFIG_L3510_MAINBOARD
-
-					  if(lct_read_boardid() >= 10)
-			      		 pled_dtsi[i].mode = 4;
+#ifdef CONFIG_LCT_L3500_EVT_LCM_BACKLIGHT_BLS_PWM
+					  if(lct_read_boardid() < 10 && (strncmp(leds_name[i], "lcd-backlight", strlen(leds_name[i]))==0))
+			      		 pled_dtsi[i].mode = MT65XX_LED_MODE_CUST_BLS_PWM;
 #endif
 			             //printk("kls 2 board_id = %d\n",ret);
 					/**** add by wangjiaxing 20170218 end ****/

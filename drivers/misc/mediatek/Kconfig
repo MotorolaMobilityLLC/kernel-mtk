@@ -5,6 +5,12 @@ menuconfig MEDIATEK_SOLUTION
 	help
 	  Check this to enable MediaTek properity configuration.
 
+config LCT_L3500_EVT_LCM_BACKLIGHT_BLS_PWM
+	bool "Enable l3500 evt bls_pwm mode of backlight"
+	default n
+	help 
+		used for enable lcm backlight bls_pwm mode of l3500 dvt board
+
 if MEDIATEK_SOLUTION
 
 config MTK_PLATFORM
