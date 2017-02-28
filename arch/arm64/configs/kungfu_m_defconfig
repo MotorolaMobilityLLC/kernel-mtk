@@ -587,4 +587,7 @@ CONFIG_MTK_BMI120GY_NEW=y
 CONFIG_CUSTOM_KERNEL_STEP_COUNTER="bmi160"
 CONFIG_CUSTOM_KERNEL_SIGNIFICANT_MOTION_SENSOR=""
 #Lenovo-sw weimh1 add 2016-9-30 end
+
+#For OTP unlock BL
+CONFIG_MTK_EMMC_SUPPORT_OTP=y
 ###################### Lenovo BSP Feature end #########################
