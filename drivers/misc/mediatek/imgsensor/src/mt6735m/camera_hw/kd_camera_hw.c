@@ -413,7 +413,7 @@ int kdCISModulePowerOn(CAMERA_DUAL_CAMERA_SENSOR_ENUM SensorIdx, char *currSenso
 
 		}
 #if defined(CONFIG_LCT_CAMERA_KERNEL)/*jijin.wang add for LCT*/
-else if(currSensorName && (0 == strcmp(currSensorName, SENSOR_DRVNAME_AR1335_MIPI_RAW_SUNNY)))
+else if(currSensorName && (0 == strcmp(currSensorName, SENSOR_DRVNAME_AR1335_MIPI_RAW_SUNNY))&&(pinSetIdx != 1))
 		{
           //1.set xshutdown low
             //if (GPIO_CAMERA_INVALID != pinSet[pinSetIdx][IDX_PS_CMPDN])
@@ -460,7 +460,7 @@ else if(currSensorName && (0 == strcmp(currSensorName, SENSOR_DRVNAME_AR1335_MIP
 				//mtkcam_gpio_set(pinSetIdx, CAMPDN, pinSet[pinSetIdx][IDX_PS_CMPDN + IDX_PS_ON]);
 
 		}
-		else if(currSensorName && (0 == strcmp(currSensorName, SENSOR_DRVNAME_AR1335_MIPI_RAW)))
+		else if(currSensorName && (0 == strcmp(currSensorName, SENSOR_DRVNAME_AR1335_MIPI_RAW))&&(pinSetIdx != 1))
 		{
           //1.set xshutdown low
             //if (GPIO_CAMERA_INVALID != pinSet[pinSetIdx][IDX_PS_CMPDN])
@@ -507,7 +507,7 @@ else if(currSensorName && (0 == strcmp(currSensorName, SENSOR_DRVNAME_AR1335_MIP
 				//mtkcam_gpio_set(pinSetIdx, CAMPDN, pinSet[pinSetIdx][IDX_PS_CMPDN + IDX_PS_ON]);
 
 		}
-		else if(currSensorName && (0 == strcmp(currSensorName, SENSOR_DRVNAME_S5K5E8YX_MIPI_RAW)))
+		else if(currSensorName && (0 == strcmp(currSensorName, SENSOR_DRVNAME_S5K5E8YX_MIPI_RAW))&&(pinSetIdx != 0))
 		{
 		ISP_MCLK1_EN(1);  
           	//1.set xshutdown low
@@ -538,7 +538,7 @@ else if(currSensorName && (0 == strcmp(currSensorName, SENSOR_DRVNAME_AR1335_MIP
 				mtkcam_gpio_set(pinSetIdx, CAMRST, pinSet[pinSetIdx][IDX_PS_CMRST + IDX_PS_ON]);
 		
 		}  
-		else if(currSensorName && (0 == strcmp(currSensorName, SENSOR_DRVNAME_HI553_MIPI_RAW)))
+		else if(currSensorName && (0 == strcmp(currSensorName, SENSOR_DRVNAME_HI553_MIPI_RAW))&&(pinSetIdx != 0))
 		{
 			 
           //1.set xshutdown low
@@ -570,7 +570,7 @@ else if(currSensorName && (0 == strcmp(currSensorName, SENSOR_DRVNAME_AR1335_MIP
 				mtkcam_gpio_set(pinSetIdx, CAMRST, pinSet[pinSetIdx][IDX_PS_CMRST + IDX_PS_ON]);
 		
 		}
-else if(currSensorName && (0 == strcmp(currSensorName, SENSOR_DRVNAME_HI556_MIPI_RAW)))
+else if(currSensorName && (0 == strcmp(currSensorName, SENSOR_DRVNAME_HI556_MIPI_RAW))&&(pinSetIdx != 0))
 		{
 			 
           //1.set xshutdown low
