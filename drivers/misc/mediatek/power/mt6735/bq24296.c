@@ -651,6 +651,23 @@ unsigned int bq24296_get_vsys_stat(void)
 	return val;
 }
 
+//zhangchao@wind-mobi.com 20170301 begin
+#ifdef CONFIG_WIND_Z168_BATTERY_MODIFY
+unsigned int bq24296_get_otg_fault_state(void)
+{
+	unsigned int ret = 0;
+	unsigned char val = 0;
+
+	ret = bq24296_read_interface((unsigned char) (bq24296_CON9),
+				       (&val),
+				       (unsigned char) (CON9_OTG_FAULT_MASK),
+				       (unsigned char) (CON9_OTG_FAULT_SHIFT)
+	    );
+	return val;
+}
+#endif
+//zhangchao@wind-mobi.com 20170301 end
+
 /**********************************************************
   *
   *   [Internal Function]
