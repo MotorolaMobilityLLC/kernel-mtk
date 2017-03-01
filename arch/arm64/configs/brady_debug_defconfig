@@ -604,6 +604,10 @@ CONFIG_LCT_CAPTOUCH=y
 CONFIG_LCT_CAPSENSOR_SX9310=y
 #add by dingjian 20170220 end
 
+#add by lct  wangjiaxing  20170301 start
+CONFIG_LCT_DEVINFO_SUPPORT=y
+#add by lct wangjiaxing 20170301 end
+
 #add by wangjiaxing 20170227 start
 CONFIG_LCT_L3500_EVT_LCM_BACKLIGHT_BLS_PWM=y
 #add by wangjiaxing 20170227 end
