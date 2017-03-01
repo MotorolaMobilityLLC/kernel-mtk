@@ -50,3 +50,10 @@ config MICROTRUST_TUI_DRIVER
 	default n
 	---help---
 	  Enable Microtrust TUI Support
+
+config MICROTRUST_DEBUG
+	bool "Enable Microtrust Debug Message"
+	depends on MICROTRUST_TEE_SUPPORT
+	default n
+	---help---
+	  Enable debug messages output from Microtrust Linux drivers

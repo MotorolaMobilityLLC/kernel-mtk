@@ -12,8 +12,8 @@
  * GNU General Public License for more details.
  */
 
-#define fp_buffer_size 2048
+//#define fp_buffer_size 2048
 
-#define ARGS_BLOCK_SIZE 1024
+//#define ARGS_BLOCK_SIZE 1024
 
-int send_fp_command(unsigned long share_memory_size);
+//int send_fp_command(unsigned long share_memory_size);
