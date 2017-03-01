@@ -236,6 +236,12 @@ extern unsigned int bq24296_get_system_status(void);
 extern unsigned int bq24296_get_vbus_stat(void);
 extern unsigned int bq24296_get_chrg_stat(void);
 extern unsigned int bq24296_get_vsys_stat(void);
+
+//zhangchao@wind-mobi.com 20170301 begin
+#ifdef CONFIG_WIND_Z168_BATTERY_MODIFY
+unsigned int bq24296_get_otg_fault_state(void);
+#endif
+//zhangchao@wind-mobi.com 20170301 end
 /* --------------------------------------------------------- */
 extern void bq24296_dump_register(void);
 extern unsigned int bq24296_reg_config_interface(unsigned char RegNum, unsigned char val);
