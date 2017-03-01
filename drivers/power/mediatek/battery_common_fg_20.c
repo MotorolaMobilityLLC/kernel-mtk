@@ -1899,6 +1899,14 @@ static void battery_update(struct battery_data *bat_data)
 	static unsigned int update_cnt = 6;
 	static unsigned int pre_uisoc2;
 	static unsigned int pre_chr_state;
+	//zhangchao@wind-mobi.com 20170301 begin
+	#ifdef CONFIG_WIND_Z168_BATTERY_MODIFY
+	static unsigned int OTG_state = 0;
+	OTG_state = bq24296_get_otg_fault_state();
+	if (OTG_state == 1)
+		bq24296_set_otg_config(0);
+	#endif
+	//zhangchao@wind-mobi.com 20170301 end
 
 	if (shutdown_cnt == 0xBADDCAFE)
 		shutdown_cnt = 0;
