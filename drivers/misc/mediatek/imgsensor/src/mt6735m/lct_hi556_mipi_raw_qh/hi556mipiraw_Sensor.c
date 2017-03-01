@@ -579,7 +579,7 @@ static void ihdr_write_shutter_gain(kal_uint16 le, kal_uint16 se, kal_uint16 gai
 
 }
 
-
+#if 0
 //[TODO]
 static void set_mirror_flip(kal_uint8 image_mirror)
 {
@@ -617,7 +617,7 @@ static void set_mirror_flip(kal_uint8 image_mirror)
 	}
 
 }
-
+#endif
 /*************************************************************************
 * FUNCTION
 *	night_mode
@@ -696,7 +696,7 @@ static void sensor_init(void)
 	write_cmos_sensor(0x0a10, 0x4000);
 	write_cmos_sensor(0x006c, 0x0000);
 	write_cmos_sensor(0x005e, 0x0200);
-	write_cmos_sensor(0x000e, 0x0100);
+	write_cmos_sensor(0x000e, 0x0200);
 	write_cmos_sensor(0x0e0a, 0x0001);
 	write_cmos_sensor(0x004a, 0x0100);
 	write_cmos_sensor(0x004c, 0x0000);
@@ -1375,7 +1375,7 @@ static kal_uint32 hs_video(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 	imgsensor.autoflicker_en = KAL_FALSE;
 	spin_unlock(&imgsensor_drv_lock);
 	hs_video_setting();
-	set_mirror_flip(IMAGE_NORMAL);
+	//set_mirror_flip(IMAGE_NORMAL);
 	
 	return ERROR_NONE;
 }	/*	hs_video   */
@@ -1398,7 +1398,7 @@ static kal_uint32 slim_video(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 	imgsensor.autoflicker_en = KAL_FALSE;
 	spin_unlock(&imgsensor_drv_lock);
 	slim_video_setting();
-	set_mirror_flip(IMAGE_NORMAL);
+	//set_mirror_flip(IMAGE_NORMAL);
 	return ERROR_NONE;
 }
 	
