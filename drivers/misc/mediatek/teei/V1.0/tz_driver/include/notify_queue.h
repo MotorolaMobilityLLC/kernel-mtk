@@ -1,18 +1,5 @@
-/*
- * Copyright (c) 2015-2016 MICROTRUST Incorporated
- * All Rights Reserved.
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * version 2 as published by the Free Software Foundation.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- */
-
-#include "utdriver_macro.h"
+#ifndef NOTIFY_QUEUE_H
+#define NOTIFY_QUEUE_H
 
 struct NQ_head {
 	unsigned int start_index;
@@ -35,26 +22,10 @@ struct create_NQ_struct {
 	unsigned int t_n_size;
 };
 
-/******************************
- * Message header
- ******************************/
+extern unsigned long t_nt_buffer;
 
-struct message_head {
-	unsigned int invalid_flag;
-	unsigned int message_type;
-	unsigned int child_type;
-	unsigned int param_length;
-};
+int add_nq_entry(u32 command_buff, int command_length, int valid_flag);
+unsigned char *get_nq_entry(unsigned char *buffer_addr);
+long create_nq_buffer(void);
 
-struct ack_fast_call_struct {
-	int retVal;
-};
-
-static unsigned long nt_t_buffer;
-unsigned long t_nt_buffer;
-
-extern struct semaphore boot_sema;
-extern struct semaphore smc_lock;
-extern unsigned long message_buff;
-
-extern void invoke_fastcall(void);
+#endif // end of NOTIFY_QUEUE_H

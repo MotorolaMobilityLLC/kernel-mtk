@@ -1062,28 +1062,72 @@
 };
 /* FLASHLIGHTS_LM3643 GPIO end */
 
-//LCSH TQQ ADD FINGER 1-19
-/*******************finger pin end ****************/
-/*Goodix fingerprint start*/
-&pio {
-gdfp_defaule: state_default {
+/* FINGERPRINT start */
+&spi0{
+	#address-cells = <1>;
+	#size-cells = <0>;
 
-              };
-gdfp_reset_high: state_reset_high{
-                     pins_cmd_dat {
-                         pins = <PINMUX_GPIO190__FUNC_GPIO190>;
-                         slew-rate = <1>;
-                         output-high;
-                     };
-                 };
-gdfp_reset_low: state_reset_low{
-                    pins_cmd_dat {
-                        pins = <PINMUX_GPIO190__FUNC_GPIO190>;
-                        slew-rate = <1>;
-                        output-low;
-                    };
-                };
-gdfp_fp_irq_mode: state_fp_irq_mode{
+	fingerprint@0 {
+		compatible = "goodix,goodix-fp";
+		reg = <0>;
+		spi-max-frequency = <8000000>;
+		status = "okay";
+	};
+};
+
+&goodix_fp {
+	pinctrl-names = "default", "miso_pullhigh", "miso_pulllow", "reset_high", "reset_low","fp_irq_mode", "fp_ldo1v8_off","fp_ldo1v8_on","fp_ldo3v3_on","fp_ldo3v3_off";
+	pinctrl-0 = <&fingerprint_default>;
+	pinctrl-1 = <&fingerprint_miso_pullhigh>;
+	pinctrl-2 = <&fingerprint_miso_pulllow>;
+	pinctrl-3 = <&fingerprint_reset_high>;
+	pinctrl-4 = <&fingerprint_reset_low>;
+	pinctrl-5 = <&gdfp_fp_irq_mode>;
+    	pinctrl-6 = <&gdfp_fp_ldo1v8_off>;
+    	pinctrl-7 = <&gdfp_fp_ldo1v8_on>;
+   	pinctrl-8 = <&gdfp_fp_ldo3v3_on>;
+    	pinctrl-9 = <&gdfp_fp_ldo3v3_off>;
+	status = "okay";
+};
+
+&pio {
+	fingerprint_default: state_default {
+
+	};
+
+	fingerprint_miso_pullhigh: state_miso_pullhigh {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO25__FUNC_GPIO25>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+
+	fingerprint_miso_pulllow: state_miso_pulllow {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO25__FUNC_GPIO25>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+
+	fingerprint_reset_high: state_reset_high {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO190__FUNC_GPIO190>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+
+	fingerprint_reset_low: state_reset_low {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO190__FUNC_GPIO190>;
+			slew-rate = <1>;
+			output-low;
+		};
+
+	};
+	gdfp_fp_irq_mode: state_fp_irq_mode{
                       pins_cmd_dat {
                           pins = <PINMUX_GPIO7__FUNC_GPIO7>;
                           slew-rate = <0>;
@@ -1112,35 +1156,13 @@ gdfp_fp_ldo3v3_on: state_fp_1do3v3_on{
                            output-high;
                        };
                    };
-gdfp_fp_ldo3v3_off: state_fp_ldo3v3_off{
+	gdfp_fp_ldo3v3_off: state_fp_ldo3v3_off{
                         pins_cmd_dat {
                             pins = <PINMUX_GPIO22__FUNC_GPIO22>;
                             slew-rate = <1>;
                             output-low;
-                        };
-                    };
-};
-&spi0{
-    #address-cells = <1>;
-    #size-cells = <0>;
+	};
 
-    fingerprint@0 {
-        compatible = "goodix,fingerprint";
-        reg = <0>;
-        spi-max-frequency = <8000000>;
-        status = "okay";
-    };
+	};
 };
-&goodix_fp {
-    pinctrl-names = "default", "fp_reset_high", "fp_reset_low","fp_irq_mode", "fp_ldo1v8_off","fp_ldo1v8_on","fp_ldo3v3_on","fp_ldo3v3_off";
-    pinctrl-0 = <&gdfp_defaule>;
-    pinctrl-1 = <&gdfp_reset_high>;
-    pinctrl-2 = <&gdfp_reset_low>;
-    pinctrl-3 = <&gdfp_fp_irq_mode>;
-    pinctrl-4 = <&gdfp_fp_ldo1v8_off>;
-    pinctrl-5 = <&gdfp_fp_ldo1v8_on>;
-    pinctrl-6 = <&gdfp_fp_ldo3v3_on>;
-    pinctrl-7 = <&gdfp_fp_ldo3v3_off>;
-    /*&fingerprint*/
-};
-/*Goodix fingerprint end*/
+/* FINGERPRINT end */
