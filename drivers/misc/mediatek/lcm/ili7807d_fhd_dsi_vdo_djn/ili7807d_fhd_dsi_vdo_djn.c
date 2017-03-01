@@ -8,14 +8,12 @@
 #include <platform/upmu_common.h>
 #include <platform/mt_gpio.h>
 #include <platform/mt_i2c.h>
-#include <platform/mt_pmic.h>
 #include <string.h>
+#include <platform/mt_pmic.h>
+#elif defined(BUILD_UBOOT)
+#include <asm/arch/mt_gpio.h>
 #endif
 
-#ifdef BUILD_LK
-#define GPIO_LP3101_ENN   GPIO_LCD_BIAS_ENN_PIN
-#define GPIO_LP3101_ENP   GPIO_LCD_BIAS_ENP_PIN
-#endif
 
 /* --------------------------------------------------------------------------- */
 /* Local Constants */
@@ -30,6 +28,10 @@
 /* --------------------------------------------------------------------------- */
 /* Local Variables */
 /* --------------------------------------------------------------------------- */
+#ifdef BUILD_LK
+#define GPIO_LP3101_ENN   GPIO_LCD_BIAS_ENN_PIN
+#define GPIO_LP3101_ENP   GPIO_LCD_BIAS_ENP_PIN
+#endif
 
 static LCM_UTIL_FUNCS lcm_util;
 
@@ -86,7 +88,7 @@ static int lp3101_write_bytes(kal_uint8 addr, kal_uint8 value)
 	write_data[0] = addr;
 	write_data[1] = value;
 
-	lp3101_i2c.id = I2C1;
+	lp3101_i2c.id = I2C0;
 	/* Since i2c will left shift 1 bit, we need to set FAN5405 I2C address to >>1 */
 	lp3101_i2c.addr = (LP3101_SLAVE_ADDR_WRITE >> 1);
 	lp3101_i2c.mode = ST_MODE;
@@ -213,20 +215,40 @@ static void lcm_get_params(LCM_PARAMS *params)
 static void lcm_init(void)
 {
 #ifdef BUILD_LK
-	/* data sheet 136 page ,the first AVDD power on */
-	mt_set_gpio_mode(GPIO_LP3101_ENP, GPIO_MODE_00);
-	mt_set_gpio_dir(GPIO_LP3101_ENP, GPIO_DIR_OUT);
-	mt_set_gpio_out(GPIO_LP3101_ENP, GPIO_OUT_ONE);
-	MDELAY(5);
+		int ret = 0;
+		unsigned char cmd = 0x0;
+		unsigned char data = 0xFF;
 
-	mt_set_gpio_mode(GPIO_LP3101_ENN, GPIO_MODE_00);
-	mt_set_gpio_dir(GPIO_LP3101_ENN, GPIO_DIR_OUT);
-	mt_set_gpio_out(GPIO_LP3101_ENN, GPIO_OUT_ONE);
-#else
-	set_gpio_lcd_enp(1);
-	MDELAY(5);
-	set_gpio_lcd_enn(1);
 #endif
+
+#ifdef BUILD_LK
+		/* data sheet 136 page ,the first AVDD power on */
+		mt_set_gpio_mode(GPIO_LP3101_ENP, GPIO_MODE_00);
+		mt_set_gpio_dir(GPIO_LP3101_ENP, GPIO_DIR_OUT);
+		mt_set_gpio_out(GPIO_LP3101_ENP, GPIO_OUT_ONE);
+		MDELAY(5);
+		mt_set_gpio_mode(GPIO_LP3101_ENN, GPIO_MODE_00);
+		mt_set_gpio_dir(GPIO_LP3101_ENN, GPIO_DIR_OUT);
+		mt_set_gpio_out(GPIO_LP3101_ENN, GPIO_OUT_ONE);
+#else
+		/* set_gpio_lcd_power_enable(1); */
+		/* set_gpio_lcd_enp(1); */
+		set_gpio_lcd_enp(1);
+		MDELAY(5);
+		set_gpio_lcd_enn(1);
+#endif
+		MDELAY(5);
+#ifdef BUILD_LK
+		cmd = 0x00;
+		data = 0x0F;
+		ret = lp3101_write_bytes(cmd, data);
+		MDELAY(2);
+		cmd = 0x01;
+		data = 0x0F;
+		ret = lp3101_write_bytes(cmd, data);
+#endif
+		MDELAY(10);
+
 	SET_RESET_PIN(1);
 	MDELAY(5);
 	SET_RESET_PIN(0);
@@ -238,19 +260,22 @@ static void lcm_init(void)
 
 static void lcm_suspend(void)
 {
-	unsigned int data_array[16];
+		unsigned int data_array[16];
 
-	data_array[0] = 0x00280500;	/* Display Off */
-	dsi_set_cmdq(data_array, 1, 1);
-	MDELAY(20);
+		data_array[0] = 0x00280500; /* Display Off */
+		dsi_set_cmdq(data_array, 1, 1);
+		MDELAY(20);
 
-	data_array[0] = 0x00100500;	/* Sleep In */
-	dsi_set_cmdq(data_array, 1, 1);
-	MDELAY(120);
+		data_array[0] = 0x00100500; /* Sleep In */
+		dsi_set_cmdq(data_array, 1, 1);
+		MDELAY(120);
+#ifndef BUILD_LK
+		set_gpio_lcd_enn(0);
+		MDELAY(5);
+		set_gpio_lcd_enp(0);
 
-	set_gpio_lcd_enn(0);
-	MDELAY(5);
-	set_gpio_lcd_enp(0);
+#endif
+
 }
 
 
@@ -311,30 +336,27 @@ static unsigned int lcm_compare_id(void)
 	SET_RESET_PIN(1);
 	MDELAY(100);
 
-	array[0] = 0x00043902;
-	array[1] = 0x000778FF;
-	dsi_set_cmdq(array, 2, 1);
 
 
 	array[0] = 0x00023700;	/* read id return two byte,version and id */
 	dsi_set_cmdq(array, 1, 1);
 
-	read_reg_v2(0x06, buffer, 2);
+	read_reg_v2(0x00, buffer, 2);
 	id = buffer[0];		/* we only need ID */
 #ifdef BUILD_LK
-	dprintf("%s, LK ili7807d debug: ili7807d 0x%08x\n", __func__,
+	dprintf(0, "%s, LK ili7807d debug: ili7807d 0x%08x\n", __func__,
 	       id);
 #else
 	pr_info("%s,kernel ili7807d horse debug: ili7807d id = 0x%08x\n",
 	       __func__, id);
 #endif
-	if (id == 0x43)
+	if (id == 0x78)
 		return 1;
 	else
 		return 0;
 }
 
-
+#ifndef BUILD_LK
 static int lcm_set_cabc_mode(int mode)
 {
 	unsigned int data_array[16];
@@ -371,6 +393,7 @@ static int lcm_set_cabc_mode(int mode)
 	}
 	return 0;
 }
+#endif
 
 struct LCM_setting_table {
 	unsigned cmd;
@@ -414,9 +437,25 @@ static void push_table(struct LCM_setting_table *table, unsigned int count, unsi
 }
 
 
+static void lcm_set_backlight(unsigned int level)
+{
+	unsigned int value = level;
+
+	if (value > 0) {
+		lcm_backlight_level_setting[0].para_list[0] = ((value>>4)&0x0f);
+		lcm_backlight_level_setting[0].para_list[1] = (value<<4)&0xf0;
+	} else {
+		lcm_backlight_level_setting[0].para_list[0] = 0;
+		lcm_backlight_level_setting[0].para_list[1] = 0;
+	}
+	push_table(lcm_backlight_level_setting,
+			sizeof(lcm_backlight_level_setting) / sizeof(struct LCM_setting_table), 1);
+
+}
 static void lcm_set_backlight_cmdq(void *handle, unsigned int level)
 {
 	unsigned int value = level;
+
 	if (value > 0) {
 		lcm_backlight_level_setting[0].para_list[0] = ((value>>4)&0x0f);
 		lcm_backlight_level_setting[0].para_list[1] = (value<<4)&0xf0;
@@ -441,6 +480,9 @@ LCM_DRIVER ili7807d_fhd_dsi_vdo_djn_lcm_drv = {
 #if (LCM_DSI_CMD_MODE)
 	.update = lcm_update,
 #endif
+	.set_backlight = lcm_set_backlight,
+#ifndef BUILD_LK
 	.set_backlight_cmdq = lcm_set_backlight_cmdq,
 	.set_cabc_mode = lcm_set_cabc_mode,
+#endif
 };
