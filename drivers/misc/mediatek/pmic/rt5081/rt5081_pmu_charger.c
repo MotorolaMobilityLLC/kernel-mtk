@@ -2719,6 +2719,10 @@ static irqreturn_t rt5081_pmu_attachi_irq_handler(int irq, void *data)
 		chg_data->chg_type = CHARGER_UNKNOWN;
 		break;
 	}
+//#ifdef CONFIG_LCT_L3500_EVT_LCM_BACKLIGHT_BLS_PWM
+	//if(lct_read_boardid() < 10 )
+	   chg_data->chg_type = STANDARD_HOST;  //add by zhoulingyun temp for evt		      		 
+//#endif
 
 #ifdef RT5081_APPLE_SAMSUNG_TA_SUPPORT
 	ret = rt5081_detect_apple_samsung_ta(chg_data);
