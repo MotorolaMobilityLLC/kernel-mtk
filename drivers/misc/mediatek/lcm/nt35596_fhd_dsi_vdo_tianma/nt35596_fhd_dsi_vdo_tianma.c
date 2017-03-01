@@ -379,45 +379,6 @@ static unsigned int lcm_compare_id(void)
 		return 0;
 }
 
-#ifndef BUILD_LK
-static int lcm_set_cabc_mode(int mode)
-{
-	unsigned int data_array[16];
-
-	data_array[0] = 0x00023902;
-	data_array[1] = 0x000000FF;
-	dsi_set_cmdq(data_array, 2, 1);
-
-	data_array[0] = 0x00023902;
-	data_array[1] = 0x000001FB;
-	dsi_set_cmdq(data_array, 2, 1);
-	pr_debug("call %s, mode=%d\n", __func__, mode);
-
-	switch (mode) {
-	case OFF:
-		data_array[0] = 0x00023902;
-		data_array[1] = 0x00000055;
-		dsi_set_cmdq(data_array, 2, 1);
-		break;
-	case UI:
-		data_array[0] = 0x00023902;
-		data_array[1] = 0x00000155;
-		dsi_set_cmdq(data_array, 2, 1);
-		break;
-	case STILL_IMAGE:
-		data_array[0] = 0x00023902;
-		data_array[1] = 0x00000255;
-		dsi_set_cmdq(data_array, 2, 1);
-		break;
-	case MOVING_IMAGE:
-		data_array[0] = 0x00023902;
-		data_array[1] = 0x00000355;
-		dsi_set_cmdq(data_array, 2, 1);
-		break;
-	}
-	return 0;
-}
-#endif
 
 struct LCM_setting_table {
 	unsigned cmd;
@@ -431,6 +392,10 @@ static struct LCM_setting_table lcm_backlight_level_setting[] = {
 	{REGFLAG_END_OF_TABLE, 0x00, {} }
 };
 
+static struct LCM_setting_table lcm_cabc_mode_setting[] = {
+	{0x55, 1, {0x00} } ,
+	{REGFLAG_END_OF_TABLE, 0x00, {} }
+};
 
 
 
@@ -477,6 +442,33 @@ void lcm_set_backlight_cmdq(void *handle, unsigned int level)
 	push_table(lcm_backlight_level_setting, sizeof(lcm_backlight_level_setting) / sizeof(struct LCM_setting_table), 1);
 
 }
+
+#ifndef BUILD_LK
+static int lcm_set_cabc_mode(int mode)
+{
+	unsigned int value = 0;
+
+	printk("call %s, mode=%d\n", __func__, mode);
+
+	switch (mode) {
+	case OFF:
+		value = 0x00;
+		break;
+	case UI:
+		value = 0x01;
+		break;
+	case STILL_IMAGE:
+		value = 0x02;
+		break;
+	case MOVING_IMAGE:
+		value = 0x03;
+		break;
+	}
+	lcm_cabc_mode_setting[0].para_list[0] = value;
+	push_table(lcm_cabc_mode_setting, sizeof(lcm_cabc_mode_setting) / sizeof(struct LCM_setting_table), 1);
+	return 0;
+}
+#endif
 
 
 LCM_DRIVER nt35596_fhd_dsi_vdo_tianma_lcm_drv = {
