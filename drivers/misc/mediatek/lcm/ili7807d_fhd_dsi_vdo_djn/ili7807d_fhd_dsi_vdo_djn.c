@@ -23,8 +23,8 @@
 #define FRAME_HEIGHT (1920)
 
 #define LCM_ID_NT35596 (0x96)
-#define REGFLAG_DELAY               (0xAB)
-#define REGFLAG_END_OF_TABLE        (0xAA)	/* END OF REGISTERS MARKER */
+#define REGFLAG_DELAY               (0xFE)
+#define REGFLAG_END_OF_TABLE        (0xFD)	/* END OF REGISTERS MARKER */
 /* --------------------------------------------------------------------------- */
 /* Local Variables */
 /* --------------------------------------------------------------------------- */
@@ -189,19 +189,19 @@ static void lcm_get_params(LCM_PARAMS *params)
 
 	params->dsi.PS = LCM_PACKED_PS_24BIT_RGB888;
 
-	params->dsi.vertical_sync_active = 2;
-	params->dsi.vertical_backporch = 4;
-	params->dsi.vertical_frontporch = 4;
+	params->dsi.vertical_sync_active = 8;
+	params->dsi.vertical_backporch = 24;
+	params->dsi.vertical_frontporch = 8;
 	params->dsi.vertical_active_line = FRAME_HEIGHT;
 
-	params->dsi.horizontal_sync_active = 20;
-	params->dsi.horizontal_backporch = 100;
-	params->dsi.horizontal_frontporch = 100;
+	params->dsi.horizontal_sync_active = 100;
+	params->dsi.horizontal_backporch = 120;
+	params->dsi.horizontal_frontporch = 120;
 	params->dsi.horizontal_active_pixel = FRAME_WIDTH;
 	/* params->dsi.pll_select=1;     //0: MIPI_PLL; 1: LVDS_PLL */
 	/* Bit rate calculation */
 	/* 1 Every lane speed */
-	params->dsi.PLL_CLOCK = 500;
+	params->dsi.PLL_CLOCK = 468;
 	params->dsi.ssc_disable = 1;
 	params->dsi.ssc_range = 4;
 	params->dsi.pll_div1 = 0;	/* div1=0,1,2,3;div1_real=1,2,4,4 ----0: 546Mbps  1:273Mbps */
@@ -443,7 +443,7 @@ static int lcm_set_cabc_mode(int mode)
 {
 	unsigned int value = 0;
 
-	printk("call %s, mode=%d\n", __func__, mode);
+	printk(KERN_ALERT"call %s, mode=%d\n", __func__, mode);
 
 	switch (mode) {
 	case OFF:
