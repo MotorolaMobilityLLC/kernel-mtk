@@ -763,7 +763,7 @@ static int ltr778_als_read(struct i2c_client *client, u16* data)
 	{// D6500K 
 		ch0_coeff = 379;
 		ch1_coeff = 1520;
-		winfac_1 = 32;
+		winfac_1 = 21; //tuwenzan@wind-mobi.com modify 32->21 at 20170302
 		winfac_2 = 7;
 	}
 	else if ((ratio >= 30) && (ratio < 49))
