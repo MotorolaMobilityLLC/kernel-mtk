@@ -310,6 +310,8 @@ void msdc_sd_power(struct msdc_host *host, u32 on)
 		/* VMCH VOLSEL */
 		if (card_on)
 			pinctrl_select_state(g_pinctrl, g_pin_power_out1);
+		else
+			pinctrl_select_state(g_pinctrl, g_pin_power_out0);
 /*
 		msdc_ldo_power(card_on, POWER_LDO_VMCH, VOL_3000,
 			&g_msdc1_flash);
