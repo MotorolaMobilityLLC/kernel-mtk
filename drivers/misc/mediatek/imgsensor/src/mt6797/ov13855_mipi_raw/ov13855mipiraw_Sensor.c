@@ -844,6 +844,7 @@ static void sensor_init(void)
 	write_cmos_sensor(0x3621, 0x08);
 	write_cmos_sensor(0x3622, 0x30);
 	write_cmos_sensor(0x3624, 0x1c);
+	write_cmos_sensor(0x3641, 0x50); //Yajun Add For MIPI Test
 	write_cmos_sensor(0x3661, 0x80);
 	write_cmos_sensor(0x3664, 0x73);
 	write_cmos_sensor(0x3665, 0xa7);
@@ -917,7 +918,9 @@ static void sensor_init(void)
 	write_cmos_sensor(0x450a, 0x04);
 	write_cmos_sensor(0x4809, 0x04);
 	write_cmos_sensor(0x480c, 0x12);
+	write_cmos_sensor(0x4826, 0x2a); //Yajun Add For MIPI Test
 	write_cmos_sensor(0x4833, 0x10);
+	//write_cmos_sensor(0x4837, 0x0f); //Yajun Add For MIPI Test
 	write_cmos_sensor(0x4d00, 0x03);
 	write_cmos_sensor(0x4d01, 0xc9);
 	write_cmos_sensor(0x4d02, 0xbc);
