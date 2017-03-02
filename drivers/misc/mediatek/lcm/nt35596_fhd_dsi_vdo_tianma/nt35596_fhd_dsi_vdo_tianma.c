@@ -209,13 +209,13 @@ static void lcm_get_params(LCM_PARAMS *params)
 	params->dsi.vertical_active_line = FRAME_HEIGHT;
 
 	params->dsi.horizontal_sync_active = 20;
-	params->dsi.horizontal_backporch = 120;
-	params->dsi.horizontal_frontporch = 120;
+	params->dsi.horizontal_backporch = 80;
+	params->dsi.horizontal_frontporch = 80;
 	params->dsi.horizontal_active_pixel = FRAME_WIDTH;
 	/* params->dsi.pll_select=1;     //0: MIPI_PLL; 1: LVDS_PLL */
 	/* Bit rate calculation */
 	/* 1 Every lane speed */
-	params->dsi.PLL_CLOCK = 500;
+	params->dsi.PLL_CLOCK = 468;
 	params->dsi.ssc_disable = 1;
 	params->dsi.ssc_range = 4;
 	params->dsi.pll_div1 = 0;	/* div1=0,1,2,3;div1_real=1,2,4,4 ----0: 546Mbps  1:273Mbps */
