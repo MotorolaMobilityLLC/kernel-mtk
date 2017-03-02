@@ -1045,31 +1045,77 @@ static int ltr578_als_disable(void)
 
 static int ltr578_als_read(int gainrange)
 {
-	int alsval_0, alsval_1, alsval_2, alsval;
-	int luxdata_int;
+	int alsval_0 = 0, alsval_1 = 0, alsval_2 = 0, alsval = 0;
+	int cleval_0 = 0, cleval_1 = 0, cleval_2 = 0, cleval = 0;
+	int luxdata_int = 0;
+	int als_time = 0;
+	int als_gain = 0;
+	int lsec = 0;
 
 	alsval_0 = ltr578_i2c_read_reg(LTR578_ALS_DATA_0);
 	alsval_1 = ltr578_i2c_read_reg(LTR578_ALS_DATA_1);
 	alsval_2 = ltr578_i2c_read_reg(LTR578_ALS_DATA_2);
 	alsval = (alsval_2 * 256 * 256) + (alsval_1 * 256) + alsval_0;
-	/* APS_DBG("alsval_0 = %d,alsval_1=%d,alsval_2=%d,alsval=%d\n",alsval_0,alsval_1,alsval_2,alsval); */
+	APS_DBG("alsval_0 = %d,alsval_1=%d,alsval_2=%d,alsval=%d\n", alsval_0, alsval_1, alsval_2, alsval);
+
+	cleval_0 = ltr578_i2c_read_reg(0x0a);
+	cleval_1 = ltr578_i2c_read_reg(0x0b);
+	cleval_2 = ltr578_i2c_read_reg(0x0c);
+	cleval = cleval_0 | (cleval_1<<8) | (cleval_2<<16);
+	lsec = (cleval/alsval)*10;
 
 	if (alsval == 0) {
-	luxdata_int = 0;
-	goto err;
+		luxdata_int = 0;
+		goto err;
 	}
 
-	/* APS_DBG("gainrange = %d\n",gainrange); */
+	APS_DBG("gainrange = %d\n", gainrange);
 
-	luxdata_int = alsval;/* *8/gainrange/10;//formula: ALS counts * 0.8/gain/int , int=1 */
+	als_time = ltr578_i2c_read_reg(0x04);
+	als_time = (als_time >> 4) & 0x07;
 
-	/* APS_DBG("als_value_lux = %d\n", luxdata_int); */
+	APS_DBG("als_time=%d\n", als_time);
+
+	if (als_time == 0)
+		als_time = 400;
+	else if (als_time == 1)
+		als_time = 200;
+	else if (als_time == 2)
+		als_time = 100;
+	else if (als_time == 3)
+		als_time = 50;
+	else
+		als_time = 25;
+
+	als_gain = ltr578_i2c_read_reg(0x05);
+	als_gain = als_gain&0x07;
+	APS_DBG("als_gain=%d\n", als_gain);
+
+	if (als_gain == 0)
+		als_gain = 1;
+	else if (als_gain == 1)
+		als_gain = 3;
+	else if (als_gain == 2)
+		als_gain = 6;
+	else if (als_gain == 3)
+		als_gain = 9;
+	else
+		als_gain = 18;
+
+	if (lsec > 100)
+		luxdata_int = (alsval*312)/(als_time*als_gain)*14/10;
+	else if (lsec > 48)
+		luxdata_int = (alsval*379)/(als_time*als_gain)*13/10;
+	else if (lsec > 30)
+		luxdata_int = (alsval*379)/(als_time*als_gain);
+	else
+		luxdata_int = (alsval*812)/(als_time*als_gain)/17*10;
+	APS_DBG("als_value_lux = %d,lsec = %d\n", luxdata_int, lsec);
 	return luxdata_int;
-
 
 err:
 	final_lux_val = luxdata_int;
-	APS_DBG("err als_value_lux = 0x%x\n", luxdata_int);
+	APS_DBG("zero als_value_lux = 0x%x\n", luxdata_int);
 	return luxdata_int;
 }
 
