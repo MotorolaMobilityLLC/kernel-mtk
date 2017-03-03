@@ -2299,7 +2299,7 @@
             <device18>
                 <varName>CAMERA_MAIN_TWO</varName>
                 <channel>I2C_CHANNEL_4</channel>
-                <address>0x1A</address>
+                <address>0x10</address>
             </device18>
             <device19>
                 <varName>CAMERA_MAIN_TWO_AF</varName>
