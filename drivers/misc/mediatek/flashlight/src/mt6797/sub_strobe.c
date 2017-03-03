@@ -117,6 +117,18 @@ static int FL_Disable(void)
 	return 0;
 }
 
+int ata_FL_Enable(void)
+{
+	flashEnable_wd3100();
+	return 0;
+}
+
+int ata_FL_Disable(void)
+{
+	flashDisable_wd3100();
+	return 0;
+}
+
 static int FL_Init(void)
 {
 	PK_DBG(" FL_Init line=%d\n", __LINE__);

@@ -296,6 +296,62 @@ int flashEnable_aw3644_2(void)
 	return 0;
 }
 
+int ata_flashEnable_aw3644_2(void)
+{
+	int temp;
+
+	PK_DBG("flashEnable_aw3644_2 Enter!\n");
+	PK_DBG("LED1Closeflag = %d, LED2Closeflag = %d, m_duty1=%d, m_duty2=%d \n", LED1Closeflag, LED2Closeflag,m_duty1, m_duty2);
+	/*set gpio*/
+	mt_set_gpio_mode(FLASH_TORCH_ENABLE, 0);
+	mt_set_gpio_dir(FLASH_TORCH_ENABLE, 1);
+	mt_set_gpio_mode(FLASH_STROBE_ENABLE, 0);
+	mt_set_gpio_dir(FLASH_STROBE_ENABLE, 1);
+	mt_set_gpio_mode(FLASH_ENABLE, 0);
+	mt_set_gpio_dir(FLASH_ENABLE, 1);
+	mt_set_gpio_out(FLASH_ENABLE, 1);
+
+	temp=readReg(aw3644_REG_ENABLE);
+
+	writeReg(aw3644_REG_ENABLE,  0x0B);/*torch mode*/
+	return 0;
+}
+
+int ata_flashDisable_aw3644_2(void)
+{
+	int temp;
+
+	PK_DBG("flashEnable_aw3644_2 Enter!\n");
+	PK_DBG("LED1Closeflag = %d, LED2Closeflag = %d, m_duty1=%d, m_duty2=%d \n", LED1Closeflag, LED2Closeflag,m_duty1, m_duty2);
+	/*set gpio*/
+	mt_set_gpio_mode(FLASH_TORCH_ENABLE, 0);
+	mt_set_gpio_dir(FLASH_TORCH_ENABLE, 1);
+	mt_set_gpio_mode(FLASH_STROBE_ENABLE, 0);
+	mt_set_gpio_dir(FLASH_STROBE_ENABLE, 1);
+	mt_set_gpio_mode(FLASH_ENABLE, 0);
+	mt_set_gpio_dir(FLASH_ENABLE, 1);
+	mt_set_gpio_out(FLASH_ENABLE, 1);
+
+	temp=readReg(aw3644_REG_ENABLE);
+
+	writeReg(aw3644_REG_ENABLE, temp & 0xF0);/*close*/
+	return 0;
+}
+
+int ata_sub_FL_Enable(void)
+{
+	ata_flashEnable_aw3644_2();
+	PK_DBG(" FL_Disable line=%d\n",__LINE__);
+    	return 0;
+}
+
+int ata_sub_FL_Disable(void)
+{
+	ata_flashDisable_aw3644_2();
+	PK_DBG(" FL_Disable line=%d\n",__LINE__);
+    	return 0;
+}
+
 int flashDisable_aw3644_2(void)
 {
 	PK_DBG("flashDisable_aw3644_2 Enter!");
