@@ -55,6 +55,12 @@ extern int mt_mt65xx_blink_set(struct led_classdev *led_cdev,
 
 extern struct cust_mt65xx_led *mt_get_cust_led_list(void);
 
+extern int ata_FL_Enable(void);
+extern int ata_FL_Disable(void);
+extern int ata_sub_FL_Enable(void);
+extern int ata_sub_FL_Disable(void);
+
+
 #if defined(CONFIG_BACKLIGHT_SUPPORT_LM3697)
 extern int chargepump_set_backlight_level(unsigned int level);
 #endif /* CONFIG_BACKLIGHT_SUPPORT_LM3697 */

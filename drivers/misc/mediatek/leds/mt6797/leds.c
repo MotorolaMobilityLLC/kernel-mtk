@@ -81,6 +81,7 @@ void mt_pwm_disable(u32 pwm_no, u8 pmic_pad)
 static DEFINE_MUTEX(leds_mutex);
 static DEFINE_MUTEX(leds_pmic_mutex);
 
+
 /****************************************************************************
  * variables
  ***************************************************************************/
@@ -105,6 +106,8 @@ char *leds_name[MT65XX_LED_TYPE_TOTAL] = {
 	"keyboard-backlight",
 	"button-backlight",
 	"lcd-backlight",
+	"ata_hq-torch",
+	"ata_sub-flashlight"
 };
 
 struct cust_mt65xx_led *pled_dtsi = NULL;
@@ -930,6 +933,18 @@ int mt_mt65xx_led_set_cust(struct cust_mt65xx_led *cust, int level)
 			}
 			bl_duty_hal = level;
 
+		} else if (strcmp(cust->name, "ata_hq-torch") == 0) {
+			if (level == 0)
+				ata_sub_FL_Disable();
+			else
+				ata_sub_FL_Enable();
+
+		} else if (strcmp(cust->name, "ata_sub-flashlight") == 0) {
+			if (level == 0) {
+				ata_FL_Disable();
+			} else {
+				ata_FL_Enable();
+				 }
 		} else {
 			if (level == 0) {
 				led_tmp_setting.nled_mode = NLED_OFF;
