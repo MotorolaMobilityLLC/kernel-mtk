@@ -816,6 +816,7 @@ void get_md_postfix(int md_id, char k[], char buf[], char buf_ex[])
 				case ROLA_SS_NA_SKY77638_DVT2_1:
 //sunjingtao@wind-mobi.com at 20170119 end
 					snprintf(YY_K, IMG_POSTFIX_LEN, "_%s_4", type_str[feature_val]);
+					break;    //sunjingtao@wind-mobi.com at 20170303
 				case AP_B28_DS_NA_DVT2:
 //sunjingtao@wind-mobi.com at 20170119 begin
 				case AP_B28_DS_NA_DVT2_1:
