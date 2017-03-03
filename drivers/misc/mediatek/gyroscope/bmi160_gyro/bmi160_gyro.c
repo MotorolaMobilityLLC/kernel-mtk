@@ -1150,6 +1150,16 @@ static int bmi160_gyro_suspend(struct device *dev)
 	}
 //	if (msg.event == PM_EVENT_SUSPEND)
  	atomic_set(&obj->suspend, 1);
+	err = bmg_set_powermode(client,
+		(enum BMG_POWERMODE_ENUM)BMG_SUSPEND_MODE);
+	if(err)
+	{
+		GYRO_ERR("write power control fail!!\n");
+		return err;
+	}
+	
+//	sensor_power = false;
+
 	return err;
 }
 
@@ -1343,7 +1353,7 @@ static int bmi160_gyro_i2c_remove(struct i2c_client *client)
 
 #ifdef CONFIG_OF
 static const struct of_device_id gyro_of_match[] = {
-	{.compatible = "mediatek,gyro"},
+	{.compatible = "mediatek,gyroscope"},
 	{},
 };
 #endif
