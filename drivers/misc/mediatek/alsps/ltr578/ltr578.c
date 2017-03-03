@@ -2124,7 +2124,9 @@ static int als_get_data(int* value, int* status)
 	}
 	else
 	{
-		*value = ltr578_get_als_value(obj, obj->als);
+		//*value = ltr578_get_als_value(obj, obj->als);
+		//*status = SENSOR_STATUS_ACCURACY_MEDIUM;
+		*value = ltr578_obj->als;
 		*status = SENSOR_STATUS_ACCURACY_MEDIUM;
 	}
 #endif //#ifdef CUSTOM_KERNEL_SENSORHUB

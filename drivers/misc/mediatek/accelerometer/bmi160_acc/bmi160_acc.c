@@ -2218,8 +2218,22 @@ static int bmi160_acc_suspend(struct device *dev)
 {
     struct i2c_client *client = to_i2c_client(dev);
     struct bmi160_acc_i2c_data *obj = i2c_get_clientdata(client);
+    int err = 0;
+	if(obj == NULL)
+	{
+		GSE_ERR("null pointer!!\n");
+		return -EINVAL;
+	}
 //	if (msg.event == PM_EVENT_SUSPEND)
     atomic_set(&obj->suspend, 1);
+	err = bmi160_acc_set_power_mode(obj->client, false);
+	if(err)
+	{
+		GSE_ERR("write power control fail!!\n");
+		return err;
+	}
+	sensor_power = false;
+
 	return 0;
 }
 
