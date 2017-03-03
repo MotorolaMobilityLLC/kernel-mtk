@@ -22,7 +22,6 @@
 #define FRAME_WIDTH  (1080)
 #define FRAME_HEIGHT (1920)
 
-#define LCM_ID_NT35596 (0x96)
 #define REGFLAG_DELAY               (0xFE)
 #define REGFLAG_END_OF_TABLE        (0xFD)	/* END OF REGISTERS MARKER */
 /* --------------------------------------------------------------------------- */
@@ -161,7 +160,6 @@ static void lcm_set_util_funcs(const LCM_UTIL_FUNCS *util)
 	memcpy(&lcm_util, util, sizeof(LCM_UTIL_FUNCS));
 }
 
-
 static void lcm_get_params(LCM_PARAMS *params)
 {
 	memset(params, 0, sizeof(LCM_PARAMS));
@@ -194,9 +192,9 @@ static void lcm_get_params(LCM_PARAMS *params)
 	params->dsi.vertical_frontporch = 8;
 	params->dsi.vertical_active_line = FRAME_HEIGHT;
 
-	params->dsi.horizontal_sync_active = 100;
-	params->dsi.horizontal_backporch = 120;
-	params->dsi.horizontal_frontporch = 120;
+	params->dsi.horizontal_sync_active = 40;
+	params->dsi.horizontal_backporch = 70;
+	params->dsi.horizontal_frontporch = 80;
 	params->dsi.horizontal_active_pixel = FRAME_WIDTH;
 	/* params->dsi.pll_select=1;     //0: MIPI_PLL; 1: LVDS_PLL */
 	/* Bit rate calculation */
@@ -213,8 +211,7 @@ static void lcm_get_params(LCM_PARAMS *params)
 	params->dsi.lcm_esd_check_table[0].count		= 1;
 	params->dsi.lcm_esd_check_table[0].para_list[0] = 0x9c;
 }
-
-static void lcm_init(void)
+static void lcm_init_power(void)
 {
 #ifdef BUILD_LK
 		int ret = 0;
@@ -250,7 +247,27 @@ static void lcm_init(void)
 		ret = lp3101_write_bytes(cmd, data);
 #endif
 		MDELAY(10);
+}
+static void lcm_suspend_power(void)
+{
+#ifndef BUILD_LK
+		set_gpio_lcd_enn(0);
+		MDELAY(5);
+		set_gpio_lcd_enp(0);
 
+#endif
+}
+
+static void lcm_resume_power(void)
+{
+#ifndef BUILD_LK
+	lcm_init_power();
+#endif
+}
+
+
+static void lcm_init(void)
+{
 	SET_RESET_PIN(1);
 	MDELAY(5);
 	SET_RESET_PIN(0);
@@ -271,12 +288,6 @@ static void lcm_suspend(void)
 		data_array[0] = 0x00100500; /* Sleep In */
 		dsi_set_cmdq(data_array, 1, 1);
 		MDELAY(120);
-#ifndef BUILD_LK
-		set_gpio_lcd_enn(0);
-		MDELAY(5);
-		set_gpio_lcd_enp(0);
-
-#endif
 
 }
 
@@ -287,6 +298,7 @@ static void lcm_resume(void)
 	lcm_init();
 #endif
 }
+
 
 #if (LCM_DSI_CMD_MODE)
 static void lcm_update(unsigned int x, unsigned int y,
@@ -325,12 +337,12 @@ static void lcm_update(unsigned int x, unsigned int y,
 
 }
 #endif
-
 static unsigned int lcm_compare_id(void)
 {
 	unsigned int id = 0;
 	unsigned char buffer[2];
 	unsigned int array[16];
+	unsigned int data_array[16];
 
 	SET_RESET_PIN(1);
 	MDELAY(10);
@@ -339,7 +351,9 @@ static unsigned int lcm_compare_id(void)
 	SET_RESET_PIN(1);
 	MDELAY(100);
 
-
+	data_array[0] = 0x00043902;
+	data_array[1] = 0x010778FF;
+	dsi_set_cmdq(data_array, 2, 1);
 
 	array[0] = 0x00023700;	/* read id return two byte,version and id */
 	dsi_set_cmdq(array, 1, 1);
@@ -471,6 +485,9 @@ LCM_DRIVER ili7807d_fhd_dsi_vdo_djn_lcm_drv = {
 	.name = "ili7807d_fhd_dsi_vdo_djn",
 	.set_util_funcs = lcm_set_util_funcs,
 	.get_params = lcm_get_params,
+	.init_power = lcm_init_power,
+	.suspend_power = lcm_suspend_power,
+	.resume_power = lcm_resume_power,
 	.init = lcm_init,
 	.suspend = lcm_suspend,
 	.resume = lcm_resume,
