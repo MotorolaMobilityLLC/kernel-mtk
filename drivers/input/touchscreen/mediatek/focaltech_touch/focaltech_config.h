@@ -183,7 +183,7 @@
 #define FTS_UPGRADE_FW_APP_VID2\
 	"include/firmware/HQ_Moto_AL1570_Toptouch0xa0_Ver0x03_20170105_app.i"
 #define FTS_UPGRADE_FW_APP_VID3\
-	"include/firmware/HQ_Lenovo_AL1570_DJ0x10_Ver0x04_20170224_app.i"
+	"include/firmware/HQ_Lenovo_AL1570_DJ0x10_Ver0x05_20170306_app.i"
 
 /*
  * auto upgrade with app.bin in sdcard
