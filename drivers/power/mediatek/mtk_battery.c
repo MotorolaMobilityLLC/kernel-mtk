@@ -174,6 +174,10 @@ bool g_ADC_Cali;
 
 static signed int gFG_daemon_log_level = BM_DAEMON_DEFAULT_LOG_LEVEL;
 
+#if defined(CONFIG_LCT_CHR_LIMIT_MAX_SOC) //add by longcheer_liml_2017_03_04
+int battery_test_status=0;
+#endif
+
 static enum power_supply_property battery_props[] = {
 	POWER_SUPPLY_PROP_STATUS,
 	POWER_SUPPLY_PROP_HEALTH,
@@ -3835,6 +3839,24 @@ static ssize_t store_BAT_EC(struct device *dev, struct device_attribute *attr, c
 }
 static DEVICE_ATTR(BAT_EC, 0664, show_BAT_EC, store_BAT_EC);
 
+#if defined(CONFIG_LCT_CHR_LIMIT_MAX_SOC) 
+/*=====================running test start=add by longcheer_liml_2017_03_04=================*/
+static ssize_t show_BatteryTestStatus(struct device *dev,struct device_attribute *attr, char *buf)
+{
+	printk("[Battery] show_BatteryTestStatus : %u\n",battery_test_status);
+
+	return sprintf(buf, "%u\n", battery_test_status);
+}
+static ssize_t store_BatteryTestStatus(struct device *dev,struct device_attribute *attr, const char *buf, size_t size)
+{
+
+	sscanf(buf, "%u", &battery_test_status);
+
+	return size;
+}
+static DEVICE_ATTR(BatteryTestStatus, 0664, show_BatteryTestStatus, store_BatteryTestStatus);
+/*=====================running test end ==================*/
+#endif
 
 //========================modify_longcheer_liml_2017_02_08 for add battery voltage start=======
 static ssize_t show_FG_Battery_Voltage(struct device *dev, struct device_attribute *attr,
@@ -4332,6 +4354,9 @@ static int battery_probe(struct platform_device *dev)
 	ret_device_file = device_create_file(&(dev->dev), &dev_attr_BAT_EC);
 	ret_device_file = device_create_file(&(dev->dev), &dev_attr_FG_Battery_CurrentConsumption);
 	ret_device_file = device_create_file(&(dev->dev), &dev_attr_FG_Battery_Voltage);//add_longcheer_liml_2017_02_08 for add battery voltage
+#if defined(CONFIG_LCT_CHR_LIMIT_MAX_SOC)
+	ret_device_file = device_create_file(&(dev->dev), &dev_attr_BatteryTestStatus);//add by longcheer_liml_2017_03_04 for runin test
+#endif
 	ret_device_file = device_create_file(&(dev->dev), &dev_attr_Power_On_Voltage);
 	ret_device_file = device_create_file(&(dev->dev), &dev_attr_Power_Off_Voltage);
 	ret_device_file = device_create_file(&(dev->dev), &dev_attr_shutdown_condition_enable);
