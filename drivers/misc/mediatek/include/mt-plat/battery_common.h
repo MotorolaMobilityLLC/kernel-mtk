@@ -190,11 +190,23 @@ typedef enum {
 /*****************************************************************************
  *  Normal battery temperature state
  ****************************************************************************/
+//zhangchao@wind-mobi.com 20170306 begin
+#ifdef CONFIG_WIND_Z168_BATTERY_MODIFY
+typedef enum {
+	TEMP_POS_LOW = 0,
+	TEMP_POS_NORMAL,
+	TEMP_POS_HIGH,
+	TEMP_POS_LOW_VOL,
+	TEMP_POS_HIGH_VOL
+} batt_temp_state_enum;
+#else
 typedef enum {
 	TEMP_POS_LOW = 0,
 	TEMP_POS_NORMAL,
 	TEMP_POS_HIGH
 } batt_temp_state_enum;
+#endif
+//zhangchao@wind-mobi.com 20170306 end
 
 #ifndef BATTERY_BOOL
 #define BATTERY_BOOL

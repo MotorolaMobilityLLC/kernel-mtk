@@ -2170,6 +2170,84 @@ PMU_STATUS do_batt_temp_state_machine(void)
 	if (BMT_status.temperature == batt_cust_data.err_charge_temperature)
 		return PMU_STATUS_FAIL;
 
+	//zhangchao@wind-mobi.com 20170306 begin
+	#ifdef CONFIG_WIND_Z168_BATTERY_MODIFY
+	if (batt_cust_data.bat_low_temp_protect_enable) {
+		if (BMT_status.temperature > -20 && BMT_status.temperature < 0 && BMT_status.bat_vol > 4200){
+			battery_log(BAT_LOG_CRTI,
+				    "[BATTERY]zhangchao Battery temp Under 0 and vol over 4200 !!\n\r");
+			g_batt_temp_status = TEMP_POS_LOW_VOL;
+			return PMU_STATUS_FAIL;
+		} else if (g_batt_temp_status == TEMP_POS_LOW_VOL){
+			if ((BMT_status.bat_vol < 4200 && BMT_status.temperature > -20 && BMT_status.temperature < 60) || (BMT_status.temperature >= 2 && BMT_status.temperature <= 45)){
+				battery_log(BAT_LOG_CRTI,
+				    "[BATTERY]zhangchao Low temp Battery vol below 4200 !!\n\r");
+				g_batt_temp_status = TEMP_POS_NORMAL;
+				BMT_status.bat_charging_state = CHR_PRE;
+				return PMU_STATUS_OK;
+			} else {
+				return PMU_STATUS_FAIL;
+			}
+		}
+		if (BMT_status.temperature < batt_cust_data.min_charge_temperature) {
+			battery_log(BAT_LOG_CRTI,
+				    "[BATTERY] Battery Under Temperature or NTC fail !!\n\r");
+			g_batt_temp_status = TEMP_POS_LOW;
+			return PMU_STATUS_FAIL;
+		} else if (g_batt_temp_status == TEMP_POS_LOW) {
+			if (BMT_status.temperature >=
+			    batt_cust_data.min_charge_temperature_plus_x_degree) {
+				battery_log(BAT_LOG_CRTI,
+					    "[BATTERY] Battery Temperature raise from %d to %d(%d), allow charging!!\n\r",
+					    batt_cust_data.min_charge_temperature,
+					    BMT_status.temperature,
+					    batt_cust_data.min_charge_temperature_plus_x_degree);
+				g_batt_temp_status = TEMP_POS_NORMAL;
+				BMT_status.bat_charging_state = CHR_PRE;
+				return PMU_STATUS_OK;
+			} else {
+				return PMU_STATUS_FAIL;
+			}
+		}
+	}
+	
+	if (BMT_status.temperature > 45 && BMT_status.temperature < 59 && BMT_status.bat_vol > 4200){
+		battery_log(BAT_LOG_CRTI,
+				"[BATTERY]zhangchao Battery temp over 45 and vol over 4200 !!\n\r");
+		g_batt_temp_status = TEMP_POS_HIGH_VOL;
+		return PMU_STATUS_FAIL;
+	} else if (g_batt_temp_status == TEMP_POS_HIGH_VOL){
+		if ((BMT_status.bat_vol < 4200 && BMT_status.temperature > -20 && BMT_status.temperature < 60) || (BMT_status.temperature >= 0 && BMT_status.temperature <= 43)){
+		battery_log(BAT_LOG_CRTI,
+				 "[BATTERY]zhangchao High temp Battery vol below 4200 !!\n\r");
+			g_batt_temp_status = TEMP_POS_NORMAL;
+			BMT_status.bat_charging_state = CHR_PRE;
+			return PMU_STATUS_OK;
+		} else {
+			return PMU_STATUS_FAIL;
+		}
+	}
+	if (BMT_status.temperature >= batt_cust_data.max_charge_temperature) {
+		battery_log(BAT_LOG_CRTI, "[BATTERY] Battery Over Temperature !!\n\r");
+		g_batt_temp_status = TEMP_POS_HIGH;
+		return PMU_STATUS_FAIL;
+	} else if (g_batt_temp_status == TEMP_POS_HIGH) {
+		if (BMT_status.temperature < batt_cust_data.max_charge_temperature_minus_x_degree) {
+			battery_log(BAT_LOG_CRTI,
+				    "[BATTERY] Battery Temperature down from %d to %d(%d), allow charging!!\n\r",
+				    batt_cust_data.max_charge_temperature, BMT_status.temperature,
+				    batt_cust_data.max_charge_temperature_minus_x_degree);
+			g_batt_temp_status = TEMP_POS_NORMAL;
+			BMT_status.bat_charging_state = CHR_PRE;
+			return PMU_STATUS_OK;
+		} else {
+			return PMU_STATUS_FAIL;
+		}
+	} else {
+		g_batt_temp_status = TEMP_POS_NORMAL;
+	}
+	#else
+	//zhangchao@wind-mobi.com 20170306 end
 	if (batt_cust_data.bat_low_temp_protect_enable) {
 		if (BMT_status.temperature < batt_cust_data.min_charge_temperature) {
 			battery_log(BAT_LOG_CRTI,
@@ -2212,6 +2290,9 @@ PMU_STATUS do_batt_temp_state_machine(void)
 	} else {
 		g_batt_temp_status = TEMP_POS_NORMAL;
 	}
+	//zhangchao@wind-mobi.com 20170306 begin
+	#endif
+	//zhangchao@wind-mobi.com 20170306 end
 	return PMU_STATUS_OK;
 }
 #if defined(CONFIG_LCT_CHR_LIMIT_MAX_SOC)
