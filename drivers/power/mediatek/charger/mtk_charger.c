@@ -73,6 +73,11 @@
 static struct charger_manager *pinfo;
 static struct list_head consumer_head = LIST_HEAD_INIT(consumer_head);
 static DEFINE_MUTEX(consumer_mutex);
+/*====running test add by longcheer_liml_2017_03_04_start======*/
+#if defined(CONFIG_LCT_CHR_LIMIT_MAX_SOC) 
+int Charger_enable_Flag=1;
+extern int battery_test_status;
+#endif
 
 #define USE_FG_TIMER 1
 
@@ -308,7 +313,18 @@ static int _charger_manager_enable_charging(struct charger_consumer *consumer,
 			pdata->disable_charging_count++;
 		} else {
 			if (pdata->disable_charging_count == 1) {
-				_mtk_charger_do_charging(info, en);
+#if defined(CONFIG_LCT_CHR_LIMIT_MAX_SOC) //add by longcheer_liml_2017_03_04
+			    if(Charger_enable_Flag==1)
+	            {
+	                _mtk_charger_do_charging(info, en);
+	                printk("~~liml_charger charger_enable charger_enable_flag = %d\n",Charger_enable_Flag);
+	            }else{
+	                _mtk_charger_do_charging(info, 0);
+	                 printk("~~liml_charger charger_enable charger_enable_flag = %d\n",Charger_enable_Flag);
+	            }
+#else
+                 _mtk_charger_do_charging(info, en);
+#endif				
 				pdata->disable_charging_count = 0;
 			} else if (pdata->disable_charging_count > 1)
 				pdata->disable_charging_count--;
@@ -1155,7 +1171,7 @@ static int charger_routine_thread(void *arg)
 		i++;
 		curr_sign = battery_get_bat_current_sign();
 		bat_current = battery_get_bat_current();
-		pr_err("Vbat=%d,I=%d,VChr=%d,T=%d,Soc=%d:%d,CT:%d:%d\n", battery_get_bat_voltage(),
+		printk("~~liml_bat Vbat=%d,I=%d,VChr=%d,T=%d,Soc=%d:%d,CT:%d:%d\n", battery_get_bat_voltage(),
 			curr_sign ? bat_current : -1 * bat_current,
 			battery_get_vbus(), battery_get_bat_temperature(),
 			battery_get_bat_soc(), battery_get_bat_uisoc(),
@@ -1163,7 +1179,7 @@ static int charger_routine_thread(void *arg)
 
 		is_charger_on = mtk_is_charger_on(info);
 
-		charger_update_data(info);
+		charger_update_data(info);//get battery temp
 		charger_check_status(info);
 		kpoc_power_off_check(info);
 
@@ -1171,6 +1187,23 @@ static int charger_routine_thread(void *arg)
 			if (info->do_algorithm)
 				info->do_algorithm(info);
 		}
+/*====running test add by longcheer_liml_2017_03_04_start======*/
+#if defined(CONFIG_LCT_CHR_LIMIT_MAX_SOC) 
+	if(battery_test_status<=0)
+	{
+		Charger_enable_Flag=1;
+	}else{
+		if(battery_get_bat_uisoc() >=80)
+		{
+			Charger_enable_Flag=0;
+		}else if(battery_get_bat_uisoc() <=60)
+		{
+			Charger_enable_Flag=1;
+		}
+	}
+	printk("~~liml_charger battery_test_status=%d,Charger_enable_Flag=%d,soc=%d\n",battery_test_status,Charger_enable_Flag,battery_get_bat_uisoc());
+#endif
+/*====running test add by longcheer_liml_2017_03_04_end======*/
 
 		if (info->charger_thread_polling == true)
 			mtk_charger_start_timer(info);

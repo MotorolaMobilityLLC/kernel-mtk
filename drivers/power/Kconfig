@@ -508,6 +508,12 @@ config AXP20X_POWER
 	  This driver provides support for the power supply features of
 	  AXP20x PMIC.
 
+config LCT_CHR_LIMIT_MAX_SOC
+	tristate "battery runin test support"
+	help
+	  Say Y to enable support for the battery runin test support.
+
+
 source "drivers/power/mediatek/Kconfig"
 
 source "drivers/power/reset/Kconfig"
