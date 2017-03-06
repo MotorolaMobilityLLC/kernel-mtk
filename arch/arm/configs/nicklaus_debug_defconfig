@@ -602,3 +602,7 @@ CONFIG_INPUT_KEYCHORD=y
 CONFIG_EXFAT_FS=y
 #add by longcheer liuhuan for wifi bandrate 40MHz
 CONFIG_LCT_OPEN_WIFI_40MHZ=y
+# mtk platform F2FS support
+CONFIG_F2FS_FS=y
+CONFIG_F2FS_FS_SECURITY=y
+CONFIG_F2FS_FS_XATTR=y

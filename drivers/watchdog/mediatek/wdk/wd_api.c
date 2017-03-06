@@ -632,6 +632,7 @@ void arch_reset(char mode, const char *cmd)
 #endif
 /*caozhg add end*/
 	} else {
+		rtc_mark_reboot();
 		reboot = 1;
 	}
 

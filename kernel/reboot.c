@@ -16,6 +16,7 @@
 #include <linux/syscalls.h>
 #include <linux/syscore_ops.h>
 #include <linux/uaccess.h>
+#include <mt-plat/mtk_rtc.h>
 
 /*
  * this indicates whether you can reboot with ctrl-alt-del: the default is yes
@@ -263,6 +264,7 @@ void kernel_power_off(void)
 	syscore_shutdown();
 	pr_emerg("Power down\n");
 	kmsg_dump(KMSG_DUMP_POWEROFF);
+	rtc_mark_reboot();
 	machine_power_off();
 }
 EXPORT_SYMBOL_GPL(kernel_power_off);
