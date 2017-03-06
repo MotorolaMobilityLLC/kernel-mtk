@@ -1116,8 +1116,8 @@ static void capture_setting(kal_uint16 currefps)
 	*/
 	write_cmos_sensor_2byte(0x31B0, 0x005c);   //Frame preamble 4D
 	write_cmos_sensor_2byte(0x31B2, 0x002d);   //Line preamble 28
-	write_cmos_sensor_2byte(0x31B4, 0x4392);   //MIPI timing0 230E
-	write_cmos_sensor_2byte(0x31B6, 0x43ca);   //MIPI timing1 1348
+	write_cmos_sensor_2byte(0x31B4, 0x6392);   //MIPI timing0 230E
+	write_cmos_sensor_2byte(0x31B6, 0x73ca);   //MIPI timing1 1348
 	write_cmos_sensor_2byte(0x31B8, 0x2413);   //MIPI timing2 1C12
 	write_cmos_sensor_2byte(0x31BA, 0x1c70);   //MIPI timing3 185B
 	write_cmos_sensor_2byte(0x31BC, 0x868b);   //MIPI timing4 8509
