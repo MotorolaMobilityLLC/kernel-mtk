@@ -223,6 +223,8 @@ static void dump_common_audit_data(struct audit_buffer *ab,
 	audit_log_format(ab, " pid=%d comm=", task_pid_nr(tsk));
 	audit_log_untrustedstring(ab, tsk->comm);
 
+	audit_log_format(ab, " uid=%u",from_kuid(&init_user_ns, current_cred()->uid));
+
 	switch (a->type) {
 	case LSM_AUDIT_DATA_NONE:
 		return;
@@ -298,6 +300,7 @@ static void dump_common_audit_data(struct audit_buffer *ab,
 			if (pid) {
 				audit_log_format(ab, " pid=%d comm=", pid);
 				audit_log_untrustedstring(ab, tsk->comm);
+				audit_log_format(ab, " uid=%u",from_kuid(&init_user_ns,current_cred()->uid));
 			}
 		}
 		break;
