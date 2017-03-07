@@ -118,6 +118,13 @@
                 <sensitive_level>Edge</sensitive_level>
                 <debounce_en>Disable</debounce_en>
             </eint44>
+            <eint57>
+                <varName>SWTP</varName>
+                <debounce_time>256</debounce_time>
+                <polarity>Low</polarity>
+                <sensitive_level>Level</sensitive_level>
+                <debounce_en>Enable</debounce_en>
+            </eint57>
             <eint58>
                 <varName>CAPSENSO</varName>
                 <debounce_time>1</debounce_time>
@@ -916,6 +923,19 @@
                 <smt>false</smt>
                 <ies>true</ies>
             </gpio56>
+            <gpio57>
+                <eint_mode>true</eint_mode>
+                <def_mode>0</def_mode>
+                <mode_arr>20000000</mode_arr>
+                <inpull_en>false</inpull_en>
+                <inpull_selhigh>false</inpull_selhigh>
+                <def_dir>IN</def_dir>
+                <in>true</in>
+                <out>false</out>
+                <out_high>false</out_high>
+                <smt>false</smt>
+                <ies>true</ies>
+            </gpio57>
             <gpio58>
                 <eint_mode>false</eint_mode>
                 <def_mode>0</def_mode>
