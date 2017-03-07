@@ -53,15 +53,9 @@ struct navi_cmd_struct cmd_list;
  *     DISABLE : Ignore swipe-left & swipe-right navigation events.
  *               Don't care properties.
  */
-#ifndef CONFIG_LCT_FPC_TEE_EGIS
 #define ENABLE_SWIPE_UP_DOWN	DISABLE
 #define ENABLE_SWIPE_LEFT_RIGHT	ENABLE
-#define ENABLE_FINGER_DOWN_UP	DISABLE
-#else
-#define ENABLE_SWIPE_UP_DOWN	ENABLE
-#define ENABLE_SWIPE_LEFT_RIGHT	ENABLE
 #define ENABLE_FINGER_DOWN_UP	ENABLE
-#endif
 
 #define KEY_FPS_DOWN   614
 #define KEY_FPS_UP     615
