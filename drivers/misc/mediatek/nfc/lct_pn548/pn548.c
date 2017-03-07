@@ -502,6 +502,8 @@ static long pn544_dev_unlocked_ioctl(struct file *filp, unsigned int cmd,
 				msleep(1);
 #ifndef CONFIG_WIND_DEVICE_INFO                
 				ret = pn544_platform_pinctrl_select(gpctrl, nfc_ldo_low_pinctrl); // add by zhaofei - 2016-11-17-18-17
+#else                
+				ret = pn544_platform_pinctrl_select(gpctrl, nfc_ldo_high_pinctrl); // add by zhaofei - 2016-11-17-18-17
 #endif                
 #ifdef LCT_SYS_CLK
 				clk_buf_ctrl(CLK_BUF_NFC, 0);
