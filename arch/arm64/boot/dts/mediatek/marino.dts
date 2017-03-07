@@ -105,7 +105,7 @@
 		compatible = "mediatek,bmi160_acc";
 		i2c_num	= <1>;
 		i2c_addr = <0x68 0 0 0>;
-		direction = <1>;
+		direction = <3>;
 		power_id = <0xffff>;
 		power_vol = <0>;
 		firlen = <16>;
