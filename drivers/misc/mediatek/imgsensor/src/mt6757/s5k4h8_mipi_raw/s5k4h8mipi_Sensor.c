@@ -51,7 +51,7 @@ static imgsensor_info_struct imgsensor_info = {
 	.pre = {
 		.pclk = 280000000,				//record different mode's pclk
 		.linelength = 3744,				//record different mode's linelength
-		.framelength =2492, //3168,			//record different mode's framelength
+		.framelength =1246, //3168,			//record different mode's framelength
 		.startx = 0,					//record different mode's startx of grabwindow
 		.starty = 0,					//record different mode's starty of grabwindow
 		.grabwindow_width = 1632,		//record different mode's width of grabwindow
@@ -65,7 +65,7 @@ static imgsensor_info_struct imgsensor_info = {
 	.cap = {
 		.pclk = 280000000,
 		.linelength =3744,
-		.framelength = 2492,
+		.framelength = 2498,
 		.startx = 0,
 		.starty = 0,
 		.grabwindow_width = 3264,//5334,
@@ -3078,9 +3078,160 @@ static void sensor_init(void)
 	}
 	else if(chip_id == 0xc001)
 	{
-		write_cmos_sensor(0x0100, 0x0000);	 // stream off
+		write_cmos_sensor(0x6028, 0x2000);
+		write_cmos_sensor(0x602A, 0x1FD0);
+		write_cmos_sensor(0x6F12, 0x0448);
+		write_cmos_sensor(0x6F12, 0x0349);
+		write_cmos_sensor(0x6F12, 0x0160);
+		write_cmos_sensor(0x6F12, 0xC26A);
+		write_cmos_sensor(0x6F12, 0x511A);
+		write_cmos_sensor(0x6F12, 0x8180);
+		write_cmos_sensor(0x6F12, 0x00F0);
+		write_cmos_sensor(0x6F12, 0x60B8);
+		write_cmos_sensor(0x6F12, 0x2000);
+		write_cmos_sensor(0x6F12, 0x20E8);
+		write_cmos_sensor(0x6F12, 0x2000);
+		write_cmos_sensor(0x6F12, 0x13A0);
+		write_cmos_sensor(0x6F12, 0x0000);
+		write_cmos_sensor(0x6F12, 0x0000);
+		write_cmos_sensor(0x6F12, 0x0000);
+		write_cmos_sensor(0x6F12, 0x0000);
+		write_cmos_sensor(0x6F12, 0x38B5);
+		write_cmos_sensor(0x6F12, 0x0021);
+		write_cmos_sensor(0x6F12, 0x0446);
+		write_cmos_sensor(0x6F12, 0x8DF8);
+		write_cmos_sensor(0x6F12, 0x0010);
+		write_cmos_sensor(0x6F12, 0x00F5);
+		write_cmos_sensor(0x6F12, 0xB470);
+		write_cmos_sensor(0x6F12, 0x0122);
+		write_cmos_sensor(0x6F12, 0x6946);
+		write_cmos_sensor(0x6F12, 0x00F0);
+		write_cmos_sensor(0x6F12, 0x59F8);
+		write_cmos_sensor(0x6F12, 0x9DF8);
+		write_cmos_sensor(0x6F12, 0x0000);
+		write_cmos_sensor(0x6F12, 0xFF28);
+		write_cmos_sensor(0x6F12, 0x05D0);
+		write_cmos_sensor(0x6F12, 0x0020);
+		write_cmos_sensor(0x6F12, 0x08B1);
+		write_cmos_sensor(0x6F12, 0x04F2);
+		write_cmos_sensor(0x6F12, 0x6914);
+		write_cmos_sensor(0x6F12, 0x2046);
+		write_cmos_sensor(0x6F12, 0x38BD);
+		write_cmos_sensor(0x6F12, 0x0120);
+		write_cmos_sensor(0x6F12, 0xF8E7);
+		write_cmos_sensor(0x6F12, 0x10B5);
+		write_cmos_sensor(0x6F12, 0x92B0);
+		write_cmos_sensor(0x6F12, 0x0C46);
+		write_cmos_sensor(0x6F12, 0x4822);
+		write_cmos_sensor(0x6F12, 0x6946);
+		write_cmos_sensor(0x6F12, 0x00F0);
+		write_cmos_sensor(0x6F12, 0x46F8);
+		write_cmos_sensor(0x6F12, 0x0020);
+		write_cmos_sensor(0x6F12, 0x6946);
+		write_cmos_sensor(0x6F12, 0x04EB);
+		write_cmos_sensor(0x6F12, 0x4003);
+		write_cmos_sensor(0x6F12, 0x0A5C);
+		write_cmos_sensor(0x6F12, 0x02F0);
+		write_cmos_sensor(0x6F12, 0x0F02);
+		write_cmos_sensor(0x6F12, 0x04F8);
+		write_cmos_sensor(0x6F12, 0x1020);
+		write_cmos_sensor(0x6F12, 0x0A5C);
+		write_cmos_sensor(0x6F12, 0x401C);
+		write_cmos_sensor(0x6F12, 0x1209);
+		write_cmos_sensor(0x6F12, 0x5A70);
+		write_cmos_sensor(0x6F12, 0x4828);
+		write_cmos_sensor(0x6F12, 0xF2D3);
+		write_cmos_sensor(0x6F12, 0x12B0);
+		write_cmos_sensor(0x6F12, 0x10BD);
+		write_cmos_sensor(0x6F12, 0x2DE9);
+		write_cmos_sensor(0x6F12, 0xF041);
+		write_cmos_sensor(0x6F12, 0x164E);
+		write_cmos_sensor(0x6F12, 0x0F46);
+		write_cmos_sensor(0x6F12, 0x06F1);
+		write_cmos_sensor(0x6F12, 0x1105);
+		write_cmos_sensor(0x6F12, 0xA236);
+		write_cmos_sensor(0x6F12, 0xB0B1);
+		write_cmos_sensor(0x6F12, 0x1449);
+		write_cmos_sensor(0x6F12, 0x1248);
+		write_cmos_sensor(0x6F12, 0x0968);
+		write_cmos_sensor(0x6F12, 0x0078);
+		write_cmos_sensor(0x6F12, 0xB1F8);
+		write_cmos_sensor(0x6F12, 0x6A10);
+		write_cmos_sensor(0x6F12, 0xC007);
+		write_cmos_sensor(0x6F12, 0x0ED0);
+		write_cmos_sensor(0x6F12, 0x0846);
+		write_cmos_sensor(0x6F12, 0xFFF7);
+		write_cmos_sensor(0x6F12, 0xBEFF);
+		write_cmos_sensor(0x6F12, 0x84B2);
+		write_cmos_sensor(0x6F12, 0x2946);
+		write_cmos_sensor(0x6F12, 0x2046);
+		write_cmos_sensor(0x6F12, 0xFFF7);
+		write_cmos_sensor(0x6F12, 0xD0FF);
+		write_cmos_sensor(0x6F12, 0x4FF4);
+		write_cmos_sensor(0x6F12, 0x9072);
+		write_cmos_sensor(0x6F12, 0x3146);
+		write_cmos_sensor(0x6F12, 0x04F1);
+		write_cmos_sensor(0x6F12, 0x4800);
+		write_cmos_sensor(0x6F12, 0x00F0);
+		write_cmos_sensor(0x6F12, 0x16F8);
+		write_cmos_sensor(0x6F12, 0x002F);
+		write_cmos_sensor(0x6F12, 0x05D0);
+		write_cmos_sensor(0x6F12, 0x3146);
+		write_cmos_sensor(0x6F12, 0x2846);
+		write_cmos_sensor(0x6F12, 0xBDE8);
+		write_cmos_sensor(0x6F12, 0xF041);
+		write_cmos_sensor(0x6F12, 0x00F0);
+		write_cmos_sensor(0x6F12, 0x13B8);
+		write_cmos_sensor(0x6F12, 0xBDE8);
+		write_cmos_sensor(0x6F12, 0xF081);
+		write_cmos_sensor(0x6F12, 0x0022);
+		write_cmos_sensor(0x6F12, 0xAFF2);
+		write_cmos_sensor(0x6F12, 0x5501);
+		write_cmos_sensor(0x6F12, 0x0348);
+		write_cmos_sensor(0x6F12, 0x00F0);
+		write_cmos_sensor(0x6F12, 0x10B8);
+		write_cmos_sensor(0x6F12, 0x2000);
+		write_cmos_sensor(0x6F12, 0x0C40);
+		write_cmos_sensor(0x6F12, 0x2000);
+		write_cmos_sensor(0x6F12, 0x0560);
+		write_cmos_sensor(0x6F12, 0x0000);
+		write_cmos_sensor(0x6F12, 0x152D);
+		write_cmos_sensor(0x6F12, 0x48F6);
+		write_cmos_sensor(0x6F12, 0x296C);
+		write_cmos_sensor(0x6F12, 0xC0F2);
+		write_cmos_sensor(0x6F12, 0x000C);
+		write_cmos_sensor(0x6F12, 0x6047);
+		write_cmos_sensor(0x6F12, 0x41F2);
+		write_cmos_sensor(0x6F12, 0x950C);
+		write_cmos_sensor(0x6F12, 0xC0F2);
+		write_cmos_sensor(0x6F12, 0x000C);
+		write_cmos_sensor(0x6F12, 0x6047);
+		write_cmos_sensor(0x6F12, 0x49F2);
+		write_cmos_sensor(0x6F12, 0x514C);
+		write_cmos_sensor(0x6F12, 0xC0F2);
+		write_cmos_sensor(0x6F12, 0x000C);
+		write_cmos_sensor(0x6F12, 0x6047);
+		write_cmos_sensor(0x6F12, 0x0000);
+		write_cmos_sensor(0x6F12, 0x0000);
+		write_cmos_sensor(0x6F12, 0x0000);
+		write_cmos_sensor(0x6F12, 0x0000);
+		write_cmos_sensor(0x6F12, 0x0000);
+		write_cmos_sensor(0x6F12, 0x4088);
+		write_cmos_sensor(0x6F12, 0x0166);
+		write_cmos_sensor(0x6F12, 0x0000);
+		write_cmos_sensor(0x6F12, 0x0002);
+		write_cmos_sensor(0x5360, 0x0004);
+		write_cmos_sensor(0x3078, 0x0059);
+		write_cmos_sensor(0x307C, 0x0025);
+		write_cmos_sensor(0x36D0, 0x00DD);
+		write_cmos_sensor(0x36D2, 0x0100);
+		write_cmos_sensor(0x306A, 0x00EF);
+		write_cmos_sensor(0x6028, 0x4000);
+		write_cmos_sensor(0x0B00, 0x0180); //enable LSC 
+		//write_cmos_sensor(0x0100, 0x0000);	 // stream off
+		LOG_INF("-- sensor_init shen enter\n");
 		// evb2 don't need init setting
-             //   write_cmos_sensor(0x0b00, 0x0180);	 // stream lsc on
+              //  write_cmos_sensor(0x0b00, 0x0180);	 // stream lsc on
 	}
 	else
 	{
@@ -3176,8 +3327,7 @@ static void preview_setting(void)
 
 
 
-		write_cmos_sensor(0x602A, 0x0B00);
-		write_cmos_sensor_8(0x6F12, 0x01);//lsc on
+
 		write_cmos_sensor(0x6028, 0x2000);
 		write_cmos_sensor(0x602A, 0x0C20);
 		write_cmos_sensor_8(0x6F12, 0x01);
@@ -3249,7 +3399,7 @@ static void preview_setting(void)
 	{
 		write_cmos_sensor(0x0100, 0x0000);	 // stream off
 		//mdelay(50);
-
+	LOG_INF("-- sensor_init shen preview\n");
 		while(retry<20)
 		{
 			if(read_cmos_sensor_8(0x0005)!=0xff)
@@ -3274,25 +3424,23 @@ static void preview_setting(void)
 		write_cmos_sensor(0x6028, 0x2000);
 		write_cmos_sensor(0x602A, 0x0EC6);
 		write_cmos_sensor(0x6F12, 0x0000);
-		write_cmos_sensor(0xFCFC, 0x4000);
 		write_cmos_sensor(0xF490, 0x0030);
 		write_cmos_sensor(0xF47A, 0x0012);
 		write_cmos_sensor(0xF428, 0x0200);
 		write_cmos_sensor(0xF48E, 0x0010);
 		write_cmos_sensor(0xF45C, 0x0004);
 		write_cmos_sensor(0x0B04, 0x0101);
-                write_cmos_sensor(0x0B00, 0x0180); //lsc on
+		//write_cmos_sensor(0x0B00, 0x0180);//enable LSC
 		write_cmos_sensor(0x6028, 0x2000);
 		write_cmos_sensor(0x602A, 0x0C40);
 		write_cmos_sensor(0x6F12, 0x0140);
-		write_cmos_sensor(0xFCFC, 0x4000);
 		write_cmos_sensor(0x0200, 0x0618);
 		write_cmos_sensor(0x0202, 0x0904);
 		write_cmos_sensor(0x31AA, 0x0004);
 		write_cmos_sensor(0x1006, 0x0006);
 		write_cmos_sensor(0x31FA, 0x0000);
 		write_cmos_sensor(0x0204, 0x0020);
-		//write_cmos_sensor(0x020E, 0x0100);//avoid awb overlap
+		write_cmos_sensor(0x020E, 0x0100);
 		write_cmos_sensor(0x0344, 0x0008);
 		write_cmos_sensor(0x0348, 0x0CC7);
 		write_cmos_sensor(0x0346, 0x0008);
@@ -3300,7 +3448,7 @@ static void preview_setting(void)
 		write_cmos_sensor(0x034C, 0x0660);
 		write_cmos_sensor(0x034E, 0x04C8);
 		write_cmos_sensor(0x0342, 0x0EA0);
-		write_cmos_sensor(0x0340, 0x09C2);
+		write_cmos_sensor(0x0340, 0x04DE);
 		write_cmos_sensor(0x0900, 0x0212);
 		write_cmos_sensor(0x0380, 0x0001);
 		write_cmos_sensor(0x0382, 0x0001);
@@ -3317,7 +3465,6 @@ static void preview_setting(void)
 		write_cmos_sensor(0x030C, 0x0006);
 		write_cmos_sensor(0x030E, 0x00AF);
 		write_cmos_sensor(0x3008, 0x0000);
-		write_cmos_sensor(0x317A, 0x0101);
 		write_cmos_sensor(0x0100, 0x0100);
 	}
 
@@ -3419,8 +3566,7 @@ static void normal_capture_setting(void)
 
 
 
-		write_cmos_sensor(0x602A, 0x0B00);
-		write_cmos_sensor_8(0x6F12, 0x00);//lsc on
+
 		write_cmos_sensor(0x6028, 0x2000);
 		write_cmos_sensor(0x602A, 0x0C20);
 		write_cmos_sensor_8(0x6F12, 0x01);
@@ -3491,6 +3637,7 @@ static void normal_capture_setting(void)
 	}
 	else if(chip_id == 0xc001)
 	{
+	LOG_INF("-- capture...  shen enter\n");
 		write_cmos_sensor(0x0100, 0x0000);	 // stream off
 		//mdelay(50);
 		while(retry<20)
@@ -3517,18 +3664,16 @@ static void normal_capture_setting(void)
 		write_cmos_sensor(0x6028, 0x2000);
 		write_cmos_sensor(0x602A, 0x0EC6);
 		write_cmos_sensor(0x6F12, 0x0000);
-		write_cmos_sensor(0xFCFC, 0x4000);
 		write_cmos_sensor(0xF490, 0x0030);
 		write_cmos_sensor(0xF47A, 0x0012);
 		write_cmos_sensor(0xF428, 0x0200);
 		write_cmos_sensor(0xF48E, 0x0010);
 		write_cmos_sensor(0xF45C, 0x0004);
 		write_cmos_sensor(0x0B04, 0x0101);
-                 write_cmos_sensor(0x0B00, 0x0080); //lsc on
+		//write_cmos_sensor(0x0B00, 0x0180); //enable LSC 
 		write_cmos_sensor(0x6028, 0x2000);
 		write_cmos_sensor(0x602A, 0x0C40);
 		write_cmos_sensor(0x6F12, 0x0140);
-		write_cmos_sensor(0xFCFC, 0x4000);
 		write_cmos_sensor(0x0200, 0x0618);
 		write_cmos_sensor(0x0202, 0x0904);
 		write_cmos_sensor(0x31AA, 0x0004);
@@ -3560,7 +3705,6 @@ static void normal_capture_setting(void)
 		write_cmos_sensor(0x030C, 0x0006);
 		write_cmos_sensor(0x030E, 0x00AF);
 		write_cmos_sensor(0x3008, 0x0000);
-		write_cmos_sensor(0x317A, 0x0100);
 		write_cmos_sensor(0x0100, 0x0100);
 		
 	}
@@ -3658,9 +3802,7 @@ static void pip_capture_setting(void)
 		write_cmos_sensor(0x6F12, 0x0100);
 
 
-
-		write_cmos_sensor(0x602A, 0x0B00);
-                write_cmos_sensor_8(0x6F12, 0x00);  // lsc on
+		
 		write_cmos_sensor(0x6028, 0x2000);
 		write_cmos_sensor(0x602A, 0x0C20);
 		write_cmos_sensor_8(0x6F12, 0x01);
@@ -3737,7 +3879,7 @@ static void pip_capture_setting(void)
 		write_cmos_sensor(0xF48E, 0x0010);
 		write_cmos_sensor(0xF45C, 0x0004);
 		write_cmos_sensor(0x0B04, 0x0101);
-                                    write_cmos_sensor(0x0B00, 0x0080); //lsc on
+      //write_cmos_sensor(0x0B00, 0x0080); //lsc on
 		write_cmos_sensor(0x6028, 0x2000);
 		write_cmos_sensor(0x602A, 0x0C40);
 		write_cmos_sensor(0x6F12, 0x0140);
@@ -3885,8 +4027,7 @@ static void hs_video_setting(void)
 
 
 
-		write_cmos_sensor(0x602A, 0x0B00);
-                write_cmos_sensor_8(0x6F12, 0x01); //lsc on
+
 		write_cmos_sensor(0x6028, 0x2000);
 		write_cmos_sensor(0x602A, 0x0C20);
 		write_cmos_sensor_8(0x6F12, 0x01);
@@ -3965,7 +4106,7 @@ static void hs_video_setting(void)
 		write_cmos_sensor(0xF48E, 0x0010);
 		write_cmos_sensor(0xF45C, 0x0004);
 		write_cmos_sensor(0x0B04, 0x0101);
-                write_cmos_sensor(0x0B00, 0x0180); //lsc on
+         //       write_cmos_sensor(0x0B00, 0x0180); //lsc on
 		write_cmos_sensor(0x6028, 0x2000);
 		write_cmos_sensor(0x602A, 0x0C40);
 		write_cmos_sensor(0x6F12, 0x0140);
@@ -4097,8 +4238,7 @@ static void slim_video_setting(void)
 
 
 
-		write_cmos_sensor(0x602A, 0x0B00);
-                 write_cmos_sensor_8(0x6F12, 0x01); //lsc on
+
 		write_cmos_sensor(0x6028, 0x2000);
 		write_cmos_sensor(0x602A, 0x0C20);
 		write_cmos_sensor_8(0x6F12, 0x01);
@@ -4177,7 +4317,7 @@ static void slim_video_setting(void)
 		write_cmos_sensor(0xF48E, 0x0010);
 		write_cmos_sensor(0xF45C, 0x0004);
 		write_cmos_sensor(0x0B04, 0x0101);
-                write_cmos_sensor(0x0B00, 0x0180); //lsc on
+         //       write_cmos_sensor(0x0B00, 0x0180); //lsc on
 		write_cmos_sensor(0x6028, 0x2000);
 		write_cmos_sensor(0x602A, 0x0C40);
 		write_cmos_sensor(0x6F12, 0x0140);
