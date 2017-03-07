@@ -21,7 +21,7 @@
 		/* {"NAME", TYPE, CT, PART} */
 		{"flashlights-rt5081", 0, 0, 0},
 		{"flashlights-rt5081", 0, 1, 0},
-		{"flashlights-none", 1, 0, 0},
+		{"flashlights-dummy-gpio", 1, 0, 0},
 		{"flashlights-none", 1, 1, 0},
 		{"flashlights-none", 0, 0, 1},
 		{"flashlights-none", 0, 1, 1},
@@ -34,6 +34,7 @@
 		{"flashlights-rt5081", 0, 0, 0},
 		{"flashlights-none", 0, 1, 0},
 		{"flashlights-rt5081", 0, 1, 0},
+		{"flashlights-dummy-gpio", 1, 0, 0},
 		{"flashlights-none", 1, 1, 0},
 		{"flashlights-none", 0, 0, 1},
 		{"flashlights-none", 0, 1, 1},

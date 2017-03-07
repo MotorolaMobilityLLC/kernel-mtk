@@ -3631,6 +3631,9 @@
 	flashlights_rt5081: flashlights_rt5081 {
 		compatible = "mediatek,flashlights_rt5081";
 	};
+	flashlights_dummy_gpio: flashlights_dummy_gpio {
+		compatible = "mediatek,flashlights_dummy_gpio";
+	};
 
 	gsensor@0 {
 		compatible = "mediatek,gsensor";

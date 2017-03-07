@@ -159,27 +159,46 @@ static int rt5081_enable(void)
 		fl_err("Failed to enable since no flashlight device.\n");
 		return -1;
 	}
-
+#if 0
 	if ((rt5081_en_ht == RT5081_ENABLE_FLASH)
 			|| (rt5081_en_lt == RT5081_ENABLE_FLASH))
 		ret = flashlight_set_mode(
-				flashlight_dev_ht, FLASHLIGHT_MODE_FLASH);
+				flashlight_dev_lt, FLASHLIGHT_MODE_FLASH);
 	else
 		ret = flashlight_set_mode(
+				flashlight_dev_lt, FLASHLIGHT_MODE_TORCH);
+#endif 
+fl_err("shen rt5081_enable rt5081_en_ht= %d ,rt5081_en_lt = %d .\n",rt5081_en_ht,rt5081_en_lt);
+if (rt5081_en_ht == RT5081_ENABLE_FLASH) {
+		ret = flashlight_set_mode(
+				flashlight_dev_ht, FLASHLIGHT_MODE_FLASH);
+		}
+	else if (rt5081_en_ht == RT5081_ENABLE_TORCH) {
+		ret = flashlight_set_mode(
 				flashlight_dev_ht, FLASHLIGHT_MODE_TORCH);
-
+		}
+if (rt5081_en_lt == RT5081_ENABLE_FLASH) {
+		ret = flashlight_set_mode(
+				flashlight_dev_lt, FLASHLIGHT_MODE_FLASH);
+		}
+	else if (rt5081_en_lt == RT5081_ENABLE_TORCH) {
+		ret = flashlight_set_mode(
+				flashlight_dev_lt, FLASHLIGHT_MODE_TORCH);
+		}
 	return ret;
 }
 
 /* flashlight disable function */
 static int rt5081_disable(void)
 {
+	int ret = 0;
 	if (!flashlight_dev_ht) {
 		fl_err("Failed to disable since no flashlight device.\n");
 		return -1;
 	}
-
-	return flashlight_set_mode(flashlight_dev_ht, FLASHLIGHT_MODE_OFF);
+	ret = flashlight_set_mode(flashlight_dev_ht, FLASHLIGHT_MODE_OFF);
+	ret = flashlight_set_mode(flashlight_dev_lt, FLASHLIGHT_MODE_OFF);
+	return ret;
 }
 
 /* set flashlight level */
@@ -362,11 +381,13 @@ static int rt5081_operate(int ct_index, int enable)
 	if ((rt5081_en_ht != RT5081_NONE) || (rt5081_en_lt != RT5081_NONE)) {
 		if ((rt5081_en_ht == RT5081_DISABLE) ||
 				(rt5081_en_lt == RT5081_DISABLE)) {
+				fl_err("shen rt5081_disable\n");
 			rt5081_disable();
 			rt5081_timer_cancel(RT5081_CT_HT);
 			rt5081_timer_cancel(RT5081_CT_LT);
 		} else {
 			if(rt5081_is_torch(rt5081_level_ht) || rt5081_is_torch(rt5081_level_lt)) {
+				fl_err("shen  aaa rt5081_enable\n");
 				rt5081_enable();
 			} else {
 				if (rt5081_timeout_ms[RT5081_CT_HT]) {
@@ -381,6 +402,7 @@ static int rt5081_operate(int ct_index, int enable)
 						(rt5081_timeout_ms[RT5081_CT_LT] % 1000) * 1000000);
 					rt5081_timer_start(RT5081_CT_LT, ktime);
 				}
+				fl_err("shen timer  rt5081_enable\n");
 				rt5081_enable();
 			}
 		}
@@ -418,6 +440,15 @@ static int rt5081_ioctl(unsigned int cmd, unsigned long arg)
 	case FLASH_IOC_SET_DUTY:
 		fl_dbg("FLASH_IOC_SET_DUTY(%d): %d\n",
 				ct_index, (int)fl_arg->arg);
+		#if 0
+		if (ct_index == 1) {
+		fl_arg->arg = 6;
+		} else if (ct_index ==0) {
+		fl_arg->arg = 5;
+		}
+		#endif
+		fl_dbg("shen FLASH_IOC_SET_DUTY(%d): %d\n",
+				ct_index, (int)fl_arg->arg);
 		rt5081_set_level(ct_index, fl_arg->arg);
 		break;
 
@@ -428,6 +459,15 @@ static int rt5081_ioctl(unsigned int cmd, unsigned long arg)
 
 	case FLASH_IOC_SET_ONOFF:
 		fl_dbg("FLASH_IOC_SET_ONOFF(%d): %d\n",
+				ct_index, (int)fl_arg->arg);
+		#if 0
+		if (ct_index == 0) {
+		fl_arg->arg = 0;
+			} else if (ct_index == 1) {
+			fl_arg->arg = 0;
+			}
+		#endif
+		fl_dbg("shen FLASH_IOC_SET_ONOFF(%d): %d\n",
 				ct_index, (int)fl_arg->arg);
 		rt5081_operate(ct_index, fl_arg->arg);
 		break;
