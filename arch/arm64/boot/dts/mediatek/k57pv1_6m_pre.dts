@@ -1115,6 +1115,15 @@
 		usb_switch_name = "usb_switch";
 	};
 };
+
+&i2c2 {
+
+GT24c64a@50 {
+			compatible = "mediatek,GT24c64a";
+			reg = <0x50>;
+			status = "okay";
+		};
+};
 /* FLASHLIGHTS_LM3643 GPIO standardization */
 &pio {
 	flashlights_lm3643_pins_default: default {
