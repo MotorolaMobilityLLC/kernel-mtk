@@ -608,10 +608,10 @@ void usb_phy_recover(void)
 	USBPHY_SET8(0x6d, 0x3F);
 
 	/* from K2, FIXME */
-#if defined(MTK_HDMI_SUPPORT)
-	USBPHY_SET8(0x05, 0x05);
-	USBPHY_SET8(0x05, 0x50);
-#endif
+//#if defined(MTK_HDMI_SUPPORT)  //modify longcheer_liml_2017_03_08
+	USBPHY_SET8(0x05, 0x06);
+	USBPHY_SET8(0x05, 0x60);
+//#endif
 
 	/* adjustment after HQA */
 	HQA_special();
