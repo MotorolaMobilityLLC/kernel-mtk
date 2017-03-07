@@ -606,3 +606,9 @@ CONFIG_MOT_UTAG=y
 
 #add by longcheer_liml_2017_03_06
 CONFIG_LCT_CHR_LIMIT_MAX_SOC=y
+
+#add by longcheer wangjiaxing for cabc_mode setting
+CONFIG_LCT_CABC_MODE_SUPPORT=y
+#add by longcheer wangjiaxing for hbm
+CONFIG_LCT_HBM_SUPPORT=y
+

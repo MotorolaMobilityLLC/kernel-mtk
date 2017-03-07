@@ -834,7 +834,14 @@ typedef struct {
 	unsigned int (*get_pwm)(unsigned int divider);
 	void (*set_backlight_mode)(unsigned int mode);
 	/* ///////////////////////// */
-
+/* add by lct wangjiaxing for hbm 20170302 start */
+#ifdef CONFIG_LCT_CABC_MODE_SUPPORT
+	void (*set_cabc_cmdq)(void *handle, unsigned int enable);
+#endif
+#ifdef CONFIG_LCT_HBM_SUPPORT
+	void (*set_backlight_hbm)(unsigned int level);
+#endif
+/* add by lct wangjiaxing for hbm 20170302 end */
 	int (*adjust_fps)(void *cmdq, int fps, LCM_PARAMS *params);
 	void (*validate_roi)(int *x, int *y, int *width, int *height);
 
