@@ -6386,6 +6386,57 @@ int _set_backlight_by_cpu(unsigned int level)
 	return ret;
 }
 
+/* add by lct wangjiaxing for hbm 20170302 start */
+#ifdef CONFIG_LCT_CABC_MODE_SUPPORT
+static unsigned int cabc_mode_value = 0;
+int primary_recognition_cabc_mode(void)
+{
+	return cabc_mode_value;
+}                                                                                                                                                                                                      
+EXPORT_SYMBOL_GPL(primary_recognition_cabc_mode)
+int primary_display_setcabc(unsigned int enbale)
+{
+	//int ret = 0;
+	static unsigned int last_enable;
+	cabc_mode_value = enbale;
+	if (last_enable == enbale)
+	  return 0;
+	disp_lcm_set_cabc(pgc->plcm, NULL, enbale);
+	last_enable = enbale;
+
+	return 0;
+}
+EXPORT_SYMBOL_GPL(primary_display_setcabc)
+#endif
+
+#ifdef CONFIG_LCT_HBM_SUPPORT
+		static unsigned int hbm_backlight_level = 0;
+int primary_recognition_hbm_level(void)
+{
+	return hbm_backlight_level;
+}
+EXPORT_SYMBOL_GPL(primary_recognition_hbm_level)
+
+int primary_display_setbacklight_hbm(unsigned int level)
+{
+	int ret = 0;
+	static unsigned int last_level;                                                                                                                                                                    
+
+	DISPFUNC();
+	if (last_level == level)
+	  return 0;
+	if(level==255)
+	  hbm_backlight_level = 1;
+	else
+	  hbm_backlight_level = 0;
+	  disp_lcm_set_backlight_hbm(pgc->plcm, level);
+	  last_level = level;
+	return ret;
+}
+EXPORT_SYMBOL_GPL(primary_display_setbacklight_hbm)
+#endif
+/* add by lct wangjiaxing for hbm 20170302 end */
+
 int primary_display_setbacklight(unsigned int level)
 {
 	int ret = 0;

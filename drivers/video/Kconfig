@@ -50,5 +50,14 @@ if FB || SGI_NEWPORT_CONSOLE
 
 endif
 
+# add by longcheer wangjiaxing for cabc
+config LCT_CABC_MODE_SUPPORT
+	bool "LCT_CABC_MODE_SUPPORT"
+#wangjiaxing add end
+
+# add by longhceer wangjiaxing for hbm
+config LCT_HBM_SUPPORT
+	bool "LCT_HBM_SUPPORT"
+# wangjiaxing add end
 
 endmenu
