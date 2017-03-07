@@ -86,5 +86,6 @@
 /* battery warning */
 #define BATTERY_NOTIFY_CASE_0001_VCHARGER
 #define BATTERY_NOTIFY_CASE_0002_VBATTEMP
+#define BAT_LOW_TEMP_PROTECT_ENABLE  //add by longcheer_liml_2017_03_07
 
 #endif /*__MTK_CHARGER_INIT_H__*/
