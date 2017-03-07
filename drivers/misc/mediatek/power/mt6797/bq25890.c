@@ -790,12 +790,8 @@ unsigned int bq25890_set_current(void)
 		bq25890_current = AC_CHARGER_CURRENT;
 	else if (vbus_type == MAXCHARGER)
 		bq25890_current = MAXCHARGER_CURRENT;
-	else if (vbus_type == UNKNOWN_ADP)
-		bq25890_current = UNKNOWN_ADP_CURRENT;
-	else if (vbus_type == NON_STANDARD_ADAPTER)
-		bq25890_current = NON_STD_AC_CHARGER_CURRENT;
 	else
-		pr_debug("bq25890 not sepport yet\n");
+		pr_debug("Other charging mode detected by bb side\n");
 	return bq25890_current;
 }
 
