@@ -3809,9 +3809,12 @@ static void synaptics_rmi4_suspend(struct device *dev)
 	struct synaptics_rmi4_data *rmi4_data = dev_get_drvdata(g_dev);
 	printk("wind_tp enter synaptics_rmi4_suspend\n");  //tuwenzan@wind-mobi.com add log at 20170227
 	if (rmi4_data->staying_awake)
+	{
+		printk("wind_tp exit synaptics_rmi4_suspend staying_awake %d\n",rmi4_data->staying_awake);
 		return ;
-
+	}
 	if (rmi4_data->enable_wakeup_gesture) {
+		 printk("wind_tp exit synaptics_rmi4_suspend enable_wakeup_gesture %d\n",rmi4_data->enable_wakeup_gesture);
 		synaptics_rmi4_wakeup_gesture(rmi4_data, true);
 		goto exit;
 	}
@@ -3836,7 +3839,7 @@ exit:
 
 
 	rmi4_data->sensor_sleep = true;
-
+	printk("wind_tp exit synaptics_rmi4_suspend\n");
 	return ;
 }
 
@@ -3857,7 +3860,10 @@ static void synaptics_rmi4_resume(struct device *dev)
 	struct synaptics_rmi4_data *rmi4_data = dev_get_drvdata(g_dev);
 	printk("wind_tp enter synaptics_rmi4_resume\n"); //tuwenzan@wind-mobi.com add log at 20170227
 	if (rmi4_data->staying_awake)
+	{
+	printk("wind_tp synaptics_rmi4_resume staying_awake is %d\n",rmi4_data->staying_awake);
 		return ;
+	}
 	//tuwenzan@wind-mobi.com add reset opration for tp at 20170227 begin
 	tpd_gpio_output(0,0);// reset pin low
 	msleep(DELAY_RESET_LOW);
@@ -3867,6 +3873,7 @@ static void synaptics_rmi4_resume(struct device *dev)
 	//tuwenzan@wind-mobi.com add reset opration for tp at 20170227 end
 	
 	if (rmi4_data->enable_wakeup_gesture) {
+		printk("wind_tp synaptics_rmi4_resume enable_wakeup_gesture is %d\n",rmi4_data->enable_wakeup_gesture);
 		synaptics_rmi4_wakeup_gesture(rmi4_data, false);
 		goto exit;
 	}
@@ -3874,6 +3881,7 @@ static void synaptics_rmi4_resume(struct device *dev)
 	synaptics_rmi4_sleep_enable(rmi4_data, false);
 	synaptics_rmi4_irq_enable(rmi4_data, true);
 	retval = synaptics_rmi4_reinit_device(rmi4_data);
+	 printk("wind_tp retval is %d\n",retval);
 	if (retval < 0) {
 		dev_err(&rmi4_data->i2c_client->dev,
 				"%s: Failed to reinit device\n",
@@ -3893,7 +3901,7 @@ exit:
 	rmi4_data->sensor_sleep = false;
 	rmi4_data->touch_stopped = false;
 	tpd_halt = 0;
-
+	 printk("wind_tp exit synaptics_rmi4_resume\n");
 	return;
 }
 
