@@ -1796,13 +1796,15 @@ static ssize_t show_Charging_disable(struct device *dev, struct device_attribute
 static ssize_t store_Charging_disable(struct device *dev, struct device_attribute *attr,
 				  const char *buf, size_t size)
 {
-       if (kstrtouint(buf, 10, &cmd_discharging) == 1) {
+	if (kstrtouint(buf, 10, &cmd_discharging) == 1) {
 		battery_log(BAT_LOG_CRTI, "zhangchao not charging cmd_discharging = %d\n", cmd_discharging);
+		return size;
 	}
 	else
-	   {
-	   	battery_log(BAT_LOG_CRTI, "zhangchao 00 be charging cmd_discharging = %d\n", cmd_discharging);
-	   }
+	{
+		battery_log(BAT_LOG_CRTI, "zhangchao 00 be charging cmd_discharging = %d\n", cmd_discharging);
+		return size;
+	}
 	return cmd_discharging;
 }
 
