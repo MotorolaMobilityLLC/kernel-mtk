@@ -3340,9 +3340,10 @@
 		vcama-supply = <&mt_pmic_vcama1_ldo_reg>;
 		vcamd-supply = <&mt_pmic_vcamd1_ldo_reg>;
 		vcamio-supply = <&mt_pmic_vcamio_ldo_reg>;
-                 vcamaf-supply = <&mt_pmic_vcamaf_ldo_reg>;
+                		 vcamaf-supply = <&mt_pmic_vldo28_ldo_reg>;
 		 vcamasub-supply = <&mt_pmic_vcama2_ldo_reg>;
 		vcamdsub-supply = <&mt_pmic_vcamd2_ldo_reg>;
+		vcamd_main2-supply = <&mt_pmic_vgp3_ldo_reg>;
 		 /*add by guoameng  longcheer end */
 	};
 
