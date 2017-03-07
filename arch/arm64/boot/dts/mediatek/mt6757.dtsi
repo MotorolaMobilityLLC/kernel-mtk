@@ -3819,9 +3819,9 @@
 		/* battery temperature protection */
 		enable_min_charge_temperature;
 		min_charge_temperature = <0>;
-		min_charge_temperature_plus_x_degree = <6>;
-		max_charge_temperature = <50>;
-		max_charge_temperature_minus_x_degree = <47>;
+		min_charge_temperature_plus_x_degree = <2>;
+		max_charge_temperature = <59>;
+		max_charge_temperature_minus_x_degree = <57>;
 
 		/* PE 2.0 */
 		pe20_ichg_level_threshold = <1000>;
