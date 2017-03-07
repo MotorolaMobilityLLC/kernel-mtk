@@ -56,7 +56,7 @@ static DEFINE_SPINLOCK(imgsensor_drv_lock);
 static imgsensor_info_struct imgsensor_info = {
     .sensor_id = AR1335_SENSOR_ID,        //record sensor id defined in Kd_imgsensor.h
 
-    .checksum_value = 0xa7f3e34,//0x722b3840,        //checksum value for Camera Auto Test
+	.checksum_value = 0x8b2cc75a,/*checksum value for Camera Auto Test*/
 
     .pre = {
         .pclk = 452000000,              //record different mode's pclk 440000000
@@ -575,6 +575,7 @@ static void set_mirror_flip(kal_uint8 image_mirror)
 {
     LOG_INF("image_mirror = %d\n", image_mirror);
 
+
     /********************************************************
        *
        *   0x3820[2] ISP Vertical flip
@@ -589,7 +590,7 @@ static void set_mirror_flip(kal_uint8 image_mirror)
 
     switch (image_mirror) {
         case IMAGE_NORMAL:
-            //write_cmos_sensor(0x0101,((read_cmos_sensor(0x0101) & 0xFC) | 0x00));
+	write_cmos_sensor(0x0101, ((read_cmos_sensor(0x0101) & 0xFC) | 0x00));
             break;
         case IMAGE_H_MIRROR:
            // write_cmos_sensor(0x0101,((read_cmos_sensor(0x0101) & 0xFC) | 0x01));
@@ -1464,6 +1465,7 @@ static kal_uint32 preview(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
                       MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
 {
     LOG_INF("E\n");
+
 
     spin_lock(&imgsensor_drv_lock);
     imgsensor.sensor_mode = IMGSENSOR_MODE_PREVIEW;
