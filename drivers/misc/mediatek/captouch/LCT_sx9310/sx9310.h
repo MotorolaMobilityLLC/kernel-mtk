@@ -123,10 +123,18 @@ static struct smtc_reg_data sx9310_i2c_reg_setup[] = {
 		.reg = SX9310_CPS_CTRL3_REG,
 		.val = 0x0A,
 	},
+
+#ifdef CONFIG_LCT_CAPSENOR_PARA
+	{
+		.reg = SX9310_CPS_CTRL4_REG,
+		.val = 0x3D,
+	},
+#else
 	{
 		.reg = SX9310_CPS_CTRL4_REG,
 		.val = 0x0D,
 	},
+#endif
 	{
 		.reg = SX9310_CPS_CTRL5_REG,
 		.val = 0xD1,   //0xC1 -> 0XD1  8*30ma read cycle 
@@ -139,6 +147,16 @@ static struct smtc_reg_data sx9310_i2c_reg_setup[] = {
 		.reg = SX9310_CPS_CTRL7_REG,
 		.val = 0x4C,
 	},
+#ifdef CONFIG_LCT_CAPSENOR_PARA
+	{
+		.reg = SX9310_CPS_CTRL8_REG,
+		.val = 0x78,
+	},
+	{
+		.reg = SX9310_CPS_CTRL9_REG,
+		.val = 0x48,
+	},
+#else
 	{
 		.reg = SX9310_CPS_CTRL8_REG,
 		.val = 0x7E,
@@ -147,6 +165,7 @@ static struct smtc_reg_data sx9310_i2c_reg_setup[] = {
 		.reg = SX9310_CPS_CTRL9_REG,
 		.val = 0x7D,
 	},
+#endif
 	{
 		.reg = SX9310_CPS_CTRL10_REG,
 		.val = 0x00,
