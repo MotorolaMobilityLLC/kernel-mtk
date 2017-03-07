@@ -131,7 +131,9 @@ static struct LCM_setting_table lcm_initialization_setting[] = {
 	{0xFE,1,{0x48}},
 	{0xFA,17,{0x10,0x30,0x1C,0x24,0x1B,0x20,0x24,0x23,0x22,0x2A,0x2A,0x28,0x27,0x25,0x24,0x23,0x2A}},
 	{0xFB,17,{0x10,0x30,0x1C,0x24,0x1B,0x20,0x24,0x23,0x22,0x26,0x28,0x26,0x27,0x25,0x24,0x23,0x2A}},
-	{0x51, 1, {0xFF}},
+	{0xC0,1,{0x03}},
+
+        {0x51, 2, {0xFF,0x0f}},
 	{0x53, 1, {0x24}},
 	{0x55, 1, {0x01}},
 	{REGFLAG_DELAY, 5, {}},
@@ -144,7 +146,7 @@ static struct LCM_setting_table lcm_initialization_setting[] = {
 };
 
 static struct LCM_setting_table bl_level[] = {
-	{0x51, 1, {0xFF} },
+	{0x51, 2, {0xff,0x0f}},
 	{REGFLAG_END_OF_TABLE, 0x00, {} }
 };
 
@@ -466,9 +468,25 @@ static unsigned int lcm_ata_check(unsigned char *buffer)
 
 static void lcm_setbacklight_cmdq(void *handle, unsigned int level)
 {
-	LCM_LOGI("%s,s6d7aa6x01 backlight: level = %d\n", __func__, level);
+    
+unsigned int high_level;
+	unsigned int low_level;
+	 printk("%s,s6d7aa6x01 backlight: level = %d\n", __func__, level);
+if(level  ==  0)
+{
+		bl_level[0].para_list[0] = level;
+	bl_level[0].para_list[1] = level;
+	}
+	else 
+	{
+    level = level * 14 + 400;
+	high_level = (0xff | level);
+	low_level =   level>>8;
+    
+	bl_level[0].para_list[0] = high_level;
+	bl_level[0].para_list[1] = low_level;
+}
 
-	bl_level[0].para_list[0] = level;
 
 	push_table(handle, bl_level, sizeof(bl_level) / sizeof(struct LCM_setting_table), 1);
 }
