@@ -143,6 +143,106 @@ static int ltr778_local_init(void);
 static int ltr778_remove(void);
 static int ltr778_init_flag = -1;
 
+
+//tuwenzan@wind-mobi.com add for solve oil bug at 20170307 begin
+#define MAX_ELM_PS 4
+static unsigned int record_ps[MAX_ELM_PS];
+static int rct_ps=0,full_ps=0;
+static long ps_sum=0;
+
+
+static int get_avg_ps(unsigned int ps_data_c)
+{
+	int ps_d;
+	if(rct_ps >= MAX_ELM_PS)
+		full_ps=1;
+
+	if(full_ps){
+		rct_ps %= MAX_ELM_PS;
+		ps_sum -= record_ps[rct_ps];
+	}
+	ps_sum += ps_data_c;
+	record_ps[rct_ps]=ps_data_c;
+	rct_ps++;
+
+	if(full_ps){
+
+		ps_d = ps_sum / MAX_ELM_PS;
+			
+	}else{	
+	ps_d = ps_sum / rct_ps;
+		}
+
+	if(rct_ps == MAX_ELM_PS ){
+		return ps_d;
+	}else{
+		return 2048;
+	}
+}
+
+
+#define MAX_ELM_PS_1 8
+static unsigned int record_ps_1[MAX_ELM_PS_1];
+static int rct_ps_1=0,full_ps_1=0;
+static long ps_sum_1=0;
+static int j_ps=0;
+
+
+static int get_stable_ps(unsigned int ps_data_c_1)
+{
+	int ps_d_1;
+	int ps_d_high;
+	int ps_d_low;
+	int i;
+	
+	if(rct_ps_1 >= MAX_ELM_PS_1)
+		full_ps_1=1;
+
+	if(full_ps_1){
+		rct_ps_1 %= MAX_ELM_PS_1;
+		ps_sum_1 -= record_ps_1[rct_ps_1];
+	}
+	ps_sum_1 += ps_data_c_1;
+	record_ps_1[rct_ps_1]=ps_data_c_1;
+	rct_ps_1++;
+
+	if(full_ps_1){
+	ps_d_1 = ps_sum_1 / MAX_ELM_PS_1;
+	}else{
+	ps_d_1 = ps_sum_1 /rct_ps_1;
+	}
+
+	ps_d_high = ps_d_1 + 20;
+
+	ps_d_low = ps_d_1 - 20;
+
+
+	for(i=0;i<=MAX_ELM_PS_1;i++)
+	{
+		if(record_ps_1[i]< ps_d_high)
+			j_ps++;
+		else 
+			j_ps = 0;
+	}
+
+	if(full_ps_1){
+
+			if(j_ps >= MAX_ELM_PS_1 )
+			{
+				return 1;
+			}
+			else
+			{
+				return 0;
+			}
+	}else{
+		return 0;
+	}
+
+}
+
+//tuwenzan@wind-mobi.com add for solve oil bug at 20170307 end
+
 static struct alsps_init_info ltr778_init_info = {
 		.name = "ltr778",
 		.init = ltr778_local_init,
@@ -178,6 +278,35 @@ static int ltr778_dynamic_calibrate(void);
 static int dynamic_calibrate = 2047;
 //liujinzhou@wind-mobi.com modify at 20161205 end
 #endif
+//tuwenzan@wind-mobi.com add for solve oil bug at 20170307 begin
+#define MAX_ELM 3
+static unsigned int record[MAX_ELM];
+static int rct=0,full=0;
+static long lux_sum=0;
+
+
+/*----------------modified by hongguang for avgps function-----------------------*/		
+static int get_ps_avg(unsigned int lux)
+{
+	int lux_a;
+	if(rct >= MAX_ELM)
+		full=1;
+
+	if(full){
+		rct %= MAX_ELM;
+		lux_sum -= record[rct];
+	}
+	lux_sum += lux;
+	record[rct]=lux;
+	rct++;
+	if(full){
+	lux_a = lux_sum / MAX_ELM;
+	}else{
+	lux_a = lux_sum /rct;
+	}
+	return lux_a;
+}
+//tuwenzan@wind-mobi.com add for solve oil bug at 20170307 end
 /*-----------------------------------------------------------------------------*/
 
 /* 
@@ -534,9 +663,14 @@ static int ltr778_ps_enable(struct i2c_client *client, int enable)
 }
 
 /********************************************************************/
+//tuwenzan@wind-mobi.com modify for solve oil bug at 20170307 begin
+static int ps_en = 0;
 static int ltr778_ps_read(struct i2c_client *client, u16 *data)
 {
 	int psval_lo, psval_hi, psdata;
+	int ps_offd , ps_offdl, ps_offdh;
+	int ps_offr , ps_offrl, ps_offrh;
+	int ps_offen = 0;
 
 	psval_lo = ltr778_i2c_read_reg(LTR778_PS_DATA_0);
 	APS_DBG("ps_rawdata_psval_lo = %d\n", psval_lo);
@@ -553,8 +687,104 @@ static int ltr778_ps_read(struct i2c_client *client, u16 *data)
 		psdata = psval_hi;
 		goto out;
 	}
-	
+	/* by steven   decress   power */	
 	psdata = ((psval_hi & 7)* 256) + psval_lo;
+
+	//ps_offrl = ltr778_i2c_read_reg(0x99);
+	//ps_offrh = ltr778_i2c_read_reg(0x9A);
+	//ps_offr = ((ps_offrh & 7)* 256) + ps_offrl;
+
+
+	/*if(ps_offen == 0 && ps_offr == 0)*/
+	if(ps_offen == 0){
+		
+		if(ps_en == 1 && psdata > 80 && psdata < 1024){
+
+			ps_offen = 1;
+
+			ps_offd = psdata-50;
+			
+			APS_DBG("ltr778_ps_read:  ps_offd= %d\n", ps_offd);
+
+
+			ps_offdl = ps_offd & 0x00ff;
+			ps_offdh = (ps_offd & 0x0700)/256;
+
+			ltr778_i2c_write_reg(0x99, ps_offdl);
+			ltr778_i2c_write_reg(0x9A, ps_offdh);
+
+		}else if(ps_en == 1 && psdata >= 1024 && psdata < 1400){
+			
+			ps_offen = 1;
+			
+			ltr778_i2c_write_reg(0x99, 0xff);
+			ltr778_i2c_write_reg(0x9A, 0x03);			
+			
+		}
+	}
+
+
+	
+	psval_lo = ltr778_i2c_read_reg(LTR778_PS_DATA_0);
+	APS_DBG("ps_rawdata_psval_lo = %d\n", psval_lo);
+	if (psval_lo < 0){	    
+	    APS_DBG("psval_lo error\n");
+		psdata = psval_lo;
+		goto out;
+	}
+
+	psval_hi = ltr778_i2c_read_reg(LTR778_PS_DATA_1);
+    APS_DBG("ps_rawdata_psval_hi = %d\n", psval_hi);
+	if (psval_hi < 0){
+	    APS_DBG("psval_hi error\n");
+		psdata = psval_hi;
+		goto out;
+	}
+	psdata = ((psval_hi & 7)* 256) + psval_lo;
+	
+#if 1	
+	if(get_avg_ps(psdata) == 0  && ps_offen == 1 )
+	{
+		
+		ps_offrl = ltr778_i2c_read_reg(0x99);
+		ps_offrh = ltr778_i2c_read_reg(0x9A);
+		ps_offr = ((ps_offrh & 7)* 256) + ps_offrl;
+		
+		APS_DBG("ltr778_ps_read:  ps_offr= %d\n", ps_offr);
+		
+		if(ps_offr < 100){
+		ltr778_i2c_write_reg(0x99, 0x00);
+		ltr778_i2c_write_reg(0x9A, 0x00);
+			
+		}else{
+		
+			ps_offd = ps_offr-25;
+			
+			APS_DBG("ltr778_ps_read:  ps_offd= %d\n", ps_offd);
+
+			ps_offdl = ps_offd & 0x00ff;
+			ps_offdh = (ps_offd & 0x0700)/256;
+
+			ltr778_i2c_write_reg(0x99, ps_offdl);
+			ltr778_i2c_write_reg(0x9A, ps_offdh);
+			
+		}
+		
+			psval_lo = ltr778_i2c_read_reg(LTR778_PS_DATA_0);
+			//APS_DBG("ps_rawdata_psval_lo1 = %d\n", psval_lo);
+			psval_hi = ltr778_i2c_read_reg(LTR778_PS_DATA_1);
+			//APS_DBG("ps_rawdata_psval_hi1 = %d\n", psval_hi);
+			if (psval_hi < 0){
+				APS_DBG("psval_hi error\n");
+				psdata = psval_hi;
+				goto out;
+			}
+			psdata = ((psval_hi & 7)* 256) + psval_lo;
+
+	}
+#endif
+
+//tuwenzan@wind-mobi.com modify for solve oil bug at 20170307 end	
 	*data = psdata;
     APS_DBG("ltr778_ps_read: ps_rawdata = %d\n", psdata);
     
@@ -563,7 +793,7 @@ out:
 	return psdata;
 }
 
-//tuwenzan@wind-mobi.com modify at 20170120 begin
+//tuwenzan@wind-mobi.com modify at 20170307 begin
 #ifdef GN_MTK_BSP_PS_DYNAMIC_CALI
 static int ltr778_dynamic_calibrate(void)
 {
@@ -578,15 +808,23 @@ static int ltr778_dynamic_calibrate(void)
 	struct ltr778_priv *obj = ltr778_obj;
 	ps_thd_val_low = ps_thd_val_high = ps_persist_val_low = ps_persist_val_high =0;
 	//liujinzhou@wind-mobi.com modify at 20161205 end
+	ltr778_i2c_write_reg(LTR778_PS_MEAS_RATE, 0x01);	// 12.25 ms time 
 	if (!ltr778_obj)
 	{
 		APS_ERR("ltr778_obj is null!!\n");
 		return -1;
-	}	
+	}
+
+	for(i = 0; i < 3 ; i++)
+		{		
+		msleep(13);
+		ltr778_ps_read(ltr778_obj->client, &ltr778_obj->ps);
+		}
 
 	for (i = 0; i < count; i++) {
 		// wait for ps value be stable
-		msleep(60);
+		ps_en = 1;
+		msleep(13);
 
 		data = ltr778_ps_read(ltr778_obj->client, &ltr778_obj->ps);
 		if (data < 0) {
@@ -596,6 +834,7 @@ static int ltr778_dynamic_calibrate(void)
 
 		data_total += data;
 	}
+	ps_en = 0;
 
 	noise = data_total / count;
     //liujinzhou@wind-mobi.com modify at 20161205 begin
@@ -607,45 +846,45 @@ static int ltr778_dynamic_calibrate(void)
 		//liujinzhou@wind-mobi.com modify at 20161215 begin
 			ps_thd_val_high = noise + 30;
 			ps_thd_val_low  = noise + 15;
-			ps_persist_val_high = noise + 500;  // modified by steven
-			ps_persist_val_low  = noise + 45;
+			ps_persist_val_high = 2046;// modified by steven
+			ps_persist_val_low  = noise + 60;
 		}
 		else if (noise < 200) {
 			ps_thd_val_high = noise + 30;
 			ps_thd_val_low  = noise + 15;
-			ps_persist_val_high = noise + 500;
-			ps_persist_val_low  = noise + 50;
+			ps_persist_val_high = noise + 1700;
+			ps_persist_val_low  = noise + 65;
 		//liujinzhou@wind-mobi.com modify at 20161215 end
 		}
 		else if (noise < 300) {
 			ps_thd_val_high = noise + 30;
 			ps_thd_val_low  = noise + 15;
-			ps_persist_val_high = noise + 500;
+			ps_persist_val_high = noise + 1600;
 			ps_persist_val_low  = noise + 70;
 		}
 		else if (noise < 400) {
 			ps_thd_val_high = noise + 30;
 			ps_thd_val_low  = noise + 15;
-			ps_persist_val_high = noise + 500;
-			ps_persist_val_low  = noise + 80;
+			ps_persist_val_high = noise + 1600;
+			ps_persist_val_low  = noise + 100;
 		}
 		else if (noise < 600) {
 			ps_thd_val_high = noise + 47;
 			ps_thd_val_low  = noise + 30;
-			ps_persist_val_high = noise + 500;
-			ps_persist_val_low  = noise + 100;
+			ps_persist_val_high = noise + 1400;
+			ps_persist_val_low  = noise + 120;
 		}
 		else if (noise < 1500) {
 			ps_thd_val_high = noise + 47;
 			ps_thd_val_low  = noise + 30;
-			ps_persist_val_high = noise + 500;
-			ps_persist_val_low  = noise + 280;
+			ps_persist_val_high = 2047;
+			ps_persist_val_low  = noise + 150;
 		}
 		else {
 			ps_thd_val_high = 1900;
 			ps_thd_val_low  = 1700;	
-			ps_persist_val_high = 2047;
-			ps_persist_val_low  = 1800;		
+		ps_persist_val_high = 2047;
+		ps_persist_val_low  = 1900;		
 		}
 	
 
@@ -663,11 +902,14 @@ static int ltr778_dynamic_calibrate(void)
 	APS_LOG("%s:obj->ps_persist_val_high = %d\n", __func__, ps_persist_val_high);
 	APS_LOG("%s:obj->ps_persist_val_low = %d\n", __func__, ps_persist_val_low);
     //liujinzhou@wind-mobi.com modify at 20161205 end
+	ltr778_i2c_write_reg(LTR778_PS_MEAS_RATE, 0x03);	// 50ms time 
+	
+	ltr778_i2c_write_reg(LTR778_INTERRUPT_PRST, 0x00);// 0 persist
 
 	return 0;
 }
 #endif
-//tuwenzan@wind-mobi.com modify at 20170120 end
+//tuwenzan@wind-mobi.com modify at 20170307 end
 
 /********************************************************************/
 /* 
@@ -808,9 +1050,10 @@ out:
 	return luxdata_int;
 }
 //tuwenzan@wind-mobi.com modify at 20170222 end
-
+//tuwenzan@wind-mobi.com modify for solve oil bug at 20170307 begin
 //liujinzhou@wind-mobi.com add at 20161205 begin
 static int oil_far_cal = 0;
+static int oil_close = 0;
 //liujinzhou@wind-mobi.com add at 20161205 end
 /********************************************************************/
 static int ltr778_get_ps_value(struct ltr778_priv *obj, u16 ps)
@@ -820,46 +1063,73 @@ static int ltr778_get_ps_value(struct ltr778_priv *obj, u16 ps)
 
 	static int val_temp = 1;
 	//liujinzhou@wind-mobi.com modify at 20161205 begin
-	if((ps > atomic_read(&obj->ps_persist_val_high)))  // modified by steven
+	APS_DBG("ALS/PS ltr778_get_ps_value oil_close= %d\n", oil_close);
+	if((ps >= atomic_read(&obj->ps_persist_val_high)))  // modified by steven
 	{
 		val = 2;  /* persist oil close*/
 		val_temp = 2;
 		intr_flag_value = 2;
 		oil_far_cal = 0;
+		oil_close = 1;
 	}
-	else if((ps > atomic_read(&obj->ps_thd_val_high)))
+	else if((ps >= atomic_read(&obj->ps_thd_val_high)))
 	{
-		val = 0;  /*close*/
-		val_temp = 0;
-		intr_flag_value = 1;
-		oil_far_cal = 0;
+		if(oil_close == 0)
+			{
+				val = 0;  /*close*/
+				val_temp = 0;
+				intr_flag_value = 1;
+				oil_far_cal = 0;
+			}
+
+		if((ps <= atomic_read(&obj->ps_persist_val_low)) && (oil_close == 1) )
+			{
+				val = 3;  /* persist oil far away*/
+				val_temp = 3;
+				intr_flag_value = 3;
+			}
 	}	
-	else if((ps < atomic_read(&obj->ps_thd_val_low)))
+	else if((ps <= atomic_read(&obj->ps_thd_val_low)))
 	{
 		val = 1;  /*far away*/
 		val_temp = 1;
 		intr_flag_value = 0;
 		oil_far_cal = 0;
+		
+		oil_close = 0;
 	}
-	else if((ps < atomic_read(&obj->ps_persist_val_low)))  // modified by steven
-	{
+	else if(oil_close == 1)
+	{	
+
 		val = 3;  /* persist oil far away*/
 		val_temp = 3;
 		intr_flag_value = 3;
 	}
 	else
-	{	val = val_temp;	
-	
+	{
+		val = val_temp;		
 		oil_far_cal = 0;
 
 	}
 
-	if(val == 3  && oil_far_cal <= 3)  // modified by steven
+	
+
+	if(val == 3  && oil_far_cal <= 16)  // modified by steven stable data
 	{		
 		oil_far_cal ++;
 		val = 2;  /* persist oil close*/
 		val_temp = 2;
-		intr_flag_value = 2;		
+		intr_flag_value = 2;
+
+		if(get_stable_ps(ps) == 1){
+			
+			val = 3;  /* persist oil far away*/
+			val_temp = 3;
+			intr_flag_value = 3;
+
+			APS_DBG("ALS/PS ltr778_get_ps_value get_stable_ps\n");
+			
+		}
 	}
 	//liujinzhou@wind-mobi.com modify at 20161205 end
 
@@ -899,6 +1169,7 @@ static int ltr778_get_ps_value(struct ltr778_priv *obj, u16 ps)
 		return -1;
 	}	
 }
+//tuwenzan@wind-mobi.com modify for solve oil bug at 20170307 end
 /********************************************************************/
 static int ltr778_get_als_value(struct ltr778_priv *obj, u16 als)
 {
@@ -1660,13 +1931,54 @@ static void ltr778_eint_work(struct work_struct *work)
 			
 		}else if(intr_flag_value == 3)  //  oil far  // modified by steven
 		{
-			res = ltr778_i2c_write_reg( LTR778_PS_THRES_LOW_0,(u8)((atomic_read(&obj->ps_persist_val_low)) & 0x00FF) );
+//tuwenzan@wind-mobi.com modify for solve oil bug at 20170307 begin
+			if(obj->ps > 20 ){ 
+				 if(obj->ps < 200){
+        			atomic_set(&obj->ps_thd_val_high,  obj->ps+50);
+        			atomic_set(&obj->ps_thd_val_low, obj->ps+35);
+					
+        			atomic_set(&obj->ps_persist_val_high,  obj->ps+1700);
+        			atomic_set(&obj->ps_persist_val_low, obj->ps+70);
+        		}else if(obj->ps < 400){
+        			atomic_set(&obj->ps_thd_val_high,  obj->ps+70);
+        			atomic_set(&obj->ps_thd_val_low, obj->ps+50);
+					
+        			atomic_set(&obj->ps_persist_val_high,  obj->ps+1600);
+        			atomic_set(&obj->ps_persist_val_low, obj->ps+100);
+        		}else if(obj->ps < 800){
+        			atomic_set(&obj->ps_thd_val_high,  obj->ps+80);
+        			atomic_set(&obj->ps_thd_val_low, obj->ps+60);
+					
+        			atomic_set(&obj->ps_persist_val_high,  obj->ps+1200);
+        			atomic_set(&obj->ps_persist_val_low, obj->ps+110);
+        		}else if(obj->ps < 1400){
+        			atomic_set(&obj->ps_thd_val_high,  obj->ps+200);
+        			atomic_set(&obj->ps_thd_val_low, obj->ps+100);
+					
+        			atomic_set(&obj->ps_persist_val_high,  2047);
+        			atomic_set(&obj->ps_persist_val_low, obj->ps+240);
+        		}
+        		else{
+        			atomic_set(&obj->ps_thd_val_high,  1900);
+        			atomic_set(&obj->ps_thd_val_low, 1800);
+					
+        			atomic_set(&obj->ps_persist_val_high, 2047 );
+        			atomic_set(&obj->ps_persist_val_low, 1950);
+        		}
+        		
+        		dynamic_calibrate = obj->ps;
+        	}	        
+
+
+			
+			res = ltr778_i2c_write_reg( LTR778_PS_THRES_LOW_0,(u8)((atomic_read(&obj->ps_thd_val_low)) & 0x00FF) );
 			if(res < 0)
 			{
 				goto EXIT_INTR;
 			}
 			
-			res = ltr778_i2c_write_reg( LTR778_PS_THRES_LOW_1, (u8)(((atomic_read(&obj->ps_persist_val_low)) & 0x7F00) >> 8));
+			res = ltr778_i2c_write_reg( LTR778_PS_THRES_LOW_1, (u8)(((atomic_read(&obj->ps_thd_val_low)) & 0x7F00) >> 8));
+			//tuwenzan@wind-mobi.com modify for solve oil bug at 20170307 end
 			if(res < 0)
 			{
 				goto EXIT_INTR;
@@ -2105,7 +2417,7 @@ static int ltr778_init_client(void)
 		}
 	}
 
-	res = ltr778_ps_enable(client, 1);
+	//res = ltr778_ps_enable(client, 1); //tuwenzan@wind-mobi.com modify for solve oil bug at 20170307
 	if (res < 0)
 	{
 		APS_ERR("enable ps fail: %d\n", res);
@@ -2146,14 +2458,16 @@ static int ltr778_init_client(void)
 		res = ltr778_i2c_write_reg(LTR778_ALS_CONTR, MODE_ALS_Range1);
 		break;
 	}
-	
+	//tuwenzan@wind-mobi.com modify for solve oil bug at 20170307 begin
+	/*
 	res = ltr778_als_enable(client, 1);
 	if (res < 0)
 	{
 		APS_ERR("enable als fail: %d\n", res);
 		goto EXIT_ERR;
 	}
-
+   */
+   //tuwenzan@wind-mobi.com modify for solve oil bug at 20170307 end
 	als_gain_factor = als_gainrange;
 	als_integration_factor = 1;
 
@@ -2287,6 +2601,7 @@ static int ps_get_data(int* value, int* status)
 	}
     
 	ltr778_obj->ps = ltr778_ps_read(ltr778_obj->client, &ltr778_obj->ps);
+	ltr778_obj->ps = get_ps_avg(ltr778_obj->ps);//add steven //tuwenzan@wind-mobi.com modify for solve oil bug at 20170307
 	if (ltr778_obj->ps < 0)
 		err = -1;
 	else {
