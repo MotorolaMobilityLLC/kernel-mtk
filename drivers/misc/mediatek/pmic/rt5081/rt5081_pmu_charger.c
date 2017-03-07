@@ -37,7 +37,7 @@
 #include "inc/rt5081_pmu_charger.h"
 #include "inc/rt5081_pmu.h"
 
-#define RT5081_PMU_CHARGER_DRV_VERSION	"1.1.10_MTK"
+#define RT5081_PMU_CHARGER_DRV_VERSION	"1.1.12_MTK"
 
 /* ======================= */
 /* RT5081 Charger Variable */
@@ -99,6 +99,8 @@ struct rt5081_pmu_charger_data {
 	struct mutex irq_access_lock;
 	struct mutex aicr_access_lock;
 	struct mutex ichg_access_lock;
+	struct mutex pe_access_lock;
+	struct mutex bc12_access_lock;
 	struct device *dev;
 	struct power_supply *psy;
 	wait_queue_head_t wait_queue;
@@ -111,6 +113,7 @@ struct rt5081_pmu_charger_data {
 	u32 zcv;
 	bool adc_hang;
 	struct switch_dev *usb_switch;
+	bool bc12_en;
 #ifndef CONFIG_TCPC_CLASS
 	struct work_struct chgdet_work;
 #endif
@@ -293,6 +296,7 @@ static int rt5081_set_aicr(struct charger_device *chg_dev, u32 uA);
 static int rt5081_get_aicr(struct charger_device *chg_dev, u32 *uA);
 static int rt5081_set_ichg(struct charger_device *chg_dev, u32 uA);
 static int rt5081_get_ichg(struct charger_device *chg_dev, u32 *uA);
+static int rt5081_enable_charging(struct charger_device *chg_dev, bool en);
 
 static inline void rt5081_chg_irq_set_flag(
 	struct rt5081_pmu_charger_data *chg_data, u8 *irq, u8 mask)
@@ -588,7 +592,7 @@ static int rt5081_get_adc(struct rt5081_pmu_charger_data *chg_data,
 		if (ret < 0) {
 			dev_err(chg_data->dev, "%s: get aicr failed\n",
 				__func__);
-			goto out;
+			goto out_unlock_all;
 		}
 	} else if (adc_sel == RT5081_ADC_IBAT) {
 		mutex_lock(&chg_data->ichg_access_lock);
@@ -596,7 +600,7 @@ static int rt5081_get_adc(struct rt5081_pmu_charger_data *chg_data,
 		if (ret < 0) {
 			dev_err(chg_data->dev, "%s: get ichg failed\n",
 				__func__);
-			goto out;
+			goto out_unlock_all;
 		}
 	}
 
@@ -607,7 +611,7 @@ static int rt5081_get_adc(struct rt5081_pmu_charger_data *chg_data,
 		dev_err(chg_data->dev,
 			"%s: start conversation failed, sel = %d, ret = %d\n",
 			__func__, adc_sel, ret);
-		goto out;
+		goto out_unlock_all;
 	}
 
 	for (i = 0; i < max_wait_times; i++) {
@@ -628,8 +632,6 @@ static int rt5081_get_adc(struct rt5081_pmu_charger_data *chg_data,
 			for (i = 0; i < ARRAY_SIZE(rt5081_chg_reg_addr); i++) {
 				ret = rt5081_pmu_reg_read(chg_data->chip,
 						rt5081_chg_reg_addr[i]);
-				if (ret < 0)
-					return ret;
 
 				dev_err(chg_data->dev, "%s: reg[0x%02X] = 0x%02X\n",
 					__func__, rt5081_chg_reg_addr[i], ret);
@@ -664,7 +666,7 @@ static int rt5081_get_adc(struct rt5081_pmu_charger_data *chg_data,
 	if (ret < 0) {
 		dev_err(chg_data->dev,
 			"%s: read ADC data failed, ret = %d\n", __func__, ret);
-		goto out;
+		goto out_unlock_all;
 	}
 
 	dev_dbg_ratelimited(chg_data->dev,
@@ -679,7 +681,7 @@ static int rt5081_get_adc(struct rt5081_pmu_charger_data *chg_data,
 	adc_result = (adc_data[0] * 256 + adc_data[1]) * rt5081_adc_unit[adc_sel]
 		+ rt5081_adc_offset[adc_sel];
 
-out:
+out_unlock_all:
 
 	/* Coefficient of IBUS & IBAT */
 	if (adc_sel == RT5081_ADC_IBUS) {
@@ -694,6 +696,7 @@ out:
 		mutex_unlock(&chg_data->ichg_access_lock);
 	}
 
+out:
 	*adc_val = adc_result;
 	rt5081_enable_hidden_mode(chg_data, false);
 	mutex_unlock(&chg_data->adc_access_lock);
@@ -749,6 +752,9 @@ static int rt5081_enable_pump_express(struct rt5081_pmu_charger_data *chg_data,
 		return ret;
 
 	ret = rt5081_set_ichg(chg_data->chg_dev, 2000000);
+	if (ret < 0)
+		return ret;
+	ret = rt5081_enable_charging(chg_data->chg_dev, true);
 	if (ret < 0)
 		return ret;
 
@@ -957,8 +963,12 @@ static int rt5081_enable_chgdet_flow(struct rt5081_pmu_charger_data *chg_data,
 	}
 
 	dev_info(chg_data->dev, "%s: en = %d\n", __func__, en);
+	mutex_lock(&chg_data->bc12_access_lock);
 	ret = (en ? rt5081_pmu_reg_set_bit : rt5081_pmu_reg_clr_bit)
 		(chg_data->chip, RT5081_PMU_REG_DEVICETYPE, RT5081_MASK_USBCHGEN);
+	if (ret >= 0)
+		chg_data->bc12_en = en;
+	mutex_unlock(&chg_data->bc12_access_lock);
 
 	return ret;
 
@@ -1038,6 +1048,33 @@ static int rt5081_inform_psy_changed(struct rt5081_pmu_charger_data *chg_data)
 	return ret;
 }
 
+static int _rt5081_set_aicr(struct rt5081_pmu_charger_data *chg_data, u32 uA)
+{
+	int ret = 0;
+	u8 reg_aicr = 0;
+	if (chg_data->aicr_limit != -1 && uA > chg_data->aicr_limit) {
+		dev_err(chg_data->dev,
+			"%s: %dmA over TA's cap, can only be %dmA\n",
+			__func__, uA, chg_data->aicr_limit);
+		uA = chg_data->aicr_limit;
+	}
+	reg_aicr = rt5081_find_closest_reg_value(
+		RT5081_AICR_MIN,
+		RT5081_AICR_MAX,
+		RT5081_AICR_STEP,
+		RT5081_AICR_NUM,
+		uA
+	);
+	dev_info(chg_data->dev, "%s: aicr = %d (0x%02X)\n", __func__, uA,
+		reg_aicr);
+	ret = rt5081_pmu_reg_update_bits(
+		chg_data->chip,
+		RT5081_PMU_REG_CHGCTRL3,
+		RT5081_MASK_AICR,
+		reg_aicr << RT5081_SHIFT_AICR
+	);
+	return ret;
+}
 static int rt5081_run_aicl(struct rt5081_pmu_charger_data *chg_data)
 {
 	int ret = 0;
@@ -1067,7 +1104,11 @@ static int rt5081_run_aicl(struct rt5081_pmu_charger_data *chg_data)
 		&chg_data->irq_flag[RT5081_CHG_IRQIDX_CHGIRQ5],
 		RT5081_MASK_CHG_AICLMEASI);
 
+	mutex_lock(&chg_data->pe_access_lock);
 	mutex_lock(&chg_data->aicr_access_lock);
+	ret = _rt5081_set_aicr(chg_data, RT5081_AICR_MAX);
+	if (ret < 0)
+		goto unlock_out;
 
 	ret = rt5081_pmu_reg_set_bit(chg_data->chip, RT5081_PMU_REG_CHGCTRL14,
 		RT5081_MASK_AICL_MEAS);
@@ -1094,6 +1135,7 @@ static int rt5081_run_aicl(struct rt5081_pmu_charger_data *chg_data)
 
 unlock_out:
 	mutex_unlock(&chg_data->aicr_access_lock);
+	mutex_unlock(&chg_data->pe_access_lock);
 out:
 	return ret;
 }
@@ -1152,7 +1194,6 @@ static int _rt5081_set_ichg(struct rt5081_pmu_charger_data *chg_data, u32 uA)
 	u8 reg_ichg = 0;
 
 	/* For adc workaround */
-	mutex_lock(&chg_data->ichg_access_lock);
 
 	/* Find corresponding reg value */
 	reg_ichg = rt5081_find_closest_reg_value(
@@ -1180,46 +1221,6 @@ static int _rt5081_set_ichg(struct rt5081_pmu_charger_data *chg_data, u32 uA)
 	else
 		ret = rt5081_set_ieoc(chg_data, chg_data->chg_desc->ieoc);
 
-	/* For adc workaround */
-	mutex_unlock(&chg_data->ichg_access_lock);
-
-	return ret;
-}
-
-static int _rt5081_set_aicr(struct rt5081_pmu_charger_data *chg_data, u32 uA)
-{
-	int ret = 0;
-	u8 reg_aicr = 0;
-
-	mutex_lock(&chg_data->aicr_access_lock);
-
-	if (chg_data->aicr_limit != -1 && uA > chg_data->aicr_limit) {
-		dev_err(chg_data->dev,
-			"%s: %dmA over TA's cap, can only be %dmA\n",
-			__func__, uA, chg_data->aicr_limit);
-		uA = chg_data->aicr_limit;
-	}
-
-	/* Find corresponding reg value */
-	reg_aicr = rt5081_find_closest_reg_value(
-		RT5081_AICR_MIN,
-		RT5081_AICR_MAX,
-		RT5081_AICR_STEP,
-		RT5081_AICR_NUM,
-		uA
-	);
-
-	dev_info(chg_data->dev, "%s: aicr = %d (0x%02X)\n", __func__, uA,
-		reg_aicr);
-
-	ret = rt5081_pmu_reg_update_bits(
-		chg_data->chip,
-		RT5081_PMU_REG_CHGCTRL3,
-		RT5081_MASK_AICR,
-		reg_aicr << RT5081_SHIFT_AICR
-	);
-
-	mutex_unlock(&chg_data->aicr_access_lock);
 	return ret;
 }
 
@@ -1433,7 +1434,9 @@ static int rt5081_set_ichg(struct charger_device *chg_dev, u32 uA)
 	struct rt5081_pmu_charger_data *chg_data =
 		dev_get_drvdata(&chg_dev->dev);
 
+	mutex_lock(&chg_data->ichg_access_lock);
 	ret = _rt5081_set_ichg(chg_data, uA);
+	mutex_unlock(&chg_data->ichg_access_lock);
 
 	return ret;
 }
@@ -1462,7 +1465,9 @@ static int rt5081_set_aicr(struct charger_device *chg_dev, u32 uA)
 	struct rt5081_pmu_charger_data *chg_data =
 		dev_get_drvdata(&chg_dev->dev);
 
+	mutex_lock(&chg_data->aicr_access_lock);
 	ret = _rt5081_set_aicr(chg_data, uA);
+	mutex_unlock(&chg_data->aicr_access_lock);
 
 	return ret;
 }
@@ -1698,6 +1703,7 @@ static int rt5081_set_pep_current_pattern(struct charger_device *chg_dev,
 	dev_info(chg_data->dev, "%s: pe1.0 pump_up = %d\n", __func__,
 		is_increase);
 
+	mutex_lock(&chg_data->pe_access_lock);
 	/* Set to PE1.0 */
 	ret = rt5081_pmu_reg_clr_bit(chg_data->chip, RT5081_PMU_REG_CHGCTRL17,
 		RT5081_MASK_PUMPX_20_10);
@@ -1711,6 +1717,7 @@ static int rt5081_set_pep_current_pattern(struct charger_device *chg_dev,
 
 	/* Enable PumpX */
 	ret = rt5081_enable_pump_express(chg_data, true);
+	mutex_unlock(&chg_data->pe_access_lock);
 
 	return ret;
 }
@@ -1718,7 +1725,10 @@ static int rt5081_set_pep_current_pattern(struct charger_device *chg_dev,
 static int rt5081_set_pep20_reset(struct charger_device *chg_dev)
 {
 	int ret = 0;
+	struct rt5081_pmu_charger_data *chg_data =
+		dev_get_drvdata(&chg_dev->dev);
 
+	mutex_lock(&chg_data->pe_access_lock);
 	ret = rt5081_set_mivr(chg_dev, 4500000);
 	if (ret < 0)
 		return ret;
@@ -1734,6 +1744,7 @@ static int rt5081_set_pep20_reset(struct charger_device *chg_dev)
 	msleep(250);
 
 	ret = rt5081_set_aicr(chg_dev, 700000);
+	mutex_unlock(&chg_data->pe_access_lock);
 
 	return ret;
 }
@@ -1748,6 +1759,7 @@ static int rt5081_set_pep20_current_pattern(struct charger_device *chg_dev,
 
 	dev_info(chg_data->dev, "%s: pep2.0  = %d\n", __func__, uV);
 
+	mutex_lock(&chg_data->pe_access_lock);
 	/* Set to PEP2.0 */
 	ret = rt5081_pmu_reg_set_bit(chg_data->chip, RT5081_PMU_REG_CHGCTRL17,
 		RT5081_MASK_PUMPX_20_10);
@@ -1776,6 +1788,7 @@ static int rt5081_set_pep20_current_pattern(struct charger_device *chg_dev,
 	/* Enable PumpX */
 	ret = rt5081_enable_pump_express(chg_data, true);
 	ret = (ret >= 0) ? 0 : ret;
+	mutex_unlock(&chg_data->pe_access_lock);
 
 	return ret;
 }
@@ -1810,6 +1823,7 @@ static int rt5081_enable_cable_drop_comp(struct charger_device *chg_dev,
 
 	dev_info(chg_data->dev, "%s: en = %d\n", __func__, en);
 
+	mutex_lock(&chg_data->pe_access_lock);
 	/* Set to PEP2.0 */
 	ret = rt5081_pmu_reg_set_bit(chg_data->chip, RT5081_PMU_REG_CHGCTRL17,
 		RT5081_MASK_PUMPX_20_10);
@@ -1828,6 +1842,7 @@ static int rt5081_enable_cable_drop_comp(struct charger_device *chg_dev,
 
 	/* Enable PumpX */
 	ret = rt5081_enable_pump_express(chg_data, true);
+	mutex_unlock(&chg_data->pe_access_lock);
 
 	return ret;
 }
@@ -2693,6 +2708,14 @@ static irqreturn_t rt5081_pmu_attachi_irq_handler(int irq, void *data)
 		(struct rt5081_pmu_charger_data *)data;
 
 	dev_info(chg_data->dev, "%s\n", __func__);
+	mutex_lock(&chg_data->bc12_access_lock);
+	if (!chg_data->bc12_en) {
+		dev_err(chg_data->dev, "%s: bc12 disabled, ignore irq\n",
+			__func__);
+		mutex_unlock(&chg_data->bc12_access_lock);
+		return IRQ_HANDLED;
+	}
+	mutex_unlock(&chg_data->bc12_access_lock);
 	ret = rt5081_pmu_reg_read(chg_data->chip, RT5081_PMU_REG_USBSTATUS1);
 	if (ret < 0) {
 		dev_err(chg_data->dev, "%s: read charger type failed\n",
@@ -3088,17 +3111,17 @@ static int rt5081_chg_init_setting(struct rt5081_pmu_charger_data *chg_data)
 
 	dev_info(chg_data->dev, "%s\n", __func__);
 
-	/* Disable hardware ILIM */
-	ret = rt5081_enable_ilim(chg_data, false);
-	if (ret < 0)
-		dev_err(chg_data->dev, "%s: disable ilim failed\n", __func__);
-
 	/* Select IINLMTSEL to use AICR */
 	ret = rt5081_select_input_current_limit(chg_data,
 		RT5081_IINLMTSEL_AICR);
 	if (ret < 0)
 		dev_err(chg_data->dev, "%s: select iinlmtsel failed\n",
 			__func__);
+	mdelay(5);
+	/* Disable hardware ILIM */
+	ret = rt5081_enable_ilim(chg_data, false);
+	if (ret < 0)
+		dev_err(chg_data->dev, "%s: disable ilim failed\n", __func__);
 
 	ret = _rt5081_set_ichg(chg_data, chg_desc->ichg);
 	if (ret < 0)
@@ -3246,11 +3269,14 @@ static int rt5081_pmu_charger_probe(struct platform_device *pdev)
 	mutex_init(&chg_data->irq_access_lock);
 	mutex_init(&chg_data->aicr_access_lock);
 	mutex_init(&chg_data->ichg_access_lock);
+	mutex_init(&chg_data->pe_access_lock);
+	mutex_init(&chg_data->bc12_access_lock);
 	chg_data->chip = dev_get_drvdata(pdev->dev.parent);
 	chg_data->dev = &pdev->dev;
 	chg_data->chg_type = CHARGER_UNKNOWN;
 	chg_data->aicr_limit = -1;
 	chg_data->adc_hang = false;
+	chg_data->bc12_en = true;
 
 	if (use_dt) {
 		ret = rt_parse_dt(&pdev->dev, chg_data);
@@ -3348,6 +3374,8 @@ err_create_wq:
 	mutex_destroy(&chg_data->adc_access_lock);
 	mutex_destroy(&chg_data->irq_access_lock);
 	mutex_destroy(&chg_data->aicr_access_lock);
+	mutex_destroy(&chg_data->pe_access_lock);
+	mutex_destroy(&chg_data->bc12_access_lock);
 	return ret;
 }
 
@@ -3363,6 +3391,8 @@ static int rt5081_pmu_charger_remove(struct platform_device *pdev)
 		mutex_destroy(&chg_data->adc_access_lock);
 		mutex_destroy(&chg_data->irq_access_lock);
 		mutex_destroy(&chg_data->aicr_access_lock);
+		mutex_destroy(&chg_data->pe_access_lock);
+		mutex_destroy(&chg_data->bc12_access_lock);
 		dev_info(chg_data->dev, "%s successfully\n", __func__);
 	}
 
