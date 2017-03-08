@@ -132,13 +132,13 @@ static int dummy_pinctrl_set(int pin, int state)
  * dummy operations
  *****************************************************************************/
 /* flashlight enable function */
-static int dummy_enable(void)
+static int dummy_enable(int level)
 {
-	int pin = 0, state = 0;
+	int pin = 0;
 
 	/* TODO: wrap enable function */
 
-	return dummy_pinctrl_set(pin, state);
+	return dummy_pinctrl_set(pin, level);
 }
 
 /* flashlight disable function */
@@ -198,7 +198,15 @@ static enum hrtimer_restart fl_timer_func(struct hrtimer *timer)
 	schedule_work(&dummy_work);
 	return HRTIMER_NORESTART;
 }
-
+static void sys_torch_brightness_set(struct led_classdev *led_cdev,enum led_brightness brightness)
+{
+	printk("--[%s][%d]------%d--\n",__FUNCTION__,__LINE__,brightness);
+	if (brightness ==1)
+	dummy_enable(brightness);
+	else
+	dummy_disable();
+	return;
+}
 
 /******************************************************************************
  * Flashlight operations
@@ -243,7 +251,7 @@ static int dummy_ioctl(unsigned int cmd, unsigned long arg)
 						(fl_timeout_ms % 1000) * 1000000);
 				hrtimer_start(&fl_timer, ktime, HRTIMER_MODE_REL);
 			}
-			dummy_enable();
+			dummy_enable((int)fl_arg->arg);
 		} else {
 			dummy_disable();
 			hrtimer_cancel(&fl_timer);
@@ -298,7 +306,7 @@ static ssize_t dummy_strobe_store(struct flashlight_arg arg)
 {
 	dummy_set_driver(FLASHLIGHT_SCENARIO_CAMERA);
 	dummy_set_level(arg.level);
-	dummy_enable();
+	dummy_enable(arg.level);
 	msleep(arg.dur);
 	dummy_disable();
 	dummy_release(NULL);
@@ -330,7 +338,7 @@ static int dummy_chip_init(void)
 static int dummy_probe(struct platform_device *dev)
 {
 	int err;
-
+	static struct led_classdev torch_cdev;
 	fl_dbg("Probe start.\n");
 
 	/* init pinctrl */
@@ -359,7 +367,11 @@ static int dummy_probe(struct platform_device *dev)
 
 	/* clear usage count */
 	use_count = 0;
-
+	
+	    //create some sys node.
+   	 torch_cdev.name="torch";
+   	 torch_cdev.brightness_set=sys_torch_brightness_set;
+  	 led_classdev_register(&(dev->dev),&torch_cdev);
 	fl_dbg("Probe done.\n");
 
 	return 0;

@@ -18,6 +18,7 @@
 #define LM3643_DTNAME     "mediatek,flashlights_lm3643"
 #define LM3643_DTNAME_I2C "mediatek,strobe_main"
 #define RT5081_DTNAME     "mediatek,flashlights_rt5081"
+#define DUMMY_DTNAME "mediatek,flashlights_dummy_gpio"
 #endif
 
 #ifdef mt6799
