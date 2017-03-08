@@ -1679,19 +1679,11 @@ static void mt_battery_update_EM(struct battery_data *bat_data)
 	    && (BMT_status.bat_charging_state != CHR_ERROR))
 		bat_data->BAT_STATUS = POWER_SUPPLY_STATUS_FULL;
 
-	if(bat_data->BAT_CAPACITY == 1)
-	{
-		bat_data->BAT_CAPACITY = 2;
-	}
-	else if(bat_data->BAT_CAPACITY == 0)
-	{
-		bat_data->BAT_CAPACITY = 1;
-	}
 	battery_log(BAT_LOG_CRTI,"BAT_CAPACITY = %d\n",bat_data->BAT_CAPACITY);
-	if ((bat_data->BAT_CAPACITY == 1) && (BMT_status.bat_vol > 3700)) {
-		bat_data->BAT_CAPACITY = 2;
+	if ((bat_data->BAT_CAPACITY == 0) && (BMT_status.bat_vol > 3700)) {
+		bat_data->BAT_CAPACITY = 1;
 		battery_log(BAT_LOG_CRTI,
-			"BAT_CAPACITY=2, due to BMT_status.bat_vol > 3700, bat_vol = %d\n",BMT_status.bat_vol);
+			"BAT_CAPACITY=1, due to BMT_status.bat_vol > 3700, bat_vol = %d\n",BMT_status.bat_vol);
 	}
 #ifdef CONFIG_MTK_DISABLE_POWER_ON_OFF_VOLTAGE_LIMITATION
 	if (bat_data->BAT_CAPACITY <= 0)
