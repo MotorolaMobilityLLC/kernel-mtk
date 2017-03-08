@@ -107,24 +107,10 @@ static unsigned int blk_flush_policy(unsigned long fflags, struct request *rq)
 		/*
 		 * Use post flush when:
 		 * 1. If FUA is desired but not supported,
-		 * 2. If post barrier is desired and supported
-		 * 3. If post barrier is desired and not supported and FUA is
-		 *    not supported.
 		 */
-		if ((!(fflags & (1UL << QUEUE_FLAG_FUA)) &&
-		    (rq->cmd_flags & REQ_FUA)) ||          
-			((fflags & REQ_BARRIER) && (rq->cmd_flags &
-				REQ_POST_FLUSH_BARRIER)) ||
-			((!(fflags & REQ_BARRIER) && !(fflags & (1UL << QUEUE_FLAG_FUA)) &&
-				(rq->cmd_flags & REQ_POST_FLUSH_BARRIER))))
-			policy |= REQ_FSEQ_POSTFLUSH;
-		/*
-		 * If post barrier is desired and not supported but FUA is
-		 * supported append FUA flag.
-		 */
-		if ((rq->cmd_flags & REQ_POST_FLUSH_BARRIER) &&
-				!(fflags & REQ_BARRIER) && (fflags & (1UL << QUEUE_FLAG_FUA)))
-			rq->cmd_flags |= REQ_FUA;
+		if (!(fflags & (1UL << QUEUE_FLAG_FUA)) &&
+		    (rq->cmd_flags & REQ_FUA))
+            policy |= REQ_FSEQ_POSTFLUSH;
 	}
 	return policy;
 }
