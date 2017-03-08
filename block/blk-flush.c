@@ -94,18 +94,37 @@ enum {
 static bool blk_kick_flush(struct request_queue *q,
 			   struct blk_flush_queue *fq);
 
-static unsigned int blk_flush_policy(unsigned int fflags, struct request *rq)
+static unsigned int blk_flush_policy(unsigned long fflags, struct request *rq)
 {
 	unsigned int policy = 0;
 
 	if (blk_rq_sectors(rq))
 		policy |= REQ_FSEQ_DATA;
 
-	if (fflags & REQ_FLUSH) {
-		if (rq->cmd_flags & REQ_FLUSH)
+	if (fflags & (1UL << QUEUE_FLAG_WC)) {		
+        if (rq->cmd_flags & REQ_FLUSH)
 			policy |= REQ_FSEQ_PREFLUSH;
-		if (!(fflags & REQ_FUA) && (rq->cmd_flags & REQ_FUA))
+		/*
+		 * Use post flush when:
+		 * 1. If FUA is desired but not supported,
+		 * 2. If post barrier is desired and supported
+		 * 3. If post barrier is desired and not supported and FUA is
+		 *    not supported.
+		 */
+		if ((!(fflags & (1UL << QUEUE_FLAG_FUA)) &&
+		    (rq->cmd_flags & REQ_FUA)) ||          
+			((fflags & REQ_BARRIER) && (rq->cmd_flags &
+				REQ_POST_FLUSH_BARRIER)) ||
+			((!(fflags & REQ_BARRIER) && !(fflags & (1UL << QUEUE_FLAG_FUA)) &&
+				(rq->cmd_flags & REQ_POST_FLUSH_BARRIER))))
 			policy |= REQ_FSEQ_POSTFLUSH;
+		/*
+		 * If post barrier is desired and not supported but FUA is
+		 * supported append FUA flag.
+		 */
+		if ((rq->cmd_flags & REQ_POST_FLUSH_BARRIER) &&
+				!(fflags & REQ_BARRIER) && (fflags & (1UL << QUEUE_FLAG_FUA)))
+			rq->cmd_flags |= REQ_FUA;
 	}
 	return policy;
 }
@@ -371,7 +390,7 @@ static void mq_flush_data_end_io(struct request *rq, int error)
 void blk_insert_flush(struct request *rq)
 {
 	struct request_queue *q = rq->q;
-	unsigned int fflags = q->flush_flags;	/* may change, cache */
+	unsigned long fflags = q->queue_flags;	/* may change, cache */
 	unsigned int policy = blk_flush_policy(fflags, rq);
 	struct blk_flush_queue *fq = blk_get_flush_queue(q, rq->mq_ctx);
 
@@ -380,7 +399,7 @@ void blk_insert_flush(struct request *rq)
 	 * REQ_FLUSH and FUA for the driver.
 	 */
 	rq->cmd_flags &= ~REQ_FLUSH;
-	if (!(fflags & REQ_FUA))
+	if (!(fflags & (1UL << QUEUE_FLAG_FUA)))    
 		rq->cmd_flags &= ~REQ_FUA;
 
 	/*

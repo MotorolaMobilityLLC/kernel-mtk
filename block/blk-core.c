@@ -35,6 +35,7 @@
 #include <linux/delay.h>
 #include <linux/ratelimit.h>
 #include <linux/pm_runtime.h>
+#include <linux/wbt.h>
 
 #define CREATE_TRACE_POINTS
 #include <trace/events/block.h>
@@ -751,6 +752,8 @@ blk_init_allocated_queue(struct request_queue *q, request_fn_proc *rfn,
 
 fail:
 	blk_free_flush_queue(q->fq);
+    wbt_exit(q->rq_wb);
+    q->rq_wb = NULL;    
 	return NULL;
 }
 EXPORT_SYMBOL(blk_init_allocated_queue);
@@ -1274,6 +1277,7 @@ void blk_requeue_request(struct request_queue *q, struct request *rq)
 	blk_delete_timer(rq);
 	blk_clear_rq_complete(rq);
 	trace_block_rq_requeue(q, rq);
+    wbt_requeue(q->rq_wb, &rq->wb_stat);
 
 	if (blk_rq_tagged(rq))
 		blk_queue_end_tag(q, rq);
@@ -1364,6 +1368,7 @@ void __blk_put_request(struct request_queue *q, struct request *req)
 	/* this is a bio leak */
 	WARN_ON(req->bio != NULL);
 
+    wbt_done(q->rq_wb, &req->wb_stat);
 	/*
 	 * Request may not have originated from ll_rw_blk. if not,
 	 * it didn't come out of our reserved rq pools
@@ -1557,7 +1562,7 @@ void blk_queue_bio(struct request_queue *q, struct bio *bio)
 	int el_ret, rw_flags, where = ELEVATOR_INSERT_SORT;
 	struct request *req;
 	unsigned int request_count = 0;
-
+    bool wb_acct;
 	/*
 	 * low level driver can indicate that it wants pages above a
 	 * certain limit bounced to low memory (ie for highmem, or even
@@ -1604,6 +1609,7 @@ void blk_queue_bio(struct request_queue *q, struct bio *bio)
 	}
 
 get_rq:
+    wb_acct = wbt_wait(q->rq_wb, bio->bi_rw, q->queue_lock);
 	/*
 	 * This sync check and mask will be re-done in init_request_from_bio(),
 	 * but we need to set it earlier to expose the sync flag to the
@@ -1619,10 +1625,14 @@ get_rq:
 	 */
 	req = get_request(q, rw_flags, bio, GFP_NOIO);
 	if (IS_ERR(req)) {
+        if (wb_acct)
+            __wbt_done(q->rq_wb);    
 		bio_endio(bio, PTR_ERR(req));	/* @q is dead */
 		goto out_unlock;
 	}
 
+    if (wb_acct)
+        wbt_mark_tracked(&req->wb_stat);
 	/*
 	 * After dropping the lock and possibly sleeping here, our request
 	 * may now be mergeable after it had proven unmergeable (above).
@@ -1810,8 +1820,9 @@ generic_make_request_checks(struct bio *bio)
 	 * drivers without flush support don't have to worry
 	 * about them.
 	 */
-	if ((bio->bi_rw & (REQ_FLUSH | REQ_FUA)) && !q->flush_flags) {
-		bio->bi_rw &= ~(REQ_FLUSH | REQ_FUA);
+	if ((bio->bi_rw & (REQ_FLUSH | REQ_FUA)) &&
+	    !test_bit(QUEUE_FLAG_WC, &q->queue_flags)) {          
+		bio->bi_rw &= ~(REQ_FLUSH | REQ_FUA);        
 		if (!nr_sectors) {
 			err = 0;
 			goto end_io;
@@ -2349,6 +2360,7 @@ void blk_start_request(struct request *req)
 {
 	blk_dequeue_request(req);
 
+	wbt_issue(req->q->rq_wb, &req->wb_stat);
 	/*
 	 * We are now handing the request to the hardware, initialize
 	 * resid_len to full count and add the timeout handler.
@@ -2583,8 +2595,10 @@ void blk_finish_request(struct request *req, int error)
 
 	blk_account_io_done(req);
 
-	if (req->end_io)
+	if (req->end_io) {
+        wbt_done(req->q->rq_wb, &req->wb_stat);    
 		req->end_io(req, error);
+        }
 	else {
 		if (blk_bidi_rq(req))
 			__blk_put_request(req->next_rq->q, req->next_rq);
