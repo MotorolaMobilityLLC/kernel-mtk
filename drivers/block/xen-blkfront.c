@@ -686,7 +686,9 @@ static int xlvbd_init_blk_queue(struct gendisk *gd, u16 sector_size,
 
 static void xlvbd_flush(struct blkfront_info *info)
 {
-	blk_queue_flush(info->rq, info->feature_flush);
+	blk_queue_write_cache(info->rq, info->feature_flush & REQ_FLUSH,
+				info->feature_flush & REQ_FUA);
+
 	printk(KERN_INFO "blkfront: %s: %s: %s %s %s %s %s\n",
 	       info->gd->disk_name,
 	       info->flush_op == BLKIF_OP_WRITE_BARRIER ?

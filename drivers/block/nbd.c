@@ -702,9 +702,9 @@ static int __nbd_ioctl(struct block_device *bdev, struct nbd_device *nbd,
 			queue_flag_set_unlocked(QUEUE_FLAG_DISCARD,
 				nbd->disk->queue);
 		if (nbd->flags & NBD_FLAG_SEND_FLUSH)
-			blk_queue_flush(nbd->disk->queue, REQ_FLUSH);
+            blk_queue_write_cache(nbd->disk->queue, true, false);
 		else
-			blk_queue_flush(nbd->disk->queue, 0);
+            blk_queue_write_cache(nbd->disk->queue, false, false);
 
 		thread = kthread_create(nbd_thread, nbd, "%s",
 					nbd->disk->disk_name);
