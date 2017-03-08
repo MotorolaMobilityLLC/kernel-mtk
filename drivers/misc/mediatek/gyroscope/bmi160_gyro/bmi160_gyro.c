@@ -1353,7 +1353,7 @@ static int bmi160_gyro_i2c_remove(struct i2c_client *client)
 
 #ifdef CONFIG_OF
 static const struct of_device_id gyro_of_match[] = {
-	{.compatible = "mediatek,gyroscope"},
+	{.compatible = "mediatek,gyro"},
 	{},
 };
 #endif

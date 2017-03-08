@@ -2280,7 +2280,7 @@
 	    <device9>
                 <varName>GYRO</varName>
                 <channel>I2C_CHANNEL_1</channel>
-                <address>0x69</address>
+                <address>0x68</address>
             </device9>
             <device10>
                 <varName>CAPSENSOR</varName>
