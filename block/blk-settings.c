@@ -33,7 +33,6 @@ unsigned long blk_max_pfn;
 void blk_queue_prep_rq(struct request_queue *q, prep_rq_fn *pfn)
 {
 	q->prep_rq_fn = pfn;
-    wbt_set_queue_depth(q->rq_wb, depth);    
 }
 EXPORT_SYMBOL(blk_queue_prep_rq);
 
@@ -849,6 +848,8 @@ EXPORT_SYMBOL_GPL(blk_queue_flush_queueable);
 void blk_set_queue_depth(struct request_queue *q, unsigned int depth)
 {
 	q->queue_depth = depth;
+    wbt_set_queue_depth(q->rq_wb, depth);    
+    
 }
 EXPORT_SYMBOL(blk_set_queue_depth);
 
