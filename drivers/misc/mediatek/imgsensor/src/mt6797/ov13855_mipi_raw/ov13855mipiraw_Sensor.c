@@ -59,7 +59,7 @@ static DEFINE_SPINLOCK(imgsensor_drv_lock);
 static imgsensor_info_struct imgsensor_info = {
 	.sensor_id = OV13855_SENSOR_ID,
 
-	.checksum_value = 0xd6650427,
+	.checksum_value = 0x8b86a64,
 
 	.pre = {
 		.pclk = 108250560,//vts*hts*fps
@@ -1899,13 +1899,15 @@ static kal_uint32 set_test_pattern_mode(kal_bool enable)
 	kal_int16 color_bar=0;
 	LOG_INF("enable: %d\n", enable);
 
-    color_bar= read_cmos_sensor(0x5280);
+	color_bar = read_cmos_sensor(0x4503);
 
-    if(enable)
-        write_cmos_sensor(0x5280, ((color_bar & 0x73) | 0x84));
-    else
-        write_cmos_sensor(0x5280, (color_bar & 0x7f));
-
+	if (enable) {
+	write_cmos_sensor(0x4503, ((color_bar & 0x73) | 0x84));
+	write_cmos_sensor(0x5000, 0x9b);
+	} else {
+	write_cmos_sensor(0x4503, (color_bar & 0x7f));
+	write_cmos_sensor(0x5000, 0xff);
+	}
     spin_lock(&imgsensor_drv_lock);
     imgsensor.test_pattern = enable;
     spin_unlock(&imgsensor_drv_lock);
