@@ -512,7 +512,11 @@ config LCT_CHR_LIMIT_MAX_SOC
 	tristate "battery runin test support"
 	help
 	  Say Y to enable support for the battery runin test support.
-
+	  
+config MTK_ADDITIONAL_BATTERY_TABLE
+	tristate "battery addition battery support"
+	help
+	  Say Y to enable support for the battery addition battery support.
 
 source "drivers/power/mediatek/Kconfig"
 
