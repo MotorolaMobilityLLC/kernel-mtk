@@ -3560,6 +3560,19 @@ static void check_blkcg_changed(struct cfq_io_cq *cic, struct bio *bio)
 	if (unlikely(!cfqd) || likely(cic->blkcg_serial_nr == serial_nr))
 		return;
 
+ 	/*
+	 * If we have a non-root cgroup, we can depend on that to
+	 * do proper throttling of writes. Turn off wbt for that
+	 * case.
+	 */
+	if (bio_blkcg(bio) != &blkcg_root) {
+		struct request_queue *q = cfqd->queue;
+
+		if (q->rq_wb)
+			wbt_disable(q->rq_wb);
+	}
+
+
 	sync_cfqq = cic_to_cfqq(cic, 1);
 	if (sync_cfqq) {
 		/*

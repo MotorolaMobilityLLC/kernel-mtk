@@ -184,6 +184,9 @@ typedef void (dio_iodone_t)(struct kiocb *iocb, loff_t offset,
  * WRITE_FLUSH_FUA	Combination of WRITE_FLUSH and FUA. The IO is preceded
  *			by a cache flush and data is guaranteed to be on
  *			non-volatile media on completion.
+ * WRITE_BG		Background write. This is for background activity like
+ *			the periodic flush and background threshold writeback
+ *
  *
  */
 #define RW_MASK			REQ_WRITE
@@ -199,7 +202,7 @@ typedef void (dio_iodone_t)(struct kiocb *iocb, loff_t offset,
 #define WRITE_FLUSH		(WRITE | REQ_SYNC | REQ_NOIDLE | REQ_FLUSH)
 #define WRITE_FUA		(WRITE | REQ_SYNC | REQ_NOIDLE | REQ_FUA)
 #define WRITE_FLUSH_FUA		(WRITE | REQ_SYNC | REQ_NOIDLE | REQ_FLUSH | REQ_FUA)
-
+#define WRITE_BG		(WRITE | REQ_NOIDLE | REQ_BG)
 /*
  * Attribute flags.  These should be or-ed together to figure out what
  * has been changed!

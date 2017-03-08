@@ -21,7 +21,7 @@
 #include <linux/sched/sysctl.h>
 #include <linux/delay.h>
 #include <linux/crash_dump.h>
-
+#include <linux/wbt.h>
 #include <trace/events/block.h>
 
 #include <linux/blk-mq.h>
@@ -272,6 +272,8 @@ static void __blk_mq_free_request(struct blk_mq_hw_ctx *hctx,
 
 	if (rq->cmd_flags & REQ_MQ_INFLIGHT)
 		atomic_dec(&hctx->nr_active);
+
+    wbt_done(q->rq_wb, &rq->wb_stat);        
 	rq->cmd_flags = 0;
 
 	clear_bit(REQ_ATOM_STARTED, &rq->atomic_flags);
@@ -296,6 +298,7 @@ inline void __blk_mq_end_request(struct request *rq, int error)
 	blk_account_io_done(rq);
 
 	if (rq->end_io) {
+        wbt_done(rq->q->rq_wb, &rq->wb_stat);    
 		rq->end_io(rq, error);
 	} else {
 		if (unlikely(blk_bidi_rq(rq)))
@@ -385,6 +388,8 @@ void blk_mq_start_request(struct request *rq)
 	if (unlikely(blk_bidi_rq(rq)))
 		rq->next_rq->resid_len = blk_rq_bytes(rq->next_rq);
 
+    wbt_issue(q->rq_wb, &rq->wb_stat);
+
 	blk_add_timer(rq);
 
 	/*
@@ -420,6 +425,8 @@ static void __blk_mq_requeue_request(struct request *rq)
 	struct request_queue *q = rq->q;
 
 	trace_block_rq_requeue(q, rq);
+
+    wbt_requeue(q->rq_wb, &rq->wb_stat);    
 
 	if (test_and_clear_bit(REQ_ATOM_STARTED, &rq->atomic_flags)) {
 		if (q->dma_drain_size && blk_rq_bytes(rq))
@@ -1144,6 +1151,7 @@ static void blk_mq_make_request(struct request_queue *q, struct bio *bio)
 	const int is_flush_fua = bio->bi_rw & (REQ_FLUSH | REQ_FUA);
 	struct blk_map_ctx data;
 	struct request *rq;
+    bool wb_acct;
 
 	blk_queue_bounce(q, &bio);
 
@@ -1152,9 +1160,17 @@ static void blk_mq_make_request(struct request_queue *q, struct bio *bio)
 		return;
 	}
 
+    wb_acct = wbt_wait(q->rq_wb, bio->bi_rw, NULL);
+
 	rq = blk_mq_map_request(q, bio, &data);
-	if (unlikely(!rq))
+	if (unlikely(!rq)) {
+        if (wb_acct)
+            __wbt_done(q->rq_wb);
 		return;
+    }
+
+    if (wb_acct)
+        wbt_mark_tracked(&rq->wb_stat);    
 
 	if (unlikely(is_flush_fua)) {
 		blk_mq_bio_to_request(rq, bio);
@@ -1211,6 +1227,7 @@ static void blk_sq_make_request(struct request_queue *q, struct bio *bio)
 	unsigned int use_plug, request_count = 0;
 	struct blk_map_ctx data;
 	struct request *rq;
+    bool wb_acct;    
 
 	/*
 	 * If we have multiple hardware queues, just go directly to
@@ -1229,9 +1246,17 @@ static void blk_sq_make_request(struct request_queue *q, struct bio *bio)
 	    blk_attempt_plug_merge(q, bio, &request_count))
 		return;
 
+    wb_acct = wbt_wait(q->rq_wb, bio->bi_rw, NULL);
+
 	rq = blk_mq_map_request(q, bio, &data);
-	if (unlikely(!rq))
+	if (unlikely(!rq)) {
+        if (wb_acct)
+            __wbt_done(q->rq_wb);
 		return;
+    }
+
+    if (wb_acct)
+        wbt_mark_tracked(&rq->wb_stat);
 
 	if (unlikely(is_flush_fua)) {
 		blk_mq_bio_to_request(rq, bio);
@@ -1918,6 +1943,9 @@ void blk_mq_free_queue(struct request_queue *q)
 	mutex_lock(&all_q_mutex);
 	list_del_init(&q->all_q_node);
 	mutex_unlock(&all_q_mutex);
+
+    wbt_exit(q->rq_wb);
+    q->rq_wb = NULL;
 }
 
 /* Basically redo blk_mq_init_queue with queue frozen */

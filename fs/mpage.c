@@ -590,7 +590,7 @@ page_is_mapped:
 	 * This page will go to BIO.  Do we need to send this BIO off first?
 	 */
 	if (bio && mpd->last_block_in_bio != blocks[0] - 1)
-		bio = mpage_bio_submit(WRITE, bio);
+		bio = mpage_bio_submit(wbc_to_write_cmd(wbc), bio);    
 
 alloc_new:
 	if (bio == NULL) {
@@ -614,7 +614,7 @@ alloc_new:
 	 */
 	length = first_unmapped << blkbits;
 	if (bio_add_page(bio, page, length, 0) < length) {
-		bio = mpage_bio_submit(WRITE, bio);
+		bio = mpage_bio_submit(wbc_to_write_cmd(wbc), bio);    
 		goto alloc_new;
 	}
 
@@ -624,7 +624,7 @@ alloc_new:
 	set_page_writeback(page);
 	unlock_page(page);
 	if (boundary || (first_unmapped != blocks_per_page)) {
-		bio = mpage_bio_submit(WRITE, bio);
+		bio = mpage_bio_submit(wbc_to_write_cmd(wbc), bio);    
 		if (boundary_block) {
 			write_boundary_block(boundary_bdev,
 					boundary_block, 1 << blkbits);
@@ -636,7 +636,7 @@ alloc_new:
 
 confused:
 	if (bio)
-		bio = mpage_bio_submit(WRITE, bio);
+		bio = mpage_bio_submit(wbc_to_write_cmd(wbc), bio);    
 
 	if (mpd->use_writepage) {
 		ret = mapping->a_ops->writepage(page, wbc);
@@ -693,7 +693,7 @@ mpage_writepages(struct address_space *mapping,
 
 		ret = write_cache_pages(mapping, wbc, __mpage_writepage, &mpd);
 		if (mpd.bio)
-			mpage_bio_submit(WRITE, mpd.bio);
+			mpage_bio_submit(wbc_to_write_cmd(wbc), mpd.bio);        
 	}
 	blk_finish_plug(&plug);
 	return ret;
@@ -711,7 +711,7 @@ int mpage_writepage(struct page *page, get_block_t get_block,
 	};
 	int ret = __mpage_writepage(page, wbc, &mpd);
 	if (mpd.bio)
-		mpage_bio_submit(WRITE, mpd.bio);
+		mpage_bio_submit(wbc_to_write_cmd(wbc), mpd.bio);    
 	return ret;
 }
 EXPORT_SYMBOL(mpage_writepage);
