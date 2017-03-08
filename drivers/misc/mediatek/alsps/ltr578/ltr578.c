@@ -1109,7 +1109,7 @@ static int ltr578_als_read(int gainrange)
 	else if (lsec > 30)
 		luxdata_int = (alsval*379)/(als_time*als_gain);
 	else
-		luxdata_int = (alsval*812)/(als_time*als_gain)/17*10;
+		luxdata_int = (alsval*812)*10/(als_time*als_gain)/17;
 	APS_DBG("als_value_lux = %d,lsec = %d\n", luxdata_int, lsec);
 	return luxdata_int;
 
