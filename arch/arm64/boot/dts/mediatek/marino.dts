@@ -217,6 +217,11 @@
         i2c_addr = <0x28 0 0 0>;
     };  
 /*END LCT */
+	/*LCT shaohui add for deviceinfo*/
+	deviceinfo{
+		compatible = "mediatek,lct_devinfo";
+	};
+	/*shaohui add end*/
 
 	utags {
 		compatible = "mmi,utags";
