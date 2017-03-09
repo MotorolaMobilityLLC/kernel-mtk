@@ -516,7 +516,12 @@ static long _flashlight_ioctl(struct file *file, unsigned int cmd, unsigned long
 		fl_err("Failed copy arguments from user.\n");
 		return -EFAULT;
 	}
-
+	#ifdef FLASH_BRADY
+	fl_dbg("shen before123  FLASH_IOC_GET_[TYPE]_PART_ID(%d,%d): %d\n",
+				fl_arg.type_id, fl_arg.ct_id,fl_arg.arg);
+	if (fl_arg.type_id == 2 && fl_arg.ct_id == 1)
+		fl_arg.ct_id = 2;
+	#endif
 	/* get type, color temperature and part index */
 	type_index = fl_get_type_index(fl_arg.type_id);
 	ct_index = fl_get_ct_index(fl_arg.ct_id);
