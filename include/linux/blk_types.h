@@ -251,4 +251,12 @@ enum rq_flag_bits {
 #define REQ_HASHED		(1ULL << __REQ_HASHED)
 #define REQ_MQ_INFLIGHT		(1ULL << __REQ_MQ_INFLIGHT)
 
+struct blk_rq_stat {
+	s64 mean;
+	u64 min;
+	u64 max;
+	s64 nr_samples;
+	s64 time;
+};
+
 #endif /* __LINUX_BLK_TYPES_H */

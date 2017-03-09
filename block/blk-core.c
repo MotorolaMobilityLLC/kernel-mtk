@@ -2428,6 +2428,8 @@ bool blk_update_request(struct request *req, int error, unsigned int nr_bytes)
 
 	trace_block_rq_complete(req->q, req, nr_bytes);
 
+    blk_stat_add(&req->q->rq_stats[rq_data_dir(req)], req);
+
 	if (!req->bio)
 		return false;
 
