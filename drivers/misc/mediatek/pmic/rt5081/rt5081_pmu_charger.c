@@ -2733,7 +2733,8 @@ static irqreturn_t rt5081_pmu_attachi_irq_handler(int irq, void *data)
 		chg_data->chg_type = NONSTANDARD_CHARGER;
 		break;
 	case RT5081_CHG_TYPE_CDP:
-		chg_data->chg_type = CHARGING_HOST;
+		//chg_data->chg_type = CHARGING_HOST;
+		chg_data->chg_type = STANDARD_HOST;//add by longcheer_liml temp for evt
 		break;
 	case RT5081_CHG_TYPE_DCP:
 		chg_data->chg_type = STANDARD_CHARGER;
