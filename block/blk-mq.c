@@ -28,6 +28,7 @@
 #include "blk.h"
 #include "blk-mq.h"
 #include "blk-mq-tag.h"
+#include "blk-stat.h"
 
 static DEFINE_MUTEX(all_q_mutex);
 static LIST_HEAD(all_q_list);
@@ -323,6 +324,13 @@ static void __blk_mq_complete_request_remote(void *data)
 	rq->q->softirq_done_fn(rq);
 }
 
+static void blk_mq_stat_add(struct request *rq)
+{
+	struct blk_rq_stat *stat = &rq->mq_ctx->stat[rq_data_dir(rq)];
+
+	blk_stat_add(stat, rq);
+}
+
 static void blk_mq_ipi_complete_request(struct request *rq)
 {
 	struct blk_mq_ctx *ctx = rq->mq_ctx;
@@ -352,6 +360,8 @@ static void blk_mq_ipi_complete_request(struct request *rq)
 void __blk_mq_complete_request(struct request *rq)
 {
 	struct request_queue *q = rq->q;
+
+    blk_mq_stat_add(rq);
 
 	if (!q->softirq_done_fn)
 		blk_mq_end_request(rq, rq->errors);
@@ -1671,6 +1681,9 @@ static void blk_mq_init_cpu_queues(struct request_queue *q,
 		spin_lock_init(&__ctx->lock);
 		INIT_LIST_HEAD(&__ctx->rq_list);
 		__ctx->queue = q;
+
+        blk_stat_init(&__ctx->stat[0]);
+        blk_stat_init(&__ctx->stat[1]);
 
 		/* If the cpu isn't online, the cpu is mapped to first hctx */
 		if (!cpu_online(i))
