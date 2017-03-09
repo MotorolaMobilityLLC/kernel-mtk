@@ -449,6 +449,13 @@ static ssize_t goodix_tool_write(struct file *filp, const char __user *buff, siz
 	} else if (15 == cmd_head.wr) {/* Update firmware! */
 		show_len = 0;
 		total_len = 0;
+		if ((cmd_head.data == NULL)
+			|| (cmd_head.data_len >= DATA_LENGTH)
+			|| (cmd_head.data_len >= (len - CMD_HEAD_LENGTH))) {
+			GTP_ERROR("copy_from_user data out of range.");
+			return -EINVAL;
+		}
+
 		memset(cmd_head.data, 0, cmd_head.data_len + 1);
 		memcpy(cmd_head.data, &buff[CMD_HEAD_LENGTH], cmd_head.data_len);
 		GTP_DEBUG("update firmware, filename: %s", cmd_head.data);

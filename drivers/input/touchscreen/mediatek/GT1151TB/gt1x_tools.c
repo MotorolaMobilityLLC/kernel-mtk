@@ -326,6 +326,13 @@ static ssize_t gt1x_tool_write(struct file *filp, const char __user *buff, size_
 	} else if (13 == cmd_head.wr) {
 		gt1x_leave_update_mode();
 	} else if (15 == cmd_head.wr) {
+		if ((cmd_head.data == NULL)
+			|| (cmd_head.data_len >= DATA_LENGTH)
+			|| (cmd_head.data_len >= (len - CMD_HEAD_LENGTH))) {
+			GTP_ERROR("copy_from_user data out of range.");
+			return -EINVAL;
+		}
+
 		memset(cmd_head.data, 0, cmd_head.data_len + 1);
 		memcpy(cmd_head.data, &buff[CMD_HEAD_LENGTH], cmd_head.data_len);
 		GTP_DEBUG("update firmware, filename: %s", cmd_head.data);
