@@ -48,3 +48,4 @@ endif
 ifeq ($(CONFIG_MTK_EMMC_SUPPORT_OTP),y)
 msdc-y += emmc_otp.o
 endif
+obj-$(CONFIG_LCT_DEVINFO_SUPPORT) += devinfo_flash.o
