@@ -473,8 +473,7 @@ static unsigned int last_level=0;
 static unsigned int hbm_enable=0;
 static void lcm_setbacklight(unsigned int level)
 {
-	unsigned int high_level;
-	unsigned int low_level;
+	unsigned int level_hight,level_low;	//modified by zhudaolong at 20170309
 	#if(LCT_LCM_MAPP_BACKLIGHT)
 	static int mapped_level = 0;
 	mapped_level = (7835*level + 2165)*16/(10000);
@@ -484,10 +483,12 @@ static void lcm_setbacklight(unsigned int level)
 		set_gpio_led_en(1);
 		MDELAY(5);
 		/* Refresh value of backlight level. */
-		high_level = (0xff | mapped_level);
-		low_level = mapped_level>>8;
-		lcm_backlight_level_setting[0].para_list[0] = high_level;
-		lcm_backlight_level_setting[0].para_list[1] = low_level;
+		//modified begin by zhudaolong at 20170309
+		level_hight=(mapped_level & 0x0f00)>>8;
+		level_low=(mapped_level & 0x00ff);
+		lcm_backlight_level_setting[0].para_list[0] = level_low;
+		lcm_backlight_level_setting[0].para_list[1] = level_hight;
+		//modified end by zhudaolong at 20170309
 		//lcm_backlight_level_setting[0].para_list[0] = mapped_level;
 		push_table(lcm_backlight_level_setting,
 			   sizeof(lcm_backlight_level_setting) / sizeof(struct LCM_setting_table), 1);
@@ -499,10 +500,12 @@ static void lcm_setbacklight(unsigned int level)
 		set_gpio_led_en(1);
 		MDELAY(5);
 		//lcm_backlight_level_setting[0].para_list[0] = 255;
-		high_level = (0xff | 3200);
-		low_level = 3200 >> 8;
-		lcm_backlight_level_setting[0].para_list[0] = high_level;
-		lcm_backlight_level_setting[0].para_list[1] = low_level;
+		//modified begin by zhudaolong at 20170309
+		level_hight=(4095 & 0x0f00)>>8;
+		level_low=(4095 & 0x00ff);
+		lcm_backlight_level_setting[0].para_list[0] = level_low;
+		lcm_backlight_level_setting[0].para_list[1] = level_hight;
+		//modified end by zhudaolong at 20170309
 	push_table(lcm_backlight_level_setting,
 		   sizeof(lcm_backlight_level_setting) / sizeof(struct LCM_setting_table), 1);
 		printk("lcm_setbacklight hbm_enable1\n");
