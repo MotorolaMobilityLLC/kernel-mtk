@@ -1061,8 +1061,8 @@ static int charging_sw_init(void *data)
 	bq25890_config_interface(bq25890_CON8, 0x0, 0x7, 5);	/* disable ir_comp_resistance */
 	bq25890_config_interface(bq25890_CON8, 0x0, 0x7, 2);	/* disable ir_comp_vdamp */
 #else
-	bq25890_config_interface(bq25890_CON8, 0x4, 0x7, 5);	/* enable ir_comp_resistance */
-	bq25890_config_interface(bq25890_CON8, 0x6, 0x7, 2);	/* enable ir_comp_vdamp */
+	bq25890_config_interface(bq25890_CON8, 0x1, 0x7, 5);	/* enable ir_comp_resistance */
+	bq25890_config_interface(bq25890_CON8, 0x2, 0x7, 2);	/* enable ir_comp_vdamp */
 #endif
 	bq25890_config_interface(bq25890_CON8, 0x3, 0x3, 0);	/* thermal 120 default */
 
