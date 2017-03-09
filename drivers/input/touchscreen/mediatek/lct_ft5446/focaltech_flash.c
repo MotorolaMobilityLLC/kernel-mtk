@@ -161,7 +161,7 @@ int fts_ctpm_i2c_hid2std(struct i2c_client *client)
     fts_ctpm_i2c_hid2std(client);
 	
 
-    for (i = 0; i < FTS_UPGRADE_LOOP; i++) {
+    for (i = 0; i < 10; i++) {
         /*********Step 1:Reset  CTPM *****/
         fts_i2c_write_reg(client, 0xfc, FTS_UPGRADE_AA);
         msleep(fts_updateinfo_curr.delay_aa);
