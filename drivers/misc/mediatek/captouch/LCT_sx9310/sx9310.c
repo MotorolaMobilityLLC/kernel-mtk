@@ -96,12 +96,16 @@ enum capsensor_report_state{
        CAPSENSOR_ALL_NEAR =3,
 };
 
-
 static int SX9311_i2c_probe(struct i2c_client *client, const struct i2c_device_id *id);
 static int SX9311_i2c_remove(struct i2c_client *client);
 static int SX9311_i2c_detect(struct i2c_client *client, struct i2c_board_info *info);
 //static int SX9311_i2c_suspend(struct i2c_client *client, pm_message_t msg);
 //static int SX9311_i2c_resume(struct i2c_client *client);
+
+/*-------------------------add by qzl 20170307 start---------------------------------*/
+static int SX9311_i2c_pm_suspend(struct device *dev); 
+static int SX9311_i2c_pm_resume(struct device *dev);
+/*-------------------------add by qzl 20170307 end-----------------------------------*/
 
 static int captouch_local_init(void);
 static int captouch_remove(void);
@@ -110,6 +114,13 @@ static int captouch_remove(void);
 static const struct of_device_id captouch_of_match[] = {
 	{.compatible = "mediatek,capsensor"},
 	{},
+};
+#endif 
+
+#ifdef CONFIG_PM_SLEEP
+
+static const struct dev_pm_ops sx9310_pm_ops = {
+	SET_SYSTEM_SLEEP_PM_OPS(SX9311_i2c_pm_suspend, SX9311_i2c_pm_resume)
 };
 #endif
 
@@ -124,8 +135,11 @@ static struct i2c_driver SX9311_i2c_driver = {
 	.id_table = SX9311_i2c_id,
 	.driver = {
 		   .name = SX9311_DEV_NAME,
+		   #ifdef CONFIG_PM_SLEEP
+		   .pm = &sx9310_pm_ops,
+		   #endif 
 #ifdef CONFIG_OF
-			.of_match_table = captouch_of_match,
+		   .of_match_table = captouch_of_match,
 #endif
 		   },
 };
@@ -158,7 +172,6 @@ static int read_register(struct i2c_client *i2c , u8 address, u8 *value)
 	
   	return -ENOMEM;
 }
-
 
 static int write_register(struct i2c_client *i2c, u8 address, u8 value)
 {
@@ -200,10 +213,10 @@ static int SX9311_i2c_read_dma(struct i2c_client *client, uint8_t regaddr, uint8
 
 	return ret;
 }
-
+ 
 #else
-
-#if 0
+  
+#if 1
 static int SX9311_i2c_write(struct i2c_client *client, uint8_t regaddr, uint8_t txbyte, uint8_t *data)
 {
 	uint8_t buffer[8];
@@ -620,6 +633,9 @@ static ssize_t sx9311_read_reg(struct device_driver *ddri, char *buf){
 
 	err = SX9311_i2c_read_dma(SX9311_i2c_client, 0x01, 1,buffer);
     len += sprintf(buf + len,"0x01, %x \r\n", buffer[0]); 
+
+	err = SX9311_i2c_read_dma(SX9311_i2c_client, 0x41, 1,buffer);
+    len += sprintf(buf + len,"0x41, %x \r\n", buffer[0]); 
    
     return len ;
 }
@@ -785,8 +801,8 @@ static int SX9311_i2c_detect(struct i2c_client *client, struct i2c_board_info *i
     err = SX9311_i2c_write_dma(SX9311_i2c_client, 0x00, 1, buffer);
 
 
-}
-#if 0
+} 
+#if 1
 /*for 0x41 reg  captouch  1->active, 0->sleep mode cly add 20161117*/
 static void sx9310_sleep(void){
 
@@ -807,9 +823,31 @@ static void sx9310_active(void){
 	//cly add for  0x00=0xff, do re calibrate  20161128
     buffer[0] = 0xff;
     err = SX9311_i2c_write_dma(SX9311_i2c_client, 0x00, 1, buffer);
+
 }
 /*end cly*/
 #endif
+/*---------------------add by qzl 20170307 start------------------------------*/
+static int SX9311_i2c_pm_suspend(struct device *dev)
+{ 
+	int err = 0;
+
+	CAPTOUCH_FUN();
+        sx9310_sleep();
+	return err;
+}
+
+static int SX9311_i2c_pm_resume(struct device *dev)
+{
+	int err = 0;
+
+	CAPTOUCH_FUN();
+	sx9310_active();
+	return err;
+}
+
+/*---------------------add by qzl 20170307 end--------------------------------*/
+
 //-- Modified for close Captouch by shentaotao 2016.07.02
 /*----------------------------------------------------------------------------*/
 #if 0
