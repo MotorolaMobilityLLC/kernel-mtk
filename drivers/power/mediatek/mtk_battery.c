@@ -131,6 +131,12 @@ bool is_fg_disable(void)
 	return gDisableGM30;
 }
 
+#ifdef  CONFIG_LCT_CHR_ALT_TEST_SUPPORT  //add by longcheer_liml_2017_03_10
+unsigned int lct_alt_status = 0;
+extern void rtc_clear_alt(void);
+extern int get_rtc_mark_alt(void);
+extern int cmd_discharging;
+#endif
 
 int Enable_BATDRV_LOG = 3;	/* Todo: charging.h use it, should removed */
 int reset_fg_bat_int;
@@ -4272,6 +4278,13 @@ static int battery_probe(struct platform_device *dev)
 	char boot_voltage_tmp[10];
 	int boot_voltage_len = 0;
 
+#ifdef  CONFIG_LCT_CHR_ALT_TEST_SUPPORT  //add by longcheer_liml_2017_03_10
+	lct_alt_status = get_rtc_mark_alt();
+	if (lct_alt_status == 1){
+		cmd_discharging = 1;
+		rtc_clear_alt();
+	}
+#endif
 /********* adc_cdev **********/
 	ret = alloc_chrdev_region(&adc_cali_devno, 0, 1, ADC_CALI_DEVNAME);
 	if (ret)

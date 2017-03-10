@@ -343,3 +343,8 @@ config MTK_DUAL_CHARGER_SUPPORT
           IC is conneceted to PMID pin from the master and VBAT.
 	  Say Yes to enable dual charger support.
 	  Say No to disable dual charger support.
+config LCT_CHR_ALT_TEST_SUPPORT
+	bool "LCT_CHR_ALT_TEST_SUPPORT"
+	default n
+	help
+	  Set yes to support ALT test.  
