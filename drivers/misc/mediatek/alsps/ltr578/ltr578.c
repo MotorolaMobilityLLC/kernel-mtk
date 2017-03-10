@@ -111,6 +111,10 @@ static int als_gainrange;
 static int final_prox_val;
 static int final_lux_val;
 
+#ifdef CONFIG_MOTO_AOD_BASE_ON_AP_SENSORS
+static int ltr578_ps_stowed_enable(struct i2c_client *client, int enable);
+static bool ps_stowed_start = false; 
+#endif
 /*----------------------------------------------------------------------------*/
 static DEFINE_MUTEX(read_lock);
 
@@ -559,6 +563,22 @@ static ssize_t ltr578_show_distance(struct device_driver *ddri, char *buf)
 
 }
 
+#ifdef CONFIG_MOTO_AOD_BASE_ON_AP_SENSORS
+static ssize_t ltr578_store_stowed(struct device_driver *ddri, const char *buf, size_t count)
+{
+	uint16_t mode = 0;
+	int ret = 0;
+
+	ret = sscanf(buf, "%hu", &mode);
+	if (ret != 1)
+		return -EINVAL;
+
+	ltr578_ps_stowed_enable(ltr578_i2c_client, mode?true:false);
+
+	return count;
+}
+#endif
+
 #if 1
 /*----------------------------------------------------------------------------*/
 static DRIVER_ATTR(als,     S_IWUSR | S_IRUGO, ltr578_show_als,   NULL);
@@ -568,6 +588,9 @@ static DRIVER_ATTR(distance,S_IWUSR | S_IRUGO, ltr578_show_distance,    NULL);
 static DRIVER_ATTR(config,  S_IWUSR | S_IRUGO, ltr578_show_config,ltr578_store_config);
 static DRIVER_ATTR(status,  S_IWUSR | S_IRUGO, ltr578_show_status,  ltr578_store_status);
 static DRIVER_ATTR(reg,     S_IWUSR | S_IRUGO, ltr578_show_reg,   ltr578_store_reg);
+#ifdef CONFIG_MOTO_AOD_BASE_ON_AP_SENSORS
+static DRIVER_ATTR(stowed,    S_IWUSR , NULL,				ltr578_store_stowed);
+#endif
 
 /*----------------------------------------------------------------------------*/
 static struct driver_attribute *ltr578_attr_list[] = {
@@ -578,6 +601,9 @@ static struct driver_attribute *ltr578_attr_list[] = {
     &driver_attr_config,
     &driver_attr_status,
     &driver_attr_reg,
+#ifdef CONFIG_MOTO_AOD_BASE_ON_AP_SENSORS
+    &driver_attr_stowed,
+#endif
 };
 
 /*----------------------------------------------------------------------------*/
@@ -671,23 +697,23 @@ static int ltr578_dynamic_calibrate(void)
 				isadjust = 1;
 				
 				if(noise < 100){
-						atomic_set(&obj->ps_thd_val_high,  noise+273);
-						atomic_set(&obj->ps_thd_val_low, noise+105);
+						atomic_set(&obj->ps_thd_val_high,  noise+25);
+						atomic_set(&obj->ps_thd_val_low, noise+15);
 				}else if(noise < 200){
-						atomic_set(&obj->ps_thd_val_high,  noise+273);
-						atomic_set(&obj->ps_thd_val_low, noise+105);
+						atomic_set(&obj->ps_thd_val_high,  noise+35);
+						atomic_set(&obj->ps_thd_val_low, noise+25);
 				}else if(noise < 300){
-						atomic_set(&obj->ps_thd_val_high,  noise+273);
-						atomic_set(&obj->ps_thd_val_low, noise+105);
+						atomic_set(&obj->ps_thd_val_high,  noise+45);
+						atomic_set(&obj->ps_thd_val_low, noise+35);
 				}else if(noise < 400){
-						atomic_set(&obj->ps_thd_val_high,  noise+273);
-						atomic_set(&obj->ps_thd_val_low, noise+105);
+						atomic_set(&obj->ps_thd_val_high,  noise+55);
+						atomic_set(&obj->ps_thd_val_low, noise+45);
 				}else if(noise < 600){
-						atomic_set(&obj->ps_thd_val_high,  noise+273);
-						atomic_set(&obj->ps_thd_val_low, noise+105);
+						atomic_set(&obj->ps_thd_val_high,  noise+65);
+						atomic_set(&obj->ps_thd_val_low, noise+55);
 				}else if(noise < 800){
-					atomic_set(&obj->ps_thd_val_high,  noise+273);
-					atomic_set(&obj->ps_thd_val_low, noise+105);	
+					atomic_set(&obj->ps_thd_val_high,  noise+65);
+					atomic_set(&obj->ps_thd_val_low, noise+55);	
 				}else if(noise < 1000){
 						atomic_set(&obj->ps_thd_val_high,  noise+273);
 						atomic_set(&obj->ps_thd_val_low, noise+105);
@@ -809,6 +835,116 @@ static int ltr578_ps_set_thres(void)
 
 }
 
+#ifdef CONFIG_MOTO_AOD_BASE_ON_AP_SENSORS
+
+static int ltr578_ps_stowed_enable(struct i2c_client *client, int enable)
+{
+//    struct i2c_client *client = ltr578_obj->client;
+	struct ltr578_priv *obj = ltr578_obj;
+	u8 databuf[2];	
+	int res;
+
+	int error;
+	int setctrl;
+    APS_LOG("ltr578_ps_stowed_enable() ...start!\n");
+
+	
+	mdelay(WAKEUP_DELAY);
+    
+	/* =============== 
+	 * ** IMPORTANT **
+	 * ===============
+	 * Other settings like timing and threshold to be set here, if required.
+ 	 * Not set and kept as device default for now.
+ 	 */
+   	error = ltr578_i2c_write_reg(LTR578_PS_PULSES, 32); //32pulses 
+	if(error<0)
+    {
+        APS_LOG("ltr578_ps_stowed_enable() PS Pulses error2\n");
+	    return error;
+	} 
+	error = ltr578_i2c_write_reg(LTR578_PS_LED, 0x36); // 60khz & 100mA 
+	if(error<0)
+    {
+        APS_LOG("ltr578_ps_stowed_enable() PS LED error...\n");
+	    return error;
+	}
+		error = ltr578_i2c_write_reg(LTR578_PS_MEAS_RATE, 0x5C); // 11bits & 50ms time 
+	if(error<0)
+    {
+        APS_LOG("ltr578_ps_stowed_enable() PS time error...\n");
+	    return error;
+	}
+
+#ifdef CONFIG_MOTO_AOD_BASE_ON_AP_SENSORS
+	ltr578_i2c_write_reg(LTR578_PS_MEAS_RATE, 0x5E);// 200ms measurement time
+	ltr578_i2c_write_reg(LTR578_INT_PST, 0x0E);// 15 persist
+#endif
+
+	/*for interrup work mode support -- by WeeLiat, Liteon 18.06.2015*/
+		if(0 == obj->hw->polling_mode_ps)
+		{		
+
+			ltr578_ps_set_thres();
+			
+			databuf[0] = LTR578_INT_CFG;	
+			databuf[1] = 0x01;
+			res = i2c_master_send(client, databuf, 0x2);
+			if(res <= 0)
+			{
+				goto EXIT_ERR;
+				return LTR578_ERR_I2C;
+			}
+	
+			databuf[0] = LTR578_INT_PST;	
+			databuf[1] = 0x02;
+			res = i2c_master_send(client, databuf, 0x2);
+			if(res <= 0)
+			{
+				goto EXIT_ERR;
+				return LTR578_ERR_I2C;
+			}
+			//mt_eint_unmask(CUST_EINT_ALS_NUM);
+			
+			enable_irq(obj->irq);
+	
+		}
+	
+ 	setctrl = ltr578_i2c_read_reg(LTR578_MAIN_CTRL);
+	if (enable != 0) {
+		APS_LOG("PS: stowed enable ps only \n");
+		ps_stowed_start = 1;
+	}
+	else {
+		APS_LOG("PS: stowed disable ps only \n");
+		ps_stowed_start = 0;
+	}
+	if((setctrl & 0x01) == 0)//Check for PS enable?
+	{
+		setctrl = setctrl | 0x01;
+		error = ltr578_i2c_write_reg(LTR578_MAIN_CTRL, setctrl); 
+		if(error<0)
+		{
+	    APS_LOG("ltr578_ps_stowed_enable() error1\n");
+	    return error;
+		}
+	}
+	
+	APS_LOG("ltr578_ps_stowed_enable ...OK!\n");
+	/*
+	#ifdef GN_MTK_BSP_PS_DYNAMIC_CALI
+	ltr578_dynamic_calibrate();
+	#endif
+	*/
+	ltr578_ps_set_thres();
+ 	
+	return error;
+
+	EXIT_ERR:
+	APS_ERR("set thres: %d\n", res);
+	return res;
+}
+#endif
 
 static int ltr578_ps_enable(void)
 {
@@ -830,7 +966,7 @@ static int ltr578_ps_enable(void)
 	 * Other settings like timing and threshold to be set here, if required.
  	 * Not set and kept as device default for now.
  	 */
-   	error = ltr578_i2c_write_reg(LTR578_PS_PULSES, 32); //32pulses 
+   	error = ltr578_i2c_write_reg(LTR578_PS_PULSES, 16); //32pulses 
 	if(error<0)
     {
         APS_LOG("ltr578_ps_enable() PS Pulses error2\n");
@@ -842,13 +978,17 @@ static int ltr578_ps_enable(void)
         APS_LOG("ltr578_ps_enable() PS LED error...\n");
 	    return error;
 	}
-		error = ltr578_i2c_write_reg(LTR578_PS_MEAS_RATE, 0x5C); // 11bits & 50ms time 
+	error = ltr578_i2c_write_reg(LTR578_PS_MEAS_RATE, 0x5C); // 11bits & 50ms time 
 	if(error<0)
     {
         APS_LOG("ltr578_ps_enable() PS time error...\n");
 	    return error;
 	}
 
+#ifdef CONFIG_MOTO_AOD_BASE_ON_AP_SENSORS
+	ltr578_i2c_write_reg(LTR578_PS_MEAS_RATE, 0x5B);// 25ms measurement time
+	ltr578_i2c_write_reg(LTR578_INT_PST, 0x02);// 2 persist
+#endif
 
 	/*for interrup work mode support -- by WeeLiat, Liteon 18.06.2015*/
 		if(0 == obj->hw->polling_mode_ps)
@@ -1051,34 +1191,106 @@ static int ltr578_als_disable(void)
 	return error;
 }
 
+
 static int ltr578_als_read(int gainrange)
 {
 	int alsval_0, alsval_1, alsval_2, alsval;
+	
+	int cleval_0, cleval_1, cleval_2, cleval;
 	int luxdata_int;
+	int als_time;
+	int als_gain;
+	int lsec=0; 
 
 	alsval_0 = ltr578_i2c_read_reg(LTR578_ALS_DATA_0);
 	alsval_1 = ltr578_i2c_read_reg(LTR578_ALS_DATA_1);
 	alsval_2 = ltr578_i2c_read_reg(LTR578_ALS_DATA_2);
 	alsval = (alsval_2 * 256* 256) + (alsval_1 * 256) + alsval_0;
-	//APS_DBG("alsval_0 = %d,alsval_1=%d,alsval_2=%d,alsval=%d\n",alsval_0,alsval_1,alsval_2,alsval);
+	APS_LOG("alsval_0 = %d,alsval_1=%d,alsval_2=%d,alsval=%d\n",alsval_0,alsval_1,alsval_2,alsval);
 
+	
+	cleval_0 = ltr578_i2c_read_reg(0x0a);
+	cleval_1 = ltr578_i2c_read_reg(0x0b);
+	cleval_2 = ltr578_i2c_read_reg(0x0c);
+	
+	cleval = cleval_0 | (cleval_1<<8) | (cleval_2<<16);
+    lsec = (cleval/alsval)*10;
+		
     if(alsval==0)
     {
         luxdata_int = 0;
         goto err;
     }
 
-	//APS_DBG("gainrange = %d\n",gainrange);
+	APS_LOG("gainrange = %d\n",gainrange);
 	
-	luxdata_int = alsval;//*8/gainrange/10;//formula: ALS counts * 0.8/gain/int , int=1
+	als_time = ltr578_i2c_read_reg(0x04);
+	als_time = (als_time>>4)&0x07;
+
 	
-	//APS_DBG("als_value_lux = %d\n", luxdata_int);
+	APS_LOG("als_time=%d\n", als_time);
+
+	if (als_time == 0)
+		als_time = 400;
+	else if (als_time == 1)
+		als_time = 200;
+	
+	else if (als_time == 2)
+		als_time = 100;
+	else if (als_time == 3)
+		als_time = 50;
+	else
+		als_time = 25;
+
+
+	
+	als_gain = ltr578_i2c_read_reg(0x05);
+	als_gain = als_gain&0x07;
+	APS_LOG("als_gain=%d\n", als_gain);
+
+	if (als_gain == 0)
+		als_gain = 1;
+	else if (als_gain == 1)
+		als_gain = 3;
+	else if (als_gain == 2)
+		als_gain = 6;
+	else if (als_gain == 3)
+		als_gain = 9;
+	else
+		als_gain = 18;
+	
+	
+	
+    if(lsec > 97)
+
+    	luxdata_int = (alsval*312)/(als_time*als_gain)*12/10; //incan
+		
+	else if(lsec > 48)
+
+    	luxdata_int = (alsval*379)/(als_time*als_gain)*13/10; // D65
+		
+
+    else if(lsec > 27)
+
+    	luxdata_int = (alsval*379)/(als_time*als_gain)*10/12;	// D65
+		
+
+		else 
+
+    	luxdata_int = 10*(alsval*812)/(als_time*als_gain)/18; //cwf
+		
+	
+
+	APS_LOG("als_value_lux = %d,lsec = %d\n", luxdata_int,lsec);
+	
+	
+	//APS_LOG("als_value_lux = %d\n", luxdata_int);
 	return luxdata_int;
 
 	
 err:
 	final_lux_val = luxdata_int;
-	APS_DBG("err als_value_lux = 0x%x\n", luxdata_int);
+	APS_LOG("zero als_value_lux = 0x%x\n", luxdata_int);
 	return luxdata_int;
 }
 
@@ -1451,6 +1663,22 @@ static void ltr578_eint_work(struct work_struct *work)
     		err = -1;
     		return;
     	}
+
+#ifdef CONFIG_MOTO_AOD_BASE_ON_AP_SENSORS
+		if(ps_stowed_start == 1)
+		{
+			if(ps_value == 0){
+				APS_DBG("stowed: set 3000 mS persist");
+				ltr578_i2c_write_reg(LTR578_PS_MEAS_RATE, 0x5E);// 200ms measurement time
+				ltr578_i2c_write_reg(LTR578_INT_PST, 0x0E);// 15 persist
+			}else{
+				APS_DBG("stowed: set 100 mS persist");
+				ltr578_i2c_write_reg(LTR578_PS_MEAS_RATE, 0x5B);// 50ms measurement time
+				ltr578_i2c_write_reg(LTR578_INT_PST, 0x02);// 2 persist
+			}
+			ps_value += 2;//stowed:2,unstowed:3
+		}
+#endif
 
 		noise = obj->ps;
 		if(ps_value == 1){
