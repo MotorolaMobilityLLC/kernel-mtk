@@ -79,6 +79,10 @@ int Charger_enable_Flag=1;
 extern int battery_test_status;
 #endif
 
+#ifdef  CONFIG_LCT_CHR_ALT_TEST_SUPPORT  //add by longcheer_liml_2017_03_10
+extern unsigned int lct_alt_status;
+int cmd_discharging = 0;
+#endif
 #define USE_FG_TIMER 1
 
 
@@ -308,7 +312,14 @@ static int _charger_manager_enable_charging(struct charger_consumer *consumer,
 
 		if (en == false) {
 			if (pdata->disable_charging_count == 0)
+			{
+        #ifdef CONFIG_LCT_CHR_ALT_TEST_SUPPORT  //add by longcheer_liml_2017_03_10
+		        if (lct_alt_status != 1)
 				_mtk_charger_do_charging(info, en);
+	    #else
+	            _mtk_charger_do_charging(info, en);
+	    #endif
+			}
 
 			pdata->disable_charging_count++;
 		} else {
@@ -354,7 +365,7 @@ int charger_manager_set_input_current_limit(struct charger_consumer *consumer,
 	int idx, int input_current)
 {
 	struct charger_manager *info = consumer->cm;
-
+printk("~~liml_charger input_current=%d\n",input_current);
 	if (info != NULL) {
 		struct charger_data *pdata;
 
@@ -364,8 +375,22 @@ int charger_manager_set_input_current_limit(struct charger_consumer *consumer,
 			pdata = &info->chg2_data;
 		else
 			return -ENOTSUPP;
-
+    #ifdef CONFIG_LCT_CHR_ALT_TEST_SUPPORT  //add by longcheer_liml_2017_03_10
+		if (lct_alt_status == 1)
+        {
+            if(mt_get_charger_type() == 4)
+            {
+                pdata->thermal_input_current_limit = 2050000;//input_current;
+            }else{
+                pdata->thermal_input_current_limit = 500000;//input_current;
+            }
+        }else
+        {
 		pdata->thermal_input_current_limit = input_current;
+        }
+    #else
+        pdata->thermal_input_current_limit = input_current;
+    #endif
 		pr_err("%s: dev:%s idx:%d en:%d\n", __func__, dev_name(consumer->dev),
 		idx, input_current);
 		_mtk_charger_change_current_setting(info);
@@ -1777,6 +1802,45 @@ static ssize_t show_ADC_Charger_Voltage(struct device *dev, struct device_attrib
 static DEVICE_ATTR(ADC_Charger_Voltage, 0444, show_ADC_Charger_Voltage, NULL);
 
 /* procfs */
+#ifdef CONFIG_LCT_CHR_ALT_TEST_SUPPORT  //add by longcheer_liml_2017_03_10
+static int mtk_charger_current_cmd_show(struct seq_file *m, void *data)
+{
+	struct charger_manager *pinfo = m->private;
+	seq_printf(m, "%d %d\n", pinfo->usb_unlimited, pinfo->cmd_discharging);
+	return 0;
+}
+static ssize_t mtk_charger_current_cmd_write(struct file *file, const char *buffer,
+						size_t count, loff_t *data)
+{
+	int len = 0;
+	char desc[32];
+	int cmd_current_unlimited = 0;
+	struct charger_manager *info = PDE_DATA(file_inode(file));
+	len = (count < (sizeof(desc) - 1)) ? count : (sizeof(desc) - 1);
+	if (copy_from_user(desc, buffer, len))
+		return 0;
+	desc[len] = '\0';
+	if (sscanf(desc, "%d %d", &cmd_current_unlimited, &cmd_discharging) == 2) {
+		info->usb_unlimited = cmd_current_unlimited;
+		if (cmd_discharging == 1) {
+		    lct_alt_status = 1;
+			info->cmd_discharging = true;
+			charger_dev_enable(info->chg1_dev, false);
+			charger_manager_notifier(info, CHARGER_NOTIFY_STOP_CHARGING);
+		} else if (cmd_discharging == 0) {
+		    lct_alt_status = 0;
+			info->cmd_discharging = false;
+			charger_dev_enable(info->chg1_dev, true);
+			charger_manager_notifier(info, CHARGER_NOTIFY_START_CHARGING);
+		}
+		pr_debug("%s cmd_current_unlimited=%d, cmd_discharging=%d,lct_alt_status=%d\n",
+			__func__, cmd_current_unlimited, cmd_discharging,lct_alt_status);
+		return count;
+	}
+	pr_err("bad argument, echo [usb_unlimited] [disable] > current_cmd\n");
+	return count;
+}
+#else
 static int mtk_charger_current_cmd_show(struct seq_file *m, void *data)
 {
 	struct charger_manager *pinfo = m->private;
@@ -1820,6 +1884,7 @@ static ssize_t mtk_charger_current_cmd_write(struct file *file, const char *buff
 	pr_err("bad argument, echo [usb_unlimited] [disable] > current_cmd\n");
 	return count;
 }
+#endif
 
 static int mtk_charger_en_power_path_show(struct seq_file *m, void *data)
 {
