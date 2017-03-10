@@ -123,6 +123,10 @@ u16 rtc_spare_reg[][3] = {
 	{RTC_SPAR0, 0x1, 6},
 	{RTC_SPAR0, 0x1, 7},
 	{RTC_AL_HOU, 0xff, 8}
+#ifdef CONFIG_LCT_CHR_ALT_TEST_SUPPORT  //add by longcheer_liml
+	,
+	{RTC_SPAR0, 0x1, 9}
+#endif
 };
 
 static int rtc_eosc_cali_td = 8;

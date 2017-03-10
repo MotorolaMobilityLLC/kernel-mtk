@@ -644,6 +644,12 @@ void arch_reset(char mode, const char *cmd)
 #ifdef CONFIG_MTK_KERNEL_POWER_OFF_CHARGING
 		rtc_mark_kpoc();
 #endif
+#ifdef CONFIG_LCT_CHR_ALT_TEST_SUPPORT //add by longcheer_liml_2017_03-10
+	}else if(cmd && !strcmp(cmd,"alt")){
+		reboot = 1;
+		rtc_mark_alt();
+		printk("get alt flag:%d\n",get_rtc_mark_alt());
+#endif
 	} else {
 		reboot = 1;
 	}
