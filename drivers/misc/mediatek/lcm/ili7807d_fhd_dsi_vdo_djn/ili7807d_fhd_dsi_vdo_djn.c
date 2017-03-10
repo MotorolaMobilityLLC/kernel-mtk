@@ -113,6 +113,18 @@ static void init_lcm_registers(void)
 	dsi_set_cmdq(data_array, 2, 1);
 
 	data_array[0] = 0x00023902;
+	data_array[1] = 0x00001100;
+	dsi_set_cmdq(data_array, 2, 1);
+
+	data_array[0] = 0x00023902;
+	data_array[1] = 0x00001201;
+	dsi_set_cmdq(data_array, 2, 1);
+
+	data_array[0] = 0x00023902;
+	data_array[1] = 0x00002202;
+	dsi_set_cmdq(data_array, 2, 1);
+
+	data_array[0] = 0x00023902;
 	data_array[1] = 0x00006003;
 	dsi_set_cmdq(data_array, 2, 1);
 
@@ -124,6 +136,10 @@ static void init_lcm_registers(void)
 	data_array[1] = 0x000778FF;
 	dsi_set_cmdq(data_array, 2, 1);
 
+	data_array[0] = 0x00033902;
+	data_array[1] = 0x00000068;
+	dsi_set_cmdq(data_array, 2, 1);
+
 	data_array[0] = 0x00023902;
 	data_array[1] = 0x00000055;
 	dsi_set_cmdq(data_array, 2, 1);
@@ -133,7 +149,7 @@ static void init_lcm_registers(void)
 	dsi_set_cmdq(data_array, 2, 1);
 
 	data_array[0] = 0x00023902;
-	data_array[1] = 0x00002453;
+	data_array[1] = 0x00002C53;
 	dsi_set_cmdq(data_array, 2, 1);
 
 
