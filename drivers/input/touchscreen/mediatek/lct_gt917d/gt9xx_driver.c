@@ -1762,14 +1762,14 @@ static s32 tpd_i2c_probe(struct i2c_client *client, const struct i2c_device_id *
 
 	if (ret < 0) {
 		GTP_ERROR("Read version failed.");
-		return -1;
+		//return -1;
 	}
 
 	ret = gtp_init_panel(client);
 
 	if (ret < 0) {
 		GTP_ERROR("GTP init panel failed.");
-		return -1;
+		//return -1;
 	}
 	//add devinfo start
    #ifdef CONFIG_LCT_DEVINFO_SUPPORT 
