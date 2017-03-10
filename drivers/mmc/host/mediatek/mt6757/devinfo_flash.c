@@ -62,7 +62,7 @@
 //#include <mt-plat/sd_misc.h>
 #include "mtk_sd.h"
 
-//#define LCT_DEVINFO_DEBUG_EMCP 1
+#define LCT_DEVINFO_DEBUG_EMCP 1
 
 
 extern void msdc_check_init_done(void);
@@ -82,9 +82,9 @@ extern struct msdc_host *mtk_msdc_host[];
 #define MAX_DEV_LIST 20
 static struct devinfo_struct *dev_list[MAX_DEV_LIST];
 static unsigned int rom_size=0;
-static unsigned int ram_size=0;
+static unsigned long ram_size=0;
 
-static unsigned int inforam_size=0;
+static unsigned long inforam_size=0;
 
 #ifdef DEVINFO_DIS_DDR_STATUS
 static unsigned int boot_ram_list_num = 0xff;
@@ -106,19 +106,15 @@ static void get_boot_ram_listnum(void)
 typedef struct{
 	char *vendor_name;
 	char *cid;
-	unsigned int ram_size;
+	char ram_size;
 }lct_emmc_info;
 
 static lct_emmc_info lct_emmc_info_str[] = {
-	{"KMRX1000BM_B614",		"150100525831424D42", 3072},
-	{"KMGX6001BM_B514",		"150100475836424d42", 3072},
-	#ifdef CONFIG_L3510_MAINBOARD
-	{"H9TQ26ACLTMCUR_KUM",	"90014A484247346132", 4096},
-	#else
-	{"H9TQ26ADFTBCUR_KUM",	"90014A484247346132", 3072},
-	#endif
-	{"KMQE60013M_B318",		"150100514536334D42", 2048},
-	{"H9TQ17ABJTBCUR_KUM",	"90014a484147346132", 2048},
+	{"KMRX1000BM_B614",		"150100525831424D42", 3},
+	{"KMGX6001BM_B514",		"150100475836424d42", 3},
+	{"H9TQ26ADFTBCUR_KUM",	"90014A484247346132", 3},
+	{"KMQE60013M_B318",		"150100514536334D42", 2},
+	{"H9TQ17ABJTBCUR_KUM",	"90014a484147346132", 2},
 };
 
 static unsigned int atohex(char *str)
@@ -210,12 +206,6 @@ static int devinfo_register_emcp(struct msdc_host *host)
 				case 0x70:
 					dev_list[i]->device_vendor=	"Kingston  ";
 					break;
-				case 0x11:
-					dev_list[i]->device_vendor=	"Toshiba  ";
-					break;
-				case 0x13:
-					dev_list[i]->device_vendor=	"Micron  ";
-					break;
 				default:
 					dev_list[i]->device_vendor=	DEVINFO_NULL;
 					break;
@@ -251,14 +241,8 @@ static int devinfo_register_emcp(struct msdc_host *host)
 			if(0==memcmp(lct_emmc_info_str[i].cid,cid_str,15))
 			{
 			//sprintf(info,"ram:%dMB",ram_size);
-				switch(lct_emmc_info_str[i].ram_size)
+				switch(ram_size)
 				{
-					case 4096:
-						sprintf(dev_list[i]->device_info,"ram:4096MB+rom:%dMB",rom_size);
-						break;
-					case 3072:
-						sprintf(dev_list[i]->device_info,"ram:3072MB+rom:%dMB",rom_size);
-						break;
 					case 2048:
 						sprintf(dev_list[i]->device_info,"ram:2048MB+rom:%dMB",rom_size);
 						break;
@@ -290,12 +274,6 @@ static int devinfo_register_emcp(struct msdc_host *host)
 		}else{
 			switch(ram_size)
 			{
-				case 4096:
-					info1="ram:4096MB+rom:null";
-					break;
-				case 3072:
-					info1="ram:3072MB+rom:null";
-					break;
 				case 2048:
 					info1="ram:2048MB+rom:null";
 					break;
@@ -360,7 +338,7 @@ static u64 cust_msdc_get_user_capacity(struct msdc_host *host)
 static int raminfo_stats_show(struct seq_file *m, void *unused)
 {
 
-   	seq_printf(m,"Total physical ram: %d MB\n",inforam_size);
+   	seq_printf(m,"Total physical ram: %ld MB\n",inforam_size);
     return 0;
 }
 static int raminfo_stats_open(struct inode *inode, struct file *file)
