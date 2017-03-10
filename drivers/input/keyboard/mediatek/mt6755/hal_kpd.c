@@ -44,6 +44,22 @@ static u16 kpd_keymap_state[KPD_NUM_MEMS] = {
 
 static bool kpd_sb_enable;
 
+/*lenovo-sw jixj 2013.7.9 add begin*/
+#ifdef CONFIG_ONEKEY_REBOOT_OTHER_MODE
+extern int get_battery_temp(void);
+#define NO_TEMP_VOLT -20
+int is_batt_temp_pin(void)
+{
+    if(get_battery_temp() == NO_TEMP_VOLT) {
+        printk("is_batt_temp_pin NO_TEMP_VOLT");
+        return 0;
+    } else {
+        return 1;
+    }
+}
+#endif
+/*lenovo-sw jixj 2013.7.9 add end*/
+
 #ifdef CONFIG_MTK_SMARTBOOK_SUPPORT
 static void sb_kpd_release_keys(struct input_dev *dev)
 {
@@ -290,9 +306,25 @@ void long_press_reboot_function_setting(void)
 		kpd_info("Enable other mode LPRST\n");
 #ifdef CONFIG_ONEKEY_REBOOT_OTHER_MODE
 #ifdef CONFIG_MTK_PMIC_CHIP_MT6353
+		/*lenovo-sw liuyc7 2015.4.15 modified begin*/
+		#if 0
 		pmic_set_register_value(PMIC_RG_PWRKEY_RST_EN, 0x01);
 		pmic_set_register_value(PMIC_RG_HOMEKEY_RST_EN, 0x00);
 		pmic_set_register_value(PMIC_RG_PWRKEY_RST_TD, CONFIG_KPD_PMIC_LPRST_TD);
+		#else
+		if(is_batt_temp_pin()) {
+			kpd_info("other_mode LPRST set reboot\n");
+			pmic_set_register_value(PMIC_RG_PWRKEY_RST_EN, 0x01);
+			pmic_set_register_value(PMIC_RG_HOMEKEY_RST_EN, 0x00);
+			pmic_set_register_value(PMIC_RG_PWRKEY_RST_TD, CONFIG_KPD_PMIC_LPRST_TD);
+		} else {
+			kpd_info("other_mode no permission reboot\n");
+			pmic_set_register_value(PMIC_RG_PWRKEY_RST_EN, 0x00);
+			pmic_set_register_value(PMIC_RG_HOMEKEY_RST_EN, 0x00);
+			pmic_set_register_value(PMIC_RG_PWRKEY_RST_TD, CONFIG_KPD_PMIC_LPRST_TD);
+		}
+		#endif
+		/*lenovo-sw jixj 2015.4.15 modified begin*/
 #else
 		pmic_set_register_value(MT6351_PMIC_RG_PWRKEY_RST_EN, 0x01);
 		pmic_set_register_value(MT6351_PMIC_RG_HOMEKEY_RST_EN, 0x00);
