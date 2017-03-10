@@ -576,3 +576,7 @@ CONFIG_EFUSE_SBC_CHECK=y
 #Lenovo-sw quebs2 added 20150510 end,support efuse inquiry for secboot
 CONFIG_INPUT_KEYCHORD=y
 CONFIG_EXFAT_FS=y
+# mtk platform F2FS support
+CONFIG_F2FS_FS=y
+CONFIG_F2FS_FS_SECURITY=y
+CONFIG_F2FS_FS_XATTR=y
