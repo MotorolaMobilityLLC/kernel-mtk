@@ -38,8 +38,8 @@ unsigned int chip_reset_only = 0;
 
 #define REMOVE_USELESS_LOG 1
 
-#define STP_POLL_CPUPCR_NUM 16
-#define STP_POLL_CPUPCR_DELAY 10
+#define STP_POLL_CPUPCR_NUM 5
+#define STP_POLL_CPUPCR_DELAY 5
 #define STP_RETRY_OPTIMIZE 0
 
 /* global variables */
@@ -660,8 +660,6 @@ VOID stp_do_tx_timeout(VOID)
 		STP_DBG_FUNC("current TX timeout package has not received ACK yet,retry_times(%d)\n",
 		g_retry_times);
 #endif
-	/*polling cpupcr when no ack occurs at first retry */
-	stp_dbg_poll_cpupcr(STP_POLL_CPUPCR_NUM, STP_POLL_CPUPCR_DELAY, 1);
 	seq = stp_core_ctx.sequence.rxack;
 	INDEX_INC(seq);
 
@@ -754,6 +752,8 @@ VOID stp_do_tx_timeout(VOID)
 	}
 
 	stp_ctx_unlock(&stp_core_ctx);
+	/*polling cpupcr when no ack occurs at first retry */
+	stp_dbg_poll_cpupcr(STP_POLL_CPUPCR_NUM, STP_POLL_CPUPCR_DELAY, 1);
 	STP_WARN_FUNC
 	    ("==============================================================================#\n");
 }
@@ -2601,82 +2601,32 @@ INT32 mtk_wcn_stp_send_data(const PUINT8 buffer, const UINT32 length, const UINT
 		stp_psm_disable_by_tx_rx_density(STP_PSM_CORE(stp_core_ctx), 0, length);
 #endif
 	}
-	if (MTK_WCN_BOOL_TRUE == stp_psm_is_quick_ps_support()) {
-		/* if(stp_is_apply_powersaving()) */
-		{
-			if (type == WMT_TASK_INDX)
-				goto DONT_MONITOR;
-			if ((type == BT_TASK_INDX) && (STP_SDIO_IF_TX == wmt_plat_get_comm_if_type())) {
-				if (stp_psm_is_to_block_traffic(STP_PSM_CORE(stp_core_ctx)))
-					stp_psm_notify_wmt_wakeup(STP_PSM_CORE(stp_core_ctx));
-				goto DONT_MONITOR;
-			}
-		/*-----------------------------STP_PSM_Lock----------------------------------------*/
-			ret = stp_psm_thread_lock_aquire(STP_PSM_CORE(stp_core_ctx));
-			if (ret) {
-				STP_ERR_FUNC("--->lock psm_thread_lock failed ret=%d\n", ret);
-				return ret;
-			}
 
-			if (!stp_psm_is_to_block_traffic(STP_PSM_CORE(stp_core_ctx))) {
-				if (stp_psm_has_pending_data(STP_PSM_CORE(stp_core_ctx))) {
-					STP_WARN_FUNC
-					    ("***** Release psm hold data before send normal data *****\n");
-					stp_psm_release_data(STP_PSM_CORE(stp_core_ctx));
-				}
-			} else {
-				ret =
-				    stp_psm_hold_data(STP_PSM_CORE(stp_core_ctx), buffer, length,
-						      type);
-				stp_psm_notify_wmt_wakeup(STP_PSM_CORE(stp_core_ctx));
-				/*-----------------------------STP_PSM_UnLock-----------------------------------*/
-				stp_psm_thread_lock_release(STP_PSM_CORE(stp_core_ctx));
-				return ret;
-			}
+	if (type == WMT_TASK_INDX)
+		goto DONT_MONITOR;
+	if ((type == BT_TASK_INDX) && (wmt_plat_get_comm_if_type() == STP_SDIO_IF_TX)) {
+		if (stp_psm_is_to_block_traffic(STP_PSM_CORE(stp_core_ctx)))
+			stp_psm_notify_wmt_wakeup(STP_PSM_CORE(stp_core_ctx));
+		goto DONT_MONITOR;
+	}
+	/*-----------------------------STP_PSM_Lock----------------------------------------*/
+	ret = stp_psm_thread_lock_aquire(STP_PSM_CORE(stp_core_ctx));
+	if (ret) {
+		STP_ERR_FUNC("--->lock psm_thread_lock failed ret=%d\n", ret);
+		return ret;
+	}
+
+	if (!stp_psm_is_to_block_traffic(STP_PSM_CORE(stp_core_ctx))) {
+		if (stp_psm_has_pending_data(STP_PSM_CORE(stp_core_ctx))) {
+			STP_WARN_FUNC("***** Release psm hold data before send normal data *****\n");
+			stp_psm_release_data(STP_PSM_CORE(stp_core_ctx));
 		}
 	} else {
-		/* if(stp_is_apply_powersaving()) */
-		{
-			if (type == WMT_TASK_INDX)
-				goto DONT_MONITOR;
-			/* If now chip is awake, to restart monitor! */
-			/* STP_INFO_FUNC("check if block traffic !!\n"); */
-		/*-----------------------------STP_PSM_Lock----------------------------------------*/
-			ret = stp_psm_thread_lock_aquire(STP_PSM_CORE(stp_core_ctx));
-			if (ret) {
-				STP_ERR_FUNC("--->lock psm_thread_lock failed ret=%d\n", ret);
-				return ret;
-			}
-
-			if (!stp_psm_is_to_block_traffic(STP_PSM_CORE(stp_core_ctx))) {
-				/* STP_INFO_FUNC("not to block !!\n"); */
-				if (stp_psm_has_pending_data(STP_PSM_CORE(stp_core_ctx))) {
-					STP_WARN_FUNC
-					    ("***** Release psm hold data before send normal data *****\n");
-					stp_psm_release_data(STP_PSM_CORE(stp_core_ctx));
-				}
-			} else {
-				/* STP_INFO_FUNC("to block !!\n"); */
-
-				/* STP_INFO_FUNC("****************hold data in psm queue
-				 * data length = %d\n", length); */
-				/* stp_dump_data(buffer, "Hold in psm queue", length); */
-				/* hold datas */
-				ret =
-				    stp_psm_hold_data(STP_PSM_CORE(stp_core_ctx), buffer, length,
-						      type);
-				/* wmt notification */
-				STP_INFO_FUNC("#####Type = %d, to inform WMT to wakeup chip, ret = %d:0x%2x,0x%2x\n",
-									type, ret, *buffer, *(buffer + 1));
-
-				stp_psm_notify_wmt_wakeup(STP_PSM_CORE(stp_core_ctx));
-				/* STP_INFO_FUNC("*********Type = %d, to inform WMT to wakeup chip>end\n",
-				 * type); */
-		    /*-----------------------------STP_PSM_UnLock--------------------------------*/
-				stp_psm_thread_lock_release(STP_PSM_CORE(stp_core_ctx));
-				return ret;
-			}
-		}
+		ret = stp_psm_hold_data(STP_PSM_CORE(stp_core_ctx), buffer, length, type);
+		stp_psm_notify_wmt_wakeup(STP_PSM_CORE(stp_core_ctx));
+		/*-----------------------------STP_PSM_UnLock-----------------------------------*/
+		stp_psm_thread_lock_release(STP_PSM_CORE(stp_core_ctx));
+		return ret;
 	}
 DONT_MONITOR:
 #endif
@@ -2809,16 +2759,12 @@ DONT_MONITOR:
 STP_LOCK_FAIL:
 #ifdef CONFIG_POWER_SAVING_SUPPORT
 
-	if (MTK_WCN_BOOL_TRUE == stp_psm_is_quick_ps_support()) {
-		if ((type == BT_TASK_INDX) && (STP_SDIO_IF_TX == wmt_plat_get_comm_if_type())) {
-			stp_psm_notify_wmt_sleep(STP_PSM_CORE(stp_core_ctx));
-		} else if (type != WMT_TASK_INDX) {
-			stp_psm_notify_wmt_sleep(STP_PSM_CORE(stp_core_ctx));
-			/*-----------------------------STP_PSM_UnLock----------------------------------------*/
-			stp_psm_thread_lock_release(STP_PSM_CORE(stp_core_ctx));
-		}
-	} else {
-		if (type != WMT_TASK_INDX)
+	if (stp_psm_is_quick_ps_support() == MTK_WCN_BOOL_TRUE)
+		stp_psm_notify_wmt_sleep(STP_PSM_CORE(stp_core_ctx));
+
+	/*-----------------------------STP_PSM_UnLock----------------------------------------*/
+	if (type != WMT_TASK_INDX) {
+		if (!((type == BT_TASK_INDX) && (wmt_plat_get_comm_if_type() == STP_SDIO_IF_TX)))
 			stp_psm_thread_lock_release(STP_PSM_CORE(stp_core_ctx));
 	}
 #endif

@@ -175,12 +175,12 @@ typedef struct _MTK_WCN_STP_SDIO_PKT_BUF {
 	UINT8 rx_buf[STP_SDIO_RX_BUF_SIZE];	/* Rx buffer (not ring) */
 #endif
 #if STP_SDIO_NEW_TXRING
-	UINT32 wr_cnt;		/* Tx entry ring buffer write count */
-	UINT32 rd_cnt;		/* Tx entry ring buffer read count */
+	atomic_t wr_cnt;		/* Tx entry ring buffer write count */
+	atomic_t rd_cnt;		/* Tx entry ring buffer read count */
 	spinlock_t rd_cnt_lock;	/* Tx entry ring buffer read count spin lock */
 #else
-	UINT8 wr_idx;		/* Tx ring buffer write index *//*George: obsolete */
-	UINT8 rd_idx;		/* Tx ring buffer read index *//*George: obsolete */
+	atomic_t wr_idx;		/* Tx ring buffer write index *//*George: obsolete */
+	atomic_t rd_idx;		/* Tx ring buffer read index *//*George: obsolete */
 	spinlock_t rd_idx_lock;	/* spin lock for Tx ring buffer read index */
 #endif
 	MTK_WCN_BOOL full_flag;	/* Tx entry ring buffer full flag (TRUE: full, FALSE: not full) */
@@ -226,6 +226,7 @@ typedef struct _MTK_WCN_STP_SDIO_HIF_INFO {
 	INT32 sleep_flag;
 	INT32 wakeup_flag;
 	INT32 awake_flag;
+	INT32 txwkr_flag;
 	OSAL_EVENT tx_rx_event;
 	OSAL_SIGNAL isr_check_complete;
 	INT32 dump_flag;

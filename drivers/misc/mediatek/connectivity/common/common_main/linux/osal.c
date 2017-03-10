@@ -289,6 +289,12 @@ PVOID osal_memcpy(PVOID dst, const PVOID src, UINT32 len)
 
 }
 
+VOID osal_memcpy_fromio(PVOID dst, const PVOID src, UINT32 len)
+{
+	return memcpy_fromio(dst, src, len);
+
+}
+
 INT32 osal_memcmp(const PVOID buf1, const PVOID buf2, UINT32 len)
 {
 	return memcmp(buf1, buf2, len);
@@ -1161,6 +1167,12 @@ INT32 osal_sleep_ms(UINT32 ms)
 INT32 osal_udelay(UINT32 us)
 {
 	udelay(us);
+	return 0;
+}
+
+INT32 osal_usleep_range(ULONG min, ULONG max)
+{
+	usleep_range(min, max);
 	return 0;
 }
 
