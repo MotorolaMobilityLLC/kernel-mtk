@@ -45,7 +45,7 @@
 #define PAGE_SIZE_ 256
 #define BUFF_SIZE 8
 
-u8 LSCdatabuf[LSC_SIZE+2];
+static u8 LSCdatabuf[LSC_SIZE+2];
 
 static int is_firstboot = 1;
 static DEFINE_SPINLOCK(g_CAM_CALLock); // for SMP
@@ -150,8 +150,8 @@ static int iWriteReg(u16 a_u2Addr , u32 a_u4Data , u32 a_u4Bytes , u16 i2cId)
     return 0;
 }
 #endif
-
-bool selective_read_byte(u32 addr, unsigned char* data,u16 i2c_id)
+#if 0
+static bool selective_read_byte(u32 addr, unsigned char* data,u16 i2c_id)
 {
 //	CAM_CALDB("selective_read_byte\n");
 
@@ -166,8 +166,9 @@ bool selective_read_byte(u32 addr, unsigned char* data,u16 i2c_id)
 	//CAM_CALDB("selective_read_byte addr =0x%x data = 0x%x,page %d, offset 0x%x", addr, *data,page,offset);
     return true;
 }
-
-int selective_read_region(u32 addr, unsigned char* data,u16 i2c_id,u32 size)
+#endif
+#if 0
+static int selective_read_region(u32 addr, unsigned char* data,u16 i2c_id,u32 size)
 {
   //  u32 page = addr/PAGE_SIZE; /* size of page was 256 */
 	//u32 offset = addr%PAGE_SIZE;
@@ -210,7 +211,7 @@ int selective_read_region(u32 addr, unsigned char* data,u16 i2c_id,u32 size)
     return ret;
 }
 
-
+#endif
 
 
 //Burst Write Data
@@ -322,7 +323,8 @@ static bool selective_read_eeprom(unsigned short addr, unsigned char * data)
     return true;
 }
 //lenovo.sw wuyt3 add for read MID K5 begin
-unsigned char Read_MID_form_eeprom(void)
+#if 0
+static unsigned char Read_MID_form_eeprom(void)
 {
 
 	unsigned char data[1];
@@ -334,6 +336,7 @@ unsigned char Read_MID_form_eeprom(void)
 	}
 	return data[0];
 }
+#endif
 //end
 static int Read3L8AWBData(unsigned short ui4_offset, unsigned int  ui4_length, unsigned char * pinputdata)
 {
