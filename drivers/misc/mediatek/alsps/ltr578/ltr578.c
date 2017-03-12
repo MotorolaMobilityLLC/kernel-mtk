@@ -1390,7 +1390,7 @@ int ltr578_setup_eint(struct i2c_client *client)
 			APS_ERR("IRQ LINE NOT AVAILABLE!!\n");
 			return -EINVAL;
 		}
-		enable_irq(ltr578_obj->irq);
+		//enable_irq(ltr578_obj->irq);   //delete by zhoulingyun
 	} else {
 		APS_ERR("null irq node!!\n");
 		return -EINVAL;
@@ -1511,11 +1511,11 @@ static int ltr578_devinit(void)
 
 	// Enable PS at startup
 
-	
+	#if 0   //delete by zhoulingyun temp
 	res = ltr578_ps_enable();
 	if (res < 0)
 		goto EXIT_ERR;
-
+         #endif
 
 	// Enable ALS to Full Range at startup
 	init_als_gain = ALS_RANGE_6;
