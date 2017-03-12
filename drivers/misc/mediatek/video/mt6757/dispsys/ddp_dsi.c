@@ -2926,7 +2926,7 @@ int DSI_Send_ROI(enum DISP_MODULE_ENUM module, void *handle, unsigned int x, uns
 
 static void lcm_set_reset_pin(UINT32 value)
 {
-#if 1
+#if 0
 	DSI_OUTREG32(NULL, DISPSYS_CONFIG_BASE + 0x150, value);
 #else
 #if !defined(CONFIG_MTK_LEGACY)
