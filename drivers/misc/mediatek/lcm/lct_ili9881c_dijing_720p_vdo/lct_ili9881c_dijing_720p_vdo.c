@@ -455,6 +455,13 @@ static void lcm_get_params(LCM_PARAMS *params)
 	params->dsi.horizontal_active_pixel				= FRAME_WIDTH;
 	params->dsi.ssc_disable = 1;
 
+/*add by lct wangjiaxing start 20170313*/
+#ifdef CONFIG_LCT_DEVINFO_SUPPORT                                                                                                                                                                       
+     params->vendor="dijing";
+     params->ic="ili9881c";
+     params->info="720*1280";
+#endif
+/*add by lct wangjiaxing end 20170313*/
 #if (LCM_DSI_CMD_MODE)
 	params->dsi.PLL_CLOCK = 150;	/* this value must be in MTK suggested table */
 #else
