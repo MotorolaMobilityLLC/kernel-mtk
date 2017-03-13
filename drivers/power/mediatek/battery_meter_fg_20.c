@@ -445,6 +445,7 @@ static signed int shutdown_gauge1_xmins;
 #ifdef CONFIG_LCT_DEVINFO_SUPPORT
 #define SLT_DEVINFO_BATTERY_DEBUG
 #include  "dev_info.h"
+
 static char* temp_ver;
 static char* temp_comments;
 static struct devinfo_struct s_DEVINFO_bat;
@@ -541,9 +542,10 @@ kal_bool gFG_Is_offset_init = KAL_FALSE;
 unsigned int g_fg_battery_id = 0;
 
 #ifdef MTK_GET_BATTERY_ID_BY_AUXADC
+int id_volt = 0;
 void fgauge_get_profile_id(void)
 {
-	int id_volt = 0;
+	
 	int id = 0;
 	int ret = 0;
 
