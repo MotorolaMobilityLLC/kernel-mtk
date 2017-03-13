@@ -5991,16 +5991,27 @@ done:
 
 int primary_display_get_lcm_index(void)
 {
+        //liujinzhou@wind-mobi.com modify at 20170310 begin
 	int index = 0;
-
-	DISPFUNC();
+	/*DISPFUNC();
 	if (pgc->plcm == NULL) {
 		DISPERR("lcm handle is null\n");
 		return 0;
 	}
 	index = pgc->plcm->index;
-	DISPMSG("lcm index = %d\n", index);
+	DISPMSG("lcm index = %d\n", index);*/
+	#ifdef CONFIG_WIND_DEVICE_INFO
+	g_lcm_name = (char *)pgc->plcm->drv->name;
+	#endif
+     if(!strcmp(g_lcm_name,"hx8394f_hd720_dsi_vdo_boe"))
+        {
+         index = 1;
+	}
+        else 
+         index = 0;
+	printk("liujinzhou--%d\n",index);
 	return index;
+        //liujinzhou@wind-mobi.com modify at 20170310 end
 }
 
 int primary_display_resume(void)
