@@ -91,7 +91,7 @@
 #define LTR578_ERR_GETGSENSORDATA			-5
 #define LTR578_ERR_IDENTIFICATION			-6
 
-#define CONFIG_MOTO_AOD_BASE_ON_AP_SENSORS
+//#define CONFIG_MOTO_AOD_BASE_ON_AP_SENSORS
 
 /* Interrupt vector number to use when probing IRQ number.
  * User changeable depending on sys interrupt.

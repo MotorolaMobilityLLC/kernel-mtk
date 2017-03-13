@@ -1436,7 +1436,14 @@
 		reg = <0 0x1000a000 0 0x1000>;
 		interrupts = <GIC_SPI 173 IRQ_TYPE_LEVEL_LOW>;
 	};
-
+	gse_3: gse_3 {
+			compatible = "mediatek, gse_3-eint";
+			status = "disabled";
+		};
+	gse_4: gse_4 {
+			compatible = "mediatek, gse_4-eint";
+			status = "disabled";
+		};
 	eintc: eintc@1000b000 {
 		compatible = "mediatek,mt-eic";
 		reg = <0 0x1000b000 0 0x1000>;
