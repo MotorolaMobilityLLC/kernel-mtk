@@ -1140,8 +1140,9 @@ static struct miscdevice bmg_device = {
 
 static int bmi160_gyro_suspend(struct device *dev)
 {
-    struct i2c_client *client = to_i2c_client(dev);
-	struct bmg_i2c_data *obj = i2c_get_clientdata(client);
+//    struct i2c_client *client = to_i2c_client(dev);
+//	struct bmg_i2c_data *obj = i2c_get_clientdata(client);
+	struct bmg_i2c_data *obj = obj_i2c_data;
 	int err = 0;
 	if(obj == NULL)
 	{
@@ -1150,14 +1151,14 @@ static int bmi160_gyro_suspend(struct device *dev)
 	}
 //	if (msg.event == PM_EVENT_SUSPEND)
  	atomic_set(&obj->suspend, 1);
-	err = bmg_set_powermode(client,
+/*	err = bmg_set_powermode(client,
 		(enum BMG_POWERMODE_ENUM)BMG_SUSPEND_MODE);
 	if(err)
 	{
 		GYRO_ERR("write power control fail!!\n");
 		return err;
 	}
-	
+*/	
 //	sensor_power = false;
 
 	return err;
