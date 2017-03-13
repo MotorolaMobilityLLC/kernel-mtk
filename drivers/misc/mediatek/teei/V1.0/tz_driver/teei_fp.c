@@ -163,7 +163,9 @@ int send_fp_command(unsigned long share_memory_size)
 	fdrv_ent.fdrv_call_buff_size = share_memory_size;
 
 	/* with a wmb() */
-	wmb();
+	//zhuhailin for TEE sdk
+	//wmb();
+	//zhuhailin for TEE sdk end
 
 	Flush_Dcache_By_Area((unsigned long)&fdrv_ent, (unsigned long)&fdrv_ent + sizeof(struct fdrv_call_struct));
 	retVal = add_work_entry(FDRV_CALL, (unsigned char *)(&fdrv_ent));
@@ -177,7 +179,9 @@ int send_fp_command(unsigned long share_memory_size)
 	down(&fdrv_sema);
 	IMSG_DEBUG("send_fp_command end\n");
 	/* with a rmb() */
-	rmb();
+	//zhuhailin for TEE sdk
+	//rmb();
+	//zhuhailin for TEE sdk end
 
 	Invalidate_Dcache_By_Area((unsigned long)fp_buff_addr, fp_buff_addr + FP_BUFF_SIZE);
 
