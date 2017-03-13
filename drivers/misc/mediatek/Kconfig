@@ -22,6 +22,14 @@ config ARCH_MTK_PROJECT
 config ARCH_MTK_CUSTOM_DCT
 	string "MTK dct name"
 
+config LCT_POWEROFF_CHARGER_LED
+    tristate "Longcheer poweroff_charger flag"
+    default n
+	---help---
+	poweroff charge led
+	If you say y, you enable module param enable support
+	If you wantn't to use it ,say n as default
+
 config MTK_INTERNAL
 	bool "Enable MTK internal debug feature"
 	help

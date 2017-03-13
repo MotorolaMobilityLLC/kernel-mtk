@@ -48,8 +48,9 @@ enum boot_reason_t g_boot_reason __nosavedata = BR_UNKNOWN;
 static atomic_t g_br_state = ATOMIC_INIT(BOOT_REASON_UNINIT);
 static atomic_t g_br_errcnt = ATOMIC_INIT(0);
 static atomic_t g_br_status = ATOMIC_INIT(0);
-
-
+/*add by longcheer liuzhenhe for shutdown charge led on start*/
+ uint8_t lct_chager_led;
+/*add by longcheer liuzhenhe for shutdown charge led on end*/
 #ifdef CONFIG_LCT_BOOTINFO_SUPPORT
 /*	Lenovo(MOTO) boot reason list	*/
 #define TIME_OF_DAY_ALARM	0x00000008
@@ -146,6 +147,12 @@ static int __init dt_get_boot_reason(unsigned long node, const char *uname, int 
 #ifdef CONFIG_LCT_BOOTINFO_SUPPORT
 			if(br_ptr[13]>='0' && br_ptr[13]<='9')
 				g_boot_reason = g_boot_reason*10 + (br_ptr[13] - '0');
+/*add by longcheer liuzhenhe for shutdown charge led on start*/
+            #ifdef CONFIG_LCT_POWEROFF_CHARGER_LED
+               printk("liuzhenhe199177777\n");
+                lct_chager_led = g_boot_reason; 
+            #endif
+/*add by longcheer liuzhenhe for shutdown charge led on end*/                
 #endif
 			atomic_set(&g_br_status, 1);
 		} else {
