@@ -632,3 +632,6 @@ CONFIG_LCT_CABC_MODE_SUPPORT=y
 #add by longcheer wangjiaxing for hbm
 CONFIG_LCT_HBM_SUPPORT=y
 
+#LCSH merge from  moto  for gsenoer 20170313 tqq
+CONFIG_MOTO_AOD_BASE_ON_AP_SENSORS=y
+

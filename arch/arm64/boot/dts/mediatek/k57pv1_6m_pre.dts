@@ -101,8 +101,9 @@
 		firlen = <16>;
 		is_batch_supported = <1>;
 	};
+
 	cust_accel@1 {
-		compatible = "mediatek,bmi160_acc";
+		compatible = "mediatek,bmi160";
 		i2c_num	= <1>;
 		i2c_addr = <0x68 0 0 0>;
 		direction = <1>;
@@ -110,7 +111,8 @@
 		power_vol = <0>;
 		firlen = <16>;
 		is_batch_supported = <1>;
-	};
+		};
+
 	/*end*/
 
 	type_c_port0 {

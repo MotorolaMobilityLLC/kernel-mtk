@@ -63,12 +63,19 @@
                 <debounce_en>Disable</debounce_en>
             </eint1>
             <eint4>
-                <varName>GYRO</varName>
+                <varName>GSE_4</varName>
                 <debounce_time>0</debounce_time>
-                <polarity>High</polarity>
+                <polarity>Low</polarity>
                 <sensitive_level>Level</sensitive_level>
                 <debounce_en>Disable</debounce_en>
             </eint4>
+            <eint5>
+                <varName>GSE_3</varName>
+                <debounce_time>0</debounce_time>
+                <polarity>Low</polarity>
+                <sensitive_level>Level</sensitive_level>
+                <debounce_en>Disable</debounce_en>
+            </eint5>
             <eint6>
                 <varName>ALS</varName>
                 <debounce_time>0</debounce_time>
@@ -208,27 +215,27 @@
                 <eint_mode>true</eint_mode>
                 <def_mode>0</def_mode>
                 <mode_arr>10000000</mode_arr>
-                <inpull_en>true</inpull_en>
+                <inpull_en>false</inpull_en>
                 <inpull_selhigh>false</inpull_selhigh>
                 <def_dir>IN</def_dir>
                 <in>true</in>
                 <out>false</out>
                 <out_high>false</out_high>
-                <varName0>GPIO_GYRO_EINT_PIN</varName0>
+                <varName0>GPIO_GSE_4_EINT_PIN</varName0>
                 <smt>false</smt>
                 <ies>true</ies>
             </gpio4>
             <gpio5>
-                <eint_mode>false</eint_mode>
+                <eint_mode>true</eint_mode>
                 <def_mode>0</def_mode>
-                <mode_arr>10000000</mode_arr>
-                <inpull_en>true</inpull_en>
+                <mode_arr>20000000</mode_arr>
+                <inpull_en>false</inpull_en>
                 <inpull_selhigh>false</inpull_selhigh>
-                <def_dir>OUT</def_dir>
-                <in>false</in>
-                <out>true</out>
-                <out_high>true</out_high>
-                <varName0>GPIO_MSE_EINT_PIN</varName0>
+                <def_dir>IN</def_dir>
+                <in>true</in>
+                <out>false</out>
+                <out_high>false</out_high>
+                <varName0>GPIO_GSE_3_EINT_PIN</varName0>
                 <smt>false</smt>
                 <ies>true</ies>
             </gpio5>
