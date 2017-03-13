@@ -349,7 +349,7 @@ BYTE S5K5E2YA_Get_OTP_Info(void)
          useGroupIndex = 3;
       } else {
       printk("S5K5E2YA Module Information read failed\n");
-   //   return 0;
+      return 0;
       }
     S5K5E2YA_get_otp_date(useGroupIndex);
    if((AWB_Flag_group1& 0xc0) == 0x40)
@@ -2922,9 +2922,6 @@ static void sensor_init(void)
 	write_cmos_sensor(0x320D,0xC0);
 
 	write_cmos_sensor(0x3929,0x07);       //set mipi non-continue mode
-	write_cmos_sensor(0x3931,0x02);      //Vod
-	write_cmos_sensor(0x392F,0x01);      //TrTf
-	write_cmos_sensor(0x3930,0x80);      //TrTf
 
 	// streaming ON
 	write_cmos_sensor(0x0100,0x01);
