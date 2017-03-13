@@ -3891,7 +3891,7 @@ static ssize_t show_FG_Battery_CurrentConsumption(struct device *dev, struct dev
 {
 	int ret_value = 8888;
 
-	ret_value = battery_get_bat_avg_current();
+	ret_value = battery_get_bat_current();//battery_get_bat_avg_current(); //modify longcheer_liml_2017_03_13
 	bm_err("[EM] FG_Battery_CurrentConsumption : %d mA\n", ret_value);
 	return sprintf(buf, "%d\n", ret_value);
 }
