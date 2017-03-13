@@ -220,13 +220,19 @@ unsigned long ut_pm_count = 0;
 int send_cancel_command(unsigned long share_memory_size);
 void ut_pm_mutex_lock(struct mutex *lock)
 {
-	add_work_entry(LOCK_PM_MUTEX, (unsigned char *)lock);
+	//zhuhailin for TEE sdk
+	//add_work_entry(LOCK_PM_MUTEX, (unsigned char *)lock);
+	mutex_lock(lock);
+	//zhuhailin for TEE sdk end
 }
 
 
 void ut_pm_mutex_unlock(struct mutex *lock)
 {
-	add_work_entry(UNLOCK_PM_MUTEX, (unsigned char *)lock);
+	//zhuhailin for TEE sdk
+	//add_work_entry(UNLOCK_PM_MUTEX, (unsigned char *)lock);
+	mutex_unlock(lock);
+	//zhuhailin for TEE sdk end
 }
 int get_current_cpuid(void)
 {
