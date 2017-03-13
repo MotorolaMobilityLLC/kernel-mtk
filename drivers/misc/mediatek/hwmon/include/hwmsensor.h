@@ -428,4 +428,33 @@ struct compat_batch_trans_data {
 #define COMPAT_BATCH_IO_GET_SENSORS_DATA	_IOWR(BATCH_IOC_MAGIC, 0x01, struct compat_batch_trans_data)
 #endif
 
+
+//LCT  add for bmi160 acc gyro  by cly
+
+struct ACC_OFFSET_DATA {
+	signed short key;
+	signed short x;
+	signed short y;
+	signed short z;
+};
+
+#define LSM6DS3_IOCTL_MAGIC 0x64
+struct GYRO_OFFSET_DATA {
+	signed short key;
+	signed short x;
+	signed short y;
+	signed short z;
+};
+
+#define  LSM6DS3_GSENSOR_IOCTL_SET_CALI				_IOW(LSM6DS3_IOCTL_MAGIC, 0x06, struct ACC_OFFSET_DATA)
+#define  LSM6DS3_COMPAT_GSENSOR_IOCTL_SET_CALI			_IOW(LSM6DS3_IOCTL_MAGIC, 0x06, struct ACC_OFFSET_DATA)
+
+
+#define  LSM6DS3_GYROSCOPE_IOCTL_SET_CALI		_IOW(LSM6DS3_IOCTL_MAGIC, 0x07, struct GYRO_OFFSET_DATA)
+#define  LSM6DS3_COMPAT_GYROSCOPE_IOCTL_SET_CALI	_IOW(LSM6DS3_IOCTL_MAGIC, 0x07, struct GYRO_OFFSET_DATA)
+
+
+//end if 
+
+
 #endif				/* __HWMSENSOR_H__ */
