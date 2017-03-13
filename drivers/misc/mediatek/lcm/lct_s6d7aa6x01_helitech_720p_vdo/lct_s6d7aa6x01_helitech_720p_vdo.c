@@ -231,6 +231,13 @@ static void lcm_get_params(LCM_PARAMS *params)
 	params->dsi.horizontal_frontporch				= 48;  
 	params->dsi.horizontal_active_pixel = FRAME_WIDTH;
 //	params->dsi.ssc_disable = 1;
+/*add by wangjiaxing start 201703013*/
+#ifdef CONFIG_LCT_DEVINFO_SUPPORT                                                                                                                                                                       
+      params->vendor="heltech";
+      params->ic="s6d7aa6x01";
+      params->info="720*1280";
+#endif
+/*add by wangjiaxing end 201703013*/
 
 #if (LCM_DSI_CMD_MODE)
 	params->dsi.PLL_CLOCK = 150;	/* this value must be in MTK suggested table */

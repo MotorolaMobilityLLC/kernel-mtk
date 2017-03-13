@@ -653,6 +653,14 @@ typedef struct {
 	unsigned int physical_height_um;	/* length: um, for more precise precision */
 	unsigned int od_table_size;
 	void *od_table;
+/*add by lct wangjiaxing 201703013*/
+#ifdef CONFIG_LCT_DEVINFO_SUPPORT                                                                                                                                                                       
+	char *ic;
+	char *vendor;
+	char *module;
+	char *info;
+#endif
+/*add by lct wangjiaxing 201703013*/
 } LCM_PARAMS;
 
 
