@@ -23,6 +23,9 @@
 #include "inc/rt5081_pmu.h"
 #include "inc/rt5081_pmu_rgbled.h"
 
+/*add by longcheer liuzhenhe for shutdown charge led on start*/
+extern uint8_t lct_chager_led;
+/*add by longcheer liuzhenhe for shutdown charge led on start*/
 enum {
 	RT5081_PMU_LED_PWMMODE = 0,
 	RT5081_PMU_LED_BREATHMODE,
@@ -74,7 +77,9 @@ static const uint8_t rgbled_init_data[] = {
 	0x11, /* RT5081_PMU_REG_RGBCHRINDTONTOFF: 0x96 */
 	0xff, /* RT5081_PMU_REG_RGBOPENSHORTEN: 0x97 */
 };
-
+/*add by longcheer liuzhenhe for shutdown charge led on start*/
+static struct rt5081_led_classdev rt5081_led_classdev[RT5081_PMU_MAXLED];
+/*add by longcheer liuzhenhe for shutdown charge led on end*/
 static inline int rt5081_pmu_led_get_index(struct led_classdev *led_cdev)
 {
 	struct rt5081_led_classdev *rt_led_cdev =
@@ -110,7 +115,21 @@ static inline void rt5081_pmu_led_enable_dwork(struct led_classdev *led_cdev)
 	cancel_delayed_work_sync(&rgbled_data->dwork);
 	schedule_delayed_work(&rgbled_data->dwork, msecs_to_jiffies(100));
 }
-
+/*add by longcheer liuzhenhe for shutdown charge led on start*/
+void my_rt5081_pmu_led_bright_set(int is_on)
+{
+	int ret = 0;
+	if (is_on == 1){
+		ret = rt5081_pmu_led_update_bits(&(rt5081_led_classdev[RT5081_PMU_LED4].led_dev),RT5081_PMU_REG_RGBCHRINDCTRL,0x3,1);
+	    ret = rt5081_pmu_led_update_bits(&(rt5081_led_classdev[RT5081_PMU_LED4].led_dev), RT5081_PMU_REG_RGBEN,0x10,0x10);
+	}	
+	else if (is_on == 0){
+		ret = rt5081_pmu_led_update_bits(&(rt5081_led_classdev[RT5081_PMU_LED4].led_dev),RT5081_PMU_REG_RGBCHRINDCTRL,0x3,0);
+        ret = rt5081_pmu_led_update_bits(&(rt5081_led_classdev[RT5081_PMU_LED4].led_dev), RT5081_PMU_REG_RGBEN,0x10,0x01);
+    }
+}
+EXPORT_SYMBOL(my_rt5081_pmu_led_bright_set);
+/*add by longcheer liuzhenhe for shutdown charge led on end*/
 static void rt5081_pmu_led_bright_set(struct led_classdev *led_cdev,
 	enum led_brightness bright)
 {
@@ -1307,6 +1326,14 @@ static int rt5081_pmu_rgbled_probe(struct platform_device *pdev)
 
 	rt5081_pmu_rgbled_irq_register(pdev);
 	dev_info(&pdev->dev, "%s successfully\n", __func__);
+/*add by longcheer liuzhenhe for shutdown charge led on start*/
+	#ifdef CONFIG_LCT_POWEROFF_CHARGER_LED
+	if(lct_chager_led == 0x01){
+		printk("liuzhenhe1991999/n");
+	        my_rt5081_pmu_led_bright_set(1);
+	}
+	#endif
+/*add by longcheer liuzhenhe for shutdown charge led on end*/
 	return 0;
 out_led_register:
 	while (--i >= 0)

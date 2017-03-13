@@ -635,3 +635,5 @@ CONFIG_LCT_HBM_SUPPORT=y
 #LCSH merge from  moto  for gsenoer 20170313 tqq
 CONFIG_MOTO_AOD_BASE_ON_AP_SENSORS=y
 
+#add by longcheer liuzhenhe_2017_03_13
+CONFIG_LCT_POWEROFF_CHARGER_LED=y
