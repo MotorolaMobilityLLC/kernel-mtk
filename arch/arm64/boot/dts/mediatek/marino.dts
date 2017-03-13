@@ -1068,14 +1068,6 @@ camera_main_two@10 {
 			status = "okay";
 		};
 };
-&i2c2 {
-
-GT24c64a@50 {
-			compatible = "mediatek,GT24c64a";
-			reg = <0x50>;
-			status = "okay";
-		};
-};
 
 /* FLASHLIGHTS_LM3643 GPIO standardization */
 &pio {
