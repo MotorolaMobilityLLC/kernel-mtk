@@ -175,7 +175,7 @@ unsigned char AW87319_Audio_Speaker(void)
 	I2C_write_reg(0x03, 0x05);		/* BOV */
 	I2C_write_reg(0x04, 0x04);		/* BP */
 	I2C_write_reg(0x05, 0x0D);		/* Gain */
-	I2C_write_reg(0x06, 0x03);		/* AGC3_Po */
+	I2C_write_reg(0x06, 0x04);		/* AGC3_Po */
 	I2C_write_reg(0x07, 0x52);		/* AGC3 */
 	I2C_write_reg(0x08, 0x28);		/* AGC2 */
 	I2C_write_reg(0x09, 0x02);		/* AGC1 */
