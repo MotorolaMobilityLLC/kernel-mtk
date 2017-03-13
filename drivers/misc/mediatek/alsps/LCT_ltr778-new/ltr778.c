@@ -57,6 +57,8 @@ static int	als_gain_factor;
 static int final_prox_val;
 static int final_lux_val;
 
+static int ltr778_als_enable(struct i2c_client *client, int enable);
+
 static int winfac_1;
 static int winfac_2;
 #ifdef CONFIG_MOTO_AOD_BASE_ON_AP_SENSORS
@@ -138,12 +140,46 @@ static int ltr778_remove(void);
 static int ltr778_init_flag = -1;
 
 
+#define MAX_ELM_ALS 3
+static unsigned int record_ALS[MAX_ELM_ALS];
+static int rct_ALS=0,full_ALS=0;
+static long lux_sum_ALS=0;
+
+
+/*----------------modified by hongguang for avglux function-----------------------*/		
+static int get_avg_lux(unsigned int lux)
+{
+	int lux_a;
+	if(rct_ALS >= MAX_ELM_ALS)
+		full_ALS=1;
+
+	if(full_ALS){
+		rct_ALS %= MAX_ELM_ALS;
+		lux_sum_ALS -= record_ALS[rct_ALS];
+	}
+	lux_sum_ALS += lux;
+	record_ALS[rct_ALS]=lux;
+	rct_ALS++;
+	if(full_ALS){
+	lux_a = lux_sum_ALS / MAX_ELM_ALS;
+	}else{
+	lux_a = lux_sum_ALS /rct_ALS;
+	}
+	return lux_a;
+}
+
+
+
+
+
 
 #define MAX_ELM_PS 5
 static unsigned int record_ps[MAX_ELM_PS];
 static int rct_ps=0,full_ps=0;
 static long ps_sum=0;
 
+static int als_enable_flag = 0;
+static int ps_enable_als = 0;
 
 static int get_avg_ps(unsigned int ps_data_c)
 {
@@ -570,6 +606,24 @@ static int ltr778_ps_stowed_enable(struct i2c_client *client, int enable)
 
 	mdelay(WAKEUP_DELAY);
 
+	
+	if (enable != 0) {
+		APS_LOG("PS: stowed enable als als_enable_flag=%d \n",als_enable_flag);
+		if(als_enable_flag == 0)
+			{
+				ltr778_als_enable(client, 1);
+				ps_enable_als = 1;
+			}else{
+				ps_enable_als = 0;
+			}
+	}else {
+		APS_LOG("PS: stowed disable als ps_enable_als =%d\n",ps_enable_als);
+		if(ps_enable_als == 1)
+			{
+				ltr778_als_enable(client, 0);
+			}
+	}
+
 	if (0 == ltr778_obj->hw->polling_mode_ps && ((regdata & 0x02) == 0x02))
 	{
 //#ifdef GN_MTK_BSP_PS_DYNAMIC_CALI
@@ -638,6 +692,8 @@ static int ltr778_ps_enable(struct i2c_client *client, int enable)
 	ltr778_i2c_write_reg(LTR778_PS_MEAS_RATE, 0x02);// 25ms measurement time
 	ltr778_i2c_write_reg(LTR778_INTERRUPT_PRST, 0x20);// 2 persist
 #endif
+
+
 	regdata = ltr778_i2c_read_reg(LTR778_PS_CONTR);
 	if (enable != 0) {
 		APS_LOG("PS: enable ps only \n");
@@ -654,6 +710,25 @@ static int ltr778_ps_enable(struct i2c_client *client, int enable)
 		APS_ERR("PS: enable ps err: %d en: %d \n", err, enable);
 		return err;
 	}
+
+	if (enable != 0) {
+		APS_LOG("PS: enable als als_enable_flag=%d \n",als_enable_flag);
+		if(als_enable_flag == 0)
+			{
+				ltr778_als_enable(client, 1);
+				ps_enable_als = 1;
+			}else{
+				ps_enable_als = 0;
+			}
+	}else {
+		APS_LOG("PS: disable als ps_enable_als =%d\n",ps_enable_als);
+		if(ps_enable_als == 1)
+			{
+				ltr778_als_enable(client, 0);
+			}
+	}
+
+
 
 	mdelay(WAKEUP_DELAY);	//10s
 		
@@ -859,7 +934,7 @@ static int ltr778_dynamic_calibrate(void)
 
 	noise = data_total / count;
 
-	if(noise < dynamic_calibrate + 150)  // modified by steven
+	if(noise < dynamic_calibrate + 800)  // modified by steven
 	{
 		dynamic_calibrate = noise;
 // change 2.0cm  ->  2.5cm gray 18%
@@ -902,13 +977,13 @@ static int ltr778_dynamic_calibrate(void)
 	else if (noise < 1500) {
 			ps_thd_val_high = noise + 80;
 			ps_thd_val_low  = noise + 65;
-			ps_persist_val_high = 2047;
+			ps_persist_val_high = 2000;
 			ps_persist_val_low  = noise + 300;
 	}
 	else {
 		ps_thd_val_high = 1700;
 		ps_thd_val_low  = 1600;	
-		ps_persist_val_high = 2047;
+		ps_persist_val_high = 2000;
 		ps_persist_val_low  = 1900;		
 	}
 
@@ -953,10 +1028,14 @@ static int ltr778_als_enable(struct i2c_client *client, int enable)
 #else
 		regdata = 0x05;
 #endif
+
+	als_enable_flag = 1;
 	}
 	else {
 		APS_LOG("ALS(1): disable als only \n");
 		regdata = 0x00;
+		
+	als_enable_flag = 0;
 	}
 
 	err = ltr778_i2c_write_reg(LTR778_ALS_CONTR, regdata);
@@ -1035,23 +1114,23 @@ static int ltr778_als_read(struct i2c_client *client, u16* data)
 		winfac_2 = 7;
 #endif
 	}
-	else if ((ratio >= 30) && (ratio < 51))
+	else if ((ratio >= 30) && (ratio < 80))
 	{//CWF
 #ifdef CONFIG_LCT_LTR778_NEW
 		ch0_coeff = -4910;
 		ch1_coeff = 19950;
-		winfac_1 = 16;
+		winfac_1 = 8;
 		winfac_2 = 3;
 
 #else
 		ch0_coeff = -4910;
 		ch1_coeff = 19950;
-		winfac_1 = 4;
+		winfac_1 = 2;
 		winfac_2 = 3;
 #endif
 		
 	}
-	else if (ratio >= 51)
+	else if (ratio >= 80)
 	{
 		ch0_coeff = 8000;
 		ch1_coeff = -5760;
@@ -1060,6 +1139,8 @@ static int ltr778_als_read(struct i2c_client *client, u16* data)
 	}
 
 	luxdata_int = ((ch0_coeff * alsval_ch0) + (ch1_coeff * alsval_ch1)) / coeff_factor / als_gain_factor / als_integration_factor * WIN_FACTOR*winfac_1/winfac_2;
+
+	luxdata_int = get_avg_lux(luxdata_int);
 	
 	APS_DBG("ltr778_als_read als_value_lux = %d\n", luxdata_int);
 out:
@@ -1131,7 +1212,7 @@ static int ltr778_get_ps_value(struct ltr778_priv *obj, u16 ps)
 
 	
 
-	if(val == 3  && oil_far_cal <= (MAX_ELM_PS_1 +4))  // modified by steven stable data
+	if(val == 3  && oil_far_cal <= (MAX_ELM_PS_1 + 10))  // modified by steven stable data
 	{		
 		oil_far_cal ++;
 
@@ -1738,6 +1819,66 @@ EXIT_ERR:
 	return 0;
 }
 #endif //#ifndef CUSTOM_KERNEL_SENSORHUB
+
+/*modified by steven for light test*/
+struct delayed_work dwork;
+static u16 g_ltr778_error_check_delay=200;
+static u8 delay_work_enf = 0;
+static u8 delay_calc_time = 0;
+static u8 delay_i_calc = 0;
+static u8 eint_oclo_f = 0;
+
+static void ltr778_delay_work(struct work_struct *work)
+{
+	
+	struct ltr778_priv *obj = ltr778_obj;
+
+	obj->als = ltr778_als_read(obj->client, &obj->als);
+	
+	APS_DBG("ltr778_delay_work  delay_calc_time=%d  obj-> als  = %d \n",delay_calc_time, obj->als);
+	
+	if(obj->als > 2000){
+
+		if(delay_calc_time == 0  && intr_flag_value == 1){		
+			ps_report_interrupt_data(1);
+			delay_calc_time = 1;
+		}else if(delay_calc_time == 0  && intr_flag_value == 2 && eint_oclo_f == 0){
+
+			delay_i_calc++;
+
+			if(delay_i_calc >= 2){
+				ps_report_interrupt_data(1);
+				delay_calc_time = 1;
+				delay_i_calc = 0;
+			}
+
+		}			
+
+	}
+	schedule_delayed_work(&dwork,msecs_to_jiffies(g_ltr778_error_check_delay));
+}
+
+static void ltr778_enable_delay_work(u8 enable)
+{
+
+	APS_DBG("ltr778_enable_delay_work enable = %d \n",enable);
+	if (enable) 
+	{
+		schedule_delayed_work(&dwork,msecs_to_jiffies(g_ltr778_error_check_delay));
+		delay_work_enf = 1;
+		delay_calc_time = 0;
+	} 
+	else 
+	{
+		cancel_delayed_work_sync(&dwork);
+		delay_work_enf = 0;
+		delay_calc_time = 0;
+	}
+	
+	APS_DBG("ltr778_enable_delay_work delay_work_enf = %d  delay_calc_time = %d \n",delay_work_enf,delay_calc_time);
+}
+
+
 /*----------------------------------------------------------------------------*/
 static void ltr778_eint_work(struct work_struct *work)
 {
@@ -1750,29 +1891,6 @@ static void ltr778_eint_work(struct work_struct *work)
 	APS_FUN();
 
 	/* Read fault detection status */
-			res = ltr778_i2c_write_reg( LTR778_PS_THRES_LOW_0, 0x00);
-			if(res < 0)
-			{
-				goto EXIT_INTR;
-			}
-			
-			res = ltr778_i2c_write_reg( LTR778_PS_THRES_LOW_1, 0x00);
-			if(res < 0)
-			{
-				goto EXIT_INTR;
-			}
-			
-			res = ltr778_i2c_write_reg( LTR778_PS_THRES_UP_0, 0xFF);
-			if(res < 0)
-			{
-				goto EXIT_INTR;
-			}
-			
-			res = ltr778_i2c_write_reg( LTR778_PS_THRES_UP_1, 0x07);
-			if(res < 0)
-			{
-				goto EXIT_INTR;
-			}
 	
 	value = ltr778_i2c_read_reg(LTR778_FAULT_DET_STATUS);	
 
@@ -1810,9 +1928,9 @@ static void ltr778_eint_work(struct work_struct *work)
 		value = ltr778_get_ps_value(obj, obj->ps);
 		
 		if(value == 0 || value == 2)
-			value = 0;
+			value = 0;	// close
 		else
-			value = 1;
+			value = 1;	// far
 
 #ifdef CONFIG_MOTO_AOD_BASE_ON_AP_SENSORS
 		if(ps_stowed_start == 1)
@@ -1856,7 +1974,14 @@ static void ltr778_eint_work(struct work_struct *work)
 			{
 				goto EXIT_INTR;
 			}
-		} else if (intr_flag_value == 0){	
+			
+
+			
+		} else if (intr_flag_value == 0){
+		
+		if(delay_work_enf == 1){
+			ltr778_enable_delay_work(0);
+			}
   //def GN_MTK_BSP_PS_DYNAMIC_CALI
   #if 1
 			if(obj->ps > 10 && obj->ps < (dynamic_calibrate - 100)){ 
@@ -1901,7 +2026,7 @@ static void ltr778_eint_work(struct work_struct *work)
         			atomic_set(&obj->ps_thd_val_high,  1900);
         			atomic_set(&obj->ps_thd_val_low, 1800);
 					
-        			atomic_set(&obj->ps_persist_val_high, 2047 );
+        			atomic_set(&obj->ps_persist_val_high, 2000 );
         			atomic_set(&obj->ps_persist_val_low, 1950);
         		}
         		
@@ -1934,38 +2059,86 @@ static void ltr778_eint_work(struct work_struct *work)
 			}
 		}else if(intr_flag_value == 2)  // hypothesis oil close
 		{
-			res = ltr778_i2c_write_reg( LTR778_PS_THRES_LOW_0,(u8)((atomic_read(&obj->ps_persist_val_low)) & 0x00FF) );
-			//APS_ERR();
-			if(res < 0)
-			{
-				goto EXIT_INTR;
-			}
 			
-			res = ltr778_i2c_write_reg( LTR778_PS_THRES_LOW_1, (u8)(((atomic_read(&obj->ps_persist_val_low)) & 0x7F00) >> 8));
-			//APS_ERR();
+			if(obj->ps <= 2020){
+					res = ltr778_i2c_write_reg( LTR778_PS_THRES_LOW_0,(u8)((atomic_read(&obj->ps_persist_val_low)) & 0x00FF) );
+					//APS_ERR();
+					if(res < 0)
+					{
+						goto EXIT_INTR;
+					}
+					
+					res = ltr778_i2c_write_reg( LTR778_PS_THRES_LOW_1, (u8)(((atomic_read(&obj->ps_persist_val_low)) & 0x7F00) >> 8));
+					//APS_ERR();
 
-			if(res < 0)
-			{
-				goto EXIT_INTR;
-			}
-			
-			res = ltr778_i2c_write_reg( LTR778_PS_THRES_UP_0, 0xFF );
-			//APS_ERR();
+					if(res < 0)
+					{
+						goto EXIT_INTR;
+					}
+					
+					res = ltr778_i2c_write_reg( LTR778_PS_THRES_UP_0, 0xE4 );
+					//APS_ERR();
 
-			if(res < 0)
-			{
-				goto EXIT_INTR;
-			}
-			
-			res = ltr778_i2c_write_reg( LTR778_PS_THRES_UP_1, 0x07 );
-			//APS_ERR();
-			if(res < 0)
-			{
-				goto EXIT_INTR;
-			}
+					if(res < 0)
+					{
+						goto EXIT_INTR;
+					}
+					
+					res = ltr778_i2c_write_reg( LTR778_PS_THRES_UP_1, 0x07 );
+					//APS_ERR();
+					if(res < 0)
+					{
+						goto EXIT_INTR;
+					}
+					
+					eint_oclo_f = 0;
+
+				}else{
+
+					
+					res = ltr778_i2c_write_reg( LTR778_PS_THRES_LOW_0,0xE4 );
+					//APS_ERR();
+					if(res < 0)
+					{
+						goto EXIT_INTR;
+					}
+					
+					res = ltr778_i2c_write_reg( LTR778_PS_THRES_LOW_1, 0x07);
+					//APS_ERR();
+
+					if(res < 0)
+					{
+						goto EXIT_INTR;
+					}
+					
+					res = ltr778_i2c_write_reg( LTR778_PS_THRES_UP_0, 0xFF );
+					//APS_ERR();
+
+					if(res < 0)
+					{
+						goto EXIT_INTR;
+					}
+					
+					res = ltr778_i2c_write_reg( LTR778_PS_THRES_UP_1, 0x07 );
+					//APS_ERR();
+					if(res < 0)
+					{
+						goto EXIT_INTR;
+					}
+
+					eint_oclo_f = 1;
+
+				}
+
+				delay_calc_time = 0;
 			
 		}else if(intr_flag_value == 3)  //  oil far  
 		{
+
+			
+			if(delay_work_enf == 1){
+				ltr778_enable_delay_work(0);
+				}
 
 			if(obj->ps > 25 ){ 
 				 if(obj->ps < 50){
@@ -1990,14 +2163,14 @@ static void ltr778_eint_work(struct work_struct *work)
         			atomic_set(&obj->ps_thd_val_high,  obj->ps+200);
         			atomic_set(&obj->ps_thd_val_low, obj->ps+100);
 					
-        			atomic_set(&obj->ps_persist_val_high,  2047);
+        			atomic_set(&obj->ps_persist_val_high,  2000);
         			atomic_set(&obj->ps_persist_val_low, obj->ps+300);
         		}
         		else{
         			atomic_set(&obj->ps_thd_val_high,  1900);
         			atomic_set(&obj->ps_thd_val_low, 1800);
 					
-        			atomic_set(&obj->ps_persist_val_high, 2047 );
+        			atomic_set(&obj->ps_persist_val_high, 2000 );
         			atomic_set(&obj->ps_persist_val_low, 1950);
         		}
         		
@@ -2031,8 +2204,13 @@ static void ltr778_eint_work(struct work_struct *work)
 			}
 		}
 		//let up layer to know
-   
 		res = ps_report_interrupt_data(value);
+		
+		/*modified by steven for light test*/
+		if(delay_work_enf == 0 && value == 0){
+			ltr778_enable_delay_work(1);
+		}
+		
 		//APS_DBG("ltr778_eint_work ps_report_interrupt_data 111 intr_flag_value=%d!\n",intr_flag_value);
 
 	}
@@ -2691,6 +2869,8 @@ static int ltr778_i2c_probe(struct i2c_client *client, const struct i2c_device_i
 	
 	obj->hw = hw;
 	INIT_WORK(&obj->eint_work, ltr778_eint_work);
+	
+	INIT_DELAYED_WORK(&dwork, ltr778_delay_work);//modified by steven
 	obj->client = client;
 	i2c_set_clientdata(client, obj);	
 	
