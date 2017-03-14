@@ -291,7 +291,7 @@ static int mtkfb_blank(int blank_mode, struct fb_info *info)
 		if (!lcd_fps)
 			msleep(30);
 		else
-		   msleep(1);  
+			msleep(2 * 100000 / lcd_fps);	/* Delay 2 frames. */
 		break;
 	case FB_BLANK_VSYNC_SUSPEND:
 	case FB_BLANK_HSYNC_SUSPEND:
