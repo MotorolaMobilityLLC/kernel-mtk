@@ -62,10 +62,11 @@ static int final_lux_val;
 static int winfac_1;  // modified by steven
 static int winfac_2;
 //liujinzhou@wind-mobi.com add at 20161205 end
-
+//tuwenzan@wind-mobi.com add at 20170313 begin
 #ifdef CONFIG_MOTO_AOD_BASE_ON_AP_SENSORS
 static bool ps_stowed_start = false;
 #endif
+//tuwenzan@wind-mobi.com add at 20170313 end
 /*----------------------------------------------------------------------------*/
 typedef enum {
     CMC_BIT_ALS    = 1,
@@ -488,7 +489,7 @@ EXIT_ERR:
 	res = LTR778_ERR_I2C;
 	return res;
 }
-
+//tuwenzan@wind-mobi.com add at 20170313 begin
 #ifdef CONFIG_MOTO_AOD_BASE_ON_AP_SENSORS
 
 static int ltr778_ps_stowed_enable(struct i2c_client *client, int enable)
@@ -536,12 +537,12 @@ static int ltr778_ps_stowed_enable(struct i2c_client *client, int enable)
 	regdata = ltr778_i2c_read_reg(LTR778_PS_CONTR);
 	if (enable != 0) {
 		APS_LOG("PS: stowed enable ps only \n");
-		regdata |= 0x02;
+		regdata = 0xC2;
 		ps_stowed_start = 1;
 	}
 	else {
 		APS_LOG("PS: stowed disable ps only \n");
-		regdata &= 0xfd;
+		regdata = 0x00;
 		ps_stowed_start = 0;
 	}
 
@@ -576,7 +577,6 @@ static int ltr778_ps_stowed_enable(struct i2c_client *client, int enable)
 	return err;
 }
 #endif
-
 static int ltr778_ps_enable(struct i2c_client *client, int enable)
 {
 	u8 regdata;
@@ -611,7 +611,6 @@ static int ltr778_ps_enable(struct i2c_client *client, int enable)
 				return res;
 			}
 	//liujinzhou@wind-mobi.com modify at 20161215 end
-
 #ifdef CONFIG_MOTO_AOD_BASE_ON_AP_SENSORS
 	ltr778_i2c_write_reg(LTR778_PS_MEAS_RATE, 0x02);// 25ms measurement time
 	ltr778_i2c_write_reg(LTR778_INTERRUPT_PRST, 0x20);// 2 persist
@@ -619,12 +618,13 @@ static int ltr778_ps_enable(struct i2c_client *client, int enable)
 	regdata = ltr778_i2c_read_reg(LTR778_PS_CONTR);
 	if (enable != 0) {
 		APS_LOG("PS: enable ps only \n");
-		regdata |= 0x02;
+		regdata = 0xC2;  //regdata |= 0x02;
 	}
 	else {
 		APS_LOG("PS: disable ps only \n");
-		regdata &= 0xfd;
+		regdata = 0x00; //regdata &= 0xfd;
 	}
+	//tuwenzan@wind-mobi.com add at 20170313 end
 
 	err = ltr778_i2c_write_reg(LTR778_PS_CONTR, regdata);
 	if (err < 0)
@@ -1586,7 +1586,6 @@ static ssize_t ltr778_store_alsval(struct device_driver *ddri, const char *buf, 
 	}    
 	return count;
 }
-
 #ifdef CONFIG_MOTO_AOD_BASE_ON_AP_SENSORS
 static ssize_t ltr778_store_stowed(struct device_driver *ddri, const char *buf, size_t count)
 {
@@ -1602,7 +1601,6 @@ static ssize_t ltr778_store_stowed(struct device_driver *ddri, const char *buf, 
 	return count;
 }
 #endif
-
 /*---------------------------------------------------------------------------------------*/
 static DRIVER_ATTR(als,     S_IWUSR | S_IRUGO, ltr778_show_als,		NULL);
 static DRIVER_ATTR(ps,      S_IWUSR | S_IRUGO, ltr778_show_ps,		NULL);
@@ -1634,7 +1632,7 @@ static struct driver_attribute *ltr778_attr_list[] = {
     &driver_attr_stowed,
 #endif
 };
-
+//tuwenzan@wind-mobi.com add at 20170313 end
 /*----------------------------------------------------------------------------*/
 static int ltr778_create_attr(struct device_driver *driver)
 {
@@ -1799,7 +1797,6 @@ static void ltr778_eint_work(struct work_struct *work)
 			value = 0;
 		else
 			value = 1;
-
 #ifdef CONFIG_MOTO_AOD_BASE_ON_AP_SENSORS
 		if(ps_stowed_start == 1)
 		{
@@ -1815,7 +1812,6 @@ static void ltr778_eint_work(struct work_struct *work)
 			value += 2;//stowed:2,unstowed:3
 		}
 #endif
-
 		APS_DBG("intr_flag_value=%d    value = %d \n",intr_flag_value, value);
 		if(intr_flag_value == 1){
 			
