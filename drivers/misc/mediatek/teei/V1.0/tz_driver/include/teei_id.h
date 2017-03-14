@@ -15,6 +15,8 @@
 #ifndef __TEEI_ID_H_
 #define __TEEI_ID_H_
 #include <asm/cacheflush.h>
+#include "teei_client_main.h"
+#include "utdriver_macro.h"
 
 #define SMC_ENOMEM          7
 #define SMC_EOPNOTSUPP      6
@@ -25,8 +27,7 @@
 #define SMC_PENDING         1
 #define SMC_SUCCESS         0
 
-extern unsigned long boot_soter_flag;
-#define START_STATUS    (0)
+
 /**
  * @brief Encoding data type
  */

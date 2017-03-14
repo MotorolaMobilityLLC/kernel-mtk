@@ -21,19 +21,17 @@
 #include "teei_id.h"
 #include "sched_status.h"
 #include "nt_smc_call.h"
-
-#define IMSG_TAG "[tz_driver]"
+#include "teei_common.h"
+#include "switch_queue.h"
+#include "teei_client_main.h"
+#include "backward_driver.h"
+#include "utdriver_macro.h"
 #include <imsg_log.h>
 
-#define FDRV_CALL       0x02
 
-struct fdrv_call_struct {
-        int fdrv_call_type;
-        int fdrv_call_buff_size;
-        int retVal;
-};
+unsigned long keymaster_buff_addr = 0;
 
-extern int add_work_entry(int work_type, unsigned char *buff);
+struct keymaster_command_struct keymaster_command_entry;
 
 unsigned long create_keymaster_fdrv(int buff_size)
 {
@@ -106,11 +104,12 @@ unsigned long create_keymaster_fdrv(int buff_size)
 		if (retVal == 0) {
 			return temp_addr;
 		}
-	} else
-		retVal = 0;
+	} else {
+		retVal = (unsigned long)NULL;
+	}
 
 	/* Release the resource and return. */
-	free_pages(temp_addr, get_order(ROUND_UP(buff_size, SZ_4K)));
+	free_pages((unsigned long)temp_addr, get_order(ROUND_UP(buff_size, SZ_4K)));
 
 	IMSG_ERROR("[%s][%d]: failed!\n", __func__, __LINE__);
 	return retVal;
@@ -130,21 +129,20 @@ void set_keymaster_command(unsigned long memory_size)
 	memcpy((void *)fdrv_message_buff, (void *)(&fdrv_msg_head), sizeof(struct fdrv_message_head));
 	Flush_Dcache_By_Area((unsigned long)fdrv_message_buff, (unsigned long)fdrv_message_buff + MESSAGE_SIZE);
 
-	return;
 }
 
 int __send_keymaster_command(unsigned long share_memory_size)
 {
-	unsigned long smc_type = 2;
+	uint64_t smc_type = 2;
 	set_keymaster_command(share_memory_size);
 	Flush_Dcache_By_Area((unsigned long)keymaster_buff_addr, (unsigned long)keymaster_buff_addr + KEYMASTER_BUFF_SIZE);
 
 	fp_call_flag = GLSCH_HIGH;
-	n_invoke_t_drv((uint64_t *)(&smc_type), 0, 0);
+	n_invoke_t_drv(&smc_type, 0, 0);
 
 	while(smc_type == 0x54) {
 		udelay(IRQ_DELAY);
-		nt_sched_t((uint64_t *)(&smc_type));
+		nt_sched_t(&smc_type);
 	}
 
 	return 0;
@@ -162,8 +160,9 @@ int send_keymaster_command(unsigned long share_memory_size)
 
 	IMSG_DEBUG("send_keymaster_command start\n");
 
-	if (teei_config_flag == 1)
+	if (teei_config_flag == 1) {
 		complete(&global_down_lock);
+	}
 
 	fdrv_ent.fdrv_call_type = KEYMASTER_SYS_NO;
 	fdrv_ent.fdrv_call_buff_size = share_memory_size;

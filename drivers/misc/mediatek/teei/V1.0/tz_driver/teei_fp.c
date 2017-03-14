@@ -21,18 +21,15 @@
 #include "teei_id.h"
 #include "sched_status.h"
 #include "nt_smc_call.h"
-
-#define IMSG_TAG "[tz_driver]"
+#include "teei_common.h"
+#include "switch_queue.h"
+#include "teei_client_main.h"
+#include "utdriver_macro.h"
+#include "backward_driver.h"
 #include <imsg_log.h>
-#define FDRV_CALL       0x02
 
-struct fdrv_call_struct {
-	int fdrv_call_type;
-	int fdrv_call_buff_size;
-	int retVal;
-};
+unsigned long fp_buff_addr = 0;
 
-extern int add_work_entry(int work_type, unsigned char *buff);
 
 unsigned long create_fp_fdrv(int buff_size)
 {
@@ -80,7 +77,7 @@ unsigned long create_fp_fdrv(int buff_size)
 
 	/* Notify the T_OS that there is ctl_buffer to be created. */
 	memcpy((void *)message_buff, (void *)(&msg_head), sizeof(struct message_head));
-	memcpy((void *)(message_buff + sizeof(struct message_head)), (void *)&msg_body, sizeof(struct create_fdrv_struct));
+	memcpy((void *)(message_buff + sizeof(struct message_head)), (void *)(&msg_body), sizeof(struct create_fdrv_struct));
 	Flush_Dcache_By_Area((unsigned long)message_buff, (unsigned long)message_buff + MESSAGE_SIZE);
 
 	/* Call the smc_fast_call */
@@ -91,7 +88,7 @@ unsigned long create_fp_fdrv(int buff_size)
 	down(&(boot_sema));
 
 	Invalidate_Dcache_By_Area((unsigned long)message_buff, (unsigned long)message_buff + MESSAGE_SIZE);
-	memcpy((void *)(&msg_head), (void *)message_buff, sizeof(struct message_head));
+	memcpy((void *)(&msg_head), (void *)(message_buff), sizeof(struct message_head));
 	memcpy((void *)(&msg_ack), (void *)(message_buff + sizeof(struct message_head)), sizeof(struct ack_fast_call_struct));
 
 	//local_irq_restore(irq_flag);
@@ -104,11 +101,12 @@ unsigned long create_fp_fdrv(int buff_size)
 			/* pr_debug("[%s][%d]: %s end.\n", __func__, __LINE__, __func__); */
 			return temp_addr;
 		}
-	} else
-		retVal = 0;
+	} else {
+		retVal = (unsigned long)NULL;
+	}
 
 	/* Release the resource and return. */
-	free_pages(temp_addr, get_order(ROUND_UP(buff_size, SZ_4K)));
+	free_pages((unsigned long)temp_addr, get_order(ROUND_UP(buff_size, SZ_4K)));
 
 	IMSG_ERROR("[%s][%d]: %s failed!\n", __func__, __LINE__, __func__);
 	return retVal;
@@ -121,7 +119,7 @@ void set_fp_command(unsigned long memory_size)
 
 	struct fdrv_message_head fdrv_msg_head;
 
-	memset((void *)&fdrv_msg_head, 0, sizeof(struct fdrv_message_head));
+	memset((void *)(&fdrv_msg_head), 0, sizeof(struct fdrv_message_head));
 
 	fdrv_msg_head.driver_type = FP_SYS_NO;
 	fdrv_msg_head.fdrv_param_length = sizeof(unsigned int);
@@ -135,16 +133,16 @@ void set_fp_command(unsigned long memory_size)
 
 int __send_fp_command(unsigned long share_memory_size)
 {
-	unsigned long smc_type = 2;
+	uint64_t smc_type = 2;
 	set_fp_command(share_memory_size);
 	Flush_Dcache_By_Area((unsigned long)fp_buff_addr, fp_buff_addr + FP_BUFF_SIZE);
 
 	fp_call_flag = GLSCH_HIGH;
-	n_invoke_t_drv((uint64_t *)(&smc_type), 0, 0);
+	n_invoke_t_drv(&smc_type, 0, 0);
 
 	while(smc_type == 0x54) {
 		udelay(IRQ_DELAY);
-		nt_sched_t((uint64_t *)(&smc_type));
+		nt_sched_t(&smc_type);
 	}
 
 	return 0;
@@ -191,7 +189,7 @@ int send_fp_command(unsigned long share_memory_size)
 	/* with a rmb() */
 	rmb();
 
-	Invalidate_Dcache_By_Area((unsigned long)fp_buff_addr, fp_buff_addr + FP_BUFF_SIZE);
+	Invalidate_Dcache_By_Area((unsigned long)fp_buff_addr, (unsigned long)fp_buff_addr + FP_BUFF_SIZE);
 
 	ut_pm_mutex_unlock(&pm_mutex);
 	up(&fdrv_lock);

@@ -27,11 +27,18 @@
 #include "nt_smc_call.h"
 #include "teei_id.h"
 #include "teei_common.h"
-
-#define IMSG_TAG "[tz_driver]"
+#include "utdriver_macro.h"
+#include "notify_queue.h"
+#include "switch_queue.h"
+#include "teei_client_main.h"
+#include "utdriver_irq.h"
+#include <tlog.h>
+#include "notify_queue.h"
+#include "global_function.h"
 #include <imsg_log.h>
-
-extern int add_work_entry(int work_type, unsigned char *buff);
+static struct load_soter_entry load_ent;
+static struct work_entry work_ent;
+static struct work_entry sched_work_ent[SCHED_ENT_CNT];
 
 extern struct timeval stime;
 static struct teei_smc_cmd *get_response_smc_cmd(void)
@@ -40,8 +47,9 @@ static struct teei_smc_cmd *get_response_smc_cmd(void)
 
         nq_ent = (struct NQ_entry *)get_nq_entry((unsigned char *)t_nt_buffer);
 
-	if (nq_ent == NULL)
+	if (nq_ent == NULL) {
 		return NULL;
+	}
 
 	return (struct teei_smc_cmd *)phys_to_virt((unsigned long)(nq_ent->buffer_addr));
 }
@@ -54,7 +62,6 @@ void init_sched_work_ent(void)
 		sched_work_ent[i].in_use = 0;
 	}
 
-	return;
 }
 void nt_sched_t_call(void)
 {
@@ -62,7 +69,7 @@ void nt_sched_t_call(void)
 
 	retVal = add_work_entry(SCHED_CALL, NULL);
 	if (retVal != 0) {
-		pr_err("[%s][%d] add_work_entry function failed!\n", __func__, __LINE__);
+		IMSG_ERROR("[%s][%d] add_work_entry function failed!\n", __func__, __LINE__);
 	}
 
 	return;
@@ -74,7 +81,6 @@ void sched_func(struct work_struct *entry)
 	nt_sched_t_call();
 	md->in_use = 0;
 
-	return;
 }
 
 struct work_entry *get_unused_work_entry(void)
@@ -94,14 +100,13 @@ void add_sched_queue(void)
 
 	curr_entry = get_unused_work_entry();
 	if (curr_entry == NULL) {
-		pr_err("[%s][%d] Can NOT get unused schedule work_entry!", __func__, __LINE__);
+		IMSG_ERROR("[%s][%d] Can NOT get unused schedule work_entry!", __func__, __LINE__);
 		return;
 	}
 
 	INIT_WORK(&(curr_entry->work), sched_func);
 	queue_work(secure_wq, &(curr_entry->work));
 
-	return;
 }
 
 static irqreturn_t nt_sched_irq_handler(void)
@@ -115,8 +120,9 @@ static irqreturn_t nt_soter_irq_handler(int irq, void *dev)
 {
 	irq_call_flag = GLSCH_HIGH;
 	up(&smc_lock);
-	if (teei_config_flag == 1)
+	if (teei_config_flag == 1) {
 		complete(&global_down_lock);
+	}
 
 	return IRQ_HANDLED;
 }
@@ -163,7 +169,6 @@ void add_bdrv_queue(int bdrv_id)
 	INIT_WORK(&(work_ent.work), work_func);
 	queue_work(bdrv_wq, &(work_ent.work));
 
-	return;
 }
 
 static irqreturn_t nt_bdrv_handler(void)
@@ -196,15 +201,14 @@ static irqreturn_t nt_boot_irq_handler(void)
 
 void secondary_load_func(void)
 {
-	unsigned long smc_type = 2;
+	uint64_t smc_type = 2;
 	Flush_Dcache_By_Area((unsigned long)boot_vfs_addr, (unsigned long)boot_vfs_addr + VFS_SIZE);
-	pr_err("[%s][%d]: %s end.\n", __func__, __LINE__, __func__);
-	n_ack_t_load_img((uint64_t *)(&smc_type), 0, 0);
+	IMSG_DEBUG("[%s][%d]: %s end.\n", __func__, __LINE__, __func__);
+	n_ack_t_load_img(&smc_type, 0, 0);
 	while (smc_type == 0x54) {
 		udelay(IRQ_DELAY);
-		nt_sched_t((uint64_t *)(&smc_type));
+		nt_sched_t(&smc_type);
 	}
-	return ;
 }
 
 
@@ -216,7 +220,6 @@ void load_func(struct work_struct *entry)
 	down(&smc_lock);
 	retVal = add_work_entry(LOAD_FUNC, NULL);
 
-	return;
 }
 
 void work_func(struct work_struct *entry)
@@ -228,10 +231,9 @@ void work_func(struct work_struct *entry)
 		reetime.handle(&reetime);
 	} else if (sys_call_num == vfs_handler.sysno) {
 		vfs_handler.handle(&vfs_handler);
-	} else
-		pr_err("[%s][%d] ============ ERROR =============\n", __func__, __LINE__);
-
-	return;
+	} else {
+		IMSG_ERROR("[%s][%d] ============ ERROR =============\n", __func__, __LINE__);
+	}
 }
 
 static irqreturn_t nt_switch_irq_handler(void)
@@ -263,26 +265,15 @@ static irqreturn_t nt_switch_irq_handler(void)
 				INIT_WORK(&(work_ent.work), work_func);
 				queue_work(secure_wq, &(work_ent.work));
 				up(&smc_lock);
-#if 0
-			} else if (msg_head->child_type == FDRV_ACK_TYPE) {
-				/* IMSG_DEBUG("[%s][%d] ==== FDRV_ACK_TYPE ========\n", __func__, __LINE__); */
-				/*
-				if(forward_call_flag == GLSCH_NONE)
-					forward_call_flag = GLSCH_NEG;
-				else
-					forward_call_flag = GLSCH_NONE;
-				*/
-				up(&boot_sema);
-				up(&smc_lock);
-#endif
 			} else if (msg_head->child_type == NQ_CALL_TYPE) {
 				/* IMSG_DEBUG("[%s][%d] ==== STANDARD_CALL_TYPE ACK ========\n", __func__, __LINE__); */
 
 				forward_call_flag = GLSCH_NONE;
 				command = get_response_smc_cmd();
 
-				if (NULL == command)
+				if (NULL == command) {
 					return IRQ_NONE;
+				}
 
 				Invalidate_Dcache_By_Area((unsigned long)command, (unsigned long)command + MESSAGE_LENGTH);
 				/* Get the semaphore */
@@ -311,11 +302,11 @@ static irqreturn_t nt_switch_irq_handler(void)
 
 static irqreturn_t ut_drv_irq_handler(int irq, void *dev)
 {
-	int irq_id = 0;
+	uint64_t irq_id = 0;
 	int retVal = 0;
 
 	/* Get the interrupt ID */
-	nt_get_non_irq_num((uint64_t *)&irq_id);
+	nt_get_non_irq_num(&irq_id);
 
 	switch (irq_id) {
 		case SCHED_IRQ:

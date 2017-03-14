@@ -20,8 +20,15 @@
 #include "notify_queue.h"
 #include "teei_id.h"
 
-#define IMSG_TAG "[tz_driver]"
+#include "utdriver_macro.h"
+#include "teei_common.h"
+#include "teei_client_main.h"
+#include "backward_driver.h"
 #include <imsg_log.h>
+static unsigned long nt_t_buffer;
+unsigned long t_nt_buffer;
+
+
 /***********************************************************************
 
  create_notify_queue:
@@ -116,12 +123,14 @@ static long create_notify_queue(unsigned long msg_buff, unsigned long size)
 	if ((msg_head.message_type == FAST_CALL_TYPE) && (msg_head.child_type == FAST_ACK_CREAT_NQ)) {
 		retVal = msg_ack.retVal;
 
-		if (retVal == 0)
+		if (retVal == 0) {
 			goto return_fn;
-		else
+		} else {
 			goto Destroy_t_nt_buffer;
-	} else
+		}
+	} else {
 		retVal = -EAGAIN;
+	}
 
 /* Release the resource and return. */
 Destroy_t_nt_buffer:
@@ -134,7 +143,7 @@ return_fn:
 
 void NQ_init(unsigned long NQ_buff)
 {
-	memset((void *)NQ_buff, 0, NQ_BUFF_SIZE);
+	memset((char *)NQ_buff, 0, NQ_BUFF_SIZE);
 }
 
 long init_nq_head(unsigned char *buffer_addr)
@@ -142,7 +151,7 @@ long init_nq_head(unsigned char *buffer_addr)
 	struct NQ_head *temp_head = NULL;
 
 	temp_head = (struct NQ_head *)buffer_addr;
-	memset((void *)temp_head, 0, NQ_BLOCK_SIZE);
+	memset(temp_head, 0, NQ_BLOCK_SIZE);
 	temp_head->start_index = 0;
 	temp_head->end_index = 0;
 	temp_head->Max_count = BLOCK_MAX_COUNT;
@@ -152,28 +161,29 @@ long init_nq_head(unsigned char *buffer_addr)
 
 static __always_inline unsigned int get_end_index(struct NQ_head *nq_head)
 {
-	if (nq_head->end_index == BLOCK_MAX_COUNT)
+	if (nq_head->end_index == BLOCK_MAX_COUNT) {
 		return 1;
-	else
+	} else {
 		return nq_head->end_index + 1;
-
+	}
 }
 
 
-int add_nq_entry(unsigned int command_buff, int command_length, int valid_flag)
+int add_nq_entry(u32 command_buff, int command_length, int valid_flag)
 {
 	struct NQ_head *temp_head = NULL;
 	struct NQ_entry *temp_entry = NULL;
 
 	temp_head = (struct NQ_head *)nt_t_buffer;
 
-	if (temp_head->start_index == ((temp_head->end_index + 1) % temp_head->Max_count))
+	if (temp_head->start_index == ((temp_head->end_index + 1) % temp_head->Max_count)) {
 		return -ENOMEM;
+	}
 	temp_entry = (struct NQ_entry *)(nt_t_buffer + NQ_BLOCK_SIZE + temp_head->end_index * NQ_BLOCK_SIZE);
 
 	temp_entry->valid_flag = valid_flag;
 	temp_entry->length = command_length;
-	temp_entry->buffer_addr = (unsigned int)(unsigned long)command_buff;
+	temp_entry->buffer_addr = (unsigned int)(command_buff);
 
 	temp_head->end_index = (temp_head->end_index + 1) % temp_head->Max_count;
 

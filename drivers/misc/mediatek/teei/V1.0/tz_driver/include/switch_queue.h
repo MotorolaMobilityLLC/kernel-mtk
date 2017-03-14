@@ -11,24 +11,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
  */
-#ifndef TEEI_KEYMASTER_HH
-#define TEEI_KEYMASTER_HH
+#ifndef SWITCH_QUEUE_H
+#define SWITCH_QUEUE_H
 
+int add_work_entry(int work_type, unsigned char *buff);
 
-
-
-
-struct keymaster_command_struct {
-	unsigned long mem_size;
-	int retVal;
-};
-
-extern struct keymaster_command_struct keymaster_command_entry;
-
-extern unsigned long keymaster_buff_addr;
-extern struct mutex pm_mutex;
-
-unsigned long create_keymaster_fdrv(int buff_size);
-int __send_keymaster_command(unsigned long share_memory_size);
-
-#endif // end of TEEI_KEYMASTER_HH
+#endif  // end of SWITCH_QUEUE_H

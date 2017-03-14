@@ -65,43 +65,7 @@
 #include <asm/div64.h>
 #include <linux/mmzone.h>
 
-#define IMSG_TAG "[tz_driver]"
 #include <imsg_log.h>
-#define ALLOC_NO_WATERMARKS     0x04
-#define ALLOC_WMARK_MASK        (ALLOC_NO_WATERMARKS-1)
-#define ALLOC_WMARK_LOW         WMARK_LOW
-#define ALLOC_CPUSET            0x40
-
-#define ZONE_RECLAIM_NOSCAN     -2
-#define ZONE_RECLAIM_FULL       -1
-#define ZONE_RECLAIM_SOME       0
-#define ZONE_RECLAIM_SUCCESS    1
-
-#define ALLOC_WMARK_MIN         WMARK_MIN
-
-
-#define UT_MAX_MEM		0xD0000000
-
-#define __ut_alloc_pages(gfp_mask, order) \
-			__ut_alloc_pages_node(numa_node_id(), gfp_mask, order)
-
-extern void expand(struct zone *zone, struct page *page,
-			int low, int high, struct free_area *area,
-			int migratetype);
-
-extern int rmqueue_bulk(struct zone *zone, unsigned int order,
-			unsigned long count, struct list_head *list,
-			int migratetype, int cold);
-
-extern int prep_new_page(struct page *page, int order, gfp_t gfp_flags);
-
-extern int zlc_zone_worth_trying(struct zonelist *zonelist, struct zoneref *z,
-				nodemask_t *allowednodes);
-
-extern nodemask_t *zlc_setup(struct zonelist *zonelist, int alloc_flags);
-extern bool zone_allows_reclaim(struct zone *local_zone, struct zone *zone);
-extern void zlc_mark_zone_full(struct zonelist *zonelist, struct zoneref *z);
-
 
 static inline void rmv_page_order(struct page *page)
 {

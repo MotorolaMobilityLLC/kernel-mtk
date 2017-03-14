@@ -11,8 +11,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
  */
-
-#include "utdriver_irq.h"
+#ifndef UTDRIVER_MACRO_H
+#define UTDRIVER_MACRO_H
 
 #ifdef CONFIG_MICROTRUST_TUI_SUPPORT
 #define TUI_SUPPORT
@@ -92,6 +92,8 @@
 #define LOAD_FUNC	0x0A
 #ifdef TUI_SUPPORT
 #define POWER_DOWN_CALL	0x0B
+#define I2C_REE_CALL	0x1E
+#define I2C_TEE_CALL	0x1F
 #endif
 #define LOCK_PM_MUTEX   0x0C
 #define UNLOCK_PM_MUTEX 0x0D
@@ -99,4 +101,11 @@
 #define NT_DUMP_T	(0x10)
 #define VFS_SYS_NO 	0x08
 #define REETIME_SYS_NO	0x07
+#define CANCEL_SYS_NO	110
 #define IRQ_DELAY	1000
+#define UT_BOOT_CORE   	0
+#define UT_SWITCH_CORE 	4
+#define GK_SYS_NO 	120
+#define GK_BUFF_SIZE		(4 * 1024)
+#define LOG_BUF_LEN		    (256 * 1024)
+#endif // end of UTDRIVER_MACRO_H

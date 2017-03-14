@@ -30,6 +30,6 @@ endif
 
 obj-$(CONFIG_MICROTRUST_TZ_DRIVER) += teei.o
 
-ccflags-y += -D DEBUG_DO
-ccflags-y += -Wno-error
-ccflags-y += -D UT_DMA_ZONE
+ccflags-y += -DDEBUG_DO -DIMSG_TAG='"[tz_driver]"'
+ccflags-y += -Wall -Werror
+ccflags-y += -DUT_DMA_ZONE

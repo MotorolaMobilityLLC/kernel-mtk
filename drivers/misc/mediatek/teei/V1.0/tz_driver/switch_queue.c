@@ -25,117 +25,51 @@
 #include "nt_smc_call.h"
 #include "utdriver_macro.h"
 #include "sched_status.h"
-
-#define IMSG_TAG "[tz_driver]"
+#include "teei_common.h"
+#include "teei_client_main.h"
+#include "global_function.h"
+#include "backward_driver.h"
+#include "irq_register.h"
+#include "teei_fp.h"
+#include "teei_gatekeeper.h"
+#include "teei_keymaster.h"
+#include "teei_smc_call.h"
+#include "teei_cancel_cmd.h"
 #include <imsg_log.h>
-#define CANCEL_SYS_NO	110
-#define GK_SYS_NO 	120
+#ifdef TUI_SUPPORT
+#include "utr_tui_cmd.h"
+#endif
 
-#define VFS_SYS_NO	0x08
-#define REETIME_SYS_NO	0x07
-
-#define UT_BOOT_CORE   	0
-#define UT_SWITCH_CORE 	4
-extern void secondary_init_cmdbuf(void *info);
-extern void secondary_boot_stage2(void *info);
-extern void secondary_invoke_fastcall(void *info);
-extern void secondary_load_tee(void *info);
-extern void secondary_boot_stage1(void *info);
-extern void secondary_load_func(void);
-extern int handle_switch_core(int cpu);
-
-struct switch_head_struct
-{
+struct switch_head_struct {
 	struct list_head head;
 };
 
-struct service_handler {
-	unsigned int sysno;
-	void *param_buf;
-	unsigned size;
-	long (*init)(struct service_handler *handler);
-	void (*deinit)(struct service_handler *handler);
-	int (*handle)(struct service_handler *handler);
-};
-struct switch_call_struct
-{
+struct switch_call_struct {
 	int switch_type;
 	unsigned long buff_addr;
 };
 
 static void switch_fn(struct kthread_work *work);
 
-struct smc_call_struct {
-	unsigned long local_cmd;
-	u32 teei_cmd_type;
-	u32 dev_file_id;
-	u32 svc_id;
-	u32 cmd_id;
-	u32 context;
-	u32 enc_id;
-	void *cmd_buf;
-	size_t cmd_len;
-	void *resp_buf;
-	size_t resp_len;
-	void *meta_data;
-	void *info_data;
-	size_t info_len;
-	int *ret_resp_len;
-	int *error_code;
-	struct semaphore *psema;
-	int retVal;
-};
 extern struct mutex pm_mutex;
 extern unsigned long ut_pm_count;
 
-extern struct kthread_worker ut_fastcall_worker;
 
-extern int forward_call_flag;
-extern int fp_call_flag;
-extern int keymaster_call_flag;
-extern int irq_call_flag;
 
-extern void nt_sched_t_call(void);
-extern int __send_fp_command(unsigned long share_memory_size);
-extern int __send_cancel_command(unsigned long share_memory_size);
-extern int __send_gatekeeper_command(unsigned long share_memory_size);
-extern int __send_keymaster_command(unsigned long share_memory_size);
-#ifdef TUI_SUPPORT
-extern int __send_tui_display_command(unsigned long share_memory_size);
-extern int __send_tui_notice_command(unsigned long share_memory_size);
-#endif
-extern int __vfs_handle(struct service_handler *handler);
-extern int __reetime_handle(struct service_handler *handler);
-extern int __teei_smc_call(unsigned long local_smc_cmd,
-				u32 teei_cmd_type,
-				u32 dev_file_id,
-				u32 svc_id,
-				u32 cmd_id,
-				u32 context,
-				u32 enc_id,
-				const void *cmd_buf,
-				size_t cmd_len,
-				void *resp_buf,
-				size_t resp_len,
-				const void *meta_data,
-				const void *info_data,
-				size_t info_len,
-				int *ret_resp_len,
-				int *error_code,
-				struct semaphore *psema);
 
 extern unsigned int need_mig_flag;
 extern unsigned int nt_core;
-extern struct task_struct *teei_switch_task;
-extern int get_current_cpuid(void);
+
+
 static struct switch_call_struct *create_switch_call_struct(void)
 {
 	struct switch_call_struct *tmp_entry = NULL;
 
 	tmp_entry = kmalloc(sizeof(struct switch_call_struct), GFP_KERNEL);
 
-	if (tmp_entry == NULL)
+	if (tmp_entry == NULL) {
 		IMSG_ERROR("[%s][%d] kmalloc failed!!!\n", __func__, __LINE__);
+	}
 
 	return tmp_entry;
 }
@@ -172,8 +106,9 @@ static int ut_smc_call(void *buff)
 		.data = buff,
 	};
 
-	if (!queue_kthread_work(&ut_fastcall_worker, &usc_work.work))
+	if (!queue_kthread_work(&ut_fastcall_worker, &usc_work.work)) {
 		return -1;
+	}
 
 	flush_kthread_work(&usc_work.work);
 	return 0;
@@ -206,6 +141,7 @@ static int check_work_type(int work_type)
 }
 int handle_dump_call(void *buff)
 {
+	(void)buff;
 	IMSG_DEBUG("[%s][%d] handle_dump_call begin.\n", __func__, __LINE__);
 	nt_dump_t();
 	IMSG_DEBUG("[%s][%d] handle_dump_call end.\n", __func__, __LINE__);
@@ -265,20 +201,21 @@ int add_work_entry(int work_type, unsigned char *buff)
 
 int get_call_type(struct switch_call_struct *ent)
 {
-	if (ent == NULL)
+	if (ent == NULL) {
 		return -EINVAL;
+	}
 
 	return ent->switch_type;
 }
 
 int handle_sched_call(void *buff)
 {
-	volatile unsigned long smc_type = 2;
+	uint64_t smc_type = 2;
 
-	nt_sched_t((uint64_t *)(&smc_type));
+	nt_sched_t(&smc_type);
 	while(smc_type == 0x54) {
 		udelay(IRQ_DELAY);
-		nt_sched_t((uint64_t *)(&smc_type));
+		nt_sched_t(&smc_type);
 	}
 
 	return 0;
@@ -317,11 +254,6 @@ int handle_capi_call(void *buff)
 	return 0;
 }
 
-struct fdrv_call_struct {
-	int fdrv_call_type;
-	int fdrv_call_buff_size;
-	int retVal;
-};
 
 
 int handle_fdrv_call(void *buff)
@@ -383,12 +315,12 @@ int handle_bdrv_call(void *buff)
 
 	switch (cd->bdrv_call_type) {
 	case VFS_SYS_NO:
-		cd->retVal = __vfs_handle(cd->handler);
+		cd->retVal = __vfs_handle((struct service_handler *)cd->handler);
 		kfree(buff);
 		break;
 
 	case REETIME_SYS_NO:
-		cd->retVal = __reetime_handle(cd->handler);
+		cd->retVal = __reetime_handle((struct service_handler *)cd->handler);
 		kfree(buff);
 		break;
 
@@ -404,13 +336,13 @@ int handle_bdrv_call(void *buff)
 
 int handle_switch_call(void *buff)
 {
-	unsigned long smc_type = 2;
+	uint64_t smc_type = 2;
 
-	nt_sched_t((uint64_t *)(&smc_type));
+	nt_sched_t(&smc_type);
 
 	while (smc_type == 0x54) {
 		udelay(IRQ_DELAY);
-		nt_sched_t((uint64_t *)(&smc_type));
+		nt_sched_t(&smc_type);
 	}
 
 	return 0;
@@ -419,11 +351,11 @@ int handle_switch_call(void *buff)
 #ifdef TUI_SUPPORT
 int handler_power_down_call(void *buff)
 {
-	unsigned long smc_type = 5;
-	nt_cancel_t_tui((uint64_t *)(&smc_type), 0, 0);
+	uint64_t smc_type = 5;
+	nt_cancel_t_tui(&smc_type, 0, 0);
 	while (smc_type == 0x54) {
 		udelay(IRQ_DELAY);
-		nt_sched_t((uint64_t *)(&smc_type));
+		nt_sched_t(&smc_type);
 	}
 
 	return 0;
@@ -528,8 +460,6 @@ static void switch_fn(struct kthread_work *work)
 
 	if (retVal != 0) {
                 IMSG_ERROR("[%s][%d] destroy_switch_call_struct failed %d!\n", __func__, __LINE__, retVal);
-                return;
 	}
 
-	return;
 }

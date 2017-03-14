@@ -227,7 +227,7 @@ int emmc_rpmb_switch(struct mmc_card *card, struct emmc_rpmb_blk_data *md)
 
 		ret = mmc_switch(card, EXT_CSD_CMD_SET_NORMAL,
 				 EXT_CSD_PART_CONFIG, part_config,
-				 card->ext_csd.part_time);
+				 0); /* card->ext_csd.part_time */
 		if (ret)
 			return ret;
 
@@ -1476,6 +1476,7 @@ static long emmc_rpmb_ioctl(struct file *file, unsigned int cmd, unsigned long a
 	struct rpmb_ioc_param param;
 	int ret = 0;
 #if (defined(CONFIG_MICROTRUST_TEE_SUPPORT))
+	u32 rpmb_size = 0;
 	struct rpmb_infor rpmbinfor;
 
 	memset(&rpmbinfor, 0, sizeof(struct rpmb_infor));
@@ -1495,20 +1496,25 @@ static long emmc_rpmb_ioctl(struct file *file, unsigned int cmd, unsigned long a
 			MSG(ERR, "%s, rpmb_buffer is NULL!\n", __func__);
 			return -1;
 		}
-		err = copy_from_user(rpmb_buffer, (void *)arg, 4);
+		err = copy_from_user(&rpmb_size, (void *)arg, 4);
 		if (err < 0) {
 			MSG(ERR, "%s, err=%x\n", __func__, err);
 			return -1;
 		}
-		rpmbinfor.size =  *(unsigned char *)rpmb_buffer | (*((unsigned char *)rpmb_buffer + 1) << 8);
-		rpmbinfor.size |= (*((unsigned char *)rpmb_buffer+2) << 16) | (*((unsigned char *)rpmb_buffer+3) << 24);
-		MSG(INFO, "%s, rpmbinfor.size is %d!\n", __func__, rpmbinfor.size);
-		err = copy_from_user(rpmb_buffer, (void *)arg, 4 + rpmbinfor.size);
-		if (err < 0) {
-			MSG(ERR, "%s, err=%x\n", __func__, err);
+		rpmbinfor.size =  *(unsigned char *)&rpmb_size | (*((unsigned char *)&rpmb_size + 1) << 8);
+		rpmbinfor.size |= (*((unsigned char *)&rpmb_size+2) << 16) | (*((unsigned char *)&rpmb_size+3) << 24);
+		if (rpmbinfor.size <= (RPMB_DATA_BUFF_SIZE-4)) {
+			MSG(INFO, "%s, rpmbinfor.size is %d!\n", __func__, rpmbinfor.size);
+			err = copy_from_user(rpmb_buffer, (void *)arg, 4 + rpmbinfor.size);
+			if (err < 0) {
+				MSG(ERR, "%s, err=%x\n", __func__, err);
+				return -1;
+			}
+			rpmbinfor.data_frame = (rpmb_buffer + 4);
+		} else {
+			MSG(ERR, "%s, rpmbinfor.size(%d+4) is overflow (%d)!\n", __func__, rpmbinfor.size, RPMB_DATA_BUFF_SIZE);
 			return -1;
 		}
-		rpmbinfor.data_frame = (rpmb_buffer + 4);
 	}
 #endif
 

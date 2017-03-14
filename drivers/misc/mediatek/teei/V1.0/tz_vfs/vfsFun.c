@@ -1,3 +1,16 @@
+/*
+ * Copyright (c) 2015-2016 MICROTRUST Incorporated
+ * All Rights Reserved.
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * version 2 as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ */
 #include<linux/kernel.h>
 #include <linux/platform_device.h>
 #include<linux/module.h>
@@ -14,8 +27,8 @@
 #include<linux/slab.h>
 #include"TEEI.h"
 #include"teei_id.h"
-
-#define IMSG_TAG "[tz_vfs]"
+#include "../tz_driver/include/backward_driver.h"
+#include "../tz_driver/include/teei_client_main.h"
 #include <imsg_log.h>
 #define VFS_SIZE	0x80000
 #define MEM_CLEAR	0x1
@@ -24,13 +37,18 @@
 #define TEEI_CONFIG_IOC_MAGIC 0x775B777E
 
 #define TEEI_CONFIG_IOCTL_INIT_TEEI		_IOWR(TEEI_CONFIG_IOC_MAGIC, 3, int)
+#ifdef CONFIG_MICROTRUST_TUI_SUPPORT
 #define SOTER_TUI_ENTER				_IOWR(TEEI_CONFIG_IOC_MAGIC, 0x70, int)
 #define SOTER_TUI_LEAVE				_IOWR(TEEI_CONFIG_IOC_MAGIC, 0x71, int)
+int enter_tui_flag = 0;
+#else
+int enter_tui_flag = 1;
+#endif
 
 static int vfs_major = VFS_MAJOR;
 static struct class *driver_class;
 static dev_t devno;
-int enter_tui_flag = 0;
+
 
 struct vfs_dev {
 	struct cdev cdev;
@@ -38,7 +56,7 @@ struct vfs_dev {
 	struct semaphore sem;
 };
 
-extern struct completion global_down_lock;
+
 #ifdef CONFIG_MICROTRUST_TUI_SUPPORT
 extern int display_enter_tui(void);
 extern int display_exit_tui(void);
@@ -68,14 +86,17 @@ struct vfs_dev *vfs_devp = NULL;
 
 int tz_vfs_open(struct inode *inode, struct file *filp)
 {
-	if (vfs_devp == NULL)
+	if (vfs_devp == NULL) {
 		return -EINVAL;
+	}
 
-	if (filp == NULL)
+	if (filp == NULL) {
 		return -EINVAL;
+	}
 
-	if (strcmp("teei_daemon", current->comm) != 0)
+	if (strcmp("teei_daemon", current->comm) != 0) {
 		return -EINVAL;
+	}
 
 	filp->private_data = vfs_devp;
 	return 0;
@@ -98,14 +119,16 @@ static long tz_vfs_ioctl(struct file *filp,
 		IMSG_DEBUG("***************SOTER_TUI_ENTER\n");
 		enter_tui_flag = 1;
 		ret = tui_i2c_enable_clock();
-		if(ret)
+		if (ret) {
 			IMSG_ERROR("tui_i2c_enable_clock failed!!\n");
+		}
 
 		mt_deint_leave();
 
 		ret = display_enter_tui();
-		if(ret)
+		if (ret) {
 			IMSG_ERROR("display_enter_tui failed!!\n");
+		}
 
 		break;
 
@@ -113,14 +136,15 @@ static long tz_vfs_ioctl(struct file *filp,
 		IMSG_DEBUG("***************SOTER_TUI_LEAVE\n");
 
 		ret = tui_i2c_disable_clock();
-		if(ret)
+		if (ret) {
 			IMSG_ERROR("tui_i2c_disable_clock failed!!\n");
-
+		}
 		mt_deint_restore();
 
 		ret = display_exit_tui();
-		if(ret)
+		if (ret) {
 			IMSG_ERROR("display_exit_tui failed!!\n");
+		}
 		/* primary_display_trigger(0, NULL, 0); */
 		enter_tui_flag = 0;
 		break;
@@ -139,14 +163,17 @@ static ssize_t tz_vfs_read(struct file *filp, char __user *buf,
 	int length = 0;
 	int ret = 0;
 
-	if (buf == NULL)
+	if (buf == NULL) {
 		return -EINVAL;
+	}
 
-	if (daulOS_VFS_share_mem == NULL)
+	if (daulOS_VFS_share_mem == NULL) {
 		return -EINVAL;
+	}
 
-	if ((0 > size) || (size > VFS_SIZE))
+	if ((size > VFS_SIZE)) {
 		return -EINVAL;
+	}
 
 	/*pr_debug("read begin cpu[%d]\n",cpu_id);*/
 #ifdef VFS_RDWR_SEM
@@ -163,39 +190,42 @@ static ssize_t tz_vfs_read(struct file *filp, char __user *buf,
 
 	vfs_p = (struct TEEI_vfs_command *)daulOS_VFS_share_mem;
 
-#if 1
 
-	if (vfs_p->cmd_size > size)
+	if (vfs_p->cmd_size > size) {
 		length = size;
-	else
+	} else {
 		length = vfs_p->cmd_size;
-
-#endif
+	}
 
 	length = size;
 
-	if (copy_to_user(buf, (void *)vfs_p, length))
+	if (copy_to_user(buf, (void *)vfs_p, length)) {
 		ret = -EFAULT;
-	else
+	} else {
 		ret = length;
+	}
 	return ret;
 }
 
 static ssize_t tz_vfs_write(struct file *filp, const char __user *buf,
 			size_t size, loff_t *ppos)
 {
-	if (buf == NULL)
+	if (buf == NULL) {
 		return -EINVAL;
+	}
 
-	if (daulOS_VFS_share_mem == NULL)
+	if (daulOS_VFS_share_mem == NULL) {
 		return -EINVAL;
+	}
 
-	if ((0 > size) || (size > VFS_SIZE))
+	if ((size > VFS_SIZE)) {
 		return -EINVAL;
+	}
 
 	/*pr_debug("write begin cpu_id[%d]\n",cpu_id);*/
-	if (copy_from_user((void *)daulOS_VFS_share_mem, buf, size))
+	if (copy_from_user((void *)daulOS_VFS_share_mem, buf, size)) {
 		return -EFAULT;
+	}
 
 	Flush_Dcache_By_Area((unsigned long)daulOS_VFS_share_mem, (unsigned long)daulOS_VFS_share_mem + size);
 
@@ -272,14 +302,15 @@ static void vfs_setup_cdev(struct vfs_dev *dev, int index)
 	dev->cdev.owner = vfs_fops.owner;
 	err = cdev_add(&dev->cdev, devno, 1);
 
-	if (err)
+	if (err) {
 		IMSG_ERROR("Error %d adding socket %d.\n", err, index);
+	}
 }
 
 
 
 
-int vfs_init(void)
+static int vfs_init(void)
 {
 	int result = 0;
 	struct device *class_dev = NULL;
@@ -288,8 +319,9 @@ int vfs_init(void)
 	result = alloc_chrdev_region(&devno, 0, 1, "tz_vfs");
 	vfs_major = MAJOR(devno);
 
-	if (result < 0)
+	if (result < 0) {
 		return result;
+	}
 
 	driver_class = class_create(THIS_MODULE, "tz_vfs");
 

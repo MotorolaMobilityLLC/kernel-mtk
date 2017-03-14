@@ -21,23 +21,24 @@
 #include "nt_smc_call.h"
 #include "backward_driver.h"
 #include "teei_id.h"
-
-#define IMSG_TAG "[tz_driver]"
+#include "sched_status.h"
+#include "utdriver_macro.h"
+#include "teei_common.h"
+#include "switch_queue.h"
+#include "teei_client_main.h"
+#include <linux/time.h>
 #include <imsg_log.h>
-#define BDRV_CALL       0x03
-
-#define VFS_SYS_NO      0x08
-#define REETIME_SYS_NO  0x07
-#define GLSCH_LOW      0x01
 
 struct bdrv_call_struct {
 	int bdrv_call_type;
 	struct service_handler *handler;
 	int retVal;
 };
-extern int forward_call_flag;
-extern int add_work_entry(int work_type, unsigned char *buff);
+
 static long register_shared_param_buf(struct service_handler *handler);
+unsigned char *daulOS_VFS_share_mem = NULL;
+static unsigned char *vfs_flush_address;
+struct service_handler reetime;
 
 void set_ack_vdrv_cmd(unsigned int sys_num)
 {
@@ -71,22 +72,20 @@ void set_ack_vdrv_cmd(unsigned int sys_num)
 
 void secondary_invoke_fastcall(void *info)
 {
-	unsigned long smc_type = 2;
-	n_invoke_t_fast_call((uint64_t *)(&smc_type), 0, 0);
+	uint64_t smc_type = 2;
+	n_invoke_t_fast_call(&smc_type, 0, 0);
 
 	while (smc_type == 0x54){
 		udelay(IRQ_DELAY);
-		nt_sched_t((uint64_t *)(&smc_type));
+		nt_sched_t(&smc_type);
 	}
-	return;
 }
 
 
 void invoke_fastcall(void)
 {
-  forward_call_flag = GLSCH_LOW;
+	forward_call_flag = GLSCH_LOW;
 	add_work_entry(INVOKE_FASTCALL, NULL);
-	return;
 }
 
 static long register_shared_param_buf(struct service_handler *handler)
@@ -112,7 +111,7 @@ static long register_shared_param_buf(struct service_handler *handler)
 #else
 	handler->param_buf = (void *)__get_free_pages(GFP_KERNEL, get_order(ROUND_UP(handler->size, SZ_4K)));
 #endif
-	if ((unsigned char *)(handler->param_buf) == NULL) {
+	if (handler->param_buf == NULL) {
 		IMSG_ERROR("[%s][%d]: kmalloc vdrv_buffer failed.\n", __FILE__, __LINE__);
 		return -ENOMEM;
 	}
@@ -153,23 +152,22 @@ static long register_shared_param_buf(struct service_handler *handler)
 	if ((msg_head.message_type == FAST_CALL_TYPE) && (msg_head.child_type == FAST_ACK_CREAT_VDRV)) {
 		retVal = msg_ack.retVal;
 
-		if (retVal == 0)
+		if (retVal == 0) {
 			return retVal;
+		}
 	} else {
 		retVal = -EAGAIN;
 	}
 
 	/* Release the resource and return. */
-	free_pages((unsigned long)handler->param_buf, get_order(ROUND_UP(handler->size, SZ_4K)));
+	free_pages((unsigned long)(handler->param_buf), get_order(ROUND_UP(handler->size, SZ_4K)));
 	handler->param_buf = NULL;
 
 	return retVal;
 }
 
 /******************************TIME**************************************/
-#include <linux/time.h>
 
-struct service_handler reetime;
 static long reetime_init(struct service_handler *handler)
 {
 	return register_shared_param_buf(handler);
@@ -186,7 +184,7 @@ int __reetime_handle(struct service_handler *handler)
 	void *ptr = NULL;
 	int tv_sec;
 	int tv_usec;
-	unsigned long smc_type = 2;
+	uint64_t smc_type = 2;
 
 	do_gettimeofday(&tv);
 	ptr = handler->param_buf;
@@ -198,10 +196,10 @@ int __reetime_handle(struct service_handler *handler)
 	Flush_Dcache_By_Area((unsigned long)handler->param_buf, (unsigned long)handler->param_buf + handler->size);
 
 	set_ack_vdrv_cmd(handler->sysno);
-	n_ack_t_invoke_drv((uint64_t *)(&smc_type), 0, 0);
+	n_ack_t_invoke_drv(&smc_type, 0, 0);
 	while(smc_type == 0x54) {
 		udelay(IRQ_DELAY);
-		nt_sched_t((uint64_t *)(&smc_type));
+		nt_sched_t(&smc_type);
 	}
 
 	return 0;
@@ -241,7 +239,7 @@ static unsigned long buff_vaddr;
 
 int vfs_thread_function(unsigned long virt_addr, unsigned long para_vaddr, unsigned long buff_vaddr)
 {
-	Invalidate_Dcache_By_Area(virt_addr, virt_addr + VFS_SIZE);
+	Invalidate_Dcache_By_Area((unsigned long)virt_addr, virt_addr + VFS_SIZE);
 	daulOS_VFS_share_mem = (unsigned char *)virt_addr;
 #ifdef VFS_RDWR_SEM
 	up(&VFS_rd_sem);
@@ -270,15 +268,15 @@ static void vfs_deinit(struct service_handler *handler) /*! stop service  */
 
 int __vfs_handle(struct service_handler *handler) /*! invoke handler */
 {
-	unsigned long smc_type = 2;
+	uint64_t smc_type = 2;
 	Flush_Dcache_By_Area((unsigned long)handler->param_buf, (unsigned long)handler->param_buf + handler->size);
 
 	set_ack_vdrv_cmd(handler->sysno);
-	n_ack_t_invoke_drv((uint64_t *)(&smc_type), 0, 0);
+	n_ack_t_invoke_drv(&smc_type, 0, 0);
 
 	while(smc_type == 0x54) {
 		udelay(IRQ_DELAY);
-		nt_sched_t((uint64_t *)(&smc_type));
+		nt_sched_t(&smc_type);
 	}
 
 	return 0;
@@ -292,7 +290,7 @@ static int vfs_handle(struct service_handler *handler)
 
 	struct bdrv_call_struct *vfs_bdrv_ent = NULL;
 
-	vfs_thread_function((unsigned long)handler->param_buf, para_vaddr, buff_vaddr);
+	vfs_thread_function((unsigned long)(handler->param_buf), para_vaddr, buff_vaddr);
 	down(&smc_lock);
 	vfs_bdrv_ent = (struct bdrv_call_struct *)kmalloc(sizeof(struct bdrv_call_struct), GFP_KERNEL);
 	vfs_bdrv_ent->handler = handler;

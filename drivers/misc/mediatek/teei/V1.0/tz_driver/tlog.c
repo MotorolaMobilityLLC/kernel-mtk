@@ -21,12 +21,22 @@
 #include "sched_status.h"
 #include "tlog.h"
 #include "teei_id.h"
-
-#define IMSG_TAG "[tz_driver]"
+#include "teei_client_main.h"
+#include "utdriver_macro.h"
 #include <imsg_log.h>
 
-#define MESSAGE_LENGTH	0x1000
-#define MAX_LOG_LEN	250
+unsigned long tlog_thread_buff = 0;
+unsigned long tlog_buf = 0;
+unsigned long tlog_pos = 0;
+unsigned char tlog_line[256];
+unsigned long tlog_line_len = 0;
+unsigned long utgate_log_buff = 0;
+unsigned long utgate_log_pos = 0;
+unsigned char utgate_log_line[256];
+unsigned long utgate_log_len = 0;
+struct task_struct *utgate_log_thread = NULL;
+struct task_struct *tlog_thread = NULL;
+static struct tlog_struct tlog_ent[TLOG_MAX_CNT];
 /********************************************
 		LOG IRQ handler
  ********************************************/
@@ -35,10 +45,10 @@ void init_tlog_entry(void)
 {
 	int i = 0;
 
-	for (i = 0; i < TLOG_MAX_CNT; i++)
+	for (i = 0; i < TLOG_MAX_CNT; i++) {
 		tlog_ent[i].valid = TLOG_UNUSE;
+	}
 
-	return;
 }
 
 int search_tlog_entry(void)
@@ -63,7 +73,6 @@ void tlog_func(struct work_struct *entry)
 	IMSG_DEBUG("TLOG %s", (char *)(ts->context));
 
 	ts->valid = TLOG_UNUSE;
-	return;
 }
 
 
@@ -90,24 +99,19 @@ irqreturn_t tlog_handler(void)
 /**************************************************
 		LOG thread for printf
  **************************************************/
-#define LOG_BUF_LEN		(256 * 1024)
 
-unsigned long tlog_thread_buff = 0;
-unsigned long tlog_buf = 0;
-unsigned long tlog_pos = 0;
-unsigned char tlog_line[256];
-unsigned long tlog_line_len = 0;
-struct task_struct *tlog_thread = NULL;
 
 long init_tlog_buff_head(unsigned long tlog_virt_addr, unsigned long buff_size)
 {
 	struct ut_log_buf_head *tlog_head = NULL;
 
-	if ((unsigned char *)tlog_virt_addr == NULL)
+	if ((unsigned char *)tlog_virt_addr == NULL) {
 		return -EINVAL;
+	}
 
-	if (buff_size < 0)
+	if (buff_size ==0) {
 		return -EINVAL;
+	}
 
 	tlog_thread_buff = tlog_virt_addr;
 	tlog_buf = tlog_virt_addr;
@@ -145,7 +149,7 @@ int tlog_print(unsigned long log_start)
 		tlog_line[tlog_line_len + 1] = 0;
 		tlog_line_len++;
 		if (tlog_line_len > MAX_LOG_LEN) {
-			pr_err("[UT_LOG] %s\n", tlog_line);
+			IMSG_ERROR("[UT_LOG] %s\n", tlog_line);
 			tlog_line_len = 0;
 			tlog_line[0] = 0;
 			//WARN_ON(1);
@@ -224,11 +228,13 @@ long create_tlog_thread(unsigned long tlog_virt_addr, unsigned long buff_size)
 	int ret = 0;
 
 	struct sched_param param = { .sched_priority = 1 };
-	if ((unsigned char *)tlog_virt_addr == NULL)
+	if ((unsigned char *)tlog_virt_addr == NULL) {
 		return -EINVAL;
+	}
 
-	if (buff_size < 0)
+	if (buff_size == 0) {
 		return -EINVAL;
+	}
 
 	retVal = init_tlog_buff_head(tlog_virt_addr, buff_size);
 	if (retVal != 0) {
@@ -256,21 +262,18 @@ long create_tlog_thread(unsigned long tlog_virt_addr, unsigned long buff_size)
 /**************************************************
 		LOG thread for uTgate
  **************************************************/
-struct task_struct *utgate_log_thread = NULL;
-unsigned long utgate_log_buff = 0;
-unsigned long utgate_log_pos = 0;
-unsigned char utgate_log_line[256];
-unsigned long utgate_log_len = 0;
 
 long init_utgate_log_buff_head(unsigned long log_virt_addr, unsigned long buff_size)
 {
 	struct utgate_log_head *utgate_log_head = NULL;
 
-	if ((unsigned char *)log_virt_addr == NULL)
+	if ((unsigned char *)log_virt_addr == NULL) {
 		return -EINVAL;
+	}
 
-	if (buff_size < 0)
+	if (buff_size == 0) {
 		return -EINVAL;
+	}
 
 	utgate_log_buff = log_virt_addr;
 
@@ -299,7 +302,7 @@ int utgate_log_print(unsigned long log_start)
 		utgate_log_line[utgate_log_len + 1] = 0;
 		utgate_log_len++;
 		if (utgate_log_len > MAX_LOG_LEN) {
-			pr_err("[uTgate LOG] %s\n", utgate_log_line);
+			IMSG_ERROR("[uTgate LOG] %s\n", utgate_log_line);
 			utgate_log_len = 0;
 			utgate_log_line[0] = 0;
 			//WARN_ON(1);
@@ -320,8 +323,9 @@ int handle_utgate_log(void)
 
         while(utgate_last_log_pos != utgate_start_log_pos) {
                 retVal = utgate_log_print(utgate_start_log_pos);
-                if (retVal != 0)
+		if (retVal != 0) {
                         IMSG_ERROR("[%s][%d]fail to print utgate tlog!\n", __func__, __LINE__);
+		}
 
                 utgate_start_log_pos = utgate_log_cont_pos + utgate_log_pos;
         }
@@ -348,8 +352,9 @@ int utgate_log_worker(void *p)
 		switch (((struct utgate_log_head *)utgate_log_buff)->version) {
 			case UT_TLOG_VERSION:
 				ret = handle_utgate_log();
-				if (ret != 0)
+			if (ret != 0) {
 					return ret;
+			}
 				break;
 			default:
 				IMSG_ERROR("[%s][%d] utgate tlog VERSION is wrong !\n", __func__, __LINE__);
@@ -367,11 +372,13 @@ long create_utgate_log_thread(unsigned long log_virt_addr, unsigned long buff_si
         int ret = 0;
 
         struct sched_param param = { .sched_priority = 1 };
-        if ((unsigned char *)log_virt_addr == NULL)
+	if ((unsigned char *)log_virt_addr == NULL) {
                 return -EINVAL;
+	}
 
-        if (buff_size < 0)
+	if (buff_size == 0) {
                 return -EINVAL;
+	}
 
         retVal = init_utgate_log_buff_head(log_virt_addr, buff_size);
         if (retVal != 0) {

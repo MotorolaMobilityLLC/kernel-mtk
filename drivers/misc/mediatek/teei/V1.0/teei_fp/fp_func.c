@@ -1,3 +1,16 @@
+/*
+ * Copyright (c) 2015-2016 MICROTRUST Incorporated
+ * All Rights Reserved.
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * version 2 as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ */
 #include<linux/kernel.h>
 #include <linux/platform_device.h>
 #include<linux/module.h>
@@ -13,78 +26,54 @@
 #include <asm/cacheflush.h>
 #include<linux/semaphore.h>
 #include<linux/slab.h>
+#include "fp_func.h"
+#include "../tz_driver/include/teei_fp.h"
 #include "../tz_driver/include/teei_id.h"
 #include "../tz_driver/include/tz_service.h"
 #include "../tz_driver/include/nt_smc_call.h"
+#include "../tz_driver/include/utdriver_macro.h"
+#include "../tz_driver/include/teei_client_main.h"
+#include "../tz_driver/include/teei_gatekeeper.h"
 
-#include "teei_fp.h"
-
-#define IMSG_TAG "[teei_fp]"
 #include <imsg_log.h>
 /* #define FP_DEBUG */
-
-#define FP_SIZE	0x80000
-#define CMD_MEM_CLEAR	_IO(0x775A777E, 0x1)
-#define CMD_FP_CMD      _IO(0x775A777E, 0x2)
-#define CMD_GATEKEEPER_CMD	_IO(0x775A777E, 0x3)
-#define CMD_LOAD_TEE			_IO(0x775A777E, 0x4)
-#define FP_MAJOR	254
-#define SHMEM_ENABLE    0
-#define SHMEM_DISABLE   1
-#define DEV_NAME "teei_fp"
-#define FP_DRIVER_ID 100
-#define GK_DRIVER_ID 120
-static int fp_major = FP_MAJOR;
-static struct class *driver_class;
-static dev_t devno;
-struct semaphore fp_api_lock;
 struct fp_dev {
 	struct cdev cdev;
 	unsigned char mem[FP_SIZE];
 	struct semaphore sem;
 };
 
+static int fp_major = FP_MAJOR;
+static dev_t devno;
+static int wait_teei_config_flag_count = 0;
+
+static struct class *driver_class;
+struct semaphore fp_api_lock;
+struct fp_dev *fp_devp;
 struct semaphore daulOS_rd_sem;
 struct semaphore daulOS_wr_sem;
+
 EXPORT_SYMBOL_GPL(daulOS_rd_sem);
 EXPORT_SYMBOL_GPL(daulOS_wr_sem);
-
-extern char *fp_buff_addr;
-extern unsigned long gatekeeper_buff_addr;
-/*extern unsigned int daulOS_shmem_flags;*/
-
-struct fp_dev *fp_devp;
-extern struct semaphore boot_decryto_lock;
-
-extern unsigned long teei_config_flag;
-
 DECLARE_WAIT_QUEUE_HEAD(__fp_open_wq);
-int wait_teei_config_flag = 1;
 
 int fp_open(struct inode *inode, struct file *filp)
 {
-	if (wait_teei_config_flag == 1) {
-		int ret;
-       IMSG_INFO("[I]%s : Teei_config_flag = %lu\n", __func__, teei_config_flag);
-		ret = wait_event_timeout(__fp_open_wq, (teei_config_flag == 1), msecs_to_jiffies(1000*10));
+	int ret = -1;
 
-		if (ret == 0) {
-               IMSG_ERROR("[E]%s : Tees's loading is not finished, and has already waited 10s.\n", __func__);
-			return -1;
-		}
-
-		if (ret < 0) {
-               IMSG_ERROR("[E]%s : Wait_event_timeout error.\n", __func__);
-			return -1;
-		}
-
-       IMSG_INFO("[I]%s : Load tees finished, and wait for %u msecs\n", __func__, (1000*10-jiffies_to_msecs(ret)));
-		wait_teei_config_flag = 0;
+	if (wait_teei_config_flag_count != 1 && teei_config_flag == 0) {
+		ret = wait_event_timeout(__fp_open_wq, (teei_config_flag == 1), msecs_to_jiffies(1000*20));
+		IMSG_ERROR("[TEE] open wait for %u msecs in first time \n", (1000*20-jiffies_to_msecs(ret)));
 	}
 
-#ifdef FP_DEBUG
-	IMSG_DEBUG("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!say hello  from fp!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
-#endif
+	wait_teei_config_flag_count = 1;
+	ret = wait_event_timeout(__fp_open_wq, (teei_config_flag == 1), msecs_to_jiffies(1000*20));
+
+	if (ret <= 0) {
+		IMSG_INFO("[TEE] error , tee load not finished yet , and wait timeout\n");
+		return -1;
+	}
+
 	filp->private_data = fp_devp;
 
 	return 0;
@@ -134,15 +123,13 @@ static long fp_ioctl(struct file *filp, unsigned cmd, unsigned long arg)
 
 		memset((void *)fp_buff_addr, 0, args_len + 16);
 
-		if (copy_from_user((void *)fp_buff_addr, (void *)arg,
-				args_len + 16)) {
+		if (copy_from_user((void *)fp_buff_addr, (void *)arg, args_len + 16)) {
 			IMSG_ERROR("copy from user failed. \n");
 			up(&fp_api_lock);
 			return -EFAULT;
 		}
 
-		Flush_Dcache_By_Area((unsigned long)fp_buff_addr,
-				(unsigned long)fp_buff_addr + FP_SIZE);
+		Flush_Dcache_By_Area((unsigned long)fp_buff_addr, (unsigned long)fp_buff_addr + FP_SIZE);
 		/*send command data to TEEI*/
 		send_fp_command(FP_DRIVER_ID);
 #ifdef FP_DEBUG
@@ -151,8 +138,7 @@ static long fp_ioctl(struct file *filp, unsigned cmd, unsigned long arg)
 		IMSG_DEBUG("[%s][%d] fp_buff_addr 88 - 91 = %d\n", __func__, args_len, *((unsigned int *)(fp_buff_addr + 88)));
 #endif
 
-		if (copy_to_user((void *)arg, fp_buff_addr,
-				args_len + 16)) {
+		if (copy_to_user((void *)arg, (void*)fp_buff_addr,(args_len + 16))) {
 			IMSG_ERROR("copy from user failed. \n");
 			up(&fp_api_lock);
 			return -EFAULT;
@@ -193,8 +179,7 @@ static long fp_ioctl(struct file *filp, unsigned cmd, unsigned long arg)
 #ifdef FP_DEBUG
                 IMSG_DEBUG("copy_from_user  ok\n");
 #endif
-		Flush_Dcache_By_Area((unsigned long)gatekeeper_buff_addr,
-					(unsigned long)gatekeeper_buff_addr + 0x1000);
+		Flush_Dcache_By_Area((unsigned long)gatekeeper_buff_addr, (unsigned long)gatekeeper_buff_addr + 0x1000);
 #ifdef FP_DEBUG
                 IMSG_DEBUG("Flush_Dcache_By_Area  ok\n");
 #endif
@@ -317,8 +302,7 @@ int fp_init(void)
 	sema_init(&daulOS_rd_sem, 0);
 	sema_init(&daulOS_wr_sem, 0);
 
-IMSG_DEBUG("[%s][%d]create the teei_fp device node successfully!\n", __func__,
-		__LINE__);
+	IMSG_DEBUG("[%s][%d]create the teei_fp device node successfully!\n", __func__, __LINE__);
 	goto return_fn;
 
 
