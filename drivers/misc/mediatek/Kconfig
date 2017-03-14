@@ -65,6 +65,9 @@ config WIND_FM_RSSI
 	help
 	  this is for read fm rssi.
 	  If you are not sure about this, set n
+config MOTO_AOD_BASE_ON_AP_SENSORS
+    bool "Support moto AOD feature base on AP sensors's built-in algos"
+    default n
 #tuwenzan@wind-mobi.com add at 20161125 end
 
 config MTK_LDVT
