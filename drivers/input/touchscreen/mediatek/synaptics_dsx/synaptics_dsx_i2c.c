@@ -226,7 +226,7 @@ static int of_get_synaptic_platform_data(struct device *dev)
 extern struct tpd_device *tpd;
 
 #ifdef CONFIG_OF_TOUCH
-static irqreturn_t tpd_eint_handler(unsigned irq, struct irq_desc *desc);
+static irqreturn_t tpd_eint_handler(unsigned irq,void *data); //tuwenzan@wind-mobi.com modify at 20170313
 #else
 static void tpd_eint_handler(void);
 #endif
@@ -656,12 +656,13 @@ static struct device_attribute attrs[] = {
 };
 
 #ifdef CONFIG_OF_TOUCH
-static int tpd_irq_registration(void)
+//tuwenzan@wind-mobi.com modify at 20170313 begin
+static int tpd_irq_registration(void *data)
 {
 	struct device_node *node = NULL;
 	int ret = 0;
 	u32 ints[2] = { 0, 0 };
-
+	struct synaptics_rmi4_data *rmi4_data = data;
 	node = of_find_matching_node(node, touch_of_match);
 	if (node) {
 
@@ -671,7 +672,8 @@ static int tpd_irq_registration(void)
 		touch_irq = irq_of_parse_and_map(node, 0);
 
 		ret = request_irq(touch_irq, (irq_handler_t) tpd_eint_handler, IRQF_TRIGGER_LOW,   //IRQF_TRIGGER_LOW //tuwenzan@wind-mobi.com modify at 20170227  
-				"TOUCH_PANEL-eint", NULL);
+				"TOUCH_PANEL-eint", rmi4_data);
+//tuwenzan@wind-mobi.com modify at 20170313 end
 		if (ret > 0) {
 			printk("tpd request_irq IRQ LINE NOT AVAILABLE!.");
 			return -1;
@@ -1724,14 +1726,20 @@ static void synaptics_rmi4_sensor_report(struct synaptics_rmi4_data *rmi4_data)
  * is detected.
  */
 #ifdef CONFIG_OF_TOUCH
- static irqreturn_t tpd_eint_handler(unsigned irq, struct irq_desc *desc)
+//tuwenzan@wind-mobi.com modify at 20170313 begin
+ static irqreturn_t tpd_eint_handler(unsigned irq,void *data)
  {
-	disable_irq_nosync(touch_irq);
-
+ 	struct synaptics_rmi4_data *rmi4_data = data;
+    if (rmi4_data->irq_enabled){
+        rmi4_data->irq_enabled = false;
+	    disable_irq_nosync(touch_irq);
+    }
 	tpd_flag = 1;
-	wake_up_interruptible(&waiter);
-	return IRQ_HANDLED;
+	//wake_up_interruptible(&waiter);
+    wake_up(&waiter);
+    return IRQ_HANDLED;
  }
+ //tuwenzan@wind-mobi.com modify at 20170313 end
 #else
 static void tpd_eint_handler(void)
 {
@@ -1744,19 +1752,19 @@ static void tpd_eint_handler(void)
 static int touch_event_handler(void *data)
 {
 	struct synaptics_rmi4_data *rmi4_data = data;
-	struct sched_param param = { .sched_priority = 4}; //tuwenzan@wind-mobi.com modify at 20161125  RTPM_PRIO_TPD 
+	struct sched_param param = { .sched_priority = 4}; //tuwenzan@wind-mobi.com modify at 20161125  RTPM_PRIO_TPD
 	//printk("twz enter touch_event_handler \n");
 	//dev_dbg("twz dev enter touch_event_handler\n");
 	sched_setscheduler(current, SCHED_RR, &param);
 	do{
 		set_current_state(TASK_INTERRUPTIBLE);
-
-		while (tpd_halt) {
+		//tuwenzan@wind-mobi.com modify at 20170313 begin
+		if (tpd_halt) {
 			tpd_flag = 0;
-			msleep(20);
+			mdelay(20);
 		}
-
-		wait_event_interruptible(waiter, tpd_flag != 0);
+		//wait_event_interruptible(waiter, tpd_flag != 0);
+        wait_event(waiter, tpd_flag != 0);
 
 		tpd_flag = 0;
 		TPD_DEBUG_SET_TIME;
@@ -1765,7 +1773,11 @@ static int touch_event_handler(void *data)
 		if (!rmi4_data->touch_stopped)
 			synaptics_rmi4_sensor_report(rmi4_data);
 #ifdef CONFIG_OF_TOUCH
-		enable_irq(touch_irq);
+        if (!rmi4_data->irq_enabled){
+            rmi4_data->irq_enabled=true;
+		    enable_irq(touch_irq);
+        }
+		//tuwenzan@wind-mobi.com modify at 20170313 end
 #else
 		mt_eint_unmask(CUST_EINT_TOUCH_PANEL_NUM);
 #endif
@@ -1800,35 +1812,36 @@ static int synaptics_rmi4_irq_enable(struct synaptics_rmi4_data *rmi4_data,
 				rmi4_data->num_of_intr_regs);
 		if (retval < 0)
 			return retval;
-
+//tuwenzan@wind-mobi.com modify at 20170313 begin
 		// set up irq
-		if (!rmi4_data->irq_enabled) {
-#ifdef CONFIG_OF_TOUCH
+		//if (!rmi4_data->irq_enabled) {
+/*#ifdef CONFIG_OF_TOUCH
 			tpd_gpio_as_int(1);
 #else
 			TPD_GPIO_AS_INT(1);
 #endif
-
+*/
+        rmi4_data->irq_enabled = true;
 #ifdef CONFIG_OF_TOUCH
 			enable_irq(touch_irq);
 #else
 			mt_eint_unmask(CUST_EINT_TOUCH_PANEL_NUM);
 #endif
-			rmi4_data->irq_enabled = true;
 
-		}
+//		}
 
-	} else {
+		}else {
 		if (rmi4_data->irq_enabled) {
+            rmi4_data->irq_enabled = false;
 #ifdef CONFIG_OF_TOUCH
 			disable_irq_nosync(touch_irq);
 #else
 			mt_eint_mask(CUST_EINT_TOUCH_PANEL_NUM);
 #endif
-			rmi4_data->irq_enabled = false;
+
 		}
 	}
-
+//tuwenzan@wind-mobi.com modify at 20170313 end
 	return retval;
 }
 
@@ -3552,7 +3565,7 @@ static int synaptics_rmi4_probe(struct i2c_client *client,
 
 #ifdef CONFIG_OF_TOUCH
 	/* EINT device tree, default EINT enable */
-	tpd_irq_registration();
+	tpd_irq_registration(rmi4_data); //tuwenzan@wind-mobi.com modify at 20170313
 #else
 	mt_eint_registration(CUST_EINT_TOUCH_PANEL_NUM, EINTF_TRIGGER_LOW, tpd_eint_handler, 1);
 #endif
@@ -3809,12 +3822,9 @@ static void synaptics_rmi4_suspend(struct device *dev)
 	struct synaptics_rmi4_data *rmi4_data = dev_get_drvdata(g_dev);
 	printk("wind_tp enter synaptics_rmi4_suspend\n");  //tuwenzan@wind-mobi.com add log at 20170227
 	if (rmi4_data->staying_awake)
-	{
-		printk("wind_tp exit synaptics_rmi4_suspend staying_awake %d\n",rmi4_data->staying_awake);
 		return ;
-	}
+
 	if (rmi4_data->enable_wakeup_gesture) {
-		 printk("wind_tp exit synaptics_rmi4_suspend enable_wakeup_gesture %d\n",rmi4_data->enable_wakeup_gesture);
 		synaptics_rmi4_wakeup_gesture(rmi4_data, true);
 		goto exit;
 	}
@@ -3825,9 +3835,9 @@ static void synaptics_rmi4_suspend(struct device *dev)
 		synaptics_rmi4_sleep_enable(rmi4_data, true);
 		synaptics_rmi4_free_fingers(rmi4_data);
 	}
-	
-	tpd_halt = 1;	
-	
+
+	tpd_halt = 1;
+
 exit:
 	mutex_lock(&exp_data.mutex);
 	if (!list_empty(&exp_data.list)) {
@@ -3839,7 +3849,7 @@ exit:
 
 
 	rmi4_data->sensor_sleep = true;
-	printk("wind_tp exit synaptics_rmi4_suspend\n");
+
 	return ;
 }
 
@@ -3860,10 +3870,7 @@ static void synaptics_rmi4_resume(struct device *dev)
 	struct synaptics_rmi4_data *rmi4_data = dev_get_drvdata(g_dev);
 	printk("wind_tp enter synaptics_rmi4_resume\n"); //tuwenzan@wind-mobi.com add log at 20170227
 	if (rmi4_data->staying_awake)
-	{
-	printk("wind_tp synaptics_rmi4_resume staying_awake is %d\n",rmi4_data->staying_awake);
 		return ;
-	}
 	//tuwenzan@wind-mobi.com add reset opration for tp at 20170227 begin
 	tpd_gpio_output(0,0);// reset pin low
 	msleep(DELAY_RESET_LOW);
@@ -3871,9 +3878,10 @@ static void synaptics_rmi4_resume(struct device *dev)
 	tpd_gpio_output(0,1);// reset pin high
 	msleep(DELAY_UI_READY);
 	//tuwenzan@wind-mobi.com add reset opration for tp at 20170227 end
-	
+
+    tpd_halt = 0; //tuwenzan@wind-mobi.com modify at 20170313
+
 	if (rmi4_data->enable_wakeup_gesture) {
-		printk("wind_tp synaptics_rmi4_resume enable_wakeup_gesture is %d\n",rmi4_data->enable_wakeup_gesture);
 		synaptics_rmi4_wakeup_gesture(rmi4_data, false);
 		goto exit;
 	}
@@ -3881,7 +3889,6 @@ static void synaptics_rmi4_resume(struct device *dev)
 	synaptics_rmi4_sleep_enable(rmi4_data, false);
 	synaptics_rmi4_irq_enable(rmi4_data, true);
 	retval = synaptics_rmi4_reinit_device(rmi4_data);
-	 printk("wind_tp retval is %d\n",retval);
 	if (retval < 0) {
 		dev_err(&rmi4_data->i2c_client->dev,
 				"%s: Failed to reinit device\n",
@@ -3900,8 +3907,8 @@ exit:
 
 	rmi4_data->sensor_sleep = false;
 	rmi4_data->touch_stopped = false;
-	tpd_halt = 0;
-	 printk("wind_tp exit synaptics_rmi4_resume\n");
+	// tpd_halt = 0; //tuwenzan@wind-mobi.com modify at 20170313
+
 	return;
 }
 
