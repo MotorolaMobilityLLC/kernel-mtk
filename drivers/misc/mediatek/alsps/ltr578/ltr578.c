@@ -697,8 +697,8 @@ static int ltr578_dynamic_calibrate(void)
 				isadjust = 1;
 				
 				if(noise < 100){
-						atomic_set(&obj->ps_thd_val_high,  noise+25);
-						atomic_set(&obj->ps_thd_val_low, noise+15);
+						atomic_set(&obj->ps_thd_val_high,  noise+30);
+						atomic_set(&obj->ps_thd_val_low, noise+20);
 				}else if(noise < 200){
 						atomic_set(&obj->ps_thd_val_high,  noise+35);
 						atomic_set(&obj->ps_thd_val_low, noise+25);
@@ -1685,24 +1685,24 @@ static void ltr578_eint_work(struct work_struct *work)
 			if(noise < (dynamic_cali - 100)){
 					dynamic_cali = noise;
 					isadjust = 1;
-					if(noise < 100){
-							atomic_set(&obj->ps_thd_val_high,  noise+65);
+     				if(noise < 100){
+	     					atomic_set(&obj->ps_thd_val_high,  noise+30);
 							atomic_set(&obj->ps_thd_val_low, noise+20);
 					}else if(noise < 200){
-							atomic_set(&obj->ps_thd_val_high,  noise+80);
-							atomic_set(&obj->ps_thd_val_low, noise+40);
+							atomic_set(&obj->ps_thd_val_high,  noise+35);
+							atomic_set(&obj->ps_thd_val_low, noise+25);
 					}else if(noise < 300){
-							atomic_set(&obj->ps_thd_val_high,  noise+110);
-							atomic_set(&obj->ps_thd_val_low, noise+60);
+							atomic_set(&obj->ps_thd_val_high,  noise+45);
+							atomic_set(&obj->ps_thd_val_low, noise+35);
 					}else if(noise < 400){
-							atomic_set(&obj->ps_thd_val_high,  noise+150);
-							atomic_set(&obj->ps_thd_val_low, noise+90);
+							atomic_set(&obj->ps_thd_val_high,  noise+55);
+							atomic_set(&obj->ps_thd_val_low, noise+45);
 					}else if(noise < 600){
-							atomic_set(&obj->ps_thd_val_high,  noise+170);
-							atomic_set(&obj->ps_thd_val_low, noise+110);
+							atomic_set(&obj->ps_thd_val_high,  noise+65);
+							atomic_set(&obj->ps_thd_val_low, noise+55);
 					}else if(noise < 800){
-						atomic_set(&obj->ps_thd_val_high,  noise+180);
-						atomic_set(&obj->ps_thd_val_low, noise+130);	
+							atomic_set(&obj->ps_thd_val_high,  noise+180);
+							atomic_set(&obj->ps_thd_val_low, noise+130);	
 					}else if(noise < 1000){
 							atomic_set(&obj->ps_thd_val_high,  noise+220);
 							atomic_set(&obj->ps_thd_val_low, noise+100);
