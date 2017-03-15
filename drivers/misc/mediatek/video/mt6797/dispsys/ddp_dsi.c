@@ -2726,7 +2726,7 @@ static void lcm_mdelay(UINT32 ms)
 	if (ms < 10)
 		udelay(ms * 1000);
 	else
-		msleep(ms);
+		usleep_range(ms*1000, ms*1000);
 }
 
 void DSI_set_cmdq_V11_wrapper_DSI0(void *cmdq, unsigned int *pdata, unsigned int queue_size, unsigned char force_update)
