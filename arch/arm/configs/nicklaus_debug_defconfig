@@ -620,5 +620,7 @@ CONFIG_SDCARD_FS=y
 #lenovo-sw sunyue5 start
 # CONFIG_MTK_WAPI_SUPPORT is not set
 #lenovo-sw sunyue5 end
-
+# BEGIN Lenovo lubm1 20170315 IKANGEROW-2471
+CONFIG_MTK_MD_SBP_CUSTOM_VALUE=0
+# END IKANGEROW-2471
 
