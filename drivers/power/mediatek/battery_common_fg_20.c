@@ -179,12 +179,6 @@ kal_bool g_vcdt_irq_delay_flag = 0;
 unsigned int g_batt_temp_status = TEMP_POS_NORMAL;
 #endif
 
-
-#ifdef MTK_MULTI_BAT_PROFILE_SUPPORT
-extern unsigned int g_fg_battery_id;
-extern int id_volt;
-#endif
-
 kal_bool battery_suspended = KAL_FALSE;
 
 struct timespec battery_duration_time[DURATION_NUM];	/* sec */
@@ -2582,15 +2576,6 @@ void mt_battery_GetBatteryData(void)
 	if (batteryIndex >= BATTERY_AVERAGE_SIZE)
 		batteryIndex = 0;
 
-#ifdef MTK_MULTI_BAT_PROFILE_SUPPORT
-	battery_log(BAT_LOG_CRTI,
-		"[kernel]AvgVbat %d,bat_vol %d, AvgI %d, I %d, VChr %d, AvgT %d, T %d, ZCV %d, CHR_Type %d, SOC %3d:%3d:%3d, bcct %d:%d, Ichg %d, IBat %d,g_fg_battery_id=%d,id_volt=%d\n",
-		BMT_status.bat_vol, bat_vol, BMT_status.ICharging, ICharging,
-		BMT_status.charger_vol, BMT_status.temperature, temperature, BMT_status.ZCV,
-		BMT_status.charger_type, BMT_status.SOC, BMT_status.UI_SOC, BMT_status.UI_SOC2,
-		g_bcct_flag, get_usb_current_unlimited(), get_bat_charging_current_level() / 100,
-		BMT_status.IBattery / 10,g_fg_battery_id,id_volt);
-#else
 	battery_log(BAT_LOG_CRTI,
 		"[kernel]AvgVbat %d,bat_vol %d, AvgI %d, I %d, VChr %d, AvgT %d, T %d, ZCV %d, CHR_Type %d, SOC %3d:%3d:%3d, bcct %d:%d, Ichg %d, IBat %d\n",
 		BMT_status.bat_vol, bat_vol, BMT_status.ICharging, ICharging,
@@ -2598,7 +2583,6 @@ void mt_battery_GetBatteryData(void)
 		BMT_status.charger_type, BMT_status.SOC, BMT_status.UI_SOC, BMT_status.UI_SOC2,
 		g_bcct_flag, get_usb_current_unlimited(), get_bat_charging_current_level() / 100,
 		BMT_status.IBattery / 10);
-#endif
 }
 
 
