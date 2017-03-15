@@ -249,10 +249,9 @@ static void lcm_init_power(void)
 		/* set_gpio_lcd_power_enable(1); */
 		/* set_gpio_lcd_enp(1); */
 		set_gpio_lcd_enp(1);
-		MDELAY(5);
+		MDELAY(2);
 		set_gpio_lcd_enn(1);
 #endif
-		MDELAY(5);
 #ifdef BUILD_LK
 		cmd = 0x00;
 		data = 0x0F;
