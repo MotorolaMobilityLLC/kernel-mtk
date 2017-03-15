@@ -506,6 +506,30 @@ static unsigned char gDisableFG;
 
 struct battery_meter_table_custom_data {
 
+#ifdef MTK_MULTI_BAT_PROFILE_SUPPORT  //add by longcheer_liml_2017_03_14
+	/* cust_battery_meter_table.h */
+	int battery_profile_t0_size;
+	BATTERY_PROFILE_STRUCT battery_profile_t0[102];
+	int battery_profile_t1_size;
+	BATTERY_PROFILE_STRUCT battery_profile_t1[102];
+	int battery_profile_t2_size;
+	BATTERY_PROFILE_STRUCT battery_profile_t2[102];
+	int battery_profile_t3_size;
+	BATTERY_PROFILE_STRUCT battery_profile_t3[102];
+	int battery_profile_temperature_size;
+	BATTERY_PROFILE_STRUCT battery_profile_temperature[102];
+
+	int r_profile_t0_size;
+	R_PROFILE_STRUCT r_profile_t0[102];
+	int r_profile_t1_size;
+	R_PROFILE_STRUCT r_profile_t1[102];
+	int r_profile_t2_size;
+	R_PROFILE_STRUCT r_profile_t2[102];
+	int r_profile_t3_size;
+	R_PROFILE_STRUCT r_profile_t3[102];
+	int r_profile_temperature_size;
+	R_PROFILE_STRUCT r_profile_temperature[102];
+#else
 	/* cust_battery_meter_table.h */
 	int battery_profile_t0_size;
 	BATTERY_PROFILE_STRUCT battery_profile_t0[100];
@@ -528,6 +552,7 @@ struct battery_meter_table_custom_data {
 	R_PROFILE_STRUCT r_profile_t3[100];
 	int r_profile_temperature_size;
 	R_PROFILE_STRUCT r_profile_temperature[100];
+#endif
 };
 
 struct battery_meter_custom_data batt_meter_cust_data;
