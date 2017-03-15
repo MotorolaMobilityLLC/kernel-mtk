@@ -383,6 +383,8 @@ static int decFlash(void)
 	return 0;
 }
 */
+//wangkangmin@wind-mobi modify for low power protect 20170314 begin
+#ifndef CONFIG_WIND_CAMERA_CUSTOM
 static int closeFlash(void)
 {
 	int i;
@@ -481,8 +483,8 @@ void bat_oc_protection_powerlimit(BATTERY_OC_LEVEL level)
     }
 }
 */
-
-
+#endif
+//wangkangmin@wind-mobi modify for low power protect 20170314 end
 
 /* ======================================================================== */
 
@@ -518,10 +520,11 @@ static long flashlight_ioctl_core(struct file *file, unsigned int cmd, unsigned 
 		logI("FLASH_IOC_IS_LOW_POWER");
 		{
 			int isLow = 0;
-
-			if (gLowPowerPer != BATTERY_PERCENT_LEVEL_0
+//wangkangmin@wind-mobi modify for low power protect 20170314 begin
+			/*if (gLowPowerPer != BATTERY_PERCENT_LEVEL_0
 			|| gLowPowerVbat != LOW_BATTERY_LEVEL_0)
-				isLow = 1;
+				isLow = 1;*/
+//wangkangmin@wind-mobi modify for low power protect 20170314 end
 			logI("FLASH_IOC_IS_LOW_POWER %d %d %d", gLowPowerPer, gLowPowerVbat, isLow);
 			kdArg.arg = isLow;
 			if (copy_to_user
@@ -907,10 +910,11 @@ static int __init flashlight_init(void)
 		logI("[flashlight_probe] platform_driver_register fail ~");
 		return ret;
 	}
-
-	register_low_battery_notify(&Lbat_protection_powerlimit_flash, LOW_BATTERY_PRIO_FLASHLIGHT);
+//wangkangmin@wind-mobi modify for low power protect 20170314 begin
+	/*register_low_battery_notify(&Lbat_protection_powerlimit_flash, LOW_BATTERY_PRIO_FLASHLIGHT);
 	register_battery_percent_notify(&bat_per_protection_powerlimit_flashlight,
-					BATTERY_PERCENT_PRIO_FLASHLIGHT);
+					BATTERY_PERCENT_PRIO_FLASHLIGHT);*/
+//wangkangmin@wind-mobi modify for low power protect 20170314 end
 /* @@    register_battery_oc_notify(&bat_oc_protection_powerlimit, BATTERY_OC_PRIO_FLASHLIGHT); */
 
 	logI("[flashlight_probe] done! ~");
