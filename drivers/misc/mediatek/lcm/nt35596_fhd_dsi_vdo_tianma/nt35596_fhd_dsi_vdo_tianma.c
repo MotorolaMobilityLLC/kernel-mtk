@@ -163,7 +163,6 @@ static void init_lcm_registers(void)
 	data_array[0] = 0x00013902;
 	data_array[1] = 0x00000029;
 	dsi_set_cmdq(data_array, 2, 1);
-	MDELAY(20);
 }
 
 /* --------------------------------------------------------------------------- */
@@ -243,7 +242,7 @@ static void lcm_init(void)
 	mt_set_gpio_mode(GPIO_LP3101_ENP, GPIO_MODE_00);
 	mt_set_gpio_dir(GPIO_LP3101_ENP, GPIO_DIR_OUT);
 	mt_set_gpio_out(GPIO_LP3101_ENP, GPIO_OUT_ONE);
-	MDELAY(5);
+	MDELAY(2);
 	mt_set_gpio_mode(GPIO_LP3101_ENN, GPIO_MODE_00);
 	mt_set_gpio_dir(GPIO_LP3101_ENN, GPIO_DIR_OUT);
 	mt_set_gpio_out(GPIO_LP3101_ENN, GPIO_OUT_ONE);
@@ -251,10 +250,9 @@ static void lcm_init(void)
 	/* set_gpio_lcd_power_enable(1); */
 	/* set_gpio_lcd_enp(1); */
 	set_gpio_lcd_enp(1);
-	MDELAY(5);
+	MDELAY(2);
 	set_gpio_lcd_enn(1);
 #endif
-	MDELAY(5);
 #ifdef BUILD_LK
 	cmd = 0x00;
 	data = 0x0F;
@@ -267,13 +265,13 @@ static void lcm_init(void)
 	MDELAY(10);
 
 	SET_RESET_PIN(1);
-	MDELAY(5);
+	MDELAY(2);
 	SET_RESET_PIN(0);
-	MDELAY(5);
+	MDELAY(2);
 	SET_RESET_PIN(1);
-	MDELAY(5);
+	MDELAY(2);
 	SET_RESET_PIN(0);
-	MDELAY(5);
+	MDELAY(2);
 	SET_RESET_PIN(1);
 	MDELAY(20);
 	init_lcm_registers();
