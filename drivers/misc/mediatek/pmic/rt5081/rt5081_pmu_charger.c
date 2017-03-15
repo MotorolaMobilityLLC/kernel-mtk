@@ -1340,9 +1340,9 @@ static int rt5081_enable_charging(struct charger_device *chg_dev, bool en)
 		dev_get_drvdata(&chg_dev->dev);
 
 	dev_info(chg_data->dev, "%s: en = %d\n", __func__, en);
-
+  //  printk("~~liml_charger func=%s\n",__func__);
 	ret = (en ? rt5081_pmu_reg_set_bit : rt5081_pmu_reg_clr_bit)
-		(chg_data->chip, RT5081_PMU_REG_CHGCTRL2, RT5081_MASK_CHG_EN);
+		(chg_data->chip, RT5081_PMU_REG_CHGCTRL2, RT5081_MASK_CHG_EN); 
 
 	return ret;
 }
