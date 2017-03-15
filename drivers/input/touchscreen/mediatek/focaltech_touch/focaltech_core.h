@@ -115,6 +115,7 @@ extern unsigned int tpd_rst_gpio_number;
 extern unsigned int ft_touch_irq;
 extern struct i2c_client *fts_i2c_client;
 extern int fts_ctpm_fw_ReadChipID(struct i2c_client *client , u8 *ucChipID);
+extern int fts_enter_charger_mode(struct i2c_client *client, int mode);
 
 #ifdef CONFIG_MTK_SENSOR_HUB_SUPPORT
 void fts_sensor_suspend(struct i2c_client *i2c_client);

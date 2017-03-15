@@ -614,6 +614,9 @@ extern int is_mt6311_sw_ready(void);
 
 extern void hw_charging_enable_dp_voltage(int ison);
 
+#ifdef CONFIG_TOUCHSCREEN_MTK_FOCALTECH_TS
+extern void tpd_usb_plugin(int plugin);
+#endif
 
 /* switch charger */
 extern void switch_charger_set_vindpm(unsigned int chr_v);

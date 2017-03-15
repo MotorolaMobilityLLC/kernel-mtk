@@ -125,7 +125,7 @@
  * Charger enable
  * 1: enable, 0:disable(default)
  */
-#define FTS_CHARGER_EN                          0
+#define FTS_CHARGER_EN                          1
 
 /*
  * Proximity sensor

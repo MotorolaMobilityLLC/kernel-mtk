@@ -67,6 +67,11 @@ int g_show_log = 1;
 int g_show_log = 0;
 #endif
 
+#if FTS_CHARGER_EN
+int b_usb_plugin = 0;
+int ctp_is_probe = 0;
+#endif
+
 unsigned int tpd_rst_gpio_number = 0;
 unsigned int tpd_int_gpio_number = 1;
 unsigned int tpd_power_gpio_number = 2;
@@ -863,6 +868,24 @@ static int tpd_i2c_detect(struct i2c_client *client,
 	return 0;
 }
 
+#if FTS_CHARGER_EN
+void tpd_usb_plugin(int plugin)
+{
+	int ret = -1;
+
+	b_usb_plugin = plugin;
+
+	if (!ctp_is_probe)
+		return;
+
+	FTS_DEBUG("[TPD] usb detect: %d.\n", b_usb_plugin);
+	ret = fts_enter_charger_mode(fts_i2c_client, b_usb_plugin);
+	if (ret < 0)
+		FTS_DEBUG("[TPD] usb detect write err:%d.\n", b_usb_plugin);
+}
+EXPORT_SYMBOL(tpd_usb_plugin);
+#endif
+
 /************************************************************************
 * Name: fts_probe
 * Brief:
@@ -952,6 +975,13 @@ static int tpd_probe(struct i2c_client *client, const struct i2c_device_id *id)
 
 #if FTS_TEST_EN
 	fts_test_init(client);
+#endif
+
+#ifdef FTS_CHARGER_EN
+	if (ctp_is_probe == 0) {
+		tpd_usb_plugin(b_usb_plugin);
+		ctp_is_probe = 1;
+	}
 #endif
 
 	FTS_FUNC_EXIT();
@@ -1155,6 +1185,10 @@ static void tpd_resume(struct device *h)
 
 #if FTS_ESDCHECK_EN
 	fts_esdcheck_resume();
+#endif
+
+#ifdef FTS_CHARGER_EN
+	tpd_usb_plugin(b_usb_plugin);
 #endif
 
 #ifdef CONFIG_MTK_SENSOR_HUB_SUPPORT
