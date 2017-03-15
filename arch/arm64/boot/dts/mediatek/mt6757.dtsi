@@ -3784,14 +3784,14 @@
 	charger: charger {
 		compatible = "mediatek,charger";
 		algorithm_name = "SwitchCharging";
-		/* enable_sw_jeita; */
+		enable_sw_jeita;//add by longcheer_liml_2017_03_14
 		enable_pe_plus;
 		enable_pe_2;
 		enable_pe_3;
 
 		/* common */
 		/***charg by liminglong longcheer start******/
-		battery_cv =<4400000>;
+		battery_cv =<4420000>;
 		max_charger_voltage=<10000000>;//14mv
                /***charg by liminglong longcheer end******/
 		/* charging current */
@@ -3810,11 +3810,11 @@
 		/* sw jeita */
 		jeita_temp_above_t4_cv_voltage = <4240000>;
 		jeita_temp_t3_to_t4_cv_voltage = <4240000>;
-		jeita_temp_t2_to_t3_cv_voltage = <4340000>;
-		jeita_temp_t1_to_t2_cv_voltage = <4240000>;
-		jeita_temp_t0_to_t1_cv_voltage = <4040000>;
-		jeita_temp_below_t0_cv_voltage = <4040000>;
-		temp_t4_threshold = <50>;
+		jeita_temp_t2_to_t3_cv_voltage = <4400000>;
+		jeita_temp_t1_to_t2_cv_voltage = <4400000>;
+		jeita_temp_t0_to_t1_cv_voltage = <4400000>;
+		jeita_temp_below_t0_cv_voltage = <4400000>;
+		temp_t4_threshold = <52>;
 		temp_t4_thres_minus_x_degree = <47>;
 		temp_t3_threshold = <45>;
 		temp_t3_thres_minus_x_degree = <39>;
@@ -3829,9 +3829,9 @@
 		/* battery temperature protection */
 		enable_min_charge_temperature;
 		min_charge_temperature = <0>;
-		min_charge_temperature_plus_x_degree = <2>;
-		max_charge_temperature = <59>;
-		max_charge_temperature_minus_x_degree = <57>;
+		min_charge_temperature_plus_x_degree = <5>;
+		max_charge_temperature = <52>;
+		max_charge_temperature_minus_x_degree = <45>;
 
 		/* PE 2.0 */
 		pe20_ichg_level_threshold = <1000>;

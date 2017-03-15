@@ -47,8 +47,8 @@
 			ichg = <2000000>;	/* uA */
 			aicr = <500000>;	/* uA */
 			mivr = <4400000>;	/* uV */
-			cv = <4350000>;		/* uA */
-			ieoc = <150000>;	/* uA */
+			cv = <4420000>;		/* uA */
+			ieoc = <200000>;	/* uA */
 			safety_timer = <12>;	/* hour */
 			dc_wdt = <4000000>;	/* us */
 			ircmp_resistor = <25000>;	/* uohm */
