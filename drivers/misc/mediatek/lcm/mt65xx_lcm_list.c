@@ -46,9 +46,14 @@ LCM_DRIVER *lcm_driver_list[] = {
 	&lct_ili9881c_dijing_cmi_720p_vdo_lcm_drv,
 #endif
 
-//add by jiatianbao for ili9881c-0d
-#if defined(LCT_R63350_TIANMA_720P_VDO)
-	&lct_r63350_tianma_720p_vdo_lcm_drv,
+//add by jiatianbao for r63350
+#if defined(LCT_R63350_TIANMA_1080P_VDO)
+	&lct_r63350_tianma_1080p_vdo_lcm_drv,
+#endif
+
+//add by jiatianbao
+#if defined(LCT_OTM1911A_OFILM_1080P_VDO)
+	&lct_otm1911a_ofilm_1080p_vdo_lcm_drv,
 #endif
 
 #if defined(OTM1284A_HD720_DSI_VDO_TM)

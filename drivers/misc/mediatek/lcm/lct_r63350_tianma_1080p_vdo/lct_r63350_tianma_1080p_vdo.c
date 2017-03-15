@@ -396,7 +396,7 @@ static unsigned int lcm_compare_id(void)
 	id4  =  buffer[4];
 	id5  =  buffer[5];
 
-	printk("R63350 %s, id4 = 0x%08x , id5 = 0x%08x\n", __func__, id4, id5);
+	printk("[Simon]LCM R63350 %s, id4 = 0x%08x , id5 = 0x%08x\n", __func__, id4, id5);
 
 	if ((id4 == 0x33)&&(id5 == 0x50))
 		return 1;
@@ -458,16 +458,16 @@ static unsigned int lcm_ata_check(unsigned char *buffer)
 static void lcm_setbacklight_cmdq(void *handle, unsigned int level)
 {
 
-	LCM_LOGI("%s,ili9881c  backlight: level = %d\n", __func__, level);
+	LCM_LOGI("%s,LCM R63350 backlight: level = %d\n", __func__, level);
 
 	bl_level[0].para_list[0] = level;
 
 	push_table(handle, bl_level, sizeof(bl_level) / sizeof(struct LCM_setting_table), 1);
 }
 
-LCM_DRIVER lct_r63350_tianma_720p_vdo_lcm_drv = {
+LCM_DRIVER lct_r63350_tianma_1080p_vdo_lcm_drv = {
 
-	.name = "lct_r63350_tianma_720p_vdo",
+	.name = "lct_r63350_tianma_1080p_vdo",
 	.set_util_funcs = lcm_set_util_funcs,
 	.get_params = lcm_get_params,
 	.init = lcm_init,
