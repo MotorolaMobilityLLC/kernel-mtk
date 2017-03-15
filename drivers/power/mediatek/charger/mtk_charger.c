@@ -1040,7 +1040,7 @@ static void charger_check_status(struct charger_manager *info)
 
 	temperature = info->battery_temperature;
 	thermal = &info->thermal;
-
+//printk("~~liml_charger func=%s,temperature=%d\n",__func__,temperature);
 	if (info->enable_sw_jeita == true) {
 		do_sw_jeita_state_machine(info);
 		if (info->sw_jeita.charging == false) {
@@ -1096,14 +1096,15 @@ static void charger_check_status(struct charger_manager *info)
 		charging = false;
 	if (info->vbusov_stat)
 		charging = false;
+//printk("~~liml_charger func=%s,info->cmd_discharging=%d,charging=%d,info->can_charging=%d\n",__func__,info->cmd_discharging,charging,info->can_charging);
 
 stop_charging:
 	mtk_battery_notify_check(info);
 
-	pr_err("tmp:%d (jeita:%d sm:%d cv:%d en:%d) (sm:%d) en:%d\n", temperature,
+	printk("~~liml_charger tmp:%d (jeita:%d sm:%d cv:%d en:%d) (sm:%d) en:%d,info->can_charging=%d\n", temperature,
 		info->enable_sw_jeita, info->sw_jeita.sm, info->sw_jeita.cv,
 		info->sw_jeita.charging,
-		thermal->sm, charging);
+		thermal->sm, charging,info->can_charging);
 
 	if (charging != info->can_charging)
 		_charger_manager_enable_charging(info->chg1_consumer, 0, charging);
