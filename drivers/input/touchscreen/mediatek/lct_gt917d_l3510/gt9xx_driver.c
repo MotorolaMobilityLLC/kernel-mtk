@@ -47,7 +47,7 @@ static int ctp_proc_read_show (struct seq_file* m, void* data)
 	char vendor_name[20] = {0};
 
 	if(temp_pid == 0x00){	//add by liuzhen
-		sprintf(vendor_name,"%s","Djn");
+		sprintf(vendor_name,"%s","O-film");
 	}else if(temp_pid == 0x01){
 		sprintf(vendor_name,"%s","TopTouch");
 	}else if(temp_pid == 0x02){
@@ -58,7 +58,7 @@ static int ctp_proc_read_show (struct seq_file* m, void* data)
 		sprintf(vendor_name,"%s","Reserve");
 	}
 	//sprintf(temp, "[Vendor]O-Film,[Fw]%s,[IC]GT915\n",temp_ver); //changed by cao
-	sprintf(temp, "[Vendor]%s,[Fw]0x%x,[IC]GT915\n",vendor_name,grp_cfg_version); 
+	sprintf(temp, "[Vendor]%s,[Fw]0x%x,[IC]GT917D\n",vendor_name,grp_cfg_version); 
 	seq_printf(m, "%s\n", temp);
 	printk("vid:%s,firmware:0x%04x\n",temp_ver, temp_pid);
 	return 0;

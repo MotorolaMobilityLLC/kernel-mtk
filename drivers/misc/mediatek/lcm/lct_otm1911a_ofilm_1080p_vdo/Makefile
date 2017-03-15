@@ -16,6 +16,6 @@
 #
 
 
-obj-y += lct_r63350_tianma_720p_vdo.o
+obj-y += lct_otm1911a_ofilm_1080p_vdo.o
 
 ccflags-$(CONFIG_MTK_LCM) += -I$(srctree)/drivers/misc/mediatek/lcm/inc
