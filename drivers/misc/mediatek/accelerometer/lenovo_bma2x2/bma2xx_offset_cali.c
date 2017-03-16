@@ -100,7 +100,7 @@ static int bma2xx_fast_compensate(
 	unsigned char databuf;
   
 	/*** set normal mode, make sure that lowpower_en bit is '0' ***/
-	res = BMA2x2_SetPowerMode(bma2x2_client,true);
+	res = BMA2x2_SetPowerMode(bma2x2_client,true, 0);
 	if (res != 0)
 	{
 		return -1;
