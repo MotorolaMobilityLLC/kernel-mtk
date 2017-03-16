@@ -272,6 +272,27 @@ static kal_uint16 ov13855_MIPI_table_write_cmos_sensor_multi(kal_uint16* para, k
 }
 #endif
 
+//Lcsh tqq add device_info
+#ifdef CONFIG_LCT_DEVINFO_SUPPORT
+#include  "dev_info.h"
+static struct devinfo_struct *s_DEVINFO_Cam;   
+static void devinfo_camera_regchar(char *module,char * vendor,char *used)
+{
+
+	s_DEVINFO_Cam =(struct devinfo_struct*) kmalloc(sizeof(struct devinfo_struct), GFP_KERNEL);	
+	s_DEVINFO_Cam->device_type="camera";
+	s_DEVINFO_Cam->device_module=module;
+	s_DEVINFO_Cam->device_vendor=vendor;
+	s_DEVINFO_Cam->device_ic="Ov13855";
+	s_DEVINFO_Cam->device_info=DEVINFO_NULL;
+	s_DEVINFO_Cam->device_version=DEVINFO_NULL;
+	s_DEVINFO_Cam->device_used=used;
+
+       DEVINFO_CHECK_DECLARE(s_DEVINFO_Cam->device_type,s_DEVINFO_Cam->device_module,s_DEVINFO_Cam->device_vendor,s_DEVINFO_Cam->device_ic,s_DEVINFO_Cam->device_version,s_DEVINFO_Cam->device_info,s_DEVINFO_Cam->device_used);
+}     
+#endif
+//end
+
 static kal_uint16 read_cmos_sensor(kal_uint32 addr)
 {
     kal_uint16 get_byte=0;
@@ -1384,6 +1405,12 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
         do {
             *sensor_id = return_sensor_id();
             if (*sensor_id == imgsensor_info.sensor_id) {
+//lcsh tqq add device_info
+#ifdef CONFIG_LCT_DEVINFO_SUPPORT
+	devinfo_camera_regchar("Ov13855","ofilm",DEVINFO_USED);
+
+#endif
+//and end
                 LOG_INF("i2c write id: 0x%x, sensor id: 0x%x\n", imgsensor.i2c_write_id,*sensor_id);
                 return ERROR_NONE;
             }

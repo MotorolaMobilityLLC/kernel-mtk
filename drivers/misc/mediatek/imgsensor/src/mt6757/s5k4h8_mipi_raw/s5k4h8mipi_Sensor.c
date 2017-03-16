@@ -249,7 +249,29 @@ static SENSOR_WINSIZE_INFO_STRUCT imgsensor_winsize_info[10] =
  { 4192, 3104,	  0,  0, 4192, 3104, 2096,  1552, 0000, 0000, 2096, 1552, 0,	0, 2096,  1552}, // Custom3 
  { 4192, 3104,	  0,  0, 4192, 3104, 2096,  1552, 0000, 0000, 2096, 1552, 0,	0, 2096,  1552}, // Custom4 
  { 4192, 3104,	  0,  0, 4192, 3104, 2096,  1552, 0000, 0000, 2096, 1552, 0,	0, 2096,  1552}, // Custom5 
- };// slim video  
+ };// slim video
+
+//Lcsh tqq add device_info
+#ifdef CONFIG_LCT_DEVINFO_SUPPORT
+#include  "dev_info.h"
+static struct devinfo_struct *s_DEVINFO_Cam;   
+static void devinfo_camera_regchar(char *module,char * vendor,char *used)
+{
+
+	s_DEVINFO_Cam =(struct devinfo_struct*) kmalloc(sizeof(struct devinfo_struct), GFP_KERNEL);	
+	s_DEVINFO_Cam->device_type="camera";
+	s_DEVINFO_Cam->device_module=module;
+	s_DEVINFO_Cam->device_vendor=vendor;
+	s_DEVINFO_Cam->device_ic="s5k4h8";
+	s_DEVINFO_Cam->device_info=DEVINFO_NULL;
+	s_DEVINFO_Cam->device_version=DEVINFO_NULL;
+	s_DEVINFO_Cam->device_used=used;
+
+       DEVINFO_CHECK_DECLARE(s_DEVINFO_Cam->device_type,s_DEVINFO_Cam->device_module,s_DEVINFO_Cam->device_vendor,s_DEVINFO_Cam->device_ic,s_DEVINFO_Cam->device_version,s_DEVINFO_Cam->device_info,s_DEVINFO_Cam->device_used);
+}     
+#endif
+//end  
+
 static kal_uint16 read_cmos_sensor(kal_uint32 addr)
 {
 	kal_uint16 get_byte=0;
@@ -4390,7 +4412,13 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 			write_cmos_sensor(0x602E,0x0000);
 			*sensor_id = read_cmos_sensor(0x6F12);
 			//*sensor_id = imgsensor_info.sensor_id;
-            if (*sensor_id == imgsensor_info.sensor_id) {               
+            if (*sensor_id == imgsensor_info.sensor_id) { 
+//lcsh tqq add device_info
+#ifdef CONFIG_LCT_DEVINFO_SUPPORT
+	devinfo_camera_regchar("S5k4h8","ofilm",DEVINFO_USED);
+
+#endif
+//and end              
                 LOG_INF("i2c write id: 0x%x, sensor id: 0x%x\n", imgsensor.i2c_write_id,*sensor_id);      
                 return ERROR_NONE;
             }   
