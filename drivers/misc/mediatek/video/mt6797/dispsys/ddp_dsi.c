@@ -2704,16 +2704,13 @@ int DSI_Send_ROI(DISP_MODULE_ENUM module, void *handle, unsigned int x, unsigned
 
 static void lcm_set_reset_pin(UINT32 value)
 {
-#if 1
+#if 0
 	DSI_OUTREG32(NULL, DISPSYS_CONFIG_BASE + 0x150, value);
-#else
-#if !defined(CONFIG_MTK_LEGACY)
+#endif
 	if (value)
 		disp_dts_gpio_select_state(DTS_GPIO_STATE_LCM_RST_OUT1);
 	else
 		disp_dts_gpio_select_state(DTS_GPIO_STATE_LCM_RST_OUT0);
-#endif
-#endif
 }
 
 static void lcm_udelay(UINT32 us)
