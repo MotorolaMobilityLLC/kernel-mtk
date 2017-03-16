@@ -134,7 +134,7 @@ enum BMA_TYPE {
 //tuwenzan@wind-mobi.com add at 20161128 begin
 //#define BACKUP_OFFSET_OUTSIDE
 #define BMA2XX_OFFSET_CALI
-extern int BMA2x2_SetPowerMode(struct i2c_client *client, bool enable);
+extern int BMA2x2_SetPowerMode(struct i2c_client *client, bool enable, int who);
 extern int bma2x2_set_range(struct i2c_client *client, unsigned char range);
 extern int bma2x2_set_bandwidth(struct i2c_client *client,unsigned char bandwidth);
 extern int bma_i2c_read_block(struct i2c_client *client,u8 addr, u8 *data, u8 len);
