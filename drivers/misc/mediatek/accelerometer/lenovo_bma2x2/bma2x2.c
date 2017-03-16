@@ -1,3 +1,4 @@
+//tuwenzan@wind-mobi.com modify at 20161108 begin
 /* BMA255 motion sensor driver
  *
  *
@@ -1494,11 +1495,6 @@ enum {
 	BMA_TRC_CALI	= 0X08,
 	BMA_TRC_INFO	= 0X10,
 } BMA_TRC;
-
-enum {
-	BMA25X_AOD,
-	BMA25X_ACC,
-};
 /*----------------------------------------------------------------------------*/
 struct scale_factor {
 	u8  whole;
@@ -1566,8 +1562,6 @@ struct bma2x2_i2c_data {
 	struct work_struct int2_irq_work;
 	struct workqueue_struct *data_wq;
 #endif
-	int mode;
-	struct mutex mode_mutex;
 };
 
 #ifdef CONFIG_MOTO_AOD_BASE_ON_AP_SENSORS
@@ -2080,7 +2074,7 @@ static int BMA2x2_ReadData(struct i2c_client *client, s16 data[BMA2x2_AXES_NUM])
 					 data[BMA2x2_AXIS_Z];
 					if (atomic_read(&priv->trace) &
 					 BMA_TRC_FILTER) {
-					/*	GSE_LOG(
+						GSE_LOG(
 						"add [%2d] [%5d %5d %5d] => [%5d %5d %5d]\n",
 						 priv->fir.num,
 						 priv->fir.raw[num][X],
@@ -2088,7 +2082,7 @@ static int BMA2x2_ReadData(struct i2c_client *client, s16 data[BMA2x2_AXES_NUM])
 						 priv->fir.raw[num][Z],
 						 priv->fir.sum[BMA2x2_AXIS_X],
 						 priv->fir.sum[BMA2x2_AXIS_Y],
-						 priv->fir.sum[BMA2x2_AXIS_Z]); */
+						 priv->fir.sum[BMA2x2_AXIS_Z]);
 					}
 					priv->fir.num++;
 					priv->fir.idx++;
@@ -2121,7 +2115,7 @@ static int BMA2x2_ReadData(struct i2c_client *client, s16 data[BMA2x2_AXES_NUM])
 					 priv->fir.sum[BMA2x2_AXIS_Z]/firlen;
 					if (atomic_read(&priv->trace) &
 					 BMA_TRC_FILTER) {
-						/*GSE_LOG(
+						GSE_LOG(
 						"[%2d][%5d %5d %5d][%5d %5d %5d]:[%5d %5d %5d]\n",
 						 idx,
 						 priv->fir.raw[idx][X],
@@ -2132,7 +2126,7 @@ static int BMA2x2_ReadData(struct i2c_client *client, s16 data[BMA2x2_AXES_NUM])
 						 priv->fir.sum[BMA2x2_AXIS_Z],
 						 data[BMA2x2_AXIS_X],
 						 data[BMA2x2_AXIS_Y],
-						 data[BMA2x2_AXIS_Z]);  */
+						 data[BMA2x2_AXIS_Z]);
 					}
 				}
 			}
@@ -2364,10 +2358,9 @@ exit_BMA2x2_CheckDeviceID:
 	return BMA2x2_SUCCESS;
 }
 /*----------------------------------------------------------------------------*/
-int BMA2x2_DoSetPowerMode(struct i2c_client *client, bool enable) //tuwenzan@wind-mobi.com modify at 20161128
+int BMA2x2_SetPowerMode(struct i2c_client *client, bool enable) //tuwenzan@wind-mobi.com modify at 20161128
 {
 	u8 databuf[2] = {0};
-	u8 databuf1[2] = {0};
 	int res = 0;
 	u8 temp, temp0, temp1;
 	struct bma2x2_i2c_data *obj = i2c_get_clientdata(client);
@@ -2382,34 +2375,20 @@ int BMA2x2_DoSetPowerMode(struct i2c_client *client, bool enable) //tuwenzan@win
 	if (enable == true)
 		actual_power_mode = BMA2x2_MODE_NORMAL;
 	else
+#ifdef CONFIG_MOTO_AOD_BASE_ON_AP_SENSORS
+		actual_power_mode = BMA2x2_MODE_LOWPOWER;
+#else
 		actual_power_mode = BMA2x2_MODE_SUSPEND;
+#endif
 	res = bma_i2c_read_block(client, 0x3E, &temp, 0x1);
 	udelay(1000);
 	if (res < 0)
 		GSE_LOG("read  config failed!\n");
 	switch (actual_power_mode) {
 	case BMA2x2_MODE_NORMAL:
-
-		databuf1[0] = 0x80;
-		databuf1[1] = 0x00;
-
 		databuf[0] = 0x00;
 		databuf[1] = 0x00;
 		while (count < 10) {
-/*cly add for LOWPOWER -> NORMAL  must first change to SUSPEND mode 20170217*/
-
-			res = bma_i2c_write_block(client,
-							BMA2x2_MODE_CTRL_REG, &databuf1[0], 1);
-						udelay(1000);
-			if (res < 0)
-					GSE_LOG("write MODE_CTRL_REG  80 failed!\n");
-
-			res = bma_i2c_write_block(client, 0x3E, &databuf1[1], 0x1);
-
-			if (res < 0)
-					GSE_LOG("write MODE_CTRL_REG  0x3E 00 failed!\n");
-
-/*end*/
 			res = bma_i2c_write_block(client,
 				BMA2x2_MODE_CTRL_REG, &databuf[0], 1);
 			udelay(1000);
@@ -2550,31 +2529,6 @@ int BMA2x2_DoSetPowerMode(struct i2c_client *client, bool enable) //tuwenzan@win
 	mutex_unlock(&obj->lock);
 	return BMA2x2_SUCCESS;
 }
-
-int BMA2x2_SetPowerMode(struct i2c_client *client, bool enable, int who)
-{
-	unsigned char mode = 0;
-	struct bma2x2_i2c_data *obj = i2c_get_clientdata(client);
-
-	mutex_lock(&obj->mode_mutex);
-	mode = obj->mode;
-	if (enable)
-		mode |= (1<<who);
-	else
-		mode &= (~(1<<who));
-	if (mode && !obj->mode) {
-		GSE_LOG("enter normal mode\n");
-		BMA2x2_DoSetPowerMode(client, true);
-	} else if (!mode && obj->mode) {
-		GSE_LOG("enter suspend mode\n");
-		BMA2x2_DoSetPowerMode(client, false);
-	}
-	obj->mode = mode;
-	mutex_unlock(&obj->mode_mutex);
-
-	return BMA2x2_SUCCESS;
-}
-
 /*----------------------------------------------------------------------------*/
 static int BMA2x2_SetDataFormat(struct i2c_client *client, u8 dataformat)
 {
@@ -2690,7 +2644,7 @@ static int bma2x2_init_client(struct i2c_client *client, int reset_cali)
 #endif
 
 	/*should add normal mode setting*/
-	res = BMA2x2_SetPowerMode(client, true, BMA25X_ACC);
+	res = BMA2x2_SetPowerMode(client, true);
 	if (res != BMA2x2_SUCCESS)
 		return res;
 
@@ -2729,7 +2683,7 @@ static int bma2x2_init_client(struct i2c_client *client, int reset_cali)
 
 	GSE_LOG("BMA255 disable interrupt function!\n");
 
-	res = BMA2x2_SetPowerMode(client, false, BMA25X_ACC);
+	res = BMA2x2_SetPowerMode(client, false);
 	if (res != BMA2x2_SUCCESS)
 		return res;
 
@@ -2805,7 +2759,7 @@ static int BMA2x2_CompassReadData(struct i2c_client *client,
 	}
 
 	if (sensor_power == false) {
-		res = BMA2x2_SetPowerMode(client, true, BMA25X_ACC);
+		res = BMA2x2_SetPowerMode(client, true);
 		if (res)
 			GSE_ERR("Power on bma255 error %d!\n", res);
 
@@ -2858,7 +2812,7 @@ static int BMA2x2_ReadSensorData(struct i2c_client *client,
 	}
 
 	if (sensor_power == false) {
-		res = BMA2x2_SetPowerMode(client, true, BMA25X_ACC);
+		res = BMA2x2_SetPowerMode(client, true);
 		if (res)
 			GSE_ERR("Power on bma255 error %d!\n", res);
 	}
@@ -2878,10 +2832,10 @@ static int BMA2x2_ReadSensorData(struct i2c_client *client,
 		 obj->cvt.sign[BMA2x2_AXIS_Y]*databuf[BMA2x2_AXIS_Y];
 		acc[obj->cvt.map[BMA2x2_AXIS_Z]] =
 		 obj->cvt.sign[BMA2x2_AXIS_Z]*databuf[BMA2x2_AXIS_Z];
-		/*GSE_LOG("cvt x=%d, y=%d, z=%d\n",
+		GSE_LOG("cvt x=%d, y=%d, z=%d\n",
 		 obj->cvt.sign[BMA2x2_AXIS_X],
 		 obj->cvt.sign[BMA2x2_AXIS_Y],
-		 obj->cvt.sign[BMA2x2_AXIS_Z]);  */
+		 obj->cvt.sign[BMA2x2_AXIS_Z]);
 
 		acc[BMA2x2_AXIS_X] =
 		 acc[BMA2x2_AXIS_X] * GRAVITY_EARTH_1000
@@ -2893,10 +2847,12 @@ static int BMA2x2_ReadSensorData(struct i2c_client *client,
 		 acc[BMA2x2_AXIS_Z] * GRAVITY_EARTH_1000
 		 / obj->reso->sensitivity;
 
-		/*GSE_ERR("Mapped gsensor data: %d, %d, %d!\n",
+#if 0
+		GSE_ERR("Mapped gsensor data: %d, %d, %d!\n",
 		 acc[BMA2x2_AXIS_X],
 		 acc[BMA2x2_AXIS_Y],
-		 acc[BMA2x2_AXIS_Z]); */
+		 acc[BMA2x2_AXIS_Z]);
+#endif
 		snprintf(buf, BMA2x2_BUFSIZE, "%04x %04x %04x",
 		 acc[BMA2x2_AXIS_X],
 		 acc[BMA2x2_AXIS_Y],
@@ -3260,7 +3216,7 @@ static int bma25x_set_en_sig_int_mode(bma25x_data *bma25x,
 	mutex_lock(&bma25x->int_mode_mutex);
 	if (!bma25x->mEnabled && newstatus) {
 		/* set normal mode at first if needed */
-		BMA2x2_SetPowerMode(bma25x->client, true, BMA25X_AOD);
+		BMA2x2_SetPowerMode(bma25x->client, true);
 		bma2x2_set_bandwidth(
 			bma25x->client, BMA25X_BW_500HZ);
 		bma25x_flat_update(bma25x);
@@ -3315,7 +3271,7 @@ static int bma25x_set_en_sig_int_mode(bma25x_data *bma25x,
 	/* set low power mode at the end if no need */
 	if (bma25x->mEnabled && !newstatus) {
 		bma25x->mEnabled = newstatus;/* mEnabled will be used in below func */
-		BMA2x2_SetPowerMode(bma25x->client, false, BMA25X_AOD);
+		BMA2x2_SetPowerMode(bma25x->client, false);
 	}
 
 	bma25x->mEnabled = newstatus;
@@ -3754,9 +3710,9 @@ static ssize_t store_cpsopmode_value(struct device_driver *ddri,
 	if (error)
 		return error;
 	if (data == BMA2x2_MODE_NORMAL)
-		BMA2x2_SetPowerMode(bma2x2_i2c_client, true, BMA25X_ACC);
+		BMA2x2_SetPowerMode(bma2x2_i2c_client, true);
 	else if (data == BMA2x2_MODE_SUSPEND)
-		BMA2x2_SetPowerMode(bma2x2_i2c_client, false, BMA25X_ACC);
+		BMA2x2_SetPowerMode(bma2x2_i2c_client, false);
 	else
 		GSE_ERR("invalid content: '%s'\n", buf);
 
@@ -4224,7 +4180,7 @@ static ssize_t show_softreset(struct device_driver *ddri, char *buf)
 		GSE_ERR("bma2x2_init_client failed\n");
 	else
 		GSE_ERR("bma2x2_init_client succeed\n");
-	ret = BMA2x2_SetPowerMode(bma2x2_i2c_client, true, BMA25X_ACC);
+	ret = BMA2x2_SetPowerMode(bma2x2_i2c_client, true);
 	if (ret < 0)
 		GSE_ERR("BMA2x2_SetPowerMode failed\n");
 	else
@@ -4735,7 +4691,7 @@ int bma253_setup_int1(struct i2c_client *client)
 	}
 
 	/* enable irq */
-	//enable_irq(obj_i2c_data->IRQ1);
+	enable_irq(obj_i2c_data->IRQ1);
 
 	return 0;
 }
@@ -4831,7 +4787,7 @@ static int bma2x2_suspend(struct i2c_client *client, pm_message_t msg)
 			return -EINVAL;
 		}
 		atomic_set(&obj->suspend, 1);
-		err = BMA2x2_SetPowerMode(obj->client, false, BMA25X_ACC);
+		err = BMA2x2_SetPowerMode(obj->client, false);
 		if (err) {
 			GSE_ERR("write power control fail!!\n");
 			return err;
@@ -4879,7 +4835,7 @@ static void bma2x2_early_suspend(struct early_suspend *h)
 		return;
 	}
 	atomic_set(&obj->suspend, 1);
-	err = BMA2x2_SetPowerMode(obj->client, false, BMA25X_ACC);
+	err = BMA2x2_SetPowerMode(obj->client, false);
 
 	if (err) {
 		GSE_ERR("write power control fail!!\n");
@@ -4931,7 +4887,7 @@ static int bma2x2_enable_nodata(int en)
 	 || ((en == 1) && (sensor_power == true))) {
 		GSE_LOG("Gsensor device have updated!\n");
 	} else {
-		err = BMA2x2_SetPowerMode(obj_i2c_data->client, !sensor_power, BMA25X_ACC);
+		err = BMA2x2_SetPowerMode(obj_i2c_data->client, !sensor_power);
 	}
 
 	return err;
@@ -4991,6 +4947,7 @@ static int bma2x2_i2c_probe(struct i2c_client *client,
 #endif
 
 	GSE_FUN();
+	//printk("twz enter bma2x2 probe client addr = %x\n",client->addr);
 	obj = kzalloc(sizeof(*obj), GFP_KERNEL);
 	if (!obj) {
 		err = -ENOMEM;
@@ -5027,7 +4984,6 @@ static int bma2x2_i2c_probe(struct i2c_client *client,
 	mutex_init(&obj->lock);
 
 	mutex_init(&sensor_data_mutex);
-	mutex_init(&obj->mode_mutex);
 
 #ifdef CONFIG_BMA2x2_LOWPASS
 	if (obj->hw->firlen > C_MAX_FIR_LENGTH)
@@ -5262,3 +5218,4 @@ module_exit(bma2x2_exit);
 MODULE_LICENSE("GPL v2");
 MODULE_DESCRIPTION("BMA2x2 ACCELEROMETER SENSOR DRIVER");
 MODULE_AUTHOR("contact@bosch-sensortec.com");
+//tuwenzan@wind-mobi.com modify at 20161108 end
