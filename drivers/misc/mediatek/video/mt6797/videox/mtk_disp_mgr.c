@@ -1588,7 +1588,7 @@ long mtk_disp_mgr_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 		return _ioctl_frame_config(arg);
 	case DISP_IOCTL_GET_LCMINDEX:
 		{
-			return primary_display_get_lcm_index();
+			return primary_display_get_lcm_index(arg);
 		}
 	case DISP_IOCTL_QUERY_VALID_LAYER:
 		{

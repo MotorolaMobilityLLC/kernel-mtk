@@ -3970,20 +3970,28 @@ done:
 	return ret;
 }
 
-int primary_display_get_lcm_index(void)
+int primary_display_get_lcm_index(unsigned long arg)
 {
 	int index = 0;
+	int ret =0;
+	void __user *argp = (void __user *)arg;
 
 	DISPFUNC();
 
 	if (pgc->plcm == NULL) {
 		DISPERR("lcm handle is null\n");
-		return 0;
+		return -1;
 	}
 
 	index = pgc->plcm->index;
 	DISPMSG("lcm index = %d\n", index);
-	return index;
+
+	if (copy_to_user(argp, &index, sizeof(index))) {
+		DISPERR("[FB]: copy_to_user failed! line:%d\n", __LINE__);
+		ret = -EFAULT;
+	}
+
+	return ret;
 }
 
 int primary_display_resume(void)
