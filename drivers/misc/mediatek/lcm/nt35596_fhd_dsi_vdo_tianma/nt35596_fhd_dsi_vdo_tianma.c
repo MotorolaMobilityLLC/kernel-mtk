@@ -231,43 +231,64 @@ static void lcm_get_params(LCM_PARAMS *params)
 	params->dsi.lcm_esd_check_table[0].para_list[0] = 0x9c;
 }
 
-static void lcm_init(void)
+static void lcm_init_power(void)
 {
 #ifdef BUILD_LK
-	int ret = 0;
-	unsigned char cmd = 0x0;
-	unsigned char data = 0xFF;
-
+		int ret = 0;
+		unsigned char cmd = 0x0;
+		unsigned char data = 0xFF;
 
 #endif
 
 #ifdef BUILD_LK
-	/* data sheet 136 page ,the first AVDD power on */
-	mt_set_gpio_mode(GPIO_LP3101_ENP, GPIO_MODE_00);
-	mt_set_gpio_dir(GPIO_LP3101_ENP, GPIO_DIR_OUT);
-	mt_set_gpio_out(GPIO_LP3101_ENP, GPIO_OUT_ONE);
-	MDELAY(2);
-	mt_set_gpio_mode(GPIO_LP3101_ENN, GPIO_MODE_00);
-	mt_set_gpio_dir(GPIO_LP3101_ENN, GPIO_DIR_OUT);
-	mt_set_gpio_out(GPIO_LP3101_ENN, GPIO_OUT_ONE);
+		/* data sheet 136 page ,the first AVDD power on */
+		mt_set_gpio_mode(GPIO_LP3101_ENP, GPIO_MODE_00);
+		mt_set_gpio_dir(GPIO_LP3101_ENP, GPIO_DIR_OUT);
+		mt_set_gpio_out(GPIO_LP3101_ENP, GPIO_OUT_ONE);
+		MDELAY(2);
+		mt_set_gpio_mode(GPIO_LP3101_ENN, GPIO_MODE_00);
+		mt_set_gpio_dir(GPIO_LP3101_ENN, GPIO_DIR_OUT);
+		mt_set_gpio_out(GPIO_LP3101_ENN, GPIO_OUT_ONE);
 #else
-	/* set_gpio_lcd_power_enable(1); */
-	/* set_gpio_lcd_enp(1); */
-	set_gpio_lcd_enp(1);
-	MDELAY(2);
-	set_gpio_lcd_enn(1);
+		/* set_gpio_lcd_power_enable(1); */
+		/* set_gpio_lcd_enp(1); */
+		set_gpio_lcd_enp(1);
+		MDELAY(2);
+		set_gpio_lcd_enn(1);
 #endif
-#ifdef BUILD_LK
-	cmd = 0x00;
-	data = 0x0F;
-	ret = lp3101_write_bytes(cmd, data);
-	MDELAY(2);
-	cmd = 0x01;
-	data = 0x0F;
-	ret = lp3101_write_bytes(cmd, data);
-#endif
-	MDELAY(10);
 
+#ifdef BUILD_LK
+		cmd = 0x00;
+		data = 0x0F;
+		ret = lp3101_write_bytes(cmd, data);
+		MDELAY(2);
+		cmd = 0x01;
+		data = 0x0F;
+		ret = lp3101_write_bytes(cmd, data);
+#endif
+		MDELAY(10);
+
+}
+static void lcm_suspend_power(void)
+{
+#ifndef BUILD_LK
+		set_gpio_lcd_enn(0);
+		MDELAY(5);
+		set_gpio_lcd_enp(0);
+
+		SET_RESET_PIN(0);
+		MDELAY(10);
+#endif
+}
+static void lcm_resume_power(void)
+{
+#ifndef BUILD_LK
+	lcm_init_power();
+#endif
+}
+
+static void lcm_init(void)
+{
 	SET_RESET_PIN(1);
 	MDELAY(2);
 	SET_RESET_PIN(0);
@@ -292,14 +313,6 @@ static void lcm_suspend(void)
 	data_array[0] = 0x00100500;	/* Sleep In */
 	dsi_set_cmdq(data_array, 1, 1);
 	MDELAY(120);
-#ifndef BUILD_LK
-	set_gpio_lcd_enn(0);
-	MDELAY(5);
-	set_gpio_lcd_enp(0);
-
-	SET_RESET_PIN(0);
-	MDELAY(10);
-#endif
 }
 
 
@@ -309,6 +322,7 @@ static void lcm_resume(void)
 	lcm_init();
 #endif
 }
+
 
 #if (LCM_DSI_CMD_MODE)
 static void lcm_update(unsigned int x, unsigned int y,
@@ -477,6 +491,9 @@ LCM_DRIVER nt35596_fhd_dsi_vdo_tianma_lcm_drv = {
 	.name = "nt35596_fhd_dsi_vdo_tianma",
 	.set_util_funcs = lcm_set_util_funcs,
 	.get_params = lcm_get_params,
+	.init_power = lcm_init_power,
+	.suspend_power = lcm_suspend_power,
+	.resume_power = lcm_resume_power,
 	.init = lcm_init,
 	.suspend = lcm_suspend,
 	.resume = lcm_resume,
