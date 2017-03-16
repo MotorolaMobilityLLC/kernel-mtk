@@ -307,6 +307,7 @@ static int icm206xx_EnableSensor(struct i2c_client *client, int sensor_type, boo
 {
 	u8 databuf[2] = {0};
 	int res = 0;
+	int startup_time = 0;
 
 	if (sensor_type >= ICM206XX_SENSOR_TYPE_MAX) {
 		return ICM206XX_ERR_INVALID_PARAM;
@@ -319,6 +320,7 @@ static int icm206xx_EnableSensor(struct i2c_client *client, int sensor_type, boo
 	}
 
 	if (enable == true) {
+		startup_time = 50;
 		if (sensor_type == ICM206XX_SENSOR_TYPE_ACC || sensor_type == ICM206XX_SENSOR_TYPE_STEP_COUNTER) {
 			databuf[0] &= ~ICM206XX_BIT_ACCEL_STANDBY;
 
@@ -342,8 +344,7 @@ static int icm206xx_EnableSensor(struct i2c_client *client, int sensor_type, boo
 		ACC_ERR("set power ctl2 failed!\n");
 		return ICM206XX_ERR_I2C;
 	}
-
-	mdelay(50);
+	mdelay(startup_time);
 
 	return ICM206XX_SUCCESS;
 }
