@@ -1156,7 +1156,7 @@
 
 	mtkfb_pins_lcm_reset0: lcm_rst_out0_gpio {
 		pins_cmd_dat {
-			pins = <PINMUX_GPIO180__FUNC_LCM_RST>;
+			pins = <PINMUX_GPIO180__FUNC_GPIO180>;
 			slew-rate = <1>;
 			output-low;
 		};
@@ -1164,7 +1164,7 @@
 
 	mtkfb_pins_lcm_reset1: lcm_rst_out1_gpio {
 		pins_cmd_dat {
-			pins = <PINMUX_GPIO180__FUNC_LCM_RST>;
+			pins = <PINMUX_GPIO180__FUNC_GPIO180>;
 			slew-rate = <1>;
 			output-high;
 		};
