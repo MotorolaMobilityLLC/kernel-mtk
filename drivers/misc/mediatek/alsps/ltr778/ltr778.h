@@ -71,7 +71,7 @@
 
 /* Power On response time in ms */
 #define PON_DELAY				50
-#define WAKEUP_DELAY			10 //tuwenzan@wind-mobi.com modify at 20170227 
+#define WAKEUP_DELAY			10 //tuwenzan@wind-mobi.com modify at 20170316 
 
 #define WIN_FACTOR 				1
 
