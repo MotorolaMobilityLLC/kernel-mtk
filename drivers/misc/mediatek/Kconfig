@@ -397,6 +397,10 @@ config MTK_CACHE_FLUSH_RANGE_PARALLEL
 config MTK_SM100
 	bool "Software synchronization 64bits objects"
 	default n
+#LCSH ADD by tianqiangqiang for L3510 20170217
+config L3510_MAINBOARD
+	bool "config for l3510 mainboard"
+	default n
 
 config MTK_SVP
 	bool "Support Mediatek Shareable Secure Video Playback technology"
