@@ -611,7 +611,7 @@ static struct acc_hw *hw = &accel_cust_bmi160;
 #define GSE_TAG                  "[Gsensor] "
 #define GSE_FUN(f)               printk(GSE_TAG"%s\n", __FUNCTION__)
 #define GSE_ERR(fmt, args...)    printk(GSE_TAG"%s %d : "fmt, __FUNCTION__, __LINE__, ##args)
-#define GSE_LOG(fmt, args...)    printk(GSE_TAG fmt, ##args)
+#define GSE_LOG(fmt, args...)    printk(KERN_INFO  GSE_TAG fmt, ##args)
 
 /*!bmi160 sensor time depends on ODR */
 static const struct bmi_sensor_time_odr_tbl
