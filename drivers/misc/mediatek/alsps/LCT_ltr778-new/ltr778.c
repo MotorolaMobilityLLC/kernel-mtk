@@ -34,8 +34,8 @@
 #define APS_TAG					"[ALS/PS] "
 #define APS_FUN(f)              printk(KERN_INFO 	APS_TAG"%s\n", __FUNCTION__)
 #define APS_ERR(fmt, args...)   printk(KERN_ERR  	APS_TAG"%s %d : "fmt, __FUNCTION__, __LINE__, ##args)
-#define APS_LOG(fmt, args...)   printk(KERN_ERR		APS_TAG fmt, ##args)
-#define APS_DBG(fmt, args...)   printk(KERN_ERR 	APS_TAG fmt, ##args)
+#define APS_LOG(fmt, args...)   printk(KERN_INFO		APS_TAG fmt, ##args)
+#define APS_DBG(fmt, args...)   printk(KERN_DEBUG 	APS_TAG fmt, ##args)
 
 /*----------------------------------------------------------------------------*/
 static const struct i2c_device_id ltr778_i2c_id[] = {{LTR778_DEV_NAME,0},{}};
