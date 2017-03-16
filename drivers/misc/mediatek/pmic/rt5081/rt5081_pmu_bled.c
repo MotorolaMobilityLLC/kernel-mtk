@@ -440,7 +440,13 @@ static inline int rt_parse_dt(struct device *dev)
 	if (of_property_read_u32(np, "rt,max_bled_brightness", &tmp) < 0)
 		pdata->max_bled_brightness = 1024;
 	else
+	{
+#ifdef CONFIG_L3510_MAINBOARD
+		pdata->max_bled_brightness = 1024;//Mod max brightness 350 nits for Marino
+#else
 		pdata->max_bled_brightness = tmp;
+#endif
+	}
 	of_property_read_string(np, "rt,bled_name", &(pdata->bled_name));
 	return 0;
 }
