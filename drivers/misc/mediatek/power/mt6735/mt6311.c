@@ -7362,6 +7362,7 @@ static int __init mt6311_init(void)
 	PMICLOG1("[mt6311_init] mt6311_AUTO_DETECT_DISABLE\n");
 	g_mt6311_hw_exist = 0;
 	g_mt6311_driver_ready = 1;
+	goto exit;
 
 #else
 
