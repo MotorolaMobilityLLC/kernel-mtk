@@ -38,7 +38,7 @@ static u8 g_proximity_en = 0;
 			//#include "LQ_L3600_OFG_C07_2016-12-03.i"
 			//#include "LQ_L3600_OFG_C08_2016-12-22.i"
 			//#include "LQ_L3600_OFG_C09_2016-12-28.i"
-			#include "LQ_L3600_OFG_C0A_2017-1-13.i"
+			#include "LQ_L3600_OFG_C0B_2017-3-17.i"
 	};
 #endif
 #ifdef MTK
