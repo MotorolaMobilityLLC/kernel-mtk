@@ -124,7 +124,7 @@ static void init_lcm_registers(void)
 	dsi_set_cmdq(data_array, 2, 1);
 
 	data_array[0] = 0x00023902;
-	data_array[1] = 0x00000003;
+	data_array[1] = 0x00000200;
 	dsi_set_cmdq(data_array, 2, 1);
 
 	data_array[0] = 0x00023902;
@@ -144,7 +144,7 @@ static void init_lcm_registers(void)
 	dsi_set_cmdq(data_array, 2, 1);
 
 	data_array[0] = 0x00023902;
-	data_array[1] = 0x00002C53;
+	data_array[1] = 0x00002453;
 	dsi_set_cmdq(data_array, 2, 1);
 
 	data_array[0] = 0x00023902;
