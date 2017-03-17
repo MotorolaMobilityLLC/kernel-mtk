@@ -6566,7 +6566,7 @@ himax_gpio_power_config(ts->client, pdata);
 	tpd_cfg_version_hx = private_ts->vendor_config_ver;
 	temp_ver=(char*) kmalloc(8, GFP_KERNEL);	
 	sprintf(temp_ver,"0x%x",tpd_cfg_version_hx);
-	devinfo_ctp_regchar("unknown","JL.BY550F-849-A",temp_ver,DEVINFO_USED);
+	devinfo_ctp_regchar("unknown","Holitech",temp_ver,DEVINFO_USED);
 #endif
 #if defined(LCT_ADD_TP_VERSION)
 	if(proc_create(CTP_PROC_FILE, 0444, NULL, &g_ctp_proc)== NULL)
