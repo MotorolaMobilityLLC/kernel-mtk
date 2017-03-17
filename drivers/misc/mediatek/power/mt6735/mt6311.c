@@ -39,6 +39,8 @@
 #endif
 #endif
 
+#define mt6311_AUTO_DETECT_DISABLE
+
 /**********************************************************
   *
   *   [I2C Slave Setting]
