@@ -802,6 +802,7 @@ BATTERY_PROFILE_STRUCT battery_profile_t3[TOTAL_BATTERY_NUMBER][85] = {
 	{99, 3517},
 	{100, 3412},
 	{100, 3282},
+	{100, 3267}
 	},
 	{
 	{0, 4380},
@@ -1691,6 +1692,7 @@ R_PROFILE_STRUCT r_profile_t3[TOTAL_BATTERY_NUMBER][85] = {
 	{150, 3517},
 	{170, 3412},
 	{205, 3282},
+	{168, 3267}
 	},
 	{
 	{186, 4380},
