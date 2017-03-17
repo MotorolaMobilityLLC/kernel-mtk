@@ -146,12 +146,11 @@ static int ltr778_init_flag = -1;
 
 
 //tuwenzan@wind-mobi.com add for solve oil bug at 20170307 begin
+#if Hardware_OFFSET
 #define MAX_ELM_PS 4
 static unsigned int record_ps[MAX_ELM_PS];
 static int rct_ps=0,full_ps=0;
 static long ps_sum=0;
-
-
 static int get_avg_ps(unsigned int ps_data_c)
 {
 	int ps_d;
@@ -180,7 +179,7 @@ static int get_avg_ps(unsigned int ps_data_c)
 		return 2048;
 	}
 }
-
+#endif
 
 #define MAX_ELM_PS_1 8
 static unsigned int record_ps_1[MAX_ELM_PS_1];
@@ -537,7 +536,7 @@ static int ltr778_ps_stowed_enable(struct i2c_client *client, int enable)
 	regdata = ltr778_i2c_read_reg(LTR778_PS_CONTR);
 	if (enable != 0) {
 		APS_LOG("PS: stowed enable ps only \n");
-		regdata = 0xC2;
+		regdata = 0x02; //c2
 		ps_stowed_start = 1;
 	}
 	else {
@@ -618,7 +617,7 @@ static int ltr778_ps_enable(struct i2c_client *client, int enable)
 	regdata = ltr778_i2c_read_reg(LTR778_PS_CONTR);
 	if (enable != 0) {
 		APS_LOG("PS: enable ps only \n");
-		regdata = 0xC2;  //regdata |= 0x02;
+		regdata = 0x02;  //regdata |= 0x02;
 	}
 	else {
 		APS_LOG("PS: disable ps only \n");
@@ -665,15 +664,18 @@ static int ltr778_ps_enable(struct i2c_client *client, int enable)
 /********************************************************************/
 //tuwenzan@wind-mobi.com modify for solve oil bug at 20170307 begin
 static int ps_en = 0;
+#if Hardware_OFFSET
+static int ps_offen = 0;
+#endif
 static int ltr778_ps_read(struct i2c_client *client, u16 *data)
 {
 	int psval_lo, psval_hi, psdata;
+#if Hardware_OFFSET
 	int ps_offd , ps_offdl, ps_offdh;
 	int ps_offr , ps_offrl, ps_offrh;
-	int ps_offen = 0;
-
+#endif
 	psval_lo = ltr778_i2c_read_reg(LTR778_PS_DATA_0);
-	APS_DBG("ps_rawdata_psval_lo = %d\n", psval_lo);
+	//APS_DBG("ps_rawdata_psval_lo = %d\n", psval_lo);
 	if (psval_lo < 0){	    
 	    APS_DBG("psval_lo error\n");
 		psdata = psval_lo;
@@ -681,7 +683,7 @@ static int ltr778_ps_read(struct i2c_client *client, u16 *data)
 	}
 
 	psval_hi = ltr778_i2c_read_reg(LTR778_PS_DATA_1);
-    APS_DBG("ps_rawdata_psval_hi = %d\n", psval_hi);
+    //APS_DBG("ps_rawdata_psval_hi = %d\n", psval_hi);
 	if (psval_hi < 0){
 	    APS_DBG("psval_hi error\n");
 		psdata = psval_hi;
@@ -689,7 +691,7 @@ static int ltr778_ps_read(struct i2c_client *client, u16 *data)
 	}
 	/* by steven   decress   power */	
 	psdata = ((psval_hi & 7)* 256) + psval_lo;
-
+#if Hardware_OFFSET
 	//ps_offrl = ltr778_i2c_read_reg(0x99);
 	//ps_offrh = ltr778_i2c_read_reg(0x9A);
 	//ps_offr = ((ps_offrh & 7)* 256) + ps_offrl;
@@ -783,7 +785,7 @@ static int ltr778_ps_read(struct i2c_client *client, u16 *data)
 
 	}
 #endif
-
+#endif
 //tuwenzan@wind-mobi.com modify for solve oil bug at 20170307 end	
 	*data = psdata;
     APS_DBG("ltr778_ps_read: ps_rawdata = %d\n", psdata);
@@ -965,17 +967,17 @@ static int ltr778_als_read(struct i2c_client *client, u16* data)
 	//liujinzhou@wind-mobi.com modify at 20161205 begin
 	int coeff_factor = 10000;
     //liujinzhou@wind-mobi.com modify at 20161205 end
-    status_value = ltr778_i2c_read_reg(LTR778_ALS_PS_STATUS);
-	printk("twz test status_value = %x\n",status_value);
+   // status_value = ltr778_i2c_read_reg(LTR778_ALS_PS_STATUS);
+	//printk("twz test status_value = %x\n",status_value);
 	alsval_ch1_lo = ltr778_i2c_read_reg(LTR778_ALS_DATA_CH1_0);
 	alsval_ch1_hi = ltr778_i2c_read_reg(LTR778_ALS_DATA_CH1_1);
 	alsval_ch1 = (alsval_ch1_hi * 256) + alsval_ch1_lo;
-	APS_DBG("alsval_ch1_lo = %d,alsval_ch1_hi=%d,alsval_ch1=%d\n",alsval_ch1_lo,alsval_ch1_hi,alsval_ch1);
+	//APS_DBG("alsval_ch1_lo = %d,alsval_ch1_hi=%d,alsval_ch1=%d\n",alsval_ch1_lo,alsval_ch1_hi,alsval_ch1);
 
 	alsval_ch0_lo = ltr778_i2c_read_reg(LTR778_ALS_DATA_CH0_0);
 	alsval_ch0_hi = ltr778_i2c_read_reg(LTR778_ALS_DATA_CH0_1);
 	alsval_ch0 = (alsval_ch0_hi * 256) + alsval_ch0_lo;
-	APS_DBG("alsval_ch0_lo = %d,alsval_ch0_hi=%d,alsval_ch0=%d\n",alsval_ch0_lo,alsval_ch0_hi,alsval_ch0);
+	//APS_DBG("alsval_ch0_lo = %d,alsval_ch0_hi=%d,alsval_ch0=%d\n",alsval_ch0_lo,alsval_ch0_hi,alsval_ch0);
 
     if(alsval_ch0 == 0)
     {
@@ -984,7 +986,7 @@ static int ltr778_als_read(struct i2c_client *client, u16* data)
     }
 
 	ratio = alsval_ch1 * 100 / alsval_ch0;
-	APS_DBG("ratio = %d\n", ratio);
+	//APS_DBG("ratio = %d\n", ratio);
 
 	if (ratio < 14)
 	{
@@ -1043,7 +1045,7 @@ static int ltr778_als_read(struct i2c_client *client, u16* data)
 	//liujinzhou@wind-mobi.com modify at 20170210 end
 	luxdata_int = ((ch0_coeff * alsval_ch0) + (ch1_coeff * alsval_ch1)) / coeff_factor / als_gain_factor / als_integration_factor * WIN_FACTOR*winfac_1/winfac_2;
 	//liujinzhou@wind-mobi.com modify at 20161205 end
-	APS_DBG("ltr778_als_read als_value_lux = %d\n", luxdata_int);
+	//APS_DBG("ltr778_als_read als_value_lux = %d\n", luxdata_int);
 out:
 	*data = luxdata_int;
 	final_lux_val = luxdata_int;
