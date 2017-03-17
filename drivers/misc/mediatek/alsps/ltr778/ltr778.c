@@ -963,7 +963,7 @@ static int ltr778_als_read(struct i2c_client *client, u16* data)
 	int ratio;
 	int ch0_coeff;
 	int ch1_coeff;
-	u8 status_value = 0;
+	//u8 status_value = 0;
 	//liujinzhou@wind-mobi.com modify at 20161205 begin
 	int coeff_factor = 10000;
     //liujinzhou@wind-mobi.com modify at 20161205 end
