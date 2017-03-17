@@ -81,7 +81,7 @@
 #define LTR778_ERR_SETUP_FAILURE			-4
 #define LTR778_ERR_GETGSENSORDATA			-5
 #define LTR778_ERR_IDENTIFICATION			-6
-
+#define Hardware_OFFSET						0 //tuwenzan@wind-mobi.com add at 20170317
 extern struct platform_device *get_alsps_platformdev(void);
 
 #endif
