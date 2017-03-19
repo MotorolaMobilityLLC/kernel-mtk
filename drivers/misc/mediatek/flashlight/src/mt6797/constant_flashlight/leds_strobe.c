@@ -92,10 +92,10 @@ static DEFINE_MUTEX(g_strobeSem);
 static struct work_struct workTimeOut;
 
 #define aw3644_REG_ENABLE       	0x01
-#define aw3644_REG_LED1_FLASH  0x03
-#define aw3644_REG_LED2_FLASH  0x04
-#define aw3644_REG_LED1_TORCH  0x05
-#define aw3644_REG_LED2_TORCH  0x06
+#define aw3644_REG_LED1_FLASH  0x04
+#define aw3644_REG_LED2_FLASH  0x03
+#define aw3644_REG_LED1_TORCH  0x06
+#define aw3644_REG_LED2_TORCH  0x05
 #define aw3644_REG_TIMING           0x08
 
 #define FLASH_ENABLE  (GPIO90 | 0x80000000)
@@ -253,12 +253,12 @@ int flashEnable_aw3644_2(void)
 		if(isMovieMode[m_duty2] == 1)
 			{
 			//mt_set_gpio_out(FLASH_TORCH_ENABLE, GPIO_OUT_ONE);
-			writeReg(aw3644_REG_ENABLE, 0x0A);//torch mode
+			writeReg(aw3644_REG_ENABLE, 0x09);//torch mode
 			}
 		else
 			{
 			//mt_set_gpio_out(FLASH_STROBE_ENABLE, GPIO_OUT_ONE);
-			writeReg(aw3644_REG_ENABLE, 0x0E);//flash mode
+			writeReg(aw3644_REG_ENABLE,  0x0D);//flash mode
 			}
 	}
 	else if(LED2Closeflag == 1)
@@ -266,12 +266,12 @@ int flashEnable_aw3644_2(void)
 		if(isMovieMode[m_duty1] == 1)
 			{
 			//mt_set_gpio_out(FLASH_TORCH_ENABLE, GPIO_OUT_ONE);
-			writeReg(aw3644_REG_ENABLE, 0x09);//torch mode
+			writeReg(aw3644_REG_ENABLE, 0x0A);//torch mode
 			}
 		else
 			{
 			//mt_set_gpio_out(FLASH_STROBE_ENABLE, GPIO_OUT_ONE);
-			writeReg(aw3644_REG_ENABLE,  0x0D);//flash mode
+			writeReg(aw3644_REG_ENABLE, 0x0E);//flash mode
 			}
 	}
 	else
@@ -401,13 +401,13 @@ int setDuty_aw3644_2(int duty)
 	{
 		if((isMovieMode[m_duty1] == 1) && ((isMovieMode[m_duty2] == 1)))
 		{
-			writeReg(aw3644_REG_LED1_TORCH, torchDuty_L[m_duty1]);
-			writeReg(aw3644_REG_LED2_TORCH, torchDuty_H[m_duty2]);
+			writeReg(aw3644_REG_LED1_TORCH, torchDuty_H[m_duty1]);
+			writeReg(aw3644_REG_LED2_TORCH, torchDuty_L[m_duty2]);
 		}
 		else
 		{
-			writeReg(aw3644_REG_LED1_FLASH, flashDuty_L[m_duty1]);
-			writeReg(aw3644_REG_LED2_FLASH, flashDuty_H[m_duty2]);
+			writeReg(aw3644_REG_LED1_FLASH, flashDuty_H[m_duty1]);
+			writeReg(aw3644_REG_LED2_FLASH, flashDuty_L[m_duty2]);
 		}
 	}
 	return 0;
