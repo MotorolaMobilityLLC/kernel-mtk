@@ -138,6 +138,7 @@ static struct task_struct *decouple_trigger_thread;
 static struct task_struct *init_decouple_buffer_thread;
 static struct sg_table table;
 
+unsigned int esd_backlight_level = 0;
 static int decouple_mirror_update_rdma_config_thread(void *data);
 static int decouple_trigger_worker_thread(void *data);
 
@@ -6369,6 +6370,17 @@ int primary_display_vsync_switch(int method)
 	}
 
 	return ret;
+}
+
+
+int primary_display_esd_setbacklight(unsigned int level)
+{
+
+
+			disp_lcm_set_backlight(pgc->plcm,NULL,level);
+ 		printk("add by zhouhua   primary_display_esd_setbacklight, level == %d\n",level);
+	
+	return 0;
 }
 
 int _set_backlight_by_cmdq(unsigned int level)

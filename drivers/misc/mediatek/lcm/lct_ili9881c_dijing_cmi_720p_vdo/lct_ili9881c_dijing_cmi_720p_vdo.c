@@ -33,7 +33,7 @@
 #endif
 
 
-
+extern  unsigned int esd_backlight_level;
 static const unsigned int BL_MIN_LEVEL = 20;
 static LCM_UTIL_FUNCS lcm_util;
 
@@ -324,14 +324,14 @@ static struct LCM_setting_table lcm_initialization_setting[] = {
 {0x29,1,{0x00}},       
 {REGFLAG_DELAY, 10, {}},     
 {0x35,1,{0x00}},   // te on
-	{0x51,2,{0x0f,0x80}},   
+	{0x51,2,{0x00,0x00}},   
     {0x53,1,{0x24}},
      {0x55,1,{0x00}},
 	{REGFLAG_END_OF_TABLE, 0x00, {}}
 };
 
 static struct LCM_setting_table bl_level[] = {
-	{0x51, 2, {0x0F,0xF0} },
+	{0x51, 2, {0x00,0x00} },
 	{REGFLAG_END_OF_TABLE, 0x00, {} }
 };
 
@@ -694,6 +694,7 @@ static void lcm_setbacklight_cmdq(void *handle, unsigned int level)
 unsigned int level_hight,level_low=0;
 	printk("%s,ili9881c backlight: level = %d\n", __func__, level);
 
+   esd_backlight_level = level;
 
 		level_hight=(level & 0xf0)>>4;
 		level_low=(level & 0x0f)<<4;
