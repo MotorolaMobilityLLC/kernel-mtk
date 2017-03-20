@@ -1064,6 +1064,9 @@ BATTERY_PROFILE_STRUCT battery_profile_temperature[TOTAL_BATTERY_NUMBER][85] = {
 	{0, 0},
 	{0, 0},
 	{0, 0},
+	{0, 0},
+	{0, 0},
+	{0, 0},
 	{0, 0}
 	}
 };
@@ -1873,6 +1876,9 @@ R_PROFILE_STRUCT r_profile_temperature[TOTAL_BATTERY_NUMBER][85] = {
 	{0, 0}
 	},
 	{
+	{0, 0},
+	{0, 0},
+	{0, 0},
 	{0, 0},
 	{0, 0},
 	{0, 0},
