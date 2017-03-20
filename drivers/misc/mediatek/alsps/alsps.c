@@ -20,13 +20,13 @@ struct platform_device *pltfm_dev;
 static struct alsps_init_info *alsps_init_list[MAX_CHOOSE_ALSPS_NUM] = {0};
 
 static bool alsps_misc_dev_init;
-
+static int first_als_enable = 1;
 int als_data_report(struct input_dev *dev, int value, int status)
 {
 	struct alsps_context *cxt = NULL;
 
 	cxt  = alsps_context_obj;
-	/*ALSPS_LOG(" +als_data_report! %d, %d\n", value, status);*/
+	ALSPS_LOG(" +als_data_report! %d, %d\n", value, status);
 	/* force trigger data update after sensor enable. */
 	if (cxt->is_get_valid_als_data_after_enable == false) {
 		input_report_abs(dev, EVENT_TYPE_ALS_VALUE, value+1);
@@ -40,7 +40,7 @@ int als_data_report(struct input_dev *dev, int value, int status)
 
 int ps_data_report(struct input_dev *dev, int value, int status)
 {
-	/* ALSPS_LOG("+ps_data_report! %d, %d\n",value,status); */
+	ALSPS_LOG("+ps_data_report! %d, %d\n", value, status);
 	input_report_rel(dev, EVENT_TYPE_PS_VALUE, (value+1));
 	input_report_rel(dev, EVENT_TYPE_PS_STATUS, status);
 	input_sync(dev);
@@ -256,13 +256,18 @@ static int als_enable_data(int enable)
 		if (false == cxt->is_als_polling_run && cxt->is_als_batch_enable == false) {
 			if (false == cxt->als_ctl.is_report_input_direct) {
 				cxt->is_get_valid_als_data_after_enable = false;
-				mod_timer(&cxt->timer_als, jiffies + atomic_read(&cxt->delay_als)/(1000/HZ));
+				if (1 == first_als_enable)
+					mod_timer(&cxt->timer_als, jiffies + 150/(1000/HZ));
+				else
+					mod_timer(&cxt->timer_als, jiffies + atomic_read(&cxt->delay_als)/(1000/HZ));
 				cxt->is_als_polling_run = true;
 			}
 		}
+		first_als_enable = 0;
 	}
 
 	if (0 == enable) {
+		first_als_enable = 1;
 		ALSPS_LOG("ALSPS disable\n");
 		cxt->is_als_active_data = false;
 		cxt->als_ctl.open_report_data(0);
