@@ -54,8 +54,12 @@ unsigned char AW87318_Audio_Speaker(void);
 unsigned char AW87318_Audio_OFF(void);
 
 ///////////////sgm3718 switch key
+// LCSH MOD @duanlongfei 20170320
+//#define SPEAKER_HEADSET_ONLY_ONE_USE
+#ifdef SPEAKER_HEADSET_ONLY_ONE_USE
 static void Sgm3718_Switch_On(void);
 static void Sgm3718_Switch_Off(void);
+#endif
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 unsigned char AW87319_HW_ON(void);
 unsigned char AW87319_HW_OFF(void);
@@ -142,6 +146,8 @@ static void AW87319_pa_pwroff(void)
 	msleep(1);
 }
 //add by wangyongfu
+// LCSH MOD @duanlongfei 20170320
+#ifdef SPEAKER_HEADSET_ONLY_ONE_USE
 static void Sgm3718_Switch_On(void)
 {
     	printk("%s enter\n", __func__);
@@ -156,7 +162,7 @@ static void Sgm3718_Switch_Off(void)
     	msleep(1);
 	printk("%s out\n", __func__);
 }
-
+#endif
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // i2c write and read
@@ -267,8 +273,10 @@ unsigned char AW87319_Audio_Speaker(void)
 	
 	I2C_write_reg(0x01, 0x03);		// Class D Enable; Boost Enable
 	I2C_write_reg(0x01, 0x07);		// CHIP Enable; Class D Enable; Boost Enable
-
-	Sgm3718_Switch_On();	
+// LCSH MOD @duanlongfei 20170320
+#ifdef SPEAKER_HEADSET_ONLY_ONE_USE
+	Sgm3718_Switch_On();
+#endif
 	return 0;
 }
 
@@ -282,8 +290,10 @@ unsigned char AW87319_Audio_OFF(void)
 	}
 	I2C_write_reg(0x01, 0x00);		// CHIP Disable
 	AW87319_HW_OFF();
-	
+// LCSH MOD @duanlongfei 20170320
+#ifdef SPEAKER_HEADSET_ONLY_ONE_USE
 	Sgm3718_Switch_Off();
+#endif
 	return 0;
 }
 
@@ -361,7 +371,10 @@ static void AW87318_MODE(void)
 unsigned char AW87318_Audio_Speaker(void)
 {
 	AW87318_MODE();
+// LCSH MOD @duanlongfei 20170320
+#ifdef SPEAKER_HEADSET_ONLY_ONE_USE
 	Sgm3718_Switch_On();
+#endif
 	return 0;
 }
 
@@ -369,7 +382,10 @@ unsigned char AW87318_Audio_Speaker(void)
 unsigned char AW87318_Audio_OFF(void)
 {
 	AW87318_OFF();
+// LCSH MOD @duanlongfei 20170320
+#ifdef SPEAKER_HEADSET_ONLY_ONE_USE
 	Sgm3718_Switch_Off();
+#endif
 	return 0;
 }
 
