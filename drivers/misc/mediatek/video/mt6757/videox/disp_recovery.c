@@ -553,6 +553,9 @@ static int primary_display_check_recovery_worker_kthread(void *data)
 }
 
 
+extern unsigned int esd_backlight_level;
+ extern int primary_display_esd_setbacklight(unsigned int level);
+
 /* ESD RECOVERY */
 int primary_display_esd_recovery(void)
 {
@@ -658,6 +661,14 @@ done:
 	DISPCHECK("[ESD]ESD recovery end\n");
 	MMProfileLogEx(ddp_mmp_get_events()->esd_recovery_t, MMProfileFlagEnd, 0, 0);
 	dprec_logger_done(DPREC_LOGGER_ESD_RECOVERY, 0, 0);
+
+	DISPERR("[ESD]lcm force backlight set to %d, line=%d\n", esd_backlight_level, __LINE__);
+     mdelay(10);
+	if(esd_backlight_level == 0)
+	{
+		esd_backlight_level = 128;
+	}
+	primary_display_esd_setbacklight(esd_backlight_level);
 	return ret;
 }
 
