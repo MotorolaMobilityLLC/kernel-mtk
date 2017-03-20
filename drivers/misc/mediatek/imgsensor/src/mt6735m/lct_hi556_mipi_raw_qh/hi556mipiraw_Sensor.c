@@ -37,21 +37,18 @@
 #include <asm/atomic.h>
 //#include <asm/system.h>
 //#include <linux/xlog.h>
-
 #include "kd_camera_hw.h"
 #include "kd_imgsensor.h"
 #include "kd_imgsensor_define.h"
 #include "kd_imgsensor_errcode.h"
-
 #include "hi556mipiraw_Sensor.h"
-
-
 /*===FEATURE SWITH===*/
  // #define FPTPDAFSUPPORT   //for pdaf switch
  // #define FANPENGTAO   //for debug log
  #define LOG_INF LOG_INF_NEW
  //#define NONCONTINUEMODE
 /*===FEATURE SWITH===*/
+
 
 /****************************Modify Following Strings for Debug****************************/
 #define PFX "hi556"
@@ -60,8 +57,15 @@
 #define LOG_1 LOG_INF("hi556,MIPI 2LANE\n")
 #define SENSORDB LOG_INF
 /****************************   Modify end    *******************************************/
+//#define HI556_OTP_FUNCTION
+
+
+
 
 static DEFINE_SPINLOCK(imgsensor_drv_lock);
+
+
+
 
 static imgsensor_info_struct imgsensor_info = { 
 	.sensor_id = HI556_SENSOR_ID,		//Sensor ID Value: 0x30C8//record sensor id defined in Kd_imgsensor.h
@@ -250,8 +254,8 @@ static imgsensor_info_struct imgsensor_info = {
 		.max_framerate = 300,	
 	},
 
-	.margin = 4,			//sensor framelength & shutter margin
-	.min_shutter = 4,		//min shutter
+	.margin = 6,			//sensor framelength & shutter margin
+	.min_shutter = 6,		//min shutter
 	.max_frame_length = 0x7FFF,//REG0x0202 <=REG0x0340-5//max framelength by sensor register's limitation
 	.ae_shut_delay_frame = 0,	//shutter delay frame for AE cycle, 2 frame with ispGain_delay-shut_delay=2-0=2
 	.ae_sensor_gain_delay_frame = 0,//sensor gain delay frame for AE cycle,2 frame with ispGain_delay-sensor_gain_delay=2-0=2
@@ -275,7 +279,7 @@ static imgsensor_info_struct imgsensor_info = {
 	.sensor_interface_type = SENSOR_INTERFACE_TYPE_MIPI,//sensor_interface_type
     .mipi_sensor_type = MIPI_OPHY_NCSI2, //0,MIPI_OPHY_NCSI2;  1,MIPI_OPHY_CSI2
     .mipi_settle_delay_mode = 1,//0,MIPI_SETTLEDELAY_AUTO; 1,MIPI_SETTLEDELAY_MANNUAL
-	.sensor_output_dataformat = SENSOR_OUTPUT_FORMAT_RAW_Gb,//sensor output first pixel color
+	.sensor_output_dataformat = SENSOR_OUTPUT_FORMAT_RAW_Gr,//sensor output first pixel color
 	.mclk = 24,//mclk value, suggest 24 or 26 for 24Mhz or 26Mhz
 	.mipi_lane_num = SENSOR_MIPI_2_LANE,//mipi lane num
 	.i2c_addr_table = {0x40,0x50,0xff},//record sensor support all write id addr, only supprt 4must end with 0xff
@@ -284,7 +288,7 @@ static imgsensor_info_struct imgsensor_info = {
 
 
 static imgsensor_struct imgsensor = {
-	.mirror = IMAGE_NORMAL,				//mirrorflip information
+	.mirror = IMAGE_V_MIRROR,				//mirrorflip information
 	.sensor_mode = IMGSENSOR_MODE_INIT, //IMGSENSOR_MODE enum value,record current sensor mode,such as: INIT, Preview, Capture, Video,High Speed Video, Slim Video
 	.shutter = 0x200,					//current shutter
 	.gain = 0x200,						//current gain
@@ -309,6 +313,7 @@ static SENSOR_WINSIZE_INFO_STRUCT imgsensor_winsize_info[5] =
  { 2592, 1944,	  0,  	0, 2592, 1944, 1296,  972,   0,	0,  640,  480, 	 0, 0,  640,  480}, // hight speed video
  { 2592, 1944,	  0,  	0, 2592, 1944, 1296,  972,   0,	0, 1296,  972, 	 0, 0, 1296,  972}, // slim
 };
+
 
 #if 0
 static kal_uint16 read_cmos_sensor_byte(kal_uint16 addr)
@@ -617,6 +622,204 @@ static void set_mirror_flip(kal_uint8 image_mirror)
 	}
 
 }
+
+#endif
+//#ifdef HI556_OTP_FUNCTION
+#if 0
+struct HI556_otp_struct 
+{
+	int info_Flag;	//bit[7]:info, bit[6]:wb
+	int info_data[13];
+	int WB_FLAG;
+	int wb_data[8];
+	int RG_ratio_unit;
+	int BG_ratio_unit;
+};
+
+struct HI556_otp_struct HI556_otp;
+
+
+void HI556_OTPSetting(void)
+{	
+	LOG_INF("HI556OTPSetting begin:\n ");
+	write_cmos_sensor_byte(0x0A02, 0x01); //fast sleep On
+	write_cmos_sensor_byte(0x0A00, 0x00); //sleep On
+	mDELAY(10);
+	write_cmos_sensor_byte(0x0F02, 0x00); //pll disable
+	write_cmos_sensor_byte(0x011A, 0x01); //CP TRI_H
+	write_cmos_sensor_byte(0x011B, 0x09); //IPGM TRIM_H
+	write_cmos_sensor_byte(0x0D04, 0x01); //Fsync Output enable
+	write_cmos_sensor_byte(0x0D00, 0x07); //Fsync Output Drivability
+	write_cmos_sensor_byte(0x003E, 0x10); //OTP R/W
+	write_cmos_sensor_byte(0x0a00, 0x01); //sleep off
+	LOG_INF("HI556OTPSetting exit :\n ");
+}
+
+static kal_uint16 OTP_read_cmos_sensor(kal_uint16 otp_addr)
+{
+    kal_uint16 data;
+
+    write_cmos_sensor_byte(0x10a, (otp_addr & 0xFF00) >> 8 ); //start address H        
+    write_cmos_sensor_byte(0x10b, otp_addr & 0xFF); //start address L
+    write_cmos_sensor_byte(0x102, 0x01); //single read
+    	//mDELAY(10);
+    data = read_cmos_sensor_byte(0x108); //OTP data read
+	return data;
+}
+
+static int HI556_otp_read(void)
+{
+	int i = 0, info_start_addr = 0, wb_start_addr = 0;
+	int  checksum = 0 ,info_check = 0, wb_check = 0;
+	LOG_INF("HI556 HI556_otp_read \n");
+	
+//module info read 
+	HI556_otp.info_Flag = OTP_read_cmos_sensor(0x0401);
+	if (HI556_otp.info_Flag == 0x01)	//Base Info Group1 valid
+		info_start_addr = 0x0402;
+	else if (HI556_otp.info_Flag == 0x13)	//Base Info Group2 valid
+		info_start_addr = 0x040f;
+	else if (HI556_otp.info_Flag == 0x37)	//Base Info Group3 valid
+		info_start_addr = 0x041c;
+	else
+		info_start_addr = 0;
+	
+	LOG_INF("HI556 info_start_addr = 0x%x \n", info_start_addr);
+	LOG_INF("HI556 info_Flag = 0x%x \n", HI556_otp.info_Flag);
+
+	if (info_start_addr != 0) {
+		write_cmos_sensor_byte(0x10a, (info_start_addr >> 8) & 0xff); //start addr H
+		write_cmos_sensor_byte(0x10b, info_start_addr & 0xff);	//start addr L
+		write_cmos_sensor_byte(0x102, 0x01);	//single mode
+		for (i = 0; i < 13; i++) {
+			HI556_otp.info_data[i] = read_cmos_sensor_byte(0x108); //otp data read
+			LOG_INF("HI556 info_data[%d] = 0x%x  ", i, HI556_otp.info_data[i]);
+		}
+	}
+
+	for(i=0;i<11;i++)
+	{
+	checksum += HI556_otp.info_data[i];
+	}
+	info_check = ((HI556_otp.info_data[12] << 8) | HI556_otp.info_data[11])&0xffff;
+	if (checksum == info_check)
+		{
+		LOG_INF("HI556_Sensor: Module information checksum PASS\n ");
+		}
+	else
+		{
+		LOG_INF("HI556_Sensor: Module information checksum Fail\n ");
+		}
+	LOG_INF("HI556 checksum = 0x%x ,info_check = 0x%x \n", checksum,info_check);
+
+//wb read	
+	HI556_otp.WB_FLAG = OTP_read_cmos_sensor(0x0429);
+	if (HI556_otp.WB_FLAG == 0x01)
+		wb_start_addr = 0x042a;
+	else if (HI556_otp.WB_FLAG == 0x13)
+		wb_start_addr = 0x0432;
+	else if (HI556_otp.WB_FLAG == 0x37)
+		wb_start_addr = 0x043a;
+	else
+		LOG_INF("HI556 WB data invalid \n");
+
+LOG_INF("HI556 WB_FLAG = 0x%x \n", HI556_otp.WB_FLAG);
+LOG_INF("HI556 wb_start_addr = 0x%x \n", wb_start_addr);
+
+	if (wb_start_addr != 0) {
+		write_cmos_sensor_byte(0x10a, (wb_start_addr >> 8) & 0xff);	//start addr H
+		write_cmos_sensor_byte(0x10b, wb_start_addr & 0xff);	//start addr L
+		write_cmos_sensor_byte(0x102, 0x01);	//single mode
+		for (i = 0; i < 8; i++) {
+			HI556_otp.wb_data[i] = read_cmos_sensor_byte(0x108);	//otp data read
+			LOG_INF("HI843 wb_data[%d] = 0x%x  ", i, HI556_otp.wb_data[i]);
+		}
+	}
+	
+	checksum = 0;
+	for(i=0;i<6;i++)
+	{
+	checksum += HI556_otp.wb_data[i];
+	}
+	
+	wb_check = ((HI556_otp.wb_data[7] << 8) | HI556_otp.wb_data[6])&0xffff;
+
+	if (checksum == wb_check)
+			{
+			LOG_INF("HI556_Sensor: WB checksum PASS\n ");
+			}
+	else
+			{
+			LOG_INF("HI556_Sensor: WB checksum Fail\n ");
+			}
+	LOG_INF("HI556 checksum = 0x%x ,wb_check = 0x%x \n", checksum,wb_check);
+
+
+	write_cmos_sensor_byte(0x0a00, 0x00); //sleep On
+	mdelay(10);
+    write_cmos_sensor_byte(0x003e, 0x00); //OTP mode off
+    write_cmos_sensor_byte(0x0a00, 0x01); //sleep Off
+
+	return HI556_otp.WB_FLAG;
+}
+
+static int HI556_otp_apply(void)
+{
+	int R_gain = 1, G_gain = 1, B_gain = 1;
+	int RG_ratio_golden = 0; //module house provide
+	int BG_ratio_golden = 0; //module house provide
+	LOG_INF("HI556 HI556_otp_apply \n");
+
+	HI556_otp.RG_ratio_unit = ((HI556_otp.wb_data[0] << 8) | HI556_otp.wb_data[1]) & 0x03FF;
+	HI556_otp.BG_ratio_unit = ((HI556_otp.wb_data[2] << 8) | HI556_otp.wb_data[3]) & 0x03FF;
+
+
+	R_gain = (0x100 * RG_ratio_golden / HI556_otp.RG_ratio_unit);
+	B_gain = (0x100 * BG_ratio_golden / HI556_otp.BG_ratio_unit);
+	G_gain = 0x100;
+
+
+	if (R_gain < B_gain) {
+		if(R_gain < 0x100) {
+			B_gain =0x100 *  B_gain / R_gain;
+			G_gain =0x100 *  G_gain / R_gain;
+			R_gain = 0x100;
+		}
+	} else {
+		if (B_gain < 0x100) {
+			R_gain = 0x100 * R_gain / B_gain;
+			G_gain = 0x100 * G_gain / B_gain;
+			B_gain = 0x100;
+		}
+	}
+	//R_gain = 0x11111111;
+
+
+    
+LOG_INF("HI556 Before apply otp G_gain = 0x%x, R_gain = 0x%x, B_gain = 0x%x \n",\
+	(read_cmos_sensor(0x0078) << 8) | (read_cmos_sensor(0x0079) & 0xFFFF), (read_cmos_sensor(0x007c) << 8) | (read_cmos_sensor(0x007d) & 0xFFFF), (read_cmos_sensor(0x007e) << 8) | (read_cmos_sensor(0x007f) & 0xFFFF));
+	write_cmos_sensor(0x0078, G_gain);
+	write_cmos_sensor(0x007a, G_gain);
+	write_cmos_sensor(0x007c, R_gain);
+	write_cmos_sensor(0x007e, B_gain);
+LOG_INF("HI556 after apply otp G_gain = 0x%x, R_gain = 0x%x, B_gain = 0x%x \n",\
+	(read_cmos_sensor(0x0078) << 8) | (read_cmos_sensor(0x0079) & 0xFFFF), (read_cmos_sensor(0x007c) << 8) | (read_cmos_sensor(0x007d) & 0xFFFF), (read_cmos_sensor(0x007e) << 8) | (read_cmos_sensor(0x007f) & 0xFFFF));
+
+	return HI556_otp.WB_FLAG;
+}
+
+
+static void HI556_otp_cali(void)
+{
+	LOG_INF("HI556 otp_cali \n");
+	
+		HI556_OTPSetting();
+
+        HI556_otp_read();
+    
+        HI556_otp_apply();
+
+}
 #endif
 /*************************************************************************
 * FUNCTION
@@ -640,11 +843,146 @@ static void night_mode(kal_bool enable)
 }	/*	night_mode	*/
 static void sensor_init(void)
 {
-	write_cmos_sensor(0x0a00, 0x0000);
-	write_cmos_sensor(0x0e00, 0x0102);
-	write_cmos_sensor(0x0e02, 0x0102);
-	write_cmos_sensor(0x0e0c, 0x0100);
-	write_cmos_sensor(0x2000, 0xffff);
+	//Sensor Information////////////////////////////
+	//Sensor	  : Hi-556                            
+	//Date		  : 2017-02-20                        
+	//AP chipset      : MTK                                       
+	//MCLK	          : 24MHz                   
+	//MIPI            : 2 Lane                                   
+	//Pixel order 	  : B 1st            
+	//BLC offset	  : 64code                       
+	//Setting Ver.    : v06                         
+	////////////////////////////////////////////////
+
+	write_cmos_sensor(0x0a00, 0x0000); //stream off
+	write_cmos_sensor(0x0e00, 0x0102); 
+	write_cmos_sensor(0x0e02, 0x0102); 
+	write_cmos_sensor(0x0e0c, 0x0100); 
+	write_cmos_sensor(0x2000, 0x7400);
+	write_cmos_sensor(0x2002, 0x001c);
+	write_cmos_sensor(0x2004, 0x0242);
+	write_cmos_sensor(0x2006, 0x0942);
+	write_cmos_sensor(0x2008, 0x7007);
+	write_cmos_sensor(0x200a, 0x0fd9);
+	write_cmos_sensor(0x200c, 0x0259);
+	write_cmos_sensor(0x200e, 0x7008);
+	write_cmos_sensor(0x2010, 0x160e);
+	write_cmos_sensor(0x2012, 0x0047);
+	write_cmos_sensor(0x2014, 0x2118);
+	write_cmos_sensor(0x2016, 0x0041);
+	write_cmos_sensor(0x2018, 0x00d8);
+	write_cmos_sensor(0x201a, 0x0145);
+	write_cmos_sensor(0x201c, 0x0006);
+	write_cmos_sensor(0x201e, 0x0181);
+	write_cmos_sensor(0x2020, 0x13cc);
+	write_cmos_sensor(0x2022, 0x2057);
+	write_cmos_sensor(0x2024, 0x7001);
+	write_cmos_sensor(0x2026, 0x0fca);
+	write_cmos_sensor(0x2028, 0x00cb);
+	write_cmos_sensor(0x202a, 0x009f);
+	write_cmos_sensor(0x202c, 0x7002);
+	write_cmos_sensor(0x202e, 0x13cc);
+	write_cmos_sensor(0x2030, 0x019b);
+	write_cmos_sensor(0x2032, 0x014d);
+	write_cmos_sensor(0x2034, 0x2987);
+	write_cmos_sensor(0x2036, 0x2766);
+	write_cmos_sensor(0x2038, 0x0020);
+	write_cmos_sensor(0x203a, 0x2060);
+	write_cmos_sensor(0x203c, 0x0e5d);
+	write_cmos_sensor(0x203e, 0x181d);
+	write_cmos_sensor(0x2040, 0x2066);
+	write_cmos_sensor(0x2042, 0x20c4);
+	write_cmos_sensor(0x2044, 0x5000);
+	write_cmos_sensor(0x2046, 0x0005);
+	write_cmos_sensor(0x2048, 0x0000);
+	write_cmos_sensor(0x204a, 0x01db);
+	write_cmos_sensor(0x204c, 0x025a);
+	write_cmos_sensor(0x204e, 0x00c0);
+	write_cmos_sensor(0x2050, 0x0005);
+	write_cmos_sensor(0x2052, 0x0006);
+	write_cmos_sensor(0x2054, 0x0ad9);
+	write_cmos_sensor(0x2056, 0x0259);
+	write_cmos_sensor(0x2058, 0x0618);
+	write_cmos_sensor(0x205a, 0x0258);
+	write_cmos_sensor(0x205c, 0x2266);
+	write_cmos_sensor(0x205e, 0x20c8);
+	write_cmos_sensor(0x2060, 0x2060);
+	write_cmos_sensor(0x2062, 0x707b);
+	write_cmos_sensor(0x2064, 0x0fdd);
+	write_cmos_sensor(0x2066, 0x81b8);
+	write_cmos_sensor(0x2068, 0x5040);
+	write_cmos_sensor(0x206a, 0x0020);
+	write_cmos_sensor(0x206c, 0x5060);
+	write_cmos_sensor(0x206e, 0x3143);
+	write_cmos_sensor(0x2070, 0x5081);
+	write_cmos_sensor(0x2072, 0x025c);
+	write_cmos_sensor(0x2074, 0x7800);
+	write_cmos_sensor(0x2076, 0x7400);
+	write_cmos_sensor(0x2078, 0x001c);
+	write_cmos_sensor(0x207a, 0x0242);
+	write_cmos_sensor(0x207c, 0x0942);
+	write_cmos_sensor(0x207e, 0x0bd9);
+	write_cmos_sensor(0x2080, 0x0259);
+	write_cmos_sensor(0x2082, 0x7008);
+	write_cmos_sensor(0x2084, 0x160e);
+	write_cmos_sensor(0x2086, 0x0047);
+	write_cmos_sensor(0x2088, 0x2118);
+	write_cmos_sensor(0x208a, 0x0041);
+	write_cmos_sensor(0x208c, 0x00d8);
+	write_cmos_sensor(0x208e, 0x0145);
+	write_cmos_sensor(0x2090, 0x0006);
+	write_cmos_sensor(0x2092, 0x0181);
+	write_cmos_sensor(0x2094, 0x13cc);
+	write_cmos_sensor(0x2096, 0x2057);
+	write_cmos_sensor(0x2098, 0x7001);
+	write_cmos_sensor(0x209a, 0x0fca);
+	write_cmos_sensor(0x209c, 0x00cb);
+	write_cmos_sensor(0x209e, 0x009f);
+	write_cmos_sensor(0x20a0, 0x7002);
+	write_cmos_sensor(0x20a2, 0x13cc);
+	write_cmos_sensor(0x20a4, 0x019b);
+	write_cmos_sensor(0x20a6, 0x014d);
+	write_cmos_sensor(0x20a8, 0x2987);
+	write_cmos_sensor(0x20aa, 0x2766);
+	write_cmos_sensor(0x20ac, 0x0020);
+	write_cmos_sensor(0x20ae, 0x2060);
+	write_cmos_sensor(0x20b0, 0x0e5d);
+	write_cmos_sensor(0x20b2, 0x181d);
+	write_cmos_sensor(0x20b4, 0x2066);
+	write_cmos_sensor(0x20b6, 0x20c4);
+	write_cmos_sensor(0x20b8, 0x50a0);
+	write_cmos_sensor(0x20ba, 0x0005);
+	write_cmos_sensor(0x20bc, 0x0000);
+	write_cmos_sensor(0x20be, 0x01db);
+	write_cmos_sensor(0x20c0, 0x025a);
+	write_cmos_sensor(0x20c2, 0x00c0);
+	write_cmos_sensor(0x20c4, 0x0005);
+	write_cmos_sensor(0x20c6, 0x0006);
+	write_cmos_sensor(0x20c8, 0x0ad9);
+	write_cmos_sensor(0x20ca, 0x0259);
+	write_cmos_sensor(0x20cc, 0x0618);
+	write_cmos_sensor(0x20ce, 0x0258);
+	write_cmos_sensor(0x20d0, 0x2266);
+	write_cmos_sensor(0x20d2, 0x20c8);
+	write_cmos_sensor(0x20d4, 0x2060);
+	write_cmos_sensor(0x20d6, 0x707b);
+	write_cmos_sensor(0x20d8, 0x0fdd);
+	write_cmos_sensor(0x20da, 0x86b8);
+	write_cmos_sensor(0x20dc, 0x50e0);
+	write_cmos_sensor(0x20de, 0x0020);
+	write_cmos_sensor(0x20e0, 0x5100);
+	write_cmos_sensor(0x20e2, 0x3143);
+	write_cmos_sensor(0x20e4, 0x5121);
+	write_cmos_sensor(0x20e6, 0x7800);
+	write_cmos_sensor(0x20e8, 0x3140);
+	write_cmos_sensor(0x20ea, 0x01c4);
+	write_cmos_sensor(0x20ec, 0x01c1);
+	write_cmos_sensor(0x20ee, 0x01c0);
+	write_cmos_sensor(0x20f0, 0x01c4);
+	write_cmos_sensor(0x20f2, 0x2700);
+	write_cmos_sensor(0x20f4, 0x3d40);
+	write_cmos_sensor(0x20f6, 0x7800);
+	write_cmos_sensor(0x20f8, 0xffff);
 	write_cmos_sensor(0x27fe, 0xe000);
 	write_cmos_sensor(0x3000, 0x60f8);
 	write_cmos_sensor(0x3002, 0x187f);
@@ -666,213 +1004,85 @@ static void sensor_init(void)
 	write_cmos_sensor(0x3022, 0x140f);
 	write_cmos_sensor(0x3024, 0x0040);
 	write_cmos_sensor(0x3026, 0x000f);
-	
-	write_cmos_sensor(0x0b00, 0x0000);
-	write_cmos_sensor(0x0b02, 0x0045);
-	write_cmos_sensor(0x0b04, 0xb405);
-	write_cmos_sensor(0x0b06, 0xc403);
-	write_cmos_sensor(0x0b08, 0x0081);
-	write_cmos_sensor(0x0b0a, 0x8252);
-	write_cmos_sensor(0x0b0c, 0xf814);
-	write_cmos_sensor(0x0b0e, 0xc618);
-	write_cmos_sensor(0x0b10, 0xa828);
-	write_cmos_sensor(0x0b12, 0x002c);
-	write_cmos_sensor(0x0b14, 0x4068);
-	write_cmos_sensor(0x0b16, 0x0000);
-	write_cmos_sensor(0x0f30, 0x6e25);
-	write_cmos_sensor(0x0f32, 0x7067);
-	write_cmos_sensor(0x0954, 0x0009);
-	write_cmos_sensor(0x0956, 0x0000);
-	write_cmos_sensor(0x0958, 0xbb80);
-	write_cmos_sensor(0x095a, 0x0000);
-	write_cmos_sensor(0x0c00, 0x1110);
-	write_cmos_sensor(0x0c02, 0x0011);
-	write_cmos_sensor(0x0c04, 0x0000);
-	write_cmos_sensor(0x0c06, 0x0200);
-	write_cmos_sensor(0x0c10, 0x0040);
-	write_cmos_sensor(0x0c12, 0x0040);
-	write_cmos_sensor(0x0c14, 0x0040);
-	write_cmos_sensor(0x0c16, 0x0040);
-	write_cmos_sensor(0x0a10, 0x4000);
-	write_cmos_sensor(0x006c, 0x0000);
-	write_cmos_sensor(0x005e, 0x0200);
-	write_cmos_sensor(0x000e, 0x0200);
-	write_cmos_sensor(0x0e0a, 0x0001);
-	write_cmos_sensor(0x004a, 0x0100);
-	write_cmos_sensor(0x004c, 0x0000);
-	write_cmos_sensor(0x000c, 0x0022);
-	write_cmos_sensor(0x0008, 0x0b00);
-	write_cmos_sensor(0x005a, 0x0202);
-	write_cmos_sensor(0x0012, 0x000e);
-	write_cmos_sensor(0x0018, 0x0a31);
-	write_cmos_sensor(0x0022, 0x0008);
-	write_cmos_sensor(0x0028, 0x0017);
-	write_cmos_sensor(0x0024, 0x0028);
-	write_cmos_sensor(0x002a, 0x002d);
-	write_cmos_sensor(0x0026, 0x0030);
-	write_cmos_sensor(0x002c, 0x07c7);
-	write_cmos_sensor(0x002e, 0x1111);
-	write_cmos_sensor(0x0030, 0x1111);
-	write_cmos_sensor(0x0032, 0x1111);
-	write_cmos_sensor(0x0006, 0x07bc);
-	write_cmos_sensor(0x0a22, 0x0000);
-	write_cmos_sensor(0x0a12, 0x0a20);
-	write_cmos_sensor(0x0a14, 0x0798);
-	write_cmos_sensor(0x003e, 0x0000);
-	write_cmos_sensor(0x0074, 0x080e);
-	write_cmos_sensor(0x0070, 0x0407);
-	write_cmos_sensor(0x0002, 0x0000);
-	write_cmos_sensor(0x0a02, 0x0100);
-	write_cmos_sensor(0x0a24, 0x0100);
-	write_cmos_sensor(0x0046, 0x0000);
-	write_cmos_sensor(0x0076, 0x0000);
-	write_cmos_sensor(0x0060, 0x0000);
-	write_cmos_sensor(0x0062, 0x0530);
-	write_cmos_sensor(0x0064, 0x0500);
-	write_cmos_sensor(0x0066, 0x0530);
-	write_cmos_sensor(0x0068, 0x0500);
-	write_cmos_sensor(0x0122, 0x0300);
-	write_cmos_sensor(0x015a, 0xff08);
-	write_cmos_sensor(0x0804, 0x0200);
-	write_cmos_sensor(0x005c, 0x0100);
-	write_cmos_sensor(0x0a1a, 0x0800);
 
-}	/*	sensor_init  */
-
+	write_cmos_sensor(0x0b00, 0x0000); 
+	write_cmos_sensor(0x0b02, 0x0045); 
+	write_cmos_sensor(0x0b04, 0xb405); 
+	write_cmos_sensor(0x0b06, 0xc403); 
+	write_cmos_sensor(0x0b08, 0x0081); 
+	write_cmos_sensor(0x0b0a, 0x8252); 
+	write_cmos_sensor(0x0b0c, 0xf814); 
+	write_cmos_sensor(0x0b0e, 0xc618); 
+	write_cmos_sensor(0x0b10, 0xa828); 
+	write_cmos_sensor(0x0b12, 0x004c); 
+	write_cmos_sensor(0x0b14, 0x4068); 
+	write_cmos_sensor(0x0b16, 0x0000); 
+	write_cmos_sensor(0x0f30, 0x6e25); //pll                                   
+	write_cmos_sensor(0x0f32, 0x7067); //pll                                   
+	write_cmos_sensor(0x0954, 0x0009);                                         
+	write_cmos_sensor(0x0956, 0x1100);                                         
+	write_cmos_sensor(0x0958, 0xcc80);                                         
+	write_cmos_sensor(0x095a, 0x0000);                                         
+	write_cmos_sensor(0x0c00, 0x1110);                                         
+	write_cmos_sensor(0x0c02, 0x0011);                                         
+	write_cmos_sensor(0x0c04, 0x0000);                                         
+	write_cmos_sensor(0x0c06, 0x0200);                                         
+	write_cmos_sensor(0x0c10, 0x0040); //OB                                    
+	write_cmos_sensor(0x0c12, 0x0040); //OB                                    
+	write_cmos_sensor(0x0c14, 0x0040); //OB                                    
+	write_cmos_sensor(0x0c16, 0x0040); //OB                                    
+	write_cmos_sensor(0x0a10, 0x4000); //pedestal_data                         
+	write_cmos_sensor(0x3068, 0xf800);                                         
+	write_cmos_sensor(0x306a, 0xf876);                                         
+	write_cmos_sensor(0x006c, 0x0000);                                         
+	write_cmos_sensor(0x005e, 0x0200);                                         
+	write_cmos_sensor(0x000e, 0x0200); //image orient                          
+	write_cmos_sensor(0x0e0a, 0x0001);                                         
+	write_cmos_sensor(0x004a, 0x0100);                                         
+	write_cmos_sensor(0x004c, 0x0000);                                         
+	write_cmos_sensor(0x004e, 0x0100);                                         
+	write_cmos_sensor(0x000c, 0x0022);                                         
+	write_cmos_sensor(0x0008, 0x0b00); //line length pck 2816                  
+	write_cmos_sensor(0x005a, 0x0202);                                         
+	write_cmos_sensor(0x0012, 0x000e);                                         
+	write_cmos_sensor(0x0018, 0x0a31);                                         
+	write_cmos_sensor(0x0022, 0x0008);                                         
+	write_cmos_sensor(0x0028, 0x0017);                                         
+	write_cmos_sensor(0x0024, 0x0028);                                         
+	write_cmos_sensor(0x002a, 0x002d);                                         
+	write_cmos_sensor(0x0026, 0x0030);                                         
+	write_cmos_sensor(0x002c, 0x07c7);                                         
+	write_cmos_sensor(0x002e, 0x1111);                                         
+	write_cmos_sensor(0x0030, 0x1111);                                         
+	write_cmos_sensor(0x0032, 0x1111);                                         
+	write_cmos_sensor(0x0006, 0x0801); //frame length lines min 0x07BC         
+	write_cmos_sensor(0x0a22, 0x0000);                                         
+	write_cmos_sensor(0x0a12, 0x0a20); //x output size 2592                    
+	write_cmos_sensor(0x0a14, 0x0798); //y output size 1944                    
+	write_cmos_sensor(0x003e, 0x0000);                                         
+	write_cmos_sensor(0x0074, 0x07ff); //coarse integ time                     
+	write_cmos_sensor(0x0070, 0x0411);                                         
+	write_cmos_sensor(0x0002, 0x0000);                                         
+	write_cmos_sensor(0x0a02, 0x0100);                                         
+	write_cmos_sensor(0x0a24, 0x0100);                                         
+	write_cmos_sensor(0x0076, 0x0000); //analog gain 1x                        
+	write_cmos_sensor(0x0060, 0x0000);                                         
+	write_cmos_sensor(0x0062, 0x0530);                                         
+	write_cmos_sensor(0x0064, 0x0500);                                         
+	write_cmos_sensor(0x0066, 0x0530);                                         
+	write_cmos_sensor(0x0068, 0x0500);                                         
+	write_cmos_sensor(0x0122, 0x0300);                                         
+	write_cmos_sensor(0x015a, 0xff08);                                         
+	write_cmos_sensor(0x0804, 0x0200);                                         
+	write_cmos_sensor(0x005c, 0x0102);                                         
+	write_cmos_sensor(0x0a1a, 0x0800); //DGain pedestal enable
+	write_cmos_sensor(0x0a00, 0x0100); //stream off    
+}
 
 static void preview_setting(void)
 {
 	LOG_INF("E\n");
 	
-	//Sensor Information////////////////////////////
-	//Sensor	  : hi-556
-	//Date		  : 2016-10-19
-	//Customer		  : MTK_validation
-	//Image size	  : 1296x972
-	//MCLK		  : 24MHz
-	//MIPI speed(Mbps): 440Mbps x 2Lane
-	//Frame Length	  : 2049
-	//Line Length	  : 2816
-	//Max Fps	  : 30.5fps
-	//Pixel order	  : Green 1st (=GB)
-	//X/Y-flip	  : X-flip
-	//BLC offset	  : 64code
-	////////////////////////////////////////////////
-
-	write_cmos_sensor(0x0a00, 0x0000);
-	write_cmos_sensor(0x0b0a, 0x8259);
-	write_cmos_sensor(0x0f30, 0x6e25);
-	write_cmos_sensor(0x0f32, 0x7167);
-	write_cmos_sensor(0x004a, 0x0100);
-	write_cmos_sensor(0x004c, 0x0000);
-	write_cmos_sensor(0x000c, 0x0122);
-	write_cmos_sensor(0x0008, 0x0b00);
-	write_cmos_sensor(0x005a, 0x0404);
-	write_cmos_sensor(0x0012, 0x000c);
-	write_cmos_sensor(0x0018, 0x0a33);
-	write_cmos_sensor(0x0022, 0x0008);
-	write_cmos_sensor(0x0028, 0x0017);
-	write_cmos_sensor(0x0024, 0x0022);
-	write_cmos_sensor(0x002a, 0x002b);
-	write_cmos_sensor(0x0026, 0x0030);
-	write_cmos_sensor(0x002c, 0x07c7);
-	write_cmos_sensor(0x002e, 0x3311);
-	write_cmos_sensor(0x0030, 0x3311);
-	write_cmos_sensor(0x0032, 0x3311);
-	write_cmos_sensor(0x0006, 0x0801);
-	write_cmos_sensor(0x0a22, 0x0000);
-	write_cmos_sensor(0x0a12, 0x0510);
-	write_cmos_sensor(0x0a14, 0x03cc);
-	write_cmos_sensor(0x003e, 0x0000);
-	write_cmos_sensor(0x0074, 0x07ff);
-	write_cmos_sensor(0x0070, 0x0411);
-	write_cmos_sensor(0x0804, 0x0200);
-	write_cmos_sensor(0x0a04, 0x016a);
-	write_cmos_sensor(0x090e, 0x0010);
-	write_cmos_sensor(0x090c, 0x09c0);
-	//===============================================
-	//			   mipi 2 lane 440Mbps				 
-	//===============================================
-	write_cmos_sensor(0x0902, 0x4319);
-	write_cmos_sensor(0x0914, 0xc106);
-	write_cmos_sensor(0x0916, 0x040e);
-	write_cmos_sensor(0x0918, 0x0304);
-	write_cmos_sensor(0x091a, 0x0709);
-	write_cmos_sensor(0x091c, 0x0e06);
-	write_cmos_sensor(0x091e, 0x0300);
-	write_cmos_sensor(0x0a00, 0x0100);
-
-
-
-}	/*	preview_setting  */
-
-static void capture_setting(kal_uint16 currefps)
-{
-	LOG_INF("E! currefps:%d\n",currefps);
-	if (currefps == 300) {
-		
-	//Sensor Information////////////////////////////
-	//Sensor	  : Hi-556
-	//Date		  : 2016-10-19
-	//Customer		  : MTK_validation
-	//Image size	  : 2592x1944
-	//MCLK		  : 24MHz
-	//MIPI speed(Mbps): 880Mbps x 2Lane
-	//Frame Length	  : 2049
-	//Line Length	  : 2816
-	//Max Fps	  : 30.5fps
-	//Pixel order	  : Green 1st (=GB)
-	//X/Y-flip	  : X-flip
-	//BLC offset	  : 64code
-	////////////////////////////////////////////////
-
-	write_cmos_sensor(0x0a00, 0x0000);
-	write_cmos_sensor(0x0b0a, 0x8252);
-	write_cmos_sensor(0x0f30, 0x6e25);
-	write_cmos_sensor(0x0f32, 0x7067);
-	write_cmos_sensor(0x004a, 0x0100);
-	write_cmos_sensor(0x004c, 0x0000);
-	write_cmos_sensor(0x000c, 0x0022);
-	write_cmos_sensor(0x0008, 0x0b00);
-	write_cmos_sensor(0x005a, 0x0202);
-	write_cmos_sensor(0x0012, 0x000e);
-	write_cmos_sensor(0x0018, 0x0a31);
-	write_cmos_sensor(0x0022, 0x0008);
-	write_cmos_sensor(0x0028, 0x0017);
-	write_cmos_sensor(0x0024, 0x0028);
-	write_cmos_sensor(0x002a, 0x002d);
-	write_cmos_sensor(0x0026, 0x0030);
-	write_cmos_sensor(0x002c, 0x07c7);
-	write_cmos_sensor(0x002e, 0x1111);
-	write_cmos_sensor(0x0030, 0x1111);
-	write_cmos_sensor(0x0032, 0x1111);
-	write_cmos_sensor(0x0006, 0x0801);
-	write_cmos_sensor(0x0a22, 0x0000);
-	write_cmos_sensor(0x0a12, 0x0a20);
-	write_cmos_sensor(0x0a14, 0x0798);
-	write_cmos_sensor(0x003e, 0x0000);
-	write_cmos_sensor(0x0074, 0x07ff);
-	write_cmos_sensor(0x0070, 0x0411);
-	write_cmos_sensor(0x0804, 0x0200);
-	write_cmos_sensor(0x0a04, 0x014a);
-	write_cmos_sensor(0x090c, 0x0fdc);
-	write_cmos_sensor(0x090e, 0x002d);
-	//===============================================
-	//			   mipi 2 lane 880Mbps				 
-	//===============================================
-	write_cmos_sensor(0x0902, 0x4319);
-	write_cmos_sensor(0x0914, 0xc10a);
-	write_cmos_sensor(0x0916, 0x071f);
-	write_cmos_sensor(0x0918, 0x0408);
-	write_cmos_sensor(0x091a, 0x0c0d);
-	write_cmos_sensor(0x091c, 0x0f09);
-	write_cmos_sensor(0x091e, 0x0a00);
-	write_cmos_sensor(0x0a00, 0x0100);
-
-	}
-	//else if (currefps == 240) {}
-	else if (currefps == 150) {	
-
 	//Sensor Information////////////////////////////
 	//Sensor	  : Hi-556
 	//Date		  : 2016-10-19
@@ -889,56 +1099,57 @@ static void capture_setting(kal_uint16 currefps)
 	////////////////////////////////////////////////
 
 	write_cmos_sensor(0x0a00, 0x0000);
-	write_cmos_sensor(0x0b0a, 0x8252);
-	write_cmos_sensor(0x0f30, 0x6e25);
-	write_cmos_sensor(0x0f32, 0x7067);
-	write_cmos_sensor(0x004a, 0x0100);
-	write_cmos_sensor(0x004c, 0x0000);
-	write_cmos_sensor(0x000c, 0x0022);
-	write_cmos_sensor(0x0008, 0x0b00);
-	write_cmos_sensor(0x005a, 0x0202);
-	write_cmos_sensor(0x0012, 0x000e);
-	write_cmos_sensor(0x0018, 0x0a31);
-	write_cmos_sensor(0x0022, 0x0008);
-	write_cmos_sensor(0x0028, 0x0017);
-	write_cmos_sensor(0x0024, 0x0028);
-	write_cmos_sensor(0x002a, 0x002d);
-	write_cmos_sensor(0x0026, 0x0030);
-	write_cmos_sensor(0x002c, 0x07c7);
-	write_cmos_sensor(0x002e, 0x1111);
-	write_cmos_sensor(0x0030, 0x1111);
-	write_cmos_sensor(0x0032, 0x1111);
-	write_cmos_sensor(0x0006, 0x1046);
-	write_cmos_sensor(0x0a22, 0x0000);
-	write_cmos_sensor(0x0a12, 0x0a20);
-	write_cmos_sensor(0x0a14, 0x0798);
-	write_cmos_sensor(0x003e, 0x0000);
-	write_cmos_sensor(0x0074, 0x1044);
-	write_cmos_sensor(0x0070, 0x0411);
-	write_cmos_sensor(0x0804, 0x0200);
-	write_cmos_sensor(0x0a04, 0x014a);
-	write_cmos_sensor(0x090c, 0x0fdc);
-	write_cmos_sensor(0x090e, 0x002d);
-	//===============================================
-	//			   mipi 2 lane 880Mbps				 
-	//===============================================
-	write_cmos_sensor(0x0902, 0x4319);
-	write_cmos_sensor(0x0914, 0xc10a);
-	write_cmos_sensor(0x0916, 0x071f);
-	write_cmos_sensor(0x0918, 0x0408);
-	write_cmos_sensor(0x091a, 0x0c0d);
-	write_cmos_sensor(0x091c, 0x0f09);
-	write_cmos_sensor(0x091e, 0x0a00);
-	write_cmos_sensor(0x0a00, 0x0100);
+	write_cmos_sensor(0x0b0a, 0x8259);
+	write_cmos_sensor(0x0f30, 0x6e25); //pll                                  
+	write_cmos_sensor(0x0f32, 0x7167); //pll                                  
+	write_cmos_sensor(0x004a, 0x0100);                                        
+	write_cmos_sensor(0x004c, 0x0000);                                        
+	write_cmos_sensor(0x004e, 0x0000); //per-frame control off, on 0x0100     
+	write_cmos_sensor(0x000c, 0x0122);                                        
+	write_cmos_sensor(0x0008, 0x0b00); //line length pck 2816                 
+	write_cmos_sensor(0x005a, 0x0404);                                        
+	write_cmos_sensor(0x0012, 0x000c);                                        
+	write_cmos_sensor(0x0018, 0x0a33);                                        
+	write_cmos_sensor(0x0022, 0x0008);                                        
+	write_cmos_sensor(0x0028, 0x0017);                                        
+	write_cmos_sensor(0x0024, 0x0022);                                        
+	write_cmos_sensor(0x002a, 0x002b);                                        
+	write_cmos_sensor(0x0026, 0x0030);                                        
+	write_cmos_sensor(0x002c, 0x07c7);                                        
+	write_cmos_sensor(0x002e, 0x3311);                                        
+	write_cmos_sensor(0x0030, 0x3311);                                        
+	write_cmos_sensor(0x0032, 0x3311);                                        
+	write_cmos_sensor(0x0006, 0x0801); //frame length lines 2049              
+	write_cmos_sensor(0x0a22, 0x0000);                                        
+	write_cmos_sensor(0x0a12, 0x0510); //x output size 2592                   
+	write_cmos_sensor(0x0a14, 0x03cc); //y output size 1944                   
+	write_cmos_sensor(0x003e, 0x0000);                                        
+	write_cmos_sensor(0x0804, 0x0200);                                        
+	write_cmos_sensor(0x0a04, 0x016a); //isp_en                               
+	write_cmos_sensor(0x090e, 0x0010); //mipi_vblank_delay                    
+	write_cmos_sensor(0x090c, 0x09c0); //mipi_hblank_delay                    
+	write_cmos_sensor(0x0902, 0x4319); //mipi_tx_op_mode1, mipi_tx_op_mode2   
+	write_cmos_sensor(0x0914, 0xc106); //mipi_exit_seq, tlpx                  
+	write_cmos_sensor(0x0916, 0x040e); //tclk_prepare, tclk_zero              
+	write_cmos_sensor(0x0918, 0x0304); //tclk_pre, ths_prepare                
+	write_cmos_sensor(0x091a, 0x0709); //ths_zero, ths_trail                  
+	write_cmos_sensor(0x091c, 0x0e06); //tclk_post, tclk_trail                
+	write_cmos_sensor(0x091e, 0x0300); //mipi_exit, null  
+	write_cmos_sensor(0x0a00, 0x0100); //stream off
 
-		}
 
-	else {
 
+}	/*	preview_setting  */
+
+static void capture_setting(kal_uint16 currefps)
+{
+	LOG_INF("E! currefps:%d\n",currefps);
+	if (currefps == 300) {
+		
 	//Sensor Information////////////////////////////
 	//Sensor	  : Hi-556
-	//Date		  : 2016-10-19
-	//Customer		  : MTK_validation
+	//Date		  : 2017-02-20
+	//AP chipset      : MTK 
 	//Image size	  : 2592x1944
 	//MCLK		  : 24MHz
 	//MIPI speed(Mbps): 880Mbps x 2Lane
@@ -952,46 +1163,152 @@ static void capture_setting(kal_uint16 currefps)
 
 	write_cmos_sensor(0x0a00, 0x0000);
 	write_cmos_sensor(0x0b0a, 0x8252);
-	write_cmos_sensor(0x0f30, 0x6e25);
-	write_cmos_sensor(0x0f32, 0x7067);
-	write_cmos_sensor(0x004a, 0x0100);
-	write_cmos_sensor(0x004c, 0x0000);
-	write_cmos_sensor(0x000c, 0x0022);
-	write_cmos_sensor(0x0008, 0x0b00);
-	write_cmos_sensor(0x005a, 0x0202);
-	write_cmos_sensor(0x0012, 0x000e);
-	write_cmos_sensor(0x0018, 0x0a31);
-	write_cmos_sensor(0x0022, 0x0008);
-	write_cmos_sensor(0x0028, 0x0017);
-	write_cmos_sensor(0x0024, 0x0028);
-	write_cmos_sensor(0x002a, 0x002d);
-	write_cmos_sensor(0x0026, 0x0030);
-	write_cmos_sensor(0x002c, 0x07c7);
-	write_cmos_sensor(0x002e, 0x1111);
-	write_cmos_sensor(0x0030, 0x1111);
-	write_cmos_sensor(0x0032, 0x1111);
-	write_cmos_sensor(0x0006, 0x0801);
-	write_cmos_sensor(0x0a22, 0x0000);
-	write_cmos_sensor(0x0a12, 0x0a20);
-	write_cmos_sensor(0x0a14, 0x0798);
-	write_cmos_sensor(0x003e, 0x0000);
-	write_cmos_sensor(0x0074, 0x07ff);
-	write_cmos_sensor(0x0070, 0x0411);
-	write_cmos_sensor(0x0804, 0x0200);
-	write_cmos_sensor(0x0a04, 0x014a);
-	write_cmos_sensor(0x090c, 0x0fdc);
-	write_cmos_sensor(0x090e, 0x002d);
-	//===============================================
-	//			   mipi 2 lane 880Mbps				 
-	//===============================================
-	write_cmos_sensor(0x0902, 0x4319);
-	write_cmos_sensor(0x0914, 0xc10a);
-	write_cmos_sensor(0x0916, 0x071f);
-	write_cmos_sensor(0x0918, 0x0408);
-	write_cmos_sensor(0x091a, 0x0c0d);
-	write_cmos_sensor(0x091c, 0x0f09);
-	write_cmos_sensor(0x091e, 0x0a00);
-	write_cmos_sensor(0x0a00, 0x0100);
+	write_cmos_sensor(0x0f30, 0x6e25); //pll                                  
+	write_cmos_sensor(0x0f32, 0x7067); //pll                                  
+	write_cmos_sensor(0x004a, 0x0100);                                        
+	write_cmos_sensor(0x004c, 0x0000);                                        
+	write_cmos_sensor(0x004e, 0x0000); //per-frame control off, on 0x0100      
+	write_cmos_sensor(0x000c, 0x0022);                                        
+	write_cmos_sensor(0x0008, 0x0b00); //line length pck 2816                 
+	write_cmos_sensor(0x005a, 0x0202);                                        
+	write_cmos_sensor(0x0012, 0x000e);                                        
+	write_cmos_sensor(0x0018, 0x0a31);                                        
+	write_cmos_sensor(0x0022, 0x0008);                                        
+	write_cmos_sensor(0x0028, 0x0017);                                        
+	write_cmos_sensor(0x0024, 0x0028);                                        
+	write_cmos_sensor(0x002a, 0x002d);                                        
+	write_cmos_sensor(0x0026, 0x0030);                                        
+	write_cmos_sensor(0x002c, 0x07c7);                                        
+	write_cmos_sensor(0x002e, 0x1111);                                        
+	write_cmos_sensor(0x0030, 0x1111);                                        
+	write_cmos_sensor(0x0032, 0x1111);                                        
+	write_cmos_sensor(0x0006, 0x0801); //frame length lines 2049              
+	write_cmos_sensor(0x0a22, 0x0000);                                        
+	write_cmos_sensor(0x0a12, 0x0a20); //x output size 2592                   
+	write_cmos_sensor(0x0a14, 0x0798); //y output size 1944                   
+	write_cmos_sensor(0x003e, 0x0000);                                        
+	write_cmos_sensor(0x0804, 0x0200);                                        
+	write_cmos_sensor(0x0a04, 0x014a); //isp_en                               
+	write_cmos_sensor(0x090c, 0x0fdc); //mipi_vblank_delay                    
+	write_cmos_sensor(0x090e, 0x002d); //mipi_hblank_delay                    
+	write_cmos_sensor(0x0902, 0x4319); //mipi_tx_op_mode1, mipi_tx_op_mode2   
+	write_cmos_sensor(0x0914, 0xc10a); //mipi_exit_seq, tlpx                  
+	write_cmos_sensor(0x0916, 0x071f); //tclk_prepare, tclk_zero              
+	write_cmos_sensor(0x0918, 0x0408); //tclk_pre, ths_prepare                
+	write_cmos_sensor(0x091a, 0x0c0d); //ths_zero, ths_trail                  
+	write_cmos_sensor(0x091c, 0x0f09); //tclk_post, tclk_trail                
+	write_cmos_sensor(0x091e, 0x0a00); //mipi_exit, null  
+	write_cmos_sensor(0x0a00, 0x0100); //stream off
+
+	}
+	//else if (currefps == 240) {}
+	else if (currefps == 150) {	
+
+	//Sensor Information////////////////////////////
+	//Sensor	  : Hi-556
+	//Date		  : 2017-02-20
+	//AP chipset      : MTK 
+	//Image size	  : 2592x1944
+	//MCLK		  : 24MHz
+	//MIPI speed(Mbps): 880Mbps x 2Lane
+	//Frame Length	  : 4166
+	//Line Length 	  : 2816
+	//Max Fps 	  : 15.0fps
+	////////////////////////////////////////////////
+
+	write_cmos_sensor(0x0a00, 0x0000);
+	write_cmos_sensor(0x0b0a, 0x8252);
+	write_cmos_sensor(0x0f30, 0x6e25); //pll                                  
+	write_cmos_sensor(0x0f32, 0x7067); //pll                                  
+	write_cmos_sensor(0x004a, 0x0100);                                        
+	write_cmos_sensor(0x004c, 0x0000);                                        
+	write_cmos_sensor(0x004e, 0x0000); //per-frame control off, on 0x0100     
+	write_cmos_sensor(0x000c, 0x0022);                                        
+	write_cmos_sensor(0x0008, 0x0b00); //line length pck 2816                 
+	write_cmos_sensor(0x005a, 0x0202);                                        
+	write_cmos_sensor(0x0012, 0x000e);                                        
+	write_cmos_sensor(0x0018, 0x0a31);                                        
+	write_cmos_sensor(0x0022, 0x0008);                                        
+	write_cmos_sensor(0x0028, 0x0017);                                        
+	write_cmos_sensor(0x0024, 0x0028);                                        
+	write_cmos_sensor(0x002a, 0x002d);                                        
+	write_cmos_sensor(0x0026, 0x0030);                                        
+	write_cmos_sensor(0x002c, 0x07c7);                                        
+	write_cmos_sensor(0x002e, 0x1111);                                        
+	write_cmos_sensor(0x0030, 0x1111);                                        
+	write_cmos_sensor(0x0032, 0x1111);                                        
+	write_cmos_sensor(0x0006, 0x1046); //frame length lines 4166              
+	write_cmos_sensor(0x0a22, 0x0000);                                        
+	write_cmos_sensor(0x0a12, 0x0a20); //x output size 2592                   
+	write_cmos_sensor(0x0a14, 0x0798); //y output size 1944                   
+	write_cmos_sensor(0x003e, 0x0000);                                        
+	write_cmos_sensor(0x0804, 0x0200);                                        
+	write_cmos_sensor(0x0a04, 0x014a); //isp_en                               
+	write_cmos_sensor(0x090c, 0x0fdc); //mipi_vblank_delay                    
+	write_cmos_sensor(0x090e, 0x002d); //mipi_hblank_delay                    
+	write_cmos_sensor(0x0902, 0x4319); //mipi_tx_op_mode1, mipi_tx_op_mode2   
+	write_cmos_sensor(0x0914, 0xc10a); //mipi_exit_seq, tlpx                  
+	write_cmos_sensor(0x0916, 0x071f); //tclk_prepare, tclk_zero              
+	write_cmos_sensor(0x0918, 0x0408); //tclk_pre, ths_prepare                
+	write_cmos_sensor(0x091a, 0x0c0d); //ths_zero, ths_trail                  
+	write_cmos_sensor(0x091c, 0x0f09); //tclk_post, tclk_trail                
+	write_cmos_sensor(0x091e, 0x0a00); //mipi_exit, null
+	write_cmos_sensor(0x0a00, 0x0100); //stream off  									
+
+		}
+
+	else {
+
+	//Sensor Information////////////////////////////
+	//Sensor	  : Hi-556
+	//Date		  : 2017-02-20
+	//AP chipset      : MTK 
+	//Image size	  : 2592x1944
+	//MCLK		  : 24MHz
+	//MIPI speed(Mbps): 880Mbps x 2Lane
+	//Frame Length	  : 2049
+	//Line Length 	  : 2816
+	//Max Fps 	  : 30.5fps
+	////////////////////////////////////////////////
+
+	write_cmos_sensor(0x0a00, 0x0000);
+	write_cmos_sensor(0x0b0a, 0x8252);
+	write_cmos_sensor(0x0f30, 0x6e25); //pll                                  
+	write_cmos_sensor(0x0f32, 0x7067); //pll                                  
+	write_cmos_sensor(0x004a, 0x0100);                                        
+	write_cmos_sensor(0x004c, 0x0000);                                        
+	write_cmos_sensor(0x004e, 0x0000); //per-frame control off, on 0x0100      
+	write_cmos_sensor(0x000c, 0x0022);                                        
+	write_cmos_sensor(0x0008, 0x0b00); //line length pck 2816                 
+	write_cmos_sensor(0x005a, 0x0202);                                        
+	write_cmos_sensor(0x0012, 0x000e);                                        
+	write_cmos_sensor(0x0018, 0x0a31);                                        
+	write_cmos_sensor(0x0022, 0x0008);                                        
+	write_cmos_sensor(0x0028, 0x0017);                                        
+	write_cmos_sensor(0x0024, 0x0028);                                        
+	write_cmos_sensor(0x002a, 0x002d);                                        
+	write_cmos_sensor(0x0026, 0x0030);                                        
+	write_cmos_sensor(0x002c, 0x07c7);                                        
+	write_cmos_sensor(0x002e, 0x1111);                                        
+	write_cmos_sensor(0x0030, 0x1111);                                        
+	write_cmos_sensor(0x0032, 0x1111);                                        
+	write_cmos_sensor(0x0006, 0x0801); //frame length lines 2049              
+	write_cmos_sensor(0x0a22, 0x0000);                                        
+	write_cmos_sensor(0x0a12, 0x0a20); //x output size 2592                   
+	write_cmos_sensor(0x0a14, 0x0798); //y output size 1944                   
+	write_cmos_sensor(0x003e, 0x0000);                                        
+	write_cmos_sensor(0x0804, 0x0200);                                        
+	write_cmos_sensor(0x0a04, 0x014a); //isp_en                               
+	write_cmos_sensor(0x090c, 0x0fdc); //mipi_vblank_delay                    
+	write_cmos_sensor(0x090e, 0x002d); //mipi_hblank_delay                    
+	write_cmos_sensor(0x0902, 0x4319); //mipi_tx_op_mode1, mipi_tx_op_mode2   
+	write_cmos_sensor(0x0914, 0xc10a); //mipi_exit_seq, tlpx                  
+	write_cmos_sensor(0x0916, 0x071f); //tclk_prepare, tclk_zero              
+	write_cmos_sensor(0x0918, 0x0408); //tclk_pre, ths_prepare                
+	write_cmos_sensor(0x091a, 0x0c0d); //ths_zero, ths_trail                  
+	write_cmos_sensor(0x091c, 0x0f09); //tclk_post, tclk_trail                
+	write_cmos_sensor(0x091e, 0x0a00); //mipi_exit, null
+	write_cmos_sensor(0x0a00, 0x0100); //stream off
 
 	}
 }
@@ -1023,46 +1340,42 @@ static void hs_video_setting(void)
 
 	write_cmos_sensor(0x0a00, 0x0000);
 	write_cmos_sensor(0x0b0a, 0x8252);
-	write_cmos_sensor(0x0f30, 0x6e25);
-	write_cmos_sensor(0x0f32, 0x7267);
-	write_cmos_sensor(0x004a, 0x0100);
-	write_cmos_sensor(0x004c, 0x0000);
-	write_cmos_sensor(0x000c, 0x0022);
-	write_cmos_sensor(0x0008, 0x0b00);
-	write_cmos_sensor(0x005a, 0x0208);
-	write_cmos_sensor(0x0012, 0x0018);
-	write_cmos_sensor(0x0018, 0x0a27);
-	write_cmos_sensor(0x0022, 0x0008);
-	write_cmos_sensor(0x0028, 0x0017);
-	write_cmos_sensor(0x0024, 0x002e);
-	write_cmos_sensor(0x002a, 0x0033);
-	write_cmos_sensor(0x0026, 0x003c);
-	write_cmos_sensor(0x002c, 0x07bb);
-	write_cmos_sensor(0x002e, 0x1111);
-	write_cmos_sensor(0x0030, 0x1111);
-	write_cmos_sensor(0x0032, 0x7711);
-	write_cmos_sensor(0x0006, 0x0208);
-	write_cmos_sensor(0x0a22, 0x0100);
-	write_cmos_sensor(0x0a12, 0x0280);
-	write_cmos_sensor(0x0a14, 0x01e0);
-	write_cmos_sensor(0x003e, 0x0000);
-	write_cmos_sensor(0x0074, 0x0206);
-	write_cmos_sensor(0x0070, 0x0411);
-	write_cmos_sensor(0x0804, 0x0200);
-	write_cmos_sensor(0x0a04, 0x016a);
-	write_cmos_sensor(0x090c, 0x0270);
-	write_cmos_sensor(0x090e, 0x000c);
-	//===============================================
-	//			   mipi 2 lane 220Mbps				 
-	//===============================================
-	write_cmos_sensor(0x0902, 0x4319);
-	write_cmos_sensor(0x0914, 0xc103);
-	write_cmos_sensor(0x0916, 0x0207);
-	write_cmos_sensor(0x0918, 0x0302);
-	write_cmos_sensor(0x091a, 0x0406);
-	write_cmos_sensor(0x091c, 0x0903);
-	write_cmos_sensor(0x091e, 0x0300);
-	write_cmos_sensor(0x0a00, 0x0100);
+	write_cmos_sensor(0x0f30, 0x6e25); //pll                                  
+	write_cmos_sensor(0x0f32, 0x7267); //pll                                  
+	write_cmos_sensor(0x004a, 0x0100);                                        
+	write_cmos_sensor(0x004c, 0x0000);                                        
+	write_cmos_sensor(0x004e, 0x0000); //per-frame control off, on 0x0100     
+	write_cmos_sensor(0x000c, 0x0022);                                        
+	write_cmos_sensor(0x0008, 0x0b00); //line length pck 2816                 
+	write_cmos_sensor(0x005a, 0x0208);                                        
+	write_cmos_sensor(0x0012, 0x0018);                                        
+	write_cmos_sensor(0x0018, 0x0a27);                                        
+	write_cmos_sensor(0x0022, 0x0008);                                        
+	write_cmos_sensor(0x0028, 0x0017);                                        
+	write_cmos_sensor(0x0024, 0x002e);                                        
+	write_cmos_sensor(0x002a, 0x0033);                                        
+	write_cmos_sensor(0x0026, 0x003c);                                        
+	write_cmos_sensor(0x002c, 0x07bb);                                        
+	write_cmos_sensor(0x002e, 0x1111);                                        
+	write_cmos_sensor(0x0030, 0x1111);                                        
+	write_cmos_sensor(0x0032, 0x7711);                                        
+	write_cmos_sensor(0x0006, 0x0208); //frame length lines 520              
+	write_cmos_sensor(0x0a22, 0x0100);                                        
+	write_cmos_sensor(0x0a12, 0x0280); //x output size 2592                   
+	write_cmos_sensor(0x0a14, 0x01e0); //y output size 1944                   
+	write_cmos_sensor(0x003e, 0x0000);                                        
+	write_cmos_sensor(0x0804, 0x0200);                                        
+	write_cmos_sensor(0x0a04, 0x016a); //isp_en                               
+	write_cmos_sensor(0x090c, 0x0270); //mipi_vblank_delay                    
+	write_cmos_sensor(0x090e, 0x000c); //mipi_hblank_delay                    
+	write_cmos_sensor(0x0902, 0x4319); //mipi_tx_op_mode1, mipi_tx_op_mode2   
+	write_cmos_sensor(0x0914, 0xc103); //mipi_exit_seq, tlpx                  
+	write_cmos_sensor(0x0916, 0x0207); //tclk_prepare, tclk_zero              
+	write_cmos_sensor(0x0918, 0x0302); //tclk_pre, ths_prepare                
+	write_cmos_sensor(0x091a, 0x0406); //ths_zero, ths_trail                  
+	write_cmos_sensor(0x091c, 0x0903); //tclk_post, tclk_trail                
+	write_cmos_sensor(0x091e, 0x0300); //mipi_exit, null
+	write_cmos_sensor(0x0a00, 0x0100); //stream off   
 
 
 }
@@ -1176,6 +1489,10 @@ static kal_uint32 open(void)
 
     /* initail sequence write in  */
     sensor_init();
+	
+	#ifdef HI556_OTP_FUNCTION
+	HI556_otp_cali();
+	#endif
 
     spin_lock(&imgsensor_drv_lock);
 
