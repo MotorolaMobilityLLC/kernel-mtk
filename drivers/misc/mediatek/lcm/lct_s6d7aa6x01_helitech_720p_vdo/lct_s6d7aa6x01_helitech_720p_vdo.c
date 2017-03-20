@@ -73,6 +73,8 @@ static LCM_UTIL_FUNCS lcm_util;
 #include <linux/platform_device.h>
 #endif
 
+
+extern  unsigned  int  esd_backlight_level;
 /* static unsigned char lcd_id_pins_value = 0xFF; */
 static const unsigned char LCD_MODULE_ID = 0x01;
 #define LCM_DSI_CMD_MODE									0
@@ -133,7 +135,7 @@ static struct LCM_setting_table lcm_initialization_setting[] = {
 	{0xFB,17,{0x10,0x30,0x1C,0x24,0x1B,0x20,0x24,0x23,0x22,0x26,0x28,0x26,0x27,0x25,0x24,0x23,0x2A}},
 	{0xC0,1,{0x03}},
 	{0xC1, 3, {0x70,0x25,0x23}}, // pwm 20K
-        {0x51, 2, {0xFF,0x0f}},
+        {0x51, 2, {0x00,0x00}},
 	{0x53, 1, {0x24}},
 	{0x55, 1, {0x01}},
 	{REGFLAG_DELAY, 5, {}},
@@ -146,7 +148,7 @@ static struct LCM_setting_table lcm_initialization_setting[] = {
 };
 
 static struct LCM_setting_table bl_level[] = {
-	{0x51, 2, {0xff,0x0f}},
+	{0x51, 2, {0x00,0x00}},
 	{REGFLAG_END_OF_TABLE, 0x00, {} }
 };
 
@@ -247,8 +249,8 @@ static void lcm_get_params(LCM_PARAMS *params)
 
 	params->dsi.cont_clock=0;
 	params->dsi.clk_lp_per_line_enable = 0;
-	params->dsi.esd_check_enable = 0;
-	params->dsi.customization_esd_check_enable = 0;
+	params->dsi.esd_check_enable = 1;
+	params->dsi.customization_esd_check_enable = 1;
 	params->dsi.lcm_esd_check_table[0].cmd = 0x0A;
 	params->dsi.lcm_esd_check_table[0].count = 1;
 	params->dsi.lcm_esd_check_table[0].para_list[0] = 0x9C;
@@ -479,6 +481,8 @@ static void lcm_setbacklight_cmdq(void *handle, unsigned int level)
 	unsigned int high_level;
 	unsigned int low_level;
 	printk("%s,s6d7aa6x01 backlight: level = %d\n", __func__, level);
+	
+    esd_backlight_level = level;
 	if(level  ==  0)
 	{
 		bl_level[0].para_list[0] = level;
