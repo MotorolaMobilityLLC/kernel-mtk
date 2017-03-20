@@ -224,8 +224,8 @@ static void lcm_get_params(LCM_PARAMS *params)
 	params->dsi.pll_div1 = 0;	/* div1=0,1,2,3;div1_real=1,2,4,4 ----0: 546Mbps  1:273Mbps */
 	params->dsi.pll_div2 = 0;	/* div2=0,1,2,3;div1_real=1,2,4,4 */
 	params->dsi.fbk_div = 0x13;	/* 0x12  // fref=26MHz, fvco=fref*(fbk_div+1)*2/(div1_real*div2_real) */
-	params->dsi.esd_check_enable = 1;
-	params->dsi.customization_esd_check_enable = 1;
+	params->dsi.esd_check_enable = 0;
+	params->dsi.customization_esd_check_enable = 0;
 	params->dsi.lcm_esd_check_table[0].cmd			= 0x0a;
 	params->dsi.lcm_esd_check_table[0].count		= 1;
 	params->dsi.lcm_esd_check_table[0].para_list[0] = 0x9c;
