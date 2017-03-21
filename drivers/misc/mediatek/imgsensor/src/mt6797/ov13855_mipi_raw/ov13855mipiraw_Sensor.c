@@ -159,7 +159,7 @@ static imgsensor_info_struct imgsensor_info = {
 	.ae_ispGain_delay_frame = 2,
 	.ihdr_support = 0,
 	.ihdr_le_firstline = 0,
-	.sensor_mode_num = 10,
+	.sensor_mode_num = 7,
 
 	.cap_delay_frame = 3,  //check
 	.pre_delay_frame = 3,  //check
@@ -200,7 +200,7 @@ static imgsensor_struct imgsensor = {
 };
 
 /* Sensor output window information */
-static SENSOR_WINSIZE_INFO_STRUCT imgsensor_winsize_info[10] =
+static SENSOR_WINSIZE_INFO_STRUCT imgsensor_winsize_info[7] =
 {
 	{ 4256, 3168, 0,   8, 4256, 3144, 2128, 1572,  8,	2,	 2112, 1568, 0,   0,   2112, 1568}, // Preview 
 	{ 4256, 3168, 0,   8, 4256, 3152, 4256, 3152,  16,	8,	 4224, 3136, 0,   0,   4224, 3136},//capture
@@ -1554,7 +1554,7 @@ static kal_uint32 open(void)
     kal_uint8 i = 0;
     kal_uint8 retry = 1;
     kal_uint32 sensor_id = 0;
-    LOG_INF("huangsh4 PLATFORM:MT6797,MIPI 4LANE\n");
+    LOG_INF("huangsh4  PLATFORM:MT6797,MIPI 4LANE\n");
     LOG_INF("preview 2112*1568@30fps,864Mbps/lane; video 1024*768@120fps,864Mbps/lane; capture 4224*3136@30fps,864Mbps/lane\n");
 
     while (imgsensor_info.i2c_addr_table[i] != 0xff) {
@@ -2260,6 +2260,12 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
                 case MSDK_SCENARIO_ID_SLIM_VIDEO:
                     memcpy((void *)wininfo,(void *)&imgsensor_winsize_info[4],sizeof(SENSOR_WINSIZE_INFO_STRUCT));
                     break;
+                 case MSDK_SCENARIO_ID_CUSTOM1:
+	memcpy((void *)wininfo,(void *)&imgsensor_winsize_info[5],sizeof(SENSOR_WINSIZE_INFO_STRUCT));
+	break;
+	case MSDK_SCENARIO_ID_CUSTOM2:
+	memcpy((void *)wininfo,(void *)&imgsensor_winsize_info[6],sizeof(SENSOR_WINSIZE_INFO_STRUCT));
+	break;
                 case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
                 default:
                     memcpy((void *)wininfo,(void *)&imgsensor_winsize_info[0],sizeof(SENSOR_WINSIZE_INFO_STRUCT));
