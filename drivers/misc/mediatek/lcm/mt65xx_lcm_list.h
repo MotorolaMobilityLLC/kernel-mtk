@@ -267,6 +267,8 @@ extern LCM_DRIVER lct_ili9881c_dijing_cmi_720p_vdo_lcm_drv;
 extern LCM_DRIVER lct_r63350_tianma_1080p_vdo_lcm_drv;//add by jiatianbao
 extern LCM_DRIVER lct_s6d7aa6x01_helitech_720p_vdo_lcm_drv;
 extern LCM_DRIVER lct_otm1911a_ofilm_1080p_vdo_lcm_drv;//add by jiatianbao
+extern LCM_DRIVER lct_otm1289a_wistron_720p_vdo_lcm_drv;//add by jiatianbao
+
 
 #ifdef BUILD_LK
 extern void mdelay(unsigned long msec);
