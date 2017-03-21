@@ -1253,6 +1253,27 @@ int disp_lcm_adjust_fps(void *cmdq, disp_lcm_handle *plcm, int fps)
 	DISPERR("lcm not initialied\n");
 	return -1;
 }
+int disp_lcm_set_cabc_mode(disp_lcm_handle *plcm, int mode)
+{
+	LCM_DRIVER *lcm_drv = NULL;
+
+	DISPFUNC();
+
+	if (_is_lcm_inited(plcm)) {
+		lcm_drv = plcm->drv;
+
+		if (lcm_drv->set_cabc_mode) {
+			lcm_drv->set_cabc_mode(mode);
+	       } else {
+		       DISPERR("FATAL ERROR, lcm_drv->set_cabc_mode is null\n");
+		       return -1;
+	       }
+	} else {
+	       DISPERR("lcm_drv is null\n");
+	       return -1;
+		}
+	return 0;
+}
 
 int disp_lcm_set_backlight(disp_lcm_handle *plcm, void *handle, int level)
 {
