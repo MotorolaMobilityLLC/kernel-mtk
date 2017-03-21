@@ -50,6 +50,7 @@ int disp_lcm_resume(disp_lcm_handle *plcm);
 int disp_lcm_is_support_adjust_fps(disp_lcm_handle *plcm);
 int disp_lcm_adjust_fps(void *cmdq, disp_lcm_handle *plcm, int fps);
 int disp_lcm_set_backlight(disp_lcm_handle *plcm, void *handle, int level);
+int disp_lcm_set_cabc_mode(disp_lcm_handle *plcm, int mode);
 int disp_lcm_read_fb(disp_lcm_handle *plcm);
 int disp_lcm_ioctl(disp_lcm_handle *plcm, LCM_IOCTL ioctl, unsigned int arg);
 int disp_lcm_is_video_mode(disp_lcm_handle *plcm);
