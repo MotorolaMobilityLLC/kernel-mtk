@@ -263,14 +263,6 @@ static const char *session_mode_spy(unsigned int mode)
 	}
 }
 
-int primary_display_set_cabc_mode(int mode)
-{
-	if (NULL == pgc->plcm->drv->set_cabc_mode)
-		return -EINVAL;
-
-	return pgc->plcm->drv->set_cabc_mode(mode);
-}
-
 int primary_display_is_directlink_mode(void)
 {
 	DISP_MODE mode = pgc->session_mode;
@@ -5751,6 +5743,139 @@ int primary_display_vsync_switch(int method)
 				       DDP_IRQ_DSI0_FRAME_DONE);
 	}
 
+	return ret;
+}
+int _set_cabc_mode_by_cmdq(int mode)
+{
+	int ret = 0;
+	cmdqRecHandle cmdq_handle_cabc_mode = NULL;
+
+	MMProfileLogEx(ddp_mmp_get_events()->primary_set_bl, MMProfileFlagPulse, 1, 1);
+	ret = cmdqRecCreate(CMDQ_SCENARIO_PRIMARY_DISP, &cmdq_handle_cabc_mode);
+	DISPDBG("primary cabc mode, handle = %p\n", cmdq_handle_cabc_mode);
+	if (0 != ret) {
+		DISPERR("fail to create primary cmdq handle for cabc mode\n");
+		return -1;
+	}
+
+	if (primary_display_is_video_mode()) {
+		MMProfileLogEx(ddp_mmp_get_events()->primary_set_bl, MMProfileFlagPulse, 1, 2);
+		cmdqRecReset(cmdq_handle_cabc_mode);
+		ret = disp_lcm_set_cabc_mode(pgc->plcm, mode);
+		_cmdq_flush_config_handle_mira(cmdq_handle_cabc_mode, 1);
+		DISPDBG("_set_cabc_mode_by_cmdq ret = %d\n", ret);
+	} else {
+		MMProfileLogEx(ddp_mmp_get_events()->primary_set_bl, MMProfileFlagPulse, 1, 3);
+		cmdqRecReset(cmdq_handle_cabc_mode);
+		cmdqRecWait(cmdq_handle_cabc_mode, CMDQ_SYNC_TOKEN_CABC_EOF);
+		_cmdq_handle_clear_dirty(cmdq_handle_cabc_mode);
+		_cmdq_insert_wait_frame_done_token_mira(cmdq_handle_cabc_mode);
+		ret = disp_lcm_set_cabc_mode(pgc->plcm, mode);
+		cmdqRecSetEventToken(cmdq_handle_cabc_mode, CMDQ_SYNC_TOKEN_CONFIG_DIRTY);
+		cmdqRecSetEventToken(cmdq_handle_cabc_mode, CMDQ_SYNC_TOKEN_CABC_EOF);
+		MMProfileLogEx(ddp_mmp_get_events()->primary_set_bl, MMProfileFlagPulse, 1, 4);
+		_cmdq_flush_config_handle_mira(cmdq_handle_cabc_mode, 1);
+		MMProfileLogEx(ddp_mmp_get_events()->primary_set_bl, MMProfileFlagPulse, 1, 6);
+		DISPCHECK("_set_cabc_mode_by_cmdq ret = %d\n", ret);
+	}
+	cmdqRecDestroy(cmdq_handle_cabc_mode);
+	cmdq_handle_cabc_mode = NULL;
+	MMProfileLogEx(ddp_mmp_get_events()->primary_set_bl, MMProfileFlagPulse, 1, 5);
+	return ret;
+}
+int _set_cabc_mode_by_cpu(int mode)
+{
+	int ret = 0;
+
+	if (DISP_HELPER_STAGE_NORMAL != disp_helper_get_stage()) {
+		DISPMSG("%s skip due to stage %s\n", __func__, disp_helper_stage_spy());
+		return 0;
+	}
+	MMProfileLogEx(ddp_mmp_get_events()->primary_set_bl, MMProfileFlagPulse, 0, 1);
+	if (primary_display_is_video_mode()) {
+		disp_lcm_set_cabc_mode(pgc->plcm, mode);
+	} else {
+		DISPCHECK("display cmdq trigger loop stop[begin]\n");
+		if (primary_display_cmdq_enabled())
+			_cmdq_stop_trigger_loop();
+		DISPCHECK("display cmdq trigger loop stop[end]\n");
+		if (dpmgr_path_is_busy(pgc->dpmgr_handle)) {
+			DISPCHECK("primary display path is busy\n");
+			ret = dpmgr_wait_event_timeout(pgc->dpmgr_handle, DISP_PATH_EVENT_FRAME_DONE, HZ*1);
+			DISPCHECK("wait frame done ret : %d\n", ret);
+		}
+		DISPCHECK("stop dpmgr path[begin]\n");
+		dpmgr_path_stop(pgc->dpmgr_handle, CMDQ_DISABLE);
+		DISPCHECK("stop dpmgr path[end]\n");
+		if (dpmgr_path_is_busy(pgc->dpmgr_handle)) {
+			DISPCHECK("primary display path is busy after stop\n");
+			ret = dpmgr_wait_event_timeout(pgc->dpmgr_handle, DISP_PATH_EVENT_FRAME_DONE, HZ*1);
+			DISPCHECK("wait frame done ret : %d\n", ret);
+		}
+
+		DISPCHECK("reset display path[begin]\n");
+		dpmgr_path_reset(pgc->dpmgr_handle, CMDQ_DISABLE);
+		DISPCHECK("reset display path[end]\n");
+		MMProfileLogEx(ddp_mmp_get_events()->primary_set_bl, MMProfileFlagPulse, 0, 2);
+		disp_lcm_set_cabc_mode(pgc->plcm, mode);
+		MMProfileLogEx(ddp_mmp_get_events()->primary_set_bl, MMProfileFlagPulse, 0, 3);
+		DISPCHECK("start dpmgr path[begin]\n");
+		dpmgr_path_start(pgc->dpmgr_handle, CMDQ_DISABLE);
+		DISPCHECK("start dpmgr path[end]\n");
+
+		if (primary_display_cmdq_enabled()) {
+			DISPCHECK("start cmdq trigger loop[begin]\n");
+			_cmdq_start_trigger_loop();
+		}
+		DISPCHECK("start cmdq trigger loop[end]\n");
+	}
+	MMProfileLogEx(ddp_mmp_get_events()->primary_set_bl, MMProfileFlagPulse, 0, 7);
+	return ret;
+}
+int primary_display_set_cabc_mode(int mode)
+{
+	int ret = 0;
+	static int last_mode;
+
+	DISPFUNC();
+	if (DISP_HELPER_STAGE_NORMAL != disp_helper_get_stage()) {
+		DISPMSG("%s skip due to stage %s\n", __func__, disp_helper_stage_spy());
+		return 0;
+	}
+
+	if (last_mode == mode)
+		return 0;
+
+	MMProfileLogEx(ddp_mmp_get_events()->primary_set_bl, MMProfileFlagStart, 0, 0);
+#ifndef CONFIG_MTK_AAL_SUPPORT
+	_primary_path_switch_dst_lock();
+	_primary_path_lock(__func__);
+#endif
+	if (DISP_SLEPT == pgc->state) {
+		DISPERR("Sleep State set cabc mode invald\n");
+	} else {
+		primary_display_idlemgr_kick(__func__, 0);
+		if (primary_display_cmdq_enabled()) {
+			if (primary_display_is_video_mode()) {
+				MMProfileLogEx(ddp_mmp_get_events()->primary_set_bl,
+									MMProfileFlagPulse, 0, 7);
+				/* setting start */
+				ret = disp_lcm_set_cabc_mode(pgc->plcm, mode);
+				/* setting end */
+			} else {
+				_set_cabc_mode_by_cmdq(mode);
+			}
+			atomic_set(&delayed_trigger_kick, 1);
+		} else {
+			_set_cabc_mode_by_cpu(mode);
+		}
+		last_mode = mode;
+	}
+#ifndef CONFIG_MTK_AAL_SUPPORT
+	_primary_path_unlock(__func__);
+	_primary_path_switch_dst_unlock();
+#endif
+	MMProfileLogEx(ddp_mmp_get_events()->primary_set_bl, MMProfileFlagEnd, 0, 0);
 	return ret;
 }
 
