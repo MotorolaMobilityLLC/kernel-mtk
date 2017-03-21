@@ -115,7 +115,7 @@ static struct LCM_setting_table lcm_suspend_setting[] = {
 
 static struct LCM_setting_table lcm_initialization_setting[] = {
 	{0xB0,1,{0x04}},
-	{0x51,1,{0xff}},   
+	{0x51,1,{0x00}},   
     {0x53,1,{0x24}},
     {0x55,1,{0x00}},
 	//{0x36,1,{0xC0}},
@@ -129,7 +129,7 @@ static struct LCM_setting_table lcm_initialization_setting[] = {
 };
 
 static struct LCM_setting_table bl_level[] = {
-	{0x51, 1, {0xFF} },
+	{0x51, 1, {0x00} },
 	{REGFLAG_END_OF_TABLE, 0x00, {} }
 };
 
@@ -361,8 +361,9 @@ static void lcm_init(void)
 static void lcm_suspend(void)
 {
 	push_table(NULL, lcm_suspend_setting, sizeof(lcm_suspend_setting) / sizeof(struct LCM_setting_table), 1);
+
+	SET_RESET_PIN(0);
 	MDELAY(10);
-	/* SET_RESET_PIN(0); */
 }
 
 static void lcm_resume(void)
