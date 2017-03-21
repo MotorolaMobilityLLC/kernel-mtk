@@ -681,7 +681,7 @@ static ssize_t show_hbm(struct device *device,
 //tuwenzan@wind-mobi.com modify code at 20170321 begin
 #include <linux/leds.h>
 int wind_hbm_flag = 1;
-int last_level = 0;
+int hbm_last_level = 0;
 static int hbm_level = 255;
 extern struct led_classdev	*lcd_backlight_hbm;
 extern void led_set_brightness(struct led_classdev *led_cdev,enum led_brightness brightness);
@@ -695,8 +695,8 @@ static ssize_t store_hbm(struct device *device, struct device_attribute *attr,
 	//int chang_level;
 	led_update_brightness(lcd_backlight_hbm);
 	if(wind_hbm_flag ||  lcd_backlight_hbm->brightness != hbm_level){
-		 last_level = lcd_backlight_hbm->brightness;
-		 printk("wind_hbm hbm lcd_backlight_hbm->brightness = %d last_level = %d\n",lcd_backlight_hbm->brightness,last_level);
+		 hbm_last_level = lcd_backlight_hbm->brightness;
+		 printk("wind_hbm hbm lcd_backlight_hbm->brightness = %d last_level = %d\n",lcd_backlight_hbm->brightness,hbm_last_level);
 	}
 	if(strncmp(echo_hbm,buf,1)==0){
 		printk("wind_hbm enter echo hbm 1\n");
@@ -707,7 +707,7 @@ static ssize_t store_hbm(struct device *device, struct device_attribute *attr,
 		printk("wind_hbm enter echo hbm 0\n");
 		wind_hbm_flag = 1;
 		//chang_level = last_level + 1;
-		led_set_brightness(lcd_backlight_hbm,last_level);
+		led_set_brightness(lcd_backlight_hbm,hbm_last_level);
 	}
 	return count;
 
