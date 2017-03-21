@@ -216,7 +216,7 @@ CONFIG_MTK_IMGSENSOR=y
 CONFIG_MTK_JPEG=y
 CONFIG_MTK_LCM=y
 #add by zhouhua  start  longcheer
-CONFIG_CUSTOM_KERNEL_LCM="lct_ili9881c_dijing_720p_vdo lct_ili9881c_dijing_cmi_720p_vdo lct_s6d7aa6x01_helitech_720p_vdo"
+CONFIG_CUSTOM_KERNEL_LCM="lct_ili9881c_dijing_720p_vdo lct_ili9881c_dijing_cmi_720p_vdo lct_s6d7aa6x01_helitech_720p_vdo lct_otm1289a_wistron_720p_vdo"
 CONFIG_LCT_LCM_GPIO_UTIL=y
 #add by zhouhua  end  longcheer
 CONFIG_MTK_LENS=y
