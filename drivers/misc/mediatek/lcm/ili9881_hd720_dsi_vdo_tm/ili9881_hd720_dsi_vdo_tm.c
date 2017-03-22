@@ -506,6 +506,7 @@ static void lcm_suspend(void)
 
 static void lcm_resume(void)
 {
+printk("hyg ---- lcm_resume enter \n");
 //huyunge@wind-mobi.com modify at 20170322 for LCD out sleep time 
 #ifdef GPIO_LCD_BIAS_ENP_PIN	
 	mt_set_gpio_mode(GPIO_LCD_BIAS_ENP_PIN, GPIO_MODE_00);	
@@ -519,7 +520,7 @@ static void lcm_resume(void)
 	SET_RESET_PIN(0);
 	MDELAY(10);
 	SET_RESET_PIN(1);
-	MDELAY(120);		
+	MDELAY(10);		
 
 	push_table(lcm_initialization_setting, sizeof(lcm_initialization_setting) / sizeof(struct LCM_setting_table), 1); 
 	#ifdef  CONFIG_WIND_CABC_BACKLIGHT_CTRL
@@ -528,6 +529,7 @@ static void lcm_resume(void)
 	}
 	#endif
 	//lcm_init();
+	printk("hyg ---- lcm_resume out \n");
 //huyunge@wind-mobi.com modify at 20170322 for LCD out sleep time
 }
 
