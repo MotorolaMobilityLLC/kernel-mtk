@@ -242,20 +242,14 @@ static struct i2c_driver ltr578_i2c_driver = {
 	},
 };
 
-
-
-//add by wangxiqiang
-#ifdef CONFIG_SLT_DRV_DEVINFO_SUPPORT
-#define SLT_DEVINFO_ALSPS_DEBUG
-#include  <linux/dev_info.h>
-//u8 ver_id;
-//u8 ver_module;
-//static int devinfo_first=0;
-//static char* temp_ver;
-static char* temp_comments;
-struct devinfo_struct *s_DEVINFO_alsps;   //suppose 10 max lcm device 
+//add by wangshuai
+#ifdef CONFIG_LCT_DEVINFO_SUPPORT
+#define SLT_DEVINFO_ACC_DEBUG
+#include  "dev_info.h"
+//static char* temp_comments;
+struct devinfo_struct *s_DEVINFO_alsps;   
 //The followd code is for GTP style
-static void devinfo_ctp_regchar(char *module,char * vendor,char *version,char *used, char* comments)
+static void devinfo_alsps_regchar(char *module,char * vendor,char *version,char *used)
 {
 
 	s_DEVINFO_alsps =(struct devinfo_struct*) kmalloc(sizeof(struct devinfo_struct), GFP_KERNEL);	
@@ -266,16 +260,18 @@ static void devinfo_ctp_regchar(char *module,char * vendor,char *version,char *u
 	s_DEVINFO_alsps->device_info=DEVINFO_NULL;
 	s_DEVINFO_alsps->device_version=version;
 	s_DEVINFO_alsps->device_used=used;
-#ifdef SLT_DEVINFO_ALSPS_DEBUG
-		printk("[DEVINFO accel sensor]registe CTP device! type:<%s> module:<%s> vendor<%s> ic<%s> version<%s> info<%s> used<%s>\n",
+#ifdef SLT_DEVINFO_ACC_DEBUG
+		printk("[DEVINFO magnetometer sensor]registe msensor device! type:<%s> module:<%s> vendor<%s> ic<%s> version<%s> info<%s> used<%s>\n",
 				s_DEVINFO_alsps->device_type,s_DEVINFO_alsps->device_module,s_DEVINFO_alsps->device_vendor,
 				s_DEVINFO_alsps->device_ic,s_DEVINFO_alsps->device_version,s_DEVINFO_alsps->device_info,s_DEVINFO_alsps->device_used);
 #endif
-       DEVINFO_CHECK_DECLARE_COMMEN(s_DEVINFO_alsps->device_type,s_DEVINFO_alsps->device_module,s_DEVINFO_alsps->device_vendor,s_DEVINFO_alsps->device_ic,s_DEVINFO_alsps->device_version,s_DEVINFO_alsps->device_info,s_DEVINFO_alsps->device_used);
+       DEVINFO_CHECK_DECLARE(s_DEVINFO_alsps->device_type,s_DEVINFO_alsps->device_module,s_DEVINFO_alsps->device_vendor,s_DEVINFO_alsps->device_ic,s_DEVINFO_alsps->device_version,s_DEVINFO_alsps->device_info,s_DEVINFO_alsps->device_used);
+}
       //devinfo_check_add_device(s_DEVINFO_ctp);
 
-}
+
 #endif
+
 
 
 /* 
@@ -2625,12 +2621,9 @@ static int ltr578_i2c_probe(struct i2c_client *client, const struct i2c_device_i
 			APS_ERR("register proximity batch support err = %d\n", err);
 		}
 
-//add by wangxiqiang
-   #ifdef CONFIG_SLT_DRV_DEVINFO_SUPPORT
-   
-	temp_comments=(char*) kmalloc(20, GFP_KERNEL);
-	sprintf(temp_comments,"ALPS:LTR578 BOE"); 
-	devinfo_ctp_regchar("unknown","BOE","1.0",DEVINFO_USED,temp_comments);
+//add by wangshuai
+   #ifdef CONFIG_LCT_DEVINFO_SUPPORT
+	devinfo_alsps_regchar("ltr578","BOE","null",DEVINFO_USED);
 
    #endif
    //end of add

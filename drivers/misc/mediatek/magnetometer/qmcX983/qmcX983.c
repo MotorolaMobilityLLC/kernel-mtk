@@ -147,6 +147,36 @@ static int qmcX983_resume(struct device *dev);
 
 DECLARE_COMPLETION(data_updated);
 
+//add by wangshuai
+#ifdef CONFIG_LCT_DEVINFO_SUPPORT
+#define SLT_DEVINFO_ACC_DEBUG
+#include  "dev_info.h"
+//static char* temp_comments;
+struct devinfo_struct *s_DEVINFO_mag_qmcX;   
+//The followd code is for GTP style
+static void devinfo_mag_qmcX_regchar(char *module,char * vendor,char *version,char *used)
+{
+
+	s_DEVINFO_mag_qmcX =(struct devinfo_struct*) kmalloc(sizeof(struct devinfo_struct), GFP_KERNEL);	
+	s_DEVINFO_mag_qmcX->device_type="Magnetometer";
+	s_DEVINFO_mag_qmcX->device_module=module;
+	s_DEVINFO_mag_qmcX->device_vendor=vendor;
+	s_DEVINFO_mag_qmcX->device_ic="MMC3630X";
+	s_DEVINFO_mag_qmcX->device_info=DEVINFO_NULL;
+	s_DEVINFO_mag_qmcX->device_version=version;
+	s_DEVINFO_mag_qmcX->device_used=used;
+#ifdef SLT_DEVINFO_ACC_DEBUG
+		printk("[DEVINFO magnetometer sensor]registe msensor device! type:<%s> module:<%s> vendor<%s> ic<%s> version<%s> info<%s> used<%s>\n",
+				s_DEVINFO_mag_qmcX->device_type,s_DEVINFO_mag_qmcX->device_module,s_DEVINFO_mag_qmcX->device_vendor,
+				s_DEVINFO_mag_qmcX->device_ic,s_DEVINFO_mag_qmcX->device_version,s_DEVINFO_mag_qmcX->device_info,s_DEVINFO_mag_qmcX->device_used);
+#endif
+       DEVINFO_CHECK_DECLARE(s_DEVINFO_mag_qmcX->device_type,s_DEVINFO_mag_qmcX->device_module,s_DEVINFO_mag_qmcX->device_vendor,s_DEVINFO_mag_qmcX->device_ic,s_DEVINFO_mag_qmcX->device_version,s_DEVINFO_mag_qmcX->device_info,s_DEVINFO_mag_qmcX->device_used);
+}
+      //devinfo_check_add_device(s_DEVINFO_ctp);
+
+
+#endif
+
 /*----------------------------------------------------------------------------*/
 typedef enum {
     QMC_FUN_DEBUG  = 0x01,
@@ -3026,6 +3056,13 @@ static int qmcX983_i2c_probe(struct i2c_client *client, const struct i2c_device_
 		goto exit_hwm_attach_failed;
 	}
 #endif
+
+//add by wangshuai
+   #ifdef CONFIG_LCT_DEVINFO_SUPPORT
+	devinfo_mag_qmcX_regchar("qmcX983","xirui","null",DEVINFO_USED);
+
+   #endif
+   //end of add
 
 #ifdef CONFIG_HAS_EARLYSUSPEND
 	data->early_drv.level    = EARLY_SUSPEND_LEVEL_DISABLE_FB - 1,
