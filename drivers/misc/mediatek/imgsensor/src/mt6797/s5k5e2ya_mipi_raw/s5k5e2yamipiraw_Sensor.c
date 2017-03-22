@@ -4439,10 +4439,14 @@ static kal_uint32 set_test_pattern_mode(kal_bool enable)
 		// 0x5E00[8]: 1 enable,  0 disable
 		// 0x5E00[1:0]; 00 Color bar, 01 Random Data, 10 Square, 11 BLACK
 		write_cmos_sensor(0x0601, 0x02);
+		write_cmos_sensor(0x0b00, 0x00);
+		write_cmos_sensor(0x3400, 0x00);
 	} else {
 		// 0x5E00[8]: 1 enable,  0 disable
 		// 0x5E00[1:0]; 00 Color bar, 01 Random Data, 10 Square, 11 BLACK
 		write_cmos_sensor(0x0601, 0x00);
+		write_cmos_sensor(0x0b00, 0x01);
+		write_cmos_sensor(0x3400, 0x00);
 	}
 	write_cmos_sensor(0x3200, 0x00);
 	spin_lock(&imgsensor_drv_lock);
