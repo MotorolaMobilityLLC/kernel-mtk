@@ -181,7 +181,7 @@ CONFIG_MTK_DISABLE_PICACHU=y
 CONFIG_MTK_FREQ_HOPPING=y
 CONFIG_MTK_THERMAL_PA_VIA_ATCMD=y
 ##wangkangmin@wind-mobi.com add for camera 20161206 begin
-CONFIG_CUSTOM_KERNEL_IMGSENSOR="imx219_mipi_raw s5k4h8_mipi_raw s5k4h8_mipi_raw_qt s5k5e8yx_mipi_raw s5k5e8yx_mipi_raw_xy gc5005_mipi_raw"
+CONFIG_CUSTOM_KERNEL_IMGSENSOR="imx219_mipi_raw s5k4h8_mipi_raw s5k4h8_mipi_raw_qt s5k5e8yx_mipi_raw s5k5e8yx_mipi_raw_xy gc5025_mipi_raw"
 CONFIG_CUSTOM_KERNEL_CAM_CAL_DRV="s5k4h8_eeprom s5k4h8_eeprom_qt s5k5e8_eeprom s5k5e8_eeprom_xy"
 CONFIG_MTK_CAM_CAL=y
 CONFIG_WIND_CAMERA_CUSTOM=y
