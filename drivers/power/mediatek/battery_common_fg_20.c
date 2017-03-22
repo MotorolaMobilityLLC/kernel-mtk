@@ -311,6 +311,7 @@ struct battery_data {
 	int present_smb;
 	int adjust_power;
 	int charge_full_design;
+	int charge_full;
 };
 
 static enum power_supply_property wireless_props[] = {
@@ -349,6 +350,7 @@ static enum power_supply_property battery_props[] = {
 	/* ADB CMD Discharging */
 	POWER_SUPPLY_PROP_adjust_power,
 	POWER_SUPPLY_PROP_CHARGE_FULL_DESIGN,
+	POWER_SUPPLY_PROP_CHARGE_FULL,
 };
 
 struct timespec batteryThreadRunTime;
@@ -674,6 +676,9 @@ static int battery_get_property(struct power_supply *psy,
 	case POWER_SUPPLY_PROP_CHARGE_FULL_DESIGN:
 		val->intval = data->charge_full_design;
 		break;
+	case POWER_SUPPLY_PROP_CHARGE_FULL:
+		val->intval = data->charge_full;
+		break;
 
 	default:
 		ret = -EINVAL;
@@ -744,6 +749,7 @@ static struct battery_data battery_main = {
 	/* ADB CMD discharging */
 	.adjust_power = -1,
 	.charge_full_design = Q_MAX_CHARGE_FULL_DESIGN,
+	.charge_full = Q_MAX_CHARGE_FULL_DESIGN,
 #else
 	.BAT_STATUS = POWER_SUPPLY_STATUS_NOT_CHARGING,
 	.BAT_HEALTH = POWER_SUPPLY_HEALTH_GOOD,
@@ -763,6 +769,7 @@ static struct battery_data battery_main = {
 	/* ADB CMD discharging */
 	.adjust_power = -1,
 	.charge_full_design = Q_MAX_CHARGE_FULL_DESIGN,
+	.charge_full = Q_MAX_CHARGE_FULL_DESIGN,
 #endif
 };
 
