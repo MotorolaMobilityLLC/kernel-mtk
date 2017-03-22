@@ -397,11 +397,11 @@ static void lcm_init(void)
 	MDELAY(10);
 
 	SET_RESET_PIN(1);
-	MDELAY(10);
+	MDELAY(5);////huyunge@wind-mobi.com modify delay 120ms==>55ms for lcd out sleep time.
 	SET_RESET_PIN(0);
 	MDELAY(10);
 	SET_RESET_PIN(1);
-	MDELAY(120);
+	MDELAY(55); //huyunge@wind-mobi.com modify delay 120ms==>55ms for lcd out sleep time.
 //	printk(" gemingming hx8394f init  \n");
 	push_table(lcm_initialization_setting1, sizeof(lcm_initialization_setting1) / sizeof(struct LCM_setting_table), 1); 
 
