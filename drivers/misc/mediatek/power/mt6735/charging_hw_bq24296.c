@@ -470,6 +470,12 @@ static unsigned int charging_get_hv_status(void *data)
 static unsigned int charging_get_battery_status(void *data)
 {
 	unsigned int status = STATUS_OK;
+//zhangchao@wind-mobi.com 20170322 begin
+#ifdef CONFIG_WIND_Z168_TEST
+	*(kal_bool *) (data) = 0;	/* battery exist */
+	battery_log(BAT_LOG_CRTI, "[charging_get_battery_status] battery exist for bring up.\n");
+#else
+//zhangchao@wind-mobi.com 20170322 end
 	unsigned int val = 0;
 
 #if defined(CONFIG_POWER_EXT) || defined(CONFIG_MTK_FPGA)
@@ -486,6 +492,9 @@ static unsigned int charging_get_battery_status(void *data)
 		*(kal_bool *) (data) = KAL_FALSE;
 	}
 #endif
+//zhangchao@wind-mobi.com 20170322 begin
+#endif
+//zhangchao@wind-mobi.com 20170322 end
 
 	return status;
 }
