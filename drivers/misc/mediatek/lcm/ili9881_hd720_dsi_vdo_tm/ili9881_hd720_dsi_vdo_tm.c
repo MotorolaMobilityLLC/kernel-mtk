@@ -506,10 +506,29 @@ static void lcm_suspend(void)
 
 static void lcm_resume(void)
 {
+//huyunge@wind-mobi.com modify at 20170322 for LCD out sleep time 
+#ifdef GPIO_LCD_BIAS_ENP_PIN	
+	mt_set_gpio_mode(GPIO_LCD_BIAS_ENP_PIN, GPIO_MODE_00);	
+	mt_set_gpio_dir(GPIO_LCD_BIAS_ENP_PIN, GPIO_DIR_OUT);	
+	mt_set_gpio_out(GPIO_LCD_BIAS_ENP_PIN, GPIO_OUT_ONE);
+#endif
+	MDELAY(10);
 
+	SET_RESET_PIN(1);
+	MDELAY(1);
+	SET_RESET_PIN(0);
+	MDELAY(10);
+	SET_RESET_PIN(1);
+	MDELAY(120);		
 
-	lcm_init();
-
+	push_table(lcm_initialization_setting, sizeof(lcm_initialization_setting) / sizeof(struct LCM_setting_table), 1); 
+	#ifdef  CONFIG_WIND_CABC_BACKLIGHT_CTRL
+	if(wind_board_id <= 0x13){
+		push_table(close_lcm_backlight_setting, sizeof(close_lcm_backlight_setting) / sizeof(struct LCM_setting_table), 1);
+	}
+	#endif
+	//lcm_init();
+//huyunge@wind-mobi.com modify at 20170322 for LCD out sleep time
 }
 
 //sunsiyuan@wind-mobi.com modify ata_check at 20161228 begin
