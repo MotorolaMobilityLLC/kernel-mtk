@@ -171,7 +171,17 @@ static long sdcardfs_unlocked_ioctl(struct file *file, unsigned int cmd,
 {
 	long err = -ENOTTY;
 	struct file *lower_file;
+	struct sdcardfs_sb_info *sbi = SDCARDFS_SB(file->f_path.dentry->d_sb);
 
+	if (cmd == SDCARDFS_IOC_DIS_ACCESS) {
+		if (!capable(CAP_SYS_ADMIN)) {
+			err = -EPERM;
+			goto out;
+		}
+		sbi->flag |= SDCARDFS_MOUNT_ACCESS_DISABLE;
+		err = 0;
+		goto out;
+	}
 	lower_file = sdcardfs_lower_file(file);
 
 	/* XXX: use vfs_ioctl if/when VFS exports it */
@@ -294,6 +304,11 @@ static int sdcardfs_open(struct inode *inode, struct file *file)
 	/* save current_cred and override it */
 	OVERRIDE_CRED(sbi, saved_cred);
 
+	if (sbi->flag && SDCARDFS_MOUNT_ACCESS_DISABLE) {
+		err = -ENOENT;
+		goto out_revert_cred;
+	}
+
 	file->private_data =
 		kzalloc(sizeof(struct sdcardfs_file_info), GFP_KERNEL);
 	if (!SDCARDFS_F(file)) {
@@ -390,6 +405,32 @@ static int sdcardfs_fasync(int fd, struct file *file, int flag)
 	return err;
 }
 
+/*
+ * Wrapfs cannot use generic_file_llseek as ->llseek, because it would
+ * only set the offset of the upper file.  So we have to implement our
+ * own method to set both the upper and lower file offsets
+ * consistently.
+ */
+static loff_t sdcardfs_file_llseek(struct file *file, loff_t offset, int whence)
+{
+	int err;
+	struct file *lower_file;
+	const struct cred *saved_cred;
+	OVERRIDE_CRED(SDCARDFS_SB(file->f_path.dentry->d_sb), saved_cred);
+
+
+	err = generic_file_llseek(file, offset, whence);
+	if (err < 0)
+		goto out;
+
+	lower_file = sdcardfs_lower_file(file);
+	err = generic_file_llseek(lower_file, offset, whence);
+
+out:
+	REVERT_CRED(saved_cred);
+	return err;
+}
+
 const struct file_operations sdcardfs_main_fops = {
 	.llseek		= generic_file_llseek,
 	.read		= sdcardfs_read,
@@ -410,7 +451,7 @@ const struct file_operations sdcardfs_main_fops = {
 
 /* trimmed directory options */
 const struct file_operations sdcardfs_dir_fops = {
-	.llseek		= generic_file_llseek,
+	.llseek		= sdcardfs_file_llseek,
 	.read		= generic_read_dir,
 	.iterate	= sdcardfs_readdir,
 	.unlocked_ioctl	= sdcardfs_unlocked_ioctl,
