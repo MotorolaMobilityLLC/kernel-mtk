@@ -777,6 +777,17 @@ static int __init pn544_dev_init(void)
 			case ROLA_SS_NA_SKY77638_DVT2_1:	//1a
 			case AP_B28_DS_NA_DVT2_1:				//1b
 //sunjingtao@wind-mobi.com at 20170119 end
+//sunjingtao@wind-mobi.com at 20170322 begin
+			case AP_B28_DS_SKY77638_DVT2_1:		//1c
+			case AP_DS_NA_MP:		//1d
+			case EMEA_DS_NA_MP:		//1e
+			case LATAM_DS_NA_SKY77643_MP:       //20
+			case ROLA_SS_NA_SKY77643_MP:         //21
+			case LATAM_DS_NA_SKY77638_MP:      //22
+			case ROLA_SS_NA_SKY77638_MP:	//23
+			case AP_B28_DS_NA_MP:				//24
+			case AP_B28_DS_SKY77638_MP:		//25
+//sunjingtao@wind-mobi.com at 20170322 end
 					printk("this board is not support NFC\n");
 				return 0;
 			case EMEA_SS_NFC_DVT:
@@ -785,6 +796,9 @@ static int __init pn544_dev_init(void)
 //sunjingtao@wind-mobi.com at 20170119 begin
 			case EMEA_SS_NFC_DVT2_1:		//16
 //sunjingtao@wind-mobi.com at 20170119 end
+//sunjingtao@wind-mobi.com at 20170322 begin
+			case EMEA_SS_NFC_MP:		//1f
+//sunjingtao@wind-mobi.com at 20170322 end
 				printk("this board is support NFC\n");
 				break;
 			default:

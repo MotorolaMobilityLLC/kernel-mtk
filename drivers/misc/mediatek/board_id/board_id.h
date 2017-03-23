@@ -38,8 +38,20 @@
 	ROLA_SS_NA_SKY77643_DVT2_1,          //18
 	LATAM_DS_NA_SKY77638_DVT2_1,      //19
 	ROLA_SS_NA_SKY77638_DVT2_1,	//1a
-	AP_B28_DS_NA_DVT2_1		//1b
+	AP_B28_DS_NA_DVT2_1,		//1b
 //sunjingtao@wind-mobi.com at 20170119 end
+//sunjingtao@wind-mobi.com at 20170322 begin
+	AP_B28_DS_SKY77638_DVT2_1,	//1c
+	AP_DS_NA_MP,		//1d
+	EMEA_DS_NA_MP,		//1e
+	EMEA_SS_NFC_MP,     //1f
+	LATAM_DS_NA_SKY77643_MP,        //20
+	ROLA_SS_NA_SKY77643_MP,          //21
+	LATAM_DS_NA_SKY77638_MP,      //22
+	ROLA_SS_NA_SKY77638_MP,	//23
+	AP_B28_DS_NA_MP,		//24
+	AP_B28_DS_SKY77638_MP	//25
+//sunjingtao@wind-mobi.com at 20170322 end
  };
  
  enum{
