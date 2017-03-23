@@ -520,93 +520,6 @@ void battery_debug_init(void)
 	proc_create("dump_dtsi", S_IRUGO | S_IWUSR, battery_dir, &battery_dump_dtsi_proc_fops);
 }
 
-static ssize_t show_Battery_Temperature(struct device *dev, struct device_attribute *attr,
-					       char *buf)
-{
-	bm_err("show_Battery_Temperature: %d %d\n", battery_main.BAT_batt_temp, fixed_bat_tmp);
-	return sprintf(buf, "%d\n", fixed_bat_tmp);
-}
-
-static ssize_t store_Battery_Temperature(struct device *dev, struct device_attribute *attr,
-						const char *buf, size_t size)
-{
-	signed int temp;
-
-	if (kstrtoint(buf, 10, &temp) == 0) {
-		int fg_bat_temp_int_en = 0;
-
-		fixed_bat_tmp = temp;
-		battery_meter_ctrl(BATTERY_METER_CMD_SET_FG_BAT_TMP_EN, &fg_bat_temp_int_en);
-		battery_main.BAT_batt_temp = force_get_tbat(true);
-		bm_err("store_Battery_Temperature: fixed_bat_tmp:%d ,tmp:%d!\n", temp, battery_main.BAT_batt_temp);
-		battery_update(&battery_main);
-	} else {
-		bm_err("store_Battery_Temperature: format error!\n");
-	}
-	return size;
-}
-
-static DEVICE_ATTR(Battery_Temperature, 0664, show_Battery_Temperature,
-		   store_Battery_Temperature);
-
-#if 0
-unsigned long BAT_Get_Battery_Current(int polling_mode)
-{
-	int bat_current;
-
-	battery_meter_ctrl(BATTERY_METER_CMD_GET_HW_FG_CURRENT, &bat_current);
-	/*	battery_meter_ctrl(BATTERY_METER_CMD_GET_HW_FG_CURRENT_AVG, &bat_current); */
-
-	return bat_current;
-}
-
-unsigned long BAT_Get_Battery_Voltage(int polling_mode)
-{
-	int bat_vol;
-
-	battery_meter_ctrl(BATTERY_METER_CMD_GET_ADC_V_BAT_SENSE, &bat_vol);
-/*	battery_meter_ctrl(BATTERY_METER_CMD_GET_ADC_V_BAT_SENSE_AVG, &bat_vol); */
-
-	return bat_vol;
-}
-
-unsigned int bat_get_ui_percentage(void)
-{
-	return 50;
-}
-
-void wake_up_bat(void)
-{
-
-}
-EXPORT_SYMBOL(wake_up_bat);
-
-signed int battery_meter_get_battery_current(void)
-{
-	int fg_current;
-	int ret;
-
-	ret = battery_meter_ctrl(BATTERY_METER_CMD_GET_HW_FG_CURRENT, &fg_current);
-
-	return fg_current;
-}
-
-bool battery_meter_get_battery_current_sign(void)
-{
-	int ret = 0;
-	bool val = 0;
-
-	ret = battery_meter_ctrl(BATTERY_METER_CMD_GET_HW_FG_CURRENT_SIGN, &val);
-
-	return val;
-
-}
-
-signed int battery_meter_get_charger_voltage(void)
-{
-	return pmic_get_vbus();
-}
-#endif
 /* ============================================================ */
 /* Internal function */
 /* ============================================================ */
@@ -885,6 +798,7 @@ void fg_custom_init_from_header(void)
 
 	fg_cust_data.battery_tmp_to_disable_gm30 = BATTERY_TMP_TO_DISABLE_GM30;
 	fg_cust_data.battery_tmp_to_disable_nafg = BATTERY_TMP_TO_DISABLE_NAFG;
+	fg_cust_data.battery_tmp_to_enable_nafg = BATTERY_TMP_TO_ENABLE_NAFG;
 
 #if defined(GM30_DISABLE_NAFG)
 	fg_cust_data.disable_nafg = 1;
@@ -2103,6 +2017,17 @@ void bmd_ctrl_cmd_from_user(void *nl_data, struct fgd_nl_msg_t *ret_msg)
 	}
 	break;
 
+	case FG_DAEMON_CMD_GET_VBAT:
+	{
+		unsigned int vbat = 0;
+
+		vbat = battery_get_bat_voltage() * 10;
+		ret_msg->fgd_data_len += sizeof(vbat);
+		memcpy(ret_msg->fgd_data, &vbat, sizeof(vbat));
+		bm_debug("[fg_res] FG_DAEMON_CMD_GET_VBAT = %d\n", vbat);
+	}
+	break;
+
 	case FG_DAEMON_CMD_SET_FG_RESET_RTC_STATUS:
 	{
 		int fg_reset_rtc;
@@ -2884,9 +2809,10 @@ void fg_bat_temp_int_internal(void)
 	fg_bat_new_ht = TempToBattVolt(tmp + 1, 1);
 	fg_bat_new_lt = TempToBattVolt(tmp - 1, 0);
 
-	battery_meter_ctrl(BATTERY_METER_CMD_SET_FG_BAT_TMP_INT_LT, &fg_bat_new_lt);
-	battery_meter_ctrl(BATTERY_METER_CMD_SET_FG_BAT_TMP_INT_HT, &fg_bat_new_ht);
-
+	if (fixed_bat_tmp == 0xffff) {
+		battery_meter_ctrl(BATTERY_METER_CMD_SET_FG_BAT_TMP_INT_LT, &fg_bat_new_lt);
+		battery_meter_ctrl(BATTERY_METER_CMD_SET_FG_BAT_TMP_INT_HT, &fg_bat_new_ht);
+	}
 	battery_main.BAT_batt_temp = tmp;
 	battery_update(&battery_main);
 }
@@ -2997,6 +2923,9 @@ void fg_drv_update_hw_status(void)
 	hwocv = hwocv_new;
 	plugout_status = plugout_status_new;
 	tmp = tmp_new;
+
+	wakeup_fg_algo(FG_INTR_DUMP_INFO);
+
 }
 
 void fg_iavg_int_ht_handler(void)
@@ -3840,6 +3769,40 @@ static ssize_t store_FG_Battery_CurrentConsumption(struct device *dev,
 
 static DEVICE_ATTR(FG_Battery_CurrentConsumption, 0664, show_FG_Battery_CurrentConsumption,
 		   store_FG_Battery_CurrentConsumption);
+
+static ssize_t show_Battery_Temperature(struct device *dev, struct device_attribute *attr,
+					       char *buf)
+{
+	bm_err("show_Battery_Temperature: %d %d\n", battery_main.BAT_batt_temp, fixed_bat_tmp);
+	return sprintf(buf, "%d\n", fixed_bat_tmp);
+}
+
+static ssize_t store_Battery_Temperature(struct device *dev, struct device_attribute *attr,
+						const char *buf, size_t size)
+{
+	signed int temp;
+
+	if (kstrtoint(buf, 10, &temp) == 0) {
+		int fg_bat_temp_int_en = 0;
+
+		fixed_bat_tmp = temp;
+
+		if (fixed_bat_tmp == 0xffff)
+			fg_bat_temp_int_internal();
+		else
+			battery_meter_ctrl(BATTERY_METER_CMD_SET_FG_BAT_TMP_EN, &fg_bat_temp_int_en);
+
+		battery_main.BAT_batt_temp = force_get_tbat(true);
+		bm_err("store_Battery_Temperature: fixed_bat_tmp:%d ,tmp:%d!\n", temp, battery_main.BAT_batt_temp);
+		battery_update(&battery_main);
+	} else {
+		bm_err("store_Battery_Temperature: format error!\n");
+	}
+	return size;
+}
+
+static DEVICE_ATTR(Battery_Temperature, 0664, show_Battery_Temperature,
+		   store_Battery_Temperature);
 
 /* ///////////////////////////////////////////////////////////////////////////////////////// */
 /* // Create File For EM : Power_On_Voltage */

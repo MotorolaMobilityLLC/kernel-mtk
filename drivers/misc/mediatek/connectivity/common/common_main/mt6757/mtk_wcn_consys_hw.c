@@ -62,9 +62,7 @@
 
 #include <linux/of_reserved_mem.h>
 
-#if CONSYS_CLOCK_BUF_CTRL
 #include <mtk_clkbuf_ctl.h>
-#endif
 
 /*******************************************************************************
 *                              C O N S T A N T S
@@ -415,6 +413,9 @@ INT32 mtk_wcn_consys_hw_reg_ctrl(UINT32 on, UINT32 co_clock_type)
 		if (co_clock_type) {
 			/*step0,clk buf ctrl */
 			WMT_PLAT_INFO_FUNC("co clock type(%d),turn on clk buf\n", co_clock_type);
+			if (!is_clk_buf_from_pmic())
+				clk_buf_ctrl(CLK_BUF_CONN, 1);
+
 			/*if co-clock mode: */
 			/*2.set VCN28 to SW control mode (with PMIC_WRAP API) */
 			/*turn on VCN28 LDO only when FMSYS is activated"  */
@@ -789,6 +790,8 @@ INT32 mtk_wcn_consys_hw_reg_ctrl(UINT32 on, UINT32 co_clock_type)
 #if CONSYS_PMIC_CTRL_ENABLE
 		if (co_clock_type) {
 			/*VCN28 has been turned off by GPS OR FM */
+			if (!is_clk_buf_from_pmic())
+				clk_buf_ctrl(CLK_BUF_CONN, 0);
 		} else {
 			#if defined(CONFIG_MTK_PMIC_CHIP_MT6355)
 			pmic_set_register_value(PMIC_RG_LDO_VCN28_HW0_OP_EN, 0);

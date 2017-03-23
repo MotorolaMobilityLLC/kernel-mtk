@@ -33,8 +33,8 @@ unsigned int chip_reset_only;
 
 #define REMOVE_USELESS_LOG 1
 
-#define STP_POLL_CPUPCR_NUM 16
-#define STP_POLL_CPUPCR_DELAY 10
+#define STP_POLL_CPUPCR_NUM 5
+#define STP_POLL_CPUPCR_DELAY 5
 #define STP_RETRY_OPTIMIZE 0
 
 /* global variables */
@@ -655,8 +655,6 @@ VOID stp_do_tx_timeout(VOID)
 		STP_DBG_FUNC("current TX timeout package has not received ACK yet,retry_times(%d)\n",
 		g_retry_times);
 #endif
-	/*polling cpupcr when no ack occurs at first retry */
-	stp_dbg_poll_cpupcr(STP_POLL_CPUPCR_NUM, STP_POLL_CPUPCR_DELAY, 1);
 	seq = stp_core_ctx.sequence.rxack;
 	INDEX_INC(seq);
 
@@ -749,6 +747,8 @@ VOID stp_do_tx_timeout(VOID)
 	}
 
 	stp_ctx_unlock(&stp_core_ctx);
+	/*polling cpupcr when no ack occurs at first retry */
+	stp_dbg_poll_cpupcr(STP_POLL_CPUPCR_NUM, STP_POLL_CPUPCR_DELAY, 1);
 	STP_WARN_FUNC
 	    ("==============================================================================#\n");
 }

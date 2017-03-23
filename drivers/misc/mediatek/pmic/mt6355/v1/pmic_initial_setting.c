@@ -21,6 +21,8 @@
 #include "include/pmic.h"
 #include "include/pmic_api.h"
 #include "include/pmic_api_buck.h"
+#include <mtk_clkbuf_ctl.h>
+
 
 #define PMIC_32K_LESS_DETECT_V1      0
 #define PMIC_CO_TSX_V1               1
@@ -209,10 +211,14 @@ void PMIC_LP_INIT_SETTING(void)
 	ret = pmic_ldo_vsram_core_lp(SRCLKEN0, 1, HW_LP);
 	ret = pmic_ldo_vfe28_lp(SRCLKEN1, 1, HW_OFF);
 	ret = pmic_ldo_vtcxo24_lp(SRCLKEN1, 1, HW_OFF);
-	if (crystal_exist_status() == true)
+	if (is_clk_buf_from_pmic()) {
+		if (crystal_exist_status() == true)
+			ret = pmic_ldo_vxo22_lp(SRCLKEN0, 1, HW_OFF);
+		else
+			ret = pmic_ldo_vxo22_lp(SRCLKEN0, 1, HW_LP);
+	} else {
 		ret = pmic_ldo_vxo22_lp(SRCLKEN0, 1, HW_OFF);
-	else
-		ret = pmic_ldo_vxo22_lp(SRCLKEN0, 1, HW_LP);
+	}
 	ret = pmic_ldo_vxo18_lp(SRCLKEN0, 1, HW_OFF);
 	ret = pmic_ldo_vrf18_1_lp(SRCLKEN1, 1, HW_OFF);
 	ret = pmic_ldo_vrf18_2_lp(SRCLKEN1, 1, HW_OFF);

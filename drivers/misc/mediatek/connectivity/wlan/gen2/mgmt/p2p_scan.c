@@ -604,10 +604,11 @@ scanP2pUpdateBssChannel(IN UINT_8 ucHwChannel,
 			     IN P_HIF_RX_HEADER_T prHifRxHdr,
 			     IN P_BSS_DESC_T prBssDesc)
 {
-	DBGLOG(P2P, INFO, "[channel] hw:ds:ht: %d:%d:%d\n",
+	DBGLOG(P2P, INFO, "[channel] hw:ds:ht: band: %d:%d:%d:%d\n",
 			ucHwChannel,
 			ucDsChannel,
-			ucHtChannel);
+			ucHtChannel,
+			prBssDesc->eBand);
 	if (prBssDesc->eBand == BAND_2G4) {
 
 		/* Update RCPI if in right channel */
@@ -681,6 +682,18 @@ scanP2pGetBssChannel(IN P_SW_RFB_T prSwRfb,
 }
 
 VOID
+scanP2pUpdateBssBand(IN UINT_8 ucDsChannel,
+			     IN UINT_8 ucHtChannel,
+			     IN P_BSS_DESC_T prBssDesc)
+{
+	if ((ucDsChannel >= 1 && ucDsChannel <= 14)
+		|| (ucHtChannel >= 1 && ucHtChannel <= 14))
+		prBssDesc->eBand = BAND_2G4;
+	else
+		prBssDesc->eBand = BAND_5G;
+}
+
+VOID
 scanP2pProcessBeaconAndProbeResp(IN P_ADAPTER_T prAdapter,
 				 IN P_SW_RFB_T prSwRfb,
 				 IN P_WLAN_STATUS prStatus,
@@ -717,21 +730,24 @@ scanP2pProcessBeaconAndProbeResp(IN P_ADAPTER_T prAdapter,
 
 			ASSERT_BREAK((prSwRfb != NULL) && (prBssDesc != NULL));
 
+			ucHwChannel = HIF_RX_HDR_GET_CHNL_NUM(prSwRfb->prHifRxHdr);
+			/*
+			 * Should update channel information separately
+			 */
+			scanP2pGetBssChannel(prSwRfb, &ucDsChannel, &ucHtChannel);
+
 			if (((prWlanBeaconFrame->u2FrameCtrl & MASK_FRAME_TYPE) != MAC_FRAME_PROBE_RSP)) {
 				/* Only report Probe Response frame to supplicant. */
 				/* Probe response collect much more information. */
 
 				if (fgIsSkipThisBeacon || prBssDesc->eBand == BAND_2G4)
 					break;
+
+				prBssDesc->eBand = HIF_RX_HDR_GET_RF_BAND(prSwRfb->prHifRxHdr);
+			} else {
+				scanP2pUpdateBssBand(ucDsChannel, ucHtChannel, prBssDesc);
 			}
 
-			ucHwChannel = HIF_RX_HDR_GET_CHNL_NUM(prSwRfb->prHifRxHdr);
-			prBssDesc->eBand = HIF_RX_HDR_GET_RF_BAND(prSwRfb->prHifRxHdr);
-
-			/*
-			 * Should update channel information separately
-			 */
-			scanP2pGetBssChannel(prSwRfb, &ucDsChannel, &ucHtChannel);
 			scanP2pUpdateBssChannel(ucHwChannel, ucDsChannel, ucHtChannel,
 						prSwRfb->prHifRxHdr,
 						prBssDesc);

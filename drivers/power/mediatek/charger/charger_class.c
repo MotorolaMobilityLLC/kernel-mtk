@@ -348,7 +348,7 @@ int charger_dev_send_ta_current_pattern(struct charger_device *charger_dev, bool
 
 	return -ENOTSUPP;
 }
-EXPORT_SYMBOL(charger_dev_send_ta20_current_pattern);
+EXPORT_SYMBOL(charger_dev_send_ta_current_pattern);
 
 int charger_dev_send_ta20_current_pattern(struct charger_device *charger_dev, u32 uV)
 {

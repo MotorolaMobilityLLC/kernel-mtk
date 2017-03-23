@@ -869,7 +869,7 @@ static int dispatch_ext_layer(struct disp_layer_info *disp_info)
 					is_on_OVL = 0;
 					is_ext_layer = 0;
 					++phy_layer_num_on_OVL_2L;
-				} else {
+				} else if (is_ext_layer) {
 					is_ext_layer = 0;
 					++phy_layer_num_on_OVL;
 				}
