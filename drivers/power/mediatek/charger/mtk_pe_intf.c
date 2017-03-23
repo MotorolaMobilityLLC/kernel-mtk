@@ -21,9 +21,14 @@
 
 #ifdef CONFIG_MTK_PUMP_EXPRESS_PLUS_SUPPORT
 
-static int pe_get_vbus(void)
+static inline u32 pe_get_vbus(void)
 {
 	return pmic_get_vbus() * 1000;
+}
+
+static inline u32 pe_get_ibat(void)
+{
+	return battery_meter_get_battery_current() * 100;
 }
 
 static int pe_enable_hw_vbus_ovp(struct charger_manager *pinfo, bool enable)
@@ -127,20 +132,19 @@ static int pe_check_leave_status(struct charger_manager *pinfo)
 		return ret;
 	}
 
-	ichg = battery_get_bat_current(); /* 0.1 mA */
-	ichg /= 10; /* mA */
+	ichg = pe_get_ibat();
 	current_sign = battery_get_bat_current_sign();
 
 	/* Check SOC & Ichg */
 	if (pinfo->data.ta_stop_battery_soc < battery_get_bat_soc() &&
-	    current_sign && ichg < pinfo->data.pe_ichg_level_threshold) {
+	    current_sign && ichg < pinfo->data.pe_ichg_level_threshold * 1000) {
 		ret = pe_leave(pinfo, true);
 		if (ret < 0 || pe->pe_is_connect)
 			goto _err;
 		pr_err(
 			"%s: OK, SOC = (%d,%d), Ichg = %dmA, stop PE+\n",
 			__func__, battery_get_bat_soc(), pinfo->data.ta_stop_battery_soc,
-			ichg);
+			ichg / 1000);
 	}
 
 	return ret;
@@ -193,7 +197,8 @@ static int pe_increase_ta_vchr(struct charger_manager *pinfo, u32 vchr_target)
 			__func__, retry_cnt, vchr_before, vchr_after, vchr_target);
 
 		retry_cnt++;
-	} while (mt_get_charger_type() != CHARGER_UNKNOWN && retry_cnt < 3);
+	} while (mt_get_charger_type() != CHARGER_UNKNOWN && retry_cnt < 3 &&
+		pinfo->enable_hv_charging);
 
 	ret = -EIO;
 	pr_err(
@@ -338,16 +343,27 @@ int mtk_pe_reset_ta_vchr(struct charger_manager *pinfo)
 int mtk_pe_check_charger(struct charger_manager *pinfo)
 {
 	int ret = 0;
+	struct mtk_pe *pe = &pinfo->pe;
 
-	if (mtk_pe20_get_is_connect(pinfo)) {
-		pr_err("%s: stop, PE+20 is connected\n",
-			__func__);
+	if (!pinfo->enable_hv_charging) {
+		pr_info("%s: hv charging is disabled\n", __func__);
+		if (pe->pe_is_connect) {
+			pe_leave(pinfo, true);
+			pe->pe_to_check_chr_type = true;
+		}
 		return ret;
 	}
 
-	if (!pinfo->enable_pe_plus) {
-		pr_err("%s: stop, PE+ is disabled\n",
-			__func__);
+	if (mtk_pe20_get_is_connect(pinfo)) {
+		pr_err("%s: stop, PE+20 is connected\n", __func__);
+		return ret;
+	}
+
+	if (!pinfo->enable_pe_plus)
+		return -ENOTSUPP;
+
+	if (!pe->pe_is_enabled) {
+		pr_err("%s: stop, PE+ is disabled\n", __func__);
 		return ret;
 	}
 
@@ -406,6 +422,16 @@ _err:
 int mtk_pe_start_algorithm(struct charger_manager *pinfo)
 {
 	int ret = 0, chr_volt;
+	struct mtk_pe *pe = &pinfo->pe;
+
+	if (!pinfo->enable_hv_charging) {
+		pr_info("%s: hv charging is disabled\n", __func__);
+		if (pe->pe_is_connect) {
+			pe_leave(pinfo, true);
+			pe->pe_to_check_chr_type = true;
+		}
+		return ret;
+	}
 
 	if (mtk_pe20_get_is_connect(pinfo)) {
 		pr_err("%s: stop, PE+20 is connected\n",

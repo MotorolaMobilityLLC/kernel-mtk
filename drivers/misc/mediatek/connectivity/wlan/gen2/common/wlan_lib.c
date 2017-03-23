@@ -3966,9 +3966,10 @@ WLAN_STATUS wlanEnqueueTxPacket(IN P_ADAPTER_T prAdapter, IN P_NATIVE_PACKET prN
 	QUEUE_REMOVE_HEAD(&prTxCtrl->rFreeMsduInfoList, prMsduInfo, P_MSDU_INFO_T);
 	KAL_RELEASE_SPIN_LOCK(prAdapter, SPIN_LOCK_TX_MSDU_INFO_LIST);
 
-	if (prMsduInfo == NULL)
+	if (prMsduInfo == NULL) {
+		DBGLOG(TX, WARN, "%s prMsduInfo is null!\n", __func__);
 		return WLAN_STATUS_RESOURCES;
-
+	}
 	prMsduInfo->eSrc = TX_PACKET_OS;
 
 	if (nicTxFillMsduInfo(prAdapter, prMsduInfo, prNativePacket) == FALSE) {
@@ -3978,6 +3979,8 @@ WLAN_STATUS wlanEnqueueTxPacket(IN P_ADAPTER_T prAdapter, IN P_NATIVE_PACKET prN
 		kalSendComplete(prAdapter->prGlueInfo, prNativePacket, WLAN_STATUS_INVALID_PACKET);
 
 		nicTxReturnMsduInfo(prAdapter, prMsduInfo);
+
+		DBGLOG(TX, WARN, "%s WLAN_STATUS_INVALID_PACKET!\n", __func__);
 
 		return WLAN_STATUS_INVALID_PACKET;
 	}

@@ -46,7 +46,7 @@
 /* #include <mach/mt6605.h> */
 
 #ifndef CONFIG_MTK_FPGA
-/* #include <mt_clkbuf_ctl.h>  for clock buffer */
+#include <mtk_clkbuf_ctl.h>
 #endif
 
 /* #include <cust_eint.h> */
@@ -878,14 +878,16 @@ static long mt6605_dev_unlocked_ioctl(struct file *filp, unsigned int cmd,
 			pr_debug("%s, enable clock buffer.\n", __func__);
 #ifndef CONFIG_MTK_FPGA
 			/* enable nfc clock buffer */
-			/* clk_buf_ctrl(CLK_BUF_NFC, 1); */
+			if (!is_clk_buf_from_pmic())
+				clk_buf_ctrl(CLK_BUF_NFC, 1);
 #endif
 			break;
 		case MTK_NFC_IOCTL_CMD_CLOCK_BUF_DISABLE:
 			pr_debug("%s, disable clock buffer.\n", __func__);
 #ifndef CONFIG_MTK_FPGA
 			/* disable nfc clock buffer */
-			/* clk_buf_ctrl(CLK_BUF_NFC, 0); */
+			if (!is_clk_buf_from_pmic())
+				clk_buf_ctrl(CLK_BUF_NFC, 0);
 #endif
 			break;
 		case MTK_NFC_IOCTL_CMD_EXIT_EINT:

@@ -55,6 +55,7 @@
 
 #define IP_PRO_ICMP				0x01
 #define IP_PRO_UDP				0x11
+#define IP_PRO_TCP				0x06
 
 #define UDP_PORT_DHCPS				0x43
 #define UDP_PORT_DHCPC				0x44

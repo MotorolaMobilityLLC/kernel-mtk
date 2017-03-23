@@ -1660,13 +1660,12 @@ static ssize_t show_Pump_Express(struct device *dev, struct device_attribute *at
 			is_ta_detected = 1;
 		pr_debug("%s: pe20_is_connect = %d\n",
 			__func__, mtk_pe20_get_is_connect(pinfo));
-#if 0 /* TODO: Add PE+ */
+
 		/* Is PE+ connect */
 		if (mtk_pe_get_is_connect(pinfo))
 			is_ta_detected = 1;
-		pr_err("%s: pe_is_connect = %d\n",
-			__func__, mtk_pep_get_is_connect(pinfo));
-#endif
+		pr_debug("%s: pe_is_connect = %d\n",
+			__func__, mtk_pe_get_is_connect(pinfo));
 	}
 
 	if (mtk_is_TA_support_pe30(pinfo) == true)
