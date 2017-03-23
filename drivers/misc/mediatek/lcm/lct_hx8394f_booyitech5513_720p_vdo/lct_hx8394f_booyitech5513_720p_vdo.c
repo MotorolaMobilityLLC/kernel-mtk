@@ -514,7 +514,16 @@ static void lcm_suspend(void)
 
 static void lcm_resume(void)
 {
-	lcm_init();
+	//lcm_init();	//modified by zhudaolong at 20170323
+	tps65132_enable_5513(1);
+	SET_RESET_PIN(1);
+	MDELAY(5);
+	SET_RESET_PIN(0);
+	MDELAY(10);
+	SET_RESET_PIN(1);
+	MDELAY(20);
+	push_table(lcm_initialization_setting,
+		   sizeof(lcm_initialization_setting) / sizeof(struct LCM_setting_table), 1);	
 }
 
 static unsigned int last_level=0;
