@@ -4259,7 +4259,7 @@ static int __batt_init_cust_data_from_dt(void)
 	//zhangchao@wind-mobi.com 20161221 begin
 	#ifdef CONFIG_WIND_Z168_BATTERY_MODIFY
 	ret=get_bid_gpio();
-	if(ret==LATAM_DS_NA_EVT || ret==LATAM_DS_NA_DVT || ret==ROLA_SS_NA_EVT || ret==ROLA_SS_NA_DVT || ret==LATAM_DS_NA_SKY77643_DVT2 || ret==LATAM_DS_NA_SKY77638_DVT2 || ret==ROLA_SS_NA_SKY77643_DVT2 || ret==ROLA_SS_NA_SKY77638_DVT2 || ret==LATAM_DS_NA_SKY77643_DVT2_1 || ret== ROLA_SS_NA_SKY77643_DVT2_1 || ret== LATAM_DS_NA_SKY77638_DVT2_1 || ret== ROLA_SS_NA_SKY77638_DVT2_1)
+	if(ret==LATAM_DS_NA_EVT || ret==LATAM_DS_NA_DVT || ret==ROLA_SS_NA_EVT || ret==ROLA_SS_NA_DVT || ret==LATAM_DS_NA_SKY77643_DVT2 || ret==LATAM_DS_NA_SKY77638_DVT2 || ret==ROLA_SS_NA_SKY77643_DVT2 || ret==ROLA_SS_NA_SKY77638_DVT2 || ret==LATAM_DS_NA_SKY77643_DVT2_1 || ret== ROLA_SS_NA_SKY77643_DVT2_1 || ret== LATAM_DS_NA_SKY77638_DVT2_1 || ret== ROLA_SS_NA_SKY77638_DVT2_1 || ret==LATAM_DS_NA_SKY77643_MP || ret==ROLA_SS_NA_SKY77643_MP || ret==LATAM_DS_NA_SKY77638_MP || ret==ROLA_SS_NA_SKY77638_MP)
 	{
 	__batt_parse_node(np, "ac_charger_current",
 		&batt_cust_data.ac_charger_current);
