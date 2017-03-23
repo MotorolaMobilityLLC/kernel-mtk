@@ -187,6 +187,28 @@ static long  bid_dev_unlocked_ioctl(struct file *filp ,unsigned int cmd ,unsigne
 			else if(args==AP_B28_DS_NA_DVT2_1)
 				printk("this board is AP_B28_DS_NA_DVT2_1");
 //sunjingtao@wind-mobi.com at 20170119 end
+//sunjingtao@wind-mobi.com at 20170322 begin
+			else if(args==AP_B28_DS_SKY77638_DVT2_1)
+				printk("this board is AP_B28_DS_SKY77638_DVT2_1");
+			else if(args==AP_DS_NA_MP)
+				printk("this board is AP_DS_NA_MP");
+			else if(args==EMEA_DS_NA_MP)
+				printk("this board is EMEA_DS_NA_MP");
+			else if(args==EMEA_SS_NFC_MP)
+				printk("this board is EMEA_SS_NFC_MP");
+			else if(args==LATAM_DS_NA_SKY77643_MP)
+				printk("this board is LATAM_DS_NA_SKY77643_MP");
+			else if(args==ROLA_SS_NA_SKY77643_MP)
+				printk("this board is ROLA_SS_NA_SKY77643_MP");
+			else if(args==LATAM_DS_NA_SKY77638_MP)
+				printk("this board is LATAM_DS_NA_SKY77638_MP");
+			else if(args==ROLA_SS_NA_SKY77638_MP)
+				printk("this board is ROLA_SS_NA_SKY77638_MP");
+			else if(args==AP_B28_DS_NA_MP)
+				printk("this board is AP_B28_DS_NA_MP");
+			else if(args==AP_B28_DS_SKY77638_MP)
+				printk("this board is AP_B28_DS_SKY77638_MP");
+//sunjingtao@wind-mobi.com at 20170322 end
 			break;
 		default:
 			break;
@@ -314,89 +336,121 @@ static int bid_platform_probe(struct platform_device *pdev){
 	wind_board_id = num;	//tuwenzan@wind-mobi.com add at 20170112
 	switch(num){
 	case AP_DS_NA_EVT: //00
-		board_str="00000";
+		board_str="000000";
 		break;
     case EMEA_DS_NA_EVT:	//01
-		board_str="00001";
+		board_str="000001";
 		break;
 	case EMEA_SS_NA_EVT:		//02
-		board_str="00010";
+		board_str="000010";
 		break;
 	case EMEA_SS_NFC_EVT:	//03
-		board_str="00011";
+		board_str="000011";
 		break;
 	case LATAM_DS_NA_EVT:	//04
-		board_str="00100";
+		board_str="000100";
 		break;
 	case ROLA_SS_NA_EVT:		//05
-		board_str="00101";
+		board_str="000101";
 		break;
 	case AP_DS_NA_DVT:		//06
-		board_str="00110";
+		board_str="000110";
 		break;
 	case EMEA_DS_NA_DVT:		//07
-		board_str="00111";
+		board_str="000111";
 		break;
 	case EMEA_SS_NA_DVT:		//08
-		board_str="01000";
+		board_str="001000";
 		break;
 	case EMEA_SS_NFC_DVT:	//09
-		board_str="01001";
+		board_str="001001";
 		break;
 	case LATAM_DS_NA_DVT:	//0a
-		board_str="01010";
+		board_str="001010";
 		break;
 	case ROLA_SS_NA_DVT:		//0B
-		board_str="01011";
+		board_str="001011";
 		break;
 	case AP_DS_NA_DVT2:		//0c
-		board_str="01100";
+		board_str="001100";
 		break;
 	case EMEA_DS_NA_DVT2:		//0d
-		board_str="01101";
+		board_str="001101";
 		break;
 	case EMEA_SS_NFC_DVT2:	//0e
-		board_str="01110";
+		board_str="001110";
 		break;
 	case LATAM_DS_NA_SKY77643_DVT2:	//0f
-		board_str="01111";
+		board_str="001111";
 		break;
 	case ROLA_SS_NA_SKY77643_DVT2:		//10
-		board_str="10000";
+		board_str="010000";
 		break;
 	case LATAM_DS_NA_SKY77638_DVT2:	//11
-		board_str="10001";
+		board_str="010001";
 		break;
 	case ROLA_SS_NA_SKY77638_DVT2:		//12
-		board_str="10010";
+		board_str="010010";
 		break;
 	case AP_B28_DS_NA_DVT2:		//13
-		board_str="10011";
+		board_str="010011";
 //sunjingtao@wind-mobi.com at 20170119 begin
 	case AP_DS_NA_DVT2_1:		//14
-		board_str="10100";
+		board_str="010100";
 		break;
 	case EMEA_DS_NA_DVT2_1:		//15
-		board_str="10101";
+		board_str="010101";
 		break;
 	case EMEA_SS_NFC_DVT2_1:	//16
-		board_str="10110";
+		board_str="010110";
 		break;
 	case LATAM_DS_NA_SKY77643_DVT2_1:	//17
-		board_str="10111";
+		board_str="010111";
 		break;
 	case ROLA_SS_NA_SKY77643_DVT2_1:		//18
-		board_str="11000";
+		board_str="011000";
 		break;
 	case LATAM_DS_NA_SKY77638_DVT2_1:	//19
-		board_str="11001";
+		board_str="011001";
 		break;
 	case ROLA_SS_NA_SKY77638_DVT2_1:		//1a
-		board_str="11010";
+		board_str="011010";
 		break;
 	case AP_B28_DS_NA_DVT2_1:		//1b
-		board_str="11011";
+		board_str="011011";
 //sunjingtao@wind-mobi.com at 20170119 end
+//sunjingtao@wind-mobi.com at 20170322 begin
+	case AP_B28_DS_SKY77638_DVT2_1:		//1c
+		board_str="011100";
+		break;
+	case AP_DS_NA_MP:		//1d
+		board_str="011101";
+		break;
+	case EMEA_DS_NA_MP:		//1e
+		board_str="011110";
+		break;
+	case EMEA_SS_NFC_MP:	//1f
+		board_str="011111";
+		break;
+	case LATAM_DS_NA_SKY77643_MP:	//20
+		board_str="100000";
+		break;
+	case ROLA_SS_NA_SKY77643_MP:		//21
+		board_str="100001";
+		break;
+	case LATAM_DS_NA_SKY77638_MP:	//22
+		board_str="100010";
+		break;
+	case ROLA_SS_NA_SKY77638_MP:		//23
+		board_str="100011";
+		break;
+	case AP_B28_DS_NA_MP:		//24
+		board_str="100100";
+		break;
+	case AP_B28_DS_SKY77638_MP:		//25
+		board_str="100101";
+		break;
+//sunjingtao@wind-mobi.com at 20170322 end
 	default:
 		break;
 	}
