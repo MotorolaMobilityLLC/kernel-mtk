@@ -3198,6 +3198,6 @@ extern void usb_phy_switch_to_usb(void);
 extern void usb_phy_switch_to_uart(void);
 extern void __iomem *ap_uart0_base;
 #endif
-
+#define MTK_USB_MODE1
 #endif
 #endif

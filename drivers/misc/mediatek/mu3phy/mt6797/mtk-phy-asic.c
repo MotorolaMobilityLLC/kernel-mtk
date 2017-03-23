@@ -571,9 +571,9 @@ PHY_INT32 phy_init_soc(struct u3phy_info *info)
 	U3PhyWriteField32((phys_addr_t) U3D_USBPHYACR5, RG_USB20_HS_100U_U3_EN_OFST,
 			  RG_USB20_HS_100U_U3_EN, 0);
 	U3PhyWriteField32((phys_addr_t) U3D_USBPHYACR1, RG_USB20_VRT_VREF_SEL_OFST,
-			  RG_USB20_VRT_VREF_SEL, 5);
+			  RG_USB20_VRT_VREF_SEL, 7);
 	U3PhyWriteField32((phys_addr_t) U3D_USBPHYACR1, RG_USB20_TERM_VREF_SEL_OFST,
-			  RG_USB20_TERM_VREF_SEL, 5);
+			  RG_USB20_TERM_VREF_SEL, 7);
 #else
 	/*Change 100uA current switch to SSUSB */
 	U3PhyWriteField32((phys_addr_t) U3D_USBPHYACR5, RG_USB20_HS_100U_U3_EN_OFST,
