@@ -219,7 +219,7 @@ out:
 /* The dir context used by  sdcardfs_lower_filldir() */
 struct sdcardfs_lower_getent_cb {
 	struct dir_context ctx;
-	loff_t pos;
+	int count;
 	const char *target; /* search target */
 	int target_len;
 	char alias[NAME_MAX+1]; /* alias name found in lower dir */
@@ -239,7 +239,7 @@ sdcardfs_lower_filldir(struct dir_context *ctx, const char *name, int namelen,
 	if (!buf->result)  /* entry already found, skip search */
 		return 0;
 
-	buf->pos = buf->ctx.pos;
+	buf->count++;
 	if (!strncasecmp(name, buf->target, namelen) && namelen == buf->target_len) {
 		strncpy(buf->alias, name, namelen);
 		buf->alias_len = namelen;
@@ -261,11 +261,9 @@ static int sdcardfs_ci_path_lookup(struct path *folder, const char *name, struct
 {
 	int ret = 0;
 	struct file *filp;
-	loff_t last_pos;
 	struct sdcardfs_lower_getent_cb buf = {
 			.ctx.actor = sdcardfs_lower_filldir,
 			.ctx.pos = 0,
-			.pos = 0,
 			.target = name,
 			.alias_len = 0,
 			.result = -ENOENT
@@ -280,9 +278,9 @@ static int sdcardfs_ci_path_lookup(struct path *folder, const char *name, struct
 		return -ENOENT;
 
 	while (ret >= 0) {
-		last_pos = filp->f_pos;
+		buf.count = 0;
 		ret = iterate_dir(filp, &buf.ctx);
-		if (last_pos == filp->f_pos || !buf.result)  /* reaches end or found matching entry */
+		if (!buf.count || !buf.result)  /* reaches end or found matching entry */
 			break;
 	}
 
@@ -381,6 +379,12 @@ static struct dentry *__sdcardfs_lookup(struct dentry *dentry,
 	this.name = name;
 	this.len = strlen(name);
 	this.hash = full_name_hash(this.name, this.len);
+
+	/* See if the low-level filesystem might want
+	 * to use its own hash */
+	if (lower_dir_dentry->d_flags & DCACHE_OP_HASH)
+		lower_dir_dentry->d_op->d_hash(lower_dir_dentry, &this);
+
 	lower_dentry = d_lookup(lower_dir_dentry, &this);
 	if (lower_dentry)
 		goto setup_lower;
