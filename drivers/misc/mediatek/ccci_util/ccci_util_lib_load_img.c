@@ -688,6 +688,10 @@ void get_md_postfix(int md_id, char k[], char buf[], char buf_ex[])
 						case EMEA_DS_NA_DVT2_1:
 						case EMEA_SS_NFC_DVT2_1:
 //sunjingtao@wind-mobi.com at 20170119 end
+//sunjingtao@wind-mobi.com at 20170322 begin
+						case EMEA_DS_NA_MP:
+						case EMEA_SS_NFC_MP:
+//sunjingtao@wind-mobi.com at 20170322 end
 							snprintf(buf, IMG_POSTFIX_LEN, "%d_%s_1", X, type_str[curr_ubin_id]);
 							break;
 						case LATAM_DS_NA_EVT:
@@ -700,6 +704,10 @@ void get_md_postfix(int md_id, char k[], char buf[], char buf_ex[])
 						case LATAM_DS_NA_SKY77643_DVT2_1:
 						case ROLA_SS_NA_SKY77643_DVT2_1:
 //sunjingtao@wind-mobi.com at 20170119 end
+//sunjingtao@wind-mobi.com at 20170322 begin
+						case LATAM_DS_NA_SKY77643_MP:
+						case ROLA_SS_NA_SKY77643_MP:
+//sunjingtao@wind-mobi.com at 20170322 end
 							snprintf(buf, IMG_POSTFIX_LEN, "%d_%s_2", X, type_str[curr_ubin_id]);
 							break;
 						case AP_DS_NA_EVT:
@@ -708,6 +716,9 @@ void get_md_postfix(int md_id, char k[], char buf[], char buf_ex[])
 //sunjingtao@wind-mobi.com at 20170119 begin
 						case AP_DS_NA_DVT2_1:
 //sunjingtao@wind-mobi.com at 20170119 end
+//sunjingtao@wind-mobi.com at 20170322 begin
+						case AP_DS_NA_MP:
+//sunjingtao@wind-mobi.com at 20170322 end
 							snprintf(buf, IMG_POSTFIX_LEN, "%d_%s_3", X, type_str[curr_ubin_id]);
 							break;
 						case LATAM_DS_NA_SKY77638_DVT2:
@@ -716,12 +727,19 @@ void get_md_postfix(int md_id, char k[], char buf[], char buf_ex[])
 						case LATAM_DS_NA_SKY77638_DVT2_1:
 						case ROLA_SS_NA_SKY77638_DVT2_1:
 //sunjingtao@wind-mobi.com at 20170119 end
+//sunjingtao@wind-mobi.com at 20170322 begin
+						case LATAM_DS_NA_SKY77638_MP:
+						case ROLA_SS_NA_SKY77638_MP:
+//sunjingtao@wind-mobi.com at 20170322 end
 							snprintf(buf, IMG_POSTFIX_LEN, "%d_%s_4", X, type_str[curr_ubin_id]);
 							break;
 						case AP_B28_DS_NA_DVT2:
 //sunjingtao@wind-mobi.com at 20170119 begin
 						case AP_B28_DS_NA_DVT2_1:
 //sunjingtao@wind-mobi.com at 20170119 end
+//sunjingtao@wind-mobi.com at 20170322 begin
+						case AP_B28_DS_NA_MP:
+//sunjingtao@wind-mobi.com at 20170322 end
 							snprintf(buf, IMG_POSTFIX_LEN, "%d_%s_5", X, type_str[curr_ubin_id]);
 							break;
 						default:
@@ -787,6 +805,10 @@ void get_md_postfix(int md_id, char k[], char buf[], char buf_ex[])
 				case EMEA_DS_NA_DVT2_1:
 				case EMEA_SS_NFC_DVT2_1:
 //sunjingtao@wind-mobi.com at 20170119 end
+//sunjingtao@wind-mobi.com at 20170322 begin
+				case EMEA_DS_NA_MP:
+				case EMEA_SS_NFC_MP:
+//sunjingtao@wind-mobi.com at 20170322 end
 					snprintf(YY_K, IMG_POSTFIX_LEN, "_%s_1", type_str[feature_val]);
 					break;
 				case LATAM_DS_NA_EVT:
@@ -799,6 +821,10 @@ void get_md_postfix(int md_id, char k[], char buf[], char buf_ex[])
 				case LATAM_DS_NA_SKY77643_DVT2_1:
 				case ROLA_SS_NA_SKY77643_DVT2_1:
 //sunjingtao@wind-mobi.com at 20170119 end
+//sunjingtao@wind-mobi.com at 20170322 begin
+				case LATAM_DS_NA_SKY77643_MP:
+				case ROLA_SS_NA_SKY77643_MP:
+//sunjingtao@wind-mobi.com at 20170322 end
 					snprintf(YY_K, IMG_POSTFIX_LEN, "_%s_2", type_str[feature_val]);
 					break;
 				case AP_DS_NA_EVT:
@@ -807,6 +833,9 @@ void get_md_postfix(int md_id, char k[], char buf[], char buf_ex[])
 //sunjingtao@wind-mobi.com at 20170119 begin
 				case AP_DS_NA_DVT2_1:
 //sunjingtao@wind-mobi.com at 20170119 end
+//sunjingtao@wind-mobi.com at 20170322 begin
+				case AP_DS_NA_MP:
+//sunjingtao@wind-mobi.com at 20170322 end
 					snprintf(YY_K, IMG_POSTFIX_LEN, "_%s_3", type_str[feature_val]);
 					break;
 				case LATAM_DS_NA_SKY77638_DVT2:
@@ -815,12 +844,19 @@ void get_md_postfix(int md_id, char k[], char buf[], char buf_ex[])
 				case LATAM_DS_NA_SKY77638_DVT2_1:
 				case ROLA_SS_NA_SKY77638_DVT2_1:
 //sunjingtao@wind-mobi.com at 20170119 end
+//sunjingtao@wind-mobi.com at 20170322 begin
+				case LATAM_DS_NA_SKY77638_MP:
+				case ROLA_SS_NA_SKY77638_MP:
+//sunjingtao@wind-mobi.com at 20170322 end
 					snprintf(YY_K, IMG_POSTFIX_LEN, "_%s_4", type_str[feature_val]);
 					break;    //sunjingtao@wind-mobi.com at 20170303
 				case AP_B28_DS_NA_DVT2:
 //sunjingtao@wind-mobi.com at 20170119 begin
 				case AP_B28_DS_NA_DVT2_1:
 //sunjingtao@wind-mobi.com at 20170119 end
+//sunjingtao@wind-mobi.com at 20170322 begin
+				case AP_B28_DS_NA_MP:
+//sunjingtao@wind-mobi.com at 20170322 end
 					snprintf(YY_K, IMG_POSTFIX_LEN, "_%s_5", type_str[feature_val]);				
 					break;	
 				default:
