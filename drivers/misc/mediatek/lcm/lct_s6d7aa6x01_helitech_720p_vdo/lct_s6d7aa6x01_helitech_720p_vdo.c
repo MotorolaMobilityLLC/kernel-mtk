@@ -134,7 +134,7 @@ static struct LCM_setting_table lcm_initialization_setting[] = {
 	{0xFA,17,{0x10,0x30,0x1C,0x24,0x1B,0x20,0x24,0x23,0x22,0x2A,0x2A,0x28,0x27,0x25,0x24,0x23,0x2A}},
 	{0xFB,17,{0x10,0x30,0x1C,0x24,0x1B,0x20,0x24,0x23,0x22,0x26,0x28,0x26,0x27,0x25,0x24,0x23,0x2A}},
 	{0xC0,1,{0x03}},
-	{0xC1, 3, {0x70,0x25,0x23}}, // pwm 20K
+	{0xC1, 3, {0x70,0x0C,0x21}}, // pwm   1.5K
         {0x51, 2, {0x00,0x00}},
 	{0x53, 1, {0x24}},
 	{0x55, 1, {0x01}},
@@ -249,8 +249,8 @@ static void lcm_get_params(LCM_PARAMS *params)
 
 	params->dsi.cont_clock=0;
 	params->dsi.clk_lp_per_line_enable = 0;
-	params->dsi.esd_check_enable = 1;
-	params->dsi.customization_esd_check_enable = 1;
+	params->dsi.esd_check_enable = 0;
+	params->dsi.customization_esd_check_enable = 0;
 	params->dsi.lcm_esd_check_table[0].cmd = 0x0A;
 	params->dsi.lcm_esd_check_table[0].count = 1;
 	params->dsi.lcm_esd_check_table[0].para_list[0] = 0x9C;
@@ -492,7 +492,8 @@ static void lcm_setbacklight_cmdq(void *handle, unsigned int level)
 	{
   
   // level = (8009*level + 20232)*16/(10000);
-    level = (9000*level + 200000)*16/(10000);
+  //  level = (9000*level + 200000)*16/(10000);
+	level = 80 + (12*level);
     	high_level =(level & 0x0f00)>>8;
 	low_level=(level & 0x00ff);
 	bl_level[0].para_list[0] = low_level;
