@@ -70,6 +70,8 @@
 #include <mt-plat/mtk_battery.h>
 #include <musb_core.h>
 
+#include "mtk_switch_charging.h"
+
 static struct charger_manager *pinfo;
 static struct list_head consumer_head = LIST_HEAD_INIT(consumer_head);
 static DEFINE_MUTEX(consumer_mutex);
@@ -913,6 +915,7 @@ static int mtk_charger_plug_out(struct charger_manager *info)
 	pdata1->disable_charging_count = 0;
 	pdata2->disable_charging_count = 0;
 
+    info->pe.pe_is_connect = false;//add by longcheer_liml_2017_03_22
 	if (info->plug_out != NULL)
 		info->plug_out(info);
 
@@ -949,15 +952,25 @@ static void mtk_battery_notify_VCharger_check(struct charger_manager *info)
 {
 #if defined(BATTERY_NOTIFY_CASE_0001_VCHARGER)
 	int vchr = 0;
-
 	vchr = pmic_get_vbus();
-	if (vchr > info->data.max_charger_voltage) {
-		info->notify_code |= 0x0001;
-		pr_err("[BATTERY] charger_vol(%d) > %d mV\n",
-			vchr, info->data.max_charger_voltage);
-	} else {
-		info->notify_code &= ~(0x0001);
+	printk("~~liml func=%s,vchr=%d,info->pe.pe_is_connect=%d\n",__func__,vchr,info->pe.pe_is_connect);
+	if(info->pe.pe_is_connect == true)
+	{
+	    if (vchr > 10000) {//10V
+		    info->notify_code |= 0x0001;
+		    pr_err("[BATTERY] charger_vol(%d) > 10000 mV\n", vchr);
+	    } else {
+		    info->notify_code &= ~(0x0001);
+	    }
+	}else{
+	    if (vchr > info->data.max_charger_voltage/1000) {//6.5V
+		    info->notify_code |= 0x0001;
+		    pr_err("[BATTERY] charger_vol(%d) > %d mV\n", vchr, info->data.max_charger_voltage/1000);
+	    } else {
+		    info->notify_code &= ~(0x0001);
+	    }
 	}
+	
 	if (info->notify_code != 0x0000)
 		pr_err("[BATTERY] BATTERY_NOTIFY_CASE_0001_VCHARGER (%x)\n",
 			info->notify_code);
@@ -1181,6 +1194,30 @@ void mtk_charger_stop_timer(struct charger_manager *info)
 		fgtimer_stop(&info->charger_kthread_fgtimer);
 }
 
+//add by longcheer_liml_2017_03_23
+static void mt_battery_CheckChargerVoltage(struct charger_manager *info)
+{
+    int vchr = 0;
+    struct switch_charging_alg_data *swchgalg = info->algorithm_data;
+    
+    vchr = pmic_get_vbus();
+    printk("~~liml func=%s,vchr=%d,info->pe.pe_is_connect=%d\n",__func__,vchr,info->pe.pe_is_connect);
+	if(info->pe.pe_is_connect == true)
+	{
+        if (vchr > 10000) {//10V
+            swchgalg->state = CHR_ERROR;
+		    charger_manager_notifier(info, CHARGER_NOTIFY_STOP_CHARGING);
+            pr_err("[BATTERY] charger_vol(%d) > 10000 mV\n", vchr);
+        } 
+    }else{
+        if (vchr > info->data.max_charger_voltage/1000) {//6.5V
+            swchgalg->state = CHR_ERROR;
+		    charger_manager_notifier(info, CHARGER_NOTIFY_STOP_CHARGING);
+            pr_err("[BATTERY] charger_vol(%d) > %d mV\n", vchr, info->data.max_charger_voltage/1000);
+        }
+    }
+}
+
 static int charger_routine_thread(void *arg)
 {
 	struct charger_manager *info = arg;
@@ -1210,6 +1247,7 @@ static int charger_routine_thread(void *arg)
 		kpoc_power_off_check(info);
 
 		if (is_charger_on == true) {
+		    mt_battery_CheckChargerVoltage(info);
 			if (info->do_algorithm)
 				info->do_algorithm(info);
 		}
