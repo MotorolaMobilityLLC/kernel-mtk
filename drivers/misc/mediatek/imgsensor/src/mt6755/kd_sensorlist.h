@@ -19,6 +19,9 @@ UINT32 IMX219_MIPI_RAW_SensorInit(PSENSOR_FUNCTION_STRUCT *pfFunc);
 //lenovo.sw START huangsh4 config kungfu 2nd front camera
 UINT32 IMX219_OFILM_MIPI_RAW_SensorInit(PSENSOR_FUNCTION_STRUCT *pfFunc);
 //lenovo.sw END huangsh4 config kungfu 2nd front camera
+//odm.sw START liuzhen config kungfu 2nd front camera of HI843
+UINT32 HI843B_MIPI_RAW_SensorInit(PSENSOR_FUNCTION_STRUCT *pfFunc);
+//odm.sw END liuzhen config kungfu 2nd front camera of HI843
 UINT32 IMX214_MIPI_RAW_SensorInit(PSENSOR_FUNCTION_STRUCT *pfFunc);
 UINT32 IMX179_MIPI_RAW_SensorInit(PSENSOR_FUNCTION_STRUCT *pfFunc);
 UINT32 IMX178_MIPI_RAW_SensorInit(PSENSOR_FUNCTION_STRUCT *pfFunc);
@@ -155,6 +158,11 @@ ACDK_KD_SENSOR_INIT_FUNCTION_STRUCT kdSensorList[MAX_NUM_OF_SUPPORT_SENSOR+1] =
     {IMX219_OFILM_SENSOR_ID, SENSOR_DRVNAME_IMX219_OFILM_MIPI_RAW, IMX219_MIPI_RAW_SensorInit},
 #endif
 //end
+//odm.sw START liuzhen config kungfu 2nd front camera of HI843
+#if defined(HI843B_MIPI_RAW)
+    {HI843B_SENSOR_ID, SENSOR_DRVNAME_HI843B_MIPI_RAW, HI843B_MIPI_RAW_SensorInit},
+#endif
+//odm.sw END liuzhen config kungfu 2nd front camera of HI843
 #if defined(IMX214_MIPI_RAW)
     {IMX214_SENSOR_ID, SENSOR_DRVNAME_IMX214_MIPI_RAW, IMX214_MIPI_RAW_SensorInit},
 #endif

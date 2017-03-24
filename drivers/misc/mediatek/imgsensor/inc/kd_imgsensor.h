@@ -125,6 +125,9 @@ NSFeature :  : RAWSensorInfo < _id >  :  : getFlickerPara \
 #define IMX219_SENSOR_ID                        0x0219
 #define IMX219_SENSOR_ID                        0x0219
 #define IMX219_OFILM_SENSOR_ID         0x021b
+//odm.sw START liuzhen config kungfu 2nd front camera of HI843
+#define HI843B_SENSOR_ID                        0x0843
+//odm.sw END liuzhen config kungfu 2nd front camera of HI843
 #define IMX214_SENSOR_ID                        0x0214
 #define IMX214_MONO_SENSOR_ID                   0x0215
 #define IMX179_SENSOR_ID                        0x0179
@@ -304,6 +307,9 @@ NSFeature :  : RAWSensorInfo < _id >  :  : getFlickerPara \
 #define SENSOR_DRVNAME_IMX220_MIPI_RAW          "imx220mipiraw"
 #define SENSOR_DRVNAME_IMX219_MIPI_RAW          "imx219mipiraw"
 #define SENSOR_DRVNAME_IMX219_OFILM_MIPI_RAW          "imx219ofilmmipiraw"
+//odm.sw START liuzhen config kungfu 2nd front camera of HI843
+#define SENSOR_DRVNAME_HI843B_MIPI_RAW          "hi843bmipiraw"
+//odm.sw END liuzhen config kungfu 2nd front camera of HI843
 #define SENSOR_DRVNAME_IMX214_MIPI_MONO         "imx214mipimono"
 #define SENSOR_DRVNAME_IMX214_MIPI_RAW          "imx214mipiraw"
 #define SENSOR_DRVNAME_IMX179_MIPI_RAW          "imx179mipiraw"
