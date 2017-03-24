@@ -2066,7 +2066,65 @@ bool SetAncRecordReg(uint32 value, uint32 mask)
 
 int get_trim_buffer_diff(int channels)
 {
-#if 0 /* For 6351 */
+#ifdef MT6355_PORTING  /* For 6355 */
+	int diffValue = 0, onValue = 0, offValue = 0;
+
+	if (channels != AUDIO_OFFSET_TRIM_MUX_HPL &&
+	    channels != AUDIO_OFFSET_TRIM_MUX_HPR){
+		pr_warn("%s Not support this channels = %d\n", __func__, channels);
+		return 0;
+	}
+
+	/* Buffer Off and Get Auxadc value */
+	setHpGainZero();
+
+	/* setOffsetTrimMux(AUDIO_OFFSET_TRIM_MUX_HSP); */
+	/* Set Trim mux to HP */
+	setOffsetTrimMux(channels);
+	setOffsetTrimBufferGain(3); /* TrimBufferGain 18db */
+	EnableTrimbuffer(true);
+
+	/* HP off setting */
+	Ana_Set_Reg(AUDDEC_ANA_CON0, 0x30C0, 0xffff);
+	Ana_Set_Reg(AUDDEC_ANA_CON1, 0x3f00, 0xffff);
+	Ana_Set_Reg(AUDDEC_ANA_CON2, 0xc000, 0xffff);
+	Ana_Set_Reg(AUDDEC_ANA_CON6, 0x0092, 0xffff);
+	Ana_Set_Reg(AUDDEC_ANA_CON7, 0x0112, 0xffff);
+	Ana_Set_Reg(AUDDEC_ANA_CON11, 0x4800, 0xffff); /* must align to HP playback setting */
+	Ana_Set_Reg(AUDDEC_ANA_CON12, 0x0014, 0xffff); /* must align to HP playback setting */
+
+	usleep_range(10 * 1000, 20 * 1000);
+
+	offValue = audio_get_auxadc_value();
+
+	EnableTrimbuffer(false);
+	setOffsetTrimMux(AUDIO_OFFSET_TRIM_MUX_GROUND);
+
+	/* Buffer On and Get Auxadc values */
+	setOffsetTrimMux(channels);
+	setOffsetTrimBufferGain(3); /* TrimBufferGain 18db */
+	EnableTrimbuffer(true);
+
+	/* HP on setting */
+	Ana_Set_Reg(AUDDEC_ANA_CON0, 0x30f0, 0xffff);
+	Ana_Set_Reg(AUDDEC_ANA_CON1, 0x3f03, 0xffff);
+	Ana_Set_Reg(AUDDEC_ANA_CON2, 0x4000, 0xffff);
+	Ana_Set_Reg(AUDDEC_ANA_CON6, 0x0090, 0xffff);
+	Ana_Set_Reg(AUDDEC_ANA_CON7, 0x0110, 0xffff);
+
+	usleep_range(10 * 1000, 20 * 1000);
+
+	onValue = audio_get_auxadc_value();
+
+	EnableTrimbuffer(false);
+	setOffsetTrimMux(AUDIO_OFFSET_TRIM_MUX_GROUND);
+
+	diffValue = onValue - offValue;
+	pr_debug("#diffValue(%d), onValue(%d), offValue(%d)\n", diffValue, onValue, offValue);
+
+	return diffValue;
+
+#else /* For 6351 */
 	int diffValue = 0, onValue = 0, offValue = 0;
 
 	if (channels != AUDIO_OFFSET_TRIM_MUX_HPL &&
@@ -2116,69 +2174,6 @@ int get_trim_buffer_diff(int channels)
 
 	return diffValue;
 #endif
-
-	int diffValue = 0, onValue = 0, offValue = 0;
-
-	if (channels != AUDIO_OFFSET_TRIM_MUX_HPL &&
-	    channels != AUDIO_OFFSET_TRIM_MUX_HPR){
-		pr_warn("%s Not support this channels = %d\n", __func__, channels);
-		return 0;
-	}
-
-	/* Buffer Off and Get Auxadc value */
-	setHpGainZero();
-
-	/* setOffsetTrimMux(AUDIO_OFFSET_TRIM_MUX_HSP); */
-	/* Set Trim mux to HP */
-	setOffsetTrimMux(channels);
-	setOffsetTrimBufferGain(3); /* TrimBufferGain 18db */
-	EnableTrimbuffer(true);
-
-	/* Setting for HP OFF trim */
-	/* Pull-down HPL/R to AVSS30_AUD for de-pop noise */
-	Ana_Set_Reg(AUDDEC_ANA_CON2, 0x8000, 0x8000);
-	/* disable headphone main output stage */
-	Ana_Set_Reg(AUDDEC_ANA_CON1, 0x0, 0x3);
-	/* set HP input mux to open, not iDAC.  Disable hp buffer and iDAC */
-	Ana_Set_Reg(AUDDEC_ANA_CON0, 0x0000, 0x0fff);
-	/* enable HP driver positive output stage short to AU_REFN. */
-	/* HPLN/HPRN SHORT2VCM enable. HPL/HPR output stage STB enhance enable */
-	Ana_Set_Reg(AUDDEC_ANA_CON2, 0x8033, 0x8033);
-
-	usleep_range(10 * 1000, 20 * 1000);
-
-	offValue = audio_get_auxadc_value();
-
-	EnableTrimbuffer(false);
-	setOffsetTrimMux(AUDIO_OFFSET_TRIM_MUX_GROUND);
-
-	/* Buffer On and Get Auxadc values */
-	setOffsetTrimMux(channels);
-	setOffsetTrimBufferGain(3); /* TrimBufferGain 18db */
-	EnableTrimbuffer(true);
-
-	/* Setting for HP ON trim */
-	/* disable HP driver positive output stage short to AU_REFN. */
-	/* HPLN/HPRN SHORT2VCM disable. HPL/HPR output stage STB enhance disable */
-	Ana_Set_Reg(AUDDEC_ANA_CON2, 0x0000, 0x0033);
-	/* enable headphone main output stage */
-	Ana_Set_Reg(AUDDEC_ANA_CON1, 0x3, 0x3);
-	/* set HP input mux iDAC.  enable hp buffer and iDAC */
-	Ana_Set_Reg(AUDDEC_ANA_CON0, 0x0aff, 0x0fff);
-	/* No Pull-down HPL/R to AVSS30_AUD for de-pop noise */
-	Ana_Set_Reg(AUDDEC_ANA_CON2, 0x0000, 0x8000);
-
-	usleep_range(10 * 1000, 20 * 1000);
-
-	onValue = audio_get_auxadc_value();
-
-	EnableTrimbuffer(false);
-	setOffsetTrimMux(AUDIO_OFFSET_TRIM_MUX_GROUND);
-
-	diffValue = onValue - offValue;
-	pr_debug("#diffValue(%d), onValue(%d), offValue(%d)\n", diffValue, onValue, offValue);
-
-	return diffValue;
 }
 
 int get_audio_trim_offset(int channel)

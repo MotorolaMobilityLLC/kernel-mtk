@@ -758,6 +758,10 @@ static int rt5081_enable_pump_express(struct rt5081_pmu_charger_data *chg_data,
 	if (ret < 0)
 		return ret;
 
+	ret = rt5081_enable_charging(chg_data->chg_dev, true);
+	if (ret < 0)
+		return ret;
+
 	ret = (en ? rt5081_pmu_reg_set_bit : rt5081_pmu_reg_clr_bit)
 		(chg_data->chip, RT5081_PMU_REG_CHGCTRL17, RT5081_MASK_PUMPX_EN);
 	if (ret < 0)
@@ -1058,6 +1062,7 @@ static int _rt5081_set_aicr(struct rt5081_pmu_charger_data *chg_data, u32 uA)
 			__func__, uA, chg_data->aicr_limit);
 		uA = chg_data->aicr_limit;
 	}
+	/* Find corresponding reg value */
 	reg_aicr = rt5081_find_closest_reg_value(
 		RT5081_AICR_MIN,
 		RT5081_AICR_MAX,
@@ -1067,6 +1072,7 @@ static int _rt5081_set_aicr(struct rt5081_pmu_charger_data *chg_data, u32 uA)
 	);
 	dev_info(chg_data->dev, "%s: aicr = %d (0x%02X)\n", __func__, uA,
 		reg_aicr);
+
 	ret = rt5081_pmu_reg_update_bits(
 		chg_data->chip,
 		RT5081_PMU_REG_CHGCTRL3,
@@ -1075,6 +1081,7 @@ static int _rt5081_set_aicr(struct rt5081_pmu_charger_data *chg_data, u32 uA)
 	);
 	return ret;
 }
+
 static int rt5081_run_aicl(struct rt5081_pmu_charger_data *chg_data)
 {
 	int ret = 0;
@@ -1106,6 +1113,11 @@ static int rt5081_run_aicl(struct rt5081_pmu_charger_data *chg_data)
 
 	mutex_lock(&chg_data->pe_access_lock);
 	mutex_lock(&chg_data->aicr_access_lock);
+	ret = _rt5081_set_aicr(chg_data, RT5081_AICR_MAX);
+	if (ret < 0)
+		goto unlock_out;
+
+	/* Set AICR to max */
 	ret = _rt5081_set_aicr(chg_data, RT5081_AICR_MAX);
 	if (ret < 0)
 		goto unlock_out;
@@ -1193,7 +1205,6 @@ static int _rt5081_set_ichg(struct rt5081_pmu_charger_data *chg_data, u32 uA)
 	int ret = 0;
 	u8 reg_ichg = 0;
 
-	/* For adc workaround */
 
 	/* Find corresponding reg value */
 	reg_ichg = rt5081_find_closest_reg_value(
@@ -2708,6 +2719,8 @@ static irqreturn_t rt5081_pmu_attachi_irq_handler(int irq, void *data)
 		(struct rt5081_pmu_charger_data *)data;
 
 	dev_info(chg_data->dev, "%s\n", __func__);
+
+	/* Check bc12 enable flag */
 	mutex_lock(&chg_data->bc12_access_lock);
 	if (!chg_data->bc12_en) {
 		dev_err(chg_data->dev, "%s: bc12 disabled, ignore irq\n",
@@ -2716,6 +2729,7 @@ static irqreturn_t rt5081_pmu_attachi_irq_handler(int irq, void *data)
 		return IRQ_HANDLED;
 	}
 	mutex_unlock(&chg_data->bc12_access_lock);
+
 	ret = rt5081_pmu_reg_read(chg_data->chip, RT5081_PMU_REG_USBSTATUS1);
 	if (ret < 0) {
 		dev_err(chg_data->dev, "%s: read charger type failed\n",
@@ -3124,6 +3138,13 @@ static int rt5081_chg_init_setting(struct rt5081_pmu_charger_data *chg_data)
 	if (ret < 0)
 		dev_err(chg_data->dev, "%s: disable ilim failed\n", __func__);
 
+	mdelay(5);
+
+	/* Disable hardware ILIM */
+	ret = rt5081_enable_ilim(chg_data, false);
+	if (ret < 0)
+		dev_err(chg_data->dev, "%s: disable ilim failed\n", __func__);
+
 	ret = _rt5081_set_ichg(chg_data, chg_desc->ichg);
 	if (ret < 0)
 		dev_err(chg_data->dev, "%s: set ichg failed\n", __func__);
@@ -3431,6 +3452,15 @@ MODULE_VERSION(RT5081_PMU_CHARGER_DRV_VERSION);
 
 /*
  * Version Note
+ * 1.1.12_MTK
+ * (1) Enable charger before sending PE+/PE+20 pattern
+ * (2) Select to use reg AICR as input limit -> disable HW limit
+ *
+ * 1.1.11_MTK
+ * (1) Fix get_adc lock unbalance issue
+ * (2) Add pe_access_lock
+ * (3) Add a flag to check enable status of bc12
+ *
  * 1.1.10_MTK
  * (1) Add ext usb switch control
  * (2) Add RT5081_APPLE_SAMSUNG_TA_SUPPORT config

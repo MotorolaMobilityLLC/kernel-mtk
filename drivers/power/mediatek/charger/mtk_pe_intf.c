@@ -352,6 +352,16 @@ int mtk_pe_check_charger(struct charger_manager *pinfo)
 		}
 		return ret;
 	}
+
+
+	if (!pinfo->enable_hv_charging) {
+		pr_info("%s: hv charging is disabled\n", __func__);
+		if (pe->pe_is_connect) {
+			pe_leave(pinfo, true);
+			pe->pe_to_check_chr_type = true;
+		}
+		return ret;
+	}
 	if (mtk_pe20_get_is_connect(pinfo)) {
 		pr_err("%s: stop, PE+20 is connected\n", __func__);
 		return ret;
@@ -359,6 +369,8 @@ int mtk_pe_check_charger(struct charger_manager *pinfo)
 
 	if (!pinfo->enable_pe_plus)
 		return -ENOTSUPP;
+
+
 	if (!pe->pe_is_enabled) {
 		pr_err("%s: stop, PE+ is disabled\n", __func__);
 		return ret;
@@ -420,6 +432,7 @@ int mtk_pe_start_algorithm(struct charger_manager *pinfo)
 {
 	int ret = 0, chr_volt;
 	struct mtk_pe *pe = &pinfo->pe;
+
 	if (!pinfo->enable_hv_charging) {
 		pr_info("%s: hv charging is disabled\n", __func__);
 		if (pe->pe_is_connect) {
