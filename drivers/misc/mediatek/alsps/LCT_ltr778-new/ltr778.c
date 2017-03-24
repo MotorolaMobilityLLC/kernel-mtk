@@ -1077,7 +1077,7 @@ static int ltr778_als_read(struct i2c_client *client, u16* data)
 #ifdef CONFIG_LCT_LTR778_NEW
 		ch0_coeff = -4910;
 		ch1_coeff = 19950;
-		winfac_1 = 8;
+		winfac_1 = 10;
 		winfac_2 = 3;
 
 #else
