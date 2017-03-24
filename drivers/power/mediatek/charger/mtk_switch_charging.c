@@ -66,6 +66,8 @@
 #include "mtk_charger_intf.h"
 #include "mtk_switch_charging.h"
 
+#define TEMP_T1_TO_T2_INPUT_CURRENT 850000;
+#define TEMP_T1_TO_T2_CURRENT 900000;
 static void _disable_all_charging(struct charger_manager *info)
 {
 	charger_dev_enable(info->chg1_dev, false);
@@ -135,8 +137,24 @@ static void swchg_select_charging_current_limit(struct charger_manager *info)
 		pdata->input_current_limit = info->data.non_std_ac_charger_current;
 		pdata->charging_current_limit = info->data.non_std_ac_charger_current;
 	} else if (info->chr_type == STANDARD_CHARGER) {
+#if 0 //add by longcheer_liml_2017_03_25_start
 		pdata->input_current_limit = info->data.ac_charger_input_current;
 		pdata->charging_current_limit = info->data.ac_charger_current;
+#else
+	    if (info->enable_sw_jeita == true) {
+		    if (info->battery_temperature <= info->data.temp_t2_threshold)
+		    {
+		        pdata->input_current_limit = TEMP_T1_TO_T2_INPUT_CURRENT;
+		        pdata->charging_current_limit = TEMP_T1_TO_T2_CURRENT;		    
+		    }else{
+		        pdata->input_current_limit = info->data.ac_charger_input_current;
+		        pdata->charging_current_limit = info->data.ac_charger_current;
+		    }	
+		}else{
+		    pdata->input_current_limit = info->data.ac_charger_input_current;
+		    pdata->charging_current_limit = info->data.ac_charger_current;		    
+		}
+#endif //add by longcheer_liml_2017_03_25_endif
 		mtk_pe20_set_charging_current(info, &pdata->charging_current_limit, &pdata->input_current_limit);
 		mtk_pe_set_charging_current(info, &pdata->charging_current_limit, &pdata->input_current_limit);
 	} else if (info->chr_type == CHARGING_HOST) {

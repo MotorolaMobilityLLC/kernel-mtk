@@ -3814,14 +3814,14 @@
 		jeita_temp_t1_to_t2_cv_voltage = <4400000>;
 		jeita_temp_t0_to_t1_cv_voltage = <4400000>;
 		jeita_temp_below_t0_cv_voltage = <4400000>;
-		temp_t4_threshold = <52>;
+		temp_t4_threshold = <50>;
 		temp_t4_thres_minus_x_degree = <47>;
 		temp_t3_threshold = <45>;
-		temp_t3_thres_minus_x_degree = <39>;
-		temp_t2_threshold = <10>;
+		temp_t3_thres_minus_x_degree = <44>;
+		temp_t2_threshold = <15>;
 		temp_t2_thres_plus_x_degree = <16>;
 		temp_t1_threshold = <0>;
-		temp_t1_thres_plus_x_degree = <6>;
+		temp_t1_thres_plus_x_degree = <2>;
 		temp_t0_threshold = <0>;
 		temp_t0_thres_plus_x_degree = <0>;
 		temp_neg_10_threshold = <0>;
@@ -3829,9 +3829,9 @@
 		/* battery temperature protection */
 		enable_min_charge_temperature;
 		min_charge_temperature = <0>;
-		min_charge_temperature_plus_x_degree = <5>;
-		max_charge_temperature = <52>;
-		max_charge_temperature_minus_x_degree = <45>;
+		min_charge_temperature_plus_x_degree = <2>;
+		max_charge_temperature = <51>;
+		max_charge_temperature_minus_x_degree = <48>;
 
 		/* PE 2.0 */
 		pe20_ichg_level_threshold = <1000>;

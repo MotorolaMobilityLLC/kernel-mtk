@@ -587,7 +587,7 @@ void do_sw_jeita_state_machine(struct charger_manager *info)
 	sw_jeita->charging = true;
 	/* JEITA battery temp Standard */
 
-	if (info->battery_temperature >= info->data.temp_t4_threshold) {
+	if (info->battery_temperature > info->data.temp_t4_threshold) {
 		pr_err("[SW_JEITA] Battery Over high Temperature(%d) !!\n\r",
 			    info->data.temp_t4_threshold);
 
