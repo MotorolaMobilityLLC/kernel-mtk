@@ -3307,10 +3307,13 @@ static int bma25x_set_en_sig_int_mode(bma25x_data *bma25x,
 			TEST_BIT(Motion, bma25x->mEnabled))
 		err = bma25x_set_en_no_motion_int(bma25x, 0);
 
-	if (!bma25x->mEnabled && newstatus)
-		enable_irq(bma25x->IRQ1);
+	if (!bma25x->mEnabled && newstatus) {
+		enable_irq_wake(bma25x->IRQ1);
+		enable_irq_wake(bma25x->IRQ2);
+	}
 	else if (bma25x->mEnabled && !newstatus) {
 		disable_irq_wake(bma25x->IRQ1);
+		disable_irq_wake(bma25x->IRQ2);
 		bma2x2_set_bandwidth(
 			bma25x->client,BMA25X_BW_500HZ);
 		BMA2x2_SetPowerMode(bma25x->client, false, BMA25X_AOD);
