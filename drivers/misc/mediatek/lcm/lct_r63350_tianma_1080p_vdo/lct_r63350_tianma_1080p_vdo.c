@@ -213,6 +213,14 @@ static void lcm_get_params(LCM_PARAMS *params)
 	params->dsi.horizontal_frontporch				= 100;//36  //100
 	params->dsi.horizontal_active_pixel				= FRAME_WIDTH;
 
+/*add by lct jiatianbao start 20170321*/
+#ifdef CONFIG_LCT_DEVINFO_SUPPORT
+      params->vendor="Tianma";
+      params->ic="r63350";
+      params->info="1080*1920";
+#endif
+/*add by lct jiatianbao end 20170321*/
+
 #if (LCM_DSI_CMD_MODE)
 	params->dsi.PLL_CLOCK = 150;	/* this value must be in MTK suggested table */
 #else
