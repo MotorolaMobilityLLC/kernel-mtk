@@ -44,6 +44,7 @@ const UINT_8 aucPhyCfg2PhyTypeSet[PHY_CONFIG_NUM] = {
 
 #define GATING_CONTROL_POLL_LIMIT   64
 #endif
+#define QUEUE_CMD_TIMEOUT_MS 10000
 
 /*******************************************************************************
 *                             D A T A   T Y P E S
@@ -809,6 +810,7 @@ P_CMD_INFO_T nicGetPendingCmdInfo(IN P_ADAPTER_T prAdapter, IN UINT_8 ucSeqNum)
 	P_QUE_T prTempCmdQue = &rTempCmdQue;
 	P_QUE_ENTRY_T prQueueEntry = (P_QUE_ENTRY_T) NULL;
 	P_CMD_INFO_T prCmdInfo = (P_CMD_INFO_T) NULL;
+	UINT_32 u4CurrTick = 0;
 
 	GLUE_SPIN_LOCK_DECLARATION();
 
@@ -822,6 +824,12 @@ P_CMD_INFO_T nicGetPendingCmdInfo(IN P_ADAPTER_T prAdapter, IN UINT_8 ucSeqNum)
 	QUEUE_REMOVE_HEAD(prTempCmdQue, prQueueEntry, P_QUE_ENTRY_T);
 	while (prQueueEntry) {
 		prCmdInfo = (P_CMD_INFO_T) prQueueEntry;
+
+		u4CurrTick = kalGetTimeTick();
+		if ((prCmdInfo->u4InqueTime != 0) &&
+			(u4CurrTick - prCmdInfo->u4InqueTime) > QUEUE_CMD_TIMEOUT_MS)
+			DBGLOG(REQ, WARN, "CMD que is pending too long (%u)-(%u),CmdSeq=%d,ucSeq=%d\n"
+			, u4CurrTick, prCmdInfo->u4InqueTime, prCmdInfo->ucCmdSeqNum, ucSeqNum);
 
 		if (prCmdInfo->ucCmdSeqNum == ucSeqNum)
 			break;

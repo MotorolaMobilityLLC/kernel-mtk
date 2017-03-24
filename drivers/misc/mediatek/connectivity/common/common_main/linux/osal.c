@@ -12,9 +12,10 @@
  */
 
 /*! \file
- * \brief  Declaration of library functions
- * Any definitions in this file will be shared among GLUE Layer and internal Driver Stack.
- */
+    \brief  Declaration of library functions
+
+    Any definitions in this file will be shared among GLUE Layer and internal Driver Stack.
+*/
 
 /*******************************************************************************
 *                         C O M P I L E R   F L A G S
@@ -284,20 +285,14 @@ PVOID osal_memset(PVOID buf, INT32 i, UINT32 len)
 
 PVOID osal_memcpy(PVOID dst, const PVOID src, UINT32 len)
 {
-#ifdef CONFIG_MTK_WCN_ARM64
-		char *tmp;
-		const char *s;
-		size_t i;
+	return memcpy(dst, src, len);
 
-		tmp = dst;
-		s = src;
-		for (i = 0; i < len; i++)
-			tmp[i] = s[i];
+}
 
-		return dst;
-#else
-		return memcpy(dst, src, len);
-#endif
+VOID osal_memcpy_fromio(PVOID dst, const PVOID src, UINT32 len)
+{
+	return memcpy_fromio(dst, src, len);
+
 }
 
 INT32 osal_memcmp(const PVOID buf1, const PVOID buf2, UINT32 len)

@@ -107,7 +107,7 @@ struct msdc_host *emmc_otp_get_host(void)
  * ***************************************************************************/
 unsigned int emmc_get_wp_size(void)
 {
-	u8 *l_ext_csd;
+	u8 *l_ext_csd = NULL;
 	struct msdc_host *host_ctl;
 	int ret = 0;
 	u32 *csd = NULL;
@@ -181,8 +181,8 @@ unsigned int emmc_get_wp_size(void)
 				(write_prot_grpsz + 1);
 			pr_err("otp: non-hc unit sg_wp_size %d\n", sg_wp_size);
 		}
+		kfree(l_ext_csd);
 	}
-	kfree(l_ext_csd);
 
 	return sg_wp_size;
 }

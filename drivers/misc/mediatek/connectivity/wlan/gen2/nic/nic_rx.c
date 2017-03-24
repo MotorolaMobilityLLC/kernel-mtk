@@ -922,7 +922,9 @@ VOID nicRxProcessEventPacket(IN P_ADAPTER_T prAdapter, IN OUT P_SW_RFB_T prSwRfb
 			}
 			/* return prCmdInfo */
 			cmdBufFreeCmdInfo(prAdapter, prCmdInfo);
-		}
+		} else
+			DBGLOG(RX, WARN, "prCmdInfo is null ,ucEID = 0x%02x ucSeqNum = 0x%02x\n"
+			, prEvent->ucEID, prEvent->ucSeqNum);
 
 		break;
 

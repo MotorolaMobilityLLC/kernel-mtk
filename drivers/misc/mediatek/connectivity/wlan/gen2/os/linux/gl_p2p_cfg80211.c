@@ -1464,6 +1464,9 @@ int mtk_p2p_cfg80211_testmode_cmd(IN struct wiphy *wiphy, IN struct wireless_dev
 		i4Status = mtk_cfg80211_process_str_cmd(prGlueInfo, (PUINT_8)(prParams + 1),
 				len - sizeof(*prParams));
 		break;
+	case TESTMODE_CMD_ID_HS_CONFIG:
+		i4Status = mtk_p2p_cfg80211_testmode_hotspot_config_cmd(wiphy, data, len);
+		break;
 	default:
 		i4Status = -EINVAL;
 		break;
@@ -1472,6 +1475,41 @@ int mtk_p2p_cfg80211_testmode_cmd(IN struct wiphy *wiphy, IN struct wireless_dev
 	DBGLOG(P2P, TRACE, "prParams->index=%d, status=%d\n", prParams->index, i4Status);
 
 	return i4Status;
+}
+
+int mtk_p2p_cfg80211_testmode_hotspot_config_cmd(IN struct wiphy *wiphy, IN void *data, IN int len)
+{
+	P_GLUE_INFO_T prGlueInfo = NULL;
+	struct NL80211_DRIVER_HOTSPOT_CONFIG_PARAMS *prParams = (struct NL80211_DRIVER_HOTSPOT_CONFIG_PARAMS *) NULL;
+	UINT_32 index;
+	UINT_32 value;
+
+	ASSERT(wiphy);
+
+	prGlueInfo = *((P_GLUE_INFO_T *) wiphy_priv(wiphy));
+
+	if (data && len) {
+		prParams = (struct NL80211_DRIVER_HOTSPOT_CONFIG_PARAMS *) data;
+	} else {
+		DBGLOG(P2P, ERROR, "data is NULL or len is 0\n");
+		return -EINVAL;
+	}
+
+	index = prParams->idx;
+	value = prParams->value;
+
+	DBGLOG(P2P, INFO, "NL80211_ATTR_TESTDATA, idx=%d value=%d\n",
+			    (UINT_32) prParams->idx, (UINT_32) prParams->value);
+
+	switch (index) {
+	case 1:		/* Max Clients */
+		kalP2PSetMaxClients(prGlueInfo, value);
+		break;
+	default:
+		break;
+	}
+
+	return 0;
 }
 
 int mtk_p2p_cfg80211_testmode_p2p_sigma_pre_cmd(IN struct wiphy *wiphy, IN void *data, IN int len)

@@ -209,6 +209,7 @@ typedef enum {
 	FG_INTR_BAT_TMP_C_HT = 0x400000,
 	FG_INTR_BAT_TMP_C_LT = 0x800000,
 	FG_INTR_BAT_INT1_CHECK = 0x1000000,
+	FG_INTR_DUMP_INFO = 0x2000000,
 
 } FG_INTERRUPT_FLAG;
 
@@ -294,6 +295,7 @@ typedef enum {
 	FG_DAEMON_CMD_IS_BATTERY_CYCLE_RESET,
 	FG_DAEMON_CMD_GET_RTC_TWO_SEC_REBOOT,
 	FG_DAEMON_CMD_GET_RTC_INVALID,
+	FG_DAEMON_CMD_GET_VBAT,
 
 	FG_DAEMON_CMD_FROM_USER_NUMBER
 } FG_DAEMON_CTRL_CMD_FROM_USER;
@@ -633,8 +635,10 @@ struct fuel_gauge_custom_data {
 	int keep_100_percent_minsoc;
 	int battery_tmp_to_disable_gm30;
 	int battery_tmp_to_disable_nafg;
+	int battery_tmp_to_enable_nafg;
 	int disable_nafg;
 
+	int zcv_car_gap_percentage;
 /*======old setting ======*/
 	/* cust_battery_meter.h */
 	int soc_flow;

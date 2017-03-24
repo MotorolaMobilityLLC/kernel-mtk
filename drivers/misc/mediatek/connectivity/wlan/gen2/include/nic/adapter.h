@@ -942,6 +942,9 @@ struct _ADAPTER_T {
 
 	/* NLO Timer */
 	TIMER_T rScanNloTimeoutTimer;
+
+	OS_SYSTIME rStasEnvReportDetectTime;
+
 };				/* end of _ADAPTER_T */
 
 /*******************************************************************************

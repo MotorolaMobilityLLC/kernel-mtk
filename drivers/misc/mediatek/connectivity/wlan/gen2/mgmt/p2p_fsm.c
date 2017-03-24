@@ -829,7 +829,7 @@ VOID p2pFsmRunEventFsmTimeout(IN P_ADAPTER_T prAdapter, IN ULONG ulParam)
 			case P2P_CNN_DEV_DISC_REQ:
 			case P2P_CNN_PROV_DISC_REQ:
 				DBGLOG(P2P, INFO, "P2P: waiting response, re-enter channel on hand state\n");
-				p2pFsmStateTransition(prAdapter, prP2pFsmInfo, P2P_STATE_CHNL_ON_HAND);
+				p2pFsmStateTransition(prAdapter, prP2pFsmInfo, P2P_STATE_REQING_CHANNEL);
 				break;
 
 			case P2P_CNN_NORMAL:

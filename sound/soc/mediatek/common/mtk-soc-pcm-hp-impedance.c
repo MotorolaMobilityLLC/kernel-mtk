@@ -425,13 +425,13 @@ static unsigned short mtk_calculate_hp_impedance(int dc_init, int dc_input, shor
 
 	/* Efuse calibration */
 	if ((EfuseCurrentCalibration != 0) && (r_tmp != 0)) {
-		r_tmp = (r_tmp * 128 + (128 + EfuseCurrentCalibration) / 2) / (128 + EfuseCurrentCalibration);
-		pr_aud("%s After Calibration from EFUSE: %d, R: %d\n",
+		pr_aud("%s(), Before Calibration from EFUSE: %d, R: %d\n",
 				__func__, EfuseCurrentCalibration, r_tmp);
+		r_tmp = (r_tmp * (128 + EfuseCurrentCalibration) + 64) / 128;
 	}
 
 	r_hp = (unsigned short)r_tmp;
-	pr_aud("%s pcm_offset %d dcoffset %d detected resistor is %d\n",
+	pr_aud("%s(), pcm_offset = %d, dcoffset = %d, detected resistor is %d\n",
 			__func__, pcm_offset, dc_value, r_hp);
 
 	return r_hp;

@@ -1114,15 +1114,10 @@ static int mtkfb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long arg
 
 	case MTKFB_GET_DISPLAY_IF_INFORMATION:
 		{
-			int displayid = 0;
+			unsigned int displayid = 0;
 
 			if (copy_from_user(&displayid, (void __user *)arg, sizeof(displayid))) {
 				MTKFB_LOG("[FB]: copy_from_user failed! line:%d\n", __LINE__);
-				return -EFAULT;
-			}
-
-			if (displayid > MTKFB_MAX_DISPLAY_COUNT) {
-				DISPERR("[FB]: invalid display id:%d\n", displayid);
 				return -EFAULT;
 			}
 
@@ -1139,6 +1134,7 @@ static int mtkfb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long arg
 			} else {
 				DISPERR("information for displayid: %d is not available now\n",
 					displayid);
+				return -EFAULT;
 			}
 
 			if (copy_to_user((void __user *)arg, &(dispif_info[displayid]),
@@ -2861,7 +2857,7 @@ static void __exit mtkfb_cleanup(void)
 }
 
 
-late_initcall(mtkfb_init);
+device_initcall_sync(mtkfb_init);
 module_exit(mtkfb_cleanup);
 
 MODULE_DESCRIPTION("MEDIATEK framebuffer driver");

@@ -1787,30 +1787,41 @@ void battery_dump_nag(void)
 		);
 
 	bm_err("[read_nafg_vbat1] %d %d %d %d %d %d %d %d %d\n",
+		pmic_get_register_value(PMIC_AUXADC_ADC_RDY_NAG),
+		pmic_get_register_value(PMIC_AUXADC_ADC_OUT_NAG),
 		pmic_get_register_value(PMIC_AUXADC_NAG_C_DLTV_IRQ),
 		pmic_get_register_value(PMIC_AUXADC_NAG_IRQ_EN),
 		pmic_get_register_value(PMIC_AUXADC_NAG_PRD),
 		pmic_get_register_value(PMIC_AUXADC_NAG_VBAT1_SEL),
 		pmic_get_register_value(PMIC_AUXADC_NAG_CLR),
 		pmic_get_register_value(PMIC_AUXADC_NAG_EN),
-		pmic_get_register_value(PMIC_AUXADC_NAG_ZCV),
-		pmic_get_register_value(PMIC_AUXADC_NAG_C_DLTV_TH_15_0),
-		pmic_get_register_value(PMIC_AUXADC_NAG_C_DLTV_TH_26_16)
+		pmic_get_register_value(PMIC_AUXADC_NAG_ZCV)
 		);
 
-	bm_err("[read_nafg_vbat2] %d %d %d %d %d %d %d %d %d %d %d %d\n",
-		pmic_get_register_value(PMIC_RG_AUXADC_CK_PDN_HWEN),
-		pmic_get_register_value(PMIC_RG_AUXADC_CK_PDN),
-		pmic_get_register_value(PMIC_RG_AUXADC_NAG_CK_SW_MODE),
-		pmic_get_register_value(PMIC_RG_AUXADC_NAG_CK_SW_EN),
-		pmic_get_register_value(PMIC_RG_AUXADC_32K_CK_PDN_HWEN),
-		pmic_get_register_value(PMIC_RG_AUXADC_32K_CK_PDN),
-		pmic_get_register_value(PMIC_RG_AUXADC_1M_CK_PDN_HWEN),
+	bm_err("[read_nafg_vbat2] %d %d %d %d %d %d %d %d %d\n",
+		pmic_get_register_value(PMIC_AUXADC_NAG_C_DLTV_TH_15_0),
+		pmic_get_register_value(PMIC_AUXADC_NAG_C_DLTV_TH_26_16),
+		pmic_get_register_value(PMIC_AUXADC_NAG_CNT_15_0),
+		pmic_get_register_value(PMIC_AUXADC_NAG_CNT_25_16),
+		pmic_get_register_value(PMIC_AUXADC_NAG_DLTV),
+		pmic_get_register_value(PMIC_AUXADC_NAG_C_DLTV_15_0),
+		pmic_get_register_value(PMIC_AUXADC_NAG_C_DLTV_26_16),
+		pmic_get_register_value(PMIC_AUXADC_AUTORPT_EN),
+		pmic_get_register_value(PMIC_AUXADC_AUTORPT_PRD)
+		);
+
+	bm_err("[read_nafg_vbat3] %d %d %d %d %d %d %d %d %d %d %d\n",
 		pmic_get_register_value(PMIC_RG_AUXADC_1M_CK_PDN),
-		pmic_get_register_value(PMIC_RG_AUXADC_RST),
-		pmic_get_register_value(PMIC_RG_INT_EN_NAG_C_DLTV),
-		pmic_get_register_value(PMIC_RG_INT_MASK_NAG_C_DLTV),
-		pmic_get_register_value(PMIC_RG_INT_STATUS_NAG_C_DLTV)
+		pmic_get_register_value(PMIC_RG_AUXADC_RNG_CK_PDN),
+		pmic_get_register_value(PMIC_RG_AUXADC_CK_PDN),
+		pmic_get_register_value(PMIC_RG_AUXADC_AO_1M_CK_PDN),
+		pmic_get_register_value(PMIC_RG_AUXADC_32K_CK_PDN),
+		pmic_get_register_value(PMIC_RG_AUXADC_CK_DIVSEL),
+		pmic_get_register_value(PMIC_RG_AUXADC_32K_CK_PDN_HWEN),
+		pmic_get_register_value(PMIC_RG_AUXADC_RNG_CK_PDN_HWEN),
+		pmic_get_register_value(PMIC_RG_AUXADC_CK_PDN_HWEN),
+		pmic_get_register_value(PMIC_RG_AUXADC_1M_CK_PDN_HWEN),
+		pmic_get_register_value(PMIC_RG_AUXADC_CK_TSTSEL)
 	);
 }
 
