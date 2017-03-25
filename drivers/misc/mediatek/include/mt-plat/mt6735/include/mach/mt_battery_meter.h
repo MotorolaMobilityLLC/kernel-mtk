@@ -315,7 +315,6 @@
 #define MTK_MULTI_BAT_PROFILE_SUPPORT
 #endif
 
-
 #elif defined(CONFIG_ARCH_MT6753)
 /* ============================================================
 // define
