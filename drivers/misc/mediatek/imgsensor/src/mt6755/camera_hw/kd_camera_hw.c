@@ -36,7 +36,7 @@
 ******************************************************************************/
 #define PFX "[kd_camera_hw]"
 #define PK_DBG_NONE(fmt, arg...)    do {} while (0)
-#define PK_DBG_FUNC(fmt, arg...)    pr_err(PFX fmt, ##arg)
+#define PK_DBG_FUNC(fmt, arg...)    pr_debug(PFX fmt, ##arg)
 #define DEBUG_CAMERA_HW_K
 
 /*K52 AF power*/
@@ -184,7 +184,16 @@ PowerUp PowerOnList = {
 	   {PDN, Vol_High, 0},
 	   },
 	  },
-
+	   {SENSOR_DRVNAME_HI843B_MIPI_RAW,
+	  {
+	   {PDN, Vol_Low, 0},
+	   {DOVDD, Vol_1800, 0},
+	   {AVDD, Vol_2800, 0},
+	   {DVDD, VOL1200, 1},
+	   {SensorMCLK, Vol_High, 1},
+	   {PDN, Vol_High, 2},
+	   },
+	  },
 	 /* add new sensor before this line */
 	 {NULL,},
 	 }
@@ -229,6 +238,15 @@ PowerUp PowerDownList = {
 	   {AVDD, Vol_2800, 0},
 	   {DVDD, VOL1200, 1},
 	   {PDN, Vol_Low, 1},
+	   },
+	  },
+	   {SENSOR_DRVNAME_HI843B_MIPI_RAW,
+	  {
+	   {PDN, Vol_Low, 1},
+	   {SensorMCLK, Vol_Low, 1},
+	   {DVDD, VOL1200, 0},
+	   {AVDD, Vol_2800, 0},
+	   {DOVDD, Vol_1800, 0},
 	   },
 	  },
 	 /* add new sensor before this line */
@@ -871,6 +889,12 @@ BOOL hwpoweron(PowerInformation pwInfo, char *mode_name)
 					mtkcam_gpio_set(0, PDN, pinSet[0][IDX_PS_CMPDN + IDX_PS_OFF]);
 				}
 			}else if(gcurrSensorName && ((0 == strcmp(SENSOR_DRVNAME_IMX219_MIPI_RAW,gcurrSensorName)) ||(0 == strcmp(SENSOR_DRVNAME_IMX219_OFILM_MIPI_RAW,gcurrSensorName)))){
+				if(pinSetIdx == 1){
+					mtkcam_gpio_set(1, PDN, pinSet[1][IDX_PS_CMPDN + IDX_PS_ON]);
+				}else{
+					mtkcam_gpio_set(1, PDN, pinSet[1][IDX_PS_CMPDN + IDX_PS_OFF]);
+				}
+			}else if(gcurrSensorName && ((0 == strcmp(SENSOR_DRVNAME_HI843B_MIPI_RAW,gcurrSensorName)) )){
 				if(pinSetIdx == 1){
 					mtkcam_gpio_set(1, PDN, pinSet[1][IDX_PS_CMPDN + IDX_PS_ON]);
 				}else{

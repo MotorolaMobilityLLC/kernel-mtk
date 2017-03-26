@@ -447,6 +447,99 @@ int iReadRegI2C(u8 *a_pSendData , u16 a_sizeSendData, u8 *a_pRecvData, u16 a_siz
     return 0;
 }
 
+//odm.sw START liuzhen config kungfu 2nd front camera OTP of HI843
+int iReadRegI2C_OTP(u8 *a_pSendData , u16 a_sizeSendData, u8 *a_pRecvData, u16 a_sizeRecvData, u16 i2cId)
+{
+	int  i4RetValue = 0;                   
+	struct i2c_msg msg[2];
+
+
+	if (gI2CBusNum == SUPPORT_I2C_BUS_NUM1) 
+	{
+		spin_lock(&kdsensor_drv_lock);
+		g_pstI2Cclient->addr = (i2cId >> 1);
+		g_pstI2Cclient->ext_flag = (g_pstI2Cclient->ext_flag)&(~I2C_DMA_FLAG);
+
+
+		/* Remove i2c ack error log during search sensor */
+		/* PK_ERR("g_pstI2Cclient->ext_flag: %d", g_IsSearchSensor); */
+		if (g_IsSearchSensor == 1)
+			g_pstI2Cclient->ext_flag = (g_pstI2Cclient->ext_flag) | I2C_A_FILTER_MSG;
+		else
+			g_pstI2Cclient->ext_flag = (g_pstI2Cclient->ext_flag)&(~I2C_A_FILTER_MSG);
+		spin_unlock(&kdsensor_drv_lock);
+
+		/*  */
+		msg[0].addr = g_pstI2Cclient->addr;
+		msg[0].flags = g_pstI2Cclient->flags & I2C_M_TEN;
+		msg[0].len = a_sizeSendData ;
+		msg[0].buf = a_pSendData; 
+#ifdef CONFIG_MTK_I2C_EXTENSION
+		msg[0].timing = g_pstI2Cclient->timing;
+		msg[0].ext_flag = g_pstI2Cclient->ext_flag;
+#endif
+
+		msg[1].addr = g_pstI2Cclient->addr;
+		msg[1].flags = g_pstI2Cclient->flags & I2C_M_TEN;
+		msg[1].flags |= I2C_M_RD;
+		msg[1].len = a_sizeRecvData ;
+		msg[1].buf = a_pRecvData;
+#ifdef CONFIG_MTK_I2C_EXTENSION
+		msg[1].timing = g_pstI2Cclient->timing;
+		msg[1].ext_flag = g_pstI2Cclient->ext_flag;
+#endif
+
+		i4RetValue = i2c_transfer(g_pstI2Cclient->adapter, msg, 2);
+		if (!i4RetValue) {
+			PK_ERR("[CAMERA SENSOR] I2C read failed!!, Addr = 0x%x in %d\n", a_pSendData[0],__LINE__);
+			return -1;
+		}                      
+
+
+	}
+	else
+	{
+		spin_lock(&kdsensor_drv_lock);
+		g_pstI2Cclient2->addr = (i2cId >> 1);
+
+
+		/* Remove i2c ack error log during search sensor */
+		/* PK_ERR("g_pstI2Cclient2->ext_flag: %d", g_IsSearchSensor); */
+		if (g_IsSearchSensor == 1)
+			g_pstI2Cclient2->ext_flag = (g_pstI2Cclient2->ext_flag) | I2C_A_FILTER_MSG;
+		else
+			g_pstI2Cclient2->ext_flag = (g_pstI2Cclient2->ext_flag)&(~I2C_A_FILTER_MSG);
+		spin_unlock(&kdsensor_drv_lock);
+
+		/*        */
+		msg[0].addr = g_pstI2Cclient2->addr;
+		msg[0].flags = g_pstI2Cclient2->flags & I2C_M_TEN;
+		msg[0].len = a_sizeSendData ;
+		msg[0].buf = a_pSendData;
+#ifdef CONFIG_MTK_I2C_EXTENSION
+		msg[0].timing = g_pstI2Cclient2->timing;
+		msg[0].ext_flag = g_pstI2Cclient2->ext_flag;
+#endif
+
+		msg[1].addr = g_pstI2Cclient2->addr;
+		msg[1].flags = g_pstI2Cclient2->flags & I2C_M_TEN;
+		msg[1].flags |= I2C_M_RD;
+		msg[1].len = a_sizeRecvData ;
+		msg[1].buf = a_pRecvData;
+#ifdef CONFIG_MTK_I2C_EXTENSION
+		msg[1].timing = g_pstI2Cclient2->timing;
+		msg[1].ext_flag = g_pstI2Cclient2->ext_flag;
+#endif
+
+		i4RetValue = i2c_transfer(g_pstI2Cclient2->adapter, msg, 2);
+		if (!i4RetValue) {
+			PK_ERR("[CAMERA SENSOR] I2C read failed!!, Addr = 0x%x in %d\n", a_pSendData[0],__LINE__);
+			return -1;
+		}
+	}
+	return 0;
+}
+//odm.sw END liuzhen config kungfu 2nd front camera OTP of HI843
 
 /*******************************************************************************
 * iWriteReg
