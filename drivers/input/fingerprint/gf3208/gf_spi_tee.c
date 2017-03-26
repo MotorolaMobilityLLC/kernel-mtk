@@ -748,7 +748,6 @@ static long gf_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 		else
 			gf_debug(ERR_LOG, "%s irq thread request failed, retval=%d\n", __func__, retval);
 
-		enable_irq_wake(gf_dev->irq);
 		gf_dev->irq_count = 1;
 		gf_disable_irq(gf_dev);
 
