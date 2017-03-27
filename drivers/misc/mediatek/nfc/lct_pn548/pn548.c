@@ -987,35 +987,47 @@ static int __init pn544_dev_init(void)
 
 #ifdef CONFIG_MTK_BOARD_ID
 	ret=get_bid_gpio();
-	//huyunge@wind-mobi.com 20161209 start
-	switch(ret){
-			case EMEA_DS_NA_EVT:
-			case EMEA_SS_NA_EVT:
-			case EMEA_DS_NA_DVT:
-			case EMEA_SS_NA_DVT:
-			case LATAM_DS_NA_EVT:
-			case LATAM_DS_NA_DVT:
-			case ROLA_SS_NA_EVT:
-			case ROLA_SS_NA_DVT:
-			case AP_DS_NA_DVT2:
-			case EMEA_DS_NA_DVT2:
-			case LATAM_DS_NA_SKY77643_DVT2:       //0f
-			case ROLA_SS_NA_SKY77643_DVT2:         //10
-			case LATAM_DS_NA_SKY77638_DVT2:      //11 
-			case ROLA_SS_NA_SKY77638_DVT2:	//12
-			case AP_B28_DS_NA_DVT2:
-					printk("this board is not support NFC\n");
-				return 0;
-			case EMEA_SS_NFC_DVT:
-			case EMEA_SS_NFC_EVT:
-			case EMEA_SS_NFC_DVT2:
-				printk("this board is support NFC\n");
-				break;
-			default:
-				printk("this board is no support NFC\n");
-				return 0;
-	}
-	//huyunge@wind-mobi.com 20161209 end
+    //huyunge@wind-mobi.com 20161209 start
+    switch(ret){
+            case EMEA_DS_NA_EVT:
+            case EMEA_SS_NA_EVT:
+            case EMEA_DS_NA_DVT:
+            case EMEA_SS_NA_DVT:
+            case LATAM_DS_NA_EVT:
+            case LATAM_DS_NA_DVT:
+            case ROLA_SS_NA_EVT:
+            case ROLA_SS_NA_DVT:
+            case AP_DS_NA_DVT2:
+            case EMEA_DS_NA_DVT2:
+            case LATAM_DS_NA_SKY77643_DVT2:       //0f
+            case ROLA_SS_NA_SKY77643_DVT2:         //10
+            case LATAM_DS_NA_SKY77638_DVT2:      //11 
+            case ROLA_SS_NA_SKY77638_DVT2:  //12
+            case AP_B28_DS_NA_DVT2:
+//sunjingtao@wind-mobi.com at 20170119 begin
+            case AP_DS_NA_DVT2_1:       //14
+            case EMEA_DS_NA_DVT2_1:     //15
+            case LATAM_DS_NA_SKY77643_DVT2_1:       //17
+            case ROLA_SS_NA_SKY77643_DVT2_1:         //18
+            case LATAM_DS_NA_SKY77638_DVT2_1:      //19
+            case ROLA_SS_NA_SKY77638_DVT2_1:    //1a
+            case AP_B28_DS_NA_DVT2_1:               //1b
+//sunjingtao@wind-mobi.com at 20170119 end
+                    printk("this board is not support NFC\n");
+                return 0;
+            case EMEA_SS_NFC_DVT:
+            case EMEA_SS_NFC_EVT:
+            case EMEA_SS_NFC_DVT2:
+//sunjingtao@wind-mobi.com at 20170119 begin
+            case EMEA_SS_NFC_DVT2_1:        //16
+//sunjingtao@wind-mobi.com at 20170119 end
+                printk("this board is support NFC\n");
+                break;
+            default:
+                printk("this board is no support NFC\n");
+                return 0;
+    }
+    //huyunge@wind-mobi.com 20161209 end
 #endif
 
 /* add lct_sku by changjingyang end */ 
