@@ -8,8 +8,8 @@
  * --------
  *	 ALPS
  *
- * Description: 
- * [201512] 
+ * Description:
+ * [201512]
  * ------------
  *	 Source code of Sensor driver
  *
@@ -45,7 +45,7 @@
 #define LOGE(fmt, args...)   pr_err(PFX "[%s] " fmt, __FUNCTION__, ##args)
 
 static DEFINE_SPINLOCK(imgsensor_drv_lock);
-static imgsensor_info_struct imgsensor_info = { 
+static imgsensor_info_struct imgsensor_info = {
 	.sensor_id = S5K4H8_SENSOR_ID,
 	.checksum_value = 0x31f55cce,
 	.pre = {
@@ -60,7 +60,7 @@ static imgsensor_info_struct imgsensor_info = {
 		/*	 following for MIPIDataLowPwr2HighSpeedSettleDelayCount by different scenario	*/
 		.mipi_data_lp2hs_settle_dc = 85,//unit , ns
 		/*	 following for GetDefaultFramerateByScenario()	*/
-		.max_framerate = 300,	
+		.max_framerate = 300,
 	},
 	.cap = {
 		.pclk = 280000000,
@@ -82,7 +82,7 @@ static imgsensor_info_struct imgsensor_info = {
 		.grabwindow_width =3264,
 		.grabwindow_height = 2448,
 		.mipi_data_lp2hs_settle_dc = 85,//unit , ns
-		.max_framerate = 150,	
+		.max_framerate = 150,
 	},
 	.normal_video = {
 		.pclk = 280000000,
@@ -129,7 +129,7 @@ static imgsensor_info_struct imgsensor_info = {
 		/*	 following for MIPIDataLowPwr2HighSpeedSettleDelayCount by different scenario	*/
 		.mipi_data_lp2hs_settle_dc = 85,//unit , ns
 		/*	 following for GetDefaultFramerateByScenario()	*/
-		.max_framerate = 300,	
+		.max_framerate = 300,
 	},
     .custom2 = {
 		.pclk = 440000000,				//record different mode's pclk
@@ -143,7 +143,7 @@ static imgsensor_info_struct imgsensor_info = {
 		/*	 following for MIPIDataLowPwr2HighSpeedSettleDelayCount by different scenario	*/
 		.mipi_data_lp2hs_settle_dc = 85,//unit , ns
 		/*	 following for GetDefaultFramerateByScenario()	*/
-		.max_framerate = 300,	
+		.max_framerate = 300,
 	},
     .custom3 = {
 		.pclk = 440000000,				//record different mode's pclk
@@ -157,7 +157,7 @@ static imgsensor_info_struct imgsensor_info = {
 		/*	 following for MIPIDataLowPwr2HighSpeedSettleDelayCount by different scenario	*/
 		.mipi_data_lp2hs_settle_dc = 85,//unit , ns
 		/*	 following for GetDefaultFramerateByScenario()	*/
-		.max_framerate = 300,	
+		.max_framerate = 300,
 	},
     .custom4 = {
 		.pclk = 440000000,				//record different mode's pclk
@@ -171,7 +171,7 @@ static imgsensor_info_struct imgsensor_info = {
 		/*	 following for MIPIDataLowPwr2HighSpeedSettleDelayCount by different scenario	*/
 		.mipi_data_lp2hs_settle_dc = 85,//unit , ns
 		/*	 following for GetDefaultFramerateByScenario()	*/
-		.max_framerate = 300,	
+		.max_framerate = 300,
 	},
     .custom5 = {
 		.pclk = 440000000,				//record different mode's pclk
@@ -185,7 +185,7 @@ static imgsensor_info_struct imgsensor_info = {
 		/*	 following for MIPIDataLowPwr2HighSpeedSettleDelayCount by different scenario	*/
 		.mipi_data_lp2hs_settle_dc = 85,//unit , ns
 		/*	 following for GetDefaultFramerateByScenario()	*/
-		.max_framerate = 300,	
+		.max_framerate = 300,
 	},
 	.margin = 4,
 	.min_shutter = 2,
@@ -196,18 +196,18 @@ static imgsensor_info_struct imgsensor_info = {
 	.ihdr_support = 1,	  //1, support; 0,not support
 	.ihdr_le_firstline = 0,  //1,le first ; 0, se first
 	.sensor_mode_num = 5,	  //support sensor mode num
-	
-	.cap_delay_frame = 2, 
-	.pre_delay_frame = 2,  
+
+	.cap_delay_frame = 2,
+	.pre_delay_frame = 2,
 	.video_delay_frame = 2,
 	.hs_video_delay_frame = 2,
 	.slim_video_delay_frame = 2,
     .custom1_delay_frame = 2,
-    .custom2_delay_frame = 2, 
-    .custom3_delay_frame = 2, 
-    .custom4_delay_frame = 2, 
+    .custom2_delay_frame = 2,
+    .custom3_delay_frame = 2,
+    .custom4_delay_frame = 2,
     .custom5_delay_frame = 2,
-	
+
 	.isp_driving_current = ISP_DRIVING_6MA,
 	.sensor_interface_type = SENSOR_INTERFACE_TYPE_MIPI,
 	.mipi_sensor_type = MIPI_OPHY_NCSI2, //0,MIPI_OPHY_NCSI2;  1,MIPI_OPHY_CSI2
@@ -237,28 +237,28 @@ static imgsensor_struct imgsensor = {
 
 
 /* Sensor output window information */
-static SENSOR_WINSIZE_INFO_STRUCT imgsensor_winsize_info[10] =	 
+static SENSOR_WINSIZE_INFO_STRUCT imgsensor_winsize_info[10] =
 {
- { 3264, 2448,	  0,  0, 3264, 2448, 1632,  1224, 0000, 0000, 1632, 1224, 0,	0, 1632,  1224}, // Preview 
- { 3264, 2448,	  0,  0, 3264, 2448, 3264,  2448, 0000, 0000, 3264, 2448, 0,	0, 3264,  2448}, // capture 
- { 3264, 2448,	  0,  0, 3264, 2448, 1632,  1224, 0000, 0000, 1632, 1224, 0,	0, 1632,  1224}, // video 
+ { 3264, 2448,	  0,  0, 3264, 2448, 1632,  1224, 0000, 0000, 1632, 1224, 0,	0, 1632,  1224}, // Preview
+ { 3264, 2448,	  0,  0, 3264, 2448, 3264,  2448, 0000, 0000, 3264, 2448, 0,	0, 3264,  2448}, // capture
+ { 3264, 2448,	  0,  0, 3264, 2448, 1632,  1224, 0000, 0000, 1632, 1224, 0,	0, 1632,  1224}, // video
  { 3264, 2448,	  0,  0, 3264, 2448,  816,   612, 0000, 0000,  816,  612, 0,	0,  816,   612},// hight video 120
- { 3264, 2448,	  0,  306, 3264, 1836, 1280,   720, 0000, 0000, 1280,  720, 0,	0, 1280,   720},// slim video 
- { 4192, 3104,	  0,  0, 4192, 3104, 2096,  1552, 0000, 0000, 2096, 1552, 0,	0, 2096,  1552}, // Custom1 (defaultuse preview) 
- { 4192, 3104,	  0,  0, 4192, 3104, 2096,  1552, 0000, 0000, 2096, 1552, 0,	0, 2096,  1552}, // Custom2 
- { 4192, 3104,	  0,  0, 4192, 3104, 2096,  1552, 0000, 0000, 2096, 1552, 0,	0, 2096,  1552}, // Custom3 
- { 4192, 3104,	  0,  0, 4192, 3104, 2096,  1552, 0000, 0000, 2096, 1552, 0,	0, 2096,  1552}, // Custom4 
- { 4192, 3104,	  0,  0, 4192, 3104, 2096,  1552, 0000, 0000, 2096, 1552, 0,	0, 2096,  1552}, // Custom5 
+ { 3264, 2448,	  0,  306, 3264, 1836, 1280,   720, 0000, 0000, 1280,  720, 0,	0, 1280,   720},// slim video
+ { 4192, 3104,	  0,  0, 4192, 3104, 2096,  1552, 0000, 0000, 2096, 1552, 0,	0, 2096,  1552}, // Custom1 (defaultuse preview)
+ { 4192, 3104,	  0,  0, 4192, 3104, 2096,  1552, 0000, 0000, 2096, 1552, 0,	0, 2096,  1552}, // Custom2
+ { 4192, 3104,	  0,  0, 4192, 3104, 2096,  1552, 0000, 0000, 2096, 1552, 0,	0, 2096,  1552}, // Custom3
+ { 4192, 3104,	  0,  0, 4192, 3104, 2096,  1552, 0000, 0000, 2096, 1552, 0,	0, 2096,  1552}, // Custom4
+ { 4192, 3104,	  0,  0, 4192, 3104, 2096,  1552, 0000, 0000, 2096, 1552, 0,	0, 2096,  1552}, // Custom5
  };// slim video
 
 //Lcsh tqq add device_info
 #ifdef CONFIG_LCT_DEVINFO_SUPPORT
 #include  "dev_info.h"
-static struct devinfo_struct *s_DEVINFO_Cam;   
+static struct devinfo_struct *s_DEVINFO_Cam;
 static void devinfo_camera_regchar(char *module,char * vendor,char *used)
 {
 
-	s_DEVINFO_Cam =(struct devinfo_struct*) kmalloc(sizeof(struct devinfo_struct), GFP_KERNEL);	
+	s_DEVINFO_Cam =(struct devinfo_struct*) kmalloc(sizeof(struct devinfo_struct), GFP_KERNEL);
 	s_DEVINFO_Cam->device_type="camera";
 	s_DEVINFO_Cam->device_module=module;
 	s_DEVINFO_Cam->device_vendor=vendor;
@@ -268,9 +268,9 @@ static void devinfo_camera_regchar(char *module,char * vendor,char *used)
 	s_DEVINFO_Cam->device_used=used;
 
        DEVINFO_CHECK_DECLARE(s_DEVINFO_Cam->device_type,s_DEVINFO_Cam->device_module,s_DEVINFO_Cam->device_vendor,s_DEVINFO_Cam->device_ic,s_DEVINFO_Cam->device_version,s_DEVINFO_Cam->device_info,s_DEVINFO_Cam->device_used);
-}     
+}
 #endif
-//end  
+//end
 
 static kal_uint16 read_cmos_sensor(kal_uint32 addr)
 {
@@ -289,7 +289,7 @@ static void write_cmos_sensor(kal_uint16 addr, kal_uint16 para)
 
 static kal_uint16 read_cmos_sensor_8(kal_uint16 addr)
 {
-  
+
     kal_uint16 get_byte=0;
     char pusendcmd[2] = {(char)(addr >> 8) , (char)(addr & 0xFF) };
     iReadRegI2C(pusendcmd , 2, (u8*)&get_byte,1,imgsensor.i2c_write_id);
@@ -316,13 +316,13 @@ static void write_cmos_sensor_8(kal_uint16 addr, kal_uint8 para)
 #define AWB_FLAG_GROUP       (0x0A26)
 #define AWB_FLAG_ADDR_1   (0x0A27)
 #define AWB_FLAG_ADDR_2   (0x0A34)
-#define FLAG_GROUP_1          (0x40)           
-#define FLAG_GROUP_2          (0x10)    
+#define FLAG_GROUP_1          (0x40)
+#define FLAG_GROUP_2          (0x10)
 #define  PAGE1_SIZE               (7)
 #define  PAGE2_SIZE                 (6)
 #define CHECKSUM_DIVISOR     (0xFF)
-#define GOLD_RG_VALUE          (574)
-#define GOLD_BG_VALUE          (670)
+#define GOLD_RG_VALUE          (10885)
+#define GOLD_BG_VALUE          (9567)
 typedef struct Lsc_Group
 {
 	kal_uint16 addr_start;
@@ -355,18 +355,18 @@ static BOOL read_otp(kal_uint16 Page, kal_uint16 address, kal_uint16 *iBuffer, i
 		write_cmos_sensor(0x0a00,0x0100);  //set register page
 	        while(addr<PAGE_START_ADDR+PAGE_SIZE)
 	        {
-	            tempValue = read_cmos_sensor_8(addr);  
+	            tempValue = read_cmos_sensor_8(addr);
 	   LOG_INF("s5k4h8 OTP::awb  addr = 0x%x, value = %x\n",addr,tempValue);
 	            *(iBuffer+i) =tempValue;
 	            addr ++;
 	            i++;
-	            if (i>=length) 
+	            if (i>=length)
 	            {
 	                break;
 	            }
 	        }
-		write_cmos_sensor(0x0a00,0x0000);  
-	        addr  = PAGE_START_ADDR;	
+		write_cmos_sensor(0x0a00,0x0000);
+	        addr  = PAGE_START_ADDR;
 	        bank ++;
     	}
     	return TRUE;
@@ -406,14 +406,14 @@ static BOOL read_lsc_otp(kal_uint16 flag_otp_page, kal_uint16 *iBuffer, kal_uint
 		addr = m_address->addr_start;
 	        while(addr <= m_address->addr_end)
 	        {
-			tempValue = read_cmos_sensor_8(addr);  
+			tempValue = read_cmos_sensor_8(addr);
 			*(iBuffer+i) =tempValue;
 			  LOG_INF("s5k4h8 OTP::lsc  addr = 0x%X, value = %x\n",addr,tempValue);
 			lsc_sum += *(iBuffer+i);
 			addr++;
 			i++;
 	        }
-		write_cmos_sensor(0x0a00,0x0000);  	
+		write_cmos_sensor(0x0a00,0x0000);
 		m_address++;
 		bank_num--;
 		group_num++;
@@ -434,13 +434,13 @@ static BOOL read_lsc_otp(kal_uint16 flag_otp_page, kal_uint16 *iBuffer, kal_uint
 #if 1
 static BOOL writer_awb_otp(kal_uint16 r_gain,kal_uint16 b_gain,kal_uint16 g_gain)
 {
-	write_cmos_sensor(0x6028,0x4000);  
-	write_cmos_sensor(0x602A,0x3058);  
-	write_cmos_sensor_8(0x6F12,0x01);  
-	write_cmos_sensor(0x020e,g_gain);  
-	write_cmos_sensor(0x0210,r_gain);  
-	write_cmos_sensor(0x0212,b_gain);  
-	write_cmos_sensor(0x0214,g_gain);  
+	write_cmos_sensor(0x6028,0x4000);
+	write_cmos_sensor(0x602A,0x3058);
+	write_cmos_sensor_8(0x6F12,0x01);
+	write_cmos_sensor(0x020e,g_gain);
+	write_cmos_sensor(0x0210,r_gain);
+	write_cmos_sensor(0x0212,b_gain);
+	write_cmos_sensor(0x0214,g_gain);
 	LOG_INF("s5k4h8 otp:writer_awb_otp success!\n");
 	return TRUE;
 }
@@ -483,12 +483,12 @@ static BOOL calculate_awb_data(kal_uint16 rg,kal_uint16 bg,kal_uint16 golden_rg,
 		if(b_ratio >= 512)
 		{
 			r_gain = GAIN_DEFAULT ;
-			g_gain  = (kal_uint16) (GAIN_DEFAULT *512 /r_ratio) ; 
+			g_gain  = (kal_uint16) (GAIN_DEFAULT *512 /r_ratio) ;
 			b_gain = (kal_uint16)(GAIN_DEFAULT * b_ratio / r_ratio);
 		}
 		else
 		{
-			gr_gain =  (kal_uint16) (GAIN_DEFAULT *512 /r_ratio) ; 
+			gr_gain =  (kal_uint16) (GAIN_DEFAULT *512 /r_ratio) ;
 			gb_gain = (kal_uint16)(GAIN_DEFAULT * 512 / b_ratio);
 			if(gr_gain > gb_gain)
 			{
@@ -504,30 +504,30 @@ static BOOL calculate_awb_data(kal_uint16 rg,kal_uint16 bg,kal_uint16 golden_rg,
 			}
 		}
 	}
-	s_Awb_otp.r_gain = r_gain; //save awb data 
-	s_Awb_otp.g_gain = g_gain; //save awb data 
-	s_Awb_otp.b_gain = b_gain; //save awb data 
+	s_Awb_otp.r_gain = r_gain; //save awb data
+	s_Awb_otp.g_gain = g_gain; //save awb data
+	s_Awb_otp.b_gain = b_gain; //save awb data
 	LOG_INF("[%s] s5k4h5:r_gain =[0x%x],b_gain =[0x%x],g_gain =[0x%x] \n",__func__,r_gain,b_gain,g_gain);
 	return TRUE;
 }
 static BOOL read_data_from_otp(void)
 {
-	kal_uint16 pTemp[AWB_VALID_DATA_SIZE+1]={0,};  
-	kal_uint16 pTemp_lsc[LSC_VALID_DATA_SIZE+1]={0,};  
+	kal_uint16 pTemp[AWB_VALID_DATA_SIZE+1]={0,};
+	kal_uint16 pTemp_lsc[LSC_VALID_DATA_SIZE+1]={0,};
 	kal_uint16 Length;
 	kal_uint16 sum = 0;
 	kal_uint16 awb_sum = 0;
 	kal_uint16 lsc_sum = 0;
 	kal_uint16 rg_gian, bg_gian,grgb_gain;
 	kal_uint16 rg_gian_golden, bg_gian_golden,grgb_gain_golden;
-	kal_uint16 MID = 0x07;//s5k4h8 MID
+	//kal_uint16 MID = 0x07;//s5k4h8 MID
 	kal_uint16 addr_start = 0xffff;
 	int j = 0;
 	 Length = 1;
 	 LOG_INF("[%s]  read_s5k4h5_otp \n",__func__);
 	write_cmos_sensor(0x6028,0x4000);
 	write_cmos_sensor(0x602A,0x0100);
-	write_cmos_sensor_8(0x6F12,0x01);  //streamm on	
+	write_cmos_sensor_8(0x6F12,0x01);  //streamm on
 	mdelay(10);
 	if(!read_otp(AWB_PAGE, AWB_FLAG_GROUP,&flag_otp_group,Length))
 	{
@@ -551,25 +551,20 @@ static BOOL read_data_from_otp(void)
 			return FALSE;
 		}
 		 for (j=0;j<AWB_DATA_LEN;j++)
-		{	
+		{
 			 sum +=pTemp[j];
 		}
 		 awb_sum = pTemp[16];
 		// lsc_sum = pTemp[9];
 		if((sum%CHECKSUM_DIVISOR+1)!=awb_sum)
 		{
-			LOG_INF("s5k4h8 OTP::AWB check sum error:cal data = 0x%02x,otp_checksum = 0x%x\n",sum%CHECKSUM_DIVISOR+1,awb_sum);
-			s_otp_Avail.awb_avail = TRUE; 
+		//	LOG_INF("s5k4h8 OTP::AWB check sum error:cal data = 0x%02x,otp_checksum = 0x%x\n",sum%CHECKSUM_DIVISOR+1,awb_sum);
+			s_otp_Avail.awb_avail = TRUE;
 			//return FALSE;
 		}
 		else
 		{
-			s_otp_Avail.awb_avail = TRUE; 
-		}
-		if(pTemp[0]!=MID)
-		{
-			LOG_INF("s5k4h8 OTP::module information error:MID = %d,pTemp[2] = %d\n",MID,pTemp[1]);
-		//	return FALSE;
+			s_otp_Avail.awb_avail = TRUE;
 		}
 	}
 	rg_gian =(pTemp[0] <<8 ) | (pTemp[1]&0xff) ;
@@ -580,18 +575,22 @@ static BOOL read_data_from_otp(void)
 	bg_gian_golden = (pTemp[8] <<8 ) | (pTemp[9] &0xff);
 	grgb_gain_golden = (pTemp[10] <<8 ) | (pTemp[11]&0xff) ;
 	LOG_INF("s5k4h8 OTP::rg_gian_golden = %d, bg_gian_golden = %d,grgb_gain_golden = %d\n", rg_gian_golden,bg_gian_golden,grgb_gain_golden);
-	calculate_awb_data(rg_gian,  bg_gian , rg_gian_golden, bg_gian_golden) ; 
+	if (rg_gian_golden == 0 || bg_gian_golden == 0) {
+	calculate_awb_data(rg_gian,  bg_gian , GOLD_RG_VALUE, GOLD_BG_VALUE) ;
+	} else {
+	calculate_awb_data(rg_gian,  bg_gian , rg_gian_golden, bg_gian_golden) ;
+		}
       	read_lsc_otp(flag_otp_group, pTemp_lsc,lsc_sum);
     	return TRUE;
 }
 static void set_dummy(void)
 {
 	 LOG_INF("dummyline = %d, dummypixels = %d ", imgsensor.dummy_line, imgsensor.dummy_pixel);
-    //write_cmos_sensor_8(0x0104, 0x01); 
+    //write_cmos_sensor_8(0x0104, 0x01);
     write_cmos_sensor(0x0340, imgsensor.frame_length);
     write_cmos_sensor(0x0342, imgsensor.line_length);
-   // write_cmos_sensor_8(0x0104, 0x00); 
-  
+   // write_cmos_sensor_8(0x0104, 0x00);
+
 }	/*	set_dummy  */
 static void set_max_framerate(UINT16 framerate,kal_bool min_framelength_en)
 {
