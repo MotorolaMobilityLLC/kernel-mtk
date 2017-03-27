@@ -79,19 +79,19 @@ typedef enum {
 // ============================================================*/
 
 /* Qmax for battery  */
-signed int g_Q_MAX_POS_50[TOTAL_BATTERY_NUMBER] = {5066, 4689, 2500, 2500};
-signed int g_Q_MAX_POS_25[TOTAL_BATTERY_NUMBER] = {5004, 4858, 2432, 2432};
-signed int g_Q_MAX_POS_0[TOTAL_BATTERY_NUMBER] = {3742, 4704, 2244, 2244};
-signed int g_Q_MAX_NEG_10[TOTAL_BATTERY_NUMBER] = {2514, 3559, 1654, 1654};
+signed int g_Q_MAX_POS_50[TOTAL_BATTERY_NUMBER] = {4818, 4689, 2500, 2500};
+signed int g_Q_MAX_POS_25[TOTAL_BATTERY_NUMBER] = {4959, 4858, 2432, 2432};
+signed int g_Q_MAX_POS_0[TOTAL_BATTERY_NUMBER] = {4752, 4704, 2244, 2244};
+signed int g_Q_MAX_NEG_10[TOTAL_BATTERY_NUMBER] = {4119, 3559, 1654, 1654};
 
-signed int g_Q_MAX_POS_50_H_CURRENT[TOTAL_BATTERY_NUMBER] = {4965, 4595, 2500, 2500};
-signed int g_Q_MAX_POS_25_H_CURRENT[TOTAL_BATTERY_NUMBER] = {4904, 4761, 2390, 2390};
-signed int g_Q_MAX_POS_0_H_CURRENT[TOTAL_BATTERY_NUMBER] = {3667, 4610, 1814, 1814};
-signed int g_Q_MAX_NEG_10_H_CURRENT[TOTAL_BATTERY_NUMBER] = {2464, 3488, 1814, 696};
+signed int g_Q_MAX_POS_50_H_CURRENT[TOTAL_BATTERY_NUMBER] = {4722, 4595, 2500, 2500};
+signed int g_Q_MAX_POS_25_H_CURRENT[TOTAL_BATTERY_NUMBER] = {4860, 4761, 2390, 2390};
+signed int g_Q_MAX_POS_0_H_CURRENT[TOTAL_BATTERY_NUMBER] = {4657, 4610, 1814, 1814};
+signed int g_Q_MAX_NEG_10_H_CURRENT[TOTAL_BATTERY_NUMBER] = {4037, 3488, 1814, 696};
 
-signed int g_Q_MAX_SYS_VOLTAGE[TOTAL_BATTERY_NUMBER] = {3350, 3400, 3350, 3350};
-signed int g_BATTERYPSEUDO100[TOTAL_BATTERY_NUMBER] = {95, 98, 95, 95};
-signed int g_BATTERYPSEUDO1[TOTAL_BATTERY_NUMBER] = {4, 2, 4, 4};
+signed int g_Q_MAX_SYS_VOLTAGE[TOTAL_BATTERY_NUMBER] = {3400, 3400, 3350, 3350};
+signed int g_BATTERYPSEUDO100[TOTAL_BATTERY_NUMBER] = {98, 98, 95, 95};
+signed int g_BATTERYPSEUDO1[TOTAL_BATTERY_NUMBER] = {2, 2, 4, 4};
 
 /* 0~0.5V for battery 0, 0.5~1V for battery 1, 1~1.5V for battery 2, -1 for the last one (battery 3) */
 signed int g_battery_id_voltage[TOTAL_BATTERY_NUMBER] = {100000, 2000000, -1, -1};
@@ -262,18 +262,31 @@ BATT_TEMPERATURE Batt_Temperature_Table[TOTAL_BATTERY_NUMBER][17] = {
 BATTERY_PROFILE_STRUCT battery_profile_t0[TOTAL_BATTERY_NUMBER][100] = {
 	{
 	//0
-	{0,4316},
-	{2,4278},
-	{5,4240},
-	{7,4219},
-	{11,4202},
-	{13,4187},
-	{14,4173},
-	{18,4159},
-	{20,4145},
-	{23,4131},
-	{25,4117},
-	{27,4104},
+	{0,4384},
+	{1,4375},
+	{2,4359},
+	{4,4344},
+	{5,4330},
+	{6,4316},
+	{7,4302},
+	{9,4290},
+	{10,4278},
+	{11,4266},
+	{12,4255},
+	{13,4243},
+	{15,4231},
+	{16,4219},
+	{17,4208},
+	{18,4197},
+	{20,4186},
+	{21,4175},
+	{22,4165},
+	{23,4153},
+	{24,4142},
+	{26,4131},
+	{27,4121},
+	{28,4108},
+	{29,4100},
 	{30,4092},
 	{32,4084},
 	{33,4076},
@@ -631,25 +644,36 @@ BATTERY_PROFILE_STRUCT battery_profile_t0[TOTAL_BATTERY_NUMBER][100] = {
 BATTERY_PROFILE_STRUCT battery_profile_t1[TOTAL_BATTERY_NUMBER][100] = {
 	{
 	//0
-	{0,4323},
-	{1,4293},
-	{4,4273},
-	{5,4257},
-	{6,4241},
-	{9,4226},
-	{10,4211},
-	{12,4197},
-	{13,4183},
-	{15,4169},
-	{17,4156},
-	{18,4142},
-	{21,4129},
-	{22,4115},
-	{23,4102},
-	{26,4090},
-	{27,4080},
-	{28,4069},
-	{29,4057},
+	{0,4387},
+	{1,4372},
+	{2,4358},
+	{3,4343},
+	{4,4330},
+	{5,4318},
+	{6,4304},
+	{7,4292},
+	{8,4281},
+	{9,4269},
+	{11,4257},
+	{12,4246},
+	{13,4234},
+	{14,4222},
+	{15,4211},
+	{16,4200},
+	{17,4188},
+	{18,4178},
+	{19,4167},
+	{20,4156},
+	{21,4145},
+	{22,4134},
+	{23,4123},
+	{24,4111},
+	{25,4102},
+	{26,4093},
+	{27,4085},
+	{28,4080},
+	{29,4072},
+	{31,4059},
 	{32,4040},
 	{33,4018},
 	{34,4000},
@@ -1080,25 +1104,28 @@ BATTERY_PROFILE_STRUCT battery_profile_t2[TOTAL_BATTERY_NUMBER][100] = {
 	{78,3759},
 	{79,3754},
 	{80,3751},
-	{81,3746},
-	{82,3743},
+	{81,3748},
+	{82,3745},
+	{83,3741},
 	{84,3737},
-	{85,3730},
-	{86,3722},
-	{87,3715},
-	{89,3706},
-	{90,3695},
-	{91,3693},
-	{92,3691},
+	{85,3731},
+	{86,3725},
+	{87,3721},
+	{88,3715},
+	{89,3707},
+	{90,3698},
+	{91,3694},
+	{92,3692},
+	{93,3692},
 	{94,3690},
-	{95,3688},
-	{96,3684},
-	{97,3661},
-	{99,3605},
+	{95,3689},
+	{96,3685},
+	{97,3675},
+	{98,3640},
+	{99,3591},
 	{100,3525},
-	{101,3400},
-	{102,3119},
-	{102,3119}
+	{101,3433},
+	{101,3271}
 	},
 	{
 	//1
