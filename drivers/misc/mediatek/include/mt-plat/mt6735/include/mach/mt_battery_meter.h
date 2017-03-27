@@ -52,15 +52,15 @@
 #define FG_METER_RESISTANCE 0
 
 /* Qmax for battery  */
-#define Q_MAX_POS_50 2752
-#define Q_MAX_POS_25 2757
-#define Q_MAX_POS_0 2651
-#define Q_MAX_NEG_10 2220
+#define Q_MAX_POS_50 1463
+#define Q_MAX_POS_25 1437
+#define Q_MAX_POS_0 1220
+#define Q_MAX_NEG_10 1137
 
-#define Q_MAX_POS_50_H_CURRENT 2697
-#define Q_MAX_POS_25_H_CURRENT 2702
-#define Q_MAX_POS_0_H_CURRENT 2598
-#define Q_MAX_NEG_10_H_CURRENT 2176
+#define Q_MAX_POS_50_H_CURRENT 1511
+#define Q_MAX_POS_25_H_CURRENT 1462
+#define Q_MAX_POS_0_H_CURRENT 818
+#define Q_MAX_NEG_10_H_CURRENT 149
 
 
 /* Discharge Percentage */
@@ -82,7 +82,7 @@
 #define OCV_BOARD_COMPESATE	0 /*mV */
 #define R_FG_BOARD_BASE 1000
 #define R_FG_BOARD_SLOPE 1000 /*slope*/
-#define CAR_TUNE_VALUE 101 /*1.00*/
+#define CAR_TUNE_VALUE 100 /*1.00*/
 
 
 /* HW Fuel gague  */
@@ -101,10 +101,10 @@
 #define AGING1_LOAD_SOC			70
 #define AGING1_UPDATE_SOC		30
 #define BATTERYPSEUDO100		95
-#define BATTERYPSEUDO1 0
+#define BATTERYPSEUDO1			4
 
 /* #define Q_MAX_BY_SYS */
-#define Q_MAX_SYS_VOLTAGE 3350
+#define Q_MAX_SYS_VOLTAGE		3300
 #define SHUTDOWN_GAUGE0
 #define SHUTDOWN_GAUGE1_XMINS
 #define SHUTDOWN_GAUGE1_MINS		60
@@ -192,15 +192,15 @@
 #endif
 
 /* Qmax for battery  */
-#define Q_MAX_POS_50 2752
-#define Q_MAX_POS_25 2757
-#define Q_MAX_POS_0 2651
-#define Q_MAX_NEG_10 2220
+#define Q_MAX_POS_50 1463
+#define Q_MAX_POS_25 1437
+#define Q_MAX_POS_0 1220
+#define Q_MAX_NEG_10 1137
 
-#define Q_MAX_POS_50_H_CURRENT 2697
-#define Q_MAX_POS_25_H_CURRENT 2702
-#define Q_MAX_POS_0_H_CURRENT 2598
-#define Q_MAX_NEG_10_H_CURRENT 2176
+#define Q_MAX_POS_50_H_CURRENT 1511
+#define Q_MAX_POS_25_H_CURRENT 1462
+#define Q_MAX_POS_0_H_CURRENT 818
+#define Q_MAX_NEG_10_H_CURRENT 149
 
 
 /* Discharge Percentage */
@@ -250,10 +250,10 @@
 #define BATTERYPSEUDO100		95
 #endif
 //zhangchao@wind-mobi.com 20170103 end
-#define BATTERYPSEUDO1 0
+#define BATTERYPSEUDO1			4
 
 /* #define Q_MAX_BY_SYS */
-#define Q_MAX_SYS_VOLTAGE 3350
+#define Q_MAX_SYS_VOLTAGE		3300
 //zhangchao@wind-mobi.com 20170103 begin
 #ifdef CONFIG_WIND_Z168_BATTERY_MODIFY
 //#define SHUTDOWN_GAUGE0
@@ -350,15 +350,15 @@
 #define FG_METER_RESISTANCE 0
 
 /* Qmax for battery  */
-#define Q_MAX_POS_50 2752
-#define Q_MAX_POS_25 2757
-#define Q_MAX_POS_0 2651
-#define Q_MAX_NEG_10 2220
+#define Q_MAX_POS_50 1463
+#define Q_MAX_POS_25 1437
+#define Q_MAX_POS_0 1220
+#define Q_MAX_NEG_10 1137
 
-#define Q_MAX_POS_50_H_CURRENT 2697
-#define Q_MAX_POS_25_H_CURRENT 2702
-#define Q_MAX_POS_0_H_CURRENT 2598
-#define Q_MAX_NEG_10_H_CURRENT 2176
+#define Q_MAX_POS_50_H_CURRENT 1511
+#define Q_MAX_POS_25_H_CURRENT 1462
+#define Q_MAX_POS_0_H_CURRENT 818
+#define Q_MAX_NEG_10_H_CURRENT 149
 
 
 /* Discharge Percentage */
@@ -380,7 +380,7 @@
 #define OCV_BOARD_COMPESATE	0 /*mV */
 #define R_FG_BOARD_BASE 1000
 #define R_FG_BOARD_SLOPE 1000 /*slope*/
-#define CAR_TUNE_VALUE 101 /*1.00*/
+#define CAR_TUNE_VALUE 100 /*1.00*/
 
 
 /* HW Fuel gague  */
@@ -399,10 +399,10 @@
 #define AGING1_LOAD_SOC			70
 #define AGING1_UPDATE_SOC		30
 #define BATTERYPSEUDO100		95
-#define BATTERYPSEUDO1 0
+#define BATTERYPSEUDO1			4
 
 /* #define Q_MAX_BY_SYS */
-#define Q_MAX_SYS_VOLTAGE 3350
+#define Q_MAX_SYS_VOLTAGE		3300
 #define SHUTDOWN_GAUGE0
 #define SHUTDOWN_GAUGE1_XMINS
 #define SHUTDOWN_GAUGE1_MINS		60
