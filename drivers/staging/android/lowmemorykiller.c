@@ -240,7 +240,8 @@ static unsigned long lowmem_scan(struct shrinker *s, struct shrink_control *sc)
 		minfree = lowmem_minfree[i];
 		if (other_free < minfree && other_file < minfree) {
 #ifdef CONFIG_SWAP
-			if (totalram_pages < 0x40000) {
+/*			if (totalram_pages < 0x40000) { */
+			if (1) {
 				if (to_be_aggressive != 0 && i > 3) {
 					i -= to_be_aggressive;
 					if (i < 3)
