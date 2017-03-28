@@ -617,7 +617,10 @@ void usb_phy_recover(void)
 	HQA_special();
 
 	hs_slew_rate_cal();
-
+/*huyunge@wind-mobi.com 20170327 modify for */
+#ifdef CONFIG_WIND_OTG_HDD_SUPPORT
+	USBPHY_SET8(0x18, 0xf0);
+#endif
 	DBG(0, "usb recovery success\n");
 }
 
