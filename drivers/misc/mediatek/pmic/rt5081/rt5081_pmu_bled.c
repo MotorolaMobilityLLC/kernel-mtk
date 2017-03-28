@@ -403,8 +403,13 @@ static inline int rt_parse_dt(struct device *dev)
 		pdata->ext_en_pin = 1;
 	if (of_property_read_u32(np, "rt,chan_en", &tmp) < 0)
 		pdata->chan_en = 0x0; /* default 4 channel disable */
-	else
+	else{
+#ifdef CONFIG_L3510_MAINBOARD
+        pdata->chan_en = 0x0e;  //Mod chan_ne for Marino
+#else
 		pdata->chan_en = tmp;
+#endif
+	}
 	if (of_property_read_bool(np, "rt,map_linear"))
 		pdata->map_linear = 1;
 	if (of_property_read_u32(np, "rt,bl_ovp_level", &tmp) < 0)
