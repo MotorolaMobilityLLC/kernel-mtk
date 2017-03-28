@@ -2367,7 +2367,6 @@ exit_BMA2x2_CheckDeviceID:
 int BMA2x2_DoSetPowerMode(struct i2c_client *client, bool enable) //tuwenzan@wind-mobi.com modify at 20161128
 {
 	u8 databuf[2] = {0};
-	u8 databuf1[2] = {0};
 	int res = 0;
 	u8 temp, temp0, temp1;
 	struct bma2x2_i2c_data *obj = i2c_get_clientdata(client);
@@ -2389,27 +2388,9 @@ int BMA2x2_DoSetPowerMode(struct i2c_client *client, bool enable) //tuwenzan@win
 		GSE_LOG("read  config failed!\n");
 	switch (actual_power_mode) {
 	case BMA2x2_MODE_NORMAL:
-
-		databuf1[0] = 0x80;
-		databuf1[1] = 0x00;
-
 		databuf[0] = 0x00;
 		databuf[1] = 0x00;
 		while (count < 10) {
-/*cly add for LOWPOWER -> NORMAL  must first change to SUSPEND mode 20170217*/
-
-			res = bma_i2c_write_block(client,
-							BMA2x2_MODE_CTRL_REG, &databuf1[0], 1);
-						udelay(1000);
-			if (res < 0)
-					GSE_LOG("write MODE_CTRL_REG  80 failed!\n");
-
-			res = bma_i2c_write_block(client, 0x3E, &databuf1[1], 0x1);
-
-			if (res < 0)
-					GSE_LOG("write MODE_CTRL_REG  0x3E 00 failed!\n");
-
-/*end*/
 			res = bma_i2c_write_block(client,
 				BMA2x2_MODE_CTRL_REG, &databuf[0], 1);
 			udelay(1000);
