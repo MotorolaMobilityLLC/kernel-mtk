@@ -84,7 +84,7 @@ static void als_work_func(struct work_struct *work)
 		}
 	}
 	/* ALSPS_LOG(" als data[%d]\n" , cxt->drv_data.als_data.values[0]); */
-	als_data_report(cxt->idev,
+	als_data_report(cxt->idev_als,
 	cxt->drv_data.als_data.values[0],
 	cxt->drv_data.als_data.status);
 
@@ -137,7 +137,7 @@ static void ps_work_func(struct work_struct *work)
 			cxt->is_get_valid_ps_data_after_enable = true;
 	}
 
-	ps_data_report(cxt->idev,
+	ps_data_report(cxt->idev_ps,
 	cxt->drv_data.ps_data.values[0],
 	cxt->drv_data.ps_data.status);
 
@@ -503,7 +503,7 @@ static ssize_t als_show_devnum(struct device *dev,
 	int ret;
 	struct input_handle *handle;
 
-	list_for_each_entry(handle, &alsps_context_obj->idev->h_list, d_node)
+	list_for_each_entry(handle, &alsps_context_obj->idev_als->h_list, d_node)
 		if (strncmp(handle->name, "event", 5) == 0) {
 			devname = handle->name;
 			break;
@@ -655,7 +655,7 @@ static ssize_t ps_show_devnum(struct device *dev,
 	int ret;
 	struct input_handle *handle;
 
-	list_for_each_entry(handle, &alsps_context_obj->idev->h_list, d_node)
+	list_for_each_entry(handle, &alsps_context_obj->idev_ps->h_list, d_node)
 		if (strncmp(handle->name, "event", 5) == 0) {
 			devname = handle->name;
 			break;
@@ -777,7 +777,7 @@ int ps_report_interrupt_data(int value)
 	}
 
 	if (cxt->is_ps_batch_enable == false)
-		ps_data_report(cxt->idev, value, 3);
+		ps_data_report(cxt->idev_ps, value, 3);
 
 	return 0;
 }
@@ -800,30 +800,46 @@ static int alsps_misc_init(struct alsps_context *cxt)
 
 static int alsps_input_init(struct alsps_context *cxt)
 {
-	struct input_dev *dev;
+	struct input_dev *dev_ps;
+	struct input_dev *dev_als;
 	int err = 0;
 
-	dev = input_allocate_device();
-	if (NULL == dev)
+	dev_ps = input_allocate_device();
+	dev_als = input_allocate_device();
+	if( (NULL == dev_ps) ||(NULL == dev_als))
 		return -ENOMEM;
 
-	dev->name = ALSPS_INPUTDEV_NAME;
-	set_bit(EV_REL, dev->evbit);
-	set_bit(EV_SYN, dev->evbit);
-	input_set_capability(dev, EV_REL, EVENT_TYPE_PS_VALUE);
-	input_set_capability(dev, EV_REL, EVENT_TYPE_PS_STATUS);
-	input_set_capability(dev, EV_ABS, EVENT_TYPE_ALS_VALUE);
-	input_set_capability(dev, EV_ABS, EVENT_TYPE_ALS_STATUS);
-	input_set_abs_params(dev, EVENT_TYPE_ALS_VALUE, ALSPS_VALUE_MIN, ALSPS_VALUE_MAX, 0, 0);
-	input_set_abs_params(dev, EVENT_TYPE_ALS_STATUS, ALSPS_STATUS_MIN, ALSPS_STATUS_MAX, 0, 0);
-	input_set_drvdata(dev, cxt);
+	dev_ps->name = "m_ps_input";//ALSPS_INPUTDEV_NAME;
+	dev_als->name = "m_als_input";//ALSPS_INPUTDEV_NAME;
 
-	err = input_register_device(dev);
+	set_bit(EV_REL, dev_ps->evbit);
+	set_bit(EV_SYN, dev_ps->evbit);
+	input_set_capability(dev_ps, EV_REL, EVENT_TYPE_PS_VALUE);
+	input_set_capability(dev_ps, EV_REL, EVENT_TYPE_PS_STATUS);
+	input_set_abs_params(dev_ps, EVENT_TYPE_ALS_VALUE, ALSPS_VALUE_MIN, ALSPS_VALUE_MAX, 0, 0);
+	input_set_abs_params(dev_ps, EVENT_TYPE_ALS_STATUS, ALSPS_STATUS_MIN, ALSPS_STATUS_MAX, 0, 0);
+	input_set_drvdata(dev_ps, cxt);
+
+	set_bit(EV_REL, dev_als->evbit);
+	set_bit(EV_SYN, dev_als->evbit);
+	input_set_capability(dev_als, EV_ABS, EVENT_TYPE_ALS_VALUE);
+	input_set_capability(dev_als, EV_ABS, EVENT_TYPE_ALS_STATUS);
+	input_set_abs_params(dev_als, EVENT_TYPE_ALS_VALUE, ALSPS_VALUE_MIN, ALSPS_VALUE_MAX, 0, 0);
+	input_set_abs_params(dev_als, EVENT_TYPE_ALS_STATUS, ALSPS_STATUS_MIN, ALSPS_STATUS_MAX, 0, 0);
+	input_set_drvdata(dev_als, cxt);
+
+	err = input_register_device(dev_ps);
 	if (err < 0) {
-		input_free_device(dev);
+		input_free_device(dev_ps);
 		return err;
 	}
-	cxt->idev = dev;
+	err = input_register_device(dev_als);
+	if (err < 0) {
+		input_free_device(dev_als);
+		return err;
+	}
+	cxt->idev_ps = dev_ps;
+	cxt->idev_als = dev_als;
 
 	return 0;
 }
@@ -1072,10 +1088,12 @@ static int alsps_remove(void)
 	int err = 0;
 
 	ALSPS_FUN(f);
-	input_unregister_device(alsps_context_obj->idev);
-	sysfs_remove_group(&alsps_context_obj->idev->dev.kobj,
-				&alsps_attribute_group);
-
+	input_unregister_device(alsps_context_obj->idev_ps);
+	sysfs_remove_group(&alsps_context_obj->idev_ps->dev.kobj,
+			&alsps_attribute_group);
+	input_unregister_device(alsps_context_obj->idev_als);
+	sysfs_remove_group(&alsps_context_obj->idev_als->dev.kobj,
+			&alsps_attribute_group);
 	err = misc_deregister(&alsps_context_obj->mdev);
 	if (err)
 		ALSPS_ERR("misc_deregister fail: %d\n", err);
