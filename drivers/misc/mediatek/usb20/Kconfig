@@ -58,3 +58,10 @@ config MTK_MUSB_SW_WITCH_MODE
     	help
 	  Usb host/device/idle mode switch through command, not only depend on ID pin.
 	  Say Y here if your want to use software to switch usb mode.
+#huyunge@wind-mobi.com add 20170328 start
+config WIND_OTG_HDD_SUPPORT
+	 bool "WIND_OTG_HDD_SUPPORT"
+    default n
+	help
+          For support Lenovo HDD
+#huyunge@wind-mobi.com 20170328 end

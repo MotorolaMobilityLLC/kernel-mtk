@@ -557,4 +557,6 @@ CONFIG_EXFAT_FS=y
 CONFIG_F2FS_FS=y
 CONFIG_F2FS_FS_SECURITY=y
 CONFIG_F2FS_FS_XATTR=y
-
+#huyunge@wind-mobi.com add 20170328 start
+CONFIG_WIND_OTG_HDD_SUPPORT=y
+#huyunge@wind-mobi.com add 20170328 end
