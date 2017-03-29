@@ -13,7 +13,7 @@
 
 flashlight-y	:= flashlight-core.o
 flashlight-y	+= flashlight-device.o
-ifeq ($(TARGET_PRODUCT),brady)
+ifneq (, $(findstring brady, $(TARGET_PRODUCT)))
 ccflags-y += -DFLASH_BRADY
 endif
 obj-$(CONFIG_MTK_FLASHLIGHT)		     += flashlight.o
