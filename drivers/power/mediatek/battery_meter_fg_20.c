@@ -1724,6 +1724,7 @@ int force_get_tbat(kal_bool update)
 	//zhangchao@wind-mobi.com 20161217 begin
 	#ifdef CONFIG_WIND_Z168_TEST
 	battery_log(BAT_LOG_CRTI, "[BATTERY]fix batteryTemp=25!!\r\n");
+	battery_log(BAT_LOG_CRTI, "[BATTERY]Actual batteryTemp = %d !!\r\n",bat_temperature_val);
 	return 25;
 	#else
 	return bat_temperature_val;
