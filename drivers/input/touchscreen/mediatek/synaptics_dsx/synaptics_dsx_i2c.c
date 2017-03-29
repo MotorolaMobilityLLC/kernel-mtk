@@ -1283,7 +1283,16 @@ static int synaptics_rmi4_f11_abs_report(struct synaptics_rmi4_data *rmi4_data,
 					__func__, finger,
 					finger_status,
 					x, y, wx, wy);
-
+					
+			printk("wind_tp Finger %d:\n"
+					"status = 0x%02x\n"
+					"x = %d\n"
+					"y = %d\n"
+					"wx = %d\n"
+					"wy = %d\n",
+					finger,
+					finger_status,
+					x, y, wx, wy);
 			touch_count++;
 		}
 	}
@@ -1602,7 +1611,7 @@ static void synaptics_rmi4_report_touch(struct synaptics_rmi4_data *rmi4_data,
 		struct synaptics_rmi4_fn *fhandler)
 {
 	unsigned char touch_count_2d;
-
+printk("wind_tp enter synaptics_rmi4_report_touch\n");
 	dev_dbg(&rmi4_data->i2c_client->dev,
 			"%s: Function %02x reporting\n",
 			__func__, fhandler->fn_number);
@@ -1664,8 +1673,8 @@ static void synaptics_rmi4_sensor_report(struct synaptics_rmi4_data *rmi4_data)
 			rmi4_data->f01_data_base_addr,
 			data,
 			rmi4_data->num_of_intr_regs + 1);
-	printk("wind_tp data[0] =0x%0x,data[1] =0x%0x,data[2] =0x%0x,data[3] =0x%0x,data[4] =0x%0x\n",
-		       data[0],data[1],data[2],data[3],data[4]); //tuwenzan@wind-mobi.com add log at 20170227
+	//printk("wind_tp data[0] =0x%0x,data[1] =0x%0x,data[2] =0x%0x,data[3] =0x%0x,data[4] =0x%0x\n",
+	//	       data[0],data[1],data[2],data[3],data[4]); //tuwenzan@wind-mobi.com add log at 20170227
 	if (retval < 0) {
 		dev_err(&rmi4_data->i2c_client->dev,
 				"%s: Failed to read interrupt status\n",
@@ -1689,9 +1698,12 @@ static void synaptics_rmi4_sensor_report(struct synaptics_rmi4_data *rmi4_data)
 	 * Traverse the function handler list and service the source(s)
 	 * of the interrupt accordingly.
 	 */
+	 printk("wind-tp list_empty(&rmi->support_fn_list) %d\n",list_empty(&rmi->support_fn_list));
 	if (!list_empty(&rmi->support_fn_list)) {
 		list_for_each_entry(fhandler, &rmi->support_fn_list, link) {
+		printk("wind-tp fhandler->num_of_data_sources %d\n",fhandler->num_of_data_sources);
 			if (fhandler->num_of_data_sources) {
+				printk("wind-tp fhandler->intr_mask %d,intr[fhandler->intr_reg_num] %d\n",fhandler->intr_mask,intr[fhandler->intr_reg_num]);
 				if (fhandler->intr_mask &
 						intr[fhandler->intr_reg_num]) {
 					synaptics_rmi4_report_touch(rmi4_data,
