@@ -406,6 +406,73 @@ static void write_shutter(kal_uint16 shutter)
     LOG_INF("shutter =%d, framelength =%d, realtime_fps =%d\n", shutter,imgsensor.frame_length, realtime_fps);
 }
 
+static void set_shutter_frame_length(kal_uint16 shutter, kal_uint16 frame_length)
+{
+	kal_uint16 realtime_fps = 0;
+	kal_int32 dummy_line = 0;
+
+	//LOG_INF("shutter =%d, frame_time =%d\n", shutter, frame_time);
+	/* 0x3500, 0x3501, 0x3502 will increase VBLANK to get exposure larger than frame exposure */
+	/* AE doesn't update sensor gain at capture mode, thus extra exposure lines must be updated here. */
+
+	// OV Recommend Solution
+	// if shutter bigger than frame_length, should extend frame length first
+	spin_lock(&imgsensor_drv_lock);
+    /*Change frame time*/
+    if(frame_length > 1)
+	    dummy_line = frame_length - imgsensor.frame_length;
+	imgsensor.frame_length = imgsensor.frame_length + dummy_line;
+
+    //
+    if (shutter > imgsensor.frame_length - imgsensor_info.margin)
+        imgsensor.frame_length = shutter + imgsensor_info.margin;
+
+    if (imgsensor.frame_length > imgsensor_info.max_frame_length)
+        imgsensor.frame_length = imgsensor_info.max_frame_length;
+
+	spin_unlock(&imgsensor_drv_lock);
+	shutter = (shutter < imgsensor_info.min_shutter) ? imgsensor_info.min_shutter : shutter;
+	shutter = (shutter > (imgsensor_info.max_frame_length - imgsensor_info.margin)) ? (imgsensor_info.max_frame_length - imgsensor_info.margin) : shutter;
+	//frame_length and shutter should be an even number.
+	shutter = (shutter >> 1) << 1;
+	imgsensor.frame_length = (imgsensor.frame_length >> 1) << 1;
+
+	if (imgsensor.autoflicker_en == KAL_TRUE)
+	{
+        realtime_fps = imgsensor.pclk / imgsensor.line_length * 10 / imgsensor.frame_length;
+        if(realtime_fps >= 297 && realtime_fps <= 305){
+			realtime_fps = 296;
+            set_max_framerate(realtime_fps,0);
+		}
+        else if(realtime_fps >= 147 && realtime_fps <= 150){
+			realtime_fps = 146;
+            set_max_framerate(realtime_fps ,0);
+		}
+        else
+        {
+        	imgsensor.frame_length = (imgsensor.frame_length  >> 1) << 1;
+            write_cmos_sensor(0x380e, imgsensor.frame_length >> 8);
+            write_cmos_sensor(0x380f, imgsensor.frame_length & 0xFF);
+        }
+    }
+    else
+    {
+    	imgsensor.frame_length = (imgsensor.frame_length  >> 1) << 1;
+        write_cmos_sensor(0x380e, (imgsensor.frame_length >> 8)& 0xFF);
+        write_cmos_sensor(0x380f, imgsensor.frame_length & 0xFF);
+    }
+
+	/*Warning : shutter must be even. Odd might happen Unexpected Results */
+    write_cmos_sensor(0x3500, (shutter >> 12) & 0x0F);
+    write_cmos_sensor(0x3501, (shutter >> 4) & 0xFF);
+    write_cmos_sensor(0x3502, (shutter<<4)  & 0xF0);
+    //LOG_INF("realtime_fps =%d\n", realtime_fps);
+	LOG_INF("shen shutter =%d, framelength =%d/%d, dummy_line=%d\n", shutter,imgsensor.frame_length, frame_length, dummy_line);
+
+	//LOG_INF("frame_length = %d ", frame_length);
+
+}	/*	write_shutter  */
+
 static void set_shutter(kal_uint16 shutter)
 {
     unsigned long flags;
@@ -2317,6 +2384,9 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 			break;
 		case SENSOR_FEATURE_SET_PDAF:
 			LOG_INF("PDAF mode :%d\n", imgsensor.pdaf_mode);
+			break;
+		case SENSOR_FEATURE_SET_SHUTTER_FRAME_TIME:
+			set_shutter_frame_length((UINT16)*feature_data,(UINT16)*(feature_data+1));
 			break;
         default:
             break;
