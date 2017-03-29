@@ -2288,7 +2288,12 @@ const struct i2c_device_id *id)
 		goto exit_init_failed;
 
 	APS_LOG("ltr578_devinit() ...OK!\n");
-
+	err = ltr578_ps_disable();
+	if (err)
+		APS_ERR("disable ps fail in probe: %d\n", err);
+	err = ltr578_als_disable();
+	if (err)
+		APS_ERR("disable als fail in probe: %d\n", err);
 	/* printk("@@@@@@ Part ID:%x\n",ltr578_i2c_read_reg(0x06)); */
 	err = misc_register(&ltr578_device);
 	if (err) {
