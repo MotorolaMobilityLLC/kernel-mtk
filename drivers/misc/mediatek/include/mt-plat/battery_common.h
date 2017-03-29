@@ -28,7 +28,7 @@
 #define CHARGER_THRESH_HOLD                 (4300)
 #define BATTERY_UVLO_VOLTAGE                (2700)
 #ifndef SHUTDOWN_SYSTEM_VOLTAGE
-#define SHUTDOWN_SYSTEM_VOLTAGE		(3400)
+#define SHUTDOWN_SYSTEM_VOLTAGE		(3100)
 #endif
 
 /*****************************************************************************
