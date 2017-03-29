@@ -1792,13 +1792,12 @@ static void ltr778_eint_work(struct work_struct *work)
 
 	if (value < 0) {
 		goto EXIT_INTR;
-	}
-	else {
+	}else {
 		if (value != 0) {
-			err = ltr778_ps_enable(obj->client, 0);
+			err = ltr778_i2c_write_reg(LTR778_PS_CONTR, 0x00);
 			if (err < 0)
 			{
-				APS_ERR("disable ps:  %d\n", err);				
+				APS_ERR("PS: eint_work disable ps err: %d \n", err);
 			}
 			goto EXIT_INTR;
 		}
