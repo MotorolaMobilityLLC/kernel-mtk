@@ -58,7 +58,7 @@ static imgsensor_info_struct imgsensor_info = {
 	.pre = {
 		.pclk = 375000000,                //record different mode's pclk
 		.linelength = 4614,                //record different mode's linelength
-		.framelength = 2786,            //record different mode's framelength
+		.framelength = 2704,            //record different mode's framelength
 		.startx = 0,                    //record different mode's startx of grabwindow
 		.starty = 0,                    //record different mode's starty of grabwindow
 		.grabwindow_width = 2104,        //record different mode's width of grabwindow
@@ -301,7 +301,7 @@ static void set_shutter(kal_uint16 shutter)
 	{
 		realtime_fps = imgsensor.pclk / imgsensor.line_length * 10 / imgsensor.frame_length;
 		if(realtime_fps >= 297 && realtime_fps <= 305)
-		  set_max_framerate(296,0);
+		  set_max_framerate(300,0);
 		else if(realtime_fps >= 147 && realtime_fps <= 150)
 		  set_max_framerate(146,0);
 		else 
@@ -1110,7 +1110,7 @@ static void preview_setting(void)
 	write_cmos_sensor_2byte(0x0400, 0x0001); 	// SCALING_MODE
 	write_cmos_sensor_2byte(0x0404, 0x0020); 	// SCALE_M
 	write_cmos_sensor_2byte(0x0342, 0x1206); 	// LINE_LENGTH_PCK
-	write_cmos_sensor_2byte(0x0340, 0x0AE2); 	// FRAME_LENGTH_LINES //0x0C52
+	write_cmos_sensor_2byte(0x0340, 0x0A90); 	// FRAME_LENGTH_LINES //0x0C52
 	write_cmos_sensor_2byte(0x0202, 0x094c); 	// COARSE_INTEGRATION_TIME
 
 	write_cmos_sensor_2byte(0x31B0, 0x0045);   //Frame preamble 4D
@@ -1857,7 +1857,7 @@ static kal_uint32 set_video_mode(UINT16 framerate)
 	  return ERROR_NONE;
 	spin_lock(&imgsensor_drv_lock);
 	if ((framerate == 300) && (imgsensor.autoflicker_en == KAL_TRUE))
-	  imgsensor.current_fps = 296;
+	  imgsensor.current_fps = 300;
 	else if ((framerate == 150) && (imgsensor.autoflicker_en == KAL_TRUE))
 	  imgsensor.current_fps = 146;
 	else
