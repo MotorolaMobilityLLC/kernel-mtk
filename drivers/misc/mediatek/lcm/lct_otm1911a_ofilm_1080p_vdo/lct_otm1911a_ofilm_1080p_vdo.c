@@ -535,8 +535,8 @@ static void lcm_init(void)
 static void lcm_suspend(void)
 {
 	push_table(NULL, lcm_suspend_setting, sizeof(lcm_suspend_setting) / sizeof(struct LCM_setting_table), 1);
+	SET_RESET_PIN(0);
 	MDELAY(10);
-	/* SET_RESET_PIN(0); */
 }
 
 static void lcm_resume(void)
