@@ -878,5 +878,7 @@ unsigned char which_lcd_module_triple(void);
 int lcm_vgp_supply_enable(void);
 int lcm_vgp_supply_disable(void);
 extern LCM_DSI_MODE_CON lcm_dsi_mode;
+extern int lp3101_write_bytes(unsigned char addr, unsigned char value);
+
 
 #endif /* __LCM_DRV_H__ */
