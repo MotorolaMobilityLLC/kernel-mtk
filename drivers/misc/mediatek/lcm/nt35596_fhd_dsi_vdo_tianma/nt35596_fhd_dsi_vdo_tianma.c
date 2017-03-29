@@ -4,6 +4,7 @@
 #endif
 #include "lcm_drv.h"
 
+
 #ifdef BUILD_LK
 #include <platform/upmu_common.h>
 #include <platform/mt_gpio.h>
@@ -86,8 +87,9 @@ static int lp3101_write_bytes(kal_uint8 addr, kal_uint8 value)
 	len = 2;
 
 	ret_code = i2c_write(&lp3101_i2c, write_data, len);
-	/* LCD_DEBUG("%s: i2c_write: ret_code: %d\n", __func__, ret_code); */
-
+	/*LCD_DEBUG("%s: i2c_write: ret_code: %d\n", __func__, ret_code);*/
+	if (ret_code < 0)
+		printf("lp3101 write data fail 1 !!\n");
 	return ret_code;
 }
 #endif
@@ -233,12 +235,9 @@ static void lcm_get_params(LCM_PARAMS *params)
 
 static void lcm_init_power(void)
 {
-#ifdef BUILD_LK
 		int ret = 0;
 		unsigned char cmd = 0x0;
 		unsigned char data = 0xFF;
-
-#endif
 
 #ifdef BUILD_LK
 		/* data sheet 136 page ,the first AVDD power on */
@@ -257,15 +256,14 @@ static void lcm_init_power(void)
 		set_gpio_lcd_enn(1);
 #endif
 
-#ifdef BUILD_LK
 		cmd = 0x00;
 		data = 0x0F;
+
 		ret = lp3101_write_bytes(cmd, data);
 		MDELAY(2);
 		cmd = 0x01;
 		data = 0x0F;
 		ret = lp3101_write_bytes(cmd, data);
-#endif
 
 		MDELAY(10);
 
