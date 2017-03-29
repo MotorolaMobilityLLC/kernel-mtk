@@ -27,7 +27,8 @@ static u8 g_proximity_en = 0;
 #if defined(HX_AUTO_UPDATE_FW)
 	static unsigned char i_CTPM_FW[]=
 	{
-		#include "LQ_L3500_HLT_C00_2017-2-13.i"
+		//#include "LQ_L3500_HLT_C00_2017-2-13.i"
+		#include "LQ_L3500_HLT_C01_2017-3-28.i"
 	};
 #endif
 #ifdef MTK
@@ -110,7 +111,7 @@ static struct himax_config *config_selected = NULL;
 static int iref_number = 11;
 static bool iref_found = false;    
 
-#if defined(CONFIG_FB)
+#if 0//defined(CONFIG_FB)
 static int fb_notifier_callback(struct notifier_block *self,
 				 unsigned long event, void *data);
 #elif defined(CONFIG_HAS_EARLYSUSPEND)
@@ -2959,7 +2960,7 @@ static void himax_cable_detect_func(void)
 }
 #endif
 
-#if defined(CONFIG_FB)
+#if 0//defined(CONFIG_FB)
 static void himax_fb_register(struct work_struct *work)
 {
 	int ret = 0;
@@ -6642,7 +6643,7 @@ himax_gpio_power_config(ts->client, pdata);
 		goto err_input_register_device_failed;
 	}
 
-#ifdef CONFIG_FB
+#if 0//CONFIG_FB
 	ts->himax_att_wq = create_singlethread_workqueue("HMX_ATT_reuqest");
 	if (!ts->himax_att_wq) {
 		E(" allocate HMX_att_wq failed\n");
@@ -6732,7 +6733,7 @@ wake_lock_destroy(&ts->ts_flash_wake_lock);
 	destroy_workqueue(ts->himax_chip_monitor_wq);
 err_create_chip_monitor_wq_failed:
 #endif
-#ifdef CONFIG_FB
+#if 0//CONFIG_FB
 	cancel_delayed_work_sync(&ts->work_att);
 	destroy_workqueue(ts->himax_att_wq);
 	if (fb_unregister_client(&ts->fb_notif))
@@ -6811,7 +6812,7 @@ static int himax852xes_remove(struct i2c_client *client)
 		cancel_delayed_work_sync(&ts->himax_chip_monitor);
 		destroy_workqueue(ts->himax_chip_monitor_wq);
 #endif
-#ifdef CONFIG_FB
+#if 0//CONFIG_FB
 		cancel_delayed_work_sync(&ts->work_att);
 		destroy_workqueue(ts->himax_att_wq);
 		if (fb_unregister_client(&ts->fb_notif))
@@ -7193,7 +7194,17 @@ static void himax852xes_suspend(struct device *dev)
 	ts->pre_finger_mask = 0;
 	if (ts->pdata->powerOff3V3 && ts->pdata->power)
 		ts->pdata->power(0);
-	
+
+//ADD BY JIATIANBAO
+	tpd_gpio_output(GTP_RST_PORT, 0);
+	tpd_gpio_output(GTP_INT_PORT, 0);
+	msleep(20);
+
+	ret = regulator_disable(tpd->reg);	
+	if (ret)
+		E("[Simon]regulator_disable() failed!\n");
+//ADD BY JIATIANBAO
+
 	return ;
 }
 #ifdef MTK_INT_NOT_WORK_WORKAROUND
@@ -7218,6 +7229,9 @@ static void himax852xes_resume(struct device *dev)
 #ifdef MTK_INT_NOT_WORK_WORKAROUND
 	int i,himax_depth_r;
 #endif
+
+	int ret;
+
 	struct himax_ts_data *ts = dev_get_drvdata(&hx_i2c_client_point->dev);
 	if(HX_DRIVER_PROBE_Fial)
 		{
@@ -7240,6 +7254,19 @@ static void himax852xes_resume(struct device *dev)
 
 	if (ts->pdata->powerOff3V3 && ts->pdata->power)
 		ts->pdata->power(1);
+
+//add by jiatianbao
+	ret = regulator_enable(tpd->reg);	
+	if (ret)
+		E("[Simon]regulator_enable() failed!\n");
+//add by jiatianbao
+
+        HW_RESET_ACTIVATE=1; 
+        himax_rst_gpio_set(ts->rst_gpio, 0); 
+        msleep(20); 
+        himax_rst_gpio_set(ts->rst_gpio, 1); 
+        msleep(20); 
+
 #ifdef HX_CHIP_STATUS_MONITOR
 	if(HX_ON_HAND_SHAKING)//chip on hand shaking,wait hand shaking
 	{
@@ -7598,7 +7625,7 @@ static void himax852xes_resume(struct early_suspend *h)
 #endif
 
 
-#if defined(CONFIG_FB)
+#if 0//defined(CONFIG_FB)
 static int fb_notifier_callback(struct notifier_block *self,
 				 unsigned long event, void *data)
 {
@@ -7700,9 +7727,12 @@ static int himax852xes_local_init(void)
 		I("[Himax] Himax_ts I2C Touchscreen Driver local init\n");
 #ifdef MTK_KERNEL_318
 	tpd->reg = regulator_get(tpd->tpd_dev, "vtouch");
+	if (IS_ERR(tpd->reg))
+		E("[Simon]regulator_get() failed!\n");
     retval = regulator_set_voltage(tpd->reg, 2800000, 2800000);
+    TPD_DMESG("[Simon] set reg-vgp6 voltage: %d\n", retval);
     if (retval != 0) {
-    	TPD_DMESG("Failed to set reg-vgp6 voltage: %d\n", retval);
+    	TPD_DMESG("[Simon]Failed to set reg-vgp6 voltage: %d\n", retval);
     	return -1;
     } 
 #endif
