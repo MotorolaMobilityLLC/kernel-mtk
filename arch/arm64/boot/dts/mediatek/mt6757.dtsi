@@ -3824,7 +3824,7 @@
 		temp_t1_thres_plus_x_degree = <2>;
 		temp_t0_threshold = <0>;
 		temp_t0_thres_plus_x_degree = <0>;
-		temp_neg_10_threshold = <0>;
+		temp_neg_10_threshold = <1>;
 
 		/* battery temperature protection */
 		enable_min_charge_temperature;
