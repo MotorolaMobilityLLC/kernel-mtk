@@ -77,7 +77,6 @@ static struct list_head consumer_head = LIST_HEAD_INIT(consumer_head);
 static DEFINE_MUTEX(consumer_mutex);
 /*====running test add by longcheer_liml_2017_03_04_start======*/
 #if defined(CONFIG_LCT_CHR_LIMIT_MAX_SOC) 
-int Charger_enable_Flag=1;
 extern int battery_test_status;
 #endif
 
@@ -326,18 +325,7 @@ static int _charger_manager_enable_charging(struct charger_consumer *consumer,
 			pdata->disable_charging_count++;
 		} else {
 			if (pdata->disable_charging_count == 1) {
-#if defined(CONFIG_LCT_CHR_LIMIT_MAX_SOC) //add by longcheer_liml_2017_03_04
-			    if(Charger_enable_Flag==1)
-	            {
-	                _mtk_charger_do_charging(info, en);
-	                printk("~~liml_charger charger_enable charger_enable_flag = %d\n",Charger_enable_Flag);
-	            }else{
-	                _mtk_charger_do_charging(info, 0);
-	                 printk("~~liml_charger charger_enable charger_enable_flag = %d\n",Charger_enable_Flag);
-	            }
-#else
                  _mtk_charger_do_charging(info, en);
-#endif				
 				pdata->disable_charging_count = 0;
 			} else if (pdata->disable_charging_count > 1)
 				pdata->disable_charging_count--;
@@ -1218,6 +1206,36 @@ static void mt_battery_CheckChargerVoltage(struct charger_manager *info)
     }
 }
 
+/*====running test add by longcheer_liml_2017_03_04_start======*/
+#if defined(CONFIG_LCT_CHR_LIMIT_MAX_SOC) 
+static void mt_battery_runin_test(struct charger_manager *info)
+{
+    int soc =0;
+    struct switch_charging_alg_data *swchgalg = info->algorithm_data;
+    soc =battery_get_bat_uisoc();
+ 
+    if(battery_test_status == 1)
+	{
+		if(soc >=80)
+		{
+			swchgalg->state = CHR_ERROR;
+		    charger_manager_notifier(info, CHARGER_NOTIFY_STOP_CHARGING);
+		    charger_dev_enable_powerpath(info->chg1_dev, 0);
+		}else if(soc <=60)
+		{
+            swchgalg->state = CHR_CC;
+            charger_manager_notifier(info, CHARGER_NOTIFY_START_CHARGING);
+            charger_dev_enable_powerpath(info->chg1_dev, 1);
+		}
+	}else
+	{
+	    charger_dev_enable_powerpath(info->chg1_dev, 1);
+	    charger_manager_notifier(info,CHARGER_NOTIFY_NORMAL);
+	}
+	printk("~~liml_charger battery_test_status=%d,soc=%d\n",battery_test_status,soc);    
+}
+#endif
+
 static int charger_routine_thread(void *arg)
 {
 	struct charger_manager *info = arg;
@@ -1247,27 +1265,14 @@ static int charger_routine_thread(void *arg)
 		kpoc_power_off_check(info);
 
 		if (is_charger_on == true) {
-		    mt_battery_CheckChargerVoltage(info);
+		    mt_battery_CheckChargerVoltage(info);//add by lonngcheer_liml
+		  #if defined(CONFIG_LCT_CHR_LIMIT_MAX_SOC) 
+		    mt_battery_runin_test(info);
+		  #endif
 			if (info->do_algorithm)
 				info->do_algorithm(info);
 		}
-/*====running test add by longcheer_liml_2017_03_04_start======*/
-#if defined(CONFIG_LCT_CHR_LIMIT_MAX_SOC) 
-	if(battery_test_status<=0)
-	{
-		Charger_enable_Flag=1;
-	}else{
-		if(battery_get_bat_uisoc() >=80)
-		{
-			Charger_enable_Flag=0;
-		}else if(battery_get_bat_uisoc() <=60)
-		{
-			Charger_enable_Flag=1;
-		}
-	}
-	printk("~~liml_charger battery_test_status=%d,Charger_enable_Flag=%d,soc=%d\n",battery_test_status,Charger_enable_Flag,battery_get_bat_uisoc());
-#endif
-/*====running test add by longcheer_liml_2017_03_04_end======*/
+
 
 		if (info->charger_thread_polling == true)
 			mtk_charger_start_timer(info);
