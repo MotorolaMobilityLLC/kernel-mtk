@@ -56,9 +56,9 @@ static imgsensor_info_struct imgsensor_info = {
 	.checksum_value = 0xa7f3e34,//0x722b3840,        //checksum value for Camera Auto Test
 
 	.pre = {
-		.pclk = 375000000,                //record different mode's pclk
-		.linelength = 4614,                //record different mode's linelength
-		.framelength = 2704,            //record different mode's framelength
+		.pclk = 512000000,                //record different mode's pclk   170309:375000000   170313:345000000
+		.linelength = 4816,                //record different mode's linelength   4614
+		.framelength = 2386,            //record different mode's framelength     2786
 		.startx = 0,                    //record different mode's startx of grabwindow
 		.starty = 0,                    //record different mode's starty of grabwindow
 		.grabwindow_width = 2104,        //record different mode's width of grabwindow
@@ -69,9 +69,9 @@ static imgsensor_info_struct imgsensor_info = {
 		.max_framerate = 300,
 	},
 	.cap = {
-		.pclk = 438000000,
+		.pclk = 512000000,     //170309:375000000      170313:345000000
 		.linelength = 5728,
-		.framelength = 3186,
+		.framelength = 3186,     //170313:3186   3150
 		.startx = 0,
 		.starty = 0,
 		.grabwindow_width = 4208,
@@ -301,7 +301,7 @@ static void set_shutter(kal_uint16 shutter)
 	{
 		realtime_fps = imgsensor.pclk / imgsensor.line_length * 10 / imgsensor.frame_length;
 		if(realtime_fps >= 297 && realtime_fps <= 305)
-		  set_max_framerate(300,0);
+		  set_max_framerate(296,0);
 		else if(realtime_fps >= 147 && realtime_fps <= 150)
 		  set_max_framerate(146,0);
 		else 
@@ -1088,11 +1088,11 @@ static void preview_setting(void)
 	write_cmos_sensor(0x0100, 0x00);      //mode_select	  8-bit			
 	write_cmos_sensor_2byte(0x3FE0, 0x0000);
 	mDELAY(20);
-	////vt_clk = 440mhz, dada rate 880mhz
-	write_cmos_sensor_2byte(0x0300, 0x0004); 	// VT_PIX_CLK_DIV
+	////vt_clk = 512mhz, dada rate 1020mhz
+	write_cmos_sensor_2byte(0x0300, 0x0005); 	// VT_PIX_CLK_DIV  0x0004
 	write_cmos_sensor_2byte(0x0302, 0x0001); 	// VT_SYS_CLK_DIV
-	write_cmos_sensor_2byte(0x0304, 0x0404); 	// PRE_PLL_CLK_DIV
-	write_cmos_sensor_2byte(0x0306, 0x7D7D); 	// PLL_MULTIPLIER 0x7878
+	write_cmos_sensor_2byte(0x0304, 0x0403); 	// PRE_PLL_CLK_DIV
+	write_cmos_sensor_2byte(0x0306, 0xAAA0); 	// PLL_MULTIPLIER 0x7878   170309:7D7D  170313:0x7373
 	write_cmos_sensor_2byte(0x0308, 0x000A); 	// OP_PIX_CLK_DIV
 	write_cmos_sensor_2byte(0x030A, 0x0001); 	// OP_SYS_CLK_DIV
 	write_cmos_sensor_2byte(0x0112, 0x0A0A); 	// CCP_DATA_FORMAT
@@ -1109,8 +1109,8 @@ static void preview_setting(void)
 	write_cmos_sensor_2byte(0x3F3C, 0x0003); 	// ANALOG_CONTROL9
 	write_cmos_sensor_2byte(0x0400, 0x0001); 	// SCALING_MODE
 	write_cmos_sensor_2byte(0x0404, 0x0020); 	// SCALE_M
-	write_cmos_sensor_2byte(0x0342, 0x1206); 	// LINE_LENGTH_PCK
-	write_cmos_sensor_2byte(0x0340, 0x0A90); 	// FRAME_LENGTH_LINES //0x0C52
+	write_cmos_sensor_2byte(0x0342, 0x12D0); 	// LINE_LENGTH_PCK               //170310: 0x1206
+	write_cmos_sensor_2byte(0x0340, 0x0952); 	// FRAME_LENGTH_LINES //0x0C52   //170310: 0x0AE2
 	write_cmos_sensor_2byte(0x0202, 0x094c); 	// COARSE_INTEGRATION_TIME
 
 	write_cmos_sensor_2byte(0x31B0, 0x0045);   //Frame preamble 4D
@@ -1143,10 +1143,10 @@ static void capture_setting(kal_uint16 currefps)
             write_cmos_sensor(0x0100, 0x00);
             write_cmos_sensor_2byte(0x3FE0,0x0000);
 	    mDELAY(20);
-            write_cmos_sensor_2byte(0x0300,0x0004); 
+            write_cmos_sensor_2byte(0x0300,0x0005); 
             write_cmos_sensor_2byte(0x0302,0x0001); 
-            write_cmos_sensor_2byte(0x0304,0x0404); 
-            write_cmos_sensor_2byte(0x0306,0x7D7D); 
+            write_cmos_sensor_2byte(0x0304,0x0403); //170313:0x0404
+            write_cmos_sensor_2byte(0x0306,0xAAA0); //170309:7D7D   170313:0x7373
             write_cmos_sensor_2byte(0x0308,0x000A); 
             write_cmos_sensor_2byte(0x030A,0x0001); 
             write_cmos_sensor_2byte(0x0112,0x0A0A); 
@@ -1165,7 +1165,7 @@ static void capture_setting(kal_uint16 currefps)
             write_cmos_sensor_2byte(0x0400,0x0000); 
             write_cmos_sensor_2byte(0x0404,0x0010); 
             write_cmos_sensor_2byte(0x0342,0x1660); 
-            write_cmos_sensor_2byte(0x0340,0x0C72); 
+            write_cmos_sensor_2byte(0x0340,0x0C72); //170313: 0x0C72
             write_cmos_sensor_2byte(0x0202,0x0C60); 
             write_cmos_sensor_2byte(0x31B0,0x004D); 
             write_cmos_sensor_2byte(0x31B2,0x0028); 
@@ -1857,7 +1857,7 @@ static kal_uint32 set_video_mode(UINT16 framerate)
 	  return ERROR_NONE;
 	spin_lock(&imgsensor_drv_lock);
 	if ((framerate == 300) && (imgsensor.autoflicker_en == KAL_TRUE))
-	  imgsensor.current_fps = 300;
+	  imgsensor.current_fps = 296;
 	else if ((framerate == 150) && (imgsensor.autoflicker_en == KAL_TRUE))
 	  imgsensor.current_fps = 146;
 	else
