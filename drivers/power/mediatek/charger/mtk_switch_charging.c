@@ -66,8 +66,8 @@
 #include "mtk_charger_intf.h"
 #include "mtk_switch_charging.h"
 
-#define TEMP_T1_TO_T2_INPUT_CURRENT 850000;
-#define TEMP_T1_TO_T2_CURRENT 900000;
+#define TEMP_T1_TO_T2_INPUT_CURRENT 800000;
+#define TEMP_T1_TO_T2_CURRENT 800000;
 static void _disable_all_charging(struct charger_manager *info)
 {
 	charger_dev_enable(info->chg1_dev, false);
