@@ -568,8 +568,6 @@ CONFIG_LIBCRC32C=y
 #add by liminglong  longcheer start
 #CONFIG_SWITCH_USB_RT8973  is not set
 #add by liminglong  longcheer end
-# LCSH ADD add dmesg buffer to 8M @duanlongfei
-CONFIG_LOG_BUF_SHIFT=24
 # LCT add ext speaker pa @duanlongfei 20170119 Start
 CONFIG_LCT_AW87319_PA=y
 # LCT add ext speaker pa @duanlongfei End
