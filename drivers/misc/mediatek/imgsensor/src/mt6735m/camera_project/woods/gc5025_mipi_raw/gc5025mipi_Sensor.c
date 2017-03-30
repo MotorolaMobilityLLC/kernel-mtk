@@ -40,7 +40,12 @@
 #define LOG_1 LOG_INF("GC5025,MIPI 2LANE\n")
 /****************************   Modify end    *******************************************/
 
+//#define DEBUG_CAMERA_INFO
+#ifdef DEBUG_CAMERA_INFO
 #define LOG_INF(format, args...)    pr_debug(PFX "[%s] " format, __FUNCTION__, ##args)
+#else
+#define LOG_INF(a, ...)
+#endif
 
 #define GC5025OTP_FOR_CUSTOMER
 
@@ -207,6 +212,7 @@ static void write_cmos_sensor(kal_uint32 addr, kal_uint32 para)
 #define RG_TYPICAL    		0x0400
 #define BG_TYPICAL			0x0400
 #define INFO_ROM_START		0x01
+#define INFO_ROM_START1		0x0f
 #define INFO_WIDTH       	0x0e
 #endif
 
@@ -493,8 +499,35 @@ static void gc5025_gcore_read_otp_info(void)
 			}
 			break;
 		case 0x02:
-		case 0x03:	
-			LOG_INF("GC5025_OTP_INFO group %d is Invalid !!\n", index + 1);
+		case 0x03:
+			LOG_INF("GC5025_OTP_INFO group %d is Valid !!\n", index + 2);
+			check = 0;
+			gc5025_read_otp_group(INFO_ROM_START1 + index * INFO_WIDTH, &info[0], INFO_WIDTH);
+			for (i = 0; i < INFO_WIDTH - 1; i++)
+			{
+				check += info[i];
+				LOG_INF("GC5025_OTP_INFO:OTP_DATA=0x%x\n",info[i]);
+			}
+			if ((check % 255 + 1) == info[INFO_WIDTH-1])
+			{
+				gc5025_otp_info.module_id = info[0];
+				gc5025_otp_info.lens_id = info[1];
+				//gc5025_otp_info.vcm_driver_id = info[2];
+				//gc5025_otp_info.vcm_id = info[3];
+				gc5025_otp_info.year = info[2];
+				gc5025_otp_info.month = info[3];
+				gc5025_otp_info.day = info[4];
+				gc5025_otp_info.rg_gain = (((info[5]<<8)&0xff00)|info[6]) > 0 ? (((info[5]<<8)&0xff00)|info[6]) : 0x400;
+				gc5025_otp_info.bg_gain = (((info[7]<<8)&0xff00)|info[8]) > 0 ? (((info[7]<<8)&0xff00)|info[8]) : 0x400;
+				gc5025_otp_info.wb_flag = gc5025_otp_info.wb_flag|0x01;
+				gc5025_otp_info.golden_rg = (((info[9]<<8)&0xff00)|info[10]) > 0 ? (((info[9]<<8)&0xff00)|info[10]) : RG_TYPICAL;
+				gc5025_otp_info.golden_bg = (((info[11]<<8)&0xff00)|info[12]) > 0 ? (((info[11]<<8)&0xff00)|info[12]) : BG_TYPICAL;
+				gc5025_otp_info.golden_flag = gc5025_otp_info.golden_flag|0x01;
+			}
+			else
+			{
+				LOG_INF("GC5025_OTP_INFO Check sum %d Error !!\n", index + 2);
+			}
 			break;
 		default :
 			break;
@@ -1062,7 +1095,7 @@ static void sensor_init(void)
                           
 	/*MIPI*/                
 	write_cmos_sensor(0xfe, 0x03);
-	write_cmos_sensor(0x02, 0x01);
+	write_cmos_sensor(0x02, 0x05);
 	write_cmos_sensor(0x03, 0x8e);
 	write_cmos_sensor(0x06, 0x80);
 	write_cmos_sensor(0x15, 0x00);
