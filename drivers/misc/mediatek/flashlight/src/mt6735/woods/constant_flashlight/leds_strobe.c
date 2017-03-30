@@ -62,12 +62,15 @@
 #else
 #define PK_DBG(a, ...)
 #endif
-//wangkangmin@wind-mobi.com 20161108 begin
+//wangkangmin@wind-mobi.com 20170330 begin
+//define FLASH_PWM
+#ifdef FLASH_PWM
 static int hduration=-1;
 static int lduration=-1;
 extern int flashlight_set_pwm(u32 hduration, u32 lduration, u32 level);
 extern int flashlight_set_pwm_old(u32 hduration, u32 lduration, u32 level);
-//wangkangmin@wind-mobi.com 20161108 end
+#endif
+//wangkangmin@wind-mobi.com 20170330 end
 /******************************************************************************
  * local variables
 ******************************************************************************/
@@ -94,10 +97,12 @@ static struct work_struct workTimeOut;
 /* #define FLASH_GPIO_ENF GPIO12 */
 /* #define FLASH_GPIO_ENT GPIO13 */
 
-//wangkangmin@wind-mobi.com 20161202 begin
+//wangkangmin@wind-mobi.com 20170330 begin
 int FL_Enable(void)
 {
+#ifdef FLASH_PWM
 	int level =0;
+#endif
 	printk("FL_enable g_duty=%d \n",g_duty);
 	if(g_duty < 1){
 		g_duty=0;
@@ -109,9 +114,9 @@ int FL_Enable(void)
 	flashlight_gpio_set(0, 1);
 
 	}
+#ifdef FLASH_PWM
 	else if(g_duty >= 1 && g_duty <= 9)
 	{
-	
 	printk("enable flash mode \n");
 	flashlight_gpio_set(1, 0);
 	
@@ -186,6 +191,7 @@ int FL_Enable(void)
 			mdelay(6);
 			flashlight_gpio_set(1, 1);
 	}
+#endif
 	else{
 		flashlight_gpio_set(1, 0);
 		flashlight_gpio_set(0, 1);
@@ -193,6 +199,7 @@ int FL_Enable(void)
 		flashlight_gpio_set(1, 1);
 	}
 	PK_DBG(" FL_Enable line=%d\n", __LINE__);
+	
 	return 0;
 
 }
@@ -211,7 +218,7 @@ int FL_Disable(void)
 	return 0;
 
 }
-//wangkangmin@wind-mobi.com 20161202 end
+//wangkangmin@wind-mobi.com 20170330 end
 int FL_dim_duty(kal_uint32 duty)
 {
 	PK_DBG(" FL_dim_duty line=%d\n", __LINE__);
