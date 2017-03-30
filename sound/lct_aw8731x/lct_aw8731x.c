@@ -56,10 +56,9 @@ unsigned char AW87318_Audio_OFF(void);
 ///////////////sgm3718 switch key
 // LCSH MOD @duanlongfei 20170320
 //#define SPEAKER_HEADSET_ONLY_ONE_USE
-#ifdef SPEAKER_HEADSET_ONLY_ONE_USE
-static void Sgm3718_Switch_On(void);
-static void Sgm3718_Switch_Off(void);
-#endif
+void Sgm3718_Switch_On(void);
+void Sgm3718_Switch_Off(void);
+
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 unsigned char AW87319_HW_ON(void);
 unsigned char AW87319_HW_OFF(void);
@@ -147,22 +146,20 @@ static void AW87319_pa_pwroff(void)
 }
 //add by wangyongfu
 // LCSH MOD @duanlongfei 20170320
-#ifdef SPEAKER_HEADSET_ONLY_ONE_USE
-static void Sgm3718_Switch_On(void)
+void Sgm3718_Switch_On(void)
 {
     	printk("%s enter\n", __func__);
     	pinctrl_select_state(aw87319ctrl, sgm3718_switch_high);
     	msleep(1);
 }
 
-static void Sgm3718_Switch_Off(void)
+void Sgm3718_Switch_Off(void)
 {
 	printk("%s enter\n", __func__);    
 	pinctrl_select_state(aw87319ctrl, sgm3718_switch_low);
     	msleep(1);
 	printk("%s out\n", __func__);
 }
-#endif
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // i2c write and read
