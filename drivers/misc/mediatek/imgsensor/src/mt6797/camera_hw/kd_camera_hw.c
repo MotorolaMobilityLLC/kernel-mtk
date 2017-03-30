@@ -159,12 +159,12 @@ PowerUp PowerOnList = {
 #if defined(AR1335_MIPI_RAW)
 	 {SENSOR_DRVNAME_AR1335_MIPI_RAW,
 	  {
-	   {DOVDD, Vol_1800, 1},
-	   {DVDD, Vol_1200, 2},
-	   {AVDD, Vol_2800, 2},
-	   {SensorMCLK, Vol_High, 0},
-	   {PDN, Vol_Low, 1},
-	   {PDN, Vol_High, 0},
+	   {DOVDD, Vol_1800, 10},
+	   {DVDD, Vol_1200, 3},
+	   {AVDD, Vol_2800, 11},
+	   {SensorMCLK, Vol_High, 2},
+	   {PDN, Vol_Low, 2},
+	   {PDN, Vol_High, 1},
 	   },
 	  },
 #endif
