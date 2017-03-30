@@ -111,6 +111,11 @@ extern unsigned char AW87318_AW87319_Switch_Audio_OFF(void);
 #define AW8737_MODE_CTRL // AW8737 PA output power mode control */
 #endif
 
+//LCSH ADD by duanlongfei
+#ifdef CONFIG_LCT_CLOSE_HEADPHONE_PA
+extern void Sgm3718_Switch_On(void);
+extern void Sgm3718_Switch_Off(void);
+#endif
 /* static function declaration */
 static bool AudioPreAmp1_Sel(int Mul_Sel);
 static bool GetAdcStatus(void);
@@ -1443,7 +1448,9 @@ static void Audio_Amp_Change(int channels, bool enable)
 	if (enable) {
 		if (GetDLStatus() == false)
 			TurnOnDacPower();
-
+        #if defined(CONFIG_LCT_CLOSE_HEADPHONE_PA)   //LCSH ADD by duanlongfei
+            Sgm3718_Switch_Off();
+        #endif
 		/* here pmic analog control */
 		if (mCodec_data->mAudio_Ana_DevicePower[AUDIO_ANALOG_DEVICE_OUT_HEADSETL] == false
 		    && mCodec_data->mAudio_Ana_DevicePower[AUDIO_ANALOG_DEVICE_OUT_HEADSETR] ==
@@ -1525,6 +1532,9 @@ static void Audio_Amp_Change(int channels, bool enable)
 		}
 
 	} else {
+#if defined(CONFIG_LCT_CLOSE_HEADPHONE_PA) //LCSH ADD by duanlongfei
+        Sgm3718_Switch_On();
+#endif
 		if (mCodec_data->mAudio_Ana_DevicePower[AUDIO_ANALOG_DEVICE_OUT_HEADSETL] == false
 		    && mCodec_data->mAudio_Ana_DevicePower[AUDIO_ANALOG_DEVICE_OUT_HEADSETR] ==
 		    false) {
@@ -2110,6 +2120,28 @@ static int Ext_Speaker_Amp_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_ele
 	}
 	return 0;
 }
+
+/* LCSH ADD for fix the bug : NICKLAUS-499 @duanlongfei 20170330 Start */
+#if defined(CONFIG_LCT_CLOSE_HEADPHONE_PA)
+static int Ext_Speaker_Amp_Set_Close_Headphone(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
+{
+
+	pr_debug("%s() gain = %ld\n ", __func__, ucontrol->value.integer.value[0]);
+	if (ucontrol->value.integer.value[0]) {
+	    Sgm3718_Switch_On();
+		Ext_Speaker_Amp_Change(true);
+		mCodec_data->mAudio_Ana_DevicePower[AUDIO_ANALOG_DEVICE_OUT_EXTSPKAMP] =
+		    ucontrol->value.integer.value[0];
+	} else {
+		mCodec_data->mAudio_Ana_DevicePower[AUDIO_ANALOG_DEVICE_OUT_EXTSPKAMP] =
+		    ucontrol->value.integer.value[0];
+		Sgm3718_Switch_Off();
+		Ext_Speaker_Amp_Change(false);
+	}
+	return 0;
+}
+#endif
+/* LCSH ADD for fix the bug : NICKLAUS-499 @duanlongfei 20170330 End */
 
 static void Receiver_Speaker_Switch_Change(bool enable)
 {
@@ -2771,6 +2803,11 @@ static const struct snd_kcontrol_new mt6331_snd_controls[] = {
 	SOC_ENUM_EXT("AUD_CLK_BUF_Switch", Audio_DL_Enum[10], Aud_Clk_Buf_Get, Aud_Clk_Buf_Set),
 	SOC_ENUM_EXT("Ext_Speaker_Amp_Switch", Audio_DL_Enum[11], Ext_Speaker_Amp_Get,
 		     Ext_Speaker_Amp_Set),
+    /* LCSH ADD for fix the bug : NICKLAUS-499 @duanlongfei 20170330 */
+    #if defined(CONFIG_LCT_CLOSE_HEADPHONE_PA)
+	SOC_ENUM_EXT("Ext_Speaker_Amp_Switch_Close_Headphone_PA", Audio_DL_Enum[11], Ext_Speaker_Amp_Get,
+    		     Ext_Speaker_Amp_Set_Close_Headphone),
+    #endif
 	SOC_ENUM_EXT("Receiver_Speaker_Switch", Audio_DL_Enum[11], Receiver_Speaker_Switch_Get,
 		     Receiver_Speaker_Switch_Set),
 	SOC_SINGLE_EXT("Audio HP Impedance", SND_SOC_NOPM, 0, 512, 0, Audio_Hp_Impedance_Get,
