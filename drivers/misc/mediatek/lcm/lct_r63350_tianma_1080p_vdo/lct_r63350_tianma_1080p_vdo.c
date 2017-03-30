@@ -468,6 +468,8 @@ static void lcm_setbacklight_cmdq(void *handle, unsigned int level)
 {
 
 	LCM_LOGI("%s,LCM R63350 backlight: level = %d\n", __func__, level);
+	if(level <= 4)
+	  level = 4;
 
 	bl_level[0].para_list[0] = level;
 
