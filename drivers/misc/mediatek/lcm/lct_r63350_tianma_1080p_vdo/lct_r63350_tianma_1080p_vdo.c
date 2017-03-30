@@ -274,11 +274,11 @@ static int display_bias_enable(void)
 		return ret;
 
 	/* set voltage with min & max*/
-	ret = mtk_regulator_set_voltage(&disp_bias_pos, 5400000, 5400000);
+	ret = mtk_regulator_set_voltage(&disp_bias_pos, 5500000, 5500000);
 	if (ret < 0)
 		pr_err("set voltage disp_bias_pos fail\n");
 
-	ret = mtk_regulator_set_voltage(&disp_bias_neg, 5400000, 5400000);
+	ret = mtk_regulator_set_voltage(&disp_bias_neg, 5500000, 5500000);
 	if (ret < 0)
 		pr_err("set voltage disp_bias_neg fail\n");
 
