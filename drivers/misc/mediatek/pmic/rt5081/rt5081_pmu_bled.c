@@ -447,7 +447,7 @@ static inline int rt_parse_dt(struct device *dev)
 	else
 	{
 #ifdef CONFIG_L3510_MAINBOARD
-		pdata->max_bled_brightness = 950;//Mod max brightness 350 nits for Marino
+		pdata->max_bled_brightness = 1000;//Mod max brightness 350 nits for Marino
 #else
 		pdata->max_bled_brightness = tmp;
 #endif
