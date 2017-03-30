@@ -161,6 +161,10 @@ static struct switch_dev disp_switch_data;
 
 static int g_is_inited;
 
+#ifdef CONFIG_LCT_ESD_RECOVERY_BACKLIGHT
+unsigned int esd_recovery_level = 0;	//add by zhudaolong at 20170330 
+#endif
+
 void enqueue_buffer(display_primary_path_context *ctx, struct list_head *head,
 		    disp_internal_buffer_info *buf)
 {
@@ -3988,6 +3992,18 @@ int primary_display_esd_recovery(void)
 
 done:
 	_primary_path_unlock(__func__);
+
+#ifdef CONFIG_LCT_ESD_RECOVERY_BACKLIGHT
+	//add by zhudaolong at 20170330
+	DISPERR("[ESD]lcm force backlight set to %d, line=%d\n", esd_recovery_level, __LINE__);
+     	mdelay(10);
+	if(esd_recovery_level == 0)
+	{
+		esd_recovery_level = 128;
+	}
+ 	disp_lcm_set_backlight(pgc->plcm, esd_recovery_level);
+#endif
+
 	DISPMSG("[ESD]ESD recovery end\n");
 	MMProfileLogEx(ddp_mmp_get_events()->esd_recovery_t, MMProfileFlagEnd, 0, 0);
 	dprec_logger_done(DPREC_LOGGER_ESD_RECOVERY, 0, 0);
@@ -8378,6 +8394,11 @@ int primary_display_setbacklight(unsigned int level)
 				MMProfileLogEx(ddp_mmp_get_events()->primary_set_bl,
 					       MMProfileFlagPulse, 0, 7);
 				disp_lcm_set_backlight(pgc->plcm, level);
+
+				#ifdef CONFIG_LCT_ESD_RECOVERY_BACKLIGHT
+				esd_recovery_level = level;	//add by zhudaolong at 20170330
+				#endif
+
 			} else {
 #ifdef MTK_DISP_IDLE_LP
 				/* CMD mode need to exit top clock off idle mode */
