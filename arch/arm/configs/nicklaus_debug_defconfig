@@ -609,3 +609,5 @@ CONFIG_LCT_OPEN_WIFI_40MHZ=y
 CONFIG_F2FS_FS=y
 CONFIG_F2FS_FS_SECURITY=y
 CONFIG_F2FS_FS_XATTR=y
+#add by duanlongfei for close headphone pa when open speaker
+CONFIG_LCT_CLOSE_HEADPHONE_PA=y

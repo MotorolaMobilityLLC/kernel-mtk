@@ -218,3 +218,8 @@ config MTK_LEGACY_EXTSPK
 	help
 	  If you say Y, enable MTK_LEGACY_EXTSPK
 #ext amp for Z168 ---sunsiyuan@wind-mobi.com add at 20161109 end	  
+config LCT_CLOSE_HEADPHONE_PA
+	bool "LCT_CLOSE_HEADPHONE_PA"
+	default n
+	help
+	   If you say Y, enable LCT_CLOSE_HEADPHONE_PA
