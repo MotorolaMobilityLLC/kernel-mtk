@@ -1,3 +1,4 @@
+//zhangchao@wind-mobi.com 20170330 begin
 /*
  * Copyright (C) 2015 MediaTek Inc.
  *
@@ -902,3 +903,4 @@ R_PROFILE_STRUCT_P fgauge_get_profile_r_table(unsigned int temperature);
 
 #endif	/*#ifndef _CUST_BATTERY_METER_TABLE_H*/
 
+//zhangchao@wind-mobi.com 20170330 end
