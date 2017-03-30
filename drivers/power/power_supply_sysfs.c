@@ -214,6 +214,7 @@ static struct device_attribute power_supply_attrs[] = {
 	POWER_SUPPLY_ATTR(TempBattVoltage),
 	POWER_SUPPLY_ATTR(InstatVolt),
 	POWER_SUPPLY_ATTR(BatteryAverageCurrent),
+	POWER_SUPPLY_ATTR(BatteryCurrent),
 	POWER_SUPPLY_ATTR(BatterySenseVoltage),
 	POWER_SUPPLY_ATTR(ISenseVoltage),
 	POWER_SUPPLY_ATTR(ChargerVoltage),

@@ -307,6 +307,7 @@ struct battery_data {
 	int BAT_TempBattVoltage;
 	int BAT_InstatVolt;
 	int BAT_BatteryAverageCurrent;
+	int BAT_BatteryCurrent;
 	int BAT_BatterySenseVoltage;
 	int BAT_ISenseVoltage;
 	int BAT_ChargerVoltage;
@@ -345,6 +346,7 @@ static enum power_supply_property battery_props[] = {
 	POWER_SUPPLY_PROP_TempBattVoltage,
 	POWER_SUPPLY_PROP_InstatVolt,
 	POWER_SUPPLY_PROP_BatteryAverageCurrent,
+	POWER_SUPPLY_PROP_BatteryCurrent,
 	POWER_SUPPLY_PROP_BatterySenseVoltage,
 	POWER_SUPPLY_PROP_ISenseVoltage,
 	POWER_SUPPLY_PROP_ChargerVoltage,
@@ -662,6 +664,10 @@ static int battery_get_property(struct power_supply *psy,
 		break;
 	case POWER_SUPPLY_PROP_BatteryAverageCurrent:
 		val->intval = data->BAT_BatteryAverageCurrent;
+		break;
+	case POWER_SUPPLY_PROP_BatteryCurrent:
+		data->BAT_BatteryCurrent = battery_meter_get_charging_current();
+		val->intval = data->BAT_BatteryCurrent;
 		break;
 	case POWER_SUPPLY_PROP_BatterySenseVoltage:
 		val->intval = data->BAT_BatterySenseVoltage;
