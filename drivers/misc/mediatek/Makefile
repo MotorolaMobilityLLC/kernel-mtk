@@ -225,6 +225,4 @@ obj-$(CONFIG_LCT_CAPTOUCH) += captouch/
 #shaohui add for LCT DEVINFO start
 obj-$(CONFIG_LCT_DEVINFO_SUPPORT) += lct_devinfo/
 #obj-$(CONFIG_LCT_DEVINFO_SUPPORT) += lct_meminfo/
-#shaohui add for LCT DEVINFO end
-#wangxiqiang add to efuse status check 20161218
-obj-$(CONFIG_LCT_CHECK_EFUSE_STATUS) += lct_efuseinfo/  
+#shaohui add for LCT DEVINFO end 
