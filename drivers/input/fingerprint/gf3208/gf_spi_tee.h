@@ -24,19 +24,42 @@
 /**********************IO Magic**********************/
 #define GF_IOC_MAGIC	'g'
 
+#define GF_NAV_INPUT_UP			KEY_RIGHT
+#define GF_NAV_INPUT_DOWN		KEY_LEFT
+#define GF_NAV_INPUT_LEFT		KEY_UP
+#define GF_NAV_INPUT_RIGHT		KEY_DOWN
+#define GF_NAV_INPUT_CLICK		KEY_VOLUMEDOWN
+#define GF_NAV_INPUT_DOUBLE_CLICK	KEY_VOLUMEUP
+#define GF_NAV_INPUT_LONG_PRESS		KEY_SEARCH
+#define GF_NAV_INPUT_HEAVY		KEY_CHAT
+
+#define GF_KEY_INPUT_HOME		KEY_HOMEPAGE
+#define GF_KEY_INPUT_MENU		KEY_MENU
+#define GF_KEY_INPUT_BACK		KEY_BACK
+#define GF_KEY_INPUT_POWER		KEY_POWER
+#define GF_KEY_INPUT_CAMERA		KEY_CAMERA
+
+typedef enum gf_nav_event {
+	GF_NAV_NONE = 0,
+	GF_NAV_FINGER_UP,
+	GF_NAV_FINGER_DOWN,
+	GF_NAV_UP,
+	GF_NAV_DOWN,
+	GF_NAV_LEFT,
+	GF_NAV_RIGHT,
+	GF_NAV_CLICK,
+	GF_NAV_HEAVY,
+	GF_NAV_LONG_PRESS,
+	GF_NAV_DOUBLE_CLICK,
+} gf_nav_event_t;
+
 typedef enum gf_key_event {
 	GF_KEY_NONE = 0,
 	GF_KEY_HOME,
 	GF_KEY_POWER,
 	GF_KEY_MENU,
 	GF_KEY_BACK,
-	GF_KEY_CAPTURE,
-	GF_KEY_UP,
-	GF_KEY_DOWN,
-	GF_KEY_RIGHT,
-	GF_KEY_LEFT,
-	GF_KEY_TAP,
-	GF_KEY_HEAVY
+	GF_KEY_CAMERA,
 } gf_key_event_t;
 
 struct gf_key {
@@ -107,7 +130,7 @@ typedef struct {
 #define GF_IOC_ENABLE_IRQ		_IO(GF_IOC_MAGIC, 3)
 #define GF_IOC_DISABLE_IRQ		_IO(GF_IOC_MAGIC, 4)
 
-#define GF_IOC_ENABLE_SPI_CLK		_IO(GF_IOC_MAGIC, 5)
+#define GF_IOC_ENABLE_SPI_CLK           _IOW(GF_IOC_MAGIC, 5, uint32_t)
 #define GF_IOC_DISABLE_SPI_CLK		_IO(GF_IOC_MAGIC, 6)
 
 #define GF_IOC_ENABLE_POWER		_IO(GF_IOC_MAGIC, 7)
@@ -119,7 +142,9 @@ typedef struct {
 #define GF_IOC_ENTER_SLEEP_MODE		_IO(GF_IOC_MAGIC, 10)
 #define GF_IOC_GET_FW_INFO		_IOR(GF_IOC_MAGIC, 11, u8)
 #define GF_IOC_REMOVE		_IO(GF_IOC_MAGIC, 12)
-#define GF_IOC_CHIP_INFO	_IOR(GF_IOC_MAGIC, 13, struct gf_ioc_chip_info)
+#define GF_IOC_CHIP_INFO	_IOW(GF_IOC_MAGIC, 13, struct gf_ioc_chip_info)
+
+#define GF_IOC_NAV_EVENT	_IOW(GF_IOC_MAGIC, 14, gf_nav_event_t)
 
 /* for SPI REE transfer */
 #define GF_IOC_TRANSFER_CMD		_IOWR(GF_IOC_MAGIC, 15, struct gf_ioc_transfer)
