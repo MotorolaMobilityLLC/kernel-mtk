@@ -261,7 +261,7 @@ int handle_sched_call(void *buff)
 
 	nt_sched_t((uint64_t *)(&smc_type));
 	while(smc_type == 0x54) {
-		udelay(IRQ_DELAY);
+		//udelay(IRQ_DELAY);
 		nt_sched_t((uint64_t *)(&smc_type));
 	}
 	return 0;
@@ -394,7 +394,7 @@ int handle_switch_call(void *buff)
 	nt_sched_t((uint64_t *)(&smc_type));
 
 	while (smc_type == 0x54) {
-		udelay(IRQ_DELAY);
+		//udelay(IRQ_DELAY);
 		nt_sched_t((uint64_t *)(&smc_type));
 	}
 	return 0;

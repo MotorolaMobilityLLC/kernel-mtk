@@ -247,7 +247,7 @@ void secondary_boot_stage2(void *info)
 	n_switch_to_t_os_stage2((uint64_t *)(&smc_type));
 
 	while (smc_type == 0x54) {
-		udelay(IRQ_DELAY);
+		//udelay(IRQ_DELAY);
 		nt_sched_t((uint64_t *)(&smc_type));
 	}
 }
@@ -278,7 +278,7 @@ void secondary_load_tee(void *info)
 	n_invoke_t_load_tee((uint64_t *)(&smc_type), 0, 0);
 
 	while (smc_type == 0x54) {
-		udelay(IRQ_DELAY);
+		//udelay(IRQ_DELAY);
 		nt_sched_t((uint64_t *)(&smc_type));
 
 	}
@@ -341,7 +341,7 @@ void secondary_boot_stage1(void *info)
 
 	n_init_t_boot_stage1((uint64_t)(cd->vfs_phy_addr), (uint64_t)(cd->tlog_phy_addr), (uint64_t *)(&smc_type));
 	while (smc_type == 0x54) {
-		udelay(IRQ_DELAY);
+		//udelay(IRQ_DELAY);
 		nt_sched_t((uint64_t *)(&smc_type));
 	}
 	/* with a wmb() */
@@ -438,12 +438,12 @@ void secondary_init_cmdbuf(void *info)
 
 	n_init_t_fc_buf((uint64_t)cd->phy_addr, (uint64_t)cd->fdrv_phy_addr, (uint64_t *)(&smc_type));
 	while (smc_type == 0x54) {
-		udelay(IRQ_DELAY);
+		//udelay(IRQ_DELAY);
 		nt_sched_t((uint64_t *)(&smc_type));
 	}
 	n_init_t_fc_buf((uint64_t)cd->bdrv_phy_addr, (uint64_t)cd->tlog_phy_addr, (uint64_t *)(&smc_type));
 	while (smc_type == 0x54) {
-		udelay(IRQ_DELAY);
+		//udelay(IRQ_DELAY);
 		nt_sched_t((uint64_t *)(&smc_type));
 	}
 
@@ -1797,6 +1797,10 @@ static int teei_client_init(void)
 		teei_switch_task = NULL;
 		goto fastcall_thread_fail;
 	}
+
+	
+	struct sched_param param = {.sched_priority = 50 };
+        sched_setscheduler_nocheck(teei_switch_task, SCHED_FIFO, &param);
 
 	/* sched_setscheduler_nocheck(teei_switch_task, SCHED_NORMAL, &param); */
 	/* get_task_struct(teei_switch_task); */
