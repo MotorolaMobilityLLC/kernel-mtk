@@ -163,6 +163,7 @@ enum power_supply_property {
 	POWER_SUPPLY_PROP_TempBattVoltage,
 	POWER_SUPPLY_PROP_InstatVolt,
 	POWER_SUPPLY_PROP_BatteryAverageCurrent,
+	POWER_SUPPLY_PROP_BatteryCurrent,
 	POWER_SUPPLY_PROP_BatterySenseVoltage,
 	POWER_SUPPLY_PROP_ISenseVoltage,
 	POWER_SUPPLY_PROP_ChargerVoltage,
