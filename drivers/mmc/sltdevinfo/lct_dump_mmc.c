@@ -253,6 +253,40 @@ int lct_read_boardid(void)
 }
 /**** add by wangjiaxing 20170219 end ****/
 
+
+/**** add by lct:wangjiaxing 20170331 start ****/
+char lct_klcm_name[100];
+static void lct_getFirstStr(char str[])
+{
+	int i=0;
+	
+	while(str[i] != ' ')
+		i++;
+	str[i] = '\0';
+}
+
+int lct_parseLcmName_fromcmdline(void)
+{	
+	char  lct_kp_lcm_temp1[100];
+    char* lct_kp_lcm_temp = strstr(saved_command_line, "LCM=");
+    if(lct_kp_lcm_temp == NULL)
+    {
+      return -1;
+    }
+
+	if(strncpy(lct_kp_lcm_temp1, lct_kp_lcm_temp+4, 100) == NULL){
+		printk("fail to copy lct_kp_lcm_temp\n");
+		return -1;
+	}
+	lct_getFirstStr(lct_kp_lcm_temp1);
+	if(strncpy(lct_klcm_name, lct_kp_lcm_temp1, 100) == NULL){
+		printk("fail to copy lct_klcm_name\n");
+		return -1;
+	}
+	printk("kls lct_klcm_name = %s\n",lct_klcm_name);
+    return 0;
+}
+/**** add by wangjiaxing 20170331 end ****/
 //LCSH ADD by dingyin for boardid start
 static int cf_show(struct seq_file *m, void *v)
 {
