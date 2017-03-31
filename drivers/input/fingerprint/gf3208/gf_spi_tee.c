@@ -63,7 +63,7 @@
 #define GF_CLASS_NAME "goodix_fp"
 #define GF_INPUT_NAME "gf-keys"
 
-#define GF_LINUX_VERSION "V1.01.03"
+#define GF_LINUX_VERSION "V1.01.04"
 
 #define GF_NETLINK_ROUTE 29   /* for GF test temporary, need defined in include/uapi/linux/netlink.h */
 #define MAX_NL_MSG_LEN 16
@@ -102,7 +102,7 @@ u8 g_debug_level = DEBUG_LOG;
 static LIST_HEAD(device_list);
 static DEFINE_MUTEX(device_list_lock);
 
-static unsigned int bufsiz = (15 * 1024);
+static unsigned int bufsiz = (25 * 1024);
 module_param(bufsiz, uint, S_IRUGO);
 MODULE_PARM_DESC(bufsiz, "maximum data bytes for SPI message");
 
@@ -691,7 +691,9 @@ static long gf_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 {
 	struct gf_device *gf_dev = NULL;
 	struct gf_key gf_key;
-	uint32_t key_event;
+	gf_nav_event_t nav_event = GF_NAV_NONE;
+	uint32_t nav_input = 0;
+	uint32_t key_input = 0;
 #ifdef SUPPORT_REE_SPI
 #ifdef SUPPORT_REE_OSWEGO
 	struct gf_ioc_transfer ioc;
@@ -845,46 +847,96 @@ static long gf_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 		}
 
 		if (GF_KEY_HOME == gf_key.key) {
-			key_event = GF_INPUT_HOME_KEY;
+			key_input = GF_KEY_INPUT_HOME;
 		} else if (GF_KEY_POWER == gf_key.key) {
-			key_event = GF_INPUT_FF_KEY;
-		} else if (GF_KEY_CAPTURE == gf_key.key) {
-			key_event = GF_INPUT_CAMERA_KEY;
+			key_input = GF_KEY_INPUT_POWER;
+		} else if (GF_KEY_CAMERA == gf_key.key) {
+			key_input = GF_KEY_INPUT_CAMERA;
 		} else {
 			/* add special key define */
-			key_event = GF_INPUT_OTHER_KEY;
+			key_input = gf_key.key;
 		}
 		gf_debug(INFO_LOG, "%s: received key event[%d], key=%d, value=%d\n",
-				__func__, key_event, gf_key.key, gf_key.value);
+				__func__, key_input, gf_key.key, gf_key.value);
 
-		if ((GF_KEY_POWER == gf_key.key || GF_KEY_CAPTURE == gf_key.key) && (gf_key.value == 1)) {
-			input_report_key(gf_dev->input, key_event, 1);
+		if ((GF_KEY_POWER == gf_key.key || GF_KEY_CAMERA == gf_key.key) && (gf_key.value == 1)) {
+			input_report_key(gf_dev->input, key_input, 1);
 			input_sync(gf_dev->input);
-			input_report_key(gf_dev->input, key_event, 0);
+			input_report_key(gf_dev->input, key_input, 0);
 			input_sync(gf_dev->input);
-		} else if (GF_KEY_UP == gf_key.key) {
-			input_report_key(gf_dev->input, GF_NAV_UP_KEY, 1);
-			input_sync(gf_dev->input);
-			input_report_key(gf_dev->input, GF_NAV_UP_KEY, 0);
-			input_sync(gf_dev->input);
-		} else if (GF_KEY_DOWN == gf_key.key) {
-			input_report_key(gf_dev->input, GF_NAV_DOWN_KEY, 1);
-			input_sync(gf_dev->input);
-			input_report_key(gf_dev->input, GF_NAV_DOWN_KEY, 0);
-			input_sync(gf_dev->input);
-		} else if (GF_KEY_RIGHT == gf_key.key) {
-			input_report_key(gf_dev->input, GF_NAV_RIGHT_KEY, 1);
-			input_sync(gf_dev->input);
-			input_report_key(gf_dev->input, GF_NAV_RIGHT_KEY, 0);
-			input_sync(gf_dev->input);
-		} else if (GF_KEY_LEFT == gf_key.key) {
-			input_report_key(gf_dev->input, GF_NAV_LEFT_KEY, 1);
-			input_sync(gf_dev->input);
-			input_report_key(gf_dev->input, GF_NAV_LEFT_KEY, 0);
-			input_sync(gf_dev->input);
-		} else if ((GF_KEY_POWER != gf_key.key) && (GF_KEY_CAPTURE != gf_key.key)) {
-			input_report_key(gf_dev->input, key_event, gf_key.value);
-			input_sync(gf_dev->input);
+		}
+
+		if (GF_KEY_HOME == gf_key.key) {
+		    input_report_key(gf_dev->input, key_input, gf_key.value);
+		    input_sync(gf_dev->input);
+		}
+
+		break;
+
+	case GF_IOC_NAV_EVENT:
+	    gf_debug(ERR_LOG, "nav event");
+		if (copy_from_user(&nav_event, (gf_nav_event_t *)arg, sizeof(gf_nav_event_t))) {
+			gf_debug(ERR_LOG, "Failed to copy nav event from user to kernel\n");
+			retval = -EFAULT;
+			break;
+		}
+
+		switch (nav_event) {
+		    case GF_NAV_FINGER_DOWN:
+		    gf_debug(ERR_LOG, "nav finger down");
+			break;
+
+		    case GF_NAV_FINGER_UP:
+		    gf_debug(ERR_LOG, "nav finger up");
+			break;
+
+		    case GF_NAV_DOWN:
+			nav_input = GF_NAV_INPUT_DOWN;
+			gf_debug(ERR_LOG, "nav down");
+			break;
+
+		    case GF_NAV_UP:
+			nav_input = GF_NAV_INPUT_UP;
+			gf_debug(ERR_LOG, "nav up");
+			break;
+
+		    case GF_NAV_LEFT:
+			nav_input = GF_NAV_INPUT_LEFT;
+			gf_debug(ERR_LOG, "nav left");
+			break;
+
+		    case GF_NAV_RIGHT:
+			nav_input = GF_NAV_INPUT_RIGHT;
+			gf_debug(ERR_LOG, "nav right");
+			break;
+
+		    case GF_NAV_CLICK:
+			nav_input = GF_NAV_INPUT_CLICK;
+			gf_debug(ERR_LOG, "nav click");
+			break;
+
+		    case GF_NAV_HEAVY:
+			nav_input = GF_NAV_INPUT_HEAVY;
+			break;
+
+		    case GF_NAV_LONG_PRESS:
+			nav_input = GF_NAV_INPUT_LONG_PRESS;
+			break;
+
+		    case GF_NAV_DOUBLE_CLICK:
+			nav_input = GF_NAV_INPUT_DOUBLE_CLICK;
+			break;
+
+		    default:
+			gf_debug(INFO_LOG, "%s: not support nav event nav_event: %d ======\n", __func__, nav_event);
+			break;
+		}
+
+		if ((nav_event != GF_NAV_FINGER_DOWN) && (nav_event != GF_NAV_FINGER_UP)) {
+		    input_report_key(gf_dev->input, nav_input, 1);
+		    input_sync(gf_dev->input);
+		    input_report_key(gf_dev->input, nav_input, 0);
+		    input_sync(gf_dev->input);
 		}
 		break;
 
@@ -1759,17 +1811,21 @@ static int gf_probe(struct spi_device *spi)
 	}
 
 	__set_bit(EV_KEY, gf_dev->input->evbit);
-	__set_bit(GF_INPUT_HOME_KEY, gf_dev->input->keybit);
+	__set_bit(GF_KEY_INPUT_HOME, gf_dev->input->keybit);
 
-	__set_bit(GF_INPUT_MENU_KEY, gf_dev->input->keybit);
-	__set_bit(GF_INPUT_BACK_KEY, gf_dev->input->keybit);
-	__set_bit(GF_INPUT_FF_KEY, gf_dev->input->keybit);
+	__set_bit(GF_KEY_INPUT_MENU, gf_dev->input->keybit);
+	__set_bit(GF_KEY_INPUT_BACK, gf_dev->input->keybit);
+	__set_bit(GF_KEY_INPUT_POWER, gf_dev->input->keybit);
 
-	__set_bit(GF_NAV_UP_KEY, gf_dev->input->keybit);
-	__set_bit(GF_NAV_DOWN_KEY, gf_dev->input->keybit);
-	__set_bit(GF_NAV_RIGHT_KEY, gf_dev->input->keybit);
-	__set_bit(GF_NAV_LEFT_KEY, gf_dev->input->keybit);
-	__set_bit(GF_INPUT_CAMERA_KEY, gf_dev->input->keybit);
+	__set_bit(GF_NAV_INPUT_UP, gf_dev->input->keybit);
+	__set_bit(GF_NAV_INPUT_DOWN, gf_dev->input->keybit);
+	__set_bit(GF_NAV_INPUT_RIGHT, gf_dev->input->keybit);
+	__set_bit(GF_NAV_INPUT_LEFT, gf_dev->input->keybit);
+	__set_bit(GF_KEY_INPUT_CAMERA, gf_dev->input->keybit);
+	__set_bit(GF_NAV_INPUT_CLICK, gf_dev->input->keybit);
+	__set_bit(GF_NAV_INPUT_DOUBLE_CLICK, gf_dev->input->keybit);
+	__set_bit(GF_NAV_INPUT_LONG_PRESS, gf_dev->input->keybit);
+	__set_bit(GF_NAV_INPUT_HEAVY, gf_dev->input->keybit);
 
 	gf_dev->input->name = GF_INPUT_NAME;
 	if (input_register_device(gf_dev->input)) {
