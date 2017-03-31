@@ -172,7 +172,7 @@ int __send_tui_display_command(unsigned long type)
 	n_invoke_t_drv(&smc_type, 0, 0);
 
 	while(smc_type == 0x54) {
-		udelay(IRQ_DELAY);
+		//udelay(IRQ_DELAY);
 		nt_sched_t(&smc_type);
 	}
 
@@ -207,7 +207,7 @@ int __send_tui_notice_command(unsigned long share_memory_size)
 	forward_call_flag = GLSCH_LOW;
 	n_invoke_t_nq(&smc_type, 0, 0);
 	while (smc_type == 0x54) {
-		udelay(IRQ_DELAY);
+		//udelay(IRQ_DELAY);
 		nt_sched_t(&smc_type);
 	}
 	return 0;

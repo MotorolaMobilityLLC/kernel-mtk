@@ -210,7 +210,7 @@ void secondary_load_func(void)
 	printk("[%s][%d]: %s end.\n", __func__, __LINE__, __func__);
 	n_ack_t_load_img((uint64_t *)(&smc_type), 0, 0);
 	while (smc_type == 0x54) {
-		udelay(IRQ_DELAY);
+		//udelay(IRQ_DELAY);
 		nt_sched_t((uint64_t *)(&smc_type));
 	}
 	return ;
