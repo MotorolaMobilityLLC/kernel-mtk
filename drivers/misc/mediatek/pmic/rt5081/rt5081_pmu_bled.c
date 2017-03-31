@@ -393,6 +393,11 @@ static inline int rt5081_pmu_bled_parse_initdata(
 	return 0;
 }
 
+/**add by lct:wangjiaxing 20170331 start**/
+extern int lct_parseLcmName_fromcmdline(void);
+extern char lct_klcm_name[100];
+/**add by lct:wangjiaxing 20170331 end**/
+
 static inline int rt_parse_dt(struct device *dev)
 {
 	struct rt5081_pmu_bled_platdata *pdata = dev_get_platdata(dev);
@@ -450,6 +455,13 @@ static inline int rt_parse_dt(struct device *dev)
 		pdata->max_bled_brightness = 1000;//Mod max brightness 350 nits for Marino
 #else
 		pdata->max_bled_brightness = tmp;
+/**  add by lct:wangjiaxing 20170313 start **/
+		lct_parseLcmName_fromcmdline();
+		if(strcmp(lct_klcm_name, "lct_s6d7aa6x01_helitech_720p_vdo") == 0)
+		{
+			pdata->max_bled_brightness = 450;
+		}
+/**  add by lct:wangjiaxing 20170313 end **/
 #endif
 	}
 	of_property_read_string(np, "rt,bled_name", &(pdata->bled_name));
