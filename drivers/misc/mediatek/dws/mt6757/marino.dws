@@ -2427,7 +2427,7 @@
         <module name="kpd">
             <row>8</row>
             <column>9</column>
-            <keyMatrix>VOLUMEDOWN CAMERA NC NC NC NC NC NC NC
+            <keyMatrix>VOLUMEDOWN MUSIC NC NC NC NC NC NC NC
 				NC NC NC NC NC NC NC NC NC
 				NC NC NC NC NC NC NC NC NC
 				NC NC NC NC NC NC NC NC NC
