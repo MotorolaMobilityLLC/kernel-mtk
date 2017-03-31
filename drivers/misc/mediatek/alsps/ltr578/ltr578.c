@@ -1187,6 +1187,36 @@ static int ltr578_als_disable(void)
 	return error;
 }
 
+#define MAX_ELM 5
+static unsigned int record[MAX_ELM];
+static int rct=0,full=0;
+static long lux_sum=0;
+
+
+/*----------------modified by hongguang for avglux function-----------------------*/		
+static int get_avg_lux(unsigned int lux)
+{
+	int lux_a;
+	if(rct >= MAX_ELM)
+		full=1;
+
+	if(full){
+		rct %= MAX_ELM;
+		lux_sum -= record[rct];
+	}
+	lux_sum += lux;
+	record[rct]=lux;
+	rct++;
+	if(full){
+	lux_a = lux_sum / MAX_ELM;
+	}else{
+	lux_a = lux_sum /rct;
+	}
+	return lux_a;
+}
+
+
+static int lsec_tmp = 0;
 
 static int ltr578_als_read(int gainrange)
 {
@@ -1211,7 +1241,10 @@ static int ltr578_als_read(int gainrange)
 	
 	cleval = cleval_0 | (cleval_1<<8) | (cleval_2<<16);
     lsec = (cleval/alsval)*10;
-		
+	
+    if (lsec > (lsec_tmp + 30)  || lsec < (lsec_tmp - 30) )
+            lsec_tmp = lsec;
+	
     if(alsval==0)
     {
         luxdata_int = 0;
@@ -1256,7 +1289,7 @@ static int ltr578_als_read(int gainrange)
 		als_gain = 18;
 	
 	
-	
+/*	
     if(lsec > 97)
 
     	luxdata_int = (alsval*312)/(als_time*als_gain)*12/10; //incan
@@ -1274,11 +1307,21 @@ static int ltr578_als_read(int gainrange)
 		else 
 
     	luxdata_int = 10*(alsval*812)/(als_time*als_gain)/18; //cwf
-		
+*/		
 	
+    if(lsec_tmp > 100)
+    	luxdata_int = (alsval*312)/(als_time*als_gain)*12/10; //incan
+	else if(lsec_tmp > 30)
+    	luxdata_int = (alsval*379)/(als_time*als_gain)*13/10; // D65
+    else 
+    	luxdata_int = 10*(alsval*812)/(als_time*als_gain)/18; //cwf
 
-	APS_LOG("als_value_lux = %d,lsec = %d\n", luxdata_int,lsec);
-	
+
+	luxdata_int = get_avg_lux(luxdata_int);
+
+
+//	APS_LOG("als_value_lux = %d,lsec = %d\n", luxdata_int,lsec);
+    APS_LOG("als_value_lux = %d,lsec_tmp = %d, lsec = %d \n", luxdata_int,lsec_tmp,lsec);	
 	
 	//APS_LOG("als_value_lux = %d\n", luxdata_int);
 	return luxdata_int;
