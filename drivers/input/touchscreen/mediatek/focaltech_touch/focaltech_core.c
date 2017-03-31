@@ -518,12 +518,16 @@ static int fts_report_key(struct ts_event *data)
 			return -1;
 		}
 	}
-	if (data->au8_touch_event[i] == 0 || data->au8_touch_event[i] == 2) {
+	if (data->au8_touch_event[i] == 0) {
+		CTP_DEBUG("[B]Key(%d, %d) DOWN!", data->au16_x[0],
+			  data->au16_y[0]);
 		tpd_button(data->au16_x[0], data->au16_y[0], 1);
 		FTS_DEBUG("[B]Key(%d, %d) DOWN!", data->au16_x[0],
 			  data->au16_y[0]);
 	} else {
 		tpd_button(data->au16_x[0], data->au16_y[0], 0);
+		CTP_DEBUG("[B]Key(%d, %d) UP!", data->au16_x[0],
+			  data->au16_y[0]);
 		FTS_DEBUG("[B]Key(%d, %d) UP!", data->au16_x[0],
 			  data->au16_y[0]);
 	}
@@ -552,6 +556,12 @@ static int fts_report_value(struct ts_event *data)
 
 		if (data->au8_touch_event[i] == 0
 		    || data->au8_touch_event[i] == 2) {
+			if (data->au8_touch_event[i] == 0) {
+				CTP_DEBUG("[B]P%d(%4d,%4d)[tm:%d] DOWN!",
+				data->au8_finger_id[i],
+				data->au16_x[i], data->au16_y[i],
+				data->area[i]);
+			}
 			input_mt_report_slot_state(tpd->dev, MT_TOOL_FINGER,
 						   true);
 			input_report_key(tpd->dev, BTN_TOUCH, 1);
@@ -611,6 +621,7 @@ static int fts_report_value(struct ts_event *data)
 	for (i = 0; i < tpd_dts_data.touch_max_num; i++) {
 		if (BIT(i) & (data->touchs ^ touchs)) {
 			FTS_DEBUG("[B]P%d UP!", i);
+			CTP_DEBUG("[B]P%d UP!", i);
 			data->touchs &= ~BIT(i);
 			input_mt_slot(tpd->dev, i);
 			input_mt_report_slot_state(tpd->dev, MT_TOOL_FINGER,

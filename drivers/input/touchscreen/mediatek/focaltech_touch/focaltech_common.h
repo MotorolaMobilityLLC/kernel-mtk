@@ -180,6 +180,12 @@ int fts_ex_mode_recovery(struct i2c_client *client);
 #define FTS_FUNC_EXIT()
 #endif
 
+#if CTP_DEBUG_EN
+#define CTP_DEBUG(fmt, args...) printk(KERN_ERR "[CTP][%s]"fmt"\n", __func__, ##args)
+#else
+#define CTP_DEBUG(fmt, args...)
+#endif
+
 #define FTS_INFO(fmt, args...)   do {\
 	    if (g_show_log) {\
 		 printk(KERN_ERR "[FTS][Info]"fmt"\n", ##args);\
