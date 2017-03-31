@@ -138,7 +138,6 @@ struct scan_control {
  * From 0 .. 100.  Higher means more swappy.
  */
 int vm_swappiness = 60;
-int max_swappiness = 200;
 /*
  * The total number of pages which are beyond the high watermark within all
  * zones.
@@ -2067,7 +2066,7 @@ static void get_scan_count(struct lruvec *lruvec, int swappiness,
 	 * This scanning priority is essentially the inverse of IO cost.
 	 */
 	anon_prio = vmscan_swappiness(sc);
-	file_prio = max_swappiness - anon_prio;
+	file_prio = 200 - anon_prio;
 
 	anon  = get_lru_size(lruvec, LRU_ACTIVE_ANON) +
 		get_lru_size(lruvec, LRU_INACTIVE_ANON);
