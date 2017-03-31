@@ -315,17 +315,7 @@ static SENSOR_WINSIZE_INFO_STRUCT imgsensor_winsize_info[5] =
 };
 
 
-#if 0
-static kal_uint16 read_cmos_sensor_byte(kal_uint16 addr)
-{
-    kal_uint16 get_byte=0;
-    char pu_send_cmd[2] = {(char)(addr >> 8) , (char)(addr & 0xFF) };
 
-    kdSetI2CSpeed(imgsensor_info.i2c_speed); // Add this func to set i2c speed by each sensor
-    iReadRegI2C(pu_send_cmd , 2, (u8*)&get_byte,1,imgsensor.i2c_write_id);
-    return get_byte;
-}
-#endif
 static kal_uint16 read_cmos_sensor(kal_uint32 addr)
 {
     kal_uint16 get_byte=0;
@@ -335,15 +325,7 @@ static kal_uint16 read_cmos_sensor(kal_uint32 addr)
     iReadRegI2C(pu_send_cmd, 2, (u8*)&get_byte, 2, imgsensor.i2c_write_id);
     return ((get_byte<<8)&0xFF00)|((get_byte>>8)&0x00FF);
 }
-#if 0
-static void write_cmos_sensor_byte(kal_uint32 addr, kal_uint32 para)
-{
-    char pu_send_cmd[3] = {(char)(addr >> 8), (char)(addr & 0xFF), (char)(para & 0xFF)};
 
-    kdSetI2CSpeed(imgsensor_info.i2c_speed); // Add this func to set i2c speed by each sensor
-    iWriteRegI2C(pu_send_cmd, 3, imgsensor.i2c_write_id);
-}
-#endif
 static void write_cmos_sensor(kal_uint16 addr, kal_uint16 para)
 {
     char pusendcmd[4] = {(char)(addr >> 8) , (char)(addr & 0xFF) ,(char)(para >> 8),(char)(para & 0xFF)};
@@ -624,16 +606,38 @@ static void set_mirror_flip(kal_uint8 image_mirror)
 }
 
 #endif
-//#ifdef HI556_OTP_FUNCTION
-#if 0
+#ifdef HI556_OTP_FUNCTION
+//#if 0
+#if 1
+static kal_uint16 read_cmos_sensor_byte(kal_uint16 addr)
+{
+    kal_uint16 get_byte=0;
+    char pu_send_cmd[2] = {(char)(addr >> 8) , (char)(addr & 0xFF) };
+
+    kdSetI2CSpeed(imgsensor_info.i2c_speed); // Add this func to set i2c speed by each sensor
+    iReadRegI2C(pu_send_cmd , 2, (u8*)&get_byte,1,imgsensor.i2c_write_id);
+    return get_byte;
+}
+#endif
+#if 1
+static void write_cmos_sensor_byte(kal_uint32 addr, kal_uint32 para)
+{
+    char pu_send_cmd[3] = {(char)(addr >> 8), (char)(addr & 0xFF), (char)(para & 0xFF)};
+
+    kdSetI2CSpeed(imgsensor_info.i2c_speed); // Add this func to set i2c speed by each sensor
+    iWriteRegI2C(pu_send_cmd, 3, imgsensor.i2c_write_id);
+}
+#endif
 struct HI556_otp_struct 
 {
 	int info_Flag;	//bit[7]:info, bit[6]:wb
-	int info_data[13];
+	int info_data[20];
 	int WB_FLAG;
-	int wb_data[8];
+	int wb_data[13];
 	int RG_ratio_unit;
 	int BG_ratio_unit;
+	int LSC_FLAG;/*guoameng add lSC-shading read flag*/
+	char lsc_data[4000];/*add lsc-shading data struct-3739-lsc-all-data*/
 };
 
 struct HI556_otp_struct HI556_otp;
@@ -672,15 +676,16 @@ static int HI556_otp_read(void)
 	int i = 0, info_start_addr = 0, wb_start_addr = 0;
 	int  checksum = 0 ,info_check = 0, wb_check = 0;
 	LOG_INF("HI556 HI556_otp_read \n");
-	
 //module info read 
+	printk("guoameng-OTP_read_cmos_sensor(0x0401) = 0x%x \n", OTP_read_cmos_sensor(0x0401));
 	HI556_otp.info_Flag = OTP_read_cmos_sensor(0x0401);
+	printk("guoameng-HI556 HI556_otp.info_Flag = 0x%x \n", HI556_otp.info_Flag);
 	if (HI556_otp.info_Flag == 0x01)	//Base Info Group1 valid
 		info_start_addr = 0x0402;
-	else if (HI556_otp.info_Flag == 0x13)	//Base Info Group2 valid
-		info_start_addr = 0x040f;
-	else if (HI556_otp.info_Flag == 0x37)	//Base Info Group3 valid
-		info_start_addr = 0x041c;
+	else if (HI556_otp.info_Flag == 0x07)	//Base Info Group2 valid
+		info_start_addr = 0x0416;
+	else if (HI556_otp.info_Flag == 0x1f)	//Base Info Group3 valid
+		info_start_addr = 0x042A;
 	else
 		info_start_addr = 0;
 	
@@ -691,17 +696,18 @@ static int HI556_otp_read(void)
 		write_cmos_sensor_byte(0x10a, (info_start_addr >> 8) & 0xff); //start addr H
 		write_cmos_sensor_byte(0x10b, info_start_addr & 0xff);	//start addr L
 		write_cmos_sensor_byte(0x102, 0x01);	//single mode
-		for (i = 0; i < 13; i++) {
+		for (i = 0; i < 20; i++) {
 			HI556_otp.info_data[i] = read_cmos_sensor_byte(0x108); //otp data read
-			LOG_INF("HI556 info_data[%d] = 0x%x  ", i, HI556_otp.info_data[i]);
+			LOG_INF("guoameng-HI556 info_data[%d] = 0x%x \n ", i, HI556_otp.info_data[i]);
 		}
 	}
 
-	for(i=0;i<11;i++)
+	for(i=0;i<19;i++)
 	{
 	checksum += HI556_otp.info_data[i];
 	}
-	info_check = ((HI556_otp.info_data[12] << 8) | HI556_otp.info_data[11])&0xffff;
+	checksum =checksum % 0xff;
+	info_check = HI556_otp.info_data[19]&0xff;
 	if (checksum == info_check)
 		{
 		LOG_INF("HI556_Sensor: Module information checksum PASS\n ");
@@ -710,39 +716,40 @@ static int HI556_otp_read(void)
 		{
 		LOG_INF("HI556_Sensor: Module information checksum Fail\n ");
 		}
-	LOG_INF("HI556 checksum = 0x%x ,info_check = 0x%x \n", checksum,info_check);
+	LOG_INF("guoameng-HI556_module_info checksum = 0x%x ,info_check = 0x%x \n", checksum,info_check);
 
 //wb read	
-	HI556_otp.WB_FLAG = OTP_read_cmos_sensor(0x0429);
+	printk("guoameng-OTP_read_cmos_sensor(0x043E) = 0x%x \n", OTP_read_cmos_sensor(0x043E));
+	HI556_otp.WB_FLAG = OTP_read_cmos_sensor(0x043E);
 	if (HI556_otp.WB_FLAG == 0x01)
-		wb_start_addr = 0x042a;
-	else if (HI556_otp.WB_FLAG == 0x13)
-		wb_start_addr = 0x0432;
-	else if (HI556_otp.WB_FLAG == 0x37)
-		wb_start_addr = 0x043a;
+		wb_start_addr = 0x043f;
+	else if (HI556_otp.WB_FLAG == 0x07)
+		wb_start_addr = 0x044c;
+	else if (HI556_otp.WB_FLAG == 0x1f)
+		wb_start_addr = 0x0459;
 	else
 		LOG_INF("HI556 WB data invalid \n");
 
-LOG_INF("HI556 WB_FLAG = 0x%x \n", HI556_otp.WB_FLAG);
-LOG_INF("HI556 wb_start_addr = 0x%x \n", wb_start_addr);
+LOG_INF("guoameng-HI556 WB_FLAG = 0x%x \n", HI556_otp.WB_FLAG);
+LOG_INF("guoameng-HI556 wb_start_addr = 0x%x \n", wb_start_addr);
 
 	if (wb_start_addr != 0) {
 		write_cmos_sensor_byte(0x10a, (wb_start_addr >> 8) & 0xff);	//start addr H
 		write_cmos_sensor_byte(0x10b, wb_start_addr & 0xff);	//start addr L
 		write_cmos_sensor_byte(0x102, 0x01);	//single mode
-		for (i = 0; i < 8; i++) {
+		for (i = 0; i < 13; i++) {
 			HI556_otp.wb_data[i] = read_cmos_sensor_byte(0x108);	//otp data read
-			LOG_INF("HI843 wb_data[%d] = 0x%x  ", i, HI556_otp.wb_data[i]);
+			LOG_INF("guoameng-wb_data[%d] = 0x%x \n ", i, HI556_otp.wb_data[i]);
 		}
 	}
 	
 	checksum = 0;
-	for(i=0;i<6;i++)
+	for(i=0;i<12;i++)
 	{
 	checksum += HI556_otp.wb_data[i];
 	}
-	
-	wb_check = ((HI556_otp.wb_data[7] << 8) | HI556_otp.wb_data[6])&0xffff;
+	checksum =checksum % 0xff;
+	wb_check =  HI556_otp.wb_data[12]&0xff;
 
 	if (checksum == wb_check)
 			{
@@ -752,8 +759,7 @@ LOG_INF("HI556 wb_start_addr = 0x%x \n", wb_start_addr);
 			{
 			LOG_INF("HI556_Sensor: WB checksum Fail\n ");
 			}
-	LOG_INF("HI556 checksum = 0x%x ,wb_check = 0x%x \n", checksum,wb_check);
-
+	LOG_INF("guoameng-HI556_awb checksum = 0x%x ,wb_check = 0x%x \n", checksum,wb_check);
 
 	write_cmos_sensor_byte(0x0a00, 0x00); //sleep On
 	mdelay(10);
@@ -766,10 +772,12 @@ LOG_INF("HI556 wb_start_addr = 0x%x \n", wb_start_addr);
 static int HI556_otp_apply(void)
 {
 	int R_gain = 1, G_gain = 1, B_gain = 1;
-	int RG_ratio_golden = 0; //module house provide
-	int BG_ratio_golden = 0; //module house provide
+	int RG_ratio_golden = ((HI556_otp.wb_data[6] << 8) | HI556_otp.wb_data[7]);
+	int BG_ratio_golden = ((HI556_otp.wb_data[8] << 8) | HI556_otp.wb_data[9]);
+	//int RG_ratio_golden = 0x1fd; //module house provide
+	//int BG_ratio_golden = 0x24e; //module house provide
 	LOG_INF("HI556 HI556_otp_apply \n");
-
+	printk("guoameng-HI556_otp_apply-778-RG_ratio_golden=0x%x,BG_ratio_golden=0x%x\n",RG_ratio_golden,BG_ratio_golden);
 	HI556_otp.RG_ratio_unit = ((HI556_otp.wb_data[0] << 8) | HI556_otp.wb_data[1]) & 0x03FF;
 	HI556_otp.BG_ratio_unit = ((HI556_otp.wb_data[2] << 8) | HI556_otp.wb_data[3]) & 0x03FF;
 
@@ -777,19 +785,21 @@ static int HI556_otp_apply(void)
 	R_gain = (0x100 * RG_ratio_golden / HI556_otp.RG_ratio_unit);
 	B_gain = (0x100 * BG_ratio_golden / HI556_otp.BG_ratio_unit);
 	G_gain = 0x100;
-
+	printk("guoameng-HI556_otp_apply-782-R_gain=%d,B_gain=%d\n",R_gain,B_gain);
 
 	if (R_gain < B_gain) {
 		if(R_gain < 0x100) {
 			B_gain =0x100 *  B_gain / R_gain;
 			G_gain =0x100 *  G_gain / R_gain;
 			R_gain = 0x100;
+		printk("guoameng-HI556_otp_apply-789-R_gain=%d,B_gain=%d\n",R_gain,B_gain);
 		}
 	} else {
 		if (B_gain < 0x100) {
 			R_gain = 0x100 * R_gain / B_gain;
 			G_gain = 0x100 * G_gain / B_gain;
 			B_gain = 0x100;
+			printk("guoameng-HI556_otp_apply-796-R_gain=%d,B_gain=%d\n",R_gain,B_gain);
 		}
 	}
 	//R_gain = 0x11111111;
@@ -797,17 +807,63 @@ static int HI556_otp_apply(void)
 
     
 LOG_INF("HI556 Before apply otp G_gain = 0x%x, R_gain = 0x%x, B_gain = 0x%x \n",\
-	(read_cmos_sensor(0x0078) << 8) | (read_cmos_sensor(0x0079) & 0xFFFF), (read_cmos_sensor(0x007c) << 8) | (read_cmos_sensor(0x007d) & 0xFFFF), (read_cmos_sensor(0x007e) << 8) | (read_cmos_sensor(0x007f) & 0xFFFF));
+	read_cmos_sensor(0x0078) , read_cmos_sensor(0x007c), read_cmos_sensor(0x007e));
 	write_cmos_sensor(0x0078, G_gain);
 	write_cmos_sensor(0x007a, G_gain);
 	write_cmos_sensor(0x007c, R_gain);
 	write_cmos_sensor(0x007e, B_gain);
-LOG_INF("HI556 after apply otp G_gain = 0x%x, R_gain = 0x%x, B_gain = 0x%x \n",\
-	(read_cmos_sensor(0x0078) << 8) | (read_cmos_sensor(0x0079) & 0xFFFF), (read_cmos_sensor(0x007c) << 8) | (read_cmos_sensor(0x007d) & 0xFFFF), (read_cmos_sensor(0x007e) << 8) | (read_cmos_sensor(0x007f) & 0xFFFF));
+LOG_INF("HI556 After apply otp G_gain = 0x%x, R_gain = 0x%x, B_gain = 0x%x \n",\
+	read_cmos_sensor(0x0078) , read_cmos_sensor(0x007c), read_cmos_sensor(0x007e)) ;
 
 	return HI556_otp.WB_FLAG;
 }
 
+//add by ameng read lsc start
+#if 0
+static int hi556_otp_lsc_read(void)
+{
+	int lsc_start_addr=0;
+	int  checksum_lsc = 0;
+	hi556_otp.LSC_FLAG = OTP_read_cmos_sensor(0x0466);
+	if (hi556_otp.LSC_FLAG == 0x01)
+	  lsc_start_addr = 0x467;
+	else if (hi556_otp.LSC_FLAG == 0x07)
+	  lsc_start_addr = 0xbb4;
+	else if (hi556_otp.LSC_FLAG == 0x1F)
+	  lsc_start_addr = 0x1301;
+	else
+	  LOG_INF("HI556 LSC data invalid \n");
+	LOG_INF("HI556 lsc_FLAG = 0x%x \n", hi556_otp.LSC_FLAG);
+	LOG_INF("HI556 lsc_start_addr = 0x%x \n", lsc_start_addr);
+	if (lsc_start_addr != 0) {
+		write_cmos_sensor_byte(0x10a, (lsc_start_addr >> 8) & 0xff);	//start addr H
+		write_cmos_sensor_byte(0x10b, lsc_start_addr & 0xff);	//start addr L
+		write_cmos_sensor_byte(0x102, 0x01);	//single mode
+		for (i = 0; i < 1869; i++) {
+			hi556_otp.lsc_data[i] = read_cmos_sensor_byte(0x108);	//otp data read
+			printk("HI556 lsc_data[%d] = 0x%x\n", i, hi556_otp.lsc_data[i]);
+			checksum_lsc += hi556_otp.lsc_data[i];
+		}
+
+		printk("HI556 xljadd checksum_lsc = 0x%x\n", checksum_lsc);
+		checksum_lsc = (checksum_lsc - hi556_otp.lsc_data[1868])%255;
+		printk("HI556 xljadd after calculator checksum_lsc = 0x%x\n", checksum_lsc);
+	}
+return hi556_otp.LSC_FLAG;
+}
+#endif
+#if 0
+unsigned int HI556_OTP_Read_Lsc(unsigned int addr,unsigned char *data, unsigned int size)
+{
+
+	LOG_INF(" start copy lsc_data size = %d\n",size);  
+
+	LOG_INF(" hi553_otp.lsc_data[963]=0x%x\n",hi553_otp.lsc_data[963]);    		
+	memcpy(data,hi553_otp.lsc_data,size);
+	return size;
+}
+#endif
+//add by ameng read lsc end
 
 static void HI556_otp_cali(void)
 {
@@ -1409,10 +1465,24 @@ static kal_uint32 return_sensor_id(void)
 * GLOBALS AFFECTED
 *
 *************************************************************************/
+#ifdef CONFIG_LCT_DEVINFO_SUPPORT/* add for dev_info*/
+#include  "dev_info.h"
+static struct devinfo_struct s_DEVINFO_ccm;
+#endif
 static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 {
     kal_uint8 i = 0;
     kal_uint8 retry = 2;
+#ifdef CONFIG_LCT_DEVINFO_SUPPORT
+	s_DEVINFO_ccm.device_type = "CCM-S";
+	s_DEVINFO_ccm.device_module = "NULL";//can change if got module id
+	s_DEVINFO_ccm.device_vendor = "qunhui";
+	s_DEVINFO_ccm.device_ic = "hi556";
+	s_DEVINFO_ccm.device_version = "hynix";
+	s_DEVINFO_ccm.device_info = "500W-Gr";
+	s_DEVINFO_ccm.device_used=DEVINFO_USED;
+	// - 2016-11-17-10-53
+#endif
     //sensor have two i2c address 0x6c 0x6d & 0x21 0x20, we should detect the module used i2c address
     while (imgsensor_info.i2c_addr_table[i] != 0xff) {
         spin_lock(&imgsensor_drv_lock);
@@ -1435,6 +1505,12 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
     }
     if (*sensor_id != imgsensor_info.sensor_id) {
         // if Sensor ID is not correct, Must set *sensor_id to 0xFFFFFFFF
+	#ifdef CONFIG_LCT_DEVINFO_SUPPORT	
+		s_DEVINFO_ccm.device_used=DEVINFO_UNUSED;	
+		DEVINFO_CHECK_DECLARE(s_DEVINFO_ccm.device_type,s_DEVINFO_ccm.device_module,
+					s_DEVINFO_ccm.device_vendor,s_DEVINFO_ccm.device_ic,s_DEVINFO_ccm.device_version,
+					s_DEVINFO_ccm.device_info,s_DEVINFO_ccm.device_used);
+	#endif
         *sensor_id = 0xFFFFFFFF;
         return ERROR_SENSOR_CONNECT_FAIL;
     }
