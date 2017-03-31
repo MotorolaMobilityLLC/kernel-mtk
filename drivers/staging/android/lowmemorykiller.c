@@ -220,13 +220,6 @@ static unsigned long lowmem_scan(struct shrinker *s, struct shrink_control *sc)
 		lowmem_print(3, "Halve other_free %d\n", other_free);
 		other_free >>= 1;
 	}
-#elif defined(CONFIG_SWAP)
-
-	if (vm_swap_full()) {
-		lowmem_print(3, "Halve other_free %d\n", other_free);
-		other_free >>= 1;
-        other_file >>= 1;
-	}
 #endif
 
 #ifdef CONFIG_SWAP
@@ -247,8 +240,7 @@ static unsigned long lowmem_scan(struct shrinker *s, struct shrink_control *sc)
 		minfree = lowmem_minfree[i];
 		if (other_free < minfree && other_file < minfree) {
 #ifdef CONFIG_SWAP
-/*			if (totalram_pages < 0x40000) { */
-			if (1) {
+			if (totalram_pages < 0x40000) {
 				if (to_be_aggressive != 0 && i > 3) {
 					i -= to_be_aggressive;
 					if (i < 3)
