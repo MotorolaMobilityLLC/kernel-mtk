@@ -979,7 +979,10 @@ INT32 wmt_lib_ps_stp_cb(MTKSTP_PSM_ACTION_T action)
 
 MTK_WCN_BOOL wmt_lib_is_quick_ps_support(VOID)
 {
-	return wmt_core_is_quick_ps_support();
+	if ((g_quick_sleep_ctrl) && (wmt_dev_get_early_suspend_state() == MTK_WCN_BOOL_TRUE))
+		return wmt_core_is_quick_ps_support();
+	else
+		return MTK_WCN_BOOL_FALSE;
 }
 
 VOID wmt_lib_ps_irq_cb(VOID)
@@ -2034,7 +2037,7 @@ UINT8 *wmt_lib_get_fwinfor_from_emi(UINT8 section, UINT32 offset, UINT8 *buf, UI
 			WMT_ERR_FUNC("wmt-lib: get EMI virtual base address fail\n");
 		} else {
 			WMT_INFO_FUNC("vir addr(0x%p)\n", pAddr);
-			osal_memcpy(&buf[0], pAddr, len);
+			osal_memcpy_fromio(&buf[0], pAddr, len);
 		}
 	} else {
 		if (offset >= 0x7fff)
@@ -2047,7 +2050,7 @@ UINT8 *wmt_lib_get_fwinfor_from_emi(UINT8 section, UINT32 offset, UINT8 *buf, UI
 			} else {
 				WMT_INFO_FUNC("part1 vir addr(0x%p)\n", pAddr);
 				sublen1 = 0x7fff - offset;
-				osal_memcpy(&buf[0], pAddr, sublen1);
+				osal_memcpy_fromio(&buf[0], pAddr, sublen1);
 			}
 			pAddr = wmt_plat_get_emi_virt_add(p_consys_info->paged_trace_off);
 			if (!pAddr) {
@@ -2055,7 +2058,7 @@ UINT8 *wmt_lib_get_fwinfor_from_emi(UINT8 section, UINT32 offset, UINT8 *buf, UI
 			} else {
 				WMT_INFO_FUNC("part2 vir addr(0x%p)\n", pAddr);
 				sublen2 = len - sublen1;
-				osal_memcpy(&buf[sublen1], pAddr, sublen2);
+				osal_memcpy_fromio(&buf[sublen1], pAddr, sublen2);
 			}
 		} else {
 			pAddr = wmt_plat_get_emi_virt_add(offset + p_consys_info->paged_trace_off);
@@ -2063,7 +2066,7 @@ UINT8 *wmt_lib_get_fwinfor_from_emi(UINT8 section, UINT32 offset, UINT8 *buf, UI
 				WMT_ERR_FUNC("wmt-lib: get EMI virtual base address fail\n");
 			} else {
 				WMT_INFO_FUNC("vir addr(0x%p)\n", pAddr);
-				osal_memcpy(&buf[0], pAddr, len);
+				osal_memcpy_fromio(&buf[0], pAddr, len);
 			}
 		}
 	}
