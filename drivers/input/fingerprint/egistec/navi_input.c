@@ -61,11 +61,11 @@ struct navi_cmd_struct cmd_list;
 #define KEY_FPS_UP     615
 #define KEY_FPS_TAP    616
 #define KEY_FPS_HOLD   617
-#define KEY_FPS_YPLUS  618
-#define KEY_FPS_YMINUS 619
-#define KEY_FPS_XPLUS  620
-#define KEY_FPS_XMINUS 621
-
+#define KEY_FPS_YPLUS  619
+#define KEY_FPS_YMINUS 618
+#define KEY_FPS_XPLUS  621
+#define KEY_FPS_XMINUS 620
+//sunsiyuan@wind-mobi.com modify at 20170331 end
 /*
  * ENABLE_SWIPE_UP_DOWN properties
  *
