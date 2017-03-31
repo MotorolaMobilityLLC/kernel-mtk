@@ -51,7 +51,7 @@ int __send_cancel_command(unsigned long share_memory_size)
 	n_invoke_t_drv((uint64_t *)(&smc_type), 0, 0);
 
 	while(smc_type == 0x54) {
-		udelay(IRQ_DELAY);
+		//udelay(IRQ_DELAY);
 		nt_sched_t((uint64_t *)(&smc_type));
 	}
 
