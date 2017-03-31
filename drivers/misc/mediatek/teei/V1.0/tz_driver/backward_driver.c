@@ -60,7 +60,7 @@ void secondary_invoke_fastcall(void *info)
 	n_invoke_t_fast_call((uint64_t *)(&smc_type), 0, 0);
 
 	while (smc_type == 0x54){
-		udelay(IRQ_DELAY);
+		//udelay(IRQ_DELAY);
 		nt_sched_t((uint64_t *)(&smc_type));
 	}
 	return;
@@ -184,7 +184,7 @@ int __reetime_handle(struct service_handler *handler)
 	set_ack_vdrv_cmd(handler->sysno);
 	n_ack_t_invoke_drv((uint64_t *)(&smc_type), 0, 0);
 	while(smc_type == 0x54) {
-		udelay(IRQ_DELAY);
+		//udelay(IRQ_DELAY);
 		nt_sched_t((uint64_t *)(&smc_type));
 	}
 
@@ -265,7 +265,7 @@ int __vfs_handle(struct service_handler *handler) /*! invoke handler */
 	n_ack_t_invoke_drv((uint64_t *)(&smc_type), 0, 0);
 
 	while(smc_type == 0x54) {
-		udelay(IRQ_DELAY);
+		//udelay(IRQ_DELAY);
 		nt_sched_t((uint64_t *)(&smc_type));
 	}
 

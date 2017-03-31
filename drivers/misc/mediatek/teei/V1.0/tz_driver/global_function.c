@@ -21,7 +21,7 @@ static void secondary_nt_sched_t(void *info)
 	nt_sched_t((uint64_t *)(&smc_type));
 
 	while (smc_type == 0x54) {
-		udelay(IRQ_DELAY);
+		//udelay(IRQ_DELAY);
 		nt_sched_t((uint64_t *)(&smc_type));
 	}
 }
