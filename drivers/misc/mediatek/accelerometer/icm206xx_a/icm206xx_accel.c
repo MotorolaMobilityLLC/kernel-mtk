@@ -73,7 +73,7 @@ static struct acc_init_info icm206xx_accel_init_info = {
 
 #define DEBUG_PRINT_ELEMENT_COUNT	8
 #define DEBUG_PRINT_CHAR_COUNT_PER_LINE 24
-
+/*
 struct icm206xx_debug_data {
 	int nTestCount[DEBUG_MAX_CHECK_COUNT];
 	int nUsedTestCount;
@@ -87,16 +87,13 @@ struct icm206xx_debug_data {
 	char strDebugDump[DEBUG_MAX_LOG_STRING_LENGTH];
 	int nStrIndex;
 };
-
 struct icm206xx_debug_data icm206xx_accel_debug;
-
 static void initDebugData(void)
 {
 	memset(&icm206xx_accel_debug, 0x00, sizeof(icm206xx_accel_debug));
 	icm206xx_accel_debug.ucPrevCmd = DEBUG_IOCTL_CMD_DEFAULT;
 	memset(&(icm206xx_accel_debug.ucCmdLog[0]), DEBUG_IOCTL_CMD_DEFAULT, DEBUG_MAX_IOCTL_CMD_COUNT);
 }
-
 static void addCmdLog(unsigned int cmd)
 {
 	unsigned char converted_cmd = DEBUG_IOCTL_CMD_DEFAULT;
@@ -138,7 +135,6 @@ static void addCmdLog(unsigned int cmd)
 		icm206xx_accel_debug.ucPrevCmd = converted_cmd;
 	}
 }
-
 static void printCmdLog(void)
 {
 	int i;
@@ -158,7 +154,7 @@ static void printCmdLog(void)
 
 	ACC_LOG("ACCEL_IOCTL_CMD_LOG :\n%s\t%d\n", icm206xx_accel_debug.strDebugDump, icm206xx_accel_debug.nLogIndex);
 }
-
+*/
 /*=======================================================================================*/
 /* Vendor Specific Functions Section							 */
 /*=======================================================================================*/
@@ -929,8 +925,9 @@ static long icm206xx_accel_unlocked_ioctl(struct file *file, unsigned int cmd, u
 		return -EFAULT;
 	}
 
-	addCmdLog(cmd);
-	printCmdLog();
+/*	addCmdLog(cmd);
+	printCmdLog();*/
+
 
 	switch (cmd) {
 	case GSENSOR_IOCTL_INIT:
@@ -1402,7 +1399,7 @@ static int icm206xx_accel_local_init(void)
 {
 	icm206xx_accel_power(hw, 1);
 
-	initDebugData();
+/*	initDebugData();*/
 
 	if (i2c_add_driver(&icm206xx_accel_i2c_driver)) {
 		ACC_ERR("add driver error\n");
