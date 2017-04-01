@@ -1298,7 +1298,7 @@ static int bmi160_acc_init_client(struct i2c_client *client, int reset_cali)
 	}
 	GSE_LOG("BMI160_ACC_CheckDeviceID ok \n");
 
-	res = BMI160_ACC_SetBWRate(client, BMI160_ACCEL_ODR_200HZ);
+	res = BMI160_ACC_SetBWRate(client, BMI160_ACCEL_ODR_12_5HZ);
 	if(res != BMI160_ACC_SUCCESS )
 	{
 		return res;
@@ -1334,6 +1334,20 @@ static int bmi160_acc_init_client(struct i2c_client *client, int reset_cali)
 		return res;
 	}
 	GSE_LOG("BMI160_ACC_SetPowerMode OK!\n");
+
+	res = BMI160_ACC_SetPowerMode(client, true);
+	if(res != BMI160_ACC_SUCCESS)
+	{
+		return res;
+	}
+	GSE_LOG("BMI160_ACC_SetPowerMode true OK!\n");
+
+	res = BMI160_ACC_SetPowerMode(client, false);
+	if(res != BMI160_ACC_SUCCESS)
+	{
+		return res;
+	}
+	GSE_LOG("BMI160_ACC_SetPowerMode second OK!\n");
 
 	if(0 != reset_cali)
 	{

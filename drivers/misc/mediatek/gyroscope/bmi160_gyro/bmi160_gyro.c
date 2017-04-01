@@ -897,12 +897,12 @@ static int bmg_read_sensor_data(struct i2c_client *client,
 
 	if (NULL == buf)
 		return -1;
-
+/*
 	if (NULL == client) {
 		*buf = 0;
 		return -2;
 	}
-
+*/
 	err = bmg_read_raw_data(client, databuf);
 	if (err) {
 		GYRO_ERR("bmg read raw data failed, err = %d\n", err);
