@@ -169,7 +169,7 @@ module_exit(lcmbias_mod_exit);
     unsigned char count;
     unsigned char para_list[64];
 };
-
+//tuwenzan@wind-mobi.com modify at 20170402 beign
 static struct LCM_setting_table lcm_initialization_setting1[] = 
 {
 		//liujinzhou@wind-mobi.com modify at 20170103 begin
@@ -177,7 +177,7 @@ static struct LCM_setting_table lcm_initialization_setting1[] =
 			  
 	{0xBA, 6,{0x63,0x03,0x68,0x6B,0xB2,0xC0}},
 			  
-	{0xB1,1,{0x60}},
+	//{0xB1,1,{0x60}},
 	
 	{0xCC,1,{0x0B}},
 			  
@@ -202,11 +202,11 @@ static struct LCM_setting_table lcm_initialization_setting1[] =
 	
 	{0xD4,1,{0x02}},
 	
-	{0xBD,1,{0x01}},
+	//{0xBD,1,{0x01}},
 	
-	{0xB1,1,{0x60}},
+	//{0xB1,1,{0x60}},
 	
-	{0xBD,1,{0x00}},
+	//{0xBD,1,{0x00}},
 	
 	{0xBD,1,{0x00}},
 	
@@ -226,16 +226,27 @@ static struct LCM_setting_table lcm_initialization_setting1[] =
 			  
 	{0x11, 1,{0x00}},
 	
-	{REGFLAG_DELAY, 150, {0}},	
+	{REGFLAG_DELAY, 120, {0}},
+	
+	{0xBD,1,{0x01}},
+	
+	{0xB1,1,{0x00}},
+	
+	{0xBD,1,{0x00}},
+	//{0x35,1,{0x00}},
+	//{0xBE,2,{0x01,0x73}},
+	//{0xD9,1,{0xBF}},
 	//liupeng@wind-mobi.com 20160322 begin for ESD blurred screen
 	{0xB2, 12,{0x00,0x80,0x64,0x0e,0x0a,0x2F,0x00,0x00,0x00,0x00,0xc0,0x18}},//liupeng	
 	//liupeng@wind-mobi.com 20160322 end	  
+	//{0xCC,1,{0x0f}},
 	{0x29, 1,{0x00}},
-	{REGFLAG_DELAY, 20, {0}},	
+	{REGFLAG_DELAY, 20, {0}},
 	
 	{REGFLAG_END_OF_TABLE, 0x00, {}}
 	//liujinzhou@wind-mobi.com modify at 20170103 end
 };
+//tuwenzan@wind-mobi.com modify at 20170402 end
 #if 0
 static struct LCM_setting_table lcm_sleep_out_setting[] = {
     //Sleep Out

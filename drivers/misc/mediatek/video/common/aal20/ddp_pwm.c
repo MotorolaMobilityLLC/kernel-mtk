@@ -387,7 +387,7 @@ int disp_bls_set_backlight(int level_1024)
  * Returns:
  *  PWM duty in [0, 1023]
  */
- //tuwenzan@wind-mobi.com modify at 20170209 begin
+ //tuwenzan@wind-mobi.com modify at 20170402 begin
 #ifdef CONFIG_WIND_BACKLIGHT_CURVE
 extern int wind_hbm_flag;
 int wind_standby_flag = 0;
@@ -404,15 +404,15 @@ static int disp_pwm_level_remap(disp_pwm_id_t id, int level_1024)
 			return level_1024;
 		}
 		if(wind_standby_flag == 0){
-			if(temp > 923){
+			if(temp > 1020){ //923
 				wind_standby_flag = 1;
-				level_1024 = 923;
+				level_1024 = 1020;
 			}
 		}else{
-			if(temp <= 923){
+			if(temp <= 1020){
 				level_1024 = temp;
 			}else{
-				level_1024 = 923;
+				level_1024 = 1020;
 			}
 		}
 	//	printk("tuwenzanpwm level_1024 = %d\n",level_1024);
@@ -420,14 +420,15 @@ static int disp_pwm_level_remap(disp_pwm_id_t id, int level_1024)
 	}
 	wind_standby_flag = 0;
 	if(temp > 409){
-			level_1024 = (641*temp + 147099)/(1000);
+	//		level_1024 = (641*temp + 268616)/(1000); //147099
+			level_1024 = (840*temp + 65493)/(1000);
 //			printk("tuwenzanpwm gongshi level_1024 = %d\n",level_1024);
 	}
 #endif
 //	printk("tuwenzanremap level_1024 = %d\n",level_1024);
 	return level_1024;
 }
-//tuwenzan@wind-mobi.com modify at 20170209 end
+//tuwenzan@wind-mobi.com modify at 20170402 end
 
 int disp_pwm_set_backlight(disp_pwm_id_t id, int level_1024)
 {
