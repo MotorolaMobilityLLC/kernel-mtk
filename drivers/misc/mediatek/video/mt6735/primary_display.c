@@ -3842,9 +3842,7 @@ static int primary_display_esd_check_worker_kthread(void *data)
 			while (i--) {
 				DISPMSG("[ESD]esd recovery try:%d\n", i);
 				primary_display_esd_recovery();
-#ifdef CONFIG_LCT_ESD_CHECK_MULTI_REG
 				msleep(50);
-#endif
 				ret = primary_display_esd_check();
 
 				if (ret == 0) {
