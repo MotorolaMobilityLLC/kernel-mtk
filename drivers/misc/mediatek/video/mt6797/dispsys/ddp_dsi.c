@@ -2440,8 +2440,18 @@ void DSI_set_cmdq_V2(DISP_MODULE_ENUM module, cmdqRecHandle cmdq, unsigned cmd, 
 
 	if (0 != DSI_REG[0]->DSI_MODE_CTRL.MODE) { /* not in cmd mode */
 		/* start DSI VM CMDQ */
-		if (force_update)
-			DSI_EnableVM_CMD(module, cmdq);
+		if (force_update) {
+			if (cmdq) {
+				DSI_MASKREG32(cmdq, &DSI_REG[0]->DSI_INTSTA, 0x00000020, 0);
+				DSI_EnableVM_CMD(module, cmdq);
+				DSI_POLLREG32(cmdq, &DSI_REG[0]->DSI_INTSTA, 0x00000020, 1);
+			} else {
+				wait_vm_cmd_done = false;
+				DSI_EnableVM_CMD(module, cmdq);
+				wait_event_interruptible(_dsi_wait_vm_cmd_done_queue[0], wait_vm_cmd_done);
+			}
+		}
+
 	} else {
 		if (force_update) {
 			DSI_Start(module, cmdq);
@@ -2520,8 +2530,17 @@ void DSI_set_cmdq_V3(DISP_MODULE_ENUM module, cmdqRecHandle cmdq, LCM_setting_ta
 					OUTREG32(&DSI_REG[d]->DSI_VM_CMD_CON, AS_UINT32(&vm_cmdq));
 				}
 				/* start DSI VM CMDQ */
-				if (force_update)
-					DSI_EnableVM_CMD(module, cmdq);
+				if (force_update) {
+					if (cmdq) {
+						DSI_MASKREG32(cmdq, &DSI_REG[0]->DSI_INTSTA, 0x00000020, 0);
+						DSI_EnableVM_CMD(module, cmdq);
+						DSI_POLLREG32(cmdq, &DSI_REG[0]->DSI_INTSTA, 0x00000020, 1);
+					} else {
+						wait_vm_cmd_done = false;
+						DSI_EnableVM_CMD(module, cmdq);
+						wait_event_interruptible(_dsi_wait_vm_cmd_done_queue[0], wait_vm_cmd_done);
+					}
+				}
 			} else {
 				DSI_WaitForNotBusy(module, cmdq);
 
