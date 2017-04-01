@@ -778,21 +778,19 @@ unsigned int bq25890_get_vbus_state(void)
 	return val;
 }
 
-unsigned int bq25890_set_current(void)
+bool bq25890_is_maxcharger(void)
 {
 	unsigned char vbus_type;
-	unsigned int bq25890_current = 0;
 
 	vbus_type = bq25890_get_vbus_state();
-	if (vbus_type == NO_INPUT)
-		pr_debug("bq25890 no input current\n");
-	else if (vbus_type == USB_DCP)
-		bq25890_current = AC_CHARGER_CURRENT;
-	else if (vbus_type == MAXCHARGER)
-		bq25890_current = MAXCHARGER_CURRENT;
-	else
-		pr_debug("Other charging mode detected by bb side\n");
-	return bq25890_current;
+
+	if (vbus_type == MAXCHARGER) {
+		battery_log(BAT_LOG_CRTI,"bq25890 charger type is maxcharger\n");
+		return true;
+	} else {
+		battery_log(BAT_LOG_CRTI,"bq25890 charger type is normal\n");
+		return false;
+	}
 }
 
 unsigned int bq25890_get_chrg_state(void)

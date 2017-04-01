@@ -96,7 +96,6 @@ unsigned int g_bcct_input_value = 0;
 CHR_CURRENT_ENUM g_bcct_CC_value = CHARGE_CURRENT_0_00_MA;
 #endif
 unsigned int g_full_check_count = 0;
-unsigned int g_usb_type_flag = 1;
 CHR_CURRENT_ENUM g_temp_CC_value = CHARGE_CURRENT_0_00_MA;
 CHR_CURRENT_ENUM g_temp_input_CC_value = CHARGE_CURRENT_0_00_MA;
 unsigned int g_usb_state = USB_UNCONFIGURED;
@@ -758,12 +757,17 @@ void select_charging_current(void)
 			g_temp_CC_value = batt_cust_data.non_std_ac_charger_current;
 
 		} else if (BMT_status.charger_type == STANDARD_CHARGER) {
-			if (batt_cust_data.ac_charger_input_current != 0)
-				g_temp_input_CC_value = batt_cust_data.ac_charger_input_current;
-			else
-				g_temp_input_CC_value = batt_cust_data.ac_charger_current;
+			if (bq25890_is_maxcharger()) {
+				g_temp_input_CC_value = MAXCHARGER_INPUT_CURRENT;
+				g_temp_CC_value = MAXCHARGER_CURRENT;
+			} else {
+				if (batt_cust_data.ac_charger_input_current != 0)
+					g_temp_input_CC_value = batt_cust_data.ac_charger_input_current;
+				else
+					g_temp_input_CC_value = batt_cust_data.ac_charger_current;
 
-			g_temp_CC_value = batt_cust_data.ac_charger_current;
+				g_temp_CC_value = batt_cust_data.ac_charger_current;
+			}
 			mtk_pep_set_charging_current(&g_temp_CC_value, &g_temp_input_CC_value);
 			mtk_pep20_set_charging_current(&g_temp_CC_value, &g_temp_input_CC_value);
 
@@ -865,12 +869,6 @@ static void mtk_select_ichg_aicr(void)
 
 	mutex_lock(&g_ichg_aicr_access_mutex);
 
-	if (BMT_status.charger_type != STANDARD_CHARGER) {
-		g_usb_type_flag = 1;
-		bq2589x_set_dpdm(0);
-	} else {
-		g_usb_type_flag = 0;
-	}
 	/* Set Ichg, AICR */
 	if (get_usb_current_unlimited()) {
 		if (batt_cust_data.ac_charger_input_current != 0)
@@ -896,15 +894,11 @@ static void mtk_select_ichg_aicr(void)
 #else
 	else if (g_bcct_flag == 1 || g_bcct_input_flag == 1) {
 		select_charging_current();
-		if (g_usb_type_flag == 0)
-			g_temp_CC_value = bq25890_set_current();
 		select_charging_current_bcct();
 		battery_log(BAT_LOG_FULL,
 			"[BATTERY] select_charging_curret_bcct !\n");
 	} else {
 		select_charging_current();
-		if (g_usb_type_flag == 0)
-			g_temp_CC_value = bq25890_set_current();
 		battery_log(BAT_LOG_FULL,
 			"[BATTERY] select_charging_curret !\n");
 	}

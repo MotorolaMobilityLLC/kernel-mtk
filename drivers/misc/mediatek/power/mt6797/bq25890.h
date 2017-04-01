@@ -401,7 +401,7 @@ unsigned int bq25890_get_idpm_state(void);
 unsigned int bq25890_get_vdpm_state(void);
 
 extern void bq2589x_set_dpdm(bool gpio_pin);
-extern unsigned int bq25890_set_current(void);
+extern bool bq25890_is_maxcharger(void);
 extern unsigned int bq25890_config_interface(unsigned char RegNum, unsigned char val, unsigned char MASK,
 				    unsigned char SHIFT);
 /*Added for debuging to check power off caller*/
