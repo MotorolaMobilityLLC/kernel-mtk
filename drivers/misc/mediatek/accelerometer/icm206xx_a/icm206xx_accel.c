@@ -51,6 +51,7 @@ static struct icm206xx_accel_i2c_data *obj_i2c_data;
 #ifdef ICM206XX_SELFTEST
 static char selftestRes[8] = { 0 };
 #endif
+bool power = false;
 
 static int g_icm206xx_accel_sensitivity = ICM206XX_ACCEL_DEFAULT_SENSITIVITY;	/* +/-4G as Default */
 
@@ -600,9 +601,9 @@ static int icm206xx_accel_init_client(struct i2c_client *client, bool enable)
 		return res;
 
 	/* Disable sensor - standby mode for accelerometer */
-	res = icm206xx_share_EnableSensor(ICM206XX_SENSOR_TYPE_ACC, enable);
+	/*res = icm206xx_share_EnableSensor(ICM206XX_SENSOR_TYPE_ACC, enable);
 	if (res != ICM206XX_SUCCESS)
-		return res;
+		return res;*/
 
 	/* Set power mode - sleep or normal */
 	res = icm206xx_share_SetPowerMode(ICM206XX_SENSOR_TYPE_ACC, enable);
@@ -1124,7 +1125,6 @@ static int icm206xx_accel_open_report_data(int open)
 static int icm206xx_accel_enable_nodata(int en)
 {
 	int res = 0;
-	bool power = false;
 
 	if (1 == en) {
 		power = true;
@@ -1356,7 +1356,7 @@ static int icm206xx_accel_i2c_resume(struct i2c_client *client)
 	}
 
 	icm206xx_accel_power(obj->hw, 1);
-	res = icm206xx_accel_init_client(client, false);
+	res = icm206xx_accel_init_client(client, power);
 
 	if (res) {
 		ACC_ERR("initialize client fail!!\n");
