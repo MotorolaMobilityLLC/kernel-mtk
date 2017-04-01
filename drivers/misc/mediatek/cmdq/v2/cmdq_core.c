@@ -6205,7 +6205,9 @@ static int32_t cmdq_core_wait_task_done_with_timeout_impl(TaskStruct *pTask, int
 				   msecs_to_jiffies(CMDQ_PREDUMP_TIMEOUT_MS));
 
 	/* if SW-timeout, pre-dump hang instructions */
-	while (0 == waitQ && retryCount < CMDQ_PREDUMP_RETRY_COUNT) {
+	//tuwenzan@wind-mobi.com modify at 20170402 begin
+	while (0 == waitQ && retryCount < CMDQ_PREDUMP_RETRY_COUNT && pTask->scenario != CMDQ_SCENARIO_DISP_ESD_CHECK) {
+    //tuwenzan@wind-mobi.com modify at 20170402 end
 		CMDQ_LOG("=============== [CMDQ] SW timeout Pre-dump(%d)===============\n",
 			 retryCount);
 
