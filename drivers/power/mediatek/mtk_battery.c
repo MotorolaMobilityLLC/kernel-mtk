@@ -551,10 +551,12 @@ void battery_debug_init(void)
 int g_fg_battery_id;
 
 #ifdef MTK_GET_BATTERY_ID_BY_AUXADC
+int id_volt =0;  //modify longcheer_liml_20170403
+extern int pmic_get_auxadc_value(u8 list);  //modify longcheer_liml_20170403
 void fgauge_get_profile_id(void)
 {
-	int id_volt = 0;
 	int id = 0;
+#if 0  //modify longcheer_liml_20170403
 	int ret = 0;
 
 	ret = IMM_GetOneChannelValue_Cali(BATTERY_ID_CHANNEL_NUM, &id_volt);
@@ -562,7 +564,9 @@ void fgauge_get_profile_id(void)
 		bm_debug("[fgauge_get_profile_id]id_volt read fail\n");
 	else
 		bm_debug("[fgauge_get_profile_id]id_volt = %d\n", id_volt);
-
+#else
+    id_volt = pmic_get_auxadc_value(AUXADC_LIST_BATID);
+#endif
 	if ((sizeof(g_battery_id_voltage) / sizeof(int)) != TOTAL_BATTERY_NUMBER) {
 		bm_debug("[fgauge_get_profile_id]error! voltage range incorrect!\n");
 		return;
@@ -3774,6 +3778,18 @@ static ssize_t store_BAT_EC(struct device *dev, struct device_attribute *attr, c
 }
 static DEVICE_ATTR(BAT_EC, 0664, show_BAT_EC, store_BAT_EC);
 
+/*=====================add by longcheer_liml_2017_04_03=================*/
+static ssize_t show_BatteryIdVoltage(struct device *dev,struct device_attribute *attr, char *buf)
+{
+	printk("[Battery] BatteryId : %u\n",id_volt);
+	return sprintf(buf, "%u\n", id_volt);
+}
+static ssize_t store_BatteryIdVoltage(struct device *dev,struct device_attribute *attr, const char *buf, size_t size)
+{
+	bm_err("[EM] BatteryIdVoltage Not Support Write Function\n");
+	return size;
+}
+static DEVICE_ATTR(BatteryIdVoltage, 0664, show_BatteryIdVoltage, store_BatteryIdVoltage);
 #if defined(CONFIG_LCT_CHR_LIMIT_MAX_SOC) 
 /*=====================running test start=add by longcheer_liml_2017_03_04=================*/
 static ssize_t show_BatteryTestStatus(struct device *dev,struct device_attribute *attr, char *buf)
@@ -4333,6 +4349,7 @@ static int battery_probe(struct platform_device *dev)
 #if defined(CONFIG_LCT_CHR_LIMIT_MAX_SOC)
 	ret_device_file = device_create_file(&(dev->dev), &dev_attr_BatteryTestStatus);//add by longcheer_liml_2017_03_04 for runin test
 #endif
+    ret_device_file = device_create_file(&(dev->dev), &dev_attr_BatteryIdVoltage);//add by longcheer_liml_2017_04_03 for add battery id
 	ret_device_file = device_create_file(&(dev->dev), &dev_attr_Power_On_Voltage);
 	ret_device_file = device_create_file(&(dev->dev), &dev_attr_Power_Off_Voltage);
 	ret_device_file = device_create_file(&(dev->dev), &dev_attr_shutdown_condition_enable);

@@ -1,7 +1,7 @@
 bat_gm30: bat_gm30{
 	compatible = "mediatek,bat_gm30";
 	DIFFERENCE_FULLOCV_ITH = <(150)>;	/*	Charging termination current.*/
-	SHUTDOWN_1_TIME = <(60)>;	/*	If ui_soc shows 1% more than X minites, system will shutdown.*/
+	SHUTDOWN_1_TIME = <(20)>;	/*	If ui_soc shows 1% more than X minites, system will shutdown.*/
 	KEEP_100_PERCENT = <(3)>;	/*	The ui_soc will keep 100% until SOC drop X percents after unplugged.*/
 	R_FG_VALUE = <(10)>;	/*	R_sense resistance.*/
 	EMBEDDED_SEL = <(0)>;	/*	Configures whether using embedded battery or not.*/
@@ -24,7 +24,11 @@ bat_gm30: bat_gm30{
 	Q_MAX_SYS_VOLTAGE_BAT3 = <(3200)>;	/*	System shut down voltage.*/
 	
 	#if (CONFIG_MTK_ADDITIONAL_BATTERY_TABLE == 1) 
+#if (CONFIG_L3510_MAINBOARD == 1)
+#include "LCT_L3510_mt6757_battery_table_ext.dtsi"
+#else
 	#include "mt6757_battery_table_ext.dtsi" 
+#endif		
 	#else 
 	#include "mt6757_battery_table.dtsi" 
 	#endif 
