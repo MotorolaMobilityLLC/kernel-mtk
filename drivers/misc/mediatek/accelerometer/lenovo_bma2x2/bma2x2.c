@@ -2703,7 +2703,7 @@ static int bma2x2_init_client(struct i2c_client *client, int reset_cali)
 
 	GSE_LOG("BMA2x2_SetBWRate OK!\n");
 
-	res = BMA2x2_SetDataFormat(client, BMA2x2_RANGE_4G);
+	res = BMA2x2_SetDataFormat(client, BMA2x2_RANGE_2G);
 	if (res != BMA2x2_SUCCESS)
 		return res;
 
@@ -3379,7 +3379,10 @@ static void bma25x_flat_work_func(struct work_struct *work)
 				data->flat_down_value = FLATDOWN_GESTURE;
 			else
 				data->flat_down_value = EXIT_FLATDOWN_GESTURE;
-			bma25x_set_flat_hold_time(data->client, 0x00);
+			if (data->flat_down_value == FLATDOWN_GESTURE)
+				bma25x_set_flat_hold_time(data->client, 0x01);
+			else
+				bma25x_set_flat_hold_time(data->client, 0x00);
 		} else {
 			data->flat_up_value = EXIT_FLATUP_GESTURE;
 			data->flat_down_value = EXIT_FLATDOWN_GESTURE;
@@ -3487,11 +3490,14 @@ static void bma25x_int1_irq_work_func(struct work_struct *work)
 		} else {
 			dev_info(&data->client->dev,
 				"glance slow motion interrupt happened\n");
-			input_report_rel(data->dev_interrupt,
-				SLOW_NO_MOTION_INTERRUPT,
-				GLANCE_MOVEMENT_GESTURE);
-			input_sync(data->dev_interrupt);
-			wake_lock_timeout(&data->aod_wakelock, msecs_to_jiffies(100));
+			if (data->flat_down_value != FLATDOWN_GESTURE &&
+				data->flat_up_value != FLATUP_GESTURE) {
+				input_report_rel(data->dev_interrupt,
+					SLOW_NO_MOTION_INTERRUPT,
+					GLANCE_MOVEMENT_GESTURE);
+				input_sync(data->dev_interrupt);
+				wake_lock_timeout(&data->aod_wakelock, msecs_to_jiffies(100));
+			}
 			bma25x_set_Int_Enable(
 				data->client, 12, 0);
 			bma25x_set_Int_Enable(
@@ -4814,6 +4820,7 @@ static irqreturn_t gsensor_eint_func2(int irq, void *desc)
 	queue_delayed_work(data->data_wq,
 		&data->flat_work, msecs_to_jiffies(50));
 	wake_lock_timeout(&data->aod_wakelock, msecs_to_jiffies(60));
+
 	return IRQ_HANDLED;
 }
 
@@ -5210,7 +5217,7 @@ static int bma2x2_i2c_probe(struct i2c_client *client,
 		goto exit_register_input_device_interrupt_failed;
 
 	obj->dev_interrupt = dev_interrupt;
-	obj->flat_threshold = 962;
+	obj->flat_threshold = 962*GRAVITY_EARTH_1000/obj->reso->sensitivity;
 	obj->aod_flag = 0;
 	obj->flat_up_value = 0;
 	obj->flat_down_value = 0;
