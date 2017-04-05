@@ -1800,9 +1800,7 @@ static int teei_client_init(void)
 
 	
 	struct sched_param param = {.sched_priority = 50 };
-        sched_setscheduler_nocheck(teei_switch_task, SCHED_FIFO, &param);
-
-	/* sched_setscheduler_nocheck(teei_switch_task, SCHED_NORMAL, &param); */
+	sched_setscheduler_nocheck(teei_switch_task, SCHED_FIFO, &param);
 	/* get_task_struct(teei_switch_task); */
 	wake_up_process(teei_switch_task);
 
