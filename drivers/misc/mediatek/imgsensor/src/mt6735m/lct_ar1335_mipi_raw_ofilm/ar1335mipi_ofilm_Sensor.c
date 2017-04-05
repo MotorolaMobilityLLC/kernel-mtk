@@ -77,7 +77,7 @@ static imgsensor_info_struct imgsensor_info = {
 		.grabwindow_width = 4208,
 		.grabwindow_height = 3120,
 		.mipi_data_lp2hs_settle_dc = 85,//unit , ns
-		.max_framerate = 240,
+		.max_framerate = 280,
 	},
 	.cap1 = {                            //capture for PIP 24fps relative information, capture1 mode must use same framelength, linelength with Capture mode for shutter calculate
 		.pclk = 438000000,
