@@ -71,7 +71,6 @@ void invoke_fastcall(void)
 	add_work_entry(INVOKE_FASTCALL, NULL);
 	return;
 }
-// tee_xuzhifeng@wind-mobi.com 20161117 end
 
 static long register_shared_param_buf(struct service_handler *handler)
 {
