@@ -246,6 +246,7 @@ static void disable_fg(void)
 	gDisableGM30 = 1;
 }
 
+
 signed int battery_meter_get_tempR(signed int dwVolt)
 {
 #if defined(CONFIG_POWER_EXT)
@@ -4436,6 +4437,11 @@ struct platform_device battery_device = {
 	.id = -1,
 };
 
+#ifdef CONFIG_LCT_DEVINFO_SUPPORT  //add by longcheer_liml_2017_04_05
+#include  <dev_info.h>
+struct devinfo_struct *dev_battery;
+#endif
+
 #ifdef CONFIG_OF
 static int battery_dts_probe(struct platform_device *dev)
 {
@@ -4450,6 +4456,34 @@ static int battery_dts_probe(struct platform_device *dev)
 	}
 
 	fg_custom_init_from_dts(dev);
+	
+#ifdef CONFIG_LCT_DEVINFO_SUPPORT //add by longcheer_liml_2017_04_05
+	dev_battery = (struct devinfo_struct*)kmalloc(sizeof(struct devinfo_struct), GFP_KERNEL);
+	dev_battery->device_type = "Battery";
+	dev_battery->device_vendor = DEVINFO_NULL;
+	dev_battery->device_ic = DEVINFO_NULL;
+	dev_battery->device_version = DEVINFO_NULL;
+#ifdef CONFIG_L3510_MAINBOARD
+	if(g_fg_battery_id==0)		
+	dev_battery->device_module = "Veken"; //0V
+	else if(g_fg_battery_id==1)	
+	dev_battery->device_module = "SCUD";//feimaotui 2.8V
+	else
+#else
+	if(g_fg_battery_id==0)		
+	dev_battery->device_module = "SCUD"; //1.14V
+	else if(g_fg_battery_id==1)	
+	dev_battery->device_module = "Veken";//weike 1.4V
+	else
+#endif
+	dev_battery->device_module = "ERROR";	
+	dev_battery->device_info = DEVINFO_NULL;
+	dev_battery->device_used = DEVINFO_USED;	
+	devinfo_check_add_device(dev_battery);
+	
+	printk("[DEVINFO battery]registe battery device! type:<%s> module:<%s> used<%s>\n",
+				dev_battery->device_type,dev_battery->device_module,dev_battery->device_used);
+#endif
 
 	return 0;
 }

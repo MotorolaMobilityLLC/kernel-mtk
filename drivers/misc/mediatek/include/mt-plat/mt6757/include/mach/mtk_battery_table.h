@@ -50,7 +50,7 @@ int g_Q_MAX_SYS_VOLTAGE[TOTAL_BATTERY_NUMBER] = { 3200, 3200, 3200, 3200};
 /* 0~0.5V for battery 0, 0.5~1V for battery 1*/
 /* 1~1.5V for battery 2, -1 for the last one (battery 3) */
 int g_battery_id_voltage[TOTAL_BATTERY_NUMBER] = {
-	1250, 2800, -1, -1};//500000, 1000000, 1500000 modify longcheer_liml 20170402
+	1250, 2900, -1, -1};//500000, 1000000, 1500000 modify longcheer_liml 20170402
 
 int g_FG_PSEUDO1_T0[TOTAL_BATTERY_NUMBER] = { 5, 6, 7, 8};
 int g_FG_PSEUDO1_T1[TOTAL_BATTERY_NUMBER] = { 9, 10, 11, 12};
