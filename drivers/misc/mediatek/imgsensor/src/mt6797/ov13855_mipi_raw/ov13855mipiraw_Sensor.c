@@ -773,7 +773,7 @@ kal_uint16 addr_data_pair_init[] =
     0x3682, 0x17,
     0x3683, 0xa9,
     0x3684, 0x9a,
-    0x3709, 0x68,
+    0x3709, 0x5f,
     0x371a, 0x3e,
     0x3738, 0xcc,
     0x373d, 0x26,
@@ -909,7 +909,10 @@ static void sensor_init(void)
 
 	write_cmos_sensor(0x0304, 0x00);
 	write_cmos_sensor(0x0305, 0x01);//PLL
-
+	write_cmos_sensor(0x0312, 0x11);// add for the change list of pll setting /12
+	write_cmos_sensor(0x030b, 0x06);// add for the change list of pll setting /12
+	write_cmos_sensor(0x030c, 0x02);// add for the change list of pll setting /12
+	write_cmos_sensor(0x030d, 0x88);// add for the change list of pll setting /12
 	write_cmos_sensor(0x3022, 0x01);
 	write_cmos_sensor(0x3013, 0x12);
 	write_cmos_sensor(0x3016, 0x72);//Pll
@@ -949,7 +952,7 @@ static void sensor_init(void)
 	write_cmos_sensor(0x3682, 0x17);
 	write_cmos_sensor(0x3683, 0xa9);
 	write_cmos_sensor(0x3684, 0x9a);
-	write_cmos_sensor(0x3709, 0x68);
+	write_cmos_sensor(0x3709, 0x5f);//0x68 change for the change list of pll setting /12
 	write_cmos_sensor(0x371a, 0x3e);
 	write_cmos_sensor(0x3738, 0xcc);
 	write_cmos_sensor(0x373d, 0x26);
