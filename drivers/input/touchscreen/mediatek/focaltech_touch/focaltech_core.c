@@ -518,9 +518,12 @@ static int fts_report_key(struct ts_event *data)
 			return -1;
 		}
 	}
-	if (data->au8_touch_event[i] == 0) {
-		CTP_DEBUG("[B]Key(%d, %d) DOWN!", data->au16_x[0],
-			  data->au16_y[0]);
+	if (data->au8_touch_event[i] == 0
+		|| data->au8_touch_event[i] == 2) {
+		if (data->au8_touch_event[i] == 0) {
+			CTP_DEBUG("[B]Key(%d, %d) DOWN!", data->au16_x[0],
+				 data->au16_y[0]);
+		}
 		tpd_button(data->au16_x[0], data->au16_y[0], 1);
 		FTS_DEBUG("[B]Key(%d, %d) DOWN!", data->au16_x[0],
 			  data->au16_y[0]);
