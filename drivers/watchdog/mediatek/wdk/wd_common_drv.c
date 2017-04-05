@@ -349,6 +349,8 @@ void kicker_cpu_bind(int cpu)
 
 void wk_cpu_update_bit_flag(int cpu, int plug_status)
 {
+	if(cpu == 8 || cpu == 9)
+		printk(KERN_EMERG "[WDK] wfq cpu=%d s=%d\n",cpu,plug_status);
 	if (1 == plug_status) {	/* plug on */
 		spin_lock(&lock);
 		cpus_kick_bit |= (1 << cpu);

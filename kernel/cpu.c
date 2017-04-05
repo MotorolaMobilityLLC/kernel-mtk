@@ -526,6 +526,8 @@ static int _cpu_down_profile(unsigned int cpu, int tasks_frozen, bool debug)
 int __ref cpu_down(unsigned int cpu)
 {
 	int err;
+	if(cpu == 8 || cpu == 9)
+		printk(KERN_EMERG "wfq cpudown:%d\n",cpu);
 
 #ifdef CONFIG_MTK_RAM_CONSOLE
 	aee_rr_rec_cpu_caller(get_cpu());
@@ -556,6 +558,8 @@ int __ref cpu_down(unsigned int cpu)
 
 out:
 	cpu_maps_update_done();
+	if(cpu == 8 || cpu == 9)
+		printk(KERN_EMERG "wfq cpudown:%d  s=%d-\n",cpu,err);
 	return err;
 }
 EXPORT_SYMBOL(cpu_down);
@@ -711,7 +715,8 @@ static int _cpu_up_profile(unsigned int cpu, int tasks_frozen, bool debug)
 int cpu_up(unsigned int cpu)
 {
 	int err = 0;
-
+    if(cpu == 8 || cpu == 9)
+		printk(KERN_EMERG "wfq cpuup:%d+\n",cpu);
 #ifdef CONFIG_MTK_RAM_CONSOLE
 	aee_rr_rec_cpu_caller(get_cpu());
 	put_cpu();
@@ -754,6 +759,8 @@ int cpu_up(unsigned int cpu)
 
 out:
 	cpu_maps_update_done();
+	if(cpu == 8 || cpu == 9)
+		printk(KERN_EMERG "wfq cpuup:%d s=%d-\n",cpu,err);
 	return err;
 }
 EXPORT_SYMBOL_GPL(cpu_up);
