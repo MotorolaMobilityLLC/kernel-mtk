@@ -8650,6 +8650,7 @@ extern char *g_flash_id_str;
 static u8 *emmc_spt_tab[][4] = {
 	{"150100514531334D42", "KMQE10013M_B318",		"Samsung",		"16G+2G"},
 	{"90014A484147346132", "H9TQ17ABJTBCUR_KUM",		"Hynix",		"16G+2G"},
+	{"150100514536334D42", "KMQE60013M_B318",		"Samsung",		"16G+2G"}, //tuwenzan@wind-mobi.com add at 20170405
 	{NULL}
 };
 int emmc_id_get(void)
