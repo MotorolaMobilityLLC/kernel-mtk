@@ -37,7 +37,7 @@ struct icm206xx_gyro_i2c_data {
 	s16			cali_sw[ICM206XX_AXIS_NUM+1];
 	s16			data[ICM206XX_AXIS_NUM+1];
 };
-bool power = false;
+bool power_gyro = false;
 
 static int icm206xx_gyro_init_flag =  -1;
 
@@ -929,14 +929,14 @@ static int icm206xx_gyro_enable_nodata(int en)
 	int res = 0;
 
 	if (1 == en)
-		power = true;
+		power_gyro = true;
 	else{
-		power = false;
+		power_gyro = false;
 		icm206xx_share_SetSampleRate(ICM206XX_SENSOR_TYPE_GYRO, 0, false);
 	}
 
-	res = icm206xx_share_EnableSensor(ICM206XX_SENSOR_TYPE_GYRO, power);
-	res = icm206xx_share_SetPowerMode(ICM206XX_SENSOR_TYPE_GYRO, power);
+	res = icm206xx_share_EnableSensor(ICM206XX_SENSOR_TYPE_GYRO, power_gyro);
+	res = icm206xx_share_SetPowerMode(ICM206XX_SENSOR_TYPE_GYRO, power_gyro);
 
 	if (res != ICM206XX_SUCCESS) {
 		GYRO_ERR("icm206xx_gyro_SetPowerMode fail!\n");
@@ -1131,7 +1131,7 @@ static int icm206xx_gyro_i2c_resume(struct i2c_client *client)
 	}
 
 	icm206xx_gyro_power(obj->hw, 1);
-	res = icm206xx_gyro_init_client(client, power);
+	res = icm206xx_gyro_init_client(client, power_gyro);
 	if (res) {
 		GYRO_ERR("initialize client fail!!\n");
 		return res;

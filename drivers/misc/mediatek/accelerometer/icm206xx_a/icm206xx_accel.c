@@ -51,7 +51,7 @@ static struct icm206xx_accel_i2c_data *obj_i2c_data;
 #ifdef ICM206XX_SELFTEST
 static char selftestRes[8] = { 0 };
 #endif
-bool power = false;
+bool power_acc = false;
 
 static int g_icm206xx_accel_sensitivity = ICM206XX_ACCEL_DEFAULT_SENSITIVITY;	/* +/-4G as Default */
 
@@ -1127,16 +1127,16 @@ static int icm206xx_accel_enable_nodata(int en)
 	int res = 0;
 
 	if (1 == en) {
-		power = true;
+		power_acc = true;
 
 	}
 	if (0 == en) {
-		power = false;
+		power_acc = false;
 		icm206xx_share_SetSampleRate(ICM206XX_SENSOR_TYPE_ACC, 0, false);
 	}
 
-	res = icm206xx_share_EnableSensor(ICM206XX_SENSOR_TYPE_ACC, power);
-	res = icm206xx_share_SetPowerMode(ICM206XX_SENSOR_TYPE_ACC, power);
+	res = icm206xx_share_EnableSensor(ICM206XX_SENSOR_TYPE_ACC, power_acc);
+	res = icm206xx_share_SetPowerMode(ICM206XX_SENSOR_TYPE_ACC, power_acc);
 
 	if (res != ICM206XX_SUCCESS) {
 		ACC_LOG("fail!\n");
@@ -1356,7 +1356,7 @@ static int icm206xx_accel_i2c_resume(struct i2c_client *client)
 	}
 
 	icm206xx_accel_power(obj->hw, 1);
-	res = icm206xx_accel_init_client(client, power);
+	res = icm206xx_accel_init_client(client, power_acc);
 
 	if (res) {
 		ACC_ERR("initialize client fail!!\n");
