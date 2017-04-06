@@ -465,13 +465,7 @@ static int hang_detect_thread(void *arg)
 						 "\nCRDISPATCH_KEY:SS Hang\n",
 						 "we triger Kernel API DB ");
 					msleep(30 * 1000);
-					
-					//Start, IKANGEROW-2631, lenovo, miaotao1, disable MTK Hang_Detect reboot
-					//This is a temp workaround to get more logs, See IKANGEROW-2631
-
-					//BUG();
-					
-					//End, IKANGEROW-2631, lenovo, miaotao1
+					BUG();
 				}
 			}
 
