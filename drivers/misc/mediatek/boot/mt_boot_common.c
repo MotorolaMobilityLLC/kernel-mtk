@@ -34,6 +34,9 @@
 #endif
 #include <linux/atomic.h>
 #include <mt-plat/mt_boot_common.h>
+/* add for proc/bootinfo,20170206 begin */
+#include <mt-plat/mtk_ram_console.h>
+/* add for proc/bootinfo,20170206 end */
 
 
 enum {
@@ -280,7 +283,15 @@ static int boot_info_proc_show(struct seq_file *p, void *v)
 	br_ptr = strstr(saved_command_line, "androidboot.bootreason=");
 	if (br_ptr != 0) {
 		sscanf(br_ptr, "androidboot.bootreason=%s ", boot_reason);
-		seq_printf(p, "%s\n", boot_reason);
+		/* defined in mtk_ram_console.c */
+		if (aee_rr_last_exp_type() == 1)
+			seq_printf(p, "%s\n", "hwt");
+		else if (aee_rr_last_exp_type() == 2)
+			seq_printf(p, "%s\n", "kernel_panic");
+		else if (aee_rr_last_exp_type() == 3)
+			seq_printf(p, "%s\n", "nested_panic");
+		else
+			seq_printf(p, "%s\n", boot_reason);
 	} else {
 		seq_puts(p, "Unknown reason !\n");
 	}
