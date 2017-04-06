@@ -261,6 +261,8 @@ static int iWriteData(unsigned int  ui4_offset, unsigned int  ui4_length, unsign
 unsigned int cat24c16_selective_read_region(struct i2c_client *client, unsigned int addr,
 	unsigned char *data, unsigned int size)
 {
+	if(client==NULL||data==NULL)
+	return 0;
 	g_pstI2Cclient = client;
 	if (selective_read_region(addr, data, g_pstI2Cclient->addr, size) == 0)
 		return size;
