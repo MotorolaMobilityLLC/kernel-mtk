@@ -39,7 +39,12 @@
 
 #include "flashlight.h"
 #include "flashlight-dt.h"
-
+  static unsigned int f_duty = 10;
+ module_param(f_duty,int,0644);
+   static unsigned int count = 8;
+ module_param(count,int,0644);
+    static unsigned int sleep = 50;
+ module_param(sleep,int,0644);
 /* define device tree */
 /* TODO: modify temp device tree name */
 #ifndef DUMMY_DTNAME
@@ -51,11 +56,15 @@
 
 /* define registers */
 /* TODO: define register */
-
+enum
+{
+	e_DutyNum = 16,
+};
+static int flashDuty[e_DutyNum]=     {16,15,14,13,12,11,10,9,8,7,6,5,4,3,2,1}; //lenovo.sw huangsh4 change for 1A flash current
 /* define mutex and work queue */
 static DEFINE_MUTEX(dummy_mutex);
 static struct work_struct dummy_work;
-
+static int g_duty=-1;
 /* define pinctrl */
 /* TODO: define pinctrl */
 #define DUMMY_PINCTRL_PIN_XXX 0
@@ -135,10 +144,20 @@ static int dummy_pinctrl_set(int pin, int state)
 static int dummy_enable(int level)
 {
 	int pin = 0;
-
+	int i =0;
+	for (i =1;i<=flashDuty[f_duty];i++)
+	{
+		//dummy_pinctrl_set(pin, 1);
+		udelay(count);
+		fl_dbg("Suny FL_enable flash i = %d ,g_duty=%d line=%d\n",i,g_duty,__LINE__);
+		 dummy_pinctrl_set(pin, 0);
+		  udelay(sleep);
+		 dummy_pinctrl_set(pin, 1);
+			}
+		fl_dbg("Suny FL_enable flash g_duty=%d line=%d\n",g_duty,__LINE__);
 	/* TODO: wrap enable function */
 
-	return dummy_pinctrl_set(pin, level);
+	return 0;
 }
 
 /* flashlight disable function */
@@ -157,7 +176,8 @@ static int dummy_set_level(int level)
 	int pin = 0, state = 0;
 
 	/* TODO: wrap set level function */
-
+	g_duty=level;
+	fl_dbg(" Suny FL_dim_duty=%d line=%d\n",level,__LINE__);
 	return dummy_pinctrl_set(pin, state);
 }
 
