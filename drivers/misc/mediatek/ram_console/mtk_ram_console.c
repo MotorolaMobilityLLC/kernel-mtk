@@ -739,6 +739,15 @@ unsigned int aee_rr_curr_exp_type(void)
 	return (exp_type ^ 0xaeedead0) < 16 ? exp_type ^ 0xaeedead0 : exp_type;
 }
 
+/* add for proc/bootinfo,20170407 begin */
+unsigned int aee_rr_last_exp_type(void)
+{
+	unsigned int exp_type = LAST_RRR_VAL(exp_type);
+
+	return (exp_type ^ 0xaeedead0) < 16 ? exp_type ^ 0xaeedead0 : exp_type;
+}
+/* add for proc/bootinfo,20170407 end */
+
 /* composite api */
 void aee_rr_rec_last_irq_enter(int cpu, int irq, u64 jiffies)
 {

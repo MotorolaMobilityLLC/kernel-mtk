@@ -72,6 +72,9 @@ extern void aee_rr_rec_hotplug_cb_fp(unsigned long val);
 #ifdef CONFIG_MTK_EMMC_SUPPORT
 extern void last_kmsg_store_to_emmc(void);
 #endif
+/* add for proc/bootinfo,20170407 begin */
+extern unsigned int aee_rr_last_exp_type(void);
+/* add for proc/bootinfo,20170407 end */
 
 #else
 static inline void aee_rr_rec_hotplug_footprint(int cpu, u8 fp)

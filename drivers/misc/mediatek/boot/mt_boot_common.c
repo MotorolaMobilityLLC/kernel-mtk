@@ -34,6 +34,9 @@
 #endif
 #include <linux/atomic.h>
 #include <mt-plat/mt_boot_common.h>
+/* add for proc/bootinfo,20170206 begin */
+#include <mt-plat/mtk_ram_console.h>
+/* add for proc/bootinfo,20170206 end */
 
 
 enum {
@@ -280,12 +283,54 @@ static const struct file_operations boot_mode_proc_fops = {
 	.release = single_release,
 };
 
+/* add for proc/bootinfo,20170206 begin */
+static int boot_info_proc_show(struct seq_file *p, void *v)
+{
+	char boot_reason[25];
+	char *br_ptr;
+
+	br_ptr = strstr(saved_command_line, "androidboot.bootreason=");
+	if (br_ptr != 0) {
+		sscanf(br_ptr, "androidboot.bootreason=%s ", boot_reason);
+		/* defined in mtk_ram_console.c */
+		if (aee_rr_last_exp_type() == 1)
+			seq_printf(p, "%s\n", "hwt");
+		else if (aee_rr_last_exp_type() == 2)
+			seq_printf(p, "%s\n", "kernel_panic");
+		else if (aee_rr_last_exp_type() == 3)
+			seq_printf(p, "%s\n", "nested_panic");
+		else
+			seq_printf(p, "%s\n", boot_reason);
+	} else {
+		seq_puts(p, "Unknown reason !\n");
+	}
+	return 0;
+}
+
+static int boot_info_proc_open(struct inode *inode, struct file *file)
+{
+	return single_open(file, boot_info_proc_show, NULL);
+}
+
+static const struct file_operations boot_info_proc_fops = {
+	.open = boot_info_proc_open,
+	.read = seq_read,
+	.llseek = seq_lseek,
+	.release = single_release,
+};
+/* add for proc/bootinfo,20170206 end */
+
 static int __init boot_common_core(void)
 {
 	init_boot_common(__LINE__);
 	/* create proc entry at /proc/boot_mode */
 	if (NULL == proc_create_data("boot_mode", S_IRUGO, NULL, &boot_mode_proc_fops, NULL))
 		pr_warn("create procfs fail");
+
+	/* create proc entry at /proc/bootinfo */
+	if (NULL == proc_create_data("bootinfo",
+				S_IRUGO, NULL, &boot_info_proc_fops, NULL))
+		pr_warn("create /proc/bootinfo procfs fail");
 
 	/* create sysfs entry at /sys/class/BOOT/BOOT/boot */
 	create_sysfs();
