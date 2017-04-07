@@ -4,11 +4,11 @@ $(info "CONFIG_MICROTRUST_VFS_DRIVER=$(CONFIG_MICROTRUST_VFS_DRIVER)")
 $(info "CONFIG_MICROTRUST_FP_DRIVER=$(CONFIG_MICROTRUST_FP_DRIVER)")
 $(info "CONFIG_MICROTRUST_KEYMASTER_DRIVER=$(CONFIG_MICROTRUST_KEYMASTER_DRIVER)")
 
+
 subdir-ccflags-y  += -I$(srctree)/drivers/misc/mediatek/teei/V1.0/common/include
 ifneq (,$(filter userdebug eng,$(TARGET_BUILD_VARIANT)))
 subdir-ccflags-y  += -DCONFIG_MICROTRUST_DEBUG
 endif
-
 obj-$(CONFIG_MICROTRUST_TZ_DRIVER) += tz_driver/
 obj-$(CONFIG_MICROTRUST_VFS_DRIVER) += tz_vfs/
 obj-$(CONFIG_MICROTRUST_FP_DRIVER) += teei_fp/
