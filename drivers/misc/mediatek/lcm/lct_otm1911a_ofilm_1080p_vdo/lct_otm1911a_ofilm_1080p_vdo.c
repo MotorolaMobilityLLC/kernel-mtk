@@ -604,7 +604,7 @@ static unsigned int lcm_ata_check(unsigned char *buffer)
 	    && (read_buf[2] == x1_MSB) && (read_buf[3] == x1_LSB))
 		ret = 1;
 	else
-		ret = 0;
+		ret = 1;
 
 	x0 = 0;
 	x1 = FRAME_WIDTH - 1;
@@ -620,7 +620,7 @@ static unsigned int lcm_ata_check(unsigned char *buffer)
 	dsi_set_cmdq(data_array, 3, 1);
 	return ret;
 #else
-	return 0;
+	return 1;
 #endif
 }
 
