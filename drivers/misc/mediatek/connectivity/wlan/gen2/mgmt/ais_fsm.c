@@ -2098,6 +2098,10 @@ VOID aisFsmRunEventAbort(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHdr)
 			aisFsmIsRequestPending(prAdapter, AIS_REQUEST_ROAMING_SEARCH, TRUE);
 			aisFsmIsRequestPending(prAdapter, AIS_REQUEST_ROAMING_CONNECT, TRUE);
 			aisFsmInsertRequest(prAdapter, AIS_REQUEST_ROAMING_CONNECT);
+			/*lenovo-sw liuwj11 IKANGEROW-3294 2017.4.7*/
+			if(prAisFsmInfo->eCurrentState == AIS_STATE_IDLE)
+				aisFsmSteps(prAdapter, AIS_STATE_IDLE);
+
 		}
 		return;
 	}
