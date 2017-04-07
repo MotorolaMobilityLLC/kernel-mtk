@@ -39,7 +39,7 @@
 
 #include "flashlight.h"
 #include "flashlight-dt.h"
-  static unsigned int f_duty = 10;
+  static unsigned int f_duty = 7;  //modify lct tianyaping 100mA 20170407
  module_param(f_duty,int,0644);
    static unsigned int count = 8;
  module_param(count,int,0644);
