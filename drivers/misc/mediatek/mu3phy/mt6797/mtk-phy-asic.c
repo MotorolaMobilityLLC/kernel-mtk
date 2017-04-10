@@ -491,6 +491,7 @@ bool usb_phy_sib_enable_switch_status(void)
 }
 #endif
 
+#define MTK_USB_MODE1
 
 /*This "power on/initial" sequence refer to "6593_USB_PORT0_PWR Sequence 20130729.xls"*/
 PHY_INT32 phy_init_soc(struct u3phy_info *info)
@@ -585,6 +586,10 @@ PHY_INT32 phy_init_soc(struct u3phy_info *info)
 	/*Pass RX sensitivity HQA requirement */
 	U3PhyWriteField32((phys_addr_t) U3D_USBPHYACR6, RG_USB20_SQTH_OFST, RG_USB20_SQTH, 0x2);
 #else
+	U3PhyWriteField32((phys_addr_t) U3D_USBPHYACR1, RG_USB20_VRT_VREF_SEL_OFST,
+			  RG_USB20_VRT_VREF_SEL, 7);
+	U3PhyWriteField32((phys_addr_t) U3D_USBPHYACR1, RG_USB20_TERM_VREF_SEL_OFST,
+			  RG_USB20_TERM_VREF_SEL, 7);
 	/*switch to USB function. (system register, force ip into usb mode) */
 	U3PhyWriteField32((phys_addr_t) U3D_U2PHYDTM0, FORCE_UART_EN_OFST, FORCE_UART_EN, 0);
 	U3PhyWriteField32((phys_addr_t) U3D_U2PHYDTM1, RG_UART_EN_OFST, RG_UART_EN, 0);
