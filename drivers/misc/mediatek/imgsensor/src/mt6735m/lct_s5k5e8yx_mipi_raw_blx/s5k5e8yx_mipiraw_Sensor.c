@@ -151,9 +151,9 @@ static imgsensor_info_struct imgsensor_info = {
 	.ihdr_le_firstline = 0,  //1,le first ; 0, se first
 	.sensor_mode_num = 7,	  //support sensor mode num
 
-	.cap_delay_frame = 3, 
-	.pre_delay_frame = 3, 
-	.video_delay_frame = 3,
+	.cap_delay_frame = 1, 
+	.pre_delay_frame = 1, 
+	.video_delay_frame = 1,
 	.hs_video_delay_frame = 3,
 	.slim_video_delay_frame = 3,
 
@@ -165,6 +165,7 @@ static imgsensor_info_struct imgsensor_info = {
 	.mclk = 26,
 	.mipi_lane_num = SENSOR_MIPI_2_LANE,
 	.i2c_addr_table = {0x20, 0x5a,0xff},
+	.i2c_speed=400,
 };
 
 
@@ -199,6 +200,7 @@ static kal_uint16 read_cmos_sensor(kal_uint32 addr)
 	kal_uint16 get_byte=0;
 
 	char pu_send_cmd[2] = {(char)(addr >> 8), (char)(addr & 0xFF) };
+	kdSetI2CSpeed(imgsensor_info.i2c_speed);
 	iReadRegI2C(pu_send_cmd, 2, (u8*)&get_byte, 1, imgsensor.i2c_write_id);
 
 	return get_byte;
@@ -206,12 +208,14 @@ static kal_uint16 read_cmos_sensor(kal_uint32 addr)
 static void write_cmos_sensor(kal_uint32 addr, kal_uint32 para)
 {
 	char pu_send_cmd[3] = {(char)(addr >> 8), (char)(addr & 0xFF), (char)(para & 0xFF)};
+	kdSetI2CSpeed(imgsensor_info.i2c_speed);
 	iWriteRegI2C(pu_send_cmd, 3, imgsensor.i2c_write_id);
 }
 
 static void write_cmos_sensor_8(kal_uint16 addr, kal_uint8 para)
 {
 	char pusendcmd[4] = {(char)(addr >> 8) , (char)(addr & 0xFF) ,(char)(para & 0xFF)};
+	kdSetI2CSpeed(imgsensor_info.i2c_speed);
 	iWriteRegI2C(pusendcmd , 3, imgsensor.i2c_write_id);
 }
 
@@ -1056,7 +1060,7 @@ static void capture_setting(kal_uint16 currefps)
 		write_cmos_sensor(0x0100,0x00);
 		//write_cmos_sensor(0x3C16,0x01);//Streaming off (revised on 07.30)
 		//Delay 1 frame	  
-		mDELAY(42); 
+		mDELAY(33); 
 		write_cmos_sensor(0x0136,0x18);
 		write_cmos_sensor(0x0137,0x00);
 		write_cmos_sensor(0x0305,0x06);
@@ -1134,7 +1138,7 @@ static void capture_setting(kal_uint16 currefps)
 		write_cmos_sensor(0x0100,0x00);
 		//write_cmos_sensor(0x3C16,0x01);//Streaming off (revised on 07.30)
 		//Delay 1 frame 
-		mDELAY(42); 
+		mDELAY(33); 
 		write_cmos_sensor(0x0136,0x18);
 		write_cmos_sensor(0x0137,0x00);
 		write_cmos_sensor(0x0305,0x06);
@@ -1377,7 +1381,7 @@ static void hs_video_setting(void)
 	// streaming OFF
 	write_cmos_sensor(0x0100,0x00);
 	//Delay 1 frame  
-	mDELAY(83);
+	mDELAY(33);
 	write_cmos_sensor(0x0136,0x18);
 	write_cmos_sensor(0x0137,0x00);
 	write_cmos_sensor(0x0305,0x06);
