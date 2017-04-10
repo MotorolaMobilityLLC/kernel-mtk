@@ -264,9 +264,9 @@ static imgsensor_info_struct imgsensor_info = {
 	.ihdr_le_firstline = 0,  //1,le first ; 0, se first
 	.sensor_mode_num = 3,	  //support sensor mode num ,don't support Slow motion
 	
-	.cap_delay_frame = 3,		//enter capture delay frame num
-	.pre_delay_frame = 3, 		//enter preview delay frame num
-	.video_delay_frame = 3,		//enter video delay frame num
+	.cap_delay_frame = 2,		//enter capture delay frame num
+	.pre_delay_frame = 2, 		//enter preview delay frame num
+	.video_delay_frame = 2,		//enter video delay frame num
 	.hs_video_delay_frame = 3,	//enter high speed video  delay frame num
 	.slim_video_delay_frame = 3,//enter slim video delay frame num
     .custom1_delay_frame = 2,
@@ -283,7 +283,7 @@ static imgsensor_info_struct imgsensor_info = {
 	.mclk = 24,//mclk value, suggest 24 or 26 for 24Mhz or 26Mhz
 	.mipi_lane_num = SENSOR_MIPI_2_LANE,//mipi lane num
 	.i2c_addr_table = {0x40,0x50,0xff},//record sensor support all write id addr, only supprt 4must end with 0xff
-    .i2c_speed = 300, // i2c read/write speed
+    .i2c_speed = 400, // i2c read/write speed
 };
 
 
@@ -1651,6 +1651,7 @@ static kal_uint32 preview(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 	spin_unlock(&imgsensor_drv_lock);
 	preview_setting();
 	//set_mirror_flip(IMAGE_NORMAL);	
+	#if 0
 	mdelay(10);
 	#ifdef FANPENGTAO
 	int i=0;
@@ -1658,6 +1659,7 @@ static kal_uint32 preview(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 		LOG_INF("delay time = %d, the frame no = %d\n", i*10, read_cmos_sensor(0x0005));
 		mdelay(10);
 	}
+	#endif
 	#endif
 	return ERROR_NONE;
 }	/*	preview   */
@@ -1712,7 +1714,7 @@ static kal_uint32 capture(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 	spin_unlock(&imgsensor_drv_lock);
 	capture_setting(imgsensor.current_fps); 
 	//set_mirror_flip(IMAGE_NORMAL);	
-	mdelay(10);
+	mdelay(5);
 
 #if 0
 	if(imgsensor.test_pattern == KAL_TRUE)

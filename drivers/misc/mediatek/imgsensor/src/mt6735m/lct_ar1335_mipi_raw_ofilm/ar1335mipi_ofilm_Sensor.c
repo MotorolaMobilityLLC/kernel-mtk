@@ -152,6 +152,7 @@ static imgsensor_info_struct imgsensor_info = {
 	.mipi_lane_num = SENSOR_MIPI_4_LANE,//mipi lane num
 	//    .i2c_addr_table = {0x6c, 0x6E, 0xff},//record sensor support all write id addr, only supprt 4must end with 0xff
 	.i2c_addr_table = {0x6c,0xff},//record sensor support all write id addr, only supprt 4must end with 0xff
+	.i2c_speed=400,
 };
 
 
@@ -185,6 +186,7 @@ static kal_uint16 read_cmos_sensor(kal_uint32 addr)
 	kal_uint16 get_byte=0;
 
 	char pu_send_cmd[2] = {(char)(addr >> 8), (char)(addr & 0xFF) };
+	kdSetI2CSpeed(imgsensor_info.i2c_speed);
 	iReadRegI2C(pu_send_cmd, 2, (u8*)&get_byte, 1, imgsensor.i2c_write_id);
 
 	return get_byte;
@@ -192,12 +194,14 @@ static kal_uint16 read_cmos_sensor(kal_uint32 addr)
 static void write_cmos_sensor(kal_uint32 addr, kal_uint32 para)
 {
 	char pu_send_cmd[3] = {(char)(addr >> 8), (char)(addr & 0xFF), (char)(para & 0xFF)};
+	kdSetI2CSpeed(imgsensor_info.i2c_speed);
 	iWriteRegI2C(pu_send_cmd, 3, imgsensor.i2c_write_id);
 }
 
 static void write_cmos_sensor_2byte(kal_uint32 addr, kal_uint32 para)
 {
 	char pu_send_cmd[4] = {(char)(addr >> 8), (char)(addr & 0xFF), (char)(para >> 8), (char)(para & 0xFF)};
+	kdSetI2CSpeed(imgsensor_info.i2c_speed);
 	iWriteRegI2C(pu_send_cmd, 4, imgsensor.i2c_write_id);
 }
 #ifdef OPEN_OTP_DEBUG
@@ -206,6 +210,7 @@ static kal_uint16 Read_cmos_sensor_2byte(kal_uint32 addr)
 	kal_uint16 get_byte=0;
 	kal_uint16 tmp = 0;
 	char pu_send_cmd[2] = {(char)(addr >> 8), (char)(addr & 0xFF) };
+	kdSetI2CSpeed(imgsensor_info.i2c_speed);
 	iReadRegI2C(pu_send_cmd, 2, (u8*)&get_byte, 2, 0x6c);
 	tmp = get_byte >> 8;
 	get_byte = ((get_byte & 0x00ff) << 8) | tmp; 
@@ -608,6 +613,7 @@ static kal_uint16 Read_cmos_sensor(kal_uint32 addr)
 	kal_uint16 get_byte=0;
 
 	char pu_send_cmd[2] = {(char)(addr >> 8), (char)(addr & 0xFF) };
+	kdSetI2CSpeed(imgsensor_info.i2c_speed);
 	iReadRegI2C(pu_send_cmd, 2, (u8*)&get_byte, 1, 0xB0);
 
 	return get_byte;
@@ -739,7 +745,7 @@ static void sensor_init(void)
 	  */
 
 	write_cmos_sensor(0x0103, 0x01); 	// SOFTWARE_RESET     8bit
-	mDELAY(20);
+	mDELAY(5);
 	////corrections_recommended in here
 	write_cmos_sensor_2byte(0x3042, 0x1004); 	// DARK_CONTROL2
 	write_cmos_sensor_2byte(0x30D2, 0x0120); 	// CRM_CONTROL
@@ -1087,7 +1093,7 @@ static void preview_setting(void)
 	write_cmos_sensor_2byte(0x3FE0, 0x0001);
 	write_cmos_sensor(0x0100, 0x00);      //mode_select	  8-bit			
 	write_cmos_sensor_2byte(0x3FE0, 0x0000);
-	mDELAY(20);
+	mDELAY(5);
 	////vt_clk = 512mhz, dada rate 1020mhz
 	write_cmos_sensor_2byte(0x0300, 0x0005); 	// VT_PIX_CLK_DIV  0x0004
 	write_cmos_sensor_2byte(0x0302, 0x0001); 	// VT_SYS_CLK_DIV
@@ -1124,7 +1130,7 @@ static void preview_setting(void)
 
 	write_cmos_sensor_2byte(0x3F3C, 0x0003);
 	write_cmos_sensor(0x0100, 0x01);      //bit 8//mode_select  8-bit
-	mDELAY(20);
+	mDELAY(5);
 	if(OTP_KEY)	
 	{	
 		write_cmos_sensor(0x3780,0x80);
@@ -1142,7 +1148,7 @@ static void capture_setting(kal_uint16 currefps)
             write_cmos_sensor_2byte(0x3FE0,0x0001);
             write_cmos_sensor(0x0100, 0x00);
             write_cmos_sensor_2byte(0x3FE0,0x0000);
-	    mDELAY(20);
+	    mDELAY(5);
             write_cmos_sensor_2byte(0x0300,0x0005); 
             write_cmos_sensor_2byte(0x0302,0x0001); 
             write_cmos_sensor_2byte(0x0304,0x0403); //170313:0x0404
@@ -1177,7 +1183,7 @@ static void capture_setting(kal_uint16 currefps)
             write_cmos_sensor_2byte(0x31AE,0x0204); 
             write_cmos_sensor_2byte(0x3F3C,0x0003);
             write_cmos_sensor(0x0100,0x01);  
-            mDELAY(20);
+            mDELAY(5);
 	if(OTP_KEY)
 	{
 		write_cmos_sensor(0x3780,0x80);
@@ -1198,7 +1204,7 @@ static void normal_video_setting(kal_uint16 currefps)
 	write_cmos_sensor_2byte(0x3FE0, 0x0001);
 	write_cmos_sensor(0x0100, 0x00); //mode_select															
 	write_cmos_sensor_2byte(0x3FE0, 0x0000);
-	mDELAY(20);
+	mDELAY(5);
 
 	//1080p_array_setup_3840_2160_Ybin2_Xscale2
 	////vt_clk = 440mhz, dada rate 880mhz
@@ -1237,7 +1243,7 @@ static void normal_video_setting(kal_uint16 currefps)
 
 	write_cmos_sensor_2byte(0x3F3C, 0x0003);
 	write_cmos_sensor(0x0100, 0x01);		//bit 8//mode_select  8-bit
-	mDELAY(20);
+	mDELAY(5);
 	//msleep(50);
 
 
@@ -1251,7 +1257,7 @@ static void hs_video_setting(void)
 	write_cmos_sensor_2byte(0x3FE0, 0x0001);
 	write_cmos_sensor(0x0100, 0x00  );   //mode_select	 8-bit			
 	write_cmos_sensor_2byte(0x3FE0, 0x0000);
-	mDELAY(20);
+	mDELAY(5);
 	//720p_array_setup_3840_2160_Yskip3_XScale3
 	////vt_clk = 440mhz, dada rate 880mhz
 	write_cmos_sensor_2byte(0x0300, 0x0004);	// VT_PIX_CLK_DIV
@@ -1288,7 +1294,7 @@ static void hs_video_setting(void)
 
 	write_cmos_sensor_2byte(0x3F3C, 0x0003);
 	write_cmos_sensor(0x0100, 0x01 	);		//bit 8//mode_select  8-bit
-	mDELAY(20);
+	mDELAY(5);
 
 	//msleep(100);
 }
@@ -1301,7 +1307,7 @@ static void slim_video_setting(void)
 	write_cmos_sensor_2byte(0x3FE0, 0x0001);
 	write_cmos_sensor(0x0100, 0x00);      //mode_select	  8-bit			
 	write_cmos_sensor_2byte(0x3FE0, 0x0000);
-	mDELAY(20);
+	mDELAY(5);
 	////vt_clk = 440mhz, dada rate 880mhz
 	write_cmos_sensor_2byte(0x0300, 0x0004); 	// VT_PIX_CLK_DIV
 	write_cmos_sensor_2byte(0x0302, 0x0001); 	// VT_SYS_CLK_DIV
@@ -1338,7 +1344,7 @@ static void slim_video_setting(void)
 
 	write_cmos_sensor_2byte(0x3F3C, 0x0003);
 	write_cmos_sensor(0x0100, 0x01);      //bit 8//mode_select  8-bit
-	mDELAY(20);	
+	mDELAY(5);	
 }
 
 static kal_uint32 set_test_pattern_mode(kal_bool enable)
