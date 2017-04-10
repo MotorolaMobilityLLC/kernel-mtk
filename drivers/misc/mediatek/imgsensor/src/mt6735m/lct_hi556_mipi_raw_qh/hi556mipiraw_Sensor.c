@@ -698,7 +698,7 @@ static int HI556_otp_read(void)
 		write_cmos_sensor_byte(0x102, 0x01);	//single mode
 		for (i = 0; i < 20; i++) {
 			HI556_otp.info_data[i] = read_cmos_sensor_byte(0x108); //otp data read
-			LOG_INF("guoameng-HI556 info_data[%d] = 0x%x \n ", i, HI556_otp.info_data[i]);
+			//LOG_INF("guoameng-HI556 info_data[%d] = 0x%x \n ", i, HI556_otp.info_data[i]);
 		}
 	}
 
@@ -739,7 +739,7 @@ LOG_INF("guoameng-HI556 wb_start_addr = 0x%x \n", wb_start_addr);
 		write_cmos_sensor_byte(0x102, 0x01);	//single mode
 		for (i = 0; i < 13; i++) {
 			HI556_otp.wb_data[i] = read_cmos_sensor_byte(0x108);	//otp data read
-			LOG_INF("guoameng-wb_data[%d] = 0x%x \n ", i, HI556_otp.wb_data[i]);
+			//LOG_INF("guoameng-wb_data[%d] = 0x%x \n ", i, HI556_otp.wb_data[i]);
 		}
 	}
 	
@@ -841,7 +841,7 @@ static int hi556_otp_lsc_read(void)
 		write_cmos_sensor_byte(0x102, 0x01);	//single mode
 		for (i = 0; i < 1869; i++) {
 			hi556_otp.lsc_data[i] = read_cmos_sensor_byte(0x108);	//otp data read
-			printk("HI556 lsc_data[%d] = 0x%x\n", i, hi556_otp.lsc_data[i]);
+			//printk("HI556 lsc_data[%d] = 0x%x\n", i, hi556_otp.lsc_data[i]);
 			checksum_lsc += hi556_otp.lsc_data[i];
 		}
 

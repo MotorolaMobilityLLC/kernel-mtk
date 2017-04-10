@@ -2604,7 +2604,7 @@ static int hi553_otp_read(void)
 		write_cmos_sensor_byte(0x102, 0x01);	//single mode
 		for (i = 0; i < 30; i++) {
 			hi553_otp.wb_data[i] = read_cmos_sensor_byte(0x108);	//otp data read
-			LOG_INF("HI553 wb_data[%d] = 0x%x  ", i, hi553_otp.wb_data[i]);
+			//LOG_INF("HI553 wb_data[%d] = 0x%x  ", i, hi553_otp.wb_data[i]);
 		}
 	}
 
@@ -2623,7 +2623,7 @@ static int hi553_otp_read(void)
 		write_cmos_sensor_byte(0x102, 0x01);	//single mode
 		for (i = 0; i < 965; i++) {
 			hi553_otp.lsc_data[i] = read_cmos_sensor_byte(0x108);	//otp data read
-			printk("HI553 lsc_data[%d] = 0x%x\n", i, hi553_otp.lsc_data[i]);
+			//printk("HI553 lsc_data[%d] = 0x%x\n", i, hi553_otp.lsc_data[i]);
 			checksum_lsc += hi553_otp.lsc_data[i];
 		}
 
