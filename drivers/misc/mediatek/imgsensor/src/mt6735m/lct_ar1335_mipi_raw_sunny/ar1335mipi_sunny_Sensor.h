@@ -113,6 +113,7 @@ typedef struct imgsensor_info_struct {
 
     kal_uint8  mipi_lane_num;        //mipi lane num
     kal_uint8  i2c_addr_table[5];    //record sensor support all write id addr, only supprt 4must end with 0xff
+    kal_uint32  i2c_speed;  
 } imgsensor_info_struct;
 
 /* SENSOR READ/WRITE ID */
@@ -125,6 +126,8 @@ extern int iReadRegI2C(u8 *a_pSendData , u16 a_sizeSendData, u8 * a_pRecvData, u
 extern int iWriteRegI2C(u8 *a_pSendData , u16 a_sizeSendData, u16 i2cId);
 extern void AR1335_OTP_AUTO_LOAD_LSC(void);
 extern int Sunwin_AR1335_read_OTP(void);
+extern void kdSetI2CSpeed(u16 i2cSpeed);
+
 //extern OTP_AWB_VALUE g_AWB_Value;
 //extern u8 OTP_KEY;
 #endif
