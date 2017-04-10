@@ -657,7 +657,7 @@ int Read_And_Write_Lsc_Otp_Value_SUNNY(void)
 	j = 0;
 	i = 0;
 	for(i = 0;i < 20;i++){
-		LOG_INF("read-hl[%d] = %x\n",i,Read_cmos_sensor_2byte(0x3600 + j));
+		//LOG_INF("read-hl[%d] = %x\n",i,Read_cmos_sensor_2byte(0x3600 + j));
 		j += 2;
 	}
 #endif
