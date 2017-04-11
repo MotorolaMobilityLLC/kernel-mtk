@@ -241,7 +241,7 @@
 	tpd-resolution = <1080 1920>;
 	use-tpd-button = <1>;
 	tpd-key-num = <3>;
-	tpd-key-local= <139 172 158 0>;
+	tpd-key-local= <580 172 158 0>;
 	tpd-key-dim-local = <920 2100 100 40 540 2100 100 40 160 2100 100 40 0 0 0 0>;
 	tpd-max-touch-num = <5>;
 	tpd-filter-enable = <1>;
