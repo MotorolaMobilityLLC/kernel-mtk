@@ -78,6 +78,7 @@ static DEFINE_MUTEX(consumer_mutex);
 /*====running test add by longcheer_liml_2017_03_04_start======*/
 #if defined(CONFIG_LCT_CHR_LIMIT_MAX_SOC) 
 extern int battery_test_status;
+extern int runin_flag;
 #endif
 
 #ifdef  CONFIG_LCT_CHR_ALT_TEST_SUPPORT  //add by longcheer_liml_2017_03_10
@@ -1212,10 +1213,10 @@ static void mt_battery_runin_test(struct charger_manager *info)
 {
     int soc =0;
     struct switch_charging_alg_data *swchgalg = info->algorithm_data;
-    soc =battery_get_bat_uisoc();
- 
-    if(battery_test_status == 1)
+    
+    if((battery_test_status == 1)&&(runin_flag ==0))
 	{
+	    soc =battery_get_bat_uisoc();
 		if(soc >=80)
 		{
 			swchgalg->state = CHR_ERROR;
@@ -1226,13 +1227,14 @@ static void mt_battery_runin_test(struct charger_manager *info)
             swchgalg->state = CHR_CC;
             charger_manager_notifier(info, CHARGER_NOTIFY_START_CHARGING);
             charger_dev_enable_powerpath(info->chg1_dev, 1);
-		}
-	}else
+		} 
+	}else if((battery_test_status == 0)&&(runin_flag ==1)&&(swchgalg->state != CHR_BATFULL))
 	{
+	    swchgalg->state = CHR_CC;
 	    charger_dev_enable_powerpath(info->chg1_dev, 1);
 	    charger_manager_notifier(info,CHARGER_NOTIFY_NORMAL);
 	}
-	printk("~~liml_charger battery_test_status=%d,soc=%d\n",battery_test_status,soc);    
+	printk("~~liml_charger battery_test_status=%d,runin_flag=%d,soc=%d\n",battery_test_status,runin_flag,soc);    
 }
 #endif
 
