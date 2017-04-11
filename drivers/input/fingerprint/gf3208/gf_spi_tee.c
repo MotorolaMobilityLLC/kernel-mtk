@@ -121,6 +121,8 @@ static int pid = 0;
 
 static u8 g_vendor_id = 0;
 
+static int g_chip_id = 0;
+
 static ssize_t gf_debug_show(struct device *dev,
 			struct device_attribute *attr, char *buf);
 
@@ -166,6 +168,29 @@ const struct mt_chip_conf spi_ctrdata = {
 	.tckdly = 0,
 };
 
+//LCSH TQQ add 
+
+static ssize_t show_chip_id(struct device *dev, struct device_attribute *attr, char *buf)
+{
+	return sprintf(buf, "0x%x\n", g_chip_id);
+}
+
+static ssize_t store_chip_id(struct device *dev,struct device_attribute *attr, const char *buf,size_t size)
+{
+	return size;
+}
+static DEVICE_ATTR(fingerprint_id, 0664, show_chip_id,store_chip_id);
+
+static struct attribute *fingerprint_class_attrs[] = {
+	&dev_attr_fingerprint_id.attr,
+	NULL,
+};
+
+static const struct attribute_group fingerprint_group = {
+	.attrs = fingerprint_class_attrs,
+};
+
+//end
 
 /* -------------------------------------------------------------------- */
 /* timer function								*/
@@ -778,8 +803,10 @@ static long gf_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 			break;
 		}
 		g_vendor_id = info.vendor_id;
+		g_chip_id = info.chip_id;
 
 		gf_debug(INFO_LOG, "%s: vendor_id 0x%x\n", __func__, g_vendor_id);
+		gf_debug(INFO_LOG, "%s: chip_id 0x%x\n", __func__, g_chip_id);
 		gf_debug(INFO_LOG, "%s: mode 0x%x\n", __func__, info.mode);
 		gf_debug(INFO_LOG, "%s: operation 0x%x\n", __func__, info.operation);
 		break;
@@ -883,11 +910,13 @@ static long gf_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 
 		switch (nav_event) {
 		    case GF_NAV_FINGER_DOWN:
-		    gf_debug(ERR_LOG, "nav finger down");
+		    nav_input = GF_NAV_INPUT_FINGER_DOWN;
+		    gf_debug(ERR_LOG, "nav finger down\n");
 			break;
 
 		    case GF_NAV_FINGER_UP:
-		    gf_debug(ERR_LOG, "nav finger up");
+		    nav_input = GF_NAV_INPUT_FINGER_UP;
+		    gf_debug(ERR_LOG, "nav finger up\n");
 			break;
 
 		    case GF_NAV_DOWN:
@@ -932,12 +961,12 @@ static long gf_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 			break;
 		}
 
-		if ((nav_event != GF_NAV_FINGER_DOWN) && (nav_event != GF_NAV_FINGER_UP)) {
+		//if ((nav_event != GF_NAV_FINGER_DOWN) && (nav_event != GF_NAV_FINGER_UP)) {
 		    input_report_key(gf_dev->input, nav_input, 1);
 		    input_sync(gf_dev->input);
 		    input_report_key(gf_dev->input, nav_input, 0);
 		    input_sync(gf_dev->input);
-		}
+		//}
 		break;
 
 	case GF_IOC_ENTER_SLEEP_MODE:
@@ -1661,6 +1690,7 @@ static int gf_probe(struct spi_device *spi)
 {
 	struct gf_device *gf_dev = NULL;
 	int status = -EINVAL;
+	int status_fp;
 
 	FUNC_ENTRY();
 
@@ -1826,12 +1856,22 @@ static int gf_probe(struct spi_device *spi)
 	__set_bit(GF_NAV_INPUT_DOUBLE_CLICK, gf_dev->input->keybit);
 	__set_bit(GF_NAV_INPUT_LONG_PRESS, gf_dev->input->keybit);
 	__set_bit(GF_NAV_INPUT_HEAVY, gf_dev->input->keybit);
+	__set_bit(GF_NAV_INPUT_FINGER_UP, gf_dev->input->keybit);
+	__set_bit(GF_NAV_INPUT_FINGER_DOWN, gf_dev->input->keybit);
 
 	gf_dev->input->name = GF_INPUT_NAME;
 	if (input_register_device(gf_dev->input)) {
 		gf_debug(ERR_LOG, "%s, Failed to register input device.\n", __func__);
 		status = -ENODEV;
 		goto err_input_2;
+	}
+
+
+/* create sysfs */
+	status_fp = sysfs_create_group(&spi->dev.kobj, &fingerprint_group);
+	if (status_fp) {
+		status_fp = -ENODEV;
+	} else {
 	}
 
 	/* netlink interface init */
