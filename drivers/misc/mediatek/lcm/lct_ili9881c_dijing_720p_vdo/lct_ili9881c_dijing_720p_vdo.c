@@ -33,7 +33,7 @@
 #endif
 
 
-
+extern  unsigned int esd_backlight_level;
 static const unsigned int BL_MIN_LEVEL = 20;
 static LCM_UTIL_FUNCS lcm_util;
 
@@ -98,18 +98,6 @@ static const unsigned char LCD_MODULE_ID = 0x01;
 #define FALSE 0
 #endif
 
-/* add by lct wangjiaxing for hbm 20170302 start */
-#define LCT_LCM_MAPP_BACKLIGHT	  1
-#ifdef CONFIG_LCT_CABC_MODE_SUPPORT
-extern int cabc_mode_mode;
-#define CABC_MODE_SETTING_UI	1
-#define CABC_MODE_SETTING_MV	2
-#define CABC_MODE_SETTING_DIS	3
-#define CABC_MODE_SETTING_NULL	0
-//static int reg_mode = 0;
-#endif
-/* add by lct wangjiaxing for hbm 20170302 end */
-
 struct LCM_setting_table {
 	unsigned int cmd;
 	unsigned char count;
@@ -125,52 +113,29 @@ static struct LCM_setting_table lcm_suspend_setting[] = {
 	{REGFLAG_DELAY, 120, {} }
 };
 
-/* add by lct wangjiaxing for hbm 20170302 start */
-static struct LCM_setting_table lcm_setting_ui[] = {
-{0xFF,3,{0x98,0x81,0x00}},
-{0x53,1,{0x24}},
-{0x55,1,{0x01}},
-{REGFLAG_END_OF_TABLE, 0x00, {}}
-};
-
-static struct LCM_setting_table lcm_setting_dis[] = {
-{0xFF,3,{0x98,0x81,0x00}},
-{0x53,1,{0x24}},
-{0x55,1,{0x00}},
-{REGFLAG_END_OF_TABLE, 0x00, {}}
-};
-
-static struct LCM_setting_table lcm_setting_mv[] = {
-{0xFF,3,{0x98,0x81,0x00}},
-{0x53,1,{0x2c}},
-{0x55,1,{0x03}},
-{REGFLAG_END_OF_TABLE, 0x00, {}}
-};
-/* add by lct wangjiaxing for hbm 20170302 end */
-
 static struct LCM_setting_table lcm_initialization_setting[] = {
 
 {0xFF,3,{0x98,0x81,0x03}},
 //GIP_1
 {0x01,1,{0x00}},
 {0x02,1,{0x00}},
-{0x03,1,{0x73}},
-{0x04,1,{0x00}},
-{0x05,1,{0x00}},
-{0x06,1,{0x08}},
-{0x07,1,{0x00}},
-{0x08,1,{0x00}},
-{0x09,1,{0x1B}},
-{0x0a,1,{0x01}},
-{0x0b,1,{0x01}},
-{0x0c,1,{0x0D}},
-{0x0d,1,{0x01}},
-{0x0e,1,{0x01}},
-{0x0f,1,{0x26}},
-{0x10,1,{0x26}},
+{0x03,1,{0x53}},
+{0x04,1,{0x53}},
+{0x05,1,{0x13}},
+{0x06,1,{0x04}},
+{0x07,1,{0x02}},
+{0x08,1,{0x02}},
+{0x09,1,{0x00}},
+{0x0a,1,{0x00}},
+{0x0b,1,{0x00}},
+{0x0c,1,{0x00}},
+{0x0d,1,{0x00}},
+{0x0e,1,{0x00}},
+{0x0f,1,{0x00}},
+{0x10,1,{0x00}},
 {0x11,1,{0x00}},
 {0x12,1,{0x00}},
-{0x13,1,{0x02}},
+{0x13,1,{0x00}},
 {0x14,1,{0x00}},
 {0x15,1,{0x00}},
 {0x16,1,{0x00}},
@@ -181,17 +146,17 @@ static struct LCM_setting_table lcm_initialization_setting[] = {
 {0x1b,1,{0x00}},
 {0x1c,1,{0x00}},
 {0x1d,1,{0x00}},
-{0x1e,1,{0x40}},
-{0x1f,1,{0xC0}},
-{0x20,1,{0x06}},
-{0x21,1,{0x01}},
-{0x22,1,{0x06}},
-{0x23,1,{0x01}},
-{0x24,1,{0x88}},
-{0x25,1,{0x88}},
+{0x1e,1,{0xC0}},
+{0x1f,1,{0x80}},
+{0x20,1,{0x02}},
+{0x21,1,{0x09}},
+{0x22,1,{0x00}},
+{0x23,1,{0x00}},
+{0x24,1,{0x00}},
+{0x25,1,{0x00}},
 {0x26,1,{0x00}},
 {0x27,1,{0x00}},
-{0x28,1,{0x3B}},
+{0x28,1,{0x55}},
 {0x29,1,{0x03}},
 {0x2a,1,{0x00}},
 {0x2b,1,{0x00}},
@@ -205,9 +170,9 @@ static struct LCM_setting_table lcm_initialization_setting[] = {
 {0x33,1,{0x00}},
 {0x34,1,{0x00}},
 {0x35,1,{0x00}},
-{0x36,1,{0x00}},
+{0x36,1,{0x05}},
 {0x37,1,{0x00}},
-{0x38,1,{0x00}},
+{0x38,1,{0x3C}},
 {0x39,1,{0x00}},
 {0x3a,1,{0x00}},
 {0x3b,1,{0x00}},
@@ -236,18 +201,18 @@ static struct LCM_setting_table lcm_initialization_setting[] = {
 {0x5c,1,{0xcd}},
 {0x5d,1,{0xef}},
 //GIP_3
-{0x5e,1,{0x11}},
-{0x5f,1,{0x02}},
-{0x60,1,{0x00}},
-{0x61,1,{0x07}},
-{0x62,1,{0x06}},
+{0x5e,1,{0x01}},
+{0x5f,1,{0x14}},
+{0x60,1,{0x15}},
+{0x61,1,{0x0C}},
+{0x62,1,{0x0D}},
 {0x63,1,{0x0E}},
 {0x64,1,{0x0F}},
-{0x65,1,{0x0C}},
-{0x66,1,{0x0D}},
-{0x67,1,{0x02}},
+{0x65,1,{0x10}},
+{0x66,1,{0x11}},
+{0x67,1,{0x08}},
 {0x68,1,{0x02}},
-{0x69,1,{0x02}},
+{0x69,1,{0x0A}},
 {0x6a,1,{0x02}},
 {0x6b,1,{0x02}},
 {0x6c,1,{0x02}},
@@ -256,20 +221,20 @@ static struct LCM_setting_table lcm_initialization_setting[] = {
 {0x6f,1,{0x02}},
 {0x70,1,{0x02}},
 {0x71,1,{0x02}},
-{0x72,1,{0x02}},
-{0x73,1,{0x05}},
-{0x74,1,{0x01}},
-{0x75,1,{0x02}},
-{0x76,1,{0x00}},
-{0x77,1,{0x07}},
-{0x78,1,{0x06}},
-{0x79,1,{0x0E}},
-{0x7a,1,{0x0F}},
-{0x7b,1,{0x0C}},
-{0x7c,1,{0x0D}},
-{0x7d,1,{0x02}},
+{0x72,1,{0x06}},
+{0x73,1,{0x02}},
+{0x74,1,{0x02}},
+{0x75,1,{0x14}},
+{0x76,1,{0x15}},
+{0x77,1,{0x0F}},
+{0x78,1,{0x0E}},
+{0x79,1,{0x0D}},
+{0x7a,1,{0x0C}},
+{0x7b,1,{0x11}},
+{0x7c,1,{0x10}},
+{0x7d,1,{0x06}},
 {0x7e,1,{0x02}},
-{0x7f,1,{0x02}},
+{0x7f,1,{0x0A}},
 {0x80,1,{0x02}},
 {0x81,1,{0x02}},
 {0x82,1,{0x02}},
@@ -278,80 +243,76 @@ static struct LCM_setting_table lcm_initialization_setting[] = {
 {0x85,1,{0x02}},
 {0x86,1,{0x02}},
 {0x87,1,{0x02}},
-{0x88,1,{0x02}},
-{0x89,1,{0x05}},
-{0x8A,1,{0x01}},
+{0x88,1,{0x08}},
+{0x89,1,{0x02}},
+{0x8A,1,{0x02}},
 //CMD_Page 4
 {0xFF,3,{ 0x98,0x81,0x04}},
 //{0x00,1,{0x80}},           // 00-3LANE   80-4LANE 
 {0x6C,1,{0x15}},                //Set VCORE voltage =1.5V);
-{0x6E,1,{0x19}},              //di_pwr_reg=0 for power mode 
-{0x6F,1,{0x25}},                // reg vcl + pumping ratio 
-//{0x3A,1,{0x1F}},                //POWER SAVING);
+{0x6E,1,{0x2F}},              //di_pwr_reg=0 for power mode 
+{0x6F,1,{0x55}},                // reg vcl + pumping ratio 
+{0x3A,1,{0xA4}},                //POWER SAVING);
 {0x8D,1,{0x1F}},              //VGL clamp -10
 {0x87,1,{0xBA}},               //ESD               );
-{0x7A,1,{0x10}},
-{0x71,1,{0xB0}},
-//{0x26,1,{0x76}},            
-//{0xB2,1,{0xD1}},
-//{0x88,1,{0x0B}},
+
+{0x26,1,{0x76}},            
+{0xB2,1,{0xD1}},
+
 //CMD_Page 1
 {0xFF,3,{ 0x98,0x81,0x01}},
 {0x22,1,{0x0A}},               //BGR,0x SS);
 {0x31,1,{0x00}},               //column inversion);
-//{0x34,1,{0x01}},
-{0x40,1,{0x53}},
-{0x43,1,{0x66}},
-{0x53,1,{0x7C}},
-{0x55,1,{0x64}},               //VCOM1);  7c
-//{0x56,1,{0x00}},       // FOR ²âÊÔÓÃ  ÓÃR53 ÉèÖÃµÄVCOMÖµ   
-{0x50,1,{0x97}},               // VREG1OUT=4.7V);
-{0x51,1,{0x92}},               // VREG2OUT=-4.7V);
-{0x60,1,{0x15}},               //SDT);
-{0x61,1,{0x01}}, 
-{0x62,1,{0x0C}}, 
-{0x63,1,{0x00}}, 
 
-{0xA0,1,{0x00}},               //VP255 Gamma P);
-{0xA1,1,{0x1A}},               //VP251);
-{0xA2,1,{0x29}},               //VP247);
-{0xA3,1,{0x14}},               //VP243);
-{0xA4,1,{0x17}},               //VP239);
-{0xA5,1,{0x29}},               //VP231);
-{0xA6,1,{0x1D}},               //VP219);
-{0xA7,1,{0x1E}},               //VP203);
-{0xA8,1,{0x88}},               //VP175);
-{0xA9,1,{0x1D}},               //VP144);
-{0xAA,1,{0x29}},               //VP111);
-{0xAB,1,{0x76}},              //VP80);
-{0xAC,1,{0x19}},              //VP52);
-{0xAD,1,{0x17}},              //VP36);
-{0xAE,1,{0x4A}},              //VP24);
-{0xAF,1,{0x20}},              //VP16);
-{0xB0,1,{0x26}},               //VP12);
-{0xB1,1,{0x4C}},               //VP8);
-{0xB2,1,{0x5D}},              //VP4);
-{0xB3,1,{0x3F}},              //VP0);
-{0xC0,1,{0x00}},              //VN255 GAMMA N);
-{0xC1,1,{0x1A}},              //VN251);
-{0xC2,1,{0x29}},              //VN247);
-{0xC3,1,{0x13}},              //VN243);
-{0xC4,1,{0x16}},              //VN239);
-{0xC5,1,{0x28}},              //VN231);
-{0xC6,1,{0x1D}},              //VN219);
-{0xC7,1,{0x1E}},              //VN203);
-{0xC8,1,{0x88}},              //VN175); 
-{0xC9,1,{0x1C}},               //VN144);
+{0x53,1,{0x8A}},
+{0x55,1,{0x88}},               //VCOM1);  7c
+
+{0x50,1,{0x95}},               // VREG1OUT=4.7V);
+{0x51,1,{0x90}},               // VREG2OUT=-4.7V);
+{0x60,1,{0x2B}},               //SDT);
+
+
+
+{0xA0,1,{0x08}},               //VP255 Gamma P);
+{0xA1,1,{0x17}},               //VP251);
+{0xA2,1,{0x22}},               //VP247);
+{0xA3,1,{0x11}},               //VP243);
+{0xA4,1,{0x11}},               //VP239);
+{0xA5,1,{0x27}},               //VP231);
+{0xA6,1,{0x1B}},               //VP219);
+{0xA7,1,{0x1D}},               //VP203);
+{0xA8,1,{0x77}},               //VP175);
+{0xA9,1,{0x1E}},               //VP144);
+{0xAA,1,{0x2A}},               //VP111);
+{0xAB,1,{0x65}},              //VP80);
+{0xAC,1,{0x1C}},              //VP52);
+{0xAD,1,{0x1D}},              //VP36);
+{0xAE,1,{0x4F}},              //VP24);
+{0xAF,1,{0x24}},              //VP16);
+{0xB0,1,{0x2A}},               //VP12);
+{0xB1,1,{0x42}},               //VP8);
+{0xB2,1,{0x4D}},              //VP4);
+{0xB3,1,{0x2C}},              //VP0);
+{0xC0,1,{0x08}},              //VN255 GAMMA N);
+{0xC1,1,{0x17}},              //VN251);
+{0xC2,1,{0x21}},              //VN247);
+{0xC3,1,{0x12}},              //VN243);
+{0xC4,1,{0x13}},              //VN239);
+{0xC5,1,{0x26}},              //VN231);
+{0xC6,1,{0x1B}},              //VN219);
+{0xC7,1,{0x1D}},              //VN203);
+{0xC8,1,{0x76}},              //VN175); 
+{0xC9,1,{0x1B}},               //VN144);
 {0xCA,1,{0x29}},               //VN111);
-{0xCB,1,{0x76}},               //VN80);
-{0xCC,1,{0x19}},               //VN52);
-{0xCD,1,{0x16}},               //VN36);
-{0xCE,1,{0x4A}},               //VN24);
-{0xCF,1,{0x1F}},               //VN16);
-{0xD0,1,{0x26}},               //VN12);
-{0xD1,1,{0x4B}},               //VN8);
-{0xD2,1,{0x5D}},               //VN4);
-{0xD3,1,{0x3F}},
+{0xCB,1,{0x66}},               //VN80);
+{0xCC,1,{0x1D}},               //VN52);
+{0xCD,1,{0x1B}},               //VN36);
+{0xCE,1,{0x50}},               //VN24);
+{0xCF,1,{0x25}},               //VN16);
+{0xD0,1,{0x2A}},               //VN12);
+{0xD1,1,{0x41}},               //VN8);
+{0xD2,1,{0x4F}},               //VN4);
+{0xD3,1,{0x2C}},
 {0xFF,3,{0x98,0x81,0x00}},
 {0xFF,3,{0x98,0x81,0x02}},		//CMD_Page 0
 {0x06,1,{0x40}},
@@ -363,14 +324,14 @@ static struct LCM_setting_table lcm_initialization_setting[] = {
 {0x29,1,{0x00}},       
 {REGFLAG_DELAY, 10, {}},     
 {0x35,1,{0x00}},   // te on
-	{0x51,2,{0x0f,0xf0}},   
+	{0x51,2,{0x00,0x00}},   
     {0x53,1,{0x24}},
      {0x55,1,{0x00}},
 	{REGFLAG_END_OF_TABLE, 0x00, {}}
 };
 
 static struct LCM_setting_table bl_level[] = {
-	{0x51, 2, {0x0F,0xF0} },
+	{0x51, 2, {0x00,0x00} },
 	{REGFLAG_END_OF_TABLE, 0x00, {} }
 };
 
@@ -457,20 +418,21 @@ static void lcm_get_params(LCM_PARAMS *params)
 
 /*add by lct wangjiaxing start 20170313*/
 #ifdef CONFIG_LCT_DEVINFO_SUPPORT                                                                                                                                                                       
-     params->vendor="dijing";
-     params->ic="ili9881c";
-     params->info="720*1280";
+      params->vendor="dijing";
+      params->ic="ili9881c";
+      params->info="720*1280";
 #endif
 /*add by lct wangjiaxing end 20170313*/
+
 #if (LCM_DSI_CMD_MODE)
 	params->dsi.PLL_CLOCK = 150;	/* this value must be in MTK suggested table */
 #else
-	params->dsi.PLL_CLOCK = 207;	/* this value must be in MTK suggested table */
+	params->dsi.PLL_CLOCK = 210;	/* this value must be in MTK suggested table */
 #endif
 	params->dsi.cont_clock=0;
 	params->dsi.clk_lp_per_line_enable = 0;
 	params->dsi.esd_check_enable = 1;
-	params->dsi.customization_esd_check_enable = 1;
+	params->dsi.customization_esd_check_enable = 0;
 	params->dsi.lcm_esd_check_table[0].cmd = 0x0A;
 	params->dsi.lcm_esd_check_table[0].count = 1;
 	params->dsi.lcm_esd_check_table[0].para_list[0] = 0x9C;
@@ -591,101 +553,14 @@ static void lcm_resume_power(void)
 
 }
 
-/* add by lct wangjiaxing for hbm 20170302 start */
-#ifdef CONFIG_LCT_CABC_MODE_SUPPORT
-static void push_table_v22(void *handle, struct LCM_setting_table *table, unsigned int count,
-		       unsigned char force_update)
-{
-	unsigned int i;
-
-	for (i = 0; i < count; i++) {
-
-		unsigned cmd;
-		void *cmdq = handle;
-		cmd = table[i].cmd;
-
-		switch (cmd) {
-
-		case REGFLAG_DELAY:
-			MDELAY(table[i].count);
-			break;
-
-		case REGFLAG_END_OF_TABLE:
-			break;
-
-		default:
-			dsi_set_cmdq_V22(cmdq, cmd, table[i].count, table[i].para_list, force_update);
-		}
-	}
-
-}
-
-static void lcm_cabc_cmdq(void *handle, unsigned int mode)
-{
-    //printk("kls lcm_cabc_cmdq entry\n");
-	switch(mode)
-	{
-		case CABC_MODE_SETTING_UI:
-			{
-				push_table_v22(handle,lcm_setting_ui,
-			   sizeof(lcm_setting_ui) / sizeof(struct LCM_setting_table), 1);
-			}
-		break;
-		case CABC_MODE_SETTING_MV:
-			{
-				push_table_v22(handle,lcm_setting_mv,
-			   sizeof(lcm_setting_mv) / sizeof(struct LCM_setting_table), 1);
-			}
-		break;
-		case CABC_MODE_SETTING_DIS:
-			{
-				push_table_v22(handle,lcm_setting_dis,
-			   sizeof(lcm_setting_dis) / sizeof(struct LCM_setting_table), 1);
-			}
-		break;
-		default:
-		{
-			push_table_v22(handle,lcm_setting_ui,
-			   sizeof(lcm_setting_ui) / sizeof(struct LCM_setting_table), 1);
-		}
-
-	}
-}
-#endif
-
-#ifdef CONFIG_LCT_HBM_SUPPORT
-static unsigned int last_level=0;
-static unsigned int hbm_enable=0;
-static void lcm_setbacklight_hbm(unsigned int level)                                                                                                                                                    
-{
-
-	unsigned int level_hight,level_low=0;
-printk("kls lcm_setbacklight_hbm entry level = %d\n",level);
-	if(level==0)
-	{
-		level = last_level;
-		hbm_enable = 0;
-	}
-	else
-	  hbm_enable = 1;
-	level_hight=(level & 0xf0)>>4;
-	level_low=(level & 0x0f)<<4;
-	bl_level[0].para_list[0] = level_hight;
-	bl_level[0].para_list[1] = level_low;
-	push_table(NULL, bl_level,
-				sizeof(bl_level) / sizeof(struct LCM_setting_table), 1);
-}
-/* add by lct wangjiaxing for hbm 20170302 end */
-
-#endif
 static void lcm_init(void)
 {
 	SET_RESET_PIN(0);
-	MDELAY(5);
-	SET_RESET_PIN(1);
-	MDELAY(1);
-	SET_RESET_PIN(0);
 	MDELAY(10);
+	SET_RESET_PIN(1);
+	MDELAY(5);
+	SET_RESET_PIN(0);
+	MDELAY(5);
 
 	SET_RESET_PIN(1);
 	MDELAY(100);
@@ -696,8 +571,9 @@ static void lcm_init(void)
 static void lcm_suspend(void)
 {
 	push_table(NULL, lcm_suspend_setting, sizeof(lcm_suspend_setting) / sizeof(struct LCM_setting_table), 1);
+
+    SET_RESET_PIN(0);
 	MDELAY(10);
-	/* SET_RESET_PIN(0); */
 }
 
 static void lcm_resume(void)
@@ -709,8 +585,7 @@ static unsigned int lcm_compare_id(void)
 {
   	int   array[4];
 	char  buffer[3];
-//	char  id0,id1,id=0;
-   char id0 = 0;	
+	char  id0,id1,id=0;
 	SET_RESET_PIN(1);
 	MDELAY(1);
 	SET_RESET_PIN(0);
@@ -720,9 +595,9 @@ static unsigned int lcm_compare_id(void)
 	MDELAY(100);
 	
 	array[0] = 0x00043902; 						 
-		array[1] = 0x008198ff; 				
+		array[1] = 0x018198ff; 				
 	    dsi_set_cmdq(array, 2, 1); 
-/*
+
 		array[0] = 0x00013700;// read id return two byte,version and id
 		dsi_set_cmdq(array, 1, 1);
 		read_reg_v2(0x00, buffer, 1);
@@ -735,27 +610,12 @@ static unsigned int lcm_compare_id(void)
 
 	
 		    id = (id0 << 8) | id1;
-		printf("[Simon]ili9881-c %s, id0 = 0x%08x , id1 = 0x%08x, id = 0x%08x\n", __func__, id0, id1, id);
+		printk("[Simon]ili9881-c %s, id0 = 0x%08x , id1 = 0x%08x, id = 0x%08x\n", __func__, id0, id1, id);
 
         if ((id0 == 0x98)&&(id1 == 0x81)) //cpt    
 	   		return 1;
         else
-           return 0;
-*/
 
-		array[0] = 0x00013700;// read id return two byte,version and id
-		dsi_set_cmdq(array, 1, 1);
-		read_reg_v2(0xDA, buffer, 1);
-		id0  =  buffer[0]; 
-
-	
-		   
-		printk("ili9881-c %s, id0 = 0x%08x \n", __func__, id0);
-
-        if (id0 == 0x00)   
-	   		
-	return 1;
-        else
            return 0;
 
 
@@ -812,41 +672,19 @@ static unsigned int lcm_ata_check(unsigned char *buffer)
 #endif
 }
 
-/* add by lct wangjiaxing for hbm 20170302 start */
 static void lcm_setbacklight_cmdq(void *handle, unsigned int level)
 {
-	unsigned int level_hight,level_low=0;
-#if(LCT_LCM_MAPP_BACKLIGHT)
-	static unsigned int mapped_level = 0;
-	mapped_level = (7835*level + 2165)/(10000);
-#endif
-	if(hbm_enable==0)
-	{       
+unsigned int level_hight,level_low=0;
+	printk("%s,ili9881c backlight: level = %d\n", __func__, level);
 
-		printk("kls hbm_enable=0 level = %d\n",mapped_level);
-		level_hight=(mapped_level & 0xf0)>>4;
-		level_low=(mapped_level & 0x0f)<<4;
-		bl_level[0].para_list[0] = level_hight;
-		bl_level[0].para_list[1] = level_low;
-		push_table(handle, bl_level,
-					sizeof(bl_level) / sizeof(struct LCM_setting_table), 1);
+   esd_backlight_level = level;
 
-	}
-	else
-	{
-		//printk("kls hbm_enable=1\n");
-		level_hight=(255 & 0xf0)>>4;
-		level_low=(255 & 0x0f)<<4;
-		bl_level[0].para_list[0] = level_hight;
-		bl_level[0].para_list[1] = level_low;
-		push_table(handle, bl_level,
-					sizeof(bl_level) / sizeof(struct LCM_setting_table), 1);
-	}
-#ifdef CONFIG_LCT_HBM_SUPPORT
-	last_level = mapped_level;
-#endif
+		level_hight=(level & 0xf0)>>4;
+		level_low=(level & 0x0f)<<4;
+			bl_level[0].para_list[0] = level_hight;
+			bl_level[0].para_list[1] = level_low;
+	push_table(handle, bl_level, sizeof(bl_level) / sizeof(struct LCM_setting_table), 1);
 }
-/* add by lct wangjiaxing for hbm 20170302 end */
 
 LCM_DRIVER lct_ili9881c_dijing_720p_vdo_lcm_drv = {
 
@@ -862,14 +700,6 @@ LCM_DRIVER lct_ili9881c_dijing_720p_vdo_lcm_drv = {
 	.suspend_power = lcm_suspend_power,
 	.set_backlight_cmdq = lcm_setbacklight_cmdq,
 	.ata_check = lcm_ata_check,
-	/* add by lct wangjiaxing for hbm 20170302 start */
-#ifdef CONFIG_LCT_CABC_MODE_SUPPORT
-	.set_cabc_cmdq = lcm_cabc_cmdq,
-#endif
-#ifdef CONFIG_LCT_HBM_SUPPORT
-     .set_backlight_hbm = lcm_setbacklight_hbm,
-#endif
-      /* add by lct wangjiaxing for hbm 20170302 end */
- 
+
 
 };
