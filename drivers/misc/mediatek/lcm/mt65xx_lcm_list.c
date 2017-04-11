@@ -34,21 +34,17 @@ LCM_DSI_MODE_CON lcm_dsi_mode;
 #endif
 
 LCM_DRIVER *lcm_driver_list[] = {
-#if defined(LCT_OTM1289A_WISTRON_720P_VDO)
-	&lct_otm1289a_wistron_720p_vdo_lcm_drv,
-#endif		
-
-#if defined(LCT_S6D7AA6X01_HELITECH_720P_VDO)
-	&lct_s6d7aa6x01_helitech_720p_vdo_lcm_drv,
-#endif	
-
+		
 #if defined(LCT_ILI9881C_DIJING_720P_VDO)
 	&lct_ili9881c_dijing_720p_vdo_lcm_drv,
 #endif
-
-#if defined(LCT_ILI9881C_DIJING_CMI_720P_VDO)
-	&lct_ili9881c_dijing_cmi_720p_vdo_lcm_drv,
+#if defined(LCT_S6D7AA6X01_HELITECH_720P_VDO)
+	&lct_s6d7aa6x01_helitech_720p_vdo_lcm_drv,
+#endif	
+#if defined(LCT_OTM1289A_WISTRON_720P_VDO)
+	&lct_otm1289a_wistron_720p_vdo_lcm_drv,
 #endif
+
 
 //add by jiatianbao for r63350
 #if defined(LCT_R63350_TIANMA_1080P_VDO)
