@@ -182,6 +182,7 @@ static signed int gFG_daemon_log_level = BM_DAEMON_DEFAULT_LOG_LEVEL;
 
 #if defined(CONFIG_LCT_CHR_LIMIT_MAX_SOC) //add by longcheer_liml_2017_03_04
 int battery_test_status=0;
+int runin_flag =0;
 #endif
 
 static enum power_supply_property battery_props[] = {
@@ -3803,6 +3804,13 @@ static ssize_t store_BatteryTestStatus(struct device *dev,struct device_attribut
 {
 
 	sscanf(buf, "%u", &battery_test_status);
+	if(battery_test_status == 1)
+	{
+	    runin_flag = 0;
+	}else
+	{
+	    runin_flag = 1;
+	}
 
 	return size;
 }
