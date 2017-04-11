@@ -161,8 +161,8 @@ static struct switch_dev disp_switch_data;
 
 static int g_is_inited;
 
-#ifdef CONFIG_LCT_ESD_RECOVERY_BACKLIGHT
-unsigned int esd_recovery_level = 0;	//add by zhudaolong at 20170330 
+#ifdef CONFIG_LCT_ESD_CHECK_MULTI_REG
+unsigned int esd_recovery_level = 0;	//add by zhudaolong at 20170411
 #endif
 
 void enqueue_buffer(display_primary_path_context *ctx, struct list_head *head,
@@ -3991,8 +3991,8 @@ int primary_display_esd_recovery(void)
 done:
 	_primary_path_unlock(__func__);
 
-#ifdef CONFIG_LCT_ESD_RECOVERY_BACKLIGHT
-	//add by zhudaolong at 20170330
+#ifdef CONFIG_LCT_ESD_CHECK_MULTI_REG
+	//add by zhudaolong at 20170411
 	DISPERR("[ESD]lcm force backlight set to %d, line=%d\n", esd_recovery_level, __LINE__);
      	mdelay(10);
 	if(esd_recovery_level == 0)
@@ -8393,8 +8393,8 @@ int primary_display_setbacklight(unsigned int level)
 					       MMProfileFlagPulse, 0, 7);
 				disp_lcm_set_backlight(pgc->plcm, level);
 
-				#ifdef CONFIG_LCT_ESD_RECOVERY_BACKLIGHT
-				esd_recovery_level = level;	//add by zhudaolong at 20170330
+				#ifdef CONFIG_LCT_ESD_CHECK_MULTI_REG
+				esd_recovery_level = level;	//add by zhudaolong at 20170411
 				#endif
 
 			} else {
