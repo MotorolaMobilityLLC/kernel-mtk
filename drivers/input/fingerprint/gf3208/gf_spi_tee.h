@@ -24,20 +24,26 @@
 /**********************IO Magic**********************/
 #define GF_IOC_MAGIC	'g'
 
-#define GF_NAV_INPUT_UP			KEY_RIGHT
-#define GF_NAV_INPUT_DOWN		KEY_LEFT
-#define GF_NAV_INPUT_LEFT		KEY_UP
-#define GF_NAV_INPUT_RIGHT		KEY_DOWN
-#define GF_NAV_INPUT_CLICK		KEY_VOLUMEDOWN
+#define GF_NAV_INPUT_FINGER_DOWN		614//KEY_VOLUMEUP
+#define GF_NAV_INPUT_FINGER_UP		    615//KEY_VOLUMEDOWN
+#define GF_NAV_INPUT_CLICK				616 //
+#define GF_NAV_INPUT_LONG_PRESS			617//KEY_SEARCH
+#define GF_NAV_INPUT_DOWN				618//KEY_LEFT
+#define GF_NAV_INPUT_UP					619//KEY_RIGHT
+#define GF_NAV_INPUT_RIGHT				620//KEY_DOWN
+#define GF_NAV_INPUT_LEFT				621//KEY_UP
 #define GF_NAV_INPUT_DOUBLE_CLICK	KEY_VOLUMEUP
-#define GF_NAV_INPUT_LONG_PRESS		KEY_SEARCH
+
 #define GF_NAV_INPUT_HEAVY		KEY_CHAT
+
 
 #define GF_KEY_INPUT_HOME		KEY_HOMEPAGE
 #define GF_KEY_INPUT_MENU		KEY_MENU
 #define GF_KEY_INPUT_BACK		KEY_BACK
 #define GF_KEY_INPUT_POWER		KEY_POWER
 #define GF_KEY_INPUT_CAMERA		KEY_CAMERA
+
+
 
 typedef enum gf_nav_event {
 	GF_NAV_NONE = 0,
@@ -95,6 +101,7 @@ struct gf_ioc_chip_info {
 	u8 mode;
 	u8 operation;
 	u8 reserved[5];
+	int chip_id;
 };
 
 /* define for gf_spi_cfg_t->speed_hz */
