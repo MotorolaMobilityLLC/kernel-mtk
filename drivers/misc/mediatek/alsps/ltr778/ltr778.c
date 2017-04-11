@@ -1174,9 +1174,9 @@ static int ltr778_als_read(struct i2c_client *client, u16* data)
 	//liujinzhou@wind-mobi.com modify at 20170210 end
 	luxdata_int = ((ch0_coeff * alsval_ch0) + (ch1_coeff * alsval_ch1))* WIN_FACTOR*winfac_1/winfac_2 / coeff_factor / als_gain_factor / als_integration_factor;
 	//liujinzhou@wind-mobi.com modify at 20161205 end
-	luxdata_int = get_avg_lux(luxdata_int);
 	//APS_DBG("ltr778_als_read als_value_lux = %d\n", luxdata_int);
 out:
+	luxdata_int = get_avg_lux(luxdata_int);//huyunge@wubd-mobi.com modify 20170411	
 	*data = luxdata_int;
 	final_lux_val = luxdata_int;
 	return luxdata_int;
