@@ -1,1 +1,0 @@
-../../../motorola/kernel/Documentation/filesystems/f2fs.txt
