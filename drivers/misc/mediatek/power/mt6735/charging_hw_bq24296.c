@@ -224,7 +224,13 @@ static unsigned int charging_hw_init(void *data)
 #endif
 
 	bq24296_set_en_hiz(0x0);
+	//zhangchao@wind-mobi.com 20170412 begin
+	#ifdef CONFIG_WIND_Z168_BATTERY_MODIFY
+	bq24296_set_vindpm(0x8);	/* VIN DPM check 4.52V */
+	#else
 	bq24296_set_vindpm(0xA);	/* VIN DPM check 4.68V */
+	#endif
+	//zhangchao@wind-mobi.com 20170412 end
 	bq24296_set_reg_rst(0x0);
 	bq24296_set_wdt_rst(0x1);	/* Kick watchdog */
 	bq24296_set_sys_min(0x5);	/* Minimum system voltage 3.5V */
