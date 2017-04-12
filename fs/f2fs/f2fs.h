@@ -70,6 +70,8 @@ typedef u32 nid_t;
 
 struct f2fs_mount_info {
 	unsigned int	opt;
+	unsigned int	reserved_mb;
+	unsigned int	reserved_fsuid;
 };
 
 #define F2FS_FEATURE_ENCRYPT	0x0001
@@ -2178,4 +2180,38 @@ static inline int f2fs_fname_setup_filename(struct inode *dir,
 
 static inline void f2fs_fname_free_filename(struct f2fs_filename *fname) { }
 #endif
+#define DEFAULT_WRITE_FSUID		10010
+#define DEFAULT_RESERVED_SIZE		100//100MB
+
+static inline int f2fs_check_avail_size(struct dentry *dentry, size_t size, int dir)
+{
+	struct super_block *sb = dentry->d_sb;
+	struct f2fs_sb_info *sbi = F2FS_SB(sb);
+	u64 avail;
+
+	if (!sbi->mount_opt.reserved_mb ||!sbi->mount_opt.reserved_fsuid) {
+		return 1;
+	}
+
+	avail = (u64)sbi->user_block_count*sbi->blocksize - (u64)valid_user_blocks(sbi) *sbi->blocksize;
+	/* if you are checking directory, set size to f_bsize. */
+	if (unlikely(dir))
+		size = sbi->blocksize;
+
+	/* not enough space */
+	if (avail < (u64)size)
+		goto out;
+
+	if ((avail-size) > (sbi->mount_opt.reserved_mb * 1024 * 1024))
+		return 1;
+
+	if(uid_lte(current_fsuid(), KUIDT_INIT(sbi->mount_opt.reserved_fsuid))) {
+		return 1;
+	}
+
+out:
+	printk(KERN_ERR "f2fs low memory, avail size=%lldMB, fsuid=%d, current_comm=%s\n",
+		avail/1024/1024, __kuid_val(current_fsuid()), current->group_leader->comm);
+	return 0;
+}
 #endif

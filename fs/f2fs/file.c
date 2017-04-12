@@ -1692,6 +1692,10 @@ static ssize_t f2fs_file_write_iter(struct kiocb *iocb, struct iov_iter *from)
 {
 	struct inode *inode = file_inode(iocb->ki_filp);
 
+	if(!f2fs_check_avail_size(iocb->ki_filp->f_path.dentry, iocb->ki_nbytes, 0)) {
+		return -ENOSPC;
+	}
+
 	if (f2fs_encrypted_inode(inode) &&
 				!f2fs_has_encryption_key(inode) &&
 				f2fs_get_encryption_info(inode))
