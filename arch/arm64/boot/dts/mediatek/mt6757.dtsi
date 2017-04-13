@@ -3795,7 +3795,7 @@
 
 		/* common */
 		/***charg by liminglong longcheer start******/
-		battery_cv =<4420000>;
+		battery_cv =<4400000>;
 		max_charger_voltage=<6500000>;//14mv
                /***charg by liminglong longcheer end******/
 		/* charging current */
