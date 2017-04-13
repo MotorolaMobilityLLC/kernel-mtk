@@ -1582,7 +1582,15 @@ int force_get_tbat(bool update)
 		battery_update(&battery_main);
 	}
 
+#ifdef CONFIG_LCT_CHR_ALT_TEST_SUPPORT //add by longcheer_liml_2017_04_13
+	    if (1 == lct_alt_status){
+	        return 25;
+	    }else{
+            return bat_temperature_val;
+	    }
+#else
 	return bat_temperature_val;
+#endif
 #endif
 }
 

@@ -87,16 +87,8 @@ signed int battery_get_bat_temperature(void)
 {
 	/* TODO */
 	if (is_battery_init_done()){
-#ifdef CONFIG_LCT_CHR_ALT_TEST_SUPPORT //add by longcheer_liml_2017_03_10
-        printk("~~liml lct_alt_status=%d\n",lct_alt_status);
-	    if (1 == lct_alt_status){
-	        return 25;
-	    }else{
-		return force_get_tbat(true);
-	    }
-#else
+	
         return force_get_tbat(true);
-#endif
 	}
 	else
 		return -127;
