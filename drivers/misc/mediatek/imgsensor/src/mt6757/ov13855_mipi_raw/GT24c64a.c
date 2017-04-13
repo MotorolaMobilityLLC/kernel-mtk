@@ -30,7 +30,8 @@
 #define LSC_ADDR	0x00DE
 #define LSC_SIZE	0x74C
 #define MID_ADDR 0x0401
-
+#define PDAF_SIZE	2048
+#define PDAF_ADDR	0x0d00
 //#define CAM_CALGETDLT_DEBUG
 #define CAM_CAL_DEBUG
 #ifdef CAM_CAL_DEBUG
@@ -47,7 +48,7 @@
 #define BUFF_SIZE 8
 
 u8 LSCdatabuf[LSC_SIZE+2];
-
+u8 PDAFdatabuf[2048];
 static int is_firstboot = 1;
 static DEFINE_SPINLOCK(g_CAM_CALLock); // for SMP
 #define CAM_CAL_I2C_BUSNUM 2  //lenovo.sw wangsx3 change fro K5
@@ -421,6 +422,38 @@ static int ReadOV13855LSCData(unsigned short ui4_offset, unsigned int  ui4_lengt
 	return 0;
 }
 
+static int ReadOV13855PDAFData(unsigned short ui4_offset, unsigned int  ui4_length, unsigned char * pinputdata)
+{
+	int i = 0;
+	int addr = ui4_offset;
+	//unsigned int sum = 0;
+
+	CAM_CALDB("ReadOV13855PDAFData\n");
+	
+	for(i = 0; i < PDAF_SIZE; i++) {  // LSC data 1868 + 2 byte
+		if(!selective_read_eeprom(addr, &PDAFdatabuf[i])){
+			return -1;
+		}
+		/* huangsh4 to print lsc data with kungfu */
+		//CAM_CALDB("read_eeprom 0x%0x %d\n",addr, LSCdatabuf[i]);
+		addr++;
+	}
+
+	if( PDAFdatabuf[0] != 0x1)
+	{
+		CAM_CALDB("PDAFdatabuf[0]:0x%x\n", PDAFdatabuf[0]);
+	}
+
+	for(i = 0; i < 1372; i++)   // proc1 data
+	{
+		pinputdata[i] = PDAFdatabuf[i+1];
+	}
+	for(i = 0; i < 1372; i++)
+	{
+		CAM_CALDB("pdaf data[%d] = %d\n", i, pinputdata[i]);
+	}
+	return 0;
+}
 
 static int iReadData(unsigned short ui4_offset, unsigned int  ui4_length, unsigned char * pinputdata)
 {
@@ -562,7 +595,10 @@ static long CAM_CAL_Ioctl(
             {
             	i4RetValue = ReadOV13855LSCData((u16)ptempbuf->u4Offset, ptempbuf->u4Length, pu1Params);
             }   
-            
+            else if((ptempbuf->u4Offset == PDAF_ADDR) && (ptempbuf->u4Length == PDAF_SIZE) )
+            {
+            	i4RetValue = ReadOV13855PDAFData((u16)ptempbuf->u4Offset, ptempbuf->u4Length, pu1Params);
+            } 
             else
             {
             	i4RetValue = iReadData((u16)ptempbuf->u4Offset, ptempbuf->u4Length, pu1Params);
