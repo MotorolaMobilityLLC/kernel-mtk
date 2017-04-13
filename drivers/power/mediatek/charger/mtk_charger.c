@@ -326,7 +326,12 @@ static int _charger_manager_enable_charging(struct charger_consumer *consumer,
 			pdata->disable_charging_count++;
 		} else {
 			if (pdata->disable_charging_count == 1) {
+		#ifdef CONFIG_LCT_CHR_ALT_TEST_SUPPORT  //add by longcheer_liml_2017_03_10
+		        if (lct_alt_status == 1)
+				    _mtk_charger_do_charging(info, 0);
+	    #else   
                  _mtk_charger_do_charging(info, en);
+	    #endif
 				pdata->disable_charging_count = 0;
 			} else if (pdata->disable_charging_count > 1)
 				pdata->disable_charging_count--;
@@ -652,7 +657,7 @@ void do_sw_jeita_state_machine(struct charger_manager *info)
 		else if (sw_jeita->sm == TEMP_T3_TO_T4)
 			sw_jeita->cv = info->data.jeita_temp_t3_to_t4_cv_voltage;
 		else if (sw_jeita->sm == TEMP_T2_TO_T3)
-			sw_jeita->cv = 0;
+			sw_jeita->cv = info->data.jeita_temp_t2_to_t3_cv_voltage;
 		else if (sw_jeita->sm == TEMP_T1_TO_T2)
 			sw_jeita->cv = info->data.jeita_temp_t1_to_t2_cv_voltage;
 		else if (sw_jeita->sm == TEMP_T0_TO_T1)
@@ -662,7 +667,7 @@ void do_sw_jeita_state_machine(struct charger_manager *info)
 		else
 			sw_jeita->cv = info->data.battery_cv;
 	} else {
-		sw_jeita->cv = 0;
+		sw_jeita->cv = info->data.jeita_temp_t2_to_t3_cv_voltage;
 	}
 
 	pr_err("[SW_JEITA]preState:%d newState:%d tmp:%d cv:%d\n\r",
