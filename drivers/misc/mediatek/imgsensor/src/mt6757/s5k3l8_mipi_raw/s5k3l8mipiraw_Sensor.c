@@ -37,7 +37,7 @@
 #include "s5k3l8mipiraw_Sensor.h"
 
 /*===FEATURE SWITH===*/
- // #define FPTPDAFSUPPORT   //for pdaf switch
+  #define FPTPDAFSUPPORT   //for pdaf switch
  // #define FANPENGTAO   //for debug log
 
  //#define NONCONTINUEMODE
@@ -322,7 +322,8 @@ static SENSOR_WINSIZE_INFO_STRUCT imgsensor_winsize_info[10] =
     .i4PosL = {{28,31},{80,31},{44,35},{64,35},{32,51},{76,51},{48,55},{60,55},{48,63},{60,63},{32,67},{76,67},{44,83},{64,83},{28,87},{80,87}},
 
     .i4PosR = {{28,35},{80,35},{44,39},{64,39},{32,47},{76,47},{48,51},{60,51},{48,67},{60,67},{32,71},{76,71},{44,79},{64,79},{28,83},{80,83}},
-
+    .i4BlockNumX = 65,
+    .i4BlockNumY = 48,
 };
 
 static kal_uint16 read_cmos_sensor_byte(kal_uint16 addr)
