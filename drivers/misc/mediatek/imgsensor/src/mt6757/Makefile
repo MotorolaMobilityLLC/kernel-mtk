@@ -20,7 +20,7 @@
 #else
 subdir-ccflags-y += -I$(srctree)/drivers/i2c/busses/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/ccu/inc
-ifeq ($(TARGET_PRODUCT),marino)
+ifneq (, $(findstring marino, $(TARGET_PRODUCT)))
 ccflags-y += -DCAMERA_INDRIYA
 endif
 #endif

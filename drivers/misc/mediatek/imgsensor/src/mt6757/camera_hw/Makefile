@@ -19,7 +19,7 @@ ifneq ($(CONFIG_PINCTRL_MT6757),y)
 subdir-ccflags-y += -I$(DRVGEN_OUT)/inc
 endif
 MTK_CUSTOM_PATH  := $(srctree)/drivers/misc/mediatek
-ifeq ($(TARGET_PRODUCT),marino)
+ifneq (, $(findstring marino, $(TARGET_PRODUCT)))
 ccflags-y += -DCAMERAHW_INDRIYA
 endif
 ccflags-y += -I$(MTK_CUSTOM_PATH)/imgsensor/inc \
