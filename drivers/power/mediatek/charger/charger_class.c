@@ -71,16 +71,19 @@ int charger_dev_enable(struct charger_device *charger_dev, bool en)
 	if (charger_dev != NULL && charger_dev->ops != NULL && charger_dev->ops->enable){
 	    if(en ==false)
 	    {
+            return charger_dev->ops->enable(charger_dev, en);
+	    }else{
         #ifdef CONFIG_LCT_CHR_ALT_TEST_SUPPORT
-            if (lct_alt_status != 1)
+            if (lct_alt_status == 1)
+            {
+                return charger_dev->ops->enable(charger_dev, 0);
+            }else
             {
                 return charger_dev->ops->enable(charger_dev, en);
             }
         #else
                 return charger_dev->ops->enable(charger_dev, en);
         #endif
-	    }else{
-            return charger_dev->ops->enable(charger_dev, en);
 	    }
 //add by longcheer_liml_2017_03_14_end	
 //  return charger_dev->ops->enable(charger_dev, en);	
