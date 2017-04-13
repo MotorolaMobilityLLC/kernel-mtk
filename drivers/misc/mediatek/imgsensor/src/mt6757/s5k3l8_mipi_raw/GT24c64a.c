@@ -28,6 +28,8 @@
 #define AF_ADDR		0x0015
 #define LSC_ADDR	0x002B
 #define LSC_SIZE	0x74C
+#define PDAF_SIZE	2048
+#define PDAF_ADDR	0x779
 #define MID_ADDR 0x0401
 
 //#define CAM_CALGETDLT_DEBUG
@@ -46,7 +48,7 @@
 #define BUFF_SIZE 8
 
 static u8 LSCdatabuf[LSC_SIZE+2];
-
+u8 PDAFdatabuf[2048];
 static int is_firstboot = 1;
 static DEFINE_SPINLOCK(g_CAM_CALLock); // for SMP
 #define CAM_CAL_I2C_BUSNUM 2  //lenovo.sw wangsx3 change fro K5
@@ -467,6 +469,44 @@ static int Read3L8LSCData(unsigned short ui4_offset, unsigned int  ui4_length, u
 	return 0;
 }
 
+static int Read3L8PDAFData(unsigned short ui4_offset, unsigned int  ui4_length, unsigned char * pinputdata)
+{
+	int i = 0;
+	int addr = ui4_offset;
+	//unsigned int sum = 0;
+
+	CAM_CALDB("Read3L8PDAFData\n");
+	
+	for(i = 0; i < PDAF_SIZE; i++) {  // LSC data 1868 + 2 byte
+		if(!selective_read_eeprom(addr, &PDAFdatabuf[i])){
+			return -1;
+		}
+		/* huangsh4 to print lsc data with kungfu */
+		//CAM_CALDB("read_eeprom 0x%0x %d\n",addr, LSCdatabuf[i]);
+		addr++;
+	}
+
+	if( PDAFdatabuf[0] != 0x1)
+	{
+		CAM_CALDB("PDAFdatabuf[0]:0x%x\n", PDAFdatabuf[0]);
+	}
+
+	for(i = 0; i < 496; i++)   // proc1 data
+	{
+		pinputdata[i] = PDAFdatabuf[i+1];
+	}
+
+	for(i = 496; i < 1404; i++)  // proc2 data
+	{
+		pinputdata[i] = PDAFdatabuf[i+3];
+	}	
+
+	for(i = 0; i < 1404; i++)
+	{
+		CAM_CALDB("pdaf data[%d] = %d\n", i, pinputdata[i]);
+	}
+	return 0;
+}
 
 static int iReadData(unsigned short ui4_offset, unsigned int  ui4_length, unsigned char * pinputdata)
 {
@@ -608,7 +648,10 @@ static long CAM_CAL_Ioctl(
             {
             	i4RetValue = Read3L8LSCData((u16)ptempbuf->u4Offset, ptempbuf->u4Length, pu1Params);
             }   
-            
+           else if((ptempbuf->u4Offset == PDAF_ADDR) && (ptempbuf->u4Length == PDAF_SIZE) )
+            {
+            	i4RetValue = Read3L8PDAFData((u16)ptempbuf->u4Offset, ptempbuf->u4Length, pu1Params);
+            } 
             else
             {
             	i4RetValue = iReadData((u16)ptempbuf->u4Offset, ptempbuf->u4Length, pu1Params);
