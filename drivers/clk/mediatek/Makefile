@@ -18,3 +18,8 @@ obj-$(CONFIG_COMMON_CLK_MT2712_VENCSYS) += clk-mt2712-venc.o
 obj-$(CONFIG_COMMON_CLK_MT8135) += clk-mt8135.o
 obj-$(CONFIG_COMMON_CLK_MT8173) += clk-mt8173.o
 obj-y += clk-bringup.o
+
+ifeq ($(CONFIG_DEBUG_FS), y)
+obj-$(CONFIG_COMMON_CLK_MEDIATEK) += clkdbg.o
+obj-$(CONFIG_COMMON_CLK_MT2712) += clkdbg-mt2712.o
+endif
