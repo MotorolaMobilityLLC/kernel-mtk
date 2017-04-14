@@ -1269,14 +1269,14 @@
 		pins_cmd_dat{
 			pins = <PINMUX_GPIO126__FUNC_GPIO126>;
 			output-high;
-			bias-pull-down=<00>;
+			bias-pull-up=<00>;
 		};
 	};
 	fingerprint_irq_low:fingerprint_irq_low{
 		pins_cmd_dat{
 			pins = <PINMUX_GPIO126__FUNC_GPIO126>;
 			output-high;
-			bias-pull-down=<00>;
+			bias-pull-up=<00>;
 		};
 	};
 /*jijin.wang add dts for camera otp start*/
