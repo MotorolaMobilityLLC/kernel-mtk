@@ -1851,7 +1851,7 @@ static s32 tpd_i2c_probe(struct i2c_client *client, const struct i2c_device_id *
 					     tpd_dts_data.tpd_key_local[idx]);
 	}
 #if defined(CONFIG_GTP_SLIDE_WAKEUP)
-	input_set_capability(tpd->dev, EV_KEY, KEY_SPACE);
+	input_set_capability(tpd->dev, EV_KEY, 294/*KEY_SPACE*/);
 	input_set_capability(tpd->dev, EV_KEY, KEY_F1);
 	input_set_capability(tpd->dev, EV_KEY, KEY_F2);
 	input_set_capability(tpd->dev, EV_KEY, KEY_F3);
@@ -2290,7 +2290,7 @@ static void report_gesture_key(int gesture_id)
 			keycode = KEY_S;
 			break;
 		case 0xCC:
-			keycode = KEY_SPACE;
+			keycode = 294/*KEY_SPACE*/;
 			break;
 		case 0xAA:
 			keycode = KEY_F1;
@@ -2502,7 +2502,7 @@ static int touch_event_handler(void *unused)
 			}
 #else
 			mutex_unlock(&i2c_access);
-			GTP_ERROR("buffer not ready");
+			GTP_ERROR("[Simon]buffer not ready");
 			continue;
 #endif
 		}
@@ -2823,6 +2823,7 @@ static s8 gtp_enter_doze(struct i2c_client *client)
 				 (u8)GTP_REG_SLEEP, 8};
 
 	GTP_DEBUG_FUNC();
+	GTP_INFO("[Simon]ENTER gtp_enter_doze");
 #if defined(CONFIG_GTP_DBL_CLK_WAKEUP)
 	i2c_control_buf[2] = 0x09;
 #endif
@@ -3091,6 +3092,8 @@ static void tpd_suspend(struct device *h)
 	s32 ret = -1;
 	u8 buf[3] = { 0x81, 0xaa, 0 };
 
+	GTP_DEBUG_FUNC();
+	GTP_INFO("[Simon]ENTER tpd_suspend");
 #if defined(CONFIG_TPD_PROXIMITY)
 	if (tpd_proximity_flag == 1)
 		return;
@@ -3122,6 +3125,7 @@ static void tpd_suspend(struct device *h)
 	mutex_lock(&i2c_access);
 
 #if defined(CONFIG_GTP_SLIDE_WAKEUP)
+	GTP_INFO("[Simon] gesture_enable_flag = %d ",gesture_enable_flag);
 	if (gesture_enable_flag) {
 		ret = gtp_enter_doze(i2c_client_point);
 		gesture_suspend_resume_flag = 1;
