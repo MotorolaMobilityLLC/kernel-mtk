@@ -86,11 +86,11 @@ config GTP_WARP_Y_ON
 
 	If unsure, say N.
 
-config GTP_GESTURE_WAKEUP
+config GTP_SLIDE_WAKEUP
 	bool "GT9 gesture wakeup"
 	default n
 	help
-	Say Y here if you have GT9 touch panel GTP_GESTURE_WAKEUP.
+	Say Y here if you have GT9 touch panel GTP_SLIDE_WAKEUP.
 
 	If unsure, say N.
 
