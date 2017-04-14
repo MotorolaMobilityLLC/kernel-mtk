@@ -665,11 +665,13 @@ static int ltr778_ps_stowed_enable(struct i2c_client *client, int enable)
 		APS_LOG("PS: stowed enable ps only \n");
 		regdata = 0xC2; //c2
 		ps_stowed_start = 1;
+		ps_en_flag = 1;
 	}
 	else {
 		APS_LOG("PS: stowed disable ps only \n");
 		regdata = 0x00;
 		ps_stowed_start = 0;
+		ps_en_flag = 0;
 	}
 
 	err = ltr778_i2c_write_reg(LTR778_PS_CONTR, regdata);
