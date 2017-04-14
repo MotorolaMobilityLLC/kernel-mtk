@@ -484,6 +484,9 @@
 			reg = <0 0x10206000 0 0x1000>;
 			#address-cells = <1>;
 			#size-cells = <1>;
+			thermal_calibration: calib@528 {
+				reg = <0x528 0xc>;
+			};
 		};
 
 		apmixedsys: syscon@10209000 {
@@ -756,6 +759,8 @@
 			resets = <&pericfg MT2712_PERI_THERM_SW_RST>;
 			mediatek,auxadc = <&auxadc>;
 			mediatek,apmixedsys = <&apmixedsys>;
+			nvmem-cells = <&thermal_calibration>;
+			nvmem-cell-names = "calibration-data";
 		};
 
 		i2c3: i2c@11010000 {
