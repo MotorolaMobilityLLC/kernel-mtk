@@ -49,6 +49,55 @@ config COMMON_CLK_MT2701_BDPSYS
 	---help---
 	  This driver supports Mediatek MT2701 bdpsys clocks.
 
+config COMMON_CLK_MT2712
+	bool "Clock driver for Mediatek MT2712"
+	select COMMON_CLK_MEDIATEK
+	default ARCH_MEDIATEK
+	---help---
+	  This driver supports Mediatek MT2712 clocks.
+
+config COMMON_CLK_MT2712_BDPSYS
+	bool "Clock driver for Mediatek MT2712 bdpsys"
+	select COMMON_CLK_MT2712
+	---help---
+	  This driver supports Mediatek MT2712 bdpsys clocks.
+
+config COMMON_CLK_MT2712_IMGSYS
+	bool "Clock driver for Mediatek MT2712 imgsys"
+	select COMMON_CLK_MT2712
+	---help---
+	  This driver supports Mediatek MT2712 imgsys clocks.
+
+config COMMON_CLK_MT2712_JPGDECSYS
+	bool "Clock driver for Mediatek MT2712 jpgdecsys"
+	select COMMON_CLK_MT2712
+	---help---
+	  This driver supports Mediatek MT2712 jpgdecsys clocks.
+
+config COMMON_CLK_MT2712_MFGCFG
+	bool "Clock driver for Mediatek MT2712 mfgcfg"
+	select COMMON_CLK_MT2712
+	---help---
+	  This driver supports Mediatek MT2712 mfgcfg clocks.
+
+config COMMON_CLK_MT2712_MMSYS
+	bool "Clock driver for Mediatek MT2712 mmsys"
+	select COMMON_CLK_MT2712
+	---help---
+	  This driver supports Mediatek MT2712 mmsys clocks.
+
+config COMMON_CLK_MT2712_VDECSYS
+	bool "Clock driver for Mediatek MT2712 vdecsys"
+	select COMMON_CLK_MT2712
+	---help---
+	  This driver supports Mediatek MT2712 vdecsys clocks.
+
+config COMMON_CLK_MT2712_VENCSYS
+	bool "Clock driver for Mediatek MT2712 vencsys"
+	select COMMON_CLK_MT2712
+	---help---
+	  This driver supports Mediatek MT2712 vencsys clocks.
+
 config COMMON_CLK_MT8135
 	bool "Clock driver for Mediatek MT8135"
 	depends on ARCH_MEDIATEK || COMPILE_TEST
