@@ -3812,8 +3812,8 @@
 		ta_ac_charger_current = <3000000>;
 
 		/* sw jeita */
-		jeita_temp_above_t4_cv_voltage = <4240000>;
-		jeita_temp_t3_to_t4_cv_voltage = <4240000>;
+		jeita_temp_above_t4_cv_voltage = <4150000>;
+		jeita_temp_t3_to_t4_cv_voltage = <4150000>;
 		jeita_temp_t2_to_t3_cv_voltage = <4400000>;
 		jeita_temp_t1_to_t2_cv_voltage = <4400000>;
 		jeita_temp_t0_to_t1_cv_voltage = <4400000>;
@@ -3824,10 +3824,10 @@
 		temp_t3_thres_minus_x_degree = <44>;
 		temp_t2_threshold = <15>;
 		temp_t2_thres_plus_x_degree = <16>;
-		temp_t1_threshold = <0>;
+		temp_t1_threshold = <1>;
 		temp_t1_thres_plus_x_degree = <2>;
-		temp_t0_threshold = <0>;
-		temp_t0_thres_plus_x_degree = <0>;
+		temp_t0_threshold = <1>;
+		temp_t0_thres_plus_x_degree = <1>;
 		temp_neg_10_threshold = <1>;
 
 		/* battery temperature protection */
