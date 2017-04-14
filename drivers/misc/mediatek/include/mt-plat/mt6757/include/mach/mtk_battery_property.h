@@ -69,7 +69,7 @@
 #define VBAT2_DET_VOLTAGE3	35000
 
 /* PCB setting */
-/* #define CALIBRATE_CAR_TUNE_VALUE_BY_META_TOOL */
+#define CALIBRATE_CAR_TUNE_VALUE_BY_META_TOOL //modify longcheer_liml_20170415
 #define CALI_CAR_TUNE_AVG_NUM	60
 
 /* Aging Compensation 1*/
