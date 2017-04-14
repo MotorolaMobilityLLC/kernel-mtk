@@ -130,7 +130,7 @@ static imgsensor_info_struct imgsensor_info = {
     },
     	.custom1 = {
 		.pclk = 107981280,//108183240,
-		.linelength = 1122,
+		.linelength = 1404,
 		.framelength = 4010,//3214,
 		.startx = 0,
 		.starty = 0,
@@ -1175,7 +1175,7 @@ static void custom1_setting(void)
 	LOG_INF("custom1_setting full size 24 fps\n");
 	write_cmos_sensor(0x0100,0x00);
 	mdelay(1);
-
+	write_cmos_sensor(0x0302, 0x47); //mipi data rate 852Mbps
 	write_cmos_sensor(0x0303, 0x00);
 	write_cmos_sensor(0x3501, 0x80);
 	write_cmos_sensor(0x3662, 0x12);
@@ -1204,8 +1204,8 @@ static void custom1_setting(void)
 	write_cmos_sensor(0x380a, 0x0c);
 	write_cmos_sensor(0x380b, 0x40);//o_y=3136
 	
-	write_cmos_sensor(0x380c, 0x04);
-	write_cmos_sensor(0x380d, 0x62);//hts=1122
+	write_cmos_sensor(0x380c, 0x05);//0x04
+	write_cmos_sensor(0x380d, 0x7c);//hts=1122 0x62
 
 	write_cmos_sensor(0x380e, 0x0f);
 	write_cmos_sensor(0x380f, 0xaa);//vts=4010 Yajun For 24fps //vts=3214
@@ -1238,7 +1238,7 @@ static void custom2_setting(void)
 	
 	write_cmos_sensor(0x0100,0x01);
 #else
-	LOG_INF("custom2_setting RES_2112x1568_30fps\n");
+	LOG_INF("custom2_setting RES_2112x1568_24 huangsh4 fps\n");
 	write_cmos_sensor(0x0100,0x00);
 	mdelay(10);
 
@@ -2391,7 +2391,7 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 			//PDAF capacity enable or not, 2p8 only full size support PDAF
 			switch (*feature_data) {
 				case MSDK_SCENARIO_ID_CAMERA_CAPTURE_JPEG:
-					*(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 1;
+					*(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 0;
 					break;
 				case MSDK_SCENARIO_ID_VIDEO_PREVIEW:
 					*(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 0;
