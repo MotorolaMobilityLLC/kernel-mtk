@@ -289,25 +289,31 @@ void s5k5e8_read_otp_lsc_blx(void)
 	int i = 0;
 	int j = 0;
 	s5k5e8_start_read_otp_blx(0x0004);
+	#if 0
 	for(i = 0x0A32;i <= 0x0A43;i++)
 	{
-		//LOG_INF("LSC[4][0x%x] = 0x%x\n",i,read_cmos_sensor(i));
+		LOG_INF("LSC[4][0x%x] = 0x%x\n",i,read_cmos_sensor(i));
 	}
+	#endif
 	s5k5e8_stop_read_otp_blx();
 	for(j = 5;j <= 9; j++)
 	{
 		s5k5e8_start_read_otp_blx(j);
+		#if 0
 		for(i = 0x0A04;i <= 0x0A43;i++)
 		{
-			//LOG_INF("LSC[%d][0x%x] = 0x%x\n",j,i,read_cmos_sensor(i));
+			LOG_INF("LSC[%d][0x%x] = 0x%x\n",j,i,read_cmos_sensor(i));
 		}
+		#endif
 		s5k5e8_stop_read_otp_blx();
 	}
 	s5k5e8_start_read_otp_blx(0x000a);
+	#if 0
 	for(i = 0x0A04;i <= 0x0A1B;i++)
 	{
-		//LOG_INF("LSC[10][0x%x] = 0x%x\n",i,read_cmos_sensor(i));
+		LOG_INF("LSC[10][0x%x] = 0x%x\n",i,read_cmos_sensor(i));
 	}
+	#endif
 	s5k5e8_stop_read_otp_blx();
 }
 #endif
