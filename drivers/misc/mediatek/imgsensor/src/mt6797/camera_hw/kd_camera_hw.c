@@ -146,7 +146,7 @@ PowerUp PowerOnList = {
 #if defined(OV13855_MIPI_RAW)
 	 {SENSOR_DRVNAME_OV13855_MIPI_RAW,
 	  {
-	   {SensorMCLK, Vol_High, 0},
+	   {SensorMCLK, Vol_High, 2},
 	   {DOVDD, Vol_1800, 0},
 	   {AVDD, Vol_2800, 0},
 	   {DVDD, Vol_1200, 0},
