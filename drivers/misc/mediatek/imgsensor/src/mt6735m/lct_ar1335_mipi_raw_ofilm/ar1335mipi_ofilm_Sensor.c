@@ -624,6 +624,9 @@ static kal_uint16 Read_cmos_sensor(kal_uint32 addr)
  *Read_Lsc_Otp_Value
  *************************************************************************/
 /*jijin.wang add for LSC OTP start */
+
+
+#if 0
 int Read_And_Write_Lsc_Otp_Value(void)
 {
 	int i = 0,j = 0;
@@ -663,6 +666,54 @@ int Read_And_Write_Lsc_Otp_Value(void)
 #endif
 	return 1;
 }
+#else
+//gusiliu add this session to reduce checksum's time, 20170414
+#define OPEN_OTP_DEBUG
+int Read_And_Write_Lsc_Otp_Value(void)
+{
+	int i = 0,j = 0;
+	u16 hiByte=0,loByte=0,hiByte_Tmp=0;
+	int CheckSum = 0;
+	for(i = 0;i < 106;i++)
+	{
+		hiByte_Tmp = Read_cmos_sensor(0xDF + j)&0x00ff;
+		hiByte = hiByte_Tmp<<8;
+		loByte = Read_cmos_sensor(0xDF + j +1)&0x00ff;
+		Lsc_Struct_data[i].Lsc_data = hiByte|loByte;
+		CheckSum += hiByte_Tmp;
+		CheckSum += loByte;
+		hiByte_Tmp = 0;
+		hiByte = 0;
+		loByte = 0;
+		//Lsc_Struct_data[i].Lsc_data = ((Read_cmos_sensor(0xDF + j)&0x00ff)<<8)|(Read_cmos_sensor(0xDF + j +1)&0x00ff);
+		//LOG_INF("hl[%d] = %x\n",i,Lsc_Struct_data[i].Lsc_data);
+		j += 2;
+	}
+	/*checksum*/
+	CheckSum += Read_cmos_sensor(0x00DE)&0x00ff;
+	
+	//for(i = 0x00DE;i <= 0x01B2;i++)
+	//{
+	//	CheckSum += (Read_cmos_sensor(i)&0x00ff);
+	//}
+#ifdef OPEN_OTP_DEBUG
+	LOG_INF("checksum value CheckSum = %x,0x09EF = %x,0x09F0 = %x\n"
+				,CheckSum
+				,Read_cmos_sensor(0x09EF),Read_cmos_sensor(0x09F0));
+#endif
+	/*write eeprom value to register*/
+	if(CheckSum == (((Read_cmos_sensor(0x09EF)&0x00ff)<<8)|(Read_cmos_sensor(0x09F0)&0x00ff)))
+	{
+		Write_Lsc_Otp_Value();
+	}else
+	{
+		LOG_INF("return Camera LSC-shading CheckSum fail!\n");
+		return 0;
+	}
+
+	return 1;
+}
+#endif
 /*jijin.wang add for LSC OTP end*/
 
 /*************************************************************************
@@ -745,7 +796,7 @@ static void sensor_init(void)
 	  */
 
 	write_cmos_sensor(0x0103, 0x01); 	// SOFTWARE_RESET     8bit
-	mDELAY(5);
+	mDELAY(3);
 	////corrections_recommended in here
 	write_cmos_sensor_2byte(0x3042, 0x1004); 	// DARK_CONTROL2
 	write_cmos_sensor_2byte(0x30D2, 0x0120); 	// CRM_CONTROL
@@ -1093,7 +1144,7 @@ static void preview_setting(void)
 	write_cmos_sensor_2byte(0x3FE0, 0x0001);
 	write_cmos_sensor(0x0100, 0x00);      //mode_select	  8-bit			
 	write_cmos_sensor_2byte(0x3FE0, 0x0000);
-	mDELAY(5);
+	mDELAY(3);
 	////vt_clk = 512mhz, dada rate 1020mhz
 	write_cmos_sensor_2byte(0x0300, 0x0005); 	// VT_PIX_CLK_DIV  0x0004
 	write_cmos_sensor_2byte(0x0302, 0x0001); 	// VT_SYS_CLK_DIV
@@ -1130,7 +1181,7 @@ static void preview_setting(void)
 
 	write_cmos_sensor_2byte(0x3F3C, 0x0003);
 	write_cmos_sensor(0x0100, 0x01);      //bit 8//mode_select  8-bit
-	mDELAY(5);
+	mDELAY(1);
 	if(OTP_KEY)	
 	{	
 		write_cmos_sensor(0x3780,0x80);
@@ -1148,7 +1199,7 @@ static void capture_setting(kal_uint16 currefps)
             write_cmos_sensor_2byte(0x3FE0,0x0001);
             write_cmos_sensor(0x0100, 0x00);
             write_cmos_sensor_2byte(0x3FE0,0x0000);
-	    mDELAY(5);
+	    mDELAY(3);
             write_cmos_sensor_2byte(0x0300,0x0005); 
             write_cmos_sensor_2byte(0x0302,0x0001); 
             write_cmos_sensor_2byte(0x0304,0x0403); //170313:0x0404
@@ -1183,7 +1234,7 @@ static void capture_setting(kal_uint16 currefps)
             write_cmos_sensor_2byte(0x31AE,0x0204); 
             write_cmos_sensor_2byte(0x3F3C,0x0003);
             write_cmos_sensor(0x0100,0x01);  
-            mDELAY(5);
+            mDELAY(1);
 	if(OTP_KEY)
 	{
 		write_cmos_sensor(0x3780,0x80);
@@ -1204,7 +1255,7 @@ static void normal_video_setting(kal_uint16 currefps)
 	write_cmos_sensor_2byte(0x3FE0, 0x0001);
 	write_cmos_sensor(0x0100, 0x00); //mode_select															
 	write_cmos_sensor_2byte(0x3FE0, 0x0000);
-	mDELAY(5);
+	mDELAY(3);
 
 	//1080p_array_setup_3840_2160_Ybin2_Xscale2
 	////vt_clk = 440mhz, dada rate 880mhz
@@ -1243,7 +1294,7 @@ static void normal_video_setting(kal_uint16 currefps)
 
 	write_cmos_sensor_2byte(0x3F3C, 0x0003);
 	write_cmos_sensor(0x0100, 0x01);		//bit 8//mode_select  8-bit
-	mDELAY(5);
+	mDELAY(3);
 	//msleep(50);
 
 
@@ -1257,7 +1308,7 @@ static void hs_video_setting(void)
 	write_cmos_sensor_2byte(0x3FE0, 0x0001);
 	write_cmos_sensor(0x0100, 0x00  );   //mode_select	 8-bit			
 	write_cmos_sensor_2byte(0x3FE0, 0x0000);
-	mDELAY(5);
+	mDELAY(3);
 	//720p_array_setup_3840_2160_Yskip3_XScale3
 	////vt_clk = 440mhz, dada rate 880mhz
 	write_cmos_sensor_2byte(0x0300, 0x0004);	// VT_PIX_CLK_DIV
@@ -1294,7 +1345,7 @@ static void hs_video_setting(void)
 
 	write_cmos_sensor_2byte(0x3F3C, 0x0003);
 	write_cmos_sensor(0x0100, 0x01 	);		//bit 8//mode_select  8-bit
-	mDELAY(5);
+	mDELAY(3);
 
 	//msleep(100);
 }
@@ -1307,7 +1358,7 @@ static void slim_video_setting(void)
 	write_cmos_sensor_2byte(0x3FE0, 0x0001);
 	write_cmos_sensor(0x0100, 0x00);      //mode_select	  8-bit			
 	write_cmos_sensor_2byte(0x3FE0, 0x0000);
-	mDELAY(5);
+	mDELAY(3);
 	////vt_clk = 440mhz, dada rate 880mhz
 	write_cmos_sensor_2byte(0x0300, 0x0004); 	// VT_PIX_CLK_DIV
 	write_cmos_sensor_2byte(0x0302, 0x0001); 	// VT_SYS_CLK_DIV
@@ -1344,7 +1395,7 @@ static void slim_video_setting(void)
 
 	write_cmos_sensor_2byte(0x3F3C, 0x0003);
 	write_cmos_sensor(0x0100, 0x01);      //bit 8//mode_select  8-bit
-	mDELAY(5);	
+	mDELAY(3);	
 }
 
 static kal_uint32 set_test_pattern_mode(kal_bool enable)
