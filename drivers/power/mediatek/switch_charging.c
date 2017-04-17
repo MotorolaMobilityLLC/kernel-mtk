@@ -911,6 +911,12 @@ static void mtk_select_ichg_aicr(void)
 	else if (g_bcct_flag == 1 || g_bcct_input_flag == 1) {
 		select_charging_current();
 		select_charging_current_bcct();
+		//zhangchao@wind-mobi.com 20170417 begin
+		#ifdef CONFIG_WIND_Z168_BATTERY_MODIFY
+		if (BMT_status.charger_type == STANDARD_HOST)
+			g_temp_CC_value = 102400;
+		#endif
+		//zhangchao@wind-mobi.com 20170417 end
 		battery_log(BAT_LOG_FULL,
 			"[BATTERY] select_charging_curret_bcct !\n");
 	} else {
