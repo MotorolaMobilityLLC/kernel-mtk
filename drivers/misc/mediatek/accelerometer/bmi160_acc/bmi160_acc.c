@@ -4294,7 +4294,7 @@ static long bmi160_acc_unlocked_ioctl(struct file *file, unsigned int cmd, unsig
 			if(power == false)
 			{
 				BMI160_ACC_SetPowerMode(client,true);
-				mdelay(50);
+				mdelay(20);
 			}
 			BMI160_ACC_ReadSensorData(client, strbuf, BMI160_BUFSIZE);
 			if(copy_to_user(data, strbuf, strlen(strbuf)+1))
@@ -4920,7 +4920,7 @@ static int bmi160_acc_resume(struct device *dev)
 		return err;
 	}
 	BMI160_ACC_SetPowerMode(client,power);
-	mdelay(50);
+	mdelay(10);
 	//tad3sgh add ++
 #ifdef BMC050_BLOCK_DAEMON_ON_SUSPEND
 	/* clear driver suspend flag */
