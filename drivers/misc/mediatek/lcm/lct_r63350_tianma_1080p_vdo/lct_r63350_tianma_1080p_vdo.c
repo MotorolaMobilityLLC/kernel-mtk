@@ -354,10 +354,6 @@ static void lcm_resume_power(void)
 static void lcm_init(void)
 {
 	SET_RESET_PIN(0);
-	MDELAY(5);
-	SET_RESET_PIN(1);
-	MDELAY(1);
-	SET_RESET_PIN(0);
 	MDELAY(10);
 
 	SET_RESET_PIN(1);
