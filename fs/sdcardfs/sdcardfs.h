@@ -243,6 +243,8 @@ extern int parse_options_remount(struct super_block *sb, char *options, int sile
 struct sdcardfs_sb_info {
 	struct super_block *sb;
 	struct super_block *lower_sb;
+	struct super_block *s_sb;
+	struct list_head s_list;
 	/* derived perm policy : some of options have been added
 	 * to sdcardfs_mount_options (Android 4.4 support)
 	 */
@@ -254,6 +256,10 @@ struct sdcardfs_sb_info {
 	struct list_head list;
 	unsigned int flag;
 };
+
+void sdcardfs_drop_shared_icache(struct super_block *, struct inode *);
+void sdcardfs_drop_sb_icache(struct super_block *, unsigned long);
+void sdcardfs_add_super(struct sdcardfs_sb_info *, struct super_block *);
 
 /*
  * inode to private data
