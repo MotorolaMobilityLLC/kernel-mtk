@@ -1269,7 +1269,7 @@ int mtk_p2p_cfg80211_del_station(struct wiphy *wiphy, struct net_device *dev, co
 		if (mac == NULL)
 			mac = aucBcMac;
 
-		DBGLOG(P2P, TRACE, "mtk_p2p_cfg80211_del_station.\n");
+		DBGLOG(P2P, INFO, "Del_station: %pM.\n", mac);
 
 		prGlueInfo = *((P_GLUE_INFO_T *) wiphy_priv(wiphy));
 
