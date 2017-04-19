@@ -204,6 +204,7 @@ static int sdcardfs_rmdir(struct inode *dir, struct dentry *dentry)
 	lower_dentry = lower_path.dentry;
 	lower_dir_dentry = lock_parent(lower_dentry);
 
+	sdcardfs_drop_shared_icache(dir->i_sb, lower_dentry->d_inode);
 	err = vfs_rmdir(lower_dir_dentry->d_inode, lower_dentry);
 	if (err)
 		goto out;
