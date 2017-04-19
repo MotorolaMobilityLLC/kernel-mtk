@@ -220,6 +220,7 @@ struct sdcardfs_sb_info {
 void sdcardfs_drop_shared_icache(struct super_block *, struct inode *);
 void sdcardfs_drop_sb_icache(struct super_block *, unsigned long);
 void sdcardfs_add_super(struct sdcardfs_sb_info *, struct super_block *);
+void sdcardfs_truncate_share(struct super_block *, struct inode *, loff_t newsize);
 
 /*
  * inode to private data
