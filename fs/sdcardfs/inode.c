@@ -530,6 +530,7 @@ static int sdcardfs_setattr(struct dentry *dentry, struct iattr *ia)
 			goto out;
 		}
 		truncate_setsize(inode, ia->ia_size);
+		sdcardfs_truncate_share(inode->i_sb, lower_dentry->d_inode, ia->ia_size);
 	}
 
 	if (current->mm)
