@@ -799,6 +799,7 @@ static int sdcardfs_setattr(struct vfsmount *mnt, struct dentry *dentry, struct 
 			goto out;
 		}
 		truncate_setsize(inode, ia->ia_size);
+		sdcardfs_truncate_share(inode->i_sb, lower_dentry->d_inode, ia->ia_size);
 	}
 
 	/*
