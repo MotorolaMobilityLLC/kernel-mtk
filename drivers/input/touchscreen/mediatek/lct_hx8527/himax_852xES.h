@@ -111,7 +111,7 @@
 #define HX_RST_PIN_FUNC
 //#define HX_LOADIN_CONFIG
 #define HX_AUTO_UPDATE_FW
-//#define HX_SMART_WAKEUP
+#define HX_SMART_WAKEUP
 //#define HX_DOT_VIEW
 //#define HX_PALM_REPORT
 #define HX_ESD_WORKAROUND
