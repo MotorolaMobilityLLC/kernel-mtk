@@ -1327,17 +1327,17 @@ static int bmi160_acc_init_client(struct i2c_client *client, int reset_cali)
 		return res;
 	}
 	GSE_LOG("BMI160_ACC disable interrupt function!\n");
-
+/*
 	res = BMI160_ACC_SetPowerMode(client, false);
-//	mdelay(50);
+	mdelay(10);
 	if(res != BMI160_ACC_SUCCESS)
 	{
 		return res;
 	}
 	GSE_LOG("BMI160_ACC_SetPowerMode OK!\n");
-/*
+*/
 	res = BMI160_ACC_SetPowerMode(client, true);
-	mdelay(50);
+	mdelay(10);
 	if(res != BMI160_ACC_SUCCESS)
 	{
 		return res;
@@ -1345,13 +1345,13 @@ static int bmi160_acc_init_client(struct i2c_client *client, int reset_cali)
 	GSE_LOG("BMI160_ACC_SetPowerMode true OK!\n");
 
 	res = BMI160_ACC_SetPowerMode(client, false);
-	mdelay(50);
+	mdelay(10);
 	if(res != BMI160_ACC_SUCCESS)
 	{
 		return res;
 	}
 	GSE_LOG("BMI160_ACC_SetPowerMode second OK!\n");
-*/
+
 	if(0 != reset_cali)
 	{
 		/*reset calibration only in power on*/

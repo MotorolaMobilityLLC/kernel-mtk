@@ -856,9 +856,26 @@ static int bmg_init_client(struct i2c_client *client, int reset_cali)
 		GYRO_ERR("set range failed, err = %d\n", err);
 		return err;
 	}
+/*
+	err = bmg_set_powermode(client,
+		(enum BMG_POWERMODE_ENUM)BMG_SUSPEND_MODE);
+		mdelay(10);
+	if (err < 0) {
+		GYRO_ERR("set power mode failed, err = %d\n", err);
+		return err;
+	}
+*/
+	err = bmg_set_powermode(client,
+		(enum BMG_POWERMODE_ENUM)BMG_NORMAL_MODE);
+		mdelay(10);
+	if (err < 0) {
+		GYRO_ERR("set power mode failed, err = %d\n", err);
+		return err;
+	}
 
 	err = bmg_set_powermode(client,
 		(enum BMG_POWERMODE_ENUM)BMG_SUSPEND_MODE);
+		mdelay(10);
 	if (err < 0) {
 		GYRO_ERR("set power mode failed, err = %d\n", err);
 		return err;
