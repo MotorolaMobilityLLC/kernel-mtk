@@ -120,8 +120,10 @@ void sdcardfs_truncate_share(struct super_block *sb, struct inode *lower_inode, 
 		}
 		spin_unlock(&sdcardfs_list_lock);
 		inode = ilookup(sbi->s_sb, lower_inode->i_ino);
-		if (inode)
+		if (inode) {
 			truncate_setsize(inode, newsize);
+			iput(inode);
+		}
 		spin_lock(&sdcardfs_list_lock);
 		p = p->next;
 	}
