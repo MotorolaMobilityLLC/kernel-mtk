@@ -354,6 +354,7 @@ static void sdcardfs_work_handle_unlink(struct sdcardfs_work_job *pw)
 	dget(lower_dentry);
 	lower_dir_dentry = lock_parent(lower_dentry);
 
+	sdcardfs_drop_shared_icache(dir->i_sb, lower_dentry->d_inode);
 	err = vfs_unlink(lower_dir_inode, lower_dentry, NULL);
 
 	/*
