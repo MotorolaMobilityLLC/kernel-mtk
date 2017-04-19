@@ -1421,7 +1421,6 @@ int spm_mtcmos_ctrl_isp(int state)
 			/* until hw ack ok */
 		}
 	} else {		/* STA_POWER_ON */
-        int count = 0;
 		spm_write(SPM_ISP_PWR_CON, spm_read(SPM_ISP_PWR_CON) | PWR_ON);
 		spm_write(SPM_ISP_PWR_CON, spm_read(SPM_ISP_PWR_CON) | PWR_ON_2ND);
 
@@ -1438,17 +1437,6 @@ int spm_mtcmos_ctrl_isp(int state)
 		spm_write(SPM_ISP_PWR_CON, spm_read(SPM_ISP_PWR_CON) & ~SRAM_PDN);
 
 		while ((spm_read(SPM_ISP_PWR_CON) & ISP_SRAM_ACK)) {
-            count++;
-            if (count > 1000 && count < 1010) {
-                pr_debug("there is no fmm_clk, CLK_CFG_0 = 0x%x\n", 
-                    spm_read(CLK_CFG_0));
-            }
-            if (count > 2000) {
-            #if defined(CONFIG_MTK_LEGACY)
-                clk_stat_check(SYS_DIS);
-            #endif
-                BUG();
-            }
 			/* read hw status */
 			/* until hw ack ok */
 		}
