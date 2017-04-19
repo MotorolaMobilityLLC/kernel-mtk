@@ -36,7 +36,7 @@
 #define PFX "GT24c32_otp"
 
 #define CAM_CALINF(fmt, arg...)     pr_err(PFX "[%s] " fmt, __FUNCTION__, ##arg)
-#define CAM_CALDB(fmt, arg...)    pr_err(PFX "[%s] " fmt, __FUNCTION__, ##arg)
+#define CAM_CALDB(fmt, arg...)    pr_debug(PFX "[%s] " fmt, __FUNCTION__, ##arg)
 #define CAM_CALERR(fmt, arg...)     pr_err(PFX "[%s] " fmt, __FUNCTION__, ##arg)
 #else
 #define CAM_CALDB(x,...)
@@ -341,7 +341,7 @@ static int ReadAR1335AWBData(unsigned short ui4_offset, unsigned int  ui4_length
 		if(!selective_read_eeprom(addr, &AWBdatabuf[i])){
 			return -1;
 		}
-		CAM_CALDB("read_eeprom 0x%0x %d\n",addr, AWBdatabuf[i]);
+	//	CAM_CALDB("read_eeprom 0x%0x %d\n",addr, AWBdatabuf[i]);
 		addr++;
 	}
 

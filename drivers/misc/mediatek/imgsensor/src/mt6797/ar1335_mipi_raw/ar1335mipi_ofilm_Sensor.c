@@ -992,7 +992,7 @@ write_cmos_sensor_2byte(0x301A, 0x021C); 	// RESET_REGISTER 0x021C
 
 //// end init
 AR1335_OTP_READ_LOAD_LSC();
-#if 1
+#if 0
 #if defined(AR1335_OTP)
 	//AR1335_otp_read(0x30);
 	//temp = read_cmos_sensor_2(0x3812);  //
@@ -1016,7 +1016,7 @@ static void preview_setting(void)
 	write_cmos_sensor_2byte(0x3FE0, 0x0001);
 	write_cmos_sensor(0x0100, 0x00);      //mode_select	  8-bit			
 	write_cmos_sensor_2byte(0x3FE0, 0x0000);
-		mDELAY(20);
+		mDELAY(10);
 	////vt_clk = 440mhz, dada rate 1104mhz
 	write_cmos_sensor_2byte(0x0300, 0x0005); 	// VT_PIX_CLK_DIV
 	write_cmos_sensor_2byte(0x0302, 0x0001); 	// VT_SYS_CLK_DIV
@@ -1062,7 +1062,7 @@ static void preview_setting(void)
 	
 	write_cmos_sensor_2byte(0x3F3C, 0x0003);
 	write_cmos_sensor(0x0100, 0x01);      //bit 8//mode_select  8-bit
-	mDELAY(20);	
+	mDELAY(10);	
 	
 }    /*    preview_setting  */
 
@@ -1074,7 +1074,7 @@ static void capture_setting(kal_uint16 currefps)
 	write_cmos_sensor_2byte(0x3FE0, 0x0001);
 	write_cmos_sensor(0x0100, 0x00);     //mode_select	   8bit			
 	write_cmos_sensor_2byte(0x3FE0, 0x0000);
-		mDELAY(20);
+		mDELAY(10);
 
 	/// Mclk = 24Mhz , vt_clk = 441.6Mhz
 	////// vt_clk = 441.6mhz pclk = 110.4mhz data rate = 1104mhz  4208*3120@30fps
@@ -1129,7 +1129,7 @@ static void capture_setting(kal_uint16 currefps)
 	write_cmos_sensor(0x0100, 0x01);      //mode_select  8-bit   
 
 
-    mDELAY(20);  
+   	 mDELAY(10);  
 
 }
 
