@@ -227,6 +227,17 @@ config PCI_HISI
 	  Say Y here if you want PCIe controller support on HiSilicon
 	  Hip05 and Hip06 SoCs
 
+config PCIE_MTK
+	depends on OF && ARCH_MEDIATEK
+	bool "Mediatek PCIe controller"
+	select PCIEPORTBUS
+	help
+	  Say Y here if you want PCIe controller support on Mediatek SoC
+	  platform
+
+	  PCIe controller support PCIe Gen 2.0 and msi, it's integrated in
+	  Mediatek SoCs.
+
 config PCIE_QCOM
 	bool "Qualcomm PCIe controller"
 	depends on ARCH_QCOM && OF
