@@ -131,6 +131,26 @@ static ssize_t gf_debug_store(struct device *dev,
 
 static DEVICE_ATTR(debug, S_IRUGO | S_IWUSR, gf_debug_show, gf_debug_store);
 
+//Lcsh tqq add device_info
+#ifdef CONFIG_LCT_DEVINFO_SUPPORT
+#include  "dev_info.h"
+static struct devinfo_struct *s_DEVINFO_Finger;   
+static void devinfo_finger_regchar(char *module,char * vendor,char *used)
+{
+
+	s_DEVINFO_Finger =(struct devinfo_struct*) kmalloc(sizeof(struct devinfo_struct), GFP_KERNEL);	
+	s_DEVINFO_Finger->device_type="fingerprint";
+	s_DEVINFO_Finger->device_module=module;
+	s_DEVINFO_Finger->device_vendor=vendor;
+	s_DEVINFO_Finger->device_ic="gf3208";
+	s_DEVINFO_Finger->device_info=DEVINFO_NULL;
+	s_DEVINFO_Finger->device_version="-P8";
+	s_DEVINFO_Finger->device_used=used;
+
+       DEVINFO_CHECK_DECLARE(s_DEVINFO_Finger->device_type,s_DEVINFO_Finger->device_module,s_DEVINFO_Finger->device_vendor,s_DEVINFO_Finger->device_ic,s_DEVINFO_Finger->device_version,s_DEVINFO_Finger->device_info,s_DEVINFO_Finger->device_used);
+}     
+#endif
+
 static struct attribute *gf_debug_attrs[] = {
 	&dev_attr_debug.attr,
 	NULL
@@ -1749,7 +1769,12 @@ static int gf_probe(struct spi_device *spi)
 
 	/* check firmware Integrity */
 	//gf_debug(INFO_LOG, "%s, Sensor type : %s.\n", __func__, CONFIG_GOODIX_SENSOR_TYPE);
+//lcsh tqq add device_info
+#ifdef CONFIG_LCT_DEVINFO_SUPPORT
+	devinfo_finger_regchar("gf3208","goodix",DEVINFO_USED);
 
+#endif
+//and end
 #ifdef SUPPORT_REE_SPI
 #ifdef SUPPORT_REE_OSWEGO
 	{
