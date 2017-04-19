@@ -44,7 +44,7 @@
 
 #define FW_IMAGE_NAME "synaptics/startup_fw_update.img"
 
-#define DO_STARTUP_FW_UPDATE //tuwenzan@wind-mobi.com close this feature at 20161229
+// #define DO_STARTUP_FW_UPDATE //tuwenzan@wind-mobi.com close this feature at 20170419
 #ifdef DO_STARTUP_FW_UPDATE
 #include "SynapticsImage_Biel.h" //tuwenzan@wind-mobi.com add at 20170113
 #include "SynapticsImage_GD.h"  //tuwenzan@wind-mobi.com modify at 20161202
