@@ -15,6 +15,13 @@
 #define __MALI_KBASE_CONFIG_PLATFORM_H__
 
 
+struct mfg_base {
+	void __iomem *reg_base;
+	struct clk *mfg_pll;
+	struct clk *mfg_sel;
+};
+
+
 /**
  * Maximum frequency GPU will be clocked at. Given in kHz.
  * This must be specified as there is no default value.

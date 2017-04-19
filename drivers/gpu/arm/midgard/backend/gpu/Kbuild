@@ -45,9 +45,9 @@ BACKEND += \
 	backend/gpu/mali_kbase_pm_fast_start.c
 endif
 
-ifeq ($(CONFIG_MALI_DEVFREQ),y)
-BACKEND += backend/gpu/mali_kbase_devfreq.c
-endif
+#ifeq ($(CONFIG_MALI_DEVFREQ),y)
+#BACKEND += backend/gpu/mali_kbase_devfreq.c
+#endif
 
 ifeq ($(CONFIG_MALI_NO_MALI),y)
 	# Dummy model
@@ -57,6 +57,6 @@ ifeq ($(CONFIG_MALI_NO_MALI),y)
 	BACKEND += backend/gpu/mali_kbase_model_error_generator.c
 endif
 
-ifeq ($(CONFIG_DEVFREQ_THERMAL),y)
-	BACKEND += backend/gpu/mali_kbase_power_model_simple.c
-endif
+#ifeq ($(CONFIG_DEVFREQ_THERMAL),y)
+#	BACKEND += backend/gpu/mali_kbase_power_model_simple.c
+#endif
