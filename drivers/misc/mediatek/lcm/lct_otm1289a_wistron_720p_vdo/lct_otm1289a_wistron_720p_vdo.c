@@ -565,6 +565,8 @@ static void lcm_setbacklight_cmdq(void *handle, unsigned int level)
 {
 	LCM_LOGI("%s,lcm otm1289a backlight: level = %d\n", __func__, level);
 
+	if(level <= 3)
+	 	level = 3;
 	bl_level[0].para_list[0] = level;
 
 	push_table(handle, bl_level, sizeof(bl_level) / sizeof(struct LCM_setting_table), 1);
