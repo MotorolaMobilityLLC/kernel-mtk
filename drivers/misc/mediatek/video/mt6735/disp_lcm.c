@@ -27,6 +27,10 @@
 #include <linux/of.h>
 #endif
 
+#ifdef CONFIG_LCT_CHR_JEITA_STANDARD_SUPPORT //add by longcheer_liml_2017_07_20
+extern int lcm_suspend_flag;
+#endif
+
 int _lcm_count(void)
 {
 	return lcm_count;
@@ -1155,6 +1159,9 @@ int disp_lcm_suspend(disp_lcm_handle *plcm)
 	LCM_DRIVER *lcm_drv = NULL;
 
 	DISPFUNC();
+	#ifdef CONFIG_LCT_CHR_JEITA_STANDARD_SUPPORT //add by longcheer_liml_2017_07_20
+    lcm_suspend_flag=1;
+    #endif
 	if (_is_lcm_inited(plcm)) {
 		lcm_drv = plcm->drv;
 		if (lcm_drv->suspend) {
@@ -1182,6 +1189,9 @@ int disp_lcm_resume(disp_lcm_handle *plcm)
 	LCM_DRIVER *lcm_drv = NULL;
 
 	DISPFUNC();
+	#ifdef CONFIG_LCT_CHR_JEITA_STANDARD_SUPPORT //add by longcheer_liml_2017_07_20
+    lcm_suspend_flag=0;
+    #endif
 	if (_is_lcm_inited(plcm)) {
 		lcm_drv = plcm->drv;
 

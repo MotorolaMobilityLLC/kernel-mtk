@@ -110,6 +110,10 @@ DEFINE_MUTEX(g_ichg_access_mutex);
 unsigned int g_aicr_upper_bound;
 static bool g_enable_dynamic_cv = true;
 
+#ifdef CONFIG_LCT_CHR_JEITA_STANDARD_SUPPORT //add by longcheer_liml_2017_07_20
+int lcm_suspend_flag =0;
+#endif
+
  /* ///////////////////////////////////////////////////////////////////////////////////////// */
  /* // JEITA */
  /* ///////////////////////////////////////////////////////////////////////////////////////// */
@@ -863,10 +867,42 @@ void select_charging_current_bcct(void)
 		g_temp_input_CC_value = CHARGE_CURRENT_500_00_MA;
 	}
 #else
+#ifdef CONFIG_LCT_CHR_JEITA_STANDARD_SUPPORT //add by longcheer_liml_2017_07_20
 	if (g_bcct_flag == 1)
-		g_temp_CC_value = g_bcct_value * 100;
+	{ 
+	    if(BMT_status.charger_type == STANDARD_CHARGER) 
+	    { 
+	        if(lcm_suspend_flag ==1)
+	        {
+	            g_temp_CC_value = batt_cust_data.ac_charger_current;
+	        }else{
+	            g_temp_CC_value = g_bcct_value * 100;
+	        }
+        }else{
+            g_temp_CC_value = g_bcct_value * 100;
+        }	          
+	}		
 	if (g_bcct_input_flag == 1)
-		g_temp_input_CC_value = g_bcct_input_value * 100;
+	{
+		if(BMT_status.charger_type == STANDARD_CHARGER) 
+	    { 
+	        if(lcm_suspend_flag ==1)
+	        {
+	            g_temp_input_CC_value = batt_cust_data.ac_charger_input_current;
+	        }else{
+	            g_temp_input_CC_value = g_bcct_input_value * 100;
+	        }
+        }else{
+            g_temp_input_CC_value = g_bcct_input_value * 100;
+        }
+	}
+	printk("~~liml_chg lcm_suspend_flag=%d,g_temp_input_CC_value=%d,g_temp_CC_value=%d\n",lcm_suspend_flag,g_temp_input_CC_value,g_temp_CC_value);
+#else
+	if (g_bcct_flag == 1)
+	    g_temp_CC_value = g_bcct_value * 100;		
+	if (g_bcct_input_flag == 1)
+	    g_temp_input_CC_value = g_bcct_input_value * 100;
+#endif
 #endif
 
 #ifdef CONFIG_LCT_CHR_JEITA_STANDARD_SUPPORT
