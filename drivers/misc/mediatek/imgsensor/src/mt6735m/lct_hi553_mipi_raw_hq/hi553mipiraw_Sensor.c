@@ -180,7 +180,7 @@ static imgsensor_info_struct imgsensor_info = {
 	.sensor_mode_num = 3,	  //support sensor mode num ,don't support Slow motion
 
 	.cap_delay_frame = 2,		//enter capture delay frame num
-	.pre_delay_frame = 2, 		//enter preview delay frame num
+	.pre_delay_frame = 3, 		//enter preview delay frame num
 	.video_delay_frame = 2,		//enter video delay frame num
 	.hs_video_delay_frame = 3,	//enter high speed video  delay frame num
 	.slim_video_delay_frame = 3,//enter slim video delay frame num	
@@ -4513,7 +4513,7 @@ static kal_uint32 preview(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 	spin_unlock(&imgsensor_drv_lock);
 	preview_setting();
 	//set_mirror_flip(imgsensor.mirror);	
-	//mdelay(5);
+	mdelay(200);
 //#ifdef FANPENGTAO
 	//int i=0;
 	//for(i=0; i<10; i++){
