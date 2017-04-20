@@ -1097,13 +1097,13 @@ static int BMI160_ACC_SetPowerMode(struct i2c_client *client, bool enable)
 	u8 databuf[2] = {0};
 	int res = 0;
 	struct bmi160_acc_i2c_data *obj = obj_i2c_data;
-
+/*
 	if(enable == sensor_power )
 	{
 		GSE_LOG("Sensor power status is newest!\n");
 		return BMI160_ACC_SUCCESS;
 	}
-
+*/
 	mutex_lock(&obj->lock);
 	if(enable == true)
 	{
