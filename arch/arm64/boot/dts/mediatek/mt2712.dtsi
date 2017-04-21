@@ -376,6 +376,11 @@
 					cooling-device = <&cpu4 0 0>;
 					contribution = <1024>;
 				};
+				map@2 {
+					trip = <&target>;
+					cooling-device = <&gpu 0 0>;
+					contribution = <2048>;
+				};
 			};
 		};
 	};
@@ -1216,7 +1221,7 @@
 
 			#cooling-cells = <2>;
 			#cooling-min-level = <0>;
-			#cooling-max-level = <3>;
+			#cooling-max-level = <5>;
 
 			operating-points = <
 				520000 1000000
