@@ -25,6 +25,7 @@
 #include <linux/kthread.h>
 #include <linux/workqueue.h>
 #include <linux/switch.h>
+#include <linux/math64.h>
 
 #include <mt-plat/upmu_common.h>
 #include <mt-plat/charger_class.h>
@@ -685,14 +686,28 @@ out_unlock_all:
 
 	/* Coefficient of IBUS & IBAT */
 	if (adc_sel == RT5081_ADC_IBUS) {
-		if (aicr < 400000) /* 400mA */
+		if (aicr < 400000) {/* 400mA */
+#if defined(__LP64__) || defined(_LP64)
 			adc_result = adc_result * 67 / 100;
+#else
+			adc_result = div_s64(adc_result * 67, 100);
+#endif
+		}
 		mutex_unlock(&chg_data->aicr_access_lock);
 	} else if (adc_sel == RT5081_ADC_IBAT) {
-		if (ichg >= 100000 && ichg <= 450000) /* 100~450mA */
+		if (ichg >= 100000 && ichg <= 450000) {/* 100~450mA */
+#if defined(__LP64__) || defined(_LP64)
 			adc_result = adc_result * 475 / 1000;
-		else if (ichg >= 500000 && ichg <= 850000) /* 500~850mA */
+#else
+			adc_result = div_s64(adc_result * 475, 1000);
+#endif
+		} else if (ichg >= 500000 && ichg <= 850000) {/* 500~850mA */
+#if defined(__LP64__) || defined(_LP64)
 			adc_result = adc_result * 536 / 1000;
+#else
+			adc_result = div_s64(adc_result * 536, 1000);
+#endif
+		}
 		mutex_unlock(&chg_data->ichg_access_lock);
 	}
 

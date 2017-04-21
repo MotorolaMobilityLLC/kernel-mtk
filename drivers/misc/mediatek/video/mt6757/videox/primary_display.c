@@ -4240,8 +4240,11 @@ int primary_display_wait_for_vsync_timeout(int timeout)
 {
 	int has_vsync = 1;
 
-	/* kick idle manager here to ensure sodi is disabled when screen update begin(not 100% ensure) */
-	primary_display_idlemgr_kick(__func__, 1);
+	/* this function is used for AV-sync which contributes to lowpower of VP
+	 * So we don't need to kick display to exit idle state.
+	 * We just wait until timeout if display is in idle and has no vsync.
+	 */
+	/* primary_display_idlemgr_kick(__func__, 1); */
 
 #ifdef CONFIG_FPGA_EARLY_PORTING
 	if (!primary_display_is_video_mode())

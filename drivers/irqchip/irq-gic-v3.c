@@ -718,7 +718,11 @@ static int gic_set_affinity(struct irq_data *d, const struct cpumask *mask_val,
 	 */
 	if ((val != GICD_IROUTER_SPI_MODE_ANY) &&
 	    (val > gic_mpidr_to_affinity(cpu_logical_map(num_possible_cpus()-1)))) {
+#ifdef CONFIG_64BIT
 		pr_err("[GIC] cpu_logical_map(%d) = %llu\n", cpu, cpu_logical_map(cpu));
+#else
+		pr_err("[GIC] cpu_logical_map(%d) = %u\n", cpu, cpu_logical_map(cpu));
+#endif
 		BUG_ON(1);
 	}
 

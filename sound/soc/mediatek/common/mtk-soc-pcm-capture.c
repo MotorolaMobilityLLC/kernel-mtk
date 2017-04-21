@@ -73,6 +73,7 @@ static bool mCaptureUseSram;
 
 static bool vcore_dvfs_enable;
 
+static bool mPrepareDone;
 
 /*
  *    function implementation
@@ -106,19 +107,10 @@ static void StopAudioCaptureHardware(struct snd_pcm_substream *substream)
 {
 	pr_aud("StopAudioCaptureHardware\n");
 
-	SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_IN_ADC, false);
-	if (GetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_IN_ADC) == false)
-		SetI2SAdcEnable(false);
-
 	SetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_VUL, false);
 
 	/* here to set interrupt */
 	irq_remove_user(substream, Soc_Aud_IRQ_MCU_MODE_IRQ2_MCU_MODE);
-
-	/* here to turn off digital part */
-	SetIntfConnection(Soc_Aud_InterCon_DisConnect, Soc_Aud_AFE_IO_Block_I2S2_ADC, Soc_Aud_AFE_IO_Block_MEM_VUL);
-
-	EnableAfe(false);
 }
 
 static void ConfigAdcI2S(struct snd_pcm_substream *substream)
@@ -138,27 +130,6 @@ static void StartAudioCaptureHardware(struct snd_pcm_substream *substream)
 {
 	pr_aud("StartAudioCaptureHardware\n");
 
-	ConfigAdcI2S(substream);
-	SetI2SAdcIn(mAudioDigitalI2S);
-
-	if (substream->runtime->format == SNDRV_PCM_FORMAT_S32_LE ||
-		substream->runtime->format == SNDRV_PCM_FORMAT_U32_LE) {
-		SetMemIfFetchFormatPerSample(Soc_Aud_Digital_Block_MEM_VUL, AFE_WLEN_32_BIT_ALIGN_8BIT_0_24BIT_DATA);
-		SetConnectionFormat(OUTPUT_DATA_FORMAT_24BIT, Soc_Aud_AFE_IO_Block_MEM_VUL);
-	} else {
-		SetMemIfFetchFormatPerSample(Soc_Aud_Digital_Block_MEM_VUL, AFE_WLEN_16_BIT);
-		SetConnectionFormat(OUTPUT_DATA_FORMAT_16BIT, Soc_Aud_AFE_IO_Block_MEM_VUL);
-	}
-
-	SetIntfConnection(Soc_Aud_InterCon_Connection, Soc_Aud_AFE_IO_Block_I2S2_ADC, Soc_Aud_AFE_IO_Block_MEM_VUL);
-
-	if (GetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_IN_ADC) == false) {
-		SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_IN_ADC, true);
-		SetI2SAdcEnable(true);
-	} else {
-		SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_IN_ADC, true);
-	}
-
 	/* here to set interrupt */
 	irq_add_user(substream,
 		     Soc_Aud_IRQ_MCU_MODE_IRQ2_MCU_MODE,
@@ -169,12 +140,39 @@ static void StartAudioCaptureHardware(struct snd_pcm_substream *substream)
 	SetSampleRate(Soc_Aud_Digital_Block_MEM_VUL, substream->runtime->rate);
 	SetChannels(Soc_Aud_Digital_Block_MEM_VUL, substream->runtime->channels);
 	SetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_VUL, true);
-
-	EnableAfe(true);
 }
 
 static int mtk_capture_pcm_prepare(struct snd_pcm_substream *substream)
 {
+	pr_aud("mtk_capture_pcm_prepare, mPrepareDone = %d\n", mPrepareDone);
+
+	if (mPrepareDone == false) {
+		ConfigAdcI2S(substream);
+		SetI2SAdcIn(mAudioDigitalI2S);
+
+		if (substream->runtime->format == SNDRV_PCM_FORMAT_S32_LE ||
+			substream->runtime->format == SNDRV_PCM_FORMAT_U32_LE) {
+			SetMemIfFetchFormatPerSample(Soc_Aud_Digital_Block_MEM_VUL,
+					AFE_WLEN_32_BIT_ALIGN_8BIT_0_24BIT_DATA);
+			SetConnectionFormat(OUTPUT_DATA_FORMAT_24BIT, Soc_Aud_AFE_IO_Block_MEM_VUL);
+		} else {
+			SetMemIfFetchFormatPerSample(Soc_Aud_Digital_Block_MEM_VUL, AFE_WLEN_16_BIT);
+			SetConnectionFormat(OUTPUT_DATA_FORMAT_16BIT, Soc_Aud_AFE_IO_Block_MEM_VUL);
+		}
+
+		SetIntfConnection(Soc_Aud_InterCon_Connection,
+				Soc_Aud_AFE_IO_Block_I2S2_ADC, Soc_Aud_AFE_IO_Block_MEM_VUL);
+
+		if (GetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_IN_ADC) == false) {
+			SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_IN_ADC, true);
+			SetI2SAdcEnable(true);
+		} else {
+			SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_IN_ADC, true);
+		}
+
+		EnableAfe(true);
+		mPrepareDone = true;
+	}
 	return 0;
 }
 
@@ -284,6 +282,21 @@ static int mtk_capture_pcm_open(struct snd_pcm_substream *substream)
 
 static int mtk_capture_pcm_close(struct snd_pcm_substream *substream)
 {
+	pr_aud("mtk_capture_pcm_close\n");
+
+	if (mPrepareDone == true) {
+		SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_IN_ADC, false);
+		if (GetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_IN_ADC) == false)
+			SetI2SAdcEnable(false);
+
+		/* here to turn off digital part */
+		SetIntfConnection(Soc_Aud_InterCon_DisConnect,
+				Soc_Aud_AFE_IO_Block_I2S2_ADC, Soc_Aud_AFE_IO_Block_MEM_VUL);
+
+		EnableAfe(false);
+		mPrepareDone = false;
+	}
+
 	AudDrv_ADC_Clk_Off();
 	AudDrv_Clk_Off();
 	vcore_dvfs(&vcore_dvfs_enable, true);

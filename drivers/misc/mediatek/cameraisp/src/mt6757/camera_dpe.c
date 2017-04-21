@@ -1164,7 +1164,7 @@ static MINT32 ConfigDVEHW(DPE_DVEConfig *pDveConfig)
 {
 #ifdef DPE_USE_GCE
 		struct cmdqRecStruct *handle;
-		uint64_t engineFlag = (1L << CMDQ_ENG_DPE);
+		uint64_t engineFlag = (uint64_t)(1LL << CMDQ_ENG_DPE);
 #endif
 
 	if (DPE_DBG_DBGLOG == (DPE_DBG_DBGLOG & DPEInfo.DebugMask)) {
@@ -1570,7 +1570,7 @@ static MINT32 ConfigWMFEHW(DPE_WMFEConfig *pWmfeCfg)
 {
 #ifdef DPE_USE_GCE
 		struct cmdqRecStruct *handle;
-		uint64_t engineFlag = (1L << CMDQ_ENG_DPE);
+		uint64_t engineFlag = (uint64_t)(1LL << CMDQ_ENG_DPE);
 #endif
 	unsigned int i = 0;
 	unsigned int wmfe_mask_value = 0;

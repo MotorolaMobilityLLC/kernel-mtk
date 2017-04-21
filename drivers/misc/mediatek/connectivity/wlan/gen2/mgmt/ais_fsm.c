@@ -5472,14 +5472,22 @@ VOID aisFsmRunEventBssTransition(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgH
 static VOID
 aisSendNeighborRequest(P_ADAPTER_T prAdapter)
 {
-	struct SUB_ELEMENT_LIST rSSIDIE;
+	struct SUB_ELEMENT_LIST *prSSIDIE;
+	UINT_32 u4Length = 0;
 	P_BSS_INFO_T prBssInfo = &(prAdapter->rWifiVar.arBssInfo[NETWORK_TYPE_AIS_INDEX]);
 
-	kalMemZero(&rSSIDIE, sizeof(rSSIDIE));
-	rSSIDIE.rSubIE.ucSubID = ELEM_ID_SSID;
-	rSSIDIE.rSubIE.ucLength = prBssInfo->ucSSIDLen;
-	kalMemCopy(&rSSIDIE.rSubIE.aucOptInfo[0], prBssInfo->aucSSID, prBssInfo->ucSSIDLen);
-	rlmTxNeighborReportRequest(prAdapter, prBssInfo->prStaRecOfAP, &rSSIDIE);
+	u4Length = sizeof(struct SUB_ELEMENT_LIST) + prBssInfo->ucSSIDLen;
+	prSSIDIE = (struct SUB_ELEMENT_LIST *)kalMemAlloc(u4Length, VIR_MEM_TYPE);
+	if (prSSIDIE == NULL) {
+		DBGLOG(AIS, WARN, "allocate memory fail in aisSendNeighborRequest\n");
+		return;
+	}
+	kalMemZero(prSSIDIE, u4Length);
+	prSSIDIE->rSubIE.ucSubID = ELEM_ID_SSID;
+	prSSIDIE->rSubIE.ucLength = prBssInfo->ucSSIDLen;
+	kalMemCopy(&prSSIDIE->rSubIE.aucOptInfo[0], prBssInfo->aucSSID, prBssInfo->ucSSIDLen);
+	rlmTxNeighborReportRequest(prAdapter, prBssInfo->prStaRecOfAP, prSSIDIE);
+	kalMemFree(prSSIDIE, VIR_MEM_TYPE, u4Length);
 }
 
 VOID aisCollectNeighborAPChannel(P_ADAPTER_T prAdapter,

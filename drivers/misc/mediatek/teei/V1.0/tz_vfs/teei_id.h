@@ -79,7 +79,9 @@ enum teei_cmd_type {
  * ***************************************************************/
 static inline void Flush_Dcache_By_Area(unsigned long start, unsigned long end)
 {
-#if 0
+#ifdef CONFIG_ARM64
+		__flush_dcache_area((void *)start, (end - start));
+#else
 	__asm__ __volatile__ ("dsb" : : : "memory"); /* dsb */
 
 	__asm__ __volatile__ (
