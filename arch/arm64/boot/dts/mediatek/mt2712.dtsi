@@ -17,6 +17,7 @@
 #include <dt-bindings/memory/mt2712-larb-port.h>
 #include <dt-bindings/power/mt2712-power.h>
 #include <dt-bindings/reset-controller/mt2712-resets.h>
+#include "mt2712-pinfunc.h"
 
 / {
 	compatible = "mediatek,mt2712";
@@ -96,6 +97,20 @@
 		#size-cells = <2>;
 		compatible = "simple-bus";
 		ranges;
+
+		syscfg_pctl_a: syscfg_pctl_a@10005000 {
+			compatible = "mediatek,mt2712-pctl-a-syscfg", "syscon";
+			reg = <0 0x10005000 0 0x1000>;
+		};
+
+		pio: pinctrl@10005000 {
+			compatible = "mediatek,mt2712-pinctrl";
+			reg = <0 0x1000b000 0 0x1000>;
+			mediatek,pctl-regmap = <&syscfg_pctl_a>;
+			pins-are-numbered;
+			gpio-controller;
+			#gpio-cells = <2>;
+		};
 
 		timer: timer@10008000 {
 			compatible = "mediatek,mt2712-timer",
