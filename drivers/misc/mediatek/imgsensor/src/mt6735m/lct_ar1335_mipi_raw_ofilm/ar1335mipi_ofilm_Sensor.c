@@ -1121,7 +1121,8 @@ static void sensor_init(void)
 
 	/// enable_streaming
 	write_cmos_sensor_2byte(0x3F3C, 0x0003); 	// ANALOG_CONTROL9
-	write_cmos_sensor_2byte(0x301A, 0x021C); 	// RESET_REGISTER 0x021C  
+	write_cmos_sensor_2byte(0x301A, 0x021C); 	// RESET_REGISTER 0x021C 
+	mdelay(5); 
 
 
 	if(OTP_KEY)
@@ -1169,7 +1170,7 @@ static void preview_setting(void)
 	write_cmos_sensor_2byte(0x0342, 0x12D0); 	// LINE_LENGTH_PCK               //170310: 0x1206
 	write_cmos_sensor_2byte(0x0340, 0x0DC6); 	// FRAME_LENGTH_LINES //0x0C52   //170310: 0x0AE2
 	write_cmos_sensor_2byte(0x0202, 0x094c); 	// COARSE_INTEGRATION_TIME
-
+	#if 0
 	write_cmos_sensor_2byte(0x31B0, 0x0045);   //Frame preamble 4D
 	write_cmos_sensor_2byte(0x31B2, 0x0025);   //Line preamble 28
 	write_cmos_sensor_2byte(0x31B4, 0x424C);   //MIPI timing0 230E
@@ -1178,10 +1179,19 @@ static void preview_setting(void)
 	write_cmos_sensor_2byte(0x31BA, 0x1452);   //MIPI timing3 185B
 	write_cmos_sensor_2byte(0x31BC, 0x8488);   //MIPI timing4 8509
 	write_cmos_sensor_2byte(0x31AE, 0x0204);   //SERIAL_FORMAT
-
+	#else
+	    write_cmos_sensor_2byte(0x31B0,0x004D); 
+            write_cmos_sensor_2byte(0x31B2,0x0028); 
+            write_cmos_sensor_2byte(0x31B4,0x230E); 
+            write_cmos_sensor_2byte(0x31B6,0x1348); 
+            write_cmos_sensor_2byte(0x31B8,0x1C12); 
+            write_cmos_sensor_2byte(0x31BA,0x185B); 
+            write_cmos_sensor_2byte(0x31BC,0x8509); 
+            write_cmos_sensor_2byte(0x31AE,0x0204);
+	#endif
 	write_cmos_sensor_2byte(0x3F3C, 0x0003);
 	write_cmos_sensor(0x0100, 0x01);      //bit 8//mode_select  8-bit
-	mDELAY(1);
+	mDELAY(5);
 	if(OTP_KEY)	
 	{	
 		write_cmos_sensor(0x3780,0x80);
@@ -1224,7 +1234,8 @@ static void capture_setting(kal_uint16 currefps)
             write_cmos_sensor_2byte(0x0342,0x1660); 
             write_cmos_sensor_2byte(0x0340,0x0C72); //170313: 0x0C72
             write_cmos_sensor_2byte(0x0202,0x0C60); 
-            write_cmos_sensor_2byte(0x31B0,0x004D); 
+            #if 0
+	    write_cmos_sensor_2byte(0x31B0,0x004D); 
             write_cmos_sensor_2byte(0x31B2,0x0028); 
             write_cmos_sensor_2byte(0x31B4,0x230E); 
             write_cmos_sensor_2byte(0x31B6,0x1348); 
@@ -1232,9 +1243,10 @@ static void capture_setting(kal_uint16 currefps)
             write_cmos_sensor_2byte(0x31BA,0x185B); 
             write_cmos_sensor_2byte(0x31BC,0x8509); 
             write_cmos_sensor_2byte(0x31AE,0x0204); 
+	    #endif
             write_cmos_sensor_2byte(0x3F3C,0x0003);
             write_cmos_sensor(0x0100,0x01);  
-            mDELAY(1);
+            mDELAY(5);
 	if(OTP_KEY)
 	{
 		write_cmos_sensor(0x3780,0x80);
