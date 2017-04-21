@@ -5685,7 +5685,7 @@ static int Audio_HyBridDRE_TurnOff_Set(struct snd_kcontrol *kcontrol, struct snd
 				}
 			} else if (dre_l_gain_dig_cur != rg_dre_l_gain_dig_tar ||
 					dre_l_gain_ana_cur != rg_dre_l_gain_ana_tar) {
-				if (dre_r_dig_gain_targeted && dre_r_ana_gain_targeted) {
+				if (dre_l_dig_gain_targeted && dre_l_ana_gain_targeted) {
 					pr_warn("%s L Err dre_l_dig_gain_targeted %d dre_l_ana_gain_targeted %d\n",
 						__func__, dre_l_dig_gain_targeted, dre_l_ana_gain_targeted);
 					Audio_DRE_RegDump();

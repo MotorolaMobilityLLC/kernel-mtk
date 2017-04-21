@@ -1154,6 +1154,10 @@ void OpenTrimBufferHardware(bool enable)
 		/* Disable HP aux feedback loop */
 		Ana_Set_Reg(AUDDEC_ANA_CON1, 0x0000, 0x000C);
 		/* Disable HP aux output stage */
+
+		/* HPL/HPR output stage STB enhance for ACCDET */
+		Ana_Set_Reg(AUDDEC_ANA_CON2, 0x0011, 0x0011);
+
 		Ana_Set_Reg(AUDDEC_ANA_CON2, 0x0000, 0x8000);
 		/* No Pull-down HPL/R to AVSS30_AUD for de-pop noise */
 
@@ -1309,6 +1313,9 @@ bool OpenHeadPhoneImpedanceSetting(bool bEnable)
 
 		/* HP Aux loop gain setting */
 		Ana_Set_Reg(AUDDEC_ANA_CON9, 0x8200, 0x8200);
+
+		/* HPL/HPR output stage STB enhance for ACCDET */
+		Ana_Set_Reg(AUDDEC_ANA_CON2, 0x0011, 0x0011);
 
 		Ana_Set_Reg(AUDDEC_ANA_CON0, 0x0000, 0x0009);
 		/* Disable Audio DAC */
@@ -2256,6 +2263,9 @@ static void Audio_Amp_Change(int channels, bool enable, bool is_anc)
 			Ana_Set_Reg(AUDDEC_ANA_CON2, 0x4000, 0x4000); /* 0xC000 */
 			/* Reduce ESD resistance of AU_REFN */
 
+			/* HPL/HPR output stage STB no enhance when playback */
+			Ana_Set_Reg(AUDDEC_ANA_CON2, 0x0000, 0x0011);
+
 			Ana_Set_Reg(AFE_DL_NLE_L_CFG0, 0x001e, 0x003f);
 			Ana_Set_Reg(AFE_DL_NLE_R_CFG0, 0x001e, 0x003f);
 			/* Set HPL/HPR gain to -22dB */
@@ -2432,6 +2442,9 @@ static void Audio_Amp_Change(int channels, bool enable, bool is_anc)
 
 			Ana_Set_Reg(AUDDEC_ANA_CON10, 0x0000, 0x0003);
 			/* Disable HPR/L main CMFB loop modulation control for E3 */
+
+			/* HPL/HPR output stage STB enhance for ACCDET */
+			Ana_Set_Reg(AUDDEC_ANA_CON2, 0x0011, 0x0011);
 
 			Ana_Set_Reg(AUDDEC_ANA_CON2, 0x0000, 0x8000);
 			/* No Pull-down HPL/R to AVSS30_AUD for de-pop noise */
@@ -3023,7 +3036,6 @@ static void Headset_Speaker_Amp_Change(bool enable)
 		/* Pull-down HPL/R to AVSS30_AUD for de-pop noise */
 		Ana_Set_Reg(AUDDEC_ANA_CON2, 0x4000, 0x4000); /* 0xC000 */
 		/* Reduce ESD resistance of AU_REFN */
-
 		Ana_Set_Reg(AUDDEC_ANA_CON14, 0x0005, 0x0005); /* 0x0005 */
 		/* Enable cap-less LDOs (1.6V) */
 		Ana_Set_Reg(AUDDEC_ANA_CON14, 0x0010, 0x0010); /* 0x0015 */
@@ -3072,6 +3084,10 @@ static void Headset_Speaker_Amp_Change(bool enable)
 		/* Set HPP/N STB enhance circuits */
 		Ana_Set_Reg(AUDDEC_ANA_CON2, 0x0000, 0x8000); /* 0x4000 */
 		/* No Pull-down HPL/R to AVSS30_AUD */
+
+		/* HPL/HPR output stage STB no enhance when playback */
+		Ana_Set_Reg(AUDDEC_ANA_CON2, 0x0000, 0x0011);
+
 		/* Ana_Set_Reg(AUDDEC_ANA_CON4, 0x0004, 0x000E); - 6337 */
 		/* Set HP bias in HIFI mdoe */
 		Ana_Set_Reg(AUDDEC_ANA_CON0, 0x00C0, 0x00C0); /* 0x30C0 */
@@ -3140,6 +3156,9 @@ static void Headset_Speaker_Amp_Change(bool enable)
 			/* Disable HPR/HPL */
 			Ana_Set_Reg(AUDDEC_ANA_CON9, 0x0000, 0xff00); /* 0x0001 */
 			/* Disable HP aux CMFB loop */
+
+			/* HPL/HPR output stage STB enhance for ACCDET */
+			Ana_Set_Reg(AUDDEC_ANA_CON2, 0x0011, 0x0011);
 
 			Ana_Set_Reg(AUDDEC_ANA_CON10, 0x0000, 0x0003);
 			/* Disable HPR/L main CMFB loop modulation control for E3 */
@@ -7351,7 +7370,7 @@ static int Audio_HyBridNLE_TurnOff_Set(struct snd_kcontrol *kcontrol, struct snd
 				}
 			} else if (nle_l_gain_dig_cur != rg_nle_l_gain_dig_tar ||
 					nle_l_gain_ana_cur != rg_nle_l_gain_ana_tar) {
-				if (nle_r_dig_gain_targeted && nle_r_ana_gain_targeted) {
+				if (nle_l_dig_gain_targeted && nle_l_ana_gain_targeted) {
 					pr_warn("%s L Err nle_l_dig_gain_targeted %d nle_l_ana_gain_targeted %d\n",
 						__func__, nle_l_dig_gain_targeted, nle_l_ana_gain_targeted);
 					Audio_NLE_RegDump();
@@ -7867,6 +7886,8 @@ static void mt6331_codec_init_reg(struct snd_soc_codec *codec)
 	Ana_Set_Reg(AUDDEC_ANA_CON7, 0x0110, 0x0110);
 	/* Ana_Set_Reg(AUDDEC_ANA_CON3, 0x4228, 0xffff); */
 	/* [5] = 1, disable LO buffer left short circuit protection */
+	/* HPL/HPR output stage STB enhance for ACCDET */
+	Ana_Set_Reg(AUDDEC_ANA_CON2, 0x0011, 0x0011);
 #endif
 	/* Set for 6757 bring up */
 	Ana_Set_Reg(DRV_CON2, 0xe << 8, 0xf << 8);

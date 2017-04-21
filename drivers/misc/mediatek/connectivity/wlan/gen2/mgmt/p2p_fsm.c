@@ -1961,8 +1961,8 @@ VOID p2pFsmRunEventBeaconTimeout(IN P_ADAPTER_T prAdapter)
 		if (prP2pBssInfo->eConnectionState == PARAM_MEDIA_STATE_CONNECTED) {
 			/* Indicate disconnect to Host. */
 			kalP2PGCIndicateConnectionStatus(prAdapter->prGlueInfo,
-							NULL, NULL, 0, REASON_CODE_DISASSOC_INACTIVITY,
-							WLAN_STATUS_MEDIA_DISCONNECT_LOCALLY);
+							 NULL, NULL, 0, REASON_CODE_DEAUTH_LEAVING_BSS,
+							 WLAN_STATUS_MEDIA_DISCONNECT);
 			if (prP2pBssInfo->prStaRecOfAP != NULL) {
 				P_STA_RECORD_T prStaRec = prP2pBssInfo->prStaRecOfAP;
 

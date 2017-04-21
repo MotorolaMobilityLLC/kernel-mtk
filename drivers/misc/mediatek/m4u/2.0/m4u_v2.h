@@ -47,7 +47,6 @@ typedef enum {
 /* port related: virtuality, security, distance */
 typedef struct _M4U_PORT {
 	M4U_PORT_ID ePortID;		   /* hardware port ID, defined in M4U_PORT_ID */
-	unsigned long va;
 	unsigned int Virtuality;
 	unsigned int Security;
 	unsigned int domain;            /* domain : 0 1 2 3 */

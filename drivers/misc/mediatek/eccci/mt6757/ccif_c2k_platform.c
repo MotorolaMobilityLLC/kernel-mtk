@@ -344,7 +344,8 @@ int md_ccif_let_md_go(struct ccci_modem *md)
 		 */
 
 		/*step 4: wake up C2K */
-#if 1
+		/* use hardcode may cause case issue */
+#if 0
 		ccif_write32(md_ctrl->hw_info->toprgu_base,
 			     TOP_RGU_WDT_SWSYSRST,
 			     (ccif_read32

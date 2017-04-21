@@ -187,6 +187,9 @@ static long dev_char_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 				if (ret < 0) {
 					pr_err("[IRTX] mtk_regulator_enable disable fail!!\n");
 					return -1;
+				} else {
+					/* requlator return 0(no change) or 1(change) is correct */
+					ret = 0;
 				}
 				#else
 				switch_irtx_gpio(IRTX_GPIO_MODE_EN_DEFAULT);

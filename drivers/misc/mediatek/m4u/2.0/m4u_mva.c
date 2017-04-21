@@ -372,8 +372,8 @@ unsigned int m4u_do_mva_alloc_start_from(unsigned long va, unsigned int mva, uns
 	spin_lock_irqsave(&gMvaGraph_lock, irq_flags);
 
 	/* find this region */
-	for (region_start = 1; region_start < (MVA_MAX_BLOCK_NR + 1);
-		region_start += MVA_GET_NR(region_start)) {
+	for (region_start = 1; (region_start < (MVA_MAX_BLOCK_NR + 1));
+	     region_start += (MVA_GET_NR(region_start) & MVA_BLOCK_NR_MASK)) {
 		if ((mvaGraph[region_start] & MVA_BLOCK_NR_MASK) == 0) {
 			m4u_mvaGraph_dump();
 			m4u_aee_print("%s: s=%d, 0x%x\n", __func__, s, mvaGraph[region_start]);
@@ -382,6 +382,12 @@ unsigned int m4u_do_mva_alloc_start_from(unsigned long va, unsigned int mva, uns
 			next_region_start = region_start + MVA_GET_NR(region_start);
 			break;
 		}
+	}
+
+	if (region_start > MVA_MAX_BLOCK_NR) {
+		M4UMSG("%s:alloc mva fail,no available MVA for %d blocks\n", __func__, nr);
+		spin_unlock_irqrestore(&gMvaGraph_lock, irq_flags);
+		return 0;
 	}
 
 	region_end = region_start + MVA_GET_NR(region_start) - 1;
@@ -425,7 +431,6 @@ unsigned int m4u_do_mva_alloc_start_from(unsigned long va, unsigned int mva, uns
 
 		return 0;
 	}
-
 	/* ----------------------------------------------- */
 	if (s == 0) {
 		/* same as m4u_do_mva_alloc_fix */

@@ -322,7 +322,7 @@ static int task_sync_handler(void *arg)
 			VAL_UINT32_T _diff = 0;
 
 			eVideoGetTimeOfDay(&_time_1, sizeof(VAL_TIME_T));
-			primary_display_wait_for_vsync_timeout(50);
+			primary_display_wait_for_vsync_timeout((HZ*20+999)/1000);
 			eVideoGetTimeOfDay(&_time_2, sizeof(VAL_TIME_T));
 			_diff = time_diff_ms(_time_1, _time_2);
 			if (_diff > 50)
