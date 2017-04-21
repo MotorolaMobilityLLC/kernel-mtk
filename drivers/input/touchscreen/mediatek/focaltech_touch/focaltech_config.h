@@ -185,7 +185,7 @@
 
 #define FTS_UPGRADE_COMP_VENDORS_NUM			3
 #define FTS_UPGRADE_FW_APP_VID1\
-	"include/firmware/HQ_Lenovo_AL1570_Ofilm0x01_Ver0x06_20170410_app.i"
+	"include/firmware/HQ_Lenovo_AL1570_Ofilm0x01_Ver0x07_20170421_app.i"
 #define FTS_UPGRADE_FW_APP_VID2\
 	"include/firmware/HQ_Moto_AL1570_Toptouch0xa0_Ver0x03_20170105_app.i"
 #define FTS_UPGRADE_FW_APP_VID3\
