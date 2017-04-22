@@ -923,7 +923,7 @@ static int bmg_read_sensor_data(struct i2c_client *client,
 
 		/* convert: LSB -> degree/second(o/s) */
 		gyro[BMG_AXIS_X] = gyro[BMG_AXIS_X] / obj->sensitivity;
-		gyro[BMG_AXIS_Y] = gyro[BMG_AXIS_Y] / obj->sensitivity;
+		gyro[BMG_AXIS_Y] = gyro[BMG_AXIS_Y] / obj->sensitivity*983/1000; //yangchao
 		gyro[BMG_AXIS_Z] = gyro[BMG_AXIS_Z] / obj->sensitivity;
 
 		sprintf(buf, "%04x %04x %04x",
