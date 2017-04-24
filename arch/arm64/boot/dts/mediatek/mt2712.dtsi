@@ -110,6 +110,9 @@
 			pins-are-numbered;
 			gpio-controller;
 			#gpio-cells = <2>;
+			interrupt-controller;
+			#interrupt-cells = <2>;
+			interrupts = <GIC_SPI 153 IRQ_TYPE_LEVEL_HIGH>;
 		};
 
 		timer: timer@10008000 {
