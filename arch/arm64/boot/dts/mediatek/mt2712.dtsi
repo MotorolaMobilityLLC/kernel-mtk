@@ -318,4 +318,15 @@
 			#clock-cells = <1>;
 		};
 	};
+
+	clkitg: clkitg {
+		compatible = "simple-bus";
+	};
+
+	clkao: clkao {
+		compatible = "simple-bus";
+	};
 };
+
+#include "mt2712-clkitg.dtsi"
+#include "mt2712-clkao.dtsi"
