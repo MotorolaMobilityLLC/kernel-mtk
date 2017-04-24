@@ -900,6 +900,34 @@ void tpd_usb_plugin(int plugin)
 EXPORT_SYMBOL(tpd_usb_plugin);
 #endif
 
+static int fts_read_vendor(struct i2c_client *client)
+{
+	u8 ctp_vendor_id;
+	int ret = 0;
+
+	ret = fts_i2c_read_reg(client, FTS_REG_VENDOR_ID, &ctp_vendor_id);
+	if (ret < 0) {
+		FTS_ERROR("[TPD]read value failed!(ret: %d)", ret);
+		return -1;
+	}
+	switch (ctp_vendor_id) {
+	case FTS_VENDOR_1_ID :
+		FTS_INFO("[TPD]Vendor:Ofilm");
+		break;
+	case FTS_VENDOR_2_ID :
+		FTS_INFO("[TPD]Vendor:TopTouch");
+		break;
+	case FTS_VENDOR_3_ID :
+		FTS_INFO("[TPD]Vendor:DJ");
+		break;
+	default :
+		FTS_INFO("[TPD]Vendor:Unknown");
+		break;
+	}
+
+	return 0;
+}
+
 /************************************************************************
 * Name: fts_probe
 * Brief:
@@ -974,6 +1002,8 @@ static int tpd_probe(struct i2c_client *client, const struct i2c_device_id *id)
 
 	FTS_DEBUG("[TPD]Touch Panel Device Probe %s!",
 		  (retval < 0) ? "FAIL" : "PASS");
+
+	fts_read_vendor(client);
 
 #ifdef CONFIG_MTK_SENSOR_HUB_SUPPORT
 	fts_sensor_init();

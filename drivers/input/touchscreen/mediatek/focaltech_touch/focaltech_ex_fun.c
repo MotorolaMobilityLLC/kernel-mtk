@@ -524,6 +524,55 @@ void fts_release_apk_debug_channel(void)
 #endif
 }
 
+static ssize_t fts_tpvendor_show(struct device *dev,
+				struct device_attribute *attr, char *buf)
+{
+	ssize_t num_read_chars = 0;
+	u8 vendor = 0;
+
+	mutex_lock(&fts_input_dev->mutex);
+
+#if FTS_ESDCHECK_EN
+	fts_esdcheck_proc_busy(1);
+#endif
+	if (fts_i2c_read_reg(fts_i2c_client, FTS_REG_VENDOR_ID, &vendor) < 0) {
+		num_read_chars =
+		    snprintf(buf, PAGE_SIZE, "I2c transfer error!\n");
+	}
+#if FTS_ESDCHECK_EN
+	fts_esdcheck_proc_busy(0);
+#endif
+	switch (vendor) {
+	case FTS_VENDOR_1_ID :
+		num_read_chars = snprintf(buf, PAGE_SIZE, "Ofilm\n");
+		break;
+	case FTS_VENDOR_2_ID :
+		num_read_chars = snprintf(buf, PAGE_SIZE, "TopTouch\n");
+		break;
+	case FTS_VENDOR_3_ID :
+		num_read_chars = snprintf(buf, PAGE_SIZE, "DJ\n");
+		break;
+	case 255 :
+		num_read_chars = snprintf(buf, PAGE_SIZE, "get tp fw version fail!\n");
+		break;
+	default :
+		num_read_chars = snprintf(buf, PAGE_SIZE, "Unknown\n");
+		break;
+	}
+
+	mutex_unlock(&fts_input_dev->mutex);
+
+	return num_read_chars;
+}
+
+static ssize_t fts_tpvendor_store(struct device *dev,
+				 struct device_attribute *attr, const char *buf,
+				 size_t count)
+{
+	/* place holder for future use */
+	return -EPERM;
+}
+
 /************************************************************************
 * Name: fts_tpfwver_show
 * Brief:  show tp fw vwersion
@@ -1193,6 +1242,9 @@ static ssize_t fts_dumpreg_show(struct device *dev,
 static DEVICE_ATTR(fts_fw_version, S_IRUGO | S_IWUSR, fts_tpfwver_show,
 		   fts_tpfwver_store);
 
+static DEVICE_ATTR(fts_vendor_name, S_IRUGO | S_IWUSR, fts_tpvendor_show,
+		   fts_tpvendor_store);
+
 /* upgrade from *.i
 *   example: echo 1 > fw_update
 */
@@ -1227,6 +1279,7 @@ static DEVICE_ATTR(fts_esd_check, S_IRUGO | S_IWUSR, fts_esdcheck_show,
 /* add your attr in here*/
 static struct attribute *fts_attributes[] = {
 	&dev_attr_fts_fw_version.attr,
+	&dev_attr_fts_vendor_name.attr,
 	&dev_attr_fts_fw_update.attr,
 	&dev_attr_fts_rw_reg.attr,
 	&dev_attr_fts_dump_reg.attr,
