@@ -129,7 +129,7 @@
 			interrupt-controller;
 			#interrupt-cells = <3>;
 			interrupt-parent = <&gic>;
-			reg = <0 0x10220a80 0 0x2c>;
+			reg = <0 0x10220a80 0 0x40>;
 		};
 
 		gic: interrupt-controller@10510000 {
