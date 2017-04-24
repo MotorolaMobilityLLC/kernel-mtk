@@ -71,7 +71,7 @@
 /*************************************************************/
 
 /* debug log setting */
-u8 g_debug_level = DEBUG_LOG;
+u8 g_debug_level = INFO_LOG;
 
 /* align=2, 2 bytes align */
 /* align=4, 4 bytes align */
@@ -434,7 +434,7 @@ void gf_netlink_send(struct gf_device *gf_dev, const int command)
 		return;
 	}
 
-	gf_debug(INFO_LOG, "[%s] : send done, data length is %d\n", __func__, ret);
+	gf_debug(DEBUG_LOG, "[%s] : send done, data length is %d\n", __func__, ret);
 }
 
 static void gf_netlink_recv(struct sk_buff *__skb)
