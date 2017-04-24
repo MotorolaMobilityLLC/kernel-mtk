@@ -669,9 +669,9 @@ static int bmg_set_powermode(struct i2c_client *client,
 		data = actual_power_mode;
 		err += bmg_i2c_write_block(client,
 			BMI160_CMD_COMMANDS__REG, &data, 1);
-		mdelay(55);
+		mdelay(80);
 	}
-
+	printk("set power mode data = %d",data);
 	if (err < 0)
 		GYRO_ERR("set power mode failed, err = %d, sensor name = %s\n",
 			err, obj->sensor_name);
@@ -947,7 +947,7 @@ static int bmg_read_sensor_data(struct i2c_client *client,
 
 		sprintf(buf, "%04x %04x %04x",
 			gyro[BMG_AXIS_X], gyro[BMG_AXIS_Y], gyro[BMG_AXIS_Z]);
-		if (atomic_read(&obj->trace) & GYRO_TRC_IOCTL)
+//		if (atomic_read(&obj->trace) & GYRO_TRC_IOCTL)
 			GYRO_LOG("gyroscope data: %s\n", buf);
 	}
 
