@@ -693,7 +693,7 @@
 	tpd-key-local= <158 172 139 0>;
 	tpd-key-dim-local = <160 2030 100 40 360 2030 100 40 570 2030 100 40 0 0 0 0>;
 	tpd-max-touch-num = <10>;
-	tpd-filter-enable = <1>;
+	tpd-filter-enable = <0>;
 	tpd-filter-pixel-density = <144>;
 	tpd-filter-custom-prameters = <0 0 0 0 0 0 0 0 0 0 0 0>;
 	tpd-filter-custom-speed = <0 0 0>;
