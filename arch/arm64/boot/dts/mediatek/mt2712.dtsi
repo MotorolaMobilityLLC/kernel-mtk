@@ -154,6 +154,15 @@
 			interrupts = <GIC_SPI 153 IRQ_TYPE_LEVEL_HIGH>;
 		};
 
+		scpsys: syscon@10006000 {
+			compatible = "mediatek,mt2712-scpsys", "syscon";
+			#power-domain-cells = <1>;
+			reg = <0 0x10006000 0 0x1000>;
+			clocks = <&topckgen CLK_TOP_MM_SEL>;
+			clock-names = "mm";
+			infracfg = <&infracfg>;
+		};
+
 		timer: timer@10008000 {
 			compatible = "mediatek,mt2712-timer",
 				     "mediatek,mt6577-timer";
