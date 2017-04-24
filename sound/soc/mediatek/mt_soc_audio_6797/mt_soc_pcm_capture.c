@@ -106,10 +106,6 @@ static void StopAudioCaptureHardware(struct snd_pcm_substream *substream)
 	/* here to set interrupt */
 	irq_remove_user(substream, Soc_Aud_IRQ_MCU_MODE_IRQ2_MCU_MODE);
 
-	/* here to turn off digital part */
-	SetConnection(Soc_Aud_InterCon_DisConnect, Soc_Aud_InterConnectionInput_I03, Soc_Aud_InterConnectionOutput_O09);
-	SetConnection(Soc_Aud_InterCon_DisConnect, Soc_Aud_InterConnectionInput_I04, Soc_Aud_InterConnectionOutput_O10);
-
 	EnableAfe(false);
 }
 
@@ -367,6 +363,10 @@ static int mtk_capture_pcm_open(struct snd_pcm_substream *substream)
 static int mtk_capture_pcm_close(struct snd_pcm_substream *substream)
 {
 	if (mPrepareDone == true) {
+		SetConnection(Soc_Aud_InterCon_DisConnect,
+			      Soc_Aud_InterConnectionInput_I03, Soc_Aud_InterConnectionOutput_O09);
+		SetConnection(Soc_Aud_InterCon_DisConnect,
+			      Soc_Aud_InterConnectionInput_I04, Soc_Aud_InterConnectionOutput_O10);
 		SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_IN_ADC, false);
 		if (GetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_IN_ADC) == false)
 			SetI2SAdcEnable(false);
