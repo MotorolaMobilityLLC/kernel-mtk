@@ -602,8 +602,8 @@ CONFIG_SLT_DEVINFO=y
 CONFIG_LCT_VIBR_FACTORY_SUPPORT=y
 
 #LCT add capsensor by dingjian 20170220 start
-CONFIG_LCT_CAPTOUCH=y
-CONFIG_LCT_CAPSENSOR_SX9310=y
+#CONFIG_LCT_CAPTOUCH is not set
+#CONFIG_LCT_CAPSENSOR_SX9310 is not set
 #add by dingjian 20170220 end
 
 #add by lct  wangjiaxing  20170301 start
