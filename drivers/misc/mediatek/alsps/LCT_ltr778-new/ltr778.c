@@ -173,7 +173,7 @@ static int get_avg_lux(unsigned int lux)
 
 
 
-#define MAX_ELM_PS 5
+#define MAX_ELM_PS 2
 static unsigned int record_ps[MAX_ELM_PS];
 static int rct_ps=0,full_ps=0;
 static long ps_sum=0;
@@ -749,14 +749,16 @@ static int ltr778_ps_read(struct i2c_client *client, u16 *data)
 	//ps_offrl = ltr778_i2c_read_reg(0x99);
 	//ps_offrh = ltr778_i2c_read_reg(0x9A);
 	//ps_offr = ((ps_offrh & 7)* 256) + ps_offrl;
-
-
+	if(ps_offen < 5)
+		ps_offen++;
 	/*if(ps_offen == 0 && ps_offr == 0)*/
-	if(ps_offen == 0){
+	if(ps_offen == 4){
+
+		//ps_offen++;
 		
 		if(ps_en == 1 && psdata > 150 && psdata < 1024){
 
-			ps_offen = 1;
+			
 
 			ps_offd = psdata-130;
 			
@@ -771,7 +773,7 @@ static int ltr778_ps_read(struct i2c_client *client, u16 *data)
 
 		}else if(ps_en == 1 && psdata >= 1024 && psdata < 1400){
 			
-			ps_offen = 1;
+			//ps_offen = 1;
 			
 			ltr778_i2c_write_reg(0x99, 0xff);
 			ltr778_i2c_write_reg(0x9A, 0x03);			
@@ -799,7 +801,7 @@ static int ltr778_ps_read(struct i2c_client *client, u16 *data)
 	psdata = ((psval_hi & 7)* 256) + psval_lo;
 	
 #if 1	
-	if(get_avg_ps(psdata) == 0  && ps_offen == 1 )
+	if(get_avg_ps(psdata) == 0  && ps_offen >= 4 )
 	{
 		
 		ps_offrl = ltr778_i2c_read_reg(0x99);
@@ -1137,12 +1139,20 @@ static int ltr778_get_ps_value(struct ltr778_priv *obj, u16 ps)
 				oil_far_cal = 0;
 			}
 
-		if((ps <= atomic_read(&obj->ps_persist_val_low)) && (oil_close == 1) )
-			{
+		if((ps <= (atomic_read(&obj->ps_persist_val_low) - 10)) && (oil_close == 1)){
 				val = 3;  /* persist oil far away*/
 				val_temp = 3;
 				intr_flag_value = 3;
+			}else if((ps >  (atomic_read(&obj->ps_persist_val_low) + 15)) && (oil_close == 1)){
+				val = 2;  /* persist oil near*/
+				val_temp = 2;
+				intr_flag_value = 3;
+			}else{
+				val = val_temp;
+				intr_flag_value = 3;
 			}
+
+
 	}	
 	else if((ps <= atomic_read(&obj->ps_thd_val_low)))
 	{
@@ -1980,7 +1990,7 @@ static void ltr778_eint_work(struct work_struct *work)
 
 			
 
-
+#if 0
 			if(obj->ps > 25 ){ 
 				 if(obj->ps < 50){
         			atomic_set(&obj->ps_thd_val_high,  obj->ps+75);
@@ -2018,7 +2028,7 @@ static void ltr778_eint_work(struct work_struct *work)
         		dynamic_calibrate = obj->ps;
         	}	        
 
-
+#endif
 			
 			res = ltr778_i2c_write_reg( LTR778_PS_THRES_LOW_0,(u8)((atomic_read(&obj->ps_thd_val_low)) & 0x00FF) );
 			if(res < 0)
