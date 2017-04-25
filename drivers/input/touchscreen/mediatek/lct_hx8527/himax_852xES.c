@@ -803,11 +803,11 @@ static int himax_input_register(struct himax_ts_data *ts)
 	set_bit(KEY_MENU, ts->input_dev->keybit);
 	set_bit(KEY_SEARCH, ts->input_dev->keybit);*/
 #if defined(HX_SMART_WAKEUP)||defined(HX_PALM_REPORT)
-	set_bit(294/*KEY_POWER*/, ts->input_dev->keybit);
+	set_bit(KEY_SLIDE/*KEY_POWER*/, ts->input_dev->keybit);
 	set_bit(KEY_CUST_01, ts->input_dev->keybit);
 	set_bit(KEY_CUST_02, ts->input_dev->keybit);
 	set_bit(KEY_CUST_03, ts->input_dev->keybit);
-	set_bit(KEY_CUST_04, ts->input_dev->keybit);
+	//set_bit(KEY_CUST_04, ts->input_dev->keybit);
 	set_bit(KEY_CUST_05, ts->input_dev->keybit);
 	set_bit(KEY_CUST_06, ts->input_dev->keybit);
 	set_bit(KEY_CUST_07, ts->input_dev->keybit);
@@ -2684,7 +2684,7 @@ static int touch_event_handler(void *ptr)
 		ret_event = himax_parse_wake_event(private_ts);
 		switch (ret_event) {
 			case EV_GESTURE_PWR:
-				KEY_EVENT = 294/*KEY_POWER*/;
+				KEY_EVENT = KEY_SLIDE/*KEY_POWER*/;
 			break;
 			case EV_GESTURE_01:
 				KEY_EVENT = KEY_CUST_01;
@@ -2695,9 +2695,9 @@ static int touch_event_handler(void *ptr)
 			case EV_GESTURE_03:
 				KEY_EVENT = KEY_CUST_03;
 			break;
-			case EV_GESTURE_04:
+			/*case EV_GESTURE_04:
 				KEY_EVENT = KEY_CUST_04;
-			break;
+			break;*/
 			case EV_GESTURE_05:
 				KEY_EVENT = KEY_CUST_05;
 			break;
@@ -7067,6 +7067,7 @@ static int himax852xes_resume(struct device *dev)
 
 #if defined(MTK)
 #ifdef MTK_KERNEL_318
+extern int gesture_enable_flag;
 static void himax852xes_suspend(struct device *dev)
 {
 	int ret;
@@ -7151,6 +7152,15 @@ static void himax852xes_suspend(struct device *dev)
 #endif
 
 #ifdef HX_SMART_WAKEUP
+	if(1 == gesture_enable_flag){
+		ts->SMWP_enable = 1;
+		ts->gesture_cust_en[0]= 1;
+	}
+	else{
+		ts->SMWP_enable = 0;
+		ts->gesture_cust_en[0]= 0;
+	}
+
 	if(ts->SMWP_enable)
 	{
 		atomic_set(&ts->suspend_mode, 1);

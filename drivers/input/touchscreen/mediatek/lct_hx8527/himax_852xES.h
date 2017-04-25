@@ -580,7 +580,7 @@ static struct proc_dir_entry *himax_proc_reset_file 		= NULL;
 	#define KEY_CUST_01 251
 	#define KEY_CUST_02 252
 	#define KEY_CUST_03 253
-	#define KEY_CUST_04 254
+	#define KEY_SLIDE 254 //KEY_CUST_04
 	#define KEY_CUST_05 255
 	#define KEY_CUST_06 256
 	#define KEY_CUST_07 257
