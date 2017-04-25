@@ -131,6 +131,8 @@ struct bmg_i2c_data {
 #define GYRO_LOG(fmt, args...)    printk(KERN_INFO GYRO_TAG fmt, ##args)
 #endif
 
+static bool power=false;
+
 //static struct gyro_init_info bmi160_gyro_init_info;
 static int bmi160_gyro_init_flag =-1; // 0<==>OK -1 <==> fail
 static struct i2c_driver bmg_i2c_driver;
@@ -856,9 +858,26 @@ static int bmg_init_client(struct i2c_client *client, int reset_cali)
 		GYRO_ERR("set range failed, err = %d\n", err);
 		return err;
 	}
+/*
+	err = bmg_set_powermode(client,
+		(enum BMG_POWERMODE_ENUM)BMG_SUSPEND_MODE);
+		mdelay(10);
+	if (err < 0) {
+		GYRO_ERR("set power mode failed, err = %d\n", err);
+		return err;
+	}
+*/
+	err = bmg_set_powermode(client,
+		(enum BMG_POWERMODE_ENUM)BMG_NORMAL_MODE);
+		mdelay(10);
+	if (err < 0) {
+		GYRO_ERR("set power mode failed, err = %d\n", err);
+		return err;
+	}
 
 	err = bmg_set_powermode(client,
 		(enum BMG_POWERMODE_ENUM)BMG_SUSPEND_MODE);
+		mdelay(10);
 	if (err < 0) {
 		GYRO_ERR("set power mode failed, err = %d\n", err);
 		return err;
@@ -1492,6 +1511,11 @@ static long bmg_unlocked_ioctl(struct file *file, unsigned int cmd,
 		break;
 	}
 
+	if(power == false)
+	{
+		bmg_set_powermode(client,true);
+		mdelay(20);
+	}
 	bmg_read_sensor_data(client, strbuf, BMG_BUFSIZE);
 	if (copy_to_user(data, strbuf, strlen(strbuf) + 1)) {
 		err = -EFAULT;
@@ -1725,6 +1749,9 @@ static int bmg_resume(struct device *dev)
 		return err;
 	}
 
+	bmg_set_powermode(client,power);
+	mdelay(10);
+
 	atomic_set(&obj->suspend, 0);
 	return 0;
 }
@@ -1766,7 +1793,7 @@ static int bmi160_gyro_enable_nodata(int en)
 #else
 	int res =0;
 	int retry = 0;
-	bool power=false;
+//	bool power=false;
 	
 	if(1==en)
 	{

@@ -219,7 +219,7 @@ static struct LCM_setting_table lcm_initialization_setting[] = {
 {0x29,1,{0x00}},       
 {REGFLAG_DELAY, 10, {}}, 
 
-{0x51,1,{0xff}},
+{0x51,1,{0x00}},
 {REGFLAG_DELAY, 5, {}},
 {0x53,1,{0x24}},
 {REGFLAG_DELAY, 5, {}},
@@ -230,7 +230,7 @@ static struct LCM_setting_table lcm_initialization_setting[] = {
 };
 
 static struct LCM_setting_table bl_level[] = {
-	{0x51,1,{0xff}},
+	{0x51,1,{0x00}},
 	{REGFLAG_END_OF_TABLE, 0x00, {} }
 };
 
@@ -565,6 +565,8 @@ static void lcm_setbacklight_cmdq(void *handle, unsigned int level)
 {
 	LCM_LOGI("%s,lcm otm1289a backlight: level = %d\n", __func__, level);
 
+	if(level <= 3)
+	 	level = 3;
 	bl_level[0].para_list[0] = level;
 
 	push_table(handle, bl_level, sizeof(bl_level) / sizeof(struct LCM_setting_table), 1);

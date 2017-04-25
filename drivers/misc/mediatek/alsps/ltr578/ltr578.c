@@ -693,8 +693,8 @@ static int ltr578_dynamic_calibrate(void)
 				isadjust = 1;
 				
 				if(noise < 100){
-						atomic_set(&obj->ps_thd_val_high,  noise+30);
-						atomic_set(&obj->ps_thd_val_low, noise+20);
+						atomic_set(&obj->ps_thd_val_high,  noise+27);
+						atomic_set(&obj->ps_thd_val_low, noise+17);
 				}else if(noise < 200){
 						atomic_set(&obj->ps_thd_val_high,  noise+35);
 						atomic_set(&obj->ps_thd_val_low, noise+25);
@@ -1215,6 +1215,40 @@ static int get_avg_lux(unsigned int lux)
 	return lux_a;
 }
 
+#define LSEC_NUM 10
+static unsigned int record_lsec[LSEC_NUM];
+static unsigned int num = 0;
+static unsigned int full_num = 0;
+static unsigned int lsec_flag = 0;
+
+
+static int check_lsec(unsigned int lsec)
+{
+//	unsigned int i = 0;
+	if(num >= LSEC_NUM){
+		full_num = 1;
+		num %= LSEC_NUM;
+	}
+	
+	record_lsec[num] = lsec;	
+
+	if(full_num == 1){
+
+			if(record_lsec[(num + 1)% LSEC_NUM] >= record_lsec[(num + 3)% LSEC_NUM] &&
+				record_lsec[(num + 3)% LSEC_NUM] >= record_lsec[(num + 5)% LSEC_NUM] && 
+				record_lsec[(num + 5)% LSEC_NUM] >= record_lsec[(num + 7)% LSEC_NUM] &&
+				record_lsec[(num + 1)% LSEC_NUM ] > (record_lsec[num]+20) ) 
+				lsec_flag = 1;
+			else				
+				lsec_flag = 0;
+
+	}
+
+	num ++;
+	
+	return 0;
+
+}
 
 static int lsec_tmp = 0;
 
@@ -1242,7 +1276,9 @@ static int ltr578_als_read(int gainrange)
 	cleval = cleval_0 | (cleval_1<<8) | (cleval_2<<16);
     lsec = (cleval/alsval)*10;
 	
-    if (lsec > (lsec_tmp + 30)  || lsec < (lsec_tmp - 30) )
+	check_lsec(lsec);
+
+    if (lsec > (lsec_tmp + 20)  || lsec < (lsec_tmp - 20) )
             lsec_tmp = lsec;
 	
     if(alsval==0)
@@ -1288,6 +1324,15 @@ static int ltr578_als_read(int gainrange)
 	else
 		als_gain = 18;
 	
+	if(lsec_flag == 1){
+		if (lsec > (lsec_tmp + 40)	|| lsec < (lsec_tmp - 40) )
+			lsec_tmp = lsec;
+	}else{
+		if (lsec > (lsec_tmp + 20)	|| lsec < (lsec_tmp - 20) )
+			lsec_tmp = lsec;
+
+	}
+
 	
 /*	
     if(lsec > 97)
@@ -1309,12 +1354,12 @@ static int ltr578_als_read(int gainrange)
     	luxdata_int = 10*(alsval*812)/(als_time*als_gain)/18; //cwf
 */		
 	
-    if(lsec_tmp > 100)
+    if(lsec_tmp > 80)
     	luxdata_int = (alsval*312)/(als_time*als_gain)*12/10; //incan
 	else if(lsec_tmp > 30)
-    	luxdata_int = (alsval*379)/(als_time*als_gain)*13/10; // D65
+    	luxdata_int = (alsval*379)/(als_time*als_gain)*11/10; // D65
     else 
-    	luxdata_int = 10*(alsval*812)/(als_time*als_gain)/18; //cwf
+    	luxdata_int = 10*(alsval*812)/(als_time*als_gain)/21; //cwf
 
 
 	luxdata_int = get_avg_lux(luxdata_int);
@@ -1725,8 +1770,8 @@ static void ltr578_eint_work(struct work_struct *work)
 					dynamic_cali = noise;
 					isadjust = 1;
      				if(noise < 100){
-	     					atomic_set(&obj->ps_thd_val_high,  noise+30);
-							atomic_set(&obj->ps_thd_val_low, noise+20);
+	     					atomic_set(&obj->ps_thd_val_high,  noise+27);
+							atomic_set(&obj->ps_thd_val_low, noise+17);
 					}else if(noise < 200){
 							atomic_set(&obj->ps_thd_val_high,  noise+35);
 							atomic_set(&obj->ps_thd_val_low, noise+25);

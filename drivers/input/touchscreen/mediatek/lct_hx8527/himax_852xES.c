@@ -28,7 +28,8 @@ static u8 g_proximity_en = 0;
 	static unsigned char i_CTPM_FW[]=
 	{
 		//#include "LQ_L3500_HLT_C00_2017-2-13.i"
-		#include "LQ_L3500_HLT_C01_2017-3-28.i"
+		//#include "LQ_L3500_HLT_C01_2017-3-28.i"
+		#include "LQ_L3500_HLT_C02_2017-4-19.i"
 	};
 #endif
 #ifdef MTK
@@ -802,7 +803,7 @@ static int himax_input_register(struct himax_ts_data *ts)
 	set_bit(KEY_MENU, ts->input_dev->keybit);
 	set_bit(KEY_SEARCH, ts->input_dev->keybit);*/
 #if defined(HX_SMART_WAKEUP)||defined(HX_PALM_REPORT)
-	set_bit(KEY_POWER, ts->input_dev->keybit);
+	set_bit(294/*KEY_POWER*/, ts->input_dev->keybit);
 	set_bit(KEY_CUST_01, ts->input_dev->keybit);
 	set_bit(KEY_CUST_02, ts->input_dev->keybit);
 	set_bit(KEY_CUST_03, ts->input_dev->keybit);
@@ -2683,7 +2684,7 @@ static int touch_event_handler(void *ptr)
 		ret_event = himax_parse_wake_event(private_ts);
 		switch (ret_event) {
 			case EV_GESTURE_PWR:
-				KEY_EVENT = KEY_POWER;
+				KEY_EVENT = 294/*KEY_POWER*/;
 			break;
 			case EV_GESTURE_01:
 				KEY_EVENT = KEY_CUST_01;
@@ -2740,7 +2741,7 @@ static int touch_event_handler(void *ptr)
 				I(" %s SMART WAKEUP KEY event %x release\n",__func__,KEY_EVENT);
 				input_report_key(private_ts->input_dev, KEY_EVENT, 0);
 				input_sync(private_ts->input_dev);
-				FAKE_POWER_KEY_SEND=true;
+				//FAKE_POWER_KEY_SEND=true;
 
 				//I("gest_start_x= %d, gest_start_y= %d, gest_end_x= %d, gest_end_y= %d\n",gest_start_x,gest_start_y,
 				//gest_end_x,gest_end_y);
@@ -5426,8 +5427,10 @@ static ssize_t himax_SMWP_write(struct file *file, const char *buff,
 
 	if(buf[0] == '0')
 		ts->SMWP_enable = 0;
-	else if(buf[0] == '1')
+	else if(buf[0] == '1'){
 		ts->SMWP_enable = 1;
+		ts->gesture_cust_en[0]= 1;
+		}
 	else
 		return -EINVAL;
 	
@@ -7229,8 +7232,6 @@ static void himax852xes_resume(struct device *dev)
 #ifdef MTK_INT_NOT_WORK_WORKAROUND
 	int i,himax_depth_r;
 #endif
-
-	int ret;
 
 	struct himax_ts_data *ts = dev_get_drvdata(&hx_i2c_client_point->dev);
 	if(HX_DRIVER_PROBE_Fial)
