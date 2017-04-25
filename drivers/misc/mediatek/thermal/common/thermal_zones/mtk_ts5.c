@@ -31,6 +31,7 @@
 
 #define MTK_ALLTS_SW_FILTER         (1)
 
+static int doing_tz_unregister;
 static kuid_t uid = KUIDT_INIT(0);
 static kgid_t gid = KGIDT_INIT(1000);
 
@@ -255,14 +256,14 @@ static int tsallts_get_crit_temp(struct thermal_zone_device *thermal, unsigned l
 
 void mtkts_allts_cancel_ts5_timer(void)
 {
-	if (thz_dev)
+	if (thz_dev && !doing_tz_unregister)
 		cancel_delayed_work(&(thz_dev->poll_queue));
 }
 
 
 void mtkts_allts_start_ts5_timer(void)
 {
-	if (thz_dev != NULL && interval != 0)
+	if (thz_dev != NULL && interval != 0 && !doing_tz_unregister)
 		mod_delayed_work(system_freezable_wq, &(thz_dev->poll_queue), round_jiffies(msecs_to_jiffies(1000)));
 	/*1000 = 1sec */
 }
@@ -455,8 +456,10 @@ static void tsallts_unregister_thermal(void)
 	tsallts_dprintk("[tsallts_unregister_thermal]\n");
 
 	if (thz_dev) {
+		doing_tz_unregister = 1;
 		mtk_thermal_zone_device_unregister(thz_dev);
 		thz_dev = NULL;
+		doing_tz_unregister = 0;
 	}
 }
 
