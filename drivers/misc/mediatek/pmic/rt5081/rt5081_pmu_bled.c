@@ -459,7 +459,7 @@ static inline int rt_parse_dt(struct device *dev)
 		lct_parseLcmName_fromcmdline();
 		if(strcmp(lct_klcm_name, "lct_s6d7aa6x01_helitech_720p_vdo") == 0)
 		{
-			pdata->max_bled_brightness = 512;
+			pdata->max_bled_brightness = 450;
 		}
 		if(strcmp(lct_klcm_name,"lct_otm1289a_wistron_720p_vdo") == 0)
 		{
