@@ -23,7 +23,11 @@ bat_gm30: bat_gm30{
 	Q_MAX_SYS_VOLTAGE_BAT2 = <(3200)>;	/*	System shut down voltage.*/
 	Q_MAX_SYS_VOLTAGE_BAT3 = <(3200)>;	/*	System shut down voltage.*/
 #if (CONFIG_MTK_ADDITIONAL_BATTERY_TABLE == 1)
-#include "mt6757_battery_table_ext.dtsi"
+#if (CONFIG_L3510_MAINBOARD == 1)
+#include "LCT_L3510_mt6757_battery_table_ext.dtsi"
+#else
+#include "mt6757_battery_table_ext.dtsi" 
+#endif
 #else
 #include "mt6757_battery_table.dtsi"
 #endif
