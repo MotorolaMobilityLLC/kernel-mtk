@@ -244,7 +244,7 @@ static int devinfo_register_emcp(struct msdc_host *host)
     	//lct_pr_debug("Device info:<%x> <%x><%x><%x><%d><%ld>\n",emi_settings[i].DRAM_RANK_SIZE[0],emi_settings[i].DRAM_RANK_SIZE[1],emi_settings[i].DRAM_RANK_SIZE[2],emi_settings[i].DRAM_RANK_SIZE[3],rom_size,ram_size);
 		#endif
 
-		printk("<%s:%d>size[%ld]\n", __func__, __LINE__, sizeof(dev_list[i]->device_info));
+		//printk("<%s:%d>size[%ld]\n", __func__, __LINE__, sizeof(dev_list[i]->device_info));
 				dev_list[i]->device_info = (char *)kmalloc(40,GFP_KERNEL);
 			//Check if used on this board// add by zhaofei - 2017-01-05-15-26
 //			if((emi_settings[i].ID[0]== host->mmc->card->cid.manfid) && (emi_settings[i].ID[1]==(host->mmc->card->raw_cid[0]&0x00FF0000)>>16) && (emi_settings[i].ID[2]==(host->mmc->card->raw_cid[0]&0x0000FF00)>>8) && (emi_settings[i].ID[3]==(host->mmc->card->raw_cid[0]&0x000000FF)>>0)

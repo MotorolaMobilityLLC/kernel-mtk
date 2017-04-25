@@ -2482,7 +2482,7 @@ static enum hrtimer_restart himax_ts_timer_func(struct hrtimer *timer)
 static irqreturn_t himax_ts_thread(int irq, void *ptr)
 {
 	struct himax_ts_data *ts = ptr;
-	struct timespec timeStart, timeEnd, timeDelta;
+	struct timespec timeStart, timeEnd, timeDelta;asd
 #ifdef HX_SMART_WAKEUP
 	int ret_event = 0, KEY_EVENT = 0;
 #endif
@@ -2659,7 +2659,7 @@ static int touch_event_handler(void *ptr)
 #ifdef HX_SMART_WAKEUP
 	int ret_event = 0, KEY_EVENT = 0;
 #endif
-	struct timespec timeStart, timeEnd, timeDelta;
+	//struct timespec timeStart, timeEnd, timeDelta;
 	//struct sched_param param = { .sched_priority = RTPM_PRIO_TPD };
 	//sched_setscheduler(current, SCHED_RR, &param);
 
@@ -2671,11 +2671,11 @@ static int touch_event_handler(void *ptr)
 		tpd_flag = 0;
 		set_current_state(TASK_RUNNING);
 
-		if (private_ts->debug_log_level & BIT(2)) {
-				getnstimeofday(&timeStart);
-				/*I(" Irq start time = %ld.%06ld s\n",
-					timeStart.tv_sec, timeStart.tv_nsec/1000);*/
-		}
+		// if (private_ts->debug_log_level & BIT(2)) {
+		// 		getnstimeofday(&timeStart);
+		// 		I(" Irq start time = %ld.%06ld s\n",
+		// 			timeStart.tv_sec, timeStart.tv_nsec/1000);
+		// }
 #ifdef HX_SMART_WAKEUP
 	if (atomic_read(&private_ts->suspend_mode)&&(!FAKE_POWER_KEY_SEND)&&(private_ts->SMWP_enable)) {
 		I("Start to parse wake event\n");
@@ -2753,14 +2753,15 @@ static int touch_event_handler(void *ptr)
 #endif
 		himax_ts_work();
 
-		if(private_ts->debug_log_level & BIT(2)) {
-				getnstimeofday(&timeEnd);
-					timeDelta.tv_nsec = (timeEnd.tv_sec*1000000000+timeEnd.tv_nsec)
-					-(timeStart.tv_sec*1000000000+timeStart.tv_nsec);
-				/*I("Irq finish time = %ld.%06ld s\n",
-					timeEnd.tv_sec, timeEnd.tv_nsec/1000);*/
-				I("Touch latency = %ld us\n", timeDelta.tv_nsec/1000);
-		}
+		// if(private_ts->debug_log_level & BIT(2)) {
+		// 		getnstimeofday(&timeEnd);
+		// 		I("zy Touch latency = %ld us %ld \n", timeStart.tv_sec,timeStart.tv_nsec);
+		// 			timeDelta.tv_nsec = (timeEnd.tv_sec*1000000000+timeEnd.tv_nsec)
+		// 			-(timeStart.tv_sec*1000000000+timeStart.tv_nsec);
+		// 		/*I("Irq finish time = %ld.%06ld s\n",
+		// 			timeEnd.tv_sec, timeEnd.tv_nsec/1000);*/
+		// 		I("Touch latency = %ld us\n", timeDelta.tv_nsec/1000);
+		// }
 	}
 	while(!kthread_should_stop());
 
