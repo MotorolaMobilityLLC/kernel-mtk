@@ -1,5 +1,12 @@
 menu "Mediatek Peripherals "
 
+config MTK_FREQ_HOPPING
+    tristate "MediaTek FREQHOPPING SUPPORT"
+    help
+      If you want to use MediaTek freqhopping, say Y here.If unsure, say N.
+      Please choose your desired freqhopping driver as well. E.g: MTK2712_FREQ_HOPPING=y
+
+source "drivers/misc/mediatek/freqhopping/Kconfig"
 source "drivers/misc/mediatek/ice_debug/Kconfig"
 
 menu "Sensors"
@@ -15,4 +22,3 @@ config MTK_SENSOR_SUPPORT
 source "drivers/misc/mediatek/alsps/Kconfig"
 endmenu  # Sensors
 endmenu
-

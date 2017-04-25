@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2017 MediaTek Inc.
+# Copyright (C) 2015 MediaTek Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License version 2 as
@@ -11,12 +11,6 @@
 # GNU General Public License for more details.
 #
 
-#$(call all-subdir-src-or-makefile)
-subdir-ccflags-y += -Werror
-subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat/
-obj-$(CONFIG_MTK_ICE_DEBUG) +=ice_debug/
-ifeq ($(CONFIG_MTK_SENSOR_SUPPORT),y)
-obj-y	+= hwmon/
-obj-$(CONFIG_CUSTOM_KERNEL_ALSPS) += alsps/
-endif
-obj-$(CONFIG_MTK_FREQ_HOPPING) += freqhopping/
+
+obj-$(CONFIG_MTK2712_FREQ_HOPPING) := mt_freqhopping.o
+
