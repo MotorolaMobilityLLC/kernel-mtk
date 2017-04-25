@@ -4293,7 +4293,7 @@ static void hi553_otp_cali_read(void)
 	//hi553_otp_apply(&hi553_otp);
 
 }
-unsigned int OTP_Read_Lsc(unsigned int addr,unsigned char *data, unsigned int size)
+unsigned int HI553_OTP_Read_Lsc(unsigned int addr,unsigned char *data, unsigned int size)
 {
 
 	LOG_INF(" start copy lsc_data size = %d\n",size);  
@@ -4513,7 +4513,7 @@ static kal_uint32 preview(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 	spin_unlock(&imgsensor_drv_lock);
 	preview_setting();
 	//set_mirror_flip(imgsensor.mirror);	
-	mdelay(200);
+	//mdelay(200);
 //#ifdef FANPENGTAO
 	//int i=0;
 	//for(i=0; i<10; i++){

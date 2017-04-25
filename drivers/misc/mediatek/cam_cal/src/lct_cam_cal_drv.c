@@ -58,7 +58,8 @@ static struct cdev *g_charDrv;
 static struct class *g_drvClass;
 static unsigned int g_drvOpened;
 static DEFINE_SPINLOCK(g_spinLock); /*for SMP*/
-extern unsigned int OTP_Read_Lsc(unsigned int addr,unsigned char *data, unsigned int size);/*jijin.wang add for front camera otp*/
+extern unsigned int HI553_OTP_Read_Lsc(unsigned int addr,unsigned char *data, unsigned int size);/*jijin.wang add for front camera otp*/
+extern unsigned int HI556_OTP_Read_Lsc(unsigned int addr,unsigned char *data, unsigned int size);/*jijin.wang add for front camera otp*/
 typedef enum {
 	I2C_DEV_1 = 0,
 	I2C_DEV_2,
@@ -514,7 +515,12 @@ static long cam_cal_drv_ioctl(
 /*jijn.wang add for front camera read lsc-shading OTP*/
 			if((ptempbuf->deviceID == 2)&&(ptempbuf->sensorID == 0x553))
 			{
-				i4RetValue = OTP_Read_Lsc(ptempbuf->u4Offset,pu1Params,ptempbuf->u4Length);
+				i4RetValue = HI553_OTP_Read_Lsc(ptempbuf->u4Offset,pu1Params,ptempbuf->u4Length);
+				CAM_CALDB("i4RetValue = %d\n",i4RetValue);
+			}
+			else if((ptempbuf->deviceID == 2)&&(ptempbuf->sensorID == 0x556))
+			{
+				i4RetValue = HI556_OTP_Read_Lsc(ptempbuf->u4Offset,pu1Params,ptempbuf->u4Length);
 				CAM_CALDB("i4RetValue = %d\n",i4RetValue);
 			}
 			else
