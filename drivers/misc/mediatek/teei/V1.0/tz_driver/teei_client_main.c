@@ -202,13 +202,15 @@ void tz_free_shared_mem(void *addr, size_t size)
 
 void ut_pm_mutex_lock(struct mutex *lock)
 {
-	add_work_entry(LOCK_PM_MUTEX, (unsigned char *)lock);
+/*	add_work_entry(LOCK_PM_MUTEX, (unsigned char *)lock); */
+	mutex_lock(lock);
 }
 
 
 void ut_pm_mutex_unlock(struct mutex *lock)
 {
-	add_work_entry(UNLOCK_PM_MUTEX, (unsigned char *)lock);
+/*	add_work_entry(UNLOCK_PM_MUTEX, (unsigned char *)lock); */
+	mutex_unlock(lock);
 }
 
 int get_current_cpuid(void)
@@ -339,7 +341,7 @@ int handle_switch_core(int cpu)
     for_each_online_cpu(i) {
             IMSG_DEBUG("current on line cpu [%d]\n", i);
 
-            if (i == cpu) {
+            if ((i == cpu) || (i == 8) || (i == 9)) {
                     continue;
             }
 
@@ -1897,8 +1899,10 @@ static int teei_client_init(void)
 	sema_init(&(smc_lock), 1);
 
 	for_each_online_cpu(i) {
+	    if ((i != 8) && (i != 9)) {
 		current_cpu_id = i;
 		IMSG_DEBUG("init stage : current_cpu_id = %d\n", current_cpu_id);
+	}
 	}
 
 	IMSG_DEBUG("begin to create sub_thread.\n");
