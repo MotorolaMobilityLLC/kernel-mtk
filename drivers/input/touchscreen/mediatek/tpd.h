@@ -42,6 +42,8 @@
 #define TPD_DEBUG(arg...)
 #endif
 
+extern int gesture_enable_flag;
+
 /* register, address, configurations */
 #define TPD_DEVICE            "mtk-tpd"
 #define TPD_X                  0
