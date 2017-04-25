@@ -1239,7 +1239,7 @@ static void mt_battery_runin_test(struct charger_manager *info)
 	    charger_dev_enable_powerpath(info->chg1_dev, 1);
 	    charger_manager_notifier(info,CHARGER_NOTIFY_NORMAL);
 	}
-	printk("~~liml_charger battery_test_status=%d,runin_flag=%d,soc=%d\n",battery_test_status,runin_flag,soc);    
+	printk("~~liml_charger battery_test_status=%d,runin_flag=%d,soc=%d,lct_alt_status=%d\n",battery_test_status,runin_flag,soc,lct_alt_status);    
 }
 #endif
 

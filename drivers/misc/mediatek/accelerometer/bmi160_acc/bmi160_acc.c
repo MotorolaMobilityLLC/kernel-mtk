@@ -1097,13 +1097,13 @@ static int BMI160_ACC_SetPowerMode(struct i2c_client *client, bool enable)
 	u8 databuf[2] = {0};
 	int res = 0;
 	struct bmi160_acc_i2c_data *obj = obj_i2c_data;
-
+/*
 	if(enable == sensor_power )
 	{
 		GSE_LOG("Sensor power status is newest!\n");
 		return BMI160_ACC_SUCCESS;
 	}
-
+*/
 	mutex_lock(&obj->lock);
 	if(enable == true)
 	{
@@ -1327,17 +1327,17 @@ static int bmi160_acc_init_client(struct i2c_client *client, int reset_cali)
 		return res;
 	}
 	GSE_LOG("BMI160_ACC disable interrupt function!\n");
-
+/*
 	res = BMI160_ACC_SetPowerMode(client, false);
-//	mdelay(50);
+	mdelay(10);
 	if(res != BMI160_ACC_SUCCESS)
 	{
 		return res;
 	}
 	GSE_LOG("BMI160_ACC_SetPowerMode OK!\n");
-/*
+*/
 	res = BMI160_ACC_SetPowerMode(client, true);
-	mdelay(50);
+	mdelay(10);
 	if(res != BMI160_ACC_SUCCESS)
 	{
 		return res;
@@ -1345,13 +1345,13 @@ static int bmi160_acc_init_client(struct i2c_client *client, int reset_cali)
 	GSE_LOG("BMI160_ACC_SetPowerMode true OK!\n");
 
 	res = BMI160_ACC_SetPowerMode(client, false);
-	mdelay(50);
+	mdelay(10);
 	if(res != BMI160_ACC_SUCCESS)
 	{
 		return res;
 	}
 	GSE_LOG("BMI160_ACC_SetPowerMode second OK!\n");
-*/
+
 	if(0 != reset_cali)
 	{
 		/*reset calibration only in power on*/
@@ -4294,7 +4294,7 @@ static long bmi160_acc_unlocked_ioctl(struct file *file, unsigned int cmd, unsig
 			if(power == false)
 			{
 				BMI160_ACC_SetPowerMode(client,true);
-				mdelay(50);
+				mdelay(20);
 			}
 			BMI160_ACC_ReadSensorData(client, strbuf, BMI160_BUFSIZE);
 			if(copy_to_user(data, strbuf, strlen(strbuf)+1))
@@ -4920,7 +4920,7 @@ static int bmi160_acc_resume(struct device *dev)
 		return err;
 	}
 	BMI160_ACC_SetPowerMode(client,power);
-	mdelay(50);
+	mdelay(10);
 	//tad3sgh add ++
 #ifdef BMC050_BLOCK_DAEMON_ON_SUSPEND
 	/* clear driver suspend flag */

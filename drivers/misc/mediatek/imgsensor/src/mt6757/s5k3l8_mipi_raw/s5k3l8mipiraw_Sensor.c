@@ -56,7 +56,7 @@ static DEFINE_SPINLOCK(imgsensor_drv_lock);
 static imgsensor_info_struct imgsensor_info = {
 	.sensor_id = S5K3L8_SENSOR_ID,		//Sensor ID Value: 0x30C8//record sensor id defined in Kd_imgsensor.h
 
-	.checksum_value = 0xba395b5c, //0x49c09f86,		//checksum value for Camera Auto Test
+	.checksum_value = 0x4e9b4d, //0x49c09f86,		//checksum value for Camera Auto Test
 
 	.pre = {
 		.pclk = 566400000,			
@@ -2430,7 +2430,7 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 			//PDAF capacity enable or not, 2p8 only full size support PDAF
 			switch (*feature_data) {
 				case MSDK_SCENARIO_ID_CAMERA_CAPTURE_JPEG:
-					*(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 0;
+					*(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 1;
 					break;
 				case MSDK_SCENARIO_ID_VIDEO_PREVIEW:
 					*(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 1; // video & capture use same setting
