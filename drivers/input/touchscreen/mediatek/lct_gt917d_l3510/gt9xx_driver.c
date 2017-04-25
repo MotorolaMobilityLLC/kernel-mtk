@@ -41,6 +41,8 @@ static u8 tpd_cfg_version = 0;
 #ifdef LCT_ADD_TP_VERSION
 #define CTP_PROC_FILE "tp_info"
 extern u8 grp_cfg_version;
+#define KEY_SLIDE 254
+
 static int ctp_proc_read_show (struct seq_file* m, void* data)
 {
 	char temp[40] = {0};
@@ -1705,7 +1707,9 @@ static const struct file_operations gt_upgrade_proc_fops = {
 
 #if defined(CONFIG_GTP_SLIDE_WAKEUP)
 struct kobject *goodix_gesture_kobj = NULL;
-static int gesture_enable_flag = 1, gesture_suspend_resume_flag = 0;
+/*static int gesture_enable_flag = 1, */
+extern int gesture_enable_flag;
+static int gesture_suspend_resume_flag = 0;
 static ssize_t gtp_gesture_enable_show(struct device *dev,struct device_attribute *attr, char *buf)
 {
 	ssize_t len;
@@ -1851,7 +1855,7 @@ static s32 tpd_i2c_probe(struct i2c_client *client, const struct i2c_device_id *
 					     tpd_dts_data.tpd_key_local[idx]);
 	}
 #if defined(CONFIG_GTP_SLIDE_WAKEUP)
-	input_set_capability(tpd->dev, EV_KEY, 294/*KEY_SPACE*/);
+	input_set_capability(tpd->dev, EV_KEY, KEY_SLIDE/*KEY_SPACE*/);
 	input_set_capability(tpd->dev, EV_KEY, KEY_F1);
 	input_set_capability(tpd->dev, EV_KEY, KEY_F2);
 	input_set_capability(tpd->dev, EV_KEY, KEY_F3);
@@ -2290,7 +2294,7 @@ static void report_gesture_key(int gesture_id)
 			keycode = KEY_S;
 			break;
 		case 0xCC:
-			keycode = 294/*KEY_SPACE*/;
+			keycode = KEY_SLIDE/*KEY_SPACE*/;
 			break;
 		case 0xAA:
 			keycode = KEY_F1;
