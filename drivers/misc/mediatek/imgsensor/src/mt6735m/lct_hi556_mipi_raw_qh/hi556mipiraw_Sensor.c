@@ -57,7 +57,7 @@
 #define LOG_1 LOG_INF("hi556,MIPI 2LANE\n")
 #define SENSORDB LOG_INF
 /****************************   Modify end    *******************************************/
-//#define HI556_OTP_FUNCTION
+#define HI556_OTP_FUNCTION
 
 
 
@@ -637,7 +637,7 @@ struct HI556_otp_struct
 	int RG_ratio_unit;
 	int BG_ratio_unit;
 	int LSC_FLAG;/*guoameng add lSC-shading read flag*/
-	char lsc_data[4000];/*add lsc-shading data struct-3739-lsc-all-data*/
+	char lsc_data[1869];/*add lsc-shading data struct-3739-lsc-all-data*/
 };
 
 struct HI556_otp_struct HI556_otp;
@@ -673,8 +673,11 @@ static kal_uint16 OTP_read_cmos_sensor(kal_uint16 otp_addr)
 
 static int HI556_otp_read(void)
 {
+	int k;
 	int i = 0, info_start_addr = 0, wb_start_addr = 0;
 	int  checksum = 0 ,info_check = 0, wb_check = 0;
+	int lsc_start_addr=0;
+	int checksum_lsc=0;
 	LOG_INF("HI556 HI556_otp_read \n");
 //module info read 
 	printk("guoameng-OTP_read_cmos_sensor(0x0401) = 0x%x \n", OTP_read_cmos_sensor(0x0401));
@@ -760,6 +763,34 @@ LOG_INF("guoameng-HI556 wb_start_addr = 0x%x \n", wb_start_addr);
 			LOG_INF("HI556_Sensor: WB checksum Fail\n ");
 			}
 	LOG_INF("guoameng-HI556_awb checksum = 0x%x ,wb_check = 0x%x \n", checksum,wb_check);
+	//lsc start
+	HI556_otp.LSC_FLAG = OTP_read_cmos_sensor(0x0466);
+	if (HI556_otp.LSC_FLAG == 0x01)
+	  lsc_start_addr = 0x467;
+	else if (HI556_otp.LSC_FLAG == 0x07)
+	  lsc_start_addr = 0xbb4;
+	else if (HI556_otp.LSC_FLAG == 0x1F)
+	  lsc_start_addr = 0x1301;
+	else
+	  LOG_INF("HI556 LSC data invalid \n");
+	LOG_INF("HI556 lsc_FLAG = 0x%x \n", HI556_otp.LSC_FLAG);
+	LOG_INF("HI556 lsc_start_addr = 0x%x \n", lsc_start_addr);
+	if (lsc_start_addr != 0) {
+		write_cmos_sensor_byte(0x10a, (lsc_start_addr >> 8) & 0xff);	//start addr H
+		write_cmos_sensor_byte(0x10b, lsc_start_addr & 0xff);	//start addr L
+		write_cmos_sensor_byte(0x102, 0x01);	//single mode
+		for (k = 0; k < 1869; k++) {
+			HI556_otp.lsc_data[k] = read_cmos_sensor_byte(0x108);	//otp data read
+		//	printk("guoameng-845-HI556 lsc_data[%d] = 0x%x\n", k, HI556_otp.lsc_data[k]);
+			checksum_lsc += HI556_otp.lsc_data[k];
+		}
+
+		printk("HI556 xljadd checksum_lsc = 0x%x\n", checksum_lsc);
+		checksum_lsc = (checksum_lsc - HI556_otp.lsc_data[1868])%255;
+		printk("HI556 xljadd after calculator checksum_lsc = 0x%x\n", checksum_lsc);
+	}
+//return HI556_otp.LSC_FLAG;
+	//lsc end
 
 	write_cmos_sensor_byte(0x0a00, 0x00); //sleep On
 	mdelay(10);
@@ -852,14 +883,13 @@ static int hi556_otp_lsc_read(void)
 return hi556_otp.LSC_FLAG;
 }
 #endif
-#if 0
+#if 1
 unsigned int HI556_OTP_Read_Lsc(unsigned int addr,unsigned char *data, unsigned int size)
 {
-
 	LOG_INF(" start copy lsc_data size = %d\n",size);  
 
-	LOG_INF(" hi553_otp.lsc_data[963]=0x%x\n",hi553_otp.lsc_data[963]);    		
-	memcpy(data,hi553_otp.lsc_data,size);
+	LOG_INF(" hi553_otp.lsc_data[1868]=0x%x\n",HI556_otp.lsc_data[1868]);    		
+	memcpy(data,HI556_otp.lsc_data,size);
 	return size;
 }
 #endif
@@ -1491,6 +1521,8 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
         do {
             *sensor_id = return_sensor_id();
             if (*sensor_id == imgsensor_info.sensor_id) {
+			sensor_init();
+			HI556_otp_cali();
 #ifdef CONFIG_MTK_CAM_CAL
 		//read_imx135_otp_mtk_fmt();
 #endif
@@ -1564,11 +1596,8 @@ static kal_uint32 open(void)
         return ERROR_SENSOR_CONNECT_FAIL;
 
     /* initail sequence write in  */
-    sensor_init();
-	
-	#ifdef HI556_OTP_FUNCTION
-	HI556_otp_cali();
-	#endif
+    	sensor_init();
+	 HI556_otp_apply();
 
     spin_lock(&imgsensor_drv_lock);
 
