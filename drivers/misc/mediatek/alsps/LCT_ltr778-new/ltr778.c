@@ -119,6 +119,11 @@ struct ltr778_priv {
 
 	int			fault_detect_level;
 };
+static int ltr778_als_read(struct i2c_client *client, u16* data);
+static int ltr778_i2c_read_reg(u8 regnum);
+static int ltr778_i2c_write_reg(u8 regnum, u8 value);
+static void ltr778_enable_ps_delay_work(u8 enable);
+
 
 struct PS_CALI_DATA_STRUCT
 {
@@ -138,6 +143,9 @@ static DEFINE_MUTEX(ltr778_mutex);
 static int ltr778_local_init(void);
 static int ltr778_remove(void);
 static int ltr778_init_flag = -1;
+static int ps_stowed_enf = 0;
+static int ps_enable_als = 0;
+static int als_enable_flag = 0;
 
 
 #define MAX_ELM_ALS 3
@@ -589,11 +597,13 @@ static int ltr778_ps_stowed_enable(struct i2c_client *client, int enable)
 		APS_LOG("PS: stowed enable ps only \n");
 		regdata = 0xC2;
 		ps_stowed_start = 1;
+		ps_stowed_enf = 1;	
 	}
 	else {
 		APS_LOG("PS: stowed disable ps only \n");
 		regdata = 0x00;
 		ps_stowed_start = 0;
+		ps_stowed_enf = 0;	
 	}
 
 	err = ltr778_i2c_write_reg(LTR778_PS_CONTR, regdata);
@@ -683,6 +693,25 @@ static int ltr778_ps_enable(struct i2c_client *client, int enable)
 	else {
 		APS_LOG("PS: disable ps only \n");
 		regdata = 0x00;
+	}
+
+
+	
+	if (enable != 0) {
+		APS_LOG("PS: enable als als_enable_flag=%d \n",als_enable_flag);
+		if(als_enable_flag == 0)
+			{
+				ltr778_als_enable(client, 1);
+				ps_enable_als = 1;
+			}else{
+				ps_enable_als = 0;
+			}
+	}else {
+		APS_LOG("PS: disable als ps_enable_als =%d\n",ps_enable_als);
+		if(ps_enable_als == 1)
+			{
+				ltr778_als_enable(client, 0);
+			}
 	}
 
 	err = ltr778_i2c_write_reg(LTR778_PS_CONTR, regdata);
@@ -897,7 +926,14 @@ static int ltr778_dynamic_calibrate(void)
 	ps_en = 0;
 
 	noise = data_total / count;
+	obj->als = ltr778_als_read(obj->client, &obj->als);
+	
+	
+	if(obj->als < 20){
 
+		noise = 3000;  // not meet the calibration condition -- noise < dynamic_calibrate + 450
+
+	}
 	if(noise < dynamic_calibrate + 800)  // modified by steven
 	{
 		dynamic_calibrate = noise;
@@ -992,10 +1028,14 @@ static int ltr778_als_enable(struct i2c_client *client, int enable)
 #else
 		regdata = 0x05;
 #endif
+
+		als_enable_flag = 1;
 	}
 	else {
 		APS_LOG("ALS(1): disable als only \n");
 		regdata = 0x00;
+		
+		als_enable_flag = 0;
 	}
 
 	err = ltr778_i2c_write_reg(LTR778_ALS_CONTR, regdata);
@@ -1108,6 +1148,64 @@ out:
 	final_lux_val = luxdata_int;
 	return luxdata_int;
 }
+
+static int ltr778_stowed_get_ps_value(struct ltr778_priv *obj, u16 ps)
+{
+	int val;
+	int invalid = 0;
+
+	static int val_temp = 1;
+	if((ps > atomic_read(&obj->ps_thd_val_high)))
+	{
+		val = 0;  /*close*/
+		val_temp = 0;
+		intr_flag_value = 1;
+	}
+	else if((ps < atomic_read(&obj->ps_thd_val_low)))
+	{
+		val = 1;  /*far away*/
+		val_temp = 1;
+		intr_flag_value = 0;
+	}
+	else
+		val = val_temp; 		
+	
+	if(atomic_read(&obj->ps_suspend))
+	{
+		invalid = 1;
+	}
+	else if(1 == atomic_read(&obj->ps_deb_on))
+	{
+		unsigned long endt = atomic_read(&obj->ps_deb_end);
+		if(time_after(jiffies, endt))
+		{
+			atomic_set(&obj->ps_deb_on, 0);
+		}
+		
+		if (1 == atomic_read(&obj->ps_deb_on))
+		{
+			invalid = 1;
+		}
+	}
+	else if (obj->als > 50000)
+	{
+		//invalid = 1;
+		APS_DBG("ligh too high will result to failt proximiy\n");
+		return 1;  /*far away*/
+	}
+
+	if(!invalid)
+	{
+		APS_DBG("stowed PS:  %05d => %05d\n", ps, val);
+		return val;
+	}	
+	else
+	{
+		return -1;
+	}	
+}
+
+
 
 static int oil_far_cal = 0;
 static int oil_close = 0;
@@ -1786,29 +1884,172 @@ EXIT_ERR:
 }
 #endif //#ifndef CUSTOM_KERNEL_SENSORHUB
 /*----------------------------------------------------------------------------*/
+/*modified by steven for light test*/
+static u8 ps_normal_farcal = 0;
+struct delayed_work dpswork;
+static u16 ltr778_ps_check_delay=50;
+static u8 ps_cali_time = 0;
+static u8 ps_delay_work_flag = 0;
+
+static void ltr778_ps_delay_work(struct work_struct *work)
+{
+	
+	struct ltr778_priv *obj = ltr778_obj;
+	int noise;
+	int ps_thd_val_low, ps_thd_val_high;
+	int ps_persist_val_low, ps_persist_val_high;
+	
+	ps_thd_val_low = 0;
+	ps_thd_val_high = 0;
+	ps_persist_val_low = 0;
+	ps_persist_val_high = 0;
+
+	obj->als = ltr778_als_read(obj->client, &obj->als);
+	
+	APS_DBG("ltr778_delay_work obj-> als  = %d \n",obj->als);
+	obj->ps = ltr778_ps_read(obj->client, &obj->ps);
+	
+	noise = obj->ps;
+	if(get_stable_ps(obj->ps) == 1 && ps_cali_time == 0 && (obj->ps < dynamic_calibrate)){
+
+		ps_cali_time = 1;
+
+					if (noise < 1) {
+						ps_thd_val_high = noise + 50;
+						ps_thd_val_low	= noise + 25;
+						ps_persist_val_high = 2000;// modified by steven
+						ps_persist_val_low	= noise + 125;
+					}		
+					else if (noise < 8) {
+						ps_thd_val_high = noise + 65;
+						ps_thd_val_low	= noise + 35;
+						ps_persist_val_high = 2000;// modified by steven
+						ps_persist_val_low	= noise + 150;
+					}
+					else if (noise < 50) {
+						ps_thd_val_high = noise + 75;
+						ps_thd_val_low	= noise + 45;
+						ps_persist_val_high = 2000;
+						ps_persist_val_low	= noise + 190;
+					}
+					else if (noise < 80) {
+						ps_thd_val_high = noise + 80;
+						ps_thd_val_low	= noise + 48;
+						ps_persist_val_high = noise + 1900;
+						ps_persist_val_low	= noise + 230;
+					}
+					else if (noise < 200) {
+						ps_thd_val_high = noise + 85;
+						ps_thd_val_low	= noise + 55;
+						ps_persist_val_high = noise + 1700;
+						ps_persist_val_low	= noise + 312;
+					}
+					else if (noise < 600) {
+						ps_thd_val_high = noise + 140;
+						ps_thd_val_low	= noise + 70;
+						ps_persist_val_high = noise + 1400;
+						ps_persist_val_low	= noise + 450;
+					}
+				else if (noise < 1500) {
+						ps_thd_val_high = noise + 200;
+						ps_thd_val_low	= noise + 100;
+						ps_persist_val_high = 2000;
+						ps_persist_val_low	= noise + 400;
+				}
+				else {
+					ps_thd_val_high = 1700;
+					ps_thd_val_low	= 1600; 
+					ps_persist_val_high = 2000;
+					ps_persist_val_low	= 1900; 	
+				}
+
+				atomic_set(&obj->ps_thd_val_high, ps_thd_val_high);
+				atomic_set(&obj->ps_thd_val_low, ps_thd_val_low);
+				
+				atomic_set(&obj->ps_persist_val_high, ps_persist_val_high);
+				atomic_set(&obj->ps_persist_val_low, ps_persist_val_low);
+		
+        		dynamic_calibrate = obj->ps;
+
+		
+		}else{
+			ps_delay_work_flag++;
+		}
+
+	if(ps_cali_time == 0 && ps_delay_work_flag < 200) 
+		schedule_delayed_work(&dpswork,msecs_to_jiffies(ltr778_ps_check_delay));
+	
+
+}
+
+static void ltr778_enable_ps_delay_work(u8 enable)
+{
+
+	APS_DBG("ltr778_enable_ps_delay_work enable = %d \n",enable);
+	if (enable) 
+	{
+		schedule_delayed_work(&dpswork,msecs_to_jiffies(ltr778_ps_check_delay));
+		
+		ps_cali_time = 0;
+		ps_delay_work_flag = 0;
+	} 
+//tuwenzan@wind-mobi.com modify at 20170425 end
+	else 
+	{
+		cancel_delayed_work_sync(&dpswork);
+		
+		ps_cali_time = 0;
+	}
+
+
+	
+	if (enable != 0) {
+		APS_LOG("PS: enable als als_enable_flag=%d \n",als_enable_flag);
+		if(als_enable_flag == 0)
+			{
+				ltr778_als_enable(ltr778_obj->client, 1);
+				ps_enable_als = 1;
+			}else{
+				ps_enable_als = 0;
+			}
+	}else {
+		APS_LOG("PS: disable als ps_enable_als =%d\n",ps_enable_als);
+		if(ps_enable_als == 1)
+			{
+				ltr778_als_enable(ltr778_obj->client, 0);
+			}
+	}
+
+	
+}
+
+
+/*----------------------------------------------------------------------------*/
 static void ltr778_eint_work(struct work_struct *work)
 {
 	struct ltr778_priv *obj = (struct ltr778_priv *)container_of(work, struct ltr778_priv, eint_work);
-	//u8 databuf[2];
 	int res = 0;
 	int err;
 	int value = 1;
-	
 	APS_FUN();
 
-	/* Read fault detection status */
+	/* Read fault detection status */  // modified by steven
 	
 	value = ltr778_i2c_read_reg(LTR778_FAULT_DET_STATUS);	
 
+//APS_ERR("ltr778_eint_work  value:  %d\n", value);	
+
 	if (value < 0) {
 		goto EXIT_INTR;
-	}else {
+	}
+	else {
 		if (value != 0) {
+			
 			err = ltr778_i2c_write_reg(LTR778_PS_CONTR, 0x00);
 			if (err < 0)
 			{
 				APS_ERR("PS: eint_work disable ps err: %d \n", err);
-			}
+			}			
 			goto EXIT_INTR;
 		}
 	}
@@ -1828,13 +2069,15 @@ static void ltr778_eint_work(struct work_struct *work)
 		}
 				
 		APS_DBG("ltr778_eint_work rawdata ps=%d!\n",obj->ps);
+		if( ps_stowed_enf == 0){
 		value = ltr778_get_ps_value(obj, obj->ps);
-		
+		} else {
+		value = ltr778_stowed_get_ps_value(obj, obj->ps);
+		}
 		if(value == 0 || value == 2)
-			value = 0;	// close
+			value = 0;
 		else
-			value = 1;	// far
-
+			value = 1;
 #ifdef CONFIG_MOTO_AOD_BASE_ON_AP_SENSORS
 		if(ps_stowed_start == 1)
 		{
@@ -1852,145 +2095,151 @@ static void ltr778_eint_work(struct work_struct *work)
 #endif
 
 		APS_DBG("intr_flag_value=%d    value = %d \n",intr_flag_value, value);
-		if(intr_flag_value == 1){
-			
-			res = ltr778_i2c_write_reg( LTR778_PS_THRES_LOW_0,(u8)((atomic_read(&obj->ps_thd_val_low)) & 0x00FF) );
-			if(res < 0)
-			{
-				goto EXIT_INTR;
-			}
-			
-			res = ltr778_i2c_write_reg( LTR778_PS_THRES_LOW_1, (u8)(((atomic_read(&obj->ps_thd_val_low)) & 0x7F00) >> 8));
-			if(res < 0)
-			{
-				goto EXIT_INTR;
-			}
-			
-			res = ltr778_i2c_write_reg( LTR778_PS_THRES_UP_0,   (u8)((atomic_read(&obj->ps_persist_val_high)) & 0x00FF) );
-			if(res < 0)
-			{
-				goto EXIT_INTR;
-			}
-			
-			res = ltr778_i2c_write_reg( LTR778_PS_THRES_UP_1, (u8)(((atomic_read(&obj->ps_persist_val_high)) & 0x7F00) >> 8));
-			if(res < 0)
-			{
-				goto EXIT_INTR;
-			}
-		} else if (intr_flag_value == 0){	
-  //def GN_MTK_BSP_PS_DYNAMIC_CALI
-  #if 1
-			if(obj->ps > 10 && obj->ps < (dynamic_calibrate - 100)){ 
-        		if(obj->ps < 15){			
-        			atomic_set(&obj->ps_thd_val_high,  obj->ps+65);
-        			atomic_set(&obj->ps_thd_val_low, obj->ps+35);
-					
-        			atomic_set(&obj->ps_persist_val_high,  obj->ps+1750);
-        			atomic_set(&obj->ps_persist_val_low, obj->ps+150);
-        		}else if(obj->ps < 50){
-        			atomic_set(&obj->ps_thd_val_high,  obj->ps+75);
-        			atomic_set(&obj->ps_thd_val_low, obj->ps+45);
-					
-        			atomic_set(&obj->ps_persist_val_high,  obj->ps+1700);
-        			atomic_set(&obj->ps_persist_val_low, obj->ps+190);
-        		}else if(obj->ps < 80){
-        			atomic_set(&obj->ps_thd_val_high,  obj->ps+80);
-        			atomic_set(&obj->ps_thd_val_low, obj->ps+48);
-					
-        			atomic_set(&obj->ps_persist_val_high,  obj->ps+1600);
-        			atomic_set(&obj->ps_persist_val_low, obj->ps+230);
-        		}else if(obj->ps < 200){
-        			atomic_set(&obj->ps_thd_val_high,  obj->ps+85);
-        			atomic_set(&obj->ps_thd_val_low, obj->ps+55);
-					
-        			atomic_set(&obj->ps_persist_val_high,  obj->ps+1600);
-        			atomic_set(&obj->ps_persist_val_low, obj->ps+312);
-        		}else if(obj->ps < 600){
-        			atomic_set(&obj->ps_thd_val_high,  obj->ps+140);
-        			atomic_set(&obj->ps_thd_val_low, obj->ps+70);
-					
-        			atomic_set(&obj->ps_persist_val_high,  obj->ps+1400);
-        			atomic_set(&obj->ps_persist_val_low, obj->ps+450);
-        		}else if(obj->ps < 1500){
-        			atomic_set(&obj->ps_thd_val_high,  obj->ps+200);
-        			atomic_set(&obj->ps_thd_val_low, obj->ps+100);
-					
-        			atomic_set(&obj->ps_persist_val_high,  obj->ps+500);
-        			atomic_set(&obj->ps_persist_val_low, obj->ps+400);
-        		}
-        		else{
-        			atomic_set(&obj->ps_thd_val_high,  1900);
-        			atomic_set(&obj->ps_thd_val_low, 1800);
-					
-        			atomic_set(&obj->ps_persist_val_high, 2000 );
-        			atomic_set(&obj->ps_persist_val_low, 1950);
-        		}
-        		
-        		dynamic_calibrate = obj->ps;
-        	}	
-#endif
 
-			res = ltr778_i2c_write_reg( LTR778_PS_THRES_LOW_0, 0x00);
-			if(res < 0)
+		/* 	modyfied by steven turn if...else to switch...case
+			1--> normal near  
+			0--> normal far    
+			2--> oil near    
+			3--> oil far
+		*/
+		switch(intr_flag_value){
+			case 1://normal near
 			{
-				goto EXIT_INTR;
-			}
-			
-			res = ltr778_i2c_write_reg( LTR778_PS_THRES_LOW_1, 0x00);
-			if(res < 0)
-			{
-				goto EXIT_INTR;
-			}
-			
-			res = ltr778_i2c_write_reg( LTR778_PS_THRES_UP_0, (u8)((atomic_read(&obj->ps_thd_val_high)) & 0x00FF));
-			if(res < 0)
-			{
-				goto EXIT_INTR;
-			}
-			
-			res = ltr778_i2c_write_reg( LTR778_PS_THRES_UP_1, (u8)(((atomic_read(&obj->ps_thd_val_high)) & 0x7F00) >> 8));
-			if(res < 0)
-			{
-				goto EXIT_INTR;
-			}
-		}else if(intr_flag_value == 2)  // hypothesis oil close
-		{
-			res = ltr778_i2c_write_reg( LTR778_PS_THRES_LOW_0,(u8)((atomic_read(&obj->ps_persist_val_low)) & 0x00FF) );
-			//APS_ERR();
-			if(res < 0)
-			{
-				goto EXIT_INTR;
-			}
-			
-			res = ltr778_i2c_write_reg( LTR778_PS_THRES_LOW_1, (u8)(((atomic_read(&obj->ps_persist_val_low)) & 0x7F00) >> 8));
-			//APS_ERR();
 
-			if(res < 0)
-			{
-				goto EXIT_INTR;
+				if(ps_normal_farcal == 1){
+					ltr778_enable_ps_delay_work(0);
+					ps_normal_farcal = 0;
+					}
+				
+				if( ps_stowed_enf == 0){
+					res = ltr778_i2c_write_reg( LTR778_PS_THRES_LOW_0,(u8)((atomic_read(&obj->ps_thd_val_low)) & 0x00FF) );
+					if(res < 0)
+					{
+						goto EXIT_INTR;
+					}
+					
+					res = ltr778_i2c_write_reg( LTR778_PS_THRES_LOW_1, (u8)(((atomic_read(&obj->ps_thd_val_low)) & 0x7F00) >> 8));
+					if(res < 0)
+					{
+						goto EXIT_INTR;
+					}
+					
+					res = ltr778_i2c_write_reg( LTR778_PS_THRES_UP_0,   (u8)((atomic_read(&obj->ps_persist_val_high)) & 0x00FF) );
+					if(res < 0)
+					{
+						goto EXIT_INTR;
+					}
+					
+					res = ltr778_i2c_write_reg( LTR778_PS_THRES_UP_1, (u8)(((atomic_read(&obj->ps_persist_val_high)) & 0x7F00) >> 8));
+					if(res < 0)
+					{
+						goto EXIT_INTR;
+					}
+				}else{
+				
+					res = ltr778_i2c_write_reg( LTR778_PS_THRES_LOW_0,(u8)((atomic_read(&obj->ps_thd_val_low)) & 0x00FF) );
+					if(res < 0)
+					{
+						goto EXIT_INTR;
+					}
+					
+					res = ltr778_i2c_write_reg( LTR778_PS_THRES_LOW_1, (u8)(((atomic_read(&obj->ps_thd_val_low)) & 0x7F00) >> 8));
+					if(res < 0)
+					{
+						goto EXIT_INTR;
+					}
+					
+					res = ltr778_i2c_write_reg( LTR778_PS_THRES_UP_0, 0xFF );
+					if(res < 0)
+					{
+						goto EXIT_INTR;
+					}
+					
+					res = ltr778_i2c_write_reg( LTR778_PS_THRES_UP_1, 0X07 );
+					if(res < 0)
+					{
+						goto EXIT_INTR;
+					}
+				}
 			}
+			break;
 			
-			res = ltr778_i2c_write_reg( LTR778_PS_THRES_UP_0, 0xFF );
-			//APS_ERR();
-
-			if(res < 0)
+			case 0://normal far
 			{
-				goto EXIT_INTR;
+
+				if(obj->ps > 20 && obj->ps < (dynamic_calibrate - 50)){
+					ps_normal_farcal = 1;
+					ltr778_enable_ps_delay_work(1);
+				}
+
+				res = ltr778_i2c_write_reg( LTR778_PS_THRES_LOW_0, 0x00);
+				if(res < 0)
+				{
+					goto EXIT_INTR;
+				}
+				
+				res = ltr778_i2c_write_reg( LTR778_PS_THRES_LOW_1, 0x00);
+				if(res < 0)
+				{
+					goto EXIT_INTR;
+				}
+				
+				res = ltr778_i2c_write_reg( LTR778_PS_THRES_UP_0, (u8)((atomic_read(&obj->ps_thd_val_high)) & 0x00FF));
+				if(res < 0)
+				{
+					goto EXIT_INTR;
+				}
+				
+				res = ltr778_i2c_write_reg( LTR778_PS_THRES_UP_1, (u8)(((atomic_read(&obj->ps_thd_val_high)) & 0x7F00) >> 8));
+				if(res < 0)
+				{
+					goto EXIT_INTR;
+				}
 			}
+			break;
 			
-			res = ltr778_i2c_write_reg( LTR778_PS_THRES_UP_1, 0x07 );
-			//APS_ERR();
-			if(res < 0)
+			case 2:	//oil near
 			{
-				goto EXIT_INTR;
-			}
-			
-		}else if(intr_flag_value == 3)  //  oil far  
-		{
+				
+				if(ps_normal_farcal == 1){
+					ltr778_enable_ps_delay_work(0);
+					ps_normal_farcal = 0;
+					}
+					res = ltr778_i2c_write_reg( LTR778_PS_THRES_LOW_0,(u8)((atomic_read(&obj->ps_persist_val_low)) & 0x00FF) );
+					//APS_ERR();
+					if(res < 0)
+					{
+						goto EXIT_INTR;
+					}
+					
+					res = ltr778_i2c_write_reg( LTR778_PS_THRES_LOW_1, (u8)(((atomic_read(&obj->ps_persist_val_low)) & 0x7F00) >> 8));
+					//APS_ERR();
 
-			
+					if(res < 0)
+					{
+						goto EXIT_INTR;
+					}
+					
+					res = ltr778_i2c_write_reg( LTR778_PS_THRES_UP_0, 0xFF );
+					//APS_ERR();
 
-#if 0
+					if(res < 0)
+					{
+						goto EXIT_INTR;
+					}
+					
+					res = ltr778_i2c_write_reg( LTR778_PS_THRES_UP_1, 0x07 );
+					//APS_ERR();
+					if(res < 0)
+					{
+						goto EXIT_INTR;
+					}
+				}
+			break;
+			
+			case 3:	//oil far
+			{
+			#if 0
 			if(obj->ps > 25 ){ 
 				 if(obj->ps < 50){
         			atomic_set(&obj->ps_thd_val_high,  obj->ps+75);
@@ -2027,32 +2276,36 @@ static void ltr778_eint_work(struct work_struct *work)
         		
         		dynamic_calibrate = obj->ps;
         	}	        
+			#endif
+				res = ltr778_i2c_write_reg( LTR778_PS_THRES_LOW_0,(u8)((atomic_read(&obj->ps_thd_val_low)) & 0x00FF) );
+				if(res < 0)
+				{
+					goto EXIT_INTR;
+				}
+				
+				res = ltr778_i2c_write_reg( LTR778_PS_THRES_LOW_1, (u8)(((atomic_read(&obj->ps_thd_val_low)) & 0x7F00) >> 8));
+				if(res < 0)
+				{
+					goto EXIT_INTR;
+				}
+				
+				res = ltr778_i2c_write_reg( LTR778_PS_THRES_UP_0, (u8)((atomic_read(&obj->ps_thd_val_high)) & 0x00FF) );
+				if(res < 0)
+				{
+					goto EXIT_INTR;
+				}
+				
+				res = ltr778_i2c_write_reg( LTR778_PS_THRES_UP_1, (u8)(((atomic_read(&obj->ps_thd_val_high)) & 0x7F00) >> 8) );
+				if(res < 0)
+				{
+					goto EXIT_INTR;
+				}
+			}
+			break;
 
-#endif
-			
-			res = ltr778_i2c_write_reg( LTR778_PS_THRES_LOW_0,(u8)((atomic_read(&obj->ps_thd_val_low)) & 0x00FF) );
-			if(res < 0)
-			{
-				goto EXIT_INTR;
-			}
-			
-			res = ltr778_i2c_write_reg( LTR778_PS_THRES_LOW_1, (u8)(((atomic_read(&obj->ps_thd_val_low)) & 0x7F00) >> 8));
-			if(res < 0)
-			{
-				goto EXIT_INTR;
-			}
-			
-			res = ltr778_i2c_write_reg( LTR778_PS_THRES_UP_0, (u8)((atomic_read(&obj->ps_thd_val_high)) & 0x00FF) );
-			if(res < 0)
-			{
-				goto EXIT_INTR;
-			}
-			
-			res = ltr778_i2c_write_reg( LTR778_PS_THRES_UP_1, (u8)(((atomic_read(&obj->ps_thd_val_high)) & 0x7F00) >> 8) );
-			if(res < 0)
-			{
-				goto EXIT_INTR;
-			}
+			default: 
+				APS_DBG("ltr778_eint_work  switch case error intr_flag_value=%d!\n",intr_flag_value);
+
 		}
 		//let up layer to know
 		res = ps_report_interrupt_data(value);
@@ -2714,6 +2967,7 @@ static int ltr778_i2c_probe(struct i2c_client *client, const struct i2c_device_i
 	
 	obj->hw = hw;
 	INIT_WORK(&obj->eint_work, ltr778_eint_work);
+	INIT_DELAYED_WORK(&dpswork, ltr778_ps_delay_work);//modified by steven
 	obj->client = client;
 	i2c_set_clientdata(client, obj);	
 	
