@@ -911,16 +911,16 @@ static int fts_read_vendor(struct i2c_client *client)
 		return -1;
 	}
 	switch (ctp_vendor_id) {
-	case FTS_VENDOR_1_ID :
+	case FTS_VENDOR_1_ID:
 		FTS_INFO("[TPD]Vendor:Ofilm");
 		break;
-	case FTS_VENDOR_2_ID :
+	case FTS_VENDOR_2_ID:
 		FTS_INFO("[TPD]Vendor:TopTouch");
 		break;
-	case FTS_VENDOR_3_ID :
+	case FTS_VENDOR_3_ID:
 		FTS_INFO("[TPD]Vendor:DJ");
 		break;
-	default :
+	default:
 		FTS_INFO("[TPD]Vendor:Unknown");
 		break;
 	}
@@ -1228,6 +1228,7 @@ static void tpd_resume(struct device *h)
 	fts_tp_state_recovery(fts_i2c_client);
 
 #if FTS_ESDCHECK_EN
+	fts_i2c_write_reg(fts_i2c_client, 0x90, 0x01);
 	fts_esdcheck_resume();
 #endif
 

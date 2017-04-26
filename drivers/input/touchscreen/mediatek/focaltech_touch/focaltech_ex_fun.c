@@ -543,19 +543,19 @@ static ssize_t fts_tpvendor_show(struct device *dev,
 	fts_esdcheck_proc_busy(0);
 #endif
 	switch (vendor) {
-	case FTS_VENDOR_1_ID :
+	case FTS_VENDOR_1_ID:
 		num_read_chars = snprintf(buf, PAGE_SIZE, "Ofilm\n");
 		break;
-	case FTS_VENDOR_2_ID :
+	case FTS_VENDOR_2_ID:
 		num_read_chars = snprintf(buf, PAGE_SIZE, "TopTouch\n");
 		break;
-	case FTS_VENDOR_3_ID :
+	case FTS_VENDOR_3_ID:
 		num_read_chars = snprintf(buf, PAGE_SIZE, "DJ\n");
 		break;
-	case 255 :
+	case 255:
 		num_read_chars = snprintf(buf, PAGE_SIZE, "get tp fw version fail!\n");
 		break;
-	default :
+	default:
 		num_read_chars = snprintf(buf, PAGE_SIZE, "Unknown\n");
 		break;
 	}
