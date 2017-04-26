@@ -223,6 +223,7 @@ static struct device_attribute power_supply_attrs[] = {
 	POWER_SUPPLY_ATTR(energy_full),
 	POWER_SUPPLY_ATTR(charger_full_design),
 	POWER_SUPPLY_ATTR(charge_full),
+	POWER_SUPPLY_ATTR(charge_counter),
 	#endif
 	//zhangchao@wind-mobi.com 20161219 end
 	/* Dual battery */
