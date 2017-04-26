@@ -1,6 +1,7 @@
 #
 # linux/drivers/nand/Makefile
 #
+subdir-ccflags-y += -Werror
 
 obj-$(CONFIG_MTD_NAND)			+= nand.o
 obj-$(CONFIG_MTD_NAND_ECC)		+= nand_ecc.o
