@@ -30,7 +30,7 @@
 #define LSC_SIZE	0x74C
 #define PDAF_SIZE	2048
 #define PDAF_ADDR	0x779
-#define MID_ADDR 0x0401
+#define MID_ADDR 0x000B
 
 //#define CAM_CALGETDLT_DEBUG
 #define CAM_CAL_DEBUG
@@ -325,8 +325,8 @@ static bool selective_read_eeprom(unsigned short addr, unsigned char * data)
     return true;
 }
 //lenovo.sw wuyt3 add for read MID K5 begin
-#if 0
-static unsigned char Read_MID_form_eeprom(void)
+#if 1
+unsigned char Read_MID_form_eeprom(void)
 {
 
 	unsigned char data[1];
