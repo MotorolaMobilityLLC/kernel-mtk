@@ -278,6 +278,7 @@ signed int mt_battery_GetBatteryCapacity(void);
 signed int mt_battery_GetBatteryCoulombs(void);
 signed int mt_battery_GetBatteryDesignedCapacity(void);
 signed int mt_battery_GetBatteryChargeFullCapacity(void);
+signed int mt_battery_GetBatteryChargeCounter(void);
 #endif
 //zhangchao@wind-mobi.com 20161128 end
 
@@ -373,6 +374,7 @@ static enum power_supply_property battery_props[] = {
 	POWER_SUPPLY_PROP_energy_full,
 	POWER_SUPPLY_PROP_charger_full_design,
 	POWER_SUPPLY_PROP_charge_full,
+	POWER_SUPPLY_PROP_charge_counter,
 	#endif
 	//zhangchao@wind-mobi.com 20161128 end
 	/* Add for EM */
@@ -703,6 +705,9 @@ static int battery_get_property(struct power_supply *psy,
 		break;
 	case POWER_SUPPLY_PROP_charge_full:
 		val->intval = mt_battery_GetBatteryChargeFullCapacity();
+		break;
+	case POWER_SUPPLY_PROP_charge_counter:
+		val->intval = mt_battery_GetBatteryChargeCounter();
 		break;
 	#endif
 	//zhangchao@wind-mobi.com 20161128 end
@@ -2487,6 +2492,13 @@ signed int mt_battery_GetBatteryChargeFullCapacity(void)
 	i = 2800;
 	battery_log(BAT_LOG_CRTI, "zhangchao2 battery ChargeFullCapacity= (%d)\n",i);
 	return i;
+}
+signed int mt_battery_GetBatteryChargeCounter(void)
+{
+	int charge_counter;
+	charge_counter = BMT_status.UI_SOC2*mt_battery_GetBatteryCapacity()/100;
+	battery_log(BAT_LOG_CRTI, "wind-log battery charge_counter= (%d)\n",charge_counter);
+	return charge_counter;
 }
 #endif
 //zhangchao@wind-mobi.com 20161128 begin
