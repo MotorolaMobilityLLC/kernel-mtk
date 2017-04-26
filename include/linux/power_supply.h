@@ -172,6 +172,7 @@ enum power_supply_property {
 	POWER_SUPPLY_PROP_energy_full,
 	POWER_SUPPLY_PROP_charger_full_design,
 	POWER_SUPPLY_PROP_charge_full,
+	POWER_SUPPLY_PROP_charge_counter,
 	#endif
 	//zhangchao@wind-mobi.com 20161219 end
 	/* Dual battery */
