@@ -6187,6 +6187,13 @@ int tcp_conn_request(struct request_sock_ops *rsk_ops,
 		if (!want_cookie)
 			goto drop;
 	}
+        /* Accept backlog is full. If we have already queued enough
+         * of warm entries in syn queue, drop request. It is better than
+         * clogging syn queue with openreqs with exponentially increasing
+         * timeout.
+	 * if (sk_acceptq_is_full(sk) && inet_csk_reqsk_queue_young(sk) > 1) {
+ 	 * modify by zhangsu CtsLibcoretest fail mtk case ALPS03270854 
+         */
 
 
 	if (sk_acceptq_is_full(sk)) {

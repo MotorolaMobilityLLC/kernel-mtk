@@ -320,7 +320,6 @@ static int dccp_v6_conn_request(struct sock *sk, struct sk_buff *skb)
 	dcb->dccpd_reset_code = DCCP_RESET_CODE_TOO_BUSY;
 	if (inet_csk_reqsk_queue_is_full(sk))
 		goto drop;
-
 	if (sk_acceptq_is_full(sk))
 		goto drop;
 
