@@ -52,7 +52,10 @@ static int ltr778_i2c_remove(struct i2c_client *client);
 static int ltr778_i2c_detect(struct i2c_client *client, struct i2c_board_info *info);
 static int ltr778_i2c_suspend(struct i2c_client *client, pm_message_t msg);
 static int ltr778_i2c_resume(struct i2c_client *client);
-
+//tuwenzan@wind-mobi.com add at 20170424 begin
+static int ltr778_als_enable(struct i2c_client *client, int enable);
+static int ltr778_als_read(struct i2c_client *client, u16* data);
+//tuwenzan@wind-mobi.com add at 20170424 end
 static int	als_integration_factor;
 static int	als_gain_factor;
 
@@ -269,7 +272,7 @@ static int get_avg_lux(unsigned int lux)
 
 
 //tuwenzan@wind-mobi.com add for solve oil bug at 20170307 begin
-#define MAX_ELM_PS 4
+#define MAX_ELM_PS 2 	//tuwenzan@wind-mobi.com modify at 20170424
 static unsigned int record_ps[MAX_ELM_PS];
 static int rct_ps=0,full_ps=0;
 static long ps_sum=0;
@@ -624,7 +627,7 @@ static int ltr778_ps_stowed_enable(struct i2c_client *client, int enable)
 	int err;
 	int res = 0;
 //	struct ltr778_priv *obj = ltr778_obj;
-	ps_stowed_enf = 1;
+	
 
 	APS_LOG("ltr778_ps_stowed_enable(%d) ...start!\n",enable);
 
@@ -665,13 +668,15 @@ static int ltr778_ps_stowed_enable(struct i2c_client *client, int enable)
 		APS_LOG("PS: stowed enable ps only \n");
 		regdata = 0xC2; //c2
 		ps_stowed_start = 1;
-		ps_en_flag = 1;
+		ps_en_flag = 1; //tuwenzan@wind-mobi.com add at 20170414
+		ps_stowed_enf = 1;	//tuwenzan@wind-mobi.com add at 20170421
 	}
 	else {
 		APS_LOG("PS: stowed disable ps only \n");
 		regdata = 0x00;
 		ps_stowed_start = 0;
-		ps_en_flag = 0;
+		ps_en_flag = 0; //tuwenzan@wind-mobi.com add at 20170414
+		ps_stowed_enf = 0;	//tuwenzan@wind-mobi.com add at 20170421
 	}
 
 	err = ltr778_i2c_write_reg(LTR778_PS_CONTR, regdata);
@@ -756,6 +761,25 @@ static int ltr778_ps_enable(struct i2c_client *client, int enable)
 	}
 	//tuwenzan@wind-mobi.com add at 20170313 end
 
+
+//tuwenzan@wind-mobic.com add at 20170424 begin	
+	if (enable != 0) {
+		APS_LOG("PS: enable als als_enable_flag=%d \n",als_enable_flag);
+		if(als_enable_flag == 0)
+			{
+				ltr778_als_enable(client, 1);
+				ps_enable_als = 1;
+			}else{
+				ps_enable_als = 0;
+			}
+	}else {
+		APS_LOG("PS: disable als ps_enable_als =%d\n",ps_enable_als);
+		if(ps_enable_als == 1)
+			{
+				ltr778_als_enable(client, 0);
+			}
+	}
+//tuwenzan@wind-mobic.com add at 20170424 end
 	err = ltr778_i2c_write_reg(LTR778_PS_CONTR, regdata);
 	if (err < 0)
 	{
@@ -819,10 +843,9 @@ static int ltr778_ps_read(struct i2c_client *client, u16 *data)
 	/* by steven   decress   power */	
 	psdata = ((psval_hi & 7)* 256) + psval_lo;
 	if(ps_offen == 0){
-		
+		ps_offen = 1; //tuwenzan@wind-mobi.com add at 20170424
 		if(ps_en == 1 && psdata > 80 && psdata < 1024){
-
-			ps_offen = 1;
+			
 
 			ps_offd = psdata-50;
 			
@@ -956,6 +979,19 @@ static int ltr778_dynamic_calibrate(void)
 	ps_en = 0;
 
 	noise = data_total / count;
+//tuwenzan@wind-mobic.com add at 20170424 begin	
+	obj->als = ltr778_als_read(obj->client, &obj->als);
+	
+	
+	if(obj->als < 20){
+
+		noise = 3000;  // not meet the calibration condition -- noise < dynamic_calibrate + 450
+
+	}
+//tuwenzan@wind-mobic.com add at 20170424 end
+
+
+	
     //liujinzhou@wind-mobi.com modify at 20161205 begin
 	if(noise < dynamic_calibrate + 450)  // modified by steven
 	{
@@ -1250,7 +1286,7 @@ static int ltr778_stowed_get_ps_value(struct ltr778_priv *obj, u16 ps)
 
 static int ltr778_get_ps_value(struct ltr778_priv *obj, u16 ps)
 {
-	int val;
+	int val = 0; //tuwenzan@wind-mobi.com add at 20170424
 	int invalid = 0;
 
 	static int val_temp = 1;
@@ -1273,14 +1309,22 @@ static int ltr778_get_ps_value(struct ltr778_priv *obj, u16 ps)
 				intr_flag_value = 1;
 				oil_far_cal = 0;
 			}
-
-		if((ps <= atomic_read(&obj->ps_persist_val_low)) && (oil_close == 1) )
+		//tuwenzan@wind-mobi.com modify at 20170424 begin
+		if((ps <= (atomic_read(&obj->ps_persist_val_low)-10)) && (oil_close == 1) )
 			{
 				val = 3;  /* persist oil far away*/
 				val_temp = 3;
 				intr_flag_value = 3;
+			}else if((ps > (atomic_read(&obj->ps_persist_val_low)+15)) && (oil_close == 1)){
+				val = 2;  //oil close
+				val_temp = 2;
+				intr_flag_value = 3;
+			}else{
+				val = val_temp;
+				intr_flag_value = 3;
 			}
-	}	
+	}
+		//tuwenzan@wind-mobi.com modify at 20170424 end	
 	else if((ps <= atomic_read(&obj->ps_thd_val_low)))
 	{
 		val = 1;  /*far away*/
@@ -1912,10 +1956,12 @@ EXIT_ERR:
 #endif //#ifndef CUSTOM_KERNEL_SENSORHUB
 /*----------------------------------------------------------------------------*/
 /*modified by steven for light test*/
+//tuwenzan@wind-mobi.com modify at 20170425 begin
 static u8 ps_normal_farcal = 0;
 struct delayed_work dpswork;
 static u16 ltr778_ps_check_delay=50;
 static u8 ps_cali_time = 0;
+static u8 ps_delay_work_flag = 0;
 
 static void ltr778_ps_delay_work(struct work_struct *work)
 {
@@ -1927,7 +1973,7 @@ static void ltr778_ps_delay_work(struct work_struct *work)
 	APS_DBG("ltr778_delay_work obj-> als  = %d \n",obj->als);
 	obj->ps = ltr778_ps_read(obj->client, &obj->ps);
 	
-	if(get_stable_ps(obj->ps) == 1 && ps_cali_time == 0 ){
+	if(get_stable_ps(obj->ps) == 1 && ps_cali_time == 0 && (obj->ps < dynamic_calibrate)){
 
 		ps_cali_time = 1;
 
@@ -1972,10 +2018,13 @@ static void ltr778_ps_delay_work(struct work_struct *work)
         		dynamic_calibrate = obj->ps;
 
 		
-	}
+		}else{
+			ps_delay_work_flag++;
+		}
 
+	if(ps_cali_time == 0 && ps_delay_work_flag < 200) //tuwenzan@wind-mobi.com add at 20170421
+		schedule_delayed_work(&dpswork,msecs_to_jiffies(ltr778_ps_check_delay));
 	
-	schedule_delayed_work(&dpswork,msecs_to_jiffies(ltr778_ps_check_delay));
 
 }
 
@@ -1988,7 +2037,9 @@ static void ltr778_enable_ps_delay_work(u8 enable)
 		schedule_delayed_work(&dpswork,msecs_to_jiffies(ltr778_ps_check_delay));
 		
 		ps_cali_time = 0;
+		ps_delay_work_flag = 0;
 	} 
+//tuwenzan@wind-mobi.com modify at 20170425 end
 	else 
 	{
 		cancel_delayed_work_sync(&dpswork);
@@ -2238,6 +2289,8 @@ static void ltr778_eint_work(struct work_struct *work)
 			
 			case 3:	//oil far
 			{
+			//tuwenzan@wind-mobi.com remove oil calibration at 20170421 begin
+			#if 0
 			if(obj->ps > 25 ){ 
 				 if(obj->ps < 50){
         			atomic_set(&obj->ps_thd_val_high,  obj->ps+75);
@@ -2274,7 +2327,8 @@ static void ltr778_eint_work(struct work_struct *work)
         		
         		dynamic_calibrate = obj->ps;
         	}	        
-		
+			#endif
+			//tuwenzan@wind-mobi.com remove oil calibration at 20170421 end
 				res = ltr778_i2c_write_reg( LTR778_PS_THRES_LOW_0,(u8)((atomic_read(&obj->ps_thd_val_low)) & 0x00FF) );
 				if(res < 0)
 				{
