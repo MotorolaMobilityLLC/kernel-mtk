@@ -177,9 +177,15 @@ NSFeature :  : RAWSensorInfo < _id >  :  : getFlickerPara \
 #define OV2650_SENSOR_ID_2                      0x2652
 #define OV2650_SENSOR_ID_3                      0x2655
 /*S5K*/
-#define S5K4H8_SENSOR_ID                        0x4088
-#define S5K2L7_SENSOR_ID                        0x20C7
+#define S5K4H8_OFILM_MID		0x07
+#define S5K4H8_QTECH_MID		0x06
+#define S5K3L8_TRULY_MID		0x02
+#define S5K3L8_SUNNY_MID		0x01
+#define S5K4H8_SENSOR_ID                      0x4088
+#define S5K4H8_QTECH_SENSOR_ID                  (0x4088+S5K4H8_QTECH_MID)
 #define S5K3L8_SENSOR_ID                        0x30C8
+#define S5K3L8_SUNNY_SENSOR_ID                  (0x30C8+S5K3L8_SUNNY_MID)
+#define S5K2L7_SENSOR_ID                        0x20C7
 #define S5K2X8_SENSOR_ID                        0x2188
 #define S5K2P8_SENSOR_ID                        0x2108
 #define S5K3P3SX_SENSOR_ID                      0x3103
@@ -357,8 +363,10 @@ NSFeature :  : RAWSensorInfo < _id >  :  : getFlickerPara \
 #define SENSOR_DRVNAME_OV2650_RAW               "ov265x"
 /*S5K*/
 #define SENSOR_DRVNAME_S5K4H8_MIPI_RAW          "s5k4h8mipiraw"
-#define SENSOR_DRVNAME_S5K2L7_MIPI_RAW          "s5k2l7mipiraw"
+#define SENSOR_DRVNAME_S5K4H8_MIPI_RAW_QTECH          "s5k4h8mipirawqtech"
 #define SENSOR_DRVNAME_S5K3L8_MIPI_RAW          "s5k3l8mipiraw"
+#define SENSOR_DRVNAME_S5K3L8_MIPI_RAW_SUNNY          "s5k3l8mipirawsunny"
+#define SENSOR_DRVNAME_S5K2L7_MIPI_RAW          "s5k2l7mipiraw"
 #define SENSOR_DRVNAME_S5K2X8_MIPI_RAW          "s5k2x8mipiraw"
 #define SENSOR_DRVNAME_S5K2P8_MIPI_RAW          "s5k2p8mipiraw"
 #define SENSOR_DRVNAME_S5K3P3SX_MIPI_RAW      "s5k3p3sxmipiraw"
