@@ -3123,15 +3123,14 @@ CHARGER_TYPE mt_charger_type_detection(void)
 	BMT_status.charger_type = CHR_Type_num;
 #else
 #if !defined(CONFIG_MTK_DUAL_INPUT_CHARGER_SUPPORT)
-	if ((BMT_status.charger_type == CHARGER_UNKNOWN)||(BMT_status.charger_type == NONSTANDARD_CHARGER)) {
-	    battery_log(BAT_LOG_CRTI, "LCT mt_charger_type_detection BMT_status.charger_type = %d\n",BMT_status.charger_type);
+	if (BMT_status.charger_type == CHARGER_UNKNOWN) {
 #else
 	if ((BMT_status.charger_type == CHARGER_UNKNOWN) &&
 	    (DISO_data.diso_state.cur_vusb_state == DISO_ONLINE)) {
 #endif
 		battery_charging_control(CHARGING_CMD_GET_CHARGER_TYPE, &CHR_Type_num);
 		BMT_status.charger_type = CHR_Type_num;
-        battery_log(BAT_LOG_CRTI, "LCT mt_charger_type_detection BMT_status.charger_type = %d end\n",BMT_status.charger_type);
+
 #if defined(CONFIG_MTK_KERNEL_POWER_OFF_CHARGING)
 #if defined(PUMP_EXPRESS_SERIES)
 		/*if (BMT_status.UI_SOC2 == 100) {
@@ -3208,14 +3207,7 @@ static void mt_battery_charger_detect_check(void)
 		if ((BMT_status.charger_type == CHARGER_UNKNOWN) &&
 		    (DISO_data.diso_state.cur_vusb_state == DISO_ONLINE)) {
 #endif
-battery_log(BAT_LOG_CRTI, "LCT first mt_charger_type_detection\n");
 			mt_charger_type_detection();
-
-if(BMT_status.charger_type == NONSTANDARD_CHARGER)
-{
-      battery_log(BAT_LOG_CRTI, "LCT second mt_charger_type_detection\n");
-      mt_charger_type_detection();
-}
 
 			if ((BMT_status.charger_type == STANDARD_HOST)
 			    || (BMT_status.charger_type == CHARGING_HOST)) {
