@@ -521,7 +521,8 @@ static void mt2701_spec_pinmux_set(struct regmap *reg, unsigned int pin,
 	regmap_update_bits(reg, mt2701_spec_pinmux[i].offset, mask, value);
 }
 
-static void mt2701_spec_dir_set(unsigned int *reg_addr, unsigned int pin)
+static void mt2701_spec_dir_set(struct mtk_pinctrl *pctl,
+			unsigned int *reg_addr, unsigned int pin, bool input)
 {
 	if (pin > 175)
 		*reg_addr += 0x10;
