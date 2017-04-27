@@ -11,7 +11,15 @@
 #include "switch_queue.h"
 #include <imsg_log.h>
 
+static void secondary_nt_sched_t(void *info)
+{
+	unsigned long smc_type = 2;
 
+	nt_sched_t((uint64_t *)(&smc_type));
+	while (smc_type == 0x54) {
+		nt_sched_t((uint64_t *)(&smc_type));
+	}
+}
 void nt_sched_t_call(void)
 {
 	int retVal = 0;

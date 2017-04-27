@@ -79,9 +79,7 @@ enum teei_cmd_type {
  * ***************************************************************/
 static inline void Flush_Dcache_By_Area(unsigned long start, unsigned long end)
 {
-#ifdef CONFIG_ARM64
-		__flush_dcache_area((void *)start, (end - start));
-#else
+#if 0
 	__asm__ __volatile__ ("dsb" : : : "memory"); /* dsb */
 
 	__asm__ __volatile__ (
@@ -112,6 +110,31 @@ static inline void Flush_Dcache_By_Area(unsigned long start, unsigned long end)
  * *****************************************************************/
 static inline void Invalidate_Dcache_By_Area(unsigned long start, unsigned long end)
 {
+#ifdef CONFIG_ARM64
+#if 0
+	uint64_t temp[2];
+	temp[0] = start;
+	temp[1] = end;
+	__asm__ volatile(
+		"ldr x0, [%[temp], #0]\n\t"
+		"ldr x1, [%[temp], #8]\n\t"
+		"mrs    x3, ctr_el0\n\t"
+		"ubfm   x3, x3, #16, #19\n\t"
+		"mov	x2, #4\n\t"
+		"lsl	x2, x2, x3\n\t"
+		"dsb	sy\n\t"
+		"sub	x3, x2, #1\n\t"
+		"bic	x0, x0, x3\n\t"
+		"1:	dc      ivac, x0\n\t"                       /* invalidate D line / unified line */
+		"add	x0, x0, x2\n\t"
+		"cmp	x0, x1\n\t"
+		"b.lo	1b\n\t"
+		"dsb	sy\n\t"
+		: :
+		[temp] "r" (temp)
+ : "x0", "x1", "x2", "x3", "memory");
+#endif 
+#else
 #if 0
 	__asm__ __volatile__ ("dsb" : : : "memory"); /* dsb */
 	__asm__ __volatile__ (
@@ -148,6 +171,7 @@ static inline void Invalidate_Dcache_By_Area(unsigned long start, unsigned long 
 	    [start]  "r" (start),
 	    [end]  "r"  (end)
 	    : "memory");
+#endif
 #endif
 }
 

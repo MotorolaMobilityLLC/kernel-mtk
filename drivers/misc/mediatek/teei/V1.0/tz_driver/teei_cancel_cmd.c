@@ -36,16 +36,16 @@ void set_cancel_command(unsigned long memory_size)
 
 int __send_cancel_command(unsigned long share_memory_size)
 {
-	uint64_t smc_type = 2;
+	unsigned long smc_type = 2;
 	set_cancel_command(share_memory_size);
     Flush_Dcache_By_Area((unsigned long)cancel_message_buff, (unsigned long)cancel_message_buff + CANCEL_MESSAGE_SIZE);
 
 	fp_call_flag = GLSCH_HIGH;
-	n_invoke_t_drv(&smc_type, 0, 0);
+	n_invoke_t_drv((uint64_t *)(&smc_type), 0, 0);
 
 	while (smc_type == 0x54) {
-		udelay(IRQ_DELAY);
-		nt_sched_t(&smc_type);
+		//udelay(IRQ_DELAY);
+		nt_sched_t((uint64_t *)(&smc_type));
 	}
 
 	return 0;

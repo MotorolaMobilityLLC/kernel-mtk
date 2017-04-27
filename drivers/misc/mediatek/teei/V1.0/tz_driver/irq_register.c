@@ -189,13 +189,13 @@ static irqreturn_t nt_boot_irq_handler(void)
 
 void secondary_load_func(void)
 {
-	uint64_t smc_type = 2;
+	unsigned long smc_type = 2;
 	Flush_Dcache_By_Area((unsigned long)boot_vfs_addr, (unsigned long)boot_vfs_addr + VFS_SIZE);
 	IMSG_DEBUG("[%s][%d]: %s end.\n", __func__, __LINE__, __func__);
-	n_ack_t_load_img(&smc_type, 0, 0);
+	n_ack_t_load_img((uint64_t *)(&smc_type), 0, 0);
 	while (smc_type == 0x54) {
-		udelay(IRQ_DELAY);
-		nt_sched_t(&smc_type);
+		//udelay(IRQ_DELAY);
+		nt_sched_t((uint64_t *)(&smc_type));
 	}
 }
 

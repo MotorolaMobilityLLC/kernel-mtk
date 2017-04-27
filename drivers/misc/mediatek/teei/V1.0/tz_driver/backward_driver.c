@@ -55,13 +55,14 @@ void set_ack_vdrv_cmd(unsigned int sys_num)
 
 void secondary_invoke_fastcall(void *info)
 {
-	uint64_t smc_type = 2;
-	n_invoke_t_fast_call(&smc_type, 0, 0);
+	unsigned long smc_type = 2;
+	n_invoke_t_fast_call((uint64_t *)(&smc_type), 0, 0);
 
 	while (smc_type == 0x54) {
-		udelay(IRQ_DELAY);
-		nt_sched_t(&smc_type);
+		//udelay(IRQ_DELAY);
+		nt_sched_t((uint64_t *)(&smc_type));
 	}
+	return;
 }
 
 void invoke_fastcall(void)
@@ -166,7 +167,7 @@ int __reetime_handle(struct service_handler *handler)
 	void *ptr = NULL;
 	int tv_sec;
 	int tv_usec;
-	uint64_t smc_type = 2;
+	unsigned long smc_type = 2;
 
 	do_gettimeofday(&tv);
 	ptr = handler->param_buf;
@@ -178,10 +179,9 @@ int __reetime_handle(struct service_handler *handler)
 	Flush_Dcache_By_Area((unsigned long)handler->param_buf, (unsigned long)handler->param_buf + handler->size);
 
 	set_ack_vdrv_cmd(handler->sysno);
-	n_ack_t_invoke_drv(&smc_type, 0, 0);
+	n_ack_t_invoke_drv((uint64_t *)(&smc_type), 0, 0);
 	while(smc_type == 0x54) {
-		udelay(IRQ_DELAY);
-		nt_sched_t(&smc_type);
+		nt_sched_t((uint64_t *)(&smc_type));
 	}
 
 	return 0;
@@ -253,15 +253,15 @@ static void vfs_deinit(struct service_handler *handler) /*! stop service  */
 
 int __vfs_handle(struct service_handler *handler) /*! invoke handler */
 {
-	uint64_t smc_type = 2;
+	unsigned long smc_type = 2;
 	Flush_Dcache_By_Area((unsigned long)handler->param_buf, (unsigned long)handler->param_buf + handler->size);
 
 	set_ack_vdrv_cmd(handler->sysno);
-	n_ack_t_invoke_drv(&smc_type, 0, 0);
+	n_ack_t_invoke_drv((uint64_t *)(&smc_type), 0, 0);
 
 	while(smc_type == 0x54) {
-		udelay(IRQ_DELAY);
-		nt_sched_t(&smc_type);
+		//udelay(IRQ_DELAY);
+		nt_sched_t((uint64_t *)(&smc_type));
 	}
 
 	return 0;
