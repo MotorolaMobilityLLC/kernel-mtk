@@ -581,7 +581,7 @@ static long flashlight_ioctl_core(struct file *file, unsigned int cmd, unsigned 
 			|| gLowPowerVbat != LOW_BATTERY_LEVEL_0)
 				isLow = 1;
 			logI("FLASH_IOC_IS_LOW_POWER %d %d %d", gLowPowerPer, gLowPowerVbat, isLow);
-			kdArg.arg = isLow;
+			kdArg.arg = 0;
 			if (copy_to_user
 			    ((void __user *)arg, (void *)&kdArg, sizeof(kdStrobeDrvArg))) {
 				logI("[FLASH_IOC_IS_LOW_POWER] ioctl copy to user failed ~");
