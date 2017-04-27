@@ -121,7 +121,20 @@ void sdcardfs_truncate_share(struct super_block *sb, struct inode *lower_inode, 
 		spin_unlock(&sdcardfs_list_lock);
 		inode = ilookup(sbi->s_sb, lower_inode->i_ino);
 		if (inode) {
-			truncate_setsize(inode, newsize);
+			loff_t oldsize = inode->i_size;
+
+			#if BITS_PER_LONG == 32 && defined(CONFIG_SMP)
+			spin_lock(&inode->i_lock);
+			#endif
+			i_size_write(inode, newsize);
+			#if BITS_PER_LONG == 32 && defined(CONFIG_SMP)
+			spin_unlock(&inode->i_lock);
+			#endif
+
+			if (newsize > oldsize)
+				pagecache_isize_extended(inode, oldsize, newsize);
+			truncate_pagecache(inode, newsize);
+
 			iput(inode);
 		}
 		spin_lock(&sdcardfs_list_lock);
