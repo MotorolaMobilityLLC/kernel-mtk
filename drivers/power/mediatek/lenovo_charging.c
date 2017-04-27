@@ -521,6 +521,16 @@ kal_bool lenovo_battery_is_temp_45_to_pos_50(void)
 #endif
 /*End, lenovo-sw chailu1 add for 45-50  CV limit   20150318 */
 
+kal_bool lenovo_battery_is_limit_charging(void)
+{
+	if ((BMT_status.charger_type == STANDARD_CHARGER)
+		&&(g_call_state == CALL_ACTIVE || lenovo_chg_state == CHARGING_STATE_LIMIT_CHARGING)) {
+		return KAL_TRUE;
+	} else {
+		return KAL_FALSE;
+	}
+}
+
 /* lenovo-sw zhangrc2 use pmic control charging led 2014-12-08 */
 #if defined (LENOVO_USE_PMIC_CONTROL_LED )
  void lenovo_battery_charging_set_led_state(void) 

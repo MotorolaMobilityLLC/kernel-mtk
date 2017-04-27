@@ -100,7 +100,7 @@ extern void lenovo_battery_notify_to_health(unsigned int notify, unsigned int *B
 extern kal_bool lenovo_battery_is_temp_45_to_pos_50(void);
 #endif
 /*End, lenovo-sw chailu1 add for 45-50  CV limit   20150318 */
-
+kal_bool lenovo_battery_is_limit_charging(void);
 //lenovo-sw mahj2 add for charging led and ui_soc sync,Begin
 extern  void lenovo_battery_charging_set_led_state(void);
 //lenovo-sw mahj2 add for charging led and ui_soc sync,End

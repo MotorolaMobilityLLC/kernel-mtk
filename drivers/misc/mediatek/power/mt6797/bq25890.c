@@ -793,6 +793,18 @@ bool bq25890_is_maxcharger(void)
 	}
 }
 
+void bq25890_set_9V_to_5V(void)
+{
+	bq25890_config_interface(bq25890_CON1, 0x2, 0x7, 5);
+	bq25890_config_interface(bq25890_CON1, 0x1, 0x7, 2);
+}
+
+void bq25890_set_5V_to_9V(void)
+{
+	bq25890_config_interface(bq25890_CON1, 0x6, 0x7, 5);
+	bq25890_config_interface(bq25890_CON1, 0x2, 0x7, 2);
+}
+
 unsigned int bq25890_get_chrg_state(void)
 {
 	unsigned int ret = 0;

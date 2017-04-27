@@ -757,17 +757,13 @@ void select_charging_current(void)
 			g_temp_CC_value = batt_cust_data.non_std_ac_charger_current;
 
 		} else if (BMT_status.charger_type == STANDARD_CHARGER) {
-			if (bq25890_is_maxcharger()) {
-				g_temp_input_CC_value = MAXCHARGER_INPUT_CURRENT;
-				g_temp_CC_value = MAXCHARGER_CURRENT;
-			} else {
-				if (batt_cust_data.ac_charger_input_current != 0)
-					g_temp_input_CC_value = batt_cust_data.ac_charger_input_current;
-				else
-					g_temp_input_CC_value = batt_cust_data.ac_charger_current;
+			if (batt_cust_data.ac_charger_input_current != 0)
+				g_temp_input_CC_value = batt_cust_data.ac_charger_input_current;
+			else
+				g_temp_input_CC_value = batt_cust_data.ac_charger_current;
 
-				g_temp_CC_value = batt_cust_data.ac_charger_current;
-			}
+			g_temp_CC_value = batt_cust_data.ac_charger_current;
+
 			mtk_pep_set_charging_current(&g_temp_CC_value, &g_temp_input_CC_value);
 			mtk_pep20_set_charging_current(&g_temp_CC_value, &g_temp_input_CC_value);
 
@@ -861,6 +857,21 @@ void select_charging_current_bcct(void)
 #endif
 
 	mtk_check_aicr_upper_bound();
+}
+static void bq25890_select_correspond_power(void)
+{
+	if (!(bq25890_is_maxcharger()
+		&& BMT_status.charger_type == STANDARD_CHARGER))
+		return;
+
+	if (g_bcct_input_flag == 1
+		|| g_bcct_flag == 1
+		|| lenovo_battery_is_limit_charging() == KAL_TRUE) {
+		bq25890_set_9V_to_5V();
+	} else {
+		bq25890_set_5V_to_9V();
+	}
+
 }
 
 static void mtk_select_ichg_aicr(void)
@@ -958,6 +969,8 @@ static void mtk_select_ichg_aicr(void)
 			mtk_pep_set_to_check_chr_type(true);
 		}
 	}
+
+	bq25890_select_correspond_power();
 
 	mutex_unlock(&g_ichg_aicr_access_mutex);
 }
