@@ -445,6 +445,42 @@
 			#clock-cells = <1>;
 		};
 
+		/* 2712 only have one pcie RC. */
+		pcie@0x11700000 {
+			compatible = "mediatek,pcie-mt2712";
+			device_type = "pci";
+			reg = <0 0x11700000 0 0x1000>; /* 4k PORT0 registers */
+			interrupts = <GIC_SPI 115 IRQ_TYPE_LEVEL_HIGH>;
+			bus-range = <0x00 0xff>;
+			#address-cells = <3>;
+			#size-cells = <2>;
+			ranges = <0x82000000 0 0x20000000  0x0 0x20000000  0 0x10000000>;
+
+			pcie0: pcie@1,0 {
+				device_type = "pci";
+				reg = <0x0800 0 0 0 0>;
+				#address-cells = <3>;
+				#size-cells = <2>;
+				#interrupt-cells = <1>;
+				ranges;
+				interrupt-map-mask = <0 0 0 7>;
+				interrupt-map = <0 0 0 1 &pcie_intc0 1>,
+						<0 0 0 2 &pcie_intc0 2>,
+						<0 0 0 3 &pcie_intc0 3>,
+						<0 0 0 4 &pcie_intc0 4>;
+				pcie-port = <0>;
+				num-lanes = <1>;
+				phys = <&pcie0_phy>;
+				phy-names = "pcie-phy0";
+				status = "okay";
+				pcie_intc0: interrupt-controller {
+					interrupt-controller;
+					#address-cells = <0>;
+					#interrupt-cells = <1>;
+				};
+			};
+		};
+
 		vdecsys: syscon@16000000 {
 			compatible = "mediatek,mt2712-vdecsys", "syscon";
 			reg = <0 0x16000000 0 0x1000>;
@@ -461,6 +497,19 @@
 			compatible = "mediatek,mt2712-jpgdecsys", "syscon";
 			reg = <0 0x19000000 0 0x1000>;
 			#clock-cells = <1>;
+		};
+
+		/*  add those to avoid runtime errors. */
+		pcie0_phy: pciephy@1a147000 {
+			compatible = "mediatek,pcie-phy";
+			reg = <0 0x1a147000 0 0x0800>;
+			#phy-cells = <0>;
+		};
+
+		pcie1_phy: pciephy@1a147800 {
+			compatible = "mediatek,pcie-phy";
+			reg = <0 0x1a147800 0 0x0800>;
+			#phy-cells = <0>;
 		};
 	};
 

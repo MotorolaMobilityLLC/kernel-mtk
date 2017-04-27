@@ -153,6 +153,11 @@
 	sd-uhs-sdr104;
 };
 
+&pcie0 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pcie_pinctl0>;
+};
+
 &pio {
 	i2c0_pins: i2c0 {
 		pins_bus {
@@ -350,6 +355,18 @@
 			pinmux = <MT2712_PIN_89_MSDC2_CLK__FUNC_MSDC2_CLK>;
 			drive-strength = <MTK_DRIVE_6mA>;
 			bias-pull-down = <MTK_PUPD_SET_R1R0_10>;
+		};
+	};
+
+	pcie_pinctl0: pcie0 {
+		pcie0 {
+			pinmux = <MT2712_PIN_204_PERSTB_P0__FUNC_PERST_B_P0>,
+			<MT2712_PIN_205_CLKREQN_P0__FUNC_CLKREQ_N_P0>,
+			<MT2712_PIN_206_WAKEEN_P0__FUNC_WAKE_EN_P0>,
+			/* following three pins are for EP */
+			<MT2712_PIN_207_PERSTB_P1__FUNC_PERST_B_P1>,
+			<MT2712_PIN_208_CLKREQN_P1__FUNC_CLKREQ_N_P1>,
+			<MT2712_PIN_209_WAKEEN_P1__FUNC_WAKE_EN_P1>;
 		};
 	};
 };
