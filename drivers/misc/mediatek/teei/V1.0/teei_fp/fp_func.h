@@ -1,7 +1,7 @@
 #ifndef TEEI_FUNC_H
 #define TEEI_FUNC_H
 
-#define FP_SIZE			    0x80000
+#define FP_MAX_SIZE			    0x80000
 #define CMD_MEM_CLEAR		_IO(0x5A777E, 0x1)
 #define CMD_FP_CMD      	_IO(0x5A777E, 0x2)
 #define CMD_GATEKEEPER_CMD	_IO(0x5A777E, 0x3)

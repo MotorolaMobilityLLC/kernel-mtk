@@ -199,13 +199,15 @@ void tz_free_shared_mem(void *addr, size_t size)
 
 void ut_pm_mutex_lock(struct mutex *lock)
 {
-	add_work_entry(LOCK_PM_MUTEX, (unsigned char *)lock);
+	//add_work_entry(LOCK_PM_MUTEX, (unsigned char *)lock);
+	mutex_lock(lock);
 }
 
 
 void ut_pm_mutex_unlock(struct mutex *lock)
 {
-	add_work_entry(UNLOCK_PM_MUTEX, (unsigned char *)lock);
+	//add_work_entry(UNLOCK_PM_MUTEX, (unsigned char *)lock);
+	mutex_unlock(lock);
 }
 
 int get_current_cpuid(void)
@@ -215,13 +217,13 @@ int get_current_cpuid(void)
 
 void secondary_boot_stage2(void *info)
 {
-	uint64_t smc_type = 2;
+	unsigned long smc_type = 2;
 
-	n_switch_to_t_os_stage2(&smc_type);
+	n_switch_to_t_os_stage2((uint64_t *)(&smc_type));
 
 	while (smc_type == 0x54) {
-		udelay(IRQ_DELAY);
-		nt_sched_t(&smc_type);
+		//udelay(IRQ_DELAY);
+		nt_sched_t((uint64_t *)(&smc_type));
 	}
 }
 
@@ -246,12 +248,12 @@ int switch_to_t_os_stages2(void)
 
 void secondary_load_tee(void *info)
 {
-	uint64_t smc_type = 2;
+	unsigned long smc_type = 2;
 
-	n_invoke_t_load_tee(&smc_type, 0, 0);
+	n_invoke_t_load_tee((uint64_t *)(&smc_type), 0, 0);
 	while (smc_type == 0x54) {
-		udelay(IRQ_DELAY);
-		nt_sched_t(&smc_type);
+		//udelay(IRQ_DELAY);
+		nt_sched_t((uint64_t *)(&smc_type));
 
 	}
 }
@@ -294,14 +296,14 @@ int t_os_load_image(void)
 void secondary_boot_stage1(void *info)
 {
 	struct boot_stage1_struct *cd = (struct boot_stage1_struct *)info;
-	uint64_t smc_type = 2;
+	unsigned long smc_type = 2;
 	/* with a rmb() */
 	rmb();
 
-	n_init_t_boot_stage1((uint64_t)(cd->vfs_phy_addr), (uint64_t)(cd->tlog_phy_addr), &smc_type);
+	n_init_t_boot_stage1((uint64_t)(cd->vfs_phy_addr), (uint64_t)(cd->tlog_phy_addr), (uint64_t *)(&smc_type));
 	while (smc_type == 0x54) {
-		udelay(IRQ_DELAY);
-		nt_sched_t(&smc_type);
+		//udelay(IRQ_DELAY);
+		nt_sched_t((uint64_t *)(&smc_type));
 	}
 
 	/* with a wmb() */
@@ -400,7 +402,7 @@ struct init_cmdbuf_struct {
 void secondary_init_cmdbuf(void *info)
 {
 	struct init_cmdbuf_struct *cd = (struct init_cmdbuf_struct *)info;
-	uint64_t smc_type = 2;
+	unsigned long smc_type = 2;
 	/* with a rmb() */
 	rmb();
 
@@ -408,15 +410,15 @@ void secondary_init_cmdbuf(void *info)
 	       (unsigned long)cd->phy_addr, (unsigned long)cd->fdrv_phy_addr,
 	       (unsigned long)cd->bdrv_phy_addr, (unsigned long)cd->tlog_phy_addr);
 
-	n_init_t_fc_buf((uint64_t)cd->phy_addr, (uint64_t)cd->fdrv_phy_addr, &smc_type);
+	n_init_t_fc_buf((uint64_t)cd->phy_addr, (uint64_t)cd->fdrv_phy_addr, (uint64_t *)(&smc_type));
 	while (smc_type == 0x54) {
-		udelay(IRQ_DELAY);
-		nt_sched_t(&smc_type);
+		//udelay(IRQ_DELAY);
+		nt_sched_t((uint64_t *)(&smc_type));
 	}
-	n_init_t_fc_buf((uint64_t)cd->bdrv_phy_addr, (uint64_t)cd->tlog_phy_addr, &smc_type);
+	n_init_t_fc_buf((uint64_t)cd->bdrv_phy_addr, (uint64_t)cd->tlog_phy_addr, (uint64_t *)(&smc_type));
 	while (smc_type == 0x54) {
-		udelay(IRQ_DELAY);
-		nt_sched_t(&smc_type);
+		//udelay(IRQ_DELAY);
+		nt_sched_t((uint64_t *)(&smc_type));
 	}
 	/* with a wmb() */
 	wmb();

@@ -82,7 +82,11 @@ enum teei_cmd_type {
  * ***************************************************************/
 static inline void Flush_Dcache_By_Area(unsigned long start, unsigned long end)
 {
-#if 0
+
+	if (boot_soter_flag == START_STATUS) {
+#ifdef CONFIG_ARM64
+		__flush_dcache_area((void *)start, (end - start));
+#else
 	__asm__ __volatile__ ("dsb" : : : "memory"); /* dsb */
 
 	__asm__ __volatile__ (
@@ -102,8 +106,6 @@ static inline void Flush_Dcache_By_Area(unsigned long start, unsigned long end)
 	__asm__ __volatile__ ("dsb" : : : "memory"); /* dsb */
 #endif
 	/* __flush_dcache_area((void *)start, (end - start)); */
-	if (boot_soter_flag == START_STATUS) {
-		__flush_dcache_area((void *)start, (end - start));
 	}
 }
 /******************************************************************
@@ -117,6 +119,7 @@ static inline void Flush_Dcache_By_Area(unsigned long start, unsigned long end)
 
 static inline void __Invalidate_Dcache_By_Area(unsigned long start, unsigned long end)
 {
+#ifdef CONFIG_ARM64
 
 	uint64_t temp[2];
 	temp[0] = start;
@@ -140,6 +143,22 @@ static inline void __Invalidate_Dcache_By_Area(unsigned long start, unsigned lon
 		[temp] "r" (temp)
 		:"x0","x1","x2","x3","memory");
 
+#else
+	__asm__ __volatile__ ("dsb" : : : "memory"); /* dsb */
+	__asm__ __volatile__ (
+		"1:  mcr p15, 0, %[i], c7, c6, 1\n" /* Invalidate Data Cache Line (using MVA) Register */
+		"    add %[i], %[i], %[clsz]\n"
+		"    cmp %[i], %[end]\n"
+		"    blo 1b\n"
+		:
+		[i]    "=&r" (start)
+		:        "0"   ((unsigned long)start & (~(Cache_line_size - 1))),
+		[end]  "r"   (end),
+		[clsz] "i"   (Cache_line_size)
+		: "memory");
+	asm volatile ("mcr p15, 0, %0, c7, c5, 0" : : "r" (0) : "memory"); /* invalidate btc */
+	__asm__ __volatile__ ("dsb" : : : "memory"); /* dsb */
+#endif
 }
 
 static inline void Invalidate_Dcache_By_Area(unsigned long start, unsigned long end)

@@ -194,13 +194,13 @@ int get_call_type(struct switch_call_struct *ent)
 
 int handle_sched_call(void *buff)
 {
-	uint64_t smc_type = 2;
+	volatile unsigned long smc_type = 2;
 
-	nt_sched_t(&smc_type);
+	nt_sched_t((uint64_t *)(&smc_type));
 
 	while(smc_type == 0x54) {
-		udelay(IRQ_DELAY);
-		nt_sched_t(&smc_type);
+		//udelay(IRQ_DELAY);
+		nt_sched_t((uint64_t *)(&smc_type));
 	}
 
 	return 0;
@@ -324,13 +324,12 @@ int handle_bdrv_call(void *buff)
 
 int handle_switch_call(void *buff)
 {
-	uint64_t smc_type = 2;
+	unsigned long smc_type = 2;
 
-	nt_sched_t(&smc_type);
+	nt_sched_t((uint64_t *)(&smc_type));
 
 	while (smc_type == 0x54) {
-		udelay(IRQ_DELAY);
-		nt_sched_t(&smc_type);
+		nt_sched_t((uint64_t *)(&smc_type));
 	}
 
 	return 0;

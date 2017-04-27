@@ -26,7 +26,7 @@
 #define FP_DEBUG
 struct fp_dev {
 	struct cdev cdev;
-	unsigned char mem[FP_SIZE];
+	unsigned char mem[FP_MAX_SIZE];
 	struct semaphore sem;
 };
 
@@ -112,7 +112,7 @@ static long fp_ioctl(struct file *filp, unsigned cmd, unsigned long arg)
 			return -EFAULT;
 		}
 
-		Flush_Dcache_By_Area((unsigned long)fp_buff_addr, (unsigned long)fp_buff_addr + FP_SIZE);
+		Flush_Dcache_By_Area((unsigned long)fp_buff_addr, (unsigned long)fp_buff_addr + FP_MAX_SIZE);
 		/*send command data to TEEI*/
 		send_fp_command(FP_DRIVER_ID);
 #ifdef FP_DEBUG
