@@ -567,7 +567,6 @@ static int fts_report_value(struct ts_event *data)
 			}
 			input_mt_report_slot_state(tpd->dev, MT_TOOL_FINGER,
 						   true);
-			input_report_key(tpd->dev, BTN_TOUCH, 1);
 			if (FTS_REPORT_PRESSURE_EN) {
 				if (FTS_FORCE_TOUCH_EN) {
 					if (data->pressure[i] > 0) {
@@ -635,6 +634,17 @@ static int fts_report_value(struct ts_event *data)
 		}
 	}
 	data->touchs = touchs;
+
+	if (data->touch_point_num == 0) {
+		for (i = 0; i < FTS_MAX_POINTS; i++) {
+			input_mt_slot(tpd->dev, i);
+			input_mt_report_slot_state(tpd->dev, MT_TOOL_FINGER, false);
+		}
+		data->touchs = 0;
+		input_report_key(tpd->dev, BTN_TOUCH, 0);
+		input_sync(tpd->dev);
+		return 0;
+	}
 
 	if ((data->touch_point == up_point) || !data->touch_point_num) {
 		FTS_DEBUG("[B]Points All UP!");
