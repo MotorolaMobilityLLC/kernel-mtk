@@ -579,6 +579,32 @@ static const struct mtk_pin_drv_grp mt2712_pin_drv[] = {
 	MTK_PIN_DRV_GRP(209, 0xc00, 8, 0),
 };
 
+static void mt2712_spec_dir_set(struct mtk_pinctrl *pctl,
+				unsigned int *reg_addr,
+				unsigned int pin,
+				bool input)
+{
+	u32 reg_val;
+
+	if (pin == 16) {
+		regmap_read(pctl->regmap2, 0x940, &reg_val);
+		reg_val |= BIT(15);
+		if (input)
+			reg_val &= ~BIT(14);
+		else
+			reg_val |= BIT(14);
+		regmap_write(pctl->regmap2, 0x940, reg_val);
+	} else if (pin == 17) {
+		regmap_read(pctl->regmap2, 0x940, &reg_val);
+		reg_val |= BIT(7);
+		if (input)
+			reg_val &= ~BIT(6);
+		else
+			reg_val |= BIT(6);
+		regmap_write(pctl->regmap2, 0x940, reg_val);
+	}
+}
+
 static const struct mtk_pinctrl_devdata mt2712_pinctrl_data = {
 	.pins = mtk_pins_mt2712,
 	.npins = ARRAY_SIZE(mtk_pins_mt2712),
@@ -591,6 +617,7 @@ static const struct mtk_pinctrl_devdata mt2712_pinctrl_data = {
 	.spec_ies_smt_set = mt2712_ies_smt_set,
 	.spec_ies_get = mt2712_spec_ies_get,
 	.spec_smt_get = mt2712_spec_smt_get,
+	.spec_dir_set = mt2712_spec_dir_set,
 	.dir_offset = 0x0000,
 	.pullen_offset = 0x0100,
 	.pullsel_offset = 0x0200,

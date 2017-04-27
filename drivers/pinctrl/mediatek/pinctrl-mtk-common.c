@@ -223,7 +223,7 @@ static int mtk_pmx_gpio_set_direction(struct pinctrl_dev *pctldev,
 	bit = BIT(offset & 0xf);
 
 	if (pctl->devdata->spec_dir_set)
-		pctl->devdata->spec_dir_set(&reg_addr, offset);
+		pctl->devdata->spec_dir_set(pctl, &reg_addr, offset, input);
 
 	if (input)
 		/* Different SoC has different alignment offset. */
@@ -959,8 +959,8 @@ static int mtk_gpio_get_direction(struct gpio_chip *chip, unsigned int offset)
 	reg_addr =  mtk_get_port(pctl, offset) + pctl->devdata->dir_offset;
 	bit = BIT(offset & 0xf);
 
-	if (pctl->devdata->spec_dir_set)
-		pctl->devdata->spec_dir_set(&reg_addr, offset);
+	if (pctl->devdata->spec_dir_get)
+		pctl->devdata->spec_dir_get(pctl, &reg_addr, offset, &read_val);
 
 	regmap_read(pctl->regmap1, reg_addr, &read_val);
 	return !(read_val & bit);

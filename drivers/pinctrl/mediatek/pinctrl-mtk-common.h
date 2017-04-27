@@ -328,7 +328,10 @@ struct mtk_pinctrl_devdata {
 			unsigned char align, int value, enum pin_config_param arg);
 	void (*spec_pinmux_set)(struct regmap *reg, unsigned int pin,
 			unsigned int mode);
-	void (*spec_dir_set)(unsigned int *reg_addr, unsigned int pin);
+	void (*spec_dir_set)(struct mtk_pinctrl *pctl, unsigned int *reg_addr,
+			unsigned int pin, bool input);
+	void (*spec_dir_get)(struct mtk_pinctrl *pctl, unsigned int *reg_addr,
+			unsigned int pin, unsigned int *reg_val);
 	int (*spec_pull_get)(struct regmap *reg, unsigned int pin);
 	int (*spec_ies_get)(struct regmap *reg, unsigned int pin);
 	int (*spec_smt_get)(struct regmap *reg, unsigned int pin);
