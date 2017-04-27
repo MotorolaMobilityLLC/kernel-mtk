@@ -43,7 +43,7 @@
 //#define LOG_DBG(format, args...) xlog_printk(ANDROID_LOG_DEBUG ,PFX, "[%S] " format, __FUNCTION__, ##args)
 #define LOG_INF(fmt, args...)   pr_err(PFX "[%s] " fmt, __FUNCTION__, ##args)
 #define LOGE(fmt, args...)   pr_err(PFX "[%s] " fmt, __FUNCTION__, ##args)
-
+static kal_uint16 MID = 0;
 static DEFINE_SPINLOCK(imgsensor_drv_lock);
 static imgsensor_info_struct imgsensor_info = { 
 	.sensor_id = S5K4H8_QTECH_SENSOR_ID,
@@ -313,6 +313,8 @@ static void write_cmos_sensor_8(kal_uint16 addr, kal_uint8 para)
 #define AWB_PAGE     (15)
 #define AWB_DATA_LEN        (12)
 #define CHESUM_ADDR_LEN   (1)
+#define OTP_MID_GROUP_1       (0x0A05)
+#define OTP_MID_GROUP_2       (0x0A0F)
 #define AWB_FLAG_GROUP       (0x0A26)
 #define AWB_FLAG_ADDR_1   (0x0A27)
 #define AWB_FLAG_ADDR_2   (0x0A34)
@@ -509,6 +511,31 @@ static BOOL calculate_awb_data(kal_uint16 rg,kal_uint16 bg,kal_uint16 golden_rg,
 	s_Awb_otp.b_gain = b_gain; //save awb data 
 	LOG_INF("[%s] s5k4h5:r_gain =[0x%x],b_gain =[0x%x],g_gain =[0x%x] \n",__func__,r_gain,b_gain,g_gain);
 	return TRUE;
+}
+static BOOL read_MID_from_otp(void)
+{
+	kal_uint16 Length =1;
+	 LOG_INF("[%s]  read_s5k4h5_otp \n",__func__);
+	write_cmos_sensor(0x6028,0x4000);
+	write_cmos_sensor(0x602A,0x0100);
+	write_cmos_sensor_8(0x6F12,0x01);  //streamm on	
+	mdelay(10);
+	if(!read_otp(AWB_PAGE, OTP_MID_GROUP_1,&MID,Length))
+	{
+		LOG_INF("[%s]  read s5k4h5 otp mid err!\n",__func__);
+	 	return FALSE;
+	}else {
+	 LOG_INF("[%s] group 1 mid = %d   read_s5k4h5_otp \n",__func__,MID);
+		 if(MID== S5K4H8_QTECH_MID)
+		 {
+		       return 0;
+		 }else {
+		read_otp(AWB_PAGE, OTP_MID_GROUP_2,&MID,Length);
+		 LOG_INF("[%s] group 2 mid = %d   read_s5k4h5_otp \n",__func__,MID);
+		 }
+
+	}
+	return 0;
 }
 static BOOL read_data_from_otp(void)
 {
@@ -4407,10 +4434,12 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
         imgsensor.i2c_write_id = imgsensor_info.i2c_addr_table[i];
         spin_unlock(&imgsensor_drv_lock);
         do {
+			read_MID_from_otp();
 			write_cmos_sensor(0x602C,0x4000);
 			write_cmos_sensor(0x602E,0x0000);
 			*sensor_id = read_cmos_sensor(0x6F12);
-			*sensor_id = *sensor_id  +S5K4H8_QTECH_MID;
+			
+			*sensor_id = *sensor_id  +MID;
 			//*sensor_id = imgsensor_info.sensor_id;
             if (*sensor_id == imgsensor_info.sensor_id) { 
 //lcsh tqq add device_info
@@ -4428,7 +4457,7 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
         i++;
         retry = 1;
     }
-    if (*sensor_id != imgsensor_info.sensor_id) {
+    if (*sensor_id != imgsensor_info.sensor_id || (MID !=S5K4H8_QTECH_MID )) {
         // if Sensor ID is not correct, Must set *sensor_id to 0xFFFFFFFF 
         *sensor_id = 0xFFFFFFFF;
         return ERROR_SENSOR_CONNECT_FAIL;
@@ -4473,7 +4502,7 @@ static kal_uint32 open(void)
 			write_cmos_sensor(0x602E,0x0000);
             sensor_id =  read_cmos_sensor(0x6F12);
 			//sensor_id = imgsensor_info.sensor_id;
-			sensor_id = sensor_id  +S5K4H8_QTECH_MID;
+			sensor_id = sensor_id  +MID;
             if (sensor_id == imgsensor_info.sensor_id) {                
                 LOG_INF("qtech module i2c write id: 0x%x, sensor id: 0x%x\n", imgsensor.i2c_write_id,sensor_id);   
                 break;
@@ -4486,7 +4515,7 @@ static kal_uint32 open(void)
             break;
         retry = 2;
     }        
-    if (imgsensor_info.sensor_id != sensor_id)
+    if (imgsensor_info.sensor_id != sensor_id || (MID !=S5K4H8_QTECH_MID ))
         return ERROR_SENSOR_CONNECT_FAIL;
 	/* initail sequence write in  */
 	sensor_init();
