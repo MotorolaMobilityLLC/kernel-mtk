@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!--dct_version="2.5" buid_sn="161025" dws_modification_time="03.29.2017.17:16:53"-->
+<!--dct_version="2.5" buid_sn="161025" dws_modification_time="04.27.2017.21:52:50"-->
 <dct_cfg>
     <general chip="MT6797">
         <proj>k97_v1</proj>
@@ -656,13 +656,13 @@
             </gpio40>
             <gpio41>
                 <eint_mode>false</eint_mode>
-                <def_mode>1</def_mode>
+                <def_mode>0</def_mode>
                 <mode_arr>11000000</mode_arr>
-                <inpull_en>true</inpull_en>
+                <inpull_en>false</inpull_en>
                 <inpull_selhigh>false</inpull_selhigh>
-                <def_dir>OUT</def_dir>
+                <def_dir>IN</def_dir>
                 <in>true</in>
-                <out>true</out>
+                <out>false</out>
                 <out_high>false</out_high>
                 <smt>true</smt>
                 <ies>true</ies>
