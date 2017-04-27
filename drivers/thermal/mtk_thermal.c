@@ -126,6 +126,8 @@
 #define MT8173_CALIB_BUF2_VTS_TSABB(x)	(((x) >> 14) & 0x1ff)
 #define MT8173_CALIB_BUF0_DEGC_CALI(x)	(((x) >> 1) & 0x3f)
 #define MT8173_CALIB_BUF0_O_SLOPE(x)	(((x) >> 26) & 0x3f)
+#define MT8173_CALIB_BUF0_O_SLOPE_SIGN(x)	(((x) >> 6) & 0x1)
+#define MT8173_CALIB_BUF1_ID(x)	(((x) >> 9) & 0x1)
 
 /* MT2701 thermal sensors */
 #define MT2701_TS1	0
@@ -609,7 +611,10 @@ static int mtk_thermal_get_calibration_data(struct device *dev,
 		mt->vts[MT8173_TS4] = MT8173_CALIB_BUF2_VTS_TS4(buf[2]);
 		mt->vts[MT8173_TSABB] = MT8173_CALIB_BUF2_VTS_TSABB(buf[2]);
 		mt->degc_cali = MT8173_CALIB_BUF0_DEGC_CALI(buf[0]);
-		mt->o_slope = MT8173_CALIB_BUF0_O_SLOPE(buf[0]);
+		if (MT8173_CALIB_BUF1_ID(buf[1]) && MT8173_CALIB_BUF0_O_SLOPE_SIGN(buf[0]))
+			mt->o_slope = -MT8173_CALIB_BUF0_O_SLOPE(buf[0]);
+		else
+			mt->o_slope = MT8173_CALIB_BUF0_O_SLOPE(buf[0]);
 	} else {
 		dev_info(dev, "Device not calibrated, using default calibration values\n");
 	}
