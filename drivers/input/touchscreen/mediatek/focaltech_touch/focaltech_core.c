@@ -1162,12 +1162,11 @@ static void tpd_suspend(struct device *h)
 		return;
 #endif
 
-	fts_release_all_finger();
-
 #if FTS_GESTURE_EN
 	retval = fts_gesture_suspend(fts_i2c_client);
 	if (retval == 0) {
 		/* Enter into gesture mode(suspend) */
+		fts_release_all_finger();
 		return;
 	}
 #endif
@@ -1192,6 +1191,7 @@ static void tpd_suspend(struct device *h)
 #endif
 
 #endif
+	fts_release_all_finger();
 
 	FTS_FUNC_EXIT();
 }
