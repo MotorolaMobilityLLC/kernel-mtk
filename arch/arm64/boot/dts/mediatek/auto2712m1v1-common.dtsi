@@ -70,6 +70,10 @@
 
 };
 
+&auxadc {
+	status = "okay";
+};
+
 &mmc1 {
 	pinctrl-names = "default", "state_uhs";
 	pinctrl-0 = <&mmc1_pins_default>;
