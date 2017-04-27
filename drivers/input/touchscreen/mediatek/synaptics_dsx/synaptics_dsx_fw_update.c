@@ -44,7 +44,7 @@
 
 #define FW_IMAGE_NAME "synaptics/startup_fw_update.img"
 
-// #define DO_STARTUP_FW_UPDATE //tuwenzan@wind-mobi.com close this feature at 20170419
+#define DO_STARTUP_FW_UPDATE //tuwenzan@wind-mobi.com close this feature at 20170419
 #ifdef DO_STARTUP_FW_UPDATE
 #include "SynapticsImage_Biel.h" //tuwenzan@wind-mobi.com add at 20170113
 #include "SynapticsImage_GD.h"  //tuwenzan@wind-mobi.com modify at 20161202
@@ -2279,13 +2279,15 @@ static int fwu_get_device_config_id(void)
 	
 	return 0;
 }
-//tuwenzan@wind-mobi.com add at 20161202 begin
+//tuwenzan@wind-mobi.com modify at 20170427 begin
 static enum flash_area fwu_go_nogo(void)
 {
 	int retval;
 	enum flash_area flash_area = NONE;
-	unsigned char ii;
-	unsigned char config_id_size;
+	//unsigned char ii;
+	//unsigned char config_id_size;
+	unsigned int ui_config_data = 0;
+	unsigned int config_id_data = 0;
 	//unsigned int device_fw_id;
 	//unsigned int image_fw_id;
 	//struct synaptics_rmi4_data *rmi4_data = fwu->rmi4_data;
@@ -2337,13 +2339,28 @@ static enum flash_area fwu_go_nogo(void)
 		flash_area = NONE;
 		goto exit;
 	}
+	ui_config_data = (fwu->img.ui_config.data[3]<<24) + (fwu->img.ui_config.data[2]<<16) + (fwu->img.ui_config.data[1]<<8) + (fwu->img.ui_config.data[0]<<0);
+	config_id_data = (fwu->config_id[3]<<24) + (fwu->config_id[2]<<16) + (fwu->config_id[1]<<8) +  (fwu->config_id[0]<<0);
+	printk("wind-tp ui_config_data = 0x%0x   %d\n",ui_config_data,ui_config_data);
+	printk("wind-tp config_id_data = 0x%0x   %d\n",config_id_data,config_id_data);
 
+	if(ui_config_data > config_id_data){
+		flash_area = UI_FIRMWARE;
+		goto exit;
+	}else{
+		flash_area = NONE;
+		goto exit;
+	}
+	
+	/*
 	if (fwu->bl_version == BL_V7 || fwu->bl_version == BL_V8)
 		config_id_size = V7_CONFIG_ID_SIZE;
 	else
 		config_id_size = V5V6_CONFIG_ID_SIZE;
 
 	for (ii = 0; ii < config_id_size; ii++) {
+		printk("wind-tp ui_config.data[%d] = 0x%0x   %d\n",ii,fwu->img.ui_config.data[ii],fwu->img.ui_config.data[ii]);
+		printk("wind-tp config_id[%d] = 0x%0x   %d\n",ii,fwu->config_id[ii],fwu->config_id[ii]);
 		if (fwu->img.ui_config.data[ii] != fwu->config_id[ii]) {     // >
 			flash_area = UI_FIRMWARE;
 			goto exit;
@@ -2352,7 +2369,7 @@ static enum flash_area fwu_go_nogo(void)
 			goto exit;
 		}
 	}
-
+	*/
 	flash_area = NONE;
 
 exit:
@@ -2371,7 +2388,7 @@ exit:
 
 	return flash_area;
 }
-//tuwenzan@wind-mobi.com add at 20161202 begin
+//tuwenzan@wind-mobi.com modify at 20170427 begin
 static int fwu_scan_pdt(void)
 {
 	int retval;
