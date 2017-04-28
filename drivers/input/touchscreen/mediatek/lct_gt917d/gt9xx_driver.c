@@ -51,9 +51,9 @@ static int ctp_proc_read_show (struct seq_file* m, void* data)
 	if(temp_pid == 0x00){	//add by liuzhen
 		sprintf(vendor_name,"%s","DJN");
 	}else if(temp_pid == 0x01){
-		sprintf(vendor_name,"%s","HELITECH");
-	}else if(temp_pid == 0x02){
 		sprintf(vendor_name,"%s","Top-Group");
+	}else if(temp_pid == 0x02){
+		sprintf(vendor_name,"%s","Top-Group-old");
 	}else if(temp_pid == 0x05){
 		sprintf(vendor_name,"%s","YuShun");
 	}else{
@@ -1786,10 +1786,10 @@ static s32 tpd_i2c_probe(struct i2c_client *client, const struct i2c_device_id *
 		devinfo_ctp_regchar("unknown","DJN",temp_ver,DEVINFO_USED);
 			break;
 		case 0x01:
-		devinfo_ctp_regchar("unknown","HELITECH",temp_ver,DEVINFO_USED);
+		devinfo_ctp_regchar("unknown","Top-Group",temp_ver,DEVINFO_USED);
 			break;
 		case 0x02:
-		devinfo_ctp_regchar("unknown","Top-Group",temp_ver,DEVINFO_USED);
+		devinfo_ctp_regchar("unknown","Top-Group-old",temp_ver,DEVINFO_USED);
 			break;
 		case 0x03:
 		devinfo_ctp_regchar("unknown","reverse",temp_ver,DEVINFO_USED);
