@@ -222,6 +222,11 @@ static unsigned long lowmem_scan(struct shrinker *s, struct shrink_control *sc)
 	}
 #endif
 
+	if (vm_swap_full()) {
+		lowmem_print(3, "cut other_file %d\n", other_file);
+		other_file = (other_file << 1) / 3;
+	}
+
 #ifdef CONFIG_SWAP
 	swap_pages = atomic_long_read(&nr_swap_pages);
 	/* More than 1/2 swap usage */
