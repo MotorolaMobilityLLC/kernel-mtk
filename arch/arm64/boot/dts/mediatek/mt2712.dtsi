@@ -376,6 +376,18 @@
 			status = "disabled";
 		};
 
+		nor_flash: spi@1100D000 {
+			compatible = "mediatek,mt2712-nor",
+				     "mediatek,mt8173-nor";
+			reg = <0 0x1100D000 0 0xe0>;
+			clocks = <&pericfg CLK_PERI_SPI>,
+				 <&topckgen CLK_TOP_SPINOR_SEL>;
+			clock-names = "spi", "sf";
+			#address-cells = <1>;
+			#size-cells = <0>;
+			status = "disabled";
+		};
+
 		mmc0: mmc@11230000 {
 			compatible = "mediatek,mt2712-mmc";
 			reg = <0 0x11230000 0 0x1000>;

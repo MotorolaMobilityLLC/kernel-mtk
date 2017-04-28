@@ -153,6 +153,15 @@
 	sd-uhs-sdr104;
 };
 
+&nor_flash {
+	pinctrl-names = "default";
+	status = "okay";
+	flash@0 {
+		compatible = "jedec,spi-nor";
+		reg = <0>;
+	};
+};
+
 &pcie0 {
 	pinctrl-names = "default";
 	pinctrl-0 = <&pcie_pinctl0>;
