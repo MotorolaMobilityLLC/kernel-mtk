@@ -74,6 +74,42 @@
 	status = "okay";
 };
 
+&i2c0 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&i2c0_pins>;
+	status = "okay";
+};
+
+&i2c1 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&i2c1_pins>;
+	status = "okay";
+};
+
+&i2c2 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&i2c2_pins>;
+	status = "okay";
+};
+
+&i2c3 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&i2c3_pins>;
+	status = "okay";
+};
+
+&i2c4 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&i2c4_pins>;
+	status = "okay";
+};
+
+&i2c5 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&i2c5_pins>;
+	status = "okay";
+};
+
 &mmc1 {
 	pinctrl-names = "default", "state_uhs";
 	pinctrl-0 = <&mmc1_pins_default>;
@@ -118,6 +154,54 @@
 };
 
 &pio {
+	i2c0_pins: i2c0 {
+		pins_bus {
+			pinmux = <MT2712_PIN_105_I2C_SDA0__FUNC_SDA0>,
+				 <MT2712_PIN_111_I2C_SCL0__FUNC_SCL0>;
+			bias-disable;
+		};
+	};
+
+	i2c1_pins: i2c1 {
+		pins_bus {
+			pinmux = <MT2712_PIN_106_I2C_SDA1__FUNC_SDA1>,
+				 <MT2712_PIN_112_I2C_SCL1__FUNC_SCL1>;
+			bias-disable;
+		};
+	};
+
+	i2c2_pins: i2c2 {
+		pins_bus {
+			pinmux = <MT2712_PIN_107_I2C_SDA2__FUNC_SDA2>,
+				 <MT2712_PIN_113_I2C_SCL2__FUNC_SCL2>;
+			bias-disable;
+		};
+	};
+
+	i2c3_pins: i2c3 {
+		pins_bus {
+			pinmux = <MT2712_PIN_108_I2C_SDA3__FUNC_SDA3>,
+				 <MT2712_PIN_114_I2C_SCL3__FUNC_SCL3>;
+			bias-disable;
+		};
+	};
+
+	i2c4_pins: i2c4 {
+		pins_bus {
+			pinmux = <MT2712_PIN_109_I2C_SDA4__FUNC_SDA4>,
+				 <MT2712_PIN_115_I2C_SCL4__FUNC_SCL4>;
+			bias-disable;
+		};
+	};
+
+	i2c5_pins: i2c5 {
+		pins_bus {
+			pinmux = <MT2712_PIN_110_I2C_SDA5__FUNC_SDA5>,
+				 <MT2712_PIN_116_I2C_SCL5__FUNC_SCL5>;
+			bias-disable;
+		};
+	};
+
 	mmc0_pins_default: mmc0default {
 		pins_cmd_dat {
 			pinmux = <MT2712_PIN_45_MSDC0E_DAT0__FUNC_MSDC0_DAT0>,
