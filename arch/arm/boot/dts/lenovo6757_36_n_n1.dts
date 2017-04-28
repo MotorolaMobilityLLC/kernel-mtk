@@ -1171,7 +1171,7 @@ GT24c64a@50 {
 };
 
 &goodix_fp {
-	pinctrl-names = "default", "miso_pullhigh", "miso_pulllow", "reset_high", "reset_low","fp_irq_mode", "fp_ldo1v8_off","fp_ldo1v8_on","fp_ldo3v3_on","fp_ldo3v3_off";
+	pinctrl-names = "default", "miso_pullhigh", "miso_pulllow", "reset_high", "reset_low","fp_irq_mode", "fp_ldo1v8_off","fp_ldo1v8_on","fp_ldo3v3_on","fp_ldo3v3_off","fp_spi0_mi","fp_spi0_csb","fp_spi0_mo","fp_spi0_clk";
 	pinctrl-0 = <&fingerprint_default>;
 	pinctrl-1 = <&fingerprint_miso_pullhigh>;
 	pinctrl-2 = <&fingerprint_miso_pulllow>;
@@ -1182,6 +1182,10 @@ GT24c64a@50 {
     	pinctrl-7 = <&gdfp_fp_ldo1v8_on>;
    	pinctrl-8 = <&gdfp_fp_ldo3v3_on>;
     	pinctrl-9 = <&gdfp_fp_ldo3v3_off>;
+	pinctrl-10 = <&gdfp_fp_spi0_mi>;
+	pinctrl-11 = <&gdfp_fp_spi0_csb>;
+	pinctrl-12 = <&gdfp_fp_spi0_mo>;
+	pinctrl-13 = <&gdfp_fp_spi0_clk>;
 	status = "okay";
 };
 
@@ -1256,8 +1260,28 @@ GT24c64a@50 {
                             pins = <PINMUX_GPIO22__FUNC_GPIO22>;
                             slew-rate = <1>;
                             output-low;
-	};
+			};
+ 		  };
+	gdfp_fp_spi0_mi: spi0_mi{
+                        pins_cmd_dat {
+                            pins = <PINMUX_GPIO95__FUNC_SPI0_MI>;
+			};
+ 		 };
+	gdfp_fp_spi0_csb: spi0_csb{
+                        pins_cmd_dat {
+                            pins = <PINMUX_GPIO96__FUNC_SPI0_CSB>;
+			};
+ 		 };
+	gdfp_fp_spi0_mo: spi0_mo{
+                        pins_cmd_dat {
+                            pins = <PINMUX_GPIO97__FUNC_SPI0_MO>;
+			};
+ 		};
+	gdfp_fp_spi0_clk: spi0_clk{
+                        pins_cmd_dat {
+                            pins = <PINMUX_GPIO98__FUNC_SPI0_CLK>;
+			};
 
-	};
+		};
 };
 /* FINGERPRINT end */
