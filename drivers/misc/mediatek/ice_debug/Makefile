@@ -11,6 +11,4 @@
 # GNU General Public License for more details.
 #
 
-#$(call all-subdir-src-or-makefile)
-subdir-ccflags-y += -Werror
-obj-$(CONFIG_MTK_ICE_DEBUG) +=ice_debug/
+obj-$(CONFIG_MTK_ICE_DEBUG) += ice_debug.o
