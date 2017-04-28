@@ -597,7 +597,7 @@ static const struct of_device_id machines[] __initconst = {
 	{ }
 };
 
-static int mt8173_cpufreq_driver_init(void)
+static int __init mt8173_cpufreq_driver_init(void)
 {
 	struct platform_device *pdev;
 	int err;
