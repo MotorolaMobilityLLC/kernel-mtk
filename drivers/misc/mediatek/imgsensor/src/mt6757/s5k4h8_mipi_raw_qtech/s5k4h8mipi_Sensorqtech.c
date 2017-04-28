@@ -581,7 +581,7 @@ static BOOL read_data_from_otp(void)
 		{	
 			 sum +=pTemp[j];
 		}
-		 awb_sum = pTemp[16];
+		 awb_sum = pTemp[AWB_DATA_LEN];
 		// lsc_sum = pTemp[9];
 		if((sum%CHECKSUM_DIVISOR+1)!=awb_sum)
 		{
