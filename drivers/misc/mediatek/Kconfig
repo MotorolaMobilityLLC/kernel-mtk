@@ -1,3 +1,6 @@
 menu "Mediatek Peripherals "
 
+source "drivers/misc/mediatek/ice_debug/Kconfig"
+
 endmenu
+
