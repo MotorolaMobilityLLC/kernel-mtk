@@ -235,6 +235,12 @@
 		clock-output-names = "clkaud_ext_i_2";
 	};
 
+	ice: ice_debug {
+		compatible ="mediatek,mt2712-ice_debug",
+			    "mediatek,mt2701-ice_debug";
+		clocks = <&infracfg CLK_INFRA_DBGCLK>;
+		clock-names = "ice_dbg";
+	};
 	timer {
 		compatible = "arm,armv8-timer";
 		interrupt-parent = <&gic>;
