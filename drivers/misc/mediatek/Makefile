@@ -159,7 +159,12 @@ ifeq ($(CONFIG_HAVE_MTK_IN_HOUSE_TEE_SUPPORT),y)
 endif
 obj-$(CONFIG_TRUSTONIC_TEE_SUPPORT) += gud/
 obj-$(CONFIG_TRUSTONIC_TEE_SUPPORT) += secmem/
+ifeq ($(CONFIG_L3510_MAINBOARD),y)
+obj-$(CONFIG_MICROTRUST_TEE_SUPPORT) += teei_marino/
+else
 obj-$(CONFIG_MICROTRUST_TEE_SUPPORT) += teei/
+endif
+
 obj-$(CONFIG_MTK_DEBUG_LATCH)	+= debug_latch/
 #obj-$(CONFIG_MTK_DEBUG_TRACER)	+= debug_tracer/
 obj-$(CONFIG_MTK_DFD_INTERNAL_DUMP) += dfd/
