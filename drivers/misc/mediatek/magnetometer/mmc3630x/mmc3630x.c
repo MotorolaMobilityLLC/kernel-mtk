@@ -1225,7 +1225,7 @@ static ssize_t store_trace_value(struct device_driver *ddri, const char *buf, si
 	}
 	else
 	{
-		printk(KERN_ERR "invalid content: '%s', length = %ld\n", buf, count);
+		printk(KERN_ERR "invalid content: '%s', length = %d\n", buf, count);
 	}
 
 	return count;
