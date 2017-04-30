@@ -586,41 +586,19 @@ static inline void nt_get_non_irq_num (uint64_t *p0)
 	*p0 = temp[0];
 }
 
-
-
-
-
-/* ///////////////////////////////////////////////////////////////////////////////////////////////////////////// */
-
-
-#else
-
-static inline void smc_out(uint32_t id,
-                           uint32_t p0,
-                           uint32_t p1,
-                           uint32_t p2)
+static inline void nt_get_secure_os_state (uint64_t *p0)
 {
-	uint32_t fun_id = (uint32_t)id;
-	uint32_t temp[3];
-
-	temp[0] = p0;
-	temp[1] = p1;
-	temp[2] = p2;
-
-
+	uint64_t temp[3];
 	__asm__ volatile(
-	        ".arch_extension sec\n"
-	        "mov r0, %[fun_id]\n\t"
-	        "ldr r1, [%[temp], #0]\n\t"
-	        "ldr r2, [%[temp], #4]\n\t"
-	        "ldr r3, [%[temp], #8]\n\t"
-	        "smc 0\n\t"
-	        "nop\n\t"
-	        "nop\n\t"
-	        "nop"
-	        : :
-	        [fun_id] "r" (fun_id), [temp] "r" (temp)
-	        : "r0", "r1", "r2", "r3",  "memory");
+	    /* ".arch_extension sec\n" */
+	    "mov x0, %[fun_id]\n\t"
+	    "smc 0\n\t"
+	    "str x1, [%[temp], #0]\n\t"
+	    "nop"
+	    : :
+	    [fun_id] "r" (N_GET_SE_OS_STATE), [temp] "r" (temp)
+	    : "x0", "x1", "memory");
+	*p0 = temp[0];
 }
 
 static inline void nt_dump_t(void)
@@ -954,5 +932,4 @@ static inline void nt_cancel_t_tui(
 
 #endif
 
-#endif
 #endif /* SMC_CALL_H_ */
