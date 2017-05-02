@@ -116,7 +116,7 @@
 
 #define CFG_SUPPORT_PERSIST_NETDEV		0	/* create NETDEV when system bootup */
 
-#define CFG_FORCE_USE_20BW			1
+#define CFG_FORCE_USE_20BW			1       /*modify by longcheer liuzhenhe for 40M*/
 
 #define CFG_SUPPORT_RN				1
 
