@@ -378,6 +378,129 @@
 			<MT2712_PIN_209_WAKEEN_P1__FUNC_WAKE_EN_P1>;
 		};
 	};
+
+	spi_pins_0: spi0@0 {
+		pins_spi {
+			pinmux = <MT2712_PIN_153_SPI0_CSN__FUNC_SPI_CS_0_>,
+				 <MT2712_PIN_154_SPI0_MI__FUNC_SPI_MI_0_>,
+				 <MT2712_PIN_155_SPI0_CK__FUNC_SPI_CK_0_>,
+				 <MT2712_PIN_156_SPI0_MO__FUNC_SPI_MO_0_>;
+			bias-disable;
+		};
+	};
+
+	spi_pins_2: spi2@0 {
+		pins_spi {
+			pinmux = <MT2712_PIN_127_SPI2_CSN__FUNC_SPI_CS_2_>,
+				 <MT2712_PIN_128_SPI2_MO__FUNC_SPI_MO_2_>,
+				 <MT2712_PIN_129_SPI2_MI__FUNC_SPI_MI_2_>,
+				 <MT2712_PIN_130_SPI2_CK__FUNC_SPI_CK_2_>;
+			bias-disable;
+		};
+	};
+
+	spi_pins_3: spi3@0 {
+		pins_spi {
+			pinmux = <MT2712_PIN_131_SPI3_CSN__FUNC_SPI_CS_3_>,
+				 <MT2712_PIN_132_SPI3_MO__FUNC_SPI_MO_3_>,
+				 <MT2712_PIN_133_SPI3_MI__FUNC_SPI_MI_3_>,
+				 <MT2712_PIN_134_SPI3_CK__FUNC_SPI_CK_3_>;
+			bias-disable;
+		};
+	};
+
+	spi_pins_4: spi4@0 {
+		pins_spi0 {
+			pinmux = <MT2712_PIN_165_SPI4_CSN__FUNC_SPI_CS_4_>,
+				 <MT2712_PIN_166_SPI4_MI__FUNC_SPI_MI_4_>,
+				 <MT2712_PIN_167_SPI4_MO__FUNC_SPI_MO_4_>,
+				 <MT2712_PIN_168_SPI4_CK__FUNC_SPI_CK_4_>;
+			bias-disable;
+		};
+
+		pins_spi1 {
+			pinmux = <MT2712_PIN_161_SPI1_CSN__FUNC_SPI_CS_1_>,
+				 <MT2712_PIN_162_SPI1_SI__FUNC_SPI_SI_1_>,
+				 <MT2712_PIN_163_SPI1_CK__FUNC_SPI_CK_1_>,
+				 <MT2712_PIN_164_SPI1_SO__FUNC_SPI_SO_1_>;
+			bias-disable;
+		};
+	};
+
+	spi_pins_5: spi5@0 {
+		pins_spi {
+			pinmux = <MT2712_PIN_157_SPI5_CSN__FUNC_SPI_CS_5_>,
+				 <MT2712_PIN_158_SPI5_MI__FUNC_SPI_MI_5_>,
+				 <MT2712_PIN_159_SPI5_MO__FUNC_SPI_MO_5_>,
+				 <MT2712_PIN_160_SPI5_CK__FUNC_SPI_CK_5_>;
+			bias-disable;
+		};
+	};
+};
+
+&spi0 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&spi_pins_0>;
+	status = "okay";
+
+	spidev0: spi@0 {
+		compatible = "linux,spidev";
+		reg = <0>;
+		spi-max-frequency = <1000000>;
+	};
+};
+
+&spi2 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&spi_pins_2>;
+	status = "okay";
+
+	spidev2: spi@0 {
+		compatible = "linux,spidev";
+		reg = <0>;
+		spi-max-frequency = <1000000>;
+	};
+};
+
+&spi3 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&spi_pins_3>;
+	status = "okay";
+
+	spidev3: spi@0 {
+		compatible = "linux,spidev";
+		reg = <0>;
+		spi-max-frequency = <1000000>;
+	};
+};
+
+&spi4 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&spi_pins_4>;
+	status = "okay";
+
+	spis: spi@0 {
+		compatible = "mediatek,2712-spis";
+		reg = <0>;
+		interrupts = <GIC_SPI 283 IRQ_TYPE_LEVEL_LOW>;
+		clocks = <&topckgen CLK_TOP_SPISLV_SEL>,
+			 <&pericfg CLK_PERI_SPI1>;
+		clock-names = "selclk", "spiclk";
+		spi-max-frequency = <1000000>;
+	};
+
+};
+
+&spi5 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&spi_pins_5>;
+	status = "okay";
+
+	spidev5: spi@0 {
+		compatible = "linux,spidev";
+		reg = <0>;
+		spi-max-frequency = <1000000>;
+	};
 };
 
 &uart0 {
