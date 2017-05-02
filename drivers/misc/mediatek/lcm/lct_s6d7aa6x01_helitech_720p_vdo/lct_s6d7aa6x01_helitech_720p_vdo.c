@@ -486,6 +486,8 @@ static void lcm_setbacklight(unsigned int level)
 	#if(LCT_LCM_MAPP_BACKLIGHT)
 	static int mapped_level = 0;
 	mapped_level = (8009*level + 20232)*16/(10000);	//modified by zhudaolong at 20170310
+	if(mapped_level < 2)		//add by zhudaolong 20170502
+		mapped_level = 2;	//add by zhudaolong 20170502
 	#endif
 	if(hbm_enable ==0)
 	{				
