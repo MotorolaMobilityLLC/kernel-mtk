@@ -155,6 +155,12 @@ config MTD_BCM47XX_PARTS
 	  This provides partitions parser for devices based on BCM47xx
 	  boards.
 
+config MTD_GPT_PARTS
+	tristate "GPT partitioning support"
+	help
+	  This provides a partition parsing function to parse those devices
+	  have GUID Partition Table.
+
 comment "User Modules And Translation Layers"
 
 #
