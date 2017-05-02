@@ -90,6 +90,17 @@ static const unsigned char LCD_MODULE_ID = 0x01;
 #define REGFLAG_RESET_HIGH	0xFFFF
 
 
+#ifdef CONFIG_LCT_CABC_MODE_SUPPORT
+extern int cabc_mode_mode;
+#define CABC_MODE_SETTING_UI	1
+#define CABC_MODE_SETTING_MV	2
+#define CABC_MODE_SETTING_DIS	3
+#define CABC_MODE_SETTING_NULL	0
+//static int reg_mode = 0;
+#define dsi_set_cmdq_V22(cmdq, cmd, count, ppara, force_update) \
+lcm_util.dsi_set_cmdq_V22(cmdq, cmd, count, ppara, force_update)
+#endif
+
 #ifndef TRUE
 #define TRUE 1
 #endif
@@ -330,6 +341,28 @@ static struct LCM_setting_table lcm_initialization_setting[] = {
 	{REGFLAG_END_OF_TABLE, 0x00, {}}
 };
 
+static struct LCM_setting_table lcm_setting_ui[] = {
+{0xFF,3,{0x98,0x81,0x00}},
+{0x53,1,{0x24}},
+{0x55,1,{0x01}},
+{REGFLAG_END_OF_TABLE, 0x00, {}}
+};
+
+static struct LCM_setting_table lcm_setting_dis[] = {
+{0xFF,3,{0x98,0x81,0x00}},
+{0x53,1,{0x24}},
+{0x55,1,{0x00}},
+{REGFLAG_END_OF_TABLE, 0x00, {}}
+};
+
+static struct LCM_setting_table lcm_setting_mv[] = {
+{0xFF,3,{0x98,0x81,0x00}},
+{0x53,1,{0x2c}},
+{0x55,1,{0x03}},
+{REGFLAG_END_OF_TABLE, 0x00, {}}
+};
+
+
 static struct LCM_setting_table bl_level[] = {
 	{0x51, 2, {0x00,0x00} },
 	{REGFLAG_END_OF_TABLE, 0x00, {} }
@@ -507,6 +540,91 @@ static int display_bias_enable(void)
 	return ret;
 }
 
+//add by wangjiaxing for hbm
+#ifdef CONFIG_LCT_HBM_SUPPORT
+static unsigned int last_level=0;
+static unsigned int hbm_enable=0;
+static void lcm_setbacklight_hbm(unsigned int level)
+{
+
+	unsigned int level_hight,level_low=0;
+	
+	if(level==0)
+	{
+		level = last_level;
+		hbm_enable = 0;
+	}
+	else
+		hbm_enable = 1;
+	level_hight=(level & 0xf0)>>4;
+	level_low=(level & 0x0f)<<4;
+	bl_level[0].para_list[0] = level_hight;
+	bl_level[0].para_list[1] = level_low;
+	push_table(NULL, bl_level,
+		   sizeof(bl_level) / sizeof(struct LCM_setting_table), 1);
+}
+#endif
+
+#ifdef CONFIG_LCT_CABC_MODE_SUPPORT
+static void push_table_v22(void *handle, struct LCM_setting_table *table, unsigned int count,
+		       unsigned char force_update)
+{
+	unsigned int i;
+
+	for (i = 0; i < count; i++) {
+
+		unsigned cmd;
+		void *cmdq = handle;
+		cmd = table[i].cmd;
+
+		switch (cmd) {
+
+		case REGFLAG_DELAY:
+			MDELAY(table[i].count);
+			break;
+
+		case REGFLAG_END_OF_TABLE:
+			break;
+
+		default:
+			dsi_set_cmdq_V22(cmdq, cmd, table[i].count, table[i].para_list, force_update);
+		}
+	}
+
+}
+
+static void lcm_cabc_cmdq(void *handle, unsigned int mode)
+{
+
+	switch(mode)
+	{
+		case CABC_MODE_SETTING_UI:
+			{
+				push_table_v22(handle,lcm_setting_ui,
+			   sizeof(lcm_setting_ui) / sizeof(struct LCM_setting_table), 1);
+			}
+		break;
+		case CABC_MODE_SETTING_MV:
+			{
+				push_table_v22(handle,lcm_setting_mv,
+			   sizeof(lcm_setting_mv) / sizeof(struct LCM_setting_table), 1);
+			}
+		break;
+		case CABC_MODE_SETTING_DIS:
+			{
+				push_table_v22(handle,lcm_setting_dis,
+			   sizeof(lcm_setting_dis) / sizeof(struct LCM_setting_table), 1);
+			}
+		break;
+		default:
+		{
+			push_table_v22(handle,lcm_setting_ui,
+			   sizeof(lcm_setting_ui) / sizeof(struct LCM_setting_table), 1);
+		}
+
+	}
+}
+#endif
 static int display_bias_disable(void)
 {
 	int ret = 0;
@@ -563,7 +681,7 @@ static void lcm_init(void)
 	MDELAY(5);
 
 	SET_RESET_PIN(1);
-	MDELAY(100);
+	MDELAY(30);
 	push_table(NULL, lcm_initialization_setting, sizeof(lcm_initialization_setting) / sizeof(struct LCM_setting_table), 1);
 }
 
@@ -678,12 +796,28 @@ unsigned int level_hight,level_low=0;
 	printk("%s,ili9881c backlight: level = %d\n", __func__, level);
 
    esd_backlight_level = level;
+if(hbm_enable==0)
+	{		
+	
 
 		level_hight=(level & 0xf0)>>4;
 		level_low=(level & 0x0f)<<4;
 			bl_level[0].para_list[0] = level_hight;
 			bl_level[0].para_list[1] = level_low;
 	push_table(handle, bl_level, sizeof(bl_level) / sizeof(struct LCM_setting_table), 1);
+}
+else{
+	level_hight=(255 & 0xf0)>>4;
+		level_low=(255 & 0x0f)<<4;
+			bl_level[0].para_list[0] = level_hight;
+			bl_level[0].para_list[1] = level_low;
+	push_table(handle, bl_level, sizeof(bl_level) / sizeof(struct LCM_setting_table), 1);
+	
+}
+
+	#ifdef CONFIG_LCT_HBM_SUPPORT
+		last_level = level;
+	#endif
 }
 
 LCM_DRIVER lct_ili9881c_dijing_720p_vdo_lcm_drv = {
@@ -700,6 +834,10 @@ LCM_DRIVER lct_ili9881c_dijing_720p_vdo_lcm_drv = {
 	.suspend_power = lcm_suspend_power,
 	.set_backlight_cmdq = lcm_setbacklight_cmdq,
 	.ata_check = lcm_ata_check,
-
-
+#ifdef CONFIG_LCT_CABC_MODE_SUPPORT
+	.set_cabc_cmdq = lcm_cabc_cmdq,
+#endif
+#ifdef CONFIG_LCT_HBM_SUPPORT
+	.set_backlight_hbm = lcm_setbacklight_hbm,
+#endif
 };
