@@ -1107,6 +1107,7 @@ static int rt5081_run_aicl(struct rt5081_pmu_charger_data *chg_data)
 
 	/* Check if there's a suitable AICL_VTH */
 	aicl_vth = mivr + 200000;
+	aicl_vth = 4500000;//add by longcheer_liml_2017_05_02_temp
 	if (aicl_vth > RT5081_AICL_VTH_MAX) {
 		dev_info(chg_data->dev, "%s: no suitable VTH, vth = %d\n",
 			__func__, aicl_vth);
