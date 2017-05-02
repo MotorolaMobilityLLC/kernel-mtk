@@ -24,6 +24,11 @@
 		reg = <0 0x40000000 0 0x80000000>;
 	};
 
+	extcon_usb: extcon_iddig {
+		compatible = "linux,extcon-usb-gpio";
+		id-gpio = <&pio 12 GPIO_ACTIVE_HIGH>;
+	};
+
 	mmc_fixed_3v3: fixedregulator@0 {
 		compatible = "regulator-fixed";
 		regulator-name = "mmc_power";
@@ -68,6 +73,43 @@
 		regulator-always-on;
 	};
 
+	usb_p0_vbus: regulator@2 {
+		compatible = "regulator-fixed";
+		regulator-name = "p0_vbus";
+		regulator-min-microvolt = <5000000>;
+		regulator-max-microvolt = <5000000>;
+		gpio = <&pio 13 GPIO_ACTIVE_HIGH>;
+		enable-active-high;
+	};
+
+	usb_p1_vbus: regulator@3 {
+		compatible = "regulator-fixed";
+		regulator-name = "p1_vbus";
+		regulator-min-microvolt = <5000000>;
+		regulator-max-microvolt = <5000000>;
+		gpio = <&pio 15 GPIO_ACTIVE_HIGH>;
+		enable-active-high;
+		regulator-always-on;
+	};
+
+	usb_p2_vbus: regulator@4 {
+		compatible = "regulator-fixed";
+		regulator-name = "p2_vbus";
+		regulator-min-microvolt = <5000000>;
+		regulator-max-microvolt = <5000000>;
+		gpio = <&pio 16 GPIO_ACTIVE_HIGH>;
+		enable-active-high;
+	};
+
+	usb_p3_vbus: regulator@5 {
+		compatible = "regulator-fixed";
+		regulator-name = "p3_vbus";
+		regulator-min-microvolt = <5000000>;
+		regulator-max-microvolt = <5000000>;
+		gpio = <&pio 17 GPIO_ACTIVE_HIGH>;
+		enable-active-high;
+		regulator-always-on;
+	};
 };
 
 &auxadc {
@@ -436,6 +478,20 @@
 			bias-disable;
 		};
 	};
+
+	usb_id_pins_float: usb_iddig_pull_up {
+		pins_iddig {
+			pinmux = <MT2712_PIN_12_IDDIG_P0__FUNC_IDDIG_A>;
+			bias-pull-up;
+		};
+	};
+
+	usb_id_pins_ground: usb_iddig_pull_down {
+		pins_iddig {
+			pinmux = <MT2712_PIN_12_IDDIG_P0__FUNC_IDDIG_A>;
+			bias-pull-down;
+		};
+	};
 };
 
 &spi0 {
@@ -501,6 +557,33 @@
 		reg = <0>;
 		spi-max-frequency = <1000000>;
 	};
+};
+
+&ssusb {
+	//vusb33-supply = <&mt6397_vusb_reg>;
+	vbus-supply = <&usb_p0_vbus>;
+	extcon = <&extcon_usb>;
+	dr_mode = "peripheral";
+	//mediatek,enable-wakeup;
+	//enable-manual-drd;
+	//maximum-speed = "full-speed";
+	pinctrl-names = "default", "id_float", "id_ground";
+	pinctrl-0 = <&usb_id_pins_float>;
+	pinctrl-1 = <&usb_id_pins_float>;
+	pinctrl-2 = <&usb_id_pins_ground>;
+	status = "okay";
+};
+
+&usb_host0 {
+	//vusb33-supply = <&mt6397_vusb_reg>;
+	vbus-supply = <&usb_p2_vbus>;
+	status = "okay";
+};
+
+&usb_host1 {
+	//vusb33-supply = <&mt6397_vusb_reg>;
+	//vbus-supply = <&usb_p3_vbus>;
+	status = "okay";
 };
 
 &uart0 {
