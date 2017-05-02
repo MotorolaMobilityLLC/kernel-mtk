@@ -58,7 +58,7 @@
 #define DISCHARGE_TRACKING_TIME 10
 #define CHARGE_TRACKING_TIME 60
 #define DIFFERENCE_FULLOCV_VTH	1000	/* 0.1mV */
-#define CHARGE_PSEUDO_FULL_LEVEL 8000  //9000 modify longcheer_liml_2017_04_22
+#define CHARGE_PSEUDO_FULL_LEVEL 7700  //9000 modify longcheer_liml_2017_04_22
 
 /* pre tracking */
 #define FG_PRE_TRACKING_EN 0
