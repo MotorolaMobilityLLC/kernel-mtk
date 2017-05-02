@@ -2836,6 +2836,8 @@ static int als_enable_nodata(int en)
 		clear_bit(CMC_BIT_ALS, &ltr778_obj->enable);
 	mutex_unlock(&ltr778_mutex);
 
+	ps_enable_als = 0;	// clear ps control als
+
 	res = ltr778_als_enable(ltr778_obj->client, en);
 	if (res) {
 		APS_ERR("als_enable_nodata is failed!!\n");
