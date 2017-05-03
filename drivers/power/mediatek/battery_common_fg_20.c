@@ -256,6 +256,10 @@ unsigned char fg_ipoh_reset;
 static struct workqueue_struct *battery_init_workqueue;
 static struct work_struct battery_init_work;
 
+extern signed int fgauge_get_Q_max(signed short temperature);
+extern int force_get_tbat(kal_bool update);
+signed int mt_battery_GetBatteryCapacity(void);
+signed int mt_battery_GetBatteryChargeCounter(void);
 /* ////////////////////////////////////////////////////////////////////////////// */
 /* FOR ADB CMD */
 /* ////////////////////////////////////////////////////////////////////////////// */
@@ -358,6 +362,7 @@ static enum power_supply_property battery_props[] = {
 	POWER_SUPPLY_PROP_adjust_power,
 	POWER_SUPPLY_PROP_CHARGE_FULL_DESIGN,
 	POWER_SUPPLY_PROP_CHARGE_FULL,
+	POWER_SUPPLY_PROP_CHARGE_COUNTER,
 };
 
 struct timespec batteryThreadRunTime;
@@ -625,6 +630,25 @@ static int usb_get_property(struct power_supply *psy,
 	return ret;
 }
 
+signed int mt_battery_GetBatteryCapacity(void)
+{
+	int temp, Qmax;
+
+	temp = force_get_tbat(KAL_TRUE);
+	Qmax = fgauge_get_Q_max(temp);
+	battery_log(BAT_LOG_CRTI, "BatteryCapacity= (%d)\n",Qmax);
+	return Qmax;
+}
+
+signed int mt_battery_GetBatteryChargeCounter(void)
+{
+	int charge_counter;
+
+	charge_counter = BMT_status.UI_SOC2*mt_battery_GetBatteryCapacity()/100;
+	battery_log(BAT_LOG_CRTI, "battery charge_counter= (%d)\n",charge_counter);
+	return charge_counter;
+}
+
 static int battery_get_property(struct power_supply *psy,
 				enum power_supply_property psp, union power_supply_propval *val)
 {
@@ -696,6 +720,9 @@ static int battery_get_property(struct power_supply *psy,
 		break;
 	case POWER_SUPPLY_PROP_CHARGE_FULL:
 		val->intval = data->charge_full;
+		break;
+	case POWER_SUPPLY_PROP_CHARGE_COUNTER:
+		val->intval = mt_battery_GetBatteryChargeCounter();
 		break;
 
 	default:
