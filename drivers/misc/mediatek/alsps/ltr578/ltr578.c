@@ -948,6 +948,7 @@ static int ltr578_ps_enable(void)
 	struct ltr578_priv *obj = ltr578_obj;
 	u8 databuf[2];	
 	int res;
+	int lct_ps_value;
 
 	int error;
 	int setctrl;
@@ -1033,6 +1034,19 @@ static int ltr578_ps_enable(void)
 	ltr578_dynamic_calibrate();
 	#endif
 	ltr578_ps_set_thres();
+
+    /*add by lct_liuzhenhe for ps_enable_report start*/
+       lct_ps_value = ltr578_get_ps_value();
+       if(!(lct_ps_value < 0))
+       {
+           APS_LOG("ltr578_lct_ps_value = %d\n",lct_ps_value);
+           if(ps_report_interrupt_data(lct_ps_value))
+               {       
+                       APS_ERR("call ps_report_interrupt_data fail\n");
+               }       
+    }
+    /*add by lct_liuzhenhe for ps_enable_report end*/
+
  	
 	return error;
 
