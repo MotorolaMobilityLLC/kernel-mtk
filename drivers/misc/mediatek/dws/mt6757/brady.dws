@@ -199,15 +199,16 @@
                 <ies>true</ies>
             </gpio2>
             <gpio3>
-                <eint_mode>true</eint_mode>
+                <eint_mode>false</eint_mode>
                 <def_mode>0</def_mode>
                 <mode_arr>10000000</mode_arr>
                 <inpull_en>true</inpull_en>
-                <inpull_selhigh>false</inpull_selhigh>
-                <def_dir>IN</def_dir>
+                <inpull_selhigh>true</inpull_selhigh>
+                <def_dir>OUT</def_dir>
                 <in>true</in>
-                <out>false</out>
-                <out_high>false</out_high>
+                <out>true</out>
+                <out_high>true</out_high>
+                <varName0>GPIO_CAMERA_AF_EN_PIN</varName0>
                 <smt>true</smt>
                 <ies>true</ies>
             </gpio3>
