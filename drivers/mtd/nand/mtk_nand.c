@@ -24,10 +24,14 @@
 #include <linux/module.h>
 #include <linux/iopoll.h>
 #include <linux/of.h>
+#include <linux/of_device.h>
+#include <linux/pm_runtime.h>
+#include <linux/mtd/partitions.h>
 #include "mtk_ecc.h"
+#include "mtk_partition.h"
 
 /* NAND controller register definition */
-#define NFI_CNFG		(0x00)
+#define _NFI_CNFG		(0x00)
 #define		CNFG_AHB		BIT(0)
 #define		CNFG_READ_EN		BIT(1)
 #define		CNFG_DMA_BURST_EN	BIT(2)
@@ -35,7 +39,7 @@
 #define		CNFG_HW_ECC_EN		BIT(8)
 #define		CNFG_AUTO_FMT_EN	BIT(9)
 #define		CNFG_OP_CUST		(6 << 12)
-#define NFI_PAGEFMT		(0x04)
+#define _NFI_PAGEFMT		(0x04)
 #define		PAGEFMT_FDM_ECC_SHIFT	(12)
 #define		PAGEFMT_FDM_SHIFT	(8)
 #define		PAGEFMT_SPARE_16	(0)
@@ -52,60 +56,63 @@
 #define		PAGEFMT_SPARE_51	(0xb)
 #define		PAGEFMT_SPARE_52	(0xc)
 #define		PAGEFMT_SPARE_62	(0xd)
-#define		PAGEFMT_SPARE_63	(0xe)
-#define		PAGEFMT_SPARE_64	(0xf)
-#define		PAGEFMT_SPARE_SHIFT	(4)
+#define		_PAGEFMT_SPARE_63	(0xe)
+#define		_PAGEFMT_SPARE_64	(0xf)
+#define		PAGEFMT_SPARE_67	(0x11)
+#define		PAGEFMT_SPARE_74	(0x12)
+#define		_PAGEFMT_SPARE_SHIFT	(4)
 #define		PAGEFMT_SEC_SEL_512	BIT(2)
 #define		PAGEFMT_512_2K		(0)
 #define		PAGEFMT_2K_4K		(1)
 #define		PAGEFMT_4K_8K		(2)
 #define		PAGEFMT_8K_16K		(3)
 /* NFI control */
-#define NFI_CON			(0x08)
+#define _NFI_CON			(0x08)
 #define		CON_FIFO_FLUSH		BIT(0)
 #define		CON_NFI_RST		BIT(1)
 #define		CON_BRD			BIT(8)  /* burst  read */
 #define		CON_BWR			BIT(9)	/* burst  write */
 #define		CON_SEC_SHIFT		(12)
 /* Timming control register */
-#define NFI_ACCCON		(0x0C)
-#define NFI_INTR_EN		(0x10)
+#define _NFI_ACCCON		(0x0C)
+#define _NFI_INTR_EN		(0x10)
 #define		INTR_AHB_DONE_EN	BIT(6)
-#define NFI_INTR_STA		(0x14)
-#define NFI_CMD			(0x20)
-#define NFI_ADDRNOB		(0x30)
-#define NFI_COLADDR		(0x34)
-#define NFI_ROWADDR		(0x38)
-#define NFI_STRDATA		(0x40)
+#define _NFI_INTR_STA		(0x14)
+#define _NFI_CMD		(0x20)
+#define _NFI_ADDRNOB		(0x30)
+#define _NFI_COLADDR		(0x34)
+#define _NFI_ROWADDR		(0x38)
+#define _NFI_STRDATA		(0x40)
 #define		STAR_EN			(1)
 #define		STAR_DE			(0)
-#define NFI_CNRNB		(0x44)
-#define NFI_DATAW		(0x50)
-#define NFI_DATAR		(0x54)
-#define NFI_PIO_DIRDY		(0x58)
+#define _NFI_CNRNB		(0x44)
+#define _NFI_DATAW		(0x50)
+#define _NFI_DATAR		(0x54)
+#define _NFI_PIO_DIRDY		(0x58)
 #define		PIO_DI_RDY		(0x01)
-#define NFI_STA			(0x60)
+#define _NFI_STA		(0x60)
 #define		STA_CMD			BIT(0)
 #define		STA_ADDR		BIT(1)
 #define		STA_BUSY		BIT(8)
 #define		STA_EMP_PAGE		BIT(12)
 #define		NFI_FSM_CUSTDATA	(0xe << 16)
 #define		NFI_FSM_MASK		(0xf << 16)
-#define NFI_ADDRCNTR		(0x70)
+#define _NFI_ADDRCNTR		(0x70)
 #define		CNTR_MASK		GENMASK(16, 12)
 #define		ADDRCNTR_SEC_SHIFT	(12)
 #define		ADDRCNTR_SEC(val) \
 		(((val) & CNTR_MASK) >> ADDRCNTR_SEC_SHIFT)
-#define NFI_STRADDR		(0x80)
-#define NFI_BYTELEN		(0x84)
-#define NFI_CSEL		(0x90)
-#define NFI_FDML(x)		(0xA0 + (x) * sizeof(u32) * 2)
-#define NFI_FDMM(x)		(0xA4 + (x) * sizeof(u32) * 2)
+#define _NFI_STRADDR		(0x80)
+#define _NFI_BYTELEN		(0x84)
+#define _NFI_CSEL		(0x90)
+#define _NFI_FDML(x)		(0xA0 + (x) * sizeof(u32) * 2)
+#define _NFI_FDMM(x)		(0xA4 + (x) * sizeof(u32) * 2)
 #define NFI_FDM_MAX_SIZE	(8)
 #define NFI_FDM_MIN_SIZE	(1)
-#define NFI_MASTER_STA		(0x224)
+#define _NFI_MASTER_STA		(0x224)
 #define		MASTER_STA_MASK		(0x0FFF)
-#define NFI_EMPTY_THRESH	(0x23C)
+#define		RG_HREQ_HRDY_DIS	BIT(4)
+#define _NFI_EMPTY_THRESH	(0x23C)
 
 #define MTK_NAME		"mtk-nand"
 #define KB(x)			((x) * 1024UL)
@@ -115,6 +122,197 @@
 #define MTK_RESET_TIMEOUT	(1000000)
 #define MTK_MAX_SECTOR		(16)
 #define MTK_NAND_MAX_NSELS	(2)
+#define NFC_REG(nfc, x)		(nfc->regs + nfc->chip_data->nfi_regs[x])
+
+enum nfi_regs {
+	NFI_CNFG,
+	NFI_PAGEFMT,
+	NFI_CON,
+	NFI_ACCCON,
+	NFI_INTR_EN,
+	NFI_INTR_STA,
+	NFI_CMD,
+	NFI_ADDRNOB,
+	NFI_COLADDR,
+	NFI_ROWADDR,
+	NFI_STRDATA,
+	NFI_CNRNB,
+	NFI_DATAW,
+	NFI_DATAR,
+	NFI_PIO_DIRDY,
+	NFI_STA,
+	NFI_ADDRCNTR,
+	NFI_STRADDR,
+	NFI_BYTELEN,
+	NFI_CSEL,
+	NFI_FDM0L,
+	NFI_FDM0M,
+	NFI_FDM1L,
+	NFI_FDM1M,
+	NFI_FDM2L,
+	NFI_FDM2M,
+	NFI_FDM3L,
+	NFI_FDM3M,
+	NFI_FDM4L,
+	NFI_FDM4M,
+	NFI_FDM5L,
+	NFI_FDM5M,
+	NFI_FDM6L,
+	NFI_FDM6M,
+	NFI_FDM7L,
+	NFI_FDM7M,
+	NFI_MASTER_STA,
+	NFI_MASTER_RST,
+	NFI_EMPTY_THRESH,
+
+};
+
+static int mt2701_nfi_regs[] = {
+	[NFI_CNFG] =		0x0,
+	[NFI_PAGEFMT] =		0x4,
+	[NFI_CON] =		0x8,
+	[NFI_ACCCON] =		0xc,
+	[NFI_INTR_EN] =		0x10,
+	[NFI_INTR_STA] =	0x14,
+	[NFI_CMD] =		0x20,
+	[NFI_ADDRNOB] =		0x30,
+	[NFI_COLADDR] =		0x34,
+	[NFI_ROWADDR] =		0x38,
+	[NFI_STRDATA] =		0x40,
+	[NFI_CNRNB] =		0x44,
+	[NFI_DATAW] =		0x50,
+	[NFI_DATAR] =		0x54,
+	[NFI_PIO_DIRDY] =	0x58,
+	[NFI_STA] =		0x60,
+	[NFI_ADDRCNTR] =	0x70,
+	[NFI_STRADDR] =		0x80,
+	[NFI_BYTELEN] =		0x84,
+	[NFI_CSEL] =		0x90,
+	[NFI_FDM0L] =		0xa0,
+	[NFI_FDM0M] =		0xa4,
+	[NFI_FDM1L] =		0xa8,
+	[NFI_FDM1M] =		0xac,
+	[NFI_FDM2L] =		0xb0,
+	[NFI_FDM2M] =		0xb4,
+	[NFI_FDM3L] =		0xb8,
+	[NFI_FDM3M] =		0xbc,
+	[NFI_FDM4L] =		0xc0,
+	[NFI_FDM4M] =		0xc4,
+	[NFI_FDM5L] =		0xc8,
+	[NFI_FDM5M] =		0xcc,
+	[NFI_FDM6L] =		0xd0,
+	[NFI_FDM6M] =		0xd4,
+	[NFI_FDM7L] =		0xd8,
+	[NFI_FDM7M] =		0xdc,
+	[NFI_MASTER_STA] =	0x224,
+	[NFI_EMPTY_THRESH] =	0x23c,
+};
+
+static int mt7622_nfi_regs[] = {
+	[NFI_CNFG] =		0x0,
+	[NFI_PAGEFMT] =		0x4,
+	[NFI_CON] =		0x8,
+	[NFI_ACCCON] =		0xc,
+	[NFI_INTR_EN] =		0x10,
+	[NFI_INTR_STA] =	0x14,
+	[NFI_CMD] =		0x20,
+	[NFI_ADDRNOB] =		0x30,
+	[NFI_COLADDR] =		0x34,
+	[NFI_ROWADDR] =		0x38,
+	[NFI_STRDATA] =		0x40,
+	[NFI_CNRNB] =		0x44,
+	[NFI_DATAW] =		0x50,
+	[NFI_DATAR] =		0x54,
+	[NFI_PIO_DIRDY] =	0x58,
+	[NFI_STA] =		0x60,
+	[NFI_ADDRCNTR] =	0x70,
+	[NFI_STRADDR] =		0x80,
+	[NFI_BYTELEN] =		0x84,
+	[NFI_CSEL] =		0x90,
+	[NFI_FDM0L] =		0xa0,
+	[NFI_FDM0M] =		0xa4,
+	[NFI_FDM1L] =		0xa8,
+	[NFI_FDM1M] =		0xac,
+	[NFI_FDM2L] =		0xb0,
+	[NFI_FDM2M] =		0xb4,
+	[NFI_FDM3L] =		0xb8,
+	[NFI_FDM3M] =		0xbc,
+	[NFI_FDM4L] =		0xc0,
+	[NFI_FDM4M] =		0xc4,
+	[NFI_FDM5L] =		0xc8,
+	[NFI_FDM5M] =		0xcc,
+	[NFI_FDM6L] =		0xd0,
+	[NFI_FDM6M] =		0xd4,
+	[NFI_FDM7L] =		0xd8,
+	[NFI_FDM7M] =		0xdc,
+	[NFI_MASTER_STA] =	0x224,
+	[NFI_EMPTY_THRESH] =	0x23c,
+};
+
+static int mt2712_nfi_regs[] = {
+	[NFI_CNFG] =            0x0,
+	[NFI_PAGEFMT] =         0x4,
+	[NFI_CON] =             0x8,
+	[NFI_ACCCON] =          0xc,
+	[NFI_INTR_EN] =         0x10,
+	[NFI_INTR_STA] =        0x14,
+	[NFI_CMD] =             0x20,
+	[NFI_ADDRNOB] =         0x30,
+	[NFI_COLADDR] =         0x34,
+	[NFI_ROWADDR] =         0x38,
+	[NFI_STRDATA] =         0x40,
+	[NFI_CNRNB] =           0x44,
+	[NFI_DATAW] =           0x50,
+	[NFI_DATAR] =           0x54,
+	[NFI_PIO_DIRDY] =       0x58,
+	[NFI_STA] =             0x60,
+	[NFI_ADDRCNTR] =        0x70,
+	[NFI_STRADDR] =         0x80,
+	[NFI_BYTELEN] =         0x84,
+	[NFI_CSEL] =            0x90,
+	[NFI_FDM0L] =           0xa0,
+	[NFI_FDM0M] =           0xa4,
+	[NFI_FDM1L] =           0xa8,
+	[NFI_FDM1M] =           0xac,
+	[NFI_FDM2L] =           0xb0,
+	[NFI_FDM2M] =           0xb4,
+	[NFI_FDM3L] =           0xb8,
+	[NFI_FDM3M] =           0xbc,
+	[NFI_FDM4L] =           0xc0,
+	[NFI_FDM4M] =           0xc4,
+	[NFI_FDM5L] =           0xc8,
+	[NFI_FDM5M] =           0xcc,
+	[NFI_FDM6L] =           0xd0,
+	[NFI_FDM6M] =           0xd4,
+	[NFI_FDM7L] =           0xd8,
+	[NFI_FDM7M] =           0xdc,
+	[NFI_MASTER_STA] =      0x224,
+	[NFI_MASTER_RST] =	0x228,
+	[NFI_EMPTY_THRESH] =    0x23c,
+};
+enum mtk_nfc_type {
+	MTK_NAND_MT2701,
+	MTK_NAND_MT7622,
+	MTK_NAND_MT2712,
+};
+
+struct mtk_nand_type {
+	int *nfi_regs;
+	enum mtk_nfc_type type;
+	int fdm_ecc_size;
+	int parity_bit;
+	int max_sector;
+	int max_sector_spare;
+	int max_ecc_size;
+	void (*mark_swap)(struct mtd_info *mtd, u8 *buf, int raw);
+	void (*adjust_spare_fmt)(struct mtd_info *mtd, u32 *fmt);
+	void (*nfc_adjust_ecc)(struct mtd_info *mtd);
+	/* NFI_PAGEFMT register special bit define */
+	int PAGEFMT_SPARE_61;
+	int PAGEFMT_SPARE_63;
+	int PAGEFMT_SPARE_64;
+	int PAGEFMT_SPARE_SHIFT;
+};
 
 struct mtk_nfc_bad_mark_ctl {
 	void (*bm_swap)(struct mtd_info *, u8 *buf, int raw);
@@ -156,6 +354,7 @@ struct mtk_nfc {
 
 	struct device *dev;
 	void __iomem *regs;
+	struct mtk_nand_type *chip_data;
 
 	struct completion done;
 	struct list_head chips;
@@ -213,34 +412,34 @@ static inline u8 *mtk_oob_ptr(struct nand_chip *chip, int i)
 	return nfc->buffer + i * mtk_data_len(chip) + chip->ecc.size;
 }
 
-static inline void nfi_writel(struct mtk_nfc *nfc, u32 val, u32 reg)
+static inline void nfi_writel(struct mtk_nfc *nfc, u32 val, enum nfi_regs reg)
 {
-	writel(val, nfc->regs + reg);
+	writel(val, NFC_REG(nfc, reg));
 }
 
-static inline void nfi_writew(struct mtk_nfc *nfc, u16 val, u32 reg)
+static inline void nfi_writew(struct mtk_nfc *nfc, u16 val, enum nfi_regs reg)
 {
-	writew(val, nfc->regs + reg);
+	writew(val, NFC_REG(nfc, reg));
 }
 
-static inline void nfi_writeb(struct mtk_nfc *nfc, u8 val, u32 reg)
+static inline void nfi_writeb(struct mtk_nfc *nfc, u8 val, enum nfi_regs reg)
 {
-	writeb(val, nfc->regs + reg);
+	writeb(val, NFC_REG(nfc, reg));
 }
 
-static inline u32 nfi_readl(struct mtk_nfc *nfc, u32 reg)
+static inline u32 nfi_readl(struct mtk_nfc *nfc, enum nfi_regs reg)
 {
-	return readl_relaxed(nfc->regs + reg);
+	return readl_relaxed(NFC_REG(nfc, reg));
 }
 
-static inline u16 nfi_readw(struct mtk_nfc *nfc, u32 reg)
+static inline u16 nfi_readw(struct mtk_nfc *nfc, enum nfi_regs reg)
 {
-	return readw_relaxed(nfc->regs + reg);
+	return readw_relaxed(NFC_REG(nfc, reg));
 }
 
-static inline u8 nfi_readb(struct mtk_nfc *nfc, u32 reg)
+static inline u8 nfi_readb(struct mtk_nfc *nfc, enum nfi_regs reg)
 {
-	return readb_relaxed(nfc->regs + reg);
+	return readb_relaxed(NFC_REG(nfc, reg));
 }
 
 static void mtk_nfc_hw_reset(struct mtk_nfc *nfc)
@@ -253,12 +452,12 @@ static void mtk_nfc_hw_reset(struct mtk_nfc *nfc)
 	nfi_writel(nfc, CON_FIFO_FLUSH | CON_NFI_RST, NFI_CON);
 
 	/* wait for the master to finish the last transaction */
-	ret = readl_poll_timeout(nfc->regs + NFI_MASTER_STA, val,
+	ret = readl_poll_timeout(NFC_REG(nfc, NFI_MASTER_STA), val,
 				 !(val & MASTER_STA_MASK), 50,
 				 MTK_RESET_TIMEOUT);
 	if (ret)
 		dev_warn(dev, "master active in reset [0x%x] = 0x%x\n",
-			 NFI_MASTER_STA, val);
+			 nfc->chip_data->nfi_regs[NFI_MASTER_STA], val);
 
 	/* ensure any status register affected by the NFI master is reset */
 	nfi_writel(nfc, CON_FIFO_FLUSH | CON_NFI_RST, NFI_CON);
@@ -273,7 +472,7 @@ static int mtk_nfc_send_command(struct mtk_nfc *nfc, u8 command)
 
 	nfi_writel(nfc, command, NFI_CMD);
 
-	ret = readl_poll_timeout_atomic(nfc->regs + NFI_STA, val,
+	ret = readl_poll_timeout_atomic(NFC_REG(nfc, NFI_STA), val,
 					!(val & STA_CMD), 10,  MTK_TIMEOUT);
 	if (ret) {
 		dev_warn(dev, "nfi core timed out entering command mode\n");
@@ -293,7 +492,7 @@ static int mtk_nfc_send_address(struct mtk_nfc *nfc, int addr)
 	nfi_writel(nfc, 0, NFI_ROWADDR);
 	nfi_writew(nfc, 1, NFI_ADDRNOB);
 
-	ret = readl_poll_timeout_atomic(nfc->regs + NFI_STA, val,
+	ret = readl_poll_timeout_atomic(NFC_REG(nfc, NFI_STA), val,
 					!(val & STA_ADDR), 10, MTK_TIMEOUT);
 	if (ret) {
 		dev_warn(dev, "nfi core timed out entering address mode\n");
@@ -308,7 +507,9 @@ static int mtk_nfc_hw_runtime_config(struct mtd_info *mtd)
 	struct nand_chip *chip = mtd_to_nand(mtd);
 	struct mtk_nfc_nand_chip *mtk_nand = to_mtk_nand(chip);
 	struct mtk_nfc *nfc = nand_get_controller_data(chip);
+	struct mtk_nand_type *chip_data = nfc->chip_data;
 	u32 fmt, spare;
+	int PAGEFMT_SPARE_SHIFT = chip_data->PAGEFMT_SPARE_SHIFT;
 
 	if (!mtd->writesize)
 		return 0;
@@ -392,23 +593,35 @@ static int mtk_nfc_hw_runtime_config(struct mtd_info *mtd)
 	case 52:
 		fmt |= (PAGEFMT_SPARE_52 << PAGEFMT_SPARE_SHIFT);
 		break;
+	case 61:
+		fmt |= (chip_data->PAGEFMT_SPARE_61 << PAGEFMT_SPARE_SHIFT);
+		break;
 	case 62:
 		fmt |= (PAGEFMT_SPARE_62 << PAGEFMT_SPARE_SHIFT);
 		break;
 	case 63:
-		fmt |= (PAGEFMT_SPARE_63 << PAGEFMT_SPARE_SHIFT);
+		fmt |= (chip_data->PAGEFMT_SPARE_63 << PAGEFMT_SPARE_SHIFT);
 		break;
 	case 64:
-		fmt |= (PAGEFMT_SPARE_64 << PAGEFMT_SPARE_SHIFT);
+		fmt |= (chip_data->PAGEFMT_SPARE_64 << PAGEFMT_SPARE_SHIFT);
+		break;
+	case 67:
+		fmt |= (PAGEFMT_SPARE_67 << PAGEFMT_SPARE_SHIFT);
+		break;
+	case 74:
+		fmt |= (PAGEFMT_SPARE_74 << PAGEFMT_SPARE_SHIFT);
 		break;
 	default:
 		dev_err(nfc->dev, "invalid spare per sector %d\n", spare);
 		return -EINVAL;
 	}
 
+	if (nfc->chip_data->adjust_spare_fmt)
+		nfc->chip_data->adjust_spare_fmt(mtd, &fmt);
+
 	fmt |= mtk_nand->fdm.reg_size << PAGEFMT_FDM_SHIFT;
 	fmt |= mtk_nand->fdm.ecc_size << PAGEFMT_FDM_ECC_SHIFT;
-	nfi_writew(nfc, fmt, NFI_PAGEFMT);
+	nfi_writel(nfc, fmt, NFI_PAGEFMT);
 
 	nfc->ecc_cfg.strength = chip->ecc.strength;
 	nfc->ecc_cfg.len = chip->ecc.size + mtk_nand->fdm.ecc_size;
@@ -459,7 +672,7 @@ static inline void mtk_nfc_wait_ioready(struct mtk_nfc *nfc)
 	int rc;
 	u8 val;
 
-	rc = readb_poll_timeout_atomic(nfc->regs + NFI_PIO_DIRDY, val,
+	rc = readb_poll_timeout_atomic(NFC_REG(nfc, NFI_PIO_DIRDY), val,
 				       val & PIO_DI_RDY, 10, MTK_TIMEOUT);
 	if (rc < 0)
 		dev_err(nfc->dev, "data not ready\n");
@@ -482,7 +695,10 @@ static inline u8 mtk_nfc_read_byte(struct mtd_info *mtd)
 		 * set to max sector to allow the HW to continue reading over
 		 * unaligned accesses
 		 */
-		reg = (MTK_MAX_SECTOR << CON_SEC_SHIFT) | CON_BRD;
+		if (nfc->chip_data->fdm_ecc_size)
+			reg = (nfc->chip_data->max_sector << CON_SEC_SHIFT) | CON_BRD;
+		else
+			reg = (MTK_MAX_SECTOR << CON_SEC_SHIFT) | CON_BRD;
 		nfi_writel(nfc, reg, NFI_CON);
 
 		/* trigger to fetch data */
@@ -512,8 +728,10 @@ static void mtk_nfc_write_byte(struct mtd_info *mtd, u8 byte)
 	if (reg != NFI_FSM_CUSTDATA) {
 		reg = nfi_readw(nfc, NFI_CNFG) | CNFG_BYTE_RW;
 		nfi_writew(nfc, reg, NFI_CNFG);
-
-		reg = MTK_MAX_SECTOR << CON_SEC_SHIFT | CON_BWR;
+		if (nfc->chip_data->fdm_ecc_size)
+			reg = (nfc->chip_data->max_sector << CON_SEC_SHIFT) | CON_BWR;
+		else
+			reg = (MTK_MAX_SECTOR << CON_SEC_SHIFT) | CON_BWR;
 		nfi_writel(nfc, reg, NFI_CON);
 
 		nfi_writew(nfc, STAR_EN, NFI_STRDATA);
@@ -543,6 +761,61 @@ static int mtk_nfc_sector_encode(struct nand_chip *chip, u8 *data)
 	return mtk_ecc_encode(nfc->ecc, &nfc->ecc_cfg, data, size);
 }
 
+static void mt2701_adjust_spare_fmt(struct mtd_info *mtd, u32 *fmt)
+{
+	struct nand_chip *chip = mtd_to_nand(mtd);
+	struct mtk_nfc_nand_chip *mtk_nand = to_mtk_nand(chip);
+	struct mtk_nfc *nfc = nand_get_controller_data(chip);
+	u32 spare;
+	int PAGEFMT_SPARE_SHIFT = nfc->chip_data->PAGEFMT_SPARE_SHIFT;
+
+	spare = mtk_nand->spare_per_sector;
+	if (chip->ecc.size == 1024)
+		spare >>= 1;
+	*fmt &= ~(0xf << PAGEFMT_SPARE_SHIFT);
+	if (spare < 26) {
+		chip->ecc.strength = 12;
+		*fmt |= (PAGEFMT_SPARE_16 << PAGEFMT_SPARE_SHIFT);
+	} else if ((spare >= 32) && (nfc->chip_data->type != MTK_NAND_MT7622)) {
+		chip->ecc.strength = 32;
+		*fmt |= (PAGEFMT_SPARE_32 << PAGEFMT_SPARE_SHIFT);
+	} else {
+		chip->ecc.strength = 24;
+		*fmt |= (PAGEFMT_SPARE_26 << PAGEFMT_SPARE_SHIFT);
+	}
+}
+
+static void mt7622_adjust_spare_fmt(struct mtd_info *mtd, u32 *fmt)
+{
+	struct nand_chip *chip = mtd_to_nand(mtd);
+	struct mtk_nfc_nand_chip *mtk_nand = to_mtk_nand(chip);
+	struct mtk_nfc *nfc = nand_get_controller_data(chip);
+	u32 spare;
+	int PAGEFMT_SPARE_SHIFT = nfc->chip_data->PAGEFMT_SPARE_SHIFT;
+
+	spare = mtk_nand->spare_per_sector;
+	*fmt &= ~(0xf << PAGEFMT_SPARE_SHIFT);
+	if (spare == 16)
+		*fmt |= (PAGEFMT_SPARE_16 << PAGEFMT_SPARE_SHIFT);
+	else
+		*fmt |= (PAGEFMT_SPARE_28 << PAGEFMT_SPARE_SHIFT);
+}
+
+static void mt7622_nfc_adjust_ecc(struct mtd_info *mtd)
+{
+	struct nand_chip *nand = mtd_to_nand(mtd);
+	u32 spare;
+
+	nand->ecc.size = 512;
+	if (mtd->oobsize >= 112)
+		mtd->oobsize = 112;
+	spare = mtd->oobsize * nand->ecc.size / mtd->writesize;
+	if (spare == 16)
+		nand->ecc.strength = 4;
+	else
+		nand->ecc.strength = 12;
+}
+
 static void mtk_nfc_no_bad_mark_swap(struct mtd_info *a, u8 *b, int c)
 {
 	/* nop */
@@ -560,6 +833,8 @@ static void mtk_nfc_bad_mark_swap(struct mtd_info *mtd, u8 *buf, int raw)
 		bad_pos += nand->bad_mark.sec * chip->ecc.size;
 
 	swap(chip->oob_poi[0], buf[bad_pos]);
+	return;
+
 }
 
 static int mtk_nfc_format_subpage(struct mtd_info *mtd, u32 offset,
@@ -630,8 +905,8 @@ static inline void mtk_nfc_read_fdm(struct nand_chip *chip, u32 start,
 
 	for (i = 0; i < sectors; i++) {
 		oobptr = oob_ptr(chip, start + i);
-		vall = nfi_readl(nfc, NFI_FDML(i));
-		valm = nfi_readl(nfc, NFI_FDMM(i));
+		vall = nfi_readl(nfc, NFI_FDM0L + i * 2);
+		valm = nfi_readl(nfc, NFI_FDM0M + i * 2);
 
 		for (j = 0; j < fdm->reg_size; j++)
 			oobptr[j] = (j >= 4 ? valm : vall) >> ((j % 4) * 8);
@@ -659,8 +934,8 @@ static inline void mtk_nfc_write_fdm(struct nand_chip *chip)
 				valm |= (j < fdm->reg_size ? oobptr[j] : 0xff)
 						<< ((j - 4) * 8);
 		}
-		nfi_writel(nfc, vall, NFI_FDML(i));
-		nfi_writel(nfc, valm, NFI_FDMM(i));
+		nfi_writel(nfc, vall, NFI_FDM0L + i * 2);
+		nfi_writel(nfc, valm, NFI_FDM0M + i * 2);
 	}
 }
 
@@ -701,7 +976,7 @@ static int mtk_nfc_do_write_page(struct mtd_info *mtd, struct nand_chip *chip,
 		goto timeout;
 	}
 
-	ret = readl_poll_timeout_atomic(nfc->regs + NFI_ADDRCNTR, reg,
+	ret = readl_poll_timeout_atomic(NFC_REG(nfc, NFI_ADDRCNTR), reg,
 					ADDRCNTR_SEC(reg) >= chip->ecc.steps,
 					10, MTK_TIMEOUT);
 	if (ret)
@@ -904,7 +1179,7 @@ static int mtk_nfc_read_subpage(struct mtd_info *mtd, struct nand_chip *chip,
 	if (!rc)
 		dev_warn(nfc->dev, "read ahb/dma done timeout\n");
 
-	rc = readl_poll_timeout_atomic(nfc->regs + NFI_BYTELEN, reg,
+	rc = readl_poll_timeout_atomic(NFC_REG(nfc, NFI_BYTELEN), reg,
 				       ADDRCNTR_SEC(reg) >= sectors, 10,
 				       MTK_TIMEOUT);
 	if (rc < 0) {
@@ -1009,7 +1284,7 @@ static inline void mtk_nfc_hw_init(struct mtk_nfc *nfc)
 	 * 0  : poll the status of the busy/ready signal after [7:4]*16 cycles.
 	 */
 	nfi_writew(nfc, 0xf1, NFI_CNRNB);
-	nfi_writew(nfc, PAGEFMT_8K_16K, NFI_PAGEFMT);
+	nfi_writel(nfc, PAGEFMT_8K_16K, NFI_PAGEFMT);
 
 	mtk_nfc_hw_reset(nfc);
 
@@ -1073,8 +1348,8 @@ static int mtk_nfc_ooblayout_free(struct mtd_info *mtd, int section,
 	if (section >= eccsteps)
 		return -ERANGE;
 
-	oob_region->length = fdm->reg_size - fdm->ecc_size;
-	oob_region->offset = section * fdm->reg_size + fdm->ecc_size;
+	oob_region->length = fdm->reg_size - 1;
+	oob_region->offset = section * fdm->reg_size + 1;
 
 	return 0;
 }
@@ -1105,38 +1380,46 @@ static void mtk_nfc_set_fdm(struct mtk_nfc_fdm *fdm, struct mtd_info *mtd)
 {
 	struct nand_chip *nand = mtd_to_nand(mtd);
 	struct mtk_nfc_nand_chip *chip = to_mtk_nand(nand);
+	struct mtk_nfc *nfc = nand_get_controller_data(nand);
 	u32 ecc_bytes;
 
-	ecc_bytes = DIV_ROUND_UP(nand->ecc.strength * ECC_PARITY_BITS, 8);
+	ecc_bytes = DIV_ROUND_UP(nand->ecc.strength * nfc->chip_data->parity_bit, 8);
 
 	fdm->reg_size = chip->spare_per_sector - ecc_bytes;
 	if (fdm->reg_size > NFI_FDM_MAX_SIZE)
 		fdm->reg_size = NFI_FDM_MAX_SIZE;
 
-	/* bad block mark storage */
-	fdm->ecc_size = 1;
+	if (nfc->chip_data->fdm_ecc_size)
+		fdm->ecc_size = nfc->chip_data->fdm_ecc_size;
+	else
+		fdm->ecc_size = 1;
 }
 
 static void mtk_nfc_set_bad_mark_ctl(struct mtk_nfc_bad_mark_ctl *bm_ctl,
 				     struct mtd_info *mtd)
 {
 	struct nand_chip *nand = mtd_to_nand(mtd);
+	struct mtk_nfc *nfc = nand_get_controller_data(nand);
 
-	if (mtd->writesize == 512) {
-		bm_ctl->bm_swap = mtk_nfc_no_bad_mark_swap;
-	} else {
-		bm_ctl->bm_swap = mtk_nfc_bad_mark_swap;
+	if (mtd->writesize != 512) {
 		bm_ctl->sec = mtd->writesize / mtk_data_len(nand);
 		bm_ctl->pos = mtd->writesize % mtk_data_len(nand);
 	}
+
+	if (nfc->chip_data->mark_swap)
+		bm_ctl->bm_swap = nfc->chip_data->mark_swap;
+	else
+		bm_ctl->bm_swap = mtk_nfc_bad_mark_swap;
 }
 
 static void mtk_nfc_set_spare_per_sector(u32 *sps, struct mtd_info *mtd)
 {
 	struct nand_chip *nand = mtd_to_nand(mtd);
+	struct mtk_nfc *nfc = nand_get_controller_data(nand);
 	u32 spare[] = {16, 26, 27, 28, 32, 36, 40, 44,
-			48, 49, 50, 51, 52, 62, 63, 64};
+			48, 49, 50, 51, 52, 61, 62, 63, 64, 67, 74};
 	u32 eccsteps, i;
+	u32 max_sector_spare = ARRAY_SIZE(spare);
 
 	eccsteps = mtd->writesize / nand->ecc.size;
 	*sps = mtd->oobsize / eccsteps;
@@ -1144,7 +1427,10 @@ static void mtk_nfc_set_spare_per_sector(u32 *sps, struct mtd_info *mtd)
 	if (nand->ecc.size == 1024)
 		*sps >>= 1;
 
-	for (i = 0; i < ARRAY_SIZE(spare); i++) {
+	if ((nfc->chip_data->max_sector_spare) &&
+	    (max_sector_spare > nfc->chip_data->max_sector_spare))
+		max_sector_spare = nfc->chip_data->max_sector_spare;
+	for (i = 0; i < max_sector_spare; i++) {
 		if (*sps <= spare[i]) {
 			if (!i)
 				*sps = spare[i];
@@ -1164,6 +1450,7 @@ static void mtk_nfc_set_spare_per_sector(u32 *sps, struct mtd_info *mtd)
 static int mtk_nfc_ecc_init(struct device *dev, struct mtd_info *mtd)
 {
 	struct nand_chip *nand = mtd_to_nand(mtd);
+	struct mtk_nfc *nfc = nand_get_controller_data(nand);
 	u32 spare;
 	int free;
 
@@ -1184,7 +1471,7 @@ static int mtk_nfc_ecc_init(struct device *dev, struct mtd_info *mtd)
 		 * this controller only supports 512 and 1024 sizes
 		 */
 		if (nand->ecc.size < 1024) {
-			if (mtd->writesize > 512) {
+			if ((mtd->writesize > 512) && (nfc->chip_data->max_ecc_size > 512)) {
 				nand->ecc.size = 1024;
 				nand->ecc.strength <<= 1;
 			} else {
@@ -1197,9 +1484,8 @@ static int mtk_nfc_ecc_init(struct device *dev, struct mtd_info *mtd)
 		mtk_nfc_set_spare_per_sector(&spare, mtd);
 
 		/* calculate oob bytes except ecc parity data */
-		free = ((nand->ecc.strength * ECC_PARITY_BITS) + 7) >> 3;
+		free = ((nand->ecc.strength * nfc->chip_data->parity_bit) + 7) >> 3;
 		free = spare - free;
-
 		/*
 		 * enhance ecc strength if oob left is bigger than max FDM size
 		 * or reduce ecc strength if oob size is not enough for ecc
@@ -1207,12 +1493,14 @@ static int mtk_nfc_ecc_init(struct device *dev, struct mtd_info *mtd)
 		 */
 		if (free > NFI_FDM_MAX_SIZE) {
 			spare -= NFI_FDM_MAX_SIZE;
-			nand->ecc.strength = (spare << 3) / ECC_PARITY_BITS;
+			nand->ecc.strength = (spare << 3) / nfc->chip_data->parity_bit;
 		} else if (free < 0) {
 			spare -= NFI_FDM_MIN_SIZE;
-			nand->ecc.strength = (spare << 3) / ECC_PARITY_BITS;
+			nand->ecc.strength = (spare << 3) / nfc->chip_data->parity_bit;
 		}
 	}
+	if (nfc->chip_data->nfc_adjust_ecc)
+		nfc->chip_data->nfc_adjust_ecc(mtd);
 
 	mtk_ecc_adjust_strength(&nand->ecc.strength);
 
@@ -1228,6 +1516,8 @@ static int mtk_nfc_nand_chip_init(struct device *dev, struct mtk_nfc *nfc,
 	struct mtk_nfc_nand_chip *chip;
 	struct nand_chip *nand;
 	struct mtd_info *mtd;
+	struct mtd_part_parser_data ppdata;
+	struct device_node *ofpart_node, *ppdata_node;
 	int nsels, len;
 	u32 tmp;
 	int ret;
@@ -1325,14 +1615,31 @@ static int mtk_nfc_nand_chip_init(struct device *dev, struct mtk_nfc *nfc,
 	if (ret)
 		return -ENODEV;
 
-	ret = mtd_device_parse_register(mtd, NULL, NULL, NULL, 0);
+	list_add_tail(&chip->node, &nfc->chips);
+
+	ppdata_node = of_get_next_available_child(dev->of_node, NULL);
+	if (!ppdata_node) {
+		dev_err(dev, "no nand device to configure\n");
+		return -ENODEV;
+	}
+
+	ofpart_node = of_get_child_by_name(ppdata_node, "partitions");
+	if (ofpart_node) {
+		static const char * const probes[] = {"ofpart", NULL};
+
+		ret = mtd_device_parse_register(mtd, probes, &ppdata, NULL, 0);
+	} else {
+		if (nfc->chip_data->type == MTK_NAND_MT2712)
+			ret = mtk_partition_register(mtd, 0);
+		else
+			ret = mtk_partition_register(mtd, 8);
+	}
+
 	if (ret) {
 		dev_err(dev, "mtd parse partition error\n");
 		nand_release(mtd);
 		return ret;
 	}
-
-	list_add_tail(&chip->node, &nfc->chips);
 
 	return 0;
 }
@@ -1354,6 +1661,63 @@ static int mtk_nfc_nand_chips_init(struct device *dev, struct mtk_nfc *nfc)
 	return 0;
 }
 
+static const struct mtk_nand_type nfc_mt2701 = {
+	.nfi_regs = mt2701_nfi_regs,
+	.type = MTK_NAND_MT2701,
+	.fdm_ecc_size = 8,
+	.parity_bit = 14,
+	.max_sector = 16,
+	.max_sector_spare = 16,
+	.max_ecc_size = 1024,
+	.mark_swap = mtk_nfc_no_bad_mark_swap,
+	.adjust_spare_fmt = mt2701_adjust_spare_fmt,
+	.PAGEFMT_SPARE_63 = 0xe,
+	.PAGEFMT_SPARE_64 = 0xf,
+	.PAGEFMT_SPARE_SHIFT = 4,
+};
+
+static const struct mtk_nand_type nfc_mt7622 = {
+	.nfi_regs = mt7622_nfi_regs,
+	.type = MTK_NAND_MT7622,
+	.fdm_ecc_size = 1,
+	.parity_bit = 13,
+	.max_sector = 8,
+	.max_sector_spare = 4,
+	.max_ecc_size = 512,
+	.mark_swap = mtk_nfc_bad_mark_swap,
+	.adjust_spare_fmt = mt7622_adjust_spare_fmt,
+	.PAGEFMT_SPARE_SHIFT = 4,
+	.nfc_adjust_ecc = mt7622_nfc_adjust_ecc,
+};
+
+static const struct mtk_nand_type nfc_mt2712 = {
+	.nfi_regs = mt2712_nfi_regs,
+	.type = MTK_NAND_MT2712,
+	.fdm_ecc_size = 1,
+	.parity_bit = 14,
+	.max_sector = 16,
+	.max_sector_spare = 16,
+	.max_ecc_size = 1024,
+	.PAGEFMT_SPARE_61 = 0xe,
+	.PAGEFMT_SPARE_63 = 0xf,
+	.PAGEFMT_SPARE_64 = 0x10,
+	.PAGEFMT_SPARE_SHIFT = 16,
+};
+
+static const struct of_device_id mtk_nfc_id_table[] = {
+	{
+		.compatible = "mediatek,mt2701-nfc",
+		.data = &nfc_mt2701,
+	}, {
+		.compatible = "mediatek,mt7622-nfc",
+		.data = &nfc_mt7622,
+	}, {
+		.compatible = "mediatek,mt2712-nfc",
+		.data = &nfc_mt2712,
+	}, {
+	}
+};
+
 static int mtk_nfc_probe(struct platform_device *pdev)
 {
 	struct device *dev = &pdev->dev;
@@ -1361,6 +1725,11 @@ static int mtk_nfc_probe(struct platform_device *pdev)
 	struct mtk_nfc *nfc;
 	struct resource *res;
 	int ret, irq;
+	const struct of_device_id *of_nand_id = NULL;
+
+	of_nand_id = of_match_device(mtk_nfc_id_table, &pdev->dev);
+	if (!of_nand_id)
+		return -EINVAL;
 
 	nfc = devm_kzalloc(dev, sizeof(*nfc), GFP_KERNEL);
 	if (!nfc)
@@ -1378,6 +1747,7 @@ static int mtk_nfc_probe(struct platform_device *pdev)
 		return -ENODEV;
 
 	nfc->dev = dev;
+	nfc->chip_data = (struct mtk_nand_type *)of_nand_id->data;
 
 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
 	nfc->regs = devm_ioremap_resource(dev, res);
@@ -1424,6 +1794,9 @@ static int mtk_nfc_probe(struct platform_device *pdev)
 		goto clk_disable;
 	}
 
+	pm_runtime_enable(dev);
+	pm_runtime_get_sync(dev);
+
 	platform_set_drvdata(pdev, nfc);
 
 	ret = mtk_nfc_nand_chips_init(dev, nfc);
@@ -1457,6 +1830,9 @@ static int mtk_nfc_remove(struct platform_device *pdev)
 
 	mtk_ecc_release(nfc->ecc);
 	mtk_nfc_disable_clk(&nfc->clk);
+
+	pm_runtime_put_sync(&pdev->dev);
+	pm_runtime_disable(&pdev->dev);
 
 	return 0;
 }
@@ -1504,10 +1880,6 @@ static int mtk_nfc_resume(struct device *dev)
 static SIMPLE_DEV_PM_OPS(mtk_nfc_pm_ops, mtk_nfc_suspend, mtk_nfc_resume);
 #endif
 
-static const struct of_device_id mtk_nfc_id_table[] = {
-	{ .compatible = "mediatek,mt2701-nfc" },
-	{}
-};
 MODULE_DEVICE_TABLE(of, mtk_nfc_id_table);
 
 static struct platform_driver mtk_nfc_driver = {
