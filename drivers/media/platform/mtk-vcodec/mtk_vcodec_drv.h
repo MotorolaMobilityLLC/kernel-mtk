@@ -28,6 +28,7 @@
 #define MTK_VCODEC_DEC_NAME	"mtk-vcodec-dec"
 #define MTK_VCODEC_ENC_NAME	"mtk-vcodec-enc"
 #define MTK_PLATFORM_STR	"platform:mt8173"
+#define MTK_VCU_FW_VERSION	"0.2.13"
 
 #define MTK_VCODEC_MAX_PLANES	3
 #define MTK_V4L2_BENCHMARK	0
@@ -48,6 +49,7 @@ enum mtk_hw_reg_idx {
 	VDEC_HWD,
 	VDEC_HWQ,
 	VDEC_HWB,
+	VDEC_HD,
 	VDEC_HWG,
 	NUM_MAX_VDEC_REG_BASE,
 	/* h264 encoder */
@@ -138,6 +140,25 @@ struct mtk_q_data {
 	unsigned int	bytesperline[MTK_VCODEC_MAX_PLANES];
 	unsigned int	sizeimage[MTK_VCODEC_MAX_PLANES];
 	struct mtk_video_fmt	*fmt;
+};
+
+enum mtk_dec_param {
+	MTK_DEC_PARAM_NONE = 0,
+	MTK_DEC_PARAM_DECODE_MODE = (1 << 0),
+	MTK_DEC_PARAM_FRAME_SIZE = (1 << 1),
+	MTK_DEC_PARAM_FIXED_MAX_FRAME_SIZE = (1 << 2),
+	MTK_DEC_PARAM_CRC_PATH = (1 << 3),
+	MTK_DEC_PARAM_GOLDEN_PATH = (1 << 4),
+};
+
+struct mtk_dec_params {
+	unsigned int	decode_mode;
+	unsigned int	frame_size_width;
+	unsigned int	frame_size_height;
+	unsigned int	fixed_max_frame_size_width;
+	unsigned int	fixed_max_frame_size_height;
+	char		*crc_path;
+	char		*golden_path;
 };
 
 /**
@@ -236,6 +257,8 @@ struct vdec_pic_info {
  *	    of the context
  * @id: index of the context that this structure describes
  * @state: state of the context
+ * @dec_param_change: indicate decode parameter type
+ * @dec_params: decoding parameters
  * @param_change: indicate encode parameter type
  * @enc_params: encoding parameters
  * @dec_if: hooked decoder driver interface
@@ -273,6 +296,8 @@ struct mtk_vcodec_ctx {
 	struct mtk_q_data q_data[2];
 	int id;
 	enum mtk_instance_state state;
+	enum mtk_dec_param dec_param_change;
+	struct mtk_dec_params dec_params;
 	enum mtk_encode_param param_change;
 	struct mtk_enc_params enc_params;
 
@@ -313,7 +338,7 @@ struct mtk_vcodec_ctx {
  * @m2m_dev_dec: m2m device for decoder
  * @m2m_dev_enc: m2m device for encoder.
  * @plat_dev: platform device
- * @vpu_plat_dev: mtk vpu platform device
+ * @vcu_plat_dev: mtk vcu platform device
  * @ctx_list: list of struct mtk_vcodec_ctx
  * @irqlock: protect data access by irq handler and work thread
  * @curr_ctx: The context that is waiting for codec hardware
@@ -348,7 +373,7 @@ struct mtk_vcodec_dev {
 	struct v4l2_m2m_dev *m2m_dev_dec;
 	struct v4l2_m2m_dev *m2m_dev_enc;
 	struct platform_device *plat_dev;
-	struct platform_device *vpu_plat_dev;
+	struct platform_device *vcu_plat_dev;
 	struct list_head ctx_list;
 	spinlock_t irqlock;
 	struct mtk_vcodec_ctx *curr_ctx;

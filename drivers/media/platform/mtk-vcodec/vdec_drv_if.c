@@ -23,6 +23,7 @@
 #include "mtk_vcodec_dec_pm.h"
 #include "mtk_vcu.h"
 
+struct vdec_common_if *get_dec_common_if(void);
 
 int vdec_if_init(struct mtk_vcodec_ctx *ctx, unsigned int fourcc)
 {
@@ -30,7 +31,28 @@ int vdec_if_init(struct mtk_vcodec_ctx *ctx, unsigned int fourcc)
 
 	switch (fourcc) {
 	case V4L2_PIX_FMT_H264:
+	case V4L2_PIX_FMT_H265:
+	case V4L2_PIX_FMT_MPEG1:
+	case V4L2_PIX_FMT_MPEG2:
+	case V4L2_PIX_FMT_MPEG4:
+	case V4L2_PIX_FMT_H263:
+	case V4L2_PIX_FMT_S263:
+	case V4L2_PIX_FMT_XVID:
+	case V4L2_PIX_FMT_DIVX3:
+	case V4L2_PIX_FMT_DIVX4:
+	case V4L2_PIX_FMT_DIVX5:
+	case V4L2_PIX_FMT_DIVX6:
 	case V4L2_PIX_FMT_VP8:
+	case V4L2_PIX_FMT_VP9:
+	case V4L2_PIX_FMT_WMV1:
+	case V4L2_PIX_FMT_WMV2:
+	case V4L2_PIX_FMT_WMV3:
+	case V4L2_PIX_FMT_WVC1:
+	case V4L2_PIX_FMT_WMVA:
+	case V4L2_PIX_FMT_RV30:
+	case V4L2_PIX_FMT_RV40:
+		ctx->dec_if = get_dec_common_if();
+		break;
 	default:
 		return -EINVAL;
 	}
@@ -92,6 +114,18 @@ int vdec_if_get_param(struct mtk_vcodec_ctx *ctx, enum vdec_get_param_type type,
 
 	mtk_vdec_lock(ctx);
 	ret = ctx->dec_if->get_param(ctx->drv_handle, type, out);
+	mtk_vdec_unlock(ctx);
+
+	return ret;
+}
+
+int vdec_if_set_param(struct mtk_vcodec_ctx *ctx, enum vdec_set_param_type type,
+		      void *in)
+{
+	int ret = 0;
+
+	mtk_vdec_lock(ctx);
+	ret = ctx->dec_if->set_param(ctx->drv_handle, type, in);
 	mtk_vdec_unlock(ctx);
 
 	return ret;
