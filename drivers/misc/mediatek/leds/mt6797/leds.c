@@ -803,7 +803,7 @@ int mt_brightness_set_pmic(enum mt65xx_led_pmic pmic_type, u32 level, u32 div)
 		pmic_set_register_value(PMIC_RG_DRV_ISINK0_CK_PDN, 0);
 		pmic_set_register_value(PMIC_RG_DRV_ISINK0_CK_CKSEL, 0);
 		pmic_set_register_value(PMIC_ISINK_CH0_MODE, ISINK_PWM_MODE);
-		pmic_set_register_value(PMIC_ISINK_CH0_STEP, ISINK_3);	/* 16mA */
+		pmic_set_register_value(PMIC_ISINK_CH0_STEP, ISINK_0);	/* 4mA */
 		pmic_set_register_value(PMIC_ISINK_DIM0_DUTY, 15);
 		pmic_set_register_value(PMIC_ISINK_DIM0_FSEL, ISINK_1KHZ);	/* 1KHz */
 		if (level)
@@ -1087,11 +1087,6 @@ void mt_mt65xx_led_set(struct led_classdev *led_cdev, enum led_brightness level)
 				mt_mt65xx_led_set_cust(&led_data->cust, level);
 			}
 		}
-	} else if ((strcmp(led_data->cust.name, "lcd-backlight") != 0)
-		&& (level == 0)) {
-		LEDS_DEBUG("Set NLED directly %d at time %lu\n",
-			led_data->level, jiffies);
-		schedule_work(&led_data->work);
 	}
 	/* spin_unlock_irqrestore(&leds_lock, flags); */
 #endif
