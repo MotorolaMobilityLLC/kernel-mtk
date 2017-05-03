@@ -65,4 +65,6 @@ ccflags-y += -I$(srctree)/drivers/media/i2c
 
 obj-$(CONFIG_VIDEO_MEDIATEK_VPU)	+= mtk-vpu/
 
+obj-$(CONFIG_VIDEO_MEDIATEK_VCU)	+= mtk-vcu/
+
 obj-$(CONFIG_VIDEO_MEDIATEK_VCODEC)	+= mtk-vcodec/

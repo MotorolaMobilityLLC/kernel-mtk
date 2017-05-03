@@ -26,8 +26,8 @@
 #include "../mtk_vcodec_enc_pm.h"
 #include "../venc_drv_base.h"
 #include "../venc_ipi_msg.h"
-#include "../venc_vpu_if.h"
-#include "mtk_vpu.h"
+#include "../venc_vcu_if.h"
+#include "mtk_vcu.h"
 
 static const char h264_filler_marker[] = {0x0, 0x0, 0x0, 0x1, 0xc};
 
@@ -266,7 +266,7 @@ static int h264_enc_alloc_work_buf(struct venc_h264_inst *inst)
 		 */
 		inst->work_bufs[i].size = wb[i].size;
 		if (i == VENC_H264_VPU_WORK_BUF_SKIP_FRAME) {
-			inst->work_bufs[i].va = vpu_mapping_dm_addr(
+			inst->work_bufs[i].va = vcu_mapping_dm_addr(
 				inst->vpu_inst.dev, wb[i].vpua);
 			inst->work_bufs[i].dma_addr = 0;
 		} else {
@@ -286,7 +286,7 @@ static int h264_enc_alloc_work_buf(struct venc_h264_inst *inst)
 			if (i == VENC_H264_VPU_WORK_BUF_RC_CODE) {
 				void *tmp_va;
 
-				tmp_va = vpu_mapping_dm_addr(inst->vpu_inst.dev,
+				tmp_va = vcu_mapping_dm_addr(inst->vpu_inst.dev,
 							     wb[i].vpua);
 				memcpy(inst->work_bufs[i].va, tmp_va,
 				       wb[i].size);
@@ -665,10 +665,10 @@ static int h264_enc_deinit(unsigned long handle)
 }
 
 static const struct venc_common_if venc_h264_if = {
-	h264_enc_init,
-	h264_enc_encode,
-	h264_enc_set_param,
-	h264_enc_deinit,
+	.init = h264_enc_init,
+	.encode = h264_enc_encode,
+	.set_param = h264_enc_set_param,
+	.deinit = h264_enc_deinit,
 };
 
 const struct venc_common_if *get_h264_enc_comm_if(void);

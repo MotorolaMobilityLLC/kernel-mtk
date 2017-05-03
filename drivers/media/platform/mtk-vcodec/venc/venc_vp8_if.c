@@ -25,8 +25,8 @@
 #include "../mtk_vcodec_enc_pm.h"
 #include "../venc_drv_base.h"
 #include "../venc_ipi_msg.h"
-#include "../venc_vpu_if.h"
-#include "mtk_vpu.h"
+#include "../venc_vcu_if.h"
+#include "mtk_vcu.h"
 
 #define VENC_BITSTREAM_FRAME_SIZE 0x0098
 #define VENC_BITSTREAM_HEADER_LEN 0x00e8
@@ -201,7 +201,7 @@ static int vp8_enc_alloc_work_buf(struct venc_vp8_inst *inst)
 		    i == VENC_VP8_VPU_WORK_BUF_RC_CODE3) {
 			void *tmp_va;
 
-			tmp_va = vpu_mapping_dm_addr(inst->vpu_inst.dev,
+			tmp_va = vcu_mapping_dm_addr(inst->vpu_inst.dev,
 						     wb[i].vpua);
 			memcpy(inst->work_bufs[i].va, tmp_va, wb[i].size);
 		}
@@ -470,10 +470,10 @@ static int vp8_enc_deinit(unsigned long handle)
 }
 
 static const struct venc_common_if venc_vp8_if = {
-	vp8_enc_init,
-	vp8_enc_encode,
-	vp8_enc_set_param,
-	vp8_enc_deinit,
+	.init = vp8_enc_init,
+	.encode = vp8_enc_encode,
+	.set_param = vp8_enc_set_param,
+	.deinit = vp8_enc_deinit,
 };
 
 const struct venc_common_if *get_vp8_enc_comm_if(void);
