@@ -862,7 +862,7 @@
 		};
 
 		/* 2712 only have one pcie RC. */
-		pcie@0x11700000 {
+		pcie: pcie@0x11700000 {
 			compatible = "mediatek,pcie-mt2712";
 			device_type = "pci";
 			reg = <0 0x11700000 0 0x1000>; /* 4k PORT0 registers */
