@@ -13,16 +13,16 @@
  * GNU General Public License for more details.
  */
 
-#include "mtk_vpu.h"
+#include "mtk_vcu.h"
 #include "venc_ipi_msg.h"
-#include "venc_vpu_if.h"
+#include "venc_vcu_if.h"
 
 static void handle_enc_init_msg(struct venc_vpu_inst *vpu, void *data)
 {
 	struct venc_vpu_ipi_msg_init *msg = data;
 
 	vpu->inst_addr = msg->vpu_inst_addr;
-	vpu->vsi = vpu_mapping_dm_addr(vpu->dev, msg->vpu_inst_addr);
+	vpu->vsi = vcu_mapping_dm_addr(vpu->dev, msg->vpu_inst_addr);
 }
 
 static void handle_enc_encode_msg(struct venc_vpu_inst *vpu, void *data)
@@ -34,11 +34,12 @@ static void handle_enc_encode_msg(struct venc_vpu_inst *vpu, void *data)
 	vpu->is_key_frm = msg->is_key_frm;
 }
 
-static void vpu_enc_ipi_handler(void *data, unsigned int len, void *priv)
+static int vpu_enc_ipi_handler(void *data, unsigned int len, void *priv)
 {
 	struct venc_vpu_ipi_msg_common *msg = data;
 	struct venc_vpu_inst *vpu =
 		(struct venc_vpu_inst *)(unsigned long)msg->venc_inst;
+	int ret = 0;
 
 	mtk_vcodec_debug(vpu, "msg_id %x inst %p status %d",
 			 msg->msg_id, vpu, msg->status);
@@ -63,6 +64,7 @@ static void vpu_enc_ipi_handler(void *data, unsigned int len, void *priv)
 	vpu->failure = (msg->status != VENC_IPI_MSG_STATUS_OK);
 
 	mtk_vcodec_debug_leave(vpu);
+	return ret;
 }
 
 static int vpu_enc_send_msg(struct venc_vpu_inst *vpu, void *msg,
@@ -77,10 +79,12 @@ static int vpu_enc_send_msg(struct venc_vpu_inst *vpu, void *msg,
 		return -EINVAL;
 	}
 
-	status = vpu_ipi_send(vpu->dev, vpu->id, msg, len);
+	status = vcu_ipi_send(vpu->dev, vpu->id, msg, len);
 	if (status) {
+		uint32_t msg_id = *(uint32_t *)msg;
+
 		mtk_vcodec_err(vpu, "vpu_ipi_send msg_id %x len %d fail %d",
-			       *(uint32_t *)msg, len, status);
+			       msg_id, len, status);
 		return -EINVAL;
 	}
 	if (vpu->failure)
@@ -102,7 +106,7 @@ int vpu_enc_init(struct venc_vpu_inst *vpu)
 	vpu->signaled = 0;
 	vpu->failure = 0;
 
-	status = vpu_ipi_register(vpu->dev, vpu->id, vpu_enc_ipi_handler,
+	status = vcu_ipi_register(vpu->dev, vpu->id, vpu_enc_ipi_handler,
 				  NULL, NULL);
 	if (status) {
 		mtk_vcodec_err(vpu, "vpu_ipi_register fail %d", status);

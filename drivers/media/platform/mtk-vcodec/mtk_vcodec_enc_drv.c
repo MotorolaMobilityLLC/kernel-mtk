@@ -29,7 +29,7 @@
 #include "mtk_vcodec_enc_pm.h"
 #include "mtk_vcodec_intr.h"
 #include "mtk_vcodec_util.h"
-#include "mtk_vpu.h"
+#include "mtk_vcu.h"
 
 module_param(mtk_v4l2_dbg_level, int, S_IRUGO | S_IWUSR);
 module_param(mtk_vcodec_dbg, bool, S_IRUGO | S_IWUSR);
@@ -109,22 +109,6 @@ static irqreturn_t mtk_vcodec_enc_lt_irq_handler(int irq, void *priv)
 	return IRQ_HANDLED;
 }
 
-static void mtk_vcodec_enc_reset_handler(void *priv)
-{
-	struct mtk_vcodec_dev *dev = priv;
-	struct mtk_vcodec_ctx *ctx;
-
-	mtk_v4l2_debug(0, "Watchdog timeout!!");
-
-	mutex_lock(&dev->dev_mutex);
-	list_for_each_entry(ctx, &dev->ctx_list, list) {
-		ctx->state = MTK_STATE_ABORT;
-		mtk_v4l2_debug(0, "[%d] Change to state MTK_STATE_ABORT",
-				ctx->id);
-	}
-	mutex_unlock(&dev->dev_mutex);
-}
-
 static int fops_vcodec_open(struct file *file)
 {
 	struct mtk_vcodec_dev *dev = video_drvdata(file);
@@ -167,28 +151,27 @@ static int fops_vcodec_open(struct file *file)
 
 	if (v4l2_fh_is_singular(&ctx->fh)) {
 		/*
-		 * vpu_load_firmware checks if it was loaded already and
+		 * vcu_load_firmware checks if it was loaded already and
 		 * does nothing in that case
 		 */
-		ret = vpu_load_firmware(dev->vpu_plat_dev);
+		ret = vcu_load_firmware(dev->vpu_plat_dev);
 		if (ret < 0) {
 			/*
 			 * Return 0 if downloading firmware successfully,
 			 * otherwise it is failed
 			 */
-			mtk_v4l2_err("vpu_load_firmware failed!");
+			mtk_v4l2_err("vcu_load_firmware failed!");
 			goto err_load_fw;
 		}
 
 		dev->enc_capability =
-			vpu_get_venc_hw_capa(dev->vpu_plat_dev);
+			vcu_get_venc_hw_capa(dev->vpu_plat_dev);
 		mtk_v4l2_debug(0, "encoder capability %x", dev->enc_capability);
 	}
 
 	mtk_v4l2_debug(2, "Create instance [%d]@%p m2m_ctx=%p ",
 			ctx->id, ctx, ctx->m2m_ctx);
 
-	dev->num_instances++;
 	list_add(&ctx->list, &dev->ctx_list);
 
 	mutex_unlock(&dev->dev_mutex);
@@ -218,18 +201,13 @@ static int fops_vcodec_release(struct file *file)
 	mtk_v4l2_debug(1, "[%d] encoder", ctx->id);
 	mutex_lock(&dev->dev_mutex);
 
-	/*
-	 * Call v4l2_m2m_ctx_release to make sure the worker thread is not
-	 * running after venc_if_deinit.
-	 */
-	v4l2_m2m_ctx_release(ctx->m2m_ctx);
 	mtk_vcodec_enc_release(ctx);
 	v4l2_fh_del(&ctx->fh);
 	v4l2_fh_exit(&ctx->fh);
 	v4l2_ctrl_handler_free(&ctx->ctrl_hdl);
+	v4l2_m2m_ctx_release(ctx->m2m_ctx);
 
 	list_del_init(&ctx->list);
-	dev->num_instances--;
 	kfree(ctx);
 	mutex_unlock(&dev->dev_mutex);
 	return 0;
@@ -258,14 +236,11 @@ static int mtk_vcodec_probe(struct platform_device *pdev)
 	INIT_LIST_HEAD(&dev->ctx_list);
 	dev->plat_dev = pdev;
 
-	dev->vpu_plat_dev = vpu_get_plat_device(dev->plat_dev);
+	dev->vpu_plat_dev = vcu_get_plat_device(dev->plat_dev);
 	if (dev->vpu_plat_dev == NULL) {
 		mtk_v4l2_err("[VPU] vpu device in not ready");
 		return -EPROBE_DEFER;
 	}
-
-	vpu_wdt_reg_handler(dev->vpu_plat_dev, mtk_vcodec_enc_reset_handler,
-				dev, VPU_RST_ENC);
 
 	ret = mtk_vcodec_init_enc_pm(dev);
 	if (ret < 0) {
@@ -401,6 +376,7 @@ err_res:
 
 static const struct of_device_id mtk_vcodec_enc_match[] = {
 	{.compatible = "mediatek,mt8173-vcodec-enc",},
+	{.compatible = "mediatek,mt2712-vcodec-enc",},
 	{},
 };
 MODULE_DEVICE_TABLE(of, mtk_vcodec_enc_match);
