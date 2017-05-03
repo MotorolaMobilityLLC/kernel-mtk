@@ -204,7 +204,7 @@
 	};
 };
 
-&pcie0 {
+&pcie {
 	pinctrl-names = "default";
 	pinctrl-0 = <&pcie_pinctl0>;
 };
