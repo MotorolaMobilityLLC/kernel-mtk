@@ -24,8 +24,8 @@
 #include "vdec_drv_if.h"
 #include "mtk_vcodec_dec_pm.h"
 
-#define OUT_FMT_IDX	0
-#define CAP_FMT_IDX	3
+#define OUT_FMT_IDX	1
+#define CAP_FMT_IDX	0
 
 #define MTK_VDEC_MIN_W	64U
 #define MTK_VDEC_MIN_H	64U
@@ -34,7 +34,17 @@
 
 static struct mtk_video_fmt mtk_video_formats[] = {
 	{
+		.fourcc = V4L2_PIX_FMT_MT21C,
+		.type = MTK_FMT_FRAME,
+		.num_planes = 2,
+	},
+	{
 		.fourcc = V4L2_PIX_FMT_H264,
+		.type = MTK_FMT_DEC,
+		.num_planes = 1,
+	},
+	{
+		.fourcc = V4L2_PIX_FMT_H265,
 		.type = MTK_FMT_DEC,
 		.num_planes = 1,
 	},
@@ -49,9 +59,89 @@ static struct mtk_video_fmt mtk_video_formats[] = {
 		.num_planes = 1,
 	},
 	{
-		.fourcc = V4L2_PIX_FMT_MT21C,
-		.type = MTK_FMT_FRAME,
-		.num_planes = 2,
+		.fourcc = V4L2_PIX_FMT_MPEG1,
+		.type = MTK_FMT_DEC,
+		.num_planes = 1,
+	},
+	{
+		.fourcc = V4L2_PIX_FMT_MPEG2,
+		.type = MTK_FMT_DEC,
+		.num_planes = 1,
+	},
+	{
+		.fourcc = V4L2_PIX_FMT_MPEG4,
+		.type = MTK_FMT_DEC,
+		.num_planes = 1,
+	},
+	{
+		.fourcc = V4L2_PIX_FMT_H263,
+		.type = MTK_FMT_DEC,
+		.num_planes = 1,
+	},
+	{
+		.fourcc = V4L2_PIX_FMT_S263,
+		.type = MTK_FMT_DEC,
+		.num_planes = 1,
+	},
+	{
+		.fourcc = V4L2_PIX_FMT_XVID,
+		.type = MTK_FMT_DEC,
+		.num_planes = 1,
+	},
+	{
+		.fourcc = V4L2_PIX_FMT_DIVX3,
+		.type = MTK_FMT_DEC,
+		.num_planes = 1,
+	},
+	{
+		.fourcc = V4L2_PIX_FMT_DIVX4,
+		.type = MTK_FMT_DEC,
+		.num_planes = 1,
+	},
+	{
+		.fourcc = V4L2_PIX_FMT_DIVX5,
+		.type = MTK_FMT_DEC,
+		.num_planes = 1,
+	},
+	{
+		.fourcc = V4L2_PIX_FMT_DIVX6,
+		.type = MTK_FMT_DEC,
+		.num_planes = 1,
+	},
+	{
+		.fourcc = V4L2_PIX_FMT_WMV1,
+		.type = MTK_FMT_DEC,
+		.num_planes = 1,
+	},
+	{
+		.fourcc = V4L2_PIX_FMT_WMV2,
+		.type = MTK_FMT_DEC,
+		.num_planes = 1,
+	},
+	{
+		.fourcc = V4L2_PIX_FMT_WMV3,
+		.type = MTK_FMT_DEC,
+		.num_planes = 1,
+	},
+	{
+		.fourcc = V4L2_PIX_FMT_WVC1,
+		.type = MTK_FMT_DEC,
+		.num_planes = 1,
+	},
+	{
+		.fourcc = V4L2_PIX_FMT_WMVA,
+		.type = MTK_FMT_DEC,
+		.num_planes = 1,
+	},
+	{
+		.fourcc = V4L2_PIX_FMT_RV30,
+		.type = MTK_FMT_DEC,
+		.num_planes = 1,
+	},
+	{
+		.fourcc = V4L2_PIX_FMT_RV40,
+		.type = MTK_FMT_DEC,
+		.num_planes = 1,
 	},
 };
 
@@ -62,12 +152,101 @@ static const struct mtk_codec_framesizes mtk_vdec_framesizes[] = {
 				MTK_VDEC_MIN_H, MTK_VDEC_MAX_H, 16 },
 	},
 	{
+		.fourcc	= V4L2_PIX_FMT_H265,
+		.stepwise = {  MTK_VDEC_MIN_W, VCODEC_DEC_4K_CODED_WIDTH, 16,
+				MTK_VDEC_MIN_H, VCODEC_DEC_4K_CODED_HEIGHT, 16 },
+	},
+	{
 		.fourcc	= V4L2_PIX_FMT_VP8,
 		.stepwise = {  MTK_VDEC_MIN_W, MTK_VDEC_MAX_W, 16,
 				MTK_VDEC_MIN_H, MTK_VDEC_MAX_H, 16 },
 	},
 	{
-		.fourcc = V4L2_PIX_FMT_VP9,
+		.fourcc	= V4L2_PIX_FMT_VP9,
+		.stepwise = {  1, MTK_VDEC_MAX_W, 16, 1, MTK_VDEC_MAX_H, 16 },
+	},
+	{
+		.fourcc	= V4L2_PIX_FMT_MPEG1,
+		.stepwise = {  MTK_VDEC_MIN_W, MTK_VDEC_MAX_W, 16,
+				MTK_VDEC_MIN_H, MTK_VDEC_MAX_H, 16 },
+	},
+	{
+		.fourcc	= V4L2_PIX_FMT_MPEG2,
+		.stepwise = {  MTK_VDEC_MIN_W, MTK_VDEC_MAX_W, 16,
+				MTK_VDEC_MIN_H, MTK_VDEC_MAX_H, 16 },
+	},
+	{
+		.fourcc	= V4L2_PIX_FMT_MPEG4,
+		.stepwise = {  MTK_VDEC_MIN_W, MTK_VDEC_MAX_W, 16,
+				MTK_VDEC_MIN_H, MTK_VDEC_MAX_H, 16 },
+	},
+	{
+		.fourcc = V4L2_PIX_FMT_H263,
+		.stepwise = {  MTK_VDEC_MIN_W, MTK_VDEC_MAX_W, 16,
+				MTK_VDEC_MIN_H, MTK_VDEC_MAX_H, 16 },
+	},
+	{
+		.fourcc	= V4L2_PIX_FMT_S263,
+		.stepwise = {  MTK_VDEC_MIN_W, MTK_VDEC_MAX_W, 16,
+				MTK_VDEC_MIN_H, MTK_VDEC_MAX_H, 16 },
+	},
+	{
+		.fourcc	= V4L2_PIX_FMT_XVID,
+		.stepwise = {  MTK_VDEC_MIN_W, MTK_VDEC_MAX_W, 16,
+				MTK_VDEC_MIN_H, MTK_VDEC_MAX_H, 16 },
+	},
+	{
+		.fourcc	= V4L2_PIX_FMT_DIVX3,
+		.stepwise = {  MTK_VDEC_MIN_W, MTK_VDEC_MAX_W, 16,
+				MTK_VDEC_MIN_H, MTK_VDEC_MAX_H, 16 },
+	},
+	{
+		.fourcc	= V4L2_PIX_FMT_DIVX4,
+		.stepwise = {  MTK_VDEC_MIN_W, MTK_VDEC_MAX_W, 16,
+				MTK_VDEC_MIN_H, MTK_VDEC_MAX_H, 16 },
+	},
+	{
+		.fourcc	= V4L2_PIX_FMT_DIVX5,
+		.stepwise = {  MTK_VDEC_MIN_W, MTK_VDEC_MAX_W, 16,
+				MTK_VDEC_MIN_H, MTK_VDEC_MAX_H, 16 },
+	},
+	{
+		.fourcc	= V4L2_PIX_FMT_DIVX6,
+		.stepwise = {  MTK_VDEC_MIN_W, MTK_VDEC_MAX_W, 16,
+				MTK_VDEC_MIN_H, MTK_VDEC_MAX_H, 16 },
+	},
+	{
+		.fourcc = V4L2_PIX_FMT_WMV1,
+		.stepwise = {  MTK_VDEC_MIN_W, MTK_VDEC_MAX_W, 16,
+				MTK_VDEC_MIN_H, MTK_VDEC_MAX_H, 16 },
+	},
+	{
+		.fourcc	= V4L2_PIX_FMT_WMV2,
+		.stepwise = {  MTK_VDEC_MIN_W, MTK_VDEC_MAX_W, 16,
+				MTK_VDEC_MIN_H, MTK_VDEC_MAX_H, 16 },
+	},
+	{
+		.fourcc	= V4L2_PIX_FMT_WMV3,
+		.stepwise = {  MTK_VDEC_MIN_W, MTK_VDEC_MAX_W, 16,
+				MTK_VDEC_MIN_H, MTK_VDEC_MAX_H, 16 },
+	},
+	{
+		.fourcc	= V4L2_PIX_FMT_WVC1,
+		.stepwise = {  MTK_VDEC_MIN_W, MTK_VDEC_MAX_W, 16,
+				MTK_VDEC_MIN_H, MTK_VDEC_MAX_H, 16 },
+	},
+	{
+		.fourcc	= V4L2_PIX_FMT_WMVA,
+		.stepwise = {  MTK_VDEC_MIN_W, MTK_VDEC_MAX_W, 16,
+				MTK_VDEC_MIN_H, MTK_VDEC_MAX_H, 16 },
+	},
+	{
+		.fourcc	= V4L2_PIX_FMT_RV30,
+		.stepwise = {  MTK_VDEC_MIN_W, MTK_VDEC_MAX_W, 16,
+				MTK_VDEC_MIN_H, MTK_VDEC_MAX_H, 16 },
+	},
+	{
+		.fourcc	= V4L2_PIX_FMT_RV40,
 		.stepwise = {  MTK_VDEC_MIN_W, MTK_VDEC_MAX_W, 16,
 				MTK_VDEC_MIN_H, MTK_VDEC_MAX_H, 16 },
 	},
@@ -355,10 +534,14 @@ static void mtk_vdec_worker(struct work_struct *work)
 	pfb->base_y.va = vb2_plane_vaddr(dst_buf, 0);
 	pfb->base_y.dma_addr = vb2_dma_contig_plane_dma_addr(dst_buf, 0);
 	pfb->base_y.size = ctx->picinfo.y_bs_sz + ctx->picinfo.y_len_sz;
+	pfb->base_y.length = dst_buf->planes[0].length;
+	pfb->base_y.dmabuf = dst_buf->planes[0].dbuf;
 
 	pfb->base_c.va = vb2_plane_vaddr(dst_buf, 1);
 	pfb->base_c.dma_addr = vb2_dma_contig_plane_dma_addr(dst_buf, 1);
 	pfb->base_c.size = ctx->picinfo.c_bs_sz + ctx->picinfo.c_len_sz;
+	pfb->base_c.length = dst_buf->planes[1].length;
+	pfb->base_c.dmabuf = dst_buf->planes[1].dbuf;
 	pfb->status = 0;
 	mtk_v4l2_debug(3, "===>[%d] vdec_if_decode() ===>", ctx->id);
 
@@ -391,6 +574,8 @@ static void mtk_vdec_worker(struct work_struct *work)
 	buf.va = vb2_plane_vaddr(src_buf, 0);
 	buf.dma_addr = vb2_dma_contig_plane_dma_addr(src_buf, 0);
 	buf.size = (size_t)src_buf->planes[0].bytesused;
+	buf.length = (size_t)src_buf->planes[0].length;
+	buf.dmabuf = src_buf->planes[0].dbuf;
 	if (!buf.va) {
 		v4l2_m2m_job_finish(dev->m2m_dev_dec, ctx->m2m_ctx);
 		mtk_v4l2_err("[%d] id=%d src_addr is NULL!!",
@@ -412,9 +597,10 @@ static void mtk_vdec_worker(struct work_struct *work)
 
 	if (ret) {
 		mtk_v4l2_err(
-			" <===[%d], src_buf[%d] sz=0x%zx pts=%llu dst_buf[%d] vdec_if_decode() ret=%d res_chg=%d===>",
+			" <===[%d], src_buf[%d] last_frame = %d sz=0x%zx pts=%llu dst_buf[%d] vdec_if_decode() ret=%d res_chg=%d===>",
 			ctx->id,
 			src_buf->index,
+			src_buf_info->lastframe,
 			buf.size,
 			src_buf_info->vb.vb2_buf.timestamp,
 			dst_buf->index,
@@ -575,15 +761,97 @@ void mtk_vcodec_dec_set_default_params(struct mtk_vcodec_ctx *ctx)
 	q_data->bytesperline[1] = q_data->coded_width;
 }
 
+static int mtk_vdec_set_param(struct mtk_vcodec_ctx *ctx)
+{
+	unsigned long in[8] = {0};
+
+	mtk_v4l2_debug(3, "[%d] param change %d decode mode %d frame width %d frame height %d max width %d max height %d",
+		ctx->id, ctx->dec_param_change, ctx->dec_params.decode_mode,
+		ctx->dec_params.frame_size_width, ctx->dec_params.frame_size_height,
+		ctx->dec_params.fixed_max_frame_size_width, ctx->dec_params.fixed_max_frame_size_height);
+
+	if (ctx->dec_param_change & MTK_DEC_PARAM_DECODE_MODE) {
+		in[0] = ctx->dec_params.decode_mode;
+		if (vdec_if_set_param(ctx, SET_PARAM_DECODE_MODE, in) != 0) {
+			mtk_v4l2_err("[%d] Error!! Cannot set param", ctx->id);
+			return -EINVAL;
+		}
+		ctx->dec_param_change &= (~MTK_DEC_PARAM_DECODE_MODE);
+	}
+
+	if (ctx->dec_param_change & MTK_DEC_PARAM_FRAME_SIZE) {
+		in[0] = ctx->dec_params.frame_size_width;
+		in[1] = ctx->dec_params.frame_size_height;
+		if (in[0] != 0 && in[1] != 0) {
+			if (vdec_if_set_param(ctx, SET_PARAM_FRAME_SIZE, in) != 0) {
+				mtk_v4l2_err("[%d] Error!! Cannot set param", ctx->id);
+				return -EINVAL;
+			}
+		}
+		ctx->dec_param_change &= (~MTK_DEC_PARAM_FRAME_SIZE);
+	}
+
+	if (ctx->dec_param_change & MTK_DEC_PARAM_FIXED_MAX_FRAME_SIZE) {
+		in[0] = ctx->dec_params.fixed_max_frame_size_width;
+		in[1] = ctx->dec_params.fixed_max_frame_size_height;
+		if (in[0] != 0 && in[1] != 0) {
+			if (vdec_if_set_param(ctx, SET_PARAM_SET_FIXED_MAX_OUTPUT_BUFFER, in) != 0) {
+				mtk_v4l2_err("[%d] Error!! Cannot set param", ctx->id);
+				return -EINVAL;
+			}
+		}
+		ctx->dec_param_change &= (~MTK_DEC_PARAM_FIXED_MAX_FRAME_SIZE);
+	}
+
+	if (ctx->dec_param_change & MTK_DEC_PARAM_CRC_PATH) {
+		in[0] = (unsigned long)ctx->dec_params.crc_path;
+		if (vdec_if_set_param(ctx, SET_PARAM_CRC_PATH, in) != 0) {
+			mtk_v4l2_err("[%d] Error!! Cannot set param", ctx->id);
+			return -EINVAL;
+		}
+		ctx->dec_param_change &= (~MTK_DEC_PARAM_CRC_PATH);
+	}
+
+	if (ctx->dec_param_change & MTK_DEC_PARAM_GOLDEN_PATH) {
+		in[0] = (unsigned long)ctx->dec_params.golden_path;
+		if (vdec_if_set_param(ctx, SET_PARAM_GOLDEN_PATH, in) != 0) {
+			mtk_v4l2_err("[%d] Error!! Cannot set param", ctx->id);
+			return -EINVAL;
+		}
+		ctx->dec_param_change &= (~MTK_DEC_PARAM_GOLDEN_PATH);
+	}
+
+	return 0;
+}
+
 static int vidioc_vdec_qbuf(struct file *file, void *priv,
 			    struct v4l2_buffer *buf)
 {
 	struct mtk_vcodec_ctx *ctx = fh_to_ctx(priv);
+	struct vb2_queue *vq;
+	struct vb2_buffer *vb;
+	struct mtk_video_dec_buf *mtkbuf;
+	struct vb2_v4l2_buffer	*vb2_v4l2;
 
 	if (ctx->state == MTK_STATE_ABORT) {
 		mtk_v4l2_err("[%d] Call on QBUF after unrecoverable error",
 				ctx->id);
 		return -EIO;
+	}
+
+	vq = v4l2_m2m_get_vq(ctx->m2m_ctx, buf->type);
+	vb = vq->bufs[buf->index];
+	vb2_v4l2 = container_of(vb, struct vb2_v4l2_buffer, vb2_buf);
+	mtkbuf = container_of(vb2_v4l2, struct mtk_video_dec_buf, vb);
+
+	if ((buf->type == V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE) &&
+	    (buf->m.planes[0].bytesused == 0)) {
+		mtkbuf->lastframe = true;
+		mtk_v4l2_debug(1, "[%d] (%d) id=%d lastframe=%d (%d,%d, %d) vb=%p",
+			 ctx->id, buf->type, buf->index,
+			 mtkbuf->lastframe, buf->bytesused,
+			 buf->m.planes[0].bytesused, buf->length,
+			 vb);
 	}
 
 	return v4l2_m2m_qbuf(file, ctx->m2m_ctx, buf);
@@ -693,6 +961,59 @@ static int vidioc_try_fmt(struct v4l2_format *f, struct mtk_video_fmt *fmt)
 
 	pix_fmt_mp->flags = 0;
 	memset(&pix_fmt_mp->reserved, 0x0, sizeof(pix_fmt_mp->reserved));
+	return 0;
+}
+
+static int vidioc_vdec_g_crop(struct file *file, void *priv,
+			 struct v4l2_crop *cr)
+{
+	struct mtk_vcodec_ctx *ctx = fh_to_ctx(priv);
+
+	if (ctx->state < MTK_STATE_HEADER)
+		return -EINVAL;
+
+	if ((ctx->q_data[MTK_Q_DATA_SRC].fmt->fourcc == V4L2_PIX_FMT_H264) ||
+		(ctx->q_data[MTK_Q_DATA_SRC].fmt->fourcc == V4L2_PIX_FMT_H265) ||
+		(ctx->q_data[MTK_Q_DATA_SRC].fmt->fourcc == V4L2_PIX_FMT_VP8) ||
+		(ctx->q_data[MTK_Q_DATA_SRC].fmt->fourcc == V4L2_PIX_FMT_VP9) ||
+		(ctx->q_data[MTK_Q_DATA_SRC].fmt->fourcc == V4L2_PIX_FMT_MPEG1) ||
+		(ctx->q_data[MTK_Q_DATA_SRC].fmt->fourcc == V4L2_PIX_FMT_MPEG2) ||
+		(ctx->q_data[MTK_Q_DATA_SRC].fmt->fourcc == V4L2_PIX_FMT_MPEG4) ||
+		(ctx->q_data[MTK_Q_DATA_SRC].fmt->fourcc == V4L2_PIX_FMT_H263) ||
+		(ctx->q_data[MTK_Q_DATA_SRC].fmt->fourcc == V4L2_PIX_FMT_S263) ||
+		(ctx->q_data[MTK_Q_DATA_SRC].fmt->fourcc == V4L2_PIX_FMT_XVID) ||
+		(ctx->q_data[MTK_Q_DATA_SRC].fmt->fourcc == V4L2_PIX_FMT_DIVX3) ||
+		(ctx->q_data[MTK_Q_DATA_SRC].fmt->fourcc == V4L2_PIX_FMT_DIVX4) ||
+		(ctx->q_data[MTK_Q_DATA_SRC].fmt->fourcc == V4L2_PIX_FMT_DIVX5) ||
+		(ctx->q_data[MTK_Q_DATA_SRC].fmt->fourcc == V4L2_PIX_FMT_DIVX6) ||
+		(ctx->q_data[MTK_Q_DATA_SRC].fmt->fourcc == V4L2_PIX_FMT_WMV1) ||
+		(ctx->q_data[MTK_Q_DATA_SRC].fmt->fourcc == V4L2_PIX_FMT_WMV2) ||
+		(ctx->q_data[MTK_Q_DATA_SRC].fmt->fourcc == V4L2_PIX_FMT_WMV3) ||
+		(ctx->q_data[MTK_Q_DATA_SRC].fmt->fourcc == V4L2_PIX_FMT_WVC1) ||
+		(ctx->q_data[MTK_Q_DATA_SRC].fmt->fourcc == V4L2_PIX_FMT_WMVA) ||
+		(ctx->q_data[MTK_Q_DATA_SRC].fmt->fourcc == V4L2_PIX_FMT_RV30) ||
+		(ctx->q_data[MTK_Q_DATA_SRC].fmt->fourcc == V4L2_PIX_FMT_RV40)) {
+		if (vdec_if_get_param(ctx, GET_PARAM_CROP_INFO, cr) != 0) {
+			mtk_v4l2_debug(2, "[%d]Error!! Cannot get param : GET_PARAM_CROP_INFO ERR",
+					 ctx->id);
+			cr->c.left = 0;
+			cr->c.top = 0;
+			cr->c.width = ctx->picinfo.pic_w;
+			cr->c.height = ctx->picinfo.pic_h;
+		}
+		mtk_v4l2_debug(2, "Cropping info: l=%d t=%d w=%d h=%d",
+				 cr->c.left, cr->c.top, cr->c.width,
+				 cr->c.height);
+	} else {
+		cr->c.left = 0;
+		cr->c.top = 0;
+		cr->c.width = ctx->picinfo.pic_w;
+		cr->c.height = ctx->picinfo.pic_h;
+		mtk_v4l2_debug(2, "Cropping info: w=%d h=%d fw=%d fh=%d",
+				 cr->c.width, cr->c.height, ctx->picinfo.buf_w,
+				 ctx->picinfo.buf_h);
+	}
+
 	return 0;
 }
 
@@ -1154,11 +1475,13 @@ static void vb2ops_vdec_buf_queue(struct vb2_buffer *vb)
 	src_mem.va = vb2_plane_vaddr(src_buf, 0);
 	src_mem.dma_addr = vb2_dma_contig_plane_dma_addr(src_buf, 0);
 	src_mem.size = (size_t)src_buf->planes[0].bytesused;
+	src_mem.length = (size_t)src_buf->planes[0].length;
+	src_mem.dmabuf = src_buf->planes[0].dbuf;
 	mtk_v4l2_debug(2,
-			"[%d] buf id=%d va=%p dma=%pad size=%zx",
+			"[%d] buf id=%d va=%p dma=%pad size=%zx length=%zu dmabuf=%p",
 			ctx->id, src_buf->index,
 			src_mem.va, &src_mem.dma_addr,
-			src_mem.size);
+			src_mem.size, src_mem.length, src_mem.dmabuf);
 
 	ret = vdec_if_decode(ctx, &src_mem, NULL, &res_chg);
 	if (ret || !res_chg) {
@@ -1253,6 +1576,8 @@ static int vb2ops_vdec_start_streaming(struct vb2_queue *q, unsigned int count)
 	if (ctx->state == MTK_STATE_FLUSH)
 		ctx->state = MTK_STATE_HEADER;
 
+	mtk_vdec_set_param(ctx);
+
 	return 0;
 }
 
@@ -1346,7 +1671,7 @@ static int mtk_vdec_g_v_ctrl(struct v4l2_ctrl *ctrl)
 {
 	struct mtk_vcodec_ctx *ctx = ctrl_to_ctx(ctrl);
 	int ret = 0;
-
+	static unsigned int value;
 	switch (ctrl->id) {
 	case V4L2_CID_MIN_BUFFERS_FOR_CAPTURE:
 		if (ctx->state >= MTK_STATE_HEADER) {
@@ -1356,27 +1681,127 @@ static int mtk_vdec_g_v_ctrl(struct v4l2_ctrl *ctrl)
 			ctrl->val = 0;
 		}
 		break;
+	case V4L2_CID_MPEG_MTK_FRAME_INTERVAL:
+		if (vdec_if_get_param(ctx, GET_PARAM_FRAME_INTERVAL, &value) != 0) {
+			mtk_v4l2_err("[%d] Error!! Cannot get param", ctx->id);
+			ret = -EINVAL;
+		}
+		ctrl->p_new.p_u32 = &value;
+		mtk_v4l2_debug(2, "V4L2_CID_MPEG_MTK_FRAME_INTERVAL val = %u", *(ctrl->p_new.p_u32));
+		break;
+	case V4L2_CID_MPEG_MTK_ERRORMB_MAP:
+		if (vdec_if_get_param(ctx, GET_PARAM_ERRORMB_MAP, &value) != 0) {
+			mtk_v4l2_err("[%d] Error!! Cannot get param", ctx->id);
+			ret = -EINVAL;
+		}
+		ctrl->val = value;
+		mtk_v4l2_debug(2, "V4L2_CID_MPEG_MTK_ERRORMB_MAP val = %d",
+				 ctrl->val);
+		break;
 	default:
 		ret = -EINVAL;
 	}
 	return ret;
 }
 
+static int mtk_vdec_s_ctrl(struct v4l2_ctrl *ctrl)
+{
+	struct mtk_vcodec_ctx *ctx = ctrl_to_ctx(ctrl);
+
+	mtk_v4l2_debug(3, "[%d] id %d val %d array[0] %d array[1] %d",
+		ctx->id, ctrl->id, ctrl->val,
+		ctrl->p_new.p_u32[0], ctrl->p_new.p_u32[1]);
+
+	if (!ctx->drv_handle)
+		return 0;
+
+	switch (ctrl->id) {
+	case V4L2_CID_MPEG_MTK_DECODE_MODE:
+		ctx->dec_params.decode_mode = ctrl->val;
+		ctx->dec_param_change |= MTK_DEC_PARAM_DECODE_MODE;
+		break;
+	case V4L2_CID_MPEG_MTK_FRAME_SIZE:
+		ctx->dec_params.frame_size_width = ctrl->p_new.p_u32[0];
+		ctx->dec_params.frame_size_height = ctrl->p_new.p_u32[1];
+		ctx->dec_param_change |= MTK_DEC_PARAM_FRAME_SIZE;
+		break;
+	case V4L2_CID_MPEG_MTK_FIXED_MAX_FRAME_BUFFER:
+		ctx->dec_params.fixed_max_frame_size_width =
+				 ctrl->p_new.p_u32[0];
+		ctx->dec_params.fixed_max_frame_size_height = ctrl->p_new.p_u32[1];
+		ctx->dec_param_change |= MTK_DEC_PARAM_FIXED_MAX_FRAME_SIZE;
+		break;
+	case V4L2_CID_MPEG_MTK_CRC_PATH:
+		ctx->dec_params.crc_path = ctrl->p_new.p_char;
+		ctx->dec_param_change |= MTK_DEC_PARAM_CRC_PATH;
+		break;
+	case V4L2_CID_MPEG_MTK_GOLDEN_PATH:
+		ctx->dec_params.golden_path = ctrl->p_new.p_char;
+		ctx->dec_param_change |= MTK_DEC_PARAM_GOLDEN_PATH;
+		break;
+	default:
+		mtk_v4l2_err("ctrl-id=%d not support!", ctrl->id);
+		return -EINVAL;
+	}
+
+	return 0;
+}
+
 static const struct v4l2_ctrl_ops mtk_vcodec_dec_ctrl_ops = {
 	.g_volatile_ctrl = mtk_vdec_g_v_ctrl,
+	.s_ctrl = mtk_vdec_s_ctrl,
 };
 
 int mtk_vcodec_dec_ctrls_setup(struct mtk_vcodec_ctx *ctx)
 {
 	struct v4l2_ctrl *ctrl;
 
-	v4l2_ctrl_handler_init(&ctx->ctrl_hdl, 1);
+	v4l2_ctrl_handler_init(&ctx->ctrl_hdl, MTK_MAX_CTRLS_HINT);
 
+	/* g_volatile_ctrl */
 	ctrl = v4l2_ctrl_new_std(&ctx->ctrl_hdl,
 				&mtk_vcodec_dec_ctrl_ops,
 				V4L2_CID_MIN_BUFFERS_FOR_CAPTURE,
 				0, 32, 1, 1);
 	ctrl->flags |= V4L2_CTRL_FLAG_VOLATILE;
+
+	ctrl = v4l2_ctrl_new_std(&ctx->ctrl_hdl,
+				&mtk_vcodec_dec_ctrl_ops,
+				V4L2_CID_MPEG_MTK_FRAME_INTERVAL,
+				16666, 41719, 1, 33333);
+	ctrl->flags |= V4L2_CTRL_FLAG_VOLATILE;
+
+	ctrl = v4l2_ctrl_new_std(&ctx->ctrl_hdl,
+				&mtk_vcodec_dec_ctrl_ops,
+				V4L2_CID_MPEG_MTK_ERRORMB_MAP,
+				0, 65535, 1, 0);
+	ctrl->flags |= V4L2_CTRL_FLAG_VOLATILE;
+
+	/* s_ctrl */
+	ctrl = v4l2_ctrl_new_std(&ctx->ctrl_hdl,
+				&mtk_vcodec_dec_ctrl_ops,
+				V4L2_CID_MPEG_MTK_DECODE_MODE,
+				0, 32, 1, 0);
+
+	ctrl = v4l2_ctrl_new_std(&ctx->ctrl_hdl,
+				&mtk_vcodec_dec_ctrl_ops,
+				V4L2_CID_MPEG_MTK_FRAME_SIZE,
+				0, 65535, 1, 0);
+
+	ctrl = v4l2_ctrl_new_std(&ctx->ctrl_hdl,
+				&mtk_vcodec_dec_ctrl_ops,
+				V4L2_CID_MPEG_MTK_FIXED_MAX_FRAME_BUFFER,
+				0, 65535, 1, 0);
+
+	ctrl = v4l2_ctrl_new_std(&ctx->ctrl_hdl,
+				&mtk_vcodec_dec_ctrl_ops,
+				V4L2_CID_MPEG_MTK_CRC_PATH,
+				0, 255, 1, 0);
+
+	ctrl = v4l2_ctrl_new_std(&ctx->ctrl_hdl,
+				&mtk_vcodec_dec_ctrl_ops,
+				V4L2_CID_MPEG_MTK_GOLDEN_PATH,
+				0, 255, 1, 0);
 
 	if (ctx->ctrl_hdl.error) {
 		mtk_v4l2_err("Adding control failed %d",
@@ -1454,6 +1879,7 @@ const struct v4l2_ioctl_ops mtk_vdec_ioctl_ops = {
 	.vidioc_g_selection             = vidioc_vdec_g_selection,
 	.vidioc_s_selection             = vidioc_vdec_s_selection,
 
+	.vidioc_g_crop			= vidioc_vdec_g_crop,
 	.vidioc_decoder_cmd = vidioc_decoder_cmd,
 	.vidioc_try_decoder_cmd = vidioc_try_decoder_cmd,
 };

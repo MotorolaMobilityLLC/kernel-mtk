@@ -139,7 +139,7 @@ static int fops_vcodec_open(struct file *file)
 		 * vcu_load_firmware checks if it was loaded already and
 		 * does nothing in that case
 		 */
-		ret = vcu_load_firmware(dev->vpu_plat_dev);
+		ret = vcu_load_firmware(dev->vcu_plat_dev);
 		if (ret < 0) {
 			/*
 			 * Return 0 if downloading firmware successfully,
@@ -149,8 +149,16 @@ static int fops_vcodec_open(struct file *file)
 			goto err_load_fw;
 		}
 
+		if (vcu_compare_version(dev->vcu_plat_dev,
+						 MTK_VCU_FW_VERSION) != 0) {
+			mtk_v4l2_err("Invalid vcu firmware, should be %s!",
+					MTK_VCU_FW_VERSION);
+			ret = -EPERM;
+			goto err_load_fw;
+		}
+
 		dev->dec_capability =
-			vcu_get_vdec_hw_capa(dev->vpu_plat_dev);
+			vcu_get_vdec_hw_capa(dev->vcu_plat_dev);
 		mtk_v4l2_debug(0, "decoder capability %x", dev->dec_capability);
 	}
 
@@ -229,9 +237,9 @@ static int mtk_vcodec_probe(struct platform_device *pdev)
 	INIT_LIST_HEAD(&dev->ctx_list);
 	dev->plat_dev = pdev;
 
-	dev->vpu_plat_dev = vcu_get_plat_device(dev->plat_dev);
-	if (dev->vpu_plat_dev == NULL) {
-		mtk_v4l2_err("[VPU] vpu device in not ready");
+	dev->vcu_plat_dev = vcu_get_plat_device(dev->plat_dev);
+	if (dev->vcu_plat_dev == NULL) {
+		mtk_v4l2_err("[VCU] vcu device in not ready");
 		return -EPROBE_DEFER;
 	}
 

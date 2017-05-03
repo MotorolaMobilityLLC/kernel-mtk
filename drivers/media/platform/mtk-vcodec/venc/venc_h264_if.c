@@ -478,7 +478,7 @@ static int h264_enc_init(struct mtk_vcodec_ctx *ctx, unsigned long *handle)
 
 	inst->ctx = ctx;
 	inst->vpu_inst.ctx = ctx;
-	inst->vpu_inst.dev = ctx->dev->vpu_plat_dev;
+	inst->vpu_inst.dev = ctx->dev->vcu_plat_dev;
 	inst->vpu_inst.id = IPI_VENC_H264;
 	inst->hw_base = mtk_vcodec_get_reg_addr(inst->ctx, VENC_SYS);
 

@@ -47,6 +47,14 @@ struct vdec_common_if {
 			 void *out);
 
 	/**
+	 * (*set_param)() - set driver's parameter
+	 * @h_vdec : [in] driver handle
+	 * @type   : [in] input parameter type
+	 * @in     : [in] buffer to store query
+	 */
+	int (*set_param)(unsigned long h_vdec, enum vdec_set_param_type type,
+			 void *in);
+	/**
 	 * (*deinit)() - deinitialize driver.
 	 * @h_vdec : [in] driver handle to be deinit
 	 */

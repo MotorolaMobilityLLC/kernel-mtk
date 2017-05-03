@@ -15,22 +15,23 @@
 #ifndef _VDEC_VCU_IF_H_
 #define _VDEC_VCU_IF_H_
 
+#include <linux/dma-buf.h>
 #include "mtk_vcu.h"
 
 /**
- * struct vdec_vpu_inst - VPU instance for video codec
+ * struct vdec_vcu_inst - VCU instance for video codec
  * @ipi_id      : ipi id for each decoder
- * @vsi         : driver structure allocated by VPU side and shared to AP side
+ * @vsi         : driver structure allocated by VCU side and shared to AP side
  *                for control and info share
- * @failure     : VPU execution result status, 0: success, others: fail
- * @inst_addr	: VPU decoder instance address
- * @signaled    : 1 - Host has received ack message from VPU, 0 - not received
+ * @failure     : VCU execution result status, 0: success, others: fail
+ * @inst_addr	: VCU decoder instance address
+ * @signaled    : 1 - Host has received ack message from VCU, 0 - not received
  * @ctx         : context for v4l2 layer integration
- * @dev	        : platform device of VPU
- * @wq          : wait queue to wait VPU message ack
+ * @dev	        : platform device of VCU
+ * @wq          : wait queue to wait VCU message ack
  * @handler     : ipi handler for each decoder
  */
-struct vdec_vpu_inst {
+struct vdec_vcu_inst {
 	enum ipi_id id;
 	void *vsi;
 	int32_t failure;
@@ -43,54 +44,56 @@ struct vdec_vpu_inst {
 };
 
 /**
- * vpu_dec_init - init decoder instance and allocate required resource in VPU.
+ * vcu_dec_init - init decoder instance and allocate required resource in VCU.
  *
- * @vpu: instance for vdec_vpu_inst
+ * @vcu: instance for vdec_vcu_inst
  */
-int vpu_dec_init(struct vdec_vpu_inst *vpu);
+int vcu_dec_init(struct vdec_vcu_inst *vcu);
 
 /**
- * vpu_dec_start - start decoding, basically the function will be invoked once
+ * vcu_dec_start - start decoding, basically the function will be invoked once
  *                 every frame.
  *
- * @vpu : instance for vdec_vpu_inst
- * @data: meta data to pass bitstream info to VPU decoder
+ * @vcu : instance for vdec_vcu_inst
+ * @data: meta data to pass bitstream info to VCU decoder
  * @len : meta data length
  */
-int vpu_dec_start(struct vdec_vpu_inst *vpu, uint32_t *data, unsigned int len);
+int vcu_dec_start(struct vdec_vcu_inst *vcu, uint32_t *data, unsigned int len);
 
 /**
- * vpu_dec_end - end decoding, basically the function will be invoked once
+ * vcu_dec_end - end decoding, basically the function will be invoked once
  *               when HW decoding done interrupt received successfully. The
- *               decoder in VPU will continute to do referene frame management
+ *               decoder in VCU will continute to do referene frame management
  *               and check if there is a new decoded frame available to display.
  *
- * @vpu : instance for vdec_vpu_inst
+ * @vcu : instance for vdec_vcu_inst
  */
-int vpu_dec_end(struct vdec_vpu_inst *vpu);
+int vcu_dec_end(struct vdec_vcu_inst *vcu);
 
 /**
- * vpu_dec_deinit - deinit decoder instance and resource freed in VPU.
+ * vcu_dec_deinit - deinit decoder instance and resource freed in VCU.
  *
- * @vpu: instance for vdec_vpu_inst
+ * @vcu: instance for vdec_vcu_inst
  */
-int vpu_dec_deinit(struct vdec_vpu_inst *vpu);
+int vcu_dec_deinit(struct vdec_vcu_inst *vcu);
 
 /**
- * vpu_dec_reset - reset decoder, use for flush decoder when end of stream or
+ * vcu_dec_reset - reset decoder, use for flush decoder when end of stream or
  *                 seek. Remainig non displayed frame will be pushed to display.
  *
- * @vpu: instance for vdec_vpu_inst
+ * @vcu: instance for vdec_vcu_inst
  */
-int vpu_dec_reset(struct vdec_vpu_inst *vpu);
+int vcu_dec_reset(struct vdec_vcu_inst *vcu);
 
 /**
- * vpu_dec_ipi_handler - Handler for VPU ipi message.
+ * vcu_dec_ipi_handler - Handler for VCU ipi message.
  *
  * @data: ipi message
  * @len : length of ipi message
  * @priv: callback private data which is passed by decoder when register.
  */
-void vpu_dec_ipi_handler(void *data, unsigned int len, void *priv);
-
+int vcu_dec_ipi_handler(void *data, unsigned int len, void *priv);
+int vcu_dec_set_param(struct vdec_vcu_inst *vcu, unsigned int id,
+		      void *param, unsigned int size);
+int get_mapped_fd(struct dma_buf *dmabuf);
 #endif
