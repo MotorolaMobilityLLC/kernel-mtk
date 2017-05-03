@@ -123,6 +123,8 @@ static u8 g_vendor_id = 0;
 
 static int g_chip_id = 0;
 
+static int chip_id = 0;
+
 static ssize_t gf_debug_show(struct device *dev,
 			struct device_attribute *attr, char *buf);
 
@@ -192,7 +194,7 @@ const struct mt_chip_conf spi_ctrdata = {
 
 static ssize_t show_chip_id(struct device *dev, struct device_attribute *attr, char *buf)
 {
-	return sprintf(buf, "0x%x\n", g_chip_id);
+	return sprintf(buf, "gf3208-%d", chip_id);
 }
 
 static ssize_t store_chip_id(struct device *dev,struct device_attribute *attr, const char *buf,size_t size)
@@ -356,6 +358,7 @@ static void gf_hw_power_enable(struct gf_device *gf_dev ,u8 onoff)
 	gf_debug(INFO_LOG, "%s, gf_power_on\n", __func__);
 	 pinctrl_select_state(gf_dev->pinctrl_gpios, gf_dev->ldo_1v8_on);
      pinctrl_select_state(gf_dev->pinctrl_gpios, gf_dev->ldo_3v3_on);
+		chip_id = 1;
 		enable = 0;
 	}
 	else if (!onoff && !enable) {
