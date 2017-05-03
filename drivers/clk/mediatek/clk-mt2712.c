@@ -1310,6 +1310,7 @@ static int clk_mt2712_infra_probe(struct platform_device *pdev)
 		pr_err("%s(): could not register clock provider: %d\n",
 			__func__, r);
 
+	mtk_register_reset_controller(node, 2, 0x30);
 	return r;
 }
 
@@ -1329,6 +1330,7 @@ static int clk_mt2712_peri_probe(struct platform_device *pdev)
 		pr_err("%s(): could not register clock provider: %d\n",
 			__func__, r);
 
+	mtk_register_reset_controller(node, 2, 0);
 	return r;
 }
 
