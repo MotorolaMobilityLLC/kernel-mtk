@@ -1225,7 +1225,7 @@ static int ltr778_get_ps_value(struct ltr778_priv *obj, u16 ps)
 	int val;
 	int invalid = 0;
 	static int val_temp = 1;
-	static int full_ps_1;
+	//static int full_ps_1;
 	
 	APS_DBG("ALS/PS ltr778_get_ps_value oil_close= %d\n", oil_close);
 	
