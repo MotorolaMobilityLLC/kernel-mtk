@@ -632,7 +632,6 @@ static void lcm_setbacklight_cmdq(void *handle, unsigned int level)
 		}}
 	else{
 		level = 255;
-		level = (9000*level + 200000)*16/(10000);
 		level =  79+ (18*level)*7/8; 
 		high_level =(level & 0x0f00)>>8;
 		low_level=(level & 0x00ff);
