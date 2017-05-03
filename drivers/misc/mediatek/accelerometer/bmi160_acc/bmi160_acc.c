@@ -1097,6 +1097,9 @@ static int BMI160_ACC_SetPowerMode(struct i2c_client *client, bool enable)
 	u8 databuf[2] = {0};
 	int res = 0;
 	struct bmi160_acc_i2c_data *obj = obj_i2c_data;
+	int i = 0;
+    u8 data1[5];
+
 /*
 	if(enable == sensor_power )
 	{
@@ -1124,9 +1127,37 @@ static int BMI160_ACC_SetPowerMode(struct i2c_client *client, bool enable)
 		}
 #endif
 	}
+      
+if(enable == true)
+{
+   printk("wangshuai--bma160 acc set power mode data is enable start\n");
+	for(i=0;i<10;i++)
+	{
+		res = bma_i2c_write_block(client,
+				BMI160_CMD_COMMANDS__REG, &databuf[0], 1);
+		mdelay(8);
 
-	res = bma_i2c_write_block(client,
-			BMI160_CMD_COMMANDS__REG, &databuf[0], 1);
+		bma_i2c_read_block(bmi160_acc_i2c_client, 0x03, data1, 1);
+               printk("wangshuai--bma160 acc set power mode data = 0x%x ; i=%d \n",data1[0],i);
+		//if(data1[0] == 0x10 || data1[0] == 0x14)
+                if((data1[0]&0x30) == 0x10)
+                   {
+                      power=true;
+                      printk("wangshuai--bma160 acc set power mode data is ok = 0x%x\n",data1[0]);
+			break;
+                    }
+		
+	}
+}
+else
+{
+  printk("wangshuai--bma160 acc set power mode data is disable start\n");
+ res = bma_i2c_write_block(client,
+				BMI160_CMD_COMMANDS__REG, &databuf[0], 1);
+mdelay(8);
+power=false;
+}
+
 	if(res < 0)
 	{
 		GSE_ERR("set power mode failed, res = %d\n", res);
@@ -1336,14 +1367,13 @@ static int bmi160_acc_init_client(struct i2c_client *client, int reset_cali)
 	}
 	GSE_LOG("BMI160_ACC_SetPowerMode OK!\n");
 */
-	res = BMI160_ACC_SetPowerMode(client, true);
+        res = BMI160_ACC_SetPowerMode(client, true);
 	mdelay(10);
 	if(res != BMI160_ACC_SUCCESS)
 	{
 		return res;
 	}
-	GSE_LOG("BMI160_ACC_SetPowerMode true OK!\n");
-
+	GSE_LOG("BMI160_ACC_SetPowerMode true OK!\n");       
 	res = BMI160_ACC_SetPowerMode(client, false);
 	mdelay(10);
 	if(res != BMI160_ACC_SUCCESS)
@@ -1412,7 +1442,7 @@ static int BMI160_ACC_CompassReadData(struct i2c_client *client, char *buf, int 
 	}
 
 	if(sensor_power == false)
-	{
+	{		
 		res = BMI160_ACC_SetPowerMode(client, true);
 		if(res)
 		{
@@ -1471,7 +1501,7 @@ static int BMI160_ACC_ReadSensorData(struct i2c_client *client, char *buf, int b
 	}
 
 	if(sensor_power == false)
-	{
+	{		
 		res = BMI160_ACC_SetPowerMode(client, true);
 		if(res)
 		{
@@ -4291,11 +4321,13 @@ static long bmi160_acc_unlocked_ioctl(struct file *file, unsigned int cmd, unsig
 				err = -EINVAL;
 				break;
 			}
+                       
 			if(power == false)
 			{
 				BMI160_ACC_SetPowerMode(client,true);
 				mdelay(20);
 			}
+                         
 			BMI160_ACC_ReadSensorData(client, strbuf, BMI160_BUFSIZE);
 			if(copy_to_user(data, strbuf, strlen(strbuf)+1))
 			{

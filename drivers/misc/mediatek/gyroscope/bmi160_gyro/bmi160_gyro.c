@@ -842,18 +842,21 @@ static int bmg_init_client(struct i2c_client *client, int reset_cali)
 	GYRO_FUN(f);
 
 	err = bmg_get_chip_type(client);
+	mdelay(1);
 	if (err < 0) {
 		GYRO_ERR("get chip type failed, err = %d\n", err);
 		return err;
 	}
 
 	err = bmg_set_datarate(client, BMI160_GYRO_ODR_100HZ);
+	mdelay(1);
 	if (err < 0) {
 		GYRO_ERR("set bandwidth failed, err = %d\n", err);
 		return err;
 	}
 
 	err = bmg_set_range(client, (enum BMG_RANGE_ENUM)BMG_RANGE_2000);
+	mdelay(1);
 	if (err < 0) {
 		GYRO_ERR("set range failed, err = %d\n", err);
 		return err;
