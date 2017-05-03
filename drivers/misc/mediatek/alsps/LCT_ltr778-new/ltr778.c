@@ -58,6 +58,8 @@ static int final_prox_val;
 static int final_lux_val;
 
 static int ltr778_als_enable(struct i2c_client *client, int enable);
+static int ltr778_als_read(struct i2c_client *client, u16* data);
+
 
 static int winfac_1;
 static int winfac_2;
@@ -119,7 +121,7 @@ struct ltr778_priv {
 
 	int			fault_detect_level;
 };
-static int ltr778_als_read(struct i2c_client *client, u16* data);
+
 static int ltr778_i2c_read_reg(u8 regnum);
 static int ltr778_i2c_write_reg(u8 regnum, u8 value);
 static void ltr778_enable_ps_delay_work(u8 enable);
@@ -218,7 +220,7 @@ static int get_avg_ps(unsigned int ps_data_c)
 }
 
 
-#define MAX_ELM_PS_1 8
+#define MAX_ELM_PS_1 10
 static unsigned int record_ps_1[MAX_ELM_PS_1];
 static int rct_ps_1=0,full_ps_1=0;
 static long ps_sum_1=0;
@@ -249,14 +251,14 @@ static int get_stable_ps(unsigned int ps_data_c_1)
 	ps_d_1 = ps_sum_1 /rct_ps_1;
 	}
 
-	ps_d_high = ps_d_1 + 25;
+	ps_d_high = ps_d_1 + 20;	// 25->20
 
-	ps_d_low = ps_d_1 - 25;
+	ps_d_low = ps_d_1 - 20;
 
 
 	for(i=0;i<=MAX_ELM_PS_1;i++)
 	{
-		if(record_ps_1[i]< ps_d_high)
+		if(record_ps_1[i]< ps_d_high  && record_ps_1[i]>ps_d_low )
 			j_ps++;
 		else 
 			j_ps = 0;
@@ -880,6 +882,8 @@ out:
 	return psdata;
 }
 
+static int persist_add_val = 25;
+
 #ifdef GN_MTK_BSP_PS_DYNAMIC_CALI
 static int ltr778_dynamic_calibrate(void)
 {
@@ -927,6 +931,11 @@ static int ltr778_dynamic_calibrate(void)
 
 	noise = data_total / count;
 	obj->als = ltr778_als_read(obj->client, &obj->als);
+
+	if (noise <100)
+		persist_add_val = 25;
+	else
+		persist_add_val = 35;
 	
 	
 	if(obj->als < 20){
@@ -1209,18 +1218,19 @@ static int ltr778_stowed_get_ps_value(struct ltr778_priv *obj, u16 ps)
 
 static int oil_far_cal = 0;
 static int oil_close = 0;
+
 /********************************************************************/
 static int ltr778_get_ps_value(struct ltr778_priv *obj, u16 ps)
 {
 	int val;
 	int invalid = 0;
 	static int val_temp = 1;
-
+	static int full_ps_1;
 	
 	APS_DBG("ALS/PS ltr778_get_ps_value oil_close= %d\n", oil_close);
 	
 	if((ps >= atomic_read(&obj->ps_persist_val_high)))  // modified by steven
-	{
+	{	full_ps_1=0;
 		val = 2;  /* persist oil close*/
 		val_temp = 2;
 		intr_flag_value = 2;
@@ -1230,30 +1240,32 @@ static int ltr778_get_ps_value(struct ltr778_priv *obj, u16 ps)
 	else if((ps >= atomic_read(&obj->ps_thd_val_high)))
 	{
 		if(oil_close == 0)
-			{
+			{	full_ps_1=0;
 				val = 0;  /*close*/
 				val_temp = 0;
 				intr_flag_value = 1;
 				oil_far_cal = 0;
 			}
 
-		if((ps <= (atomic_read(&obj->ps_persist_val_low) - 10)) && (oil_close == 1)){
+		if((ps <= (atomic_read(&obj->ps_persist_val_low) - persist_add_val)) && (oil_close == 1)){
 				val = 3;  /* persist oil far away*/
 				val_temp = 3;
 				intr_flag_value = 3;
-			}else if((ps >  (atomic_read(&obj->ps_persist_val_low) + 15)) && (oil_close == 1)){
+			}else if((ps >  (atomic_read(&obj->ps_persist_val_low) + persist_add_val +5)) && (oil_close == 1)){
+				full_ps_1=0;
 				val = 2;  /* persist oil near*/
 				val_temp = 2;
-				intr_flag_value = 3;
+				intr_flag_value = 2;
 			}else{
+				full_ps_1=0;
 				val = val_temp;
-				intr_flag_value = 3;
+				intr_flag_value = 2;
 			}
 
 
 	}	
 	else if((ps <= atomic_read(&obj->ps_thd_val_low)))
-	{
+	{	full_ps_1=0;
 		val = 1;  /*far away*/
 		val_temp = 1;
 		intr_flag_value = 0;
@@ -1262,15 +1274,14 @@ static int ltr778_get_ps_value(struct ltr778_priv *obj, u16 ps)
 		oil_close = 0;
 	}
 	else if(oil_close == 1)
-	{	
-
+	{
 		val = 3;  /* persist oil far away*/
 		val_temp = 3;
 		intr_flag_value = 3;
 
 	}
 	else
-	{
+	{	full_ps_1=0;
 		val = val_temp;		
 		oil_far_cal = 0;
 	}
@@ -1278,7 +1289,7 @@ static int ltr778_get_ps_value(struct ltr778_priv *obj, u16 ps)
 
 	
 
-	if(val == 3  && oil_far_cal <= (MAX_ELM_PS_1 + 10))  // modified by steven stable data
+	if(val == 3  && oil_far_cal <= (MAX_ELM_PS_1 + 18))  // modified by steven stable data
 	{		
 		oil_far_cal ++;
 
