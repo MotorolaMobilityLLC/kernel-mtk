@@ -352,6 +352,16 @@
 			#iommu-cells = <1>;
 		};
 
+		gce: gce@10212000 {
+			compatible = "mediatek,mt2712-gce";
+			reg = <0 0x10212000 0 0x1000>;
+			interrupts = <GIC_SPI 143 IRQ_TYPE_LEVEL_LOW>;
+			clocks = <&infracfg CLK_INFRA_GCE>;
+			clock-names = "gce";
+
+			#mbox-cells = <2>;
+		};
+
 		mcucfg: syscon@10220000 {
 			compatible = "mediatek,mt2712-mcucfg", "syscon";
 			reg = <0 0x10220000 0 0x1000>;
