@@ -124,16 +124,25 @@ static inline int getAFInfo(__user stAF_MotorInfo *pstMotorInfo)
 
 static void initdrv(void)
 {
-	char puSendCmd2[2] = { 0x01, 0x38 };
-	char puSendCmd3[2] = { 0x05, 0x74 };
-	i2c_master_send(g_pstAF_I2Cclient, puSendCmd2, 2);
+
+
+	char puSendCmd3[2] = { 0x01, 0x39 };
+	char puSendCmd4[2] = { 0x05, 0x74 };
+
+	g_pstAF_I2Cclient->addr = AF_I2C_SLAVE_ADDR;
+	g_pstAF_I2Cclient->addr = g_pstAF_I2Cclient->addr >> 1;
+	
 	i2c_master_send(g_pstAF_I2Cclient, puSendCmd3, 2);
+
+	i2c_master_send(g_pstAF_I2Cclient, puSendCmd4, 2);
+
 }
 
 
 static inline int moveAF(unsigned long a_u4Position)
 {
 	int ret = 0;
+	unsigned short InitPos;
 
 	if ((a_u4Position > g_u4AF_MACRO) || (a_u4Position < g_u4AF_INF)) {
 		LOG_INF("out of range\n");
@@ -141,7 +150,8 @@ static inline int moveAF(unsigned long a_u4Position)
 	}
 
 	if (*g_pAF_Opened == 1) {
-		unsigned short InitPos;
+		LOG_INF("*g_pAF_Opened == 1\n");
+	
 
 		initdrv();
 		ret = s4DW9718AF_ReadReg(&InitPos);
@@ -239,10 +249,19 @@ long DW9718AF_Ioctl(struct file *a_pstFile, unsigned int a_u4Command, unsigned l
 /* Q1 : Try release multiple times. */
 int DW9718AF_Release(struct inode *a_pstInode, struct file *a_pstFile)
 {
+	
+	char puSendCmd_release[2] = { 0x01, 0x33 };
 	LOG_INF("Start\n");
 
 	if (*g_pAF_Opened == 2)
+	{
+	
+	i2c_master_send(g_pstAF_I2Cclient, puSendCmd_release, 2);
+
+	moveAF(0);
+	msleep(50);	
 		LOG_INF("Wait\n");
+	}
 
 	if (*g_pAF_Opened) {
 		LOG_INF("Free\n");
