@@ -646,6 +646,7 @@ static int vidioc_venc_g_selection(struct file *file, void *priv,
 		s->r.height = q_data->coded_height;
 		break;
 	case V4L2_SEL_TGT_CROP:
+	case V4L2_SEL_TGT_COMPOSE:
 		s->r.top = 0;
 		s->r.left = 0;
 		s->r.width = q_data->visible_width;
@@ -673,6 +674,7 @@ static int vidioc_venc_s_selection(struct file *file, void *priv,
 
 	switch (s->target) {
 	case V4L2_SEL_TGT_CROP:
+	case V4L2_SEL_TGT_COMPOSE:
 		/* Only support crop from (0,0) */
 		s->r.top = 0;
 		s->r.left = 0;

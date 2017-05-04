@@ -38,6 +38,7 @@ int mtk_vcodec_init_enc_pm(struct mtk_vcodec_dev *mtkdev)
 	pm->dev = &pdev->dev;
 	dev = &pdev->dev;
 
+	pm->chip_node = of_find_compatible_node(NULL, NULL, "mediatek,mt8173-vcodec-enc");
 	node = of_parse_phandle(dev->of_node, "mediatek,larb", 0);
 	if (!node) {
 		mtk_v4l2_err("no mediatek,larb found");
@@ -50,19 +51,21 @@ int mtk_vcodec_init_enc_pm(struct mtk_vcodec_dev *mtkdev)
 	}
 	pm->larbvenc = &pdev->dev;
 
-	node = of_parse_phandle(dev->of_node, "mediatek,larb", 1);
-	if (!node) {
-		mtk_v4l2_err("no mediatek,larb found");
-		return -1;
-	}
+	if (pm->chip_node) {
+		node = of_parse_phandle(dev->of_node, "mediatek,larb", 1);
+		if (!node) {
+			mtk_v4l2_err("no mediatek,larb found");
+			return -1;
+		}
 
-	pdev = of_find_device_by_node(node);
-	if (!pdev) {
-		mtk_v4l2_err("no mediatek,larb device found");
-		return -1;
-	}
+		pdev = of_find_device_by_node(node);
+		if (!pdev) {
+			mtk_v4l2_err("no mediatek,larb device found");
+			return -1;
+		}
 
-	pm->larbvenclt = &pdev->dev;
+		pm->larbvenclt = &pdev->dev;
+	}
 	pdev = mtkdev->plat_dev;
 	pm->dev = &pdev->dev;
 
@@ -78,18 +81,19 @@ int mtk_vcodec_init_enc_pm(struct mtk_vcodec_dev *mtkdev)
 		ret = PTR_ERR(pm->venc_sel);
 	}
 
-	pm->univpll1_d2 = devm_clk_get(&pdev->dev, "venc_lt_sel_src");
-	if (IS_ERR(pm->univpll1_d2)) {
-		mtk_v4l2_err("devm_clk_get univpll1_d2 fail");
-		ret = PTR_ERR(pm->univpll1_d2);
-	}
+	if (pm->chip_node) {
+		pm->univpll1_d2 = devm_clk_get(&pdev->dev, "venc_lt_sel_src");
+		if (IS_ERR(pm->univpll1_d2)) {
+			mtk_v4l2_err("devm_clk_get univpll1_d2 fail");
+			ret = PTR_ERR(pm->univpll1_d2);
+		}
 
-	pm->venc_lt_sel = devm_clk_get(&pdev->dev, "venc_lt_sel");
-	if (IS_ERR(pm->venc_lt_sel)) {
-		mtk_v4l2_err("devm_clk_get venc_lt_sel fail");
-		ret = PTR_ERR(pm->venc_lt_sel);
+		pm->venc_lt_sel = devm_clk_get(&pdev->dev, "venc_lt_sel");
+		if (IS_ERR(pm->venc_lt_sel)) {
+			mtk_v4l2_err("devm_clk_get venc_lt_sel fail");
+			ret = PTR_ERR(pm->venc_lt_sel);
+		}
 	}
-
 	return ret;
 }
 
@@ -110,28 +114,34 @@ void mtk_vcodec_enc_clock_on(struct mtk_vcodec_pm *pm)
 	if (ret)
 		mtk_v4l2_err("clk_set_parent fail %d", ret);
 
-	ret = clk_prepare_enable(pm->venc_lt_sel);
-	if (ret)
-		mtk_v4l2_err("clk_prepare_enable fail %d", ret);
+	if (pm->chip_node) {
+		ret = clk_prepare_enable(pm->venc_lt_sel);
+		if (ret)
+			mtk_v4l2_err("clk_prepare_enable fail %d", ret);
 
-	ret = clk_set_parent(pm->venc_lt_sel, pm->univpll1_d2);
-	if (ret)
-		mtk_v4l2_err("clk_set_parent fail %d", ret);
+		ret = clk_set_parent(pm->venc_lt_sel, pm->univpll1_d2);
+		if (ret)
+			mtk_v4l2_err("clk_set_parent fail %d", ret);
+	}
 
 	ret = mtk_smi_larb_get(pm->larbvenc);
 	if (ret)
 		mtk_v4l2_err("mtk_smi_larb_get larb3 fail %d", ret);
 
-	ret = mtk_smi_larb_get(pm->larbvenclt);
-	if (ret)
-		mtk_v4l2_err("mtk_smi_larb_get larb4 fail %d", ret);
+	if (pm->chip_node) {
+		ret = mtk_smi_larb_get(pm->larbvenclt);
+		if (ret)
+			mtk_v4l2_err("mtk_smi_larb_get larb4 fail %d", ret);
+	}
 
 }
 
 void mtk_vcodec_enc_clock_off(struct mtk_vcodec_pm *pm)
 {
 	mtk_smi_larb_put(pm->larbvenc);
-	mtk_smi_larb_put(pm->larbvenclt);
-	clk_disable_unprepare(pm->venc_lt_sel);
+	if (pm->chip_node) {
+		mtk_smi_larb_put(pm->larbvenclt);
+		clk_disable_unprepare(pm->venc_lt_sel);
+	}
 	clk_disable_unprepare(pm->venc_sel);
 }

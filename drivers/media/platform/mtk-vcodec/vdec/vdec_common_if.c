@@ -147,13 +147,16 @@ static void get_pic_info(struct vdec_inst *inst,
 	pic->pic_h = inst->vsi->pic.pic_h;
 	pic->buf_w = inst->vsi->pic.buf_w;
 	pic->buf_h = inst->vsi->pic.buf_h;
+	pic->bitdepth = inst->vsi->pic.bitdepth;
+	pic->ufo_mode = inst->vsi->pic.ufo_mode;
 	pic->y_bs_sz = inst->vsi->pic.y_bs_sz;
 	pic->c_bs_sz = inst->vsi->pic.c_bs_sz;
 	pic->y_len_sz = inst->vsi->pic.y_len_sz;
 	pic->c_len_sz = inst->vsi->pic.c_len_sz;
 
-	mtk_vcodec_debug(inst, "pic(%d, %d), buf(%d, %d)",
-			 pic->pic_w, pic->pic_h, pic->buf_w, pic->buf_h);
+	mtk_vcodec_debug(inst, "pic(%d, %d), buf(%d, %d), bitdepth = %d\n",
+			 pic->pic_w, pic->pic_h, pic->buf_w, pic->buf_h,
+			 pic->bitdepth);
 	mtk_vcodec_debug(inst, "Y(%d, %d), C(%d, %d)", pic->y_bs_sz,
 			 pic->y_len_sz, pic->c_bs_sz, pic->c_len_sz);
 }

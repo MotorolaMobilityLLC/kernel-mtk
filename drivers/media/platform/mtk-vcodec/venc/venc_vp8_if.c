@@ -35,29 +35,29 @@
 #define MAX_AC_TAG_SIZE 10
 
 /**
- * enum venc_vp8_vpu_work_buf - vp8 encoder buffer index
+ * enum venc_vp8_vcu_work_buf - vp8 encoder buffer index
  */
-enum venc_vp8_vpu_work_buf {
-	VENC_VP8_VPU_WORK_BUF_LUMA,
-	VENC_VP8_VPU_WORK_BUF_LUMA2,
-	VENC_VP8_VPU_WORK_BUF_LUMA3,
-	VENC_VP8_VPU_WORK_BUF_CHROMA,
-	VENC_VP8_VPU_WORK_BUF_CHROMA2,
-	VENC_VP8_VPU_WORK_BUF_CHROMA3,
-	VENC_VP8_VPU_WORK_BUF_MV_INFO,
-	VENC_VP8_VPU_WORK_BUF_BS_HEADER,
-	VENC_VP8_VPU_WORK_BUF_PROB_BUF,
-	VENC_VP8_VPU_WORK_BUF_RC_INFO,
-	VENC_VP8_VPU_WORK_BUF_RC_CODE,
-	VENC_VP8_VPU_WORK_BUF_RC_CODE2,
-	VENC_VP8_VPU_WORK_BUF_RC_CODE3,
-	VENC_VP8_VPU_WORK_BUF_MAX,
+enum venc_vp8_vcu_work_buf {
+	VENC_VP8_VCU_WORK_BUF_LUMA,
+	VENC_VP8_VCU_WORK_BUF_LUMA2,
+	VENC_VP8_VCU_WORK_BUF_LUMA3,
+	VENC_VP8_VCU_WORK_BUF_CHROMA,
+	VENC_VP8_VCU_WORK_BUF_CHROMA2,
+	VENC_VP8_VCU_WORK_BUF_CHROMA3,
+	VENC_VP8_VCU_WORK_BUF_MV_INFO,
+	VENC_VP8_VCU_WORK_BUF_BS_HEADER,
+	VENC_VP8_VCU_WORK_BUF_PROB_BUF,
+	VENC_VP8_VCU_WORK_BUF_RC_INFO,
+	VENC_VP8_VCU_WORK_BUF_RC_CODE,
+	VENC_VP8_VCU_WORK_BUF_RC_CODE2,
+	VENC_VP8_VCU_WORK_BUF_RC_CODE3,
+	VENC_VP8_VCU_WORK_BUF_MAX,
 };
 
 /*
- * struct venc_vp8_vpu_config - Structure for vp8 encoder configuration
+ * struct venc_vp8_vcu_config - Structure for vp8 encoder configuration
  *                              AP-W/R : AP is writer/reader on this item
- *                              VPU-W/R: VPU is write/reader on this item
+ *                              VCU-W/R: VCU is write/reader on this item
  * @input_fourcc: input fourcc
  * @bitrate: target bitrate (in bps)
  * @pic_w: picture width. Picture size is visible stream resolution, in pixels,
@@ -72,7 +72,7 @@ enum venc_vp8_vpu_work_buf {
  * @ts_mode: temporal scalability mode (0: disable, 1: enable)
  *	     support three temporal layers - 0: 7.5fps 1: 7.5fps 2: 15fps.
  */
-struct venc_vp8_vpu_config {
+struct venc_vp8_vcu_config {
 	u32 input_fourcc;
 	u32 bitrate;
 	u32 pic_w;
@@ -85,36 +85,36 @@ struct venc_vp8_vpu_config {
 };
 
 /*
- * struct venc_vp8_vpu_buf - Structure for buffer information
+ * struct venc_vp8_vcu_buf - Structure for buffer information
  *                           AP-W/R : AP is writer/reader on this item
- *                           VPU-W/R: VPU is write/reader on this item
+ *                           VCU-W/R: VCU is write/reader on this item
  * @iova: IO virtual address
- * @vpua: VPU side memory addr which is used by RC_CODE
+ * @vcua: VCU side memory addr which is used by RC_CODE
  * @size: buffer size (in bytes)
  */
-struct venc_vp8_vpu_buf {
+struct venc_vp8_vcu_buf {
 	u32 iova;
-	u32 vpua;
+	u32 vcua;
 	u32 size;
 };
 
 /*
- * struct venc_vp8_vsi - Structure for VPU driver control and info share
+ * struct venc_vp8_vsi - Structure for VCU driver control and info share
  *                       AP-W/R : AP is writer/reader on this item
- *                       VPU-W/R: VPU is write/reader on this item
- * This structure is allocated in VPU side and shared to AP side.
+ *                       VCU-W/R: VCU is write/reader on this item
+ * This structure is allocated in VCU side and shared to AP side.
  * @config: vp8 encoder configuration
- * @work_bufs: working buffer information in VPU side
+ * @work_bufs: working buffer information in VCU side
  * The work_bufs here is for storing the 'size' info shared to AP side.
  * The similar item in struct venc_vp8_inst is for memory allocation
  * in AP side. The AP driver will copy the 'size' from here to the one in
  * struct mtk_vcodec_mem, then invoke mtk_vcodec_mem_alloc to allocate
  * the buffer. After that, bypass the 'dma_addr' to the 'iova' field here for
- * register setting in VPU side.
+ * register setting in VCU side.
  */
 struct venc_vp8_vsi {
-	struct venc_vp8_vpu_config config;
-	struct venc_vp8_vpu_buf work_bufs[VENC_VP8_VPU_WORK_BUF_MAX];
+	struct venc_vp8_vcu_config config;
+	struct venc_vp8_vcu_buf work_bufs[VENC_VP8_VCU_WORK_BUF_MAX];
 };
 
 /*
@@ -126,18 +126,18 @@ struct venc_vp8_vsi {
  *	     reset when force intra cmd received.
  * @ts_mode: temporal scalability mode (0: disable, 1: enable)
  *	     support three temporal layers - 0: 7.5fps 1: 7.5fps 2: 15fps.
- * @vpu_inst: VPU instance to exchange information between AP and VPU
- * @vsi: driver structure allocated by VPU side and shared to AP side for
+ * @vcu_inst: VCU instance to exchange information between AP and VCU
+ * @vsi: driver structure allocated by VCU side and shared to AP side for
  *	 control and info share
  * @ctx: context for v4l2 layer integration
  */
 struct venc_vp8_inst {
 	void __iomem *hw_base;
-	struct mtk_vcodec_mem work_bufs[VENC_VP8_VPU_WORK_BUF_MAX];
+	struct mtk_vcodec_mem work_bufs[VENC_VP8_VCU_WORK_BUF_MAX];
 	bool work_buf_allocated;
 	unsigned int frm_cnt;
 	unsigned int ts_mode;
-	struct venc_vpu_inst vpu_inst;
+	struct venc_vcu_inst vcu_inst;
 	struct venc_vp8_vsi *vsi;
 	struct mtk_vcodec_ctx *ctx;
 };
@@ -154,7 +154,7 @@ static void vp8_enc_free_work_buf(struct venc_vp8_inst *inst)
 	mtk_vcodec_debug_enter(inst);
 
 	/* Buffers need to be freed by AP. */
-	for (i = 0; i < VENC_VP8_VPU_WORK_BUF_MAX; i++) {
+	for (i = 0; i < VENC_VP8_VCU_WORK_BUF_MAX; i++) {
 		if ((inst->work_bufs[i].size == 0))
 			continue;
 		mtk_vcodec_mem_free(inst->ctx, &inst->work_bufs[i]);
@@ -167,21 +167,21 @@ static int vp8_enc_alloc_work_buf(struct venc_vp8_inst *inst)
 {
 	int i;
 	int ret = 0;
-	struct venc_vp8_vpu_buf *wb = inst->vsi->work_bufs;
+	struct venc_vp8_vcu_buf *wb = inst->vsi->work_bufs;
 
 	mtk_vcodec_debug_enter(inst);
 
-	for (i = 0; i < VENC_VP8_VPU_WORK_BUF_MAX; i++) {
+	for (i = 0; i < VENC_VP8_VCU_WORK_BUF_MAX; i++) {
 		if ((wb[i].size == 0))
 			continue;
 		/*
-		 * This 'wb' structure is set by VPU side and shared to AP for
+		 * This 'wb' structure is set by VCU side and shared to AP for
 		 * buffer allocation and IO virtual addr mapping. For most of
 		 * the buffers, AP will allocate the buffer according to 'size'
 		 * field and store the IO virtual addr in 'iova' field. For the
-		 * RC_CODEx buffers, they are pre-allocated in the VPU side
-		 * because they are inside VPU SRAM, and save the VPU addr in
-		 * the 'vpua' field. The AP will translate the VPU addr to the
+		 * RC_CODEx buffers, they are pre-allocated in the VCU side
+		 * because they are inside VCU SRAM, and save the VCU addr in
+		 * the 'vcua' field. The AP will translate the VCU addr to the
 		 * corresponding IO virtual addr and store in 'iova' field.
 		 */
 		inst->work_bufs[i].size = wb[i].size;
@@ -192,17 +192,17 @@ static int vp8_enc_alloc_work_buf(struct venc_vp8_inst *inst)
 			goto err_alloc;
 		}
 		/*
-		 * This RC_CODEx is pre-allocated by VPU and saved in VPU addr.
-		 * So we need use memcpy to copy RC_CODEx from VPU addr into IO
-		 * virtual addr in 'iova' field for reg setting in VPU side.
+		 * This RC_CODEx is pre-allocated by VCU and saved in VCU addr.
+		 * So we need use memcpy to copy RC_CODEx from VCU addr into IO
+		 * virtual addr in 'iova' field for reg setting in VCU side.
 		 */
-		if (i == VENC_VP8_VPU_WORK_BUF_RC_CODE ||
-		    i == VENC_VP8_VPU_WORK_BUF_RC_CODE2 ||
-		    i == VENC_VP8_VPU_WORK_BUF_RC_CODE3) {
+		if (i == VENC_VP8_VCU_WORK_BUF_RC_CODE ||
+		    i == VENC_VP8_VCU_WORK_BUF_RC_CODE2 ||
+		    i == VENC_VP8_VCU_WORK_BUF_RC_CODE3) {
 			void *tmp_va;
 
-			tmp_va = vcu_mapping_dm_addr(inst->vpu_inst.dev,
-						     wb[i].vpua);
+			tmp_va = vcu_mapping_dm_addr(inst->vcu_inst.dev,
+						     wb[i].vcua);
 			memcpy(inst->work_bufs[i].va, tmp_va, wb[i].size);
 		}
 		wb[i].iova = inst->work_bufs[i].dma_addr;
@@ -256,7 +256,7 @@ static int vp8_enc_compose_one_frame(struct venc_vp8_inst *inst,
 	bs_hdr_len = vp8_enc_read_reg(inst, VENC_BITSTREAM_HEADER_LEN);
 
 	/* if a frame is key frame, not_key is 0 */
-	not_key = !inst->vpu_inst.is_key_frm;
+	not_key = !inst->vcu_inst.is_key_frm;
 	tag = (bs_hdr_len << 5) | 0x10 | not_key;
 	ac_tag[0] = tag & 0xff;
 	ac_tag[1] = (tag >> 8) & 0xff;
@@ -292,7 +292,7 @@ static int vp8_enc_compose_one_frame(struct venc_vp8_inst *inst,
 	memmove(bs_buf->va + bs_hdr_len + ac_tag_size,
 		bs_buf->va, bs_frm_size);
 	memcpy(bs_buf->va + ac_tag_size,
-	       inst->work_bufs[VENC_VP8_VPU_WORK_BUF_BS_HEADER].va,
+	       inst->work_bufs[VENC_VP8_VCU_WORK_BUF_BS_HEADER].va,
 	       bs_hdr_len);
 	memcpy(bs_buf->va, ac_tag, ac_tag_size);
 	*bs_size = bs_frm_size + bs_hdr_len + ac_tag_size;
@@ -310,7 +310,7 @@ static int vp8_enc_encode_frame(struct venc_vp8_inst *inst,
 
 	mtk_vcodec_debug(inst, "->frm_cnt=%d", inst->frm_cnt);
 
-	ret = vpu_enc_encode(&inst->vpu_inst, 0, frm_buf, bs_buf, bs_size);
+	ret = vcu_enc_encode(&inst->vcu_inst, 0, frm_buf, bs_buf, bs_size);
 	if (ret)
 		return ret;
 
@@ -327,7 +327,7 @@ static int vp8_enc_encode_frame(struct venc_vp8_inst *inst,
 
 	inst->frm_cnt++;
 	mtk_vcodec_debug(inst, "<-size=%d key_frm=%d", *bs_size,
-			 inst->vpu_inst.is_key_frm);
+			 inst->vcu_inst.is_key_frm);
 
 	return ret;
 }
@@ -342,16 +342,16 @@ static int vp8_enc_init(struct mtk_vcodec_ctx *ctx, unsigned long *handle)
 		return -ENOMEM;
 
 	inst->ctx = ctx;
-	inst->vpu_inst.ctx = ctx;
-	inst->vpu_inst.dev = ctx->dev->vcu_plat_dev;
-	inst->vpu_inst.id = IPI_VENC_VP8;
+	inst->vcu_inst.ctx = ctx;
+	inst->vcu_inst.dev = ctx->dev->vcu_plat_dev;
+	inst->vcu_inst.id = IPI_VENC_VP8;
 	inst->hw_base = mtk_vcodec_get_reg_addr(inst->ctx, VENC_LT_SYS);
 
 	mtk_vcodec_debug_enter(inst);
 
-	ret = vpu_enc_init(&inst->vpu_inst);
+	ret = vcu_enc_init(&inst->vcu_inst);
 
-	inst->vsi = (struct venc_vp8_vsi *)inst->vpu_inst.vsi;
+	inst->vsi = (struct venc_vp8_vsi *)inst->vcu_inst.vsi;
 
 	mtk_vcodec_debug_leave(inst);
 
@@ -383,7 +383,7 @@ static int vp8_enc_encode(unsigned long handle,
 					   &result->bs_size);
 		if (ret)
 			goto encode_err;
-		result->is_key_frm = inst->vpu_inst.is_key_frm;
+		result->is_key_frm = inst->vcu_inst.is_key_frm;
 		break;
 
 	default:
@@ -420,7 +420,7 @@ static int vp8_enc_set_param(unsigned long handle,
 		inst->vsi->config.gop_size = enc_prm->gop_size;
 		inst->vsi->config.framerate = enc_prm->frm_rate;
 		inst->vsi->config.ts_mode = inst->ts_mode;
-		ret = vpu_enc_set_param(&inst->vpu_inst, type, enc_prm);
+		ret = vcu_enc_set_param(&inst->vcu_inst, type, enc_prm);
 		if (ret)
 			break;
 		if (inst->work_buf_allocated) {
@@ -442,7 +442,7 @@ static int vp8_enc_set_param(unsigned long handle,
 		break;
 
 	default:
-		ret = vpu_enc_set_param(&inst->vpu_inst, type, enc_prm);
+		ret = vcu_enc_set_param(&inst->vcu_inst, type, enc_prm);
 		break;
 	}
 
@@ -458,7 +458,7 @@ static int vp8_enc_deinit(unsigned long handle)
 
 	mtk_vcodec_debug_enter(inst);
 
-	ret = vpu_enc_deinit(&inst->vpu_inst);
+	ret = vcu_enc_deinit(&inst->vcu_inst);
 
 	if (inst->work_buf_allocated)
 		vp8_enc_free_work_buf(inst);
