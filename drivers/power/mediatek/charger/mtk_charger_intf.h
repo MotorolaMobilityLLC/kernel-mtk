@@ -85,9 +85,6 @@ enum {
 };
 
 /* Data of notifier from charger device */
-struct chgdev_notify {
-	bool vbusov_stat;
-};
 
 /*
 *Software Jeita

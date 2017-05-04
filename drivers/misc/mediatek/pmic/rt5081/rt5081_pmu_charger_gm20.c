@@ -746,10 +746,6 @@ static int rt5081_enable_pump_express(struct rt5081_pmu_charger_data *chg_data,
 	if (ret < 0)
 		return ret;
 
-	ret = rt5081_enable_charging(&chg_data->mchr_info, &chg_en);
-	if (ret < 0)
-		return ret;
-
 	ret = (en ? rt5081_pmu_reg_set_bit : rt5081_pmu_reg_clr_bit)
 		(chg_data->chip, RT5081_PMU_REG_CHGCTRL17, RT5081_MASK_PUMPX_EN);
 	if (ret < 0)
@@ -3207,10 +3203,6 @@ static int rt5081_chg_init_setting(struct rt5081_pmu_charger_data *chg_data)
 	if (ret < 0)
 		dev_err(chg_data->dev, "%s: select iinlmtsel failed\n",
 			__func__);
-	mdelay(5);
-	ret = rt5081_enable_ilim(chg_data, false);
-	if (ret < 0)
-		dev_err(chg_data->dev, "%s: disable ilim failed\n", __func__);
 
 	mdelay(5);
 
