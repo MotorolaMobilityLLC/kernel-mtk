@@ -155,35 +155,10 @@ static int ldo_apply_dts(struct rt5081_pmu_chip *chip,
 		mask->cfg, pdata->cfg);
 }
 
-static int rt5081_ldo_enable(struct mtk_simple_regulator_desc *mreg_desc)
-{
-	int retval;
 
-	pr_debug("%s: (%s) Enable regulator\n", __func__, mreg_desc->rdesc.name);
-	retval = rt5081_ldo_reg_update_bits(mreg_desc->client,
-		RT5081_PMU_REG_OSCCTRL, 0x01, 0x01);
-	if (retval < 0)
-		return retval;
-	return rt5081_ldo_reg_update_bits(mreg_desc->client,
-		mreg_desc->enable_reg, mreg_desc->enable_bit,
-		mreg_desc->enable_bit);
-}
 
-static int rt5081_ldo_disable(struct mtk_simple_regulator_desc *mreg_desc)
-{
-	int retval;
 
-	pr_debug("%s: (%s) disable regulator\n", __func__, mreg_desc->rdesc.name);
-	retval =  rt5081_ldo_reg_update_bits(mreg_desc->client,
-		RT5081_PMU_REG_OSCCTRL, 0x01, 0x00);
-	return rt5081_ldo_reg_update_bits(mreg_desc->client,
-		mreg_desc->enable_reg, mreg_desc->enable_bit, 0);
-}
 
-const  struct mtk_simple_regulator_ext_ops mreg_ext_ops = {
-	.enable = rt5081_ldo_enable,
-	.disable = rt5081_ldo_disable,
-};
 
 static int rt5081_pmu_ldo_probe(struct platform_device *pdev)
 {
@@ -211,7 +186,7 @@ static int rt5081_pmu_ldo_probe(struct platform_device *pdev)
 		goto probe_err;
 	/*Check chip revision here */
 	ret = mtk_simple_regulator_register(&ldo_data->mreg_desc,
-		ldo_data->dev, &mreg_ext_ops, NULL);
+		ldo_data->dev, NULL, NULL);
 	if (ret < 0)
 		goto probe_err;
 
@@ -259,4 +234,4 @@ module_platform_driver(rt5081_pmu_ldo);
 MODULE_LICENSE("GPL v2");
 MODULE_AUTHOR("Patrick Chang <patrick_chang@richtek.com>");
 MODULE_DESCRIPTION("Richtek RT5081 PMU Vib LDO");
-MODULE_VERSION("1.0.0_G");
+MODULE_VERSION("1.0.1_G");
