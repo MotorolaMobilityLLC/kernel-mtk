@@ -126,6 +126,24 @@
 				core0 {
 					cpu = <&cpu0>;
 				};
+				core1 {
+					cpu = <&cpu1>;
+				};
+				core2 {
+					cpu = <&cpu2>;
+				};
+				core3 {
+					cpu = <&cpu3>;
+				};
+			};
+
+			cluster1 {
+				core0 {
+					cpu = <&cpu4>;
+				};
+				core1 {
+					cpu = <&cpu5>;
+				};
 			};
 		};
 
@@ -138,6 +156,8 @@
 				 <&topckgen CLK_TOP_F_MP0_PLL1>;
 			clock-names = "cpu", "intermediate";
 			operating-points-v2 = <&cluster0_opp>;
+			sched-energy-costs = <&MT2712_CPU_COST_0
+					      &MT2712_CLUSTER_COST_0>;
 		};
 
 		cpu1: cpu@1 {
@@ -149,6 +169,8 @@
 				 <&topckgen CLK_TOP_F_MP0_PLL1>;
 			clock-names = "cpu", "intermediate";
 			operating-points-v2 = <&cluster0_opp>;
+			sched-energy-costs = <&MT2712_CPU_COST_0
+					      &MT2712_CLUSTER_COST_0>;
 		};
 
 		cpu2: cpu@2 {
@@ -160,6 +182,8 @@
 				 <&topckgen CLK_TOP_F_MP0_PLL1>;
 			clock-names = "cpu", "intermediate";
 			operating-points-v2 = <&cluster0_opp>;
+			sched-energy-costs = <&MT2712_CPU_COST_0
+					      &MT2712_CLUSTER_COST_0>;
 		};
 
 		cpu3: cpu@3 {
@@ -171,6 +195,8 @@
 				 <&topckgen CLK_TOP_F_MP0_PLL1>;
 			clock-names = "cpu", "intermediate";
 			operating-points-v2 = <&cluster0_opp>;
+			sched-energy-costs = <&MT2712_CPU_COST_0
+					      &MT2712_CLUSTER_COST_0>;
 		};
 
 		cpu4: cpu@200 {
@@ -182,6 +208,8 @@
 				 <&topckgen CLK_TOP_F_BIG_PLL1>;
 			clock-names = "cpu", "intermediate";
 			operating-points-v2 = <&cluster1_opp>;
+			sched-energy-costs = <&MT2712_CPU_COST_1
+					      &MT2712_CLUSTER_COST_1>;
 		};
 
 		cpu5: cpu@201 {
@@ -194,7 +222,10 @@
 			clock-names = "cpu", "intermediate";
 			operating-points-v2 = <&cluster1_opp>;
 			#cooling-cells = <0>;
+			sched-energy-costs = <&MT2712_CPU_COST_1
+					      &MT2712_CLUSTER_COST_1>;
 		};
+		/include/ "mt2712-sched-energy.dtsi"
 	};
 
 	psci {
