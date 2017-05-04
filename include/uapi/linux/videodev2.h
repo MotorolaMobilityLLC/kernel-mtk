@@ -650,7 +650,10 @@ struct v4l2_pix_format {
 #define V4L2_PIX_FMT_Y8I      v4l2_fourcc('Y', '8', 'I', ' ') /* Greyscale 8-bit L/R interleaved */
 #define V4L2_PIX_FMT_Y12I     v4l2_fourcc('Y', '1', '2', 'I') /* Greyscale 12-bit L/R interleaved */
 #define V4L2_PIX_FMT_Z16      v4l2_fourcc('Z', '1', '6', ' ') /* Depth data 16-bit */
-#define V4L2_PIX_FMT_MT21C    v4l2_fourcc('M', 'T', '2', '1') /* Mediatek compressed block mode  */
+#define V4L2_PIX_FMT_MT21C    v4l2_fourcc('M', 'T', '2', '1') /* Mediatek 8bit block mode  */
+#define V4L2_PIX_FMT_MT21T    v4l2_fourcc('M', 'T', '2', 'T') /* Mediatek 10bit block mode  */
+#define V4L2_PIX_FMT_MT21U    v4l2_fourcc('M', 'T', '2', 'U') /* Mediatek 8bit and compressed block mode  */
+#define V4L2_PIX_FMT_MT2TU    v4l2_fourcc('M', 'T', 'T', 'U') /* Mediatek 10bit and compressed block mode  */
 
 /* SDR formats - used only for Software Defined Radio devices */
 #define V4L2_SDR_FMT_CU8          v4l2_fourcc('C', 'U', '0', '8') /* IQ u8 */

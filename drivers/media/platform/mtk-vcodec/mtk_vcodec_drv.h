@@ -212,10 +212,12 @@ struct mtk_vcodec_pm {
 	struct clk	*venc_sel;
 	struct clk	*univpll1_d2;
 	struct clk	*venc_lt_sel;
+	struct clk	*img_resz;
 	struct device	*larbvdec;
 	struct device	*larbvenc;
 	struct device	*larbvenclt;
 	struct device	*dev;
+	struct device_node	*chip_node;
 	struct mtk_vcodec_dev	*mtkdev;
 };
 
@@ -231,6 +233,8 @@ struct mtk_vcodec_pm {
  *		plane
  * @c_len_sz: additional size required to store decompress information for cbcr
  *		plane
+ * @bitdepth: Sequence luma bitdepth
+ * @ufo_mode: mediatek block mode
  * E.g. suppose picture size is 176x144,
  *      buffer size will be aligned to 176x160.
  */
@@ -243,6 +247,8 @@ struct vdec_pic_info {
 	unsigned int c_bs_sz;
 	unsigned int y_len_sz;
 	unsigned int c_len_sz;
+	unsigned int bitdepth;
+	unsigned int ufo_mode;
 };
 
 /**

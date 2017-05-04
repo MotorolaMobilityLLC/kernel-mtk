@@ -227,6 +227,7 @@ static int mtk_vcodec_probe(struct platform_device *pdev)
 	struct mtk_vcodec_dev *dev;
 	struct video_device *vfd_enc;
 	struct resource *res;
+	struct mtk_vcodec_pm *pm;
 	int i, j, ret;
 
 	dev = devm_kzalloc(&pdev->dev, sizeof(*dev), GFP_KERNEL);
@@ -248,19 +249,36 @@ static int mtk_vcodec_probe(struct platform_device *pdev)
 		return ret;
 	}
 
-	for (i = VENC_SYS, j = 0; i < NUM_MAX_VCODEC_REG_BASE; i++, j++) {
-		res = platform_get_resource(pdev, IORESOURCE_MEM, j);
+	pm = &dev->pm;
+	pm->chip_node = of_find_compatible_node(NULL, NULL, "mediatek,mt8173-vcodec-enc");
+	if (pm->chip_node) {
+		for (i = VENC_SYS, j = 0; i < NUM_MAX_VCODEC_REG_BASE; i++, j++) {
+			res = platform_get_resource(pdev, IORESOURCE_MEM, j);
+			if (res == NULL) {
+				dev_err(&pdev->dev, "get memory resource failed.");
+				ret = -ENXIO;
+				goto err_res;
+			}
+			dev->reg_base[i] = devm_ioremap_resource(&pdev->dev, res);
+			if (IS_ERR((__force void *)dev->reg_base[i])) {
+				ret = PTR_ERR((__force void *)dev->reg_base[i]);
+				goto err_res;
+			}
+			mtk_v4l2_debug(2, "reg[%d] base=0x%p", i, dev->reg_base[i]);
+		}
+	} else {
+		res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
 		if (res == NULL) {
 			dev_err(&pdev->dev, "get memory resource failed.");
 			ret = -ENXIO;
 			goto err_res;
 		}
-		dev->reg_base[i] = devm_ioremap_resource(&pdev->dev, res);
-		if (IS_ERR((__force void *)dev->reg_base[i])) {
-			ret = PTR_ERR((__force void *)dev->reg_base[i]);
+		dev->reg_base[VENC_SYS] = devm_ioremap_resource(&pdev->dev, res);
+		if (IS_ERR((__force void *)dev->reg_base[VENC_SYS])) {
+			ret = PTR_ERR((__force void *)dev->reg_base[VENC_SYS]);
 			goto err_res;
 		}
-		mtk_v4l2_debug(2, "reg[%d] base=0x%p", i, dev->reg_base[i]);
+		mtk_v4l2_debug(2, "reg[%d] base=0x%p", VENC_SYS, dev->reg_base[VENC_SYS]);
 	}
 
 	res = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
@@ -281,21 +299,22 @@ static int mtk_vcodec_probe(struct platform_device *pdev)
 		ret = -EINVAL;
 		goto err_res;
 	}
-
-	dev->enc_lt_irq = platform_get_irq(pdev, 1);
-	ret = devm_request_irq(&pdev->dev,
-			       dev->enc_lt_irq, mtk_vcodec_enc_lt_irq_handler,
-			       0, pdev->name, dev);
-	if (ret) {
-		dev_err(&pdev->dev,
-			"Failed to install dev->enc_lt_irq %d (%d)",
-			dev->enc_lt_irq, ret);
-		ret = -EINVAL;
-		goto err_res;
+	if (pm->chip_node) {
+		dev->enc_lt_irq = platform_get_irq(pdev, 1);
+		ret = devm_request_irq(&pdev->dev,
+					dev->enc_lt_irq, mtk_vcodec_enc_lt_irq_handler,
+					0, pdev->name, dev);
+		if (ret) {
+			dev_err(&pdev->dev,
+				"Failed to install dev->enc_lt_irq %d (%d)",
+				dev->enc_lt_irq, ret);
+			ret = -EINVAL;
+			goto err_res;
+		}
 	}
-
 	disable_irq(dev->enc_irq);
-	disable_irq(dev->enc_lt_irq); /* VENC_LT */
+	if (pm->chip_node)
+		disable_irq(dev->enc_lt_irq); /* VENC_LT */
 	mutex_init(&dev->enc_mutex);
 	mutex_init(&dev->dev_mutex);
 	spin_lock_init(&dev->irqlock);

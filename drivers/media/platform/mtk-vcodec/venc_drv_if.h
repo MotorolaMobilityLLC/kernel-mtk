@@ -23,7 +23,7 @@
 
 /*
  * enum venc_yuv_fmt - The type of input yuv format
- * (VPU related: If you change the order, you must also update the VPU codes.)
+ * (VCU related: If you change the order, you must also update the VCU codes.)
  * @VENC_YUV_FORMAT_I420: I420 YUV format
  * @VENC_YUV_FORMAT_YV12: YV12 YUV format
  * @VENC_YUV_FORMAT_NV12: NV12 YUV format
@@ -49,7 +49,7 @@ enum venc_start_opt {
 /*
  * enum venc_set_param_type - The type of set parameter used in
  *						      venc_if_set_param()
- * (VPU related: If you change the order, you must also update the VPU codes.)
+ * (VCU related: If you change the order, you must also update the VCU codes.)
  * @VENC_SET_PARAM_ENC: set encoder parameters
  * @VENC_SET_PARAM_FORCE_INTRA: force an intra frame
  * @VENC_SET_PARAM_ADJUST_BITRATE: adjust bitrate (in bps)
@@ -86,6 +86,7 @@ enum venc_set_param_type {
  * @intra_period: intra frame period
  * @bitrate: target bitrate in bps
  * @gop_size: group of picture size
+ * @sizeimage: image size for each plane
  */
 struct venc_enc_param {
 	enum venc_yuv_fmt input_yuv_fmt;
@@ -99,6 +100,7 @@ struct venc_enc_param {
 	unsigned int intra_period;
 	unsigned int bitrate;
 	unsigned int gop_size;
+	unsigned int sizeimage[MTK_VCODEC_MAX_PLANES];
 };
 
 /*

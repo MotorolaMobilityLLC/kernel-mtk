@@ -24,7 +24,7 @@
 #include "vdec_drv_if.h"
 #include "mtk_vcodec_dec_pm.h"
 
-#define OUT_FMT_IDX	1
+#define OUT_FMT_IDX	4
 #define CAP_FMT_IDX	0
 
 #define MTK_VDEC_MIN_W	64U
@@ -35,6 +35,21 @@
 static struct mtk_video_fmt mtk_video_formats[] = {
 	{
 		.fourcc = V4L2_PIX_FMT_MT21C,
+		.type = MTK_FMT_FRAME,
+		.num_planes = 2,
+	},
+	{
+		.fourcc = V4L2_PIX_FMT_MT21T,
+		.type = MTK_FMT_FRAME,
+		.num_planes = 2,
+	},
+	{
+		.fourcc = V4L2_PIX_FMT_MT21U,
+		.type = MTK_FMT_FRAME,
+		.num_planes = 2,
+	},
+	{
+		.fourcc = V4L2_PIX_FMT_MT2TU,
 		.type = MTK_FMT_FRAME,
 		.num_planes = 2,
 	},
@@ -269,6 +284,20 @@ static struct mtk_video_fmt *mtk_vdec_find_format(struct v4l2_format *f)
 	return NULL;
 }
 
+static struct mtk_video_fmt *mtk_find_fmt_by_pixel(unsigned int pixelformat)
+{
+	struct mtk_video_fmt *fmt;
+	unsigned int k;
+
+	for (k = 0; k < NUM_FORMATS; k++) {
+		fmt = &mtk_video_formats[k];
+		if (fmt->fourcc == pixelformat)
+			return fmt;
+	}
+
+	return NULL;
+}
+
 static struct mtk_q_data *mtk_vdec_get_q_data(struct mtk_vcodec_ctx *ctx,
 					      enum v4l2_buf_type type)
 {
@@ -483,10 +512,11 @@ static void mtk_vdec_pic_info_update(struct mtk_vcodec_ctx *ctx)
 		return;
 
 	mtk_v4l2_debug(1,
-			"[%d]-> new(%d,%d), old(%d,%d), real(%d,%d)",
+			"[%d]-> new(%d,%d), old(%d,%d), bit(%d) real(%d,%d)",
 			ctx->id, ctx->last_decoded_picinfo.pic_w,
 			ctx->last_decoded_picinfo.pic_h,
 			ctx->picinfo.pic_w, ctx->picinfo.pic_h,
+			ctx->picinfo.bitdepth,
 			ctx->last_decoded_picinfo.buf_w,
 			ctx->last_decoded_picinfo.buf_h);
 
@@ -509,6 +539,7 @@ static void mtk_vdec_worker(struct work_struct *work)
 	int ret;
 	struct mtk_video_dec_buf *dst_buf_info, *src_buf_info;
 	struct vb2_v4l2_buffer *dst_vb2_v4l2, *src_vb2_v4l2;
+	int fourcc = ctx->q_data[MTK_Q_DATA_SRC].fmt->fourcc;
 
 	src_buf = v4l2_m2m_next_src_buf(ctx->m2m_ctx);
 	if (src_buf == NULL) {
@@ -552,20 +583,19 @@ static void mtk_vdec_worker(struct work_struct *work)
 			&pfb->base_c.dma_addr, pfb->base_y.size);
 
 	if (src_buf_info->lastframe) {
-		mtk_v4l2_debug(1, "Got empty flush input buffer.");
+		/* update src buf status */
 		src_buf = v4l2_m2m_src_buf_remove(ctx->m2m_ctx);
+		src_buf_info->lastframe = false;
+		v4l2_m2m_buf_done(&src_buf_info->vb, VB2_BUF_STATE_DONE);
 
 		/* update dst buf status */
 		dst_buf = v4l2_m2m_dst_buf_remove(ctx->m2m_ctx);
-		mutex_lock(&ctx->lock);
 		dst_buf_info->used = false;
-		mutex_unlock(&ctx->lock);
 
 		vdec_if_decode(ctx, NULL, NULL, &res_chg);
 		clean_display_buffer(ctx);
 		vb2_set_plane_payload(&dst_buf_info->vb.vb2_buf, 0, 0);
 		vb2_set_plane_payload(&dst_buf_info->vb.vb2_buf, 1, 0);
-		dst_vb2_v4l2->flags |= V4L2_BUF_FLAG_LAST;
 		v4l2_m2m_buf_done(&dst_buf_info->vb, VB2_BUF_STATE_DONE);
 		clean_free_buffer(ctx);
 		v4l2_m2m_job_finish(dev->m2m_dev_dec, ctx->m2m_ctx);
@@ -595,7 +625,7 @@ static void mtk_vdec_worker(struct work_struct *work)
 
 	ret = vdec_if_decode(ctx, &buf, pfb, &res_chg);
 
-	if (ret) {
+	if (ret < 0) {
 		mtk_v4l2_err(
 			" <===[%d], src_buf[%d] last_frame = %d sz=0x%zx pts=%llu dst_buf[%d] vdec_if_decode() ret=%d res_chg=%d===>",
 			ctx->id,
@@ -607,13 +637,16 @@ static void mtk_vdec_worker(struct work_struct *work)
 			ret, res_chg);
 		src_buf = v4l2_m2m_src_buf_remove(ctx->m2m_ctx);
 		v4l2_m2m_buf_done(&src_buf_info->vb, VB2_BUF_STATE_ERROR);
-	} else if (res_chg == false) {
+	} else if ((ret == 0) && ((fourcc == V4L2_PIX_FMT_RV40) ||
+			(fourcc == V4L2_PIX_FMT_RV30) || (res_chg == false))) {
 		/*
 		 * we only return src buffer with VB2_BUF_STATE_DONE
-		 * when decode success without resolution change
+		 * when decode success without resolution change except rv30/rv40.
 		 */
 		src_buf = v4l2_m2m_src_buf_remove(ctx->m2m_ctx);
 		v4l2_m2m_buf_done(&src_buf_info->vb, VB2_BUF_STATE_DONE);
+	} else {
+		mtk_v4l2_debug(1, "Need more capture buffer\n");
 	}
 
 	dst_buf = v4l2_m2m_dst_buf_remove(ctx->m2m_ctx);
@@ -621,22 +654,34 @@ static void mtk_vdec_worker(struct work_struct *work)
 	clean_free_buffer(ctx);
 
 	if (!ret && res_chg) {
-		mtk_vdec_pic_info_update(ctx);
-		/*
-		 * On encountering a resolution change in the stream.
-		 * The driver must first process and decode all
-		 * remaining buffers from before the resolution change
-		 * point, so call flush decode here
-		 */
-		mtk_vdec_flush_decoder(ctx);
-		/*
-		 * After all buffers containing decoded frames from
-		 * before the resolution change point ready to be
-		 * dequeued on the CAPTURE queue, the driver sends a
-		 * V4L2_EVENT_SOURCE_CHANGE event for source change
-		 * type V4L2_EVENT_SRC_CH_RESOLUTION
-		 */
-		mtk_vdec_queue_res_chg_event(ctx);
+		if ((fourcc == V4L2_PIX_FMT_RV40) || (fourcc == V4L2_PIX_FMT_RV30)) {
+			/*
+			 * For rv30/rv40 stream, encountering a resolution change the current frame
+			 * needs to refer to the previous frame,so driver should not flush decode,
+			 * but the driver should sends a V4L2_EVENT_SOURCE_CHANGE
+			 * event for source change to app.
+			 * app should set new crop to mdp directly.
+			 */
+			mtk_v4l2_debug(0, "RV30/RV40 RPR res_chg:%d\n", res_chg);
+			mtk_vdec_queue_res_chg_event(ctx);
+		} else {
+			mtk_vdec_pic_info_update(ctx);
+			/*
+			 * On encountering a resolution change in the stream.
+			 * The driver must first process and decode all
+			 * remaining buffers from before the resolution change
+			 * point, so call flush decode here
+			 */
+			mtk_vdec_flush_decoder(ctx);
+			/*
+			 * After all buffers containing decoded frames from
+			 * before the resolution change point ready to be
+			 * dequeued on the CAPTURE queue, the driver sends a
+			 * V4L2_EVENT_SOURCE_CHANGE event for source change
+			 * type V4L2_EVENT_SRC_CH_RESOLUTION
+			 */
+			mtk_vdec_queue_res_chg_event(ctx);
+		}
 	}
 	v4l2_m2m_job_finish(dev->m2m_dev_dec, ctx->m2m_ctx);
 }
@@ -657,7 +702,6 @@ static int vidioc_try_decoder_cmd(struct file *file, void *priv,
 	}
 	return 0;
 }
-
 
 static int vidioc_decoder_cmd(struct file *file, void *priv,
 				struct v4l2_decoder_cmd *cmd)
@@ -1130,6 +1174,7 @@ static int vidioc_vdec_s_fmt(struct file *file, void *priv,
 	struct mtk_q_data *q_data;
 	int ret = 0;
 	struct mtk_video_fmt *fmt;
+	uint32_t size[2];
 
 	mtk_v4l2_debug(3, "[%d]", ctx->id);
 
@@ -1169,6 +1214,8 @@ static int vidioc_vdec_s_fmt(struct file *file, void *priv,
 		q_data->sizeimage[0] = pix_mp->plane_fmt[0].sizeimage;
 		q_data->coded_width = pix_mp->width;
 		q_data->coded_height = pix_mp->height;
+		size[0] = pix_mp->width;
+		size[1] = pix_mp->height;
 
 		ctx->colorspace = f->fmt.pix_mp.colorspace;
 		ctx->ycbcr_enc = f->fmt.pix_mp.ycbcr_enc;
@@ -1182,6 +1229,7 @@ static int vidioc_vdec_s_fmt(struct file *file, void *priv,
 					ctx->id, ret);
 				return -EINVAL;
 			}
+			vdec_if_set_param(ctx, SET_PARAM_FRAME_SIZE, (void *) size);
 			ctx->state = MTK_STATE_INIT;
 		}
 	}
@@ -1463,14 +1511,6 @@ static void vb2ops_vdec_buf_queue(struct vb2_buffer *vb)
 		mtk_v4l2_err("No src buffer");
 		return;
 	}
-	vb2_v4l2 = to_vb2_v4l2_buffer(src_buf);
-	buf = container_of(vb2_v4l2, struct mtk_video_dec_buf, vb);
-	if (buf->lastframe) {
-		/* This shouldn't happen. Just in case. */
-		mtk_v4l2_err("Invalid flush buffer.");
-		v4l2_m2m_src_buf_remove(ctx->m2m_ctx);
-		return;
-	}
 
 	src_mem.va = vb2_plane_vaddr(src_buf, 0);
 	src_mem.dma_addr = vb2_dma_contig_plane_dma_addr(src_buf, 0);
@@ -1509,6 +1549,26 @@ static void vb2ops_vdec_buf_queue(struct vb2_buffer *vb)
 	}
 
 	ctx->last_decoded_picinfo = ctx->picinfo;
+
+
+	if (ctx->picinfo.bitdepth == 10) {
+		ctx->q_data[MTK_Q_DATA_DST].fmt = ctx->picinfo.ufo_mode ?
+			mtk_find_fmt_by_pixel(V4L2_PIX_FMT_MT2TU) : mtk_find_fmt_by_pixel(V4L2_PIX_FMT_MT21T);
+	} else if (ctx->picinfo.bitdepth == 8) {
+		ctx->q_data[MTK_Q_DATA_DST].fmt = ctx->picinfo.ufo_mode ?
+			mtk_find_fmt_by_pixel(V4L2_PIX_FMT_MT21U) : mtk_find_fmt_by_pixel(V4L2_PIX_FMT_MT21C);
+	} else {
+		/*
+		 * Not all codec drivers have bit depth.some codecs should keep origin fmt.
+		 */
+		ctx->q_data[MTK_Q_DATA_DST].fmt = ctx->picinfo.ufo_mode ?
+			mtk_find_fmt_by_pixel(V4L2_PIX_FMT_MT21U) : mtk_find_fmt_by_pixel(V4L2_PIX_FMT_MT21C);
+
+		mtk_v4l2_debug(3, "[%d]ufo_mode=%d bitdepth(%d)\n", ctx->id, ctx->picinfo.ufo_mode,
+			ctx->picinfo.bitdepth);
+
+	}
+
 	ctx->q_data[MTK_Q_DATA_DST].sizeimage[0] =
 						ctx->picinfo.y_bs_sz +
 						ctx->picinfo.y_len_sz;
@@ -1518,10 +1578,11 @@ static void vb2ops_vdec_buf_queue(struct vb2_buffer *vb)
 						ctx->picinfo.c_bs_sz +
 						ctx->picinfo.c_len_sz;
 	ctx->q_data[MTK_Q_DATA_DST].bytesperline[1] = ctx->picinfo.buf_w;
-	mtk_v4l2_debug(2, "[%d] vdec_if_init() OK wxh=%dx%d pic wxh=%dx%d sz[0]=0x%x sz[1]=0x%x",
+	mtk_v4l2_debug(2, "[%d] vdec_if_init() OK wxh=%dx%d pic wxh=%dx%d bitdepth:%d ufo:%d sz[0]=0x%x sz[1]=0x%x",
 			ctx->id,
 			ctx->picinfo.buf_w, ctx->picinfo.buf_h,
 			ctx->picinfo.pic_w, ctx->picinfo.pic_h,
+			ctx->picinfo.bitdepth, ctx->picinfo.ufo_mode,
 			ctx->q_data[MTK_Q_DATA_DST].sizeimage[0],
 			ctx->q_data[MTK_Q_DATA_DST].sizeimage[1]);
 
@@ -1590,15 +1651,9 @@ static void vb2ops_vdec_stop_streaming(struct vb2_queue *q)
 			ctx->id, q->type, ctx->state, ctx->decoded_frame_cnt);
 
 	if (q->type == V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE) {
-		while ((src_buf = v4l2_m2m_src_buf_remove(ctx->m2m_ctx))) {
-			struct vb2_v4l2_buffer *vb2_v4l2 =
-					to_vb2_v4l2_buffer(src_buf);
-			struct mtk_video_dec_buf *buf_info = container_of(
-					vb2_v4l2, struct mtk_video_dec_buf, vb);
-			if (!buf_info->lastframe)
-				v4l2_m2m_buf_done(vb2_v4l2,
-						VB2_BUF_STATE_ERROR);
-		}
+		while ((src_buf = v4l2_m2m_src_buf_remove(ctx->m2m_ctx)))
+			v4l2_m2m_buf_done(to_vb2_v4l2_buffer(src_buf),
+					VB2_BUF_STATE_ERROR);
 		return;
 	}
 
@@ -1613,12 +1668,13 @@ static void vb2ops_vdec_stop_streaming(struct vb2_queue *q)
 		ctx->picinfo = ctx->last_decoded_picinfo;
 
 		mtk_v4l2_debug(2,
-				"[%d]-> new(%d,%d), old(%d,%d), real(%d,%d)",
+				"[%d]-> new(%d,%d), old(%d,%d), real(%d,%d) bit:%d\n",
 				ctx->id, ctx->last_decoded_picinfo.pic_w,
 				ctx->last_decoded_picinfo.pic_h,
 				ctx->picinfo.pic_w, ctx->picinfo.pic_h,
 				ctx->last_decoded_picinfo.buf_w,
-				ctx->last_decoded_picinfo.buf_h);
+				ctx->last_decoded_picinfo.buf_h,
+				ctx->picinfo.bitdepth);
 
 		mtk_vdec_flush_decoder(ctx);
 	}
