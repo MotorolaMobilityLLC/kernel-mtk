@@ -325,6 +325,12 @@
 			clocks = <&system_clk>, <&clk32k>;
 		};
 
+		keypad: keypad@10010000 {
+			compatible = "mediatek,mt2712-keypad";
+			reg = <0 0x10010000 0 0x1000>;
+			interrupts = <GIC_SPI 162 IRQ_TYPE_EDGE_FALLING>;
+		};
+
 		iommu0: iommu@10205000 {
 			compatible = "mediatek,mt2712-m4u";
 			reg = <0 0x10205000 0 0x1000>;
