@@ -1047,13 +1047,20 @@ static void charger_check_status(struct charger_manager *info)
 	struct battery_thermal_protection_data *thermal;
 
 	temperature = info->battery_temperature;
-	thermal = &info->thermal;
-//printk("~~liml_charger func=%s,temperature=%d\n",__func__,temperature);
+	thermal = &info->thermal;    
 	if (info->enable_sw_jeita == true) {
 		do_sw_jeita_state_machine(info);
 		if (info->sw_jeita.charging == false) {
 			charging = false;
+			charger_manager_notifier(info, CHARGER_NOTIFY_STOP_CHARGING);//add by longcheer-liml_2017_05_04
 			goto stop_charging;
+		}else{
+		    if(mtk_is_charger_on(info)==true)  //add by longcheer-liml_2017_05_04
+		    {
+		        charger_manager_notifier(info, CHARGER_NOTIFY_START_CHARGING);
+		    }else{
+		        charger_manager_notifier(info, CHARGER_NOTIFY_STOP_CHARGING);
+		    }
 		}
 	} else {
 
