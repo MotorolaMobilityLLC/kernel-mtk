@@ -349,7 +349,7 @@ static int get_stable_ps(unsigned int ps_data_c_1)
 
 	for(i=0;i<=MAX_ELM_PS_1;i++)
 	{
-		if(record_ps_1[i]< ps_d_high)
+		if(record_ps_1[i]< ps_d_high &&  record_ps_1[i]>ps_d_low )
 			j_ps++;
 		else 
 			j_ps = 0;
@@ -1299,6 +1299,7 @@ static int ltr778_get_ps_value(struct ltr778_priv *obj, u16 ps)
 		intr_flag_value = 2;
 		oil_far_cal = 0;
 		oil_close = 1;
+		full_ps_1=0;
 	}
 	else if((ps >= atomic_read(&obj->ps_thd_val_high)))
 	{
@@ -1308,6 +1309,7 @@ static int ltr778_get_ps_value(struct ltr778_priv *obj, u16 ps)
 				val_temp = 0;
 				intr_flag_value = 1;
 				oil_far_cal = 0;
+				full_ps_1=0;
 			}
 		//tuwenzan@wind-mobi.com modify at 20170424 begin
 		if((ps <= (atomic_read(&obj->ps_persist_val_low)-10)) && (oil_close == 1) )
@@ -1318,10 +1320,12 @@ static int ltr778_get_ps_value(struct ltr778_priv *obj, u16 ps)
 			}else if((ps > (atomic_read(&obj->ps_persist_val_low)+15)) && (oil_close == 1)){
 				val = 2;  //oil close
 				val_temp = 2;
-				intr_flag_value = 3;
+				intr_flag_value = 2;
+				full_ps_1=0;
 			}else{
 				val = val_temp;
-				intr_flag_value = 3;
+				intr_flag_value = 2;
+				full_ps_1=0;
 			}
 	}
 		//tuwenzan@wind-mobi.com modify at 20170424 end	
@@ -1331,7 +1335,7 @@ static int ltr778_get_ps_value(struct ltr778_priv *obj, u16 ps)
 		val_temp = 1;
 		intr_flag_value = 0;
 		oil_far_cal = 0;
-		
+		full_ps_1=0;
 		oil_close = 0;
 	}
 	else if(oil_close == 1)
@@ -1345,12 +1349,12 @@ static int ltr778_get_ps_value(struct ltr778_priv *obj, u16 ps)
 	{
 		val = val_temp;		
 		oil_far_cal = 0;
-
+		full_ps_1=0;
 	}
 
 	
 
-	if(val == 3  && oil_far_cal <= 16)  // modified by steven stable data
+	if(val == 3  && oil_far_cal <= (MAX_ELM_PS_1+10))  // modified by steven stable data
 	{		
 		oil_far_cal ++;
 		val = 2;  /* persist oil close*/
