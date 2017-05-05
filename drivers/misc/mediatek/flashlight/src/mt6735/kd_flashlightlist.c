@@ -417,8 +417,7 @@ static int setFlashDrv(int sensorDev, int strobeId)
 	return 0;
 }
 
-//Lenovo-sw caoxu1 [IKANGEROW-4703] 2017-5-5 begin
-
+#if defined(CONFIG_LCT_CAMERA_KERNEL)//yangchao
 static int decFlash(void)
 {
 	int i;
@@ -440,9 +439,7 @@ static int decFlash(void)
 			}
 	return 0;
 }
-//Lenovo-sw caoxu1 [IKANGEROW-4703] 2017-5-5 end
-
-#if 0
+#else
 static int closeFlash(void)
 {
 	int i;
@@ -467,6 +464,7 @@ static int closeFlash(void)
 	return 0;
 }
 #endif
+
 /* @@{ */
 
 /*
@@ -489,11 +487,21 @@ static void Lbat_protection_powerlimit_flash(LOW_BATTERY_LEVEL level)
 	if (level == LOW_BATTERY_LEVEL_0) {
 		gLowPowerVbat = LOW_BATTERY_LEVEL_0;
 	} else if (level == LOW_BATTERY_LEVEL_1) {
+                #if defined(CONFIG_LCT_CAMERA_KERNEL)//yangchao
 		decFlash();
+                #else
+                closeFlash();
+                #endif
 		gLowPowerVbat = LOW_BATTERY_LEVEL_1;
 
 	} else if (level == LOW_BATTERY_LEVEL_2) {
+
+                #if defined(CONFIG_LCT_CAMERA_KERNEL)//yangchao
 		decFlash();
+                #else
+                closeFlash();
+                #endif
+
 		gLowPowerVbat = LOW_BATTERY_LEVEL_2;
 	} else {
 		/* unlimit cpu and gpu */
@@ -513,7 +521,13 @@ static void bat_per_protection_powerlimit_flashlight(BATTERY_PERCENT_LEVEL level
 	if (level == BATTERY_PERCENT_LEVEL_0) {
 		gLowPowerPer = BATTERY_PERCENT_LEVEL_0;
 	} else if (level == BATTERY_PERCENT_LEVEL_1) {
+
+		#if defined(CONFIG_LCT_CAMERA_KERNEL)//yangchao
 		decFlash();
+                #else
+                closeFlash();
+                #endif
+
 		gLowPowerPer = BATTERY_PERCENT_LEVEL_1;
 	} else {
 
@@ -584,6 +598,9 @@ static long flashlight_ioctl_core(struct file *file, unsigned int cmd, unsigned 
 				isLow = 1;
 			logI("FLASH_IOC_IS_LOW_POWER %d %d %d", gLowPowerPer, gLowPowerVbat, isLow);
 			kdArg.arg = isLow;
+                        #if defined(CONFIG_LCT_CAMERA_KERNEL)
+			kdArg.arg = 0;
+			#endif
 			if (copy_to_user
 			    ((void __user *)arg, (void *)&kdArg, sizeof(kdStrobeDrvArg))) {
 				logI("[FLASH_IOC_IS_LOW_POWER] ioctl copy to user failed ~");
