@@ -264,11 +264,16 @@ static struct LCM_setting_table lcm_initialization_setting[] = {
 
 	    {0x29, 0, {}},
         {REGFLAG_DELAY, 20, {}},
-		{0xC9, 9, {0x13,0x00,0x14,0x1e,0xb1,0x1e,0x00,0x91,0x00}},//pwm 20k
+        //modified begin by zhudaolong 20170505
         {0x51, 1, {0x00}},	//modified by zhudaolong at 20170330
+        {REGFLAG_DELAY, 5, {}},
+		{0xC9, 9, {0x13,0x00,0x14,0x1e,0xb1,0x1e,0x00,0x91,0x00}},//pwm 20k
+		{REGFLAG_DELAY, 5, {}},
         {0x53, 1, {0x24}},
+        {REGFLAG_DELAY, 5, {}},
         {0x55, 1, {0x01}},
         {REGFLAG_DELAY, 5, {}},
+        //modified end by zhudaolong 20170505
         
 	      {REGFLAG_END_OF_TABLE, 0x00, {}}
 
@@ -280,6 +285,7 @@ static struct LCM_setting_table lcm_setting_ui[] = {
 	//{0x51,1,{0xff}},
 	{0x53,1,{0x24}},
 	{0x55,1,{0x01}},
+	{REGFLAG_DELAY, 5, {}},	//add by zhudaolong 20170505
 	{REGFLAG_END_OF_TABLE, 0x00, {}}
 
 };
@@ -288,6 +294,7 @@ static struct LCM_setting_table lcm_setting_mv[] = {
 	//{0x51,1,{0xff}},
 	{0x53,1,{0x2c}},
 	{0x55,1,{0x03}},
+	{REGFLAG_DELAY, 5, {}},	//add by zhudaolong 20170505
 	{REGFLAG_END_OF_TABLE, 0x00, {}}
 
 };
@@ -296,6 +303,7 @@ static struct LCM_setting_table lcm_setting_dis[] = {
 	//{0x51,1,{0xff}},
 	{0x53,1,{0x24}},
 	{0x55,1,{0x00}},
+	{REGFLAG_DELAY, 5, {}},	//add by zhudaolong 20170505
 	{REGFLAG_END_OF_TABLE, 0x00, {}}
 
 };
@@ -532,7 +540,9 @@ static void lcm_setbacklight(unsigned int level)
 {
 	#if(LCT_LCM_MAPP_BACKLIGHT)
 			static unsigned int mapped_level = 0;
-			mapped_level = (7835*level + 2165)/(10000);
+			mapped_level = (7795*level + 12210)/(10000);	//modified by zhudaolong 20170505
+			if(mapped_level < 2)		//add by zhudaolong 20170505
+				mapped_level = 2;	//add by zhudaolong 20170505
 	#endif
 	if(hbm_enable ==0)
 	{				
