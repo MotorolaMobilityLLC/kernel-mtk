@@ -200,6 +200,12 @@
 	status = "okay";
 };
 
+&eth {
+	pinctrl-names = "default";
+	pinctrl-0 = <&ethphy_rst>;
+	status = "okay";
+};
+
 &i2c0 {
 	pinctrl-names = "default";
 	pinctrl-0 = <&i2c0_pins>;
@@ -334,6 +340,17 @@
 };
 
 &pio {
+	ethphy_rst: ethphy_rst {
+		rest_pin {
+			pinmux = <MT2712_PIN_87_GBE_COL__FUNC_GPIO87>;
+			output-high;
+		};
+		eth_mux {
+			pinmux = <MT2712_PIN_75_GBE_TXC__FUNC_GBE_TXC>;
+			drive-strength = <MTK_DRIVE_4mA>;
+		};
+	};
+
 	kpd_pins_default: kpddefault {
 		pins_cols {
 			pinmux = <MT2712_PIN_19_KPCOL0__FUNC_KCOL0>,
