@@ -613,6 +613,7 @@ int primary_display_esd_recovery(void)
 	DISPCHECK("[ESD]lcm force init[end]\n");
 	MMProfileLogEx(ddp_mmp_get_events()->esd_recovery_t, MMProfileFlagPulse, 0, 8);
 
+	disp_lcm_esd_recover_backlight(primary_get_lcm());
 	DISPDBG("[ESD]start dpmgr path[begin]\n");
 	if (primary_display_partial_support()) {
 		disp_ddp_path_config *data_config = dpmgr_path_get_last_config(primary_get_dpmgr_handle());

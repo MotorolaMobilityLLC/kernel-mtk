@@ -1295,6 +1295,25 @@ int disp_lcm_set_backlight(disp_lcm_handle *plcm, void *handle, int level)
 		return -1;
 	}
 }
+int disp_lcm_esd_recover_backlight(disp_lcm_handle *plcm)
+{
+	LCM_DRIVER *lcm_drv = NULL;
+
+	DISPFUNC();
+	if (_is_lcm_inited(plcm)) {
+		lcm_drv = plcm->drv;
+		if (lcm_drv->esd_recover_backlight) {
+			lcm_drv->esd_recover_backlight();
+		} else {
+			DISPERR("FATAL ERROR, lcm_drv->esd_recover_backlight is null\n");
+			return -1;
+		}
+	} else {
+		DISPERR("lcm_drv is null\n");
+		return -1;
+	}
+	return 0;
+}
 
 int disp_lcm_ioctl(disp_lcm_handle *plcm, LCM_IOCTL ioctl, unsigned int arg)
 {
