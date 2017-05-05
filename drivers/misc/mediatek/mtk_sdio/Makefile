@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2017 MediaTek Inc.
+# Copyright (C) 2015 MediaTek Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License version 2 as
@@ -11,13 +11,19 @@
 # GNU General Public License for more details.
 #
 
-#$(call all-subdir-src-or-makefile)
-subdir-ccflags-y += -Werror
-subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat/
-obj-$(CONFIG_MTK_ICE_DEBUG) +=ice_debug/
-ifeq ($(CONFIG_MTK_SENSOR_SUPPORT),y)
-obj-y	+= hwmon/
-obj-$(CONFIG_CUSTOM_KERNEL_ALSPS) += alsps/
-endif
-obj-$(CONFIG_MTK_FREQ_HOPPING) += freqhopping/
-obj-$(CONFIG_MMC_MTK_SDIO) += mtk_sdio/
+#add kernel source code path as head file search path
+ccflags-y += -I$(srctree)/drivers/mmc
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/include
+
+obj-$(CONFIG_MMC_MTK_SDIO) += msdc.o
+
+msdc-y += sd.o
+msdc-y += msdc_tune.o
+msdc-y += dbg.o
+msdc-y += autok.o
+msdc-y += autok_dvfs.o
+
+msdc-y += msdc_io.o
+
+
+
