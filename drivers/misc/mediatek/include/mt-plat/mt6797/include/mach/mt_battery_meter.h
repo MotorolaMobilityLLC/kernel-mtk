@@ -104,7 +104,7 @@
 #define SHUTDOWN_GAUGE1_MINS	60
 
 #ifndef SHUTDOWN_SYSTEM_VOLTAGE
-#define SHUTDOWN_SYSTEM_VOLTAGE	3100	/*	DLPT will shutdown at 3.1v first	*/
+#define SHUTDOWN_SYSTEM_VOLTAGE	3400	/*	DLPT will shutdown at 3.1v first	*/
 #endif
 #define CHARGE_TRACKING_TIME	60
 #define DISCHARGE_TRACKING_TIME	10
