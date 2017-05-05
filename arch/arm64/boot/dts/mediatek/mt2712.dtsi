@@ -1091,7 +1091,8 @@
 				 <0 0x16026000 0 0x800>,		/* VP6_VD */
 				 <0 0x16027800 0 0x800>,		/* VP8_VL */
 				 <0 0x16028000 0 0x400>,                /* HEVC_VD */
-				 <0 0x16028400 0 0x400>;		/* VP9_VD */
+				 <0 0x16028400 0 0x400>,		/* VP9_VD */
+				 <0 0x16030000 0 0x1000>;		/* IMAGE_RESZ */
 			interrupts = <GIC_SPI 212 IRQ_TYPE_LEVEL_LOW>;
 			mediatek,larb = <&larb1>;
 			iommus = <&iommu0 M4U_PORT_HW_VDEC_MC_EXT>,
@@ -1102,7 +1103,8 @@
 				 <&iommu0 M4U_PORT_HW_VDEC_VLD_EXT>,
 				 <&iommu0 M4U_PORT_HW_VDEC_VLD2_EXT>,
 				 <&iommu0 M4U_PORT_HW_VDEC_TILE>,
-				 <&iommu0 M4U_PORT_HW_VDEC_UFO_EXT>;
+				 <&iommu0 M4U_PORT_HW_VDEC_UFO_EXT>,
+				 <&iommu0 M4U_PORT_HW_IMG_RESZ_EXT>;
 			mediatek,vcu = <&vcu>;
 			power-domains = <&scpsys MT2712_POWER_DOMAIN_VDEC>;
 			clocks = <&apmixedsys CLK_APMIXED_VCODECPLL>,
@@ -1112,7 +1114,8 @@
 				 <&topckgen CLK_TOP_VCODECPLL>,
 				 <&apmixedsys CLK_APMIXED_VENCPLL>,
 				 <&topckgen CLK_TOP_VDEC_SEL>,
-				 <&topckgen CLK_TOP_VCODECPLL>;
+				 <&topckgen CLK_TOP_VCODECPLL>,
+				 <&vdecsys CLK_VDEC_IMGRZ_CKEN>;
 			clock-names = "vcodecpll",
 				      "univpll_d2",
 				      "clk_cci400_sel",
@@ -1120,14 +1123,15 @@
 				      "vdecpll",
 				      "vencpll",
 				      "venc_lt_sel",
-				      "vdec_bus_clk_src";
+				      "vdec_bus_clk_src",
+				      "img_resz";
 		};
 
 		vcu: vcu@0 {
 			compatible = "mediatek,mt2712-vcu";
 			mediatek,vcuid = <0>;
 			mediatek,vcuname = "vpu";
-			reg = <0 0x16000000 0 0x30000>,	        /* VDEC_BASE */
+			reg = <0 0x16000000 0 0x40000>,	        /* VDEC_BASE */
 				 <0 0x18004000 0 0x1000>,	/* VENC_BASE */
 				 <0 0x19002000 0 0x1000>;	/* VENC_LT_BASE */
 			iommus = <&iommu0 M4U_PORT_VENC_RCPU>;
