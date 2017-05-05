@@ -418,6 +418,7 @@ static int setFlashDrv(int sensorDev, int strobeId)
 }
 
 //Lenovo-sw caoxu1 [IKANGEROW-4703] 2017-5-5 begin
+
 static int decFlash(void)
 {
 	int i;
@@ -441,6 +442,31 @@ static int decFlash(void)
 }
 //Lenovo-sw caoxu1 [IKANGEROW-4703] 2017-5-5 end
 
+#if 0
+static int closeFlash(void)
+{
+	int i;
+	int j;
+	int k;
+
+	logI("closeFlash ln=%d", __LINE__);
+	for (i = 0; i < e_Max_Sensor_Dev_Num; i++) {
+		/* logI("closeFlash ln=%d %d",__LINE__,i); */
+		for (j = 0; j < e_Max_Strobe_Num_Per_Dev; j++) {
+			/* logI("closeFlash ln=%d %d",__LINE__,j); */
+			for (k = 0; k < e_Max_Part_Num_Per_Dev; k++) {
+				/* logI("closeFlash ln=%d %d %d",__LINE__,k, (int)g_pFlashInitFunc[i][j][k]); */
+				if (g_pFlashInitFunc[i][j][k] != 0) {
+					logI("closeFlash i,j,k %d %d %d", i, j, k);
+					g_pFlashInitFunc[i][j][k]->flashlight_ioctl
+					    (FLASH_IOC_SET_ONOFF, 0);
+				}
+			}
+		}
+	}
+	return 0;
+}
+#endif
 /* @@{ */
 
 /*
@@ -463,11 +489,11 @@ static void Lbat_protection_powerlimit_flash(LOW_BATTERY_LEVEL level)
 	if (level == LOW_BATTERY_LEVEL_0) {
 		gLowPowerVbat = LOW_BATTERY_LEVEL_0;
 	} else if (level == LOW_BATTERY_LEVEL_1) {
-		decFlash(); //Lenovo-sw caoxu1 [IKANGEROW-4703] 2017-5-5
+		decFlash();
 		gLowPowerVbat = LOW_BATTERY_LEVEL_1;
 
 	} else if (level == LOW_BATTERY_LEVEL_2) {
-		decFlash(); //Lenovo-sw caoxu1 [IKANGEROW-4703] 2017-5-5
+		decFlash();
 		gLowPowerVbat = LOW_BATTERY_LEVEL_2;
 	} else {
 		/* unlimit cpu and gpu */
@@ -487,7 +513,7 @@ static void bat_per_protection_powerlimit_flashlight(BATTERY_PERCENT_LEVEL level
 	if (level == BATTERY_PERCENT_LEVEL_0) {
 		gLowPowerPer = BATTERY_PERCENT_LEVEL_0;
 	} else if (level == BATTERY_PERCENT_LEVEL_1) {
-		decFlash(); //Lenovo-sw caoxu1 [IKANGEROW-4703] 2017-5-5
+		decFlash();
 		gLowPowerPer = BATTERY_PERCENT_LEVEL_1;
 	} else {
 
@@ -558,9 +584,6 @@ static long flashlight_ioctl_core(struct file *file, unsigned int cmd, unsigned 
 				isLow = 1;
 			logI("FLASH_IOC_IS_LOW_POWER %d %d %d", gLowPowerPer, gLowPowerVbat, isLow);
 			kdArg.arg = isLow;
-			#if defined(CONFIG_LCT_CAMERA_KERNEL)
-			kdArg.arg = 0;
-			#endif
 			if (copy_to_user
 			    ((void __user *)arg, (void *)&kdArg, sizeof(kdStrobeDrvArg))) {
 				logI("[FLASH_IOC_IS_LOW_POWER] ioctl copy to user failed ~");
