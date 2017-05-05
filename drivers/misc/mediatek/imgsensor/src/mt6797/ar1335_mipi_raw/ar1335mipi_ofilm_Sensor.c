@@ -28,7 +28,7 @@
 #include <asm/atomic.h>
 //#include <asm/system.h>
 //#include <linux/xlog.h>
-
+#include <linux/module.h>
 #include "kd_camera_hw.h"
 #include "kd_imgsensor.h"
 #include "kd_imgsensor_define.h"
@@ -48,6 +48,10 @@
 #define LOG_INF(format, args...)	pr_err(PFX "[%s] " format, __FUNCTION__, ##args)
 //#define LOG_INF(format, args...)    pr_debug(PFX  fmt, ##args)
 //extern u8 ar1335_LSCdatabuf[214];
+static unsigned int times = 50;
+module_param(times,int,0644);
+int count = 0;
+module_param(count,int,0644);
 extern int ReadAR1335LSCData(unsigned short ui4_offset, unsigned int  ui4_length, unsigned char * pinputdata);
 static DEFINE_SPINLOCK(imgsensor_drv_lock);
 
@@ -61,7 +65,7 @@ static imgsensor_info_struct imgsensor_info = {
     .pre = {
         .pclk = 452000000,              //record different mode's pclk 440000000
         .linelength = 4672,             //record different mode's linelength
-        .framelength = 3200,            //record different mode's framelength
+        .framelength = 3300,            //record different mode's framelength
         .startx = 0,                    //record different mode's startx of grabwindow
         .starty = 0,                    //record different mode's starty of grabwindow
         .grabwindow_width = 2104,        //record different mode's width of grabwindow
@@ -1014,14 +1018,15 @@ static void preview_setting(void)
  /// stop_streaming
 	write_cmos_sensor_2byte(0x3F3C, 0x0002);
 	write_cmos_sensor_2byte(0x3FE0, 0x0001);
-	write_cmos_sensor(0x0100, 0x00);      //mode_select	  8-bit			
+	write_cmos_sensor(0x0100, 0x00);      //mode_select	  8-bit		
+	mDELAY(times);
 	write_cmos_sensor_2byte(0x3FE0, 0x0000);
-		mDELAY(10);
-	////vt_clk = 440mhz, dada rate 1104mhz
-	write_cmos_sensor_2byte(0x0300, 0x0005); 	// VT_PIX_CLK_DIV
+	mDELAY(count);
+	////vt_clk = 440mhz, dada rate 880mhz
+	write_cmos_sensor_2byte(0x0300, 0x0004); 	// VT_PIX_CLK_DIV
 	write_cmos_sensor_2byte(0x0302, 0x0001); 	// VT_SYS_CLK_DIV
-	write_cmos_sensor_2byte(0x0304, 0x0101); 	// PRE_PLL_CLK_DIV
-	write_cmos_sensor_2byte(0x0306, 0x2e2e); 	// PLL_MULTIPLIER 0x6E6E
+	write_cmos_sensor_2byte(0x0304, 0x0303); 	// PRE_PLL_CLK_DIV
+	write_cmos_sensor_2byte(0x0306, 0x7171); 	// PLL_MULTIPLIER 0x6E6E
 	write_cmos_sensor_2byte(0x0308, 0x000A); 	// OP_PIX_CLK_DIV
 	write_cmos_sensor_2byte(0x030A, 0x0001); 	// OP_SYS_CLK_DIV
 	write_cmos_sensor_2byte(0x0112, 0x0A0A); 	// CCP_DATA_FORMAT
@@ -1039,7 +1044,7 @@ static void preview_setting(void)
 	write_cmos_sensor_2byte(0x0400, 0x0001); 	// SCALING_MODE
 	write_cmos_sensor_2byte(0x0404, 0x0020); 	// SCALE_M
 	write_cmos_sensor_2byte(0x0342, 0x1240); 	// LINE_LENGTH_PCK
-	write_cmos_sensor_2byte(0x0340, 0x0C80); 	// FRAME_LENGTH_LINES 0x0C6E
+	write_cmos_sensor_2byte(0x0340, 0x0CE4); 	// FRAME_LENGTH_LINES 0x0C6E
 	write_cmos_sensor_2byte(0x0202, 0x0C4F); 	// COARSE_INTEGRATION_TIME
 /*
 	write_cmos_sensor_2byte(0x31B0, 0x004D);   //Frame preamble 4D
@@ -1062,7 +1067,7 @@ static void preview_setting(void)
 	
 	write_cmos_sensor_2byte(0x3F3C, 0x0003);
 	write_cmos_sensor(0x0100, 0x01);      //bit 8//mode_select  8-bit
-	mDELAY(10);	
+	mDELAY(20);	
 	
 }    /*    preview_setting  */
 
@@ -1072,9 +1077,10 @@ static void capture_setting(kal_uint16 currefps)
   /// stop_streaming
 	write_cmos_sensor_2byte(0x3F3C, 0x0002);
 	write_cmos_sensor_2byte(0x3FE0, 0x0001);
-	write_cmos_sensor(0x0100, 0x00);     //mode_select	   8bit			
+	write_cmos_sensor(0x0100, 0x00);     //mode_select	   8bit	
+	mDELAY(times);
 	write_cmos_sensor_2byte(0x3FE0, 0x0000);
-		mDELAY(10);
+	mDELAY(count);
 
 	/// Mclk = 24Mhz , vt_clk = 441.6Mhz
 	////// vt_clk = 441.6mhz pclk = 110.4mhz data rate = 1104mhz  4208*3120@30fps
@@ -1129,7 +1135,7 @@ static void capture_setting(kal_uint16 currefps)
 	write_cmos_sensor(0x0100, 0x01);      //mode_select  8-bit   
 
 
-   	 mDELAY(10);  
+    mDELAY(20);  
 
 }
 
