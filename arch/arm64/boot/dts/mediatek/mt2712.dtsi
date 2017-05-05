@@ -661,6 +661,18 @@
 			status = "disabled";
 		};
 
+		eth: eth@1101c000 {
+			compatible = "mediatek,mt2712-eth";
+			reg = <0 0x1101c000 0 0x1200>;
+			interrupts = <GIC_SPI 237 IRQ_TYPE_EDGE_FALLING>;
+			phy-mode ="rgmii";
+			mac-address = [00 55 7b b5 7d f7];
+			clock-names = "mac_ext","ptp", "ptp_parent";
+			clocks = <&topckgen CLK_TOP_ETHER_125M_SEL>,
+				 <&topckgen CLK_TOP_ETHER_50M_SEL>,
+				 <&topckgen CLK_TOP_UNIVPLL3_D4>;
+		};
+
 		mmc0: mmc@11230000 {
 			compatible = "mediatek,mt2712-mmc";
 			reg = <0 0x11230000 0 0x1000>;
