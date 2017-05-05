@@ -156,6 +156,10 @@
 				 <&topckgen CLK_TOP_F_MP0_PLL1>;
 			clock-names = "cpu", "intermediate";
 			operating-points-v2 = <&cluster0_opp>;
+			#cooling-cells = <2>;
+			cooling-min-level = <0>;
+			cooling-max-level = <6>;
+			dynamic-power-coefficient = <263>;
 			sched-energy-costs = <&MT2712_CPU_COST_0
 					      &MT2712_CLUSTER_COST_0>;
 		};
@@ -169,6 +173,10 @@
 				 <&topckgen CLK_TOP_F_MP0_PLL1>;
 			clock-names = "cpu", "intermediate";
 			operating-points-v2 = <&cluster0_opp>;
+			#cooling-cells = <2>;
+			cooling-min-level = <0>;
+			cooling-max-level = <6>;
+			dynamic-power-coefficient = <263>;
 			sched-energy-costs = <&MT2712_CPU_COST_0
 					      &MT2712_CLUSTER_COST_0>;
 		};
@@ -182,6 +190,10 @@
 				 <&topckgen CLK_TOP_F_MP0_PLL1>;
 			clock-names = "cpu", "intermediate";
 			operating-points-v2 = <&cluster0_opp>;
+			#cooling-cells = <2>;
+			cooling-min-level = <0>;
+			cooling-max-level = <6>;
+			dynamic-power-coefficient = <263>;
 			sched-energy-costs = <&MT2712_CPU_COST_0
 					      &MT2712_CLUSTER_COST_0>;
 		};
@@ -195,6 +207,10 @@
 				 <&topckgen CLK_TOP_F_MP0_PLL1>;
 			clock-names = "cpu", "intermediate";
 			operating-points-v2 = <&cluster0_opp>;
+			#cooling-cells = <2>;
+			cooling-min-level = <0>;
+			cooling-max-level = <6>;
+			dynamic-power-coefficient = <263>;
 			sched-energy-costs = <&MT2712_CPU_COST_0
 					      &MT2712_CLUSTER_COST_0>;
 		};
@@ -208,6 +224,10 @@
 				 <&topckgen CLK_TOP_F_BIG_PLL1>;
 			clock-names = "cpu", "intermediate";
 			operating-points-v2 = <&cluster1_opp>;
+			#cooling-cells = <2>;
+			cooling-min-level = <0>;
+			cooling-max-level = <8>;
+			dynamic-power-coefficient = <530>;
 			sched-energy-costs = <&MT2712_CPU_COST_1
 					      &MT2712_CLUSTER_COST_1>;
 		};
@@ -221,7 +241,10 @@
 				 <&topckgen CLK_TOP_F_BIG_PLL1>;
 			clock-names = "cpu", "intermediate";
 			operating-points-v2 = <&cluster1_opp>;
-			#cooling-cells = <0>;
+			#cooling-cells = <2>;
+			cooling-min-level = <0>;
+			cooling-max-level = <8>;
+			dynamic-power-coefficient = <530>;
 			sched-energy-costs = <&MT2712_CPU_COST_1
 					      &MT2712_CLUSTER_COST_1>;
 		};
@@ -294,6 +317,50 @@
 		clocks = <&infracfg CLK_INFRA_DBGCLK>;
 		clock-names = "ice_dbg";
 	};
+
+	thermal-zones {
+		cpu_thermal: cpu_thermal {
+			polling-delay-passive = <1000>; /* milliseconds */
+			polling-delay = <1000>; /* milliseconds */
+
+			thermal-sensors = <&thermal>;
+			sustainable-power = <1500>; /* milliwatts */
+
+			trips {
+				threshold: trip-point@0 {
+					temperature = <68000>;
+					hysteresis = <2000>;
+					type = "passive";
+				};
+
+				target: trip-point@1 {
+					temperature = <85000>;
+					hysteresis = <2000>;
+					type = "passive";
+				};
+
+				cpu_crit: cpu_crit@0 {
+					temperature = <115000>;
+					hysteresis = <2000>;
+					type = "critical";
+				};
+			};
+
+			cooling-maps {
+				map@0 {
+					trip = <&target>;
+					cooling-device = <&cpu0 0 0>;
+					contribution = <3072>;
+				};
+				map@1 {
+					trip = <&target>;
+					cooling-device = <&cpu4 0 0>;
+					contribution = <1024>;
+				};
+			};
+		};
+	};
+
 	timer {
 		compatible = "arm,armv8-timer";
 		interrupt-parent = <&gic>;
@@ -586,6 +653,18 @@
 				 <&pericfg CLK_PERI_SPI0>;
 			clock-names = "parent-clk", "sel-clk", "spi-clk";
 				status = "disabled";
+		};
+
+		thermal: thermal@1100b000 {
+			#thermal-sensor-cells = <0>;
+			compatible = "mediatek,mt2712-thermal";
+			reg = <0 0x1100b000 0 0x1000>;
+			interrupts = <0 78 IRQ_TYPE_LEVEL_LOW>;
+			clocks = <&pericfg CLK_PERI_THERM>, <&pericfg CLK_PERI_AUXADC>;
+			clock-names = "therm", "auxadc";
+			resets = <&pericfg MT2712_PERI_THERM_SW_RST>;
+			mediatek,auxadc = <&auxadc>;
+			mediatek,apmixedsys = <&apmixedsys>;
 		};
 
 		i2c3: i2c@11010000 {
