@@ -60,6 +60,7 @@ static LCM_UTIL_FUNCS lcm_util;
 
 #define   LCM_DSI_CMD_MODE							(0)
 
+static unsigned int esd_last_backlight = 255;
 #ifndef BUILD_LK
 #define set_gpio_lcd_enp(cmd) lcm_util.set_gpio_lcd_enp_bias(cmd)
 #define set_gpio_lcd_enn(cmd) lcm_util.set_gpio_lcd_enn_bias(cmd)
@@ -69,6 +70,7 @@ static LCM_UTIL_FUNCS lcm_util;
 #ifdef BUILD_LK
 #define LP3101_SLAVE_ADDR_WRITE  0x7C
 static struct mt_i2c_t lp3101_i2c;
+
 
 static int lp3101_write_bytes(kal_uint8 addr, kal_uint8 value)
 {
@@ -452,8 +454,19 @@ void lcm_set_backlight(unsigned int level)
 void lcm_set_backlight_cmdq(void *handle, unsigned int level)
 {
 	unsigned int value = level;
+	esd_last_backlight = level;
 
+#ifndef BUILD_LK
+	pr_info("call %s, level=%d\n", __func__, level);
+#endif
 	lcm_backlight_level_setting[0].para_list[0] = value;
+	push_table(lcm_backlight_level_setting, sizeof(lcm_backlight_level_setting) / sizeof(struct LCM_setting_table), 1);
+
+}
+
+void lcm_esd_recover_backlight(void)
+{
+	lcm_backlight_level_setting[0].para_list[0] = esd_last_backlight;
 	push_table(lcm_backlight_level_setting, sizeof(lcm_backlight_level_setting) / sizeof(struct LCM_setting_table), 1);
 
 }
@@ -502,6 +515,7 @@ LCM_DRIVER nt35596_fhd_dsi_vdo_tianma_lcm_drv = {
 #endif
 	.set_backlight = lcm_set_backlight,
 	.set_backlight_cmdq = lcm_set_backlight_cmdq,
+	.esd_recover_backlight = lcm_esd_recover_backlight,
 #ifndef BUILD_LK
 	.set_cabc_mode = lcm_set_cabc_mode,
 #endif

@@ -70,6 +70,7 @@ static LCM_UTIL_FUNCS lcm_util;
 
 #define   LCM_DSI_CMD_MODE							(0)
 
+static unsigned int esd_last_backlight = 255;
 #ifndef BUILD_LK
 #define set_gpio_lcd_enp(cmd) lcm_util.set_gpio_lcd_enp_bias(cmd)
 #define set_gpio_lcd_enn(cmd) lcm_util.set_gpio_lcd_enn_bias(cmd)
@@ -436,13 +437,8 @@ static void lcm_set_backlight(unsigned int level)
 {
 	unsigned int value = level;
 
-	if (value > 0) {
-		lcm_backlight_level_setting[0].para_list[0] = ((value>>4)&0x0f);
-		lcm_backlight_level_setting[0].para_list[1] = (value<<4)&0xf0;
-	} else {
-		lcm_backlight_level_setting[0].para_list[0] = 0;
-		lcm_backlight_level_setting[0].para_list[1] = 0;
-	}
+	lcm_backlight_level_setting[0].para_list[0] = ((value>>4)&0x0f);
+	lcm_backlight_level_setting[0].para_list[1] = (value<<4)&0xf0;
 	push_table(lcm_backlight_level_setting,
 			sizeof(lcm_backlight_level_setting) / sizeof(struct LCM_setting_table), 1);
 
@@ -451,18 +447,27 @@ static void lcm_set_backlight(unsigned int level)
 static void lcm_set_backlight_cmdq(void *handle, unsigned int level)
 {
 	unsigned int value = level;
+	esd_last_backlight =  level;
 
-	if (value > 0) {
-		lcm_backlight_level_setting[0].para_list[0] = ((value>>4)&0x0f);
-		lcm_backlight_level_setting[0].para_list[1] = (value<<4)&0xf0;
-	} else {
-		lcm_backlight_level_setting[0].para_list[0] = 0;
-		lcm_backlight_level_setting[0].para_list[1] = 0;
-	}
+#ifndef BUILD_LK
+	pr_info("call %s, level=%d\n", __func__, level);
+#endif
+	lcm_backlight_level_setting[0].para_list[0] = ((value>>4)&0x0f);
+	lcm_backlight_level_setting[0].para_list[1] = (value<<4)&0xf0;
 	push_table(lcm_backlight_level_setting,
 			sizeof(lcm_backlight_level_setting) / sizeof(struct LCM_setting_table), 1);
 
 }
+
+static void lcm_esd_recover_backlight(void)
+{
+	lcm_backlight_level_setting[0].para_list[0] = ((esd_last_backlight>>4)&0x0f);
+	lcm_backlight_level_setting[0].para_list[1] = (esd_last_backlight<<4)&0xf0;
+	push_table(lcm_backlight_level_setting,
+			sizeof(lcm_backlight_level_setting) / sizeof(struct LCM_setting_table), 1);
+
+}
+
 #ifndef BUILD_LK
 static int lcm_set_cabc_mode(int mode)
 {
@@ -510,5 +515,6 @@ LCM_DRIVER ili7807d_fhd_dsi_vdo_djn_lcm_drv = {
 #ifndef BUILD_LK
 	.set_backlight_cmdq = lcm_set_backlight_cmdq,
 	.set_cabc_mode = lcm_set_cabc_mode,
+	.esd_recover_backlight = lcm_esd_recover_backlight,
 #endif
 };
