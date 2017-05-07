@@ -860,7 +860,7 @@ void select_charging_current_bcct(void)
 }
 static void bq25890_select_correspond_power(void)
 {
-	if (!(bq25890_is_maxcharger()
+	if (!(BMT_status.charger_rate == POWER_SUPPLY_CHARGE_RATE_TURBO
 		&& BMT_status.charger_type == STANDARD_CHARGER))
 		return;
 

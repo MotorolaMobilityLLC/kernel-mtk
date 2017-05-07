@@ -255,6 +255,8 @@ unsigned char fg_ipoh_reset;
 
 static struct workqueue_struct *battery_init_workqueue;
 static struct work_struct battery_init_work;
+struct delayed_work		check_turbo_charger_work;
+static int check_turbo_counter = 0;
 
 extern signed int fgauge_get_Q_max(signed short temperature);
 extern int force_get_tbat(kal_bool update);
@@ -322,6 +324,7 @@ struct battery_data {
 	int adjust_power;
 	int charge_full_design;
 	int charge_full;
+	int charge_rate;
 };
 
 static enum power_supply_property wireless_props[] = {
@@ -363,6 +366,7 @@ static enum power_supply_property battery_props[] = {
 	POWER_SUPPLY_PROP_CHARGE_FULL_DESIGN,
 	POWER_SUPPLY_PROP_CHARGE_FULL,
 	POWER_SUPPLY_PROP_CHARGE_COUNTER,
+	POWER_SUPPLY_PROP_CHARGE_RATE,
 };
 
 struct timespec batteryThreadRunTime;
@@ -723,6 +727,9 @@ static int battery_get_property(struct power_supply *psy,
 		break;
 	case POWER_SUPPLY_PROP_CHARGE_COUNTER:
 		val->intval = mt_battery_GetBatteryChargeCounter();
+		break;
+	case POWER_SUPPLY_PROP_CHARGE_RATE:
+		val->intval = data->charge_rate;
 		break;
 
 	default:
@@ -1718,6 +1725,8 @@ static void mt_battery_update_EM(struct battery_data *bat_data)
 	bat_data->BAT_BatterySenseVoltage = BMT_status.bat_vol;
 	bat_data->BAT_ISenseVoltage = BMT_status.Vsense;	/* API */
 	bat_data->BAT_ChargerVoltage = BMT_status.charger_vol;
+	bat_data->charge_rate = BMT_status.charger_rate;
+
 	/* Dual battery */
 	bat_data->status_smb = g_status_smb;
 	bat_data->capacity_smb = g_capacity_smb;
@@ -2650,7 +2659,43 @@ void mt_battery_update_status(void)
 
 #endif
 }
+#define CHECK_TURBO_MS 1000
+static void bq25890_check_turbo_charger_work(struct work_struct *work)
+{
+	struct battery_data *bat_data = &battery_main;
+	struct power_supply *bat_psy = &bat_data->psy;
+	int prev_chg_rate = bat_data->charge_rate;
+	char *charge_rate[] = {
+		"None", "Normal", "Weak", "Turbo"
+	};
 
+	if (bq25890_is_maxcharger()) {
+		bat_data->charge_rate = POWER_SUPPLY_CHARGE_RATE_TURBO;
+		BMT_status.charger_rate = POWER_SUPPLY_CHARGE_RATE_TURBO;
+	} else {
+		bat_data->charge_rate = POWER_SUPPLY_CHARGE_RATE_NORMAL;
+		BMT_status.charger_rate = POWER_SUPPLY_CHARGE_RATE_NORMAL;
+	}
+
+	if (prev_chg_rate != bat_data->charge_rate)
+	battery_log(BAT_LOG_CRTI, "%s Charger Detected!\n",
+		charge_rate[bat_data->charge_rate]);
+
+	if (bat_data->charge_rate == POWER_SUPPLY_CHARGE_RATE_NORMAL) {
+		if (check_turbo_counter <= 9) {
+			check_turbo_counter ++;
+			schedule_delayed_work(&check_turbo_charger_work,
+				msecs_to_jiffies(CHECK_TURBO_MS));
+		} else {
+			power_supply_changed(bat_psy);
+			check_turbo_counter = 0;
+		}
+	} else if (bat_data->charge_rate == POWER_SUPPLY_CHARGE_RATE_TURBO) {
+		power_supply_changed(bat_psy);
+		check_turbo_counter = 0;
+	}
+
+}
 
 CHARGER_TYPE mt_charger_type_detection(void)
 {
@@ -2769,6 +2814,12 @@ static void mt_battery_charger_detect_check(void)
 			    || (BMT_status.charger_type == CHARGING_HOST)) {
 				mt_usb_connect();
 			}
+
+			if (BMT_status.charger_type == STANDARD_CHARGER)
+				schedule_delayed_work(&check_turbo_charger_work,
+					msecs_to_jiffies(CHECK_TURBO_MS));
+			else
+				BMT_status.charger_rate = POWER_SUPPLY_CHARGE_RATE_NORMAL;
 		}
 #endif
 
@@ -2782,7 +2833,7 @@ static void mt_battery_charger_detect_check(void)
 		battery_charging_control(CHARGING_CMD_SET_CHRIND_CK_PDN, &pwr);
 #endif
 
-		battery_log(BAT_LOG_FULL, "[BAT_thread]Cable in, CHR_Type_num=%d\r\n",
+		battery_log(BAT_LOG_CRTI, "[BAT_thread]Cable in, CHR_Type_num=%d\r\n",
 			    BMT_status.charger_type);
 
 
@@ -2791,6 +2842,7 @@ static void mt_battery_charger_detect_check(void)
 
 		BMT_status.charger_exist = KAL_FALSE;
 		BMT_status.charger_type = CHARGER_UNKNOWN;
+		BMT_status.charger_rate = POWER_SUPPLY_CHARGE_RATE_NONE;
 		BMT_status.bat_full = KAL_FALSE;
 		BMT_status.bat_in_recharging_state = KAL_FALSE;
 		BMT_status.bat_charging_state = CHR_PRE;
@@ -2808,6 +2860,8 @@ static void mt_battery_charger_detect_check(void)
 
 		battery_log(BAT_LOG_FULL, "[PE+] Cable OUT\n");
 
+		check_turbo_counter = 0;
+		cancel_delayed_work(&check_turbo_charger_work);
 
 #ifdef CONFIG_MTK_BQ25896_SUPPORT
 /*New low power feature of MT6531: disable charger CLK without CHARIN.
@@ -4088,7 +4142,7 @@ static int battery_probe(struct platform_device *dev)
 #if defined(CONFIG_MTK_PUMP_EXPRESS_SUPPORT)
 	wake_lock_init(&TA_charger_suspend_lock, WAKE_LOCK_SUSPEND, "TA charger suspend wakelock");
 #endif
-
+	INIT_DELAYED_WORK(&check_turbo_charger_work, bq25890_check_turbo_charger_work);
 	mtk_pep_init();
 	mtk_pep20_init();
 

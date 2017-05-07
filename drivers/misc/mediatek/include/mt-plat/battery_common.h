@@ -112,6 +112,13 @@ typedef enum {
 	DURATION_NUM
 } BATTERY_TIME_ENUM;
 
+enum {
+	POWER_SUPPLY_CHARGE_RATE_NONE = 0,
+	POWER_SUPPLY_CHARGE_RATE_NORMAL,
+	POWER_SUPPLY_CHARGE_RATE_WEAK,
+	POWER_SUPPLY_CHARGE_RATE_TURBO,
+};
+
 /*****************************************************************************
 *   JEITA battery temperature standard
     charging info ,like temperatue, charging current, re-charging voltage, CV threshold would be reconfigurated.
@@ -219,6 +226,7 @@ typedef struct {
 	unsigned int nPercent_ZCV;
 	unsigned int nPrecent_UI_SOC_check_point;
 	unsigned int ZCV;
+	int charger_rate;
 } PMU_ChargerStruct;
 
 struct battery_custom_data {
