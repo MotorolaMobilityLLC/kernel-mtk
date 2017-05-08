@@ -31,11 +31,18 @@ static void mtk_mdp_vpu_handle_init_ack(struct mdp_ipi_comm_ack *msg)
 {
 	struct mtk_mdp_vpu *vpu = (struct mtk_mdp_vpu *)
 					(unsigned long)msg->ap_inst;
+	struct mdp_cmdq_info *cmdq;
 
 	/* mapping VPU address to kernel virtual address */
 	vpu->vsi = (struct mdp_process_vsi *)
 			vpu_mapping_dm_addr(vpu->pdev, msg->vpu_inst_addr);
 	vpu->inst_addr = msg->vpu_inst_addr;
+
+	/* mapping cmdq buffer address in VPU to kernel virtual address */
+	cmdq = &vpu->vsi->cmdq;
+	if (cmdq->vpu_buf_addr != 0uLL)
+		cmdq->ap_buf_addr = (uint64_t)(unsigned long)
+				vpu_mapping_dm_addr(vpu->pdev, (unsigned long)cmdq->vpu_buf_addr);
 }
 
 #ifdef CONFIG_VIDEO_MEDIATEK_VCU
@@ -58,6 +65,7 @@ static void mtk_mdp_vpu_ipi_handler(void *data, unsigned int len, void *priv)
 			break;
 		case VPU_MDP_DEINIT_ACK:
 		case VPU_MDP_PROCESS_ACK:
+		case VPU_MDP_CMDQ_DONE_ACK:
 			break;
 		default:
 			ctx = vpu_to_ctx(vpu);
@@ -153,7 +161,68 @@ int mtk_mdp_vpu_deinit(struct mtk_mdp_vpu *vpu)
 	return mtk_mdp_vpu_send_ap_ipi(vpu, AP_MDP_DEINIT);
 }
 
+static int mtk_mdp_cmdq_exec(struct mtk_mdp_ctx *ctx, struct mdp_cmdq_info *cmdq)
+{
+	struct cmdq_pkt *handle  = ctx->cmdq_handle;
+	int err, request_size;
+
+	mtk_mdp_dbg(2, "eng=%llx,addr=%llx,offset=%u,size=%u,regr=%x,%u,%u",
+		cmdq->engine_flag, cmdq->ap_buf_addr, cmdq->cmd_offset,
+		cmdq->cmd_size, cmdq->regr_count, cmdq->regr_addr_offset,
+		cmdq->regr_val_offset);
+
+	/* copy cmd buffer */
+	handle->cmd_buf_size = 0;
+	if (cmdq->cmd_size % CMDQ_INST_SIZE)
+		return -EINVAL;
+
+	request_size = cmdq->cmd_size;
+	if (unlikely(request_size > handle->buf_size)) {
+		request_size = roundup(request_size, PAGE_SIZE);
+		err = cmdq_pkt_realloc_cmd_buffer(handle, request_size);
+		if (err < 0)
+			return err;
+	}
+
+	memcpy(handle->va_base,
+		(void *)(unsigned long)cmdq->ap_buf_addr + cmdq->cmd_offset,
+		cmdq->cmd_size);
+	handle->cmd_buf_size = cmdq->cmd_size;
+
+	/* execute cmd */
+	err = cmdq_pkt_flush(ctx->mdp_dev->cmdq_client, handle);
+	if (unlikely(err < 0))
+		dev_err(&ctx->mdp_dev->pdev->dev, "cmdq flush failed!!!\n");
+
+	return err;
+}
+
 int mtk_mdp_vpu_process(struct mtk_mdp_vpu *vpu)
 {
-	return mtk_mdp_vpu_send_ap_ipi(vpu, AP_MDP_PROCESS);
+	int err, use_cmdq;
+	struct mdp_cmdq_info *cmdq;
+
+	err = mtk_mdp_vpu_send_ap_ipi(vpu, AP_MDP_PROCESS);
+
+	use_cmdq = 0;
+	cmdq = &vpu->vsi->cmdq;
+
+	if (err == 0 && cmdq->ap_buf_addr && cmdq->cmd_size) {
+		/* There are command in cmdq buffer, to use cmdq. */
+		use_cmdq = 1;
+	}
+
+	if (use_cmdq) {
+		struct mtk_mdp_ctx *ctx = container_of(vpu, struct mtk_mdp_ctx, vpu);
+
+		err = mtk_mdp_cmdq_exec(ctx, cmdq);
+		if (unlikely(err < 0))
+			dev_err(&ctx->mdp_dev->pdev->dev, "cmdq execute failed!!!\n");
+
+		/* notify VPU that cmdq instructions executed done */
+		/* to do: add status in vpu->vsi->cmdq */
+		err = mtk_mdp_vpu_send_ap_ipi(vpu, AP_MDP_CMDQ_DONE);
+	}
+
+	return err;
 }

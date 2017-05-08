@@ -22,10 +22,12 @@ enum mdp_ipi_msgid {
 	AP_MDP_INIT		= 0xd000,
 	AP_MDP_DEINIT		= 0xd001,
 	AP_MDP_PROCESS		= 0xd002,
+	AP_MDP_CMDQ_DONE	= 0xd003,
 
 	VPU_MDP_INIT_ACK	= 0xe000,
 	VPU_MDP_DEINIT_ACK	= 0xe001,
-	VPU_MDP_PROCESS_ACK	= 0xe002
+	VPU_MDP_PROCESS_ACK	= 0xe002,
+	VPU_MDP_CMDQ_DONE_ACK	= 0xe003
 };
 
 #pragma pack(push, 4)
@@ -114,12 +116,38 @@ struct mdp_config_misc {
 	int32_t alpha; /* global alpha */
 };
 
+/**
+ * struct mdp_cmdq_info - command queue information
+ * @engine_flag      : bit flag of engines used.
+ * @vpu_buf_addr     : pointer to instruction buffer in vpu.
+ *                          This must point to an 64-bit aligned uint32_t array.
+ * @ap_buf_addr      : pointer to instruction buffer in ap.
+ * @buf_size         : size of buffer, in bytes.
+ * @cmd_offset       : offset of real instruction start pointer relative to buf_addr.
+ * @cmd_size         : used size, in bytes.
+ * @regr_count       : number of requesting to read register values
+ * @regr_addr_offset : offset of read registers addresse relative to buf_addr.
+ * @regr_val_offset  : offset of read back registers values address relative to buf_addr.
+ */
+struct mdp_cmdq_info {
+	uint64_t engine_flag;
+	uint64_t vpu_buf_addr;
+	uint64_t ap_buf_addr;
+	uint32_t buf_size;
+	uint32_t cmd_offset;
+	uint32_t cmd_size;
+	uint32_t regr_count;
+	uint32_t regr_addr_offset;
+	uint32_t regr_val_offset;
+};
+
 struct mdp_process_vsi {
 	struct mdp_config src_config;
 	struct mdp_buffer src_buffer;
 	struct mdp_config dst_config;
 	struct mdp_buffer dst_buffer;
 	struct mdp_config_misc misc;
+	struct mdp_cmdq_info cmdq;
 };
 
 #pragma pack(pop)

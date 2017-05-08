@@ -1246,12 +1246,20 @@ static int mtk_mdp_m2m_open(struct file *file)
 	}
 
 	list_add(&ctx->list, &mdp->ctx_list);
+
+	ret = cmdq_pkt_create(&ctx->cmdq_handle);
+	if (ret) {
+		dev_err(&mdp->pdev->dev, "Create cmdq ptk failed %d\n", ret);
+		goto err_create_cmdq_pkt;
+	}
+
 	mutex_unlock(&mdp->lock);
 
 	mtk_mdp_dbg(0, "%s [%d]", dev_name(&mdp->pdev->dev), ctx->id);
 
 	return 0;
 
+err_create_cmdq_pkt:
 err_load_vpu:
 	mdp->ctx_num--;
 	v4l2_m2m_ctx_release(ctx->m2m_ctx);
@@ -1281,6 +1289,7 @@ static int mtk_mdp_m2m_release(struct file *file)
 	mtk_mdp_vpu_deinit(&ctx->vpu);
 	mdp->ctx_num--;
 	list_del_init(&ctx->list);
+	cmdq_pkt_destroy(ctx->cmdq_handle);
 
 	mtk_mdp_dbg(0, "%s [%d]", dev_name(&mdp->pdev->dev), ctx->id);
 
