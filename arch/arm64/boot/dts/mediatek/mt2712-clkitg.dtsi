@@ -47,7 +47,7 @@
 			<&bdpsys CLK_BDP_TVD_TDC>,
 			<&bdpsys CLK_BDP_TVD_54>,
 			<&bdpsys CLK_BDP_TVD_CBUS>,
-			<&infracfg CLK_INFRA_DBGCLK>,
+			<&clk26m>,
 			<&infracfg CLK_INFRA_GCE>,
 			<&infracfg CLK_INFRA_M4U>,
 			<&infracfg CLK_INFRA_KP>,
