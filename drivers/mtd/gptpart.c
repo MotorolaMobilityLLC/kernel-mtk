@@ -21,11 +21,7 @@
 #define GPT_SIGNATURE_1            0x54524150
 #define GPT_SIGNATURE_2            0x20494645
 
-#define MAX_PARTS                  10
-#define LBA_SIZE                   512
-
 /* GPT Offsets */
-#define PROTECTIVE_MBR_SIZE        LBA_SIZE
 #define HEADER_SIZE_OFFSET         12
 #define HEADER_CRC_OFFSET          16
 #define PRIMARY_HEADER_OFFSET      24
@@ -82,6 +78,13 @@ struct gpt_header {
 
 static int validate_mbr_partition(struct mtd_info *master, const struct mbr_part *part)
 {
+	u32 lba_size;
+
+	if (mtd_type_is_nand(master))
+		lba_size = master->writesize;
+	else
+		lba_size = 512;
+
 	/* check for invalid types */
 	if (part->type == 0)
 		return -1;
@@ -90,9 +93,9 @@ static int validate_mbr_partition(struct mtd_info *master, const struct mbr_part
 		return -1;
 
 	/* make sure the range fits within the device */
-	if (part->lba_start >= master->size / LBA_SIZE)
+	if (part->lba_start >= master->size / lba_size)
 		return -1;
-	if ((part->lba_start + part->lba_length) > master->size / LBA_SIZE)
+	if ((part->lba_start + part->lba_length) > master->size / lba_size)
 		return -1;
 
 	return 0;
@@ -147,25 +150,24 @@ int gpt_parse(struct mtd_info *master,
 	struct gpt_header gpthdr = {0, 0, 0, 0, 0};
 	uint32_t part_entry_cnt;
 	uint64_t partition_0;
+	u32 lba_size;
 
 	dev_dbg(&master->dev, "GPT: enter gpt parser...\n");
 
-	parts = kzalloc(sizeof(struct mtd_partition) * MAX_PARTS,
-			GFP_KERNEL);
-	if (!parts)
+	if (mtd_type_is_nand(master))
+		lba_size = master->writesize;
+	else
+		lba_size = 512;
+
+	buf = kzalloc(lba_size, GFP_KERNEL);
+	if (!buf)
 		return -ENOMEM;
 
-	buf = kzalloc(LBA_SIZE, GFP_KERNEL);
-	if (!buf) {
-		kfree(parts);
-		return -ENOMEM;
-	}
-
-	err = mtd_read(master, 0, LBA_SIZE, &bytes_read, buf);
+	err = mtd_read(master, 0, lba_size, &bytes_read, buf);
 	if (err < 0)
-		goto err;
+		goto freebuf;
 
-	for (k = 0; k < LBA_SIZE; k += 8) {
+	for (k = 0; k < lba_size; k += 8) {
 		dev_dbg(&master->dev, "+%d: %x %x %x %x  %x %x %x %x\n",
 			k, buf[k], buf[k+1], buf[k+2], buf[k+3],
 			buf[k+4], buf[k+5], buf[k+6], buf[k+7]);
@@ -174,7 +176,7 @@ int gpt_parse(struct mtd_info *master,
 	/* look for the aa55 tag */
 	if (buf[510] != 0x55 || buf[511] != 0xaa) {
 		dev_err(&master->dev, "GPT: not find aa55 @ 510,511\n");
-		goto err;
+		goto freebuf;
 	}
 
 	/* see if a partition table makes sense here */
@@ -193,39 +195,44 @@ int gpt_parse(struct mtd_info *master,
 
 	if (!gpt_partitions_exist) {
 		dev_err(&master->dev, "GPT: not find GPT\n");
-		goto err;
+		goto freebuf;
 	}
 
-	err = mtd_read(master, LBA_SIZE, LBA_SIZE, &bytes_read, buf);
+	err = mtd_read(master, lba_size, lba_size, &bytes_read, buf);
 	if (err < 0)
-		goto err;
+		goto freebuf;
 
 	err = partition_parse_gpt_header(buf, &gpthdr);
 	if (err) {
 		dev_warn(&master->dev, "GPT: Read GPT header fail, try to check the backup gpt.\n");
-		err = mtd_read(master, master->size - LBA_SIZE, LBA_SIZE, &bytes_read, buf);
+		err = mtd_read(master, master->size - lba_size, lba_size, &bytes_read, buf);
 		if (err < 0) {
 			dev_err(&master->dev, "GPT: Could not read backup gpt.\n");
-			goto err;
+			goto freebuf;
 		}
 
 		err = partition_parse_gpt_header(buf, &gpthdr);
 		if (err) {
 			dev_err(&master->dev, "GPT: Primary and backup signatures invalid.\n");
-			goto err;
+			goto freebuf;
 		}
 	}
 
-	part_entry_cnt = LBA_SIZE / ENTRY_SIZE;
+	parts = kcalloc(gpthdr.max_partition_count, sizeof(struct mtd_partition),
+			GFP_KERNEL);
+	if (!parts)
+		return -ENOMEM;
+
+	part_entry_cnt = lba_size / ENTRY_SIZE;
 	partition_0 = GET_LLWORD_FROM_BYTE(&buf[PARTITION_ENTRIES_OFFSET]);
 
 	/* Read GPT Entries */
 	for (i = 0; i < (ROUNDUP(gpthdr.max_partition_count, part_entry_cnt)) / part_entry_cnt; i++) {
-		err = mtd_read(master, (partition_0 * LBA_SIZE) + (i * LBA_SIZE),
-			LBA_SIZE, &bytes_read, (uint8_t *)buf);
+		err = mtd_read(master, (partition_0 * lba_size) + (i * lba_size),
+			lba_size, &bytes_read, (uint8_t *)buf);
 		if (err < 0) {
 			dev_err(&master->dev, "GPT: read failed reading partition entries.\n");
-			goto err;
+			goto freeparts;
 		}
 
 		for (j = 0; j < part_entry_cnt; j++) {
@@ -263,7 +270,7 @@ int gpt_parse(struct mtd_info *master,
 				name, first_lba, last_lba, size);
 
 			gpt_add_part(&parts[curr_part++], name,
-				first_lba * LBA_SIZE, 0, (last_lba - first_lba + 1) * LBA_SIZE);
+				first_lba * lba_size, 0, (last_lba - first_lba + 1) * lba_size);
 
 			dev_dbg(&master->dev, "gpt there are <%d> parititons.\n", curr_part);
 		}
@@ -272,9 +279,11 @@ int gpt_parse(struct mtd_info *master,
 	*pparts = parts;
 	kfree(buf);
 	return curr_part;
-err:
-	kfree(buf);
+
+freeparts:
 	kfree(parts);
+freebuf:
+	kfree(buf);
 	return 0;
 };
 
