@@ -4905,15 +4905,38 @@ static MINT32 ISP_ReadReg(ISP_REG_IO_STRUCT *pRegIo)
 
 
 	/*  */
-	ISP_REG_STRUCT reg;
+	ISP_REG_STRUCT *reg;
 	/* MUINT32* pData = (MUINT32*)pRegIo->Data; */
-	ISP_REG_STRUCT *pData = (ISP_REG_STRUCT *)pRegIo->pData;
+	ISP_REG_STRUCT *pData = NULL;
 
-	if (get_user(module, (MUINT32 *)&pData->module) != 0) {
-		LOG_ERR("get_user failed\n");
+	if ((void __user *)(pRegIo->pData) == NULL) {
+		LOG_ERR("NULL pData");
 		Ret = -EFAULT;
 		goto EXIT;
 	}
+
+	if (pRegIo->Count > (PAGE_SIZE/sizeof(MUINT32))) {
+		LOG_ERR("pRegIo->Count error");
+		Ret = -EFAULT;
+		goto EXIT;
+	}
+
+	pData = kmalloc((pRegIo->Count) * sizeof(ISP_REG_STRUCT), GFP_KERNEL);
+	if (pData == NULL) {
+		LOG_DBG("ERROR: kmalloc failed, (process, pid, tgid)=(%s, %d, %d),count(%d)\n",
+		current->comm, current->pid, current->tgid, pRegIo->Count);
+		Ret = -ENOMEM;
+		goto EXIT;
+	}
+
+	/*  */
+	if (copy_from_user(pData, (void __user *)(pRegIo->pData), pRegIo->Count * sizeof(ISP_REG_STRUCT)) != 0) {
+		LOG_ERR("copy_from_user failed\n");
+		Ret = -EFAULT;
+		goto EXIT;
+	}
+
+	module = pData->module;
 
 	switch (module) {
 	case CAM_A:
@@ -4956,33 +4979,32 @@ static MINT32 ISP_ReadReg(ISP_REG_IO_STRUCT *pRegIo)
 	}
 
 
+	reg = pData;
 	for (i = 0; i < pRegIo->Count; i++) {
-		if (get_user(reg.Addr, (MUINT32 *)&pData->Addr) != 0) {
-			LOG_ERR("get_user failed\n");
-			Ret = -EFAULT;
-			goto EXIT;
-		}
-		/* pData++; */
 		/*  */
-		if (((regBase + reg.Addr) < (regBase + PAGE_SIZE))) {
-			reg.Val = ISP_RD32(regBase + reg.Addr);
+		if (((regBase + reg->Addr) < (regBase + PAGE_SIZE))) {
+			reg->Val = ISP_RD32(regBase + reg->Addr);
 		} else {
-			LOG_ERR("Wrong address(0x%lx)\n", (unsigned long)(regBase + reg.Addr));
-			reg.Val = 0;
+			LOG_ERR("Wrong address(0x%lx)\n", (unsigned long)(regBase + reg->Addr));
+			reg->Val = 0;
 		}
 		/*  */
-		/* printk("[KernelRDReg]addr(0x%x),value()0x%x\n",ISP_ADDR_CAMINF + reg.Addr,reg.Val); */
-
-		if (put_user(reg.Val, (MUINT32 *) &(pData->Val)) != 0) {
-			LOG_ERR("put_user failed\n");
-			Ret = -EFAULT;
-			goto EXIT;
-		}
-		pData++;
+		/* LOG_INF("module(%d)addr(0x%lx),value(0x%x)\n",module,(unsigned long)(regBase+reg->Addr),reg->Val); */
+		reg++;
 		/*  */
 	}
-	/*  */
+	if (copy_to_user((void *)pRegIo->pData, pData, (pRegIo->Count) * sizeof(ISP_REG_STRUCT)) != 0) {
+		LOG_ERR("copy_to_user failed\n");
+		Ret = -EFAULT;
+		goto EXIT;
+		}
+		/*  */
 EXIT:
+	if (pData != NULL) {
+		kfree(pData);
+		pData = NULL;
+	}
+
 	return Ret;
 }
 
@@ -5083,7 +5105,7 @@ static MINT32 ISP_WriteReg(ISP_REG_IO_STRUCT *pRegIo)
 	/* MUINT8* pData = NULL; */
 	ISP_REG_STRUCT *pData = NULL;
 
-	if (pRegIo->Count > 0xFFFFFFFF) {
+	if (pRegIo->Count > (PAGE_SIZE/sizeof(MUINT32))) {
 		LOG_ERR("pRegIo->Count error");
 		Ret = -EFAULT;
 		goto EXIT;
