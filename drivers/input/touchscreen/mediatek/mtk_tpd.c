@@ -375,36 +375,34 @@ static int tpd_fb_notifier_callback(struct notifier_block *self, unsigned long e
 	TPD_DEBUG("tpd_fb_notifier_callback\n");
 
 	evdata = data;
-	/* If we aren't interested in this event, skip it immediately ... */
-	if (event != FB_EVENT_BLANK)
-		return 0;
 
-	blank = *(int *)evdata->data;
-	TPD_DMESG("fb_notify(blank=%d)\n", blank);
-	switch (blank) {
-	case FB_BLANK_UNBLANK:
-		TPD_DMESG("LCD ON Notify\n");
-		if (g_tpd_drv && tpd_suspend_flag) {
-			err = queue_work(touch_resume_workqueue, &touch_resume_work);
-			if (!err) {
-				TPD_DMESG("start touch_resume_workqueue failed\n");
-				return err;
+	if ((event == FB_EARLY_EVENT_BLANK || event == FB_EVENT_BLANK)) {
+		blank = *(int *)evdata->data;
+		TPD_DMESG("fb notification: event = %lu blank = %d\n", event, blank);
+		if (event == FB_EARLY_EVENT_BLANK) {
+			if (blank != FB_BLANK_POWERDOWN)
+				return 0;
+			TPD_DMESG("LCD OFF Notify\n");
+			if (g_tpd_drv && !tpd_suspend_flag) {
+				err = cancel_work_sync(&touch_resume_work);
+				if (!err)
+					TPD_DMESG("cancel touch_resume_workqueue err = %d\n", err);
+				g_tpd_drv->suspend(NULL);
+			}
+			tpd_suspend_flag = 1;
+		} else if (blank == FB_BLANK_UNBLANK ||
+			(blank == FB_BLANK_NORMAL && tpd_suspend_flag)) {
+			TPD_DMESG("LCD ON Notify\n");
+			if (g_tpd_drv && tpd_suspend_flag) {
+				err = queue_work(touch_resume_workqueue, &touch_resume_work);
+				if (!err) {
+					TPD_DMESG("start touch_resume_workqueue failed\n");
+					return err;
+				}
 			}
 		}
-		break;
-	case FB_BLANK_POWERDOWN:
-		TPD_DMESG("LCD OFF Notify\n");
-		if (g_tpd_drv && !tpd_suspend_flag) {
-			err = cancel_work_sync(&touch_resume_work);
-			if (!err)
-				TPD_DMESG("cancel touch_resume_workqueue err = %d\n", err);
-			g_tpd_drv->suspend(NULL);
-		}
-		tpd_suspend_flag = 1;
-		break;
-	default:
-		break;
 	}
+
 	return 0;
 }
 
