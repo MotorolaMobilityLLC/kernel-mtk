@@ -239,7 +239,7 @@ static int mtk_vcodec_probe(struct platform_device *pdev)
 
 	dev->vcu_plat_dev = vcu_get_plat_device(dev->plat_dev);
 	if (dev->vcu_plat_dev == NULL) {
-		mtk_v4l2_err("[VPU] vpu device in not ready");
+		mtk_v4l2_err("[VCU] vcu device in not ready");
 		return -EPROBE_DEFER;
 	}
 
