@@ -1510,14 +1510,14 @@ static int mtk_nfc_ecc_init(struct device *dev, struct mtd_info *mtd)
 	return 0;
 }
 
+static const char * const part_types[] = {"gptpart", "ofpart", NULL};
+
 static int mtk_nfc_nand_chip_init(struct device *dev, struct mtk_nfc *nfc,
 				  struct device_node *np)
 {
 	struct mtk_nfc_nand_chip *chip;
 	struct nand_chip *nand;
 	struct mtd_info *mtd;
-	struct mtd_part_parser_data ppdata;
-	struct device_node *ofpart_node, *ppdata_node;
 	int nsels, len;
 	u32 tmp;
 	int ret;
@@ -1615,31 +1615,14 @@ static int mtk_nfc_nand_chip_init(struct device *dev, struct mtk_nfc *nfc,
 	if (ret)
 		return -ENODEV;
 
-	list_add_tail(&chip->node, &nfc->chips);
-
-	ppdata_node = of_get_next_available_child(dev->of_node, NULL);
-	if (!ppdata_node) {
-		dev_err(dev, "no nand device to configure\n");
-		return -ENODEV;
-	}
-
-	ofpart_node = of_get_child_by_name(ppdata_node, "partitions");
-	if (ofpart_node) {
-		static const char * const probes[] = {"ofpart", NULL};
-
-		ret = mtd_device_parse_register(mtd, probes, &ppdata, NULL, 0);
-	} else {
-		if (nfc->chip_data->type == MTK_NAND_MT2712)
-			ret = mtk_partition_register(mtd, 0);
-		else
-			ret = mtk_partition_register(mtd, 8);
-	}
-
+	ret = mtd_device_parse_register(mtd, part_types, NULL, NULL, 0);
 	if (ret) {
 		dev_err(dev, "mtd parse partition error\n");
 		nand_release(mtd);
 		return ret;
 	}
+
+	list_add_tail(&chip->node, &nfc->chips);
 
 	return 0;
 }
