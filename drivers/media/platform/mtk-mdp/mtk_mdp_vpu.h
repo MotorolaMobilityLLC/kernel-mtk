@@ -40,7 +40,7 @@
  */
 struct mtk_mdp_vpu {
 	struct platform_device	*pdev;
-	uint32_t		inst_addr;
+	uint64_t		inst_addr;
 	int32_t			failure;
 	struct mdp_process_vsi	*vsi;
 };

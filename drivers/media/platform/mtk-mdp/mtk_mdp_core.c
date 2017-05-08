@@ -59,6 +59,7 @@ static const struct of_device_id mtk_mdp_comp_dt_ids[] = {
 };
 
 static const struct of_device_id mtk_mdp_of_ids[] = {
+	{ .compatible = "mediatek,mt2701-mdp", },
 	{ .compatible = "mediatek,mt8173-mdp", },
 	{ },
 };
@@ -162,22 +163,23 @@ static int mtk_mdp_probe(struct platform_device *pdev)
 
 	mdp->job_wq = create_singlethread_workqueue(MTK_MDP_MODULE_NAME);
 	if (!mdp->job_wq) {
-		dev_err(&pdev->dev, "unable to alloc job workqueue\n");
+		dev_err(dev, "unable to alloc job workqueue\n");
 		ret = -ENOMEM;
 		goto err_alloc_job_wq;
 	}
 
 	mdp->wdt_wq = create_singlethread_workqueue("mdp_wdt_wq");
 	if (!mdp->wdt_wq) {
-		dev_err(&pdev->dev, "unable to alloc wdt workqueue\n");
+		dev_err(dev, "unable to alloc wdt workqueue\n");
 		ret = -ENOMEM;
 		goto err_alloc_wdt_wq;
 	}
+
 	INIT_WORK(&mdp->wdt_work, mtk_mdp_wdt_worker);
 
 	ret = v4l2_device_register(dev, &mdp->v4l2_dev);
 	if (ret) {
-		dev_err(&pdev->dev, "Failed to register v4l2 device\n");
+		dev_err(dev, "Failed to register v4l2 device\n");
 		ret = -EINVAL;
 		goto err_dev_register;
 	}

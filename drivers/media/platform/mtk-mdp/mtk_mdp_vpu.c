@@ -100,12 +100,15 @@ static int mtk_mdp_vpu_send_msg(void *msg, int len, struct mtk_mdp_vpu *vpu,
 		mtk_mdp_dbg(1, "[%d]:vpu pdev is NULL", ctx->id);
 		return -EINVAL;
 	}
-
 	mutex_lock(&ctx->mdp_dev->vpulock);
+	mtk_mdp_dbg(2, "id=0x%x, msg_len=%d", *(int *)msg, len);
+
 	err = vpu_ipi_send(vpu->pdev, (enum ipi_id)id, msg, len);
 	if (err)
 		dev_err(&ctx->mdp_dev->pdev->dev,
 			"vpu_ipi_send fail status %d\n", err);
+
+	mtk_mdp_dbg(2, "id=0x%x, return from vpu", id);
 	mutex_unlock(&ctx->mdp_dev->vpulock);
 
 	return err;
@@ -119,7 +122,7 @@ static int mtk_mdp_vpu_send_ap_ipi(struct mtk_mdp_vpu *vpu, uint32_t msg_id)
 	msg.msg_id = msg_id;
 	msg.ipi_id = IPI_MDP;
 	msg.vpu_inst_addr = vpu->inst_addr;
-	msg.ap_inst = (unsigned long)vpu;
+	msg.ap_inst = (uint64_t)(unsigned long)vpu;
 	err = mtk_mdp_vpu_send_msg((void *)&msg, sizeof(msg), vpu, IPI_MDP);
 	if (!err && vpu->failure)
 		err = -EINVAL;
@@ -137,7 +140,7 @@ int mtk_mdp_vpu_init(struct mtk_mdp_vpu *vpu)
 
 	msg.msg_id = AP_MDP_INIT;
 	msg.ipi_id = IPI_MDP;
-	msg.ap_inst = (unsigned long)vpu;
+	msg.ap_inst = (uint64_t)(unsigned long)vpu;
 	err = mtk_mdp_vpu_send_msg((void *)&msg, sizeof(msg), vpu, IPI_MDP);
 	if (!err && vpu->failure)
 		err = -EINVAL;
