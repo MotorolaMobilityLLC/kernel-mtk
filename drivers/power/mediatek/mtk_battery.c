@@ -62,7 +62,6 @@
 #include <mt-plat/mtk_boot.h>
 #include <linux/of_fdt.h>	/*of_dt API*/
 
-
 /* ============================================================ */
 /* define */
 /* ============================================================ */
@@ -211,6 +210,7 @@ static enum power_supply_property battery_props[] = {
 //add by longcheer_liml_2017_02_22 for add battery capacity start
     POWER_SUPPLY_PROP_CHARGE_FULL,
     POWER_SUPPLY_PROP_CHARGE_FULL_DESIGN,
+    POWER_SUPPLY_PROP_CHARGE_COUNTER,
 //add by longcheer_liml_2017_02_22 for add battery capacity end
 };
 
@@ -374,6 +374,9 @@ static int battery_get_property(struct power_supply *psy,
 		break;
 	case POWER_SUPPLY_PROP_CHARGE_FULL_DESIGN:
 		val->intval = 4000000;
+		break;
+	case POWER_SUPPLY_PROP_CHARGE_COUNTER:
+		val->intval = (4000*data->BAT_CAPACITY)/100;
 		break;
 //add by longcheer_liml_2017_02_22 for add battery capacity end
 	default:
@@ -3800,6 +3803,7 @@ static ssize_t store_BatteryIdVoltage(struct device *dev,struct device_attribute
 	return size;
 }
 static DEVICE_ATTR(BatteryIdVoltage, 0664, show_BatteryIdVoltage, store_BatteryIdVoltage);
+
 #if defined(CONFIG_LCT_CHR_LIMIT_MAX_SOC) 
 /*=====================running test start=add by longcheer_liml_2017_03_04=================*/
 static ssize_t show_BatteryTestStatus(struct device *dev,struct device_attribute *attr, char *buf)
