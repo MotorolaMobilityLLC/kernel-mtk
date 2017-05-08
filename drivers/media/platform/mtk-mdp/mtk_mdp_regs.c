@@ -48,7 +48,7 @@ static int32_t mtk_mdp_map_color_format(int v4l2_format)
 	case V4L2_PIX_FMT_YVU420:
 		return DP_COLOR_YV12;
 	case V4L2_PIX_FMT_YUV422P:
-		return MDP_COLOR_I422;
+		return DP_COLOR_I422;
 	case V4L2_PIX_FMT_NV16:
 	case V4L2_PIX_FMT_NV16M:
 		return DP_COLOR_NV16;
