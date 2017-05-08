@@ -379,22 +379,22 @@ int setDuty_aw3644_2(int duty)
 	{
 		if(isMovieMode[m_duty2] == 1)
 		{
-			writeReg(aw3644_REG_LED2_TORCH, torchDuty_H[m_duty2]);
+			writeReg(aw3644_REG_LED2_TORCH, torchDuty_L[m_duty2]);
 		}
 		else
 		{
-			writeReg(aw3644_REG_LED2_FLASH, flashDuty_H[m_duty2]);
+			writeReg(aw3644_REG_LED2_FLASH, flashDuty_L[m_duty2]);
 		}
 	}
 	else if(LED2Closeflag == 1)
 	{
 		if(isMovieMode[m_duty1] == 1)
 		{
-			writeReg(aw3644_REG_LED1_TORCH, torchDuty_L[m_duty1]);
+			writeReg(aw3644_REG_LED1_TORCH, torchDuty_H[m_duty1]);
 		}
 		else
 		{
-			writeReg(aw3644_REG_LED1_FLASH, flashDuty_L[m_duty1]);
+			writeReg(aw3644_REG_LED1_FLASH, flashDuty_H[m_duty1]);
 		}
 	}
 	else
