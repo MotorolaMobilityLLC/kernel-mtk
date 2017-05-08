@@ -126,14 +126,14 @@ static void initdrv(void)
 {
 
 
-	char puSendCmd3[2] = { 0x01, 0x39 };
-	char puSendCmd4[2] = { 0x05, 0x7A };
+	char puSendCmd3[2] = {0x01, 0x39};
+	char puSendCmd4[2] = {0x05, 0x7A};
 
 	g_pstAF_I2Cclient->addr = AF_I2C_SLAVE_ADDR;
 	g_pstAF_I2Cclient->addr = g_pstAF_I2Cclient->addr >> 1;
 	
 	i2c_master_send(g_pstAF_I2Cclient, puSendCmd3, 2);
-
+ 	msleep(1);
 	i2c_master_send(g_pstAF_I2Cclient, puSendCmd4, 2);
 
 }
