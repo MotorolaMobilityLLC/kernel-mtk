@@ -490,7 +490,7 @@ static int mtk_iommu_hw_init(const struct mtk_iommu_data *data)
 		return ret;
 	}
 
-	if (data->match_type == m4u_mt8173) {
+	if (data->match_data->match_type == m4u_mt8173) {
 		regval = F_MMU_PREFETCH_RT_REPLACE_MOD |
 			F_MMU_TF_PROTECT_SEL(2);
 	} else {
@@ -499,7 +499,7 @@ static int mtk_iommu_hw_init(const struct mtk_iommu_data *data)
 	writel_relaxed(regval, data->base + REG_MMU_CTRL_REG);
 
 	/* for mt2712 and mt8695, if 4GB was enabled, set the validate pa range to 8GB */
-	if (data->match_type != m4u_mt8173 && data->enable_4GB) {
+	if (data->match_data->match_type != m4u_mt8173 && data->enable_4GB) {
 		regval = F_MMU_VLD_PA_RNG(8, 1);
 		writel_relaxed(regval, data->base + REG_MMU_VLD_PA_RNG);
 	}
@@ -552,6 +552,7 @@ static int mtk_iommu_probe(struct platform_device *pdev)
 	struct component_match  *match = NULL;
 	void                    *protect;
 	int                     i, larb_nr, ret;
+	static int iommu_cnt;
 
 	data = devm_kzalloc(dev, sizeof(*data), GFP_KERNEL);
 	if (!data)
@@ -559,7 +560,7 @@ static int mtk_iommu_probe(struct platform_device *pdev)
 	data->dev = dev;
 
 	of_id = of_match_node(mtk_iommu_of_ids, dev->of_node);
-	data->match_type = (enum mtk_iommu_match_type)of_id->data;
+	data->match_data = (const struct mtk_iommu_match_data *)of_id->data;
 
 	/* Protect memory. HW will access here while translation fault.*/
 	protect = devm_kzalloc(dev, MTK_PROTECT_PA_ALIGN * 2, GFP_KERNEL);
@@ -622,11 +623,14 @@ static int mtk_iommu_probe(struct platform_device *pdev)
 
 	platform_set_drvdata(pdev, data);
 
+	of_iommu_set_ops(dev->of_node, &mtk_iommu_ops);
+
 	ret = mtk_iommu_hw_init(data);
 	if (ret)
 		return ret;
 
-	if (!iommu_present(&platform_bus_type))
+	iommu_cnt++;
+	if (!iommu_present(&platform_bus_type) && iommu_cnt == data->match_data->iommu_cnt)
 		bus_set_iommu(&platform_bus_type, &mtk_iommu_ops);
 
 	return component_master_add_with_match(dev, &mtk_iommu_com_ops, match);
@@ -684,9 +688,22 @@ const struct dev_pm_ops mtk_iommu_pm_ops = {
 	SET_SYSTEM_SLEEP_PM_OPS(mtk_iommu_suspend, mtk_iommu_resume)
 };
 
+#define MT8173_IOMMU_CNT	1
+#define MT2712_IOMMU_CNT	2
+
+const struct mtk_iommu_match_data mt8173_match_data = {
+	.match_type = m4u_mt8173,
+	.iommu_cnt = MT2712_IOMMU_CNT,
+};
+
+const struct mtk_iommu_match_data mt2712_match_data = {
+	.match_type = m4u_mt2712,
+	.iommu_cnt = MT2712_IOMMU_CNT,
+};
+
 static const struct of_device_id mtk_iommu_of_ids[] = {
-	{ .compatible = "mediatek,mt8173-m4u", .data = (void *)m4u_mt8173},
-	{ .compatible = "mediatek,mt2712-m4u", .data = (void *)m4u_mt2712},
+	{ .compatible = "mediatek,mt8173-m4u", .data = (void *)&mt8173_match_data},
+	{ .compatible = "mediatek,mt2712-m4u", .data = (void *)&mt2712_match_data},
 	{}
 };
 
@@ -720,7 +737,6 @@ static int mtk_iommu_init_fn(struct device_node *np)
 		init_done = true;
 	}
 
-	of_iommu_set_ops(np, &mtk_iommu_ops);
 	return 0;
 }
 
