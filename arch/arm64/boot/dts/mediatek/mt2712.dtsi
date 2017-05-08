@@ -1223,6 +1223,34 @@
 			#clock-cells = <1>;
 		};
 
+		jpegdec: jpegdec@19001000 {
+			compatible = "mediatek,mt2712-jpgdec";
+			reg = <0 0x19001000 0 0x1000>;
+			interrupts = <GIC_SPI 211 IRQ_TYPE_LEVEL_LOW>;
+			clocks = <&topckgen CLK_TOP_JPGDEC_SEL>,
+				 <&jpgdecsys CLK_JPGDEC_JPGDEC>;
+			clock-names = "jpgdec-smi",
+				      "jpgdec";
+			power-domains = <&scpsys MT2712_POWER_DOMAIN_VENC>;
+			mediatek,larb = <&larb6>;
+			iommus = <&iommu0 M4U_PORT_JPGDEC_WDMA_0>,
+				 <&iommu0 M4U_PORT_JPGDEC_BSDMA_0>;
+		};
+
+		jpegdec1: jpegdec@19002000 {
+			compatible = "mediatek,mt2712-jpgdec";
+			reg = <0 0x19002000 0 0x1000>;
+			interrupts = <GIC_SPI 208 IRQ_TYPE_LEVEL_LOW>;
+			clocks = <&topckgen CLK_TOP_JPGDEC_SEL>,
+				 <&jpgdecsys CLK_JPGDEC_JPGDEC1>;
+			clock-names = "jpgdec-smi",
+				      "jpgdec";
+			power-domains = <&scpsys MT2712_POWER_DOMAIN_VENC>;
+			mediatek,larb = <&larb6>;
+			iommus = <&iommu0 M4U_PORT_JPGDEC_WDMA_1>,
+				 <&iommu0 M4U_PORT_JPGDEC_BSDMA_1>;
+		};
+
 		/*  add those to avoid runtime errors. */
 		pcie0_phy: pciephy@1a147000 {
 			compatible = "mediatek,pcie-phy";
