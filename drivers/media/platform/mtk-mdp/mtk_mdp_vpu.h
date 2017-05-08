@@ -43,6 +43,10 @@ struct mtk_mdp_vpu {
 	uint64_t		inst_addr;
 	int32_t			failure;
 	struct mdp_process_vsi	*vsi;
+#ifdef CONFIG_VIDEO_MEDIATEK_MDP_FRVC
+	struct mdp_process_vsi	vsi_frvc;
+	int32_t			initialized;
+#endif
 };
 
 int mtk_mdp_vpu_register(struct platform_device *pdev);

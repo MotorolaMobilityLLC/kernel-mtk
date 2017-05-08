@@ -206,6 +206,15 @@ config VIDEO_MEDIATEK_MDP
 	    To compile this driver as a module, choose M here: the
 	    module will be called mtk-mdp.
 
+config VIDEO_MEDIATEK_MDP_FRVC
+	bool "Mediatek MDP Support Fast-RVC driver"
+	depends on VIDEO_MEDIATEK_MDP
+	---help---
+	  This driver is part of fast rear video camera feature.
+	  It provides support of fast rear video camera in MDP.
+	  Default is disable
+	  Set y when Fast-RVC is needed
+
 config VIDEO_MEDIATEK_VCODEC
 	tristate "Mediatek Video Codec driver"
 	depends on MTK_IOMMU || COMPILE_TEST

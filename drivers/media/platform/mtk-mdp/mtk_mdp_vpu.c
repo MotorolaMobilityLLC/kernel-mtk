@@ -21,6 +21,7 @@
 #include "mtk_vpu.h"
 #endif
 
+#define FRVC_DEBUG 0 /* Only for FRVC debug */
 
 static inline struct mtk_mdp_ctx *vpu_to_ctx(struct mtk_mdp_vpu *vpu)
 {
@@ -110,8 +111,62 @@ static int mtk_mdp_vpu_send_msg(void *msg, int len, struct mtk_mdp_vpu *vpu,
 	}
 	mutex_lock(&ctx->mdp_dev->vpulock);
 	mtk_mdp_dbg(2, "id=0x%x, msg_len=%d", *(int *)msg, len);
+#ifdef CONFIG_VIDEO_MEDIATEK_MDP_FRVC
+	err = 0;
 
+	if (*(uint32_t *)msg == AP_MDP_INIT) {
+		#if FRVC_DEBUG
+		vpu->vsi = NULL;
+		#else
+		err = vpu_ipi_send(vpu->pdev, (enum ipi_id)id, msg, len);
+		#endif
+		if (vpu->vsi == NULL) {
+			vpu->vsi = &vpu->vsi_frvc;
+			mtk_mdp_dbg(0,
+				"init vpu failed %d, will use fast-rvc flow\n", err);
+			err = 0;
+			vpu->initialized = 0;
+		} else
+			vpu->initialized = 1;
+	} else if (*(uint32_t *)msg == AP_MDP_PROCESS) {
+		if (vpu->initialized) {
+			/* normal flow, mtk mdp vpu is initialized */
+			err = vpu_ipi_send(vpu->pdev, (enum ipi_id)id, msg, len);
+		} else {
+			/* mtk_mdp_vpu is not initialized, try to initialize it */
+			#if FRVC_DEBUG
+			err = 1;
+			#else
+			struct mdp_ipi_init init_msg;
+
+			init_msg.msg_id = AP_MDP_INIT;
+			init_msg.ipi_id = IPI_MDP;
+			init_msg.ap_inst = (uint64_t)(unsigned long)vpu;
+			err = vpu_ipi_send(vpu->pdev, (enum ipi_id)id, (void *)&init_msg,
+				sizeof(init_msg));
+			#endif
+
+			if (err || vpu->failure) {
+				/* VPU is not running, go to fast rvc patch flow*/
+				err = mtk_mdp_frvc_process(ctx);
+			} else {
+				vpu->initialized = 1;
+				mtk_mdp_frvc_stop();
+				/* initialize successfully, switch to normal flow */
+				err = vpu_ipi_send(vpu->pdev, (enum ipi_id)id, msg, len);
+			}
+		}
+	} else if (*(uint32_t *)msg == AP_MDP_DEINIT) {
+		if (vpu->initialized)
+			err = vpu_ipi_send(vpu->pdev, (enum ipi_id)id, msg, len);
+		else {
+			/* todo: mtk_mdp_frc_uninit */
+			err = 0;
+		}
+	}
+#else
 	err = vpu_ipi_send(vpu->pdev, (enum ipi_id)id, msg, len);
+#endif
 	if (err)
 		dev_err(&ctx->mdp_dev->pdev->dev,
 			"vpu_ipi_send fail status %d\n", err);
@@ -210,6 +265,11 @@ int mtk_mdp_vpu_process(struct mtk_mdp_vpu *vpu)
 	if (err == 0 && cmdq->ap_buf_addr && cmdq->cmd_size) {
 		/* There are command in cmdq buffer, to use cmdq. */
 		use_cmdq = 1;
+
+#ifdef CONFIG_VIDEO_MEDIATEK_MDP_FRVC
+		if (!vpu->initialized)
+			use_cmdq = 0;
+#endif
 	}
 
 	if (use_cmdq) {
