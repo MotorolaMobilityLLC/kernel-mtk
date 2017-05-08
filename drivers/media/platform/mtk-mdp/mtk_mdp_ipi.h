@@ -53,7 +53,7 @@ struct mdp_ipi_comm {
 	uint32_t msg_id;
 	uint32_t ipi_id;
 	uint64_t ap_inst;
-	uint32_t vpu_inst_addr;
+	uint64_t vpu_inst_addr;
 };
 
 /**
@@ -68,7 +68,7 @@ struct mdp_ipi_comm_ack {
 	uint32_t msg_id;
 	uint32_t ipi_id;
 	uint64_t ap_inst;
-	uint32_t vpu_inst_addr;
+	uint64_t vpu_inst_addr;
 	int32_t status;
 };
 
@@ -98,6 +98,7 @@ struct mdp_config {
 	int32_t crop_w;
 	int32_t crop_h;
 	int32_t format;
+	int32_t reserved[1];
 };
 
 struct mdp_buffer {
