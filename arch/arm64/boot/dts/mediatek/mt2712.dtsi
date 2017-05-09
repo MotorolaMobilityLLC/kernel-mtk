@@ -478,6 +478,14 @@
 			#iommu-cells = <1>;
 		};
 
+		efuse: efuse@10206000 {
+			compatible = "mediatek,mt2712-efuse",
+				     "mediatek,efuse";
+			reg = <0 0x10206000 0 0x1000>;
+			#address-cells = <1>;
+			#size-cells = <1>;
+		};
+
 		apmixedsys: syscon@10209000 {
 			compatible = "mediatek,mt2712-apmixedsys", "syscon";
 			reg = <0 0x10209000 0 0x1000>;
