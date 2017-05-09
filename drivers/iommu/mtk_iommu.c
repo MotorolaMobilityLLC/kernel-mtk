@@ -693,7 +693,7 @@ const struct dev_pm_ops mtk_iommu_pm_ops = {
 
 const struct mtk_iommu_match_data mt8173_match_data = {
 	.match_type = m4u_mt8173,
-	.iommu_cnt = MT2712_IOMMU_CNT,
+	.iommu_cnt = MT8173_IOMMU_CNT,
 };
 
 const struct mtk_iommu_match_data mt2712_match_data = {
