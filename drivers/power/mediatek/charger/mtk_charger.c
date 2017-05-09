@@ -329,6 +329,8 @@ static int _charger_manager_enable_charging(struct charger_consumer *consumer,
 		#ifdef CONFIG_LCT_CHR_ALT_TEST_SUPPORT  //add by longcheer_liml_2017_03_10
 		        if (lct_alt_status == 1)
 				    _mtk_charger_do_charging(info, 0);
+				else
+				    _mtk_charger_do_charging(info, en);
 	    #else   
                  _mtk_charger_do_charging(info, en);
 	    #endif
@@ -1052,15 +1054,7 @@ static void charger_check_status(struct charger_manager *info)
 		do_sw_jeita_state_machine(info);
 		if (info->sw_jeita.charging == false) {
 			charging = false;
-			charger_manager_notifier(info, CHARGER_NOTIFY_STOP_CHARGING);//add by longcheer-liml_2017_05_04
 			goto stop_charging;
-		}else{
-		    if(mtk_is_charger_on(info)==true)  //add by longcheer-liml_2017_05_04
-		    {
-		        charger_manager_notifier(info, CHARGER_NOTIFY_START_CHARGING);
-		    }else{
-		        charger_manager_notifier(info, CHARGER_NOTIFY_STOP_CHARGING);
-		    }
 		}
 	} else {
 
