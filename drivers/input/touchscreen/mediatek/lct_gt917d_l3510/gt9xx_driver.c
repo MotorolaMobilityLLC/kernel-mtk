@@ -1173,7 +1173,7 @@ static s32 gtp_init_panel(struct i2c_client *client)
 
 			if (opr_buf[0] < 90) { //compare cfg id
 				grp_cfg_version = send_cfg_buf[sensor_id][0];	/* backup group config version */
-				send_cfg_buf[sensor_id][0] = 0x00;
+				//send_cfg_buf[sensor_id][0] = 0x00;
 				fixed_config = 0;
 			} else {
 				GTP_INFO("Ic fixed config with config version(%d)", opr_buf[0]);
