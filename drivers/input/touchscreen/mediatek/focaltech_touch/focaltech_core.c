@@ -567,6 +567,7 @@ static int fts_report_value(struct ts_event *data)
 			}
 			input_mt_report_slot_state(tpd->dev, MT_TOOL_FINGER,
 						   true);
+			input_report_key(tpd->dev, BTN_TOUCH, 1);
 			if (FTS_REPORT_PRESSURE_EN) {
 				if (FTS_FORCE_TOUCH_EN) {
 					if (data->pressure[i] > 0) {
