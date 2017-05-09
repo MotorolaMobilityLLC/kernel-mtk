@@ -840,8 +840,10 @@ static void mtk_jpeg_device_run(void *priv)
 	}
 
 	mtk_jpeg_set_dec_src(ctx, src_buf, &bs);
-	if (mtk_jpeg_set_dec_dst(ctx, &jpeg_src_buf->dec_param, dst_buf, &fb))
+	if (mtk_jpeg_set_dec_dst(ctx, &jpeg_src_buf->dec_param, dst_buf, &fb)) {
+		dev_err(jpeg->dev, "Invalid parameter\n");
 		goto dec_end;
+	}
 
 	spin_lock_irqsave(&jpeg->hw_lock, flags);
 	mtk_jpeg_dec_reset(jpeg->dec_reg_base);
@@ -893,27 +895,27 @@ static int mtk_jpeg_queue_init(void *priv, struct vb2_queue *src_vq,
 	int ret;
 
 	src_vq->type = V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE;
-	src_vq->io_modes = VB2_DMABUF | VB2_MMAP;
+	src_vq->io_modes = VB2_DMABUF | VB2_MMAP | VB2_USERPTR;
 	src_vq->drv_priv = ctx;
 	src_vq->buf_struct_size = sizeof(struct mtk_jpeg_src_buf);
 	src_vq->ops = &mtk_jpeg_qops;
 	src_vq->mem_ops = &vb2_dma_contig_memops;
 	src_vq->timestamp_flags = V4L2_BUF_FLAG_TIMESTAMP_COPY;
 	src_vq->lock = &ctx->jpeg->lock;
-	/* src_vq->dev = ctx->jpeg->dev; */
+	src_vq->dev = ctx->jpeg->dev;
 	ret = vb2_queue_init(src_vq);
 	if (ret)
 		return ret;
 
 	dst_vq->type = V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE;
-	dst_vq->io_modes = VB2_DMABUF | VB2_MMAP;
+	dst_vq->io_modes = VB2_DMABUF | VB2_MMAP | VB2_USERPTR;
 	dst_vq->drv_priv = ctx;
 	dst_vq->buf_struct_size = sizeof(struct v4l2_m2m_buffer);
 	dst_vq->ops = &mtk_jpeg_qops;
 	dst_vq->mem_ops = &vb2_dma_contig_memops;
 	dst_vq->timestamp_flags = V4L2_BUF_FLAG_TIMESTAMP_COPY;
 	dst_vq->lock = &ctx->jpeg->lock;
-	/* dst_vq->dev = ctx->jpeg->dev; */
+	dst_vq->dev = ctx->jpeg->dev;
 	ret = vb2_queue_init(dst_vq);
 
 	return ret;
@@ -961,9 +963,10 @@ static irqreturn_t mtk_jpeg_dec_irq(int irq, void *priv)
 	dec_ret = mtk_jpeg_dec_get_int_status(jpeg->dec_reg_base);
 	dec_irq_ret = mtk_jpeg_dec_enum_result(dec_ret);
 
-	if (dec_irq_ret >= MTK_JPEG_DEC_RESULT_UNDERFLOW)
+	if (dec_irq_ret >= MTK_JPEG_DEC_RESULT_UNDERFLOW) {
+		dev_err(jpeg->dev, "decode Underflow\n");
 		mtk_jpeg_dec_reset(jpeg->dec_reg_base);
-
+	}
 	if (dec_irq_ret != MTK_JPEG_DEC_RESULT_EOF_DONE) {
 		dev_err(jpeg->dev, "decode failed\n");
 		goto dec_end;
