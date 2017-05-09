@@ -410,6 +410,19 @@ static struct iommu_group *mtk_iommu_device_group(struct device *dev)
 
 	/* All the client devices are in the same m4u iommu-group */
 	data = dev_get_drvdata(priv->m4udev);
+
+	/*
+	 * We may run into a scenario that of_xlate have already set dev->archdata.iommu, but
+	 * iommu driver has not been finished probe, at this time data is NULL, we will trigger
+	 * bus scan all the device after all iommu's probe have been done.
+	 *
+	 * Just make the first enter is safe and will not crash the system. After all the iommu
+	 * driver has finished probe, bus_set_iommu will trigger all the not-been added device
+	 * add to iommu domain again.
+	 */
+	if (!data)
+		return ERR_PTR(-ENODEV);
+
 	if (!data->m4u_group) {
 		data->m4u_group = iommu_group_alloc();
 		if (IS_ERR(data->m4u_group))
@@ -623,13 +636,15 @@ static int mtk_iommu_probe(struct platform_device *pdev)
 
 	platform_set_drvdata(pdev, data);
 
-	of_iommu_set_ops(dev->of_node, &mtk_iommu_ops);
-
 	ret = mtk_iommu_hw_init(data);
 	if (ret)
 		return ret;
 
 	iommu_cnt++;
+	/*
+	 * trigger the bus to scan all the device to add them to iommu domain after all the iommu
+	 * have finished probe.
+	 */
 	if (!iommu_present(&platform_bus_type) && iommu_cnt == data->match_data->iommu_cnt)
 		bus_set_iommu(&platform_bus_type, &mtk_iommu_ops);
 
@@ -736,6 +751,18 @@ static int mtk_iommu_init_fn(struct device_node *np)
 		}
 		init_done = true;
 	}
+
+	/*
+	 * We must set the ops here or we may not get the very master "np" of_xlate callback
+	 * not set at the time of_iommu_configure was called by of_dma_configure, when platform device
+	 * node was created by of_platform_device_create_pdata. And we get dev->archdata.iommu not
+	 * set, then we could not add the device into iommu group.
+	 *
+	 * If iommu probe was deferred, it will be delayed after late_initcall, that's when defer_probe
+	 * work was scheduled. Our of_xlate callback could not be excuted at that time and iommu clients
+	 * could not be added to the iommu domain.
+	 */
+	of_iommu_set_ops(np, &mtk_iommu_ops);
 
 	return 0;
 }
