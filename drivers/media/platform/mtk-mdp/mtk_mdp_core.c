@@ -26,6 +26,7 @@
 #include <linux/pm_runtime.h>
 #include <linux/workqueue.h>
 #include <soc/mediatek/smi.h>
+#include <linux/iommu.h>
 
 #include "mtk_mdp_core.h"
 #include "mtk_mdp_m2m.h"
@@ -113,7 +114,13 @@ static int mtk_mdp_probe(struct platform_device *pdev)
 	struct device_node *node;
 	struct platform_device *cmdq_dev;
 	int i, ret = 0;
+	struct iommu_domain *iommu;
 
+	iommu = iommu_get_domain_for_dev(dev);
+	if (!iommu) {
+		dev_info(dev, "Waiting iommu driver ready...\n");
+		return -EPROBE_DEFER;
+	}
 	/* Check whether cmdq driver is ready */
 	node = of_parse_phandle(dev->of_node, "mediatek,gce", 0);
 	if (!node) {
