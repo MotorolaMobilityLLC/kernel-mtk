@@ -98,12 +98,6 @@ static int mtk_jpeg_querycap(struct file *file, void *priv,
 	snprintf(cap->bus_info, sizeof(cap->bus_info), "platform:%s",
 		 dev_name(jpeg->dev));
 
-	cap->capabilities = V4L2_CAP_STREAMING |
-			    V4L2_CAP_VIDEO_M2M_MPLANE |
-			    V4L2_CAP_VIDEO_CAPTURE_MPLANE |
-			    V4L2_CAP_VIDEO_OUTPUT_MPLANE |
-			    V4L2_CAP_DEVICE_CAPS;
-	cap->device_caps =  V4L2_CAP_STREAMING | V4L2_CAP_VIDEO_M2M;
 	return 0;
 }
 
@@ -587,7 +581,6 @@ static int mtk_jpeg_queue_setup(struct vb2_queue *q,
 	*num_planes = q_data->fmt->colplanes;
 	for (i = 0; i < q_data->fmt->colplanes; i++) {
 		sizes[i] = q_data->sizeimage[i];
-		/*alloc_ctxs[i] = jpeg->alloc_ctx;*/
 		v4l2_dbg(1, debug, &jpeg->v4l2_dev, "sizeimage[%d]=%u\n",
 			 i, sizes[i]);
 	}
@@ -871,15 +864,6 @@ static int mtk_jpeg_job_ready(void *priv)
 
 static void mtk_jpeg_job_abort(void *priv)
 {
-	struct mtk_jpeg_ctx *ctx = priv;
-	struct mtk_jpeg_dev *jpeg = ctx->jpeg;
-	struct vb2_buffer *src_buf, *dst_buf;
-
-	src_buf = v4l2_m2m_src_buf_remove(ctx->fh.m2m_ctx);
-	dst_buf = v4l2_m2m_dst_buf_remove(ctx->fh.m2m_ctx);
-	v4l2_m2m_buf_done(to_vb2_v4l2_buffer(src_buf), VB2_BUF_STATE_ERROR);
-	v4l2_m2m_buf_done(to_vb2_v4l2_buffer(dst_buf), VB2_BUF_STATE_ERROR);
-	v4l2_m2m_job_finish(jpeg->m2m_dev, ctx->fh.m2m_ctx);
 }
 
 static struct v4l2_m2m_ops mtk_jpeg_m2m_ops = {
@@ -895,7 +879,7 @@ static int mtk_jpeg_queue_init(void *priv, struct vb2_queue *src_vq,
 	int ret;
 
 	src_vq->type = V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE;
-	src_vq->io_modes = VB2_DMABUF | VB2_MMAP | VB2_USERPTR;
+	src_vq->io_modes = VB2_DMABUF | VB2_MMAP;
 	src_vq->drv_priv = ctx;
 	src_vq->buf_struct_size = sizeof(struct mtk_jpeg_src_buf);
 	src_vq->ops = &mtk_jpeg_qops;
@@ -908,7 +892,7 @@ static int mtk_jpeg_queue_init(void *priv, struct vb2_queue *src_vq,
 		return ret;
 
 	dst_vq->type = V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE;
-	dst_vq->io_modes = VB2_DMABUF | VB2_MMAP | VB2_USERPTR;
+	dst_vq->io_modes = VB2_DMABUF | VB2_MMAP;
 	dst_vq->drv_priv = ctx;
 	dst_vq->buf_struct_size = sizeof(struct v4l2_m2m_buffer);
 	dst_vq->ops = &mtk_jpeg_qops;
@@ -950,6 +934,8 @@ static irqreturn_t mtk_jpeg_dec_irq(int irq, void *priv)
 	u32 dec_ret;
 	int i;
 
+	dec_ret = mtk_jpeg_dec_get_int_status(jpeg->dec_reg_base);
+	dec_irq_ret = mtk_jpeg_dec_enum_result(dec_ret);
 	ctx = v4l2_m2m_get_curr_priv(jpeg->m2m_dev);
 	if (!ctx) {
 		v4l2_err(&jpeg->v4l2_dev, "Context is NULL\n");
@@ -959,9 +945,6 @@ static irqreturn_t mtk_jpeg_dec_irq(int irq, void *priv)
 	src_buf = v4l2_m2m_src_buf_remove(ctx->fh.m2m_ctx);
 	dst_buf = v4l2_m2m_dst_buf_remove(ctx->fh.m2m_ctx);
 	jpeg_src_buf = mtk_jpeg_vb2_to_srcbuf(src_buf);
-
-	dec_ret = mtk_jpeg_dec_get_int_status(jpeg->dec_reg_base);
-	dec_irq_ret = mtk_jpeg_dec_enum_result(dec_ret);
 
 	if (dec_irq_ret >= MTK_JPEG_DEC_RESULT_UNDERFLOW) {
 		dev_err(jpeg->dev, "decode Underflow\n");
@@ -1168,13 +1151,6 @@ static int mtk_jpeg_probe(struct platform_device *pdev)
 		goto err_m2m_init;
 	}
 
-	/*jpeg->alloc_ctx = vb2_dma_contig_init_ctx(&pdev->dev); */
-	/*if (IS_ERR(jpeg->alloc_ctx)) {*/
-	/*	v4l2_err(&jpeg->v4l2_dev, "Failed to init memory allocator\n");*/
-	/*	ret = PTR_ERR(jpeg->alloc_ctx);*/
-	/*	goto err_alloc_ctx;*/
-	/*}*/
-
 	jpeg->dec_vdev = video_device_alloc();
 	if (!jpeg->dec_vdev) {
 		ret = -ENOMEM;
@@ -1189,8 +1165,8 @@ static int mtk_jpeg_probe(struct platform_device *pdev)
 	jpeg->dec_vdev->lock = &jpeg->lock;
 	jpeg->dec_vdev->v4l2_dev = &jpeg->v4l2_dev;
 	jpeg->dec_vdev->vfl_dir = VFL_DIR_M2M;
-	/*jpeg->dec_vdev->device_caps = V4L2_CAP_STREAMING |*/
-	/*			      V4L2_CAP_VIDEO_M2M_MPLANE;*/
+	jpeg->dec_vdev->device_caps = V4L2_CAP_STREAMING |
+				      V4L2_CAP_VIDEO_M2M_MPLANE;
 
 	ret = video_register_device(jpeg->dec_vdev, VFL_TYPE_GRABBER, 3);
 	if (ret) {
@@ -1212,7 +1188,6 @@ static int mtk_jpeg_probe(struct platform_device *pdev)
 err_dec_vdev_register:
 	video_device_release(jpeg->dec_vdev);
 
-/*err_alloc_ctx:*/
 err_dec_vdev_alloc:
 	v4l2_m2m_release(jpeg->m2m_dev);
 
@@ -1221,7 +1196,6 @@ err_m2m_init:
 
 err_dev_register:
 
-/*err_clk_init:*/
 
 err_req_irq:
 
