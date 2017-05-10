@@ -931,10 +931,12 @@ static int bmg_read_sensor_data(struct i2c_client *client,
 		return -3;
 	} else {
 		/* compensate data */
+		printk("wangshuai--%s--databuf x,y,z=%x,%x,%x\n",__func__,databuf[BMG_AXIS_X],databuf[BMG_AXIS_Y],databuf[BMG_AXIS_Z]);
+		printk("wangshuai--%s--cali x,y,z=%x,%x,%x\n",__func__,obj->cali_sw[BMG_AXIS_X],obj->cali_sw[BMG_AXIS_Y],obj->cali_sw[BMG_AXIS_Z]);
 		databuf[BMG_AXIS_X] += obj->cali_sw[BMG_AXIS_X];
 		databuf[BMG_AXIS_Y] += obj->cali_sw[BMG_AXIS_Y];
 		databuf[BMG_AXIS_Z] += obj->cali_sw[BMG_AXIS_Z];
-
+		printk("wangshuai--%s--cali+databuf x,y,z=%x,%x,%x\n",__func__,databuf[BMG_AXIS_X],databuf[BMG_AXIS_Y],databuf[BMG_AXIS_Z]);
 		/* remap coordinate */
 		gyro[obj->cvt.map[BMG_AXIS_X]] =
 			obj->cvt.sign[BMG_AXIS_X]*databuf[BMG_AXIS_X];
@@ -948,6 +950,7 @@ static int bmg_read_sensor_data(struct i2c_client *client,
 		gyro[BMG_AXIS_Y] = gyro[BMG_AXIS_Y] / obj->sensitivity*985/1000;
 		gyro[BMG_AXIS_Z] = gyro[BMG_AXIS_Z] / obj->sensitivity*(-1)*985/1000;
 
+		printk("wangshuai--%s--gyro x,y,z=%x,%x,%x\n",__func__,gyro[BMG_AXIS_X],gyro[BMG_AXIS_Y],gyro[BMG_AXIS_Z]);
 		sprintf(buf, "%04x %04x %04x",
 			gyro[BMG_AXIS_X], gyro[BMG_AXIS_Y], gyro[BMG_AXIS_Z]);
 //		if (atomic_read(&obj->trace) & GYRO_TRC_IOCTL)
@@ -1544,6 +1547,8 @@ static long bmg_unlocked_ioctl(struct file *file, unsigned int cmd,
 		cali[BMG_AXIS_X] = sensor_data.x * obj->sensitivity;
 		cali[BMG_AXIS_Y] = sensor_data.y * obj->sensitivity;
 		cali[BMG_AXIS_Z] = sensor_data.z * obj->sensitivity;
+		printk("wangshuai--%s--ioctl-cali x,y,z=%x,%x,%x\n",__func__,cali[BMG_AXIS_X],cali[BMG_AXIS_Y],cali[BMG_AXIS_Z]);
+
 		err = bmg_write_calibration(client, cali);
 	}
 	break;
