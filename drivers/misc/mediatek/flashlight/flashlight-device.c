@@ -29,18 +29,6 @@
 		{1, 0, 1, "flashlights-none", -1, 0},
 		{1, 1, 1, "flashlights-none", -1, 0},
 	};
-	#elif defined(CONFIG_MTK_FLASHLIGHT_RT5081)
-	const struct flashlight_device_id flashlight_id[] = {
-		/* {"NAME", TYPE, CT, PART} */
-		{"flashlights-rt5081", 0, 0, 0},
-		{"flashlights-rt5081", 0, 1, 0},
-		{"flashlights-dummy-gpio", 1, 0, 0},
-		{"flashlights-none", 1, 1, 0},
-		{"flashlights-none", 0, 0, 1},
-		{"flashlights-none", 0, 1, 1},
-		{"flashlights-none", 1, 0, 1},
-		{"flashlights-none", 1, 1, 1},
-	};
 	#else
 	#ifdef FLASH_BRADY
 	const struct flashlight_device_id flashlight_id[] = {
