@@ -14,6 +14,7 @@
 #include <drm/drmP.h>
 #include <linux/clk.h>
 #include <linux/component.h>
+#include <linux/iommu.h>
 #include <linux/of_device.h>
 #include <linux/of_irq.h>
 #include <linux/platform_device.h>
@@ -257,6 +258,13 @@ static int mtk_disp_ovl_probe(struct platform_device *pdev)
 	int comp_id;
 	int irq;
 	int ret;
+	struct iommu_domain *iommu;
+
+	iommu = iommu_get_domain_for_dev(dev);
+	if (!iommu) {
+		dev_info(dev, "Waiting iommu driver ready...\n");
+		return -EPROBE_DEFER;
+	}
 
 	priv = devm_kzalloc(dev, sizeof(*priv), GFP_KERNEL);
 	if (!priv)
