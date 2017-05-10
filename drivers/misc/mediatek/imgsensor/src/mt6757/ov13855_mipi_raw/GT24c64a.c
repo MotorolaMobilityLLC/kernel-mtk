@@ -29,7 +29,7 @@
 #define AF_ADDR		0x0034
 #define LSC_ADDR	0x00DE
 #define LSC_SIZE	0x74C
-#define MID_ADDR 0x0401
+#define MID_ADDR 0x000C
 #define PDAF_SIZE	2048
 #define PDAF_ADDR	0x0d00
 //#define CAM_CALGETDLT_DEBUG

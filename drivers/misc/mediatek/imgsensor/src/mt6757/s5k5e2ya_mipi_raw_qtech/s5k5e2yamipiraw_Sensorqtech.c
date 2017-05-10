@@ -46,24 +46,24 @@
 #include "kd_imgsensor_define.h"
 #include "kd_imgsensor_errcode.h"
 
-#include "s5k5e2yamipiraw_Sensor.h"
+#include "s5k5e2yamipiraw_Sensorqtech.h"
 
 /****************************Modify following Strings for debug****************************/
-#define PFX "s5k5e2ya_camera_sensor"
-#define LOG_1 LOG_INF("s5k5e2ya,MIPI 2LANE\n")
+#define PFX "s5k5e2ya_camera_sensorqtech"
+#define LOG_1 LOG_INF("indriya plus s5k5e2ya,MIPI 2LANE\n")
 #define LOG_2 LOG_INF("preview 1280*960@30fps,864Mbps/lane; video 1280*960@30fps,864Mbps/lane; capture 5M@30fps,864Mbps/lane\n")
 /****************************   Modify end    *******************************************/
 #define LOG_INF(format, args...)	pr_err(PFX "[%s] " format, __FUNCTION__, ##args)
 #define Sleep(ms) mdelay(ms)
-UINT32 R_CalGain_B = 0;
-UINT32 Gr_CalGain_Gb = 0; 
-UINT32 R_FacGain_B = 0; 
-UINT32 Gr_FacGain_Gb = 0; 
-BYTE otpinfo_page2 = 2;
-BYTE otpinfo_page3 = 3;
-BYTE otpawb_page4 = 4;
-BYTE otpawb_page5 = 5;
-BYTE otplsc_page15 = 15;
+static UINT32 R_CalGain_B = 0;
+static UINT32 Gr_CalGain_Gb = 0; 
+static UINT32 R_FacGain_B = 0; 
+static UINT32 Gr_FacGain_Gb = 0; 
+static BYTE otpinfo_page2 = 2;
+static BYTE otpinfo_page3 = 3;
+static BYTE otpawb_page4 = 4;
+static BYTE otpawb_page5 = 5;
+static BYTE otplsc_page15 = 15;
 static BYTE otpmid_page2 = 2;
 static BYTE otpmid_page3 = 3;
 static BYTE MID = 0;
@@ -77,7 +77,7 @@ static DEFINE_SPINLOCK(imgsensor_drv_lock);
 
 
 static imgsensor_info_struct imgsensor_info = {
-	.sensor_id = S5K5E2YA_SENSOR_ID,
+	.sensor_id = S5K5E2YA_QTECH_SENSOR_ID,
 
 	.checksum_value = 0xa48ebf5d,
 
@@ -307,7 +307,7 @@ struct S5K5E2YA_MIPI_otp_struct
 	kal_uint16 AWB_BG;
 	kal_uint16 AWB_GbGr;
 };
-struct S5K5E2YA_MIPI_otp_struct S5K5E2YA_OTP_Infor;
+static struct S5K5E2YA_MIPI_otp_struct S5K5E2YA_OTP_Infor;
 
 /*************************************************************************************************
 * Function    :  start_read_otp
@@ -316,7 +316,7 @@ struct S5K5E2YA_MIPI_otp_struct S5K5E2YA_OTP_Infor;
 * Return      :  0, reading block setting err
                  1, reading block setting ok
 **************************************************************************************************/
-bool start_read_otp(BYTE Page)
+static bool start_read_otp(BYTE Page)
 {
   	write_cmos_sensor_8(0x0A00, 0x04);   //make initial state
 	write_cmos_sensor_8(0x0A02, Page);   //Select the page to write by writing to 0xD0000A02 0x00~0x0F
@@ -331,18 +331,17 @@ bool start_read_otp(BYTE Page)
 * Function    :  stop_read_otp
 * Description :  after read otp , stop and reset otp block setting
 **************************************************************************************************/
-void stop_read_otp(void)
+static void stop_read_otp(void)
 {
  	write_cmos_sensor_8(0x0A00, 0x04);//make initial state
 	write_cmos_sensor_8(0x0A00, 0x00);//Disable NVM controller
 }
-
 static BYTE S5K5E2YA_Get_OTP_MID(void)
 {
 	start_read_otp(otpmid_page2);
 	MID=read_cmos_sensor(0x0A10);
 	stop_read_otp();
-	if(MID == S5K5E2YA_OFILM_MID) {
+	if(MID == S5K5E2YA_QTECH_MID) {
 	return 0;
 	} else {
 	start_read_otp(otpmid_page3);
@@ -357,7 +356,7 @@ static BYTE S5K5E2YA_Get_OTP_MID(void)
 * Parameters  :  [BYTE] zone : OTP PAGE index , 0x00~0x0f
 * Return      :  [BYTE], if 0x00 , this type has valid or empty otp data, otherwise, invalid otp data
 **************************************************************************************************/
-BYTE S5K5E2YA_Get_OTP_Flag(BYTE Page)
+static BYTE S5K5E2YA_Get_OTP_Flag(BYTE Page)
 {
 	BYTE Otp_Flag = 0x00;
 	start_read_otp(Page);
@@ -372,7 +371,7 @@ BYTE S5K5E2YA_Get_OTP_Flag(BYTE Page)
 * Parameters  :  [BYTE] zone : OTP PAGE index , 0x00~0x0f
 * Return      :  [BYTE], if 0x00 , this type has valid or empty otp data, otherwise, invalid otp data
 **************************************************************************************************/
-BYTE S5K5E2YA_Get_LSC_Flag(BYTE Page)
+static BYTE S5K5E2YA_Get_LSC_Flag(BYTE Page)
 {
 	BYTE Lsc_Flag = 0x00,Lsc_checksum_lsb = 0, Lsc_checksum_msb = 0;
 	kal_uint16 lsc_checksum = 0;
@@ -393,7 +392,7 @@ BYTE S5K5E2YA_Get_LSC_Flag(BYTE Page)
 * Parameters  :  [BYTE] zone : OTP PAGE index , 0x00~0x0f
 * Return      :  [BYTE], if 0x00 , this type has valid or empty otp data, otherwise, invalid otp data
 **************************************************************************************************/
-BYTE S5K5E2YA_Get_OTP_Info(void)
+static BYTE S5K5E2YA_Get_OTP_Info(void)
 {
     BYTE Info_Flag_group1= 0x00,Info_Flag_group2 =0x00;
     BYTE AWB_Flag_group1= 0x00,AWB_Flag_group2 =0x00;
@@ -438,7 +437,7 @@ BYTE S5K5E2YA_Get_OTP_Info(void)
 * Description :  get_otp_awb value=
 * Parameters  :  [BYTE] zone : OTP PAGE index , 0x00~0x0f
 **************************************************************************************************/
-bool S5K5E2YA_get_otp_awb(BYTE Page)
+static bool S5K5E2YA_get_otp_awb(BYTE Page)
 {
 	BYTE awb_rg_msb  = 0, awb_rg_lsb = 0, awb_bg_msb   = 0, awb_bg_lsb = 0;
 	BYTE awb_GbGr_msb  = 0, awb_GbGr_lsb = 0;
@@ -511,7 +510,7 @@ bool S5K5E2YA_get_otp_awb(BYTE Page)
 * Description :  get otp date value
 * Parameters  :  [BYTE] zone : OTP PAGE index , 0x00~0x0f
 **************************************************************************************************/
-bool S5K5E2YA_get_otp_date(BYTE Page)
+static bool S5K5E2YA_get_otp_date(BYTE Page)
 {
 	BYTE MID  = 0, Lens_id = 0, VCM_id   = 0, DriverIC_id=0,Sensor_id =0;
 	BYTE Year  = 0, Month = 0, Day   = 0;
@@ -552,7 +551,7 @@ bool S5K5E2YA_get_otp_date(BYTE Page)
 * Return      :  [bool] 0 : OTP data fail
                         1 : otp_lenc update success
 **************************************************************************************************/
-bool S5K5E2YA_OTP_LSC_update(struct S5K5E2YA_MIPI_otp_struct *otp)
+static bool S5K5E2YA_OTP_LSC_update(struct S5K5E2YA_MIPI_otp_struct *otp)
 {
     BYTE  flag_LSC = 0;
     kal_uint16 LSC_Checksum=0;
@@ -2473,8 +2472,8 @@ bool S5K5E2YA_OTP_LSC_update(struct S5K5E2YA_MIPI_otp_struct *otp)
     return 1;
 }
 
-
-void S5K5E2YA_MIPI_Algorithm_OTP_AWB(struct S5K5E2YA_MIPI_otp_struct *otp)
+#if 0
+static void S5K5E2YA_MIPI_Algorithm_OTP_AWB(struct S5K5E2YA_MIPI_otp_struct *otp)
 {
 	kal_uint32 R_to_G, B_to_G;
 	kal_uint32 R_Gain, B_Gain, G_Gain;
@@ -2548,12 +2547,12 @@ if(R_to_G < tRG_Ratio_typical )
 		}
 }
 
-void S5K5E2YA_OTP_AWB_update(struct S5K5E2YA_MIPI_otp_struct *otp)
+static void S5K5E2YA_OTP_AWB_update(struct S5K5E2YA_MIPI_otp_struct *otp)
 {
 	printk("S5K5E2YA_OTP_AWB_update \n");
 	S5K5E2YA_MIPI_Algorithm_OTP_AWB(otp);
 }
-
+#endif
 ////////// OTP S5K5E2YA End --------------------------------------------
 /////////////////////////////////////////////////////////////////////////
 static void set_dummy(void)
@@ -3801,7 +3800,7 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 			if (*sensor_id == imgsensor_info.sensor_id) {
 //lcsh tqq add device_info
 #ifdef CONFIG_LCT_DEVINFO_SUPPORT
-	devinfo_camera_regchar("S5k5e2","ofilm",DEVINFO_USED);
+	devinfo_camera_regchar("S5k5e2","qtech",DEVINFO_USED);
 
 #endif
 //and end
@@ -3814,7 +3813,7 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 		i++;
 		retry = 2;
 	}
-	if (*sensor_id != imgsensor_info.sensor_id || (MID !=S5K5E2YA_OFILM_MID )) {
+	if (*sensor_id != imgsensor_info.sensor_id || (MID !=S5K5E2YA_QTECH_MID )) {
 		// if Sensor ID is not correct, Must set *sensor_id to 0xFFFFFFFF
 		*sensor_id = 0xFFFFFFFF;
 		return ERROR_SENSOR_CONNECT_FAIL;
@@ -3868,7 +3867,7 @@ static kal_uint32 open(void)
 			break;
 		retry = 2;
 	}
-	if (imgsensor_info.sensor_id != sensor_id || (MID !=S5K5E2YA_OFILM_MID ))
+	if (imgsensor_info.sensor_id != sensor_id || (MID !=S5K5E2YA_QTECH_MID ))
 		return ERROR_SENSOR_CONNECT_FAIL;
 
 	/* initail sequence write in  */
@@ -4660,7 +4659,7 @@ static SENSOR_FUNCTION_STRUCT sensor_func = {
 	close
 };
 
-UINT32 S5K5E2YA_MIPI_RAW_SensorInit(PSENSOR_FUNCTION_STRUCT *pfFunc)
+UINT32 S5K5E2YA_MIPI_RAW_SensorInit_QTECH(PSENSOR_FUNCTION_STRUCT *pfFunc)
 {
 	/* To Do : Check Sensor status here */
 	if (pfFunc!=NULL)
