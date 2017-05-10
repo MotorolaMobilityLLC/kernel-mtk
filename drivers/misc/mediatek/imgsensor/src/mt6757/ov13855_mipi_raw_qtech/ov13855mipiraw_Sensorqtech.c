@@ -46,9 +46,9 @@
 #include "kd_imgsensor.h"
 #include "kd_imgsensor_define.h"
 #include "kd_imgsensor_errcode.h"
-#include "ov13855mipiraw_Sensor.h"
+#include "ov13855mipiraw_Sensorqtech.h"
 
-#define PFX "ov13855"
+#define PFX "ov13855_qtech"
 #define LOG_INF(fmt, args...)   pr_err(PFX "[%s] " fmt, __FUNCTION__, ##args)
 extern unsigned char  Read_MID_form_eeprom(void);
 extern bool read_ov13855_eeprom( kal_uint16 addr, BYTE* data, kal_uint32 size);
@@ -57,7 +57,7 @@ extern bool read_ov13855_eeprom( kal_uint16 addr, BYTE* data, kal_uint32 size);
 static DEFINE_SPINLOCK(imgsensor_drv_lock);
 
 static imgsensor_info_struct imgsensor_info = {
-	.sensor_id = OV13855_SENSOR_ID,
+	.sensor_id = OV13855_QTECH_SENSOR_ID,
 
 	.checksum_value = 0x78779e1c,
 
@@ -549,8 +549,8 @@ static void night_mode(kal_bool enable)
 {
 	LOG_INF("night_mode do nothing");
 }
-
-kal_uint16 addr_data_pair_slim_video[] = {
+#if 0
+static kal_uint16 addr_data_pair_slim_video[] = {
 	//1024x768_120fps
     0x0303, 0x03,
     0x3501, 0x20,
@@ -588,7 +588,7 @@ kal_uint16 addr_data_pair_slim_video[] = {
     0x4902, 0x02,
 };
 
-kal_uint16 addr_data_pair_hs_video[] = {
+static kal_uint16 addr_data_pair_hs_video[] = {
 	//1024x768_120fps
     0x0303, 0x03,
     0x3501, 0x20,
@@ -626,7 +626,7 @@ kal_uint16 addr_data_pair_hs_video[] = {
     0x4902, 0x02,
 };
 
-kal_uint16 addr_data_pair_normal_video[] = 
+static kal_uint16 addr_data_pair_normal_video[] = 
 {
 	//1024x768_120fps
     0x0303, 0x03,
@@ -708,7 +708,7 @@ kal_uint16 addr_data_pair_cap[] =
 };
 
 //full size,2112x1568
-kal_uint16 addr_data_pair_prv[] = 
+static kal_uint16 addr_data_pair_prv[] = 
 {
     0x0303, 0x01,
     0x3501, 0x40,
@@ -748,7 +748,7 @@ kal_uint16 addr_data_pair_prv[] =
     0x4902, 0x01,	
 };
 
-kal_uint16 addr_data_pair_init[] =
+static kal_uint16 addr_data_pair_init[] =
 {
     0x0103, 0x01,
     0x0300, 0x02,
@@ -909,7 +909,7 @@ kal_uint16 addr_data_pair_init[] =
     0x5407, 0x01,
     0x5408, 0x4a,
 };
-
+#endif
 static void sensor_init(void)
 {
 #if 0
@@ -1622,17 +1622,17 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
         imgsensor.i2c_write_id = imgsensor_info.i2c_addr_table[i];
         spin_unlock(&imgsensor_drv_lock);
         do {
-            	//read MID
+	//read MID
 	data_mid[0] = Read_MID_form_eeprom();
 	LOG_INF("[wuyt3]MID data_mid[0]=%x\n", data_mid[0]);
                 *sensor_id = return_sensor_id();
 	 //final
 	 LOG_INF("[wuyt3]sensor id = 0x%x,data_mid[0]=0x%x, imgsensor_info.sensor_id=0x%x\n",*sensor_id,data_mid[0], imgsensor_info.sensor_id);
-	//*sensor_id = *sensor_id+data_mid[0];
-            if (*sensor_id == imgsensor_info.sensor_id && (data_mid[0] ==OV13855_OFILM_MID )) {
+	*sensor_id = *sensor_id+data_mid[0];
+            if (*sensor_id == imgsensor_info.sensor_id) {
 //lcsh tqq add device_info
 #ifdef CONFIG_LCT_DEVINFO_SUPPORT
-	devinfo_camera_regchar("Ov13855","ofilm",DEVINFO_USED);
+	devinfo_camera_regchar("Ov13855","qtech",DEVINFO_USED);
 
 #endif
 //and end
@@ -1645,7 +1645,7 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
         i++;
         retry = 1;
     }
-    if (*sensor_id != imgsensor_info.sensor_id || (data_mid[0] !=OV13855_OFILM_MID )) {
+    if (*sensor_id != imgsensor_info.sensor_id) {
         *sensor_id = 0xFFFFFFFF;
         return ERROR_SENSOR_CONNECT_FAIL;
     }
@@ -1667,14 +1667,14 @@ static kal_uint32 open(void)
         imgsensor.i2c_write_id = imgsensor_info.i2c_addr_table[i];
         spin_unlock(&imgsensor_drv_lock);
         do {
-                       	//read MID
+            	//read MID
 	data_mid[0] = Read_MID_form_eeprom();
 	LOG_INF("[wuyt3]MID  data_mid[0]=%x\n", data_mid[0]);
                 sensor_id = return_sensor_id();
 	 //final
 	 LOG_INF("[wuyt3]sensor id = 0x%x,data_mid[0]=0x%x, imgsensor_info.sensor_id=0x%x\n",sensor_id,data_mid[0], imgsensor_info.sensor_id);
-	//sensor_id = sensor_id+data_mid[0];
-            if (sensor_id == imgsensor_info.sensor_id && (data_mid[0] ==OV13855_OFILM_MID )) {
+	sensor_id = sensor_id+data_mid[0];
+            if (sensor_id == imgsensor_info.sensor_id) {
                 LOG_INF("i2c write id: 0x%x, sensor id: 0x%x\n", imgsensor.i2c_write_id,sensor_id);
                 break;
             }
@@ -1682,11 +1682,11 @@ static kal_uint32 open(void)
             retry--;
         } while(retry > 0);
         i++;
-        if (sensor_id == imgsensor_info.sensor_id && (data_mid[0] ==OV13855_OFILM_MID ))
+        if (sensor_id == imgsensor_info.sensor_id)
             break;
         retry = 2;
     }
-    if (imgsensor_info.sensor_id != sensor_id || (data_mid[0] !=OV13855_OFILM_MID ))
+    if (imgsensor_info.sensor_id != sensor_id)
         return ERROR_SENSOR_CONNECT_FAIL;
 
     sensor_init();
@@ -2461,7 +2461,7 @@ static SENSOR_FUNCTION_STRUCT sensor_func = {
     close
 };
 
-UINT32 OV13855_MIPI_RAW_SensorInit(PSENSOR_FUNCTION_STRUCT *pfFunc)
+UINT32 OV13855_MIPI_RAW_SensorInit_QTECH(PSENSOR_FUNCTION_STRUCT *pfFunc)
 {
     /* To Do : Check Sensor status here */
     if (pfFunc!=NULL)
