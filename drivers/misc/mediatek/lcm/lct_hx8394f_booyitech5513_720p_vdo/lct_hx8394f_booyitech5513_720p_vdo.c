@@ -295,6 +295,8 @@ static struct LCM_setting_table lcm_setting_mv[] = {
 	{0x53,1,{0x2c}},
 	{0x55,1,{0x03}},
 	{REGFLAG_DELAY, 5, {}},	//add by zhudaolong 20170505
+	{0xCA,9,{0x2A,0x2A,0x2A,0x2A,0x2A,0x2A,0x2A,0x2A,0x2A}},		//add by zhudaolong 20170510
+	{REGFLAG_DELAY, 5, {}},	//add by zhudaolong 20170510
 	{REGFLAG_END_OF_TABLE, 0x00, {}}
 
 };
