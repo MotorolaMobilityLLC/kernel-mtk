@@ -23,6 +23,7 @@
 #include <media/v4l2-mem2mem.h>
 #include <media/videobuf2-dma-contig.h>
 #include <linux/pm_runtime.h>
+#include <linux/iommu.h>
 
 #include "mtk_vcodec_drv.h"
 #include "mtk_vcodec_enc.h"
@@ -229,7 +230,13 @@ static int mtk_vcodec_probe(struct platform_device *pdev)
 	struct resource *res;
 	struct mtk_vcodec_pm *pm;
 	int i, j, ret;
+	struct iommu_domain *domain;
 
+	domain = iommu_get_domain_for_dev(&pdev->dev);
+	if (!domain) {
+		mtk_v4l2_err("[IOMMU]iommu driver not ready");
+		return -EPROBE_DEFER;
+	}
 	dev = devm_kzalloc(&pdev->dev, sizeof(*dev), GFP_KERNEL);
 	if (!dev)
 		return -ENOMEM;
