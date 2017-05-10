@@ -54,6 +54,174 @@
 		compatible = "linux,bt-sco";
 	};
 
+	combo:connectivity-combo@0 {
+		compatible = "mediatek,connectivity-combo";
+		gpio_combo_pmu_en_pin = <&pio 149 0>;
+		gpio_combo_rst_pin = <&pio 148 0>;
+		gpio_wifi_eint_pin = <&pio 151 0>;
+		gpio_pcm_daiclk_pin = <&pio 27 0>;
+		gpio_pcm_daipcmin_pin = <&pio 26 0>;
+		gpio_pcm_daipcmout_pin = <&pio 28 0>;
+		gpio_pcm_daisync_pin = <&pio 29 0>;
+		gpio_gps_lna_pin = <&pio 150 0>;
+		gpio_combo_urxd_pin = <&pio 123 0>;
+		gpio_combo_utxd_pin = <&pio 124 0>;
+		pinctrl-names =	"gpio_pmu_en_pull_dis",
+					   "gpio_pmu_en_in_pulldown",
+					   "gpio_rst_pull_dis",
+					   "gpio_wifi_eint_in_pull_dis",
+					   "gpio_wifi_eint_in_pullup",
+					   "gpio_pcm_daiclk_pull_dis",
+					   "gpio_pcm_daipcmin_pull_dis",
+					   "gpio_pcm_daipcmout_pull_dis",
+					   "gpio_pcm_daisync_pull_dis",
+					   "gpio_gps_lna_pull_dis",
+					   "gpio_urxd_uart_pull_dis",
+					   "gpio_urxd_gpio_in_pullup",
+					   "gpio_urxd_uart_out_low",
+					   "gpio_urxd_gpio_in_pull_dis",
+					   "gpio_utxd_uart_pull_dis";
+		pinctrl-0 = <&pcfg_combo_pmu_en_pull_dis_cfgs>;
+		pinctrl-1 = <&pcfg_combo_pmu_en_in_pulldown_cfgs>;
+		pinctrl-2 = <&pcfg_combo_rst_pull_dis_cfgs>;
+		pinctrl-3 = <&pcfg_combo_wifi_eint_in_pull_dis_cfgs>;
+		pinctrl-4 = <&pcfg_combo_wifi_eint_in_pullup_cfgs>;
+		pinctrl-5 = <&pcfg_combo_pcm_daiclk_pull_dis_cfgs>;
+		pinctrl-6 = <&pcfg_combo_pcm_daipcmin_pull_dis_cfgs>;
+		pinctrl-7 = <&pcfg_combo_pcm_daipcmout_pull_dis_cfgs>;
+		pinctrl-8 = <&pcfg_combo_pcm_daisync_pull_dis_cfgs>;
+		pinctrl-9 = <&pcfg_combo_gps_lna_pull_dis_cfgs>;
+		pinctrl-10 = <&pcfg_combo_urxd_uart_pull_dis_cfgs>;
+		pinctrl-11 = <&pcfg_combo_urxd_gpio_in_pullup_cfgs>;
+		pinctrl-12 = <&pcfg_combo_urxd_uart_out_low_cfgs>;
+		pinctrl-13 = <&pcfg_combo_urxd_gpio_in_pull_dis_cfgs>;
+		pinctrl-14 = <&pcfg_combo_utxd_uart_pull_dis_cfgs>;
+		interrupt-parent = <&pio>;
+		interrupts = <156 IRQ_TYPE_LEVEL_LOW>;
+		status = "okay";
+
+		u2Part1OwnVersion = [06 01];
+		u2Part1PeerVersion = [00 00];
+		aucMacAddress = [00 00 00 00 00 00];
+		aucCountryCode = [00 00];
+
+		cTxPwr2G4Cck = [2C];
+		cTxPwr2G4Dsss = [2C];
+		acReserved = [00 00];
+
+		cTxPwr2G4OFDM_BPSK = [28];
+		cTxPwr2G4OFDM_QPSK = [28];
+		cTxPwr2G4OFDM_16QAM = [28];
+		cTxPwr2G4OFDM_Reserved = [28];
+		cTxPwr2G4OFDM_48Mbps = [28];
+		cTxPwr2G4OFDM_54Mbps = [28];
+
+		cTxPwr2G4HT20_BPSK = [25];
+		cTxPwr2G4HT20_QPSK = [25];
+		cTxPwr2G4HT20_16QAM = [25];
+		cTxPwr2G4HT20_MCS5 = [25];
+		cTxPwr2G4HT20_MCS6 = [25];
+		cTxPwr2G4HT20_MCS7 = [25];
+
+		cTxPwr2G4HT40_BPSK = [23];
+		cTxPwr2G4HT40_QPSK = [23];
+		cTxPwr2G4HT40_16QAM = [23];
+		cTxPwr2G4HT40_MCS5 = [23];
+		cTxPwr2G4HT40_MCS6 = [23];
+		cTxPwr2G4HT40_MCS7 = [23];
+
+		cTxPwr5GOFDM_BPSK = [25];
+		cTxPwr5GOFDM_QPSK = [25];
+		cTxPwr5GOFDM_16QAM = [25];
+		cTxPwr5GOFDM_Reserved = [25];
+		cTxPwr5GOFDM_48Mbps = [25];
+		cTxPwr5GOFDM_54Mbps = [25];
+
+		cTxPwr5GHT20_BPSK = [23];
+		cTxPwr5GHT20_QPSK = [23];
+		cTxPwr5GHT20_16QAM = [23];
+		cTxPwr5GHT20_MCS5 = [23];
+		cTxPwr5GHT20_MCS6 = [23];
+		cTxPwr5GHT20_MCS7 = [23];
+
+		cTxPwr5GHT40_BPSK = [23];
+		cTxPwr5GHT40_QPSK = [23];
+		cTxPwr5GHT40_16QAM = [23];
+		cTxPwr5GHT40_MCS5 = [23];
+		cTxPwr5GHT40_MCS6 = [23];
+		cTxPwr5GHT40_MCS7 = [23];
+
+		aucEFUSE144 = [00 00 00 00 00 00 00 00
+					   00 00
+					   00 20 22 00
+					   00 00 00 00 00 00 00 00 00 00 00 00 00 00
+					   60 60 60
+					   00
+					   00
+					   00 00 00 00 00 00 00 00 00 00 00
+					   00 30 00 00 00 00 00 10
+					   00
+					   00 00 00 00 00 00 00
+					   23 23 23 23 23 20 1E 00 00 00 00
+					   01
+					   00 00 00 00 00 00 00 00
+					   00 00 00 00 00 00 00 00
+					   00 00 00 00 00 00 00 00
+					   00 00 00 00 00 00 00 00
+					   00 00 00 00 00 00 00 00
+					   00 00 00 00 00 00 00 00
+					   00 00 00 00 00 00 00 00
+					   00 00 00 00 00 00 00 00
+					   00 00 00 00 00 00 00 00];
+
+		ucTxPwrValid = [01];
+		ucSupport5GBand = [01];
+		fg2G4BandEdgePwrUsed = [00];
+		cBandEdgeMaxPwrCCK = [26];
+		cBandEdgeMaxPwrOFDM20 = [1E];
+		cBandEdgeMaxPwrOFDM40 = [1A];
+
+		ucRegChannelListMap = [00];
+		ucRegChannelListIndex = [00];
+
+		aucRegSubbandInfo36 = [00 00 00 00 00 00
+							  00 00 00 00 00 00
+							  00 00 00 00 00 00
+							  00 00 00 00 00 00
+							  00 00 00 00 00 00
+							  00 00 00 00 00 00];
+		aucReserved16 = [00 00 00 00 00 00 00 00
+					      00 00 00 00 00 00 00 00];
+		u2Part2OwnVersion = [01 00];
+		u2Part2PeerVersion = [00 00];
+		uc2G4BwFixed20M = [00];
+		uc5GBwFixed20M = [00];
+		ucEnable5GBand = [01];
+		ucRxDiversity = [00];
+
+		rRssiPathCompensation = [00 00];
+		fgRssiCompensationVaildbit = [00];
+		ucGpsDesense = [00];
+		u2FeatureReserved = [00 01];
+		aucPreTailReserved = [00];
+		aucTailReserved241 = [00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+						      00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+						      00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+						      00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+						      00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+						      00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+						      00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+						      00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+						      00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+						      00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+						      00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+						      00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+						      00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+						      00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+						      00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+						      00];
+	};
+
 	cust_alsps_1 {
 		compatible = "mediatek,CM36686_1";
 		i2c_num = <5>;
@@ -791,6 +959,115 @@
 		};
 	};
 
+	pcfg_combo_pmu_en_pull_dis_cfgs:cfg_pmu_en_pull_dis {
+		combo_pins {
+			pinmux = <MT2712_PIN_149_JTCK_CM4__FUNC_GPIO149>;
+			bias-disable;
+		};
+	};
+
+	pcfg_combo_pmu_en_in_pulldown_cfgs:cfg_pmu_en_in_pulldown {
+		combo_pins {
+			pinmux = <MT2712_PIN_149_JTCK_CM4__FUNC_GPIO149>;
+			bias-pull-down;
+		};
+	};
+
+	pcfg_combo_rst_pull_dis_cfgs:cfg_rst_pull_dis {
+		combo_pins {
+			pinmux = <MT2712_PIN_148_JTRSTB_CM4__FUNC_GPIO148>;
+			bias-disable;
+		};
+	};
+
+	pcfg_combo_wifi_eint_in_pull_dis_cfgs:cfg_wifi_eint_in_pull_dis {
+		combo_pins {
+			pinmux = <MT2712_PIN_151_JTDI_CM4__FUNC_GPIO151>;
+			slew-rate = <0>;
+			bias-disable;
+		};
+	};
+
+	pcfg_combo_wifi_eint_in_pullup_cfgs:cfg_wifi_eint_in_pullup {
+		combo_pins {
+			pinmux = <MT2712_PIN_151_JTDI_CM4__FUNC_GPIO151>;
+			slew-rate = <0>;
+			bias-pull-up = <00>;
+		};
+	};
+
+	pcfg_combo_pcm_daiclk_pull_dis_cfgs:cfg_pcm_daiclk_pull_dis {
+		combo_pins {
+			pinmux = <MT2712_PIN_27_PCM_CLK__FUNC_MRG_CLK>;
+			bias-disable;
+		};
+	};
+
+	pcfg_combo_pcm_daipcmin_pull_dis_cfgs:cfg_pcm_daipcmin_pull_dis {
+		combo_pins {
+			pinmux = <MT2712_PIN_26_PCM_TX__FUNC_MRG_TX>;
+			bias-disable;
+		};
+	};
+
+	pcfg_combo_pcm_daipcmout_pull_dis_cfgs:cfg_pcm_daipcmout_pull_dis {
+		combo_pins {
+			pinmux = <MT2712_PIN_28_PCM_RX__FUNC_MRG_RX>;
+			bias-disable;
+		};
+	};
+
+	pcfg_combo_pcm_daisync_pull_dis_cfgs:cfg_pcm_daisync_pull_dis {
+		combo_pins {
+			pinmux = <MT2712_PIN_29_PCM_SYNC__FUNC_MRG_SYNC>;
+			bias-disable;
+		};
+	};
+
+	pcfg_combo_gps_lna_pull_dis_cfgs:cfg_gps_lna_pull_dis {
+		combo_pins {
+			pinmux = <MT2712_PIN_150_JTMS_CM4__FUNC_GPIO150>;
+			bias-disable;
+		};
+	};
+
+	pcfg_combo_urxd_uart_pull_dis_cfgs:cfg_urxd_pull_dis {
+		combo_pins {
+			pinmux = <MT2712_PIN_123_URXD3__FUNC_URXD3>;
+			bias-disable;
+		};
+	};
+
+	pcfg_combo_urxd_uart_out_low_cfgs:cfg_urxd_out_low {
+		combo_pins {
+			pinmux = <MT2712_PIN_123_URXD3__FUNC_GPIO123>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+
+	pcfg_combo_urxd_gpio_in_pullup_cfgs:cfg_urxd_in_pullup {
+		combo_pins {
+			pinmux = <MT2712_PIN_123_URXD3__FUNC_URXD3>;
+			input-enable;
+			bias-pull-up;
+		};
+	};
+
+	pcfg_combo_urxd_gpio_in_pull_dis_cfgs:cfg_urxd_in_pull_dis {
+		combo_pins {
+			pinmux = <MT2712_PIN_123_URXD3__FUNC_URXD3>;
+			input-enable;
+			bias-disable;
+		};
+	};
+
+	pcfg_combo_utxd_uart_pull_dis_cfgs:cfg_utxd_pull_dis {
+		combo_pins {
+			pinmux = <MT2712_PIN_124_UTXD3__FUNC_UTXD3>;
+			bias-disable;
+		};
+	};
 	pcie_pinctl0: pcie0 {
 		pcie0 {
 			pinmux = <MT2712_PIN_204_PERSTB_P0__FUNC_PERST_B_P0>,
