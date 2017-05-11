@@ -912,10 +912,10 @@ static int mtk_mdp_m2m_g_selection(struct file *file, void *fh,
 	bool valid = false;
 
 	if (s->type == V4L2_BUF_TYPE_VIDEO_CAPTURE) {
-		if (mtk_mdp_is_target_compose(s->target))
+		if (mtk_mdp_is_target_crop(s->target))
 			valid = true;
 	} else if (s->type == V4L2_BUF_TYPE_VIDEO_OUTPUT) {
-		if (mtk_mdp_is_target_crop(s->target))
+		if (mtk_mdp_is_target_compose(s->target))
 			valid = true;
 	}
 	if (!valid) {
@@ -982,10 +982,10 @@ static int mtk_mdp_m2m_s_selection(struct file *file, void *fh,
 	bool valid = false;
 
 	if (s->type == V4L2_BUF_TYPE_VIDEO_CAPTURE) {
-		if (s->target == V4L2_SEL_TGT_COMPOSE)
+		if (s->target == V4L2_SEL_TGT_CROP)
 			valid = true;
 	} else if (s->type == V4L2_BUF_TYPE_VIDEO_OUTPUT) {
-		if (s->target == V4L2_SEL_TGT_CROP)
+		if (s->target == V4L2_SEL_TGT_COMPOSE)
 			valid = true;
 	}
 	if (!valid) {
@@ -999,7 +999,7 @@ static int mtk_mdp_m2m_s_selection(struct file *file, void *fh,
 	if (ret)
 		return ret;
 
-	if (mtk_mdp_is_target_crop(s->target))
+	if (mtk_mdp_is_target_compose(s->target))
 		frame = &ctx->s_frame;
 	else
 		frame = &ctx->d_frame;
