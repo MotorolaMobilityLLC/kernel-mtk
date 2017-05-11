@@ -48,15 +48,15 @@
 #define LTR578_DEV_NAME   "LTR_578ALS"
 
 /*----------------------------------------------------------------------------*/
-#define LTR578_DEBUG
+/*#define LTR578_DEBUG*/
 #define APS_TAG                  "[ALS/PS] "
-#define APS_FUN(f)               pr_debug(APS_TAG"%s\n", __func__)
-#define APS_ERR(fmt, args...)    pr_err(APS_TAG"%s %d : "fmt, __func__, __LINE__, ##args)
+#define APS_ERR(fmt, args...)	pr_err(APS_TAG"%s %d : "fmt, __func__, __LINE__, ##args)
+#define APS_LOG(fmt, args...)		pr_err(APS_TAG fmt, ##args)
 #ifdef LTR578_DEBUG
-#define APS_LOG(fmt, args...)    pr_debug(APS_TAG fmt, ##args)
-#define APS_DBG(fmt, args...)    pr_debug(APS_TAG fmt, ##args)
+#define APS_FUN(f)		pr_err(APS_TAG"%s\n", __func__)
+#define APS_DBG(fmt, args...)	pr_err(APS_TAG fmt, ##args)
 #else
-#define APS_LOG(fmt, args...)
+#define APS_FUN(f)
 #define APS_DBG(fmt, args...)
 #endif
 
@@ -251,7 +251,7 @@ static void devinfo_ctp_regchar(char *module, char *vendor, char *version, char 
 	s_DEVINFO_alsps->device_version = version;
 	s_DEVINFO_alsps->device_used = used;
 #ifdef SLT_DEVINFO_ALSPS_DEBUG
-	printk("[DEVINFO accel sensor]registe CTP device! type:<%s> module:<%s> vendor<%s> ic<%s> version<%s> info<%s> used<%s>\n",
+	APS_LOG("[DEVINFO accel sensor]registe CTP device! type:<%s> module:<%s> vendor<%s> ic<%s> version<%s> info<%s> used<%s>\n",
 	   s_DEVINFO_alsps->device_type, s_DEVINFO_alsps->device_module, s_DEVINFO_alsps->device_vendor,
 	   s_DEVINFO_alsps->device_ic, s_DEVINFO_alsps->device_version, s_DEVINFO_alsps->device_info, s_DEVINFO_alsps->device_used);
 #endif
@@ -677,7 +677,7 @@ static int ltr578_dynamic_calibrate(void)
 
 	ps_thd_val_low = atomic_read(&obj->ps_thd_val_low);
 	ps_thd_val_high = atomic_read(&obj->ps_thd_val_high);
-	APS_DBG(" ltr578_dynamic_calibrate end:noise=%d, obj->ps_thd_val_low= %d , obj->ps_thd_val_high = %d\n", noise, ps_thd_val_low, ps_thd_val_high);
+	APS_LOG(" ltr578_dynamic_calibrate end:noise=%d, obj->ps_thd_val_low= %d , obj->ps_thd_val_high = %d\n", noise, ps_thd_val_low, ps_thd_val_high);
 	/* / */
 
 	return 0;
@@ -695,72 +695,70 @@ static int ltr578_ps_set_thres(void)
 	struct ltr578_priv *obj = ltr578_obj;
 
 	APS_FUN();
-
-
-
-
-
 	APS_DBG("ps_cali.valid: %d\n", ps_cali.valid);
 	if (1 == ps_cali.valid) {
-	databuf[0] = LTR578_PS_THRES_LOW_0;
-	databuf[1] = (u8)(ps_cali.far_away & 0x00FF);
-	res = i2c_master_send(client, databuf, 0x2);
-	if (res <= 0) {
-		goto EXIT_ERR;
-		return LTR578_ERR_I2C;
-	}
-	databuf[0] = LTR578_PS_THRES_LOW_1;
-	databuf[1] = (u8)((ps_cali.far_away & 0xFF00) >> 8);
-	res = i2c_master_send(client, databuf, 0x2);
-	if (res <= 0) {
-		goto EXIT_ERR;
-		return LTR578_ERR_I2C;
-	}
-	databuf[0] = LTR578_PS_THRES_UP_0;
-	databuf[1] = (u8)(ps_cali.close & 0x00FF);
-	res = i2c_master_send(client, databuf, 0x2);
-	if (res <= 0) {
-		goto EXIT_ERR;
-		return LTR578_ERR_I2C;
-	}
-	databuf[0] = LTR578_PS_THRES_UP_1;
-	databuf[1] = (u8)((ps_cali.close & 0xFF00) >> 8);
-	res = i2c_master_send(client, databuf, 0x2);
-	if (res <= 0) {
-		goto EXIT_ERR;
-		return LTR578_ERR_I2C;
-	}
+		databuf[0] = LTR578_PS_THRES_LOW_0;
+		databuf[1] = (u8)(ps_cali.far_away & 0x00FF);
+		res = i2c_master_send(client, databuf, 0x2);
+		if (res <= 0) {
+			goto EXIT_ERR;
+			return LTR578_ERR_I2C;
+		}
+		databuf[0] = LTR578_PS_THRES_LOW_1;
+		databuf[1] = (u8)((ps_cali.far_away & 0xFF00) >> 8);
+		res = i2c_master_send(client, databuf, 0x2);
+		if (res <= 0) {
+			goto EXIT_ERR;
+			return LTR578_ERR_I2C;
+		}
+		databuf[0] = LTR578_PS_THRES_UP_0;
+		databuf[1] = (u8)(ps_cali.close & 0x00FF);
+		res = i2c_master_send(client, databuf, 0x2);
+		if (res <= 0) {
+			goto EXIT_ERR;
+			return LTR578_ERR_I2C;
+		}
+		databuf[0] = LTR578_PS_THRES_UP_1;
+		databuf[1] = (u8)((ps_cali.close & 0xFF00) >> 8);
+		res = i2c_master_send(client, databuf, 0x2);
+		if (res <= 0) {
+			goto EXIT_ERR;
+			return LTR578_ERR_I2C;
+		}
+		APS_LOG("ps_cali.close=%d,ps_cali.far_away=%d.\n",
+			ps_cali.close, ps_cali.far_away);
 	} else{
-	databuf[0] = LTR578_PS_THRES_LOW_0;
-	databuf[1] = (u8)((atomic_read(&obj->ps_thd_val_low)) & 0x00FF);
-	res = i2c_master_send(client, databuf, 0x2);
-	if (res <= 0) {
-		goto EXIT_ERR;
-		return LTR578_ERR_I2C;
-	}
-	databuf[0] = LTR578_PS_THRES_LOW_1;
-	databuf[1] = (u8)((atomic_read(&obj->ps_thd_val_low) >> 8) & 0x00FF);
+		databuf[0] = LTR578_PS_THRES_LOW_0;
+		databuf[1] = (u8)((atomic_read(&obj->ps_thd_val_low)) & 0x00FF);
+		res = i2c_master_send(client, databuf, 0x2);
+		if (res <= 0) {
+			goto EXIT_ERR;
+			return LTR578_ERR_I2C;
+		}
+		databuf[0] = LTR578_PS_THRES_LOW_1;
+		databuf[1] = (u8)((atomic_read(&obj->ps_thd_val_low) >> 8) & 0x00FF);
 
-	res = i2c_master_send(client, databuf, 0x2);
-	if (res <= 0) {
-		goto EXIT_ERR;
-		return LTR578_ERR_I2C;
-	}
-	databuf[0] = LTR578_PS_THRES_UP_0;
-	databuf[1] = (u8)((atomic_read(&obj->ps_thd_val_high)) & 0x00FF);
-	res = i2c_master_send(client, databuf, 0x2);
-	if (res <= 0) {
-		goto EXIT_ERR;
-		return LTR578_ERR_I2C;
-	}
-	databuf[0] = LTR578_PS_THRES_UP_1;
-	databuf[1] = (u8)((atomic_read(&obj->ps_thd_val_high) >> 8) & 0x00FF);
-	res = i2c_master_send(client, databuf, 0x2);
-	if (res <= 0) {
-		goto EXIT_ERR;
-		return LTR578_ERR_I2C;
-	}
-
+		res = i2c_master_send(client, databuf, 0x2);
+		if (res <= 0) {
+			goto EXIT_ERR;
+			return LTR578_ERR_I2C;
+		}
+		databuf[0] = LTR578_PS_THRES_UP_0;
+		databuf[1] = (u8)((atomic_read(&obj->ps_thd_val_high)) & 0x00FF);
+		res = i2c_master_send(client, databuf, 0x2);
+		if (res <= 0) {
+			goto EXIT_ERR;
+			return LTR578_ERR_I2C;
+		}
+		databuf[0] = LTR578_PS_THRES_UP_1;
+		databuf[1] = (u8)((atomic_read(&obj->ps_thd_val_high) >> 8) & 0x00FF);
+		res = i2c_master_send(client, databuf, 0x2);
+		if (res <= 0) {
+			goto EXIT_ERR;
+			return LTR578_ERR_I2C;
+		}
+		APS_LOG("ps_thd_val_high=%d,ps_thd_val_low=%d.\n",
+			atomic_read(&obj->ps_thd_val_high), atomic_read(&obj->ps_thd_val_low));
 	}
 
 	res = 0;
@@ -950,7 +948,7 @@ static int ltr578_ps_read(void)
 
 	psdata = ((psval_hi & 7) * 256) + psval_lo;
 	/* psdata = ((psval_hi&0x7)<<8) + psval_lo; */
-	APS_DBG("ps_rawdata = %d\n", psdata);
+	APS_LOG("ps_rawdata = %d\n", psdata);
 
 out:
 	final_prox_val = psdata;
@@ -1133,12 +1131,8 @@ void ltr578_eint_func(void)
 {
 	struct ltr578_priv *obj = ltr578_obj;
 
-	APS_FUN();
-	printk("[ALS/PS]: int !!\n");
-
-
 	if (!obj) {
-	return;
+		return;
 	}
 
 	schedule_work(&obj->eint_work);
@@ -1438,7 +1432,7 @@ static void ltr578_eint_work(struct work_struct *work)
 	int noise;
 
 	APS_FUN();
-	printk("[ALS/PS] ltr578_eint_work\n");
+
 	err = ltr578_check_intr(obj->client);
 	if (err < 0) {
 	APS_ERR("ltr578_eint_work check intrs: %d\n", err);
@@ -1490,7 +1484,7 @@ static void ltr578_eint_work(struct work_struct *work)
 					atomic_set(&obj->ps_thd_val_high, 1200);
 					atomic_set(&obj->ps_thd_val_low, 1150);
 					isadjust = 0;
-					printk("ltr578 the proximity ps_raw_data\n");
+					APS_LOG("ltr578 the proximity ps_raw_data\n");
 				}
 
 				ltr578_ps_set_thres();
@@ -1500,7 +1494,7 @@ static void ltr578_eint_work(struct work_struct *work)
 
 	}
 
-	APS_DBG("ltr578_eint_work rawdata ps=%d als=%d!\n", obj->ps, obj->als);
+	APS_LOG("%s:rawdata ps=%d als=%d\n", __func__, obj->ps, obj->als);
 	if (enable_flag == 1) {
 		enable_flag = 0;
 		if (obj->ps < atomic_read(&obj->ps_thd_val_low))
@@ -1519,9 +1513,9 @@ static void ltr578_eint_work(struct work_struct *work)
 	APS_DBG("intr_flag_value=%d\n", intr_flag_value);
 	/*---------modified by hongguang@wecorp---------*/
 	/*let up layer to know*/
-	if((err = hwmsen_get_interrupt_data(ID_PROXIMITY, &sensor_data)))
-	{
-	  APS_ERR("call hwmsen_get_interrupt_data fail = %d\n", err);
+	err = hwmsen_get_interrupt_data(ID_PROXIMITY, &sensor_data);
+	if (err) {
+		APS_ERR("call hwmsen_get_interrupt_data fail = %d\n", err);
 	}
 	/*-----------------------------------------------------*/
 	/*--------modified by hongguang@wecorp---------*/
@@ -1936,7 +1930,7 @@ int ltr578_als_operate(void *self,
 	struct hwm_sensor_data *sensor_data;
 	struct ltr578_priv *obj = (struct ltr578_priv *)self;
 
-	printk("ltr578_als_operate: cmd=%d\n", command);
+	APS_LOG("ltr578_als_operate: cmd=%d\n", command);
 	switch (command) {
 	case SENSOR_DELAY:
 	if ((buff_in == NULL) || (size_in < sizeof(int))) {
@@ -1952,7 +1946,7 @@ int ltr578_als_operate(void *self,
 		err = -EINVAL;
 	} else{
 		value = *(int *)buff_in;
-		printk("ltr578_als_operate: value=%d\n", value);
+		APS_LOG("ltr578_als_operate: value=%d\n", value);
 		if (value) {
 		err = ltr578_als_enable(als_gainrange);
 		if (err < 0) {
