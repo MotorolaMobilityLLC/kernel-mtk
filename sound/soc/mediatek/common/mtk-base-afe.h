@@ -33,6 +33,8 @@ struct mtk_base_memif_data {
 	int hd_shift;
 	int msb_reg;
 	int msb_shift;
+	int msb2_reg;
+	int msb2_shift;
 	int agent_disable_reg;
 	int agent_disable_shift;
 };

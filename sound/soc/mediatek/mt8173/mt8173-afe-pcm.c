@@ -733,6 +733,8 @@ static const struct mtk_base_memif_data memif_data[MT8173_AFE_MEMIF_NUM] = {
 		.enable_shift = 1,
 		.msb_reg = AFE_MEMIF_MSB,
 		.msb_shift = 0,
+		.msb2_reg = -1,
+		.msb2_shift = -1,
 		.agent_disable_reg = -1,
 		.agent_disable_shift = -1,
 	}, {
@@ -751,6 +753,8 @@ static const struct mtk_base_memif_data memif_data[MT8173_AFE_MEMIF_NUM] = {
 		.enable_shift = 2,
 		.msb_reg = AFE_MEMIF_MSB,
 		.msb_shift = 1,
+		.msb2_reg = -1,
+		.msb2_shift = -1,
 		.agent_disable_reg = -1,
 		.agent_disable_shift = -1,
 	}, {
@@ -769,6 +773,8 @@ static const struct mtk_base_memif_data memif_data[MT8173_AFE_MEMIF_NUM] = {
 		.enable_shift = 3,
 		.msb_reg = AFE_MEMIF_MSB,
 		.msb_shift = 6,
+		.msb2_reg = -1,
+		.msb2_shift = -1,
 		.agent_disable_reg = -1,
 		.agent_disable_shift = -1,
 	}, {
@@ -787,6 +793,8 @@ static const struct mtk_base_memif_data memif_data[MT8173_AFE_MEMIF_NUM] = {
 		.enable_shift = 4,
 		.msb_reg = AFE_MEMIF_MSB,
 		.msb_shift = 5,
+		.msb2_reg = -1,
+		.msb2_shift = -1,
 		.agent_disable_reg = -1,
 		.agent_disable_shift = -1,
 	}, {
@@ -805,6 +813,8 @@ static const struct mtk_base_memif_data memif_data[MT8173_AFE_MEMIF_NUM] = {
 		.enable_shift = 6,
 		.msb_reg = AFE_MEMIF_MSB,
 		.msb_shift = 3,
+		.msb2_reg = -1,
+		.msb2_shift = -1,
 		.agent_disable_reg = -1,
 		.agent_disable_shift = -1,
 	}, {
@@ -823,6 +833,8 @@ static const struct mtk_base_memif_data memif_data[MT8173_AFE_MEMIF_NUM] = {
 		.enable_shift = 7,
 		.msb_reg = AFE_MEMIF_MSB,
 		.msb_shift = 4,
+		.msb2_reg = -1,
+		.msb2_shift = -1,
 		.agent_disable_reg = -1,
 		.agent_disable_shift = -1,
 	}, {
@@ -841,6 +853,8 @@ static const struct mtk_base_memif_data memif_data[MT8173_AFE_MEMIF_NUM] = {
 		.enable_shift = -1,
 		.msb_reg = AFE_MEMIF_MSB,
 		.msb_shift = 8,
+		.msb2_reg = -1,
+		.msb2_shift = -1,
 		.agent_disable_reg = -1,
 		.agent_disable_shift = -1,
 	},

@@ -22,6 +22,16 @@ config SND_SOC_MT2701_CS42448
 	  Select Y if you have such device.
 	  If unsure select "N".
 
+config SND_SOC_MT2712_D1V1
+	tristate "ASoc Audio driver for MT2712 with D1V1 DTB"
+	depends on SND_SOC_MT2701
+	select SND_SOC_BT_SCO
+	help
+	  This adds ASoC driver for Mediatek MT2701 boards
+	  with the MTKD1V1 DTB.
+	  Select Y if you have such device.
+	  If unsure select "N".
+
 config SND_SOC_MT8173
 	tristate "ASoC support for Mediatek MT8173 chip"
 	depends on ARCH_MEDIATEK
