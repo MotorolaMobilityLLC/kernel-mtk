@@ -30,14 +30,6 @@
 		#address-cells = <2>;
 		#size-cells = <2>;
 		ranges;
-
-		zone-movable-cma-memory {
-			compatible = "mediatek,zone_movable_cma";
-			size = <0 0xffc00000>;
-			/* 256MB alignment */
-			alignment = <0 0x10000000>;
-			alloc-ranges = <0 0xc0000000 1 0x00000000>;
-		};
 	};
 
 	led0:led@0 {
