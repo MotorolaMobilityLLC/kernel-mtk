@@ -276,7 +276,7 @@ static int rt5081_fled_resume(struct rt_fled_dev *info)
 	fi->suspend = 0;
 	return 0;
 }
-
+//modified by lyq --start
 static int rt5081_fled_set_mode(struct rt_fled_dev *info,
 					flashlight_mode_t mode)
 {
@@ -286,52 +286,99 @@ static int rt5081_fled_set_mode(struct rt_fled_dev *info,
 	switch (mode) {
 	case FLASHLIGHT_MODE_TORCH:
 		if (rt5081_global_mode == FLASHLIGHT_MODE_FLASH)
+		{
+		ret |= rt5081_pmu_reg_set_bit(fi->chip,
+				RT5081_PMU_REG_FLEDEN, fi->id == RT5081_FLED1 ? 0x02 : 0x01);
+		dev_info(fi->dev, "set to flash mode\n");
+		rt5081_global_mode = mode;
+		pr_err("rt5081_global_mode=%d\n", rt5081_global_mode);
+		dev_info(fi->dev, "liye1\n");
+		if (fi->id == RT5081_FLED1)
+			rt5081_fled_on |= 1 << RT5081_FLED1;
+		if (fi->id == RT5081_FLED2)
+			rt5081_fled_on |= 1 << RT5081_FLED2;
 			break;
+		}else{
 		ret |= rt5081_pmu_reg_clr_bit(fi->chip,
 			RT5081_PMU_REG_FLEDEN, RT5081_STROBE_EN_MASK);
 		ret |= rt5081_pmu_reg_set_bit(fi->chip,
-				RT5081_PMU_REG_FLEDEN, fi->id == RT5081_FLED1 ? 0x02 : 0x01);
+			RT5081_PMU_REG_FLEDEN, fi->id == RT5081_FLED1 ? 0x02 : 0x01);
 		ret |= rt5081_pmu_reg_set_bit(fi->chip,
-				RT5081_PMU_REG_FLEDEN, RT5081_TORCH_EN_MASK);
+			RT5081_PMU_REG_FLEDEN, RT5081_TORCH_EN_MASK);
 		dev_info(fi->dev, "set to torch mode\n");
 		rt5081_global_mode = mode;
+		pr_err("rt5081_global_mode=%d\n", rt5081_global_mode);
+		dev_info(fi->dev, "liye2\n");
 		if (fi->id == RT5081_FLED1)
 			rt5081_fled_on |= 1 << RT5081_FLED1;
 		if (fi->id == RT5081_FLED2)
 			rt5081_fled_on |= 1 << RT5081_FLED2;
 		break;
+		}
 	case FLASHLIGHT_MODE_FLASH:
-		ret = rt5081_pmu_reg_clr_bit(fi->chip,
-			RT5081_PMU_REG_FLEDEN, RT5081_STROBE_EN_MASK);
+		if (rt5081_global_mode == FLASHLIGHT_MODE_TORCH)
+		{
+		ret |= rt5081_pmu_reg_clr_bit(fi->chip,
+			RT5081_PMU_REG_FLEDEN, RT5081_TORCH_EN_MASK);
 		ret |= rt5081_pmu_reg_set_bit(fi->chip,
 			RT5081_PMU_REG_FLEDEN, fi->id == RT5081_FLED1 ? 0x02 : 0x01);
 		ret |= rt5081_pmu_reg_set_bit(fi->chip,
 			RT5081_PMU_REG_FLEDEN, RT5081_STROBE_EN_MASK);
 		dev_info(fi->dev, "set to flash mode\n");
 		rt5081_global_mode = mode;
+		pr_err("rt5081_global_mode=%d\n", rt5081_global_mode);
+		dev_info(fi->dev, "liye3\n");
 		if (fi->id == RT5081_FLED1)
 			rt5081_fled_on |= 1 << RT5081_FLED1;
 		if (fi->id == RT5081_FLED2)
 			rt5081_fled_on |= 1 << RT5081_FLED2;
+			break;
+		}else{
+		if (rt5081_global_mode == FLASHLIGHT_MODE_FLASH)
+		{
+		ret |= rt5081_pmu_reg_set_bit(fi->chip,
+			RT5081_PMU_REG_FLEDEN, fi->id == RT5081_FLED1 ? 0x02 : 0x01);
+		dev_info(fi->dev, "liye4\n");
+		}else{
+		ret = rt5081_pmu_reg_clr_bit(fi->chip,
+			RT5081_PMU_REG_FLEDEN, RT5081_STROBE_EN_MASK);
+		ret |= rt5081_pmu_reg_set_bit(fi->chip,
+			RT5081_PMU_REG_FLEDEN, fi->id == RT5081_FLED1 ? 0x02 : 0x01);
+		ret |= rt5081_pmu_reg_set_bit(fi->chip,
+			RT5081_PMU_REG_FLEDEN, RT5081_STROBE_EN_MASK);
+		dev_info(fi->dev, "liye5\n");
+		}
+		dev_info(fi->dev, "set to flash mode\n");
+		rt5081_global_mode = mode;
+		pr_err("rt5081_global_mode=%d\n", rt5081_global_mode);
+		if (fi->id == RT5081_FLED1)
+			rt5081_fled_on |= 1 << RT5081_FLED1;
+		if (fi->id == RT5081_FLED2)
+			rt5081_fled_on |= 1 << RT5081_FLED2;
+		dev_info(fi->dev, "liye6\n");
 		break;
+		}
 	case FLASHLIGHT_MODE_OFF:
 		ret = rt5081_pmu_reg_clr_bit(fi->chip,
 				RT5081_PMU_REG_FLEDEN,
 				fi->id == RT5081_FLED1 ? 0x02 : 0x01);
 		dev_info(fi->dev, "set to off mode\n");
+		dev_info(fi->dev, "liye7\n");
 		if (fi->id == RT5081_FLED1)
 			rt5081_fled_on &= ~(1 << RT5081_FLED1);
 		if (fi->id == RT5081_FLED2)
 			rt5081_fled_on &= ~(1 << RT5081_FLED2);
 		if (rt5081_fled_on == 0)
 			rt5081_global_mode = mode;
+		pr_err("rt5081_global_mode=%d\n", rt5081_global_mode);
+		dev_info(fi->dev, "liye8\n");
 		break;
 	default:
 		return -EINVAL;
 	}
 	return ret;
 }
-
+//--end--
 static int rt5081_fled_get_mode(struct rt_fled_dev *info)
 {
 	struct rt5081_pmu_fled_data *fi = (struct rt5081_pmu_fled_data *)info;
