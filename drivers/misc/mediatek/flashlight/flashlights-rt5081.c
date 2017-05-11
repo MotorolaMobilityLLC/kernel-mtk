@@ -231,16 +231,24 @@ int rt5081_set_level_lt(int level)
 
 	/* set brightness level */
 	if (rt5081_is_torch(level))
+	{
+		printk("tqq line = %d level = %d\n",__LINE__,level);
 		flashlight_set_torch_brightness(
 				flashlight_dev_lt, rt5081_torch_level[level]);
-	flashlight_set_strobe_brightness(
+		flashlight_set_strobe_brightness(
 			flashlight_dev_lt, rt5081_strobe_level[level]);
+	}else{
+		printk("tqq line = %d level = %d\n",__LINE__,level);
+		flashlight_set_strobe_brightness(
+			flashlight_dev_lt, rt5081_strobe_level[level]);
+	}
 
 	return 0;
 }
 
 static int rt5081_set_level(int ct_index, int level)
 {
+printk("tqq line = %d level = %d ct_index = %d\n",__LINE__,level,ct_index);
 	if (ct_index == RT5081_CT_HT)
 		rt5081_set_level_ht(level);
 	else if (ct_index == RT5081_CT_LT)
@@ -301,30 +309,35 @@ static int rt5081_uninit(void)
  *****************************************************************************/
 static void rt5081_work_disable_ht(struct work_struct *data)
 {
+	printk("tqq line = %d\n",__LINE__);	
 	fl_dbg("ht work queue callback\n");
 	rt5081_disable();
 }
 
 static void rt5081_work_disable_lt(struct work_struct *data)
 {
+	printk("tqq line = %d\n",__LINE__);		
 	fl_dbg("lt work queue callback\n");
 	rt5081_disable();
 }
 
 static enum hrtimer_restart fl_timer_func_ht(struct hrtimer *timer)
 {
+	printk("tqq line = %d\n",__LINE__);	
 	schedule_work(&rt5081_work_ht);
 	return HRTIMER_NORESTART;
 }
 
 static enum hrtimer_restart fl_timer_func_lt(struct hrtimer *timer)
 {
+	printk("tqq line = %d\n",__LINE__);	
 	schedule_work(&rt5081_work_lt);
 	return HRTIMER_NORESTART;
 }
 
 int rt5081_timer_start(int ct_index, ktime_t ktime)
 {
+	printk("tqq line = %d\n",__LINE__);	
 	if (ct_index == RT5081_CT_HT)
 		hrtimer_start(&fl_timer_ht, ktime, HRTIMER_MODE_REL);
 	else if (ct_index == RT5081_CT_LT)
@@ -339,6 +352,7 @@ int rt5081_timer_start(int ct_index, ktime_t ktime)
 
 int rt5081_timer_cancel(int ct_index)
 {
+	printk("tqq line = %d\n",__LINE__);	
 	if (ct_index == RT5081_CT_HT)
 		hrtimer_cancel(&fl_timer_ht);
 	else if (ct_index == RT5081_CT_LT)
@@ -357,7 +371,7 @@ int rt5081_timer_cancel(int ct_index)
 static int rt5081_operate(int ct_index, int enable)
 {
 	ktime_t ktime;
-
+	printk("tqq line = %d ct_index = %d enable = %d\n",__LINE__,ct_index,enable);	
 	/* setup enable/disable */
 	if (ct_index == RT5081_CT_HT) {
 		rt5081_en_ht = enable;
