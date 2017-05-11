@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 MediaTek Inc.
+ * Copyright (c) 2017 MediaTek Inc.
  * Author: Leilk Liu <leilk.liu@mediatek.com>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -28,6 +28,8 @@
 #include <linux/of_platform.h>
 #include <linux/of_address.h>
 #include <linux/spi/spi.h>
+
+#include "spis-mt27xx.h"
 
 #define SPIS_IRQ_EN_REG	0x0
 #define DMA_DONE_EN	BIT(7)
@@ -173,6 +175,7 @@ void mtk_spis_prepare_hw(struct spi_device *spi)
 
 	writel(reg_val, mdata->base + SPIS_CFG_REG);
 }
+
 int mtk_spis_dma_transfer(struct spi_device *spi,
 			  struct spi_transfer *xfer)
 {
@@ -439,6 +442,8 @@ static int mtk_spis_probe(struct spi_device *spi)
 		dev_err(dev, "request spis irq %d fail\n", spi->irq);
 		return ret;
 	}
+
+	mtk_spis_create_attribute(&spi->dev);
 
 	return 0;
 }
