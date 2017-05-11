@@ -898,6 +898,15 @@ static int mtk_vcu_probe(struct platform_device *pdev)
 	}
 	vcu_mtkdev[vcuid] = vcu;
 
+#ifdef CONFIG_MTK_IOMMU
+	vcu_mtkdev[vcuid]->io_domain = iommu_get_domain_for_dev(dev);
+	if (vcu_mtkdev[vcuid]->io_domain == NULL) {
+		dev_err(dev, "[VCU] vcuid: %d get iommu domain fail !!\n", vcuid);
+		return -EPROBE_DEFER;
+	}
+	dev_err(dev, "vcu iommudom: %p,vcuid:%d\n", vcu_mtkdev[vcuid]->io_domain, vcuid);
+#endif
+
 	if (vcuid == 1)
 		vcu_mtkdev[vcuid]->path = MDP_PATH;
 	else if (vcuid == 0)
@@ -943,13 +952,7 @@ static int mtk_vcu_probe(struct platform_device *pdev)
 		goto vcu_mutex_destroy;
 	}
 
-#ifdef CONFIG_MTK_IOMMU
-	vcu_mtkdev[vcuid]->io_domain = iommu_get_domain_for_dev(dev);
-	dev_err(dev, "vcu iommudom: %p,vcuid:%d\n", vcu_mtkdev[vcuid]->io_domain, vcuid);
-#endif
-
 	init_waitqueue_head(&vcu->ack_wq);
-
 	/* init character device */
 
 	ret = alloc_chrdev_region(&vcu_mtkdev[vcuid]->vcu_devno, 0, 1, vcu_mtkdev[vcuid]->vcuname);
