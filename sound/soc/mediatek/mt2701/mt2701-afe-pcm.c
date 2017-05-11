@@ -3154,14 +3154,16 @@ static int mt2701_afe_pcm_dev_probe(struct platform_device *pdev)
 		return ret;
 	}
 
+	/* set 4GB dma mask */
+	ret = dma_set_mask(dev, DMA_BIT_MASK(33));
+	if (ret)
+		return ret;
+
 	platform_set_drvdata(pdev, afe);
 	pm_runtime_enable(&pdev->dev);
 	if (!pm_runtime_enabled(&pdev->dev))
 		goto err_pm_disable;
 	pm_runtime_get_sync(&pdev->dev);
-
-	/* set 4GB dma mask */
-	/*dma_set_mask(dev, DMA_BIT_MASK(33));*/
 
 	ret = snd_soc_register_platform(&pdev->dev, &mtk_afe_pcm_platform);
 	if (ret) {
