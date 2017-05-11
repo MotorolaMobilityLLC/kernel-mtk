@@ -34,5 +34,29 @@ void mt2701_turn_off_afe_clock(struct mtk_base_afe *afe);
 
 void mt2701_mclk_configuration(struct mtk_base_afe *afe, int id, int domain,
 			       int mclk);
+void mt2701_turn_off_mclk(struct mtk_base_afe *afe, int id);
+
+int mt2712_init_clock(struct mtk_base_afe *afe);
+int mt2712_afe_enable_clock(struct mtk_base_afe *afe);
+void mt2712_afe_disable_clock(struct mtk_base_afe *afe);
+
+int mt2712_turn_on_a1sys_clock(struct mtk_base_afe *afe);
+void mt2712_turn_off_a1sys_clock(struct mtk_base_afe *afe);
+
+int mt2712_turn_on_a2sys_clock(struct mtk_base_afe *afe);
+void mt2712_turn_off_a2sys_clock(struct mtk_base_afe *afe);
+
+int mt2712_turn_on_afe_clock(struct mtk_base_afe *afe);
+void mt2712_turn_off_afe_clock(struct mtk_base_afe *afe);
+
+void mt2712_mclk_configuration(struct mtk_base_afe *afe, int id, int domain,
+			       int mclk);
+
+void mt2712_turn_off_mclk(struct mtk_base_afe *afe, int id);
+int mt2712_turn_on_tdm_clock(struct mtk_base_afe *afe);
+void mt2712_turn_off_tdm_clock(struct mtk_base_afe *afe);
+
+int mt2701_tdm_clk_configuration(struct mtk_base_afe *afe, int tdm_id,
+				  struct snd_pcm_hw_params *params, bool coclk);
 
 #endif

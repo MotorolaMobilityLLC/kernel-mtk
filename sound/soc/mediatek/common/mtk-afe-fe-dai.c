@@ -131,6 +131,7 @@ int mtk_afe_fe_hw_params(struct snd_pcm_substream *substream,
 	struct mtk_base_afe *afe = snd_soc_platform_get_drvdata(rtd->platform);
 	struct mtk_base_afe_memif *memif = &afe->memif[rtd->cpu_dai->id];
 	int msb_at_bit33 = 0;
+	int msb2_at_bit33 = 0;
 	int ret, fs = 0;
 
 	ret = snd_pcm_lib_malloc_pages(substream, params_buffer_bytes(params));
@@ -140,6 +141,7 @@ int mtk_afe_fe_hw_params(struct snd_pcm_substream *substream,
 	msb_at_bit33 = upper_32_bits(substream->runtime->dma_addr) ? 1 : 0;
 	memif->phys_buf_addr = lower_32_bits(substream->runtime->dma_addr);
 	memif->buffer_size = substream->runtime->dma_bytes;
+	msb2_at_bit33 = upper_32_bits(substream->runtime->dma_addr + memif->buffer_size - 1) ? 1 : 0;
 
 	/* start */
 	mtk_regmap_write(afe->regmap, memif->data->reg_ofs_base,
@@ -153,6 +155,11 @@ int mtk_afe_fe_hw_params(struct snd_pcm_substream *substream,
 	mtk_regmap_update_bits(afe->regmap, memif->data->msb_reg,
 			       1 << memif->data->msb_shift,
 			       msb_at_bit33 << memif->data->msb_shift);
+
+	/* set buf end MSB to 33-bit */
+	mtk_regmap_update_bits(afe->regmap, memif->data->msb2_reg,
+			       1 << memif->data->msb2_shift,
+			       msb2_at_bit33 << memif->data->msb2_shift);
 
 	/* set channel */
 	if (memif->data->mono_shift >= 0) {

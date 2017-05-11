@@ -28,6 +28,16 @@
 #define MT2701_AUD_AUD_MUX1_DIV_RATE (MT2701_PLL_DOMAIN_0_RATE / 2)
 #define MT2701_AUD_AUD_MUX2_DIV_RATE (MT2701_PLL_DOMAIN_1_RATE / 2)
 
+#define MT2712_PLL_DOMAIN_0_RATE	196608000
+#define MT2712_PLL_DOMAIN_1_RATE	180633600
+#define AUDIO_CLOCK_45M 45158400
+#define AUDIO_CLOCK_49M 49152000
+#define AUDIO_CLOCK_196M 196608000
+#define AUDIO_CLOCK_180M 180633600
+#define MT2701_TDM_IN_CLK_THR 12288000
+#define MT2701_TDM_OUT_CLK_THR 24576000
+#define MT2701_TDM_MAX_CLK_DIV 256
+
 enum {
 	MT2701_I2S_1,
 	MT2701_I2S_2,
@@ -49,8 +59,14 @@ enum {
 	MT2701_MEMIF_UL3,
 	MT2701_MEMIF_UL4,
 	MT2701_MEMIF_UL5,
+	MT2701_MEMIF_AWB2,
 	MT2701_MEMIF_DLBT,
 	MT2701_MEMIF_ULBT,
+	MT2701_MEMIF_DLMOD,
+	MT2701_MEMIF_ULMOD,
+	MT2701_MEMIF_DLTDM1,
+	MT2701_MEMIF_DLTDM2,
+	MT2701_MEMIF_ULTDM,
 	MT2701_MEMIF_NUM,
 	MT2701_IO_I2S = MT2701_MEMIF_NUM,
 	MT2701_IO_2ND_I2S,
@@ -58,7 +74,12 @@ enum {
 	MT2701_IO_4TH_I2S,
 	MT2701_IO_5TH_I2S,
 	MT2701_IO_6TH_I2S,
+	MT2701_IO_AADC,
 	MT2701_IO_MRG,
+	MT2701_IO_MOD,
+	MT2701_IO_TDMO1,
+	MT2701_IO_TDMO2,
+	MT2701_IO_TDMI,
 };
 
 enum {
@@ -66,7 +87,17 @@ enum {
 	MT2701_IRQ_ASYS_IRQ1 = MT2701_IRQ_ASYS_START,
 	MT2701_IRQ_ASYS_IRQ2,
 	MT2701_IRQ_ASYS_IRQ3,
+	MT2701_IRQ_ASYS_IRQ4,
+	MT2701_IRQ_ASYS_IRQ5,
+	MT2701_IRQ_ASYS_IRQ6,
 	MT2701_IRQ_ASYS_END,
+};
+
+enum {
+	MT2701_TDMO_1,
+	MT2701_TDMO_2,
+	MT2701_TDMI,
+	MT2701_TDM_NUM,
 };
 
 /* 2701 clock def */
@@ -118,6 +149,65 @@ enum audio_system_clock_type {
 	MT2701_CLOCK_NUM
 };
 
+/* 2712 clock def */
+enum audio_system_clock_type_2712 {
+	MT2712_AUD_AUD_INTBUS_SEL,
+	MT2712_AUD_AUD_APLL1_SEL,
+	MT2712_AUD_AUD_APLL2_SEL,
+	MT2712_AUD_A1SYS_HP_SEL,
+	MT2712_AUD_A2SYS_HP_SEL,
+	MT2712_AUD_APLL_SEL,
+	MT2712_AUD_APLL2_SEL,
+	MT2712_AUD_I2SO1_SEL,
+	MT2712_AUD_I2SO2_SEL,
+	MT2712_AUD_I2SO3_SEL,
+	MT2712_AUD_TDMO0_SEL,
+	MT2712_AUD_TDMO1_SEL,
+	MT2712_AUD_I2SI1_SEL,
+	MT2712_AUD_I2SI2_SEL,
+	MT2712_AUD_I2SI3_SEL,
+	MT2712_AUD_APLL_DIV0,
+	MT2712_AUD_APLL_DIV1,
+	MT2712_AUD_APLL_DIV2,
+	MT2712_AUD_APLL_DIV3,
+	MT2712_AUD_APLL_DIV4,
+	MT2712_AUD_APLL_DIV5,
+	MT2712_AUD_APLL_DIV6,
+	MT2712_AUD_APLL_DIV7,
+	MT2712_AUD_DIV_PDN0,
+	MT2712_AUD_DIV_PDN1,
+	MT2712_AUD_DIV_PDN2,
+	MT2712_AUD_DIV_PDN3,
+	MT2712_AUD_DIV_PDN4,
+	MT2712_AUD_DIV_PDN5,
+	MT2712_AUD_DIV_PDN6,
+	MT2712_AUD_DIV_PDN7,
+	MT2712_AUD_APMIXED_APLL1,
+	MT2712_AUD_APMIXED_APLL2,
+	MT2712_AUD_EXT_I_1,
+	MT2712_AUD_EXT_I_2,
+	MT2712_AUD_CLK_26M,
+	MT2712_AUD_SYSPLL1_D4,
+	MT2712_AUD_SYSPLL1_D2,
+	MT2712_AUD_UNIVPLL3_D2,
+	MT2712_AUD_UNIVPLL2_D8,
+	MT2712_AUD_SYSPLL3_D2,
+	MT2712_AUD_SYSPLL3_D4,
+	MT2712_AUD_APLL1,
+	MT2712_AUD_APLL1_D2,
+	MT2712_AUD_APLL1_D4,
+	MT2712_AUD_APLL1_D8,
+	MT2712_AUD_APLL1_D16,
+	MT2712_AUD_APLL2,
+	MT2712_AUD_APLL2_D2,
+	MT2712_AUD_APLL2_D4,
+	MT2712_AUD_APLL2_D8,
+	MT2712_AUD_APLL2_D16,
+	MT2712_CLOCK_NUM
+};
+#define MCLK_I2SIN_OFFSET 5
+#define MCLK_TDM_OFFSET 3
+
 static const unsigned int mt2701_afe_backup_list[] = {
 	AUDIO_TOP_CON0,
 	AUDIO_TOP_CON4,
@@ -163,10 +253,78 @@ struct mt2701_i2s_path {
 	const struct mt2701_i2s_data *i2s_data[2];
 };
 
+enum mt2701_tdm_channel {
+	TDM_2CH = 0,
+	TDM_4CH,
+	TDM_8CH,
+	TDM_12CH,
+	TDM_16CH,
+};
+
+enum mt2701_tdm_mode {
+	TDM_MODE_COCLK_O1_GPIO_O1,
+	TDM_MODE_COCLK_O1_GPIO_IN,
+	TDM_MODE_COCLK_O2_GPIO_O2,
+	TDM_MODE_COCLK_O2_GPIO_IN,
+	TDM_MODE_SEPCLK,
+};
+
+struct mt2701_tdm_data {
+	int tdm_bck_reg;
+	int tdm_plldiv_shift;
+	int tdm_pll_sel_shift;
+	int tdm_bck_on_shift;
+	int tdm_ctrl_reg;
+	int tdm_ctrl_2nd_reg;
+	int tdm_conn_reg;
+	int tdm_conn_2nd_reg;
+	int tdm_lrck_cycle_shift;
+	int tdm_on_shift;
+	int tdm_agent_reg;
+	int tdm_agent_bit_width_shift;
+	int tdm_agent_ch_num_shift;
+};
+
+struct mt2701_tdm_path {
+	int mclk_rate;
+	const struct mt2701_tdm_data *tdm_data;
+};
+
+struct mt2701_tdm_coclk_info {
+	int src;
+	int gpio_src;
+	int on;
+	int channels;
+	int bit_width;
+	int sample_rate;
+};
+
+struct tdm_in_lrck_setting {
+	unsigned int delay_half_T;
+	unsigned int width;
+};
+
+struct clock_ctrl {
+	int (*init_clock)(struct mtk_base_afe *afe);
+	int (*afe_enable_clock)(struct mtk_base_afe *afe);
+	void (*afe_disable_clock)(struct mtk_base_afe *afe);
+	void (*mclk_configuration)(struct mtk_base_afe *afe, int id, int domain,
+			       int mclk);
+	void (*disable_mclk)(struct mtk_base_afe *afe, int id);
+	int apll0_rate;
+	int apll1_rate;
+};
+
 struct mt2701_afe_private {
-	struct clk *clocks[MT2701_CLOCK_NUM];
+	struct clk *clocks[MT2712_CLOCK_NUM];
 	struct mt2701_i2s_path i2s_path[MT2701_I2S_NUM];
+	struct mt2701_tdm_path tdm_path[MT2701_TDM_NUM];
 	bool mrg_enable[MT2701_STREAM_DIR_NUM];
+	bool pcm_enable[MT2701_STREAM_DIR_NUM];
+	bool pcm_slave;
+	struct mt2701_tdm_coclk_info tdm_coclk_info;
+	struct tdm_in_lrck_setting tdm_in_lrck;
+	struct clock_ctrl *clk_ctrl;
 };
 
 #endif
