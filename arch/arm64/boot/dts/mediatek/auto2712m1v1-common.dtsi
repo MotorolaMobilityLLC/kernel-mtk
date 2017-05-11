@@ -50,6 +50,10 @@
 		compatible = "mediatek,barometer";
 	};
 
+	bt_sco_codec:bt_sco_codec {
+		compatible = "linux,bt-sco";
+	};
+
 	cust_alsps_1 {
 		compatible = "mediatek,CM36686_1";
 		i2c_num = <5>;
@@ -85,6 +89,11 @@
 		is_batch_supported_ps = <0>;
 		is_batch_supported_als = <0>;
 	};
+
+	dummy_codec:dummy_codec {
+		compatible = "mediatek,dummy-codec";
+	};
+
 	gsensor@0 {
 		compatible = "mediatek,gsensor";
 	};
@@ -236,6 +245,35 @@
 	touch: touch@ {
 		compatible = "mediatek,mt2712-touch";
 	};
+
+	sound: sound {
+		compatible = "mediatek,mt2712-d1v1-machine";
+		mediatek,platform = <&afe>;
+		/* CS42448 Machine name */
+		audio-routing =
+		"Line Out Jack", "AOUT1L",
+		"Line Out Jack", "AOUT1R",
+		"Line Out Jack", "AOUT2L",
+		"Line Out Jack", "AOUT2R",
+		"Line Out Jack", "AOUT3L",
+		"Line Out Jack", "AOUT3R",
+		"Line Out Jack", "AOUT4L",
+		"Line Out Jack", "AOUT4R",
+		"AIN1L", "AMIC",
+		"AIN1R", "AMIC",
+		"AIN2L", "Tuner In",
+		"AIN2R", "Tuner In",
+		"AIN3L", "Satellite Tuner In",
+		"AIN3R", "Satellite Tuner In",
+		"AIN3L", "AUX In",
+		"AIN3R", "AUX In";
+		mediatek,audio-codec = <&dummy_codec>;
+		mediatek,audio-codec-bt-mrg = <&bt_sco_codec>;
+		mediatek,audio-codec-tdmo = <&cs42448>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&aud_pins_default>;
+		status = "okay";
+	};
 };
 
 &auxadc {
@@ -298,6 +336,13 @@
 	pinctrl-names = "default";
 	pinctrl-0 = <&i2c4_pins>;
 	status = "okay";
+
+	cs42448: cs42448@48 {
+		compatible = "cirrus,cs42448";
+		reg = <0x48>;
+		clocks = <&topckgen CLK_TOP_APLL_DIV_PDN3>;
+		clock-names = "mclk";
+	};
 };
 
 &i2c5 {
@@ -449,6 +494,45 @@
 };
 
 &pio {
+	aud_pins_default: audiodefault {
+		pins_cmd_dat {
+			pinmux = <MT2712_PIN_196_TDMO1_MCLK__FUNC_TDMO1_MCLK>,
+				 <MT2712_PIN_197_TDMO1_LRCK__FUNC_TDMO1_LRCK>,
+				 <MT2712_PIN_198_TDMO1_BCK__FUNC_TDMO1_BCK>,
+				 <MT2712_PIN_199_TDMO1_DATA__FUNC_TDMO1_DATA>,
+				 <MT2712_PIN_200_TDMO0_MCLK__FUNC_TDMO0_MCLK0>,
+				 <MT2712_PIN_201_TDMO0_LRCK__FUNC_TDMO0_LRCK0>,
+				 <MT2712_PIN_202_TDMO0_BCK__FUNC_TDMO0_BCK0>,
+				 <MT2712_PIN_203_TDMO0_DATA__FUNC_TDMO0_DATA0>,
+				 <MT2712_PIN_169_I2SI0_DATA__FUNC_TDMIN_DI>,
+				 <MT2712_PIN_170_I2SI0_LRCK__FUNC_TDMIN_LRCK>,
+				 <MT2712_PIN_171_I2SI0_MCLK__FUNC_TDMIN_MCLK>,
+				 <MT2712_PIN_172_I2SI0_BCK__FUNC_TDMIN_BCK>,
+				 <MT2712_PIN_181_I2SO1_DATA0__FUNC_I2SO1_DO>,
+				 <MT2712_PIN_182_I2SO1_BCK__FUNC_I2SO1_BCK>,
+				 <MT2712_PIN_183_I2SO1_LRCK__FUNC_I2SO1_WS>,
+				 <MT2712_PIN_184_I2SO1_MCLK__FUNC_I2SO1_MCK>,
+				 <MT2712_PIN_177_I2SI1_DATA__FUNC_I2SI1_DI>,
+				 <MT2712_PIN_178_I2SI1_BCK__FUNC_I2SI1_BCK>,
+				 <MT2712_PIN_179_I2SI1_LRCK__FUNC_I2SI1_WS>,
+				 <MT2712_PIN_180_I2SI1_MCLK__FUNC_I2SI1_MCK>,
+				 <MT2712_PIN_187_I2SO2_BCK__FUNC_I2SO2_BCK>,
+				 <MT2712_PIN_188_I2SO2_LRCK__FUNC_I2SO2_WS>,
+				 <MT2712_PIN_189_I2SO2_MCLK__FUNC_I2SO2_MCK>,
+				 <MT2712_PIN_190_I2SO2_DATA0__FUNC_I2SO2_DO>,
+				 <MT2712_PIN_173_I2SI2_DATA__FUNC_I2SI2_DI>,
+				 <MT2712_PIN_174_I2SI2_MCLK__FUNC_I2SI2_MCK>,
+				 <MT2712_PIN_175_I2SI2_BCK__FUNC_I2SI2_BCK>,
+				 <MT2712_PIN_176_I2SI2_LRCK__FUNC_I2SI2_WS>,
+				 <MT2712_PIN_191_I2SO0_DATA1__FUNC_I2SO0_DO1>,
+				 <MT2712_PIN_192_I2SO0_MCLK__FUNC_I2SO0_MCK>,
+				 <MT2712_PIN_193_I2SO0_DATA0__FUNC_I2SO0_DO0>,
+				 <MT2712_PIN_194_I2SO0_LRCK__FUNC_I2SO0_WS>,
+				 <MT2712_PIN_195_I2SO0_BCK__FUNC_I2SO0_BCK>;
+			drive-strength = <MTK_DRIVE_12mA>;
+			bias-pull-down;
+		};
+	};
 	disp_pwm0_pins: disp_pwm0_pins {
 		pins1 {
 			pinmux = <MT2712_PIN_4_PWM0__FUNC_DISP0_PWM>;
