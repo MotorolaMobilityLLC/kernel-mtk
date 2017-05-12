@@ -946,7 +946,7 @@ static int bmg_read_sensor_data(struct i2c_client *client,
 			obj->cvt.sign[BMG_AXIS_Z]*databuf[BMG_AXIS_Z];
 
 		/* convert: LSB -> degree/second(o/s) */
-		gyro[BMG_AXIS_X] = gyro[BMG_AXIS_X] / obj->sensitivity*985/1000;
+		gyro[BMG_AXIS_X] = gyro[BMG_AXIS_X] / obj->sensitivity*(-1)*985/1000;
 		gyro[BMG_AXIS_Y] = gyro[BMG_AXIS_Y] / obj->sensitivity*985/1000;
 		gyro[BMG_AXIS_Z] = gyro[BMG_AXIS_Z] / obj->sensitivity*(-1)*985/1000;
 
