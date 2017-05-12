@@ -18,7 +18,7 @@
 			<&apmixedsys CLK_APMIXED_ARMCA72PLL>,
 			<&apmixedsys CLK_APMIXED_ETHERPLL>,
 			<&apmixedsys CLK_APMIXED_CVBSPLL>,
-			<&apmixedsys CLK_APMIXED_REF2USB_TX>,
+			<&clk26m>,
 			<&bdpsys CLK_BDP_BRIDGE_B>,
 			<&bdpsys CLK_BDP_BRIDGE_DRAM>,
 			<&bdpsys CLK_BDP_LARB_DRAM>,
@@ -195,7 +195,7 @@
 			<&vencsys CLK_VENC_SMI_COMMON_CON>,
 			<&vencsys CLK_VENC_VENC>,
 			<&vencsys CLK_VENC_SMI_LARB6>,
-			<&topckgen CLK_TOP_USB30_SEL>;
+			<&clk26m>;
 
 		clock-names =
 			"0", "1", "2", "3", "4", "5", "6", "7", "8", "9",
@@ -243,16 +243,6 @@
 	bring-up-pd-audio {
 		compatible = "mediatek,scpsys-bring-up";
 		power-domains = <&scpsys MT2712_POWER_DOMAIN_AUDIO>;
-	};
-
-	bring-up-pd-usb {
-		compatible = "mediatek,scpsys-bring-up";
-		power-domains = <&scpsys MT2712_POWER_DOMAIN_USB>;
-	};
-
-	bring-up-pd-usb2 {
-		compatible = "mediatek,scpsys-bring-up";
-		power-domains = <&scpsys MT2712_POWER_DOMAIN_USB2>;
 	};
 
 	bring-up-pd-mfg {

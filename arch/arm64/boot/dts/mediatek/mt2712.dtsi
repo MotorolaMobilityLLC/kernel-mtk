@@ -1118,7 +1118,7 @@
 			phys = <&u2port2 PHY_TYPE_USB2>,
 			       <&u2port3 PHY_TYPE_USB2>,
 			       <&u3port1 PHY_TYPE_USB3>;
-			power-domains = <&scpsys MT2712_POWER_DOMAIN_USB>;
+			power-domains = <&scpsys MT2712_POWER_DOMAIN_USB2>;
 			clocks = <&topckgen CLK_TOP_USB30_SEL>, <&clk26m>;
 			clock-names = "sys_ck", "ref_ck";
 			status = "disabled";
