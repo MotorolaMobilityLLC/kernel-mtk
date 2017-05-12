@@ -19,12 +19,14 @@
  * enum mtk_mdp_comp_type - the MDP component
  * @MTK_MDP_RDMA:	Read DMA
  * @MTK_MDP_RSZ:	Riszer
+ * @MTK_MDP_TDSHP:	2D sharpness
  * @MTK_MDP_WDMA:	Write DMA
  * @MTK_MDP_WROT:	Write DMA with rotation
  */
 enum mtk_mdp_comp_type {
 	MTK_MDP_RDMA,
 	MTK_MDP_RSZ,
+	MTK_MDP_TDSHP,
 	MTK_MDP_WDMA,
 	MTK_MDP_WROT,
 	MTK_MDP_COMP_TYPE_MAX,
@@ -33,12 +35,18 @@ enum mtk_mdp_comp_type {
 enum mtk_mdp_comp_id {
 	MTK_MDP_COMP_RDMA0,
 	MTK_MDP_COMP_RDMA1,
+	MTK_MDP_COMP_RDMA2,
+	MTK_MDP_COMP_RDMA3,
 	MTK_MDP_COMP_RSZ0,
 	MTK_MDP_COMP_RSZ1,
 	MTK_MDP_COMP_RSZ2,
+	MTK_MDP_COMP_TDSHP0,
+	MTK_MDP_COMP_TDSHP1,
+	MTK_MDP_COMP_TDSHP2,
 	MTK_MDP_COMP_WDMA,
 	MTK_MDP_COMP_WROT0,
 	MTK_MDP_COMP_WROT1,
+	MTK_MDP_COMP_WROT2,
 	MTK_MDP_COMP_ID_MAX,
 };
 

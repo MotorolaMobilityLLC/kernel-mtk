@@ -41,7 +41,8 @@ static int32_t mtk_mdp_map_color_format(int v4l2_format)
 	case V4L2_PIX_FMT_NV12:
 		return MDP_COLOR_NV12;
 	case V4L2_PIX_FMT_MT21C:
-		return MDP_COLOR_420_MT21;
+		return DP_COLOR_420_BLKP;
+		/* return DP_COLOR_420_MT21; */
 	case V4L2_PIX_FMT_YUV420M:
 	case V4L2_PIX_FMT_YUV420:
 		return MDP_COLOR_I420;
@@ -57,9 +58,15 @@ static int32_t mtk_mdp_map_color_format(int v4l2_format)
 	case V4L2_PIX_FMT_UYVY:
 		return DP_COLOR_UYVY;
 	case V4L2_PIX_FMT_ARGB32:
-		return DP_COLOR_ARGB8888;
+		return DP_COLOR_RGBA8888;
 	case V4L2_PIX_FMT_ABGR32:
 		return DP_COLOR_BGRA8888;
+	case V4L2_PIX_FMT_XRGB32:
+		return DP_COLOR_RGBA8888;
+	case V4L2_PIX_FMT_XBGR32:
+		return DP_COLOR_BGRA8888;
+	case V4L2_PIX_FMT_RGB565:
+		return DP_COLOR_RGB565;
 	}
 
 	mtk_mdp_err("Unknown format 0x%x", v4l2_format);

@@ -99,9 +99,17 @@ static const struct mtk_mdp_fmt mtk_mdp_formats[] = {
 		.flags		= MTK_MDP_FMT_FLAG_OUTPUT |
 				  MTK_MDP_FMT_FLAG_CAPTURE,
 	}, {
+		.pixelformat	= V4L2_PIX_FMT_YUV420,
+		.depth		= { 12 },
+		.row_depth	= { 8, 2, 2 },
+		.num_planes	= 1,
+		.num_comp	= 3,
+		.flags		= MTK_MDP_FMT_FLAG_OUTPUT |
+				  MTK_MDP_FMT_FLAG_CAPTURE,
+	}, {
 		.pixelformat	= V4L2_PIX_FMT_YUV422P,
 		.depth		= { 16 },
-		.row_depth	= { 16 },
+		.row_depth	= { 8, 4, 4 },
 		.num_planes	= 1,
 		.num_comp	= 3,
 		.flags		= MTK_MDP_FMT_FLAG_OUTPUT |
@@ -141,8 +149,8 @@ static const struct mtk_mdp_fmt mtk_mdp_formats[] = {
 	}, {
 		.pixelformat	= V4L2_PIX_FMT_ARGB32,
 		.depth		= { 32 },
-		.row_depth  = { 32 },
-		.num_planes = 1,
+		.row_depth	= { 32 },
+		.num_planes	= 1,
 		.num_comp	= 1,
 		.flags		= MTK_MDP_FMT_FLAG_OUTPUT |
 				  MTK_MDP_FMT_FLAG_CAPTURE,
@@ -150,6 +158,29 @@ static const struct mtk_mdp_fmt mtk_mdp_formats[] = {
 		.pixelformat	= V4L2_PIX_FMT_ABGR32,
 		.depth		= { 32 },
 		.row_depth	= { 32 },
+		.num_planes	= 1,
+		.num_comp	= 1,
+		.flags		= MTK_MDP_FMT_FLAG_OUTPUT |
+				  MTK_MDP_FMT_FLAG_CAPTURE,
+	}, {
+		.depth		= { 32 },
+		.row_depth	= { 32 },
+		.num_planes	= 1,
+		.num_comp	= 1,
+		.flags		= MTK_MDP_FMT_FLAG_OUTPUT |
+				  MTK_MDP_FMT_FLAG_CAPTURE,
+	}, {
+		.pixelformat	= V4L2_PIX_FMT_XBGR32,
+		.depth		= { 32 },
+		.row_depth	= { 32 },
+		.num_planes	= 1,
+		.num_comp	= 1,
+		.flags		= MTK_MDP_FMT_FLAG_OUTPUT |
+				  MTK_MDP_FMT_FLAG_CAPTURE,
+	}, {
+		.pixelformat	= V4L2_PIX_FMT_RGB565,
+		.depth		= { 16 },
+		.row_depth	= { 16 },
 		.num_planes	= 1,
 		.num_comp	= 1,
 		.flags		= MTK_MDP_FMT_FLAG_OUTPUT |
@@ -541,10 +572,15 @@ static void mtk_mdp_prepare_addr(struct mtk_mdp_ctx *ctx,
 		addr->addr[i] = vb2_dma_contig_plane_dma_addr(vb, i);
 
 	if (planes == 1 && frame->fmt->num_comp > 1) {
-		if (frame->fmt->pixelformat == V4L2_PIX_FMT_YVU420) {
+		if ((frame->fmt->pixelformat == V4L2_PIX_FMT_YVU420) ||
+			(frame->fmt->pixelformat == V4L2_PIX_FMT_YUV420)) {
 			addr->addr[1] = (dma_addr_t)(addr->addr[0] + pix_size);
 			addr->addr[2] = (dma_addr_t)(addr->addr[1] +
 					(pix_size >> 2));
+		} else if (frame->fmt->pixelformat == V4L2_PIX_FMT_YUV422P) {
+			addr->addr[1] = (dma_addr_t)(addr->addr[0] + pix_size);
+			addr->addr[2] = (dma_addr_t)(addr->addr[1] +
+					(pix_size >> 1));
 		} else if (frame->fmt->pixelformat == V4L2_PIX_FMT_NV12) {
 			addr->addr[1] = (dma_addr_t)(addr->addr[0] + pix_size);
 			addr->addr[2] = 0;
@@ -1063,7 +1099,7 @@ static int mtk_mdp_m2m_queue_init(void *priv, struct vb2_queue *src_vq,
 
 	memset(src_vq, 0, sizeof(*src_vq));
 	src_vq->type = V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE;
-	src_vq->io_modes = VB2_MMAP | VB2_DMABUF;
+	src_vq->io_modes = VB2_MMAP | VB2_USERPTR | VB2_DMABUF;
 	src_vq->drv_priv = ctx;
 	src_vq->ops = &mtk_mdp_m2m_qops;
 	src_vq->mem_ops = &vb2_dma_contig_memops;
@@ -1077,7 +1113,7 @@ static int mtk_mdp_m2m_queue_init(void *priv, struct vb2_queue *src_vq,
 
 	memset(dst_vq, 0, sizeof(*dst_vq));
 	dst_vq->type = V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE;
-	dst_vq->io_modes = VB2_MMAP | VB2_DMABUF;
+	dst_vq->io_modes = VB2_MMAP | VB2_USERPTR | VB2_DMABUF;
 	dst_vq->drv_priv = ctx;
 	dst_vq->ops = &mtk_mdp_m2m_qops;
 	dst_vq->mem_ops = &vb2_dma_contig_memops;
@@ -1349,7 +1385,7 @@ int mtk_mdp_register_m2m_device(struct mtk_mdp_dev *mdp)
 		goto err_vdev_register;
 	}
 
-	v4l2_info(&mdp->v4l2_dev, "driver registered as /dev/video%d",
+	v4l2_info(&mdp->v4l2_dev, "driver registered as /dev/video%d\n",
 		  mdp->vdev->num);
 	return 0;
 

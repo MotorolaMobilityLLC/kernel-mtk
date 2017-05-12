@@ -55,6 +55,21 @@ static const struct of_device_id mtk_mdp_comp_dt_ids[] = {
 	}, {
 		.compatible = "mediatek,mt8173-mdp-wrot",
 		.data = (void *)MTK_MDP_WROT
+	}, {
+		.compatible = "mediatek,mt2712-mdp-rdma",
+		.data = (void *)MTK_MDP_RDMA
+	}, {
+		.compatible = "mediatek,mt2712-mdp-rsz",
+		.data = (void *)MTK_MDP_RSZ
+	}, {
+		.compatible = "mediatek,mt2712-mdp-tdshp",
+		.data = (void *)MTK_MDP_TDSHP
+	}, {
+		.compatible = "mediatek,mt2712-mdp-wdma",
+		.data = (void *)MTK_MDP_WDMA
+	}, {
+		.compatible = "mediatek,mt2712-mdp-wrot",
+		.data = (void *)MTK_MDP_WROT
 	},
 	{ },
 };
@@ -62,6 +77,7 @@ static const struct of_device_id mtk_mdp_comp_dt_ids[] = {
 static const struct of_device_id mtk_mdp_of_ids[] = {
 	{ .compatible = "mediatek,mt2701-mdp", },
 	{ .compatible = "mediatek,mt8173-mdp", },
+	{ .compatible = "mediatek,mt2712-mdp", },
 	{ },
 };
 MODULE_DEVICE_TABLE(of, mtk_mdp_of_ids);
@@ -92,10 +108,8 @@ static void mtk_mdp_wdt_worker(struct work_struct *work)
 
 	mtk_mdp_err("Watchdog timeout");
 
-	list_for_each_entry(ctx, &mdp->ctx_list, list) {
-		mtk_mdp_dbg(0, "[%d] Change as state error", ctx->id);
+	list_for_each_entry(ctx, &mdp->ctx_list, list)
 		mtk_mdp_ctx_state_lock_set(ctx, MTK_MDP_CTX_ERROR);
-	}
 }
 
 #ifndef CONFIG_VIDEO_MEDIATEK_VCU
@@ -147,7 +161,7 @@ static int mtk_mdp_probe(struct platform_device *pdev)
 	mutex_init(&mdp->vpulock);
 
 	/* Iterate over sibling MDP function blocks */
-	for_each_child_of_node(dev->of_node, node) {
+	for_each_child_of_node(dev->of_node->parent, node) {
 		const struct of_device_id *of_id;
 		enum mtk_mdp_comp_type comp_type;
 		int comp_id;
