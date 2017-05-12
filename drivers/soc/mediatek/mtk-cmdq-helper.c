@@ -354,6 +354,8 @@ static int cmdq_pkt_finalize(struct cmdq_pkt *pkt)
 	if (err < 0)
 		return err;
 
+	cmdq_log("finalize: add EOC and JUMP cmd");
+
 	return 0;
 }
 
@@ -361,6 +363,8 @@ int cmdq_pkt_flush_async(struct cmdq_client *client, struct cmdq_pkt *pkt,
 			 cmdq_async_flush_cb cb, void *data)
 {
 	int err;
+
+	cmdq_log("");
 
 	err = cmdq_pkt_finalize(pkt);
 	if (err < 0)
@@ -386,6 +390,8 @@ static void cmdq_pkt_flush_cb(struct cmdq_cb_data data)
 {
 	struct cmdq_flush_completion *cmplt = data.data;
 
+	cmdq_log("err=%d", data.err);
+
 	cmplt->err = data.err;
 	complete(&cmplt->cmplt);
 }
@@ -395,11 +401,14 @@ int cmdq_pkt_flush(struct cmdq_client *client, struct cmdq_pkt *pkt)
 	struct cmdq_flush_completion cmplt;
 	int err;
 
+	cmdq_log("start");
+
 	init_completion(&cmplt.cmplt);
 	err = cmdq_pkt_flush_async(client, pkt, cmdq_pkt_flush_cb, &cmplt);
 	if (err < 0)
 		return err;
 	wait_for_completion(&cmplt.cmplt);
+	cmdq_log("done, err=%u", cmplt.err);
 	return cmplt.err ? -EFAULT : 0;
 }
 EXPORT_SYMBOL(cmdq_pkt_flush);
