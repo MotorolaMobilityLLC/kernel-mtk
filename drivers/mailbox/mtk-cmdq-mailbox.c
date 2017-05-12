@@ -24,6 +24,7 @@
 #include <linux/soc/mediatek/mtk-cmdq.h>
 #include <linux/timer.h>
 #include <linux/workqueue.h>
+#include <linux/module.h>
 
 #define CMDQ_THR_MAX_COUNT		4 /* main, sub, general(misc) */
 #define CMDQ_OP_CODE_MASK		(0xff << CMDQ_OP_CODE_SHIFT)
@@ -60,6 +61,13 @@
 
 #define CMDQ_JUMP_BY_OFFSET		0x10000000
 #define CMDQ_JUMP_BY_PA			0x10000001
+
+/* CMDQ log flag */
+int mtk_cmdq_log;
+EXPORT_SYMBOL(mtk_cmdq_log);
+
+module_param(mtk_cmdq_log, int, 0644);
+
 
 struct cmdq_thread {
 	struct mbox_chan	*chan;
@@ -234,6 +242,9 @@ static void cmdq_task_exec(struct cmdq_pkt *pkt, struct cmdq_thread *thread)
 		WARN_ON(clk_enable(cmdq->clock) < 0);
 		WARN_ON(cmdq_thread_reset(cmdq, thread) < 0);
 
+		cmdq_log("task %p~%p, thread->base=%p",
+			task->pa_base, (void *)(task->pa_base+pkt->cmd_buf_size), thread->base);
+
 		writel(task->pa_base, thread->base + CMDQ_THR_CURR_ADDR);
 		writel(task->pa_base + pkt->cmd_buf_size,
 		       thread->base + CMDQ_THR_END_ADDR);
@@ -246,6 +257,9 @@ static void cmdq_task_exec(struct cmdq_pkt *pkt, struct cmdq_thread *thread)
 		WARN_ON(cmdq_thread_suspend(cmdq, thread) < 0);
 		curr_pa = readl(thread->base + CMDQ_THR_CURR_ADDR);
 		end_pa = readl(thread->base + CMDQ_THR_END_ADDR);
+
+		cmdq_log("curr task %p~%p, thread->base=%p",
+					curr_pa, end_pa, thread->base);
 
 		/*
 		 * Atomic execution should remove the following wfe, i.e. only
@@ -483,6 +497,8 @@ static void cmdq_thread_irq_handler(struct cmdq *cmdq,
 	irq_flag = readl(thread->base + CMDQ_THR_IRQ_STATUS);
 	writel(~irq_flag, thread->base + CMDQ_THR_IRQ_STATUS);
 
+	cmdq_log("CMDQ_THR_IRQ_STATUS: %u", irq_flag);
+
 	/*
 	 * When ISR call this function, another CPU core could run
 	 * "release task" right before we acquire the spin lock, and thus
@@ -500,10 +516,16 @@ static void cmdq_thread_irq_handler(struct cmdq *cmdq,
 		return;
 
 	curr_pa = readl(thread->base + CMDQ_THR_CURR_ADDR);
+	task_end_pa = readl(thread->base + CMDQ_THR_END_ADDR);
+
+	cmdq_log("task status %p~%p, err=%d", (void *)curr_pa, (void *)task_end_pa, err);
 
 	list_for_each_entry_safe(task, tmp, &thread->task_busy_list,
 				 list_entry) {
 		task_end_pa = task->pa_base + task->pkt->cmd_buf_size;
+
+		cmdq_log("task %p~%p", task->pa_base, task_end_pa);
+
 		if (curr_pa >= task->pa_base && curr_pa < task_end_pa)
 			curr_task = task;
 
@@ -523,9 +545,12 @@ static void cmdq_thread_irq_handler(struct cmdq *cmdq,
 	if (list_empty(&thread->task_busy_list)) {
 		cmdq_thread_disable(cmdq, thread);
 		clk_disable(cmdq->clock);
+
+		cmdq_log("empty task");
 	} else {
 		mod_timer(&thread->timeout,
 			  jiffies + msecs_to_jiffies(CMDQ_TIMEOUT_MS));
+		cmdq_log("mod_timer");
 	}
 }
 
@@ -536,11 +561,14 @@ static irqreturn_t cmdq_irq_handler(int irq, void *dev)
 	int bit;
 
 	irq_status = readl(cmdq->base + CMDQ_CURR_IRQ_STATUS) & CMDQ_IRQ_MASK;
+	cmdq_log("CMDQ_CURR_IRQ_STATUS: %x, %x", irq_status, (irq_status ^ CMDQ_IRQ_MASK));
 	if (!(irq_status ^ CMDQ_IRQ_MASK))
 		return IRQ_NONE;
 
 	for_each_clear_bit(bit, &irq_status, fls(CMDQ_IRQ_MASK)) {
 		struct cmdq_thread *thread = &cmdq->thread[bit];
+
+		cmdq_log("bit=%d, thread->base=%p", bit, thread->base);
 
 		spin_lock_irqsave(&thread->chan->lock, flags);
 		cmdq_thread_irq_handler(cmdq, thread);
