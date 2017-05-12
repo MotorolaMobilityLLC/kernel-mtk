@@ -233,11 +233,12 @@ static kal_uint32 return_sensor_id(void)
 {
     return ((read_cmos_sensor(0x0000) << 8) | read_cmos_sensor(0x0001));
 }
+u8 ar1335_otpLSCdatabuf[214];
+int otp_have_read =0;
 static void AR1335_OTP_READ_LOAD_LSC(void)
 {
 	kal_uint32 lsc_value[200] = {0};
 	int i,addr= 0xDE,length = 0xD4;
-	u8 ar1335_LSCdatabuf[214];
 	kal_uint32 lsc_add1 = 0x3600;
 	kal_uint32 lsc_add2 = 0x3640;
 	kal_uint32 lsc_add3 = 0x3680;
@@ -245,10 +246,14 @@ static void AR1335_OTP_READ_LOAD_LSC(void)
 	kal_uint32 lsc_add5 = 0x3700;
 	kal_uint32 lsc_add6 = 0x3782;
 	kal_uint32 lsc_add7 = 0x37c0;
-	ReadAR1335LSCData(addr,length,ar1335_LSCdatabuf);
+	if(otp_have_read == 0) {
+	otp_have_read = 1;
+	printk("huangsh4 AR1335_OTP_READ_LOAD_LSC frist time\n ");
+	ReadAR1335LSCData(addr,length,ar1335_otpLSCdatabuf);
+		} 
 	for (i = 0;i < 106;i++) {	
-	lsc_value[i]= ( (ar1335_LSCdatabuf[2*i] << 8 ) + ar1335_LSCdatabuf[2*i+1]) ;
-	//printk("huangsh i = %d,lsc_value = 0x%x ar1335_LSCdatabuf = %x,ar1335_LSCdatabuf11 = 0x%x\n",i,lsc_value[i],ar1335_LSCdatabuf[2*i],ar1335_LSCdatabuf[2*i+1]);
+	lsc_value[i]= ( (ar1335_otpLSCdatabuf[2*i] << 8 ) + ar1335_otpLSCdatabuf[2*i+1]) ;
+	//printk("huangsh i = %d,lsc_value = 0x%x ar1335_LSCdatabuf = %x,ar1335_LSCdatabuf11 = 0x%x\n",i,lsc_value[i],ar1335_otpLSCdatabuf[2*i],ar1335_otpLSCdatabuf[2*i+1]);
 	}
 	for(i =0;i< 20;i++)  {
 	write_cmos_sensor_2byte((lsc_add1+2*i),lsc_value[i]);  /// 
