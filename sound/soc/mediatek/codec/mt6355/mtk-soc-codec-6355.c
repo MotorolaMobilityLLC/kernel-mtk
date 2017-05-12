@@ -3036,12 +3036,16 @@ static void Headset_Speaker_Amp_Change(bool enable)
 		/* Pull-down HPL/R to AVSS30_AUD for de-pop noise */
 		Ana_Set_Reg(AUDDEC_ANA_CON2, 0x4000, 0x4000); /* 0xC000 */
 		/* Reduce ESD resistance of AU_REFN */
+
+		Ana_Set_Reg(AFE_DL_NLE_L_CFG0, 0x001e, 0x003f);
+		Ana_Set_Reg(AFE_DL_NLE_R_CFG0, 0x001e, 0x003f);
+		/* Set HPL/HPR gain to -22dB */
 		Ana_Set_Reg(AUDDEC_ANA_CON14, 0x0005, 0x0005); /* 0x0005 */
 		/* Enable cap-less LDOs (1.6V) */
 		Ana_Set_Reg(AUDDEC_ANA_CON14, 0x0010, 0x0010); /* 0x0015 */
 		/* Enable NV regulator (-1.3V) */
 
-		udelay(100);
+		usleep_range(100, 200);
 
 		enable_hp_zcd(false);
 		/* Disable AUD_ZCD */
@@ -3049,8 +3053,7 @@ static void Headset_Speaker_Amp_Change(bool enable)
 		/* --- Enable LO --- */
 		Ana_Set_Reg(AUDDEC_ANA_CON7, 0x0010, 0x0010);
 		/* Disable lineout short-ckt protection */
-		Ana_Set_Reg(AUDDEC_ANA_CON12, 0x0055, 0x0100);
-		/* Enable IBIST */
+
 		Ana_Set_Reg(AUDDEC_ANA_CON11, 0x4000, 0xe380); /* 4800 for low power */
 		/* Set LOL DR bias current optimization */
 		Ana_Set_Reg(AUDDEC_ANA_CON7, 0x0100, 0x0100); /* 0x0110 */
@@ -3059,44 +3062,28 @@ static void Headset_Speaker_Amp_Change(bool enable)
 		/* Enable LO driver bias circuits */
 		Ana_Set_Reg(AUDDEC_ANA_CON7, 0x0001, 0x0001); /* 0x0113 */
 		/* Enable LO driver core circuits */
-
 		/* Defined in control sequence */
 		/* Ana_Set_Reg(ZCD_CON1, 0x0F89, 0xffff); */
 		Ana_Set_Reg(ZCD_CON1, 0x0009, 0x001f); /* Follow 6337 */
 		/* Set LO gain to normal gain step by step */
-
-		Ana_Set_Reg(AUDDEC_ANA_CON13, 0x0001, 0x0001);
-		/* Enable AUD_CLK */
-		Ana_Set_Reg(AUDDEC_ANA_CON0, 0x0009, 0x0009);
-		/* Enable Audio DAC  */
-
-		Ana_Set_Reg(AUDDEC_ANA_CON9, 0x0001, 0x0001);
-		/* Enable low-noise mode of DAC */
-
-		Ana_Set_Reg(AUDDEC_ANA_CON7, 0x0008, 0x000C); /* 0x011B */
-		/* Switch LOL MUX to audio DAC */
-
+		
 		/* --- Enable HP --- */
 		Ana_Set_Reg(AUDDEC_ANA_CON0, 0x3000, 0x3000);
 		/* Disable headphone short-ckt protection */
+		Ana_Set_Reg(AUDDEC_ANA_CON12, 0x0055, 0x0100);
+		/* Enable IBIST */
 		/* Don't set HP DR bias current for harmonic distortion */
 		/* Ana_Set_Reg(AUDDEC_ANA_CON2, 0x0033, 0x0033); */
 		/* Set HPP/N STB enhance circuits */
 		Ana_Set_Reg(AUDDEC_ANA_CON2, 0x0000, 0x8000); /* 0x4000 */
 		/* No Pull-down HPL/R to AVSS30_AUD */
-
-		/* HPL/HPR output stage STB no enhance when playback */
-		Ana_Set_Reg(AUDDEC_ANA_CON2, 0x0000, 0x0011);
-
 		/* Ana_Set_Reg(AUDDEC_ANA_CON4, 0x0004, 0x000E); - 6337 */
 		/* Set HP bias in HIFI mdoe */
-		Ana_Set_Reg(AUDDEC_ANA_CON0, 0x00C0, 0x00C0); /* 0x30C0 */
-		/* Enable HP driver bias circuits */
-		Ana_Set_Reg(AUDDEC_ANA_CON0, 0x0030, 0x0030); /* 0x30F0 */
-		/* Enable HP driver core circuits */
-
 		Ana_Set_Reg(AUDDEC_ANA_CON10, 0x0003, 0x0003);
 		/* Enable HPR/L main CMFB loop modulation control for E3 */
+
+
+
 
 		Ana_Set_Reg(AUDDEC_ANA_CON9, 0x8200, 0xff00); /* 0x8201 */
 		/* Enable HP main CMFB loop */
@@ -3105,25 +3092,47 @@ static void Headset_Speaker_Amp_Change(bool enable)
 		Ana_Set_Reg(AUDDEC_ANA_CON1, 0x0003, 0x0003);
 		/* Enable HP main output stage */
 
+		hp_main_output_ramp(true);
+		hp_aux_feedback_loop_gain_ramp(true);
 		Ana_Set_Reg(AUDDEC_ANA_CON1, 0x3F00, 0x3f00); /* 0x3F03 */
+		usleep_range(100, 150);
+
 		/* Ana_Set_Reg(AUDDEC_ANA_CON1, 0x0700, 0x3f00); - 6337 */
 		/* Enable HPR/L main output stage step by step */
 
+		Ana_Set_Reg(AUDDEC_ANA_CON13, 0x0001, 0x0001);
+		/* Enable AUD_CLK */
+		Ana_Set_Reg(AUDDEC_ANA_CON0, 0x0009, 0x0009);
+		/* Enable Audio DAC  */
+	
+	
 		Ana_Set_Reg(AFE_DL_NLE_L_CFG0, 0x0006, 0x007f);
 		Ana_Set_Reg(AFE_DL_NLE_R_CFG0, 0x0006, 0x007f);
 		/* Increase HPL and HPR gain to normal gain step by step */
+		Ana_Set_Reg(AUDDEC_ANA_CON9, 0x0001, 0x0001);
+		/* Enable low-noise mode of DAC */
+
+        usleep_range(100, 150);
+		Ana_Set_Reg(AUDDEC_ANA_CON7, 0x0008, 0x000C); /* 0x011B */
+		/* Switch LOL MUX to audio DAC */
 
 		/* Apply digital DC compensation value to DAC */
 		setHpGainZero();
+		Ana_Set_Reg(AUDDEC_ANA_CON0, 0x00C0, 0x00C0); /* 0x30C0 */
+		/* Enable HP driver bias circuits */
+		Ana_Set_Reg(AUDDEC_ANA_CON0, 0x0030, 0x0030); /* 0x30F0 */
+		/* Enable HP driver core circuits */
+		
 		/* SetDcCompenSation(); */
 		Ana_Set_Reg(AUDDEC_ANA_CON0, 0x0500, 0x0f00);
 		/* Switch HP input selection MUX to audio DAC LO */
-
-		hp_switch_to_release();
-
 		/* apply volume setting */
 		set_headset_volume();
 		Apply_Speaker_Gain();
+
+
+		hp_switch_to_release();
+		
 	} else {
 		hp_switch_to_ground();
 
@@ -3156,9 +3165,6 @@ static void Headset_Speaker_Amp_Change(bool enable)
 			/* Disable HPR/HPL */
 			Ana_Set_Reg(AUDDEC_ANA_CON9, 0x0000, 0xff00); /* 0x0001 */
 			/* Disable HP aux CMFB loop */
-
-			/* HPL/HPR output stage STB enhance for ACCDET */
-			Ana_Set_Reg(AUDDEC_ANA_CON2, 0x0011, 0x0011);
 
 			Ana_Set_Reg(AUDDEC_ANA_CON10, 0x0000, 0x0003);
 			/* Disable HPR/L main CMFB loop modulation control for E3 */
