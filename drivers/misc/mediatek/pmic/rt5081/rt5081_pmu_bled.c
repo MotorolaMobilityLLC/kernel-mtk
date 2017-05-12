@@ -452,7 +452,16 @@ static inline int rt_parse_dt(struct device *dev)
 	else
 	{
 #ifdef CONFIG_L3510_MAINBOARD
-		pdata->max_bled_brightness = 1000;//Mod max brightness 350 nits for Marino
+		pdata->max_bled_brightness = tmp;//Mod max brightness 350 nits for Marino
+		lct_parseLcmName_fromcmdline();
+		if(strcmp(lct_klcm_name, "lct_r63350_tianma_1080p_vdo") == 0)
+		{
+			pdata->max_bled_brightness = 1000;
+		}
+		if(strcmp(lct_klcm_name,"lct_otm1911a_ofilm_1080p_vdo") == 0)
+		{
+			pdata->max_bled_brightness = 1100;
+		}
 #else
 		pdata->max_bled_brightness = tmp;
 /**  add by lct:wangjiaxing 20170313 start **/
