@@ -757,12 +757,21 @@ void select_charging_current(void)
 			g_temp_CC_value = batt_cust_data.non_std_ac_charger_current;
 
 		} else if (BMT_status.charger_type == STANDARD_CHARGER) {
-			if (batt_cust_data.ac_charger_input_current != 0)
-				g_temp_input_CC_value = batt_cust_data.ac_charger_input_current;
-			else
-				g_temp_input_CC_value = batt_cust_data.ac_charger_current;
 
-			g_temp_CC_value = batt_cust_data.ac_charger_current;
+			if (BMT_status.charger_rate == POWER_SUPPLY_CHARGE_RATE_TURBO
+				&& BMT_status.charger_vbus_state == VBUS_STATE_9V) {
+
+				g_temp_input_CC_value = TURBO_AC_CHARGER_INPUT_CURRENT;
+
+				g_temp_CC_value = TURBO_AC_CHARGER_CURRENT;
+			} else {
+				if (batt_cust_data.ac_charger_input_current != 0)
+					g_temp_input_CC_value = batt_cust_data.ac_charger_input_current;
+				else
+					g_temp_input_CC_value = batt_cust_data.ac_charger_current;
+
+				g_temp_CC_value = batt_cust_data.ac_charger_current;
+			}
 
 			mtk_pep_set_charging_current(&g_temp_CC_value, &g_temp_input_CC_value);
 			mtk_pep20_set_charging_current(&g_temp_CC_value, &g_temp_input_CC_value);
@@ -864,12 +873,18 @@ static void bq25890_select_correspond_power(void)
 		&& BMT_status.charger_type == STANDARD_CHARGER))
 		return;
 
-	if (g_bcct_input_flag == 1
+	if ((g_bcct_input_flag == 1
 		|| g_bcct_flag == 1
-		|| lenovo_battery_is_limit_charging() == KAL_TRUE) {
+		|| lenovo_battery_is_limit_charging() == KAL_TRUE)
+		&& (g_temp_CC_value < CHARGE_CURRENT_2000_00_MA)
+		&& (BMT_status.charger_vbus_state == VBUS_STATE_9V)){
 		bq25890_set_9V_to_5V();
-	} else {
+		BMT_status.charger_vbus_state = VBUS_STATE_5V;
+		g_temp_input_CC_value = CHARGE_CURRENT_2000_00_MA;
+	} else if (BMT_status.charger_vbus_state == VBUS_STATE_5V){
 		bq25890_set_5V_to_9V();
+		BMT_status.charger_vbus_state = VBUS_STATE_9V;
+		g_temp_input_CC_value = CHARGE_CURRENT_1600_00_MA;
 	}
 
 }
@@ -935,6 +950,8 @@ static void mtk_select_ichg_aicr(void)
 	}
 #endif
 
+	bq25890_select_correspond_power();
+
 	battery_log(BAT_LOG_CRTI,
 		"[BATTERY] Default CC mode charging : %d, input current = %d\n",
 		g_temp_CC_value, g_temp_input_CC_value);
@@ -969,8 +986,6 @@ static void mtk_select_ichg_aicr(void)
 			mtk_pep_set_to_check_chr_type(true);
 		}
 	}
-
-	bq25890_select_correspond_power();
 
 	mutex_unlock(&g_ichg_aicr_access_mutex);
 }

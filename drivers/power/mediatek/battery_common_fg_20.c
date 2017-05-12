@@ -2665,6 +2665,8 @@ static void bq25890_check_turbo_charger_work(struct work_struct *work)
 	struct battery_data *bat_data = &battery_main;
 	struct power_supply *bat_psy = &bat_data->psy;
 	int prev_chg_rate = bat_data->charge_rate;
+	CHR_CURRENT_ENUM input_CC_value;
+	CHR_CURRENT_ENUM CC_value;
 	char *charge_rate[] = {
 		"None", "Normal", "Weak", "Turbo"
 	};
@@ -2672,9 +2674,19 @@ static void bq25890_check_turbo_charger_work(struct work_struct *work)
 	if (bq25890_is_maxcharger()) {
 		bat_data->charge_rate = POWER_SUPPLY_CHARGE_RATE_TURBO;
 		BMT_status.charger_rate = POWER_SUPPLY_CHARGE_RATE_TURBO;
+		BMT_status.charger_vbus_state = VBUS_STATE_9V;
+
+		input_CC_value = TURBO_AC_CHARGER_INPUT_CURRENT;
+		CC_value = TURBO_AC_CHARGER_CURRENT;
+		battery_charging_control(CHARGING_CMD_SET_INPUT_CURRENT,
+		&input_CC_value);
+		battery_charging_control(CHARGING_CMD_SET_CURRENT,
+		&CC_value);
+
 	} else {
 		bat_data->charge_rate = POWER_SUPPLY_CHARGE_RATE_NORMAL;
 		BMT_status.charger_rate = POWER_SUPPLY_CHARGE_RATE_NORMAL;
+		BMT_status.charger_vbus_state = VBUS_STATE_5V;
 	}
 
 	if (prev_chg_rate != bat_data->charge_rate)
@@ -2843,6 +2855,7 @@ static void mt_battery_charger_detect_check(void)
 		BMT_status.charger_exist = KAL_FALSE;
 		BMT_status.charger_type = CHARGER_UNKNOWN;
 		BMT_status.charger_rate = POWER_SUPPLY_CHARGE_RATE_NONE;
+		BMT_status.charger_vbus_state = VBUS_STATE_5V;
 		BMT_status.bat_full = KAL_FALSE;
 		BMT_status.bat_in_recharging_state = KAL_FALSE;
 		BMT_status.bat_charging_state = CHR_PRE;

@@ -194,7 +194,10 @@ typedef unsigned char  BOOL;
   #define TRUE  (1)
 #endif
 
-
+enum {
+	VBUS_STATE_5V = 0,
+	VBUS_STATE_9V,
+};
 
 /*****************************************************************************
  *  structure
@@ -227,6 +230,7 @@ typedef struct {
 	unsigned int nPrecent_UI_SOC_check_point;
 	unsigned int ZCV;
 	int charger_rate;
+	int charger_vbus_state;
 } PMU_ChargerStruct;
 
 struct battery_custom_data {
