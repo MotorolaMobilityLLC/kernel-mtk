@@ -1204,10 +1204,12 @@ static int rt5081_run_aicl(struct rt5081_pmu_charger_data *chg_data)
 	mutex_lock(&chg_data->pe_access_lock);
 	mutex_lock(&chg_data->aicr_access_lock);
 
+#if 0 //close by longcheer_liml_2017_05_12
 	/* Set AICR to max */
 	ret = _rt5081_set_aicr(chg_data, RT5081_AICR_MAX);
 	if (ret < 0)
 		goto unlock_out;
+#endif
 
 	ret = rt5081_pmu_reg_set_bit(chg_data->chip, RT5081_PMU_REG_CHGCTRL14,
 		RT5081_MASK_AICL_MEAS);
