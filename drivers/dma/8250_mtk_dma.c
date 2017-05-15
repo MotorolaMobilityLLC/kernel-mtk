@@ -750,7 +750,6 @@ static void mtk_dma_free(struct mtk_dmadev *mtkd)
 }
 
 static const struct of_device_id mtk_uart_dma_match[] = {
-	{ .compatible = "mediatek,mt6577-uart-dma", },
 	{ .compatible = "mediatek,mt2712-uart-dma", },
 	{ /* sentinel */ },
 };
