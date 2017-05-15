@@ -641,6 +641,10 @@ static void GetAudioTrimOffset(int channels)
 	pr_warn("%s channels = %d\n", __func__, channels);
 	/* open headphone and digital part */
 	AudDrv_Clk_On();
+	/*Lenovo-sw weimh1 add 2017-5-2:temp for test HW REBOOT*/
+	for (i = 0; i < 10; i++)
+		AudDrv_ANC_Clk_On();
+	
 	AudDrv_Emi_Clk_On();
 	OpenAfeDigitaldl1(true);
 	switch (channels) {

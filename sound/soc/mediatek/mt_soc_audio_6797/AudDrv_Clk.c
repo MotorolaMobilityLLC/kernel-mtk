@@ -1915,6 +1915,7 @@ void AudDrv_ANC_Clk_On(void)
 {
 	int ret = 0;
 
+	pr_err("+++%s()1111 Aud_ANC_Clk_cntr(%x)\n",__func__,Aud_ANC_Clk_cntr);
 	mutex_lock(&auddrv_pmic_mutex);
 
 	if (Aud_ANC_Clk_cntr == 0) {
@@ -1984,6 +1985,7 @@ void AudDrv_ANC_Clk_On(void)
 	Aud_ANC_Clk_cntr++;
 EXIT:
 	mutex_unlock(&auddrv_pmic_mutex);
+	pr_err("---%s()2222 Aud_ANC_Clk_cntr(%x)\n",__func__,Aud_ANC_Clk_cntr);
 }
 
 void AudDrv_ANC_Clk_Off(void)
