@@ -89,7 +89,7 @@ static struct fts_gesture_st fts_gesture_data;
 /*****************************************************************************
 * Global variable or extern global variabls/functions
 *****************************************************************************/
-
+extern void fts_set_wakeup_flag(bool flag);
 /*****************************************************************************
 * Static function prototypes
 *****************************************************************************/
@@ -168,10 +168,14 @@ static ssize_t fts_gesture_store(struct device *dev,
 	FTS_DEBUG("fts_gesture_store buf:%s", buf);
 	mutex_lock(&fts_input_dev->mutex);
 	val = simple_strtoul(buf, NULL, 10);
-	if (val == 1)
+	if (val == 1) {
 		fts_gesture_data.mode = ENABLE;
-	else
+		fts_set_wakeup_flag(1);
+    }
+	else {
 		fts_gesture_data.mode = DISABLE;
+		fts_set_wakeup_flag(0);
+    }
 	mutex_unlock(&fts_input_dev->mutex);
 
 	return count;
@@ -587,6 +591,8 @@ int fts_gesture_suspend(struct i2c_client *i2c_client)
 	if (fts_gesture_data.mode == 0)
 		return -EPERM;
 
+	disable_irq(ft_touch_irq);
+
 	for (i = 0; i < 5; i++) {
 		fts_i2c_write_reg(i2c_client, FTS_REG_GESTURE_EN, 0x01);
 #if FTS_GESTURE_DOUBLETAP_ONLY
@@ -609,11 +615,15 @@ int fts_gesture_suspend(struct i2c_client *i2c_client)
 	if (i >= 5) {
 		FTS_ERROR("[GESTURE]Enter into gesture(suspend) failed!\n");
 		FTS_FUNC_EXIT();
+		enable_irq(ft_touch_irq);
 		return -1;
 	}
 
 	fts_gesture_data.active = 1;
 	FTS_DEBUG("[GESTURE]Enter into gesture(suspend) successfully!");
+	enable_irq(ft_touch_irq);
+	CTP_DEBUG("[GESTURE][B]Enter into gesture(suspend).");
+
 	FTS_FUNC_EXIT();
 	return 0;
 }

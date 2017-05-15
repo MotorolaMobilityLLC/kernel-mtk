@@ -51,7 +51,7 @@
 #define INTERVAL_READ_REG                   20	/* interval time per read reg unit:ms */
 #define TIMEOUT_READ_REG                    300	/* timeout of read reg unit:ms */
 #define FTS_I2C_SLAVE_ADDR                  0x38
-#define FTS_READ_TOUCH_BUFFER_DIVIDED       1
+#define FTS_READ_TOUCH_BUFFER_DIVIDED       0
 /*****************************************************************************
 * Static variables
 *****************************************************************************/
@@ -60,6 +60,11 @@ struct input_dev *fts_input_dev;
 struct task_struct *thread_tpd;
 static DECLARE_WAIT_QUEUE_HEAD(waiter);
 static int tpd_flag;
+
+#if  FTS_GESTURE_EN
+static int fts_wakeup_flag = 0;
+static bool  fts_gesture_status = false;
+#endif
 
 #if FTS_DEBUG_EN
 int g_show_log = 1;
@@ -117,6 +122,17 @@ static struct i2c_driver tpd_i2c_driver = {
 	.id_table = fts_tpd_id,
 	.detect = tpd_i2c_detect,
 };
+
+#if  FTS_GESTURE_EN
+void fts_set_wakeup_flag(int flag)
+{
+    fts_wakeup_flag = flag;
+    CTP_DEBUG("[wj]%s = %d.", __func__, fts_wakeup_flag);
+    return;
+}
+EXPORT_SYMBOL(fts_set_wakeup_flag);
+#endif
+
 
 /*****************************************************************************
 *  Name: fts_wait_tp_to_valid
@@ -443,7 +459,9 @@ static int fts_read_touchdata(struct ts_event *data)
 		FTS_FUNC_EXIT();
 		return ret;
 	}
+	ret = data->touchs;
 	memset(data, 0, sizeof(struct ts_event));
+	data->touchs = ret;
 	data->touch_point_num = buf[FT_TOUCH_POINT_NUM] & 0x0F;
 #endif
 	data->touch_point = 0;
@@ -553,10 +571,12 @@ static int fts_report_value(struct ts_event *data)
 	int up_point = 0;
 	int touchs = 0;
 	int pressure = 0;
+	bool reported = false;
 
 	for (i = 0; i < data->touch_point; i++) {
 		input_mt_slot(tpd->dev, data->au8_finger_id[i]);
 
+		reported = true;
 		if (data->au8_touch_event[i] == 0
 		    || data->au8_touch_event[i] == 2) {
 			if (data->au8_touch_event[i] == 0) {
@@ -618,12 +638,14 @@ static int fts_report_value(struct ts_event *data)
 			}
 			data->touchs &= ~BIT(data->au8_finger_id[i]);
 			FTS_DEBUG("[B]P%d UP!", data->au8_finger_id[i]);
+			CTP_DEBUG("[B]P%d UP!", data->au8_finger_id[i]);
 		}
 
 	}
 	for (i = 0; i < tpd_dts_data.touch_max_num; i++) {
 		if (BIT(i) & (data->touchs ^ touchs)) {
 			FTS_DEBUG("[B]P%d UP!", i);
+			reported = true;
 			CTP_DEBUG("[B]P%d UP!", i);
 			data->touchs &= ~BIT(i);
 			input_mt_slot(tpd->dev, i);
@@ -636,7 +658,7 @@ static int fts_report_value(struct ts_event *data)
 	}
 	data->touchs = touchs;
 
-	if (data->touch_point_num == 0) {
+	/* if (data->touch_point_num == 0) {
 		for (i = 0; i < FTS_MAX_POINTS; i++) {
 			input_mt_slot(tpd->dev, i);
 			input_mt_report_slot_state(tpd->dev, MT_TOOL_FINGER, false);
@@ -645,16 +667,18 @@ static int fts_report_value(struct ts_event *data)
 		input_report_key(tpd->dev, BTN_TOUCH, 0);
 		input_sync(tpd->dev);
 		return 0;
-	}
+	} */
 
-	if ((data->touch_point == up_point) || !data->touch_point_num) {
-		FTS_DEBUG("[B]Points All UP!");
-		input_report_key(tpd->dev, BTN_TOUCH, 0);
-	} else {
-		input_report_key(tpd->dev, BTN_TOUCH, 1);
-	}
+	if (reported) {
+		if ((data->touch_point == up_point) || !data->touch_point_num) {
+			FTS_DEBUG("[B]Points All UP!");
+			input_report_key(tpd->dev, BTN_TOUCH, 0);
+		} else {
+			input_report_key(tpd->dev, BTN_TOUCH, 1);
+		}
 
-	input_sync(tpd->dev);
+		input_sync(tpd->dev);
+	}
 	return 0;
 }
 #endif
@@ -753,16 +777,18 @@ static int touch_event_handler(void *unused)
 		set_current_state(TASK_RUNNING);
 
 #if FTS_GESTURE_EN
-		ret =
-		    fts_i2c_read_reg(fts_i2c_client, FTS_REG_GESTURE_EN,
-				     &state);
-		if (ret < 0) {
-			FTS_ERROR("[Focal][Touch] read value fail");
-		}
-		if (state == 1) {
-			fts_gesture_readdata(fts_i2c_client);
-			continue;
-		}
+		if (fts_gesture_status) {
+		    ret =
+		        fts_i2c_read_reg(fts_i2c_client, FTS_REG_GESTURE_EN,
+				         &state);
+		    if (ret < 0) {
+			    FTS_ERROR("[Focal][Touch] read value fail");
+		    }
+		    if (state == 1) {
+			    fts_gesture_readdata(fts_i2c_client);
+			    continue;
+		    }
+        }
 #endif
 
 #if FTS_PSENSOR_EN
@@ -1163,17 +1189,23 @@ static void tpd_suspend(struct device *h)
 		return;
 #endif
 
-#if FTS_GESTURE_EN
-	retval = fts_gesture_suspend(fts_i2c_client);
-	if (retval == 0) {
-		/* Enter into gesture mode(suspend) */
-		fts_release_all_finger();
-		return;
-	}
-#endif
-
 #if FTS_ESDCHECK_EN
 	fts_esdcheck_suspend();
+#endif
+
+#if FTS_GESTURE_EN
+	if (fts_wakeup_flag && (!fts_gesture_status)) {
+		fts_gesture_status = true ;
+	}
+
+	if (fts_gesture_status) {
+	    CTP_DEBUG("[wj] enter  gesture");
+	    retval = fts_gesture_suspend(fts_i2c_client);
+	    if (retval == 0) {
+		    /* Enter into gesture mode(suspend) */
+		    //fts_release_all_finger();
+	    }
+    } else {
 #endif
 
 #ifdef CONFIG_MTK_SENSOR_HUB_SUPPORT
@@ -1191,6 +1223,10 @@ static void tpd_suspend(struct device *h)
 	fts_power_suspend();
 #endif
 
+#endif
+
+#if FTS_GESTURE_EN
+	}
 #endif
 	fts_release_all_finger();
 
@@ -1222,18 +1258,36 @@ static void tpd_resume(struct device *h)
 #endif
 
 #if FTS_GESTURE_EN
-	if (fts_gesture_resume(fts_i2c_client) == 0) {
-		FTS_FUNC_EXIT();
-		return;
+	if (fts_gesture_status) {
+		/*fts_write_reg(fts_i2c_client,0xD0,0x00); //only reset can exit */
+		fts_gesture_status = false; /*reset ic so exit */
+		CTP_DEBUG("[wj] exit  gesture");
+		#if (!FTS_CHIP_IDC)
+			fts_reset_proc(200);
+		#endif
+		if (fts_gesture_resume(fts_i2c_client) == 0) {
+			FTS_FUNC_EXIT();
+			/* return; */
+		}
+	} else {
+#endif
+
+	#if FTS_POWER_SOURCE_CUST_EN
+		fts_power_resume();
+	#endif
+
+	#if (!FTS_CHIP_IDC)
+		fts_reset_proc(200);
+	#endif
+
+#ifdef CONFIG_MTK_SENSOR_HUB_SUPPORT
+	fts_sensor_enable(fts_i2c_client);
+#else
+	enable_irq(ft_touch_irq);
+#endif
+
+#if FTS_GESTURE_EN
 	}
-#endif
-
-#if FTS_POWER_SOURCE_CUST_EN
-	fts_power_resume();
-#endif
-
-#if (!FTS_CHIP_IDC)
-	fts_reset_proc(200);
 #endif
 
 	fts_tp_state_recovery(fts_i2c_client);
@@ -1247,12 +1301,7 @@ static void tpd_resume(struct device *h)
 	tpd_usb_plugin(b_usb_plugin);
 #endif
 
-#ifdef CONFIG_MTK_SENSOR_HUB_SUPPORT
-	fts_sensor_enable(fts_i2c_client);
-#else
-	enable_irq(ft_touch_irq);
-#endif
-
+	fts_release_all_finger();
 }
 
 /*****************************************************************************
