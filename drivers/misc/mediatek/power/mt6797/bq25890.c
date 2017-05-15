@@ -1064,7 +1064,7 @@ void bq25890_dump_register(void)
 	unsigned char vdpm = 0;
 	unsigned char fault = 0;
 
-	if (Enable_BATDRV_LOG == BAT_LOG_FULL) {
+	if (Enable_BATDRV_LOG == BAT_LOG_CRTI) {
 		bq25890_ADC_start(1);
 		for (i = 0; i < bq25890_REG_NUM; i++)
 			bq25890_read_byte(i, &bq25890_reg[i]);

@@ -1007,19 +1007,20 @@ static int charging_sw_init(void *data)
 	int status = STATUS_OK;
 	/*put here anything needed to be init upon battery_common driver probe*/
 	mtk_bif_init();
-
+	bq25890_chg_en(0x0);      /* disable charge enable */
 	bq25890_config_interface(bq25890_CON0, 0x01, 0x01, 6);	/* enable ilimit Pin */
+	bq25890_config_interface(bq25890_CON0, 0x00, 0x01, 7);	/* disable HIZ Mode */
 	 /*DPM*/
 	/*bq25890_config_interface(bq25890_CON1, 0x6, 0xF, 0);*/	/* Vindpm offset  600MV */
 	bq25890_config_interface(bq25890_COND, 0x1, 0x1, 7);	/* vindpm vth 0:relative 1:absolute */
 
 	/*CC mode */
-	bq25890_config_interface(bq25890_CON4, 0x08, 0x7F, 0);	/* ICHG (0x08)512mA --> (0x20)2.048mA */
+	bq25890_config_interface(bq25890_CON4, 0x08, 0x7F, 0);	/* ICHG (0x08)512mA */
 	/*Vbus current limit */
-	bq25890_config_interface(bq25890_CON0, 0x3F, 0x3F, 0);	/* input current limit, IINLIM, 3.25A */
+	bq25890_config_interface(bq25890_CON0, 0x08, 0x3F, 0);	/* input current limit, IINLIM, 500mA */
 
 	/* absolute VINDPM = 2.6 + code x 0.1 =4.5V;K2 24261 4.452V */
-	bq25890_config_interface(bq25890_COND, 0x13, 0x7F, 0);
+	bq25890_config_interface(bq25890_COND, 0x14, 0x7F, 0);
 
 	/*CV mode */
 #ifdef LENOVO_TEMP_POS_45_TO_POS_50_CV_LiMIT_SUPPORT
@@ -1044,9 +1045,9 @@ static int charging_sw_init(void *data)
 	/* upmu_set_rg_vcdt_hv_en(0); */
 
 	/* The following setting is moved from HW_INIT */
-	bq25890_config_interface(bq25890_CON2, 0x1, 0x1, 4);	/* disable ico Algorithm -->bear:en */
-	bq25890_config_interface(bq25890_CON2, 0x1, 0x1, 3);	/* disable HV DCP for gq25897 */
-	bq25890_config_interface(bq25890_CON2, 0x1, 0x1, 2);	/* disbale MaxCharge for gq25897 */
+	bq25890_config_interface(bq25890_CON2, 0x1, 0x1, 4);	/* enable ico Algorithm -->bear:en */
+	bq25890_config_interface(bq25890_CON2, 0x1, 0x1, 3);	/* enable HVDCP for bq25890 */
+	bq25890_config_interface(bq25890_CON2, 0x1, 0x1, 2);	/* enable MaxCharge for bq25890 */
 	bq25890_config_interface(bq25890_CON2, 0x0, 0x1, 1);	/* disable DPDM detection */
 	bq25890_config_interface(bq25890_CON2, 0x0, 0x1, 0);
 
@@ -1076,8 +1077,8 @@ static int charging_sw_init(void *data)
 	bq25890_config_interface(bq25890_CON6, 0x1, 0x1, 1);	/* precharge2cc voltage,BATLOWV, 3.0V */
 	/*CV mode */
 	bq25890_config_interface(bq25890_CON6, 0x0, 0x1, 0);	/* recharge voltage@VRECHG=CV-100MV */
-	bq25890_config_interface(bq25890_CON7, 0x1, 0x1, 7);	/* disable ICHG termination detect */
-	bq25890_config_interface(bq25890_CON5, 0x1, 0x7, 0);	/* termianation current default 128mA */
+	bq25890_config_interface(bq25890_CON7, 0x1, 0x1, 7);	/* enable ICHG termination detect */
+	bq25890_config_interface(bq25890_CON5, 0x1, 0xF, 0);	/* termianation current default 128mA */
 
 	return status;
 }
