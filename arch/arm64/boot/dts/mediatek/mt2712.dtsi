@@ -270,6 +270,18 @@
 		/include/ "mt2712-sched-energy.dtsi"
 	};
 
+	reserved-memory {
+		#address-cells = <2>;
+		#size-cells = <2>;
+		ranges;
+
+		atf_reserved: atf-reserved-memory@43000000 {
+			compatible = "mediatek,mt2712-atf-reserved-memory";
+			no-map;
+			reg = <0 0x43000000 0 0x30000>;
+		};
+	};
+
 	psci {
 		compatible = "arm,psci-0.2";
 		method = "smc";
