@@ -130,6 +130,7 @@
 			compatible = "arm,cortex-a35";
 			reg = <0x000>;
 			enable-method = "psci";
+			cpu-idle-states = <&CPU_SLEEP_0 &CLUSTER_SLEEP_0>;
 			clocks = <&mcucfg CLK_MCU_MP0_SEL>,
 				 <&topckgen CLK_TOP_F_MP0_PLL1>;
 			clock-names = "cpu", "intermediate";
@@ -147,6 +148,7 @@
 			compatible = "arm,cortex-a35";
 			reg = <0x001>;
 			enable-method = "psci";
+			cpu-idle-states = <&CPU_SLEEP_0 &CLUSTER_SLEEP_0>;
 			clocks = <&mcucfg CLK_MCU_MP0_SEL>,
 				 <&topckgen CLK_TOP_F_MP0_PLL1>;
 			clock-names = "cpu", "intermediate";
@@ -164,6 +166,7 @@
 			compatible = "arm,cortex-a72";
 			reg = <0x200>;
 			enable-method = "psci";
+			cpu-idle-states = <&CPU_SLEEP_0 &CLUSTER_SLEEP_0>;
 			clocks = <&mcucfg CLK_MCU_MP2_SEL>,
 				 <&topckgen CLK_TOP_F_BIG_PLL1>;
 			clock-names = "cpu", "intermediate";
@@ -177,6 +180,30 @@
 		};
 
 		/include/ "mt2712-sched-energy.dtsi"
+
+		idle-states {
+			entry-method = "arm,psci";
+
+			CPU_SLEEP_0: cpu-sleep-0 {
+				compatible = "arm,idle-state";
+				local-timer-stop;
+				entry-latency-us = <100>;
+				exit-latency-us = <80>;
+				min-residency-us = <2000>;
+				arm,psci-suspend-param = <0x0010000>;
+				status = "disabled";
+			};
+
+			CLUSTER_SLEEP_0: cluster-sleep-0 {
+				compatible = "arm,idle-state";
+				local-timer-stop;
+				entry-latency-us = <350>;
+				exit-latency-us = <80>;
+				min-residency-us = <3000>;
+				arm,psci-suspend-param = <0x1010000>;
+				status = "disabled";
+			};
+		};
 	};
 
 	reserved-memory {
