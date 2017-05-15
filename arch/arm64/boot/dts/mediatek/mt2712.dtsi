@@ -1517,6 +1517,7 @@
 				 <&mmsys CLK_MM_MUTEX_32K>;
 			power-domains = <&scpsys MT2712_POWER_DOMAIN_MM>;
 			iommus = <&iommu1 M4U_PORT_MDP_RDMA2>;
+			mediatek,larb = <&larb5>;
 		};
 
 		color2: color@14029000 {
