@@ -869,22 +869,32 @@ void select_charging_current_bcct(void)
 }
 static void bq25890_select_correspond_power(void)
 {
+	CHR_CURRENT_ENUM temp_CC_value = CHARGE_CURRENT_500_00_MA;
+
 	if (!(BMT_status.charger_rate == POWER_SUPPLY_CHARGE_RATE_TURBO
 		&& BMT_status.charger_type == STANDARD_CHARGER))
 		return;
 
-	if ((g_bcct_input_flag == 1
-		|| g_bcct_flag == 1
-		|| lenovo_battery_is_limit_charging() == KAL_TRUE)
-		&& (g_temp_CC_value < CHARGE_CURRENT_2000_00_MA)
-		&& (BMT_status.charger_vbus_state == VBUS_STATE_9V)){
+	if ((g_temp_CC_value < CHARGE_CURRENT_2000_00_MA)
+		&& (BMT_status.charger_vbus_state == VBUS_STATE_9V)) {
+
+		battery_charging_control(CHARGING_CMD_SET_CURRENT,
+			&temp_CC_value);
 		bq25890_set_9V_to_5V();
-		BMT_status.charger_vbus_state = VBUS_STATE_5V;
 		g_temp_input_CC_value = CHARGE_CURRENT_2000_00_MA;
-	} else if (BMT_status.charger_vbus_state == VBUS_STATE_5V){
+		BMT_status.charger_vbus_state = VBUS_STATE_5V;
+
+	} else if ((BMT_status.charger_vbus_state == VBUS_STATE_5V)
+			&& (g_temp_CC_value >= CHARGE_CURRENT_2000_00_MA)) {
+
+		battery_charging_control(CHARGING_CMD_SET_CURRENT,
+			&temp_CC_value);
+		g_temp_input_CC_value = CHARGE_CURRENT_1600_00_MA;
+		battery_charging_control(CHARGING_CMD_SET_INPUT_CURRENT,
+			&g_temp_input_CC_value);
 		bq25890_set_5V_to_9V();
 		BMT_status.charger_vbus_state = VBUS_STATE_9V;
-		g_temp_input_CC_value = CHARGE_CURRENT_1600_00_MA;
+
 	}
 
 }
