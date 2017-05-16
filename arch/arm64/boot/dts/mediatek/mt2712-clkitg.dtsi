@@ -134,7 +134,7 @@
 			<&mmsys CLK_MM_DSI3>,
 			<&mmsys CLK_MM_DSI3_DIGITAL>,
 			<&pericfg CLK_PERI_NFI>,
-			<&pericfg CLK_PERI_THERM>,
+			<&clk26m>,
 			<&pericfg CLK_PERI_PWM0>,
 			<&pericfg CLK_PERI_PWM1>,
 			<&pericfg CLK_PERI_PWM2>,
