@@ -23,3 +23,8 @@ config MTK_SENSOR_SUPPORT
 source "drivers/misc/mediatek/alsps/Kconfig"
 endmenu  # Sensors
 endmenu
+
+
+menu "Modem & Connectivity related configs"
+source "drivers/misc/mediatek/connectivity/Kconfig"
+endmenu
