@@ -488,11 +488,9 @@ static int mtk_drm_probe(struct platform_device *pdev)
 		} else {
 			struct mtk_ddp_comp *comp;
 
-			comp = devm_kzalloc(dev, sizeof(*comp), GFP_KERNEL);
-			if (!comp) {
-				ret = -ENOMEM;
+			ret = mtk_ddp_comp_alloc(dev, &comp, comp_id);
+			if (ret)
 				goto err_node;
-			}
 
 			ret = mtk_ddp_comp_init(dev, node, comp, comp_id, NULL);
 			if (ret)
