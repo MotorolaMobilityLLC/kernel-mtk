@@ -322,6 +322,29 @@ int mtk_ddp_comp_get_id(struct device_node *node,
 	return -EINVAL;
 }
 
+int mtk_ddp_comp_alloc(struct device *dev, struct mtk_ddp_comp **comp,
+			enum mtk_ddp_comp_id comp_id)
+{
+	if (comp_id < 0 || comp_id >= DDP_COMPONENT_ID_MAX)
+		return -EINVAL;
+
+	if (mtk_ddp_matches[comp_id].type == MTK_DISP_COLOR) {
+		struct mtk_disp_color *color;
+
+		color = devm_kzalloc(dev, sizeof(*color), GFP_KERNEL);
+		if (!color)
+			return -ENOMEM;
+
+		*comp = &color->ddp_comp;
+	} else {
+		*comp = devm_kzalloc(dev, sizeof(*comp), GFP_KERNEL);
+		if (!*comp)
+			return -ENOMEM;
+	}
+
+	return 0;
+}
+
 int mtk_ddp_comp_init(struct device *dev, struct device_node *node,
 		      struct mtk_ddp_comp *comp, enum mtk_ddp_comp_id comp_id,
 		      const struct mtk_ddp_comp_funcs *funcs)
@@ -330,19 +353,16 @@ int mtk_ddp_comp_init(struct device *dev, struct device_node *node,
 	struct device_node *larb_node;
 	struct platform_device *larb_pdev;
 	const struct of_device_id *match;
-	struct mtk_disp_color *color;
 
 	if (comp_id < 0 || comp_id >= DDP_COMPONENT_ID_MAX)
 		return -EINVAL;
 
 	type = mtk_ddp_matches[comp_id].type;
 	if (type == MTK_DISP_COLOR) {
-		devm_kfree(dev, comp);
-		color = devm_kzalloc(dev, sizeof(*color), GFP_KERNEL);
-		if (!color)
-			return -ENOMEM;
+		struct mtk_disp_color *color;
 
 		match = of_match_node(mtk_disp_color_driver_dt_match, node);
+		color = comp_to_color(comp);
 		color->data = match->data;
 		comp = &color->ddp_comp;
 	}
