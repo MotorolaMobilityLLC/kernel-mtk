@@ -159,7 +159,7 @@
 			<&pericfg CLK_PERI_I2C2>,
 			<&pericfg CLK_PERI_I2C3>,
 			<&pericfg CLK_PERI_I2C4>,
-			<&pericfg CLK_PERI_AUXADC>,
+			<&clk26m>,
 			<&pericfg CLK_PERI_SPI0>,
 			<&pericfg CLK_PERI_SPI>,
 			<&pericfg CLK_PERI_I2C5>,
