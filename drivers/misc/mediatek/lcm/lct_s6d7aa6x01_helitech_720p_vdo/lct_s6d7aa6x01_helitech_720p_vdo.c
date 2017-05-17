@@ -151,7 +151,6 @@ static struct LCM_setting_table lcm_initialization_setting[] = {
 	{0x53, 1, {0x24}},
 	{0x55, 1, {0x01}},
 	{0x35, 1, {0x00}},
-	{REGFLAG_DELAY, 5, {}},
 	{0x11,1,{0x00}},  
 	{REGFLAG_DELAY, 120, {}},
 	{0x29,1,{0x00}},       
@@ -413,15 +412,12 @@ static void lcm_resume_power(void)
 
 static void lcm_init(void)
 {
-	SET_RESET_PIN(0);
-	MDELAY(5);
 	SET_RESET_PIN(1);
-	MDELAY(1);
+	MDELAY(5);
 	SET_RESET_PIN(0);
 	MDELAY(10);
-
 	SET_RESET_PIN(1);
-	MDELAY(50);
+	MDELAY(10);
 	push_table(NULL, lcm_initialization_setting, sizeof(lcm_initialization_setting) / sizeof(struct LCM_setting_table), 1);
 }
 
@@ -430,7 +426,7 @@ static void lcm_suspend(void)
 {
 	push_table(NULL, lcm_suspend_setting, sizeof(lcm_suspend_setting) / sizeof(struct LCM_setting_table), 1);
 	MDELAY(10);
-	/* SET_RESET_PIN(0); */
+	SET_RESET_PIN(0); 
 }
 
 static void lcm_resume(void)
@@ -445,13 +441,12 @@ static unsigned int lcm_compare_id(void)
 		char  buffer[3];
 		char  id0=0;
 
-        MDELAY(10);
         SET_RESET_PIN(1);
-        MDELAY(20);
+        MDELAY(5);
         SET_RESET_PIN(0);
         MDELAY(10);
         SET_RESET_PIN(1);
-	    MDELAY(120);
+	    MDELAY(10);
 		array[0] = 0x00013700;// read id return two byte,version and id
 		dsi_set_cmdq(array, 1, 1);
 		read_reg_v2(0xF0,buffer, 1);
