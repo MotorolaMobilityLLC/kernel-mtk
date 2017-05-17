@@ -474,11 +474,12 @@ static int mtk_drm_probe(struct platform_device *pdev)
 		private->comp_node[comp_id] = of_node_get(node);
 
 		/*
-		 * Currently only the OVL, RDMA, DSI, and DPI blocks have
+		 * Currently only the COLOR, OVL, RDMA, DSI, and DPI blocks have
 		 * separate component platform drivers and initialize their own
 		 * DDP component structure. The others are initialized here.
 		 */
-		if (comp_type == MTK_DISP_OVL ||
+		if (comp_type == MTK_DISP_COLOR ||
+		    comp_type == MTK_DISP_OVL ||
 		    comp_type == MTK_DISP_RDMA ||
 		    comp_type == MTK_DSI ||
 		    comp_type == MTK_DPI) {
@@ -488,9 +489,11 @@ static int mtk_drm_probe(struct platform_device *pdev)
 		} else {
 			struct mtk_ddp_comp *comp;
 
-			ret = mtk_ddp_comp_alloc(dev, &comp, comp_id);
-			if (ret)
+			comp = devm_kzalloc(dev, sizeof(*comp), GFP_KERNEL);
+			if (!comp) {
+				ret = -ENOMEM;
 				goto err_node;
+			}
 
 			ret = mtk_ddp_comp_init(dev, node, comp, comp_id, NULL);
 			if (ret)
@@ -600,6 +603,7 @@ static struct platform_driver mtk_drm_platform_driver = {
 
 static struct platform_driver * const mtk_drm_drivers[] = {
 	&mtk_ddp_driver,
+	&mtk_disp_color_driver,
 	&mtk_disp_ovl_driver,
 	&mtk_disp_rdma_driver,
 	&mtk_dpi_driver,

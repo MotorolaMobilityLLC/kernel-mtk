@@ -38,13 +38,6 @@
 
 #define DISP_REG_UFO_START			0x0000
 
-#define DISP_COLOR_CFG_MAIN			0x0400
-#define DISP_COLOR_START_MT2701			0x0f00
-#define DISP_COLOR_START_MT8173			0x0c00
-#define DISP_COLOR_START(comp)			((comp)->data->color_offset)
-#define DISP_COLOR_WIDTH(comp)			(DISP_COLOR_START(comp) + 0x50)
-#define DISP_COLOR_HEIGHT(comp)			(DISP_COLOR_START(comp) + 0x54)
-
 #define DISP_AAL_EN				0x0000
 #define DISP_AAL_SIZE				0x0030
 
@@ -54,9 +47,6 @@
 #define DISP_GAMMA_LUT				0x0700
 
 #define LUT_10BIT_MASK				0x03ff
-
-#define COLOR_BYPASS_ALL			BIT(7)
-#define COLOR_SEQ_SEL				BIT(13)
 
 #define OD_RELAYMODE				BIT(0)
 
@@ -82,20 +72,6 @@
 #define DITHER_ADD_LSHIFT_G(x)			(((x) & 0x7) << 4)
 #define DITHER_ADD_RSHIFT_G(x)			(((x) & 0x7) << 0)
 
-struct mtk_disp_color_data {
-	unsigned int color_offset;
-};
-
-struct mtk_disp_color {
-	struct mtk_ddp_comp			ddp_comp;
-	const struct mtk_disp_color_data	*data;
-};
-
-static inline struct mtk_disp_color *comp_to_color(struct mtk_ddp_comp *comp)
-{
-	return container_of(comp, struct mtk_disp_color, ddp_comp);
-}
-
 void mtk_dither_set(struct mtk_ddp_comp *comp, unsigned int bpc,
 		    unsigned int CFG)
 {
@@ -117,25 +93,6 @@ void mtk_dither_set(struct mtk_ddp_comp *comp, unsigned int bpc,
 		       comp->regs + DISP_DITHER_16);
 		writel(DISP_DITHERING, comp->regs + CFG);
 	}
-}
-
-static void mtk_color_config(struct mtk_ddp_comp *comp, unsigned int w,
-			     unsigned int h, unsigned int vrefresh,
-			     unsigned int bpc)
-{
-	struct mtk_disp_color *color = comp_to_color(comp);
-
-	writel(w, comp->regs + DISP_COLOR_WIDTH(color));
-	writel(h, comp->regs + DISP_COLOR_HEIGHT(color));
-}
-
-static void mtk_color_start(struct mtk_ddp_comp *comp)
-{
-	struct mtk_disp_color *color = comp_to_color(comp);
-
-	writel(COLOR_BYPASS_ALL | COLOR_SEQ_SEL,
-	       comp->regs + DISP_COLOR_CFG_MAIN);
-	writel(0x1, comp->regs + DISP_COLOR_START(color));
 }
 
 static void mtk_od_config(struct mtk_ddp_comp *comp, unsigned int w,
@@ -229,11 +186,6 @@ static const struct mtk_ddp_comp_funcs ddp_gamma = {
 	.stop = mtk_gamma_stop,
 };
 
-static const struct mtk_ddp_comp_funcs ddp_color = {
-	.config = mtk_color_config,
-	.start = mtk_color_start,
-};
-
 static const struct mtk_ddp_comp_funcs ddp_od = {
 	.config = mtk_od_config,
 	.start = mtk_od_start,
@@ -269,8 +221,9 @@ static const struct mtk_ddp_comp_match mtk_ddp_matches[DDP_COMPONENT_ID_MAX] = {
 	[DDP_COMPONENT_AAL]	= { MTK_DISP_AAL,	0, &ddp_aal },
 	[DDP_COMPONENT_AAL1]	= { MTK_DISP_AAL,	1, &ddp_aal },
 	[DDP_COMPONENT_BLS]	= { MTK_DISP_BLS,	0, NULL },
-	[DDP_COMPONENT_COLOR0]	= { MTK_DISP_COLOR,	0, &ddp_color },
-	[DDP_COMPONENT_COLOR1]	= { MTK_DISP_COLOR,	1, &ddp_color },
+	[DDP_COMPONENT_COLOR0]	= { MTK_DISP_COLOR,	0, NULL },
+	[DDP_COMPONENT_COLOR1]	= { MTK_DISP_COLOR,	1, NULL },
+	[DDP_COMPONENT_COLOR2]	= { MTK_DISP_COLOR,	2, NULL },
 	[DDP_COMPONENT_DPI0]	= { MTK_DPI,		0, NULL },
 	[DDP_COMPONENT_DPI1]	= { MTK_DPI,		1, NULL },
 	[DDP_COMPONENT_DSI0]	= { MTK_DSI,		0, NULL },
@@ -291,22 +244,6 @@ static const struct mtk_ddp_comp_match mtk_ddp_matches[DDP_COMPONENT_ID_MAX] = {
 	[DDP_COMPONENT_WDMA1]	= { MTK_DISP_WDMA,	1, NULL },
 };
 
-static const struct mtk_disp_color_data mt2701_color_driver_data = {
-	.color_offset = DISP_COLOR_START_MT2701,
-};
-
-static const struct mtk_disp_color_data mt8173_color_driver_data = {
-	.color_offset = DISP_COLOR_START_MT8173,
-};
-
-static const struct of_device_id mtk_disp_color_driver_dt_match[] = {
-	{ .compatible = "mediatek,mt2701-disp-color",
-	  .data = &mt2701_color_driver_data},
-	{ .compatible = "mediatek,mt8173-disp-color",
-	  .data = &mt8173_color_driver_data},
-	{},
-};
-
 int mtk_ddp_comp_get_id(struct device_node *node,
 			enum mtk_ddp_comp_type comp_type)
 {
@@ -322,29 +259,6 @@ int mtk_ddp_comp_get_id(struct device_node *node,
 	return -EINVAL;
 }
 
-int mtk_ddp_comp_alloc(struct device *dev, struct mtk_ddp_comp **comp,
-			enum mtk_ddp_comp_id comp_id)
-{
-	if (comp_id < 0 || comp_id >= DDP_COMPONENT_ID_MAX)
-		return -EINVAL;
-
-	if (mtk_ddp_matches[comp_id].type == MTK_DISP_COLOR) {
-		struct mtk_disp_color *color;
-
-		color = devm_kzalloc(dev, sizeof(*color), GFP_KERNEL);
-		if (!color)
-			return -ENOMEM;
-
-		*comp = &color->ddp_comp;
-	} else {
-		*comp = devm_kzalloc(dev, sizeof(*comp), GFP_KERNEL);
-		if (!*comp)
-			return -ENOMEM;
-	}
-
-	return 0;
-}
-
 int mtk_ddp_comp_init(struct device *dev, struct device_node *node,
 		      struct mtk_ddp_comp *comp, enum mtk_ddp_comp_id comp_id,
 		      const struct mtk_ddp_comp_funcs *funcs)
@@ -352,20 +266,11 @@ int mtk_ddp_comp_init(struct device *dev, struct device_node *node,
 	enum mtk_ddp_comp_type type;
 	struct device_node *larb_node;
 	struct platform_device *larb_pdev;
-	const struct of_device_id *match;
 
 	if (comp_id < 0 || comp_id >= DDP_COMPONENT_ID_MAX)
 		return -EINVAL;
 
 	type = mtk_ddp_matches[comp_id].type;
-	if (type == MTK_DISP_COLOR) {
-		struct mtk_disp_color *color;
-
-		match = of_match_node(mtk_disp_color_driver_dt_match, node);
-		color = comp_to_color(comp);
-		color->data = match->data;
-		comp = &color->ddp_comp;
-	}
 
 	comp->id = comp_id;
 	comp->funcs = funcs ?: mtk_ddp_matches[comp_id].funcs;

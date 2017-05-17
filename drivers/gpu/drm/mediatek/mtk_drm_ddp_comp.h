@@ -46,6 +46,7 @@ enum mtk_ddp_comp_id {
 	DDP_COMPONENT_BLS,
 	DDP_COMPONENT_COLOR0,
 	DDP_COMPONENT_COLOR1,
+	DDP_COMPONENT_COLOR2,
 	DDP_COMPONENT_DPI0,
 	DDP_COMPONENT_DPI1,
 	DDP_COMPONENT_DSI0,
@@ -157,8 +158,6 @@ static inline void mtk_ddp_gamma_set(struct mtk_ddp_comp *comp,
 
 int mtk_ddp_comp_get_id(struct device_node *node,
 			enum mtk_ddp_comp_type comp_type);
-int mtk_ddp_comp_alloc(struct device *dev, struct mtk_ddp_comp **comp,
-			enum mtk_ddp_comp_id comp_id);
 int mtk_ddp_comp_init(struct device *dev, struct device_node *comp_node,
 		      struct mtk_ddp_comp *comp, enum mtk_ddp_comp_id comp_id,
 		      const struct mtk_ddp_comp_funcs *funcs);
