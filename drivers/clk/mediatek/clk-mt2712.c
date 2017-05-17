@@ -635,8 +635,8 @@ static const char * const audull_vtx_parents[] = {
 
 static struct mtk_composite top_muxes[] = {
 	/* CLK_CFG_0 */
-	MUX_GATE(CLK_TOP_AXI_SEL, "axi_sel", axi_parents, 0x040, 0, 3, 7),
-	MUX_GATE(CLK_TOP_MEM_SEL, "mem_sel", mem_parents, 0x040, 8, 1, 15),
+	MUX_GATE_FLAGS(CLK_TOP_AXI_SEL, "axi_sel", axi_parents, 0x040, 0, 3, 7, CLK_IS_CRITICAL),
+	MUX_GATE_FLAGS(CLK_TOP_MEM_SEL, "mem_sel", mem_parents, 0x040, 8, 1, 15, CLK_IS_CRITICAL),
 	MUX_GATE(CLK_TOP_MM_SEL, "mm_sel", mm_parents, 0x040, 24, 3, 31),
 	/* CLK_CFG_1 */
 	MUX_GATE(CLK_TOP_PWM_SEL, "pwm_sel", pwm_parents, 0x050, 0, 2, 7),
@@ -682,7 +682,7 @@ static struct mtk_composite top_muxes[] = {
 	MUX_GATE(CLK_TOP_MSDC50_3_HCLK_SEL, "msdc50_3_h_sel", msdc50_0_h_parents, 0x0d0, 0, 3, 7),
 	MUX_GATE(CLK_TOP_HDCP_SEL, "hdcp_sel", hdcp_parents, 0x0d0, 8, 2, 15),
 	MUX_GATE(CLK_TOP_HDCP_24M_SEL, "hdcp_24m_sel", hdcp_24m_parents, 0x0d0, 16, 2, 23),
-	MUX_GATE(CLK_TOP_RTC_SEL, "rtc_sel", rtc_parents, 0x0d0, 24, 2, 31),
+	MUX_GATE_FLAGS(CLK_TOP_RTC_SEL, "rtc_sel", rtc_parents, 0x0d0, 24, 2, 31, CLK_IS_CRITICAL),
 	/* CLK_CFG_10 */
 	MUX_GATE(CLK_TOP_SPINOR_SEL, "spinor_sel", spinor_parents, 0x500, 0, 4, 7),
 	MUX_GATE(CLK_TOP_APLL_SEL, "apll_sel", apll_parents, 0x500, 8, 4, 15),
@@ -749,11 +749,11 @@ static const char * const mcu_bus_parents[] = {
 
 static struct mtk_composite mcu_muxes[] = {
 	/* mp0_pll_divider_cfg */
-	MUX(CLK_MCU_MP0_SEL, "mcu_mp0_sel", mcu_mp0_parents, 0x7A0, 9, 2),
+	MUX_GATE_FLAGS(CLK_MCU_MP0_SEL, "mcu_mp0_sel", mcu_mp0_parents, 0x7A0, 9, 2, -1, CLK_IS_CRITICAL),
 	/* mp2_pll_divider_cfg */
 	MUX(CLK_MCU_MP2_SEL, "mcu_mp2_sel", mcu_mp2_parents, 0x7A8, 9, 2),
 	/* bus_pll_divider_cfg */
-	MUX(CLK_MCU_BUS_SEL, "mcu_bus_sel", mcu_bus_parents, 0x7C0, 9, 2),
+	MUX_GATE_FLAGS(CLK_MCU_BUS_SEL, "mcu_bus_sel", mcu_bus_parents, 0x7C0, 9, 2, -1, CLK_IS_CRITICAL),
 };
 
 static const struct mtk_clk_divider top_adj_divs[] = {
@@ -1218,21 +1218,6 @@ static const struct mtk_pll_data plls[] = {
 		0x0304, 0),
 };
 
-static struct clk_onecell_data *mt2712_top_clk_data;
-static struct clk_onecell_data *mt2712_mcu_clk_data;
-
-static void mtk_clk_enable_critical(void)
-{
-	if (!mt2712_top_clk_data || !mt2712_mcu_clk_data)
-		return;
-
-	clk_prepare_enable(mt2712_top_clk_data->clks[CLK_TOP_AXI_SEL]);
-	clk_prepare_enable(mt2712_top_clk_data->clks[CLK_TOP_MEM_SEL]);
-	clk_prepare_enable(mt2712_top_clk_data->clks[CLK_TOP_RTC_SEL]);
-	clk_prepare_enable(mt2712_mcu_clk_data->clks[CLK_MCU_MP0_SEL]);
-	clk_prepare_enable(mt2712_mcu_clk_data->clks[CLK_MCU_BUS_SEL]);
-}
-
 static int clk_mt2712_apmixed_probe(struct platform_device *pdev)
 {
 	struct clk_onecell_data *clk_data;
@@ -1264,6 +1249,7 @@ static int clk_mt2712_apmixed_probe(struct platform_device *pdev)
 
 static int clk_mt2712_top_probe(struct platform_device *pdev)
 {
+	struct clk_onecell_data *clk_data;
 	int r;
 	struct device_node *node = pdev->dev.of_node;
 	void __iomem *base;
@@ -1275,21 +1261,19 @@ static int clk_mt2712_top_probe(struct platform_device *pdev)
 		return PTR_ERR(base);
 	}
 
-	mt2712_top_clk_data = mtk_alloc_clk_data(CLK_TOP_NR_CLK);
+	clk_data = mtk_alloc_clk_data(CLK_TOP_NR_CLK);
 
-	mtk_clk_register_fixed_clks(top_fixed_clks, ARRAY_SIZE(top_fixed_clks), mt2712_top_clk_data);
-	mtk_clk_register_factors(top_divs, ARRAY_SIZE(top_divs), mt2712_top_clk_data);
-	mtk_clk_register_composites(top_muxes, ARRAY_SIZE(top_muxes), base, &mt2712_clk_lock, mt2712_top_clk_data);
-	mtk_clk_register_dividers(top_adj_divs, ARRAY_SIZE(top_adj_divs), base, &mt2712_clk_lock, mt2712_top_clk_data);
-	mtk_clk_register_gates(node, top_clks, ARRAY_SIZE(top_clks), mt2712_top_clk_data);
+	mtk_clk_register_fixed_clks(top_fixed_clks, ARRAY_SIZE(top_fixed_clks), clk_data);
+	mtk_clk_register_factors(top_divs, ARRAY_SIZE(top_divs), clk_data);
+	mtk_clk_register_composites(top_muxes, ARRAY_SIZE(top_muxes), base, &mt2712_clk_lock, clk_data);
+	mtk_clk_register_dividers(top_adj_divs, ARRAY_SIZE(top_adj_divs), base, &mt2712_clk_lock, clk_data);
+	mtk_clk_register_gates(node, top_clks, ARRAY_SIZE(top_clks), clk_data);
 
-	r = of_clk_add_provider(node, of_clk_src_onecell_get, mt2712_top_clk_data);
+	r = of_clk_add_provider(node, of_clk_src_onecell_get, clk_data);
 
 	if (r)
 		pr_err("%s(): could not register clock provider: %d\n",
 			__func__, r);
-
-	mtk_clk_enable_critical();
 
 	return r;
 }
@@ -1336,6 +1320,7 @@ static int clk_mt2712_peri_probe(struct platform_device *pdev)
 
 static int clk_mt2712_mcu_probe(struct platform_device *pdev)
 {
+	struct clk_onecell_data *clk_data;
 	int r;
 	struct device_node *node = pdev->dev.of_node;
 	void __iomem *base;
@@ -1347,17 +1332,15 @@ static int clk_mt2712_mcu_probe(struct platform_device *pdev)
 		return PTR_ERR(base);
 	}
 
-	mt2712_mcu_clk_data = mtk_alloc_clk_data(CLK_MCU_NR_CLK);
+	clk_data = mtk_alloc_clk_data(CLK_MCU_NR_CLK);
 
-	mtk_clk_register_composites(mcu_muxes, ARRAY_SIZE(mcu_muxes), base, &mt2712_clk_lock, mt2712_mcu_clk_data);
+	mtk_clk_register_composites(mcu_muxes, ARRAY_SIZE(mcu_muxes), base, &mt2712_clk_lock, clk_data);
 
-	r = of_clk_add_provider(node, of_clk_src_onecell_get, mt2712_mcu_clk_data);
+	r = of_clk_add_provider(node, of_clk_src_onecell_get, clk_data);
 
 	if (r)
 		pr_err("%s(): could not register clock provider: %d\n",
 			__func__, r);
-
-	mtk_clk_enable_critical();
 
 	return r;
 }
