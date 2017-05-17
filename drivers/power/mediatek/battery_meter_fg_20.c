@@ -788,7 +788,7 @@ int __batt_meter_init_cust_data_from_cust_header(struct platform_device *dev)
 #endif				/* #if defined(FIXED_TBAT_25) */
 
 	batt_meter_cust_data.batterypseudo100 = BATTERYPSEUDO100;
-#ifdef CONFIG_MTK_MULTI_BAT_PROFILE_SUPPORT
+#ifdef MTK_MULTI_BAT_PROFILE_SUPPORT
 	batt_meter_cust_data.batterypseudo1 = g_BATTERYPSEUDO1[g_fg_battery_id];
 #else
 	batt_meter_cust_data.batterypseudo1 = BATTERYPSEUDO1;
@@ -829,7 +829,7 @@ int __batt_meter_init_cust_data_from_cust_header(struct platform_device *dev)
 #else				/* #if defined(Q_MAX_BY_CURRENT) */
 	batt_meter_cust_data.q_max_by_current = 0;
 #endif				/* #if defined(Q_MAX_BY_CURRENT) */
-#ifdef CONFIG_MTK_MULTI_BAT_PROFILE_SUPPORT
+#ifdef MTK_MULTI_BAT_PROFILE_SUPPORT
 	batt_meter_cust_data.q_max_sys_voltage = g_Q_MAX_SYS_VOLTAGE[g_fg_battery_id];
 #else
 	batt_meter_cust_data.q_max_sys_voltage = Q_MAX_SYS_VOLTAGE;

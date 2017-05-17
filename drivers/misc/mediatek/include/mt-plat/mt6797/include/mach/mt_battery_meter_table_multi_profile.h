@@ -89,8 +89,8 @@ signed int g_Q_MAX_POS_25_H_CURRENT[TOTAL_BATTERY_NUMBER] = {3957, 3976};
 signed int g_Q_MAX_POS_0_H_CURRENT[TOTAL_BATTERY_NUMBER] = {2687, 2736};
 signed int g_Q_MAX_NEG_10_H_CURRENT[TOTAL_BATTERY_NUMBER] = {1524, 1404};
 
-signed int g_Q_MAX_SYS_VOLTAGE[TOTAL_BATTERY_NUMBER] = {3100, 3100};
-signed int g_BATTERYPSEUDO1[TOTAL_BATTERY_NUMBER] = {5, 5};
+signed int g_Q_MAX_SYS_VOLTAGE[TOTAL_BATTERY_NUMBER] = {3350, 3350};
+signed int g_BATTERYPSEUDO1[TOTAL_BATTERY_NUMBER] = {2, 2};
 
 /* 0~0.5V for battery 0, 0.5~1V for battery 1, 1~1.5V for battery 2, -1 for the last one (battery 3) */
 signed int g_battery_id_voltage[TOTAL_BATTERY_NUMBER] = {1300000, -1};
