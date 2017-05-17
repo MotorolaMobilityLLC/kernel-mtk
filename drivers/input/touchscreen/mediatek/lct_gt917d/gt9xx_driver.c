@@ -1314,17 +1314,17 @@ void gtp_reset_guitar(struct i2c_client *client, s32 ms)
 	msleep(ms);
 	tpd_gpio_output(GTP_INT_PORT, client->addr == 0x14);
 
-	msleep(20);
+	msleep(5);
 	tpd_gpio_output(GTP_RST_PORT, 1);
 
-	msleep(20);		/* must >= 6ms */
+	msleep(10);		/* must >= 6ms */
 
 #if defined(CONFIG_GTP_COMPATIBLE_MODE)
 	if (CHIP_TYPE_GT9F == gtp_chip_type)
 		return;
 #endif
 
-	gtp_int_sync(100);	/* for dbl-system */
+	gtp_int_sync(60);	/* for dbl-system */
 #if defined(CONFIG_GTP_ESD_PROTECT)
 	gtp_init_ext_watchdog(i2c_client_point);
 #endif
