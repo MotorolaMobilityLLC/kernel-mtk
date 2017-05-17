@@ -673,15 +673,12 @@ static void lcm_resume_power(void)
 
 static void lcm_init(void)
 {
+	SET_RESET_PIN(1);
+	MDELAY(5);
 	SET_RESET_PIN(0);
 	MDELAY(10);
 	SET_RESET_PIN(1);
-	MDELAY(5);
-	SET_RESET_PIN(0);
-	MDELAY(5);
-
-	SET_RESET_PIN(1);
-	MDELAY(30);
+	MDELAY(10);
 	push_table(NULL, lcm_initialization_setting, sizeof(lcm_initialization_setting) / sizeof(struct LCM_setting_table), 1);
 }
 
@@ -689,7 +686,6 @@ static void lcm_init(void)
 static void lcm_suspend(void)
 {
 	push_table(NULL, lcm_suspend_setting, sizeof(lcm_suspend_setting) / sizeof(struct LCM_setting_table), 1);
-
     SET_RESET_PIN(0);
 	MDELAY(10);
 }
@@ -705,12 +701,11 @@ static unsigned int lcm_compare_id(void)
 	char  buffer[3];
 	char  id0,id1,id=0;
 	SET_RESET_PIN(1);
-	MDELAY(1);
+	MDELAY(5);
 	SET_RESET_PIN(0);
 	MDELAY(10);
-
 	SET_RESET_PIN(1);
-	MDELAY(100);
+	MDELAY(10);
 	
 	array[0] = 0x00043902; 						 
 		array[1] = 0x018198ff; 				
