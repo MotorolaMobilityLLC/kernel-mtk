@@ -1390,10 +1390,7 @@ static int __rt5081_run_aicl(struct rt5081_pmu_charger_data *chg_data)
 	if (ret < 0)
 		goto unlock_out;
 
-	if(aicr < 500000 )
-		chg_data->aicr_limit = 500000;
-	else
-		chg_data->aicr_limit = aicr;
+	chg_data->aicr_limit = aicr;
 	dev_info(chg_data->dev, "%s: OK, aicr upper bound = %dmA\n", __func__,
 		aicr / 1000);
 
