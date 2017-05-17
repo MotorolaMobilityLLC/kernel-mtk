@@ -28,7 +28,6 @@
 #include <linux/pm_runtime.h>
 #include <linux/mtd/partitions.h>
 #include "mtk_ecc.h"
-#include "mtk_partition.h"
 
 /* NAND controller register definition */
 #define _NFI_CNFG		(0x00)
