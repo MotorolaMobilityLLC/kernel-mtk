@@ -964,9 +964,8 @@ unsigned int get_total_desc_cnt(struct prv_data *pdata, struct sk_buff *skb, uns
 int start_xmit(struct sk_buff *skb, struct net_device *dev)
 {
 	struct prv_data *pdata = netdev_priv(dev);
-	unsigned int q_inx = skb_get_queue_mapping(skb);
-	struct tx_wrapper_descriptor *desc_data =
-	    GET_TX_WRAPPER_DESC(q_inx);
+	unsigned int q_inx;
+	struct tx_wrapper_descriptor *desc_data;
 	struct s_tx_pkt_features *tx_pkt_features = GET_TX_PKT_FEATURES_PTR;
 	unsigned long flags;
 	unsigned int desc_count = 0;
@@ -975,8 +974,12 @@ int start_xmit(struct sk_buff *skb, struct net_device *dev)
 	struct desc_if_struct *desc_if = &pdata->desc_if;
 	int retval = NETDEV_TX_OK;
 
-	desc_data =
-	    GET_TX_WRAPPER_DESC(q_inx);
+	/* only queue0 support half duplex */
+	if (!pdata->phydev->duplex)
+		skb_set_queue_mapping(skb, 0);
+
+	q_inx = skb_get_queue_mapping(skb);
+	desc_data = GET_TX_WRAPPER_DESC(q_inx);
 
 	spin_lock_irqsave(&pdata->tx_lock, flags);
 
