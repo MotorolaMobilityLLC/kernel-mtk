@@ -471,6 +471,26 @@ int charger_dev_get_zcv(struct charger_device *charger_dev, u32 *uV)
 }
 EXPORT_SYMBOL(charger_dev_get_zcv);
 
+//add by longcheer_liml_2017_05_17 _start
+int charger_dev_run_aicl(struct charger_device *charger_dev, u32 *uA)
+{
+	if (charger_dev != NULL && charger_dev->ops != NULL && charger_dev->ops->run_aicl)
+		return charger_dev->ops->run_aicl(charger_dev, uA);
+
+	return -ENOTSUPP;
+}
+EXPORT_SYMBOL(charger_dev_run_aicl);
+
+int charger_dev_reset_eoc_state(struct charger_device *charger_dev)
+{
+	if (charger_dev != NULL && charger_dev->ops != NULL && charger_dev->ops->reset_eoc_state)
+		return charger_dev->ops->reset_eoc_state(charger_dev);
+
+	return -ENOTSUPP;
+}
+EXPORT_SYMBOL(charger_dev_reset_eoc_state);
+//add by longcheer_liml_2017_05_17_end
+
 int charger_dev_notify(struct charger_device *charger_dev, int event)
 {
 	return srcu_notifier_call_chain(

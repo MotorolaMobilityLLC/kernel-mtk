@@ -3959,6 +3959,8 @@ static int battery_callback(struct notifier_block *nb, unsigned long event, void
 		{
 /* CHARGING FULL */
 			notify_fg_chr_full();
+			battery_main.BAT_STATUS = POWER_SUPPLY_STATUS_FULL;//add by longcheer_liml_2017_05_16 update charger full status
+			battery_update(&battery_main);//add by longcheer_liml_2017_05_16 update charger full status
 		}
 		break;
 	case CHARGER_NOTIFY_START_CHARGING:
