@@ -727,7 +727,6 @@ static void DL1GlobalVarInit(void)
 static int mtk_soc_dl1_probe(struct platform_device *pdev)
 {
 	int ret = 0;
-	int i;
 
 	PRINTK_AUDDRV("%s\n", __func__);
 
@@ -753,9 +752,6 @@ static int mtk_soc_dl1_probe(struct platform_device *pdev)
 #ifndef CONFIG_MTK_LEGACY
 	AudDrv_GPIO_probe(&pdev->dev);
 #endif
-	/*Lenovo-sw weimh1 add 2017-5-2:temp for test HW REBOOT*/
-	for (i = 0; i < 10; i++)
-		AudDrv_ANC_Clk_On();
 
 	ret = Auddrv_Reg_map_new(&pdev->dev);
 	if (ret) {
