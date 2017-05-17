@@ -27,12 +27,12 @@ Required properties:
 	20. (O) chg_ichgmeasi: ICHG measurement function done event.
 	21. (O) chgdet_donei: charger type detection done event.
 	22. (R) chg_wdtmri: watch dog timer timeout fault.
-	23. (R) ssfinishi: charger or boost softstart finishes event.
+	23. (O) ssfinishi: charger or boost softstart finishes event.
 	24. (R) chg_rechgi: recharge behavior ever occurs.
 	25. (O) chg_termi: charge terminated event.
 	26. (R) chg_ieoci: charging current is lower than EOC current ever occurs.
-	27. (R) adc_donei: ADC measurement done event.
-	28. (R) pumpx_donei: MTK pump express function done event.
+	27. (O) adc_donei: ADC measurement done event.
+	28. (O) pumpx_donei: MTK pump express function done event.
 	29. (O) bst_batuvi: boost low voltage input fault.
 	30. (O) bst_vbusovi: boost VMID OVP fault event.
 	31. (O) bst_olpi: boost overload protection event.
@@ -79,10 +79,9 @@ rt5081_pmu@34 {
 	rt,intr_gpio = <&msmgpio 66 0>;
 	charger {
 		compatible = "richtek,rt5081_pmu_charger";
-		interrupt-names = "adc_donei", "chg_mivr",
-			"chg_aiclmeasi", "ssfinishi", "pumpx_donei",
-			"attachi", "ovpctrl_uvp_d_evt", "chg_wdtmri",
-			"chg_vbusov", "chg_ieoci", "chg_tmri", "chg_rechgi";
+        interrupt-names = "chg_mivr", "chg_aiclmeasi", "attachi",
+			"ovpctrl_uvp_d_evt", "chg_wdtmri", "chg_vbusov",
+            "chg_ieoci", "chg_tmri", "chg_rechgi", "chg_treg";
 		charger_name = "primary_chg";
 		load_switch_name = "primary_load_switch";
 		ichg = <2000000>;	/* uA */
