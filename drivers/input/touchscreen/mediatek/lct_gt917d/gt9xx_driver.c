@@ -2645,7 +2645,7 @@ static int touch_event_handler(void *unused)
 					if (key_value & (0x01 << i)) {
 						input_x = maping[i].x;
 						input_y = maping[i].y;
-						GTP_DEBUG("button =%d %d",
+						GTP_INFO("[Simon]Key button =%d %d",
 							  input_x, input_y);
 						tpd_down(input_x,
 							 input_y,
