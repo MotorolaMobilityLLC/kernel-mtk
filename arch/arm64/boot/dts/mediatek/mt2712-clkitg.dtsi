@@ -51,16 +51,11 @@
 			<&infracfg CLK_INFRA_GCE>,
 			<&infracfg CLK_INFRA_M4U>,
 			<&infracfg CLK_INFRA_KP>,
-			<&infracfg CLK_INFRA_CEC>,
 			<&infracfg CLK_INFRA_AO_SPI0>,
 			<&infracfg CLK_INFRA_AO_SPI1>,
 			<&infracfg CLK_INFRA_AO_UART5>,
 			<&imgsys CLK_IMG_SMI_LARB2>,
-			<&imgsys CLK_IMG_SENINF_SCAM_MUX_EN>,
-			<&imgsys CLK_IMG_SENINF_SCAM_DIV_EN>,
 			<&imgsys CLK_IMG_SENINF_SCAM_EN>,
-			<&imgsys CLK_IMG_CAM>,
-			<&imgsys CLK_IMG_CAM_CAM_EN>,
 			<&imgsys CLK_IMG_SENINF_CAM_EN>,
 			<&imgsys CLK_IMG_CAM_SV_EN>,
 			<&imgsys CLK_IMG_CAM_SV1_EN>,
@@ -149,7 +144,6 @@
 			<&pericfg CLK_PERI_MSDC30_1>,
 			<&pericfg CLK_PERI_MSDC30_2>,
 			<&pericfg CLK_PERI_MSDC30_3>,
-			<&pericfg CLK_PERI_NLI_ARB>,
 			<&pericfg CLK_PERI_UART0>,
 			<&pericfg CLK_PERI_UART1>,
 			<&pericfg CLK_PERI_UART2>,
@@ -216,8 +210,7 @@
 			"150", "151", "152", "153", "154", "155", "156", "157", "158", "159",
 			"160", "161", "162", "163", "164", "165", "166", "167", "168", "169",
 			"170", "171", "172", "173", "174", "175", "176", "177", "178", "179",
-			"180", "181", "182", "183", "184", "185", "186", "187", "188", "189",
-			"190", "191", "192", "193";
+			"180", "181", "182", "183", "184", "185", "186", "187";
 	};
 
 	bring-up-pd-mm {
