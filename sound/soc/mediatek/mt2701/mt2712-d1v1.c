@@ -22,10 +22,11 @@
 #include <linux/gpio.h>
 #include <linux/pinctrl/consumer.h>
 #include <linux/of_gpio.h>
+#include <sound/pcm_params.h>
 
 #include "mt2701-afe-common.h"
 
-/*#define TS_CS42448*/
+#define TS_CS42448
 
 struct mt2712_d1v1_private {
 	int i2s1_in_mux;
@@ -148,21 +149,67 @@ static int mt2712_d1v1_be_ops_hw_params(struct snd_pcm_substream *substream,
 	return 0;
 }
 
+static const unsigned int mt2712_cs42448_tdm_channels[] = {2, 8};
+
+static struct snd_pcm_hw_constraint_list mt2701_cs42448_constraints_tdm_channels = {
+		.count = ARRAY_SIZE(mt2712_cs42448_tdm_channels),
+		.list = mt2712_cs42448_tdm_channels,
+		.mask = 0,
+};
+
+static int mt2712_d1v1_be_tdm_ops_startup(struct snd_pcm_substream *substream)
+{
+	int err = 0;
+
+	err = snd_pcm_hw_constraint_list(substream->runtime, 0,
+					SNDRV_PCM_HW_PARAM_CHANNELS,
+					&mt2701_cs42448_constraints_tdm_channels);
+	if (err < 0) {
+		dev_err(substream->pcm->card->dev,
+			"%s snd_pcm_hw_constraint_list failed: 0x%x\n",
+			__func__, err);
+		return err;
+	}
+	return 0;
+}
+
 static int mt2712_d1v1_be_tdm_ops_hw_params(struct snd_pcm_substream *substream,
 					   struct snd_pcm_hw_params *params)
 {
 	struct snd_soc_pcm_runtime *rtd = substream->private_data;
 	struct snd_soc_dai *cpu_dai = rtd->cpu_dai;
+	unsigned int channel = params_channels(params);
 	unsigned int rate = params_rate(params);
+	unsigned int mclk_rate;
+	unsigned int div_mclk_over_bck = rate > 192000 ? 2 : 4;
+	unsigned int div_bck_over_lrck = 64;
+
+	mclk_rate = rate * div_bck_over_lrck * div_mclk_over_bck;
+
 	/* set tdmin based on rate */
-	switch (rate) {
+	switch (channel) {
+	case 2:
+		snd_soc_dai_set_fmt(cpu_dai, SND_SOC_DAIFMT_I2S | SND_SOC_DAIFMT_IB_IF);
+		snd_soc_dai_set_fmt(rtd->codec_dai, SND_SOC_DAIFMT_I2S | SND_SOC_DAIFMT_CBS_CFS);
+		break;
+	case 8:
+		snd_soc_dai_set_fmt(cpu_dai, SND_SOC_DAIFMT_DSP_A | SND_SOC_DAIFMT_IB_NF);
+		snd_soc_dai_set_fmt(rtd->codec_dai, SND_SOC_DAIFMT_DSP_A | SND_SOC_DAIFMT_CBS_CFS);
+		snd_mask_reset(&params->masks[SNDRV_PCM_HW_PARAM_FORMAT - SNDRV_PCM_HW_PARAM_FIRST_MASK],
+				SNDRV_PCM_FORMAT_S16_LE);
+		params_set_format(params, SNDRV_PCM_FORMAT_S32_LE);
+		break;
 	default:
-		snd_soc_dai_set_fmt(cpu_dai, SND_SOC_DAIFMT_DSP_A | SND_SOC_DAIFMT_NB_IF);
+		return -EINVAL;
 	}
 
-	snd_soc_dai_set_fmt(rtd->codec_dai, SND_SOC_DAIFMT_DSP_A | SND_SOC_DAIFMT_CBS_CFS);
+	/* mt2701 mclk */
+	snd_soc_dai_set_sysclk(cpu_dai, 0, mclk_rate, SND_SOC_CLOCK_OUT);
 
-	return mt2712_d1v1_be_ops_hw_params(substream, params);
+	/* codec mclk */
+	snd_soc_dai_set_sysclk(rtd->codec_dai, 0, mclk_rate, SND_SOC_CLOCK_IN);
+
+	return 0;
 }
 
 static struct snd_soc_ops mt2712_d1v1_be_ops = {
@@ -170,6 +217,7 @@ static struct snd_soc_ops mt2712_d1v1_be_ops = {
 };
 
 static struct snd_soc_ops mt2712_d1v1_be_tdm_ops = {
+	.startup = mt2712_d1v1_be_tdm_ops_startup,
 	.hw_params = mt2712_d1v1_be_tdm_ops_hw_params
 };
 
@@ -501,7 +549,7 @@ static struct snd_soc_dai_link mt2712_d1v1_dai_links[] = {
 	.codec_name = "dummy-codec",
 	.codec_dai_name = "dummy-codec-tdm",
 	#endif
-	.dai_fmt = SND_SOC_DAIFMT_I2S | SND_SOC_DAIFMT_CBS_CFS
+	.dai_fmt = SND_SOC_DAIFMT_I2S | SND_SOC_DAIFMT_DSP_A | SND_SOC_DAIFMT_CBS_CFS
 	| SND_SOC_DAIFMT_GATED,
 	.ops = &mt2712_d1v1_be_tdm_ops,
 	.dpcm_playback = 1,
@@ -520,7 +568,7 @@ static struct snd_soc_dai_link mt2712_d1v1_dai_links[] = {
 	.cpu_dai_name = "TDMIN",
 	.no_pcm = 1,
 	.codec_name = "dummy-codec",
-	.codec_dai_name = "dummy-codec-tdm",
+	.codec_dai_name = "dummy-codec-tdmin",
 	.ops = &mt2712_d1v1_be_tdm_ops,
 	.dpcm_capture = 1,
 	},

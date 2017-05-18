@@ -262,10 +262,8 @@ enum mt2701_tdm_channel {
 };
 
 enum mt2701_tdm_mode {
-	TDM_MODE_COCLK_O1_GPIO_O1,
-	TDM_MODE_COCLK_O1_GPIO_IN,
-	TDM_MODE_COCLK_O2_GPIO_O2,
-	TDM_MODE_COCLK_O2_GPIO_IN,
+	TDM_MODE_COCLK_O1,
+	TDM_MODE_COCLK_O2,
 	TDM_MODE_SEPCLK,
 };
 
@@ -292,7 +290,6 @@ struct mt2701_tdm_path {
 
 struct mt2701_tdm_coclk_info {
 	int src;
-	int gpio_src;
 	int on;
 	int channels;
 	int bit_width;

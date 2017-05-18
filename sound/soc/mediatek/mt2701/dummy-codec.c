@@ -106,6 +106,9 @@ static struct snd_soc_dai_driver dummy_codec_dai_driver[] = {
 					 SNDRV_PCM_FMTBIT_DSD_U8 |
 					 SNDRV_PCM_FMTBIT_DSD_U16_LE),
 		},
+	},
+	{
+		.name = "dummy-codec-tdmin",
 		.capture = {
 			.stream_name = "dummy-codec-tdm-capture",
 			.channels_min = 1,
@@ -133,7 +136,7 @@ static int dummy_codec_probe(struct platform_device *pdev)
 		}
 	#endif
 	return snd_soc_register_codec(&pdev->dev, &dummy_codec_driver,
-				 dummy_codec_dai_driver, 3);
+				 dummy_codec_dai_driver, ARRAY_SIZE(dummy_codec_dai_driver));
 }
 
 static int dummy_codec_remove(struct platform_device *pdev)
