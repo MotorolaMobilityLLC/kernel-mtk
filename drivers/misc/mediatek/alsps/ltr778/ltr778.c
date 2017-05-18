@@ -311,64 +311,76 @@ static int get_avg_ps(unsigned int ps_data_c)
 	}
 }
 
-#define MAX_ELM_PS_1 8
-static unsigned int record_ps_1[MAX_ELM_PS_1];
-static int rct_ps_1=0,full_ps_1=0;
-static long ps_sum_1=0;
-static int j_ps=0;
+#define PS_NUM 8
+static unsigned int ps_data[PS_NUM];
+static unsigned int ps_rct_n = 0,ps_cal_full = 0, j_ps = 0;
 
-
-static int get_stable_ps(unsigned int ps_data_c_1)
+static int get_stable_ps(unsigned int ps_count)
 {
-	int ps_d_1;
-	int ps_d_high;
-	int ps_d_low;
+	int ps_avg = 0;
+	int ps_avg_h;
+	int ps_avg_l;
 	int i;
+	long ps_data_sum = 0;
 	
-	if(rct_ps_1 >= MAX_ELM_PS_1)
-		full_ps_1=1;
+	if(ps_rct_n >= PS_NUM)
+		ps_cal_full=1;
 
-	if(full_ps_1){
-		rct_ps_1 %= MAX_ELM_PS_1;
-		ps_sum_1 -= record_ps_1[rct_ps_1];
-	}
-	ps_sum_1 += ps_data_c_1;
-	record_ps_1[rct_ps_1]=ps_data_c_1;
-	rct_ps_1++;
+	if(ps_cal_full){
+		ps_rct_n %= PS_NUM;
+	}	
 
-	if(full_ps_1){
-	ps_d_1 = ps_sum_1 / MAX_ELM_PS_1;
+	ps_data[ps_rct_n]=ps_count;
+
+	
+	if(ps_cal_full){
+		
+		for(i=0;i<PS_NUM;i++){
+			APS_LOG("LTR778 %s:ps_data[%d] = %d \n", __func__, i,ps_data[i]);
+			ps_data_sum += ps_data[i];
+		}
+		
+		ps_avg = ps_data_sum / PS_NUM;
+		
+		ps_avg_h = ps_avg + 20; // 25->20
+		
+		ps_avg_l = ps_avg - 20;
+		
+		for(i=0;i<PS_NUM;i++)
+		{
+			if(ps_data[i]< ps_avg_h  && ps_data[i]>ps_avg_l )
+				j_ps++;
+			else 
+				j_ps = 0;
+		}
+		
+		
 	}else{
-	ps_d_1 = ps_sum_1 /rct_ps_1;
+		j_ps = 0;
 	}
+	
+	ps_rct_n++;
 
-	ps_d_high = ps_d_1 + 20;
-
-	ps_d_low = ps_d_1 - 20;
-
-
-	for(i=0;i<=MAX_ELM_PS_1;i++)
-	{
-		if(record_ps_1[i]< ps_d_high &&  record_ps_1[i]>ps_d_low )
-			j_ps++;
-		else 
-			j_ps = 0;
-	}
-
-	if(full_ps_1){
-
-			if(j_ps >= MAX_ELM_PS_1 )
-			{
-				return 1;
-			}
-			else
-			{
-				return 0;
-			}
+	
+	if(j_ps >= PS_NUM-1){
+		return 1;
 	}else{
 		return 0;
 	}
 
+
+}
+
+
+static int clear_stable(void)
+{
+		ps_rct_n = 0;
+		ps_cal_full = 0;
+		j_ps = 0;
+		
+		APS_LOG("LTR778 %s: j_ps %d \n", __func__,j_ps );
+
+		return 0;		
 }
 
 //tuwenzan@wind-mobi.com add for solve oil bug at 20170307 end
@@ -936,6 +948,8 @@ out:
 }
 
 //tuwenzan@wind-mobi.com modify at 20170323 begin
+static unsigned int psensor_first_cal = 0;
+
 #ifdef GN_MTK_BSP_PS_DYNAMIC_CALI
 static int ltr778_dynamic_calibrate(void)
 {
@@ -979,15 +993,21 @@ static int ltr778_dynamic_calibrate(void)
 	ps_en = 0;
 
 	noise = data_total / count;
+
+	
+	APS_LOG("%s:noise1 = %d\n", __func__, noise);
 //tuwenzan@wind-mobic.com add at 20170424 begin	
 	obj->als = ltr778_als_read(obj->client, &obj->als);
 	
 	
-	if(obj->als < 20){
+	if(obj->als < 10 && noise > atomic_read(&obj->ps_persist_val_low) && psensor_first_cal == 1){
 
 		noise = 3000;  // not meet the calibration condition -- noise < dynamic_calibrate + 450
 
 	}
+	psensor_first_cal = 1; // first time  must run dynamic calibrate
+	
+	APS_LOG("%s:noise2 = %d\n", __func__, noise);
 //tuwenzan@wind-mobic.com add at 20170424 end
 
 
@@ -1052,10 +1072,10 @@ static int ltr778_dynamic_calibrate(void)
 	}
 	
 	APS_LOG("%s:noise = %d\n", __func__, noise);
-	APS_LOG("%s:obj->ps_thd_val_high = %d\n", __func__, ps_thd_val_high);
-	APS_LOG("%s:obj->ps_thd_val_low = %d\n", __func__, ps_thd_val_low);
-	APS_LOG("%s:obj->ps_persist_val_high = %d\n", __func__, ps_persist_val_high);
-	APS_LOG("%s:obj->ps_persist_val_low = %d\n", __func__, ps_persist_val_low);
+	APS_LOG("%s:obj->ps_thd_val_high = %d\n", __func__, atomic_read(&obj->ps_thd_val_high));
+	APS_LOG("%s:obj->ps_thd_val_low = %d\n", __func__, atomic_read(&obj->ps_thd_val_low));
+	APS_LOG("%s:obj->ps_persist_val_high = %d\n", __func__, atomic_read(&obj->ps_persist_val_high));
+	APS_LOG("%s:obj->ps_persist_val_low = %d\n", __func__, atomic_read(&obj->ps_persist_val_low));
     //liujinzhou@wind-mobi.com modify at 20161205 end
 	ltr778_i2c_write_reg(LTR778_PS_MEAS_RATE, 0x03);	// 50ms time 
 	
@@ -1299,7 +1319,7 @@ static int ltr778_get_ps_value(struct ltr778_priv *obj, u16 ps)
 		intr_flag_value = 2;
 		oil_far_cal = 0;
 		oil_close = 1;
-		full_ps_1=0;
+			clear_stable();
 	}
 	else if((ps >= atomic_read(&obj->ps_thd_val_high)))
 	{
@@ -1309,7 +1329,7 @@ static int ltr778_get_ps_value(struct ltr778_priv *obj, u16 ps)
 				val_temp = 0;
 				intr_flag_value = 1;
 				oil_far_cal = 0;
-				full_ps_1=0;
+			clear_stable();
 			}
 		//tuwenzan@wind-mobi.com modify at 20170424 begin
 		if((ps <= (atomic_read(&obj->ps_persist_val_low)-10)) && (oil_close == 1) )
@@ -1321,11 +1341,10 @@ static int ltr778_get_ps_value(struct ltr778_priv *obj, u16 ps)
 				val = 2;  //oil close
 				val_temp = 2;
 				intr_flag_value = 2;
-				full_ps_1=0;
+			clear_stable();
 			}else{
 				val = val_temp;
-				intr_flag_value = 2;
-				full_ps_1=0;
+			clear_stable();
 			}
 	}
 		//tuwenzan@wind-mobi.com modify at 20170424 end	
@@ -1335,7 +1354,7 @@ static int ltr778_get_ps_value(struct ltr778_priv *obj, u16 ps)
 		val_temp = 1;
 		intr_flag_value = 0;
 		oil_far_cal = 0;
-		full_ps_1=0;
+			clear_stable();
 		oil_close = 0;
 	}
 	else if(oil_close == 1)
@@ -1349,12 +1368,12 @@ static int ltr778_get_ps_value(struct ltr778_priv *obj, u16 ps)
 	{
 		val = val_temp;		
 		oil_far_cal = 0;
-		full_ps_1=0;
+			clear_stable();
 	}
 
 	
 
-	if(val == 3  && oil_far_cal <= (MAX_ELM_PS_1+10))  // modified by steven stable data
+	if(val == 3  && oil_far_cal <= (PS_NUM+10))  // modified by steven stable data
 	{		
 		oil_far_cal ++;
 		val = 2;  /* persist oil close*/
@@ -1362,6 +1381,7 @@ static int ltr778_get_ps_value(struct ltr778_priv *obj, u16 ps)
 		intr_flag_value = 2;
 
 		if(get_stable_ps(ps) == 1){
+			clear_stable();
 			
 			val = 3;  /* persist oil far away*/
 			val_temp = 3;
@@ -1978,6 +1998,7 @@ static void ltr778_ps_delay_work(struct work_struct *work)
 	obj->ps = ltr778_ps_read(obj->client, &obj->ps);
 	
 	if(get_stable_ps(obj->ps) == 1 && ps_cali_time == 0 && (obj->ps < dynamic_calibrate)){
+		clear_stable();
 
 		ps_cali_time = 1;
 
