@@ -813,7 +813,6 @@ static const struct mtk_gate infra_clks[] = {
 	GATE_INFRA(CLK_INFRA_GCE, "infra_gce", "axi_sel", 6),
 	GATE_INFRA(CLK_INFRA_M4U, "infra_m4u", "mem_sel", 8),
 	GATE_INFRA(CLK_INFRA_KP, "infra_kp", "axi_sel", 16),
-	GATE_INFRA(CLK_INFRA_CEC, "infra_cec", "clk26m", 18),
 	GATE_INFRA(CLK_INFRA_AO_SPI0, "infra_ao_spi0", "axi_sel", 24),
 	GATE_INFRA(CLK_INFRA_AO_SPI1, "infra_ao_spi1", "axi_sel", 25),
 	GATE_INFRA(CLK_INFRA_AO_UART5, "infra_ao_uart5", "axi_sel", 26),
@@ -882,7 +881,6 @@ static const struct mtk_gate peri_clks[] = {
 	GATE_PERI0(CLK_PERI_MSDC30_1, "per_msdc30_1", "msdc30_1_sel", 15),
 	GATE_PERI0(CLK_PERI_MSDC30_2, "per_msdc30_2", "msdc30_2_sel", 16),
 	GATE_PERI0(CLK_PERI_MSDC30_3, "per_msdc30_3", "msdc30_3_sel", 17),
-	GATE_PERI0(CLK_PERI_NLI_ARB, "per_nli_arb", "axi_sel", 18),
 	GATE_PERI0(CLK_PERI_UART0, "per_uart0", "uart_sel", 20),
 	GATE_PERI0(CLK_PERI_UART1, "per_uart1", "uart_sel", 21),
 	GATE_PERI0(CLK_PERI_UART2, "per_uart2", "uart_sel", 22),
@@ -1295,6 +1293,7 @@ static int clk_mt2712_infra_probe(struct platform_device *pdev)
 			__func__, r);
 
 	mtk_register_reset_controller(node, 2, 0x30);
+
 	return r;
 }
 
@@ -1315,6 +1314,7 @@ static int clk_mt2712_peri_probe(struct platform_device *pdev)
 			__func__, r);
 
 	mtk_register_reset_controller(node, 2, 0);
+
 	return r;
 }
 
