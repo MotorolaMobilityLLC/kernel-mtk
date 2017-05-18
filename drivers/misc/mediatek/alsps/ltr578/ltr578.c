@@ -29,6 +29,7 @@
 #include "cust_alsps.h"
 #include "ltr578.h"
 #include "alsps.h"
+
 /**********  it`s only for compile            ****************/
 	// TODO: it`s only for compile  by wangyang for smt
 #define CUST_EINT_ALS_NUM 			11
@@ -115,6 +116,7 @@ static int final_lux_val;
 static int ltr578_ps_stowed_enable(struct i2c_client *client, int enable);
 static bool ps_stowed_start = false; 
 #endif
+
 /*----------------------------------------------------------------------------*/
 static DEFINE_MUTEX(read_lock);
 
@@ -145,6 +147,8 @@ struct ltr578_i2c_addr {    /*define a series of i2c slave address*/
 };
 
 /*----------------------------------------------------------------------------*/
+
+struct delayed_work pswork;
 
 struct ltr578_priv {
     struct alsps_hw  *hw;
@@ -677,7 +681,7 @@ static int ltr578_dynamic_calibrate(void)
 
 			goto err;
 		}
-		mdelay(15);
+		mdelay(13);
 		
 		data = ltr578_ps_read();
 		if(data == 0){
@@ -693,8 +697,8 @@ static int ltr578_dynamic_calibrate(void)
 				isadjust = 1;
 				
 				if(noise < 100){
-						atomic_set(&obj->ps_thd_val_high,  noise+27);
-						atomic_set(&obj->ps_thd_val_low, noise+17);
+						atomic_set(&obj->ps_thd_val_high,  noise+23);
+						atomic_set(&obj->ps_thd_val_low, noise+15);
 				}else if(noise < 200){
 						atomic_set(&obj->ps_thd_val_high,  noise+35);
 						atomic_set(&obj->ps_thd_val_low, noise+25);
@@ -902,7 +906,7 @@ static int ltr578_ps_stowed_enable(struct i2c_client *client, int enable)
 			}
 			//mt_eint_unmask(CUST_EINT_ALS_NUM);
 			
-			enable_irq(obj->irq);
+			//enable_irq(obj->irq);
 	
 		}
 	
@@ -942,13 +946,29 @@ static int ltr578_ps_stowed_enable(struct i2c_client *client, int enable)
 }
 #endif
 
+static void ltr578_ps_delay_work(struct work_struct *work)
+{
+	int lct_ps_value;
+
+    /*add by lct_liuzhenhe for ps_enable_report start*/
+    lct_ps_value = ltr578_get_ps_value();
+    if(!(lct_ps_value < 0))
+    {
+        APS_LOG("ltr578_lct_ps_value = %d\n",lct_ps_value);
+        if(ps_report_interrupt_data(lct_ps_value))
+        {       
+             APS_ERR("call ps_report_interrupt_data fail\n");
+        }       
+    }
+    /*add by lct_liuzhenhe for ps_enable_report end*/
+}
 static int ltr578_ps_enable(void)
 {
 	struct i2c_client *client = ltr578_obj->client;
 	struct ltr578_priv *obj = ltr578_obj;
 	u8 databuf[2];	
 	int res;
-	int lct_ps_value;
+//	int lct_ps_value;
 
 	int error;
 	int setctrl;
@@ -1012,7 +1032,7 @@ static int ltr578_ps_enable(void)
 			}
 			//mt_eint_unmask(CUST_EINT_ALS_NUM);
 			
-			enable_irq(obj->irq);
+			//enable_irq(obj->irq);
 	
 		}
 	
@@ -1029,13 +1049,19 @@ static int ltr578_ps_enable(void)
 	}
 	
 	APS_LOG("ltr578_ps_enable ...OK!\n");
-	
+
 	#ifdef GN_MTK_BSP_PS_DYNAMIC_CALI
 	ltr578_dynamic_calibrate();
 	#endif
 	ltr578_ps_set_thres();
 
-    /*add by lct_liuzhenhe for ps_enable_report start*/
+	if((setctrl & 0x01) == 1)//Check for PS enable?
+	{
+		schedule_delayed_work(&pswork,msecs_to_jiffies(50));
+	}else{
+		cancel_delayed_work_sync(&pswork);
+	}
+    /*add by lct_liuzhenhe for ps_enable_report start
        lct_ps_value = ltr578_get_ps_value();
        if(!(lct_ps_value < 0))
        {
@@ -1045,7 +1071,7 @@ static int ltr578_ps_enable(void)
                        APS_ERR("call ps_report_interrupt_data fail\n");
                }       
     }
-    /*add by lct_liuzhenhe for ps_enable_report end*/
+   add by lct_liuzhenhe for ps_enable_report end*/
 
  	
 	return error;
@@ -1367,14 +1393,21 @@ static int ltr578_als_read(int gainrange)
 
     	luxdata_int = 10*(alsval*812)/(als_time*als_gain)/18; //cwf
 */		
-	
+#ifdef CONFIG_L3510_MAINBOARD	
+    if(lsec_tmp > 80)
+    	luxdata_int = (alsval*312)/(als_time*als_gain)*15/10; //incan
+	else if(lsec_tmp > 30)
+    	luxdata_int = (alsval*379)/(als_time*als_gain)*11/10; // D65
+    else 
+    	luxdata_int = 10*(alsval*812)/(als_time*als_gain)/13; //cwf
+#else
     if(lsec_tmp > 80)
     	luxdata_int = (alsval*312)/(als_time*als_gain)*12/10; //incan
 	else if(lsec_tmp > 30)
     	luxdata_int = (alsval*379)/(als_time*als_gain)*11/10; // D65
     else 
     	luxdata_int = 10*(alsval*812)/(als_time*als_gain)/21; //cwf
-
+#endif
 
 	luxdata_int = get_avg_lux(luxdata_int);
 
@@ -2078,7 +2111,7 @@ static int ltr578_i2c_suspend(struct device *dev)
 	struct ltr578_priv *obj = i2c_get_clientdata(client);    
 	int err = 0;
 	APS_FUN();    
-	  
+	
 	if(!obj)
 	{
 		APS_ERR("null pointer!!\n");
@@ -2102,7 +2135,7 @@ static int ltr578_i2c_resume(struct device *dev)
 	struct ltr578_priv *obj = i2c_get_clientdata(client);        
 	int err = 0;
 	APS_FUN();
-
+	
 	if(!obj)
 	{
 		APS_ERR("null pointer!!\n");
@@ -2598,6 +2631,7 @@ static int ltr578_i2c_probe(struct i2c_client *client, const struct i2c_device_i
 	ltr578_get_addr(obj->hw, &obj->addr);
 
 	INIT_WORK(&obj->eint_work, ltr578_eint_work);
+	INIT_DELAYED_WORK(&pswork, ltr578_ps_delay_work);//modified by steven
 	obj->client = client;
 	i2c_set_clientdata(client, obj);	
 	atomic_set(&obj->als_debounce, 300);

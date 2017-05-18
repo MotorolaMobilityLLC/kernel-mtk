@@ -669,7 +669,7 @@ static int bmg_set_powermode(struct i2c_client *client,
 		data = actual_power_mode;
 		err += bmg_i2c_write_block(client,
 			BMI160_CMD_COMMANDS__REG, &data, 1);
-		mdelay(80);
+		mdelay(90);
 	}
 	printk("set power mode data = %d",data);
 	if (err < 0)
@@ -702,9 +702,9 @@ static int bmg_set_range(struct i2c_client *client, enum BMG_RANGE_ENUM range)
 			actual_range = BMI160_RANGE_1000;
 		else if (range == BMG_RANGE_500)
 			actual_range = BMI160_RANGE_500;
-		else if (range == BMG_RANGE_500)
+		else if (range == BMG_RANGE_250)
 			actual_range = BMI160_RANGE_250;
-		else if (range == BMG_RANGE_500)
+		else if (range == BMG_RANGE_125)
 			actual_range = BMI160_RANGE_125;
 		else {
 			err = -EINVAL;
@@ -719,7 +719,7 @@ static int bmg_set_range(struct i2c_client *client, enum BMG_RANGE_ENUM range)
 			BMI160_USER_GYR_RANGE, actual_range);
 		err += bmg_i2c_write_block(client,
 			BMI160_USER_GYR_RANGE__REG, &data, 1);
-		mdelay(1);
+		mdelay(5);
 
 		if (err < 0)
 			GYRO_ERR("set range failed,"
@@ -729,22 +729,22 @@ static int bmg_set_range(struct i2c_client *client, enum BMG_RANGE_ENUM range)
 			/* bitnum: 16bit */
 			switch (range) {
 			case BMG_RANGE_2000:
-				obj->sensitivity = 16;
+				obj->sensitivity = BMI160_FS_2000_LSB; /* 16; */
 			break;
 			case BMG_RANGE_1000:
-				obj->sensitivity = 33;
+				obj->sensitivity = BMI160_FS_1000_LSB; /* 33; */
 			break;
 			case BMG_RANGE_500:
-				obj->sensitivity = 66;
+				obj->sensitivity = BMI160_FS_500_LSB; /* 66; */
 			break;
 			case BMG_RANGE_250:
-				obj->sensitivity = 131;
+				obj->sensitivity = BMI160_FS_250_LSB; /* 131; */
 			break;
 			case BMG_RANGE_125:
-				obj->sensitivity = 262;
+				obj->sensitivity = BMI160_FS_125_LSB; /* 262; */
 			break;
 			default:
-				obj->sensitivity = 16;
+				obj->sensitivity = BMI160_FS_2000_LSB; /* 16; */
 			break;
 			}
 		}
@@ -869,7 +869,7 @@ static int bmg_init_client(struct i2c_client *client, int reset_cali)
 		GYRO_ERR("set power mode failed, err = %d\n", err);
 		return err;
 	}
-*/
+
 	err = bmg_set_powermode(client,
 		(enum BMG_POWERMODE_ENUM)BMG_NORMAL_MODE);
 		mdelay(10);
@@ -877,7 +877,7 @@ static int bmg_init_client(struct i2c_client *client, int reset_cali)
 		GYRO_ERR("set power mode failed, err = %d\n", err);
 		return err;
 	}
-
+*/
 	err = bmg_set_powermode(client,
 		(enum BMG_POWERMODE_ENUM)BMG_SUSPEND_MODE);
 		mdelay(10);
@@ -931,12 +931,12 @@ static int bmg_read_sensor_data(struct i2c_client *client,
 		return -3;
 	} else {
 		/* compensate data */
-		printk("wangshuai--%s--databuf x,y,z=%x,%x,%x\n",__func__,databuf[BMG_AXIS_X],databuf[BMG_AXIS_Y],databuf[BMG_AXIS_Z]);
-		printk("wangshuai--%s--cali x,y,z=%x,%x,%x\n",__func__,obj->cali_sw[BMG_AXIS_X],obj->cali_sw[BMG_AXIS_Y],obj->cali_sw[BMG_AXIS_Z]);
+//		printk("wangshuai--%s--databuf x,y,z=%x,%x,%x\n",__func__,databuf[BMG_AXIS_X],databuf[BMG_AXIS_Y],databuf[BMG_AXIS_Z]);
+//		printk("wangshuai--%s--cali x,y,z=%x,%x,%x\n",__func__,obj->cali_sw[BMG_AXIS_X],obj->cali_sw[BMG_AXIS_Y],obj->cali_sw[BMG_AXIS_Z]);
 		databuf[BMG_AXIS_X] += obj->cali_sw[BMG_AXIS_X];
 		databuf[BMG_AXIS_Y] += obj->cali_sw[BMG_AXIS_Y];
 		databuf[BMG_AXIS_Z] += obj->cali_sw[BMG_AXIS_Z];
-		printk("wangshuai--%s--cali+databuf x,y,z=%x,%x,%x\n",__func__,databuf[BMG_AXIS_X],databuf[BMG_AXIS_Y],databuf[BMG_AXIS_Z]);
+//		printk("wangshuai--%s--cali+databuf x,y,z=%x,%x,%x\n",__func__,databuf[BMG_AXIS_X],databuf[BMG_AXIS_Y],databuf[BMG_AXIS_Z]);
 		/* remap coordinate */
 		gyro[obj->cvt.map[BMG_AXIS_X]] =
 			obj->cvt.sign[BMG_AXIS_X]*databuf[BMG_AXIS_X];
@@ -946,17 +946,20 @@ static int bmg_read_sensor_data(struct i2c_client *client,
 			obj->cvt.sign[BMG_AXIS_Z]*databuf[BMG_AXIS_Z];
 
 		/* convert: LSB -> degree/second(o/s) */
-		gyro[BMG_AXIS_X] = gyro[BMG_AXIS_X] / obj->sensitivity*(-1)*985/1000;
-		gyro[BMG_AXIS_Y] = gyro[BMG_AXIS_Y] / obj->sensitivity*985/1000;
-		gyro[BMG_AXIS_Z] = gyro[BMG_AXIS_Z] / obj->sensitivity*(-1)*985/1000;
-
-		printk("wangshuai--%s--gyro x,y,z=%x,%x,%x\n",__func__,gyro[BMG_AXIS_X],gyro[BMG_AXIS_Y],gyro[BMG_AXIS_Z]);
-		sprintf(buf, "%04x %04x %04x",
-			gyro[BMG_AXIS_X], gyro[BMG_AXIS_Y], gyro[BMG_AXIS_Z]);
-//		if (atomic_read(&obj->trace) & GYRO_TRC_IOCTL)
+		gyro[BMG_AXIS_X] = -(gyro[BMG_AXIS_X] * BMI160_FS_250_LSB) /
+		obj->sensitivity;
+		gyro[BMG_AXIS_Y] = (gyro[BMG_AXIS_Y] * BMI160_FS_250_LSB) /
+		obj->sensitivity;
+		gyro[BMG_AXIS_Z] = -(gyro[BMG_AXIS_Z] * BMI160_FS_250_LSB) /
+		obj->sensitivity;
+		GYRO_LOG("gyro final xyz data: %d,%d,%d, sens:%d\n",
+		gyro[BMG_AXIS_X], gyro[BMG_AXIS_Y],
+		gyro[BMG_AXIS_Z], obj->sensitivity);
+		snprintf(buf, 96, "%04x %04x %04x",
+		gyro[BMG_AXIS_X], gyro[BMG_AXIS_Y], gyro[BMG_AXIS_Z]);
+		if (atomic_read(&obj->trace) & GYRO_TRC_IOCTL)
 			GYRO_LOG("gyroscope data: %s\n", buf);
 	}
-
 	return 0;
 }
 
@@ -1544,10 +1547,13 @@ static long bmg_unlocked_ioctl(struct file *file, unsigned int cmd,
 		err = -EINVAL;
 	} else {
 		/* convert: degree/second -> LSB */
-		cali[BMG_AXIS_X] = sensor_data.x * obj->sensitivity;
-		cali[BMG_AXIS_Y] = sensor_data.y * obj->sensitivity;
-		cali[BMG_AXIS_Z] = sensor_data.z * obj->sensitivity;
-		printk("wangshuai--%s--ioctl-cali x,y,z=%x,%x,%x\n",__func__,cali[BMG_AXIS_X],cali[BMG_AXIS_Y],cali[BMG_AXIS_Z]);
+			cali[BMG_AXIS_X] = (sensor_data.x * obj->sensitivity) /
+			BMI160_FS_250_LSB;
+			cali[BMG_AXIS_Y] = (sensor_data.y * obj->sensitivity) /
+			BMI160_FS_250_LSB;
+			cali[BMG_AXIS_Z] = (sensor_data.z * obj->sensitivity) /
+			BMI160_FS_250_LSB;
+//		printk("wangshuai--%s--ioctl-cali x,y,z=%x,%x,%x\n",__func__,cali[BMG_AXIS_X],cali[BMG_AXIS_Y],cali[BMG_AXIS_Z]);
 
 		err = bmg_write_calibration(client, cali);
 	}
@@ -1565,10 +1571,12 @@ static long bmg_unlocked_ioctl(struct file *file, unsigned int cmd,
 	if (err)
 		break;
    /* change for sp_META tool calibration by dingleilei*/
-	sensor_data.x = cali[BMG_AXIS_X]/obj->sensitivity;
-	sensor_data.y = cali[BMG_AXIS_Y]/obj->sensitivity;
-	sensor_data.z = cali[BMG_AXIS_Z]/obj->sensitivity;
-	
+		sensor_data.x = (cali[BMG_AXIS_X] * BMI160_FS_250_LSB) /
+		obj->sensitivity;
+		sensor_data.y = (cali[BMG_AXIS_Y] * BMI160_FS_250_LSB) /
+		obj->sensitivity;
+		sensor_data.z = (cali[BMG_AXIS_Z] * BMI160_FS_250_LSB) /
+		obj->sensitivity;
 	/*
 	GYRO_ERR("Meidong:Gyro get cali:[%5d %5d %5d]\n",
 	sensor_data.x, sensor_data.y, sensor_data.z);
@@ -1714,6 +1722,7 @@ static int bmg_suspend(struct device *dev)
 //    struct i2c_client *client = to_i2c_client(dev);
 //	struct bmg_i2c_data *obj = i2c_get_clientdata(client);
 	struct bmg_i2c_data *obj = obj_i2c_data;
+//	pm_message_t msg;
 
 	int err = 0;
 	GYRO_FUN();
@@ -1725,14 +1734,15 @@ static int bmg_suspend(struct device *dev)
 		}
 
 		atomic_set(&obj->suspend, 1);
+		/*
 		err = bmg_set_powermode(obj->client, BMG_SUSPEND_MODE);
 		if (err) {
 			GYRO_ERR("bmg set suspend mode failed, err = %d\n",
 				err);
 			return err;
 		}
-		bmg_power(obj->hw, 0);
-//	}
+		bmg_power(obj->hw, 0);*/
+//	}   
 	return err;
 }
 
@@ -1742,7 +1752,8 @@ static int bmg_resume(struct device *dev)
 	struct i2c_client *client = to_i2c_client(dev);
 	struct bmg_i2c_data *obj = i2c_get_clientdata(client);
 
-	int err;
+//	int err;
+
 	GYRO_FUN();
 
 	if (obj == NULL) {
@@ -1751,14 +1762,14 @@ static int bmg_resume(struct device *dev)
 	}
 
 	bmg_power(obj->hw, 1);
-	err = bmg_init_client(obj -> client, 0);
+/*	err = bmg_init_client(obj -> client, 0);
 	if (err) {
 		GYRO_ERR("initialize client failed, err = %d\n", err);
 		return err;
 	}
-
-	bmg_set_powermode(client,power);
-	mdelay(10);
+*/
+//	bmg_set_powermode(client,power);
+//	mdelay(10);
 
 	atomic_set(&obj->suspend, 0);
 	return 0;
@@ -1902,7 +1913,7 @@ static int bmi160_gyro_get_data(int* x ,int* y,int* z, int* status)
 #endif
 }
 
-extern struct i2c_client *bmi160_acc_i2c_client;
+//extern struct i2c_client *bmi160_acc_i2c_client;
 
 static int bmg_i2c_probe(struct i2c_client *client,
 		const struct i2c_device_id *id)
@@ -1981,11 +1992,11 @@ static int bmg_i2c_probe(struct i2c_client *client,
 	}
 
 	data.get_data = bmi160_gyro_get_data;
-#ifdef USE_DAEMON
+//#ifdef USE_DAEMON
 	data.vender_div = DEGREE_TO_RAD;
-#else
-	data.vender_div = 57;
-#endif
+//#else
+//	data.vender_div = 57;
+//#endif
 	err = gyro_register_data_path(&data);
 	if(err) {
 		GYRO_ERR("gyro_register_data_path fail = %d\n", err);

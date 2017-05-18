@@ -23,7 +23,8 @@
 /*
  * configuration
 */
-#define BMG_DRIVER_VERSION "V1.3"
+#define BMG_DRIVER_VERSION "V2.1"
+extern struct i2c_client *bmi160_acc_i2c_client;
 
 /* apply low pass filter on output */
 /* #define CONFIG_BMG_LOWPASS */
@@ -31,11 +32,11 @@
 #define BMG_AXIS_X				0
 #define BMG_AXIS_Y				1
 #define BMG_AXIS_Z				2
-#define BMG_AXES_NUM				3
-#define BMG_DATA_LEN				6
-
-#define C_MAX_FIR_LENGTH			(32)
-#define MAX_SENSOR_NAME				(32)
+#define BMG_AXES_NUM			3
+#define BMG_DATA_LEN			6
+#define BMG_BUFSIZE				128
+#define C_MAX_FIR_LENGTH		(32)
+#define MAX_SENSOR_NAME			(32)
 
 /* common definition */
 #define BMG_GET_BITSLICE(regvar, bitname)\
@@ -44,34 +45,36 @@
 #define BMG_SET_BITSLICE(regvar, bitname, val)\
 	((regvar & ~bitname##__MSK) | ((val<<bitname##__POS)&bitname##__MSK))
 
-#define BMG_BUFSIZE				128
-
+#define BMI160_FS_125_LSB               2624
+#define BMI160_FS_250_LSB               1312
+#define BMI160_FS_500_LSB               656
+#define BMI160_FS_1000_LSB              328
+#define BMI160_FS_2000_LSB              164
 /*
 *1 rad = PI*degree/180, about 3.1416*degree/180
 *1 degree = rad*180/PI, about rad*180/3.1416
 */
-#define DEGREE_TO_RAD				938
+#define DEGREE_TO_RAD				7506
 
 /* -----------------  BMI160 gyro macros  ---------------- */
 #define SW_CALIBRATION
 
 #define BMG_DEV_NAME				"bmi160_gyro"
-#define BMI160_GYRO_I2C_ADDRESS			0x66
-
-#define BMI160_USER_CHIP_ID_ADDR				0x00
-/* USER DATA REGISTERS DEFINITION START */
-/* Chip ID Description - Reg Addr --> 0x00, Bit --> 0...7 */
-#define BMI160_USER_CHIP_ID__POS             0
-#define BMI160_USER_CHIP_ID__MSK            0xFF
-#define BMI160_USER_CHIP_ID__LEN             8
-#define BMI160_USER_CHIP_ID__REG             BMI160_USER_CHIP_ID_ADDR
-
+#define UNKNOWN_DEV					"unknown sensor"
+#define BMI160_GYRO_I2C_ADDRESS		0x66
+#define BMI160_USER_CHIP_ID_ADDR	0x00
 
 #define SENSOR_CHIP_ID_BMI (0xD0)
 #define SENSOR_CHIP_ID_BMI_C2 (0xD1)
 #define SENSOR_CHIP_ID_BMI_C3 (0xD3)
-
+#define SENSOR_CHIP_ID_BMI_C4 (0xD8)
 #define SENSOR_CHIP_REV_ID_BMI (0x00)
+/* USER DATA REGISTERS DEFINITION START */
+/* Chip ID Description - Reg Addr --> 0x00, Bit --> 0...7 */
+#define BMI160_USER_CHIP_ID__POS	0
+#define BMI160_USER_CHIP_ID__MSK	0xFF
+#define BMI160_USER_CHIP_ID__LEN	8
+#define BMI160_USER_CHIP_ID__REG	BMI160_USER_CHIP_ID_ADDR
 
 /* BMI160 Gyro ODR */
 #define BMI160_GYRO_ODR_RESERVED		0x00
@@ -131,10 +134,28 @@
 
 #define BMI160_USER_DATA_8_ADDR					0X0C
 /* GYR_X (LSB) Description - Reg Addr --> 0x0C, Bit --> 0...7 */
-#define BMI160_USER_DATA_8_GYR_X_LSB__POS           0
-#define BMI160_USER_DATA_8_GYR_X_LSB__LEN           8
-#define BMI160_USER_DATA_8_GYR_X_LSB__MSK          0xFF
-#define BMI160_USER_DATA_8_GYR_X_LSB__REG          BMI160_USER_DATA_8_ADDR
+#define BMI160_USER_DATA_8_GYR_X_LSB__POS	0
+#define BMI160_USER_DATA_8_GYR_X_LSB__LEN	8
+#define BMI160_USER_DATA_8_GYR_X_LSB__MSK   0xFF
+#define BMI160_USER_DATA_8_GYR_X_LSB__REG   BMI160_USER_DATA_8_ADDR
+#define BMI160_USER_PMU_STATUS_ADDR			0X03
 
+/* PMU_Status Description of GYRO - Reg Addr --> (0x03), Bit --> 3...2 */
+#define BMI160_USER_GYRO_POWER_MODE_STAT__POS               (2)
+#define BMI160_USER_GYRO_POWER_MODE_STAT__LEN               (2)
+#define BMI160_USER_GYRO_POWER_MODE_STAT__MSK               (0x0C)
+#define BMI160_USER_GYRO_POWER_MODE_STAT__REG		      \
+(BMI160_USER_PMU_STATUS_ADDR)
+#define BMI160_GET_BITSLICE(regvar, bitname)\
+			((regvar & bitname##__MSK) >> bitname##__POS)
+#define BMI160_SET_BITSLICE(regvar, bitname, val)\
+			((regvar & ~bitname##__MSK) | \
+			((val<<bitname##__POS)&bitname##__MSK))
+enum BMI_GYRO_PM_TYPE {
+	BMI_GYRO_PM_NORMAL = 0,
+	BMI_GYRO_PM_FAST_START,
+	BMI_GYRO_PM_SUSPEND,
+	BMI_GYRO_PM_MAX
+};
 #endif/* BMI160_GYRO_H */
 
