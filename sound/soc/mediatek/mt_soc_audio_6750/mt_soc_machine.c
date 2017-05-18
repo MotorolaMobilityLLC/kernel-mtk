@@ -1132,6 +1132,10 @@ static ssize_t mt_soc_debug_write(struct file *f, const char __user *buf,
 	char delim[] = " ,";
 
 	memset((void *)InputString, 0, 256);
+
+	if (count > 256)
+		count = 256;
+
 	if (copy_from_user((InputString), buf, count))
 		pr_debug("copy_from_user mt_soc_debug_write count = %zu temp = %s\n", count,
 			 InputString);
