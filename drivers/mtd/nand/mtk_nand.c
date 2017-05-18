@@ -74,6 +74,9 @@
 #define		CON_SEC_SHIFT		(12)
 /* Timming control register */
 #define _NFI_ACCCON		(0x0C)
+#define		ACCTIMING(t0, t1, t2, t3, t4, t5, t6) \
+		((t0) << 28 | (t1) << 22 | (t2) << 16 | \
+		(t3) << 12 | (t4) << 8 | (t5) << 4 | (t6))
 #define _NFI_INTR_EN		(0x10)
 #define		INTR_AHB_DONE_EN	BIT(6)
 #define _NFI_INTR_STA		(0x14)
@@ -311,6 +314,7 @@ struct mtk_nand_type {
 	int PAGEFMT_SPARE_63;
 	int PAGEFMT_SPARE_64;
 	int PAGEFMT_SPARE_SHIFT;
+	u8 nfi_clk_div;
 };
 
 struct mtk_nfc_bad_mark_ctl {
@@ -746,6 +750,59 @@ static void mtk_nfc_write_buf(struct mtd_info *mtd, const u8 *buf, int len)
 
 	for (i = 0; i < len; i++)
 		mtk_nfc_write_byte(mtd, buf[i]);
+}
+
+static int mtk_nfc_setup_data_interface(struct mtd_info *mtd,
+					const struct nand_data_interface *conf,
+					bool check_only)
+{
+	struct mtk_nfc *nfc = nand_get_controller_data(mtd_to_nand(mtd));
+	const struct nand_sdr_timings *timings;
+	u32 rate;
+	u32 tpoecs, tprecs, tc2r, tw2r, twh, twst, trlt;
+
+	timings = nand_get_sdr_timings(conf);
+	if (IS_ERR(timings))
+		return -ENOTSUPP;
+
+	if (check_only)
+		return 0;
+
+	rate = clk_get_rate(nfc->clk.nfi_clk);
+	rate /= nfc->chip_data->nfi_clk_div;
+
+	/* turn clock rate into KHZ */
+	rate /= 1000;
+
+	tpoecs = max(timings->tALH_min, timings->tCLH_min) / 1000;
+	tpoecs = DIV_ROUND_UP(tpoecs * rate, 1000000);
+
+	tprecs = max(timings->tCLS_min, timings->tALS_min) / 1000;
+	tprecs = DIV_ROUND_UP(tprecs * rate, 1000000);
+
+	/* sdr interface has no tCR which means CE# low to RE# low */
+	tc2r = 0;
+
+	tw2r = timings->tWHR_min / 1000;
+	tw2r = DIV_ROUND_UP(tw2r * rate, 1000000);
+	tw2r = DIV_ROUND_UP(tw2r - 1, 2);
+
+	twh = max(timings->tREH_min, timings->tWH_min) / 1000;
+	twh = DIV_ROUND_UP(twh * rate, 1000000) - 1;
+
+	twst = timings->tWP_min / 1000;
+	twst = DIV_ROUND_UP(twst * rate, 1000000) - 1;
+
+	trlt = max(timings->tREA_max, timings->tRP_min) / 1000;
+	trlt = DIV_ROUND_UP(trlt * rate, 1000000) - 1;
+
+	trlt = ACCTIMING(tpoecs, tprecs, tc2r, tw2r, twh, twst, trlt);
+
+	nfi_writel(nfc, trlt, NFI_ACCCON);
+
+	dev_info(nfc->dev, "set ACC timing as 0x%x\n", trlt);
+
+	return 0;
 }
 
 static int mtk_nfc_sector_encode(struct nand_chip *chip, u8 *data)
@@ -1560,6 +1617,7 @@ static int mtk_nfc_nand_chip_init(struct device *dev, struct mtk_nfc *nfc,
 	nand->read_byte = mtk_nfc_read_byte;
 	nand->read_buf = mtk_nfc_read_buf;
 	nand->cmd_ctrl = mtk_nfc_cmd_ctrl;
+	nand->setup_data_interface = mtk_nfc_setup_data_interface;
 
 	/* set default mode in case dt entry is missing */
 	nand->ecc.mode = NAND_ECC_HW;
@@ -1656,6 +1714,7 @@ static const struct mtk_nand_type nfc_mt2701 = {
 	.PAGEFMT_SPARE_63 = 0xe,
 	.PAGEFMT_SPARE_64 = 0xf,
 	.PAGEFMT_SPARE_SHIFT = 4,
+	.nfi_clk_div = 1,
 };
 
 static const struct mtk_nand_type nfc_mt7622 = {
@@ -1670,6 +1729,7 @@ static const struct mtk_nand_type nfc_mt7622 = {
 	.adjust_spare_fmt = mt7622_adjust_spare_fmt,
 	.PAGEFMT_SPARE_SHIFT = 4,
 	.nfc_adjust_ecc = mt7622_nfc_adjust_ecc,
+	.nfi_clk_div = 4,
 };
 
 static const struct mtk_nand_type nfc_mt2712 = {
@@ -1684,6 +1744,7 @@ static const struct mtk_nand_type nfc_mt2712 = {
 	.PAGEFMT_SPARE_63 = 0xf,
 	.PAGEFMT_SPARE_64 = 0x10,
 	.PAGEFMT_SPARE_SHIFT = 16,
+	.nfi_clk_div = 2,
 };
 
 static const struct of_device_id mtk_nfc_id_table[] = {
@@ -1843,8 +1904,6 @@ static int mtk_nfc_resume(struct device *dev)
 	ret = mtk_nfc_enable_clk(dev, &nfc->clk);
 	if (ret)
 		return ret;
-
-	mtk_nfc_hw_init(nfc);
 
 	/* reset NAND chip if VCC was powered off */
 	list_for_each_entry(chip, &nfc->chips, node) {
