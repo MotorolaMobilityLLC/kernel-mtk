@@ -1036,6 +1036,7 @@ extern int wind_hbm_flag;
 extern int wind_standby_flag;
 static int standby_level = 0;
 extern int hbm_last_level;
+int wind_hbm_last_flag=1;
 #endif
 
 void mt_mt65xx_led_set(struct led_classdev *led_cdev, enum led_brightness level)
@@ -1044,7 +1045,7 @@ void mt_mt65xx_led_set(struct led_classdev *led_cdev, enum led_brightness level)
 	    container_of(led_cdev, struct mt65xx_led_data, cdev);
 	#ifdef CONFIG_WIND_BACKLIGHT_CURVE
 	int temp = led_data->level;
-	printk("wind_hbm after temp = %d,level = %d,last_level = %d\n",temp,level,hbm_last_level);
+	printk("wind_hbm after temp = %d,level = %d,last_level = %d,wind_hbm_flag %d\n",temp,level,hbm_last_level,wind_hbm_flag);
 	if(wind_hbm_flag == 0){
 		if(led_data->level < level){
 		//	wind_standby_flag = 1;
@@ -1060,11 +1061,13 @@ void mt_mt65xx_led_set(struct led_classdev *led_cdev, enum led_brightness level)
 	/* spin_lock_irqsave(&leds_lock, flags); */
 	
 #ifdef CONFIG_MTK_AAL_SUPPORT
-	if ((led_data->level != level)||((wind_hbm_flag == 0)) {
+	if ((led_data->level != level)||(wind_hbm_flag != wind_hbm_last_flag)) {
 		#ifdef CONFIG_WIND_BACKLIGHT_CURVE
+		printk("wind_hbm wind_hbm_last_flag = %d,wind_hbm_flag = %d\n",wind_hbm_last_flag,wind_hbm_flag);
+		wind_hbm_last_flag=wind_hbm_flag;
 		if(wind_standby_flag == 1 && wind_hbm_flag == 0){
-			hbm_last_level = level;
-//			printk("wind_hbm temp = %d,level = %d,last_level = %d\n",temp,level,hbm_last_level);
+				hbm_last_level = level;
+			printk("wind_hbm temp = %d,level = %d,last_level = %d\n",temp,level,hbm_last_level);
 			if(level == 0){
 				standby_level = temp;
 			}else if(temp== 0){
