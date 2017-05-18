@@ -1061,7 +1061,7 @@ void mt_mt65xx_led_set(struct led_classdev *led_cdev, enum led_brightness level)
 	/* spin_lock_irqsave(&leds_lock, flags); */
 	
 #ifdef CONFIG_MTK_AAL_SUPPORT
-	if ((led_data->level != level)||(wind_hbm_flag != wind_hbm_last_flag)) {
+	if ((led_data->level != level)||(wind_hbm_flag != wind_hbm_last_flag)||(wind_hbm_flag==0)) {
 		#ifdef CONFIG_WIND_BACKLIGHT_CURVE
 		printk("wind_hbm wind_hbm_last_flag = %d,wind_hbm_flag = %d\n",wind_hbm_last_flag,wind_hbm_flag);
 		wind_hbm_last_flag=wind_hbm_flag;
