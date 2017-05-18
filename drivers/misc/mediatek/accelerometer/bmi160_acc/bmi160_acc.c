@@ -759,7 +759,7 @@ static int bma_i2c_read_block(struct i2c_client *client,
 	} else {
 		err = 0;/*no error*/
 	}
-
+	mdelay(1);/*delay 1ms for every read*/
 	return err;
 }
 
@@ -792,6 +792,7 @@ static int bma_i2c_write_block(struct i2c_client *client, u8 addr,
 	} else {
 		err = 0;/*no error*/
 	}
+	mdelay(1);/*delay 1ms for every read*/
 	return err;
 }
 
@@ -936,6 +937,7 @@ static int BMI160_ACC_ResetCalibration(struct i2c_client *client)
 	#else
 	u8 ofs[4]={0,0,0,0};
 	err = bma_i2c_write_block(client, BMI160_ACC_REG_OFSX, ofs, 4);
+	mdelay(1);
 	if(err) {
 		GSE_ERR("error: %d\n", err);
 	}
@@ -1051,6 +1053,7 @@ static int BMI160_ACC_WriteCalibration(struct i2c_client *client, int dat[BMI160
 		obj->cali_sw[BMI160_ACC_AXIS_X], obj->cali_sw[BMI160_ACC_AXIS_Y], obj->cali_sw[BMI160_ACC_AXIS_Z]);
 
 	err = bma_i2c_write_block(obj->client, BMI160_ACC_REG_OFSX, obj->offset, BMI160_ACC_AXES_NUM);
+	mdelay(1);
 	if(err) {
 		GSE_ERR("write offset fail: %d\n", err);
 		return err;
@@ -1114,7 +1117,8 @@ static int BMI160_ACC_SetPowerMode(struct i2c_client *client, bool enable)
 	}
 	else
 	{
-		databuf[0] = CMD_PMU_ACC_SUSPEND;
+//		databuf[0] = CMD_PMU_ACC_SUSPEND;
+		databuf[0] = CMD_PMU_ACC_NORMAL;
 #ifdef CONFIG_MOTO_AOD_BASE_ON_AP_SENSORS
 		if (obj->mEnabled) {
 			res = bma_i2c_read_block(client, 0x40, &databuf[1], 1);
@@ -1144,9 +1148,8 @@ if(enable == true)
                    {
                       power=true;
                       printk("wangshuai--bma160 acc set power mode data is ok = 0x%x\n",data1[0]);
-			break;
-                    }
-		
+					 break;
+			}
 	}
 }
 else
@@ -1176,7 +1179,7 @@ power=false;
 #endif
 
 	sensor_power = enable;
-	mdelay(4);
+	mdelay(5);
 	mutex_unlock(&obj->lock);
 
 	return BMI160_ACC_SUCCESS;
@@ -1195,7 +1198,7 @@ static int BMI160_ACC_SetDataFormat(struct i2c_client *client, u8 dataformat)
 		BMI160_USER_ACC_RANGE, dataformat);
 	res += bma_i2c_write_block(client,
 		BMI160_USER_ACC_RANGE__REG, &databuf[0], 1);
-	mdelay(1);
+	mdelay(5);
 
 	if(res < 0)
 	{
@@ -1223,7 +1226,7 @@ static int BMI160_ACC_SetBWRate(struct i2c_client *client, u8 bwrate)
 		BMI160_USER_ACC_CONF_ODR, bwrate);
 	res += bma_i2c_write_block(client,
 		BMI160_USER_ACC_CONF_ODR__REG, &databuf[0], 1);
-	mdelay(1);
+	mdelay(5);
 
 	if(res < 0)
 	{
@@ -1259,7 +1262,7 @@ static int BMI160_ACC_SetOSR4(struct i2c_client *client)
 			accel_undersampling_parameter);
 	res += bma_i2c_write_block(client,
 		BMI160_USER_ACC_CONF_ODR__REG, &databuf[0], 1);
-	mdelay(1);
+	mdelay(5);
 
 	if(res < 0)
 	{
@@ -1366,14 +1369,14 @@ static int bmi160_acc_init_client(struct i2c_client *client, int reset_cali)
 		return res;
 	}
 	GSE_LOG("BMI160_ACC_SetPowerMode OK!\n");
-*/
+
         res = BMI160_ACC_SetPowerMode(client, true);
 	mdelay(10);
 	if(res != BMI160_ACC_SUCCESS)
 	{
 		return res;
 	}
-	GSE_LOG("BMI160_ACC_SetPowerMode true OK!\n");       
+	GSE_LOG("BMI160_ACC_SetPowerMode true OK!\n");      */ 
 	res = BMI160_ACC_SetPowerMode(client, false);
 	mdelay(10);
 	if(res != BMI160_ACC_SUCCESS)
@@ -1522,6 +1525,7 @@ static int BMI160_ACC_ReadSensorData(struct i2c_client *client, char *buf, int b
 		databuf[BMI160_ACC_AXIS_Y] += obj->cali_sw[BMI160_ACC_AXIS_Y];
 		databuf[BMI160_ACC_AXIS_Z] += obj->cali_sw[BMI160_ACC_AXIS_Z];
 
+//		printk("wangshuai--%s-databuf-x,y,z=%d,%d,%d\n",__func__,databuf[BMI160_ACC_AXIS_X],databuf[BMI160_ACC_AXIS_Y],databuf[BMI160_ACC_AXIS_Z]);
 		//GSE_LOG("cali_sw x=%d, y=%d, z=%d \n",obj->cali_sw[BMI160_ACC_AXIS_X],obj->cali_sw[BMI160_ACC_AXIS_Y],obj->cali_sw[BMI160_ACC_AXIS_Z]);
 
 		/*remap coordinate*/
@@ -1538,6 +1542,7 @@ static int BMI160_ACC_ReadSensorData(struct i2c_client *client, char *buf, int b
 		acc[BMI160_ACC_AXIS_Y] = acc[BMI160_ACC_AXIS_Y] * GRAVITY_EARTH_1000 / obj->reso->sensitivity;
 		acc[BMI160_ACC_AXIS_Z] = acc[BMI160_ACC_AXIS_Z] * GRAVITY_EARTH_1000 / obj->reso->sensitivity;
 
+		printk("wangshuai--%s--x,y,z=%d,%d,%d\n",__func__,acc[BMI160_ACC_AXIS_X],acc[BMI160_ACC_AXIS_Y],acc[BMI160_ACC_AXIS_Z]);
 		sprintf(buf, "%04x %04x %04x", acc[BMI160_ACC_AXIS_X], acc[BMI160_ACC_AXIS_Y], acc[BMI160_ACC_AXIS_Z]);
 		if(atomic_read(&obj->trace) & BMA_TRC_IOCTL)
 		{
@@ -2877,6 +2882,8 @@ static ssize_t show_sensordata_value(struct device_driver *ddri, char *buf)
 		return 0;
 	}
 	BMI160_ACC_ReadSensorData(client, strbuf, BMI160_BUFSIZE);
+//	printk("wangshuai--%s--getsensordata\n",__func__);
+
 	//BMI160_ACC_ReadRawData(client, strbuf);
 	return snprintf(buf, PAGE_SIZE, "%s\n", strbuf);
 }
@@ -4329,6 +4336,7 @@ static long bmi160_acc_unlocked_ioctl(struct file *file, unsigned int cmd, unsig
 			}
                          
 			BMI160_ACC_ReadSensorData(client, strbuf, BMI160_BUFSIZE);
+//			printk("wangshuai--%s--readsensordata x,y,z=%x,%x,%x\n",__func__,cali[BMI160_ACC_AXIS_X],cali[BMI160_ACC_AXIS_Y],cali[BMI160_ACC_AXIS_Z]);
 			if(copy_to_user(data, strbuf, strlen(strbuf)+1))
 			{
 				err = -EFAULT;
@@ -4359,6 +4367,7 @@ static long bmi160_acc_unlocked_ioctl(struct file *file, unsigned int cmd, unsig
 				break;
 			}
 			BMI160_ACC_ReadRawData(client, strbuf);
+//			printk("wangshuai--%s--read-rawdata x,y,z=%x,%x,%x\n",__func__,cali[BMI160_ACC_AXIS_X],cali[BMI160_ACC_AXIS_Y],cali[BMI160_ACC_AXIS_Z]);
 			if(copy_to_user(data, &strbuf, strlen(strbuf)+1))
 			{
 				err = -EFAULT;
@@ -4388,6 +4397,8 @@ static long bmi160_acc_unlocked_ioctl(struct file *file, unsigned int cmd, unsig
 				cali[BMI160_ACC_AXIS_X] = sensor_data.x * obj->reso->sensitivity / GRAVITY_EARTH_1000;
 				cali[BMI160_ACC_AXIS_Y] = sensor_data.y * obj->reso->sensitivity / GRAVITY_EARTH_1000;
 				cali[BMI160_ACC_AXIS_Z] = sensor_data.z * obj->reso->sensitivity / GRAVITY_EARTH_1000;
+//				printk("wangshuai--%s--set-cali x,y,z=%x,%x,%x\n",__func__,cali[BMI160_ACC_AXIS_X],cali[BMI160_ACC_AXIS_Y],cali[BMI160_ACC_AXIS_Z]);
+
 				err = BMI160_ACC_WriteCalibration(client, cali);
 			}
 			break;
@@ -4407,10 +4418,11 @@ static long bmi160_acc_unlocked_ioctl(struct file *file, unsigned int cmd, unsig
 			if(err) {
 				break;
 			}
-
+//			printk("wangshuai--%s--get-calidata x,y,z=%x,%x,%x\n",__func__,cali[BMI160_ACC_AXIS_X],cali[BMI160_ACC_AXIS_Y],cali[BMI160_ACC_AXIS_Z]);
 			sensor_data.x = cali[BMI160_ACC_AXIS_X] * GRAVITY_EARTH_1000 / obj->reso->sensitivity;
 			sensor_data.y = cali[BMI160_ACC_AXIS_Y] * GRAVITY_EARTH_1000 / obj->reso->sensitivity;
 			sensor_data.z = cali[BMI160_ACC_AXIS_Z] * GRAVITY_EARTH_1000 / obj->reso->sensitivity;
+//			printk("wangshuai--%s--get-cali-sensordata x,y,z=%x,%x,%x\n",__func__,sensor_data.x,sensor_data.y,sensor_data.z);
 			if(copy_to_user(data, &sensor_data, sizeof(sensor_data)))
 			{
 				err = -EFAULT;
@@ -4847,13 +4859,13 @@ static int bmi160_acc_suspend(struct device *dev)
 	struct i2c_client *client = to_i2c_client(dev);
 	struct bmi160_acc_i2c_data *obj = i2c_get_clientdata(client);
 	//struct bmi160_acc_i2c_data *obj = obj_i2c_data;
-	 pm_message_t msg;
+	// pm_message_t msg;
 	int err = 0;
 
 	GSE_FUN();
 
-	if(msg.event == PM_EVENT_SUSPEND)
-	{
+//	if(msg.event == PM_EVENT_SUSPEND)
+//	{
 		if(obj == NULL)
 		{
 			GSE_ERR("null pointer!!\n");
@@ -4920,13 +4932,13 @@ static int bmi160_acc_suspend(struct device *dev)
 #endif //BMC050_BLOCK_DAEMON_ON_SUSPEND
 
 //tad3sgh add --
-		err = BMI160_ACC_SetPowerMode(obj->client, false);
+/*		err = BMI160_ACC_SetPowerMode(obj->client, false);
 		if(err) {
 			GSE_ERR("write power control fail!!\n");
 			return err;
-		}
-		BMI160_ACC_power(obj->hw, 0);
-	}
+		}  
+		BMI160_ACC_power(obj->hw, 0);  
+	} */
 	return err;
 }
 /*----------------------------------------------------------------------------*/
@@ -4935,7 +4947,7 @@ static int bmi160_acc_resume(struct device *dev)
 	 struct i2c_client *client = to_i2c_client(dev);
     struct bmi160_acc_i2c_data *obj = i2c_get_clientdata(client);
 //	struct bmi160_acc_i2c_data *obj = obj_i2c_data;
-	int err;
+	//int err;
 
 	GSE_FUN();
 
@@ -4944,15 +4956,15 @@ static int bmi160_acc_resume(struct device *dev)
 		GSE_ERR("null pointer!!\n");
 		return -EINVAL;
 	}
-
+/*
 	BMI160_ACC_power(obj->hw, 1);
 	err = bmi160_acc_init_client(client, 0);
 	if(err) {
 		GSE_ERR("initialize client fail!!\n");
 		return err;
-	}
-	BMI160_ACC_SetPowerMode(client,power);
-	mdelay(10);
+	}  */
+//	BMI160_ACC_SetPowerMode(client,power);
+//	mdelay(10);
 	//tad3sgh add ++
 #ifdef BMC050_BLOCK_DAEMON_ON_SUSPEND
 	/* clear driver suspend flag */
@@ -5196,8 +5208,8 @@ static struct i2c_driver bmi160_acc_i2c_driver = {
 	.probe      		= bmi160_acc_i2c_probe,
 	.remove    			= bmi160_acc_i2c_remove,
 //#if !defined(CONFIG_HAS_EARLYSUSPEND)
-//    .suspend            = bmi160_acc_suspend,
-//    .resume             = bmi160_acc_resume,
+   // .suspend            = bmi160_acc_suspend,
+   // .resume             = bmi160_acc_resume,
 //#endif
 	.id_table = bmi160_acc_i2c_id,
 };
@@ -5325,6 +5337,7 @@ static int bmi160_acc_get_data(int* x ,int* y,int* z, int* status)
 	char buff[BMI160_BUFSIZE];
 	/* use acc raw data for gsensor */
 	BMI160_ACC_ReadSensorData(obj_i2c_data->client, buff, BMI160_BUFSIZE);
+//	printk("wangshuai--%s--getsensordata\n",__func__);
 
 	sscanf(buff, "%x %x %x", x, y, z);
 	*status = SENSOR_STATUS_ACCURACY_MEDIUM;
