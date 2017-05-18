@@ -302,6 +302,8 @@
 #define AFE_TDM_CON_WLEN_SET(x)    ((x) << 8)
 #define AFE_TDM_CON_LRCK_DELAY             (0x1 << 5)
 #define AFE_TDM_CON_LRCK_DELAY_SET(x)    ((x) << 5)
+#define AFE_TDM_CON_LEFT_ALIGN             (0x1 << 4)
+#define AFE_TDM_CON_LEFT_ALIGN_SET(x)    ((x) << 4)
 #define AFE_TDM_CON_DELAY             (0x1 << 3)
 #define AFE_TDM_CON_DELAY_SET(x)    ((x) << 3)
 #define AFE_TDM_CON_INV_LRCK             (0x1 << 2)

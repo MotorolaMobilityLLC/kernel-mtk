@@ -1094,29 +1094,37 @@ static int mt2701_afe_tdmio_set_sysclk(struct snd_soc_dai *dai, int clk_id,
 	return 0;
 }
 
-static int mt2701_tdmio_set_fmt(struct snd_soc_dai *dai, unsigned int fmt)
+static int mt2701_set_tdm_fmt(struct snd_soc_dai *dai, unsigned int fmt, int tdm_num)
 {
 	struct mtk_base_afe *afe = snd_soc_dai_get_drvdata(dai);
-	int tdm_num = mt2701_dai_num_to_tdm(afe, dai->id);
 	struct mt2701_afe_private *afe_priv = afe->platform_priv;
 	struct mt2701_tdm_data *tdm_data = (struct mt2701_tdm_data *)afe_priv->tdm_path[tdm_num].tdm_data;
 
 	switch (fmt & SND_SOC_DAIFMT_FORMAT_MASK) {
-	case SND_SOC_DAIFMT_DSP_A:
-		regmap_update_bits(afe->regmap, tdm_data->tdm_ctrl_reg, AFE_TDM_CON_DELAY,
-				 AFE_TDM_CON_DELAY_SET(1));
-		break;
-
-	case SND_SOC_DAIFMT_DSP_B:
+	case SND_SOC_DAIFMT_LEFT_J:
+	/* falling through */
+	case SND_SOC_DAIFMT_RIGHT_J:
 		regmap_update_bits(afe->regmap, tdm_data->tdm_ctrl_reg, AFE_TDM_CON_DELAY,
 				 AFE_TDM_CON_DELAY_SET(0));
 		break;
 
+	case SND_SOC_DAIFMT_I2S:
+	/* falling through */
+	case SND_SOC_DAIFMT_DSP_A:
 	default:
 		regmap_update_bits(afe->regmap, tdm_data->tdm_ctrl_reg, AFE_TDM_CON_DELAY,
 				 AFE_TDM_CON_DELAY_SET(1));
 		break;
 
+	}
+
+	if (tdm_num != MT2701_TDMI) {
+		if ((fmt & SND_SOC_DAIFMT_FORMAT_MASK) == SND_SOC_DAIFMT_RIGHT_J)
+			regmap_update_bits(afe->regmap, tdm_data->tdm_ctrl_reg, AFE_TDM_CON_LEFT_ALIGN,
+				 AFE_TDM_CON_LEFT_ALIGN_SET(0));
+		else
+			regmap_update_bits(afe->regmap, tdm_data->tdm_ctrl_reg, AFE_TDM_CON_LEFT_ALIGN,
+				 AFE_TDM_CON_LEFT_ALIGN_SET(1));
 	}
 
 	switch (fmt & SND_SOC_DAIFMT_INV_MASK) {
@@ -1153,6 +1161,13 @@ static int mt2701_tdmio_set_fmt(struct snd_soc_dai *dai, unsigned int fmt)
 	}
 	return 0;
 
+}
+
+static int mt2701_tdmio_set_fmt(struct snd_soc_dai *dai, unsigned int fmt)
+{
+	struct mtk_base_afe *afe = snd_soc_dai_get_drvdata(dai);
+
+	return mt2701_set_tdm_fmt(dai, fmt, mt2701_dai_num_to_tdm(afe, dai->id));
 }
 
 
@@ -1246,59 +1261,9 @@ static int mt2701_tdmio_coclk_set_fmt(struct snd_soc_dai *dai, unsigned int fmt)
 {
 	struct mtk_base_afe *afe = snd_soc_dai_get_drvdata(dai);
 	struct mt2701_afe_private *afe_priv = afe->platform_priv;
-	int tdm_num = afe_priv->tdm_coclk_info.gpio_src;
-	struct mt2701_tdm_data *tdm_data = (struct mt2701_tdm_data *)afe_priv->tdm_path[tdm_num].tdm_data;
 
-	switch (fmt & SND_SOC_DAIFMT_FORMAT_MASK) {
-	case SND_SOC_DAIFMT_DSP_A:
-		regmap_update_bits(afe->regmap, tdm_data->tdm_ctrl_reg,
-				AFE_TDM_CON_DELAY, AFE_TDM_CON_DELAY_SET(1));
-		break;
-
-	case SND_SOC_DAIFMT_DSP_B:
-		regmap_update_bits(afe->regmap, tdm_data->tdm_ctrl_reg,
-				AFE_TDM_CON_DELAY, AFE_TDM_CON_DELAY_SET(0));
-		break;
-
-	default:
-		regmap_update_bits(afe->regmap, tdm_data->tdm_ctrl_reg,
-				AFE_TDM_CON_DELAY, AFE_TDM_CON_DELAY_SET(1));
-		break;
-
-	}
-
-	switch (fmt & SND_SOC_DAIFMT_INV_MASK) {
-	case SND_SOC_DAIFMT_NB_NF:
-		regmap_update_bits(afe->regmap, tdm_data->tdm_ctrl_reg,
-				AFE_TDM_CON_INV_BCK, AFE_TDM_CON_INV_BCK_SET(0));
-		regmap_update_bits(afe->regmap, tdm_data->tdm_ctrl_reg,
-				AFE_TDM_CON_INV_LRCK, AFE_TDM_CON_INV_LRCK_SET(0));
-		break;
-	case SND_SOC_DAIFMT_NB_IF:
-		regmap_update_bits(afe->regmap, tdm_data->tdm_ctrl_reg,
-				AFE_TDM_CON_INV_BCK, AFE_TDM_CON_INV_BCK_SET(0));
-		regmap_update_bits(afe->regmap, tdm_data->tdm_ctrl_reg,
-				AFE_TDM_CON_INV_LRCK, AFE_TDM_CON_INV_LRCK_SET(1));
-		break;
-	case SND_SOC_DAIFMT_IB_NF:
-		regmap_update_bits(afe->regmap, tdm_data->tdm_ctrl_reg,
-				AFE_TDM_CON_INV_BCK, AFE_TDM_CON_INV_BCK_SET(1));
-		regmap_update_bits(afe->regmap, tdm_data->tdm_ctrl_reg,
-				AFE_TDM_CON_INV_LRCK, AFE_TDM_CON_INV_LRCK_SET(0));
-		break;
-	case SND_SOC_DAIFMT_IB_IF:
-		regmap_update_bits(afe->regmap, tdm_data->tdm_ctrl_reg,
-				AFE_TDM_CON_INV_BCK, AFE_TDM_CON_INV_BCK_SET(1));
-		regmap_update_bits(afe->regmap, tdm_data->tdm_ctrl_reg,
-				AFE_TDM_CON_INV_LRCK, AFE_TDM_CON_INV_LRCK_SET(1));
-		break;
-	default:
-		regmap_update_bits(afe->regmap, tdm_data->tdm_ctrl_reg,
-				AFE_TDM_CON_INV_BCK, AFE_TDM_CON_INV_BCK_SET(0));
-		regmap_update_bits(afe->regmap, tdm_data->tdm_ctrl_reg,
-				AFE_TDM_CON_INV_LRCK, AFE_TDM_CON_INV_LRCK_SET(0));
-		break;
-	}
+	mt2701_set_tdm_fmt(dai, fmt, afe_priv->tdm_coclk_info.src);
+	mt2701_set_tdm_fmt(dai, fmt, MT2701_TDMI);
 	return 0;
 
 }
@@ -3079,21 +3044,11 @@ static int mt2701_afe_pcm_dev_probe(struct platform_device *pdev)
 	of_property_read_s32(afe->dev->of_node, "tdm-mode", &tdm_mode);
 
 	switch (tdm_mode) {
-	case TDM_MODE_COCLK_O1_GPIO_O1:
+	case TDM_MODE_COCLK_O1:
 		afe_priv->tdm_coclk_info.src = MT2701_TDMO_1;
-		afe_priv->tdm_coclk_info.gpio_src = MT2701_TDMO_1;
 		break;
-	case TDM_MODE_COCLK_O1_GPIO_IN:
-		afe_priv->tdm_coclk_info.src = MT2701_TDMO_1;
-		afe_priv->tdm_coclk_info.gpio_src = MT2701_TDMI;
-		break;
-	case TDM_MODE_COCLK_O2_GPIO_O2:
+	case TDM_MODE_COCLK_O2:
 		afe_priv->tdm_coclk_info.src = MT2701_TDMO_2;
-		afe_priv->tdm_coclk_info.gpio_src = MT2701_TDMO_2;
-		break;
-	case TDM_MODE_COCLK_O2_GPIO_IN:
-		afe_priv->tdm_coclk_info.src = MT2701_TDMO_2;
-		afe_priv->tdm_coclk_info.gpio_src = MT2701_TDMI;
 		break;
 	}
 
