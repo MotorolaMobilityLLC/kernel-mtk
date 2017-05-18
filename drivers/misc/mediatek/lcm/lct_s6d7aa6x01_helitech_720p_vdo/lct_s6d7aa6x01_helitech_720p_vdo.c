@@ -118,12 +118,14 @@ struct LCM_setting_table {
 };
 
 static struct LCM_setting_table lcm_suspend_setting[] = {
-	{0x28, 0, {} },
+	/* Display off sequence */
+	{0x28, 1, {0x00} },
 	{REGFLAG_DELAY, 20, {} },
-	{0x10, 0, {} },
+
+	/* Sleep Mode On */
+	{0x10, 1, {0x00} },
 	{REGFLAG_DELAY, 120, {} },
-	{0x4F, 1, {0x01} },
-	{REGFLAG_DELAY, 120, {} }
+	{REGFLAG_END_OF_TABLE, 0x00, {} }
 };
 
 static struct LCM_setting_table lcm_initialization_setting[] = {
