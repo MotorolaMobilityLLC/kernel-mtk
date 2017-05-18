@@ -1637,8 +1637,9 @@ static int ltr578_devinit(void)
 	struct i2c_client *client = ltr578_obj->client;
 
 	//struct ltr578_priv *obj = ltr578_obj;   
-	
-	mdelay(PON_DELAY);
+	//modify by hukai1@longcheer.com 2107.5.18 start
+	mdelay(5);//mdelay(PON_DELAY);
+        //modify by hukai1@longcheer.com 2107.5.18 end
 
 	// Enable PS at startup
 
@@ -1652,9 +1653,11 @@ static int ltr578_devinit(void)
 	init_als_gain = ALS_RANGE_6;
 	als_gainrange = init_als_gain;//Set global variable
 
-	res = ltr578_als_enable(init_als_gain);
-	if (res < 0)
-		goto EXIT_ERR;
+        //modify by hukai1@longcheer.com 2107.5.18 start
+	//res = ltr578_als_enable(init_als_gain);
+	//if (res < 0)
+		//goto EXIT_ERR;
+        //modify by hukai1@longcheer.com 2107.5.18 end
 
 	if((res = ltr578_setup_eint(client))!=0)
 	{
@@ -1663,11 +1666,11 @@ static int ltr578_devinit(void)
 	}
 
 	res = 0;
-
-	EXIT_ERR:
-	APS_ERR("init dev: %d\n", res);
-	return res;
-
+        //modify by hukai1@longcheer.com 2107.5.18 start
+        //EXIT_ERR:
+	//APS_ERR("init dev: %d\n", res);
+        return res;
+        //modify by hukai1@longcheer.com 2107.5.18 end
 }
 /*----------------------------------------------------------------------------*/
 
