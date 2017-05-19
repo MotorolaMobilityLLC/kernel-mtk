@@ -1117,8 +1117,8 @@ static int BMI160_ACC_SetPowerMode(struct i2c_client *client, bool enable)
 	}
 	else
 	{
-//		databuf[0] = CMD_PMU_ACC_SUSPEND;
-		databuf[0] = CMD_PMU_ACC_NORMAL;
+		databuf[0] = CMD_PMU_ACC_SUSPEND;
+//		databuf[0] = CMD_PMU_ACC_NORMAL;
 #ifdef CONFIG_MOTO_AOD_BASE_ON_AP_SENSORS
 		if (obj->mEnabled) {
 			res = bma_i2c_read_block(client, 0x40, &databuf[1], 1);
@@ -1140,7 +1140,6 @@ if(enable == true)
 		res = bma_i2c_write_block(client,
 				BMI160_CMD_COMMANDS__REG, &databuf[0], 1);
 		mdelay(8);
-
 		bma_i2c_read_block(bmi160_acc_i2c_client, 0x03, data1, 1);
                printk("wangshuai--bma160 acc set power mode data = 0x%x ; i=%d \n",data1[0],i);
 		//if(data1[0] == 0x10 || data1[0] == 0x14)
@@ -1151,6 +1150,7 @@ if(enable == true)
 					 break;
 			}
 	}
+	msleep(1000);
 }
 else
 {
