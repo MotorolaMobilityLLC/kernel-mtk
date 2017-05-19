@@ -1055,6 +1055,10 @@ void mt_mt65xx_led_set(struct led_classdev *led_cdev, enum led_brightness level)
 			wind_standby_flag = 1;
 		}
 	}
+	if((wind_hbm_flag==1)&&(255==level))
+	{
+		level=254;
+	}
 //	printk("tuwenzanled led_data->level =%d,level = %d\n",led_data->level,level);
 	#endif
 	/* unsigned long flags; */
