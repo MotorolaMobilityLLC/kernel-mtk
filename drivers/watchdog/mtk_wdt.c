@@ -43,6 +43,7 @@
 #include <linux/reset-controller.h>
 #include <linux/reset.h>
 #include <linux/sched.h>
+#include <asm/system_misc.h>
 #ifdef CONFIG_MT6397_MISC
 #include <linux/mfd/mt6397/rtc_misc.h>
 #endif
@@ -219,11 +220,12 @@ static int mtk_reset_handler(struct notifier_block *this, unsigned long mode,
 		#endif
 	}
 
-	while (1) {
-		writel(WDT_SWRST_KEY, wdt_base + WDT_SWRST);
-		mdelay(5);
+	if (!arm_pm_restart) {
+		while (1) {
+			writel(WDT_SWRST_KEY, wdt_base + WDT_SWRST);
+			mdelay(5);
+		}
 	}
-
 	return NOTIFY_DONE;
 }
 
@@ -412,10 +414,18 @@ static int mtk_wdt_probe(struct platform_device *pdev)
 
 	mtk_wdt->restart_handler.notifier_call = mtk_reset_handler;
 	mtk_wdt->restart_handler.priority = 128;
-	err = register_restart_handler(&mtk_wdt->restart_handler);
-	if (err)
-		dev_warn(&pdev->dev,
-			"cannot register restart handler (err=%d)\n", err);
+	if (arm_pm_restart) {
+		dev_info(&pdev->dev, "register restart_handler on reboot_notifier_list for psci reset\n");
+		err = register_reboot_notifier(&mtk_wdt->restart_handler);
+		if (err != 0)
+			dev_warn(&pdev->dev,
+				"cannot register reboot notifier (err=%d)\n", err);
+	} else {
+		err = register_restart_handler(&mtk_wdt->restart_handler);
+		if (err)
+			dev_warn(&pdev->dev,
+				"cannot register restart handler (err=%d)\n", err);
+	}
 
 	dev_info(&pdev->dev, "Watchdog enabled (timeout=%d sec, nowayout=%d)\n",
 			mtk_wdt->wdt_dev.timeout, nowayout);
