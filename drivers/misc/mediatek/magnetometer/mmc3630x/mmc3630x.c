@@ -2680,14 +2680,14 @@ static int mmc3630x_m_enable(int en)
 	wake_up(&open_wq);
 	return err;
 }
-
+//modify for delay hukai1@longcheer.com 20170519 start
 static int mmc3630x_m_set_delay(u64 ns)
 {
     int value=0;
 	value = (int)ns/1000/1000;
-	if(value <= 20)
+	if(value <= 10)
     {
-        mmcd_delay = 20;
+        mmcd_delay = 10;
     }
     else{
         mmcd_delay = value;
@@ -2695,6 +2695,7 @@ static int mmc3630x_m_set_delay(u64 ns)
 
 	return 0;
 }
+//modify for delay hukai1@longcheer.com 20170519 end
 static int mmc3630x_m_open_report_data(int open)
 {
 	return 0;
@@ -2721,14 +2722,14 @@ static int mmc3630x_o_enable(int en)
 	wake_up(&open_wq);
 	return en;
 }
-
+//modify for delay hukai1@longcheer.com 20170519 start
 static int mmc3630x_o_set_delay(u64 ns)
 {
 	int value=0;
 	value = (int)ns/1000/1000;
-	if(value <= 20)
+	if(value <= 10)
 	{
-		mmcd_delay = 20;
+		mmcd_delay = 10;
 	}
 	else{
 		mmcd_delay = value;
@@ -2737,6 +2738,7 @@ static int mmc3630x_o_set_delay(u64 ns)
 	return 0;
 				
 }
+//modify for delay hukai1@longcheer.com 20170519 end
 static int mmc3630x_o_open_report_data(int open)
 {
 	return 0;
