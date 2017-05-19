@@ -148,20 +148,11 @@
 				core1 {
 					cpu = <&cpu1>;
 				};
-				core2 {
-					cpu = <&cpu2>;
-				};
-				core3 {
-					cpu = <&cpu3>;
-				};
 			};
 
 			cluster1 {
 				core0 {
-					cpu = <&cpu4>;
-				};
-				core1 {
-					cpu = <&cpu5>;
+					cpu = <&cpu2>;
 				};
 			};
 		};
@@ -200,41 +191,7 @@
 					      &MT2712_CLUSTER_COST_0>;
 		};
 
-		cpu2: cpu@2 {
-			device_type = "cpu";
-			compatible = "arm,cortex-a35";
-			reg = <0x002>;
-			enable-method = "psci";
-			clocks = <&mcucfg CLK_MCU_MP0_SEL>,
-				 <&topckgen CLK_TOP_F_MP0_PLL1>;
-			clock-names = "cpu", "intermediate";
-			operating-points-v2 = <&cluster0_opp>;
-			#cooling-cells = <2>;
-			cooling-min-level = <0>;
-			cooling-max-level = <6>;
-			dynamic-power-coefficient = <263>;
-			sched-energy-costs = <&MT2712_CPU_COST_0
-					      &MT2712_CLUSTER_COST_0>;
-		};
-
-		cpu3: cpu@3 {
-			device_type = "cpu";
-			compatible = "arm,cortex-a35";
-			reg = <0x003>;
-			enable-method = "psci";
-			clocks = <&mcucfg CLK_MCU_MP0_SEL>,
-				 <&topckgen CLK_TOP_F_MP0_PLL1>;
-			clock-names = "cpu", "intermediate";
-			operating-points-v2 = <&cluster0_opp>;
-			#cooling-cells = <2>;
-			cooling-min-level = <0>;
-			cooling-max-level = <6>;
-			dynamic-power-coefficient = <263>;
-			sched-energy-costs = <&MT2712_CPU_COST_0
-					      &MT2712_CLUSTER_COST_0>;
-		};
-
-		cpu4: cpu@200 {
+		cpu2: cpu@200 {
 			device_type = "cpu";
 			compatible = "arm,cortex-a72";
 			reg = <0x200>;
@@ -251,22 +208,6 @@
 					      &MT2712_CLUSTER_COST_1>;
 		};
 
-		cpu5: cpu@201 {
-			device_type = "cpu";
-			compatible = "arm,cortex-a72";
-			reg = <0x201>;
-			enable-method = "psci";
-			clocks = <&mcucfg CLK_MCU_MP2_SEL>,
-				 <&topckgen CLK_TOP_F_BIG_PLL1>;
-			clock-names = "cpu", "intermediate";
-			operating-points-v2 = <&cluster1_opp>;
-			#cooling-cells = <2>;
-			cooling-min-level = <0>;
-			cooling-max-level = <8>;
-			dynamic-power-coefficient = <530>;
-			sched-energy-costs = <&MT2712_CPU_COST_1
-					      &MT2712_CLUSTER_COST_1>;
-		};
 		/include/ "mt2712-sched-energy.dtsi"
 	};
 
@@ -385,7 +326,7 @@
 				};
 				map@1 {
 					trip = <&target>;
-					cooling-device = <&cpu4 0 0>;
+					cooling-device = <&cpu2 0 0>;
 					contribution = <1024>;
 				};
 				map@2 {
