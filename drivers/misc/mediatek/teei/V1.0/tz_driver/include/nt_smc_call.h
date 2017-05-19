@@ -207,17 +207,18 @@ static inline void n_init_t_boot_stage1(
 	temp[2] = *p2;
 
 	__asm__ volatile(
-	        /* ".arch_extension sec\n" */
-	        "mov x0, %[fun_id]\n\t"
-	        "ldr x1, [%[temp], #0]\n\t"
-	        "ldr x2, [%[temp], #8]\n\t"
-	        "ldr x3, [%[temp], #16]\n\t"
-	        "smc 0\n\t"
-	        "str x2, [%[temp], #0]\n\t"
-	        "nop"
-	        : :
-	        [fun_id] "r" (N_INIT_T_BOOT_STAGE1), [temp] "r" (temp)
-	        : "x0", "x1", "x2", "x3", "memory");
+	    /* ".arch_extension sec\n" */
+	    "mov x0, %[fun_id]\n\t"
+	    "ldr x1, [%[temp], #0]\n\t"
+	    "ldr x2, [%[temp], #8]\n\t"
+	    "ldr x3, [%[temp], #16]\n\t"
+	    "smc 0\n\t"
+	    "str x2, [%[temp], #0]\n\t"
+	    "nop"
+	    : :
+	    [fun_id] "r" (N_INIT_T_BOOT_STAGE1), [temp] "r" (temp)
+	    : "x0", "x1", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12", 
+			"x13", "x14", "x15", "x16", "x17", "memory");
 	*p2 = temp[0];
 }
 
@@ -226,33 +227,35 @@ static inline void n_switch_to_t_os_stage2(uint64_t *p0)
 	uint64_t temp[3];
 
 	__asm__ volatile(
-	        /* ".arch_extension sec\n" */
-	        "mov x0, %[fun_id]\n\t"
-	        "mov x1, #0\n\t"
-	        "mov x2, #0\n\t"
-	        "mov x3, #0\n\t"
-	        "smc 0\n\t"
-	        "str x2, [%[temp], #0]\n\t"
-	        "nop"
-	        : :
-	        [fun_id] "r" (N_SWITCH_TO_T_OS_STAGE2), [temp] "r" (temp)
-	        : "x0", "x1", "x2", "x3",  "memory");
+	    /* ".arch_extension sec\n" */
+	    "mov x0, %[fun_id]\n\t"
+	    "mov x1, #0\n\t"
+	    "mov x2, #0\n\t"
+	    "mov x3, #0\n\t"
+	    "smc 0\n\t"
+	    "str x2, [%[temp], #0]\n\t"
+	    "nop"
+	    : :
+	    [fun_id] "r" (N_SWITCH_TO_T_OS_STAGE2), [temp] "r" (temp)
+	    : "x0", "x1", "x2", "x3",  "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12", 
+			"x13", "x14", "x15", "x16", "x17", "memory");
 	*p0 = temp[0];
 }
 
 static inline void nt_dump_state(void)
 {
 	__asm__ volatile(
-	        /* ".arch_extension sec\n" */
-	        "mov x0, %[fun_id]\n\t"
-	        "mov x1, #0\n\t"
-	        "mov x2, #0\n\t"
-	        "mov x3, #0\n\t"
-	        "smc 0\n\t"
-	        "nop"
-	        : :
-	        [fun_id] "r" (NT_DUMP_STATE)
-	        : "x0", "x1", "x2", "x3",  "memory");
+	    /* ".arch_extension sec\n" */
+	    "mov x0, %[fun_id]\n\t"
+	    "mov x1, #0\n\t"
+	    "mov x2, #0\n\t"
+	    "mov x3, #0\n\t"
+	    "smc 0\n\t"
+	    "nop"
+	    : :
+	    [fun_id] "r" (NT_DUMP_STATE)
+	    : "x0", "x1", "x2", "x3",  "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12", 
+			"x13", "x14", "x15", "x16", "x17", "memory");
 }
 
 static inline void n_get_param_in(
@@ -264,20 +267,21 @@ static inline void n_get_param_in(
 	uint64_t temp[4];
 
 	__asm__ volatile(
-	        /* ".arch_extension sec\n" */
-	        "mov r0, %[fun_id]\n\t"
-	        "mov x1, #0\n\t"
-	        "mov x2, #0\n\t"
-	        "mov x3, #0\n\t"
-	        "smc 0\n\t"
-	        "nop"
-	        "str x0, [%[temp]]\n\t"
-	        "str x1, [%[temp], #8]\n\t"
-	        "str x2, [%[temp], #16]\n\t"
-	        "str x3, [%[temp], #24]\n\t"
-	        : :
-	        [fun_id] "r" (N_GET_PARAM_IN), [temp] "r" (temp)
-	        : "x0", "x1", "x2", "x3", "memory");
+	    /* ".arch_extension sec\n" */
+	    "mov r0, %[fun_id]\n\t"
+	    "mov x1, #0\n\t"
+	    "mov x2, #0\n\t"
+	    "mov x3, #0\n\t"
+	    "smc 0\n\t"
+	    "nop"
+	    "str x0, [%[temp]]\n\t"
+	    "str x1, [%[temp], #8]\n\t"
+	    "str x2, [%[temp], #16]\n\t"
+	    "str x3, [%[temp], #24]\n\t"
+	    : :
+	    [fun_id] "r" (N_GET_PARAM_IN), [temp] "r" (temp)
+	    : "x0", "x1", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12", 
+			"x13", "x14", "x15", "x16", "x17", "memory");
 
 	*rtc0 = temp[0];
 	*rtc1 = temp[1];
@@ -296,17 +300,18 @@ static inline void n_init_t_fc_buf(
 	temp[2] = *p2;
 
 	__asm__ volatile(
-	        /* ".arch_extension sec\n" */
-	        "mov x0, %[fun_id]\n\t"
-	        "ldr x1, [%[temp], #0]\n\t"
-	        "ldr x2, [%[temp], #8]\n\t"
-	        "ldr x3, [%[temp], #16]\n\t"
-	        "smc 0\n\t"
-	        "str x2, [%[temp], #0]\n\t"
-	        "nop"
-	        : :
-	        [fun_id] "r" (N_INIT_T_FC_BUF), [temp] "r" (temp)
-	        : "x0", "x1", "x2", "x3", "memory");
+	    /* ".arch_extension sec\n" */
+	    "mov x0, %[fun_id]\n\t"
+	    "ldr x1, [%[temp], #0]\n\t"
+	    "ldr x2, [%[temp], #8]\n\t"
+	    "ldr x3, [%[temp], #16]\n\t"
+	    "smc 0\n\t"
+	    "str x2, [%[temp], #0]\n\t"
+	    "nop"
+	    : :
+	    [fun_id] "r" (N_INIT_T_FC_BUF), [temp] "r" (temp)
+	    : "x0", "x1", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12", 
+			"x13", "x14", "x15", "x16", "x17", "memory");
 	*p2 = temp[0];
 }
 static inline void n_invoke_t_fast_call(
@@ -320,17 +325,18 @@ static inline void n_invoke_t_fast_call(
 	temp[2] = p2;
 
 	__asm__ volatile(
-	        /* ".arch_extension sec\n" */
-	        "mov x0, %[fun_id]\n\t"
-	        "ldr x1, [%[temp], #0]\n\t"
-	        "ldr x2, [%[temp], #8]\n\t"
-	        "ldr x3, [%[temp], #16]\n\t"
-	        "smc 0\n\t"
-	        "str x2, [%[temp], #0]\n\t"
-	        "nop"
-	        : :
-	        [fun_id] "r" (N_INVOKE_T_FAST_CALL), [temp] "r" (temp)
-	        : "x0", "x1", "x2", "x3", "memory");
+	    /* ".arch_extension sec\n" */
+	    "mov x0, %[fun_id]\n\t"
+	    "ldr x1, [%[temp], #0]\n\t"
+	    "ldr x2, [%[temp], #8]\n\t"
+	    "ldr x3, [%[temp], #16]\n\t"
+	    "smc 0\n\t"
+	    "str x2, [%[temp], #0]\n\t"
+	    "nop"
+	    : :
+	    [fun_id] "r" (N_INVOKE_T_FAST_CALL), [temp] "r" (temp)
+	    : "x0", "x1", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12", 
+			"x13", "x14", "x15", "x16", "x17", "memory");
 	*p0 = temp[0];
 }
 
@@ -340,17 +346,18 @@ static inline void nt_sched_t(uint64_t *p)
 	uint64_t temp[3];
 
 	__asm__ volatile(
-	        /* ".arch_extension sec\n" */
-	        "mov x0, %[fun_id]\n\t"
-	        "mov x1, #0\n\t"
-	        "mov x2, #0\n\t"
-	        "mov x3, #0\n\t"
-	        "smc 0\n\t"
-	        "str x2, [%[temp], #0]\n\t"
-	        "nop"
-	        : :
-	        [fun_id] "r" (NT_SCHED_T), [temp] "r" (temp)
-	        : "x0", "x1", "x2", "x3", "memory");
+	    /* ".arch_extension sec\n" */
+	    "mov x0, %[fun_id]\n\t"
+	    "mov x1, #0\n\t"
+	    "mov x2, #0\n\t"
+	    "mov x3, #0\n\t"
+	    "smc 0\n\t"
+	    "str x2, [%[temp], #0]\n\t"
+	    "nop"
+	    : :
+	    [fun_id] "r" (NT_SCHED_T), [temp] "r" (temp)
+	    : "x0", "x1", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12", 
+			"x13", "x14", "x15", "x16", "x17", "memory");
 	*p = temp[0];
 }
 
@@ -365,16 +372,17 @@ static inline void n_invoke_t_sys_ctl(
 	temp[2] = p2;
 
 	__asm__ volatile(
-	        /* ".arch_extension sec\n */
-	        "mov x0, %[fun_id]\n\t"
-	        "ldr x1, [%[temp], #0]\n\t"
-	        "ldr x2, [%[temp], #8]\n\t"
-	        "ldr x3, [%[temp], #16]\n\t"
-	        "smc 0\n\t"
-	        "nop"
-	        : :
-	        [fun_id] "r" (N_INVOKE_T_SYS_CTL), [temp] "r" (temp)
-	        : "x0", "x1", "x2", "x3", "memory");
+	    /* ".arch_extension sec\n */
+	    "mov x0, %[fun_id]\n\t"
+	    "ldr x1, [%[temp], #0]\n\t"
+	    "ldr x2, [%[temp], #8]\n\t"
+	    "ldr x3, [%[temp], #16]\n\t"
+	    "smc 0\n\t"
+	    "nop"
+	    : :
+	    [fun_id] "r" (N_INVOKE_T_SYS_CTL), [temp] "r" (temp)
+	    : "x0", "x1", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12", 
+			"x13", "x14", "x15", "x16", "x17", "memory");
 }
 
 static inline void n_invoke_t_nq(
@@ -388,17 +396,18 @@ static inline void n_invoke_t_nq(
 	temp[2] = p2;
 
 	__asm__ volatile(
-	        /* ".arch_extension sec\n" */
-	        "mov x0, %[fun_id]\n\t"
-	        "ldr x1, [%[temp], #0]\n\t"
-	        "ldr x2, [%[temp], #8]\n\t"
-	        "ldr x3, [%[temp], #16]\n\t"
-	        "smc 0\n\t"
-	        "str x2, [%[temp], #0]\n\t"
-	        "nop"
-	        : :
-	        [fun_id] "r" (N_INVOKE_T_NQ), [temp] "r" (temp)
-	        : "x0", "x1", "x2", "x3", "memory");
+	    /* ".arch_extension sec\n" */
+	    "mov x0, %[fun_id]\n\t"
+	    "ldr x1, [%[temp], #0]\n\t"
+	    "ldr x2, [%[temp], #8]\n\t"
+	    "ldr x3, [%[temp], #16]\n\t"
+	    "smc 0\n\t"
+	    "str x2, [%[temp], #0]\n\t"
+	    "nop"
+	    : :
+	    [fun_id] "r" (N_INVOKE_T_NQ), [temp] "r" (temp)
+	    : "x0", "x1", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12", 
+			"x13", "x14", "x15", "x16", "x17", "memory");
 	*p0 = temp[0];
 }
 
@@ -413,17 +422,18 @@ static inline void n_invoke_t_drv(
 	temp[2] = p2;
 
 	__asm__ volatile(
-	        /* ".arch_extension sec\n" */
-	        "mov x0, %[fun_id]\n\t"
-	        "ldr x1, [%[temp], #0]\n\t"
-	        "ldr x2, [%[temp], #8]\n\t"
-	        "ldr x3, [%[temp], #16]\n\t"
-	        "smc 0\n\t"
-	        "str x2, [%[temp], #0]\n\t"
-	        "nop"
-	        : :
-	        [fun_id] "r" (N_INVOKE_T_DRV), [temp] "r" (temp)
-	        : "x0", "x1", "x2", "x3", "memory");
+	    /* ".arch_extension sec\n" */
+	    "mov x0, %[fun_id]\n\t"
+	    "ldr x1, [%[temp], #0]\n\t"
+	    "ldr x2, [%[temp], #8]\n\t"
+	    "ldr x3, [%[temp], #16]\n\t"
+	    "smc 0\n\t"
+	    "str x2, [%[temp], #0]\n\t"
+	    "nop"
+	    : :
+	    [fun_id] "r" (N_INVOKE_T_DRV), [temp] "r" (temp)
+	    : "x0", "x1", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12", 
+			"x13", "x14", "x15", "x16", "x17", "memory");
 	*p0 = temp[0];
 }
 
@@ -438,16 +448,17 @@ static inline void n_raise_t_event(
 	temp[2] = p2;
 
 	__asm__ volatile(
-	        /* ".arch_extension sec\n" */
-	        "mov x0, %[fun_id]\n\t"
-	        "ldr x1, [%[temp], #0]\n\t"
-	        "ldr x2, [%[temp], #8]\n\t"
-	        "ldr x3, [%[temp], #16]\n\t"
-	        "smc 0\n\t"
-	        "nop"
-	        : :
-	        [fun_id] "r" (N_RAISE_T_EVENT), [temp] "r" (temp)
-	        : "x0", "x1", "x2", "x3", "memory");
+	    /* ".arch_extension sec\n" */
+	    "mov x0, %[fun_id]\n\t"
+	    "ldr x1, [%[temp], #0]\n\t"
+	    "ldr x2, [%[temp], #8]\n\t"
+	    "ldr x3, [%[temp], #16]\n\t"
+	    "smc 0\n\t"
+	    "nop"
+	    : :
+	    [fun_id] "r" (N_RAISE_T_EVENT), [temp] "r" (temp)
+	    : "x0", "x1", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12", 
+			"x13", "x14", "x15", "x16", "x17", "memory");
 }
 
 static inline void n_ack_t_invoke_drv(
@@ -461,17 +472,18 @@ static inline void n_ack_t_invoke_drv(
 	temp[2] = p2;
 
 	__asm__ volatile(
-	        /* ".arch_extension sec\n" */
-	        "mov x0, %[fun_id]\n\t"
-	        "ldr x1, [%[temp], #0]\n\t"
-	        "ldr x2, [%[temp], #8]\n\t"
-	        "ldr x3, [%[temp], #16]\n\t"
-	        "smc 0\n\t"
-	        "str x2, [%[temp], #0]\n\t"
-	        "nop"
-	        : :
-	        [fun_id] "r" (N_ACK_T_INVOKE_DRV), [temp] "r" (temp)
-	        : "x0", "x1", "x2", "x3", "memory");
+	    /* ".arch_extension sec\n" */
+	    "mov x0, %[fun_id]\n\t"
+	    "ldr x1, [%[temp], #0]\n\t"
+	    "ldr x2, [%[temp], #8]\n\t"
+	    "ldr x3, [%[temp], #16]\n\t"
+	    "smc 0\n\t"
+	    "str x2, [%[temp], #0]\n\t"
+	    "nop"
+	    : :
+	    [fun_id] "r" (N_ACK_T_INVOKE_DRV), [temp] "r" (temp)
+	    : "x0", "x1", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12", 
+			"x13", "x14", "x15", "x16", "x17", "memory");
 	*p0 = temp[0];
 }
 
@@ -486,17 +498,18 @@ static inline void n_invoke_t_load_tee(
 	temp[2] = p2;
 
 	__asm__ volatile(
-	        /* ".arch_extension sec\n" */
-	        "mov x0, %[fun_id]\n\t"
-	        "ldr x1, [%[temp], #0]\n\t"
-	        "ldr x2, [%[temp], #8]\n\t"
-	        "ldr x3, [%[temp], #16]\n\t"
-	        "smc 0\n\t"
-	        "str x2, [%[temp], #0]\n\t"
-	        "nop"
-	        : :
-	        [fun_id] "r" (N_INVOKE_T_LOAD_TEE), [temp] "r" (temp)
-	        : "x0", "x1", "x2", "x3", "memory");
+	    /* ".arch_extension sec\n" */
+	    "mov x0, %[fun_id]\n\t"
+	    "ldr x1, [%[temp], #0]\n\t"
+	    "ldr x2, [%[temp], #8]\n\t"
+	    "ldr x3, [%[temp], #16]\n\t"
+	    "smc 0\n\t"
+	    "str x2, [%[temp], #0]\n\t"
+	    "nop"
+	    : :
+	    [fun_id] "r" (N_INVOKE_T_LOAD_TEE), [temp] "r" (temp)
+	    : "x0", "x1", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12", 
+			"x13", "x14", "x15", "x16", "x17", "memory");
 	*p0 = temp[0];
 }
 
@@ -511,17 +524,18 @@ static inline void n_ack_t_load_img(
 	temp[2] = p2;
 
 	__asm__ volatile(
-	        /* ".arch_extension sec\n" */
-	        "mov x0, %[fun_id]\n\t"
-	        "ldr x1, [%[temp], #0]\n\t"
-	        "ldr x2, [%[temp], #8]\n\t"
-	        "ldr x3, [%[temp], #16]\n\t"
-	        "smc 0\n\t"
-	        "str x2, [%[temp], #0]\n\t"
-	        "nop"
-	        : :
-	        [fun_id] "r" (N_ACK_T_LOAD_IMG), [temp] "r" (temp)
-	        : "x0", "x1", "x2", "x3", "memory");
+	    /* ".arch_extension sec\n" */
+	    "mov x0, %[fun_id]\n\t"
+	    "ldr x1, [%[temp], #0]\n\t"
+	    "ldr x2, [%[temp], #8]\n\t"
+	    "ldr x3, [%[temp], #16]\n\t"
+	    "smc 0\n\t"
+	    "str x2, [%[temp], #0]\n\t"
+	    "nop"
+	    : :
+	    [fun_id] "r" (N_ACK_T_LOAD_IMG), [temp] "r" (temp)
+	    : "x0", "x1", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12", 
+			"x13", "x14", "x15", "x16", "x17", "memory");
 	*p0 = temp[0];
 }
 
@@ -536,16 +550,17 @@ static inline void nt_sched_t_fiq(
 	temp[2] = p2;
 
 	__asm__ volatile(
-	        /* ".arch_extension sec\n" */
-	        "mov x0, %[fun_id]\n\t"
-	        "ldr x1, [%[temp], #0]\n\t"
-	        "ldr x2, [%[temp], #8]\n\t"
-	        "ldr x3, [%[temp], #16]\n\t"
-	        "smc 0\n\t"
-	        "nop"
-	        : :
-	        [fun_id] "r" (NT_SCHED_T_FIQ), [temp] "r" (temp)
-	        : "x0", "x1", "x2", "x3", "memory");
+	    /* ".arch_extension sec\n" */
+	    "mov x0, %[fun_id]\n\t"
+	    "ldr x1, [%[temp], #0]\n\t"
+	    "ldr x2, [%[temp], #8]\n\t"
+	    "ldr x3, [%[temp], #16]\n\t"
+	    "smc 0\n\t"
+	    "nop"
+	    : :
+	    [fun_id] "r" (NT_SCHED_T_FIQ), [temp] "r" (temp)
+	    : "x0", "x1", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12", 
+			"x13", "x14", "x15", "x16", "x17", "memory");
 }
 
 
@@ -560,30 +575,32 @@ static inline void nt_sched_core(
 	temp[2] = p2;
 
 	__asm__ volatile(
-	        /* ".arch_extension sec\n" */
-	        "mov x0, %[fun_id]\n\t"
-	        "ldr x1, [%[temp], #0]\n\t"
-	        "ldr x2, [%[temp], #8]\n\t"
-	        "ldr x3, [%[temp], #16]\n\t"
-	        "smc 0\n\t"
-	        "nop"
-	        : :
-	        [fun_id] "r" (N_SWITCH_CORE), [temp] "r" (temp)
-	        : "x0", "x1", "x2", "x3", "memory");
+	    /* ".arch_extension sec\n" */
+	    "mov x0, %[fun_id]\n\t"
+	    "ldr x1, [%[temp], #0]\n\t"
+	    "ldr x2, [%[temp], #8]\n\t"
+	    "ldr x3, [%[temp], #16]\n\t"
+	    "smc 0\n\t"
+	    "nop"
+	    : :
+	    [fun_id] "r" (N_SWITCH_CORE), [temp] "r" (temp)
+	    : "x0", "x1", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12", 
+			"x13", "x14", "x15", "x16", "x17", "memory");
 }
 
 static inline void nt_get_non_irq_num (uint64_t *p0)
 {
 	uint64_t temp[3];
 	__asm__ volatile(
-	        /* ".arch_extension sec\n" */
-	        "mov x0, %[fun_id]\n\t"
-	        "smc 0\n\t"
-	        "str x1, [%[temp], #0]\n\t"
-	        "nop"
-	        : :
-	        [fun_id] "r" (N_GET_NON_IRQ_NUM), [temp] "r" (temp)
-	        : "x0", "x1", "memory");
+	    /* ".arch_extension sec\n" */
+	    "mov x0, %[fun_id]\n\t"
+	    "smc 0\n\t"
+	    "str x1, [%[temp], #0]\n\t"
+	    "nop"
+	    : :
+	    [fun_id] "r" (N_GET_NON_IRQ_NUM), [temp] "r" (temp)
+	    : "x0", "x1", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12", 
+			"x13", "x14", "x15", "x16", "x17", "memory");
 	*p0 = temp[0];
 }
 
@@ -598,7 +615,8 @@ static inline void nt_get_secure_os_state (uint64_t *p0)
 	    "nop"
 	    : :
 	    [fun_id] "r" (N_GET_SE_OS_STATE), [temp] "r" (temp)
-	    : "x0", "x1", "memory");
+	    : "x0", "x1", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12", 
+			"x13", "x14", "x15", "x16", "x17", "memory");
 	*p0 = temp[0];
 }
 
@@ -614,7 +632,8 @@ static inline void nt_dump_t(void)
 	    "nop"
 	    : :
 	    [fun_id] "r" (NT_SCHED_T)
-	    : "x0", "x1", "x2", "x3", "memory");
+	    : "x0", "x1", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12", 
+			"x13", "x14", "x15", "x16", "x17", "memory");
 }
 
 #ifdef TUI_SUPPORT
@@ -639,7 +658,8 @@ static inline void nt_cancel_t_tui(
 	    "nop"
 	    : :
 	    [fun_id] "r" (NT_CANCEL_T_TUI), [temp] "r" (temp)
-	    : "x0", "x1", "x2", "x3", "memory");
+	    : "x0", "x1", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12", 
+			"x13", "x14", "x15", "x16", "x17", "memory");
 	*p0 = temp[0];
 }
 #endif
