@@ -7210,7 +7210,7 @@ static void himax852xes_suspend(struct device *dev)
 	if (ts->pdata->powerOff3V3 && ts->pdata->power)
 		ts->pdata->power(0);
 
-//ADD BY JIATIANBAO
+/*ADD BY JIATIANBAO
 	tpd_gpio_output(GTP_RST_PORT, 0);
 	tpd_gpio_output(GTP_INT_PORT, 0);
 	msleep(20);
@@ -7218,7 +7218,7 @@ static void himax852xes_suspend(struct device *dev)
 	ret = regulator_disable(tpd->reg);	
 	if (ret)
 		E("[Simon]regulator_disable() failed!\n");
-//ADD BY JIATIANBAO
+ADD BY JIATIANBAO */
 
 	return ;
 }
@@ -7268,17 +7268,18 @@ static void himax852xes_resume(struct device *dev)
 	if (ts->pdata->powerOff3V3 && ts->pdata->power)
 		ts->pdata->power(1);
 
-//add by jiatianbao
+/*add by jiatianbao
 	ret = regulator_enable(tpd->reg);	
 	if (ret)
 		E("[Simon]regulator_enable() failed!\n");
-//add by jiatianbao
 
         HW_RESET_ACTIVATE=1; 
         himax_rst_gpio_set(ts->rst_gpio, 0); 
         msleep(20); 
         himax_rst_gpio_set(ts->rst_gpio, 1); 
         msleep(20); 
+
+add by jiatianbao*/
 
 #ifdef HX_CHIP_STATUS_MONITOR
 	if(HX_ON_HAND_SHAKING)//chip on hand shaking,wait hand shaking
