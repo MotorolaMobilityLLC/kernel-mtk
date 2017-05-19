@@ -424,6 +424,7 @@ static int mtk_drm_probe(struct platform_device *pdev)
 	int ret;
 	int i;
 
+	drm_debug = 0x2; /* DRIVER messages */
 	private = devm_kzalloc(dev, sizeof(*private), GFP_KERNEL);
 	if (!private)
 		return -ENOMEM;
