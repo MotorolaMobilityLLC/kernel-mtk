@@ -181,16 +181,18 @@ static int mt2712_d1v1_be_tdm_ops_hw_params(struct snd_pcm_substream *substream,
 	unsigned int channel = params_channels(params);
 	unsigned int rate = params_rate(params);
 	unsigned int mclk_rate;
-	unsigned int div_mclk_over_bck = rate > 192000 ? 2 : 4;
+	unsigned int div_mclk_over_bck = 4;
 	unsigned int div_bck_over_lrck = 64;
-
-	mclk_rate = rate * div_bck_over_lrck * div_mclk_over_bck;
 
 	/* set tdmin based on rate */
 	switch (channel) {
 	case 2:
 		snd_soc_dai_set_fmt(cpu_dai, SND_SOC_DAIFMT_I2S | SND_SOC_DAIFMT_IB_IF);
 		snd_soc_dai_set_fmt(rtd->codec_dai, SND_SOC_DAIFMT_I2S | SND_SOC_DAIFMT_CBS_CFS);
+		if (rate > 100000)
+			div_mclk_over_bck = 1;
+		else if (rate > 50000)
+			div_mclk_over_bck = 2;
 		break;
 	case 8:
 		snd_soc_dai_set_fmt(cpu_dai, SND_SOC_DAIFMT_DSP_A | SND_SOC_DAIFMT_IB_NF);
@@ -203,6 +205,7 @@ static int mt2712_d1v1_be_tdm_ops_hw_params(struct snd_pcm_substream *substream,
 		return -EINVAL;
 	}
 
+	mclk_rate = rate * div_bck_over_lrck * div_mclk_over_bck;
 	/* mt2701 mclk */
 	snd_soc_dai_set_sysclk(cpu_dai, 0, mclk_rate, SND_SOC_CLOCK_OUT);
 

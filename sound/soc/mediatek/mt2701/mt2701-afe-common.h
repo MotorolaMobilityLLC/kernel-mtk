@@ -307,6 +307,7 @@ struct clock_ctrl {
 	void (*afe_disable_clock)(struct mtk_base_afe *afe);
 	void (*mclk_configuration)(struct mtk_base_afe *afe, int id, int domain,
 			       int mclk);
+	int (*enable_mclk)(struct mtk_base_afe *afe, int id);
 	void (*disable_mclk)(struct mtk_base_afe *afe, int id);
 	int apll0_rate;
 	int apll1_rate;

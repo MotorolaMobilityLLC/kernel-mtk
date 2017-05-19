@@ -480,7 +480,6 @@ void mt2701_mclk_configuration(struct mtk_base_afe *afe, int id, int domain,
 	int ret;
 	int aud_src_div_id = MT2701_AUD_AUD_K1_SRC_DIV + id;
 	int aud_src_clk_id = MT2701_AUD_AUD_K1_SRC_SEL + id;
-	int aud_src_en_id = MT2701_AUD_AUD_I2S1_MCLK + id;
 
 	/* Set MCLK Kx_SRC_SEL(domain) */
 	ret = clk_prepare_enable(afe_priv->clocks[aud_src_clk_id]);
@@ -517,12 +516,22 @@ void mt2701_mclk_configuration(struct mtk_base_afe *afe, int id, int domain,
 			aud_clks[aud_src_div_id], mclk, ret);
 	clk_disable_unprepare(afe_priv->clocks[aud_src_div_id]);
 
+}
+
+int mt2701_turn_on_mclk(struct mtk_base_afe *afe, int id)
+{
+	int aud_src_en_id = MT2701_AUD_AUD_I2S1_MCLK + id;
+	struct mt2701_afe_private *afe_priv = afe->platform_priv;
+	int ret;
+
 	/* enable mclk */
 	ret = clk_prepare_enable(afe_priv->clocks[aud_src_en_id]);
 	if (ret)
 		dev_err(afe->dev, "Failed to enable mclk for I2S: %d\n",
 			id);
+	return ret;
 }
+
 
 void mt2701_turn_off_mclk(struct mtk_base_afe *afe, int id)
 {
@@ -621,6 +630,14 @@ int mt2712_turn_on_a1sys_clock(struct mtk_base_afe *afe)
 	struct mt2701_afe_private *afe_priv = afe->platform_priv;
 	int ret = 0;
 
+	/* Turn On APLL1 */
+	ret = clk_prepare_enable(afe_priv->clocks[MT2712_AUD_APMIXED_APLL1]);
+	if (ret) {
+		dev_err(afe->dev, "%s clk_prepare_enable %s fail %d\n",
+			__func__, aud_clks_2712[MT2712_AUD_APMIXED_APLL1], ret);
+		goto A1SYS_CLK_AUD_APMIXED_APLL1_ERR;
+	}
+
 	/* Set Div Mux */
 	ret = clk_prepare_enable(afe_priv->clocks[MT2712_AUD_A1SYS_HP_SEL]);
 	if (ret) {
@@ -661,6 +678,8 @@ A1SYS_CLK_AUD_MUX1_SEL_ERR:
 	clk_disable_unprepare(afe_priv->clocks[MT2712_AUD_AUD_APLL1_SEL]);
 A1SYS_CLK_AUD_HP_MUX1_SEL_ERR:
 	clk_disable_unprepare(afe_priv->clocks[MT2712_AUD_A1SYS_HP_SEL]);
+A1SYS_CLK_AUD_APMIXED_APLL1_ERR:
+	clk_disable_unprepare(afe_priv->clocks[MT2712_AUD_APMIXED_APLL1]);
 
 	return ret;
 }
@@ -671,12 +690,21 @@ void mt2712_turn_off_a1sys_clock(struct mtk_base_afe *afe)
 
 	clk_disable_unprepare(afe_priv->clocks[MT2712_AUD_AUD_APLL1_SEL]);
 	clk_disable_unprepare(afe_priv->clocks[MT2712_AUD_A1SYS_HP_SEL]);
+	clk_disable_unprepare(afe_priv->clocks[MT2712_AUD_APMIXED_APLL1]);
 }
 
 int mt2712_turn_on_a2sys_clock(struct mtk_base_afe *afe)
 {
 	struct mt2701_afe_private *afe_priv = afe->platform_priv;
 	int ret = 0;
+
+	/* Turn On APLL2 */
+	ret = clk_prepare_enable(afe_priv->clocks[MT2712_AUD_APMIXED_APLL2]);
+	if (ret) {
+		dev_err(afe->dev, "%s clk_prepare_enable %s fail %d\n",
+			__func__, aud_clks_2712[MT2712_AUD_APMIXED_APLL2], ret);
+		goto A2SYS_CLK_AUD_APMIXED_APLL2_ERR;
+	}
 
 	/* Set Div Mux */
 	ret = clk_prepare_enable(afe_priv->clocks[MT2712_AUD_A2SYS_HP_SEL]);
@@ -718,6 +746,8 @@ A1SYS_CLK_AUD_MUX2_SEL_ERR:
 	clk_disable_unprepare(afe_priv->clocks[MT2712_AUD_AUD_APLL2_SEL]);
 A2SYS_CLK_AUD_HP_MUX2_SEL_ERR:
 	clk_disable_unprepare(afe_priv->clocks[MT2712_AUD_A2SYS_HP_SEL]);
+A2SYS_CLK_AUD_APMIXED_APLL2_ERR:
+	clk_disable_unprepare(afe_priv->clocks[MT2712_AUD_APMIXED_APLL2]);
 
 	return ret;
 }
@@ -728,6 +758,7 @@ void mt2712_turn_off_a2sys_clock(struct mtk_base_afe *afe)
 
 	clk_disable_unprepare(afe_priv->clocks[MT2712_AUD_AUD_APLL2_SEL]);
 	clk_disable_unprepare(afe_priv->clocks[MT2712_AUD_A2SYS_HP_SEL]);
+	clk_disable_unprepare(afe_priv->clocks[MT2712_AUD_APMIXED_APLL2]);
 }
 
 int mt2712_turn_on_afe_clock(struct mtk_base_afe *afe)
@@ -800,14 +831,8 @@ void mt2712_mclk_configuration(struct mtk_base_afe *afe, int id, int domain,
 	int ret;
 	int aud_src_clk_id = MT2712_AUD_I2SO1_SEL + id;
 	int aud_src_div_id = MT2712_AUD_APLL_DIV0 + id;
-	int aud_src_pdn_id = MT2712_AUD_DIV_PDN0 + id;
 
 	/* Set MCLK Kx_SRC_SEL(domain) */
-	ret = clk_prepare_enable(afe_priv->clocks[aud_src_clk_id]);
-	if (ret)
-		dev_err(afe->dev, "%s clk_prepare_enable %s fail %d\n",
-			__func__, aud_clks_2712[aud_src_clk_id], ret);
-
 	if (domain == 0) {
 		ret = clk_set_parent(afe_priv->clocks[aud_src_clk_id],
 				     afe_priv->clocks[MT2712_AUD_APLL1]);
@@ -825,22 +850,53 @@ void mt2712_mclk_configuration(struct mtk_base_afe *afe, int id, int domain,
 	}
 
 	/* Set MCLK Kx_SRC_DIV(divider) */
-	ret = clk_prepare_enable(afe_priv->clocks[aud_src_div_id]);
-	if (ret)
-		dev_err(afe->dev, "%s clk_prepare_enable %s fail %d\n",
-			__func__, aud_clks_2712[aud_src_div_id], ret);
-
 	ret = clk_set_rate(afe_priv->clocks[aud_src_div_id], mclk);
 	if (ret)
 		dev_err(afe->dev, "%s clk_set_rate %s-%d fail %d\n", __func__,
 			aud_clks_2712[aud_src_div_id], mclk, ret);
 
+}
+
+int mt2712_turn_on_mclk(struct mtk_base_afe *afe, int id)
+{
+	struct mt2701_afe_private *afe_priv = afe->platform_priv;
+	int ret;
+	int aud_src_clk_id = MT2712_AUD_I2SO1_SEL + id;
+	int aud_src_div_id = MT2712_AUD_APLL_DIV0 + id;
+	int aud_src_pdn_id = MT2712_AUD_DIV_PDN0 + id;
+
+	ret = clk_prepare_enable(afe_priv->clocks[aud_src_clk_id]);
+	if (ret) {
+		dev_err(afe->dev, "%s clk_prepare_enable %s fail %d\n",
+			__func__, aud_clks_2712[aud_src_clk_id], ret);
+		goto MCLK_SRC_CLK_ERROR;
+	}
+
+	ret = clk_prepare_enable(afe_priv->clocks[aud_src_div_id]);
+	if (ret) {
+		dev_err(afe->dev, "%s clk_prepare_enable %s fail %d\n",
+			__func__, aud_clks_2712[aud_src_div_id], ret);
+		goto MCLK_SRC_DIV_ERROR;
+	}
+
 	ret = clk_prepare_enable(afe_priv->clocks[aud_src_pdn_id]);
-	if (ret)
+	if (ret) {
 		dev_err(afe->dev, "%s clk_prepare_enable %s fail %d\n",
 			__func__, aud_clks_2712[aud_src_pdn_id], ret);
+		goto MCLK_SRC_PDN_ERROR;
+	}
+	return 0;
+
+MCLK_SRC_PDN_ERROR:
+	clk_disable_unprepare(afe_priv->clocks[MT2701_AUD_INFRA_SYS_AUDIO]);
+MCLK_SRC_DIV_ERROR:
+	clk_disable_unprepare(afe_priv->clocks[MT2701_AUD_AUD_48K_TIMING]);
+MCLK_SRC_CLK_ERROR:
+	clk_disable_unprepare(afe_priv->clocks[MT2701_AUD_AUD_MUX1_DIV]);
+	return ret;
 
 }
+
 
 void mt2712_turn_off_mclk(struct mtk_base_afe *afe, int id)
 {
@@ -914,6 +970,7 @@ int mt2701_tdm_clk_configuration(struct mtk_base_afe *afe, int tdm_id,
 	struct mt2701_afe_private *afe_priv = (struct mt2701_afe_private *) afe->platform_priv;
 	struct mt2701_tdm_data *tdm_data = (struct mt2701_tdm_data *)afe_priv->tdm_path[tdm_id].tdm_data;
 	int apll_sel, apll_div;
+	int apll_sel_div = MT2712_AUD_APLL1;
 	unsigned int fs_rate = params_rate(params);
 	int channels = params_channels(params);
 	int bit_width = params_width(params);
@@ -932,26 +989,38 @@ int mt2701_tdm_clk_configuration(struct mtk_base_afe *afe, int tdm_id,
 	}
 
 	if (!(AUDIO_CLOCK_196M % bck)) {
-		apll_sel = 1;
+		apll_sel = 0;
+		apll_sel_div = MT2712_AUD_APLL1;
 		apll_div = AUDIO_CLOCK_196M / bck;
 	} else if (!(AUDIO_CLOCK_180M % bck)) {
-		apll_sel = 2;
+		apll_sel = 1;
+		apll_sel_div = MT2712_AUD_APLL2;
 		apll_div = AUDIO_CLOCK_180M / bck;
 	} else {
 		return -1;
 	}
 
-	if (apll_div > MT2701_TDM_MAX_CLK_DIV) {
-		/* set APLL divider 2!! need implement!! */
+	while (apll_div > MT2701_TDM_MAX_CLK_DIV) {
 		apll_div = apll_div >> 1;
+		apll_sel_div++;
 	}
-	/* use I2SI0 mclk as TDMIN mclk */
-	afe_priv->clk_ctrl->mclk_configuration(afe, MCLK_TDM_OFFSET + tdm_id, apll_sel-1, mclk);
 
 	regmap_update_bits(afe->regmap, tdm_data->tdm_bck_reg, 1<<tdm_data->tdm_pll_sel_shift,
-			(apll_sel-1)<<tdm_data->tdm_pll_sel_shift);
+			(apll_sel)<<tdm_data->tdm_pll_sel_shift);
 	regmap_update_bits(afe->regmap, tdm_data->tdm_bck_reg, 0xff<<tdm_data->tdm_plldiv_shift,
 			(apll_div-1)<<tdm_data->tdm_plldiv_shift);
+
+	ret = clk_set_parent(afe_priv->clocks[MT2712_AUD_APLL_SEL + apll_sel],
+			     afe_priv->clocks[apll_sel_div]);
+	if (ret) {
+		dev_err(afe->dev, "%s clk_set_parent %s-%s fail %d\n", __func__,
+			aud_clks_2712[MT2712_AUD_APLL_SEL+apll_sel],
+			aud_clks_2712[apll_sel_div], ret);
+	}
+
+	/* use I2SI0 mclk as TDMIN mclk */
+	afe_priv->clk_ctrl->mclk_configuration(afe, MCLK_TDM_OFFSET + tdm_id, apll_sel, mclk);
+
 	return ret;
 
 }

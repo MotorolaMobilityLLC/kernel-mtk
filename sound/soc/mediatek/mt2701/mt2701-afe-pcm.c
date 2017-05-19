@@ -94,6 +94,22 @@ static int mt2701_afe_i2s_fs(unsigned int sample_rate)
 
 	return -EINVAL;
 }
+static int mt2701_afe_i2s_startup(struct snd_pcm_substream *substream,
+				    struct snd_soc_dai *dai)
+{
+	struct snd_soc_pcm_runtime *rtd = substream->private_data;
+	struct mtk_base_afe *afe = snd_soc_platform_get_drvdata(rtd->platform);
+	struct mt2701_afe_private *afe_priv = afe->platform_priv;
+	int i2s_num = mt2701_dai_num_to_i2s(afe, dai->id);
+
+	/* enable mclk */
+	if (of_device_is_compatible(afe->dev->of_node, "mediatek,mt2712-audio")
+		&& substream->stream == SNDRV_PCM_STREAM_CAPTURE) {
+		return afe_priv->clk_ctrl->enable_mclk(afe, i2s_num + MCLK_I2SIN_OFFSET);
+	} else {
+		return afe_priv->clk_ctrl->enable_mclk(afe, i2s_num);
+	}
+}
 
 static int mt2701_afe_i2s_path_shutdown(struct snd_pcm_substream *substream,
 					struct snd_soc_dai *dai,
@@ -1060,7 +1076,8 @@ static int mt2701_tdm_fe_hw_params(struct snd_pcm_substream *substream,
 	int channels = params_channels(params);
 	int bit_width = params_width(params);
 
-	mtk_afe_fe_hw_params(substream, params, dai);
+	if (afe->memif_fs(substream, params_rate(params)) < 0)
+		return -EINVAL;
 
 	if (tdm_num < MT2701_TDMI) {
 		if (bit_width != 16)
@@ -1076,10 +1093,10 @@ static int mt2701_tdm_fe_hw_params(struct snd_pcm_substream *substream,
 				   channels << tdm_data->tdm_agent_ch_num_shift);
 	}
 
-	return 0;
+	return mtk_afe_fe_hw_params(substream, params, dai);
 }
 
-static int mt2701_afe_tdmio_set_sysclk(struct snd_soc_dai *dai, int clk_id,
+static int mt2701_tdmio_set_sysclk(struct snd_soc_dai *dai, int clk_id,
 				     unsigned int freq, int dir)
 {
 	struct mtk_base_afe *afe = dev_get_drvdata(dai->dev);
@@ -1170,6 +1187,16 @@ static int mt2701_tdmio_set_fmt(struct snd_soc_dai *dai, unsigned int fmt)
 	return mt2701_set_tdm_fmt(dai, fmt, mt2701_dai_num_to_tdm(afe, dai->id));
 }
 
+static int mt2701_tdmio_startup(struct snd_pcm_substream *substream,
+				    struct snd_soc_dai *dai)
+{
+	struct snd_soc_pcm_runtime *rtd = substream->private_data;
+	struct mtk_base_afe *afe = snd_soc_platform_get_drvdata(rtd->platform);
+	int tdm_num = mt2701_dai_num_to_tdm(afe, dai->id);
+	struct mt2701_afe_private *afe_priv = afe->platform_priv;
+
+	return afe_priv->clk_ctrl->enable_mclk(afe, MCLK_TDM_OFFSET + tdm_num);
+}
 
 static int mt2701_tdmio_hw_params(struct snd_pcm_substream *substream,
 				  struct snd_pcm_hw_params *params,
@@ -1212,6 +1239,36 @@ static void mt2701_tdmio_shutdown(struct snd_pcm_substream *substream,
 	afe_priv->clk_ctrl->disable_mclk(afe, MCLK_TDM_OFFSET + tdm_num);
 }
 
+static int mt2701_tdmio_coclk_set_sysclk(struct snd_soc_dai *dai, int clk_id,
+				     unsigned int freq, int dir)
+{
+	struct mtk_base_afe *afe = dev_get_drvdata(dai->dev);
+	struct mt2701_afe_private *afe_priv = afe->platform_priv;
+	int tdm_num = afe_priv->tdm_coclk_info.src;
+
+	if (tdm_num < 0)
+		return tdm_num;
+
+	/* mclk */
+	afe_priv->tdm_path[tdm_num].mclk_rate = freq;
+	afe_priv->tdm_path[MT2701_TDMI].mclk_rate = freq;
+	return 0;
+}
+
+static int mt2701_tdmio_coclk_startup(struct snd_pcm_substream *substream,
+				    struct snd_soc_dai *dai)
+{
+	struct snd_soc_pcm_runtime *rtd = substream->private_data;
+	struct mtk_base_afe *afe = snd_soc_platform_get_drvdata(rtd->platform);
+	struct mt2701_afe_private *afe_priv = afe->platform_priv;
+
+	afe_priv->tdm_coclk_info.on++;
+	if (afe_priv->tdm_coclk_info.on == 1)
+		return afe_priv->clk_ctrl->enable_mclk(afe, MCLK_TDM_OFFSET + MT2701_TDMI);
+	else
+		return 0;
+}
+
 static int mt2701_tdmio_coclk_hw_params(struct snd_pcm_substream *substream,
 				  struct snd_pcm_hw_params *params,
 				  struct snd_soc_dai *dai)
@@ -1227,7 +1284,7 @@ static int mt2701_tdmio_coclk_hw_params(struct snd_pcm_substream *substream,
 
 	regmap_update_bits(afe->regmap, AFE_TDM_IN_CON1, 0x3<<21, 0);
 
-	if (afe_priv->tdm_coclk_info.on == 0) {
+	if (afe_priv->tdm_coclk_info.on == 1) {
 		regmap_update_bits(afe->regmap, AFE_TDM_IN_CON1, AFE_TDM_CON_IN_BCK, AFE_TDM_CON_IN_BCK_SET(tdm_num));
 		regmap_update_bits(afe->regmap, AFE_TDM_IN_CON1, AFE_TDM_CON_INOUT_SYNC, AFE_TDM_CON_INOUT_SYNC_SET(1));
 
@@ -1253,7 +1310,6 @@ static int mt2701_tdmio_coclk_hw_params(struct snd_pcm_substream *substream,
 			|| params_width(params) != afe_priv->tdm_coclk_info.bit_width)
 			ret = -EINVAL;
 	}
-	afe_priv->tdm_coclk_info.on++;
 	return ret;
 }
 
@@ -1273,11 +1329,10 @@ static void mt2701_tdmio_coclk_shutdown(struct snd_pcm_substream *substream,
 {
 	struct snd_soc_pcm_runtime *rtd = substream->private_data;
 	struct mtk_base_afe *afe = snd_soc_platform_get_drvdata(rtd->platform);
-	int tdm_num = mt2701_dai_num_to_tdm(afe, dai->id);
-	int tdm_num_in = MT2701_TDMI;
 	struct mt2701_afe_private *afe_priv = afe->platform_priv;
+	int tdm_num = afe_priv->tdm_coclk_info.src;
 	struct mt2701_tdm_data *tdm_data = (struct mt2701_tdm_data *)afe_priv->tdm_path[tdm_num].tdm_data;
-	struct mt2701_tdm_data *tdm_data_in = (struct mt2701_tdm_data *)afe_priv->tdm_path[tdm_num_in].tdm_data;
+	struct mt2701_tdm_data *tdm_data_in = (struct mt2701_tdm_data *)afe_priv->tdm_path[MT2701_TDMI].tdm_data;
 
 	if (afe_priv->tdm_coclk_info.on == 1) {
 		regmap_update_bits(afe->regmap, tdm_data_in->tdm_ctrl_reg,
@@ -1286,6 +1341,7 @@ static void mt2701_tdmio_coclk_shutdown(struct snd_pcm_substream *substream,
 				1<<tdm_data->tdm_on_shift, 0<<tdm_data->tdm_on_shift);
 		regmap_update_bits(afe->regmap, tdm_data->tdm_bck_reg,
 				1<<tdm_data->tdm_bck_on_shift, 0<<tdm_data->tdm_bck_on_shift);
+		afe_priv->clk_ctrl->disable_mclk(afe, MCLK_TDM_OFFSET + MT2701_TDMI);
 	}
 	afe_priv->tdm_coclk_info.on--;
 }
@@ -1342,6 +1398,7 @@ static const struct snd_soc_dai_ops mt2701_tdm_memif_ops = {
 
 /* I2S BE DAIs */
 static const struct snd_soc_dai_ops mt2701_afe_i2s_ops = {
+	.startup	= mt2701_afe_i2s_startup,
 	.shutdown	= mt2701_afe_i2s_shutdown,
 	.prepare	= mt2701_afe_i2s_prepare,
 	.set_sysclk	= mt2701_afe_i2s_set_sysclk,
@@ -1366,16 +1423,19 @@ static struct snd_soc_dai_ops mt2701_modpcm_ops = {
 
 /* TDM BE DAIs */
 static const struct snd_soc_dai_ops mt2701_tdmio_ops = {
+	.startup	= mt2701_tdmio_startup,
 	.hw_params      = mt2701_tdmio_hw_params,
 	.set_fmt	= mt2701_tdmio_set_fmt,
-	.set_sysclk	= mt2701_afe_tdmio_set_sysclk,
+	.set_sysclk	= mt2701_tdmio_set_sysclk,
 	.shutdown	= mt2701_tdmio_shutdown,
 };
 
 static const struct snd_soc_dai_ops mt2701_tdmio_coclk_ops = {
+	.startup	= mt2701_tdmio_coclk_startup,
 	.hw_params      = mt2701_tdmio_coclk_hw_params,
-	.shutdown	= mt2701_tdmio_coclk_shutdown,
 	.set_fmt	= mt2701_tdmio_coclk_set_fmt,
+	.set_sysclk	= mt2701_tdmio_coclk_set_sysclk,
+	.shutdown	= mt2701_tdmio_coclk_shutdown,
 };
 
 
@@ -2887,6 +2947,7 @@ struct clock_ctrl mt2701_clk_ctrl = {
 	.afe_enable_clock = mt2701_afe_enable_clock,
 	.afe_disable_clock = mt2701_afe_disable_clock,
 	.mclk_configuration = mt2701_mclk_configuration,
+	.enable_mclk = mt2701_turn_on_mclk,
 	.disable_mclk = mt2701_turn_off_mclk,
 	.apll0_rate = MT2701_PLL_DOMAIN_0_RATE,
 	.apll1_rate = MT2701_PLL_DOMAIN_1_RATE,
@@ -2897,6 +2958,7 @@ struct clock_ctrl mt2712_clk_ctrl = {
 	.afe_enable_clock = mt2712_afe_enable_clock,
 	.afe_disable_clock = mt2712_afe_disable_clock,
 	.mclk_configuration = mt2712_mclk_configuration,
+	.enable_mclk = mt2712_turn_on_mclk,
 	.disable_mclk = mt2712_turn_off_mclk,
 	.apll0_rate = MT2712_PLL_DOMAIN_0_RATE,
 	.apll1_rate = MT2712_PLL_DOMAIN_1_RATE,
