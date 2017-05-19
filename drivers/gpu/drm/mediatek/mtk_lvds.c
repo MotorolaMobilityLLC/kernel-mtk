@@ -300,7 +300,7 @@ static void mtk_lvds_enable(struct drm_bridge *bridge)
 		clk_set_rate(lvds->vpll, 75000000);
 
 	phy_power_on(lvds->phy);
-	writel(RG_FIFO_EN | (lvds->is_dual ? 3 : 1) << 20 |
+	writel((lvds->is_dual ? 3 : 2) << 16 | 3 << 20 |
 	       (lvds->is_dual ? 1 : 0) << 23, lvds->regs + LVDSTOP_REG05);
 
 	writel((lvds->is_dual ? RG_DUAL : 0),

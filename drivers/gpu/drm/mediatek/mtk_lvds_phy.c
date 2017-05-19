@@ -119,15 +119,17 @@ static int mtk_lvds_tx_pll_set_rate(struct clk_hw *hw, unsigned long rate,
 	writel(DA_LVDSTX_PWR_ON, lvds_tx->tx1_regs + VOPLL_CTL3);
 	writel(DA_LVDSTX_PWR_ON, lvds_tx->tx2_regs + VOPLL_CTL3);
 	reg = RG_VPLL_TXMUXDIV2_EN | 1 << 6 | 0x1c << 12 | 1 << 20;
-	writel(reg, lvds_tx->tx1_regs + VOPLL_CTL1);
+	if (lvds_tx->dual_lvds)
+		writel(reg, lvds_tx->tx1_regs + VOPLL_CTL1);
 	writel(reg, lvds_tx->tx2_regs + VOPLL_CTL1);
 
 	reg = RG_VPLL_EN | 1 << 8 | (lvds_tx->dual_lvds ? 0 : 1) << 10 |
 	      RG_VPLL_LVDS_EN | RG_VPLL_LVDS_DPIX_DIV2 |
 	      (lvds_tx->dual_lvds ? 1 : 0) << 16 | RG_VPLL_TXDIV5_EN |
 	      RG_VPLL_BIAS_EN | RG_VPLL_BIASLPF_EN;
-	writel(reg, lvds_tx->tx1_regs + VOPLL_CTL2);
 	writel(reg, lvds_tx->tx2_regs + VOPLL_CTL2);
+	if (lvds_tx->dual_lvds)
+		writel(reg, lvds_tx->tx1_regs + VOPLL_CTL2);
 
 	return 0;
 }
@@ -154,22 +156,22 @@ static int mtk_lvds_tx_power_on_signal(struct phy *phy)
 	reg = 7 | 0xb << 4 | 3 << 8 | RG_LVDSTX_TSTCLKDIV_EN |
 	      RG_LVDSTX_TSTCLK_EN | 1 << 16 | RG_LVDSTX_LDO_EN |
 	      RG_LVDSTX_BIAS_EN;
-	writel(reg, lvds_tx->tx1_regs + LVDSTX_CTL2);
+	writel(reg, lvds_tx->tx2_regs + LVDSTX_CTL2);
 
 	if (lvds_tx->dual_lvds)
-		writel(reg, lvds_tx->tx2_regs + LVDSTX_CTL2);
+		writel(reg, lvds_tx->tx1_regs + LVDSTX_CTL2);
 
 	reg = 0x1f << 5 | 0x1f << 10;
-	writel(reg, lvds_tx->tx1_regs + LVDSTX_CTL3);
+	writel(reg, lvds_tx->tx2_regs + LVDSTX_CTL3);
 
 	if (lvds_tx->dual_lvds)
-		writel(reg, lvds_tx->tx2_regs + LVDSTX_CTL3);
+		writel(reg, lvds_tx->tx1_regs + LVDSTX_CTL3);
 
 	reg = RG_LVDSTX_LDOLPF_EN | RG_LVDSTX_BIASLPF_EN;
-	writel(reg, lvds_tx->tx1_regs + LVDSTX_CTL4);
+	writel(reg, lvds_tx->tx2_regs + LVDSTX_CTL4);
 
 	if (lvds_tx->dual_lvds)
-		writel(reg, lvds_tx->tx2_regs + LVDSTX_CTL4);
+		writel(reg, lvds_tx->tx1_regs + LVDSTX_CTL4);
 
 	return 0;
 }
@@ -194,10 +196,10 @@ static void mtk_lvds_tx_power_off_signal(struct phy *phy)
 {
 	struct mtk_lvds_tx *lvds_tx = phy_get_drvdata(phy);
 
-	writel(0, lvds_tx->tx1_regs + LVDSTX_CTL3);
+	writel(0, lvds_tx->tx2_regs + LVDSTX_CTL3);
 
 	if (lvds_tx->dual_lvds)
-		writel(0, lvds_tx->tx2_regs + LVDSTX_CTL3);
+		writel(0, lvds_tx->tx1_regs + LVDSTX_CTL3);
 }
 
 static int mtk_lvds_tx_power_off(struct phy *phy)
