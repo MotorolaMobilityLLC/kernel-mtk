@@ -135,7 +135,7 @@ int send_fp_command(unsigned long share_memory_size)
 	int retVal = 0;
 
 	down(&fdrv_lock);
-	ut_pm_mutex_lock(&pm_mutex);
+	//ut_pm_mutex_lock(&pm_mutex);
 	down(&smc_lock);
 	IMSG_DEBUG("send_fp_command start\n");
 
@@ -153,7 +153,7 @@ int send_fp_command(unsigned long share_memory_size)
 
 	if (retVal != 0) {
 		up(&smc_lock);
-		ut_pm_mutex_unlock(&pm_mutex);
+		//ut_pm_mutex_unlock(&pm_mutex);
 		up(&fdrv_lock);
 		return retVal;
 	}
@@ -165,7 +165,7 @@ int send_fp_command(unsigned long share_memory_size)
 
 	Invalidate_Dcache_By_Area((unsigned long)fp_buff_addr, (unsigned long)fp_buff_addr + FP_BUFF_SIZE);
 
-	ut_pm_mutex_unlock(&pm_mutex);
+	//ut_pm_mutex_unlock(&pm_mutex);
 	up(&fdrv_lock);
 
 
