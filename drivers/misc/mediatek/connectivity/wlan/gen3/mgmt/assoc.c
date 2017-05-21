@@ -287,8 +287,6 @@ __KAL_INLINE__ VOID assocBuildReAssocReqFrameCommonIEs(IN P_ADAPTER_T prAdapter,
 		u2SupportedRateSet = (prStaRec->u2OperationalRateSet &
 				      rNonHTPhyAttributes[u4NonHTPhyType].u2SupportedRateSet);
 
-		ASSERT(u2SupportedRateSet);
-
 		if (!u2SupportedRateSet)
 			u2SupportedRateSet = rNonHTPhyAttributes[u4NonHTPhyType].u2SupportedRateSet;
 
