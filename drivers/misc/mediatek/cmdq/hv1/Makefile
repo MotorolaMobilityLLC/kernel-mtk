@@ -44,6 +44,10 @@ endif
 ccflags-y += -DMET_USER_EVENT_SUPPORT
 ccflags-y += -DDEBUG_INFO
 
+ifneq ($(TARGET_BUILD_VARIANT),user)
+ccflags-y += -D_CMDQ_TEST_PROC_
+endif
+
 obj-y += cmdq_record.o
 obj-y += cmdq_core.o
 obj-y += cmdq_driver.o
