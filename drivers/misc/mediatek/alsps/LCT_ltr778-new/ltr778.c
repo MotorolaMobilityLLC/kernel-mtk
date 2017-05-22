@@ -113,6 +113,8 @@ struct ltr778_priv {
 	atomic_t	ps_thd_val_low; 	/*the cmd value can't be read, stored in ram*/
 	atomic_t	ps_persist_val_high;
 	atomic_t	ps_persist_val_low;
+	atomic_t	ps_thd_val_high_stowed;
+	atomic_t	ps_thd_val_low_stowed;
 	atomic_t	als_thd_val_high;	 /*the cmd value can't be read, stored in ram*/
 	atomic_t	als_thd_val_low; 	/*the cmd value can't be read, stored in ram*/
 	atomic_t	ps_thd_val;
@@ -220,67 +222,77 @@ static int get_avg_ps(unsigned int ps_data_c)
 }
 
 
-#define MAX_ELM_PS_1 10
-static unsigned int record_ps_1[MAX_ELM_PS_1];
-static int rct_ps_1=0,full_ps_1=0;
-static long ps_sum_1=0;
-static int j_ps=0;
+#define PS_NUM 8
+static unsigned int ps_data[PS_NUM];
+static unsigned int ps_rct_n = 0,ps_cal_full = 0, j_ps = 0;
 
-
-static int get_stable_ps(unsigned int ps_data_c_1)
+static int get_stable_ps(unsigned int ps_count)
 {
-	int ps_d_1;
-	int ps_d_high;
-	int ps_d_low;
+	int ps_avg = 0;
+	int ps_avg_h;
+	int ps_avg_l;
 	int i;
+	long ps_data_sum = 0;
 	
-	if(rct_ps_1 >= MAX_ELM_PS_1)
-		full_ps_1=1;
+	if(ps_rct_n >= PS_NUM)
+		ps_cal_full=1;
 
-	if(full_ps_1){
-		rct_ps_1 %= MAX_ELM_PS_1;
-		ps_sum_1 -= record_ps_1[rct_ps_1];
-	}
-	ps_sum_1 += ps_data_c_1;
-	record_ps_1[rct_ps_1]=ps_data_c_1;
-	rct_ps_1++;
+	if(ps_cal_full){
+		ps_rct_n %= PS_NUM;
+	}	
 
-	if(full_ps_1){
-	ps_d_1 = ps_sum_1 / MAX_ELM_PS_1;
+	ps_data[ps_rct_n]=ps_count;
+
+	
+	if(ps_cal_full){
+		
+		for(i=0;i<PS_NUM;i++){
+			APS_LOG("LTR778 %s:ps_data[%d] = %d \n", __func__, i,ps_data[i]);
+			ps_data_sum += ps_data[i];
+		}
+		
+		ps_avg = ps_data_sum / PS_NUM;
+		
+		ps_avg_h = ps_avg + 20; // 25->20
+		
+		ps_avg_l = ps_avg - 20;
+		
+		for(i=0;i<PS_NUM;i++)
+		{
+			if(ps_data[i]< ps_avg_h  && ps_data[i]>ps_avg_l )
+				j_ps++;
+			else 
+				j_ps = 0;
+		}
+		
+		
 	}else{
-	ps_d_1 = ps_sum_1 /rct_ps_1;
+		j_ps = 0;
 	}
+	
+	ps_rct_n++;
 
-	ps_d_high = ps_d_1 + 20;	// 25->20
-
-	ps_d_low = ps_d_1 - 20;
-
-
-	for(i=0;i<=MAX_ELM_PS_1;i++)
-	{
-		if(record_ps_1[i]< ps_d_high  && record_ps_1[i]>ps_d_low )
-			j_ps++;
-		else 
-			j_ps = 0;
-	}
-
-	if(full_ps_1){
-
-			if(j_ps >= MAX_ELM_PS_1 )
-			{
-				return 1;
-			}
-			else
-			{
-				return 0;
-			}
+	
+	if(j_ps >= PS_NUM-1){
+		return 1;
 	}else{
 		return 0;
 	}
 
+
 }
 
 
+static int clear_stable(void)
+{
+		ps_rct_n = 0;
+		ps_cal_full = 0;
+		j_ps = 0;
+		
+		APS_LOG("LTR778 %s: j_ps %d \n", __func__,j_ps );
+
+		return 0;		
+}
 
 static struct alsps_init_info ltr778_init_info = {
 		.name = "ltr778",
@@ -557,7 +569,7 @@ static int ltr778_ps_stowed_enable(struct i2c_client *client, int enable)
 	u8 regdata;
 	int err;
 	int res = 0;
-//	struct ltr778_priv *obj = ltr778_obj;
+	struct ltr778_priv *obj = ltr778_obj;
 
 
 	APS_LOG("ltr778_ps_stowed_enable(%d) ...start!\n",enable);
@@ -619,6 +631,8 @@ static int ltr778_ps_stowed_enable(struct i2c_client *client, int enable)
 
 	if (0 == ltr778_obj->hw->polling_mode_ps && ((regdata & 0x02) == 0x02))
 	{
+	atomic_set(&obj->ps_thd_val_high_stowed, atomic_read(&obj->ps_thd_val_high) + 50);
+	atomic_set(&obj->ps_thd_val_low_stowed, atomic_read(&obj->ps_thd_val_low) + 20);
 //#ifdef GN_MTK_BSP_PS_DYNAMIC_CALI
 #if 0
 		err = ltr778_dynamic_calibrate();
@@ -627,7 +641,15 @@ static int ltr778_ps_stowed_enable(struct i2c_client *client, int enable)
 			APS_LOG("ltr778_dynamic_calibrate() failed\n");
 		}
 #endif
-		ltr778_ps_set_thres();
+
+	ltr778_i2c_write_reg( LTR778_PS_THRES_LOW_0,(u8)((atomic_read(&obj->ps_thd_val_low_stowed)) & 0x00FF) );
+	
+	ltr778_i2c_write_reg( LTR778_PS_THRES_LOW_1, (u8)(((atomic_read(&obj->ps_thd_val_low_stowed)) & 0x7F00) >> 8));
+	
+	ltr778_i2c_write_reg( LTR778_PS_THRES_UP_0, (u8)((atomic_read(&obj->ps_thd_val_high_stowed)) & 0x00FF) );
+	
+	ltr778_i2c_write_reg( LTR778_PS_THRES_UP_1, (u8)(((atomic_read(&obj->ps_thd_val_high_stowed)) & 0x7F00) >> 8) );
+
 	}
 	else if (0 == ltr778_obj->hw->polling_mode_ps && ((regdata & 0x02) == 0x00))
 	{
@@ -883,6 +905,7 @@ out:
 }
 
 static int persist_add_val = 25;
+static unsigned int psensor_first_cal = 0;
 
 #ifdef GN_MTK_BSP_PS_DYNAMIC_CALI
 static int ltr778_dynamic_calibrate(void)
@@ -930,6 +953,7 @@ static int ltr778_dynamic_calibrate(void)
 	ps_en = 0;
 
 	noise = data_total / count;
+	APS_LOG("%s:noise1 = %d\n", __func__, noise);
 	obj->als = ltr778_als_read(obj->client, &obj->als);
 
 	if (noise <100)
@@ -938,11 +962,15 @@ static int ltr778_dynamic_calibrate(void)
 		persist_add_val = 35;
 	
 	
-	if(obj->als < 20){
+	if(obj->als < 10 && noise > atomic_read(&obj->ps_persist_val_low) && psensor_first_cal == 1){  
 
 		noise = 3000;  // not meet the calibration condition -- noise < dynamic_calibrate + 450
+	APS_LOG("%s:noise2 = %d\n", __func__, noise);
 
 	}
+   
+	psensor_first_cal = 1; // first time  must run dynamic calibrate
+
 	if(noise < dynamic_calibrate + 800)  // modified by steven
 	{
 		dynamic_calibrate = noise;
@@ -1004,11 +1032,10 @@ static int ltr778_dynamic_calibrate(void)
 	}
 	
 	
-	APS_LOG("%s:noise = %d\n", __func__, noise);
-	APS_LOG("%s:obj->ps_thd_val_high = %d\n", __func__, ps_thd_val_high);
-	APS_LOG("%s:obj->ps_thd_val_low = %d\n", __func__, ps_thd_val_low);
-	APS_LOG("%s:obj->ps_persist_val_high = %d\n", __func__, ps_persist_val_high);
-	APS_LOG("%s:obj->ps_persist_val_low = %d\n", __func__, ps_persist_val_low);
+	APS_LOG("%s:obj->ps_thd_val_high = %d\n", __func__, atomic_read(&obj->ps_thd_val_high));
+	APS_LOG("%s:obj->ps_thd_val_low = %d\n", __func__, atomic_read(&obj->ps_thd_val_low));
+	APS_LOG("%s:obj->ps_persist_val_high = %d\n", __func__, atomic_read(&obj->ps_persist_val_high));
+	APS_LOG("%s:obj->ps_persist_val_low = %d\n", __func__, atomic_read(&obj->ps_persist_val_low));
 
 	ltr778_i2c_write_reg(LTR778_PS_MEAS_RATE, 0x03);	// 50ms time 
 	
@@ -1222,29 +1249,30 @@ static int oil_close = 0;
 /********************************************************************/
 static int ltr778_get_ps_value(struct ltr778_priv *obj, u16 ps)
 {
-	int val;
+	int val = 0; 
 	int invalid = 0;
 	static int val_temp = 1;
-	//static int full_ps_1;
 	
 	APS_DBG("ALS/PS ltr778_get_ps_value oil_close= %d\n", oil_close);
 	
 	if((ps >= atomic_read(&obj->ps_persist_val_high)))  // modified by steven
-	{	full_ps_1=0;
+	{	
 		val = 2;  /* persist oil close*/
 		val_temp = 2;
 		intr_flag_value = 2;
 		oil_far_cal = 0;
 		oil_close = 1;
+			clear_stable();
 	}
 	else if((ps >= atomic_read(&obj->ps_thd_val_high)))
 	{
 		if(oil_close == 0)
-			{	full_ps_1=0;
+			{	
 				val = 0;  /*close*/
 				val_temp = 0;
 				intr_flag_value = 1;
 				oil_far_cal = 0;
+			clear_stable();
 			}
 
 		if((ps <= (atomic_read(&obj->ps_persist_val_low) - persist_add_val)) && (oil_close == 1)){
@@ -1252,25 +1280,25 @@ static int ltr778_get_ps_value(struct ltr778_priv *obj, u16 ps)
 				val_temp = 3;
 				intr_flag_value = 3;
 			}else if((ps >  (atomic_read(&obj->ps_persist_val_low) + persist_add_val +5)) && (oil_close == 1)){
-				full_ps_1=0;
+				
 				val = 2;  /* persist oil near*/
 				val_temp = 2;
 				intr_flag_value = 2;
+			clear_stable();
 			}else{
-				full_ps_1=0;
 				val = val_temp;
-				intr_flag_value = 2;
+			clear_stable();
 			}
 
 
 	}	
 	else if((ps <= atomic_read(&obj->ps_thd_val_low)))
-	{	full_ps_1=0;
+	{	
 		val = 1;  /*far away*/
 		val_temp = 1;
 		intr_flag_value = 0;
 		oil_far_cal = 0;
-		
+			clear_stable();
 		oil_close = 0;
 	}
 	else if(oil_close == 1)
@@ -1281,15 +1309,16 @@ static int ltr778_get_ps_value(struct ltr778_priv *obj, u16 ps)
 
 	}
 	else
-	{	full_ps_1=0;
+	{	
 		val = val_temp;		
 		oil_far_cal = 0;
+			clear_stable();
 	}
 	
 
 	
 
-	if(val == 3  && oil_far_cal <= (MAX_ELM_PS_1 + 18))  // modified by steven stable data
+	if(val == 3  && oil_far_cal <= (PS_NUM + 18))  // modified by steven stable data
 	{		
 		oil_far_cal ++;
 
@@ -1299,6 +1328,7 @@ static int ltr778_get_ps_value(struct ltr778_priv *obj, u16 ps)
 		intr_flag_value = 2;
 
 		if(get_stable_ps(ps) == 1){
+			clear_stable();
 			
 			val = 3;  /* persist oil far away*/
 			val_temp = 3;
@@ -1923,6 +1953,8 @@ static void ltr778_ps_delay_work(struct work_struct *work)
 	noise = obj->ps;
 	if(get_stable_ps(obj->ps) == 1 && ps_cali_time == 0 && (obj->ps < dynamic_calibrate)){
 
+		clear_stable();
+
 		ps_cali_time = 1;
 
 					if (noise < 1) {
@@ -2150,13 +2182,13 @@ static void ltr778_eint_work(struct work_struct *work)
 					}
 				}else{
 				
-					res = ltr778_i2c_write_reg( LTR778_PS_THRES_LOW_0,(u8)((atomic_read(&obj->ps_thd_val_low)) & 0x00FF) );
+					res = ltr778_i2c_write_reg( LTR778_PS_THRES_LOW_0,(u8)((atomic_read(&obj->ps_thd_val_low_stowed)) & 0x00FF) );
 					if(res < 0)
 					{
 						goto EXIT_INTR;
 					}
 					
-					res = ltr778_i2c_write_reg( LTR778_PS_THRES_LOW_1, (u8)(((atomic_read(&obj->ps_thd_val_low)) & 0x7F00) >> 8));
+					res = ltr778_i2c_write_reg( LTR778_PS_THRES_LOW_1, (u8)(((atomic_read(&obj->ps_thd_val_low_stowed)) & 0x7F00) >> 8));
 					if(res < 0)
 					{
 						goto EXIT_INTR;
@@ -2197,16 +2229,31 @@ static void ltr778_eint_work(struct work_struct *work)
 					goto EXIT_INTR;
 				}
 				
-				res = ltr778_i2c_write_reg( LTR778_PS_THRES_UP_0, (u8)((atomic_read(&obj->ps_thd_val_high)) & 0x00FF));
-				if(res < 0)
-				{
-					goto EXIT_INTR;
-				}
-				
-				res = ltr778_i2c_write_reg( LTR778_PS_THRES_UP_1, (u8)(((atomic_read(&obj->ps_thd_val_high)) & 0x7F00) >> 8));
-				if(res < 0)
-				{
-					goto EXIT_INTR;
+				if( ps_stowed_enf == 0){
+						res = ltr778_i2c_write_reg( LTR778_PS_THRES_UP_0, (u8)((atomic_read(&obj->ps_thd_val_high)) & 0x00FF));
+						if(res < 0)
+						{
+							goto EXIT_INTR;
+						}
+						
+						res = ltr778_i2c_write_reg( LTR778_PS_THRES_UP_1, (u8)(((atomic_read(&obj->ps_thd_val_high)) & 0x7F00) >> 8));
+						if(res < 0)
+						{
+							goto EXIT_INTR;
+						}
+				}else{
+					
+						res = ltr778_i2c_write_reg( LTR778_PS_THRES_UP_0, (u8)((atomic_read(&obj->ps_thd_val_high_stowed)) & 0x00FF));
+						if(res < 0)
+						{
+							goto EXIT_INTR;
+						}
+						
+						res = ltr778_i2c_write_reg( LTR778_PS_THRES_UP_1, (u8)(((atomic_read(&obj->ps_thd_val_high_stowed)) & 0x7F00) >> 8));
+						if(res < 0)
+						{
+							goto EXIT_INTR;
+						}
 				}
 			}
 			break;
