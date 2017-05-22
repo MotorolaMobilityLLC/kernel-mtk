@@ -29,6 +29,7 @@
 #include <media/videobuf2-core.h>
 #include <media/videobuf2-dma-contig.h>
 #include <soc/mediatek/smi.h>
+#include <linux/iommu.h>
 
 #include "mtk_jpeg_hw.h"
 #include "mtk_jpeg_core.h"
@@ -1098,7 +1099,13 @@ static int mtk_jpeg_probe(struct platform_device *pdev)
 	struct resource *res;
 	int dec_irq;
 	int ret;
+	struct iommu_domain *domain;
 
+	domain = iommu_get_domain_for_dev(&pdev->dev);
+	if (!domain) {
+		dev_err(&pdev->dev, "[IOMMU]iommu driver not ready");
+		return -EPROBE_DEFER;
+	}
 	jpeg = devm_kzalloc(&pdev->dev, sizeof(*jpeg), GFP_KERNEL);
 	if (!jpeg)
 		return -ENOMEM;
