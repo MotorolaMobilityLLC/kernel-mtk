@@ -308,6 +308,12 @@
 	pinctrl-names = "default";
 	pinctrl-0 = <&i2c0_pins>;
 	status = "okay";
+
+	lp87565-regulator {
+		#address-cells = <0>;
+		compatible = "ti, lp87565-regulator";
+		reg = <0x61>;
+	};
 };
 
 &i2c1 {
