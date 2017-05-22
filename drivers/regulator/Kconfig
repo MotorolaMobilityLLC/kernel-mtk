@@ -339,6 +339,16 @@ config REGULATOR_LP8755
 	  chip contains six step-down DC/DC converters which can support
 	  9 mode multiphase configuration.
 
+config REGULATOR_LP8756
+	tristate "TI LP8756 High Performance PMU driver"
+	depends on I2C
+	select REGMAP_I2C
+	help
+	  This driver supports LP8756 High Performance PMU driver. This
+	  chip contains four step-down DC/DC converters which can support
+	  4 mode multiphase configuration. Say y to enable the regulator
+	  driver.
+
 config REGULATOR_LP8788
 	tristate "TI LP8788 Power Regulators"
 	depends on MFD_LP8788
