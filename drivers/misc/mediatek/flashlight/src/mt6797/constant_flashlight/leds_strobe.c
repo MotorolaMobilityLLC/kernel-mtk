@@ -180,14 +180,14 @@ int writeReg(int reg, int data)
 
 enum
 {
-	e_DutyNum = 23,
+	e_DutyNum = 26,
 };
 static int isMovieMode[e_DutyNum]={1,1,1,1,0,0,0,0,0,0,0,0,0,0,0};
 static int torchDuty_H[e_DutyNum]=    {16,34,51,68,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};//follow k51m aw3644 the same as lm3643
-static int torchDuty_L[e_DutyNum]=    {9,16,34,51,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};//follow k51m aw3644 the same as lm3643
-//50,105,156,200ma
-static int flashDuty_H[e_DutyNum]=     {3,8,12,14,16,20,25,29,33,37,42,46,50,55,59,63,67,72,76,80,84,93,101}; //follow k51m aw3644 the same as lm3643
-static int flashDuty_L[e_DutyNum]=     {1,3,8,12,14,16,20,25,29,33,37,42,46,50,55,59,63,67,72,76,80,84,93}; //follow k51m aw3644 the same as lm3643
+//static int torchDuty_L[e_DutyNum]=    {9,16,34,51,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};//follow k51m aw3644 the same as lm3643
+//50,105,156,200maz
+static int flashDuty_H[e_DutyNum]=     {3,8,12,16,18,20,25,29,33,37,42,46,50,55,59,63,67,72,76,80,84,93,101,110,119,127}; //follow k51m aw3644 the same as lm3643
+//static int flashDuty_L[e_DutyNum]=     {1,3,8,12,14,16,20,25,29,33,37,42,46,50,55,59,63,67,72,76,80,84,93}; //follow k51m aw3644 the same as lm3643
 //150,200,250,300,350,400,450,500,550,600,650,700,750,800,850,900,950,1000,1100,1200,1300,1400,1500ma
 int m_duty1=0;
 int m_duty2=0;
@@ -266,7 +266,7 @@ int flashEnable_aw3644_2(void)
 		if(isMovieMode[m_duty1] == 1)
 			{
 			//mt_set_gpio_out(FLASH_TORCH_ENABLE, GPIO_OUT_ONE);
-			writeReg(aw3644_REG_ENABLE, 0x0A);//torch mode
+			writeReg(aw3644_REG_ENABLE, 0x0E);//torch mode
 			}
 		else
 			{
@@ -276,7 +276,7 @@ int flashEnable_aw3644_2(void)
 	}
 	else
 	{
-		if((isMovieMode[m_duty1] == 1) & (isMovieMode[m_duty2] == 1))
+		if((isMovieMode[m_duty1] == 1) && (isMovieMode[m_duty2] == 1))
 			{
 			PK_DBG("TORCH mode\n");
 			//mt_set_gpio_out(FLASH_TORCH_ENABLE, GPIO_OUT_ONE);
@@ -379,18 +379,18 @@ int setDuty_aw3644_2(int duty)
 	{
 		if(isMovieMode[m_duty2] == 1)
 		{
-			writeReg(aw3644_REG_LED2_TORCH, torchDuty_L[m_duty2]);
+			writeReg(aw3644_REG_LED2_TORCH, torchDuty_H[m_duty2]);
 		}
 		else
 		{
-			writeReg(aw3644_REG_LED2_FLASH, flashDuty_L[m_duty2]);
+			writeReg(aw3644_REG_LED2_FLASH, flashDuty_H[m_duty2]);
 		}
 	}
 	else if(LED2Closeflag == 1)
 	{
 		if(isMovieMode[m_duty1] == 1)
 		{
-			writeReg(aw3644_REG_LED1_TORCH, torchDuty_H[m_duty1]);
+			writeReg(aw3644_REG_LED1_FLASH, flashDuty_H[m_duty1]);
 		}
 		else
 		{
@@ -402,12 +402,12 @@ int setDuty_aw3644_2(int duty)
 		if((isMovieMode[m_duty1] == 1) && ((isMovieMode[m_duty2] == 1)))
 		{
 			writeReg(aw3644_REG_LED1_TORCH, torchDuty_H[m_duty1]);
-			writeReg(aw3644_REG_LED2_TORCH, torchDuty_L[m_duty2]);
+			writeReg(aw3644_REG_LED2_TORCH, torchDuty_H[m_duty2]);
 		}
 		else
 		{
 			writeReg(aw3644_REG_LED1_FLASH, flashDuty_H[m_duty1]);
-			writeReg(aw3644_REG_LED2_FLASH, flashDuty_L[m_duty2]);
+			writeReg(aw3644_REG_LED2_FLASH, flashDuty_H[m_duty2]);
 		}
 	}
 	return 0;
@@ -705,13 +705,13 @@ static int constant_flashlight_ioctl(unsigned int cmd, unsigned long arg)
 			hrtimer_start( &g_timeOutTimer, ktime, HRTIMER_MODE_REL );
 	            }
 			LED1Closeflag = 0;
-	       		setDuty_aw3644_2(m_duty1);
-			FL_Enable();
+	       		//setDuty_aw3644_2(m_duty1);
+		//	FL_Enable();
 		}
 		else
 		{
 			LED1Closeflag = 1;
-			FL_Disable();
+		//	FL_Disable();
 			hrtimer_cancel( &g_timeOutTimer );
 		}
 		break;
