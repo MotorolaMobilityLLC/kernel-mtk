@@ -189,6 +189,7 @@ static irqreturn_t mtk_iommu_isr(int irq, void *dev_id)
 {
 	struct mtk_iommu_data *data = dev_id;
 	struct mtk_iommu_domain *dom = data->m4u_dom;
+	const struct mtk_iommu_match_data *match_data;
 	u32 int_state, regval, fault_iova, fault_pa;
 	unsigned int fault_larb, fault_port;
 	bool layer, write;
@@ -202,6 +203,15 @@ static irqreturn_t mtk_iommu_isr(int irq, void *dev_id)
 	regval = readl_relaxed(data->base + REG_MMU_INT_ID);
 	fault_larb = F_MMU0_INT_ID_LARB_ID(regval);
 	fault_port = F_MMU0_INT_ID_PORT_ID(regval);
+
+	/*
+	 * for mt2712 if bit[7] && bit[6], it's larb6, it's ok for iommu1
+	 * since larb7 do not have port number bigger than 8.
+	 */
+	if (data->match_data->match_type == m4u_mt2712 && fault_larb == 3 && regval & BIT(6)) {
+		fault_larb = 6;
+		fault_port &= 0xf;
+	}
 
 	if (report_iommu_fault(&dom->domain, data->dev, fault_iova,
 			       write ? IOMMU_FAULT_WRITE : IOMMU_FAULT_READ)) {
