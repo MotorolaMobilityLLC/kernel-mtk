@@ -257,6 +257,7 @@ static struct workqueue_struct *battery_init_workqueue;
 static struct work_struct battery_init_work;
 struct delayed_work		check_turbo_charger_work;
 static int check_turbo_counter = 0;
+struct delayed_work		charger_type_detection_work;
 
 extern signed int fgauge_get_Q_max(signed short temperature);
 extern int force_get_tbat(kal_bool update);
@@ -2709,6 +2710,29 @@ static void bq25890_check_turbo_charger_work(struct work_struct *work)
 
 }
 
+#define CHECK_TYPE_MS 3000
+static void mt_charger_type_detection_work(struct work_struct *work)
+{
+	CHARGER_TYPE CHR_Type_num = CHARGER_UNKNOWN;
+
+	mutex_lock(&charger_type_mutex);
+
+	battery_charging_control(CHARGING_CMD_GET_CHARGER_TYPE,&CHR_Type_num);
+	BMT_status.charger_type = CHR_Type_num;
+
+	printk("mt_charger_type_detection_work  the charge type is %d\n",CHR_Type_num);
+	if ((BMT_status.charger_type == STANDARD_HOST)
+	    || (BMT_status.charger_type == CHARGING_HOST)) {
+		mt_usb_connect();
+	}
+
+	if (BMT_status.charger_type == STANDARD_CHARGER)
+		schedule_delayed_work(&check_turbo_charger_work,
+			msecs_to_jiffies(CHECK_TURBO_MS));
+
+	mutex_unlock(&charger_type_mutex);
+}
+
 CHARGER_TYPE mt_charger_type_detection(void)
 {
 	CHARGER_TYPE CHR_Type_num = CHARGER_UNKNOWN;
@@ -2733,11 +2757,18 @@ CHARGER_TYPE mt_charger_type_detection(void)
 	else
 	{
 		battery_charging_control(CHARGING_CMD_GET_CHARGER_TYPE, &CHR_Type_num);
-	 if ( NONSTANDARD_CHARGER == CHR_Type_num) {
-	     msleep(200);
-             battery_charging_control(CHARGING_CMD_GET_CHARGER_TYPE,&CHR_Type_num);
-	    printk("mahj2_debug now the charge type is %d\n",CHR_Type_num) ;
-	 }
+
+		if ( NONSTANDARD_CHARGER == CHR_Type_num) {
+			msleep(200);
+			battery_charging_control(CHARGING_CMD_GET_CHARGER_TYPE, &CHR_Type_num);
+			printk("mahj2_debug now the charge type is %d\n",CHR_Type_num);
+		 }
+
+		if ( NONSTANDARD_CHARGER == CHR_Type_num) {
+			schedule_delayed_work(&charger_type_detection_work,
+					msecs_to_jiffies(CHECK_TYPE_MS));
+			printk("mt_charger_type_detection the charge type is %d\n",CHR_Type_num);
+		 }
     }
 #else
 	battery_charging_control(CHARGING_CMD_GET_CHARGER_TYPE,&CHR_Type_num);
@@ -2875,6 +2906,7 @@ static void mt_battery_charger_detect_check(void)
 
 		check_turbo_counter = 0;
 		cancel_delayed_work(&check_turbo_charger_work);
+		cancel_delayed_work(&charger_type_detection_work);
 
 #ifdef CONFIG_MTK_BQ25896_SUPPORT
 /*New low power feature of MT6531: disable charger CLK without CHARIN.
@@ -4156,6 +4188,7 @@ static int battery_probe(struct platform_device *dev)
 	wake_lock_init(&TA_charger_suspend_lock, WAKE_LOCK_SUSPEND, "TA charger suspend wakelock");
 #endif
 	INIT_DELAYED_WORK(&check_turbo_charger_work, bq25890_check_turbo_charger_work);
+	INIT_DELAYED_WORK(&charger_type_detection_work, mt_charger_type_detection_work);
 	mtk_pep_init();
 	mtk_pep20_init();
 
