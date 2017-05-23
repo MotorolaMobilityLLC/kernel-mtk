@@ -1199,12 +1199,8 @@
 	};
 
 #if (CONFIG_MTK_GAUGE_VERSION == 30)
-	#if (CONFIG_MTK_ADDITIONAL_BATTERY_TABLE == 1)
-	    #if (CONFIG_L3510_MAINBOARD == 1)
-		    #include "bat_setting/LCT_L3510_mt6757_battery_prop_ext.dtsi"
-		#else
+    #ifdef CONFIG_MTK_ADDITIONAL_BATTERY_TABLE
 		#include "bat_setting/mt6757_battery_prop_ext.dtsi"
-		#endif
 	#else
 		#include "bat_setting/mt6757_battery_prop.dtsi"
 	#endif
@@ -3804,12 +3800,12 @@
 		usb_charger_current_configured = <500000>;
 		usb_charger_current = <500000>;
 		/***charg by liminglong longcheer start******/
-		ac_charger_current = <3000000 >;
+		ac_charger_current = <2500000 >;
 		ac_charger_input_current = <2050000 >;
 		/***charg by liminglong longcheer end******/
 		non_std_ac_charger_current = <500000>;
 		charging_host_charger_current = <500000>;
-		ta_ac_charger_current = <3000000>;
+		ta_ac_charger_current = <2500000>;
 
 		/* sw jeita */
 		jeita_temp_above_t4_cv_voltage = <4150000>;

@@ -1200,11 +1200,7 @@
 
 #if (CONFIG_MTK_GAUGE_VERSION == 30)
     #ifdef CONFIG_MTK_ADDITIONAL_BATTERY_TABLE
-	    #ifdef CONFIG_L3510_MAINBOARD
-		    #include "bat_setting/LCT_L3510_mt6757_battery_prop_ext.dtsi"
-		#else
 		#include "bat_setting/mt6757_battery_prop_ext.dtsi"
-		#endif
 	#else
 		#include "bat_setting/mt6757_battery_prop.dtsi"
 	#endif
