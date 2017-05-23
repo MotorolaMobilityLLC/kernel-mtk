@@ -272,7 +272,7 @@ enum CHIP_TYPE_T gtp_chip_type = CHIP_TYPE_GT9;
 u8 gtp_clk_buf[6];
 u8 rqst_processing = 0;
 
-static void gtp_get_chip_type(struct i2c_client *client);
+//static void gtp_get_chip_type(struct i2c_client *client); //Optimize boot time by jiatianbao 20170523
 static u8 gtp_bak_ref_proc(struct i2c_client *client, u8 mode);
 static u8 gtp_main_clk_proc(struct i2c_client *client);
 static void gtp_recovery_reset(struct i2c_client *client);
@@ -1356,7 +1356,8 @@ reset_proc:
 
 	gtp_reset_guitar(client, 20);
 
-#if defined(CONFIG_GTP_COMPATIBLE_MODE)
+//Optimize boot time by jiatianbao 20170523
+#if 0//defined(CONFIG_GTP_COMPATIBLE_MODE)     
 	gtp_get_chip_type(client);
 
 	if (CHIP_TYPE_GT9F == gtp_chip_type) {
@@ -1388,7 +1389,7 @@ reset_proc:
 
 /* **************** For GT9XXF Start ********************/
 #if defined(CONFIG_GTP_COMPATIBLE_MODE)
-
+/* Optimize boot time by jiatianbao 20170523
 void gtp_get_chip_type(struct i2c_client *client)
 {
 	u8 opr_buf[10] = { 0x00 };
@@ -1413,10 +1414,10 @@ void gtp_get_chip_type(struct i2c_client *client)
 		GTP_INFO("Chip Type: %s",
 			 (gtp_chip_type == CHIP_TYPE_GT9) ? "GOODIX_GT9" : "GOODIX_GT9F");
 	}
-	gtp_chip_type = CHIP_TYPE_GT9;	/* for test */
+	gtp_chip_type = CHIP_TYPE_GT9;	// for test 
 	GTP_INFO("Chip Type: %s", (gtp_chip_type == CHIP_TYPE_GT9) ? "GOODIX_GT9" : "GOODIX_GT9F");
 }
-
+*/
 static u8 gtp_bak_ref_proc(struct i2c_client *client, u8 mode)
 {
 	s32 i = 0;
