@@ -692,12 +692,7 @@ PHY_INT32 phy_init_soc(struct u3phy_info *info)
 	/*Release force suspendm.  (force_suspendm=0) (let suspendm=1, enable usb 480MHz pll) */
 	U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_U2PHYDTM0, FORCE_SUSPENDM_OFST, FORCE_SUSPENDM, 0);
 #endif
-//LCSH ADD BY dingyin for adjust usb driver start
-	U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_USBPHYACR1, RG_USB20_VRT_VREF_SEL_OFST,
-			  RG_USB20_VRT_VREF_SEL, 7);
-	U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_USBPHYACR1, RG_USB20_TERM_VREF_SEL_OFST,
-			  RG_USB20_TERM_VREF_SEL, 7);
-//LCSH ADD BY dingyin for adjust usb driver end
+
 	/*Wait 800 usec */
 	udelay(800);
 
@@ -1087,12 +1082,6 @@ void usb_phy_recover(unsigned int clk_on)
 	/* U3D_U2PHYDTM0 FORCE_SUSPENDM */
 	U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_U2PHYDTM0, FORCE_SUSPENDM_OFST, FORCE_SUSPENDM, 0);
 #endif
-//LCSH ADD BY dingyin for adjust usb driver start	
-	U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_USBPHYACR1, RG_USB20_VRT_VREF_SEL_OFST,
-			  RG_USB20_VRT_VREF_SEL, 7);
-	U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_USBPHYACR1, RG_USB20_TERM_VREF_SEL_OFST,
-			  RG_USB20_TERM_VREF_SEL, 7);
-//LCSH ADD BY dingyin for adjust usb driver end
 
 	/* RG_DPPULLDOWN 1'b0 */
 	/* U3D_U2PHYDTM0 RG_DPPULLDOWN */
