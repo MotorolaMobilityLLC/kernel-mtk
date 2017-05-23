@@ -1150,7 +1150,7 @@ if(enable == true)
 					 break;
 			}
 	}
-	msleep(1000);
+//	msleep(1000);
 }
 else
 {
