@@ -946,12 +946,21 @@ static int bmg_read_sensor_data(struct i2c_client *client,
 			obj->cvt.sign[BMG_AXIS_Z]*databuf[BMG_AXIS_Z];
 
 		/* convert: LSB -> degree/second(o/s) */
+#ifdef CONFIG_L3510_MAINBOARD
+               gyro[BMG_AXIS_X] = (gyro[BMG_AXIS_X] * BMI160_FS_250_LSB) /
+               obj->sensitivity;
+               gyro[BMG_AXIS_Y] = -(gyro[BMG_AXIS_Y] * BMI160_FS_250_LSB) /
+               obj->sensitivity;
+               gyro[BMG_AXIS_Z] = -(gyro[BMG_AXIS_Z] * BMI160_FS_250_LSB) /
+               obj->sensitivity;
+#else
 		gyro[BMG_AXIS_X] = -(gyro[BMG_AXIS_X] * BMI160_FS_250_LSB) /
 		obj->sensitivity;
 		gyro[BMG_AXIS_Y] = (gyro[BMG_AXIS_Y] * BMI160_FS_250_LSB) /
 		obj->sensitivity;
 		gyro[BMG_AXIS_Z] = -(gyro[BMG_AXIS_Z] * BMI160_FS_250_LSB) /
 		obj->sensitivity;
+#endif
 		GYRO_LOG("gyro final xyz data: %d,%d,%d, sens:%d\n",
 		gyro[BMG_AXIS_X], gyro[BMG_AXIS_Y],
 		gyro[BMG_AXIS_Z], obj->sensitivity);
