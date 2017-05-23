@@ -18,6 +18,7 @@
 
 #include <linux/module.h>
 #include <sound/soc.h>
+#include <sound/pcm_params.h>
 #include <linux/delay.h>
 #include <linux/gpio.h>
 #include <linux/pinctrl/consumer.h>
@@ -124,6 +125,22 @@ static int mt2712_d1v1_fe_ops_startup(struct snd_pcm_substream *substream)
 static struct snd_soc_ops mt2712_d1v1_48k_fe_ops = {
 	.startup = mt2712_d1v1_fe_ops_startup,
 };
+
+static int mt2712_d1v1_be_ops_fixup(struct snd_soc_pcm_runtime *rtd,
+					   struct snd_pcm_hw_params *params)
+{
+	struct snd_soc_dai *cpu_dai = rtd->cpu_dai;
+
+	/* set sample bits to 32 bit for I2SO2-to-AK4556 */
+	if (cpu_dai->id == (MT2701_IO_I2S + 2)) {
+		snd_mask_reset(&params->masks[SNDRV_PCM_HW_PARAM_FORMAT -
+			SNDRV_PCM_HW_PARAM_FIRST_MASK],
+			SNDRV_PCM_FORMAT_S16_LE);
+
+		params_set_format(params, SNDRV_PCM_FORMAT_S32_LE);
+	}
+	return 0;
+}
 
 static int mt2712_d1v1_be_ops_hw_params(struct snd_pcm_substream *substream,
 					   struct snd_pcm_hw_params *params)
@@ -508,6 +525,7 @@ static struct snd_soc_dai_link mt2712_d1v1_dai_links[] = {
 	.codec_dai_name = "dummy-codec-i2s",
 	.dai_fmt = SND_SOC_DAIFMT_I2S | SND_SOC_DAIFMT_CBS_CFS
 	| SND_SOC_DAIFMT_GATED,
+	.be_hw_params_fixup = mt2712_d1v1_be_ops_fixup,
 	.ops = &mt2712_d1v1_be_ops,
 	.dpcm_playback = 1,
 	.dpcm_capture = 1,
