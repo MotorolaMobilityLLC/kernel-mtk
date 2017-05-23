@@ -112,10 +112,7 @@ static int mt2712_aadc_hw_params(struct snd_pcm_substream *substream,
 		AADC_CON3, 0xFFFFFFFF, 0x40024001);
 	regmap_update_bits(codec_data->regmap_modules[REGMAP_APMIXEDSYS],
 		AADC_CON0, 0xFFFFFFFF, 0x03F9809E);
-
-	dev_dbg(rtd->codec->dev, "%s(): AADC_CON0=%x (%d), AADC_CON3=%x (%d)\n", __func__);
 #endif
-
 
 	return 0;
 }
@@ -284,7 +281,6 @@ static int mt2712_codec_dev_probe(struct platform_device *pdev)
 	codec_data->base_addr = devm_ioremap_resource(&pdev->dev, res);
 	codec_data->regmap = devm_regmap_init_mmio(&pdev->dev, codec_data->base_addr,
 		&mt2712_codec_regmap_config);
-
 	if (IS_ERR(codec_data->regmap)) {
 		dev_err(dev, "%s failed to get regmap of codec\n", __func__);
 		devm_kfree(dev, codec_data);

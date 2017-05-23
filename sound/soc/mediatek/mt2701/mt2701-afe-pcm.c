@@ -191,6 +191,40 @@ I2S_UNSTART:
 	}
 }
 
+static int mt2701_afe_i2s_hw_params(struct snd_pcm_substream *substream,
+				  struct snd_pcm_hw_params *params,
+				  struct snd_soc_dai *dai) {
+	struct snd_soc_pcm_runtime *rtd = substream->private_data;
+	struct mtk_base_afe *afe = snd_soc_platform_get_drvdata(rtd->platform);
+	struct mt2701_afe_private *afe_priv = afe->platform_priv;
+	int i2s_num = mt2701_dai_num_to_i2s(afe, dai->id);
+	struct mt2701_i2s_path *i2s_path;
+	const struct mt2701_i2s_data *i2s_data;
+	int stream_dir = substream->stream;
+	unsigned int mask = 0, val = 0;
+
+	if (i2s_num < 0)
+		return i2s_num;
+
+	i2s_path = &afe_priv->i2s_path[i2s_num];
+	i2s_data = i2s_path->i2s_data[stream_dir];
+
+	switch (params_format(params)) {
+	case SNDRV_PCM_FORMAT_S16_LE:
+		val = ASYS_I2S_CON_WIDE_MODE_SET(0);
+		break;
+	case SNDRV_PCM_FORMAT_S32_LE:
+		val = ASYS_I2S_CON_WIDE_MODE_SET(1);
+		break;
+	default:
+		val = ASYS_I2S_CON_WIDE_MODE_SET(0);
+	}
+	mask = ASYS_I2S_CON_WIDE_MODE;
+	regmap_update_bits(afe->regmap, i2s_data->i2s_ctrl_reg, mask, val);
+
+	return 0;
+}
+
 static int mt2701_i2s_path_prepare_enable(struct snd_pcm_substream *substream,
 					  struct snd_soc_dai *dai,
 					  int dir_invert)
@@ -203,7 +237,6 @@ static int mt2701_i2s_path_prepare_enable(struct snd_pcm_substream *substream,
 	const struct mt2701_i2s_data *i2s_data;
 	struct snd_pcm_runtime * const runtime = substream->runtime;
 	int reg, fs;
-	int w_len = (runtime->sample_bits == 16 ? 0 : 1);
 	int stream_dir = substream->stream;
 	unsigned int mask = 0, val = 0;
 
@@ -229,13 +262,8 @@ static int mt2701_i2s_path_prepare_enable(struct snd_pcm_substream *substream,
 	fs = mt2701_afe_i2s_fs(runtime->rate);
 
 	mask = ASYS_I2S_CON_FS |
-	       ASYS_I2S_CON_I2S_COUPLE_MODE | /* 0 */
-	       ASYS_I2S_CON_I2S_MODE |
-	       ASYS_I2S_CON_WIDE_MODE;
-
-	val = ASYS_I2S_CON_FS_SET(fs) |
-	      ASYS_I2S_CON_I2S_MODE |
-	      ASYS_I2S_CON_WIDE_MODE_SET(w_len);
+	       ASYS_I2S_CON_I2S_COUPLE_MODE;
+	val = ASYS_I2S_CON_FS_SET(fs);
 
 	if (stream_dir == SNDRV_PCM_STREAM_CAPTURE) {
 		mask |= ASYS_I2S_IN_PHASE_FIX;
@@ -328,85 +356,56 @@ static int mt2701_afe_i2s_set_fmt(struct snd_soc_dai *dai, unsigned int fmt)
 	struct mtk_base_afe *afe = snd_soc_dai_get_drvdata(dai);
 	int i2s_num = mt2701_dai_num_to_i2s(afe, dai->id);
 	struct mt2701_afe_private *afe_priv = afe->platform_priv;
-	struct mt2701_i2s_data *i2s_data =
-		(struct mt2701_i2s_data *)afe_priv->i2s_path[i2s_num].i2s_data;
-
-	int read1, read2, ret1, ret2;
-
-	dev_err(afe->dev, "%s, dai->id=%d, fmt=%d, i2s_num=%d, MT2701_IO_I2S=%d\n",
-		__func__, dai->id, fmt, i2s_num, MT2701_IO_I2S);
-	ret1 = regmap_read(afe->regmap, i2s_data[0].i2s_ctrl_reg, &read1);
-	ret2 = regmap_read(afe->regmap, i2s_data[1].i2s_ctrl_reg, &read2);
-	dev_err(afe->dev, "%s , reg[OUT] 0x%x = 0x%x (%d) | reg[IN] 0x%x = 0x%x (%d)\n",
-		__func__, i2s_data[0].i2s_ctrl_reg, read1, ret1,
-		i2s_data[1].i2s_ctrl_reg, read2, ret2);
-
+	struct mt2701_i2s_data *i2s_data_out =
+		(struct mt2701_i2s_data *)afe_priv->i2s_path[i2s_num].i2s_data[I2S_OUT];
+	struct mt2701_i2s_data *i2s_data_in =
+		(struct mt2701_i2s_data *)afe_priv->i2s_path[i2s_num].i2s_data[I2S_IN];
+	unsigned int mask = 0, val = 0;
+	int ret_out, ret_in;
 
 	switch (fmt & SND_SOC_DAIFMT_FORMAT_MASK) {
 	case SND_SOC_DAIFMT_I2S:	/* I2S */
 	case SND_SOC_DAIFMT_DSP_A:
-		ret1 = regmap_update_bits(afe->regmap, i2s_data->i2s_ctrl_reg,
-			ASYS_I2S_CON_I2S_MODE, ASYS_I2S_CON_I2S_MODE_SET(1));
+		val |= ASYS_I2S_CON_I2S_MODE_SET(1);
 		break;
 	case SND_SOC_DAIFMT_RIGHT_J:
-		ret1 = regmap_update_bits(afe->regmap, i2s_data->i2s_ctrl_reg,
-			ASYS_I2S_CON_RIGHT_J, ASYS_I2S_CON_RIGHT_J_SET(1));
+		val |= ASYS_I2S_CON_RIGHT_J_SET(1);
+		val |= ASYS_I2S_CON_I2S_MODE_SET(0);
 		break;
 	case SND_SOC_DAIFMT_LEFT_J:
-		ret1 = regmap_update_bits(afe->regmap, i2s_data->i2s_ctrl_reg,
-			ASYS_I2S_CON_RIGHT_J, ASYS_I2S_CON_RIGHT_J_SET(0));
+		val |= ASYS_I2S_CON_RIGHT_J_SET(0);
+		val |= ASYS_I2S_CON_I2S_MODE_SET(0);
 		break;
 	case SND_SOC_DAIFMT_DSP_B:	/* EIAJ */
-		ret1 = regmap_update_bits(afe->regmap, i2s_data->i2s_ctrl_reg,
-			ASYS_I2S_CON_I2S_MODE, ASYS_I2S_CON_I2S_MODE_SET(0));
+		val |= ASYS_I2S_CON_I2S_MODE_SET(0);
 		break;
 	default:
-		ret1 = regmap_update_bits(afe->regmap, i2s_data->i2s_ctrl_reg,
-			ASYS_I2S_CON_I2S_MODE, ASYS_I2S_CON_I2S_MODE_SET(1));
+		val |= ASYS_I2S_CON_I2S_MODE_SET(1);
 		break;
 	}
-	dev_err(afe->dev, "%s , I2S MODE update ret: %d\n", __func__, ret1);
 
 	switch (fmt & SND_SOC_DAIFMT_INV_MASK) {
 	case SND_SOC_DAIFMT_NB_NF:
-		ret1 = regmap_update_bits(afe->regmap, i2s_data->i2s_ctrl_reg,
-			ASYS_I2S_CON_INV_BCK, ASYS_I2S_CON_INV_BCK_SET(0));
-		ret2 = regmap_update_bits(afe->regmap, i2s_data->i2s_ctrl_reg,
-			ASYS_I2S_CON_INV_LRCK, ASYS_I2S_CON_INV_LRCK_SET(0));
+		val |= ASYS_I2S_CON_INV_BCK_SET(0) | ASYS_I2S_CON_INV_LRCK_SET(0);
 		break;
 	case SND_SOC_DAIFMT_NB_IF:
-		ret1 = regmap_update_bits(afe->regmap, i2s_data->i2s_ctrl_reg,
-			ASYS_I2S_CON_INV_BCK, ASYS_I2S_CON_INV_BCK_SET(0));
-		ret2 = regmap_update_bits(afe->regmap, i2s_data->i2s_ctrl_reg,
-			ASYS_I2S_CON_INV_LRCK, ASYS_I2S_CON_INV_LRCK_SET(1));
+		val |= ASYS_I2S_CON_INV_BCK_SET(0) | ASYS_I2S_CON_INV_LRCK_SET(1);
 		break;
 	case SND_SOC_DAIFMT_IB_NF:
-		ret1 = regmap_update_bits(afe->regmap, i2s_data->i2s_ctrl_reg,
-			ASYS_I2S_CON_INV_BCK, ASYS_I2S_CON_INV_BCK_SET(1));
-		ret2 = regmap_update_bits(afe->regmap, i2s_data->i2s_ctrl_reg,
-			ASYS_I2S_CON_INV_LRCK, ASYS_I2S_CON_INV_LRCK_SET(0));
+		val |= ASYS_I2S_CON_INV_BCK_SET(1) | ASYS_I2S_CON_INV_LRCK_SET(0);
 		break;
 	case SND_SOC_DAIFMT_IB_IF:
-		ret1 = regmap_update_bits(afe->regmap, i2s_data->i2s_ctrl_reg,
-			ASYS_I2S_CON_INV_BCK, ASYS_I2S_CON_INV_BCK_SET(1));
-		ret2 = regmap_update_bits(afe->regmap, i2s_data->i2s_ctrl_reg,
-			ASYS_I2S_CON_INV_LRCK, ASYS_I2S_CON_INV_LRCK_SET(1));
+		val |= ASYS_I2S_CON_INV_BCK_SET(1) | ASYS_I2S_CON_INV_LRCK_SET(1);
 		break;
 	default:
-		ret1 = regmap_update_bits(afe->regmap, i2s_data->i2s_ctrl_reg,
-			ASYS_I2S_CON_INV_BCK, ASYS_I2S_CON_INV_BCK_SET(0));
-		ret2 = regmap_update_bits(afe->regmap, i2s_data->i2s_ctrl_reg,
-			ASYS_I2S_CON_INV_LRCK, ASYS_I2S_CON_INV_LRCK_SET(0));
+		val |= ASYS_I2S_CON_INV_BCK_SET(0) | ASYS_I2S_CON_INV_LRCK_SET(0);
 		break;
 	}
-	dev_err(afe->dev, "%s , CLK INV update ret: %d | %d\n", __func__, ret1, ret2);
 
-
-	ret1 = regmap_read(afe->regmap, i2s_data[0].i2s_ctrl_reg, &read1);
-	ret2 = regmap_read(afe->regmap, i2s_data[1].i2s_ctrl_reg, &read2);
-	dev_err(afe->dev, "%s , reg[OUT] 0x%x = 0x%x (%d) | reg[IN] 0x%x = 0x%x (%d)\n",
-		__func__, i2s_data[0].i2s_ctrl_reg, read1, ret1,
-		i2s_data[1].i2s_ctrl_reg, read2, ret2);
+	mask = ASYS_I2S_CON_I2S_MODE | ASYS_I2S_CON_RIGHT_J |
+		   ASYS_I2S_CON_INV_BCK | ASYS_I2S_CON_INV_LRCK;
+	ret_out = regmap_update_bits(afe->regmap, i2s_data_out->i2s_ctrl_reg, mask, val);
+	ret_in = regmap_update_bits(afe->regmap, i2s_data_in->i2s_ctrl_reg, mask, val);
 
 	return 0;
 }
@@ -1402,6 +1401,7 @@ static const struct snd_soc_dai_ops mt2701_afe_i2s_ops = {
 	.shutdown	= mt2701_afe_i2s_shutdown,
 	.prepare	= mt2701_afe_i2s_prepare,
 	.set_sysclk	= mt2701_afe_i2s_set_sysclk,
+	.hw_params	= mt2701_afe_i2s_hw_params,
 	.set_fmt	= mt2701_afe_i2s_set_fmt,
 };
 
@@ -2095,6 +2095,7 @@ static const struct snd_kcontrol_new mt2701_soc_controls[] = {
 	SOC_SINGLE("I2SO2_I2SI2 Loopback Switch", ASYS_I2SIN3_CON, 21, 1, 0),
 	SOC_SINGLE("I2SO3_I2SI2 Loopback Switch", ASYS_I2SIN3_CON, 20, 1, 0),
 	SOC_SINGLE("MODPCM Loopback Switch", AFE_PCM_INTF_CON2, 10, 1, 0),
+	SOC_SINGLE("MRGIF Serial Loopback Switch", AFE_MRGIF_CON, 17, 1, 0),
 };
 
 static const struct snd_soc_dapm_widget mt2701_afe_pcm_widgets[] = {
