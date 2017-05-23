@@ -7,7 +7,7 @@ bat_gm30: bat_gm30{
 	EMBEDDED_SEL = <(0)>;	/*	Configures whether using embedded battery or not.*/
 	PMIC_SHUTDOWN_CURRENT = <(20)>;	/*	System shutdown current.*/
 	FG_METER_RESISTANCE = <(50)>;	/*	The resistance of PCB*/
-	CAR_TUNE_VALUE = <(99)>;	/*	Tune value for current measurement.*/
+	CAR_TUNE_VALUE = <(100)>;	/*	Tune value for current measurement.*/
 	TEMPERATURE_T0 = <(50)>;	/*	Battery temperature T0*/
 	TEMPERATURE_T1 = <(25)>;	/*	Battery temperature T1*/
 	TEMPERATURE_T2 = <(10)>;	/*	Battery temperature T2*/
@@ -22,15 +22,9 @@ bat_gm30: bat_gm30{
 	Q_MAX_SYS_VOLTAGE_BAT1 = <(3200)>;	/*	System shut down voltage.*/
 	Q_MAX_SYS_VOLTAGE_BAT2 = <(3200)>;	/*	System shut down voltage.*/
 	Q_MAX_SYS_VOLTAGE_BAT3 = <(3200)>;	/*	System shut down voltage.*/
-	
 #ifdef CONFIG_MTK_ADDITIONAL_BATTERY_TABLE
-    #ifdef CONFIG_L3510_MAINBOARD
-    #include "LCT_L3510_mt6757_battery_table_ext.dtsi"
+#include "mt6757_battery_table_ext.dtsi" 
 #else
-	#include "mt6757_battery_table_ext.dtsi" 
-#endif		
-	#else 
-	#include "mt6757_battery_table.dtsi" 
-	#endif 
-	};
-
+#include "mt6757_battery_table.dtsi"
+#endif
+};
