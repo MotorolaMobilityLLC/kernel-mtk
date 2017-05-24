@@ -214,6 +214,9 @@ int kbase_devfreq_init(struct kbase_device *kbdev)
 		goto opp_notifier_failed;
 	}
 
+	kbdev->devfreq->min_freq = GPU_FREQ_KHZ_MIN * 1000;
+	kbdev->devfreq->max_freq = GPU_FREQ_KHZ_MAX * 1000;
+
 #ifdef CONFIG_DEVFREQ_THERMAL
 	err = kbase_power_model_simple_init(kbdev);
 	if (err && err != -ENODEV && err != -EPROBE_DEFER) {
