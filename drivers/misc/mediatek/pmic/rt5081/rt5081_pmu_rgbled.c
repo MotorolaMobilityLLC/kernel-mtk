@@ -23,6 +23,9 @@
 #include "inc/rt5081_pmu.h"
 #include "inc/rt5081_pmu_rgbled.h"
 
+/*add by longcheer liuzhenhe for shutdown charge led on start*/
+extern uint8_t lct_chager_led;
+/*add by longcheer liuzhenhe for shutdown charge led on start*/
 enum {
 	RT5081_PMU_LED_PWMMODE = 0,
 	RT5081_PMU_LED_BREATHMODE,
@@ -1242,12 +1245,17 @@ static inline int rt_parse_dt(struct device *dev)
 
 static int rt5081_pmu_rgbled_probe(struct platform_device *pdev)
 {
+	
 	struct rt5081_pmu_rgbled_platdata *pdata =
 					dev_get_platdata(&pdev->dev);
 	struct rt5081_pmu_rgbled_data *rgbled_data;
 	bool use_dt = pdev->dev.of_node;
 	int i = 0, ret = 0;
-
+   /*add by longcheer liuzhenhe for shutdown charge led on start*/
+	if(lct_chager_led == 0x01){
+   	   return 0;
+	}
+	/*add by longcheer liuzhenhe for shutdown charge led on end*/
 	rgbled_data = devm_kzalloc(&pdev->dev,
 				   sizeof(*rgbled_data), GFP_KERNEL);
 	if (!rgbled_data)
