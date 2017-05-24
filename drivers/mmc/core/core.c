@@ -1489,9 +1489,20 @@ int mmc_blk_cmdq_switch(struct mmc_card *card, int enable)
 	if (!enable)
 		mmc_wait_cmdq_empty(card->host);
 
-	ret = mmc_switch(card, EXT_CSD_CMD_SET_NORMAL,
-		EXT_CSD_CMDQ_MODE_EN, enable,
-		card->ext_csd.generic_cmd6_time);
+        mdelay(200);
+
+        if (0 == strcmp(card->cid.prod_name, "BJTD4R")) {
+		printk("this is Samsung 32G emmc, need delay 250ms \n");
+
+		ret = mmc_switch(card, EXT_CSD_CMD_SET_NORMAL,
+			EXT_CSD_CMDQ_MODE_EN, enable,
+			(card->ext_csd.generic_cmd6_time+250));
+	}
+        else {
+		ret = mmc_switch(card, EXT_CSD_CMD_SET_NORMAL,
+			EXT_CSD_CMDQ_MODE_EN, enable,
+			card->ext_csd.generic_cmd6_time);
+        }
 
 	if (ret) {
 		pr_err("%s: cmdq %s error %d\n",
