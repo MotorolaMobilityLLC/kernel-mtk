@@ -335,12 +335,18 @@ static void mtk_crtc_ddp_config(struct drm_crtc *crtc)
 	struct mtk_crtc_state *state = to_mtk_crtc_state(mtk_crtc->base.state);
 	struct mtk_ddp_comp *ovl = mtk_crtc->ddp_comp[0];
 	unsigned int i;
+	unsigned int ovl_is_busy;
 
 	/*
 	 * TODO: instead of updating the registers here, we should prepare
 	 * working registers in atomic_commit and let the hardware command
 	 * queue update module registers on vblank.
 	 */
+
+	ovl_is_busy = readl(mtk_crtc->ddp_comp[0]->regs) & 0x1;
+	if (ovl_is_busy)
+		return;
+
 	if (state->pending_config) {
 		mtk_ddp_comp_config(ovl, state->pending_width,
 				    state->pending_height,
