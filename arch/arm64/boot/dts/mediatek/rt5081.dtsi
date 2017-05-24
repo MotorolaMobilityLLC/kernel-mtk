@@ -123,7 +123,7 @@
 			rt,bled_ramptime = <3>; /* 0, 500us, 750us, 1ms, 2ms, 5ms, 10ms, 20ms */
 						/* 50ms, 100ms, 250ms, 800ms, 1s, 2s, 4s, 8s */
 			rt,bled_flash_ramp = <1>; /* 0, 500us, 750us, 1ms, 2ms, 5ms */
-			rt,max_bled_brightness = <512>; /* we have 11 bit resolution, quantize in driver */
+			rt,max_bled_brightness = <660>; /* we have 11 bit resolution, quantize in driver */
 							 /* maximum 2047 */
 		};
 		dsv {
@@ -142,7 +142,7 @@
 			db_vpos_20ms = <1>; /* 1 = DB VPOS discharge 20ms when shutdown; 0 = disable */
 			db_vpos_disc = <0>; /*  1 = Discharge VPOS when turn off; 0 = disable */
 			db_delay = <3>; /* 0 = no constraint; 1 = 0 ms; 2 = 1 ms; 3 = 4 ms */
-			db_vbst  = <5700>; /* mV */
+			db_vbst  = <5600>; /* mV */
 			db_vpos_slew = <1>; /* 0 : 8.46 V/ms; 1 : 5.79 V/ms; 2: 3.87 V/ms; 3: 2.97V/ms */
 			db_vneg_slew = <1>; /* 0: -9.24V/ms; 1: -5.97V/ms; 2: -4.82V/ms; 3: -3.07V/ms*/
 			rt5081_dsvp {
