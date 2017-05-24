@@ -13,6 +13,7 @@
  */
 
 /dts-v1/;
+#include "mt2712e.dtsi"
 #include "auto2712m1v1-common.dtsi"
 
 / {
