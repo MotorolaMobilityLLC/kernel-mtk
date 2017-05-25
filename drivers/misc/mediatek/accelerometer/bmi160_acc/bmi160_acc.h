@@ -224,7 +224,11 @@
 #define FIFO_HEAD_OVER_READ_LSB       0x80
 #define FIFO_HEAD_OVER_READ_MSB       0x00
 
+#define BMI160_USER_ACCEL_CONFIG_ADDR        (0X40)
+
 #define CMD_CLR_FIFO_DATA             0xB0
+#define REG_MAX0					0x24
+#define REG_MAX1					0x56
 
 /*! FIFO Head definition*/
 #define FIFO_HEAD_A        0x84
