@@ -79,6 +79,8 @@ struct alsps_hw alsps_cust;
 static struct alsps_hw *hw = &alsps_cust;
 struct platform_device *alspsPltFmDev;
 
+static struct wake_lock ps_wakelock;
+
 /* For alsp driver get cust info */
 struct alsps_hw *get_cust_alsps(void)
 {
@@ -1872,6 +1874,7 @@ static void ltr578_eint_work(struct work_struct *work)
 		{	
 			APS_ERR("call ps_report_interrupt_data fail\n");
 		} 
+		wake_lock_timeout(&ps_wakelock, msecs_to_jiffies(100));
 	}
 	ltr578_clear_intr(obj->client);
   //  mt_eint_unmask(CUST_EINT_ALS_NUM);   
@@ -2635,6 +2638,8 @@ static int ltr578_i2c_probe(struct i2c_client *client, const struct i2c_device_i
 
 	INIT_WORK(&obj->eint_work, ltr578_eint_work);
 	INIT_DELAYED_WORK(&pswork, ltr578_ps_delay_work);//modified by steven
+	wake_lock_init(&ps_wakelock, WAKE_LOCK_SUSPEND,"ps_wake_lock");
+
 	obj->client = client;
 	i2c_set_clientdata(client, obj);	
 	atomic_set(&obj->als_debounce, 300);
