@@ -186,6 +186,22 @@ static const struct mtk_mdp_fmt mtk_mdp_formats[] = {
 		.num_comp	= 1,
 		.flags		= MTK_MDP_FMT_FLAG_OUTPUT |
 				  MTK_MDP_FMT_FLAG_CAPTURE,
+	}, {
+		.pixelformat	= V4L2_PIX_FMT_RGB24,
+		.depth		= { 24 },
+		.row_depth	= { 24 },
+		.num_planes	= 1,
+		.num_comp	= 1,
+		.flags		= MTK_MDP_FMT_FLAG_OUTPUT |
+				  MTK_MDP_FMT_FLAG_CAPTURE,
+	}, {
+		.pixelformat	= V4L2_PIX_FMT_BGR24,
+		.depth		= { 24 },
+		.row_depth	= { 24 },
+		.num_planes	= 1,
+		.num_comp	= 1,
+		.flags		= MTK_MDP_FMT_FLAG_OUTPUT |
+				  MTK_MDP_FMT_FLAG_CAPTURE,
 	}
 };
 

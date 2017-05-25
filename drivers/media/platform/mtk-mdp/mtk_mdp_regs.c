@@ -67,6 +67,10 @@ static int32_t mtk_mdp_map_color_format(int v4l2_format)
 		return DP_COLOR_BGRA8888;
 	case V4L2_PIX_FMT_RGB565:
 		return DP_COLOR_RGB565;
+	case V4L2_PIX_FMT_RGB24:
+		return DP_COLOR_RGB888;
+	case V4L2_PIX_FMT_BGR24:
+		return DP_COLOR_BGR888;
 	}
 
 	mtk_mdp_err("Unknown format 0x%x", v4l2_format);
