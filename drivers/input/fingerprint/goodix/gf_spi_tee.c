@@ -399,7 +399,7 @@ void gf_netlink_send(struct gf_device *gf_dev, const int command)
 	struct sk_buff *skb = NULL;
 	int ret;
 
-	gf_debug(INFO_LOG, "[%s] : enter, send command %d\n", __func__, command);
+	gf_debug(DEBUG_LOG, "[%s] : enter, send command %d\n", __func__, command);
 	if (NULL == gf_dev->nl_sk) {
 		gf_debug(ERR_LOG, "[%s] : invalid socket\n", __func__);
 		return;
