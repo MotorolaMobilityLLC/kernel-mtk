@@ -428,9 +428,15 @@ static inline int rt_parse_dt(struct device *dev)
 	if (of_property_read_bool(np, "rt,use_pwm"))
 		pdata->use_pwm = 1;
 	if (of_property_read_u32(np, "rt,pwm_fsample", &tmp) < 0)
-		pdata->pwm_fsample = 0x1; /* 4MHz */
-	else
+	  pdata->pwm_fsample = 0x1; /* 4MHz */
+	else{
 		pdata->pwm_fsample = tmp;
+		lct_parseLcmName_fromcmdline();
+		if(strcmp(lct_klcm_name, "lct_s6d7aa6x01_helitech_720p_vdo") == 0)
+		{   
+			pdata->pwm_fsample = 1;
+		}
+		}
 	if (of_property_read_u32(np, "rt,pwm_deglitch", &tmp) < 0)
 		pdata->pwm_deglitch = 0x1;
 	else
@@ -465,7 +471,7 @@ static inline int rt_parse_dt(struct device *dev)
 #else
 		pdata->max_bled_brightness = tmp;
 /**  add by lct:wangjiaxing 20170313 start **/
-		lct_parseLcmName_fromcmdline();
+		//lct_parseLcmName_fromcmdline();
 		if(strcmp(lct_klcm_name, "lct_s6d7aa6x01_helitech_720p_vdo") == 0)
 		{
 			pdata->max_bled_brightness = 512;
