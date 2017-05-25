@@ -72,6 +72,7 @@
 //tad3sgh add ++
 #define BMM050_DEFAULT_DELAY	100
 #define CALIBRATION_DATA_SIZE	12
+#define BYTES_PER_LINE						(16)
 
 #ifdef CONFIG_LCT_GSENSOR_ADD_EINT  //add cly for gsensor eint
 #define CONFIG_GSENSOR_IRQ_ENABLE 
@@ -1326,13 +1327,15 @@ static int bmi160_acc_init_client(struct i2c_client *client, int reset_cali)
 	}
 
 	res = BMI160_ACC_CheckDeviceID(client);
+	mdelay(1);
 	if(res != BMI160_ACC_SUCCESS)
 	{
 		return res;
 	}
 	GSE_LOG("BMI160_ACC_CheckDeviceID ok \n");
 
-	res = BMI160_ACC_SetBWRate(client, BMI160_ACCEL_ODR_12_5HZ);
+	res = BMI160_ACC_SetBWRate(client, BMI160_ACCEL_ODR_200HZ);
+	mdelay(1);
 	if(res != BMI160_ACC_SUCCESS )
 	{
 		return res;
@@ -1340,6 +1343,7 @@ static int bmi160_acc_init_client(struct i2c_client *client, int reset_cali)
 	GSE_LOG("BMI160_ACC_SetBWRate OK!\n");
 
 	res = BMI160_ACC_SetOSR4(client);
+	mdelay(1);
 	if(res != BMI160_ACC_SUCCESS )
 	{
 		return res;
@@ -1347,6 +1351,7 @@ static int bmi160_acc_init_client(struct i2c_client *client, int reset_cali)
 	GSE_LOG("BMI160_ACC_SetOSR4 OK!\n");
 
 	res = BMI160_ACC_SetDataFormat(client, BMI160_ACCEL_RANGE_2G);
+	mdelay(1);
 	if(res != BMI160_ACC_SUCCESS)
 	{
 		return res;
@@ -1356,6 +1361,7 @@ static int bmi160_acc_init_client(struct i2c_client *client, int reset_cali)
 	gsensor_gain.x = gsensor_gain.y = gsensor_gain.z = obj->reso->sensitivity;
 
 	res = BMI160_ACC_SetIntEnable(client, 0x00);
+	mdelay(1);
 	if(res != BMI160_ACC_SUCCESS)
 	{
 		return res;
@@ -3454,6 +3460,71 @@ int bmi160_set_command_register(u8 cmd_reg)
         return comres;
 }
 
+static void bmi_dump_reg(struct bmi160_acc_i2c_data *client_data)
+{
+	int i;
+	u8 dbg_buf0[REG_MAX0];
+	u8 dbg_buf1[REG_MAX1];
+	u8 dbg_buf_str0[REG_MAX0 * 3 + 1] = "";
+	u8 dbg_buf_str1[REG_MAX1 * 3 + 1] = "";
+	struct i2c_client *client = bmi160_acc_i2c_client;
+
+	GSE_LOG("\nFrom 0x00:\n");
+	bma_i2c_read_block(client,
+		BMI160_USER_CHIP_ID__REG, dbg_buf0, REG_MAX0);
+	for (i = 0; i < REG_MAX0; i++) {
+		snprintf(dbg_buf_str0 + i * 3, 48, "%02x%c", dbg_buf0[i],
+				(((i + 1) % BYTES_PER_LINE == 0) ? '\n' : ' '));
+	}
+	GSE_LOG("%s\n", dbg_buf_str0);
+
+	bma_i2c_read_block(client,
+	BMI160_USER_ACCEL_CONFIG_ADDR, dbg_buf1, REG_MAX1);
+	GSE_LOG("\nFrom 0x40:\n");
+	for (i = 0; i < REG_MAX1; i++) {
+		snprintf(dbg_buf_str1 + i * 3, 48, "%02x%c", dbg_buf1[i],
+				(((i + 1) % BYTES_PER_LINE == 0) ? '\n' : ' '));
+	}
+	GSE_LOG("\n%s\n", dbg_buf_str1);
+}
+
+static ssize_t bmi_register_show(struct device_driver *ddri, char *buf)
+{
+	struct bmi160_acc_i2c_data *client_data = obj_i2c_data;
+	bmi_dump_reg(client_data);
+	return snprintf(buf, 64, "Dump OK\n");
+}
+
+static ssize_t bmi_register_store(struct device_driver *ddri,
+		const char *buf, size_t count)
+{
+	int err;
+	int reg_addr = 0;
+	int data;
+	u8 write_reg_add = 0;
+	u8 write_data = 0;
+	struct i2c_client *client = bmi160_acc_i2c_client;
+
+	err = sscanf(buf, "%3d %3d", &reg_addr, &data);
+	if (err < 2)
+		return err;
+
+	if (data > 0xff)
+         return -EINVAL;
+ 
+    write_reg_add = (u8)reg_addr;
+    write_data = (u8)data;
+    err += bma_i2c_write_block(client, write_reg_add, &write_data, 1);
+
+    if (!err) {
+        GSE_ERR("write reg 0x%2x, value= 0x%2x\n", reg_addr, data);
+    } else {
+        GSE_ERR("write reg fail\n");
+        return err;
+    }
+    return count;
+}
+
 static ssize_t bmi160_fifo_bytecount_show(struct device_driver *ddri, char *buf)
 {
         int comres=0;
@@ -3819,6 +3890,8 @@ static DRIVER_ATTR(trace,      S_IWUSR | S_IRUGO, show_trace_value,         stor
 static DRIVER_ATTR(status,               S_IRUGO, show_status_value,        NULL);
 static DRIVER_ATTR(powerstatus,               S_IRUGO, show_power_status_value,        NULL);
 
+static DRIVER_ATTR(register, S_IWUSR | S_IRUGO,	bmi_register_show, bmi_register_store);
+
 static DRIVER_ATTR(fifo_bytecount, S_IRUGO | S_IWUSR, bmi160_fifo_bytecount_show, bmi160_fifo_bytecount_store);
 static DRIVER_ATTR(fifo_data_sel, S_IRUGO | S_IWUSR, bmi160_fifo_data_sel_show, bmi160_fifo_data_sel_store);
 static DRIVER_ATTR(fifo_data_frame, S_IRUGO, bmi160_fifo_data_out_frame_show, NULL);
@@ -3845,6 +3918,7 @@ static struct driver_attribute *bmi160_acc_attr_list[] = {
 	&driver_attr_cpsrange,	/*g sensor range for compass tilt compensation*/
 	&driver_attr_cpsbandwidth,	/*g sensor bandwidth for compass tilt compensation*/
 
+	&driver_attr_register,
 	&driver_attr_fifo_bytecount,
 	&driver_attr_fifo_data_sel,
 	&driver_attr_fifo_data_frame,
@@ -5304,6 +5378,7 @@ static int bmi160_acc_set_delay(u64 ns)
 
 	return 0;
 #else
+/*
 	int value =0;
 	int sample_delay=0;
 	int err=0;
@@ -5328,6 +5403,7 @@ static int bmi160_acc_set_delay(u64 ns)
 		return -1;
 	}
 	GSE_LOG("bmi160_acc_set_delay (%d)\n",value);
+*/
 	return 0;
 #endif
 }
