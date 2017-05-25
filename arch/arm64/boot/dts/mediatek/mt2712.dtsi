@@ -1672,7 +1672,7 @@
 			mediatek,larbidx = <6>;
 			power-domains = <&scpsys MT2712_POWER_DOMAIN_VENC>;
 			clocks = <&vencsys CLK_VENC_SMI_COMMON_CON>,
-				 <&vencsys CLK_VENC_SMI_LARB6>;
+				 <&vencsys CLK_VENC_VENC>;
 			clock-names = "apb", "smi";
 		};
 
