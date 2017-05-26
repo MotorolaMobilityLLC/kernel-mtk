@@ -343,9 +343,6 @@
 			compatible = "mediatek,mt8173-lvds-tx";
 			reg = <0 0x10214800 0 0x14>,
 				<0 0x1020b800 0 0x20>;
-			clocks = <&clk26m>;
-			clock-output-names = "lvds_tx1_pll";
-			#clock-cells = <0>;
 			#phy-cells = <0>;
 			status = "disabled";
 		};
@@ -364,9 +361,6 @@
 			compatible = "mediatek,mt8173-lvds-tx";
 			reg = <0 0x10215800 0 0x14>,
 				<0 0x10216800 0 0x20>;
-			clocks = <&clk26m>;
-			clock-output-names = "lvds_tx0_pll";
-			#clock-cells = <0>;
 			#phy-cells = <0>;
 			status = "disabled";
 		};
@@ -1333,9 +1327,8 @@
 				 <&mmsys CLK_MM_LVDS_CTS>,
 				 <&topckgen CLK_TOP_DPILVDS_SEL>,
 				 <&topckgen CLK_TOP_LVDSPLL>,
-				 <&topckgen CLK_TOP_LVDSPLL_D2>,
-				 <&lvds_tx0>;
-			clock-names = "pixel", "cts", "lvdsdpi_sel", "lvds_d1", "lvds_d2", "pll";
+				 <&topckgen CLK_TOP_LVDSPLL_D2>;
+			clock-names = "pixel", "cts", "lvdsdpi_sel", "lvds_d1", "lvds_d2";
 			phys = <&lvds_tx0>;
 			phy-names = "lvds";
 			status = "disabled";
@@ -1412,9 +1405,8 @@
 				 <&mmsys CLK_MM_LVDS1_CTS>,
 				 <&topckgen CLK_TOP_DPILVDS1_SEL>,
 				 <&topckgen CLK_TOP_LVDSPLL2>,
-				 <&topckgen CLK_TOP_LVDSPLL2_D2>,
-				 <&lvds_tx1>;
-			clock-names = "pixel", "cts", "lvdsdpi_sel", "lvds_d1", "lvds_d2", "pll";
+				 <&topckgen CLK_TOP_LVDSPLL2_D2>;
+			clock-names = "pixel", "cts", "lvdsdpi_sel", "lvds_d1", "lvds_d2";
 			phys = <&lvds_tx1>;
 			phy-names = "lvds";
 			status = "disabled";

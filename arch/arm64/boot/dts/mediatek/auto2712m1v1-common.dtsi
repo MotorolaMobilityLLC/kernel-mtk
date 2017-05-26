@@ -436,10 +436,12 @@
 
 &lvds_tx0 {
 	status = "okay";
+	mediatek,dual-channel;
 };
 
 &lvds_tx1 {
 	status = "okay";
+	mediatek,dual-channel;
 };
 
 &mmc1 {
