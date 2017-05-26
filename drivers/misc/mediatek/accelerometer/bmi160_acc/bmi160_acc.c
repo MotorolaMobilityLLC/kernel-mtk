@@ -1321,10 +1321,12 @@ static int bmi160_acc_init_client(struct i2c_client *client, int reset_cali)
 	int res = 0;
 	GSE_LOG("bmi160_acc_init_client \n");
 
+#ifdef CONFIG_MOTO_AOD_BASE_ON_AP_SENSORS
 	if (obj->mEnabled) {
 		GSE_LOG("bmi160_acc_init_client: skip for aod is on\n");
 		return BMI160_ACC_SUCCESS;
 	}
+#endif
 
 	res = BMI160_ACC_CheckDeviceID(client);
 	mdelay(1);
