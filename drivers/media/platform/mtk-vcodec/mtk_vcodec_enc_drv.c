@@ -234,7 +234,7 @@ static int mtk_vcodec_probe(struct platform_device *pdev)
 
 	domain = iommu_get_domain_for_dev(&pdev->dev);
 	if (!domain) {
-		mtk_v4l2_err("[IOMMU]iommu driver not ready");
+		mtk_v4l2_debug(2, "[IOMMU]iommu driver not ready");
 		return -EPROBE_DEFER;
 	}
 	dev = devm_kzalloc(&pdev->dev, sizeof(*dev), GFP_KERNEL);
