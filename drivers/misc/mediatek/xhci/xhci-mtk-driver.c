@@ -101,7 +101,7 @@ static void mtk_enable_otg_mode(void)
 {
 #if CONFIG_MTK_GAUGE_VERSION == 30
 	charger_dev_enable_otg(primary_charger, true);
-	charger_dev_set_boost_current_limit(primary_charger, 1500000);//add by longcheer_liml_2017_05_26
+	charger_dev_set_boost_current_limit(primary_charger, 800000);//add by longcheer_liml_2017_05_26
 	charger_dev_kick_wdt(primary_charger);
 	enable_boost_polling(true);
 #else
