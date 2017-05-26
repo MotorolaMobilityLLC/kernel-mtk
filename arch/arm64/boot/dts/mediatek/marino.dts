@@ -361,8 +361,8 @@
 		/* accdet micbias voltage: 0x07,2.7v;0x05,2.5v;0x02,1.9v */
 		accdet-mic-vol = <7>;
 		headset-mode-setting = <0x500 0x500 1 0x1F0 0x800 0x800 0x20>;
-		/* LCSH MOD for support selfie stick @duanlongfei 20170525 */
-		accdet-plugout-debounce = <40>;
+		/* LCSH MOD for support selfie stick @duanlongfei 20170526 */
+		accdet-plugout-debounce = <200>;
 		/*1:ACC mode, 2:low cost without in bias, 6:low cost with in bias*/
 		accdet-mic-mode = <1>;
 		/* eint_level_trigger: 8,LEVEL_LOW(default);4,LEVEL_HIGH;others,LEVEL_LOW */
