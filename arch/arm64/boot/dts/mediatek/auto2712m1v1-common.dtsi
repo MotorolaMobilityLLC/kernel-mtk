@@ -28,8 +28,8 @@
 		compatible = "pwm-backlight";
 		pwms = <&pwm0 0 1000000>;
 		brightness-levels = <
-			128 136 144 152 160 168 176 184
-			192 200 208 216 224 232 240 248
+			0  16  32  48  64  80  96 112
+			128 144 160 176 192 208 224 240
 			255
 		>;
 		default-brightness-level = <9>;
@@ -39,8 +39,8 @@
 		compatible = "pwm-backlight";
 		pwms = <&pwm1 0 1000000>;
 		brightness-levels = <
-			128 136 144 152 160 168 176 184
-			192 200 208 216 224 232 240 248
+			0  16  32  48  64  80  96 112
+			128 144 160 176 192 208 224 240
 			255
 		>;
 		default-brightness-level = <9>;
@@ -543,23 +543,23 @@
 	};
 	disp_pwm0_pins: disp_pwm0_pins {
 		pins1 {
-			pinmux = <MT2712_PIN_4_PWM0__FUNC_DISP0_PWM>;
+			pinmux = <MT2712_PIN_4_PWM0__FUNC_GPIO4>;
+			output-high;
 		};
 
 		pins2 {
-			pinmux = <MT2712_PIN_6_PWM2__FUNC_GPIO6>;
-			output-high;
+			pinmux = <MT2712_PIN_6_PWM2__FUNC_DISP0_PWM>;
 		};
 	};
 
 	disp_pwm1_pins: disp_pwm1_pins {
 		pins1 {
-			pinmux = <MT2712_PIN_5_PWM1__FUNC_DISP1_PWM>;
+			pinmux = <MT2712_PIN_5_PWM1__FUNC_GPIO5>;
+			output-high;
 		};
 
 		pins2 {
-			pinmux = <MT2712_PIN_7_PWM3__FUNC_GPIO7>;
-			output-high;
+			pinmux = <MT2712_PIN_7_PWM3__FUNC_DISP1_PWM>;
 		};
 	};
 
