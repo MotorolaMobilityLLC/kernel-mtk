@@ -320,6 +320,8 @@ struct mt2701_afe_private {
 	bool mrg_enable[MT2701_STREAM_DIR_NUM];
 	bool pcm_enable[MT2701_STREAM_DIR_NUM];
 	bool pcm_slave;
+	bool tdm_coclk;
+	bool i2so2_mclk;
 	struct mt2701_tdm_coclk_info tdm_coclk_info;
 	struct tdm_in_lrck_setting tdm_in_lrck;
 	struct clock_ctrl *clk_ctrl;

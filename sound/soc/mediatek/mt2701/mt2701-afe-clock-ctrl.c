@@ -888,11 +888,11 @@ int mt2712_turn_on_mclk(struct mtk_base_afe *afe, int id)
 	return 0;
 
 MCLK_SRC_PDN_ERROR:
-	clk_disable_unprepare(afe_priv->clocks[MT2701_AUD_INFRA_SYS_AUDIO]);
+	clk_disable_unprepare(afe_priv->clocks[aud_src_pdn_id]);
 MCLK_SRC_DIV_ERROR:
-	clk_disable_unprepare(afe_priv->clocks[MT2701_AUD_AUD_48K_TIMING]);
+	clk_disable_unprepare(afe_priv->clocks[aud_src_div_id]);
 MCLK_SRC_CLK_ERROR:
-	clk_disable_unprepare(afe_priv->clocks[MT2701_AUD_AUD_MUX1_DIV]);
+	clk_disable_unprepare(afe_priv->clocks[aud_src_clk_id]);
 	return ret;
 
 }
