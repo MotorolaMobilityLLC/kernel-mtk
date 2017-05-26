@@ -83,6 +83,22 @@ static const struct mtk_mdp_fmt mtk_mdp_formats[] = {
 		.flags		= MTK_MDP_FMT_FLAG_OUTPUT |
 				  MTK_MDP_FMT_FLAG_CAPTURE,
 	}, {
+		.pixelformat	= V4L2_PIX_FMT_NV21M,
+		.depth		= { 8, 4 },
+		.row_depth	= { 8, 4 },
+		.num_planes	= 2,
+		.num_comp	= 2,
+		.flags		= MTK_MDP_FMT_FLAG_OUTPUT |
+				  MTK_MDP_FMT_FLAG_CAPTURE,
+	}, {
+		.pixelformat	= V4L2_PIX_FMT_NV21,
+		.depth		= { 12 },
+		.row_depth	= { 8, 4 },
+		.num_planes	= 1,
+		.num_comp	= 2,
+		.flags		= MTK_MDP_FMT_FLAG_OUTPUT |
+				  MTK_MDP_FMT_FLAG_CAPTURE,
+	}, {
 		.pixelformat	= V4L2_PIX_FMT_YUV420M,
 		.depth		= { 8, 2, 2 },
 		.row_depth	= { 8, 2, 2 },
@@ -598,7 +614,8 @@ static void mtk_mdp_prepare_addr(struct mtk_mdp_ctx *ctx,
 			addr->addr[1] = (dma_addr_t)(addr->addr[0] + pix_size);
 			addr->addr[2] = (dma_addr_t)(addr->addr[1] +
 					(pix_size >> 1));
-		} else if (frame->fmt->pixelformat == V4L2_PIX_FMT_NV12) {
+		} else if (frame->fmt->pixelformat == V4L2_PIX_FMT_NV12 ||
+			frame->fmt->pixelformat == V4L2_PIX_FMT_NV21) {
 			addr->addr[1] = (dma_addr_t)(addr->addr[0] + pix_size);
 			addr->addr[2] = 0;
 		} else if (frame->fmt->pixelformat == V4L2_PIX_FMT_NV16) {
