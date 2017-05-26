@@ -125,7 +125,7 @@ static int mt2712_d1v1_fe_ops_startup(struct snd_pcm_substream *substream)
 static struct snd_soc_ops mt2712_d1v1_48k_fe_ops = {
 	.startup = mt2712_d1v1_fe_ops_startup,
 };
-
+#if 0
 static int mt2712_d1v1_be_ops_fixup(struct snd_soc_pcm_runtime *rtd,
 					   struct snd_pcm_hw_params *params)
 {
@@ -141,7 +141,7 @@ static int mt2712_d1v1_be_ops_fixup(struct snd_soc_pcm_runtime *rtd,
 	}
 	return 0;
 }
-
+#endif
 static int mt2712_d1v1_be_ops_hw_params(struct snd_pcm_substream *substream,
 					   struct snd_pcm_hw_params *params)
 {
@@ -154,6 +154,34 @@ static int mt2712_d1v1_be_ops_hw_params(struct snd_pcm_substream *substream,
 	unsigned int div_bck_over_lrck = 64;
 
 	mclk_rate = rate * div_bck_over_lrck * div_mclk_over_bck;
+
+	/* mt2701 mclk */
+	snd_soc_dai_set_sysclk(cpu_dai, 0, mclk_rate, SND_SOC_CLOCK_OUT);
+
+	/* codec mclk */
+	snd_soc_dai_set_sysclk(codec_dai, 0, mclk_rate, SND_SOC_CLOCK_IN);
+
+	snd_soc_dai_set_fmt(cpu_dai, SND_SOC_DAIFMT_DSP_A | SND_SOC_DAIFMT_NB_NF);
+
+	return 0;
+}
+
+static int mt2712_d1v1_be_AK4556VT_ops_hw_params(struct snd_pcm_substream *substream,
+					   struct snd_pcm_hw_params *params)
+{
+	struct snd_soc_pcm_runtime *rtd = substream->private_data;
+	struct snd_soc_dai *cpu_dai = rtd->cpu_dai;
+	struct snd_soc_dai *codec_dai = rtd->codec_dai;
+	unsigned int mclk_rate;
+	unsigned int rate = params_rate(params);
+	unsigned int div_mclk_over_lrck = 512;
+
+	if (rate > 54000 && rate < 108000)
+		div_mclk_over_lrck = 256;
+	else if (rate > 108000)
+		div_mclk_over_lrck = 128;
+
+	mclk_rate = rate * div_mclk_over_lrck;
 
 	/* mt2701 mclk */
 	snd_soc_dai_set_sysclk(cpu_dai, 0, mclk_rate, SND_SOC_CLOCK_OUT);
@@ -231,10 +259,33 @@ static int mt2712_d1v1_be_tdm_ops_hw_params(struct snd_pcm_substream *substream,
 
 	return 0;
 }
+static int mt2712_d1v1_be_modpcm_ops_hw_params(struct snd_pcm_substream *substream,
+					   struct snd_pcm_hw_params *params)
+{
+	struct snd_soc_pcm_runtime *rtd = substream->private_data;
+	struct mtk_base_afe *afe = snd_soc_platform_get_drvdata(rtd->platform);
+	struct mt2701_afe_private *afe_priv = afe->platform_priv;
+	struct clock_ctrl *clk_ctrl = afe_priv->clk_ctrl;
+
+	/* set mclk for d1v1 i2s mclk test*/
+	if (afe_priv->i2so2_mclk)
+		clk_ctrl->mclk_configuration(afe, 2, 0, params_rate(params)*512);
+
+	return 0;
+}
 
 static struct snd_soc_ops mt2712_d1v1_be_ops = {
 	.hw_params = mt2712_d1v1_be_ops_hw_params
 };
+
+static struct snd_soc_ops mt2712_d1v1_be_AK4556VT_ops = {
+	.hw_params = mt2712_d1v1_be_AK4556VT_ops_hw_params
+};
+
+static struct snd_soc_ops mt2712_d1v1_be_modpcm_ops = {
+	.hw_params = mt2712_d1v1_be_modpcm_ops_hw_params
+};
+
 
 static struct snd_soc_ops mt2712_d1v1_be_tdm_ops = {
 	.startup = mt2712_d1v1_be_tdm_ops_startup,
@@ -487,8 +538,8 @@ static struct snd_soc_dai_link mt2712_d1v1_dai_links[] = {
 	.codec_name = "snd-soc-dummy",
 	.codec_dai_name = "snd-soc-dummy-dai",
 	.trigger = {
-		SND_SOC_DPCM_TRIGGER_POST,
-		SND_SOC_DPCM_TRIGGER_POST
+		SND_SOC_DPCM_TRIGGER_PRE,
+		SND_SOC_DPCM_TRIGGER_PRE
 	},
 	.ops = &mt2712_d1v1_48k_fe_ops,
 	.dynamic = 1,
@@ -513,7 +564,7 @@ static struct snd_soc_dai_link mt2712_d1v1_dai_links[] = {
 	.codec_dai_name = "dummy-codec-i2s",
 	.dai_fmt = SND_SOC_DAIFMT_I2S | SND_SOC_DAIFMT_CBS_CFS
 	| SND_SOC_DAIFMT_GATED,
-	.ops = &mt2712_d1v1_be_ops,
+	.ops = &mt2712_d1v1_be_AK4556VT_ops,
 	.dpcm_playback = 1,
 	.dpcm_capture = 1,
 	},
@@ -525,8 +576,8 @@ static struct snd_soc_dai_link mt2712_d1v1_dai_links[] = {
 	.codec_dai_name = "dummy-codec-i2s",
 	.dai_fmt = SND_SOC_DAIFMT_I2S | SND_SOC_DAIFMT_CBS_CFS
 	| SND_SOC_DAIFMT_GATED,
-	.be_hw_params_fixup = mt2712_d1v1_be_ops_fixup,
-	.ops = &mt2712_d1v1_be_ops,
+	//.be_hw_params_fixup = mt2712_d1v1_be_ops_fixup,
+	.ops = &mt2712_d1v1_be_AK4556VT_ops,
 	.dpcm_playback = 1,
 	.dpcm_capture = 1,
 	},
@@ -557,6 +608,7 @@ static struct snd_soc_dai_link mt2712_d1v1_dai_links[] = {
 	.codec_name = "dummy-codec",
 	.codec_dai_name = "dummy-codec-mod",
 	.dai_fmt = SND_SOC_DAIFMT_I2S | SND_SOC_DAIFMT_CBS_CFS,
+	.ops = &mt2712_d1v1_be_modpcm_ops,
 	.dpcm_playback = 1,
 	.dpcm_capture = 1,
 	},
@@ -570,7 +622,7 @@ static struct snd_soc_dai_link mt2712_d1v1_dai_links[] = {
 	.codec_name = "dummy-codec",
 	.codec_dai_name = "dummy-codec-tdm",
 	#endif
-	.dai_fmt = SND_SOC_DAIFMT_I2S | SND_SOC_DAIFMT_DSP_A | SND_SOC_DAIFMT_CBS_CFS
+	.dai_fmt = SND_SOC_DAIFMT_DSP_A | SND_SOC_DAIFMT_CBS_CFS
 	| SND_SOC_DAIFMT_GATED,
 	.ops = &mt2712_d1v1_be_tdm_ops,
 	.dpcm_playback = 1,
@@ -588,8 +640,14 @@ static struct snd_soc_dai_link mt2712_d1v1_dai_links[] = {
 	.name = "mt2712_d1v1-TDM-IN",
 	.cpu_dai_name = "TDMIN",
 	.no_pcm = 1,
+	#ifdef TS_CS42448
+	.codec_dai_name = "cs42448",
+	#else
 	.codec_name = "dummy-codec",
 	.codec_dai_name = "dummy-codec-tdmin",
+	#endif
+	.dai_fmt = SND_SOC_DAIFMT_DSP_A | SND_SOC_DAIFMT_CBS_CFS
+	| SND_SOC_DAIFMT_GATED,
 	.ops = &mt2712_d1v1_be_tdm_ops,
 	.dpcm_capture = 1,
 	},
@@ -621,7 +679,7 @@ static int mt2712_d1v1_machine_probe(struct platform_device *pdev)
 	int i;
 	struct device_node *platform_node, *codec_node, *codec_node_bt_mrg;
 #ifdef TS_CS42448
-	struct device_node *codec_node_tdmo;
+	struct device_node *codec_node_tdmo, *codec_node_tdmi;
 #endif
 	struct mt2712_d1v1_private *priv =
 						devm_kzalloc(&pdev->dev, sizeof(struct mt2712_d1v1_private),
@@ -634,8 +692,8 @@ static int mt2712_d1v1_machine_probe(struct platform_device *pdev)
 	platform_node = of_parse_phandle(pdev->dev.of_node,
 					 "mediatek,platform", 0);
 	if (!platform_node) {
-	dev_err(&pdev->dev, "Property 'platform' missing or invalid\n");
-	return -EINVAL;
+		dev_notice(&pdev->dev, "Property 'platform' missing or invalid\n");
+		return -EINVAL;
 	}
 
 	for (i = 0; i < card->num_links; i++) {
@@ -649,7 +707,7 @@ static int mt2712_d1v1_machine_probe(struct platform_device *pdev)
 	codec_node = of_parse_phandle(pdev->dev.of_node,
 				  "mediatek,audio-codec", 0);
 	if (!codec_node) {
-		dev_err(&pdev->dev,
+		dev_notice(&pdev->dev,
 			"Property 'audio-codec' missing or invalid\n");
 		return -EINVAL;
 	}
@@ -663,7 +721,7 @@ static int mt2712_d1v1_machine_probe(struct platform_device *pdev)
 	codec_node_bt_mrg = of_parse_phandle(pdev->dev.of_node,
 					 "mediatek,audio-codec-bt-mrg", 0);
 	if (!codec_node_bt_mrg) {
-		dev_err(&pdev->dev,
+		dev_notice(&pdev->dev,
 			"Property 'audio-codec-bt-mrg' missing or invalid\n");
 	return -EINVAL;
 	}
@@ -673,17 +731,28 @@ static int mt2712_d1v1_machine_probe(struct platform_device *pdev)
 	codec_node_tdmo = of_parse_phandle(pdev->dev.of_node,
 					 "mediatek,audio-codec-tdmo", 0);
 	if (!codec_node_tdmo) {
-		dev_err(&pdev->dev,
+		dev_notice(&pdev->dev,
 			"Property 'audio-codec-tdmo' missing or invalid\n");
 	return -EINVAL;
 	}
 	mt2712_d1v1_dai_links[DAI_LINK_BE_TDMO0].codec_of_node
 		= codec_node_tdmo;
+
+	codec_node_tdmi = of_parse_phandle(pdev->dev.of_node,
+					 "mediatek,audio-codec-tdmi", 0);
+	if (!codec_node_tdmi) {
+		dev_notice(&pdev->dev,
+			"Property 'audio-codec-tdmi' missing or invalid\n");
+	return -EINVAL;
+	}
+	mt2712_d1v1_dai_links[DAI_LINK_BE_TDMIN].codec_of_node
+		= codec_node_tdmi;
+
 #endif
 
 	ret = snd_soc_of_parse_audio_routing(card, "audio-routing");
 	if (ret) {
-		dev_err(&pdev->dev, "failed to parse audio-routing: %d\n", ret);
+		dev_notice(&pdev->dev, "failed to parse audio-routing: %d\n", ret);
 		return ret;
 	}
 
@@ -712,7 +781,7 @@ static int mt2712_d1v1_machine_probe(struct platform_device *pdev)
 	ret = devm_snd_soc_register_card(&pdev->dev, card);
 
 	if (ret)
-		dev_err(&pdev->dev, "%s snd_soc_register_card fail %d\n",
+		dev_notice(&pdev->dev, "%s snd_soc_register_card fail %d\n",
 						__func__, ret);
 
 	return ret;
