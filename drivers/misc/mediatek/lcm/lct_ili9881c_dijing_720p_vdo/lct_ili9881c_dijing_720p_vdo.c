@@ -179,7 +179,7 @@ static struct LCM_setting_table lcm_initialization_setting[] = {
 {0x31,1,{0x00}},
 {0x32,1,{0x00}},
 {0x33,1,{0x00}},
-{0x34,1,{0x00}},
+{0x34,1,{0x03}},
 {0x35,1,{0x00}},
 {0x36,1,{0x05}},
 {0x37,1,{0x00}},
@@ -280,7 +280,7 @@ static struct LCM_setting_table lcm_initialization_setting[] = {
 
 {0x50,1,{0x95}},               // VREG1OUT=4.7V);
 {0x51,1,{0x90}},               // VREG2OUT=-4.7V);
-{0x60,1,{0x2B}},               //SDT);
+{0x60,1,{0x14}},               //SDT);
 
 
 
