@@ -12,7 +12,7 @@
  */
 
 energy-costs {
-	MT2712_CPU_COST_0: mt2712-core-cost0 {
+	MT2712E_CPU_COST_0: mt2712e-core-cost0 {
 		busy-cost-data = <
 			334	40
 			392	41
@@ -25,7 +25,7 @@ energy-costs {
 			0
 		>;
 	};
-	MT2712_CPU_COST_1: mt2712-core-cost1 {
+	MT2712E_CPU_COST_1: mt2712e-core-cost1 {
 		busy-cost-data = <
 			610	218
 			716	252
@@ -40,7 +40,7 @@ energy-costs {
 			0
 		>;
 	};
-	MT2712_CLUSTER_COST_0: mt2712-cluster-cost0 {
+	MT2712E_CLUSTER_COST_0: mt2712e-cluster-cost0 {
 		busy-cost-data = <
 			334	91
 			392	97
@@ -53,7 +53,7 @@ energy-costs {
 			113
 		>;
 	};
-	MT2712_CLUSTER_COST_1: mt2712-cluster-cost1 {
+	MT2712E_CLUSTER_COST_1: mt2712e-cluster-cost1 {
 		busy-cost-data = <
 			610	71
 			716	74

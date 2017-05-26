@@ -94,8 +94,8 @@
 			cooling-min-level = <0>;
 			cooling-max-level = <6>;
 			dynamic-power-coefficient = <263>;
-			sched-energy-costs = <&MT2712_CPU_COST_0
-					      &MT2712_CLUSTER_COST_0>;
+			sched-energy-costs = <&MT2712E_CPU_COST_0
+					      &MT2712E_CLUSTER_COST_0>;
 		};
 
 		cpu1: cpu@1 {
@@ -112,8 +112,8 @@
 			cooling-min-level = <0>;
 			cooling-max-level = <6>;
 			dynamic-power-coefficient = <263>;
-			sched-energy-costs = <&MT2712_CPU_COST_0
-					      &MT2712_CLUSTER_COST_0>;
+			sched-energy-costs = <&MT2712E_CPU_COST_0
+					      &MT2712E_CLUSTER_COST_0>;
 		};
 
 		cpu2: cpu@200 {
@@ -130,8 +130,8 @@
 			cooling-min-level = <0>;
 			cooling-max-level = <8>;
 			dynamic-power-coefficient = <530>;
-			sched-energy-costs = <&MT2712_CPU_COST_1
-					      &MT2712_CLUSTER_COST_1>;
+			sched-energy-costs = <&MT2712E_CPU_COST_1
+					      &MT2712E_CLUSTER_COST_1>;
 		};
 
 		/include/ "mt2712-sched-energy.dtsi"
