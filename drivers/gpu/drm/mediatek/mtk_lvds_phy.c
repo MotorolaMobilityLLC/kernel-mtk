@@ -87,34 +87,13 @@ struct mtk_lvds_tx {
 	void __iomem *regs;
 	void __iomem *tx1_regs;
 	void __iomem *tx2_regs;
-	u32 data_rate;
 	bool dual_lvds;
-
-	struct clk_hw pll_hw;
-	struct clk *pll;
 };
 
-static inline struct mtk_lvds_tx *mtk_lvds_tx_from_clk_hw(struct clk_hw *hw)
+static int mtk_lvds_tx_power_on_signal(struct phy *phy)
 {
-	return container_of(hw, struct mtk_lvds_tx, pll_hw);
-}
-
-static long mtk_lvds_tx_pll_round_rate(struct clk_hw *hw, unsigned long rate,
-				       unsigned long *prate)
-{
-	return clamp_val(rate, 50000000, 1250000000);
-}
-
-static int mtk_lvds_tx_pll_set_rate(struct clk_hw *hw, unsigned long rate,
-				    unsigned long parent_rate)
-{
-	struct mtk_lvds_tx *lvds_tx = mtk_lvds_tx_from_clk_hw(hw);
+	struct mtk_lvds_tx *lvds_tx = phy_get_drvdata(phy);
 	u32 reg;
-
-	if (rate > 75000000)
-		lvds_tx->dual_lvds = true;
-	else
-		lvds_tx->dual_lvds = false;
 
 	writel(DA_LVDSTX_PWR_ON, lvds_tx->tx1_regs + VOPLL_CTL3);
 	writel(DA_LVDSTX_PWR_ON, lvds_tx->tx2_regs + VOPLL_CTL3);
@@ -130,29 +109,6 @@ static int mtk_lvds_tx_pll_set_rate(struct clk_hw *hw, unsigned long rate,
 	writel(reg, lvds_tx->tx2_regs + VOPLL_CTL2);
 	if (lvds_tx->dual_lvds)
 		writel(reg, lvds_tx->tx1_regs + VOPLL_CTL2);
-
-	return 0;
-}
-
-static unsigned long mtk_lvds_tx_pll_recalc_rate(struct clk_hw *hw,
-						 unsigned long parent_rate)
-{
-	struct mtk_lvds_tx *lvds_tx = mtk_lvds_tx_from_clk_hw(hw);
-
-	return lvds_tx->data_rate;
-}
-
-static const struct clk_ops mtk_lvds_tx_pll_ops = {
-	.round_rate = mtk_lvds_tx_pll_round_rate,
-	.set_rate = mtk_lvds_tx_pll_set_rate,
-	.recalc_rate = mtk_lvds_tx_pll_recalc_rate,
-};
-
-static int mtk_lvds_tx_power_on_signal(struct phy *phy)
-{
-	struct mtk_lvds_tx *lvds_tx = phy_get_drvdata(phy);
-	u32 reg;
-
 	reg = 7 | 0xb << 4 | 3 << 8 | RG_LVDSTX_TSTCLKDIV_EN |
 	      RG_LVDSTX_TSTCLK_EN | 1 << 16 | RG_LVDSTX_LDO_EN |
 	      RG_LVDSTX_BIAS_EN;
@@ -178,14 +134,6 @@ static int mtk_lvds_tx_power_on_signal(struct phy *phy)
 
 static int mtk_lvds_tx_power_on(struct phy *phy)
 {
-	struct mtk_lvds_tx *lvds_tx = phy_get_drvdata(phy);
-	int ret;
-
-	/* Power up core and enable PLL */
-	ret = clk_prepare_enable(lvds_tx->pll);
-	if (ret < 0)
-		return ret;
-
 	/* Enable DSI Lane LDO outputs, disable pad tie low */
 	mtk_lvds_tx_power_on_signal(phy);
 
@@ -204,13 +152,8 @@ static void mtk_lvds_tx_power_off_signal(struct phy *phy)
 
 static int mtk_lvds_tx_power_off(struct phy *phy)
 {
-	struct mtk_lvds_tx *lvds_tx = phy_get_drvdata(phy);
-
 	/* Enable pad tie low, disable DSI Lane LDO outputs */
 	mtk_lvds_tx_power_off_signal(phy);
-
-	/* Disable PLL and power down core */
-	clk_disable_unprepare(lvds_tx->pll);
 
 	return 0;
 }
@@ -226,14 +169,6 @@ static int mtk_lvds_tx_probe(struct platform_device *pdev)
 	struct device *dev = &pdev->dev;
 	struct mtk_lvds_tx *lvds_tx;
 	struct resource *mem;
-	struct clk *ref_clk;
-	const char *ref_clk_name;
-	struct clk_init_data clk_init = {
-		.ops = &mtk_lvds_tx_pll_ops,
-		.num_parents = 1,
-		.parent_names = (const char * const *)&ref_clk_name,
-		.flags = CLK_SET_RATE_GATE,
-	};
 	struct phy *phy;
 	struct phy_provider *phy_provider;
 	int ret;
@@ -241,6 +176,9 @@ static int mtk_lvds_tx_probe(struct platform_device *pdev)
 	lvds_tx = devm_kzalloc(dev, sizeof(*lvds_tx), GFP_KERNEL);
 	if (!lvds_tx)
 		return -ENOMEM;
+
+	lvds_tx->dual_lvds = of_property_read_bool(dev->of_node,
+							  "mediatek,dual-channel");
 
 	mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
 	lvds_tx->tx1_regs = devm_ioremap_resource(dev, mem);
@@ -255,29 +193,6 @@ static int mtk_lvds_tx_probe(struct platform_device *pdev)
 	if (IS_ERR(lvds_tx->regs)) {
 		ret = PTR_ERR(lvds_tx->regs);
 		dev_err(dev, "Failed to get lvds2 memory resource: %d\n", ret);
-		return ret;
-	}
-
-	ref_clk = devm_clk_get(dev, NULL);
-	if (IS_ERR(ref_clk)) {
-		ret = PTR_ERR(ref_clk);
-		dev_err(dev, "Failed to get reference clock: %d\n", ret);
-		return ret;
-	}
-	ref_clk_name = __clk_get_name(ref_clk);
-
-	ret = of_property_read_string(dev->of_node, "clock-output-names",
-				      &clk_init.name);
-	if (ret < 0) {
-		dev_err(dev, "Failed to read clock-output-names: %d\n", ret);
-		return ret;
-	}
-
-	lvds_tx->pll_hw.init = &clk_init;
-	lvds_tx->pll = devm_clk_register(dev, &lvds_tx->pll_hw);
-	if (IS_ERR(lvds_tx->pll)) {
-		ret = PTR_ERR(lvds_tx->pll);
-		dev_err(dev, "Failed to register PLL: %d\n", ret);
 		return ret;
 	}
 
@@ -298,8 +213,7 @@ static int mtk_lvds_tx_probe(struct platform_device *pdev)
 
 	lvds_tx->dev = dev;
 
-	return of_clk_add_provider(dev->of_node, of_clk_src_simple_get,
-				   lvds_tx->pll);
+	return 0;
 }
 
 static int mtk_lvds_tx_remove(struct platform_device *pdev)

@@ -105,7 +105,6 @@ struct mtk_lvds {
 	struct clk *lvdsdpi_sel;
 	struct clk *lvds_d1;
 	struct clk *lvds_d2;
-	struct clk *vpll;
 	struct drm_display_mode mode;
 	u32 lane_count;
 	void __iomem *regs;
@@ -207,10 +206,19 @@ static void mtk_lvds_bridge_disable(struct drm_bridge *bridge)
 {
 	struct mtk_lvds *lvds = bridge_to_lvds(bridge);
 
+	if (!lvds->enabled)
+		return;
+
 	if (drm_panel_disable(lvds->panel)) {
 		DRM_ERROR("failed to disable panel\n");
 		return;
 	}
+
+	phy_power_off(lvds->phy);
+	clk_disable_unprepare(lvds->cts_clk_gate);
+	clk_disable_unprepare(lvds->pix_clk_gate);
+	clk_disable_unprepare(lvds->lvdsdpi_sel);
+	lvds->enabled = false;
 }
 
 static void mtk_lvds_bridge_post_disable(struct drm_bridge *bridge)
@@ -254,7 +262,7 @@ static void mtk_lvds_pre_enable(struct drm_bridge *bridge)
 {
 	struct mtk_lvds *lvds = bridge_to_lvds(bridge);
 
-	if (lvds->enabled)
+	if (lvds->powered)
 		return;
 
 	if (drm_panel_prepare(lvds->panel)) {
@@ -262,13 +270,16 @@ static void mtk_lvds_pre_enable(struct drm_bridge *bridge)
 		return;
 	}
 
-	lvds->enabled = true;
+	lvds->powered = true;
 }
 
-static void mtk_lvds_enable(struct drm_bridge *bridge)
+static void mtk_lvds_bridge_enable(struct drm_bridge *bridge)
 {
 	struct mtk_lvds *lvds = bridge_to_lvds(bridge);
 	int ret;
+
+	if (lvds->enabled)
+		return;
 
 	ret = clk_prepare_enable(lvds->lvdsdpi_sel);
 	if (ret) {
@@ -294,11 +305,6 @@ static void mtk_lvds_enable(struct drm_bridge *bridge)
 		return;
 	}
 
-	if (lvds->is_dual)
-		clk_set_rate(lvds->vpll, 150000000);
-	else
-		clk_set_rate(lvds->vpll, 75000000);
-
 	phy_power_on(lvds->phy);
 	writel((lvds->is_dual ? 3 : 2) << 16 | 3 << 20 |
 	       (lvds->is_dual ? 1 : 0) << 23, lvds->regs + LVDSTOP_REG05);
@@ -309,6 +315,7 @@ static void mtk_lvds_enable(struct drm_bridge *bridge)
 
 	if (drm_panel_enable(lvds->panel)) {
 		DRM_ERROR("failed to enable panel\n");
+		phy_power_off(lvds->phy);
 		clk_disable_unprepare(lvds->cts_clk_gate);
 		clk_disable_unprepare(lvds->pix_clk_gate);
 		clk_disable_unprepare(lvds->lvdsdpi_sel);
@@ -325,7 +332,7 @@ static const struct drm_bridge_funcs mtk_lvds_bridge_funcs = {
 	.post_disable = mtk_lvds_bridge_post_disable,
 	.mode_set = mtk_lvds_bridge_mode_set,
 	.pre_enable = mtk_lvds_pre_enable,
-	.enable = mtk_lvds_enable,
+	.enable = mtk_lvds_bridge_enable,
 };
 
 static int mtk_drm_lvds_probe(struct platform_device *pdev)
@@ -414,12 +421,6 @@ static int mtk_drm_lvds_probe(struct platform_device *pdev)
 	if (ret < 0) {
 		dev_err(&pdev->dev, "failed to clk_set_parent (%d)\n", ret);
 		return ret;
-	}
-
-	lvds->vpll = devm_clk_get(dev, "pll");
-	if (IS_ERR(lvds->vpll)) {
-		dev_err(dev, "Failed to get lvds pll\n");
-		return PTR_ERR(lvds->vpll);
 	}
 
 	ret = of_property_read_u32(dev->of_node, "lane-count",
