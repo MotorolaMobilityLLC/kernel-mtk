@@ -68,4 +68,77 @@ energy-costs {
 			3
 		>;
 	};
+
+	MT2712H_CPU_COST_0: mt2712h-core-cost0 {
+		busy-cost-data = <
+			240	40
+			282	41
+			318	44
+			360	48
+			403	54
+			445	61
+			482	69
+		>;
+		idle-cost-data = <
+			8
+			8
+			0
+			0
+		>;
+	};
+	MT2712H_CPU_COST_1: mt2712h-core-cost1 {
+		busy-cost-data = <
+			438	218
+			515	252
+			583	282
+			658	315
+			737	349
+			812	382
+			878	411
+			955	443
+			1024	472
+		>;
+		idle-cost-data = <
+			37
+			37
+			0
+			0
+		>;
+	};
+	MT2712H_CLUSTER_COST_0: mt2712h-cluster-cost0 {
+		busy-cost-data = <
+			240	91
+			282	97
+			318	105
+			360	113
+			406	120
+			445	129
+			482	136
+		>;
+		idle-cost-data = <
+			187
+			187
+			187
+			113
+		>;
+	};
+	MT2712H_CLUSTER_COST_1: mt2712h-cluster-cost1 {
+		busy-cost-data = <
+			438	71
+			515	74
+			583	78
+			658	81
+			737	84
+			812	88
+			878	92
+			955	95
+			1024	99
+		>;
+		idle-cost-data = <
+			45
+			45
+			45
+			3
+		>;
+	};
 };
