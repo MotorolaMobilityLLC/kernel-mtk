@@ -123,6 +123,9 @@ static struct LCM_setting_table lcm_initialization_setting[] = {
 	{0x00,1,{0x92}},
 	{0xB3,2,{0x18,0x04}},//Panel Mode, swap G
 
+  {0x00,1,{0xB5}},
+	{0xCA,1,{0x04}},  // Dimming frame adjust by zhuxiaming 
+	
 	{0x00,1,{0x8A}},
 	{0xC0,1,{0x04}},//Panel Scan Mode
 
@@ -478,11 +481,14 @@ static void lcm_resume_power(void)
 
 static void lcm_init(void)
 {
-	SET_RESET_PIN(0);
+	SET_RESET_PIN(1);
 	MDELAY(10);
 
+	SET_RESET_PIN(0);
+	MDELAY(5);//10
+
 	SET_RESET_PIN(1);
-	MDELAY(120);
+	MDELAY(10);//120
 	push_table(NULL, lcm_initialization_setting, sizeof(lcm_initialization_setting) / sizeof(struct LCM_setting_table), 1);
 }
 
@@ -505,13 +511,13 @@ static unsigned int lcm_compare_id(void)
 	char  buffer[10];
 	char  id0,id1,id2,id3,id4=0;
 	
-	MDELAY(10);
+	//MDELAY(10);
 	SET_RESET_PIN(1);
-	MDELAY(20);
+	MDELAY(5);//10
 	SET_RESET_PIN(0);
-	MDELAY(10);
+	MDELAY(2);//5
 	SET_RESET_PIN(1);
-	MDELAY(120);
+	MDELAY(5);//120
 
 	array[0] = 0x00053700;
 	dsi_set_cmdq(array, 1, 1);
