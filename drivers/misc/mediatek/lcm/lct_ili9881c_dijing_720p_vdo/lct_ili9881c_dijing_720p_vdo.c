@@ -116,12 +116,14 @@ struct LCM_setting_table {
 };
 
 static struct LCM_setting_table lcm_suspend_setting[] = {
-	{0x28, 0, {} },
+	/* Display off sequence */
+	{0x28, 1, {0x00} },
 	{REGFLAG_DELAY, 20, {} },
-	{0x10, 0, {} },
+
+	/* Sleep Mode On */
+	{0x10, 1, {0x00} },
 	{REGFLAG_DELAY, 120, {} },
-	{0x4F, 1, {0x01} },
-	{REGFLAG_DELAY, 120, {} }
+	{REGFLAG_END_OF_TABLE, 0x00, {} }
 };
 
 static struct LCM_setting_table lcm_initialization_setting[] = {
@@ -324,7 +326,6 @@ static struct LCM_setting_table lcm_initialization_setting[] = {
 {0xD1,1,{0x41}},               //VN8);
 {0xD2,1,{0x4F}},               //VN4);
 {0xD3,1,{0x2C}},
-{0xFF,3,{0x98,0x81,0x00}},
 {0xFF,3,{0x98,0x81,0x02}},		//CMD_Page 0
 {0x06,1,{0x40}},
 {0x07,1,{0x05}}, //pwm  20K
@@ -343,14 +344,14 @@ static struct LCM_setting_table lcm_initialization_setting[] = {
 
 static struct LCM_setting_table lcm_setting_ui[] = {
 {0xFF,3,{0x98,0x81,0x00}},
-{0x53,1,{0x24}},
+{0x53,1,{0x2c}},
 {0x55,1,{0x01}},
 {REGFLAG_END_OF_TABLE, 0x00, {}}
 };
 
 static struct LCM_setting_table lcm_setting_dis[] = {
 {0xFF,3,{0x98,0x81,0x00}},
-{0x53,1,{0x24}},
+{0x53,1,{0x2c}},
 {0x55,1,{0x00}},
 {REGFLAG_END_OF_TABLE, 0x00, {}}
 };
