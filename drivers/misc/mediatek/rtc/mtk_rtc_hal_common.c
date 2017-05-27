@@ -37,6 +37,11 @@
 #include <mt_pmic_wrap.h>
 /*#include <mt-plat/aee.h>*/
 
+#ifdef CONFIG_MTK_GPUREGULATOR_INTF
+/* Used for RT5735A SDA low workaround */
+#include "../power/mt6797/mtk_gpuregulator_intf.h"
+#endif
+
 #define hal_rtc_xinfo(fmt, args...)		\
 		pr_notice(fmt, ##args)
 
@@ -133,6 +138,12 @@ void rtc_set_writeif(bool enable)
 void rtc_bbpu_pwrdown(bool auto_boot)
 {
 	u16 bbpu;
+
+#ifdef CONFIG_MTK_GPUREGULATOR_INTF
+	/* Used for RT5735A SDA low workaround */
+	if (rt_is_hw_exist())
+		rt_i2c7_switch_gpio_shutdown();
+#endif
 
 	if (auto_boot)
 		bbpu = RTC_BBPU_KEY | RTC_BBPU_AUTO | RTC_BBPU_PWREN;

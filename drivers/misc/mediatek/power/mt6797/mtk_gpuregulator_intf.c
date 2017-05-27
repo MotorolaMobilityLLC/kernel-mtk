@@ -274,6 +274,18 @@ void rt_dump_registers(void)
 }
 EXPORT_SYMBOL(rt_dump_registers);
 
+/* Used for RT5735A SDA low workaround, called in RTC driver */
+int rt_i2c7_switch_gpio_shutdown(void)
+{
+	const struct mtk_user_intf *user_intf = g_intf_info->pdata->user_intf;
+
+	if (!user_intf->i2c7_switch_gpio_shutdown)
+		return -1;
+
+	return user_intf->i2c7_switch_gpio_shutdown();
+}
+EXPORT_SYMBOL(rt_i2c7_switch_gpio_shutdown);
+
 static ssize_t show_rt_access(struct device *dev, struct device_attribute *attr,
 			      char *buf)
 {

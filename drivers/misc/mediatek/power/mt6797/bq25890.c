@@ -1126,6 +1126,19 @@ static int bq25890_driver_probe(struct i2c_client *client, const struct i2c_devi
 	return 0;
 }
 
+#define CON9_BATFET_DIS_MASK 0x1
+#define CON9_BATFET_DIS_SHIFT 0x5
+
+/* For RT5735A SDA low workaround */
+void battery_disable_batfet(void)
+{
+	unsigned int ret = 0;
+
+	ret = bq25890_config_interface(bq25890_CON9, 1,
+			CON9_BATFET_DIS_MASK, CON9_BATFET_DIS_SHIFT);
+	pr_notice("battery_disable_batfet success");
+}
+
 /**********************************************************
   *
   *   [platform_driver API]

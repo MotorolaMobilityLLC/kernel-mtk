@@ -26,6 +26,10 @@
 #include <mt-plat/rt-regmap.h>
 #endif /* #ifdef CONFIG_RT_REGMAP */
 
+#include <mt_gpio.h>
+#include <linux/delay.h>
+#include <mt-plat/charging.h>
+#include "fan53555.h"
 
 #define RT5735_I2C_CHANNEL 0
 
@@ -451,6 +455,225 @@ static int rt5735_set_slew_rate(void *r_info, u8 up_down, u8 val)
 	return ret;
 }
 
+/* Used for RT5735A SDA low workaround, called in RTC driver */
+static int rt5735_i2c7_switch_gpio_shutdown(void)
+{
+	pr_alert("%s +\n", __func__);
+
+	/* emulator read addr 0x1c offset 0x23 */
+	/* switch gpio mode */
+	mt_set_gpio_mode(SCL7_GPIO, 0);
+	mt_set_gpio_mode(SDA7_GPIO, 0);
+
+	/* config output */
+	mt_set_gpio_dir(SCL7_GPIO, 1);
+	mt_set_gpio_dir(SDA7_GPIO, 1);
+
+	/* output high */
+	mt_set_gpio_out(SCL7_GPIO, 1);
+	mt_set_gpio_out(SDA7_GPIO, 1);
+
+	/* trigger start */
+	mt_set_gpio_out(SDA7_GPIO, 0);
+	udelay(2);
+
+	mt_set_gpio_out(SCL7_GPIO, 0);
+
+	/* write 0x1c, bit data == 0x0011 1000 */
+	udelay(5);
+	mt_set_gpio_out(SCL7_GPIO, 1);	/* bit7 */
+	udelay(5);
+
+	mt_set_gpio_out(SCL7_GPIO, 0);
+	udelay(5);
+	mt_set_gpio_out(SCL7_GPIO, 1); /* bit6 */
+	udelay(5);
+
+	mt_set_gpio_out(SCL7_GPIO, 0);
+	/* add a delay 2us for data change at middle of scl low */
+	udelay(2);
+	mt_set_gpio_out(SDA7_GPIO, 1);
+	udelay(5);
+	mt_set_gpio_out(SCL7_GPIO, 1); /* bit5 */
+	/* mt_set_gpio_out(SDA7_GPIO, 1); */
+	udelay(5);
+
+	mt_set_gpio_out(SCL7_GPIO, 0);
+	mt_set_gpio_out(SDA7_GPIO, 1);
+	udelay(5);
+	mt_set_gpio_out(SCL7_GPIO, 1); /* bit4 */
+
+	/* mt_set_gpio_out(SDA7_GPIO, 1); */
+	udelay(5);
+	mt_set_gpio_out(SCL7_GPIO, 0);
+	mt_set_gpio_out(SDA7_GPIO, 1);
+	udelay(5);
+	mt_set_gpio_out(SCL7_GPIO, 1); /* bit3 */
+
+	/* mt_set_gpio_out(SDA7_GPIO, 1); */
+	udelay(5);
+	mt_set_gpio_out(SCL7_GPIO, 0);
+	udelay(2);
+	mt_set_gpio_out(SDA7_GPIO, 0);
+	udelay(5);
+	mt_set_gpio_out(SCL7_GPIO, 1); /* bit2 */
+
+	/* mt_set_gpio_out(SDA7_GPIO, 0); */
+	udelay(5);
+	mt_set_gpio_out(SCL7_GPIO, 0);
+	udelay(5);
+	mt_set_gpio_out(SCL7_GPIO, 1); /* bit1 */
+	udelay(5);
+
+	mt_set_gpio_out(SCL7_GPIO, 0);
+	mt_set_gpio_out(SDA7_GPIO, 0);
+	udelay(5);
+	mt_set_gpio_out(SCL7_GPIO, 1); /* bit0 */
+	/* mt_set_gpio_out(SDA7_GPIO, 1); */
+
+	/* slave ACK, Switch SDA input mode */
+	udelay(5);
+	mt_set_gpio_out(SCL7_GPIO, 0);
+	udelay(1);
+	mt_set_gpio_dir(SDA7_GPIO, 0);
+	udelay(5);
+	mt_set_gpio_out(SCL7_GPIO, 1);
+	udelay(5);
+
+	mt_set_gpio_out(SCL7_GPIO, 0);
+	/* udelay(2); */
+	/* mt_set_gpio_out(SDA7_GPIO, 1); */
+	mt_set_gpio_dir(SDA7_GPIO, 1);
+
+	/*****************end first ack***********************************/
+	/* write 0x23, 0x0010, 0011 */
+	udelay(5);
+	mt_set_gpio_out(SDA7_GPIO, 0); /* bit7:0 */
+	udelay(2);
+	mt_set_gpio_out(SCL7_GPIO, 1);
+	udelay(5);
+
+	mt_set_gpio_out(SCL7_GPIO, 0);
+	udelay(5);
+	mt_set_gpio_out(SCL7_GPIO, 1);
+	udelay(5);
+
+	mt_set_gpio_out(SCL7_GPIO, 0);
+	udelay(5);
+	mt_set_gpio_out(SDA7_GPIO, 1); /* bit5:1 */
+	udelay(2);
+	mt_set_gpio_out(SCL7_GPIO, 1);
+	udelay(5);
+
+	mt_set_gpio_out(SCL7_GPIO, 0);
+	udelay(5);
+	mt_set_gpio_out(SDA7_GPIO, 0); /* bit4:0 */
+	udelay(2);
+	mt_set_gpio_out(SCL7_GPIO, 1);
+	udelay(5);
+
+	mt_set_gpio_out(SCL7_GPIO, 0);
+	udelay(5);
+	mt_set_gpio_out(SCL7_GPIO, 1);
+	udelay(5);
+
+	mt_set_gpio_out(SCL7_GPIO, 0);
+	udelay(5);
+	/* mt_set_gpio_dir(SDA7_GPIO, 0); */
+	mt_set_gpio_out(SCL7_GPIO, 1);
+	udelay(5);
+
+	mt_set_gpio_out(SCL7_GPIO, 0);
+	udelay(5);
+	mt_set_gpio_out(SDA7_GPIO, 1); /* bit1:1 */
+	udelay(2);
+	mt_set_gpio_out(SCL7_GPIO, 1);
+	udelay(5);
+
+	mt_set_gpio_out(SCL7_GPIO, 0);
+	udelay(5);
+	mt_set_gpio_out(SCL7_GPIO, 1);
+	/* end */
+
+	/* slave ACK, set SDA input mode */
+	udelay(5);
+	mt_set_gpio_out(SCL7_GPIO, 0);
+	udelay(5);
+	mt_set_gpio_dir(SDA7_GPIO, 0);
+	mt_set_gpio_out(SCL7_GPIO, 1);
+	udelay(5);
+	mt_set_gpio_out(SCL7_GPIO, 0);
+	udelay(2);
+	mt_set_gpio_out(SDA7_GPIO, 1);
+	mt_set_gpio_dir(SDA7_GPIO, 1);
+
+	/*****************end second ack***********************************/
+	/* restart */
+	udelay(5);
+	mt_set_gpio_out(SCL7_GPIO, 1);
+	udelay(2);
+	mt_set_gpio_out(SDA7_GPIO, 0);
+	udelay(3);
+	mt_set_gpio_out(SCL7_GPIO, 0);
+	/*****************read command**********************************/
+	/* read data 0x1001,1100 */
+
+	udelay(5);
+	mt_set_gpio_out(SCL7_GPIO, 1);
+	udelay(5);
+	mt_set_gpio_out(SCL7_GPIO, 0);
+	udelay(5);
+	mt_set_gpio_out(SCL7_GPIO, 1);
+	udelay(5);
+	mt_set_gpio_out(SCL7_GPIO, 0);
+	udelay(2);
+	mt_set_gpio_out(SDA7_GPIO, 1);
+	udelay(5);
+	mt_set_gpio_out(SCL7_GPIO, 1);
+	udelay(5);
+	mt_set_gpio_out(SCL7_GPIO, 0);
+	udelay(5);
+	mt_set_gpio_out(SCL7_GPIO, 1);
+
+	/* finish first 4 bits */
+	udelay(5);
+	mt_set_gpio_out(SCL7_GPIO, 0);
+	udelay(5);
+	mt_set_gpio_out(SCL7_GPIO, 1);
+	udelay(5);
+	mt_set_gpio_out(SCL7_GPIO, 0);
+	udelay(2);
+	mt_set_gpio_out(SDA7_GPIO, 0);
+	udelay(5);
+	mt_set_gpio_out(SCL7_GPIO, 1);
+	udelay(5);
+	mt_set_gpio_out(SCL7_GPIO, 0);
+	udelay(5);
+	mt_set_gpio_out(SCL7_GPIO, 1);
+	udelay(5);
+	mt_set_gpio_out(SCL7_GPIO, 0);
+	udelay(2);
+	mt_set_gpio_out(SDA7_GPIO, 1);
+	udelay(5);
+	mt_set_gpio_out(SCL7_GPIO, 1);
+	udelay(5);
+	mt_set_gpio_out(SCL7_GPIO, 0);
+	udelay(5);
+
+	/* ack */
+	udelay(2);
+	mt_set_gpio_dir(SDA7_GPIO, 0);
+	udelay(5);
+	mt_set_gpio_out(SCL7_GPIO, 1);
+	udelay(5);
+	mt_set_gpio_out(SCL7_GPIO, 0);
+	udelay(5);
+	mt_set_gpio_out(SCL7_GPIO, 1);
+
+	pr_alert("%s -\n", __func__);
+	return 0;
+}
+
 static const struct mtk_user_intf mtk_user_intf = {
 	.get_chip_name = rt5735_get_chip_name,
 	.get_compatible_name = rt5735_get_compatible_name,
@@ -469,6 +692,7 @@ static const struct mtk_user_intf mtk_user_intf = {
 	.dump_registers = rt5735_dump_registers,
 	.get_slew_rate = rt5735_get_slew_rate,
 	.set_slew_rate = rt5735_set_slew_rate,
+	.i2c7_switch_gpio_shutdown = rt5735_i2c7_switch_gpio_shutdown,
 };
 
 static const struct mtk_gpuregulator_platform_data rtintf_platdata = {
@@ -534,6 +758,43 @@ static int rt5735_chip_init(struct rt5735_info *info)
 			&rt5735_cfg_default[3]);
 }
 
+/* Used for RT5735A SDA low workaround */
+static int rt5735_i2c7_switch_gpio_bootup(void)
+{
+	int i;
+
+	pr_alert("%s +\n", __func__);
+
+	/* switch gpio mode */
+	mt_set_gpio_mode(SCL7_GPIO, 0);
+	mt_set_gpio_mode(SDA7_GPIO, 0);
+
+	/* dir, scl output, sda input */
+	mt_set_gpio_dir(SCL7_GPIO, 1);
+	mt_set_gpio_dir(SDA7_GPIO, 0);
+
+	/* level */
+	mt_set_gpio_out(SCL7_GPIO, 1);
+
+	udelay(20);
+
+	/* output 9 cycle */
+	for (i = 0; i < 9; i++) {
+		udelay(5);
+		mt_set_gpio_out(SCL7_GPIO, 0);
+		udelay(5);
+		mt_set_gpio_out(SCL7_GPIO, 1);
+	}
+
+	/* switch i2c mode */
+	udelay(5);
+	mt_set_gpio_mode(SCL7_GPIO, 1);
+	mt_set_gpio_mode(SDA7_GPIO, 1);
+
+	pr_alert("%s -\n", __func__);
+	return 0;
+}
+
 static int rt5735_i2c_probe(struct i2c_client *client,
 		const struct i2c_device_id *id)
 {
@@ -543,10 +804,28 @@ static int rt5735_i2c_probe(struct i2c_client *client,
 	int ret = 0;
 	u8 regval = 0;
 
+	pr_alert("%s\n", __func__);
+
+	if (is_fan53555_exist() == 1) {
+		pr_err("%s: fan53555 is detected\n", __func__);
+		return -ENODEV;
+	}
+
+	/* Fix SDA7 remains low issue */
+	rt5735_i2c7_switch_gpio_bootup();
+
 	/* check product id for exist */
 	ret = rt5735_read_device(client, RT5735_REG_PID, 1, &regval);
 	pr_info("regval = 0x%02x\n, ret = %d", regval, ret);
-	if (ret < 0 || regval != RT5735_PRODUCT_ID) {
+
+	if (ret < 0) {
+		/*
+		 * No FAN53555 is detected and can't successfully probe RT5735A after workaround.
+		 * Assume this workaround can't work, try next fix if exist.
+		 */
+		pr_err("%s: can't probe I2C device\n", __func__);
+		battery_disable_batfet();
+	} else if (regval != RT5735_PRODUCT_ID) {
 		pr_err("%s chip not match\n", __func__);
 		return -ENODEV;
 	}
@@ -658,7 +937,19 @@ static struct i2c_driver rt5735_driver = {
 	.remove = rt5735_i2c_remove,
 	.id_table = rt5735_device_id,
 };
-module_i2c_driver(rt5735_driver);
+
+static int __init rt5735_init(void)
+{
+	return i2c_add_driver(&rt5735_driver);
+}
+
+static void __exit rt5735_exit(void)
+{
+	i2c_del_driver(&rt5735_driver);
+}
+
+device_initcall_sync(rt5735_init);
+module_exit(rt5735_exit);
 
 MODULE_LICENSE("GPL");
 MODULE_DESCRIPTION("Regulator Driver for Richtek RT5735");

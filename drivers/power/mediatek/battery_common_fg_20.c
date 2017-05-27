@@ -498,6 +498,11 @@ kal_bool upmu_is_chr_det(void)
 }
 EXPORT_SYMBOL(upmu_is_chr_det);
 
+void __attribute__ ((weak))
+	battery_disable_batfet(void)
+{
+	pr_notice("battery_disable_batfet do not implement");
+}
 
 void wake_up_bat(void)
 {

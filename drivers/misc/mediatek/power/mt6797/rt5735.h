@@ -64,6 +64,10 @@ enum {
 #define RT5735_TPWTH_SHFT	4
 #define RT5735_REARM_MASK	0x01
 
+/* Used for RT5735A SDA low workaround */
+#define SCL7_GPIO	(153 | 0x80000000)
+#define SDA7_GPIO	(154 | 0x80000000)
+
 struct rt5735_platform_data {
 	u32 pgdvs:1;
 	u32 pgdcdc:1;

@@ -47,6 +47,10 @@ extern int rt_enable_force_pwm(u8 vsel, u8 enable);
 extern int rt_is_force_pwm_enabled(u8 vsel);
 extern int rt_enable_discharge(u8 enable);
 extern int rt_is_discharge_enabled(void);
+
+/* Used for RT5735A SDA low workaround, called in RTC driver */
+extern int rt_i2c7_switch_gpio_shutdown(void);
+
 /* deprecated for short term */
 extern int rt_read_interface(u8 cmd, u8 *return_data, u8 mask, u8 shift);
 extern int rt_read_byte(u8 cmd, u8 *return_data);
@@ -74,6 +78,7 @@ struct mtk_user_intf {
 	int (*get_slew_rate)(void *info, u8 up_down);
 	int (*set_slew_rate)(void *info, u8 up_down, u8 val);
 	void (*dump_registers)(void *info);
+	int (*i2c7_switch_gpio_shutdown)(void); /* Used for RT5735A SDA low workaround */
 };
 
 struct chip_io_intf {

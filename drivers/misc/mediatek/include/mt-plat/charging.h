@@ -616,7 +616,8 @@ extern void hw_charging_enable_dp_voltage(int ison);
 #ifdef CONFIG_TOUCHSCREEN_MTK_FOCALTECH_TS
 extern void tpd_usb_plugin(int plugin);
 #endif
-
+/* For RT5735A SDA low workaround */
+extern void battery_disable_batfet(void);
 /* switch charger */
 extern void switch_charger_set_vindpm(unsigned int chr_v);
 extern int mtk_get_dynamic_cv(unsigned int *cv);
