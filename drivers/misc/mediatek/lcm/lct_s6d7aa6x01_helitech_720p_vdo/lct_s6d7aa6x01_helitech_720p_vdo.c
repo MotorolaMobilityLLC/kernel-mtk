@@ -166,7 +166,7 @@ static struct LCM_setting_table lcm_initialization_setting[] = {
 #ifdef CONFIG_LCT_CABC_MODE_SUPPORT
 static struct LCM_setting_table lcm_setting_ui[] = {
 	//{0x51,1,{0xff}},
-	{0x53,1,{0x24}},
+	{0x53,1,{0x2c}},
 	{0x55,1,{0x01}},
 	{REGFLAG_END_OF_TABLE, 0x00, {}}
 
@@ -182,7 +182,7 @@ static struct LCM_setting_table lcm_setting_mv[] = {
 
 static struct LCM_setting_table lcm_setting_dis[] = {
 	//{0x51,1,{0xff}},
-	{0x53,1,{0x24}},
+	{0x53,1,{0x2c}},
 	{0x55,1,{0x00}},
 	{REGFLAG_END_OF_TABLE, 0x00, {}}
 
