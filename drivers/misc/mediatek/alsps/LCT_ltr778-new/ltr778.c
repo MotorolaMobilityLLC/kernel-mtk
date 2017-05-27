@@ -1164,13 +1164,13 @@ static int ltr778_stowed_get_ps_value(struct ltr778_priv *obj, u16 ps)
 	int invalid = 0;
 
 	static int val_temp = 1;
-	if((ps > atomic_read(&obj->ps_thd_val_high)))
+	if((ps > atomic_read(&obj->ps_thd_val_high_stowed)))
 	{
 		val = 0;  /*close*/
 		val_temp = 0;
 		intr_flag_value = 1;
 	}
-	else if((ps < atomic_read(&obj->ps_thd_val_low)))
+	else if((ps < atomic_read(&obj->ps_thd_val_low_stowed)))
 	{
 		val = 1;  /*far away*/
 		val_temp = 1;
@@ -1979,6 +1979,8 @@ static void ltr778_ps_delay_work(struct work_struct *work)
 				
 				atomic_set(&obj->ps_persist_val_high, ps_persist_val_high);
 				atomic_set(&obj->ps_persist_val_low, ps_persist_val_low);
+				atomic_set(&obj->ps_thd_val_high_stowed, ps_thd_val_high + 50);
+				atomic_set(&obj->ps_thd_val_low_stowed, ps_thd_val_low + 20);
 		
         		dynamic_calibrate = obj->ps;
 
