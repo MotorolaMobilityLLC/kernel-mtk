@@ -279,6 +279,22 @@ static unsigned int is_chr_det(void)
 }
 #endif
 
+static int charging_hw_init(void *data);
+ void lenovo_charging_again_enble(void)
+{
+	int en = KAL_TRUE;
+
+	//bq25890_set_en_hiz(1);
+	bq25890_chg_en(0x0); // charger disable
+	msleep(100);
+
+	charging_hw_init(&en);
+
+	//bq25890_set_en_hiz(0x0);
+	bq25890_chg_en(0x1); // charger enable
+}
+
+
 static int charging_hw_init(void *data)
 {
 	int status = STATUS_OK;

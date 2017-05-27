@@ -139,7 +139,7 @@
 #endif
 
 #define LENOVO_THERMAL_SUPPORT
-
+#define LENOVO_CHARGING_FULL_CHECK_AGAIN_SUPPORT
 
 /*VINDPM moved from cust_pe.h to de-relating from PE+*/
 #define SWITCH_CHR_VINDPM_5V 0x13  /* 4.5V */

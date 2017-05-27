@@ -68,7 +68,7 @@
 
 #ifdef LENOVO_CHARGING_FULL_CHECK_AGAIN_SUPPORT
 static bool  g_is_lenovo_charging_check_again_state = KAL_FALSE;
-static UINT32      g_bat_charging_state_back = CHR_PRE;
+static s32      g_bat_charging_state_back = CHR_PRE;
 extern  void lenovo_charging_again_enble(void);
 #endif
 
