@@ -79,7 +79,7 @@ static irqreturn_t mtk_vcodec_dec_irq_handler(int irq, void *priv)
 
 	wake_up_ctx(ctx);
 
-	mtk_v4l2_debug(3,
+	mtk_v4l2_debug(4,
 			"mtk_vcodec_dec_irq_handler :wake up ctx %d, dec_done_status=%x",
 			ctx->id, dec_done_status);
 

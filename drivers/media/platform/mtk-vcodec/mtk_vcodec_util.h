@@ -39,7 +39,7 @@ extern bool mtk_vcodec_dbg;
 
 #define mtk_v4l2_debug(level, fmt, args...)				 \
 	do {								 \
-		if (mtk_v4l2_dbg_level >= level)			 \
+		if ((mtk_v4l2_dbg_level & level) == level)			 \
 			pr_info("[MTK_V4L2] level=%d %s(),%d: " fmt "\n",\
 				level, __func__, __LINE__, ##args);	 \
 	} while (0)
@@ -49,8 +49,8 @@ extern bool mtk_vcodec_dbg;
 	       ##args)
 
 
-#define mtk_v4l2_debug_enter()  mtk_v4l2_debug(3, "+")
-#define mtk_v4l2_debug_leave()  mtk_v4l2_debug(3, "-")
+#define mtk_v4l2_debug_enter()  mtk_v4l2_debug(8, "+")
+#define mtk_v4l2_debug_leave()  mtk_v4l2_debug(8, "-")
 
 #define mtk_vcodec_debug(h, fmt, args...)				\
 	do {								\

@@ -1152,7 +1152,7 @@ static int m2mops_venc_job_ready(void *m2m_priv)
 	struct mtk_vcodec_ctx *ctx = m2m_priv;
 
 	if (ctx->state == MTK_STATE_ABORT || ctx->state == MTK_STATE_FREE) {
-		mtk_v4l2_debug(3, "[%d]Not ready: state=0x%x.",
+		mtk_v4l2_debug(4, "[%d]Not ready: state=0x%x.",
 			       ctx->id, ctx->state);
 		return 0;
 	}
