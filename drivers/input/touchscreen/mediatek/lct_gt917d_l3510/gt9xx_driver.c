@@ -272,7 +272,7 @@ enum CHIP_TYPE_T gtp_chip_type = CHIP_TYPE_GT9;
 u8 gtp_clk_buf[6];
 u8 rqst_processing = 0;
 
-static void gtp_get_chip_type(struct i2c_client *client);
+//static void gtp_get_chip_type(struct i2c_client *client);  //optimize boot time by yangjiangzhu 20170527
 static u8 gtp_bak_ref_proc(struct i2c_client *client, u8 mode);
 static u8 gtp_main_clk_proc(struct i2c_client *client);
 static void gtp_recovery_reset(struct i2c_client *client);
@@ -1314,17 +1314,17 @@ void gtp_reset_guitar(struct i2c_client *client, s32 ms)
 	msleep(ms);
 	tpd_gpio_output(GTP_INT_PORT, client->addr == 0x14);
 
-	msleep(20);
+	msleep(5);  //20  optimize
 	tpd_gpio_output(GTP_RST_PORT, 1);
 
-	msleep(20);		/* must >= 6ms */
+	msleep(10); //20  optimize	/* must >= 6ms */
 
 #if defined(CONFIG_GTP_COMPATIBLE_MODE)
 	if (CHIP_TYPE_GT9F == gtp_chip_type)
 		return;
 #endif
 
-	gtp_int_sync(100);	/* for dbl-system */
+	gtp_int_sync(60); //100  optimize	/* for dbl-system */
 #if defined(CONFIG_GTP_ESD_PROTECT)
 	gtp_init_ext_watchdog(i2c_client_point);
 #endif
@@ -1356,7 +1356,8 @@ reset_proc:
 
 	gtp_reset_guitar(client, 20);
 
-#if defined(CONFIG_GTP_COMPATIBLE_MODE)
+//optimize boot time by yangjiangzhu  20170527
+#if 0 //defined(CONFIG_GTP_COMPATIBLE_MODE)
 	gtp_get_chip_type(client);
 
 	if (CHIP_TYPE_GT9F == gtp_chip_type) {
@@ -1388,7 +1389,7 @@ reset_proc:
 
 /* **************** For GT9XXF Start ********************/
 #if defined(CONFIG_GTP_COMPATIBLE_MODE)
-
+/*  //optimize boot time by yangjiangzhu  20170527
 void gtp_get_chip_type(struct i2c_client *client)
 {
 	u8 opr_buf[10] = { 0x00 };
@@ -1413,10 +1414,10 @@ void gtp_get_chip_type(struct i2c_client *client)
 		GTP_INFO("Chip Type: %s",
 			 (gtp_chip_type == CHIP_TYPE_GT9) ? "GOODIX_GT9" : "GOODIX_GT9F");
 	}
-	gtp_chip_type = CHIP_TYPE_GT9;	/* for test */
+	gtp_chip_type = CHIP_TYPE_GT9;	// for test 
 	GTP_INFO("Chip Type: %s", (gtp_chip_type == CHIP_TYPE_GT9) ? "GOODIX_GT9" : "GOODIX_GT9F");
 }
-
+*/
 static u8 gtp_bak_ref_proc(struct i2c_client *client, u8 mode)
 {
 	s32 i = 0;
