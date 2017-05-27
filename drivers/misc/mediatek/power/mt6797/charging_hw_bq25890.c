@@ -284,7 +284,7 @@ static int charging_hw_init(void *data)
 	int status = STATUS_OK;
 
 	bq25890_config_interface(bq25890_COND, 0x1, 0x1, 7);	/* vindpm vth 0:relative 1:absolute */
-
+	bq25890_config_interface(bq25890_COND, 0x16, 0x7F, 0);
 
 #if defined(MTK_WIRELESS_CHARGER_SUPPORT)
 	if (wireless_charger_gpio_number != 0) {
