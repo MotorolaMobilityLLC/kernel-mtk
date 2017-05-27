@@ -735,6 +735,40 @@ static int rt5081_inform_psy_changed(struct rt5081_pmu_charger_data *chg_data)
 	return ret;
 }
 
+static int rt5081_get_mivr_EN(struct rt5081_pmu_charger_data *chg_data)
+{
+	int ret = 0;
+	int reg_mivr = 0;
+
+	ret = rt5081_pmu_reg_read(chg_data->chip, RT5081_PMU_REG_CHGCTRL6);
+	if (ret < 0)
+		return 0;
+
+	reg_mivr = ((ret & RT5081_MASK_MIVR_EN) >> RT5081_SHIFT_MIVR_EN) & 0xFF;
+
+	printk(KERN_ERR "%s ,en_flag:%d\n",__func__, reg_mivr);
+
+	return reg_mivr;
+}
+
+static int __rt5081_set_mivr_EN(struct rt5081_pmu_charger_data *chg_data, int en_flag)
+{
+	int ret = 0;
+	int reg_mivr  = en_flag;
+
+	printk(KERN_ERR "%s, EN_flag:%d \n",__func__,en_flag);
+
+	ret = rt5081_pmu_reg_update_bits(
+		chg_data->chip,
+		RT5081_PMU_REG_CHGCTRL6,
+		RT5081_MASK_MIVR_EN,
+		reg_mivr << RT5081_SHIFT_MIVR_EN
+	);
+
+	return ret;
+}
+static int __rt5081_set_mivr(struct rt5081_pmu_charger_data *chg_data, u32 uV);
+
 static int __rt5081_chgdet_handler(struct rt5081_pmu_charger_data *chg_data)
 {
 	int ret = 0;
@@ -805,6 +839,16 @@ static int __rt5081_chgdet_handler(struct rt5081_pmu_charger_data *chg_data)
 	if (ret < 0)
 		dev_err(chg_data->dev, "%s: disable chrdet fail\n", __func__);
 
+	if(chg_data->chg_type == STANDARD_HOST ){
+		if(rt5081_get_mivr_EN(chg_data) != 0){
+			__rt5081_set_mivr_EN(chg_data,0);
+		}
+	}else{
+		if(rt5081_get_mivr_EN(chg_data) != 1){
+			__rt5081_set_mivr_EN(chg_data,1);
+			__rt5081_set_mivr(chg_data, 4500000);
+		}
+	}
 out:
 	rt5081_inform_psy_changed(chg_data);
 	return ret;
@@ -2616,7 +2660,7 @@ static irqreturn_t rt5081_pmu_chg_aicr_irq_handler(int irq, void *data)
 	dev_err(chg_data->dev, "%s\n", __func__);
 	return IRQ_HANDLED;
 }
-
+	
 static irqreturn_t rt5081_pmu_chg_mivr_irq_handler(int irq, void *data)
 {
 	int ret = 0, ibus = 0;
@@ -2625,6 +2669,11 @@ static irqreturn_t rt5081_pmu_chg_mivr_irq_handler(int irq, void *data)
 		(struct rt5081_pmu_charger_data *)data;
 
 	dev_info(chg_data->dev, "%s\n", __func__);
+
+	if(chg_data->chg_type == STANDARD_HOST){
+		__rt5081_set_mivr_EN(chg_data,0);
+	}
+
 	ret = rt5081_pmu_reg_test_bit(chg_data->chip, RT5081_PMU_REG_CHGSTAT1,
 		RT5081_SHIFT_MIVR_STAT, &mivr_stat);
 	if (ret < 0) {
