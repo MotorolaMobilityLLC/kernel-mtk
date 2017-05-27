@@ -1020,7 +1020,7 @@ static int charging_sw_init(void *data)
 	bq25890_config_interface(bq25890_CON0, 0x08, 0x3F, 0);	/* input current limit, IINLIM, 500mA */
 
 	/* absolute VINDPM = 2.6 + code x 0.1 =4.5V;K2 24261 4.452V */
-	bq25890_config_interface(bq25890_COND, 0x14, 0x7F, 0);
+	bq25890_config_interface(bq25890_COND, 0x16, 0x7F, 0);
 
 	/*CV mode */
 #ifdef LENOVO_TEMP_POS_45_TO_POS_50_CV_LiMIT_SUPPORT
