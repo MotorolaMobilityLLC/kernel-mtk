@@ -9020,6 +9020,8 @@ static MINT32 ISP_release(
 #if 0 /* _mt6593fpga_dvt_use_ */
 	spm_enable_sodi();
 #endif
+
+#if 0
 	/* Reset MCLK   */
 	mMclk1User = 0;
 	mMclk2User = 0;
@@ -9028,7 +9030,7 @@ static MINT32 ISP_release(
 	ISP_WR32(ISP_SENINF1_BASE + 0x0600, 0x00000001);
 	ISP_WR32(ISP_SENINF2_BASE + 0x0600, 0x00000001);
 	LOG_DBG("ISP_MCLK_EN Release");
-
+#endif
 EXIT:
 
 	/* Disable clock.
@@ -11835,7 +11837,7 @@ void ISP_MCLK1_EN(BOOL En)
 	temp = ISP_RD32(ISP_SENINF0_BASE + 0x0600);
 	if (En) {
 		if (mMclk1User > 0) {
-			temp |= 0x20000000;
+			temp |= 0xA0000000;
 			ISP_WR32(ISP_SENINF0_BASE + 0x0600, temp);
 		}
 	} else {
@@ -11865,7 +11867,7 @@ void ISP_MCLK2_EN(BOOL En)
 	temp = ISP_RD32(ISP_SENINF1_BASE + 0x0600);
 	if (En) {
 		if (mMclk2User > 0) {
-			temp |= 0x20000000;
+			temp |= 0xA0000000;
 			ISP_WR32(ISP_SENINF1_BASE + 0x0600, temp);
 		}
 	} else {
@@ -11893,7 +11895,7 @@ void ISP_MCLK3_EN(BOOL En)
 	temp = ISP_RD32(ISP_SENINF2_BASE + 0x0600);
 	if (En) {
 		if (mMclk3User > 0) {
-			temp |= 0x20000000;
+			temp |= 0xA0000000;
 			ISP_WR32(ISP_SENINF2_BASE + 0x0600, temp);
 		}
 	} else {
