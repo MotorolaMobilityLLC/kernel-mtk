@@ -867,9 +867,13 @@ void select_charging_current_bcct(void)
 
 	mtk_check_aicr_upper_bound();
 }
+
 static void bq25890_select_correspond_power(void)
 {
 	CHR_CURRENT_ENUM temp_CC_value = CHARGE_CURRENT_500_00_MA;
+
+	if (LENOVO_DISABLE_9V_TO_5V)
+		return ;
 
 	if (!(BMT_status.charger_rate == POWER_SUPPLY_CHARGE_RATE_TURBO
 		&& BMT_status.charger_type == STANDARD_CHARGER))
