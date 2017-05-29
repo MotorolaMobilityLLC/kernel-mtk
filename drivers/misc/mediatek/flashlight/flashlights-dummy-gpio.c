@@ -41,6 +41,8 @@
 #include "flashlight-dt.h"
   static unsigned int f_duty = 7;  //modify lct tianyaping 100mA 20170407
  module_param(f_duty,int,0644);
+  static unsigned int t_duty = 5;  //modify lct tianyaping  75mA 20170407
+ module_param(t_duty,int,0644);
    static unsigned int count = 8;
  module_param(count,int,0644);
     static unsigned int sleep = 50;
@@ -145,6 +147,18 @@ static int dummy_enable(int level)
 {
 	int pin = 0;
 	int i =0;
+	if(g_duty== 0)//torch
+	{
+	for (i =1;i<=flashDuty[t_duty];i++)
+	{
+		//dummy_pinctrl_set(pin, 1);
+		udelay(count);
+		fl_dbg("Suny FL_enable torch i = %d ,g_duty=%d line=%d\n",i,g_duty,__LINE__);
+		 dummy_pinctrl_set(pin, 0);
+		  udelay(sleep);
+		 dummy_pinctrl_set(pin, 1);
+			}
+	} else {
 	for (i =1;i<=flashDuty[f_duty];i++)
 	{
 		//dummy_pinctrl_set(pin, 1);
@@ -154,6 +168,7 @@ static int dummy_enable(int level)
 		  udelay(sleep);
 		 dummy_pinctrl_set(pin, 1);
 			}
+		}
 		fl_dbg("Suny FL_enable flash g_duty=%d line=%d\n",g_duty,__LINE__);
 	/* TODO: wrap enable function */
 
