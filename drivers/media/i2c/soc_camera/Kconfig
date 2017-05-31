@@ -6,6 +6,15 @@ config SOC_CAMERA_IMX074
 	help
 	  This driver supports IMX074 cameras from Sony
 
+config SOC_CAMERA_MAX9286
+	tristate "max9286 support"
+	depends on SOC_CAMERA && I2C
+	help
+	  This is a driver for the MAX9286 from mediatek. MAX9286 can
+	  link 4 serdes camera like CAB888 and output MIPI-CSI2 signal.
+	  The driver is base on V4l2 framework and it can detect how many
+	  camera links and lock status to initialize MAX9286.
+
 config SOC_CAMERA_MT9M001
 	tristate "mt9m001 support"
 	depends on SOC_CAMERA && I2C
