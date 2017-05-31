@@ -119,6 +119,8 @@ struct ltr778_priv {
 	atomic_t	ps_persist_val_high;
 	atomic_t	ps_persist_val_low;
 	//liujinzhou@wind-mobi.com add at 20161205 end
+	atomic_t	ps_thd_val_high_stowed;
+	atomic_t	ps_thd_val_low_stowed;
 	atomic_t	als_thd_val_high;	 /*the cmd value can't be read, stored in ram*/
 	atomic_t	als_thd_val_low; 	/*the cmd value can't be read, stored in ram*/
 	atomic_t	ps_thd_val;
@@ -638,7 +640,7 @@ static int ltr778_ps_stowed_enable(struct i2c_client *client, int enable)
 	u8 regdata;
 	int err;
 	int res = 0;
-//	struct ltr778_priv *obj = ltr778_obj;
+	struct ltr778_priv *obj = ltr778_obj;
 	
 
 	APS_LOG("ltr778_ps_stowed_enable(%d) ...start!\n",enable);
@@ -702,6 +704,8 @@ static int ltr778_ps_stowed_enable(struct i2c_client *client, int enable)
 
 	if (0 == ltr778_obj->hw->polling_mode_ps && ((regdata & 0x02) == 0x02))
 	{
+	atomic_set(&obj->ps_thd_val_high_stowed, atomic_read(&obj->ps_thd_val_high) + 50);
+	atomic_set(&obj->ps_thd_val_low_stowed, atomic_read(&obj->ps_thd_val_low) + 20);
 //#ifdef GN_MTK_BSP_PS_DYNAMIC_CALI
 #if 0
 		err = ltr778_dynamic_calibrate();
@@ -710,7 +714,10 @@ static int ltr778_ps_stowed_enable(struct i2c_client *client, int enable)
 			APS_LOG("ltr778_dynamic_calibrate() failed\n");
 		}
 #endif
-		ltr778_ps_set_thres();
+	ltr778_i2c_write_reg( LTR778_PS_THRES_LOW_0,(u8)((atomic_read(&obj->ps_thd_val_low_stowed)) & 0x00FF) );
+	ltr778_i2c_write_reg( LTR778_PS_THRES_LOW_1, (u8)(((atomic_read(&obj->ps_thd_val_low_stowed)) & 0x7F00) >> 8));
+	ltr778_i2c_write_reg( LTR778_PS_THRES_UP_0, (u8)((atomic_read(&obj->ps_thd_val_high_stowed)) & 0x00FF) );
+	ltr778_i2c_write_reg( LTR778_PS_THRES_UP_1, (u8)(((atomic_read(&obj->ps_thd_val_high_stowed)) & 0x7F00) >> 8));
 	}
 	else if (0 == ltr778_obj->hw->polling_mode_ps && ((regdata & 0x02) == 0x00))
 	{
@@ -1071,7 +1078,6 @@ static int ltr778_dynamic_calibrate(void)
 
 	}
 	
-	APS_LOG("%s:noise = %d\n", __func__, noise);
 	APS_LOG("%s:obj->ps_thd_val_high = %d\n", __func__, atomic_read(&obj->ps_thd_val_high));
 	APS_LOG("%s:obj->ps_thd_val_low = %d\n", __func__, atomic_read(&obj->ps_thd_val_low));
 	APS_LOG("%s:obj->ps_persist_val_high = %d\n", __func__, atomic_read(&obj->ps_persist_val_high));
@@ -1253,13 +1259,13 @@ static int ltr778_stowed_get_ps_value(struct ltr778_priv *obj, u16 ps)
 	int invalid = 0;
 
 	static int val_temp = 1;
-	if((ps > atomic_read(&obj->ps_thd_val_high)))
+	if((ps > atomic_read(&obj->ps_thd_val_high_stowed)))
 	{
 		val = 0;  /*close*/
 		val_temp = 0;
 		intr_flag_value = 1;
 	}
-	else if((ps < atomic_read(&obj->ps_thd_val_low)))
+	else if((ps < atomic_read(&obj->ps_thd_val_low_stowed)))
 	{
 		val = 1;  /*far away*/
 		val_temp = 1;
@@ -2039,6 +2045,8 @@ static void ltr778_ps_delay_work(struct work_struct *work)
         			atomic_set(&obj->ps_persist_val_high, 2047 );
         			atomic_set(&obj->ps_persist_val_low, 1900);
         		}
+				atomic_set(&obj->ps_thd_val_high_stowed, atomic_read(&obj->ps_thd_val_high) + 50);
+				atomic_set(&obj->ps_thd_val_low_stowed, atomic_read(&obj->ps_thd_val_low) + 20);
 		
         		dynamic_calibrate = obj->ps;
 
@@ -2212,13 +2220,13 @@ static void ltr778_eint_work(struct work_struct *work)
 					}
 				}else{
 				
-					res = ltr778_i2c_write_reg( LTR778_PS_THRES_LOW_0,(u8)((atomic_read(&obj->ps_thd_val_low)) & 0x00FF) );
+					res = ltr778_i2c_write_reg( LTR778_PS_THRES_LOW_0,(u8)((atomic_read(&obj->ps_thd_val_low_stowed)) & 0x00FF) );
 					if(res < 0)
 					{
 						goto EXIT_INTR;
 					}
 					
-					res = ltr778_i2c_write_reg( LTR778_PS_THRES_LOW_1, (u8)(((atomic_read(&obj->ps_thd_val_low)) & 0x7F00) >> 8));
+					res = ltr778_i2c_write_reg( LTR778_PS_THRES_LOW_1, (u8)(((atomic_read(&obj->ps_thd_val_low_stowed)) & 0x7F00) >> 8));
 					if(res < 0)
 					{
 						goto EXIT_INTR;
@@ -2259,16 +2267,31 @@ static void ltr778_eint_work(struct work_struct *work)
 					goto EXIT_INTR;
 				}
 				
-				res = ltr778_i2c_write_reg( LTR778_PS_THRES_UP_0, (u8)((atomic_read(&obj->ps_thd_val_high)) & 0x00FF));
-				if(res < 0)
-				{
-					goto EXIT_INTR;
-				}
-				
-				res = ltr778_i2c_write_reg( LTR778_PS_THRES_UP_1, (u8)(((atomic_read(&obj->ps_thd_val_high)) & 0x7F00) >> 8));
-				if(res < 0)
-				{
-					goto EXIT_INTR;
+				if( ps_stowed_enf == 0){
+						res = ltr778_i2c_write_reg( LTR778_PS_THRES_UP_0, (u8)((atomic_read(&obj->ps_thd_val_high)) & 0x00FF));
+						if(res < 0)
+						{
+							goto EXIT_INTR;
+						}
+						
+						res = ltr778_i2c_write_reg( LTR778_PS_THRES_UP_1, (u8)(((atomic_read(&obj->ps_thd_val_high)) & 0x7F00) >> 8));
+						if(res < 0)
+						{
+							goto EXIT_INTR;
+						}
+				}else{
+					
+						res = ltr778_i2c_write_reg( LTR778_PS_THRES_UP_0, (u8)((atomic_read(&obj->ps_thd_val_high_stowed)) & 0x00FF));
+						if(res < 0)
+						{
+							goto EXIT_INTR;
+						}
+						
+						res = ltr778_i2c_write_reg( LTR778_PS_THRES_UP_1, (u8)(((atomic_read(&obj->ps_thd_val_high_stowed)) & 0x7F00) >> 8));
+						if(res < 0)
+						{
+							goto EXIT_INTR;
+						}
 				}
 			}
 			break;
