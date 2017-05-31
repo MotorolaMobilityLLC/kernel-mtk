@@ -222,6 +222,18 @@
 			clocks = <&system_clk>, <&clk32k>;
 		};
 
+		uart5: serial@1000f000 {
+			compatible = "mediatek,mt2712-uart";
+			reg = <0 0x1000f000 0 0xc0>;
+			interrupts = <GIC_SPI 127 IRQ_TYPE_LEVEL_LOW>;
+			clocks = <&clk12m>, <&clk12m>;
+			clock-names = "baud", "bus";
+			dmas = <&apdma 10
+				&apdma 11>;
+			dma-names = "tx", "rx";
+			status = "disabled";
+		};
+
 		keypad: keypad@10010000 {
 			compatible = "mediatek,mt2712-keypad";
 			reg = <0 0x10010000 0 0x1000>;
@@ -410,11 +422,9 @@
 			interrupts = <GIC_SPI 92 IRQ_TYPE_LEVEL_LOW>;
 			clocks = <&clk12m>, <&clk12m>;
 			clock-names = "baud", "bus";
-
 			dmas = <&apdma 2
 				&apdma 3>;
 			dma-names = "tx", "rx";
-
 			status = "disabled";
 		};
 
@@ -424,11 +434,9 @@
 			interrupts = <GIC_SPI 93 IRQ_TYPE_LEVEL_LOW>;
 			clocks = <&clk12m>, <&clk12m>;
 			clock-names = "baud", "bus";
-
 			dmas = <&apdma 4
 				&apdma 5>;
 			dma-names = "tx", "rx";
-
 			status = "disabled";
 		};
 
@@ -438,11 +446,9 @@
 			interrupts = <GIC_SPI 94 IRQ_TYPE_LEVEL_LOW>;
 			clocks = <&clk12m>, <&clk12m>;
 			clock-names = "baud", "bus";
-
 			dmas = <&apdma 6
 				&apdma 7>;
 			dma-names = "tx", "rx";
-
 			status = "disabled";
 		};
 
@@ -640,6 +646,18 @@
 				 <&topckgen CLK_TOP_SPI_SEL>,
 				 <&pericfg CLK_PERI_SPI5>;
 			clock-names = "parent-clk", "sel-clk", "spi-clk";
+			status = "disabled";
+		};
+
+		uart4: serial@11019000 {
+			compatible = "mediatek,mt2712-uart";
+			reg = <0 0x11019000 0 0xc0>;
+			interrupts = <GIC_SPI 126 IRQ_TYPE_LEVEL_LOW>;
+			clocks = <&clk12m>, <&clk12m>;
+			clock-names = "baud", "bus";
+			dmas = <&apdma 8
+				&apdma 9>;
+			dma-names = "tx", "rx";
 			status = "disabled";
 		};
 
