@@ -474,9 +474,10 @@ static int Read3L8PDAFData(unsigned short ui4_offset, unsigned int  ui4_length, 
 	int i = 0;
 	int addr = ui4_offset;
 	//unsigned int sum = 0;
-
+	char data_mid[1] = {0};
 	CAM_CALDB("Read3L8PDAFData\n");
-	
+	data_mid[0] = Read_MID_form_eeprom();
+	CAM_CALDB("data_mid [0]:0x%x\n", data_mid[0]);
 	for(i = 0; i < PDAF_SIZE; i++) {  // LSC data 1868 + 2 byte
 		if(!selective_read_eeprom(addr, &PDAFdatabuf[i])){
 			return -1;
@@ -490,17 +491,21 @@ static int Read3L8PDAFData(unsigned short ui4_offset, unsigned int  ui4_length, 
 	{
 		CAM_CALDB("PDAFdatabuf[0]:0x%x\n", PDAFdatabuf[0]);
 	}
-
+	if (data_mid[0] == 1) {
+	for(i = 0; i < 1404; i++)   // proc1 data
+	{
+		pinputdata[i] = PDAFdatabuf[i+1];
+	}
+		} else {
 	for(i = 0; i < 496; i++)   // proc1 data
 	{
 		pinputdata[i] = PDAFdatabuf[i+1];
 	}
-
 	for(i = 496; i < 1404; i++)  // proc2 data
 	{
 		pinputdata[i] = PDAFdatabuf[i+3];
-	}	
-
+	}
+		}
 	for(i = 0; i < 1404; i++)
 	{
 		CAM_CALDB("pdaf data[%d] = %d\n", i, pinputdata[i]);
