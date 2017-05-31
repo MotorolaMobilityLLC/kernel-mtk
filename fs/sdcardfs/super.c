@@ -50,7 +50,7 @@ static void sdcardfs_remove_super(struct sdcardfs_sb_info *sbi)
 void sdcardfs_drop_sb_icache(struct super_block *sb, unsigned long ino)
 {
 	struct inode *inode = ilookup(sb, ino);
-	struct dentry *dentry;
+	struct dentry *dentry, *dir_dentry;
 
 	if (!inode)
 		return;
@@ -62,11 +62,13 @@ void sdcardfs_drop_sb_icache(struct super_block *sb, unsigned long ino)
 		return;
 	}
 
+	dir_dentry = lock_parent(dentry);
 
 	mutex_lock(&inode->i_mutex);
 	set_nlink(inode, sdcardfs_lower_inode(inode)->i_nlink);
 	d_drop(dentry);
 	dont_mount(dentry);
+	mutex_unlock(&inode->i_mutex);
 
 	/* We don't d_delete() NFS sillyrenamed files--they still exist. */
 	if (!(dentry->d_flags & DCACHE_NFSFS_RENAMED)) {
@@ -74,7 +76,7 @@ void sdcardfs_drop_sb_icache(struct super_block *sb, unsigned long ino)
 		d_delete(dentry);
 	}
 
-	mutex_unlock(&inode->i_mutex);
+	unlock_dir(dir_dentry);
 	dput(dentry);
 	iput(inode);
 }
