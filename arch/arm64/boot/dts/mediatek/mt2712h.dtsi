@@ -15,7 +15,7 @@
 #include "mt2712.dtsi"
 
 / {
-	compatible = "mediatek,mt2712e";
+	compatible = "mediatek,mt2712h";
 
 	cluster0_opp: opp_table0 {
 		compatible = "operating-points-v2";
@@ -30,6 +30,22 @@
 		};
 		opp02 {
 			opp-hz = /bits/ 64 <793000000>;
+			opp-microvolt = <1300000>;
+		};
+		opp03 {
+			opp-hz = /bits/ 64 <897000000>;
+			opp-microvolt = <1300000>;
+		};
+		opp04 {
+			opp-hz = /bits/ 64 <1001000000>;
+			opp-microvolt = <1300000>;
+		};
+		opp05 {
+			opp-hz = /bits/ 64 <1105000000>;
+			opp-microvolt = <1300000>;
+		};
+		opp06 {
+			opp-hz = /bits/ 64 <1196000000>;
 			opp-microvolt = <1300000>;
 		};
 	};
@@ -57,6 +73,22 @@
 			opp-hz = /bits/ 64 <1001000000>;
 			opp-microvolt = <1300000>;
 		};
+		opp05 {
+			opp-hz = /bits/ 64 <1105000000>;
+			opp-microvolt = <1300000>;
+		};
+		opp06 {
+			opp-hz = /bits/ 64 <1196000000>;
+			opp-microvolt = <1300000>;
+		};
+		opp07 {
+			opp-hz = /bits/ 64 <1300000000>;
+			opp-microvolt = <1300000>;
+		};
+		opp08 {
+			opp-hz = /bits/ 64 <1391000000>;
+			opp-microvolt = <1300000>;
+		};
 	};
 
 	cpus {
@@ -71,11 +103,17 @@
 				core1 {
 					cpu = <&cpu1>;
 				};
+				core2 {
+					cpu = <&cpu2>;
+				};
+				core3 {
+					cpu = <&cpu3>;
+				};
 			};
 
 			cluster1 {
 				core0 {
-					cpu = <&cpu2>;
+					cpu = <&cpu4>;
 				};
 			};
 		};
@@ -94,8 +132,8 @@
 			cooling-min-level = <0>;
 			cooling-max-level = <6>;
 			dynamic-power-coefficient = <263>;
-			sched-energy-costs = <&MT2712E_CPU_COST_0
-					      &MT2712E_CLUSTER_COST_0>;
+			sched-energy-costs = <&MT2712H_CPU_COST_0
+					      &MT2712H_CLUSTER_COST_0>;
 		};
 
 		cpu1: cpu@1 {
@@ -112,16 +150,49 @@
 			cooling-min-level = <0>;
 			cooling-max-level = <6>;
 			dynamic-power-coefficient = <263>;
-			sched-energy-costs = <&MT2712E_CPU_COST_0
-					      &MT2712E_CLUSTER_COST_0>;
+			sched-energy-costs = <&MT2712H_CPU_COST_0
+					      &MT2712H_CLUSTER_COST_0>;
 		};
 
-		cpu2: cpu@200 {
+		cpu2: cpu@2 {
+			device_type = "cpu";
+			compatible = "arm,cortex-a35";
+			reg = <0x002>;
+			enable-method = "psci";
+			clocks = <&mcucfg CLK_MCU_MP0_SEL>,
+				 <&topckgen CLK_TOP_F_MP0_PLL1>;
+			clock-names = "cpu", "intermediate";
+			operating-points-v2 = <&cluster0_opp>;
+			#cooling-cells = <2>;
+			cooling-min-level = <0>;
+			cooling-max-level = <6>;
+			dynamic-power-coefficient = <263>;
+			sched-energy-costs = <&MT2712H_CPU_COST_0
+					      &MT2712H_CLUSTER_COST_0>;
+		};
+
+		cpu3: cpu@3 {
+			device_type = "cpu";
+			compatible = "arm,cortex-a35";
+			reg = <0x003>;
+			enable-method = "psci";
+			clocks = <&mcucfg CLK_MCU_MP0_SEL>,
+				 <&topckgen CLK_TOP_F_MP0_PLL1>;
+			clock-names = "cpu", "intermediate";
+			operating-points-v2 = <&cluster0_opp>;
+			#cooling-cells = <2>;
+			cooling-min-level = <0>;
+			cooling-max-level = <6>;
+			dynamic-power-coefficient = <263>;
+			sched-energy-costs = <&MT2712H_CPU_COST_0
+					      &MT2712H_CLUSTER_COST_0>;
+		};
+
+		cpu4: cpu@200 {
 			device_type = "cpu";
 			compatible = "arm,cortex-a72";
 			reg = <0x200>;
 			enable-method = "psci";
-			cpu-idle-states = <&CPU_SLEEP_0 &CLUSTER_SLEEP_0>;
 			clocks = <&mcucfg CLK_MCU_MP2_SEL>,
 				 <&topckgen CLK_TOP_F_BIG_PLL1>;
 			clock-names = "cpu", "intermediate";
@@ -130,8 +201,8 @@
 			cooling-min-level = <0>;
 			cooling-max-level = <8>;
 			dynamic-power-coefficient = <530>;
-			sched-energy-costs = <&MT2712E_CPU_COST_1
-					      &MT2712E_CLUSTER_COST_1>;
+			sched-energy-costs = <&MT2712H_CPU_COST_1
+					      &MT2712H_CLUSTER_COST_1>;
 		};
 
 		/include/ "mt2712-sched-energy.dtsi"
@@ -197,7 +268,7 @@
 				};
 				map@1 {
 					trip = <&target>;
-					cooling-device = <&cpu2 0 0>;
+					cooling-device = <&cpu4 0 0>;
 					contribution = <1024>;
 				};
 				map@2 {
@@ -221,7 +292,7 @@
 				 <&topckgen CLK_TOP_MMPLL>;
 			clock-names = "mfg_sel", "mfg_pll";
 			power-domains = <&scpsys MT2712_POWER_DOMAIN_MFG>;
-			mp=<2>;
+			mp=<4>;
 
 			#cooling-cells = <2>;
 			#cooling-min-level = <0>;
@@ -247,9 +318,13 @@
 		compatible = "arm,armv8-pmuv3";
 		interrupts = <GIC_SPI 8 IRQ_TYPE_LEVEL_LOW>,
 			     <GIC_SPI 9 IRQ_TYPE_LEVEL_LOW>,
+			     <GIC_SPI 10 IRQ_TYPE_LEVEL_LOW>,
+			     <GIC_SPI 11 IRQ_TYPE_LEVEL_LOW>,
 			     <GIC_SPI 297 IRQ_TYPE_LEVEL_LOW>;
 		interrupt-affinity = <&{/cpus/cpu@0}>,
 				     <&{/cpus/cpu@1}>,
+				     <&{/cpus/cpu@2}>,
+				     <&{/cpus/cpu@3}>,
 				     <&{/cpus/cpu@200}>;
 	};
 };
