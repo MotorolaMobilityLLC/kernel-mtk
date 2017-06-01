@@ -314,7 +314,7 @@ static ssize_t store_lp87565_access(struct device *dev,
 			if (ret < 0)
 				dev_err(chip->dev, "Failed to read CRC: %d\n", ret);
 
-			dev_err(chip->dev, "[%s]reg_addr[0x%x], val[0x%x], CRC[0x%x]\r\n",
+			dev_info(chip->dev, "[%s]reg_addr[0x%lx], val[0x%lx], CRC[0x%x]\r\n",
 				__func__, reg_address, reg_value, reg_value_lp87565);
 		} else {
 			ret = kstrtoul(pvalue, 16, &reg_address);
@@ -324,7 +324,7 @@ static ssize_t store_lp87565_access(struct device *dev,
 			ret = regmap_read(chip->regmap, reg_address, &reg_value_lp87565);
 			if (ret < 0)
 				dev_err(chip->dev, "Failed to read reg: %d\n", ret);
-			dev_err(chip->dev, "ret(%d), reg_addr[0x%x], reg_value[0x%x]\n",
+			dev_info(chip->dev, "ret(%d), reg_addr[0x%lx], reg_value[0x%x]\n",
 				ret, reg_address, reg_value_lp87565);
 		}
 	}
