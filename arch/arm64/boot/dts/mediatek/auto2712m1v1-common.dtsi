@@ -438,6 +438,7 @@
 		mediatek,audio-codec = <&dummy_codec>;
 		mediatek,audio-codec-bt-mrg = <&bt_sco_codec>;
 		mediatek,audio-codec-tdmo = <&cs42448>;
+		mediatek,audio-codec-tdmi = <&cs42448_2>;
 		pinctrl-names = "default";
 		pinctrl-0 = <&aud_pins_default>;
 		status = "okay";
@@ -526,6 +527,13 @@
 	alsps_1@60 {
 		compatible = "mediatek,alsps_1";
 		reg = <0x60>;
+	};
+
+	cs42448_2: cs42448_2@49 {
+		compatible = "cirrus,cs42448";
+		reg = <0x49>;
+		clocks = <&topckgen CLK_TOP_APLL_DIV_PDN5>;
+		clock-names = "mclk";
 	};
 };
 &keypad {
