@@ -51,7 +51,6 @@
 #define TEMP_MONIDET0		0x014
 #define TEMP_MONIDET1		0x018
 #define TEMP_MSRCTL0		0x038
-#define TEMP_MSRCTL1		0x03c
 #define TEMP_AHBPOLL		0x040
 #define TEMP_AHBTO		0x044
 #define TEMP_ADCPNP0		0x048
@@ -91,9 +90,6 @@
 
 #define TEMP_ADCVALIDMASK_VALID_HIGH		BIT(5)
 #define TEMP_ADCVALIDMASK_VALID_POS(bit)	(bit)
-
-#define TEMP_BUS_STA	(BIT(1) | BIT(8))
-#define TEMP_SENSING_POINTS_PAUSE	0x10E
 
 /* MT8173 thermal sensors */
 #define MT8173_TS1	0
@@ -189,10 +185,6 @@ struct mtk_thermal_data {
 struct mtk_thermal {
 	struct device *dev;
 	void __iomem *thermal_base;
-	void __iomem *apmixed_base;
-	void __iomem *auxadc_base;
-	u64 apmixed_phys_base;
-	u64 auxadc_phys_base;
 
 	struct clk *clk_peri_therm;
 	struct clk *clk_auxadc;
@@ -564,52 +556,6 @@ static void mtk_thermal_init_bank(struct mtk_thermal *mt, int num,
 	mtk_thermal_put_bank(bank);
 }
 
-static int mtk_thermal_disable_sensing(struct mtk_thermal *mt, int num)
-{
-	struct mtk_thermal_bank *bank = &mt->banks[num];
-	u32 val;
-	unsigned long timeout;
-	bool expired;
-	int ret = 0;
-
-	bank->id = num;
-	bank->mt = mt;
-
-	mtk_thermal_get_bank(bank);
-
-	/* wait until temperature measurement bus idle */
-	timeout = jiffies + HZ;
-	expired = false;
-	while (1) {
-		val = readl(mt->thermal_base + TEMP_MSRCTL1);
-		if ((val & TEMP_BUS_STA == 0x0) ||
-		    (val & TEMP_BUS_STA) == TEMP_BUS_STA)
-			break;
-
-		if (expired) {
-			ret = -ETIMEDOUT;
-			goto out;
-		}
-
-		cpu_relax();
-
-		if (time_after(jiffies, timeout))
-			expired = true;
-	}
-
-	/* pause periodic temperature measurement for sensing points */
-	writel(val | TEMP_SENSING_POINTS_PAUSE,
-	       mt->thermal_base + TEMP_MSRCTL1);
-
-	/* disable periodic temperature meausrement on sensing points */
-	writel(0x0, mt->thermal_base + TEMP_MONCTL0);
-
-out:
-	mtk_thermal_put_bank(bank);
-
-	return ret;
-}
-
 static u64 of_get_phys_base(struct device_node *np)
 {
 	u64 size64;
@@ -703,6 +649,7 @@ static int mtk_thermal_probe(struct platform_device *pdev)
 	struct mtk_thermal *mt;
 	struct resource *res;
 	const struct of_device_id *of_id;
+	u64 auxadc_phys_base, apmixed_phys_base;
 	struct thermal_zone_device *tzdev;
 
 	mt = devm_kzalloc(&pdev->dev, sizeof(*mt), GFP_KERNEL);
@@ -740,12 +687,11 @@ static int mtk_thermal_probe(struct platform_device *pdev)
 		return -ENODEV;
 	}
 
-	mt->auxadc_phys_base = of_get_phys_base(auxadc);
-	mt->auxadc_base = of_iomap(auxadc, 0);
+	auxadc_phys_base = of_get_phys_base(auxadc);
 
 	of_node_put(auxadc);
 
-	if (mt->auxadc_phys_base == OF_BAD_ADDR) {
+	if (auxadc_phys_base == OF_BAD_ADDR) {
 		dev_err(&pdev->dev, "Can't get auxadc phys address\n");
 		return -EINVAL;
 	}
@@ -756,12 +702,11 @@ static int mtk_thermal_probe(struct platform_device *pdev)
 		return -ENODEV;
 	}
 
-	mt->apmixed_phys_base = of_get_phys_base(apmixedsys);
-	mt->apmixed_base = of_iomap(apmixedsys, 0);
+	apmixed_phys_base = of_get_phys_base(apmixedsys);
 
 	of_node_put(apmixedsys);
 
-	if (mt->apmixed_phys_base == OF_BAD_ADDR) {
+	if (apmixed_phys_base == OF_BAD_ADDR) {
 		dev_err(&pdev->dev, "Can't get auxadc phys address\n");
 		return -EINVAL;
 	}
@@ -779,12 +724,12 @@ static int mtk_thermal_probe(struct platform_device *pdev)
 	ret = clk_prepare_enable(mt->clk_peri_therm);
 	if (ret) {
 		dev_err(&pdev->dev, "Can't enable peri clk: %d\n", ret);
-		goto err_disable_clk_peri_therm;
+		goto err_disable_clk_auxadc;
 	}
 
 	for (i = 0; i < mt->conf->num_banks; i++)
-		mtk_thermal_init_bank(mt, i, mt->apmixed_phys_base,
-				      mt->auxadc_phys_base);
+		mtk_thermal_init_bank(mt, i, apmixed_phys_base,
+				      auxadc_phys_base);
 
 	platform_set_drvdata(pdev, mt);
 
@@ -815,78 +760,11 @@ static int mtk_thermal_remove(struct platform_device *pdev)
 	return 0;
 }
 
-static int __maybe_unused mtk_thermal_suspend(struct device *dev)
-{
-	struct platform_device *pdev = to_platform_device(dev);
-	struct mtk_thermal *mt = platform_get_drvdata(pdev);
-	int i, ret;
-
-	for (i = 0; i < mt->conf->num_banks; i++) {
-		ret = mtk_thermal_disable_sensing(mt, i);
-		if (ret)
-			goto out;
-	}
-
-	/* disable buffer */
-	writel(readl(mt->apmixed_base + APMIXED_SYS_TS_CON1) | 0x30,
-	       mt->apmixed_base + APMIXED_SYS_TS_CON1);
-
-	clk_disable_unprepare(mt->clk_peri_therm);
-	clk_disable_unprepare(mt->clk_auxadc);
-
-	return 0;
-
-out:
-	dev_err(&pdev->dev, "Failed to wait until bus idle\n");
-
-	return ret;
-}
-
-static int __maybe_unused mtk_thermal_resume(struct device *dev)
-{
-	struct platform_device *pdev = to_platform_device(dev);
-	struct mtk_thermal *mt = platform_get_drvdata(pdev);
-	int i, ret;
-
-	ret = device_reset(&pdev->dev);
-	if (ret)
-		return ret;
-
-	ret = clk_prepare_enable(mt->clk_auxadc);
-	if (ret) {
-		dev_err(&pdev->dev, "Can't enable auxadc clk: %d\n", ret);
-		goto err_disable_clk_auxadc;
-	}
-
-	ret = clk_prepare_enable(mt->clk_peri_therm);
-	if (ret) {
-		dev_err(&pdev->dev, "Can't enable peri clk: %d\n", ret);
-		goto err_disable_clk_peri_therm;
-	}
-
-	for (i = 0; i < mt->conf->num_banks; i++)
-		mtk_thermal_init_bank(mt, i, mt->apmixed_phys_base,
-				      mt->auxadc_phys_base);
-
-	return 0;
-
-err_disable_clk_peri_therm:
-	clk_disable_unprepare(mt->clk_peri_therm);
-err_disable_clk_auxadc:
-	clk_disable_unprepare(mt->clk_auxadc);
-
-	return ret;
-}
-
-static SIMPLE_DEV_PM_OPS(mtk_thermal_pm_ops,
-			 mtk_thermal_suspend, mtk_thermal_resume);
-
 static struct platform_driver mtk_thermal_driver = {
 	.probe = mtk_thermal_probe,
 	.remove = mtk_thermal_remove,
 	.driver = {
 		.name = THERMAL_NAME,
-		.pm = &mtk_thermal_pm_ops,
 		.of_match_table = mtk_thermal_of_match,
 	},
 };
