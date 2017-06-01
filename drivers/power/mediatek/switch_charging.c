@@ -1036,7 +1036,11 @@ static void mtk_select_cv(void)
 		battery_log(BAT_LOG_FULL, "%s: set dynamic cv = %dmV\n",
 			__func__, dynamic_cv);
 	}
+	if (batt_cust_data.demo_mode)
+                cv_voltage = BATTERY_VOLT_04_000000_V;
 
+	battery_log(BAT_LOG_FULL,
+		"[BATTERY] Battery demo mode set cv_voltage = %d\n",cv_voltage);
 	battery_charging_control(CHARGING_CMD_SET_CV_VOLTAGE, &cv_voltage);
 
 #if defined(CONFIG_MTK_HAFG_20)
