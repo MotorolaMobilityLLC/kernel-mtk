@@ -43,6 +43,7 @@
 #define	OVL_RDMA_MEM_GMC	0x40402020
 
 #define OVL_CON_BYTE_SWAP	BIT(24)
+#define OVL_CON_MTX_YUV_TO_RGB	(6 << 16)
 #define OVL_CON_CLRFMT_RGB	(1 << 12)
 #define OVL_CON_CLRFMT_RGBA8888	(2 << 12)
 #define OVL_CON_CLRFMT_ARGB8888	(3 << 12)
@@ -50,12 +51,16 @@
 					0 : OVL_CON_CLRFMT_RGB)
 #define OVL_CON_CLRFMT_RGB888(ovl)	((ovl)->data->fmt_rgb565_is_0 ? \
 					OVL_CON_CLRFMT_RGB : 0)
+#define OVL_CON_CLRFMT_UYVY(ovl)	((ovl)->data->fmt_uyvy)
+#define OVL_CON_CLRFMT_YUYV(ovl)	((ovl)->data->fmt_yuyv)
 #define	OVL_CON_AEN		BIT(8)
 #define	OVL_CON_ALPHA		0xff
 
 struct mtk_disp_ovl_data {
 	unsigned int addr;
 	bool fmt_rgb565_is_0;
+	unsigned int fmt_uyvy;
+	unsigned int fmt_yuyv;
 };
 
 /**
@@ -177,6 +182,10 @@ static unsigned int ovl_fmt_convert(struct mtk_disp_ovl *ovl, unsigned int fmt)
 	case DRM_FORMAT_XBGR8888:
 	case DRM_FORMAT_ABGR8888:
 		return OVL_CON_CLRFMT_RGBA8888 | OVL_CON_BYTE_SWAP;
+	case DRM_FORMAT_UYVY:
+		return OVL_CON_CLRFMT_UYVY(ovl) | OVL_CON_MTX_YUV_TO_RGB;
+	case DRM_FORMAT_YUYV:
+		return OVL_CON_CLRFMT_YUYV(ovl) | OVL_CON_MTX_YUV_TO_RGB;
 	}
 }
 
@@ -315,11 +324,15 @@ static int mtk_disp_ovl_remove(struct platform_device *pdev)
 static const struct mtk_disp_ovl_data mt2701_ovl_driver_data = {
 	.addr = DISP_REG_OVL_ADDR_MT2701,
 	.fmt_rgb565_is_0 = false,
+	.fmt_uyvy = 9 << 12,
+	.fmt_yuyv = 8 << 12,
 };
 
 static const struct mtk_disp_ovl_data mt8173_ovl_driver_data = {
 	.addr = DISP_REG_OVL_ADDR_MT8173,
 	.fmt_rgb565_is_0 = true,
+	.fmt_uyvy = 4 << 12,
+	.fmt_yuyv = 5 << 12,
 };
 
 static const struct of_device_id mtk_disp_ovl_driver_dt_match[] = {
