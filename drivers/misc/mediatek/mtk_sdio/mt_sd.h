@@ -456,7 +456,6 @@ struct msdc_host {
 	unsigned int            err_mrq_dir;
 #endif
 	struct msdc_saved_para  saved_para;
-	struct wakeup_source    trans_lock;
 	bool                    block_bad_card;
 	struct delayed_work     write_timeout;  /* check if write busy timeout*/
 #ifdef SDIO_ERROR_BYPASS

@@ -4437,10 +4437,6 @@ static void msdc_ops_request(struct mmc_host *mmc, struct mmc_request *mrq)
 
 	WARN_ON(mmc == NULL || mrq == NULL);
 
-	if ((host->hw->host_function == MSDC_SDIO) &&
-	    !(host->trans_lock.active))
-		__pm_stay_awake(&host->trans_lock);
-
 	/* 6630 in msdc2 and SDIO need lock dvfs */
 	if ((host->id == 2) && (sdio_lock_dvfs == 1))
 		sdio_set_vcore_performance(host, 1);
@@ -4529,8 +4525,6 @@ static void msdc_ops_request(struct mmc_host *mmc, struct mmc_request *mrq)
 	if ((host->id == 2) && (sdio_lock_dvfs == 1))
 		sdio_set_vcore_performance(host, 0);
 
-	if ((host->hw->host_function == MSDC_SDIO) && (host->trans_lock.active))
-		__pm_relax(&host->trans_lock);
 }
 
 
@@ -5649,9 +5643,6 @@ static int msdc_drv_probe(struct platform_device *pdev)
 	msdc_reset_tmo_tune_counter(host, all_counter);
 	msdc_reset_pwr_cycle_counter(host);
 	host->error_tune_enable = 1;
-
-	if (host->hw->host_function == MSDC_SDIO)
-		wakeup_source_init(&host->trans_lock, "MSDC Transfer Lock");
 
 #ifdef MTK_MSDC_FLUSH_BY_CLK_GATE
 	if (host->mmc->caps2 & MMC_CAP2_CACHE_CTRL)
