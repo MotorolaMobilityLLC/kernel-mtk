@@ -683,7 +683,7 @@ void do_sw_jeita_state_machine(struct charger_manager *info)
     }
 
 
-	pr_err("[SW_JEITA]preState:%d newState:%d tmp:%d cv:%d,force_demo_mode_flag\n\r",
+	pr_err("[SW_JEITA]preState:%d newState:%d tmp:%d cv:%d,force_demo_mode_flag:%d\n\r",
 		pre_sm, sw_jeita->sm, info->battery_temperature, sw_jeita->cv,force_demo_mode_flag);
 }
 
