@@ -19,7 +19,7 @@
 #include <linux/suspend.h>
 #include <linux/of_platform.h>
 #include <linux/of_address.h>
-#include <mali_kbase_config_platform.h>
+#include "mali_kbase_config_platform.h"
 #include <linux/devfreq_cooling.h>
 #include <backend/gpu/mali_kbase_power_model_simple.h>
 

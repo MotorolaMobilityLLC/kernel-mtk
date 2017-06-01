@@ -14,7 +14,7 @@
 
 
 #include <mali_kbase.h>
-#include <mali_kbase_config_defaults.h>
+#include "mali_kbase_config_platform.h"
 #include <backend/gpu/mali_kbase_pm_internal.h>
 #ifdef CONFIG_DEVFREQ_THERMAL
 #include <backend/gpu/mali_kbase_power_model_simple.h>
@@ -25,8 +25,6 @@
 #ifdef CONFIG_DEVFREQ_THERMAL
 #include <linux/devfreq_cooling.h>
 #endif
-
-#include <mali_kbase_config_platform.h>
 
 #include <linux/version.h>
 #include <linux/pm_opp.h>
