@@ -193,6 +193,7 @@ struct battery_custom_data batt_cust_data;
 int pending_wake_up_bat;
 
 int cable_in_uevent = 0;
+static PMU_STATUS mt_battery_CheckDemoModeBatterySOC(void);
 #if defined(CONFIG_LCT_CHR_LIMIT_MAX_SOC)
 kal_bool g_battery_test_status = KAL_FALSE;
 int g_battery_percent = 50;
@@ -1697,9 +1698,39 @@ static ssize_t store_Charger_Type(struct device *dev, struct device_attribute *a
 
 static DEVICE_ATTR(Charger_Type, 0664, show_Charger_Type, store_Charger_Type);
 
+static ssize_t force_demo_mode_show(struct device *dev,
+				struct device_attribute *attr,
+				char *buf)
+{
+	int state;
 
+	state = batt_cust_data.demo_mode;
 
+	return sprintf(buf,"%d\n", state);
+}
 
+static ssize_t force_demo_mode_store(struct device *dev,
+				struct device_attribute *attr,
+				const char *buf, size_t count)
+{
+	unsigned long r;
+	unsigned long mode;
+
+	r = kstrtoul(buf, 0, &mode);
+	if (r) {
+		pr_err("Invalid usb suspend mode value = %lu\n", mode);
+		return -EINVAL;
+	}
+
+	/* Stop charging when the battery capacity reaches the vale set by demo mode */
+	if ((mode >= 35) && (mode <= 80))
+		batt_cust_data.demo_mode = mode;
+	else
+		batt_cust_data.demo_mode = 35;
+
+	return r ? r : count;
+}
+static DEVICE_ATTR(force_demo_mode, 0644,force_demo_mode_show,force_demo_mode_store);
 
 static ssize_t show_Pump_Express(struct device *dev, struct device_attribute *attr, char *buf)
 {
@@ -2820,7 +2851,15 @@ static void mt_battery_CheckBatteryStatus(void)
         return;                  
     }
     #endif
-
+	if (batt_cust_data.demo_mode)
+	{
+		if(mt_battery_CheckDemoModeBatterySOC() != PMU_STATUS_OK)
+		{
+			battery_log(BAT_LOG_FULL, "mt_battery_CheckDemoModeBatterySOC failed\n");
+			BMT_status.bat_charging_state = CHR_ERROR;
+			return;
+		}
+	}
 }
 
 
@@ -3418,6 +3457,67 @@ void do_chrdet_int_task(void)
 
 }
 
+#define DEMO_MODE_HYS_SOC 5
+#define FULL_CHECK_TIMES 6
+static unsigned int charging_full_check(void)
+{
+	unsigned int status = KAL_FALSE;
+	static unsigned int g_full_check_count = 0;
+
+	battery_charging_control(CHARGING_CMD_GET_CHARGING_STATUS, &status);
+	if (status == KAL_TRUE) {
+		g_full_check_count++;
+		battery_log(BAT_LOG_FULL,"demo mode charging full check g_full_check_count = %u\n",g_full_check_count);
+		if (g_full_check_count >= FULL_CHECK_TIMES)
+			return KAL_TRUE;
+		else
+			return KAL_FALSE;
+	}
+
+	g_full_check_count = 0;
+	return status;
+}
+
+static PMU_STATUS do_batt_soc_demo_mode_machine(void)
+{
+	static int demo_full_soc = 100;
+
+	PMU_STATUS status = PMU_STATUS_OK;
+
+	battery_log(BAT_LOG_FULL,
+			"[BATTERY] demo mode machine,UI_SOC = %d,batt_vol = %d, demo_full_soc = %d!!\n\r",
+			BMT_status.UI_SOC,BMT_status.bat_vol,demo_full_soc);
+
+	if ( (BMT_status.UI_SOC >= batt_cust_data.demo_mode) || charging_full_check() )
+	{
+		battery_log(BAT_LOG_FULL, "[BATTERY] Battery Over demo mode, UI_SOC = %d,batt_vol = %d !!\n\r",
+				BMT_status.UI_SOC,BMT_status.bat_vol);
+		demo_full_soc = BMT_status.UI_SOC;
+		status = PMU_STATUS_FAIL;
+	}
+	else if (BMT_status.UI_SOC <= (demo_full_soc - DEMO_MODE_HYS_SOC))
+	{
+		battery_log(BAT_LOG_FULL, "[BATTERY] Battery demo mode down below %d to %d, allow charging!!\n\r",
+				batt_cust_data.demo_mode,BMT_status.UI_SOC);
+		BMT_status.bat_charging_state=CHR_PRE;
+		return PMU_STATUS_OK;
+	}
+
+	return status;
+}
+
+static PMU_STATUS mt_battery_CheckDemoModeBatterySOC(void)
+{
+	PMU_STATUS status = PMU_STATUS_OK;
+
+	if (do_batt_soc_demo_mode_machine() == PMU_STATUS_FAIL)
+	{
+		battery_log(BAT_LOG_CRTI, "[BATTERY] Batt demo mode SOC check : fail\n");
+		status = PMU_STATUS_FAIL;
+	}
+
+	return status;
+}
 
 void BAT_thread(void)
 {
@@ -4177,6 +4277,8 @@ int __batt_init_cust_data_from_cust_header(void)
 	#endif
 #endif
 
+	batt_cust_data.demo_mode = 0;
+
 	return 0;
 }
 
@@ -4558,6 +4660,7 @@ static int battery_probe(struct platform_device *dev)
 		ret_device_file = device_create_file(&(dev->dev), &dev_attr_FG_SW_CoulombCounter);
 		ret_device_file = device_create_file(&(dev->dev), &dev_attr_Charging_CallState);
 		ret_device_file = device_create_file(&(dev->dev), &dev_attr_Charger_Type);
+		ret_device_file = device_create_file(&(dev->dev), &dev_attr_force_demo_mode);
 #if defined(CONFIG_LCT_CHR_LIMIT_MAX_SOC)
 	    ret_device_file = device_create_file(&(dev->dev), &dev_attr_BatteryTestStatus);
 	    ret_device_file = device_create_file(&(dev->dev), &dev_attr_BatteryPercent);
