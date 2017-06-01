@@ -549,11 +549,24 @@ int mtk_pe_set_charging_current(struct charger_manager *pinfo,
 		*aicr = pinfo->data.ta_ac_12v_input_current;
 		*ichg = pinfo->data.ta_ac_charger_current;
 	} else if ((chr_volt - pinfo->pe.pe_ta_vchr_org) > 3000000) { /* TA = 9V */
-		*aicr = pinfo->data.ta_ac_9v_input_current;
-		*ichg = pinfo->data.ta_ac_charger_current;
+	    if (pinfo->battery_temperature >= pinfo->data.temp_t3_threshold)//add by longcheer_liml_2017_06_01
+	    {
+	        *aicr = pinfo->data.ta_ac_9v_input_current;
+		    *ichg = 2000000;//2000mA
+	    }else{
+		    *aicr = pinfo->data.ta_ac_9v_input_current;
+		    *ichg = pinfo->data.ta_ac_charger_current;	    
+	    }
+
 	} else if ((chr_volt - pinfo->pe.pe_ta_vchr_org) > 1000000) { /* TA = 7V */
-		*aicr = pinfo->data.ta_ac_7v_input_current;
-		*ichg = pinfo->data.ta_ac_charger_current;
+	    if (pinfo->battery_temperature >= pinfo->data.temp_t3_threshold)//add by longcheer_liml_2017_06_01
+	    {
+	        *aicr = pinfo->data.ta_ac_7v_input_current;
+		    *ichg = 2000000;
+	    }else{
+		    *aicr = pinfo->data.ta_ac_7v_input_current;
+		    *ichg = pinfo->data.ta_ac_charger_current;
+		}
 	}
 
 	pr_err(
