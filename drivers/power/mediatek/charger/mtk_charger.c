@@ -81,6 +81,11 @@ extern int battery_test_status;
 extern int runin_flag;
 #endif
 
+//add by longcheer_liml_2017_05_31
+extern int force_demo_mode;
+extern int force_demo_mode_flag;
+
+
 #ifdef  CONFIG_LCT_CHR_ALT_TEST_SUPPORT  //add by longcheer_liml_2017_03_10
 extern unsigned int lct_alt_status;
 int cmd_discharging = 0;
@@ -671,9 +676,15 @@ void do_sw_jeita_state_machine(struct charger_manager *info)
 	} else {
 		sw_jeita->cv = info->data.jeita_temp_t2_to_t3_cv_voltage;
 	}
+	
+    if(force_demo_mode_flag == 1)//add by longcheer_liml_2017_05_31
+    {
+        sw_jeita->cv = 4000000;
+    }
 
-	pr_err("[SW_JEITA]preState:%d newState:%d tmp:%d cv:%d\n\r",
-		pre_sm, sw_jeita->sm, info->battery_temperature, sw_jeita->cv);
+
+	pr_err("[SW_JEITA]preState:%d newState:%d tmp:%d cv:%d,force_demo_mode_flag\n\r",
+		pre_sm, sw_jeita->sm, info->battery_temperature, sw_jeita->cv,force_demo_mode_flag);
 }
 
 static ssize_t show_sw_jeita(struct device *dev, struct device_attribute *attr,
@@ -1246,6 +1257,31 @@ static void mt_battery_runin_test(struct charger_manager *info)
 }
 #endif
 
+//========================add_by_longcheer_liml_2017_05_31 for add force demo mode start======
+static void mt_battery_force_demo_mode(struct charger_manager *info)
+{
+    int soc =0;
+    struct switch_charging_alg_data *swchgalg = info->algorithm_data;
+    
+    if(force_demo_mode_flag == 1)
+	{
+	    soc =battery_get_bat_uisoc();
+		if(soc >=force_demo_mode)
+		{
+			swchgalg->state = CHR_ERROR;
+		    charger_manager_notifier(info, CHARGER_NOTIFY_STOP_CHARGING);
+		    charger_dev_enable_powerpath(info->chg1_dev, 0);
+		}else if(soc <=(force_demo_mode -5))
+		{
+            swchgalg->state = CHR_CC;
+            charger_manager_notifier(info, CHARGER_NOTIFY_START_CHARGING);
+            charger_dev_enable_powerpath(info->chg1_dev, 1);
+		}
+	    printk("~~liml_charger force_demo_mode_flag=%d,force_demo_mode=%d\n",force_demo_mode_flag,force_demo_mode);  
+	}   
+}
+//========================modify_longcheer_liml_2017_05_31 for add force demo mode end======
+
 static int charger_routine_thread(void *arg)
 {
 	struct charger_manager *info = arg;
@@ -1279,6 +1315,7 @@ static int charger_routine_thread(void *arg)
 		  #if defined(CONFIG_LCT_CHR_LIMIT_MAX_SOC) 
 		    mt_battery_runin_test(info);
 		  #endif
+		  mt_battery_force_demo_mode(info);//add_by_longcheer_liml_2017_05_31 for add force demo mode start
 			if (info->do_algorithm)
 				info->do_algorithm(info);
 		}
