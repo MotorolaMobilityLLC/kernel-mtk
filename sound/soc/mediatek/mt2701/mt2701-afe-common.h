@@ -291,6 +291,7 @@ struct mt2701_tdm_path {
 struct mt2701_tdm_coclk_info {
 	int src;
 	int on;
+	int hw_on;
 	int channels;
 	int bit_width;
 	int sample_rate;

@@ -1324,7 +1324,7 @@ static int mt2701_tdmio_coclk_hw_params(struct snd_pcm_substream *substream,
 
 	regmap_update_bits(afe->regmap, AFE_TDM_IN_CON1, 0x3<<21, 0);
 
-	if (afe_priv->tdm_coclk_info.on == 1) {
+	if (afe_priv->tdm_coclk_info.hw_on == 0) {
 		regmap_update_bits(afe->regmap, AFE_TDM_IN_CON1, AFE_TDM_CON_IN_BCK, AFE_TDM_CON_IN_BCK_SET(tdm_num));
 		regmap_update_bits(afe->regmap, AFE_TDM_IN_CON1, AFE_TDM_CON_INOUT_SYNC, AFE_TDM_CON_INOUT_SYNC_SET(1));
 
@@ -1344,6 +1344,7 @@ static int mt2701_tdmio_coclk_hw_params(struct snd_pcm_substream *substream,
 		afe_priv->tdm_coclk_info.sample_rate = params_rate(params);
 		afe_priv->tdm_coclk_info.channels = params_channels(params);
 		afe_priv->tdm_coclk_info.bit_width = params_width(params);
+		afe_priv->tdm_coclk_info.hw_on = 1;
 	} else {
 		if (params_rate(params) != afe_priv->tdm_coclk_info.sample_rate
 			|| params_channels(params) != afe_priv->tdm_coclk_info.channels
@@ -1382,11 +1383,10 @@ static void mt2701_tdmio_coclk_shutdown(struct snd_pcm_substream *substream,
 		regmap_update_bits(afe->regmap, tdm_data->tdm_bck_reg,
 				1<<tdm_data->tdm_bck_on_shift, 0<<tdm_data->tdm_bck_on_shift);
 		afe_priv->clk_ctrl->disable_mclk(afe, MCLK_TDM_OFFSET + MT2701_TDMI);
+		afe_priv->tdm_coclk_info.hw_on = 0;
 	}
 	afe_priv->tdm_coclk_info.on--;
 }
-
-
 
 static int mt2701_memif_fs(struct snd_pcm_substream *substream,
 			   unsigned int rate)
@@ -3280,6 +3280,7 @@ static int mt2701_afe_pcm_dev_probe(struct platform_device *pdev)
 	}
 
 	afe_priv->tdm_coclk_info.on = 0;
+	afe_priv->tdm_coclk_info.hw_on = 0;
 
 	of_property_read_u32_array(afe->dev->of_node, "tdm-in-lrck-setting", (unsigned int *)&afe_priv->tdm_in_lrck, 2);
 
