@@ -1697,6 +1697,10 @@
 	clkao: clkao {
 		compatible = "simple-bus";
 	};
+
+	gps {
+		compatible = "mediatek,gps";
+	};
 };
 
 #include "mt2712-clkitg.dtsi"
