@@ -357,6 +357,9 @@ struct battery_custom_data {
 	int ta_ac_charging_current;
 	int ta_12v_support;
 	int ta_9v_support;
+
+	/* Stop charging when the battery capacity reaches the vale set by demo mode */
+	int demo_mode;
 };
 
 /*****************************************************************************
