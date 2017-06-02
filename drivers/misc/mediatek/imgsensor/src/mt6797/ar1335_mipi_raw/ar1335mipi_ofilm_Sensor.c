@@ -442,7 +442,7 @@ static void set_shutter(kal_uint16 shutter)
 		{
 			// Extend frame length
 			//write_cmos_sensor(0x0104, 0x01);
-			write_cmos_sensor_2byte(0x0340, imgsensor.frame_length); 	// FRAME_LENGTH_LINES
+			//write_cmos_sensor_2byte(0x0340, imgsensor.frame_length); 	// FRAME_LENGTH_LINES
 			//write_cmos_sensor(0x0104, 0x00);
 		}
 	} 
@@ -450,7 +450,7 @@ static void set_shutter(kal_uint16 shutter)
 	{
 		// Extend frame length
 		//write_cmos_sensor(0x0104, 0x01);
-		write_cmos_sensor_2byte(0x0340, imgsensor.frame_length); 	// FRAME_LENGTH_LINES
+		//write_cmos_sensor_2byte(0x0340, imgsensor.frame_length); 	// FRAME_LENGTH_LINES
 		//write_cmos_sensor(0x0104, 0x00);
 	}
 #endif
