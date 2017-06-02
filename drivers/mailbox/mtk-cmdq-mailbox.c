@@ -243,7 +243,7 @@ static void cmdq_task_exec(struct cmdq_pkt *pkt, struct cmdq_thread *thread)
 		WARN_ON(cmdq_thread_reset(cmdq, thread) < 0);
 
 		cmdq_log("task %p~%p, thread->base=%p",
-			task->pa_base, (void *)(task->pa_base+pkt->cmd_buf_size), thread->base);
+			(void *)task->pa_base, (void *)(task->pa_base+pkt->cmd_buf_size), thread->base);
 
 		writel(task->pa_base, thread->base + CMDQ_THR_CURR_ADDR);
 		writel(task->pa_base + pkt->cmd_buf_size,
@@ -259,7 +259,7 @@ static void cmdq_task_exec(struct cmdq_pkt *pkt, struct cmdq_thread *thread)
 		end_pa = readl(thread->base + CMDQ_THR_END_ADDR);
 
 		cmdq_log("curr task %p~%p, thread->base=%p",
-					curr_pa, end_pa, thread->base);
+					(void *)curr_pa, (void *)end_pa, thread->base);
 
 		/*
 		 * Atomic execution should remove the following wfe, i.e. only
@@ -518,13 +518,13 @@ static void cmdq_thread_irq_handler(struct cmdq *cmdq,
 	curr_pa = readl(thread->base + CMDQ_THR_CURR_ADDR);
 	task_end_pa = readl(thread->base + CMDQ_THR_END_ADDR);
 
-	cmdq_log("task status %p~%p, err=%d", (void *)curr_pa, (void *)task_end_pa, err);
+	cmdq_log("task status %p~%p, err=%d", (void *)(unsigned long)curr_pa, (void *)(unsigned long)task_end_pa, err);
 
 	list_for_each_entry_safe(task, tmp, &thread->task_busy_list,
 				 list_entry) {
 		task_end_pa = task->pa_base + task->pkt->cmd_buf_size;
 
-		cmdq_log("task %p~%p", task->pa_base, task_end_pa);
+		cmdq_log("task %p~%p", (void *)task->pa_base, (void *)(unsigned long)task_end_pa);
 
 		if (curr_pa >= task->pa_base && curr_pa < task_end_pa)
 			curr_task = task;
@@ -561,7 +561,7 @@ static irqreturn_t cmdq_irq_handler(int irq, void *dev)
 	int bit;
 
 	irq_status = readl(cmdq->base + CMDQ_CURR_IRQ_STATUS) & CMDQ_IRQ_MASK;
-	cmdq_log("CMDQ_CURR_IRQ_STATUS: %x, %x", irq_status, (irq_status ^ CMDQ_IRQ_MASK));
+	cmdq_log("CMDQ_CURR_IRQ_STATUS: %x, %x", (u32)irq_status, (u32)(irq_status ^ CMDQ_IRQ_MASK));
 	if (!(irq_status ^ CMDQ_IRQ_MASK))
 		return IRQ_NONE;
 
