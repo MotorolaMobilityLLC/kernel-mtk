@@ -19,6 +19,6 @@
 / {
 	chosen {
 		bootargs = "console=ttyS0,921600n1 root=/dev/ram initrd=0x45000000,90M debugshell=1 \
-printk.disable_uart=0 rootwait initcall_debug=1 loglevel=8 clk_ignore_unused";
+printk.disable_uart=0 rootwait initcall_debug=1 loglevel=8 clk_ignore_unused earlycon=uart8250,mmio32,0x11002000";
 	};
 };
