@@ -160,7 +160,7 @@ int gpt_parse(struct mtd_info *master,
 		lba_size = 512;
 
 	buf = kzalloc(lba_size, GFP_KERNEL);
-	if (!buf)
+	if (buf == NULL)
 		return -ENOMEM;
 
 	err = mtd_read(master, 0, lba_size, &bytes_read, buf);
@@ -193,7 +193,7 @@ int gpt_parse(struct mtd_info *master,
 		}
 	}
 
-	if (!gpt_partitions_exist) {
+	if (gpt_partitions_exist == NULL) {
 		dev_err(&master->dev, "GPT: not find GPT\n");
 		goto freebuf;
 	}
@@ -220,7 +220,7 @@ int gpt_parse(struct mtd_info *master,
 
 	parts = kcalloc(gpthdr.max_partition_count, sizeof(struct mtd_partition),
 			GFP_KERNEL);
-	if (!parts)
+	if (parts == NULL)
 		return -ENOMEM;
 
 	part_entry_cnt = lba_size / ENTRY_SIZE;
