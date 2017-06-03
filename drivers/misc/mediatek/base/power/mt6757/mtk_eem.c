@@ -2755,15 +2755,18 @@ static unsigned int interpolate(unsigned int y1, unsigned int y0,
 {
 	unsigned int ratio, result;
 
+	printk("wsh-1 y1(%d), y0(%d), x1(%d), x0(%d), ym(%d),\n",
+		y1, y0, x1, x0, ym);
+
 	if (x1 == x0) {
 		result = x1;
 	} else {
 		ratio = (((y1 - y0) * 100) + (x1 - x0 - 1)) / (x1 - x0);
 		result =  (x1 - ((((y1 - ym) * 10000) + ratio - 1) / ratio) / 100);
-		/*
-		* eem_debug("y1(%d), y0(%d), x1(%d), x0(%d), ym(%d), ratio(%d), rtn(%d)\n",
-		*	y1, y0, x1, x0, ym, ratio, result);
-		*/
+		
+	printk("wsh-2 y1(%d), y0(%d), x1(%d), x0(%d), ym(%d), ratio(%d), rtn(%d)\n",
+		y1, y0, x1, x0, ym, ratio, result);
+		
 	}
 
 	return result;
