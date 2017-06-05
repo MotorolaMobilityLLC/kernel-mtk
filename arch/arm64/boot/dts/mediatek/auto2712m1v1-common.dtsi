@@ -668,8 +668,9 @@
 };
 
 &pcie {
-	pinctrl-names = "default";
+	pinctrl-names = "default", "wake-pull-up";
 	pinctrl-0 = <&pcie_pinctl0>;
+	pinctrl-1 = <&pcie_pinctl_wake>;
 };
 
 &pio {
@@ -1071,17 +1072,24 @@
 			bias-disable;
 		};
 	};
+
 	pcie_pinctl0: pcie0 {
 		pcie0 {
 			pinmux = <MT2712_PIN_204_PERSTB_P0__FUNC_PERST_B_P0>,
-			<MT2712_PIN_205_CLKREQN_P0__FUNC_CLKREQ_N_P0>,
-			<MT2712_PIN_206_WAKEEN_P0__FUNC_WAKE_EN_P0>,
-			/* following three pins are for EP */
-			<MT2712_PIN_207_PERSTB_P1__FUNC_PERST_B_P1>,
-			<MT2712_PIN_208_CLKREQN_P1__FUNC_CLKREQ_N_P1>,
-			<MT2712_PIN_209_WAKEEN_P1__FUNC_WAKE_EN_P1>;
+				 <MT2712_PIN_205_CLKREQN_P0__FUNC_CLKREQ_N_P0>,
+				 /* following pins are for EP */
+				 <MT2712_PIN_207_PERSTB_P1__FUNC_PERST_B_P1>,
+				 <MT2712_PIN_208_CLKREQN_P1__FUNC_CLKREQ_N_P1>;
 			drive-strength = <MTK_DRIVE_8mA>;
 		};
+	};
+
+	pcie_pinctl_wake: wake_n_pull_up {
+		pinmux = <MT2712_PIN_206_WAKEEN_P0__FUNC_WAKE_EN_P0>,
+			 <MT2712_PIN_209_WAKEEN_P1__FUNC_WAKE_EN_P1>;
+		drive-strength = <MTK_DRIVE_8mA>;
+		input-enable;
+		bias-pull-up;
 	};
 
 	spi_pins_0: spi0@0 {
