@@ -520,14 +520,10 @@
 	pinctrl-0 = <&kpd_pins_default>;
 	status = "okay";
 	mediatek,kpd-key-debounce = <1024>;
-	mediatek,kpd-sw-pwrkey = <0>;
-	mediatek,kpd-hw-pwrkey = <8>;
-	mediatek,kpd-sw-rstkey  = <0>;
-	mediatek,kpd-hw-rstkey = <17>;
 	mediatek,kpd-use-extend-type = <0>;
 	/*HW Keycode [0~71] -> Linux Keycode*/
 	mediatek,kpd-hw-map-num = <72>;
-	/* 9*8 key mapping table */
+	/* 8*9 key mapping table */
 	mediatek,kpd-hw-init-map = \
 			<115 114 116 0 0 0 0 0 0
 			113 237 103 0 0 0 0 0 0
@@ -538,13 +534,6 @@
 			0 0 0 0 0 0 0 0 0
 			0 0 0 0 0 0 0 0 0
 			>;
-	mediatek,kpd-pwrkey-eint-gpio = <0>;
-	mediatek,kpd-pwkey-gpio-din  = <0>;
-	mediatek,kpd-hw-dl-key0 = <0>;
-	mediatek,kpd-hw-dl-key1 = <17>;
-	mediatek,kpd-hw-dl-key2 = <8>;
-	mediatek,kpd-hw-recovery-key = <17>;
-	mediatek,kpd-hw-factory-key  = <0>;
 };
 
 &lvds0 {
