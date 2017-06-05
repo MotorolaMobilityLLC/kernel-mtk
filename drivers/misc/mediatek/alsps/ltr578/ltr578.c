@@ -1880,7 +1880,7 @@ static void ltr578_eint_work(struct work_struct *work)
 	}
 	ltr578_clear_intr(obj->client);
   //  mt_eint_unmask(CUST_EINT_ALS_NUM);   
- 	 //enable_irq(obj->irq);
+ 	 enable_irq(obj->irq);
  	 /*add by lct_liuzhenhe for eint*/
  	 enable_irq_wake(obj->irq);
 }
