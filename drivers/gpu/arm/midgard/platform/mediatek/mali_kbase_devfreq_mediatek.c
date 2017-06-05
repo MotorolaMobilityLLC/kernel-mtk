@@ -242,6 +242,11 @@ int kbase_devfreq_init(struct kbase_device *kbdev)
 	}
 #endif
 
+	kbdev->pm.debug_core_mask[0] = mfg->gpu_core_mask;
+	kbdev->pm.debug_core_mask[1] = mfg->gpu_core_mask;
+	kbdev->pm.debug_core_mask[2] = mfg->gpu_core_mask;
+	kbdev->pm.debug_core_mask_all = mfg->gpu_core_mask;
+
 	return 0;
 
 #ifdef CONFIG_DEVFREQ_THERMAL
