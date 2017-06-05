@@ -560,11 +560,13 @@ int mtk_ecc_enable(struct mtk_ecc *ecc, struct mtk_ecc_config *config)
 	mtk_ecc_wait_idle(ecc, op);
 	mtk_ecc_config(ecc, config);
 
-	init_completion(&ecc->done);
-	reg = ECC_IRQ_EN;
-	if ((ecc->ecc_data->pg_irq_enable) && (config->mode == ECC_NFI_MODE))
-		reg |= ECC_PG_IRQ_SEL;
-	writew(reg, ECC_IRQ_REG(ecc, op));
+	if (config->mode != ECC_NFI_MODE || op != ECC_ENCODE) {
+		init_completion(&ecc->done);
+		reg = ECC_IRQ_EN;
+		if (ecc->ecc_data->pg_irq_enable && config->mode == ECC_NFI_MODE)
+			reg |= ECC_PG_IRQ_SEL;
+		writew(reg, ECC_IRQ_REG(ecc, op));
+	}
 
 	writew(ECC_OP_ENABLE, ECC_CTL_REG(ecc, op));
 
