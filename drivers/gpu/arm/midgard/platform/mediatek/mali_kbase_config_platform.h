@@ -19,6 +19,7 @@ struct mfg_base {
 	void __iomem *reg_base;
 	struct clk *mfg_pll;
 	struct clk *mfg_sel;
+	u64 gpu_core_mask;
 };
 
 

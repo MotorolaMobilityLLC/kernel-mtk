@@ -110,6 +110,7 @@ struct kbase_pm_callback_conf pm_callbacks = {
 int mali_mfgsys_init(struct kbase_device *kbdev, struct mfg_base *mfg)
 {
 	int err = 0;
+	u32 mp = 0;
 
 	mfg->reg_base = of_iomap(kbdev->dev->of_node, 1);
 	if (!mfg->reg_base)
@@ -128,6 +129,12 @@ int mali_mfgsys_init(struct kbase_device *kbdev, struct mfg_base *mfg)
 		dev_err(kbdev->dev, "devm_clk_get mfg_sel failed\n");
 		goto err_iounmap_reg_base;
 	}
+
+	of_property_read_u32(kbdev->dev->of_node, "mp", &mp);
+	if (mp == 2) /* 2 core */
+		mfg->gpu_core_mask = (u64)0x3;
+	else /* 4 core */
+		mfg->gpu_core_mask = (u64)0xf;
 
 	return 0;
 
