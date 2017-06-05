@@ -122,6 +122,7 @@ static MTK_WCN_BOOL mtk_wcn_wmt_func_ctrl(ENUM_WMTDRV_TYPE_T type, ENUM_WMT_OPID
 	if (DISABLE_PSM_MONITOR()) {
 		WMT_ERR_FUNC("wake up failed,OPID(%d) type(%zu) abort\n", pOp->op.opId, pOp->op.au4OpData[0]);
 		wmt_lib_put_op_to_free_queue(pOp);
+		wmt_lib_host_awake_put();
 		return MTK_WCN_BOOL_FALSE;
 	}
 
@@ -144,9 +145,8 @@ INT32 mtk_wcn_wmt_psm_ctrl(MTK_WCN_BOOL flag)
 		wmt_lib_ps_ctrl(0);
 		WMT_INFO_FUNC("disable PSM\n");
 	} else {
-		wmt_lib_ps_set_idle_time(5000);
 		wmt_lib_ps_ctrl(1);
-		WMT_INFO_FUNC("enable PSM, idle to sleep time = 5000 ms\n");
+		WMT_INFO_FUNC("enable PSM\n");
 	}
 #else
 	WMT_INFO_FUNC("WMT PS not supported\n");
