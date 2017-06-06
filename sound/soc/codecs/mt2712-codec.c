@@ -34,84 +34,127 @@ static int mt2712_aadc_hw_params(struct snd_pcm_substream *substream,
 	struct snd_soc_pcm_runtime *rtd = substream->private_data;
 	struct mt2712_codec_priv *codec_data = snd_soc_codec_get_drvdata(rtd->codec);
 	int rate = params_rate(params);
-	struct snd_soc_codec *codec = dai->codec;
 
 	dev_dbg(rtd->codec->dev, "%s()\n", __func__);
 
 	switch (rate) {
 	case 8000:
-		regmap_update_bits(codec_data->regmap, ABB_AFE_CON11,
+		regmap_update_bits(codec_data->regmap_dig, ABB_AFE_CON11,
 			   AFIFO_RATE, AFIFO_RATE_SET(0));
-		regmap_update_bits(codec_data->regmap, ABB_AFE_CON1,
+		regmap_update_bits(codec_data->regmap_dig, ABB_AFE_CON1,
 			   ABB_UL_RATE, ABB_UL_RATE_SET(0));
-		regmap_update_bits(codec_data->regmap, AFE_ADDA_UL_SRC_CON0,
+		regmap_update_bits(codec_data->regmap_dig, AFE_ADDA_UL_SRC_CON0,
 			   ULSRC_VOICE_MODE, ULSRC_VOICE_MODE_SET(0));
 		break;
 	case 16000:
-		regmap_update_bits(codec_data->regmap, ABB_AFE_CON11,
+		regmap_update_bits(codec_data->regmap_dig, ABB_AFE_CON11,
 			   AFIFO_RATE, AFIFO_RATE_SET(2));
-		regmap_update_bits(codec_data->regmap, ABB_AFE_CON1,
+		regmap_update_bits(codec_data->regmap_dig, ABB_AFE_CON1,
 			   ABB_UL_RATE, ABB_UL_RATE_SET(0));
-		regmap_update_bits(codec_data->regmap, AFE_ADDA_UL_SRC_CON0,
+		regmap_update_bits(codec_data->regmap_dig, AFE_ADDA_UL_SRC_CON0,
 			   ULSRC_VOICE_MODE, ULSRC_VOICE_MODE_SET(1));
 		break;
 	case 32000:
-		regmap_update_bits(codec_data->regmap, ABB_AFE_CON11,
+		regmap_update_bits(codec_data->regmap_dig, ABB_AFE_CON11,
 			   AFIFO_RATE, AFIFO_RATE_SET(4));
-		regmap_update_bits(codec_data->regmap, ABB_AFE_CON1,
+		regmap_update_bits(codec_data->regmap_dig, ABB_AFE_CON1,
 			   ABB_UL_RATE, ABB_UL_RATE_SET(0));
-		regmap_update_bits(codec_data->regmap, AFE_ADDA_UL_SRC_CON0,
+		regmap_update_bits(codec_data->regmap_dig, AFE_ADDA_UL_SRC_CON0,
 			   ULSRC_VOICE_MODE, ULSRC_VOICE_MODE_SET(2));
 		break;
 	case 48000:
-		regmap_update_bits(codec_data->regmap, ABB_AFE_CON11,
+		regmap_update_bits(codec_data->regmap_dig, ABB_AFE_CON11,
 			   AFIFO_RATE, AFIFO_RATE_SET(5));
-		regmap_update_bits(codec_data->regmap, ABB_AFE_CON1,
+		regmap_update_bits(codec_data->regmap_dig, ABB_AFE_CON1,
 			   ABB_UL_RATE, ABB_UL_RATE_SET(1));
-		regmap_update_bits(codec_data->regmap, AFE_ADDA_UL_SRC_CON0,
+		regmap_update_bits(codec_data->regmap_dig, AFE_ADDA_UL_SRC_CON0,
 			   ULSRC_VOICE_MODE, ULSRC_VOICE_MODE_SET(3));
 		break;
 	}
-	regmap_update_bits(codec_data->regmap, ABB_AFE_CON11,
+	regmap_update_bits(codec_data->regmap_dig, ABB_AFE_CON11,
 		 AFIFO_SRPT, AFIFO_SRPT_SET(3));
-	regmap_update_bits(codec_data->regmap, ABB_AFE_CON0,
+	regmap_update_bits(codec_data->regmap_dig, ABB_AFE_CON0,
 		 ABB_PDN_I2SO1, ABB_PDN_I2SO1_SET(0));
-	regmap_update_bits(codec_data->regmap, ABB_AFE_CON0,
+	regmap_update_bits(codec_data->regmap_dig, ABB_AFE_CON0,
 		 ABB_PDN_I2SI1, ABB_PDN_I2SI1_SET(0));
-	regmap_update_bits(codec_data->regmap, ABB_AFE_CON0,
+	regmap_update_bits(codec_data->regmap_dig, ABB_AFE_CON0,
 		 ABB_UL_EN, ABB_UL_EN_SET(1));
-	regmap_update_bits(codec_data->regmap, ABB_AFE_CON0,
+	regmap_update_bits(codec_data->regmap_dig, ABB_AFE_CON0,
 		 ABB_AFE_EN, ABB_AFE_EN_SET(1));
-	regmap_update_bits(codec_data->regmap, AFE_ADDA_UL_SRC_CON0,
+	regmap_update_bits(codec_data->regmap_dig, AFE_ADDA_UL_SRC_CON0,
 		 ULSRC_ON, ULSRC_ON_SET(1));
 
 #if DEBUG_AADC_SGEN
 	/* Sgen debug setting */
-	regmap_update_bits(codec_data->regmap, AFE_ADDA_UL_SRC_CON1,
+	regmap_update_bits(codec_data->regmap_dig, AFE_ADDA_UL_SRC_CON1,
 		UL_SRC_CH1_AMP_MASK, 6 << UL_SRC_CH1_AMP_POS);
-	regmap_update_bits(codec_data->regmap, AFE_ADDA_UL_SRC_CON1,
+	regmap_update_bits(codec_data->regmap_dig, AFE_ADDA_UL_SRC_CON1,
 		UL_SRC_CH1_FREQ_MASK, 2 << UL_SRC_CH1_FREQ_POS);
-	regmap_update_bits(codec_data->regmap, AFE_ADDA_UL_SRC_CON1,
+	regmap_update_bits(codec_data->regmap_dig, AFE_ADDA_UL_SRC_CON1,
 		UL_SRC_CH2_AMP_MASK, 6 << UL_SRC_CH2_AMP_POS);
-	regmap_update_bits(codec_data->regmap, AFE_ADDA_UL_SRC_CON1,
+	regmap_update_bits(codec_data->regmap_dig, AFE_ADDA_UL_SRC_CON1,
 		UL_SRC_CH2_FREQ_MASK, 1 << UL_SRC_CH2_FREQ_POS);
 	/* Turn on sgen */
-	regmap_update_bits(codec_data->regmap, AFE_ADDA_UL_SRC_CON1,
+	regmap_update_bits(codec_data->regmap_dig, AFE_ADDA_UL_SRC_CON1,
 		UL_SRC_MUTE_MASK, 0 << UL_SRC_MUTE_POS);
-	regmap_update_bits(codec_data->regmap, AFE_ADDA_UL_SRC_CON1,
+	regmap_update_bits(codec_data->regmap_dig, AFE_ADDA_UL_SRC_CON1,
 		UL_SRC_SGEN_EN_MASK, 1 << UL_SRC_SGEN_EN_POS);
 
-	dev_warn(rtd->codec->dev, "%s: AADC data from sgen now.\n", __func__);
+	dev_notice(rtd->codec->dev, "%s: AADC data from sgen now.\n", __func__);
 #else
 	/* Enable CIC filter for analog src */
-	regmap_update_bits(codec_data->regmap, AFE_ADDA_UL_DL_CON0,
+	regmap_update_bits(codec_data->regmap_dig, AFE_ADDA_UL_DL_CON0,
 		ADDA_adda_afe_on_MASK, 1 << ADDA_adda_afe_on_POS);
 
-	/* Analog part setting */
-	regmap_update_bits(codec_data->regmap_modules[REGMAP_APMIXEDSYS],
-		AADC_CON3, 0xFFFFFFFF, 0x40024001);
-	regmap_update_bits(codec_data->regmap_modules[REGMAP_APMIXEDSYS],
-		AADC_CON0, 0xFFFFFFFF, 0x03F9809E);
+	/* Clock enable */
+	regmap_update_bits(codec_data->regmap_ana,
+		AADC_CON3, RG_CLK_EN_MASK, 1 << RG_CLK_EN_POS);
+	regmap_update_bits(codec_data->regmap_ana,
+		AADC_CON3, RG_CLK_SEL_MASK, 0);
+
+	/* Enable MICBIAS0 */
+	regmap_update_bits(codec_data->regmap_ana,
+		AADC_CON3, RG_AUDPWDBMICBIAS_MASK, 1 << RG_AUDPWDBMICBIAS_POS);
+
+	/* L/R ch VREF enable */
+	regmap_update_bits(codec_data->regmap_ana,
+		AADC_CON0, RG_AUDULL_VREF24_EN_MASK, 1 << RG_AUDULL_VREF24_EN_POS);
+	regmap_update_bits(codec_data->regmap_ana,
+		AADC_CON0, RG_AUDULL_VCM14_EN_MASK, 1 << RG_AUDULL_VCM14_EN_POS);
+	regmap_update_bits(codec_data->regmap_ana,
+		AADC_CON0, RG_AUDULR_VREF24_EN_MASK, 1 << RG_AUDULR_VREF24_EN_POS);
+	regmap_update_bits(codec_data->regmap_ana,
+		AADC_CON0, RG_AUDULR_VCM14_EN_MASK, 1 << RG_AUDULR_VCM14_EN_POS);
+
+	/* L/R ch ADC Dither disable */
+	regmap_update_bits(codec_data->regmap_ana,
+		AADC_CON0, RG_AUDULL_VADC_DENB_MASK, 1 << RG_AUDULL_VADC_DENB_POS);
+	regmap_update_bits(codec_data->regmap_ana,
+		AADC_CON0, RG_AUDULR_VADC_DENB_MASK, 1 << RG_AUDULR_VADC_DENB_POS);
+
+	/* L/R ch PGA gain setting */
+	regmap_update_bits(codec_data->regmap_ana,
+		AADC_CON0, RG_AUDULL_VUPG_MASK,
+		ANALOG_UL_PGA_GAIN_0dB << RG_AUDULL_VUPG_POS);
+	regmap_update_bits(codec_data->regmap_ana,
+		AADC_CON0, RG_AUDULR_VUPG_MASK,
+		ANALOG_UL_PGA_GAIN_0dB << RG_AUDULR_VUPG_POS);
+
+	/* L/R ch PGA enable */
+	regmap_update_bits(codec_data->regmap_ana,
+		AADC_CON0, RG_AUDULL_VPWDB_PGA_MASK, 1 << RG_AUDULL_VPWDB_PGA_POS);
+	regmap_update_bits(codec_data->regmap_ana,
+		AADC_CON0, RG_AUDULR_VPWDB_PGA_MASK, 1 << RG_AUDULR_VPWDB_PGA_POS);
+
+	/* L/R ch ADC enable */
+	regmap_update_bits(codec_data->regmap_ana,
+		AADC_CON0, RG_AUDULL_VPWDB_ADC_MASK, 1 << RG_AUDULL_VPWDB_ADC_POS);
+	regmap_update_bits(codec_data->regmap_ana,
+		AADC_CON0, RG_AUDULR_VPWDB_ADC_MASK, 1 << RG_AUDULR_VPWDB_ADC_POS);
+	regmap_update_bits(codec_data->regmap_ana,
+		AADC_CON0, RG_AUDULL_VADC_DVREF_CAL_MASK, 1 << RG_AUDULL_VADC_DVREF_CAL_POS);
+	regmap_update_bits(codec_data->regmap_ana,
+		AADC_CON0, RG_AUDULR_VADC_DVREF_CAL_MASK, 1 << RG_AUDULR_VADC_DVREF_CAL_POS);
 #endif
 
 	return 0;
@@ -123,9 +166,9 @@ static void mt2712_aadc_shutdown(struct snd_pcm_substream *substream,
 	struct snd_soc_pcm_runtime *rtd = substream->private_data;
 	struct mt2712_codec_priv *codec_data = snd_soc_codec_get_drvdata(rtd->codec);
 
-	regmap_update_bits(codec_data->regmap, AFE_ADDA_UL_SRC_CON0,
+	regmap_update_bits(codec_data->regmap_dig, AFE_ADDA_UL_SRC_CON0,
 		 ULSRC_ON, ULSRC_ON_SET(0));
-	regmap_update_bits(codec_data->regmap, ABB_AFE_CON0,
+	regmap_update_bits(codec_data->regmap_dig, ABB_AFE_CON0,
 		 ABB_UL_EN, ABB_UL_EN_SET(0));
 }
 
@@ -163,97 +206,7 @@ static const struct regmap_config mt2712_codec_regmap_config = {
 	.cache_type = REGCACHE_NONE,
 };
 
-static struct regmap *mt2712_codec_get_regmap_from_dt(const char *phandle_name,
-		struct mt2712_codec_priv *codec_data)
-{
-	struct device_node *self_node = NULL, *node = NULL;
-	struct platform_device *platdev = NULL;
-	struct device *dev = codec_data->codec->dev;
-	struct regmap *regmap = NULL;
-
-	self_node = of_find_compatible_node(NULL, NULL,
-		"mediatek,mt2712-codec");
-	if (!self_node) {
-		dev_err(dev, "%s failed to find %s node\n",
-			__func__, "mt2712-codec");
-		return NULL;
-	}
-	dev_dbg(dev, "%s found %s node\n", __func__, "mt2712-codec");
-		node = of_parse_phandle(self_node, phandle_name, 0);
-	if (!node) {
-		dev_err(dev, "%s failed to find %s node\n",
-			__func__, phandle_name);
-		return NULL;
-	}
-	dev_dbg(dev, "%s found %s\n", __func__, phandle_name);
-
-	platdev = of_find_device_by_node(node);
-	if (!platdev) {
-		dev_err(dev, "%s failed to get platform device of %s\n",
-			__func__, phandle_name);
-		return NULL;
-	}
-	dev_dbg(dev, "%s found platform device of %s\n",
-		__func__, phandle_name);
-
-	regmap = dev_get_regmap(&platdev->dev, NULL);
-	if (regmap) {
-		dev_dbg(dev, "%s found regmap of %s\n", __func__, phandle_name);
-		return regmap;
-	}
-
-	regmap = syscon_regmap_lookup_by_phandle(dev->of_node, phandle_name);
-	if (!IS_ERR(regmap)) {
-		dev_dbg(dev, "%s found regmap of syscon node %s\n",
-			__func__, phandle_name);
-		return regmap;
-	}
-	dev_err(dev, "%s failed to get regmap of syscon node %s\n",
-		__func__, phandle_name);
-
-	return NULL;
-}
-
-static const char * const modules_dt_regmap_str[REGMAP_NUMS] = {
-	/*"mediatek,afe-regmap",*/
-	"mediatek,apmixedsys-regmap",
-};
-
-static int mt2712_codec_parse_dt(struct mt2712_codec_priv *codec_data)
-{
-	struct device *dev = codec_data->codec->dev;
-	int ret = 0;
-	int i;
-
-	for (i = 0; i < REGMAP_NUMS; i++) {
-		codec_data->regmap_modules[i] = mt2712_codec_get_regmap_from_dt(
-			modules_dt_regmap_str[i],
-			codec_data);
-		if (!codec_data->regmap_modules[i]) {
-			dev_err(dev, "%s failed to get %s\n",
-				__func__, modules_dt_regmap_str[i]);
-			devm_kfree(dev, codec_data);
-			ret = -EPROBE_DEFER;
-			break;
-		}
-	}
-
-	return ret;
-}
-
-static int mt2712_codec_probe(struct snd_soc_codec *codec)
-{
-	struct mt2712_codec_priv *codec_data = snd_soc_codec_get_drvdata(codec);
-
-	dev_dbg(codec->dev, "%s():\n", __func__);
-
-	codec_data->codec = codec;
-
-	return mt2712_codec_parse_dt(codec_data);
-}
-
 static struct snd_soc_codec_driver mt2712_codec_driver = {
-	.probe = mt2712_codec_probe,
 	.component_driver = {
 		.dapm_widgets           = mt2712_codec_widgets,
 		.num_dapm_widgets       = ARRAY_SIZE(mt2712_codec_widgets),
@@ -261,6 +214,8 @@ static struct snd_soc_codec_driver mt2712_codec_driver = {
 		.num_dapm_routes        = ARRAY_SIZE(mt2712_codec_routes),
 	},
 };
+
+static const char * const apmixedsys_regmap_phandle = "mediatek,apmixedsys-regmap";
 
 static int mt2712_codec_dev_probe(struct platform_device *pdev)
 {
@@ -279,12 +234,22 @@ static int mt2712_codec_dev_probe(struct platform_device *pdev)
 
 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
 	codec_data->base_addr = devm_ioremap_resource(&pdev->dev, res);
-	codec_data->regmap = devm_regmap_init_mmio(&pdev->dev, codec_data->base_addr,
+	codec_data->regmap_dig = devm_regmap_init_mmio(&pdev->dev, codec_data->base_addr,
 		&mt2712_codec_regmap_config);
-	if (IS_ERR(codec_data->regmap)) {
-		dev_err(dev, "%s failed to get regmap of codec\n", __func__);
+	if (IS_ERR(codec_data->regmap_dig)) {
+		dev_notice(dev, "%s failed to get regmap of codec\n", __func__);
 		devm_kfree(dev, codec_data);
-		codec_data->regmap = NULL;
+		codec_data->regmap_dig = NULL;
+		return -EINVAL;
+	}
+
+	codec_data->regmap_ana =
+		syscon_regmap_lookup_by_phandle(dev->of_node, apmixedsys_regmap_phandle);
+	if (IS_ERR(codec_data->regmap_ana)) {
+		dev_notice(dev, "%s failed to get regmap of syscon node %s\n",
+			__func__, apmixedsys_regmap_phandle);
+		devm_kfree(dev, codec_data);
+		codec_data->regmap_ana = NULL;
 		return -EINVAL;
 	}
 
