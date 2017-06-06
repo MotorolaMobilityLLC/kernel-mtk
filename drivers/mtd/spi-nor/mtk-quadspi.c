@@ -521,7 +521,7 @@ static int mtk_nor_resume(struct device *dev)
 		return ret;
 
 	ret = clk_prepare_enable(mt8173_nor->nor_clk);
-	if (ret) {
+	if (ret != 0) {
 		clk_disable_unprepare(mt8173_nor->spi_clk);
 		return ret;
 	}
