@@ -93,7 +93,7 @@
 			#cooling-cells = <2>;
 			cooling-min-level = <0>;
 			cooling-max-level = <6>;
-			dynamic-power-coefficient = <263>;
+			dynamic-power-coefficient = <222>;
 			sched-energy-costs = <&MT2712E_CPU_COST_0
 					      &MT2712E_CLUSTER_COST_0>;
 		};
@@ -111,7 +111,7 @@
 			#cooling-cells = <2>;
 			cooling-min-level = <0>;
 			cooling-max-level = <6>;
-			dynamic-power-coefficient = <263>;
+			dynamic-power-coefficient = <222>;
 			sched-energy-costs = <&MT2712E_CPU_COST_0
 					      &MT2712E_CLUSTER_COST_0>;
 		};
@@ -129,7 +129,7 @@
 			#cooling-cells = <2>;
 			cooling-min-level = <0>;
 			cooling-max-level = <8>;
-			dynamic-power-coefficient = <530>;
+			dynamic-power-coefficient = <475>;
 			sched-energy-costs = <&MT2712E_CPU_COST_1
 					      &MT2712E_CLUSTER_COST_1>;
 		};
