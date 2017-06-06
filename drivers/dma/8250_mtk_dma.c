@@ -515,7 +515,7 @@ static struct dma_async_tx_descriptor *mtk_dma_prep_slave_sg(
 	}
 
 	/* Now allocate and setup the descriptor. */
-	d = kmalloc(sizeof(*d) + sglen * sizeof(d->sg[0]), GFP_KERNEL);
+	d = kzalloc(sizeof(*d) + sglen * sizeof(d->sg[0]), GFP_KERNEL);
 	if (!d)
 		return NULL;
 
@@ -801,7 +801,7 @@ static int mtk_dma_probe(struct platform_device *pdev)
 	mtkd->ddev.src_addr_widths = BIT(DMA_SLAVE_BUSWIDTH_1_BYTE);
 	mtkd->ddev.dst_addr_widths = BIT(DMA_SLAVE_BUSWIDTH_1_BYTE);
 	mtkd->ddev.directions = BIT(DMA_DEV_TO_MEM) | BIT(DMA_MEM_TO_DEV);
-	mtkd->ddev.residue_granularity = DMA_RESIDUE_GRANULARITY_DESCRIPTOR;
+	mtkd->ddev.residue_granularity = DMA_RESIDUE_GRANULARITY_SEGMENT;
 	mtkd->ddev.dev = &pdev->dev;
 	INIT_LIST_HEAD(&mtkd->ddev.channels);
 	INIT_LIST_HEAD(&mtkd->pending);
