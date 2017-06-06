@@ -1317,7 +1317,7 @@ static int ltr578_als_read(int gainrange)
 	cleval_2 = ltr578_i2c_read_reg(0x0c);
 	
 	cleval = cleval_0 | (cleval_1<<8) | (cleval_2<<16);
-    lsec = (cleval/alsval)*10;
+    lsec = (cleval/(alsval+1))*10;
 	
 	check_lsec(lsec);
 
@@ -2119,7 +2119,7 @@ static int ltr578_i2c_suspend(struct device *dev)
 {
 	struct i2c_client *client = to_i2c_client(dev);
 	struct ltr578_priv *obj = i2c_get_clientdata(client);    
-	int err = 0;
+//	int err = 0;
 	APS_FUN();    
 	
 	if(!obj)
@@ -2127,15 +2127,16 @@ static int ltr578_i2c_suspend(struct device *dev)
 		APS_ERR("null pointer!!\n");
 		return -EINVAL;
 	}
-	
+/*	
 	atomic_set(&obj->als_suspend, 1);
+
 	err = ltr578_als_disable();
 	if(err < 0)
 	{
 		APS_ERR("disable als: %d\n", err);
 		return err;
 	}
-	
+*/	
 	return 0;
 }
 /*----------------------------------------------------------------------------*/
@@ -2143,7 +2144,7 @@ static int ltr578_i2c_resume(struct device *dev)
 {
 	struct i2c_client *client = to_i2c_client(dev);
 	struct ltr578_priv *obj = i2c_get_clientdata(client);        
-	int err = 0;
+//	int err = 0;
 	APS_FUN();
 	
 	if(!obj)
@@ -2151,8 +2152,9 @@ static int ltr578_i2c_resume(struct device *dev)
 		APS_ERR("null pointer!!\n");
 		return -EINVAL;
 	}
-
+/*
 	atomic_set(&obj->als_suspend, 0);
+
 	if(test_bit(CMC_BIT_ALS, &obj->enable))
 	{
 	    err = ltr578_als_enable(als_gainrange);
@@ -2161,7 +2163,7 @@ static int ltr578_i2c_resume(struct device *dev)
 			APS_ERR("enable als fail: %d\n", err);        
 		}
 	}
-	
+*/	
 	return 0;
 }
 #ifdef CONFIG_HAS_EARLYSUSPEND
