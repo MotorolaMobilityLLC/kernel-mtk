@@ -517,18 +517,19 @@ static int mtk_nor_resume(struct device *dev)
 	struct mt8173_nor *mt8173_nor = dev_get_drvdata(dev);
 
 	ret = clk_prepare_enable(mt8173_nor->spi_clk);
-	if (ret)
-		return ret;
+	if (ret != 0)
+		goto out;
 
 	ret = clk_prepare_enable(mt8173_nor->nor_clk);
 	if (ret != 0) {
 		clk_disable_unprepare(mt8173_nor->spi_clk);
-		return ret;
+		goto out;
 	}
 
 	writel(MTK_NOR_ENABLE_SF_CMD, mt8173_nor->base + MTK_NOR_WRPROT_REG);
 
-	return 0;
+out:
+	return ret;
 }
 
 static const struct dev_pm_ops mtk_nor_dev_pm_ops = {
