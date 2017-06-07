@@ -157,8 +157,9 @@ static void mtk_dma_desc_free(struct virt_dma_desc *vd)
 {
 	struct dma_chan *chan = vd->tx.chan;
 	struct mtk_chan *c = to_mtk_dma_chan(chan);
+	unsigned long flags;
 
-	spin_lock(&c->lock);
+	spin_lock_irqsave(&c->vc.lock, flags);
 	if (c->desc != NULL) {
 		kfree(c->desc);
 		c->desc = NULL;
@@ -166,7 +167,7 @@ static void mtk_dma_desc_free(struct virt_dma_desc *vd)
 		if (c->cfg.direction == DMA_DEV_TO_MEM)
 			atomic_dec(&c->entry);
 	}
-	spin_unlock(&c->lock);
+	spin_unlock_irqrestore(&c->vc.lock, flags);
 }
 
 static int mtk_dma_clk_enable(struct mtk_dmadev *mtkd)
@@ -314,12 +315,26 @@ static void mtk_dma_get_dst_pos(struct mtk_chan *c)
 
 static void mtk_dma_8250_start_rx(struct mtk_chan *c)
 {
+	struct dma_chan *chan = &(c->vc.chan);
+	struct mtk_dmadev *mtkd = to_mtk_dma_dev(chan->device);
 	struct mtk_desc *d = c->desc;
 
-	if (mtk_dma_chan_read(c, VFF_VALID_SIZE) != 0 && c->desc != NULL) {
+	if (mtk_dma_chan_read(c, VFF_VALID_SIZE) != 0 && c->desc != NULL &&
+		c->desc->vd.tx.cookie != 0) {
 		mtk_dma_get_dst_pos(c);
 		mtk_dma_remove_virt_list(d->vd.tx.cookie, &c->vc);
 		vchan_cookie_complete(&d->vd);
+	} else {
+		if (mtk_dma_chan_read(c, VFF_VALID_SIZE) != 0) {
+			spin_lock(&mtkd->lock);
+			if (list_empty(&mtkd->pending))
+				list_add_tail(&c->node, &mtkd->pending);
+			spin_unlock(&mtkd->lock);
+			tasklet_schedule(&mtkd->task);
+			} else {
+				if (atomic_read(&c->entry) > 0)
+					atomic_set(&c->entry, 0);
+			}
 	}
 }
 
@@ -349,8 +364,9 @@ static void mtk_dma_stop(struct mtk_chan *c)
 	while (mtk_dma_chan_read(c, VFF_FLUSH))	{
 		polling_cnt++;
 		if (polling_cnt > 10000) {
-			dev_info(c->vc.chan.device->dev, "mtk_uart_stop_dma: polling VFF_FLUSH fail VFF_DEBUG_STATUS=0x%x\n",
-					mtk_dma_chan_read(c, VFF_DEBUG_STATUS));
+			dev_info(c->vc.chan.device->dev,
+				"mtk_uart_stop_dma: polling VFF_FLUSH fail VFF_DEBUG_STATUS=0x%x\n",
+				mtk_dma_chan_read(c, VFF_DEBUG_STATUS));
 			break;
 		}
 	}
@@ -361,8 +377,9 @@ static void mtk_dma_stop(struct mtk_chan *c)
 	while (mtk_dma_chan_read(c, VFF_EN)) {
 		polling_cnt++;
 		if (polling_cnt > 10000) {
-			dev_info(c->vc.chan.device->dev, "mtk_uart_stop_dma: polling VFF_EN fail VFF_DEBUG_STATUS=0x%x\n",
-					mtk_dma_chan_read(c, VFF_DEBUG_STATUS));
+			dev_info(c->vc.chan.device->dev,
+				"mtk_uart_stop_dma: polling VFF_EN fail VFF_DEBUG_STATUS=0x%x\n",
+				mtk_dma_chan_read(c, VFF_DEBUG_STATUS));
 			break;
 		}
 	}
@@ -371,6 +388,26 @@ static void mtk_dma_stop(struct mtk_chan *c)
 	mtk_dma_chan_write(c, VFF_INT_FLAG, VFF_INT_FLAG_CLR_B);
 
 	c->paused = true;
+}
+
+/*
+ * We need to deal with 'all channels in-use'
+ */
+static void mtk_dma_rx_sched(struct mtk_chan *c)
+{
+	struct dma_chan *chan = &(c->vc.chan);
+	struct mtk_dmadev *mtkd = to_mtk_dma_dev(chan->device);
+	unsigned long flags;
+
+	if (!(atomic_read(&c->entry) > 1)) {
+		mtk_dma_8250_start_rx(c);
+	} else {
+		spin_lock(&mtkd->lock);
+		if (list_empty(&mtkd->pending))
+			list_add_tail(&c->node, &mtkd->pending);
+		spin_unlock(&mtkd->lock);
+		tasklet_schedule(&mtkd->task);
+	}
 }
 
 /*
@@ -387,20 +424,21 @@ static void mtk_dma_sched(unsigned long data)
 	struct virt_dma_desc *vd;
 	dma_cookie_t cookie;
 	LIST_HEAD(head);
+	unsigned long flags;
 
 	spin_lock_irq(&mtkd->lock);
 	list_splice_tail_init(&mtkd->pending, &head);
 	spin_unlock_irq(&mtkd->lock);
 
-	while (!list_empty(&head)) {
+	if (!list_empty(&head)) {
 		c = list_first_entry(&head, struct mtk_chan, node);
 		cookie = c->vc.chan.cookie;
 
-		spin_lock_irq(&c->vc.lock);
+		spin_lock_irqsave(&c->vc.lock, flags);
 
 		if (c->cfg.direction == DMA_DEV_TO_MEM) {
 			list_del_init(&c->node);
-			mtk_dma_8250_start_rx(c);
+			mtk_dma_rx_sched(c);
 		} else if (c->cfg.direction == DMA_MEM_TO_DEV) {
 			vd = vchan_find_desc(&c->vc, cookie);
 
@@ -411,7 +449,7 @@ static void mtk_dma_sched(unsigned long data)
 			dev_warn(c->vc.chan.device->dev, "%s maybe error @Line%d\n",
 				__func__, __LINE__);
 		}
-		spin_unlock_irq(&c->vc.lock);
+		spin_unlock_irqrestore(&c->vc.lock, flags);
 	}
 }
 
@@ -450,6 +488,8 @@ static void mtk_dma_free_chan_resources(struct dma_chan *chan)
 
 	dev_dbg(mtkd->ddev.dev, "freeing channel for %u\n", c->dma_sig);
 	c->dma_sig = 0;
+
+	tasklet_kill(&mtkd->task);
 }
 
 static enum dma_status mtk_dma_tx_status(struct dma_chan *chan,
@@ -573,14 +613,22 @@ static irqreturn_t mtk_dma_rx_interrupt(int irq, void *dev_id)
 {
 	struct dma_chan *chan = (struct dma_chan *)dev_id;
 	struct mtk_chan *c = to_mtk_dma_chan(chan);
+	struct mtk_dmadev *mtkd = to_mtk_dma_dev(chan->device);
 	unsigned long flags;
 
 	spin_lock_irqsave(&c->vc.lock, flags);
 
 	mtk_dma_chan_write(c, VFF_INT_FLAG, 0x03);
 
-	if (!(atomic_add_return(1, &c->entry) > 1))
+	if (atomic_add_return(1, &c->entry) > 1) {
+		spin_lock(&mtkd->lock);
+		if (list_empty(&mtkd->pending))
+			list_add_tail(&c->node, &mtkd->pending);
+		spin_unlock(&mtkd->lock);
+		tasklet_schedule(&mtkd->task);
+	} else {
 		mtk_dma_8250_start_rx(c);
+	}
 
 	spin_unlock_irqrestore(&c->vc.lock, flags);
 
@@ -621,7 +669,8 @@ static irqreturn_t mtk_dma_tx_interrupt(int irq, void *dev_id)
 
 }
 
-static int mtk_dma_slave_config(struct dma_chan *chan, struct dma_slave_config *cfg)
+static int mtk_dma_slave_config(struct dma_chan *chan,
+			struct dma_slave_config *cfg)
 {
 	struct mtk_chan *c = to_mtk_dma_chan(chan);
 	struct mtk_dmadev *mtkd = to_mtk_dma_dev(c->vc.chan.device);
@@ -640,8 +689,8 @@ static int mtk_dma_slave_config(struct dma_chan *chan, struct dma_slave_config *
 		if (c->requested == false) {
 			atomic_set(&c->entry, 0);
 			c->requested = true;
-			ret = request_irq(mtkd->irq + c->dma_ch, mtk_dma_rx_interrupt, IRQF_TRIGGER_NONE,
-								DRV_NAME, chan);
+			ret = request_irq(mtkd->irq + c->dma_ch, mtk_dma_rx_interrupt,
+						IRQF_TRIGGER_NONE, DRV_NAME, chan);
 			if (ret) {
 				dev_err(chan->device->dev, "Cannot request IRQ\n");
 				return IRQ_NONE;
@@ -656,8 +705,8 @@ static int mtk_dma_slave_config(struct dma_chan *chan, struct dma_slave_config *
 
 		if (c->requested == false) {
 			c->requested = true;
-			ret = request_irq(mtkd->irq + c->dma_ch, mtk_dma_tx_interrupt, IRQF_TRIGGER_NONE,
-								DRV_NAME, chan);
+			ret = request_irq(mtkd->irq + c->dma_ch, mtk_dma_tx_interrupt,
+					IRQF_TRIGGER_NONE, DRV_NAME, chan);
 			if (ret) {
 				dev_err(chan->device->dev, "Cannot request IRQ\n");
 				return IRQ_NONE;
@@ -692,7 +741,10 @@ static int mtk_dma_terminate_all(struct dma_chan *chan)
 
 	if (c->desc) {
 		mtk_dma_remove_virt_list(c->desc->vd.tx.cookie, &c->vc);
+		spin_unlock_irqrestore(&c->vc.lock, flags);
 		mtk_dma_desc_free(&c->desc->vd);
+		spin_lock_irqsave(&c->vc.lock, flags);
+
 		if (!c->paused)
 			mtk_dma_stop(c);
 	}
