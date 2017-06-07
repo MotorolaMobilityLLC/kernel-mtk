@@ -552,11 +552,11 @@ static int read_otp_s5k4h8(struct S5K4H8_otp_struct *otp_ptr)
 	  
 	  LOG_INF("luminjie s5k4h8 group2\n");
 	}
-	if((awb_flag & 0xff) == 0x40){
+	if((awb_flag & 0xc0) == 0x40){
 		addr = 0x0A27; // group 1
 		//LOG_INF("luminjie addr =  %x \n", addr);
 	}
-	else if((awb_flag & 0xff) == 0xd0){
+	else if((awb_flag & 0x30) == 0x10){
 		addr = 0x0A34; // group 2
 		//LOG_INF("luminjie addr =  %x \n", addr);
 	}
@@ -606,11 +606,11 @@ static int read_otp_s5k4h8(struct S5K4H8_otp_struct *otp_ptr)
 	 qt_gd_B_gain = 0;
 	}
 	LOG_INF("luminjie af_addr =  %x \n", af_addr);
-	if((af_flag & 0xff) == 0x40){
+	if((af_flag & 0xc0) == 0x40){
 	    af_addr = 0x0A1B; // group 1
 		LOG_INF("luminjie af_addr =  %x \n", af_addr);
 	}
-	else if((af_addr & 0xff) == 0xd0){
+	else if((af_flag & 0x30) == 0x10){
 	    af_addr = 0x0A21; // group 2
 		LOG_INF("luminjie af_addr =  %x \n", af_addr);
 	}
