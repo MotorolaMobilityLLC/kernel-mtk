@@ -128,7 +128,7 @@
 			<&clk26m>,
 			<&clk26m>,
 			<&clk26m>,
-			<&pericfg CLK_PERI_NFI>,
+			<&clk26m>,
 			<&clk26m>,
 			<&pericfg CLK_PERI_PWM0>,
 			<&pericfg CLK_PERI_PWM1>,
