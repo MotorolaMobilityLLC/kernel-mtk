@@ -220,7 +220,7 @@ int msdc_get_ccf_clk_pointer(struct platform_device *pdev,
 
 #define MSDC3_SRC_0             260000
 #define MSDC3_SRC_1             50000000
-#define MSDC3_SRC_2             100000000
+#define MSDC3_SRC_2             200000000
 #define MSDC3_SRC_3             156000000
 #define MSDC3_SRC_4             48000000
 #define MSDC3_SRC_5             156000000
