@@ -43,6 +43,7 @@
 #define UART_MTK_FRACDIV_L	0x15	/* fractional divider LSB address */
 #define UART_MTK_FRACDIV_M	0x16	/* fractional divider MSB address */
 #define UART_MTK_FCR_RD		0x17	/* fifo control register */
+#define UART_MTK_DEBUG0		0x18
 #define UART_MTK_RX_SEL		0x24	/* uart rx pin sel */
 #define UART_MTK_SLEEP_REQ	0x2d	/* uart sleep request register */
 #define UART_MTK_SLEEP_ACK	0x2e	/* uart sleep ack register */
@@ -418,6 +419,12 @@ mtk8250_set_termios(struct uart_port *port, struct ktermios *termios,
 static int mtk8250_runtime_suspend(struct device *dev)
 {
 	struct mtk8250_data *data = dev_get_drvdata(dev);
+	struct uart_8250_port *up = serial8250_get_port(data->line);
+	struct uart_port *port = &up->port;
+
+	/*wait until UART in idle status*/
+	while (serial_port_in(port, UART_MTK_DEBUG0))
+		NULL;
 
 	spin_lock(&data->lock);
 	if (data->clk_count == 0) {
@@ -563,8 +570,6 @@ static int mtk8250_probe(struct platform_device *pdev)
 	/* Disable Rate Fix function */
 	writel(0x0, uart.port.membase +
 			(MTK_UART_RATE_FIX << uart.port.regshift));
-
-	dev_set_drvdata(&pdev->dev, data);
 
 	platform_set_drvdata(pdev, data);
 
