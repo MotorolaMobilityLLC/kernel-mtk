@@ -225,7 +225,7 @@ static int mtk_cpufreq_set_target(struct cpufreq_policy *policy,
 	struct device *cpu_dev = info->cpu_dev;
 	struct dev_pm_opp *opp;
 	long freq_hz, old_freq_hz;
-	int vproc, old_vproc, inter_vproc, target_vproc, ret;
+	int vproc, old_vproc = 0, inter_vproc, target_vproc, ret;
 
 	inter_vproc = info->intermediate_voltage;
 
