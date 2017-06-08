@@ -99,13 +99,6 @@
 		clock-output-names = "clk32k";
 	};
 
-	clk12m: oscillator@2 {
-		compatible = "fixed-clock";
-		#clock-cells = <0>;
-		clock-frequency = <12000000>;
-		clock-output-names = "clk12m";
-	};
-
 	clkfpc: oscillator@3 {
 		compatible = "fixed-clock";
 		#clock-cells = <0>;
@@ -226,7 +219,7 @@
 			compatible = "mediatek,mt2712-uart";
 			reg = <0 0x1000f000 0 0xc0>;
 			interrupts = <GIC_SPI 127 IRQ_TYPE_LEVEL_LOW>;
-			clocks = <&clk12m>, <&clk12m>;
+			clocks = <&topckgen CLK_TOP_UART_SEL>, <&pericfg CLK_PERI_UART5>;
 			clock-names = "baud", "bus";
 			dmas = <&apdma 10
 				&apdma 11>;
@@ -392,7 +385,7 @@
 				     <GIC_SPI 112 IRQ_TYPE_LEVEL_LOW>,
 				     <GIC_SPI 113 IRQ_TYPE_LEVEL_LOW>,
 				     <GIC_SPI 114 IRQ_TYPE_LEVEL_LOW>;
-			clocks = <&clk26m>;
+			clocks = <&pericfg CLK_PERI_AP_DMA>;
 			clock-names = "apdma";
 			#dma-cells = <1>;
 		};
@@ -411,16 +404,16 @@
 			compatible = "mediatek,mt2712-uart";
 			reg = <0 0x11002000 0 0xc0>;
 			interrupts = <GIC_SPI 91 IRQ_TYPE_LEVEL_LOW>;
-			clocks = <&clk26m>, <&clk26m>;
+			clocks = <&topckgen CLK_TOP_UART_SEL>, <&pericfg CLK_PERI_UART0>;
 			clock-names = "baud", "bus";
-			status = "okay";
+			status = "disabled";
 		};
 
 		uart1: serial@11003000 {
 			compatible = "mediatek,mt2712-uart";
 			reg = <0 0x11003000 0 0xc0>;
 			interrupts = <GIC_SPI 92 IRQ_TYPE_LEVEL_LOW>;
-			clocks = <&clk12m>, <&clk12m>;
+			clocks = <&topckgen CLK_TOP_UART_SEL>, <&pericfg CLK_PERI_UART1>;
 			clock-names = "baud", "bus";
 			dmas = <&apdma 2
 				&apdma 3>;
@@ -432,7 +425,7 @@
 			compatible = "mediatek,mt2712-uart";
 			reg = <0 0x11004000 0 0xc0>;
 			interrupts = <GIC_SPI 93 IRQ_TYPE_LEVEL_LOW>;
-			clocks = <&clk12m>, <&clk12m>;
+			clocks = <&topckgen CLK_TOP_UART_SEL>, <&pericfg CLK_PERI_UART2>;
 			clock-names = "baud", "bus";
 			dmas = <&apdma 4
 				&apdma 5>;
@@ -444,7 +437,7 @@
 			compatible = "mediatek,mt2712-uart";
 			reg = <0 0x11005000 0 0xc0>;
 			interrupts = <GIC_SPI 94 IRQ_TYPE_LEVEL_LOW>;
-			clocks = <&clk12m>, <&clk12m>;
+			clocks = <&topckgen CLK_TOP_UART_SEL>, <&pericfg CLK_PERI_UART3>;
 			clock-names = "baud", "bus";
 			dmas = <&apdma 6
 				&apdma 7>;
@@ -653,7 +646,7 @@
 			compatible = "mediatek,mt2712-uart";
 			reg = <0 0x11019000 0 0xc0>;
 			interrupts = <GIC_SPI 126 IRQ_TYPE_LEVEL_LOW>;
-			clocks = <&clk12m>, <&clk12m>;
+			clocks = <&topckgen CLK_TOP_UART_SEL>, <&pericfg CLK_PERI_UART4>;
 			clock-names = "baud", "bus";
 			dmas = <&apdma 8
 				&apdma 9>;
