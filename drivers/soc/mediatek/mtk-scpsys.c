@@ -664,6 +664,12 @@ static const struct scp_domain_data scp_domain_data_mt2712[] = {
 		.sram_pdn_bits = GENMASK(11, 8),
 		.sram_pdn_ack_bits = GENMASK(19, 16),
 		.clk_id = {CLK_NONE},
+		.bus_prot_mask = BIT(14) | BIT(21) | BIT(23),
+		.bp_ext = {
+			.set_ofs = INFRA_TOPAXI_PROTECTEN_SET,
+			.clr_ofs = INFRA_TOPAXI_PROTECTEN_CLR,
+			.sta_ofs = INFRA_TOPAXI_PROTECTSTA1,
+		},
 		.active_wakeup = true,
 	},
 };
