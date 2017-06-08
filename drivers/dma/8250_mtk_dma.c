@@ -47,6 +47,10 @@
 /*VFF_FLUSH*/
 #define VFF_FLUSH_B			BIT(0)
 #define VFF_FLUSH_CLR_B		0
+/*VFF_4G_SUPPORT*/
+#define VFF_4G_SUPPORT_B		BIT(0)
+#define VFF_4G_SUPPORT_CLR_B	0
+
 
 #define VFF_TX_THRE(n)		((n)*7/8)	/* tx_vff_left_size >= tx_vff_thrs */
 #define VFF_RX_THRE(n)		((n)*3/4)	/* trigger level of rx vfifo */
@@ -62,7 +66,7 @@ struct mtk_dmadev {
 	int irq;
 	struct clk *clk;
 	unsigned int dma_requests;
-	uint32_t irq_enable_mask;
+	bool support_33bits;
 	struct mtk_chan *lch_map[MTK_SDMA_CHANNELS];
 };
 
@@ -122,6 +126,7 @@ enum {
 	VFF_VALID_SIZE		= 0x3c,
 	VFF_LEFT_SIZE		= 0x40,
 	VFF_DEBUG_STATUS	= 0x50,
+	VFF_4G_SUPPORT		= 0x54,
 };
 
 static bool mtk_dma_filter_fn(struct dma_chan *chan, void *param);
@@ -340,6 +345,8 @@ static void mtk_dma_8250_start_rx(struct mtk_chan *c)
 
 static void mtk_dma_reset(struct mtk_chan *c)
 {
+	struct mtk_dmadev *mtkd = to_mtk_dma_dev(c->vc.chan.device);
+
 	mtk_dma_chan_write(c, VFF_ADDR, 0);
 	mtk_dma_chan_write(c, VFF_THRE, 0);
 	mtk_dma_chan_write(c, VFF_LEN, 0);
@@ -352,6 +359,9 @@ static void mtk_dma_reset(struct mtk_chan *c)
 		mtk_dma_chan_write(c, VFF_RPT, 0);
 	else if (c->cfg.direction == DMA_MEM_TO_DEV)
 		mtk_dma_chan_write(c, VFF_WPT, 0);
+
+	if (mtkd->support_33bits)
+		mtk_dma_chan_write(c, VFF_4G_SUPPORT, VFF_4G_SUPPORT_CLR_B);
 }
 
 static void mtk_dma_stop(struct mtk_chan *c)
@@ -718,6 +728,9 @@ static int mtk_dma_slave_config(struct dma_chan *chan,
 		}
 	}
 
+	if (mtkd->support_33bits)
+		mtk_dma_chan_write(c, VFF_4G_SUPPORT, VFF_4G_SUPPORT_B);
+
 	if (mtk_dma_chan_read(c, VFF_EN) != VFF_EN_B) {
 		dev_err(chan->device->dev, "Start DMA fail\n");
 		return -EINVAL;
@@ -816,10 +829,6 @@ static int mtk_dma_probe(struct platform_device *pdev)
 	struct resource *res;
 	int rc, i;
 
-	rc = dma_set_mask_and_coherent(&pdev->dev, DMA_BIT_MASK(32));
-	if (rc)
-		return rc;
-
 	mtkd = devm_kzalloc(&pdev->dev, sizeof(*mtkd), GFP_KERNEL);
 	if (!mtkd)
 		return -ENOMEM;
@@ -842,6 +851,18 @@ static int mtk_dma_probe(struct platform_device *pdev)
 		dev_err(&pdev->dev, "No clock specified\n");
 		return PTR_ERR(mtkd->clk);
 	}
+
+	if (of_property_read_bool(pdev->dev.of_node, "dma-33bits")) {
+		dev_info(&pdev->dev, "Support dma 33bits\n");
+		mtkd->support_33bits = true;
+	}
+
+	if (mtkd->support_33bits)
+		rc = dma_set_mask_and_coherent(&pdev->dev, DMA_BIT_MASK(33));
+	else
+		rc = dma_set_mask_and_coherent(&pdev->dev, DMA_BIT_MASK(32));
+	if (rc)
+		return rc;
 
 	dma_cap_set(DMA_SLAVE, mtkd->ddev.cap_mask);
 	mtkd->ddev.device_alloc_chan_resources = mtk_dma_alloc_chan_resources;
