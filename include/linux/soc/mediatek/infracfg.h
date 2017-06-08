@@ -1,6 +1,18 @@
 #ifndef __SOC_MEDIATEK_INFRACFG_H
 #define __SOC_MEDIATEK_INFRACFG_H
 
+#define INFRA_TOPAXI_PROTECTEN		0x0220
+#define INFRA_TOPAXI_PROTECTSTA1	0x0228
+
+#define INFRA_TOPAXI_PROTECTEN1		0x0250
+#define INFRA_TOPAXI_PROTECTSTA3	0x0258
+
+#define INFRA_TOPAXI_PROTECTEN_SET	0x0260
+#define INFRA_TOPAXI_PROTECTEN_CLR	0x0264
+
+#define INFRA_TOPAXI_PROTECTEN1_SET	0x0270
+#define INFRA_TOPAXI_PROTECTEN1_CLR	0x0274
+
 #define MT8173_TOP_AXI_PROT_EN_MCI_M2		BIT(0)
 #define MT8173_TOP_AXI_PROT_EN_MM_M0		BIT(1)
 #define MT8173_TOP_AXI_PROT_EN_MM_M1		BIT(2)
@@ -23,4 +35,8 @@
 int mtk_infracfg_set_bus_protection(struct regmap *infracfg, u32 mask);
 int mtk_infracfg_clear_bus_protection(struct regmap *infracfg, u32 mask);
 
+int mtk_infracfg_set_bus_protection_ext(struct regmap *infracfg, u32 mask,
+		u32 reg_set, u32 reg_sta, u32 reg_en);
+int mtk_infracfg_clear_bus_protection_ext(struct regmap *infracfg, u32 mask,
+		u32 reg_clr, u32 reg_sta, u32 reg_en);
 #endif /* __SOC_MEDIATEK_INFRACFG_H */

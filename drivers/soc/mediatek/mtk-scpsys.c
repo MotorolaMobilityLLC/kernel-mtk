@@ -89,6 +89,13 @@ static const char * const clk_names[] = {
 
 #define MAX_CLKS	2
 
+struct bus_prot_ext {
+	u32 set_ofs;
+	u32 clr_ofs;
+	u32 en_ofs;
+	u32 sta_ofs;
+};
+
 struct scp_domain_data {
 	const char *name;
 	u32 sta_mask;
@@ -96,6 +103,7 @@ struct scp_domain_data {
 	u32 sram_pdn_bits;
 	u32 sram_pdn_ack_bits;
 	u32 bus_prot_mask;
+	struct bus_prot_ext bp_ext;
 	enum clk_id clk_id[MAX_CLKS];
 	bool active_wakeup;
 };
@@ -221,8 +229,14 @@ static int scpsys_power_on(struct generic_pm_domain *genpd)
 	}
 
 	if (scpd->data->bus_prot_mask) {
-		ret = mtk_infracfg_clear_bus_protection(scp->infracfg,
-				scpd->data->bus_prot_mask);
+		if (((scpd->data->bp_ext.set_ofs && scpd->data->bp_ext.clr_ofs) || scpd->data->bp_ext.en_ofs) &&
+				scpd->data->bp_ext.sta_ofs)
+			ret = mtk_infracfg_clear_bus_protection_ext(scp->infracfg,
+					scpd->data->bus_prot_mask, scpd->data->bp_ext.clr_ofs,
+					scpd->data->bp_ext.sta_ofs, scpd->data->bp_ext.en_ofs);
+		else
+			ret = mtk_infracfg_clear_bus_protection(scp->infracfg,
+					scpd->data->bus_prot_mask);
 		if (ret)
 			goto err_pwr_ack;
 	}
@@ -256,8 +270,14 @@ static int scpsys_power_off(struct generic_pm_domain *genpd)
 	int i;
 
 	if (scpd->data->bus_prot_mask) {
-		ret = mtk_infracfg_set_bus_protection(scp->infracfg,
-				scpd->data->bus_prot_mask);
+		if (((scpd->data->bp_ext.set_ofs && scpd->data->bp_ext.clr_ofs) || scpd->data->bp_ext.en_ofs) &&
+				scpd->data->bp_ext.sta_ofs)
+			ret = mtk_infracfg_set_bus_protection_ext(scp->infracfg,
+					scpd->data->bus_prot_mask, scpd->data->bp_ext.set_ofs,
+					scpd->data->bp_ext.sta_ofs, scpd->data->bp_ext.en_ofs);
+		else
+			ret = mtk_infracfg_set_bus_protection(scp->infracfg,
+					scpd->data->bus_prot_mask);
 		if (ret)
 			goto out;
 	}
