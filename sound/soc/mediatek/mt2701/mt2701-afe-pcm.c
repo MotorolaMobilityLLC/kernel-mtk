@@ -114,12 +114,19 @@ static int mt2701_afe_i2s_startup(struct snd_pcm_substream *substream,
 	int i2s_num = mt2701_dai_num_to_i2s(afe, dai->id);
 
 	/* enable mclk */
-	if (of_device_is_compatible(afe->dev->of_node, "mediatek,mt2712-audio")
-		&& substream->stream == SNDRV_PCM_STREAM_CAPTURE) {
-		afe_priv->clk_ctrl->enable_mclk(afe, i2s_num);
-		return afe_priv->clk_ctrl->enable_mclk(afe, i2s_num + MCLK_I2SIN_OFFSET);
-	} else {
+	if (of_device_is_compatible(afe->dev->of_node, "mediatek,mt2701-audio"))
 		return afe_priv->clk_ctrl->enable_mclk(afe, i2s_num);
+	else if (afe_priv->i2s_path[i2s_num].i2s_mode == I2S_COCLK) {
+		if (substream->stream == SNDRV_PCM_STREAM_CAPTURE) {
+			afe_priv->clk_ctrl->enable_mclk(afe, i2s_num);
+			return afe_priv->clk_ctrl->enable_mclk(afe, i2s_num + MCLK_I2SIN_OFFSET);
+		} else
+			return afe_priv->clk_ctrl->enable_mclk(afe, i2s_num);
+	} else {
+		if (substream->stream == SNDRV_PCM_STREAM_CAPTURE)
+			return afe_priv->clk_ctrl->enable_mclk(afe, i2s_num + MCLK_I2SIN_OFFSET);
+		else
+			return afe_priv->clk_ctrl->enable_mclk(afe, i2s_num);
 	}
 }
 
@@ -187,7 +194,7 @@ static void mt2701_afe_i2s_shutdown(struct snd_pcm_substream *substream,
 
 	mt2701_afe_i2s_path_shutdown(substream, dai, 0);
 
-	if (of_find_property(afe->dev->of_node, "6-pin-i2s", NULL) == NULL) {
+	if (afe_priv->i2s_path[i2s_num].i2s_mode == I2S_COCLK) {
 		/* need to disable i2s-out path when disable i2s-in */
 		if (substream->stream == SNDRV_PCM_STREAM_CAPTURE)
 			mt2701_afe_i2s_path_shutdown(substream, dai, 1);
@@ -195,12 +202,19 @@ static void mt2701_afe_i2s_shutdown(struct snd_pcm_substream *substream,
 
 I2S_UNSTART:
 	/* disable mclk */
-	if (of_device_is_compatible(afe->dev->of_node, "mediatek,mt2712-audio")
-		&& substream->stream == SNDRV_PCM_STREAM_CAPTURE) {
-		afe_priv->clk_ctrl->disable_mclk(afe, i2s_num);
-		afe_priv->clk_ctrl->disable_mclk(afe, i2s_num + MCLK_I2SIN_OFFSET);
+	if (of_device_is_compatible(afe->dev->of_node, "mediatek,mt2701-audio"))
+		return afe_priv->clk_ctrl->disable_mclk(afe, i2s_num);
+	else if (afe_priv->i2s_path[i2s_num].i2s_mode == I2S_COCLK) {
+		if (substream->stream == SNDRV_PCM_STREAM_CAPTURE) {
+			afe_priv->clk_ctrl->disable_mclk(afe, i2s_num);
+			return afe_priv->clk_ctrl->disable_mclk(afe, i2s_num + MCLK_I2SIN_OFFSET);
+		} else
+			return afe_priv->clk_ctrl->disable_mclk(afe, i2s_num);
 	} else {
-		afe_priv->clk_ctrl->disable_mclk(afe, i2s_num);
+		if (substream->stream == SNDRV_PCM_STREAM_CAPTURE)
+			return afe_priv->clk_ctrl->disable_mclk(afe, i2s_num + MCLK_I2SIN_OFFSET);
+		else
+			return afe_priv->clk_ctrl->disable_mclk(afe, i2s_num);
 	}
 }
 
@@ -237,7 +251,8 @@ static int mt2701_afe_i2s_hw_params(struct snd_pcm_substream *substream,
 	regmap_update_bits(afe->regmap, i2s_data->i2s_ctrl_reg, mask, val);
 
 	/* for 4-pin mode, use output clock */
-	if (stream_dir == SNDRV_PCM_STREAM_CAPTURE) {
+	if (stream_dir == SNDRV_PCM_STREAM_CAPTURE
+		&& afe_priv->i2s_path[i2s_num].i2s_mode == I2S_COCLK) {
 		i2s_data = i2s_path->i2s_data[SNDRV_PCM_STREAM_PLAYBACK];
 		regmap_update_bits(afe->regmap, i2s_data->i2s_ctrl_reg, mask, val);
 	}
@@ -291,6 +306,8 @@ static int mt2701_i2s_path_prepare_enable(struct snd_pcm_substream *substream,
 	}
 
 	regmap_update_bits(afe->regmap, i2s_data->i2s_ctrl_reg, mask, val);
+	regmap_update_bits(afe->regmap, i2s_path->i2s_data[0]->i2s_ctrl_reg,
+		ASYS_I2S_CON_I2S_COUPLE_MODE, 0);
 
 	if (stream_dir == SNDRV_PCM_STREAM_PLAYBACK)
 		reg = ASMO_TIMING_CON1;
@@ -351,15 +368,23 @@ static int mt2701_afe_i2s_prepare(struct snd_pcm_substream *substream,
 		return -EINVAL;
 	}
 
-	if (of_device_is_compatible(afe->dev->of_node, "mediatek,mt2712-audio")
-		&& substream->stream == SNDRV_PCM_STREAM_CAPTURE) {
+	if (of_device_is_compatible(afe->dev->of_node, "mediatek,mt2701-audio"))
 		clk_ctrl->mclk_configuration(afe, i2s_num, clk_domain, mclk_rate);
-		clk_ctrl->mclk_configuration(afe, i2s_num + MCLK_I2SIN_OFFSET, clk_domain, mclk_rate);
+	else if (afe_priv->i2s_path[i2s_num].i2s_mode == I2S_COCLK) {
+		if (substream->stream == SNDRV_PCM_STREAM_CAPTURE) {
+			clk_ctrl->mclk_configuration(afe, i2s_num, clk_domain, mclk_rate);
+			clk_ctrl->mclk_configuration(afe, i2s_num + MCLK_I2SIN_OFFSET, clk_domain, mclk_rate);
+		} else
+			clk_ctrl->mclk_configuration(afe, i2s_num, clk_domain, mclk_rate);
 	} else {
-		clk_ctrl->mclk_configuration(afe, i2s_num, clk_domain, mclk_rate);
+		if (substream->stream == SNDRV_PCM_STREAM_CAPTURE)
+			clk_ctrl->mclk_configuration(afe, i2s_num + MCLK_I2SIN_OFFSET, clk_domain, mclk_rate);
+		else
+			clk_ctrl->mclk_configuration(afe, i2s_num, clk_domain, mclk_rate);
 	}
 
-	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK) {
+	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK
+		|| afe_priv->i2s_path[i2s_num].i2s_mode == I2S_SEPCLK) {
 		mt2701_i2s_path_prepare_enable(substream, dai, 0);
 	} else {
 		/* need to enable i2s-out path when enable i2s-in */
@@ -3169,6 +3194,7 @@ static int mt2701_afe_pcm_dev_probe(struct platform_device *pdev)
 	struct device *dev;
 	const struct of_device_id *of_id;
 	int tdm_mode = TDM_MODE_SEPCLK;
+	int i2s_mode[3];
 
 	ret = 0;
 	afe = devm_kzalloc(&pdev->dev, sizeof(*afe), GFP_KERNEL);
@@ -3239,6 +3265,13 @@ static int mt2701_afe_pcm_dev_probe(struct platform_device *pdev)
 			= &mt2701_i2s_data[i][I2S_OUT];
 		afe_priv->i2s_path[i].i2s_data[I2S_IN]
 			= &mt2701_i2s_data[i][I2S_IN];
+		afe_priv->i2s_path[i].i2s_mode = I2S_COCLK;
+	}
+
+	if (of_device_is_compatible(afe->dev->of_node, "mediatek,mt2712-audio")) {
+		of_property_read_u32_array(afe->dev->of_node, "i2s-mode", i2s_mode, 3);
+		for (i = 0; i < 3; i++)
+			afe_priv->i2s_path[i].i2s_mode = i2s_mode[i];
 	}
 
 	/* TDM initialize */

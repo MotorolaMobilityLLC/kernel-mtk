@@ -245,11 +245,17 @@ enum mt2701_i2s_dir {
 	I2S_DIR_NUM,
 };
 
+enum mt2701_i2s_mode {
+	I2S_COCLK,
+	I2S_SEPCLK,
+};
+
 struct mt2701_i2s_path {
 	int dai_id;
 	int mclk_rate;
 	int on[I2S_DIR_NUM];
 	int occupied[I2S_DIR_NUM];
+	int i2s_mode;
 	const struct mt2701_i2s_data *i2s_data[2];
 };
 
