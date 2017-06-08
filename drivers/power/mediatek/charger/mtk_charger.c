@@ -84,6 +84,7 @@ extern int runin_flag;
 //add by longcheer_liml_2017_05_31
 extern int force_demo_mode;
 extern int force_demo_mode_flag;
+int demo_full_soc=100;
 
 
 #ifdef  CONFIG_LCT_CHR_ALT_TEST_SUPPORT  //add by longcheer_liml_2017_03_10
@@ -1261,24 +1262,29 @@ static void mt_battery_runin_test(struct charger_manager *info)
 static void mt_battery_force_demo_mode(struct charger_manager *info)
 {
     int soc =0;
+    bool chg_done = false;
+    
     struct switch_charging_alg_data *swchgalg = info->algorithm_data;
+    
+    charger_dev_is_charging_done(info->chg1_dev, &chg_done);
     
     if(force_demo_mode_flag == 1)
 	{
 	    soc =battery_get_bat_uisoc();
-		if(soc >=force_demo_mode)
+		if((soc >=force_demo_mode) ||(chg_done))
 		{
+		    demo_full_soc =soc;
 			swchgalg->state = CHR_ERROR;
 		    charger_manager_notifier(info, CHARGER_NOTIFY_STOP_CHARGING);
 		    charger_dev_enable_powerpath(info->chg1_dev, 0);
-		}else if(soc <=(force_demo_mode -5))
+		}else if(soc <=(demo_full_soc -5))
 		{
             swchgalg->state = CHR_CC;
             charger_manager_notifier(info, CHARGER_NOTIFY_START_CHARGING);
             charger_dev_enable_powerpath(info->chg1_dev, 1);
 		}
-	    printk("~~liml_charger force_demo_mode_flag=%d,force_demo_mode=%d\n",force_demo_mode_flag,force_demo_mode);  
-	}   
+	    printk("~~liml_charger force_demo_mode_flag=%d,force_demo_mode=%d,chg_done=%d,demo_full_soc=%d\n",force_demo_mode_flag,force_demo_mode,chg_done,demo_full_soc);  
+	} 
 }
 //========================modify_longcheer_liml_2017_05_31 for add force demo mode end======
 
