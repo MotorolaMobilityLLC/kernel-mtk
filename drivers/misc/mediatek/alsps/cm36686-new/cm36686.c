@@ -258,7 +258,6 @@ static s32 i2c_dma_read(struct i2c_client *client, u8 addr, u8 *rxbuf, int len)
 	if (rxbuf == NULL)
 		return -1;
 
-	memset(&msg, 0, 2 * sizeof(struct i2c_msg));
 	memcpy(g_i2c_addr, &addr, CMP_REG_ADDR_LEN);
 
 	msg[0].addr = client->addr;
@@ -291,7 +290,6 @@ static s32 i2c_dma_write(struct i2c_client *client, u8 addr, u8 *txbuf, s32 len)
 	if ((txbuf == NULL) && (len > 0))
 		return -1;
 
-	memset(&msg, 0, sizeof(struct i2c_msg));
 	*g_i2c_buff = addr;
 
 	msg.addr = (client->addr);
