@@ -74,9 +74,7 @@ signed int battery_get_bat_uisoc(void)
 {
 	int boot_mode = get_boot_mode();
 
-	if ((boot_mode == META_BOOT) ||
-		(boot_mode == ADVMETA_BOOT) ||
-		(boot_mode == FACTORY_BOOT) ||
+	if ((boot_mode == FACTORY_BOOT) ||
 		(boot_mode == ATE_FACTORY_BOOT))
 		return 75;
 
