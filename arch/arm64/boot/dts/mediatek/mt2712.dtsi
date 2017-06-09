@@ -692,6 +692,7 @@
 			interrupts = <GIC_SPI 242 IRQ_TYPE_LEVEL_LOW>,
 				     <GIC_SPI 142 IRQ_TYPE_LEVEL_LOW>;
 			tdm-mode = <2>;
+			i2s-mode = <1 1 0>;
 			tdm-in-lrck-setting = <0 0>;
 			power-domains = <&scpsys MT2712_POWER_DOMAIN_AUDIO>;
 			clocks = <&topckgen CLK_TOP_AUD_INTBUS_SEL>,
