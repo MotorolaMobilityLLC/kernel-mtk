@@ -48,7 +48,7 @@
 			mivr = <4400000>;	/* uV */
 			cv = <4400000>;		/* uA */
 			ieoc = <150000>;	/* uA */
-			safety_timer = <12>;	/* hour */
+			safety_timer = <20>;	/*12 hour modify longcheer_liml*/
 			dc_wdt = <4000000>;	/* us */
 			ircmp_resistor = <25000>;	/* uohm */
 			ircmp_vclamp = <32000>;		/* uV */
