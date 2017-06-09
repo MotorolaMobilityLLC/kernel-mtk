@@ -457,16 +457,22 @@ const struct file_operations WIFI_fops = {
 
 static int WIFI_init(void)
 {
-	dev_t dev = MKDEV(WIFI_major, 0);
+	dev_t dev;
+	int dev_major;
+	int dev_minor;
 	INT32 alloc_ret = 0;
 	INT32 cdev_err = 0;
 
-	/* Allocate char device */
-	alloc_ret = register_chrdev_region(dev, WIFI_devs, WIFI_DRIVER_NAME);
+	/* Dynamic allocate char device */
+	alloc_ret = alloc_chrdev_region(&dev, 0, 1, WIFI_DRIVER_NAME);
 	if (alloc_ret) {
-		WIFI_ERR_FUNC("Fail to register device numbers\n");
+		WIFI_ERR_FUNC("Fail to dynamic allocate register chr device\n");
 		return alloc_ret;
 	}
+
+	dev_major = MAJOR(dev);
+	dev_minor = MINOR(dev);
+	WIFI_INFO_FUNC("Registered dev num is Major(%d) Minot(%d)\n", dev_major, dev_minor);
 
 	cdev_init(&WIFI_cdev, &WIFI_fops);
 	WIFI_cdev.owner = THIS_MODULE;
