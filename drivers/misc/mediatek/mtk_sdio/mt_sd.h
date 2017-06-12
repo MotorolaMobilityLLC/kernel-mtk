@@ -466,6 +466,8 @@ struct msdc_host {
 	u32                     vmc_cal_default;
 
 	struct clk *clock_control;
+	struct clk *clock_hclk;
+	struct clk *clock_source_cg;
 	struct delayed_work	work_init; /* for init mmc card */
 	struct platform_device  *pdev;
 

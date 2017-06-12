@@ -614,6 +614,8 @@ void msdc_set_smpl_all(struct msdc_host *host, u32 clock_mode)
 void msdc_gate_clock(struct msdc_host *host)
 {
 	clk_disable_unprepare(host->clock_control);
+	clk_disable_unprepare(host->clock_hclk);
+	clk_disable_unprepare(host->clock_source_cg);
 }
 
 /* host does need the clock on */
@@ -622,6 +624,9 @@ void msdc_ungate_clock(struct msdc_host *host)
 	void __iomem *base = host->base;
 
 	clk_prepare_enable(host->clock_control);
+	clk_prepare_enable(host->clock_hclk);
+	clk_prepare_enable(host->clock_source_cg);
+
 	while (!(MSDC_READ32(MSDC_CFG) & MSDC_CFG_CKSTB))
 		cpu_relax();
 }
@@ -631,6 +636,10 @@ void msdc_prepare_clk(struct msdc_host *host)
 	if (!host->clk_on) {
 		if (host->clock_control)
 			clk_prepare_enable(host->clock_control);
+		if (host->clock_hclk)
+			clk_prepare_enable(host->clock_hclk);
+		if (host->clock_source_cg)
+			clk_prepare_enable(host->clock_source_cg);
 		host->clk_on = true;
 	}
 }
@@ -640,6 +649,10 @@ void msdc_unprepare_clk(struct msdc_host *host)
 	if (host->clk_on) {
 		if (host->clock_control)
 			clk_disable_unprepare(host->clock_control);
+		if (host->clock_hclk)
+			clk_disable_unprepare(host->clock_hclk);
+		if (host->clock_source_cg)
+			clk_disable_unprepare(host->clock_source_cg);
 		host->clk_on = false;
 	}
 }
