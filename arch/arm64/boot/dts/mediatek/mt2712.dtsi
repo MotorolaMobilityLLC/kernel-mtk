@@ -849,8 +849,10 @@
 			reg = <0 0x11260000 0 0x1000>;
 			interrupts = <GIC_SPI 82 IRQ_TYPE_LEVEL_LOW>;
 			/* power domain always on */
-			clocks = <&pericfg CLK_PERI_MSDC30_3>;
-			clock-names = "sdio-clock";
+			clocks = <&pericfg CLK_PERI_MSDC30_3>,
+				 <&pericfg CLK_PERI_MSDC50_3_HCLK_EN>,
+				 <&pericfg CLK_PERI_MSDC30_3_EN>;
+			clock-names = "sdio-clock", "hclk", "source_cg";
 			clk_src = <2>;  /*<MSDC30_CLKSRC_200MHZ>*/
 			host_function = <2>;
 			status = "disabled";
