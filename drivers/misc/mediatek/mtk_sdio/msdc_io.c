@@ -409,6 +409,14 @@ int msdc_get_ccf_clk_pointer(struct platform_device *pdev,
 		return 1;
 	}
 
+	host->clock_hclk = devm_clk_get(&pdev->dev, "hclk");
+	if (IS_ERR(host->clock_hclk))
+		return 1;
+
+	host->clock_source_cg = devm_clk_get(&pdev->dev, "source_cg");
+	if (IS_ERR(host->clock_source_cg))
+		return 1;
+
 	host->clk_on = false;
 	msdc_prepare_clk(host);
 	return 0;
