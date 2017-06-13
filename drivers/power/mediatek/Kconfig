@@ -429,3 +429,10 @@ config LCT_CHR_THERMAL_INPUT_CURRENT_CONTROL
     help
 	  Set yes to support thermal input current control.
 	  Set no to not support thermal input current control.
+
+config LCT_CHARGER_GREEN_LED
+	bool "green led on"
+	default n
+ 	---help---
+	  power_off green led on
+

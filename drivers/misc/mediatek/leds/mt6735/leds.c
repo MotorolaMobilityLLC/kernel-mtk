@@ -52,6 +52,29 @@
 extern int wind_board_id;
 #endif
 //tuwenzan@wind-mobi.com add for init cabc ctrl backlight at 20170105 end
+
+#ifdef CONFIG_LCT_FUNC_GREEN_LED
+    /*add by lct_liuzhenhe for led power-off */
+ void lct_brightness_green_on(uint8_t level)
+{
+		pmic_set_register_value(PMIC_RG_DRV_32K_CK_PDN, 0x0);	/* Disable power down */
+		pmic_set_register_value(PMIC_RG_DRV_ISINK0_CK_PDN, 0);
+		pmic_set_register_value(PMIC_RG_DRV_ISINK0_CK_CKSEL, 0);
+		pmic_set_register_value(PMIC_ISINK_CH0_MODE, ISINK_PWM_MODE);
+		pmic_set_register_value(PMIC_ISINK_CH0_STEP, ISINK_3);	/* 16mA */
+		pmic_set_register_value(PMIC_ISINK_DIM0_DUTY, 15);
+		pmic_set_register_value(PMIC_ISINK_DIM0_FSEL, ISINK_1KHZ);	/* 1KHz */	
+		if(level == 1){
+			pmic_set_register_value(PMIC_ISINK_CH0_EN, NLED_OFF);
+		    pmic_set_register_value(PMIC_ISINK_CH1_EN, NLED_ON);
+		}else if(level == 0){           
+		    pmic_set_register_value(PMIC_ISINK_CH1_EN, NLED_OFF);
+		    pmic_set_register_value(PMIC_ISINK_CH0_EN, NLED_ON);
+		}
+		
+}
+#endif
+
 /* for LED&Backlight bringup, define the dummy API */
 #ifndef CONFIG_MTK_PMIC
 u16 pmic_set_register_value(u32 flagname, u32 val)

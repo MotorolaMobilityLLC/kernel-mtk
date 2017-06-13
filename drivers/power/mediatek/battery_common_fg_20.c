@@ -157,6 +157,15 @@ int g_battery_tt_check_flag = 0;	/* 0:default enable check batteryTT, 1:default 
 
 
 /* ///////////////////////////////////////////////////////////////////////////////////////// */
+/* // poweroff_charger*/
+/* ///////////////////////////////////////////////////////////////////////////////////////// */
+
+#ifdef CONFIG_LCT_CHARGER_GREEN_LED
+/*add by liuzhenhe*/
+extern void lct_brightness_green_on(uint8_t level);
+/*add by liuzhenhe*/
+#endif
+/* ///////////////////////////////////////////////////////////////////////////////////////// */
 /* // Global Variable */
 /* ///////////////////////////////////////////////////////////////////////////////////////// */
 
@@ -3531,7 +3540,18 @@ void BAT_thread(void)
 
 
 	mt_battery_update_time(&batteryThreadRunTime, BATTERY_THREAD_TIME);
-
+#ifdef CONFIG_LCT_CHARGER_GREEN_LED
+	    /*add by liuzhenhe for poweroff_charger start*/
+    if (g_platform_boot_mode == KERNEL_POWER_OFF_CHARGING_BOOT) 
+       {
+               if(BMT_status.UI_SOC2 >= 90 ){
+                    lct_brightness_green_on(1);
+               }else{
+                    lct_brightness_green_on(0);
+               }
+       }
+       /*add by liuzhenhe for poweroff_charger end*/
+#endif
 	if (fg_ipoh_reset) {
 		battery_log(BAT_LOG_CRTI, "[FG BAT_thread]FG_MAIN because IPOH  .\n");
 		battery_meter_set_init_flag(false);

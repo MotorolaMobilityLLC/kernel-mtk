@@ -21,3 +21,12 @@ config BACKLIGHT_SUPPORT_LM3697
 	default n
  	---help---
 	  charge pump driver for external backlight
+config LCT_FUNC_GREEN_LED
+	bool "green led on"
+	default n
+ 	---help---
+	  power_off green led on
+
+
+
+
