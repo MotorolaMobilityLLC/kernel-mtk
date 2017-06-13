@@ -231,6 +231,8 @@
 			compatible = "mediatek,mt2712-keypad";
 			reg = <0 0x10010000 0 0x1000>;
 			interrupts = <GIC_SPI 162 IRQ_TYPE_EDGE_FALLING>;
+			clocks = <&infracfg CLK_INFRA_KP>;
+			clock-names = "kpd-clk";
 		};
 
 		iommu0: iommu@10205000 {
