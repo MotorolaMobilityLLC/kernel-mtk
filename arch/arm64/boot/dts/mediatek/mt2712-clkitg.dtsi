@@ -50,7 +50,7 @@
 			<&clk26m>,
 			<&clk26m>,
 			<&clk26m>,
-			<&infracfg CLK_INFRA_KP>,
+			<&clk26m>,
 			<&infracfg CLK_INFRA_AO_SPI0>,
 			<&infracfg CLK_INFRA_AO_SPI1>,
 			<&infracfg CLK_INFRA_AO_UART5>,
