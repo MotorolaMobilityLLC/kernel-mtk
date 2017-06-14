@@ -2134,19 +2134,19 @@ static INT32 stp_parser_data_in_full_mode(UINT32 length, UINT8 *p_data)
 				stp_core_ctx.parser.nak = 0;	/* disable NAK */
 			else
 				stp_core_ctx.parser.nak = (*p_data & 0x80) >> 7;
-				stp_core_ctx.parser.type = (*p_data & 0x70) >> 4;
-				stp_core_ctx.parser.length = (*p_data & 0x0f) << 8;
-				stp_core_ctx.rx_buf[1] = *p_data;
-				/* Geoge FIXME: WHY comment the following line? */
-				/*stp_core_ctx.rx_counter++; */
-				if (stp_core_ctx.parser.nak)
-					STP_ERR_FUNC("MTKSTP_NAK TRUE: mtk_wcn_stp_parser_data, buff = %x\n", *p_data);
+			stp_core_ctx.parser.type = (*p_data & 0x70) >> 4;
+			stp_core_ctx.parser.length = (*p_data & 0x0f) << 8;
+			stp_core_ctx.rx_buf[1] = *p_data;
+			/* Geoge FIXME: WHY comment the following line? */
+			/*stp_core_ctx.rx_counter++; */
+			if (stp_core_ctx.parser.nak)
+				STP_ERR_FUNC("MTKSTP_NAK TRUE: mtk_wcn_stp_parser_data, buff = %x\n", *p_data);
 
-				if (stp_core_ctx.parser.type < MTKSTP_MAX_TASK_NUM)
-					stp_change_rx_state(MTKSTP_LENGTH);
-				else
-					stp_change_rx_state(MTKSTP_SYNC);
-				break;
+			if (stp_core_ctx.parser.type < MTKSTP_MAX_TASK_NUM)
+				stp_change_rx_state(MTKSTP_LENGTH);
+			else
+				stp_change_rx_state(MTKSTP_SYNC);
+			break;
 
 		case MTKSTP_LENGTH:
 			/* (*sys_dbg_print)("MTKSTP_LENGTH : mtk_wcn_stp_parser_data, buff = %x", *p_data); */
@@ -2628,7 +2628,7 @@ INT32 mtk_wcn_stp_send_data(const PUINT8 buffer, const UINT32 length, const UINT
 	if ((type == BT_TASK_INDX) && (wmt_plat_get_comm_if_type() == STP_SDIO_IF_TX)) {
 		if (stp_psm_is_to_block_traffic(STP_PSM_CORE(stp_core_ctx)))
 			stp_psm_notify_wmt_wakeup(STP_PSM_CORE(stp_core_ctx));
-			goto DONT_MONITOR;
+		goto DONT_MONITOR;
 	}
 	/*-----------------------------STP_PSM_Lock----------------------------------------*/
 	ret = stp_psm_thread_lock_aquire(STP_PSM_CORE(stp_core_ctx));
