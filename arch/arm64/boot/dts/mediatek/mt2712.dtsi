@@ -1492,8 +1492,10 @@
 		pcie: pcie@0x11700000 {
 			compatible = "mediatek,pcie-mt2712";
 			device_type = "pci";
-			reg = <0 0x11700000 0 0x1000>; /* 4k PORT0 registers */
-			interrupts = <GIC_SPI 115 IRQ_TYPE_LEVEL_HIGH>;
+			reg = <0 0x11700000 0 0x1000>,
+			      <0 0x112FF000 0 0x1000>; /* 4k PORT0 registers */
+			interrupts = <GIC_SPI 115 IRQ_TYPE_LEVEL_HIGH>,
+				     <GIC_SPI 117 IRQ_TYPE_LEVEL_HIGH>;
 			bus-range = <0x00 0xff>;
 			#address-cells = <3>;
 			#size-cells = <2>;
@@ -1506,6 +1508,8 @@
 				#size-cells = <2>;
 				#interrupt-cells = <1>;
 				ranges;
+				clocks = <&pericfg CLK_PERI_PCIE0>;
+				clock-names = "pci";
 				interrupt-map-mask = <0 0 0 7>;
 				interrupt-map = <0 0 0 1 &pcie_intc0 1>,
 						<0 0 0 2 &pcie_intc0 2>,
@@ -1517,6 +1521,32 @@
 				phy-names = "pcie-phy0";
 				status = "okay";
 				pcie_intc0: interrupt-controller {
+					interrupt-controller;
+					#address-cells = <0>;
+					#interrupt-cells = <1>;
+				};
+			};
+
+			pcie1: pcie@2,0 {
+				device_type = "pci";
+				reg = <0x0800 0 0 0 0>;
+				#address-cells = <3>;
+				#size-cells = <2>;
+				#interrupt-cells = <1>;
+				ranges;
+				clocks = <&pericfg CLK_PERI_PCIE1>;
+				clock-names = "pci";
+				interrupt-map-mask = <0 0 0 7>;
+				interrupt-map = <0 0 0 1 &pcie_intc1 1>,
+						<0 0 0 2 &pcie_intc1 2>,
+						<0 0 0 3 &pcie_intc1 3>,
+						<0 0 0 4 &pcie_intc1 4>;
+				pcie-port = <1>;
+				num-lanes = <1>;
+				phys = <&pcie1_phy>;
+				phy-names = "pcie-phy1";
+				status = "okay";
+				pcie_intc1: interrupt-controller {
 					interrupt-controller;
 					#address-cells = <0>;
 					#interrupt-cells = <1>;
