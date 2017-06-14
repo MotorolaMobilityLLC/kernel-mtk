@@ -172,7 +172,7 @@ struct mtk_pcie_port {
 	u32 port;
 	u32 lane;
 	int devfn;
-	struct clk	*aux, *obff, *ahb, *axi, *mac, *pipe;
+	struct clk	*aux, *obff, *ahb, *axi, *mac, *pipe, *pci;
 	struct device *dev;
 	struct mtk_pcie *pcie;
 	struct irq_domain *irq_domain;
@@ -235,6 +235,11 @@ static int mtk_pcie_clk_get(struct mtk_pcie_port *port)
 {
 	struct device *dev = port->dev;
 
+	/* mt2712 only have pci clock, other clocks is for mt7622. */
+	port->pci = devm_clk_get(dev, "pci");
+	if (!IS_ERR(port->aux))
+		return 0;
+
 	port->aux = devm_clk_get(dev, "aux");
 	if (IS_ERR(port->aux))
 		return PTR_ERR(port->aux);
@@ -267,7 +272,10 @@ static int mtk_pcie_port_enable(struct mtk_pcie_port *port)
 	int ret;
 	struct device *dev = port->dev;
 
-	/* mt2712 does not enable ccf for now.*/
+	/* mt2712 only have pci clock */
+	if (!IS_ERR(port->pci))
+		return clk_prepare_enable(port->pci);
+
 	if (!IS_ERR(port->aux)) {
 		ret = clk_prepare_enable(port->aux);
 		if (ret)
