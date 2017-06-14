@@ -640,10 +640,10 @@ static int vidioc_venc_g_selection(struct file *file, void *priv,
 	if (!q_data)
 		return -EINVAL;
 
-		s->r.top = 0;
-		s->r.left = 0;
-		s->r.width = q_data->visible_width;
-		s->r.height = q_data->visible_height;
+	s->r.top = 0;
+	s->r.left = 0;
+	s->r.width = q_data->visible_width;
+	s->r.height = q_data->visible_height;
 
 	return 0;
 }
@@ -665,10 +665,10 @@ static int vidioc_venc_s_selection(struct file *file, void *priv,
 	if (!q_data)
 		return -EINVAL;
 
-		s->r.top = 0;
-		s->r.left = 0;
-		q_data->visible_width = s->r.width;
-		q_data->visible_height = s->r.height;
+	s->r.top = 0;
+	s->r.left = 0;
+	q_data->visible_width = s->r.width;
+	q_data->visible_height = s->r.height;
 
 	return 0;
 }

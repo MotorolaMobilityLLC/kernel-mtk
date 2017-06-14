@@ -764,7 +764,7 @@ static int mt2712_d1v1_machine_probe(struct platform_device *pdev)
 		if (ret)
 			dev_warn(&pdev->dev, "%s devm_gpio_request fail %d\n",
 							__func__, ret);
-			gpio_direction_output(priv->i2s1_in_mux_gpio_sel_1, 0);
+		gpio_direction_output(priv->i2s1_in_mux_gpio_sel_1, 0);
 	}
 
 	priv->i2s1_in_mux_gpio_sel_2 =
