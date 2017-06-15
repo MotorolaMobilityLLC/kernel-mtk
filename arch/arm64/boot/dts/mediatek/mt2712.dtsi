@@ -219,7 +219,7 @@
 			compatible = "mediatek,mt2712-uart";
 			reg = <0 0x1000f000 0 0xc0>;
 			interrupts = <GIC_SPI 127 IRQ_TYPE_LEVEL_LOW>;
-			clocks = <&topckgen CLK_TOP_UART_SEL>, <&pericfg CLK_PERI_UART5>;
+			clocks = <&topckgen CLK_TOP_UART_SEL>, <&infracfg CLK_INFRA_AO_UART5>;
 			clock-names = "baud", "bus";
 			dmas = <&apdma 10
 				&apdma 11>;

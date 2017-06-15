@@ -53,7 +53,7 @@
 			<&clk26m>,
 			<&infracfg CLK_INFRA_AO_SPI0>,
 			<&infracfg CLK_INFRA_AO_SPI1>,
-			<&infracfg CLK_INFRA_AO_UART5>,
+			<&clk26m>,
 			<&clk26m>,
 			<&imgsys CLK_IMG_SENINF_SCAM_EN>,
 			<&clk26m>,
