@@ -300,7 +300,9 @@ static signed int fgauge_initialization(void *data)
 		pmic_set_register_value(PMIC_RG_AUXADC_CK_PDN_HWEN, 0);
 		pmic_set_register_value(PMIC_RG_AUXADC_CK_PDN, 0);
 	}
-
+	
+    pmic_set_register_value(PMIC_FG_SON_SLP_EN,0);//add by longcheer_liml_2017_06_12
+    
 	return STATUS_OK;
 }
 
