@@ -145,6 +145,20 @@ static int probe(struct platform_device *pdev)
 	dev->irq = irq;
 	dev_info(&pdev->dev, "irq number is %d\n", irq);
 
+	pdata->peri_axi = devm_clk_get(&pdev->dev, "axi");
+	if (IS_ERR(pdata->peri_axi)) {
+		ret = PTR_ERR(pdata->peri_axi);
+		dev_err(&pdev->dev, "failed to get peri_axi_clk: %d\n", ret);
+		goto err_out_q_alloc_failed;
+	}
+
+	pdata->peri_apb = devm_clk_get(&pdev->dev, "apb");
+	if (IS_ERR(pdata->peri_apb)) {
+		ret = PTR_ERR(pdata->peri_apb);
+		dev_err(&pdev->dev, "failed to get peri_apb_clk: %d\n", ret);
+		goto err_out_q_alloc_failed;
+	}
+
 	pdata->ext_125m_clk = devm_clk_get(&pdev->dev, "mac_ext");
 	if (IS_ERR(pdata->ext_125m_clk)) {
 		ret = PTR_ERR(pdata->ext_125m_clk);
@@ -166,10 +180,22 @@ static int probe(struct platform_device *pdev)
 		goto err_out_q_alloc_failed;
 	}
 
+	ret = clk_prepare_enable(pdata->peri_axi);
+	if (ret < 0) {
+		dev_err(&pdev->dev, "failed to enable peri_axi_clk (%d)\n", ret);
+		goto err_out_q_alloc_failed;
+	}
+
+	ret = clk_prepare_enable(pdata->peri_apb);
+	if (ret < 0) {
+		dev_err(&pdev->dev, "failed to enable peri_apb_clk (%d)\n", ret);
+		goto err_apb_enable;
+	}
+
 	ret = clk_prepare_enable(pdata->ext_125m_clk);
 	if (ret < 0) {
 		dev_err(&pdev->dev, "failed to enable ext_125m_clk (%d)\n", ret);
-		goto err_out_q_alloc_failed;
+		goto err_ext_125m_clk_enable;
 	}
 
 	ret = clk_prepare_enable(pdata->ptp_clk);
@@ -254,6 +280,12 @@ static int probe(struct platform_device *pdev)
 
  err_ptp_enable:
 	clk_disable_unprepare(pdata->ext_125m_clk);
+
+ err_ext_125m_clk_enable:
+	clk_disable_unprepare(pdata->peri_apb);
+
+ err_apb_enable:
+	clk_disable_unprepare(pdata->peri_axi);
 
  err_out_q_alloc_failed:
 	free_netdev(dev);

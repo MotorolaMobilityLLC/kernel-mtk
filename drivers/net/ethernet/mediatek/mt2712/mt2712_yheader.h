@@ -683,7 +683,7 @@ struct prv_data {
 	struct net_device *dev;
 	struct platform_device *pdev;
 	int mac_result;
-	struct clk *ptp_clk, *ext_125m_clk, *ptp_parent_clk;
+	struct clk *peri_axi, *peri_apb, *ptp_clk, *ext_125m_clk, *ptp_parent_clk;
 
 	spinlock_t lock;	/* rx lock */
 	spinlock_t tx_lock;	/* tx lock */
