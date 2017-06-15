@@ -153,6 +153,10 @@
 	(CFG_DW2_REGN(regn) | CFG_DW2_FUN(fun) | \
 	 CFG_DW2_DEV(dev) | CFG_DW2_BUS(bus))
 
+struct mtk_pcie_suspend_resume_reg {
+	bool linkup;
+};
+
 /**
  * struct mtk_pcie_port - PCIe port information
  * @name: PCIe port name
@@ -175,6 +179,7 @@ struct mtk_pcie_port {
 	struct clk	*aux, *obff, *ahb, *axi, *mac, *pipe, *pci;
 	struct device *dev;
 	struct mtk_pcie *pcie;
+	struct mtk_pcie_suspend_resume_reg reg;
 	struct irq_domain *irq_domain;
 	struct irq_domain *msi_irq_domain;
 	DECLARE_BITMAP(msi_irq_in_use, MSI_IRQS);
@@ -1506,11 +1511,68 @@ static int mtk_pcie_remove(struct platform_device *pdev)
 	return 0;
 }
 
+static int __maybe_unused mtk_pcie_suspend_noirq(struct device *dev)
+{
+	struct platform_device *pdev;
+	struct mtk_pcie *pcie;
+	struct mtk_pcie_port *port;
+	struct mtk_pcie_suspend_resume_reg *reg;
+	int i;
+
+	pdev = to_platform_device(dev);
+	pcie = platform_get_drvdata(pdev);
+
+	for (i = 0; i < pcie->nports; i++) {
+		port = &pcie->ports[i];
+		reg = &port->reg;
+
+		reg->linkup = mtk_pcie_link_is_up(port);
+		if (reg->linkup)
+			if (!IS_ERR(port->pci))
+				clk_disable_unprepare(port->pci);
+	}
+
+	return 0;
+}
+
+static int __maybe_unused mtk_pcie_resume_noirq(struct device *dev)
+{
+	struct platform_device *pdev;
+	struct mtk_pcie *pcie;
+	struct mtk_pcie_port *port;
+	struct mtk_pcie_suspend_resume_reg *reg;
+	int i;
+
+	pdev = to_platform_device(dev);
+	pcie = platform_get_drvdata(pdev);
+
+	for (i = 0; i < pcie->nports; i++) {
+		port = &pcie->ports[i];
+		reg = &port->reg;
+
+		if (reg->linkup) {
+			mtk_pcie_init_hw(port);
+			if (IS_ENABLED(CONFIG_PCI_MSI))
+				mtk_pcie_enable_msi(port);
+		}
+	}
+
+	return 0;
+}
+
+
+const struct dev_pm_ops mtk_pcie_pm_ops = {
+	//SET_SYSTEM_SLEEP_PM_OPS(mtk_pcie_suspend, mtk_pcie_resume)
+	SET_NOIRQ_SYSTEM_SLEEP_PM_OPS(mtk_pcie_suspend_noirq,
+				      mtk_pcie_resume_noirq)
+};
+
 static struct platform_driver mtk_pcie_driver = {
 	.driver = {
 		.name = "mtk-pcie",
 		.owner = THIS_MODULE,
 		.of_match_table = mtk_pcie_of_match,
+		.pm = &mtk_pcie_pm_ops,
 	},
 	.probe = mtk_pcie_probe,
 	.remove = mtk_pcie_remove,
