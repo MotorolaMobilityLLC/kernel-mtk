@@ -490,6 +490,10 @@
 	pinctrl-names = "default";
 	pinctrl-0 = <&i2c2_pins>;
 	status = "okay";
+	max9286@48 {
+		compatible = "maxim,max9286";
+		reg = <0x48>;
+	};
 };
 
 &i2c3 {
