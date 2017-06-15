@@ -813,8 +813,8 @@ static const struct mtk_gate infra_clks[] = {
 	GATE_INFRA(CLK_INFRA_GCE, "infra_gce", "axi_sel", 6),
 	GATE_INFRA(CLK_INFRA_M4U, "infra_m4u", "mem_sel", 8),
 	GATE_INFRA(CLK_INFRA_KP, "infra_kp", "axi_sel", 16),
-	GATE_INFRA(CLK_INFRA_AO_SPI0, "infra_ao_spi0", "axi_sel", 24),
-	GATE_INFRA(CLK_INFRA_AO_SPI1, "infra_ao_spi1", "axi_sel", 25),
+	GATE_INFRA(CLK_INFRA_AO_SPI0, "infra_ao_spi0", "spi_sel", 24),
+	GATE_INFRA(CLK_INFRA_AO_SPI1, "infra_ao_spi1", "spislv_sel", 25),
 	GATE_INFRA(CLK_INFRA_AO_UART5, "infra_ao_uart5", "axi_sel", 26),
 };
 
