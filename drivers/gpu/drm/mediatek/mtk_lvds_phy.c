@@ -95,6 +95,8 @@ static int mtk_lvds_tx_power_on_signal(struct phy *phy)
 	struct mtk_lvds_tx *lvds_tx = phy_get_drvdata(phy);
 	u32 reg;
 
+	dev_info(lvds_tx->dev, "mtk_lvds_tx_power_on_signal\n");
+
 	writel(DA_LVDSTX_PWR_ON, lvds_tx->tx1_regs + VOPLL_CTL3);
 	writel(DA_LVDSTX_PWR_ON, lvds_tx->tx2_regs + VOPLL_CTL3);
 	reg = RG_VPLL_TXMUXDIV2_EN | 1 << 6 | 0x1c << 12 | 1 << 20;
@@ -134,7 +136,6 @@ static int mtk_lvds_tx_power_on_signal(struct phy *phy)
 
 static int mtk_lvds_tx_power_on(struct phy *phy)
 {
-	/* Enable DSI Lane LDO outputs, disable pad tie low */
 	mtk_lvds_tx_power_on_signal(phy);
 
 	return 0;
@@ -143,6 +144,24 @@ static int mtk_lvds_tx_power_on(struct phy *phy)
 static void mtk_lvds_tx_power_off_signal(struct phy *phy)
 {
 	struct mtk_lvds_tx *lvds_tx = phy_get_drvdata(phy);
+	u32 reg;
+
+	dev_info(lvds_tx->dev, "mtk_lvds_tx_power_off_signal\n");
+
+	writel(DA_LVDSTX_PWR_ON | LVDS_ISO_EN, lvds_tx->tx1_regs + VOPLL_CTL3);
+	writel(DA_LVDSTX_PWR_ON | LVDS_ISO_EN, lvds_tx->tx2_regs + VOPLL_CTL3);
+
+	writel(0, lvds_tx->tx2_regs + VOPLL_CTL2);
+	if (lvds_tx->dual_lvds)
+		writel(0, lvds_tx->tx1_regs + VOPLL_CTL2);
+
+	reg = readl(lvds_tx->tx2_regs + LVDSTX_CTL2) &
+		    (~(RG_LVDSTX_BIAS_EN | RG_LVDSTX_LDO_EN));
+
+	writel(reg, lvds_tx->tx2_regs + LVDSTX_CTL2);
+
+	if (lvds_tx->dual_lvds)
+		writel(reg, lvds_tx->tx1_regs + LVDSTX_CTL2);
 
 	writel(0, lvds_tx->tx2_regs + LVDSTX_CTL3);
 
@@ -152,7 +171,6 @@ static void mtk_lvds_tx_power_off_signal(struct phy *phy)
 
 static int mtk_lvds_tx_power_off(struct phy *phy)
 {
-	/* Enable pad tie low, disable DSI Lane LDO outputs */
 	mtk_lvds_tx_power_off_signal(phy);
 
 	return 0;
@@ -190,11 +208,14 @@ static int mtk_lvds_tx_probe(struct platform_device *pdev)
 
 	mem = platform_get_resource(pdev, IORESOURCE_MEM, 1);
 	lvds_tx->tx2_regs = devm_ioremap_resource(dev, mem);
-	if (IS_ERR(lvds_tx->regs)) {
-		ret = PTR_ERR(lvds_tx->regs);
+	if (IS_ERR(lvds_tx->tx2_regs)) {
+		ret = PTR_ERR(lvds_tx->tx2_regs);
 		dev_err(dev, "Failed to get lvds2 memory resource: %d\n", ret);
 		return ret;
 	}
+
+	writel(DA_LVDSTX_PWR_ON | LVDS_ISO_EN, lvds_tx->tx1_regs + VOPLL_CTL3);
+	writel(DA_LVDSTX_PWR_ON | LVDS_ISO_EN, lvds_tx->tx2_regs + VOPLL_CTL3);
 
 	phy = devm_phy_create(dev, NULL, &mtk_lvds_tx_ops);
 	if (IS_ERR(phy)) {
