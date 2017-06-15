@@ -109,7 +109,7 @@ static int mtk_lvds_tx_power_on_signal(struct phy *phy)
 	writel(reg, lvds_tx->tx2_regs + VOPLL_CTL2);
 	if (lvds_tx->dual_lvds)
 		writel(reg, lvds_tx->tx1_regs + VOPLL_CTL2);
-	reg = 7 | 0xb << 4 | 3 << 8 | RG_LVDSTX_TSTCLKDIV_EN |
+	reg = 5 | 0xb << 4 | 3 << 8 | RG_LVDSTX_TSTCLKDIV_EN |
 	      RG_LVDSTX_TSTCLK_EN | 1 << 16 | RG_LVDSTX_LDO_EN |
 	      RG_LVDSTX_BIAS_EN;
 	writel(reg, lvds_tx->tx2_regs + LVDSTX_CTL2);
