@@ -626,7 +626,7 @@
 			interrupts = <GIC_SPI 286 IRQ_TYPE_LEVEL_LOW>;
 			clocks = <&topckgen CLK_TOP_UNIVPLL2_D2>,
 				 <&topckgen CLK_TOP_SPI_SEL>,
-				 <&pericfg CLK_PERI_SPI4>;
+				 <&infracfg CLK_INFRA_AO_SPI0>;
 			clock-names = "parent-clk", "sel-clk", "spi-clk";
 			status = "disabled";
 		};
