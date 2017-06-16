@@ -971,6 +971,33 @@
 		};
 	};
 
+	nand_pins_default: nanddefault {
+		pins_dat {
+			pinmux = <MT2712_PIN_38_MSDC0E_DAT7__FUNC_NAND_ND7>,
+				 <MT2712_PIN_39_MSDC0E_DAT6__FUNC_NAND_ND6>,
+				 <MT2712_PIN_40_MSDC0E_DAT5__FUNC_NAND_ND5>,
+				 <MT2712_PIN_41_MSDC0E_DAT4__FUNC_NAND_ND4>,
+				 <MT2712_PIN_42_MSDC0E_DAT3__FUNC_NAND_ND3>,
+				 <MT2712_PIN_43_MSDC0E_DAT2__FUNC_NAND_ND2>,
+				 <MT2712_PIN_44_MSDC0E_DAT1__FUNC_NAND_ND1>,
+				 <MT2712_PIN_45_MSDC0E_DAT0__FUNC_NAND_ND0>,
+				 <MT2712_PIN_32_NF_DQS__FUNC_NF_DQS>;
+			input-enable;
+			bias-pull-up;
+		};
+
+		pins_cmd {
+			pinmux = <MT2712_PIN_46_MSDC0E_CMD__FUNC_NAND_NRNB>,
+				 <MT2712_PIN_36_NALE__FUNC_NALE>,
+				 <MT2712_PIN_35_NCLE__FUNC_NCLE>,
+				 <MT2712_PIN_34_NREB__FUNC_NREB>,
+				 <MT2712_PIN_33_NWEB__FUNC_NWEB>,
+				 <MT2712_PIN_31_NCEB1__FUNC_NCEB1>,
+				 <MT2712_PIN_30_NCEB0__FUNC_NCEB0>;
+			bias-pull-up;
+		};
+	};
+
 	pcfg_combo_pmu_en_pull_dis_cfgs:cfg_pmu_en_pull_dis {
 		combo_pins {
 			pinmux = <MT2712_PIN_149_JTCK_CM4__FUNC_GPIO149>;
