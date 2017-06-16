@@ -674,8 +674,10 @@
 			interrupts = <GIC_SPI 237 IRQ_TYPE_EDGE_FALLING>;
 			phy-mode ="rgmii";
 			mac-address = [00 55 7b b5 7d f7];
-			clock-names = "mac_ext","ptp", "ptp_parent";
-			clocks = <&topckgen CLK_TOP_ETHER_125M_SEL>,
+			clock-names = "axi", "apb", "mac_ext", "ptp", "ptp_parent";
+			clocks = <&pericfg CLK_PERI_GMAC>,
+				 <&pericfg CLK_PERI_GMAC_PCLK>,
+				 <&topckgen CLK_TOP_ETHER_125M_SEL>,
 				 <&topckgen CLK_TOP_ETHER_50M_SEL>,
 				 <&topckgen CLK_TOP_UNIVPLL3_D4>;
 		};
