@@ -176,7 +176,7 @@ struct mtk_pcie_port {
 	u32 port;
 	u32 lane;
 	int devfn;
-	struct clk	*aux, *obff, *ahb, *axi, *mac, *pipe, *pci;
+	struct clk	*aux, *obff, *ahb, *axi, *mac, *pipe;
 	struct device *dev;
 	struct mtk_pcie *pcie;
 	struct mtk_pcie_suspend_resume_reg reg;
@@ -240,10 +240,18 @@ static int mtk_pcie_clk_get(struct mtk_pcie_port *port)
 {
 	struct device *dev = port->dev;
 
-	/* mt2712 only have pci clock, other clocks is for mt7622. */
-	port->pci = devm_clk_get(dev, "pci");
-	if (!IS_ERR(port->aux))
-		return 0;
+	/*
+	 * mt2712 only have ahb and mac clock, other clocks is for mt7622.
+	 * ahb clock, for access pcie mac control register.
+	 */
+	port->ahb = devm_clk_get(dev, "ahb");
+	if (IS_ERR(port->ahb))
+		return PTR_ERR(port->ahb);
+
+	/* mac clock, for pcie work clock. */
+	port->mac = devm_clk_get(dev, "mac");
+	if (IS_ERR(port->mac))
+		return PTR_ERR(port->mac);
 
 	port->aux = devm_clk_get(dev, "aux");
 	if (IS_ERR(port->aux))
@@ -253,17 +261,9 @@ static int mtk_pcie_clk_get(struct mtk_pcie_port *port)
 	if (IS_ERR(port->obff))
 		return PTR_ERR(port->obff);
 
-	port->ahb = devm_clk_get(dev, "ahb");
-	if (IS_ERR(port->ahb))
-		return PTR_ERR(port->ahb);
-
 	port->axi = devm_clk_get(dev, "axi");
 	if (IS_ERR(port->axi))
 		return PTR_ERR(port->axi);
-
-	port->mac = devm_clk_get(dev, "mac");
-	if (IS_ERR(port->mac))
-		return PTR_ERR(port->mac);
 
 	port->pipe = devm_clk_get(dev, "pipe");
 	if (IS_ERR(port->pipe))
@@ -277,9 +277,18 @@ static int mtk_pcie_port_enable(struct mtk_pcie_port *port)
 	int ret;
 	struct device *dev = port->dev;
 
-	/* mt2712 only have pci clock */
-	if (!IS_ERR(port->pci))
-		return clk_prepare_enable(port->pci);
+	/* mt2712 only have ahb and sel clock */
+	if (!IS_ERR(port->ahb)) {
+		ret = clk_prepare_enable(port->ahb);
+		if (ret)
+			goto err_put_pm;
+	}
+
+	if (!IS_ERR(port->mac)) {
+		ret = clk_prepare_enable(port->mac);
+		if (ret)
+			goto err_put_pm;
+	}
 
 	if (!IS_ERR(port->aux)) {
 		ret = clk_prepare_enable(port->aux);
@@ -312,16 +321,12 @@ static int mtk_pcie_port_enable(struct mtk_pcie_port *port)
 			goto err_put_pm;
 	}
 
-	if (!IS_ERR(port->pipe)) {
-		ret = clk_prepare_enable(port->pipe);
-		if (ret)
-			goto err_put_pm;
-	}
-
 	return 0;
 
 err_put_pm:
-	pm_runtime_put_sync(dev);
+	if (dev->pm_domain)
+		pm_runtime_put_sync(dev);
+
 	return ret;
 }
 
@@ -1527,9 +1532,12 @@ static int __maybe_unused mtk_pcie_suspend_noirq(struct device *dev)
 		reg = &port->reg;
 
 		reg->linkup = mtk_pcie_link_is_up(port);
-		if (reg->linkup)
-			if (!IS_ERR(port->pci))
-				clk_disable_unprepare(port->pci);
+		if (reg->linkup) {
+			if (!IS_ERR(port->ahb))
+				clk_disable_unprepare(port->ahb);
+			if (!IS_ERR(port->mac))
+				clk_disable_unprepare(port->mac);
+		}
 	}
 
 	return 0;
