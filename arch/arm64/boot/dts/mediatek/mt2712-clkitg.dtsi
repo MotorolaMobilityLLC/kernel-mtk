@@ -2,21 +2,21 @@
 	bring-up {
 		compatible = "mediatek,clk-bring-up";
 		clocks =
-			<&apmixedsys CLK_APMIXED_MAINPLL>,
-			<&apmixedsys CLK_APMIXED_UNIVPLL>,
 			<&clk26m>,
 			<&clk26m>,
 			<&clk26m>,
 			<&clk26m>,
 			<&clk26m>,
 			<&clk26m>,
-			<&apmixedsys CLK_APMIXED_MSDCPLL>,
-			<&apmixedsys CLK_APMIXED_MSDCPLL2>,
-			<&apmixedsys CLK_APMIXED_TVDPLL>,
-			<&apmixedsys CLK_APMIXED_MMPLL>,
-			<&apmixedsys CLK_APMIXED_ARMCA35PLL>,
+			<&clk26m>,
+			<&clk26m>,
+			<&clk26m>,
+			<&clk26m>,
+			<&clk26m>,
+			<&clk26m>,
+			<&clk26m>,
 			<&apmixedsys CLK_APMIXED_ARMCA72PLL>,
-			<&apmixedsys CLK_APMIXED_ETHERPLL>,
+			<&clk26m>,
 			<&clk26m>,
 			<&clk26m>,
 			<&bdpsys CLK_BDP_BRIDGE_B>,
@@ -211,31 +211,6 @@
 			"160", "161", "162", "163", "164", "165", "166", "167", "168", "169",
 			"170", "171", "172", "173", "174", "175", "176", "177", "178", "179",
 			"180", "181", "182", "183", "184", "185", "186", "187";
-	};
-
-	bring-up-pd-mm {
-		compatible = "mediatek,scpsys-bring-up";
-		power-domains = <&scpsys MT2712_POWER_DOMAIN_MM>;
-	};
-
-	bring-up-pd-vdec {
-		compatible = "mediatek,scpsys-bring-up";
-		power-domains = <&scpsys MT2712_POWER_DOMAIN_VDEC>;
-	};
-
-	bring-up-pd-venc {
-		compatible = "mediatek,scpsys-bring-up";
-		power-domains = <&scpsys MT2712_POWER_DOMAIN_VENC>;
-	};
-
-	bring-up-pd-isp {
-		compatible = "mediatek,scpsys-bring-up";
-		power-domains = <&scpsys MT2712_POWER_DOMAIN_ISP>;
-	};
-
-	bring-up-pd-audio {
-		compatible = "mediatek,scpsys-bring-up";
-		power-domains = <&scpsys MT2712_POWER_DOMAIN_AUDIO>;
 	};
 
 	bring-up-pd-mfg {
