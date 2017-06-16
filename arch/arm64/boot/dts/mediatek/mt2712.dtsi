@@ -1510,8 +1510,9 @@
 				#size-cells = <2>;
 				#interrupt-cells = <1>;
 				ranges;
-				clocks = <&pericfg CLK_PERI_PCIE0>;
-				clock-names = "pci";
+				clocks = <&pericfg CLK_PERI_PCIE0>,
+					 <&topckgen CLK_TOP_PE2_MAC_P0_SEL>;
+				clock-names = "ahb", "mac";
 				interrupt-map-mask = <0 0 0 7>;
 				interrupt-map = <0 0 0 1 &pcie_intc0 1>,
 						<0 0 0 2 &pcie_intc0 2>,
@@ -1536,8 +1537,9 @@
 				#size-cells = <2>;
 				#interrupt-cells = <1>;
 				ranges;
-				clocks = <&pericfg CLK_PERI_PCIE1>;
-				clock-names = "pci";
+				clocks = <&pericfg CLK_PERI_PCIE1>,
+					 <&topckgen CLK_TOP_PE2_MAC_P1_SEL>;
+				clock-names = "ahb", "mac";
 				interrupt-map-mask = <0 0 0 7>;
 				interrupt-map = <0 0 0 1 &pcie_intc1 1>,
 						<0 0 0 2 &pcie_intc1 2>,
