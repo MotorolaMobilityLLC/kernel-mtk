@@ -301,6 +301,13 @@ static void mtk_jpeg_dec_set_dec_mode(void __iomem *base, u32 mode)
 	writel(mode & 0x03, base + JPGDEC_REG_OPERATION_MODE);
 }
 
+static void mtk_jpeg_dec_set_huffman_mode(void __iomem *base, u32 huffman_exist)
+{
+	if (huffman_exist == 0)	{
+		writel(0x01, base + JPGDEC_REG_ST_HUFFMAN_EN);
+	}
+}
+
 static void mtk_jpeg_dec_set_bs_write_ptr(void __iomem *base, u32 ptr)
 {
 	mtk_jpeg_verify_align(ptr, 16, JPGDEC_REG_FILE_BRP);
@@ -397,6 +404,7 @@ void mtk_jpeg_dec_set_config(void __iomem *base,
 				 config->comp_id[2]);
 	mtk_jpeg_dec_set_q_table(base, config->qtbl_num[0],
 				 config->qtbl_num[1], config->qtbl_num[2]);
+	mtk_jpeg_dec_set_huffman_mode(base, config->huffman_exist);
 	mtk_jpeg_dec_set_sampling_factor(base, config->comp_num,
 					 config->sampling_w[0],
 					 config->sampling_h[0],
