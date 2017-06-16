@@ -895,13 +895,10 @@ static const struct mtk_gate peri_clks[] = {
 	/* PERI1 */
 	GATE_PERI1(CLK_PERI_SPI, "per_spi", "spinor_sel", 1),
 	GATE_PERI1(CLK_PERI_I2C5, "per_i2c5", "axi_sel", 3),
-	GATE_PERI1(CLK_PERI_SPI1, "per_spi1", "spi_sel", 4),
 	GATE_PERI1(CLK_PERI_SPI2, "per_spi2", "spi_sel", 5),
 	GATE_PERI1(CLK_PERI_SPI3, "per_spi3", "spi_sel", 6),
-	GATE_PERI1(CLK_PERI_SPI4, "per_spi4", "spi_sel", 7),
 	GATE_PERI1(CLK_PERI_SPI5, "per_spi5", "spi_sel", 8),
 	GATE_PERI1(CLK_PERI_UART4, "per_uart4", "uart_sel", 9),
-	GATE_PERI1(CLK_PERI_UART5, "per_uart5", "uart_sel", 10),
 	GATE_PERI1(CLK_PERI_SFLASH, "per_sflash", "uart_sel", 11),
 	GATE_PERI1(CLK_PERI_GMAC, "per_gmac", "uart_sel", 12),
 	GATE_PERI1(CLK_PERI_PCIE0, "per_pcie0", "uart_sel", 14),
