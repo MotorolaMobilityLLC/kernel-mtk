@@ -27,6 +27,53 @@ static const struct snd_soc_dapm_route mt2712_codec_routes[] = {
 	 { "mt2712-codec-aadc-capture", NULL, "RX" },
 };
 
+static int mt2712_aadc_pga_gain_get(struct snd_kcontrol *kcontrol,
+	struct snd_ctl_elem_value *ucontrol)
+{
+	struct snd_soc_component *component = snd_kcontrol_chip(kcontrol);
+	struct mt2712_codec_priv *codec_data =
+			snd_soc_component_get_drvdata(component);
+	uint32_t value = codec_data->pga_gain;
+
+	ucontrol->value.integer.value[0] = value;
+	return 0;
+}
+
+static int mt2712_aadc_pga_gain_put(struct snd_kcontrol *kcontrol,
+	struct snd_ctl_elem_value *ucontrol)
+{
+	struct snd_soc_component *component = snd_kcontrol_chip(kcontrol);
+	struct mt2712_codec_priv *codec_data =
+			snd_soc_component_get_drvdata(component);
+	uint32_t value = ucontrol->value.integer.value[0];
+
+	regmap_update_bits(codec_data->regmap_ana,
+		AADC_CON0, RG_AUDULL_VUPG_MASK,
+		value << RG_AUDULL_VUPG_POS);
+	regmap_update_bits(codec_data->regmap_ana,
+		AADC_CON0, RG_AUDULR_VUPG_MASK,
+		value << RG_AUDULR_VUPG_POS);
+
+	codec_data->pga_gain = value;
+	return 0;
+}
+
+static const char *const aadc_pga_gain_text[] = {
+	"-6dB", "+0dB", "+6dB", "+12dB", "+18dB", "+24dB"
+};
+
+static const struct soc_enum mt2712_aadc_pga_gain_enums = SOC_ENUM_SINGLE_EXT(6, aadc_pga_gain_text);
+;
+
+static const struct snd_kcontrol_new mt2712_codec_controls[] = {
+	 /* UL PGA gain adjustment */
+	 SOC_ENUM_EXT("PGA Capture Volume",
+		mt2712_aadc_pga_gain_enums,
+		mt2712_aadc_pga_gain_get,
+		mt2712_aadc_pga_gain_put),
+};
+
+
 static int mt2712_aadc_hw_params(struct snd_pcm_substream *substream,
 				  struct snd_pcm_hw_params *params,
 				  struct snd_soc_dai *dai)
@@ -132,14 +179,6 @@ static int mt2712_aadc_hw_params(struct snd_pcm_substream *substream,
 	regmap_update_bits(codec_data->regmap_ana,
 		AADC_CON0, RG_AUDULR_VADC_DENB_MASK, 1 << RG_AUDULR_VADC_DENB_POS);
 
-	/* L/R ch PGA gain setting */
-	regmap_update_bits(codec_data->regmap_ana,
-		AADC_CON0, RG_AUDULL_VUPG_MASK,
-		ANALOG_UL_PGA_GAIN_0dB << RG_AUDULL_VUPG_POS);
-	regmap_update_bits(codec_data->regmap_ana,
-		AADC_CON0, RG_AUDULR_VUPG_MASK,
-		ANALOG_UL_PGA_GAIN_0dB << RG_AUDULR_VUPG_POS);
-
 	/* L/R ch PGA enable */
 	regmap_update_bits(codec_data->regmap_ana,
 		AADC_CON0, RG_AUDULL_VPWDB_PGA_MASK, 1 << RG_AUDULL_VPWDB_PGA_POS);
@@ -212,6 +251,8 @@ static struct snd_soc_codec_driver mt2712_codec_driver = {
 		.num_dapm_widgets       = ARRAY_SIZE(mt2712_codec_widgets),
 		.dapm_routes            = mt2712_codec_routes,
 		.num_dapm_routes        = ARRAY_SIZE(mt2712_codec_routes),
+		.controls = mt2712_codec_controls,
+		.num_controls = ARRAY_SIZE(mt2712_codec_controls),
 	},
 };
 
@@ -252,6 +293,8 @@ static int mt2712_codec_dev_probe(struct platform_device *pdev)
 		codec_data->regmap_ana = NULL;
 		return -EINVAL;
 	}
+
+	codec_data->pga_gain = 1;
 
 	return snd_soc_register_codec(&pdev->dev, &mt2712_codec_driver,
 				      mt2712_codec_dai_driver, 1);

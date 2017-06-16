@@ -22,6 +22,7 @@ struct mt2712_codec_priv {
 	struct regmap *regmap_dig;
 	struct regmap *regmap_ana;
 	struct snd_soc_codec *codec;
+	int pga_gain;
 };
 
 enum {
