@@ -1221,8 +1221,8 @@
 		compatible = "mediatek,2712-spis";
 		reg = <0>;
 		interrupts = <GIC_SPI 283 IRQ_TYPE_LEVEL_LOW>;
-		clocks = <&topckgen CLK_TOP_SPISLV_SEL>,
-			 <&pericfg CLK_PERI_SPI1>;
+		clocks = <&infracfg CLK_INFRA_AO_SPI0>,
+			 <&infracfg CLK_INFRA_AO_SPI1>;
 		clock-names = "selclk", "spiclk";
 		spi-max-frequency = <1000000>;
 	};
