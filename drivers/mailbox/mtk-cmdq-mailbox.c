@@ -219,22 +219,41 @@ static void cmdq_thread_wait_end(struct cmdq_thread *thread,
 		dev_err(dev, "GCE thread cannot run to end.\n");
 }
 
+static void cmdq_task_callback(struct cmdq_pkt *pkt, bool err)
+{
+	struct cmdq_cb_data cmdq_cb_data;
+
+	if (pkt->cb.cb) {
+		cmdq_cb_data.err = err;
+		cmdq_cb_data.data = pkt->cb.data;
+		pkt->cb.cb(cmdq_cb_data);
+	}
+}
+
 static void cmdq_task_exec(struct cmdq_pkt *pkt, struct cmdq_thread *thread)
 {
 	struct cmdq *cmdq;
 	struct cmdq_task *task;
 	unsigned long curr_pa, end_pa;
+	dma_addr_t dma_handle;
 
 	cmdq = dev_get_drvdata(thread->chan->mbox->dev);
 
 	/* Client should not flush new tasks if suspended. */
 	WARN_ON(cmdq->suspended);
 
+	dma_handle = dma_map_single(cmdq->mbox.dev, pkt->va_base,
+			       pkt->cmd_buf_size, DMA_TO_DEVICE);
+	if (dma_mapping_error(cmdq->mbox.dev, dma_handle)) {
+		dev_err(cmdq->mbox.dev, "dma map failed\n");
+		cmdq_task_callback(pkt, true);
+		return;
+	}
+
 	task = kzalloc(sizeof(*task), GFP_ATOMIC);
 	task->cmdq = cmdq;
 	INIT_LIST_HEAD(&task->list_entry);
-	task->pa_base = dma_map_single(cmdq->mbox.dev, pkt->va_base,
-				       pkt->cmd_buf_size, DMA_TO_DEVICE);
+	task->pa_base = dma_handle;
 	task->thread = thread;
 	task->pkt = pkt;
 
@@ -301,15 +320,10 @@ static void cmdq_task_exec(struct cmdq_pkt *pkt, struct cmdq_thread *thread)
 static void cmdq_task_exec_done(struct cmdq_task *task, bool err)
 {
 	struct device *dev = task->cmdq->mbox.dev;
-	struct cmdq_cb_data cmdq_cb_data;
 
 	dma_unmap_single(dev, task->pa_base, task->pkt->cmd_buf_size,
 			 DMA_TO_DEVICE);
-	if (task->pkt->cb.cb) {
-		cmdq_cb_data.err = err;
-		cmdq_cb_data.data = task->pkt->cb.data;
-		task->pkt->cb.cb(cmdq_cb_data);
-	}
+	cmdq_task_callback(task->pkt, err);
 	list_del(&task->list_entry);
 }
 
