@@ -26,7 +26,7 @@
 #include <linux/workqueue.h>
 #include <linux/module.h>
 
-#define CMDQ_THR_MAX_COUNT		4 /* main, sub, general(misc) */
+#define CMDQ_THR_MAX_COUNT		7 /* ddp main/sub, mdp path 0/1/2/3, general(misc) */
 #define CMDQ_OP_CODE_MASK		(0xff << CMDQ_OP_CODE_SHIFT)
 #define CMDQ_TIMEOUT_MS			1000
 #define CMDQ_IRQ_MASK			0xffff
