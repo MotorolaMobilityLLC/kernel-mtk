@@ -121,7 +121,7 @@
 #define BASE_SIZE(sz)			(sz & 0x1f)
 
 /* Translated AXI base address */
-#define PCIE2AXI_SIZE			0xffffffff
+#define PCIE2AXI_SIZE			0x1ffffffff
 
 /* PCI Configuration Transaction Header */
 #define CFG_DW0_LENGTH(length)		(length & 0x3ff)
@@ -385,7 +385,7 @@ static inline bool mtk_pcie_link_is_up(struct mtk_pcie_port *port)
 		PCI_LINKUP) ? 1 : 0;
 }
 
-static int mtk_pcie_mapping_sz(u32 size)
+static int mtk_pcie_mapping_sz(u64 size)
 {
 	int i = 0;
 
