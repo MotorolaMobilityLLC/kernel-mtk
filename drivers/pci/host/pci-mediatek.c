@@ -303,20 +303,14 @@ static int mtk_pcie_port_enable(struct mtk_pcie_port *port)
 			goto err_put_pm;
 	}
 
-	if (!IS_ERR(port->ahb)) {
-		ret = clk_prepare_enable(port->ahb);
-		if (ret)
-			goto err_put_pm;
-	}
-
 	if (!IS_ERR(port->axi)) {
 		ret = clk_prepare_enable(port->axi);
 		if (ret)
 			goto err_put_pm;
 	}
 
-	if (!IS_ERR(port->mac)) {
-		ret = clk_prepare_enable(port->mac);
+	if (!IS_ERR(port->pipe)) {
+		ret = clk_prepare_enable(port->pipe);
 		if (ret)
 			goto err_put_pm;
 	}
@@ -354,7 +348,7 @@ static void __maybe_unused mtk_pcie_port_disable(struct mtk_pcie_port *port)
 		clk_disable_unprepare(port->aux);
 
 	/* mt2712 does not enable power domain for now.*/
-	if (!dev->pm_domain)
+	if (dev->pm_domain)
 		pm_runtime_put_sync(dev);
 }
 
