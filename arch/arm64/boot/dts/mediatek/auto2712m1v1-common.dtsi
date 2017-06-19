@@ -493,6 +493,11 @@
 	max9286@48 {
 		compatible = "maxim,max9286";
 		reg = <0x48>;
+		port {
+			max9286_out: endpoint {
+				remote-endpoint = <&mipicsi0_in>;
+			};
+		};
 	};
 };
 
@@ -1278,4 +1283,13 @@
 
 &pwm {
 	status = "okay";
+};
+
+&mipicsi0 {
+	status = "okay";
+	port {
+		mipicsi0_in: endpoint {
+			remote-endpoint = <&max9286_out>;
+		};
+	};
 };
