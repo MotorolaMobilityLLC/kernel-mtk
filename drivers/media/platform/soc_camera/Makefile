@@ -9,3 +9,4 @@ obj-$(CONFIG_SOC_CAMERA_PLATFORM)	+= soc_camera_platform.o
 obj-$(CONFIG_VIDEO_ATMEL_ISI)		+= atmel-isi.o
 obj-$(CONFIG_VIDEO_SH_MOBILE_CEU)	+= sh_mobile_ceu_camera.o
 obj-$(CONFIG_VIDEO_MTK_MIPICSI0)  	+= mtk_mipicsi0.o
+obj-$(CONFIG_VIDEO_MTK_MIPICSI1)  	+= mtk_mipicsi1.o
