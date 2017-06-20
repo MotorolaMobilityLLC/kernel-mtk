@@ -79,7 +79,7 @@
 #define MTK_SPI_IDLE 0
 #define MTK_SPI_PAUSED 1
 
-#define MTK_SPI_MAX_FIFO_SIZE 32
+#define MTK_SPI_MAX_FIFO_SIZE 32U
 #define MTK_SPI_PACKET_SIZE 1024
 
 struct mtk_spi_compatible {
@@ -87,7 +87,7 @@ struct mtk_spi_compatible {
 	/* Must explicitly send dummy Tx bytes to do Rx only transfer */
 	bool must_tx;
 	/* some IC design adjust register define */
-	bool adjust_reg;
+	bool enhance_timing;
 };
 
 struct mtk_spi {
@@ -111,7 +111,7 @@ static const struct mtk_spi_compatible mt2712_compat = {
 
 static const struct mtk_spi_compatible mt7622_compat = {
 	.must_tx = true,
-	.adjust_reg = true,
+	.enhance_timing = true,
 };
 
 static const struct mtk_spi_compatible mt8173_compat = {
@@ -140,11 +140,11 @@ static const struct of_device_id mtk_spi_of_match[] = {
 	{ .compatible = "mediatek,mt6589-spi",
 		.data = (void *)&mtk_common_compat,
 	},
-	{ .compatible = "mediatek,mt8135-spi",
-		.data = (void *)&mtk_common_compat,
-	},
 	{ .compatible = "mediatek,mt7622-spi",
 		.data = (void *)&mt7622_compat,
+	},
+	{ .compatible = "mediatek,mt8135-spi",
+		.data = (void *)&mtk_common_compat,
 	},
 	{ .compatible = "mediatek,mt8173-spi",
 		.data = (void *)&mt8173_compat,
@@ -190,13 +190,14 @@ static int mtk_spi_prepare_message(struct spi_master *master,
 		reg_val &= ~SPI_CMD_CPOL;
 
 	/* set the mlsbx and mlsbtx */
-	if (spi->mode & SPI_LSB_FIRST) {
-		reg_val &= ~SPI_CMD_TXMSBF;
-		reg_val &= ~SPI_CMD_RXMSBF;
-	} else {
+	if (chip_config->tx_mlsb)
 		reg_val |= SPI_CMD_TXMSBF;
+	else
+		reg_val &= ~SPI_CMD_TXMSBF;
+	if (chip_config->rx_mlsb)
 		reg_val |= SPI_CMD_RXMSBF;
-	}
+	else
+		reg_val &= ~SPI_CMD_RXMSBF;
 
 	/* set the tx/rx endian */
 #ifdef __LITTLE_ENDIAN
@@ -207,7 +208,7 @@ static int mtk_spi_prepare_message(struct spi_master *master,
 	reg_val |= SPI_CMD_RX_ENDIAN;
 #endif
 
-	if (mdata->dev_comp->adjust_reg) {
+	if (mdata->dev_comp->enhance_timing) {
 		if (chip_config->cs_pol)
 			reg_val |= SPI_CMD_CS_POL;
 		else
@@ -269,8 +270,9 @@ static void mtk_spi_prepare_transfer(struct spi_master *master,
 	sck_time = (div + 1) / 2;
 	cs_time = sck_time * 2;
 
-	if (mdata->dev_comp->adjust_reg) {
-		reg_val |= (((sck_time - 1) & 0xffff) << SPI_CFG0_SCK_HIGH_OFFSET);
+	if (mdata->dev_comp->enhance_timing) {
+		reg_val |= (((sck_time - 1) & 0xffff)
+			   << SPI_CFG0_SCK_HIGH_OFFSET);
 		reg_val |= (((sck_time - 1) & 0xffff)
 			   << SPI_ADJUST_CFG0_SCK_LOW_OFFSET);
 		writel(reg_val, mdata->base + SPI_CFG2_REG);
@@ -280,7 +282,8 @@ static void mtk_spi_prepare_transfer(struct spi_master *master,
 			   << SPI_ADJUST_CFG0_CS_SETUP_OFFSET);
 		writel(reg_val, mdata->base + SPI_CFG0_REG);
 	} else {
-		reg_val |= (((sck_time - 1) & 0xff) << SPI_CFG0_SCK_HIGH_OFFSET);
+		reg_val |= (((sck_time - 1) & 0xff)
+			   << SPI_CFG0_SCK_HIGH_OFFSET);
 		reg_val |= (((sck_time - 1) & 0xff) << SPI_CFG0_SCK_LOW_OFFSET);
 		reg_val |= (((cs_time - 1) & 0xff) << SPI_CFG0_CS_HOLD_OFFSET);
 		reg_val |= (((cs_time - 1) & 0xff) << SPI_CFG0_CS_SETUP_OFFSET);
@@ -559,7 +562,7 @@ static int mtk_spi_probe(struct platform_device *pdev)
 
 	master->auto_runtime_pm = true;
 	master->dev.of_node = pdev->dev.of_node;
-	master->mode_bits = SPI_CPOL | SPI_CPHA | SPI_LSB_FIRST;
+	master->mode_bits = SPI_CPOL | SPI_CPHA;
 
 	master->set_cs = mtk_spi_set_cs;
 	master->prepare_message = mtk_spi_prepare_message;
@@ -676,6 +679,8 @@ static int mtk_spi_probe(struct platform_device *pdev)
 		goto err_put_master;
 	}
 
+	clk_disable_unprepare(mdata->spi_clk);
+
 	pm_runtime_enable(&pdev->dev);
 
 	ret = devm_spi_register_master(&pdev->dev, master);
@@ -714,8 +719,6 @@ static int mtk_spi_probe(struct platform_device *pdev)
 		}
 	}
 
-	clk_disable_unprepare(mdata->spi_clk);
-
 	return 0;
 
 err_disable_runtime_pm:
@@ -734,7 +737,6 @@ static int mtk_spi_remove(struct platform_device *pdev)
 	pm_runtime_disable(&pdev->dev);
 
 	mtk_spi_reset(mdata);
-	spi_master_put(master);
 
 	return 0;
 }
