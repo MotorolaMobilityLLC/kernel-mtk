@@ -116,7 +116,7 @@ static int probe(struct platform_device *pdev)
 
 	SET_NETDEV_DEV(dev, &pdev->dev);
 
-	pdev->dev.coherent_dma_mask = DMA_BIT_MASK(32);/* call dma_set_mask */
+	pdev->dev.coherent_dma_mask = DMA_BIT_MASK(33);/* call dma_set_mask */
 	pdev->dev.dma_mask = &pdev->dev.coherent_dma_mask;
 
 	pdata = netdev_priv(dev);
