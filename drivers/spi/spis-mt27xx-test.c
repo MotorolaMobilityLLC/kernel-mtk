@@ -160,10 +160,13 @@ int spim_spis_check(struct spi_transfer *trans,
 		spi_auto_test_flag = true;
 	}
 
-	if (spi_auto_test_flag)
+	if (spi_auto_test_flag) {
+		pr_info("spis2spim test pass.\n");
 		return 0;
-	else
+	} else {
+		pr_info("spis2spim test fail.\n");
 		return -1;
+	}
 }
 
 int spis2spim_transfer(struct spi_device *spi, int len)
