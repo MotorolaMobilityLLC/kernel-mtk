@@ -751,7 +751,7 @@ static struct mtk_composite mcu_muxes[] = {
 	/* mp0_pll_divider_cfg */
 	MUX_GATE_FLAGS(CLK_MCU_MP0_SEL, "mcu_mp0_sel", mcu_mp0_parents, 0x7A0, 9, 2, -1, CLK_IS_CRITICAL),
 	/* mp2_pll_divider_cfg */
-	MUX(CLK_MCU_MP2_SEL, "mcu_mp2_sel", mcu_mp2_parents, 0x7A8, 9, 2),
+	MUX_GATE_FLAGS(CLK_MCU_MP2_SEL, "mcu_mp2_sel", mcu_mp2_parents, 0x7A8, 9, 2, -1, CLK_IS_CRITICAL),
 	/* bus_pll_divider_cfg */
 	MUX_GATE_FLAGS(CLK_MCU_BUS_SEL, "mcu_bus_sel", mcu_bus_parents, 0x7C0, 9, 2, -1, CLK_IS_CRITICAL),
 };
