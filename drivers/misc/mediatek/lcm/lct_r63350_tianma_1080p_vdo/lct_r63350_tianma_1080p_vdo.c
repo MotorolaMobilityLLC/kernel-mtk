@@ -203,7 +203,7 @@ static void lcm_get_params(LCM_PARAMS *params)
 	params->dsi.PS = LCM_PACKED_PS_24BIT_RGB888;
 
 	params->dsi.vertical_sync_active				= 2;//15
-	params->dsi.vertical_backporch					= 6;//20
+	params->dsi.vertical_backporch					= 4;//20
 	params->dsi.vertical_frontporch					= 14; //20
 	params->dsi.vertical_active_line				= FRAME_HEIGHT;
 
