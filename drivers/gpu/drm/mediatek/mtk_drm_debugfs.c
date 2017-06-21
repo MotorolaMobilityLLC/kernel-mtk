@@ -20,6 +20,7 @@
 #include "mtk_drm_plane.h"
 #include "mtk_drm_crtc.h"
 #include "mtk_drm_drv.h"
+#include "mtk_drm_debugfs.h"
 
 struct mtk_drm_debugfs_table {
 	char name[8];
@@ -31,9 +32,9 @@ struct mtk_drm_debugfs_table {
 /* ------------------------------------------------------------------------- */
 /* External variable declarations */
 /* ------------------------------------------------------------------------- */
-void __iomem *gdrm_disp1_base[7];
-void __iomem *gdrm_disp2_base[7];
-struct mtk_drm_debugfs_table gdrm_disp1_reg_range[7] = {
+static void __iomem *gdrm_disp1_base[7];
+static void __iomem *gdrm_disp2_base[7];
+static struct mtk_drm_debugfs_table gdrm_disp1_reg_range[7] = {
 	{ "OVL0 ", {0, 0xf40}, {0x260, 0x80} },
 	{ "COLOR0 ", {0x400, 0xc00}, {0x400, 0x100} },
 	{ "AAL0 ", {0, 0}, {0x100, 0} },
@@ -43,7 +44,7 @@ struct mtk_drm_debugfs_table gdrm_disp1_reg_range[7] = {
 	{ "MUTEX ", {0, 0}, {0x100, 0} }
 };
 
-struct mtk_drm_debugfs_table gdrm_disp2_reg_range[7] = {
+static struct mtk_drm_debugfs_table gdrm_disp2_reg_range[7] = {
 	{ "OVL1 ", {0, 0xf40}, {0x260, 0x80} },
 	{ "COLOR1 ", {0x400, 0xc00}, {0x100, 0x100} },
 	{ "AAL1 ", {0, 0}, {0x100, 0} },
@@ -54,7 +55,7 @@ struct mtk_drm_debugfs_table gdrm_disp2_reg_range[7] = {
 };
 static bool dbgfs_alpha;
 
-void mtk_read_reg(unsigned long addr)
+static void mtk_read_reg(unsigned long addr)
 {
 	unsigned long reg_va = 0;
 
@@ -63,7 +64,7 @@ void mtk_read_reg(unsigned long addr)
 	iounmap((void *)reg_va);
 }
 
-void mtk_write_reg(unsigned long addr, unsigned long val)
+static void mtk_write_reg(unsigned long addr, unsigned long val)
 {
 	unsigned long reg_va = 0;
 
@@ -381,7 +382,7 @@ static ssize_t debug_write(struct file *file, const char __user *ubuf,
 	return ret;
 }
 
-struct dentry *mtkdrm_dbgfs;
+static struct dentry *mtkdrm_dbgfs;
 static const struct file_operations debug_fops = {
 	.read = debug_read,
 	.write = debug_write,
