@@ -781,9 +781,9 @@ static int mtk_mdp_m2m_querycap(struct file *file, void *fh,
 	struct mtk_mdp_ctx *ctx = fh_to_ctx(fh);
 	struct mtk_mdp_dev *mdp = ctx->mdp_dev;
 
-	strlcpy(cap->driver, MTK_MDP_MODULE_NAME, sizeof(cap->driver));
+	strlcpy(cap->driver, mdp->driver, sizeof(cap->driver));
 	strlcpy(cap->card, mdp->pdev->name, sizeof(cap->card));
-	strlcpy(cap->bus_info, "platform", sizeof(cap->bus_info));
+	strlcpy(cap->bus_info, mdp->platform, sizeof(cap->bus_info));
 
 	return 0;
 }

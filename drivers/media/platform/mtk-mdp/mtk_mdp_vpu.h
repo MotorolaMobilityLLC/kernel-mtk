@@ -36,12 +36,14 @@
  * @pdev	: pointer to the VPU platform device
  * @inst_addr	: VPU MDP instance address
  * @failure	: VPU execution result status
+ * @ipi_id	: value of enum ipi_id. e.g. IPI_MDP, IPI_MDP_1.
  * @vsi		: VPU shared information
  */
 struct mtk_mdp_vpu {
 	struct platform_device	*pdev;
 	uint64_t		inst_addr;
 	int32_t			failure;
+	int32_t			ipi_id;
 	struct mdp_process_vsi	*vsi;
 #ifdef CONFIG_VIDEO_MEDIATEK_MDP_FRVC
 	struct mdp_process_vsi	vsi_frvc;
