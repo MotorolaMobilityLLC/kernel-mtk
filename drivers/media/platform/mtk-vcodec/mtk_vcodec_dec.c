@@ -537,10 +537,14 @@ static void mtk_vdec_worker(struct work_struct *work)
 	struct vdec_fb *pfb;
 	bool res_chg = false;
 	int ret;
+	struct timeval worktvstart;
+	struct timeval worktvstart1;
+	struct timeval vputvend;
 	struct mtk_video_dec_buf *dst_buf_info, *src_buf_info;
 	struct vb2_v4l2_buffer *dst_vb2_v4l2, *src_vb2_v4l2;
 	int fourcc = ctx->q_data[MTK_Q_DATA_SRC].fmt->fourcc;
 
+	do_gettimeofday(&worktvstart);
 	src_buf = v4l2_m2m_next_src_buf(ctx->m2m_ctx);
 	if (src_buf == NULL) {
 		v4l2_m2m_job_finish(dev->m2m_dev_dec, ctx->m2m_ctx);
@@ -622,8 +626,11 @@ static void mtk_vdec_worker(struct work_struct *work)
 	dst_buf_info->used = true;
 	mutex_unlock(&ctx->lock);
 	src_buf_info->used = true;
-
+	do_gettimeofday(&worktvstart1);
 	ret = vdec_if_decode(ctx, &buf, pfb, &res_chg);
+	do_gettimeofday(&vputvend);
+	mtk_v4l2_debug(5, "vpudtimeuse:%ld\n", (vputvend.tv_sec - worktvstart1.tv_sec) * 1000000 +
+			(vputvend.tv_usec - worktvstart1.tv_usec));
 
 	if (ret < 0) {
 		mtk_v4l2_err(
@@ -684,6 +691,9 @@ static void mtk_vdec_worker(struct work_struct *work)
 		}
 	}
 	v4l2_m2m_job_finish(dev->m2m_dev_dec, ctx->m2m_ctx);
+	do_gettimeofday(&vputvend);
+	mtk_v4l2_debug(5, "worktimeuse:%ld\n", (vputvend.tv_sec - worktvstart.tv_sec) * 1000000 +
+			(vputvend.tv_usec - worktvstart.tv_usec));
 }
 
 static int vidioc_try_decoder_cmd(struct file *file, void *priv,
