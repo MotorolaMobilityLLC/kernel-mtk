@@ -15,7 +15,7 @@
 			<&clk26m>,
 			<&clk26m>,
 			<&clk26m>,
-			<&apmixedsys CLK_APMIXED_ARMCA72PLL>,
+			<&clk26m>,
 			<&clk26m>,
 			<&clk26m>,
 			<&clk26m>,
