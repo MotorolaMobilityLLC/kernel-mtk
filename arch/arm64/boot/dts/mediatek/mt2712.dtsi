@@ -1622,6 +1622,35 @@
 			status="disabled";
 		};
 
+		mipicsi1: mipicsi1@10218000 {
+			compatible = "mediatek,mt2712-mipicsi1";
+			reg = <0 0x10218000 0 0x60>,
+				<0 0x15002700 0 0x100>,
+				<0 0x15002500 0 0x4>,
+				<0 0x15003000 0 0x40>,
+				<0 0x15008010 0 0x40>,
+				<0 0x15008110 0 0x10>,
+				<0 0x15008200 0 0x300>,
+				<0 0x15008500 0 0x80>;
+			iommus = <&iommu0 M4U_PORT_CAM_DMA2>;
+			mediatek,larb = <&larb2>;
+			interrupts = <GIC_SPI 270 IRQ_TYPE_LEVEL_LOW>,
+				<GIC_SPI 271 IRQ_TYPE_LEVEL_LOW>;
+			power-domains = <&scpsys MT2712_POWER_DOMAIN_ISP>;
+			/* Camera Common Clock Framework (CCF) */
+			clocks = <&topckgen CLK_TOP_CAM2TG_SEL>,
+			<&topckgen CLK_TOP_UNIVPLL_D52>,
+			<&imgsys CLK_IMG_SENINF_CAM_EN>,
+			<&imgsys CLK_IMG_SENINF_SCAM_EN>,
+			<&imgsys CLK_IMG_CAM_SV2_EN>;
+			clock-names = "mclk",
+				"TOP_UNIVPLL2_D52",
+				"IMG_SENINF_CAM_EN",
+				"IMG_SENINF_SCAM_EN",
+				"IMG_CAM_SV2_EN";
+			status="disabled";
+		};
+
 		/* 2712 only have one pcie RC. */
 		pcie: pcie@0x11700000 {
 			compatible = "mediatek,pcie-mt2712";
