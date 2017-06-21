@@ -509,6 +509,16 @@
 		compatible = "mediatek,alsps_2";
 		reg = <0x60>;
 	};
+
+	max9286@48 {
+		compatible = "maxim,max9286";
+		reg = <0x48>;
+		port {
+			max9286_csi1_out: endpoint {
+				remote-endpoint = <&mipicsi1_in>;
+			};
+		};
+	};
 };
 
 &i2c4 {
@@ -1317,6 +1327,15 @@
 	port {
 		mipicsi0_in: endpoint {
 			remote-endpoint = <&max9286_out>;
+		};
+	};
+};
+
+&mipicsi1 {
+	status = "okay";
+	port {
+		mipicsi1_in: endpoint {
+			remote-endpoint = <&max9286_csi1_out>;
 		};
 	};
 };
