@@ -31,7 +31,8 @@
 
 #include "clkdbg.h"
 
-#define CLKDBG_PM_DOMAIN	0
+#define CLKDBG_PM_DOMAIN	1
+#define CLKDBG_PM_DOMAIN_API_4_9	1
 #define CLKDBG_CCF_API_4_4	1
 #define CLKDBG_HACK_CLK		0
 #define CLKDBG_HACK_CLK_CORE	1
@@ -1171,6 +1172,9 @@ static struct generic_pm_domain **get_all_genpd(void)
 	static int num_pds;
 	const int maxpd = ARRAY_SIZE(pds);
 	struct device_node *node;
+#if CLKDBG_PM_DOMAIN_API_4_9
+	struct platform_device *pdev;
+#endif
 
 	if (num_pds)
 		goto out;
@@ -1180,19 +1184,34 @@ static struct generic_pm_domain **get_all_genpd(void)
 	if (!node)
 		return NULL;
 
+#if CLKDBG_PM_DOMAIN_API_4_9
+	pdev = platform_device_alloc("traverse", 0);
+#endif
+
 	for (num_pds = 0; num_pds < maxpd; num_pds++) {
 		struct of_phandle_args pa;
 
 		pa.np = node;
 		pa.args[0] = num_pds;
 		pa.args_count = 1;
+
+#if CLKDBG_PM_DOMAIN_API_4_9
+		of_genpd_add_device(&pa, &pdev->dev);
+		pds[num_pds] = pd_to_genpd(pdev->dev.pm_domain);
+		pm_genpd_remove_device(pds[num_pds], &pdev->dev);
+#else
 		pds[num_pds] = of_genpd_get_from_provider(&pa);
+#endif
 
 		if (IS_ERR(pds[num_pds])) {
 			pds[num_pds] = NULL;
 			break;
 		}
 	}
+
+#if CLKDBG_PM_DOMAIN_API_4_9
+	platform_device_put(pdev);
+#endif
 
 out:
 	return pds;
