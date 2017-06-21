@@ -1013,6 +1013,7 @@
 			compatible = "mediatek,mt2712-mdp-rdma",
 				     "mediatek,mt2712-mdp";
 			reg = <0 0x14001000 0 0x1000>;
+			mediatek,mdpid = <0>;
 			clocks = <&mmsys CLK_MM_MDP_RDMA0>,
 				 <&mmsys CLK_MM_MUTEX_32K>;
 			power-domains = <&scpsys MT2712_POWER_DOMAIN_MM>;
@@ -1020,17 +1021,22 @@
 			mediatek,larb = <&larb0>;
 			mediatek,vcu = <&mdp_vcu>;
 			mediatek,gce = <&gce>;
-			mboxes = <&gce 2 0>; /* MDP use idx=2, w/o atomic exec */
+			mboxes = <&gce 2 0>;
 		};
 
 		mdp_rdma1: rdma@14002000 {
-			compatible = "mediatek,mt2712-mdp-rdma";
+			compatible = "mediatek,mt2712-mdp-rdma",
+				     "mediatek,mt2712-mdp";
 			reg = <0 0x14002000 0 0x1000>;
+			mediatek,mdpid = <1>;
 			clocks = <&mmsys CLK_MM_MDP_RDMA1>,
 				 <&mmsys CLK_MM_MUTEX_32K>;
 			power-domains = <&scpsys MT2712_POWER_DOMAIN_MM>;
 			iommus = <&iommu1 M4U_PORT_MDP_RDMA1>;
 			mediatek,larb = <&larb4>;
+			mediatek,vcu = <&mdp_vcu>;
+			mediatek,gce = <&gce>;
+			mboxes = <&gce 3 0>;
 		};
 
 		mdp_rsz0: rsz@14003000 {
@@ -1090,7 +1096,7 @@
 
 		mdp_tdshp1: tdshp@1400a000 {
 			compatible = "mediatek,mt2712-mdp-tdshp";
-			reg = <0 0x1400A000 0 0x1000>;
+			reg = <0 0x1400a000 0 0x1000>;
 			clocks = <&mmsys CLK_MM_MDP_TDSHP1>;
 			power-domains = <&scpsys MT2712_POWER_DOMAIN_MM>;
 		};
@@ -1337,13 +1343,18 @@
 		};
 
 		mdp_rdma2: rdma@14028000 {
-			compatible = "mediatek,mt2712-mdp-rdma";
+			compatible = "mediatek,mt2712-mdp-rdma",
+				     "mediatek,mt2712-mdp";
 			reg = <0 0x14028000 0 0x1000>;
+			mediatek,mdpid = <2>;
 			clocks = <&mmsys CLK_MM_MDP_RDMA2>,
 				 <&mmsys CLK_MM_MUTEX_32K>;
 			power-domains = <&scpsys MT2712_POWER_DOMAIN_MM>;
 			iommus = <&iommu1 M4U_PORT_MDP_RDMA2>;
 			mediatek,larb = <&larb5>;
+			mediatek,vcu = <&mdp_vcu>;
+			mediatek,gce = <&gce>;
+			mboxes = <&gce 4 0>;
 		};
 
 		color2: color@14029000 {
@@ -1405,7 +1416,7 @@
 
 		mdp_tdshp2: tdshp@1402f000 {
 			compatible = "mediatek,mt2712-mdp-tdshp";
-			reg = <0 0x1402F000 0 0x1000>;
+			reg = <0 0x1402f000 0 0x1000>;
 			clocks = <&mmsys CLK_MM_MDP_TDSHP2>;
 			power-domains = <&scpsys MT2712_POWER_DOMAIN_MM>;
 		};
@@ -1442,13 +1453,18 @@
 		};
 
 		mdp_rdma3: rdma@14033000 {
-			compatible = "mediatek,mt2712-mdp-rdma";
+			compatible = "mediatek,mt2712-mdp-rdma",
+				     "mediatek,mt2712-mdp";
 			reg = <0 0x14033000 0 0x1000>;
+			mediatek,mdpid = <3>;
 			clocks = <&mmsys CLK_MM_MDP_RDMA3>,
 				 <&mmsys CLK_MM_MUTEX_32K>;
 			power-domains = <&scpsys MT2712_POWER_DOMAIN_MM>;
 			iommus = <&iommu1 M4U_PORT_MDP_RDMA3>;
 			mediatek,larb = <&larb7>;
+			mediatek,vcu = <&mdp_vcu>;
+			mediatek,gce = <&gce>;
+			mboxes = <&gce 5 0>;
 		};
 
 		mdp_wrot2: wrot@14034000 {
