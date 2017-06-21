@@ -56,6 +56,7 @@
 
 
 #define OV490_ID 0xB888
+#define MAX9286_LINK_CONFIG_REG 0x00
 #define MAX9286_ID_REG   0x1E
 #define MAX9286_LOCK_REG 0x27
 #define MAX9286_LINK_REG 0x49
@@ -73,12 +74,12 @@
 #define SENSOR_ID               (0x86)
 
 #define max9286_info(fmt, args...)                \
-		pr_info("[max9286][info] %s %s %d: " fmt "\n",\
-			__FILE__, __func__, __LINE__, ##args)
+		pr_info("[max9286][info] %s %d: " fmt "\n",\
+			__func__, __LINE__, ##args)
 
 #define max9286_err(fmt, args...)                \
-		pr_info("[max9286][error] %s %s %d: " fmt "\n",\
-			__FILE__, __func__, __LINE__, ##args)
+		pr_info("[max9286][error] %s %d: " fmt "\n",\
+			__func__, __LINE__, ##args)
 
 struct reg_val_ops {
 	u16 slave_addr;
@@ -487,6 +488,20 @@ static int max9286_cropcap(struct v4l2_subdev *sd, struct v4l2_cropcap *a)
 	return 0;
 }
 
+static int max9286_set_link_config(struct i2c_client *client, u8 *val)
+{
+	int ret = 0;
+	u8 link_config_reg = MAX9286_LINK_CONFIG_REG;
+
+	ret = i2c_write(client, MAX9286_ADDR, &link_config_reg, 1, val);
+	if (ret != 1) {
+		max9286_info("link config set fail. ret = %d", ret);
+		return -EIO;
+	}
+
+	return ret;
+}
+
 static int max9286_get_lock_status(struct i2c_client *client, u8 *val)
 {
 	int ret = 0;
@@ -501,7 +516,7 @@ static int max9286_get_lock_status(struct i2c_client *client, u8 *val)
 	if (*val & 0x80) {
 		max9286_info("camera links are locked");
 	} else {
-		max9286_info("camera links are not locked");
+		max9286_err("camera links are not locked");
 		ret =  -ENODEV;
 	}
 
@@ -528,6 +543,7 @@ static int max9286_camera_init(struct i2c_client *client)
 	u8 max9286_id_reg = MAX9286_ID_REG;
 	u8 max9286_id_val = 0;
 	u8 lock_reg_val = 0;
+	u8 link_config_reg_val = 0x81;
 	u8 link_reg_val = 0;
 	u8 ch_link_status[4] = {0};
 	int index = 0;
@@ -541,19 +557,6 @@ static int max9286_camera_init(struct i2c_client *client)
 			break;
 		} else if ((read_cnt == 2) && (ret != 2)) {
 			max9286_err("read max9286 ID time out");
-			return -EIO;
-		}
-
-		mdelay(10);
-	}
-
-	/* check camera links are locked or not */
-	for (read_cnt = 0; read_cnt < 3; ++read_cnt) {
-		ret = max9286_get_lock_status(client, &lock_reg_val);
-		if (ret == 2) {
-			break;
-		} else if ((read_cnt == 2) && (ret != 2)) {
-			max9286_err("read lock status time out");
 			return -EIO;
 		}
 
@@ -584,6 +587,27 @@ static int max9286_camera_init(struct i2c_client *client)
 		} else {
 			max9286_info("channel %d not linked", index);
 		}
+	}
+
+	/* If link_cnt < 4. Link config should be set or lock status error */
+	if (link_cnt == 1) {
+		ret = max9286_set_link_config(client, &link_config_reg_val);
+		if (ret != 1)
+			return -EIO;
+
+	}
+
+	/* check camera links are locked or not */
+	for (read_cnt = 0; read_cnt < 3; ++read_cnt) {
+		ret = max9286_get_lock_status(client, &lock_reg_val);
+		if (ret == 2) {
+			break;
+		} else if ((read_cnt == 2) && (ret != 2)) {
+			max9286_err("read lock status time out");
+			return -EIO;
+		}
+
+		mdelay(10);
 	}
 
 	/*init max9286 command*/
