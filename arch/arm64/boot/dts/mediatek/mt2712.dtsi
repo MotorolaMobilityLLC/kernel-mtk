@@ -1581,27 +1581,32 @@
 		mipicsi0: mipicsi0@10217000 {
 			compatible = "mediatek,mt2712-mipicsi0";
 			reg = <0 0x10217000 0 0x60>,
-				 <0 0x15002000 0 0x1000>,
+				 <0 0x15002300 0 0x100>,
+				 <0 0x15002000 0 0x10>,
+				 <0 0x15002100 0 0x4>,
+				 <0 0x15002120 0 0x40>,
 				 <0 0x15004010 0 0x40>,
 				 <0 0x15004110 0 0x10>,
-				 <0 0x15004200 0 0x300>,
-				 <0 0x15004500 0 0x70>,
+				 <0 0x15004200 0 0x80>,
+				 <0 0x15004500 0 0x80>,
+				 <0 0x15002520 0 0x40>,
 				 <0 0x15005010 0 0x40>,
 				 <0 0x15005110 0 0x10>,
-				 <0 0x15005200 0 0x300>,
+				 <0 0x15005200 0 0x80>,
 				 <0 0x15005500 0 0x80>,
+				 <0 0x15002920 0 0x40>,
 				 <0 0x15006010 0 0x40>,
 				 <0 0x15006110 0 0x10>,
-				 <0 0x15006200 0 0x300>,
+				 <0 0x15006200 0 0x80>,
 				 <0 0x15006500 0 0x80>,
+				 <0 0x15002D20 0 0x40>,
 				 <0 0x15007010 0 0x40>,
 				 <0 0x15007110 0 0x10>,
-				 <0 0x15007200 0 0x300>,
+				 <0 0x15007200 0 0x80>,
 				 <0 0x15007500 0 0x80>,
 				 <0 0x15000000 0 0x4>;
 			iommus = <&iommu0 M4U_PORT_CAM_DMA0>,
-				<&iommu0 M4U_PORT_CAM_DMA1>,
-				<&iommu0 M4U_PORT_CAM_DMA2>;
+				<&iommu0 M4U_PORT_CAM_DMA1>;
 			mediatek,larb = <&larb2>;
 			interrupts = <GIC_SPI 222 IRQ_TYPE_LEVEL_LOW>,
 				<GIC_SPI 223 IRQ_TYPE_LEVEL_LOW>,
@@ -1612,11 +1617,13 @@
 			clocks = <&topckgen CLK_TOP_CAM2TG_SEL>,
 			<&topckgen CLK_TOP_UNIVPLL_D52>,
 			<&imgsys CLK_IMG_SENINF_CAM_EN>,
+			<&imgsys CLK_IMG_SENINF_SCAM_EN>,
 			<&imgsys CLK_IMG_CAM_SV_EN>,
 			<&imgsys CLK_IMG_CAM_SV1_EN>;
 			clock-names = "mclk",
 				"TOP_UNIVPLL2_D52",
 				"IMG_SENINF_CAM_EN",
+				"IMG_SENINF_SCAM_EN",
 				"IMG_CAM_SV_EN",
 				"IMG_CAM_SV1_EN";
 			status="disabled";
