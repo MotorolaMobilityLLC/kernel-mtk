@@ -85,13 +85,35 @@ static void mtk_mdp_vpu_ipi_handler(void *data, unsigned int len, void *priv)
 #endif
 }
 
+static enum ipi_id mdp_dev_id_2_ipi_id(int id)
+{
+	if (id == 1)
+		return IPI_MDP_1;
+	else if (id == 2)
+		return IPI_MDP_2;
+	else if (id == 3)
+		return IPI_MDP_3;
+	else
+		return IPI_MDP;
+}
+
 int mtk_mdp_vpu_register(struct platform_device *pdev)
 {
 	struct mtk_mdp_dev *mdp = platform_get_drvdata(pdev);
 	int err;
+	char *name;
 
-	err = vpu_ipi_register(mdp->vpu_dev, IPI_MDP,
-			       mtk_mdp_vpu_ipi_handler, "mdp_vpu", NULL);
+	if (mdp->id == 1)
+		name = "mdp_1_vpu";
+	else if (mdp->id == 2)
+		name = "mdp_2_vpu";
+	else if (mdp->id == 3)
+		name = "mdp_3_vpu";
+	else
+		name = "mdp_vpu";
+
+	err = vpu_ipi_register(mdp->vpu_dev, mdp_dev_id_2_ipi_id(mdp->id),
+			       mtk_mdp_vpu_ipi_handler, name, NULL);
 	if (err)
 		dev_err(&mdp->pdev->dev,
 			"vpu_ipi_registration fail status=%d\n", err);
@@ -140,7 +162,7 @@ static int mtk_mdp_vpu_send_msg(void *msg, int len, struct mtk_mdp_vpu *vpu,
 			struct mdp_ipi_init init_msg;
 
 			init_msg.msg_id = AP_MDP_INIT;
-			init_msg.ipi_id = IPI_MDP;
+			init_msg.ipi_id = vpu->ipi_id;
 			init_msg.ap_inst = (uint64_t)(unsigned long)vpu;
 			err = vpu_ipi_send(vpu->pdev, (enum ipi_id)id, (void *)&init_msg,
 				sizeof(init_msg));
@@ -183,10 +205,10 @@ static int mtk_mdp_vpu_send_ap_ipi(struct mtk_mdp_vpu *vpu, uint32_t msg_id)
 	struct mdp_ipi_comm msg;
 
 	msg.msg_id = msg_id;
-	msg.ipi_id = IPI_MDP;
+	msg.ipi_id = vpu->ipi_id;
 	msg.vpu_inst_addr = vpu->inst_addr;
 	msg.ap_inst = (uint64_t)(unsigned long)vpu;
-	err = mtk_mdp_vpu_send_msg((void *)&msg, sizeof(msg), vpu, IPI_MDP);
+	err = mtk_mdp_vpu_send_msg((void *)&msg, sizeof(msg), vpu, vpu->ipi_id);
 	if (!err && vpu->failure)
 		err = -EINVAL;
 
@@ -200,11 +222,12 @@ int mtk_mdp_vpu_init(struct mtk_mdp_vpu *vpu)
 	struct mtk_mdp_ctx *ctx = vpu_to_ctx(vpu);
 
 	vpu->pdev = ctx->mdp_dev->vpu_dev;
+	vpu->ipi_id = mdp_dev_id_2_ipi_id(ctx->mdp_dev->id);
 
 	msg.msg_id = AP_MDP_INIT;
-	msg.ipi_id = IPI_MDP;
+	msg.ipi_id = vpu->ipi_id;
 	msg.ap_inst = (uint64_t)(unsigned long)vpu;
-	err = mtk_mdp_vpu_send_msg((void *)&msg, sizeof(msg), vpu, IPI_MDP);
+	err = mtk_mdp_vpu_send_msg((void *)&msg, sizeof(msg), vpu, vpu->ipi_id);
 	if (!err && vpu->failure)
 		err = -EINVAL;
 

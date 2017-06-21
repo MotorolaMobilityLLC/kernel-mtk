@@ -75,9 +75,9 @@ static const struct of_device_id mtk_mdp_comp_dt_ids[] = {
 };
 
 static const struct of_device_id mtk_mdp_of_ids[] = {
-	{ .compatible = "mediatek,mt2701-mdp", },
-	{ .compatible = "mediatek,mt8173-mdp", },
-	{ .compatible = "mediatek,mt2712-mdp", },
+	{ .compatible = "mediatek,mt2701-mdp", .data = "platform:mt2701" },
+	{ .compatible = "mediatek,mt8173-mdp", .data = "platform:mt8173" },
+	{ .compatible = "mediatek,mt2712-mdp", .data = "platform:mt2712" },
 	{ },
 };
 MODULE_DEVICE_TABLE(of, mtk_mdp_of_ids);
@@ -153,7 +153,18 @@ static int mtk_mdp_probe(struct platform_device *pdev)
 	if (!mdp)
 		return -ENOMEM;
 
-	mdp->id = pdev->id;
+	ret = of_property_read_u32(dev->of_node, "mediatek,mdpid", (u32 *)&mdp->id);
+	if (ret) {
+		dev_info(dev, "not set mediatek,mdpid, use default id 0.\n");
+		mdp->id = 0;
+	}
+
+	if (mdp->id == 0)
+		strlcpy(mdp->driver, MTK_MDP_MODULE_NAME, sizeof(mdp->driver));
+	else
+		snprintf(mdp->driver, sizeof(mdp->driver), "%s-%d", MTK_MDP_MODULE_NAME, mdp->id);
+
+	strlcpy(mdp->platform, of_device_get_match_data(dev), sizeof(mdp->platform));
 	mdp->pdev = pdev;
 	INIT_LIST_HEAD(&mdp->ctx_list);
 
