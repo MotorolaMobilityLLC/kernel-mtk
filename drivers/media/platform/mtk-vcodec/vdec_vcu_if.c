@@ -73,6 +73,7 @@ int vcu_dec_ipi_handler(void *data, unsigned int len, void *priv)
 	struct vdec_vcu_inst *vcu = (struct vdec_vcu_inst *)
 		(unsigned long)msg->ap_inst_addr;
 	int ret = 0;
+	struct timeval t_s, t_e;
 
 	mtk_vcodec_debug(vcu, "+ id=%X status = %d\n", msg->msg_id, msg->status);
 
@@ -92,9 +93,13 @@ int vcu_dec_ipi_handler(void *data, unsigned int len, void *priv)
 			break;
 		case VCU_IPIMSG_DEC_WAITISR:
 			/* wait decoder done interrupt */
+			do_gettimeofday(&t_s);
 			mtk_vcodec_wait_for_done_ctx(vcu->ctx,
 						     MTK_INST_IRQ_RECEIVED,
 						     WAIT_INTR_TIMEOUT_MS);
+			do_gettimeofday(&t_e);
+			mtk_v4l2_debug(5, "IRQtimeuse:%ld\n", (t_e.tv_sec - t_s.tv_sec) * 1000000 +
+					(t_e.tv_usec - t_s.tv_usec));
 			ret = 1;
 			break;
 		case VCU_IPIMSG_DEC_CLOCK_ON:
