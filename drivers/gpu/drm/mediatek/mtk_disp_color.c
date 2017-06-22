@@ -127,7 +127,7 @@ static int mtk_disp_color_probe(struct platform_device *pdev)
 
 	ret = mtk_ddp_comp_init(dev, dev->of_node, &priv->ddp_comp, comp_id,
 				&mtk_disp_color_funcs);
-	if (ret) {
+	if (ret != 0) {
 		dev_err(dev, "Failed to initialize component: %d\n", ret);
 		return ret;
 	}
@@ -137,7 +137,7 @@ static int mtk_disp_color_probe(struct platform_device *pdev)
 	platform_set_drvdata(pdev, priv);
 
 	ret = component_add(dev, &mtk_disp_color_component_ops);
-	if (ret)
+	if (ret != 0)
 		dev_err(dev, "Failed to add component: %d\n", ret);
 
 	return ret;

@@ -104,14 +104,14 @@ static void process_dbg_opt(const char *opt)
 		int i;
 
 		np = strsep(&p, "=");
-		if (kstrtoul(np, 16, &addr))
+		if (kstrtoul(np, 16, &addr) != 0)
 			goto error;
 
 		if (!p)
 			goto error;
 
 		np = strsep(&p, "=");
-		if (kstrtoul(np, 16, &val))
+		if (kstrtoul(np, 16, &val) != 0)
 			goto error;
 
 		for (i = 0; i < ARRAY_SIZE(gdrm_disp1_reg_range); i++) {
@@ -137,7 +137,7 @@ static void process_dbg_opt(const char *opt)
 		unsigned long addr;
 		int i;
 
-		if (kstrtoul(p, 16, &addr))
+		if (kstrtoul(p, 16, &addr) != 0)
 			goto error;
 
 		for (i = 0; i < ARRAY_SIZE(gdrm_disp1_reg_range); i++) {
@@ -232,7 +232,7 @@ static void process_dbg_opt(const char *opt)
 		char *p = (char *)opt + 2;
 		unsigned long addr;
 
-		if (kstrtoul(p, 16, &addr))
+		if (kstrtoul(p, 16, &addr) != 0)
 			goto error;
 
 		mtk_read_reg(addr);
@@ -242,14 +242,14 @@ static void process_dbg_opt(const char *opt)
 		unsigned long addr, val;
 
 		np = strsep(&p, "=");
-		if (kstrtoul(np, 16, &addr))
+		if (kstrtoul(np, 16, &addr) != 0)
 			goto error;
 
 		if (!p)
 			goto error;
 
 		np = strsep(&p, "=");
-		if (kstrtoul(np, 16, &val))
+		if (kstrtoul(np, 16, &val) != 0)
 			goto error;
 
 		mtk_write_reg(addr, val);
@@ -289,7 +289,7 @@ static ssize_t debug_read(struct file *file, char __user *ubuf, size_t count,
 		unsigned long addr;
 		int i;
 
-		if (kstrtoul(p, 16, &addr))
+		if (kstrtoul(p, 16, &addr) != 0)
 			return 0;
 
 		for (i = 0; i < ARRAY_SIZE(gdrm_disp1_reg_range); i++) {
@@ -326,7 +326,7 @@ static ssize_t debug_read(struct file *file, char __user *ubuf, size_t count,
 		unsigned long addr2;
 		int i;
 
-		if (kstrtoul(p, 16, &addr))
+		if (kstrtoul(p, 16, &addr) != 0)
 			return 0;
 
 		for (i = 0; i < ARRAY_SIZE(gdrm_disp1_reg_range); i++) {
@@ -372,7 +372,7 @@ static ssize_t debug_write(struct file *file, const char __user *ubuf,
 	if (count > debug_bufmax)
 		count = debug_bufmax;
 
-	if (copy_from_user(&dis_cmd_buf, ubuf, count))
+	if (copy_from_user(&dis_cmd_buf, ubuf, count) != 0)
 		return -EFAULT;
 
 	dis_cmd_buf[count] = 0;
