@@ -1271,7 +1271,7 @@
 		};
 
 		mutex: mutex@14020000 {
-			compatible = "mediatek,mt2712-disp-mutex";
+			compatible = "mediatek,mt2712-disp-mutex", "syscon";
 			reg = <0 0x14020000 0 0x1000>;
 			interrupts = <GIC_SPI 177 IRQ_TYPE_LEVEL_LOW>;
 			power-domains = <&scpsys MT2712_POWER_DOMAIN_MM>;
@@ -1380,21 +1380,68 @@
 		};
 
 		ovl2: ovl@1402c000 {
-			compatible = "mediatek,mt8173-disp-ovl";
+			compatible = "mediatek,mt2712-disp-ovl-2";
+			mediatek,ovlid = <0>;
+			mediatek,ovlname = "ovl-0";
 			reg = <0 0x1402c000 0 0x1000>;
 			interrupts = <GIC_SPI 262 IRQ_TYPE_LEVEL_LOW>;
 			power-domains = <&scpsys MT2712_POWER_DOMAIN_MM>;
 			clocks = <&mmsys CLK_MM_DISP_OVL2>;
+			clock-names = "mm_disp_ovl2";
+			iommus = <&iommu1 M4U_PORT_DISP_OVL2>;
+			mediatek,larb = <&larb5>;
+		};
+
+		ovl3: ovl@1402c100 {
+			compatible = "mediatek,mt2712-disp-ovl-2";
+			mediatek,ovlid = <1>;
+			mediatek,ovlname = "ovl-1";
+			reg = <0 0x1402c100 0 0x100>;
+			interrupts = <GIC_SPI 262 IRQ_TYPE_LEVEL_LOW>;
+			power-domains = <&scpsys MT2712_POWER_DOMAIN_MM>;
+			clocks = <&mmsys CLK_MM_DISP_OVL2>;
+			clock-names = "mm_disp_ovl2";
+			iommus = <&iommu1 M4U_PORT_DISP_OVL2>;
+			mediatek,larb = <&larb5>;
+		};
+
+		ovl4: ovl@1402c200 {
+			compatible = "mediatek,mt2712-disp-ovl-2";
+			mediatek,ovlid = <2>;
+			mediatek,ovlname = "ovl-2";
+			reg = <0 0x1402c200 0 0x100>;
+			interrupts = <GIC_SPI 262 IRQ_TYPE_LEVEL_LOW>;
+			power-domains = <&scpsys MT2712_POWER_DOMAIN_MM>;
+			clocks = <&mmsys CLK_MM_DISP_OVL2>;
+			clock-names = "mm_disp_ovl2";
+			iommus = <&iommu1 M4U_PORT_DISP_OVL2>;
+			mediatek,larb = <&larb5>;
+		};
+
+		ovl5: ovl@1402c300 {
+			compatible = "mediatek,mt2712-disp-ovl-2";
+			mediatek,ovlid = <3>;
+			mediatek,ovlname = "ovl-3";
+			reg = <0 0x1402c300 0 0x100>;
+			interrupts = <GIC_SPI 262 IRQ_TYPE_LEVEL_LOW>;
+			power-domains = <&scpsys MT2712_POWER_DOMAIN_MM>;
+			clocks = <&mmsys CLK_MM_DISP_OVL2>;
+			clock-names = "mm_disp_ovl2";
 			iommus = <&iommu1 M4U_PORT_DISP_OVL2>;
 			mediatek,larb = <&larb5>;
 		};
 
 		wdma2: wdma@1402d000 {
-			compatible = "mediatek,mt8173-disp-wdma";
+			compatible = "mediatek,mt2712-disp-wdma-2";
 			reg = <0 0x1402d000 0 0x1000>;
+			mediatek,mmsys-regmap = <&mmsys>;
+			mediatek,mutex-regmap = <&mutex>;
 			interrupts = <GIC_SPI 264 IRQ_TYPE_LEVEL_LOW>;
 			power-domains = <&scpsys MT2712_POWER_DOMAIN_MM>;
-			clocks = <&mmsys CLK_MM_DISP_WDMA2>;
+			clocks =
+				<&mmsys CLK_MM_DISP_WDMA2>,
+				<&mmsys CLK_MM_MUTEX_32K>;
+			clock-names = "mm_disp_wdma2", "mm_mutex_32k";
 			iommus = <&iommu1 M4U_PORT_DISP_WDMA2>;
 			mediatek,larb = <&larb5>;
 		};
