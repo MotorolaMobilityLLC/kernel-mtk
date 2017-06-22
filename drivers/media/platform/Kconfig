@@ -33,6 +33,16 @@ source "drivers/media/platform/omap/Kconfig"
 
 source "drivers/media/platform/blackfin/Kconfig"
 
+config MEDIATEK_OVL
+	tristate "Mediatek Overlay driver"
+	depends on VIDEO_DEV && VIDEO_V4L2 && ARCH_MEDIATEK
+	select VIDEOBUF2_DMA_CONTIG
+	---help---
+	   Mediatek Overlay driver is a framework of V4L2.
+	   Defaultly it is disable. Set when v4l2 Video mediatek
+	   overlay is needed. When it is enable, related
+	   mediatek overlay driver will be included.
+
 config VIDEO_SH_VOU
 	tristate "SuperH VOU video output driver"
 	depends on MEDIA_CAMERA_SUPPORT
