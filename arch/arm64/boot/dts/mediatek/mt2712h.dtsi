@@ -217,7 +217,6 @@
 				exit-latency-us = <80>;
 				min-residency-us = <2000>;
 				arm,psci-suspend-param = <0x0010000>;
-				status = "disabled";
 			};
 
 			CLUSTER_SLEEP_0: cluster-sleep-0 {
@@ -227,7 +226,6 @@
 				exit-latency-us = <80>;
 				min-residency-us = <3000>;
 				arm,psci-suspend-param = <0x1010000>;
-				status = "disabled";
 			};
 		};
 	};
