@@ -31,7 +31,11 @@
 
 #include "clkdbg.h"
 
+#if defined(CONFIG_PM_DEBUG)
 #define CLKDBG_PM_DOMAIN	1
+#else
+#define CLKDBG_PM_DOMAIN	0
+#endif
 #define CLKDBG_PM_DOMAIN_API_4_9	1
 #define CLKDBG_CCF_API_4_4	1
 #define CLKDBG_HACK_CLK		0
