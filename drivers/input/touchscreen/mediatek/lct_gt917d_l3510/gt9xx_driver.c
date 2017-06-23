@@ -1736,6 +1736,7 @@ static s32 tpd_i2c_probe(struct i2c_client *client, const struct i2c_device_id *
 {
 	s32 err = 0;
 	s32 ret = 0;
+	u8 sensor_id = 0;//modify by yangjiangzhu
 	struct device_node *node;
 
 	u16 version_info;
@@ -1905,6 +1906,9 @@ static s32 tpd_i2c_probe(struct i2c_client *client, const struct i2c_device_id *
 	enable_irq(touch_irq);
 #if defined(CONFIG_GTP_AUTO_UPDATE)
 	ret = gup_init_update_proc(client);
+
+ 	temp_pid=sensor_id;//modify by yangjiangzhu
+		GTP_INFO("Sensor_ID: %d", sensor_id);
 
 	if (ret < 0)
 		GTP_ERROR("Create update thread error.");
