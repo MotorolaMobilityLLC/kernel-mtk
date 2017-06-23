@@ -634,7 +634,7 @@
 	cap-sd-highspeed;
 	sd-uhs-sdr50;
 	sd-uhs-sdr104;
-	cd-gpios = <&pio 70 0>;
+	cd-gpios = <&pio 70 1>;
 	vmmc-supply = <&mmc_fixed_3v3>;
 	vqmmc-supply = <&mmc1_vqmmc>;
 	assigned-clocks = <&topckgen CLK_TOP_MSDC30_1_SEL>;
@@ -651,7 +651,7 @@
 	cap-sd-highspeed;
 	sd-uhs-sdr50;
 	sd-uhs-sdr104;
-	cd-gpios = <&pio 94 0>;
+	cd-gpios = <&pio 94 1>;
 	vmmc-supply = <&mmc_fixed_3v3>;
 	vqmmc-supply = <&mmc2_vqmmc>;
 	assigned-clocks = <&topckgen CLK_TOP_MSDC30_1_SEL>;
