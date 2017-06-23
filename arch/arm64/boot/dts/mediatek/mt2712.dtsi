@@ -1193,11 +1193,11 @@
 			clocks = <&mmsys CLK_MM_DISP_GAMMA>;
 		};
 
-		split@14019000 {
+		split@14018000 {
 			compatible = "mediatek,mt8173-disp-split";
-			reg = <0 0x14019000 0 0x1000>;
+			reg = <0 0x14018000 0 0x1000>;
 			power-domains = <&scpsys MT2712_POWER_DOMAIN_MM>;
-			clocks = <&mmsys CLK_MM_DISP_SPLIT1>;
+			clocks = <&mmsys CLK_MM_DISP_SPLIT0>;
 		};
 
 		ufoe@1401a000 {
