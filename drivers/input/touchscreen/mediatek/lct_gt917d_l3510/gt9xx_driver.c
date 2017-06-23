@@ -1777,40 +1777,7 @@ static s32 tpd_i2c_probe(struct i2c_client *client, const struct i2c_device_id *
 		GTP_ERROR("GTP init panel failed.");
 		//return -1;
 	}
-	//add devinfo start
-   #ifdef CONFIG_LCT_DEVINFO_SUPPORT 
-	temp_ver=(char*) kmalloc(8, GFP_KERNEL);	
-	sprintf(temp_ver,"0x%x",tpd_cfg_version); //changed by caozhg
 
-	switch(temp_pid)
-	{
-		case 0x00://No used
-		devinfo_ctp_regchar("unknown","O-Film",temp_ver,DEVINFO_USED);
-			break;
-		case 0x01:
-		devinfo_ctp_regchar("unknown","TopTouch",temp_ver,DEVINFO_USED);
-			break;
-		case 0x02:
-		devinfo_ctp_regchar("unknown","Mudong",temp_ver,DEVINFO_USED);
-			break;
-		case 0x03:
-		devinfo_ctp_regchar("unknown","reverse",temp_ver,DEVINFO_USED);
-			break;
-		case 0x04:
-		devinfo_ctp_regchar("unknown","reverse",temp_ver,DEVINFO_USED);
-			break;
-		case 0x05:
-		devinfo_ctp_regchar("unknown","YuShun",temp_ver,DEVINFO_USED);
-			break;
-		case 0x06:
-		devinfo_ctp_regchar("unknown","reverse",temp_ver,DEVINFO_USED);
-			break;
-		default:
-			break;
-	}
-
-   #endif
-	//add end
 	/* Create proc file system */
 	gt91xx_config_proc =
 	    proc_create(GT91XX_CONFIG_PROC_FILE, 0660, NULL,
@@ -1906,13 +1873,48 @@ static s32 tpd_i2c_probe(struct i2c_client *client, const struct i2c_device_id *
 	enable_irq(touch_irq);
 #if defined(CONFIG_GTP_AUTO_UPDATE)
 	ret = gup_init_update_proc(client);
-
- 	temp_pid=sensor_id;//modify by yangjiangzhu
+	gtp_i2c_read_dbl_check(client, GTP_REG_SENSOR_ID, &sensor_id, 1);//modify by yangjiangzhu
+	
 		GTP_INFO("Sensor_ID: %d", sensor_id);
-
+ 	temp_pid=sensor_id;//modify by yangjiangzhu
 	if (ret < 0)
 		GTP_ERROR("Create update thread error.");
 #endif
+
+//add devinfo start
+#ifdef CONFIG_LCT_DEVINFO_SUPPORT 
+	temp_ver=(char*) kmalloc(8, GFP_KERNEL);	
+	sprintf(temp_ver,"0x%x",tpd_cfg_version); //changed by caozhg
+
+	switch(temp_pid)
+	{
+		case 0x00://No used
+		devinfo_ctp_regchar("unknown","O-Film",temp_ver,DEVINFO_USED);
+			break;
+		case 0x01:
+		devinfo_ctp_regchar("unknown","TopTouch",temp_ver,DEVINFO_USED);
+			break;
+		case 0x02:
+		devinfo_ctp_regchar("unknown","Mudong",temp_ver,DEVINFO_USED);
+			break;
+		case 0x03:
+		devinfo_ctp_regchar("unknown","reverse",temp_ver,DEVINFO_USED);
+			break;
+		case 0x04:
+		devinfo_ctp_regchar("unknown","reverse",temp_ver,DEVINFO_USED);
+			break;
+		case 0x05:
+		devinfo_ctp_regchar("unknown","YuShun",temp_ver,DEVINFO_USED);
+			break;
+		case 0x06:
+		devinfo_ctp_regchar("unknown","reverse",temp_ver,DEVINFO_USED);
+			break;
+		default:
+			break;
+	}
+
+#endif
+//add end
 
 #if defined(CONFIG_TPD_PROXIMITY)
 	/* obj_ps.self = cm3623_obj; */
