@@ -334,7 +334,7 @@ static void mtk_crtc_ddp_config(struct drm_crtc *crtc)
 	struct mtk_drm_crtc *mtk_crtc = to_mtk_crtc(crtc);
 	struct mtk_crtc_state *state = to_mtk_crtc_state(mtk_crtc->base.state);
 	struct mtk_ddp_comp *ovl = mtk_crtc->ddp_comp[0];
-	unsigned int i;
+	s8 i;
 	unsigned int ovl_is_busy;
 
 	/*

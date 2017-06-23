@@ -165,11 +165,13 @@ static unsigned int ovl_fmt_convert(struct mtk_disp_ovl *ovl, unsigned int fmt)
 	case DRM_FORMAT_RGB565:
 		return OVL_CON_CLRFMT_RGB565(ovl);
 	case DRM_FORMAT_BGR565:
-		return OVL_CON_CLRFMT_RGB565(ovl) | OVL_CON_BYTE_SWAP;
+		return (unsigned int)OVL_CON_CLRFMT_RGB565(ovl) |
+				     OVL_CON_BYTE_SWAP;
 	case DRM_FORMAT_RGB888:
 		return OVL_CON_CLRFMT_RGB888(ovl);
 	case DRM_FORMAT_BGR888:
-		return OVL_CON_CLRFMT_RGB888(ovl) | OVL_CON_BYTE_SWAP;
+		return (unsigned int)OVL_CON_CLRFMT_RGB888(ovl) |
+				     OVL_CON_BYTE_SWAP;
 	case DRM_FORMAT_RGBX8888:
 	case DRM_FORMAT_RGBA8888:
 		return OVL_CON_CLRFMT_ARGB8888;
