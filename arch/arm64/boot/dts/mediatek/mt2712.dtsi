@@ -390,6 +390,7 @@
 			clocks = <&pericfg CLK_PERI_AP_DMA>;
 			clock-names = "apdma";
 			#dma-cells = <1>;
+			dma-33bits;
 		};
 
 		auxadc: adc@11001000 {
