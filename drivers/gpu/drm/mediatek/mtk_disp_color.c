@@ -22,15 +22,15 @@
 #include "mtk_drm_ddp_comp.h"
 #include "mtk_drm_drv.h"
 
-#define DISP_COLOR_CFG_MAIN			0x0400
-#define DISP_COLOR_START_MT2701			0x0f00
-#define DISP_COLOR_START_MT8173			0x0c00
-#define DISP_COLOR_START(comp)			((comp)->data->color_offset)
-#define DISP_COLOR_WIDTH(comp)			(DISP_COLOR_START(comp) + 0x50)
-#define DISP_COLOR_HEIGHT(comp)			(DISP_COLOR_START(comp) + 0x54)
+#define DISP_COLOR_CFG_MAIN		0x0400
+#define DISP_COLOR_START_MT2701		0x0f00
+#define DISP_COLOR_START_MT8173		0x0c00
+#define DISP_COLOR_START(comp)		((comp)->data->color_offset)
+#define DISP_COLOR_WIDTH(comp)		(DISP_COLOR_START(comp) + 0x50UL)
+#define DISP_COLOR_HEIGHT(comp)		(DISP_COLOR_START(comp) + 0x54UL)
 
-#define COLOR_BYPASS_ALL			BIT(7)
-#define COLOR_SEQ_SEL				BIT(13)
+#define COLOR_BYPASS_ALL		BIT(7)
+#define COLOR_SEQ_SEL			BIT(13)
 
 struct mtk_disp_color_data {
 	unsigned int color_offset;

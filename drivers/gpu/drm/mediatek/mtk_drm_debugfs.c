@@ -101,7 +101,7 @@ static void process_dbg_opt(const char *opt)
 		char *p = (char *)opt + 5;
 		char *np;
 		unsigned long addr, val;
-		int i;
+		u64 i;
 
 		np = strsep(&p, "=");
 		if (kstrtoul(np, 16, &addr) != 0)
@@ -116,7 +116,8 @@ static void process_dbg_opt(const char *opt)
 
 		for (i = 0; i < ARRAY_SIZE(gdrm_disp1_reg_range); i++) {
 			if (addr > gdrm_disp1_reg_range[i].reg_base &&
-			    addr < gdrm_disp1_reg_range[i].reg_base + 0x1000) {
+			    addr < gdrm_disp1_reg_range[i].reg_base +
+			    0x1000UL) {
 				writel(val, gdrm_disp1_base[i] + addr -
 					gdrm_disp1_reg_range[i].reg_base);
 				break;
@@ -125,7 +126,8 @@ static void process_dbg_opt(const char *opt)
 
 		for (i = 0; i < ARRAY_SIZE(gdrm_disp1_reg_range); i++) {
 			if (addr > gdrm_disp2_reg_range[i].reg_base &&
-			    addr < gdrm_disp2_reg_range[i].reg_base + 0x1000) {
+			    addr < gdrm_disp2_reg_range[i].reg_base +
+			    0x1000UL) {
 				writel(val, gdrm_disp2_base[i] + addr -
 					gdrm_disp2_reg_range[i].reg_base);
 				break;
@@ -135,7 +137,7 @@ static void process_dbg_opt(const char *opt)
 	} else if (strncmp(opt, "regr:", 5) == 0) {
 		char *p = (char *)opt + 5;
 		unsigned long addr;
-		int i;
+		u64 i;
 
 		if (kstrtoul(p, 16, &addr) != 0)
 			goto error;
@@ -143,7 +145,7 @@ static void process_dbg_opt(const char *opt)
 		for (i = 0; i < ARRAY_SIZE(gdrm_disp1_reg_range); i++) {
 			if (addr >= gdrm_disp1_reg_range[i].reg_base &&
 			    addr < gdrm_disp1_reg_range[i].reg_base +
-			    0x1000) {
+			    0x1000UL) {
 				DRM_INFO("%8s Read register 0x%08lX: 0x%08X\n",
 					 gdrm_disp1_reg_range[i].name, addr,
 					 readl(gdrm_disp1_base[i] + addr -
@@ -154,7 +156,8 @@ static void process_dbg_opt(const char *opt)
 
 		for (i = 0; i < ARRAY_SIZE(gdrm_disp2_reg_range); i++) {
 			if (addr >= gdrm_disp2_reg_range[i].reg_base &&
-			    addr < gdrm_disp2_reg_range[i].reg_base + 0x1000) {
+			    addr < gdrm_disp2_reg_range[i].reg_base +
+			    0x1000UL) {
 				DRM_INFO("%8s Read register 0x%08lX: 0x%08X\n",
 					 gdrm_disp2_reg_range[i].name, addr,
 					 readl(gdrm_disp2_base[i] + addr -
@@ -166,14 +169,15 @@ static void process_dbg_opt(const char *opt)
 	} else if (strncmp(opt, "autoregr:", 9) == 0) {
 		DRM_INFO("Set the register addr for Auto-test\n");
 	} else if (strncmp(opt, "dump:", 5) == 0) {
-		int i, j;
+		u64 i;
+		u32 j;
 
 		for (i = 0; i < ARRAY_SIZE(gdrm_disp1_reg_range); i++) {
 			if (!gdrm_disp1_base[i])
 				continue;
 			for (j = gdrm_disp1_reg_range[i].offset[0];
 			     j < gdrm_disp1_reg_range[i].offset[0] +
-			     gdrm_disp1_reg_range[i].length[0]; j += 16)
+			     gdrm_disp1_reg_range[i].length[0]; j += 16UL)
 				DRM_INFO("%8s 0x%08X: %08X %08X %08X %08X\n",
 					gdrm_disp1_reg_range[i].name,
 					gdrm_disp1_reg_range[i].reg_base + j,
@@ -184,7 +188,7 @@ static void process_dbg_opt(const char *opt)
 
 			for (j = gdrm_disp1_reg_range[i].offset[1];
 			     j < gdrm_disp1_reg_range[i].offset[1] +
-			     gdrm_disp1_reg_range[i].length[1]; j += 16)
+			     gdrm_disp1_reg_range[i].length[1]; j += 16UL)
 				DRM_INFO("%8s 0x%08X: %08X %08X %08X %08X\n",
 					gdrm_disp1_reg_range[i].name,
 					gdrm_disp1_reg_range[i].reg_base + j,
@@ -287,14 +291,15 @@ static ssize_t debug_read(struct file *file, char __user *ubuf, size_t count,
 		char read_buf[512] = {0};
 		char *p = (char *)dis_cmd_buf + 5;
 		unsigned long addr;
-		int i;
+		u64 i;
 
 		if (kstrtoul(p, 16, &addr) != 0)
 			return 0;
 
 		for (i = 0; i < ARRAY_SIZE(gdrm_disp1_reg_range); i++) {
 			if (addr >= gdrm_disp1_reg_range[i].reg_base &&
-			    addr < gdrm_disp1_reg_range[i].reg_base + 0x1000) {
+			    addr < gdrm_disp1_reg_range[i].reg_base +
+			    0x1000UL) {
 				sprintf(read_buf,
 					"%8s Read register 0x%08lX: 0x%08X\n",
 					gdrm_disp1_reg_range[i].name, addr,
@@ -306,7 +311,8 @@ static ssize_t debug_read(struct file *file, char __user *ubuf, size_t count,
 
 		for (i = 0; i < ARRAY_SIZE(gdrm_disp2_reg_range); i++) {
 			if (addr >= gdrm_disp2_reg_range[i].reg_base &&
-			    addr < gdrm_disp2_reg_range[i].reg_base + 0x1000) {
+			    addr < gdrm_disp2_reg_range[i].reg_base +
+			    0x1000UL) {
 				sprintf(read_buf,
 					"%8s Read register 0x%08lX: 0x%08X\n",
 					gdrm_disp2_reg_range[i].name, addr,
@@ -324,14 +330,15 @@ static ssize_t debug_read(struct file *file, char __user *ubuf, size_t count,
 		char *p = (char *)dis_cmd_buf + 9;
 		unsigned long addr;
 		unsigned long addr2;
-		int i;
+		u64 i;
 
 		if (kstrtoul(p, 16, &addr) != 0)
 			return 0;
 
 		for (i = 0; i < ARRAY_SIZE(gdrm_disp1_reg_range); i++) {
 			if (addr >= gdrm_disp1_reg_range[i].reg_base &&
-			    addr < gdrm_disp1_reg_range[i].reg_base + 0x1000) {
+			    addr < gdrm_disp1_reg_range[i].reg_base +
+			    0x1000UL) {
 				sprintf(read_buf,
 					"%8s Read register 0x%08lX: 0x%08X\n",
 					gdrm_disp1_reg_range[i].name, addr,
@@ -340,10 +347,11 @@ static ssize_t debug_read(struct file *file, char __user *ubuf, size_t count,
 				break;
 			}
 		}
-		addr2 = addr + 0x1000;
+		addr2 = addr + 0x1000ULL;
 		for (i = 0; i < ARRAY_SIZE(gdrm_disp2_reg_range); i++) {
 			if (addr2 >= gdrm_disp2_reg_range[i].reg_base &&
-			    addr2 < gdrm_disp2_reg_range[i].reg_base + 0x1000) {
+			    addr2 < gdrm_disp2_reg_range[i].reg_base +
+			    0x1000UL) {
 				sprintf(read_buf2,
 					"%8s Read register 0x%08lX: 0x%08X\n",
 					gdrm_disp2_reg_range[i].name, addr2,
@@ -364,7 +372,7 @@ static ssize_t debug_read(struct file *file, char __user *ubuf, size_t count,
 static ssize_t debug_write(struct file *file, const char __user *ubuf,
 	size_t count, loff_t *ppos)
 {
-	const int debug_bufmax = sizeof(dis_cmd_buf) - 1;
+	const u64 debug_bufmax = sizeof(dis_cmd_buf) - 1ULL;
 	size_t ret;
 
 	ret = count;
@@ -409,8 +417,8 @@ void mtk_drm_debugfs_init(struct drm_device *dev,
 					   &debug_fops);
 
 	for (i = 0; (comp_id = priv->data->main_path[i]) !=
-		     DDP_COMPONENT_DPI0 && comp_id !=
-		     DDP_COMPONENT_PWM0; i++) {
+		     (int)DDP_COMPONENT_DPI0 && comp_id !=
+		     (int)DDP_COMPONENT_PWM0; i++) {
 		np = priv->comp_node[comp_id];
 		gdrm_disp1_base[i] = priv->ddp_comp[comp_id]->regs;
 		of_address_to_resource(np, 0, &res);
@@ -426,8 +434,8 @@ void mtk_drm_debugfs_init(struct drm_device *dev,
 	gdrm_disp1_reg_range[i++].reg_base = mutex_phys;
 
 	for (i = 0; (comp_id = priv->data->ext_path[i]) !=
-		     DDP_COMPONENT_DPI1 && comp_id !=
-		     DDP_COMPONENT_PWM1; i++) {
+		     (int)DDP_COMPONENT_DPI1 && comp_id !=
+		     (int)DDP_COMPONENT_PWM1; i++) {
 		np = priv->comp_node[comp_id];
 		gdrm_disp2_base[i] = of_iomap(np, 0);
 		of_address_to_resource(np, 0, &res);
