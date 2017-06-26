@@ -151,6 +151,14 @@
 #define U3P_SR_COEF_DIVISOR	1000
 #define U3P_FM_DET_CYCLE_CNT	1024
 
+#define GPIO_CTLD			0x80c
+#define GPIO_CTLE			0x810
+#define FORCE_SSUSB_IP_SW_RST		BIT(29)
+#define MCU_BUS_CK_GATE_EN		BIT(30)
+#define REG_SSUSB_IP_SW_RST		BIT(31)
+#define RG_SWRST_U3_PHYD_FORCE_EN	BIT(24)
+#define RG_SWRST_U3_PHYD		BIT(25)
+
 enum mt_phy_version {
 	MT_PHY_V1 = 1,
 	MT_PHY_V2,
@@ -458,6 +466,36 @@ static void phy_instance_power_off(struct mt65xx_u3phy *u3phy,
 	dev_dbg(u3phy->dev, "%s(%d)\n", __func__, index);
 }
 
+static void phy_pcie_power_on(struct mt65xx_u3phy *u3phy,
+	struct mt65xx_phy_instance *instance)
+{
+	u32 tmp;
+
+	tmp = readl(instance->port_base + GPIO_CTLD);
+	tmp &= ~(FORCE_SSUSB_IP_SW_RST | MCU_BUS_CK_GATE_EN |
+		REG_SSUSB_IP_SW_RST);
+	writel(tmp, instance->port_base + GPIO_CTLD);
+
+	tmp = readl(instance->port_base + GPIO_CTLE);
+	tmp &= ~(RG_SWRST_U3_PHYD_FORCE_EN | RG_SWRST_U3_PHYD);
+	writel(tmp, instance->port_base + GPIO_CTLE);
+}
+
+static void phy_pcie_power_off(struct mt65xx_u3phy *u3phy,
+	struct mt65xx_phy_instance *instance)
+
+{
+	u32 tmp;
+
+	tmp = readl(instance->port_base + GPIO_CTLD);
+	tmp |= FORCE_SSUSB_IP_SW_RST | REG_SSUSB_IP_SW_RST;
+	writel(tmp, instance->port_base + GPIO_CTLD);
+
+	tmp = readl(instance->port_base + GPIO_CTLE);
+	tmp |= RG_SWRST_U3_PHYD_FORCE_EN | RG_SWRST_U3_PHYD;
+	writel(tmp, instance->port_base + GPIO_CTLE);
+}
+
 static void phy_instance_exit(struct mt65xx_u3phy *u3phy,
 	struct mt65xx_phy_instance *instance)
 {
@@ -547,7 +585,9 @@ static int mt65xx_phy_power_on(struct phy *phy)
 	if (instance->type == PHY_TYPE_USB2) {
 		phy_instance_power_on(u3phy, instance);
 		hs_slew_rate_calibrate(u3phy, instance);
-	}
+	} else if (instance->type == PHY_TYPE_PCIE)
+		phy_pcie_power_on(u3phy, instance);
+
 	return 0;
 }
 
@@ -558,6 +598,8 @@ static int mt65xx_phy_power_off(struct phy *phy)
 
 	if (instance->type == PHY_TYPE_USB2)
 		phy_instance_power_off(u3phy, instance);
+	else if (instance->type == PHY_TYPE_PCIE)
+		phy_pcie_power_off(u3phy, instance);
 
 	return 0;
 }
@@ -601,7 +643,8 @@ static struct phy *mt65xx_phy_xlate(struct device *dev,
 
 	instance->type = args->args[0];
 	if (!(instance->type == PHY_TYPE_USB2 ||
-	      instance->type == PHY_TYPE_USB3)) {
+	      instance->type == PHY_TYPE_USB3) ||
+	      instance->type == PHY_TYPE_PCIE) {
 		dev_err(dev, "unsupported device type: %d\n", instance->type);
 		return ERR_PTR(-EINVAL);
 	}
