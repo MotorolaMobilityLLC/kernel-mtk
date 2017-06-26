@@ -19,7 +19,6 @@ obj-$(CONFIG_MMC_MTK_SDIO) += msdc.o
 
 msdc-y += sd.o
 msdc-y += msdc_tune.o
-msdc-y += dbg.o
 msdc-y += autok.o
 msdc-y += autok_dvfs.o
 

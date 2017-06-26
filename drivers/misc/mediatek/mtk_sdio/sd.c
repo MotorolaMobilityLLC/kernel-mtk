@@ -1734,10 +1734,6 @@ static u32 msdc_command_resp_polling(struct msdc_host *host,
 		}
 	}
 
-#ifdef MTK_MSDC_ERROR_TUNE_DEBUG
-	msdc_error_tune_debug1(host, cmd, sbc, &intsts);
-#endif
-
 	/* command interrupts */
 	if  (!(intsts & cmdsts))
 		goto out;
@@ -2499,7 +2495,6 @@ static void msdc_dma_stop(struct msdc_host *host)
 	if (retry == 0) {
 		msdc_dump_info(host->id);
 		mdelay(10);
-		msdc_dump_gpd_bd(host->id);
 	}
 
 	MSDC_CLR_BIT32(MSDC_INTEN, wints); /* Not just xfer_comp */
@@ -4139,8 +4134,7 @@ static void msdc_ops_request_legacy(struct mmc_host *mmc,
 	struct mmc_command *stop = NULL;
 	struct mmc_command *sbc = NULL;
 	/* === for sdio profile === */
-	u32 old_H32 = 0, old_L32 = 0, new_H32 = 0, new_L32 = 0;
-	u32 ticks = 0, opcode = 0, sizes = 0, bRx = 0;
+	u32 opcode = 0, sizes = 0, bRx = 0;
 #ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
 	int ret;
 #endif
@@ -4182,11 +4176,6 @@ static void msdc_ops_request_legacy(struct mmc_host *mmc,
 		sbc = mrq->sbc;
 #endif
 
-	if (sdio_pro_enable) {
-		/* === for sdio profile === */
-		if (mrq->cmd->opcode == 52 || mrq->cmd->opcode == 53)
-			; /* GPT_GetCounter64(&old_L32, &old_H32); */
-	}
 #ifndef CONFIG_CMDQ_CMD_DAT_PARALLEL
 	host->mrq = mrq;
 #endif
@@ -4276,8 +4265,6 @@ static void msdc_ops_request_legacy(struct mmc_host *mmc,
 	if (sdio_pro_enable) {
 		if (mrq->cmd->opcode == 52 || mrq->cmd->opcode == 53) {
 			/* GPT_GetCounter64(&new_L32, &new_H32); */
-			ticks = msdc_time_calc(old_L32, old_H32,
-				new_L32, new_H32);
 
 			opcode = mrq->cmd->opcode;
 			if (mrq->cmd->data) {
@@ -4288,9 +4275,6 @@ static void msdc_ops_request_legacy(struct mmc_host *mmc,
 			} else {
 				bRx = mrq->cmd->arg & 0x80000000 ? 1 : 0;
 			}
-
-			if (!mrq->cmd->error)
-				msdc_performance(opcode, sizes, bRx, ticks);
 		}
 	}
 
@@ -5100,10 +5084,6 @@ static irqreturn_t msdc_irq(int irq, void *dev_id)
 	if (data == NULL)
 		goto skip_data_interrupts;
 
-#ifdef MTK_MSDC_ERROR_TUNE_DEBUG
-	msdc_error_tune_debug2(host, stop, &intsts);
-#endif
-
 	stop = data->stop;
 #if (MSDC_DATA1_INT == 1)
 	if ((host->hw->flags & MSDC_SDIO_IRQ) &&
@@ -5177,10 +5157,6 @@ skip_data_interrupts:
 	/* command interrupts */
 	if ((cmd == NULL) || !(intsts & cmdsts))
 		goto skip_cmd_interrupts;
-
-#ifdef MTK_MSDC_ERROR_TUNE_DEBUG
-	msdc_error_tune_debug3(host, cmd, &intsts);
-#endif
 
 #ifndef CONFIG_CMDQ_CMD_DAT_PARALLEL
 	if (intsts & MSDC_INT_CMDRDY) {
@@ -5936,7 +5912,6 @@ static int __init mt_msdc_init(void)
 #ifdef CONFIG_PWR_LOSS_MTK_TEST
 	msdc_proc_emmc_create();
 #endif
-	msdc_debug_proc_init();
 
 	pr_debug(DRV_NAME ": MediaTek MSDC Driver\n");
 
