@@ -176,6 +176,7 @@ struct mtk_pcie_port {
 	u32 port;
 	u32 lane;
 	int devfn;
+	struct phy *phy;
 	struct clk	*aux, *obff, *ahb, *axi, *mac, *pipe;
 	struct device *dev;
 	struct mtk_pcie *pcie;
@@ -1371,6 +1372,7 @@ static int mtk_pcie_parse_and_add_res(struct mtk_pcie *pcie)
 		snprintf(name, sizeof(name), "pcie-phy%d", i);
 		phy = devm_of_phy_get(dev, child, name);
 		if (!IS_ERR(phy)) {
+			port->phy = phy;
 			err = phy_init(phy);
 			if (err) {
 				dev_err(dev, "%s: failed to initialize phy\n",
@@ -1397,6 +1399,7 @@ static int mtk_pcie_parse_and_add_res(struct mtk_pcie *pcie)
 		/* initialize pcie rc controller */
 		err = mtk_pcie_init_hw(port);
 		if (err) {
+			phy_power_off(port->phy);
 			dev_err(dev, "failed to init pcie rc %d h/w, check the connection\n", port->port);
 			continue;
 		}
@@ -1531,6 +1534,7 @@ static int __maybe_unused mtk_pcie_suspend_noirq(struct device *dev)
 				clk_disable_unprepare(port->ahb);
 			if (!IS_ERR(port->mac))
 				clk_disable_unprepare(port->mac);
+			phy_power_off(port->phy);
 		}
 	}
 
@@ -1553,6 +1557,7 @@ static int __maybe_unused mtk_pcie_resume_noirq(struct device *dev)
 		reg = &port->reg;
 
 		if (reg->linkup) {
+			phy_power_on(port->phy);
 			mtk_pcie_init_hw(port);
 			if (IS_ENABLED(CONFIG_PCI_MSI))
 				mtk_pcie_enable_msi(port);
@@ -1564,7 +1569,6 @@ static int __maybe_unused mtk_pcie_resume_noirq(struct device *dev)
 
 
 const struct dev_pm_ops mtk_pcie_pm_ops = {
-	//SET_SYSTEM_SLEEP_PM_OPS(mtk_pcie_suspend, mtk_pcie_resume)
 	SET_NOIRQ_SYSTEM_SLEEP_PM_OPS(mtk_pcie_suspend_noirq,
 				      mtk_pcie_resume_noirq)
 };
