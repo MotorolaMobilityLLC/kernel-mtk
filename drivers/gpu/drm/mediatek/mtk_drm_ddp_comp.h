@@ -15,6 +15,7 @@
 #define MTK_DRM_DDP_COMP_H
 
 #include <linux/io.h>
+#include <stdbool.h>
 
 struct device;
 struct device_node;
