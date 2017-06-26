@@ -343,7 +343,7 @@ static void mtk_crtc_ddp_config(struct drm_crtc *crtc)
 	 * queue update module registers on vblank.
 	 */
 
-	ovl_is_busy = readl(mtk_crtc->ddp_comp[0]->regs) & 0x1;
+	ovl_is_busy = readl(mtk_crtc->ddp_comp[0]->regs) & 0x1UL;
 	if (ovl_is_busy)
 		return;
 
@@ -522,7 +522,7 @@ void mtk_crtc_ddp_irq(struct drm_crtc *crtc, struct mtk_ddp_comp *ovl)
 	struct mtk_drm_crtc *mtk_crtc = to_mtk_crtc(crtc);
 	struct mtk_drm_private *priv = crtc->dev->dev_private;
 
-	if (!priv->data->shadow_register)
+	if (priv->data->shadow_register == false)
 		mtk_crtc_ddp_config(crtc);
 
 	mtk_drm_finish_page_flip(mtk_crtc);

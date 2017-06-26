@@ -43,14 +43,14 @@
 #define	OVL_RDMA_MEM_GMC	0x40402020
 
 #define OVL_CON_BYTE_SWAP	BIT(24)
-#define OVL_CON_MTX_YUV_TO_RGB	(6 << 16)
-#define OVL_CON_CLRFMT_RGB	(1 << 12)
+#define OVL_CON_MTX_YUV_TO_RGB	(6UL << 16)
+#define OVL_CON_CLRFMT_RGB	(1UL << 12)
 #define OVL_CON_CLRFMT_RGBA8888	(2 << 12)
 #define OVL_CON_CLRFMT_ARGB8888	(3 << 12)
-#define OVL_CON_CLRFMT_RGB565(module)	((module)->data->fmt_rgb565_is_0 ? \
-					0 : OVL_CON_CLRFMT_RGB)
-#define OVL_CON_CLRFMT_RGB888(module)	((module)->data->fmt_rgb565_is_0 ? \
-					OVL_CON_CLRFMT_RGB : 0)
+#define OVL_CON_CLRFMT_RGB565(module)	(((module)->data->fmt_rgb565_is_0 \
+					== true) ? 0UL : OVL_CON_CLRFMT_RGB)
+#define OVL_CON_CLRFMT_RGB888(module)	(((module)->data->fmt_rgb565_is_0 \
+					== true) ? OVL_CON_CLRFMT_RGB : 0UL)
 #define OVL_CON_CLRFMT_UYVY(module)	((module)->data->fmt_uyvy)
 #define OVL_CON_CLRFMT_YUYV(module)	((module)->data->fmt_yuyv)
 #define	OVL_CON_AEN		BIT(8)
@@ -272,7 +272,7 @@ static int mtk_disp_ovl_probe(struct platform_device *pdev)
 	struct iommu_domain *iommu;
 
 	iommu = iommu_get_domain_for_dev(dev);
-	if (!iommu) {
+	if (iommu == NULL) {
 		dev_info(dev, "Waiting iommu driver ready...\n");
 		return -EPROBE_DEFER;
 	}
@@ -326,15 +326,15 @@ static int mtk_disp_ovl_remove(struct platform_device *pdev)
 static const struct mtk_disp_ovl_data mt2701_ovl_driver_data = {
 	.addr = DISP_REG_OVL_ADDR_MT2701,
 	.fmt_rgb565_is_0 = false,
-	.fmt_uyvy = 9 << 12,
-	.fmt_yuyv = 8 << 12,
+	.fmt_uyvy = 9U << 12,
+	.fmt_yuyv = 8U << 12,
 };
 
 static const struct mtk_disp_ovl_data mt8173_ovl_driver_data = {
 	.addr = DISP_REG_OVL_ADDR_MT8173,
 	.fmt_rgb565_is_0 = true,
-	.fmt_uyvy = 4 << 12,
-	.fmt_yuyv = 5 << 12,
+	.fmt_uyvy = 4U << 12,
+	.fmt_yuyv = 5U << 12,
 };
 
 static const struct of_device_id mtk_disp_ovl_driver_dt_match[] = {

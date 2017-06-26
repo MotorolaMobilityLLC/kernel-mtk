@@ -254,8 +254,10 @@ static int mtk_drm_kms_init(struct drm_device *drm)
 		goto err_component_unbind;
 
 	/* Use OVL device for all DMA memory allocations */
-	np = private->comp_node[private->data->main_path[0]] ?:
-	     private->comp_node[private->data->ext_path[0]];
+	np = private->comp_node[private->data->main_path[0]];
+	if (np == NULL)
+		np = private->comp_node[private->data->ext_path[0]];
+
 	pdev = of_find_device_by_node(np);
 	if (!pdev) {
 		ret = -ENODEV;

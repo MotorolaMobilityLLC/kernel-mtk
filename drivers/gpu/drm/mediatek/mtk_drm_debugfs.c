@@ -107,7 +107,7 @@ static void process_dbg_opt(const char *opt)
 		if (kstrtoul(np, 16, &addr) != 0)
 			goto error;
 
-		if (!p)
+		if (p == NULL)
 			goto error;
 
 		np = strsep(&p, "=");
@@ -173,7 +173,7 @@ static void process_dbg_opt(const char *opt)
 		u32 j;
 
 		for (i = 0; i < ARRAY_SIZE(gdrm_disp1_reg_range); i++) {
-			if (!gdrm_disp1_base[i])
+			if (gdrm_disp1_base[i] == NULL)
 				continue;
 			for (j = gdrm_disp1_reg_range[i].offset[0];
 			     j < gdrm_disp1_reg_range[i].offset[0] +
@@ -198,7 +198,7 @@ static void process_dbg_opt(const char *opt)
 					readl(gdrm_disp1_base[i] + j + 0xc));
 		}
 		for (i = 0; i < ARRAY_SIZE(gdrm_disp2_reg_range); i++) {
-			if (!gdrm_disp2_base[i])
+			if (gdrm_disp2_base[i] == NULL)
 				continue;
 			for (j = gdrm_disp2_reg_range[i].offset[0];
 			     j < gdrm_disp2_reg_range[i].offset[0] +
@@ -249,7 +249,7 @@ static void process_dbg_opt(const char *opt)
 		if (kstrtoul(np, 16, &addr) != 0)
 			goto error;
 
-		if (!p)
+		if (p == NULL)
 			goto error;
 
 		np = strsep(&p, "=");
