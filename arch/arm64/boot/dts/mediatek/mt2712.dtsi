@@ -1652,7 +1652,7 @@
 						<0 0 0 4 &pcie_intc0 4>;
 				pcie-port = <0>;
 				num-lanes = <1>;
-				phys = <&pcie0_phy>;
+				phys = <&u2port1 PHY_TYPE_PCIE>;
 				phy-names = "pcie-phy0";
 				status = "okay";
 				pcie_intc0: interrupt-controller {
@@ -1679,9 +1679,9 @@
 						<0 0 0 4 &pcie_intc1 4>;
 				pcie-port = <1>;
 				num-lanes = <1>;
-				phys = <&pcie1_phy>;
+				phys = <&u2port3 PHY_TYPE_PCIE>;
 				phy-names = "pcie-phy1";
-				status = "okay";
+				status = "disabled";
 				pcie_intc1: interrupt-controller {
 					interrupt-controller;
 					#address-cells = <0>;
@@ -1858,18 +1858,6 @@
 				 <&iommu0 M4U_PORT_JPGDEC_BSDMA_1>;
 		};
 
-		/*  add those to avoid runtime errors. */
-		pcie0_phy: pciephy@1a147000 {
-			compatible = "mediatek,pcie-phy";
-			reg = <0 0x1a147000 0 0x0800>;
-			#phy-cells = <0>;
-		};
-
-		pcie1_phy: pciephy@1a147800 {
-			compatible = "mediatek,pcie-phy";
-			reg = <0 0x1a147800 0 0x0800>;
-			#phy-cells = <0>;
-		};
 	};
 
 	clkitg: clkitg {
