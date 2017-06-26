@@ -339,7 +339,7 @@ static void lcm_get_params(LCM_PARAMS *params)
 
 	params->dsi.horizontal_sync_active				= 10; //20
 	params->dsi.horizontal_backporch				= 50;  //32//140
-	params->dsi.horizontal_frontporch				= 100;//36  //100
+	params->dsi.horizontal_frontporch				= 80;//36  //100
 	params->dsi.horizontal_active_pixel				= FRAME_WIDTH;
 //	params->dsi.ssc_disable = 1;
 /*add by lct jiatianbao start 20170321*/
