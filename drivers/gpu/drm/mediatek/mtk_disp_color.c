@@ -25,9 +25,9 @@
 #define DISP_COLOR_CFG_MAIN		0x0400
 #define DISP_COLOR_START_MT2701		0x0f00
 #define DISP_COLOR_START_MT8173		0x0c00
-#define DISP_COLOR_START(comp)		((comp)->data->color_offset)
-#define DISP_COLOR_WIDTH(comp)		(DISP_COLOR_START(comp) + 0x50UL)
-#define DISP_COLOR_HEIGHT(comp)		(DISP_COLOR_START(comp) + 0x54UL)
+#define DISP_COLOR_START(module)		((module)->data->color_offset)
+#define DISP_COLOR_WIDTH(reg)		(DISP_COLOR_START(reg) + 0x50UL)
+#define DISP_COLOR_HEIGHT(reg)		(DISP_COLOR_START(reg) + 0x54UL)
 
 #define COLOR_BYPASS_ALL		BIT(7)
 #define COLOR_SEQ_SEL			BIT(13)

@@ -38,7 +38,7 @@
 #define DISP_REG_OVL_RDMA_GMC(n)		(0x00c8 + 0x20 * (n))
 #define DISP_REG_OVL_ADDR_MT2701		0x0040
 #define DISP_REG_OVL_ADDR_MT8173		0x0f40
-#define DISP_REG_OVL_ADDR(ovl, n)		((ovl)->data->addr + 0x20 * (n))
+#define DISP_REG_OVL_ADDR(module, n)	((module)->data->addr + 0x20 * (n))
 
 #define	OVL_RDMA_MEM_GMC	0x40402020
 
@@ -47,12 +47,12 @@
 #define OVL_CON_CLRFMT_RGB	(1 << 12)
 #define OVL_CON_CLRFMT_RGBA8888	(2 << 12)
 #define OVL_CON_CLRFMT_ARGB8888	(3 << 12)
-#define OVL_CON_CLRFMT_RGB565(ovl)	((ovl)->data->fmt_rgb565_is_0 ? \
+#define OVL_CON_CLRFMT_RGB565(module)	((module)->data->fmt_rgb565_is_0 ? \
 					0 : OVL_CON_CLRFMT_RGB)
-#define OVL_CON_CLRFMT_RGB888(ovl)	((ovl)->data->fmt_rgb565_is_0 ? \
+#define OVL_CON_CLRFMT_RGB888(module)	((module)->data->fmt_rgb565_is_0 ? \
 					OVL_CON_CLRFMT_RGB : 0)
-#define OVL_CON_CLRFMT_UYVY(ovl)	((ovl)->data->fmt_uyvy)
-#define OVL_CON_CLRFMT_YUYV(ovl)	((ovl)->data->fmt_yuyv)
+#define OVL_CON_CLRFMT_UYVY(module)	((module)->data->fmt_uyvy)
+#define OVL_CON_CLRFMT_YUYV(module)	((module)->data->fmt_yuyv)
 #define	OVL_CON_AEN		BIT(8)
 #define	OVL_CON_ALPHA		0xff
 
