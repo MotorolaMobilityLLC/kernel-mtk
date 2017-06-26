@@ -38,7 +38,7 @@
 #define RDMA_FIFO_UNDERFLOW_EN				BIT(31)
 #define RDMA_FIFO_PSEUDO_SIZE(bytes)		(((bytes) / 16UL) << 16)
 #define RDMA_OUTPUT_VALID_FIFO_THRESHOLD(bytes)		((bytes) / 16)
-#define RDMA_FIFO_SIZE(rdma)			((rdma)->data->fifo_size)
+#define RDMA_FIFO_SIZE(module)			((module)->data->fifo_size)
 
 struct mtk_disp_rdma_data {
 	unsigned int fifo_size;
