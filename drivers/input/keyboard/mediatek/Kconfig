@@ -1,0 +1,16 @@
+config KEYBOARD_MTK
+	tristate "MediaTek Keypad Support"
+	---help---
+	  Say Y here if you want to use the keypad.
+	  If unuse, say N.
+	  To compile this driver as a module, choose M here: the
+	  module will be called mtk-kpd.
+
+config KEYBOARD_MTK_PLAT
+	string "MediaTek Keypad rely on specific platform"
+	depends on KEYBOARD_MTK
+	---help---
+	  choose which platform you used.
+	  Every chip has its own key matrix.
+	  So should implement driver rely on specific paltform and
+	  get registor map from ic designer
