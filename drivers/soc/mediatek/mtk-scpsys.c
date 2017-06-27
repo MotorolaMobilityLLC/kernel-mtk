@@ -74,6 +74,7 @@ enum clk_id {
 	CLK_VENC,
 	CLK_VENC_LT,
 	CLK_ETHIF,
+	CLK_JPGDEC,
 	CLK_MAX,
 };
 
@@ -84,10 +85,11 @@ static const char * const clk_names[] = {
 	"venc",
 	"venc_lt",
 	"ethif",
+	"jpgdec",
 	NULL,
 };
 
-#define MAX_CLKS	2
+#define MAX_CLKS	3
 
 struct bus_prot_ext {
 	u32 set_ofs;
@@ -618,7 +620,7 @@ static const struct scp_domain_data scp_domain_data_mt2712[] = {
 		.ctl_offs = SPM_VEN_PWR_CON,
 		.sram_pdn_bits = GENMASK(11, 8),
 		.sram_pdn_ack_bits = GENMASK(15, 12),
-		.clk_id = {CLK_MM},
+		.clk_id = {CLK_MM, CLK_VENC, CLK_JPGDEC},
 		.active_wakeup = true,
 	},
 	[MT2712_POWER_DOMAIN_ISP] = {
@@ -663,7 +665,7 @@ static const struct scp_domain_data scp_domain_data_mt2712[] = {
 		.ctl_offs = SPM_MFG_PWR_CON,
 		.sram_pdn_bits = GENMASK(11, 8),
 		.sram_pdn_ack_bits = GENMASK(19, 16),
-		.clk_id = {CLK_NONE},
+		.clk_id = {CLK_MFG},
 		.bus_prot_mask = BIT(14) | BIT(21) | BIT(23),
 		.bp_ext = {
 			.set_ofs = INFRA_TOPAXI_PROTECTEN_SET,
