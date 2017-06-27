@@ -29,7 +29,11 @@
 #include "mt_fhreg.h"
 #include "mt_freqhopping_drv.h"
 
+#define SUPPORT_SLT_TEST 0
+
 static struct mt_fh_hal_driver *g_p_fh_hal_drv;
+
+#if SUPPORT_SLT_TEST
 static int fhctl_slt_test_result = -2;
 
 static int freqhopping_slt_test_proc_read(struct seq_file *m, void *v)
@@ -75,14 +79,23 @@ out:
 	return count;
 }
 
-static int freqhopping_dumpregs_proc_open(struct inode *inode, struct file *file)
-{
-	return single_open(file, g_p_fh_hal_drv->mt_fh_hal_dumpregs_read, NULL);
-}
-
 static int freqhopping_slt_test_proc_open(struct inode *inode, struct file *file)
 {
 	return single_open(file, freqhopping_slt_test_proc_read, NULL);
+}
+
+static const struct file_operations slt_test_fops = {
+	.owner = THIS_MODULE,
+	.open = freqhopping_slt_test_proc_open,
+	.read = seq_read,
+	.write = freqhopping_slt_test_proc_write,
+	.release = single_release,
+};
+#endif /* SUPPORT_SLT_TEST */
+
+static int freqhopping_dumpregs_proc_open(struct inode *inode, struct file *file)
+{
+	return single_open(file, g_p_fh_hal_drv->mt_fh_hal_dumpregs_read, NULL);
 }
 
 static const struct file_operations dumpregs_fops = {
@@ -92,18 +105,12 @@ static const struct file_operations dumpregs_fops = {
 	.release = single_release,
 };
 
-static const struct file_operations slt_test_fops = {
-	.owner = THIS_MODULE,
-	.open = freqhopping_slt_test_proc_open,
-	.read = seq_read,
-	.write = freqhopping_slt_test_proc_write,
-	.release = single_release,
-};
-
 static int freqhopping_debug_proc_init(void)
 {
 	struct proc_dir_entry *prDumpregEntry;
+#if SUPPORT_SLT_TEST
 	struct proc_dir_entry *prSltTestEntry;
+#endif /* SUPPORT_SLT_TEST */
 	struct proc_dir_entry *fh_proc_dir = NULL;
 
 	FH_MSG_INFO("%s", __func__);
@@ -120,14 +127,14 @@ static int freqhopping_debug_proc_init(void)
 		FH_MSG_ERROR("[%s]: failed to create /proc/freqhopping/dumpregs", __func__);
 		return -EINVAL;
 	}
-
+#if SUPPORT_SLT_TEST
 	/* /proc/freqhopping/slt_test */
 	prSltTestEntry = proc_create("slt_test", 0664, fh_proc_dir, &slt_test_fops);
 	if (prSltTestEntry == NULL) {
 		FH_MSG_ERROR("[%s]: failed to create /proc/freqhopping/slt_test", __func__);
 		return -EINVAL;
 	}
-
+#endif /* SUPPORT_SLT_TEST */
 	return 0;
 }
 
