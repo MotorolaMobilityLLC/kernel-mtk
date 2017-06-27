@@ -31,22 +31,22 @@
 
 #include "8250.h"
 
-#define UART_MTK_DLH		0x01	/* baudrate Only when LCR.DLAB = 1 */
-#define UART_MTK_HIGHS		0x09	/* Highspeed register */
+#define UART_MTK_DLH			0x01	/* baudrate Only when LCR.DLAB = 1 */
+#define UART_MTK_HIGHS			0x09	/* Highspeed register */
 #define UART_MTK_SAMPLE_COUNT	0x0a	/* Sample count register */
 #define UART_MTK_SAMPLE_POINT	0x0b	/* Sample point register */
-#define MTK_UART_RATE_FIX	0x0d	/* UART Rate Fix Register */
-#define UART_MTK_GUARD		0x0f	/* guard time added register */
+#define MTK_UART_RATE_FIX		0x0d	/* UART Rate Fix Register */
+#define UART_MTK_GUARD			0x0f	/* guard time added register */
 #define UART_MTK_ESCAPE_DAT		0x10
 #define UART_MTK_ESCAPE_EN		0x11
 #define UART_MTK_DMA_EN			0x13
-#define UART_MTK_FRACDIV_L	0x15	/* fractional divider LSB address */
-#define UART_MTK_FRACDIV_M	0x16	/* fractional divider MSB address */
-#define UART_MTK_FCR_RD		0x17	/* fifo control register */
-#define UART_MTK_DEBUG0		0x18
-#define UART_MTK_RX_SEL		0x24	/* uart rx pin sel */
-#define UART_MTK_SLEEP_REQ	0x2d	/* uart sleep request register */
-#define UART_MTK_SLEEP_ACK	0x2e	/* uart sleep ack register */
+#define UART_MTK_FRACDIV_L		0x15	/* fractional divider LSB address */
+#define UART_MTK_FRACDIV_M		0x16	/* fractional divider MSB address */
+#define UART_MTK_FCR_RD			0x17	/* fifo control register */
+#define UART_MTK_DEBUG0			0x18
+#define UART_MTK_RX_SEL			0x24	/* uart rx pin sel */
+#define UART_MTK_SLEEP_REQ		0x2d	/* uart sleep request register */
+#define UART_MTK_SLEEP_ACK		0x2e	/* uart sleep ack register */
 
 #define UART_MTK_CLK_OFF_REQ	(1 << 0)	/* Request UART to sleep*/
 #define UART_MTK_CLK_OFF_ACK	(1 << 0)	/* UART sleep ack*/
@@ -58,18 +58,20 @@
 #define UART_IER_XOFFI			BIT(5)
 #define UART_IER_RTSI			BIT(6)
 #define UART_IER_CTSI			BIT(7)
-#define UART_EFR_EN			BIT(4)
+#define UART_EFR_EN				BIT(4)
 #define UART_EFR_AUTO_RTS		BIT(6)
 #define UART_EFR_AUTO_CTS		BIT(7)
-#define UART_EFR_SW_CTRL_MASK		(0xf << 0)
+#define UART_EFR_SW_CTRL_MASK	(0xf << 0)
 #define UART_EFR_NO_SW_CTRL		(0)
-#define UART_EFR_NO_FLOW_CTRL		(0)
-#define UART_EFR_AUTO_RTSCTS		(UART_EFR_AUTO_RTS | UART_EFR_AUTO_CTS)
+#define UART_EFR_NO_FLOW_CTRL	(0)
+#define UART_EFR_AUTO_RTSCTS	(UART_EFR_AUTO_RTS | UART_EFR_AUTO_CTS)
 #define UART_EFR_XON1_XOFF1		(0xa)	/* TX/RX XON1/XOFF1 flow control */
 #define UART_EFR_XON2_XOFF2		(0x5)	/* TX/RX XON2/XOFF2 flow control */
-#define UART_EFR_XON12_XOFF12		(0xf)	/* TX/RX XON1,2/XOFF1,2 flow control */
-#define TX_TRIGGER			1
-#define RX_TRIGGER			8192
+#define UART_EFR_XON12_XOFF12	(0xf)	/* TX/RX XON1,2/XOFF1,2 flow control */
+#define UART_TX_SIZE			(UART_XMIT_SIZE)
+#define UART_RX_SIZE			(8192)
+#define TX_TRIGGER				(1)
+#define RX_TRIGGER				(UART_RX_SIZE)
 
 #ifdef CONFIG_SERIAL_8250_DMA
 enum dma_rx_status {
@@ -202,7 +204,7 @@ static void mtk_dma_enable(struct uart_8250_port *up)
 	dma->rxconf.src_addr		= dma->rx_addr;
 
 	dma->txconf.direction		= DMA_MEM_TO_DEV;
-	dma->txconf.dst_addr_width	= UART_XMIT_SIZE/1024;
+	dma->txconf.dst_addr_width	= UART_TX_SIZE/1024;
 	dma->txconf.dst_addr		= dma->tx_addr;
 
 	serial_port_out(port, UART_FCR, ((1 << 0)|(1 << 1)|(1 << 2)));
@@ -230,9 +232,12 @@ static int mtk8250_startup(struct uart_port *port)
 		container_of(port, struct uart_8250_port, port);
 	struct mtk8250_data *data = port->private_data;
 
-	if (up->dma != NULL)
+	if (up->dma != NULL) {
 		data->rxstatus = DMA_RX_START;
+		uart_circ_clear(&port->state->xmit);
+	}
 #endif
+	memset(&port->icount, 0, sizeof(port->icount));
 
 	return serial8250_do_startup(port);
 }
@@ -507,7 +512,7 @@ static int mtk8250_probe_of(struct platform_device *pdev, struct uart_port *p,
 	if (dmacnt == 2) {
 		data->dma = devm_kzalloc(&pdev->dev, sizeof(*(data->dma)), GFP_KERNEL);
 		data->dma->fn = the_no_dma_filter_fn;
-		data->dma->rx_size = RX_TRIGGER;
+		data->dma->rx_size = UART_RX_SIZE;
 		data->dma->rxconf.src_maxburst = RX_TRIGGER;
 		data->dma->txconf.dst_maxburst = TX_TRIGGER;
 	}

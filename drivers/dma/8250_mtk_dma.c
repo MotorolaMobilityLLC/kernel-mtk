@@ -24,7 +24,7 @@
 #include "virt-dma.h"
 
 #define MTK_SDMA_REQUESTS	127
-#define MTK_SDMA_CHANNELS	8
+#define MTK_SDMA_CHANNELS	(CONFIG_SERIAL_8250_NR_UARTS * 2)
 
 #define DRV_NAME	"8250-mtk-dma"
 
@@ -74,7 +74,7 @@ struct mtk_chan {
 	struct virt_dma_chan vc;
 	struct list_head node;
 	void __iomem *channel_base;
-	uint32_t ccr;
+	unsigned int ccr;
 
 	struct dma_slave_config	cfg;
 	unsigned int dma_sig;
@@ -98,8 +98,8 @@ struct mtk_chan {
 
 struct mtk_sg {
 	dma_addr_t addr;
-	uint32_t en;		/* number of elements (24-bit) */
-	uint32_t fn;		/* number of frames (16-bit) */
+	unsigned int en;		/* number of elements (24-bit) */
+	unsigned int fn;		/* number of frames (16-bit) */
 };
 
 struct mtk_desc {
@@ -123,7 +123,9 @@ enum {
 	VFF_THRE			= 0x28,
 	VFF_WPT				= 0x2c,
 	VFF_RPT				= 0x30,
+	/*TX: the buffer size HW can read. RX: the buffer size SW can read.*/
 	VFF_VALID_SIZE		= 0x3c,
+	/*TX: the buffer size SW can write. RX: the buffer size HW can write.*/
 	VFF_LEFT_SIZE		= 0x40,
 	VFF_DEBUG_STATUS	= 0x50,
 	VFF_4G_SUPPORT		= 0x54,
@@ -208,7 +210,7 @@ static void mtk_dma_remove_virt_list(dma_cookie_t cookie, struct virt_dma_chan *
 	}
 }
 
-static void mtk_dma_tx_flush(struct dma_chan *chan, int timeout)
+static void mtk_dma_tx_flush(struct dma_chan *chan)
 {
 	struct mtk_chan *c = to_mtk_dma_chan(chan);
 
@@ -219,18 +221,40 @@ static void mtk_dma_tx_flush(struct dma_chan *chan, int timeout)
 	}
 }
 
+
+/*
+ * check whether the dma flush operation is finished or not.
+ * return 0 for flush success.
+ * return others for flush timeout.
+ */
+static int mtk_dma_check_flush_result(struct dma_chan *chan)
+{
+	struct timespec start, end;
+	struct mtk_chan *c = to_mtk_dma_chan(chan);
+
+	start = ktime_to_timespec(ktime_get());
+
+	while (mtk_dma_chan_read(c, VFF_FLUSH)) {
+		end = ktime_to_timespec(ktime_get());
+		if ((end.tv_sec - start.tv_sec) > 1 ||
+			((end.tv_sec - start.tv_sec) == 1 && end.tv_nsec > start.tv_nsec)) {
+			dev_info(chan->device->dev, "[DMA] Polling flush timeout\n");
+			return -1;
+		}
+	}
+
+	return 0;
+}
+
 static int mtk_dma_8250_tx_write(struct dma_chan *chan)
 {
 	struct mtk_chan *c = to_mtk_dma_chan(chan);
 	struct mtk_dmadev *mtkd = to_mtk_dma_dev(chan->device);
-	struct timespec a, b;
 	int txcount = c->remain_size;
-	unsigned int tx_size = c->cfg.dst_addr_width*1024;
-	unsigned int len, left;
-	unsigned int wpt;
-	ktime_t begin, end;
+	unsigned int send_len, left_size;
+	unsigned int wpt, vff_len;
 
-	if (atomic_inc_and_test(&c->entry) > 1) {
+	if (atomic_inc_return(&c->entry) > 1) {
 		if (vchan_issue_pending(&c->vc) && !c->desc) {
 			spin_lock(&mtkd->lock);
 			list_add_tail(&c->node, &mtkd->pending);
@@ -238,33 +262,23 @@ static int mtk_dma_8250_tx_write(struct dma_chan *chan)
 			tasklet_schedule(&mtkd->task);
 		}
 	} else {
-		while (mtk_dma_chan_read(c, VFF_LEFT_SIZE) >= c->trig) {
-			left = tx_size - mtk_dma_chan_read(c, VFF_VALID_SIZE);
-			left = (left > 16) ? (left - 16) : (0); /*prevent from CPU lock */
-			len = left < c->remain_size ? left : c->remain_size;
+		vff_len = mtk_dma_chan_read(c, VFF_LEN);
+		while (mtk_dma_chan_read(c, VFF_LEFT_SIZE) > 0) {
+			left_size = mtk_dma_chan_read(c, VFF_LEFT_SIZE);
 
-			begin = ktime_get();
-			a = ktime_to_timespec(begin);
-			while (len--) {
-				/*
-				 * DMA limitation.
-				 * Workaround: Polling flush bit to zero, set 1s timeout
-				 */
-				while (mtk_dma_chan_read(c, VFF_FLUSH)) {
-					end = ktime_get();
-					b = ktime_to_timespec(end);
-					if ((b.tv_sec - a.tv_sec) > 1 ||
-						((b.tv_sec - a.tv_sec) == 1 && b.tv_nsec > a.tv_nsec)) {
-						dev_info(chan->device->dev, "[UART] Polling flush timeout\n");
-						return 0;
-					}
-				}
+			/*prevent from CPU lock */
+			left_size = (left_size > 16) ? (left_size - 16) : (0);
+			send_len = min(left_size, c->remain_size);
+
+			while (send_len--) {
+				if (mtk_dma_check_flush_result(chan))
+					return 0;
 
 				wpt = mtk_dma_chan_read(c, VFF_WPT);
 
 				/*xmit buffer mapping DMA buffer, So don't need write data?*/
 
-				if ((wpt & 0x0000ffffl) == (mtk_dma_chan_read(c, VFF_LEN) - 1))
+				if ((wpt & 0x0000ffffl) == (vff_len - 1))
 					mtk_dma_chan_write(c, VFF_WPT, (~wpt)&0x10000);
 				else
 					mtk_dma_chan_write(c, VFF_WPT, wpt+1);
@@ -276,7 +290,7 @@ static int mtk_dma_8250_tx_write(struct dma_chan *chan)
 
 		if (txcount != c->remain_size) {
 			mtk_dma_chan_write(c, VFF_INT_EN, VFF_TX_INT_EN_B);
-			mtk_dma_tx_flush(chan, 0);
+			mtk_dma_tx_flush(chan);
 		}
 	}
 	atomic_dec(&c->entry);
@@ -690,7 +704,7 @@ static int mtk_dma_slave_config(struct dma_chan *chan,
 	struct mtk_dmadev *mtkd = to_mtk_dma_dev(c->vc.chan.device);
 	int ret;
 
-	memcpy(&c->cfg, cfg, sizeof(c->cfg));
+	c->cfg = *cfg;
 
 	if (cfg->direction == DMA_DEV_TO_MEM) {
 		mtk_dma_chan_write(c, VFF_ADDR, cfg->src_addr);
