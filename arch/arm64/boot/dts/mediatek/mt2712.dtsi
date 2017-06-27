@@ -194,8 +194,11 @@
 			compatible = "mediatek,mt2712-scpsys", "syscon";
 			#power-domain-cells = <1>;
 			reg = <0 0x10006000 0 0x1000>;
-			clocks = <&topckgen CLK_TOP_MM_SEL>;
-			clock-names = "mm";
+			clocks = <&topckgen CLK_TOP_MM_SEL>,
+				 <&topckgen CLK_TOP_MFG_SEL>,
+				 <&topckgen CLK_TOP_VENC_SEL>,
+				 <&topckgen CLK_TOP_JPGDEC_SEL>;
+			clock-names = "mm", "mfg", "venc", "jpgdec";
 			infracfg = <&infracfg>;
 		};
 
