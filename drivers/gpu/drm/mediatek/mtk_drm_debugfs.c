@@ -124,7 +124,7 @@ static void process_dbg_opt(const char *opt)
 			}
 		}
 
-		for (i = 0; i < ARRAY_SIZE(gdrm_disp1_reg_range); i++) {
+		for (i = 0; i < ARRAY_SIZE(gdrm_disp2_reg_range); i++) {
 			if (addr > gdrm_disp2_reg_range[i].reg_base &&
 			    addr < gdrm_disp2_reg_range[i].reg_base +
 			    0x1000UL) {
