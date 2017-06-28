@@ -25,6 +25,7 @@
 #include <linux/timer.h>
 #include <linux/workqueue.h>
 #include <linux/module.h>
+#include <linux/of_device.h>
 
 #define CMDQ_THR_MAX_COUNT		7 /* ddp main/sub, mdp path 0/1/2/3, general(misc) */
 #define CMDQ_OP_CODE_MASK		(0xff << CMDQ_OP_CODE_SHIFT)
@@ -393,11 +394,27 @@ static void cmdq_buf_print_wfe(struct device *dev, u32 offset, u64 cmd)
 		event_str = "CMDQ_EVENT_DISP_RDMA1_UNDERRUN";
 	else if (event == cmdq_event_value[CMDQ_EVENT_DISP_RDMA2_UNDERRUN])
 		event_str = "CMDQ_EVENT_DISP_RDMA2_UNDERRUN";
+	else if (event == cmdq_event_value[CMDQ_EVENT_MDP_RDMA0_EOF])
+		event_str = "CMDQ_EVENT_MDP_RDMA0_EOF";
+	else if (event == cmdq_event_value[CMDQ_EVENT_MDP_RDMA1_EOF])
+		event_str = "CMDQ_EVENT_MDP_RDMA1_EOF";
+	else if (event == cmdq_event_value[CMDQ_EVENT_MDP_RDMA2_EOF])
+		event_str = "CMDQ_EVENT_MDP_RDMA2_EOF";
+	else if (event == cmdq_event_value[CMDQ_EVENT_MDP_RDMA3_EOF])
+		event_str = "CMDQ_EVENT_MDP_RDMA3_EOF";
+	else if (event == cmdq_event_value[CMDQ_EVENT_MDP_WDMA_EOF])
+		event_str = "CMDQ_EVENT_MDP_WDMA_EOF";
+	else if (event == cmdq_event_value[CMDQ_EVENT_MDP_WROT0_W_EOF])
+		event_str = "CMDQ_EVENT_MDP_WROT0_W_EOF";
+	else if (event == cmdq_event_value[CMDQ_EVENT_MDP_WROT1_W_EOF])
+		event_str = "CMDQ_EVENT_MDP_WROT1_W_EOF";
+	else if (event == cmdq_event_value[CMDQ_EVENT_MDP_WROT2_W_EOF])
+		event_str = "CMDQ_EVENT_MDP_WROT2_W_EOF";
 	else
 		event_str = "UNKNOWN";
 
-	dev_err(dev, "0x%08x 0x%016llx %s event %s\n", offset, cmd,
-		cmdq_command_is_wfe(cmd) ?  "wait for" : "clear", event_str);
+	dev_err(dev, "0x%08x 0x%016llx %s event %d:%s\n", offset, cmd,
+		cmdq_command_is_wfe(cmd) ?  "wait for" : "clear", event, event_str);
 }
 
 static void cmdq_buf_print_mask(struct device *dev, u32 offset, u64 cmd)
@@ -798,6 +815,8 @@ static int cmdq_probe(struct platform_device *pdev)
 	platform_set_drvdata(pdev, cmdq);
 	WARN_ON(clk_prepare(cmdq->clock) < 0);
 
+	cmdq_event_value = of_device_get_match_data(dev);
+
 	return 0;
 }
 
@@ -807,8 +826,8 @@ static const struct dev_pm_ops cmdq_pm_ops = {
 };
 
 static const struct of_device_id cmdq_of_ids[] = {
-	{.compatible = "mediatek,mt8173-gce",},
-	{.compatible = "mediatek,mt2712-gce",},
+	{.compatible = "mediatek,mt8173-gce", .data = cmdq_event_value_8173},
+	{.compatible = "mediatek,mt2712-gce", .data = cmdq_event_value_2712},
 	{}
 };
 
