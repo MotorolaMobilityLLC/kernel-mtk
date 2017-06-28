@@ -3243,7 +3243,9 @@ s32 gup_load_fx_system(void)
 
 	current_system_length = length;
 
+#ifdef CONFIG_GTP_AUTO_UPDATE	//Add by jiatianbao 20170628
 	ret = gup_load_system(&firmware[FIRMWARE_HEADER_LEN], length, 1);
+#endif
 
 load_fx_exit:
 
@@ -3328,7 +3330,9 @@ s32 gup_load_hotknot_system(void)
 
 	current_system_length = length;
 
+#ifdef CONFIG_GTP_AUTO_UPDATE	//Add by jiatianbao 20170628
 	ret = gup_load_system(&firmware[FIRMWARE_HEADER_LEN], length, 0);
+#endif
 
 load_hotknot_exit:
 
