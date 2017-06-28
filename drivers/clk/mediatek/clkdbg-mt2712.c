@@ -842,8 +842,6 @@ static const char * const *get_all_clk_names(void)
 		"mm_disp_gamma",
 		"mm_disp_ufoe",
 		"mm_disp_split0",
-		"mm_disp_split1",
-		"mm_disp_merge",
 		"mm_disp_od",
 		"mm_pwm0_mm",
 		"mm_pwm0_26m",
