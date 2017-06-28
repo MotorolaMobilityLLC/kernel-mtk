@@ -53,6 +53,7 @@ s32 gup_load_hotknot_system(void);
 s32 gup_load_fx_system(void);
 s32 gup_recovery_main_system(void);
 s32 gup_load_main_system(char *filepath);
+extern s32 gtp_init_panel(struct i2c_client *client);
 
 #if ((defined(CONFIG_GTP_AUTO_UPDATE) && defined(CONFIG_GTP_HEADER_FW_UPDATE)) || defined(CONFIG_GTP_COMPATIBLE_MODE))
 #include "include/firmware_default/gt9xx_firmware.h"
@@ -2052,7 +2053,8 @@ update_fail:
 
 	if (SUCCESS == update_ret) {
 		GTP_DEBUG("[update_proc]send config.");
-		ret = gtp_send_cfg(i2c_client_point);
+		//ret = gtp_send_cfg(i2c_client_point);
+		ret = gtp_init_panel(i2c_client_point);
 		if (ret < 0)
 			GTP_ERROR("[update_proc]send config fail.");
 	}

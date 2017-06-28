@@ -1081,9 +1081,10 @@ Input:
 Output:
     Executive outcomes.0---succeed.
 *******************************************************/
-static s32 gtp_init_panel(struct i2c_client *client)
+s32 gtp_init_panel(struct i2c_client *client)
 {
 	s32 ret = 0;
+	s32 retry = 0;
 
 #if defined(CONFIG_GTP_DRIVER_SEND_CFG)
 	s32 i;
@@ -1112,6 +1113,7 @@ static s32 gtp_init_panel(struct i2c_client *client)
 		  cfg_info_len[0], cfg_info_len[1], cfg_info_len[2], cfg_info_len[3],
 		  cfg_info_len[4], cfg_info_len[5]);
 
+	pnl_init_error = 0;
 	if ((!cfg_info_len[1]) && (!cfg_info_len[2]) &&
 	    (!cfg_info_len[3]) && (!cfg_info_len[4]) && (!cfg_info_len[5])) {
 		sensor_id = 0;
@@ -1122,6 +1124,13 @@ static s32 gtp_init_panel(struct i2c_client *client)
 #endif
 		ret = gtp_i2c_read_dbl_check(client, GTP_REG_SENSOR_ID, &sensor_id, 1);
 		if (SUCCESS == ret) {
+
+			while ((sensor_id == 0xff) && (retry++ < 3)) {
+				msleep(100);
+				ret = gtp_i2c_read_dbl_check(client, GTP_REG_SENSOR_ID, &sensor_id, 1);
+				GTP_ERROR("GTP sensor_ID read failed time %d.", retry);
+			}
+
 			if (sensor_id >= 0x06) {
 				GTP_ERROR("Invalid sensor_id(0x%02X), No Config Sent!", sensor_id);
 				pnl_init_error = 1;
@@ -1768,7 +1777,7 @@ static s32 tpd_i2c_probe(struct i2c_client *client, const struct i2c_device_id *
 
 	if (ret < 0) {
 		GTP_ERROR("Read version failed.");
-		//return -1;
+		return -1;
 	}
 
 	ret = gtp_init_panel(client);
@@ -1873,14 +1882,13 @@ static s32 tpd_i2c_probe(struct i2c_client *client, const struct i2c_device_id *
 	enable_irq(touch_irq);
 #if defined(CONFIG_GTP_AUTO_UPDATE)
 	ret = gup_init_update_proc(client);
-	gtp_i2c_read_dbl_check(client, GTP_REG_SENSOR_ID, &sensor_id, 1);//modify by yangjiangzhu
-	
-		GTP_INFO("Sensor_ID: %d", sensor_id);
- 	temp_pid=sensor_id;//modify by yangjiangzhu
 	if (ret < 0)
 		GTP_ERROR("Create update thread error.");
 #endif
-
+	gtp_i2c_read_dbl_check(client, GTP_REG_SENSOR_ID, &sensor_id, 1);//modify by yangjiangzhu
+	
+	GTP_INFO("Sensor_ID: %d", sensor_id);
+ 	temp_pid=sensor_id;//modify by yangjiangzhu
 //add devinfo start
 #ifdef CONFIG_LCT_DEVINFO_SUPPORT 
 	temp_ver=(char*) kmalloc(8, GFP_KERNEL);	
