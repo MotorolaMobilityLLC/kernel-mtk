@@ -94,8 +94,6 @@
 			<&mmsys CLK_MM_DISP_GAMMA>,
 			<&mmsys CLK_MM_DISP_UFOE>,
 			<&mmsys CLK_MM_DISP_SPLIT0>,
-			<&mmsys CLK_MM_DISP_SPLIT1>,
-			<&mmsys CLK_MM_DISP_MERGE>,
 			<&mmsys CLK_MM_DISP_OD>,
 			<&mmsys CLK_MM_DISP_PWM0_MM>,
 			<&mmsys CLK_MM_DISP_PWM0_26M>,
@@ -209,7 +207,7 @@
 			"150", "151", "152", "153", "154", "155", "156", "157", "158", "159",
 			"160", "161", "162", "163", "164", "165", "166", "167", "168", "169",
 			"170", "171", "172", "173", "174", "175", "176", "177", "178", "179",
-			"180", "181", "182", "183", "184";
+			"180", "181", "182";
 	};
 
 	bring-up-pd-mm {
