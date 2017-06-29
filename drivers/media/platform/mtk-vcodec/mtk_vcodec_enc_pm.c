@@ -94,11 +94,13 @@ int mtk_vcodec_init_enc_pm(struct mtk_vcodec_dev *mtkdev)
 			ret = PTR_ERR(pm->venc_lt_sel);
 		}
 	}
+	pm_runtime_enable(&pdev->dev);
 	return ret;
 }
 
 void mtk_vcodec_release_enc_pm(struct mtk_vcodec_dev *mtkdev)
 {
+	pm_runtime_disable(mtkdev->pm.dev);
 }
 
 
