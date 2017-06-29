@@ -79,6 +79,7 @@
 #define MSDC_PAD_TUNE0   0xf0
 #define PAD_DS_TUNE      0x188
 #define EMMC50_CFG0      0x208
+#define EMMC50_CFG3      0x220
 #define SDC_FIFO_CFG    0x228
 
 /*--------------------------------------------------------------------------*/
@@ -245,6 +246,8 @@
 #define EMMC50_CFG_CRCSTS_EDGE    (0x1 << 3)   /* RW */
 #define EMMC50_CFG_CFCSTS_SEL     (0x1 << 4)   /* RW */
 
+#define EMMC50_CFG3_OUTS_WR      (0x1f << 0)  /* RW */
+
 #define SDC_FIFO_CFG_WRVALIDSEL   (0x1 << 24)  /* RW */
 #define SDC_FIFO_CFG_RDVALIDSEL   (0x1 << 25)  /* RW */
 
@@ -313,6 +316,7 @@ struct msdc_save_para {
 	u32 patch_bit2;
 	u32 pad_ds_tune;
 	u32 emmc50_cfg0;
+	u32 emmc50_cfg3;
 	u32 sdc_fifo_cfg;
 };
 
@@ -1732,6 +1736,8 @@ static int msdc_prepare_hs400_tuning(struct mmc_host *mmc, struct mmc_ios *ios)
 	/* hs400 mode must set it to 0 */
 	sdr_clr_bits(host->base + MSDC_PATCH_BIT2, MSDC_PATCH_BIT2_CFGCRCSTS);
 	host->hs400_mode = true;
+	/* to improve read performance, set outstanding to 2 */
+	sdr_set_field(host->base + EMMC50_CFG3, EMMC50_CFG3_OUTS_WR, 2);
 
 	return 0;
 }
@@ -1983,6 +1989,7 @@ static void msdc_save_reg(struct msdc_host *host)
 	host->save_para.patch_bit2 = readl(host->base + MSDC_PATCH_BIT2);
 	host->save_para.pad_ds_tune = readl(host->base + PAD_DS_TUNE);
 	host->save_para.emmc50_cfg0 = readl(host->base + EMMC50_CFG0);
+	host->save_para.emmc50_cfg3 = readl(host->base + EMMC50_CFG3);
 	host->save_para.sdc_fifo_cfg = readl(host->base + SDC_FIFO_CFG);
 }
 
@@ -2001,6 +2008,7 @@ static void msdc_restore_reg(struct msdc_host *host)
 	writel(host->save_para.patch_bit2, host->base + MSDC_PATCH_BIT2);
 	writel(host->save_para.pad_ds_tune, host->base + PAD_DS_TUNE);
 	writel(host->save_para.emmc50_cfg0, host->base + EMMC50_CFG0);
+	writel(host->save_para.emmc50_cfg3, host->base + EMMC50_CFG3);
 	writel(host->save_para.sdc_fifo_cfg, host->base + SDC_FIFO_CFG);
 }
 
