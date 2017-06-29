@@ -17,7 +17,11 @@
 #include <linux/delay.h>
 #include "mtk_charger_intf.h"
 
-
+//add by liyeqiang@longcheer.com --start--
+#ifdef CONFIG_LCT_CHR_PE_ILIM
+int lcm_resume_flag = 0;
+#endif
+//--end--
 
 #ifdef CONFIG_MTK_PUMP_EXPRESS_PLUS_SUPPORT
 
@@ -547,7 +551,15 @@ int mtk_pe_set_charging_current(struct charger_manager *pinfo,
 	chr_volt = pe_get_vbus();
 	if ((chr_volt - pinfo->pe.pe_ta_vchr_org) > 6000000) { /* TA = 12V */
 		*aicr = pinfo->data.ta_ac_12v_input_current;
+//add by liyeqiang@longcheer.com --start--
+#ifdef CONFIG_LCT_CHR_PE_ILIM
+		if(lcm_resume_flag == 1){
+		*ichg = 2000000;//2000mA
+		}else
+#endif
+		{
 		*ichg = pinfo->data.ta_ac_charger_current;
+		}
 	} else if ((chr_volt - pinfo->pe.pe_ta_vchr_org) > 3000000) { /* TA = 9V */
 	    if (pinfo->battery_temperature >= pinfo->data.temp_t3_threshold)//add by longcheer_liml_2017_06_01
 	    {
@@ -555,7 +567,15 @@ int mtk_pe_set_charging_current(struct charger_manager *pinfo,
 		    *ichg = 2000000;//2000mA
 	    }else{
 		    *aicr = pinfo->data.ta_ac_9v_input_current;
-		    *ichg = pinfo->data.ta_ac_charger_current;	    
+//add by liyeqiang@longcheer.com --start--
+#ifdef CONFIG_LCT_CHR_PE_ILIM
+		if(lcm_resume_flag == 1){
+		*ichg = 2000000;//2000mA
+		}else
+#endif
+		{
+		*ichg = pinfo->data.ta_ac_charger_current;
+		}    
 	    }
 
 	} else if ((chr_volt - pinfo->pe.pe_ta_vchr_org) > 1000000) { /* TA = 7V */
@@ -566,6 +586,15 @@ int mtk_pe_set_charging_current(struct charger_manager *pinfo,
 	    }else{
 		    *aicr = pinfo->data.ta_ac_7v_input_current;
 		    *ichg = pinfo->data.ta_ac_charger_current;
+//add by liyeqiang@longcheer.com --start--
+#ifdef CONFIG_LCT_CHR_PE_ILIM
+		if(lcm_resume_flag == 1){
+		*ichg = 2000000;//2000mA
+		}else
+#endif
+		{
+		*ichg = pinfo->data.ta_ac_charger_current;
+		}
 		}
 	}
 

@@ -29,6 +29,12 @@
 /* for multiple LCM, we should assign I/F Port id in lcm driver, such as DPI0, DSI0/1 */
 /* static disp_lcm_handle _disp_lcm_driver[MAX_LCM_NUMBER]; */
 
+//add by liyeqiang@longcheer.com --start--
+#ifdef CONFIG_LCT_CHR_PE_ILIM 
+extern int lcm_resume_flag;
+#endif
+//--end--
+
 int _lcm_count(void)
 {
 	return lcm_count;
@@ -1175,6 +1181,11 @@ int disp_lcm_suspend(struct disp_lcm_handle *plcm)
 	LCM_DRIVER *lcm_drv = NULL;
 
 	DISPFUNC();
+//add by liyeqiang@longcheer.com --start--
+#ifdef CONFIG_LCT_CHR_PE_ILIM 
+	lcm_resume_flag=0;
+#endif
+//--end--
 	if (_is_lcm_inited(plcm)) {
 		lcm_drv = plcm->drv;
 		if (lcm_drv->suspend) {
@@ -1201,6 +1212,11 @@ int disp_lcm_resume(struct disp_lcm_handle *plcm)
 	LCM_DRIVER *lcm_drv = NULL;
 
 	DISPFUNC();
+//add by liyeqiang@longcheer.com --start--
+#ifdef CONFIG_LCT_CHR_PE_ILIM
+	lcm_resume_flag=1;
+#endif
+//--end--
 	if (_is_lcm_inited(plcm)) {
 		lcm_drv = plcm->drv;
 

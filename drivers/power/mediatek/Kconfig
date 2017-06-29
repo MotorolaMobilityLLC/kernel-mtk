@@ -348,3 +348,9 @@ config LCT_CHR_ALT_TEST_SUPPORT
 	default n
 	help
 	  Set yes to support ALT test.  
+
+config LCT_CHR_PE_ILIM
+	bool "LCT_CHR_PE_ILIM"
+	default n
+	help
+	  Set yes to support ALT test. 
