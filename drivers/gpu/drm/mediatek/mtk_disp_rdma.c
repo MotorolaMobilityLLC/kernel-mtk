@@ -17,6 +17,7 @@
 #include <linux/of_device.h>
 #include <linux/of_irq.h>
 #include <linux/platform_device.h>
+#include <linux/pm_runtime.h>
 
 #include "mtk_drm_crtc.h"
 #include "mtk_drm_ddp_comp.h"
@@ -105,12 +106,24 @@ static void mtk_rdma_disable_vblank(struct mtk_ddp_comp *comp)
 
 static void mtk_rdma_start(struct mtk_ddp_comp *comp)
 {
+	int ret;
+
+	ret = pm_runtime_get_sync(comp->dev);
+	if (ret < 0)
+		DRM_ERROR("Failed to enable power domain: %d\n", ret);
+
 	rdma_update_bits(comp, DISP_REG_RDMA_GLOBAL_CON, RDMA_ENGINE_EN,
 			 RDMA_ENGINE_EN);
 }
 
 static void mtk_rdma_stop(struct mtk_ddp_comp *comp)
 {
+	int ret;
+
+	ret = pm_runtime_put(comp->dev);
+	if (ret < 0)
+		DRM_ERROR("Failed to disable power domain: %d\n", ret);
+
 	rdma_update_bits(comp, DISP_REG_RDMA_GLOBAL_CON, RDMA_ENGINE_EN, 0);
 }
 
@@ -222,9 +235,13 @@ static int mtk_disp_rdma_probe(struct platform_device *pdev)
 
 	platform_set_drvdata(pdev, priv);
 
+	pm_runtime_enable(dev);
+
 	ret = component_add(dev, &mtk_disp_rdma_component_ops);
-	if (ret)
+	if (ret != 0) {
 		dev_err(dev, "Failed to add component: %d\n", ret);
+		pm_runtime_disable(dev);
+	}
 
 	return ret;
 }
@@ -233,6 +250,7 @@ static int mtk_disp_rdma_remove(struct platform_device *pdev)
 {
 	component_del(&pdev->dev, &mtk_disp_rdma_component_ops);
 
+	pm_runtime_disable(&pdev->dev);
 	return 0;
 }
 
