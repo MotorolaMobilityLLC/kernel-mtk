@@ -17,6 +17,7 @@
 #include <linux/of_device.h>
 #include <linux/of_irq.h>
 #include <linux/platform_device.h>
+#include <linux/pm_runtime.h>
 
 #include "mtk_drm_crtc.h"
 #include "mtk_drm_ddp_comp.h"
@@ -65,15 +66,30 @@ static void mtk_color_config(struct mtk_ddp_comp *comp, unsigned int w,
 static void mtk_color_start(struct mtk_ddp_comp *comp)
 {
 	struct mtk_disp_color *color = comp_to_color(comp);
+	int ret;
+
+	ret = pm_runtime_get_sync(comp->dev);
+	if (ret < 0)
+		DRM_ERROR("Failed to enable power domain: %d\n", ret);
 
 	writel(COLOR_BYPASS_ALL | COLOR_SEQ_SEL,
 	       comp->regs + DISP_COLOR_CFG_MAIN);
 	writel(0x1, comp->regs + DISP_COLOR_START(color));
 }
 
+static void mtk_color_stop(struct mtk_ddp_comp *comp)
+{
+	int ret;
+
+	ret = pm_runtime_put(comp->dev);
+	if (ret < 0)
+		DRM_ERROR("Failed to disable power domain: %d\n", ret);
+}
+
 static const struct mtk_ddp_comp_funcs mtk_disp_color_funcs = {
 	.config = mtk_color_config,
 	.start = mtk_color_start,
+	.stop = mtk_color_stop,
 };
 
 static int mtk_disp_color_bind(struct device *dev, struct device *master,
@@ -136,9 +152,13 @@ static int mtk_disp_color_probe(struct platform_device *pdev)
 
 	platform_set_drvdata(pdev, priv);
 
+	pm_runtime_enable(dev);
+
 	ret = component_add(dev, &mtk_disp_color_component_ops);
-	if (ret != 0)
+	if (ret != 0) {
 		dev_err(dev, "Failed to add component: %d\n", ret);
+		pm_runtime_disable(dev);
+	}
 
 	return ret;
 }
@@ -147,6 +167,7 @@ static int mtk_disp_color_remove(struct platform_device *pdev)
 {
 	component_del(&pdev->dev, &mtk_disp_color_component_ops);
 
+	pm_runtime_disable(&pdev->dev);
 	return 0;
 }
 

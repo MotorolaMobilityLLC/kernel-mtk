@@ -274,6 +274,7 @@ int mtk_ddp_comp_init(struct device *dev, struct device_node *node,
 
 	comp->id = comp_id;
 	comp->funcs = funcs ?: mtk_ddp_matches[comp_id].funcs;
+	comp->dev = dev;
 
 	if (comp_id == DDP_COMPONENT_BLS ||
 	    comp_id == DDP_COMPONENT_DPI0 ||

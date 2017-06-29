@@ -17,6 +17,8 @@
 #include <linux/of_device.h>
 #include <linux/platform_device.h>
 #include <linux/regmap.h>
+#include <linux/pm_runtime.h>
+#include <drm/drmP.h>
 
 #include "mtk_drm_ddp.h"
 #include "mtk_drm_ddp_comp.h"
@@ -325,6 +327,12 @@ int mtk_disp_mutex_prepare(struct mtk_disp_mutex *mutex)
 {
 	struct mtk_ddp *ddp = container_of(mutex, struct mtk_ddp,
 					   mutex[mutex->id]);
+	int ret;
+
+	ret = pm_runtime_get_sync(ddp->dev);
+	if (ret < 0)
+		DRM_ERROR("Failed to enable power domain: %d\n", ret);
+
 	return clk_prepare_enable(ddp->clk);
 }
 
@@ -332,7 +340,13 @@ void mtk_disp_mutex_unprepare(struct mtk_disp_mutex *mutex)
 {
 	struct mtk_ddp *ddp = container_of(mutex, struct mtk_ddp,
 					   mutex[mutex->id]);
+	int ret;
+
 	clk_disable_unprepare(ddp->clk);
+
+	ret = pm_runtime_put(ddp->dev);
+	if (ret < 0)
+		DRM_ERROR("Failed to disable power domain: %d\n", ret);
 }
 
 void mtk_disp_mutex_add_comp(struct mtk_disp_mutex *mutex,
@@ -473,6 +487,9 @@ static int mtk_ddp_probe(struct platform_device *pdev)
 	}
 
 	ddp->mutex_mod = of_device_get_match_data(dev);
+	ddp->dev = dev;
+
+	pm_runtime_enable(dev);
 
 	platform_set_drvdata(pdev, ddp);
 
@@ -481,6 +498,7 @@ static int mtk_ddp_probe(struct platform_device *pdev)
 
 static int mtk_ddp_remove(struct platform_device *pdev)
 {
+	pm_runtime_disable(&pdev->dev);
 	return 0;
 }
 
