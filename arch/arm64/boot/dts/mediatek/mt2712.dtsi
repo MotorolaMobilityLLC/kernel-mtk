@@ -892,8 +892,8 @@
 			reg-names = "mac", "ippc";
 			interrupts = <GIC_SPI 122 IRQ_TYPE_LEVEL_LOW>;
 			phys = <&u2port0 PHY_TYPE_USB2>,
-			       <&u2port1 PHY_TYPE_USB2>,
-			       <&u3port0 PHY_TYPE_USB3>;
+			       <&u2port1 PHY_TYPE_USB2>;
+			       //<&u3port0 PHY_TYPE_USB3>;
 			power-domains = <&scpsys MT2712_POWER_DOMAIN_USB>;
 			clocks = <&topckgen CLK_TOP_USB30_SEL>;
 			clock-names = "sys_ck";
