@@ -1222,6 +1222,8 @@ bool SetI2SAdcEnable(bool bEnable)
 		pr_warn("%s(), disable fpga clock divide by 4", __func__);
 		Afe_Set_Reg(FPGA_CFG0, 0x0 << 1, 0x1 << 1);
 #endif
+		/* should delayed 1/fs(smallest is 8k) = 125us before afe off */
+		usleep_range(125, 150);
 	}
 
 	AudDrv_GPIO_Request(bEnable, Soc_Aud_Digital_Block_ADDA_UL);
@@ -3915,7 +3917,7 @@ static int mtk_mem_ulblk_copy(struct snd_pcm_substream *substream,
 
 	PRINTK_AUD_UL1("mtk_capture_pcm_copy pos = %lucount = %lu\n ", pos, count);
 	/* get total bytes to copy */
-	count = word_size_align(audio_frame_to_bytes(substream, count));
+	count = audio_frame_to_bytes(substream, count);
 
 	/* check which memif nned to be write */
 	pVUL_MEM_ConTrol = pMemControl;
