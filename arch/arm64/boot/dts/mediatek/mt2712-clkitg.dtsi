@@ -62,7 +62,7 @@
 			<&clk26m>,
 			<&clk26m>,
 			<&clk26m>,
-			<&mfgcfg CLK_MFG_BG3D>,
+			<&clk26m>,
 			<&clk26m>,
 			<&clk26m>,
 			<&clk26m>,
@@ -213,8 +213,4 @@
 			"180", "181", "182", "183", "184", "185", "186", "187";
 	};
 
-	bring-up-pd-mfg {
-		compatible = "mediatek,scpsys-bring-up";
-		power-domains = <&scpsys MT2712_POWER_DOMAIN_MFG>;
-	};
 };
