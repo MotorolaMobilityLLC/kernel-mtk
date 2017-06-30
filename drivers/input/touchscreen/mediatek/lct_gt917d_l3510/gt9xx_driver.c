@@ -1151,7 +1151,7 @@ s32 gtp_init_panel(struct i2c_client *client)
 			return -1;
 		}
 		//tpd_info.sid = sensor_id;
-        temp_pid=sensor_id;
+        	temp_pid=sensor_id;
 		GTP_INFO("Sensor_ID: %d", sensor_id);
 	}
 
@@ -1745,7 +1745,6 @@ static s32 tpd_i2c_probe(struct i2c_client *client, const struct i2c_device_id *
 {
 	s32 err = 0;
 	s32 ret = 0;
-	u8 sensor_id = 0;//modify by yangjiangzhu
 	struct device_node *node;
 
 	u16 version_info;
@@ -1880,16 +1879,7 @@ static s32 tpd_i2c_probe(struct i2c_client *client, const struct i2c_device_id *
 	}
 	/* mt_eint_unmask(CUST_EINT_TOUCH_PANEL_NUM); */
 	enable_irq(touch_irq);
-#if defined(CONFIG_GTP_AUTO_UPDATE)
-	ret = gup_init_update_proc(client);
-	if (ret < 0)
-		GTP_ERROR("Create update thread error.");
-#endif
-	gtp_i2c_read_dbl_check(client, GTP_REG_SENSOR_ID, &sensor_id, 1);//modify by yangjiangzhu
-	
-	GTP_INFO("Sensor_ID: %d", sensor_id);
- 	temp_pid=sensor_id;//modify by yangjiangzhu
-//add devinfo start
+
 #ifdef CONFIG_LCT_DEVINFO_SUPPORT 
 	temp_ver=(char*) kmalloc(8, GFP_KERNEL);	
 	sprintf(temp_ver,"0x%x",tpd_cfg_version); //changed by caozhg
@@ -1936,6 +1926,12 @@ static s32 tpd_i2c_probe(struct i2c_client *client, const struct i2c_device_id *
 
 #if defined(CONFIG_GTP_ESD_PROTECT)
 	gtp_esd_switch(client, SWITCH_ON);
+#endif
+
+#if defined(CONFIG_GTP_AUTO_UPDATE)
+	ret = gup_init_update_proc(client);
+	if (ret < 0)
+		GTP_ERROR("Create update thread error.");
 #endif
 
 	tpd_load_status = 1;
