@@ -287,8 +287,9 @@
 					<GIC_SPI 227 IRQ_TYPE_LEVEL_LOW>;
 			interrupt-names = "GPU", "MMU", "JOB";
 			clocks = <&topckgen CLK_TOP_MFG_SEL>,
-				 <&topckgen CLK_TOP_MMPLL>;
-			clock-names = "mfg_sel", "mfg_pll";
+				 <&topckgen CLK_TOP_MMPLL>,
+				 <&mfgcfg CLK_MFG_BG3D>;
+			clock-names = "mfg_sel", "mfg_pll", "mfg_bg3d";
 			power-domains = <&scpsys MT2712_POWER_DOMAIN_MFG>;
 			mp=<4>;
 
