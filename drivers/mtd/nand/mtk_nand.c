@@ -800,8 +800,6 @@ static int mtk_nfc_setup_data_interface(struct mtd_info *mtd,
 
 	nfi_writel(nfc, trlt, NFI_ACCCON);
 
-	dev_info(nfc->dev, "set ACC timing as 0x%x\n", trlt);
-
 	return 0;
 }
 
