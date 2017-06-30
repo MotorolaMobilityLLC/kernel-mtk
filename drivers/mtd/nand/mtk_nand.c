@@ -1139,13 +1139,15 @@ static int mtk_nfc_write_oob_std(struct mtd_info *mtd, struct nand_chip *chip,
 	return ret & NAND_STATUS_FAIL ? -EIO : 0;
 }
 
-static int mtk_nfc_update_ecc_stats(struct mtd_info *mtd, u8 *buf, u32 sectors)
+static int mtk_nfc_update_ecc_stats(struct mtd_info *mtd, u8 *buf, u32 start,
+				    u32 end, int page)
 {
 	struct nand_chip *chip = mtd_to_nand(mtd);
 	struct mtk_nfc *nfc = nand_get_controller_data(chip);
 	struct mtk_nfc_nand_chip *mtk_nand = to_mtk_nand(chip);
 	struct mtk_ecc_stats stats;
-	int rc, i;
+	u32 sectors = end - start, rc, i;
+	const unsigned long *addr = (const unsigned long *)&stats.failed_bitmap;
 
 	rc = nfi_readl(nfc, NFI_STA) & STA_EMP_PAGE;
 	if (rc) {
@@ -1158,6 +1160,12 @@ static int mtk_nfc_update_ecc_stats(struct mtd_info *mtd, u8 *buf, u32 sectors)
 	mtk_ecc_get_stats(nfc->ecc, &stats, sectors);
 	mtd->ecc_stats.corrected += stats.corrected;
 	mtd->ecc_stats.failed += stats.failed;
+
+	if (stats.failed) {
+		dev_err(nfc->dev, "Uncorrect ECC happens at page %d\n", page);
+		for_each_set_bit(i, addr, 16)
+			dev_err(nfc->dev, "UECC subpage %d\n", start + i);
+	}
 
 	return stats.bitflips;
 }
@@ -1244,7 +1252,8 @@ static int mtk_nfc_read_subpage(struct mtd_info *mtd, struct nand_chip *chip,
 		if (!raw) {
 			rc = mtk_ecc_wait_done(nfc->ecc, ECC_DECODE);
 			bitflips = rc < 0 ? -ETIMEDOUT :
-				mtk_nfc_update_ecc_stats(mtd, buf, sectors);
+				mtk_nfc_update_ecc_stats(mtd, buf, start, end,
+							 page);
 			mtk_nfc_read_fdm(chip, start, sectors);
 		}
 	}

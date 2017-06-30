@@ -477,6 +477,7 @@ void mtk_ecc_get_stats(struct mtk_ecc *ecc, struct mtk_ecc_stats *stats,
 
 	stats->corrected = 0;
 	stats->failed = 0;
+	stats->failed_bitmap = 0;
 
 	for (i = 0; i < sectors; i++) {
 		offset = i >> 2;
@@ -486,6 +487,7 @@ void mtk_ecc_get_stats(struct mtk_ecc *ecc, struct mtk_ecc_stats *stats,
 		if (err == ecc->ecc_data->ERR_MASK) {
 			/* uncorrectable errors */
 			stats->failed++;
+			stats->failed_bitmap |= (1 << i);
 			continue;
 		}
 
