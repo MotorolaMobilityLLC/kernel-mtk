@@ -1565,6 +1565,31 @@
 			#clock-cells = <1>;
 		};
 
+		nr: nr@15013000 {
+			compatible = "mediatek,mt2712-nr";
+			reg = <0 0x15013000 0 0x2000>;   /* nr */
+			mediatek,bdpsys-regmap = <&bdpsys>;		/*dispsys_cfg */
+			interrupts = <GIC_SPI 277 IRQ_TYPE_LEVEL_LOW>;
+			power-domains = <&scpsys MT2712_POWER_DOMAIN_ISP>;
+			iommus = <&iommu1 M4U_PORT_DISP_OVL1>;
+			clocks = <&bdpsys CLK_BDP_NR_AGENT>,
+				 <&bdpsys CLK_BDP_NR_DRAM>,
+				 <&bdpsys CLK_BDP_NR_B>,
+				 <&bdpsys CLK_BDP_BRIDGE_B>,
+				 <&bdpsys CLK_BDP_BRIDGE_DRAM>,
+				 <&bdpsys CLK_BDP_LARB_DRAM>,
+				 <&mmsys CLK_MM_SMI_COMMON1>;
+			clock-names = "bdp_nr_agent",
+				      "bdp_nr_d",
+				      "bdp_nr_b",
+				      "bdp_bridge_b",
+				      "bdp_bridge_d",
+				      "bdp_larb_d",
+				      "smi_common1";
+			mediatek,smi = <&smi_common1>;
+			status = "disabled";
+		};
+
 		mipicsi0: mipicsi0@10217000 {
 			compatible = "mediatek,mt2712-mipicsi0";
 			reg = <0 0x10217000 0 0x60>,
