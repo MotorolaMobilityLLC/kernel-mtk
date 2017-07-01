@@ -35,7 +35,6 @@
 
 #define CMDQ_CURR_IRQ_STATUS		0x10
 #define CMDQ_THR_SLOT_CYCLES		0x30
-#define CMDQ_SYNC_TOKEN_UPDATE		0x68
 
 #define CMDQ_THR_BASE			0x100
 #define CMDQ_THR_SIZE			0x80
@@ -817,23 +816,6 @@ static int cmdq_probe(struct platform_device *pdev)
 	WARN_ON(clk_prepare(cmdq->clock) < 0);
 
 	cmdq_event_value = of_device_get_match_data(dev);
-
-	if (cmdq_event_value[CMDQ_EVENT_MDP_RDMA0_EOF] != 0)
-		writel(cmdq_event_value[CMDQ_EVENT_MDP_RDMA0_EOF], cmdq->base + CMDQ_SYNC_TOKEN_UPDATE);
-	if (cmdq_event_value[CMDQ_EVENT_MDP_RDMA1_EOF] != 0)
-		writel(cmdq_event_value[CMDQ_EVENT_MDP_RDMA1_EOF], cmdq->base + CMDQ_SYNC_TOKEN_UPDATE);
-	if (cmdq_event_value[CMDQ_EVENT_MDP_RDMA2_EOF] != 0)
-		writel(cmdq_event_value[CMDQ_EVENT_MDP_RDMA2_EOF], cmdq->base + CMDQ_SYNC_TOKEN_UPDATE);
-	if (cmdq_event_value[CMDQ_EVENT_MDP_RDMA3_EOF] != 0)
-		writel(cmdq_event_value[CMDQ_EVENT_MDP_RDMA3_EOF], cmdq->base + CMDQ_SYNC_TOKEN_UPDATE);
-	if (cmdq_event_value[CMDQ_EVENT_MDP_WDMA_EOF] != 0)
-		writel(cmdq_event_value[CMDQ_EVENT_MDP_WDMA_EOF], cmdq->base + CMDQ_SYNC_TOKEN_UPDATE);
-	if (cmdq_event_value[CMDQ_EVENT_MDP_WROT0_W_EOF] != 0)
-		writel(cmdq_event_value[CMDQ_EVENT_MDP_WROT0_W_EOF], cmdq->base + CMDQ_SYNC_TOKEN_UPDATE);
-	if (cmdq_event_value[CMDQ_EVENT_MDP_WROT1_W_EOF] != 0)
-		writel(cmdq_event_value[CMDQ_EVENT_MDP_WROT1_W_EOF], cmdq->base + CMDQ_SYNC_TOKEN_UPDATE);
-	if (cmdq_event_value[CMDQ_EVENT_MDP_WROT2_W_EOF] != 0)
-		writel(cmdq_event_value[CMDQ_EVENT_MDP_WROT2_W_EOF], cmdq->base + CMDQ_SYNC_TOKEN_UPDATE);
 
 	return 0;
 }
