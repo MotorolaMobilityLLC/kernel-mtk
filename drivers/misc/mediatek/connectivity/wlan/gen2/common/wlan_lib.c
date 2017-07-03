@@ -3725,6 +3725,7 @@ WLAN_STATUS wlanLoadManufactureData(IN P_ADAPTER_T prAdapter, IN P_REG_INFO_T pr
 #if CFG_SUPPORT_FCC_DYNAMIC_TX_PWR_ADJUST
 	CMD_FCC_TX_PWR_ADJUST FccTxPwrAdjust = {0x00};
 #endif
+	CMD_BAND_SUPPORT_T rCmdBandSupport;
 
 	ASSERT(prAdapter);
 
@@ -3911,19 +3912,16 @@ WLAN_STATUS wlanLoadManufactureData(IN P_ADAPTER_T prAdapter, IN P_REG_INFO_T pr
 				    NULL, NULL, sizeof(CMD_RSSI_COMPENSATE_T), (PUINT_8)&rCmdRssiCompensate, NULL, 0);
 	}
 	/* 10. notify FW Band Support 5G */
-	if (prAdapter->fgEnable5GBand) {
-		CMD_BAND_SUPPORT_T rCmdBandSupport;
 
-		rCmdBandSupport.uc5GBandSupport = TRUE;
-		DBGLOG(INIT, TRACE, "NVRAM 5G BandSupport\n");
-		wlanSendSetQueryCmd(prAdapter,
-				    CMD_ID_SET_BAND_SUPPORT,
-				    TRUE,
-				    FALSE,
-				    FALSE,
-				    NULL, NULL, sizeof(CMD_BAND_SUPPORT_T), (PUINT_8)&rCmdBandSupport, NULL, 0);
+	rCmdBandSupport.uc5GBandSupport = prAdapter->fgEnable5GBand;
+	DBGLOG(INIT, TRACE, "notify NVRAM 5G BandSupport %d\n", rCmdBandSupport.uc5GBandSupport);
 
-	}
+	wlanSendSetQueryCmd(prAdapter,
+			    CMD_ID_SET_BAND_SUPPORT,
+			    TRUE,
+			    FALSE,
+			    FALSE,
+			    NULL, NULL, sizeof(CMD_BAND_SUPPORT_T), (PUINT_8)&rCmdBandSupport, NULL, 0);
 
 	return WLAN_STATUS_SUCCESS;
 }
@@ -4435,14 +4433,16 @@ WLAN_STATUS wlanCheckConnectedAP(IN P_ADAPTER_T prAdapter)
 	}
 
 	if (fgGenAPMsg == TRUE) {
-		prBeacon = cnmMemAlloc(prAdapter, RAM_TYPE_BUF, sizeof(WLAN_BEACON_FRAME_T) + sizeof(IE_SSID_T));
+		if (!prBssDesc->u2IELength)
+			return WLAN_STATUS_FAILURE;
+		prBeacon = cnmMemAlloc(prAdapter, RAM_TYPE_BUF, sizeof(WLAN_BEACON_FRAME_T) + prBssDesc->u2IELength);
 		if (!prBeacon) {
 			ASSERT(FALSE);
 			return WLAN_STATUS_FAILURE;
 		}
 
 		/* initialization */
-		kalMemZero(prBeacon, sizeof(WLAN_BEACON_FRAME_T) + sizeof(IE_SSID_T));
+		kalMemZero(prBeacon, sizeof(WLAN_BEACON_FRAME_T) + prBssDesc->u2IELength);
 
 		/* prBeacon initialization */
 		prBeacon->u2FrameCtrl = MAC_FRAME_BEACON;
@@ -4452,14 +4452,9 @@ WLAN_STATUS wlanCheckConnectedAP(IN P_ADAPTER_T prAdapter)
 		prBeacon->u2BeaconInterval = prBssDesc->u2BeaconInterval;
 		prBeacon->u2CapInfo = prBssDesc->u2CapInfo;
 
-		/* prSSID initialization */
-		if (prBssDesc->ucSSIDLen > ELEM_MAX_LEN_SSID)
-			prBssDesc->ucSSIDLen = ELEM_MAX_LEN_SSID;
-		kalMemCopy(prBeacon->aucInfoElem, prBssDesc->aucIEBuf, prBssDesc->ucSSIDLen + OFFSET_OF(IE_SSID_T,
-										 aucSSID));
+		kalMemCopy(prBeacon->aucInfoElem, prBssDesc->aucIEBuf, prBssDesc->u2IELength);
 		prSsid = (P_IE_SSID_T) (&prBeacon->aucInfoElem[0]);
 		COPY_SSID(rSsid.aucSsid, rSsid.u4SsidLen, prSsid->aucSSID, prSsid->ucLength);
-
 		/* rConfiguration initialization */
 		rConfiguration.u4Length = sizeof(PARAM_802_11_CONFIG_T);
 		rConfiguration.u4BeaconPeriod = (UINT_32) prBeacon->u2BeaconInterval;
@@ -4494,11 +4489,10 @@ WLAN_STATUS wlanCheckConnectedAP(IN P_ADAPTER_T prAdapter)
 		/* rSupportedRates initialization */
 		kalMemZero(rSupportedRates, sizeof(PARAM_RATES_EX));
 	}
-	if ((prBeacon) && (prSsid)) {
+	if (prBeacon) {
 		kalIndicateBssInfo(prAdapter->prGlueInfo,
 				   (PUINT_8) prBeacon,
-				   OFFSET_OF(WLAN_BEACON_FRAME_T, aucInfoElem) + OFFSET_OF(IE_SSID_T,
-											   aucSSID) + prSsid->ucLength,
+				   sizeof(WLAN_BEACON_FRAME_T) + prBssDesc->u2IELength,
 				   prBssDesc->ucChannelNum, (PARAM_RSSI) prAdapter->rLinkQuality.cRssi);
 		nicAddScanResult(prAdapter,
 			 prBeacon->aucBSSID,
@@ -4509,9 +4503,7 @@ WLAN_STATUS wlanCheckConnectedAP(IN P_ADAPTER_T prAdapter)
 			 &rConfiguration,
 			 eOpMode,
 			 rSupportedRates,
-			 OFFSET_OF(WLAN_BEACON_FRAME_T, aucInfoElem) + OFFSET_OF(IE_SSID_T,
-										 aucSSID) + prSsid->ucLength -
-			 WLAN_MAC_MGMT_HEADER_LEN, (PUINT_8) ((ULONG) (prBeacon) + WLAN_MAC_MGMT_HEADER_LEN));
+			 prBssDesc->u2IELength, (PUINT_8) ((ULONG) (prBeacon) + WLAN_MAC_MGMT_HEADER_LEN));
 		cnmMemFree(prAdapter, prBeacon);
 	}
 
