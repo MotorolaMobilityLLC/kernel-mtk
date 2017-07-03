@@ -8,6 +8,7 @@ obj-$(CONFIG_MTD_TESTS) += mtd_torturetest.o
 obj-$(CONFIG_MTD_TESTS) += mtd_nandecctest.o
 obj-$(CONFIG_MTD_TESTS) += mtd_nandbiterrs.o
 obj-$(CONFIG_MTD_TESTS) += mtd_readretentiontest.o
+obj-$(CONFIG_MTD_TESTS) += mtd_markbadtest.o
 
 mtd_oobtest-objs := oobtest.o mtd_test.o
 mtd_pagetest-objs := pagetest.o mtd_test.o
@@ -18,3 +19,4 @@ mtd_subpagetest-objs := subpagetest.o mtd_test.o
 mtd_torturetest-objs := torturetest.o mtd_test.o
 mtd_nandbiterrs-objs := nandbiterrs.o mtd_test.o
 mtd_readretentiontest-objs := readretentiontest.o mtd_test.o
+mtd_markbadtest-objs := markbadtest.o mtd_test.o
