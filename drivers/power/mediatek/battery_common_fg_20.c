@@ -760,7 +760,7 @@ static int battery_get_property(struct power_supply *psy,
 		val->intval = data->energy_full;
 		break;
 	case POWER_SUPPLY_PROP_charge_full:
-		val->intval = data->charge_full;
+		val->intval = data->charge_full*1000;
 		break;
 	case POWER_SUPPLY_PROP_charge_full_design:
 		val->intval = data->charge_full_design;
@@ -2529,7 +2529,7 @@ signed int mt_battery_GetBatteryDesignedCapacity(void)
 signed int mt_battery_GetBatteryChargeFullCapacity(void)
 {
 	int i;
-	i = 2800;
+	i = 2800*1000;
 	battery_log(BAT_LOG_CRTI, "zhangchao2 battery ChargeFullCapacity= (%d)\n",i);
 	return i;
 }
