@@ -1583,13 +1583,8 @@ static struct platform_driver mtk_pcie_driver = {
 	.probe = mtk_pcie_probe,
 	.remove = mtk_pcie_remove,
 };
-/* PCIe driver does not allow module unload */
-static int __init pcie_init(void)
-{
-	return platform_driver_probe(&mtk_pcie_driver, mtk_pcie_probe);
-}
 
-subsys_initcall_sync(pcie_init);
+builtin_platform_driver(mtk_pcie_driver);
 
 MODULE_AUTHOR("Liang-Yen Wang <liang-yen.wang@mediatek.com>");
 MODULE_DESCRIPTION("Mediatek PCIe host controller driver");
