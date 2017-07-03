@@ -105,7 +105,7 @@
 /* can shift up to 56 bits (7 bytes) transfer by MTK_NOR_PRG_CMD */
 #define MTK_NOR_MAX_SHIFT		7
 /* nor controller 4-byte address mode enable bit */
-#define MTK_NOR_4B_ADDR_EN		0x10
+#define MTK_NOR_4B_ADDR_EN		0x10U
 
 /* Helpers for accessing the program data / shift data registers */
 #define MTK_NOR_PRG_REG(n)		(MTK_NOR_PRGDATA0_REG + 4 * (n))
