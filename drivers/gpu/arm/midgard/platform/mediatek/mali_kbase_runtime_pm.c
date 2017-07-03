@@ -24,22 +24,6 @@
 #include <backend/gpu/mali_kbase_power_model_simple.h>
 
 
-#define REG_MFG_G3D BIT(0)
-
-#define REG_MFG_CG_STA 0x00
-#define REG_MFG_CG_SET 0x04
-#define REG_MFG_CG_CLR 0x08
-
-static void mtk_mfg_set_clock_gating(void __iomem *reg)
-{
-	writel(REG_MFG_G3D, reg + REG_MFG_CG_SET);
-}
-
-static void mtk_mfg_clr_clock_gating(void __iomem *reg)
-{
-	writel(REG_MFG_G3D, reg + REG_MFG_CG_CLR);
-}
-
 static int pm_callback_power_on(struct kbase_device *kbdev)
 {
 	struct mfg_base *mfg = (struct mfg_base *)kbdev->platform_context;
@@ -47,7 +31,7 @@ static int pm_callback_power_on(struct kbase_device *kbdev)
 	pm_runtime_get_sync(kbdev->dev);
 	clk_prepare_enable(mfg->mfg_pll);
 	clk_prepare_enable(mfg->mfg_sel);
-	mtk_mfg_clr_clock_gating(mfg->reg_base);
+	clk_prepare_enable(mfg->mfg_bg3d);
 
 	return 1;
 }
@@ -56,10 +40,10 @@ static void pm_callback_power_off(struct kbase_device *kbdev)
 {
 	struct mfg_base *mfg = (struct mfg_base *)kbdev->platform_context;
 
-	mtk_mfg_set_clock_gating(mfg->reg_base);
+	clk_disable_unprepare(mfg->mfg_bg3d);
 	clk_disable_unprepare(mfg->mfg_sel);
 	clk_disable_unprepare(mfg->mfg_pll);
-	pm_runtime_put_autosuspend(kbdev->dev);
+	pm_runtime_put_sync(kbdev->dev);
 }
 
 int kbase_device_runtime_init(struct kbase_device *kbdev)
@@ -130,6 +114,13 @@ int mali_mfgsys_init(struct kbase_device *kbdev, struct mfg_base *mfg)
 		goto err_iounmap_reg_base;
 	}
 
+	mfg->mfg_bg3d = devm_clk_get(kbdev->dev, "mfg_bg3d");
+	if (IS_ERR(mfg->mfg_bg3d)) {
+		err = PTR_ERR(mfg->mfg_bg3d);
+		dev_notice(kbdev->dev, "devm_clk_get mfg_bg3d failed\n");
+		goto err_iounmap_reg_base;
+	}
+
 	of_property_read_u32(kbdev->dev->of_node, "mp", &mp);
 	if (mp == 2) /* 2 core */
 		mfg->gpu_core_mask = (u64)0x3;
@@ -155,6 +146,9 @@ static int platform_init(struct kbase_device *kbdev)
 {
 	int err;
 	struct mfg_base *mfg;
+
+	if (!kbdev->dev->pm_domain)
+		return -EPROBE_DEFER;
 
 	mfg = devm_kzalloc(kbdev->dev, sizeof(*mfg), GFP_KERNEL);
 	if (!mfg)
