@@ -1257,6 +1257,7 @@
 				     "mediatek,mt6595-disp-pwm";
 			reg = <0 0x1401e000 0 0x1000>;
 			#pwm-cells = <2>;
+			power-domains = <&scpsys MT2712_POWER_DOMAIN_MM>;
 			clocks = <&mmsys CLK_MM_DISP_PWM0_26M>,
 				 <&mmsys CLK_MM_DISP_PWM0_MM>;
 			clock-names = "main", "mm";
@@ -1268,6 +1269,7 @@
 				     "mediatek,mt6595-disp-pwm";
 			reg = <0 0x1401f000 0 0x1000>;
 			#pwm-cells = <2>;
+			power-domains = <&scpsys MT2712_POWER_DOMAIN_MM>;
 			clocks = <&mmsys CLK_MM_DISP_PWM1_26M>,
 				 <&mmsys CLK_MM_DISP_PWM1_MM>;
 			clock-names = "main", "mm";
