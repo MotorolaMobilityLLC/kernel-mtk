@@ -571,7 +571,7 @@ static int mt65xx_phy_init(struct phy *phy)
 
 	if (instance->type == PHY_TYPE_USB2)
 		phy_instance_init(u3phy, instance);
-	else
+	else if (instance->type == PHY_TYPE_USB3)
 		u3_phy_instance_init(u3phy, instance);
 
 	return 0;
@@ -643,8 +643,8 @@ static struct phy *mt65xx_phy_xlate(struct device *dev,
 
 	instance->type = args->args[0];
 	if (!(instance->type == PHY_TYPE_USB2 ||
-	      instance->type == PHY_TYPE_USB3) ||
-	      instance->type == PHY_TYPE_PCIE) {
+	      instance->type == PHY_TYPE_USB3 ||
+	      instance->type == PHY_TYPE_PCIE)) {
 		dev_err(dev, "unsupported device type: %d\n", instance->type);
 		return ERR_PTR(-EINVAL);
 	}
