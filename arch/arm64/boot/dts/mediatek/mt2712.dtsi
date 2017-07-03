@@ -1402,11 +1402,6 @@
 			compatible = "mediatek,mt2712-disp-ovl-2";
 			mediatek,ovlid = <1>;
 			mediatek,ovlname = "ovl-1";
-			reg = <0 0x1402c100 0 0x100>;
-			interrupts = <GIC_SPI 262 IRQ_TYPE_LEVEL_LOW>;
-			power-domains = <&scpsys MT2712_POWER_DOMAIN_MM>;
-			clocks = <&mmsys CLK_MM_DISP_OVL2>;
-			clock-names = "mm_disp_ovl2";
 			iommus = <&iommu1 M4U_PORT_DISP_OVL2>;
 			mediatek,larb = <&larb5>;
 		};
@@ -1415,11 +1410,6 @@
 			compatible = "mediatek,mt2712-disp-ovl-2";
 			mediatek,ovlid = <2>;
 			mediatek,ovlname = "ovl-2";
-			reg = <0 0x1402c200 0 0x100>;
-			interrupts = <GIC_SPI 262 IRQ_TYPE_LEVEL_LOW>;
-			power-domains = <&scpsys MT2712_POWER_DOMAIN_MM>;
-			clocks = <&mmsys CLK_MM_DISP_OVL2>;
-			clock-names = "mm_disp_ovl2";
 			iommus = <&iommu1 M4U_PORT_DISP_OVL2>;
 			mediatek,larb = <&larb5>;
 		};
@@ -1428,11 +1418,6 @@
 			compatible = "mediatek,mt2712-disp-ovl-2";
 			mediatek,ovlid = <3>;
 			mediatek,ovlname = "ovl-3";
-			reg = <0 0x1402c300 0 0x100>;
-			interrupts = <GIC_SPI 262 IRQ_TYPE_LEVEL_LOW>;
-			power-domains = <&scpsys MT2712_POWER_DOMAIN_MM>;
-			clocks = <&mmsys CLK_MM_DISP_OVL2>;
-			clock-names = "mm_disp_ovl2";
 			iommus = <&iommu1 M4U_PORT_DISP_OVL2>;
 			mediatek,larb = <&larb5>;
 		};
