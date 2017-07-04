@@ -597,8 +597,8 @@ int mtk_drm_crtc_create(struct drm_device *drm_dev,
 
 	for (zpos = 0; zpos < OVL_LAYER_NR; zpos++) {
 		type = (zpos == 0) ? DRM_PLANE_TYPE_PRIMARY :
-				(zpos == 1) ? DRM_PLANE_TYPE_CURSOR :
-						DRM_PLANE_TYPE_OVERLAY;
+		       (zpos == (OVL_LAYER_NR - 1UL)) ? DRM_PLANE_TYPE_CURSOR :
+							DRM_PLANE_TYPE_OVERLAY;
 		ret = mtk_plane_init(drm_dev, &mtk_crtc->planes[zpos],
 				     BIT(pipe), type);
 		if (ret)
@@ -606,7 +606,7 @@ int mtk_drm_crtc_create(struct drm_device *drm_dev,
 	}
 
 	ret = mtk_drm_crtc_init(drm_dev, mtk_crtc, &mtk_crtc->planes[0],
-				&mtk_crtc->planes[1], pipe);
+				&mtk_crtc->planes[OVL_LAYER_NR - 1UL], pipe);
 	if (ret < 0)
 		goto unprepare;
 	drm_mode_crtc_set_gamma_size(&mtk_crtc->base, MTK_LUT_SIZE);
