@@ -28,13 +28,12 @@
 #include <linux/vmalloc.h>
 #include <linux/dma-mapping.h>
 #include <linux/seq_file.h>
+#include <linux/bitops.h>
 #include <mt_freqhopping_drv.h>
 
 #include "mt_freqhopping.h"
-#include "mt_fhreg.h"
 #include "sync_write.h"
 
-#ifdef CONFIG_OF
 #include <linux/of.h>
 #include <linux/of_irq.h>
 #include <linux/of_address.h>
@@ -43,106 +42,97 @@ static void __iomem *freqhopping_base;	/* 0x10209E00 */
 static void __iomem *apmixed_base;	/* 0x10209000 */
 static void __iomem *ddrphy_base;	/* 0x10100000 */
 
-#ifdef CONFIG_ARM64
-#define REG_ADDR(x)                 ((unsigned long)freqhopping_base   + (x))
-#define REG_APMIX_ADDR(x)           ((unsigned long)g_apmixed_base + (x))
-#define REG_DDRPHY_ADDR(x)          ((unsigned long)g_ddrphy_base  + (x))
-#else
-#define REG_ADDR(x)                 ((unsigned int)freqhopping_base   + (x))
-#define REG_APMIX_ADDR(x)           ((unsigned int)g_apmixed_base + (x))
-#define REG_DDRPHY_ADDR(x)          ((unsigned int)g_ddrphy_base  + (x))
-#endif
+#define FREQHOPPING_BASE    (freqhopping_base)
+#define REG_FHCTL_HP_EN     (FREQHOPPING_BASE+0x0000)
+#define REG_FHCTL_CLK_CON   (FREQHOPPING_BASE+0x0004)
+#define REG_FHCTL_RST_CON   (FREQHOPPING_BASE+0x0008)
+#define REG_FHCTL_SLOPE0    (FREQHOPPING_BASE+0x000C)
+#define REG_FHCTL_SLOPE1    (FREQHOPPING_BASE+0x0010)
+#define REG_FHCTL_DSSC_CFG  (FREQHOPPING_BASE+0x0014)
 
-#define REG_FHCTL_HP_EN     REG_ADDR(0x0000)
-#define REG_FHCTL_CLK_CON   REG_ADDR(0x0004)
-#define REG_FHCTL_RST_CON   REG_ADDR(0x0008)
-#define REG_FHCTL_SLOPE0    REG_ADDR(0x000C)
-#define REG_FHCTL_SLOPE1    REG_ADDR(0x0010)
-#define REG_FHCTL_DSSC_CFG  REG_ADDR(0x0014)
+#define REG_FHCTL_DSSC0_CON (FREQHOPPING_BASE+0x0018)
+#define REG_FHCTL_DSSC1_CON (FREQHOPPING_BASE+0x001C)
+#define REG_FHCTL_DSSC2_CON (FREQHOPPING_BASE+0x0020)
+#define REG_FHCTL_DSSC3_CON (FREQHOPPING_BASE+0x0024)
+#define REG_FHCTL_DSSC4_CON (FREQHOPPING_BASE+0x0028)
+#define REG_FHCTL_DSSC5_CON (FREQHOPPING_BASE+0x002C)
+#define REG_FHCTL_DSSC6_CON (FREQHOPPING_BASE+0x0030)
+#define REG_FHCTL_DSSC7_CON (FREQHOPPING_BASE+0x0034)
 
-#define REG_FHCTL_DSSC0_CON REG_ADDR(0x0018)
-#define REG_FHCTL_DSSC1_CON REG_ADDR(0x001C)
-#define REG_FHCTL_DSSC2_CON REG_ADDR(0x0020)
-#define REG_FHCTL_DSSC3_CON REG_ADDR(0x0024)
-#define REG_FHCTL_DSSC4_CON REG_ADDR(0x0028)
-#define REG_FHCTL_DSSC5_CON REG_ADDR(0x002C)
-#define REG_FHCTL_DSSC6_CON REG_ADDR(0x0030)
-#define REG_FHCTL_DSSC7_CON REG_ADDR(0x0034)
+#define REG_FHCTL0_CFG      (FREQHOPPING_BASE+0x0038)
+#define REG_FHCTL0_UPDNLMT  (FREQHOPPING_BASE+0x003C)
+#define REG_FHCTL0_DDS      (FREQHOPPING_BASE+0x0040)
+#define REG_FHCTL0_DVFS     (FREQHOPPING_BASE+0x0044)
+#define REG_FHCTL0_MON      (FREQHOPPING_BASE+0x0048)
 
-#define REG_FHCTL0_CFG      REG_ADDR(0x0038)
-#define REG_FHCTL0_UPDNLMT  REG_ADDR(0x003C)
-#define REG_FHCTL0_DDS      REG_ADDR(0x0040)
-#define REG_FHCTL0_DVFS     REG_ADDR(0x0044)
-#define REG_FHCTL0_MON      REG_ADDR(0x0048)
+#define REG_FHCTL1_CFG      (FREQHOPPING_BASE+0x004C)
+#define REG_FHCTL1_UPDNLMT  (FREQHOPPING_BASE+0x0050)
+#define REG_FHCTL1_DDS      (FREQHOPPING_BASE+0x0054)
+#define REG_FHCTL1_DVFS     (FREQHOPPING_BASE+0x0058)
+#define REG_FHCTL1_MON      (FREQHOPPING_BASE+0x005C)
 
-#define REG_FHCTL1_CFG      REG_ADDR(0x004C)
-#define REG_FHCTL1_UPDNLMT  REG_ADDR(0x0050)
-#define REG_FHCTL1_DDS      REG_ADDR(0x0054)
-#define REG_FHCTL1_DVFS     REG_ADDR(0x0058)
-#define REG_FHCTL1_MON      REG_ADDR(0x005C)
+#define REG_FHCTL2_CFG      (FREQHOPPING_BASE+0x0060)
+#define REG_FHCTL2_UPDNLMT  (FREQHOPPING_BASE+0x0064)
+#define REG_FHCTL2_DDS      (FREQHOPPING_BASE+0x0068)
+#define REG_FHCTL2_DVFS     (FREQHOPPING_BASE+0x006C)
+#define REG_FHCTL2_MON      (FREQHOPPING_BASE+0x0070)
 
-#define REG_FHCTL2_CFG      REG_ADDR(0x0060)
-#define REG_FHCTL2_UPDNLMT  REG_ADDR(0x0064)
-#define REG_FHCTL2_DDS      REG_ADDR(0x0068)
-#define REG_FHCTL2_DVFS     REG_ADDR(0x006C)
-#define REG_FHCTL2_MON      REG_ADDR(0x0070)
+#define REG_FHCTL3_CFG      (FREQHOPPING_BASE+0x0074)
+#define REG_FHCTL3_UPDNLMT  (FREQHOPPING_BASE+0x0078)
+#define REG_FHCTL3_DDS      (FREQHOPPING_BASE+0x007C)
+#define REG_FHCTL3_DVFS     (FREQHOPPING_BASE+0x0080)
+#define REG_FHCTL3_MON      (FREQHOPPING_BASE+0x0084)
 
-#define REG_FHCTL3_CFG      REG_ADDR(0x0074)
-#define REG_FHCTL3_UPDNLMT  REG_ADDR(0x0078)
-#define REG_FHCTL3_DDS      REG_ADDR(0x007C)
-#define REG_FHCTL3_DVFS     REG_ADDR(0x0080)
-#define REG_FHCTL3_MON      REG_ADDR(0x0084)
+#define REG_FHCTL4_CFG      (FREQHOPPING_BASE+0x0088)
+#define REG_FHCTL4_UPDNLMT  (FREQHOPPING_BASE+0x008C)
+#define REG_FHCTL4_DDS      (FREQHOPPING_BASE+0x0090)
+#define REG_FHCTL4_DVFS     (FREQHOPPING_BASE+0x0094)
+#define REG_FHCTL4_MON      (FREQHOPPING_BASE+0x0098)
 
-#define REG_FHCTL4_CFG      REG_ADDR(0x0088)
-#define REG_FHCTL4_UPDNLMT  REG_ADDR(0x008C)
-#define REG_FHCTL4_DDS      REG_ADDR(0x0090)
-#define REG_FHCTL4_DVFS     REG_ADDR(0x0094)
-#define REG_FHCTL4_MON      REG_ADDR(0x0098)
+#define REG_FHCTL5_CFG      (FREQHOPPING_BASE+0x009C)
+#define REG_FHCTL5_UPDNLMT  (FREQHOPPING_BASE+0x00A0)
+#define REG_FHCTL5_DDS      (FREQHOPPING_BASE+0x00A4)
+#define REG_FHCTL5_DVFS     (FREQHOPPING_BASE+0x00A8)
+#define REG_FHCTL5_MON      (FREQHOPPING_BASE+0x00AC)
 
-#define REG_FHCTL5_CFG      REG_ADDR(0x009C)
-#define REG_FHCTL5_UPDNLMT  REG_ADDR(0x00A0)
-#define REG_FHCTL5_DDS      REG_ADDR(0x00A4)
-#define REG_FHCTL5_DVFS     REG_ADDR(0x00A8)
-#define REG_FHCTL5_MON      REG_ADDR(0x00AC)
+#define REG_FHCTL6_CFG      (FREQHOPPING_BASE+0x00B0)
+#define REG_FHCTL6_UPDNLMT  (FREQHOPPING_BASE+0x00B4)
+#define REG_FHCTL6_DDS      (FREQHOPPING_BASE+0x00B8)
+#define REG_FHCTL6_DVFS     (FREQHOPPING_BASE+0x00BC)
+#define REG_FHCTL6_MON      (FREQHOPPING_BASE+0x00C0)
 
-#define REG_FHCTL6_CFG      REG_ADDR(0x00B0)
-#define REG_FHCTL6_UPDNLMT  REG_ADDR(0x00B4)
-#define REG_FHCTL6_DDS      REG_ADDR(0x00B8)
-#define REG_FHCTL6_DVFS     REG_ADDR(0x00BC)
-#define REG_FHCTL6_MON      REG_ADDR(0x00C0)
+#define REG_FHCTL7_CFG      (FREQHOPPING_BASE+0x00C4)
+#define REG_FHCTL7_UPDNLMT  (FREQHOPPING_BASE+0x00C8)
+#define REG_FHCTL7_DDS      (FREQHOPPING_BASE+0x00CC)
+#define REG_FHCTL7_DVFS     (FREQHOPPING_BASE+0x00D0)
+#define REG_FHCTL7_MON      (FREQHOPPING_BASE+0x00D4)
 
-#define REG_FHCTL7_CFG      REG_ADDR(0x00C4)
-#define REG_FHCTL7_UPDNLMT  REG_ADDR(0x00C8)
-#define REG_FHCTL7_DDS      REG_ADDR(0x00CC)
-#define REG_FHCTL7_DVFS     REG_ADDR(0x00D0)
-#define REG_FHCTL7_MON      REG_ADDR(0x00D4)
+#define REG_FHCTL8_CFG      (FREQHOPPING_BASE+0x00D8)
+#define REG_FHCTL8_UPDNLMT  (FREQHOPPING_BASE+0x00DC)
+#define REG_FHCTL8_DDS      (FREQHOPPING_BASE+0x00E0)
+#define REG_FHCTL8_DVFS     (FREQHOPPING_BASE+0x00E4)
+#define REG_FHCTL8_MON      (FREQHOPPING_BASE+0x00E8)
 
-#define REG_FHCTL8_CFG      REG_ADDR(0x00D8)
-#define REG_FHCTL8_UPDNLMT  REG_ADDR(0x00DC)
-#define REG_FHCTL8_DDS      REG_ADDR(0x00E0)
-#define REG_FHCTL8_DVFS     REG_ADDR(0x00E4)
-#define REG_FHCTL8_MON      REG_ADDR(0x00E8)
+#define REG_FHCTL9_CFG      (FREQHOPPING_BASE+0x00EC)
+#define REG_FHCTL9_UPDNLMT  (FREQHOPPING_BASE+0x00F0)
+#define REG_FHCTL9_DDS      (FREQHOPPING_BASE+0x00F4)
+#define REG_FHCTL9_DVFS     (FREQHOPPING_BASE+0x00F8)
+#define REG_FHCTL9_MON      (FREQHOPPING_BASE+0x00FC)
 
-#define REG_FHCTL9_CFG      REG_ADDR(0x00EC)
-#define REG_FHCTL9_UPDNLMT  REG_ADDR(0x00F0)
-#define REG_FHCTL9_DDS      REG_ADDR(0x00F4)
-#define REG_FHCTL9_DVFS     REG_ADDR(0x00F8)
-#define REG_FHCTL9_MON      REG_ADDR(0x00FC)
+#define REG_FHCTL10_CFG      (FREQHOPPING_BASE+0x0100)
+#define REG_FHCTL10_UPDNLMT  (FREQHOPPING_BASE+0x0104)
+#define REG_FHCTL10_DDS      (FREQHOPPING_BASE+0x0108)
+#define REG_FHCTL10_DVFS     (FREQHOPPING_BASE+0x010C)
+#define REG_FHCTL10_MON      (FREQHOPPING_BASE+0x0110)
 
-#define REG_FHCTL10_CFG      REG_ADDR(0x0100)
-#define REG_FHCTL10_UPDNLMT  REG_ADDR(0x0104)
-#define REG_FHCTL10_DDS      REG_ADDR(0x0108)
-#define REG_FHCTL10_DVFS     REG_ADDR(0x010C)
-#define REG_FHCTL10_MON      REG_ADDR(0x0110)
-
-#define REG_FHCTL11_CFG      REG_ADDR(0x0114)
-#define REG_FHCTL11_UPDNLMT  REG_ADDR(0x0118)
-#define REG_FHCTL11_DDS      REG_ADDR(0x011C)
-#define REG_FHCTL11_DVFS     REG_ADDR(0x0120)
-#define REG_FHCTL11_MON      REG_ADDR(0x0124)
+#define REG_FHCTL11_CFG      (FREQHOPPING_BASE+0x0114)
+#define REG_FHCTL11_UPDNLMT  (FREQHOPPING_BASE+0x0118)
+#define REG_FHCTL11_DDS      (FREQHOPPING_BASE+0x011C)
+#define REG_FHCTL11_DVFS     (FREQHOPPING_BASE+0x0120)
+#define REG_FHCTL11_MON      (FREQHOPPING_BASE+0x0124)
 
 /* mt2712 */
-#define APMIXED_BASE		((unsigned long)apmixed_base)
+#define APMIXED_BASE		(apmixed_base)
 #define ARMCA7PLL_CON0		(APMIXED_BASE+0x100)
 #define ARMCA7PLL_CON1		(APMIXED_BASE+0x104)
 #define ARMCA7PLL_PWR_CON0	(APMIXED_BASE+0x110)
@@ -188,9 +178,8 @@ static void __iomem *ddrphy_base;	/* 0x10100000 */
 #define MSDC2PLL_PWR_CON0	(APMIXED_BASE+0x41C)
 
 /* DDRPHY_PLL = MEMPLL*/
-#define DDRPHY_BASE		((unsigned long)ddrphy_base)
+#define DDRPHY_BASE		(ddrphy_base)
 #define MEMPLL			(DDRPHY_BASE+0xD9C) /* SHU1_PLL7 */
-#endif
 
 /* masks */
 #define MASK_FRDDSX_DYS         (0xFU<<20)
@@ -212,41 +201,98 @@ static void __iomem *ddrphy_base;	/* 0x10100000 */
 #define FH_FHCTLX_PLL_CHG       (0x1U<<21)
 #define FH_FHCTLX_PLL_DDS       (0xFFFFFU)
 
-#define MASK20b (0x1FFFFF)
-#define BIT31   (1U<<31)
+#define MASK20b (0x1FFFFFu)
+#define BIT31   (1u<<31u)
+
+#define fh_read8(reg)		readb((reg))
+#define fh_read16(reg)		readw((reg))
+#define fh_read32(reg)		readl((reg))
+#define fh_write8(reg, val)	mt_reg_sync_writeb((val), (reg))
+#define fh_write16(reg, val)	mt_reg_sync_writew((val), (reg))
+#define fh_write32(reg, val)	mt_reg_sync_writel((val), (reg))
+
+static unsigned int uffs(unsigned int mask)
+{
+	unsigned int shift = 0u;
+
+	if (mask == 0u)
+		return 0;
+
+	if ((mask & 0xffffu) == 0u) {
+		mask >>= 16u;
+		shift += 16u;
+	}
+
+	if ((mask & 0xffu) == 0u) {
+		mask >>= 8u;
+		shift += 8u;
+	}
+
+	if ((mask & 0xfu) == 0u) {
+		mask >>= 4u;
+		shift += 4u;
+	}
+
+	if ((mask & 0x3U) == 0U) {
+		mask >>= 2u;
+		shift += 2u;
+	}
+
+	if ((mask & 0x1u) == 0u) {
+		mask >>= 1u;
+		shift += 1u;
+	}
+
+	return shift;
+}
+
+static void fh_set_field(void __iomem *fh_reg, unsigned int mask, unsigned int mask_val)
+{
+	unsigned int tv = fh_read32(fh_reg);
+
+	tv &= ~mask;
+	tv |= mask_val << uffs(mask);
+	fh_write32(fh_reg, tv);
+}
+
+#if 0
+#define fh_get_field(reg, field, val) \
+	do {	\
+		unsigned int tv = fh_read32(reg);	\
+		val = ((tv & (field)) >> (uffs((unsigned int)field) - 1)); \
+	} while (0)
+#endif
+
+/* #define fh_set_bits(reg,bs)	((*(volatile u32*)(reg)) |= (u32)(bs)) */
+/* #define fh_clr_bits(reg,bs)	((*(volatile u32*)(reg)) &= ~((u32)(bs))) */
+
+static unsigned int percent_to_ddslmt(unsigned int dDs, unsigned int pERCENT_M10)
+{
+	return ((dDs * pERCENT_M10) >> 5u) / 100u;
+}
 
 static DEFINE_SPINLOCK(g_fh_lock);
 
-#define PERCENT_TO_DDSLMT(dDS, pERCENT_M10) (((dDS * pERCENT_M10) >> 5) / 100)
-
 static unsigned int g_initialize;
 
-static unsigned long g_reg_pll_con1[FH_PLL_NUM];
-static unsigned long g_reg_dds[FH_PLL_NUM];
-static unsigned long g_reg_cfg[FH_PLL_NUM];
-static unsigned long g_reg_updnlmt[FH_PLL_NUM];
-static unsigned long g_reg_mon[FH_PLL_NUM];
-static unsigned long g_reg_dvfs[FH_PLL_NUM];
+static void __iomem *g_reg_pll_con1[FH_PLL_NUM];
+static void __iomem *g_reg_dds[FH_PLL_NUM];
+static void __iomem *g_reg_cfg[FH_PLL_NUM];
+static void __iomem *g_reg_updnlmt[FH_PLL_NUM];
+static void __iomem *g_reg_mon[FH_PLL_NUM];
+static void __iomem *g_reg_dvfs[FH_PLL_NUM];
 static unsigned int g_slt_fmax[FH_PLL_NUM];
 static unsigned int g_slt_fmin[FH_PLL_NUM];
 static char g_fh_name[FH_PLL_NUM][20] =	{
-	"ARMCA7PLL_CON1", "ARMCA15PLL_CON1", "MAINPLL_CON1", "MEMPLL",
-	"MSDCPLL_CON1", "MMPLL_CON1", "VENCPLL_CON1", "TVDPLL_CON1",
-	"VCODECPLL_CON1", "LVDSPLL_CON1", "MSDC2PLL_CON1", "LVDS2PLL_CON1"
+	"ARMCA7PLL", "ARMCA15PLL", "MAINPLL", "MEMPLL",
+	"MSDCPLL", "MMPLL", "VENCPLL", "TVDPLL",
+	"VCODECPLL", "LVDSPLL", "MSDC2PLL", "LVDS2PLL"
 };
-
-#define VALIDATE_PLLID(id)\
-		WARN_ON(id >= FH_PLL_NUM)
 
 /* caller: clk mgr */
 static void mt_fh_default_conf(void)
 {
 	FH_MSG_INFO("%s", __func__);
-
-	if (g_initialize != 1) {
-		FH_MSG_ERROR("fh driver isn't initialized successfully\n");
-		return;
-	}
 #if 0
 	mtk_fhctl_hopping_by_id(FH_MAIN_PLLID, 0x1CC000);
 	mtk_fhctl_hopping_by_id(FH_MAIN_PLLID, 0x134000);
@@ -257,16 +303,15 @@ static void mt_fh_default_conf(void)
 	mtk_fhctl_enable_ssc_by_id(FH_MM_PLLID);
 	msleep(5000);
 	mtk_fhctl_disable_ssc_by_id(FH_MM_PLLID);
+	mtk_fhctl_disable_ssc_by_id(100); /* give wrong pll_id on purpose */
 #endif
 }
 
-static void fh_switch2fhctl(enum FH_PLL_ID pll_id, int i_control)
+static void fh_switch2fhctl(unsigned int pll_id, unsigned int i_control)
 {
-	unsigned int mask = 0;
+	unsigned int mask;
 
-	VALIDATE_PLLID(pll_id);
-
-	mask = 0x1U << pll_id;
+	mask = 0x1u << pll_id;
 
 	/* FIXME: clock should be turned on/off at entry functions */
 	/* Turn on clock */
@@ -284,11 +329,9 @@ static void fh_switch2fhctl(enum FH_PLL_ID pll_id, int i_control)
 	/* fh_set_field(REG_FHCTL_CLK_CON, mask, i_control); */
 }
 
-static void fh_sync_ncpo_to_fhctl_dds(enum FH_PLL_ID pll_id)
+static void fh_sync_ncpo_to_fhctl_dds(unsigned int pll_id)
 {
 	unsigned int pll_con1;
-
-	VALIDATE_PLLID(pll_id);
 
 	pll_con1 = fh_read32(g_reg_pll_con1[pll_id]);
 
@@ -311,9 +354,9 @@ static void fh_sync_ncpo_to_fhctl_dds(enum FH_PLL_ID pll_id)
 static void __enable_ssc(unsigned int pll_id)
 {
 	unsigned long flags = 0;
-	const unsigned long reg_cfg = g_reg_cfg[pll_id];
-	const unsigned long reg_updnlmt = g_reg_updnlmt[pll_id];
-	const unsigned long reg_dds = g_reg_dds[pll_id];
+	void __iomem *reg_cfg = g_reg_cfg[pll_id];
+	void __iomem *reg_updnlmt = g_reg_updnlmt[pll_id];
+	void __iomem *reg_dds = g_reg_dds[pll_id];
 
 	FH_MSG_INFO("Calling %s", __func__);
 
@@ -328,7 +371,7 @@ static void __enable_ssc(unsigned int pll_id)
 	/* TODO: Not setting upper due to they are all 0? */
 	/* Set downlimit 100% ~ 92% */
 	fh_write32(reg_updnlmt,
-		   (PERCENT_TO_DDSLMT((fh_read32(reg_dds) & MASK20b), 0x8) << 16));
+		   (percent_to_ddslmt((fh_read32(reg_dds) & MASK20b), 8u) << 16u));
 
 	/* Switch to FHCTL */
 	fh_switch2fhctl(pll_id, 1);
@@ -344,7 +387,7 @@ static void __enable_ssc(unsigned int pll_id)
 static void __disable_ssc(unsigned int pll_id)
 {
 	unsigned long flags = 0;
-	unsigned long reg_cfg = g_reg_cfg[pll_id];
+	void __iomem *reg_cfg = g_reg_cfg[pll_id];
 
 	FH_MSG_INFO("Calling %s", __func__);
 
@@ -360,7 +403,7 @@ static void __disable_ssc(unsigned int pll_id)
 }
 
 /* reg_mon reflects the value of reg_dds */
-static int wait_dds_stable(unsigned int target_dds, unsigned long reg_mon, unsigned int wait_count)
+static int wait_dds_stable(unsigned int target_dds, void __iomem *reg_mon, unsigned int wait_count)
 {
 	unsigned int fh_dds = 0;
 	unsigned int count = 0;
@@ -386,9 +429,9 @@ static int wait_dds_stable(unsigned int target_dds, unsigned long reg_mon, unsig
 }
 
 /* #define UINT_MAX (unsigned int)(-1) */
-static int mt_fh_dumpregs_proc_read(struct seq_file *m, void *v)
+static int mt_fh_dumpregs_proc_read(struct seq_file *m, void *data)
 {
-	int i;
+	unsigned int i;
 
 	for (i = 0; i < FH_PLL_NUM; ++i) {
 		/* mt2712  doesn't need to support MEMPLL. Therefore, ignore MEMPLL setting. */
@@ -427,7 +470,7 @@ static int mt_fh_dumpregs_proc_read(struct seq_file *m, void *v)
 	return 0;
 }
 
-void mt_fh_init_register(void)
+static void mt_fh_init_register(void)
 {
 	g_reg_pll_con1[FH_ARMCA7_PLLID] = ARMCA7PLL_CON1;
 	g_reg_dds[FH_ARMCA7_PLLID] = REG_FHCTL0_DDS;
@@ -542,26 +585,28 @@ void mt_fh_init_register(void)
 /* TODO: __init void mt_freqhopping_init(void) */
 static int mt_fh_init(void)
 {
-	int i = 0;
+	unsigned int i, mask;
 	unsigned long flags = 0;
-	struct device_node *fh_node = NULL;
+	struct device_node *freqhopping_node = NULL;
 	struct device_node *apmix_node = NULL;
 
 	FH_MSG_INFO("%s", __func__);
 
-	if (g_initialize == 1)
+	if (g_initialize == 1u) {
+		FH_MSG_ERROR("fh driver has ever been initialized successfully\n");
 		return -EPERM;
+	}
 
-	fh_node = of_find_compatible_node(NULL, NULL, "mediatek,mt2712-fhctl");
-	if (fh_node == NULL) {
+	freqhopping_node = of_find_compatible_node(NULL, NULL, "mediatek,mt2712-fhctl");
+	if (freqhopping_node == NULL) {
 		FH_MSG_ERROR("node \"mediatek,mt2712-fhctl\" not found!\n");
 		return -ENODEV;
 	}
 
 	/* Setup IO addresses */
-	freqhopping_base = of_iomap(fh_node, 0);
+	freqhopping_base = of_iomap(freqhopping_node, 0);
 	if (freqhopping_base == NULL) {
-		FH_MSG_ERROR("Wrong freqhopping_base = 0x%lx\n", (unsigned long)freqhopping_base);
+		FH_MSG_ERROR("Cannot get freqhopping_base from freqhopping_node\n");
 		return -EFAULT;
 	}
 
@@ -574,14 +619,14 @@ static int mt_fh_init(void)
 	/* Setup IO addresses */
 	apmixed_base = of_iomap(apmix_node, 0);
 	if (apmixed_base == NULL) {
-		FH_MSG_ERROR("Wrong apmixed_base = 0x%lx\n", (unsigned long)apmixed_base);
+		FH_MSG_ERROR("Cannot get apmixed_base from apmix_node");
 		return -EFAULT;
 	}
 
 	mt_fh_init_register();
 
 	for (i = 0; i < FH_PLL_NUM; ++i) {
-		unsigned int mask = 1 << i;
+		mask = 0x1u << i;
 
 		spin_lock_irqsave(&g_fh_lock, flags);
 
@@ -600,7 +645,7 @@ static int mt_fh_init(void)
 		spin_unlock_irqrestore(&g_fh_lock, flags);
 	}
 
-	g_initialize = 1;
+	g_initialize = 1u;
 
 	return 0;
 }
@@ -610,9 +655,9 @@ static void print_fhctl_reg(const char *type, const char *regname, void __iomem 
 	FH_MSG_NOTICE("[%7s] %-23s: [0x%p]: 0x%08x\n", type, regname, addr, fh_read32(addr));
 }
 
-#define DUMP(type, regname)	print_fhctl_reg(type, #regname, (void __iomem *)regname)
+#define DUMP(type, regname)	print_fhctl_reg(type, #regname, regname)
 
-void print_fhctl_register(enum FH_PLL_ID fh_pll_id, char *fh_pll_name)
+static void print_fhctl_register(unsigned int fh_pll_id, char *fh_pll_name)
 {
 	DUMP(fh_pll_name, g_reg_pll_con1[fh_pll_id]);
 	DUMP(fh_pll_name, g_reg_dds[fh_pll_id]);
@@ -627,12 +672,12 @@ void print_fhctl_register(enum FH_PLL_ID fh_pll_id, char *fh_pll_name)
 /* User needs to set its pll frequency first and use this API to turn on
  * corresponding frequency hopping SSC.
  */
-int mtk_fhctl_enable_ssc_by_id(enum FH_PLL_ID fh_pll_id)
+int mtk_fhctl_enable_ssc_by_id(unsigned int fh_pll_id)
 {
-	if (g_initialize != 1) {
+	if (g_initialize != 1u) {
 		FH_MSG_ERROR("fh driver isn't initialized successfully\n");
 		return -EPERM;
-	} else if (fh_pll_id < FH_MIN_PLLID || fh_pll_id > FH_MAX_PLLID) {
+	} else if (fh_pll_id > FH_MAX_PLLID) {
 		FH_MSG_ERROR("unknown pll_id = %d\n", fh_pll_id);
 		return -EINVAL;
 	} else if (fh_pll_id == FH_MEM_PLLID) {
@@ -646,12 +691,12 @@ int mtk_fhctl_enable_ssc_by_id(enum FH_PLL_ID fh_pll_id)
 }
 EXPORT_SYMBOL(mtk_fhctl_enable_ssc_by_id);
 
-int mtk_fhctl_disable_ssc_by_id(enum FH_PLL_ID fh_pll_id)
+int mtk_fhctl_disable_ssc_by_id(unsigned int fh_pll_id)
 {
-	if (g_initialize != 1) {
+	if (g_initialize != 1u) {
 		FH_MSG_ERROR("fh driver isn't initialized successfully\n");
 		return -EPERM;
-	} else if (fh_pll_id < FH_MIN_PLLID || fh_pll_id > FH_MAX_PLLID) {
+	} else if (fh_pll_id > FH_MAX_PLLID) {
 		FH_MSG_ERROR("unknown pll_id = %d\n", fh_pll_id);
 		return -EINVAL;
 	} else if (fh_pll_id == FH_MEM_PLLID) {
@@ -666,16 +711,16 @@ int mtk_fhctl_disable_ssc_by_id(enum FH_PLL_ID fh_pll_id)
 EXPORT_SYMBOL(mtk_fhctl_disable_ssc_by_id);
 
 /* This API helps hopping PLL to your target vco frequency via fhctl*/
-int mtk_fhctl_hopping_by_id(enum FH_PLL_ID fh_pll_id, unsigned int target_vco_frequency)
+int mtk_fhctl_hopping_by_id(unsigned int fh_pll_id, unsigned int target_vco_frequency)
 {
 	int ret;
 	unsigned int fh_vco_freq;
 	unsigned long flags;
 
-	if (g_initialize != 1) {
+	if (g_initialize != 1u) {
 		FH_MSG_ERROR("fh driver isn't initialized successfully\n");
 		return -EPERM;
-	} else if (fh_pll_id < FH_MIN_PLLID || fh_pll_id > FH_MAX_PLLID) {
+	} else if (fh_pll_id > FH_MAX_PLLID) {
 		FH_MSG_ERROR("unknown pll_id = %d\n", fh_pll_id);
 		return -EINVAL;
 	} else if (fh_pll_id == FH_MEM_PLLID) {
@@ -726,14 +771,14 @@ freqhopping_done:
 }
 EXPORT_SYMBOL(mtk_fhctl_hopping_by_id);
 
-int test_freqhopping(enum FH_PLL_ID fh_pll_id, char *fh_pll_name)
+static int test_freqhopping(unsigned int fh_pll_id, char *fh_pll_name)
 {
 	int ret = 0; /* slt pass flag */
 	unsigned long flags = 0;
 
 	FH_MSG_NOTICE("%s() start.\n", __func__);
 
-	if (g_slt_fmax[fh_pll_id] == 0 || g_slt_fmin[fh_pll_id] == 0) {
+	if (g_slt_fmax[fh_pll_id] == 0u || g_slt_fmin[fh_pll_id] == 0u) {
 		FH_MSG_ERROR("[Notice][%s]un-define g_slt_fmax = 0x%x, g_slt_fmin = 0x%x\n",
 						fh_pll_name, g_slt_fmax[fh_pll_id], g_slt_fmin[fh_pll_id]);
 		return 0;
@@ -800,7 +845,7 @@ freqhopping_test_done:
 	return ret;
 }
 
-int test_ssc(enum FH_PLL_ID fh_pll_id, char *fh_pll_name)
+static int test_ssc(unsigned int fh_pll_id, char *fh_pll_name)
 {
 	int ret = 0; /* slt pass flag */
 	unsigned long flags = 0;
@@ -819,13 +864,13 @@ int test_ssc(enum FH_PLL_ID fh_pll_id, char *fh_pll_name)
 	fh_sync_ncpo_to_fhctl_dds(fh_pll_id);
 
 	dds_value = fh_read32(g_reg_dds[fh_pll_id]) & MASK20b;
-	dds_downlimit = (unsigned int)((dds_value * 92) / 100); /* SSC between 92% and 100%  */
+	dds_downlimit = (unsigned int)((dds_value * 92u) / 100u); /* SSC between 92% and 100%  */
 
 	FH_MSG_NOTICE("dds_value = 0x%x, dds_downlimit = 0x%x\n", dds_value, dds_downlimit);
 
 	/* Setting ssc downlimit */
 	fh_write32(g_reg_updnlmt[fh_pll_id],
-			(PERCENT_TO_DDSLMT((fh_read32(g_reg_dds[fh_pll_id]) & MASK20b), 0x08) << 16));
+			(percent_to_ddslmt((fh_read32(g_reg_dds[fh_pll_id]) & MASK20b), 8u) << 16u));
 
 	FH_MSG_NOTICE("Enable DVFS and Hopping control\n");
 	fh_set_field(g_reg_cfg[fh_pll_id], FH_FRDDSX_EN, 1); /* Enable SSC */
@@ -871,10 +916,10 @@ ssc_test_done:
 	return ret;
 }
 
-int mt_fh_slt_start(void)
+static int mt_fh_slt_start(void)
 {
 	int ret = 0; /* slt pass flag */
-	int fh_pll_id;
+	unsigned int fh_pll_id;
 
 	FH_MSG_NOTICE("%s() start\n", __func__);
 
@@ -886,12 +931,16 @@ int mt_fh_slt_start(void)
 			continue;
 
 		ret = test_freqhopping(fh_pll_id, g_fh_name[fh_pll_id]);
-		if (ret == -1)
+		if (ret == -1) {
+			FH_MSG_ERROR("test_freqhopping failed\n");
 			goto slt_test_result;
+		}
 
 		ret = test_ssc(fh_pll_id, g_fh_name[fh_pll_id]);
-		if (ret == -1)
+		if (ret == -1) {
+			FH_MSG_ERROR("test_ssc failed\n");
 			goto slt_test_result;
+		}
 	}
 
 slt_test_result:
