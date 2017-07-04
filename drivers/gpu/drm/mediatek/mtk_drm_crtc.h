@@ -18,7 +18,7 @@
 #include "mtk_drm_ddp_comp.h"
 #include "mtk_drm_plane.h"
 
-#define OVL_LAYER_NR	4
+#define OVL_LAYER_NR	4UL
 #define MTK_LUT_SIZE	512
 #define MTK_MAX_BPC	10
 #define MTK_MIN_BPC	3
