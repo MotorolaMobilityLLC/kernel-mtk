@@ -29,84 +29,15 @@
 
 #define TS_CS42448
 
-struct mt2712_d1v1_private {
-	int i2s1_in_mux;
-	int i2s1_in_mux_gpio_sel_1;
-	int i2s1_in_mux_gpio_sel_2;
-};
-
-static const char *const i2sin_mux_switch_text[] = {
-	"ADC_SDOUT2",
-	"ADC_SDOUT3",
-	"I2S_IN_1",
-	"I2S_IN_2",
-};
-
-static const struct soc_enum i2sin_mux_enum =
-	SOC_ENUM_SINGLE_EXT(4, i2sin_mux_switch_text);
-
-static int mt2712_d1v1_i2sin1_mux_get(struct snd_kcontrol *kcontrol,
-					 struct snd_ctl_elem_value *ucontrol)
-{
-	struct snd_soc_card *card = snd_kcontrol_chip(kcontrol);
-	struct mt2712_d1v1_private *priv = snd_soc_card_get_drvdata(card);
-
-	ucontrol->value.integer.value[0] = priv->i2s1_in_mux;
-	return 0;
-}
-
-static int mt2712_d1v1_i2sin1_mux_set(struct snd_kcontrol *kcontrol,
-					 struct snd_ctl_elem_value *ucontrol)
-{
-	struct snd_soc_card *card = snd_kcontrol_chip(kcontrol);
-	struct mt2712_d1v1_private *priv = snd_soc_card_get_drvdata(card);
-
-	if (ucontrol->value.integer.value[0] == priv->i2s1_in_mux)
-		return 0;
-
-	switch (ucontrol->value.integer.value[0]) {
-	case 0:
-		gpio_set_value(priv->i2s1_in_mux_gpio_sel_1, 0);
-		gpio_set_value(priv->i2s1_in_mux_gpio_sel_2, 0);
-		break;
-	case 1:
-		gpio_set_value(priv->i2s1_in_mux_gpio_sel_1, 1);
-		gpio_set_value(priv->i2s1_in_mux_gpio_sel_2, 0);
-		break;
-	case 2:
-		gpio_set_value(priv->i2s1_in_mux_gpio_sel_1, 0);
-		gpio_set_value(priv->i2s1_in_mux_gpio_sel_2, 1);
-		break;
-	case 3:
-		gpio_set_value(priv->i2s1_in_mux_gpio_sel_1, 1);
-		gpio_set_value(priv->i2s1_in_mux_gpio_sel_2, 1);
-		break;
-	default:
-		dev_warn(card->dev, "%s invalid setting\n", __func__);
-	}
-
-	priv->i2s1_in_mux = ucontrol->value.integer.value[0];
-	return 0;
-}
-
 static const struct snd_soc_dapm_widget
 	mt2712_d1v1_asoc_card_dapm_widgets[] = {
 	SND_SOC_DAPM_LINE("Line Out Jack", NULL),
 	SND_SOC_DAPM_MIC("AMIC", NULL),
-	SND_SOC_DAPM_LINE("Tuner In", NULL),
-	SND_SOC_DAPM_LINE("Satellite Tuner In", NULL),
-	SND_SOC_DAPM_LINE("AUX In", NULL),
 };
 
 static const struct snd_kcontrol_new mt2712_d1v1_controls[] = {
 	SOC_DAPM_PIN_SWITCH("Line Out Jack"),
 	SOC_DAPM_PIN_SWITCH("AMIC"),
-	SOC_DAPM_PIN_SWITCH("Tuner In"),
-	SOC_DAPM_PIN_SWITCH("Satellite Tuner In"),
-	SOC_DAPM_PIN_SWITCH("AUX In"),
-	SOC_ENUM_EXT("I2SIN1_MUX_Switch", i2sin_mux_enum,
-	mt2712_d1v1_i2sin1_mux_get,
-	mt2712_d1v1_i2sin1_mux_set),
 };
 
 static int mt2712_d1v1_fe_ops_startup(struct snd_pcm_substream *substream)
@@ -125,23 +56,7 @@ static int mt2712_d1v1_fe_ops_startup(struct snd_pcm_substream *substream)
 static struct snd_soc_ops mt2712_d1v1_48k_fe_ops = {
 	.startup = mt2712_d1v1_fe_ops_startup,
 };
-#if 0
-static int mt2712_d1v1_be_ops_fixup(struct snd_soc_pcm_runtime *rtd,
-					   struct snd_pcm_hw_params *params)
-{
-	struct snd_soc_dai *cpu_dai = rtd->cpu_dai;
 
-	/* set sample bits to 32 bit for I2SO2-to-AK4556 */
-	if (cpu_dai->id == (MT2701_IO_I2S + 2)) {
-		snd_mask_reset(&params->masks[SNDRV_PCM_HW_PARAM_FORMAT -
-			SNDRV_PCM_HW_PARAM_FIRST_MASK],
-			SNDRV_PCM_FORMAT_S16_LE);
-
-		params_set_format(params, SNDRV_PCM_FORMAT_S32_LE);
-	}
-	return 0;
-}
-#endif
 static int mt2712_d1v1_be_ops_hw_params(struct snd_pcm_substream *substream,
 					   struct snd_pcm_hw_params *params)
 {
@@ -576,7 +491,6 @@ static struct snd_soc_dai_link mt2712_d1v1_dai_links[] = {
 	.codec_dai_name = "dummy-codec-i2s",
 	.dai_fmt = SND_SOC_DAIFMT_I2S | SND_SOC_DAIFMT_CBS_CFS
 	| SND_SOC_DAIFMT_GATED,
-	//.be_hw_params_fixup = mt2712_d1v1_be_ops_fixup,
 	.ops = &mt2712_d1v1_be_AK4556VT_ops,
 	.dpcm_playback = 1,
 	.dpcm_capture = 1,
@@ -677,17 +591,11 @@ static int mt2712_d1v1_machine_probe(struct platform_device *pdev)
 	struct snd_soc_card *card = &mt2712_d1v1_soc_card;
 	int ret;
 	int i;
-	struct device_node *platform_node, *codec_node, *codec_node_bt_mrg;
+	struct device_node *platform_node, *codec_node_bt_mrg;
 #ifdef TS_CS42448
 	struct device_node *codec_node_tdmo, *codec_node_tdmi;
 #endif
-	struct mt2712_d1v1_private *priv =
-						devm_kzalloc(&pdev->dev, sizeof(struct mt2712_d1v1_private),
-						GFP_KERNEL);
 	struct device *dev = &pdev->dev;
-
-	if (!priv)
-		return -ENOMEM;
 
 	platform_node = of_parse_phandle(pdev->dev.of_node,
 					 "mediatek,platform", 0);
@@ -704,20 +612,6 @@ static int mt2712_d1v1_machine_probe(struct platform_device *pdev)
 	}
 
 	card->dev = dev;
-	codec_node = of_parse_phandle(pdev->dev.of_node,
-				  "mediatek,audio-codec", 0);
-	if (!codec_node) {
-		dev_notice(&pdev->dev,
-			"Property 'audio-codec' missing or invalid\n");
-		return -EINVAL;
-	}
-	for (i = 0; i < card->num_links; i++) {
-		if (mt2712_d1v1_dai_links[i].codec_name)
-			continue;
-
-		mt2712_d1v1_dai_links[i].codec_of_node = codec_node;
-	}
-
 	codec_node_bt_mrg = of_parse_phandle(pdev->dev.of_node,
 					 "mediatek,audio-codec-bt-mrg", 0);
 	if (!codec_node_bt_mrg) {
@@ -756,28 +650,6 @@ static int mt2712_d1v1_machine_probe(struct platform_device *pdev)
 		return ret;
 	}
 
-	priv->i2s1_in_mux_gpio_sel_1 =
-	of_get_named_gpio(dev->of_node, "i2s1-in-sel-gpio1", 0);
-	if (gpio_is_valid(priv->i2s1_in_mux_gpio_sel_1)) {
-		ret = devm_gpio_request(dev, priv->i2s1_in_mux_gpio_sel_1,
-					"i2s1_in_mux_gpio_sel_1");
-		if (ret)
-			dev_warn(&pdev->dev, "%s devm_gpio_request fail %d\n",
-							__func__, ret);
-		gpio_direction_output(priv->i2s1_in_mux_gpio_sel_1, 0);
-	}
-
-	priv->i2s1_in_mux_gpio_sel_2 =
-	of_get_named_gpio(dev->of_node, "i2s1-in-sel-gpio2", 0);
-	if (gpio_is_valid(priv->i2s1_in_mux_gpio_sel_2)) {
-		ret = devm_gpio_request(dev, priv->i2s1_in_mux_gpio_sel_2,
-					"i2s1_in_mux_gpio_sel_2");
-		if (ret)
-			dev_warn(&pdev->dev, "%s devm_gpio_request fail2 %d\n",
-						__func__, ret);
-		gpio_direction_output(priv->i2s1_in_mux_gpio_sel_2, 0);
-	}
-	snd_soc_card_set_drvdata(card, priv);
 	ret = devm_snd_soc_register_card(&pdev->dev, card);
 
 	if (ret)
