@@ -990,20 +990,17 @@ static inline bool msdc_cmd_is_ready(struct msdc_host *host,
 {
 	/* The max busy time we can endure is 20ms */
 	unsigned long tmo = jiffies + msecs_to_jiffies(20);
-	u32 count = 0;
 
-	if (in_interrupt()) {
-		while ((readl(host->base + SDC_STS) & SDC_STS_CMDBUSY) &&
-		       (count < 1000)) {
-			udelay(1);
-			count++;
-		}
-	} else {
-		while ((readl(host->base + SDC_STS) & SDC_STS_CMDBUSY) &&
-		       time_before(jiffies, tmo))
-			cpu_relax();
-	}
+	/*
+	 * cmd12 is the unique cmd which will run in irq context.
+	 * in this case, can issue cmd12 directly.
+	 */
+	if (in_interrupt() && cmd->mrq->data && (cmd == cmd->mrq->data->stop))
+		return true;
 
+	while ((readl(host->base + SDC_STS) & SDC_STS_CMDBUSY) &&
+			time_before(jiffies, tmo))
+		cpu_relax();
 	if (readl(host->base + SDC_STS) & SDC_STS_CMDBUSY) {
 		dev_err(host->dev, "CMD bus busy detected\n");
 		host->error |= REQ_CMD_BUSY;
@@ -1011,29 +1008,24 @@ static inline bool msdc_cmd_is_ready(struct msdc_host *host,
 		return false;
 	}
 
-	if (cmd->opcode != MMC_SEND_STATUS) {
-		count = 0;
-		/* Consider that CMD6 crc error before card was init done,
+	if (mmc_resp_type(cmd) == MMC_RSP_R1B || cmd->data) {
+		/*
+		 * Consider that CMD6 crc error before card was init done,
 		 * mmc_retune() will return directly as host->card is null.
 		 * and CMD6 will retry 3 times, must ensure card is in transfer
 		 * state when retry.
 		 */
-		tmo = jiffies + msecs_to_jiffies(60 * 1000);
+		tmo = jiffies + msecs_to_jiffies(1000);
 		while (1) {
 			if (!(readl(host->base + MSDC_PS) & BIT(16))) {
-				if (in_interrupt()) {
-					udelay(1);
-					count++;
-				} else {
-					msleep_interruptible(10);
-				}
+				msleep_interruptible(10);
 			} else {
 				break;
 			}
 			/* Timeout if the device never leaves the program state. */
-			if (count > 1000 || time_after(jiffies, tmo)) {
+			if (time_after(jiffies, tmo)) {
 				pr_err("%s: Card stuck in programming state! %s\n",
-				       mmc_hostname(host->mmc), __func__);
+						mmc_hostname(host->mmc), __func__);
 				host->error |= REQ_CMD_BUSY;
 				msdc_cmd_done(host, MSDC_INT_CMDTMO, mrq, cmd);
 				return false;
