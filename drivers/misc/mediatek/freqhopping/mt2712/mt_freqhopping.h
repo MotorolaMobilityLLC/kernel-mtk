@@ -23,23 +23,21 @@
 #define FH_MSG_NOTICE(fmt, args...)	pr_notice(FHTAG fmt, ##args)
 #define FH_MSG_INFO(fmt, args...)	/* pr_info(FHTAG fmt, ##args) */
 
-enum FH_PLL_ID {
-	FH_MIN_PLLID = 0,
-	FH_ARMCA7_PLLID = FH_MIN_PLLID,
-	FH_ARMCA15_PLLID = 1,
-	FH_MAIN_PLLID = 2,	/* hf_faxi_ck = mainpll/4 */
-	FH_MEM_PLLID = 3,		/* ?? */
-	FH_MSDC_PLLID = 4,	/* hf_fmsdc30_1_ck = MSDCPLL/4 */
-	FH_MM_PLLID = 5,	/* hf_fmfg_ck = MMPLL(455MHz) */
-	FH_VENC_PLLID = 6,	/* hf_fcci400_ck = VENCPLL */
-	FH_TVD_PLLID = 7,	/* hf_dpi0_ck = TVDPLL/2 = 297 */
-	FH_VCODEC_PLLID = 8,	/* hf_fvdec_ck = VCODECPLL */
-	FH_LVDS_PLLID = 9,
-	FH_MSDC2_PLLID = 10,
-	FH_LVDS2_PLLID = 11,
-	FH_MAX_PLLID = FH_LVDS2_PLLID,
-	FH_PLL_NUM
-};
+#define FH_MIN_PLLID		0u	/* FH_MIN_PLLID = FH_ARMCA7_PLLID is for current design */
+#define FH_ARMCA7_PLLID		0u
+#define FH_ARMCA15_PLLID	1u
+#define FH_MAIN_PLLID		2u	/* hf_faxi_ck = mainpll/4 */
+#define FH_MEM_PLLID		3u	/* ?? */
+#define FH_MSDC_PLLID		4u	/* hf_fmsdc30_1_ck = MSDCPLL/4 */
+#define FH_MM_PLLID		5u	/* hf_fmfg_ck = MMPLL(455MHz) */
+#define FH_VENC_PLLID		6u	/* hf_fcci400_ck = VENCPLL */
+#define FH_TVD_PLLID		7u	/* hf_dpi0_ck = TVDPLL/2 = 297 */
+#define FH_VCODEC_PLLID		8u	/* hf_fvdec_ck = VCODECPLL */
+#define FH_LVDS_PLLID		9u
+#define FH_MSDC2_PLLID		10u
+#define FH_LVDS2_PLLID		11u
+#define FH_MAX_PLLID		11u	/* FH_MAX_PLLID = FH_LVDS2_PLLID is for current design */
+#define FH_PLL_NUM		12u
 
 struct freqhopping_ssc {
 	unsigned int freq;
@@ -50,8 +48,8 @@ struct freqhopping_ssc {
 	unsigned int dds;
 };
 
-extern int mtk_fhctl_enable_ssc_by_id(enum FH_PLL_ID);
-extern int mtk_fhctl_disable_ssc_by_id(enum FH_PLL_ID);
-extern int mtk_fhctl_hopping_by_id(enum FH_PLL_ID, unsigned int target_vco_frequency);
+extern int mtk_fhctl_enable_ssc_by_id(unsigned int fh_pll_id);
+extern int mtk_fhctl_disable_ssc_by_id(unsigned int fh_pll_id);
+extern int mtk_fhctl_hopping_by_id(unsigned int fh_pll_id, unsigned int target_vco_frequency);
 
 #endif				/* !__MT_FREQHOPPING_H__ */

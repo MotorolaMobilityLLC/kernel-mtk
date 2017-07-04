@@ -26,7 +26,6 @@
 #include <linux/vmalloc.h>
 #include <linux/dma-mapping.h>
 #include <linux/seq_file.h>
-#include "mt_fhreg.h"
 #include "mt_freqhopping_drv.h"
 
 #define SUPPORT_SLT_TEST 0
@@ -149,13 +148,13 @@ static int mt_freqhopping_init(void)
 	}
 
 	ret = g_p_fh_hal_drv->mt_fh_hal_init();
-	if (ret)
+	if (ret != 0)
 		return ret;
 
 	g_p_fh_hal_drv->mt_fh_hal_default_conf();
 
 	ret = freqhopping_debug_proc_init();
-	if (ret)
+	if (ret != 0)
 		return ret;
 
 	return 0;
