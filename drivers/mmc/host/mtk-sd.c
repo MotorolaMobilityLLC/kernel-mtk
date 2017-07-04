@@ -1374,11 +1374,12 @@ static void msdc_init_hw(struct msdc_host *host)
 
 	if (host->dev_comp->async_fifo) {
 		sdr_set_field(host->base + MSDC_PATCH_BIT2, MSDC_PB2_RESPWAIT, 3);
-		sdr_set_field(host->base + MSDC_PATCH_BIT2, MSDC_PB2_RESPSTSENSEL, 2);
-		if (host->dev_comp->enhance_rx)
+		if (host->dev_comp->enhance_rx) {
 			sdr_set_bits(host->base + SDC_ADV_CFG0, SDC_RX_ENHANCE_EN);
-		else
+		} else {
+			sdr_set_field(host->base + MSDC_PATCH_BIT2, MSDC_PB2_RESPSTSENSEL, 2);
 			sdr_set_field(host->base + MSDC_PATCH_BIT2, MSDC_PB2_CRCSTSENSEL, 2);
+		}
 		/* use async fifo, then no need tune internal delay */
 		sdr_clr_bits(host->base + MSDC_PATCH_BIT2,
 			     MSDC_PATCH_BIT2_CFGRESP);
