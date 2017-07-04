@@ -28,6 +28,7 @@
 #include <video/videomode.h>
 
 #include "mtk_drm_ddp_comp.h"
+#include "mtk_drm_crtc.h"
 
 #define DSI_START		0x00
 
@@ -763,11 +764,23 @@ static int mtk_dsi_connector_get_modes(struct drm_connector *connector)
 	return drm_panel_get_modes(dsi->panel);
 }
 
+static int mtk_dsi_atomic_check(struct drm_encoder *encoder,
+				struct drm_crtc_state *crtc_state,
+				struct drm_connector_state *conn_state)
+{
+	struct mtk_drm_crtc *mtk_crtc = container_of(conn_state->crtc,
+						     struct mtk_drm_crtc, base);
+	mtk_crtc->bpc = conn_state->connector->display_info.bpc;
+
+	return 0;
+}
+
 static const struct drm_encoder_helper_funcs mtk_dsi_encoder_helper_funcs = {
 	.mode_fixup = mtk_dsi_encoder_mode_fixup,
 	.mode_set = mtk_dsi_encoder_mode_set,
 	.disable = mtk_dsi_encoder_disable,
 	.enable = mtk_dsi_encoder_enable,
+	.atomic_check = mtk_dsi_atomic_check,
 };
 
 static const struct drm_connector_funcs mtk_dsi_connector_funcs = {

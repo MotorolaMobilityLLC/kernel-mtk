@@ -27,33 +27,6 @@
 #include "mtk_drm_gem.h"
 #include "mtk_drm_plane.h"
 
-/**
- * struct mtk_drm_crtc - MediaTek specific crtc structure.
- * @base: crtc object.
- * @enabled: records whether crtc_enable succeeded
- * @planes: array of 4 drm_plane structures, one for each overlay plane
- * @pending_planes: whether any plane has pending changes to be applied
- * @config_regs: memory mapped mmsys configuration register space
- * @mutex: handle to one of the ten disp_mutex streams
- * @ddp_comp_nr: number of components in ddp_comp
- * @ddp_comp: array of pointers the mtk_ddp_comp structures used by this crtc
- */
-struct mtk_drm_crtc {
-	struct drm_crtc			base;
-	bool				enabled;
-
-	bool				pending_needs_vblank;
-	struct drm_pending_vblank_event	*event;
-
-	struct drm_plane		planes[OVL_LAYER_NR];
-	bool				pending_planes;
-
-	void __iomem			*config_regs;
-	struct mtk_disp_mutex		*mutex;
-	unsigned int			ddp_comp_nr;
-	struct mtk_ddp_comp		**ddp_comp;
-};
-
 struct mtk_crtc_state {
 	struct drm_crtc_state		base;
 
@@ -221,8 +194,6 @@ static void mtk_crtc_ddp_clk_disable(struct mtk_drm_crtc *mtk_crtc)
 static int mtk_crtc_ddp_hw_init(struct mtk_drm_crtc *mtk_crtc)
 {
 	struct drm_crtc *crtc = &mtk_crtc->base;
-	struct drm_connector *connector;
-	struct drm_encoder *encoder;
 	unsigned int width, height, vrefresh, bpc = MTK_MAX_BPC;
 	int ret;
 	int i;
@@ -234,19 +205,7 @@ static int mtk_crtc_ddp_hw_init(struct mtk_drm_crtc *mtk_crtc)
 	width = crtc->state->adjusted_mode.hdisplay;
 	height = crtc->state->adjusted_mode.vdisplay;
 	vrefresh = crtc->state->adjusted_mode.vrefresh;
-
-	drm_for_each_encoder(encoder, crtc->dev) {
-		if (encoder->crtc != crtc)
-			continue;
-
-		drm_for_each_connector(connector, crtc->dev) {
-			if (connector->encoder != encoder)
-				continue;
-			if (connector->display_info.bpc != 0 &&
-			    bpc > connector->display_info.bpc)
-				bpc = connector->display_info.bpc;
-		}
-	}
+	bpc = mtk_crtc->bpc;
 
 	ret = pm_runtime_get_sync(crtc->dev->dev);
 	if (ret < 0) {

@@ -25,6 +25,7 @@
 
 #include "mtk_dpi_regs.h"
 #include "mtk_drm_ddp_comp.h"
+#include "mtk_drm_crtc.h"
 
 enum mtk_dpi_out_bit_num {
 	MTK_DPI_OUT_BIT_NUM_8BITS,
@@ -569,6 +570,10 @@ static int mtk_dpi_atomic_check(struct drm_encoder *encoder,
 				struct drm_crtc_state *crtc_state,
 				struct drm_connector_state *conn_state)
 {
+	struct mtk_drm_crtc *mtk_crtc = container_of(conn_state->crtc,
+						     struct mtk_drm_crtc, base);
+	mtk_crtc->bpc = conn_state->connector->display_info.bpc;
+
 	return 0;
 }
 
