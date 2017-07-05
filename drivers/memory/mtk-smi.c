@@ -45,7 +45,7 @@
 #define SMI_SECUR_CON_VAL_DOMAIN(id)	(0x3 << ((((id) & 0x7) << 2) + 1))
 
 /* mt2712 */
-#define SMI_LARB_NONSEC_CON(id)	(0x380 + (id * 4))
+#define SMI_LARB_NONSEC_CON(id)	(0x380 + ((id) * 4))
 #define F_MMU_EN		BIT(0)
 
 struct mtk_smi_larb_gen {
@@ -65,7 +65,7 @@ struct mtk_smi_larb { /* larb: local arbiter */
 	void __iomem			*base;
 	struct device			*smi_common_dev;
 	const struct mtk_smi_larb_gen	*larb_gen;
-	int				larbid;
+	unsigned int			larbid;
 	u32				*mmu;
 };
 
