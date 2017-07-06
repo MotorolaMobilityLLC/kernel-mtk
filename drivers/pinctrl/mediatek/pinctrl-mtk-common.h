@@ -25,8 +25,9 @@
 #define EINT_DBNC_SET_DBNC_BITS     4
 #define EINT_DBNC_RST_BIT           (0x1 << 1)
 #define EINT_DBNC_SET_EN            (0x1 << 0)
-#define MAX_IP_BASE			5
 #define MTK_PINCTRL_NOT_SUPPORT	(0xffff)
+#if defined(CONFIG_PINCTRL_MTK_COMMON_DEBUG)
+#define MAX_IP_BASE			5
 enum {
 	GPIO_PULL_UNSUPPORTED = -1,
 	GPIO_PULL_DOWN = 0,
@@ -38,6 +39,7 @@ enum {
 	GPIO_PULL_DISABLE = 0,
 	GPIO_PULL_ENABLE = 1,
 };
+#endif
 
 struct mtk_desc_function {
 	const char *name;
@@ -203,6 +205,7 @@ struct mtk_eint_offsets {
 	u8  ports;
 };
 
+#if defined(CONFIG_PINCTRL_MTK_COMMON_DEBUG)
 /**
  * struct mt_pin_info - For all pins' setting.
  * @pin: The pin number.
@@ -228,10 +231,14 @@ struct mtk_pin_info {
 		.ip_num = _ip_num,	\
 	}
 
+#endif
+
 struct mtk_pinctrl {
 	struct regmap	*regmap1;
 	struct regmap	*regmap2;
+#if defined(CONFIG_PINCTRL_MTK_COMMON_DEBUG)
 	struct regmap	*regmap[MAX_IP_BASE];
+#endif
 	struct pinctrl_desc pctl_desc;
 	struct device           *dev;
 	struct gpio_chip	*chip;
@@ -245,7 +252,9 @@ struct mtk_pinctrl {
 	int			*eint_dual_edges;
 	u32 *wake_mask;
 	u32 *cur_mask;
+#if defined(CONFIG_PINCTRL_MTK_COMMON_DEBUG)
 	int dbg_start;
+#endif
 };
 
 /**
@@ -292,6 +301,7 @@ struct mtk_pinctrl_devdata {
 	unsigned int				npins;
 	const struct mtk_drv_group_desc	*grp_desc;
 	unsigned int	n_grp_cls;
+#if defined(CONFIG_PINCTRL_MTK_COMMON_DEBUG)
 	const struct mtk_pin_info	*pin_mode_grps;
 	unsigned int	n_pin_mode;
 	const struct mtk_pin_info	*pin_ies_grps;
@@ -320,6 +330,7 @@ struct mtk_pinctrl_devdata {
 	unsigned int	n_pin_drve4;
 	const struct mtk_pin_info	*pin_drve8_grps;
 	unsigned int	n_pin_drve8;
+#endif
 	const const struct mtk_pin_drv_grp	*pin_drv_grp;
 	unsigned int	n_pin_drv_grps;
 	int (*spec_pull_set)(struct regmap *reg, unsigned int pin,
@@ -332,16 +343,20 @@ struct mtk_pinctrl_devdata {
 			unsigned int pin, bool input);
 	void (*spec_dir_get)(struct mtk_pinctrl *pctl, unsigned int *reg_addr,
 			unsigned int pin, unsigned int *reg_val);
+#if defined(CONFIG_PINCTRL_MTK_COMMON_DEBUG)
 	int (*spec_pull_get)(struct regmap *reg, unsigned int pin);
 	int (*spec_ies_get)(struct regmap *reg, unsigned int pin);
 	int (*spec_smt_get)(struct regmap *reg, unsigned int pin);
+#endif
 	unsigned int (*spec_debounce_select)(unsigned int debounce);
+#if defined(CONFIG_PINCTRL_MTK_COMMON_DEBUG)
 	int (*mtk_pctl_set_pull_sel)(struct mtk_pinctrl *pctl, unsigned int pin,
 			bool enable, bool isup, unsigned int arg);
 	int (*mtk_pctl_get_pull_sel)(struct mtk_pinctrl *pctl, unsigned int pin);
 	int (*mtk_pctl_set_gpio_drv)(struct mtk_pinctrl *pctl, unsigned int pin,
 			unsigned char drv);
 	int (*mtk_pctl_get_gpio_drv)(struct mtk_pinctrl *pctl, unsigned int pin);
+#endif
 	unsigned int dir_offset;
 	unsigned int ies_offset;
 	unsigned int smt_offset;
@@ -356,7 +371,9 @@ struct mtk_pinctrl_devdata {
 	unsigned char  port_shf;
 	unsigned char  port_mask;
 	unsigned char  port_align;
+#if defined(CONFIG_PINCTRL_MTK_COMMON_DEBUG)
 	unsigned int regmap_num;
+#endif
 	struct mtk_eint_offsets eint_offsets;
 	unsigned int	ap_num;
 	unsigned int	db_cnt;
@@ -375,6 +392,7 @@ int mtk_pconf_spec_set_ies_smt_range(struct regmap *regmap,
 		const struct mtk_pin_ies_smt_set *ies_smt_infos, unsigned int info_num,
 		unsigned int pin, unsigned char align, int value);
 
+#if defined(CONFIG_PINCTRL_MTK_COMMON_DEBUG)
 int mtk_spec_pull_get_samereg(struct regmap *regmap,
 		const struct mtk_pin_spec_pupd_set_samereg *pupd_infos,
 		unsigned int info_num, unsigned int pin);
@@ -392,6 +410,7 @@ int mtk_pinctrl_update_gpio_value(struct mtk_pinctrl *pctl, int pin,
 
 int mtk_pinctrl_set_gpio_value(struct mtk_pinctrl *pctl, int pin,
 	bool value, int size, const struct mtk_pin_info pin_info[]);
+#endif
 
 unsigned int mtk_gpio_debounce_select(const unsigned int *dbnc_infos, int dbnc_infos_num,
 	unsigned int debounce);
