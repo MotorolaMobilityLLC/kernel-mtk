@@ -95,11 +95,13 @@ static int mt2712_spec_pull_set(struct regmap *regmap, unsigned int pin,
 		ARRAY_SIZE(mt2712_spec_pupd), pin, align, isup, r1r0);
 }
 
+#if defined(CONFIG_PINCTRL_MTK_COMMON_DEBUG)
 static int mt2712_spec_pull_get(struct regmap *regmap, unsigned int pin)
 {
 	return mtk_spec_pull_get_samereg(regmap, mt2712_spec_pupd,
 		ARRAY_SIZE(mt2712_spec_pupd), pin);
 }
+#endif
 
 static const struct mtk_pin_ies_smt_set mt2712_smt_set[] = {
 	MTK_PIN_IES_SMT_SPEC(0, 3, 0x900, 2),
@@ -307,6 +309,7 @@ static int mt2712_ies_smt_set(struct regmap *regmap, unsigned int pin,
 	return -EINVAL;
 }
 
+#if defined(CONFIG_PINCTRL_MTK_COMMON_DEBUG)
 static int mt2712_spec_ies_get(struct regmap *regmap, unsigned int pin)
 {
 	return mtk_spec_get_ies_smt_range(regmap, mt2712_ies_set,
@@ -318,6 +321,7 @@ static int mt2712_spec_smt_get(struct regmap *regmap, unsigned int pin)
 	return mtk_spec_get_ies_smt_range(regmap, mt2712_smt_set,
 		ARRAY_SIZE(mt2712_smt_set), pin);
 }
+#endif
 
 static const struct mtk_drv_group_desc mt2712_drv_grp[] =  {
 	/* 0E4E8SR 4/8/12/16 */
@@ -613,10 +617,14 @@ static const struct mtk_pinctrl_devdata mt2712_pinctrl_data = {
 	.pin_drv_grp = mt2712_pin_drv,
 	.n_pin_drv_grps = ARRAY_SIZE(mt2712_pin_drv),
 	.spec_pull_set = mt2712_spec_pull_set,
+#if defined(CONFIG_PINCTRL_MTK_COMMON_DEBUG)
 	.spec_pull_get = mt2712_spec_pull_get,
+#endif
 	.spec_ies_smt_set = mt2712_ies_smt_set,
+#if defined(CONFIG_PINCTRL_MTK_COMMON_DEBUG)
 	.spec_ies_get = mt2712_spec_ies_get,
 	.spec_smt_get = mt2712_spec_smt_get,
+#endif
 	.spec_dir_set = mt2712_spec_dir_set,
 	.dir_offset = 0x0000,
 	.pullen_offset = 0x0100,
