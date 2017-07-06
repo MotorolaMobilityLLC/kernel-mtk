@@ -380,7 +380,7 @@ static ssize_t debug_write(struct file *file, const char __user *ubuf,
 	if (count > debug_bufmax)
 		count = debug_bufmax;
 
-	if (copy_from_user(&dis_cmd_buf, ubuf, count) != 0)
+	if (copy_from_user(&dis_cmd_buf, ubuf, count) != 0ULL)
 		return -EFAULT;
 
 	dis_cmd_buf[count] = 0;
