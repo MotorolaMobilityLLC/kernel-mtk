@@ -339,9 +339,9 @@ struct mtk_pinctrl_devdata {
 			unsigned char align, int value, enum pin_config_param arg);
 	void (*spec_pinmux_set)(struct regmap *reg, unsigned int pin,
 			unsigned int mode);
-	void (*spec_dir_set)(struct mtk_pinctrl *pctl, unsigned int *reg_addr,
+	int (*spec_dir_set)(struct mtk_pinctrl *pctl, unsigned int *reg_addr,
 			unsigned int pin, bool input);
-	void (*spec_dir_get)(struct mtk_pinctrl *pctl, unsigned int *reg_addr,
+	int (*spec_dir_get)(struct mtk_pinctrl *pctl, unsigned int *reg_addr,
 			unsigned int pin, unsigned int *reg_val);
 #if defined(CONFIG_PINCTRL_MTK_COMMON_DEBUG)
 	int (*spec_pull_get)(struct regmap *reg, unsigned int pin);

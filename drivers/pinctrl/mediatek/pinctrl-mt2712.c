@@ -303,7 +303,7 @@ static int mt2712_ies_smt_set(struct regmap *regmap, unsigned int pin,
 	if (arg == PIN_CONFIG_INPUT_ENABLE)
 		return mtk_pconf_spec_set_ies_smt_range(regmap, mt2712_ies_set,
 			ARRAY_SIZE(mt2712_ies_set), pin, align, value);
-	else if (arg == PIN_CONFIG_INPUT_SCHMITT_ENABLE)
+	if (arg == PIN_CONFIG_INPUT_SCHMITT_ENABLE)
 		return mtk_pconf_spec_set_ies_smt_range(regmap, mt2712_smt_set,
 			ARRAY_SIZE(mt2712_smt_set), pin, align, value);
 	return -EINVAL;
@@ -583,7 +583,7 @@ static const struct mtk_pin_drv_grp mt2712_pin_drv[] = {
 	MTK_PIN_DRV_GRP(209, 0xc00, 8, 0),
 };
 
-static void mt2712_spec_dir_set(struct mtk_pinctrl *pctl,
+static int mt2712_spec_dir_set(struct mtk_pinctrl *pctl,
 				unsigned int *reg_addr,
 				unsigned int pin,
 				bool input)
@@ -593,20 +593,24 @@ static void mt2712_spec_dir_set(struct mtk_pinctrl *pctl,
 	if (pin == 16) {
 		regmap_read(pctl->regmap2, 0x940, &reg_val);
 		reg_val |= BIT(15);
-		if (input)
+		if (input == true)
 			reg_val &= ~BIT(14);
 		else
 			reg_val |= BIT(14);
 		regmap_write(pctl->regmap2, 0x940, reg_val);
-	} else if (pin == 17) {
+	}
+
+	if (pin == 17) {
 		regmap_read(pctl->regmap2, 0x940, &reg_val);
 		reg_val |= BIT(7);
-		if (input)
+		if (input == true)
 			reg_val &= ~BIT(6);
 		else
 			reg_val |= BIT(6);
 		regmap_write(pctl->regmap2, 0x940, reg_val);
 	}
+
+	return 0;
 }
 
 static const struct mtk_pinctrl_devdata mt2712_pinctrl_data = {
