@@ -1641,7 +1641,7 @@ static void mtk_wdma_probe_free(
 	}
 
 	if (st >= PROBE_ST_VIDEO_DEV_REG)
-		video_device_release(&wdma_dev->vdev);
+		video_unregister_device(&wdma_dev->vdev);
 
 	if (st >= PROBE_ST_V4L2_DEV_REG)
 		v4l2_device_unregister(&wdma_dev->v4l2_dev);
