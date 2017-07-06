@@ -19,7 +19,7 @@
 
 //add by liyeqiang@longcheer.com --start--
 #ifdef CONFIG_LCT_CHR_PE_ILIM
-int lcm_resume_flag = 0;
+int lcm_resume_flag = 1;
 #endif
 //--end--
 
@@ -550,14 +550,15 @@ int mtk_pe_set_charging_current(struct charger_manager *pinfo,
 
 	chr_volt = pe_get_vbus();
 	if ((chr_volt - pinfo->pe.pe_ta_vchr_org) > 6000000) { /* TA = 12V */
-		*aicr = pinfo->data.ta_ac_12v_input_current;
 //add by liyeqiang@longcheer.com --start--
 #ifdef CONFIG_LCT_CHR_PE_ILIM
 		if(lcm_resume_flag == 1){
+		*aicr = 1200000;
 		*ichg = 2000000;//2000mA
 		}else
 #endif
 		{
+		*aicr = pinfo->data.ta_ac_12v_input_current;
 		*ichg = pinfo->data.ta_ac_charger_current;
 		}
 	} else if ((chr_volt - pinfo->pe.pe_ta_vchr_org) > 3000000) { /* TA = 9V */
@@ -566,14 +567,15 @@ int mtk_pe_set_charging_current(struct charger_manager *pinfo,
 	        *aicr = pinfo->data.ta_ac_9v_input_current;
 		    *ichg = 2000000;//2000mA
 	    }else{
-		    *aicr = pinfo->data.ta_ac_9v_input_current;
 //add by liyeqiang@longcheer.com --start--
 #ifdef CONFIG_LCT_CHR_PE_ILIM
 		if(lcm_resume_flag == 1){
+		*aicr = 1200000;
 		*ichg = 2000000;//2000mA
 		}else
 #endif
 		{
+		*aicr = pinfo->data.ta_ac_9v_input_current;
 		*ichg = pinfo->data.ta_ac_charger_current;
 		}    
 	    }
@@ -584,24 +586,24 @@ int mtk_pe_set_charging_current(struct charger_manager *pinfo,
 	        *aicr = pinfo->data.ta_ac_7v_input_current;
 		    *ichg = 2000000;
 	    }else{
-		    *aicr = pinfo->data.ta_ac_7v_input_current;
-		    *ichg = pinfo->data.ta_ac_charger_current;
 //add by liyeqiang@longcheer.com --start--
 #ifdef CONFIG_LCT_CHR_PE_ILIM
 		if(lcm_resume_flag == 1){
+		*aicr = 1200000;
 		*ichg = 2000000;//2000mA
 		}else
 #endif
 		{
+	        *aicr = pinfo->data.ta_ac_7v_input_current;
 		*ichg = pinfo->data.ta_ac_charger_current;
 		}
 		}
 	}
 
 	pr_err(
-		"%s: Ichg= %dmA, AICR = %dmA, chr_org = %d, chr_after = %d %d\n",
+		"%s: Ichg= %dmA, AICR = %dmA, chr_org = %d, chr_after = %d %d,lcm_resume_flag= %d\n",
 		__func__, *ichg, *aicr, pinfo->pe.pe_ta_vchr_org, chr_volt
-		, pinfo->data.ta_ac_charger_current);
+		, pinfo->data.ta_ac_charger_current,lcm_resume_flag);
 	return ret;
 }
 

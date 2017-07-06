@@ -1044,7 +1044,11 @@ FAIL:
 int disp_lcm_init(struct disp_lcm_handle *plcm, int force)
 {
 	LCM_DRIVER *lcm_drv = NULL;
-
+//add by liyeqiang@longcheer.com --start--
+#ifdef CONFIG_LCT_CHR_PE_ILIM
+	lcm_resume_flag=1;
+#endif
+//--end--
 	DISPFUNC();
 	if (_is_lcm_inited(plcm)) {
 		lcm_drv = plcm->drv;
@@ -1136,7 +1140,6 @@ int disp_lcm_update(struct disp_lcm_handle *plcm, int x, int y, int w, int h, in
 int disp_lcm_esd_check(struct disp_lcm_handle *plcm)
 {
 	LCM_DRIVER *lcm_drv = NULL;
-
 	DISPFUNC();
 	if (_is_lcm_inited(plcm)) {
 		lcm_drv = plcm->drv;
