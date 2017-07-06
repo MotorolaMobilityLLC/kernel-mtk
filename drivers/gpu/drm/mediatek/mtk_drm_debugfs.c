@@ -26,7 +26,7 @@ struct mtk_drm_debugfs_table {
 	char name[8];
 	unsigned int offset[2];
 	unsigned int length[2];
-	unsigned int reg_base;
+	unsigned long reg_base;
 };
 
 /* ------------------------------------------------------------------------- */
@@ -178,7 +178,7 @@ static void process_dbg_opt(const char *opt)
 			for (j = gdrm_disp1_reg_range[i].offset[0];
 			     j < gdrm_disp1_reg_range[i].offset[0] +
 			     gdrm_disp1_reg_range[i].length[0]; j += 16UL)
-				DRM_INFO("%8s 0x%08X: %08X %08X %08X %08X\n",
+				DRM_INFO("%8s 0x%08lX: %08X %08X %08X %08X\n",
 					gdrm_disp1_reg_range[i].name,
 					gdrm_disp1_reg_range[i].reg_base + j,
 					readl(gdrm_disp1_base[i] + j),
@@ -189,7 +189,7 @@ static void process_dbg_opt(const char *opt)
 			for (j = gdrm_disp1_reg_range[i].offset[1];
 			     j < gdrm_disp1_reg_range[i].offset[1] +
 			     gdrm_disp1_reg_range[i].length[1]; j += 16UL)
-				DRM_INFO("%8s 0x%08X: %08X %08X %08X %08X\n",
+				DRM_INFO("%8s 0x%08lX: %08X %08X %08X %08X\n",
 					gdrm_disp1_reg_range[i].name,
 					gdrm_disp1_reg_range[i].reg_base + j,
 					readl(gdrm_disp1_base[i] + j),
@@ -203,7 +203,7 @@ static void process_dbg_opt(const char *opt)
 			for (j = gdrm_disp2_reg_range[i].offset[0];
 			     j < gdrm_disp2_reg_range[i].offset[0] +
 			     gdrm_disp2_reg_range[i].length[0]; j += 16)
-				DRM_INFO("%8s 0x%08X: %08X %08X %08X %08X\n",
+				DRM_INFO("%8s 0x%08lX: %08X %08X %08X %08X\n",
 					gdrm_disp2_reg_range[i].name,
 					gdrm_disp2_reg_range[i].reg_base + j,
 					readl(gdrm_disp2_base[i] + j),
@@ -214,7 +214,7 @@ static void process_dbg_opt(const char *opt)
 			for (j = gdrm_disp2_reg_range[i].offset[1];
 			     j < gdrm_disp2_reg_range[i].offset[1] +
 			     gdrm_disp2_reg_range[i].length[1]; j += 16)
-				DRM_INFO("%8s 0x%08X: %08X %08X %08X %08X\n",
+				DRM_INFO("%8s 0x%08lX: %08X %08X %08X %08X\n",
 					gdrm_disp2_reg_range[i].name,
 					gdrm_disp2_reg_range[i].reg_base + j,
 					readl(gdrm_disp2_base[i] + j),
