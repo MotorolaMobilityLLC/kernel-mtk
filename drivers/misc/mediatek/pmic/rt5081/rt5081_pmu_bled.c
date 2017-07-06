@@ -462,11 +462,11 @@ static inline int rt_parse_dt(struct device *dev)
 		lct_parseLcmName_fromcmdline();
 		if(strcmp(lct_klcm_name, "lct_r63350_tianma_1080p_vdo") == 0)
 		{
-			pdata->max_bled_brightness = 1000;
+			pdata->max_bled_brightness = 1055;
 		}
 		if(strcmp(lct_klcm_name,"lct_otm1911a_ofilm_1080p_vdo") == 0)
 		{
-			pdata->max_bled_brightness = 1100;
+			pdata->max_bled_brightness = 1230;
 		}
 #else
 		pdata->max_bled_brightness = tmp;
