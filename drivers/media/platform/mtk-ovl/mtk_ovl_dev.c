@@ -1416,7 +1416,7 @@ static void mtk_ovl_probe_free(
 	}
 
 	if (st & PROBE_ST_VIDEO_DEV_REG)
-		video_device_release(&ovl_dev->vdev);
+		video_unregister_device(&ovl_dev->vdev);
 
 	if (st & PROBE_ST_V4L2_DEV_REG)
 		v4l2_device_unregister(&ovl_dev->v4l2_dev);
