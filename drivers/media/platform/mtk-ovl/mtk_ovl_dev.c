@@ -408,6 +408,7 @@ static const struct mtk_ovl_fmt *mtk_ovl_find_fmt(
 	return def_fmt;
 }
 
+#if 0
 static void mtk_ovl_bound_align_image(
 	u32 *w, unsigned int wmin, unsigned int wmax, unsigned int walign,
 	u32 *h, unsigned int hmin, unsigned int hmax, unsigned int halign)
@@ -425,6 +426,7 @@ static void mtk_ovl_bound_align_image(
 	if (*h < height && (*h + h_step) <= hmax)
 		*h += h_step;
 }
+#endif
 
 static void mtk_ovl_set_frame_size(
 	struct mtk_ovl_frame *frame, int width, int height)
@@ -439,7 +441,9 @@ static void mtk_ovl_set_frame_size(
 
 static int mtk_ovl_param_store(struct mtk_ovl_ctx *ctx, struct vb2_buffer *vb)
 {
+	#if LIST_OLD
 	unsigned long flags;
+	#endif
 	struct MTK_OVL_HW_PARAM_ALL *hw = &_mtk_ovl_hw_param;
 	struct MTK_OVL_HW_PARAM_LAYER *layer = NULL;
 
@@ -472,9 +476,6 @@ static int mtk_ovl_param_store(struct mtk_ovl_ctx *ctx, struct vb2_buffer *vb)
 	#else
 
 	ctx->curr_vb2_v4l2_buffer = to_vb2_v4l2_buffer(vb);
-	log_dbg("[ovl%d] %s[%d] get curr_vb2_v4l2_buffer 0x%x 0x%x 0x%x",
-		ctx->ovl_dev->id, __func__, __LINE__,
-		ctx, ctx->curr_vb2_v4l2_buffer, vb);
 
 	#endif
 
@@ -508,7 +509,7 @@ static int mtk_ovl_param_store(struct mtk_ovl_ctx *ctx, struct vb2_buffer *vb)
 		ctx->ovl_dev->id,
 		hw->dst_w,
 		hw->dst_h);
-	log_dbg("[ovl%d] layer[%d] en[%d] src[%d] fmt[%d] addr[0x%llx]",
+	log_dbg("[ovl%d] layer[%d] en[%d] src[%d] fmt[%d] addr[0x%lx]",
 		ctx->ovl_dev->id,
 		ctx->ovl_dev->id,
 		layer->layer_en,
@@ -608,7 +609,7 @@ static int mtk_ovl_buf_prepare(struct vb2_buffer *vb)
 
 	addr = vb2_dma_contig_plane_dma_addr(vb, 0);
 	if (!IS_ALIGNED(addr, 8)) {
-		log_err("[ovl%d] addr[0x%x] is not 8 align",
+		log_err("[ovl%d] addr[0x%lx] is not 8 align",
 			ctx->ovl_dev->id, addr);
 		return RET_ERR_EXCEPTION;
 	}
@@ -658,8 +659,10 @@ static int mtk_ovl_start_streaming(struct vb2_queue *q, unsigned int count)
 
 static void mtk_ovl_stop_streaming(struct vb2_queue *q)
 {
+	#if LIST_OLD
 	unsigned long flags;
 	struct vb2_buffer *vb;
+	#endif
 	struct mtk_ovl_ctx *ctx = q->drv_priv;
 
 	log_dbg("[ovl%d] %s[%d] start", ctx->ovl_dev->id, __func__, __LINE__);
@@ -810,11 +813,13 @@ static int mtk_ovl_try_fmt_mplane(
 	struct file *file, void *fh, struct v4l2_format *f)
 {
 	struct mtk_ovl_ctx *ctx = fh_to_ctx(fh);
-	struct mtk_ovl_variant *variant = ctx->variant;
 	struct v4l2_pix_format_mplane *pix_mp;
 	const struct mtk_ovl_fmt *fmt;
+	#if 0
+	struct mtk_ovl_variant *variant = ctx->variant;
 	u32 max_w, max_h, mod_x, mod_y;
 	u32 min_w, min_h, tmp_w, tmp_h;
+	#endif
 	int i;
 
 	if (f == NULL) {
@@ -896,7 +901,6 @@ static int mtk_ovl_s_fmt_mplane(
 	struct file *file, void *fh, struct v4l2_format *f)
 {
 	struct mtk_ovl_ctx *ctx = fh_to_ctx(fh);
-	struct vb2_queue *q;
 	struct mtk_ovl_frame *frame = &ctx->s_frame;
 	struct v4l2_pix_format_mplane *pix;
 	int i, ret = RET_OK;
@@ -960,17 +964,18 @@ static int mtk_ovl_reqbufs(
 		return RET_ERR_PARAM;
 	}
 
-	log_dbg("[ovl%d] %s start, cnt[%d] mem[%d] type[%d, %d] point[0x%x]",
+	log_dbg("[ovl%d] %s start, cnt[%d] mem[%d] type[%d, %d] point[0x%lx]",
 		ctx->ovl_dev->id, __func__,
 		reqbufs->count,
 		reqbufs->memory,
 		reqbufs->type,
 		ctx->vb2_q.type,
-		&(ctx->vb2_q));
+		(unsigned long)(&(ctx->vb2_q)));
 
 	vfd->queue = &ctx->vb2_q;
-	log_dbg("[ovl%d] save vb2_q [0x%x, 0x%x, 0x%x]",
-		ctx->ovl_dev->id, &(ctx->vb2_q), vfd, vfd->queue);
+	log_dbg("[ovl%d] save vb2_q [0x%lx, 0x%lx, 0x%lx]",
+		ctx->ovl_dev->id, (unsigned long)(&(ctx->vb2_q)),
+		(unsigned long)vfd, (unsigned long)(vfd->queue));
 
 	ret = vb2_ioctl_reqbufs(file, fh, reqbufs);
 
@@ -1043,7 +1048,7 @@ static int mtk_ovl_qbuf(struct file *file, void *fh, struct v4l2_buffer *buf)
 		return RET_ERR_PARAM;
 	}
 
-	log_dbg("[ovl%d] %s[%d] start, idx[%d], size[%d, %d], type[%d, %d], plane[%d, %d, 0x%llx], time[%d, %d]",
+	log_dbg("[ovl%d] %s[%d] start, idx[%d], size[%d, %d], type[%d, %d], plane[%d, %d, 0x%lx], time[%ld, %ld]",
 		ctx->ovl_dev->id, __func__, __LINE__,
 		buf->index,
 		buf->bytesused,
@@ -1052,9 +1057,9 @@ static int mtk_ovl_qbuf(struct file *file, void *fh, struct v4l2_buffer *buf)
 		buf->type,
 		buf->m.planes[0].length,
 		buf->m.planes[0].bytesused,
-		buf->m.planes[0].m.userptr,
-		buf->timestamp.tv_sec,
-		buf->timestamp.tv_usec);
+		(unsigned long)(buf->m.planes[0].m.userptr),
+		(unsigned long)(buf->timestamp.tv_sec),
+		(unsigned long)(buf->timestamp.tv_usec));
 
 	ret = vb2_ioctl_qbuf(file, fh, buf);
 
@@ -1094,8 +1099,8 @@ static int mtk_ovl_streamon(
 	ret = vb2_ioctl_streamon(file, fh, type);
 
 	_mtk_ovl_ctx[ctx->ovl_dev->id] = ctx;
-	log_dbg("[ovl%d] save ovl ctx[0x%x] to id[%d]",
-		ctx->ovl_dev->id, ctx, ctx->ovl_dev->id);
+	log_dbg("[ovl%d] save ovl ctx[0x%lx] to id[%d]",
+		ctx->ovl_dev->id, (unsigned long)ctx, ctx->ovl_dev->id);
 
 	log_dbg("[ovl%d] %s end, ret[%d]", ctx->ovl_dev->id, __func__, ret);
 
@@ -1112,8 +1117,9 @@ static int mtk_ovl_streamoff(
 
 	ret = vb2_ioctl_streamoff(file, fh, type);
 
-	log_dbg("[ovl%d] remove ovl ctx[0x%x]",
-		ctx->ovl_dev->id, _mtk_ovl_ctx[ctx->ovl_dev->id]);
+	log_dbg("[ovl%d] remove ovl ctx[0x%lx]",
+		ctx->ovl_dev->id,
+		(unsigned long)(_mtk_ovl_ctx[ctx->ovl_dev->id]));
 	_mtk_ovl_ctx[ctx->ovl_dev->id] = NULL;
 
 	log_dbg("[ovl%d] %s end, ret[%d]", ctx->ovl_dev->id, __func__, ret);
@@ -1342,7 +1348,6 @@ static int mtk_ovl_clock_on(struct mtk_ovl_dev *ovl_dev)
 {
 	int i;
 	int ret;
-	struct device *dev = &ovl_dev->pdev->dev;
 
 	log_dbg("[ovl%d] %s[%d] start", ovl_dev->id, __func__, __LINE__);
 
@@ -1394,7 +1399,6 @@ static void mtk_ovl_probe_free(
 	struct mtk_ovl_dev *ovl_dev, unsigned int st)
 {
 	int i;
-	struct resource *res;
 	struct platform_device *pdev = ovl_dev->pdev;
 	struct device *dev = &pdev->dev;
 
@@ -1462,7 +1466,8 @@ static void mtk_ovl_probe_free(
 		mutex_destroy(&ovl_dev->lock);
 
 	if (st & PROBE_ST_DEV_ALLOC) {
-		log_dbg("will to do devm_kfree for addr[0x%x]\n", ovl_dev);
+		log_dbg("will to do devm_kfree for addr[0x%lx]\n",
+			(unsigned long)ovl_dev);
 		devm_kfree(dev, ovl_dev);
 	}
 }
@@ -1560,7 +1565,8 @@ static int mtk_ovl_probe(struct platform_device *pdev)
 		}
 		of_node_put(node);
 		ovl_dev->larb_dev = &larb_pdev->dev;
-		log_dbg("ok to get larb device 0x%x", ovl_dev->larb_dev);
+		log_dbg("ok to get larb device 0x%lx",
+			(unsigned long)(ovl_dev->larb_dev));
 		probe_st |= PROBE_ST_DEV_LARB;
 	}
 
@@ -1589,22 +1595,22 @@ static int mtk_ovl_probe(struct platform_device *pdev)
 				devm_clk_get(dev, _ap_mtk_ovl_clk_name[i]);
 			if (IS_ERR(ovl_dev->clks[i])) {
 				dev_err(dev,
-					"fail to get dev[0x%x] clk[%s] as 0x%x\n",
-					dev,
+					"fail to get dev[0x%lx] clk[%s] as 0x%lx\n",
+					(unsigned long)dev,
 					_ap_mtk_ovl_clk_name[i],
-					ovl_dev->clks[i]);
+					(unsigned long)(ovl_dev->clks[i]));
 				ret = -ENXIO;
 				for (i -= 1; i >= 0; i--) {
-					log_err("will put clk[%d][0x%x]\n",
-						i, ovl_dev->clks[i]);
+					log_err("will put clk[%d][0x%lx]\n",
+					i, (unsigned long)(ovl_dev->clks[i]));
 					devm_clk_put(dev, ovl_dev->clks[i]);
 				}
 				goto err_handle;
 			} else
-				log_dbg("ok to get dev[0x%x] clk[%s] as 0x%x\n",
-					dev,
+				log_dbg("ok to get dev[0x%lx] clk[%s] as 0x%lx\n",
+					(unsigned long)dev,
 					_ap_mtk_ovl_clk_name[i],
-					ovl_dev->clks[i]);
+					(unsigned long)(ovl_dev->clks[i]));
 		}
 
 		probe_st |= PROBE_ST_CLK_GET;
@@ -1648,8 +1654,8 @@ static int mtk_ovl_probe(struct platform_device *pdev)
 				goto err_handle;
 			}
 
-			log_dbg("ok to map reg[%d] base=0x%llx",
-				i, ovl_dev->reg_base[i]);
+			log_dbg("ok to map reg[%d] base=0x%lx",
+				i, (unsigned long)(ovl_dev->reg_base[i]));
 		}
 		probe_st |= PROBE_ST_REG_MAP;
 	}
@@ -1716,7 +1722,6 @@ err_handle:
 
 static int mtk_ovl_remove(struct platform_device *pdev)
 {
-	struct device *dev = &pdev->dev;
 	struct mtk_ovl_dev *ovl_dev = platform_get_drvdata(pdev);
 
 	mtk_ovl_probe_free(ovl_dev, PROBE_ST_ALL);
@@ -1729,7 +1734,9 @@ static int mtk_ovl_remove(struct platform_device *pdev)
 #if defined(CONFIG_PM_RUNTIME) || defined(CONFIG_PM_SLEEP)
 static int mtk_ovl_pm_suspend(struct device *dev)
 {
+	#if SUPPORT_CLOCK_SUSPEND
 	struct mtk_ovl_dev *ovl_dev = dev_get_drvdata(dev);
+	#endif
 
 	#if SUPPORT_CLOCK_SUSPEND
 	mtk_ovl_clock_off(ovl_dev);
@@ -1740,7 +1747,9 @@ static int mtk_ovl_pm_suspend(struct device *dev)
 
 static int mtk_ovl_pm_resume(struct device *dev)
 {
+	#if SUPPORT_CLOCK_SUSPEND
 	struct mtk_ovl_dev *ovl_dev = dev_get_drvdata(dev);
+	#endif
 
 	#if SUPPORT_CLOCK_SUSPEND
 	return mtk_ovl_clock_on(ovl_dev);
@@ -1822,7 +1831,6 @@ int mtk_ovl_unprepare_hw(void)
 {
 	int i = 0;
 	int ret = RET_OK;
-	unsigned long flags;
 
 	log_dbg("[ovl] %s[%d] start", __func__, __LINE__);
 
