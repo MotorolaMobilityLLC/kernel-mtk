@@ -246,8 +246,8 @@ static int mtk_ovl_hw_layer_switch(
 {
 	int ret = RET_OK;
 
-	log_dbg("%s start, base[0x%llx] layer[%d] enable[%d]",
-		__func__, reg_base, layer, en);
+	log_dbg("%s start, base[0x%lx] layer[%d] enable[%d]",
+		__func__, (unsigned long)reg_base, layer, en);
 
 	switch (layer) {
 	case 0:
@@ -320,7 +320,7 @@ static int mtk_ovl_hw_layer_config(
 	}
 
 	if (addr == 0) {
-		log_err("unsupport address[%d]", addr);
+		log_err("unsupport address[0x%lx]", addr);
 		return RET_ERR_PARAM;
 	}
 
@@ -339,7 +339,7 @@ static int mtk_ovl_hw_layer_config(
 		break;
 	}
 
-	log_dbg("layer[%d], off[%d, %d], dst[%d, %d, %d, %d], pitch[%d], col_mtx[%d], fmt[%d], addr[0x%x], key[%d, %d], alpha[%d, %d, %d, 0x%x]",
+	log_dbg("layer[%d], off[%d, %d], dst[%d, %d, %d, %d], pitch[%d], col_mtx[%d], fmt[%d], addr[0x%lx], key[%d, %d], alpha[%d, %d, %d, 0x%x]",
 		layer,
 		src_x, src_y,
 		dst_x, dst_y, dst_w, dst_h,
@@ -387,7 +387,7 @@ static int mtk_ovl_hw_layer_config(
 
 	DISP_REG_SET(DISP_REG_OVL_L0_PITCH + layer_off_site, value);
 
-	return 0;
+	return ret;
 }
 
 static int mtk_ovl_hw_roi(
@@ -544,11 +544,13 @@ int mtk_ovl_hw_set(
 {
 	int ret = RET_OK;
 
-	log_dbg("%s start, reg_base[0x%llx]", __func__, reg_base);
+	log_dbg("%s start, reg_base[0x%lx]", __func__, (unsigned long)reg_base);
 
 	if (!reg_base || !pConfig) {
-		log_err("invalid param[0x%llx, 0x%llx] in %s",
-			reg_base, pConfig, __func__);
+		log_err("invalid param[0x%lx, 0x%lx] in %s",
+			(unsigned long)reg_base,
+			(unsigned long)pConfig,
+			__func__);
 		return RET_ERR_PARAM;
 	}
 
@@ -571,10 +573,12 @@ int mtk_ovl_hw_unset(void *reg_base)
 {
 	int ret = RET_OK;
 
-	log_dbg("%s start, reg_base[0x%llx]", __func__, reg_base);
+	log_dbg("%s start, reg_base[0x%lx]", __func__, (unsigned long)reg_base);
 
 	if (!reg_base) {
-		log_err("invalid param[0x%llx] in %s", reg_base, __func__);
+		log_err("invalid param[0x%lx] in %s",
+			(unsigned long)reg_base,
+			__func__);
 		return RET_ERR_PARAM;
 	}
 

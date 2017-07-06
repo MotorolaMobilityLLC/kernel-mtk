@@ -500,7 +500,6 @@ static int mtk_wdma_clock_on(struct mtk_wdma_dev *wdma_dev)
 {
 	int i;
 	int ret;
-	struct device *dev = &wdma_dev->pdev->dev;
 
 	log_dbg("[wdma] %s[%d] start", __func__, __LINE__);
 
@@ -670,7 +669,9 @@ static void mtk_wdma_mutex_disable(struct regmap *mutex_regmap)
 
 static int mtk_wdma_param_store(struct mtk_wdma_ctx *ctx, struct vb2_buffer *vb)
 {
+	#if LIST_OLD
 	unsigned long flags;
+	#endif
 
 	log_dbg("[wdma] %s[%d] start", __func__, __LINE__);
 
@@ -700,9 +701,9 @@ static int mtk_wdma_param_store(struct mtk_wdma_ctx *ctx, struct vb2_buffer *vb)
 	#else
 
 	ctx->curr_vb2_v4l2_buffer = to_vb2_v4l2_buffer(vb);
-	log_dbg("[wdma] %s[%d] get curr_vb2_v4l2_buffer 0x%x 0x%x",
+	log_dbg("[wdma] %s[%d] get curr_vb2_v4l2_buffer 0x%lx 0x%lx",
 	__func__, __LINE__,
-	ctx->curr_vb2_v4l2_buffer, vb);
+	(unsigned long)(ctx->curr_vb2_v4l2_buffer), (unsigned long)vb);
 
 	#endif
 
@@ -735,7 +736,7 @@ static int mtk_wdma_param_store(struct mtk_wdma_ctx *ctx, struct vb2_buffer *vb)
 		_mtk_wdma_hw_param.clip_y,
 		_mtk_wdma_hw_param.clip_width,
 		_mtk_wdma_hw_param.clip_height);
-	log_dbg("[wdma] addr[0x%llx, 0x%llx, 0x%llx]",
+	log_dbg("[wdma] addr[0x%lx, 0x%lx, 0x%lx]",
 		_mtk_wdma_hw_param.addr_1st_plane,
 		_mtk_wdma_hw_param.addr_2nd_plane,
 		_mtk_wdma_hw_param.addr_3rd_plane);
@@ -769,9 +770,7 @@ static int mtk_wdma_prepare_hw(struct mtk_wdma_ctx *ctx)
 
 static int mtk_wdma_unprepare_hw(struct mtk_wdma_ctx *ctx)
 {
-	int i = 0;
 	int ret = RET_OK;
-	unsigned long flags;
 
 	log_dbg("[wdma] %s[%d] start", __func__, __LINE__);
 
@@ -829,6 +828,7 @@ static const struct mtk_wdma_fmt *mtk_wdma_find_fmt(
 	return def_fmt;
 }
 
+#if 0
 static void mtk_wdma_bound_align_image(
 	u32 *w, unsigned int wmin, unsigned int wmax, unsigned int walign,
 	u32 *h, unsigned int hmin, unsigned int hmax, unsigned int halign)
@@ -846,6 +846,7 @@ static void mtk_wdma_bound_align_image(
 	if (*h < height && (*h + h_step) <= hmax)
 		*h += h_step;
 }
+#endif
 
 static void mtk_wdma_set_frame_size(
 	struct mtk_wdma_frame *frame, int width, int height)
@@ -908,7 +909,7 @@ static int mtk_wdma_buffer_init(struct vb2_buffer *vb)
  */
 static int mtk_wdma_buf_prepare(struct vb2_buffer *vb)
 {
-	int ret;
+	int ret = RET_OK;
 	struct mtk_wdma_ctx *ctx = vb2_get_drv_priv(vb->vb2_queue);
 	struct mtk_wdma_frame *frame = &ctx->s_frame;
 	int i;
@@ -921,19 +922,17 @@ static int mtk_wdma_buf_prepare(struct vb2_buffer *vb)
 
 	addr = vb2_dma_contig_plane_dma_addr(vb, 0);
 	if (!IS_ALIGNED(addr, 8)) {
-		log_err("[wdma] addr[0x%x] is not 8 align", addr);
+		log_err("[wdma] addr[0x%lx] is not 8 align", addr);
 		return RET_ERR_EXCEPTION;
 	}
 
 	mtk_wdma_param_store(ctx, vb);
 
-	return 0;
+	return ret;
 }
 
 static void mtk_wdma_buf_queue(struct vb2_buffer *vb)
 {
-	struct mtk_wdma_ctx *ctx = vb2_get_drv_priv(vb->vb2_queue);
-
 	log_dbg("[wdma] %s[%d] start", __func__, __LINE__);
 }
 
@@ -968,9 +967,7 @@ static int mtk_wdma_start_streaming(struct vb2_queue *q, unsigned int count)
 
 static void mtk_wdma_stop_streaming(struct vb2_queue *q)
 {
-	unsigned long flags;
 	struct mtk_wdma_ctx *ctx = q->drv_priv;
-	struct vb2_buffer *vb;
 
 	log_dbg("[wdma] %s[%d] start", __func__, __LINE__);
 
@@ -1039,7 +1036,6 @@ static int mtk_wdma_enum_fmt_mplane(
 	struct file *file, void *fh, struct v4l2_fmtdesc *f)
 {
 	const struct mtk_wdma_fmt *fmt;
-	struct mtk_wdma_ctx *ctx = fh_to_ctx(fh);
 
 	log_dbg("[wdma] %s[%d] start", __func__, __LINE__);
 
@@ -1107,12 +1103,14 @@ static int mtk_wdma_g_fmt_mplane(
 static int mtk_wdma_try_fmt_mplane(
 	struct file *file, void *fh, struct v4l2_format *f)
 {
-	struct mtk_wdma_ctx *ctx = fh_to_ctx(fh);
-	struct mtk_wdma_variant *variant = ctx->variant;
 	struct v4l2_pix_format_mplane *pix_mp;
 	const struct mtk_wdma_fmt *fmt;
+	#if 0
+	struct mtk_wdma_ctx *ctx = fh_to_ctx(fh);
+	struct mtk_wdma_variant *variant = ctx->variant;
 	u32 max_w, max_h, mod_x, mod_y;
 	u32 min_w, min_h, tmp_w, tmp_h;
+	#endif
 	int i;
 
 	log_dbg("[wdma] %s[%d] start", __func__, __LINE__);
@@ -1195,7 +1193,6 @@ static int mtk_wdma_s_fmt_mplane(
 	struct file *file, void *fh, struct v4l2_format *f)
 {
 	struct mtk_wdma_ctx *ctx = fh_to_ctx(fh);
-	struct vb2_queue *q;
 	struct mtk_wdma_frame *frame = &ctx->s_frame;
 	struct v4l2_pix_format_mplane *pix;
 	int i, ret = RET_OK;
@@ -1262,8 +1259,10 @@ static int mtk_wdma_reqbufs(
 		__func__, reqbufs->count, reqbufs->memory, reqbufs->type);
 
 	vfd->queue = &ctx->vb2_q;
-	log_dbg("[wdma] save vb2_q [0x%x, 0x%x, 0x%x]",
-		&(ctx->vb2_q), vfd, vfd->queue);
+	log_dbg("[wdma] save vb2_q [0x%lx, 0x%lx, 0x%lx]",
+		(unsigned long)(&(ctx->vb2_q)),
+		(unsigned long)vfd,
+		(unsigned long)(vfd->queue));
 
 	ret = vb2_ioctl_reqbufs(file, fh, reqbufs);
 
@@ -1277,7 +1276,6 @@ static int mtk_wdma_expbuf(
 	struct file *file, void *fh, struct v4l2_exportbuffer *eb)
 {
 	int ret = RET_OK;
-	struct mtk_wdma_ctx *ctx = fh_to_ctx(fh);
 
 	log_dbg("[wdma] %s[%d] start", __func__, __LINE__);
 
@@ -1298,7 +1296,6 @@ static int mtk_wdma_querybuf(
 	struct file *file, void *fh, struct v4l2_buffer *buf)
 {
 	int ret = RET_OK;
-	struct mtk_wdma_ctx *ctx = fh_to_ctx(fh);
 
 	log_dbg("[wdma] %s[%d] start", __func__, __LINE__);
 
@@ -1330,7 +1327,7 @@ static int mtk_wdma_qbuf(struct file *file, void *fh, struct v4l2_buffer *buf)
 		return RET_ERR_PARAM;
 	}
 
-	log_dbg("[wdma] %s[%d] start, idx[%d], size[%d, %d], type[%d, %d], plane[%d, %d, 0x%llx], time[%d, %d]",
+	log_dbg("[wdma] %s[%d] start, idx[%d], size[%d, %d], type[%d, %d], plane[%d, %d, 0x%lx], time[%ld, %ld]",
 		__func__, __LINE__,
 		buf->index,
 		buf->bytesused,
@@ -1339,9 +1336,9 @@ static int mtk_wdma_qbuf(struct file *file, void *fh, struct v4l2_buffer *buf)
 		buf->type,
 		buf->m.planes[0].length,
 		buf->m.planes[0].bytesused,
-		buf->m.planes[0].m.userptr,
-		buf->timestamp.tv_sec,
-		buf->timestamp.tv_usec);
+		(unsigned long)(buf->m.planes[0].m.userptr),
+		(unsigned long)(buf->timestamp.tv_sec),
+		(unsigned long)(buf->timestamp.tv_usec));
 
 	ret = vb2_ioctl_qbuf(file, fh, buf);
 
@@ -1360,7 +1357,6 @@ static int mtk_wdma_qbuf(struct file *file, void *fh, struct v4l2_buffer *buf)
 static int mtk_wdma_dqbuf(struct file *file, void *fh, struct v4l2_buffer *buf)
 {
 	int ret = RET_OK;
-	struct mtk_wdma_ctx *ctx = fh_to_ctx(fh);
 
 	log_dbg("[wdma] %s[%d] start", __func__, __LINE__);
 
@@ -1380,7 +1376,6 @@ static int mtk_wdma_streamon(
 	struct file *file, void *fh, enum v4l2_buf_type type)
 {
 	int ret = RET_OK;
-	struct mtk_wdma_ctx *ctx = fh_to_ctx(fh);
 
 	log_dbg("[wdma] %s[%d] start", __func__, __LINE__);
 
@@ -1395,7 +1390,6 @@ static int mtk_wdma_streamoff(
 	struct file *file, void *fh, enum v4l2_buf_type type)
 {
 	int ret = RET_OK;
-	struct mtk_wdma_ctx *ctx = fh_to_ctx(fh);
 
 	log_dbg("[wdma] %s[%d] start", __func__, __LINE__);
 
@@ -1770,7 +1764,8 @@ static int mtk_wdma_probe(struct platform_device *pdev)
 	}
 	of_node_put(node);
 	wdma_dev->larb_dev = &larb_pdev->dev;
-	log_dbg("ok to get larb device 0x%x", wdma_dev->larb_dev);
+	log_dbg("ok to get larb device 0x%lx",
+		(unsigned long)(wdma_dev->larb_dev));
 	probe_st = PROBE_ST_DEV_LARB;
 
 	#if SUPPORT_IOMMU_ATTACH
@@ -1802,10 +1797,10 @@ static int mtk_wdma_probe(struct platform_device *pdev)
 				devm_clk_put(dev, wdma_dev->clks[i]);
 			goto err_handle;
 		} else
-			log_dbg("ok to get dev[0x%x] clk[%s] as 0x%x\n",
-				dev,
+			log_dbg("ok to get dev[0x%lx] clk[%s] as 0x%lx\n",
+				(unsigned long)dev,
 				_ap_mtk_wdma_clk_name[i],
-				wdma_dev->clks[i]);
+				(unsigned long)(wdma_dev->clks[i]));
 	}
 	probe_st = PROBE_ST_CLK_GET;
 
@@ -1861,26 +1856,27 @@ static int mtk_wdma_probe(struct platform_device *pdev)
 			goto err_handle;
 		}
 
-		log_dbg("ok to map reg[%d] base=0x%llx",
-			i, wdma_dev->reg_base[i]);
+		log_dbg("ok to map reg[%d] base=0x%lx",
+			i, (unsigned long)(wdma_dev->reg_base[i]));
 	}
 	probe_st = PROBE_ST_REG_MAP;
 
 	node = of_parse_phandle(pdev->dev.of_node, "mediatek,mmsys-regmap", 0);
 	if (node) {
-		log_dbg("ok to get mmsys-regmap node 0x%x", (unsigned int)node);
+		log_dbg("ok to get mmsys-regmap node 0x%lx",
+			(unsigned long)node);
 		wdma_dev->mmsys_regmap = syscon_node_to_regmap(node);
 		if (IS_ERR(wdma_dev->mmsys_regmap)) {
-			log_err("fail to get mmsys-regmap regmap 0x%llx",
-				(unsigned int)wdma_dev->mmsys_regmap);
+			log_err("fail to get mmsys-regmap regmap 0x%lx",
+				(unsigned long)wdma_dev->mmsys_regmap);
 			ret = -EPROBE_DEFER;
 			goto err_handle;
 		}
-		log_dbg("ok to get mmsys-regmap regmap 0x%llx",
-			(unsigned int)wdma_dev->mmsys_regmap);
+		log_dbg("ok to get mmsys-regmap regmap 0x%lx",
+			(unsigned long)wdma_dev->mmsys_regmap);
 	} else {
-		log_err("fail to get mmsys-regmap node 0x%x",
-			(unsigned int)node);
+		log_err("fail to get mmsys-regmap node 0x%lx",
+			(unsigned long)node);
 		dev_err(&pdev->dev,
 			"wdma2 node has not [mediatek,mmsys-regmap]\n");
 		ret = -EINVAL;
@@ -1890,19 +1886,20 @@ static int mtk_wdma_probe(struct platform_device *pdev)
 
 	node = of_parse_phandle(pdev->dev.of_node, "mediatek,mutex-regmap", 0);
 	if (node) {
-		log_dbg("ok to get mutex-regmap node 0x%x", (unsigned int)node);
+		log_dbg("ok to get mutex-regmap node 0x%lx",
+			(unsigned long)node);
 		wdma_dev->mutex_regmap = syscon_node_to_regmap(node);
 		if (IS_ERR(wdma_dev->mutex_regmap)) {
-			log_err("fail to get mutex-regmap regmap 0x%llx",
-				(unsigned int)wdma_dev->mutex_regmap);
+			log_err("fail to get mutex-regmap regmap 0x%lx",
+				(unsigned long)wdma_dev->mutex_regmap);
 			ret = -EPROBE_DEFER;
 			goto err_handle;
 		}
-		log_dbg("ok to get mutex-regmap regmap 0x%llx",
-			(unsigned int)wdma_dev->mutex_regmap);
+		log_dbg("ok to get mutex-regmap regmap 0x%lx",
+			(unsigned long)wdma_dev->mutex_regmap);
 	} else {
-		log_err("fail to get mutex-regmap node 0x%x",
-			(unsigned int)node);
+		log_err("fail to get mutex-regmap node 0x%lx",
+			(unsigned long)node);
 		dev_err(&pdev->dev,
 			"wdma2 node has not [mediatek,mutex-regmap]\n");
 		ret = -EINVAL;
@@ -1959,18 +1956,17 @@ static int mtk_wdma_probe(struct platform_device *pdev)
 	pm_runtime_enable(dev);
 	probe_st = PROBE_ST_PM_ENABLE;
 
-	log_dbg("ok to do wdma-%d probe\n");
+	log_dbg("ok to do wdma probe\n");
 	return 0;
 
 err_handle:
 	mtk_wdma_probe_free(wdma_dev, probe_st);
-	log_dbg("fail to do wdma-%d probe\n");
+	log_dbg("fail to do wdma probe\n");
 	return ret;
 }
 
 static int mtk_wdma_remove(struct platform_device *pdev)
 {
-	struct device *dev = &pdev->dev;
 	struct mtk_wdma_dev *wdma_dev = platform_get_drvdata(pdev);
 
 	log_dbg("[wdma] %s[%d] start", __func__, __LINE__);
@@ -1985,7 +1981,9 @@ static int mtk_wdma_remove(struct platform_device *pdev)
 #if defined(CONFIG_PM_RUNTIME) || defined(CONFIG_PM_SLEEP)
 static int mtk_wdma_pm_suspend(struct device *dev)
 {
+	#if SUPPORT_CLOCK_SUSPEND
 	struct mtk_wdma_dev *wdma_dev = dev_get_drvdata(dev);
+	#endif
 
 	log_dbg("[wdma] %s[%d] start", __func__, __LINE__);
 
@@ -1998,7 +1996,9 @@ static int mtk_wdma_pm_suspend(struct device *dev)
 
 static int mtk_wdma_pm_resume(struct device *dev)
 {
+	#if SUPPORT_CLOCK_SUSPEND
 	struct mtk_wdma_dev *wdma_dev = dev_get_drvdata(dev);
+	#endif
 
 	log_dbg("[wdma] %s[%d] start", __func__, __LINE__);
 

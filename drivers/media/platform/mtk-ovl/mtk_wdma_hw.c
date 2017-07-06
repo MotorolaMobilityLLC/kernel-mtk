@@ -400,8 +400,8 @@ int mtk_wdma_hw_reset(unsigned long reg_base)
 	unsigned int delay_cnt = 0;
 
 	DISP_REG_SET(reg_base + DISP_REG_WDMA_RST, 0x01);
-	while (DISP_REG_GET(reg_base + DISP_REG_WDMA_FLOW_CTRL_DBG)
-			& 0x1 == 0) {
+	while ((DISP_REG_GET(reg_base + DISP_REG_WDMA_FLOW_CTRL_DBG) & 0x1)
+			== 0) {
 		delay_cnt++;
 		if (delay_cnt > 10000) {
 			log_err("fail to do wdma hw reset\n");
@@ -434,7 +434,6 @@ int mtk_wdma_hw_config(
 	unsigned long reg_base, struct MTK_WDMA_HW_PARAM *pParam)
 {
 	unsigned int output_swap = 0;
-	unsigned int input_fmt = 0;
 	unsigned int input_color_space = 0;
 	unsigned int output_color_space = 0;
 	unsigned int mode = 0xdeaddead;
@@ -490,7 +489,8 @@ int mtk_wdma_hw_config(
 		input_color_space = WDMA_COLOR_SPACE_YUV;
 		break;
 	default:
-		log_err("%s[%d] unsupport input fmt = %d", pParam->in_format);
+		log_err("%s[%d] unsupport input fmt = %d",
+			__func__, __LINE__, pParam->in_format);
 		break;
 	}
 
@@ -623,11 +623,13 @@ int mtk_wdma_hw_set(void *reg_base, struct MTK_WDMA_HW_PARAM *pParam)
 {
 	int ret = RET_OK;
 
-	log_dbg("%s start, reg_base[0x%llx]", __func__, reg_base);
+	log_dbg("%s start, reg_base[0x%lx]", __func__, (unsigned long)reg_base);
 
 	if (!reg_base || !pParam) {
-		log_err("invalid param[0x%llx, 0x%llx] in %s",
-			reg_base, pParam, __func__);
+		log_err("invalid param[0x%lx, 0x%lx] in %s",
+			(unsigned long)reg_base,
+			(unsigned long)pParam,
+			__func__);
 		return RET_ERR_PARAM;
 	}
 
@@ -643,10 +645,11 @@ int mtk_wdma_hw_unset(void *reg_base)
 {
 	int ret = RET_OK;
 
-	log_dbg("%s start, reg_base[0x%llx]", __func__, reg_base);
+	log_dbg("%s start, reg_base[0x%lx]", __func__, (unsigned long)reg_base);
 
 	if (!reg_base) {
-		log_err("invalid param[0x%llx] in %s", reg_base, __func__);
+		log_err("invalid param[0x%lx] in %s",
+			(unsigned long)reg_base, __func__);
 		return RET_ERR_PARAM;
 	}
 
@@ -661,23 +664,24 @@ int mtk_wdma_hw_irq_clear(void *reg_base)
 	unsigned int val = 0;
 	unsigned long addr = (unsigned long)reg_base + DISP_REG_WDMA_INTSTA;
 
-	log_dbg("%s start, reg_base[0x%llx]", __func__, reg_base);
+	log_dbg("%s start, reg_base[0x%lx]", __func__, (unsigned long)reg_base);
 
 	if (!reg_base) {
-		log_err("invalid param[0x%llx] in %s", reg_base, __func__);
+		log_err("invalid param[0x%lx] in %s",
+			(unsigned long)reg_base, __func__);
 		return RET_ERR_PARAM;
 	}
 
 	val = DISP_REG_GET(addr);
 
 	if ((val & 0x1) == 0x1) {
-		log_dbg("ok to confirm wdma irq 0x%llx = 0x%x",
+		log_dbg("ok to confirm wdma irq 0x%lx = 0x%x",
 			addr, val);
 		DISP_REG_SET(addr, 0x0);
-		log_dbg("clear wdma irq 0x%llx = 0x%x",
+		log_dbg("clear wdma irq 0x%lx = 0x%x",
 			addr, DISP_REG_GET(addr));
 	} else {
-		log_err("fail to confirm wdma irq 0x%llx = 0x%x",
+		log_err("fail to confirm wdma irq 0x%lx = 0x%x",
 			addr, val);
 		ret = RET_ERR_EXCEPTION;
 	}
