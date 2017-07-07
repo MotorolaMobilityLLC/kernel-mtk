@@ -2149,7 +2149,11 @@ if(imgsensor.frame_length > imgsensor.shutter){
             imgsensor.frame_length =imgsensor_info.cap.framelength + imgsensor.dummy_line;
             imgsensor.min_frame_length = imgsensor.frame_length;
             spin_unlock(&imgsensor_drv_lock);
-            set_dummy();
+            //set_dummy();   //modify lct tianyaping 20170706  alps03376089
+            if(imgsensor.frame_length > imgsensor.shutter){ //modify lct tianyaping 20170706  alps03376089
+				set_dummy();  //modify lct tianyaping 20170706  alps03376089
+            }  //modify lct tianyaping 20170706  alps03376089
+
             break;
         case MSDK_SCENARIO_ID_HIGH_SPEED_VIDEO:
             frameHeight = imgsensor_info.hs_video.pclk / framerate * 10 / imgsensor_info.hs_video.linelength;
