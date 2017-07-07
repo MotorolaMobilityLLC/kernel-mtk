@@ -41,8 +41,6 @@
 #include "mtk_wcn_cmb_stub.h"
 #endif
 
-#define MSDC_WQ_ERROR_TUNE
-
 #define MSDC_AUTOK_ON_ERROR
 #ifdef MSDC_AUTOK_ON_ERROR
 /*#define DATA_TUNE_READ_DATA_ALLOW_FALLING_EDGE*/
@@ -94,7 +92,7 @@
 /*--------------------------------------------------------------------------*/
 /* Common Macro                                                             */
 /*--------------------------------------------------------------------------*/
-#define REG_ADDR(x)                     ((u32 *)(base + OFFSET_##x))
+#define REG_ADDR(x)                     (base + OFFSET_##x)
 
 /*--------------------------------------------------------------------------*/
 /* Common Definition                                                        */
@@ -452,9 +450,6 @@ struct msdc_host {
 	bool                    legacy_tuning_done;
 	int                     autok_error;
 	u32                     tune_latch_ck_cnt;
-#ifndef MSDC_WQ_ERROR_TUNE
-	unsigned int            err_mrq_dir;
-#endif
 	struct msdc_saved_para  saved_para;
 	bool                    block_bad_card;
 	struct delayed_work     write_timeout;  /* check if write busy timeout*/
@@ -471,10 +466,6 @@ struct msdc_host {
 	struct delayed_work	work_init; /* for init mmc card */
 	struct platform_device  *pdev;
 
-#ifdef MSDC_WQ_ERROR_TUNE
-	struct work_struct	work_tune; /* new thread tune */
-	struct mmc_request	*mrq_tune; /* backup host->mrq */
-#endif
 };
 
 enum {
@@ -626,7 +617,7 @@ static inline unsigned int uffs(unsigned int x)
 	do { \
 		unsigned int tv = MSDC_READ32(reg);\
 		tv |= (u32)(bs); \
-		MSDC_WRITE32(reg, tv); \
+		MSDC_WRITE32((reg), tv); \
 	} while (0)
 
 #define MSDC_CLR_BIT32(reg, bs) \
@@ -640,14 +631,14 @@ static inline unsigned int uffs(unsigned int x)
 	do { \
 		unsigned int tv = MSDC_READ32(reg); \
 		tv &= ~(field); \
-		tv |= ((val) << (uffs((unsigned int)field) - 1)); \
+		tv |= ((val) << (uffs((unsigned int)(field)) - 1)); \
 		MSDC_WRITE32(reg, tv); \
 	} while (0)
 
 #define MSDC_GET_FIELD(reg, field, val) \
 	do { \
 		unsigned int tv = MSDC_READ32(reg); \
-		val = ((tv & (field)) >> (uffs((unsigned int)field) - 1)); \
+		val = ((tv & (field)) >> (uffs((unsigned int)(field)) - 1)); \
 	} while (0)
 
 #define sdc_is_busy()           (MSDC_READ32(SDC_STS) & SDC_STS_SDCBUSY)
@@ -673,18 +664,18 @@ static inline unsigned int uffs(unsigned int x)
 
 #define msdc_retry(expr, retry, cnt, id) \
 	do { \
-		int backup = cnt; \
+		int backup = (cnt); \
 		while (retry) { \
 			if (!(expr)) \
 				break; \
-			if (cnt-- == 0) { \
-				retry--; mdelay(1); cnt = backup; \
+			if ((cnt)-- == 0) { \
+				(retry)--; mdelay(1); (cnt) = backup; \
 			} \
 		} \
-		if (retry == 0) { \
+		if ((retry) == 0) { \
 			msdc_dump_info(id); \
 		} \
-		WARN_ON(retry == 0); \
+		WARN_ON((retry) == 0); \
 	} while (0)
 
 #define msdc_reset(id) \
@@ -692,7 +683,7 @@ static inline unsigned int uffs(unsigned int x)
 		int retry = 3, cnt = 1000; \
 		MSDC_SET_BIT32(MSDC_CFG, MSDC_CFG_RST); \
 		msdc_retry(MSDC_READ32(MSDC_CFG) & MSDC_CFG_RST, retry, \
-			cnt, id); \
+			cnt, (id)); \
 	} while (0)
 
 #define msdc_clr_int() \
@@ -829,7 +820,6 @@ int msdc_get_card_status(struct mmc_host *mmc, struct msdc_host *host,
 int msdc_get_dma_status(int host_id);
 struct msdc_host *msdc_get_host(int host_function, bool boot,
 	bool secondary);
-int msdc_reinit(struct msdc_host *host);
 void msdc_select_clksrc(struct msdc_host *host, int clksrc);
 void msdc_send_stop(struct msdc_host *host);
 void msdc_set_mclk(struct msdc_host *host, unsigned char timing, u32 hz);
@@ -895,5 +885,5 @@ void mmc_remove_card(struct mmc_card *card);
 	(((x)->opcode == MMC_SEND_STATUS) && \
 	 ((x)->arg & (1 << 15)))
 
-#endif /* end of  MT_SD_H */
+#endif /* end of MT_SD_H */
 
