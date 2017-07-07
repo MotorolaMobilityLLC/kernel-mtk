@@ -193,7 +193,7 @@ int gpt_parse(struct mtd_info *master,
 		}
 	}
 
-	if (gpt_partitions_exist == NULL) {
+	if (gpt_partitions_exist == 0) {
 		dev_err(&master->dev, "GPT: not find GPT\n");
 		goto freebuf;
 	}
