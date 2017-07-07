@@ -14,8 +14,7 @@
 #ifndef MTK_DRM_DEBUGFS_H
 #define MTK_DRM_DEBUGFS_H
 
-struct drm_device;
-struct mtk_drm_private;
+#include "mtk_drm_drv.h"
 
 #ifdef CONFIG_DEBUG_FS
 void mtk_drm_debugfs_init(struct drm_device *dev,
