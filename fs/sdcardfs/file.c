@@ -187,12 +187,6 @@ static int sdcardfs_mmap(struct file *file, struct vm_area_struct *vma)
 			goto out;
 		}
 		saved_vm_ops = vma->vm_ops; /* save: came from lower ->mmap */
-		err = do_munmap(current->mm, vma->vm_start,
-				vma->vm_end - vma->vm_start);
-		if (err) {
-			printk(KERN_ERR "sdcardfs: do_munmap failed %d\n", err);
-			goto out;
-		}
 	}
 
 	/*
@@ -205,6 +199,9 @@ static int sdcardfs_mmap(struct file *file, struct vm_area_struct *vma)
 	file->f_mapping->a_ops = &sdcardfs_aops; /* set our aops */
 	if (!SDCARDFS_F(file)->lower_vm_ops) /* save for our ->fault */
 		SDCARDFS_F(file)->lower_vm_ops = saved_vm_ops;
+	vma->vm_private_data = file;
+	get_file(lower_file);
+	vma->vm_file = lower_file;
 
 out:
 	return err;
