@@ -473,12 +473,22 @@ static void mtk_vdec_queue_res_chg_event(struct mtk_vcodec_ctx *ctx)
 	v4l2_event_queue_fh(&ctx->fh, &ev_src_ch);
 }
 
+static void mtk_vdec_queue_stop_play_event(struct mtk_vcodec_ctx *ctx)
+{
+	static const struct v4l2_event ev_eos = {
+		.type = V4L2_EVENT_EOS,
+	};
+
+	mtk_v4l2_debug(1, "[%d]", ctx->id);
+	v4l2_event_queue_fh(&ctx->fh, &ev_eos);
+}
+
 static void mtk_vdec_flush_decoder(struct mtk_vcodec_ctx *ctx)
 {
-	bool res_chg;
+	unsigned int src_chg = 0;
 	int ret = 0;
 
-	ret = vdec_if_decode(ctx, NULL, NULL, &res_chg);
+	ret = vdec_if_decode(ctx, NULL, NULL, &src_chg);
 	if (ret)
 		mtk_v4l2_err("DecodeFinal failed, ret=%d", ret);
 
@@ -535,7 +545,9 @@ static void mtk_vdec_worker(struct work_struct *work)
 	struct vb2_buffer *src_buf, *dst_buf;
 	struct mtk_vcodec_mem buf;
 	struct vdec_fb *pfb;
+	unsigned int src_chg = 0;
 	bool res_chg = false;
+	bool mtk_vcodec_unsupport = false;
 	int ret;
 	struct timeval worktvstart;
 	struct timeval worktvstart1;
@@ -543,6 +555,12 @@ static void mtk_vdec_worker(struct work_struct *work)
 	struct mtk_video_dec_buf *dst_buf_info, *src_buf_info;
 	struct vb2_v4l2_buffer *dst_vb2_v4l2, *src_vb2_v4l2;
 	int fourcc = ctx->q_data[MTK_Q_DATA_SRC].fmt->fourcc;
+
+	if (ctx->state != MTK_STATE_HEADER) {
+		v4l2_m2m_job_finish(dev->m2m_dev_dec, ctx->m2m_ctx);
+		mtk_v4l2_debug(1, " %d", ctx->state);
+		return;
+	}
 
 	do_gettimeofday(&worktvstart);
 	src_buf = v4l2_m2m_next_src_buf(ctx->m2m_ctx);
@@ -596,7 +614,7 @@ static void mtk_vdec_worker(struct work_struct *work)
 		dst_buf = v4l2_m2m_dst_buf_remove(ctx->m2m_ctx);
 		dst_buf_info->used = false;
 
-		vdec_if_decode(ctx, NULL, NULL, &res_chg);
+		vdec_if_decode(ctx, NULL, NULL, &src_chg);
 		clean_display_buffer(ctx);
 		vb2_set_plane_payload(&dst_buf_info->vb.vb2_buf, 0, 0);
 		vb2_set_plane_payload(&dst_buf_info->vb.vb2_buf, 1, 0);
@@ -627,23 +645,39 @@ static void mtk_vdec_worker(struct work_struct *work)
 	mutex_unlock(&ctx->lock);
 	src_buf_info->used = true;
 	do_gettimeofday(&worktvstart1);
-	ret = vdec_if_decode(ctx, &buf, pfb, &res_chg);
+	ret = vdec_if_decode(ctx, &buf, pfb, &src_chg);
 	do_gettimeofday(&vputvend);
 	mtk_v4l2_debug(5, "vpudtimeuse:%ld\n", (vputvend.tv_sec - worktvstart1.tv_sec) * 1000000 +
 			(vputvend.tv_usec - worktvstart1.tv_usec));
 
-	if (ret < 0) {
+	res_chg = (src_chg & VDEC_RES_CHANGE) ? true : false;
+	mtk_vcodec_unsupport = (src_chg & VDEC_HW_NOT_SUPPORT) ? true : false;
+
+	if (ret < 0 || mtk_vcodec_unsupport) {
 		mtk_v4l2_err(
-			" <===[%d], src_buf[%d] last_frame = %d sz=0x%zx pts=%llu dst_buf[%d] vdec_if_decode() ret=%d res_chg=%d===>",
+			" <===[%d], src_buf[%d] last_frame = %d sz=0x%zx pts=%llu dst_buf[%d] vdec_if_decode() ret=%d src_chg=%d===>",
 			ctx->id,
 			src_buf->index,
 			src_buf_info->lastframe,
 			buf.size,
 			src_buf_info->vb.vb2_buf.timestamp,
 			dst_buf->index,
-			ret, res_chg);
-		src_buf = v4l2_m2m_src_buf_remove(ctx->m2m_ctx);
-		v4l2_m2m_buf_done(&src_buf_info->vb, VB2_BUF_STATE_ERROR);
+			ret, src_chg);
+		if (mtk_vcodec_unsupport) {
+			src_buf = v4l2_m2m_src_buf_remove(ctx->m2m_ctx);
+			v4l2_m2m_buf_done(&src_buf_info->vb, VB2_BUF_STATE_DONE);
+			/*
+			 * If cncounter the src unsupport during play, egs:
+			 * width/height, bitdepth, level, then teturn EOS event
+			 * to  user to stop play it
+			 */
+			mtk_v4l2_err(" <=== [%d] vcodec not support the source!===>", ctx->id);
+			ctx->state = MTK_STATE_FLUSH;
+			mtk_vdec_queue_stop_play_event(ctx);
+		} else {
+			src_buf = v4l2_m2m_src_buf_remove(ctx->m2m_ctx);
+			v4l2_m2m_buf_done(&src_buf_info->vb, VB2_BUF_STATE_ERROR);
+		}
 	} else if ((ret == 0) && ((fourcc == V4L2_PIX_FMT_RV40) ||
 			(fourcc == V4L2_PIX_FMT_RV30) || (res_chg == false))) {
 		/*
@@ -690,6 +724,7 @@ static void mtk_vdec_worker(struct work_struct *work)
 			mtk_vdec_queue_res_chg_event(ctx);
 		}
 	}
+
 	v4l2_m2m_job_finish(dev->m2m_dev_dec, ctx->m2m_ctx);
 	do_gettimeofday(&vputvend);
 	mtk_v4l2_debug(5, "worktimeuse:%ld\n", (vputvend.tv_sec - worktvstart.tv_sec) * 1000000 +
@@ -1477,7 +1512,9 @@ static void vb2ops_vdec_buf_queue(struct vb2_buffer *vb)
 {
 	struct vb2_buffer *src_buf;
 	struct mtk_vcodec_mem src_mem;
+	unsigned int src_chg = 0;
 	bool res_chg = false;
+	bool mtk_vcodec_unsupport = false;
 	int ret = 0;
 	unsigned int dpbsize = 1;
 	struct mtk_vcodec_ctx *ctx = vb2_get_drv_priv(vb->vb2_queue);
@@ -1533,8 +1570,14 @@ static void vb2ops_vdec_buf_queue(struct vb2_buffer *vb)
 			src_mem.va, &src_mem.dma_addr,
 			src_mem.size, src_mem.length, src_mem.dmabuf);
 
-	ret = vdec_if_decode(ctx, &src_mem, NULL, &res_chg);
-	if (ret || !res_chg) {
+	ret = vdec_if_decode(ctx, &src_mem, NULL, &src_chg);
+
+	/* src_chg bit0 for res change flag, bit1 for realloc mv buf flag,
+	 * bit2 for not support flag, other bits are reserved
+	 */
+	res_chg = (src_chg & VDEC_RES_CHANGE) ? true : false;
+	mtk_vcodec_unsupport = (src_chg & VDEC_HW_NOT_SUPPORT) ? true : false;
+	if (ret || !res_chg || mtk_vcodec_unsupport) {
 		/*
 		 * fb == NULL menas to parse SPS/PPS header or
 		 * resolution info in src_mem. Decode can fail
@@ -1546,9 +1589,16 @@ static void vb2ops_vdec_buf_queue(struct vb2_buffer *vb)
 		v4l2_m2m_buf_done(to_vb2_v4l2_buffer(src_buf),
 					VB2_BUF_STATE_DONE);
 		mtk_v4l2_debug(ret ? 0 : 1,
-			       "[%d] vdec_if_decode() src_buf=%d, size=%zu, fail=%d, res_chg=%d",
+			       "[%d] vdec_if_decode() src_buf=%d, size=%zu, fail=%d, res_chg=%d, mtk_vcodec_unsupport=%d",
 			       ctx->id, src_buf->index,
-			       src_mem.size, ret, res_chg);
+			       src_mem.size, ret, res_chg, mtk_vcodec_unsupport);
+
+		/* If not support the source, eg: w/h, bitdepth, level, we need to stop to play it */
+		if (mtk_vcodec_unsupport) {
+			mtk_v4l2_err("[%d]Error!! Codec driver not support the file!",
+				ctx->id);
+			mtk_vdec_queue_stop_play_event(ctx);
+		}
 		return;
 	}
 

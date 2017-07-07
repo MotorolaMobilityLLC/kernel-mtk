@@ -57,9 +57,7 @@ struct ring_fb_list {
 /**
  * struct vdec_dec_info - decode information
  * @dpb_sz		: decoding picture buffer size
- * @resolution_changed  : resoltion change happen
- * @realloc_mv_buf	: flag to notify driver to re-allocate mv buffer
- * @reserved		: for 8 bytes alignment
+ * @vdec_changed_info  : some changed flags
  * @bs_dma		: Input bit-stream buffer dma address
  * @bs_fd               : Input bit-stream buffer dmabuf fd
  * @y_fb_dma		: Y frame buffer dma address
@@ -70,9 +68,7 @@ struct ring_fb_list {
  */
 struct vdec_dec_info {
 	uint32_t dpb_sz;
-	uint32_t resolution_changed;
-	uint32_t realloc_mv_buf;
-	uint32_t reserved;
+	uint32_t vdec_changed_info;
 	uint64_t bs_dma;
 	uint64_t bs_fd;
 	uint64_t y_fb_dma;
@@ -270,7 +266,7 @@ static void vdec_deinit(unsigned long h_vdec)
 }
 
 static int vdec_decode(unsigned long h_vdec, struct mtk_vcodec_mem *bs,
-			       struct vdec_fb *fb, bool *res_chg)
+			       struct vdec_fb *fb, unsigned int *src_chg)
 {
 	struct vdec_inst *inst = (struct vdec_inst *)h_vdec;
 	struct vdec_vcu_inst *vcu = &inst->vcu;
@@ -316,12 +312,15 @@ static int vdec_decode(unsigned long h_vdec, struct mtk_vcodec_mem *bs,
 	data[0] = bs->size;
 	data[1] = bs->length;
 	ret = vcu_dec_start(vcu, data, 2);
-	if (ret < 0)
-		goto err_free_fb_out;
 
-	*res_chg = inst->vsi->dec.resolution_changed;
-	if (*res_chg)
+	*src_chg = inst->vsi->dec.vdec_changed_info;
+
+	if (*src_chg & VDEC_RES_CHANGE)
 		mtk_vcodec_debug(inst, "- resolution changed -");
+	if (*src_chg & VDEC_HW_NOT_SUPPORT)
+		mtk_vcodec_err(inst, "- unsupported -");
+	if (ret < 0 || (*src_chg & VDEC_HW_NOT_SUPPORT))
+		goto err_free_fb_out;
 
 	mtk_vcodec_debug(inst, "\n - NALU[%d] -\n", inst->num_nalu);
 	inst->num_nalu++;

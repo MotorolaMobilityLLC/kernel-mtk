@@ -32,10 +32,10 @@ struct vdec_common_if {
 	 * @h_vdec  : [in] driver handle
 	 * @bs      : [in] input bitstream
 	 * @fb      : [in] frame buffer to store decoded frame
-	 * @res_chg : [out] resolution change happen
+	 * @src_chg : [out] some changed flags
 	 */
 	int (*decode)(unsigned long h_vdec, struct mtk_vcodec_mem *bs,
-		      struct vdec_fb *fb, bool *res_chg);
+		      struct vdec_fb *fb, unsigned int *src_chg);
 
 	/**
 	 * (*get_param)() - get driver's parameter

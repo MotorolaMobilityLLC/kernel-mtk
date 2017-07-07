@@ -67,7 +67,7 @@ int vdec_if_init(struct mtk_vcodec_ctx *ctx, unsigned int fourcc)
 }
 
 int vdec_if_decode(struct mtk_vcodec_ctx *ctx, struct mtk_vcodec_mem *bs,
-		   struct vdec_fb *fb, bool *res_chg)
+		   struct vdec_fb *fb, unsigned int *src_chg)
 {
 	int ret = 0;
 
@@ -94,7 +94,7 @@ int vdec_if_decode(struct mtk_vcodec_ctx *ctx, struct mtk_vcodec_mem *bs,
 	mtk_vcodec_set_curr_ctx(ctx->dev, ctx);
 	mtk_vcodec_dec_clock_on(&ctx->dev->pm);
 	enable_irq(ctx->dev->dec_irq);
-	ret = ctx->dec_if->decode(ctx->drv_handle, bs, fb, res_chg);
+	ret = ctx->dec_if->decode(ctx->drv_handle, bs, fb, src_chg);
 	disable_irq(ctx->dev->dec_irq);
 	mtk_vcodec_dec_clock_off(&ctx->dev->pm);
 	mtk_vcodec_set_curr_ctx(ctx->dev, NULL);
