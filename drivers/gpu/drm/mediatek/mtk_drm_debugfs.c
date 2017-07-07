@@ -95,7 +95,7 @@ static char STR_HELP[] =
 /* ------------------------------------------------------------------------- */
 /* Command Processor */
 /* ------------------------------------------------------------------------- */
-static void process_dbg_opt(const char *opt)
+static void process_dbg_opt(char *opt)
 {
 	if (strncmp(opt, "regw:", 5) == 0) {
 		char *p = (char *)opt + 5;
