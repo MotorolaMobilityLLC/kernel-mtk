@@ -291,6 +291,7 @@ static ssize_t debug_read(struct file *file, char __user *ubuf, size_t count,
 		char read_buf[512] = {0};
 		char *p = (char *)dis_cmd_buf + 5;
 		unsigned long addr;
+		int ret;
 		u64 i;
 
 		if (kstrtoul(p, 16, &addr) != 0)
@@ -300,11 +301,13 @@ static ssize_t debug_read(struct file *file, char __user *ubuf, size_t count,
 			if (addr >= gdrm_disp1_reg_range[i].reg_base &&
 			    addr < gdrm_disp1_reg_range[i].reg_base +
 			    0x1000UL) {
-				sprintf(read_buf,
+				ret = sprintf(read_buf,
 					"%8s Read register 0x%08lX: 0x%08X\n",
 					gdrm_disp1_reg_range[i].name, addr,
 					readl(gdrm_disp1_base[i] + addr -
 					gdrm_disp1_reg_range[i].reg_base));
+				if (ret <= 0L)
+					DRM_INFO("autoregr fail\n");
 				break;
 			}
 		}
@@ -313,11 +316,13 @@ static ssize_t debug_read(struct file *file, char __user *ubuf, size_t count,
 			if (addr >= gdrm_disp2_reg_range[i].reg_base &&
 			    addr < gdrm_disp2_reg_range[i].reg_base +
 			    0x1000UL) {
-				sprintf(read_buf,
+				ret = sprintf(read_buf,
 					"%8s Read register 0x%08lX: 0x%08X\n",
 					gdrm_disp2_reg_range[i].name, addr,
 					readl(gdrm_disp2_base[i] + addr -
 					gdrm_disp2_reg_range[i].reg_base));
+				if (ret <= 0L)
+					DRM_INFO("autoregr fail\n");
 				break;
 			}
 		}
@@ -330,6 +335,7 @@ static ssize_t debug_read(struct file *file, char __user *ubuf, size_t count,
 		char *p = (char *)dis_cmd_buf + 9;
 		unsigned long addr;
 		unsigned long addr2;
+		int ret;
 		u64 i;
 
 		if (kstrtoul(p, 16, &addr) != 0)
@@ -339,11 +345,13 @@ static ssize_t debug_read(struct file *file, char __user *ubuf, size_t count,
 			if (addr >= gdrm_disp1_reg_range[i].reg_base &&
 			    addr < gdrm_disp1_reg_range[i].reg_base +
 			    0x1000UL) {
-				sprintf(read_buf,
+				ret = sprintf(read_buf,
 					"%8s Read register 0x%08lX: 0x%08X\n",
 					gdrm_disp1_reg_range[i].name, addr,
 					readl(gdrm_disp1_base[i] + addr -
 					gdrm_disp1_reg_range[i].reg_base));
+				if (ret <= 0L)
+					DRM_INFO("autoregr fail\n");
 				break;
 			}
 		}
@@ -352,15 +360,19 @@ static ssize_t debug_read(struct file *file, char __user *ubuf, size_t count,
 			if (addr2 >= gdrm_disp2_reg_range[i].reg_base &&
 			    addr2 < gdrm_disp2_reg_range[i].reg_base +
 			    0x1000UL) {
-				sprintf(read_buf2,
+				ret = sprintf(read_buf2,
 					"%8s Read register 0x%08lX: 0x%08X\n",
 					gdrm_disp2_reg_range[i].name, addr2,
 					readl(gdrm_disp2_base[i] + addr2 -
 					gdrm_disp2_reg_range[i].reg_base));
+				if (ret <= 0L)
+					DRM_INFO("autoregr fail\n");
 				break;
 			}
 		}
-		strcat(read_buf, read_buf2);
+		p = strcat(read_buf, read_buf2);
+		if (p == NULL)
+			DRM_INFO("autoregr strcat fail\n");
 		return simple_read_from_buffer(ubuf, count, ppos, read_buf,
 						strlen(read_buf));
 	} else {
@@ -411,6 +423,7 @@ void mtk_drm_debugfs_init(struct drm_device *dev,
 	struct resource res;
 	int i;
 	int comp_id;
+	int ret;
 
 	DRM_DEBUG_DRIVER("%s\n", __func__);
 	mtkdrm_dbgfs = debugfs_create_file("mtkdrm", 0644, NULL, (void *)0,
@@ -421,14 +434,18 @@ void mtk_drm_debugfs_init(struct drm_device *dev,
 		     (int)DDP_COMPONENT_PWM0; i++) {
 		np = priv->comp_node[comp_id];
 		gdrm_disp1_base[i] = priv->ddp_comp[comp_id]->regs;
-		of_address_to_resource(np, 0, &res);
+		ret = of_address_to_resource(np, 0, &res);
+		if (ret < 0)
+			DRM_INFO("comp_node[%d] map address fail\n", i);
 		gdrm_disp1_reg_range[i].reg_base = res.start;
 	}
 
 	gdrm_disp1_base[i] = priv->config_regs;
 	gdrm_disp1_reg_range[i++].reg_base = 0x14000000;
 	mutex_regs = of_iomap(priv->mutex_node, 0);
-	of_address_to_resource(priv->mutex_node, 0, &res);
+	ret = of_address_to_resource(priv->mutex_node, 0, &res);
+	if (ret < 0)
+		DRM_INFO("mutex_node map address fail\n");
 	mutex_phys = res.start;
 	gdrm_disp1_base[i] = mutex_regs;
 	gdrm_disp1_reg_range[i++].reg_base = mutex_phys;
@@ -438,7 +455,9 @@ void mtk_drm_debugfs_init(struct drm_device *dev,
 		     (int)DDP_COMPONENT_PWM1; i++) {
 		np = priv->comp_node[comp_id];
 		gdrm_disp2_base[i] = of_iomap(np, 0);
-		of_address_to_resource(np, 0, &res);
+		ret = of_address_to_resource(np, 0, &res);
+		if (ret < 0)
+			DRM_INFO("comp_node[%d] map address fail\n", i);
 		gdrm_disp2_reg_range[i].reg_base = res.start;
 	}
 	gdrm_disp2_base[i] = priv->config_regs;
