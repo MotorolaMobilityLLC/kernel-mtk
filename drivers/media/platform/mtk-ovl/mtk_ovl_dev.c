@@ -207,7 +207,7 @@ struct mtk_ovl_ctx {
 
 static struct mtk_ovl_ctx *_mtk_ovl_ctx[OVL_LAYER_NUM] = {0};
 
-static struct MTK_OVL_HW_PARAM_ALL _mtk_ovl_hw_param = {0};
+static struct MTK_OVL_HW_PARAM_ALL _mtk_ovl_hw_param;
 
 static char *_ap_mtk_ovl_clk_name[MTK_OVL_CLK_CNT] = {
 	"mm_disp_ovl2",
