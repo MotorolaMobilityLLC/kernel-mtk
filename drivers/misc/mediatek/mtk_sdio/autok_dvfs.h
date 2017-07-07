@@ -11,26 +11,22 @@
  * GNU General Public License for more details.
  */
 
-#ifndef _AUTOK_DVFS_H_
-#define _AUTOK_DVFS_H_
+#ifndef AUTOK_DVFS_H
+#define AUTOK_DVFS_H
 
 #include "autok.h"
 
 #define SDIO_DVFS_TIMEOUT       (HZ/100 * 5)    /* 10ms x5 */
-#define SDIO_FIX_VCORE_CONDITIONAL
 
-enum AUTOK_VCORE {
+enum {
 	AUTOK_VCORE_LOW = 0,
 	AUTOK_VCORE_HIGH,
 	AUTOK_VCORE_NUM
 };
-
 /**********************************************************
  * Variable Declaration                                   *
  **********************************************************/
 extern u8 sdio_autok_res[2][TUNING_PARAM_COUNT];
-extern u8 emmc_autok_res[2][TUNING_PARAM_COUNT];
-extern u8 sd_autok_res[2][TUNING_PARAM_COUNT];
 
 /**********************************************************
  * Function Declaration                                   *
@@ -45,5 +41,5 @@ extern void sdio_unreq_vcore(struct work_struct *work);
 extern void sdio_set_vcore_performance(struct msdc_host *host, u32 enable);
 void sdio_set_vcorefs_sram(int vcore, int done, struct msdc_host *host);
 
-#endif /* _AUTOK_DVFS_H_ */
+#endif /* AUTOK_DVFS_H */
 
