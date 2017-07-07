@@ -335,7 +335,7 @@ static void mtk_crtc_ddp_config(struct drm_crtc *crtc)
 	struct mtk_crtc_state *state = to_mtk_crtc_state(mtk_crtc->base.state);
 	struct mtk_ddp_comp *ovl = mtk_crtc->ddp_comp[0];
 	s8 i;
-	unsigned int ovl_is_busy;
+	bool ovl_is_busy;
 
 	/*
 	 * TODO: instead of updating the registers here, we should prepare
@@ -347,7 +347,7 @@ static void mtk_crtc_ddp_config(struct drm_crtc *crtc)
 	if (ovl_is_busy)
 		return;
 
-	if (state->pending_config) {
+	if ((state->pending_config) == true) {
 		mtk_ddp_comp_config(ovl, state->pending_width,
 				    state->pending_height,
 				    state->pending_vrefresh, 0);
@@ -355,14 +355,14 @@ static void mtk_crtc_ddp_config(struct drm_crtc *crtc)
 		state->pending_config = false;
 	}
 
-	if (mtk_crtc->pending_planes) {
+	if ((mtk_crtc->pending_planes) == true) {
 		for (i = 0; i < OVL_LAYER_NR; i++) {
 			struct drm_plane *plane = &mtk_crtc->planes[i];
 			struct mtk_plane_state *plane_state;
 
 			plane_state = to_mtk_plane_state(plane->state);
 
-			if (plane_state->pending.config) {
+			if ((plane_state->pending.config) == true) {
 				mtk_ddp_comp_layer_config(ovl, i, plane_state);
 				plane_state->pending.config = false;
 			}
@@ -470,7 +470,7 @@ static void mtk_drm_crtc_atomic_flush(struct drm_crtc *crtc,
 		for (i = 0; i < mtk_crtc->ddp_comp_nr; i++)
 			mtk_ddp_gamma_set(mtk_crtc->ddp_comp[i], crtc->state);
 
-	if (priv->data->shadow_register) {
+	if ((priv->data->shadow_register) == true) {
 		mtk_disp_mutex_acquire(mtk_crtc->mutex);
 		mtk_crtc_ddp_config(crtc);
 		mtk_disp_mutex_release(mtk_crtc->mutex);
