@@ -22,6 +22,20 @@
 
 
 /**
+ * enum vdec_src_chg_type - decoder src change type
+ * @VDEC_NO_CHANGE      : no change
+ * @VDEC_RES_CHANGE     : resolution change
+ * @VDEC_REALLOC_MV_BUF : realloc mv buf
+ * @VDEC_HW_NOT_SUPPORT : hw not support
+ */
+enum vdec_src_chg_type {
+	VDEC_NO_CHANGE              = (0 << 0),
+	VDEC_RES_CHANGE             = (1 << 0),
+	VDEC_REALLOC_MV_BUF         = (1 << 1),
+	VDEC_HW_NOT_SUPPORT         = (1 << 2),
+};
+
+/**
  * struct vdec_fb_status  - decoder frame buffer status
  * @FB_ST_NORMAL	: initial state
  * @FB_ST_DISPLAY	: frmae buffer is ready to be displayed
@@ -110,7 +124,7 @@ void vdec_if_deinit(struct mtk_vcodec_ctx *ctx);
  * Note: To flush the decoder when reaching EOF, set input bitstream as NULL.
  */
 int vdec_if_decode(struct mtk_vcodec_ctx *ctx, struct mtk_vcodec_mem *bs,
-		   struct vdec_fb *fb, bool *res_chg);
+		   struct vdec_fb *fb, unsigned int *src_chg);
 
 /**
  * vdec_if_get_param() - get driver's parameter
