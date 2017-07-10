@@ -545,18 +545,21 @@ static int display_bias_enable(void)
 #ifdef CONFIG_LCT_HBM_SUPPORT
 static unsigned int last_level=0;
 static unsigned int hbm_enable=0;
+extern int lct_klcm_ili9881_enable_hbm(int enable);
 static void lcm_setbacklight_hbm(unsigned int level)
 {
-
 	unsigned int level_hight,level_low=0;
 	
 	if(level==0)
 	{
 		level = last_level;
 		hbm_enable = 0;
+		//lct_klcm_ili9881_enable_hbm(0);
 	}
-	else
+	else{
 		hbm_enable = 1;
+		//lct_klcm_ili9881_enable_hbm(1);
+	}
 	level_hight=(level & 0xf0)>>4;
 	level_low=(level & 0x0f)<<4;
 	bl_level[0].para_list[0] = level_hight;
