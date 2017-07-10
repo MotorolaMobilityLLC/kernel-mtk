@@ -57,20 +57,20 @@ static bool dbgfs_alpha;
 
 static void mtk_read_reg(unsigned long addr)
 {
-	unsigned long reg_va = 0;
+	void __iomem *reg_va = 0;
 
-	reg_va = (unsigned long)ioremap_nocache(addr, sizeof(unsigned long));
-	pr_info("r:0x%8lx = 0x%08x\n", addr, readl((void *)reg_va));
-	iounmap((void *)reg_va);
+	reg_va = ioremap_nocache(addr, sizeof(reg_va));
+	pr_info("r:0x%8lx = 0x%08x\n", addr, readl(reg_va));
+	iounmap(reg_va);
 }
 
 static void mtk_write_reg(unsigned long addr, unsigned long val)
 {
-	unsigned long reg_va = 0;
+	void __iomem *reg_va = 0;
 
-	reg_va = (unsigned long)ioremap_nocache(addr, sizeof(unsigned long));
-	writel(val, (void *)reg_va);
-	iounmap((void *)reg_va);
+	reg_va = ioremap_nocache(addr, sizeof(reg_va));
+	writel(val, reg_va);
+	iounmap(reg_va);
 }
 
 /* ------------------------------------------------------------------------- */
