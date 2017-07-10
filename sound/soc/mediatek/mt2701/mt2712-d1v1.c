@@ -545,8 +545,14 @@ static struct snd_soc_dai_link mt2712_d1v1_dai_links[] = {
 	.name = "mt2712_d1v1-TDM-OUT1",
 	.cpu_dai_name = "TDMO1",
 	.no_pcm = 1,
+	#ifdef TS_CS42448
+	.codec_dai_name = "cs42448",
+	#else
 	.codec_name = "dummy-codec",
 	.codec_dai_name = "dummy-codec-tdm",
+	#endif
+	.dai_fmt = SND_SOC_DAIFMT_DSP_A | SND_SOC_DAIFMT_CBS_CFS
+		| SND_SOC_DAIFMT_GATED,
 	.ops = &mt2712_d1v1_be_tdm_ops,
 	.dpcm_playback = 1,
 	},
@@ -593,7 +599,7 @@ static int mt2712_d1v1_machine_probe(struct platform_device *pdev)
 	int i;
 	struct device_node *platform_node, *codec_node_bt_mrg;
 #ifdef TS_CS42448
-	struct device_node *codec_node_tdmo, *codec_node_tdmi;
+	struct device_node *codec_node_tdmo, *codec_node_tdmo1, *codec_node_tdmi;
 #endif
 	struct device *dev = &pdev->dev;
 
@@ -617,7 +623,7 @@ static int mt2712_d1v1_machine_probe(struct platform_device *pdev)
 	if (!codec_node_bt_mrg) {
 		dev_notice(&pdev->dev,
 			"Property 'audio-codec-bt-mrg' missing or invalid\n");
-	return -EINVAL;
+		return -EINVAL;
 	}
 	mt2712_d1v1_dai_links[DAI_LINK_BE_MRG_BT].codec_of_node
 		= codec_node_bt_mrg;
@@ -627,17 +633,27 @@ static int mt2712_d1v1_machine_probe(struct platform_device *pdev)
 	if (!codec_node_tdmo) {
 		dev_notice(&pdev->dev,
 			"Property 'audio-codec-tdmo' missing or invalid\n");
-	return -EINVAL;
+		return -EINVAL;
 	}
 	mt2712_d1v1_dai_links[DAI_LINK_BE_TDMO0].codec_of_node
 		= codec_node_tdmo;
+
+	codec_node_tdmo1 = of_parse_phandle(pdev->dev.of_node,
+					 "mediatek,audio-codec-tdmo1", 0);
+	if (!codec_node_tdmo1) {
+		dev_notice(&pdev->dev,
+			"Property 'audio-codec-tdmo1' missing or invalid\n");
+		return -EINVAL;
+	}
+	mt2712_d1v1_dai_links[DAI_LINK_BE_TDMO1].codec_of_node
+		 = codec_node_tdmo1;
 
 	codec_node_tdmi = of_parse_phandle(pdev->dev.of_node,
 					 "mediatek,audio-codec-tdmi", 0);
 	if (!codec_node_tdmi) {
 		dev_notice(&pdev->dev,
 			"Property 'audio-codec-tdmi' missing or invalid\n");
-	return -EINVAL;
+		return -EINVAL;
 	}
 	mt2712_d1v1_dai_links[DAI_LINK_BE_TDMIN].codec_of_node
 		= codec_node_tdmi;
