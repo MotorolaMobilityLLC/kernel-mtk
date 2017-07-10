@@ -279,7 +279,7 @@ static int mtk_disp_ovl_probe(struct platform_device *pdev)
 {
 	struct device *dev = &pdev->dev;
 	struct mtk_disp_ovl *priv;
-	int comp_id;
+	enum mtk_ddp_comp_id comp_id;
 	int irq;
 	int ret;
 	struct iommu_domain *iommu;
@@ -299,7 +299,7 @@ static int mtk_disp_ovl_probe(struct platform_device *pdev)
 		return irq;
 
 	comp_id = mtk_ddp_comp_get_id(dev->of_node, MTK_DISP_OVL);
-	if (comp_id < 0) {
+	if ((int)comp_id < 0) {
 		dev_err(dev, "Failed to identify by alias: %d\n", comp_id);
 		return comp_id;
 	}

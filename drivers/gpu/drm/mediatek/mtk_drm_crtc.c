@@ -196,7 +196,7 @@ static int mtk_crtc_ddp_hw_init(struct mtk_drm_crtc *mtk_crtc)
 	struct drm_crtc *crtc = &mtk_crtc->base;
 	unsigned int width, height, vrefresh, bpc = MTK_MAX_BPC;
 	int ret;
-	int i;
+	unsigned int i;
 
 	DRM_DEBUG_DRIVER("%s\n", __func__);
 	if (WARN_ON(!crtc->state))
@@ -229,7 +229,7 @@ static int mtk_crtc_ddp_hw_init(struct mtk_drm_crtc *mtk_crtc)
 	for (i = 0; i < mtk_crtc->ddp_comp_nr - 1; i++) {
 		mtk_ddp_add_comp_to_path(mtk_crtc->config_regs,
 					 mtk_crtc->ddp_comp[i]->id,
-					 mtk_crtc->ddp_comp[i + 1]->id);
+					 mtk_crtc->ddp_comp[i + 1UL]->id);
 		mtk_disp_mutex_add_comp(mtk_crtc->mutex,
 					mtk_crtc->ddp_comp[i]->id);
 	}
@@ -293,8 +293,8 @@ static void mtk_crtc_ddp_config(struct drm_crtc *crtc)
 	struct mtk_drm_crtc *mtk_crtc = to_mtk_crtc(crtc);
 	struct mtk_crtc_state *state = to_mtk_crtc_state(mtk_crtc->base.state);
 	struct mtk_ddp_comp *ovl = mtk_crtc->ddp_comp[0];
-	s8 i;
-	bool ovl_is_busy;
+	unsigned int i;
+	unsigned int ovl_is_busy;
 
 	/*
 	 * TODO: instead of updating the registers here, we should prepare
@@ -303,7 +303,7 @@ static void mtk_crtc_ddp_config(struct drm_crtc *crtc)
 	 */
 
 	ovl_is_busy = readl(mtk_crtc->ddp_comp[0]->regs) & 0x1UL;
-	if (ovl_is_busy)
+	if (ovl_is_busy == 0x1UL)
 		return;
 
 	if ((state->pending_config) == true) {
@@ -358,7 +358,7 @@ static void mtk_drm_crtc_disable(struct drm_crtc *crtc)
 {
 	struct mtk_drm_crtc *mtk_crtc = to_mtk_crtc(crtc);
 	struct mtk_ddp_comp *ovl = mtk_crtc->ddp_comp[0];
-	int i;
+	unsigned int i;
 
 	DRM_DEBUG_DRIVER("%s %d\n", __func__, crtc->base.id);
 	if (!mtk_crtc->enabled)
@@ -408,7 +408,7 @@ static void mtk_drm_crtc_atomic_flush(struct drm_crtc *crtc,
 	struct mtk_drm_crtc *mtk_crtc = to_mtk_crtc(crtc);
 	struct mtk_drm_private *priv = crtc->dev->dev_private;
 	unsigned int pending_planes = 0;
-	int i;
+	unsigned int i;
 
 	if (mtk_crtc->event)
 		mtk_crtc->pending_needs_vblank = true;

@@ -448,7 +448,7 @@ static int mtk_drm_probe(struct platform_device *pdev)
 	for_each_child_of_node(dev->of_node->parent, node) {
 		const struct of_device_id *of_id;
 		enum mtk_ddp_comp_type comp_type;
-		int comp_id;
+		enum mtk_ddp_comp_id comp_id;
 
 		of_id = of_match_node(mtk_ddp_comp_dt_ids, node);
 		if (!of_id)
@@ -468,7 +468,7 @@ static int mtk_drm_probe(struct platform_device *pdev)
 		}
 
 		comp_id = mtk_ddp_comp_get_id(node, comp_type);
-		if (comp_id < 0) {
+		if ((int)comp_id < 0) {
 			dev_warn(dev, "Skipping unknown component %s\n",
 				 node->full_name);
 			continue;
