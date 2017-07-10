@@ -128,7 +128,7 @@ static int mtk_disp_color_probe(struct platform_device *pdev)
 {
 	struct device *dev = &pdev->dev;
 	struct mtk_disp_color *priv;
-	int comp_id;
+	enum mtk_ddp_comp_id comp_id;
 	int ret;
 
 	priv = devm_kzalloc(dev, sizeof(*priv), GFP_KERNEL);
@@ -136,7 +136,7 @@ static int mtk_disp_color_probe(struct platform_device *pdev)
 		return -ENOMEM;
 
 	comp_id = mtk_ddp_comp_get_id(dev->of_node, MTK_DISP_COLOR);
-	if (comp_id < 0) {
+	if ((int)comp_id < 0) {
 		dev_err(dev, "Failed to identify by alias: %d\n", comp_id);
 		return comp_id;
 	}

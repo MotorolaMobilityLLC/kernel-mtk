@@ -385,9 +385,9 @@ static ssize_t debug_write(struct file *file, const char __user *ubuf,
 	size_t count, loff_t *ppos)
 {
 	const u64 debug_bufmax = sizeof(dis_cmd_buf) - 1ULL;
-	size_t ret;
+	ssize_t ret;
 
-	ret = count;
+	ret = (ssize_t)count;
 
 	if (count > debug_bufmax)
 		count = debug_bufmax;
@@ -395,7 +395,7 @@ static ssize_t debug_write(struct file *file, const char __user *ubuf,
 	if (copy_from_user(&dis_cmd_buf, ubuf, count) != 0ULL)
 		return -EFAULT;
 
-	dis_cmd_buf[count] = 0;
+	dis_cmd_buf[count] = '\0';
 
 	process_dbg_cmd(dis_cmd_buf);
 
@@ -418,11 +418,11 @@ void mtk_drm_debugfs_init(struct drm_device *dev,
 			  struct mtk_drm_private *priv)
 {
 	void __iomem *mutex_regs;
-	unsigned int mutex_phys;
+	unsigned long mutex_phys;
 	struct device_node *np;
 	struct resource res;
 	int i;
-	int comp_id;
+	enum mtk_ddp_comp_id comp_id;
 	int ret;
 
 	DRM_DEBUG_DRIVER("%s\n", __func__);
