@@ -601,9 +601,9 @@ int mtk_pe_set_charging_current(struct charger_manager *pinfo,
 	}
 
 	pr_err(
-		"%s: Ichg= %dmA, AICR = %dmA, chr_org = %d, chr_after = %d %d,lcm_resume_flag= %d\n",
+		"%s: Ichg= %dmA, AICR = %dmA, chr_org = %d, chr_after = %d %d\n",
 		__func__, *ichg, *aicr, pinfo->pe.pe_ta_vchr_org, chr_volt
-		, pinfo->data.ta_ac_charger_current,lcm_resume_flag);
+		, pinfo->data.ta_ac_charger_current);
 	return ret;
 }
 
