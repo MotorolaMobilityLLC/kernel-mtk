@@ -261,28 +261,23 @@ static struct LCM_setting_table lcm_initialization_setting[] = {
 	{REGFLAG_DELAY, 20, {}}, 
 	
 	{0x51,1,{0x00}}, //0xff
-    {0x53,1,{0x2C}},
-    {0x55,1,{0x00}},
+    {0x53,1,{0x2C}},//CABC on
+    {0x55,1,{0x01}},//default UI mode 
   
 	{REGFLAG_END_OF_TABLE, 0x00, {}}
 };
 #ifdef CONFIG_LCT_CABC_MODE_SUPPORT
 static struct LCM_setting_table lcm_setting_ui[] = {
-{0xFF,3,{0x98,0x81,0x00}},
 {0x53,1,{0x2c}},
 {0x55,1,{0x01}},//CABC UI mode
 {REGFLAG_END_OF_TABLE, 0x00, {}}
 };
-
 static struct LCM_setting_table lcm_setting_dis[] = {
-{0xFF,3,{0x98,0x81,0x00}},
 {0x53,1,{0x2c}},
 {0x55,1,{0x00}},//CABC off
 {REGFLAG_END_OF_TABLE, 0x00, {}}
 };
-
 static struct LCM_setting_table lcm_setting_mv[] = {
-{0xFF,3,{0x98,0x81,0x00}},
 {0x53,1,{0x2c}},
 {0x55,1,{0x03}},//CABC Video mode
 {REGFLAG_END_OF_TABLE, 0x00, {}}
@@ -735,5 +730,4 @@ LCM_DRIVER lct_otm1911a_ofilm_1080p_vdo_lcm_drv = {
 #ifdef CONFIG_LCT_HBM_SUPPORT
 	.set_backlight_hbm = lcm_setbacklight_hbm,
 #endif
-
 };
