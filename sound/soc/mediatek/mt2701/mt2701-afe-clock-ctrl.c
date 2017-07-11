@@ -122,6 +122,10 @@ static const char *aud_clks_2712[MT2712_CLOCK_NUM] = {
 	[MT2712_AUD_APLL2_D4] = "apll2_d4",
 	[MT2712_AUD_APLL2_D8] = "apll2_d8",
 	[MT2712_AUD_APLL2_D16] = "apll2_d16",
+	[MT2712_AUD_ASM_L_SEL] = "asm_l_sel",
+	[MT2712_AUD_UNIVPLL2_D4] = "univpll2_d4",
+	[MT2712_AUD_UNIVPLL2_D2] = "univpll2_d2",
+	[MT2712_AUD_SYSPLL_D5] = "syspll_d5",
 };
 
 
@@ -596,6 +600,17 @@ int mt2712_afe_enable_clock(struct mtk_base_afe *afe)
 		return ret;
 	}
 
+	ret = mt2712_turn_on_asrc_clock(afe);
+	if (ret) {
+		dev_err(afe->dev, "%s turn_on_a2sys_clock fail %d\n",
+			__func__, ret);
+		mt2712_turn_off_a1sys_clock(afe);
+		mt2712_turn_off_a2sys_clock(afe);
+		mt2712_turn_off_afe_clock(afe);
+		mt2712_turn_off_tdm_clock(afe);
+		return ret;
+	}
+
 	regmap_update_bits(afe->regmap, ASYS_TOP_CON,
 			   AUDIO_TOP_CON0_A1SYS_A2SYS_ON,
 			   AUDIO_TOP_CON0_A1SYS_A2SYS_ON);
@@ -618,6 +633,7 @@ void mt2712_afe_disable_clock(struct mtk_base_afe *afe)
 	mt2712_turn_off_a1sys_clock(afe);
 	mt2712_turn_off_a2sys_clock(afe);
 	mt2712_turn_off_tdm_clock(afe);
+	mt2712_turn_off_asrc_clock(afe);
 
 	regmap_update_bits(afe->regmap, ASYS_TOP_CON,
 			   AUDIO_TOP_CON0_A1SYS_A2SYS_ON, 0);
@@ -760,6 +776,44 @@ void mt2712_turn_off_a2sys_clock(struct mtk_base_afe *afe)
 	clk_disable_unprepare(afe_priv->clocks[MT2712_AUD_A2SYS_HP_SEL]);
 	clk_disable_unprepare(afe_priv->clocks[MT2712_AUD_APMIXED_APLL2]);
 }
+
+int mt2712_turn_on_asrc_clock(struct mtk_base_afe *afe)
+{
+	struct mt2701_afe_private *afe_priv = afe->platform_priv;
+	int ret = 0;
+
+	/* Set Mux */
+	ret = clk_prepare_enable(afe_priv->clocks[MT2712_AUD_ASM_L_SEL]);
+	if (ret) {
+		dev_err(afe->dev, "%s clk_prepare_enable %s fail %d\n",
+			 __func__, aud_clks_2712[MT2712_AUD_ASM_L_SEL], ret);
+		goto ASRC_CLK_AUD_ASM_L_SEL_ERR;
+	}
+
+	ret = clk_set_parent(afe_priv->clocks[MT2712_AUD_ASM_L_SEL],
+			afe_priv->clocks[MT2712_AUD_SYSPLL_D5]);
+	if (ret) {
+		dev_err(afe->dev, "%s clk_set_parent %s-%s fail %d\n", __func__,
+			aud_clks_2712[MT2712_AUD_ASM_L_SEL],
+			aud_clks_2712[MT2712_AUD_SYSPLL_D5], ret);
+		goto ASRC_CLK_AUD_ASM_L_SEL_ERR;
+	}
+
+	return 0;
+
+ASRC_CLK_AUD_ASM_L_SEL_ERR:
+	clk_disable_unprepare(afe_priv->clocks[MT2712_AUD_ASM_L_SEL]);
+
+	return ret;
+}
+
+void mt2712_turn_off_asrc_clock(struct mtk_base_afe *afe)
+{
+	struct mt2701_afe_private *afe_priv = afe->platform_priv;
+
+	clk_disable_unprepare(afe_priv->clocks[MT2712_AUD_ASM_L_SEL]);
+}
+
 
 int mt2712_turn_on_afe_clock(struct mtk_base_afe *afe)
 {
