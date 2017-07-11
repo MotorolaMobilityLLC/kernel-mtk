@@ -701,6 +701,9 @@ static int mt2701_modpcm_hw_params(struct snd_pcm_substream *substream,
 		/* set ASRC */
 		if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK) {
 			/* set Tx ASRC */
+			regmap_update_bits(afe->regmap, AUDIO_TOP_CON4,
+					AUDIO_TOP_CON4_PDN_ASRC_PCMO, 0);
+
 			if (bit_width == 16)
 				regmap_update_bits(afe->regmap, AFE_ASRC_PCMO_CON0,
 						AFE_PCM_ASRC_O16BIT, AFE_PCM_ASRC_O16BIT_SET(1));
@@ -734,8 +737,12 @@ static int mt2701_modpcm_hw_params(struct snd_pcm_substream *substream,
 					AFE_PCM_ASRC_CLR, AFE_PCM_ASRC_CLR);
 			regmap_update_bits(afe->regmap, AFE_ASRC_PCMO_CON0,
 					AFE_PCM_ASRC_CLR | AFE_PCM_ASRC_EN, AFE_PCM_ASRC_CLR | AFE_PCM_ASRC_EN_SET(1));
+
 		} else {
 			/* set Rx ASRC */
+			regmap_update_bits(afe->regmap, AUDIO_TOP_CON4,
+					AUDIO_TOP_CON4_PDN_ASRC_PCMI, 0);
+
 			if (bit_width == 16)
 				regmap_update_bits(afe->regmap, AFE_ASRC_PCMI_CON0,
 						   AFE_PCM_ASRC_O16BIT, AFE_PCM_ASRC_O16BIT_SET(1));
@@ -771,6 +778,7 @@ static int mt2701_modpcm_hw_params(struct snd_pcm_substream *substream,
 			regmap_update_bits(afe->regmap, AFE_ASRC_PCMI_CON0,
 						   AFE_PCM_ASRC_CLR | AFE_PCM_ASRC_EN,
 						   AFE_PCM_ASRC_CLR | AFE_PCM_ASRC_EN_SET(1));
+
 		}
 	}
 
@@ -850,12 +858,19 @@ static void mt2701_modpcm_shutdown(struct snd_pcm_substream *substream,
 				   AUDIO_TOP_CON4_PDN_PCM,
 				   AUDIO_TOP_CON4_PDN_PCM);
 	}
-	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK)
+	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK) {
 		regmap_update_bits(afe->regmap, AFE_ASRC_PCMO_CON0,
 			     AFE_PCM_ASRC_CLR | AFE_PCM_ASRC_EN, AFE_PCM_ASRC_CLR | AFE_PCM_ASRC_EN_SET(0));
-	else
+		regmap_update_bits(afe->regmap, AUDIO_TOP_CON4,
+				   AUDIO_TOP_CON4_PDN_ASRC_PCMO,
+				   AUDIO_TOP_CON4_PDN_ASRC_PCMO);
+	} else {
 		regmap_update_bits(afe->regmap, AFE_ASRC_PCMI_CON0,
 			     AFE_PCM_ASRC_CLR | AFE_PCM_ASRC_EN, AFE_PCM_ASRC_CLR | AFE_PCM_ASRC_EN_SET(0));
+		regmap_update_bits(afe->regmap, AUDIO_TOP_CON4,
+				   AUDIO_TOP_CON4_PDN_ASRC_PCMI,
+				   AUDIO_TOP_CON4_PDN_ASRC_PCMI);
+	}
 
 	afe_priv->pcm_enable[substream->stream] = 0;
 }

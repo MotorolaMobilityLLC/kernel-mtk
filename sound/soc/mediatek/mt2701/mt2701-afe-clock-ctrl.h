@@ -47,6 +47,9 @@ void mt2712_turn_off_a1sys_clock(struct mtk_base_afe *afe);
 int mt2712_turn_on_a2sys_clock(struct mtk_base_afe *afe);
 void mt2712_turn_off_a2sys_clock(struct mtk_base_afe *afe);
 
+int mt2712_turn_on_asrc_clock(struct mtk_base_afe *afe);
+void mt2712_turn_off_asrc_clock(struct mtk_base_afe *afe);
+
 int mt2712_turn_on_afe_clock(struct mtk_base_afe *afe);
 void mt2712_turn_off_afe_clock(struct mtk_base_afe *afe);
 
