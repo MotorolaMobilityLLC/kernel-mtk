@@ -22,6 +22,7 @@
 #include <linux/interrupt.h>
 #include <linux/types.h>
 #include <linux/clk.h>
+#include <linux/pm_runtime.h>
 
 #include "mtk_dpi_regs.h"
 #include "mtk_drm_ddp_comp.h"
@@ -554,6 +555,11 @@ static void mtk_dpi_encoder_mode_set(struct drm_encoder *encoder,
 static void mtk_dpi_encoder_disable(struct drm_encoder *encoder)
 {
 	struct mtk_dpi *dpi = mtk_dpi_from_encoder(encoder);
+	int ret;
+
+	ret = pm_runtime_put_sync(dpi->dev);
+	if (ret < 0)
+		DRM_ERROR("Failed to disable power domain: %d\n", ret);
 
 	mtk_dpi_power_off(dpi, DPI_POWER_ENABLE);
 }
@@ -561,6 +567,11 @@ static void mtk_dpi_encoder_disable(struct drm_encoder *encoder)
 static void mtk_dpi_encoder_enable(struct drm_encoder *encoder)
 {
 	struct mtk_dpi *dpi = mtk_dpi_from_encoder(encoder);
+	int ret;
+
+	ret = pm_runtime_get_sync(dpi->dev);
+	if (ret < 0)
+		DRM_ERROR("Failed to enable power domain: %d\n", ret);
 
 	mtk_dpi_power_on(dpi, DPI_POWER_ENABLE);
 	mtk_dpi_set_display_mode(dpi, &dpi->mode);
@@ -827,12 +838,15 @@ static int mtk_dpi_probe(struct platform_device *pdev)
 		return ret;
 	}
 
+	pm_runtime_enable(dev);
+
 	return 0;
 }
 
 static int mtk_dpi_remove(struct platform_device *pdev)
 {
 	component_del(&pdev->dev, &mtk_dpi_component_ops);
+	pm_runtime_disable(&pdev->dev);
 
 	return 0;
 }

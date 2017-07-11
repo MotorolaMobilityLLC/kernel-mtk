@@ -27,6 +27,7 @@
 #include <linux/of_graph.h>
 #include <linux/phy/phy.h>
 #include <linux/platform_device.h>
+#include <linux/pm_runtime.h>
 
 /* LVDS TOP */
 #define LVDSTOP_REG00	0x000
@@ -205,9 +206,14 @@ static int mtk_lvds_bridge_attach(struct drm_bridge *bridge)
 static void mtk_lvds_bridge_disable(struct drm_bridge *bridge)
 {
 	struct mtk_lvds *lvds = bridge_to_lvds(bridge);
+	int ret;
 
 	if (!lvds->enabled)
 		return;
+
+	ret = pm_runtime_put_sync(lvds->dev);
+	if (ret < 0)
+		DRM_ERROR("Failed to disable power domain: %d\n", ret);
 
 	if (drm_panel_disable(lvds->panel)) {
 		DRM_ERROR("failed to disable panel\n");
@@ -280,6 +286,10 @@ static void mtk_lvds_bridge_enable(struct drm_bridge *bridge)
 
 	if (lvds->enabled)
 		return;
+
+	ret = pm_runtime_get_sync(lvds->dev);
+	if (ret < 0)
+		DRM_ERROR("Failed to enable power domain: %d\n", ret);
 
 	ret = clk_prepare_enable(lvds->lvdsdpi_sel);
 	if (ret) {
@@ -443,6 +453,8 @@ static int mtk_drm_lvds_probe(struct platform_device *pdev)
 		return ret;
 	}
 
+	pm_runtime_enable(dev);
+
 	return 0;
 }
 
@@ -450,6 +462,7 @@ static int mtk_drm_lvds_remove(struct platform_device *pdev)
 {
 	struct mtk_lvds *lvds = platform_get_drvdata(pdev);
 
+	pm_runtime_disable(&pdev->dev);
 	drm_bridge_remove(&lvds->bridge);
 	return 0;
 }
