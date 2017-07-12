@@ -34,7 +34,7 @@
 #define MTK_SDMA_REQUESTS	127
 #define MTK_SDMA_CHANNELS	(CONFIG_SERIAL_8250_NR_UARTS * 2)
 
-#define DRV_NAME	"8250-mtk-dma"
+#define DRV_NAME		"8250-mtk-dma"
 
 /*---------------------------------------------------------------------------*/
 #define VFF_RX_INT_FLAG_CLR_B	(BIT(0) | BIT(1))
@@ -48,21 +48,21 @@
 /*VFF_RST*/
 #define VFF_WARM_RST_B		BIT(0)
 /*VFF_EN*/
-#define VFF_EN_B			BIT(0)
+#define VFF_EN_B		BIT(0)
 /*VFF_STOP*/
-#define VFF_STOP_B			BIT(0)
+#define VFF_STOP_B		BIT(0)
 #define VFF_STOP_CLR_B		0
 /*VFF_FLUSH*/
-#define VFF_FLUSH_B			BIT(0)
+#define VFF_FLUSH_B		BIT(0)
 #define VFF_FLUSH_CLR_B		0
 /*VFF_4G_SUPPORT*/
-#define VFF_4G_SUPPORT_B		BIT(0)
+#define VFF_4G_SUPPORT_B	BIT(0)
 #define VFF_4G_SUPPORT_CLR_B	0
-
 
 #define VFF_TX_THRE(n)		((n)*7/8)	/* tx_vff_left_size >= tx_vff_thrs */
 #define VFF_RX_THRE(n)		((n)*3/4)	/* trigger level of rx vfifo */
 
+#define MTK_DMA_RING_SIZE	0x0000fffflU
 /*---------------------------------------------------------------------------*/
 
 struct mtk_dmadev {
@@ -83,7 +83,7 @@ struct mtk_chan {
 	struct list_head node;
 	struct dma_slave_config	cfg;
 	void __iomem *channel_base;
-	struct mtk_desc *desc;
+	struct mtk_dma_desc *desc;
 
 	bool paused;
 	bool requested;
@@ -101,33 +101,33 @@ struct mtk_chan {
 	atomic_t entry;		/* entry count */
 };
 
-struct mtk_sg {
+struct mtk_dma_sg {
 	dma_addr_t addr;
 	unsigned int en;		/* number of elements (24-bit) */
 	unsigned int fn;		/* number of frames (16-bit) */
 };
 
-struct mtk_desc {
+struct mtk_dma_desc {
 	struct virt_dma_desc vd;
 	enum dma_transfer_direction dir;
 	dma_addr_t dev_addr;
 
 	unsigned int sglen;
-	struct mtk_sg sg[0];
+	struct mtk_dma_sg sg[0];
 };
 
 enum {
 	VFF_INT_FLAG		= 0x00,
-	VFF_INT_EN			= 0x04,
-	VFF_EN				= 0x08,
-	VFF_RST				= 0x0c,
-	VFF_STOP			= 0x10,
-	VFF_FLUSH			= 0x14,
-	VFF_ADDR			= 0x1c,
-	VFF_LEN				= 0x24,
-	VFF_THRE			= 0x28,
-	VFF_WPT				= 0x2c,
-	VFF_RPT				= 0x30,
+	VFF_INT_EN		= 0x04,
+	VFF_EN			= 0x08,
+	VFF_RST			= 0x0c,
+	VFF_STOP		= 0x10,
+	VFF_FLUSH		= 0x14,
+	VFF_ADDR		= 0x1c,
+	VFF_LEN			= 0x24,
+	VFF_THRE		= 0x28,
+	VFF_WPT			= 0x2c,
+	VFF_RPT			= 0x30,
 	/*TX: the buffer size HW can read. RX: the buffer size SW can read.*/
 	VFF_VALID_SIZE		= 0x3c,
 	/*TX: the buffer size SW can write. RX: the buffer size HW can write.*/
@@ -151,9 +151,9 @@ static inline struct mtk_chan *to_mtk_dma_chan(struct dma_chan *c)
 	return container_of(c, struct mtk_chan, vc.chan);
 }
 
-static inline struct mtk_desc *to_mtk_dma_desc(struct dma_async_tx_descriptor *t)
+static inline struct mtk_dma_desc *to_mtk_dma_desc(struct dma_async_tx_descriptor *t)
 {
-	return container_of(t, struct mtk_desc, vd.tx);
+	return container_of(t, struct mtk_dma_desc, vd.tx);
 }
 
 static void mtk_dma_chan_write(struct mtk_chan *c, unsigned int reg, unsigned int val)
@@ -251,7 +251,7 @@ static int mtk_dma_check_flush_result(struct dma_chan *chan)
 	return 0;
 }
 
-static int mtk_dma_8250_tx_write(struct dma_chan *chan)
+static int mtk_dma_tx_write(struct dma_chan *chan)
 {
 	struct mtk_chan *c = to_mtk_dma_chan(chan);
 	struct mtk_dmadev *mtkd = to_mtk_dma_dev(chan->device);
@@ -283,7 +283,7 @@ static int mtk_dma_8250_tx_write(struct dma_chan *chan)
 
 				/*xmit buffer mapping DMA buffer, So don't need write data?*/
 
-				if ((wpt & 0x0000ffffl) == (vff_len - 1))
+				if ((wpt & MTK_DMA_RING_SIZE) == (vff_len - 1))
 					mtk_dma_chan_write(c, VFF_WPT, (~wpt)&0x10000);
 				else
 					mtk_dma_chan_write(c, VFF_WPT, wpt+1);
@@ -303,7 +303,7 @@ static int mtk_dma_8250_tx_write(struct dma_chan *chan)
 }
 
 
-static void mtk_dma_8250_start_tx(struct mtk_chan *c)
+static void mtk_dma_start_tx(struct mtk_chan *c)
 {
 	if (mtk_dma_chan_read(c, VFF_LEFT_SIZE) == 0) {
 		dev_info(c->vc.chan.device->dev, "%s maybe need fix? %d @L %d\n",
@@ -313,7 +313,7 @@ static void mtk_dma_8250_start_tx(struct mtk_chan *c)
 		reinit_completion(&c->done);
 		atomic_inc(&c->loopcnt);
 		atomic_inc(&c->loopcnt);
-		mtk_dma_8250_tx_write(&c->vc.chan);
+		mtk_dma_tx_write(&c->vc.chan);
 	}
 	c->paused = false;
 }
@@ -322,14 +322,14 @@ static void mtk_dma_get_rx_size(struct mtk_chan *c)
 {
 	unsigned int count;
 	unsigned int rdptr, wrptr, wrreg, rdreg;
-	size_t rx_size;
+	unsigned int rx_size;
 
 	rx_size = c->cfg.src_addr_width*1024;
 
 	rdreg = mtk_dma_chan_read(c, VFF_RPT);
 	wrreg = mtk_dma_chan_read(c, VFF_WPT);
-	rdptr = rdreg & 0x0000ffffl;
-	wrptr = wrreg & 0x0000ffffl;
+	rdptr = rdreg & MTK_DMA_RING_SIZE;
+	wrptr = wrreg & MTK_DMA_RING_SIZE;
 	count = ((rdreg ^ wrreg) & 0x00010000) ? (wrptr + rx_size - rdptr) : (wrptr - rdptr);
 
 	c->remain_size = count;
@@ -338,11 +338,11 @@ static void mtk_dma_get_rx_size(struct mtk_chan *c)
 	mtk_dma_chan_write(c, VFF_RPT, wrreg);
 }
 
-static void mtk_dma_8250_start_rx(struct mtk_chan *c)
+static void mtk_dma_start_rx(struct mtk_chan *c)
 {
 	struct dma_chan *chan = &(c->vc.chan);
 	struct mtk_dmadev *mtkd = to_mtk_dma_dev(chan->device);
-	struct mtk_desc *d = c->desc;
+	struct mtk_dma_desc *d = c->desc;
 
 	if (mtk_dma_chan_read(c, VFF_VALID_SIZE) != 0 && d != NULL && d->vd.tx.cookie != 0) {
 		mtk_dma_get_rx_size(c);
@@ -379,7 +379,7 @@ static void mtk_dma_reset(struct mtk_chan *c)
 	else if (c->cfg.direction == DMA_MEM_TO_DEV)
 		mtk_dma_chan_write(c, VFF_WPT, 0);
 	else
-		dev_info(c->vc.chan.device->dev, "Unknown direction\n");
+		dev_info(c->vc.chan.device->dev, "Unknown direction.\n");
 
 	if (mtkd->support_33bits)
 		mtk_dma_chan_write(c, VFF_4G_SUPPORT, VFF_4G_SUPPORT_CLR_B);
@@ -434,7 +434,7 @@ static void mtk_dma_rx_sched(struct mtk_chan *c)
 	struct mtk_dmadev *mtkd = to_mtk_dma_dev(chan->device);
 
 	if (atomic_read(&c->entry) < 1) {
-		mtk_dma_8250_start_rx(c);
+		mtk_dma_start_rx(c);
 	} else {
 		spin_lock(&mtkd->lock);
 		if (list_empty(&mtkd->pending))
@@ -477,7 +477,7 @@ static void mtk_dma_sched(unsigned long data)
 
 			c->desc = to_mtk_dma_desc(&vd->tx);
 			list_del_init(&c->node);
-			mtk_dma_8250_start_tx(c);
+			mtk_dma_start_tx(c);
 		} else {
 			dev_warn(c->vc.chan.device->dev, "%s maybe error @Line%d\n",
 				__func__, __LINE__);
@@ -510,7 +510,7 @@ static void mtk_dma_free_chan_resources(struct dma_chan *chan)
 	struct mtk_dmadev *mtkd = to_mtk_dma_dev(chan->device);
 	struct mtk_chan *c = to_mtk_dma_chan(chan);
 
-	if (c->requested == true) {
+	if (c->requested) {
 		c->requested = false;
 		free_irq(mtkd->dma_irq + c->dma_ch, chan);
 	}
@@ -536,7 +536,7 @@ static enum dma_status mtk_dma_tx_status(struct dma_chan *chan,
 
 	spin_lock_irqsave(&c->vc.lock, flags);
 	if (ret == DMA_IN_PROGRESS) {
-		c->rx_ptr = mtk_dma_chan_read(c, VFF_RPT) & 0x0000ffffl;
+		c->rx_ptr = mtk_dma_chan_read(c, VFF_RPT) & MTK_DMA_RING_SIZE;
 		txstate->residue = c->rx_ptr;
 	} else if (ret == DMA_COMPLETE && c->cfg.direction == DMA_DEV_TO_MEM) {
 		txstate->residue = c->remain_size;
@@ -548,9 +548,9 @@ static enum dma_status mtk_dma_tx_status(struct dma_chan *chan,
 	return ret;
 }
 
-static unsigned int mtk_dma_desc_size(struct mtk_desc *d)
+static unsigned int mtk_dma_desc_size(struct mtk_dma_desc *d)
 {
-	struct mtk_sg *sg;
+	struct mtk_dma_sg *sg;
 	unsigned int i;
 	unsigned int size;
 
@@ -568,7 +568,7 @@ static struct dma_async_tx_descriptor *mtk_dma_prep_slave_sg(
 	struct mtk_chan *c = to_mtk_dma_chan(chan);
 	enum dma_slave_buswidth dev_width;
 	struct scatterlist *sgent;
-	struct mtk_desc *d;
+	struct mtk_dma_desc *d;
 	dma_addr_t dev_addr;
 	unsigned int i, j, en, frame_bytes;
 
@@ -586,7 +586,7 @@ static struct dma_async_tx_descriptor *mtk_dma_prep_slave_sg(
 	}
 
 	/* Now allocate and setup the descriptor. */
-	d = kzalloc(sizeof(*d) + sglen * sizeof(d->sg[0]), GFP_KERNEL);
+	d = kzalloc(sizeof(*d) + sglen * sizeof(d->sg[0]), GFP_ATOMIC);
 	if (!d)
 		return NULL;
 
@@ -632,7 +632,7 @@ static void mtk_dma_issue_pending(struct dma_chan *chan)
 		if (vchan_issue_pending(&c->vc) && !c->desc) {
 			vd = vchan_find_desc(&c->vc, cookie);
 			c->desc = to_mtk_dma_desc(&vd->tx);
-			mtk_dma_8250_start_tx(c);
+			mtk_dma_start_tx(c);
 		}
 	} else
 		dev_info(c->vc.chan.device->dev, "Unknown direction\n");
@@ -657,7 +657,7 @@ static irqreturn_t mtk_dma_rx_interrupt(int irq, void *dev_id)
 		spin_unlock(&mtkd->lock);
 		tasklet_schedule(&mtkd->task);
 	} else {
-		mtk_dma_8250_start_rx(c);
+		mtk_dma_start_rx(c);
 	}
 	spin_unlock_irqrestore(&c->vc.lock, flags);
 
@@ -669,7 +669,7 @@ static irqreturn_t mtk_dma_tx_interrupt(int irq, void *dev_id)
 	struct dma_chan *chan = (struct dma_chan *)dev_id;
 	struct mtk_chan *c = to_mtk_dma_chan(chan);
 	struct mtk_dmadev *mtkd = to_mtk_dma_dev(chan->device);
-	struct mtk_desc *d = c->desc;
+	struct mtk_dma_desc *d = c->desc;
 	unsigned long flags;
 
 	spin_lock_irqsave(&c->vc.lock, flags);
@@ -714,7 +714,7 @@ static int mtk_dma_slave_config(struct dma_chan *chan,
 		mtk_dma_chan_write(c, VFF_INT_FLAG, VFF_RX_INT_FLAG_CLR_B);
 		mtk_dma_chan_write(c, VFF_EN, VFF_EN_B);
 
-		if (c->requested == false) {
+		if (!c->requested) {
 			atomic_set(&c->entry, 0);
 			c->requested = true;
 			ret = request_irq(mtkd->dma_irq + c->dma_ch, mtk_dma_rx_interrupt,
@@ -731,7 +731,7 @@ static int mtk_dma_slave_config(struct dma_chan *chan,
 		mtk_dma_chan_write(c, VFF_INT_FLAG, VFF_TX_INT_FLAG_CLR_B);
 		mtk_dma_chan_write(c, VFF_EN, VFF_EN_B);
 
-		if (c->requested == false) {
+		if (!c->requested) {
 			c->requested = true;
 			ret = request_irq(mtkd->dma_irq + c->dma_ch, mtk_dma_tx_interrupt,
 					IRQF_TRIGGER_NONE, DRV_NAME, chan);
@@ -741,7 +741,7 @@ static int mtk_dma_slave_config(struct dma_chan *chan,
 			}
 		}
 	} else
-		dev_info(chan->device->dev, "Unknown direction\n");
+		dev_info(chan->device->dev, "Unknown direction!\n");
 
 	if (mtkd->support_33bits)
 		mtk_dma_chan_write(c, VFF_4G_SUPPORT, VFF_4G_SUPPORT_B);
