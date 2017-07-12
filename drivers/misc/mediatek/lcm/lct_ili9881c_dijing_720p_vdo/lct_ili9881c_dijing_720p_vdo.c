@@ -554,11 +554,11 @@ static void lcm_setbacklight_hbm(unsigned int level)
 	{
 		level = last_level;
 		hbm_enable = 0;
-		//lct_klcm_ili9881_enable_hbm(0);
+		lct_klcm_ili9881_enable_hbm(0);
 	}
 	else{
 		hbm_enable = 1;
-		//lct_klcm_ili9881_enable_hbm(1);
+		lct_klcm_ili9881_enable_hbm(1);
 	}
 	level_hight=(level & 0xf0)>>4;
 	level_low=(level & 0x0f)<<4;
