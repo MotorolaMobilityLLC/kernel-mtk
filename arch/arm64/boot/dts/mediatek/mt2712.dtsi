@@ -367,10 +367,10 @@
 			#interrupt-cells = <3>;
 			interrupt-parent = <&gic>;
 			interrupt-controller;
-			reg = <0 0x10510000 0 0x1000>,
-			      <0 0x10520000 0 0x1000>,
-			      <0 0x10540000 0 0x2000>,
-			      <0 0x10560000 0 0x2000>;
+			reg = <0 0x10510000 0 0x10000>,
+			      <0 0x10520000 0 0x20000>,
+			      <0 0x10540000 0 0x20000>,
+			      <0 0x10560000 0 0x20000>;
 			interrupts = <GIC_PPI 9
 				(GIC_CPU_MASK_SIMPLE(6) | IRQ_TYPE_LEVEL_HIGH)>;
 		};
