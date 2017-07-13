@@ -47,3 +47,7 @@ rootwait initcall_debug=1 loglevel=8 earlycon=uart8250,mmio32,0x11002000";
 	assigned-clock-parents = <&topckgen CLK_TOP_MSDCPLL>;
 	non-removable;
 };
+
+&nr {
+	status = "okay";
+};
