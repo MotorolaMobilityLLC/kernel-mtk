@@ -1972,7 +1972,7 @@ void force_reset_guitar(void)
 	GTP_INFO("force_reset_guitar");
 	is_resetting = 1;
 	/* mt_eint_mask(CUST_EINT_TOUCH_PANEL_NUM); */
-	disable_irq(touch_irq);
+	disable_irq_wake(touch_irq);
 
 	tpd_gpio_output(GTP_RST_PORT, 0);
 	tpd_gpio_output(GTP_INT_PORT, 0);
@@ -3051,10 +3051,10 @@ static s8 gtp_wakeup_sleep(struct i2c_client *client)
 			doze_status = DOZE_DISABLED;
 
 			/* mt_eint_mask(CUST_EINT_TOUCH_PANEL_NUM); */
-			disable_irq(touch_irq);
+			disable_irq_wake(touch_irq);
 			gtp_reset_guitar(client, 20);
 			/* mt_eint_unmask(CUST_EINT_TOUCH_PANEL_NUM); */
-			enable_irq(touch_irq);
+			enable_irq_wake(touch_irq);
 		} else {
 			GTP_DEBUG("wakeup, no reset guitar");
 			doze_status = DOZE_DISABLED;
@@ -3145,7 +3145,7 @@ static void tpd_suspend(struct device *h)
 		ret = gtp_enter_doze(i2c_client_point);
 		gesture_suspend_resume_flag = 1;
 	} else {
-		disable_irq(touch_irq);
+		disable_irq_wake(touch_irq);
 		ret = gtp_enter_sleep(i2c_client_point);
 		if (ret < 0)
 			GTP_ERROR("GTP early suspend failed.");
@@ -3153,7 +3153,7 @@ static void tpd_suspend(struct device *h)
 	}
 #else
 	/* mt_eint_mask(CUST_EINT_TOUCH_PANEL_NUM); */
-	disable_irq(touch_irq);
+	disable_irq_wake(touch_irq);
 	ret = gtp_enter_sleep(i2c_client_point);
 	if (ret < 0)
 		GTP_ERROR("GTP early suspend failed.");
@@ -3246,7 +3246,7 @@ static void tpd_off(void)
 
 	tpd_halt = 1;
 	/* mt_eint_mask(CUST_EINT_TOUCH_PANEL_NUM); */
-	disable_irq(touch_irq);
+	disable_irq_wake(touch_irq);
 }
 
 static void tpd_on(void)
