@@ -237,10 +237,10 @@ struct snd_pcm_substream;
 struct mtk_base_irq_data;
 
 struct mt2701_i2s_data {
-	int i2s_ctrl_reg;
-	int i2s_pwn_shift;
-	int i2s_asrc_fs_shift;
-	int i2s_asrc_fs_mask;
+	unsigned int i2s_ctrl_reg;
+	unsigned int i2s_pwn_shift;
+	unsigned int i2s_asrc_fs_shift;
+	unsigned int i2s_asrc_fs_mask;
 };
 
 enum mt2701_i2s_dir {
@@ -278,19 +278,19 @@ enum mt2701_tdm_mode {
 };
 
 struct mt2701_tdm_data {
-	int tdm_bck_reg;
-	int tdm_plldiv_shift;
-	int tdm_pll_sel_shift;
-	int tdm_bck_on_shift;
-	int tdm_ctrl_reg;
-	int tdm_ctrl_2nd_reg;
-	int tdm_conn_reg;
-	int tdm_conn_2nd_reg;
-	int tdm_lrck_cycle_shift;
-	int tdm_on_shift;
-	int tdm_agent_reg;
-	int tdm_agent_bit_width_shift;
-	int tdm_agent_ch_num_shift;
+	unsigned int tdm_bck_reg;
+	unsigned int tdm_plldiv_shift;
+	unsigned int tdm_pll_sel_shift;
+	unsigned int tdm_bck_on_shift;
+	unsigned int tdm_ctrl_reg;
+	unsigned int tdm_ctrl_2nd_reg;
+	unsigned int tdm_conn_reg;
+	unsigned int tdm_conn_2nd_reg;
+	unsigned int tdm_lrck_cycle_shift;
+	unsigned int tdm_on_shift;
+	unsigned int tdm_agent_reg;
+	unsigned int tdm_agent_bit_width_shift;
+	unsigned int tdm_agent_ch_num_shift;
 };
 
 struct mt2701_tdm_path {

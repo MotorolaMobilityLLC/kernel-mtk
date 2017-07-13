@@ -2187,7 +2187,7 @@ static int mt2701_tdm_loopback_sel_set(struct snd_kcontrol *kcontrol,
 	struct mtk_base_afe *afe = snd_soc_platform_get_drvdata(platform);
 	struct mt2701_afe_private *afe_priv = afe->platform_priv;
 
-	afe_priv->tdm_coclk_info.src = ucontrol->value.integer.value[0];
+	afe_priv->tdm_coclk_info.src = (int)ucontrol->value.integer.value[0];
 	regmap_update_bits(afe->regmap, AFE_TDM_IN_CON1, (1 << 15),
 				 !(afe_priv->tdm_coclk_info.src) << 15);
 	return 0;
@@ -2200,7 +2200,7 @@ static int mt2701_tdm_loopback_switch_get(struct snd_kcontrol *kcontrol,
 	struct mtk_base_afe *afe = snd_soc_platform_get_drvdata(platform);
 	struct mt2701_afe_private *afe_priv = afe->platform_priv;
 
-	ucontrol->value.integer.value[0] = afe_priv->tdm_coclk;
+	ucontrol->value.integer.value[0] = (int)afe_priv->tdm_coclk;
 	return 0;
 }
 
@@ -2212,10 +2212,10 @@ static int mt2701_tdm_loopback_switch_set(struct snd_kcontrol *kcontrol,
 	struct mt2701_afe_private *afe_priv = afe->platform_priv;
 	struct snd_soc_dai_driver *dai_driver;
 
-	if (ucontrol->value.integer.value[0] == afe_priv->tdm_coclk)
+	if (afe_priv->tdm_coclk == (bool)ucontrol->value.integer.value[0])
 		return 0;
 
-	afe_priv->tdm_coclk = ucontrol->value.integer.value[0];
+	afe_priv->tdm_coclk = (bool)ucontrol->value.integer.value[0];
 	if (afe_priv->tdm_coclk) {
 		dai_driver = find_dai_driver_by_id(mt2701_afe_pcm_dais, ARRAY_SIZE(mt2701_afe_pcm_dais),
 				afe_priv->tdm_coclk_info.src+MT2701_IO_TDMO1);
@@ -2257,7 +2257,7 @@ static int mt2701_i2so2_mclk_switch_get(struct snd_kcontrol *kcontrol,
 	struct mtk_base_afe *afe = snd_soc_platform_get_drvdata(platform);
 	struct mt2701_afe_private *afe_priv = afe->platform_priv;
 
-	ucontrol->value.integer.value[0] = afe_priv->i2so2_mclk;
+	ucontrol->value.integer.value[0] = (int)afe_priv->i2so2_mclk;
 	return 0;
 }
 
@@ -2268,10 +2268,10 @@ static int mt2701_i2so2_mclk_switch_set(struct snd_kcontrol *kcontrol,
 	struct mtk_base_afe *afe = snd_soc_platform_get_drvdata(platform);
 	struct mt2701_afe_private *afe_priv = afe->platform_priv;
 
-	if (ucontrol->value.integer.value[0] == afe_priv->i2so2_mclk)
+	if (afe_priv->i2so2_mclk == (bool)ucontrol->value.integer.value[0])
 		return 0;
 
-	afe_priv->i2so2_mclk = ucontrol->value.integer.value[0];
+	afe_priv->i2so2_mclk = (bool)ucontrol->value.integer.value[0];
 	if (afe_priv->i2so2_mclk)
 		afe_priv->clk_ctrl->enable_mclk(afe, 2);
 	else
