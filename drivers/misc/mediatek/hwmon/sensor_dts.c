@@ -17,97 +17,21 @@
 #ifdef CONFIG_CUSTOM_KERNEL_ALSPS
 #include <cust_alsps.h>
 #endif
-#ifdef CONFIG_CUSTOM_KERNEL_RGBW
-#include <cust_rgbw.h>
-#endif
-#ifdef CONFIG_CUSTOM_KERNEL_ACCELEROMETER
-#include <cust_acc.h>
-#endif
-#ifdef CONFIG_CUSTOM_KERNEL_GYROSCOPE
-#include <cust_gyro.h>
-#endif
-#ifdef CONFIG_CUSTOM_KERNEL_MAGNETOMETER
-#include <cust_mag.h>
-#endif
-#ifdef CONFIG_CUSTOM_KERNEL_BAROMETER
-#include <cust_baro.h>
-#endif
-#ifdef CONFIG_CUSTOM_KERNEL_HUMIDITY
-#include <cust_hmdy.h>
-#endif
 
-
+#define DEBUG_ON 1
+#if DEBUG_ON
 #define SENSOR_TAG				  "[Sensor dts] "
 #define SENSOR_ERR(fmt, args...)	pr_err(SENSOR_TAG fmt, ##args)
 #define SENSOR_LOG(fmt, args...)	pr_debug(SENSOR_TAG fmt, ##args)
-
-#ifdef CONFIG_CUSTOM_KERNEL_ACCELEROMETER
-struct acc_hw *get_accel_dts_func(const char *name, struct acc_hw *hw)
-{
-	int i, ret;
-	u32 i2c_num[] = {0};
-	u32 i2c_addr[G_CUST_I2C_ADDR_NUM] = {0};
-	u32 direction[] = {0};
-	u32 power_id[] = {0};
-	u32 power_vol[] = {0};
-	u32 firlen[] = {0};
-	u32 is_batch_supported[] = {0};
-	struct device_node *node = NULL;
-
-	SENSOR_LOG("Device Tree get accel info!\n");
-	if (name == NULL)
-		return NULL;
-
-	node = of_find_compatible_node(NULL, NULL, name);
-	if (node) {
-		ret = of_property_read_u32_array(node, "i2c_num", i2c_num, ARRAY_SIZE(i2c_num));
-		if (ret == 0)
-			hw->i2c_num	=	i2c_num[0];
-
-		ret = of_property_read_u32_array(node, "i2c_addr", i2c_addr, ARRAY_SIZE(i2c_addr));
-		if (ret == 0) {
-			for (i = 0; i < G_CUST_I2C_ADDR_NUM; i++)
-				hw->i2c_addr[i] = i2c_addr[i];
-		}
-
-		ret = of_property_read_u32_array(node, "direction", direction, ARRAY_SIZE(direction));
-		if (ret == 0)
-			hw->direction = direction[0];
-
-		ret = of_property_read_u32_array(node, "power_id", power_id, ARRAY_SIZE(power_id));
-		if (ret == 0) {
-			if (power_id[0] == 0xffff)
-				hw->power_id = -1;
-			else
-				hw->power_id	=	power_id[0];
-		}
-
-		ret = of_property_read_u32_array(node, "power_vol", power_vol, ARRAY_SIZE(power_vol));
-		if (ret == 0)
-			hw->power_vol	=	power_vol[0];
-
-		ret = of_property_read_u32_array(node, "firlen", firlen, ARRAY_SIZE(firlen));
-		if (ret == 0)
-			hw->firlen	=	firlen[0];
-
-		ret = of_property_read_u32_array(node, "is_batch_supported",
-			is_batch_supported, ARRAY_SIZE(is_batch_supported));
-		if (ret == 0)
-			hw->is_batch_supported		 = is_batch_supported[0];
-	} else {
-		SENSOR_ERR("Device Tree: can not find accel node!. Go to use old cust info\n");
-		return NULL;
-	}
-
-	return hw;
-}
-EXPORT_SYMBOL_GPL(get_accel_dts_func);
+#else
+#define SENSOR_ERR(fmt, args...)
+#define SENSOR_LOG(fmt, args...)
 #endif
 
 #ifdef CONFIG_CUSTOM_KERNEL_ALSPS
 struct alsps_hw *get_alsps_dts_func(const char *name, struct alsps_hw *hw)
 {
-	int i, ret;
+	int32_t i, ret;
 	u32 i2c_num[] = {0};
 	u32 i2c_addr[C_CUST_I2C_ADDR_NUM] = {0};
 	u32 power_id[] = {0};
@@ -123,370 +47,79 @@ struct alsps_hw *get_alsps_dts_func(const char *name, struct alsps_hw *hw)
 	struct device_node *node = NULL;
 
 	SENSOR_LOG("Device Tree get alsps info!\n");
-	if (name == NULL)
-		return NULL;
-
-	node = of_find_compatible_node(NULL, NULL, name);
-	if (node) {
-		ret = of_property_read_u32_array(node, "i2c_num", i2c_num, ARRAY_SIZE(i2c_num));
-	if (ret == 0)
-		hw->i2c_num	=	i2c_num[0];
-
-	ret = of_property_read_u32_array(node, "i2c_addr", i2c_addr, ARRAY_SIZE(i2c_addr));
-	if (ret == 0) {
-		for (i = 0; i < C_CUST_I2C_ADDR_NUM; i++)
-			hw->i2c_addr[i]   = i2c_addr[i];
-	}
-
-	ret = of_property_read_u32_array(node, "power_id", power_id, ARRAY_SIZE(power_id));
-	if (ret == 0) {
-		if (power_id[0] == 0xffff)
-			hw->power_id = -1;
-		else
-			hw->power_id	=	power_id[0];
-	}
-
-	ret = of_property_read_u32_array(node, "power_vol", power_vol, ARRAY_SIZE(power_vol));
-	if (ret == 0)
-		hw->power_vol	=	power_vol[0];
-
-	ret = of_property_read_u32_array(node, "als_level", als_level, ARRAY_SIZE(als_level));
-	if (ret == 0) {
-		for (i = 0; i < ARRAY_SIZE(als_level); i++)
-			hw->als_level[i]		 = als_level[i];
-	}
-
-	ret = of_property_read_u32_array(node, "als_value", als_value, ARRAY_SIZE(als_value));
-	if (ret == 0) {
-		for (i = 0; i < ARRAY_SIZE(als_value); i++)
-			hw->als_value[i]		 = als_value[i];
-	}
-
-	ret = of_property_read_u32_array(node, "polling_mode_ps", polling_mode_ps, ARRAY_SIZE(polling_mode_ps));
-	if (ret == 0)
-		hw->polling_mode_ps		 = polling_mode_ps[0];
-
-	ret = of_property_read_u32_array(node, "polling_mode_als", polling_mode_als, ARRAY_SIZE(polling_mode_als));
-	if (ret == 0)
-		hw->polling_mode_als		 = polling_mode_als[0];
-
-	ret = of_property_read_u32_array(node, "ps_threshold_high", ps_threshold_high, ARRAY_SIZE(ps_threshold_high));
-	if (ret == 0)
-		hw->ps_threshold_high		 = ps_threshold_high[0];
-
-	ret = of_property_read_u32_array(node, "ps_threshold_low", ps_threshold_low, ARRAY_SIZE(ps_threshold_low));
-	if (ret == 0)
-		hw->ps_threshold_low		 = ps_threshold_low[0];
-
-	ret = of_property_read_u32_array(node, "is_batch_supported_ps", is_batch_supported_ps,
-		ARRAY_SIZE(is_batch_supported_ps));
-	if (ret == 0)
-		hw->is_batch_supported_ps		 = is_batch_supported_ps[0];
-
-	ret = of_property_read_u32_array(node, "is_batch_supported_als", is_batch_supported_als,
-		ARRAY_SIZE(is_batch_supported_als));
-	if (ret == 0)
-		hw->is_batch_supported_als		 = is_batch_supported_als[0];
+	if (name == NULL) {
+		ret = -1;
 	} else {
-		SENSOR_ERR("Device Tree: can not find alsps node!. Go to use old cust info\n");
-		return NULL;
-	}
-	return hw;
-}
-EXPORT_SYMBOL_GPL(get_alsps_dts_func);
-#endif
-
-#ifdef CONFIG_CUSTOM_KERNEL_RGBW
-struct rgbw_hw *get_rgbw_dts_func(const char *name, struct rgbw_hw *hw)
-{
-	int i, ret;
-	u32 i2c_num[] = {0};
-	u32 i2c_addr[C_CUST_I2C_ADDR_NUM] = {0};
-	u32 power_id[] = {0};
-	u32 power_vol[] = {0};
-	u32 is_batch_supported[] = {0};
-	struct device_node *node = NULL;
-
-	SENSOR_LOG("Device Tree get rgbw info!\n");
-	if (name == NULL)
-		return NULL;
-
-	node = of_find_compatible_node(NULL, NULL, name);
-	if (node) {
-		ret = of_property_read_u32_array(node, "i2c_num", i2c_num, ARRAY_SIZE(i2c_num));
-	if (ret == 0)
-		hw->i2c_num	=	i2c_num[0];
-
-	ret = of_property_read_u32_array(node, "i2c_addr", i2c_addr, ARRAY_SIZE(i2c_addr));
-	if (ret == 0) {
-		for (i = 0; i < C_CUST_I2C_ADDR_NUM; i++)
-			hw->i2c_addr[i]   = i2c_addr[i];
-	}
-
-	ret = of_property_read_u32_array(node, "power_id", power_id, ARRAY_SIZE(power_id));
-	if (ret == 0) {
-		if (power_id[0] == 0xffff)
-			hw->power_id = -1;
-		else
-			hw->power_id	=	power_id[0];
-	}
-
-	ret = of_property_read_u32_array(node, "power_vol", power_vol, ARRAY_SIZE(power_vol));
-	if (ret == 0)
-		hw->power_vol	=	power_vol[0];
-
-	ret = of_property_read_u32_array(node, "is_batch_supported", is_batch_supported,
-		ARRAY_SIZE(is_batch_supported));
-	if (ret == 0)
-		hw->is_batch_supported		 = is_batch_supported[0];
-	} else {
-		SENSOR_ERR("Device Tree: can not find rgbw node!. Go to use old cust info\n");
-		return NULL;
-	}
-	return hw;
-}
-EXPORT_SYMBOL_GPL(get_rgbw_dts_func);
-#endif
-
-#ifdef CONFIG_CUSTOM_KERNEL_MAGNETOMETER
-struct mag_hw *get_mag_dts_func(const char *name, struct mag_hw *hw)
-{
-	int i, ret;
-	u32 i2c_num[] = {0};
-	u32 i2c_addr[M_CUST_I2C_ADDR_NUM] = {0};
-	u32 direction[] = {0};
-	u32 power_id[] = {0};
-	u32 power_vol[] = {0};
-	u32 is_batch_supported[] = {0};
-	struct device_node *node = NULL;
-
-	SENSOR_LOG("Device Tree get mag info!\n");
-	if (name == NULL)
-		return NULL;
-
-	node = of_find_compatible_node(NULL, NULL, name);
-	if (node) {
-		ret = of_property_read_u32_array(node, "i2c_num", i2c_num, ARRAY_SIZE(i2c_num));
+		node = of_find_compatible_node(NULL, NULL, name);
+		if (node != NULL) {
+			ret = of_property_read_u32_array(node, "i2c_num", i2c_num, ARRAY_SIZE(i2c_num));
 		if (ret == 0)
-			hw->i2c_num	=	i2c_num[0];
+			hw->i2c_num	=	(int)i2c_num[0];
 
-		ret = of_property_read_u32_array(node, "i2c_addr", i2c_addr, ARRAY_SIZE(i2c_addr));
+		ret += of_property_read_u32_array(node, "i2c_addr", i2c_addr, ARRAY_SIZE(i2c_addr));
 		if (ret == 0) {
-			for (i = 0; i < M_CUST_I2C_ADDR_NUM; i++)
-				hw->i2c_addr[i]   = i2c_addr[i];
+			for (i = 0; i < C_CUST_I2C_ADDR_NUM; i++)
+				hw->i2c_addr[i]   = (u8)i2c_addr[i];
 		}
 
-		ret = of_property_read_u32_array(node, "direction", direction, ARRAY_SIZE(direction));
-		if (ret == 0)
-			hw->direction = direction[0];
-
-		ret = of_property_read_u32_array(node, "power_id", power_id, ARRAY_SIZE(power_id));
+		ret += of_property_read_u32_array(node, "power_id", power_id, ARRAY_SIZE(power_id));
 		if (ret == 0) {
-			if (power_id[0] == 0xffff)
+			if (power_id[0] == 0xffffU)
 				hw->power_id = -1;
 			else
-				hw->power_id	=	 power_id[0];
+				hw->power_id	=	(int)power_id[0];
 		}
 
-		ret = of_property_read_u32_array(node, "power_vol", power_vol, ARRAY_SIZE(power_vol));
+		ret += of_property_read_u32_array(node, "power_vol", power_vol, ARRAY_SIZE(power_vol));
 		if (ret == 0)
-			hw->power_vol	 =	  power_vol[0];
+			hw->power_vol	=	(int)power_vol[0];
 
-		ret = of_property_read_u32_array(node, "is_batch_supported", is_batch_supported,
-			ARRAY_SIZE(is_batch_supported));
+		ret += of_property_read_u32_array(node, "als_level", als_level, ARRAY_SIZE(als_level));
+		if (ret == 0) {
+			for (i = 0; i < (int32_t)ARRAY_SIZE(als_level); i++)
+				hw->als_level[i]		 = als_level[i];
+		}
+
+		ret += of_property_read_u32_array(node, "als_value", als_value, ARRAY_SIZE(als_value));
+		if (ret == 0) {
+			for (i = 0; i < (int32_t)ARRAY_SIZE(als_value); i++)
+				hw->als_value[i]		 = als_value[i];
+		}
+
+		ret += of_property_read_u32_array(node, "polling_mode_ps",
+					polling_mode_ps, ARRAY_SIZE(polling_mode_ps));
 		if (ret == 0)
-			hw->is_batch_supported		   = is_batch_supported[0];
-	} else {
-		SENSOR_ERR("Device Tree: can not find mag node!. Go to use old cust info\n");
-		return NULL;
+			hw->polling_mode_ps		 = (int)polling_mode_ps[0];
+
+		ret += of_property_read_u32_array(node, "polling_mode_als",
+					polling_mode_als, ARRAY_SIZE(polling_mode_als));
+		if (ret == 0)
+			hw->polling_mode_als		 = (int)polling_mode_als[0];
+
+		ret += of_property_read_u32_array(node, "ps_threshold_high",
+					ps_threshold_high, ARRAY_SIZE(ps_threshold_high));
+		if (ret == 0)
+			hw->ps_threshold_high		 = ps_threshold_high[0];
+
+		ret += of_property_read_u32_array(node, "ps_threshold_low",
+					ps_threshold_low, ARRAY_SIZE(ps_threshold_low));
+		if (ret == 0)
+			hw->ps_threshold_low		 = ps_threshold_low[0];
+
+		ret += of_property_read_u32_array(node, "is_batch_supported_ps", is_batch_supported_ps,
+			ARRAY_SIZE(is_batch_supported_ps));
+		if (ret == 0)
+			hw->is_batch_supported_ps		 = (bool)is_batch_supported_ps[0];
+
+		ret += of_property_read_u32_array(node, "is_batch_supported_als", is_batch_supported_als,
+			ARRAY_SIZE(is_batch_supported_als));
+		if (ret == 0)
+			hw->is_batch_supported_als		 = (bool)is_batch_supported_als[0];
+		} else {
+			SENSOR_ERR("Device Tree: can not find alsps node!. Go to use old cust info\n");
+			ret = -1;
+		}
 	}
-	return hw;
+	return (ret == 0) ? hw:NULL;
 }
-EXPORT_SYMBOL_GPL(get_mag_dts_func);
-#endif
-
-#ifdef CONFIG_CUSTOM_KERNEL_GYROSCOPE
-struct gyro_hw *get_gyro_dts_func(const char *name, struct gyro_hw *hw)
-{
-	int i, ret;
-	u32 i2c_num[] = {0};
-	u32 i2c_addr[GYRO_CUST_I2C_ADDR_NUM] = {0};
-	u32 direction[] = {0};
-	u32 power_id[] = {0};
-	u32 power_vol[] = {0};
-	u32 firlen[] = {0};
-	u32 is_batch_supported[] = {0};
-	struct device_node *node = NULL;
-
-	SENSOR_LOG("Device Tree get gyro info!\n");
-	if (name == NULL)
-		return NULL;
-
-	node = of_find_compatible_node(NULL, NULL, name);
-	if (node) {
-		ret = of_property_read_u32_array(node, "i2c_num", i2c_num, ARRAY_SIZE(i2c_num));
-		if (ret == 0)
-			hw->i2c_num	=	i2c_num[0];
-
-		ret = of_property_read_u32_array(node, "i2c_addr", i2c_addr, ARRAY_SIZE(i2c_addr));
-		if (ret == 0) {
-			for (i = 0; i < GYRO_CUST_I2C_ADDR_NUM; i++)
-				hw->i2c_addr[i] = i2c_addr[i];
-		}
-
-		ret = of_property_read_u32_array(node, "direction", direction, ARRAY_SIZE(direction));
-		if (ret == 0)
-			hw->direction = direction[0];
-
-		ret = of_property_read_u32_array(node, "power_id", power_id, ARRAY_SIZE(power_id));
-		if (ret == 0) {
-			if (power_id[0] == 0xffff)
-				hw->power_id = -1;
-			else
-				hw->power_id	=	power_id[0];
-		}
-
-		ret = of_property_read_u32_array(node, "power_vol", power_vol, ARRAY_SIZE(power_vol));
-		if (ret == 0)
-			hw->power_vol	=	power_vol[0];
-
-		ret = of_property_read_u32_array(node, "firlen", firlen, ARRAY_SIZE(firlen));
-		if (ret == 0)
-			hw->firlen	=	firlen[0];
-
-		ret = of_property_read_u32_array(node, "is_batch_supported", is_batch_supported,
-			ARRAY_SIZE(is_batch_supported));
-		if (ret == 0)
-			hw->is_batch_supported		 = is_batch_supported[0];
-	} else {
-		SENSOR_ERR("Device Tree: can not find gyro node!. Go to use old cust info\n");
-		return NULL;
-	}
-	return hw;
-}
-EXPORT_SYMBOL_GPL(get_gyro_dts_func);
-#endif
-
-#ifdef CONFIG_CUSTOM_KERNEL_BAROMETER
-struct baro_hw *get_baro_dts_func(const char *name, struct baro_hw *hw)
-{
-	int i, ret;
-	u32 i2c_num[] = {0};
-	u32 i2c_addr[C_CUST_I2C_ADDR_NUM] = {0};
-	u32 direction[] = {0};
-	u32 power_id[] = {0};
-	u32 power_vol[] = {0};
-	u32 firlen[] = {0};
-	u32 is_batch_supported[] = {0};
-	struct device_node *node = NULL;
-
-	SENSOR_LOG("Device Tree get gyro info!\n");
-	if (name == NULL)
-		return NULL;
-
-	node = of_find_compatible_node(NULL, NULL, name);
-	if (node) {
-		ret = of_property_read_u32_array(node, "i2c_num", i2c_num, ARRAY_SIZE(i2c_num));
-		if (ret == 0)
-			hw->i2c_num	=	i2c_num[0];
-
-		ret = of_property_read_u32_array(node, "i2c_addr", i2c_addr, ARRAY_SIZE(i2c_addr));
-		if (ret == 0) {
-			for (i = 0; i < GYRO_CUST_I2C_ADDR_NUM; i++)
-				hw->i2c_addr[i] = i2c_addr[i];
-		}
-
-		ret = of_property_read_u32_array(node, "direction", direction, ARRAY_SIZE(direction));
-		if (ret == 0)
-			hw->direction = direction[0];
-
-		ret = of_property_read_u32_array(node, "power_id", power_id, ARRAY_SIZE(power_id));
-		if (ret == 0) {
-			if (power_id[0] == 0xffff)
-				hw->power_id = -1;
-			else
-				hw->power_id	=	power_id[0];
-		}
-
-		ret = of_property_read_u32_array(node, "power_vol", power_vol, ARRAY_SIZE(power_vol));
-		if (ret == 0)
-			hw->power_vol	=	power_vol[0];
-
-		ret = of_property_read_u32_array(node, "firlen", firlen, ARRAY_SIZE(firlen));
-		if (ret == 0)
-			hw->firlen	=	firlen[0];
-
-		ret = of_property_read_u32_array(node, "is_batch_supported", is_batch_supported,
-			ARRAY_SIZE(is_batch_supported));
-		if (ret == 0)
-			hw->is_batch_supported		 = is_batch_supported[0];
-	} else {
-		SENSOR_ERR("Device Tree: can not find gyro node!. Go to use old cust info\n");
-		return NULL;
-	}
-	return hw;
-}
-EXPORT_SYMBOL_GPL(get_baro_dts_func);
-#endif
-
-#ifdef CONFIG_CUSTOM_KERNEL_HUMIDITY
-struct hmdy_hw *get_hmdy_dts_func(const char *name, struct hmdy_hw *hw)
-{
-	int i, ret;
-	u32 i2c_num[] = {0};
-	u32 i2c_addr[C_CUST_I2C_ADDR_NUM] = {0};
-	u32 direction[] = {0};
-	u32 power_id[] = {0};
-	u32 power_vol[] = {0};
-	u32 firlen[] = {0};
-	u32 is_batch_supported[] = {0};
-	struct device_node *node = NULL;
-
-	SENSOR_LOG("Device Tree get gyro info!\n");
-	if (name == NULL)
-		return NULL;
-
-	node = of_find_compatible_node(NULL, NULL, name);
-	if (node) {
-		ret = of_property_read_u32_array(node, "i2c_num", i2c_num, ARRAY_SIZE(i2c_num));
-		if (ret == 0)
-			hw->i2c_num	=	i2c_num[0];
-
-		ret = of_property_read_u32_array(node, "i2c_addr", i2c_addr, ARRAY_SIZE(i2c_addr));
-		if (ret == 0) {
-			for (i = 0; i < GYRO_CUST_I2C_ADDR_NUM; i++)
-				hw->i2c_addr[i] = i2c_addr[i];
-		}
-
-		ret = of_property_read_u32_array(node, "direction", direction, ARRAY_SIZE(direction));
-		if (ret == 0)
-			hw->direction = direction[0];
-
-		ret = of_property_read_u32_array(node, "power_id", power_id, ARRAY_SIZE(power_id));
-		if (ret == 0) {
-			if (power_id[0] == 0xffff)
-				hw->power_id = -1;
-			else
-				hw->power_id	=	power_id[0];
-		}
-
-		ret = of_property_read_u32_array(node, "power_vol", power_vol, ARRAY_SIZE(power_vol));
-		if (ret == 0)
-			hw->power_vol	=	power_vol[0];
-
-		ret = of_property_read_u32_array(node, "firlen", firlen, ARRAY_SIZE(firlen));
-		if (ret == 0)
-			hw->firlen	=	firlen[0];
-
-		ret = of_property_read_u32_array(node, "is_batch_supported", is_batch_supported,
-			ARRAY_SIZE(is_batch_supported));
-		if (ret == 0)
-			hw->is_batch_supported		 = is_batch_supported[0];
-	} else {
-		SENSOR_ERR("Device Tree: can not find gyro node!. Go to use old cust info\n");
-		return NULL;
-	}
-	return hw;
-}
-EXPORT_SYMBOL_GPL(get_hmdy_dts_func);
 #endif

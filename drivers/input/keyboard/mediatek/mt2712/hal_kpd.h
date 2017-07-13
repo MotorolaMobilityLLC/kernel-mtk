@@ -33,7 +33,7 @@ extern void __iomem *kp_base;
 #define KP_COL2_SEL             (1 << 12)
 
 #define KPD_DEBOUNCE_MASK	((1U << 14) - 1)
-#define KPD_DOUBLE_KEY_MASK	(1 << 0)
+#define KPD_DOUBLE_KEY_MASK	(1U << 0)
 
 /*function define*/
 void kpd_enable(int enable);
@@ -46,8 +46,8 @@ void kpd_double_key_enable(int en);
 
 extern struct input_dev *kpd_input_dev;
 
-#define KPD_NUM_MEMS	5
-#define KPD_MEM5_BITS	8
+#define KPD_NUM_MEMS	5U
+#define KPD_MEM5_BITS	8U
 
-#define KPD_NUM_KEYS	72	/* 4 * 16 + KPD_MEM5_BITS */
+#define KPD_NUM_KEYS	72U	/* 4 * 16 + KPD_MEM5_BITS */
 #endif
