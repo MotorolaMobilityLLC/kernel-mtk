@@ -162,12 +162,13 @@ static int intr_flag = 1;	/* hw default away after enable. */
 static int cm36686_local_init(void);
 static int cm36686_remove(void);
 static int cm36686_init_flag = -1;	/* 0<==>OK -1 <==> fail */
+#ifndef DEVICE_ATTRIBUTE_ENABLE
 static struct alsps_init_info cm36686_init_info = {
 	.name = "cm36686",
 	.init = cm36686_local_init,
 	.uninit = cm36686_remove,
 };
-
+#endif
 /*----------------------------------------------------------------------------*/
 static DEFINE_MUTEX(cm36686_mutex);
 static DEFINE_MUTEX(cm36686_i2c_mutex);
@@ -2651,15 +2652,21 @@ static int __init cm36686_init(void)
 	}
 	if (err >= CMP_DEVICE_NUM)
 		return -1;
+#ifdef DEVICE_ATTRIBUTE_ENABLE
+	err = cm36686_local_init();
+#else
 	alsps_driver_add(&cm36686_init_info);
-
-	return 0;
+#endif
+	return err;
 }
 
 /*----------------------------------------------------------------------------*/
 static void __exit cm36686_exit(void)
 {
 	APS_FUN();
+#ifdef DEVICE_ATTRIBUTE_ENABLE
+	cm36686_remove();
+#endif
 }
 
 /*----------------------------------------------------------------------------*/

@@ -37,14 +37,14 @@
 #include <linux/delay.h>
 
 struct keypad_dts_data {
-	u32 kpd_key_debounce;
-	u32 kpd_use_extend_type;
-	u32 kpd_hw_map_num;
-	u32 kpd_hw_init_map[KPD_NUM_KEYS];
+	u16 kpd_key_debounce;
+	u16 kpd_use_extend_type;
+	u16 kpd_hw_map_num;
+	u16 kpd_hw_init_map[KPD_NUM_KEYS];
 };
 extern struct keypad_dts_data kpd_dts_data;
 
-#define KPD_DEBUG	1
+#define KPD_DEBUG	0
 #define SET_KPD_KCOL		_IO('k', 29)
 
 #define KPD_SAY		"kpd: "
