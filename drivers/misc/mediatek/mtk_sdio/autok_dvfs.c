@@ -25,6 +25,8 @@
 #define SDIO_AUTOK_DIFF_MARGIN      3
 
 u8 sdio_autok_res[2][TUNING_PARAM_COUNT];
+u8 emmc_autok_res[2][TUNING_PARAM_COUNT];
+u8 sd_autok_res[2][TUNING_PARAM_COUNT];
 int sdio_ver;
 
 static struct file *msdc_file_open(const char *path, int flags, int rights)
@@ -300,6 +302,40 @@ int emmc_autok(void)
 
 	pr_err("emmc autok\n");
 
+#if 0 /* Wait Light confirm */
+	mmc_claim_host(mmc);
+
+	/* Performance mode, return 0 pass */
+	if (vcorefs_request_dvfs_opp(KIR_AUTOK_EMMC, OPPI_PERF) != 0)
+		pr_err("vcorefs_request_dvfs_opp@OPPI_PERF fail!\n");
+
+	if (mmc->ios.timing == MMC_TIMING_MMC_HS200) {
+		pr_err("[AUTOK]eMMC HS200 Tune\r\n");
+		hs200_execute_tuning(host, emmc_autok_res[AUTOK_VCORE_HIGH]);
+	} else if (mmc->ios.timing == MMC_TIMING_MMC_HS400) {
+		pr_err("[AUTOK]eMMC HS400 Tune\r\n");
+		hs400_execute_tuning(host, emmc_autok_res[AUTOK_VCORE_HIGH]);
+	}
+
+	/* Low power mode, return 0 pass */
+	if (vcorefs_request_dvfs_opp(KIR_AUTOK_EMMC, OPPI_LOW_PWR) != 0)
+		pr_err("vcorefs_request_dvfs_opp@OPPI_PERF fail!\n");
+
+	if (mmc->ios.timing == MMC_TIMING_MMC_HS200) {
+		pr_err("[AUTOK]eMMC HS200 Tune\r\n");
+		hs200_execute_tuning(host, emmc_autok_res[AUTOK_VCORE_LOW]);
+	} else if (mmc->ios.timing == MMC_TIMING_MMC_HS400) {
+		pr_err("[AUTOK]eMMC HS400 Tune\r\n");
+		hs400_execute_tuning(host, emmc_autok_res[AUTOK_VCORE_LOW]);
+	}
+
+	/* Un-request, return 0 pass */
+	if (vcorefs_request_dvfs_opp(KIR_AUTOK_EMMC, OPPI_UNREQ) != 0)
+		pr_err("vcorefs_request_dvfs_opp@OPPI_UNREQ fail!\n");
+
+	mmc_release_host(mmc);
+#endif
+
 	return 0;
 }
 EXPORT_SYMBOL(emmc_autok);
@@ -315,6 +351,26 @@ int sd_autok(void)
 	}
 
 	pr_err("sd autok\n");
+
+#if 0 /* Wait Cool confirm */
+	mmc_claim_host(mmc);
+
+	/* Performance mode, return 0 pass */
+	if (vcorefs_request_dvfs_opp(KIR_AUTOK_SD, OPPI_PERF) != 0)
+		pr_err("vcorefs_request_dvfs_opp@OPPI_PERF fail!\n");
+	autok_execute_tuning(host, sd_autok_res[AUTOK_VCORE_HIGH]);
+
+	/* Low power mode, return 0 pass */
+	if (vcorefs_request_dvfs_opp(KIR_AUTOK_SD, OPPI_LOW_PWR) != 0)
+		pr_err("vcorefs_request_dvfs_opp@OPPI_PERF fail!\n");
+	autok_execute_tuning(host, sd_autok_res[AUTOK_VCORE_LOW]);
+
+	/* Un-request, return 0 pass */
+	if (vcorefs_request_dvfs_opp(KIR_AUTOK_SD, OPPI_UNREQ) != 0)
+		pr_err("vcorefs_request_dvfs_opp@OPPI_UNREQ fail!\n");
+
+	mmc_release_host(mmc);
+#endif
 
 	return 0;
 }

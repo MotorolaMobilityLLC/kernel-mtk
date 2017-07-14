@@ -11,9 +11,11 @@
  * GNU General Public License for more details.
  */
 
-#ifndef MT_MSDC_DEUBG
-#define MT_MSDC_DEUBG
+#ifndef __MT_MSDC_DEUBG__
+#define __MT_MSDC_DEUBG__
 #include "mt_sd.h"
+
+#include "msdc_tune.h"
 
 #define MTK_MSDC_ERROR_TUNE_DEBUG
 
@@ -107,6 +109,24 @@ do { \
 		host->id,  ##args, __func__, __LINE__)
 #else
 #define IRQ_MSG(fmt, args...)
+#endif
+
+void msdc_dump_gpd_bd(int id);
+int msdc_debug_proc_init(void);
+void msdc_performance(u32 opcode, u32 sizes, u32 bRx, u32 ticks);
+void msdc_set_host_mode_speed(struct mmc_host *mmc, int spd_mode, int cmdq);
+u32 msdc_time_calc(u32 old_L32, u32 old_H32, u32 new_L32, u32 new_H32);
+
+void msdc_error_tune_debug1(struct msdc_host *host, struct mmc_command *cmd,
+	struct mmc_command *sbc, u32 *intsts);
+void msdc_error_tune_debug2(struct msdc_host *host, struct mmc_command *stop,
+	u32 *intsts);
+void msdc_error_tune_debug3(struct msdc_host *host, struct mmc_command *cmd,
+	u32 *intsts);
+int multi_rw_compare(int host_num, uint address, int count, uint type);
+#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
+void dbg_add_host_log(struct mmc_host *host, int type, int cmd, int arg);
+void mmc_cmd_dump(struct mmc_host *host);
 #endif
 
 #endif

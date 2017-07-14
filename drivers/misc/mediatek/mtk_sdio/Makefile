@@ -18,6 +18,7 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/include
 obj-$(CONFIG_MMC_MTK_SDIO) += msdc.o
 
 msdc-y += sd.o
+msdc-y += msdc_tune.o
 msdc-y += autok.o
 msdc-y += autok_dvfs.o
 
