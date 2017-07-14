@@ -229,10 +229,50 @@ static const struct stats mmc[] = {
 
 #define MMC_STATS_LEN ARRAY_SIZE(mmc)
 
+#define SPEED_UNKNOWN -1
+#define DUPLEX_UNKNOWN 0xff
+static int getsettings(struct net_device *dev, struct ethtool_cmd *cmd)
+{
+	struct prv_data *pdata = netdev_priv(dev);
+	int ret = 0;
+
+	if (!pdata->phydev) {
+		pr_alert("%s: PHY is not registered\n", dev->name);
+		return -ENODEV;
+	}
+
+	if (!netif_running(dev)) {
+		pr_alert("%s: interface is disabled: we cannot track link speed / duplex settings\n", dev->name);
+		return -EBUSY;
+	}
+
+	cmd->transceiver = XCVR_EXTERNAL;
+
+	spin_lock_irq(&pdata->lock);
+	ret = phy_ethtool_gset(pdata->phydev, cmd);
+	spin_unlock_irq(&pdata->lock);
+
+	return ret;
+}
+
+static int setsettings(struct net_device *dev, struct ethtool_cmd *cmd)
+{
+	struct prv_data *pdata = netdev_priv(dev);
+	int ret = 0;
+
+	spin_lock_irq(&pdata->lock);
+	ret = phy_ethtool_sset(pdata->phydev, cmd);
+	spin_unlock_irq(&pdata->lock);
+
+	return ret;
+}
+
 static const struct ethtool_ops ethtool_ops = {
 	.get_link = ethtool_op_get_link,
 	.get_pauseparam = get_pauseparam,
 	.set_pauseparam = set_pauseparam,
+	.get_settings = getsettings,
+	.set_settings = setsettings,
 	.get_coalesce = get_coalesce,
 	.set_coalesce = set_coalesce,
 	.get_ethtool_stats = get_ethtool_stats,
