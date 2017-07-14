@@ -12,8 +12,8 @@
  * GNU General Public License for more details.
  */
 
-#ifndef DT_BINDINGS_MMC_H
-#define DT_BINDINGS_MMC_H
+#ifndef _DT_BINDINGS_MMC_MT2701_H
+#define _DT_BINDINGS_MMC_MT2701_H
 
 #define MSDC_EMMC	(0)
 #define MSDC_SD		(1)
@@ -59,4 +59,4 @@
 #define MSDC_SMPL_FALLING       (1)
 #define MSDC_SMPL_SEPARATE      (2)
 
-#endif /* DT_BINDINGS_MMC_H */
+#endif /* _DT_BINDINGS_MMC_MT2701_H */

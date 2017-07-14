@@ -514,6 +514,76 @@ int msdc_get_ccf_clk_pointer(struct platform_device *pdev,
 #define GPIO_MSDC2_V_CTRLCCIRBOND	(MSDC_GPIO_BASE + 0x710)
 #define GPIO_MSDC2_V_CTRLPINMUXSEL	(MSDC_GPIO_BASE + 0xEF0)
 
+#ifndef FPGA_PLATFORM
+void msdc_set_driving_by_id(u32 id, struct msdc_hw *hw, bool sd_18);
+void msdc_set_driving(struct msdc_host *host, struct msdc_hw *hw, bool sd_18);
+void msdc_get_driving_by_id(u32 id, struct msdc_hw *hw);
+void msdc_set_ies_by_id(u32 id, int set_ies);
+void msdc_set_sr_by_id(u32 id, int clk, int cmd, int dat, int rst, int ds);
+void msdc_set_smt_by_id(u32 id, int set_smt);
+void msdc_set_tdsel_by_id(u32 id, u32 flag, u32 value);
+void msdc_set_rdsel_by_id(u32 id, u32 flag, u32 value);
+void msdc_get_tdsel_by_id(u32 id, u32 *value);
+void msdc_get_rdsel_by_id(u32 id, u32 *value);
+void msdc_dump_padctl_by_id(u32 id);
+void msdc_pin_config_by_id(u32 id, u32 mode);
+#endif
+
+#ifdef FPGA_PLATFORM
+#define msdc_set_driving_by_id(id, hw, sd_18)
+/*#define msdc_set_driving(host, hw, sd_18)*/
+#define msdc_get_driving_by_id(id, hw)
+#define msdc_set_ies_by_id(id, set_ies)
+#define msdc_set_sr_by_id(id, clk, cmd, dat, rst, ds)
+#define msdc_set_smt_by_id(id, set_smt)
+#define msdc_set_tdsel_by_id(id, flag, value)
+#define msdc_set_rdsel_by_id(id, flag, value)
+#define msdc_get_tdsel_by_id(id, value)
+#define msdc_get_rdsel_by_id(id, value)
+#define msdc_dump_padctl_by_id(id)
+#define msdc_pin_config_by_id(id, mode)
+#define msdc_set_pin_mode(host)
+
+void msdc_set_driving(struct msdc_host *host, struct msdc_hw *hw, bool sd_18)
+{
+	/* do nothing, but for build pass */
+}
+#endif
+
+#define msdc_get_driving(host, hw) \
+	msdc_get_driving_by_id(host->id, hw)
+
+/* #define msdc_set_driving(host, hw, sd_18)
+ * msdc_set_driving_by_id(host->id, hw, sd_18)
+ */
+
+#define msdc_set_ies(host, set_ies) \
+	msdc_set_ies_by_id(host->id, set_ies)
+
+#define msdc_set_sr(host, clk, cmd, dat, rst, ds) \
+	msdc_set_sr_by_id(host->id, clk, cmd, dat, rst, ds)
+
+#define msdc_set_smt(host, set_smt) \
+	msdc_set_smt_by_id(host->id, set_smt)
+
+#define msdc_set_tdsel(host, flag, value) \
+	msdc_set_tdsel_by_id(host->id, flag, value)
+
+#define msdc_set_rdsel(host, flag, value) \
+	msdc_set_rdsel_by_id(host->id, flag, value)
+
+#define msdc_get_tdsel(host, value) \
+	msdc_get_tdsel_by_id(host->id, value)
+
+#define msdc_get_rdsel(host, value) \
+	msdc_get_rdsel_by_id(host->id, value)
+
+#define msdc_dump_padctl(host) \
+	msdc_dump_padctl_by_id(host->id)
+
+#define msdc_pin_config(host, mode) \
+	msdc_pin_config_by_id(host->id, mode)
+
 /**************************************************************/
 /* Section 5: MISC                                            */
 /**************************************************************/

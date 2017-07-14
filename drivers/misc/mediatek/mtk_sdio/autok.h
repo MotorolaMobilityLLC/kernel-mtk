@@ -11,8 +11,8 @@
  * GNU General Public License for more details.
  */
 
-#ifndef AUTOK_H
-#define AUTOK_H
+#ifndef _AUTOK_H_
+#define _AUTOK_H_
 
 #include <linux/init.h>
 #include <linux/kernel.h>
@@ -52,6 +52,7 @@
 #define AUTOK_DBG_TRACE                           4
 #define AUTOK_DBG_LOUD                            5
 
+extern unsigned int do_autok_offline_tune_tx;
 extern unsigned int autok_debug_level;
 
 #define AUTOK_DBGPRINT(_level, _fmt ...)   \
@@ -201,10 +202,19 @@ enum AUTOK_PARAM {
 /**********************************************************
  * Function Declaration                                   *
  **********************************************************/
-int autok_path_sel(struct msdc_host *host);
-int autok_init_sdr104(struct msdc_host *host);
-void autok_tuning_parameter_init(struct msdc_host *host, u8 *res);
-int autok_execute_tuning(struct msdc_host *host, u8 *res);
+extern int autok_path_sel(struct msdc_host *host);
+extern int autok_init_sdr104(struct msdc_host *host);
+extern int autok_init_hs200(struct msdc_host *host);
+extern int autok_init_hs400(struct msdc_host *host);
+extern void autok_tuning_parameter_init(struct msdc_host *host, u8 *res);
+extern int autok_execute_tuning(struct msdc_host *host, u8 *res);
+extern int hs200_execute_tuning(struct msdc_host *host, u8 *res);
+extern int hs200_execute_tuning_cmd(struct msdc_host *host, u8 *res);
+extern int hs400_execute_tuning(struct msdc_host *host, u8 *res);
+extern int hs400_execute_tuning_cmd(struct msdc_host *host, u8 *res);
 
-#endif  /* AUTOK_H */
+
+extern unsigned int do_autok_offline_tune_tx;
+
+#endif  /* _AUTOK_H_ */
 

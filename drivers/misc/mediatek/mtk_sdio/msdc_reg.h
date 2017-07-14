@@ -11,8 +11,8 @@
  * GNU General Public License for more details.
  */
 
-#ifndef MSDC_REG_H
-#define MSDC_REG_H
+#ifndef _MSDC_REG_H_
+#define _MSDC_REG_H_
 
 #include <linux/bitops.h>
 #include <linux/clk.h>
@@ -20,7 +20,7 @@
 /*--------------------------------------------------------------------------*/
 /* Common Macro                                                             */
 /*--------------------------------------------------------------------------*/
-#define REG_ADDR(x)                     (base + OFFSET_##x)
+#define REG_ADDR(x)                     ((u32 *)(base + OFFSET_##x))
 
 /*--------------------------------------------------------------------------*/
 /* Register Offset                                                          */
@@ -623,5 +623,5 @@
 /* SDIO_TUNE_WIND mask*/
 #define MSDC_SDIO_TUNE_WIND                     (0x1F << 0)
 
-#endif /* end of MSDC_REG_H */
+#endif /* end of _MSDC_REG_H_ */
 
