@@ -390,6 +390,71 @@ out_bright_set:
 }
 	
 
+int lct_klcm_rm63350_enable_hbm(int enable)
+{
+	int ret = 0;
+	int bright = 0;
+	struct rt5081_pmu_bled_platdata *pdata =
+				dev_get_platdata(bled_data->dev);
+	if(enable)
+		pdata->max_bled_brightness = 1550; 
+	else
+		pdata->max_bled_brightness = 1055;
+	bright = (pdata->max_bled_brightness << 8) / 255;
+
+	bright = (bright * 255) >> 8;
+	ret = rt5081_pmu_reg_update_bits(bled_data->chip, RT5081_PMU_REG_BLDIM2,
+					 RT5081_DIM2_MASK, bright & 0x7);
+	if (ret < 0)
+		goto out_bright_set;
+	ret = rt5081_pmu_reg_write(bled_data->chip, RT5081_PMU_REG_BLDIM1,
+				   (bright >> 3) & RT5081_DIM_MASK);
+	if (ret < 0)
+		goto out_bright_set;
+	/* if choose external enable pin, no effect even config this bit */
+	ret = rt5081_pmu_reg_update_bits(bled_data->chip, RT5081_PMU_REG_BLEN,
+					 RT5081_BLED_EN,
+					 RT5081_BLED_EN);
+	if (ret < 0)
+		goto out_bright_set;
+	return 0;
+out_bright_set:
+	printk("%s error %d\n", __func__, ret);
+	return -1;
+}	
+
+int lct_klcm_otm1911a_enable_hbm(int enable)
+{
+	int ret = 0;
+	int bright = 0;
+	struct rt5081_pmu_bled_platdata *pdata =
+				dev_get_platdata(bled_data->dev);
+	if(enable)
+		pdata->max_bled_brightness = 1550; 
+	else
+		pdata->max_bled_brightness = 1230;
+	bright = (pdata->max_bled_brightness << 8) / 255;
+
+	bright = (bright * 255) >> 8;
+	ret = rt5081_pmu_reg_update_bits(bled_data->chip, RT5081_PMU_REG_BLDIM2,
+					 RT5081_DIM2_MASK, bright & 0x7);
+	if (ret < 0)
+		goto out_bright_set;
+	ret = rt5081_pmu_reg_write(bled_data->chip, RT5081_PMU_REG_BLDIM1,
+				   (bright >> 3) & RT5081_DIM_MASK);
+	if (ret < 0)
+		goto out_bright_set;
+	/* if choose external enable pin, no effect even config this bit */
+	ret = rt5081_pmu_reg_update_bits(bled_data->chip, RT5081_PMU_REG_BLEN,
+					 RT5081_BLED_EN,
+					 RT5081_BLED_EN);
+	if (ret < 0)
+		goto out_bright_set;
+	return 0;
+out_bright_set:
+	printk("%s error %d\n", __func__, ret);
+	return -1;
+}
 static inline int rt5081_pmu_bled_init_register(
 	struct rt5081_pmu_bled_data *bled_data)
 {

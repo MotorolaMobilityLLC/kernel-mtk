@@ -336,6 +336,7 @@ static int display_bias_enable(void)
 #ifdef CONFIG_LCT_HBM_SUPPORT
 static unsigned int last_level=0;
 static unsigned int hbm_enable=0;
+extern int lct_klcm_rm63350_enable_hbm(int enable);
 static void lcm_setbacklight_hbm(unsigned int level)
 {
 	
@@ -343,10 +344,14 @@ static void lcm_setbacklight_hbm(unsigned int level)
 	{
 		level = last_level;
 		hbm_enable = 0;
+ 		lct_klcm_rm63350_enable_hbm(0);
 	}
-	else
+	else{
 		hbm_enable = 1;
+		lct_klcm_rm63350_enable_hbm(1);
+	    }
 	bl_level[0].para_list[0] = level;
+	
 	push_table(NULL, bl_level,
 		   sizeof(bl_level) / sizeof(struct LCM_setting_table), 1);
 }
