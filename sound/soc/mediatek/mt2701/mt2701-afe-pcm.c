@@ -3182,6 +3182,16 @@ static irqreturn_t mt2701_asys_isr(int irq_id, void *dev)
 
 static int mt2701_afe_runtime_suspend(struct device *dev)
 {
+	return 0;
+}
+
+static int mt2701_afe_runtime_resume(struct device *dev)
+{
+	return 0;
+}
+
+static int mt2701_afe_suspend(struct device *dev)
+{
 	struct mtk_base_afe *afe = dev_get_drvdata(dev);
 	struct mt2701_afe_private *afe_priv = afe->platform_priv;
 
@@ -3189,7 +3199,7 @@ static int mt2701_afe_runtime_suspend(struct device *dev)
 	return 0;
 }
 
-static int mt2701_afe_runtime_resume(struct device *dev)
+static int mt2701_afe_resume(struct device *dev)
 {
 	struct mtk_base_afe *afe = dev_get_drvdata(dev);
 	struct mt2701_afe_private *afe_priv = afe->platform_priv;
@@ -3198,6 +3208,7 @@ static int mt2701_afe_runtime_resume(struct device *dev)
 	ret = afe_priv->clk_ctrl->afe_enable_clock(afe);
 	return ret;
 }
+
 
 static int mt2701_afe_pcm_dev_probe(struct platform_device *pdev)
 {
@@ -3382,7 +3393,7 @@ static int mt2701_afe_pcm_dev_probe(struct platform_device *pdev)
 		goto err_dai_component;
 	}
 
-	mt2701_afe_runtime_resume(&pdev->dev);
+	mt2701_afe_resume(&pdev->dev);
 
 	return 0;
 
@@ -3404,7 +3415,7 @@ static int mt2701_afe_pcm_dev_remove(struct platform_device *pdev)
 
 	pm_runtime_disable(&pdev->dev);
 	if (!pm_runtime_status_suspended(&pdev->dev))
-		mt2701_afe_runtime_suspend(&pdev->dev);
+		mt2701_afe_suspend(&pdev->dev);
 	pm_runtime_put_sync(&pdev->dev);
 
 	snd_soc_unregister_component(&pdev->dev);
@@ -3415,8 +3426,8 @@ static int mt2701_afe_pcm_dev_remove(struct platform_device *pdev)
 }
 
 static const struct dev_pm_ops mt2701_afe_pm_ops = {
-	SET_RUNTIME_PM_OPS(mt2701_afe_runtime_suspend,
-			   mt2701_afe_runtime_resume, NULL)
+	.suspend = mt2701_afe_suspend,
+	.resume = mt2701_afe_resume,
 };
 
 static struct platform_driver mt2701_afe_pcm_driver = {

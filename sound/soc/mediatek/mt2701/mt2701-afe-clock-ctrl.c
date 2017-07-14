@@ -629,16 +629,16 @@ int mt2712_afe_enable_clock(struct mtk_base_afe *afe)
 
 void mt2712_afe_disable_clock(struct mtk_base_afe *afe)
 {
-	mt2712_turn_off_afe_clock(afe);
-	mt2712_turn_off_a1sys_clock(afe);
-	mt2712_turn_off_a2sys_clock(afe);
-	mt2712_turn_off_tdm_clock(afe);
-	mt2712_turn_off_asrc_clock(afe);
-
 	regmap_update_bits(afe->regmap, ASYS_TOP_CON,
 			   AUDIO_TOP_CON0_A1SYS_A2SYS_ON, 0);
 	regmap_update_bits(afe->regmap, AFE_DAC_CON0,
 			   AFE_DAC_CON0_AFE_ON, 0);
+
+	mt2712_turn_off_asrc_clock(afe);
+	mt2712_turn_off_tdm_clock(afe);
+	mt2712_turn_off_a2sys_clock(afe);
+	mt2712_turn_off_a1sys_clock(afe);
+	mt2712_turn_off_afe_clock(afe);
 }
 
 int mt2712_turn_on_a1sys_clock(struct mtk_base_afe *afe)
@@ -860,8 +860,6 @@ void mt2712_turn_off_afe_clock(struct mtk_base_afe *afe)
 {
 	struct mt2701_afe_private *afe_priv = afe->platform_priv;
 
-	clk_disable_unprepare(afe_priv->clocks[MT2712_AUD_AUD_INTBUS_SEL]);
-
 	regmap_update_bits(afe->regmap, AUDIO_TOP_CON0,
 			   AUDIO_TOP_CON0_PDN_AFE, AUDIO_TOP_CON0_PDN_AFE);
 	regmap_update_bits(afe->regmap, AUDIO_TOP_CON0,
@@ -876,6 +874,8 @@ void mt2712_turn_off_afe_clock(struct mtk_base_afe *afe)
 	regmap_update_bits(afe->regmap, AUDIO_TOP_CON4,
 			   AUDIO_TOP_CON4_PDN_AFE_CONN,
 			   AUDIO_TOP_CON4_PDN_AFE_CONN);
+
+	clk_disable_unprepare(afe_priv->clocks[MT2712_AUD_AUD_INTBUS_SEL]);
 }
 
 void mt2712_mclk_configuration(struct mtk_base_afe *afe, int id, int domain,
