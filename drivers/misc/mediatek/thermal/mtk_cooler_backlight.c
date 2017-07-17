@@ -47,10 +47,18 @@ static void mtk_cl_backlight_set_max_brightness_limit(void)
 			setMaxbrightness(255, 0);	/* 100% */
 			break;
 		case 1:
+			#ifdef CONFIG_LCT_THERMAL_BACKLIGHT
+			setMaxbrightness(110, 1);	/* 43% */   //LCSH dingyin modify for thermal 
+			#else
 			setMaxbrightness(178, 1);	/* 70% */
+			#endif
 			break;
 		case 2:
+			#ifdef CONFIG_LCT_THERMAL_BACKLIGHT
+			setMaxbrightness(90, 1);	/* 35% */	//LCSH dingyin modify for thermal 
+			#else
 			setMaxbrightness(102, 1);	/* 40% */
+			#endif
 			break;
 		case 3:
 			setMaxbrightness(25, 1);	/* 10% */
