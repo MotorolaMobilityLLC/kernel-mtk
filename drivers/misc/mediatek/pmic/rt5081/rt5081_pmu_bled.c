@@ -397,7 +397,7 @@ int lct_klcm_rm63350_enable_hbm(int enable)
 	struct rt5081_pmu_bled_platdata *pdata =
 				dev_get_platdata(bled_data->dev);
 	if(enable)
-		pdata->max_bled_brightness = 1550; 
+		pdata->max_bled_brightness = 1370; 
 	else
 		pdata->max_bled_brightness = 1055;
 	bright = (pdata->max_bled_brightness << 8) / 255;
@@ -430,7 +430,7 @@ int lct_klcm_otm1911a_enable_hbm(int enable)
 	struct rt5081_pmu_bled_platdata *pdata =
 				dev_get_platdata(bled_data->dev);
 	if(enable)
-		pdata->max_bled_brightness = 1550; 
+		pdata->max_bled_brightness = 1660; 
 	else
 		pdata->max_bled_brightness = 1230;
 	bright = (pdata->max_bled_brightness << 8) / 255;
