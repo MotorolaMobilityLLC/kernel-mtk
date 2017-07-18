@@ -297,13 +297,14 @@ static int ltr578_i2c_read_reg(u8 regnum)
 	buffer[0]= regnum;
 	res = i2c_master_send(ltr578_obj->client, buffer, 0x1);
 	if(res <= 0)	{
-	   
+	   mutex_unlock(&read_lock);
 	   APS_ERR("read reg send res = %d\n",res);
 		return res;
 	}
 	res = i2c_master_recv(ltr578_obj->client, reg_value, 0x1);
 	if(res <= 0)
 	{
+                mutex_unlock(&read_lock);
 		APS_ERR("read reg recv res = %d\n",res);
 		return res;
 	}
