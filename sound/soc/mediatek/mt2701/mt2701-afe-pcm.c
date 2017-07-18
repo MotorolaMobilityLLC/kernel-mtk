@@ -51,12 +51,13 @@ struct mt2701_afe_rate {
 	unsigned int regvalue;
 };
 
-struct snd_soc_dai_driver *find_dai_driver_by_id(struct snd_soc_dai_driver *dai_list, int array_size, int id)
+struct snd_soc_dai_driver *find_dai_driver_by_id(struct snd_soc_dai_driver *dai_list,
+		int array_size, int id)
 {
 	int i;
 
 	for (i = 0; i < array_size; i++) {
-		if (dai_list[i].id == id)
+		if (dai_list[i].id == (unsigned int)id)
 			return dai_list+i;
 	}
 	return 0;
@@ -114,7 +115,7 @@ static int mt2701_afe_i2s_startup(struct snd_pcm_substream *substream,
 	int i2s_num = mt2701_dai_num_to_i2s(afe, dai->id);
 
 	/* enable mclk */
-	if (of_device_is_compatible(afe->dev->of_node, "mediatek,mt2701-audio"))
+	if (of_device_is_compatible(afe->dev->of_node, "mediatek,mt2701-audio") != 0)
 		return afe_priv->clk_ctrl->enable_mclk(afe, i2s_num);
 	else if (afe_priv->i2s_path[i2s_num].i2s_mode == I2S_COCLK) {
 		if (substream->stream == SNDRV_PCM_STREAM_CAPTURE) {
@@ -147,7 +148,7 @@ static int mt2701_afe_i2s_path_shutdown(struct snd_pcm_substream *substream,
 
 	i2s_path = &afe_priv->i2s_path[i2s_num];
 
-	if (dir_invert)	{
+	if (dir_invert != 0)	{
 		if (stream_dir == SNDRV_PCM_STREAM_PLAYBACK)
 			stream_dir = SNDRV_PCM_STREAM_CAPTURE;
 		else
@@ -161,15 +162,15 @@ static int mt2701_afe_i2s_path_shutdown(struct snd_pcm_substream *substream,
 			 i2s_path->on[stream_dir], stream_dir);
 		i2s_path->on[stream_dir] = 0;
 	}
-	if (i2s_path->on[stream_dir])
+	if (i2s_path->on[stream_dir] != 0)
 		return 0;
 
 	/* disable i2s */
-	regmap_update_bits(afe->regmap, i2s_data->i2s_ctrl_reg,
-			   ASYS_I2S_CON_I2S_EN, 0);
-	regmap_update_bits(afe->regmap, AUDIO_TOP_CON4,
-			   1 << i2s_data->i2s_pwn_shift,
-			   1 << i2s_data->i2s_pwn_shift);
+	mt2701_regmap_update_bits(afe->regmap, i2s_data->i2s_ctrl_reg,
+			   ASYS_I2S_CON_I2S_EN, 0U);
+	mt2701_regmap_update_bits(afe->regmap, AUDIO_TOP_CON4,
+			   1U << i2s_data->i2s_pwn_shift,
+			   1U << i2s_data->i2s_pwn_shift);
 	return 0;
 }
 
@@ -181,28 +182,33 @@ static void mt2701_afe_i2s_shutdown(struct snd_pcm_substream *substream,
 	struct mt2701_afe_private *afe_priv = afe->platform_priv;
 	int i2s_num = mt2701_dai_num_to_i2s(afe, dai->id);
 	struct mt2701_i2s_path *i2s_path;
+	int ret;
 
 	if (i2s_num < 0)
 		return;
 
 	i2s_path = &afe_priv->i2s_path[i2s_num];
 
-	if (i2s_path->occupied[substream->stream])
+	if (i2s_path->occupied[substream->stream] != 0)
 		i2s_path->occupied[substream->stream] = 0;
 	else
 		goto I2S_UNSTART;
 
-	mt2701_afe_i2s_path_shutdown(substream, dai, 0);
-
+	ret = mt2701_afe_i2s_path_shutdown(substream, dai, 0);
+	if (ret != 0)
+		dev_info(afe->dev, "mt2701_afe_i2s_path_shutdown fail %d", ret);
 	if (afe_priv->i2s_path[i2s_num].i2s_mode == I2S_COCLK) {
 		/* need to disable i2s-out path when disable i2s-in */
-		if (substream->stream == SNDRV_PCM_STREAM_CAPTURE)
-			mt2701_afe_i2s_path_shutdown(substream, dai, 1);
+		if (substream->stream == SNDRV_PCM_STREAM_CAPTURE) {
+			ret = mt2701_afe_i2s_path_shutdown(substream, dai, 1);
+			if (ret != 0)
+				dev_info(afe->dev, "mt2701_afe_i2s_path_shutdown fail %d", ret);
+		}
 	}
 
 I2S_UNSTART:
 	/* disable mclk */
-	if (of_device_is_compatible(afe->dev->of_node, "mediatek,mt2701-audio"))
+	if (of_device_is_compatible(afe->dev->of_node, "mediatek,mt2701-audio") != 0)
 		return afe_priv->clk_ctrl->disable_mclk(afe, i2s_num);
 	else if (afe_priv->i2s_path[i2s_num].i2s_mode == I2S_COCLK) {
 		if (substream->stream == SNDRV_PCM_STREAM_CAPTURE) {
@@ -238,23 +244,24 @@ static int mt2701_afe_i2s_hw_params(struct snd_pcm_substream *substream,
 
 	switch (params_format(params)) {
 	case SNDRV_PCM_FORMAT_S16_LE:
-		val = ASYS_I2S_CON_WIDE_MODE_SET(0);
+		val = ASYS_I2S_CON_WIDE_MODE_SET(0U);
 		break;
 	case SNDRV_PCM_FORMAT_S32_LE:
-		val = ASYS_I2S_CON_WIDE_MODE_SET(1);
+		val = ASYS_I2S_CON_WIDE_MODE_SET(1U);
 		break;
 	default:
-		val = ASYS_I2S_CON_WIDE_MODE_SET(0);
+		val = ASYS_I2S_CON_WIDE_MODE_SET(0U);
+		break;
 	}
 	mask = ASYS_I2S_CON_WIDE_MODE;
 
-	regmap_update_bits(afe->regmap, i2s_data->i2s_ctrl_reg, mask, val);
+	mt2701_regmap_update_bits(afe->regmap, i2s_data->i2s_ctrl_reg, mask, val);
 
 	/* for 4-pin mode, use output clock */
 	if (stream_dir == SNDRV_PCM_STREAM_CAPTURE
 		&& afe_priv->i2s_path[i2s_num].i2s_mode == I2S_COCLK) {
 		i2s_data = i2s_path->i2s_data[SNDRV_PCM_STREAM_PLAYBACK];
-		regmap_update_bits(afe->regmap, i2s_data->i2s_ctrl_reg, mask, val);
+		mt2701_regmap_update_bits(afe->regmap, i2s_data->i2s_ctrl_reg, mask, val);
 	}
 
 	return 0;
@@ -271,7 +278,7 @@ static int mt2701_i2s_path_prepare_enable(struct snd_pcm_substream *substream,
 	struct mt2701_i2s_path *i2s_path;
 	const struct mt2701_i2s_data *i2s_data;
 	struct snd_pcm_runtime * const runtime = substream->runtime;
-	int reg, fs;
+	unsigned int reg, fs;
 	int stream_dir = substream->stream;
 	unsigned int mask = 0, val = 0;
 
@@ -280,7 +287,7 @@ static int mt2701_i2s_path_prepare_enable(struct snd_pcm_substream *substream,
 
 	i2s_path = &afe_priv->i2s_path[i2s_num];
 
-	if (dir_invert) {
+	if (dir_invert != 0) {
 		if (stream_dir == SNDRV_PCM_STREAM_PLAYBACK)
 			stream_dir = SNDRV_PCM_STREAM_CAPTURE;
 		else
@@ -294,7 +301,7 @@ static int mt2701_i2s_path_prepare_enable(struct snd_pcm_substream *substream,
 	if (i2s_path->on[stream_dir] != 1)
 		return 0;
 
-	fs = mt2701_afe_i2s_fs(runtime->rate);
+	fs = (unsigned int)mt2701_afe_i2s_fs(runtime->rate);
 
 	mask = ASYS_I2S_CON_FS |
 	       ASYS_I2S_CON_I2S_COUPLE_MODE;
@@ -305,8 +312,8 @@ static int mt2701_i2s_path_prepare_enable(struct snd_pcm_substream *substream,
 		val |= ASYS_I2S_IN_PHASE_FIX;
 	}
 
-	regmap_update_bits(afe->regmap, i2s_data->i2s_ctrl_reg, mask, val);
-	regmap_update_bits(afe->regmap, i2s_path->i2s_data[0]->i2s_ctrl_reg,
+	mt2701_regmap_update_bits(afe->regmap, i2s_data->i2s_ctrl_reg, mask, val);
+	mt2701_regmap_update_bits(afe->regmap, i2s_path->i2s_data[0]->i2s_ctrl_reg,
 		ASYS_I2S_CON_I2S_COUPLE_MODE, 0);
 
 	if (stream_dir == SNDRV_PCM_STREAM_PLAYBACK)
@@ -314,24 +321,24 @@ static int mt2701_i2s_path_prepare_enable(struct snd_pcm_substream *substream,
 	else
 		reg = ASMI_TIMING_CON1;
 
-	regmap_update_bits(afe->regmap, reg,
+	mt2701_regmap_update_bits(afe->regmap, reg,
 			   i2s_data->i2s_asrc_fs_mask
 			   << i2s_data->i2s_asrc_fs_shift,
 			   fs << i2s_data->i2s_asrc_fs_shift);
 
 	/* enable i2s */
-	regmap_update_bits(afe->regmap, AUDIO_TOP_CON4,
+	mt2701_regmap_update_bits(afe->regmap, AUDIO_TOP_CON4,
 			   1 << i2s_data->i2s_pwn_shift,
 			   0 << i2s_data->i2s_pwn_shift);
 
 	/* reset i2s hw status before enable */
-	regmap_update_bits(afe->regmap, i2s_data->i2s_ctrl_reg,
+	mt2701_regmap_update_bits(afe->regmap, i2s_data->i2s_ctrl_reg,
 			   ASYS_I2S_CON_RESET, ASYS_I2S_CON_RESET);
 	udelay(1);
-	regmap_update_bits(afe->regmap, i2s_data->i2s_ctrl_reg,
+	mt2701_regmap_update_bits(afe->regmap, i2s_data->i2s_ctrl_reg,
 			   ASYS_I2S_CON_RESET, 0);
 	udelay(1);
-	regmap_update_bits(afe->regmap, i2s_data->i2s_ctrl_reg,
+	mt2701_regmap_update_bits(afe->regmap, i2s_data->i2s_ctrl_reg,
 			   ASYS_I2S_CON_I2S_EN, ASYS_I2S_CON_I2S_EN);
 	return 0;
 }
@@ -347,6 +354,7 @@ static int mt2701_afe_i2s_prepare(struct snd_pcm_substream *substream,
 	struct mt2701_i2s_path *i2s_path;
 	struct clock_ctrl *clk_ctrl = afe_priv->clk_ctrl;
 	int mclk_rate;
+	int ret;
 
 	if (i2s_num < 0)
 		return i2s_num;
@@ -354,7 +362,7 @@ static int mt2701_afe_i2s_prepare(struct snd_pcm_substream *substream,
 	i2s_path = &afe_priv->i2s_path[i2s_num];
 	mclk_rate = i2s_path->mclk_rate;
 
-	if (i2s_path->occupied[substream->stream])
+	if (i2s_path->occupied[substream->stream] != 0)
 		return -EBUSY;
 	i2s_path->occupied[substream->stream] = 1;
 
@@ -368,7 +376,7 @@ static int mt2701_afe_i2s_prepare(struct snd_pcm_substream *substream,
 		return -EINVAL;
 	}
 
-	if (of_device_is_compatible(afe->dev->of_node, "mediatek,mt2701-audio"))
+	if (of_device_is_compatible(afe->dev->of_node, "mediatek,mt2701-audio") != 0)
 		clk_ctrl->mclk_configuration(afe, i2s_num, clk_domain, mclk_rate);
 	else if (afe_priv->i2s_path[i2s_num].i2s_mode == I2S_COCLK) {
 		if (substream->stream == SNDRV_PCM_STREAM_CAPTURE) {
@@ -385,16 +393,18 @@ static int mt2701_afe_i2s_prepare(struct snd_pcm_substream *substream,
 
 	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK
 		|| afe_priv->i2s_path[i2s_num].i2s_mode == I2S_SEPCLK) {
-		mt2701_i2s_path_prepare_enable(substream, dai, 0);
+		ret = mt2701_i2s_path_prepare_enable(substream, dai, 0);
 	} else {
 		/* need to enable i2s-out path when enable i2s-in */
 		/* prepare for another direction "out" */
-		mt2701_i2s_path_prepare_enable(substream, dai, 1);
+		ret = mt2701_i2s_path_prepare_enable(substream, dai, 1);
 		/* prepare for "in" */
-		mt2701_i2s_path_prepare_enable(substream, dai, 0);
+		if (ret != 0)
+			goto err;
+		ret = mt2701_i2s_path_prepare_enable(substream, dai, 0);
 	}
-
-	return 0;
+err:
+	return ret;
 }
 
 static int mt2701_afe_i2s_set_fmt(struct snd_soc_dai *dai, unsigned int fmt)
@@ -402,56 +412,55 @@ static int mt2701_afe_i2s_set_fmt(struct snd_soc_dai *dai, unsigned int fmt)
 	struct mtk_base_afe *afe = snd_soc_dai_get_drvdata(dai);
 	int i2s_num = mt2701_dai_num_to_i2s(afe, dai->id);
 	struct mt2701_afe_private *afe_priv = afe->platform_priv;
-	struct mt2701_i2s_data *i2s_data_out =
-		(struct mt2701_i2s_data *)afe_priv->i2s_path[i2s_num].i2s_data[I2S_OUT];
-	struct mt2701_i2s_data *i2s_data_in =
-		(struct mt2701_i2s_data *)afe_priv->i2s_path[i2s_num].i2s_data[I2S_IN];
+	const struct mt2701_i2s_data *i2s_data_out =
+		afe_priv->i2s_path[i2s_num].i2s_data[I2S_OUT];
+	const struct mt2701_i2s_data *i2s_data_in =
+		afe_priv->i2s_path[i2s_num].i2s_data[I2S_IN];
 	unsigned int mask = 0, val = 0;
-	int ret_out, ret_in;
 
 	switch (fmt & SND_SOC_DAIFMT_FORMAT_MASK) {
 	case SND_SOC_DAIFMT_I2S:	/* I2S */
 	case SND_SOC_DAIFMT_DSP_A:
-		val |= ASYS_I2S_CON_I2S_MODE_SET(1);
+		val |= ASYS_I2S_CON_I2S_MODE_SET(1U);
 		break;
 	case SND_SOC_DAIFMT_RIGHT_J:
-		val |= ASYS_I2S_CON_RIGHT_J_SET(1);
-		val |= ASYS_I2S_CON_I2S_MODE_SET(0);
+		val |= ASYS_I2S_CON_RIGHT_J_SET(1U);
+		val |= ASYS_I2S_CON_I2S_MODE_SET(0U);
 		break;
 	case SND_SOC_DAIFMT_LEFT_J:
-		val |= ASYS_I2S_CON_RIGHT_J_SET(0);
-		val |= ASYS_I2S_CON_I2S_MODE_SET(0);
+		val |= ASYS_I2S_CON_RIGHT_J_SET(0U);
+		val |= ASYS_I2S_CON_I2S_MODE_SET(0U);
 		break;
 	case SND_SOC_DAIFMT_DSP_B:	/* EIAJ */
-		val |= ASYS_I2S_CON_I2S_MODE_SET(0);
+		val |= ASYS_I2S_CON_I2S_MODE_SET(0U);
 		break;
 	default:
-		val |= ASYS_I2S_CON_I2S_MODE_SET(1);
+		val |= ASYS_I2S_CON_I2S_MODE_SET(1U);
 		break;
 	}
 
 	switch (fmt & SND_SOC_DAIFMT_INV_MASK) {
 	case SND_SOC_DAIFMT_NB_NF:
-		val |= ASYS_I2S_CON_INV_BCK_SET(0) | ASYS_I2S_CON_INV_LRCK_SET(0);
+		val |= ASYS_I2S_CON_INV_BCK_SET(0U) | ASYS_I2S_CON_INV_LRCK_SET(0U);
 		break;
 	case SND_SOC_DAIFMT_NB_IF:
-		val |= ASYS_I2S_CON_INV_BCK_SET(0) | ASYS_I2S_CON_INV_LRCK_SET(1);
+		val |= ASYS_I2S_CON_INV_BCK_SET(0U) | ASYS_I2S_CON_INV_LRCK_SET(1U);
 		break;
 	case SND_SOC_DAIFMT_IB_NF:
-		val |= ASYS_I2S_CON_INV_BCK_SET(1) | ASYS_I2S_CON_INV_LRCK_SET(0);
+		val |= ASYS_I2S_CON_INV_BCK_SET(1U) | ASYS_I2S_CON_INV_LRCK_SET(0U);
 		break;
 	case SND_SOC_DAIFMT_IB_IF:
-		val |= ASYS_I2S_CON_INV_BCK_SET(1) | ASYS_I2S_CON_INV_LRCK_SET(1);
+		val |= ASYS_I2S_CON_INV_BCK_SET(1U) | ASYS_I2S_CON_INV_LRCK_SET(1U);
 		break;
 	default:
-		val |= ASYS_I2S_CON_INV_BCK_SET(0) | ASYS_I2S_CON_INV_LRCK_SET(0);
+		val |= ASYS_I2S_CON_INV_BCK_SET(0U) | ASYS_I2S_CON_INV_LRCK_SET(0U);
 		break;
 	}
 
 	mask = ASYS_I2S_CON_I2S_MODE | ASYS_I2S_CON_RIGHT_J |
 		   ASYS_I2S_CON_INV_BCK | ASYS_I2S_CON_INV_LRCK;
-	ret_out = regmap_update_bits(afe->regmap, i2s_data_out->i2s_ctrl_reg, mask, val);
-	ret_in = regmap_update_bits(afe->regmap, i2s_data_in->i2s_ctrl_reg, mask, val);
+	mt2701_regmap_update_bits(afe->regmap, i2s_data_out->i2s_ctrl_reg, mask, val);
+	mt2701_regmap_update_bits(afe->regmap, i2s_data_in->i2s_ctrl_reg, mask, val);
 
 	return 0;
 }
@@ -484,7 +493,7 @@ static int mt2701_btmrg_startup(struct snd_pcm_substream *substream,
 	struct mtk_base_afe *afe = snd_soc_platform_get_drvdata(rtd->platform);
 	struct mt2701_afe_private *afe_priv = afe->platform_priv;
 
-	regmap_update_bits(afe->regmap, AUDIO_TOP_CON4,
+	mt2701_regmap_update_bits(afe->regmap, AUDIO_TOP_CON4,
 			   AUDIO_TOP_CON4_PDN_MRGIF, 0);
 
 	afe_priv->mrg_enable[substream->stream] = 1;
@@ -508,7 +517,7 @@ static int mt2701_btmrg_hw_params(struct snd_pcm_substream *substream,
 		return -EINVAL;
 	}
 
-	regmap_update_bits(afe->regmap, AFE_MRGIF_CON,
+	mt2701_regmap_update_bits(afe->regmap, AFE_MRGIF_CON,
 			   AFE_MRGIF_CON_I2S_MODE_MASK,
 			   AFE_MRGIF_CON_I2S_MODE_32K);
 
@@ -521,15 +530,15 @@ static int mt2701_btmrg_hw_params(struct snd_pcm_substream *substream,
 
 	msk |= AFE_DAIBT_CON0_BT_WIDE_MODE_EN;
 
-	regmap_update_bits(afe->regmap, AFE_DAIBT_CON0, msk, val);
+	mt2701_regmap_update_bits(afe->regmap, AFE_DAIBT_CON0, msk, val);
 
-	regmap_update_bits(afe->regmap, AFE_DAIBT_CON0,
+	mt2701_regmap_update_bits(afe->regmap, AFE_DAIBT_CON0,
 			   AFE_DAIBT_CON0_DAIBT_EN,
 			   AFE_DAIBT_CON0_DAIBT_EN);
-	regmap_update_bits(afe->regmap, AFE_MRGIF_CON,
+	mt2701_regmap_update_bits(afe->regmap, AFE_MRGIF_CON,
 			   AFE_MRGIF_CON_MRG_I2S_EN,
 			   AFE_MRGIF_CON_MRG_I2S_EN);
-	regmap_update_bits(afe->regmap, AFE_MRGIF_CON,
+	mt2701_regmap_update_bits(afe->regmap, AFE_MRGIF_CON,
 			   AFE_MRGIF_CON_MRG_EN,
 			   AFE_MRGIF_CON_MRG_EN);
 	return 0;
@@ -544,80 +553,80 @@ static void mt2701_btmrg_shutdown(struct snd_pcm_substream *substream,
 
 	/* if the other direction stream is not occupied */
 	if (!afe_priv->mrg_enable[!substream->stream]) {
-		regmap_update_bits(afe->regmap, AFE_DAIBT_CON0,
+		mt2701_regmap_update_bits(afe->regmap, AFE_DAIBT_CON0,
 				   AFE_DAIBT_CON0_DAIBT_EN, 0);
-		regmap_update_bits(afe->regmap, AFE_MRGIF_CON,
+		mt2701_regmap_update_bits(afe->regmap, AFE_MRGIF_CON,
 				   AFE_MRGIF_CON_MRG_EN, 0);
-		regmap_update_bits(afe->regmap, AFE_MRGIF_CON,
+		mt2701_regmap_update_bits(afe->regmap, AFE_MRGIF_CON,
 				   AFE_MRGIF_CON_MRG_I2S_EN, 0);
-		regmap_update_bits(afe->regmap, AUDIO_TOP_CON4,
+		mt2701_regmap_update_bits(afe->regmap, AUDIO_TOP_CON4,
 				   AUDIO_TOP_CON4_PDN_MRGIF,
 				   AUDIO_TOP_CON4_PDN_MRGIF);
 	}
 	afe_priv->mrg_enable[substream->stream] = 0;
 }
 
-static int pcmi_palette(int fs)
+static unsigned int pcmi_palette(int fs)
 {
 	switch (fs) {
 	case 8000:
-		return 0x050000;
+		return 0x050000U;
 	case 16000:
-		return 0x0A0000;
+		return 0x0A0000U;
 	case 32000:
-		return 0x140000;
+		return 0x140000U;
 	case 48000:
-		return 0x1E0000;
+		return 0x1E0000U;
 	default:
-		return 0;
+		return 0U;
 	}
 }
 
-static int pcmo_palette(int fs)
+static unsigned int pcmo_palette(int fs)
 {
 	switch (fs) {
 	case 8000:
-		return 0x060000;
+		return 0x060000U;
 	case 16000:
-		return 0x030000;
+		return 0x030000U;
 	case 32000:
-		return 0x018000;
+		return 0x018000U;
 	case 48000:
-		return 0x010000;
+		return 0x010000U;
 	default:
-		return 0;
+		return 0U;
 	}
 }
 
-static int auto_rst_th_lo(int fs)
+static unsigned int auto_rst_th_lo(int fs)
 {
 	switch (fs) {
 	case 8000:
-		return 0x05A000;
+		return 0x05A000U;
 	case 16000:
-		return 0x02d000;
+		return 0x02d000U;
 	case 32000:
-		return 0x016000;
+		return 0x016000U;
 	case 48000:
-		return 0x00f000;
+		return 0x00f000U;
 	default:
-		return 0x0;
+		return 0x0U;
 	}
 }
 
-static int auto_rst_th_hi(int fs)
+static unsigned int auto_rst_th_hi(int fs)
 {
 	switch (fs) {
 	case 8000:
-		return 0x066000;
+		return 0x066000U;
 	case 16000:
-		return 0x033000;
+		return 0x033000U;
 	case 32000:
-		return 0x01a000;
+		return 0x01a000U;
 	case 48000:
-		return 0x011000;
+		return 0x011000U;
 	default:
-		return 0x0;
+		return 0x0U;
 	}
 }
 
@@ -628,8 +637,8 @@ static int mt2701_modpcm_startup(struct snd_pcm_substream *substream,
 	struct mtk_base_afe *afe = snd_soc_platform_get_drvdata(rtd->platform);
 	struct mt2701_afe_private *afe_priv = afe->platform_priv;
 
-	regmap_update_bits(afe->regmap, AUDIO_TOP_CON4,
-			   AUDIO_TOP_CON4_PDN_PCM, 0);
+	mt2701_regmap_update_bits(afe->regmap, AUDIO_TOP_CON4,
+			   AUDIO_TOP_CON4_PDN_PCM, 0U);
 
 	afe_priv->pcm_enable[substream->stream] = 1;
 	return 0;
@@ -642,31 +651,26 @@ static int mt2701_modpcm_hw_params(struct snd_pcm_substream *substream,
 	struct mtk_base_afe *afe = snd_soc_platform_get_drvdata(rtd->platform);
 	struct mt2701_afe_private *afe_priv = afe->platform_priv;
 	int stream_fs, bit_width, channel;
+	unsigned int mask = 0, val = 0;
 
 	stream_fs = params_rate(params);
 	bit_width = params_width(params);
 	channel = params_channels(params);
 
+	mask = AFE_PCM_MODE | AFE_PCM_WLEN | AFE_PCM_EX_MODEM | AFE_PCM_24BIT;
+	val = AFE_PCM_EX_MODEM_SET(1U);
 	switch (stream_fs) {
 	case 8000:
-		regmap_update_bits(afe->regmap, AFE_PCM_INTF_CON1,
-		   AFE_PCM_MODE,
-		   AFE_PCM_MODE_SET(0));
+		val |= AFE_PCM_MODE_SET(0U);
 		break;
 	case 16000:
-		regmap_update_bits(afe->regmap, AFE_PCM_INTF_CON1,
-		   AFE_PCM_MODE,
-		   AFE_PCM_MODE_SET(1));
+		val |= AFE_PCM_MODE_SET(1U);
 		break;
 	case 32000:
-		regmap_update_bits(afe->regmap, AFE_PCM_INTF_CON1,
-		   AFE_PCM_MODE,
-		   AFE_PCM_MODE_SET(2));
+		val |= AFE_PCM_MODE_SET(2U);
 		break;
 	case 48000:
-		regmap_update_bits(afe->regmap, AFE_PCM_INTF_CON1,
-		   AFE_PCM_MODE,
-		   AFE_PCM_MODE_SET(3));
+		val |= AFE_PCM_MODE_SET(3U);
 		break;
 	default:
 		dev_err(afe->dev, "%s() btmgr not supprt this stream_fs %d\n",
@@ -674,116 +678,83 @@ static int mt2701_modpcm_hw_params(struct snd_pcm_substream *substream,
 		return -EINVAL;
 	}
 
-	if (bit_width == 16) {
-		regmap_update_bits(afe->regmap, AFE_PCM_INTF_CON1,
-			   AFE_PCM_WLEN,
-			   AFE_PCM_WLEN_SET(0));
+	if (bit_width == 16)
+		val |= AFE_PCM_WLEN_SET(0U) | AFE_PCM_24BIT_SET(0U);
+	else
+		val |= AFE_PCM_WLEN_SET(1U) | AFE_PCM_24BIT_SET(1U);
 
-		regmap_update_bits(afe->regmap, AFE_PCM_INTF_CON1,
-			   AFE_PCM_24BIT,
-			   AFE_PCM_24BIT_SET(0));
-	} else {
-		regmap_update_bits(afe->regmap, AFE_PCM_INTF_CON1,
-			   AFE_PCM_WLEN,
-			   AFE_PCM_WLEN_SET(1));
-
-		regmap_update_bits(afe->regmap, AFE_PCM_INTF_CON1,
-			   AFE_PCM_24BIT,
-			   AFE_PCM_24BIT_SET(1));
-	}
-
-	regmap_update_bits(afe->regmap, AFE_PCM_INTF_CON1,
-			   AFE_PCM_EX_MODEM, AFE_PCM_EX_MODEM_SET(1));
-	regmap_update_bits(afe->regmap, AFE_SGEN_CON0,
-			   0xffffffff, 0xf8000000);
+	mt2701_regmap_update_bits(afe->regmap, AFE_PCM_INTF_CON1, mask, val);
+	mt2701_regmap_update_bits(afe->regmap, AFE_SGEN_CON0,
+			   0xffffffffU, 0xf8000000U);
 
 	if (afe_priv->pcm_slave) {
 		/* set ASRC */
+		mask = AFE_PCM_ASRC_O16BIT | AFE_PCM_ASRC_MONO | AFE_PCM_ASRC_OFS
+		       | AFE_PCM_ASRC_IFS | AFE_PCM_ASRC_IIR;
+		if (bit_width == 16)
+			val = AFE_PCM_ASRC_O16BIT_SET(1U);
+		else
+			val = AFE_PCM_ASRC_O16BIT_SET(0U);
+
+		if (channel == 1)
+			val |= AFE_PCM_ASRC_MONO_SET(1U);
+		else
+			val |= AFE_PCM_ASRC_MONO_SET(0U);
+
+		val |= AFE_PCM_ASRC_IIR_SET(0U);
+
 		if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK) {
 			/* set Tx ASRC */
-			regmap_update_bits(afe->regmap, AUDIO_TOP_CON4,
-					AUDIO_TOP_CON4_PDN_ASRC_PCMO, 0);
+			val |= AFE_PCM_ASRC_OFS_SET(0U) | AFE_PCM_ASRC_IFS_SET(3U);
 
-			if (bit_width == 16)
-				regmap_update_bits(afe->regmap, AFE_ASRC_PCMO_CON0,
-						AFE_PCM_ASRC_O16BIT, AFE_PCM_ASRC_O16BIT_SET(1));
-			else
-				regmap_update_bits(afe->regmap, AFE_ASRC_PCMO_CON0,
-						AFE_PCM_ASRC_O16BIT, AFE_PCM_ASRC_O16BIT_SET(0));
-			if (channel == 1)
-				regmap_update_bits(afe->regmap, AFE_ASRC_PCMO_CON0,
-						AFE_PCM_ASRC_MONO, AFE_PCM_ASRC_MONO_SET(1));
-			else
-				regmap_update_bits(afe->regmap, AFE_ASRC_PCMO_CON0,
-						AFE_PCM_ASRC_MONO, AFE_PCM_ASRC_MONO_SET(0));
-			regmap_update_bits(afe->regmap, AFE_ASRC_PCMO_CON0,
-					AFE_PCM_ASRC_OFS, AFE_PCM_ASRC_OFS_SET(0));
-			regmap_update_bits(afe->regmap, AFE_ASRC_PCMO_CON0,
-					AFE_PCM_ASRC_IFS, AFE_PCM_ASRC_IFS_SET(3));
-			regmap_update_bits(afe->regmap, AFE_ASRC_PCMO_CON0,
-					AFE_PCM_ASRC_IIR, AFE_PCM_ASRC_IIR_SET(0));
-			regmap_update_bits(afe->regmap, AFE_ASRC_PCMO_CON4,
+			mt2701_regmap_update_bits(afe->regmap, AUDIO_TOP_CON4,
+					AUDIO_TOP_CON4_PDN_ASRC_PCMO, 0);
+			mt2701_regmap_update_bits(afe->regmap, AFE_ASRC_PCMO_CON0, mask, val);
+			mt2701_regmap_update_bits(afe->regmap, AFE_ASRC_PCMO_CON4,
 					AFE_PCM_ASRC_PALETTE, AFE_PCM_ASRC_PALETTE_SET(pcmo_palette(stream_fs)));
-			regmap_update_bits(afe->regmap, AFE_ASRC_PCMO_CON1,
+			mt2701_regmap_update_bits(afe->regmap, AFE_ASRC_PCMO_CON1,
 					AFE_PCM_ASRC_PALETTE, AFE_PCM_ASRC_PALETTE_SET(pcmo_palette(stream_fs)));
-			regmap_update_bits(afe->regmap, AFE_ASRC_PCMO_CON6, 0xffffffff, 0x003f988f);
-			regmap_update_bits(afe->regmap, AFE_ASRC_PCMO_CON7, 0xffffffff, 0x00003c00);
-			regmap_update_bits(afe->regmap, AFE_ASRC_PCMO_CON13,
+			mt2701_regmap_update_bits(afe->regmap, AFE_ASRC_PCMO_CON6, 0xffffffffU, 0x003f988fU);
+			mt2701_regmap_update_bits(afe->regmap, AFE_ASRC_PCMO_CON7, 0xffffffffU, 0x00003c00U);
+			mt2701_regmap_update_bits(afe->regmap, AFE_ASRC_PCMO_CON13,
 					AFE_PCM_ASRC_TH, AFE_PCM_ASRC_TH_SET(auto_rst_th_hi(stream_fs)));
-			regmap_update_bits(afe->regmap, AFE_ASRC_PCMO_CON14,
+			mt2701_regmap_update_bits(afe->regmap, AFE_ASRC_PCMO_CON14,
 					AFE_PCM_ASRC_TH, AFE_PCM_ASRC_TH_SET(auto_rst_th_lo(stream_fs)));
 
-			regmap_update_bits(afe->regmap, AFE_ASRC_PCMO_CON0,
+			mt2701_regmap_update_bits(afe->regmap, AFE_ASRC_PCMO_CON0,
 					AFE_PCM_ASRC_CLR, AFE_PCM_ASRC_CLR);
-			regmap_update_bits(afe->regmap, AFE_ASRC_PCMO_CON0,
-					AFE_PCM_ASRC_CLR | AFE_PCM_ASRC_EN, AFE_PCM_ASRC_CLR | AFE_PCM_ASRC_EN_SET(1));
+			mt2701_regmap_update_bits(afe->regmap, AFE_ASRC_PCMO_CON0,
+					AFE_PCM_ASRC_CLR | AFE_PCM_ASRC_EN, AFE_PCM_ASRC_CLR | AFE_PCM_ASRC_EN_SET(1U));
 
 		} else {
 			/* set Rx ASRC */
-			regmap_update_bits(afe->regmap, AUDIO_TOP_CON4,
-					AUDIO_TOP_CON4_PDN_ASRC_PCMI, 0);
+			val |= AFE_PCM_ASRC_OFS_SET(1U) | AFE_PCM_ASRC_IFS_SET(2U);
 
-			if (bit_width == 16)
-				regmap_update_bits(afe->regmap, AFE_ASRC_PCMI_CON0,
-						   AFE_PCM_ASRC_O16BIT, AFE_PCM_ASRC_O16BIT_SET(1));
-			else
-				regmap_update_bits(afe->regmap, AFE_ASRC_PCMI_CON0,
-						   AFE_PCM_ASRC_O16BIT, AFE_PCM_ASRC_O16BIT_SET(0));
-			if (channel == 1)
-				regmap_update_bits(afe->regmap, AFE_ASRC_PCMI_CON0,
-						   AFE_PCM_ASRC_MONO, AFE_PCM_ASRC_MONO_SET(1));
-			else
-				regmap_update_bits(afe->regmap, AFE_ASRC_PCMI_CON0,
-						   AFE_PCM_ASRC_MONO, AFE_PCM_ASRC_MONO_SET(0));
-			regmap_update_bits(afe->regmap, AFE_ASRC_PCMI_CON0,
-						   AFE_PCM_ASRC_OFS, AFE_PCM_ASRC_OFS_SET(1));
-			regmap_update_bits(afe->regmap, AFE_ASRC_PCMI_CON0,
-						   AFE_PCM_ASRC_IFS, AFE_PCM_ASRC_IFS_SET(2));
-			regmap_update_bits(afe->regmap, AFE_ASRC_PCMI_CON0,
-						   AFE_PCM_ASRC_IIR, AFE_PCM_ASRC_IIR_SET(0));
-			regmap_update_bits(afe->regmap, AFE_ASRC_PCMI_CON3, AFE_PCM_ASRC_PALETTE,
+			mt2701_regmap_update_bits(afe->regmap, AUDIO_TOP_CON4,
+					AUDIO_TOP_CON4_PDN_ASRC_PCMI, 0);
+			mt2701_regmap_update_bits(afe->regmap, AFE_ASRC_PCMI_CON0, mask, val);
+			mt2701_regmap_update_bits(afe->regmap, AFE_ASRC_PCMI_CON3, AFE_PCM_ASRC_PALETTE,
 						   AFE_PCM_ASRC_PALETTE_SET(pcmi_palette(stream_fs)));
-			regmap_update_bits(afe->regmap, AFE_ASRC_PCMI_CON2,
+			mt2701_regmap_update_bits(afe->regmap, AFE_ASRC_PCMI_CON2,
 						   AFE_PCM_ASRC_PALETTE,
 						   AFE_PCM_ASRC_PALETTE_SET(pcmi_palette(stream_fs)));
-			regmap_update_bits(afe->regmap, AFE_ASRC_PCMI_CON6, 0xffffffff, 0x003f988f);
-			regmap_update_bits(afe->regmap, AFE_ASRC_PCMI_CON7, 0xffffffff, 0x00003c00);
-			regmap_update_bits(afe->regmap, AFE_ASRC_PCMI_CON13,
+			mt2701_regmap_update_bits(afe->regmap, AFE_ASRC_PCMI_CON6, 0xffffffffU, 0x003f988fU);
+			mt2701_regmap_update_bits(afe->regmap, AFE_ASRC_PCMI_CON7, 0xffffffffU, 0x00003c00U);
+			mt2701_regmap_update_bits(afe->regmap, AFE_ASRC_PCMI_CON13,
 						   AFE_PCM_ASRC_TH, AFE_PCM_ASRC_TH_SET(auto_rst_th_hi(stream_fs)));
-			regmap_update_bits(afe->regmap, AFE_ASRC_PCMI_CON14,
+			mt2701_regmap_update_bits(afe->regmap, AFE_ASRC_PCMI_CON14,
 						   AFE_PCM_ASRC_TH, AFE_PCM_ASRC_TH_SET(auto_rst_th_lo(stream_fs)));
 
-			regmap_update_bits(afe->regmap, AFE_ASRC_PCMI_CON0,
+			mt2701_regmap_update_bits(afe->regmap, AFE_ASRC_PCMI_CON0,
 						   AFE_PCM_ASRC_CLR, AFE_PCM_ASRC_CLR);
-			regmap_update_bits(afe->regmap, AFE_ASRC_PCMI_CON0,
+			mt2701_regmap_update_bits(afe->regmap, AFE_ASRC_PCMI_CON0,
 						   AFE_PCM_ASRC_CLR | AFE_PCM_ASRC_EN,
-						   AFE_PCM_ASRC_CLR | AFE_PCM_ASRC_EN_SET(1));
+						   AFE_PCM_ASRC_CLR | AFE_PCM_ASRC_EN_SET(1U));
 
 		}
 	}
 
-	regmap_update_bits(afe->regmap, AFE_PCM_INTF_CON1,
-				   AFE_PCM_EN, 1);
+	mt2701_regmap_update_bits(afe->regmap, AFE_PCM_INTF_CON1, AFE_PCM_EN, 1U);
 	return 0;
 }
 
@@ -794,27 +765,27 @@ static int mt2701_modpcm_set_fmt(struct snd_soc_dai *dai, unsigned int fmt)
 
 	switch (fmt & SND_SOC_DAIFMT_FORMAT_MASK) {
 	case SND_SOC_DAIFMT_I2S:
-		regmap_update_bits(afe->regmap, AFE_PCM_INTF_CON1,
+		mt2701_regmap_update_bits(afe->regmap, AFE_PCM_INTF_CON1,
 		   AFE_PCM_FMT,
 		   AFE_PCM_FMT_SET(0));
 		break;
 	case SND_SOC_DAIFMT_LEFT_J:
-		regmap_update_bits(afe->regmap, AFE_PCM_INTF_CON1,
+		mt2701_regmap_update_bits(afe->regmap, AFE_PCM_INTF_CON1,
 		   AFE_PCM_FMT,
 		   AFE_PCM_FMT_SET(1));
 		break;
 	case SND_SOC_DAIFMT_DSP_A:
-		regmap_update_bits(afe->regmap, AFE_PCM_INTF_CON1,
+		mt2701_regmap_update_bits(afe->regmap, AFE_PCM_INTF_CON1,
 		   AFE_PCM_FMT,
 		   AFE_PCM_FMT_SET(2));
 		break;
 	case SND_SOC_DAIFMT_DSP_B:
-		regmap_update_bits(afe->regmap, AFE_PCM_INTF_CON1,
+		mt2701_regmap_update_bits(afe->regmap, AFE_PCM_INTF_CON1,
 		   AFE_PCM_FMT,
 		   AFE_PCM_FMT_SET(3));
 		break;
 	default:
-		regmap_update_bits(afe->regmap, AFE_PCM_INTF_CON1,
+		mt2701_regmap_update_bits(afe->regmap, AFE_PCM_INTF_CON1,
 		   AFE_PCM_FMT,
 		   AFE_PCM_FMT_SET(0));
 		break;
@@ -822,18 +793,18 @@ static int mt2701_modpcm_set_fmt(struct snd_soc_dai *dai, unsigned int fmt)
 
 	/* master/slave */
 	if ((fmt & SND_SOC_DAIFMT_MASTER_MASK) == SND_SOC_DAIFMT_CBS_CFS) {
-		regmap_update_bits(afe->regmap, AFE_PCM_INTF_CON1,
+		mt2701_regmap_update_bits(afe->regmap, AFE_PCM_INTF_CON1,
 			   AFE_PCM_SLAVE,
 			   AFE_PCM_SLAVE_SET(0));
-		regmap_update_bits(afe->regmap, AFE_PCM_INTF_CON1,
+		mt2701_regmap_update_bits(afe->regmap, AFE_PCM_INTF_CON1,
 			   AFE_PCM_BYP_ASRC,
 			   AFE_PCM_BYP_ASRC_SET(1));
 		afe_priv->pcm_slave = 0;
 	} else {
-		regmap_update_bits(afe->regmap, AFE_PCM_INTF_CON1,
+		mt2701_regmap_update_bits(afe->regmap, AFE_PCM_INTF_CON1,
 			   AFE_PCM_SLAVE,
 			   AFE_PCM_SLAVE_SET(1));
-		regmap_update_bits(afe->regmap, AFE_PCM_INTF_CON1,
+		mt2701_regmap_update_bits(afe->regmap, AFE_PCM_INTF_CON1,
 			   AFE_PCM_BYP_ASRC,
 			   AFE_PCM_BYP_ASRC_SET(0));
 
@@ -852,22 +823,22 @@ static void mt2701_modpcm_shutdown(struct snd_pcm_substream *substream,
 
 	/* if the other direction stream is not occupied */
 	if (!afe_priv->pcm_enable[!substream->stream]) {
-		regmap_update_bits(afe->regmap, AFE_PCM_INTF_CON1,
+		mt2701_regmap_update_bits(afe->regmap, AFE_PCM_INTF_CON1,
 				   AFE_PCM_EN, 0);
-		regmap_update_bits(afe->regmap, AUDIO_TOP_CON4,
+		mt2701_regmap_update_bits(afe->regmap, AUDIO_TOP_CON4,
 				   AUDIO_TOP_CON4_PDN_PCM,
 				   AUDIO_TOP_CON4_PDN_PCM);
 	}
 	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK) {
-		regmap_update_bits(afe->regmap, AFE_ASRC_PCMO_CON0,
-			     AFE_PCM_ASRC_CLR | AFE_PCM_ASRC_EN, AFE_PCM_ASRC_CLR | AFE_PCM_ASRC_EN_SET(0));
-		regmap_update_bits(afe->regmap, AUDIO_TOP_CON4,
+		mt2701_regmap_update_bits(afe->regmap, AFE_ASRC_PCMO_CON0,
+			     AFE_PCM_ASRC_CLR | AFE_PCM_ASRC_EN, AFE_PCM_ASRC_CLR | AFE_PCM_ASRC_EN_SET(0U));
+		mt2701_regmap_update_bits(afe->regmap, AUDIO_TOP_CON4,
 				   AUDIO_TOP_CON4_PDN_ASRC_PCMO,
 				   AUDIO_TOP_CON4_PDN_ASRC_PCMO);
 	} else {
-		regmap_update_bits(afe->regmap, AFE_ASRC_PCMI_CON0,
-			     AFE_PCM_ASRC_CLR | AFE_PCM_ASRC_EN, AFE_PCM_ASRC_CLR | AFE_PCM_ASRC_EN_SET(0));
-		regmap_update_bits(afe->regmap, AUDIO_TOP_CON4,
+		mt2701_regmap_update_bits(afe->regmap, AFE_ASRC_PCMI_CON0,
+			     AFE_PCM_ASRC_CLR | AFE_PCM_ASRC_EN, AFE_PCM_ASRC_CLR | AFE_PCM_ASRC_EN_SET(0U));
+		mt2701_regmap_update_bits(afe->regmap, AUDIO_TOP_CON4,
 				   AUDIO_TOP_CON4_PDN_ASRC_PCMI,
 				   AUDIO_TOP_CON4_PDN_ASRC_PCMI);
 	}
@@ -885,13 +856,13 @@ static int mt2701_simple_fe_startup(struct snd_pcm_substream *substream,
 	int memif_num = rtd->cpu_dai->id;
 	struct mtk_base_afe_memif *memif_tmp;
 
-	if (of_device_is_compatible(afe->dev->of_node, "mediatek,mt2701-audio")) {
+	if (of_device_is_compatible(afe->dev->of_node, "mediatek,mt2701-audio") != 0) {
 		dev_warn(afe->dev, "%s, can't run single DL & DLM at the same time.\n", __func__);
 
 		/* can't run single DL & DLM at the same time */
 		if (stream_dir == SNDRV_PCM_STREAM_PLAYBACK) {
 			memif_tmp = &afe->memif[MT2701_MEMIF_DLM];
-			if (memif_tmp->substream) {
+			if (memif_tmp->substream != 0) {
 				dev_warn(afe->dev, "%s memif is not available, stream_dir %d, memif_num %d\n",
 					 __func__, stream_dir, memif_num);
 				return -EBUSY;
@@ -912,7 +883,7 @@ static int mt2701_simple_fe_hw_params(struct snd_pcm_substream *substream,
 
 	/* single DL use PAIR_INTERLEAVE */
 	if (stream_dir == SNDRV_PCM_STREAM_PLAYBACK) {
-		regmap_update_bits(afe->regmap,
+		mt2701_regmap_update_bits(afe->regmap,
 				   AFE_MEMIF_PBUF_SIZE,
 				   AFE_MEMIF_PBUF_SIZE_DLM_MASK,
 				   AFE_MEMIF_PBUF_SIZE_PAIR_INTERLEAVE);
@@ -929,12 +900,12 @@ static int mt2701_dlm_fe_startup(struct snd_pcm_substream *substream,
 	const struct mtk_base_memif_data *memif_data;
 	int i;
 
-	if (of_device_is_compatible(afe->dev->of_node, "mediatek,mt2701-audio")) {
+	if (of_device_is_compatible(afe->dev->of_node, "mediatek,mt2701-audio") != 0) {
 		dev_warn(afe->dev, "%s, can't run single DL & DLM at the same time.\n", __func__);
 
 		for (i = MT2701_MEMIF_DL1; i < MT2701_MEMIF_DL_SINGLE_NUM; ++i) {
 			memif_tmp = &afe->memif[i];
-			if (memif_tmp->substream)
+			if (memif_tmp->substream != 0)
 				return -EBUSY;
 		}
 	}
@@ -942,7 +913,7 @@ static int mt2701_dlm_fe_startup(struct snd_pcm_substream *substream,
 	/* enable agent for all signal DL (due to hw design) */
 	for (i = MT2701_MEMIF_DL1; i < MT2701_MEMIF_DL_SINGLE_NUM; ++i) {
 		memif_data = afe->memif[i].data;
-		regmap_update_bits(afe->regmap,
+		mt2701_regmap_update_bits(afe->regmap,
 				   memif_data->agent_disable_reg,
 				   1 << memif_data->agent_disable_shift,
 				   0 << memif_data->agent_disable_shift);
@@ -959,12 +930,12 @@ static void mt2701_dlm_fe_shutdown(struct snd_pcm_substream *substream,
 	const struct mtk_base_memif_data *memif_data;
 	int i;
 
-	if (of_device_is_compatible(afe->dev->of_node, "mediatek,mt2701-audio")) {
+	if (of_device_is_compatible(afe->dev->of_node, "mediatek,mt2701-audio") != 0) {
 		dev_warn(afe->dev, "%s, can't run single DL & DLM at the same time.\n", __func__);
 
 		for (i = MT2701_MEMIF_DL1; i < MT2701_MEMIF_DL_SINGLE_NUM; ++i) {
 			memif_data = afe->memif[i].data;
-			regmap_update_bits(afe->regmap,
+			mt2701_regmap_update_bits(afe->regmap,
 					   memif_data->agent_disable_reg,
 					   1 << memif_data->agent_disable_shift,
 					   1 << memif_data->agent_disable_shift);
@@ -982,17 +953,17 @@ static int mt2701_dlm_fe_hw_params(struct snd_pcm_substream *substream,
 	struct mtk_base_afe *afe = snd_soc_platform_get_drvdata(rtd->platform);
 	int channels = params_channels(params);
 
-	if (of_device_is_compatible(afe->dev->of_node, "mediatek,mt2701-audio")) {
-		regmap_update_bits(afe->regmap,
+	if (of_device_is_compatible(afe->dev->of_node, "mediatek,mt2701-audio") != 0) {
+		mt2701_regmap_update_bits(afe->regmap,
 				   AFE_MEMIF_PBUF_SIZE,
 				   AFE_MEMIF_PBUF_SIZE_DLM_MASK,
 				   AFE_MEMIF_PBUF_SIZE_FULL_INTERLEAVE);
 	}
-	regmap_update_bits(afe->regmap,
+	mt2701_regmap_update_bits(afe->regmap,
 			   AFE_MEMIF_PBUF_SIZE,
 			   AFE_MEMIF_PBUF_SIZE_DLM_BYTE_MASK,
 			   AFE_MEMIF_PBUF_SIZE_DLM_32BYTES);
-	regmap_update_bits(afe->regmap,
+	mt2701_regmap_update_bits(afe->regmap,
 			   AFE_MEMIF_PBUF_SIZE,
 			   AFE_MEMIF_PBUF_SIZE_DLM_CH_MASK,
 			   AFE_MEMIF_PBUF_SIZE_DLM_CH(channels));
@@ -1010,16 +981,15 @@ static int mt2701_dlm_fe_trigger(struct snd_pcm_substream *substream,
 	switch (cmd) {
 	case SNDRV_PCM_TRIGGER_START:
 	case SNDRV_PCM_TRIGGER_RESUME:
-		regmap_update_bits(afe->regmap, memif_tmp->data->enable_reg,
-				   1 << memif_tmp->data->enable_shift,
-				   1 << memif_tmp->data->enable_shift);
-		mtk_afe_fe_trigger(substream, cmd, dai);
-		return 0;
+		mt2701_regmap_update_bits(afe->regmap, memif_tmp->data->enable_reg,
+				   1U << memif_tmp->data->enable_shift,
+				   1U << memif_tmp->data->enable_shift);
+		return mtk_afe_fe_trigger(substream, cmd, dai);
 	case SNDRV_PCM_TRIGGER_STOP:
 	case SNDRV_PCM_TRIGGER_SUSPEND:
 		mtk_afe_fe_trigger(substream, cmd, dai);
-		regmap_update_bits(afe->regmap, memif_tmp->data->enable_reg,
-				   1 << memif_tmp->data->enable_shift, 0);
+		mt2701_regmap_update_bits(afe->regmap, memif_tmp->data->enable_reg,
+				   1U << memif_tmp->data->enable_shift, 0U);
 
 		return 0;
 	default:
@@ -1044,10 +1014,10 @@ static int mt2701_dai_num_to_tdm(struct mtk_base_afe *afe, int num)
 	return val;
 }
 
-int mt2701_tdm_map_channel(int channel)
+enum mt2701_tdm_channel mt2701_tdm_map_channel(int channel)
 {
 	if (channel > 16)
-		return 0;
+		return TDM_16CH;
 	else if (channel > 12)
 		return TDM_16CH;
 	else if (channel > 8)
@@ -1062,18 +1032,18 @@ int mt2701_tdm_map_channel(int channel)
 
 int afe_tdm_in_mask_configurate(int channel)
 {
-	u32 odd_mask = 0x0; /* ch0,1: 7th bit; ch14,15: 1st bit */
-	u32 disable_out = 0x0; /* ch0,1: 7th bit; ch14,15: 1st bit */
-	u32 reg_val_to_write = 0x0;
+	u32 odd_mask = 0U; /* ch0,1: 7th bit; ch14,15: 1st bit */
+	u32 disable_out = 0U; /* ch0,1: 7th bit; ch14,15: 1st bit */
+	u32 reg_val_to_write = 0U;
 	int i;
 	int ch_pair_num = channel / 2;
 	int ch_odd = channel & 1;
 
 	for (i = 0; i < 8 - ch_pair_num; i++)
-		disable_out |= 1 << i;
+		disable_out |= 1U << i;
 
-	if (ch_odd)
-		odd_mask = 1 << (8 - ch_pair_num);
+	if (ch_odd != 0)
+		odd_mask = 1U << (unsigned int)(8 - ch_pair_num);
 
 	reg_val_to_write |= AFE_TDM_IN_DISABLE_OUT_SET(disable_out) & AFE_TDM_IN_DISABLE_OUT;
 	reg_val_to_write |= AFE_TDM_IN_MASK_ODD_SET(odd_mask) & AFE_TDM_IN_MASK_ODD;
@@ -1084,45 +1054,41 @@ int afe_tdm_in_mask_configurate(int channel)
 void mt2701_tdm_configuration(struct mtk_base_afe *afe, int tdm_id, struct snd_pcm_hw_params *params)
 {
 	struct mt2701_afe_private *afe_priv = afe->platform_priv;
-	struct mt2701_tdm_data *tdm_data = (struct mt2701_tdm_data *)afe_priv->tdm_path[tdm_id].tdm_data;
+	const struct mt2701_tdm_data *tdm_data = afe_priv->tdm_path[tdm_id].tdm_data;
 	int channels = params_channels(params);
 	int bit_width = params_width(params);
-	/* TDM config */
-	if (bit_width == 32) {
-		regmap_update_bits(afe->regmap, tdm_data->tdm_ctrl_reg, AFE_TDM_CON_WLEN, AFE_TDM_CON_WLEN_SET(3));
-		regmap_update_bits(afe->regmap, tdm_data->tdm_ctrl_reg, 3 << tdm_data->tdm_lrck_cycle_shift,
-			2 << tdm_data->tdm_lrck_cycle_shift);
-	} else if (bit_width == 16) {
-		regmap_update_bits(afe->regmap, tdm_data->tdm_ctrl_reg, AFE_TDM_CON_WLEN, AFE_TDM_CON_WLEN_SET(1));
-		regmap_update_bits(afe->regmap, tdm_data->tdm_ctrl_reg, 3 << tdm_data->tdm_lrck_cycle_shift,
-			0 << tdm_data->tdm_lrck_cycle_shift);
-	} else if (bit_width == 24) {
-		regmap_update_bits(afe->regmap, tdm_data->tdm_ctrl_reg, AFE_TDM_CON_WLEN, AFE_TDM_CON_WLEN_SET(2));
-		regmap_update_bits(afe->regmap, tdm_data->tdm_ctrl_reg, 3 << tdm_data->tdm_lrck_cycle_shift,
-			2 << tdm_data->tdm_lrck_cycle_shift);
-	}
+	unsigned int val = 0, mask = 0;
 
-	regmap_update_bits(afe->regmap, tdm_data->tdm_ctrl_reg, AFE_TDM_CON_CH,
-			AFE_TDM_CON_CH_SET(mt2701_tdm_map_channel(channels)));
-	regmap_update_bits(afe->regmap, tdm_data->tdm_ctrl_reg, AFE_TDM_CON_LRCK_WIDTH,
-			AFE_TDM_CON_LRCK_WIDTH_SET(bit_width - 1));
+	mask = AFE_TDM_CON_WLEN | AFE_TDM_CON_CH | AFE_TDM_CON_LRCK_WIDTH
+	       | (3U << tdm_data->tdm_lrck_cycle_shift);
+
+	/* TDM config */
+	if (bit_width == 32)
+		val = AFE_TDM_CON_WLEN_SET(3U) | (2U << tdm_data->tdm_lrck_cycle_shift);
+	else if (bit_width == 16)
+		val = AFE_TDM_CON_WLEN_SET(1U) | (0U << tdm_data->tdm_lrck_cycle_shift);
+	else if (bit_width == 24)
+		val = AFE_TDM_CON_WLEN_SET(2U) | (2U << tdm_data->tdm_lrck_cycle_shift);
+
+	val |= AFE_TDM_CON_CH_SET((unsigned int)mt2701_tdm_map_channel(channels));
+	val |= AFE_TDM_CON_LRCK_WIDTH_SET((unsigned int)(bit_width - 1));
 
 	if (tdm_id == MT2701_TDMI) {
-		regmap_update_bits(afe->regmap, AFE_TDM_IN_CON1, AFE_TDM_CON_LRCK_DELAY,
-				AFE_TDM_CON_LRCK_DELAY_SET(afe_priv->tdm_in_lrck.delay_half_T));
-		if (afe_priv->tdm_in_lrck.width)
-			regmap_update_bits(afe->regmap, AFE_TDM_IN_CON1, AFE_TDM_CON_LRCK_WIDTH,
-					AFE_TDM_CON_LRCK_WIDTH_SET((channels * bit_width)-2));
+		mask |= AFE_TDM_CON_LRCK_DELAY | AFE_TDM_CON_LRCK_WIDTH | (0x1U<<21U);
+		val |= AFE_TDM_CON_LRCK_DELAY_SET(afe_priv->tdm_in_lrck.delay_half_T) | (0x1U<<21U);
 
-		regmap_update_bits(afe->regmap, tdm_data->tdm_ctrl_2nd_reg, 0xffff,
+		if (afe_priv->tdm_in_lrck.width != 0U)
+			val |= AFE_TDM_CON_LRCK_WIDTH_SET((unsigned int)((channels * bit_width)-2));
+
+		mt2701_regmap_update_bits(afe->regmap, tdm_data->tdm_ctrl_reg, mask, val);
+		mt2701_regmap_update_bits(afe->regmap, tdm_data->tdm_ctrl_2nd_reg, 0xffffU,
 			afe_tdm_in_mask_configurate(channels));
-		regmap_update_bits(afe->regmap, tdm_data->tdm_ctrl_reg, 1<<21, 1<<21);
 	} else {
-		regmap_update_bits(afe->regmap, tdm_data->tdm_ctrl_2nd_reg, 0xffffffff, 0);
+		mt2701_regmap_update_bits(afe->regmap, tdm_data->tdm_ctrl_reg, mask, val);
+		mt2701_regmap_update_bits(afe->regmap, tdm_data->tdm_ctrl_2nd_reg, 0xffffffffU, 0U);
 	}
 
 }
-
 
 static int mt2701_tdm_fe_hw_params(struct snd_pcm_substream *substream,
 				    struct snd_pcm_hw_params *params,
@@ -1132,7 +1098,7 @@ static int mt2701_tdm_fe_hw_params(struct snd_pcm_substream *substream,
 	struct mtk_base_afe *afe = snd_soc_platform_get_drvdata(rtd->platform);
 	struct mt2701_afe_private *afe_priv = afe->platform_priv;
 	int tdm_num = mt2701_dai_num_to_tdm(afe, dai->id);
-	struct mt2701_tdm_data *tdm_data = (struct mt2701_tdm_data *)afe_priv->tdm_path[tdm_num].tdm_data;
+	const struct mt2701_tdm_data *tdm_data = afe_priv->tdm_path[tdm_num].tdm_data;
 	int channels = params_channels(params);
 	int bit_width = params_width(params);
 
@@ -1141,16 +1107,17 @@ static int mt2701_tdm_fe_hw_params(struct snd_pcm_substream *substream,
 
 	if (tdm_num < MT2701_TDMI) {
 		if (bit_width != 16)
-			regmap_update_bits(afe->regmap, tdm_data->tdm_agent_reg,
-					   1 << tdm_data->tdm_agent_bit_width_shift,
-					   1 << tdm_data->tdm_agent_bit_width_shift);
+			mt2701_regmap_update_bits(afe->regmap, tdm_data->tdm_agent_reg,
+					   1U << tdm_data->tdm_agent_bit_width_shift,
+					   1U << tdm_data->tdm_agent_bit_width_shift);
 		else
-			regmap_update_bits(afe->regmap, tdm_data->tdm_agent_reg,
-					   1 << tdm_data->tdm_agent_bit_width_shift,
-					   0 << tdm_data->tdm_agent_bit_width_shift);
+			mt2701_regmap_update_bits(afe->regmap, tdm_data->tdm_agent_reg,
+					   1U << tdm_data->tdm_agent_bit_width_shift,
+					   0U << tdm_data->tdm_agent_bit_width_shift);
 
-		regmap_update_bits(afe->regmap, tdm_data->tdm_agent_reg, 0x1f << tdm_data->tdm_agent_ch_num_shift,
-				   channels << tdm_data->tdm_agent_ch_num_shift);
+		mt2701_regmap_update_bits(afe->regmap, tdm_data->tdm_agent_reg,
+				0x1fU << tdm_data->tdm_agent_ch_num_shift,
+				(unsigned int)(channels) << tdm_data->tdm_agent_ch_num_shift);
 	}
 
 	return mtk_afe_fe_hw_params(substream, params, dai);
@@ -1175,67 +1142,53 @@ static int mt2701_set_tdm_fmt(struct snd_soc_dai *dai, unsigned int fmt, int tdm
 {
 	struct mtk_base_afe *afe = snd_soc_dai_get_drvdata(dai);
 	struct mt2701_afe_private *afe_priv = afe->platform_priv;
-	struct mt2701_tdm_data *tdm_data = (struct mt2701_tdm_data *)afe_priv->tdm_path[tdm_num].tdm_data;
+	const struct mt2701_tdm_data *tdm_data = afe_priv->tdm_path[tdm_num].tdm_data;
+	unsigned int mask = 0, val = 0;
+
+	mask = AFE_TDM_CON_DELAY | AFE_TDM_CON_LEFT_ALIGN | AFE_TDM_CON_INV_BCK | AFE_TDM_CON_INV_LRCK;
 
 	switch (fmt & SND_SOC_DAIFMT_FORMAT_MASK) {
 	case SND_SOC_DAIFMT_LEFT_J:
 	/* falling through */
 	case SND_SOC_DAIFMT_RIGHT_J:
-		regmap_update_bits(afe->regmap, tdm_data->tdm_ctrl_reg, AFE_TDM_CON_DELAY,
-				 AFE_TDM_CON_DELAY_SET(0));
+		val = AFE_TDM_CON_DELAY_SET(0U);
 		break;
 
 	case SND_SOC_DAIFMT_I2S:
 	/* falling through */
 	case SND_SOC_DAIFMT_DSP_A:
 	default:
-		regmap_update_bits(afe->regmap, tdm_data->tdm_ctrl_reg, AFE_TDM_CON_DELAY,
-				 AFE_TDM_CON_DELAY_SET(1));
+		val = AFE_TDM_CON_DELAY_SET(1U);
 		break;
 
 	}
 
 	if (tdm_num != MT2701_TDMI) {
 		if ((fmt & SND_SOC_DAIFMT_FORMAT_MASK) == SND_SOC_DAIFMT_RIGHT_J)
-			regmap_update_bits(afe->regmap, tdm_data->tdm_ctrl_reg, AFE_TDM_CON_LEFT_ALIGN,
-				 AFE_TDM_CON_LEFT_ALIGN_SET(0));
+			val |= AFE_TDM_CON_LEFT_ALIGN_SET(0U);
 		else
-			regmap_update_bits(afe->regmap, tdm_data->tdm_ctrl_reg, AFE_TDM_CON_LEFT_ALIGN,
-				 AFE_TDM_CON_LEFT_ALIGN_SET(1));
+			val |= AFE_TDM_CON_LEFT_ALIGN_SET(1U);
 	}
 
 	switch (fmt & SND_SOC_DAIFMT_INV_MASK) {
 	case SND_SOC_DAIFMT_NB_NF:
-		regmap_update_bits(afe->regmap, tdm_data->tdm_ctrl_reg,
-				AFE_TDM_CON_INV_BCK, AFE_TDM_CON_INV_BCK_SET(0));
-		regmap_update_bits(afe->regmap, tdm_data->tdm_ctrl_reg,
-				AFE_TDM_CON_INV_LRCK, AFE_TDM_CON_INV_LRCK_SET(0));
+		val |= AFE_TDM_CON_INV_BCK_SET(0U) | AFE_TDM_CON_INV_LRCK_SET(0U);
 		break;
 	case SND_SOC_DAIFMT_NB_IF:
-		regmap_update_bits(afe->regmap, tdm_data->tdm_ctrl_reg,
-				AFE_TDM_CON_INV_BCK, AFE_TDM_CON_INV_BCK_SET(0));
-		regmap_update_bits(afe->regmap, tdm_data->tdm_ctrl_reg,
-				AFE_TDM_CON_INV_LRCK, AFE_TDM_CON_INV_LRCK_SET(1));
+		val |= AFE_TDM_CON_INV_BCK_SET(0U) | AFE_TDM_CON_INV_LRCK_SET(1U);
 		break;
 	case SND_SOC_DAIFMT_IB_NF:
-		regmap_update_bits(afe->regmap, tdm_data->tdm_ctrl_reg,
-				AFE_TDM_CON_INV_BCK, AFE_TDM_CON_INV_BCK_SET(1));
-		regmap_update_bits(afe->regmap, tdm_data->tdm_ctrl_reg,
-				AFE_TDM_CON_INV_LRCK, AFE_TDM_CON_INV_LRCK_SET(0));
+		val |= AFE_TDM_CON_INV_BCK_SET(1U) | AFE_TDM_CON_INV_LRCK_SET(0U);
 		break;
 	case SND_SOC_DAIFMT_IB_IF:
-		regmap_update_bits(afe->regmap, tdm_data->tdm_ctrl_reg,
-				AFE_TDM_CON_INV_BCK, AFE_TDM_CON_INV_BCK_SET(1));
-		regmap_update_bits(afe->regmap, tdm_data->tdm_ctrl_reg,
-				AFE_TDM_CON_INV_LRCK, AFE_TDM_CON_INV_LRCK_SET(1));
+		val |= AFE_TDM_CON_INV_BCK_SET(1U) | AFE_TDM_CON_INV_LRCK_SET(1U);
 		break;
 	default:
-		regmap_update_bits(afe->regmap, tdm_data->tdm_ctrl_reg,
-				AFE_TDM_CON_INV_BCK, AFE_TDM_CON_INV_BCK_SET(0));
-		regmap_update_bits(afe->regmap, tdm_data->tdm_ctrl_reg,
-				AFE_TDM_CON_INV_LRCK, AFE_TDM_CON_INV_LRCK_SET(0));
+		val |= AFE_TDM_CON_INV_BCK_SET(0U) | AFE_TDM_CON_INV_LRCK_SET(0U);
 		break;
 	}
+
+	mt2701_regmap_update_bits(afe->regmap, tdm_data->tdm_ctrl_reg, mask, val);
 	return 0;
 
 }
@@ -1266,14 +1219,14 @@ static int mt2701_tdmio_hw_params(struct snd_pcm_substream *substream,
 	struct mtk_base_afe *afe = snd_soc_platform_get_drvdata(rtd->platform);
 	int tdm_num = mt2701_dai_num_to_tdm(afe, dai->id);
 	struct mt2701_afe_private *afe_priv = afe->platform_priv;
-	struct mt2701_tdm_data *tdm_data = (struct mt2701_tdm_data *)afe_priv->tdm_path[tdm_num].tdm_data;
+	const struct mt2701_tdm_data *tdm_data = afe_priv->tdm_path[tdm_num].tdm_data;
 
-	regmap_update_bits(afe->regmap, AFE_TDM_IN_CON1, 0x3<<21, 0);
+	mt2701_regmap_update_bits(afe->regmap, AFE_TDM_IN_CON1, 3U<<21U, 0U);
 
 	mt2701_tdm_clk_configuration(afe, tdm_num, params, false);
 
-	regmap_update_bits(afe->regmap, tdm_data->tdm_bck_reg,
-			1<<tdm_data->tdm_bck_on_shift, 1<<tdm_data->tdm_bck_on_shift);
+	mt2701_regmap_update_bits(afe->regmap, tdm_data->tdm_bck_reg,
+			1U<<tdm_data->tdm_bck_on_shift, 1U<<tdm_data->tdm_bck_on_shift);
 
 	mt2701_tdm_configuration(afe, tdm_num, params);
 	return 0;
@@ -1286,18 +1239,18 @@ int mt2701_tdmio_trigger(struct snd_pcm_substream *substream, int cmd,
 	struct mtk_base_afe *afe = snd_soc_platform_get_drvdata(rtd->platform);
 	int tdm_num = mt2701_dai_num_to_tdm(afe, dai->id);
 	struct mt2701_afe_private *afe_priv = afe->platform_priv;
-	struct mt2701_tdm_data *tdm_data = (struct mt2701_tdm_data *)afe_priv->tdm_path[tdm_num].tdm_data;
+	const struct mt2701_tdm_data *tdm_data = afe_priv->tdm_path[tdm_num].tdm_data;
 
 	switch (cmd) {
 	case SNDRV_PCM_TRIGGER_START:
 	case SNDRV_PCM_TRIGGER_RESUME:
-		regmap_update_bits(afe->regmap, tdm_data->tdm_ctrl_reg,
-				1<<tdm_data->tdm_on_shift, 1<<tdm_data->tdm_on_shift);
+		mt2701_regmap_update_bits(afe->regmap, tdm_data->tdm_ctrl_reg,
+				1U<<tdm_data->tdm_on_shift, 1U<<tdm_data->tdm_on_shift);
 		return 0;
 	case SNDRV_PCM_TRIGGER_STOP:
 	case SNDRV_PCM_TRIGGER_SUSPEND:
-		regmap_update_bits(afe->regmap, tdm_data->tdm_ctrl_reg,
-				1<<tdm_data->tdm_on_shift, 0<<tdm_data->tdm_on_shift);
+		mt2701_regmap_update_bits(afe->regmap, tdm_data->tdm_ctrl_reg,
+				1U<<tdm_data->tdm_on_shift, 0U<<tdm_data->tdm_on_shift);
 		return 0;
 	default:
 		return -EINVAL;
@@ -1312,10 +1265,10 @@ static void mt2701_tdmio_shutdown(struct snd_pcm_substream *substream,
 	struct mtk_base_afe *afe = snd_soc_platform_get_drvdata(rtd->platform);
 	int tdm_num = mt2701_dai_num_to_tdm(afe, dai->id);
 	struct mt2701_afe_private *afe_priv = afe->platform_priv;
-	struct mt2701_tdm_data *tdm_data = (struct mt2701_tdm_data *)afe_priv->tdm_path[tdm_num].tdm_data;
+	const struct mt2701_tdm_data *tdm_data = afe_priv->tdm_path[tdm_num].tdm_data;
 
-	regmap_update_bits(afe->regmap, tdm_data->tdm_bck_reg,
-			 1<<tdm_data->tdm_bck_on_shift, 0<<tdm_data->tdm_bck_on_shift);
+	mt2701_regmap_update_bits(afe->regmap, tdm_data->tdm_bck_reg,
+			 1U<<tdm_data->tdm_bck_on_shift, 0U<<tdm_data->tdm_bck_on_shift);
 	afe_priv->clk_ctrl->disable_mclk(afe, MCLK_TDM_OFFSET + tdm_num);
 }
 
@@ -1358,28 +1311,30 @@ static int mt2701_tdmio_coclk_hw_params(struct snd_pcm_substream *substream,
 	struct mt2701_afe_private *afe_priv = afe->platform_priv;
 	int tdm_num = afe_priv->tdm_coclk_info.src;
 	int tdm_num_in = MT2701_TDMI;
-	struct mt2701_tdm_data *tdm_data = (struct mt2701_tdm_data *)afe_priv->tdm_path[tdm_num].tdm_data;
-	struct mt2701_tdm_data *tdm_data_in = (struct mt2701_tdm_data *)afe_priv->tdm_path[tdm_num_in].tdm_data;
+	const struct mt2701_tdm_data *tdm_data = afe_priv->tdm_path[tdm_num].tdm_data;
+	const struct mt2701_tdm_data *tdm_data_in = afe_priv->tdm_path[tdm_num_in].tdm_data;
 	int ret = 0;
 
-	regmap_update_bits(afe->regmap, AFE_TDM_IN_CON1, 0x3<<21, 0);
+	mt2701_regmap_update_bits(afe->regmap, AFE_TDM_IN_CON1, 3U<<21U, 0U);
 
 	if (afe_priv->tdm_coclk_info.hw_on == 0) {
-		regmap_update_bits(afe->regmap, AFE_TDM_IN_CON1, AFE_TDM_CON_IN_BCK, AFE_TDM_CON_IN_BCK_SET(tdm_num));
-		regmap_update_bits(afe->regmap, AFE_TDM_IN_CON1, AFE_TDM_CON_INOUT_SYNC, AFE_TDM_CON_INOUT_SYNC_SET(1));
+		mt2701_regmap_update_bits(afe->regmap, AFE_TDM_IN_CON1, AFE_TDM_CON_IN_BCK,
+				AFE_TDM_CON_IN_BCK_SET(tdm_num));
+		mt2701_regmap_update_bits(afe->regmap, AFE_TDM_IN_CON1, AFE_TDM_CON_INOUT_SYNC,
+				AFE_TDM_CON_INOUT_SYNC_SET(1U));
 
-		mt2701_tdm_clk_configuration(afe, tdm_num, params, true);
+		ret = mt2701_tdm_clk_configuration(afe, tdm_num, params, true);
 
-		regmap_update_bits(afe->regmap, tdm_data->tdm_bck_reg, 1<<tdm_data->tdm_bck_on_shift,
-				 1<<tdm_data->tdm_bck_on_shift);
+		mt2701_regmap_update_bits(afe->regmap, tdm_data->tdm_bck_reg, 1U<<tdm_data->tdm_bck_on_shift,
+				 1U<<tdm_data->tdm_bck_on_shift);
 
 		mt2701_tdm_configuration(afe, tdm_num, params);
 		mt2701_tdm_configuration(afe, tdm_num_in, params);
 
-		regmap_update_bits(afe->regmap, tdm_data_in->tdm_ctrl_reg, 1<<tdm_data_in->tdm_on_shift,
-				 1<<tdm_data_in->tdm_on_shift);
-		regmap_update_bits(afe->regmap, tdm_data->tdm_ctrl_reg, 1<<tdm_data->tdm_on_shift,
-				 1<<tdm_data->tdm_on_shift);
+		mt2701_regmap_update_bits(afe->regmap, tdm_data_in->tdm_ctrl_reg, 1U<<tdm_data_in->tdm_on_shift,
+				 1U<<tdm_data_in->tdm_on_shift);
+		mt2701_regmap_update_bits(afe->regmap, tdm_data->tdm_ctrl_reg, 1U<<tdm_data->tdm_on_shift,
+				 1U<<tdm_data->tdm_on_shift);
 
 		afe_priv->tdm_coclk_info.sample_rate = params_rate(params);
 		afe_priv->tdm_coclk_info.channels = params_channels(params);
@@ -1391,6 +1346,7 @@ static int mt2701_tdmio_coclk_hw_params(struct snd_pcm_substream *substream,
 			|| params_width(params) != afe_priv->tdm_coclk_info.bit_width)
 			ret = -EINVAL;
 	}
+
 	return ret;
 }
 
@@ -1412,16 +1368,16 @@ static void mt2701_tdmio_coclk_shutdown(struct snd_pcm_substream *substream,
 	struct mtk_base_afe *afe = snd_soc_platform_get_drvdata(rtd->platform);
 	struct mt2701_afe_private *afe_priv = afe->platform_priv;
 	int tdm_num = afe_priv->tdm_coclk_info.src;
-	struct mt2701_tdm_data *tdm_data = (struct mt2701_tdm_data *)afe_priv->tdm_path[tdm_num].tdm_data;
-	struct mt2701_tdm_data *tdm_data_in = (struct mt2701_tdm_data *)afe_priv->tdm_path[MT2701_TDMI].tdm_data;
+	const struct mt2701_tdm_data *tdm_data = afe_priv->tdm_path[tdm_num].tdm_data;
+	const struct mt2701_tdm_data *tdm_data_in = afe_priv->tdm_path[MT2701_TDMI].tdm_data;
 
 	if (afe_priv->tdm_coclk_info.on == 1) {
-		regmap_update_bits(afe->regmap, tdm_data_in->tdm_ctrl_reg,
-				1<<tdm_data_in->tdm_on_shift, 0<<tdm_data_in->tdm_on_shift);
-		regmap_update_bits(afe->regmap, tdm_data->tdm_ctrl_reg,
-				1<<tdm_data->tdm_on_shift, 0<<tdm_data->tdm_on_shift);
-		regmap_update_bits(afe->regmap, tdm_data->tdm_bck_reg,
-				1<<tdm_data->tdm_bck_on_shift, 0<<tdm_data->tdm_bck_on_shift);
+		mt2701_regmap_update_bits(afe->regmap, tdm_data_in->tdm_ctrl_reg,
+				1U<<tdm_data_in->tdm_on_shift, 0U<<tdm_data_in->tdm_on_shift);
+		mt2701_regmap_update_bits(afe->regmap, tdm_data->tdm_ctrl_reg,
+				1U<<tdm_data->tdm_on_shift, 0U<<tdm_data->tdm_on_shift);
+		mt2701_regmap_update_bits(afe->regmap, tdm_data->tdm_bck_reg,
+				1U<<tdm_data->tdm_bck_on_shift, 0U<<tdm_data->tdm_bck_on_shift);
 		afe_priv->clk_ctrl->disable_mclk(afe, MCLK_TDM_OFFSET + MT2701_TDMI);
 		afe_priv->tdm_coclk_info.hw_on = 0;
 	}
@@ -2188,8 +2144,12 @@ static int mt2701_tdm_loopback_sel_set(struct snd_kcontrol *kcontrol,
 	struct mt2701_afe_private *afe_priv = afe->platform_priv;
 
 	afe_priv->tdm_coclk_info.src = (int)ucontrol->value.integer.value[0];
-	regmap_update_bits(afe->regmap, AFE_TDM_IN_CON1, (1 << 15),
-				 !(afe_priv->tdm_coclk_info.src) << 15);
+	if (afe_priv->tdm_coclk_info.src == 0)
+		mt2701_regmap_update_bits(afe->regmap, AFE_TDM_IN_CON1,
+			(1U << 15U), (1U << 15U));
+	else
+		mt2701_regmap_update_bits(afe->regmap, AFE_TDM_IN_CON1,
+			(1U << 15U), (0U << 15U));
 	return 0;
 }
 
@@ -2226,7 +2186,7 @@ static int mt2701_tdm_loopback_switch_set(struct snd_kcontrol *kcontrol,
 		if (dai_driver != 0)
 			dai_driver->ops = &mt2701_tdmio_coclk_ops;
 
-		regmap_update_bits(afe->regmap, AFE_TDM_IN_CON1, (1 << 20), (1 << 20));
+		mt2701_regmap_update_bits(afe->regmap, AFE_TDM_IN_CON1, (1U << 20U), (1U << 20U));
 
 	} else {
 		dai_driver = find_dai_driver_by_id(mt2701_afe_pcm_dais, ARRAY_SIZE(mt2701_afe_pcm_dais),
@@ -2244,7 +2204,7 @@ static int mt2701_tdm_loopback_switch_set(struct snd_kcontrol *kcontrol,
 		if (dai_driver != 0)
 			dai_driver->ops = &mt2701_tdmio_ops;
 
-		regmap_update_bits(afe->regmap, AFE_TDM_IN_CON1, (1 << 20), (0 << 20));
+		mt2701_regmap_update_bits(afe->regmap, AFE_TDM_IN_CON1, (1U << 20), (0U << 20U));
 	}
 
 	return 0;
@@ -3078,10 +3038,10 @@ static const struct mt2701_tdm_data mt2701_tdm_data[MT2701_TDM_NUM] = {
 		.tdm_plldiv_shift = 8,
 		.tdm_pll_sel_shift = 0,
 		.tdm_bck_on_shift = 1,
-		.tdm_ctrl_reg = AFE_TDNO1_CON1,
-		.tdm_ctrl_2nd_reg = AFE_TDMO1_CON2,
-		.tdm_conn_reg = AFE_TDMO1_CONN_CON0,
-		.tdm_conn_2nd_reg = AFE_TDMO1_CONN_CON0,
+		.tdm_ctrl_reg = AFE_TDM_G1_CON1,
+		.tdm_ctrl_2nd_reg = AFE_TDM_G1_CON2,
+		.tdm_conn_reg = AFE_TDM_G1_CONN_CON0,
+		.tdm_conn_2nd_reg = AFE_TDM_G1_CONN_CON1,
 		.tdm_lrck_cycle_shift = 10,
 		.tdm_on_shift = 0,
 		.tdm_agent_reg = AFE_TDM_AGENT_CFG,
@@ -3093,10 +3053,10 @@ static const struct mt2701_tdm_data mt2701_tdm_data[MT2701_TDM_NUM] = {
 		.tdm_plldiv_shift = 24,
 		.tdm_pll_sel_shift = 16,
 		.tdm_bck_on_shift = 17,
-		.tdm_ctrl_reg = AFE_TDNO2_CON1,
-		.tdm_ctrl_2nd_reg = AFE_TDMO2_CON2,
-		.tdm_conn_reg = AFE_TDMO2_CONN_CON0,
-		.tdm_conn_2nd_reg = AFE_TDMO2_CONN_CON0,
+		.tdm_ctrl_reg = AFE_TDM_G2_CON1,
+		.tdm_ctrl_2nd_reg = AFE_TDM_G2_CON2,
+		.tdm_conn_reg = AFE_TDM_G2_CONN_CON0,
+		.tdm_conn_2nd_reg = AFE_TDM_G2_CONN_CON1,
 		.tdm_lrck_cycle_shift = 10,
 		.tdm_on_shift = 0,
 		.tdm_agent_reg = AFE_TDM_AGENT_CFG,
@@ -3108,8 +3068,8 @@ static const struct mt2701_tdm_data mt2701_tdm_data[MT2701_TDM_NUM] = {
 		.tdm_plldiv_shift = 24,
 		.tdm_pll_sel_shift = 16,
 		.tdm_bck_on_shift = 17,
-		.tdm_ctrl_reg = AFE_TDNIN_CON1,
-		.tdm_ctrl_2nd_reg = AFE_TDMIN_CON2,
+		.tdm_ctrl_reg = AFE_TDM_IN_CON1,
+		.tdm_ctrl_2nd_reg = AFE_TDM_IN_CON2,
 		.tdm_conn_reg = -1,
 		.tdm_conn_2nd_reg = -1,
 		.tdm_lrck_cycle_shift = 16,
@@ -3174,7 +3134,7 @@ static irqreturn_t mt2701_asys_isr(int irq_id, void *dev)
 		if (memif->irq_usage < 0)
 			continue;
 		irq = &afe->irqs[memif->irq_usage];
-		if (status & 1 << (irq->irq_data->irq_clr_shift))
+		if ((status & 1 << (irq->irq_data->irq_clr_shift)) != 0)
 			snd_pcm_period_elapsed(memif->substream);
 	}
 	return IRQ_HANDLED;
@@ -3224,11 +3184,11 @@ static int mt2701_afe_pcm_dev_probe(struct platform_device *pdev)
 
 	ret = 0;
 	afe = devm_kzalloc(&pdev->dev, sizeof(*afe), GFP_KERNEL);
-	if (!afe)
+	if (afe == NULL)
 		return -ENOMEM;
 	afe->platform_priv = devm_kzalloc(&pdev->dev, sizeof(*afe_priv),
 					  GFP_KERNEL);
-	if (!afe->platform_priv)
+	if (afe->platform_priv == NULL)
 		return -ENOMEM;
 	afe_priv = afe->platform_priv;
 
@@ -3236,13 +3196,13 @@ static int mt2701_afe_pcm_dev_probe(struct platform_device *pdev)
 	dev = afe->dev;
 
 	irq_id = platform_get_irq(pdev, 0);
-	if (!irq_id) {
+	if (irq_id == 0) {
 		dev_err(dev, "%s no irq found\n", dev->of_node->name);
 		return -ENXIO;
 	}
 	ret = devm_request_irq(dev, irq_id, mt2701_asys_isr,
 			       IRQF_TRIGGER_NONE, "asys-isr", (void *)afe);
-	if (ret) {
+	if (ret != 0) {
 		dev_err(dev, "could not request_irq for asys-isr\n");
 		return ret;
 	}
@@ -3266,7 +3226,7 @@ static int mt2701_afe_pcm_dev_probe(struct platform_device *pdev)
 	afe->memif = devm_kcalloc(dev, afe->memif_size, sizeof(*afe->memif),
 				  GFP_KERNEL);
 
-	if (!afe->memif)
+	if (afe->memif == NULL)
 		return -ENOMEM;
 
 	for (i = MT2701_MEMIF_DL1; i < afe->memif_size; i++) {
@@ -3279,7 +3239,7 @@ static int mt2701_afe_pcm_dev_probe(struct platform_device *pdev)
 	afe->irqs = devm_kcalloc(dev, afe->irqs_size, sizeof(*afe->irqs),
 				 GFP_KERNEL);
 
-	if (!afe->irqs)
+	if (afe->irqs == NULL)
 		return -ENOMEM;
 
 	for (i = 0; i < afe->irqs_size; i++)
@@ -3294,10 +3254,10 @@ static int mt2701_afe_pcm_dev_probe(struct platform_device *pdev)
 		afe_priv->i2s_path[i].i2s_mode = I2S_COCLK;
 	}
 
-	if (of_device_is_compatible(afe->dev->of_node, "mediatek,mt2712-audio")) {
+	if (of_device_is_compatible(afe->dev->of_node, "mediatek,mt2712-audio") != 0) {
 		of_property_read_u32_array(afe->dev->of_node, "i2s-mode", i2s_mode, 3);
 		for (i = 0; i < 3; i++)
-			afe_priv->i2s_path[i].i2s_mode = i2s_mode[i];
+			afe_priv->i2s_path[i].i2s_mode = (enum mt2701_i2s_mode)i2s_mode[i];
 	}
 
 	/* TDM initialize */
@@ -3354,7 +3314,7 @@ static int mt2701_afe_pcm_dev_probe(struct platform_device *pdev)
 
 	/* initial audio related clock */
 	of_id = of_match_device(mt2701_afe_pcm_dt_match, dev);
-	if (of_id)
+	if (of_id != 0)
 		afe_priv->clk_ctrl = (struct clock_ctrl *)of_id->data;
 	else{
 		dev_err(dev, "init clock ctrl error\n");
@@ -3362,14 +3322,14 @@ static int mt2701_afe_pcm_dev_probe(struct platform_device *pdev)
 	}
 
 	ret = afe_priv->clk_ctrl->init_clock(afe);
-	if (ret) {
+	if (ret != 0) {
 		dev_err(dev, "init clock error\n");
 		return ret;
 	}
 
 	/* set 4GB dma mask */
-	ret = dma_set_mask(dev, DMA_BIT_MASK(33));
-	if (ret)
+	ret = dma_set_mask(dev, DMA_BIT_MASK(33U));
+	if (ret != 0)
 		return ret;
 
 	platform_set_drvdata(pdev, afe);
@@ -3379,7 +3339,7 @@ static int mt2701_afe_pcm_dev_probe(struct platform_device *pdev)
 	pm_runtime_get_sync(&pdev->dev);
 
 	ret = snd_soc_register_platform(&pdev->dev, &mtk_afe_pcm_platform);
-	if (ret) {
+	if (ret != 0) {
 		dev_warn(dev, "err_platform\n");
 		goto err_platform;
 	}
@@ -3388,15 +3348,20 @@ static int mt2701_afe_pcm_dev_probe(struct platform_device *pdev)
 					 &mt2701_afe_pcm_dai_component,
 					 mt2701_afe_pcm_dais,
 					 ARRAY_SIZE(mt2701_afe_pcm_dais));
-	if (ret) {
+	if (ret != 0) {
 		dev_warn(dev, "err_dai_component\n");
 		goto err_dai_component;
 	}
 
-	mt2701_afe_resume(&pdev->dev);
+	ret = mt2701_afe_resume(&pdev->dev);
+	if (ret != 0) {
+		dev_info(dev, "err_open_audio_clock\n");
+		goto err_open_audio_clock;
+	}
 
 	return 0;
 
+err_open_audio_clock:
 err_dai_component:
 	snd_soc_unregister_component(&pdev->dev);
 
@@ -3412,10 +3377,16 @@ err_pm_disable:
 static int mt2701_afe_pcm_dev_remove(struct platform_device *pdev)
 {
 	struct mtk_base_afe *afe = platform_get_drvdata(pdev);
+	int ret;
 
 	pm_runtime_disable(&pdev->dev);
-	if (!pm_runtime_status_suspended(&pdev->dev))
-		mt2701_afe_suspend(&pdev->dev);
+	if (!pm_runtime_status_suspended(&pdev->dev)) {
+		ret = mt2701_afe_suspend(&pdev->dev);
+		if (ret != 0) {
+			dev_info(&pdev->dev, "err_close_audio_clock\n");
+			goto err_close_audio_clock;
+		}
+	}
 	pm_runtime_put_sync(&pdev->dev);
 
 	snd_soc_unregister_component(&pdev->dev);
@@ -3423,6 +3394,9 @@ static int mt2701_afe_pcm_dev_remove(struct platform_device *pdev)
 	/* disable afe clock */
 	mt2701_afe_disable_clock(afe);
 	return 0;
+
+err_close_audio_clock:
+	return ret;
 }
 
 static const struct dev_pm_ops mt2701_afe_pm_ops = {
