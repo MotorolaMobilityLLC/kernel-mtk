@@ -22,6 +22,10 @@
 #include "mt2701-reg.h"
 #include "../common/mtk-base-afe.h"
 
+void mt2701_regmap_update_bits(struct regmap *map, unsigned int reg,
+			    unsigned int mask, unsigned int val);
+
+
 #define MT2701_STREAM_DIR_NUM (SNDRV_PCM_STREAM_LAST + 1)
 #define MT2701_PLL_DOMAIN_0_RATE	98304000
 #define MT2701_PLL_DOMAIN_1_RATE	90316800
@@ -259,7 +263,7 @@ struct mt2701_i2s_path {
 	int mclk_rate;
 	int on[I2S_DIR_NUM];
 	int occupied[I2S_DIR_NUM];
-	int i2s_mode;
+	enum mt2701_i2s_mode i2s_mode;
 	const struct mt2701_i2s_data *i2s_data[2];
 };
 
