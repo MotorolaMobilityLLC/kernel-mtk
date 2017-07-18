@@ -1878,7 +1878,7 @@ static s32 tpd_i2c_probe(struct i2c_client *client, const struct i2c_device_id *
 		}
 	}
 	/* mt_eint_unmask(CUST_EINT_TOUCH_PANEL_NUM); */
-	enable_irq(touch_irq);
+	enable_irq_wake(touch_irq);
 
 #ifdef CONFIG_LCT_DEVINFO_SUPPORT 
 	temp_ver=(char*) kmalloc(8, GFP_KERNEL);	
@@ -2005,7 +2005,7 @@ void force_reset_guitar(void)
 	msleep(30);
 
 	/* mt_eint_unmask(CUST_EINT_TOUCH_PANEL_NUM); */
-	enable_irq(touch_irq);
+	enable_irq_wake(touch_irq);
 
 	for (i = 0; i < 5; i++) {
 		/* Reset Guitar */
@@ -3194,7 +3194,7 @@ static void tpd_resume(struct device *h)
 			GTP_ERROR("GTP later resume failed.");
 		}
 		/* mt_eint_unmask(CUST_EINT_TOUCH_PANEL_NUM); */
-		enable_irq(touch_irq);
+		enable_irq_wake(touch_irq);
 	}
 #else
 	ret = gtp_wakeup_sleep(i2c_client_point);
@@ -3203,7 +3203,7 @@ static void tpd_resume(struct device *h)
 		GTP_ERROR("GTP later resume failed.");
 	}
 	/* mt_eint_unmask(CUST_EINT_TOUCH_PANEL_NUM); */
-	enable_irq(touch_irq);
+	enable_irq_wake(touch_irq);
 #endif
 
 	tpd_halt = 0;
@@ -3267,7 +3267,7 @@ static void tpd_on(void)
 	if (ret < 0)
 		GTP_ERROR("GTP later resume failed.");
 	/* mt_eint_unmask(CUST_EINT_TOUCH_PANEL_NUM); */
-	enable_irq(touch_irq);
+	enable_irq_wake(touch_irq);
 	tpd_halt = 0;
 }
 
