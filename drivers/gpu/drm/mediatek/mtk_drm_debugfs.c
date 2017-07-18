@@ -430,8 +430,8 @@ void mtk_drm_debugfs_init(struct drm_device *dev,
 					   &debug_fops);
 
 	for (i = 0; (comp_id = priv->data->main_path[i]) !=
-		     (int)DDP_COMPONENT_DPI0 && comp_id !=
-		     (int)DDP_COMPONENT_PWM0; i++) {
+		     DDP_COMPONENT_DPI0 && comp_id !=
+		     DDP_COMPONENT_PWM0; i++) {
 		np = priv->comp_node[comp_id];
 		gdrm_disp1_base[i] = priv->ddp_comp[comp_id]->regs;
 		ret = of_address_to_resource(np, 0, &res);
@@ -451,8 +451,8 @@ void mtk_drm_debugfs_init(struct drm_device *dev,
 	gdrm_disp1_reg_range[i++].reg_base = mutex_phys;
 
 	for (i = 0; (comp_id = priv->data->ext_path[i]) !=
-		     (int)DDP_COMPONENT_DPI1 && comp_id !=
-		     (int)DDP_COMPONENT_PWM1; i++) {
+		     DDP_COMPONENT_DPI1 && comp_id !=
+		     DDP_COMPONENT_PWM1; i++) {
 		np = priv->comp_node[comp_id];
 		gdrm_disp2_base[i] = of_iomap(np, 0);
 		ret = of_address_to_resource(np, 0, &res);
