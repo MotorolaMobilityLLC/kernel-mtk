@@ -677,12 +677,16 @@ int mtk_fhctl_enable_ssc_by_id(unsigned int fh_pll_id)
 	if (g_initialize != 1u) {
 		FH_MSG_ERROR("fh driver isn't initialized successfully\n");
 		return -EPERM;
-	} else if (fh_pll_id > FH_MAX_PLLID) {
+	}
+
+	if (fh_pll_id > FH_MAX_PLLID) {
 		FH_MSG_ERROR("unknown pll_id = %d\n", fh_pll_id);
 		return -EINVAL;
 	} else if (fh_pll_id == FH_MEM_PLLID) {
 		FH_MSG_ERROR("MEMPLL is not supported\n");
 		return -EINVAL;
+	} else {
+		; /* do nothing */
 	}
 
 	__enable_ssc(fh_pll_id);
@@ -696,12 +700,16 @@ int mtk_fhctl_disable_ssc_by_id(unsigned int fh_pll_id)
 	if (g_initialize != 1u) {
 		FH_MSG_ERROR("fh driver isn't initialized successfully\n");
 		return -EPERM;
-	} else if (fh_pll_id > FH_MAX_PLLID) {
+	}
+
+	if (fh_pll_id > FH_MAX_PLLID) {
 		FH_MSG_ERROR("unknown pll_id = %d\n", fh_pll_id);
 		return -EINVAL;
 	} else if (fh_pll_id == FH_MEM_PLLID) {
 		FH_MSG_ERROR("MEMPLL is not supported\n");
 		return -EINVAL;
+	} else {
+		; /* do nothing */
 	}
 
 	__disable_ssc(fh_pll_id);
@@ -720,12 +728,16 @@ int mtk_fhctl_hopping_by_id(unsigned int fh_pll_id, unsigned int target_vco_freq
 	if (g_initialize != 1u) {
 		FH_MSG_ERROR("fh driver isn't initialized successfully\n");
 		return -EPERM;
-	} else if (fh_pll_id > FH_MAX_PLLID) {
+	}
+
+	if (fh_pll_id > FH_MAX_PLLID) {
 		FH_MSG_ERROR("unknown pll_id = %d\n", fh_pll_id);
 		return -EINVAL;
 	} else if (fh_pll_id == FH_MEM_PLLID) {
 		FH_MSG_ERROR("MEMPLL is not supported\n");
 		return -EINVAL;
+	} else {
+		; /* do nothing */
 	}
 
 	/* Disable corresponding FHCTL SSC first. */
