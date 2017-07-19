@@ -52,7 +52,7 @@
 #define OV490_CH2_MAP_ADDR 0x64
 #define OV490_CH3_MAP_ADDR 0x66
 #define MAX9286_1CH_LANE 1
-#define CAB888_TEST_PATTERN
+//#define CAB888_TEST_PATTERN
 
 
 #define OV490_ID 0xB888
@@ -95,9 +95,6 @@ static int i2c_write(struct i2c_client *client, u16 slave_addr,
 static int i2c_read(struct i2c_client *client, u16 slave_addr,
 		u8 *reg, u8 reg_len, u8 *val);
 static int read_max9286_id(struct i2c_client *client, u8 *id_val);
-static int read_CAB888_id(struct i2c_client *client, u16 slave_addr, u16 *id);
-static int read_max9286_reg(struct i2c_client *client, u8 reg, u8 *val);
-static int read_ov490_reg(struct i2c_client *client, u32 reg, u8 *val);
 static int max9286_write_array(struct i2c_client *client,
 		struct reg_val_ops *cmd, int len);
 
@@ -135,34 +132,6 @@ struct sensor_addr {
 
 #define CAB888_WIDTH 1280
 #define CAB888_HEIGHT 720
-
-
-static struct sensor_addr sensor_addr_list[] = {
-	{
-		.ser_init_addr = MAX9271_INIT_ADDR,
-		.ser_last_addr = MAX9271_CH0_ADDR,
-		.isp_init_addr = OV490_INIT_ADDR,
-		.isp_map_addr  = OV490_CH0_MAP_ADDR,
-	},
-	{
-		.ser_init_addr = MAX9271_INIT_ADDR,
-		.ser_last_addr = MAX9271_CH1_ADDR,
-		.isp_init_addr = OV490_INIT_ADDR,
-		.isp_map_addr  = OV490_CH1_MAP_ADDR,
-	},
-	{
-		.ser_init_addr = MAX9271_INIT_ADDR,
-		.ser_last_addr = MAX9271_CH2_ADDR,
-		.isp_init_addr = OV490_INIT_ADDR,
-		.isp_map_addr  = OV490_CH2_MAP_ADDR,
-	},
-	{
-		.ser_init_addr = MAX9271_INIT_ADDR,
-		.ser_last_addr = MAX9271_CH3_ADDR,
-		.isp_init_addr = OV490_INIT_ADDR,
-		.isp_map_addr  = OV490_CH3_MAP_ADDR,
-	},
-};
 
 static struct reg_val_ops MAX9286_CAB888_4ch_4lane_init_cmd[] = {
 	{MAX9286_ADDR,      {0x0D}, 0x03,               0x01, i2c_write},
@@ -250,7 +219,7 @@ static struct reg_val_ops MAX9286_CAB888_1ch_1lane_init_cmd[] = {
 	{MAX9271_CH0_ADDR, {0x0C},       MAX9271_CH0_ADDR, 0x01, i2c_write},
 	{MAX9286_ADDR,     {0x34},       0xB6,             0x01, i2c_write},
 	{MAX9271_CH0_ADDR, {0x04},       0xC7,             0x01, i2c_write},
-	{MAX9286_ADDR,     {0x15},       0x2B,             0x01, i2c_write},
+	{MAX9286_ADDR,     {0x15},       0x0B,             0x01, i2c_write},
 #ifdef CAB888_TEST_PATTERN
 	{OV490_CH0_ADDR,   {0xFF, 0xFD}, 0x80,             0x02, i2c_write},
 	{OV490_CH0_ADDR,   {0xFF, 0xFE}, 0x19,             0x02, i2c_write},
@@ -293,7 +262,7 @@ static int i2c_read(struct i2c_client *client, u16 slave_addr,
 	struct i2c_msg msg[2];
 
 	if (!reg || !val || (reg_len <= 0)) {
-		max9286_err("reg/val/reg_len is %x/%x/%d", reg, val, reg_len);
+		max9286_err("reg/val/reg_len is %x/%x/%d", *reg, *val, reg_len);
 		return -EINVAL;
 	}
 
@@ -333,7 +302,7 @@ static int i2c_write(struct i2c_client *client, u16 slave_addr,
 	struct i2c_msg msg;
 
 	if (!reg || !val || (reg_len <= 0)) {
-		max9286_err("reg/val/reg_len is %x/%x/%d", reg, val, reg_len);
+		max9286_err("reg/val/reg_len is %x/%x/%d", *reg, *val, reg_len);
 		return -EINVAL;
 	}
 
@@ -381,83 +350,6 @@ static int read_max9286_id(struct i2c_client *client, u8 *id_val)
 	return ret;
 }
 
-static int read_CAB888_id(struct i2c_client *client, u16 slave_addr, u16 *id)
-{
-	int ret = -1;
-	u8 index = 0;
-	struct reg_val_ops OV490_id_cmd[] = {
-		{slave_addr,   {0xFF, 0xFD}, 0x80, 0x02, i2c_write},
-		{slave_addr,   {0xFF, 0xFE}, 0x80, 0x02, i2c_write},
-		{slave_addr,   {0x01, 0x33}, 0x00, 0x02, i2c_read},
-		{slave_addr,   {0x01, 0x34}, 0x00, 0x02, i2c_read},
-	};
-
-	client->addr = (slave_addr >> 1);
-
-	for (; index < ARRAY_SIZE(OV490_id_cmd); ++index) {
-		ret = OV490_id_cmd[index].i2c_ops(client,
-						  slave_addr,
-						  OV490_id_cmd[index].reg,
-						  OV490_id_cmd[index].reg_len,
-						  &(OV490_id_cmd[index].val));
-		if (ret < 0)
-			return ret;
-	}
-
-	*id = (OV490_id_cmd[2].val << 8) | OV490_id_cmd[3].val;
-
-	return ret;
-}
-
-
-static int read_ov490_reg(struct i2c_client *client, u32 reg, u8 *val)
-{
-	int ret = -1;
-	unsigned char data[3][3];
-	struct i2c_msg msg[4];
-	u8 odata = 0;
-
-	data[0][0] = 0xFF;
-	data[0][1] = 0xFD;
-	data[0][2] = (reg & 0xFF000000) >> 24;
-
-	data[1][0] = 0xFF;
-	data[1][1] = 0xFE;
-	data[1][2] = (reg & 0xFF0000) >> 16;
-
-	data[2][0] = (reg & 0xFF00) >> 8;
-	data[2][1] = (reg & 0xFF);
-
-	memset(msg, 0, sizeof(msg));
-
-	msg[0].addr = client->addr;
-	msg[0].flags = 0;
-	msg[0].len = 3;
-	msg[0].buf = data[0];
-
-	msg[1].addr = client->addr;
-	msg[1].flags = 0;
-	msg[1].len = 3;
-	msg[1].buf = data[1];
-
-	msg[2].addr = client->addr;
-	msg[2].flags = 0;
-	msg[2].len = 2;
-	msg[2].buf = data[2];
-
-	msg[3].addr = client->addr;
-	msg[3].flags = I2C_M_RD;
-	msg[3].len = 1;
-	msg[3].buf = &odata;
-
-	ret = i2c_transfer(client->adapter, msg, 4);
-	if (ret < 0)
-		return ret;
-
-	*val = odata;
-	return ret;
-}
-
 static int max9286_write_array(struct i2c_client *client,
 		struct reg_val_ops *cmd, int len)
 {
@@ -472,20 +364,6 @@ static int max9286_write_array(struct i2c_client *client,
 	}
 
 	return ret;
-}
-
-static int max9286_cropcap(struct v4l2_subdev *sd, struct v4l2_cropcap *a)
-{
-	a->bounds.left			= 0;
-	a->bounds.top			= 0;
-	a->bounds.width			= MAXIM_MAX_WIDTH;
-	a->bounds.height		= MAXIM_MAX_HEIGHT;
-	a->defrect			= a->bounds;
-	a->type				= V4L2_BUF_TYPE_VIDEO_CAPTURE;
-	a->pixelaspect.numerator	= 1;
-	a->pixelaspect.denominator	= 1;
-
-	return 0;
 }
 
 static int max9286_set_link_config(struct i2c_client *client, u8 *val)
@@ -540,7 +418,6 @@ static int max9286_get_link(struct i2c_client *client, u8 *val)
 static int max9286_camera_init(struct i2c_client *client)
 {
 	int ret = 0;
-	u8 max9286_id_reg = MAX9286_ID_REG;
 	u8 max9286_id_val = 0;
 	u8 lock_reg_val = 0;
 	u8 link_config_reg_val = 0x81;
@@ -715,6 +592,30 @@ static int max9286_set_fmt(struct v4l2_subdev *sd,
 	return 0;
 }
 
+static int max9286_g_register(struct v4l2_subdev *sd,
+		struct v4l2_dbg_register *reg)
+{
+	struct i2c_client *client = v4l2_get_subdevdata(sd);
+	int ret = 0;
+	u8 val = 0;
+	u8 max9286_reg = (u8)(reg->reg);
+
+	if (!reg)
+		return -EINVAL;
+
+	max9286_info("read max9286 reg %llx", reg->reg);
+	if (reg->match.type == 0) {
+		ret = i2c_read(client, MAX9286_ADDR, &max9286_reg, 1, &val);
+		if (ret != 2) {
+			max9286_err("ret=%d", ret);
+			return -EIO;
+		}
+		reg->val = val;
+	}
+
+	return ret;
+}
+
 static const struct v4l2_subdev_video_ops max9286_subdev_video_ops = {
 	.g_mbus_config	= max9286_g_mbus_config,
 	.s_stream	= max9286_s_stream,
@@ -723,13 +624,13 @@ static const struct v4l2_subdev_video_ops max9286_subdev_video_ops = {
 
 static const struct v4l2_subdev_core_ops max9286_subdev_core_ops = {
 	.s_power	= max9286_s_power,
+	.g_register	= max9286_g_register,
 };
 
 static const struct v4l2_subdev_pad_ops max9286_subdev_pad_ops = {
 	.enum_mbus_code = max9286_enum_mbus_code,
 	.set_fmt	= max9286_set_fmt,
 };
-
 
 static const struct v4l2_subdev_ops max9286_subdev_ops = {
 	.core	= &max9286_subdev_core_ops,
