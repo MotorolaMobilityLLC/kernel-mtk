@@ -40,6 +40,7 @@
 
 #define MTK_CAMDMA_NUM 4
 #define MTK_CAMDMA_MAX_NUM 4
+#define MAX_DES_LINK 4
 
 #define mipicsi0_info(fmt, args...)	\
 		pr_info("[mipicsi0][info] %s %d: " fmt "\n",\
@@ -274,11 +275,18 @@
 #define MTK_CAMSV_DMA_OIMAGO_YSIZE_VAL_0		0x400
 /*Image ysize 1024-1*/
 #define MTK_CAMSV_DMA_OIMAGO_STRIDE_VAL_0		0x01810000
+#define SUBDEV_LINK_REG 0x49
+#define MTK_MIPICSI0_CTRLS_HINT 20
 
 /* if intersil camera sensor, skip first 5 frames */
 static int skipframe_num = 5;
 MODULE_PARM_DESC(skipframe_num, "MTK Carema driver drop some frames during start");
 module_param(skipframe_num, int, 0644);
+
+enum mipicsi_subdev_type {
+	DES,
+	SER,
+};
 
 struct mtk_mipicsi0_platform_data {
 	unsigned long	mclk_khz;
@@ -346,12 +354,114 @@ struct mtk_mipicsi0_dev {
 	unsigned int		buf_sequence;
 	int streamon;
 	unsigned long frame_cnt[MTK_CAMDMA_MAX_NUM];
+	int link;
+	struct v4l2_ctrl_handler ctrl_hdl;
 	struct v4l2_pix_format	current_pix;
 	irq_handler_t mtk_mipicsi0_irq_handler[MTK_CAMDMA_MAX_NUM];
 };
 
+static inline struct mtk_mipicsi0_dev *ctrl_to_pcdev(struct v4l2_ctrl *ctrl)
+{
+	return container_of(ctrl->handler, struct mtk_mipicsi0_dev, ctrl_hdl);
+}
+
+static int mtk_mipicsi0_g_v_ctrl(struct v4l2_ctrl *ctrl)
+{
+	struct mtk_mipicsi0_dev *pcdev = ctrl_to_pcdev(ctrl);
+
+	switch (ctrl->id) {
+	case V4L2_CID_MIN_BUFFERS_FOR_CAPTURE:
+		ctrl->val = pcdev->link * 3;
+		break;
+	default:
+		break;
+	}
+	return 0;
+}
+
+static const struct v4l2_ctrl_ops mtk_mipicsi0_ctrl_ops = {
+	.g_volatile_ctrl = mtk_mipicsi0_g_v_ctrl,
+};
+
+int mtk_mipicsi0_ctrls_setup(struct soc_camera_device *icd)
+{
+	struct soc_camera_host *ici = to_soc_camera_host(icd->parent);
+	struct mtk_mipicsi0_dev *pcdev = ici->priv;
+	struct v4l2_ctrl *ctrl = NULL;
+
+	v4l2_ctrl_handler_init(&pcdev->ctrl_hdl, MTK_MIPICSI0_CTRLS_HINT);
+
+	/* g_volatile_ctrl */
+	ctrl = v4l2_ctrl_new_std(&pcdev->ctrl_hdl,
+			&mtk_mipicsi0_ctrl_ops,
+			V4L2_CID_MIN_BUFFERS_FOR_CAPTURE,
+			pcdev->link * 2, 32, pcdev->link, pcdev->link * 2);
+	if (!ctrl)
+		return -1;
+	ctrl->flags |= V4L2_CTRL_FLAG_VOLATILE;
+
+	if (pcdev->ctrl_hdl.error) {
+		mipicsi0_info("Adding control failed %d",
+				pcdev->ctrl_hdl.error);
+		return pcdev->ctrl_hdl.error;
+	}
+
+	v4l2_ctrl_handler_setup(&pcdev->ctrl_hdl);
+	return 0;
+}
+
+static int get_des_register(struct soc_camera_device *icd,
+	struct v4l2_dbg_register *reg)
+{
+	struct v4l2_subdev *sd = soc_camera_to_subdev(icd);
+	int ret = 0;
+
+	reg->match.type = DES;
+	ret = v4l2_subdev_call(sd, core, g_register, reg);
+	if (ret != 2) {
+		mipicsi0_err("get des register 0x%llx fail, ret=%d",
+			reg->reg, ret);
+		return -EIO;
+
+	mipicsi0_info("read DES [reg/val/ret] is [0x%llx/0x%llx/%d]",
+		reg->reg, reg->val, ret);
+	return ret;
+}
+
+static int get_des_link(struct soc_camera_device *icd, int *link)
+{
+	struct v4l2_dbg_register reg;
+	int ret = 0;
+	int index = 0;
+
+	if (!link) {
+		mipicsi0_err("link = %p", link);
+		return -EINVAL;
+	}
+	memset(&reg, 0, sizeof(reg));
+	/*get camera link number*/
+	reg.reg = SUBDEV_LINK_REG;
+	ret = get_des_register(icd, &reg);
+	if (ret < 0)
+		return ret;
+
+	*link = 0;
+	for (index = 0; index < MAX_DES_LINK; ++index) {
+		*link += (reg.val & 0x1);
+		reg.val >>= 1;
+	}
+
+	mipicsi0_info("%d camera linked to sub device", *link);
+	return 0;
+}
+
 static int mtk_mipicsi0_add_device(struct soc_camera_device *icd)
 {
+	struct soc_camera_host *ici = to_soc_camera_host(icd->parent);
+	struct mtk_mipicsi0_dev *pcdev = ici->priv;
+
+	get_des_link(icd, &pcdev->link);
+	mtk_mipicsi0_ctrls_setup(icd);
 	pm_runtime_get_sync(icd->parent);
 	return 0;
 }
@@ -777,10 +887,31 @@ static int mtk_mipicsi0_set_bus_param(struct soc_camera_device *icd)
 	return 0;
 }
 
-static int mtk_tg_tp_init(void __iomem *base)
+static int mtk_mipicsi0_set_param(struct soc_camera_device *icd,
+	struct v4l2_streamparm *a)
 {
-	writel(MTK_SENINF1_TG1_TM_CTL_VAL, (base + MTK_SENINF1_TG1_TM_CTL));
-	writel(MTK_SENINF1_TG1_TM_SIZE_VAL, (base + MTK_SENINF1_TG1_TM_SIZE));
+	struct soc_camera_host *ici = to_soc_camera_host(icd->parent);
+
+	if (!ici->ops->get_parm)
+		return ici->ops->get_parm(icd, a);
+
+	return 0;
+}
+
+static int mtk_mipicsi0_get_parm(struct soc_camera_device *icd,
+	struct v4l2_streamparm *a)
+{
+	int link = 0;
+	int ret = 0;
+
+	/*get camera link number*/
+	ret = get_des_link(icd, &link);
+	if (ret < 0)
+		return ret;
+
+	a->parm.capture.timeperframe.numerator = 1;
+	a->parm.capture.timeperframe.denominator = link * 30;
+
 	return 0;
 }
 
@@ -843,7 +974,6 @@ static int mtk_seninf1_init(void __iomem *base)
 		(base + MTK_SENINF1_NCSI2_LNRD_TIMING));
 	writel(MTK_SENINF1_NCSI2_INT_STATUS_VAL,
 		(base + MTK_SENINF1_NCSI2_INT_STATUS));
-	//writel(MTK_SENINF1_CTRL_VAL, (base + MTK_SENINF1_CTRL));
 
 	writel(MTK_SENINF1_NCSI2_INT_EN_VAL,
 		(base + MTK_SENINF1_NCSI2_INT_EN));
@@ -983,13 +1113,11 @@ static int mtk_mipicsi0_vb2_init(struct vb2_buffer *vb)
 
 static int mtk_mipicsi0_vb2_prepare(struct vb2_buffer *vb)
 {
-	int index = -1;
 	struct soc_camera_device *icd = NULL;
 	struct soc_camera_host *ici = NULL;
 	struct mtk_mipicsi0_dev *pcdev = NULL;
 	u32 size = 0;
 
-	index = (vb->index) % MTK_CAMDMA_NUM;
 	/* notice that vb->vb2_queue addr equals to soc_camera_device->vb2_vidq.
 	 *  It was handled in reqbufs
 	 */
@@ -1019,12 +1147,14 @@ static int mtk_mipicsi0_vb2_prepare(struct vb2_buffer *vb)
 static void mtk_mipicsi0_vb2_queue(struct vb2_buffer *vb)
 {
 	int index = 0;
+	int link = 0;
 	unsigned long flags = 0;
 	struct soc_camera_device *icd = soc_camera_from_vb2q(vb->vb2_queue);
 	struct soc_camera_host *ici = to_soc_camera_host(icd->parent);
 	struct mtk_mipicsi0_dev *pcdev = ici->priv;
 
-	index = vb->index % MTK_CAMDMA_NUM;
+	link = (pcdev->link > 0) ? pcdev->link : MTK_CAMDMA_NUM;
+	index = (vb->index) % link;
 
 	spin_lock_irqsave(&pcdev->lock[index], flags);
 	list_add_tail(&(pcdev->cam_buf[vb->index].queue),
@@ -1033,6 +1163,7 @@ static void mtk_mipicsi0_vb2_queue(struct vb2_buffer *vb)
 
 	if (pcdev->cur_index[index] < 0) {
 		pcdev->cur_index[index] = vb->index;
+
 		mtk_camsv_fbc_init(pcdev->mipi_camsv_fbc_base[index],
 			pcdev->mipi_camsv_base[index],
 			pcdev->cam_buf[vb->index].vb_dma_addr_phy, 0);
@@ -1053,11 +1184,21 @@ static int mtk_mipicsi0_vb2_start_streaming(struct vb2_queue *vq,
 	struct mtk_mipicsi0_dev *pcdev = ici->priv;
 	int ret = 0;
 	int index = 0;
+	int link = 0;
 
 	pm_runtime_get_sync(ici->v4l2_dev.dev);
 	pcdev->buf_sequence = 0;
+	icd->vdev->queue = vq;
 
-	for (index = 0; index < MTK_CAMDMA_NUM; ++index) {
+	if (pcdev->larb_pdev) {
+		ret = mtk_smi_larb_get(pcdev->larb_pdev);
+		if (ret)
+			mipicsi0_err("failed to get larb, err %d", ret);
+	}
+
+	link = (pcdev->link > 0) ? pcdev->link : MTK_CAMDMA_NUM;
+
+	for (index = 0; index < link; ++index) {
 		if ((pcdev->cur_index[index] >= 0) &&
 			(!pcdev->is_enable_irq[index])) {
 			pcdev->is_enable_irq[index] = 1;
@@ -1077,10 +1218,11 @@ static void mtk_mipicsi0_vb2_stop_streaming(struct vb2_queue *vq)
 	struct mtk_mipicsi0_buf *buf = NULL;
 	int i = 0;
 	unsigned long flags = 0;
+	int link = 0;
 
-	vb2_wait_for_all_buffers(vq);
+	link = pcdev->link > 0 ? pcdev->link : MTK_CAMDMA_NUM;
 
-	for (i = 0; i < MTK_CAMDMA_NUM; i++) {
+	for (i = 0; i < link; i++) {
 		spin_lock_irqsave(&pcdev->lock[i], flags);
 
 		if (pcdev->cur_index[i] >= 0) {
@@ -1098,6 +1240,9 @@ static void mtk_mipicsi0_vb2_stop_streaming(struct vb2_queue *vq)
 		spin_unlock_irqrestore(&pcdev->lock[i], flags);
 
 	}
+
+	if (pcdev->larb_pdev)
+		mtk_smi_larb_put(pcdev->larb_pdev);
 
 	pm_runtime_put_sync(ici->v4l2_dev.dev);
 }
@@ -1118,6 +1263,7 @@ static int mtk_mipicsi0_init_videobuf2(struct vb2_queue *q,
 {
 	struct soc_camera_host *ici = to_soc_camera_host(icd->parent);
 	struct mtk_mipicsi0_dev *pcdev = ici->priv;
+	struct mutex *q_lock = NULL;
 
 	q->type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
 	q->io_modes = VB2_MMAP;
@@ -1126,8 +1272,11 @@ static int mtk_mipicsi0_init_videobuf2(struct vb2_queue *q,
 	q->ops = &mtk_vb2_ops;
 	q->mem_ops = &vb2_dma_contig_memops;
 	q->timestamp_flags = V4L2_BUF_FLAG_TIMESTAMP_MONOTONIC;
-	q->lock = &ici->host_lock;
 	q->dev = ici->v4l2_dev.dev;
+	q_lock = devm_kzalloc(pcdev->soc_host.v4l2_dev.dev,
+			sizeof(*q_lock), GFP_KERNEL);
+	q->lock = q_lock;
+	mutex_init(q->lock);
 
 	return vb2_queue_init(q);
 }
@@ -1146,6 +1295,8 @@ static struct soc_camera_host_ops mtk_soc_camera_host_ops = {
 	.poll			= vb2_fop_poll,
 	.querycap		= mtk_mipicsi0_querycap,
 	.set_bus_param		= mtk_mipicsi0_set_bus_param,
+	.get_parm		= mtk_mipicsi0_get_parm,
+	.set_parm		= mtk_mipicsi0_set_param,
 };
 
 static const struct of_device_id mtk_mipicsi0_of_match[] = {
@@ -1154,14 +1305,14 @@ static const struct of_device_id mtk_mipicsi0_of_match[] = {
 };
 static int mtk_mipicsi0_suspend(struct device *dev)
 {
+	struct soc_camera_host *ici = to_soc_camera_host(dev);
+	struct mtk_mipicsi0_dev *pcdev = NULL;
+	int ret = 0;
+
 	if (pm_runtime_suspended(dev))
 		return 0;
 
-	struct soc_camera_host *ici = to_soc_camera_host(dev);
-	struct mtk_mipicsi0_dev *pcdev =
-		container_of(ici, struct mtk_mipicsi0_dev, soc_host);
-	int ret = 0;
-
+	pcdev = container_of(ici, struct mtk_mipicsi0_dev, soc_host);
 	if (pcdev->soc_host.icd) {
 		struct v4l2_subdev *sd =
 			soc_camera_to_subdev(pcdev->soc_host.icd);
@@ -1176,28 +1327,20 @@ static int mtk_mipicsi0_suspend(struct device *dev)
 	clk_disable_unprepare(pcdev->img_cam_sv1_clk);
 	clk_disable_unprepare(pcdev->img_seninf_cam_clk);
 	clk_disable_unprepare(pcdev->clk);
-	if (pcdev->larb_pdev)
-		mtk_smi_larb_put(pcdev->larb_pdev);
-
 	return ret;
 }
 
 static int mtk_mipicsi0_resume(struct device *dev)
 {
-	if (pm_runtime_suspended(dev))
-		return 0;
-
 	struct soc_camera_host *ici = to_soc_camera_host(dev);
 
 	struct mtk_mipicsi0_dev *pcdev =
 		container_of(ici, struct mtk_mipicsi0_dev, soc_host);
 	int ret = 0;
 
-	if (pcdev->larb_pdev) {
-		ret = mtk_smi_larb_get(pcdev->larb_pdev);
-		if (ret)
-			mipicsi0_err("failed to get larb, err %d", ret);
-	}
+	if (pm_runtime_suspended(dev))
+		return 0;
+
 	ret = clk_prepare_enable(pcdev->clk);
 	ret = clk_prepare_enable(pcdev->img_seninf_cam_clk);
 	ret = clk_prepare_enable(pcdev->img_cam_sv_clk);
@@ -1224,9 +1367,8 @@ static irqreturn_t mtk_mipicsi0_irq_camdma0(int irq, void *data)
 {
 	struct mtk_mipicsi0_dev *pcdev = data;
 	unsigned int index;
-	enum vb2_buffer_state	state;
+	enum vb2_buffer_state	state = VB2_BUF_STATE_ERROR;
 	struct mtk_mipicsi0_buf *new_cam_buf = NULL;
-
 
 	/* clear interrupt*/
 	writel(1U << 10, pcdev->mipi_camsv_base[0] + MTK_CAMSV_INT_STATUS);
@@ -1246,13 +1388,13 @@ static irqreturn_t mtk_mipicsi0_irq_camdma0(int irq, void *data)
 	if (!list_empty(&(pcdev->capture_list[0]))) {
 		list_for_each_entry(new_cam_buf,
 			&(pcdev->capture_list[0]), queue) {
-			index = new_cam_buf->vb->index % MTK_CAMDMA_NUM;
+			index = new_cam_buf->vb->index % pcdev->link;
 			state = new_cam_buf->vb->state;
-			if ((index % MTK_CAMDMA_NUM == 0) &&
+			if ((index % pcdev->link == 0) &&
 				(state == VB2_BUF_STATE_ACTIVE))
 				break;
 		}
-		if ((index % MTK_CAMDMA_NUM == 0) &&
+		if ((index % pcdev->link == 0) &&
 			(state == VB2_BUF_STATE_ACTIVE)) {
 			pcdev->cur_index[0] = new_cam_buf->vb->index;
 			mtk_camsv_fbc_init(pcdev->mipi_camsv_fbc_base[0],
@@ -1286,7 +1428,7 @@ static irqreturn_t mtk_mipicsi0_irq_camdma1(int irq, void *data)
 {
 	struct mtk_mipicsi0_dev *pcdev = data;
 	unsigned int index;
-	enum vb2_buffer_state	state;
+	enum vb2_buffer_state	state = VB2_BUF_STATE_ERROR;
 	struct mtk_mipicsi0_buf *new_cam_buf = NULL;
 
 	/* clear interrupt*/
@@ -1308,13 +1450,13 @@ static irqreturn_t mtk_mipicsi0_irq_camdma1(int irq, void *data)
 	if (!list_empty(&pcdev->capture_list[1])) {
 		list_for_each_entry(new_cam_buf,
 			&pcdev->capture_list[1], queue) {
-			index = new_cam_buf->vb->index % MTK_CAMDMA_NUM;
+			index = new_cam_buf->vb->index % pcdev->link;
 			state = new_cam_buf->vb->state;
-			if ((index % MTK_CAMDMA_NUM == 1) &&
+			if ((index % pcdev->link == 1) &&
 				(state == VB2_BUF_STATE_ACTIVE))
 				break;
 		}
-		if ((index % MTK_CAMDMA_NUM == 1) &&
+		if ((index % pcdev->link == 1) &&
 			(state == VB2_BUF_STATE_ACTIVE)) {
 			pcdev->cur_index[1] = new_cam_buf->vb->index;
 			mtk_camsv_fbc_init(pcdev->mipi_camsv_fbc_base[1],
@@ -1348,7 +1490,7 @@ static irqreturn_t mtk_mipicsi0_irq_camdma2(int irq, void *data)
 {
 	struct mtk_mipicsi0_dev *pcdev = data;
 	unsigned int index;
-	enum vb2_buffer_state	state;
+	enum vb2_buffer_state	state = VB2_BUF_STATE_ERROR;
 	struct mtk_mipicsi0_buf *new_cam_buf = NULL;
 
 
@@ -1370,13 +1512,13 @@ static irqreturn_t mtk_mipicsi0_irq_camdma2(int irq, void *data)
 	if (!list_empty(&pcdev->capture_list[2])) {
 		list_for_each_entry(new_cam_buf,
 			&pcdev->capture_list[2], queue) {
-			index = new_cam_buf->vb->index % MTK_CAMDMA_NUM;
+			index = new_cam_buf->vb->index % pcdev->link;
 			state = new_cam_buf->vb->state;
-			if ((index % MTK_CAMDMA_NUM == 2) &&
+			if ((index % pcdev->link == 2) &&
 				(state == VB2_BUF_STATE_ACTIVE))
 				break;
 		}
-		if ((index % MTK_CAMDMA_NUM == 2) &&
+		if ((index % pcdev->link == 2) &&
 			(state == VB2_BUF_STATE_ACTIVE)) {
 			pcdev->cur_index[2] = new_cam_buf->vb->index;
 			mtk_camsv_fbc_init(pcdev->mipi_camsv_fbc_base[2],
@@ -1410,7 +1552,7 @@ static irqreturn_t mtk_mipicsi0_irq_camdma3(int irq, void *data)
 {
 	struct mtk_mipicsi0_dev *pcdev = data;
 	unsigned int index;
-	enum vb2_buffer_state	state;
+	enum vb2_buffer_state	state = VB2_BUF_STATE_ERROR;
 	struct mtk_mipicsi0_buf *new_cam_buf = NULL;
 
 	/* clear interrupt*/
@@ -1431,13 +1573,13 @@ static irqreturn_t mtk_mipicsi0_irq_camdma3(int irq, void *data)
 	if (!list_empty(&pcdev->capture_list[3])) {
 		list_for_each_entry(new_cam_buf,
 			&pcdev->capture_list[3], queue) {
-			index = new_cam_buf->vb->index % MTK_CAMDMA_NUM;
+			index = new_cam_buf->vb->index % pcdev->link;
 			state = new_cam_buf->vb->state;
-			if ((index % MTK_CAMDMA_NUM == 3) &&
+			if ((index % pcdev->link == 3) &&
 				(state == VB2_BUF_STATE_ACTIVE))
 				break;
 		}
-		if ((index % MTK_CAMDMA_NUM == 3) &&
+		if ((index % pcdev->link == 3) &&
 			(state == VB2_BUF_STATE_ACTIVE)) {
 			pcdev->cur_index[3] = new_cam_buf->vb->index;
 			mtk_camsv_fbc_init(pcdev->mipi_camsv_fbc_base[3],
@@ -1478,6 +1620,7 @@ static int mtk_mipicsi0_probe(struct platform_device *pdev)
 	int ret = 0;
 	int i = 0;
 
+
 	iommu = iommu_get_domain_for_dev(&pdev->dev);
 	if (!iommu) {
 		mipicsi0_err("Waiting iommu driver ready...");
@@ -1517,6 +1660,7 @@ static int mtk_mipicsi0_probe(struct platform_device *pdev)
 		pcdev->irq[i] = platform_get_irq(pdev, i);
 		if (pcdev->irq[i] < 0)
 			return -ENODEV;
+
 		ret = devm_request_irq(&pdev->dev, pcdev->irq[i],
 				pcdev->mtk_mipicsi0_irq_handler[i], 0,
 				MTK_MIPICSI0_DRV_NAME, pcdev);
@@ -1587,7 +1731,6 @@ static int mtk_mipicsi0_probe(struct platform_device *pdev)
 	pcdev->soc_host.nr		= pdev->id;
 	pcdev->width_flags = mtk_DATAWIDTH_8 << 7;
 	pcdev->streamon = 0;
-
 	ret = soc_camera_host_register(&pcdev->soc_host);
 	if (ret)
 		goto reg_err;
@@ -1722,7 +1865,7 @@ reg_err:
 	mipicsi0_err("Register host fail, ret = %d", ret);
 	return ret;
 error:
-	soc_camera_host_register(&pcdev->soc_host);
+	soc_camera_host_unregister(&pcdev->soc_host);
 	return ret;
 }
 
@@ -1730,6 +1873,7 @@ static int mtk_mipicsi0_remove(struct platform_device *pdev)
 {
 	struct soc_camera_host *soc_host = to_soc_camera_host(&pdev->dev);
 
+	pm_runtime_disable(&pdev->dev);
 	soc_camera_host_unregister(soc_host);
 
 	return 0;
@@ -1746,7 +1890,6 @@ static struct platform_driver mtk_mipicsi0_driver = {
 };
 
 module_platform_driver(mtk_mipicsi0_driver);
-
 MODULE_DESCRIPTION("MTK SoC Camera Host driver");
 MODULE_AUTHOR("baoyin zhang <baoyin.zhang@mediatek.com>");
 MODULE_LICENSE("GPL");
