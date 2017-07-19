@@ -33,10 +33,8 @@
 #include <linux/of_address.h>
 #include <linux/of_irq.h>
 
-
+#define CM36686_DEV_NAME     "CM36686"
 #define CM36686_DRIVER_NAME     "cm36686_driver"
-#define ALSPS_DEV_NAME1	"alsps_1"
-#define ALSPS_DEV_NAME2	"alsps_2"
 
 #define APS_TAG                  "[ALS/PS] "
 #define APS_FUN(f)               pr_debug(APS_TAG"%s\n", __func__)
@@ -47,28 +45,19 @@
 #define I2C_FLAG_WRITE	0
 #define I2C_FLAG_READ	1
 
+static int devProbeCnt;
+static int devProbeOkCnt;
 static int cm36686_i2c_probe(struct i2c_client *client, const struct i2c_device_id *id);
 static int cm36686_i2c_remove(struct i2c_client *client);
 static int cm36686_i2c_detect(struct i2c_client *client, struct i2c_board_info *info);
 static int cm36686_i2c_suspend(struct device *dev);
 static int cm36686_i2c_resume(struct device *dev);
 
-static const struct i2c_device_id cm36686_i2c_id[] = {
-		{ALSPS_DEV_NAME1, 0},
-		{ALSPS_DEV_NAME2, 0},
-		{}
-	};
-
 #ifdef CM36686_PS_EINT_ENABLE
 static unsigned long long int_top_time;
-#endif
-struct alsps_hw alsps_cust[CMP_DEVICE_NUM];
-static struct alsps_hw *hw[CMP_DEVICE_NUM] = {
-		&alsps_cust[0],
-		&alsps_cust[1]
-	};
-
 struct platform_device *alspsPltFmDev;
+#endif
+static struct alsps_hw alsps_cust[DEVICE_NUM_MAX];
 
 struct cm36686_priv {
 	struct alsps_hw *hw;
@@ -119,8 +108,7 @@ struct cm36686_priv {
 
 #ifdef CONFIG_OF
 static const struct of_device_id alsps_of_match[] = {
-	{.compatible = "mediatek,alsps_1"},
-	{.compatible = "mediatek,alsps_2"},
+	{.compatible = "mediatek,alsps"},
 	{},
 };
 #endif
@@ -129,11 +117,12 @@ static const struct dev_pm_ops CM36686_pm_ops = {
 	SET_SYSTEM_SLEEP_PM_OPS(cm36686_i2c_suspend, cm36686_i2c_resume)
 };
 #endif
+static const struct i2c_device_id CM36686_i2c_id[] = { {CM36686_DEV_NAME, 0}, {} };
 static struct i2c_driver cm36686_i2c_driver = {
 	.probe = cm36686_i2c_probe,
 	.remove = cm36686_i2c_remove,
 	.detect = cm36686_i2c_detect,
-	.id_table = cm36686_i2c_id,
+	.id_table = CM36686_i2c_id,
 	.driver = {
 		.name = CM36686_DRIVER_NAME,
 #ifdef CONFIG_PM_SLEEP
@@ -155,14 +144,13 @@ struct PS_CALI_DATA_STRUCT {
 /*----------------------------------------------------------------------------*/
 
 /*----------------------------------------------------------------------------*/
-static struct i2c_client *cm36686_i2c_client[CMP_DEVICE_NUM];
-static struct cm36686_priv *cm36686_obj[CMP_DEVICE_NUM];
+static struct i2c_client *cm36686_i2c_client[DEVICE_NUM_MAX];
+static struct cm36686_priv *cm36686_obj[DEVICE_NUM_MAX];
 static int intr_flag = 1;	/* hw default away after enable. */
 
 static int cm36686_local_init(void);
 static int cm36686_remove(void);
-static int cm36686_init_flag = -1;	/* 0<==>OK -1 <==> fail */
-#ifndef DEVICE_ATTRIBUTE_ENABLE
+#ifndef ONLY_USE_IOCTL
 static struct alsps_init_info cm36686_init_info = {
 	.name = "cm36686",
 	.init = cm36686_local_init,
@@ -195,29 +183,6 @@ static u8 *g_i2c_addr;
 
 static int msg_dma_alloc(void);
 static void msg_dma_release(void);
-
-static int get_dev_idex_by_dev(struct device *dev)
-{
-	u8 idx = -1;
-
-	if (strcmp(dev->of_node->name, ALSPS_DEV_NAME1) == 0)
-		idx = 0;
-	else if (strcmp(dev->of_node->name, ALSPS_DEV_NAME2) == 0)
-		idx = 1;
-
-	return idx;
-}
-static int get_dev_idex_by_client(struct i2c_client *client)
-{
-	u8 idx = -1;
-
-	if (strcmp(client->name, ALSPS_DEV_NAME1) == 0)
-		idx = 0;
-	else if (strcmp(client->name, ALSPS_DEV_NAME2) == 0)
-		idx = 1;
-
-	return idx;
-}
 
 static int msg_dma_alloc(void)
 {
@@ -672,906 +637,6 @@ static int cm36686_get_als_value(struct cm36686_priv *obj, u16 als)
 
 }
 
-#ifndef DEVICE_ATTRIBUTE_ENABLE
-static int dev_idx;
-static ssize_t cm36686_show_config(struct device_driver *ddri, char *buf)
-{
-	ssize_t res = 0;
-	static struct cm36686_priv *obj;
-
-	if (dev_idx > CMP_DEVICE_NUM || dev_idx < 0) {
-		APS_ERR("no device with index: %d\n", dev_idx);
-		return 0;
-	}
-
-	obj = cm36686_obj[dev_idx];
-	if (!obj) {
-		APS_ERR("cm36686_obj[%d] is null!!\n");
-		return res;
-	}
-
-	res += snprintf(buf + res, PAGE_SIZE, "(%d %d %d %d %d)\n",
-		atomic_read(&obj->i2c_retry),
-		atomic_read(&obj->als_debounce),
-		atomic_read(&obj->ps_mask),
-		atomic_read(&obj->ps_thd_val),
-		atomic_read(&obj->ps_debounce));
-return res;
-}
-
-/*----------------------------------------------------------------------------*/
-static ssize_t cm36686_store_config(struct device_driver *ddri, const char *buf, size_t count)
-{
-	int retry, als_deb, ps_deb, mask, thres;
-	static struct cm36686_priv *obj;
-
-	if (dev_idx > CMP_DEVICE_NUM || dev_idx < 0) {
-		APS_ERR("no device with index: %d\n", dev_idx);
-		return 0;
-	}
-
-	obj = cm36686_obj[dev_idx];
-
-	if (!obj) {
-		APS_ERR("cm36686_obj is null!!\n");
-		return 0;
-	}
-
-	if (sscanf(buf, "%d %d %d %d %d", &retry, &als_deb, &mask, &thres, &ps_deb) == 5) {
-		atomic_set(&obj->i2c_retry, retry);
-		atomic_set(&obj->als_debounce, als_deb);
-		atomic_set(&obj->ps_mask, mask);
-		atomic_set(&obj->ps_thd_val, thres);
-		atomic_set(&obj->ps_debounce, ps_deb);
-	} else {
-		APS_ERR("invalid content: '%s', length = %zu\n", buf, count);
-	}
-	return count;
-}
-
-/*----------------------------------------------------------------------------*/
-static ssize_t cm36686_show_trace(struct device_driver *ddri, char *buf)
-{
-	ssize_t res;
-	static struct cm36686_priv *obj;
-
-	if (dev_idx > CMP_DEVICE_NUM || dev_idx < 0) {
-		APS_ERR("no device with index: %d\n", dev_idx);
-		return 0;
-	}
-
-	obj = cm36686_obj[dev_idx];
-	if (!obj) {
-		APS_ERR("cm36686_obj is null!!\n");
-		return 0;
-	}
-
-	res = snprintf(buf, PAGE_SIZE, "0x%04X\n", atomic_read(&obj->trace));
-	return res;
-}
-
-/*----------------------------------------------------------------------------*/
-static ssize_t cm36686_store_trace(struct device_driver *ddri, const char *buf, size_t count)
-{
-	int trace;
-	static struct cm36686_priv *obj;
-
-	if (dev_idx > CMP_DEVICE_NUM || dev_idx < 0) {
-		APS_ERR("no device with index: %d\n", dev_idx);
-		return 0;
-	}
-
-	obj = cm36686_obj[dev_idx];
-	if (!obj) {
-		APS_ERR("cm36686_obj is null!!\n");
-		return 0;
-	}
-
-	if (sscanf(buf, "0x%x", &trace) == 1)
-		atomic_set(&obj->trace, trace);
-	else
-		APS_ERR("invalid content: '%s', length = %zu\n", buf, count);
-
-	return count;
-}
-
-/*----------------------------------------------------------------------------*/
-static ssize_t cm36686_show_als(struct device_driver *ddri, char *buf)
-{
-	int res;
-	static struct cm36686_priv *obj;
-
-	if (dev_idx > CMP_DEVICE_NUM || dev_idx < 0) {
-		APS_ERR("no device with index: %d\n", dev_idx);
-		return 0;
-	}
-
-	obj = cm36686_obj[dev_idx];
-	if (!obj) {
-		APS_ERR("cm36686_obj is null!!\n");
-		return 0;
-	}
-	res = cm36686_read_als(obj->client, &obj->als);
-	if (res)
-		return snprintf(buf, PAGE_SIZE, "ERROR: %d\n", res);
-	else
-		return snprintf(buf, PAGE_SIZE, "0x%04X\n", obj->als);
-}
-
-/*----------------------------------------------------------------------------*/
-static ssize_t cm36686_show_ps(struct device_driver *ddri, char *buf)
-{
-	ssize_t res;
-	static struct cm36686_priv *obj;
-
-	if (dev_idx > CMP_DEVICE_NUM || dev_idx < 0) {
-		APS_ERR("no device with index: %d\n", dev_idx);
-		return 0;
-	}
-
-	obj = cm36686_obj[dev_idx];
-	if (!obj) {
-		APS_ERR("cm3623_obj is null!!\n");
-		return 0;
-	}
-
-	res = cm36686_read_ps(obj->client, &obj->ps);
-	if (res)
-		return snprintf(buf, PAGE_SIZE, "ERROR: %d\n", (int)res);
-	else
-		return snprintf(buf, PAGE_SIZE, "0x%04X\n", obj->ps);
-}
-
-/*----------------------------------------------------------------------------*/
-static ssize_t cm36686_show_reg(struct device_driver *ddri, char *buf)
-{
-	u8 _bIndex = 0;
-	u8 databuf[2] = { 0 };
-	ssize_t _tLength = 0;
-	int res;
-	static struct cm36686_priv *obj;
-
-	if (dev_idx > CMP_DEVICE_NUM || dev_idx < 0) {
-		APS_ERR("no device with index: %d\n", dev_idx);
-		return 0;
-	}
-
-	obj = cm36686_obj[dev_idx];
-	if (!obj) {
-		APS_ERR("cm3623_obj is null!!\n");
-		return 0;
-	}
-
-	for (_bIndex = 0; _bIndex < 0x0D; _bIndex++) {
-		res = cmp_i2c_read(obj->client, _bIndex, databuf, 2);
-		if (res < 0)
-			APS_ERR("i2c_master_send function err res = %d\n", res);
-
-		_tLength +=
-		    snprintf((buf + _tLength), (PAGE_SIZE - _tLength), "Reg[0x%02X]: 0x%02X\n",
-			     _bIndex, databuf[0]);
-	}
-
-	return _tLength;
-
-}
-
-/*----------------------------------------------------------------------------*/
-static ssize_t cm36686_show_send(struct device_driver *ddri, char *buf)
-{
-	return 0;
-}
-
-/*----------------------------------------------------------------------------*/
-static ssize_t cm36686_store_send(struct device_driver *ddri, const char *buf, size_t count)
-{
-	int addr, cmd;
-	u8 dat;
-	static struct cm36686_priv *obj;
-
-	if (dev_idx > CMP_DEVICE_NUM || dev_idx < 0) {
-		APS_ERR("no device with index: %d\n", dev_idx);
-		return 0;
-	}
-
-	obj = cm36686_obj[dev_idx];
-	if (!obj) {
-		APS_ERR("cm36686_obj is null!!\n");
-		return 0;
-	} else if (sscanf(buf, "%x %x", &addr, &cmd) != 2) {
-		APS_ERR("invalid format: '%s'\n", buf);
-		return 0;
-	}
-
-	dat = (u8) cmd;
-
-	return count;
-}
-
-/*----------------------------------------------------------------------------*/
-static ssize_t cm36686_show_recv(struct device_driver *ddri, char *buf)
-{
-	return 0;
-}
-
-/*----------------------------------------------------------------------------*/
-static ssize_t cm36686_store_recv(struct device_driver *ddri, const char *buf, size_t count)
-{
-	int addr;
-	int ret;
-	static struct cm36686_priv *obj;
-
-	if (dev_idx > CMP_DEVICE_NUM || dev_idx < 0) {
-		APS_ERR("no device with index: %d\n", dev_idx);
-		return 0;
-	}
-
-	obj = cm36686_obj[dev_idx];
-	if (!obj) {
-		APS_ERR("cm36686_obj is null!!\n");
-		return 0;
-	}
-	ret = kstrtoint(buf, 16, &addr);
-	if (ret < 0) {
-		APS_ERR("invalid format: '%s'\n", buf);
-		return 0;
-	}
-
-	return count;
-}
-
-/*----------------------------------------------------------------------------*/
-static ssize_t cm36686_show_status(struct device_driver *ddri, char *buf)
-{
-	ssize_t len = 0;
-	static struct cm36686_priv *obj;
-
-	if (dev_idx > CMP_DEVICE_NUM || dev_idx < 0) {
-		APS_ERR("no device with index: %d\n", dev_idx);
-		return 0;
-	}
-
-	obj = cm36686_obj[dev_idx];
-	if (!obj) {
-		APS_ERR("cm36686_obj is null!!\n");
-		return 0;
-	}
-
-	if (obj->hw) {
-		len += snprintf(buf + len, PAGE_SIZE - len, "CUST: %d, (%d %d)\n",
-				obj->hw->i2c_num, obj->hw->power_id,
-				obj->hw->power_vol);
-	} else {
-		len += snprintf(buf + len, PAGE_SIZE - len, "CUST: NULL\n");
-	}
-
-	len += snprintf(buf + len, PAGE_SIZE - len, "REGS: %02X %02X %02X %02lX %02lX\n",
-			atomic_read(&obj->als_cmd_val),
-			atomic_read(&obj->ps_cmd_val),
-			atomic_read(&obj->ps_thd_val), obj->enable,
-			obj->pending_intr);
-
-	len +=
-	    snprintf(buf + len, PAGE_SIZE - len, "MISC: %d %d\n",
-		     atomic_read(&obj->als_suspend), atomic_read(&obj->ps_suspend));
-
-	return len;
-}
-
-#define IS_SPACE(CH) (((CH) == ' ') || ((CH) == '\n'))
-static int read_int_from_buf(struct cm36686_priv *obj, const char *buf, size_t count, u32 data[],
-			     int len)
-{
-	int idx = 0;
-	int ret;
-	char *cur = (char *)buf, *end = (char *)(buf + count);
-
-	while (idx < len) {
-		while ((cur < end) && IS_SPACE(*cur))
-			cur++;
-
-		ret = kstrtoint(cur, 10, &data[idx]);
-		if (ret < 0)
-			break;
-
-		idx++;
-		while ((cur < end) && !IS_SPACE(*cur))
-			cur++;
-	}
-	return idx;
-}
-
-/*----------------------------------------------------------------------------*/
-static ssize_t cm36686_show_alslv(struct device_driver *ddri, char *buf)
-{
-	ssize_t len = 0;
-	int idx;
-	static struct cm36686_priv *obj;
-
-	if (dev_idx > CMP_DEVICE_NUM || dev_idx < 0) {
-		APS_ERR("no device with index: %d\n", dev_idx);
-		return 0;
-	}
-
-	obj = cm36686_obj[dev_idx];
-	if (!obj) {
-		APS_ERR("cm36686_obj is null!!\n");
-		return 0;
-	}
-
-	for (idx = 0; idx < obj->als_level_num; idx++)
-		len += snprintf(buf + len, PAGE_SIZE - len, "%d ", obj->hw->als_level[idx]);
-	len += snprintf(buf + len, PAGE_SIZE - len, "\n");
-	return len;
-}
-
-/*----------------------------------------------------------------------------*/
-static ssize_t cm36686_store_alslv(struct device_driver *ddri, const char *buf, size_t count)
-{
-	static struct cm36686_priv *obj;
-
-	if (dev_idx > CMP_DEVICE_NUM || dev_idx < 0) {
-		APS_ERR("no device with index: %d\n", dev_idx);
-		return 0;
-	}
-
-	obj = cm36686_obj[dev_idx];
-	if (!obj) {
-		APS_ERR("cm36686_obj is null!!\n");
-		return 0;
-	} else if (!strcmp(buf, "def")) {
-		memcpy(obj->als_level, obj->hw->als_level,
-		       sizeof(obj->als_level));
-	} else if (obj->als_level_num !=
-		   read_int_from_buf(obj, buf, count, obj->hw->als_level,
-				     obj->als_level_num)) {
-		APS_ERR("invalid format: '%s'\n", buf);
-	}
-	return count;
-}
-
-/*----------------------------------------------------------------------------*/
-static ssize_t cm36686_show_alsval(struct device_driver *ddri, char *buf)
-{
-	ssize_t len = 0;
-	int idx;
-	static struct cm36686_priv *obj;
-
-	if (dev_idx > CMP_DEVICE_NUM || dev_idx < 0) {
-		APS_ERR("no device with index: %d\n", dev_idx);
-		return 0;
-	}
-
-	obj = cm36686_obj[dev_idx];
-	if (!obj) {
-		APS_ERR("cm36686_obj is null!!\n");
-		return 0;
-	}
-
-	for (idx = 0; idx < obj->als_value_num; idx++)
-		len += snprintf(buf + len, PAGE_SIZE - len, "%d ", obj->hw->als_value[idx]);
-	len += snprintf(buf + len, PAGE_SIZE - len, "\n");
-	return len;
-}
-
-/*----------------------------------------------------------------------------*/
-static ssize_t cm36686_store_alsval(struct device_driver *ddri, const char *buf, size_t count)
-{
-	static struct cm36686_priv *obj;
-
-	if (dev_idx > CMP_DEVICE_NUM || dev_idx < 0) {
-		APS_ERR("no device with index: %d\n", dev_idx);
-		return 0;
-	}
-
-	obj = cm36686_obj[dev_idx];
-	if (!obj) {
-		APS_ERR("cm36686_obj is null!!\n");
-		return 0;
-	} else if (!strcmp(buf, "def")) {
-		memcpy(obj->als_value, obj->hw->als_value,
-		       sizeof(obj->als_value));
-	} else if (obj->als_value_num !=
-		   read_int_from_buf(obj, buf, count, obj->hw->als_value,
-				     obj->als_value_num)) {
-		APS_ERR("invalid format: '%s'\n", buf);
-	}
-	return count;
-}
-/*----------------------------------------------------------------------------*/
-static ssize_t cm36686_show_dev_idx(struct device_driver *ddri, char *buf)
-{
-	int len;
-
-	len = snprintf(buf, PAGE_SIZE, "%d ", dev_idx);
-	return len;
-}
-
-/*----------------------------------------------------------------------------*/
-static ssize_t cm36686_store_dev_idx(struct device_driver *ddri, const char *buf, size_t count)
-{
-	int tmp = -1;
-	int res = 0;
-
-	res = kstrtoint(buf, 10, &tmp);
-	if (tmp < CMP_DEVICE_NUM || tmp >= 0)
-		dev_idx = tmp;
-
-	return count;
-}
-
-/*---------------------------------------------------------------------------------------*/
-static DRIVER_ATTR(als, 0444, cm36686_show_als, NULL);
-static DRIVER_ATTR(ps, 0444, cm36686_show_ps, NULL);
-static DRIVER_ATTR(config, 0644, cm36686_show_config, cm36686_store_config);
-static DRIVER_ATTR(alslv, 0644, cm36686_show_alslv, cm36686_store_alslv);
-static DRIVER_ATTR(alsval, 0644, cm36686_show_alsval, cm36686_store_alsval);
-static DRIVER_ATTR(trace, 0644, cm36686_show_trace, cm36686_store_trace);
-static DRIVER_ATTR(status, 0444, cm36686_show_status, NULL);
-static DRIVER_ATTR(send, 0644, cm36686_show_send, cm36686_store_send);
-static DRIVER_ATTR(recv, 0644, cm36686_show_recv, cm36686_store_recv);
-static DRIVER_ATTR(reg, 0444, cm36686_show_reg, NULL);
-static DRIVER_ATTR(device_idx, 0444, cm36686_show_dev_idx, cm36686_store_dev_idx);
-
-/*----------------------------------------------------------------------------*/
-static struct driver_attribute *cm36686_attr_list[] = {
-	&driver_attr_als,
-	&driver_attr_ps,
-	&driver_attr_trace,	/*trace log */
-	&driver_attr_config,
-	&driver_attr_alslv,
-	&driver_attr_alsval,
-	&driver_attr_status,
-	&driver_attr_send,
-	&driver_attr_recv,
-	&driver_attr_reg,
-	&driver_attr_device_idx,
-};
-
-/*----------------------------------------------------------------------------*/
-static int cm36686_create_attr(struct device_driver *driver)
-{
-	int idx, err = 0;
-	int num = (int)(ARRAY_SIZE(cm36686_attr_list));
-
-	if (driver == NULL)
-		return -EINVAL;
-
-	for (idx = 0; idx < num; idx++) {
-		err = driver_create_file(driver, cm36686_attr_list[idx]);
-		if (err) {
-			APS_ERR("driver_create_file (%s) = %d\n", cm36686_attr_list[idx]->attr.name,
-				err);
-			break;
-		}
-	}
-	return err;
-}
-
-/*----------------------------------------------------------------------------*/
-static int cm36686_delete_attr(struct device_driver *driver)
-{
-	int idx, err = 0;
-	int num = (int)(ARRAY_SIZE(cm36686_attr_list));
-
-	if (!driver)
-		return -EINVAL;
-
-	for (idx = 0; idx < num; idx++)
-		driver_remove_file(driver, cm36686_attr_list[idx]);
-
-	return err;
-}
-#endif
-
-#ifdef DEVICE_ATTRIBUTE_ENABLE
-static ssize_t cm36686_show_config(struct device *dev,
-				 struct device_attribute *attr, char *buf)
-{
-	ssize_t res = 0;
-	static struct cm36686_priv *obj;
-	int idx;
-
-	idx = get_dev_idex_by_dev(dev);
-	if (idx > CMP_DEVICE_NUM || idx < 0) {
-		APS_ERR("no device with index: %d\n", idx);
-		return 0;
-	}
-
-	obj = cm36686_obj[idx];
-	if (!obj) {
-		APS_ERR("cm36686_obj[%d] is null!!\n", idx);
-		return res;
-	}
-
-	res += snprintf(buf + res, PAGE_SIZE, "(%d %d %d %d %d)\n",
-		atomic_read(&obj->i2c_retry),
-		atomic_read(&obj->als_debounce),
-		atomic_read(&obj->ps_mask),
-		atomic_read(&obj->ps_thd_val),
-		atomic_read(&obj->ps_debounce));
-	return res;
-}
-
-/*----------------------------------------------------------------------------*/
-static ssize_t cm36686_store_config(struct device *dev, struct device_attribute *attr,
-				  const char *buf, size_t count)
-{
-	int retry, als_deb, ps_deb, mask, thres;
-	static struct cm36686_priv *obj;
-	int idx;
-
-	idx = get_dev_idex_by_dev(dev);
-	if (idx > CMP_DEVICE_NUM || idx < 0) {
-		APS_ERR("no device with index: %d\n", idx);
-		return 0;
-	}
-
-	obj = cm36686_obj[idx];
-
-	if (!obj) {
-		APS_ERR("cm36686_obj is null!!\n");
-		return 0;
-	}
-
-	if (sscanf(buf, "%d %d %d %d %d", &retry, &als_deb, &mask, &thres, &ps_deb) == 5) {
-		atomic_set(&obj->i2c_retry, retry);
-		atomic_set(&obj->als_debounce, als_deb);
-		atomic_set(&obj->ps_mask, mask);
-		atomic_set(&obj->ps_thd_val, thres);
-		atomic_set(&obj->ps_debounce, ps_deb);
-	} else {
-		APS_ERR("invalid content: '%s', length = %zu\n", buf, count);
-	}
-	return count;
-}
-
-/*----------------------------------------------------------------------------*/
-static ssize_t cm36686_show_trace(struct device *dev,
-				 struct device_attribute *attr, char *buf)
-{
-	ssize_t res;
-	static struct cm36686_priv *obj;
-	int idx;
-
-	idx = get_dev_idex_by_dev(dev);
-	if (idx > CMP_DEVICE_NUM || idx < 0) {
-		APS_ERR("no device with index: %d\n", idx);
-		return 0;
-	}
-
-	obj = cm36686_obj[idx];
-	if (!obj) {
-		APS_ERR("cm36686_obj is null!!\n");
-		return 0;
-	}
-
-	res = snprintf(buf, PAGE_SIZE, "0x%04X\n", atomic_read(&obj->trace));
-	return res;
-}
-
-/*----------------------------------------------------------------------------*/
-static ssize_t cm36686_store_trace(struct device *dev, struct device_attribute *attr,
-				  const char *buf, size_t count)
-{
-	int trace;
-	static struct cm36686_priv *obj;
-	int idx;
-
-	idx = get_dev_idex_by_dev(dev);
-	if (idx > CMP_DEVICE_NUM || idx < 0) {
-		APS_ERR("no device with index: %d\n", idx);
-		return 0;
-	}
-
-	obj = cm36686_obj[idx];
-	if (!obj) {
-		APS_ERR("cm36686_obj is null!!\n");
-		return 0;
-	}
-
-	if (sscanf(buf, "0x%x", &trace) == 1)
-		atomic_set(&obj->trace, trace);
-	else
-		APS_ERR("invalid content: '%s', length = %zu\n", buf, count);
-
-	return count;
-}
-
-/*----------------------------------------------------------------------------*/
-static ssize_t cm36686_show_als(struct device *dev,
-				 struct device_attribute *attr, char *buf)
-{
-	int res;
-	static struct cm36686_priv *obj;
-	int idx;
-	ssize_t len;
-
-	mutex_lock(&cm36686_mutex);
-	idx = get_dev_idex_by_dev(dev);
-	if (idx > CMP_DEVICE_NUM || idx < 0) {
-		APS_ERR("no device with index: %d\n", idx);
-		return 0;
-	}
-
-	obj = cm36686_obj[idx];
-	if (!obj) {
-		APS_ERR("cm36686_obj is null!!\n");
-		return 0;
-	}
-	res = cm36686_read_als(obj->client, &obj->als);
-	if (res)
-		len = snprintf(buf, PAGE_SIZE, "ERROR: %d\n", res);
-	else
-		len = snprintf(buf, PAGE_SIZE, "0x%04X\n", obj->als);
-	mutex_unlock(&cm36686_mutex);
-
-	return len;
-}
-
-static ssize_t cm36686_show_reg(struct device *dev,
-				 struct device_attribute *attr, char *buf)
-{
-	u8 _bIndex = 0;
-	u8 databuf[2] = { 0 };
-	ssize_t _tLength = 0;
-	int res;
-	static struct cm36686_priv *obj;
-	int idx;
-
-	idx = get_dev_idex_by_dev(dev);
-	if (idx > CMP_DEVICE_NUM || idx < 0) {
-		APS_ERR("no device with index: %d\n", idx);
-		return 0;
-	}
-
-	obj = cm36686_obj[idx];
-	if (!obj) {
-		APS_ERR("cm3623_obj is null!!\n");
-		return 0;
-	}
-
-	for (_bIndex = 0; _bIndex < 0x0D; _bIndex++) {
-		res = cmp_i2c_read(obj->client, _bIndex, databuf, 2);
-		if (res < 0)
-			APS_ERR("i2c_master_send function err res = %d\n", res);
-
-		_tLength +=
-		    snprintf((buf + _tLength), (PAGE_SIZE - _tLength), "Reg[0x%02X]: 0x%02X\n",
-			     _bIndex, databuf[0]);
-	}
-
-	return _tLength;
-
-}
-
-/*----------------------------------------------------------------------------*/
-static ssize_t cm36686_show_status(struct device *dev,
-				 struct device_attribute *attr, char *buf)
-{
-	ssize_t len = 0;
-	static struct cm36686_priv *obj;
-	int idx;
-
-	idx = get_dev_idex_by_dev(dev);
-	if (idx > CMP_DEVICE_NUM || idx < 0) {
-		APS_ERR("no device with index: %d\n", idx);
-		return 0;
-	}
-
-	obj = cm36686_obj[idx];
-	if (!obj) {
-		APS_ERR("cm36686_obj is null!!\n");
-		return 0;
-	}
-
-	if (obj->hw) {
-		len += snprintf(buf + len, PAGE_SIZE - len, "CUST: %d, (%d %d)\n",
-				obj->hw->i2c_num, obj->hw->power_id,
-				obj->hw->power_vol);
-	} else {
-		len += snprintf(buf + len, PAGE_SIZE - len, "CUST: NULL\n");
-	}
-
-	len += snprintf(buf + len, PAGE_SIZE - len, "REGS: %02X %02X %02X %02lX %02lX\n",
-			atomic_read(&obj->als_cmd_val),
-			atomic_read(&obj->ps_cmd_val),
-			atomic_read(&obj->ps_thd_val), obj->enable,
-			obj->pending_intr);
-
-	len +=
-	    snprintf(buf + len, PAGE_SIZE - len, "MISC: %d %d\n",
-		     atomic_read(&obj->als_suspend), atomic_read(&obj->ps_suspend));
-
-	return len;
-}
-
-/*----------------------------------------------------------------------------*/
-/*----------------------------------------------------------------------------*/
-#define IS_SPACE(CH) (((CH) == ' ') || ((CH) == '\n'))
-/*----------------------------------------------------------------------------*/
-static int read_int_from_buf(struct cm36686_priv *obj, const char *buf, size_t count, u32 data[],
-			     int len)
-{
-	int idx = 0;
-	int ret;
-	char *cur = (char *)buf, *end = (char *)(buf + count);
-
-	while (idx < len) {
-		while ((cur < end) && IS_SPACE(*cur))
-			cur++;
-
-		ret = kstrtoint(cur, 10, &data[idx]);
-		if (ret < 0)
-			break;
-
-		idx++;
-		while ((cur < end) && !IS_SPACE(*cur))
-			cur++;
-	}
-	return idx;
-}
-
-/*----------------------------------------------------------------------------*/
-static ssize_t cm36686_show_alslv(struct device *dev,
-				 struct device_attribute *attr, char *buf)
-{
-	ssize_t len = 0;
-	int idx;
-	static struct cm36686_priv *obj;
-
-	idx = get_dev_idex_by_dev(dev);
-	if (idx > CMP_DEVICE_NUM || idx < 0) {
-		APS_ERR("no device with index: %d\n", idx);
-		return 0;
-	}
-
-	obj = cm36686_obj[idx];
-	if (!obj) {
-		APS_ERR("cm36686_obj is null!!\n");
-		return 0;
-	}
-
-	for (idx = 0; idx < obj->als_level_num; idx++)
-		len += snprintf(buf + len, PAGE_SIZE - len, "%d ", obj->hw->als_level[idx]);
-	len += snprintf(buf + len, PAGE_SIZE - len, "\n");
-	return len;
-}
-
-/*----------------------------------------------------------------------------*/
-static ssize_t cm36686_store_alslv(struct device *dev, struct device_attribute *attr,
-				  const char *buf, size_t count)
-{
-	static struct cm36686_priv *obj;
-	u8 idx = -1;
-
-	idx = get_dev_idex_by_dev(dev);
-	if (idx > CMP_DEVICE_NUM || idx < 0) {
-		APS_ERR("no device with index: %d\n", idx);
-		return 0;
-	}
-
-	obj = cm36686_obj[idx];
-	if (!obj) {
-		APS_ERR("cm36686_obj is null!!\n");
-		return 0;
-	} else if (!strcmp(buf, "def")) {
-		memcpy(obj->als_level, obj->hw->als_level,
-		       sizeof(obj->als_level));
-	} else if (obj->als_level_num !=
-		   read_int_from_buf(obj, buf, count, obj->hw->als_level,
-				     obj->als_level_num)) {
-		APS_ERR("invalid format: '%s'\n", buf);
-	}
-	return count;
-}
-
-/*----------------------------------------------------------------------------*/
-static ssize_t cm36686_show_alsval(struct device *dev,
-				 struct device_attribute *attr, char *buf)
-{
-	ssize_t len = 0;
-	int idx;
-	static struct cm36686_priv *obj;
-
-	idx = get_dev_idex_by_dev(dev);
-	if (idx > CMP_DEVICE_NUM || idx < 0) {
-		APS_ERR("no device with index: %d\n", idx);
-		return 0;
-	}
-
-	obj = cm36686_obj[idx];
-	if (!obj) {
-		APS_ERR("cm36686_obj is null!!\n");
-		return 0;
-	}
-
-	for (idx = 0; idx < obj->als_value_num; idx++)
-		len += snprintf(buf + len, PAGE_SIZE - len, "%d ", obj->hw->als_value[idx]);
-	len += snprintf(buf + len, PAGE_SIZE - len, "\n");
-	return len;
-}
-
-/*----------------------------------------------------------------------------*/
-static ssize_t cm36686_store_alsval(struct device *dev, struct device_attribute *attr,
-				  const char *buf, size_t count)
-{
-	static struct cm36686_priv *obj;
-	u8 idx = -1;
-
-	idx = get_dev_idex_by_dev(dev);
-	if (idx > CMP_DEVICE_NUM || idx < 0) {
-		APS_ERR("no device with index: %d\n", idx);
-		return 0;
-	}
-
-	obj = cm36686_obj[idx];
-	if (!obj) {
-		APS_ERR("cm36686_obj is null!!\n");
-		return 0;
-	} else if (!strcmp(buf, "def")) {
-		memcpy(obj->als_value, obj->hw->als_value,
-		       sizeof(obj->als_value));
-	} else if (obj->als_value_num !=
-		   read_int_from_buf(obj, buf, count, obj->hw->als_value,
-				     obj->als_value_num)) {
-		APS_ERR("invalid format: '%s'\n", buf);
-	}
-	return count;
-}
-
-/*---------------------------------------------------------------------------------------*/
-static DEVICE_ATTR(als, 0444, cm36686_show_als, NULL);
-static DEVICE_ATTR(config, 0644, cm36686_show_config, cm36686_store_config);
-static DEVICE_ATTR(alslv, 0644, cm36686_show_alslv, cm36686_store_alslv);
-static DEVICE_ATTR(alsval, 0644, cm36686_show_alsval, cm36686_store_alsval);
-static DEVICE_ATTR(trace, 0644, cm36686_show_trace, cm36686_store_trace);
-static DEVICE_ATTR(status, 0444, cm36686_show_status, NULL);
-static DEVICE_ATTR(reg, 0444, cm36686_show_reg, NULL);
-/*----------------------------------------------------------------------------*/
-static struct attribute *cm36686_attr_list[] = {
-	&dev_attr_als.attr,
-	&dev_attr_trace.attr,
-	&dev_attr_config.attr,
-	&dev_attr_alslv.attr,
-	&dev_attr_alsval.attr,
-	&dev_attr_status.attr,
-	&dev_attr_reg.attr,
-	NULL
-};
-
-static struct attribute_group cm36686_attr_group = {
-	.attrs = cm36686_attr_list
-};
-
-/*----------------------------------------------------------------------------*/
-static int cm36686_create_attr(struct device *dev)
-{
-	int err = 0;
-
-	if (dev == NULL)
-		return -EINVAL;
-
-	err = sysfs_create_group(&(dev->kobj),	&cm36686_attr_group);
-	if (err)
-		APS_ERR("device attr create fail: %d\n", err);
-
-	return err;
-}
-
-/*----------------------------------------------------------------------------*/
-static int cm36686_delete_attr(struct device *dev)
-{
-	int err = 0;
-
-	if (!dev)
-		return -EINVAL;
-
-	err = sysfs_create_group(&(dev->kobj), &cm36686_attr_group);
-	return err;
-}
-#endif
-
 /*----------------------------------------------------------------------------*/
 #ifdef CM36686_PS_EINT_ENABLE
 /*----------------------------------interrupt functions--------------------------------*/
@@ -1628,12 +693,12 @@ static void cm36686_eint_work(struct work_struct *work)
 		APS_LOG("cm36686 interrupt value = %d\n", intr_flag);
 		res = ps_report_interrupt_data(intr_flag);
 	}
-	for (i = 0; i < CMP_DEVICE_NUM; i++)
+	for (i = 0; i < DEVICE_NUM_MAX; i++)
 		enable_irq(cm36686_obj[i]->irq);
 	return;
 
 EXIT_INTR_ERR:
-	for (i = 0; i < CMP_DEVICE_NUM; i++)
+	for (i = 0; i < DEVICE_NUM_MAX; i++)
 		enable_irq(cm36686_obj[i]->irq);
 	APS_ERR("cm36686_eint_work err: %d\n", res);
 }
@@ -1644,7 +709,7 @@ static void cm36686_eint_func(int irq)
 	struct cm36686_priv *obj = NULL;
 	int i;
 
-	for (i = 0; i < CMP_DEVICE_NUM; i++) {
+	for (i = 0; i < DEVICE_NUM_MAX; i++) {
 		if (irq == cm36686_obj[i]->irq)
 		obj = cm36686_obj[i];
 		break;
@@ -1661,7 +726,7 @@ static irqreturn_t cm36686_eint_handler(int irq, void *desc)
 {
 	int i;
 
-	for (i = 0; i < CMP_DEVICE_NUM; i++)
+	for (i = 0; i < DEVICE_NUM_MAX; i++)
 		disable_irq_nosync(cm36686_obj[i]->irq);
 	cm36686_eint_func(irq);
 
@@ -1678,14 +743,7 @@ int cm36686_setup_eint(struct i2c_client *client)
 	struct pinctrl *pinctrl;
 	struct pinctrl_state *pins_default;
 	struct device_node *irq_node;
-	int idx = -1;
 	struct cm36686_priv *obj;
-
-	idx = get_dev_idex_by_client(client);
-	if (idx > CMP_DEVICE_NUM || idx < 0) {
-		APS_ERR("no device with index: %d\n", idx);
-		return -1;
-	}
 
 	obj = cm36686_obj[idx];
 	irq_node = obj->irq_node;
@@ -1732,20 +790,9 @@ int cm36686_setup_eint(struct i2c_client *client)
 }
 #endif
 
-static int cm36686_open_1(struct inode *inode, struct file *file)
+static int cm36686_open(struct inode *inode, struct file *file)
 {
 	file->private_data = cm36686_i2c_client[0];
-
-	if (!file->private_data) {
-		APS_ERR("null pointer!!\n");
-		return -EINVAL;
-	}
-	return nonseekable_open(inode, file);
-}
-
-static int cm36686_open_2(struct inode *inode, struct file *file)
-{
-	file->private_data = cm36686_i2c_client[1];
 
 	if (!file->private_data) {
 		APS_ERR("null pointer!!\n");
@@ -1789,201 +836,176 @@ static int set_psensor_threshold(struct i2c_client *client)
 
 static long cm36686_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 {
-	struct i2c_client *client = (struct i2c_client *)file->private_data;
-	struct cm36686_priv *obj = i2c_get_clientdata(client);
+	/*struct i2c_client *client = (struct i2c_client *)file->private_data;*/
+	struct cm36686_priv *obj = NULL;/*= i2c_get_clientdata(client);*/
 	long err = 0;
+	int32_t i, j;
 	void __user *ptr = (void __user *)arg;
-	int dat;
-	uint32_t enable;
-	int ps_result;
-	int ps_cali;
-	int threshold[2];
+	struct ALSPS_IO_DATA io_data;
 
 	mutex_lock(&cm36686_mutex);
+	if (copy_from_user(&io_data, ptr, sizeof(io_data))) {
+		err = -EFAULT;
+		goto err_out;
+	}
+
+	for (i = 0; i < DEVICE_NUM_MAX; i++) {
+		if (alsps_cust[i].device_id == io_data.device_id)
+			break;
+	}
+
+	if ((i == DEVICE_NUM_MAX) || (io_data.device_id >= DEVICE_NUM_MAX)) {
+		err = -EFAULT;
+		APS_ERR("device_id(%d) ERR!\n", io_data.device_id);
+		goto err_out;
+	}
+	obj = cm36686_obj[io_data.device_id];
+
 	switch (cmd) {
 	case ALSPS_SET_PS_MODE:
-		if (copy_from_user(&enable, ptr, sizeof(enable))) {
-			err = -EFAULT;
-			goto err_out;
-		}
-		if (enable) {
+		if (io_data.data[0]) {/*enable*/
 			err = cm36686_enable_ps(obj->client, 1);
-			if (err) {
+			if (err)
 				APS_ERR("enable ps fail: %ld\n", err);
-				goto err_out;
-			}
-
-			set_bit(CMC_BIT_PS, &obj->enable);
+			else
+				set_bit(CMC_BIT_PS, &obj->enable);
 		} else {
 			err = cm36686_enable_ps(obj->client, 0);
-			if (err) {
+			if (err)
 				APS_ERR("disable ps fail: %ld\n", err);
-				goto err_out;
-			}
-			clear_bit(CMC_BIT_PS, &obj->enable);
+			else
+				clear_bit(CMC_BIT_PS, &obj->enable);
 		}
 		break;
 
 	case ALSPS_GET_PS_MODE:
-		enable = test_bit(CMC_BIT_PS, &obj->enable) ? (1) : (0);
-		if (copy_to_user(ptr, &enable, sizeof(enable))) {
+		io_data.data[0] = test_bit(CMC_BIT_PS, &obj->enable) ? (1) : (0);
+		if (copy_to_user(ptr, &io_data, sizeof(io_data)))
 			err = -EFAULT;
-			goto err_out;
-		}
 		break;
 
 	case ALSPS_GET_PS_DATA:
 		err = cm36686_read_ps(obj->client, &obj->ps);
-		if (err)
-			goto err_out;
-
-		dat = cm36686_get_ps_value(obj, obj->ps);
-		if (copy_to_user(ptr, &dat, sizeof(dat))) {
-			err = -EFAULT;
-			goto err_out;
+		if (err == 0) {
+			io_data.data[0] = cm36686_get_ps_value(obj, obj->ps);
+			if (copy_to_user(ptr, &io_data, sizeof(io_data)))
+				err = -EFAULT;
 		}
 		break;
 
 	case ALSPS_GET_PS_RAW_DATA:
 		err = cm36686_read_ps(obj->client, &obj->ps);
-		if (err)
-			goto err_out;
-
-		dat = obj->ps;
-		if (copy_to_user(ptr, &dat, sizeof(dat))) {
-			err = -EFAULT;
-			goto err_out;
+		if (err == 0) {
+			io_data.data[0] = obj->ps;
+			if (copy_to_user(ptr, &io_data, sizeof(io_data)))
+				err = -EFAULT;
 		}
 		break;
 
+	case AAL_SET_ALS_MODE:
 	case ALSPS_SET_ALS_MODE:
-
-		if (copy_from_user(&enable, ptr, sizeof(enable))) {
-			err = -EFAULT;
-			goto err_out;
-		}
-		if (enable) {
+		if (io_data.data[0]) {
 			err = cm36686_enable_als(obj->client, 1);
-			if (err) {
+			if (err)
 				APS_ERR("enable als fail: %ld\n", err);
-				goto err_out;
-			}
-			set_bit(CMC_BIT_ALS, &obj->enable);
+			else
+				set_bit(CMC_BIT_ALS, &obj->enable);
 		} else {
 			err = cm36686_enable_als(obj->client, 0);
-			if (err) {
+			if (err)
 				APS_ERR("disable als fail: %ld\n", err);
-				goto err_out;
-			}
-			clear_bit(CMC_BIT_ALS, &obj->enable);
+			else
+				clear_bit(CMC_BIT_ALS, &obj->enable);
 		}
 		break;
 
+	case AAL_GET_ALS_MODE:
 	case ALSPS_GET_ALS_MODE:
-		enable = test_bit(CMC_BIT_ALS, &obj->enable) ? (1) : (0);
-		if (copy_to_user(ptr, &enable, sizeof(enable))) {
+		io_data.data[0] = test_bit(CMC_BIT_ALS, &obj->enable) ? (1) : (0);
+		if (copy_to_user(ptr, &io_data, sizeof(io_data)))
 			err = -EFAULT;
-			goto err_out;
-		}
 		break;
 
+	case AAL_GET_ALS_DATA:
 	case ALSPS_GET_ALS_DATA:
 		err = cm36686_read_als(obj->client, &obj->als);
-		if (err)
-			goto err_out;
-
-		dat = cm36686_get_als_value(obj, obj->als);
-		if (copy_to_user(ptr, &dat, sizeof(dat))) {
-			err = -EFAULT;
-			goto err_out;
+		if (err == 0) {
+			io_data.data[0] = cm36686_get_als_value(obj, obj->als);
+			if (copy_to_user(ptr, &io_data, sizeof(io_data)))
+				err = -EFAULT;
 		}
 		break;
 
 	case ALSPS_GET_ALS_RAW_DATA:
 		err = cm36686_read_als(obj->client, &obj->als);
-		if (err)
-			goto err_out;
-
-		dat = obj->als;
-		if (copy_to_user(ptr, &dat, sizeof(dat))) {
-			err = -EFAULT;
-			goto err_out;
+		if (err == 0) {
+			io_data.data[0] = obj->als;
+			if (copy_to_user(ptr, &io_data, sizeof(io_data)))
+				err = -EFAULT;
 		}
 		break;
 
 	case ALSPS_GET_PS_TEST_RESULT:
 		err = cm36686_read_ps(obj->client, &obj->ps);
-		if (err)
-			goto err_out;
+		if (err == 0) {
+			if (obj->ps > atomic_read(&obj->ps_thd_val_low))
+				io_data.data[0] = 0;
+			else
+				io_data.data[0] = 1;
 
-		if (obj->ps > atomic_read(&obj->ps_thd_val_low))
-			ps_result = 0;
-		else
-			ps_result = 1;
-
-		if (copy_to_user(ptr, &ps_result, sizeof(ps_result))) {
-			err = -EFAULT;
-			goto err_out;
+			if (copy_to_user(ptr, &io_data, sizeof(io_data)))
+				err = -EFAULT;
 		}
 		break;
 
 	case ALSPS_IOCTL_CLR_CALI:
-		if (copy_from_user(&dat, ptr, sizeof(dat))) {
-			err = -EFAULT;
-			goto err_out;
-		}
-		if (dat == 0)
+		if (io_data.data[0] == 0)
 			obj->ps_cali = 0;
-
 		break;
 
 	case ALSPS_IOCTL_GET_CALI:
-		ps_cali = obj->ps_cali;
-		if (copy_to_user(ptr, &ps_cali, sizeof(ps_cali))) {
+		io_data.data[0] = obj->ps_cali;
+		if (copy_to_user(ptr, &io_data, sizeof(io_data)))
 			err = -EFAULT;
-			goto err_out;
-		}
 		break;
 
 	case ALSPS_IOCTL_SET_CALI:
-		if (copy_from_user(&ps_cali, ptr, sizeof(ps_cali))) {
-			err = -EFAULT;
-			goto err_out;
-		}
-
-		obj->ps_cali = ps_cali;
+		obj->ps_cali = io_data.data[0];
 		break;
 
 	case ALSPS_SET_PS_THRESHOLD:
-		if (copy_from_user(threshold, ptr, sizeof(threshold))) {
-			err = -EFAULT;
-			goto err_out;
-		}
-		APS_LOG("%s set threshold high: 0x%x, low: 0x%x\n", __func__, threshold[0],
-			threshold[1]);
-		atomic_set(&obj->ps_thd_val_high, (threshold[0] + obj->ps_cali));
-		atomic_set(&obj->ps_thd_val_low, (threshold[1] + obj->ps_cali));	/* need to confirm */
-
+		APS_LOG("%s set threshold high: 0x%x, low: 0x%x\n", __func__, io_data.data[0],
+			io_data.data[1]);
+		atomic_set(&obj->ps_thd_val_high, ((int)io_data.data[0] + obj->ps_cali));
+		atomic_set(&obj->ps_thd_val_low, ((int)io_data.data[1] + obj->ps_cali));	/* need to confirm */
 		set_psensor_threshold(obj->client);
-
 		break;
 
 	case ALSPS_GET_PS_THRESHOLD_HIGH:
-		threshold[0] = atomic_read(&obj->ps_thd_val_high) - obj->ps_cali;
-		APS_LOG("%s get threshold high: 0x%x\n", __func__, threshold[0]);
-		if (copy_to_user(ptr, &threshold[0], sizeof(threshold[0]))) {
+		io_data.data[0] = atomic_read(&obj->ps_thd_val_high) - obj->ps_cali;
+		APS_LOG("%s get threshold high: 0x%x\n", __func__, io_data.data[0]);
+		if (copy_to_user(ptr, &io_data, sizeof(io_data)))
 			err = -EFAULT;
-			goto err_out;
-		}
 		break;
 
 	case ALSPS_GET_PS_THRESHOLD_LOW:
-		threshold[0] = atomic_read(&obj->ps_thd_val_low) - obj->ps_cali;
-		APS_LOG("%s get threshold low: 0x%x\n", __func__, threshold[0]);
-		if (copy_to_user(ptr, &threshold[0], sizeof(threshold[0]))) {
+		io_data.data[0] = atomic_read(&obj->ps_thd_val_low) - obj->ps_cali;
+		APS_LOG("%s get threshold low: 0x%x\n", __func__, io_data.data[0]);
+		if (copy_to_user(ptr, &io_data, sizeof(io_data)))
 			err = -EFAULT;
-			goto err_out;
+		break;
+
+	case AAL_GET_ALS_INFO:
+		io_data.device_id = devProbeOkCnt;
+		j = 0;
+		for (i = 0; i < DEVICE_NUM_MAX; i++) {
+			if (alsps_cust[i].device_id != DEFAULT_DEV_ID) {
+				io_data.data[j] = alsps_cust[i].device_id;
+				j++;
+			}
 		}
+		if (copy_to_user(ptr, &io_data, sizeof(io_data)))
+			err = -EFAULT;
 		break;
 
 	default:
@@ -1991,80 +1013,26 @@ static long cm36686_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned
 		err = -ENOIOCTLCMD;
 		break;
 	}
-
 err_out:
 	mutex_unlock(&cm36686_mutex);
-
 	return err;
 }
 
 #ifdef CONFIG_COMPAT
 static long compat_cm36686_unlocked_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 {
-	unsigned long arg_ioctl = (unsigned long)compat_ptr(arg);
-
-	APS_FUN();
 	if (!filp->f_op || !filp->f_op->unlocked_ioctl) {
 		APS_ERR("compat_ion_ioctl file has no f_op or no f_op->unlocked_ioctl.\n");
 		return -ENOTTY;
 	}
-
-	switch (cmd) {
-	case COMPAT_ALSPS_SET_PS_MODE:
-		return filp->f_op->unlocked_ioctl(filp, ALSPS_SET_PS_MODE, arg_ioctl);
-	case COMPAT_ALSPS_GET_PS_MODE:
-		return filp->f_op->unlocked_ioctl(filp, ALSPS_GET_PS_MODE, arg_ioctl);
-	case COMPAT_ALSPS_GET_PS_DATA:
-		return filp->f_op->unlocked_ioctl(filp, ALSPS_GET_PS_DATA, arg_ioctl);
-	case COMPAT_ALSPS_GET_PS_RAW_DATA:
-		return filp->f_op->unlocked_ioctl(filp, ALSPS_GET_PS_RAW_DATA, arg_ioctl);
-	case COMPAT_ALSPS_SET_ALS_MODE:
-		return filp->f_op->unlocked_ioctl(filp, ALSPS_SET_ALS_MODE, arg_ioctl);
-	case COMPAT_ALSPS_GET_ALS_MODE:
-		return filp->f_op->unlocked_ioctl(filp, ALSPS_GET_ALS_MODE, arg_ioctl);
-	case COMPAT_ALSPS_GET_ALS_DATA:
-		return filp->f_op->unlocked_ioctl(filp, ALSPS_GET_ALS_DATA, arg_ioctl);
-	case COMPAT_ALSPS_GET_ALS_RAW_DATA:
-		return filp->f_op->unlocked_ioctl(filp, ALSPS_GET_ALS_RAW_DATA, arg_ioctl);
-	case COMPAT_ALSPS_GET_PS_TEST_RESULT:
-		return filp->f_op->unlocked_ioctl(filp, ALSPS_GET_PS_TEST_RESULT, arg_ioctl);
-	case COMPAT_ALSPS_GET_ALS_TEST_RESULT:
-		return filp->f_op->unlocked_ioctl(filp, ALSPS_GET_ALS_TEST_RESULT, arg_ioctl);
-	case COMPAT_ALSPS_GET_PS_THRESHOLD_HIGH:
-		return filp->f_op->unlocked_ioctl(filp, ALSPS_GET_PS_THRESHOLD_HIGH, arg_ioctl);
-	case COMPAT_ALSPS_GET_PS_THRESHOLD_LOW:
-		return filp->f_op->unlocked_ioctl(filp, ALSPS_GET_PS_THRESHOLD_LOW, arg_ioctl);
-	case COMPAT_ALSPS_GET_ALS_THRESHOLD_HIGH:
-		return filp->f_op->unlocked_ioctl(filp, ALSPS_GET_ALS_THRESHOLD_HIGH, arg_ioctl);
-	case COMPAT_ALSPS_GET_ALS_THRESHOLD_LOW:
-		return filp->f_op->unlocked_ioctl(filp, ALSPS_GET_ALS_THRESHOLD_LOW, arg_ioctl);
-	case COMPAT_ALSPS_IOCTL_CLR_CALI:
-		return filp->f_op->unlocked_ioctl(filp, ALSPS_IOCTL_CLR_CALI, arg_ioctl);
-	case COMPAT_ALSPS_IOCTL_GET_CALI:
-		return filp->f_op->unlocked_ioctl(filp, ALSPS_IOCTL_GET_CALI, arg_ioctl);
-	case COMPAT_ALSPS_IOCTL_SET_CALI:
-		return filp->f_op->unlocked_ioctl(filp, ALSPS_IOCTL_SET_CALI, arg_ioctl);
-	case COMPAT_ALSPS_SET_PS_THRESHOLD:
-		return filp->f_op->unlocked_ioctl(filp, ALSPS_SET_PS_THRESHOLD, arg_ioctl);
-	case COMPAT_ALSPS_SET_ALS_THRESHOLD:
-		return filp->f_op->unlocked_ioctl(filp, ALSPS_SET_ALS_THRESHOLD, arg_ioctl);
-	case COMPAT_AAL_SET_ALS_MODE:
-		return filp->f_op->unlocked_ioctl(filp, AAL_SET_ALS_MODE, arg_ioctl);
-	case COMPAT_AAL_GET_ALS_MODE:
-		return filp->f_op->unlocked_ioctl(filp, AAL_GET_ALS_MODE, arg_ioctl);
-	case COMPAT_AAL_GET_ALS_DATA:
-		return filp->f_op->unlocked_ioctl(filp, AAL_GET_ALS_DATA, arg_ioctl);
-	default:
-		APS_ERR("compat_ion_ioctl : No such command!! 0x%x\n", cmd);
-		return -ENOIOCTLCMD;
-	}
+	return filp->f_op->unlocked_ioctl(filp, cmd, (unsigned long)compat_ptr(arg));
 }
 #endif
 /********************************************************************/
 /*------------------------------misc device related operation functions------------------------------------*/
-static const struct file_operations cm36686_fops_1 = {
+static const struct file_operations cm36686_fops = {
 	.owner = THIS_MODULE,
-	.open = cm36686_open_1,
+	.open = cm36686_open,
 	.release = cm36686_release,
 	.unlocked_ioctl = cm36686_unlocked_ioctl,
 #if IS_ENABLED(CONFIG_COMPAT)
@@ -2072,27 +1040,10 @@ static const struct file_operations cm36686_fops_1 = {
 #endif
 };
 
-static const struct file_operations cm36686_fops_2 = {
-	.owner = THIS_MODULE,
-	.open = cm36686_open_2,
-	.release = cm36686_release,
-	.unlocked_ioctl = cm36686_unlocked_ioctl,
-#if IS_ENABLED(CONFIG_COMPAT)
-	.compat_ioctl = compat_cm36686_unlocked_ioctl,
-#endif
-};
-
-
-static struct miscdevice cm36686_device_1 = {
+static struct miscdevice cm36686_device = {
 	.minor = MISC_DYNAMIC_MINOR,
-	.name = "als_ps_1",
-	.fops = &cm36686_fops_1,
-};
-
-static struct miscdevice cm36686_device_2 = {
-	.minor = MISC_DYNAMIC_MINOR,
-	.name = "als_ps_2",
-	.fops = &cm36686_fops_2,
+	.name = "als_ps",
+	.fops = &cm36686_fops,
 };
 
 /*--------------------------------------------------------------------------------*/
@@ -2323,23 +1274,40 @@ static int ps_get_data(int *value, int *status)
 static int cm36686_i2c_probe(struct i2c_client *client, const struct i2c_device_id *id)
 {
 	struct cm36686_priv *obj;
+	struct alsps_hw cust_info;
 	int err = 0;
 	/*struct als_control_path als_ctl = { 0 };
 	 *struct als_data_path als_data = { 0 };
 	 *struct ps_control_path ps_ctl = { 0 };
 	 *struct ps_data_path ps_data = { 0 };
 	 */
-	int idx = -1;
-	int err_cnt;
+	u32 idx;
 
-	APS_FUN();
-	idx = get_dev_idex_by_client(client);
-	if (idx < 0 || idx > CMP_DEVICE_NUM) {
-		APS_ERR("No Device with index:%d\n", idx);
+	devProbeCnt++;
+	if (devProbeOkCnt >= DEVICE_NUM_MAX) {
+		APS_ERR("ERR! Max support %d devices!\n", DEVICE_NUM_MAX);
 		return -1;
 	}
-	if (!(hw[idx]))
+
+	if (get_alsps_dts_func(client->dev.of_node, &cust_info) == NULL) {
+		APS_ERR("Get dts info fail!\n");
 		return -1;
+	}
+
+	idx = cust_info.device_id;
+
+	APS_LOG("cm36686_i2c_probe(%d), name:%s device_id:%d\n",
+			devProbeCnt - 1, client->dev.of_node->name, idx);
+
+	if (alsps_cust[idx].device_id != DEFAULT_DEV_ID) {
+		APS_ERR("device_id (%d) already registered!\n", idx);
+		return -1;
+	}
+
+	if (cust_info.device_id >= DEVICE_NUM_MAX) {
+		APS_ERR("device_id limit is (%d)!\n", DEVICE_NUM_MAX);
+		return -1;
+	}
 
 	obj = kzalloc(sizeof(*obj), GFP_KERNEL);
 	if (!obj) {
@@ -2347,9 +1315,11 @@ static int cm36686_i2c_probe(struct i2c_client *client, const struct i2c_device_
 		goto exit;
 	}
 	memset(obj, 0, sizeof(*obj));
+	memcpy(&alsps_cust[idx], &cust_info, sizeof(cust_info));
 
 	cm36686_obj[idx] = obj;
-	obj->hw = hw[idx];
+	obj->hw = &alsps_cust[idx];
+	cm36686_power(obj->hw, 1);	/*power regulator*/
 
 #ifdef CM36686_PS_EINT_ENABLE
 	INIT_WORK(&obj->eint_work, cm36686_eint_work);
@@ -2400,21 +1370,22 @@ static int cm36686_i2c_probe(struct i2c_client *client, const struct i2c_device_
 	if (msg_dma_alloc())
 		goto exit;
 
+
 	err = cm36686_init_client(client);
 	if (err)
 		goto exit_init_failed;
 	APS_LOG("cm36686_init_client() OK!\n");
 
-	if (idx == 0)
-		err = misc_register(&cm36686_device_1);
-	else
-		err = misc_register(&cm36686_device_2);
-	if (err) {
-		APS_ERR("cm36686_device register failed\n");
-		goto exit_misc_device_register_failed;
+	if (devProbeOkCnt == 0) {
+		err = misc_register(&cm36686_device);
+		if (err) {
+			APS_ERR("cm36686_device register failed\n");
+			goto exit_misc_device_register_failed;
+		}
 	}
 
 	/*------------------------cm36686 attribute file for debug--------------------------------------*/
+/*
 #ifdef DEVICE_ATTRIBUTE_ENABLE
 	err = cm36686_create_attr(&(client->dev));
 #else
@@ -2424,7 +1395,7 @@ static int cm36686_i2c_probe(struct i2c_client *client, const struct i2c_device_
 		APS_ERR("create attribute err = %d\n", err);
 		goto exit_create_attr_failed;
 	}
-
+*/
 #if 0
 	als_ctl.is_use_common_factory = false;
 	ps_ctl.is_use_common_factory = false;
@@ -2472,83 +1443,57 @@ static int cm36686_i2c_probe(struct i2c_client *client, const struct i2c_device_
 	}
 
 #endif
-	cm36686_init_flag = 0;
-	APS_LOG("%s: OK\n", __func__);
+	devProbeOkCnt++;
+	APS_LOG("%s: OK(%d, %d)\n", __func__, devProbeCnt, devProbeOkCnt);
 	return 0;
 
-exit_create_attr_failed:
+/*exit_create_attr_failed:*/
 #if 0
 exit_sensor_obj_attach_fail:
 #endif
 exit_misc_device_register_failed:
-	if (idx == 0)
-		misc_deregister(&cm36686_device_1);
-	else
-		misc_deregister(&cm36686_device_2);
+	misc_deregister(&cm36686_device);
 exit_init_failed:
 	kfree(obj);
 exit:
 	cm36686_i2c_client[idx] = NULL;
 	APS_ERR("%s: err = %d\n", __func__, err);
-	err_cnt = 0;
-	for (idx = 0; idx < CMP_DEVICE_NUM; idx++) {
-		if (cm36686_i2c_client[idx] == NULL)
-			err_cnt++;
-	}
-	if (err_cnt >= CMP_DEVICE_NUM)
-		cm36686_init_flag = -1;
-	else
-		cm36686_init_flag = 0;
-
 	return err;
 }
 
 static int cm36686_i2c_remove(struct i2c_client *client)
 {
-	int err;
-	int idx;
+	int i;
 
 	APS_FUN();
-	idx = get_dev_idex_by_client(client);
-	if (idx < 0 || idx > CMP_DEVICE_NUM)
-		return 0;
-	/*------------------------cm36686 attribute file for debug--------------------------------------*/
+	if (devProbeOkCnt != 0) {
+	/*
 #ifdef DEVICE_ATTRIBUTE_ENABLE
-	err = cm36686_delete_attr(&(client->dev));
+		err = cm36686_delete_attr(&(client->dev));
 #else
-	err = cm36686_delete_attr(&(cm36686_init_info.platform_diver_addr->driver));
+		err = cm36686_delete_attr(&(cm36686_init_info.platform_diver_addr->driver));
 #endif
-	if (err)
-		APS_ERR("cm36686_delete_attr fail: %d\n", err);
-	/*----------------------------------------------------------------------------------------*/
-
-	if (idx == 0)
-		misc_deregister(&cm36686_device_1);
-	else
-		misc_deregister(&cm36686_device_2);
-
-	cm36686_i2c_client[idx] = NULL;
-	if (cm36686_i2c_client[0] == NULL && cm36686_i2c_client[1] == NULL)
+		if (err)
+			APS_ERR("cm36686_delete_attr fail: %d\n", err);
+	*/
+		misc_deregister(&cm36686_device);
 		msg_dma_release();
-
-	i2c_unregister_device(client);
-	kfree(i2c_get_clientdata(client));
+		for (i = 0; i < devProbeOkCnt; i++) {
+			i2c_unregister_device(cm36686_i2c_client[i]);
+			kfree(i2c_get_clientdata(cm36686_i2c_client[i]));
+			cm36686_i2c_client[i] = NULL;
+		}
+		devProbeOkCnt = 0;
+	}
+	devProbeCnt = 0;
 	return 0;
-
 }
 
 static int cm36686_i2c_detect(struct i2c_client *client, struct i2c_board_info *info)
 {
-	int idx;
-
-	idx = get_dev_idex_by_client(client);
-	if (idx == 0)
-		strncpy(info->type, ALSPS_DEV_NAME1, sizeof(info->type));
-	else
-		strncpy(info->type, ALSPS_DEV_NAME2, sizeof(info->type));
-
+	APS_LOG("cm36686_i2c_detect %s\n", client->name);
+	strncpy(info->type, client->name, sizeof(info->type));
 	return 0;
-
 }
 
 static int cm36686_i2c_suspend(struct device *dev)
@@ -2601,8 +1546,8 @@ static int cm36686_remove(void)
 {
 	int i;
 
-	for (i = 0; i < CMP_DEVICE_NUM; i++)
-		cm36686_power(hw[i], 0);
+	for (i = 0; i < DEVICE_NUM_MAX; i++)
+		cm36686_power(&alsps_cust[i], 0);
 
 	i2c_del_driver(&cm36686_i2c_driver);
 	return 0;
@@ -2613,58 +1558,42 @@ static int cm36686_remove(void)
 static int cm36686_local_init(void)
 {
 	int i;
+	int res;
 
 	APS_FUN();
-	for (i = 0; i < CMP_DEVICE_NUM; i++)
-		cm36686_power(hw[i], 1);
-	if (i2c_add_driver(&cm36686_i2c_driver)) {
-		APS_ERR("add driver error\n");
-		return -1;
-	}
-	if (-1 == cm36686_init_flag) {
-		APS_ERR("driver init fail\n");
-		return -1;
-	}
-
-	return 0;
+	devProbeCnt = 0;
+	devProbeOkCnt = 0;
+	for (i = 0; i < DEVICE_NUM_MAX; i++)
+		alsps_cust[i].device_id = DEFAULT_DEV_ID;	/*init device id*/
+	res = i2c_add_driver(&cm36686_i2c_driver);
+	/*APS_LOG("Total %d devices, %d probe OK!\n", devProbeCnt, devProbeOkCnt);*/
+	return res;
 }
 
 
 /*----------------------------------------------------------------------------*/
 static int __init cm36686_init(void)
 {
-	const char *name = "mediatek,CM36686";
-	char node_name[255];
-	int i = 1;
-	int res = 0;
-	int err = 0;
+	int res;
 
 	APS_FUN();
-	for (i = 0; i < CMP_DEVICE_NUM; i++) {
-		res = snprintf(node_name, 255, "%s_%d", name, (i + 1)); /*"mediatek, cm36686_1..."*/
-		node_name[res] = '\0';
-		APS_LOG("node name:%s, %d\n", node_name, res);
-		hw[i] = get_alsps_dts_func((const char *)node_name, hw[i]);
-		if (!hw[i]) {
-			APS_ERR("get_alsps_dts_func fail\n");
-			err++;
-		}
+#ifdef ONLY_USE_IOCTL
+	res = cm36686_local_init();
+	if (res != 0) {
+		APS_ERR("cm36686_init Fail!\n");
+		res = -1;
 	}
-	if (err >= CMP_DEVICE_NUM)
-		return -1;
-#ifdef DEVICE_ATTRIBUTE_ENABLE
-	err = cm36686_local_init();
 #else
 	alsps_driver_add(&cm36686_init_info);
 #endif
-	return err;
+	return res;
 }
 
 /*----------------------------------------------------------------------------*/
 static void __exit cm36686_exit(void)
 {
 	APS_FUN();
-#ifdef DEVICE_ATTRIBUTE_ENABLE
+#ifdef ONLY_USE_IOCTL
 	cm36686_remove();
 #endif
 }

@@ -24,6 +24,7 @@
 
 struct alsps_hw {
 	int i2c_num;                                    /*!< the i2c bus used by ALS/PS */
+	unsigned int device_id;
 	int power_id;                                   /*!< the VDD power id of the als chip */
 	int power_vol;                                  /*!< the VDD power voltage of the als chip */
 	int polling_mode;                               /*!< 1: polling mode ; 0:interrupt mode*/
@@ -50,6 +51,6 @@ struct alsps_hw {
 	bool is_batch_supported_als;
 };
 
-struct alsps_hw *get_alsps_dts_func(const char *name, struct alsps_hw *hw);
+struct alsps_hw *get_alsps_dts_func(struct device_node *node, struct alsps_hw *hw);
 
 #endif

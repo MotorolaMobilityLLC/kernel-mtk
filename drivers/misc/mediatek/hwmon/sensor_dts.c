@@ -29,11 +29,10 @@
 #endif
 
 #ifdef CONFIG_CUSTOM_KERNEL_ALSPS
-struct alsps_hw *get_alsps_dts_func(const char *name, struct alsps_hw *hw)
+struct alsps_hw *get_alsps_dts_func(struct device_node *node, struct alsps_hw *hw)
 {
 	int32_t i, ret;
-	u32 i2c_num[] = {0};
-	u32 i2c_addr[C_CUST_I2C_ADDR_NUM] = {0};
+	u32 device_id[] = {0};
 	u32 power_id[] = {0};
 	u32 power_vol[] = {0};
 	u32 polling_mode_ps[] = {0};
@@ -44,23 +43,14 @@ struct alsps_hw *get_alsps_dts_func(const char *name, struct alsps_hw *hw)
 	u32 ps_threshold_low[] = {0};
 	u32 is_batch_supported_ps[] = {0};
 	u32 is_batch_supported_als[] = {0};
-	struct device_node *node = NULL;
 
 	SENSOR_LOG("Device Tree get alsps info!\n");
-	if (name == NULL) {
+	if (node == NULL) {
 		ret = -1;
 	} else {
-		node = of_find_compatible_node(NULL, NULL, name);
-		if (node != NULL) {
-			ret = of_property_read_u32_array(node, "i2c_num", i2c_num, ARRAY_SIZE(i2c_num));
+		ret = of_property_read_u32_array(node, "device_id", device_id, ARRAY_SIZE(device_id));
 		if (ret == 0)
-			hw->i2c_num	=	(int)i2c_num[0];
-
-		ret += of_property_read_u32_array(node, "i2c_addr", i2c_addr, ARRAY_SIZE(i2c_addr));
-		if (ret == 0) {
-			for (i = 0; i < C_CUST_I2C_ADDR_NUM; i++)
-				hw->i2c_addr[i]   = (u8)i2c_addr[i];
-		}
+			hw->device_id = device_id[0];
 
 		ret += of_property_read_u32_array(node, "power_id", power_id, ARRAY_SIZE(power_id));
 		if (ret == 0) {
@@ -115,10 +105,6 @@ struct alsps_hw *get_alsps_dts_func(const char *name, struct alsps_hw *hw)
 			ARRAY_SIZE(is_batch_supported_als));
 		if (ret == 0)
 			hw->is_batch_supported_als		 = (bool)is_batch_supported_als[0];
-		} else {
-			SENSOR_ERR("Device Tree: can not find alsps node!. Go to use old cust info\n");
-			ret = -1;
-		}
 	}
 	return (ret == 0) ? hw:NULL;
 }
