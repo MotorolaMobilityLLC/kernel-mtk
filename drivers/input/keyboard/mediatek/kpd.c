@@ -157,18 +157,32 @@ static int kpd_open(struct input_dev *dev)
 }
 static void kpd_get_dts_info(struct device_node *node)
 {
-	int32_t ret;
+	int32_t ret, i;
+	u32 temp;
+	u32 map[KPD_NUM_KEYS] = {0};
 	void *dest;
 
 	dest = memset(&kpd_dts_data, 0, sizeof(struct keypad_dts_data));
-	ret = of_property_read_u16(node, "mediatek,kpd-key-debounce", &kpd_dts_data.kpd_key_debounce);
-	ret += of_property_read_u16(node, "mediatek,kpd-use-extend-type", &kpd_dts_data.kpd_use_extend_type);
-	ret += of_property_read_u16(node, "mediatek,kpd-hw-map-num", &kpd_dts_data.kpd_hw_map_num);
+	ret = of_property_read_u32(node, "mediatek,kpd-key-debounce", &temp);
+	if (ret == 0)
+		kpd_dts_data.kpd_key_debounce = (u16)temp;
+	ret += of_property_read_u32(node, "mediatek,kpd-use-extend-type", &temp);
+	if (ret == 0)
+		kpd_dts_data.kpd_use_extend_type = (u16)temp;
+	ret += of_property_read_u32(node, "mediatek,kpd-hw-map-num", &temp);
+	if (ret == 0)
+		kpd_dts_data.kpd_hw_map_num = (u16)temp;
 
 	if (kpd_dts_data.kpd_hw_map_num > KPD_NUM_KEYS)
 		kpd_dts_data.kpd_hw_map_num = KPD_NUM_KEYS;
-	ret += of_property_read_u16_array(node, "mediatek,kpd-hw-init-map",
-			kpd_dts_data.kpd_hw_init_map, kpd_dts_data.kpd_hw_map_num);
+	ret += of_property_read_u32_array(node, "mediatek,kpd-hw-init-map",
+			map, kpd_dts_data.kpd_hw_map_num);
+	if (ret == 0) {
+		for (i = 0; i < kpd_dts_data.kpd_hw_map_num; i++)
+			kpd_dts_data.kpd_hw_init_map[i] = (u16)map[i];
+	}
+
+	kpd_print("dts info %d, %d\n", kpd_dts_data.kpd_hw_map_num, kpd_dts_data.kpd_hw_init_map[0]);
 
 	if (ret != 0) {
 		kpd_print("kpd-hw-init-map was not defined in dts.\n");
