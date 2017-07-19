@@ -65,18 +65,25 @@ static int mt2712_d1v1_be_ops_hw_params(struct snd_pcm_substream *substream,
 	struct snd_soc_dai *codec_dai = rtd->codec_dai;
 	unsigned int mclk_rate;
 	unsigned int rate = params_rate(params);
-	unsigned int div_mclk_over_bck = rate > 192000 ? 2 : 4;
-	unsigned int div_bck_over_lrck = 64;
+	unsigned int div_mclk_over_bck = rate > 192000U ? 2U : 4U;
+	unsigned int div_bck_over_lrck = 64U;
+	int ret;
 
 	mclk_rate = rate * div_bck_over_lrck * div_mclk_over_bck;
 
 	/* mt2701 mclk */
-	snd_soc_dai_set_sysclk(cpu_dai, 0, mclk_rate, SND_SOC_CLOCK_OUT);
+	ret = snd_soc_dai_set_sysclk(cpu_dai, 0, mclk_rate, SND_SOC_CLOCK_OUT);
+	if (ret != 0 && ret != -ENOTSUPP)
+		return ret;
 
 	/* codec mclk */
-	snd_soc_dai_set_sysclk(codec_dai, 0, mclk_rate, SND_SOC_CLOCK_IN);
+	ret = snd_soc_dai_set_sysclk(codec_dai, 0, mclk_rate, SND_SOC_CLOCK_IN);
+	if (ret != 0 && ret != -ENOTSUPP)
+		return ret;
 
-	snd_soc_dai_set_fmt(cpu_dai, SND_SOC_DAIFMT_DSP_A | SND_SOC_DAIFMT_NB_NF);
+	ret = snd_soc_dai_set_fmt(cpu_dai, SND_SOC_DAIFMT_DSP_A | SND_SOC_DAIFMT_NB_NF);
+	if (ret != 0 && ret != -ENOTSUPP)
+		return ret;
 
 	return 0;
 }
@@ -90,21 +97,30 @@ static int mt2712_d1v1_be_AK4556VT_ops_hw_params(struct snd_pcm_substream *subst
 	unsigned int mclk_rate;
 	unsigned int rate = params_rate(params);
 	unsigned int div_mclk_over_lrck = 512;
+	int ret;
 
-	if (rate > 54000 && rate < 108000)
+	if (rate > 54000U && rate < 108000U)
 		div_mclk_over_lrck = 256;
-	else if (rate > 108000)
+	else if (rate > 108000U)
 		div_mclk_over_lrck = 128;
+	else
+		div_mclk_over_lrck = 512;
 
 	mclk_rate = rate * div_mclk_over_lrck;
 
 	/* mt2701 mclk */
-	snd_soc_dai_set_sysclk(cpu_dai, 0, mclk_rate, SND_SOC_CLOCK_OUT);
+	ret = snd_soc_dai_set_sysclk(cpu_dai, 0, mclk_rate, SND_SOC_CLOCK_OUT);
+	if (ret != 0 && ret != -ENOTSUPP)
+		return ret;
 
 	/* codec mclk */
-	snd_soc_dai_set_sysclk(codec_dai, 0, mclk_rate, SND_SOC_CLOCK_IN);
+	ret = snd_soc_dai_set_sysclk(codec_dai, 0, mclk_rate, SND_SOC_CLOCK_IN);
+	if (ret != 0 && ret != -ENOTSUPP)
+		return ret;
 
-	snd_soc_dai_set_fmt(cpu_dai, SND_SOC_DAIFMT_DSP_A | SND_SOC_DAIFMT_NB_NF);
+	ret = snd_soc_dai_set_fmt(cpu_dai, SND_SOC_DAIFMT_DSP_A | SND_SOC_DAIFMT_NB_NF);
+	if (ret != 0 && ret != -ENOTSUPP)
+		return ret;
 
 	return 0;
 }
@@ -143,34 +159,57 @@ static int mt2712_d1v1_be_tdm_ops_hw_params(struct snd_pcm_substream *substream,
 	unsigned int mclk_rate;
 	unsigned int div_mclk_over_bck = 4;
 	unsigned int div_bck_over_lrck = 64;
+	int ret = 0;
+	unsigned int cpu_dai_fmt, codec_dai_fmt;
 
 	/* set tdmin based on rate */
 	switch (channel) {
 	case 2:
-		snd_soc_dai_set_fmt(cpu_dai, SND_SOC_DAIFMT_I2S | SND_SOC_DAIFMT_IB_IF);
-		snd_soc_dai_set_fmt(rtd->codec_dai, SND_SOC_DAIFMT_I2S | SND_SOC_DAIFMT_CBS_CFS);
-		if (rate > 100000)
+		cpu_dai_fmt = SND_SOC_DAIFMT_I2S | SND_SOC_DAIFMT_IB_IF;
+		codec_dai_fmt = SND_SOC_DAIFMT_I2S | SND_SOC_DAIFMT_CBS_CFS;
+
+		if (rate > 100000U)
 			div_mclk_over_bck = 1;
-		else if (rate > 50000)
+		else if (rate > 50000U)
 			div_mclk_over_bck = 2;
+		else
+			div_mclk_over_bck = 4;
+
 		break;
 	case 8:
-		snd_soc_dai_set_fmt(cpu_dai, SND_SOC_DAIFMT_DSP_A | SND_SOC_DAIFMT_IB_NF);
-		snd_soc_dai_set_fmt(rtd->codec_dai, SND_SOC_DAIFMT_DSP_A | SND_SOC_DAIFMT_CBS_CFS);
+		cpu_dai_fmt = SND_SOC_DAIFMT_DSP_A | SND_SOC_DAIFMT_IB_NF;
+		codec_dai_fmt = SND_SOC_DAIFMT_DSP_A | SND_SOC_DAIFMT_CBS_CFS;
+
 		snd_mask_reset(&params->masks[SNDRV_PCM_HW_PARAM_FORMAT - SNDRV_PCM_HW_PARAM_FIRST_MASK],
 				SNDRV_PCM_FORMAT_S16_LE);
 		params_set_format(params, SNDRV_PCM_FORMAT_S32_LE);
 		break;
 	default:
-		return -EINVAL;
+		ret = -EINVAL;
+		break;
 	}
+
+	if (ret != 0)
+		return ret;
+
+	ret = snd_soc_dai_set_fmt(cpu_dai, cpu_dai_fmt);
+	if (ret != 0 && ret != -ENOTSUPP)
+		return ret;
+
+	ret = snd_soc_dai_set_fmt(rtd->codec_dai, codec_dai_fmt);
+	if (ret != 0 && ret != -ENOTSUPP)
+		return ret;
 
 	mclk_rate = rate * div_bck_over_lrck * div_mclk_over_bck;
 	/* mt2701 mclk */
-	snd_soc_dai_set_sysclk(cpu_dai, 0, mclk_rate, SND_SOC_CLOCK_OUT);
+	ret = snd_soc_dai_set_sysclk(cpu_dai, 0, mclk_rate, SND_SOC_CLOCK_OUT);
+	if (ret != 0 && ret != -ENOTSUPP)
+		return ret;
 
 	/* codec mclk */
-	snd_soc_dai_set_sysclk(rtd->codec_dai, 0, mclk_rate, SND_SOC_CLOCK_IN);
+	ret = snd_soc_dai_set_sysclk(rtd->codec_dai, 0, mclk_rate, SND_SOC_CLOCK_IN);
+	if (ret != 0 && ret != -ENOTSUPP)
+		return ret;
 
 	return 0;
 }
@@ -184,7 +223,7 @@ static int mt2712_d1v1_be_modpcm_ops_hw_params(struct snd_pcm_substream *substre
 
 	/* set mclk for d1v1 i2s mclk test*/
 	if (afe_priv->i2so2_mclk)
-		clk_ctrl->mclk_configuration(afe, 2, 0, params_rate(params)*512);
+		clk_ctrl->mclk_configuration(afe, 2, 0, params_rate(params)*512U);
 
 	return 0;
 }
@@ -605,13 +644,13 @@ static int mt2712_d1v1_machine_probe(struct platform_device *pdev)
 
 	platform_node = of_parse_phandle(pdev->dev.of_node,
 					 "mediatek,platform", 0);
-	if (!platform_node) {
+	if (platform_node == NULL) {
 		dev_notice(&pdev->dev, "Property 'platform' missing or invalid\n");
 		return -EINVAL;
 	}
 
 	for (i = 0; i < card->num_links; i++) {
-		if (mt2712_d1v1_dai_links[i].platform_name)
+		if (mt2712_d1v1_dai_links[i].platform_name != NULL)
 			continue;
 
 		mt2712_d1v1_dai_links[i].platform_of_node = platform_node;
@@ -620,7 +659,7 @@ static int mt2712_d1v1_machine_probe(struct platform_device *pdev)
 	card->dev = dev;
 	codec_node_bt_mrg = of_parse_phandle(pdev->dev.of_node,
 					 "mediatek,audio-codec-bt-mrg", 0);
-	if (!codec_node_bt_mrg) {
+	if (codec_node_bt_mrg == NULL) {
 		dev_notice(&pdev->dev,
 			"Property 'audio-codec-bt-mrg' missing or invalid\n");
 		return -EINVAL;
@@ -630,7 +669,7 @@ static int mt2712_d1v1_machine_probe(struct platform_device *pdev)
 #ifdef TS_CS42448
 	codec_node_tdmo = of_parse_phandle(pdev->dev.of_node,
 					 "mediatek,audio-codec-tdmo", 0);
-	if (!codec_node_tdmo) {
+	if (codec_node_tdmo == NULL) {
 		dev_notice(&pdev->dev,
 			"Property 'audio-codec-tdmo' missing or invalid\n");
 		return -EINVAL;
@@ -640,7 +679,7 @@ static int mt2712_d1v1_machine_probe(struct platform_device *pdev)
 
 	codec_node_tdmo1 = of_parse_phandle(pdev->dev.of_node,
 					 "mediatek,audio-codec-tdmo1", 0);
-	if (!codec_node_tdmo1) {
+	if (codec_node_tdmo1 == NULL) {
 		dev_notice(&pdev->dev,
 			"Property 'audio-codec-tdmo1' missing or invalid\n");
 		return -EINVAL;
@@ -650,7 +689,7 @@ static int mt2712_d1v1_machine_probe(struct platform_device *pdev)
 
 	codec_node_tdmi = of_parse_phandle(pdev->dev.of_node,
 					 "mediatek,audio-codec-tdmi", 0);
-	if (!codec_node_tdmi) {
+	if (codec_node_tdmi == NULL) {
 		dev_notice(&pdev->dev,
 			"Property 'audio-codec-tdmi' missing or invalid\n");
 		return -EINVAL;
@@ -661,14 +700,14 @@ static int mt2712_d1v1_machine_probe(struct platform_device *pdev)
 #endif
 
 	ret = snd_soc_of_parse_audio_routing(card, "audio-routing");
-	if (ret) {
+	if (ret != 0) {
 		dev_notice(&pdev->dev, "failed to parse audio-routing: %d\n", ret);
 		return ret;
 	}
 
 	ret = devm_snd_soc_register_card(&pdev->dev, card);
 
-	if (ret)
+	if (ret != 0)
 		dev_notice(&pdev->dev, "%s snd_soc_register_card fail %d\n",
 						__func__, ret);
 

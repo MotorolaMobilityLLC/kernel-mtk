@@ -25,22 +25,23 @@
 void mt2701_regmap_update_bits(struct regmap *map, unsigned int reg,
 			    unsigned int mask, unsigned int val);
 
+void mt2701_regmap_write(struct regmap *map, unsigned int reg, unsigned int val);
 
 #define MT2701_STREAM_DIR_NUM (SNDRV_PCM_STREAM_LAST + 1)
-#define MT2701_PLL_DOMAIN_0_RATE	98304000
-#define MT2701_PLL_DOMAIN_1_RATE	90316800
-#define MT2701_AUD_AUD_MUX1_DIV_RATE (MT2701_PLL_DOMAIN_0_RATE / 2)
-#define MT2701_AUD_AUD_MUX2_DIV_RATE (MT2701_PLL_DOMAIN_1_RATE / 2)
+#define MT2701_PLL_DOMAIN_0_RATE	98304000U
+#define MT2701_PLL_DOMAIN_1_RATE	90316800U
+#define MT2701_AUD_AUD_MUX1_DIV_RATE (MT2701_PLL_DOMAIN_0_RATE / 2U)
+#define MT2701_AUD_AUD_MUX2_DIV_RATE (MT2701_PLL_DOMAIN_1_RATE / 2U)
 
-#define MT2712_PLL_DOMAIN_0_RATE	196608000
-#define MT2712_PLL_DOMAIN_1_RATE	180633600
-#define AUDIO_CLOCK_45M 45158400
-#define AUDIO_CLOCK_49M 49152000
-#define AUDIO_CLOCK_196M 196608000
-#define AUDIO_CLOCK_180M 180633600
-#define MT2701_TDM_IN_CLK_THR 12288000
-#define MT2701_TDM_OUT_CLK_THR 24576000
-#define MT2701_TDM_MAX_CLK_DIV 256
+#define MT2712_PLL_DOMAIN_0_RATE	196608000U
+#define MT2712_PLL_DOMAIN_1_RATE	180633600U
+#define AUDIO_CLOCK_45M 45158400U
+#define AUDIO_CLOCK_49M 49152000U
+#define AUDIO_CLOCK_196M 196608000U
+#define AUDIO_CLOCK_180M 180633600U
+#define MT2701_TDM_IN_CLK_THR 12288000U
+#define MT2701_TDM_OUT_CLK_THR 24576000U
+#define MT2701_TDM_MAX_CLK_DIV 256U
 
 enum {
 	MT2701_I2S_1,
@@ -260,7 +261,7 @@ enum mt2701_i2s_mode {
 
 struct mt2701_i2s_path {
 	int dai_id;
-	int mclk_rate;
+	unsigned int mclk_rate;
 	int on[I2S_DIR_NUM];
 	int occupied[I2S_DIR_NUM];
 	enum mt2701_i2s_mode i2s_mode;
@@ -298,7 +299,7 @@ struct mt2701_tdm_data {
 };
 
 struct mt2701_tdm_path {
-	int mclk_rate;
+	unsigned int mclk_rate;
 	const struct mt2701_tdm_data *tdm_data;
 };
 
@@ -321,11 +322,11 @@ struct clock_ctrl {
 	int (*afe_enable_clock)(struct mtk_base_afe *afe);
 	void (*afe_disable_clock)(struct mtk_base_afe *afe);
 	void (*mclk_configuration)(struct mtk_base_afe *afe, int id, int domain,
-			       int mclk);
+			       unsigned int mclk);
 	int (*enable_mclk)(struct mtk_base_afe *afe, int id);
 	void (*disable_mclk)(struct mtk_base_afe *afe, int id);
-	int apll0_rate;
-	int apll1_rate;
+	unsigned int apll0_rate;
+	unsigned int apll1_rate;
 };
 
 struct mt2701_afe_private {
