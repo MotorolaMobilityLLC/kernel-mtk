@@ -50,7 +50,6 @@
 
 
 #define MTK_MIPICSI1_DRV_NAME "mtk-mipicsi1"
-#define BIT(x)	(1U << (x))
 #define MAX_VIDEO_MEM 16
 
 #define MAX_BUFFER_NUM			32
@@ -780,12 +779,6 @@ static int mtk_tg_tp_init(void __iomem *base)
 	return 0;
 }
 
-static int mtk_mipicsi1_clk_init(void __iomem *base)
-{
-	writel((~(BIT(3) | BIT(8) | BIT(11))) & readl(base),	base);
-	return 0;
-}
-
 static int mtk_mipi_csi1_ana_init(void __iomem *base)
 {
 	writel(MTK_RX_ANA4c_CSI_VAL & readl(base + MTK_RX_ANA4c_CSI),
@@ -1106,11 +1099,6 @@ static int mtk_mipicsi1_vb2_start_streaming(struct vb2_queue *vq,
 			mipicsi1_err("failed to get larb, ret %d", ret);
 	}
 
-	clk_prepare_enable(pcdev->clk);
-	clk_prepare_enable(pcdev->img_seninf_cam_clk);
-	clk_prepare_enable(pcdev->img_seninf_scam_clk);
-	clk_prepare_enable(pcdev->img_cam_sv2_clk);
-
 	pm_runtime_get_sync(ici->v4l2_dev.dev);
 	pcdev->buf_sequence = 0;
 
@@ -1135,8 +1123,6 @@ static void mtk_mipicsi1_vb2_stop_streaming(struct vb2_queue *vq)
 	int i = 0;
 	unsigned long flags = 0;
 
-	vb2_wait_for_all_buffers(vq);
-
 	for (i = 0; i < MIPICSI1_CAMDMA_NUM; i++) {
 		spin_lock_irqsave(&pcdev->lock[i], flags);
 
@@ -1156,10 +1142,6 @@ static void mtk_mipicsi1_vb2_stop_streaming(struct vb2_queue *vq)
 
 	}
 
-	clk_disable_unprepare(pcdev->clk);
-	clk_disable_unprepare(pcdev->img_seninf_cam_clk);
-	clk_disable_unprepare(pcdev->img_seninf_scam_clk);
-	clk_disable_unprepare(pcdev->img_cam_sv2_clk);
 	if (pcdev->larb_pdev)
 		mtk_smi_larb_put(pcdev->larb_pdev);
 	pm_runtime_put(ici->v4l2_dev.dev);
@@ -1218,8 +1200,13 @@ static const struct of_device_id mtk_mipicsi1_of_match[] = {
 static int mtk_mipicsi1_suspend(struct device *dev)
 {
 	struct soc_camera_host *ici = to_soc_camera_host(dev);
-	struct mtk_mipicsi1_dev *pcdev = ici->priv;
+	struct mtk_mipicsi1_dev *pcdev = NULL;
 	int ret = 0;
+
+	if (pm_runtime_suspended(dev))
+		return 0;
+
+	pcdev = container_of(ici, struct mtk_mipicsi1_dev, soc_host);
 
 	if (pcdev->soc_host.icd) {
 		struct v4l2_subdev *sd =
@@ -1244,14 +1231,13 @@ static int mtk_mipicsi1_suspend(struct device *dev)
 static int mtk_mipicsi1_resume(struct device *dev)
 {
 	struct soc_camera_host *ici = to_soc_camera_host(dev);
-	struct mtk_mipicsi1_dev *pcdev = ici->priv;
+	struct mtk_mipicsi1_dev *pcdev =
+		container_of(ici, struct mtk_mipicsi1_dev, soc_host);
 	int ret = 0;
 
-	if (pcdev->larb_pdev) {
-		ret = mtk_smi_larb_get(pcdev->larb_pdev);
-		if (ret)
-			mipicsi1_err("failed to get larb, err %d", ret);
-	}
+	if (pm_runtime_suspended(dev))
+		return 0;
+
 	clk_prepare_enable(pcdev->clk);
 	clk_prepare_enable(pcdev->img_seninf_cam_clk);
 	clk_prepare_enable(pcdev->img_seninf_scam_clk);
@@ -1433,6 +1419,21 @@ static int mtk_mipicsi1_probe(struct platform_device *pdev)
 		return PTR_ERR(pcdev->clk);
 	}
 
+	pcdev->soc_host.drv_name	= MTK_MIPICSI1_DRV_NAME;
+	pcdev->soc_host.ops		= &mtk_soc_camera_host_ops;
+	pcdev->soc_host.priv		= pcdev;
+	pcdev->soc_host.v4l2_dev.dev	= &pdev->dev;
+	pcdev->soc_host.nr		= 0;
+	pcdev->width_flags = mtk_DATAWIDTH_8 << 7;
+	pcdev->streamon = 0;
+
+	ret = soc_camera_host_register(&pcdev->soc_host);
+	if (ret)
+		goto reg_err;
+
+	pm_runtime_enable(&pdev->dev);
+	pm_runtime_get_sync(&pdev->dev);
+
 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
 	if (!res) {
 		mipicsi1_err("get memory resource failed");
@@ -1538,24 +1539,17 @@ static int mtk_mipicsi1_probe(struct platform_device *pdev)
 		pcdev->frame_cnt[i] = 0;
 	}
 
-	pcdev->soc_host.drv_name	= MTK_MIPICSI1_DRV_NAME;
-	pcdev->soc_host.ops		= &mtk_soc_camera_host_ops;
-	pcdev->soc_host.priv		= pcdev;
-	pcdev->soc_host.v4l2_dev.dev	= &pdev->dev;
-	pcdev->soc_host.nr		= 0;
-	pcdev->width_flags = mtk_DATAWIDTH_8 << 7;
-	pcdev->streamon = 0;
-
-	ret = soc_camera_host_register(&pcdev->soc_host);
-	if (ret)
-		goto error;
-
 	ret = vb2_dma_contig_set_max_seg_size(&pdev->dev, DMA_BIT_MASK(32));
 	return ret;
 
 error:
 	mipicsi1_err("Register host fail, ret = %d", ret);
+	soc_camera_host_unregister(&pcdev->soc_host);
 	return ret;
+reg_err:
+	mipicsi1_err("Register host fail, ret = %d", ret);
+	return ret;
+
 }
 
 static int mtk_mipicsi1_remove(struct platform_device *pdev)
