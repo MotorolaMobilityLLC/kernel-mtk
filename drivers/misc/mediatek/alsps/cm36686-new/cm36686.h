@@ -48,7 +48,9 @@
 /*-----------------end of I2C interface------------------*/
 
 /*#define CM36686_PS_EINT_ENABLE*/
-#define DEVICE_ATTRIBUTE_ENABLE
-#define CMP_DEVICE_NUM	2
+/*#define DEVICE_ATTRIBUTE_ENABLE*/
+#define ONLY_USE_IOCTL
+#define DEVICE_NUM_MAX	5U
+#define DEFAULT_DEV_ID	0xFFFF
 #endif
 
