@@ -923,7 +923,7 @@ static void mtk_uart_console_write(struct console *co, const char *s, unsigned i
 	 * (1) The function is called by printk, hence, spin lock can not be used
 	 * (2) don't care vfifo setting
 	 */
-#define CONSOLE_RETRY (1)
+#define CONSOLE_RETRY (50)
 	int i;
 	struct mtk_uart *uart;
 	u32 cnt = 0;
