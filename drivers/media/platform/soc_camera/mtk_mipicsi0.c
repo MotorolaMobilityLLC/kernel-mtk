@@ -422,7 +422,7 @@ static int get_des_register(struct soc_camera_device *icd,
 		mipicsi0_err("get des register 0x%llx fail, ret=%d",
 			reg->reg, ret);
 		return -EIO;
-
+	}
 	mipicsi0_info("read DES [reg/val/ret] is [0x%llx/0x%llx/%d]",
 		reg->reg, reg->val, ret);
 	return ret;
