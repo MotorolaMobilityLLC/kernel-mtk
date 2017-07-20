@@ -197,8 +197,9 @@
 			clocks = <&topckgen CLK_TOP_MM_SEL>,
 				 <&topckgen CLK_TOP_MFG_SEL>,
 				 <&topckgen CLK_TOP_VENC_SEL>,
-				 <&topckgen CLK_TOP_JPGDEC_SEL>;
-			clock-names = "mm", "mfg", "venc", "jpgdec";
+				 <&topckgen CLK_TOP_JPGDEC_SEL>,
+				 <&topckgen CLK_TOP_A1SYS_HP_SEL>;
+			clock-names = "mm", "mfg", "venc", "jpgdec", "audio";
 			infracfg = <&infracfg>;
 		};
 
