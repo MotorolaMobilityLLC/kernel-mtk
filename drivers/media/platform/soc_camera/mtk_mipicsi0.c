@@ -1237,8 +1237,8 @@ static void mtk_mipicsi0_vb2_stop_streaming(struct vb2_queue *vq)
 			buf->vb_dma_addr_phy = 0;
 			buf->prepare_flag = 0;
 		}
+		INIT_LIST_HEAD(&(pcdev->capture_list[i]));
 		spin_unlock_irqrestore(&pcdev->lock[i], flags);
-
 	}
 
 	if (pcdev->larb_pdev)
