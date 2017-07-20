@@ -75,6 +75,7 @@ enum clk_id {
 	CLK_VENC_LT,
 	CLK_ETHIF,
 	CLK_JPGDEC,
+	CLK_AUDIO,
 	CLK_MAX,
 };
 
@@ -86,6 +87,7 @@ static const char * const clk_names[] = {
 	"venc_lt",
 	"ethif",
 	"jpgdec",
+	"audio",
 	NULL,
 };
 
@@ -602,7 +604,7 @@ static const struct scp_domain_data scp_domain_data_mt2712[] = {
 		.ctl_offs = SPM_DIS_PWR_CON,
 		.sram_pdn_bits = GENMASK(8, 8),
 		.sram_pdn_ack_bits = GENMASK(12, 12),
-		.clk_id = {CLK_NONE},
+		.clk_id = {CLK_MM},
 		.active_wakeup = true,
 	},
 	[MT2712_POWER_DOMAIN_VDEC] = {
@@ -638,7 +640,7 @@ static const struct scp_domain_data scp_domain_data_mt2712[] = {
 		.ctl_offs = SPM_AUDIO_PWR_CON,
 		.sram_pdn_bits = GENMASK(11, 8),
 		.sram_pdn_ack_bits = GENMASK(15, 12),
-		.clk_id = {CLK_NONE},
+		.clk_id = {CLK_AUDIO},
 		.active_wakeup = true,
 	},
 	[MT2712_POWER_DOMAIN_USB] = {
