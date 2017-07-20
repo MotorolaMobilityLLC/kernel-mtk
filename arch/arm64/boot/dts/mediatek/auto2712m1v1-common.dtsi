@@ -19,11 +19,6 @@
 	model = "MediaTek MT2712m1v1 board";
 	compatible = "mediatek,mt2712m1v1", "mediatek,mt2712";
 
-	alsps:als_ps@0 {
-		compatible = "mediatek,als_ps";
-		status = "okay";
-	};
-
 	backlight_lcd0: backlight_lcd0 {
 		compatible = "pwm-backlight";
 		pwms = <&pwm0 0 1000000>;
@@ -222,72 +217,8 @@
 						      00];
 	};
 
-	cust_alsps_1 {
-		compatible = "mediatek,CM36686_1";
-		i2c_num = <5>;
-		i2c_addr = <0x60 0x00 0x00 0x00>;
-		polling_mode_ps = <0>;
-		polling_mode_als = <1>;
-		power_id = <0xffff>;
-		power_vol = <0>;
-		als_level = <5 10 25 50 100 150 200 400 1000 \
-				1500 2000 3000 5000 8000 10000>;
-		als_value = <10 50 100 150 200 250 280 280 \
-				1600 1600 1600 6000 6000 9000 10240 10240>;
-		ps_threshold_high = <120>;
-		ps_threshold_low = <60>;
-		is_batch_supported_ps = <0>;
-		is_batch_supported_als = <0>;
-	};
-
-	cust_alsps_2 {
-		compatible = "mediatek,CM36686_2";
-		i2c_num = <3>;
-		i2c_addr = <0x60 0x00 0x00 0x00>;
-		polling_mode_ps = <0>;
-		polling_mode_als = <1>;
-		power_id = <0xffff>;
-		power_vol = <0>;
-		als_level = <5 10 25 50 100 150 200 400 1000 \
-				1500 2000 3000 5000 8000 10000>;
-		als_value = <10 50 100 150 200 250 280 280 \
-				1600 1600 1600 6000 6000 9000 10240 10240>;
-		ps_threshold_high = <120>;
-		ps_threshold_low = <60>;
-		is_batch_supported_ps = <0>;
-		is_batch_supported_als = <0>;
-	};
-
 	dummy_codec:dummy_codec {
 		compatible = "mediatek,dummy-codec";
-	};
-
-	gsensor@0 {
-		compatible = "mediatek,gsensor";
-	};
-
-	gyro:gyroscope@0 {
-		compatible = "mediatek,gyroscope";
-	};
-	m_acc_pl@0 {
-		compatible = "mediatek,m_acc_pl";
-	};
-
-	m_alsps_pl@0 {
-		compatible = "mediatek,m_alsps_pl";
-	};
-
-	m_baro_pl@0 {
-		compatible = "mediatek,m_baro_pl";
-	};
-
-
-	m_gyro_pl@0 {
-		compatible = "mediatek,m_gyro_pl";
-	};
-
-	m_mag_pl@0 {
-		compatible = "mediatek,m_mag_pl";
 	};
 
 	extcon_usb: extcon_iddig {
@@ -505,9 +436,22 @@
 	pinctrl-names = "default";
 	pinctrl-0 = <&i2c3_pins>;
 	status = "okay";
-	alsps_2@60 {
-		compatible = "mediatek,alsps_2";
+	cm36686_0@60 {
+		compatible = "mediatek,alsps";
 		reg = <0x60>;
+		device_id = <0>;
+		polling_mode_ps = <0>;
+		polling_mode_als = <1>;
+		power_id = <0xffff>;
+		power_vol = <0>;
+		als_level = <5 10 25 50 100 150 200 400 1000 \
+				1500 2000 3000 5000 8000 10000>;
+		als_value = <10 50 100 150 200 250 280 280 \
+				1600 1600 1600 6000 6000 9000 10240 10240>;
+		ps_threshold_high = <120>;
+		ps_threshold_low = <60>;
+		is_batch_supported_ps = <0>;
+		is_batch_supported_als = <0>;
 	};
 
 	max9286@48 {
@@ -538,9 +482,22 @@
 	pinctrl-names = "default";
 	pinctrl-0 = <&i2c5_pins>;
 	status = "okay";
-	alsps_1@60 {
-		compatible = "mediatek,alsps_1";
+	cm36686_1@60 {
+		compatible = "mediatek,alsps";
 		reg = <0x60>;
+		device_id = <1>;
+		polling_mode_ps = <0>;
+		polling_mode_als = <1>;
+		power_id = <0xffff>;
+		power_vol = <0>;
+		als_level = <5 10 25 50 100 150 200 400 1000 \
+				1500 2000 3000 5000 8000 10000>;
+		als_value = <10 50 100 150 200 250 280 280 \
+				1600 1600 1600 6000 6000 9000 10240 10240>;
+		ps_threshold_high = <120>;
+		ps_threshold_low = <60>;
+		is_batch_supported_ps = <0>;
+		is_batch_supported_als = <0>;
 	};
 
 	cs42448_2: cs42448_2@49 {
@@ -557,6 +514,7 @@
 		clock-names = "mclk";
 	};
 };
+
 &keypad {
 	pinctrl-names = "default";
 	pinctrl-0 = <&kpd_pins_default>;
