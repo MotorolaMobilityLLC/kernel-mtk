@@ -990,9 +990,13 @@ void setup_provider_clk(struct provider_clk *pvdck)
 		const char *pvdname;
 		u32 pwr_mask;
 	} pvd_pwr_mask[] = {
-		{"imgsys",  BIT(5)},
-		{"vdecsys", BIT(7)},
-		{"vencsys", BIT(21)},
+		{"mfgcfg", BIT(4)},
+		{"mmsys", BIT(3)},
+		{"imgsys", BIT(3) | BIT(5)},
+		{"bdpsys", BIT(3) | BIT(5)},
+		{"vdecsys", BIT(3) | BIT(7)},
+		{"vencsys", BIT(3) | BIT(21)},
+		{"jpgdecsys", BIT(3) | BIT(21)},
 	};
 
 	int i;
