@@ -687,6 +687,7 @@ struct prv_data {
 
 	spinlock_t lock;	/* rx lock */
 	spinlock_t tx_lock;	/* tx lock */
+	spinlock_t pmt_lock;
 	int irq_number;
 	struct hw_if_struct hw_if;
 	struct desc_if_struct desc_if;
@@ -793,6 +794,9 @@ void enable_all_ch_rx_interrpt(struct prv_data *pdata);
 void disable_all_ch_rx_interrpt(struct prv_data *pdata);
 void update_rx_errors(struct net_device *dev, unsigned int rx_status);
 unsigned char get_tx_queue_count(void);
+void all_ch_napi_disable(struct prv_data *pdata);
+void napi_enable_mq(struct prv_data *pdata);
+void set_rx_mode(struct net_device *dev);
 unsigned char get_rx_queue_count(void);
 void mmc_read(struct mmc_counters *mmc);
 unsigned int get_total_desc_cnt(struct prv_data *pdata, struct sk_buff *skb, unsigned int q_inx);

@@ -38,6 +38,118 @@ void init_rx_coalesce(struct prv_data *pdata)
 	}
 }
 
+static int get_clk(struct platform_device *pdev, struct prv_data *pdata)
+{
+	int ret = 0;
+
+	pdata->peri_axi = devm_clk_get(&pdev->dev, "axi");
+	if (IS_ERR(pdata->peri_axi)) {
+		ret = PTR_ERR(pdata->peri_axi);
+		dev_err(&pdev->dev, "failed to get peri_axi_clk: %d\n", ret);
+	}
+
+	pdata->peri_apb = devm_clk_get(&pdev->dev, "apb");
+	if (IS_ERR(pdata->peri_apb)) {
+		ret = PTR_ERR(pdata->peri_apb);
+		dev_err(&pdev->dev, "failed to get peri_apb_clk: %d\n", ret);
+	}
+
+	pdata->ext_125m_clk = devm_clk_get(&pdev->dev, "mac_ext");
+	if (IS_ERR(pdata->ext_125m_clk)) {
+		ret = PTR_ERR(pdata->ext_125m_clk);
+		dev_err(&pdev->dev, "failed to get ext_125m_clk: %d\n", ret);
+	}
+
+	pdata->ptp_clk = devm_clk_get(&pdev->dev, "ptp");
+	if (IS_ERR(pdata->ptp_clk)) {
+		ret = PTR_ERR(pdata->ptp_clk);
+		dev_err(&pdev->dev, "failed to get ptp_clk: %d\n", ret);
+	}
+
+	pdata->ptp_parent_clk = devm_clk_get(&pdev->dev, "ptp_parent");
+	if (IS_ERR(pdata->ptp_parent_clk)) {
+		ret = PTR_ERR(pdata->ptp_parent_clk);
+		dev_err(&pdev->dev, "failed to get ptp_parent_clk-clk: %d\n", ret);
+	}
+
+	return ret;
+}
+
+static int close_clk(struct prv_data *pdata)
+{
+	clk_disable_unprepare(pdata->ptp_parent_clk);
+
+	clk_disable_unprepare(pdata->ptp_clk);
+
+	clk_disable_unprepare(pdata->ext_125m_clk);
+
+	clk_disable_unprepare(pdata->peri_apb);
+
+	clk_disable_unprepare(pdata->peri_axi);
+
+	return 0;
+}
+
+static int enable_clk(struct platform_device *pdev, struct prv_data *pdata)
+{
+	int ret;
+
+	ret = clk_prepare_enable(pdata->peri_axi);
+	if (ret < 0) {
+		dev_err(&pdev->dev, "failed to enable peri_axi_clk (%d)\n", ret);
+		return ret;
+	}
+
+	ret = clk_prepare_enable(pdata->peri_apb);
+	if (ret < 0) {
+		dev_err(&pdev->dev, "failed to enable peri_apb_clk (%d)\n", ret);
+		goto err_apb_enable;
+	}
+
+	ret = clk_prepare_enable(pdata->ext_125m_clk);
+	if (ret < 0) {
+		dev_err(&pdev->dev, "failed to enable ext_125m_clk (%d)\n", ret);
+		goto err_ext_125m_clk_enable;
+	}
+
+	ret = clk_prepare_enable(pdata->ptp_clk);
+	if (ret < 0) {
+		dev_err(&pdev->dev, "failed to enable ptp_clk (%d)\n", ret);
+		goto err_ptp_enable;
+	}
+
+	ret = clk_prepare_enable(pdata->ptp_parent_clk);
+	if (ret < 0) {
+		dev_err(&pdev->dev, "failed to enable ptp_parent_clk (%d)\n", ret);
+		goto err_ptp_parent_enable;
+	}
+
+	ret = clk_set_parent(pdata->ptp_clk, pdata->ptp_parent_clk);
+	if (ret < 0) {
+		dev_err(&pdev->dev, "failed to set ptp parent clk (%d)\n", ret);
+		goto err_ptp_parent_clk_set;
+	}
+
+	return 0;
+
+err_ptp_parent_clk_set:
+	clk_disable_unprepare(pdata->ptp_parent_clk);
+
+err_ptp_parent_enable:
+	clk_disable_unprepare(pdata->ptp_clk);
+
+err_ptp_enable:
+	clk_disable_unprepare(pdata->ext_125m_clk);
+
+err_ext_125m_clk_enable:
+	clk_disable_unprepare(pdata->peri_apb);
+
+err_apb_enable:
+	clk_disable_unprepare(pdata->peri_axi);
+
+	return ret;
+}
+
 static int probe(struct platform_device *pdev)
 {
 	struct prv_data *pdata = NULL;
@@ -145,75 +257,14 @@ static int probe(struct platform_device *pdev)
 	dev->irq = irq;
 	dev_info(&pdev->dev, "irq number is %d\n", irq);
 
-	pdata->peri_axi = devm_clk_get(&pdev->dev, "axi");
-	if (IS_ERR(pdata->peri_axi)) {
-		ret = PTR_ERR(pdata->peri_axi);
-		dev_err(&pdev->dev, "failed to get peri_axi_clk: %d\n", ret);
-		goto err_out_q_alloc_failed;
-	}
-
-	pdata->peri_apb = devm_clk_get(&pdev->dev, "apb");
-	if (IS_ERR(pdata->peri_apb)) {
-		ret = PTR_ERR(pdata->peri_apb);
-		dev_err(&pdev->dev, "failed to get peri_apb_clk: %d\n", ret);
-		goto err_out_q_alloc_failed;
-	}
-
-	pdata->ext_125m_clk = devm_clk_get(&pdev->dev, "mac_ext");
-	if (IS_ERR(pdata->ext_125m_clk)) {
-		ret = PTR_ERR(pdata->ext_125m_clk);
-		dev_err(&pdev->dev, "failed to get ext_125m_clk: %d\n", ret);
-		goto err_out_q_alloc_failed;
-	}
-
-	pdata->ptp_clk = devm_clk_get(&pdev->dev, "ptp");
-	if (IS_ERR(pdata->ptp_clk)) {
-		ret = PTR_ERR(pdata->ptp_clk);
-		dev_err(&pdev->dev, "failed to get ptp_clk: %d\n", ret);
-		goto err_out_q_alloc_failed;
-	}
-
-	pdata->ptp_parent_clk = devm_clk_get(&pdev->dev, "ptp_parent");
-	if (IS_ERR(pdata->ptp_parent_clk)) {
-		ret = PTR_ERR(pdata->ptp_parent_clk);
-		dev_err(&pdev->dev, "failed to get ptp_parent_clk-clk: %d\n", ret);
-		goto err_out_q_alloc_failed;
-	}
-
-	ret = clk_prepare_enable(pdata->peri_axi);
+	ret = get_clk(pdev, pdata);
 	if (ret < 0) {
-		dev_err(&pdev->dev, "failed to enable peri_axi_clk (%d)\n", ret);
-		goto err_out_q_alloc_failed;
+		goto err_alloc_queue;
 	}
 
-	ret = clk_prepare_enable(pdata->peri_apb);
+	ret = enable_clk(pdev, pdata);
 	if (ret < 0) {
-		dev_err(&pdev->dev, "failed to enable peri_apb_clk (%d)\n", ret);
-		goto err_apb_enable;
-	}
-
-	ret = clk_prepare_enable(pdata->ext_125m_clk);
-	if (ret < 0) {
-		dev_err(&pdev->dev, "failed to enable ext_125m_clk (%d)\n", ret);
-		goto err_ext_125m_clk_enable;
-	}
-
-	ret = clk_prepare_enable(pdata->ptp_clk);
-	if (ret < 0) {
-		dev_err(&pdev->dev, "failed to enable ptp_clk (%d)\n", ret);
-		goto err_ptp_enable;
-	}
-
-	ret = clk_prepare_enable(pdata->ptp_parent_clk);
-	if (ret < 0) {
-		dev_err(&pdev->dev, "failed to enable ptp_parent_clk (%d)\n", ret);
-		goto err_ptp_parent_enable;
-	}
-
-	ret = clk_set_parent(pdata->ptp_clk, pdata->ptp_parent_clk);
-	if (ret < 0) {
-		dev_err(&pdev->dev, "failed to set ptp parent clk (%d)\n", ret);
-		goto err_ptp_parent_enable;
+		goto err_alloc_queue;
 	}
 
 	get_all_hw_features(pdata);
@@ -273,19 +324,7 @@ static int probe(struct platform_device *pdev)
 	desc_if->free_queue_struct(pdata);
 
  err_alloc_queue:
-	clk_disable_unprepare(pdata->ptp_parent_clk);
-
- err_ptp_parent_enable:
-	clk_disable_unprepare(pdata->ptp_clk);
-
- err_ptp_enable:
-	clk_disable_unprepare(pdata->ext_125m_clk);
-
- err_ext_125m_clk_enable:
-	clk_disable_unprepare(pdata->peri_apb);
-
- err_apb_enable:
-	clk_disable_unprepare(pdata->peri_axi);
+	close_clk(pdata);
 
  err_out_q_alloc_failed:
 	free_netdev(dev);
@@ -322,12 +361,109 @@ static int remove(struct platform_device *pdev)
 	return 0;
 }
 
+static int suspend(struct device *dev)
+{
+	struct platform_device *pdev = to_platform_device(dev);
+	struct net_device *net_dev = platform_get_drvdata(pdev);
+	struct prv_data *pdata = netdev_priv(net_dev);
+	struct hw_if_struct *hw_if = &pdata->hw_if;
+	unsigned long flags;
+	unsigned int qinx;
+
+	if (!net_dev || !netif_running(net_dev)) {
+		dev_err(&pdev->dev, "suspend fail\n");
+		return -EINVAL;
+	}
+
+	spin_lock_irqsave(&pdata->pmt_lock, flags);
+
+	if (pdata->phydev)
+		phy_stop(pdata->phydev);
+
+	netif_device_detach(net_dev);
+
+	netif_tx_disable(net_dev);
+	all_ch_napi_disable(pdata);
+
+	/* stop DMA TX/RX */
+	for (qinx = 0; qinx < TX_QUEUE_CNT; qinx++)
+		hw_if->stop_dma_tx(qinx);
+	for (qinx = 0; qinx < RX_QUEUE_CNT; qinx++)
+		hw_if->stop_dma_rx(qinx);
+
+	hw_if->exit();
+	close_clk(pdata);
+
+	spin_unlock_irqrestore(&pdata->pmt_lock, flags);
+
+	return 0;
+}
+
+static int resume(struct device *dev)
+{
+	struct platform_device *pdev = to_platform_device(dev);
+	struct net_device *net_dev = platform_get_drvdata(pdev);
+	struct prv_data *pdata = netdev_priv(net_dev);
+	struct hw_if_struct *hw_if = &pdata->hw_if;
+	struct desc_if_struct *desc_if = &pdata->desc_if;
+	unsigned long flags;
+	unsigned int qinx;
+	int ret;
+
+	if (!net_dev || !netif_running(net_dev)) {
+		dev_err(&pdev->dev, "resume fail\n");
+		return -EINVAL;
+	}
+	spin_lock_irqsave(&pdata->pmt_lock, flags);
+
+	ret = enable_clk(pdev, pdata);
+	if (ret < 0) {
+		dev_err(&pdev->dev, "resume enable clk fail\n");
+		goto clk_fail;
+	}
+
+	set_rx_mode(net_dev);
+	desc_if->wrapper_tx_desc_init(pdata);
+	desc_if->wrapper_rx_desc_init(pdata);
+	hw_if->init(pdata);
+
+	if (pdata->phydev)
+		phy_start(pdata->phydev);
+
+	/* enable MAC TX/RX */
+	hw_if->start_mac_tx_rx();
+
+	/* enable DMA TX/RX */
+	for (qinx = 0; qinx < TX_QUEUE_CNT; qinx++)
+		hw_if->start_dma_tx(qinx);
+	for (qinx = 0; qinx < RX_QUEUE_CNT; qinx++)
+		hw_if->start_dma_rx(qinx);
+
+	netif_device_attach(net_dev);
+
+	napi_enable_mq(pdata);
+
+	netif_tx_start_all_queues(net_dev);
+
+	spin_unlock_irqrestore(&pdata->pmt_lock, flags);
+
+	return 0;
+
+clk_fail:
+	return ret;
+}
+
 static const struct of_device_id dt_ids[] = {
 	{ .compatible = "mediatek,mt2712-eth"},
 	{}
 };
 
 MODULE_DEVICE_TABLE(of, dt_ids);
+
+static const struct dev_pm_ops eth_pm_ops = {
+	.suspend = suspend,
+	.resume = resume,
+};
 
 static struct platform_driver platform_driver = {
 	.probe = probe,
@@ -336,6 +472,7 @@ static struct platform_driver platform_driver = {
 		   .name = DEV_NAME,
 		   .owner = THIS_MODULE,
 		   .of_match_table = of_match_ptr(dt_ids),
+		   .pm = &eth_pm_ops,
 	},
 };
 

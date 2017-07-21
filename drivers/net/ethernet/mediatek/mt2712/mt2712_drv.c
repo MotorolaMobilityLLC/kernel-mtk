@@ -769,7 +769,7 @@ static int prepare_uc_list(struct net_device *dev)
 	return ret;
 }
 
-static void set_rx_mode(struct net_device *dev)
+void set_rx_mode(struct net_device *dev)
 {
 	struct prv_data *pdata = netdev_priv(dev);
 	struct hw_if_struct *hw_if = &pdata->hw_if;
@@ -841,7 +841,7 @@ static void mmc_setup(struct prv_data *pdata)
 		pr_err("No MMC/RMON module available in the HW\n");
 }
 
-static void napi_enable_mq(struct prv_data *pdata)
+void napi_enable_mq(struct prv_data *pdata)
 {
 	struct rx_queue *rx_queue = NULL;
 	int q_inx;
@@ -910,7 +910,7 @@ static int open(struct net_device *dev)
 	return ret;
 }
 
-static void all_ch_napi_disable(struct prv_data *pdata)
+void all_ch_napi_disable(struct prv_data *pdata)
 {
 	struct rx_queue *rx_queue = NULL;
 	int q_inx;
