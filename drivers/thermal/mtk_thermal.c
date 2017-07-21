@@ -132,7 +132,7 @@
 #define MT8173_CALIB_BUF2_VTS_TSABB(x)	(((x) >> 14) & 0x1ff)
 #define MT8173_CALIB_BUF0_DEGC_CALI(x)	(((x) >> 1) & 0x3f)
 #define MT8173_CALIB_BUF0_O_SLOPE(x)	(((x) >> 26) & 0x3f)
-#define MT8173_CALIB_BUF0_O_SLOPE_SIGN(x)	(((x) >> 6) & 0x1)
+#define MT8173_CALIB_BUF0_O_SLOPE_SIGN(x)	(((x) >> 7) & 0x1)
 #define MT8173_CALIB_BUF1_ID(x)	(((x) >> 9) & 0x1)
 
 /* MT2701 thermal sensors */
