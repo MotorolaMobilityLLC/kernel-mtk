@@ -82,6 +82,11 @@
 #define UWK_CTL1_0P_LS_P	BIT(7)
 #define UWK_CTL1_IS_P		BIT(6)  /* polarity for ip sleep */
 
+#define PERI_SSUSB_SPM_CTRL		0x514
+/*#define PERI_SSUSB_SPM_CTRL		0x510 */
+#define RG_SSUSB_SPM_INT_EN		BIT(1)
+#define RG_SSUSB_IP_SLEEP_EN	BIT(4)
+
 enum ssusb_wakeup_src {
 	SSUSB_WK_IP_SLEEP = 1,
 	SSUSB_WK_LINE_STATE = 2,
@@ -265,25 +270,39 @@ static void usb_wakeup_ip_sleep_en(struct xhci_hcd_mtk *mtk)
 	u32 tmp;
 	struct regmap *pericfg = mtk->pericfg;
 
-	regmap_read(pericfg, PERI_WK_CTRL1, &tmp);
-	tmp &= ~UWK_CTL1_IS_P;
-	tmp &= ~(UWK_CTL1_IS_C(0xf));
-	tmp |= UWK_CTL1_IS_C(0x8);
-	regmap_write(pericfg, PERI_WK_CTRL1, tmp);
-	regmap_write(pericfg, PERI_WK_CTRL1, tmp | UWK_CTL1_IS_E);
+	if (mtk->uses_new_wakeup) {
+		regmap_read(pericfg, PERI_SSUSB_SPM_CTRL, &tmp);
+		tmp |= RG_SSUSB_SPM_INT_EN | RG_SSUSB_IP_SLEEP_EN;
+		regmap_write(pericfg, PERI_SSUSB_SPM_CTRL, tmp);
+		regmap_read(pericfg, PERI_SSUSB_SPM_CTRL, &tmp);
+		dev_dbg(mtk->dev, "%s(): WK_CTRL=%#x\n", __func__, tmp);
+	} else {
+		regmap_read(pericfg, PERI_WK_CTRL1, &tmp);
+		tmp &= ~UWK_CTL1_IS_P;
+		tmp &= ~(UWK_CTL1_IS_C(0xf));
+		tmp |= UWK_CTL1_IS_C(0x8);
+		regmap_write(pericfg, PERI_WK_CTRL1, tmp);
+		regmap_write(pericfg, PERI_WK_CTRL1, tmp | UWK_CTL1_IS_E);
 
-	regmap_read(pericfg, PERI_WK_CTRL1, &tmp);
-	dev_dbg(mtk->dev, "%s(): WK_CTRL1[P6,E25,C26:29]=%#x\n",
-		__func__, tmp);
+		regmap_read(pericfg, PERI_WK_CTRL1, &tmp);
+		dev_dbg(mtk->dev, "%s(): WK_CTRL1[P6,E25,C26:29]=%#x\n",
+			__func__, tmp);
+	}
 }
 
 static void usb_wakeup_ip_sleep_dis(struct xhci_hcd_mtk *mtk)
 {
 	u32 tmp;
 
-	regmap_read(mtk->pericfg, PERI_WK_CTRL1, &tmp);
-	tmp &= ~UWK_CTL1_IS_E;
-	regmap_write(mtk->pericfg, PERI_WK_CTRL1, tmp);
+	if (mtk->uses_new_wakeup) {
+		regmap_read(mtk->pericfg, PERI_SSUSB_SPM_CTRL, &tmp);
+		tmp &= ~(RG_SSUSB_SPM_INT_EN | RG_SSUSB_IP_SLEEP_EN);
+		regmap_write(mtk->pericfg, PERI_SSUSB_SPM_CTRL, tmp);
+	} else {
+		regmap_read(mtk->pericfg, PERI_WK_CTRL1, &tmp);
+		tmp &= ~UWK_CTL1_IS_E;
+		regmap_write(mtk->pericfg, PERI_WK_CTRL1, tmp);
+	}
 }
 
 /*
@@ -294,6 +313,9 @@ static void usb_wakeup_line_state_en(struct xhci_hcd_mtk *mtk)
 {
 	u32 tmp;
 	struct regmap *pericfg = mtk->pericfg;
+
+	if (mtk->uses_new_wakeup)
+		return;
 
 	/* line-state of u2-port0 */
 	regmap_read(pericfg, PERI_WK_CTRL1, &tmp);
@@ -316,6 +338,9 @@ static void usb_wakeup_line_state_dis(struct xhci_hcd_mtk *mtk)
 {
 	u32 tmp;
 	struct regmap *pericfg = mtk->pericfg;
+
+	if (mtk->uses_new_wakeup)
+		return;
 
 	/* line-state of u2-port0 */
 	regmap_read(pericfg, PERI_WK_CTRL1, &tmp);
@@ -573,6 +598,7 @@ static int xhci_mtk_probe(struct platform_device *pdev)
 	}
 
 	mtk->lpm_support = of_property_read_bool(node, "usb3-lpm-capable");
+	mtk->uses_new_wakeup = of_property_read_bool(node, "mediatek,new-wakeup");
 
 	ret = usb_wakeup_of_property_parse(mtk, node);
 	if (ret)
