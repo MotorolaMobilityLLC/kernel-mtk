@@ -230,6 +230,7 @@ struct ssusb_mtk {
 	struct otg_switch_mtk otg_switch;
 	enum usb_dr_mode dr_mode;
 	bool is_host;
+	bool u3ports_disable;
 	int u2_ports;
 	int u3_ports;
 	struct dentry *dbgfs_root;

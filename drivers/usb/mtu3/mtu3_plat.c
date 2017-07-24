@@ -278,6 +278,9 @@ static int get_ssusb_rscs(struct platform_device *pdev, struct ssusb_mtk *ssusb)
 	if (ret)
 		return ret;
 
+	ssusb->u3ports_disable =
+		of_property_read_bool(node, "mediatek,u3ports-disable");
+
 	if (ssusb->dr_mode != USB_DR_MODE_OTG)
 		return 0;
 

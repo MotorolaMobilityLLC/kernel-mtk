@@ -143,6 +143,8 @@ static void host_ports_num_get(struct ssusb_mtk *ssusb)
 
 	dev_dbg(ssusb->dev, "host - u2_ports:%d, u3_ports:%d\n",
 		 ssusb->u2_ports, ssusb->u3_ports);
+	if (ssusb->u3ports_disable)
+		ssusb->u3_ports = 0; /* skip u3_ports if need disable all u3ports */
 }
 
 /* only configure ports will be used later */
