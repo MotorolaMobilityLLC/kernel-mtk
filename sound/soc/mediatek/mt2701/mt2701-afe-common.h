@@ -26,6 +26,7 @@ void mt2701_regmap_update_bits(struct regmap *map, unsigned int reg,
 			    unsigned int mask, unsigned int val);
 
 void mt2701_regmap_write(struct regmap *map, unsigned int reg, unsigned int val);
+void mt2701_regmap_read(struct regmap *map, unsigned int reg, unsigned int *val);
 
 #define MT2701_STREAM_DIR_NUM (SNDRV_PCM_STREAM_LAST + 1)
 #define MT2701_PLL_DOMAIN_0_RATE	98304000U
@@ -307,9 +308,9 @@ struct mt2701_tdm_coclk_info {
 	int src;
 	int on;
 	int hw_on;
-	int channels;
+	unsigned int channels;
 	int bit_width;
-	int sample_rate;
+	unsigned int sample_rate;
 };
 
 struct tdm_in_lrck_setting {
