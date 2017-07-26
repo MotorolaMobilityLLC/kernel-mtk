@@ -1358,9 +1358,25 @@ static void normal_video_setting(kal_uint16 currefps)
 
 static void hs_video_setting(void)
 {
-	LOG_INF("E\n");
+ int retry = 0;
+	LOG_INF("aaron E\n");
   //$MV1[MCLK:24,Width:640,Height:480,Format:MIPI_Raw10,mipi_lane:4,mipi_datarate:1124,pvi_pclk_inverse:0]
   write_cmos_sensor(0x0100, 0x0000);
+  		while(retry<20)
+		{
+			if(read_cmos_sensor_byte(0x0005)!=0xff)
+			{
+				msleep(5);
+				retry++;
+				LOG_INF("Sensor has output %x\n",read_cmos_sensor_byte(0x0005));			  
+			}
+		 	else
+			{
+				retry=0;
+				LOG_INF("Sensor has not output stream %x\n",read_cmos_sensor(0x0100));
+				break;
+			}
+		}
   write_cmos_sensor(0x6028, 0x2000);
   write_cmos_sensor(0x602A, 0x0F74);
   write_cmos_sensor(0x6F12, 0x0040);
