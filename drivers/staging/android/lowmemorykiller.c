@@ -436,7 +436,7 @@ log_again:
 		long free = other_free * (long)(PAGE_SIZE / 1024);
 		trace_lowmemory_kill(selected, cache_size, cache_limit, free);
 
-		lowmem_print(1, "Killing '%s' (%d), adj %d, score_adj %hd, state(%ld)\n"
+		lowmem_print(1, "Killing '%s' (%d), adj %hd, state(%ld)\n"
 				"   to free %ldkB on behalf of '%s' (%d) because\n"
 				"   cache %ldkB is below limit %ldkB for oom_score_adj %hd\n"
 				"   Free memory is %ldkB above reserved\n"
@@ -444,7 +444,6 @@ log_again:
 				"   swapfree %lukB of SwapTatal %lukB(decrease %d level)\n"
 #endif
 				, selected->comm, selected->pid,
-				REVERT_ADJ(selected_oom_score_adj),
 				selected_oom_score_adj, selected->state,
 				selected_tasksize * (long)(PAGE_SIZE / 1024),
 				current->comm, current->pid,
