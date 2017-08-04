@@ -469,10 +469,10 @@ static void lcm_init(void)
 {
 
 	SET_RESET_PIN(0);
-	MDELAY(30);
+	MDELAY(10);
 
 	SET_RESET_PIN(1);
-	MDELAY(120);
+	MDELAY(30);
 	push_table(NULL, lcm_initialization_setting, sizeof(lcm_initialization_setting) / sizeof(struct LCM_setting_table), 1);
 }
 
