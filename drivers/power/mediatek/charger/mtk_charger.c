@@ -80,7 +80,7 @@ static DEFINE_MUTEX(consumer_mutex);
 extern int battery_test_status;
 extern int runin_flag;
 #endif
-
+unsigned int flag_power_off;     // add by longcheer yangjz
 //add by longcheer_liml_2017_05_31
 extern int force_demo_mode;
 extern int force_demo_mode_flag;
@@ -1145,11 +1145,15 @@ static void kpoc_power_off_check(struct charger_manager *info)
 	    || boot_mode == LOW_POWER_OFF_CHARGING_BOOT) {
 		pr_debug("[%s] vchr=%d, boot_mode=%d\n",
 			__func__, vbus, boot_mode);
+		flag_power_off = 1;     //add by longcheer yangjz
 		if (!mtk_is_pe30_running(info) && vbus < 2500) {
 			pr_err("Unplug Charger/USB in KPOC mode, shutdown\n");
 			kernel_power_off();
 		}
 	}
+	else{
+		flag_power_off = 0;     //add by longcheer yangjz
+		}
 #endif
 }
 
