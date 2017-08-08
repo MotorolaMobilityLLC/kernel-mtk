@@ -1550,7 +1550,7 @@ static int BMI160_ACC_ReadSensorData(struct i2c_client *client, char *buf, int b
 		acc[BMI160_ACC_AXIS_Y] = acc[BMI160_ACC_AXIS_Y] * GRAVITY_EARTH_1000 / obj->reso->sensitivity;
 		acc[BMI160_ACC_AXIS_Z] = acc[BMI160_ACC_AXIS_Z] * GRAVITY_EARTH_1000 / obj->reso->sensitivity;
 
-		printk("wangshuai--%s--x,y,z=%d,%d,%d\n",__func__,acc[BMI160_ACC_AXIS_X],acc[BMI160_ACC_AXIS_Y],acc[BMI160_ACC_AXIS_Z]);
+//		printk("wangshuai--%s--x,y,z=%d,%d,%d\n",__func__,acc[BMI160_ACC_AXIS_X],acc[BMI160_ACC_AXIS_Y],acc[BMI160_ACC_AXIS_Z]);
 		sprintf(buf, "%04x %04x %04x", acc[BMI160_ACC_AXIS_X], acc[BMI160_ACC_AXIS_Y], acc[BMI160_ACC_AXIS_Z]);
 		if(atomic_read(&obj->trace) & BMA_TRC_IOCTL)
 		{
