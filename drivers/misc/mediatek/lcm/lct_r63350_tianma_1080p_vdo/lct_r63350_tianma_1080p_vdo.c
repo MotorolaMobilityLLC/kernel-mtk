@@ -576,29 +576,25 @@ static unsigned int lcm_ata_check(unsigned char *buffer)
 
 static void lcm_setbacklight_cmdq(void *handle, unsigned int level)
 {
-	unsigned int level_hight = 255;
-	LCM_LOGI("yangjz   %s,LCM R63350 backlight: level = %d\n", __func__, level);
+unsigned int level_hight = 255;
+LCM_LOGI("yangjz   %s,LCM R63350 backlight: level = %d\n", __func__, level);
+     if(hbm_enable == 0) {
 	if(flag_power_off == 1) {
-    		MDELAY(30);//optimize device turn off,press power key wake up screen slowly.
+   		MDELAY(30);//optimize device turn off,press power key wake up screen slowly.
 		printk("enter power off charging mode delay 30ms");
-	}
-	else{
-	
-	     if(hbm_enable == 0) {
-		if(level <= 4)
+				}
+	if(level <= 4)
 		level = 4;
 		bl_level[0].para_list[0] = level;
 		push_table(handle, bl_level, sizeof(bl_level) / sizeof(struct LCM_setting_table), 1);
 		}
-		 else {	
+	 	else {	
 			bl_level[0].para_list[0] = level_hight;
 			push_table(handle, bl_level, sizeof(bl_level) / sizeof(struct LCM_setting_table), 1);
 	            }
 		#ifdef CONFIG_LCT_HBM_SUPPORT
 			last_level = level;
 		#endif
-	}
-
 }
 
 LCM_DRIVER lct_r63350_tianma_1080p_vdo_lcm_drv = {
