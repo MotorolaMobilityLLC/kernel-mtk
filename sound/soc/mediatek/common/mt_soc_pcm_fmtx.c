@@ -170,7 +170,7 @@ static int mtk_pcm_fmtx_stop(struct snd_pcm_substream *substream)
 
 	/* here to turn off digital part */
 	SetIntfConnection(Soc_Aud_InterCon_DisConnect,
-			Soc_Aud_AFE_IO_Block_MEM_DL1, Soc_Aud_AFE_IO_Block_I2S3);
+			Soc_Aud_AFE_IO_Block_MEM_DL1, Soc_Aud_AFE_IO_Block_MRG_I2S_OUT);
 
 	/* if (GetMrgI2SEnable() == false) */
 	/* { */
@@ -374,16 +374,16 @@ static int mtk_pcm_fmtx_start(struct snd_pcm_substream *substream)
 		SetMemIfFetchFormatPerSample(Soc_Aud_Digital_Block_MEM_DL1,
 					     AFE_WLEN_32_BIT_ALIGN_8BIT_0_24BIT_DATA);
 		SetConnectionFormat(OUTPUT_DATA_FORMAT_16BIT,
-				Soc_Aud_AFE_IO_Block_I2S3); /* FM Tx only support 16 bit */
+				Soc_Aud_AFE_IO_Block_MRG_I2S_OUT); /* FM Tx only support 16 bit */
 	} else {
 		SetMemIfFetchFormatPerSample(Soc_Aud_Digital_Block_MEM_DL1, AFE_WLEN_16_BIT);
 		SetConnectionFormat(OUTPUT_DATA_FORMAT_16BIT,
-				Soc_Aud_AFE_IO_Block_I2S3);
+				Soc_Aud_AFE_IO_Block_MRG_I2S_OUT);
 	}
 
 	/* here start digital part */
 	SetIntfConnection(Soc_Aud_InterCon_Connection,
-			Soc_Aud_AFE_IO_Block_MEM_DL1, Soc_Aud_AFE_IO_Block_I2S3);
+			Soc_Aud_AFE_IO_Block_MEM_DL1, Soc_Aud_AFE_IO_Block_MRG_I2S_OUT);
 
 	/* set dl1 sample ratelimit_state */
 	SetSampleRate(Soc_Aud_Digital_Block_MEM_DL1, runtime->rate);

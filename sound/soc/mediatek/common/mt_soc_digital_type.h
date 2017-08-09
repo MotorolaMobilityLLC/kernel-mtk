@@ -107,6 +107,7 @@ typedef enum {
 	Soc_Aud_AFE_IO_Block_MEM_AWB_CH1,
 	Soc_Aud_AFE_IO_Block_MEM_MOD_DAI,
 	Soc_Aud_AFE_IO_Block_MEM_VUL_DATA2,
+	Soc_Aud_AFE_IO_Block_MEM_VUL2_DATA2,
 	/* I2S */
 	Soc_Aud_AFE_IO_Block_I2S0,
 	Soc_Aud_AFE_IO_Block_I2S0_CH2,
@@ -116,6 +117,7 @@ typedef enum {
 	Soc_Aud_AFE_IO_Block_I2S2_ADC_2,
 	Soc_Aud_AFE_IO_Block_I2S2_ADC_CH1,
 	Soc_Aud_AFE_IO_Block_I2S3,
+	Soc_Aud_AFE_IO_Block_I2S_CONNSYS,
 	/* HW gain contorl */
 	Soc_Aud_AFE_IO_Block_HW_GAIN1_OUT,
 	Soc_Aud_AFE_IO_Block_HW_GAIN1_IN,
