@@ -95,6 +95,9 @@ static const struct mfd_cell mt6323_devs[] = {
 		.num_resources = ARRAY_SIZE(mt6323_keys_resources),
 		.resources = mt6323_keys_resources,
 		.of_compatible = "mediatek,mt6323-keys"
+	},	{
+		.name = "mt6323-auxadc",
+		.of_compatible = "mediatek,mt6323-auxadc"
 	},
 };
 

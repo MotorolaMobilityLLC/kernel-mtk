@@ -486,6 +486,14 @@ config MT6397_MISC
 	  PMIC rtc module. it can be provide some APIs to other modules and store
 	  some misc information to rtc registers.
 
+config MT6323_AUXADC
+	tristate "MediaTek MT6323 AUXADC FUNCTIONS Support"
+	depends on MFD_MT6397
+	help
+	  Say yes here to add support for MediaTek MT6323 auxadc functions.
+	  AUXADC is a sub block in PMIC MT6323 to select real-world messages to be
+	  monitored, and convert them to digital data.
+	  This driver is to provide a API for other modules to get auxadc voltage.
 
 config MFD_MENF21BMC
 	tristate "MEN 14F021P00 Board Management Controller Support"
