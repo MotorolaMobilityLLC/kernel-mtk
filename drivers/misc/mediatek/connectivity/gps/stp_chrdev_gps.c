@@ -18,6 +18,7 @@
 #include <linux/fs.h>
 #include <linux/cdev.h>
 #include <linux/sched.h>
+#include <linux/wakelock.h>
 #include <asm/current.h>
 #include <asm/uaccess.h>
 #include <linux/skbuff.h>
@@ -79,6 +80,9 @@ static int GPS_major = GPS_DEV_MAJOR;	/* dynamic allocation */
 module_param(GPS_major, uint, 0);
 static struct cdev GPS_cdev;
 
+static struct wakeup_source gps_wake_lock;
+static unsigned char wake_lock_acquired;   /* default: 0 */
+
 #if (defined(CONFIG_MTK_GMO_RAM_OPTIMIZE) && !defined(CONFIG_MT_ENG_BUILD))
 #define STP_GPS_BUFFER_SIZE 2048
 #else
@@ -92,6 +96,23 @@ static int flag;
 static volatile int retflag;
 
 static void GPS_event_cb(void);
+
+static void gps_hold_wake_lock(int hold)
+{
+	if (hold == 1) {
+		if (!wake_lock_acquired) {
+			GPS_DBG_FUNC("acquire gps wake_lock acquired = %d\n", wake_lock_acquired);
+			__pm_stay_awake(&gps_wake_lock);
+			wake_lock_acquired = 1;
+		}
+	} else if (hold == 0) {
+		if (wake_lock_acquired) {
+			GPS_DBG_FUNC("release gps wake_lock acquired = %d\n", wake_lock_acquired);
+			__pm_relax(&gps_wake_lock);
+			wake_lock_acquired = 0;
+		}
+	}
+}
 
 bool rtc_GPS_low_power_detected(void)
 {
@@ -424,6 +445,8 @@ static int GPS_open(struct inode *inode, struct file *file)
 		/*return error code */
 		return -ENODEV;
 	}
+	gps_hold_wake_lock(1);
+	GPS_DBG_FUNC("gps_hold_wake_lock(1)\n");
 #if defined(CONFIG_ARCH_MT6580)
 	clk_buf_ctrl(CLK_BUF_AUDIO, 1);
 #endif
@@ -454,8 +477,11 @@ static int GPS_close(struct inode *inode, struct file *file)
 		return -EIO;	/* mostly, native programer does not care this return vlaue,
 		but we still return error code. */
 	}
-
 	GPS_DBG_FUNC("WMT turn off GPS OK!\n");
+
+	gps_hold_wake_lock(0);
+	GPS_DBG_FUNC("gps_hold_wake_lock(0)\n");
+
 #if defined(CONFIG_ARCH_MT6580)
 	clk_buf_ctrl(CLK_BUF_AUDIO, 0);
 #endif
@@ -517,6 +543,8 @@ static int GPS_init(void)
 #endif
 	pr_warn("%s driver(major %d) installed.\n", GPS_DRIVER_NAME, GPS_major);
 
+	wakeup_source_init(&gps_wake_lock, "gpswakelock");
+
 	return 0;
 
 error:
@@ -549,8 +577,9 @@ static void GPS_exit(void)
 
 	cdev_del(&GPS_cdev);
 	unregister_chrdev_region(dev, GPS_devs);
-
 	pr_warn("%s driver removed.\n", GPS_DRIVER_NAME);
+
+	wakeup_source_trash(&gps_wake_lock);
 }
 
 #ifdef MTK_WCN_REMOVE_KERNEL_MODULE
