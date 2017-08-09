@@ -173,6 +173,7 @@ EXPORT_SYMBOL(mtk_audit_hook);
 
 #ifdef CONFIG_MTK_ROOT_TRACE
 
+/* strcut to keep uid0 change , from none-root to root. */
 struct uid0_change_struct {
 	atomic_t to_root_count;
 	atomic_t old_ruid;
@@ -187,6 +188,18 @@ static struct platform_driver root_trace = {
 		   .owner = THIS_MODULE,
 		   }
 };
+
+#define MAX_PATH        (256)
+/* the exclusive list for root trace*/
+const char *exclusive_list[] = {
+	"/system/bin/xxx",
+};
+
+/* by default not to traverse exclusive list
+*  0 : not to traverse exclusive list
+*  1 : traverse exclusive list
+*/
+int traverse_exclusive_list = 0;
 
 static ssize_t root_trace_show(struct device_driver *driver, char *buf)
 {
@@ -227,6 +240,7 @@ int sec_trace_root(const struct cred *old, const struct cred *new)
 {
 	int ret = 0;
 	kuid_t root_uid = make_kuid(old->user_ns, 0);
+	char *pathname = NULL;
 
 	if ((!new) || (!old))
 		goto _exit;
@@ -234,23 +248,49 @@ int sec_trace_root(const struct cred *old, const struct cred *new)
 	if ((uid_eq(new->euid, root_uid) && uid_gt(old->euid, root_uid)) ||
 	    (uid_eq(new->uid, root_uid) && uid_gt(old->uid, root_uid)) ||
 	    (uid_eq(new->suid, root_uid) && uid_gt(old->suid, root_uid))) {
+
+		if (traverse_exclusive_list) {
+			/* traverse exclusive list for not tracking root events */
+			int i = 0;
+			char *exec_path = NULL;
+			struct mm_struct *pmm;
+
+			pmm = current->mm;
+
+			if (!pmm)
+				goto _exit;
+
+			if (pmm->exe_file) {
+				pathname = kmalloc(MAX_PATH, GFP_KERNEL);
+				if (pathname) {
+					exec_path = d_path(&pmm->exe_file->f_path, pathname,
+							   MAX_PATH);
+				}
+				for (i = 0; i < ARRAY_SIZE(exclusive_list); i++) {
+					if (!strcmp(exclusive_list[i], exec_path)) {
+						/* found match in exclusive list, return immediately */
+						pr_warn
+						    (" bypass root trace - old ruid:%d euid:%d suid%d\n",
+						     __kuid_val(old->uid), __kuid_val(old->euid),
+						     __kuid_val(old->suid));
+						goto _exit;
+					}
+				}
+			}
+		}
+
 		atomic_inc(&uid0_trace.to_root_count);
 		atomic_set(&uid0_trace.old_ruid, __kuid_val(old->uid));
 		atomic_set(&uid0_trace.old_euid, __kuid_val(old->euid));
 		atomic_set(&uid0_trace.old_suid, __kuid_val(old->suid));
-		pr_warn("detect to uid root - euid:%d -> euid:%d\n",
-			__kuid_val(old->euid), __kuid_val(new->euid));
-		pr_warn("detect to uid root - ruid:%d -> ruid:%d\n",
-			__kuid_val(old->uid), __kuid_val(new->uid));
-		pr_warn("detect to uid root - suid:%d -> suid:%d\n",
-			__kuid_val(old->suid), __kuid_val(new->suid));
-		pr_warn("to_root_count:%d", atomic_read(&uid0_trace.to_root_count));
 	}
 
 _exit:
+	kfree(pathname);
 	return ret;
+
 }
 EXPORT_SYMBOL(sec_trace_root);
 module_init(root_trace_init);
 
-#endif
+#endif				/* CONFIG_MTK_ROOT_TRACE */
