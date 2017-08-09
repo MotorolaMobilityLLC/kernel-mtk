@@ -258,9 +258,9 @@ static SET_PD_BLOCK_INFO_T imgsensor_pd_info =
 };
 
 static kal_uint16 read_cmos_sensor(kal_uint32 addr)
-{
-    kdSetI2CSpeed(imgsensor_info.i2c_speed); // Add this func to set i2c speed by each sensor
+{   
     kal_uint16 get_byte=0;
+    kdSetI2CSpeed(imgsensor_info.i2c_speed); // Add this func to set i2c speed by each sensor
     char pusendcmd[2] = {(char)(addr >> 8) , (char)(addr & 0xFF) };
     iReadRegI2C(pusendcmd , 2, (u8*)&get_byte, 2, imgsensor.i2c_write_id);
     return ((get_byte<<8)&0xff00)|((get_byte>>8)&0x00ff);
@@ -304,7 +304,7 @@ static void set_dummy(void)
 
 static void set_max_framerate(UINT16 framerate,kal_bool min_framelength_en)
 {
-	kal_int16 dummy_line;
+	//kal_int16 dummy_line;
 	kal_uint32 frame_length = imgsensor.frame_length;
 	//unsigned long flags;
 
@@ -335,7 +335,7 @@ static void set_max_framerate(UINT16 framerate,kal_bool min_framelength_en)
 static void write_shutter(kal_uint16 shutter)
 {
 	kal_uint16 realtime_fps = 0;
-    kal_uint32 frame_length = 0;
+    //kal_uint32 frame_length = 0;
     spin_lock(&imgsensor_drv_lock);
     if (shutter > imgsensor.min_frame_length - imgsensor_info.margin)
         imgsensor.frame_length = shutter + imgsensor_info.margin;
@@ -3080,7 +3080,7 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 	UINT32 *feature_return_para_32=(UINT32 *) feature_para;
 	UINT32 *feature_data_32=(UINT32 *) feature_para;
     unsigned long long *feature_data=(unsigned long long *) feature_para;
-    unsigned long long *feature_return_para=(unsigned long long *) feature_para;
+//    unsigned long long *feature_return_para=(unsigned long long *) feature_para;
 
 	SENSOR_WINSIZE_INFO_STRUCT *wininfo;
     SET_PD_BLOCK_INFO_T *PDAFinfo;
