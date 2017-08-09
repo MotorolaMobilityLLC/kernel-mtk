@@ -38,7 +38,7 @@
 #endif
 
 #if CONSYS_PMIC_CTRL_ENABLE
-#include <umpu_common.h>
+#include <upmu_common.h>
 #include <linux/regulator/consumer.h>
 #endif
 
@@ -582,7 +582,7 @@ INT32 mtk_wcn_consys_hw_reg_ctrl(UINT32 on, UINT32 co_clock_type)
 				 CONSYS_CPU_SW_RST_CTRL_KEY);
 
 #endif
-		usleep(5000);
+		msleep(20);
 
 	} else {
 

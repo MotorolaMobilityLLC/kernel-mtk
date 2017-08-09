@@ -27,7 +27,6 @@
 
 /* ALPS header files */
 #include <mtk_rtc.h>
-#include <mt_irq.h>
 #if defined(CONFIG_MTK_GPIO_LEGACY)
 #include <mt_gpio.h>
 #endif
