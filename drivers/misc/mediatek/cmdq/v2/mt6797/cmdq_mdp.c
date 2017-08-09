@@ -25,6 +25,7 @@ typedef struct CmdqMdpModuleBaseVA {
 	long VENC;
 } CmdqMdpModuleBaseVA;
 static CmdqMdpModuleBaseVA gCmdqMdpModuleBaseVA;
+static atomic_t gSMILarb5Usage;
 
 #ifndef CMDQ_USE_CCF
 #define IMP_ENABLE_MDP_HW_CLOCK(FN_NAME, HW_NAME)	\
@@ -50,6 +51,7 @@ typedef struct CmdqMdpModuleClock {
 	struct clk *clk_MDP_WROT1;
 	struct clk *clk_MDP_TDSHP;
 	struct clk *clk_MDP_COLOR;
+	struct clk *clk_SMI_LARB5;
 } CmdqMdpModuleClock;
 
 static CmdqMdpModuleClock gCmdqMdpModuleClock;
@@ -77,6 +79,7 @@ IMP_ENABLE_MDP_HW_CLOCK(MDP_WROT0, MDP_WROT0);
 IMP_ENABLE_MDP_HW_CLOCK(MDP_WROT1, MDP_WROT1);
 IMP_ENABLE_MDP_HW_CLOCK(MDP_TDSHP0, MDP_TDSHP);
 IMP_ENABLE_MDP_HW_CLOCK(MDP_COLOR0, MDP_COLOR);
+IMP_ENABLE_MDP_HW_CLOCK(SMI_LARB5, SMI_LARB5);
 IMP_MDP_HW_CLOCK_IS_ENABLE(CAM_MDP, CAM_MDP);
 IMP_MDP_HW_CLOCK_IS_ENABLE(MDP_RDMA0, MDP_RDMA0);
 IMP_MDP_HW_CLOCK_IS_ENABLE(MDP_RDMA1, MDP_RDMA1);
@@ -371,8 +374,33 @@ bool cmdq_mdp_clock_is_on(CMDQ_ENG_ENUM engine)
 	}
 }
 
+void cmdq_mdp_enable_larb5_clock(bool enable, CMDQ_ENG_ENUM engine)
+{
+	const uint64_t Larb5_engineFlag = (0x1 << CMDQ_ENG_MDP_RDMA1) | (0x1 << CMDQ_ENG_MDP_WROT1);
+
+	if (0 == (Larb5_engineFlag & engine))
+		return;
+
+	if (enable) {
+		CMDQ_VERBOSE("[CLOCK] Enable SMI Larb5 %d\n", atomic_read(&gSMILarb5Usage));
+		if (0 == atomic_read(&gSMILarb5Usage))
+			cmdq_mdp_enable_clock_SMI_LARB5(enable);
+
+		atomic_inc(&gSMILarb5Usage);
+	} else {
+		atomic_dec(&gSMILarb5Usage);
+
+		CMDQ_VERBOSE("[CLOCK] Disable SMI Larb5 %d\n", atomic_read(&gSMILarb5Usage));
+		if (0 >= atomic_read(&gSMILarb5Usage))
+			cmdq_mdp_enable_clock_SMI_LARB5(enable);
+	}
+}
+
 void cmdq_mdp_enable_clock(bool enable, CMDQ_ENG_ENUM engine)
 {
+	if (true == enable)
+		cmdq_mdp_enable_larb5_clock(true, engine);
+
 	switch (engine) {
 	case CMDQ_ENG_MDP_CAMIN:
 		cmdq_mdp_enable_clock_CAM_MDP(enable);
@@ -411,6 +439,9 @@ void cmdq_mdp_enable_clock(bool enable, CMDQ_ENG_ENUM engine)
 		CMDQ_ERR("try to enable unknown mdp clock");
 		break;
 	}
+
+	if (false == enable)
+		cmdq_mdp_enable_larb5_clock(false, engine);
 }
 
 /* Common Clock Framework */
@@ -439,6 +470,8 @@ void cmdq_mdp_init_module_clk(void)
 					  &gCmdqMdpModuleClock.clk_MDP_TDSHP);
 	cmdq_dev_get_module_clock_by_name("mediatek,mdp_color", "MDP_COLOR",
 					  &gCmdqMdpModuleClock.clk_MDP_COLOR);
+	cmdq_dev_get_module_clock_by_name("mediatek,smi_common", "smi-larb5",
+					  &gCmdqMdpModuleClock.clk_SMI_LARB5);
 #endif
 }
 
@@ -843,6 +876,8 @@ int32_t cmdqMdpClockOff(uint64_t engineFlag)
 
 void cmdqMdpInitialSetting(void)
 {
+	atomic_set(&gSMILarb5Usage, 0);
+
 	/* Register M4U Translation Fault function */
 	m4u_register_fault_callback(M4U_PORT_MDP_RDMA0, cmdq_M4U_TranslationFault_callback, NULL);
 	m4u_register_fault_callback(M4U_PORT_MDP_RDMA1, cmdq_M4U_TranslationFault_callback, NULL);
