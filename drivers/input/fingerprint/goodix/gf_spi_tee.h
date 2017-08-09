@@ -49,7 +49,7 @@ int gf_spi_write_byte_ree(u16 addr, u8 value);
 /**********************IO Magic**********************/
 #define GF_IOC_MAGIC	'g'
 
-enum gf_key_event {
+typedef enum gf_key_event {
 	GF_KEY_NONE = 0,
 	GF_KEY_HOME,
 	GF_KEY_POWER,
@@ -59,8 +59,10 @@ enum gf_key_event {
 	GF_KEY_UP,
 	GF_KEY_DOWN,
 	GF_KEY_RIGHT,
-	GF_KEY_LEFT
-};
+	GF_KEY_LEFT,
+	GF_KEY_TAP,
+	GF_KEY_HEAVY
+} gf_key_event_t;
 
 struct gf_key {
 	enum gf_key_event key;

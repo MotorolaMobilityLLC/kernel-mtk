@@ -1,4 +1,4 @@
-/* Goodix's GF516/GF318/GF516M/GF318M/GF518M/GF3118M/GF5118M
+/* Goodix's GF316M/GF318M/GF3118M/GF518M/GF5118M/GF516M/GF816M/GF3208/GF5216
  *  fingerprint sensor linux driver for TEE
  *
  * 2010 - 2015 Goodix Technology.
@@ -78,6 +78,8 @@
 #define GF_INPUT_BACK_KEY  KEY_BACK
 
 #define GF_INPUT_FF_KEY  KEY_POWER
+#define GF_INPUT_CAMERA_KEY  KEY_CAMERA
+
 
 #define GF_INPUT_OTHER_KEY KEY_VOLUMEDOWN  /* temporary key value for capture use */
 #endif
@@ -255,15 +257,19 @@ static int gf_get_sensor_dts_info(void)
 	return 0;
 }
 
-static void gf_hw_power_enable(u8 bonoff)
+static void gf_hw_power_enable(u8 onoff)
 {
 	/* TODO: LDO configure */
-#if 0
-	if (bonoff)
-		hwPowerOn(MT6331_POWER_LDO_VIBR, VOL_2800, "fingerprint");
-	else
-		hwPowerDown(MT6331_POWER_LDO_VIBR, "fingerprint");
-#endif
+	static int enable = 1;
+
+	if (onoff && enable) {
+		/* TODO:  set power  according to actual situation  */
+		/* hwPowerOn(MT6331_POWER_LDO_VIBR, VOL_2800, "fingerprint"); */
+		enable = 0;
+	} else if (!onoff && !enable) {
+		/* hwPowerDown(MT6331_POWER_LDO_VIBR, "fingerprint"); */
+		enable = 1;
+	}
 }
 
 static void gf_spi_clk_enable(u8 bonoff)
@@ -493,7 +499,6 @@ static void gf_early_suspend(struct early_suspend *handler)
 	gf_dev = container_of(handler, struct gf_dev, early_suspend);
 	gf_debug(INFO_LOG, "[%s] enter\n", __func__);
 
-	gf_dev->is_sleep_mode = 0;
 	gf_netlink_send(GF_NETLINK_SCREEN_OFF);
 	gf_dev->device_available = 0;
 }
@@ -504,12 +509,6 @@ static void gf_late_resume(struct early_suspend *handler)
 
 	gf_dev = container_of(handler, struct gf_dev, early_suspend);
 	gf_debug(INFO_LOG, "[%s] enter\n", __func__);
-
-	/* first check whether chip is still in sleep mode */
-	if (gf_dev->is_sleep_mode == 1) {
-		gf_hw_reset(60);
-		gf_dev->is_sleep_mode = 0;
-	}
 
 	gf_netlink_send(GF_NETLINK_SCREEN_ON);
 	gf_dev->device_available = 1;
@@ -523,6 +522,7 @@ static int gf_fb_notifier_callback(struct notifier_block *self,
 	struct fb_event *evdata = data;
 	unsigned int blank;
 	int retval = 0;
+	FUNC_ENTRY();
 
 	/* If we aren't interested in this event, skip it immediately ... */
 	if (event != FB_EVENT_BLANK /* FB_EARLY_EVENT_BLANK */)
@@ -536,18 +536,12 @@ static int gf_fb_notifier_callback(struct notifier_block *self,
 	switch (blank) {
 	case FB_BLANK_UNBLANK:
 		gf_debug(INFO_LOG, "[%s] : lcd on notify\n", __func__);
-		/* first check whether chip is still in sleep mode */
-		if (gf_dev->is_sleep_mode == 1) {
-			gf_hw_reset(60);
-			gf_dev->is_sleep_mode = 0;
-		}
 		gf_netlink_send(GF_NETLINK_SCREEN_ON);
 		gf_dev->device_available = 1;
 		break;
 
 	case FB_BLANK_POWERDOWN:
 		gf_debug(INFO_LOG, "[%s] : lcd off notify\n", __func__);
-		gf_dev->is_sleep_mode = 0;
 		gf_netlink_send(GF_NETLINK_SCREEN_OFF);
 		gf_dev->device_available = 0;
 		break;
@@ -556,6 +550,7 @@ static int gf_fb_notifier_callback(struct notifier_block *self,
 		gf_debug(INFO_LOG, "[%s] : other notifier, ignore\n", __func__);
 		break;
 	}
+	FUNC_EXIT();
 	return retval;
 }
 
@@ -577,11 +572,6 @@ static int gf_resume(struct spi_device *spi)
 
 	gf_debug(INFO_LOG, "%s: enter\n", __func__);
 
-	if (gf_dev->is_sleep_mode == 1) {
-		/* wake up sensor... */
-		gf_hw_reset(5);
-		gf_dev->is_sleep_mode = 0;
-	}
 	return 0;
 }
 #endif
@@ -705,7 +695,7 @@ static long gf_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 
 	switch (cmd) {
 	case GF_IOC_INIT:
-		gf_debug(INFO_LOG, "%s: gf init started======\n", __func__);
+		gf_debug(INFO_LOG, "%s: GF_IOC_INIT gf init======\n", __func__);
 
 		if (copy_to_user((void __user *)arg, (void *)&netlink_route, sizeof(u8))) {
 			retval = -EFAULT;
@@ -748,6 +738,7 @@ static long gf_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 		break;
 
 	case GF_IOC_EXIT:
+		gf_debug(INFO_LOG, "%s: GF_IOC_EXIT ======\n", __func__);
 		gf_disable_irq(gf_dev);
 		if (gf_dev->irq) {
 			free_irq(gf_dev->irq, gf_dev);
@@ -764,7 +755,7 @@ static long gf_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 #endif
 
 		gf_dev->system_status = 0;
-		gf_debug(INFO_LOG, "%s: gf exit finished======\n", __func__);
+		gf_debug(INFO_LOG, "%s: gf exit finished ======\n", __func__);
 
 		break;
 
@@ -774,19 +765,33 @@ static long gf_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 		break;
 
 	case GF_IOC_ENABLE_IRQ:
+		gf_debug(INFO_LOG, "%s: GF_IOC_ENABLE_IRQ ======\n", __func__);
 		gf_enable_irq(gf_dev);
 		break;
 
 	case GF_IOC_DISABLE_IRQ:
+		gf_debug(INFO_LOG, "%s: GF_IOC_DISABLE_IRQ ======\n", __func__);
 		gf_disable_irq(gf_dev);
 		break;
 
 	case GF_IOC_ENABLE_SPI_CLK:
+		gf_debug(INFO_LOG, "%s: GF_IOC_ENABLE_SPI_CLK ======\n", __func__);
 		gf_spi_clk_enable(1);
 		break;
 
 	case GF_IOC_DISABLE_SPI_CLK:
+		gf_debug(INFO_LOG, "%s: GF_IOC_DISABLE_SPI_CLK ======\n", __func__);
 		gf_spi_clk_enable(0);
+		break;
+
+	case GF_IOC_ENABLE_POWER:
+		gf_debug(INFO_LOG, "%s: GF_IOC_ENABLE_POWER ======\n", __func__);
+		gf_hw_power_enable(1);
+		break;
+
+	case GF_IOC_DISABLE_POWER:
+		gf_debug(INFO_LOG, "%s: GF_IOC_DISABLE_POWER ======\n", __func__);
+		gf_hw_power_enable(0);
 		break;
 
 	case GF_IOC_INPUT_KEY_EVENT:
@@ -800,6 +805,8 @@ static long gf_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 			key_event = GF_INPUT_HOME_KEY;
 		} else if (GF_KEY_POWER == gf_key.key) {
 			key_event = GF_INPUT_FF_KEY;
+		} else if (GF_KEY_CAPTURE == gf_key.key) {
+			key_event = GF_INPUT_CAMERA_KEY;
 		} else {
 			/* add special key define */
 			key_event = GF_INPUT_OTHER_KEY;
@@ -807,12 +814,11 @@ static long gf_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 		gf_debug(INFO_LOG, "%s: received key event[%d], key=%d, value=%d\n",
 				__func__, key_event, gf_key.key, gf_key.value);
 
-		if ((GF_KEY_POWER == gf_key.key) && (gf_key.value == 1)) {
+		if ((GF_KEY_POWER == gf_key.key || GF_KEY_CAPTURE == gf_key.key) && (gf_key.value == 1)) {
 			input_report_key(gf_dev->input, key_event, 1);
 			input_sync(gf_dev->input);
 			input_report_key(gf_dev->input, key_event, 0);
 			input_sync(gf_dev->input);
-
 		} else if (GF_KEY_UP == gf_key.key) {
 			input_report_key(gf_dev->input, GF_NAV_UP_KEY, 1);
 			input_sync(gf_dev->input);
@@ -833,17 +839,18 @@ static long gf_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 			input_sync(gf_dev->input);
 			input_report_key(gf_dev->input, GF_NAV_LEFT_KEY, 0);
 			input_sync(gf_dev->input);
-		} else if (GF_KEY_POWER != gf_key.key) {
+		} else if ((GF_KEY_POWER != gf_key.key) && (GF_KEY_CAPTURE != gf_key.key)) {
 			input_report_key(gf_dev->input, key_event, gf_key.value);
 			input_sync(gf_dev->input);
 		}
 		break;
 
 	case GF_IOC_ENTER_SLEEP_MODE:
-		gf_dev->is_sleep_mode = 1;
+		gf_debug(INFO_LOG, "%s: GF_IOC_ENTER_SLEEP_MODE ======\n", __func__);
 		break;
 
 	case GF_IOC_GET_FW_INFO:
+		gf_debug(INFO_LOG, "%s: GF_IOC_GET_FW_INFO ======\n", __func__);
 		buf = gf_dev->need_update;
 
 		gf_debug(DEBUG_LOG, "%s: firmware info  0x%x\n", __func__, buf);
@@ -898,7 +905,7 @@ static long gf_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 		break;
 #endif
 	default:
-		gf_debug(ERR_LOG, "gf doesn't support this command(%d)\n", cmd);
+		gf_debug(ERR_LOG, "gf doesn't support this command(%x)\n", cmd);
 		break;
 	}
 
@@ -1173,11 +1180,10 @@ int gf_spi_read_bytes_ree(u16 addr, u32 data_len, u8 *rx_buf)
 	tmp_buf = g_gf_dev->spi_buffer;
 
 	/* switch to DMA mode if transfer length larger than 32 bytes */
-	if ((data_len + 1) > 32)
+	if ((data_len + 1) > 32) {
 		g_gf_dev->spi_mcc.com_mod = DMA_TRANSFER;
-
-	spi_setup(g_gf_dev->spi);
-
+		spi_setup(g_gf_dev->spi);
+	}
 	spi_message_init(&msg);
 	*tmp_buf = 0xF0;
 	*(tmp_buf + 1) = (u8)((addr >> 8) & 0xFF);
@@ -1235,11 +1241,10 @@ int gf_spi_read_bytes_ree(u16 addr, u32 data_len, u8 *rx_buf)
 	}
 
 	/* restore to FIFO mode if has used DMA */
-	if ((data_len + 1) > 32)
+	if ((data_len + 1) > 32) {
 		g_gf_dev->spi_mcc.com_mod = FIFO_TRANSFER;
-
-	spi_setup(g_gf_dev->spi);
-
+		spi_setup(g_gf_dev->spi);
+	}
 	kfree(xfer);
 	if (xfer != NULL)
 		xfer = NULL;
@@ -1271,11 +1276,10 @@ int gf_spi_write_bytes_ree(u16 addr, u32 data_len, u8 *tx_buf)
 	tmp_buf = g_gf_dev->spi_buffer;
 
 	/* switch to DMA mode if transfer length larger than 32 bytes */
-	if ((data_len + 3) > 32)
+	if ((data_len + 3) > 32) {
 		g_gf_dev->spi_mcc.com_mod = DMA_TRANSFER;
-
-	spi_setup(g_gf_dev->spi);
-
+		spi_setup(g_gf_dev->spi);
+	}
 	spi_message_init(&msg);
 	*tmp_buf = 0xF0;
 	*(tmp_buf + 1) = (u8)((addr >> 8) & 0xFF);
@@ -1307,11 +1311,10 @@ int gf_spi_write_bytes_ree(u16 addr, u32 data_len, u8 *tx_buf)
 	}
 
 	/* restore to FIFO mode if has used DMA */
-	if ((data_len + 3) > 32)
+	if ((data_len + 3) > 32) {
 		g_gf_dev->spi_mcc.com_mod = FIFO_TRANSFER;
-
-	spi_setup(g_gf_dev->spi);
-
+		spi_setup(g_gf_dev->spi);
+	}
 	kfree(xfer);
 	if (xfer != NULL)
 		xfer = NULL;
@@ -1442,12 +1445,6 @@ static int gf_init_flash_fw(struct gf_dev *gf_dev)
 
 	gf_spi_setup_conf_ree(LOW_SPEED, FIFO_TRANSFER);
 
-	/* put miso high to select SPI transfer */
-	gf_miso_gpio_cfg(1);
-	gf_hw_reset(0);
-	udelay(100);
-	gf_miso_gpio_cfg(0);
-
 	/*check sensor is goodix, or not*/
 	status = gf_check_9p_chip(gf_dev);
 	if (status != 0) {
@@ -1575,16 +1572,19 @@ static int gf_probe(struct spi_device *spi)
 	gf_bypass_flash_gpio_cfg();
 	gf_spi_clk_enable(1);
 
+	/* put miso high to select SPI transfer */
+	gf_miso_gpio_cfg(1);
+	gf_hw_reset(0);
+	udelay(100);
+	gf_miso_gpio_cfg(0);
+
 	/* check firmware Integrity */
 #ifdef SUPPORT_REE_SPI
 	status = gf_init_flash_fw(gf_dev);
 	if (status == -ERR_NO_SENSOR) {
-		gf_hw_power_enable(0);
 		gf_debug(ERR_LOG, "%s, no goodix sensor.\n", __func__);
 		goto err_fw;
 	}
-#else
-	gf_miso_gpio_cfg(0);
 #endif
 
 	mutex_lock(&device_list_lock);
@@ -1659,6 +1659,7 @@ static int gf_probe(struct spi_device *spi)
 	__set_bit(GF_NAV_DOWN_KEY, gf_dev->input->keybit);
 	__set_bit(GF_NAV_RIGHT_KEY, gf_dev->input->keybit);
 	__set_bit(GF_NAV_LEFT_KEY, gf_dev->input->keybit);
+	__set_bit(GF_INPUT_CAMERA_KEY, gf_dev->input->keybit);
 
 	gf_dev->input->name = GF_INPUT_NAME;
 	if (input_register_device(gf_dev->input)) {
@@ -1673,7 +1674,6 @@ static int gf_probe(struct spi_device *spi)
 	/* netlink interface init */
 	status = gf_netlink_init();
 	if (status == -1) {
-		gf_spi_clk_enable(0);
 		goto err_input_2;
 	}
 
@@ -1712,6 +1712,8 @@ err_class:
 #ifdef SUPPORT_REE_SPI
 err_fw:
 #endif
+	gf_hw_power_enable(0);
+	gf_spi_clk_enable(0);
 	kfree(gf_dev->spi_buffer);
 err_buf:
 	spi_set_drvdata(spi, NULL);
@@ -1818,6 +1820,6 @@ module_exit(gf_exit);
 
 
 MODULE_AUTHOR("goodix");
-MODULE_DESCRIPTION("Goodix Fingerprint chip GF318M/GF516M/GF516 TEE driver");
+MODULE_DESCRIPTION("Goodix Fingerprint chip GF316M/GF318M/GF3118M/GF518M/GF5118M/GF516M/GF816M/GF3208/GF5216 TEE driver");
 MODULE_LICENSE("GPL");
 MODULE_ALIAS("spi:gf_spi");
