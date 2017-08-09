@@ -218,6 +218,7 @@ bool ClrOffloadCbk(Soc_Aud_Digital_Block block, void *offloadstream);
 unsigned int Align64ByteSize(unsigned int insize);
 
 void AudDrv_checkDLISRStatus(void);
+bool SetHighAddr(Soc_Aud_Digital_Block MemBlock, bool usingdram);
 
 #ifdef CONFIG_OF
 int GetGPIO_Info(int type, int *pin, int *pinmode);

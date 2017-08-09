@@ -171,6 +171,7 @@ static int mtk_pcm_hp_impedance_params(struct snd_pcm_substream *substream,
 
 	substream->runtime->dma_area = Dl1_Playback_dma_buf->area;
 	substream->runtime->dma_addr = Dl1_Playback_dma_buf->addr;
+	SetHighAddr(Soc_Aud_Digital_Block_MEM_DL1, true);
 	SetDL1Buffer(substream, hw_params);
 
 	PRINTK_AUDDRV("mtk_pcm_hp_impedance_params dma_bytes = %zu dma_area = %p dma_addr = 0x%lx\n",

@@ -349,12 +349,14 @@ static int mtk_capture_pcm_hw_params(struct snd_pcm_substream *substream,
 			runtime->dma_bytes);
 		substream->runtime->dma_area = (unsigned char *)Get_Afe_SramBase_Pointer();
 		substream->runtime->dma_addr = Get_Afe_Sram_Phys_Addr();
+		SetHighAddr(Soc_Aud_Digital_Block_MEM_VUL, false);
 	} else if (Capture_dma_buf->area) {
 		pr_warn("Capture_dma_buf = %p Capture_dma_buf->area = %p apture_dma_buf->addr = 0x%lx\n",
 		       Capture_dma_buf, Capture_dma_buf->area, (long) Capture_dma_buf->addr);
 		runtime->dma_bytes = params_buffer_bytes(hw_params);
 		runtime->dma_area = Capture_dma_buf->area;
 		runtime->dma_addr = Capture_dma_buf->addr;
+		SetHighAddr(Soc_Aud_Digital_Block_MEM_VUL, true);
 	} else {
 		pr_warn("mtk_capture_pcm_hw_params snd_pcm_lib_malloc_pages\n");
 		ret = snd_pcm_lib_malloc_pages(substream, params_buffer_bytes(hw_params));

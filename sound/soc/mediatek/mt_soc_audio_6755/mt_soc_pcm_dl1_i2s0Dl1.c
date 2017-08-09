@@ -229,7 +229,7 @@ static void SetDL1Buffer(struct snd_pcm_substream *substream,
 	pblock->u4DataRemained  = 0;
 	pblock->u4fsyncflag     = false;
 	pblock->uResetFlag      = true;
-	pr_warn("SetDL1Buffer u4BufferSize = %d pucVirtBufAddr = %p pucPhysBufAddr = 0x%x\n",
+	PRINTK_AUD_DL1("SetDL1Buffer u4BufferSize = %d pucVirtBufAddr = %p pucPhysBufAddr = 0x%x\n",
 	       pblock->u4BufferSize, pblock->pucVirtBufAddr, pblock->pucPhysBufAddr);
 	/* set dram address top hardware */
 	Afe_Set_Reg(AFE_DL1_BASE , pblock->pucPhysBufAddr , 0xffffffff);
@@ -251,11 +251,13 @@ static int mtk_pcm_I2S0dl1_hw_params(struct snd_pcm_substream *substream,
 		/* substream->runtime->dma_bytes = AFE_INTERNAL_SRAM_SIZE; */
 		substream->runtime->dma_area = (unsigned char *)Get_Afe_SramBase_Pointer();
 		substream->runtime->dma_addr = AFE_INTERNAL_SRAM_PHY_BASE;
+		SetHighAddr(Soc_Aud_Digital_Block_MEM_DL1, false);
 		AudDrv_Allocate_DL1_Buffer(mDev, substream->runtime->dma_bytes);
 	} else {
 		substream->runtime->dma_bytes = params_buffer_bytes(hw_params);
 		substream->runtime->dma_area = Dl1_Playback_dma_buf->area;
 		substream->runtime->dma_addr = Dl1_Playback_dma_buf->addr;
+		SetHighAddr(Soc_Aud_Digital_Block_MEM_DL1, true);
 		SetDL1Buffer(substream, hw_params);
 	}
 #else /* old */

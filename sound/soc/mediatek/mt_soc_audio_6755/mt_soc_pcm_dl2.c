@@ -210,6 +210,7 @@ static int mtk_pcm_dl2_params(struct snd_pcm_substream *substream,
 		substream->runtime->dma_bytes = params_buffer_bytes(hw_params);
 		substream->runtime->dma_area = Dl2_Playback_dma_buf->area;
 		substream->runtime->dma_addr = Dl2_Playback_dma_buf->addr;
+		SetHighAddr(Soc_Aud_Digital_Block_MEM_DL2, true);
 		SetDL2Buffer(substream, hw_params);
 
 	PRINTK_AUDDRV("dma_bytes = %zu dma_area = %p dma_addr = 0x%lx\n",

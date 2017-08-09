@@ -177,6 +177,7 @@ static int mtk_pcm_dl1bt_hw_params(struct snd_pcm_substream *substream,
 	substream->runtime->dma_bytes = params_buffer_bytes(hw_params);
 
 	/* here to allcoate sram to hardware --------------------------- */
+	SetHighAddr(Soc_Aud_Digital_Block_MEM_DL1, false);
 	AudDrv_Allocate_mem_Buffer(mDev, Soc_Aud_Digital_Block_MEM_DL1, substream->runtime->dma_bytes);
 	/* substream->runtime->dma_bytes = AFE_INTERNAL_SRAM_SIZE; */
 	substream->runtime->dma_area = (unsigned char *)Get_Afe_SramBase_Pointer();
