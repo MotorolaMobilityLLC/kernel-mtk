@@ -311,21 +311,10 @@ struct spm_lp_scen __spm_suspend = {
 	.wakestatus = &suspend_info[0],
 };
 
-#if defined(CONFIG_ARCH_MT6797)
-#define TEMP4	0x10002000
-#endif
-
 static void spm_suspend_pre_process(struct pwr_ctrl *pwrctrl)
 {
 #if defined(CONFIG_ARCH_MT6755)
 	unsigned int temp;
-#elif defined(CONFIG_ARCH_MT6797)
-	static void __iomem *temp4_base;
-
-
-	temp4_base = ioremap(TEMP4, 0x1000);
-	spm_write(temp4_base + 0x8b0, spm_read(temp4_base) | 0x400);
-	spm_write(temp4_base + 0x8d0, spm_read(temp4_base) & 0xFFFFFBFF);
 #endif
 
 	__spm_pmic_pg_force_on();
