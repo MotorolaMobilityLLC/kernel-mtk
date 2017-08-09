@@ -14,7 +14,7 @@
  *
  */
 
-#include <kpd.h>
+#include "kpd.h"
 #include <linux/wakelock.h>
 #include <linux/of.h>
 #include <linux/of_address.h>

@@ -12,8 +12,8 @@
 #include <linux/of_gpio.h>
 #include <linux/regulator/consumer.h>
 
-#include <bq24297.h>
-#include <mt_charging.h>
+#include "bq24297.h"
+#include "mt_charging.h"
 #include <mt-plat/upmu_common.h>
 #include <mt-plat/mt_reboot.h>
 /* #include <mach/mt_gpio_def.h> */

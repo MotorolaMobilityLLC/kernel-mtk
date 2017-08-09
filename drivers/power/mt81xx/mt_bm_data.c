@@ -1,5 +1,5 @@
-#include <mt_battery_custom_data.h>
-#include <mt_battery_meter.h>
+#include "mt_battery_custom_data.h"
+#include "mt_battery_meter.h"
 #include <linux/of.h>
 #include <linux/device.h>
 

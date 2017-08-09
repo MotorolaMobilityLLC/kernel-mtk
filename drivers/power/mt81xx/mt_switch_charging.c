@@ -1,11 +1,11 @@
 
 #include <linux/kernel.h>
 /* #include <linux/musb/musb_core.h> */
-#include <mt_charging.h>
+#include "mt_charging.h"
 #include <mt_boot.h>
-#include <mt_battery_meter.h>
-#include <mt_battery_custom_data.h>
-#include <mt_battery_common.h>
+#include "mt_battery_meter.h"
+#include "mt_battery_custom_data.h"
+#include "mt_battery_common.h"
 
 /* TODO: temp code for usb!!! */
 

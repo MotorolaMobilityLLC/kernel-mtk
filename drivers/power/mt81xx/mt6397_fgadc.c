@@ -4,8 +4,8 @@
 #include <mt-plat/upmu_common.h>
 #include <mt-plat/mt_reboot.h>
 
-#include <mt_battery_meter_hal.h>
-#include <mt_battery_custom_data.h>
+#include "mt_battery_meter_hal.h"
+#include "mt_battery_custom_data.h"
 
 #define VOLTAGE_FULL_RANGE     1200
 #define ADC_PRECISE           1024	/* 10 bits */

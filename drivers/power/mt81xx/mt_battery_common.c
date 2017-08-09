@@ -34,10 +34,10 @@
 
 #include <mt-plat/mt_boot.h>
 
-#include <mt_charging.h>
-#include <mt_battery_custom_data.h>
-#include <mt_battery_common.h>
-#include <mt_battery_meter.h>
+#include "mt_charging.h"
+#include "mt_battery_custom_data.h"
+#include "mt_battery_common.h"
+#include "mt_battery_meter.h"
 #include <linux/irq.h>
 #include <linux/reboot.h>
 
