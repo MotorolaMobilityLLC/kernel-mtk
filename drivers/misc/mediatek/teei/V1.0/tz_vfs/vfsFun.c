@@ -29,6 +29,8 @@ struct vfs_dev {
 	struct semaphore sem;
 };
 
+extern struct completion global_down_lock;
+
 #ifdef VFS_RDWR_SEM
 struct semaphore VFS_rd_sem;
 EXPORT_SYMBOL_GPL(VFS_rd_sem);
@@ -95,6 +97,7 @@ int cpu_id = raw_smp_processor_id();
 
 	if (ret == -ERESTARTSYS) {
 		printk("[%s][%d] ----------------wait_for_completion_interruptible_timeout interrupt----------------------- \n", __func__, __LINE__);
+		complete(&global_down_lock);
 		return ret;
 	}
 #endif

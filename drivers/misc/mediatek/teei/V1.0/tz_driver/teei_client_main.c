@@ -20,8 +20,8 @@
 #include <mach/mt_clkmgr.h>
 #include <linux/of.h>
 #include <linux/of_irq.h>
-//#include <mach/eint.h>
-//#include <mach/eint_drv.h>
+/*#include <mach/eint.h>*/
+/*#include <mach/eint_drv.h>*/
 #include <linux/irqchip/mt-eic.h>
 #include <linux/compat.h>
 #include <linux/freezer.h>
@@ -42,7 +42,7 @@
 #include "teei_client_main.h"
 #include <linux/of.h>
 #include <linux/of_address.h>
-
+#include <linux/completion.h>
 
 #include <linux/kthread.h>
 #include <linux/module.h>
@@ -234,6 +234,8 @@ static struct tlog_struct tlog_ent[TLOG_MAX_CNT];
 
 unsigned int soter_error_flag = 0;
 
+DECLARE_COMPLETION(global_down_lock);
+EXPORT_SYMBOL_GPL(global_down_lock);
 
 /*
  * structures and MACROs for NQ buffer
@@ -255,7 +257,7 @@ static DEFINE_MUTEX(nt_t_NQ_lock);
 static DEFINE_MUTEX(t_nt_NQ_lock);
 
 struct semaphore smc_lock;
-struct semaphore cpu_down_lock;
+//struct semaphore global_down_lock;
 struct semaphore api_lock;
 static int print_context(void);
 
@@ -437,11 +439,22 @@ int global_fn(void)
 		set_freezable();
 		set_current_state(TASK_INTERRUPTIBLE);
 #endif
+
+		if (teei_config_flag == 1) {
+			retVal = wait_for_completion_interruptible(&global_down_lock);
+			if (retVal == -ERESTARTSYS) {
+				printk("[%s][%d]*********down &global_down_lock failed *****************\n", __func__, __LINE__ );
+				continue;
+			}
+		}
+
 		/* down(&smc_lock); */
 		retVal = down_interruptible(&smc_lock);
-		if (retVal != 0)
+		if (retVal != 0) {
+			printk("[%s][%d]*********down &smc_lock failed *****************\n", __func__, __LINE__ );
+			complete(&global_down_lock);
 			continue;
-
+		}
 		if (forward_call_flag == GLSCH_FOR_SOTER) {
 			forward_call_flag = GLSCH_NONE;
 			msleep(10);
@@ -893,8 +906,11 @@ int teei_smc_call(u32 teei_cmd_type,
 	smc_call_entry.error_code = error_code;
 	smc_call_entry.psema = psema;
 
+	if (teei_config_flag == 1) {
+		complete(&global_down_lock);
+	}
+
 	down(&smc_lock);
-	/*down(&cpu_down_lock);*/
 
 	/* with a wmb() */
 	wmb();
@@ -910,7 +926,6 @@ int teei_smc_call(u32 teei_cmd_type,
 
 	tz_free_shared_mem(local_smc_cmd, sizeof(struct teei_smc_cmd));
 
-	/*up(&cpu_down_lock);*/
 	return smc_call_entry.retVal;
 }
 
@@ -1164,10 +1179,7 @@ static int teei_client_session_open(void *private_data, void *argp)
 	int retVal = 0;
 	unsigned long dev_file_id = (unsigned long)private_data;
 	printk("ses open [%ld]\n", (unsigned long)ses_open);
-	printk("ses open [%ld]\n", (unsigned long)ses_open);
-	printk("ses open [%ld]\n", (unsigned long)ses_open);
 	if (ses_open == NULL) {
-		
 		return -EFAULT;
 	}
 	/* Get the paraments about this session from user space. */
@@ -1176,7 +1188,6 @@ static int teei_client_session_open(void *private_data, void *argp)
 		tz_free_shared_mem(ses_open, sizeof(struct ser_ses_id));
 		return -EFAULT;
 	}
-	/* print_context(); */
 	/* Search the teei_context structure */
 	list_for_each_entry(temp_cont, &teei_contexts_head.context_list, link) {
 		if (temp_cont->cont_id == dev_file_id) {
@@ -1301,7 +1312,6 @@ static int teei_client_session_close(void *private_data, void *argp)
 	}
 
 	down_read(&(teei_contexts_head.teei_contexts_sem));
-	/* print_context(); */
 	list_for_each_entry(temp_cont, &teei_contexts_head.context_list, link) {
 		if (temp_cont->cont_id == dev_file_id) {
 			list_for_each_entry(temp_ses, &temp_cont->sess_link, link) {
@@ -1533,7 +1543,6 @@ static int teei_client_context_init(void *private_data, void *argp)
 		(unsigned long)name+sizeof(ctx.name));
 
 	down_write(&(teei_contexts_head.teei_contexts_sem));
-	/* print_context(); */
 	list_for_each_entry(temp_cont, &teei_contexts_head.context_list, link) {
 		if (temp_cont->cont_id == dev_file_id) {
 			dev_found = 1;
@@ -1580,7 +1589,6 @@ static int teei_client_context_close(void *private_data, void *argp)
 	}
 
 	down_write(&(teei_contexts_head.teei_contexts_sem));
-	/* print_context(); */
 	list_for_each_entry(temp_cont, &teei_contexts_head.context_list, link) {
 	printk("cont_id = %ld =======\n", temp_cont->cont_id);
 		if (temp_cont->cont_id == dev_file_id) {
@@ -2873,7 +2881,7 @@ static irqreturn_t nt_sched_irq_handler(void)
 
 int register_sched_irq_handler(void)
 {
-		
+
 	int retVal = 0;
 	retVal = request_irq(SCHED_IRQ, nt_sched_irq_handler, 0, "tz_drivers_service", NULL);
 
@@ -2889,10 +2897,12 @@ int register_sched_irq_handler(void)
 
 static irqreturn_t nt_soter_irq_handler(void)
 {
-			int cpu_id = raw_smp_processor_id(); 
- 
+	int cpu_id = raw_smp_processor_id();
 	irq_call_flag = GLSCH_HIGH;
 	up(&smc_lock);
+	if (teei_config_flag == 1) {
+		complete(&global_down_lock);
+	}
 	return IRQ_HANDLED;
 }
 
@@ -2937,13 +2947,11 @@ int register_error_irq_handler(void)
 
 static irqreturn_t nt_fp_ack_handler(void)
 {
-	
 	fp_call_flag = GLSCH_NONE;
 	up(&boot_sema);
 	up(&smc_lock);
 	return IRQ_HANDLED;
 }
-
 
 int register_fp_ack_handler(void)
 {
@@ -3070,7 +3078,6 @@ irqreturn_t tlog_handler(void)
 	if (-1 != pos) {
 		memset(tlog_ent[pos].context, 0, TLOG_CONTEXT_LEN);
 		memcpy(tlog_ent[pos].context, (char *)tlog_message_buff, TLOG_CONTEXT_LEN);
-		/* printk("handler:%s\n", (char *)tlog_message_buff); */
 		Flush_Dcache_By_Area((unsigned long)tlog_message_buff, (unsigned long)tlog_message_buff + TLOG_CONTEXT_LEN);
 		INIT_WORK(&(tlog_ent[pos].work), tlog_func);
 		queue_work(secure_wq, &(tlog_ent[pos].work));
@@ -3129,7 +3136,6 @@ int switch_to_t_os_stages2(void)
 
 	down(&(boot_sema));
 	down(&(smc_lock));
-	/*down(&cpu_down_lock);*/
 
 	/* n_switch_to_t_os_stage2(); */
 	boot_stage2();
@@ -3142,7 +3148,6 @@ int switch_to_t_os_stages2(void)
 		return -1;
 
 	down(&(boot_sema));
-	/*up(&cpu_down_lock);*/
 	up(&(boot_sema));
 
 	return 0;
@@ -3171,7 +3176,6 @@ int t_os_load_image(void)
 	/* N_INVOKE_T_LOAD_TEE to TOS */
 	set_sch_load_img_cmd();
 	down(&smc_lock);
-	/*down(&cpu_down_lock);*/
 	/* n_invoke_t_load_tee(0, 0, 0); */
 	load_tee();
 
@@ -3185,7 +3189,6 @@ int t_os_load_image(void)
 
 	/* block here until the TOS ack N_SWITCH_TO_T_OS_STAGE2 */
 	down(&(boot_sema));
-	/*up(&cpu_down_lock);*/
 	up(&(boot_sema));
 
 	return 0;
@@ -3393,9 +3396,12 @@ int send_fp_command(unsigned long share_memory_size)
 
 	down(&fp_lock);
 	mutex_lock(&pm_mutex);
+	
+	if (teei_config_flag == 1) {
+		complete(&global_down_lock);
+	}
 
 	down(&smc_lock);
-	/*down(&cpu_down_lock);*/
 	down(&boot_sema);
 
 	fp_command_entry.mem_size = share_memory_size;
@@ -3410,7 +3416,6 @@ int send_fp_command(unsigned long share_memory_size)
 
 	rmb();
 	mutex_unlock(&pm_mutex);
-	/*up(&cpu_down_lock);*/
 	up(&fp_lock);
 	return fp_command_entry.retVal;
 }
@@ -3505,7 +3510,6 @@ static int init_teei_framework(void)
 	printk("[%s][%d]\n", __func__, __LINE__);
 	down(&(boot_sema));
 	down(&(smc_lock));
-	/*down(&cpu_down_lock);*/
 	printk("[%s][%d]\n", __func__, __LINE__);
 	/* n_init_t_boot_stage1((unsigned long)virt_to_phys(boot_vfs_addr), 0, 0); */
 
@@ -3513,7 +3517,6 @@ static int init_teei_framework(void)
 
 	down(&(boot_sema));
 	up(&(boot_sema));
-	/*up(&cpu_down_lock);*/
 
 	free_pages(boot_vfs_addr, get_order(ROUND_UP(VFS_SIZE, SZ_4K)));
 
@@ -3634,27 +3637,27 @@ static int __cpuinit tz_driver_cpu_callback(struct notifier_block *self,
 	case CPU_DOWN_PREPARE_FROZEN:
 			if (cpu == sched_cpu) {
 				printk("cpu down prepare ************************\n");
-				/*retVal = down_trylock(&cpu_down_lock);*/
 				retVal = down_trylock(&smc_lock);
-				if (retVal == 1)
+				if (retVal == 1) {
 					return NOTIFY_BAD;
+				}
 				else {
 					cpu_notify_flag = 1;
-					for_each_online_cpu(i)
-					{
+					for_each_online_cpu(i) {
 						printk("current on line cpu [%d]\n", i);
 						if (i == cpu) {
 							continue;
 						}
 						current_cpu_id = i;
 					}
+#if 0
 					printk("[%s][%d]brefore cpumask set cpu\n", __func__, __LINE__);
 					cpumask_set_cpu(current_cpu_id, &mtee_mask);
 					/*cpumask_set_cpu(current_cpu_id, &mask);*/
 					printk("[%s][%d]after cpumask set cpu\n", __func__, __LINE__);
 					if (sched_setaffinity(sub_pid, &mtee_mask) == -1)
 						printk("warning: could not set CPU affinity, continuing...\n");
-
+#endif
 					/* TODO smc_call to notify ATF to switch the CPU*/
 					/* NT_switch_T(current_cpu_id);*/
 					printk("current cpu id  \n");
@@ -3667,7 +3670,6 @@ static int __cpuinit tz_driver_cpu_callback(struct notifier_block *self,
 	case CPU_DOWN_FAILED:
 			if (cpu_notify_flag == 1) {
 				printk("cpu down failed *************************\n");
-				/*up(&cpu_down_lock);*/
 				up(&smc_lock);
 				cpu_notify_flag = 0;
 			}
@@ -3677,7 +3679,6 @@ static int __cpuinit tz_driver_cpu_callback(struct notifier_block *self,
 	case CPU_DEAD_FROZEN:
 			if (cpu_notify_flag == 1) {
 				printk("cpu down success ***********************\n");
-				/*up(&cpu_down_lock);*/
 				up(&smc_lock);
 				cpu_notify_flag = 0;
 			}
@@ -3704,6 +3705,9 @@ static int teei_client_init(void)
 	unsigned long irq_status = 0;
 
 	/* printk("TEEI Agent Driver Module Init ...\n"); */
+	printk("=====================================\n");
+	printk("~~~~~~~uTos version V0.6~~~~~~~\n");
+	printk("=====================================\n");
 	ret_code = alloc_chrdev_region(&teei_client_device_no, 0, 1, TEEI_CLIENT_DEV);
 	if (ret_code < 0) {
 		printk("alloc_chrdev_region failed %x\n", ret_code);
@@ -3743,10 +3747,9 @@ static int teei_client_init(void)
 	init_tlog_entry();
 
 	sema_init(&(smc_lock), 1);
-	sema_init(&(cpu_down_lock), 1);
+	//sema_init(&(global_down_lock), 0);
 	int i;
-	for_each_online_cpu(i)
-	{
+	for_each_online_cpu(i) {
 		current_cpu_id = i;
 		printk("init stage : current_cpu_id = %d\n", current_cpu_id);
 	}
@@ -3754,13 +3757,13 @@ static int teei_client_init(void)
 	sub_pid = kernel_thread(global_fn, NULL, (CLONE_FS | CLONE_FILES | CLONE_SIGHAND));
 	retVal = sys_setpriority(PRIO_PROCESS, sub_pid, -3);
 	printk("create the sub_thread successfully!\n");
-
+#if 0
 	cpumask_set_cpu(get_current_cpuid(), &mask);
 
 	retVal = sched_setaffinity(sub_pid, &mask);
 	if (retVal != 0)
-		printk("warning: could not set CPU affinity, retVal = [%l] continuing...\n", retVal);
-
+		printk("warning: could not set CPU affinity, retVal = [%l] continuing...\n",  retVal);
+#endif
 	register_cpu_notifier(&tz_driver_cpu_notifer);
 	printk("after  register cpu notify\n");
 	teei_config_init();
