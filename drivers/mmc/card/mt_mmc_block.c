@@ -57,6 +57,7 @@ enum {
 	CTX_MMCQD1 = 1,
 	CTX_MMCQD0_BOOT0 = 2,
 	CTX_MMCQD0_BOOT1 = 3,
+	CTX_MMCQD0_RPMB  = 4,
 	CTX_EXECQ  = 9
 };
 
@@ -105,7 +106,9 @@ unsigned int mt_bio_used_mem = 0;
 #define REQ_MMCQD0 "mmcqd/0"
 #define REQ_MMCQD0_BOOT0 "mmcqd/0boot0"
 #define REQ_MMCQD0_BOOT1 "mmcqd/0boot1"
+#define REQ_MMCQD0_RPMB  "mmcqd/0rpmb"
 #define REQ_MMCQD1 "mmcqd/1"
+
 
 /*
    queue id:
@@ -128,6 +131,8 @@ static int get_ctxid_by_name(const char *str)
 {
 	if (strncmp(str, REQ_EXECQ, strlen(REQ_EXECQ)) == 0)
 		return CTX_EXECQ;
+	if (strncmp(str, REQ_MMCQD0_RPMB, strlen(REQ_MMCQD0_RPMB)) == 0)
+		return CTX_MMCQD0_RPMB;
 	if (strncmp(str, REQ_MMCQD0_BOOT0, strlen(REQ_MMCQD0_BOOT0)) == 0)
 		return CTX_MMCQD0_BOOT0;
 	if (strncmp(str, REQ_MMCQD0_BOOT1, strlen(REQ_MMCQD0_BOOT1)) == 0)
@@ -149,12 +154,12 @@ static void mt_bio_init_task(struct mt_bio_context_task *tsk)
 	tsk->wait_start_t = 0;
 }
 
-static void mt_bio_init_ctx(struct mt_bio_context *ctx, pid_t qd_pid)
+static void mt_bio_init_ctx(struct mt_bio_context *ctx, struct task_struct *thread)
 {
 	int i;
 
-	ctx->pid = qd_pid;
-	get_task_comm(ctx->comm, current);
+	ctx->pid = task_pid_nr(thread);
+	get_task_comm(ctx->comm, thread);
 	ctx->qid = get_qid_by_name(ctx->comm);
 	spin_lock_init(&ctx->lock);
 	ctx->id = get_ctxid_by_name(ctx->comm);
@@ -164,6 +169,43 @@ static void mt_bio_init_ctx(struct mt_bio_context *ctx, pid_t qd_pid)
 
 	for (i = 0; i < MMC_BIOLOG_CONTEXT_TASKS; i++)
 		mt_bio_init_task(&ctx->task[i]);
+}
+
+void mt_bio_queue_alloc(struct task_struct *thread)
+{
+	int i;
+	pid_t pid;
+
+	pid = task_pid_nr(thread);
+
+	for (i = 0; i < MMC_BIOLOG_CONTEXTS; i++)	{
+		struct mt_bio_context *ctx = &mt_bio_reqctx[i];
+
+		if (ctx->pid == pid)
+			break;
+		if (ctx->pid == 0) {
+			mt_bio_init_ctx(ctx, thread);
+			break;
+		}
+	}
+}
+
+void mt_bio_queue_free(struct task_struct *thread)
+{
+	int i;
+	pid_t pid;
+
+	pid = task_pid_nr(thread);
+
+	for (i = 0; i < MMC_BIOLOG_CONTEXTS; i++)	{
+		struct mt_bio_context *ctx = &mt_bio_reqctx[i];
+
+		if (ctx->pid == pid) {
+			mt_ctx_map[ctx->id] = NULL;
+			memset(ctx, 0, sizeof(struct mt_bio_context));
+			break;
+		}
+	}
 }
 
 /* get context correspond to current process */
@@ -181,7 +223,7 @@ static struct mt_bio_context *mt_bio_curr_ctx(void)
 		struct mt_bio_context *ctx = &mt_bio_reqctx[i];
 
 		if (ctx->pid == 0)
-			mt_bio_init_ctx(ctx, qd_pid);
+			continue;
 		if (qd_pid == ctx->pid)
 			return ctx;
 	}
@@ -1070,7 +1112,7 @@ static void mt_bio_seq_debug_show_info(struct seq_file *seq)
 	seq_puts(seq, "<Queue Info>\n");
 	for (i = 0; i < MMC_BIOLOG_CONTEXTS; i++)	{
 		if (mt_bio_reqctx[i].pid == 0)
-			break;
+			continue;
 		seq_printf(seq, "mt_bio_reqctx[%d]=mt_ctx_map[%d]=%s,pid:%4d,q:%d\n",
 			i,
 			mt_bio_reqctx[i].id,
