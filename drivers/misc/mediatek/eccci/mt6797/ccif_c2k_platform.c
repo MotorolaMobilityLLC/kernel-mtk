@@ -154,7 +154,7 @@ int md_ccif_get_modem_hw_info(struct platform_device *dev_ptr,
 		hw_info->infra_ao_base = (unsigned long)of_iomap(node, 0);
 
 		/*C2K related register move to c2k_misc in mt6797*/
-		node = of_find_compatible_node(NULL, NULL, "mediatek,c2k_misc");
+		node = of_find_compatible_node(NULL, NULL, "mediatek,c2kmisc");
 		hw_info->c2k_misc = (unsigned long)of_iomap(node, 0);
 
 		node = of_find_compatible_node(NULL, NULL, "mediatek,sleep");
@@ -362,10 +362,13 @@ int md_ccif_let_md_go(struct ccci_modem *md)
 			     ccif_read32(apmixed_base, AP_PLL_CON0));
 
 		/*step 3: ap hold c2k core*/
+		/* c2k may bootup fail if AP access C2K_CONFIG, so ignore*/
+		/*
 		ccif_write32(md_ctrl->hw_info->c2k_misc,
 			     C2K_CONFIG,
 			     ccif_read32(md_ctrl->hw_info->c2k_misc,
 					 C2K_CONFIG) | (0x1 << 1));
+		*/
 
 		/*step 4: wake up C2K */
 #if 1
@@ -411,14 +414,23 @@ int md_ccif_let_md_go(struct ccci_modem *md)
 			     ccif_read32(md_ctrl->hw_info->c2k_misc,
 					 C2K_STATUS));
 
+		/*release bus protection*/
+		ccif_write32(md_ctrl->hw_info->infra_ao_base,
+			     INFRA_TOPAXI_PROTECTEN_1,
+			     ccif_read32(md_ctrl->hw_info->infra_ao_base,
+					 INFRA_TOPAXI_PROTECTEN_1) & (0xFFFF1FFF));
+
 		/*set c2k pll*/
 		config_c2k_pll();
 
 		/*release c2k arm core*/
+		/* c2k may bootup fail if AP access C2K_CONFIG, so ignore*/
+		/*
 		ccif_write32(md_ctrl->hw_info->c2k_misc,
 			     C2K_CONFIG,
 			     ccif_read32(md_ctrl->hw_info->c2k_misc,
 					 C2K_CONFIG) & (~(0x1 << 1)));
+		*/
 
 		break;
 	}

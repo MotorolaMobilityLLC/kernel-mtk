@@ -55,7 +55,7 @@
 #define AP_PLL_CON0				 0x0	/*	((UINT32P)(APMIXED_BASE+0x0))	*/
 #define MDPLL1_CON0              0x2C8	/*	((UINT32P)(APMIXED_BASE+0x02C8))	*/
 
-#define INFRA_TOPAXI_PROTECTEN_1 0x250	/*((UINT32P)(INFRACFG_AO_BASE+0x250))*/
+#define INFRA_TOPAXI_PROTECTEN_1 0x220	/*((UINT32P)(INFRACFG_AO_BASE+0x220))*/
 #define PWR_RST_B     0
 #define PWR_ISO       1
 #define PWR_ON        2
