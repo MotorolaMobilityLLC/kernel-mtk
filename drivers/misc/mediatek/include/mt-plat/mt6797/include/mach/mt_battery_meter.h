@@ -76,16 +76,15 @@
 #define AGING1_LOAD_SOC	70
 #define AGING1_UPDATE_SOC	30
 #define BATTERYPSEUDO100	95
-#define BATTERYPSEUDO1	0
+#define BATTERYPSEUDO1	1
 
-/*	#define Q_MAX_BY_SYS	*/
-/*	#define Q_MAX_SYS_VOLTAGE		3350	*/
-/*	#define SHUTDOWN_GAUGE0	*/
-/*	#define SHUTDOWN_GAUGE1_XMINS	*/
-/*	#define SHUTDOWN_GAUGE1_MINS	60	*/
-#define SHUTDOWN_GAUGE1_MINS	(48*60)
+/* #define Q_MAX_BY_SYS	*/	/* 8. Qmax variant by system drop voltage. */
+#define Q_MAX_SYS_VOLTAGE		3050
+#define SHUTDOWN_GAUGE0
+#define SHUTDOWN_GAUGE1_XMINS
+#define SHUTDOWN_GAUGE1_MINS	60
 
-#define SHUTDOWN_SYSTEM_VOLTAGE	2800	/*	DLPT will shutdown at 3.1v first	*/
+#define SHUTDOWN_SYSTEM_VOLTAGE	3100	/*	DLPT will shutdown at 3.1v first	*/
 #define CHARGE_TRACKING_TIME	60
 #define DISCHARGE_TRACKING_TIME	10
 
