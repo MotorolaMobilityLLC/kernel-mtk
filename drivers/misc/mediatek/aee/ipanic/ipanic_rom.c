@@ -10,7 +10,7 @@
 #include <mach/wd_api.h>
 #include <linux/reboot.h>
 #include "ipanic.h"
-
+#include <asm/system_misc.h>
 
 static u32 ipanic_iv = 0xaabbccdd;
 static spinlock_t ipanic_lock;
@@ -606,6 +606,7 @@ static int ipanic_die(struct notifier_block *self, unsigned long cmd, void *ptr)
 	struct die_args *dargs = (struct die_args *)ptr;
 
 	aee_disable_api();
+	__show_regs(dargs->regs);
 	dump_stack();
 
 	aee_rr_rec_fiq_step(AEE_FIQ_STEP_KE_IPANIC_DIE);
