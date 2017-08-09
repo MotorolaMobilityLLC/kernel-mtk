@@ -84,7 +84,7 @@
  * Define function prototypes.
  */
 extern void _print_status(void);
-extern int mt_gpio_set_debounce(unsigned gpio, unsigned debounce);
+extern int mt_gpio_set_debounce(unsigned int gpio, unsigned int debounce);
 extern unsigned int mt_gpio_to_irq(unsigned gpio);
 extern int mt_get_supported_irq_num_ex(void) __attribute__((weak));
 

@@ -1513,13 +1513,9 @@ static void setup_MD_eint(void)
 #endif				/* end of MD_EINT */
 }
 
-int mt_gpio_set_debounce(unsigned gpio, unsigned debounce)
+int mt_gpio_set_debounce(unsigned int gpio, unsigned int debounce)
 {
-	if (gpio >= EINT_MAX_CHANNEL)
-		return -EINVAL;
-
 	mt_eint_set_hw_debounce(gpio, debounce);
-
 	return 0;
 }
 EXPORT_SYMBOL(mt_gpio_set_debounce);
