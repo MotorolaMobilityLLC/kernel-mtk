@@ -173,7 +173,7 @@ void Auddrv_CheckInterruptTiming(void)
 			     __func__, Irq_time_t2, Irq_time_t1, Irq_time_t1 - Irq_time_t2,
 			     mDL1_Interrupt_Interval_Limit);
 			Irq_time_t2 = Irq_time_t1 - Irq_time_t2;
-			if (Irq_time_t2 > mDL1_Interrupt_Interval_Limit * 1000000) {
+			if (Irq_time_t2 > (unsigned long long)mDL1_Interrupt_Interval_Limit * 1000000) {
 				pr_debug
 				    ("%s interrupt may be blocked Irq_time_t2 = %llu Interval_Limit = %d\n",
 				     __func__, Irq_time_t2, mDL1_Interrupt_Interval_Limit);
