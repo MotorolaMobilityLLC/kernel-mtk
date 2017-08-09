@@ -488,7 +488,7 @@ void GC2145MIPI_set_contrast(UINT16 para)
 			break;
         case ISP_CONTRAST_MIDDLE: 
         default:
-			GC2145MIPI_write_cmos_sensor(0xfe, 0x00);	 
+			GC2145MIPI_write_cmos_sensor(0xfe, 0x02);	 
 			GC2145MIPI_write_cmos_sensor(0xd3, 0x40);
 			GC2145MIPI_write_cmos_sensor(0xfe, 0x00);
 			Sleep(10);			
@@ -2218,6 +2218,7 @@ UINT32 GC2145MIPIYUVSensorSetting(FEATURE_ID iCmd, UINT16 iPara)
 	case FID_ISP_CONTRAST:
 		GC2145MIPI_set_contrast(iPara);
 		break;
+/*
 	case FID_ISP_BRIGHT:
 		GC2145MIPI_set_brightness(iPara);
 		break;
@@ -2230,6 +2231,7 @@ UINT32 GC2145MIPIYUVSensorSetting(FEATURE_ID iCmd, UINT16 iPara)
 	case FID_AE_ISO:
 		GC2145MIPI_set_iso(iPara);
 		break;
+*/
 	default:
 	break;
 	}
