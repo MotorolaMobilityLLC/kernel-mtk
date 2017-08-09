@@ -106,7 +106,9 @@ static int mtk_drm_kms_init(struct drm_device *dev)
 	drm_mode_config_reset(dev);
 
 #ifdef CONFIG_DRM_MEDIATEK_FBDEV
-	mtk_fbdev_create(dev);
+	err = mtk_fbdev_create(dev);
+	if (err < 0)
+		goto err_crtc;
 #endif
 #ifdef CONFIG_DEBUG_FS
 	mediatek_drm_debugfs_init(dev);
@@ -292,9 +294,7 @@ static const struct component_master_ops mtk_drm_ops = {
 
 static int mtk_drm_probe(struct platform_device *pdev)
 {
-	component_master_add(&pdev->dev, &mtk_drm_ops);
-
-	return 0;
+	return component_master_add(&pdev->dev, &mtk_drm_ops);
 }
 
 static int mtk_drm_remove(struct platform_device *pdev)
