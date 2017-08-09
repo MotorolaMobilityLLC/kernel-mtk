@@ -28,7 +28,7 @@ static struct ccci_port md1_ccci_ports[] = {
 	{CCCI_CCMNI7_TX, CCCI_CCMNI7_RX, 5, 5, 0xF5, 0xFF, 0, &net_port_ops, 6, "ccmni6",},
 	{CCCI_CCMNI8_TX, CCCI_CCMNI8_RX, 3, 3, 0xF4, 0xFF, 0, &net_port_ops, 7, "ccmni7",},
 #ifdef FEATURE_DIRECT_TETHERING_LOGGING
-	{CCCI_CCMNILAN_TX, CCCI_CCMNILAN_RX, 3, 4, 0xFF, 0xFF, 0, &net_port_ops, 8, "ccmni-lan",},
+	{CCCI_CCMNILAN_TX, CCCI_CCMNILAN_RX, 5, 5, 0xFF, 0xFF, 0, &net_port_ops, 8, "ccmni-lan",},
 #endif
 	{CCCI_CCMNI10_TX, CCCI_CCMNI10_RX, 5, 5, 0xFF, 0xFF, 0, &net_port_ops, 9, "ccmni9",},
 	{CCCI_CCMNI11_TX, CCCI_CCMNI11_RX, 5, 5, 0xFF, 0xFF, 0, &net_port_ops, 10, "ccmni10",},
