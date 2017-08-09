@@ -252,7 +252,9 @@ struct mtuart_sysobj {
 int mtk_uart_sysfs(void)
 {
 	struct mtuart_sysobj *obj = &mtk_uart_sysobj;
+#if defined(ENABLE_VFIFO)
 	int idx;
+#endif
 
 	memset(&obj->kobj, 0x00, sizeof(obj->kobj));
 #if defined(CONFIG_MAGIC_SYSRQ)
@@ -2602,9 +2604,11 @@ static int mtk_uart_init_ports(void)
 {
 	int i;
 #ifdef CONFIG_OF
+#if defined(ENABLE_VFIFO)
 	int idx;
-	void __iomem *apdma_uart0_base = 0;
 	struct mtk_uart_vfifo *vfifo;
+#endif
+	void __iomem *apdma_uart0_base = 0;
 #endif
 	struct mtk_uart *uart;
 	unsigned long base;
