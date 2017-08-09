@@ -82,7 +82,7 @@ static int mtk_afe_hdmi_probe(struct snd_soc_platform *platform);
 #define MAX_PCM_DEVICES     4
 #define MAX_PCM_SUBSTREAMS  128
 #define MAX_MIDI_DEVICES
-/* #define _DEBUG_TDM_KERNEL_ */
+#define _DEBUG_TDM_KERNEL_
 #define _NO_SRAM_USAGE_
 #define _TDM_8CH_SGEN_TEST 1
 #define _ANX7805_SLIMPORT_CHANNEL 2
@@ -499,7 +499,7 @@ static int mtk_pcm_hdmi_stop(struct snd_pcm_substream *substream)
 	SetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_HDMI, false);
 
 #ifdef _DEBUG_TDM_KERNEL_
-	Afe_Set_Reg(AFE_TDM_CON2, 0, 0x00010000);	/* disable TDM to I2S path */
+	Afe_Set_Reg(AFE_TDM_CON2, 0, 0x00100000);	/* disable TDM to I2S path */
 	Afe_Set_Reg(AFE_I2S_CON, 0, 0x00000001);	/* I2S disable */
 	/*msleep(1); */
 #endif
@@ -744,10 +744,6 @@ static int mtk_pcm_hdmi_close(struct snd_pcm_substream *substream)
 	EnableI2SDivPower(AUDIO_APLL12_DIV4, false);
 	EnableI2SDivPower(AUDIO_APLL12_DIVB, false);
 
-#ifdef _DEBUG_TDM_KERNEL_
-	EnableI2SDivPower(AUDIO_APLL1_DIV0, false);
-	EnableI2SDivPower(AUDIO_APLL2_DIV0, false);
-#endif
 	mHDMIPrepareDone = false;
 	EnableApll1(false);
 	EnableApll2(false);

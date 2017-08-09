@@ -336,7 +336,7 @@ static struct snd_soc_dai_driver dummy_6323_dai_codecs[] = {
 	 .capture = {
 		     .stream_name = MT_SOC_TDM_CAPTURE_STREAM_NAME,
 		     .channels_min = 2,
-		     .channels_max = 8,
+		     .channels_max = 2,
 		     .rates = SOC_HIGH_USE_RATE,
 		     .formats = (SNDRV_PCM_FMTBIT_U8 | SNDRV_PCM_FMTBIT_S8 |
 				 SNDRV_PCM_FMTBIT_U16_LE | SNDRV_PCM_FMTBIT_S16_LE |
