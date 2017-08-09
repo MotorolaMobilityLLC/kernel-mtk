@@ -20,7 +20,7 @@ unsigned int g_suspend_flag = 0;
 #endif
 
 static const struct EXTD_DRIVER  *extd_driver[DEV_MAX_NUM-1];
-static struct SWITCH_MODE_INFO_STRUCT path_info;
+struct SWITCH_MODE_INFO_STRUCT path_info;
 
 struct task_struct *disp_switch_mode_task = NULL;
 wait_queue_head_t switch_mode_wq;
@@ -253,7 +253,8 @@ static int primary_resume_kthread(void *data)
 	return 0;
 }
 #endif
-static int path_change_without_cascade(DISP_MODE mode, unsigned int session_id,
+
+int external_display_path_change_without_cascade(DISP_MODE mode, unsigned int session_id,
 		unsigned int device_id, unsigned int change_flag)
 {
 	int ret = -1;
@@ -507,12 +508,14 @@ int external_display_switch_mode(DISP_MODE mode, unsigned int *session_created, 
 
 	for (j = 0; j < DEV_MAX_NUM; j++) {
 #ifndef OVL_CASCADE_SUPPORT
+#ifdef CONFIG_SINGLE_PANEL_OUTPUT
 		if ((session_id[j] == 0 && path_info.old_session[j] != DISP_SESSION_PRIMARY) ||
 			(session_id[j] > 0 && path_info.old_session[j] == DISP_SESSION_PRIMARY) ||
 			(mode != path_info.old_mode[j] && path_info.old_session[j] != DISP_SESSION_PRIMARY)) {
 			pr_warn("need change path, set change flag 1\n");
 			change_flag = 1;
 		}
+#endif
 		switching = path_change_without_cascade(mode, session_id[j], j, change_flag);
 #else
 		switching = path_change_with_cascade(mode, session_id[j], j);

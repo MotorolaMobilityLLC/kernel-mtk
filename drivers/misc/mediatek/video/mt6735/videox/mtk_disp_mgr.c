@@ -258,6 +258,15 @@ int disp_create_session(disp_session_config *config)
 
 	/* 2. Create this session */
 	if (idx != -1) {
+#ifdef CONFIG_SINGLE_PANEL_OUTPUT
+		if ((path_info.switching == DEV_MAX_NUM) && (DISP_SESSION_TYPE(session) == DISP_SESSION_EXTERNAL)
+			&& ext_disp_is_alive()) {
+				path_info.switching = DEV_MAX_NUM - 1;
+				pr_err("create external session, but path have not been destroyed ,need destroy first\n");
+				external_display_path_change_without_cascade(DISP_SESSION_DIRECT_LINK_MODE,
+					0x0, DEV_MHL, 1);
+		}
+#endif
 		config->session_id = session;
 		session_config[idx] = session;
 		session_cnt[idx] = 1;
