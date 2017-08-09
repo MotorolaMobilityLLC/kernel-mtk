@@ -83,3 +83,9 @@ config SINGLE_PANEL_OUTPUT
 	  Panel and tv can't not display at the same time.
 	  When hdmi plug in, only show display in tv, panle will be black screen.
 	  And when hdmi plug out, panel will resume.
+
+config MTK_OVERLAY_ENGINE_SUPPORT
+	bool "MTK_OVERLAY_ENGINE_SUPPORT"
+	default n
+	help
+	  This enable support overlay time division multiplex.
