@@ -365,8 +365,9 @@ static int mtk_pcm_I2S0dl1_close(struct snd_pcm_substream *substream)
 			pr_warn("%s mI2S0dl1_hdoutput_control == %d\n", __func__,
 			       mI2S0dl1_hdoutput_control);
 			/* here to open APLL */
-			DisableALLbySampleRate(substream->runtime->rate);
 			EnableI2SDivPower(AUDIO_APLL12_DIV2, false);
+			EnableI2SDivPower(AUDIO_APLL12_DIV4, false);
+			DisableALLbySampleRate(substream->runtime->rate);
 		}
 
 		mPrepareDone = false;
@@ -438,10 +439,6 @@ static int mtk_pcm_I2S0dl1_prepare(struct snd_pcm_substream *substream)
 			EnableALLbySampleRate(runtime->rate);
 			MclkDiv3 = SetCLkMclk(Soc_Aud_I2S1, runtime->rate); /* select I2S */
 			MclkDiv3 = SetCLkMclk(Soc_Aud_I2S3, runtime->rate); /* select I2S */
-			SetCLkBclk(MclkDiv3,  runtime->rate, runtime->channels,
-				   Soc_Aud_I2S_WLEN_WLEN_32BITS);
-			EnableI2SDivPower(AUDIO_APLL12_DIV2, true);
-			EnableI2SDivPower(AUDIO_APLL12_DIV4, true);
 			u32AudioI2S |= Soc_Aud_LOW_JITTER_CLOCK << 12; /* Low jitter mode */
 
 		} else
@@ -462,6 +459,12 @@ static int mtk_pcm_I2S0dl1_prepare(struct snd_pcm_substream *substream)
 			SetI2SDacEnable(true);
 		} else
 			SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_OUT_DAC, true);
+
+		if (mI2S0dl1_hdoutput_control == true) {
+			EnableI2SDivPower(AUDIO_APLL12_DIV2, true);
+			EnableI2SDivPower(AUDIO_APLL12_DIV4, true);
+		}
+
 		/* here to set interrupt_distributor */
 		SetIrqMcuCounter(Soc_Aud_IRQ_MCU_MODE_IRQ1_MCU_MODE, runtime->period_size);
 		SetIrqMcuSampleRate(Soc_Aud_IRQ_MCU_MODE_IRQ1_MCU_MODE, runtime->rate);
