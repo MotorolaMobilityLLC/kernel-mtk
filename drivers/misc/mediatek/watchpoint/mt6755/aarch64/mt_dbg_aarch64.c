@@ -21,26 +21,33 @@ void dump_dbgregs(int cpuid)
 	cs_cpu_write(wp_context->debug_regs[cpuid], OSLAR_EL1, ~UNLOCK_KEY);
 	isb();
 
-	smp_call_function_single(cpuid, smp_read_MDSCR_EL1_callback, &dbgregs[cpuid].MDSCR_EL1, 1);
+	smp_call_function_single(cpuid,
+				 smp_read_MDSCR_EL1_callback,
+				 &dbgregs[cpuid].MDSCR_EL1,
+				 1);
 
 	for (i = 1; i < 1 + (wp_context->bp_nr); i++) {
 		dbgregs[cpuid].regs[i] =
-		    cs_cpu_read_64(wp_context->debug_regs[cpuid], (DBGBVR + ((i - 1) << 4)));
+			cs_cpu_read_64(wp_context->debug_regs[cpuid],
+				       (DBGBVR + ((i - 1) << 4)));
 	}
 
 	for (i = 7; i < 7 + (wp_context->bp_nr); i++) {
 		dbgregs[cpuid].regs[i] =
-		    cs_cpu_read(wp_context->debug_regs[cpuid], (DBGBCR + ((i - 7) << 4)));
+			cs_cpu_read(wp_context->debug_regs[cpuid],
+				    (DBGBCR + ((i - 7) << 4)));
 	}
 
 	for (i = 13; i < 13 + (wp_context->wp_nr); i++) {
 		dbgregs[cpuid].regs[i] =
-		    cs_cpu_read_64(wp_context->debug_regs[cpuid], (DBGWVR + ((i - 13) << 4)));
+			cs_cpu_read_64(wp_context->debug_regs[cpuid],
+				       (DBGWVR + ((i - 13) << 4)));
 	}
 
 	for (i = 17; i < 17 + (wp_context->wp_nr); i++) {
 		dbgregs[cpuid].regs[i] =
-		    cs_cpu_read(wp_context->debug_regs[cpuid], (DBGWCR + ((i - 17) << 4)));
+			cs_cpu_read(wp_context->debug_regs[cpuid],
+				    (DBGWCR + ((i - 17) << 4)));
 	}
 
 
@@ -51,37 +58,61 @@ void dump_dbgregs(int cpuid)
 void print_dbgregs(int cpuid)
 {
 
-	pr_debug("[MTK WP] cpu %d, MDSCR_EL1 0x%lx\n", cpuid, dbgregs[cpuid].MDSCR_EL1);
-	pr_debug("[MTK WP] cpu %d, DBGBVR0 0x%lx\n", cpuid, dbgregs[cpuid].DBGBVR0);
-	pr_debug("[MTK WP] cpu %d, DBGBVR1 0x%lx\n", cpuid, dbgregs[cpuid].DBGBVR1);
-	pr_debug("[MTK WP] cpu %d, DBGBVR2 0x%lx\n", cpuid, dbgregs[cpuid].DBGBVR2);
-	pr_debug("[MTK WP] cpu %d, DBGBVR3 0x%lx\n", cpuid, dbgregs[cpuid].DBGBVR3);
-	pr_debug("[MTK WP] cpu %d, DBGBVR4 0x%lx\n", cpuid, dbgregs[cpuid].DBGBVR4);
-	pr_debug("[MTK WP] cpu %d, DBGBVR5 0x%lx\n", cpuid, dbgregs[cpuid].DBGBVR5);
+	pr_debug("[MTK WP] cpu %d, MDSCR_EL1 0x%lx\n",
+		 cpuid, dbgregs[cpuid].MDSCR_EL1);
+	pr_debug("[MTK WP] cpu %d, DBGBVR0 0x%lx\n",
+		 cpuid, dbgregs[cpuid].DBGBVR0);
+	pr_debug("[MTK WP] cpu %d, DBGBVR1 0x%lx\n",
+		 cpuid, dbgregs[cpuid].DBGBVR1);
+	pr_debug("[MTK WP] cpu %d, DBGBVR2 0x%lx\n",
+		 cpuid, dbgregs[cpuid].DBGBVR2);
+	pr_debug("[MTK WP] cpu %d, DBGBVR3 0x%lx\n",
+		 cpuid, dbgregs[cpuid].DBGBVR3);
+	pr_debug("[MTK WP] cpu %d, DBGBVR4 0x%lx\n",
+		 cpuid, dbgregs[cpuid].DBGBVR4);
+	pr_debug("[MTK WP] cpu %d, DBGBVR5 0x%lx\n",
+		 cpuid, dbgregs[cpuid].DBGBVR5);
 
-	pr_debug("[MTK WP] cpu %d, DBGBCR0 0x%lx\n", cpuid, dbgregs[cpuid].DBGBCR0);
-	pr_debug("[MTK WP] cpu %d, DBGBCR1 0x%lx\n", cpuid, dbgregs[cpuid].DBGBCR1);
-	pr_debug("[MTK WP] cpu %d, DBGBCR2 0x%lx\n", cpuid, dbgregs[cpuid].DBGBCR2);
-	pr_debug("[MTK WP] cpu %d, DBGBCR3 0x%lx\n", cpuid, dbgregs[cpuid].DBGBCR3);
-	pr_debug("[MTK WP] cpu %d, DBGBCR4 0x%lx\n", cpuid, dbgregs[cpuid].DBGBCR4);
-	pr_debug("[MTK WP] cpu %d, DBGBCR5 0x%lx\n", cpuid, dbgregs[cpuid].DBGBCR5);
+	pr_debug("[MTK WP] cpu %d, DBGBCR0 0x%lx\n",
+		 cpuid, dbgregs[cpuid].DBGBCR0);
+	pr_debug("[MTK WP] cpu %d, DBGBCR1 0x%lx\n",
+		 cpuid, dbgregs[cpuid].DBGBCR1);
+	pr_debug("[MTK WP] cpu %d, DBGBCR2 0x%lx\n",
+		 cpuid, dbgregs[cpuid].DBGBCR2);
+	pr_debug("[MTK WP] cpu %d, DBGBCR3 0x%lx\n",
+		 cpuid, dbgregs[cpuid].DBGBCR3);
+	pr_debug("[MTK WP] cpu %d, DBGBCR4 0x%lx\n",
+		 cpuid, dbgregs[cpuid].DBGBCR4);
+	pr_debug("[MTK WP] cpu %d, DBGBCR5 0x%lx\n",
+		 cpuid, dbgregs[cpuid].DBGBCR5);
 
 
-	pr_debug("[MTK WP] cpu %d, DBGWVR0 0x%lx\n", cpuid, dbgregs[cpuid].DBGWVR0);
-	pr_debug("[MTK WP] cpu %d, DBGWVR1 0x%lx\n", cpuid, dbgregs[cpuid].DBGWVR1);
-	pr_debug("[MTK WP] cpu %d, DBGWVR2 0x%lx\n", cpuid, dbgregs[cpuid].DBGWVR2);
-	pr_debug("[MTK WP] cpu %d, DBGWVR3 0x%lx\n", cpuid, dbgregs[cpuid].DBGWVR3);
+	pr_debug("[MTK WP] cpu %d, DBGWVR0 0x%lx\n",
+		 cpuid, dbgregs[cpuid].DBGWVR0);
+	pr_debug("[MTK WP] cpu %d, DBGWVR1 0x%lx\n",
+		 cpuid, dbgregs[cpuid].DBGWVR1);
+	pr_debug("[MTK WP] cpu %d, DBGWVR2 0x%lx\n",
+		 cpuid, dbgregs[cpuid].DBGWVR2);
+	pr_debug("[MTK WP] cpu %d, DBGWVR3 0x%lx\n",
+		 cpuid, dbgregs[cpuid].DBGWVR3);
 
-	pr_debug("[MTK WP] cpu %d, DBGWCR0 0x%lx\n", cpuid, dbgregs[cpuid].DBGWCR0);
-	pr_debug("[MTK WP] cpu %d, DBGWCR1 0x%lx\n", cpuid, dbgregs[cpuid].DBGWCR1);
-	pr_debug("[MTK WP] cpu %d, DBGWCR2 0x%lx\n", cpuid, dbgregs[cpuid].DBGWCR2);
-	pr_debug("[MTK WP] cpu %d, DBGWCR3 0x%lx\n", cpuid, dbgregs[cpuid].DBGWCR3);
+	pr_debug("[MTK WP] cpu %d, DBGWCR0 0x%lx\n",
+		 cpuid, dbgregs[cpuid].DBGWCR0);
+	pr_debug("[MTK WP] cpu %d, DBGWCR1 0x%lx\n",
+		 cpuid, dbgregs[cpuid].DBGWCR1);
+	pr_debug("[MTK WP] cpu %d, DBGWCR2 0x%lx\n",
+		 cpuid, dbgregs[cpuid].DBGWCR2);
+	pr_debug("[MTK WP] cpu %d, DBGWCR3 0x%lx\n",
+		 cpuid, dbgregs[cpuid].DBGWCR3);
 
 	/*
-		pr_debug("[MTK WP] cpu %d, DBGVCR 0x%lx\n",cpuid,dbgregs[cpuid].DBGVCR);
-		pr_debug("[MTK WP] cpu %d, SDSR 0x%lx\n",cpuid,dbgregs[cpuid].SDSR);
-}	*/
+	  pr_debug("[MTK WP] cpu %d, DBGVCR 0x%lx\n",
+	  cpuid,dbgregs[cpuid].DBGVCR);
+	  pr_debug("[MTK WP] cpu %d, SDSR 0x%lx\n",
+	  cpuid,dbgregs[cpuid].SDSR);
+	*/
 
+}
 #endif
 #if 1
 unsigned int *mt_save_dbg_regs(unsigned int *p, unsigned int cpuid)
@@ -143,7 +174,8 @@ unsigned int *mt_save_dbg_regs(unsigned int *p, unsigned int cpuid)
 			     "mrs x3, DBGWCR3_EL1\n\t"
 			     "str x0 , [%0],#0x8\n\t"
 			     "str x1 , [%0],#0x8\n\t"
-			     "str x2 , [%0],#0x8\n\t" "str x3 , [%0],#0x8\n\t":"+r"(p)
+			     "str x2 , [%0],#0x8\n\t"
+			     "str x3 , [%0],#0x8\n\t":"+r"(p)
 			     : : "x0", "x1", "x2", "x3", "x4", "x5");
 	isb();
 
@@ -278,30 +310,53 @@ void mt_copy_dbg_regs(int to, int from)
 
 
 #ifdef CONFIG_SMP
-int __cpuinit dbgregs_hotplug_callback(struct notifier_block *nfb, unsigned long action, void *hcpu)
+int __cpuinit dbgregs_hotplug_callback(
+	struct notifier_block *nfb,
+	unsigned long action,
+	void *hcpu)
 {
 	unsigned long this_cpu = (unsigned long)hcpu;
 	unsigned int args = 0;
 	struct wp_trace_context_t *wp_context;
-	unsigned long base_to, base_from;
+	unsigned long base_to, base_from = 0;
+	int i;
 
 	register_wp_context(&wp_context);
 	cs_cpu_write(wp_context->debug_regs[this_cpu], EDLAR, UNLOCK_KEY);
 	cs_cpu_write(wp_context->debug_regs[this_cpu], OSLAR_EL1, ~UNLOCK_KEY);
-	cs_cpu_write(wp_context->debug_regs[0], EDLAR, UNLOCK_KEY);
-	cs_cpu_write(wp_context->debug_regs[0], OSLAR_EL1, ~UNLOCK_KEY);
+	/*cs_cpu_write(wp_context->debug_regs[0], EDLAR, UNLOCK_KEY);*/
+	/*cs_cpu_write(wp_context->debug_regs[0], OSLAR_EL1, ~UNLOCK_KEY);*/
+	for (i = 0; i < num_possible_cpus(); i++) {
+		if (cpu_online(i)) {
+			cs_cpu_write(wp_context->debug_regs[i],
+				     EDLAR,
+				     UNLOCK_KEY);
+			cs_cpu_write(wp_context->debug_regs[i],
+				     OSLAR_EL1,
+				     ~UNLOCK_KEY);
+			base_from = (unsigned long)wp_context->debug_regs[i];
+			break;
+		}
+	}
 	base_to = (unsigned long)wp_context->debug_regs[this_cpu];
-	base_from = (unsigned long)wp_context->debug_regs[0];
+	/*base_from = (unsigned long)wp_context->debug_regs[0];*/
 	action = action & 0xf;
 #ifdef DBG_REG_DUMP
-	pr_debug("[MTK WP] cpu %lx do %s,action: 0x%lx\n", this_cpu, __func__, action);
+	pr_debug("[MTK WP] cpu %lx do %s,action: 0x%lx\n",
+		 this_cpu, __func__, action);
 #endif
 	switch (action) {
 	case CPU_STARTING:
-		smp_call_function_single(0, smp_read_MDSCR_EL1_callback, &args, 1);
+		smp_call_function_single(i,
+					 smp_read_MDSCR_EL1_callback,
+					 &args,
+					 1);
 #ifdef DBG_REG_DUMP
-		pr_debug("[MTK WP] cpu %lx do %s, CPU0's _MDSCR_EL1=0x%x\n", this_cpu, __func__,
-			  args);
+		pr_debug("[MTK WP] cpu %lx do %s, CPU%lx's _MDSCR_EL1=0x%x\n",
+			 this_cpu,
+			 i,
+			 __func__,
+			 args);
 #endif
 		asm volatile ("msr  MDSCR_EL1, %0" : : "r" (args));
 		isb();
