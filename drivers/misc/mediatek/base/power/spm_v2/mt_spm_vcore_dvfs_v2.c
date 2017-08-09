@@ -377,10 +377,11 @@ static void __go_to_vcore_dvfs(u32 spm_flags, u8 spm_data)
 {
 	struct pcm_desc *pcmdesc;
 	struct pwr_ctrl *pwrctrl;
-
 #if DYNAMIC_LOAD
-	if (dyna_load_pcm[DYNA_LOAD_PCM_SODI_LPM].ready) {
-		pcmdesc = &(dyna_load_pcm[DYNA_LOAD_PCM_SODI_LPM].desc);
+	u32 sodi_idx = spm_get_sodi_pcm_index();
+
+	if (dyna_load_pcm[sodi_idx].ready) {
+		pcmdesc = &(dyna_load_pcm[sodi_idx].desc);
 		pwrctrl = __spm_vcore_dvfs.pwrctrl;
 	} else {
 		spm_vcorefs_err("[%s] dyna load F/W fail\n", __func__);

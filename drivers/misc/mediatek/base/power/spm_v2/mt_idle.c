@@ -1822,7 +1822,6 @@ int soidle_enter(int cpu)
 	MMProfileLogEx(sodi_mmp_get_events()->sodi_enable, MMProfileFlagStart, 0, 0);
 #endif /* DEFAULT_MMP_ENABLE */
 
-	set_sodi_fw_mode(sodi_fw);
 	spm_go_to_sodi(slp_spm_SODI_flags, (u32)cpu, sodi_flags);
 
 #ifdef DEFAULT_MMP_ENABLE
@@ -2422,7 +2421,9 @@ static ssize_t soidle_state_write(struct file *filp,
 			idle_dbg("sodi_flags = 0x%x\n", sodi_flags);
 		} else if (!strcmp(cmd, "sodi_fw")) {
 			sodi_fw = param;
+#if defined(CONFIG_ARCH_MT6797)
 			set_sodi_fw_mode(sodi_fw);
+#endif
 			idle_dbg("sodi_fw = 0x%x\n", sodi_fw);
 		}
 		return count;
@@ -2665,6 +2666,9 @@ void mt_cpuidle_framework_init(void)
 
 	iomap_init();
 	mt_cpuidle_debugfs_init();
+#if defined(CONFIG_ARCH_MT6797)
+	set_sodi_fw_mode(sodi_fw);
+#endif
 }
 EXPORT_SYMBOL(mt_cpuidle_framework_init);
 

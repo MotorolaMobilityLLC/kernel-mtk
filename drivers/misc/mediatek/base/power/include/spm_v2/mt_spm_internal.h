@@ -383,6 +383,8 @@ extern void __spm_pmic_pg_force_off(void);
 
 #if defined(CONFIG_ARCH_MT6755)
 extern struct dram_info *g_dram_info_dummy_read;
+#elif defined(CONFIG_ARCH_MT6797)
+extern u32 spm_get_sodi_pcm_index(void);
 #endif
 
 /**************************************
