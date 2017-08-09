@@ -3,3 +3,5 @@ obj-$(CONFIG_MTK_PMIC_CHIP_MT6335) += mt6335/
 obj-$(CONFIG_MTK_PMIC_CHIP_MT6337) += mt6337/
 obj-$(CONFIG_MTK_PMIC_CHIP_MT6336) += mt6336/
 #obj-y += mt6336/
+
+obj-$(CONFIG_MTK_PMIC_NEW_ARCH) += mtk_auxadc_intf.o

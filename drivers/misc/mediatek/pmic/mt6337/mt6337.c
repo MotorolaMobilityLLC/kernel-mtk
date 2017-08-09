@@ -86,6 +86,9 @@
 #endif
 */
 
+#define pwrap_wacs2_read(a, b) (0)
+#define pwrap_wacs2_write(a, b) (0)
+
 /*---IPI Mailbox define---*/
 /*
 #define IPIMB
@@ -106,7 +109,7 @@ unsigned int mt6337_read_interface(unsigned int RegNum, unsigned int *val, unsig
 	/*PMICLOG"[mt6337_read_interface] val=0x%x\n", *val);*/
 #else
 	unsigned int pmic_reg = 0;
-	unsigned int rdata;
+	unsigned int rdata = 0;
 
 	if ((pmic_suspend_state_mt6337 == true) && irqs_disabled())
 		return mt6337_read_interface_nolock(RegNum, val, MASK, SHIFT);
@@ -144,7 +147,7 @@ unsigned int mt6337_config_interface(unsigned int RegNum, unsigned int val, unsi
 #ifdef IPIMB
 #else
 	unsigned int pmic_reg = 0;
-	unsigned int rdata;
+	unsigned int rdata = 0;
 
 	if ((pmic_suspend_state_mt6337 == true) && irqs_disabled())
 		return mt6337_config_interface_nolock(RegNum, val, MASK, SHIFT);
@@ -207,7 +210,7 @@ unsigned int mt6337_read_interface_nolock(unsigned int RegNum, unsigned int *val
 	PMICLOG("[mt6337_read_interface_nolock] IPIMB\n");
 #else
 	unsigned int pmic_reg = 0;
-	unsigned int rdata;
+	unsigned int rdata = 0;
 
 	/*mt_read_byte(RegNum, &pmic_reg); */
 	/*return_value = pwrap_wacs2(0, (RegNum), 0, &rdata);*/
@@ -239,7 +242,7 @@ unsigned int mt6337_config_interface_nolock(unsigned int RegNum, unsigned int va
 #ifdef IPIMB
 #else
 	unsigned int pmic_reg = 0;
-	unsigned int rdata;
+	unsigned int rdata = 0;
 
     /* pmic wrapper has spinlock protection. pmic do not to do it again */
 

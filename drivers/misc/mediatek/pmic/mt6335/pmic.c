@@ -86,6 +86,7 @@
 #endif
 #include <mach/mt_pmic.h>
 #include <mt-plat/mt_reboot.h>
+#include <mt-plat/mtk_auxadc_intf.h>
 
 /*wilma debug*/
 #include "include/pmic_efuse.h"
@@ -532,10 +533,10 @@ static ssize_t store_pmic_auxadc(struct device *dev, struct device_attribute *at
 		for (i = 0; i < val; i++) {
 
 			for (j = 0; j < 16; j++) {
-				pr_err("[PMIC_AUXADC] [%d]=%d\n", j, PMIC_IMM_GetOneChannelValue(j, 0, 0));
+				pr_err("[PMIC_AUXADC] [%s]=%d\n",
+					pmic_get_auxadc_name(j), pmic_get_auxadc_value(j));
 				mdelay(5);
 			}
-			pr_err("[PMIC_AUXADC] [%d]=%d\n", j, PMIC_IMM_GetOneChannelValue(PMIC_AUX_CH4_DCXO, 0, 0));
 		}
 	}
 	return size;
@@ -1131,7 +1132,7 @@ static int __init pmic_mt_init(void)
 #endif				/* End of #if !defined CONFIG_MTK_LEGACY */
 
 
-	pmic_auxadc_init();
+	mtk_auxadc_init();
 
 	pr_debug("****[pmic_mt_init] Initialization : DONE !!\n");
 
