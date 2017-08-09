@@ -150,8 +150,8 @@ static u32 enable_cpuhvfs = 2;		/* FIXME */
 /* used @ set_cur_volt_extBuck() */
 /* #define MIN_DIFF_VSRAM_PROC        1000  */
 #define NORMAL_DIFF_VRSAM_VPROC    10000
-#define MAX_DIFF_VSRAM_VPROC       20000
-#define MIN_VSRAM_VOLT             60000
+#define MAX_DIFF_VSRAM_VPROC       25000
+#define MIN_VSRAM_VOLT             100000
 #define MAX_VSRAM_VOLT             120000
 #define MAX_VPROC_VOLT             120000
 
