@@ -69,6 +69,13 @@ do { \
 	CCCI_LEGACY_ALWAYS_LOG(idx, tag, fmt, ##args); \
 } while (0)
 
+#define CCCI_NOTICE_LOG(idx, tag, fmt, args...) \
+do { \
+	ccci_dump_write(idx, CCCI_DUMP_NORMAL, CCCI_DUMP_CURR_FLAG|CCCI_DUMP_TIME_FLAG, \
+			"[ccci%d]" fmt, (idx+1), ##args); \
+	pr_warn("[ccci%d/" tag "]" fmt, (idx+1), ##args); \
+} while (0)
+
 #define CCCI_ERROR_LOG(idx, tag, fmt, args...) \
 do { \
 	ccci_dump_write(idx, CCCI_DUMP_NORMAL, CCCI_DUMP_CURR_FLAG|CCCI_DUMP_TIME_FLAG, \

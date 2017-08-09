@@ -581,7 +581,7 @@ static long dev_char_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 		/* deprecated, share memory operation */
 		break;
 	case CCCI_IOC_MD_RESET:
-		CCCI_NORMAL_LOG(md->index, CHAR, "MD reset ioctl(%d) called by %s\n", ch, current->comm);
+		CCCI_NOTICE_LOG(md->index, CHAR, "MD reset ioctl(%d) called by %s\n", ch, current->comm);
 		ccci_event_log("md%d: MD reset ioctl(%d) called by %s\n", md->index, ch, current->comm);
 		ret = md->ops->reset(md);
 		if (ret == 0) {
@@ -679,7 +679,7 @@ static long dev_char_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 		ret = md->ops->stop(md, 0);
 		break;
 	case CCCI_IOC_ENTER_DEEP_FLIGHT:
-		CCCI_NORMAL_LOG(md->index, CHAR, "enter MD flight mode ioctl called by %s\n", current->comm);
+		CCCI_NOTICE_LOG(md->index, CHAR, "enter MD flight mode ioctl called by %s\n", current->comm);
 		ccci_event_log("md%d: enter MD flight mode ioctl called by %s\n", md->index, current->comm);
 #ifdef MD_UMOLY_EE_SUPPORT
 		md->flight_mode = MD_FIGHT_MODE_ENTER; /* enter flight mode */
@@ -691,7 +691,7 @@ static long dev_char_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 		}
 		break;
 	case CCCI_IOC_LEAVE_DEEP_FLIGHT:
-		CCCI_NORMAL_LOG(md->index, CHAR, "leave MD flight mode ioctl called by %s\n", current->comm);
+		CCCI_NOTICE_LOG(md->index, CHAR, "leave MD flight mode ioctl called by %s\n", current->comm);
 		ccci_event_log("md%d: leave MD flight mode ioctl called by %s\n", md->index, current->comm);
 #ifdef MD_UMOLY_EE_SUPPORT
 		md->flight_mode = MD_FIGHT_MODE_LEAVE; /* leave flight mode */

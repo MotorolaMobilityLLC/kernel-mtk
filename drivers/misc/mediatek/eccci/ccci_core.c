@@ -763,7 +763,7 @@ int exec_ccci_kern_func_by_md_id(int md_id, unsigned int id, char *buf, unsigned
 		break;
 #endif
 	case ID_RESET_MD:
-		CCCI_NORMAL_LOG(md->index, CHAR, "MD reset API called by %ps\n", __builtin_return_address(0));
+		CCCI_NOTICE_LOG(md->index, CHAR, "MD reset API called by %ps\n", __builtin_return_address(0));
 		ret = md->ops->reset(md);
 		if (ret == 0)
 			ret = ccci_send_virtual_md_msg(md, CCCI_MONITOR_CH, CCCI_MD_MSG_RESET, 0);

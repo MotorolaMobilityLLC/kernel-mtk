@@ -403,7 +403,7 @@ static int cldma_gpd_rx_collect(struct md_cd_queue *queue, int budget, int block
 		ccci_h = *((struct ccci_header *)skb->data);
 		/* check wakeup source */
 		if (atomic_cmpxchg(&md->wakeup_src, 1, 0) == 1)
-			CCCI_NORMAL_LOG(md->index, TAG, "CLDMA_MD wakeup source:(%d/%d)\n",
+			CCCI_NOTICE_LOG(md->index, TAG, "CLDMA_MD wakeup source:(%d/%d)\n",
 							queue->index, ccci_h.channel);
 			CCCI_DEBUG_LOG(md->index, TAG, "recv Rx msg (%x %x %x %x) rxq=%d len=%d\n",
 							ccci_h.data[0], ccci_h.data[1], *(((u32 *)&ccci_h) + 2),
@@ -642,7 +642,7 @@ static int cldma_net_rx_push_thread(void *arg)
 		ccci_h = (struct ccci_header *)skb->data;
 		/* check wakeup source */
 		if (atomic_cmpxchg(&md->wakeup_src, 1, 0) == 1)
-			CCCI_NORMAL_LOG(md->index, TAG, "CLDMA_MD wakeup source:(%d/%d)\n",
+			CCCI_NOTICE_LOG(md->index, TAG, "CLDMA_MD wakeup source:(%d/%d)\n",
 							queue->index, ccci_h->channel);
 			CCCI_DEBUG_LOG(md->index, TAG, "recv Rx msg (%x %x %x %x) rxq=%d len=%d\n",
 							ccci_h->data[0], ccci_h->data[1], *(((u32 *)ccci_h) + 2),
@@ -1179,7 +1179,7 @@ static void cldma_irq_work_cb(struct ccci_modem *md)
 	L3RIMR0 = cldma_read32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_L3RIMR0);
 
 	if (atomic_read(&md->wakeup_src) == 1)
-		CCCI_NORMAL_LOG(md->index, TAG, "wake up by CLDMA_MD L2(%x/%x) L3(%x/%x)!\n",
+		CCCI_NOTICE_LOG(md->index, TAG, "wake up by CLDMA_MD L2(%x/%x) L3(%x/%x)!\n",
 						L2TISAR0, L2RISAR0, L3TISAR0, L3RISAR0);
 	else
 		CCCI_DEBUG_LOG(md->index, TAG, "CLDMA IRQ L2(%x/%x) L3(%x/%x)!\n",

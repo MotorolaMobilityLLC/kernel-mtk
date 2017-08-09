@@ -313,7 +313,7 @@ static void md_ccif_sram_rx_work(struct work_struct *work)
 	}
 #endif
 	if (atomic_cmpxchg(&md->wakeup_src, 1, 0) == 1)
-		CCCI_NORMAL_LOG(md->index, TAG,
+		CCCI_NOTICE_LOG(md->index, TAG,
 			     "CCIF_MD wakeup source:(SRX_IDX/%d)\n",
 			     *(((u32 *) ccci_h) + 2));
 
@@ -518,7 +518,7 @@ static int ccif_rx_collect(struct md_ccif_queue *queue, int budget,
 			}
 		}
 		if (atomic_cmpxchg(&md->wakeup_src, 1, 0) == 1)
-			CCCI_NORMAL_LOG(md->index, TAG, "CCIF_MD wakeup source:(%d/%d)\n",
+			CCCI_NOTICE_LOG(md->index, TAG, "CCIF_MD wakeup source:(%d/%d)\n",
 				queue->index, *(((u32 *) ccci_h) + 2));
 
 		md_ccif_tx_rx_printk(md, skb, queue->index, 0);
