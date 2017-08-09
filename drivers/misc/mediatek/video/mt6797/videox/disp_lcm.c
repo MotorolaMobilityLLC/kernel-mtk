@@ -477,7 +477,7 @@ int disp_lcm_adjust_fps(void *cmdq, disp_lcm_handle *plcm, int fps)
 	if (_is_lcm_inited(plcm)) {
 		lcm_drv = plcm->drv;
 		if (lcm_drv->adjust_fps) {
-			lcm_drv->adjust_fps(cmdq, fps);
+			lcm_drv->adjust_fps(cmdq, fps, plcm->params);
 			return 0;
 		}
 	}

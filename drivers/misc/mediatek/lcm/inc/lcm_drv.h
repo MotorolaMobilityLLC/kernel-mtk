@@ -778,7 +778,7 @@ typedef struct {
 	void (*set_backlight_mode)(unsigned int mode);
 	/* ///////////////////////// */
 
-	int (*adjust_fps)(void *cmdq, int fps);
+	int (*adjust_fps)(void *cmdq, int fps, LCM_PARAMS *params);
 
 	/* ///////////ESD_RECOVERY////////////////////// */
 	unsigned int (*esd_check)(void);
