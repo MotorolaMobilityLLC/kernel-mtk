@@ -1869,21 +1869,20 @@ static const struct file_operations mtktscpu_fastpoll_fops = {
 
 static int tscpu_read_ttpct(struct seq_file *m, void *v)
 {
-	unsigned int cpu_power, gpu_power;
-
-	cpu_power = apthermolmt_get_cpu_power_limit();
-	gpu_power = apthermolmt_get_gpu_power_limit();
-
-	cpu_power = ((cpu_power != 0x7FFFFFFF) ? cpu_power : 0);
-	gpu_power = ((gpu_power != 0x7FFFFFFF) ? gpu_power : 0);
+	unsigned int cpu_power, gpu_power, max_cpu_pwr, max_gpu_pwr;
 
 #ifdef ATM_USES_PPM
-	cpu_power = cpu_power*100/(mt_ppm_thermal_get_max_power() + 1);
+	max_cpu_pwr = mt_ppm_thermal_get_max_power() + 1;
 #else
-	cpu_power = 0;
+	max_cpu_pwr = 3000;
 #endif
-	gpu_power = gpu_power*100/(mt_gpufreq_get_max_power() + 1);
-
+	max_gpu_pwr = mt_gpufreq_get_max_power() + 1;
+	cpu_power = apthermolmt_get_cpu_power_limit();
+	gpu_power = apthermolmt_get_gpu_power_limit();
+	cpu_power = ((cpu_power != 0x7FFFFFFF) ? cpu_power : max_cpu_pwr);
+	gpu_power = ((gpu_power != 0x7FFFFFFF) ? gpu_power : max_gpu_pwr);
+	cpu_power = (max_cpu_pwr - cpu_power)*100/max_cpu_pwr;
+	gpu_power = (max_gpu_pwr - gpu_power)*100/max_gpu_pwr;
 	seq_printf(m, "%d,%d\n", cpu_power, gpu_power);
 
 	return 0;
