@@ -1,9 +1,9 @@
-/* #include <mach/mt_irq.h> */
 #include <linux/slab.h>
 #include <linux/interrupt.h>
 #include <mach/mt_clkmgr.h>
 
 #include "m4u_priv.h"
+#include "m4u_platform.h"
 #include "m4u_hw.h"
 
 #include <linux/of.h>
@@ -15,14 +15,6 @@ static unsigned long gM4UBaseAddr[TOTAL_M4U_NUM];
 static unsigned long gLarbBaseAddr[SMI_LARB_NR];
 static unsigned long gPericfgBaseAddr;
 static unsigned int gM4UTagCount[] = { 64 };
-
-static const char *const gM4U_SMILARB[] = {
-	"mediatek,smi_larb0", "mediatek,smi_larb1", "mediatek,smi_larb2", "mediatek,smi_larb3",
-	"mediatek,smi_larb4", "mediatek,smi_larb5", "mediatek,smi_larb6"
-};
-
-#define enable_clock(...)
-#define disable_clock(...)
 
 
 static M4U_RANGE_DES_T gM4u0_seq[M4U0_SEQ_NR] = { {0} };
@@ -53,155 +45,13 @@ int gM4u_port_num = M4U_PORT_UNKNOWN;
 
 static DEFINE_MUTEX(m4u_larb0_mutex);
 
-#define M4U0_PORT_INIT(name, slave, larb, port)  {\
-		name, 0, slave, larb, port, (((larb)<<7)|((port)<<2)), 1\
-	}
-
-m4u_port_t gM4uPort[] = {
-	M4U0_PORT_INIT("DISP_OVL0", 1, 0, 0),
-	M4U0_PORT_INIT("DISP_2L_OVL0", 1, 0, 1),
-	M4U0_PORT_INIT("DISP_RDMA0", 1, 0, 2),
-	M4U0_PORT_INIT("DISP_WDMA0", 1, 0, 3),
-	M4U0_PORT_INIT("MDP_RDMA0", 1, 0, 4),
-	M4U0_PORT_INIT("MDP_WDMA0", 1, 0, 5),
-	M4U0_PORT_INIT("MDP_WROT0", 1, 0, 6),
-	M4U0_PORT_INIT("DISP_FAKE", 1, 0, 7),
-
-	M4U0_PORT_INIT("VDEC_MC", 0, 1, 0),
-	M4U0_PORT_INIT("VDEC_PP", 0, 1, 1),
-	M4U0_PORT_INIT("VDEC_UFO", 0, 1, 2),
-	M4U0_PORT_INIT("VDEC_VLD", 0, 1, 3),
-	M4U0_PORT_INIT("VDEC_VLD2", 0, 1, 4),
-	M4U0_PORT_INIT("VDEC_AVC_MV", 0, 1, 5),
-	M4U0_PORT_INIT("VDEC_PRED_RD", 0, 1, 6),
-	M4U0_PORT_INIT("VDEC_PRED_WR", 0, 1, 7),
-	M4U0_PORT_INIT("VDEC_PPWRAP", 0, 1, 8),
-	M4U0_PORT_INIT("VDEC_TILE", 0, 1, 9),
-
-	M4U0_PORT_INIT("CAM_IMGO", 0, 2, 0),
-	M4U0_PORT_INIT("CAM_RRZO", 0, 2, 1),
-	M4U0_PORT_INIT("CAM_AAO", 0, 2, 2),
-	M4U0_PORT_INIT("CAM_AFO", 0, 2, 3),
-	M4U0_PORT_INIT("CAM_LSCI_0", 0, 2, 4),
-	M4U0_PORT_INIT("CAM_LSCI_1", 0, 2, 5),
-	M4U0_PORT_INIT("CAM_SV0", 0, 2, 6),
-	M4U0_PORT_INIT("CAM_SV1", 0, 2, 7),
-	M4U0_PORT_INIT("CAM_SV2", 0, 2, 8),
-	M4U0_PORT_INIT("CAM_LCSO", 0, 2, 9),
-	M4U0_PORT_INIT("CAM_UFEO", 0, 2, 10),
-	M4U0_PORT_INIT("CAM_BPCI", 0, 2, 11),
-	M4U0_PORT_INIT("CAM_PDO", 0, 2, 12),
-	M4U0_PORT_INIT("CAM_RAWI", 0, 2, 13),
-
-	M4U0_PORT_INIT("VENC_RCPU", 0, 3, 0),
-	M4U0_PORT_INIT("VENC_REC", 0, 3, 1),
-	M4U0_PORT_INIT("VENC_BSDMA", 0, 3, 2),
-	M4U0_PORT_INIT("VENC_SV_COMV", 0, 3, 3),
-	M4U0_PORT_INIT("VENC_RD_COMV", 0, 3, 4),
-	M4U0_PORT_INIT("JPGENC_RDMA", 0, 3, 5),
-	M4U0_PORT_INIT("JPGENC_BSDMA", 0, 3, 6),
-	M4U0_PORT_INIT("JPGDEC_WDMA", 0, 3, 7),
-	M4U0_PORT_INIT("JPGDEC_BSDMA", 0, 3, 8),
-	M4U0_PORT_INIT("VENC_CUR_LUMA", 0, 3, 9),
-	M4U0_PORT_INIT("VENC_CUR_CHROMA", 0, 3, 10),
-	M4U0_PORT_INIT("VENC_REF_LUMA", 0, 3, 11),
-	M4U0_PORT_INIT("VENC_REF_CHROMA", 0, 3, 12),
-	M4U0_PORT_INIT("VENC_NBM_RDMA", 0, 3, 13),
-	M4U0_PORT_INIT("VENC_NBM_WDMA", 0, 3, 14),
-
-	M4U0_PORT_INIT("MJC_MV_RD", 0, 4, 0),
-	M4U0_PORT_INIT("MJC_MV_WR", 0, 4, 1),
-	M4U0_PORT_INIT("MJC_DMA_RD", 0, 4, 2),
-	M4U0_PORT_INIT("MJC_DMA_WR", 0, 4, 3),
-
-	M4U0_PORT_INIT("DISP_OVL1", 0, 5, 0),
-	M4U0_PORT_INIT("DISP_2L_OVL1", 0, 5, 1),
-	M4U0_PORT_INIT("DISP_RDMA1", 0, 5, 2),
-	M4U0_PORT_INIT("DISP_WDMA1", 0, 5, 3),
-	M4U0_PORT_INIT("DISP_OD_R", 0, 5, 4),
-	M4U0_PORT_INIT("DISP_OD_W", 0, 5, 5),
-	M4U0_PORT_INIT("MDP_RDMA1", 0, 5, 6),
-	M4U0_PORT_INIT("MDP_WROT1", 0, 5, 7),
-
-	M4U0_PORT_INIT("CAM_IMGI", 0, 6, 0),
-	M4U0_PORT_INIT("CAM_IMG2O", 0, 6, 1),
-	M4U0_PORT_INIT("CAM_IMG3O", 0, 6, 2),
-	M4U0_PORT_INIT("CAM_VIPI", 0, 6, 3),
-	M4U0_PORT_INIT("CAM_ICEI", 0, 6, 4),
-	M4U0_PORT_INIT("CAM_RP", 0, 6, 5),
-	M4U0_PORT_INIT("CAM_WR", 0, 6, 6),
-	M4U0_PORT_INIT("CAM_RB", 0, 6, 7),
-	M4U0_PORT_INIT("CAM_DPE_RDMA", 0, 6, 8),
-	M4U0_PORT_INIT("CAM_DPE_WDMA", 0, 6, 9),
-
-	/* -----------legacy------------- */
-
-	M4U0_PORT_INIT("legacy", 0, 0, 0),
-	M4U0_PORT_INIT("legacy", 0, 0, 0),
-	M4U0_PORT_INIT("legacy", 0, 0, 0),
-	M4U0_PORT_INIT("legacy", 0, 0, 0),
-	M4U0_PORT_INIT("legacy", 0, 0, 0),
-	M4U0_PORT_INIT("legacy", 0, 0, 0),
-	M4U0_PORT_INIT("legacy", 0, 0, 0),
-	M4U0_PORT_INIT("legacy", 0, 0, 0),
-	M4U0_PORT_INIT("legacy", 0, 0, 0),
-	M4U0_PORT_INIT("legacy", 0, 0, 0),
-	M4U0_PORT_INIT("legacy", 0, 0, 0),
-	M4U0_PORT_INIT("legacy", 0, 0, 0),
-	M4U0_PORT_INIT("legacy", 0, 0, 0),
-	M4U0_PORT_INIT("legacy", 0, 0, 0),
-	M4U0_PORT_INIT("legacy", 0, 0, 0),
-	M4U0_PORT_INIT("legacy", 0, 0, 0),
-	M4U0_PORT_INIT("legacy", 0, 0, 0),
-	M4U0_PORT_INIT("legacy", 0, 0, 0),
-	M4U0_PORT_INIT("legacy", 0, 0, 0),
-	M4U0_PORT_INIT("legacy", 0, 0, 0),
-	M4U0_PORT_INIT("legacy", 0, 0, 0),
-	M4U0_PORT_INIT("legacy", 0, 0, 0),
-	M4U0_PORT_INIT("legacy", 0, 0, 0),
-	M4U0_PORT_INIT("legacy", 0, 0, 0),
-	M4U0_PORT_INIT("legacy", 0, 0, 0),
-	M4U0_PORT_INIT("legacy", 0, 0, 0),
-	M4U0_PORT_INIT("legacy", 0, 0, 0),
-	M4U0_PORT_INIT("legacy", 0, 0, 0),
-	M4U0_PORT_INIT("legacy", 0, 0, 0),
-	M4U0_PORT_INIT("legacy", 0, 0, 0),
-	M4U0_PORT_INIT("legacy", 0, 0, 0),
-	M4U0_PORT_INIT("legacy", 0, 0, 0),
-	M4U0_PORT_INIT("legacy", 0, 0, 0),
-	M4U0_PORT_INIT("legacy", 0, 0, 0),
-	M4U0_PORT_INIT("legacy", 0, 0, 0),
-	M4U0_PORT_INIT("legacy", 0, 0, 0),
-	M4U0_PORT_INIT("legacy", 0, 0, 0),
-	M4U0_PORT_INIT("legacy", 0, 0, 0),
-	M4U0_PORT_INIT("legacy", 0, 0, 0),
-	M4U0_PORT_INIT("legacy", 0, 0, 0),
-	M4U0_PORT_INIT("legacy", 0, 0, 0),
-	M4U0_PORT_INIT("legacy", 0, 0, 0),
-	M4U0_PORT_INIT("legacy", 0, 0, 0),
-	M4U0_PORT_INIT("legacy", 0, 0, 0),
-	M4U0_PORT_INIT("legacy", 0, 0, 0),
-	M4U0_PORT_INIT("legacy", 0, 0, 0),
-	M4U0_PORT_INIT("legacy", 0, 0, 0),
-	M4U0_PORT_INIT("legacy", 0, 0, 0),
-	M4U0_PORT_INIT("legacy", 0, 0, 0),
-	M4U0_PORT_INIT("legacy", 0, 0, 0),
-	M4U0_PORT_INIT("legacy", 0, 0, 0),
-	M4U0_PORT_INIT("legacy", 0, 0, 0),
-	M4U0_PORT_INIT("legacy", 0, 0, 0),
-};
-
-
-
-int m4u_invalid_tlb(int m4u_id, int L2_en, int isInvAll, unsigned int mva_start,
-		    unsigned int mva_end)
+int m4u_invalid_tlb(int m4u_id, int L2_en, int isInvAll, unsigned int mva_start, unsigned int mva_end)
 {
 	unsigned int reg = 0;
 	unsigned long m4u_base = gM4UBaseAddr[m4u_id];
 
 	if (mva_start >= mva_end)
 		isInvAll = 1;
-
 
 	if (!isInvAll) {
 		mva_start = round_down(mva_start, SZ_4K);
@@ -210,7 +60,6 @@ int m4u_invalid_tlb(int m4u_id, int L2_en, int isInvAll, unsigned int mva_start,
 
 	if (L2_en)
 		reg = F_MMU_INV_EN_L2;
-
 
 	reg |= F_MMU_INV_EN_L1;
 
@@ -245,7 +94,6 @@ int m4u_invalid_tlb(int m4u_id, int L2_en, int isInvAll, unsigned int mva_start,
 	}
 
 	return 0;
-
 }
 
 static void m4u_invalid_tlb_all(int m4u_id)
@@ -257,84 +105,25 @@ void m4u_invalid_tlb_by_range(m4u_domain_t *m4u_domain, unsigned int mva_start,
 			      unsigned int mva_end)
 {
 	int i;
+
 	/* to-do: should get m4u connected to domain here */
 	for (i = 0; i < TOTAL_M4U_NUM; i++)
 		m4u_invalid_tlb(i, gM4U_L2_enable, 0, mva_start, mva_end);
-
 	/* m4u_invalid_tlb_all(0); */
 	/* m4u_invalid_tlb_all(1); */
 }
 
-
-void m4u_invalid_tlb_sec(int m4u_id, int L2_en, int isInvAll, unsigned int mva_start,
-			 unsigned int mva_end)
-{
-	unsigned int reg = 0;
-	unsigned long m4u_base = gM4UBaseAddr[m4u_id];
-
-	if (mva_start >= mva_end)
-		isInvAll = 1;
-
-	if (!isInvAll) {
-		mva_start = round_down(mva_start, SZ_4K);
-		mva_end = round_up(mva_end, SZ_4K);
-	}
-
-	reg = F_MMU_INV_SEC_EN_L2;
-	reg |= F_MMU_INV_SEC_EN_L1;
-
-	M4U_WriteReg32(m4u_base, REG_INVLID_SEL_SEC, reg);
-
-	if (isInvAll) {
-		/* M4U_WriteReg32(m4u_base, REG_MMU_INVLD_SEC, F_MMU_INV_SEC_ALL); */
-	} else {
-		/*
-		   unsigned int type_start = m4u_get_pt_type(gPgd_nonsec, mva_start);
-		   unsigned int type_end = m4u_get_pt_type(gPgd_nonsec, mva_end);
-		   unsigned int type = max(type_start, type_end);
-		   unsigned int alignment;
-		   if(type > MMU_PT_TYPE_SUPERSECTION)
-		   type = MMU_PT_TYPE_SUPERSECTION;
-		   alignment = m4u_get_pt_type_size(type) - 1;
-
-		   M4U_WriteReg32(m4u_base, REG_MMU_INVLD_SA ,mva_start & (~alignment));
-		   M4U_WriteReg32(m4u_base, REG_MMU_INVLD_EA, mva_end | alignment);
-		   M4U_WriteReg32(m4u_base, REG_MMU_INVLD, F_MMU_INV_RANGE);
-		 */
-
-		M4U_WriteReg32(m4u_base, REG_MMU_INVLD_SA_SEC, mva_start);
-		M4U_WriteReg32(m4u_base, REG_MMU_INVLD_EA_SEC, mva_end);
-		M4U_WriteReg32(m4u_base, REG_MMU_INVLD_SEC, F_MMU_INV_SEC_RANGE);
-	}
-
-	if (!isInvAll) {
-		while (!M4U_ReadReg32(m4u_base, REG_MMU_CPE_DONE_SEC))
-			;
-		M4U_WriteReg32(m4u_base, REG_MMU_CPE_DONE_SEC, 0);
-	}
-}
-
-
-void m4u_invalid_tlb_sec_by_range(int m4u_id, unsigned int mva_start, unsigned int mva_end)
-{
-	m4u_invalid_tlb_sec(m4u_id, gM4U_L2_enable, 0, mva_start, mva_end);
-}
-
-
-static int __m4u_dump_rs_info(unsigned int va[], unsigned int pa[], unsigned int st[],
-			      unsigned int pte[])
+static int __m4u_dump_rs_info(unsigned int va[], unsigned int pa[], unsigned int st[], unsigned int pte[])
 {
 	int i;
 
 	M4ULOG_MID("m4u dump RS information =====>\n");
-	M4ULOG_MID
-	("id mva	valid   port-id       pa	 pte     larb  w/r  other-status\n");
+	M4ULOG_MID("id mva        valid   port-id       pa         pte     larb  w/r  other-status\n");
 	for (i = 0; i < MMU_TOTAL_RS_NR; i++) {
 		M4ULOG_MID("%d: 0x%8x %5d   0x%3x    0x%8x   0x%8x %d     %d  0x%3x\n", i,
 			   F_MMU_RSx_VA_GET(va[i]), F_MMU_RSx_VA_VALID(va[i]),
 			   F_MMU_RSx_VA_PID(va[i]), pa[i], pte[i], F_MMU_RSx_ST_LID(st[i]),
-			   F_MMU_RSx_ST_WRT(st[i]), F_MMU_RSx_ST_OTHER(st[i])
-			  );
+			   F_MMU_RSx_ST_WRT(st[i]), F_MMU_RSx_ST_OTHER(st[i]));
 	}
 	M4ULOG_MID("m4u dump RS information done =====>\n");
 	return 0;
@@ -344,8 +133,7 @@ static int m4u_dump_rs_info(int m4u_index, int m4u_slave_id)
 {
 	unsigned long m4u_base = gM4UBaseAddr[m4u_index];
 	int i;
-	unsigned int va[MMU_TOTAL_RS_NR], pa[MMU_TOTAL_RS_NR], st[MMU_TOTAL_RS_NR],
-		 pte[MMU_TOTAL_RS_NR];
+	unsigned int va[MMU_TOTAL_RS_NR], pa[MMU_TOTAL_RS_NR], st[MMU_TOTAL_RS_NR], pte[MMU_TOTAL_RS_NR];
 
 	for (i = 0; i < MMU_TOTAL_RS_NR; i++) {
 		va[i] = COM_ReadReg32((m4u_base + REG_MMU_RSx_VA(m4u_slave_id, i)));
@@ -390,7 +178,6 @@ static inline void m4u_intr_modify_all(unsigned long enable)
 	}
 }
 
-
 struct mau_config_info {
 	int m4u_id;
 	int m4u_slave_id;
@@ -404,22 +191,18 @@ struct mau_config_info {
 	unsigned int io;	/* :1; */
 	unsigned int start_bit32;       /* :1; */
 	unsigned int end_bit32; /* :1; */
-
 };
 
 int mau_start_monitor(int m4u_id, int m4u_slave_id, int mau_set,
 		      int wr, int vir, int io, int bit32,
-		      unsigned int start, unsigned int end, unsigned int port_mask,
-		      unsigned int larb_mask)
+		      unsigned int start, unsigned int end, unsigned int port_mask, unsigned int larb_mask)
 {
 	unsigned long m4u_base = gM4UBaseAddr[m4u_id];
 
 	if (0 == m4u_base)
 		return -1;
 
-
-	M4ULOG_HIGH
-	("mau_start_monitor [%d], start=0x%x, end=0x%x, write: %d, port_mask=0x%x, larb_mask=0x%x\n",
+	M4ULOG_HIGH("mau_start_monitor [%d], start=0x%x, end=0x%x, write: %d, port_mask=0x%x, larb_mask=0x%x\n",
 	 mau_set, start, end, wr, port_mask, larb_mask);
 
 	M4U_WriteReg32(m4u_base, REG_MMU_MAU_START(m4u_slave_id, mau_set), start);
@@ -472,13 +255,11 @@ int config_mau(M4U_MAU_STRUCT mau)
 	if (mau.enable == 0)
 		return 0;
 
-
 	if (free_id == -1) {
 		if (mau.force == 0)
 			return -1;
 
 		free_id = gMAU_candidate_id;
-
 		if (0 == gMAU_candidate_id)
 			gMAU_candidate_id = M4U0_MAU_NR - 1;
 		else
@@ -491,8 +272,8 @@ int config_mau(M4U_MAU_STRUCT mau)
 	gM4u0_mau[free_id].MVAEnd = MVAEnd;
 	gM4u0_mau[free_id].port = mau.port;
 
-	mau_start_monitor(m4u_id, larb_2_m4u_slave_id(larb), free_id, (int)mau.write, 1, 0, 0,
-			  MVAStart, MVAEnd, 1 << m4u_port_2_larb_port(mau.port), 1 << larb);
+	mau_start_monitor(m4u_id, larb_2_m4u_slave_id(larb), free_id, (int)mau.write,
+			1, 0, 0, MVAStart, MVAEnd, 1 << m4u_port_2_larb_port(mau.port), 1 << larb);
 	return free_id;
 }
 
@@ -528,7 +309,6 @@ int mau_get_config_info(struct mau_config_info *cfg)
 	return 0;
 }
 
-
 int __mau_dump_status(int m4u_id, int m4u_slave_id, int mau)
 {
 	unsigned long m4u_base;
@@ -548,8 +328,7 @@ int __mau_dump_status(int m4u_id, int m4u_slave_id, int mau)
 		larb = F_MMU_MAU_ASSERT_ID_LARB(assert_id);
 		port = F_MMU_MAU_ASSERT_ID_PORT(assert_id);
 		M4ULOG_HIGH("id=0x%x(%s),addr=0x%x,b32=0x%x\n", assert_id,
-			    m4u_get_port_name(larb_port_2_m4u_port(larb, port)), assert_addr,
-			    assert_b32);
+				m4u_get_port_name(larb_port_2_m4u_port(larb, port)), assert_addr, assert_b32);
 
 		M4U_WriteReg32(m4u_base, REG_MMU_MAU_CLR(m4u_slave_id), (1 << mau));
 		M4U_WriteReg32(m4u_base, REG_MMU_MAU_CLR(m4u_slave_id), 0);
@@ -575,7 +354,6 @@ int mau_dump_status(int m4u_id, int m4u_slave_id)
 
 	for (i = 0; i < MAU_NR_PER_M4U_SLAVE; i++)
 		__mau_dump_status(m4u_id, m4u_slave_id, i);
-
 
 	return 0;
 }
@@ -606,9 +384,9 @@ unsigned int m4u_get_main_descriptor(int m4u_id, int m4u_slave_id, int idx)
 	unsigned int regValue = 0;
 	unsigned long m4u_base = gM4UBaseAddr[m4u_id];
 
-	regValue = F_READ_ENTRY_EN | F_READ_ENTRY_MMx_MAIN(m4u_slave_id)
+	regValue = F_READ_ENTRY_EN
+		   | F_READ_ENTRY_MMx_MAIN(m4u_slave_id)
 		   | F_READ_ENTRY_MAIN_IDX(idx);
-
 
 	M4U_WriteReg32(m4u_base, REG_MMU_READ_ENTRY, regValue);
 	while (M4U_ReadReg32(m4u_base, REG_MMU_READ_ENTRY) & F_READ_ENTRY_EN)
@@ -621,7 +399,6 @@ unsigned int m4u_get_main_tag(int m4u_id, int m4u_slave_id, int idx)
 	unsigned long m4u_base = gM4UBaseAddr[m4u_id];
 
 	return M4U_ReadReg32(m4u_base, REG_MMU_MAIN_TAG(m4u_slave_id, idx));
-
 }
 
 void m4u_get_main_tlb(int m4u_id, int m4u_slave_id, int idx, mmu_tlb_t *pTlb)
@@ -630,13 +407,14 @@ void m4u_get_main_tlb(int m4u_id, int m4u_slave_id, int idx, mmu_tlb_t *pTlb)
 	pTlb->desc = m4u_get_main_descriptor(m4u_id, m4u_slave_id, idx);
 }
 
-
 unsigned int m4u_get_pfh_tlb(int m4u_id, int set, int page, int way, mmu_tlb_t *pTlb)
 {
 	unsigned int regValue = 0;
 	unsigned long m4u_base = gM4UBaseAddr[m4u_id];
 
-	regValue = F_READ_ENTRY_EN | F_READ_ENTRY_PFH | F_READ_ENTRY_PFH_IDX(set)
+	regValue = F_READ_ENTRY_EN
+		   | F_READ_ENTRY_PFH
+		   | F_READ_ENTRY_PFH_IDX(set)
 		   | F_READ_ENTRY_PFH_PAGE_IDX(page)
 		   | F_READ_ENTRY_PFH_WAY(way);
 
@@ -665,7 +443,6 @@ unsigned int m4u_get_pfh_descriptor(int m4u_id, int set, int page, int way)
 	return tlb.desc;
 }
 
-
 int m4u_dump_main_tlb(int m4u_id, int m4u_slave_id)
 {
 	/* M4U related */
@@ -678,7 +455,6 @@ int m4u_dump_main_tlb(int m4u_id, int m4u_slave_id)
 		M4ULOG_HIGH("%d:0x%x:0x%x  ", i, tlb.tag, tlb.desc);
 		if ((i + 1) % 8 == 0)
 			M4ULOG_HIGH("===\n");
-
 	}
 
 	return 0;
@@ -725,7 +501,6 @@ int m4u_dump_pfh_tlb(int m4u_id)
 	int set_nr, way_nr, set, way;
 	int valid;
 
-
 	set_nr = MMU_SET_NR(m4u_id);
 	way_nr = MMU_WAY_NR;
 
@@ -751,13 +526,11 @@ int m4u_dump_pfh_tlb(int m4u_id)
 				M4ULOG_HIGH("0x%x:", tlb.desc);
 			}
 			M4ULOG_HIGH("\n");
-
 		}
 	}
 
 	return result;
 }
-
 
 int m4u_get_pfh_tlb_all(int m4u_id, mmu_pfh_tlb_t *pfh_buf)
 {
@@ -797,16 +570,11 @@ int m4u_get_pfh_tlb_all(int m4u_id, mmu_pfh_tlb_t *pfh_buf)
 				pfh_buf[pfh_id].desc[page] = tlb.desc;
 			}
 			pfh_id++;
-
 		}
 	}
 
 	return 0;
 }
-
-
-
-
 
 int m4u_confirm_main_range_invalidated(int m4u_index, int m4u_slave_id, unsigned int MVAStart,
 				       unsigned int MVAEnd)
@@ -827,17 +595,14 @@ int m4u_confirm_main_range_invalidated(int m4u_index, int m4u_slave_id, unsigned
 			sa = MVAStart & (~(PAGE_SIZE - 1));
 			ea = MVAEnd | (PAGE_SIZE - 1);
 
-			if (layer) {
-				/* pte */
+			if (layer) {	/* pte */
 				if (large)
 					tag_e = tag_s + MMU_LARGE_PAGE_SIZE - 1;
 				else
 					tag_e = tag_s + PAGE_SIZE - 1;
 
-
 				if (!((tag_e < sa) || (tag_s > ea))) {
-					M4UERR
-					("main: i=%d, idx=0x%x, MVAStart=0x%x, MVAEnd=0x%x, RegValue=0x%x\n",
+					M4UERR("main: i=%d, idx=0x%x, MVAStart=0x%x, MVAEnd=0x%x, RegValue=0x%x\n",
 					 i, m4u_index, MVAStart, MVAEnd, regval);
 					return -1;
 				}
@@ -848,15 +613,12 @@ int m4u_confirm_main_range_invalidated(int m4u_index, int m4u_slave_id, unsigned
 				else
 					tag_e = tag_s + MMU_SECTION_SIZE - 1;
 
-
 				if ((tag_s >= sa) && (tag_e <= ea)) {
-					M4UERR
-					("main: i=%d, idx=0x%x, MVAStart=0x%x, MVAEnd=0x%x, RegValue=0x%x\n",
+					M4UERR("main: i=%d, idx=0x%x, MVAStart=0x%x, MVAEnd=0x%x, RegValue=0x%x\n",
 					 i, m4u_index, MVAStart, MVAEnd, regval);
 					return -1;
 				}
 			}
-
 		}
 	}
 	return 0;
@@ -875,18 +637,14 @@ int m4u_confirm_range_invalidated(int m4u_index, unsigned int MVAStart, unsigned
 	if (result < 0)
 		return -1;
 
-
 	if (m4u_index == 0) {
 		result = m4u_confirm_main_range_invalidated(m4u_index, 1, MVAStart, MVAEnd);
 		if (result < 0)
 			return -1;
-
 	}
-
 
 	set_nr = MMU_SET_NR(m4u_index);
 	way_nr = MMU_WAY_NR;
-
 
 	for (way = 0; way < way_nr; way++) {
 		for (set = 0; set < set_nr; set++) {
@@ -902,17 +660,15 @@ int m4u_confirm_range_invalidated(int m4u_index, unsigned int MVAStart, unsigned
 				sa = MVAStart & (~(PAGE_SIZE - 1));
 				ea = MVAEnd | (PAGE_SIZE - 1);
 
-				if (layer) {
-					/* pte */
+				if (layer) {	/* pte */
 					if (large)
 						tag_e = tag_s + MMU_LARGE_PAGE_SIZE * 8 - 1;
 					else
 						tag_e = tag_s + PAGE_SIZE * 8 - 1;
 
-
 					if (!((tag_e < sa) || (tag_s > ea))) {
 						M4UERR
-						("main: i=%d, idx=0x%x, MVAStart=0x%x, MVAEnd=0x%x, RegVal=0x%x\n",
+						("main: i=%d, idx=0x%x, MVAStart=0x%x, MVAEnd=0x%x, RegValue=0x%x\n",
 						 i, m4u_index, MVAStart, MVAEnd, regval);
 						return -1;
 					}
@@ -923,16 +679,14 @@ int m4u_confirm_range_invalidated(int m4u_index, unsigned int MVAStart, unsigned
 					else
 						tag_e = tag_s + MMU_SECTION_SIZE * 8 - 1;
 
-
 					/* if((tag_s>=sa)&&(tag_e<=ea)) */
 					if (!((tag_e < sa) || (tag_s > ea))) {
 						M4UERR
-						("main: i=%d, idx=0x%x, MVAStart=0x%x, MVAEnd=0x%x, RegVal=0x%x\n",
+						("main: i=%d, idx=0x%x, MVAStart=0x%x, MVAEnd=0x%x, RegValue=0x%x\n",
 						 i, m4u_index, MVAStart, MVAEnd, regval);
 						return -1;
 					}
 				}
-
 			}
 		}
 	}
@@ -981,23 +735,16 @@ int m4u_confirm_all_invalidated(int m4u_index)
 	if (m4u_confirm_main_all_invalid(m4u_index, 0))
 		return -1;
 
-
 	if (m4u_index == 0) {
 		if (m4u_confirm_main_all_invalid(m4u_index, 1))
 			return -1;
-
 	}
 
 	if (m4u_confirm_pfh_all_invalid(m4u_index))
 		return -1;
 
-
 	return 0;
 }
-
-
-
-
 
 int m4u_power_on(int m4u_index)
 {
@@ -1008,7 +755,6 @@ int m4u_power_off(int m4u_index)
 {
 	return 0;
 }
-
 
 static int m4u_clock_on(void)
 {
@@ -1298,7 +1044,7 @@ int m4u_insert_seq_range(M4U_PORT_ID port, unsigned int MVAStart, unsigned int M
 		mutex_unlock(&gM4u_seq_mutex);
 		return -1;
 	}
-	/* /> record range information in array */
+	/* record range information in array */
 	pSeq[free_id].Enabled = 1;
 	pSeq[free_id].port = port;
 	pSeq[free_id].MVAStart = MVAStart;
@@ -1306,7 +1052,7 @@ int m4u_insert_seq_range(M4U_PORT_ID port, unsigned int MVAStart, unsigned int M
 
 	mutex_unlock(&gM4u_seq_mutex);
 
-	/* /> set the range register */
+	/* set the range register */
 
 	MVAStart &= F_SQ_VA_MASK;
 	MVAStart |= F_SQ_EN_BIT;
@@ -1315,17 +1061,13 @@ int m4u_insert_seq_range(M4U_PORT_ID port, unsigned int MVAStart, unsigned int M
 
 	spin_lock(&gM4u_reg_lock);
 	{
-		M4U_WriteReg32(gM4UBaseAddr[m4u_index], REG_MMU_SQ_START(m4u_slave_id, free_id),
-			       MVAStart);
-		M4U_WriteReg32(gM4UBaseAddr[m4u_index], REG_MMU_SQ_END(m4u_slave_id, free_id),
-			       MVAEnd);
+		M4U_WriteReg32(gM4UBaseAddr[m4u_index], REG_MMU_SQ_START(m4u_slave_id, free_id), MVAStart);
+		M4U_WriteReg32(gM4UBaseAddr[m4u_index], REG_MMU_SQ_END(m4u_slave_id, free_id), MVAEnd);
 	}
 	spin_unlock(&gM4u_reg_lock);
 
 	return free_id;
 }
-
-
 
 int m4u_invalid_seq_range_by_id(int port, int seq_id)
 {
@@ -1352,36 +1094,32 @@ int m4u_invalid_seq_range_by_id(int port, int seq_id)
 /*
 static int m4u_invalid_seq_range_by_mva(int m4u_index, int m4u_slave_id, unsigned int MVAStart, unsigned int MVAEnd)
 {
-    unsigned int i;
-    unsigned int m4u_base = gM4UBaseAddr[m4u_index];
-    M4U_RANGE_DES_T *pSeq = gM4USeq[m4u_index] + SEQ_NR_PER_M4U_SLAVE*m4u_slave_id;
-    int ret=-1;
+	unsigned int i;
+	unsigned int m4u_base = gM4UBaseAddr[m4u_index];
+	M4U_RANGE_DES_T *pSeq = gM4USeq[m4u_index] + SEQ_NR_PER_M4U_SLAVE*m4u_slave_id;
+	int ret=-1;
 
-    MVAStart &= ~M4U_SEQ_ALIGN_MSK;
-    MVAEnd |= M4U_SEQ_ALIGN_MSK;
+	MVAStart &= ~M4U_SEQ_ALIGN_MSK;
+	MVAEnd |= M4U_SEQ_ALIGN_MSK;
 
-    mutex_lock(&gM4u_seq_mutex);
-    for(i=0; i<SEQ_NR_PER_M4U_SLAVE; i++)
-    {
+	mutex_lock(&gM4u_seq_mutex);
+	for(i=0; i<SEQ_NR_PER_M4U_SLAVE; i++) {
 	if(pSeq[i].Enabled == 1 &&
-	    pSeq[i].MVAStart>=MVAStart &&
-	    pSeq[i].MVAEnd<=MVAEnd)
-	{
-	    pSeq[i].Enabled = 0;
-	    spin_lock(&gM4u_reg_lock);
-	    M4U_WriteReg32(m4u_base, REG_MMU_SQ_START(m4u_slave_id,i), 0);
-	    M4U_WriteReg32(m4u_base, REG_MMU_SQ_END(m4u_slave_id,i), 0);
-	    spin_unlock(&gM4u_reg_lock);
-	    break;
+		pSeq[i].MVAStart>=MVAStart &&
+		pSeq[i].MVAEnd <= MVAEnd) {
+		pSeq[i].Enabled = 0;
+		spin_lock(&gM4u_reg_lock);
+		M4U_WriteReg32(m4u_base, REG_MMU_SQ_START(m4u_slave_id,i), 0);
+		M4U_WriteReg32(m4u_base, REG_MMU_SQ_END(m4u_slave_id,i), 0);
+		spin_unlock(&gM4u_reg_lock);
+		break;
 	}
-    }
-    mutex_unlock(&gM4u_seq_mutex);
+	}
+	mutex_unlock(&gM4u_seq_mutex);
 
-    return ret;
+	return ret;
 }
 */
-
-
 
 static int _m4u_config_port(int port, int virt, int sec, int dis, int dir)
 {
@@ -1423,7 +1161,6 @@ static int _m4u_config_port(int port, int virt, int sec, int dis, int dir)
 		/* m4uHw_set_field_by_mask(larb_base, REG_SMI_LARB_DOMN_OF_PORT(larb_port), */
 		/* F_SMI_DOMN(larb_port, 0x3), F_SMI_DOMN(larb_port, pM4uPort->domain)); */
 
-
 		/* debug use */
 		mmu_en =
 			m4uHw_get_field_by_mask(larb_base, SMI_LARB_MMU_EN, F_SMI_MMU_EN(larb_port, 1));
@@ -1442,13 +1179,11 @@ static int _m4u_config_port(int port, int virt, int sec, int dis, int dir)
 										   !!(virt)));
 	}
 
-
 	spin_unlock(&gM4u_reg_lock);
 
 	/* MMProfileLogEx(M4U_MMP_Events[M4U_MMP_CONFIG_PORT], MMProfileFlagEnd, dis, dir); */
 
 	return ret;
-
 }
 
 static inline void _m4u_port_clock_toggle(int m4u_index, int larb, int on)
@@ -1467,15 +1202,16 @@ static inline void _m4u_port_clock_toggle(int m4u_index, int larb, int on)
 		}
 		end = sched_clock();
 
-		if (end - start > 50000000ULL)	  /* unit is ns */
+		if (end - start > 50000000ULL) {
+			/* unit is ns */
 			M4ULOG_HIGH("warn: larb%d clock %d time: %lld ns\n", larb, on, end - start);
+		}
 	}
 	/* MMProfileLogEx(M4U_MMP_Events[M4U_MMP_TOGGLE_CG], MMProfileFlagEnd, 0, 0); */
 }
 
-int m4u_config_port(M4U_PORT_STRUCT *pM4uPort)
+int m4u_config_port(M4U_PORT_STRUCT *pM4uPort)	/* native */
 {
-	/* native */
 	M4U_PORT_ID PortID = (pM4uPort->ePortID);
 	int m4u_index = m4u_port_2_m4u_id(PortID);
 	int larb = m4u_port_2_larb_id(PortID);
@@ -1526,10 +1262,8 @@ int m4u_port_array_add(struct m4u_port_array *port_array, int port, int m4u_en, 
 	port_array->ports[port] = M4U_PORT_ATTR_EN;
 	if (m4u_en)
 		port_array->ports[port] |= M4U_PORT_ATTR_VIRTUAL;
-
 	if (secure)
 		port_array->ports[port] |= M4U_PORT_ATTR_SEC;
-
 	return 0;
 }
 
@@ -1626,22 +1360,19 @@ int m4u_config_port_array(struct m4u_port_array *port_array)
 	return ret;
 }
 
-
-
 void m4u_get_perf_counter(int m4u_index, int m4u_slave_id, M4U_PERF_COUNT *pM4U_perf_count)
 {
 	unsigned long m4u_base = gM4UBaseAddr[m4u_index];
 
 	pM4U_perf_count->transaction_cnt = M4U_ReadReg32(m4u_base, REG_MMU_ACC_CNT(m4u_slave_id));
-	/* /> Transaction access count */
+	/* Transaction access count */
 	pM4U_perf_count->main_tlb_miss_cnt =
 		M4U_ReadReg32(m4u_base, REG_MMU_MAIN_MSCNT(m4u_slave_id));
-	/* /> Main TLB miss count */
+	/* Main TLB miss count */
 	pM4U_perf_count->pfh_tlb_miss_cnt = M4U_ReadReg32(m4u_base, REG_MMU_PF_MSCNT);  /* /> Prefetch TLB miss count */
 	pM4U_perf_count->pfh_cnt = M4U_ReadReg32(m4u_base, REG_MMU_PF_CNT);     /* /> Prefetch count */
 	pM4U_perf_count->rs_perf_cnt = M4U_ReadReg32(m4u_base, REG_MMU_RS_PERF_CNT(m4u_slave_id));
 }
-
 
 int m4u_monitor_start(int m4u_id)
 {
@@ -1660,17 +1391,13 @@ int m4u_monitor_start(int m4u_id)
 	return 0;
 }
 
-/**
- * @brief ,
- * @param
- * @return
- */
 int m4u_monitor_stop(int m4u_id)
 {
 	M4U_PERF_COUNT cnt;
 	int m4u_index = m4u_id;
 	unsigned long m4u_base = gM4UBaseAddr[m4u_index];
 
+	M4UINFO("====m4u_monitor_stop: %d======\n", m4u_id);
 	/* disable GMC performance monitor */
 	m4uHw_set_field_by_mask(m4u_base, REG_MMU_CTRL_REG,
 				F_MMU_CTRL_MONITOR_EN(1), F_MMU_CTRL_MONITOR_EN(0));
@@ -1683,7 +1410,6 @@ int m4u_monitor_stop(int m4u_id)
 
 	return 0;
 }
-
 
 void m4u_print_perf_counter(int m4u_index, int m4u_slave_id, const char *msg)
 {
@@ -1822,14 +1548,12 @@ int m4u_reg_restore(void)
 			__M4U_RESTORE(m4u_base, REG_MMU_MAU_RW(m4u_slave), *(pReg++));
 			__M4U_RESTORE(m4u_base, REG_MMU_MAU_VA(m4u_slave), *(pReg++));
 		}
-
 	}
 
 	/* check register size (to prevent overflow) */
 	real_size = (pReg - pM4URegBackUp);
 	if (real_size != gM4u_reg_backup_real_size)
 		m4u_aee_print("m4u_reg_retore %d!=%d\n", real_size, gM4u_reg_backup_real_size);
-
 
 	return 0;
 }
@@ -1840,7 +1564,7 @@ static void larb_backup(unsigned int larb_idx)
 {
 	unsigned long larb_base;
 
-	if (larb_idx != 0) {
+	if (larb_idx >= SMI_LARB_NR) {
 		M4UMSG("error: %s larb_idx = %d\n", __func__, larb_idx);
 		return;
 	}
@@ -1870,7 +1594,7 @@ static void larb_restore(unsigned int larb_idx)
 {
 	unsigned long larb_base;
 
-	if (larb_idx != 0) {
+	if (larb_idx >= SMI_LARB_NR) {
 		M4UMSG("error: %s larb_idx = %d\n", __func__, larb_idx);
 		return;
 	}
@@ -1894,8 +1618,6 @@ static void larb_restore(unsigned int larb_idx)
 			M4U_ReadReg32(larb_base, SMI_LARB_MMU_EN),
 			larb_reg_backup_buf[larb_idx][0]);
 	}
-
-
 }
 
 static unsigned int larb0_cnt;
@@ -1928,7 +1650,7 @@ void m4u_larb0_disable(char *name)
 
 void m4u_print_port_status(struct seq_file *seq, int only_print_active)
 {
-	int port, mmu_en, sec;
+	int port, mmu_en = 0, sec;
 	int m4u_index, larb, larb_port;
 	unsigned long larb_base;
 
@@ -1969,7 +1691,6 @@ void m4u_print_port_status(struct seq_file *seq, int only_print_active)
 	smi_common_clock_off();
 
 	M4U_PRINT_LOG_OR_SEQ(seq, "\n");
-
 }
 
 /*
@@ -2007,7 +1728,7 @@ static int m4u_disable_error_hang(int m4u_id)
 
 int m4u_register_reclaim_callback(int port, m4u_reclaim_mva_callback_t *fn, void *data)
 {
-	if (port > M4U_PORT_UNKNOWN) {
+	if (port >= M4U_PORT_UNKNOWN) {
 		M4UMSG("%s fail, port=%d\n", __func__, port);
 		return -1;
 	}
@@ -2018,7 +1739,7 @@ int m4u_register_reclaim_callback(int port, m4u_reclaim_mva_callback_t *fn, void
 
 int m4u_unregister_reclaim_callback(int port)
 {
-	if (port > M4U_PORT_UNKNOWN) {
+	if (port >= M4U_PORT_UNKNOWN) {
 		M4UMSG("%s fail, port=%d\n", __func__, port);
 		return -1;
 	}
@@ -2034,14 +1755,13 @@ int m4u_reclaim_notify(int port, unsigned int mva, unsigned int size)
 	for (i = 0; i < M4U_PORT_UNKNOWN; i++) {
 		if (gM4uPort[i].reclaim_fn)
 			gM4uPort[i].reclaim_fn(port, mva, size, gM4uPort[i].reclaim_data);
-
 	}
 	return 0;
 }
 
 int m4u_register_fault_callback(int port, m4u_fault_callback_t *fn, void *data)
 {
-	if (port > M4U_PORT_UNKNOWN) {
+	if (port >= M4U_PORT_UNKNOWN) {
 		M4UMSG("%s fail, port=%d\n", __func__, port);
 		return -1;
 	}
@@ -2052,7 +1772,7 @@ int m4u_register_fault_callback(int port, m4u_fault_callback_t *fn, void *data)
 
 int m4u_unregister_fault_callback(int port)
 {
-	if (port > M4U_PORT_UNKNOWN) {
+	if (port >= M4U_PORT_UNKNOWN) {
 		M4UMSG("%s fail, port=%d\n", __func__, port);
 		return -1;
 	}
@@ -2147,8 +1867,8 @@ irqreturn_t MTK_M4U_isr(int irq, void *dev_id)
 			layer = fault_va & 1;
 			fault_va &= (~1);
 			m4u_aee_print("L2 table walk fault: mva=0x%x, layer=%d\n", fault_va, layer);
-
 		}
+
 		if (regval & F_INT_L2_PFH_DMA_FIFO_OVERFLOW)
 			MMU_INT_REPORT(m4u_index, 0, F_INT_L2_PFH_DMA_FIFO_OVERFLOW);
 
@@ -2170,9 +1890,7 @@ irqreturn_t MTK_M4U_isr(int irq, void *dev_id)
 		if (regval & F_INT_L2_MISS_IN_FIFO_ERR)
 			MMU_INT_REPORT(m4u_index, 0, F_INT_L2_MISS_IN_FIFO_ERR);
 
-
 	}
-
 
 	{
 		unsigned int IntrSrc = M4U_ReadReg32(m4u_base, REG_MMU_MAIN_FAULT_ST);
@@ -2228,8 +1946,7 @@ irqreturn_t MTK_M4U_isr(int irq, void *dev_id)
 					valid_mva_end = valid_mva + valid_size;
 
 				if (0 != valid_mva_end && fault_mva < valid_mva_end + SZ_4K) {
-					M4UMSG
-					("bypass disp TF, valid mva=0x%x, size=0x%x, mva_end=0x%x\n",
+					M4UMSG("bypass disp TF, valid mva=0x%x, size=0x%x, mva_end=0x%x\n",
 					 valid_mva, valid_size, valid_mva_end);
 					bypass_DISP_TF = 1;
 				}
@@ -2248,8 +1965,8 @@ irqreturn_t MTK_M4U_isr(int irq, void *dev_id)
 				}
 
 				m4u_dump_buf_info(NULL);
-				m4u_aee_print
-				("\nCRDISPATCH_KEY:M4U_%s\ntranslation fault: port=%s, mva=0x%x, pa=0x%x\n",
+				m4u_aee_print(
+					"\nCRDISPATCH_KEY:M4U_%s\ntranslation fault: port=%s, mva=0x%x, pa=0x%x\n",
 				 m4u_get_port_name(m4u_port), m4u_get_port_name(m4u_port),
 				 fault_mva, fault_pa);
 			}
@@ -2283,17 +2000,19 @@ irqreturn_t MTK_M4U_isr(int irq, void *dev_id)
 
 		if (IntrSrc & F_INT_MAU(m4u_slave_id, 0)) {
 			MMU_INT_REPORT(m4u_index, m4u_slave_id, F_INT_MAU(m4u_slave_id, 0));
-
 			__mau_dump_status(m4u_index, m4u_slave_id, 0);
 		}
+
 		if (IntrSrc & F_INT_MAU(m4u_slave_id, 1)) {
 			MMU_INT_REPORT(m4u_index, m4u_slave_id, F_INT_MAU(m4u_slave_id, 1));
 			__mau_dump_status(m4u_index, m4u_slave_id, 1);
 		}
+
 		if (IntrSrc & F_INT_MAU(m4u_slave_id, 2)) {
 			MMU_INT_REPORT(m4u_index, m4u_slave_id, F_INT_MAU(m4u_slave_id, 2));
 			__mau_dump_status(m4u_index, m4u_slave_id, 2);
 		}
+
 		if (IntrSrc & F_INT_MAU(m4u_slave_id, 3)) {
 			MMU_INT_REPORT(m4u_index, m4u_slave_id, F_INT_MAU(m4u_slave_id, 3));
 			__mau_dump_status(m4u_index, m4u_slave_id, 3);
@@ -2305,7 +2024,6 @@ irqreturn_t MTK_M4U_isr(int irq, void *dev_id)
 
 	return IRQ_HANDLED;
 }
-
 
 m4u_domain_t *m4u_get_domain_by_port(M4U_PORT_ID port)
 {
@@ -2322,8 +2040,6 @@ int m4u_get_domain_nr(void)
 	return 1;
 }
 
-
-
 int m4u_reg_init(m4u_domain_t *m4u_domain, unsigned long ProtectPA, int m4u_id)
 {
 	unsigned int regval;
@@ -2335,7 +2051,7 @@ int m4u_reg_init(m4u_domain_t *m4u_domain, unsigned long ProtectPA, int m4u_id)
 	m4u_clock_on();
 
 #ifdef M4U_FPGAPORTING
-#if 0
+#if 1
 	if (0 == m4u_id) {
 		unsigned long MMconfigBaseAddr;
 		struct device_node *node = NULL;
@@ -2412,7 +2128,7 @@ int m4u_reg_init(m4u_domain_t *m4u_domain, unsigned long ProtectPA, int m4u_id)
 	/* ============================================= */
 	/* m4u registers */
 	/* ============================================= */
-	M4UINFO("m4u hw init id = %d, base address: 0x%lx, pgd_pa: 0x%x\n", m4u_id,
+	M4UMSG("m4u hw init id = %d, base address: 0x%lx, pgd_pa: 0x%x\n", m4u_id,
 		gM4UBaseAddr[m4u_id], (unsigned int)m4u_domain->pgd_pa);
 
 	{
@@ -2423,8 +2139,7 @@ int m4u_reg_init(m4u_domain_t *m4u_domain, unsigned long ProtectPA, int m4u_id)
 
 		regval = M4U_ReadReg32(gM4UBaseAddr[m4u_id], REG_MMU_CTRL_REG);
 
-		if (0 == m4u_id) {
-			/* mm_iommu */
+		if (0 == m4u_id) {	/* mm_iommu */
 			regval = regval | F_MMU_CTRL_PFH_DIS(0)
 				 | F_MMU_CTRL_MONITOR_EN(0)
 				 | F_MMU_CTRL_MONITOR_CLR(0)
@@ -2453,7 +2168,6 @@ int m4u_reg_init(m4u_domain_t *m4u_domain, unsigned long ProtectPA, int m4u_id)
 		M4U_WriteReg32(gM4UBaseAddr[m4u_id], REG_MMU_DCM_DIS, 0);
 
 		m4u_invalid_tlb_all(m4u_id);
-
 	}
 
 	/* special settings for mmu0 (multimedia iommu) */
@@ -2461,6 +2175,7 @@ int m4u_reg_init(m4u_domain_t *m4u_domain, unsigned long ProtectPA, int m4u_id)
 		unsigned long m4u_base = gM4UBaseAddr[0];
 		/* 2 disable in-order-write */
 		M4U_WriteReg32(m4u_base, REG_MMU_IN_ORDER_WR_EN, 0);
+
 		/* 3 non-standard AXI mode */
 		M4U_WriteReg32(m4u_base, REG_MMU_STANDARD_AXI_MODE, 0);
 		/* 4 write command throttling mode */
@@ -2517,7 +2232,7 @@ int m4u_hw_init(struct m4u_device *m4u_dev, int m4u_id)
 		return -1;
 	}
 
-	M4UINFO("protect memory va=0x%lx, pa=0x%lx.\n", pProtectVA, (unsigned long)ProtectPA);
+	M4UMSG("protect memory va=0x%lx, pa=0x%lx.\n", pProtectVA, (unsigned long)ProtectPA);
 
 	pM4URegBackUp = kmalloc(M4U_REG_BACKUP_SIZE, GFP_KERNEL | __GFP_ZERO);
 	if (pM4URegBackUp == NULL) {
@@ -2529,10 +2244,11 @@ int m4u_hw_init(struct m4u_device *m4u_dev, int m4u_id)
 
 	m4u_reg_init(&gM4uDomain, ProtectPA, m4u_id);
 
-	if (request_irq(m4u_dev->irq_num[m4u_id], MTK_M4U_isr, IRQF_TRIGGER_LOW, "m4u", NULL)) {
+	if (request_irq(m4u_dev->irq_num[m4u_id], MTK_M4U_isr, IRQF_TRIGGER_NONE, "m4u", NULL)) {
 		M4UERR("request M4U%d IRQ line failed\n", m4u_id);
 		return -ENODEV;
 	}
+
 	M4UINFO("request_irq, irq_num=%d\n", m4u_dev->irq_num[m4u_id]);
 
 	m4u_isr_pause_timer_init();
