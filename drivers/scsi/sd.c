@@ -1238,7 +1238,7 @@ static int sd_open(struct block_device *bdev, fmode_t mode)
 
 error_out:
 	scsi_disk_put(sdkp);
-	return retval;	
+	return retval;
 }
 
 /**
@@ -1285,7 +1285,7 @@ static int sd_getgeo(struct block_device *bdev, struct hd_geometry *geo)
         diskinfo[0] = 0x40;	/* 1 << 6 */
        	diskinfo[1] = 0x20;	/* 1 << 5 */
        	diskinfo[2] = sdkp->capacity >> 11;
-	
+
 	/* override with calculated, extended default, or driver values */
 	if (host->hostt->bios_param)
 		host->hostt->bios_param(sdp, bdev, sdkp->capacity, diskinfo);
@@ -1320,7 +1320,7 @@ static int sd_ioctl(struct block_device *bdev, fmode_t mode,
 	struct scsi_device *sdp = sdkp->device;
 	void __user *p = (void __user *)arg;
 	int error;
-    
+
 	SCSI_LOG_IOCTL(1, sd_printk(KERN_INFO, sdkp, "sd_ioctl: disk=%s, "
 				    "cmd=0x%x\n", disk->disk_name, cmd));
 
@@ -1555,7 +1555,7 @@ static int sd_compat_ioctl(struct block_device *bdev, fmode_t mode,
 	 */
 	if (!scsi_block_when_processing_errors(sdev))
 		return -ENODEV;
-	       
+
 	if (sdev->host->hostt->compat_ioctl) {
 		ret = sdev->host->hostt->compat_ioctl(sdev, cmd, (void __user *)arg);
 
@@ -1813,16 +1813,22 @@ sd_spinup_disk(struct scsi_disk *sdkp)
 			 * doesn't have any media in it, don't bother
 			 * with any more polling.
 			 */
+			/*
 			if (media_not_present(sdkp, &sshdr))
 				return;
+			 */
 
 			if (the_result)
 				sense_valid = scsi_sense_valid(&sshdr);
 			retries++;
-		} while (retries < 3 && 
-			 (!scsi_status_is_good(the_result) ||
+			if (!scsi_status_is_good(the_result) ||
 			  ((driver_byte(the_result) & DRIVER_SENSE) &&
-			  sense_valid && sshdr.sense_key == UNIT_ATTENTION)));
+			  sense_valid && sshdr.sense_key == UNIT_ATTENTION)) {
+				msleep(100);
+			} else {
+				break;
+			}
+		} while (retries < 5);
 
 		if ((driver_byte(the_result) & DRIVER_SENSE) == 0) {
 			/* no sense, TUR either succeeded or failed
@@ -1833,7 +1839,7 @@ sd_spinup_disk(struct scsi_disk *sdkp)
 			}
 			break;
 		}
-					
+
 		/*
 		 * The device does not want the automatic start to be issued.
 		 */
@@ -1892,7 +1898,7 @@ sd_spinup_disk(struct scsi_disk *sdkp)
 			}
 			break;
 		}
-				
+
 	} while (spintime && time_before_eq(jiffies, spintime_expire));
 
 	if (spintime) {
@@ -2759,9 +2765,15 @@ static int sd_try_extended_inquiry(struct scsi_device *sdp)
 static int sd_revalidate_disk(struct gendisk *disk)
 {
 	struct scsi_disk *sdkp = scsi_disk(disk);
-	struct scsi_device *sdp = sdkp->device;
+	struct scsi_device *sdp = NULL;
 	unsigned char *buffer;
 	unsigned int max_xfer;
+
+	if (!sdkp) {
+		sd_printk(KERN_ERR, sdkp, "Error: sdkp is null\n");
+		goto out;
+	}
+	sdp = sdkp->device;
 
 	SCSI_LOG_HLQUEUE(3, sd_printk(KERN_INFO, sdkp,
 				      "sd_revalidate_disk\n"));
@@ -3104,7 +3116,7 @@ static void scsi_disk_release(struct device *dev)
 {
 	struct scsi_disk *sdkp = to_scsi_disk(dev);
 	struct gendisk *disk = sdkp->disk;
-	
+
 	spin_lock(&sd_index_lock);
 	ida_remove(&sd_index_ida, sdkp->index);
 	spin_unlock(&sd_index_lock);
