@@ -115,7 +115,7 @@ void __iomem *otp_base; /* 0x10222000 */
 
 #define DEBUG   0
 #define DUMP_FULL_LOG   0
-#define DUMP_DEBUG_LOG   1
+#define DUMP_DEBUG_LOG   0
 
 #define BIG_CORE_BANK   0
 #define MAX_TARGET_TEMP 130
@@ -160,6 +160,10 @@ static unsigned int otp_reg_dump_addr_off[] = {0x00, 0x04, 0x08, 0x0C, 0x10, 0x1
 unsigned int otp_reg_dump_data[ARRAY_SIZE(otp_reg_dump_addr_off)];
 #endif
 
+#define OTP_INTERVAL		(5LL)
+static wait_queue_head_t wq;
+static int condition;
+static struct hrtimer otp_timer;
 unsigned int otp_debug_dump_data[10];
 /*
 void BigOTPEnable(void);
@@ -885,6 +889,7 @@ static int otp_thread_handler(void *arg)
 	unsigned int score_status;
 
 	do {
+		wait_event_interruptible(wq, condition);
 		if ((cpu_online(BIG_CPU_NUM0) == 1) || (cpu_online(BIG_CPU_NUM1) == 1)) {
 			if (get_piden_status() == 1) {
 				mutex_lock(&debug_mutex);
@@ -927,18 +932,32 @@ static int otp_thread_handler(void *arg)
 
 			}
 		}
+		condition = 0;
 		/* msleep(5); */
-		mdelay(5);
 	} while (!kthread_should_stop());
 
 	return 0;
 }
 
+static enum hrtimer_restart otp_timer_func(struct hrtimer *timer)
+{
+	condition = 1;
+	wake_up_interruptible(&wq);
+	hrtimer_forward_now(timer, ms_to_ktime(OTP_INTERVAL));
+
+	return HRTIMER_RESTART;
+}
+
 static void otp_monitor_ctrl(void)
 {
 	if (1) {
+		init_waitqueue_head(&wq);
 		thread = kthread_run(otp_thread_handler, NULL, "otp info");
 	}
+
+	hrtimer_init(&otp_timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
+	otp_timer.function = otp_timer_func;
+	hrtimer_start(&otp_timer, ms_to_ktime(OTP_INTERVAL), HRTIMER_MODE_REL);
 }
 
 static void enable_OTP(void)
@@ -968,10 +987,15 @@ static void enable_OTP(void)
 
 	otp_info(" Configuration finished\n");
 
+	/* hrtimer_start(&otp_timer, ms_to_ktime(OTP_INTERVAL), HRTIMER_MODE_REL); */
 }
 
 static void disable_OTP(void)
 {
+
+	BigiDVFSChannel(2, 0);
+
+	/* hrtimer_cancel(&otp_timer); */
 	set_otp_config_data(0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0);
 	set_otp_ctrl_data(0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0);
 	set_otp_score_data(0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0);
