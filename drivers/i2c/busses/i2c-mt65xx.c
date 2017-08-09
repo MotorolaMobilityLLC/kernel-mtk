@@ -538,8 +538,6 @@ static int mtk_i2c_transfer(struct i2c_adapter *adap,
 			}
 		}
 
-		mtk_i2c_init_hw(i2c);
-
 		/* always use DMA mode. */
 		ret = mtk_i2c_do_transfer(i2c, msgs, num, left_num);
 		if (ret < 0)
@@ -727,12 +725,26 @@ static int mtk_i2c_remove(struct platform_device *pdev)
 	return 0;
 }
 
+#ifdef CONFIG_PM_SLEEP
+static int mtk_i2c_resume(struct device *dev)
+{
+	struct mtk_i2c *i2c = dev_get_drvdata(dev);
+
+	mtk_i2c_init_hw(i2c);
+
+	return 0;
+}
+#endif
+
 static struct platform_driver mtk_i2c_driver = {
 	.probe = mtk_i2c_probe,
 	.remove = mtk_i2c_remove,
 	.driver = {
 		.name = I2C_DRV_NAME,
 		.of_match_table = of_match_ptr(mtk_i2c_of_match),
+		.pm = &(const struct dev_pm_ops){
+			SET_SYSTEM_SLEEP_PM_OPS(NULL, mtk_i2c_resume)
+		},
 	},
 };
 
