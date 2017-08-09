@@ -6,7 +6,7 @@
   See the file COPYING.
 */
 
-#if defined(CONFIG_MT_ENG_BUILD)  /* log is only enabled in eng load */
+#if defined(CONFIG_FUSE_IO_LOG)
 #define DEBUG 1
 #endif
 

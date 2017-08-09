@@ -25,3 +25,20 @@ config CUSE
 
 	  If you want to develop or use a userspace character device
 	  based on CUSE, answer Y or M.
+
+config FUSE_IO_LOG
+	bool "FUSE IO log"
+	depends on FUSE_FS
+	depends on MT_ENG_BUILD
+	default y
+	help
+	  Enable IO trace for performance analysis and application access
+	  pattern study. The trace is only avalible in eng build.
+
+	  The trace is formatted as pid:operation{size(bytes),count,time(ms)}
+	  Type 1: read/write statics
+	    example: [BLOCK_TAG] FUSEIO {414:R(0,0,0),W(931,18,7304)}
+	                                {2008:R(0,0,0),W(524288,8,4079)}
+	  Type 2: file operation statics
+	    example: [BLOCK_TAG] FUSEIO {2496:open(0,1,923)}
+	                                {2500:opendir(0,2,846)}
