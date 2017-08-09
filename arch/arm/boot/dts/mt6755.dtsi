@@ -1519,7 +1519,7 @@
 		spi1: spi@11010000 {
 			compatible = "mediatek,mt6755-spi";
 			cell-index = <1>;
-			spi-padmacro = <1>;
+			spi-padmacro = <0>;
 			reg = <0x11010000 0x1000>;
 			interrupts = <GIC_SPI 122 IRQ_TYPE_LEVEL_LOW>;
 			clocks = <&infrasys INFRA_SPI1>;
