@@ -50,6 +50,8 @@
 #define SPM_FLAG_DVFS_ACTIVE	(1 << 22)
 #define MASK_MD_DVFS_REQ	0x0
 
+#define PMIC_ACK_DONE		(1 << 31)
+
 /* load fw for boot up */
 extern void spm_go_to_vcore_dvfs(u32 spm_flags, u32 spm_data, bool screen_on, u32 cpu_dvfs_req);
 
@@ -66,6 +68,8 @@ extern void spm_vcorefs_enable_perform_bw(bool enable);
 extern char *spm_vcorefs_dump_dvfs_regs(char *p);
 extern int spm_vcorefs_set_cpu_dvfs_req(u32 screen_on, u32 mask);
 extern u32 spm_vcorefs_get_MD_status(void);
+
+extern void spm_vcorefs_init_dvfs_con(void);
 
 /* AEE debug */
 extern void aee_rr_rec_vcore_dvfs_status(u32 val);

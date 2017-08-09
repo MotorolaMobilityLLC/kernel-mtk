@@ -38,6 +38,7 @@
 
 /* TIMEOUT */
 #define SPM_DVFS_TIMEOUT	7500	/* 7.5ms */
+#define SPM_DVFS_CON_TIMEOUT	2000	/* 2ms */
 
 /* BW threshold for SPM_SW_RSV_4 */
 #define HPM_THRES_OFFSET	16
@@ -51,6 +52,9 @@
 
 /* get F/W screen on/off setting status */
 #define get_screen_sta()	(spm_read(SPM_SW_RSV_1) & 0xF)
+
+/* spm to pmic cmd done */
+#define spm2pmic_cmd_done()	(spm_read(SPM_DVFS_CON) & (1 << 31))
 
 enum spm_vcorefs_step {
 	SPM_VCOREFS_ENTER = 0,
@@ -87,7 +91,7 @@ static struct pwr_ctrl vcore_dvfs_ctrl = {
 	/* default VCORE DVFS is disabled */
 	.pcm_flags = (SPM_FLAG_DIS_VCORE_DVS | SPM_FLAG_DIS_VCORE_DFS),
 
-	.wake_src = WAKE_SRC_R12_PCM_TIMER | WAKE_SRC_R12_MD32_SPM_IRQ_B,
+	.wake_src = WAKE_SRC_R12_PCM_TIMER | WAKE_SRC_R12_APWDT_EVENT_B | WAKE_SRC_R12_MD32_SPM_IRQ_B,
 	/* SPM general */
 	.r0_ctrl_en = 1,
 	.r7_ctrl_en = 1,
@@ -400,6 +404,20 @@ static void __go_to_vcore_dvfs(u32 spm_flags, u8 spm_data)
 #if SPM_AEE_RR_REC
 		aee_rr_rec_spm_common_scenario_val(SPM_COMMON_SCENARIO_SODI);
 #endif
+}
+
+void spm_vcorefs_init_dvfs_con(void)
+{
+	int timeout;
+
+	/* spm to pmic cmd done */
+	spm_write(SPM_DVFS_CON, 0x0);
+	timeout = wait_spm_complete_by_condition(spm2pmic_cmd_done() == PMIC_ACK_DONE, SPM_DVFS_CON_TIMEOUT);
+	if (timeout < 0) {
+		spm_vcorefs_crit("DVFS_CON TIMEOUT: %d\n", SPM_DVFS_CON_TIMEOUT);
+		spm_vcorefs_dump_dvfs_regs(NULL);
+		BUG();
+	}
 }
 
 static void _spm_vcorefs_init_reg(void)

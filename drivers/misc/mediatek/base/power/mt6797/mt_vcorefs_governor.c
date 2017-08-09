@@ -1165,6 +1165,7 @@ static int init_vcorefs_cmd_table(void)
 							gvrctrl->curr_axi_khz);
 
 	update_vcore_pwrap_cmd(opp_ctrl_table);
+	spm_vcorefs_init_dvfs_con();
 	mutex_unlock(&governor_mutex);
 
 	return 0;
