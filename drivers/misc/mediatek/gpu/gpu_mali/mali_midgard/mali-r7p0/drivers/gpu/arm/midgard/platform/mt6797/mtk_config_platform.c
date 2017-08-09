@@ -231,30 +231,28 @@ struct kbase_platform_config *kbase_get_platform_config(void)
 	return &versatile_platform_config;
 }
 
+extern unsigned int get_eem_status_for_gpu(void);
+
 int kbase_platform_early_init(void)
 {
-    /* Make sure the power control is ready */
-    if (!is_fan53555_exist() || !is_fan53555_sw_ready())
-    {
-        return -EPROBE_DEFER;
-    }
+	/* Make sure the ptpod is ready (not 0) */
+	if (!get_eem_status_for_gpu())
+	{
+		pr_warn("ptpod is not ready\n");
+		return -EPROBE_DEFER;
+	}
 
-    return 0;
+	/* Make sure the power control is ready */
+	if (!is_fan53555_exist() || !is_fan53555_sw_ready())
+	{
+		pr_warn("fan53555 is not ready\n");
+		return -EPROBE_DEFER;
+	}
+
+	return 0;
 }
 
 #ifdef MTK_GPU_SPM
-
-void mtk_gpu_power_limit_CB(unsigned int ui32LimitFreqID)
-{
-    unsigned int freq_ub;
-    unsigned int volt_ub;
-
-	printk("[MALI] thermal CB set to freq id=%d\n", ui32LimitFreqID);
-	freq_ub = mt_gpufreq_get_freq_by_idx(ui32LimitFreqID);
-	volt_ub = mt_gpufreq_get_volt_by_idx(ui32LimitFreqID);
-	mtk_kbase_spm_set_vol_freq_ceiling(volt_ub, freq_ub);    
-}
-
 
 ssize_t mtk_kbase_dvfs_gpu_show(struct device *dev, struct device_attribute *attr, char *const buf)
 {
@@ -492,7 +490,6 @@ int mtk_platform_init(struct platform_device *pdev, struct kbase_device *kbdev)
 
 #ifdef MTK_GPU_DPM
 	DFP_write32(CLK_MISC_CFG_0, DFP_read32(CLK_MISC_CFG_0) & 0xfffffffe);
-	mt_gpufreq_power_limit_notify_registerCB(mtk_gpu_power_limit_CB);
 #endif
 
 	return 0;
