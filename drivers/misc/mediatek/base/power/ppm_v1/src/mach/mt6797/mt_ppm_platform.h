@@ -15,6 +15,9 @@ extern "C" {
 #define PPM_UPDATE_STATE_DIRECT_TO_MET  (1)
 
 #define PPM_HW_OCP_SUPPORT		(0)
+#if PPM_HW_OCP_SUPPORT
+#include "mt_ocp.h"
+#endif
 
 /* DLPT mode */
 #define PPM_DLPT_DEFAULT_MODE	(HYBRID_MODE)
@@ -92,7 +95,9 @@ struct ppm_power_tbl_data {
 /*==============================================================*/
 /* APIs								*/
 /*==============================================================*/
+#if PPM_HW_OCP_SUPPORT
 extern unsigned int ppm_set_ocp(unsigned int limited_power, unsigned int percentage);
+#endif
 
 #ifdef __cplusplus
 }

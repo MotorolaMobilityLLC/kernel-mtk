@@ -19,7 +19,11 @@ enum PPM_DLPT_MODE {
 
 static unsigned int ppm_dlpt_calc_trans_precentage(void);
 static unsigned int ppm_dlpt_pwr_budget_preprocess(unsigned int budget);
+#if PPM_HW_OCP_SUPPORT
+static unsigned int ppm_dlpt_pwr_budget_postprocess(unsigned int budget, unsigned int pwr_idx);
+#else
 static unsigned int ppm_dlpt_pwr_budget_postprocess(unsigned int budget);
+#endif
 static void ppm_dlpt_update_limit_cb(enum ppm_power_state new_state);
 static void ppm_dlpt_status_change_cb(bool enable);
 static void ppm_dlpt_mode_change_cb(enum ppm_mode mode);
@@ -45,7 +49,7 @@ void mt_ppm_dlpt_kick_PBM(struct ppm_cluster_status *cluster_status, unsigned in
 	int power_idx;
 	unsigned int total_core = 0;
 	unsigned int max_volt = 0;
-	unsigned int budget;
+	unsigned int budget = 0;
 	int i;
 
 	FUNC_ENTER(FUNC_LV_POLICY);
@@ -55,17 +59,39 @@ void mt_ppm_dlpt_kick_PBM(struct ppm_cluster_status *cluster_status, unsigned in
 	if (power_idx < 0)
 		goto end;
 
+#if PPM_HW_OCP_SUPPORT
+	for (i = 0; i < cluster_num; i++) {
+		int leakage, total, clkpct;
+
+		total_core += cluster_status[i].core_num;
+		max_volt = MAX(max_volt, cluster_status[i].volt);
+
+		/* read power meter for total power calculation */
+		if (cluster_status[i].core_num) {
+			if (i == PPM_CLUSTER_B) {
+				BigOCPCapture(1, 1, 0, 15);
+				BigOCPCaptureStatus(&leakage, &total, &clkpct);
+			} else {
+				LittleOCPCapture(i, 1, 1, 0, 15);
+				LittleOCPCaptureGet(i, &leakage, &total, &clkpct);
+			}
+			ppm_ver("ocp capture(%d): %d, %d, %d\n", i, leakage, total, clkpct);
+			budget += total;
+		}
+	}
+	budget = ppm_dlpt_pwr_budget_postprocess(budget, (unsigned int)power_idx);
+#else
 	for (i = 0; i < cluster_num; i++) {
 		total_core += cluster_status[i].core_num;
 		max_volt = MAX(max_volt, cluster_status[i].volt);
 	}
-
 	budget = ppm_dlpt_pwr_budget_postprocess((unsigned int)power_idx);
+#endif
 
 	ppm_ver("budget = %d(%d), total_core = %d, max_volt = %d\n",
 		budget, power_idx, total_core, max_volt);
-#ifndef DISABLE_PBM_FEATURE
 
+#ifndef DISABLE_PBM_FEATURE
 	kicker_pbm_by_cpu(budget, total_core, max_volt);
 #endif
 
@@ -141,6 +167,17 @@ static unsigned int ppm_dlpt_pwr_budget_preprocess(unsigned int budget)
 	return (budget * percentage + (100 - 1)) / 100;
 }
 
+
+#if PPM_HW_OCP_SUPPORT
+static unsigned int ppm_dlpt_pwr_budget_postprocess(unsigned int budget, unsigned int pwr_idx)
+{
+	/* just calculate new ratio */
+	dlpt_percentage_to_real_power = (pwr_idx * 100 + (budget - 1)) / budget;
+	ppm_ver("new dlpt ratio = %d (%d/%d)\n", dlpt_percentage_to_real_power, pwr_idx, budget);
+
+	return budget;
+}
+#else
 static unsigned int ppm_dlpt_pwr_budget_postprocess(unsigned int budget)
 {
 	unsigned int percentage = dlpt_percentage_to_real_power;
@@ -150,6 +187,7 @@ static unsigned int ppm_dlpt_pwr_budget_postprocess(unsigned int budget)
 
 	return (budget * 100 + (percentage - 1)) / percentage;
 }
+#endif
 
 static void ppm_dlpt_update_limit_cb(enum ppm_power_state new_state)
 {
@@ -272,6 +310,24 @@ static int __init ppm_dlpt_policy_init(void)
 			goto out;
 		}
 	}
+
+#if PPM_HW_OCP_SUPPORT
+	/* enable OCP */
+	/* TBD: move these to cpu hotplug? */
+#if 0
+	BigiDVFSEnable(2500, 110000, 120000);	/* idvfs enable 2500MHz, Vproc_x100mv, Vsram_x100mv */
+	BigiDVFSChannel(1, 1);			/* ocp channel enable */
+	BigOCPConfig(300, 10000);		/* cluster 2 Voffset=0.3v_x1000, Vstep=10mv_x1000000 */
+	BigOCPSetTarget(3, 127000);		/* cluster 2 set OCPI/FPI, Target=127 W */
+	BigOCPEnable(3, 1, 625, 0);		/* cluster 2 set OCPI/FPI, Target_unit=mW, CG=6.25%_x100 */
+#endif
+	LittleOCPConfig(300, 10000);		/* cluster 0/1 Voffset=0.5v_x1000, Vstep=6.25mv_x1000000 */
+	LittleOCPSetTarget(0, 127000);		/* cluster 0 Target=127W_x1000 */
+	LittleOCPEnable(0, 1, 625);		/* cluster 0 Target_unit=mW, CG=6.25_x100 */
+	LittleOCPSetTarget(1, 127000);		/* cluster 1 Target=127W_x1000 */
+	LittleOCPEnable(1, 1, 625);		/* cluster 1 Target_unit=mW, CG=6.25_x100 */
+#endif
+
 	if (ppm_main_register_policy(&dlpt_policy)) {
 		ppm_err("@%s: dlpt policy register failed\n", __func__);
 		ret = -EINVAL;
@@ -296,7 +352,11 @@ static void __exit ppm_dlpt_policy_exit(void)
 
 	FUNC_EXIT(FUNC_LV_POLICY);
 }
-
+#if PPM_HW_OCP_SUPPORT
+/* should not init before OCP driver */
+late_initcall(ppm_dlpt_policy_init);
+#else
 module_init(ppm_dlpt_policy_init);
+#endif
 module_exit(ppm_dlpt_policy_exit);
 

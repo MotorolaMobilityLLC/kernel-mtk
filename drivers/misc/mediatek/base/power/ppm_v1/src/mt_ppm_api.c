@@ -34,7 +34,7 @@ void mt_ppm_set_dvfs_table(unsigned int cpu, struct cpufreq_frequency_table *tbl
 	}
 
 	if (i == ppm_main_info.cluster_num)
-		ppm_err("@%s: cpu_id not found!\n", __func__);
+		ppm_err("@%s: cpu_id(%d) not found!\n", __func__, cpu);
 
 	FUNC_EXIT(FUNC_LV_API);
 }

@@ -804,14 +804,30 @@ void ppm_limit_check_for_user_limit(enum ppm_power_state cur_state, struct ppm_p
 	}
 }
 
+#if PPM_HW_OCP_SUPPORT
 static unsigned int max_power;
+#define MAX_OCP_TARGET_POWER	127000
+
+static bool ppm_is_big_cluster_on(void)
+{
+	struct cpumask cpumask, cpu_online_cpumask;
+
+	arch_get_cluster_cpus(&cpumask, PPM_CLUSTER_B);
+	cpumask_and(&cpu_online_cpumask, &cpumask, cpu_online_mask);
+
+	return (cpumask_weight(&cpu_online_cpumask) > 0) ? true : false;
+}
 
 /* return value is the remaining power budget for SW DLPT */
 unsigned int ppm_set_ocp(unsigned int limited_power, unsigned int percentage)
 {
 	struct ppm_power_tbl_data power_table = ppm_get_power_table();
 	int i, ret = 0;
-	unsigned int remaining_power = 0;
+	unsigned int power_for_ocp = 0, power_for_tbl_lookup = 0;
+
+	/* no need to set big OCP since big cluster is powered off */
+	if (!ppm_is_big_cluster_on())
+		return limited_power;
 
 	/* if max_power < limited_power, set (limited_power - max_power) to HW OCP */
 	if (!max_power) {
@@ -825,27 +841,30 @@ unsigned int ppm_set_ocp(unsigned int limited_power, unsigned int percentage)
 		ppm_info("@%s: max_power = %d\n", __func__, max_power);
 	}
 
+
+
 	if (limited_power <= max_power) {
-		/* disable HW OCP (waiting for API) */
-		/* BigOCPDisable(ALL, OCP_mW); */
-		return limited_power;
+		/* disable HW OCP by setting maximum budget */
+		power_for_ocp = MAX_OCP_TARGET_POWER;
+		power_for_tbl_lookup = limited_power;
+	} else {
+		/* pass remaining power to HW OCP */
+		power_for_ocp = (percentage)
+			? ((limited_power - max_power) * 100 + (percentage - 1)) / percentage
+			: (limited_power - max_power);
+		power_for_tbl_lookup = max_power;
 	}
 
-	/* pass remaining power to HW OCP and re-enable it (waiting for API) */
-	remaining_power = (percentage)
-		? ((limited_power - max_power) * 100 + (percentage - 1)) / percentage
-		: (limited_power - max_power);
-#if 0
-	BigOCPDisable();
-	ret = BigOCPEnable(ALL, remaining_power, 0, 0);
-#endif
+	ret = BigOCPSetTarget(OCP_ALL, power_for_ocp);
 	if (ret) {
-		ppm_err("@%s: Enable OCP failed, ret = %d\n", __func__, ret);
+		/* pass all limited power for tbl lookup if set ocp target failed */
+		ppm_err("@%s: OCP set target(%d) failed, ret = %d\n", __func__, power_for_ocp, ret);
 		return limited_power;
 	}
 
-	ppm_ver("set budget = %d to OCP done!\n", remaining_power);
+	ppm_ver("set budget = %d to OCP done!\n", power_for_ocp);
 
-	return max_power;
+	return power_for_tbl_lookup;
 }
+#endif
 
