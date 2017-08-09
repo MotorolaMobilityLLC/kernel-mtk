@@ -128,6 +128,9 @@ extern void __iomem	*clk_camsys_base;
 
 #define TOP_CKDIV1              (clk_infracfg_ao_base + 0x08)
 #define TOP_DCMCTL              (clk_infracfg_ao_base + 0x10)
+#define INFRA_TOPCKGEN_CKDIV1_BIG	(clk_infracfg_ao_base + 0x24)
+#define INFRA_TOPCKGEN_CKDIV1_SML	(clk_infracfg_ao_base + 0x28)
+#define INFRA_TOPCKGEN_CKDIV1_BUS	(clk_infracfg_ao_base + 0x2C)
 #define INFRA_BUS_DCM_CTRL      (clk_infracfg_ao_base + 0x70)
 #define PERI_BUS_DCM_CTRL       (clk_infracfg_ao_base + 0x74)
 #define INFRA_SW_CG0_SET          (clk_infracfg_ao_base + 0x80)

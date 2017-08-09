@@ -34,12 +34,13 @@ obj-y += mt_static_power.o
 obj-y += mt_vcorefs_manager.o
 obj-y += mt_vcorefs_governor.o
 
+obj-$(CONFIG_ARCH_MT6757) += mt_clkmgr.o
 ifneq ($(CONFIG_FPGA_EARLY_PORTING), y)
 
 obj-y += mt_clkbuf_ctl.o
 #obj-y += mt_dcm.o
 obj-y += mt_clkmgr_common.o
-obj-$(CONFIG_ARCH_MT6757) += mt_clkmgr.o
+
 #obj-$(CONFIG_ARCH_MT6757) += mt_spm_dpidle.o
 #obj-$(CONFIG_ARCH_MT6757M) += mt_spm_dpidle.o
 #obj-$(CONFIG_ARCH_MT6753) += mt_spm_dpidle.o

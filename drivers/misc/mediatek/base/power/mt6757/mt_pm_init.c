@@ -63,7 +63,6 @@
 
 int __attribute__ ((weak)) mt_cpu_dormant_init(void) { return MT_CPU_DORMANT_BYPASS; }
 
-#if !defined(CONFIG_FPGA_EARLY_PORTING)
 #define TOPCK_LDVT
 #ifdef TOPCK_LDVT
 /***************************
@@ -172,38 +171,105 @@ unsigned int abist_meter(int ID)
 }
 
 const char *ckgen_array[] = {
-	"hd_faxi_ck", "hf_fddrphycfg_ck", "f_fpwm_ck", "hf_fvdec_ck", "hf_fmm_ck",
-	"hf_fcamtg_ck", "f_fuart_ck", "hf_fspi_ck", "hf_fmsdc50_0_h_ck", "hf_fmsdc50_0_ck",
-	"hf_fmsdc30_1_ck", "hf_fmsdc30_2_ck", "f52m_mfg_ck", "hf_faudio_ck", "hf_faud_intbus_ck",
-	"hf_fpmicspi_ck", "hf_fscp_ck", "hf_fatb_ck", "hf_fmjc_ck", "hf_fdpi0_ck",
-	"hf_faud_1_ck", "hf_faud_2_ck", "hf_fanc_md32_ck", "hf_fmfg_ck", "f_fusb20_ck",
-	"hf_fenc_ck", "f_fssusb_top_sys_ck", "hg_fspm_ck", "fmem_ck", "hf_fbsi_spi_ck",
-	"hf_faudio_h_ck"
+	"hd_faxi_ck",
+	"hf_fddrphycfg_ck",
+	"hf_fmm_ck",
+	"f_fpwm_ck",
+	"hf_fvdec_ck",
+	"hf_fmfg_ck",
+	"hf_fcamtg_ck",
+	"f_fuart_ck",
+	"hf_fspi_ck",
+	"hf_fmsdc50_0_hclk_ck", /*10*/
+	"hf_fmsdc50_0_ck",
+	"hf_fmsdc30_1_ck",
+	"hf_fmsdc30_2_ck",
+	"hf_fmsdc30_3_ck",
+	"hf_faudio_ck",
+	"hf_faud_intbus_ck",
+	"hf_fpmicspi_ck",
+	"b0",
+	"hf_fatb_ck",
+	"hf_fmjc_ck",/*20*/
+	"hf_fdpi0_ck",
+	"hf_fscam_ck",
+	"hf_faud_1_ck",
+	"hf_faud_2_ck",
+	"fmem_ck_bfe_dcm_ch0_gt",
+	"fmem_ck_aft_dcm_ch0",
+	"f_fdisp_pwm_ck",
+	"f_fssusb_top_sys_ck",
+	"f_fssusb_top_xhci_ck",
+	"f_fusb_top_ck",/*30*/
+	"hg_fspm_ck",
+	"hf_fbsi_spi_ck",
+	"f_fi2c_ck",
+	"hg_fdvfsp_ck",
+	"hf_fvenc_ck",
+	"f52m_mfg_ck",
+	"hf_fimg_ck",
+	"fmem_ck_bfe_dcm_ch1_gt",
+	"fmem_ck_aft_dcm_ch1"
 };
 
 const char *ckgen_abist_array[] = {
-	"b0", "AD_OSC_CK_abist_mon ", "AD_OSC_CK_D3 ", "AD_MAIN_H546M_CK ", "AD_MAIN_H364M_CK ",
-	"AD_MAIN_H218P4M_CK ", "AD_MAIN_H156M_CK ", "AD_UNIV_178P3M_CK ", "AD_UNIV_48M_CK ",
-	    "AD_UNIV_624M_CK ",
-	"AD_UNIV_416M_CK ", "AD_UNIV_249P6M_CK ", "AD_APLL1_180P6336M_CK ", "AD_APLL2_196P608M_CK ",
-	    "AD_MDPLL1_26M_CK ",
-	"rtc32k_ck_i ", "AD_MFGPLL_500M_CK ", "AD_IMGPLL_450M_CK ", "AD_TVDPLL_594M_CK ",
-	    "AD_CODECPLL_494M_CK ",
-	"AD_MSDCPLL_400M_CK ", "AD_USB20_48M_CK ", "AD_MEMPLL_MONCLK ", "MIPI0_DSI_TST_CK ",
-	    "AD_PLLGP_TST_CK ",
-	"AD_MCUPLLGP_TSTDIV2_CK ", "fmem_ck ", "clkm_ck_out_0 ", "clkm_ck_out_1 ", "clkm_ck_out_2 ",
-	"clkm_ck_out_3 ", "clkm_ck_out_4 ", "clkm_ck_out_5 ", "armpll_arm_clk_out1 ",
-	    "armpll_arm_clk_out2 ",
-	"armpll_arm_clk_out3 ", "armpll_arm_clk_out0 ", "1b0", "1b0", "AD_VDECPLL_500M_CK ",
-	"AD_MPLL_104M_CK ", "AD_ARMCAXPLL1_CK_MON ", "AD_ARMCAXPLL2_CK_MON ",
-	    "AD_ARMCAXPLL3_CK_MON ", "AD_ARMCAXPLL4_CK_MON ",
-	"AD_ARMCAXPLL0_CK_MON ", "AD_SSUSB_48M_CK ", "AD_CA_RPHYPLL_DIV4_CK ",
-	    "AD_CA_RCLKRPLL_DIV4_CK ", "AD_CB_RPHYPLL_DIV4_CK ",
-	"AD_CB_RCLKRPLL_DIV4_CK ", "AD_AB_RPHYPLL_DIV4_CK ", "AD_AB_RCLKRPLL_DIV4_CK ",
-	    "AD_CSI0A_DELAYCAL_CK_mux ", "AD_CSI0B_DELAYCAL_CK_mux ",
-	"AD_CSI1A_DELAYCAL_CK_mux ", "AD_CSI1B_DELAYCAL_CK_mux ", "AD_CSI2_DELAYCAL_CK_mux ",
-	    "MIPI1_DSI_TST_CK ", "AD_MDPLLGP_TSTDIV2_CK ",
-	"AD_CA_RPHYPLL_TSTDIV2_CK ", "AD_CB_RPHYPLL_TSTDIV2_CK ", "AD_AB_RPHYPLL_TSTDIV2_CK ",
+	"AD_CSI0_DELAY_TSTCLK",
+	"AD_CSI1_DELAY_TSTCLK",
+	"AD_PSMCUPLL_CK",
+	"AD_L1MCUPLL_CK",
+	"AD_C2KCPPLL_CK",
+	"AD_ICCPLL_CK",
+	"AD_INTFPLL_CK",
+	"AD_MD2GPLL_CK",
+	"AD_IMCPLL_CK",
+	"AD_C2KDSPPLL_CK",/*10*/
+	"AD_BRPPLL_CK",
+	"AD_DFEPLL_CK",
+	"AD_EQPLL_CK",
+	"AD_CMPPLL_CK",
+	"AD_MDPLLGP_TST_CK",
+	"AD_MDPLL_FS26M_CK",
+	"AD_MDPLL_FS208M_CK",
+	"b0",
+	"b0",
+	"AD_ARMPLL_L_CK",/*20*/
+	"b0",
+	"AD_ARMPLL_LL_CK",
+	"AD_MAINPLL_CK",
+	"AD_UNIVPLL_CK",
+	"AD_MMPLL_CK",
+	"AD_MSDCPLL_CK",
+	"AD_VENCPLL_CK",
+	"AD_APLL1_CK",
+	"AD_APLL2_CK",
+	"AD_APPLLGP_MON_FM_CK",/*30*/
+	"AD_USB20_192M_CK",
+	"AD_UNIV_192M_CK",
+	"AD_SSUSB_192M_CK",
+	"AD_TVDPLL_CK",
+	"AD_DSI0_MPPLL_TST_CK",
+	"AD_DSI0_LNTC_DSICLK",
+	"b0",
+	"AD_OSC_CK",
+	"rtc32k_ck_i",
+	"armpll_hd_fram_ck_big",/*40*/
+	"armpll_hd_fram_ck_sml",
+	"armpll_hd_fram_ck_bus",
+	"msdc01_in_ck",
+	"msdc02_in_ck",
+	"msdc11_in_ck",
+	"msdc12_in_ck",
+	"b0",
+	"b0",
+	"AD_CCIPLL_CK",
+	"AD_MPLL_208M_CK",/*50*/
+	"AD_WBG_DIG_CK_CK_416M",
+	"AD_WBG_B_DIG_CK_64M",
+	"AD_WBG_W_DIG_CK_160M",
+	"DA_USB20_48M_DIV_CK",
+	"DA_UNIV_48M_DIV_CK",
+	"DA_SSUSB_48M_DIV_CK",
+	"DA_MPLL_52M_DIV_CK"
 };
 
 
@@ -211,9 +277,13 @@ static int ckgen_meter_read(struct seq_file *m, void *v)
 {
 	int i;
 
-	for (i = 1; i < 32; i++)
-		seq_printf(m, "[%d] %s: %d\n", i, ckgen_array[i - 1], ckgen_meter(i));
+	for (i = 1; i < 39; i++) {
+		/*skip unknown case */
+		if (i == 18)
+			continue;
 
+		seq_printf(m, "[%d] %s: %d\n", i, ckgen_array[i - 1], ckgen_meter(i));
+	}
 	return 0;
 }
 
@@ -241,9 +311,9 @@ static int abist_meter_read(struct seq_file *m, void *v)
 {
 	int i;
 
-	for (i = 1; i < 64; i++) {
+	for (i = 1; i < 57; i++) {
 		/*skip unknown case */
-		if (i == 1 || i == 38 || i == 39)
+		if (i == 18 || i == 19 || i == 21 || i == 37 || i == 47 || i == 48)
 			continue;
 
 		seq_printf(m, "[%d] %s: %d\n", i, ckgen_abist_array[i - 1], abist_meter(i));
@@ -308,7 +378,7 @@ static unsigned int mt_get_emi_freq(void)
 	clk26cali_0 = pminit_read(CLK26CALI_0);
 	/*sel abist_cksw and enable abist meter sel abist*/
 	clk_dbg_cfg = pminit_read(CLK_DBG_CFG);
-	pminit_write(CLK_DBG_CFG, (clk_dbg_cfg & 0xFFFFFFFC) | (23 << 16));
+	pminit_write(CLK_DBG_CFG, (clk_dbg_cfg & 0xFFFFFFFC) | (50 << 16));/*AD_MPLL_208M_CK*/
 
 	clk_misc_cfg_0 = pminit_read(CLK_MISC_CFG_0);
 	pminit_write(CLK_MISC_CFG_0, (clk_misc_cfg_0 & 0x00FFFFFF));	/* select divider*/
@@ -353,7 +423,7 @@ unsigned int mt_get_bus_freq(void)
 	clk26cali_0 = pminit_read(CLK26CALI_0);
 
 	clk_dbg_cfg = pminit_read(CLK_DBG_CFG);
-	pminit_write(CLK_DBG_CFG, (1 << 8) | 0x01);	/*sel abist_cksw and enable freq meter sel abist*/
+	pminit_write(CLK_DBG_CFG, (1 << 8) | 0x01);	/* AXI */
 
 	clk_misc_cfg_0 = pminit_read(CLK_MISC_CFG_0);
 	pminit_write(CLK_MISC_CFG_0, (clk_misc_cfg_0 & 0x00FFFFFF));	/* select divider*/
@@ -391,122 +461,26 @@ unsigned int mt_get_bus_freq(void)
 }
 EXPORT_SYMBOL(mt_get_bus_freq);
 
-#if 0
-static unsigned int mt_get_cpu_freq(void)
-{
-	int output = 0, i = 0;
-	unsigned int temp, clk26cali_0, clk_dbg_cfg, clk_misc_cfg_0, clk26cali_1;
-
-	clk_dbg_cfg = pminit_read(CLK_DBG_CFG);
-
-	/*sel abist_cksw and enable freq meter sel abist*/
-	pminit_write(CLK_DBG_CFG, (clk_dbg_cfg & 0xFFFFFFFC) | (42 << 16));
-	clk_misc_cfg_0 = pminit_read(CLK_MISC_CFG_0);
-	pminit_write(CLK_MISC_CFG_0, (clk_misc_cfg_0 & 0x00FFFFFF));	/* select divider, WAIT CONFIRM*/
-
-	clk26cali_1 = pminit_read(CLK26CALI_1);
-	/*pminit_write(CLK26CALI_1, 0x00ff0000); // cycle count default 1024,[25:16]=3FF*/
-
-	/*temp = pminit_read(CLK26CALI_0);*/
-	pminit_write(CLK26CALI_0, 0x1000);
-	pminit_write(CLK26CALI_0, 0x1010);
-
-	/* wait frequency meter finish */
-	while (pminit_read(CLK26CALI_0) & 0x10) {
-		mdelay(10);
-		i++;
-		if (i > 10)
-			break;
-	}
-
-	temp = pminit_read(CLK26CALI_1) & 0xFFFF;
-
-	output = ((temp * 26000)) / 1024;	/* Khz*/
-
-	pminit_write(CLK_DBG_CFG, clk_dbg_cfg);
-	pminit_write(CLK_MISC_CFG_0, clk_misc_cfg_0);
-	pminit_write(CLK26CALI_0, clk26cali_0);
-	pminit_write(CLK26CALI_1, clk26cali_1);
-
-	if (i > 10)
-		return 0;
-	else
-		return output;
-
-}
-EXPORT_SYMBOL(mt_get_cpu_freq);
-#endif
-
-#if 0
-enum {
-	ARMPLL_BIG = 0,
-	ARMPLL_LL,
-	ARMPLL_L,
-	ARMPLL_CCI,
-};
-static int cpu_div_info(int cpu)
-{
-	unsigned int temp = 0, div = 0, i = 0;
-	int ret = 0;
-
-	temp = pminit_read(ARMPLLDIV_CKDIV);
-	switch (cpu) {
-	case ARMPLL_BIG:
-		div = (temp & _ARMPLL_B_DIV_MASK_) >> _ARMPLL_B_DIV_BIT_;
-		break;
-	case ARMPLL_LL:
-		div = (temp & _ARMPLL_LL_DIV_MASK_) >> _ARMPLL_LL_DIV_BIT_;
-		break;
-	case ARMPLL_L:
-		div = (temp & _ARMPLL_L_DIV_MASK_) >> _ARMPLL_L_DIV_BIT_;
-		break;
-	case ARMPLL_CCI:
-		div = (temp & _ARMPLL_CCI_DIV_MASK_) >> _ARMPLL_CCI_DIV_BIT_;
-		break;
-	}
-
-	switch (div) {
-	case _ARMPLL_DIV_4_:
-		ret = 4;
-		break;
-	case _ARMPLL_DIV_2_:
-		ret = 2;
-		break;
-	case _ARMPLL_DIV_1_:
-		ret = 1;
-		break;
-	case 0:
-		ret = 1;
-		break;
-	}
-	return ret;
-}
-#endif
 
 static int cpu_speed_dump_read(struct seq_file *m, void *v)
 {
 
-#if 0
-	seq_printf(m, "%s(LL):  %d Khz, CKDIV: %d\n", ckgen_abist_array[41], abist_meter(42),
-		   cpu_div_info(ARMPLL_LL));
-	seq_printf(m, "%s(L):  %d Khz, CKDIV: %d\n", ckgen_abist_array[42], abist_meter(43),
-		   cpu_div_info(ARMPLL_L));
-	seq_printf(m, "%s{CCI}:  %d Khz, CKDIV: %d\n", ckgen_abist_array[43], abist_meter(44),
-		   cpu_div_info(ARMPLL_CCI));
-	seq_printf(m, "%s(BiG) :  %d Khz, CKDIV: %d\n", ckgen_abist_array[45], abist_meter(46),
-		   cpu_div_info(ARMPLL_BIG));
-#else
-	seq_printf(m, "%s(LL): %d Khz\n", ckgen_abist_array[41], abist_meter(34));
-	seq_printf(m, "%s(L): %d Khz\n", ckgen_abist_array[42], abist_meter(35));
-	seq_printf(m, "%s(CCI): %d Khz\n", ckgen_abist_array[43], abist_meter(36));
-	seq_printf(m, "%s(BIG): %d Khz\n", ckgen_abist_array[45], abist_meter(37));
-#endif
+	seq_printf(m, "%s(LL): %d Khz\n", ckgen_abist_array[21], abist_meter(22));
+	seq_printf(m, "%s(L): %d Khz\n", ckgen_abist_array[19], abist_meter(20));
+	seq_printf(m, "%s(CCI): %d Khz\n", ckgen_abist_array[48], abist_meter(49));
+
 	return 0;
 }
 
-static int mfg_speed_dump_read(struct seq_file *m, void *v)
+static int mm_speed_dump_read(struct seq_file *m, void *v)
 {
-	seq_printf(m, "%s :  %d Khz\n", ckgen_abist_array[16], abist_meter(17));
+	seq_printf(m, "%s :  %d Khz\n", ckgen_abist_array[24], abist_meter(25));
+	return 0;
+}
+
+static int venc_speed_dump_read(struct seq_file *m, void *v)
+{
+	seq_printf(m, "%s :  %d Khz\n", ckgen_abist_array[26], abist_meter(27));
 	return 0;
 }
 
@@ -547,14 +521,25 @@ static const struct file_operations cpu_fops = {
 	.read = seq_read,
 };
 
-static int proc_mfg_open(struct inode *inode, struct file *file)
+static int proc_mm_open(struct inode *inode, struct file *file)
 {
-	return single_open(file, mfg_speed_dump_read, NULL);
+	return single_open(file, mm_speed_dump_read, NULL);
 }
 
-static const struct file_operations mfg_fops = {
+static const struct file_operations mm_fops = {
 	.owner = THIS_MODULE,
-	.open = proc_mfg_open,
+	.open = proc_mm_open,
+	.read = seq_read,
+};
+
+static int proc_venc_open(struct inode *inode, struct file *file)
+{
+	return single_open(file, venc_speed_dump_read, NULL);
+}
+
+static const struct file_operations venc_fops = {
+	.owner = THIS_MODULE,
+	.open = proc_venc_open,
 	.read = seq_read,
 };
 
@@ -603,7 +588,6 @@ static const struct file_operations mfgclk_fops = {
 	.read = seq_read,
 };
 #endif
-#endif
 
 
 static int __init mt_power_management_init(void)
@@ -650,7 +634,9 @@ static int __init mt_power_management_init(void)
 		pr_debug("[%s]: mkdir /proc/pm_init failed\n", __func__);
 	} else {
 		entry = proc_create("cpu_speed_dump", S_IRUGO, pm_init_dir, &cpu_fops);
-		entry = proc_create("mfg_speed_dump", S_IRUGO | S_IWGRP, pm_init_dir, &mfg_fops);
+		entry = proc_create("mm_speed_dump", S_IRUGO | S_IWGRP, pm_init_dir, &mm_fops);
+		entry = proc_create("venc_speed_dump", S_IRUGO | S_IWGRP, pm_init_dir, &venc_fops);
+		entry = proc_create("emi_speed_dump", S_IRUGO | S_IWGRP, pm_init_dir, &emi_fops);
 
 #ifdef TOPCK_LDVT
 		entry =

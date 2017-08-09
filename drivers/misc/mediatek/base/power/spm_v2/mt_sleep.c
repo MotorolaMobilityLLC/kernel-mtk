@@ -28,9 +28,10 @@
 #include "mt_spm.h"
 #include "mt_spm_sleep.h"
 #include "mt_spm_idle.h"
-#if defined(CONFIG_ARCH_MT6797)
+#if defined(CONFIG_ARCH_MT6797) || defined(CONFIG_ARCH_MT6757)
 #include "mt_clkmgr.h"
 #endif
+
 #include "mt_spm_mtcmos.h"
 #include "mt_spm_misc.h"
 #ifdef CONFIG_MT_SND_SOC_6755
@@ -316,15 +317,17 @@ static int slp_suspend_ops_enter(suspend_state_t state)
 	if (slp_dump_regs)
 		slp_dump_pm_regs();
 #endif
-#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_MT6757)
+#if defined(CONFIG_ARCH_MT6755)
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
 	pll_if_on();
 	subsys_if_on();
 #endif
 #endif
-#if defined(CONFIG_ARCH_MT6797)
+#if defined(CONFIG_ARCH_MT6797) || defined(CONFIG_ARCH_MT6757)
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
 	if (slp_check_mtcmos_pll)
 		slp_check_pm_mtcmos_pll();
+#endif
 #endif
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
 #if 0

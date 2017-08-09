@@ -665,6 +665,11 @@ static int mmpll_fsel_read(struct seq_file *m, void *v)
 	return 0;
 }
 
+static int vencpll_fsel_read(struct seq_file *m, void *v)
+{
+	return 0;
+}
+
 static int _clk_debugf_open(struct seq_file *s, void *data)
 {
 	return 0;
@@ -787,6 +792,63 @@ static ssize_t clk_debugf_read(struct file *filp,
 
 }
 
+static int pll_div_value_map(int index)
+{
+	int div = 0; /*default div 1/1*/
+
+	switch (index) {
+	case 1:
+		div = 0x08;
+	break;
+	case 2:
+		div = 0x09;
+	break;
+	case 3:
+		div = 0x0A;
+	break;
+	case 4:
+		div = 0x0B;
+	break;
+	case 5:
+		div = 0x10;
+	break;
+	case 6:
+		div = 0x11;
+	break;
+	case 7:
+		div = 0x12;
+	break;
+	case 8:
+		div = 0x13;
+	break;
+	case 9:
+		div = 0x14;
+	break;
+	case 10:
+		div = 0x18;
+	break;
+	case 11:
+		div = 0x19;
+	break;
+	case 12:
+		div = 0x1A;
+	break;
+	case 13:
+		div = 0x1B;
+	break;
+	case 14:
+		div = 0x1C;
+	break;
+	case 15:
+		div = 0x1D;
+	break;
+	default:
+		div = 0;
+	break;
+	}
+
+	return div;
+}
 static ssize_t armlpll_fsel_write(struct file *file, const char __user *buffer,
 				  size_t count, loff_t *data)
 {
@@ -801,27 +863,14 @@ static ssize_t armlpll_fsel_write(struct file *file, const char __user *buffer,
 		return 0;
 	desc[len] = '\0';
 
-	if (sscanf(desc, "%d %x", &div, &value) == 2) {
+	if (sscanf(desc, "%x %x", &div, &value) == 2) {
 		ctrl_value = clk_readl(ARMPLL_L_CON1);
 		ctrl_value &= ~(SDM_PLL_N_INFO_MASK | ARMPLL_POSDIV_MASK);
 		ctrl_value |= value & (SDM_PLL_N_INFO_MASK | ARMPLL_POSDIV_MASK);
 		ctrl_value |= SDM_PLL_N_INFO_CHG;
 		clk_writel(ARMPLL_L_CON1, ctrl_value);
 		udelay(20);
-		#if 0 /*divider after PLL move to mcu*/
-		if (div == 4)
-			clk_writel(ARMPLLDIV_CKDIV,
-				   (clk_readl(ARMPLLDIV_CKDIV) & _ARMPLL_L_DIV_MASK_) |
-				   _ARMPLL_DIV_4_ << _ARMPLL_L_DIV_BIT_);
-		else if (div == 2)
-			clk_writel(ARMPLLDIV_CKDIV,
-				   (clk_readl(ARMPLLDIV_CKDIV) & _ARMPLL_L_DIV_MASK_) |
-				   _ARMPLL_DIV_2_ << _ARMPLL_L_DIV_BIT_);
-		else		/*1 */
-			clk_writel(ARMPLLDIV_CKDIV,
-				   (clk_readl(ARMPLLDIV_CKDIV) & _ARMPLL_L_DIV_MASK_) |
-				   _ARMPLL_DIV_1_ << _ARMPLL_L_DIV_BIT_);
-		#endif
+		clk_writel(INFRA_TOPCKGEN_CKDIV1_BIG, pll_div_value_map(div));
 	}
 	return count;
 }
@@ -840,27 +889,14 @@ static ssize_t armllpll_fsel_write(struct file *file, const char __user *buffer,
 		return 0;
 	desc[len] = '\0';
 
-	if (sscanf(desc, "%d %x", &div, &value) == 2) {
+	if (sscanf(desc, "%x %x", &div, &value) == 2) {
 		ctrl_value = clk_readl(ARMPLL_LL_CON1);
 		ctrl_value &= ~(SDM_PLL_N_INFO_MASK | ARMPLL_POSDIV_MASK);
 		ctrl_value |= value & (SDM_PLL_N_INFO_MASK | ARMPLL_POSDIV_MASK);
 		ctrl_value |= SDM_PLL_N_INFO_CHG;
 		clk_writel(ARMPLL_LL_CON1, ctrl_value);
 		udelay(20);
-		#if 0 /*divider after PLL move to mcu*/
-		if (div == 4)
-			clk_writel(ARMPLLDIV_CKDIV,
-				   (clk_readl(ARMPLLDIV_CKDIV) & _ARMPLL_LL_DIV_MASK_) |
-				   _ARMPLL_DIV_4_ << _ARMPLL_LL_DIV_BIT_);
-		else if (div == 2)
-			clk_writel(ARMPLLDIV_CKDIV,
-				   (clk_readl(ARMPLLDIV_CKDIV) & _ARMPLL_LL_DIV_MASK_) |
-				   _ARMPLL_DIV_2_ << _ARMPLL_LL_DIV_BIT_);
-		else		/*1 */
-			clk_writel(ARMPLLDIV_CKDIV,
-				   (clk_readl(ARMPLLDIV_CKDIV) & _ARMPLL_LL_DIV_MASK_) |
-				   _ARMPLL_DIV_1_ << _ARMPLL_LL_DIV_BIT_);
-		#endif
+		clk_writel(INFRA_TOPCKGEN_CKDIV1_SML, pll_div_value_map(div));
 	}
 	return count;
 }
@@ -879,27 +915,14 @@ static ssize_t armccipll_fsel_write(struct file *file, const char __user *buffer
 		return 0;
 	desc[len] = '\0';
 
-	if (sscanf(desc, "%d %x", &div, &value) == 2) {
+	if (sscanf(desc, "%x %x", &div, &value) == 2) {
 		ctrl_value = clk_readl(CCIPLL_CON1);
 		ctrl_value &= ~(SDM_PLL_N_INFO_MASK | ARMPLL_POSDIV_MASK);
 		ctrl_value |= value & (SDM_PLL_N_INFO_MASK | ARMPLL_POSDIV_MASK);
 		ctrl_value |= SDM_PLL_N_INFO_CHG;
 		clk_writel(CCIPLL_CON1, ctrl_value);
 		udelay(20);
-		#if 0 /*divider after PLL move to mcu*/
-		if (div == 4)
-			clk_writel(ARMPLLDIV_CKDIV,
-				   (clk_readl(ARMPLLDIV_CKDIV) & _ARMPLL_CCI_DIV_MASK_) |
-				   _ARMPLL_DIV_4_ << _ARMPLL_CCI_DIV_BIT_);
-		else if (div == 2)
-			clk_writel(ARMPLLDIV_CKDIV,
-				   (clk_readl(ARMPLLDIV_CKDIV) & _ARMPLL_CCI_DIV_MASK_) |
-				   _ARMPLL_DIV_2_ << _ARMPLL_CCI_DIV_BIT_);
-		else		/*1 */
-			clk_writel(ARMPLLDIV_CKDIV,
-				   (clk_readl(ARMPLLDIV_CKDIV) & _ARMPLL_CCI_DIV_MASK_) |
-				   _ARMPLL_DIV_1_ << _ARMPLL_CCI_DIV_BIT_);
-		#endif
+		clk_writel(INFRA_TOPCKGEN_CKDIV1_BUS, pll_div_value_map(div));
 	}
 	return count;
 
@@ -926,6 +949,28 @@ static ssize_t mmpll_fsel_write(struct file *file, const char __user *buffer,
 	return count;
 
 }
+
+static ssize_t vencpll_fsel_write(struct file *file, const char __user *buffer,
+				 size_t count, loff_t *data)
+{
+	char desc[32];
+	int len = 0;
+	unsigned int con0, con1;
+
+	len = (count < (sizeof(desc) - 1)) ? count : (sizeof(desc) - 1);
+	if (copy_from_user(desc, buffer, len))
+		return 0;
+	desc[len] = '\0';
+
+	if (sscanf(desc, "%x %x", &con0, &con1) == 2) {
+		clk_writel(VENCPLL_CON1, con1);
+		udelay(20);
+	}
+
+	return count;
+
+}
+
 
 static int gAllowClkDump;
 
@@ -1062,6 +1107,20 @@ static const struct file_operations mmpll_fsel_proc_fops = {
 	.release = single_release,
 };
 
+static int proc_vencpll_fsel_open(struct inode *inode, struct file *file)
+{
+	clk_err("%s", __func__);
+	return single_open(file, vencpll_fsel_read, NULL);
+}
+
+static const struct file_operations vencpll_fsel_proc_fops = {
+	.owner = THIS_MODULE,
+	.open = proc_vencpll_fsel_open,
+	.read = seq_read,
+	.write = vencpll_fsel_write,
+	.release = single_release,
+};
+
 static int proc_clk_debugf_open(struct inode *inode, struct file *file)
 {
 	clk_err("%s", __func__);
@@ -1108,8 +1167,11 @@ void mt_clkmgr_debug_init(void)
 	    proc_create("armccipll_fsel", S_IRUGO | S_IWUSR | S_IWGRP, clkmgr_dir,
 			&armccipll_fsel_proc_fops);
 	entry =
-	    proc_create("mfgpll_fsel", S_IRUGO | S_IWUSR | S_IWGRP, clkmgr_dir,
+	    proc_create("mmpll_fsel", S_IRUGO | S_IWUSR | S_IWGRP, clkmgr_dir,
 			&mmpll_fsel_proc_fops);
+	entry =
+	    proc_create("vencpll_fsel", S_IRUGO | S_IWUSR | S_IWGRP, clkmgr_dir,
+			&vencpll_fsel_proc_fops);
 	entry =
 	    proc_create("pll_mtcmos_clk", S_IRUGO | S_IWUSR | S_IWGRP, clkmgr_dir,
 			&clk_fsel_proc_fops);

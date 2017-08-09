@@ -1836,7 +1836,7 @@ static void __init mt_audiosys_init(struct device_node *node)
 		pr_err("could not register clock provide\n");
 
 #if MT_CCF_BRINGUP
-	mt_reg_sync_writel(0x801c4000, base + aud0_cg_regs.set_ofs);
+	clk_writel(AUDIO_TOP_CON0, 0x800c4000);
 #endif
 #if CG_BOOTUP_PDN
 	audio_base = base;
