@@ -1727,16 +1727,6 @@ static fm_s32 MT6630_Rds_Tx_Enable(void)
 	fm_s32 ret = 0;
 	fm_u16 pkt_size;
 
-	if (FM_LOCK(cmd_buf_lock))
-		return -FM_ELOCK;
-
-	pkt_size = mt6630_tx_rdson_deviation(cmd_buf, TX_BUF_SIZE);
-	ret = fm_cmd_tx(cmd_buf, pkt_size, FLAG_RDS_TX, SW_RETRY_CNT, EN_TIMEOUT, NULL);
-	FM_UNLOCK(cmd_buf_lock);
-	if (ret) {
-		WCN_DBG(FM_ALT | CHIP, "mt6630_tx_rdson_deviation failed\n");
-		return ret;
-	}
 	mt6630_set_bits(0xC7, 0x0800, 0xF7FF);
 	return 0;
 }
@@ -1745,17 +1735,6 @@ static fm_s32 MT6630_Rds_Tx_Disable(void)
 {
 	fm_s32 ret = 0;
 	fm_u16 pkt_size;
-
-	if (FM_LOCK(cmd_buf_lock))
-		return -FM_ELOCK;
-
-	pkt_size = mt6630_pwrup_tx_deviation(cmd_buf, TX_BUF_SIZE);
-	ret = fm_cmd_tx(cmd_buf, pkt_size, FLAG_EN, SW_RETRY_CNT, EN_TIMEOUT, NULL);
-	FM_UNLOCK(cmd_buf_lock);
-	if (ret) {
-		WCN_DBG(FM_ALT | CHIP, "mt6630_pwrup_tx_deviation failed\n");
-		return ret;
-	}
 
 	mt6630_set_bits(0xC7, 0x0000, 0xF7FF);
 
@@ -2093,11 +2072,11 @@ static fm_s32 mt6630_PowerUpTx(void)
 	if (FM_LOCK(cmd_buf_lock))
 		return -FM_ELOCK;
 
-	pkt_size = mt6630_pwrup_tx_deviation(cmd_buf, TX_BUF_SIZE);
-	ret = fm_cmd_tx(cmd_buf, pkt_size, FLAG_EN, SW_RETRY_CNT, EN_TIMEOUT, NULL);
+	pkt_size = mt6630_tx_rdson_deviation(cmd_buf, TX_BUF_SIZE);
+	ret = fm_cmd_tx(cmd_buf, pkt_size, FLAG_RDS_TX, SW_RETRY_CNT, EN_TIMEOUT, NULL);
 	FM_UNLOCK(cmd_buf_lock);
 	if (ret) {
-		WCN_DBG(FM_ALT | CHIP, "mt6630_pwrup__tx_deviation failed\n");
+		WCN_DBG(FM_ALT | CHIP, "mt6630_tx_rdson_deviation failed\n");
 		return ret;
 	}
 
@@ -2146,6 +2125,32 @@ static fm_bool MT6630_SetFreq_Tx(fm_u16 freq)
 	fm_s32 ret = 0;
 	fm_u16 pkt_size;
 	fm_u16 chan_para = 0;
+	fm_u16 dataRead = 0;
+
+	/* repeat tune due to audio noise workaround */
+	mt6630_read(0x63, &dataRead);
+	mt6630_read(0x61, &dataRead);
+	mt6630_write(0x63, 0x0);
+	mt6630_write(0x61, 0x81);
+	mt6630_write(0x61, 0x83);
+	mt6630_write(0x61, 0x82);
+	/*mt6630_write(0x69, 0x1);*/
+	do {
+		mt6630_read(0x64, &dataRead);
+		WCN_DBG(FM_DBG | CHIP, "dataRead = %d\n", dataRead);
+	} while (dataRead != 2);
+
+	if (FM_LOCK(cmd_buf_lock))
+		return -FM_ELOCK;
+
+	pkt_size = mt6630_tx_rdson_deviation(cmd_buf, TX_BUF_SIZE);
+	ret = fm_cmd_tx(cmd_buf, pkt_size, FLAG_RDS_TX, SW_RETRY_CNT, EN_TIMEOUT, NULL);
+	FM_UNLOCK(cmd_buf_lock);
+	if (ret) {
+		WCN_DBG(FM_ALT | CHIP, "mt6630_tx_rdson_deviation failed\n");
+		return ret;
+	}
+	/* repeat tune due to audio noise workaround end */
 
 	ret = mt6630_RampDown();
 	if (ret) {
