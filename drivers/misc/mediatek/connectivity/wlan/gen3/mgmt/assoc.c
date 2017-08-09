@@ -1510,15 +1510,15 @@ WLAN_STATUS assocProcessRxAssocReqFrame(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T 
 	if (MAC_FRAME_REASSOC_REQ == u2RxFrameCtrl) {
 		prStaRec->fgIsReAssoc = TRUE;
 
-		u2IELength = (prSwRfb->u2PacketLen - prSwRfb->u2HeaderLen) -
-		    (UINT_16) (OFFSET_OF(WLAN_REASSOC_REQ_FRAME_T, aucInfoElem[0]) - WLAN_MAC_MGMT_HEADER_LEN);
+		u2IELength = prSwRfb->u2PacketLen -
+		    (UINT_16) OFFSET_OF(WLAN_REASSOC_REQ_FRAME_T, aucInfoElem[0]);
 
 		pucIEStart = pucIE = ((P_WLAN_REASSOC_REQ_FRAME_T) (prSwRfb->pvHeader))->aucInfoElem;
 	} else {
 		prStaRec->fgIsReAssoc = FALSE;
 
-		u2IELength = (prSwRfb->u2PacketLen - prSwRfb->u2HeaderLen) -
-		    (UINT_16) (OFFSET_OF(WLAN_ASSOC_REQ_FRAME_T, aucInfoElem[0]) - WLAN_MAC_MGMT_HEADER_LEN);
+		u2IELength = prSwRfb->u2PacketLen -
+		    (UINT_16) OFFSET_OF(WLAN_ASSOC_REQ_FRAME_T, aucInfoElem[0]);
 
 		pucIEStart = pucIE = prAssocReqFrame->aucInfoElem;
 	}
