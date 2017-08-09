@@ -236,7 +236,7 @@ static int IMM_auxadc_GetOneChannelValue(int dwChannel, int data[4], int *rawdat
 	if ((cali_reg & (1 << 10)) != 0) {
 		cali_oe_a = cali_reg & 0x3FF;
 		cali_ge_a = ((cali_reg & 0x3FF0000) >> 16);
-		cali_ge = (cali_ge_a - 512)/4096;
+		cali_ge = cali_ge_a - 512;
 		cali_oe = cali_oe_a - 512;
 		gain = 1 + cali_ge;
 	}
@@ -301,12 +301,12 @@ static int IMM_auxadc_GetOneChannelValue(int dwChannel, int data[4], int *rawdat
 	channel[dwChannel] = AUXADC_DRV_ReadReg16(AUXADC_DAT0 + dwChannel * 0x04) & 0x0FFF;
 #if defined(CONFIG_ARCH_MT6735) || defined(CONFIG_ARCH_MT6735M) || defined(CONFIG_ARCH_MT6753)
 	if (NULL != rawdata)
-		*rawdata = (channel[dwChannel] - cali_oe)/gain;
+		*rawdata = channel[dwChannel] - cali_oe;
 
 	pr_debug("[adc_api: imm mode raw data => channel[%d] = %d\n", dwChannel, channel[dwChannel]);
-	data[0] = (channel[dwChannel] / 1000);
-	data[1] = (channel[dwChannel] % 1000);
-	pr_debug("[adc_api]: imm mode => channel[%d] = %d.%02d\n", dwChannel, data[0], data[1]);
+	data[0] = (*rawdata * 1500 / (4096 + cali_ge)) / 1000; /* convert to volt*/
+	data[1] = (*rawdata * 1500 / (4096 + cali_ge)) % 1000;
+	pr_debug("[adc_api][external effuse cali]: imm mode => channel[%d] = %d.%3d\n", dwChannel, data[0], data[1]);
 #else
 	if (NULL != rawdata)
 		*rawdata = channel[dwChannel];
