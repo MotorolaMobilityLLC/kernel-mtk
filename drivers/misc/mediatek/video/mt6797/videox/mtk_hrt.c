@@ -64,6 +64,9 @@ static int get_bpp(DISP_FORMAT format)
 	case DISP_FORMAT_UYVY:
 		layerbpp = 2;
 		break;
+	case DISP_FORMAT_DIM:
+		layerbpp = 0;
+		break;
 
 	default:
 		DISPERR("Invalid color format: 0x%x\n", format);
