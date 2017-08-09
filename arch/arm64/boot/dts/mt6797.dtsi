@@ -1147,10 +1147,14 @@ initrd=0x44000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 			interrupts = <GIC_SPI 128 IRQ_TYPE_LEVEL_LOW>;
 		};
 
-		spi1@1100a000 {
-			compatible = "mediatek,spi1";
+		spi0:spi@1100a000 {
+			compatible = "mediatek,spi";
 			reg = <0x1100a000 0x1000>;
 			interrupts = <GIC_SPI 122 IRQ_TYPE_LEVEL_LOW>;
+		};
+
+		fpc1145: fpc {
+			compatible = "mediatek,fpc1145";
 		};
 
 		therm_ctrl@1100b000 {
@@ -1182,8 +1186,8 @@ initrd=0x44000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 			reg = <0x1100f000 0x1000>;
 		};
 
-		spi1@11012000 {
-			compatible = "mediatek,spi1";
+		spi1:spi@11012000 {
+			compatible = "mediatek,spi";
 			reg = <0x11012000 0x1000>;
 			interrupts = <GIC_SPI 131 IRQ_TYPE_LEVEL_LOW>;
 		};
@@ -1200,26 +1204,26 @@ initrd=0x44000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 			interrupts = <GIC_SPI 165 IRQ_TYPE_NONE>;
 		};
 
-		spi2@11018000 {
-			compatible = "mediatek,spi2";
+		spi2:spi@11018000 {
+			compatible = "mediatek,spi";
 			reg = <0x11018000 0x1000>;
 			interrupts = <GIC_SPI 132 IRQ_TYPE_LEVEL_LOW>;
 		};
 
-		spi3@11019000 {
-			compatible = "mediatek,spi3";
+		spi3:spi@11019000 {
+			compatible = "mediatek,spi";
 			reg = <0x11019000 0x1000>;
 			interrupts = <GIC_SPI 133 IRQ_TYPE_LEVEL_LOW>;
 		};
 
-		spi4@1101a000 {
-			compatible = "mediatek,spi4";
+		spi4:spi@1101a000 {
+			compatible = "mediatek,spi";
 			reg = <0x1101a000 0x1000>;
 			interrupts = <GIC_SPI 134 IRQ_TYPE_LEVEL_LOW>;
 		};
 
-		spi5@1101b000 {
-			compatible = "mediatek,spi5";
+		spi5:spi@1101b000 {
+			compatible = "mediatek,spi";
 			reg = <0x1101b000 0x1000>;
 			interrupts = <GIC_SPI 135 IRQ_TYPE_LEVEL_LOW>;
 		};

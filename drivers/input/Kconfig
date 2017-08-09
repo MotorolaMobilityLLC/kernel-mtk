@@ -210,6 +210,7 @@ source "drivers/input/touchscreen/mediatek/Kconfig"
 source "drivers/input/keyboard/mediatek/Kconfig"
 
 source "drivers/input/misc/Kconfig"
+source "drivers/input/fingerprint/Kconfig"
 
 endif
 
