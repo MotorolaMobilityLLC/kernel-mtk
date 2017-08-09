@@ -175,7 +175,9 @@ static int mt_eint_get_level(unsigned int eint_num);
 static unsigned int mt_eint_flip_edge(struct eint_chip *chip, unsigned int eint_num);
 static unsigned int mt_eint_get_debounce_cnt(unsigned int cur_eint_num);
 static unsigned long cur_debug_eint;
+#ifdef CONFIG_MTK_SEC_DEINT_SUPPORT
 static unsigned long cur_debug_deint;
+#endif
 
 static void mt_eint_clr_deint_selection(u32 deint_mapped)
 {
@@ -198,7 +200,7 @@ static void mt_eint_set_deint_selection(u32 eint_num, u32 deint_mapped)
 			IOMEM(DEINT_SEL_SET_BASE + 4));
 }
 
-
+#ifdef CONFIG_MTK_SEC_DEINT_SUPPORT
 static int mt_eint_get_deint_selection(u32 deint_mapped)
 {
 	int ret;
@@ -213,6 +215,7 @@ static int mt_eint_get_deint_selection(u32 deint_mapped)
 	ret = (ret & (0xff << field_shift)) >> field_shift;
 	return ret;
 }
+#endif
 
 static void mt_eint_enable_deint_selection(u32 deint_mapped)
 {
