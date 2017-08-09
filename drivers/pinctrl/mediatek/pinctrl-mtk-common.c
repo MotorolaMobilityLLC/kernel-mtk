@@ -364,14 +364,6 @@ static int mtk_pconf_set_pull_select(struct mtk_pinctrl *pctl,
 			return 0;
 	}
 
-	/* For generic pull config, default arg value should be 0 or 1. */
-
-	if (arg != 0 && arg != 1) {
-		dev_err(pctl->dev, "invalid pull-up argument %d on pin %d .\n",
-			arg, pin);
-		return -EINVAL;
-	}
-
 	bit = BIT(pin & 0xf);
 	if (enable)
 		reg_pullen = SET_ADDR(mtk_get_port(pctl, pin) +
