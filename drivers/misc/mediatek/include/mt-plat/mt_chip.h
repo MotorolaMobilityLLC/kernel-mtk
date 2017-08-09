@@ -18,6 +18,7 @@ enum chip_sw_ver {
 	CHIP_SW_VER_01 = 0x0000,
 	CHIP_SW_VER_02 = 0x0001,
 	CHIP_SW_VER_03 = 0x0002,
+	CHIP_SW_VER_04 = 0x0003,
 };
 
 enum chip_info_id {
