@@ -78,14 +78,14 @@
 #define BATTERYPSEUDO100	95
 #define BATTERYPSEUDO1	0
 
-#define Q_MAX_BY_SYS			/*8. Qmax variant by system drop voltage.*/
+/*	#define Q_MAX_BY_SYS	*/
 /*	#define Q_MAX_SYS_VOLTAGE		3350	*/
 /*	#define SHUTDOWN_GAUGE0	*/
 /*	#define SHUTDOWN_GAUGE1_XMINS	*/
 /*	#define SHUTDOWN_GAUGE1_MINS	60	*/
 #define SHUTDOWN_GAUGE1_MINS	(48*60)
 
-/*	#define SHUTDOWN_SYSTEM_VOLTAGE	3400	*/
+#define SHUTDOWN_SYSTEM_VOLTAGE	2800	/*	DLPT will shutdown at 3.1v first	*/
 #define CHARGE_TRACKING_TIME	60
 #define DISCHARGE_TRACKING_TIME	10
 
