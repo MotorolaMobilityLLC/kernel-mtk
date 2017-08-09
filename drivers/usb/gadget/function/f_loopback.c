@@ -253,15 +253,33 @@ static void loopback_complete(struct usb_ep *ep, struct usb_request *req)
 
 	case 0:				/* normal completion? */
 		if (ep == loop->out_ep) {
-			req->zero = (req->actual < req->length);
-			req->length = req->actual;
+			/* loop this OUT packet back IN to the host */
+			struct usb_request *in_req = req->context;
+
+			in_req->zero = (req->actual % ep->maxpacket == 0)?1:0;
+			in_req->length = req->actual;
+			in_req->actual = 0;
+
+			memcpy(in_req->buf, req->buf, req->length);
+
+			status = usb_ep_queue(loop->in_ep, in_req, GFP_ATOMIC);
+			if (status == 0)
+				return;
+
+			/* "should never get here" */
+			ERROR(cdev, "can't loop %s to %s: %d\n",
+				ep->name, loop->in_ep->name,
+				status);
 		}
 
-		/* queue the buffer for some later OUT packet */
-		req->length = buflen;
-		status = usb_ep_queue(ep, req, GFP_ATOMIC);
-		if (status == 0)
-			return;
+		if (ep == loop->in_ep) {
+			struct usb_request *out_req = req->context;
+			/* queue the buffer for some later OUT packet */
+			out_req->length = buflen;
+			status = usb_ep_queue(loop->out_ep, out_req, GFP_ATOMIC);
+			if (status == 0)
+				return;
+		}
 
 		/* "should never get here" */
 		/* FALLTHROUGH */
@@ -349,15 +367,71 @@ fail0:
 static int
 enable_loopback(struct usb_composite_dev *cdev, struct f_loopback *loop)
 {
+	/* use old way */
 	int					result = 0;
+	struct usb_ep				*ep;
+	unsigned				i;
 
-	result = enable_endpoint(cdev, loop, loop->in_ep);
+	/* one endpoint writes data back IN to the host */
+	ep = loop->in_ep;
+	result = config_ep_by_speed(cdev->gadget, &(loop->function), ep);
 	if (result)
 		return result;
-
-	result = enable_endpoint(cdev, loop, loop->out_ep);
-	if (result)
+	result = usb_ep_enable(ep);
+	if (result < 0)
 		return result;
+	ep->driver_data = loop;
+
+	/* one endpoint just reads OUT packets */
+	ep = loop->out_ep;
+	result = config_ep_by_speed(cdev->gadget, &(loop->function), ep);
+	if (result)
+		goto fail0;
+
+	result = usb_ep_enable(ep);
+	if (result < 0) {
+fail0:
+		ep = loop->in_ep;
+		usb_ep_disable(ep);
+		ep->driver_data = NULL;
+		return result;
+	}
+	ep->driver_data = loop;
+
+	/* allocate a bunch of read buffers and queue them all at once.
+	 * we buffer at most 'qlen' transfers; fewer if any need more
+	 * than 'buflen' bytes each.
+	 */
+	for (i = 0; i < qlen && result == 0; i++) {
+		struct usb_request			*out_req;
+		struct usb_request			*in_req;
+		/* lb_alloc_ep_req */
+		out_req = lb_alloc_ep_req(loop->out_ep, 0);
+		if (out_req) {
+			out_req->complete = loopback_complete;
+			result = usb_ep_queue(loop->out_ep, out_req, GFP_ATOMIC);
+			if (result)
+				ERROR(cdev, "%s queue req --> %d\n",
+						loop->out_ep->name, result);
+		} else {
+			usb_ep_disable(loop->out_ep);
+			loop->out_ep->driver_data = NULL;
+			result = -ENOMEM;
+			goto fail0;
+		}
+		/* lb_alloc_ep_req */
+		in_req = lb_alloc_ep_req(loop->in_ep, 0);
+		if (in_req) {
+			in_req->complete = loopback_complete;
+		} else {
+			usb_ep_disable(loop->in_ep);
+			loop->in_ep->driver_data = NULL;
+			result = -ENOMEM;
+			goto fail0;
+		}
+		in_req->context = out_req;
+		out_req->context = in_req;
+	}
 
 	DBG(cdev, "%s enabled\n", loop->function.name);
 	return result;
@@ -398,9 +472,11 @@ static struct usb_function *loopback_alloc(struct usb_function_instance *fi)
 	mutex_unlock(&lb_opts->lock);
 
 	buflen = lb_opts->bulk_buflen;
+	if (!buflen)
+		buflen = 512;
 	qlen = lb_opts->qlen;
 	if (!qlen)
-		qlen = 32;
+		qlen = 8;
 
 	loop->function.name = "loopback";
 	loop->function.bind = loopback_bind;

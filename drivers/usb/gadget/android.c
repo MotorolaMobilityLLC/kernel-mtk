@@ -42,11 +42,18 @@
 #include "f_accessory.c"
 #include "f_mass_storage.h"
 #include "f_mtp.c"
+#include "f_eem.c"
 #include "f_rndis.c"
+/* note ERROR macro both appear on cdev & u_ether, make sure what you want */
 #include "rndis.c"
 #include "u_ether.c"
 
 USB_ETHERNET_MODULE_PARAMETERS();
+
+/* #define CONFIG_MTK_C2K_SUPPORT */
+#ifdef CONFIG_MTK_C2K_SUPPORT
+#include "viatel_rawbulk.h"
+#endif
 
 MODULE_AUTHOR("Mike Lockwood");
 MODULE_DESCRIPTION("Android Composite USB Driver");
@@ -617,6 +624,91 @@ static struct android_usb_function acm_function = {
 	.attributes	= acm_function_attributes,
 };
 
+#ifdef CONFIG_USB_F_SS_LB
+#define MAX_LOOPBACK_INSTANCES 1
+
+struct loopback_function_config {
+	int port_num;
+	struct usb_function *f_lp[MAX_LOOPBACK_INSTANCES];
+	struct usb_function_instance *f_lp_inst[MAX_LOOPBACK_INSTANCES];
+};
+
+static int loopback_function_init(struct android_usb_function *f, struct usb_composite_dev *cdev)
+{
+	int i;
+	int ret;
+	struct loopback_function_config *config;
+
+	config = kzalloc(sizeof(struct loopback_function_config), GFP_KERNEL);
+	if (!config)
+		return -ENOMEM;
+	f->config = config;
+
+	for (i = 0; i < MAX_LOOPBACK_INSTANCES; i++) {
+		config->f_lp_inst[i] = usb_get_function_instance("Loopback");
+		if (IS_ERR(config->f_lp_inst[i])) {
+			ret = PTR_ERR(config->f_lp_inst[i]);
+			goto err_usb_get_function_instance;
+		}
+		config->f_lp[i] = usb_get_function(config->f_lp_inst[i]);
+		if (IS_ERR(config->f_lp[i])) {
+			ret = PTR_ERR(config->f_lp[i]);
+			goto err_usb_get_function;
+		}
+	}
+	return 0;
+err_usb_get_function_instance:
+	pr_err("Could not usb_get_function_instance() %d\n", i);
+	while (i-- > 0) {
+		usb_put_function(config->f_lp[i]);
+err_usb_get_function:
+		pr_err("Could not usb_get_function() %d\n", i);
+		usb_put_function_instance(config->f_lp_inst[i]);
+	}
+	return ret;
+}
+
+static void loopback_function_cleanup(struct android_usb_function *f)
+{
+	int i;
+	struct loopback_function_config *config = f->config;
+
+	for (i = 0; i < MAX_LOOPBACK_INSTANCES; i++) {
+		usb_put_function(config->f_lp[i]);
+		usb_put_function_instance(config->f_lp_inst[i]);
+	}
+	kfree(f->config);
+	f->config = NULL;
+}
+
+static int
+loopback_function_bind_config(struct android_usb_function *f, struct usb_configuration *c)
+{
+	int ret = 0;
+	struct loopback_function_config *config = f->config;
+
+	ret = usb_add_function(c, config->f_lp[config->port_num]);
+	if (ret) {
+		pr_err("Could not bind loopback%u config\n", config->port_num);
+		goto err_usb_add_function;
+	}
+	pr_info("%s Open loopback\n", __func__);
+
+	return 0;
+
+err_usb_add_function:
+	usb_remove_function(c, config->f_lp[config->port_num]);
+	return ret;
+}
+
+static struct android_usb_function loopback_function = {
+	.name		= "loopback",
+	.init		= loopback_function_init,
+	.cleanup	= loopback_function_cleanup,
+	.bind_config	= loopback_function_bind_config,
+};
+#endif
+
 /* note all serial port number could not exceed MAX_U_SERIAL_PORTS */
 #define MAX_SERIAL_INSTANCES 4
 
@@ -795,6 +887,109 @@ static struct android_usb_function ptp_function = {
 	.init		= ptp_function_init,
 	.cleanup	= ptp_function_cleanup,
 	.bind_config	= ptp_function_bind_config,
+};
+
+struct eem_function_config {
+	u8      ethaddr[ETH_ALEN];
+	char	manufacturer[256];
+	struct eth_dev *dev;
+};
+
+static int
+eem_function_init(struct android_usb_function *f,
+		struct usb_composite_dev *cdev)
+{
+	f->config = kzalloc(sizeof(struct eem_function_config), GFP_KERNEL);
+	if (!f->config)
+		return -ENOMEM;
+	return 0;
+}
+
+static void eem_function_cleanup(struct android_usb_function *f)
+{
+	kfree(f->config);
+	f->config = NULL;
+}
+
+static int
+eem_function_bind_config(struct android_usb_function *f,
+		struct usb_configuration *c)
+{
+	int ret;
+	struct eth_dev *dev;
+	struct eem_function_config *eem = f->config;
+
+	pr_notice("[USB]%s:\n", __func__);
+
+	if (!eem) {
+		pr_err("%s: rndis_pdata\n", __func__);
+		return -1;
+	}
+
+	pr_info("%s MAC: %02X:%02X:%02X:%02X:%02X:%02X\n", __func__,
+		eem->ethaddr[0], eem->ethaddr[1], eem->ethaddr[2],
+		eem->ethaddr[3], eem->ethaddr[4], eem->ethaddr[5]);
+
+	dev = gether_setup_name(c->cdev->gadget, dev_addr, host_addr,
+			eem->ethaddr, qmult, "rndis");
+	if (IS_ERR(dev)) {
+		ret = PTR_ERR(dev);
+		pr_err("%s: gether_setup failed\n", __func__);
+		return ret;
+	}
+	eem->dev = dev;
+
+	return eem_bind_config(c, eem->dev);
+}
+
+static void eem_function_unbind_config(struct android_usb_function *f,
+						struct usb_configuration *c)
+{
+	struct eem_function_config *eem = f->config;
+
+	gether_cleanup(eem->dev);
+}
+
+static ssize_t eem_ethaddr_show(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	struct android_usb_function *f = dev_get_drvdata(dev);
+	struct eem_function_config *eem = f->config;
+
+	return sprintf(buf, "%02x:%02x:%02x:%02x:%02x:%02x\n",
+		eem->ethaddr[0], eem->ethaddr[1], eem->ethaddr[2],
+		eem->ethaddr[3], eem->ethaddr[4], eem->ethaddr[5]);
+}
+
+static ssize_t eem_ethaddr_store(struct device *dev,
+		struct device_attribute *attr, const char *buf, size_t size)
+{
+	struct android_usb_function *f = dev_get_drvdata(dev);
+	struct eem_function_config *eem = f->config;
+
+	if (sscanf(buf, "%02x:%02x:%02x:%02x:%02x:%02x\n",
+		    (int *)&eem->ethaddr[0], (int *)&eem->ethaddr[1],
+		    (int *)&eem->ethaddr[2], (int *)&eem->ethaddr[3],
+		    (int *)&eem->ethaddr[4], (int *)&eem->ethaddr[5]) == 6)
+		return size;
+	return -EINVAL;
+}
+
+static DEVICE_ATTR(eem_ethaddr, S_IRUGO | S_IWUSR, eem_ethaddr_show,
+					       eem_ethaddr_store);
+
+static struct device_attribute *eem_function_attributes[] = {
+	&dev_attr_eem_ethaddr,
+	NULL
+};
+
+static struct android_usb_function eem_function = {
+	.name		= "eem",
+	.init		= eem_function_init,
+	.cleanup	= eem_function_cleanup,
+	.bind_config	= eem_function_bind_config,
+	.unbind_config	= eem_function_unbind_config,
+	.attributes	= eem_function_attributes,
 };
 
 struct rndis_function_config {
@@ -1275,6 +1470,86 @@ static struct android_usb_function audio_source_function = {
 	.bind_config	= audio_source_function_bind_config,
 };
 
+#ifdef CONFIG_MTK_C2K_SUPPORT
+static int rawbulk_function_init(struct android_usb_function *f,
+					struct usb_composite_dev *cdev)
+{
+	return 0;
+}
+
+static void rawbulk_function_cleanup(struct android_usb_function *f)
+{
+	;
+}
+
+static int rawbulk_function_bind_config(struct android_usb_function *f,
+						struct usb_configuration *c)
+{
+	char *i = f->name + strlen("via_");
+
+	if (!strncmp(i, "modem", 5))
+		return rawbulk_bind_config(c, RAWBULK_TID_MODEM);
+	else if (!strncmp(i, "ets", 3))
+		return rawbulk_bind_config(c, RAWBULK_TID_ETS);
+	else if (!strncmp(i, "atc", 3))
+		return rawbulk_bind_config(c, RAWBULK_TID_AT);
+	else if (!strncmp(i, "pcv", 3))
+		return rawbulk_bind_config(c, RAWBULK_TID_PCV);
+	else if (!strncmp(i, "gps", 3))
+		return rawbulk_bind_config(c, RAWBULK_TID_GPS);
+	return -EINVAL;
+}
+
+static int rawbulk_function_modem_ctrlrequest(struct android_usb_function *f,
+						struct usb_composite_dev *cdev,
+						const struct usb_ctrlrequest *c)
+{
+	if ((c->bRequestType & USB_RECIP_MASK) == USB_RECIP_DEVICE &&
+			(c->bRequestType & USB_TYPE_MASK) == USB_TYPE_VENDOR) {
+		struct rawbulk_function *fn = rawbulk_lookup_function(RAWBULK_TID_MODEM);
+
+		return rawbulk_function_setup(&fn->function, c);
+	}
+	return -1;
+}
+
+static struct android_usb_function rawbulk_modem_function = {
+	.name		= "via_modem",
+	.init		= rawbulk_function_init,
+	.cleanup	= rawbulk_function_cleanup,
+	.bind_config	= rawbulk_function_bind_config,
+	.ctrlrequest	= rawbulk_function_modem_ctrlrequest,
+};
+
+static struct android_usb_function rawbulk_ets_function = {
+	.name		= "via_ets",
+	.init		= rawbulk_function_init,
+	.cleanup	= rawbulk_function_cleanup,
+	.bind_config	= rawbulk_function_bind_config,
+};
+
+static struct android_usb_function rawbulk_atc_function = {
+	.name		= "via_atc",
+	.init		= rawbulk_function_init,
+	.cleanup	= rawbulk_function_cleanup,
+	.bind_config	= rawbulk_function_bind_config,
+};
+
+static struct android_usb_function rawbulk_pcv_function = {
+	.name		= "via_pcv",
+	.init		= rawbulk_function_init,
+	.cleanup	= rawbulk_function_cleanup,
+	.bind_config	= rawbulk_function_bind_config,
+};
+
+static struct android_usb_function rawbulk_gps_function = {
+	.name		= "via_gps",
+	.init		= rawbulk_function_init,
+	.cleanup	= rawbulk_function_cleanup,
+	.bind_config	= rawbulk_function_bind_config,
+};
+#endif
+
 #ifdef CONFIG_SND_RAWMIDI
 static int midi_function_init(struct android_usb_function *f,
 					struct usb_composite_dev *cdev)
@@ -1336,6 +1611,7 @@ static struct android_usb_function *supported_functions[] = {
 	&acm_function,
 	&mtp_function,
 	&ptp_function,
+	&eem_function,
 	&serial_function,
 	&rndis_function,
 	&mass_storage_function,
@@ -1343,6 +1619,16 @@ static struct android_usb_function *supported_functions[] = {
 	&audio_source_function,
 #ifdef CONFIG_SND_RAWMIDI
 	&midi_function,
+#endif
+#ifdef CONFIG_MTK_C2K_SUPPORT
+	&rawbulk_modem_function,
+	&rawbulk_ets_function,
+	&rawbulk_atc_function,
+	&rawbulk_pcv_function,
+	&rawbulk_gps_function,
+#endif
+#ifdef CONFIG_USB_F_SS_LB
+	&loopback_function,
 #endif
 	NULL
 };

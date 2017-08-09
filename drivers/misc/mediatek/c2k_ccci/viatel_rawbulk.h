@@ -228,5 +228,7 @@ extern int modem_buffer_push(int port_num, void *buf, int count);
 extern int delay_set;
 extern int ut_err;
 #endif
+extern int rawbulk_bind_config(struct usb_configuration *c, int transfer_id);
+extern int rawbulk_function_setup(struct usb_function *f, const struct usb_ctrlrequest *ctrl);
 
 #endif				/* __RAWBULK_HEADER_FILE__ */
