@@ -163,7 +163,7 @@ static int pm_callback_power_on(struct kbase_device *kbdev)
 
 static void pm_callback_power_off(struct kbase_device *kbdev)
 {      
-   volatile int polling_count = 100000;
+   //volatile int polling_count = 100000;
    volatile int i = 0;
 
    /// 1. Delay 0.01ms before power off   
@@ -175,7 +175,7 @@ static void pm_callback_power_off(struct kbase_device *kbdev)
           
    /// 2. Polling the MFG_DEBUG_REG for checking GPU IDLE before MTCMOS power off (0.1ms)
 
-   MFG_WRITE32(0x3, MFG_DEBUG_CTRL_REG);
+   /*MFG_WRITE32(0x3, MFG_DEBUG_CTRL_REG);
    
    do {
       /// 0x13000184[2]
@@ -191,7 +191,7 @@ static void pm_callback_power_off(struct kbase_device *kbdev)
    if (polling_count <=0)
    {
       pr_debug("[MALI]!!!!MFG(GPU) subsys is still BUSY!!!!!, polling_count=%d\n", polling_count);
-   }
+   }*/
 #if HARD_RESET_AT_POWER_OFF
 	/* Cause a GPU hard reset to test whether we have actually idled the GPU
 	 * and that we properly reconfigure the GPU on power up.
