@@ -557,7 +557,7 @@ const char *grp_get_name(int id);
 extern int clkmgr_is_locked(void);
 
 /* init */
-/* extern void mt_clkmgr_init(void); */
+extern int mt_clkmgr_init(void);
 
 extern int clk_monitor_0(enum ckmon_sel ckmon, enum monitor_clk_sel_0 sel, int div);
 extern int clk_monitor(enum ckmon_sel ckmon, enum monitor_clk_sel sel, int div);
