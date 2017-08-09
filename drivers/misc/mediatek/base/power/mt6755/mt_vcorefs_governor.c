@@ -20,9 +20,6 @@
 #include <linux/notifier.h>
 #endif
 
-/*
-#include <primary_display.h>
-*/
 
 #include <linux/of.h>
 #include <linux/of_irq.h>
@@ -34,18 +31,6 @@
 #include <mach/irqs.h>
 #include <linux/irqchip/mt-eic.h>
 #include <linux/suspend.h>
-
-/* todo */
-__weak void mt_eint_virq_soft_clr(unsigned int irq)
-{
-}
-
-__weak unsigned int get_vcore_ptp_volt(int uv)
-{
-	return uv;
-}
-
-/* end of todo */
 
 __weak int emmc_autok(void)
 {
@@ -1017,11 +1002,9 @@ static int init_vcorefs_config(void)
 
 	spm_vcorefs_set_cpu_dvfs_req(gvrctrl->cpu_dvfs_req, 0xFFFF);
 
-/* todo */
-/*
 	if (DISP_GetScreenWidth() * DISP_GetScreenHeight() < 1080 * 1920)
 		gvrctrl->is_fhd_segment = false;
-*/
+
 	for (opp = 0; opp < NUM_OPP; opp++) {
 		opp_ctrl_table[opp].vcore_uv = vcorefs_get_vcore_by_steps(opp);
 		opp_ctrl_table[opp].ddr_khz = vcorefs_get_ddr_by_steps(opp);

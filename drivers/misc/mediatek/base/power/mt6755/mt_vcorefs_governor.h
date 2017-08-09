@@ -157,6 +157,10 @@ extern int vcorefs_set_total_bw_threshold(u32 lpm_threshold, u32 hpm_threshold);
 extern int vcorefs_enable_perform_bw(bool enable);
 extern int vcorefs_enable_total_bw(bool enable);
 
+/* screen size */
+extern unsigned int DISP_GetScreenWidth(void);
+extern unsigned int DISP_GetScreenHeight(void);
+
 
 /* AutoK related API */
 extern void governor_autok_manager(void);

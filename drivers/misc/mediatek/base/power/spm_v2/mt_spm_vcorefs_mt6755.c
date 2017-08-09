@@ -17,7 +17,7 @@
 /*
  * Define and Declare
  */
-#define SPM_DVFS_TIMEOUT 1000
+#define SPM_DVFS_TIMEOUT 2000
 #define SPM_DVFS_HPM		1
 #define SPM_DVFS_LPM		0
 
