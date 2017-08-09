@@ -688,6 +688,51 @@ initrd=0x44000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 			interrupts = <GIC_SPI 179 IRQ_TYPE_EDGE_FALLING>;
 		};
 
+		rf_clock_buffer_ctrl: rf_clock_buffer_ctrl@ {
+			compatible = "mediatek,mt6797-rf_clock_buffer_ctrl";
+			status = "disabled";
+		};
+
+		pmic_clock_buffer_ctrl: pmic_clock_buffer_ctrl@ {
+			compatible = "mediatek,mt6797-pmic_clock_buffer_ctrl";
+			status = "disabled";
+		};
+
+		ext_buck_oc: ext_buck_oc@ {
+			compatible = "mediatek,mt6797-ext_buck_oc";
+			status = "disabled";
+		};
+
+		gyro: gyro@ {
+			compatible = "mediatek,mt6797-gyro";
+			status = "disabled";
+		};
+
+		chr_stat: chr_stat@ {
+			compatible = "mediatek,mt6797-chr_stat";
+			status = "disabled";
+		};
+
+		eint_fusb300_det_in: eint_fusb300_det_in@ {
+			compatible = "mediatek,mt6797-eint_fusb300_det_in";
+			status = "disabled";
+		};
+
+		irq_nfc: irq_nfc@ {
+			compatible = "mediatek,mt6797-irq_nfc";
+			status = "disabled";
+		};
+
+		kd_camera_hw1: kd_camera_hw1@ {
+			compatible = "mediatek,mt6797-kd_camera_hw1";
+			status = "disabled";
+		};
+
+		keypad: keypad@ {
+			compatible = "mediatek,mt6797-keypad";
+			status = "disabled";
+		};
+
 		touch: touch@ {
 			compatible = "mediatek,mt6797-touch";
 		};
@@ -2292,3 +2337,5 @@ initrd=0x44000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 		};
 	};
 };
+
+#include "cust.dtsi"
