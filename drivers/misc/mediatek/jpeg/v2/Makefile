@@ -10,7 +10,8 @@ endif
 
 #ccflags-y += -I$(MTK_PATH_SOURCE)/drivers/jpeg/
 ifeq ($(CONFIG_ARCH_MT8173),y)
-ccflags-y += -I$(srctree)/drivers/misc/mediatek/cmdq/mt8173/
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/cmdq/hv1/
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/cmdq/hv1/mt8173/
 endif
 
 ifneq ($(CONFIG_ARCH_MT8173),y)
