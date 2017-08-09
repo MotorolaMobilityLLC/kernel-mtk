@@ -90,9 +90,9 @@ unsigned int ckgen_meter(int ID)
 
 	/* wait frequency meter finish */
 	while (pminit_read(CLK26CALI_0) & 0x10) {
-		mdelay(10);
+		mdelay(1);
 		i++;
-		if (i > 10)
+		if (i > 100)
 			break;
 	}
 
@@ -101,7 +101,7 @@ unsigned int ckgen_meter(int ID)
 	output = ((temp * 26000)) / 1024;	/* Khz*/
 
 	pminit_write(CLK_DBG_CFG, clk_dbg_cfg);
-	pminit_write(CLK_MISC_CFG_0, clk_misc_cfg_0);
+	/*pminit_write(CLK_MISC_CFG_0, clk_misc_cfg_0);*/
 	/*pminit_write(CLK26CALI_0, clk26cali_0);*/
 	/*pminit_write(CLK26CALI_1, clk26cali_1);*/
 
@@ -135,7 +135,7 @@ unsigned int abist_meter(int ID)
 	pminit_write(CLK_DBG_CFG, (clk_dbg_cfg & 0xFFC0FFFC) | (ID << 16));
 
 	clk_misc_cfg_0 = pminit_read(CLK_MISC_CFG_0);
-	pminit_write(CLK_MISC_CFG_0, (clk_misc_cfg_0 & 0x01FFFFFF));	/* select divider, WAIT CONFIRM*/
+	pminit_write(CLK_MISC_CFG_0, (clk_misc_cfg_0 & 0x00FFFFFF)|0x01000000);	/* select divider, WAIT CONFIRM*/
 
 	clk26cali_1 = pminit_read(CLK26CALI_1);
 	/*pminit_write(CLK26CALI_1, 0x00ff0000); // cycle count default 1024,[25:16]=3FF*/
@@ -146,9 +146,9 @@ unsigned int abist_meter(int ID)
 
 	/* wait frequency meter finish */
 	while (pminit_read(CLK26CALI_0) & 0x10) {
-		mdelay(10);
+		mdelay(1);
 		i++;
-		if (i > 10)
+		if (i > 100)
 			break;
 	}
 
@@ -158,7 +158,7 @@ unsigned int abist_meter(int ID)
 	output = ((temp * 26000)) / 1024 * 2;	/* Khz*/
 
 	pminit_write(CLK_DBG_CFG, clk_dbg_cfg);
-	pminit_write(CLK_MISC_CFG_0, clk_misc_cfg_0);
+	/*pminit_write(CLK_MISC_CFG_0, clk_misc_cfg_0);*/
 	/*pminit_write(CLK26CALI_0, clk26cali_0);*/
 	/*pminit_write(CLK26CALI_1, clk26cali_1);*/
 
