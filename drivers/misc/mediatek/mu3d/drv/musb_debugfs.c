@@ -353,7 +353,7 @@ static const struct file_operations musb_usb_reg_fops = {
 };
 #endif
 
-#ifdef CONFIG_MTK_FPGA
+#ifdef CONFIG_FPGA_EARLY_PORTING
 static int musb_scan_phase_show(struct seq_file *s, void *unused)
 {
 	seq_puts(s, "#echo scan l=[0|1] d=[0~3] > scan_phase\n");
@@ -608,7 +608,7 @@ int musb_init_debugfs(struct musb *musb)
 		goto err1;
 	}
 #endif
-#ifdef CONFIG_MTK_FPGA
+#ifdef CONFIG_FPGA_EARLY_PORTING
 	file = debugfs_create_file("scan_phase", S_IRUGO | S_IWUSR,
 				   root, musb, &musb_scan_phase_fops);
 	if (!file) {

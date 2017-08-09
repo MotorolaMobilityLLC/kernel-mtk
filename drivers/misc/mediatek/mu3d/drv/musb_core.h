@@ -50,7 +50,7 @@
 #include <linux/wakelock.h>
 #include <linux/workqueue.h>
 /*#include <mt-plat/battery_common.h>*/
-#ifndef CONFIG_MTK_FPGA
+#ifndef CONFIG_FPGA_EARLY_PORTING
 #include <mt-plat/charging.h>
 #endif
 

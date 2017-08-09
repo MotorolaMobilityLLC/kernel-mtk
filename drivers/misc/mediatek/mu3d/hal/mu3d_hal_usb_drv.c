@@ -161,7 +161,7 @@ void mu3d_hal_dft_reg(void)
 #endif				/* NEVER */
 
 	/* code to override HW default values, FPGA ONLY */
-#ifndef CONFIG_MTK_FPGA
+#ifndef CONFIG_FPGA_EARLY_PORTING
 	/* enable debug probe */
 	os_writel(U3D_SSUSB_PRB_CTRL0, 0xffff);
 #endif
@@ -180,7 +180,7 @@ void mu3d_hal_dft_reg(void)
 	/* device responses to u3_exit from host automatically */
 	os_writel(U3D_LTSSM_CTRL, os_readl(U3D_LTSSM_CTRL) & ~SOFT_U3_EXIT_EN);
 
-#ifndef CONFIG_MTK_FPGA
+#ifndef CONFIG_FPGA_EARLY_PORTING
 	os_writel(U3D_PIPE_LATCH_SELECT, 0);
 #endif
 

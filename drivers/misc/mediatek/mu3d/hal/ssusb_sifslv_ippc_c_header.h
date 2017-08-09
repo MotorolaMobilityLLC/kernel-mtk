@@ -26,7 +26,7 @@
 #define U3D_SSUSB_IP_DEV_CAP                      (SSUSB_SIFSLV_IPPC_BASE+0x0028)
 #define U3D_SSUSB_OTG_INT_EN                      (SSUSB_SIFSLV_IPPC_BASE+0x002C)
 
-#if (defined(SUPPORT_U3) || defined(CONFIG_MTK_FPGA))
+#if (defined(SUPPORT_U3) || defined(CONFIG_FPGA_EARLY_PORTING))
 #define U3D_SSUSB_U3_CTRL_0P                      (SSUSB_SIFSLV_IPPC_BASE+0x0030)
 #define U3D_SSUSB_U3_CTRL_1P                      (SSUSB_SIFSLV_IPPC_BASE+0x0038)
 #define U3D_SSUSB_U3_CTRL_2P                      (SSUSB_SIFSLV_IPPC_BASE+0x0040)

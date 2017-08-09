@@ -178,7 +178,7 @@ void __iomem *u3_sif_base;
 void __iomem *u3_sif2_base;
 void __iomem *ap_uart0_base;
 
-#ifdef CONFIG_MTK_FPGA
+#ifdef CONFIG_FPGA_EARLY_PORTING
 void __iomem *i2c1_base;
 #endif
 
@@ -894,7 +894,7 @@ void musb_start(struct musb *musb)
 	os_printk(K_INFO, "%s  <== devctl %02x\n", __func__, devctl);
 
 	if (musb->is_clk_on == 0) {
-#ifndef CONFIG_MTK_FPGA
+#ifndef CONFIG_FPGA_EARLY_PORTING
 		/* Recovert PHY. And turn on CLK. */
 		usb_phy_recover(musb->is_clk_on);
 		musb->is_clk_on = 1;
@@ -1076,7 +1076,7 @@ void musb_stop(struct musb *musb)
 	set_ssusb_ip_sleep(musb);
 #endif
 
-#ifndef CONFIG_MTK_FPGA
+#ifndef CONFIG_FPGA_EARLY_PORTING
 	/* Let PHY enter savecurrent mode. And turn off CLK. */
 	usb_phy_savecurrent(musb->is_clk_on);
 	musb->is_clk_on = 0;
@@ -2034,7 +2034,7 @@ static void musb_suspend_work(struct work_struct *data)
 
 		set_ssusb_ip_sleep(musb);
 
-#ifndef CONFIG_MTK_FPGA
+#ifndef CONFIG_FPGA_EARLY_PORTING
 		/* Let PHY enter savecurrent mode. And turn off CLK. */
 		usb_phy_savecurrent(musb->is_clk_on);
 		musb->is_clk_on = 0;
@@ -2484,7 +2484,7 @@ static int __init musb_probe(struct platform_device *pdev)
 	}
 #endif
 
-#ifdef CONFIG_MTK_FPGA
+#ifdef CONFIG_FPGA_EARLY_PORTING
 	/*i2c1_base = ioremap(0x11008000, 0x1000); */
 	i2c1_base = ioremap(0x11009000, 0x1000);
 	if (!(i2c1_base)) {
@@ -2780,7 +2780,7 @@ static int musb_suspend_noirq(struct device *dev)
 
 	set_ssusb_ip_sleep(musb);
 
-#ifndef CONFIG_MTK_FPGA
+#ifndef CONFIG_FPGA_EARLY_PORTING
 	/* Let PHY enter savecurrent mode. And turn off CLK. */
 	usb_phy_savecurrent(musb->is_clk_on);
 	musb->is_clk_on = 0;
@@ -2795,7 +2795,7 @@ static int musb_resume_noirq(struct device *dev)
 
 	os_printk(K_INFO, "%s\n", __func__);
 
-#ifndef CONFIG_MTK_FPGA
+#ifndef CONFIG_FPGA_EARLY_PORTING
 	/* Recovert PHY. And turn on CLK. */
 	usb_phy_recover(musb->is_clk_on);
 	musb->is_clk_on = 1;

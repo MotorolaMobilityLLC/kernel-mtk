@@ -24,7 +24,7 @@
 static inline void BATTERY_SetUSBState(int usb_state)
 {
 };
-#ifndef CONFIG_MTK_FPGA
+#ifndef CONFIG_FPGA_EARLY_PORTING
 static inline CHARGER_TYPE  mt_get_charger_type(void)
 {
 	return STANDARD_HOST;
@@ -53,7 +53,7 @@ u32 sw_uart_path = 0;
 /* ================================ */
 bool mt_usb_is_device(void)
 {
-#if !defined(CONFIG_MTK_FPGA) && defined(CONFIG_USB_XHCI_MTK)
+#if !defined(CONFIG_FPGA_EARLY_PORTING) && defined(CONFIG_USB_XHCI_MTK)
 	bool tmp = mtk_is_host_mode();
 
 	os_printk(K_INFO, "%s mode\n", tmp ? "HOST" : "DEV");
@@ -110,7 +110,7 @@ void connection_work(struct work_struct *data)
 		bool is_usb_cable = usb_cable_connected();
 		bool cmode_effect_on = false;
 
-#ifndef CONFIG_MTK_FPGA
+#ifndef CONFIG_FPGA_EARLY_PORTING
 		CHARGER_TYPE chg_type = musb->charger_mode = mt_get_charger_type();
 
 		if (fake_CDP && chg_type == STANDARD_HOST) {
@@ -250,7 +250,7 @@ EXPORT_SYMBOL_GPL(mt_usb_disconnect);
 
 bool usb_cable_connected(void)
 {
-#if !defined(CONFIG_MTK_FPGA) && !defined(U3_COMPLIANCE)
+#if !defined(CONFIG_FPGA_EARLY_PORTING) && !defined(U3_COMPLIANCE)
 	CHARGER_TYPE chg_type = CHARGER_UNKNOWN;
 #ifdef CONFIG_POWER_EXT
 	chg_type = mt_get_charger_type();
@@ -336,7 +336,7 @@ void usb_check_connect(void)
 {
 	os_printk(K_INFO, "usb_check_connect\n");
 
-#ifndef CONFIG_MTK_FPGA
+#ifndef CONFIG_FPGA_EARLY_PORTING
 	if (usb_cable_connected())
 		mt_usb_connect();
 #endif
@@ -347,7 +347,7 @@ void musb_sync_with_bat(struct musb *musb, int usb_state)
 {
 	os_printk(K_DEBUG, "musb_sync_with_bat\n");
 
-#ifndef CONFIG_MTK_FPGA
+#ifndef CONFIG_FPGA_EARLY_PORTING
 #if defined(CONFIG_MTK_SMART_BATTERY)
 	BATTERY_SetUSBState(usb_state);
 #ifndef FOR_BRING_UP
@@ -549,7 +549,7 @@ ssize_t musb_tx_store(struct device *dev, struct device_attribute *attr,
 	} else if (1 == sscanf(buf, "%ud", &val)) {
 		pr_debug("\n Write TX : %d\n", val);
 
-#ifdef CONFIG_MTK_FPGA
+#ifdef CONFIG_FPGA_EARLY_PORTING
 		var = USB_PHY_Read_Register8(U3D_U2PHYDTM1 + 0x2);
 #else
 		var = U3PhyReadReg8((u3phy_addr_t) (U3D_U2PHYDTM1 + 0x2));
@@ -560,7 +560,7 @@ ssize_t musb_tx_store(struct device *dev, struct device_attribute *attr,
 		else
 			var2 = var | (1 << 3);
 
-#ifdef CONFIG_MTK_FPGA
+#ifdef CONFIG_FPGA_EARLY_PORTING
 		USB_PHY_Write_Register8(var2, U3D_U2PHYDTM1 + 0x2);
 		var = USB_PHY_Read_Register8(U3D_U2PHYDTM1 + 0x2);
 #else
@@ -589,7 +589,7 @@ ssize_t musb_rx_show(struct device *dev, struct device_attribute *attr, char *bu
 		pr_debug("dev is null!!\n");
 		return 0;
 	}
-#ifdef CONFIG_MTK_FPGA
+#ifdef CONFIG_FPGA_EARLY_PORTING
 	var = USB_PHY_Read_Register8(U3D_U2PHYDMON1 + 0x3);
 #else
 	var = U3PhyReadReg8((u3phy_addr_t) (U3D_U2PHYDMON1 + 0x3));
@@ -647,7 +647,7 @@ ssize_t musb_sib_enable_store(struct device *dev, struct device_attribute *attr,
 #endif
 
 #ifdef NEVER
-#ifdef CONFIG_MTK_FPGA
+#ifdef CONFIG_FPGA_EARLY_PORTING
 static struct i2c_client *usb_i2c_client;
 static const struct i2c_device_id usb_i2c_id[] = { {"mtk-usb", 0}, {} };
 
@@ -745,5 +745,5 @@ int add_usb_i2c_driver(void)
 
 	return ret;
 }
-#endif				/* End of CONFIG_MTK_FPGA */
+#endif				/* End of CONFIG_FPGA_EARLY_PORTING */
 #endif				/* NEVER */

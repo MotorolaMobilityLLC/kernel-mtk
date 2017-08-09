@@ -722,7 +722,7 @@ static void mtu3d_musb_reg_init(struct musb *musb)
 
 		musb->is_clk_on = 1;
 
-#ifndef CONFIG_MTK_FPGA
+#ifndef CONFIG_FPGA_EARLY_PORTING
 		usb_phy_recover(musb->is_clk_on);
 #endif
 		/* USB 2.0 slew rate calibration */
