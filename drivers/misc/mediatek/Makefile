@@ -60,7 +60,9 @@ endif
 obj-$(CONFIG_MTK_HDMI_SUPPORT) += hdmi/
 obj-$(CONFIG_MTK_FB) += video/
 obj-$(CONFIG_MTK_GPU_SUPPORT) += gpu/
+ifneq ($(CONFIG_MTK_PLATFORM), "mt2701")
 obj-$(CONFIG_MTK_SMI)	+= smi/
+endif
 obj-$(CONFIG_MTK_CQDMA) += cqdma/
 obj-$(CONFIG_MTK_DRAMC) += dramc/
 obj-$(CONFIG_MTK_SYNC) += sync/
