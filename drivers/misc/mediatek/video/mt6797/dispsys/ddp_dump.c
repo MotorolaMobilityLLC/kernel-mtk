@@ -388,9 +388,12 @@ static void mmsys_config_dump_reg(void)
 	DDPMSG("COLOR0_SIN       =0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_DISP_COLOR0_SEL_IN));
 	DDPMSG("WDMA0_SIN        =0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_DISP_WDMA0_SEL_IN));
 	DDPMSG("UFOE_SIN         =0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_DISP_UFOE_SEL_IN));
+	DDPMSG("DSC_SIN          =0x%x\n",  DISP_REG_GET(DISP_REG_CONFIG_DISP_DSC_SEL_IN));
+	DDPMSG("DSC_MOUT_EN      =0x%x\n",  DISP_REG_GET(DISP_REG_CONFIG_DISP_DSC_MOUT_EN));
 	DDPMSG("DSI0_SIN         =0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_DSI0_SEL_IN));
 	DDPMSG("DPI0_SIN         =0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_DPI0_SEL_IN));
 	DDPMSG("OVL0_SIN         =0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_DISP_OVL0_SEL_IN));
+	DDPMSG("DISP_PATH_SOUT_SIN =0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_DISP_PATH0_SOUT_SEL_IN));
 	DDPMSG("RDMA0_SOUT_SIN   =0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_DISP_RDMA0_SOUT_SEL_IN));
 	DDPMSG("RDMA1_SOUT_SIN   =0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_DISP_RDMA1_SOUT_SEL_IN));
 	DDPMSG("OVL0_SOUT_SIN    =0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_DISP_OVL0_SOUT_SEL_IN));
@@ -791,6 +794,23 @@ static void ufoe_dump(void)
 	DDPDUMP("(0x104)UFOE_CFG1 =0x%x\n", DISP_REG_GET(DISP_REG_UFO_CFG_1B));
 }
 
+static void dsc_dump(void)
+{
+	u32 i = 0;
+
+	DDPDUMP("==DISP DSC REGS==\n");
+	DDPDUMP("(0x000)DSC_START =0x%x\n", DISP_REG_GET(DISP_REG_DSC_CON));
+	DDPDUMP("(0x000)DSC_SLICE_WIDTH =0x%x\n", DISP_REG_GET(DISP_REG_DSC_SLICE_W));
+	DDPDUMP("(0x000)DSC_SLICE_HIGHT =0x%x\n", DISP_REG_GET(DISP_REG_DSC_SLICE_H));
+	DDPDUMP("(0x000)DSC_WIDTH =0x%x\n", DISP_REG_GET(DISP_REG_DSC_PIC_W));
+	DDPDUMP("(0x000)DSC_HEIGHT =0x%x\n", DISP_REG_GET(DISP_REG_DSC_PIC_H));
+	DDPDUMP("---------- Start dump dsc registers ----------\n");
+	for (i = 0; i < 204; i += 16) {
+		DDPDUMP("DSC+%x : 0x%x	0x%x  0x%x  0x%x\n", i, DISP_REG_GET(DISPSYS_DSC_BASE + i),
+				DISP_REG_GET(DISPSYS_DSC_BASE + i + 0x4), DISP_REG_GET(DISPSYS_DSC_BASE + i + 0x8),
+				DISP_REG_GET(DISPSYS_DSC_BASE + i + 0xc));
+	}
+}
 
 static void dsi_dump_reg(DISP_MODULE_ENUM module)
 {
@@ -934,6 +954,9 @@ int ddp_dump_reg(DISP_MODULE_ENUM module)
 		break;
 	case DISP_MODULE_UFOE:
 		ufoe_dump();
+		break;
+	case DISP_MODULE_DSC:
+		dsc_dump();
 		break;
 	default:
 		DDPDUMP("no dump_reg for module %s(%d)\n", ddp_get_module_name(module), module);

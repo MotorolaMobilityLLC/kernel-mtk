@@ -2973,7 +2973,7 @@
 			      <0x14017000 0x1000>,  /*disp_od		*/
 			      <0x14018000 0x1000>,  /*disp_dither	*/
 			      <0x14019000 0x1000>,  /*disp_dsi_ufoe	*/
-			   /*   <0x1401a000 0x1000>,  //disp_dsi_dsc	*/
+			      <0x1401a000 0x1000>,  /*disp_dsi_dsc	*/
 			      <0x1401b000 0x1000>,  /*disp_dsi_split	*/
 			      <0x1401c000 0x1000>,  /*disp_dsi0		*/
 			      <0x1401d000 0x1000>,  /*disp_dsi1		*/
@@ -3001,7 +3001,7 @@
 				<GIC_SPI 225 IRQ_TYPE_LEVEL_LOW>, /*disp_od */
 				<GIC_SPI 226 IRQ_TYPE_LEVEL_LOW>, /*disp_dither */
 				<GIC_SPI 227 IRQ_TYPE_LEVEL_LOW>, /*disp_ufoe */
-			/*	<GIC_SPI 228 IRQ_TYPE_LEVEL_LOW>, //disp_dsi_dsc */
+				<GIC_SPI 228 IRQ_TYPE_LEVEL_LOW>, /*disp_dsi_dsc */
 				<GIC_SPI 0 IRQ_TYPE_LEVEL_LOW>, /* disp_split */
 				<GIC_SPI 229 IRQ_TYPE_LEVEL_LOW>, /*disp_dsi0 */
 				<GIC_SPI 230 IRQ_TYPE_LEVEL_LOW>, /*disp_dsi1 */

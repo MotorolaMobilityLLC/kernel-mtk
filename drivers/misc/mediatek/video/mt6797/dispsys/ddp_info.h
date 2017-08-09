@@ -346,6 +346,8 @@ extern DDP_MODULE_DRIVER ddp_driver_split;
 extern DDP_MODULE_DRIVER ddp_driver_pwm;
 /* ufoe */
 extern DDP_MODULE_DRIVER ddp_driver_ufoe;
+/* dsc */
+extern DDP_MODULE_DRIVER ddp_driver_dsc;
 
 extern DDP_MODULE_DRIVER *ddp_modules_driver[DISP_MODULE_NUM];
 

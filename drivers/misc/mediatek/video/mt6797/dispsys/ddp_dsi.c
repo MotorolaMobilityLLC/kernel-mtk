@@ -1032,6 +1032,9 @@ DSI_STATUS DSI_PS_Control(DISP_MODULE_ENUM module, cmdqRecHandle cmdq, LCM_DSI_P
 					      (w +
 					       w % 4) / 2 * _dsi_ps_type_to_bpp(dsi_params->PS));
 			}
+		} else if (dsi_params->dsc_enable) {
+			DSI_OUTREGBIT(cmdq, DSI_PSCTRL_REG, DSI_REG[i]->DSI_PSCTRL, DSI_PS_WC,
+				      dsi_params->word_count);
 		} else {
 			DSI_OUTREGBIT(cmdq, DSI_PSCTRL_REG, DSI_REG[i]->DSI_PSCTRL, DSI_PS_WC,
 				      w * _dsi_ps_type_to_bpp(dsi_params->PS));

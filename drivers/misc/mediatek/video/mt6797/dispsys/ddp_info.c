@@ -116,6 +116,8 @@ DISP_MODULE_ENUM ddp_get_reg_module(DISP_REG_ENUM reg_module)
 		return DISP_MODULE_DITHER;
 	case DISP_REG_UFOE:
 		return DISP_MODULE_UFOE;
+	case DISP_REG_DSC:
+		return DISP_MODULE_DSC;
 	case DISP_REG_SPLIT0:
 		return DISP_MODULE_SPLIT0;
 	case DISP_REG_DSI0:
@@ -286,7 +288,7 @@ DDP_MODULE_DRIVER *ddp_modules_driver[DISP_MODULE_NUM] = {
 	0,			/* DISP_PATH0 */
 	&ddp_driver_ufoe,	/* DISP_MODULE_UFOE  , //10 */
 
-	0,			/* DISP_MODULE_DSC */
+	&ddp_driver_dsc,	/* DISP_MODULE_DSC */
 	&ddp_driver_pwm,	/* DISP_MODULE_PWM0   , */
 	&ddp_driver_wdma,	/* DISP_MODULE_WDMA1 , */
 #ifndef DISP_NO_DPI
