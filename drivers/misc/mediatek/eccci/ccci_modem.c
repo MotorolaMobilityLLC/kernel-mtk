@@ -504,10 +504,10 @@ static void append_runtime_feature(char **p_rt_data, struct ccci_runtime_feature
 {
 	CCCI_DEBUG_LOG(-1, KERN, "append rt_data %p, feature %u len %u\n",
 		     *p_rt_data, rt_feature->feature_id, rt_feature->data_len);
-	memcpy(*p_rt_data, rt_feature, sizeof(struct ccci_runtime_feature));
+	memcpy_toio(*p_rt_data, rt_feature, sizeof(struct ccci_runtime_feature));
 	*p_rt_data += sizeof(struct ccci_runtime_feature);
 	if (data != NULL) {
-		memcpy(*p_rt_data, data, rt_feature->data_len);
+		memcpy_toio(*p_rt_data, data, rt_feature->data_len);
 		*p_rt_data += rt_feature->data_len;
 	}
 }
@@ -616,6 +616,7 @@ static void config_ap_side_feature(struct ccci_modem *md, struct md_query_ap_fea
 	ap_side_md_feature->feature_set[MD_IMAGE_START_MEMORY].support_mask = CCCI_FEATURE_OPTIONAL_SUPPORT;
 	ap_side_md_feature->feature_set[EE_AFTER_EPOF].support_mask = CCCI_FEATURE_MUST_SUPPORT;
 
+	ap_side_md_feature->feature_set[CCMNI_MTU].support_mask = CCCI_FEATURE_MUST_SUPPORT;
 }
 
 int ccci_md_prepare_runtime_data(struct ccci_modem *md, struct sk_buff *skb)
@@ -848,6 +849,11 @@ int ccci_md_prepare_runtime_data(struct ccci_modem *md, struct sk_buff *skb)
 			case EE_AFTER_EPOF:
 				rt_feature.data_len = sizeof(struct ccci_misc_info_element);
 				append_runtime_feature(&rt_data, &rt_feature, &rt_f_element);
+				break;
+			case CCMNI_MTU:
+				rt_feature.data_len = sizeof(unsigned int);
+				random_seed = NET_RX_BUF - sizeof(struct ccci_header);
+				append_runtime_feature(&rt_data, &rt_feature, &random_seed);
 				break;
 			default:
 				break;

@@ -28,6 +28,7 @@
 #define SKB_4K (CCCI_MTU+128)	/* user MTU+CCCI_H+extra(ex. ccci_fsd's OP_ID), for genral packet */
 #define SKB_1_5K (CCCI_NET_MTU+16)	/* net MTU+CCCI_H, for network packet */
 #define SKB_16 16		/* for struct ccci_header */
+#define NET_RX_BUF SKB_4K
 
 #ifdef NET_SKBUFF_DATA_USES_OFFSET
 #define skb_size(x) ((x)->end)

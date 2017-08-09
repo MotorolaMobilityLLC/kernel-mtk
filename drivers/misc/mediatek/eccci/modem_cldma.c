@@ -70,7 +70,7 @@ static int md_cd_late_init(struct ccci_modem *md);
  * we use this as rgpd->data_allow_len, so skb length must be >= this size, check ccci_bm.c's skb pool design.
  * channel 3 is for network in normal mode, but for mdlogger_ctrl in exception mode, so choose the max packet size.
  */
-static int net_rx_queue_buffer_size[CLDMA_RXQ_NUM] = { 0, 0, 0, SKB_1_5K, SKB_1_5K, SKB_1_5K, 0, 0 };
+static int net_rx_queue_buffer_size[CLDMA_RXQ_NUM] = { 0, 0, 0, NET_RX_BUF, NET_RX_BUF, NET_RX_BUF, 0, 0 };
 static int normal_rx_queue_buffer_size[CLDMA_RXQ_NUM] = { SKB_4K, SKB_4K, SKB_4K, SKB_4K, 0, 0, SKB_4K, SKB_16 };
 
 #if 0				/* for debug log dump convenience */
