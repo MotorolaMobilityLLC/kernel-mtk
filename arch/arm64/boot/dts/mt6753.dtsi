@@ -1008,6 +1008,43 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 			"venc-venc", "mtcmos-ven", "mtcmos-vde", "mtcmos-isp", "mtcmos-dis";
 		};
 
+		ispsys@15000000 {
+			compatible = "mediatek,mt6735-ispsys";
+			reg = <0x15004000 0x9000>,  /*ISP_ADDR      */
+				<0x1500D000 0x1000>,  /*INNER_ISP_ADDR      */
+				<0x15000000 0x10000>,  /*IMGSYS_CONFIG_ADDR      */
+				<0x10215000 0x3000>,  /*MIPI_ANA_ADDR      */
+				<0x10211000 0x1000>;  /*GPIO_ADDR      */
+
+			interrupts = <GIC_SPI 183 IRQ_TYPE_LEVEL_LOW>, /* CAM0 */
+				<GIC_SPI 184 IRQ_TYPE_LEVEL_LOW>, /* CAM1 */
+				<GIC_SPI 185 IRQ_TYPE_LEVEL_LOW>, /* CAM2 */
+				<GIC_SPI 206 IRQ_TYPE_LEVEL_LOW>, /* CAMSV0 */
+				<GIC_SPI 207 IRQ_TYPE_LEVEL_LOW>; /* CAMSV1 */
+		};
+
+		kd_camera_hw1:kd_camera_hw1@15008000 {
+			compatible = "mediatek,camera_hw";
+			reg = <0x15008000 0x1000>;  /* SENINF_ADDR */
+		};
+
+		kd_camera_hw2:kd_camera_hw2@15008000 {
+			compatible = "mediatek,camera_hw2";
+			reg = <0x15008000 0x1000>;  /* SENINF_ADDR */
+		};
+
+		SENINF_TOP@0x15008000 {
+			compatible = "mediatek,SENINF_TOP";
+			reg = <0x15008000 0x1000>;
+			interrupts = <0 182 0x8>;
+		};
+
+		FDVT@0x1500B000 {
+			compatible = "mediatek,FDVT";
+			reg = <0x1500B000 0x1000>;
+			interrupts = <0 208 0x8>;
+		};
+
 		MMSYS_CONFIG@0x14000000 {
 			compatible = "mediatek,MMSYS_CONFIG";
 			reg = <0x14000000 0x1000>;
