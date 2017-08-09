@@ -17,14 +17,30 @@
 #ifdef CONFIG_OF
 extern void __iomem *auxadc_base;
 extern void __iomem *auxadc_apmix_base;
+extern void __iomem *auxadc_efuse_base;
 #undef AUXADC_BASE
 #undef APMIXED_BASE
+#undef EFUSEC_BASE
 #define AUXADC_BASE auxadc_base
 #define APMIXED_BASE auxadc_apmix_base
-
+#define EFUSEC_BASE auxadc_efuse_base
 #else
 #include <mach/mt_reg_base.h>
 #endif
+
+/* For calibration */
+/* #define EFUSE_CALI */
+#define ADC_GE_A_MASK 0xffc00000
+#define ADC_GE_A_SHIFT 22
+#define ADC_OE_A_MASK 0x3ff000
+#define ADC_OE_A_SHIFT 12
+#define ADC_CALI_EN_A_MASK 0x1
+#define ADC_CALI_EN_A_SHIFT 0
+#define ADC_CALI_EN_A_REG		(EFUSEC_BASE + 0x188)
+#define ADC_GE_A_REG            (EFUSEC_BASE + 0x18C)
+#define ADC_OE_A_REG            (EFUSEC_BASE + 0x18C)
+
+/************************/
 
 #define ADC_CHANNEL_MAX 16
 

@@ -185,6 +185,12 @@ static int g_start_debug_thread;
 static int g_adc_init_flag;
 
 static u32 cali_reg;
+#if defined(EFUSE_CALI)
+#if defined(CONFIG_ARCH_MT6797)
+static u32 cali_ge_reg;
+static u32 cali_oe_reg;
+#endif
+#endif
 static s32 cali_oe;
 static s32 cali_ge;
 static u32 cali_ge_a;
@@ -198,9 +204,18 @@ static void mt_auxadc_update_cali(void)
 
 #if defined(EFUSE_CALI)
 	cali_reg = (*(volatile unsigned int *const)(ADC_CALI_EN_A_REG));
+#if defined(CONFIG_ARCH_MT6797)
+	cali_ge_reg = (*(volatile unsigned int *const)(ADC_GE_A_REG));
+	cali_oe_reg = (*(volatile unsigned int *const)(ADC_OE_A_REG));
+#endif
 	if (((cali_reg & ADC_CALI_EN_A_MASK) >> ADC_CALI_EN_A_SHIFT) != 0) {
+#if defined(CONFIG_ARCH_MT6797)
+		cali_oe_a = (cali_oe_reg & ADC_OE_A_MASK) >> ADC_OE_A_SHIFT;
+		cali_ge_a = ((cali_ge_reg & ADC_GE_A_MASK) >> ADC_GE_A_SHIFT);
+#else
 		cali_oe_a = (cali_reg & ADC_OE_A_MASK) >> ADC_OE_A_SHIFT;
 		cali_ge_a = ((cali_reg & ADC_GE_A_MASK) >> ADC_GE_A_SHIFT);
+#endif
 		cali_ge = cali_ge_a - 512;
 		cali_oe = cali_oe_a - 512;
 		gain = 1 + cali_ge;
@@ -439,11 +454,11 @@ void mt_auxadc_hal_init(struct platform_device *dev)
 #if defined(EFUSE_CALI)
 	node = of_find_compatible_node(NULL, NULL, "mediatek,EFUSEC");
 	if (!node)
-		pr_debug("[AUXADC] find node failed\n");
+		pr_err("[AUXADC] find node failed\n");
 
 	auxadc_efuse_base = of_iomap(node, 0);
 	if (!auxadc_efuse_base)
-		pr_debug("[AUXADC] auxadc_efuse_base base failed\n");
+		pr_err("[AUXADC] auxadc_efuse_base base failed\n");
 
 	pr_debug("[AUXADC]: auxadc_efuse_base:0x%p\n", auxadc_efuse_base);
 #endif
