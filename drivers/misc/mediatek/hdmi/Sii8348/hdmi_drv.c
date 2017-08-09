@@ -268,7 +268,10 @@ static int hdmi_drv_audio_enable(bool enable)
         cust_hdmi_i2s_gpio_on(enable);
 */
 #else
-	i2s_gpio_ctrl(1);
+	if (enable)
+		i2s_gpio_ctrl(1);
+	else
+		i2s_gpio_ctrl(0);
 #endif
     audio_enable = enable;
 
