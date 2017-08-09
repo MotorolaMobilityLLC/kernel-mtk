@@ -399,8 +399,8 @@ static bool kbasep_check_va_reg(struct kbase_context *kctx, u64 pa)
 			phy_u64 = (u64)reg->gpu_alloc->pages[i];
 			phy_u64 &= PAGE_MASK;
 			if ((phy_u64&MIDGARD_MMU_PA_MASK) == (pa&MIDGARD_MMU_PA_MASK)) {
-				dev_info(kctx->kbdev->dev,"    Get the PA:%016llx in VA region, kctx:%llx, PID:%llx\n, Process:%s",
-					phy_u64, (u64)kctx, (u64)(kctx->tgid), kctx->process_name);
+				dev_info(kctx->kbdev->dev,"    Get the PA:%016llx in VA region, kctx:%p, PID:%llx\n, Process:%s",
+					phy_u64, kctx, (u64)(kctx->tgid), kctx->process_name);
 				ret = true;
 			}
 		}
