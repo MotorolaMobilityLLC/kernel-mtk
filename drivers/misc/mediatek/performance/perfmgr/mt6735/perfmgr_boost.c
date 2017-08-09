@@ -8,6 +8,7 @@
 
 #include <linux/platform_device.h>
 #include "mt_hotplug_strategy.h"
+#include "mt_cpufreq.h"
 
 /*--------------DEFAULT SETTING-------------------*/
 
@@ -31,9 +32,11 @@ void perfmgr_boost(int enable, int core, int freq)
 	if (enable) {
 		/* hps */
 		hps_set_cpu_num_base(BASE_PERF_SERV, core, 0);
+		mt_cpufreq_set_min_freq(MT_CPU_DVFS_LITTLE, freq);
 	} else {
 		/* hps */
 		hps_set_cpu_num_base(BASE_PERF_SERV, 1, 0);
+		mt_cpufreq_set_min_freq(MT_CPU_DVFS_LITTLE, 0);
 	}
 }
 
