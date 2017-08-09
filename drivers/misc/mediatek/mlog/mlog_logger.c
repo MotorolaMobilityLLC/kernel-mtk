@@ -414,13 +414,14 @@ static void mlog_vmstat(void)
 
 		v[PSWPIN] += this->event[PSWPIN];
 		v[PSWPOUT] += this->event[PSWPOUT];
+		v[PGFMFAULT] += this->event[PGFMFAULT];
 	}
 
 	spin_lock_bh(&mlogbuf_lock);
 	mlog_emit_32(v[PSWPIN]);
 	mlog_emit_32(v[PSWPOUT]);
-	/* TODO: porting PGANFAULT PGFMFAULT to kernel-3.18 */
-	mlog_emit_32(0);
+	mlog_emit_32(v[PGFMFAULT]);
+
 	mlog_emit_32(0);
 	spin_unlock_bh(&mlogbuf_lock);
 }
