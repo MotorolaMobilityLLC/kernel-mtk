@@ -7191,7 +7191,8 @@ static int mt6311_driver_probe(struct i2c_client *client, const struct i2c_devic
 	if (g_mt6311_hw_exist == 1) {
 		mt6311_hw_init();
 		mt6311_dump_register();
-
+		wake_lock_init(&pmicThread_lock_mt6311, WAKE_LOCK_SUSPEND,
+			       "pmicThread_lock_mt6311 wakelock");
 		mt6311_eint_init();
 
 	}
@@ -7360,30 +7361,25 @@ static int __init mt6311_init(void)
 
 	int ret = 0;
 
-	wake_lock_init(&pmicThread_lock_mt6311, WAKE_LOCK_SUSPEND,
-		       "pmicThread_lock_mt6311 wakelock");
+	PMICLOG1("[mt6311_init] init start. ch=%d!!\n", mt6311_BUSNUM);
 
-	{
-		PMICLOG1("[mt6311_init] init start. ch=%d!!\n", mt6311_BUSNUM);
+	/*i2c_register_board_info(mt6311_BUSNUM, &i2c_mt6311, 1); */
 
-		/*i2c_register_board_info(mt6311_BUSNUM, &i2c_mt6311, 1); */
+	if (i2c_add_driver(&mt6311_driver) != 0)
+		PMICLOG1("[mt6311_init] failed to register mt6311 i2c driver.\n");
+	else
+		PMICLOG1("[mt6311_init] Success to register mt6311 i2c driver.\n");
 
-		if (i2c_add_driver(&mt6311_driver) != 0)
-			PMICLOG1("[mt6311_init] failed to register mt6311 i2c driver.\n");
-		else
-			PMICLOG1("[mt6311_init] Success to register mt6311 i2c driver.\n");
-
-		/* mt6311 user space access interface */
-		ret = platform_device_register(&mt6311_user_space_device);
-		if (ret) {
-			PMICLOG1("****[mt6311_init] Unable to device register(%d)\n", ret);
-			return ret;
-		}
-		ret = platform_driver_register(&mt6311_user_space_driver);
-		if (ret) {
-			PMICLOG1("****[mt6311_init] Unable to register driver (%d)\n", ret);
-			return ret;
-		}
+	/* mt6311 user space access interface */
+	ret = platform_device_register(&mt6311_user_space_device);
+	if (ret) {
+		PMICLOG1("****[mt6311_init] Unable to device register(%d)\n", ret);
+		return ret;
+	}
+	ret = platform_driver_register(&mt6311_user_space_driver);
+	if (ret) {
+		PMICLOG1("****[mt6311_init] Unable to register driver (%d)\n", ret);
+		return ret;
 	}
 
 	PMICLOG1("[mt6311_init] g_mt6311_hw_exist=%d, g_mt6311_driver_ready=%d\n",

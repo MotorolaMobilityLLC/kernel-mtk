@@ -99,7 +99,7 @@
 static bool long_pwrkey_press;
 static unsigned long timer_pre;
 static unsigned long timer_pos;
-#define LONG_PWRKEY_PRESS_TIME         (500*1000000)	/*500ms*/
+#define LONG_PWRKEY_PRESS_TIME         (500*1000000)	/*500ms */
 #endif
 
 
@@ -121,7 +121,7 @@ static DEFINE_MUTEX(pmic_lock_mutex);
 /*****************************************************************************
  * PMIC read/write APIs
  ******************************************************************************/
-#if 0				/*defined(CONFIG_MTK_FPGA)*/
+#if 0				/*defined(CONFIG_MTK_FPGA) */
     /* no CONFIG_PMIC_HW_ACCESS_EN */
 #else
 #define CONFIG_PMIC_HW_ACCESS_EN
@@ -146,7 +146,8 @@ static int pmic_regulator_ldo_init(struct platform_device *pdev);
 
 static DEFINE_MUTEX(pmic_access_mutex);
 
-unsigned int pmic_read_interface(unsigned int RegNum, unsigned int *val, unsigned int MASK, unsigned int SHIFT)
+unsigned int pmic_read_interface(unsigned int RegNum, unsigned int *val, unsigned int MASK,
+				 unsigned int SHIFT)
 {
 	unsigned int return_value = 0;
 
@@ -156,7 +157,7 @@ unsigned int pmic_read_interface(unsigned int RegNum, unsigned int *val, unsigne
 
 	mutex_lock(&pmic_access_mutex);
 
-	/*mt_read_byte(RegNum, &pmic_reg);*/
+	/*mt_read_byte(RegNum, &pmic_reg); */
 	return_value = pwrap_wacs2(0, (RegNum), 0, &rdata);
 	pmic_reg = rdata;
 	if (return_value != 0) {
@@ -164,21 +165,22 @@ unsigned int pmic_read_interface(unsigned int RegNum, unsigned int *val, unsigne
 		mutex_unlock(&pmic_access_mutex);
 		return return_value;
 	}
-	/*PMICLOG"[pmic_read_interface] Reg[%x]=0x%x\n", RegNum, pmic_reg);*/
+	/*PMICLOG"[pmic_read_interface] Reg[%x]=0x%x\n", RegNum, pmic_reg); */
 
 	pmic_reg &= (MASK << SHIFT);
 	*val = (pmic_reg >> SHIFT);
-	/*PMICLOG"[pmic_read_interface] val=0x%x\n", *val);*/
+	/*PMICLOG"[pmic_read_interface] val=0x%x\n", *val); */
 
 	mutex_unlock(&pmic_access_mutex);
 #else
-	/*PMICLOG("[pmic_read_interface] Can not access HW PMIC\n");*/
+	/*PMICLOG("[pmic_read_interface] Can not access HW PMIC\n"); */
 #endif
 
 	return return_value;
 }
 
-unsigned int pmic_config_interface(unsigned int RegNum, unsigned int val, unsigned int MASK, unsigned int SHIFT)
+unsigned int pmic_config_interface(unsigned int RegNum, unsigned int val, unsigned int MASK,
+				   unsigned int SHIFT)
 {
 	unsigned int return_value = 0;
 
@@ -188,7 +190,7 @@ unsigned int pmic_config_interface(unsigned int RegNum, unsigned int val, unsign
 
 	mutex_lock(&pmic_access_mutex);
 
-	/*1. mt_read_byte(RegNum, &pmic_reg);*/
+	/*1. mt_read_byte(RegNum, &pmic_reg); */
 	return_value = pwrap_wacs2(0, (RegNum), 0, &rdata);
 	pmic_reg = rdata;
 	if (return_value != 0) {
@@ -196,23 +198,23 @@ unsigned int pmic_config_interface(unsigned int RegNum, unsigned int val, unsign
 		mutex_unlock(&pmic_access_mutex);
 		return return_value;
 	}
-	/*PMICLOG"[pmic_config_interface] Reg[%x]=0x%x\n", RegNum, pmic_reg);*/
+	/*PMICLOG"[pmic_config_interface] Reg[%x]=0x%x\n", RegNum, pmic_reg); */
 
 	pmic_reg &= ~(MASK << SHIFT);
 	pmic_reg |= (val << SHIFT);
 
-	/*2. mt_write_byte(RegNum, pmic_reg);*/
+	/*2. mt_write_byte(RegNum, pmic_reg); */
 	return_value = pwrap_wacs2(1, (RegNum), pmic_reg, &rdata);
 	if (return_value != 0) {
 		PMICLOG("[pmic_config_interface] Reg[%x]= pmic_wrap read data fail\n", RegNum);
 		mutex_unlock(&pmic_access_mutex);
 		return return_value;
 	}
-	/*PMICLOG"[pmic_config_interface] write Reg[%x]=0x%x\n", RegNum, pmic_reg);*/
+	/*PMICLOG"[pmic_config_interface] write Reg[%x]=0x%x\n", RegNum, pmic_reg); */
 
 #if 0
-	/*3. Double Check*/
-	/*mt_read_byte(RegNum, &pmic_reg);*/
+	/*3. Double Check */
+	/*mt_read_byte(RegNum, &pmic_reg); */
 	return_value = pwrap_wacs2(0, (RegNum), 0, &rdata);
 	pmic_reg = rdata;
 	if (return_value != 0) {
@@ -225,13 +227,14 @@ unsigned int pmic_config_interface(unsigned int RegNum, unsigned int val, unsign
 
 	mutex_unlock(&pmic_access_mutex);
 #else
-	/*PMICLOG("[pmic_config_interface] Can not access HW PMIC\n");*/
+	/*PMICLOG("[pmic_config_interface] Can not access HW PMIC\n"); */
 #endif
 
 	return return_value;
 }
 
-unsigned int pmic_read_interface_nolock(unsigned int RegNum, unsigned int *val, unsigned int MASK, unsigned int SHIFT)
+unsigned int pmic_read_interface_nolock(unsigned int RegNum, unsigned int *val, unsigned int MASK,
+					unsigned int SHIFT)
 {
 	unsigned int return_value = 0;
 
@@ -261,7 +264,8 @@ unsigned int pmic_read_interface_nolock(unsigned int RegNum, unsigned int *val, 
 	return return_value;
 }
 
-unsigned int pmic_config_interface_nolock(unsigned int RegNum, unsigned int val, unsigned int MASK, unsigned int SHIFT)
+unsigned int pmic_config_interface_nolock(unsigned int RegNum, unsigned int val, unsigned int MASK,
+					  unsigned int SHIFT)
 {
 	unsigned int return_value = 0;
 
@@ -269,7 +273,7 @@ unsigned int pmic_config_interface_nolock(unsigned int RegNum, unsigned int val,
 	unsigned int pmic_reg = 0;
 	unsigned int rdata;
 
-    /* pmic wrapper has spinlock protection. pmic do not to do it again */
+	/* pmic wrapper has spinlock protection. pmic do not to do it again */
 
 	/*1. mt_read_byte(RegNum, &pmic_reg); */
 	return_value = pwrap_wacs2(0, (RegNum), 0, &rdata);
@@ -521,7 +525,7 @@ unsigned int upmu_get_rgs_chrdet(void)
 {
 	unsigned int val = 0;
 
-	/*val = mt6325_upmu_get_rgs_chrdet();*/
+	/*val = mt6325_upmu_get_rgs_chrdet(); */
 	val = pmic_get_register_value(PMIC_RGS_CHRDET);
 	PMICLOG("[upmu_get_rgs_chrdet] CHRDET status = %d\n", val);
 
@@ -549,7 +553,7 @@ static ssize_t store_pmic_access(struct device *dev, struct device_attribute *at
 	pr_err("[store_pmic_access]\n");
 	if (buf != NULL && size != 0) {
 		pr_err("[store_pmic_access] buf is %s\n", buf);
-		/*reg_address = simple_strtoul(buf, &pvalue, 16);*/
+		/*reg_address = simple_strtoul(buf, &pvalue, 16); */
 
 		pvalue = (char *)buf;
 		if (size > 5) {
@@ -559,25 +563,26 @@ static ssize_t store_pmic_access(struct device *dev, struct device_attribute *at
 			ret = kstrtou32(pvalue, 16, (unsigned int *)&reg_address);
 
 		if (size > 5) {
-			/*reg_value = simple_strtoul((pvalue + 1), NULL, 16);*/
-			/*pvalue = (char *)buf + 1;*/
-			val =  strsep(&pvalue, " ");
+			/*reg_value = simple_strtoul((pvalue + 1), NULL, 16); */
+			/*pvalue = (char *)buf + 1; */
+			val = strsep(&pvalue, " ");
 			ret = kstrtou32(val, 16, (unsigned int *)&reg_value);
 
 			pr_err("[store_pmic_access] write PMU reg 0x%x with value 0x%x !\n",
-				reg_address, reg_value);
+			       reg_address, reg_value);
 			ret = pmic_config_interface(reg_address, reg_value, 0xFFFF, 0x0);
 		} else {
 			ret = pmic_read_interface(reg_address, &g_reg_value, 0xFFFF, 0x0);
 			pr_err("[store_pmic_access] read PMU reg 0x%x with value 0x%x !\n",
-				reg_address, g_reg_value);
-			pr_err("[store_pmic_access] use \"cat pmic_access\" to get value(decimal)\r\n");
+			       reg_address, g_reg_value);
+			pr_err
+			    ("[store_pmic_access] use \"cat pmic_access\" to get value(decimal)\r\n");
 		}
 	}
 	return size;
 }
 
-static DEVICE_ATTR(pmic_access, 0664, show_pmic_access, store_pmic_access);	/*664*/
+static DEVICE_ATTR(pmic_access, 0664, show_pmic_access, store_pmic_access);	/*664 */
 
 /*
  * DVT entry
@@ -602,7 +607,7 @@ static ssize_t store_pmic_dvt(struct device *dev, struct device_attribute *attr,
 	if (buf != NULL && size != 0) {
 		pr_err("[store_pmic_dvt] buf is %s and size is %zu\n", buf, size);
 
-		/*test_item = simple_strtoul(buf, &pvalue, 10);*/
+		/*test_item = simple_strtoul(buf, &pvalue, 10); */
 		pvalue = (char *)buf;
 		ret = kstrtou32(pvalue, 16, (unsigned int *)&test_item);
 		pr_err("[store_pmic_dvt] test_item=%d\n", test_item);
@@ -899,7 +904,7 @@ static ssize_t show_BUCK_VOLTAGE(struct device *dev, struct device_attribute *at
 			}
 		} else {
 			pr_debug("[EM][ERROR] buck_%s_VOLTAGE : voltage=0 vol_reg=0\n",
-				mreg->desc.name);
+				 mreg->desc.name);
 		}
 	} else {
 		pVoltage = (const int *)mreg->pvoltages;
@@ -1192,8 +1197,7 @@ static int pmic_regulator_ldo_init(struct platform_device *pdev)
 		goto out;
 	}
 	matched = of_regulator_match(&pdev->dev, regulators,
-				     pmic_regulator_matches,
-				     ARRAY_SIZE(pmic_regulator_matches));
+				     pmic_regulator_matches, ARRAY_SIZE(pmic_regulator_matches));
 	if ((matched < 0) || (matched != MT65XX_POWER_COUNT_END)) {
 		pr_warn("[PMIC]Error parsing regulator init data: %d %d\n", matched,
 			MT65XX_POWER_COUNT_END);
@@ -1364,7 +1368,7 @@ out:
 
 static int pmic_mt_cust_remove(struct platform_device *pdev)
 {
-       /*platform_driver_unregister(&mt_pmic_driver);*/
+	/*platform_driver_unregister(&mt_pmic_driver); */
 	return 0;
 }
 
@@ -1388,7 +1392,7 @@ void mtk_regulator_init(struct platform_device *dev)
 	int ret = 0;
 	int isEn = 0;
 #endif
-	/*workaround for VMC voltage*/
+	/*workaround for VMC voltage */
 	if (pmic_get_register_value(PMIC_SWCID) == PMIC6328_E1_CID_CODE) {
 		if (pmic_read_VMC_efuse() != 0) {
 			PMICLOG("VMC voltage use E1_2 voltage table\n");
@@ -1457,7 +1461,7 @@ void mtk_regulator_init(struct platform_device *dev)
 			isEn = regulator_is_enabled(mtk_ldos[i].reg);
 			if (isEn != 0) {
 				PMICLOG("[regulator] %s is default on\n", mtk_ldos[i].desc.name);
-				/*ret=regulator_enable(mtk_ldos[i].reg);*/
+				/*ret=regulator_enable(mtk_ldos[i].reg); */
 			}
 		}
 	}
@@ -1483,9 +1487,10 @@ void pmic6328_regulator_test(void)
 			if (ret2 == pmic_get_register_value(mtk_ldos[i].en_reg)) {
 				PMICLOG("[enable test pass]\n");
 			} else {
-				PMICLOG("[enable test fail] ret = %d enable = %d addr:0x%x reg:0x%x\n",
-				ret1, ret2, pmu_flags_table[mtk_ldos[i].en_reg].offset,
-				pmic_get_register_value(mtk_ldos[i].en_reg));
+				PMICLOG
+				    ("[enable test fail] ret = %d enable = %d addr:0x%x reg:0x%x\n",
+				     ret1, ret2, pmu_flags_table[mtk_ldos[i].en_reg].offset,
+				     pmic_get_register_value(mtk_ldos[i].en_reg));
 			}
 
 			ret1 = regulator_disable(reg);
@@ -1494,9 +1499,10 @@ void pmic6328_regulator_test(void)
 			if (ret2 == pmic_get_register_value(mtk_ldos[i].en_reg)) {
 				PMICLOG("[disable test pass]\n");
 			} else {
-				PMICLOG("[disable test fail] ret = %d enable = %d addr:0x%x reg:0x%x\n",
-					ret1, ret2, pmu_flags_table[mtk_ldos[i].en_reg].offset,
-					pmic_get_register_value(mtk_ldos[i].en_reg));
+				PMICLOG
+				    ("[disable test fail] ret = %d enable = %d addr:0x%x reg:0x%x\n",
+				     ret1, ret2, pmu_flags_table[mtk_ldos[i].en_reg].offset,
+				     pmic_get_register_value(mtk_ldos[i].en_reg));
 			}
 
 		}
@@ -1606,8 +1612,10 @@ bool hwPowerOn(MT65XX_POWER powerId, int powerVolt, char *mode_name)
 	ret2 = regulator_set_voltage(reg, powerVolt, powerVolt);
 
 	if (ret2 != 0) {
-		PMICLOG("hwPowerOn:%s can't set the same volt %d again.", mtk_ldos[powerId].desc.name, powerVolt);
-		PMICLOG("Or please check:%s volt %d is correct.", mtk_ldos[powerId].desc.name, powerVolt);
+		PMICLOG("hwPowerOn:%s can't set the same volt %d again.",
+			mtk_ldos[powerId].desc.name, powerVolt);
+		PMICLOG("Or please check:%s volt %d is correct.", mtk_ldos[powerId].desc.name,
+			powerVolt);
 	}
 
 	ret1 = regulator_enable(reg);
@@ -1665,8 +1673,8 @@ bool hwPowerSetVoltage(MT65XX_POWER powerId, int powerVolt, char *mode_name)
 	ret1 = regulator_set_voltage(reg, powerVolt, powerVolt);
 
 	if (ret1 != 0) {
-		PMICLOG("hwPowerSetVoltage:%s can't set the same voltage %d", mtk_ldos[powerId].desc.name,
-			powerVolt);
+		PMICLOG("hwPowerSetVoltage:%s can't set the same voltage %d",
+			mtk_ldos[powerId].desc.name, powerVolt);
 	}
 
 
@@ -1679,7 +1687,7 @@ bool hwPowerSetVoltage(MT65XX_POWER powerId, int powerVolt, char *mode_name)
 }
 EXPORT_SYMBOL(hwPowerSetVoltage);
 
-/*#endif*/ /* End of #if defined CONFIG_MTK_LEGACY */
+	   /*#endif*//* End of #if defined CONFIG_MTK_LEGACY */
 
 
 /*****************************************************************************
@@ -1695,10 +1703,10 @@ int g_lowbat_int_bottom = 0;
 
 #ifdef LOW_BATTERY_PROTECT
 /* ex. 3400/5400*4096*/
-#define BAT_HV_THD   (POWER_INT0_VOLT*4096/5400)	/*ex: 3400mV*/
-#define BAT_LV_1_THD (POWER_INT1_VOLT*4096/5400)	/*ex: 3250mV*/
-#define BAT_LV_2_THD (POWER_INT2_VOLT*4096/5400)	/*ex: 3000mV*/
-#define BAT_LV_3_THD (2900*4096/5400) /*ex: 3000mV*/
+#define BAT_HV_THD   (POWER_INT0_VOLT*4096/5400)	/*ex: 3400mV */
+#define BAT_LV_1_THD (POWER_INT1_VOLT*4096/5400)	/*ex: 3250mV */
+#define BAT_LV_2_THD (POWER_INT2_VOLT*4096/5400)	/*ex: 3000mV */
+#define BAT_LV_3_THD (2900*4096/5400)	/*ex: 3000mV */
 
 int g_low_battery_level = 0;
 int g_low_battery_stop = 0;
@@ -1723,8 +1731,9 @@ void register_low_battery_notify(void (*low_battery_callback) (LOW_BATTERY_LEVEL
 	lbcb_tb[prio_val].lbcb = low_battery_callback;
 
 	pr_err("[register_low_battery_notify] prio_val=%d\n", prio_val);
-#endif /*end of #ifdef LOW_BATTERY_PROTECT */
+#endif				/*end of #ifdef LOW_BATTERY_PROTECT */
 }
+
 #ifdef LOW_BATTERY_PROTECT
 void exec_low_battery_callback(LOW_BATTERY_LEVEL low_battery_level)
 {				/*0:no limit */
@@ -1761,7 +1770,7 @@ void lbat_max_en_setting(int en_val)
 
 void low_battery_protect_init(void)
 {
-	/*default setting*/
+	/*default setting */
 	pmic_set_register_value(PMIC_AUXADC_LBAT_DEBT_MIN, 0);
 	pmic_set_register_value(PMIC_AUXADC_LBAT_DEBT_MAX, 0);
 	pmic_set_register_value(PMIC_AUXADC_LBAT_DET_PRD_15_0, 1);
@@ -1774,18 +1783,18 @@ void low_battery_protect_init(void)
 	lbat_max_en_setting(0);
 
 	pr_err("Reg[0x%x]=0x%x, Reg[0x%x]=0x%x, Reg[0x%x]=0x%x\n",
-		MT6328_AUXADC_LBAT3, upmu_get_reg_value(MT6328_AUXADC_LBAT3),
-		MT6328_AUXADC_LBAT4, upmu_get_reg_value(MT6328_AUXADC_LBAT4),
-		MT6328_INT_CON0, upmu_get_reg_value(MT6328_INT_CON0)
+	       MT6328_AUXADC_LBAT3, upmu_get_reg_value(MT6328_AUXADC_LBAT3),
+	       MT6328_AUXADC_LBAT4, upmu_get_reg_value(MT6328_AUXADC_LBAT4),
+	       MT6328_INT_CON0, upmu_get_reg_value(MT6328_INT_CON0)
 	    );
 
 	pr_err("[low_battery_protect_init] %d mV, %d mV, %d mV\n",
-		POWER_INT0_VOLT, POWER_INT1_VOLT, POWER_INT2_VOLT);
+	       POWER_INT0_VOLT, POWER_INT1_VOLT, POWER_INT2_VOLT);
 	PMICLOG("[low_battery_protect_init] Done\n");
 
 }
 
-#endif				/*#ifdef LOW_BATTERY_PROTECT*/
+#endif				/*#ifdef LOW_BATTERY_PROTECT */
 
 void bat_h_int_handler(void)
 {
@@ -1793,7 +1802,7 @@ void bat_h_int_handler(void)
 
 	PMICLOG("[bat_h_int_handler]....\n");
 
-	/*sub-task*/
+	/*sub-task */
 #ifdef LOW_BATTERY_PROTECT
 	g_low_battery_level = 0;
 	exec_low_battery_callback(LOW_BATTERY_LEVEL_0);
@@ -1824,7 +1833,7 @@ void bat_l_int_handler(void)
 {
 	PMICLOG("[bat_l_int_handler]....\n");
 
-	/*sub-task*/
+	/*sub-task */
 #ifdef LOW_BATTERY_PROTECT
 	g_low_battery_level++;
 	if (g_low_battery_level > 2)
@@ -1882,20 +1891,20 @@ void bat_l_int_handler(void)
 
 #if defined(CONFIG_MTK_SMART_BATTERY)
 #define BAT_OC_H_THD   \
-(65535-((300400*POWER_BAT_OC_CURRENT_H/1000)/batt_meter_cust_data.car_tune_value))	/*ex: 4670mA*/
+(65535-((300400*POWER_BAT_OC_CURRENT_H/1000)/batt_meter_cust_data.car_tune_value))	/*ex: 4670mA */
 #define BAT_OC_L_THD   \
-(65535-((300400*POWER_BAT_OC_CURRENT_L/1000)/batt_meter_cust_data.car_tune_value))	/*ex: 5500mA*/
+(65535-((300400*POWER_BAT_OC_CURRENT_L/1000)/batt_meter_cust_data.car_tune_value))	/*ex: 5500mA */
 
 #define BAT_OC_H_THD_RE   \
-(65535-((300400*POWER_BAT_OC_CURRENT_H_RE/1000)/batt_meter_cust_data.car_tune_value))	/*ex: 3400mA*/
+(65535-((300400*POWER_BAT_OC_CURRENT_H_RE/1000)/batt_meter_cust_data.car_tune_value))	/*ex: 3400mA */
 #define BAT_OC_L_THD_RE   \
-(65535-((300400*POWER_BAT_OC_CURRENT_L_RE/1000)/batt_meter_cust_data.car_tune_value))	/*ex: 4000mA*/
+(65535-((300400*POWER_BAT_OC_CURRENT_L_RE/1000)/batt_meter_cust_data.car_tune_value))	/*ex: 4000mA */
 #else
 #define BAT_OC_H_THD   0xc047
 #define BAT_OC_L_THD   0xb4f4
 #define BAT_OC_H_THD_RE  0xc047
 #define BAT_OC_L_THD_RE   0xb4f4
-#endif /* end of #if defined(CONFIG_MTK_SMART_BATTERY) */
+#endif				/* end of #if defined(CONFIG_MTK_SMART_BATTERY) */
 int g_battery_oc_level = 0;
 int g_battery_oc_stop = 0;
 
@@ -1907,7 +1916,7 @@ struct battery_oc_callback_table occb_tb[] = {
 	{NULL}, {NULL}, {NULL}, {NULL}, {NULL}, {NULL}, {NULL}, {NULL},
 	{NULL}, {NULL}, {NULL}, {NULL}, {NULL}, {NULL}, {NULL}, {NULL}
 };
-#endif /*end of #ifdef BATTERY_OC_PROTECT*/
+#endif				/*end of #ifdef BATTERY_OC_PROTECT */
 void (*battery_oc_callback)(BATTERY_OC_LEVEL);
 
 void register_battery_oc_notify(void (*battery_oc_callback) (BATTERY_OC_LEVEL),
@@ -1942,6 +1951,7 @@ void exec_battery_oc_callback(BATTERY_OC_LEVEL battery_oc_level)
 	}
 #endif
 }
+
 #ifdef BATTERY_OC_PROTECT
 void bat_oc_h_en_setting(int en_val)
 {
@@ -1966,13 +1976,13 @@ void battery_oc_protect_init(void)
 	bat_oc_l_en_setting(1);
 
 	pr_err("Reg[0x%x]=0x%x, Reg[0x%x]=0x%x, Reg[0x%x]=0x%x\n",
-		MT6328_FGADC_CON23, upmu_get_reg_value(MT6328_FGADC_CON23),
-		MT6328_FGADC_CON24, upmu_get_reg_value(MT6328_FGADC_CON24),
-		MT6328_INT_CON2, upmu_get_reg_value(MT6328_INT_CON2)
+	       MT6328_FGADC_CON23, upmu_get_reg_value(MT6328_FGADC_CON23),
+	       MT6328_FGADC_CON24, upmu_get_reg_value(MT6328_FGADC_CON24),
+	       MT6328_INT_CON2, upmu_get_reg_value(MT6328_INT_CON2)
 	    );
 
 	pr_err("[battery_oc_protect_init] %d mA, %d mA\n",
-		POWER_BAT_OC_CURRENT_H, POWER_BAT_OC_CURRENT_L);
+	       POWER_BAT_OC_CURRENT_H, POWER_BAT_OC_CURRENT_L);
 	PMICLOG("[battery_oc_protect_init] Done\n");
 }
 
@@ -1985,25 +1995,25 @@ void battery_oc_protect_reinit(void)
 	/*mt6325_upmu_set_fg_cur_lth(BAT_OC_L_THD_RE); */
 
 	pr_err("Reg[0x%x]=0x%x, Reg[0x%x]=0x%x, Reg[0x%x]=0x%x\n",
-		MT6328_FGADC_CON23, upmu_get_reg_value(MT6328_FGADC_CON23),
-		MT6328_FGADC_CON24, upmu_get_reg_value(MT6328_FGADC_CON24),
-		MT6328_INT_CON2, upmu_get_reg_value(MT6328_INT_CON2)
+	       MT6328_FGADC_CON23, upmu_get_reg_value(MT6328_FGADC_CON23),
+	       MT6328_FGADC_CON24, upmu_get_reg_value(MT6328_FGADC_CON24),
+	       MT6328_INT_CON2, upmu_get_reg_value(MT6328_INT_CON2)
 	    );
 
 	pr_err("[battery_oc_protect_reinit] %d mA, %d mA\n",
-		POWER_BAT_OC_CURRENT_H_RE, POWER_BAT_OC_CURRENT_L_RE);
+	       POWER_BAT_OC_CURRENT_H_RE, POWER_BAT_OC_CURRENT_L_RE);
 	pr_err("[battery_oc_protect_reinit] Done\n");
 #else
 	pr_warn("[battery_oc_protect_reinit] no define BATTERY_OC_PROTECT\n");
 #endif
 }
-#endif /* #ifdef BATTERY_OC_PROTECT */
+#endif				/* #ifdef BATTERY_OC_PROTECT */
 
 void fg_cur_h_int_handler(void)
 {
 	PMICLOG("[fg_cur_h_int_handler]....\n");
 
-	/*sub-task*/
+	/*sub-task */
 #ifdef BATTERY_OC_PROTECT
 	g_battery_oc_level = 0;
 	exec_battery_oc_callback(BATTERY_OC_LEVEL_0);
@@ -2024,7 +2034,7 @@ void fg_cur_l_int_handler(void)
 {
 	PMICLOG("[fg_cur_l_int_handler]....\n");
 
-	/*sub-task*/
+	/*sub-task */
 #ifdef BATTERY_OC_PROTECT
 	g_battery_oc_level = 1;
 	exec_battery_oc_callback(BATTERY_OC_LEVEL_1);
@@ -2080,7 +2090,7 @@ struct battery_percent_callback_table bpcb_tb[] = {
 	{NULL}, {NULL}, {NULL}, {NULL}, {NULL}, {NULL}, {NULL}, {NULL},
 	{NULL}, {NULL}, {NULL}, {NULL}, {NULL}, {NULL}, {NULL}, {NULL}
 };
-#endif /* end of #ifdef BATTERY_PERCENT_PROTECT */
+#endif				/* end of #ifdef BATTERY_PERCENT_PROTECT */
 void (*battery_percent_callback)(BATTERY_PERCENT_LEVEL);
 
 void register_battery_percent_notify(void (*battery_percent_callback) (BATTERY_PERCENT_LEVEL),
@@ -2104,7 +2114,7 @@ void register_battery_percent_notify(void (*battery_percent_callback) (BATTERY_P
 		}
 #endif
 	}
-#endif /* end of #ifdef BATTERY_PERCENT_PROTECT */
+#endif				/* end of #ifdef BATTERY_PERCENT_PROTECT */
 }
 
 #ifdef BATTERY_PERCENT_PROTECT
@@ -2123,7 +2133,7 @@ void exec_battery_percent_callback(BATTERY_PERCENT_LEVEL battery_percent_level)
 				battery_percent_callback = bpcb_tb[i].bpcb;
 				battery_percent_callback(battery_percent_level);
 				pr_debug("[%s] prio_val=%d,battery_percent_level=%d\n",
-				     __func__, i, battery_percent_level);
+					 __func__, i, battery_percent_level);
 			}
 		}
 #else
@@ -2131,10 +2141,11 @@ void exec_battery_percent_callback(BATTERY_PERCENT_LEVEL battery_percent_level)
 			battery_percent_callback = bpcb_tb[BATTERY_PERCENT_PRIO_FLASHLIGHT].bpcb;
 			battery_percent_callback(battery_percent_level);
 			pr_debug("[%s at DLPT] prio_val=%d,battery_percent_level=%d\n",
-			    __func__, BATTERY_PERCENT_PRIO_FLASHLIGHT, battery_percent_level);
+				 __func__, BATTERY_PERCENT_PRIO_FLASHLIGHT, battery_percent_level);
 		} else
-			pr_debug("[%s at DLPT] NULL pointer, prio_val=%d,battery_percent_level=%d\n",
-			    __func__, BATTERY_PERCENT_PRIO_FLASHLIGHT, battery_percent_level);
+			pr_debug
+			    ("[%s at DLPT] NULL pointer, prio_val=%d,battery_percent_level=%d\n",
+			     __func__, BATTERY_PERCENT_PRIO_FLASHLIGHT, battery_percent_level);
 #endif
 	}
 }
@@ -2212,7 +2223,7 @@ void bat_percent_notify_init(void)
 	else
 		pr_err("Create bat_percent_notify_thread : done\n");
 }
-#endif /* #ifdef BATTERY_PERCENT_PROTECT */
+#endif				/* #ifdef BATTERY_PERCENT_PROTECT */
 
 /*****************************************************************************
  * DLPT service
@@ -2276,7 +2287,7 @@ PMIC_RG_AUXADC_SMPS_CK_PDN_HWEN));*/
 
 	while (pmic_get_register_value(PMIC_AUXADC_IMPEDANCE_IRQ_STATUS) == 0) {
 		/*PMICLOG("[do_ptim] PMIC_AUXADC_IMPEDANCE_IRQ_STATUS= %d\n",
-		pmic_get_register_value(PMIC_AUXADC_IMPEDANCE_IRQ_STATUS));*/
+		   pmic_get_register_value(PMIC_AUXADC_IMPEDANCE_IRQ_STATUS)); */
 		mdelay(1);
 	}
 
@@ -2294,7 +2305,7 @@ PMIC_RG_AUXADC_SMPS_CK_PDN_HWEN));*/
 	if (isSuspend == false)
 		pmic_auxadc_unlock();
 	/*PMICLOG("[do_ptim2] 0xee8=0x%x  0x2c6=0x%x\n", upmu_get_reg_value
-	(0xee8),upmu_get_reg_value(0x2c6));*/
+	   (0xee8),upmu_get_reg_value(0x2c6)); */
 
 
 	/*pmic_set_register_value(PMIC_RG_INT_STATUS_AUXADC_IMP,1);write 1 to clear ! */
@@ -2313,51 +2324,51 @@ void enable_dummy_load(unsigned int en)
 {
 
 	if (en == 1) {
-		/*Enable dummy load--------------------------------------------------*/
-		/*mt6325_upmu_set_rg_g_drv_2m_ck_pdn(0);*/
-		/*mt6325_upmu_set_rg_drv_32k_ck_pdn(0);*/
+		/*Enable dummy load-------------------------------------------------- */
+		/*mt6325_upmu_set_rg_g_drv_2m_ck_pdn(0); */
+		/*mt6325_upmu_set_rg_drv_32k_ck_pdn(0); */
 
-		/*upmu_set_reg_value(0x23c,0xfeb0);*/
+		/*upmu_set_reg_value(0x23c,0xfeb0); */
 		pmic_set_register_value(PMIC_RG_DRV_ISINK2_CK_PDN, 0);
 		pmic_set_register_value(PMIC_RG_DRV_ISINK3_CK_PDN, 0);
 
-		/*upmu_set_reg_value(0x25a,0x8a00);*/
+		/*upmu_set_reg_value(0x25a,0x8a00); */
 		pmic_set_register_value(PMIC_RG_DRV_ISINK2_CK_CKSEL, 0);
 		pmic_set_register_value(PMIC_RG_DRV_ISINK3_CK_CKSEL, 0);
 
-		/*upmu_set_reg_value(0x82a,0x0c00);*/
-		/*upmu_set_reg_value(0x81c,0x7000);*/
+		/*upmu_set_reg_value(0x82a,0x0c00); */
+		/*upmu_set_reg_value(0x81c,0x7000); */
 		pmic_set_register_value(PMIC_ISINK_CH2_STEP, 0xc);
 
-		/*upmu_set_reg_value(0x81e,0x7000);*/
+		/*upmu_set_reg_value(0x81e,0x7000); */
 		pmic_set_register_value(PMIC_ISINK_CH3_STEP, 0xc);
 
-		/*upmu_set_reg_value(0x820,0x0300);*/
+		/*upmu_set_reg_value(0x820,0x0300); */
 		pmic_set_register_value(PMIC_RG_ISINK2_DOUBLE_EN, 1);
 		pmic_set_register_value(PMIC_RG_ISINK3_DOUBLE_EN, 1);
 
 
-		/*upmu_set_reg_value(0x828,0x0ccc);*/
+		/*upmu_set_reg_value(0x828,0x0ccc); */
 		pmic_set_register_value(PMIC_ISINK_CH2_EN, 1);
 		pmic_set_register_value(PMIC_ISINK_CH3_EN, 1);
 		pmic_set_register_value(PMIC_ISINK_CHOP2_EN, 1);
 		pmic_set_register_value(PMIC_ISINK_CHOP3_EN, 1);
 		pmic_set_register_value(PMIC_ISINK_CH2_BIAS_EN, 1);
 		pmic_set_register_value(PMIC_ISINK_CH3_BIAS_EN, 1);
-		/*pmic_set_register_value(PMIC_RG_VIBR_EN,1);*/
+		/*pmic_set_register_value(PMIC_RG_VIBR_EN,1); */
 
-		/*PMICLOG("[enable dummy load]\n");*/
+		/*PMICLOG("[enable dummy load]\n"); */
 	} else {
-		/*upmu_set_reg_value(0x828,0x0cc0);*/
+		/*upmu_set_reg_value(0x828,0x0cc0); */
 		pmic_set_register_value(PMIC_ISINK_CH2_EN, 0);
 		pmic_set_register_value(PMIC_ISINK_CH3_EN, 0);
-		/*pmic_set_register_value(PMIC_RG_VIBR_EN,0);*/
-		/*PMICLOG("[disable dummy load]\n");*/
+		/*pmic_set_register_value(PMIC_RG_VIBR_EN,0); */
+		/*PMICLOG("[disable dummy load]\n"); */
 	}
 
 }
 
-#endif /* #ifdef DLPT_FEATURE_SUPPORT */
+#endif				/* #ifdef DLPT_FEATURE_SUPPORT */
 
 #ifdef DLPT_FEATURE_SUPPORT
 static struct hrtimer dlpt_notify_timer;
@@ -2466,7 +2477,7 @@ int get_dlpt_iavg(int is_use_zcv)
 	return iavg_val;
 }
 
-int get_real_volt(int val)*/ /*0.1mV*/
+			     int get_real_volt(int val)*//*0.1mV */
 /*
 {
     int ret = 0;
@@ -2475,7 +2486,7 @@ int get_real_volt(int val)*/ /*0.1mV*/
     return ret;
 }
 
-int get_real_curr(int val)*/ /*0.1mA*/
+			     int get_real_curr(int val)*//*0.1mA */
 /*
 {
 
@@ -2517,7 +2528,7 @@ int get_rac_val(void)
 		pmic_spm_crit2("[2,enable dummy load]");
 		enable_dummy_load(1);
 		mdelay(50);
-		/*Wait --------------------------------------------------------------*/
+		/*Wait -------------------------------------------------------------- */
 
 		/*adc and fg-------------------------------------------------------- */
 		do_ptim(KAL_TRUE);
@@ -2527,7 +2538,7 @@ int get_rac_val(void)
 		volt_2 = ptim_bat_vol;
 		curr_2 = ptim_R_curr;
 
-		/*Disable dummy load-------------------------------------------------*/
+		/*Disable dummy load------------------------------------------------- */
 		enable_dummy_load(0);
 
 		/*Calculate Rac------------------------------------------------------ */
@@ -2601,9 +2612,9 @@ int get_dlpt_imix_spm(void)
 			return -1;
 	}
 
-	/*rac_val_avg=rac_val[0]+rac_val[1]+rac_val[2]+rac_val[3]+rac_val[4];*/
-	/*rac_val_avg=rac_val_avg/5;*/
-	/*PMICLOG("[dlpt_R] %d,%d,%d,%d,%d %d\n",rac_val[0],rac_val[1],rac_val[2],rac_val[3],rac_val[4],rac_val_avg);*/
+	/*rac_val_avg=rac_val[0]+rac_val[1]+rac_val[2]+rac_val[3]+rac_val[4]; */
+	/*rac_val_avg=rac_val_avg/5; */
+	/*PMICLOG("[dlpt_R] %d,%d,%d,%d,%d %d\n",rac_val[0],rac_val[1],rac_val[2],rac_val[3],rac_val[4],rac_val_avg); */
 
 	rac_val_avg = rac_val[0] + rac_val[1];
 	rac_val_avg = rac_val_avg / 2;
@@ -2662,7 +2673,7 @@ int get_dlpt_imix(void)
 	imix = (curr_avg + (volt_avg - g_lbatInt1) * 1000 / ptim_rac_val_avg) / 10;
 
 	pr_debug("[get_dlpt_imix] %d,%d,%d,%d,%d,%d,%d\n", volt_avg, curr_avg, g_lbatInt1,
-		ptim_rac_val_avg, imix, BMT_status.SOC, bat_get_ui_percentage());
+		 ptim_rac_val_avg, imix, BMT_status.SOC, bat_get_ui_percentage());
 
 	ptim_imix = imix;
 
@@ -2686,7 +2697,7 @@ int get_dlpt_imix_charging(void)
 
 	imix_val = (zcv_val - vsys_min_1_val) * 1000 / ptim_rac_val_avg * 9 / 10;
 	pr_debug("[dlpt] get_dlpt_imix_charging %d %d %d %d\n",
-		imix_val, zcv_val, vsys_min_1_val, ptim_rac_val_avg);
+		 imix_val, zcv_val, vsys_min_1_val, ptim_rac_val_avg);
 
 	return imix_val;
 }
@@ -2707,9 +2718,10 @@ int dlpt_check_power_off(void)
 				ret = 0;
 
 			PMICLOG("[dlpt_check_power_off]");
-			PMICLOG("ptim_imix=%d, POWEROFF_BAT_CURRENT=%d", ptim_imix, POWEROFF_BAT_CURRENT);
-			PMICLOG(" g_low_battery_level=%d,ret=%d,g_lowbat_int_bottom=%d\n", g_low_battery_level, ret,
-				g_lowbat_int_bottom);
+			PMICLOG("ptim_imix=%d, POWEROFF_BAT_CURRENT=%d", ptim_imix,
+				POWEROFF_BAT_CURRENT);
+			PMICLOG(" g_low_battery_level=%d,ret=%d,g_lowbat_int_bottom=%d\n",
+				g_low_battery_level, ret, g_lowbat_int_bottom);
 		}
 	}
 
@@ -2789,7 +2801,7 @@ int dlpt_notify_handler(void *unused)
 */
 				}
 
-				/*Notify*/
+				/*Notify */
 				if (g_imix_val >= 1) {
 					if (g_imix_val > IMAX_MAX_VALUE)
 						g_imix_val = IMAX_MAX_VALUE;
@@ -2800,15 +2812,15 @@ int dlpt_notify_handler(void *unused)
 				}
 
 				pre_ui_soc = cur_ui_soc;
-				#if 0
+#if 0
 				pr_debug("[DLPT_final] %d,%d,%d,%d,%d,%d\n",
-					g_imix_val, g_imix_val_pre, pre_ui_soc, cur_ui_soc,
-					diff_ui_soc, IMAX_MAX_VALUE);
-				#else
+					 g_imix_val, g_imix_val_pre, pre_ui_soc, cur_ui_soc,
+					 diff_ui_soc, IMAX_MAX_VALUE);
+#else
 				pr_debug("[DLPT_final] %d,%d,%d,%d,%d\n",
-					g_imix_val, g_imix_val_pre, pre_ui_soc, cur_ui_soc,
-					IMAX_MAX_VALUE);
-				#endif
+					 g_imix_val, g_imix_val_pre, pre_ui_soc, cur_ui_soc,
+					 IMAX_MAX_VALUE);
+#endif
 			}
 
 		}
@@ -2850,7 +2862,7 @@ int get_system_loading_ma(void)
 		fg_val = battery_meter_get_battery_current();
 		fg_val = fg_val / 10;
 		if (battery_meter_get_battery_current_sign() == 1)
-			fg_val = 0 - fg_val;	/* charging*/
+			fg_val = 0 - fg_val;	/* charging */
 		PMICLOG("[get_system_loading_ma] fg_val=%d\n", fg_val);
 	}
 
@@ -2909,7 +2921,7 @@ void dlpt_notify_init(void)
 		break;
 	}
 	pr_err("POWER_UVLO_VOLT_LEVEL=%d, [0x%x]=0x%x\n",
-		POWER_UVLO_VOLT_LEVEL, MT6328_CHR_CON17, upmu_get_reg_value(MT6328_CHR_CON17));
+	       POWER_UVLO_VOLT_LEVEL, MT6328_CHR_CON17, upmu_get_reg_value(MT6328_CHR_CON17));
 }
 
 #else
@@ -2996,8 +3008,7 @@ static struct pmic_interrupts interrupts[] = {
 void pwrkey_int_handler(void)
 {
 
-	PMICLOG("[pwrkey_int_handler] Press pwrkey %d\n",
-		pmic_get_register_value(PMIC_PWRKEY_DEB));
+	PMICLOG("[pwrkey_int_handler] Press pwrkey %d\n", pmic_get_register_value(PMIC_PWRKEY_DEB));
 
 #if defined(CONFIG_MTK_KERNEL_POWER_OFF_CHARGING)
 	if (get_boot_mode() == KERNEL_POWER_OFF_CHARGING_BOOT)
@@ -3018,12 +3029,14 @@ void pwrkey_int_handler_r(void)
 		timer_pos = sched_clock();
 		if (timer_pos - timer_pre >= LONG_PWRKEY_PRESS_TIME)
 			long_pwrkey_press = true;
-		PMICLOG("timer_pos = %ld, timer_pre = %ld, timer_pos-timer_pre = %ld, long_pwrkey_press = %d\r\n",
-						timer_pos, timer_pre, timer_pos - timer_pre, long_pwrkey_press);
-		if (long_pwrkey_press) {	/*500ms*/
-			PMICLOG("Power Key Pressed during kernel power off charging, reboot OS\r\n");
+		PMICLOG
+		    ("timer_pos = %ld, timer_pre = %ld, timer_pos-timer_pre = %ld, long_pwrkey_press = %d\r\n",
+		     timer_pos, timer_pre, timer_pos - timer_pre, long_pwrkey_press);
+		if (long_pwrkey_press) {	/*500ms */
+			PMICLOG
+			    ("Power Key Pressed during kernel power off charging, reboot OS\r\n");
 			kernel_restart("kernel power off charging  reboot system");
-			/*arch_reset(0, NULL);*/
+			/*arch_reset(0, NULL); */
 		}
 	}
 #endif
@@ -3122,17 +3135,17 @@ void wake_up_pmic(void)
 }
 EXPORT_SYMBOL(wake_up_pmic);
 
-#if 0 /* def CONFIG_MTK_LEGACY */
+#if 0				/* def CONFIG_MTK_LEGACY */
 void mt_pmic_eint_irq(void)
 {
-	/*PMICLOG("[mt_pmic_eint_irq] receive interrupt\n");*/
+	/*PMICLOG("[mt_pmic_eint_irq] receive interrupt\n"); */
 	wake_up_pmic();
-	/*return;*/
+	/*return; */
 }
 #else
 irqreturn_t mt_pmic_eint_irq(int irq, void *desc)
 {
-	/*PMICLOG("[mt_pmic_eint_irq] receive interrupt\n");*/
+	/*PMICLOG("[mt_pmic_eint_irq] receive interrupt\n"); */
 	wake_up_pmic();
 	disable_irq_nosync(irq);
 	return IRQ_HANDLED;
@@ -3193,7 +3206,7 @@ void PMIC_EINT_SETTING(void)
 	upmu_set_reg_value(MT6328_INT_CON1, 0);
 	upmu_set_reg_value(MT6328_INT_CON2, 0);
 
-	/*enable pwrkey/homekey interrupt*/
+	/*enable pwrkey/homekey interrupt */
 	upmu_set_reg_value(MT6328_INT_CON0_SET, 0xf);
 
 	/*for all interrupt events, turn on interrupt module clock */
@@ -3227,19 +3240,19 @@ void PMIC_EINT_SETTING(void)
 	pmic_enable_interrupt(7, 1, "PMIC");
 #endif
 
-	/*pmic_enable_interrupt(30,1,"PMIC");*/
+	/*pmic_enable_interrupt(30,1,"PMIC"); */
 
 	pmic_enable_interrupt(38, 1, "PMIC");
 
 #ifdef BATTERY_OC_PROTECT
-	/* move to bat_oc_x_en_setting*/
+	/* move to bat_oc_x_en_setting */
 #else
 	pmic_enable_interrupt(42, 1, "PMIC");
 	pmic_enable_interrupt(43, 1, "PMIC");
 #endif
 
 #if 0
-	/*mt_eint_set_hw_debounce(g_eint_pmic_num, g_cust_eint_mt_pmic_debounce_cn);*/
+	/*mt_eint_set_hw_debounce(g_eint_pmic_num, g_cust_eint_mt_pmic_debounce_cn); */
 	mt_eint_registration(g_eint_pmic_num, g_cust_eint_mt_pmic_type, mt_pmic_eint_irq, 0);
 	mt_eint_unmask(g_eint_pmic_num);
 #else
@@ -3249,10 +3262,12 @@ void PMIC_EINT_SETTING(void)
 		mt_gpio_set_debounce(ints[0], ints[1]);
 
 		g_pmic_irq = irq_of_parse_and_map(node, 0);
-		ret = request_irq(g_pmic_irq, (irq_handler_t) mt_pmic_eint_irq, IRQF_TRIGGER_NONE, "pmic-eint", NULL);
+		ret =
+		    request_irq(g_pmic_irq, (irq_handler_t) mt_pmic_eint_irq, IRQF_TRIGGER_NONE,
+				"pmic-eint", NULL);
 		if (ret > 0)
 			PMICLOG("EINT IRQ LINENNOT AVAILABLE\n");
-		/*enable_irq(g_pmic_irq);*/
+		/*enable_irq(g_pmic_irq); */
 	} else
 		PMICLOG("can't find compatible node\n");
 #endif
@@ -3344,7 +3359,7 @@ static int pmic_thread_kthread(void *x)
 		pmic_int_handler();
 
 		pmic_wrap_eint_clr(0x0);
-		/*PMICLOG("[PMIC_INT] pmic_wrap_eint_clr(0x0);\n");*/
+		/*PMICLOG("[PMIC_INT] pmic_wrap_eint_clr(0x0);\n"); */
 
 		for (i = 0; i < ARRAY_SIZE(interrupts); i++) {
 			int_status_val = upmu_get_reg_value(interrupts[i].address);
@@ -3364,7 +3379,7 @@ static int pmic_thread_kthread(void *x)
 
 		set_current_state(TASK_INTERRUPTIBLE);
 
-#if 0 /*def CONFIG_MTK_LEGACY*/
+#if 0				/*def CONFIG_MTK_LEGACY */
 		mt_eint_unmask(g_eint_pmic_num);
 #else
 		if (g_pmic_irq != 0)
@@ -3385,8 +3400,8 @@ int is_ext_buck2_exist(void)
 #else
 #if !defined CONFIG_MTK_LEGACY
 	return gpiod_get_value(gpio_to_desc(130));
-	/*return __gpio_get_value(130);*/
-	/*return mt_get_gpio_in(130);*/
+	/*return __gpio_get_value(130); */
+	/*return mt_get_gpio_in(130); */
 #else
 	return 0;
 #endif
@@ -3457,38 +3472,26 @@ int is_ext_vbat_boost_exist(void)
 
 int get_ext_buck_i2c_ch_num(void)
 {
-#ifdef CONFIG_MT6311 /* TBD */
 	if (is_mt6311_exist() == 1)
 		return get_mt6311_i2c_ch_num();
 	else
 		return -1;
-#else
-	return 0;
-#endif
 }
 
 int is_ext_buck_sw_ready(void)
 {
-#ifdef CONFIG_MT6311 /* TBD */
 	if ((is_mt6311_sw_ready() == 1))
 		return 1;
 	else
 		return 0;
-#else
-	return 0;
-#endif
 }
 
 int is_ext_buck_exist(void)
 {
-#ifdef CONFIG_MT6311 /* TBD */
 	if ((is_mt6311_exist() == 1))
 		return 1;
 	else
 		return 0;
-#else
-	return 0;
-#endif
 }
 
 /*****************************************************************************
@@ -3514,7 +3517,7 @@ static long pmic_ftm_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 	int adc_out_data[2] = { 1, 1 };
 
 	switch (cmd) {
-		/*#if defined(FTM_EXT_BUCK_CHECK)*/
+		/*#if defined(FTM_EXT_BUCK_CHECK) */
 	case Get_IS_EXT_BUCK_EXIST:
 		user_data_addr = (int *)arg;
 		ret = copy_from_user(adc_in_data, user_data_addr, 8);
@@ -3522,9 +3525,9 @@ static long pmic_ftm_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 		ret = copy_to_user(user_data_addr, adc_out_data, 8);
 		PMICLOG("[pmic_ftm_ioctl] Get_IS_EXT_BUCK_EXIST:%d\n", adc_out_data[0]);
 		break;
-		/*#endif*/
+		/*#endif */
 
-		/*#if defined(FTM_EXT_VBAT_BOOST_CHECK)*/
+		/*#if defined(FTM_EXT_VBAT_BOOST_CHECK) */
 	case Get_IS_EXT_VBAT_BOOST_EXIST:
 		user_data_addr = (int *)arg;
 		ret = copy_from_user(adc_in_data, user_data_addr, 8);
@@ -3532,9 +3535,9 @@ static long pmic_ftm_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 		ret = copy_to_user(user_data_addr, adc_out_data, 8);
 		PMICLOG("[pmic_ftm_ioctl] Get_IS_EXT_VBAT_BOOST_EXIST:%d\n", adc_out_data[0]);
 		break;
-		/*#endif*/
+		/*#endif */
 
-		/*#if defined(FEATURE_FTM_SWCHR_HW_DETECT)*/
+		/*#if defined(FEATURE_FTM_SWCHR_HW_DETECT) */
 	case Get_IS_EXT_SWCHR_EXIST:
 		user_data_addr = (int *)arg;
 		ret = copy_from_user(adc_in_data, user_data_addr, 8);
@@ -3542,7 +3545,7 @@ static long pmic_ftm_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 		ret = copy_to_user(user_data_addr, adc_out_data, 8);
 		PMICLOG("[pmic_ftm_ioctl] Get_IS_EXT_SWCHR_EXIST:%d\n", adc_out_data[0]);
 		break;
-		/*#endif*/
+		/*#endif */
 	case Get_IS_EXT_BUCK2_EXIST:
 		user_data_addr = (int *)arg;
 		ret = copy_from_user(adc_in_data, user_data_addr, 8);
@@ -3557,6 +3560,7 @@ static long pmic_ftm_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 
 	return 0;
 }
+
 #ifdef CONFIG_COMPAT
 static long pmic_ftm_compat_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 {
@@ -3663,270 +3667,270 @@ void PMIC_INIT_SETTING_V1(void)
 #if defined(CONFIG_ARCH_MT6753)
 #else
 */
-	/* [4:4]: RG_EN_DRVSEL; Ricky*/
+	/* [4:4]: RG_EN_DRVSEL; Ricky */
 	ret = pmic_config_interface(0x4, 0x1, 0x1, 4);
-	/* [0:0]: DDUVLO_DEB_EN; Ricky*/
+	/* [0:0]: DDUVLO_DEB_EN; Ricky */
 	ret = pmic_config_interface(0xA, 0x1, 0x1, 0);
-	/* [11:11]: BIAS_GEN_EN_SEL; Luke, in pre-load for SMPS*/
+	/* [11:11]: BIAS_GEN_EN_SEL; Luke, in pre-load for SMPS */
 	ret = pmic_config_interface(0xA, 0x1, 0x1, 11);
-	/* [0:0]: VPROC_PG_H2L_EN; Ricky*/
+	/* [0:0]: VPROC_PG_H2L_EN; Ricky */
 	ret = pmic_config_interface(0xC, 0x1, 0x1, 0);
-	/* [1:1]: VAUX18_PG_H2L_EN; Ricky*/
+	/* [1:1]: VAUX18_PG_H2L_EN; Ricky */
 	ret = pmic_config_interface(0xC, 0x1, 0x1, 1);
-	/* [4:4]: VCORE1_PG_H2L_EN; Ricky*/
+	/* [4:4]: VCORE1_PG_H2L_EN; Ricky */
 	ret = pmic_config_interface(0xC, 0x1, 0x1, 4);
-	/* [5:5]: VSYS22_PG_H2L_EN; Ricky*/
+	/* [5:5]: VSYS22_PG_H2L_EN; Ricky */
 	ret = pmic_config_interface(0xC, 0x1, 0x1, 5);
-	/* [6:6]: VLTE_PG_H2L_EN; Ricky*/
+	/* [6:6]: VLTE_PG_H2L_EN; Ricky */
 	ret = pmic_config_interface(0xC, 0x1, 0x1, 6);
-	/* [7:7]: VIO18_PG_H2L_EN; Ricky*/
+	/* [7:7]: VIO18_PG_H2L_EN; Ricky */
 	ret = pmic_config_interface(0xC, 0x1, 0x1, 7);
-	/* [8:8]: VAUD28_PG_H2L_EN; Ricky*/
+	/* [8:8]: VAUD28_PG_H2L_EN; Ricky */
 	ret = pmic_config_interface(0xC, 0x1, 0x1, 8);
-	/* [9:9]: VTCXO_PG_H2L_EN; Ricky*/
+	/* [9:9]: VTCXO_PG_H2L_EN; Ricky */
 	ret = pmic_config_interface(0xC, 0x1, 0x1, 9);
-	/* [10:10]: VUSB_PG_H2L_EN; Ricky*/
+	/* [10:10]: VUSB_PG_H2L_EN; Ricky */
 	ret = pmic_config_interface(0xC, 0x1, 0x1, 10);
-	/* [11:11]: VSRAM_PG_H2L_EN; Ricky*/
+	/* [11:11]: VSRAM_PG_H2L_EN; Ricky */
 	ret = pmic_config_interface(0xC, 0x1, 0x1, 11);
-	/* [12:12]: VIO28_PG_H2L_EN; Ricky*/
+	/* [12:12]: VIO28_PG_H2L_EN; Ricky */
 	ret = pmic_config_interface(0xC, 0x1, 0x1, 12);
-	/* [13:13]: VM_PG_H2L_EN; Ricky*/
+	/* [13:13]: VM_PG_H2L_EN; Ricky */
 	ret = pmic_config_interface(0xC, 0x1, 0x1, 13);
-	/* [5:5]: UVLO_L2H_DEB_EN; Ricky*/
+	/* [5:5]: UVLO_L2H_DEB_EN; Ricky */
 	ret = pmic_config_interface(0x10, 0x1, 0x1, 5);
-	/* [0:0]: STRUP_PWROFF_SEQ_EN; Ricky*/
+	/* [0:0]: STRUP_PWROFF_SEQ_EN; Ricky */
 	ret = pmic_config_interface(0x16, 0x1, 0x1, 0);
-	/* [1:1]: STRUP_PWROFF_PREOFF_EN; Ricky*/
+	/* [1:1]: STRUP_PWROFF_PREOFF_EN; Ricky */
 	ret = pmic_config_interface(0x16, 0x1, 0x1, 1);
-	/* [11:11]: RG_TESTMODE_SWEN; CC: Test mode, first command*/
+	/* [11:11]: RG_TESTMODE_SWEN; CC: Test mode, first command */
 	ret = pmic_config_interface(0x1E, 0x0, 0x1, 11);
-	/* [12:12]: RG_RST_DRVSEL; Ricky*/
+	/* [12:12]: RG_RST_DRVSEL; Ricky */
 	ret = pmic_config_interface(0x40, 0x1, 0x1, 12);
-	/* [4:4]: RG_SRCLKEN_IN0_HW_MODE; Juinn-Ting*/
+	/* [4:4]: RG_SRCLKEN_IN0_HW_MODE; Juinn-Ting */
 	ret = pmic_config_interface(0x204, 0x1, 0x1, 4);
-	/* [5:5]: RG_SRCLKEN_IN1_HW_MODE; Juinn-Ting*/
+	/* [5:5]: RG_SRCLKEN_IN1_HW_MODE; Juinn-Ting */
 	ret = pmic_config_interface(0x204, 0x1, 0x1, 5);
-	/* [6:6]: RG_OSC_SEL_HW_MODE; Luke, for Vsys PFM issue,0204*/
+	/* [6:6]: RG_OSC_SEL_HW_MODE; Luke, for Vsys PFM issue,0204 */
 	ret = pmic_config_interface(0x204, 0x0, 0x1, 6);
-	/* [0:0]: RG_SMT_WDTRSTB_IN; Ricky*/
+	/* [0:0]: RG_SMT_WDTRSTB_IN; Ricky */
 	ret = pmic_config_interface(0x226, 0x1, 0x1, 0);
-	/* [2:2]: RG_SMT_SRCLKEN_IN0; Ricky*/
+	/* [2:2]: RG_SMT_SRCLKEN_IN0; Ricky */
 	ret = pmic_config_interface(0x226, 0x1, 0x1, 2);
-	/* [3:3]: RG_SMT_SRCLKEN_IN1; Ricky*/
+	/* [3:3]: RG_SMT_SRCLKEN_IN1; Ricky */
 	ret = pmic_config_interface(0x226, 0x1, 0x1, 3);
-	/* [2:2]: RG_RTC_75K_CK_PDN; Juinn-Ting*/
+	/* [2:2]: RG_RTC_75K_CK_PDN; Juinn-Ting */
 	ret = pmic_config_interface(0x242, 0x1, 0x1, 2);
-	/* [3:3]: RG_RTCDET_CK_PDN; Juinn-Ting*/
+	/* [3:3]: RG_RTCDET_CK_PDN; Juinn-Ting */
 	ret = pmic_config_interface(0x242, 0x1, 0x1, 3);
-	/* [13:13]: RG_RTC_EOSC32_CK_PDN; Juinn-Ting*/
+	/* [13:13]: RG_RTC_EOSC32_CK_PDN; Juinn-Ting */
 	ret = pmic_config_interface(0x248, 0x1, 0x1, 13);
-	/* [14:14]: RG_TRIM_75K_CK_PDN; Juinn-Ting*/
+	/* [14:14]: RG_TRIM_75K_CK_PDN; Juinn-Ting */
 	ret = pmic_config_interface(0x248, 0x1, 0x1, 14);
-	/* [9:9]: RG_75K_32K_SEL; Angela*/
+	/* [9:9]: RG_75K_32K_SEL; Angela */
 	ret = pmic_config_interface(0x25A, 0x1, 0x1, 9);
 	/* [3:2]: VPROC_OC_WND; update OC debounce timing , 0527, Luke */
 	ret = pmic_config_interface(0x40E, 0x0, 0x3, 2);
-	/* [3:2]: VLTE_OC_WND; update OC debounce timing , 0527, Luke*/
+	/* [3:2]: VLTE_OC_WND; update OC debounce timing , 0527, Luke */
 	ret = pmic_config_interface(0x412, 0x0, 0x3, 2);
-	/* [0:0]: VSRAM_TRACK_SLEEP_CTRL; SRAM Tracking,Fandy*/
+	/* [0:0]: VSRAM_TRACK_SLEEP_CTRL; SRAM Tracking,Fandy */
 	ret = pmic_config_interface(0x422, 0x1, 0x1, 0);
-	/* [1:1]: VSRAM_TRACK_ON_CTRL; SRAM Tracking,Fandy*/
+	/* [1:1]: VSRAM_TRACK_ON_CTRL; SRAM Tracking,Fandy */
 	ret = pmic_config_interface(0x422, 0x1, 0x1, 1);
-	/* [2:2]: VPROC_TRACK_ON_CTRL; SRAM Tracking,Fandy*/
+	/* [2:2]: VPROC_TRACK_ON_CTRL; SRAM Tracking,Fandy */
 	ret = pmic_config_interface(0x422, 0x1, 0x1, 2);
-	/* [6:0]: VSRAM_VOSEL_DELTA; SRAM Tracking,Fandy*/
+	/* [6:0]: VSRAM_VOSEL_DELTA; SRAM Tracking,Fandy */
 	ret = pmic_config_interface(0x424, 0x0, 0x7F, 0);
-	/* [14:8]: VSRAM_VOSEL_OFFSET; SRAM Tracking,Fandy*/
+	/* [14:8]: VSRAM_VOSEL_OFFSET; SRAM Tracking,Fandy */
 	ret = pmic_config_interface(0x424, 0x10, 0x7F, 8);
-	/* [6:0]: VSRAM_VOSEL_ON_LB; SRAM Tracking,Fandy*/
+	/* [6:0]: VSRAM_VOSEL_ON_LB; SRAM Tracking,Fandy */
 	ret = pmic_config_interface(0x426, 0x48, 0x7F, 0);
-	/* [14:8]: VSRAM_VOSEL_ON_HB; SRAM Tracking,Fandy*/
+	/* [14:8]: VSRAM_VOSEL_ON_HB; SRAM Tracking,Fandy */
 	ret = pmic_config_interface(0x426, 0x78, 0x7F, 8);
-	/* [6:0]: VSRAM_VOSEL_SLEEP_LB; SRAM Tracking,Fandy*/
+	/* [6:0]: VSRAM_VOSEL_SLEEP_LB; SRAM Tracking,Fandy */
 	ret = pmic_config_interface(0x428, 0x28, 0x7F, 0);
-	/* [8:0]: RG_SMPS_TESTMODE_B;*/
+	/* [8:0]: RG_SMPS_TESTMODE_B; */
 	ret = pmic_config_interface(0x42E, 0x1, 0x1FF, 0);
-	/* [10:8]: RG_VCORE1_PFM_RIP; for FPM ripple,0312*/
+	/* [10:8]: RG_VCORE1_PFM_RIP; for FPM ripple,0312 */
 	ret = pmic_config_interface(0x446, 0x2, 0x7, 8);
-	/* [8:7]: RG_VSYS22_ZX_OS; Luke,0114 for VSYS damage*/
+	/* [8:7]: RG_VSYS22_ZX_OS; Luke,0114 for VSYS damage */
 	ret = pmic_config_interface(0x44C, 0x0, 0x3, 7);
-	/* [7:0]: RG_VSYS22_RSV; Luke,0114 for VSYS damage*/
+	/* [7:0]: RG_VSYS22_RSV; Luke,0114 for VSYS damage */
 	ret = pmic_config_interface(0x450, 0x80, 0xFF, 0);
-	/* [8:3]: RG_VSYS22_TRAN_BST; Luke,0204 for VSYS not sleep*/
+	/* [8:3]: RG_VSYS22_TRAN_BST; Luke,0204 for VSYS not sleep */
 	ret = pmic_config_interface(0x452, 0x8, 0x3F, 3);
-	/* [10:8]: RG_VPROC_PFM_RIP; for FPM ripple,0312*/
+	/* [10:8]: RG_VPROC_PFM_RIP; for FPM ripple,0312 */
 	ret = pmic_config_interface(0x45A, 0x2, 0x7, 8);
-	/* [11:10]: RG_VPA_SLP; Seven Stability*/
+	/* [11:10]: RG_VPA_SLP; Seven Stability */
 	ret = pmic_config_interface(0x462, 0x3, 0x3, 10);
-	/* [10:8]: RG_VLTE_PFM_RIP; for FPM ripple,0312*/
+	/* [10:8]: RG_VLTE_PFM_RIP; for FPM ripple,0312 */
 	ret = pmic_config_interface(0x470, 0x2, 0x7, 8);
-	/* [1:1]: VPROC_VOSEL_CTRL; ShangYing*/
+	/* [1:1]: VPROC_VOSEL_CTRL; ShangYing */
 	ret = pmic_config_interface(0x482, 0x1, 0x1, 1);
-	/* [6:0]: VPROC_SFCHG_FRATE; 11/20 DVFS raising slewrate,SY*/
+	/* [6:0]: VPROC_SFCHG_FRATE; 11/20 DVFS raising slewrate,SY */
 	ret = pmic_config_interface(0x488, 0x11, 0x7F, 0);
-	/* [7:7]: VPROC_SFCHG_FEN; VSRAM tracking,Fandy*/
+	/* [7:7]: VPROC_SFCHG_FEN; VSRAM tracking,Fandy */
 	ret = pmic_config_interface(0x488, 0x1, 0x1, 7);
-	/* [14:8]: VPROC_SFCHG_RRATE; 11/20 DVFS raising slewrate,SY*/
+	/* [14:8]: VPROC_SFCHG_RRATE; 11/20 DVFS raising slewrate,SY */
 	ret = pmic_config_interface(0x488, 0x4, 0x7F, 8);
-	/* [15:15]: VPROC_SFCHG_REN; VSRAM tracking,Fandy*/
+	/* [15:15]: VPROC_SFCHG_REN; VSRAM tracking,Fandy */
 	ret = pmic_config_interface(0x488, 0x1, 0x1, 15);
-	/* [6:0]: VPROC_VOSEL_SLEEP; 11/20 Sleep mode 0.85V*/
+	/* [6:0]: VPROC_VOSEL_SLEEP; 11/20 Sleep mode 0.85V */
 	ret = pmic_config_interface(0x48E, 0x28, 0x7F, 0);
-	/* [1:0]: VPROC_TRANS_TD; ShangYing*/
+	/* [1:0]: VPROC_TRANS_TD; ShangYing */
 	ret = pmic_config_interface(0x498, 0x3, 0x3, 0);
-	/* [5:4]: VPROC_TRANS_CTRL; ShangYing*/
+	/* [5:4]: VPROC_TRANS_CTRL; ShangYing */
 	ret = pmic_config_interface(0x498, 0x1, 0x3, 4);
-	/* [8:8]: VPROC_VSLEEP_EN; 11/20 sleep mode by SRCLKEN*/
+	/* [8:8]: VPROC_VSLEEP_EN; 11/20 sleep mode by SRCLKEN */
 	ret = pmic_config_interface(0x498, 0x1, 0x1, 8);
-	/* [5:4]: VPROC_OSC_SEL_SRCLKEN_SEL; ShangYing*/
+	/* [5:4]: VPROC_OSC_SEL_SRCLKEN_SEL; ShangYing */
 	ret = pmic_config_interface(0x49A, 0x0, 0x3, 4);
-	/* [9:8]: VPROC_R2R_PDN_SRCLKEN_SEL; ShangYing*/
+	/* [9:8]: VPROC_R2R_PDN_SRCLKEN_SEL; ShangYing */
 	ret = pmic_config_interface(0x49A, 0x0, 0x3, 8);
-	/* [15:14]: VPROC_VSLEEP_SRCLKEN_SEL; ShangYing*/
+	/* [15:14]: VPROC_VSLEEP_SRCLKEN_SEL; ShangYing */
 	ret = pmic_config_interface(0x49A, 0x0, 0x3, 14);
-	/* [1:1]: VSRAM_VOSEL_CTRL; SRAM tracking,Fandy*/
+	/* [1:1]: VSRAM_VOSEL_CTRL; SRAM tracking,Fandy */
 	ret = pmic_config_interface(0x4AA, 0x1, 0x1, 1);
-	/* [6:0]: VSRAM_SFCHG_FRATE; SRAM tracking,Fandy*/
+	/* [6:0]: VSRAM_SFCHG_FRATE; SRAM tracking,Fandy */
 	ret = pmic_config_interface(0x4B0, 0x8, 0x7F, 0);
-	/* [7:7]: VSRAM_SFCHG_FEN; SRAM tracking,Fandy*/
+	/* [7:7]: VSRAM_SFCHG_FEN; SRAM tracking,Fandy */
 	ret = pmic_config_interface(0x4B0, 0x1, 0x1, 7);
-	/* [14:8]: VSRAM_SFCHG_RRATE; SRAM tracking,Fandy*/
+	/* [14:8]: VSRAM_SFCHG_RRATE; SRAM tracking,Fandy */
 	ret = pmic_config_interface(0x4B0, 0x8, 0x7F, 8);
-	/* [15:15]: VSRAM_SFCHG_REN; SRAM tracking,Fandy*/
+	/* [15:15]: VSRAM_SFCHG_REN; SRAM tracking,Fandy */
 	ret = pmic_config_interface(0x4B0, 0x1, 0x1, 15);
-	/* [6:0]: VSRAM_VOSEL_ON; SRAM tracking,Fandy*/
+	/* [6:0]: VSRAM_VOSEL_ON; SRAM tracking,Fandy */
 	ret = pmic_config_interface(0x4B4, 0x40, 0x7F, 0);
-	/* [1:1]: VLTE_VOSEL_CTRL; ShangYing*/
+	/* [1:1]: VLTE_VOSEL_CTRL; ShangYing */
 	ret = pmic_config_interface(0x4D2, 0x1, 0x1, 1);
-	/* [6:0]: VLTE_SFCHG_FRATE; 11/20 DVFS falling slewrate*/
+	/* [6:0]: VLTE_SFCHG_FRATE; 11/20 DVFS falling slewrate */
 	ret = pmic_config_interface(0x4D8, 0x11, 0x7F, 0);
-	/* [14:8]: VLTE_SFCHG_RRATE; 11/20 DVFS raising slewrate*/
+	/* [14:8]: VLTE_SFCHG_RRATE; 11/20 DVFS raising slewrate */
 	ret = pmic_config_interface(0x4D8, 0x4, 0x7F, 8);
-	/* [6:0]: VLTE_VOSEL_SLEEP; 11/20 Sleep mode 0.85V*/
+	/* [6:0]: VLTE_VOSEL_SLEEP; 11/20 Sleep mode 0.85V */
 	ret = pmic_config_interface(0x4DE, 0x28, 0x7F, 0);
-	/* [1:0]: VLTE_TRANS_TD; ShangYing*/
+	/* [1:0]: VLTE_TRANS_TD; ShangYing */
 	ret = pmic_config_interface(0x4E8, 0x3, 0x3, 0);
-	/* [8:8]: VLTE_VSLEEP_EN; 11/20 sleep mode by SRCLKEN*/
+	/* [8:8]: VLTE_VSLEEP_EN; 11/20 sleep mode by SRCLKEN */
 	ret = pmic_config_interface(0x4E8, 0x1, 0x1, 8);
-	/* [5:4]: VLTE_OSC_SEL_SRCLKEN_SEL;*/
+	/* [5:4]: VLTE_OSC_SEL_SRCLKEN_SEL; */
 	ret = pmic_config_interface(0x4EA, 0x0, 0x3, 4);
-	/* [9:8]: VLTE_R2R_PDN_SRCLKEN_SEL;*/
+	/* [9:8]: VLTE_R2R_PDN_SRCLKEN_SEL; */
 	ret = pmic_config_interface(0x4EA, 0x0, 0x3, 8);
-	/* [15:14]: VLTE_VSLEEP_SRCLKEN_SEL;*/
+	/* [15:14]: VLTE_VSLEEP_SRCLKEN_SEL; */
 	ret = pmic_config_interface(0x4EA, 0x0, 0x3, 14);
-	/* [1:1]: VCORE1_VOSEL_CTRL; ShangYing*/
+	/* [1:1]: VCORE1_VOSEL_CTRL; ShangYing */
 	ret = pmic_config_interface(0x60E, 0x1, 0x1, 1);
-	/* [6:0]: VCORE1_SFCHG_FRATE; 11/20 DVS falling slewrate*/
+	/* [6:0]: VCORE1_SFCHG_FRATE; 11/20 DVS falling slewrate */
 	ret = pmic_config_interface(0x614, 0x11, 0x7F, 0);
-	/* [14:8]: VCORE1_SFCHG_RRATE; 11/20 DVS rising slewrate*/
+	/* [14:8]: VCORE1_SFCHG_RRATE; 11/20 DVS rising slewrate */
 	ret = pmic_config_interface(0x614, 0x4, 0x7F, 8);
-	/* [6:0]: VCORE1_VOSEL_SLEEP; 11/20 sleep mode 0.85V*/
+	/* [6:0]: VCORE1_VOSEL_SLEEP; 11/20 sleep mode 0.85V */
 	ret = pmic_config_interface(0x61A, 0x28, 0x7F, 0);
-	/* [1:0]: VCORE1_TRANS_TD; ShangYing*/
+	/* [1:0]: VCORE1_TRANS_TD; ShangYing */
 	ret = pmic_config_interface(0x624, 0x3, 0x3, 0);
-	/* [8:8]: VCORE1_VSLEEP_EN; 11/20 sleep mode control by SRCLKEN*/
+	/* [8:8]: VCORE1_VSLEEP_EN; 11/20 sleep mode control by SRCLKEN */
 	ret = pmic_config_interface(0x624, 0x1, 0x1, 8);
-	/* [5:4]: VCORE1_OSC_SEL_SRCLKEN_SEL; ShangYing*/
+	/* [5:4]: VCORE1_OSC_SEL_SRCLKEN_SEL; ShangYing */
 	ret = pmic_config_interface(0x626, 0x0, 0x3, 4);
-	/* [9:8]: VCORE1_R2R_PDN_SRCLKEN_SEL; ShangYing*/
+	/* [9:8]: VCORE1_R2R_PDN_SRCLKEN_SEL; ShangYing */
 	ret = pmic_config_interface(0x626, 0x0, 0x3, 8);
-	/* [15:14]: VCORE1_VSLEEP_SRCLKEN_SEL; ShangYing*/
+	/* [15:14]: VCORE1_VSLEEP_SRCLKEN_SEL; ShangYing */
 	ret = pmic_config_interface(0x626, 0x0, 0x3, 14);
-	/* [2:0]: VSYS22_BURST; Seven*/
+	/* [2:0]: VSYS22_BURST; Seven */
 	ret = pmic_config_interface(0x646, 0x5, 0x7, 0);
-	/* [8:8]: VSYS22_VSLEEP_EN; VSYS22 sleep mode in 0105,Luke*/
+	/* [8:8]: VSYS22_VSLEEP_EN; VSYS22 sleep mode in 0105,Luke */
 	ret = pmic_config_interface(0x64C, 0x0, 0x1, 8);
-	/* [6:0]: VPA_SFCHG_FRATE; Seven*/
+	/* [6:0]: VPA_SFCHG_FRATE; Seven */
 	ret = pmic_config_interface(0x664, 0x2, 0x7F, 0);
-	/* [7:7]: VPA_SFCHG_FEN; Seven*/
+	/* [7:7]: VPA_SFCHG_FEN; Seven */
 	ret = pmic_config_interface(0x664, 0x0, 0x1, 7);
-	/* [14:8]: VPA_SFCHG_RRATE; Seven*/
+	/* [14:8]: VPA_SFCHG_RRATE; Seven */
 	ret = pmic_config_interface(0x664, 0x2, 0x7F, 8);
-	/* [15:15]: VPA_SFCHG_REN; Seven*/
+	/* [15:15]: VPA_SFCHG_REN; Seven */
 	ret = pmic_config_interface(0x664, 0x0, 0x1, 15);
-	/* [5:4]: VPA_TRANS_CTRL; Seven for BW exten*/
+	/* [5:4]: VPA_TRANS_CTRL; Seven for BW exten */
 	ret = pmic_config_interface(0x674, 0x3, 0x3, 4);
-	/* [5:4]: VPA_DVS_TRANS_CTRL; Seven for BW exten*/
+	/* [5:4]: VPA_DVS_TRANS_CTRL; Seven for BW exten */
 	ret = pmic_config_interface(0x67E, 0x2, 0x3, 4);
-	/* [3:3]: RG_VTCXO_0_ON_CTRL; 12/15, Fandy HW mode*/
+	/* [3:3]: RG_VTCXO_0_ON_CTRL; 12/15, Fandy HW mode */
 	ret = pmic_config_interface(0xA00, 0x1, 0x1, 3);
-	/* [3:3]: RG_VTCXO_1_ON_CTRL; by RF request 11/02,Luke*/
+	/* [3:3]: RG_VTCXO_1_ON_CTRL; by RF request 11/02,Luke */
 	ret = pmic_config_interface(0xA02, 0x1, 0x1, 3);
-	/* [6:6]: RG_VAUX18_AUXADC_PWDB_EN; Chuan-Hung*/
+	/* [6:6]: RG_VAUX18_AUXADC_PWDB_EN; Chuan-Hung */
 	ret = pmic_config_interface(0xA06, 0x1, 0x1, 6);
-	/* [0:0]: RG_VEFUSE_MODE_SET; Fandy:Disable VEFUSE*/
+	/* [0:0]: RG_VEFUSE_MODE_SET; Fandy:Disable VEFUSE */
 	ret = pmic_config_interface(0xA30, 0x0, 0x1, 0);
-	/* [1:1]: RG_TREF_EN; Tim*/
+	/* [1:1]: RG_TREF_EN; Tim */
 	ret = pmic_config_interface(0xA44, 0x1, 0x1, 1);
-	/* [14:14]: QI_VM_STB; Fandy, disable*/
+	/* [14:14]: QI_VM_STB; Fandy, disable */
 	ret = pmic_config_interface(0xA46, 0x0, 0x1, 14);
-	/* [5:4]: RG_VEMC_3V3_VOSEL;*/
+	/* [5:4]: RG_VEMC_3V3_VOSEL; */
 	ret = pmic_config_interface(0xA64, 0x2, 0x3, 4);
-	/* [0:0]: RG_SKIP_OTP_OUT; Fandy: for CORE power(VDVFS1x, VCOREx, VSRAM_DVFS) max voltage limitation.*/
+	/* [0:0]: RG_SKIP_OTP_OUT; Fandy: for CORE power(VDVFS1x, VCOREx, VSRAM_DVFS) max voltage limitation. */
 	ret = pmic_config_interface(0xC14, 0x1, 0x1, 0);
-	/* [8:8]: FG_SLP_EN; Ricky*/
+	/* [8:8]: FG_SLP_EN; Ricky */
 	ret = pmic_config_interface(0xCBC, 0x1, 0x1, 8);
-	/* [9:9]: FG_ZCV_DET_EN; Ricky*/
+	/* [9:9]: FG_ZCV_DET_EN; Ricky */
 	ret = pmic_config_interface(0xCBC, 0x1, 0x1, 9);
-	/* [15:0]: FG_SLP_CUR_TH; Ricky*/
+	/* [15:0]: FG_SLP_CUR_TH; Ricky */
 	ret = pmic_config_interface(0xCC0, 0x24, 0xFFFF, 0);
-	/* [7:0]: FG_SLP_TIME; Ricky*/
+	/* [7:0]: FG_SLP_TIME; Ricky */
 	ret = pmic_config_interface(0xCC2, 0x14, 0xFF, 0);
-	/* [15:8]: FG_DET_TIME; Ricky*/
+	/* [15:8]: FG_DET_TIME; Ricky */
 	ret = pmic_config_interface(0xCC4, 0xFF, 0xFF, 8);
-	/* [13:13]: AUXADC_CK_AON_GPS; YP Niou, sync with golden setting*/
+	/* [13:13]: AUXADC_CK_AON_GPS; YP Niou, sync with golden setting */
 	ret = pmic_config_interface(0xE94, 0x0, 0x1, 13);
-	/* [14:14]: AUXADC_CK_AON_MD; YP Niou, sync with golden setting*/
+	/* [14:14]: AUXADC_CK_AON_MD; YP Niou, sync with golden setting */
 	ret = pmic_config_interface(0xE94, 0x0, 0x1, 14);
-	/* [15:15]: AUXADC_CK_AON; YP Niou, sync with golden setting*/
+	/* [15:15]: AUXADC_CK_AON; YP Niou, sync with golden setting */
 	ret = pmic_config_interface(0xE94, 0x0, 0x1, 15);
-	/* [5:4]: AUXADC_TRIM_CH2_SEL; Ricky*/
+	/* [5:4]: AUXADC_TRIM_CH2_SEL; Ricky */
 	ret = pmic_config_interface(0xEA4, 0x1, 0x3, 4);
-	/* [7:6]: AUXADC_TRIM_CH3_SEL; Ricky*/
+	/* [7:6]: AUXADC_TRIM_CH3_SEL; Ricky */
 	ret = pmic_config_interface(0xEA4, 0x1, 0x3, 6);
-	/* [9:8]: AUXADC_TRIM_CH4_SEL; Ricky*/
+	/* [9:8]: AUXADC_TRIM_CH4_SEL; Ricky */
 	ret = pmic_config_interface(0xEA4, 0x1, 0x3, 8);
-	/* [11:10]: AUXADC_TRIM_CH5_SEL; Ricky*/
+	/* [11:10]: AUXADC_TRIM_CH5_SEL; Ricky */
 	ret = pmic_config_interface(0xEA4, 0x1, 0x3, 10);
-	/* [13:12]: AUXADC_TRIM_CH6_SEL; Ricky*/
+	/* [13:12]: AUXADC_TRIM_CH6_SEL; Ricky */
 	ret = pmic_config_interface(0xEA4, 0x1, 0x3, 12);
-	/* [15:14]: AUXADC_TRIM_CH7_SEL; Ricky*/
+	/* [15:14]: AUXADC_TRIM_CH7_SEL; Ricky */
 	ret = pmic_config_interface(0xEA4, 0x2, 0x3, 14);
-	/* [1:0]: AUXADC_TRIM_CH8_SEL; Ricky*/
+	/* [1:0]: AUXADC_TRIM_CH8_SEL; Ricky */
 	ret = pmic_config_interface(0xEA6, 0x1, 0x3, 0);
-	/* [3:2]: AUXADC_TRIM_CH9_SEL; Ricky*/
+	/* [3:2]: AUXADC_TRIM_CH9_SEL; Ricky */
 	ret = pmic_config_interface(0xEA6, 0x1, 0x3, 2);
-	/* [5:4]: AUXADC_TRIM_CH10_SEL; Ricky*/
+	/* [5:4]: AUXADC_TRIM_CH10_SEL; Ricky */
 	ret = pmic_config_interface(0xEA6, 0x1, 0x3, 4);
-	/* [7:6]: AUXADC_TRIM_CH11_SEL; Ricky*/
+	/* [7:6]: AUXADC_TRIM_CH11_SEL; Ricky */
 	ret = pmic_config_interface(0xEA6, 0x1, 0x3, 6);
-	/* [14:14]: AUXADC_START_SHADE_EN; Chuan-Hung*/
+	/* [14:14]: AUXADC_START_SHADE_EN; Chuan-Hung */
 	ret = pmic_config_interface(0xEB8, 0x1, 0x1, 14);
-	/* [7:4]: RG_VCDT_HV_VTH; Tim:VCDT_HV_th=7V*/
+	/* [7:4]: RG_VCDT_HV_VTH; Tim:VCDT_HV_th=7V */
 	ret = pmic_config_interface(0xF4A, 0xB, 0xF, 4);
-	/* [3:1]: RG_VBAT_OV_VTH; Tim:for 4.35 battery*/
+	/* [3:1]: RG_VBAT_OV_VTH; Tim:for 4.35 battery */
 	ret = pmic_config_interface(0xF54, 0x0, 0x7, 1);
-	/* [3:0]: RG_CHRWDT_TD; Tim:WDT=32s*/
+	/* [3:0]: RG_CHRWDT_TD; Tim:WDT=32s */
 	ret = pmic_config_interface(0xF62, 0x3, 0xF, 0);
-	/* [4:0]: RG_LBAT_INT_VTH; Ricky: E1 only*/
+	/* [4:0]: RG_LBAT_INT_VTH; Ricky: E1 only */
 	ret = pmic_config_interface(0xF6C, 0x2, 0x1F, 0);
-	/* [1:1]: RG_BC11_RST; Tim:Disable BC1.1 timer*/
+	/* [1:1]: RG_BC11_RST; Tim:Disable BC1.1 timer */
 	ret = pmic_config_interface(0xF70, 0x1, 0x1, 1);
-	/* [6:4]: RG_CSDAC_STP_DEC; Tim:Reduce ICHG current ripple (align 6323)*/
+	/* [6:4]: RG_CSDAC_STP_DEC; Tim:Reduce ICHG current ripple (align 6323) */
 	ret = pmic_config_interface(0xF74, 0x0, 0x7, 4);
-	/* [2:2]: RG_CSDAC_MODE; Tim:Align 6323*/
+	/* [2:2]: RG_CSDAC_MODE; Tim:Align 6323 */
 	ret = pmic_config_interface(0xF7A, 0x1, 0x1, 2);
-	/* [6:6]: RG_HWCV_EN; Tim:Align 6323*/
+	/* [6:6]: RG_HWCV_EN; Tim:Align 6323 */
 	ret = pmic_config_interface(0xF7A, 0x1, 0x1, 6);
-	/* [7:7]: RG_ULC_DET_EN; Tim:Align 6323*/
+	/* [7:7]: RG_ULC_DET_EN; Tim:Align 6323 */
 	ret = pmic_config_interface(0xF7A, 0x1, 0x1, 7);
 /*#endif*/
 
 	/*--------------------------------------------------------*/
 
 #ifdef CONFIG_CRYSTAL /*TBD*/
-	if (crystal_exist_status() == 0) {
+	    if (crystal_exist_status() == 0) {
 		PMICLOG("32k-less VTCXO always on...\n");
 		pmic_set_register_value(PMIC_RG_VTCXO_0_ON_CTRL, 0);
 		pmic_set_register_value(PMIC_RG_VTCXO_0_EN, 1);
@@ -3979,7 +3983,7 @@ void dump_ldo_status_read_debug(void)
 			voltage = -1;
 		}
 		pr_err("%s   status:%d     voltage:%duv    voltage_reg:%d\n",
-			mtk_bucks[i].desc.name, en, voltage, voltage_reg);
+		       mtk_bucks[i].desc.name, en, voltage, voltage_reg);
 	}
 
 	for (i = 0; i < ARRAY_SIZE(mtk_ldos); i++) {
@@ -4009,7 +4013,7 @@ void dump_ldo_status_read_debug(void)
 		}
 
 		pr_err("%s   status:%d     voltage:%duv    voltage_reg:%d\n",
-			mtk_ldos[i].desc.name, en, voltage, voltage_reg);
+		       mtk_ldos[i].desc.name, en, voltage, voltage_reg);
 	}
 
 
@@ -4117,14 +4121,14 @@ static int proc_dump_register_show(struct seq_file *m, void *v)
 
 	for (i = 0; i <= 0x0fae; i = i + 10) {
 		seq_printf(m, "Reg[%x]=0x%x Reg[%x]=0x%x Reg[%x]=0x%x Reg[%x]=0x%x Reg[%x]=0x%x\n",
-			i, upmu_get_reg_value(i), i + 1, upmu_get_reg_value(i + 1), i + 2,
-			upmu_get_reg_value(i + 2), i + 3, upmu_get_reg_value(i + 3), i + 4,
-			upmu_get_reg_value(i + 4));
+			   i, upmu_get_reg_value(i), i + 1, upmu_get_reg_value(i + 1), i + 2,
+			   upmu_get_reg_value(i + 2), i + 3, upmu_get_reg_value(i + 3), i + 4,
+			   upmu_get_reg_value(i + 4));
 
 		seq_printf(m, "Reg[%x]=0x%x Reg[%x]=0x%x Reg[%x]=0x%x Reg[%x]=0x%x Reg[%x]=0x%x\n",
-			i + 5, upmu_get_reg_value(i + 5), i + 6, upmu_get_reg_value(i + 6),
-			i + 7, upmu_get_reg_value(i + 7), i + 8, upmu_get_reg_value(i + 8),
-			i + 9, upmu_get_reg_value(i + 9));
+			   i + 5, upmu_get_reg_value(i + 5), i + 6, upmu_get_reg_value(i + 6),
+			   i + 7, upmu_get_reg_value(i + 7), i + 8, upmu_get_reg_value(i + 8),
+			   i + 9, upmu_get_reg_value(i + 9));
 	}
 
 	return 0;
@@ -4243,7 +4247,7 @@ static ssize_t store_low_battery_protect_ut(struct device *dev, struct device_at
 
 	if (buf != NULL && size != 0) {
 		pr_err("[store_low_battery_protect_ut] buf is %s and size is %zu\n", buf, size);
-		/*val = simple_strtoul(buf, &pvalue, 16);*/
+		/*val = simple_strtoul(buf, &pvalue, 16); */
 		pvalue = (char *)buf;
 		ret = kstrtou32(pvalue, 16, (unsigned int *)&val);
 		if (val <= 2) {
@@ -4256,7 +4260,7 @@ static ssize_t store_low_battery_protect_ut(struct device *dev, struct device_at
 	return size;
 }
 
-static DEVICE_ATTR(low_battery_protect_ut, 0664, show_low_battery_protect_ut, store_low_battery_protect_ut);	/*664*/
+static DEVICE_ATTR(low_battery_protect_ut, 0664, show_low_battery_protect_ut, store_low_battery_protect_ut);	/*664 */
 
 /*****************************************************************************
  * low battery protect stop
@@ -4279,14 +4283,14 @@ static ssize_t store_low_battery_protect_stop(struct device *dev, struct device_
 
 	if (buf != NULL && size != 0) {
 		pr_err("[store_low_battery_protect_stop] buf is %s and size is %zu\n", buf, size);
-		/*val = simple_strtoul(buf, &pvalue, 16);*/
+		/*val = simple_strtoul(buf, &pvalue, 16); */
 		pvalue = (char *)buf;
 		ret = kstrtou32(pvalue, 16, (unsigned int *)&val);
 		if ((val != 0) && (val != 1))
 			val = 0;
 		g_low_battery_stop = val;
 		pr_err("[store_low_battery_protect_stop] g_low_battery_stop=%d\n",
-			g_low_battery_stop);
+		       g_low_battery_stop);
 	}
 	return size;
 }
@@ -4338,7 +4342,7 @@ static ssize_t store_battery_oc_protect_ut(struct device *dev, struct device_att
 
 	if (buf != NULL && size != 0) {
 		pr_err("[store_battery_oc_protect_ut] buf is %s and size is %zu\n", buf, size);
-		/*val = simple_strtoul(buf, &pvalue, 16);*/
+		/*val = simple_strtoul(buf, &pvalue, 16); */
 		pvalue = (char *)buf;
 		ret = kstrtou32(pvalue, 16, (unsigned int *)&val);
 		if (val <= 1) {
@@ -4375,20 +4379,19 @@ static ssize_t store_battery_oc_protect_stop(struct device *dev, struct device_a
 
 	if (buf != NULL && size != 0) {
 		pr_err("[store_battery_oc_protect_stop] buf is %s and size is %zu\n", buf, size);
-		/*val = simple_strtoul(buf, &pvalue, 16);*/
+		/*val = simple_strtoul(buf, &pvalue, 16); */
 		pvalue = (char *)buf;
 		ret = kstrtou32(pvalue, 16, (unsigned int *)&val);
 		if ((val != 0) && (val != 1))
 			val = 0;
 		g_battery_oc_stop = val;
-		pr_err("[store_battery_oc_protect_stop] g_battery_oc_stop=%d\n",
-			g_battery_oc_stop);
+		pr_err("[store_battery_oc_protect_stop] g_battery_oc_stop=%d\n", g_battery_oc_stop);
 	}
 	return size;
 }
 
 static DEVICE_ATTR(battery_oc_protect_stop, 0664,
-			show_battery_oc_protect_stop, store_battery_oc_protect_stop);	/*664*/
+			show_battery_oc_protect_stop, store_battery_oc_protect_stop);	/*664 */
 
 /*****************************************************************************
  * battery OC protect level
@@ -4409,35 +4412,33 @@ static ssize_t store_battery_oc_protect_level(struct device *dev, struct device_
 }
 
 static DEVICE_ATTR(battery_oc_protect_level, 0664,
-			show_battery_oc_protect_level, store_battery_oc_protect_level);	/*664*/
+			show_battery_oc_protect_level, store_battery_oc_protect_level);	/*664 */
 #endif
 
 #ifdef BATTERY_PERCENT_PROTECT
 /*****************************************************************************
  * battery percent protect UT
  ******************************************************************************/
-static ssize_t show_battery_percent_ut(struct device *dev, struct device_attribute *attr,
-					       char *buf)
+static ssize_t show_battery_percent_ut(struct device *dev, struct device_attribute *attr, char *buf)
 {
-	/*show_battery_percent_protect_ut*/
+	/*show_battery_percent_protect_ut */
 	PMICLOG("[show_battery_percent_protect_ut] g_battery_percent_level=%d\n",
 		g_battery_percent_level);
 	return sprintf(buf, "%u\n", g_battery_percent_level);
 }
 
 static ssize_t store_battery_percent_ut(struct device *dev, struct device_attribute *attr,
-						const char *buf, size_t size)
+					const char *buf, size_t size)
 {
 	int ret = 0;
 	char *pvalue = NULL;
 	unsigned int val = 0;
-	/*store_battery_percent_protect_ut*/
+	/*store_battery_percent_protect_ut */
 	pr_err("[store_battery_percent_protect_ut]\n");
 
 	if (buf != NULL && size != 0) {
-		pr_err("[store_battery_percent_protect_ut] buf is %s and size is %zu\n", buf,
-			size);
-		/*val = simple_strtoul(buf, &pvalue, 16);*/
+		pr_err("[store_battery_percent_protect_ut] buf is %s and size is %zu\n", buf, size);
+		/*val = simple_strtoul(buf, &pvalue, 16); */
 		pvalue = (char *)buf;
 		ret = kstrtou32(pvalue, 16, (unsigned int *)&val);
 		if (val <= 1) {
@@ -4450,65 +4451,63 @@ static ssize_t store_battery_percent_ut(struct device *dev, struct device_attrib
 	return size;
 }
 
-static DEVICE_ATTR(battery_percent_protect_ut, 0664,
-			show_battery_percent_ut, store_battery_percent_ut);	/*664*/
+static DEVICE_ATTR(battery_percent_protect_ut, 0664, show_battery_percent_ut, store_battery_percent_ut);	/*664 */
 
 /*
  * battery percent protect stop
  ******************************************************************************/
 static ssize_t show_battery_percent_stop(struct device *dev, struct device_attribute *attr,
-						 char *buf)
+					 char *buf)
 {
-	/*show_battery_percent_protect_stop*/
+	/*show_battery_percent_protect_stop */
 	PMICLOG("[show_battery_percent_protect_stop] g_battery_percent_stop=%d\n",
 		g_battery_percent_stop);
 	return sprintf(buf, "%u\n", g_battery_percent_stop);
 }
 
 static ssize_t store_battery_percent_stop(struct device *dev, struct device_attribute *attr,
-						  const char *buf, size_t size)
+					  const char *buf, size_t size)
 {
 	int ret = 0;
 	char *pvalue = NULL;
 	unsigned int val = 0;
-	/*store_battery_percent_protect_stop*/
+	/*store_battery_percent_protect_stop */
 	pr_err("[store_battery_percent_protect_stop]\n");
 
 	if (buf != NULL && size != 0) {
 		pr_err("[store_battery_percent_protect_stop] buf is %s and size is %zu\n", buf,
-			size);
-		/*val = simple_strtoul(buf, &pvalue, 16);*/
+		       size);
+		/*val = simple_strtoul(buf, &pvalue, 16); */
 		pvalue = (char *)buf;
 		ret = kstrtou32(pvalue, 16, (unsigned int *)&val);
 		if ((val != 0) && (val != 1))
 			val = 0;
 		g_battery_percent_stop = val;
 		pr_err("[store_battery_percent_protect_stop] g_battery_percent_stop=%d\n",
-			g_battery_percent_stop);
+		       g_battery_percent_stop);
 	}
 	return size;
 }
 
-static DEVICE_ATTR(battery_percent_protect_stop, 0664,
-			show_battery_percent_stop, store_battery_percent_stop);	/*664*/
+static DEVICE_ATTR(battery_percent_protect_stop, 0664, show_battery_percent_stop, store_battery_percent_stop);	/*664 */
 
 /*
  * battery percent protect level
  ******************************************************************************/
 static ssize_t show_battery_percent_level(struct device *dev, struct device_attribute *attr,
-						  char *buf)
+					  char *buf)
 {
-	/*show_battery_percent_protect_level*/
+	/*show_battery_percent_protect_level */
 	PMICLOG("[show_battery_percent_protect_level] g_battery_percent_level=%d\n",
 		g_battery_percent_level);
 	return sprintf(buf, "%u\n", g_battery_percent_level);
 }
 
 static ssize_t store_battery_percent_level(struct device *dev,
-						   struct device_attribute *attr, const char *buf,
-						   size_t size)
+					   struct device_attribute *attr, const char *buf,
+					   size_t size)
 {
-	/*store_battery_percent_protect_level*/
+	/*store_battery_percent_protect_level */
 	PMICLOG("[store_battery_percent_protect_level] g_battery_percent_level=%d\n",
 		g_battery_percent_level);
 
@@ -4516,7 +4515,7 @@ static ssize_t store_battery_percent_level(struct device *dev,
 }
 
 static DEVICE_ATTR(battery_percent_protect_level, 0664,
-			show_battery_percent_level, store_battery_percent_level);	/*664*/
+			show_battery_percent_level, store_battery_percent_level);	/*664 */
 #endif
 
 #ifdef DLPT_FEATURE_SUPPORT
@@ -4540,7 +4539,7 @@ static ssize_t store_dlpt_ut(struct device *dev, struct device_attribute *attr, 
 
 	if (buf != NULL && size != 0) {
 		pr_err("[store_dlpt_ut] buf is %s and size is %zu\n", buf, size);
-		/*val = simple_strtoul(buf, &pvalue, 10);*/
+		/*val = simple_strtoul(buf, &pvalue, 10); */
 		pvalue = (char *)buf;
 		ret = kstrtou32(pvalue, 10, (unsigned int *)&val);
 
@@ -4550,7 +4549,7 @@ static ssize_t store_dlpt_ut(struct device *dev, struct device_attribute *attr, 
 	return size;
 }
 
-static DEVICE_ATTR(dlpt_ut, 0664, show_dlpt_ut, store_dlpt_ut);	/*664*/
+static DEVICE_ATTR(dlpt_ut, 0664, show_dlpt_ut, store_dlpt_ut);	/*664 */
 
 /*****************************************************************************
  * DLPT stop
@@ -4572,7 +4571,7 @@ static ssize_t store_dlpt_stop(struct device *dev, struct device_attribute *attr
 
 	if (buf != NULL && size != 0) {
 		pr_err("[store_dlpt_stop] buf is %s and size is %zu\n", buf, size);
-		/*val = simple_strtoul(buf, &pvalue, 16);*/
+		/*val = simple_strtoul(buf, &pvalue, 16); */
 		pvalue = (char *)buf;
 		ret = kstrtou32(pvalue, 16, (unsigned int *)&val);
 		if ((val != 0) && (val != 1))
@@ -4602,7 +4601,7 @@ static ssize_t store_dlpt_level(struct device *dev, struct device_attribute *att
 	return size;
 }
 
-static DEVICE_ATTR(dlpt_level, 0664, show_dlpt_level, store_dlpt_level);	/*664*/
+static DEVICE_ATTR(dlpt_level, 0664, show_dlpt_level, store_dlpt_level);	/*664 */
 #endif
 
 /*****************************************************************************
@@ -4618,7 +4617,7 @@ static int fb_early_init_dt_get_chosen(unsigned long node, const char *uname, in
 	pmic_node = node;
 	return 1;
 }
-#endif /*end of #ifdef DLPT_FEATURE_SUPPORT*/
+#endif				/*end of #ifdef DLPT_FEATURE_SUPPORT */
 static int pmic_mt_probe(struct platform_device *dev)
 {
 	int ret_device_file = 0, i;
@@ -4637,8 +4636,7 @@ static int pmic_mt_probe(struct platform_device *dev)
 
 	if (of_property_read_u32(np, "car_tune_value", &val) == 0) {
 		batt_meter_cust_data.car_tune_value = (int)val;
-		PMICLOG("Get car_tune_value from DT: %d\n",
-			 batt_meter_cust_data.car_tune_value);
+		PMICLOG("Get car_tune_value from DT: %d\n", batt_meter_cust_data.car_tune_value);
 	} else {
 		batt_meter_cust_data.car_tune_value = CAR_TUNE_VALUE;
 		PMICLOG("Get car_tune_value from cust header\n");
@@ -4657,7 +4655,7 @@ static int pmic_mt_probe(struct platform_device *dev)
 
 	PMICLOG("******** MT pmic driver probe!! ********%d\n", ptim_rac_val_avg);
 	pr_debug("[PMIC]pmic_mt_probe %s %s\n", dev->name, dev->id_entry->name);
-#endif /* #ifdef DLPT_FEATURE_SUPPORT */
+#endif				/* #ifdef DLPT_FEATURE_SUPPORT */
 	/*get PMIC CID */
 	pr_debug
 	    ("PMIC CID=0x%x PowerGoodStatus = 0x%x OCStatus = 0x%x ThermalStatus = 0x%x rsvStatus = 0x%x\n",
@@ -4685,7 +4683,7 @@ static int pmic_mt_probe(struct platform_device *dev)
 #if 0
 	PMICLOG("[PMIC_EINT_SETTING] disable when CONFIG_MTK_FPGA\n");
 #else
-	/*PMIC Interrupt Service*/
+	/*PMIC Interrupt Service */
 	pmic_thread_handle = kthread_create(pmic_thread_kthread, (void *)NULL, "pmic_thread");
 	if (IS_ERR(pmic_thread_handle)) {
 		pmic_thread_handle = NULL;
@@ -4742,16 +4740,16 @@ static int pmic_mt_probe(struct platform_device *dev)
 
 
 
-	/*EM BUCK voltage & Status*/
+	/*EM BUCK voltage & Status */
 	for (i = 0; i < ARRAY_SIZE(mtk_bucks); i++) {
-		/*PMICLOG("[PMIC] register buck id=%d\n",i);*/
+		/*PMICLOG("[PMIC] register buck id=%d\n",i); */
 		ret_device_file = device_create_file(&(dev->dev), &mtk_bucks[i].en_att);
 		ret_device_file = device_create_file(&(dev->dev), &mtk_bucks[i].voltage_att);
 	}
 
-	/*EM ldo voltage & Status*/
+	/*EM ldo voltage & Status */
 	for (i = 0; i < ARRAY_SIZE(mtk_ldos); i++) {
-		/*PMICLOG("[PMIC] register ldo id=%d\n",i);*/
+		/*PMICLOG("[PMIC] register ldo id=%d\n",i); */
 		ret_device_file = device_create_file(&(dev->dev), &mtk_ldos[i].en_att);
 		ret_device_file = device_create_file(&(dev->dev), &mtk_ldos[i].voltage_att);
 	}
@@ -4785,7 +4783,7 @@ static int pmic_mt_probe(struct platform_device *dev)
 
 	PMICLOG("[PMIC] device_create_file for EM : done.\n");
 
-	/*pwrkey_sw_workaround_init();*/
+	/*pwrkey_sw_workaround_init(); */
 	return 0;
 }
 
@@ -4845,11 +4843,11 @@ static int pmic_mt_resume(struct platform_device *dev)
 		lbat_min_en_setting(1);
 		lbat_max_en_setting(1);
 	} else if (g_low_battery_level == 2) {
-		/*lbat_min_en_setting(0);*/
+		/*lbat_min_en_setting(0); */
 		lbat_max_en_setting(1);
-	} else {		/*0*/
+	} else {		/*0 */
 		lbat_min_en_setting(1);
-		/*lbat_max_en_setting(0);*/
+		/*lbat_max_en_setting(0); */
 	}
 
 	PMICLOG("Reg[0x%x]=0x%x, Reg[0x%x]=0x%x, Reg[0x%x]=0x%x\n",
@@ -4888,10 +4886,10 @@ static struct platform_driver pmic_mt_driver = {
 	.probe = pmic_mt_probe,
 	.remove = pmic_mt_remove,
 	.shutdown = pmic_mt_shutdown,
-	/*#ifdef CONFIG_PM*/
+	/*#ifdef CONFIG_PM */
 	.suspend = pmic_mt_suspend,
 	.resume = pmic_mt_resume,
-	/*#endif*/
+	/*#endif */
 	.driver = {
 		   .name = "mt-pmic",
 		   },
@@ -4906,39 +4904,39 @@ unsigned int pmic_Read_Efuse_HPOffset(int i)
 
 	pr_debug("pmic_Read_Efuse_HPOffset(+)\n");
 	mutex_lock(&pmic_efuse_lock_mutex);
-	/*1. enable efuse ctrl engine clock*/
+	/*1. enable efuse ctrl engine clock */
 	ret = pmic_config_interface(0x027C, 0x0040, 0xFFFF, 0);
 	ret = pmic_config_interface(0x0252, 0x0004, 0xFFFF, 0);
 
-	/*2.*/
+	/*2. */
 	ret = pmic_config_interface(0x0C16, 0x1, 0x1, 0);
 
 
-	/*3. set row to read*/
+	/*3. set row to read */
 	ret = pmic_config_interface(0x0C00, i, 0x1F, 1);
 
-	/*4. Toggle*/
-udelay(100);
+	/*4. Toggle */
+	udelay(100);
 	ret = pmic_read_interface(0x0C10, &reg_val, 0x1, 0);
 	if (reg_val == 0)
 		ret = pmic_config_interface(0x0C10, 1, 0x1, 0);
 	else
 		ret = pmic_config_interface(0x0C10, 0, 0x1, 0);
 
-	/*5. polling Reg[0x61A]*/
-udelay(300);
+	/*5. polling Reg[0x61A] */
+	udelay(300);
 	reg_val = 1;
 	while (reg_val == 1) {
 		ret = pmic_read_interface(0x0C1A, &reg_val, 0x1, 0);
 		pr_debug("pmic_Read_Efuse_HPOffset polling 0x61A=0x%x\n", reg_val);
 	}
 
-	udelay(1000);		/*Need to delay at least 1ms for 0x61A and than can read 0xC18*/
+	udelay(1000);		/*Need to delay at least 1ms for 0x61A and than can read 0xC18 */
 
-	/*6. read data*/
+	/*6. read data */
 	efusevalue = upmu_get_reg_value(0x0C18);
 	pr_debug("HPoffset : efuse=0x%x\n", efusevalue);
-	/*7. Disable efuse ctrl engine clock*/
+	/*7. Disable efuse ctrl engine clock */
 	ret = pmic_config_interface(0x0250, 0x0004, 0xFFFF, 0);
 	ret = pmic_config_interface(0x027A, 0x0040, 0xFFFF, 0);
 	mutex_unlock(&pmic_efuse_lock_mutex);
@@ -4961,7 +4959,7 @@ static int __init pmic_mt_init(void)
 	wake_lock_init(&bat_percent_notify_lock, WAKE_LOCK_SUSPEND,
 		       "bat_percent_notify_lock wakelock");
 #endif
-#endif /* #ifdef BATTERY_PERCENT_PROTECT */
+#endif				/* #ifdef BATTERY_PERCENT_PROTECT */
 
 #ifdef DLPT_FEATURE_SUPPORT
 #if !defined CONFIG_HAS_WAKELOCKS
@@ -4969,13 +4967,13 @@ static int __init pmic_mt_init(void)
 #else
 	wake_lock_init(&dlpt_notify_lock, WAKE_LOCK_SUSPEND, "dlpt_notify_lock wakelock");
 #endif
-#endif				/*#ifdef DLPT_FEATURE_SUPPORT*/
+#endif				/*#ifdef DLPT_FEATURE_SUPPORT */
 
 #if !defined CONFIG_MTK_LEGACY
 #ifdef CONFIG_OF
 	PMICLOG("pmic_regulator_init_OF\n");
 
-	/* PMIC device driver register*/
+	/* PMIC device driver register */
 	ret = platform_device_register(&pmic_mt_device);
 	if (ret) {
 		PMICLOG("****[pmic_mt_init] Unable to device register(%d)\n", ret);
@@ -4994,7 +4992,7 @@ static int __init pmic_mt_init(void)
 #endif				/* End of #ifdef CONFIG_OF */
 #else
 	PMICLOG("pmic_regulator_init\n");
-	/* PMIC device driver register*/
+	/* PMIC device driver register */
 	ret = platform_device_register(&pmic_mt_device);
 	if (ret) {
 		PMICLOG("****[pmic_mt_init] Unable to device register(%d)\n", ret);
