@@ -19,6 +19,7 @@
 #include <linux/uaccess.h>
 #include <linux/fs.h>
 #include <asm/atomic.h>
+#include <mt_chip.h>
 
 #include "kd_camera_typedef.h"
 #include "kd_imgsensor.h"
@@ -364,6 +365,7 @@ struct pinctrl_state *cam_ldo_main2_vcamd_l = NULL;
 int mtkcam_gpio_init(struct platform_device *pdev)
 {
 	int ret = 0;
+	int ver = 0;
 
 	camctrl = devm_pinctrl_get(&pdev->dev);
 	if (IS_ERR(camctrl)) {
@@ -462,17 +464,34 @@ int mtkcam_gpio_init(struct platform_device *pdev)
 		ret = PTR_ERR(cam_ldo_vcama_l);
 		PK_ERR("%s : pinctrl err, cam_ldo_vcama_l\n", __func__);
 	}
-    /*GPIO 110*/
-	cam_ldo_vcamd_h = pinctrl_lookup_state(camctrl, "cam_ldo_vcamd_1");
-	if (IS_ERR(cam_ldo_vcamd_h)) {
-		ret = PTR_ERR(cam_ldo_vcamd_h);
-		PK_ERR("%s : pinctrl err, cam_ldo_vcamd_h\n", __func__);
-	}
+    /*E1:GPIO 110, E2:GPIO 140*/
+	ver = mt_get_chip_hw_ver();
+	if (0xCA01 == ver) {
+		 // do something for chips for E2
+		cam_ldo_vcamd_h = pinctrl_lookup_state(camctrl, "cam_ldo_vcamd2_1");
+		if (IS_ERR(cam_ldo_vcamd_h)) {
+			ret = PTR_ERR(cam_ldo_vcamd_h);
+			PK_ERR("%s : pinctrl err, cam_ldo_vcamd_h\n", __func__);
+		}
 
-	cam_ldo_vcamd_l = pinctrl_lookup_state(camctrl, "cam_ldo_vcamd_0");
-	if (IS_ERR(cam_ldo_vcamd_l)) {
-		ret = PTR_ERR(cam_ldo_vcamd_l);
-		PK_ERR("%s : pinctrl err, cam_ldo_vcamd_l\n", __func__);
+		cam_ldo_vcamd_l = pinctrl_lookup_state(camctrl, "cam_ldo_vcamd2_0");
+		if (IS_ERR(cam_ldo_vcamd_l)) {
+			ret = PTR_ERR(cam_ldo_vcamd_l);
+			PK_ERR("%s : pinctrl err, cam_ldo_vcamd_l\n", __func__);
+		}
+	} else {
+		 // do something for chips for E1
+		cam_ldo_vcamd_h = pinctrl_lookup_state(camctrl, "cam_ldo_vcamd_1");
+		if (IS_ERR(cam_ldo_vcamd_h)) {
+			ret = PTR_ERR(cam_ldo_vcamd_h);
+			PK_ERR("%s : pinctrl err, cam_ldo_vcamd_h\n", __func__);
+		}
+
+		cam_ldo_vcamd_l = pinctrl_lookup_state(camctrl, "cam_ldo_vcamd_0");
+		if (IS_ERR(cam_ldo_vcamd_l)) {
+			ret = PTR_ERR(cam_ldo_vcamd_l);
+			PK_ERR("%s : pinctrl err, cam_ldo_vcamd_l\n", __func__);
+		}
 	}
 
 	return ret;
