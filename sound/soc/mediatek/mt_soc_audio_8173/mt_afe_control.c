@@ -1651,11 +1651,15 @@ static void mt_afe_init_control(void *dev)
 
 	audio_mrg->mrg_i2s_sample_rate = mt_afe_rate_to_idx(44100);
 
+	mt_afe_main_clk_on();
+
 	/* power down all dividers */
 	for (i = MT_AFE_APLL1_DIV0; i < MT_AFE_APLL_DIV_COUNT; i++)
 		mt_afe_disable_i2s_div_power(i);
 
 	mt_afe_set_reg(AFE_IRQ_MCU_EN, 1 << 2, 1 << 2);
+
+	mt_afe_main_clk_off();
 }
 
 static int mt_afe_register_irq(void *dev)

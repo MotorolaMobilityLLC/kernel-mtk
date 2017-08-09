@@ -39,7 +39,6 @@ static void mt_pcm_dl1_awb_start_audio_hw(struct snd_pcm_substream *substream)
 	mt_afe_set_channels(MT_AFE_DIGITAL_BLOCK_MEM_AWB, substream->runtime->channels);
 	mt_afe_enable_memory_path(MT_AFE_DIGITAL_BLOCK_MEM_AWB);
 
-	/* here to set interrupt */
 	mt_afe_get_irq_state(MT_AFE_IRQ_MCU_MODE_IRQ2, &irq_status);
 	if (likely(!irq_status.status)) {
 		mt_afe_set_irq_counter(MT_AFE_IRQ_MCU_MODE_IRQ2, substream->runtime->period_size);
@@ -49,9 +48,11 @@ static void mt_pcm_dl1_awb_start_audio_hw(struct snd_pcm_substream *substream)
 		pr_debug("%s IRQ2_MCU_MODE is enabled , use original irq2 interrupt mode\n",
 			 __func__);
 	}
-	/* here to turn off digital part */
+
 	mt_afe_set_connection(INTER_CONNECT, INTER_CONN_I05, INTER_CONN_O05);
 	mt_afe_set_connection(INTER_CONNECT, INTER_CONN_I06, INTER_CONN_O06);
+	mt_afe_set_connection(INTER_CONNECT, INTER_CONN_I07, INTER_CONN_O05);
+	mt_afe_set_connection(INTER_CONNECT, INTER_CONN_I08, INTER_CONN_O06);
 
 	mt_afe_enable_afe(true);
 }
@@ -62,12 +63,12 @@ static void mt_pcm_dl1_awb_stop_audio_hw(struct snd_pcm_substream *substream)
 
 	mt_afe_disable_memory_path(MT_AFE_DIGITAL_BLOCK_MEM_AWB);
 
-	/* here to set interrupt */
 	mt_afe_set_irq_state(MT_AFE_IRQ_MCU_MODE_IRQ2, false);
 
-	/* here to turn off digital part */
 	mt_afe_set_connection(INTER_DISCONNECT, INTER_CONN_I05, INTER_CONN_O05);
 	mt_afe_set_connection(INTER_DISCONNECT, INTER_CONN_I06, INTER_CONN_O06);
+	mt_afe_set_connection(INTER_DISCONNECT, INTER_CONN_I07, INTER_CONN_O05);
+	mt_afe_set_connection(INTER_DISCONNECT, INTER_CONN_I08, INTER_CONN_O06);
 
 	mt_afe_enable_afe(false);
 }
