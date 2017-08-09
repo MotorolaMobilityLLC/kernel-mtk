@@ -67,9 +67,9 @@ static void set_static_cpu_power_limit(unsigned int limit)
 	final_limit = MIN(adaptive_cpu_power_limit, static_cpu_power_limit);
 
 	if (prv_stc_cpu_pwr_lim != static_cpu_power_limit) {
-		tscpu_printk("set_static_cpu_power_limit% d, T=",
-			     (final_limit != 0x7FFFFFFF) ? final_limit : 0);
-		tscpu_print_all_temperature(0);
+		tscpu_printk("set_static_cpu_power_limit% d, T=%d\n",
+			     (final_limit != 0x7FFFFFFF) ? final_limit : 0, tscpu_get_curr_temp());
+		/*tscpu_print_all_temperature(0);*/
 
 	#if defined(CONFIG_ARCH_MT6755)
 		mt_ppm_cpu_thermal_protect((final_limit != 0x7FFFFFFF) ? final_limit : 0);

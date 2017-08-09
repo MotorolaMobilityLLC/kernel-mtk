@@ -38,6 +38,9 @@ they means one reading is a avg of X samples */
 #define THERMAL_HEADROOM                    (0)
 #define CONTINUOUS_TM                       (1)
 #define DYNAMIC_GET_GPU_POWER			    (1)
+
+/* 1: turn on precise power budgeting; 0: turn off */
+#define PRECISE_HYBRID_POWER_BUDGET         (0)
 #endif
 
 /* 1: thermal driver fast polling, use hrtimer; 0: turn off */
