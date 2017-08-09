@@ -951,7 +951,7 @@ unsigned int ppm_calc_total_power(struct ppm_cluster_status *cluster_status,
 {
 	unsigned int budget = 0;
 
-#if 0
+#if 0/* PPM_HW_OCP_SUPPORT */
 	int i, ret;
 
 	for (i = 0; i < cluster_num; i++) {
@@ -997,7 +997,8 @@ unsigned int ppm_calc_total_power(struct ppm_cluster_status *cluster_status,
 					? ((207 + total) * cluster_status[i].volt + (1000 - 1)) / 1000
 					: (total * cluster_status[i].volt + (1000 - 1)) / 1000;
 #else
-				budget += (total * cluster_status[i].volt + (1000 - 1)) / 1000;
+				total = (total * cluster_status[i].volt + (1000 - 1)) / 1000;
+				budget += total;
 #endif
 				delta = ktime_sub(ktime_get(), now);
 			}
