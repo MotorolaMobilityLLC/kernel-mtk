@@ -33,7 +33,6 @@
 
 /*#define SPIDEV_LOG(fmt, args...) printk("[SPI-UT]: [%s]:[%d]" fmt, __func__, __LINE__, ##args)*/
 /*#define SPIDEV_MSG(fmt, args...) printk(KERN_ERR  fmt, ##args )*/
-
 #define SPIDEV_LOG(fmt, args...) pr_debug("[SPI-UT]: [%s]:[%d]" fmt, __func__, __LINE__, ##args)
 #define SPIDEV_MSG(fmt, args...) pr_debug(fmt, ##args)
 
@@ -51,14 +50,15 @@ static struct spi_transfer stress_xfer_con[SPI_STRESS_MAX];
 static struct spi_message stress_msg[SPI_STRESS_MAX];
 /*static struct spi_device *spi_test;*/
 
-#define USE_SPI1_TEST (0)
+#define USE_SPI1_4GB_TEST (0)
 
-#if USE_SPI1_TEST
+#if USE_SPI1_4GB_TEST
 static dma_addr_t SpiDmaBufTx_pa;
 static dma_addr_t SpiDmaBufRx_pa;
 static char *spi_tx_local_buf;
 static char *spi_rx_local_buf;
-int reserve_memory_spi_fn(struct reserved_mem *rmem)
+
+static int reserve_memory_spi_fn(struct reserved_mem *rmem)
 {
 	SPIDEV_LOG(" name: %s, base: 0x%llx, size: 0x%llx\n", rmem->name,
 			(unsigned long long)rmem->base, (unsigned long long)rmem->size);
@@ -67,72 +67,78 @@ int reserve_memory_spi_fn(struct reserved_mem *rmem)
 	SpiDmaBufRx_pa = rmem->base+0x4000;
 	return 0;
 }
-
 RESERVEDMEM_OF_DECLARE(reserve_memory_test, "mediatek,spi-reserve-memory", reserve_memory_spi_fn);
+
 #endif
+
+bool spi1_4G_flag = 0;
 
 static int spi_setup_xfer(struct device *dev, struct spi_transfer *xfer, u32 len, u32 flag)
 {
-	u32 tx_buffer = 0x12345678;
-	u32 cnt, i;
-#if 0
-	u8 *p;
-#endif
-#define SPI_CROSS_ALIGN_OFFSET 1008
+	u8 tx_buffer = 0x01;
+	u32 i, spi_id;
+	struct spi_device *spi;
+
+	#define SPI_CROSS_ALIGN_OFFSET 1008
 	xfer->len = len;
 
-	if (enable_4G()) {
-		if (1 == dev->id) {
-		#if USE_SPI1_TEST
-			/* map physical addr to virtual addr */
-			if (NULL == spi_tx_local_buf) {
-				spi_tx_local_buf = (char *)ioremap_nocache(SpiDmaBufTx_pa, 0x4000);
-				if (!spi_tx_local_buf) {
-					SPIDEV_LOG("SPI Failed to dma_alloc_coherent()\n");
-					return -ENOMEM;
-				}
-			}
-			SPIDEV_LOG("enable_4G debug++++\n");
-			if (NULL == spi_rx_local_buf) {
-				spi_rx_local_buf = (char *)ioremap_nocache(SpiDmaBufRx_pa, 0x4000);
-				if (!spi_rx_local_buf) {
-					SPIDEV_LOG("SPI Failed to dma_alloc_coherent()\n");
-					return -ENOMEM;
-				}
-			}
-			xfer->tx_buf = spi_tx_local_buf;
-			xfer->rx_buf = spi_rx_local_buf;
+	spi = container_of(dev, struct spi_device, dev);
+	spi_id = spi->master->bus_num;
 
-			xfer->tx_dma = SpiDmaBufTx_pa;
-			xfer->rx_dma = SpiDmaBufRx_pa;
-			MAPPING_DRAM_ACCESS_ADDR(xfer->tx_dma);
-			MAPPING_DRAM_ACCESS_ADDR(xfer->rx_dma);
-		#else
-			SPIDEV_LOG("Wanning: If using SPI1, you should define <USE_SPI1_TEST = 1>\n");
-		#endif
+	spi1_4G_flag = (enable_4G() && (1 == spi_id));
+
+	if (spi1_4G_flag) {
+	#if USE_SPI1_4GB_TEST
+		SPIDEV_LOG("spi1 4G Memory UT\n");
+		/* map physical addr to virtual addr */
+		if (NULL == spi_tx_local_buf) {
+			spi_tx_local_buf = (char *)ioremap_nocache(SpiDmaBufTx_pa, 0x4000);
+			if (!spi_tx_local_buf) {
+				SPIDEV_LOG("SPI Failed to dma_alloc_coherent()\n");
+				return -ENOMEM;
+			}
 		}
+		if (NULL == spi_rx_local_buf) {
+			spi_rx_local_buf = (char *)ioremap_nocache(SpiDmaBufRx_pa, 0x4000);
+			if (!spi_rx_local_buf) {
+				SPIDEV_LOG("SPI Failed to dma_alloc_coherent()\n");
+				return -ENOMEM;
+			}
+		}
+
+		xfer->tx_buf = spi_tx_local_buf;
+		xfer->rx_buf = spi_rx_local_buf;
+		xfer->tx_dma = SpiDmaBufTx_pa;
+		xfer->rx_dma = SpiDmaBufRx_pa;
+
+	#else
+		SPIDEV_LOG("Wanning: If using SPI1, you should define <USE_SPI1_4GB_TEST = 1>\n");
+	#endif
 	} else {
-		SPIDEV_LOG("enable_4G else debug+++222+\n");
+		SPIDEV_LOG("SPI UT debug\n");
 		xfer->tx_buf = kzalloc(len, GFP_KERNEL);
 		xfer->rx_buf = kzalloc(len, GFP_KERNEL);
 
 		if ((xfer->tx_buf == NULL) || (xfer->rx_buf == NULL))
 			return -1;
 	}
-
-	cnt = (len % 4) ? (len / 4 + 1) : (len / 4);
+#ifdef CONFIG_ARCH_DMA_ADDR_T_64BIT
+		SPIDEV_LOG("Transfer addr:Tx:0x%llx, Rx:0x%llx, before\n", xfer->tx_dma, xfer->rx_dma);
+#else
+		SPIDEV_LOG("Transfer addr:Tx:0x%x, Rx:0x%x, before\n", xfer->tx_dma, xfer->rx_dma);
+#endif
 
 	if (flag == 0) {
-		for (i = 0; i < cnt; i++)
-			*((u32 *) xfer->tx_buf + i) = tx_buffer;
+		for (i = 0; i < len; i++)
+			*((u8 *) xfer->tx_buf + i) = tx_buffer + i;
 	} else if (flag == 1) {
-		for (i = 0; i < cnt; i++)
-			*((u32 *) xfer->tx_buf + i) = tx_buffer + i;
+		for (i = 0; i < len; i++)
+			*((u8 *) xfer->tx_buf + i) = tx_buffer + i;
 	} else if (flag == 2) {	/*cross 1 K boundary*/
 		if (len < 2048)
 			return -EINVAL;
-		for (i = 0; i < cnt; i++)
-			*((u32 *) xfer->tx_buf + i) = tx_buffer + i;
+		for (i = 0; i < len; i++)
+			*((u8 *) xfer->tx_buf + i) = tx_buffer + i;
 
 #ifdef CONFIG_ARCH_DMA_ADDR_T_64BIT
 		SPIDEV_LOG("Transfer addr:Tx:0x%llx, Rx:0x%llx, before\n", xfer->tx_dma, xfer->rx_dma);
@@ -186,10 +192,21 @@ static int spi_recv_check(struct spi_message *msg)
 				err++;
 			}
 		}
-		/*memset(xfer->tx_buf,0,xfer->len);*/
-		/*memset(xfer->rx_buf,0,xfer->len);*/
-		kfree(xfer->tx_buf);
-		kfree(xfer->rx_buf);
+		if (spi1_4G_flag) {
+		#if USE_SPI1_4GB_TEST
+			if (spi_tx_local_buf) {
+				iounmap(spi_tx_local_buf);
+				spi_tx_local_buf = NULL;
+			}
+			if (spi_rx_local_buf) {
+				iounmap(spi_rx_local_buf);
+				spi_rx_local_buf = NULL;
+			}
+		#endif
+		} else {
+			kfree(xfer->tx_buf);
+			kfree(xfer->rx_buf);
+		}
 	}
 
 	SPIDEV_LOG("Message:0x%p,error %d,actual xfer length is:%d\n", msg, err, msg->actual_length);
@@ -227,8 +244,21 @@ static int spi_recv_check_all(struct spi_device *spi, struct spi_message *msg)
 				err++;
 			}
 		}
-		kfree(xfer->tx_buf);
-		kfree(xfer->rx_buf);
+		if (spi1_4G_flag) {
+		#if USE_SPI1_4GB_TEST
+			if (spi_tx_local_buf) {
+				iounmap(spi_tx_local_buf);
+				spi_tx_local_buf = NULL;
+			}
+			if (spi_rx_local_buf) {
+				iounmap(spi_rx_local_buf);
+				spi_rx_local_buf = NULL;
+			}
+		#endif
+		} else {
+			kfree(xfer->tx_buf);
+			kfree(xfer->rx_buf);
+		}
 	}
 
 	SPIDEV_LOG("Message:0x%p,error %d,actual xfer length is:%d\n", msg, err, msg->actual_length);

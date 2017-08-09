@@ -447,7 +447,7 @@ static inline void spi_disable_dma(struct mt_spi_t *ms)
 static inline void spi_enable_dma(struct mt_spi_t *ms, u8 mode)
 {
 	u32 cmd;
-	int id;
+	u32 id;
 	dma_addr_t	temp_tx_dma;
 	dma_addr_t	temp_rx_dma;
 
@@ -827,12 +827,12 @@ static int mt_spi_next_xfer(struct mt_spi_t *ms, struct spi_message *msg)
 	return 0;
 
  fail:
-
 	list_for_each_entry(xfer, &msg->transfers, transfer_list) {
-		if ((!msg->is_dma_mapped))
-			spi1_flag = (enable_4G() && (1 != ms->pdev->id));
+		if ((!msg->is_dma_mapped)) {
+			spi1_flag = (enable_4G() && (1 == ms->pdev->id));
 			if (!spi1_flag)
 				transfer_dma_unmapping(ms, xfer);
+		}
 	}
 	ms->running = IDLE;
 	mt_spi_msg_done(ms, msg, ret);
@@ -975,7 +975,7 @@ static int mt_spi_transfer(struct spi_device *spidev, struct spi_message *msg)
 		 * platforms supported by this driver, we would need to clean
 		 * up mappings for previously-mapped transfers.
 		 */
-		spi1_flag = (enable_4G() && (1 != ms->pdev->id));
+		spi1_flag = (enable_4G() && (1 == ms->pdev->id));
 		if ((!msg->is_dma_mapped) && (!spi1_flag)) {
 			if (transfer_dma_mapping(ms, chip_config->com_mod, xfer) < 0)
 				return -ENOMEM;
@@ -1051,7 +1051,7 @@ static irqreturn_t mt_spi_interrupt(int irq, void *dev_id)
 	if ((reg_val & 0x03) == 0)
 		goto out;
 
-	spi1_flag = (enable_4G() && (1 != ms->pdev->id));
+	spi1_flag = (enable_4G() && (1 == ms->pdev->id));
 	if ((!msg->is_dma_mapped) && (!spi1_flag))
 		transfer_dma_unmapping(ms, ms->cur_transfer);
 
@@ -1355,7 +1355,7 @@ static int __init mt_spi_probe(struct platform_device *pdev)
 	master->transfer = mt_spi_transfer;
 	master->cleanup = mt_spi_cleanup;
 	platform_set_drvdata(pdev, master);
-	pdev->dev.id = pdev->id;
+
 
 	/*ms = spi_master_get_devdata(master); */
 #ifdef CONFIG_OF
