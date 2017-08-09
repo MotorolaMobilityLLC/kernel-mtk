@@ -1,0 +1,328 @@
+/*
+ * Mediatek's MT6735 SoC device tree source
+ *
+ * Copyright (c) 2013 MediaTek Co., Ltd.
+ *              http://www.mediatek.com
+ *
+ */
+
+/ {
+	model = "MT6735";
+	compatible = "mediatek,MT6735";
+	interrupt-parent = <&gic>;
+	#address-cells = <2>;
+	#size-cells = <2>;
+
+	/* chosen */
+	chosen {
+		bootargs = "console=tty0 console=ttyMT0,921600n1 root=/dev/ram \
+initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
+	};
+
+
+	cpus {	#address-cells = <1>;
+		#size-cells = <0>;
+
+		cpu0: cpu@0 {
+			device_type = "cpu";
+			compatible = "arm,cortex-a53";
+			reg = <0x000>;
+			enable-method = "mt-boot";
+			cpu-release-addr = <0x0 0x40000200>;
+			clock-frequency = <1300000000>;
+		};
+
+		cpu1: cpu@1 {
+			device_type = "cpu";
+			compatible = "arm,cortex-a53";
+			reg = <0x001>;
+			enable-method = "mt-boot";
+			cpu-release-addr = <0x0 0x40000200>;
+			clock-frequency = <1300000000>;
+		};
+
+		cpu2: cpu@2 {
+			device_type = "cpu";
+			compatible = "arm,cortex-a53";
+			reg = <0x002>;
+			enable-method = "mt-boot";
+			cpu-release-addr = <0x0 0x40000200>;
+			clock-frequency = <1300000000>;
+		};
+
+		cpu3: cpu@3 {
+			device_type = "cpu";
+			compatible = "arm,cortex-a53";
+			reg = <0x003>;
+			enable-method = "mt-boot";
+			cpu-release-addr = <0x0 0x40000200>;
+			clock-frequency = <1300000000>;
+		};
+/*
+		cpu4: cpu@4 {
+			device_type = "cpu";
+			compatible = "arm,cortex-a53";
+			reg = <0x100>;
+			enable-method = "mt-boot";
+			cpu-release-addr = <0x0 0x40000200>;
+			clock-frequency = <2000000000>;
+		};
+
+		cpu5: cpu@5 {
+			device_type = "cpu";
+			compatible = "arm,cortex-a53";
+			reg = <0x101>;
+			enable-method = "mt-boot";
+			cpu-release-addr = <0x0 0x40000200>;
+			clock-frequency = <2000000000>;
+		};
+
+		cpu6: cpu@6 {
+			device_type = "cpu";
+			compatible = "arm,cortex-a53";
+			reg = <0x102>;
+			enable-method = "mt-boot";
+			cpu-release-addr = <0x0 0x40000200>;
+			clock-frequency = <2000000000>;
+		};
+
+		cpu7: cpu@7 {
+			device_type = "cpu";
+			compatible = "arm,cortex-a53";
+			reg = <0x103>;
+			enable-method = "mt-boot";
+			cpu-release-addr = <0x0 0x40000200>;
+			clock-frequency = <2000000000>;
+
+		};
+*/
+	};
+
+	memory@00000000 {
+		device_type = "memory";
+		reg = <0 0x40000000 0 0x40000000>;
+	};
+
+	reserved-memory {
+		#address-cells = <2>;
+		#size-cells = <2>;
+		ranges;
+
+		/* reserve 192KB at DRAM start + 48MB */
+		ATF-reserved-memory {
+			compatible = "ATF-reserved-memory";
+			no-map;
+			reg = <0 0x43000000 0 0x30000>;
+		};
+
+		reserve-memory-ccci_md1 {
+			compatible = "reserve-memory-ccci_md1";
+			no-map;
+			size = <0 0x3810000>; // md_size+smem_size
+			alignment = <0 0x2000000>;
+			alloc-ranges = <0 0x40000000 0 0xC0000000>;
+		};
+
+		consys-reserve-memory {
+			compatible = "consys-reserve-memory";
+			no-map;
+			size = <0 0x200000>;
+			alignment = <0 0x200000>;
+		};
+
+		mrdump-reserved-memory {
+			compatible = "mrdump-reserved-memory";
+			reg = <0 0x41F00000 0 0x2000>;
+		};
+
+		preloader-reserved-memory {
+			compatible = "mrdump-reserved-memory";
+			reg = <0 0x42000000 0 0x200000>;
+		};
+
+		lk-reserved-memory {
+			compatible = "mrdump-reserved-memory";
+			reg = <0 0x41E00000 0 0x100000>;
+		};
+
+
+		/*
+		reserve-memory-test {
+			compatible = "reserve-memory-test";
+			no-map;
+			size = <0 0x4000000>;
+			alignment = <0 0x2000000>;
+		};
+
+		mrdump-reserved-memory {
+			compatible = "mrdump";
+			reg = <0 0x80000000 0 0x4000000>;
+		};
+		*/
+		ram_console-reserved-memory {
+			compatible = "ram_console-reserve-memory";
+			reg = <0 0x43F00000 0 0x10000>;
+		};
+
+		minirdump-reserved-memory {
+			compatible = "minirdump-reserve-memory";
+			reg = <0 0x43FF0000 0 0x10000>;
+		};
+	};
+
+	gic: interrupt-controller@0x10220000 {
+		compatible = "mtk,mt-gic";
+		#interrupt-cells = <3>;
+		#address-cells = <0>;
+		interrupt-controller;
+		reg = <0 0x10221000 0 0x1000>,
+			<0 0x10222000 0 0x1000>,
+			<0 0x10200620 0 0x1000>;
+		interrupts = <1 9 0xf04>;
+
+		gic-cpuif@0 {
+			compatible = "arm,gic-cpuif";
+			cpuif-id = <0>;
+			cpu = <&cpu0>;
+		};
+
+		gic-cpuif@1 {
+			compatible = "arm,gic-cpuif";
+			cpuif-id = <1>;
+			cpu = <&cpu1>;
+		};
+
+		gic-cpuif@2 {
+			compatible = "arm,gic-cpuif";
+			cpuif-id = <2>;
+			cpu = <&cpu2>;
+		};
+
+		gic-cpuif@3 {
+			compatible = "arm,gic-cpuif";
+			cpuif-id = <3>;
+			cpu = <&cpu3>;
+		};
+
+
+	};
+
+	CPUXGPT@0x10200000 {
+		compatible = "mediatek,CPUXGPT";
+		reg = <0 0x10200000 0 0x1000>;
+		interrupts = <0 64 0x4>,
+				<0 65 0x4>,
+				<0 66 0x4>,
+				<0 67 0x4>,
+				<0 68 0x4>,
+				<0 69 0x4>,
+				<0 70 0x4>,
+				<0 71 0x4>;
+	};
+
+	APXGPT@0x10004000 {
+		compatible = "mediatek,APXGPT";
+		reg = <0 0x10004000 0 0x1000>;
+		interrupts = <0 152 0x8>;
+		clock-frequency = <13000000>;
+	};
+
+	timer {
+	compatible = "arm,armv8-timer";
+	interrupts = <1 13 0x8>, /*Secure Physical Timer Event*/
+		<1 14 0x8>, /*Non-Secure Physical Timer Event*/
+		<1 11 0x8>, /*Virtual Timer Event*/
+		<1 10 0x8>; /*Hypervisor Timer Event*/
+	clock-frequency = <13000000>;
+	};
+
+	clocks {
+		clk_null: clk_null {
+			compatible = "fixed-clock";
+			#clock-cells = <0>;
+			clock-frequency = <0>;
+		};
+
+		clk26m: clk26m {
+			compatible = "fixed-clock";
+			#clock-cells = <0>;
+			clock-frequency = <26000000>;
+		};
+
+		clk32k: clk32k {
+			compatible = "fixed-clock";
+			#clock-cells = <0>;
+			clock-frequency = <32000>;
+		};
+	};
+	bus {
+		compatible = "simple-bus";
+		#address-cells = <1>;
+		#size-cells = <1>;
+		ranges = <0 0 0 0xffffffff>;
+
+		MCUCFG@0x10200000 {
+			compatible = "mediatek,MCUCFG";
+			reg = <0x10200000 0x200>;
+			interrupts = <0 71 0x4>;
+		};
+
+		apuart0: AP_UART0@0x11002000 {
+			cell-index = <0>;
+			compatible = "mediatek,AP_UART0";
+			reg = <0x11002000 0x1000>;
+			interrupts = <0 91 0x8>;
+
+			clock-frequency = <26000000>;
+			clock-div = <1>;
+			clock-names = "uart0-main", "uart-apdma";
+		};
+
+		apuart1: AP_UART1@0x11003000 {
+			cell-index = <1>;
+			compatible = "mediatek,AP_UART1";
+			reg = <0x11003000 0x1000>;
+			interrupts = <0 92 0x8>;
+
+			clock-frequency = <26000000>;
+			clock-div = <1>;
+			clock-names = "uart1-main";
+
+		};
+
+		apuart2: AP_UART2@0x11004000 {
+			cell-index = <2>;
+			compatible = "mediatek,AP_UART2";
+			reg = <0x11004000 0x1000>;
+			interrupts = <0 93 0x8>;
+
+			clock-frequency = <26000000>;
+			clock-div = <1>;
+			clock-names = "uart2-main";
+		};
+
+		apuart3: AP_UART3@0x11005000 {
+			cell-index = <3>;
+			compatible = "mediatek,AP_UART3";
+			reg = <0x11005000 0x1000>;
+			interrupts = <0 94 0x8>;
+
+			clock-frequency = <26000000>;
+			clock-div = <1>;
+			clock-names = "uart3-main";
+		};
+
+		apuart4: AP_UART4@0x1100D000 {
+			cell-index = <4>;
+			compatible = "mediatek,AP_UART4";
+			reg = <0x1100D000 0x1000>;
+			interrupts = <0 95 0x8>;
+
+			clock-frequency = <26000000>;
+			clock-div = <1>;
+			clock-names = "uart4-main";
+		};
+
+	};
+
+};
