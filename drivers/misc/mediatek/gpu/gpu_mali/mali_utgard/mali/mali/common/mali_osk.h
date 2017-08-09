@@ -1327,7 +1327,9 @@ void _mali_osk_pm_dev_barrier(void);
 
 /** @} */ /* end group uddapi */
 
-
+// add by MTK
+void MTK_mali_osk_pm_dev_enable(void);
+void MTK_mali_osk_pm_dev_disable(void);
 
 #ifdef __cplusplus
 }

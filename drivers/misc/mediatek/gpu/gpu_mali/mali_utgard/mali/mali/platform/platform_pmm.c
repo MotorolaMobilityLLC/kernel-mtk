@@ -632,7 +632,7 @@ void mali_platform_power_mode_change(mali_power_mode power_mode)
     switch (power_mode)
     {
         case MALI_POWER_MODE_ON:
-            MALI_DEBUG_PRINT(4,("[+]MFG enable_clock \n"));
+            MALI_DEBUG_PRINT(4, ("[+] MFG enable_clock \n"));
 
             spin_lock_irqsave(&mali_pwr_lock, flags);
 
@@ -646,7 +646,7 @@ void mali_platform_power_mode_change(mali_power_mode power_mode)
             atomic_set(&g_is_power_enabled, 1);
             mali_dispatch_dvfs_work();
 
-            MALI_DEBUG_PRINT(4,("[-]MFG enable_clock \n"));
+            MALI_DEBUG_PRINT(4, ("[-] MFG enable_clock \n"));
 
 #if defined(CONFIG_MALI400_PROFILING)
             _mali_osk_profiling_add_event(MALI_PROFILING_EVENT_TYPE_SINGLE |
@@ -656,7 +656,7 @@ void mali_platform_power_mode_change(mali_power_mode power_mode)
             break;
         case MALI_POWER_MODE_LIGHT_SLEEP:
         case MALI_POWER_MODE_DEEP_SLEEP:
-            MALI_DEBUG_PRINT(4,("[+]MFG disable_clock \n"));
+            MALI_DEBUG_PRINT(4, ("[+] MFG disable_clock \n"));
 
             atomic_set(&g_is_power_enabled, 0);
             mali_cancel_dvfs_work();
@@ -671,7 +671,7 @@ void mali_platform_power_mode_change(mali_power_mode power_mode)
 
             spin_unlock_irqrestore(&mali_pwr_lock, flags);
 
-            MALI_DEBUG_PRINT(4,("[-]MFG disable_clock \n"));
+            MALI_DEBUG_PRINT(4, ("[-] MFG disable_clock \n"));
 
 #if defined(CONFIG_MALI400_PROFILING)
             _mali_osk_profiling_add_event(MALI_PROFILING_EVENT_TYPE_SINGLE |

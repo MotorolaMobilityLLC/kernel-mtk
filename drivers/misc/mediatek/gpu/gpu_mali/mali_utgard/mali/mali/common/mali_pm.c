@@ -139,6 +139,9 @@ _mali_osk_errcode_t mali_pm_initialize(void)
 		mali_pm_terminate();
 		return err;
 	}
+    
+    // add by MTK
+	MTK_mali_osk_pm_dev_enable();
 
 	return _MALI_OSK_ERR_OK;
 }
@@ -161,6 +164,9 @@ void mali_pm_terminate(void)
 		_mali_osk_spinlock_irq_term(pm_lock_state);
 		pm_lock_state = NULL;
 	}
+    
+    // add by MTK
+    MTK_mali_osk_pm_dev_disable();
 }
 
 struct mali_pm_domain *mali_pm_register_l2_cache(u32 domain_index,
