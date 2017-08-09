@@ -305,7 +305,8 @@ bool is_in_cpufreq = 0;
  * EFUSE
  */
 #define CPUFREQ_EFUSE_INDEX     (3)
-#define FUNC_CODE_EFUSE_INDEX	(28)
+#define FUNC_CODE_EFUSE_INDEX	(21)
+#define FUNC_CODE_EFUSE_INDEX_ENG	(19)
 
 #define CPU_LEVEL_0             (0x0)
 #define CPU_LEVEL_1             (0x1)
@@ -317,16 +318,30 @@ bool is_in_cpufreq = 0;
 static unsigned int _mt_cpufreq_get_cpu_level(void)
 {
 	unsigned int lv = 0;
-	unsigned int func_code_0 = _GET_BITS_VAL_(27:24, get_devinfo_with_index(FUNC_CODE_EFUSE_INDEX));
+	unsigned int func_code_0 = _GET_BITS_VAL_(7:0, get_devinfo_with_index(FUNC_CODE_EFUSE_INDEX));
 	unsigned int func_code_1 = _GET_BITS_VAL_(31:28, get_devinfo_with_index(FUNC_CODE_EFUSE_INDEX));
+	unsigned int binLevel_eng = _GET_BITS_VAL_(15:0, get_devinfo_with_index(FUNC_CODE_EFUSE_INDEX_ENG));
 
-	cpufreq_ver("from efuse: function code 0 = 0x%x, function code 1 = 0x%x\n", func_code_0,
-		     func_code_1);
+	cpufreq_ver("from efuse: function code 0 = 0x%x, function code 1 = 0x%x, binLevel_eng = 0x%x\n",
+		func_code_0,
+		func_code_1,
+		binLevel_eng);
 
-	if (func_code_1 == 0)
+	if (func_code_0 == 0) {
+		if ((2 == ((binLevel_eng >> 4) & 0x07)) || (2 == ((binLevel_eng >> 10) & 0x07)))
+			return CPU_LEVEL_0;
+		else
+			return CPU_LEVEL_1;
+	} else if (func_code_0 == 1)
 		return CPU_LEVEL_0;
-	else
+	else if (func_code_0 == 2)
 		return CPU_LEVEL_1;
+	else if (func_code_0 == 3)
+		return CPU_LEVEL_0;
+	else if (func_code_0 == 4)
+		return CPU_LEVEL_1;
+	else
+		return CPU_LEVEL_0;
 
 	/* get CPU clock-frequency from DT */
 #ifdef CONFIG_OF
