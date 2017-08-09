@@ -924,8 +924,7 @@ kalDevPortRead(IN P_GLUE_INFO_T GlueInfo, IN UINT_16 Port, IN UINT_32 Size, OUT 
 			info.field.count++;
 		count = info.field.count * func->cur_blksize;
 		if (count > MaxBufSize) {
-			DBGLOG(RX, ERROR, "blk mode rx count 0x%x exceed 0x%x!\n", count, MaxBufSize);
-			DBGLOG(RX, ERROR, "blk mode orig size is 0x%x\n", Size);
+			DBGLOG(RX, ERROR, "blk mode rxCnt 0x%x, MaxSz 0x%x, OrigSz 0x%x\n", count, MaxBufSize, Size);
 			ASSERT(0);
 		}
 	} else { /* DMA/PIO byte mode */
@@ -934,8 +933,7 @@ kalDevPortRead(IN P_GLUE_INFO_T GlueInfo, IN UINT_16 Port, IN UINT_32 Size, OUT 
 		info.field.block_mode = SDIO_GEN3_BYTE_MODE;
 		info.field.count = count;
 		if (count > MaxBufSize) {
-			DBGLOG(RX, ERROR, "byte mode rx count 0x%x exceed 0x%x!\n", count, MaxBufSize);
-			DBGLOG(RX, ERROR, "byte mode orig size is 0x%x\n", Size);
+			DBGLOG(RX, ERROR, "byte mode rxCnt 0x%x, MaxSz 0x%x, OrigSz 0x%x\n", count, MaxBufSize, Size);
 			ASSERT(0);
 		}
 	}
@@ -1199,8 +1197,7 @@ kalDevPortWrite(IN P_GLUE_INFO_T GlueInfo, IN UINT_16 Port, IN UINT_32 Size, IN 
 			info.field.count++;
 		count = info.field.count * func->cur_blksize;
 		if (count > MaxBufSize) {
-			DBGLOG(TX, ERROR, "blk mode tx count 0x%x exceed 0x%x!\n", count, MaxBufSize);
-			DBGLOG(TX, ERROR, "blk mode orig size is 0x%x\n", Size);
+			DBGLOG(TX, ERROR, "blk mode txCnt 0x%x, MaxSz 0x%x, origSz 0x%x\n", count, MaxBufSize, Size);
 			ASSERT(0);
 		}
 	} else {
