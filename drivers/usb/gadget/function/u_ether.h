@@ -77,6 +77,7 @@ struct gether {
 	u32				fixed_in_len;
 	unsigned		ul_max_pkts_per_xfer;
 	unsigned		dl_max_pkts_per_xfer;
+	unsigned		dl_max_transfer_len;
 	bool				multi_pkt_xfer;
 	bool				supports_multi_frame;
 	struct sk_buff			*(*wrap)(struct gether *port,

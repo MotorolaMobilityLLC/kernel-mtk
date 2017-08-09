@@ -506,9 +506,10 @@ static void rndis_command_complete(struct usb_ep *ep, struct usb_request *req)
 	buf = (rndis_init_msg_type *)req->buf;
 
 	if (buf->MessageType == RNDIS_MSG_INIT) {
-		if (buf->MaxTransferSize > 2048)
+		if (buf->MaxTransferSize > 2048) {
 			rndis->port.multi_pkt_xfer = 1;
-		else
+			rndis->port.dl_max_transfer_len = buf->MaxTransferSize;
+		} else
 			rndis->port.multi_pkt_xfer = 0;
 		pr_info("%s: MaxTransferSize: %d : Multi_pkt_txr: %s\n",
 				__func__, buf->MaxTransferSize,

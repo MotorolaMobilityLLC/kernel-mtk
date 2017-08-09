@@ -814,7 +814,10 @@ static netdev_tx_t eth_start_xmit(struct sk_buff *skb,
 
 		spin_lock_irqsave(&dev->req_lock, flags);
 		dev->tx_skb_hold_count++;
-		if (dev->tx_skb_hold_count < dev->dl_max_pkts_per_xfer) {
+		/* if (dev->tx_skb_hold_count < dev->dl_max_pkts_per_xfer) { */
+		if ((dev->tx_skb_hold_count < dev->dl_max_pkts_per_xfer)
+				&& (length < (dev->port_usb->dl_max_transfer_len - dev->net->mtu))) {
+
 			if (dev->no_tx_req_used > TX_REQ_THRESHOLD) {
 				list_add(&req->list, &dev->tx_reqs);
 				spin_unlock_irqrestore(&dev->req_lock, flags);
