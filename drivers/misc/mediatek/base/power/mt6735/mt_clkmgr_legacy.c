@@ -3741,56 +3741,56 @@ void iomap(void)
 	struct device_node *node;
 
 /* apmixed */
-	node = of_find_compatible_node(NULL, NULL, "mediatek,APMIXED");
+	node = of_find_compatible_node(NULL, NULL, "mediatek,mt6735-apmixedsys");
 	if (!node)
 		pr_err("[CLK_APMIXED] find node failed\n");
 	clk_apmixed_base = of_iomap(node, 0);
 	if (!clk_apmixed_base)
 		pr_err("[CLK_APMIXED] base failed\n");
 /* cksys_base */
-	node = of_find_compatible_node(NULL, NULL, "mediatek,CKSYS");
+	node = of_find_compatible_node(NULL, NULL, "mediatek,mt6735-topckgen");
 	if (!node)
 		pr_err("[CLK_CKSYS] find node failed\n");
 	clk_cksys_base = of_iomap(node, 0);
 	if (!clk_cksys_base)
 		pr_err("[CLK_CKSYS] base failed\n");
 /* infracfg_ao */
-	node = of_find_compatible_node(NULL, NULL, "mediatek,INFRACFG_AO");
+	node = of_find_compatible_node(NULL, NULL, "mediatek,mt6735-infrasys");
 	if (!node)
 		pr_err("[CLK_INFRACFG_AO] find node failed\n");
 	clk_infracfg_ao_base = of_iomap(node, 0);
 	if (!clk_infracfg_ao_base)
 		pr_err("[CLK_INFRACFG_AO] base failed\n");
 /* pericfg_base */
-	node = of_find_compatible_node(NULL, NULL, "mediatek,PERICFG");
+	node = of_find_compatible_node(NULL, NULL, "mediatek,mt6735-perisys");
 	if (!node)
 		pr_err("[PERICFG] find node failed\n");
 	clk_pericfg_base = of_iomap(node, 0);
 	if (!clk_pericfg_base)
 		pr_err("[PERICFG] base failed\n");
 /* audio */
-	node = of_find_compatible_node(NULL, NULL, "mediatek,AUDIO");
+	node = of_find_compatible_node(NULL, NULL, "mediatek,mt6735-audiosys");
 	if (!node)
 		pr_err("[CLK_AUDIO] find node failed\n");
 	clk_audio_base = of_iomap(node, 0);
 	if (!clk_audio_base)
 		pr_err("[CLK_AUDIO] base failed\n");
 /* mfgcfg */
-	node = of_find_compatible_node(NULL, NULL, "mediatek,G3D_CONFIG");
+	node = of_find_compatible_node(NULL, NULL, "mediatek,mt6735-mfgsys");
 	if (!node)
 		pr_err("[CLK_G3D_CONFIG] find node failed\n");
 	clk_mfgcfg_base = of_iomap(node, 0);
 	if (!clk_mfgcfg_base)
 		pr_err("[CLK_G3D_CONFIG] base failed\n");
 /* mmsys_config */
-	node = of_find_compatible_node(NULL, NULL, "mediatek,MMSYS_CONFIG");
+	node = of_find_compatible_node(NULL, NULL, "mediatek,mt6735-mmsys");
 	if (!node)
 		pr_err("[CLK_MMSYS_CONFIG] find node failed\n");
 	clk_mmsys_config_base = of_iomap(node, 0);
 	if (!clk_mmsys_config_base)
 		pr_err("[CLK_MMSYS_CONFIG] base failed\n");
 /* imgsys */
-	node = of_find_compatible_node(NULL, NULL, "mediatek,IMGSYS");
+	node = of_find_compatible_node(NULL, NULL, "mediatek,mt6735-imgsys");
 	if (!node)
 		pr_err("[CLK_IMGSYS_CONFIG] find node failed\n");
 	clk_imgsys_base = of_iomap(node, 0);
@@ -4708,7 +4708,7 @@ const struct dev_pm_ops clkmgr_pm_ops = {
 #endif
 #ifdef CONFIG_OF
 static const struct of_device_id mt_clkmgr_of_match[] = {
-	{ .compatible = "mediatek,APMIXED", },
+	{ .compatible = "mediatek,mt6735-apmixedsys", },
 	{},
 };
 #endif
