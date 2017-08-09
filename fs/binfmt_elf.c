@@ -965,7 +965,7 @@ static int load_elf_binary(struct linux_binprm *bprm)
 						rand_tries, bprm->vma->vm_start, bprm->vma->vm_end,
 						org_brk, current->mm->brk);
 
-			if (find_vma_intersection(current->mm, current->mm->brk,
+			if (find_vma_intersection(current->mm, current->mm->brk - PAGE_SIZE,
 						  current->mm->brk + PAGE_SIZE))
 				current->mm->brk = current->mm->start_brk = org_brk;
 			else
