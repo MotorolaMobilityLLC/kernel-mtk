@@ -600,6 +600,8 @@ prepare_next_round:
 					req->limit[PPM_CLUSTER_LL].max_cpu_core = --ACT_CORE(LL);
 				if (ACT_CORE(L) > 0)
 					opp[PPM_CLUSTER_L] = PPM_COBRA_MAX_FREQ_IDX - 1;
+				else
+					LxLL = 0;
 				if (ACT_CORE(LL) > 0)
 					opp[PPM_CLUSTER_LL] = PPM_COBRA_MAX_FREQ_IDX - 1;
 			}
