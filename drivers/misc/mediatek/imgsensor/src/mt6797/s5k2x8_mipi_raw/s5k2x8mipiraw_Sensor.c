@@ -41,6 +41,8 @@
 //#include "s5k2x8_otp.h"
 /*Enable PDAF function */
 //#define ENABLE_S5K2X8_PDAF_RAW
+/*WDR auto ration mode*/
+//#define ENABLE_WDR_AUTO_RATION
 /****************************Modify Following Strings for Debug****************************/
 #define PFX "s5k2x8_camera_sensor"
 #define LOG_1 LOG_INF("s5k2x8,MIPI 4LANE\n")
@@ -101,7 +103,7 @@ static imgsensor_info_struct imgsensor_info = {
 	.normal_video = {
 		.pclk = 720000000,				//record different mode's pclk
 		.linelength = 7640,				//record different mode's linelength
-		.framelength =3292, //			//record different mode's framelength
+		.framelength =3184,//3292, //			//record different mode's framelength
 		.startx = 0,					//record different mode's startx of grabwindow
 		.starty = 0,					//record different mode's starty of grabwindow
 		.grabwindow_width = 5632,		//record different mode's width of grabwindow
@@ -110,7 +112,7 @@ static imgsensor_info_struct imgsensor_info = {
 		/*	 following for MIPIDataLowPwr2HighSpeedSettleDelayCount by different scenario	*/
 		.mipi_data_lp2hs_settle_dc = 85,  //unit , ns
 		/*	 following for GetDefaultFramerateByScenario()	*/
-		.max_framerate = 283,
+		.max_framerate = 296,
 	},
 
 	.hs_video = {
@@ -454,22 +456,26 @@ static void hdr_write_shutter(kal_uint16 le, kal_uint16 se)
     //iRation = (((LE + SE/2)/SE) >> 1 ) << 1 ;
     iRation = ((10 * le / se) + 5) / 10;
     if(iRation < 2)
-        iRation = 0;
-    else if(iRation < 4)
         iRation = 1;
-    else if(iRation < 8)
+    else if(iRation < 4)
         iRation = 2;
-    else if(iRation < 16)
+    else if(iRation < 8)
         iRation = 4;
-    else if(iRation < 32)
+    else if(iRation < 16)
         iRation = 8;
+    else if(iRation < 32)
+        iRation = 16;
     else
-        iRation = 0;
+        iRation = 1;
 	
 	/*set ration for auto */
 	iRation = 0x100 * iRation;
-	//write_cmos_sensor_twobyte(0x0218, iRation);
-	
+#if defined(ENABLE_WDR_AUTO_RATION)
+    /*LE / SE ration ,  0x218/0x21a =  LE Ration*/
+    /*0x218 =0x400, 0x21a=0x100, LE/SE = 4x*/
+	write_cmos_sensor_twobyte(0x0218, iRation);
+	write_cmos_sensor_twobyte(0x021a, 0x100);
+#endif
 	/*Short exposure */
 	write_cmos_sensor_twobyte(0x0202,se);
 	/*Log exposure ratio*/
@@ -765,6 +771,33 @@ static void Sensor_FW_read_downlaod(char*  filename)
 
 
 #endif
+static void sensor_WDR_zhdr(void)
+{
+	if(imgsensor.hdr_mode == 9)
+	{
+		LOG_INF("sensor_WDR_zhdr\n");
+		/*it would write 0x216 = 0x1, 0x217=0x00*/
+		/*0x216=1 , Enable WDR*/
+		/*0x217=0x00, Use Manual mode to set short /long exp */
+#if defined(ENABLE_WDR_AUTO_RATION)
+		write_cmos_sensor_twobyte(0x0216, 0x0101); /*For WDR auot ration*/
+#else
+		write_cmos_sensor_twobyte(0x0216, 0x0100); /*For WDR manual ration*/
+#endif
+		write_cmos_sensor_twobyte(0x0218, 0x0100);
+		write_cmos_sensor_twobyte(0x021A, 0x0100);
+		write_cmos_sensor_twobyte(0x602A, 0x6944); 
+		write_cmos_sensor_twobyte(0x6F12, 0x0000);
+	}
+	else
+	{
+		write_cmos_sensor_twobyte(0x0216, 0x0000);
+		write_cmos_sensor_twobyte(0x0218, 0x0000);
+	}
+	/*for LE/SE Test*/
+	//hdr_write_shutter(3460,800);
+
+}
 
 static void sensor_init_11(void)
 {
@@ -3036,21 +3069,6 @@ write_cmos_sensor(0x6F12,0x01);
 //write_cmos_sensor(0x6F12,0x00); //1	// smiaRegs_rw_wdr_multiple_exp_mode, EVT1.1
 //write_cmos_sensor_twobyte(0x602A,0x021B);
 //write_cmos_sensor(0x6F12,0x00);	// smiaRegs_rw_wdr_exposure_order, EVT1.1
-if(imgsensor.hdr_mode == 9)
-{
-	/*it would write 0x216 = 0x1, 0x217=0x00*/
-	/*0x216=1 , Enable WDR*/
-	/*0x217=0x00, Use Manual mode to set short /long exp */
-	write_cmos_sensor_twobyte(0x0216, 0x0101); /*For WDR*/
-	write_cmos_sensor_twobyte(0x0218, 0x0101);
-	write_cmos_sensor_twobyte(0x602A, 0x6944); 
-	write_cmos_sensor_twobyte(0x6F12, 0x0000);
-}
-else
-{
-	write_cmos_sensor_twobyte(0x0216, 0x0000);
-	write_cmos_sensor_twobyte(0x0218, 0x0000);
-}
 
 write_cmos_sensor_twobyte(0x6028,0x4000);
 write_cmos_sensor_twobyte(0x602A,0x0202);
@@ -3062,8 +3080,6 @@ write_cmos_sensor_twobyte(0x6F12,0x0001);
 write_cmos_sensor_twobyte(0x602A,0x0204);
 write_cmos_sensor_twobyte(0x6F12,0x0020);
 write_cmos_sensor_twobyte(0x6F12,0x0020);
-
-
 
 //4. CASE : 6M(2x2) 4:3 2816x2112
 write_cmos_sensor_twobyte(0x6028,0x4000);
@@ -3159,18 +3175,14 @@ write_cmos_sensor_twobyte(0x602A,0xF4A0);
 write_cmos_sensor_twobyte(0x6F12,0x0000);
 write_cmos_sensor_twobyte(0x602A,0xF4A2);
 write_cmos_sensor_twobyte(0x6F12,0x0000);
+/*Set WDR */
+sensor_WDR_zhdr();
 
 // Stream On
 write_cmos_sensor_twobyte(0x602A,0x0100);
 write_cmos_sensor(0x6F12,0x01);
 
-
-
-
-
 mDELAY(10);
-
-
 
 }    /*    preview_setting  */
 
@@ -3319,21 +3331,9 @@ static void capture_setting_WDR(kal_uint16 currefps)
 		write_cmos_sensor_twobyte(0xB136, 0x2000);
 		write_cmos_sensor_twobyte(0xD0D0, 0x1000);
 		
-		if(imgsensor.hdr_mode == 9)
-		{
-			/*it would write 0x216 = 0x1, 0x217=0x00*/
-			/*0x216=1 , Enable WDR*/
-			/*0x217=0x00, Use Manual mode to set short /long exp */
-			write_cmos_sensor_twobyte(0x0216, 0x0100); /*For WDR*/
-			write_cmos_sensor_twobyte(0x0218, 0x0101);
-			write_cmos_sensor_twobyte(0x602A, 0x6944); 
-			write_cmos_sensor_twobyte(0x6F12, 0x0000);
-		}
-		else
-		{
-			write_cmos_sensor_twobyte(0x0216, 0x0000);
-			write_cmos_sensor_twobyte(0x0218, 0x0000);
-		}
+		/*ZHDR setting*/
+		sensor_WDR_zhdr();
+
 		/*Streaming  output */
 		write_cmos_sensor_twobyte(0x0100, 0x0100);
 
@@ -3479,25 +3479,9 @@ static void capture_setting_WDR(kal_uint16 currefps)
 		write_cmos_sensor_twobyte(0xB0CA, 0x7E00);
 		write_cmos_sensor_twobyte(0xB136, 0x2000);
 		write_cmos_sensor_twobyte(0xD0D0, 0x1000);
-		LOG_INF("imgsensor.hdr_mode = %d)",imgsensor.hdr_mode);
+		/*ZHDR setting*/
+		sensor_WDR_zhdr();
 
-		if(imgsensor.hdr_mode == 9)
-		{
-			/*it would write 0x216 = 0x1, 0x217=0x00*/
-			/*0x216=1 , Enable WDR*/
-			/*0x217=0x00, Use Manual mode to set short /long exp */
-			write_cmos_sensor_twobyte(0x0216, 0x0100); /*For WDR*/
-			//write_cmos_sensor_twobyte(0x0216, 0x0101); /*For WDR using Auot ration*/
-			write_cmos_sensor_twobyte(0x0218, 0x0100);
-			write_cmos_sensor_twobyte(0x021A, 0x0100);
-			write_cmos_sensor_twobyte(0x602A, 0x6944); 
-			write_cmos_sensor_twobyte(0x6F12, 0x0000);
-		}
-		else
-		{
-			write_cmos_sensor_twobyte(0x0216, 0x0000);
-			write_cmos_sensor_twobyte(0x0218, 0x0000);
-		}
 		/*Streaming  output */
 		write_cmos_sensor_twobyte(0x0100, 0x0100);
 	}
@@ -3665,7 +3649,7 @@ write_cmos_sensor_twobyte(0x6F12,0x0C60);
 write_cmos_sensor_twobyte(0x602A,0x0342);
 write_cmos_sensor_twobyte(0x6F12,0x1DD8);	// 1ECC
 write_cmos_sensor_twobyte(0x602A,0x0340);
-write_cmos_sensor_twobyte(0x6F12,0x0CDC);	// 0CF8
+write_cmos_sensor_twobyte(0x6F12,0x0C70);	// 0CF8
 
 write_cmos_sensor_twobyte(0x602A,0x0900);
 write_cmos_sensor(0x6F12,0x01);
@@ -3739,8 +3723,8 @@ write_cmos_sensor_twobyte(0x6F12,0x7E00);	// M_DPHYCTL[30:25] = 6'11_1111 // EVT
 write_cmos_sensor_twobyte(0x602A,0xB136);
 write_cmos_sensor_twobyte(0x6F12,0x2000);	// B_DPHYCTL[62:60] = 3'b010 // EVT1.1 0429
 
-
-
+/*ZHDR setting*/
+sensor_WDR_zhdr();
 
 // Stream On
 write_cmos_sensor_twobyte(0x602A,0x0100);
@@ -4710,7 +4694,7 @@ static kal_uint32 get_info(MSDK_SCENARIO_ID_ENUM scenario_id,
 
     /*0: no support, 1: G0,R0.B0, 2: G0,R0.B1, 3: G0,R1.B0, 4: G0,R1.B1*/
     /*                    5: G1,R0.B0, 6: G1,R0.B1, 7: G1,R1.B0, 8: G1,R1.B1*/
-    sensor_info->ZHDR_Mode = 7; 
+    sensor_info->ZHDR_Mode = 5; 
 
     sensor_info->SensorMIPILaneNumber = imgsensor_info.mipi_lane_num;
     sensor_info->SensorClockFreq = imgsensor_info.mclk;
