@@ -82,12 +82,18 @@ static int pm_callback_power_on(struct kbase_device *kbdev)
 	MFG_write32(0x3f0, 0xffffffff);
 
 #ifdef MTK_GPU_SPM
+#if 0
 	MTKCLK_prepare_enable(clk_gpupm);
 	MTKCLK_prepare_enable(clk_dvfs_gpu);
 	mtk_kbase_spm_acquire();
 	mtk_kbase_spm_con(SPM_RSV_BIT_EN, SPM_RSV_BIT_EN);
 	mtk_kbase_spm_wait();
 	mtk_kbase_spm_release();
+#else
+	mtk_kbase_spm_acquire();
+	DVFS_GPU_write32(SPM_GPU_POWER, 0x1);
+	mtk_kbase_spm_release();
+#endif
 #endif
 
 #ifdef MTK_GPU_OCP
@@ -117,12 +123,19 @@ static void pm_callback_power_off(struct kbase_device *kbdev)
 #endif
 
 #ifdef MTK_GPU_SPM
+#if 0
 	mtk_kbase_spm_acquire();
 	mtk_kbase_spm_con(0, SPM_RSV_BIT_EN);
 	mtk_kbase_spm_wait();
 	mtk_kbase_spm_release();
 	MTKCLK_disable_unprepare(clk_dvfs_gpu);
 	MTKCLK_disable_unprepare(clk_gpupm);
+#else
+	mtk_kbase_spm_acquire();
+	DVFS_GPU_write32(SPM_GPU_POWER, 0x0);
+	while (DVFS_GPU_read32(SPM_BYPASS_DFP) != 0x1);
+	mtk_kbase_spm_release(); 
+#endif
 #endif
 
 	MTKCLK_disable_unprepare(clk_mfg_main);
@@ -205,7 +218,7 @@ ssize_t mtk_kbase_dvfs_gpu_show(struct device *dev, struct device_attribute *att
 
 	i = mtk_kbase_spm_get_vol(SPM_SW_CEIL_V);
 	ret += scnprintf(buf + ret, PAGE_SIZE - ret, "ceiling voltage: %u.%06u V\n", i / 1000000, i % 1000000);
-	ret += scnprintf(buf + ret, PAGE_SIZE - ret, "cceiling freqency: %u kHz\n\n", mtk_kbase_spm_get_freq(SPM_SW_CEIL_F));
+	ret += scnprintf(buf + ret, PAGE_SIZE - ret, "ceiling freqency: %u kHz\n\n", mtk_kbase_spm_get_freq(SPM_SW_CEIL_F));
 
 	i = mtk_kbase_spm_get_vol(SPM_SW_FLOOR_V);
 	ret += scnprintf(buf + ret, PAGE_SIZE - ret, "floor voltage: %u.%06u V\n", i / 1000000, i % 1000000);
@@ -361,23 +374,28 @@ int mtk_platform_init(struct platform_device *pdev, struct kbase_device *kbdev)
 	g_config = kbdev->mtk_config = config;
 
 #ifdef MTK_GPU_SPM
-	if (device_create_file(kbdev->dev, &dev_attr_dvfs_gpu_dump))
-	{
-		dev_err(kbdev->dev, "xxxx dvfs_gpu_dump create fail\n");
-	}
-#endif
-
-#ifdef MTK_GPU_SPM
 	MTKCLK_prepare_enable(clk_gpupm);
 	MTKCLK_prepare_enable(clk_dvfs_gpu);
 
 	mtk_kbase_spm_kick(&dvfs_gpu_pcm);
 	mtk_kbase_spm_set_dvfs_en(1);
 
+#if 0
 	DVFS_GPU_write32(SPM_GPU_POWER, 0x1);
 
 	MTKCLK_disable_unprepare(clk_dvfs_gpu);
 	MTKCLK_disable_unprepare(clk_gpupm);
+#else
+	DVFS_GPU_write32(SPM_GPU_POWER, 0x0);
+	mtk_kbase_spm_con(SPM_RSV_BIT_EN, SPM_RSV_BIT_EN);
+	mtk_kbase_spm_wait();
+#endif
+
+	mtk_kbase_spm_hal_init();
+	if (device_create_file(kbdev->dev, &dev_attr_dvfs_gpu_dump))
+	{
+		dev_err(kbdev->dev, "xxxx dvfs_gpu_dump create fail\n");
+	}
 #endif
 
 	/* RG_GPULDO_RSV_H_0-8 = 0x8 */

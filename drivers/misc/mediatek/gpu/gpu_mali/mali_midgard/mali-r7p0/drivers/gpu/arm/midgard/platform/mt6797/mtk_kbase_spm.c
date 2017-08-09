@@ -153,11 +153,6 @@ static void spm_vf_adjust(unsigned int* pv, unsigned int* pf)
 	if (pf && *pf < g_config->min_freq) *pf = g_config->min_freq;
 }
 
-/* Flow to set ceiling / floor
- * 1. pause spm (SPM_RSV_BIT_EN = 0)
- * 2. set ceiling, floor
- * 3. resume spm (SPM_RSV_BIT_EN = 1)
- */
 void mtk_kbase_spm_set_vol_freq_ceiling(unsigned int v, unsigned int f)
 {
 	int en;
@@ -169,6 +164,7 @@ void mtk_kbase_spm_set_vol_freq_ceiling(unsigned int v, unsigned int f)
 	DVFS_GPU_write32(SPM_SW_CEIL_V, v);
 	DVFS_GPU_write32(SPM_SW_CEIL_F, f);
 	DVFS_GPU_write32(SPM_RSV_CON, en);
+	mtk_kbase_spm_wait();
 	spm_release();
 }
 void mtk_kbase_spm_set_vol_freq_floor(unsigned int v, unsigned int f)
@@ -199,6 +195,20 @@ void mtk_kbase_spm_fix_vol_freq(unsigned int v, unsigned int f)
 	DVFS_GPU_write32(SPM_SW_FLOOR_V, v);
 	DVFS_GPU_write32(SPM_SW_FLOOR_F, f);
 	DVFS_GPU_write32(SPM_RSV_CON, en);
+	mtk_kbase_spm_wait();
 	spm_release();
 }
 
+void mtk_kbase_spm_boost(unsigned int idx, unsigned int cnt)
+{
+	int en;
+	spm_acquire();
+	en = DVFS_GPU_read32(SPM_RSV_CON);
+	DVFS_GPU_write32(SPM_RSV_CON, 0);
+	mtk_kbase_spm_wait();
+	DVFS_GPU_write32(SPM_SW_BOOST_IDX, idx);
+	DVFS_GPU_write32(SPM_SW_BOOST_CNT, cnt);
+	DVFS_GPU_write32(SPM_RSV_CON, en);
+	mtk_kbase_spm_wait();
+	spm_release();
+}

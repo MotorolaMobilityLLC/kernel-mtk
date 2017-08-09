@@ -105,6 +105,8 @@ struct mtk_config {
 #define SPM_SW_CEIL_F    0x61C // CEILING F_VALUE -> Auto to F_REG @ EN=1
 #define SPM_SW_FLOOR_V   0x620 // FLOOR V_VALUE -> Auto to V_REG @ EN=1
 #define SPM_SW_FLOOR_F   0x624 // FLOOR F_VALUE -> Auto to F_REG @ EN=1
+#define SPM_SW_BOOST_IDX 0x628 //
+#define SPM_SW_BOOST_CNT 0x62C // ms
 
 #define SPM_RSV_CON      0x648
 //#define SPM_RSV_STA      0x64C // read-only ..
@@ -179,5 +181,8 @@ void mtk_kbase_spm_set_vol_freq_floor(unsigned int v, unsigned int f);
 /* special case, ceiling = floor */
 void mtk_kbase_spm_fix_vol_freq(unsigned int v, unsigned int f);
 
+void mtk_kbase_spm_boost(unsigned int idx, unsigned int cnt);
+
+void mtk_kbase_spm_hal_init(void);
 
 #endif
