@@ -57,6 +57,7 @@
 #include "mtk_disp_mgr.h"
 #include "ddp_dsi.h"
 #include "m4u.h"
+#include "m4u_priv.h"
 #include "mt_spm.h"
 #include "mtkfb_console.h"
 #include "mt_idle.h"
@@ -330,15 +331,16 @@ long primary_display_wait_not_state(DISP_POWER_STATE state, long timeout)
 	return ret;
 }
 
-/*
 int dynamic_debug_msg_print(unsigned int mva, int w, int h, int pitch, int bytes_per_pix)
 {
-	int ret;
+	int ret = 0;
 	unsigned int layer_size = pitch * h;
 	unsigned int real_mva = 0;
 	unsigned long kva = 0;
 	unsigned int real_size = 0, mapped_size = 0;
 	if (disp_helper_get_option(DISP_OPT_SHOW_VISUAL_DEBUG_INFO)) {
+		static MFC_HANDLE mfc_handle;
+
 		m4u_query_mva_info(mva, layer_size, &real_mva, &real_size);
 		if (ret < 0) {
 			pr_debug("m4u_query_mva_info error\n");
@@ -354,9 +356,8 @@ int dynamic_debug_msg_print(unsigned int mva, int w, int h, int pitch, int bytes
 			goto err1;
 		}
 
-		static MFC_HANDLE mfc_handle;
 		ret = MFC_Open(&mfc_handle,
-			       kva,
+			       (void *)kva,
 			       pitch,
 			       h,
 			       bytes_per_pix,
@@ -371,7 +372,7 @@ err1:
 	}
 	return 0;
 }
-*/
+
 static int primary_show_basic_debug_info(struct disp_frame_cfg_t *cfg)
 {
 	int i;
@@ -401,21 +402,24 @@ static int primary_show_basic_debug_info(struct disp_frame_cfg_t *cfg)
 				dst_layer_id : cfg->input_cfg[i].layer_id;
 		}
 	}
-	/*
+
 	dynamic_debug_msg_print((unsigned long)cfg->input_cfg[dst_layer_id].src_phy_addr,
 				cfg->input_cfg[dst_layer_id].tgt_width,
 				cfg->input_cfg[dst_layer_id].tgt_height,
 				cfg->input_cfg[dst_layer_id].src_pitch,
-				4);*/
+				4);
 	return 0;
 }
-/*
-static int primary_dynamic_debug(unsigned int mva, unsigned int pitch, unsigned int w, unsigned int h,
+
+/* static int primary_dynamic_debug(unsigned int mva, unsigned int pitch, unsigned int w, unsigned int h,
 				unsigned int x_pos, unsigned int block_sz)
 {
 	unsigned int real_mva, real_size, map_size;
 	unsigned long map_va;
 	int ret;
+
+	unsigned char *buf_va;
+	int x, y;
 
 	if (!disp_helper_get_option(DISP_OPT_DYNAMIC_DEBUG))
 		return 0;
@@ -431,8 +435,7 @@ static int primary_dynamic_debug(unsigned int mva, unsigned int pitch, unsigned 
 		return -1;
 	}
 
-	unsigned char *buf_va = map_va + (mva - real_mva);
-	int x, y;
+	buf_va = (unsigned char *)(map_va + (mva - real_mva));
 	if (x_pos + block_sz > w)
 		block_sz = w/2;
 	if (block_sz > h)
@@ -446,9 +449,8 @@ static int primary_dynamic_debug(unsigned int mva, unsigned int pitch, unsigned 
 	m4u_mva_unmap_kernel(real_mva, real_size, map_va);
 
 	return 0;
+} */
 
-}
-*/
 /*************************** fps calculate ************************/
 #if 1
 #define FPS_ARRAY_SZ	30
@@ -1510,8 +1512,8 @@ static int _DL_switch_to_DC_fast(void)
 	ret = dpmgr_path_config(pgc->dpmgr_handle, data_config_dl, pgc->cmdq_handle_config);
 
 	screen_logger_add_message("sess_mode", MESSAGE_REPLACE, (char *)session_mode_spy(DISP_SESSION_DECOUPLE_MODE));
-	/* dynamic_debug_msg_print(mva, rdma_config.width, rdma_config.height, rdma_config.pitch,
-			UFMT_GET_Bpp(rdma_config.inputFormat)); */
+	dynamic_debug_msg_print(mva, rdma_config.width, rdma_config.height, rdma_config.pitch,
+			UFMT_GET_Bpp(rdma_config.inputFormat));
 
 	memset(&gset_arg, 0, sizeof(gset_arg));
 	gset_arg.dst_mod_type = dpmgr_path_get_dst_module_type(pgc->dpmgr_handle);
@@ -4281,10 +4283,10 @@ static int _config_ovl_input(struct disp_frame_cfg_t *cfg,
 
 		/* no need ioctl because of rdma_dirty */
 		set_is_dc(1);
-		/*
+
 		dynamic_debug_msg_print(data_config->rdma_config.address, data_config->rdma_config.width,
 				data_config->rdma_config.height, data_config->rdma_config.pitch,
-				UFMT_GET_Bpp(data_config->rdma_config.inputFormat)); */
+				UFMT_GET_Bpp(data_config->rdma_config.inputFormat));
 
 	}
 
