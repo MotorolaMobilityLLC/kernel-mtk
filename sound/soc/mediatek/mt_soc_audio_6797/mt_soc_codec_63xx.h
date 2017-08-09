@@ -57,5 +57,6 @@ void SetAnalogSuspend(bool bEnable);
 void OpenTrimBufferHardware(bool bEnable);
 
 bool hasHpDepopHw(void);
+bool hasHp33Ohm(void);
 #endif
 

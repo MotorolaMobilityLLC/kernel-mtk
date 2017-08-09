@@ -137,6 +137,12 @@ static const int DC1unit_in_uv = 19184;	/* in uv with 0DB */
 /* static const int DC1unit_in_uv = 21500; */	/* in uv with 0DB */
 static const int DC1devider = 8;	/* in uv */
 
+enum hp_depop_flow {
+	HP_DEPOP_FLOW_DEPOP_HW,
+	HP_DEPOP_FLOW_33OHM,
+	HP_DEPOP_FLOW_DEPOP_HW_33OHM,
+	HP_DEPOP_FLOW_NONE,
+};
 static unsigned int mUseHpDepopFlow;
 
 #ifndef CONFIG_FPGA_EARLY_PORTING
@@ -551,7 +557,14 @@ static void anc_ul_src_enable(bool _enable)
 
 bool hasHpDepopHw(void)
 {
-	return mUseHpDepopFlow ? true : false;
+	return mUseHpDepopFlow == HP_DEPOP_FLOW_DEPOP_HW ||
+	       mUseHpDepopFlow == HP_DEPOP_FLOW_DEPOP_HW_33OHM;
+}
+
+bool hasHp33Ohm(void)
+{
+	return mUseHpDepopFlow == HP_DEPOP_FLOW_33OHM ||
+	       mUseHpDepopFlow == HP_DEPOP_FLOW_DEPOP_HW_33OHM;
 }
 
 #ifdef CONFIG_MTK_VOW_SUPPORT
@@ -935,15 +948,16 @@ void OpenAnalogHeadphone(bool bEnable)
 
 static void HP_Switch_to_Ground(void)
 {
-	if (mUseHpDepopFlow) {
+	if (hasHpDepopHw()) {
 		AudDrv_GPIO_HPDEPOP_Select(true);
-		udelay(10);
+		usleep_range(500, 800);
 	}
 }
 
 static void HP_Switch_to_Release(void)
 {
-	if (mUseHpDepopFlow) {
+	if (hasHpDepopHw()) {
+		usleep_range(500, 800);
 		AudDrv_GPIO_HPDEPOP_Select(false);
 	}
 }
@@ -1739,15 +1753,15 @@ static void Audio_Amp_Change(int channels, bool enable)
 			Ana_Set_Reg(AUDDEC_ANA_CON6, 0x0300, 0xffff);
 			/* from yoyo HQA script */
 
+			/* apply volume setting */
+			HeadsetVoloumeSet();
+
 			/* Enable ZCD, for minimize pop noise */
 			/* when adjust gain during HP buffer on */
 			Hp_Zcd_Enable(true);
 
 			/* HP output swtich release to normal output */
 			HP_Switch_to_Release();
-
-			/* apply volume setting */
-			HeadsetVoloumeSet();
 		}
 
 	} else {
