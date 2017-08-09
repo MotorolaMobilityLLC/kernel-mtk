@@ -437,15 +437,12 @@ static DSI_STATUS DSI_Reset(DISP_MODULE_ENUM module, cmdqRecHandle cmdq)
 
 static int _dsi_is_video_mode(DISP_MODULE_ENUM module)
 {
-	int i = 0;
+	int i = DSI_MODULE_BEGIN(module);
 
-	for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
-		if (DSI_REG[i]->DSI_MODE_CTRL.MODE == CMD_MODE)
-			return 0;
-		else
-			return 1;
-	}
-	return 0;
+	if (DSI_REG[i]->DSI_MODE_CTRL.MODE == CMD_MODE)
+		return 0;
+	else
+		return 1;
 }
 
 static DSI_STATUS DSI_SetMode(DISP_MODULE_ENUM module, cmdqRecHandle cmdq, unsigned int mode)
@@ -538,14 +535,11 @@ void DSI_clk_ULP_mode(DISP_MODULE_ENUM module, cmdqRecHandle cmdq, bool enter)
 
 bool DSI_clk_HS_state(DISP_MODULE_ENUM module, cmdqRecHandle cmdq)
 {
-	int i = 0;
+	int i = DSI_MODULE_BEGIN(module);
 	DSI_PHY_LCCON_REG tmpreg;
 
-	for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
-		DSI_READREG32(PDSI_PHY_LCCON_REG, &tmpreg, &DSI_REG[i]->DSI_PHY_LCCON);
-		return tmpreg.LC_HS_TX_EN ? true : false;
-	}
-	return false;
+	DSI_READREG32(PDSI_PHY_LCCON_REG, &tmpreg, &DSI_REG[i]->DSI_PHY_LCCON);
+	return tmpreg.LC_HS_TX_EN ? true : false;
 }
 
 void DSI_clk_HS_mode(DISP_MODULE_ENUM module, cmdqRecHandle cmdq, bool enter)
@@ -854,12 +848,12 @@ int ddp_dsi_porch_setting(DISP_MODULE_ENUM module, void *handle,
 void DSI_Config_VDO_Timing(DISP_MODULE_ENUM module, cmdqRecHandle cmdq, LCM_DSI_PARAMS *dsi_params)
 {
 	int i = 0;
-	unsigned int line_byte;
-	unsigned int horizontal_sync_active_byte;
-	unsigned int horizontal_backporch_byte;
-	unsigned int horizontal_frontporch_byte;
-	unsigned int horizontal_bllp_byte;
-	unsigned int dsiTmpBufBpp;
+	unsigned int line_byte = 0;
+	unsigned int horizontal_sync_active_byte = 0;
+	unsigned int horizontal_backporch_byte = 0;
+	unsigned int horizontal_frontporch_byte = 0;
+	unsigned int horizontal_bllp_byte = 0;
+	unsigned int dsiTmpBufBpp = 0;
 
 	for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
 		if (dsi_params->data_format.format == LCM_DSI_FORMAT_RGB565)
@@ -2202,6 +2196,8 @@ void DSI_set_cmdq_V2(DISP_MODULE_ENUM module, cmdqRecHandle cmdq, unsigned cmd, 
 	unsigned long goto_addr, mask_para, set_para;
 	DSI_T0_INS t0;
 	DSI_T2_INS t2;
+
+	t2.pdata = NULL;
 	/* DISPFUNC(); */
 	for (d = DSI_MODULE_BEGIN(module); d <= DSI_MODULE_END(module); d++) {
 		if (0 != DSI_REG[d]->DSI_MODE_CTRL.MODE) {	/* not in cmd mode */
