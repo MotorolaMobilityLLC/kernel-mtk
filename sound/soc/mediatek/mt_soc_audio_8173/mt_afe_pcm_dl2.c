@@ -88,6 +88,7 @@ static int mt_pcm_dl2_open(struct snd_pcm_substream *substream)
 	/* here open audio clocks */
 	mt_afe_main_clk_on();
 	mt_afe_dac_clk_on();
+	mt_afe_emi_clk_on();
 
 	if (unlikely(ret < 0)) {
 		pr_err("%s mt_pcm_dl2_close\n", __func__);
@@ -113,6 +114,7 @@ static int mt_pcm_dl2_close(struct snd_pcm_substream *substream)
 
 	mt_afe_dac_clk_off();
 	mt_afe_main_clk_off();
+	mt_afe_emi_clk_off();
 	return 0;
 }
 
