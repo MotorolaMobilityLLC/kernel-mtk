@@ -5419,7 +5419,10 @@ UINT_8 wlanGetEcoVersion(IN P_ADAPTER_T prAdapter)
 	UINT_8 ucEcoVersion;
 
 	ASSERT(prAdapter);
-
+#if defined(MT6797)
+	ucEcoVersion = 1;
+	return ucEcoVersion;
+#else
 #if CFG_MULTI_ECOVER_SUPPORT
 	ucEcoVersion = nicGetChipEcoVer();
 	DBGLOG(INIT, TRACE, "%s: %u\n", __func__, ucEcoVersion);
@@ -5429,6 +5432,7 @@ UINT_8 wlanGetEcoVersion(IN P_ADAPTER_T prAdapter)
 		return prAdapter->ucRevID + 1;
 	else
 		return 0;
+#endif
 #endif
 }
 

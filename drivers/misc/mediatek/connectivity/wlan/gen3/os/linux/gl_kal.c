@@ -953,12 +953,7 @@ WLAN_STATUS kalFirmwareOpen(IN P_GLUE_INFO_T prGlueInfo)
 	UINT_8 ucPathIdx, ucNameIdx;
 	PPUINT_8 apucNameTable;
 	UINT_8 ucMaxEcoVer = (sizeof(appucFwNameTable) / sizeof(PPUINT_8));
-#if defined(MT6797)
-	UINT_8 ucCurEcoVer = 1;
-#else
 	UINT_8 ucCurEcoVer = wlanGetEcoVersion(prGlueInfo->prAdapter);
-
-#endif	
 	UINT_8 aucFwName[128];
 	BOOLEAN fgResult = FALSE;
 

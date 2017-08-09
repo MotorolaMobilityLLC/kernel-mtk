@@ -813,8 +813,7 @@ BOOLEAN kalDevRegRead(IN GLUE_INFO_T *GlueInfo, IN UINT_32 RegOffset, OUT UINT_3
 	/* use PIO mode to read register */
 	*pu4Value = HIF_REG_READL(HifInfo, RegOffset);
 
-	if ((RegOffset == MCR_WRDR0) || (RegOffset == MCR_WRDR1))
-		HIF_DBG(("[WiFi/HIF] kalDevRegRead from Data Port 0 or 1\n"));
+	HIF_DBG(("[WiFi/HIF] kalDevRegRead 0x%x = 0x%x\n", RegOffset, *pu4Value));
 
 	return TRUE;
 
@@ -843,7 +842,7 @@ BOOLEAN kalDevRegWrite(IN GLUE_INFO_T *GlueInfo, IN UINT_32 RegOffset, IN UINT_3
 	/* use PIO mode to write register */
 	HIF_REG_WRITEL(HifInfo, RegOffset, RegValue);
 
-	HIF_DBG(("[WiFi/HIF] kalDevRegWrite to Data Port 1\n"));
+	HIF_DBG(("[WiFi/HIF] kalDevRegWrite 0x%x = 0x%x\n", RegOffset, RegValue));
 
 	return TRUE;
 
@@ -941,7 +940,8 @@ kalDevPortRead(IN P_GLUE_INFO_T GlueInfo, IN UINT_16 Port, IN UINT_32 Size, OUT 
 	info.field.addr = Port;
 
 
-	DBGLOG(RX, TRACE, "use_dma(%d), count(%d->%d), blk size(%d), CMD_SETUP(0x%x)\n",
+	/* MT6797 TODO: log level */
+	DBGLOG(RX, WARN, "use_dma(%d), count(%d->%d), blk size(%d), CMD_SETUP(0x%x)\n",
 		 func->use_dma, Size, count, func->cur_blksize, info.word);
 
 	if (pfWlanDmaOps != NULL)
@@ -1208,7 +1208,9 @@ kalDevPortWrite(IN P_GLUE_INFO_T GlueInfo, IN UINT_16 Port, IN UINT_32 Size, IN 
 	info.field.op_mode = SDIO_GEN3_FIXED_PORT_MODE; /* fix mode */
 	info.field.addr = Port;
 
-	DBGLOG(TX, TRACE, "use_dma(%d), count(%d->%d), blk size(%d), CMD_SETUP(0x%x)\n",
+
+	/* MT6797 TODO: log level */
+	DBGLOG(TX, WARN, "use_dma(%d), count(%d->%d), blk size(%d), CMD_SETUP(0x%x)\n",
 		func->use_dma, Size, count, func->cur_blksize, info.word);
 
 	if (pfWlanDmaOps != NULL)

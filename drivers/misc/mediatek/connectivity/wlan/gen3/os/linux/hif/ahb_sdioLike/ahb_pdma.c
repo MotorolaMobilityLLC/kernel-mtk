@@ -440,8 +440,6 @@ static VOID HifPdmaRegDump(IN void *HifInfoSrc)
 		}
 	}
 #endif
-	DBGLOG(INIT, INFO, "\nPDMA> clock status = 0x%x\n\n", *(volatile unsigned int *)0xF0003018);
-
 }
 
 /*----------------------------------------------------------------------------*/
