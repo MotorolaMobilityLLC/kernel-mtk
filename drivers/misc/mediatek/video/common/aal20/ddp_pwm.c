@@ -67,7 +67,11 @@ static int g_pwm_log_index;
 static void __iomem *disp_pmw_mux_base;
 
 #ifndef MUX_DISPPWM_ADDR /* disp pwm source clock select register address */
+#if defined(CONFIG_ARCH_MT6797)
 #define MUX_DISPPWM_ADDR (disp_pmw_mux_base + 0x50)
+#else
+#define MUX_DISPPWM_ADDR (disp_pmw_mux_base + 0xB0)
+#endif
 #endif
 #ifndef MUX_UPDATE_ADDR /* disp pwm source clock update register address */
 #define MUX_UPDATE_ADDR (disp_pmw_mux_base + 0x4)
@@ -79,7 +83,6 @@ static void __iomem *disp_pmw_mux_base;
 #define clk_writel(addr, val) mt_reg_sync_writel(val, addr)
 #define clk_setl(addr, val) mt_reg_sync_writel(clk_readl(addr) | (val), addr)
 #define clk_clrl(addr, val) mt_reg_sync_writel(clk_readl(addr) & ~(val), addr)
-
 /*****************************************************************************
  *
  * get disp pwm source mux node
@@ -127,7 +130,7 @@ static int disp_pwm_set_pwmmux(unsigned int clk_req)
 #ifdef CONFIG_MTK_CLKMGR /* MTK Clock Manager */
 
 #else /* Common Clock Framework */
-#if defined(CONFIG_ARCH_MT6797)
+#if defined(CONFIG_ARCH_MT6797) || defined(CONFIG_ARCH_MT6755)
 	unsigned int regsrc;
 	int ret = -1;
 	eDDP_CLK_ID clkid = -1;
@@ -137,9 +140,19 @@ static int disp_pwm_set_pwmmux(unsigned int clk_req)
 	regsrc = disp_pwm_get_pwmmux();
 
 	if (clkid != -1) {
+#if defined(CONFIG_ARCH_MT6797)
 		ddp_clk_enable(MUX_PWM);
 		ddp_clk_set_parent(MUX_PWM, clkid);
 		ddp_clk_disable(MUX_PWM);
+#else
+		regsrc = clk_readl(MUX_DISPPWM_ADDR) & 0xfffffffc;
+		regsrc = regsrc | 0x3;
+		clk_writel(MUX_DISPPWM_ADDR, regsrc);/* select clock source */
+
+		regsrc = clk_readl(MUX_UPDATE_ADDR);/* set clock source update bit */
+		regsrc = regsrc | (0x1 << 27);
+		clk_writel(MUX_UPDATE_ADDR, regsrc);
+#endif
 	}
 
 	PWM_MSG("PWM_MUX %x->%x", regsrc, disp_pwm_get_pwmmux());
@@ -478,6 +491,10 @@ static int ddp_pwm_power_on(DISP_MODULE_ENUM module, void *handle)
 #endif
 #else /* Common Clock Framework */
 		ddp_clk_enable(DISP_PWM);
+#if defined(CONFIG_ARCH_MT6755)
+		disp_pwm_osc_on();
+#endif
+
 #endif
 	}
 #endif

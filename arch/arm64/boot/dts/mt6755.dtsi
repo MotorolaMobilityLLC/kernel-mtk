@@ -1929,6 +1929,10 @@
 					<&topckgen TOP_TVDPLL_D8>,
 					<&topckgen TOP_TVDPLL_D16>,
 					<&topckgen TOP_DPI_CK>,
+					<&topckgen TOP_MUX_DISPPWM>,
+					<&topckgen TOP_UNIVPLL2_D4>,
+					<&topckgen TOP_OSC_D2>,
+					<&topckgen TOP_OSC_D8>,
 					<&topckgen TOP_MUX_MM>,
 					<&topckgen TOP_VENCPLL_CK>,
 					<&topckgen TOP_SYSPLL2_D2>;
@@ -1962,6 +1966,10 @@
 					"TVDPLL_D8",
 					"TVDPLL_D16",
 					"DPI_CK",
+					"MUX_PWM",
+					"UNIVPLL2_D4",
+					"OSC_D2",
+					"OSC_D8",
 					"MUX_MM",
 					"MM_VENCPLL",
 					"SYSPLL2_D2";

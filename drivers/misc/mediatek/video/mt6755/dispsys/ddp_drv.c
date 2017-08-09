@@ -135,6 +135,10 @@ const char *disp_clk_name[MAX_DISP_CLK_CNT] = {
 	"TVDPLL_D8",
 	"TVDPLL_D16",
 	"DPI_CK",
+	"MUX_PWM",
+	"UNIVPLL2_D4",
+	"OSC_D2",
+	"OSC_D8",
 	"MUX_MM",
 	"MM_VENCPLL",
 	"SYSPLL2_D2"
