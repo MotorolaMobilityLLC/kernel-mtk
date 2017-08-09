@@ -3308,7 +3308,7 @@ probe_begin:
 	}
 #endif /* CONFIG_DEBUG_FS */
 
-//#if 0
+#if 0
 #if defined(CONFIG_MTK_CLKMGR)
 #else	
 		kbdev->clk_mfg = devm_clk_get(&pdev->dev, "mfg-main");
@@ -3333,7 +3333,7 @@ probe_begin:
 		}
 #endif
 
-//#endif 
+#endif 
 
 
 	if (MALI_ERROR_NONE != kbase_device_init(kbdev)) {
