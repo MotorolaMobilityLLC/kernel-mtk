@@ -42,6 +42,7 @@
 
 unsigned int gCapturePriLayerEnable = 0;
 unsigned int gCaptureWdmaLayerEnable = 0;
+unsigned int gCaptureRdmaLayerEnable = 0;
 unsigned int gCapturePriLayerDownX = 20;
 unsigned int gCapturePriLayerDownY = 20;
 unsigned int gCapturePriLayerNum = 4;
@@ -1136,7 +1137,7 @@ int dprec_mmp_dump_wdma_layer(void *wdma_layer, unsigned int wdma_num)
 
 int dprec_mmp_dump_rdma_layer(void *rdma_layer, unsigned int rdma_num)
 {
-	if (gCaptureWdmaLayerEnable) {
+	if (gCaptureRdmaLayerEnable) {
 		ddp_mmp_rdma_layer((RDMA_CONFIG_STRUCT *) rdma_layer, rdma_num,
 				   gCapturePriLayerDownX, gCapturePriLayerDownY);
 	}

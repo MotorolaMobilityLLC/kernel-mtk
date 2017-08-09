@@ -452,6 +452,13 @@ void ddp_mmp_wdma_layer(WDMA_CONFIG_STRUCT *wdma_layer, unsigned int wdma_num,
 		Bitmap.format = MMProfileBitmapRGBA8888;
 		Bitmap.bpp = 32;
 		break;
+	case UFMT_YUYV:
+	case UFMT_YVYU:
+		/* use rgb888 to cheet MMP, haha! */
+		Bitmap.format = MMProfileBitmapRGB888;
+		Bitmap.bpp = 16;
+		Bitmap.data2 = wdma_layer->outputFormat;
+		break;
 	default:
 		DDPERR("dprec_mmp_dump_wdma_layer(), unknown fmt=%d, dump raw\n",
 		       wdma_layer->outputFormat);
@@ -532,6 +539,13 @@ void ddp_mmp_rdma_layer(RDMA_CONFIG_STRUCT *rdma_layer, unsigned int rdma_num,
 	case UFMT_ARGB8888:
 		Bitmap.format = MMProfileBitmapRGBA8888;
 		Bitmap.bpp = 32;
+		break;
+	case UFMT_YUYV:
+	case UFMT_YVYU:
+		/* use rgb888 to cheet MMP, haha! */
+		Bitmap.format = MMProfileBitmapRGB888;
+		Bitmap.bpp = 16;
+		Bitmap.data2 = rdma_layer->inputFormat;
 		break;
 	default:
 		DDPERR("dump_rdma_layer(), unknown fmt=%d, dump raw\n", rdma_layer->inputFormat);

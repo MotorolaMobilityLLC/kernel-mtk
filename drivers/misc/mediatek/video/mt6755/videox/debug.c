@@ -463,7 +463,7 @@ static void process_dbg_opt(const char *opt)
 			}
 
 			gCapturePriLayerEnable = 1;
-			gCaptureWdmaLayerEnable = 1;
+			gCaptureWdmaLayerEnable = 0;
 			if (gCapturePriLayerDownX == 0)
 				gCapturePriLayerDownX = 20;
 			if (gCapturePriLayerDownY == 0)
@@ -476,6 +476,49 @@ static void process_dbg_opt(const char *opt)
 			gCaptureWdmaLayerEnable = 0;
 			gCapturePriLayerNum = TOTAL_OVL_LAYER_NUM;
 			DDPMSG("dump_layer En %d\n", gCapturePriLayerEnable);
+		}
+
+	} else if (0 == strncmp(opt, "dump_wdma_layer:", 16)) {
+		if (0 == strncmp(opt + 16, "on", 2)) {
+			ret = sscanf(opt, "dump_wdma_layer:on,%d,%d\n",
+				     &gCapturePriLayerDownX, &gCapturePriLayerDownY);
+			if (ret != 2) {
+				pr_err("error to parse cmd %s\n", opt);
+				return;
+			}
+
+			gCaptureWdmaLayerEnable = 1;
+			if (gCapturePriLayerDownX == 0)
+				gCapturePriLayerDownX = 20;
+			if (gCapturePriLayerDownY == 0)
+				gCapturePriLayerDownY = 20;
+			DDPMSG("dump_wdma_layer En %d DownX %d DownY %d", gCaptureWdmaLayerEnable,
+			       gCapturePriLayerDownX, gCapturePriLayerDownY);
+
+		} else if (0 == strncmp(opt + 16, "off", 3)) {
+			gCaptureWdmaLayerEnable = 0;
+			DDPMSG("dump_layer En %d\n", gCaptureWdmaLayerEnable);
+		}
+	} else if (0 == strncmp(opt, "dump_rdma_layer:", 16)) {
+		if (0 == strncmp(opt + 16, "on", 2)) {
+			ret = sscanf(opt, "dump_rdma_layer:on,%d,%d\n",
+				     &gCapturePriLayerDownX, &gCapturePriLayerDownY);
+			if (ret != 2) {
+				pr_err("error to parse cmd %s\n", opt);
+				return;
+			}
+
+			gCaptureRdmaLayerEnable = 1;
+			if (gCapturePriLayerDownX == 0)
+				gCapturePriLayerDownX = 20;
+			if (gCapturePriLayerDownY == 0)
+				gCapturePriLayerDownY = 20;
+			DDPMSG("dump_wdma_layer En %d DownX %d DownY %d", gCaptureRdmaLayerEnable,
+			       gCapturePriLayerDownX, gCapturePriLayerDownY);
+
+		} else if (0 == strncmp(opt + 16, "off", 3)) {
+			gCaptureRdmaLayerEnable = 0;
+			DDPMSG("dump_layer En %d\n", gCaptureRdmaLayerEnable);
 		}
 	} else if (0 == strncmp(opt, "enable_idlemgr:", 15)) {
 		char *p = (char *)opt + 15;

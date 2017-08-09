@@ -1525,7 +1525,7 @@ static int _DL_switch_to_DC_fast(void)
 	/* 5. backup rdma address to slots */
 	cmdqRecBackupUpdateSlot(pgc->cmdq_handle_config, pgc->rdma_buff_info, 0, rdma_config.address);
 	cmdqRecBackupUpdateSlot(pgc->cmdq_handle_config, pgc->rdma_buff_info, 1, rdma_config.pitch);
-	cmdqBackupReadSlot(pgc->rdma_buff_info, 2, &(rdma_config.inputFormat));
+	cmdqRecBackupUpdateSlot(pgc->cmdq_handle_config, pgc->rdma_buff_info, 2, rdma_config.inputFormat);
 
 
 	/* 6 .flush to cmdq */
@@ -2668,8 +2668,6 @@ static int _ovl_fence_release_callback(unsigned long userdata)
 	addr = ddp_ovl_get_cur_addr(!_should_config_ovl_input(), 0);
 	if ((primary_display_is_decouple_mode() == 0))
 		update_frm_seq_info(addr, 0, 2, FRM_START);
-
-	decouple_update_rdma_config();
 
 	MMProfileLogEx(ddp_mmp_get_events()->session_release, MMProfileFlagEnd, 1, userdata);
 	return ret;
