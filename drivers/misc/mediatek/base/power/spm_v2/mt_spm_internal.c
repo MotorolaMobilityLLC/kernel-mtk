@@ -503,6 +503,14 @@ unsigned int spm_get_cpu_pwr_status(void)
 	return stat;
 }
 
+long int spm_get_current_time_ms(void)
+{
+	struct timeval t;
+
+	do_gettimeofday(&t);
+	return ((t.tv_sec & 0xFFF) * 1000000 + t.tv_usec) / 1000;
+}
+
 void __spm_check_md_pdn_power_control(struct pwr_ctrl *pwr_ctrl)
 {
 	if (is_md_c2k_conn_power_off())

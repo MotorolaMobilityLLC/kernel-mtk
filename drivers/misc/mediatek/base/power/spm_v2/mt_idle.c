@@ -77,9 +77,6 @@
 
 #define idle_gpt GPT4
 
-#define idle_readl(addr) \
-	DRV_Reg32(addr)
-
 #define idle_writel(addr, val)   \
 	mt65xx_reg_sync_writel(val, addr)
 
@@ -394,7 +391,7 @@ static unsigned long mcidle_block_cnt[NR_CPUS][NR_REASONS] = { {0}, {0} };
 u64 mcidle_timer_before_wfi[NR_CPUS];
 static unsigned int idle_spm_lock;
 
-static long int idle_get_current_time_ms(void)
+long int idle_get_current_time_ms(void)
 {
 	struct timeval t;
 

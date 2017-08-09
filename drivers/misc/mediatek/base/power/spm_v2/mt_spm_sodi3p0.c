@@ -36,8 +36,9 @@
 
 #define SPM_BYPASS_SYSPWREQ         0	/* JTAG is used */
 
-#define LOG_BUF_SIZE                 256
-#define SODI3_LOGOUT_TIMEOUT_CRITERA 20
+#define LOG_BUF_SIZE					(256)
+#define SODI3_LOGOUT_TIMEOUT_CRITERIA	(20)
+#define SODI3_LOGOUT_INTERVAL_CRITERIA	(5000U) /* unit:ms */
 
 
 #if defined(CONFIG_OF)
@@ -186,20 +187,11 @@ struct spm_lp_scen __spm_sodi3 = {
 
 static bool gSpm_sodi3_en;
 
-static unsigned int sodi3_logout_critera = 5000;	/* unit:ms */
 static unsigned long int sodi3_logout_prev_time;
 static int pre_emi_refresh_cnt;
 static int memPllCG_prev_status = 1;	/* 1:CG, 0:pwrdn */
 static unsigned int logout_sodi3_cnt;
 static unsigned int logout_selfrefresh_cnt;
-
-static long int idle_get_current_time_ms(void)
-{
-	struct timeval t;
-
-	do_gettimeofday(&t);
-	return ((t.tv_sec & 0xFFF) * 1000000 + t.tv_usec) / 1000;
-}
 
 static void spm_trigger_wfi_for_sodi3(struct pwr_ctrl *pwrctrl)
 {
@@ -301,20 +293,20 @@ spm_sodi3_output_log(struct wake_status *wakesta, struct pcm_desc *pcmdesc, int 
 					wakesta->assert_pc, pcmdesc->version, wakesta->r13, wakesta->debug_flag);
 		}
 	} else {
-		sodi3_logout_curr_time = idle_get_current_time_ms();
+		sodi3_logout_curr_time = spm_get_current_time_ms();
 
 		if (wakesta->assert_pc != 0) {
 			need_log_out = 1;
 		} else if ((wakesta->r12 & (0x1 << 4)) == 0) {
 			/* not wakeup by GPT */
 			need_log_out = 1;
-		} else if (wakesta->timer_out <= SODI3_LOGOUT_TIMEOUT_CRITERA) {
+		} else if (wakesta->timer_out <= SODI3_LOGOUT_TIMEOUT_CRITERIA) {
 			need_log_out = 1;
 		} else if ((spm_read(SPM_PASR_DPD_0) == 0 && pre_emi_refresh_cnt > 0) ||
 				(spm_read(SPM_PASR_DPD_0) > 0 && pre_emi_refresh_cnt == 0)) {
 			need_log_out = 1;
-		} else if ((sodi3_logout_curr_time - sodi3_logout_prev_time) > sodi3_logout_critera) {
-			/* previous logout time > sodi3_logout_critera */
+		} else if ((sodi3_logout_curr_time - sodi3_logout_prev_time) > SODI3_LOGOUT_INTERVAL_CRITERIA) {
+			/* previous logout time > SODI3_LOGOUT_INTERVAL_CRITERIA */
 			need_log_out = 1;
 		} else {
 			/* check CG/pwrdn status is changed */

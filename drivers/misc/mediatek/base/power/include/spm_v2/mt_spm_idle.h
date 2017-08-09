@@ -18,6 +18,7 @@
  * for SPM common part
  */
 extern unsigned int spm_get_cpu_pwr_status(void);
+extern long int spm_get_current_time_ms(void);
 
 /*
  * for Deep Idle

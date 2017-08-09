@@ -367,14 +367,6 @@ struct spm_lp_scen __spm_dpidle = {
 static unsigned int dpidle_log_discard_cnt;
 static unsigned int dpidle_log_print_prev_time;
 
-static long int idle_get_current_time_ms(void)
-{
-	struct timeval t;
-
-	do_gettimeofday(&t);
-	return ((t.tv_sec & 0xFFF) * 1000000 + t.tv_usec) / 1000;
-}
-
 static void spm_trigger_wfi_for_dpidle(struct pwr_ctrl *pwrctrl)
 {
 	u32 v0, v1;
@@ -444,7 +436,7 @@ static wake_reason_t spm_output_wake_reason(struct wake_status *wakesta, struct 
 		wr = __spm_output_wake_reason(wakesta, pcmdesc, false);
 	} else if (dump_log == DEEPIDLE_LOG_REDUCED) {
 		/* Determine print SPM log or not */
-		dpidle_log_print_curr_time = idle_get_current_time_ms();
+		dpidle_log_print_curr_time = spm_get_current_time_ms();
 
 		if (wakesta->assert_pc != 0)
 			log_print = true;

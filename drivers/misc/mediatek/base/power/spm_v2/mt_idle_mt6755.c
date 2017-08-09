@@ -283,7 +283,7 @@ const char *pll_grp_get_name(int id)
 
 int is_pll_on(int id)
 {
-	return idle_pll_readl(APMIXEDSYS(0x230 + id * 0x10)) & 0x1;
+	return idle_readl(APMIXEDSYS(0x230 + id * 0x10)) & 0x1;
 }
 
 bool pll_check_idle_can_enter(unsigned int *condition_mask, unsigned int *block_mask)
