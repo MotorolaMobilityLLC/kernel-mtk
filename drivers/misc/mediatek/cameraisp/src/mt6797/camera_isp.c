@@ -5251,17 +5251,21 @@ static MINT32 ISP_P2_BufQue_CTRL_FUNC(ISP_P2_BUFQUE_STRUCT param)
 			/*(2) add new to the last of the frame unit list */
 			MUINT32 cqmask = (param.dupCQIdx << 2) | (param.cQIdx << 1) | (param.burstQIdx);
 			if (P2_FramePack_List_Idx[property].end < 0 || P2_FrameUnit_List_Idx[property].end < 0) {
+#ifdef P2_DBG_LOG
 				IRQ_LOG_KEEPER(ISP_IRQ_TYPE_INT_DIP_A_ST, 0, _LOG_DBG, "pty(%d), pD(0x%x_0x%x) MF/L(%d_%d,%d),(%d,%d), RF/C/L(%d,%d,%d),(%d,%d,%d),cqmsk(0x%x)\n", \
 					       property, param.processID, param.callerID, param.frameNum, P2_FramePack_List_Idx[property].start, P2_FramePack_List_Idx[property].end, \
 					       P2_FramePackage_List[property][P2_FramePack_List_Idx[property].start].dupCQIdx, P2_FramePackage_List[property][0].dupCQIdx, \
 					       P2_FrameUnit_List_Idx[property].start, P2_FrameUnit_List_Idx[property].curr, P2_FrameUnit_List_Idx[property].end, P2_FrameUnit_List[property][P2_FrameUnit_List_Idx[property].start].bufSts, \
 					       P2_FrameUnit_List[property][P2_FrameUnit_List_Idx[property].curr].bufSts, P2_FrameUnit_List[property][0].bufSts, cqmask);
+#endif
 			} else {
+#ifdef P2_DBG_LOG
 				IRQ_LOG_KEEPER(ISP_IRQ_TYPE_INT_DIP_A_ST, 0, _LOG_DBG, "pty(%d), pD(0x%x_0x%x) MF/L(%d_%d,%d),(%d,%d), RF/C/L(%d,%d,%d),(%d,%d,%d),cqmsk(0x%x)\n", \
 					       property, param.processID, param.callerID, param.frameNum, P2_FramePack_List_Idx[property].start, P2_FramePack_List_Idx[property].end, \
 					       P2_FramePackage_List[property][P2_FramePack_List_Idx[property].start].dupCQIdx, P2_FramePackage_List[property][P2_FramePack_List_Idx[property].end].dupCQIdx, \
 					       P2_FrameUnit_List_Idx[property].start, P2_FrameUnit_List_Idx[property].curr, P2_FrameUnit_List_Idx[property].end, P2_FrameUnit_List[property][P2_FrameUnit_List_Idx[property].start].bufSts, \
 					       P2_FrameUnit_List[property][P2_FrameUnit_List_Idx[property].curr].bufSts, P2_FrameUnit_List[property][P2_FrameUnit_List_Idx[property].end].bufSts, cqmask);
+#endif
 			}
 			if (P2_FrameUnit_List_Idx[property].start == P2_FrameUnit_List_Idx[property].end && P2_FrameUnit_List[property][P2_FrameUnit_List_Idx[property].start].bufSts == ISP_P2_BUF_STATE_NONE) {
 				/* frame unit list is empty */
@@ -5397,14 +5401,18 @@ static MINT32 ISP_P2_BufQue_CTRL_FUNC(ISP_P2_BUFQUE_STRUCT param)
 			return ret;
 		}
 
+#ifdef P2_DBG_LOG
 		LOG_INF("ISP_P2_BUFQUE_CTRL_WAIT_FRAME, after pty/pID/cID (%d/0x%x/0x%x),idx(%d)", property, param.processID, param.callerID, idx);
+#endif
 		spin_lock(&(SpinLock_P2FrameList));
 		/* [2]check the buffer is dequeued or not */
 		if (P2_FramePackage_List[property][idx].dequedNum == P2_FramePackage_List[property][idx].frameNum) {
 			ISP_P2_BufQue_Erase(property, ISP_P2_BUFQUE_LIST_TAG_PACKAGE, idx);
 			spin_unlock(&(SpinLock_P2FrameList));
 			ret = 0;
+#ifdef P2_DBG_LOG
 			LOG_DBG("Frame is alreay dequeued, return user, pd(%d/0x%x/0x%x),idx(%d)", property, param.processID, param.callerID, idx);
+#endif
 			return ret;
 		} else {
 			spin_unlock(&(SpinLock_P2FrameList));
