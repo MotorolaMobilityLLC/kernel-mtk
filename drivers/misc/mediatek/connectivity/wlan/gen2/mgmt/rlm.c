@@ -696,13 +696,6 @@ static VOID rlmFillHtCapIE(P_ADAPTER_T prAdapter, P_BSS_INFO_T prBssInfo, P_MSDU
 	ASSERT(prBssInfo);
 	ASSERT(prMsduInfo);
 
-#if 1
-	if (prMsduInfo->ucNetworkType == NETWORK_TYPE_P2P_INDEX) {
-		DBGLOG(AIS, WARN, "Assoc:Force P2P BW to 20\n");
-		prBssInfo->fgAssoc40mBwAllowed = FALSE;
-	}
-#endif
-
 	fg40mAllowed = prBssInfo->fgAssoc40mBwAllowed;
 
 	prHtCap = (P_IE_HT_CAP_T)
