@@ -89,7 +89,7 @@ static kbase_io_resources io_resources = {
 };
 #endif /* CONFIG_OF */
 
-#define NO_DVFS_FOR_BRINGUP
+//#define NO_DVFS_FOR_BRINGUP
 
 static int pm_callback_power_on(struct kbase_device *kbdev)
 {

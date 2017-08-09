@@ -32,7 +32,7 @@
 #include <linux/module.h>
 #include <linux/proc_fs.h>
 
-#define NO_DVFS_FOR_BRINGUP
+//#define NO_DVFS_FOR_BRINGUP
 
 #if KBASE_PM_EN
 

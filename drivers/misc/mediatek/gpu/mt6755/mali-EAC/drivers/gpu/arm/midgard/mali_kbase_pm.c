@@ -27,7 +27,7 @@
 
 #include <mali_kbase_pm.h>
 
-#define NO_DVFS_FOR_BRINGUP
+//#define NO_DVFS_FOR_BRINGUP
 
 #if KBASE_PM_EN
 

@@ -112,7 +112,7 @@ static const char kbase_drv_name[] = KBASE_DRV_NAME;
 
 static int kbase_dev_nr;
 
-#define NO_DVFS_FOR_BRINGUP
+//#define NO_DVFS_FOR_BRINGUP
 
 /* MTK GPU DVFS freq */
 
