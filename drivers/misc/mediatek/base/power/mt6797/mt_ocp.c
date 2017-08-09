@@ -2132,7 +2132,9 @@ if (err) {
 	WARN_ON(1);
 }
 
-err = request_irq(ocp0_irq0_number, ocp_isr_cluster0, IRQF_TRIGGER_HIGH, "ocp_cluster0", NULL);
+if (LITTLE_OCP_ON) {
+
+	err = request_irq(ocp0_irq0_number, ocp_isr_cluster0, IRQF_TRIGGER_HIGH, "ocp_cluster0", NULL);
 
 if (err) {
 	ocp_err("OCP IRQ register failed: ocp0_irq0 (%d)\n", err);
@@ -2159,7 +2161,7 @@ if (err) {
 	ocp_err("OCP IRQ register failed  ocp1_irq1 (%d)\n", err);
 	WARN_ON(1);
 }
-
+}
 ocp_info("OCP Initial.\n");
 
 #if defined(CONFIG_OCP_AEE_RR_REC) && !defined(EARLY_PORTING)
@@ -4778,7 +4780,7 @@ static int ocp_debug_proc_show(struct seq_file *m, void *v)
 	seq_printf(m, "IRQ_Debug_on          = %d\n", IRQ_Debug_on);
 	seq_printf(m, "Reg_Debug_on          = %d\n", Reg_Debug_on);
 	seq_printf(m, "BIG_OCP_HW            = %d\n", BIG_OCP_ON);
-if (LITTLE_OCP_ON == 1)
+if (LITTLE_OCP_ON)
 	seq_printf(m, "LITTLE_OCP_HW         = %d\n", LITTLE_OCP_ON);
 return 0;
 }
@@ -4936,23 +4938,26 @@ ocpefus_base = of_iomap(node, 3); /* 0x10206000 0x1000, Big eFUSE register */
 		BUG();
 	}
 
-
-/*get ocp irq num*/
-ocp2_irq0_number = irq_of_parse_and_map(node, 0);
-ocp2_irq1_number = irq_of_parse_and_map(node, 1);
-ocp0_irq0_number = irq_of_parse_and_map(node, 2);
-ocp0_irq1_number = irq_of_parse_and_map(node, 3);
-ocp1_irq0_number = irq_of_parse_and_map(node, 4);
-ocp1_irq1_number = irq_of_parse_and_map(node, 5);
-
-#endif
-
-
 #if OCP_ON
 /* turn on OCP in hotplug stage */
 BIG_OCP_ON = 1;
 LITTLE_OCP_ON = 0;
 #endif
+
+/*get ocp irq num*/
+ocp2_irq0_number = irq_of_parse_and_map(node, 0);
+ocp2_irq1_number = irq_of_parse_and_map(node, 1);
+
+if (LITTLE_OCP_ON) {
+	ocp0_irq0_number = irq_of_parse_and_map(node, 2);
+	ocp0_irq1_number = irq_of_parse_and_map(node, 3);
+	ocp1_irq0_number = irq_of_parse_and_map(node, 4);
+	ocp1_irq1_number = irq_of_parse_and_map(node, 5);
+}
+#endif
+
+
+
 
 /* register platform device/driver */
 err = platform_device_register(&ocp_pdev);
