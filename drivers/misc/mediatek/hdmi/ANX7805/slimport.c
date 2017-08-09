@@ -647,7 +647,7 @@ static void anx7805_work_func(struct work_struct *work)
 
 	SP_CTRL_Main_Procss();
 	queue_delayed_work(td->workqueue, &td->work,
-	                   msecs_to_jiffies(100));
+	                   msecs_to_jiffies(300));
 #endif
 }
 
@@ -685,13 +685,15 @@ static int anx7805_irq_kthread(void *data)
 			Notify_AP_MHL_TX_Event(SLIMPORT_TX_EVENT_HPD_CLEAR, 0, NULL);
 
 			status = cancel_delayed_work_sync(&the_chip->work);
-			pr_err("true: %d\n", true);
+			pr_err("true: %d\n", status);
 			if (status == true)
 				flush_workqueue(the_chip->workqueue);
 			else
 				pr_err("cancel_delayed_work_sync error!\n");
 			wake_unlock(&the_chip->slimport_lock);
 			wake_lock_timeout(&the_chip->slimport_lock, 2*HZ);
+			if (sp_tx_pd_mode != 1)
+				system_power_ctrl(0);
 		}
 
 		Unmask_Slimport_Intr();

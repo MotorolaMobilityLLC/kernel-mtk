@@ -541,8 +541,8 @@ int ddp_dpi_config(DISP_MODULE_ENUM module, disp_ddp_path_config *config, void *
 		LCM_DPI_PARAMS *dpi_config = &(config->dispif_config.dpi);
 		int now_bg_parameters = dpi_config->bg_width << 16 | dpi_config->bg_height;
 
-		pr_warn("DISP/DPI,now_bg_parameters: 0x%x, cache_bg_parameter: 0x%x\n",
-			now_bg_parameters, cache_bg_parameter);
+		/*pr_warn("DISP/DPI,now_bg_parameters: 0x%x, cache_bg_parameter: 0x%x\n",
+			now_bg_parameters, cache_bg_parameter);*/
 
 		if (now_bg_parameters != cache_bg_parameter) {
 			pr_warn("DISP/DPI,Need to rechange DPI BG\n");

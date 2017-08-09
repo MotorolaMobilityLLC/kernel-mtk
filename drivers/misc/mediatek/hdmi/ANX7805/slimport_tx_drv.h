@@ -455,7 +455,7 @@ void SP_TX_Config_MIPI_Video_Format(void);
 void MIPI_Format_Index_Set(BYTE bFormatIndex);
 BYTE MIPI_Format_Index_Get(void);
 BYTE MIPI_CheckSum_Status_OK(void);
-
+void system_power_ctrl(BYTE ON);
 
 #define	EmbededSync     1
 #define	SeparateSync     0

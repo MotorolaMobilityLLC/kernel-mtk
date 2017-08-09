@@ -102,7 +102,7 @@ const char *avdd33_name;
 #define AUD_IN_SEL_1  0    
 #define AUD_IN_SEL_2  1
 #define SSC_EN   1
-#define HDCP_EN   1
+#define HDCP_EN   0
 
 #define BIST_EN 0
 

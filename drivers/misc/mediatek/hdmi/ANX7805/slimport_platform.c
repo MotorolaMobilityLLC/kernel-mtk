@@ -228,7 +228,7 @@ void register_slimport_eint(void)
 		mhl_eint_number = irq_of_parse_and_map(node, 0);
 		SLIMPORT_DBG("mhl_eint_number, node %p-irq %d!!\n", node, get_mhl_irq_num());
 		/*irq_set_irq_type(mhl_eint_number,IRQ_TYPE_EDGE_RISING);*/
-		gpio_set_debounce(mhl_eint_gpio_number, 2000);    /*debounce time is microseconds*/
+		gpio_set_debounce(mhl_eint_gpio_number, 50000);    /*debounce time is microseconds*/
     	/*if(request_irq(mhl_eint_number, anx7805_cbl_det_isr, IRQF_TRIGGER_RISING | IRQF_TRIGGER_FALLING | IRQF_ONESHOT, "mediatek,sii8348-hdmi", NULL))*/ ///IRQF_TRIGGER_LOW
     	if(request_irq(mhl_eint_number, anx7805_cbl_det_isr, IRQ_TYPE_LEVEL_HIGH, "mediatek,extd_dev", NULL))
     	{

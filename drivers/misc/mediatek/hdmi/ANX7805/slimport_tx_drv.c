@@ -180,11 +180,20 @@ void SP_TX_Initialization(struct VideoFormat* pInputFormat)
 	sp_read_reg(SP_TX_PORT0_ADDR, SP_TX_HDCP_CONTROL_0_REG, &c);
 	sp_write_reg(SP_TX_PORT0_ADDR, SP_TX_HDCP_CONTROL_0_REG, c | 0x03);//set KSV valid
 
-
+	/*
 	sp_write_reg(SP_TX_PORT2_ADDR, ANALOG_DEBUG_REG2, 0x06);
 
 	//sp_read_reg(SP_TX_PORT0_ADDR, SP_TX_AUX_CTRL_REG2, &c);
 	//sp_write_reg(SP_TX_PORT0_ADDR, SP_TX_AUX_CTRL_REG2, c& (~0x08));//set signle AUX output
+	*/
+	sp_read_reg(SP_TX_PORT0_ADDR, SP_TX_GNS_CTRL_REG, &c);
+	sp_write_reg(SP_TX_PORT0_ADDR, SP_TX_GNS_CTRL_REG, c | 0x40);//set interation counter to 5 times for link CTS
+	
+	sp_write_reg(SP_TX_PORT2_ADDR, ANALOG_DEBUG_REG2, 0x06);
+	
+	
+	sp_read_reg(SP_TX_PORT0_ADDR, SP_TX_AUX_CTRL_REG2, &c); 
+	sp_write_reg(SP_TX_PORT0_ADDR, SP_TX_AUX_CTRL_REG2, c|0x08);//set double AUX output 
 
 	sp_write_reg(SP_TX_PORT2_ADDR, SP_COMMON_INT_MASK1, 0x00);//mask all int
 	sp_write_reg(SP_TX_PORT2_ADDR, SP_COMMON_INT_MASK2, 0x00);//mask all int
@@ -316,6 +325,11 @@ void system_power_ctrl(BYTE ON)
 		SP_TX_Power_Enable(SP_TX_PWR_TOTAL,SP_TX_POWER_DOWN);
 		SP_TX_Hardware_PowerDown();
 		sp_tx_pd_mode = 1;
+
+		pr_err("Reset EDID Buffer\n");
+		memset(bEDID_extblock, 0, 128);
+		memset(bEDID_firstblock, 0, 128);
+		memset(bEDID_fourblock, 0, 256);
 	} else {
 		sp_tx_pd_mode = 0;
 		SP_TX_Hardware_PowerOn();
@@ -1205,6 +1219,9 @@ BYTE SP_TX_Config_Video_LVTTL (struct VideoFormat* pInputFormat)
 		sp_write_reg(SP_TX_PORT2_ADDR, SP_TX_VID_CTRL1_REG, c & ~SP_TX_VID_CTRL1_IN_BIT);
 	}
 
+	sp_read_reg(SP_TX_PORT2_ADDR, SP_TX_VID_CTRL1_REG, &c);
+	sp_write_reg(SP_TX_PORT2_ADDR, SP_TX_VID_CTRL1_REG, (c & 0xfc)|SP_TX_VID_CTRL1_DDRCTRL);
+
 	//Force output to CEA range(16-235)
 	sp_read_reg(SP_TX_PORT2_ADDR, SP_TX_VID_CTRL9_REG, &c);
 	sp_write_reg(SP_TX_PORT2_ADDR, SP_TX_VID_CTRL9_REG, c|0x80);
@@ -1222,11 +1239,19 @@ void SP_TX_LVTTL_Bit_Mapping(struct VideoFormat* pInputFormat)//the default mode
 		case COLOR_8_BIT://correspond with ANX8770 24bit DDR mode
 			sp_read_reg(SP_TX_PORT2_ADDR, SP_TX_VID_CTRL2_REG, &c);
 			sp_write_reg(SP_TX_PORT2_ADDR, SP_TX_VID_CTRL2_REG, ((c&0x8f)|0x10));//set input video 8-bit
+			/*
 			for(c=0; c<12; c++) {
 				sp_write_reg(SP_TX_PORT2_ADDR, 0x40 + c, 0x03 + c);
 			}
 			for(c=0; c<12; c++) {
 				sp_write_reg(SP_TX_PORT2_ADDR, 0x4c + c, 0x1b + c);
+			}
+			*/
+			for(c=0; c<12; c++) {
+				sp_write_reg(SP_TX_PORT2_ADDR, 0x40 + c, 0x00 + c);
+			}
+			for(c=0; c<12; c++) {
+				sp_write_reg(SP_TX_PORT2_ADDR, 0x4c + c, 0x18 + c);
 			}
 			break;
 		case COLOR_10_BIT://correspond with ANX8770 30bit DDR mode
@@ -1439,7 +1464,15 @@ void SP_TX_EnhaceMode_Set(void)
 
 void SP_TX_Clean_HDCP(void)
 {
+	BYTE c;
+	
 	sp_write_reg(SP_TX_PORT0_ADDR, SP_TX_HDCP_CONTROL_0_REG, 0x00);//disable HW HDCP
+
+	//reset HDCP logic
+	sp_read_reg(SP_TX_PORT2_ADDR, SP_TX_RST_CTRL_REG, &c);
+	sp_write_reg(SP_TX_PORT2_ADDR, SP_TX_RST_CTRL_REG, c|SP_TX_RST_HDCP_REG);
+	sp_write_reg(SP_TX_PORT2_ADDR, SP_TX_RST_CTRL_REG, c&~SP_TX_RST_HDCP_REG);
+	
 	//set re-auth
 	SP_TX_HDCP_ReAuth();
 }
@@ -3476,8 +3509,6 @@ void SP_TX_Video_Mute(BYTE enable)
 		c &=~SP_TX_VID_CTRL1_VID_MUTE;
 		sp_write_reg(SP_TX_PORT2_ADDR, SP_TX_VID_CTRL1_REG , c);
 	}
-
-
 }
 
 
@@ -4091,7 +4122,9 @@ void  SP_CTRL_Auth_Done_Int_Handler(void)
 			auth_fail_counter = 0;
 			hdcp_process_state = HDCP_FAILE;
 		} else {
-			hdcp_process_state = HDCP_PROCESS_INIT;
+			//hdcp_process_state = HDCP_PROCESS_INIT;
+			hdcp_process_state = HDCP_FAILE;
+			//SP_TX_Video_Mute(0);
 			pr_err("Re-authentication!\n");
 		}
 	}
@@ -4811,6 +4844,7 @@ void SP_CTRL_HDCP_Process(void)
 	case HDCP_FINISH:
 		hdcp_encryption_enable(1);
 		SP_TX_Video_Mute(0);
+		HDCP_fail_count = 0;
 		pr_err("@@@@@@@@@@@@@@@@@@@@@@@hdcp_auth_pass@@@@@@@@@@@@@@@@@@@@\n");
 		SP_CTRL_Set_System_State(SP_TX_PLAY_BACK);
 		SP_TX_Show_Infomation();
@@ -4854,7 +4888,7 @@ void SP_CTRL_HDCP_Process(void)
 
 void SP_CTRL_Dump_Reg(void)
 {
-	unsigned int BEGIN=0x80, END=0xFF, i=0;
+	unsigned int BEGIN=0x0, END=0xFF, i=0;
 	uint8_t temp=0;
 
 	//for ANX7418 Debug
@@ -4898,8 +4932,9 @@ void SP_CTRL_PlayBack_Process(void)
 		//pr_err("mipi checksum ok!");
 	}
 #endif
+
 	/*
-	if (dump_count < 3) {
+	if (dump_count < 2) {
 		dump_count++;
 		SP_CTRL_Dump_Reg();
 	}
@@ -5114,9 +5149,12 @@ void SP_CTRL_TimerProcess (void)
 			edid_3d_data_p p_edid = (edid_3d_data_p)slimport_edid_p;
 			slimport_read_edid_All((uint8_t *)p_edid->EDID_block_data);
 			si_mhl_tx_handle_atomic_hw_edid_read_complete((edid_3d_data_p)slimport_edid_p);
-		}
 
-		Notify_AP_MHL_TX_Event(SLIMPORT_TX_EVENT_EDID_DONE, 0, NULL);
+			if (p_edid->parse_data.HDMI_sink == true)
+				Notify_AP_MHL_TX_Event(SLIMPORT_TX_EVENT_EDID_DONE, 0, NULL);
+			else
+				pr_err("p_edid->parse_data.HDMI_sink is false\n");
+		}
 		break;
 	case SP_TX_CONFIG_VIDEO_INPUT:
 		slimport_config_video_input();
