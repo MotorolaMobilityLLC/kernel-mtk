@@ -2687,7 +2687,10 @@ static unsigned int get_cur_volt_sram_l(struct mt_cpu_dvfs *p)
 	rdata2 = _GET_BITS_VAL_(3:0, rdata2);
 
 	/* should be config to the same volt */
-	BUG_ON(rdata != rdata2);
+	if (rdata != rdata2) {
+		cpufreq_err("rdata = 0x%x, rdata2 = 0x%x\n", rdata, rdata2);
+		BUG_ON(1);
+	}
 
 	switch (rdata) {
 	case 0:
@@ -5142,12 +5145,17 @@ end:
 static int cpufreq_volt_proc_show(struct seq_file *m, void *v)
 {
 	struct mt_cpu_dvfs *p = (struct mt_cpu_dvfs *)m->private;
+	unsigned long flags;
+
+	cpufreq_lock(flags);
 
 	if (cpu_dvfs_is_extbuck_valid()) {
 		seq_printf(m, "Vproc: %d mv\n", p->ops->get_cur_volt(p) / 100);	/* mv */
 		seq_printf(m, "Vsram: %d mv\n", p->ops->get_cur_vsram(p) / 100);	/* mv */
 	} else
 		seq_printf(m, "%d mv\n", p->ops->get_cur_volt(p) / 100);	/* mv */
+
+	cpufreq_unlock(flags);
 
 	return 0;
 }
