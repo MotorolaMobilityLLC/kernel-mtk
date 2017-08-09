@@ -459,8 +459,10 @@ void aee_wdt_atf_info(unsigned int cpu, struct pt_regs *regs)
 	aee_wdt_printf("\nQwdt at [%5lu.%06lu]\n", (unsigned long)t, nanosec_rem / 1000);
 	aee_sram_fiq_log(wdt_log_buf);
 
+#ifdef CONFIG_MTK_WD_KICKER
 	/* dump bind info */
 	dump_wdk_bind_info();
+#endif
 
 	if (regs) {
 		aee_rr_rec_fiq_step(AEE_FIQ_STEP_WDT_IRQ_STACK);
