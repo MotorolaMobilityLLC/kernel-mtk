@@ -2,7 +2,6 @@
 #define CHARGING_H
 
 #include <mach/mt_typedefs.h>
-#include <cust_charging.h>
 
 /* ============================================================ */
 /* define */

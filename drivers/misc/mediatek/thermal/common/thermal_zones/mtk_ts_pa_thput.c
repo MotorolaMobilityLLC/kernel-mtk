@@ -17,7 +17,7 @@
 #include <asm/string.h>
 #include <linux/spinlock.h>
 #include "mt-plat/mtk_thermal_monitor.h"
-#include "mach/mtk_mdm_monitor.h"
+#include "mt-plat/mtk_mdm_monitor.h"
 #include <mt-plat/mt_boot_common.h>
 #include <linux/uidgid.h>
 

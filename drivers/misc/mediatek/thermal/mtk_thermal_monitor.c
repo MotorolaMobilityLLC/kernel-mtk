@@ -24,7 +24,6 @@
 #include <linux/workqueue.h>
 #include <linux/slab.h>
 #include <mt-plat/mtk_thermal_monitor.h>
-#include <mach/mt_storage_logger.h>
 #include <mt-plat/mtk_thermal_platform.h>
 #include <linux/uidgid.h>
 /*#ifdef CONFIG_MD32_SUPPORT

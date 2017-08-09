@@ -16,8 +16,7 @@
 #include <linux/bug.h>
 #include <linux/workqueue.h>
 #include <mach/mt_typedefs.h>
-#include <mach/mt_storage_logger.h>
-#include <mach/mtk_mdm_monitor.h>
+#include "mt-plat/mtk_mdm_monitor.h"
 #include <mach/mt_thermal.h>
 #include <mt-plat/aee.h>
 #include <mtk_gpu_utility.h>

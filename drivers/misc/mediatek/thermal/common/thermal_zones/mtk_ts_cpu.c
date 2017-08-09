@@ -10,9 +10,7 @@
 #include <linux/delay.h>
 #include <linux/proc_fs.h>
 #include <linux/spinlock.h>
-#include "mach/dma.h"
 #include <mt-plat/sync_write.h>
-#include <mach/mt_irq.h>
 #include "mt-plat/mtk_thermal_monitor.h"
 #include <linux/seq_file.h>
 #include <linux/slab.h>
@@ -93,6 +91,12 @@ static int tscpu_next_fp_factor = 1;
 int tscpu_g_curr_temp = 0;
 int tscpu_g_prev_temp = 0;
 static int g_max_temp = 50000;	/* default=50 deg */
+
+#if defined(CONFIG_ARCH_MT6753)
+/*For MT6753 PMIC 5A throttle patch*/
+static int thermal5A_TH = 55000;
+static int thermal5A_status;
+#endif
 
 static int tc_mid_trip = -275000;
 /* trip_temp[0] must be initialized to the thermal HW protection point. */
@@ -247,6 +251,11 @@ get_immediate_tsabb_wrap(void)
 	return 0;
 }
 
+void __attribute__ ((weak))
+mt_cpufreq_thermal_5A_limit(bool enable)
+{
+	pr_err("E_WF: %s doesn't exist\n", __func__);
+}
 /*=============================================================*/
 static void tscpu_fast_initial_sw_workaround(void)
 {
@@ -368,7 +377,7 @@ void set_taklking_flag(bool flag)
 	tscpu_printk("talking_flag=%d\n", talking_flag);
 }
 
-int mtk_gpufreq_register(struct mtk_gpu_power_info *freqs, int num)
+int mtk_gpufreq_register(struct mt_gpufreq_power_table_info *freqs, int num)
 {
 	int i = 0;
 
@@ -588,6 +597,17 @@ static int tscpu_get_temp(struct thermal_zone_device *thermal, unsigned long *t)
 #if THERMAL_GPIO_OUT_TOGGLE
 	/*for output signal monitor */
 	tscpu_set_GPIO_toggle_for_monitor();
+#endif
+
+#if defined(CONFIG_ARCH_MT6753)
+		/*For MT6753 PMIC 5A throttle patch*/
+	if (curr_temp >= thermal5A_TH && thermal5A_status == 0) {
+		mt_cpufreq_thermal_5A_limit(1);
+		thermal5A_status = 1;
+	} else if (curr_temp < thermal5A_TH && thermal5A_status == 1) {
+		mt_cpufreq_thermal_5A_limit(0);
+		thermal5A_status = 0;
+	}
 #endif
 
 	g_max_temp = curr_temp;
@@ -1588,7 +1608,50 @@ static const struct file_operations mtktscpu_fops = {
 	.release = single_release,
 };
 
+#if defined(CONFIG_ARCH_MT6753)
+/*For MT6753 PMIC 5A throttle patch*/
+static int tzcpu_cpufreq5A_read(struct seq_file *m, void *v)
+{
+	seq_printf(m, "Thermal 5A threshold= %d\n", thermal5A_TH);
 
+	return 0;
+}
+
+static ssize_t tzcpu_cpufreq5A_write(struct file *file, const char __user *buffer, size_t count, loff_t *data)
+{
+	char desc[32];
+	int th;
+	int len = 0;
+
+
+	len = (count < (sizeof(desc) - 1)) ? count : (sizeof(desc) - 1);
+	if (copy_from_user(desc, buffer, len))
+		return 0;
+	desc[len] = '\0';
+
+	if (kstrtoint(desc, 10, &th) == 0) {
+		thermal5A_TH = th;
+		return count;
+	}
+
+	tscpu_printk(" bad argument\n");
+	return -EINVAL;
+}
+
+static int tzcpu_cpufreq5A_open(struct inode *inode, struct file *file)
+{
+	return single_open(file, tzcpu_cpufreq5A_read, NULL);
+}
+
+static const struct file_operations tzcpu_cpufreq5A_fops = {
+	.owner = THIS_MODULE,
+	.open = tzcpu_cpufreq5A_open,
+	.read = seq_read,
+	.llseek = seq_lseek,
+	.write = tzcpu_cpufreq5A_write,
+	.release = single_release,
+};
+#endif
 
 static int tscpu_cal_open(struct inode *inode, struct file *file)
 {
@@ -1878,6 +1941,14 @@ static void tscpu_create_fs(void)
 		if (entry)
 			proc_set_user(entry, uid, gid);
 
+#if defined(CONFIG_ARCH_MT6753)
+		/*For MT6753 PMIC 5A throttle patch*/
+		entry = proc_create("tzcpu_cpufreq5A", S_IRUGO | S_IWUSR | S_IWGRP,
+					mtktscpu_dir, &tzcpu_cpufreq5A_fops);
+		if (entry)
+			proc_set_user(entry, uid, gid);
+#endif
+
 		entry =
 		    proc_create("tzcpu_log", S_IRUGO | S_IWUSR, mtktscpu_dir, &mtktscpu_log_fops);
 
@@ -1981,6 +2052,32 @@ static int tscpu_thermal_probe(struct platform_device *dev)
 	return err;
 }
 
+#if defined(CONFIG_ARCH_MT6753)
+/*For MT6753 PMIC 5A throttle patch*/
+int isMT6753T(void)
+{
+	unsigned int cpu_spd_bond, efuse_spare2, is53T = 0;
+
+	cpu_spd_bond = (get_devinfo_with_index(3) & _BITMASK_(2:0));
+	efuse_spare2 = (get_devinfo_with_index(5) & _BITMASK_(21:20)) >> 20;
+
+	switch (cpu_spd_bond) {
+	case 0:
+		if (efuse_spare2 == 3)
+			is53T = 1;
+		break;
+	case 1:
+	case 2:
+		is53T = 1;
+		break;
+	default:
+		break;
+	}
+
+	return is53T;
+}
+#endif
+
 static int __init tscpu_init(void)
 {
 	int err = 0;
@@ -1999,6 +2096,11 @@ static int __init tscpu_init(void)
 		goto err_unreg;
 	}
 
+#if defined(CONFIG_ARCH_MT6753)
+/*For MT6753 PMIC 5A throttle patch*/
+	if (isMT6753T() == 0)
+		fast_polling_trip_temp = 40000;
+#endif
 	tscpu_create_fs();
 
 	return 0;

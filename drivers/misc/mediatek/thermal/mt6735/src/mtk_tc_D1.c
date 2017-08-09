@@ -10,9 +10,7 @@
 #include <linux/delay.h>
 #include <linux/proc_fs.h>
 #include <linux/spinlock.h>
-#include "mach/dma.h"
 #include <mt-plat/sync_write.h>
-#include <mach/mt_irq.h>
 #include "mt-plat/mtk_thermal_monitor.h"
 #include <linux/seq_file.h>
 #include <linux/slab.h>

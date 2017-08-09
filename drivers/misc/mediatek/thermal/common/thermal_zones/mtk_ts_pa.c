@@ -18,7 +18,7 @@
 #include "mt-plat/mtk_thermal_monitor.h"
 #include "mach/mt_typedefs.h"
 #include "mach/mt_thermal.h"
-#include "mach/mtk_mdm_monitor.h"
+#include "mt-plat/mtk_mdm_monitor.h"
 #include <linux/uidgid.h>
 
 static kuid_t uid = KUIDT_INIT(0);

@@ -10,9 +10,8 @@
 #include <asm/uaccess.h>
 
 #include "mt-plat/sync_write.h"
-#include "mach/mt_reg_base.h"
 #include "mach/mt_typedefs.h"
-#include "mach/mt_gpufreq.h"
+#include "mt_gpufreq.h"
 /* #include "mach/mt6575_auxadc_hw.h" */
 
 /*

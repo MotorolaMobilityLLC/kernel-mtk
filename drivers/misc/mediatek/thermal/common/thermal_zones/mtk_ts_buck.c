@@ -13,7 +13,6 @@
 #include "mt-plat/mtk_thermal_monitor.h"
 #include "mach/mt_typedefs.h"
 #include "mach/mt_thermal.h"
-#include <cust_pmic.h>
 /* #include <mach/pmic_mt6329_hw_bank1.h> */
 /* #include <mach/pmic_mt6329_sw_bank1.h> */
 /* #include <mach/pmic_mt6329_hw.h> */
