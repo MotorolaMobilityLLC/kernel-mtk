@@ -609,14 +609,14 @@ int mt_ppm_main(void)
 				if (ppm_main_info.client_info[PPM_CLIENT_DVFS].limit_cb)
 					ppm_main_info.client_info[PPM_CLIENT_DVFS].limit_cb(*c_req);
 				delta = ktime_sub(ktime_get(), now);
-				ppm_dbg(MAIN, "Done! notify dvfs only! time = %lld us\n", ktime_to_us(delta));
+				ppm_dbg(TIME_PROFILE, "Done! notify dvfs only! time = %lld us\n", ktime_to_us(delta));
 				goto nofity_end;
 			} else if (notify_hps && !notify_dvfs) {
 				now = ktime_get();
 				if (ppm_main_info.client_info[PPM_CLIENT_HOTPLUG].limit_cb)
 					ppm_main_info.client_info[PPM_CLIENT_HOTPLUG].limit_cb(*c_req);
 				delta = ktime_sub(ktime_get(), now);
-				ppm_dbg(MAIN, "Done! notify hps only! time = %lld us\n", ktime_to_us(delta));
+				ppm_dbg(TIME_PROFILE, "Done! notify hps only! time = %lld us\n", ktime_to_us(delta));
 				goto nofity_end;
 			}
 		}
@@ -654,7 +654,7 @@ int mt_ppm_main(void)
 				if (ppm_main_info.client_info[i].limit_cb)
 					ppm_main_info.client_info[i].limit_cb(*c_req);
 				delta = ktime_sub(ktime_get(), now);
-				ppm_dbg(MAIN, "%s callback done! time = %lld us\n",
+				ppm_dbg(TIME_PROFILE, "%s callback done! time = %lld us\n",
 					(i == PPM_CLIENT_DVFS) ? "DVFS" : "HPS", ktime_to_us(delta));
 			}
 		} else {
@@ -663,7 +663,7 @@ int mt_ppm_main(void)
 				if (ppm_main_info.client_info[i].limit_cb)
 					ppm_main_info.client_info[i].limit_cb(*c_req);
 				delta = ktime_sub(ktime_get(), now);
-				ppm_dbg(MAIN, "%s callback done! time = %lld us\n",
+				ppm_dbg(TIME_PROFILE, "%s callback done! time = %lld us\n",
 					(i == PPM_CLIENT_DVFS) ? "DVFS" : "HPS", ktime_to_us(delta));
 			}
 		}

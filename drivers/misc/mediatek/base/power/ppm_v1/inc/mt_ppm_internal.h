@@ -143,6 +143,7 @@ enum {
 	HICA	= 1 << 2,
 	DLPT	= 1 << 3,
 	USER_LIMIT = 1 << 4,
+	TIME_PROFILE = 1 << 5,
 };
 
 enum ppm_policy {
