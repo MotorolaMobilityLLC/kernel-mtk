@@ -593,6 +593,7 @@ static struct i2c_board_info leds_board_info __initdata = {
 
 static const struct of_device_id lp855x_id[] = {
 	{.compatible = "mediatek,8173led_i2c"},
+	{.compatible = "ti,lp8557_led"},
 	{},
 };
 MODULE_DEVICE_TABLE(OF, lp855x_id);
