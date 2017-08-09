@@ -321,6 +321,7 @@ ssize_t musbfsh_musbfsh_cmd_proc_entry(struct file *file_ptr,
 		return 0;
 
 	switch (cmd) {
+#ifdef CONFIG_MTK_ICUSB_SUPPORT
 	case 'k':		/* enable vsim power */
 		musbfsh_open_vsim_power(1);
 		musbfsh_init_phy_by_voltage(VOL_33);
@@ -330,6 +331,10 @@ ssize_t musbfsh_musbfsh_cmd_proc_entry(struct file *file_ptr,
 		musbfsh_open_vsim_power1(1);
 		musbfsh_init_phy_by_voltage(VOL_33);
 		musbfsh_start_session();
+		break;
+#endif
+	default:
+		MYDBG("Command unsupported.\n");
 		break;
 	}
 

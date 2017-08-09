@@ -56,6 +56,9 @@ struct musbfsh;
 struct musbfsh_hw_ep;
 struct musbfsh_ep;
 
+#define MYDBG(fmt, args...) pr_warn("MTK_ICUSB [DBG], <%s(), %d> " fmt, \
+				    __func__, __LINE__, ## args)
+
 /* Helper defines for struct musbfsh->hwvers */
 #define MUSBFSH_HWVERS_MAJOR(x)	((x >> 10) & 0x1f)
 #define MUSBFSH_HWVERS_MINOR(x)	(x & 0x3ff)
@@ -66,7 +69,7 @@ struct musbfsh_ep;
 #define MUSBFSH_HWVERS_1900	0x784
 #define MUSBFSH_HWVERS_2000	0x800
 
-#include <linux/musbfsh.h>
+#include "musbfsh.h"
 #include "musbfsh_io.h"
 #include "musbfsh_regs.h"
 #include "musbfsh_debug.h"
@@ -331,7 +334,6 @@ extern void musbfsh_start_session(void);
 #endif
 
 #ifdef CONFIG_MTK_USBFSH
-#include <mach/mt_pm_ldo.h>
 extern irqreturn_t musbfsh_dma_controller_irq(int irq, void *private_data);
 #endif
 

@@ -44,7 +44,6 @@
 #include "musbfsh_core.h"
 #include "musbfsh_mt65xx.h"
 #include "mach/emi_mpu.h"
-#include <mach/mt_pm_ldo.h>
 #include <mach/mt_clkmgr.h>
 
 #include "musbfsh_host.h"
@@ -1155,7 +1154,7 @@ void mt65xx_usb11_clock_enable(bool enable)
 				 *	1: clock disable
 				 */
 				pr_debug("USB11 MODULE_SW_CG_2_STA = 0x%08x\n",
-					 DRV_Reg32(MODULE_SW_CG_2_STA));
+					 readl(MODULE_SW_CG_2_STA));
 		#endif
 	} else {
 		disable_cnt++;

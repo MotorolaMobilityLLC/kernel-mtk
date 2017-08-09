@@ -124,9 +124,7 @@
 
 #include <linux/of_irq.h>
 #include <linux/of_address.h>
-#include <linux/of_i2c.h>
 #include <mach/mt_clkmgr.h>
-#include <mach/upmu_common.h>
 
 #ifdef CONFIG_MTK_ICUSB_SUPPORT
 
