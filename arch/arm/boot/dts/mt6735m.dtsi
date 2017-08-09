@@ -1171,10 +1171,10 @@
 			interrupts = <0 228 0x8>;
 		};
 
-		WIFI@0x180F0000 {
-			compatible = "mediatek,WIFI";
+		wifi@180F0000 {
+			compatible = "mediatek,wifi";
 			reg = <0x180F0000 0x005c>;
-			interrupts = <0 226 0x8>;
+			interrupts = <GIC_SPI 226 IRQ_TYPE_LEVEL_LOW>;
 		};
 
 		NFI@0x1100D000 {

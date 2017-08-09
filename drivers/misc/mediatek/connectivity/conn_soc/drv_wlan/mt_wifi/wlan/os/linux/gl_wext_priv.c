@@ -1057,7 +1057,7 @@ _priv_set_int(IN struct net_device *prNetDev,
 #if 0
 	case PRIV_CMD_BEACON_PERIOD:
 		rStatus = wlanSetInformation(prGlueInfo->prAdapter, wlanoidSetBeaconInterval,
-					    (PVOID) &pu4IntBuf[1],/* pu4IntBuf[0] is used as input SubCmd */
+					    (PVOID)&pu4IntBuf[1],/* pu4IntBuf[0] is used as input SubCmd */
 					     sizeof(UINT_32), &u4BufLen);
 		break;
 #endif
@@ -1076,7 +1076,7 @@ _priv_set_int(IN struct net_device *prNetDev,
 
 			if (kalIoctl(prGlueInfo,
 				     wlanoidSetCSUMOffload,
-				     (PVOID) &u4CSUMFlags,
+				     (PVOID)&u4CSUMFlags,
 				     sizeof(UINT_32), FALSE, FALSE, TRUE, FALSE, &u4BufLen) == WLAN_STATUS_SUCCESS) {
 				if (pu4IntBuf[1] == 1)
 					prNetDev->features |= NETIF_F_HW_CSUM;
@@ -1089,7 +1089,7 @@ _priv_set_int(IN struct net_device *prNetDev,
 
 	case PRIV_CMD_POWER_MODE:
 		kalIoctl(prGlueInfo, wlanoidSet802dot11PowerSaveProfile,
-			(PVOID) &pu4IntBuf[1],	/* pu4IntBuf[0] is used as input SubCmd */
+			(PVOID)&pu4IntBuf[1],	/* pu4IntBuf[0] is used as input SubCmd */
 			 sizeof(UINT_32), FALSE, FALSE, TRUE, FALSE, &u4BufLen);
 		break;
 
@@ -1104,7 +1104,7 @@ _priv_set_int(IN struct net_device *prNetDev,
 
 			kalIoctl(prGlueInfo,
 				 wlanoidSetWiFiWmmPsTest,
-				 (PVOID) &rWmmPsTest,
+				 (PVOID)&rWmmPsTest,
 				 sizeof(PARAM_CUSTOM_WMM_PS_TEST_STRUCT_T), FALSE, FALSE, TRUE, FALSE, &u4BufLen);
 		}
 		break;
@@ -1112,7 +1112,7 @@ _priv_set_int(IN struct net_device *prNetDev,
 #if 0
 	case PRIV_CMD_ADHOC_MODE:
 		rStatus = wlanSetInformation(prGlueInfo->prAdapter, wlanoidSetAdHocMode,
-					    (PVOID) &pu4IntBuf[1],	/* pu4IntBuf[0] is used as input SubCmd */
+					    (PVOID)&pu4IntBuf[1],	/* pu4IntBuf[0] is used as input SubCmd */
 					     sizeof(UINT_32), &u4BufLen);
 		break;
 #endif
@@ -1135,11 +1135,11 @@ _priv_set_int(IN struct net_device *prNetDev,
 
 #if 0
 		status = wlanSetInformation(prGlueInfo->prAdapter,
-					    wlanoidSetBT, (PVOID) &aucOidBuf[0], u4CmdLen, &u4BufLen);
+					    wlanoidSetBT, (PVOID)&aucOidBuf[0], u4CmdLen, &u4BufLen);
 #endif
 
 		status = wlanoidSetBT(prGlueInfo->prAdapter,
-				      (PVOID) &aucOidBuf[0], sizeof(PARAM_PTA_IPC_T), &u4BufLen);
+				      (PVOID)&aucOidBuf[0], sizeof(PARAM_PTA_IPC_T), &u4BufLen);
 
 		if (WLAN_STATUS_SUCCESS != status)
 			status = -EFAULT;
@@ -1215,7 +1215,7 @@ _priv_set_int(IN struct net_device *prNetDev,
 			DBGLOG(P2P, INFO,
 			       "wlanoidSetP2pMode 0x%p %d %d\n", &rSetP2P, rSetP2P.u4Enable, rSetP2P.u4Mode);
 			rWlanStatus = kalIoctl(prGlueInfo, wlanoidSetP2pMode,
-					      (PVOID) &rSetP2P,	/* pu4IntBuf[0] is used as input SubCmd */
+					      (PVOID)&rSetP2P,	/* pu4IntBuf[0] is used as input SubCmd */
 					       sizeof(PARAM_CUSTOM_P2P_SET_STRUCT_T),
 					       FALSE, FALSE, TRUE, FALSE, &u4BufLen);
 			DBGLOG(P2P, INFO, "wlanoidSetP2pMode ok\n");
@@ -1262,7 +1262,7 @@ _priv_set_int(IN struct net_device *prNetDev,
 			rWfdDebugModeInfo.u2SNPeriod = (UINT_16) pu4IntBuf[2];
 			DBGLOG(REQ, INFO, "WFD Debug Mode:%d Period:%d\n", rWfdDebugModeInfo.ucWFDDebugMode,
 			       rWfdDebugModeInfo.u2SNPeriod);
-			kalIoctl(prGlueInfo, wlanoidSetWfdDebugMode, (PVOID) &rWfdDebugModeInfo,
+			kalIoctl(prGlueInfo, wlanoidSetWfdDebugMode, (PVOID)&rWfdDebugModeInfo,
 				 sizeof(PARAM_CUSTOM_WFD_DEBUG_STRUCT_T), FALSE, FALSE, TRUE, FALSE, &u4BufLen);
 
 		}
@@ -1731,7 +1731,7 @@ _priv_set_struct(IN struct net_device *prNetDev,
 		}
 
 		rStatus = wlanSetInformation(prGlueInfo->prAdapter,
-					     wlanoidSetBtCoexistCtrl, (PVOID) &aucOidBuf[0], u4CmdLen, &u4BufLen);
+					     wlanoidSetBtCoexistCtrl, (PVOID)&aucOidBuf[0], u4CmdLen, &u4BufLen);
 		if (WLAN_STATUS_SUCCESS != rStatus)
 			status = -EFAULT;
 		break;
@@ -1764,11 +1764,11 @@ _priv_set_struct(IN struct net_device *prNetDev,
 
 #if 0
 		status = wlanSetInformation(prGlueInfo->prAdapter,
-					    wlanoidSetBT, (PVOID) &aucOidBuf[0], u4CmdLen, &u4BufLen);
+					    wlanoidSetBT, (PVOID)&aucOidBuf[0], u4CmdLen, &u4BufLen);
 #endif
 
 #if 1
-		status = wlanoidSetBT(prGlueInfo->prAdapter, (PVOID) &aucOidBuf[0], u4CmdLen, &u4BufLen);
+		status = wlanoidSetBT(prGlueInfo->prAdapter, (PVOID)&aucOidBuf[0], u4CmdLen, &u4BufLen);
 #endif
 
 		if (WLAN_STATUS_SUCCESS != status)
@@ -2905,7 +2905,7 @@ INT_32 priv_driver_cmds(IN struct net_device *prNetDev, IN PCHAR pcCommand, IN I
 				g_rEventBatchResult[i].ucScanCount = i + 1;	/* for get which mscan */
 				kalIoctl(prGlueInfo,
 					 wlanoidQueryBatchScanResult,
-					 (PVOID) &g_rEventBatchResult[i],
+					 (PVOID)&g_rEventBatchResult[i],
 					 sizeof(EVENT_BATCH_RESULT_T), TRUE, TRUE, TRUE, FALSE, &u4BufLen);
 			}
 
@@ -2998,7 +2998,7 @@ INT_32 priv_driver_cmds(IN struct net_device *prNetDev, IN PCHAR pcCommand, IN I
 				g_rEventBatchResult[i].ucScanCount = i + 1;	/* for get which mscan */
 				kalIoctl(prGlueInfo,
 					 wlanoidQueryBatchScanResult,
-					 (PVOID) &g_rEventBatchResult[i],
+					 (PVOID)&g_rEventBatchResult[i],
 					 sizeof(EVENT_BATCH_RESULT_T), TRUE, TRUE, TRUE, &u4BufLen);
 			}
 

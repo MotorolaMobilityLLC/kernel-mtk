@@ -852,6 +852,12 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 						 <GIC_SPI 227 IRQ_TYPE_LEVEL_LOW>; /* WDT_EINT */
 		};
 
+		wifi@180F0000 {
+			compatible = "mediatek,wifi";
+			reg = <0x180F0000 0x005c>;
+			interrupts = <GIC_SPI 228 IRQ_TYPE_LEVEL_LOW>;
+		};
+
 		met_smi: met_smi@14017000 {
 			compatible = "mediatek,met_smi";
 			reg = <0x14017000 0x1000>,  /* SMI_COMMON_EXT */

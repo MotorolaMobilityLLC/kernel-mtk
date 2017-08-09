@@ -693,8 +693,8 @@ VOID cnmMemFree(IN P_ADAPTER_T prAdapter, IN PVOID pvMemory)
 	u4MemFreeCnt++;
 
 	/* Judge it belongs to which RAM type */
-	if (((ULONG) pvMemory >= (ULONG) &prAdapter->aucMsgBuf[0]) &&
-	    ((ULONG) pvMemory <= (ULONG) &prAdapter->aucMsgBuf[MSG_BUFFER_SIZE - 1])) {
+	if (((ULONG) pvMemory >= (ULONG)&prAdapter->aucMsgBuf[0]) &&
+	    ((ULONG) pvMemory <= (ULONG)&prAdapter->aucMsgBuf[MSG_BUFFER_SIZE - 1])) {
 
 		prBufInfo = &prAdapter->rMsgBufInfo;
 		u4BlockIndex = ((ULONG) pvMemory - (ULONG) prBufInfo->pucBuf)

@@ -499,7 +499,7 @@ WLAN_STATUS aaaFsmRunEventRxAssoc(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRf
 						/* 4 <2.2> Validate Assoc Req  Frame for Network Specific Conditions */
 						fgReplyAssocResp = p2pFuncValidateAssocReq(prAdapter,
 											   prSwRfb,
-											   (PUINT_16) &u2StatusCode);
+											   (PUINT_16)&u2StatusCode);
 					} else {
 						fgReplyAssocResp = TRUE;
 					}

@@ -93,7 +93,6 @@ ccflags-y += -D_HIF_SDIO=1
 ccflags-y += -DDBG=0
 ccflags-y += -I$(src)/os -I$(src)/os/linux/include -I$(src)/os/linux/hif/ahb/include
 ccflags-y += -I$(src)/include -I$(src)/include/nic -I$(src)/include/mgmt
-include $(srctree)/drivers/misc/mediatek/Makefile.custom
 
 obj-$(CONFIG_MTK_COMBO_WIFI) += $(MODULE_NAME).o
 #obj-m += $(MODULE_NAME).o if CONFIG_MTK_COMBO_WIFI=m ==> obj-m means ko module, not build in obj-y

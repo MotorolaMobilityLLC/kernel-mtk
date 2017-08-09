@@ -288,11 +288,12 @@ int mtk_cfg80211_del_key(struct wiphy *wiphy, struct net_device *ndev, u8 key_in
 	kalMemZero(&rRemoveKey, sizeof(PARAM_REMOVE_KEY_T));
 	if (mac_addr)
 		COPY_MAC_ADDR(rRemoveKey.arBSSID, mac_addr);
-	else if (key_index > gucKeyIndex) {	/* bypass the next remove key operation */
+	else if (key_index <= gucKeyIndex) {	/* new operation, reset gucKeyIndex */
+		gucKeyIndex = 255;
+	} else {			/* bypass the next remove key operation */
 		gucKeyIndex = key_index;
 		return -EBUSY;
-	}			/* new operation, reset gucKeyIndex */
-	gucKeyIndex = 255;
+	}
 	rRemoveKey.u4KeyIndex = key_index;
 	rRemoveKey.u4Length = sizeof(PARAM_REMOVE_KEY_T);
 

@@ -1135,19 +1135,19 @@ struct wpa_driver_hs20_data_s {
 	((P_NATIVE_PACKET) ((ULONG)_prQueueEntry - offsetof(struct sk_buff, cb[0])))
 
 #define  GLUE_SET_PKT_FLAG_802_11(_p)  \
-	(*((PUINT_8) &(((struct sk_buff *)(_p))->cb[GLUE_CB_OFFSET+4])) |= BIT(7))
+	(*((PUINT_8)&(((struct sk_buff *)(_p))->cb[GLUE_CB_OFFSET+4])) |= BIT(7))
 
 #define GLUE_SET_PKT_FLAG_1X(_p)  \
-	(*((PUINT_8) &(((struct sk_buff *)(_p))->cb[GLUE_CB_OFFSET+4])) |= BIT(6))
+	(*((PUINT_8)&(((struct sk_buff *)(_p))->cb[GLUE_CB_OFFSET+4])) |= BIT(6))
 
 #define GLUE_SET_PKT_FLAG_PAL(_p)  \
-	(*((PUINT_8) &(((struct sk_buff *)(_p))->cb[GLUE_CB_OFFSET+4])) |= BIT(5))
+	(*((PUINT_8)&(((struct sk_buff *)(_p))->cb[GLUE_CB_OFFSET+4])) |= BIT(5))
 
 #define GLUE_SET_PKT_FLAG_P2P(_p)  \
-	(*((PUINT_8) &(((struct sk_buff *)(_p))->cb[GLUE_CB_OFFSET+4])) |= BIT(4))
+	(*((PUINT_8)&(((struct sk_buff *)(_p))->cb[GLUE_CB_OFFSET+4])) |= BIT(4))
 
 #define GLUE_SET_PKT_TID(_p, _tid)  \
-	(*((PUINT_8) &(((struct sk_buff *)(_p))->cb[GLUE_CB_OFFSET+4])) |= (((UINT_8)((_tid) & (BITS(0, 3))))))
+	(*((PUINT_8)&(((struct sk_buff *)(_p))->cb[GLUE_CB_OFFSET+4])) |= (((UINT_8)((_tid) & (BITS(0, 3))))))
 
 #define GLUE_SET_PKT_FRAME_LEN(_p, _u2PayloadLen) \
 	(*((PUINT_16)&(((struct sk_buff *)(_p))->cb[GLUE_CB_OFFSET+6])) = (UINT_16)(_u2PayloadLen))
@@ -1156,37 +1156,37 @@ struct wpa_driver_hs20_data_s {
 	(*((PUINT_16)&(((struct sk_buff *)(_p))->cb[GLUE_CB_OFFSET+6])))
 
 #define  GLUE_GET_PKT_IS_802_11(_p)        \
-	((*((PUINT_8) &(((struct sk_buff *)(_p))->cb[GLUE_CB_OFFSET+4]))) & (BIT(7)))
+	((*((PUINT_8)&(((struct sk_buff *)(_p))->cb[GLUE_CB_OFFSET+4]))) & (BIT(7)))
 
 #define  GLUE_GET_PKT_IS_1X(_p)        \
-	((*((PUINT_8) &(((struct sk_buff *)(_p))->cb[GLUE_CB_OFFSET+4]))) & (BIT(6)))
+	((*((PUINT_8)&(((struct sk_buff *)(_p))->cb[GLUE_CB_OFFSET+4]))) & (BIT(6)))
 
 #define GLUE_GET_PKT_TID(_p)        \
-	((*((PUINT_8) &(((struct sk_buff *)(_p))->cb[GLUE_CB_OFFSET+4]))) & (BITS(0, 3)))
+	((*((PUINT_8)&(((struct sk_buff *)(_p))->cb[GLUE_CB_OFFSET+4]))) & (BITS(0, 3)))
 
 #define GLUE_GET_PKT_IS_PAL(_p)        \
-	((*((PUINT_8) &(((struct sk_buff *)(_p))->cb[GLUE_CB_OFFSET+4]))) & (BIT(5)))
+	((*((PUINT_8)&(((struct sk_buff *)(_p))->cb[GLUE_CB_OFFSET+4]))) & (BIT(5)))
 
 #define GLUE_GET_PKT_IS_P2P(_p)        \
-	((*((PUINT_8) &(((struct sk_buff *)(_p))->cb[GLUE_CB_OFFSET+4]))) & (BIT(4)))
+	((*((PUINT_8)&(((struct sk_buff *)(_p))->cb[GLUE_CB_OFFSET+4]))) & (BIT(4)))
 
 #define GLUE_SET_PKT_HEADER_LEN(_p, _ucMacHeaderLen)    \
-	(*((PUINT_8) &(((struct sk_buff *)(_p))->cb[GLUE_CB_OFFSET+5])) = (UINT_8)(_ucMacHeaderLen))
+	(*((PUINT_8)&(((struct sk_buff *)(_p))->cb[GLUE_CB_OFFSET+5])) = (UINT_8)(_ucMacHeaderLen))
 
 #define GLUE_GET_PKT_HEADER_LEN(_p) \
-	(*((PUINT_8) &(((struct sk_buff *)(_p))->cb[GLUE_CB_OFFSET+5])))
+	(*((PUINT_8)&(((struct sk_buff *)(_p))->cb[GLUE_CB_OFFSET+5])))
 
 #define GLUE_SET_PKT_ARRIVAL_TIME(_p, _rSysTime) \
-	(*((POS_SYSTIME) & (((struct sk_buff *)(_p))->cb[GLUE_CB_OFFSET+8])) = (OS_SYSTIME)(_rSysTime))
+	(*((POS_SYSTIME)&(((struct sk_buff *)(_p))->cb[GLUE_CB_OFFSET+8])) = (OS_SYSTIME)(_rSysTime))
 
 #define GLUE_GET_PKT_ARRIVAL_TIME(_p)    \
-	(*((POS_SYSTIME) & (((struct sk_buff *)(_p))->cb[GLUE_CB_OFFSET+8])))
+	(*((POS_SYSTIME)&(((struct sk_buff *)(_p))->cb[GLUE_CB_OFFSET+8])))
 
 #define GLUE_SET_PKT_XTIME(_p, _rSysTime) \
-	(*((UINT_64 *) &(((struct sk_buff *)(_p))->cb[GLUE_CB_OFFSET+16])) = (UINT_64)(_rSysTime))
+	(*((UINT_64 *)&(((struct sk_buff *)(_p))->cb[GLUE_CB_OFFSET+16])) = (UINT_64)(_rSysTime))
 
 #define GLUE_GET_PKT_XTIME(_p)    \
-	(*((UINT_64 *) &(((struct sk_buff *)(_p))->cb[GLUE_CB_OFFSET+16])))
+	(*((UINT_64 *)&(((struct sk_buff *)(_p))->cb[GLUE_CB_OFFSET+16])))
 
 /* Check validity of prDev, private data, and pointers */
 #define GLUE_CHK_DEV(prDev) \

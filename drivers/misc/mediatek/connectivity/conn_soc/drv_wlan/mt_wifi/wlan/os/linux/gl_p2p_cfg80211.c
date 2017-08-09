@@ -203,7 +203,7 @@ int mtk_p2p_cfg80211_add_key(struct wiphy *wiphy,
 		kalMemCopy(rKey.aucKeyMaterial, params->key, params->key_len);
 	}
 	rKey.u4KeyLength = params->key_len;
-	rKey.u4Length = ((ULONG) &(((P_P2P_PARAM_KEY_T) 0)->aucKeyMaterial)) + rKey.u4KeyLength;
+	rKey.u4Length = ((ULONG)&(((P_P2P_PARAM_KEY_T) 0)->aucKeyMaterial)) + rKey.u4KeyLength;
 
 	rStatus = kalIoctl(prGlueInfo, wlanoidSetAddP2PKey, &rKey, rKey.u4Length, FALSE, FALSE, TRUE, TRUE, &u4BufLen);
 	if (rStatus == WLAN_STATUS_SUCCESS)
@@ -412,7 +412,7 @@ int mtk_p2p_cfg80211_scan(struct wiphy *wiphy, struct cfg80211_scan_request *req
 		prSsidStruct = (P_P2P_SSID_STRUCT_T) prRfChannelInfo;
 		if (prSsidStruct) {
 			if (request->n_ssids) {
-				ASSERT((ULONG) prSsidStruct == (ULONG) &(prMsgScanRequest->arChannelListInfo[u4Idx]));
+				ASSERT((ULONG) prSsidStruct == (ULONG)&(prMsgScanRequest->arChannelListInfo[u4Idx]));
 				prMsgScanRequest->prSSID = prSsidStruct;
 			}
 

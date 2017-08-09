@@ -162,8 +162,8 @@
 
 #endif
 
-#include <mach/mt_pm_ldo.h>
-#include <mach/mt_gpt.h>
+/* #include <mach/mt_pm_ldo.h>
+#include <mach/mt_gpt.h> */
 
 #include "gl_os.h"
 

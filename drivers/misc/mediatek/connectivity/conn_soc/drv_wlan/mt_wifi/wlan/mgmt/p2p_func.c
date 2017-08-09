@@ -319,7 +319,7 @@ p2pFuncSwitchOPMode(IN P_ADAPTER_T prAdapter,
 						    FALSE,
 						    NULL,
 						    NULL,
-						    sizeof(P2P_DISCONNECT_INFO), (PUINT_8) &rP2PDisInfo, NULL, 0);
+						    sizeof(P2P_DISCONNECT_INFO), (PUINT_8)&rP2PDisInfo, NULL, 0);
 			}
 
 			DBGLOG(P2P, TRACE,
@@ -457,7 +457,7 @@ p2pFuncStartGO(IN P_ADAPTER_T prAdapter,
 						  NULL,
 						  NULL,
 						  sizeof(CMD_HOTSPOT_OPTIMIZATION_CONFIG),
-						  (PUINT_8) &arHotspotOptimizationCfg, NULL, 0);
+						  (PUINT_8)&arHotspotOptimizationCfg, NULL, 0);
 		}
 #endif
 

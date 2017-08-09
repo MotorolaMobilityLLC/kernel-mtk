@@ -647,7 +647,7 @@ WLAN_STATUS nicTxPollingResource(IN P_ADAPTER_T prAdapter, IN UINT_8 ucTC)
 * @return (none)
 */
 /*----------------------------------------------------------------------------*/
-BOOLEAN nicTxReleaseResource(IN P_ADAPTER_T prAdapter, IN UINT_8 *aucTxRlsCnt)
+BOOLEAN nicTxReleaseResource(IN P_ADAPTER_T prAdapter, IN unsigned char *aucTxRlsCnt)
 {
 	PUINT_32 pu4Tmp = (PUINT_32) aucTxRlsCnt;
 	P_TX_CTRL_T prTxCtrl;
@@ -1605,7 +1605,7 @@ WLAN_STATUS nicTxCmd(IN P_ADAPTER_T prAdapter, IN P_CMD_INFO_T prCmdInfo, IN UIN
 		rHwTxHeader.ucAck_BIP_BasicRate |= HIF_TX_HDR_BASIC_RATE /* | HIF_TX_HDR_RTS */;
 
 		/* <2.3> Copy HIF TX HEADER */
-		kalMemCopy((PVOID) &pucOutputBuf[0], (PVOID) &rHwTxHeader, TX_HDR_SIZE);
+		kalMemCopy((PVOID)&pucOutputBuf[0], (PVOID)&rHwTxHeader, TX_HDR_SIZE);
 
 		/* <3> Copy Frame Body Copy */
 		kalCopyFrame(prAdapter->prGlueInfo, prNativePacket, pucOutputBuf + TX_HDR_SIZE);
@@ -1663,7 +1663,7 @@ WLAN_STATUS nicTxCmd(IN P_ADAPTER_T prAdapter, IN P_CMD_INFO_T prCmdInfo, IN UIN
 		if (prMsduInfo->fgIsBasicRate)
 			rHwTxHeader.ucAck_BIP_BasicRate |= HIF_TX_HDR_BASIC_RATE;
 		/* <2.3> Copy HIF TX HEADER */
-		kalMemCopy((PVOID) &pucOutputBuf[0], (PVOID) &rHwTxHeader, TX_HDR_SIZE);
+		kalMemCopy((PVOID)&pucOutputBuf[0], (PVOID)&rHwTxHeader, TX_HDR_SIZE);
 
 		/* <3> Copy Frame Body */
 		kalMemCopy(pucOutputBuf + TX_HDR_SIZE, prMsduInfo->prPacket, prMsduInfo->u2FrameLength);
@@ -1694,7 +1694,7 @@ WLAN_STATUS nicTxCmd(IN P_ADAPTER_T prAdapter, IN P_CMD_INFO_T prCmdInfo, IN UIN
 		    | (UINT_8) ((HIF_TX_PKT_TYPE_CMD << HIF_TX_HDR_PACKET_TYPE_OFFSET) & (HIF_TX_HDR_PACKET_TYPE_MASK));
 
 		/* <3> Copy CMD Header to command buffer (by using pucCoalescingBufCached) */
-		kalMemCopy((PVOID) &pucOutputBuf[0], (PVOID) prCmdInfo->pucInfoBuffer, prCmdInfo->u2InfoBufLen);
+		kalMemCopy((PVOID)&pucOutputBuf[0], (PVOID) prCmdInfo->pucInfoBuffer, prCmdInfo->u2InfoBufLen);
 
 		ASSERT(u2OverallBufferLength <= prAdapter->u4CoalescingBufCachedSize);
 	}
@@ -2087,7 +2087,7 @@ WLAN_STATUS nicTxInitCmd(IN P_ADAPTER_T prAdapter, IN P_CMD_INFO_T prCmdInfo, IN
 	}
 
 	/* <3> Copy CMD Header to command buffer (by using pucCoalescingBufCached) */
-	kalMemCopy((PVOID) &pucOutputBuf[0], (PVOID) prCmdInfo->pucInfoBuffer, prCmdInfo->u2InfoBufLen);
+	kalMemCopy((PVOID)&pucOutputBuf[0], (PVOID) prCmdInfo->pucInfoBuffer, prCmdInfo->u2InfoBufLen);
 
 	ASSERT(u2OverallBufferLength <= prAdapter->u4CoalescingBufCachedSize);
 

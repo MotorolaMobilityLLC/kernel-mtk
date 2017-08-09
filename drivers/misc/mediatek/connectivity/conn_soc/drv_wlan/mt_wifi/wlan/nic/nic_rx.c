@@ -1631,7 +1631,7 @@ UINT_8 nicRxProcessGSCNEvent(IN P_ADAPTER_T prAdapter, IN OUT P_SW_RFB_T prSwRfb
 			/* report_events=1 */
 			/*NLA_PUT_U8(skb, GSCAN_ATTRIBUTE_SCAN_RESULTS_COMPLETE, 1);*/
 			{
-				unsigned char __tmp = real_num;
+				unsigned char __tmp = 1;
 
 				if (unlikely(nla_put(skb, GSCAN_ATTRIBUTE_SCAN_RESULTS_COMPLETE,
 					sizeof(unsigned int), &__tmp) < 0))
@@ -1912,7 +1912,7 @@ VOID nicRxProcessEventPacket(IN P_ADAPTER_T prAdapter, IN OUT P_SW_RFB_T prSwRfb
 
 			kalIndicateStatusAndComplete(prGlueInfo,
 						     WLAN_STATUS_MEDIA_SPECIFIC_INDICATION,
-						     (PVOID) &(prAdapter->rWlanInfo.rRssiTriggerValue),
+						     (PVOID)&(prAdapter->rWlanInfo.rRssiTriggerValue),
 						     sizeof(PARAM_RSSI));
 		} else if (prAdapter->rWlanInfo.eRssiTriggerType == ENUM_RSSI_TRIGGER_LESS
 			   && prAdapter->rWlanInfo.rRssiTriggerValue <= (PARAM_RSSI) (prAdapter->rLinkQuality.cRssi)) {
@@ -1920,7 +1920,7 @@ VOID nicRxProcessEventPacket(IN P_ADAPTER_T prAdapter, IN OUT P_SW_RFB_T prSwRfb
 
 			kalIndicateStatusAndComplete(prGlueInfo,
 						     WLAN_STATUS_MEDIA_SPECIFIC_INDICATION,
-						     (PVOID) &(prAdapter->rWlanInfo.rRssiTriggerValue),
+						     (PVOID)&(prAdapter->rWlanInfo.rRssiTriggerValue),
 						     sizeof(PARAM_RSSI));
 		}
 #endif
@@ -3497,7 +3497,9 @@ nicRxWaitResponse(IN P_ADAPTER_T prAdapter,
 			kalUdelay(50);
 
 			i++;
-		} else if (u4PktLen > u4MaxRespBufferLen) {
+			continue;
+		}
+		if (u4PktLen > u4MaxRespBufferLen) {
 			/*
 			   TO: buffer is not enough but we still need to read all data from HIF to avoid
 			   HIF crazy.

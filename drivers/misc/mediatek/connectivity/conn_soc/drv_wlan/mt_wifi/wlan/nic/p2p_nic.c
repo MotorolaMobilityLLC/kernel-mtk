@@ -112,10 +112,10 @@ nicRxAddP2pDevice(IN P_ADAPTER_T prAdapter,
 				pucIeBuf = prP2pInfo->pucCurrIePtr;
 
 				if (((ULONG) prP2pInfo->pucCurrIePtr + (ULONG) u2RxIELength) >
-				    (ULONG) &prP2pInfo->aucCommIePool[CFG_MAX_COMMON_IE_BUF_LEN]) {
+				    (ULONG)&prP2pInfo->aucCommIePool[CFG_MAX_COMMON_IE_BUF_LEN]) {
 					/* Common Buffer is no enough. */
 					u2RxIELength =
-					    (UINT_16) ((ULONG) &prP2pInfo->aucCommIePool[CFG_MAX_COMMON_IE_BUF_LEN] -
+					    (UINT_16) ((ULONG)&prP2pInfo->aucCommIePool[CFG_MAX_COMMON_IE_BUF_LEN] -
 						       (ULONG) prP2pInfo->pucCurrIePtr);
 				}
 
@@ -163,10 +163,10 @@ nicRxAddP2pDevice(IN P_ADAPTER_T prAdapter,
 				prTargetResult->pucIeBuf = prP2pInfo->pucCurrIePtr;
 
 				if (((ULONG) prP2pInfo->pucCurrIePtr + (ULONG) u2RxIELength) >
-				    (ULONG) &prP2pInfo->aucCommIePool[CFG_MAX_COMMON_IE_BUF_LEN]) {
+				    (ULONG)&prP2pInfo->aucCommIePool[CFG_MAX_COMMON_IE_BUF_LEN]) {
 					/* Common Buffer is no enough. */
 					u2IELength =
-					    (UINT_16) ((ULONG) &prP2pInfo->aucCommIePool[CFG_MAX_COMMON_IE_BUF_LEN] -
+					    (UINT_16) ((ULONG)&prP2pInfo->aucCommIePool[CFG_MAX_COMMON_IE_BUF_LEN] -
 						       (ULONG) prP2pInfo->pucCurrIePtr);
 				} else {
 					u2IELength = u2RxIELength;

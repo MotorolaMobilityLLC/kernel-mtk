@@ -3479,6 +3479,9 @@ BOOLEAN wlanProcessSecurityFrame(IN P_ADAPTER_T prAdapter, IN P_NATIVE_PACKET pr
 	UINT_8 ucNetworkType;
 	P_CMD_INFO_T prCmdInfo;
 
+	/* 1x data packets */
+	KAL_SPIN_LOCK_DECLARATION();
+
 	ASSERT(prAdapter);
 	ASSERT(prPacket);
 
@@ -3496,9 +3499,6 @@ BOOLEAN wlanProcessSecurityFrame(IN P_ADAPTER_T prAdapter, IN P_NATIVE_PACKET pr
 
 		if (fgIs1x == FALSE)
 			return FALSE;
-
-		/* 1x data packets */
-		KAL_SPIN_LOCK_DECLARATION();
 
 		/* get a free command entry */
 		KAL_ACQUIRE_SPIN_LOCK(prAdapter, SPIN_LOCK_CMD_RESOURCE);

@@ -490,7 +490,7 @@ VOID swCtrlCmdCategory0(P_ADAPTER_T prAdapter, UINT_8 ucCate, UINT_8 ucAction, U
 								      NULL,	/* pfCmdDoneHandler */
 								      NULL,	/* pfCmdTimeoutHandler */
 								      sizeof(UINT_32),	/* u4SetQueryInfoLen */
-								      (PUINT_8) &u4rxfilter,	/* pucInfoBuffer */
+								      (PUINT_8)&u4rxfilter,	/* pucInfoBuffer */
 								      NULL,	/* pvSetQueryBuffer */
 								      0	/* un4SetQueryBufferLen */
 					    );
@@ -1143,7 +1143,7 @@ VOID swCrDebugCheckTimeout(IN P_ADAPTER_T prAdapter, ULONG ulParam)
 				      swCrDebugQuery,	/* pfCmdDoneHandler */
 				      swCrDebugQueryTimeout,	/* pfCmdTimeoutHandler */
 				      sizeof(CMD_SW_DBG_CTRL_T),	/* u4SetQueryInfoLen */
-				      (PUINT_8) &rCmdSwCtrl,	/* pucInfoBuffer */
+				      (PUINT_8)&rCmdSwCtrl,	/* pucInfoBuffer */
 				      NULL,	/* pvSetQueryBuffer */
 				      0	/* u4SetQueryBufferLen */
 	    );

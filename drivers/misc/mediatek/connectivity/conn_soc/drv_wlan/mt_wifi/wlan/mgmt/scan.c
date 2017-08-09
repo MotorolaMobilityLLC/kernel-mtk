@@ -756,7 +756,7 @@ VOID scnInit(IN P_ADAPTER_T prAdapter)
 		pucBSSBuff += ALIGN_4(sizeof(BSS_DESC_T));
 	}
 	/* Check if the memory allocation consist with this initialization function */
-	ASSERT(((ULONG) pucBSSBuff - (ULONG) &prScanInfo->aucScanBuffer[0]) == SCN_MAX_BUFFER_SIZE);
+	ASSERT(((ULONG) pucBSSBuff - (ULONG)&prScanInfo->aucScanBuffer[0]) == SCN_MAX_BUFFER_SIZE);
 
 	/* reset freest channel information */
 	prScanInfo->fgIsSparseChannelValid = FALSE;
@@ -1024,6 +1024,9 @@ scanSearchExistingBssDescWithSsid(IN P_ADAPTER_T prAdapter,
 {
 	P_SCAN_INFO_T prScanInfo;
 	P_BSS_DESC_T prBssDesc, prIBSSBssDesc;
+	P_LINK_T prBSSDescList;
+	P_LINK_T prFreeBSSDescList;
+
 
 	ASSERT(prAdapter);
 	ASSERT(aucSrcAddr);
@@ -1070,8 +1073,6 @@ scanSearchExistingBssDescWithSsid(IN P_ADAPTER_T prAdapter,
 
 					return prBssDesc;
 				}	/* CASE III */
-				P_LINK_T prBSSDescList;
-				P_LINK_T prFreeBSSDescList;
 
 				prBSSDescList = &prScanInfo->rBSSDescList;
 				prFreeBSSDescList = &prScanInfo->rFreeBSSDescList;

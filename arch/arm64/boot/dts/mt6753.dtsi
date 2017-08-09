@@ -1396,6 +1396,11 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 		gps {
 			compatible = "mediatek,mt3326-gps";
 		};
+		wifi@180F0000 {
+			compatible = "mediatek,wifi";
+			reg = <0x180F0000 0x005c>;
+			interrupts = <GIC_SPI 228 IRQ_TYPE_LEVEL_LOW>;
+		};
 		usb0:USB0@0x11200000 {
 			compatible = "mediatek,USB0";
 			cell-index = <0>;

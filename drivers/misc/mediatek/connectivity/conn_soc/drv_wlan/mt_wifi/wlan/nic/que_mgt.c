@@ -3474,33 +3474,31 @@ qmAddRxBaEntry(IN P_ADAPTER_T prAdapter,
 			DBGLOG(QM, LOUD, "QM: ucRxBaCount=%d\n", prQM->ucRxBaCount);
 			break;
 		}
-
-		/* If a free-to-use entry is found, configure it and associate it with the STA_REC */
-		u2WinSize += CFG_RX_BA_INC_SIZE;
-		if (prRxBaEntry) {
-			prRxBaEntry->ucStaRecIdx = ucStaRecIdx;
-			prRxBaEntry->ucTid = ucTid;
-			prRxBaEntry->u2WinStart = u2WinStart;
-			prRxBaEntry->u2WinSize = u2WinSize;
-			prRxBaEntry->u2WinEnd = ((u2WinStart + u2WinSize - 1) % MAX_SEQ_NO_COUNT);
-			prRxBaEntry->fgIsValid = TRUE;
-			prRxBaEntry->fgIsWaitingForPktWithSsn = TRUE;
-
-			g_arMissTimeout[ucStaRecIdx][ucTid] = 0;
-
-			DBGLOG(QM, INFO, "QM: +RxBA(STA=%d TID=%d WinStart=%d WinEnd=%d WinSize=%d)\n",
-					  ucStaRecIdx, ucTid,
-					  prRxBaEntry->u2WinStart, prRxBaEntry->u2WinEnd, prRxBaEntry->u2WinSize);
-
-			/* Update the BA entry reference table for per-packet lookup */
-			prStaRec->aprRxReorderParamRefTbl[ucTid] = prRxBaEntry;
-		} else {
-			/* This shall not happen because FW should keep track of the usage of RX BA entries */
-			DBGLOG(QM, ERROR, "QM: **AddBA Error** (ucRxBaCount=%d)\n", prQM->ucRxBaCount);
-			return FALSE;
-		}
 	}
+	/* If a free-to-use entry is found, configure it and associate it with the STA_REC */
+	u2WinSize += CFG_RX_BA_INC_SIZE;
+	if (prRxBaEntry) {
+		prRxBaEntry->ucStaRecIdx = ucStaRecIdx;
+		prRxBaEntry->ucTid = ucTid;
+		prRxBaEntry->u2WinStart = u2WinStart;
+		prRxBaEntry->u2WinSize = u2WinSize;
+		prRxBaEntry->u2WinEnd = ((u2WinStart + u2WinSize - 1) % MAX_SEQ_NO_COUNT);
+		prRxBaEntry->fgIsValid = TRUE;
+		prRxBaEntry->fgIsWaitingForPktWithSsn = TRUE;
 
+		g_arMissTimeout[ucStaRecIdx][ucTid] = 0;
+
+		DBGLOG(QM, INFO, "QM: +RxBA(STA=%d TID=%d WinStart=%d WinEnd=%d WinSize=%d)\n",
+				  ucStaRecIdx, ucTid,
+				  prRxBaEntry->u2WinStart, prRxBaEntry->u2WinEnd, prRxBaEntry->u2WinSize);
+
+		/* Update the BA entry reference table for per-packet lookup */
+		prStaRec->aprRxReorderParamRefTbl[ucTid] = prRxBaEntry;
+	} else {
+		/* This shall not happen because FW should keep track of the usage of RX BA entries */
+		DBGLOG(QM, ERROR, "QM: **AddBA Error** (ucRxBaCount=%d)\n", prQM->ucRxBaCount);
+		return FALSE;
+	}
 	return TRUE;
 }
 

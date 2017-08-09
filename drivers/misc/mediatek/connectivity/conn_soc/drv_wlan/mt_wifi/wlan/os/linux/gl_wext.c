@@ -2151,7 +2151,7 @@ wext_set_essid(IN struct net_device *prNetDev,
 
 	if (kalIoctl(prGlueInfo,
 		     wlanoidSetSsid,
-		     (PVOID) &rNewSsid,
+		     (PVOID)&rNewSsid,
 		     sizeof(PARAM_SSID_T), FALSE, FALSE, TRUE, FALSE, &u4BufLen) != WLAN_STATUS_SUCCESS) {
 		/* printk(KERN_WARNING "Fail to set ssid\n"); */
 		return -EFAULT;
@@ -3276,7 +3276,7 @@ wext_set_encode_ext(IN struct net_device *prNetDev,
 			}
 
 			prKey->u4KeyLength = prIWEncExt->key_len;
-			prKey->u4Length = ((ULONG) &(((P_PARAM_KEY_T) 0)->aucKeyMaterial)) + prKey->u4KeyLength;
+			prKey->u4Length = ((ULONG)&(((P_PARAM_KEY_T) 0)->aucKeyMaterial)) + prKey->u4KeyLength;
 
 			rStatus = kalIoctl(prGlueInfo,
 					   wlanoidSetAddKey,
@@ -3956,7 +3956,7 @@ wext_indicate_wext_event(IN P_GLUE_INFO_T prGlueInfo,
 
 	case SIOCGIWAP:
 		if (pucData)
-			ether_addr_copy(&wrqu.ap_addr.sa_data, pucData);
+			ether_addr_copy((u8 *)&(wrqu.ap_addr.sa_data), pucData);
 			/*memcpy(&wrqu.ap_addr.sa_data, pucData, ETH_ALEN);*/
 		else
 			memset(&wrqu.ap_addr.sa_data, 0, ETH_ALEN);

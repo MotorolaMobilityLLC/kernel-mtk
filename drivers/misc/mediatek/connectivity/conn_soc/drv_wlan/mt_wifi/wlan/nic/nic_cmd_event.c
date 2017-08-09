@@ -644,7 +644,7 @@ VOID nicCmdEventEnterRfTest(IN P_ADAPTER_T prAdapter, IN P_CMD_INFO_T prCmdInfo,
 	}
 
 	/* 5. Clear Interrupt Status */
-	HAL_READ_INTR_STATUS(prAdapter, 4, (PUINT_8) &u4WHISR);
+	HAL_READ_INTR_STATUS(prAdapter, 4, (PUINT_8)&u4WHISR);
 	if (HAL_IS_TX_DONE_INTR(u4WHISR))
 		HAL_READ_TX_RELEASED_COUNT(prAdapter, aucTxCount);
 	/* 6. Reset TX Counter */
@@ -699,7 +699,7 @@ VOID nicCmdEventLeaveRfTest(IN P_ADAPTER_T prAdapter, IN P_CMD_INFO_T prCmdInfo,
 	}
 
 	/* 3. Clear Interrupt Status */
-	HAL_READ_INTR_STATUS(prAdapter, 4, (PUINT_8) &u4WHISR);
+	HAL_READ_INTR_STATUS(prAdapter, 4, (PUINT_8)&u4WHISR);
 	if (HAL_IS_TX_DONE_INTR(u4WHISR))
 		HAL_READ_TX_RELEASED_COUNT(prAdapter, aucTxCount);
 	/* 4. Reset TX Counter */
@@ -871,7 +871,7 @@ VOID nicCmdEventSetMediaStreamMode(IN P_ADAPTER_T prAdapter, IN P_CMD_INFO_T prC
 
 	kalIndicateStatusAndComplete(prAdapter->prGlueInfo,
 				     WLAN_STATUS_MEDIA_SPECIFIC_INDICATION,
-				     (PVOID) &rParamMediaStreamIndication, sizeof(PARAM_MEDIA_STREAMING_INDICATION));
+				     (PVOID)&rParamMediaStreamIndication, sizeof(PARAM_MEDIA_STREAMING_INDICATION));
 }
 
 /* Statistics responder */

@@ -972,6 +972,9 @@ WLAN_STATUS kalFirmwareSize(IN P_GLUE_INFO_T prGlueInfo, OUT PUINT_32 pu4Size)
 
 PVOID kalFirmwareImageMapping(IN P_GLUE_INFO_T prGlueInfo, OUT PPVOID ppvMapFileBuf, OUT PUINT_32 pu4FileLength)
 {
+	UINT_32 u4FwSize = 0;
+	PVOID prFwBuffer = NULL;
+
 	DEBUGFUNC("kalFirmwareImageMapping");
 
 	ASSERT(prGlueInfo);
@@ -984,8 +987,7 @@ PVOID kalFirmwareImageMapping(IN P_GLUE_INFO_T prGlueInfo, OUT PPVOID ppvMapFile
 			DBGLOG(INIT, TRACE, "kalFirmwareOpen fail!\n");
 			break;
 		}
-		UINT_32 u4FwSize = 0;
-		PVOID prFwBuffer = NULL;
+
 		/* <2> Query firmare size */
 		kalFirmwareSize(prGlueInfo, &u4FwSize);
 		/* <3> Use vmalloc for allocating large memory trunk */

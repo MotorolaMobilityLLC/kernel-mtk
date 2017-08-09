@@ -870,7 +870,7 @@ WLAN_STATUS bowCmdDestroyConnection(IN P_ADAPTER_T prAdapter, IN P_AMPC_COMMAND 
 					 wlanbowCmdEventLinkDisconnected,
 					 wlanbowCmdTimeoutHandler,
 					 sizeof(CMD_BT_OVER_WIFI),
-					 (PUINT_8) &rCmdBtOverWifi, prCmd->rHeader.ucSeqNumber);
+					 (PUINT_8)&rCmdBtOverWifi, prCmd->rHeader.ucSeqNumber);
 }
 
 /*----------------------------------------------------------------------------*/
@@ -974,7 +974,7 @@ WLAN_STATUS bowCmdSetPTK(IN P_ADAPTER_T prAdapter, IN P_AMPC_COMMAND prCmd)
 					 FALSE,
 					 wlanbowCmdEventSetCommon,
 					 wlanbowCmdTimeoutHandler,
-					 sizeof(CMD_802_11_KEY), (PUINT_8) &rCmdKey, prCmd->rHeader.ucSeqNumber);
+					 sizeof(CMD_802_11_KEY), (PUINT_8)&rCmdKey, prCmd->rHeader.ucSeqNumber);
 }
 
 /*----------------------------------------------------------------------------*/

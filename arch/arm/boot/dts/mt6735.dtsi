@@ -1040,6 +1040,14 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 			vcn33_wifi-supply = <&mt_pmic_vcn33_wifi_ldo_reg>;
 		};
 
+		wifi@180F0000 {
+			compatible = "mediatek,wifi";
+			reg = <0x180F0000 0x005c>;
+			interrupts = <GIC_SPI 226 IRQ_TYPE_LEVEL_LOW>;
+			clocks = <&perisys PERI_APDMA>;
+			clock-names = "wifi-dma";
+		};
+
 		ispsys@15000000 {
 			compatible = "mediatek,mt6735-ispsys";
 			reg = <0x15004000 0x9000>,  /*ISP_ADDR      */

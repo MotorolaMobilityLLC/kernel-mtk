@@ -157,7 +157,7 @@ static int procMCRRead(char *page, char **start, off_t off, int count, int *eof,
 
 	rStatus = kalIoctl(prGlueInfo,
 			   wlanoidQueryMcrRead,
-			   (PVOID) &rMcrInfo, sizeof(rMcrInfo), TRUE, TRUE, TRUE, FALSE, &u4BufLen);
+			   (PVOID)&rMcrInfo, sizeof(rMcrInfo), TRUE, TRUE, TRUE, FALSE, &u4BufLen);
 
 	/* SPRINTF(p, ("MCR (0x%08lxh): 0x%08lx\n", */
 	/* rMcrInfo.u4McrOffset, rMcrInfo.u4McrData)); */

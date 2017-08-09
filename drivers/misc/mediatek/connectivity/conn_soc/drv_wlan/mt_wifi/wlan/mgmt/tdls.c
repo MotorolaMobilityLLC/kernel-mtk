@@ -1006,7 +1006,7 @@ static void TdlsCmdTestRvFrame(P_GLUE_INFO_T prGlueInfo, UINT_8 *prInBuf, UINT_3
 #if 0
 	kalIoctl(prGlueInfo,
 		 TdlsTestFrameSend,
-		 (PVOID) &rCmd, sizeof(PARAM_CUSTOM_TDLS_CMD_STRUCT_T), FALSE, FALSE, TRUE, FALSE, &u4BufLen);
+		 (PVOID)&rCmd, sizeof(PARAM_CUSTOM_TDLS_CMD_STRUCT_T), FALSE, FALSE, TRUE, FALSE, &u4BufLen);
 #endif
 }
 
@@ -1627,7 +1627,7 @@ static void TdlsCmdTestTxTdlsFrame(P_GLUE_INFO_T prGlueInfo, UINT_8 *prInBuf, UI
 	/* send command to wifi task to handle */
 	kalIoctl(prGlueInfo,
 		 TdlsTestTdlsFrameSend,
-		 (PVOID) &rCmd, sizeof(PARAM_CUSTOM_TDLS_CMD_STRUCT_T), FALSE, FALSE, TRUE, FALSE, &u4BufLen);
+		 (PVOID)&rCmd, sizeof(PARAM_CUSTOM_TDLS_CMD_STRUCT_T), FALSE, FALSE, TRUE, FALSE, &u4BufLen);
 }
 
 /*----------------------------------------------------------------------------*/
@@ -1678,7 +1678,7 @@ static void TdlsCmdTestTxFrame(P_GLUE_INFO_T prGlueInfo, UINT_8 *prInBuf, UINT_3
 	/* send command to wifi task to handle */
 	kalIoctl(prGlueInfo,
 		 TdlsTestFrameSend,
-		 (PVOID) &rCmd, sizeof(PARAM_CUSTOM_TDLS_CMD_STRUCT_T), FALSE, FALSE, TRUE, FALSE, &u4BufLen);
+		 (PVOID)&rCmd, sizeof(PARAM_CUSTOM_TDLS_CMD_STRUCT_T), FALSE, FALSE, TRUE, FALSE, &u4BufLen);
 }
 
 /*----------------------------------------------------------------------------*/

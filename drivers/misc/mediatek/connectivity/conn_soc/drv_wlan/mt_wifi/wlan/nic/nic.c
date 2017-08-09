@@ -967,7 +967,7 @@ VOID nicSDIOInit(IN P_ADAPTER_T prAdapter)
 	ASSERT(prAdapter);
 
 	/* 4 <1> Check STATUS Buffer is DW alignment. */
-	ASSERT(IS_ALIGN_4((ULONG) &prAdapter->prSDIOCtrl->u4WHISR));
+	ASSERT(IS_ALIGN_4((ULONG)&prAdapter->prSDIOCtrl->u4WHISR));
 
 	/* 4 <2> Setup STATUS count. */
 	{
@@ -1917,7 +1917,7 @@ WLAN_STATUS nicActivateNetwork(IN P_ADAPTER_T prAdapter, IN ENUM_NETWORK_TYPE_IN
 				   TRUE,
 				   FALSE,
 				   FALSE,
-				   NULL, NULL, sizeof(CMD_BSS_ACTIVATE_CTRL), (PUINT_8) &rCmdActivateCtrl, NULL, 0);
+				   NULL, NULL, sizeof(CMD_BSS_ACTIVATE_CTRL), (PUINT_8)&rCmdActivateCtrl, NULL, 0);
 }
 
 /*----------------------------------------------------------------------------*/
@@ -1947,7 +1947,7 @@ WLAN_STATUS nicDeactivateNetwork(IN P_ADAPTER_T prAdapter, IN ENUM_NETWORK_TYPE_
 				       FALSE,
 				       FALSE,
 				       NULL,
-				       NULL, sizeof(CMD_BSS_ACTIVATE_CTRL), (PUINT_8) &rCmdActivateCtrl, NULL, 0);
+				       NULL, sizeof(CMD_BSS_ACTIVATE_CTRL), (PUINT_8)&rCmdActivateCtrl, NULL, 0);
 
 	/* free all correlated station records */
 	cnmStaFreeAllStaByNetType(prAdapter, eNetworkTypeIdx, FALSE);
@@ -2065,7 +2065,7 @@ WLAN_STATUS nicUpdateBss(IN P_ADAPTER_T prAdapter, IN ENUM_NETWORK_TYPE_INDEX_T 
 				       TRUE,
 				       FALSE,
 				       FALSE,
-				       NULL, NULL, sizeof(CMD_SET_BSS_INFO), (PUINT_8) &rCmdSetBssInfo, NULL, 0);
+				       NULL, NULL, sizeof(CMD_SET_BSS_INFO), (PUINT_8)&rCmdSetBssInfo, NULL, 0);
 
 	/* if BSS-INFO is going to be disconnected state, free all correlated station records */
 	if (prBssInfo->eConnectionState == PARAM_MEDIA_STATE_DISCONNECTED) {
@@ -2119,7 +2119,7 @@ WLAN_STATUS nicPmIndicateBssCreated(IN P_ADAPTER_T prAdapter, IN ENUM_NETWORK_TY
 				   FALSE,
 				   NULL,
 				   NULL,
-				   sizeof(CMD_INDICATE_PM_BSS_CREATED), (PUINT_8) &rCmdIndicatePmBssCreated, NULL, 0);
+				   sizeof(CMD_INDICATE_PM_BSS_CREATED), (PUINT_8)&rCmdIndicatePmBssCreated, NULL, 0);
 }
 
 /*----------------------------------------------------------------------------*/
@@ -2179,7 +2179,7 @@ WLAN_STATUS nicPmIndicateBssConnected(IN P_ADAPTER_T prAdapter, IN ENUM_NETWORK_
 				   NULL,
 				   NULL,
 				   sizeof(CMD_INDICATE_PM_BSS_CONNECTED),
-				   (PUINT_8) &rCmdIndicatePmBssConnected, NULL, 0);
+				   (PUINT_8)&rCmdIndicatePmBssConnected, NULL, 0);
 }
 
 /*----------------------------------------------------------------------------*/
@@ -2209,7 +2209,7 @@ WLAN_STATUS nicPmIndicateBssAbort(IN P_ADAPTER_T prAdapter, IN ENUM_NETWORK_TYPE
 				   FALSE,
 				   NULL,
 				   NULL,
-				   sizeof(CMD_INDICATE_PM_BSS_ABORT), (PUINT_8) &rCmdIndicatePmBssAbort, NULL, 0);
+				   sizeof(CMD_INDICATE_PM_BSS_ABORT), (PUINT_8)&rCmdIndicatePmBssAbort, NULL, 0);
 }
 
 WLAN_STATUS
@@ -2239,7 +2239,7 @@ nicConfigPowerSaveProfile(IN P_ADAPTER_T prAdapter,
 				   (fgEnCmdEvent ? nicCmdEventSetCommon : NULL),
 				   (fgEnCmdEvent ? nicOidCmdTimeoutCommon : NULL),
 				   sizeof(CMD_PS_PROFILE_T),
-				   (PUINT_8) &(prAdapter->rWlanInfo.arPowerSaveMode[eNetTypeIndex]),
+				   (PUINT_8)&(prAdapter->rWlanInfo.arPowerSaveMode[eNetTypeIndex]),
 				   NULL, sizeof(PARAM_POWER_MODE)
 	    );
 
@@ -2267,7 +2267,7 @@ WLAN_STATUS nicEnterCtiaMode(IN P_ADAPTER_T prAdapter, BOOLEAN fgEnterCtia, BOOL
 		rCmdAccessReg.u4Data = 0x904;
 		wlanSendSetQueryCmd(prAdapter, CMD_ID_ACCESS_REG, TRUE,	/* FALSE, */
 				    FALSE,	/* TRUE, */
-				    FALSE, NULL, NULL, sizeof(CMD_ACCESS_REG), (PUINT_8) &rCmdAccessReg, NULL, 0);
+				    FALSE, NULL, NULL, sizeof(CMD_ACCESS_REG), (PUINT_8)&rCmdAccessReg, NULL, 0);
 
 		/* 4. Disable Roaming */
 		rCmdSwCtrl.u4Id = 0x90000204;
@@ -2276,7 +2276,7 @@ WLAN_STATUS nicEnterCtiaMode(IN P_ADAPTER_T prAdapter, BOOLEAN fgEnterCtia, BOOL
 				    CMD_ID_SW_DBG_CTRL,
 				    TRUE,
 				    FALSE,
-				    FALSE, NULL, NULL, sizeof(CMD_SW_DBG_CTRL_T), (PUINT_8) &rCmdSwCtrl, NULL, 0);
+				    FALSE, NULL, NULL, sizeof(CMD_SW_DBG_CTRL_T), (PUINT_8)&rCmdSwCtrl, NULL, 0);
 
 		rCmdSwCtrl.u4Id = 0x90000200;
 		rCmdSwCtrl.u4Data = 0x820000;
@@ -2284,7 +2284,7 @@ WLAN_STATUS nicEnterCtiaMode(IN P_ADAPTER_T prAdapter, BOOLEAN fgEnterCtia, BOOL
 				    CMD_ID_SW_DBG_CTRL,
 				    TRUE,
 				    FALSE,
-				    FALSE, NULL, NULL, sizeof(CMD_SW_DBG_CTRL_T), (PUINT_8) &rCmdSwCtrl, NULL, 0);
+				    FALSE, NULL, NULL, sizeof(CMD_SW_DBG_CTRL_T), (PUINT_8)&rCmdSwCtrl, NULL, 0);
 
 		/* Disalbe auto tx power */
 		rCmdSwCtrl.u4Id = 0xa0100003;
@@ -2293,7 +2293,7 @@ WLAN_STATUS nicEnterCtiaMode(IN P_ADAPTER_T prAdapter, BOOLEAN fgEnterCtia, BOOL
 				    CMD_ID_SW_DBG_CTRL,
 				    TRUE,
 				    FALSE,
-				    FALSE, NULL, NULL, sizeof(CMD_SW_DBG_CTRL_T), (PUINT_8) &rCmdSwCtrl, NULL, 0);
+				    FALSE, NULL, NULL, sizeof(CMD_SW_DBG_CTRL_T), (PUINT_8)&rCmdSwCtrl, NULL, 0);
 
 		/* 2. Keep at CAM mode */
 		{
@@ -2318,7 +2318,7 @@ WLAN_STATUS nicEnterCtiaMode(IN P_ADAPTER_T prAdapter, BOOLEAN fgEnterCtia, BOOL
 		rCmdAccessReg.u4Data = 0x905;
 		wlanSendSetQueryCmd(prAdapter, CMD_ID_ACCESS_REG, TRUE,	/* FALSE, */
 				    FALSE,	/* TRUE, */
-				    FALSE, NULL, NULL, sizeof(CMD_ACCESS_REG), (PUINT_8) &rCmdAccessReg, NULL, 0);
+				    FALSE, NULL, NULL, sizeof(CMD_ACCESS_REG), (PUINT_8)&rCmdAccessReg, NULL, 0);
 
 		/* 4. Enable Roaming */
 		rCmdSwCtrl.u4Id = 0x90000204;
@@ -2327,7 +2327,7 @@ WLAN_STATUS nicEnterCtiaMode(IN P_ADAPTER_T prAdapter, BOOLEAN fgEnterCtia, BOOL
 				    CMD_ID_SW_DBG_CTRL,
 				    TRUE,
 				    FALSE,
-				    FALSE, NULL, NULL, sizeof(CMD_SW_DBG_CTRL_T), (PUINT_8) &rCmdSwCtrl, NULL, 0);
+				    FALSE, NULL, NULL, sizeof(CMD_SW_DBG_CTRL_T), (PUINT_8)&rCmdSwCtrl, NULL, 0);
 
 		rCmdSwCtrl.u4Id = 0x90000200;
 		rCmdSwCtrl.u4Data = 0x820000;
@@ -2335,7 +2335,7 @@ WLAN_STATUS nicEnterCtiaMode(IN P_ADAPTER_T prAdapter, BOOLEAN fgEnterCtia, BOOL
 				    CMD_ID_SW_DBG_CTRL,
 				    TRUE,
 				    FALSE,
-				    FALSE, NULL, NULL, sizeof(CMD_SW_DBG_CTRL_T), (PUINT_8) &rCmdSwCtrl, NULL, 0);
+				    FALSE, NULL, NULL, sizeof(CMD_SW_DBG_CTRL_T), (PUINT_8)&rCmdSwCtrl, NULL, 0);
 
 		/* Enable auto tx power */
 		/*  */
@@ -2346,7 +2346,7 @@ WLAN_STATUS nicEnterCtiaMode(IN P_ADAPTER_T prAdapter, BOOLEAN fgEnterCtia, BOOL
 				    CMD_ID_SW_DBG_CTRL,
 				    TRUE,
 				    FALSE,
-				    FALSE, NULL, NULL, sizeof(CMD_SW_DBG_CTRL_T), (PUINT_8) &rCmdSwCtrl, NULL, 0);
+				    FALSE, NULL, NULL, sizeof(CMD_SW_DBG_CTRL_T), (PUINT_8)&rCmdSwCtrl, NULL, 0);
 
 		/* 2. Keep at Fast PS */
 		{
@@ -2537,7 +2537,7 @@ WLAN_STATUS nicQmUpdateWmmParms(IN P_ADAPTER_T prAdapter, IN ENUM_NETWORK_TYPE_I
 				   TRUE,
 				   FALSE,
 				   FALSE,
-				   NULL, NULL, sizeof(CMD_UPDATE_WMM_PARMS_T), (PUINT_8) &rCmdUpdateWmmParms, NULL, 0);
+				   NULL, NULL, sizeof(CMD_UPDATE_WMM_PARMS_T), (PUINT_8)&rCmdUpdateWmmParms, NULL, 0);
 }
 
 /*----------------------------------------------------------------------------*/
@@ -2831,7 +2831,7 @@ WLAN_STATUS nicEnableClockGating(IN P_ADAPTER_T prAdapter)
 		if (kalIsCardRemoved(prAdapter->prGlueInfo) == TRUE || fgIsBusAccessFailed == TRUE)
 			return WLAN_STATUS_FAILURE;
 
-		HAL_READ_INTR_STATUS(prAdapter, sizeof(UINT_32), (PUINT_8) &u4WHISR);
+		HAL_READ_INTR_STATUS(prAdapter, sizeof(UINT_32), (PUINT_8)&u4WHISR);
 
 		if (u4WHISR & ACK_GATING_ENABLE_D2H_INT) {
 			prAdapter->fgIsClockGatingEnabled = TRUE;
@@ -2868,7 +2868,7 @@ WLAN_STATUS nicDisableClockGating(IN P_ADAPTER_T prAdapter)
 		if (kalIsCardRemoved(prAdapter->prGlueInfo) == TRUE || fgIsBusAccessFailed == TRUE)
 			return WLAN_STATUS_FAILURE;
 
-		HAL_READ_INTR_STATUS(prAdapter, sizeof(UINT_32), (PUINT_8) &u4WHISR);
+		HAL_READ_INTR_STATUS(prAdapter, sizeof(UINT_32), (PUINT_8)&u4WHISR);
 
 		if (u4WHISR & ACK_GATING_DISABLE_D2H_INT) {
 			prAdapter->fgIsClockGatingEnabled = FALSE;

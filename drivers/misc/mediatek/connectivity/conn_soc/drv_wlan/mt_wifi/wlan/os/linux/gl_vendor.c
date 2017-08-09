@@ -193,9 +193,9 @@ static int wl_cfgvendor_set_scan_cfg(struct wiphy *wiphy, struct wireless_dev *w
 				    nla_get_u32(iter1);
 				break;
 			}
-			}
-			j++;
-			break;
+		}
+		j++;
+		break;
 		}
 	}
 
