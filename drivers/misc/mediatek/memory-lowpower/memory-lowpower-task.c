@@ -1,4 +1,8 @@
 #define pr_fmt(fmt) "memory-lowpower-task: " fmt
+#define CONFIG_MTK_MEMORY_LOWPOWER_TASK_DEBUG
+
+#include <linux/types.h>
+#include <linux/debugfs.h>
 #include <linux/sched.h>
 #include <linux/freezer.h>
 #include <linux/kthread.h>
@@ -46,6 +50,7 @@ static int get_cma_aligned;			/* in PAGE_SIZE order */
 static int get_cma_num;				/* Number of allocation */
 static unsigned long get_cma_size;		/* in PAGES */
 static struct page **cma_aligned_pages;
+static struct memory_lowpower_statistics memory_lowpower_statistics;
 
 /*
  * Set aligned allocation -
@@ -138,6 +143,14 @@ static int acquire_memory(void)
 		++i;
 	}
 
+	memory_lowpower_statistics.nr_acquire_memory++;
+	if (i == (get_cma_num - 1))
+		memory_lowpower_statistics.nr_full_acquire++;
+	else if (i > 0)
+		memory_lowpower_statistics.nr_partial_acquire++;
+	else
+		memory_lowpower_statistics.nr_empty_acquire++;
+
 	return 0;
 }
 
@@ -163,6 +176,8 @@ static int release_memory(void)
 		} else
 			BUG();
 	} while (++i < get_cma_num);
+
+	memory_lowpower_statistics.nr_release_memory++;
 
 	return 0;
 }
@@ -523,3 +538,42 @@ out:
 }
 
 late_initcall(memory_lowpower_task_init);
+
+#ifdef CONFIG_MTK_MEMORY_LOWPOWER_TASK_DEBUG
+static int memory_lowpower_task_show(struct seq_file *m, void *v)
+{
+	seq_printf(m, "memory lowpower statistics: %lld, %lld, %lld, %lld, %lld\n",
+			memory_lowpower_statistics.nr_acquire_memory,
+			memory_lowpower_statistics.nr_release_memory,
+			memory_lowpower_statistics.nr_full_acquire,
+			memory_lowpower_statistics.nr_partial_acquire,
+			memory_lowpower_statistics.nr_empty_acquire);
+
+	return 0;
+}
+
+static int memory_lowpower_open(struct inode *inode, struct file *file)
+{
+	return single_open(file, &memory_lowpower_task_show, NULL);
+}
+
+static const struct file_operations memory_lowpower_task_fops = {
+	.open		= memory_lowpower_open,
+	.read		= seq_read,
+	.release	= single_release,
+};
+
+static int __init memory_lowpower_task_debug_init(void)
+{
+	struct dentry *dentry;
+
+	dentry = debugfs_create_file("memory-lowpower-task", S_IRUGO, NULL, NULL,
+					&memory_lowpower_task_fops);
+	if (!dentry)
+		pr_warn("Failed to create debugfs memory_lowpower_debug_init file\n");
+
+	return 0;
+}
+
+late_initcall(memory_lowpower_task_debug_init);
+#endif /* CONFIG_MTK_MEMORY_LOWPOWER_DEBUG */

@@ -75,6 +75,14 @@ struct memory_lowpower_operation {
 	int (*restore)(void);
 };
 
+struct memory_lowpower_statistics {
+	u64 nr_acquire_memory;
+	u64 nr_release_memory;
+	u64 nr_full_acquire;
+	u64 nr_partial_acquire;
+	u64 nr_empty_acquire;
+};
+
 /*
  * Examples for feature specific operations,
  *
