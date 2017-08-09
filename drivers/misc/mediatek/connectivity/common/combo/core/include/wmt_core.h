@@ -175,6 +175,7 @@ typedef struct _WMT_GEN_CONF {
 	UINT8 cfgExist;
 
 	UINT8 coex_wmt_ant_mode;
+	UINT8 coex_wmt_ext_component;
 	UINT8 coex_wmt_wifi_time_ctl;
 	UINT8 coex_wmt_ext_pta_dev_on;
 	/*combo chip and LTE coex filter mode setting */
