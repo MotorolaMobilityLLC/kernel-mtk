@@ -53,6 +53,9 @@
 #if defined(CONFIG_MTK_LEGACY)
 #include <cust_gpio_usage.h>
 #endif
+#if defined(CONFIG_ARCH_MT6757)
+#include "mt_dramc.h"
+#endif
 #if defined(CONFIG_ARCH_MT6797)
 #include <mt_spm_pmic_wrap.h>
 #include "../../../include/mt-plat/mt6797/include/mach/mt_thermal.h"
@@ -1708,15 +1711,13 @@ void spm_pmic_power_mode(int mode, int force, int lock)
 		spm_pmic_set_buck(MT6351_BUCK_VS1_CON0, 0, 1, 1, PMIC_BUCK_SRCLKEN0, lock);
 		spm_pmic_set_buck(MT6351_BUCK_VS2_CON0, 0, 1, 1, PMIC_BUCK_SRCLKEN0, lock);
 
-#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_MT6757)
+#if defined(CONFIG_ARCH_MT6755)
 		spm_pmic_set_ldo(MT6351_LDO_VDRAM_CON0, 0, 1, 1, PMIC_LDO_SRCLKEN0, lock);
-		/*
-		 * TODO: LP4: should turn off VDRAM_LDO
-		 * if (is_lp3)
-		 *	spm_pmic_set_ldo(MT6351_LDO_VDRAM_CON0, 0, 1, 1, PMIC_LDO_SRCLKEN0, lock);
-		 * else
-		 *	spm_pmic_set_ldo(MT6351_LDO_VDRAM_CON0, 0, 0, 0, PMIC_LDO_SRCLKEN_NA, lock);
-		 */
+#elif defined(CONFIG_ARCH_MT6757)
+		if (get_ddr_type() == TYPE_LPDDR3)
+			spm_pmic_set_ldo(MT6351_LDO_VDRAM_CON0, 0, 1, 1, PMIC_LDO_SRCLKEN0, lock);
+		else
+			spm_pmic_set_ldo(MT6351_LDO_VDRAM_CON0, 0, 0, 0, PMIC_LDO_SRCLKEN_NA, lock);
 #elif defined(CONFIG_ARCH_MT6797)
 		spm_pmic_set_buck(MT6351_BUCK_VGPU_CON0, 0, 1, 1, PMIC_BUCK_SRCLKEN0, lock);
 		spm_pmic_set_vsram_proc_mode(PMIC_HW_MODE);

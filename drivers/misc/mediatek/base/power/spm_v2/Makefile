@@ -62,6 +62,7 @@ endif
 
 ifeq ($(CONFIG_ARCH_MT6757), y)
 #ccflags-y += -I$(srctree)/sound/soc/mediatek/mt_soc_audio_6757/
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/dramc/mt6757/
 
 obj-y += mt_sleep.o
 obj-y += mt_spm.o
