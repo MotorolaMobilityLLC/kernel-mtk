@@ -147,8 +147,6 @@ static UINT8 WMT_MISC_COEX_SETTING_CONFIG_EVT[] = { 0x02, 0x10, 0x01, 0x00, 0x00
 /*coex cmd/evt--*/
 static UINT8 WMT_SET_STP_CMD[] = { 0x01, 0x04, 0x05, 0x00, 0x03, 0xDF, 0x0E, 0x68, 0x01 };
 static UINT8 WMT_SET_STP_EVT[] = { 0x02, 0x04, 0x02, 0x00, 0x00, 0x03 };
-static UINT8 WMT_STRAP_CONF_CMD_FM_COMM[] = { 0x01, 0x05, 0x02, 0x00, 0x02, 0x02 };
-static UINT8 WMT_STRAP_CONF_EVT[] = { 0x02, 0x05, 0x02, 0x00, 0x00, 0x02 };
 
 /* to get full dump when f/w assert */
 static UINT8 WMT_CORE_DUMP_LEVEL_04_CMD[] = {
@@ -162,27 +160,24 @@ static UINT8 WMT_CORE_CO_CLOCK_EVT[] = { 0x2, 0x0A, 0x01, 0x00, 0x00 };
 #if (MTK_WCN_CMB_MERGE_INTERFACE_SUPPORT)
 
 
-static UINT8 WMT_SET_DAI_MODE_REG_CMD[] = { 0x01, 0x08, 0x28, 0x00	/*length */
-	    , 0x01		/* op: w */
-	    , 0x01		/*type: reg */
-	    , 0x00		/*rev */
-	    , 0x03		/*2 registers */
-	    , 0x6c, 0x50, 0x02, 0x80	/*addr:0x8002506c */
-	    , 0x00, 0x00, 0x10, 0x11	/*value:0x11100000 */
-	    , 0x00, 0x00, 0xf0, 0xff	/*mask:0xfff00000 */
-	    , 0x70, 0x50, 0x02, 0x80	/*addr:0x80025070 */
-	    , 0x01, 0x00, 0x00, 0x00	/*value:0x00000001 */
-	    , 0x0f, 0x00, 0x00, 0x00	/*mask:0x0000000f */
-	    , 0x00, 0x53, 0x02, 0x80	/*addr:0x80025300 */
-	    , 0x04, 0x00, 0x00, 0x00	/*value:0x00000004 */
-	    , 0x04, 0x00, 0x00, 0x00	/*mask:0x00000004 */
+static UINT8 WMT_SET_DAI_MODE_REG_CMD[] = { 0x01, 0x08, 0x1c, 0x00	/*length */
+	, 0x01                                /* op: w */
+	, 0x01                                /*type: reg */
+	, 0x00                                /*rev */
+	, 0x02                                /*2 registers */
+	, 0x54, 0x30, 0x02, 0x81              /*addr:0x81023054 */
+	, 0x00, 0x00, 0x33, 0x33             /*value:0x33330000 */
+	, 0x00, 0x00, 0xff, 0xff               /*mask:0xffff0000 */
+	, 0x00, 0x53, 0x02, 0x80             /*addr:0x80025300 */
+	, 0x04, 0x00, 0x00, 0x00             /*value:0x00000004 */
+	, 0x04, 0x00, 0x00, 0x00             /*mask:0x00000004 */
 };
 
 static UINT8 WMT_SET_DAI_MODE_REG_EVT[] = { 0x02, 0x08, 0x04, 0x00	/*length */
 	    , 0x00		/*S: 0 */
 	    , 0x00		/*type: reg */
 	    , 0x00		/*rev */
-	    , 0x03		/*2 registers */
+	    , 0x02		/*2 registers */
 };
 
 
@@ -377,10 +372,6 @@ static struct init_script init_table_4[] = {
 static struct init_script init_table_5[] = {
 	INIT_CMD(WMT_QUERY_STP_CMD, WMT_QUERY_STP_EVT_UART, "query stp uart"),
 	INIT_CMD(WMT_QUERY_BAUD_CMD, WMT_QUERY_BAUD_EVT_X, "query baud X"),
-};
-
-static struct init_script init_table_5_1[] = {
-	INIT_CMD(WMT_STRAP_CONF_CMD_FM_COMM, WMT_STRAP_CONF_EVT, "configure FM comm"),
 };
 
 static struct init_script init_table_6[] = {
@@ -803,18 +794,6 @@ static INT32 mt6632_sw_init(P_WMT_HIF_CONF pWmtHifConf)
 	}
 #endif
 #endif
-	/* 15. Set FM strap */
-	WMT_STRAP_CONF_CMD_FM_COMM[5] = (UINT8) pWmtHifConf->au4StrapConf[0];
-	WMT_STRAP_CONF_EVT[5] = (UINT8) pWmtHifConf->au4StrapConf[0];
-	iRet = wmt_core_init_script(init_table_5_1, ARRAY_SIZE(init_table_5_1));
-
-	if (iRet) {
-		WMT_ERR_FUNC("init_table_5_1 fm mode(%d) fail(%d)\n",
-			     pWmtHifConf->au4StrapConf[0], iRet);
-		return -16;
-	}
-
-	WMT_INFO_FUNC("set fm mode (%d) ok\n", pWmtHifConf->au4StrapConf[0]);
 
 #if CFG_SET_OPT_REG		/*set registers */
 	iRet = wmt_core_init_script(set_registers, ARRAY_SIZE(set_registers));
@@ -947,23 +926,8 @@ static INT32 mt6632_aif_ctrl(WMT_IC_PIN_STATE state, UINT32 flag)
 
 static INT32 mt6632_gps_sync_ctrl(WMT_IC_PIN_STATE state, UINT32 flag)
 {
-	INT32 iRet = -1;
-	UINT32 uVal = 0;
+	WMT_INFO_FUNC("MT6632 do not need gps sync settings\n");
 
-	if (WMT_IC_PIN_MUX == state)
-		uVal = 0x1 << 1;
-	else
-		uVal = 0x0 << 1;
-	/*0x80025070[7:4]: 1-A-GPS_SYNC mode, 0-Jtag mode */
-#if MT6632_BRINGUP
-	iRet = 0;
-	WMT_INFO_FUNC("Bring up period, skip gps sync settings\n");
-
-#else
-	iRet = wmt_core_reg_rw_raw(1, 0x80025070, &uVal, 0xf << 4);
-#endif
-	if (0 != iRet)
-		WMT_ERR_FUNC("gps_sync pin ctrl failed, iRet(%d)\n", iRet);
 	/* anyway, we return 0 */
 	return 0;
 }
