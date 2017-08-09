@@ -32,10 +32,8 @@
 /*=============================================================
  *Local variable definition
  *=============================================================*/
-#ifndef FAST_RESPONSE_ATM
 static int print_cunt;
 static int adaptive_limit[5][2];
-#endif
 
 static kuid_t uid = KUIDT_INIT(0);
 static kgid_t gid = KGIDT_INIT(1000);
@@ -263,18 +261,24 @@ int get_target_tj(void)
 static void set_adaptive_cpu_power_limit(unsigned int limit)
 {
 	unsigned int final_limit;
+
 	prv_adp_cpu_pwr_lim = adaptive_cpu_power_limit;
 	adaptive_cpu_power_limit = (limit != 0) ? limit : 0x7FFFFFFF;
 	final_limit = MIN(adaptive_cpu_power_limit, static_cpu_power_limit);
 
 	if (prv_adp_cpu_pwr_lim != adaptive_cpu_power_limit) {
-#ifdef FAST_RESPONSE_ATM
-		tscpu_dprintk("%s %d\n", __func__,
-		     (final_limit != 0x7FFFFFFF) ? final_limit : 0);
-#else
 		if (print_cunt < 5) {
 			adaptive_limit[print_cunt][0] = (final_limit != 0x7FFFFFFF) ? final_limit : 0;
 			adaptive_limit[print_cunt][1] = tscpu_get_curr_temp();
+
+#ifdef FAST_RESPONSE_ATM
+			if ((adaptive_limit[print_cunt][0] < (adaptive_limit[print_cunt - 1][0] - 1000))
+					&& (0 != adaptive_limit[print_cunt][0]))
+				tscpu_warn("%s Big power limit change %d pre_T=%d,%d curr_T=%d\n", __func__,
+				adaptive_limit[print_cunt - 1][0] , adaptive_limit[print_cunt - 1][1],
+				adaptive_limit[print_cunt][0] , adaptive_limit[print_cunt][1]
+				);
+#endif
 		} else {
 			tscpu_warn("%s %d T=%d,%d T=%d,%d T=%d,%d T=%d,%d T=%d\n", __func__,
 			adaptive_limit[0][0] , adaptive_limit[0][1],
@@ -289,7 +293,6 @@ static void set_adaptive_cpu_power_limit(unsigned int limit)
 			adaptive_limit[0][1] = tscpu_get_curr_temp();
 		}
 		print_cunt++;
-#endif
 		gv_cpu_power_limit = final_limit;
 
 #ifdef ATM_USES_PPM
@@ -945,6 +948,7 @@ static int decide_ttj(void)
 	int active_cooler_id = -1;
 	int ret = 117000;	/* highest allowable TJ */
 	int temp_cl_dev_adp_cpu_state_active = 0;
+
 	for (; i < MAX_CPT_ADAPTIVE_COOLERS; i++) {
 		if (cl_dev_adp_cpu_state[i]) {
 			ret = MIN(ret, TARGET_TJS[i]);
@@ -959,6 +963,7 @@ static int decide_ttj(void)
 #if CONTINUOUS_TM
 	if (ctm_on) {
 		int curr_tpcb = mtk_thermal_get_temp(MTK_THERMAL_SENSOR_AP);
+
 		if (ctm_on == 1) {
 			TARGET_TJ =
 				MIN(MAX_TARGET_TJ,
@@ -1058,6 +1063,7 @@ static int adp_cpu_set_cur_state(struct thermal_cooling_device *cdev, unsigned l
 #ifndef FAST_RESPONSE_ATM
 		/* = (NULL == mtk_thermal_get_gpu_loading_fp) ? 0 : mtk_thermal_get_gpu_loading_fp(); */
 		unsigned int gpu_loading;
+
 		if (!mtk_get_gpu_loading(&gpu_loading))
 			gpu_loading = 0;
 

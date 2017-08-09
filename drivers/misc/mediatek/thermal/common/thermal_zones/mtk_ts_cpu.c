@@ -1232,6 +1232,10 @@ static ssize_t tscpu_write(struct file *file, const char __user *buffer, size_t 
 		tscpu_dprintk("tscpu_write tscpu_register_thermal\n");
 		tscpu_register_thermal();
 
+#if defined(CONFIG_ARCH_MT6797)
+				mt_ppm_cpu_thermal_protect(0);
+#endif
+
 		proc_write_flag = 1;
 		kfree(ptr_mtktscpu_data);
 		return count;
