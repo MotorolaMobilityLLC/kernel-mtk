@@ -39,6 +39,7 @@ static unsigned long apmixed_base;
 static unsigned long apmcucfg_base;
 
 struct c2k_pll_t c2k_pll_reg;
+void __iomem *ccirq_base[4];
 
 int md_ccif_get_modem_hw_info(struct platform_device *dev_ptr,
 			      struct ccci_dev_cfg *dev_cfg,
@@ -254,6 +255,12 @@ int md_ccif_io_remap_md_side_register(struct ccci_modem *md)
 		c2k_pll_reg.c2k_cg_amba_clksel = ioremap_nocache(C2KSYS_BASE + C2K_CG_ARM_AMBA_CLKSEL, 0x4);
 		c2k_pll_reg.c2k_clk_ctrl4 = ioremap_nocache(C2KSYS_BASE + C2K_CLK_CTRL4, 0x4);
 		c2k_pll_reg.c2k_clk_ctrl9 = ioremap_nocache(C2KSYS_BASE + C2K_CLK_CTRL9, 0x4);
+		/*CCIRQ reg*/
+		ccirq_base[0] = ioremap_nocache(L1_C2K_CCIRQ_BASE, 0x100);
+		ccirq_base[1] = ioremap_nocache(C2K_L1_CCIRQ_BASE, 0x100);
+		ccirq_base[2] = ioremap_nocache(PS_C2K_CCIRQ_BASE, 0x100);
+		ccirq_base[3] = ioremap_nocache(C2K_PS_CCIRQ_BASE, 0x100);
+
 
 		break;
 	}
@@ -282,6 +289,30 @@ static int config_c2k_pll(void)
 	ccif_write16(c2k_pll_reg.c2k_clk_ctrl9, 0, 0xA207);
 
 
+	return 0;
+}
+
+static int reset_ccirq_hardware(void)
+{
+	int i = 0;
+
+	CCCI_INF_MSG(MD_SYS3, TAG, "reset_ccirq_hardware start\n");
+	for (i = 0; i < 2; i++) {
+		ccif_write32(ccirq_base[i], 0x4, 0xA00000FF);
+		ccif_write32(ccirq_base[i], 0xC, 0xA00000FF);
+	}
+	for (i = 2; i < 4; i++) {
+		ccif_write32(ccirq_base[i], 0x4, 0xA000000F);
+		ccif_write32(ccirq_base[i], 0xC, 0xA000000F);
+	}
+
+	for (i = 0; i < 4; i++) {
+		ccif_write32(ccirq_base[i], 0x40, 0x0);
+		ccif_write32(ccirq_base[i], 0x44, 0x0);
+		ccif_write32(ccirq_base[i], 0x48, 0x0);
+		ccif_write32(ccirq_base[i], 0x4C, 0x0);
+	}
+	CCCI_INF_MSG(MD_SYS3, TAG, "reset_ccirq_hardware end\n");
 	return 0;
 }
 
@@ -478,6 +509,9 @@ void reset_md1_md3_pccif(struct ccci_modem *md)
 	struct md_ccif_ctrl *md_ctrl = (struct md_ccif_ctrl *)md->private_data;
 
 	struct md_hw_info *hw_info = md_ctrl->hw_info;
+
+	reset_ccirq_hardware();
+
 	/* clear occupied channel */
 	while (tx_channel < 16) {
 		if (ccif_read32(hw_info->md1_pccif_base, PCCIF_BUSY) & (1<<tx_channel))

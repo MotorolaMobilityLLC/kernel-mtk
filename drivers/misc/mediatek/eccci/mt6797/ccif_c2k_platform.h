@@ -88,6 +88,11 @@
 #define C2K_C2K_DSPPLL_CON0     0x02013050
 
 
+#define L1_C2K_CCIRQ_BASE		0x10211400
+#define C2K_L1_CCIRQ_BASE		0x10213400
+#define PS_C2K_CCIRQ_BASE		0x10211000
+#define C2K_PS_CCIRQ_BASE		0x10213000
+
 #define ETS_SEL_BIT					(0x1 << 13)
 
 struct md_hw_info {
