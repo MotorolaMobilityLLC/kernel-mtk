@@ -829,4 +829,5 @@ module_init(gpt_mod_init);
 CLOCKSOURCE_OF_DECLARE(mt2701_apxgpt, "mediatek,mt2701-apxgpt", mt_gpt_init);
 CLOCKSOURCE_OF_DECLARE(mt8163_apxgpt, "mediatek,mt8163-apxgpt", mt_gpt_init);
 CLOCKSOURCE_OF_DECLARE(mt8173_apxgpt, "mediatek,mt8173-apxgpt", mt_gpt_init);
+CLOCKSOURCE_OF_DECLARE(mt8127_apxgpt, "mediatek,mt8127-apxgpt", mt_gpt_init);
 MODULE_LICENSE("GPL");
