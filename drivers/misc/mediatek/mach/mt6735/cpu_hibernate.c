@@ -91,7 +91,7 @@ typedef void (*phys_reset_t)(unsigned long);
  * To make this work if resume is triggered from initramfs, the
  * pagetables need to be switched to allow writes to kernel mem.
  */
-void notrace mtk_arch_restore_image(void *unused)
+void notrace mtk_arch_restore_image(void)
 {
 	phys_reset_t phys_reset;
 	struct pbe *pbe;

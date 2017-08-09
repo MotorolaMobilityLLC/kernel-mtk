@@ -23,7 +23,7 @@ extern bool system_is_hibernating;
 extern int mtk_hibernate_via_autosleep(suspend_state_t *autoslp_state);
 extern void notrace mtk_save_processor_state(void);
 extern void notrace mtk_restore_processor_state(void);
-extern void notrace mtk_arch_restore_image(void *);
+extern void notrace mtk_arch_restore_image(void);
 #endif
 
 #endif /* __MT_HIBERNATE_H__ */
