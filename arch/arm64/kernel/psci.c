@@ -494,7 +494,6 @@ static int cpu_power_on_buck(unsigned int cpu, bool hotplug)
 	unsigned int temp;
 	int ret = 0;
 
-	pr_info("cpu_power_on_buck (%d)\n", cpu);
 	reg_base = ioremap(MT6797_SPM_BASE_ADDR, 0x1000);
 	writel_relaxed((readl(reg_base + 0x218) | (1 << 0)), reg_base + 0x218);
 	iounmap(reg_base);
@@ -531,10 +530,8 @@ static int cpu_power_on_buck(unsigned int cpu, bool hotplug)
 
 static int cpu_power_off_buck(unsigned int cpu)
 {
-	static void __iomem *reg_base;
 	int ret = 0;
 
-	pr_info("cpu_power_off_buck (%d)\n", cpu);
 	ret = da9214_config_interface(0x0, 0x0, 0xF, 0);
 	ret = da9214_config_interface(0x5E, 0x0, 0x1, 0);
 
