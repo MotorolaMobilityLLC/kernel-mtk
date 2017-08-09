@@ -2258,7 +2258,11 @@ char *buf = _copy_from_user_for_proc(buffer, count);
 if (sscanf(buf, "%d %d %d %d %d", &function_id, &val[0], &val[1], &val[2], &val[3]) > 0) {
 	switch (function_id) {
 	case 8:
-		Cluster2_OCP_ON();
+			ocp_opt.ocp_cluster2_flag = 0;
+			BigOCPConfig(300, 10000);
+			BigOCPSetTarget(3, 127000);
+			BigOCPEnable(3, 1, 625, 0);
+			ocp_opt.ocp_cluster2_OCPAPBCFG24 = ocp_read(OCPAPBCFG24);
 		break;
 	case 3:
 		if (sscanf(buf, "%d %d %d", &function_id, &val[0], &val[1]) == 3)
@@ -2269,11 +2273,13 @@ if (sscanf(buf, "%d %d %d %d %d", &function_id, &val[0], &val[1], &val[2], &val[
 			BigOCPSetTarget(val[0], val[1]);
 		break;
 	case 1:
-		if (sscanf(buf, "%d %d %d %d %d", &function_id, &val[0], &val[1], &val[2], &val[3]) == 5)
+		if (sscanf(buf, "%d %d %d %d %d", &function_id, &val[0], &val[1], &val[2], &val[3]) == 5) {
 			BigOCPEnable(val[0], val[1], val[2], val[3]);
+			ocp_opt.ocp_cluster2_OCPAPBCFG24 = ocp_read(OCPAPBCFG24);
+		}
 		break;
 	case 0:
-		Cluster2_OCP_OFF();
+		BigOCPDisable();
 		ocp_status[2].IntEnDis = 0;
 		ocp_status[2].IRQ1 = 0;
 		ocp_status[2].IRQ0 = 0;
@@ -2319,13 +2325,14 @@ char *buf = _copy_from_user_for_proc(buffer, count);
 if (!buf)
 	return -EINVAL;
 
-if (!LITTLE_OCP_ON)
-	return -EINVAL;
-
 if (sscanf(buf, "%d %d %d", &function_id, &val[0], &val[1]) > 0) {
 	switch (function_id) {
 	case 8:
-		Cluster0_OCP_ON();
+		ocp_opt.ocp_cluster0_flag = 0;
+		LittleOCPConfig(0, 300, 10000);
+		LittleOCPSetTarget(0, 127000);
+		LittleOCPDVFSSet(0, 624, 900);
+		LittleOCPEnable(0, 1, 625);
 		break;
 	case 4:
 		if (sscanf(buf, "%d %d %d", &function_id, &val[0], &val[1]) == 3)
@@ -2344,7 +2351,7 @@ if (sscanf(buf, "%d %d %d", &function_id, &val[0], &val[1]) > 0) {
 			LittleOCPEnable(0, val[0], val[1]);
 		break;
 	case 0:
-		Cluster0_OCP_OFF();
+		LittleOCPDisable(0);
 		ocp_status[0].IntEnDis = 0;
 		ocp_status[0].IRQ1 = 0;
 		ocp_status[0].IRQ0 = 0;
@@ -2388,13 +2395,15 @@ char *buf = _copy_from_user_for_proc(buffer, count);
 if (!buf)
 	return -EINVAL;
 
-if (!LITTLE_OCP_ON)
-	return -EINVAL;
 
 if (sscanf(buf, "%d %d %d", &function_id, &val[0], &val[1]) > 0) {
 		switch (function_id) {
 		case 8:
-			Cluster1_OCP_ON();
+			ocp_opt.ocp_cluster1_flag = 0;
+			LittleOCPConfig(1, 300, 10000);
+			LittleOCPSetTarget(1, 127000);
+			LittleOCPDVFSSet(1, 338, 780);
+			LittleOCPEnable(1, 1, 625);
 			break;
 		case 4:
 			if (sscanf(buf, "%d %d %d", &function_id, &val[0], &val[1]) == 3)
@@ -2413,7 +2422,7 @@ if (sscanf(buf, "%d %d %d", &function_id, &val[0], &val[1]) > 0) {
 				LittleOCPEnable(1, val[0], val[1]);
 			break;
 		case 0:
-			Cluster1_OCP_OFF();
+			LittleOCPDisable(1);
 			ocp_status[1].IntEnDis = 0;
 			ocp_status[1].IRQ1 = 0;
 			ocp_status[1].IRQ0 = 0;
@@ -2531,8 +2540,6 @@ char *buf = _copy_from_user_for_proc(buffer, count);
 if (!buf)
 	return -EINVAL;
 
-if (!LITTLE_OCP_ON)
-	return -EINVAL;
 
 if (sscanf(buf, "%d %d %d", &function_id, &val[0], &val[1]) > 0) {
 	switch (function_id) {
@@ -2593,8 +2600,6 @@ char *buf = _copy_from_user_for_proc(buffer, count);
 if (!buf)
 	return -EINVAL;
 
-if (!LITTLE_OCP_ON)
-	return -EINVAL;
 
 if (sscanf(buf, "%d %d %d", &function_id, &val[0], &val[1]) > 0) {
 	switch (function_id) {
@@ -2823,9 +2828,6 @@ char *buf = _copy_from_user_for_proc(buffer, count);
 if (!buf)
 	return -EINVAL;
 
-if (!LITTLE_OCP_ON)
-	return -EINVAL;
-
 if (sscanf(buf, "%d %d %d %d", &EnDis, &Edge, &Count1, &Trig) > 0) {
 	switch (EnDis) {
 	case 0:
@@ -2976,8 +2978,6 @@ char *buf = _copy_from_user_for_proc(buffer, count);
 if (!buf)
 	return -EINVAL;
 
-if (!LITTLE_OCP_ON)
-	return -EINVAL;
 
 if (sscanf(buf, "%d %d %d %d", &EnDis, &Edge, &Count1, &Trig) > 0) {
 	switch (EnDis) {
@@ -4815,7 +4815,8 @@ else if  (OCP_DEBUG_FLAG == 4)
 	BIG_OCP_ON = 0;
 else if  (OCP_DEBUG_FLAG == 5)
 	LITTLE_OCP_ON = 1;
-
+else if  (OCP_DEBUG_FLAG == 6)
+	BIG_OCP_ON = 1;
 
 
 
