@@ -611,7 +611,6 @@ if TRACING
 config MTK_SCHED_TRACERS
        bool "MTK Sched Tracers"
        select CONTEXT_SWITCH_TRACER
-       default n
        help
          Mediatek enhancements to vanilla linux kernel. Include export task
 	 status and other information in sched_switch events, and track irq
@@ -622,7 +621,6 @@ config MTK_SCHED_TRACERS
 config MTK_FTRACE_DEFAULT_ENABLE
        bool "enable MTK events by default"
        depends on MTK_SCHED_TRACERS
-       default n
        help
          Enable ftrace at bootup e.g., enlarge ring_buffer size and enable
 	 configured events at bootup. With ftrace enabled and trace collected
@@ -633,7 +631,6 @@ config MTK_FTRACE_DEFAULT_ENABLE
 config MTK_KERNEL_MARKER
        bool "MTK Kernel Marker API"
        depends on KALLSYMS
-       default n
        help
          Export trace_marker in kernel space. Mark the user-defined points,
 	 such as systrace events in user space, to visualize via systrace html
