@@ -1155,7 +1155,7 @@ static const struct spi_device_id *spi_nor_match_id(const char *name)
 {
 	const struct spi_device_id *id = spi_nor_ids;
 
-	while (id->name[0]) {
+	while (id->name) {
 		if (!strcmp(name, id->name))
 			return id;
 		id++;
