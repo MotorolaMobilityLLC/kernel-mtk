@@ -306,6 +306,11 @@ static const struct platform_suspend_ops slp_suspend_ops = {
 };
 #endif
 
+__attribute__((weak)) int spm_set_dpidle_wakesrc(u32 wakesrc, bool enable, bool replace)
+{
+	return 0;
+}
+
 /*
  * wakesrc : WAKE_SRC_XXX
  * enable  : enable or disable @wakesrc

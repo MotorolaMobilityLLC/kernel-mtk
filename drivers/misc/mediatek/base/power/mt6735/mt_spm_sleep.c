@@ -37,9 +37,6 @@
 #include <linux/of_irq.h>
 #include <linux/of_address.h>
 #endif
-#if defined(CONFIG_ARCH_MT6753)
-#include <mach/mt_secure_api.h>
-#endif
 
 
 /**************************************
@@ -56,14 +53,10 @@
 #endif
 #define SPM_PCMTIMER_DIS        0
 
-#if defined(CONFIG_ARCH_MT6753)
-#include <mach/hotplug.h>
-#else
 #define K2_MCUCFG_BASE          (0xF0200000)	/* 0x1020_0000 */
 #define MP0_AXI_CONFIG          (K2_MCUCFG_BASE + 0x2C)
 #define MP1_AXI_CONFIG          (K2_MCUCFG_BASE + 0x22C)
 #define ACINACTM                (1<<4)
-#endif
 
 #define I2C_CHANNEL 2
 
@@ -1056,10 +1049,6 @@ static void spm_trigger_wfi_for_sleep(struct pwr_ctrl *pwrctrl)
 	sync_hw_gating_value();	/* for Vcore DVFS */
 #endif
 
-#if defined(CONFIG_ARCH_MT6753)
-	u32 v0, v1;
-#endif
-
 	if (is_cpu_pdn(pwrctrl->pcm_flags)) {
 		#if 0
 		spm_dormant_sta = mt_cpu_dormant(CPU_SHUTDOWN_MODE /* | DORMANT_SKIP_WFI */);
@@ -1076,29 +1065,9 @@ static void spm_trigger_wfi_for_sleep(struct pwr_ctrl *pwrctrl)
 		#endif
 	} else {
 		spm_dormant_sta = -1;
-#if defined(CONFIG_ARCH_MT6753)
-		/* spm_write(SPM_MP0_AXI_CONFIG, spm_read(SPM_MP0_AXI_CONFIG) | 0x10); */
-		/* spm_write(SPM_MP1_AXI_CONFIG, spm_read(SPM_MP1_AXI_CONFIG) | 0x10); */
-		/* backup MPx_AXI_CONFIG */
-		v0 = reg_read(SPM_MP0_AXI_CONFIG);
-		v1 = reg_read(SPM_MP1_AXI_CONFIG);
-
-		/* disable snoop function */
-		MCUSYS_SMC_WRITE(SPM_MP0_AXI_CONFIG, v0 | ACINACTM);
-		MCUSYS_SMC_WRITE(SPM_MP1_AXI_CONFIG, v1 | ACINACTM);
-#else
 		/* spm_write(MP0_AXI_CONFIG, spm_read(MP0_AXI_CONFIG) | ACINACTM); */
-#endif
 		wfi_with_sync();
-#if defined(CONFIG_ARCH_MT6753)
-		/* spm_write(SPM_MP0_AXI_CONFIG, spm_read(SPM_MP0_AXI_CONFIG) & ~0x10); */
-		/* spm_write(SPM_MP1_AXI_CONFIG, spm_read(SPM_MP1_AXI_CONFIG) & ~0x10); */
-		/* restore SPM_MP0_AXI_CONFIG */
-		MCUSYS_SMC_WRITE(SPM_MP0_AXI_CONFIG, v0);
-		MCUSYS_SMC_WRITE(SPM_MP1_AXI_CONFIG, v1);
-#else
 		/* spm_write(MP0_AXI_CONFIG, spm_read(MP0_AXI_CONFIG) & ~ACINACTM); */
-#endif
 	}
 
 	if (is_infra_pdn(pwrctrl->pcm_flags))
@@ -1359,8 +1328,10 @@ wake_reason_t spm_go_to_sleep(u32 spm_flags, u32 spm_data)
 #if defined(CONFIG_ARCH_MT6753)
 	__spm_enable_i2c4_clk();
 
+#if 0
 	if (vcorefs_get_curr_voltage() == VCORE_1_P_25_UV)
 		vcorefs_list_kicker_request();
+#endif
 #endif
 
 
@@ -1403,10 +1374,12 @@ wake_reason_t spm_go_to_sleep(u32 spm_flags, u32 spm_data)
 	spm_write(SPM_PCM_PASR_DPD_3, (temp_b << 16)|temp_a);
 #endif
 #elif defined(CONFIG_ARCH_MT6753)
+#if 0
 	spm_write(PMIC_WRAP_DVFS_ADR10, 0x454);
 	spm_write(PMIC_WRAP_DVFS_WDATA10, 0x3E62);
 	spm_write(PMIC_WRAP_DVFS_ADR11, 0x454);
 	spm_write(PMIC_WRAP_DVFS_WDATA11, 0x2262);
+#endif
 
 #else
 #endif
@@ -1437,8 +1410,10 @@ wake_reason_t spm_go_to_sleep(u32 spm_flags, u32 spm_data)
 
 
 #if defined(CONFIG_ARCH_MT6753)
+#if 0
 	if (vcorefs_get_curr_voltage() == VCORE_1_P_25_UV)
 		vcorefs_list_kicker_request();
+#endif
 
 	__spm_disable_i2c4_clk();
 #endif
