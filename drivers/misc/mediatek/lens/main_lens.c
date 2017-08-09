@@ -91,6 +91,9 @@ static stAF_DrvList g_stAF_DrvList[MAX_NUM_OF_LENS] = {
 	#ifdef CONFIG_MTK_LENS_WV511AAF_SUPPORT
 	{1, AFDRV_WV511AAF, WV511AAF_SetI2Cclient, WV511AAF_Ioctl, WV511AAF_Release},
 	#endif
+	#ifdef CONFIG_MTK_LENS_AK7371AF_SUPPORT
+	{1, AFDRV_AK7371AF, AK7371AF_SetI2Cclient, AK7371AF_Ioctl, AK7371AF_Release},
+	#endif
 };
 
 static stAF_DrvList *g_pstAF_CurDrv;
