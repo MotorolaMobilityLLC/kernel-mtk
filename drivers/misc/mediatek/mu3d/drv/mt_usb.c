@@ -54,7 +54,7 @@ u32 sw_uart_path = 0;
 /* ================================ */
 bool mt_usb_is_device(void)
 {
-#if !defined(CONFIG_MTK_FPGA) && defined(CONFIG_MTK_XHCI)
+#if !defined(CONFIG_MTK_FPGA) && defined(CONFIG_USB_XHCI_MTK)
 	bool tmp = mtk_is_host_mode();
 
 	os_printk(K_INFO, "%s mode\n", tmp ? "HOST" : "DEV");

@@ -20,6 +20,11 @@
 #include <linux/usb/xhci_pdriver.h>
 
 #include "xhci.h"
+
+#ifdef CONFIG_USB_XHCI_MTK
+#include <xhci-mtk.h>
+#endif
+
 #include "xhci-mvebu.h"
 #include "xhci-rcar.h"
 
@@ -33,6 +38,14 @@ static void xhci_plat_quirks(struct device *dev, struct xhci_hcd *xhci)
 	 * dev struct in order to setup MSI
 	 */
 	xhci->quirks |= XHCI_PLAT;
+#ifdef CONFIG_USB_XHCI_MTK
+	/*
+	 * MTK host controller gives a spurious successful event after a
+	 * short transfer. Ignore it.
+	*/
+	xhci->quirks |= XHCI_SPURIOUS_SUCCESS;
+	xhci->quirks |= XHCI_LPM_SUPPORT;
+#endif
 }
 
 /* called during probe() after chip reset completes */
@@ -61,6 +74,18 @@ static int xhci_plat_start(struct usb_hcd *hcd)
 
 	return xhci_run(hcd);
 }
+#if defined(CONFIG_MTK_LM_MODE)
+#define XHCI_DMA_BIT_MASK DMA_BIT_MASK(64)
+#else
+#define XHCI_DMA_BIT_MASK DMA_BIT_MASK(32)
+#endif
+
+static u64 xhci_dma_mask = XHCI_DMA_BIT_MASK;
+
+static void xhci_hcd_release(struct device *dev)
+{
+	;
+}
 
 static int xhci_plat_probe(struct platform_device *pdev)
 {
@@ -79,6 +104,19 @@ static int xhci_plat_probe(struct platform_device *pdev)
 
 	driver = &xhci_plat_hc_driver;
 
+#ifdef CONFIG_USB_XHCI_MTK  /* device tree support */
+	irq = platform_get_irq_byname(pdev, XHCI_DRIVER_NAME);
+	if (irq < 0)
+		return -ENODEV;
+
+	res = platform_get_resource_byname(pdev, IORESOURCE_MEM, XHCI_BASE_REGS_ADDR_RES_NAME);
+	if (!res)
+		return -ENODEV;
+
+	pdev->dev.coherent_dma_mask = XHCI_DMA_BIT_MASK;
+	pdev->dev.dma_mask = &xhci_dma_mask;
+	pdev->dev.release = xhci_hcd_release;
+#else
 	irq = platform_get_irq(pdev, 0);
 	if (irq < 0)
 		return -ENODEV;
@@ -86,7 +124,7 @@ static int xhci_plat_probe(struct platform_device *pdev)
 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
 	if (!res)
 		return -ENODEV;
-
+#endif
 	/* Initialize dma_mask and coherent_dma_mask to 32-bits */
 	ret = dma_set_coherent_mask(&pdev->dev, DMA_BIT_MASK(32));
 	if (ret)
@@ -239,6 +277,7 @@ static const struct of_device_id usb_xhci_of_match[] = {
 	{ .compatible = "marvell,armada-380-xhci"},
 	{ .compatible = "renesas,xhci-r8a7790"},
 	{ .compatible = "renesas,xhci-r8a7791"},
+	{ .compatible = "mediatek,usb3_xhci"},
 	{ },
 };
 MODULE_DEVICE_TABLE(of, usb_xhci_of_match);
@@ -255,6 +294,19 @@ static struct platform_driver usb_xhci_driver = {
 };
 MODULE_ALIAS("platform:xhci-hcd");
 
+#ifdef CONFIG_USB_XHCI_MTK
+int xhci_register_plat(void)
+{
+	xhci_init_driver(&xhci_plat_hc_driver, xhci_plat_setup);
+	xhci_plat_hc_driver.start = xhci_plat_start;
+	return platform_driver_register(&usb_xhci_driver);
+}
+
+void xhci_unregister_plat(void)
+{
+	platform_driver_unregister(&usb_xhci_driver);
+}
+#else
 static int __init xhci_plat_init(void)
 {
 	xhci_init_driver(&xhci_plat_hc_driver, xhci_plat_setup);
@@ -268,6 +320,7 @@ static void __exit xhci_plat_exit(void)
 	platform_driver_unregister(&usb_xhci_driver);
 }
 module_exit(xhci_plat_exit);
+#endif
 
 MODULE_DESCRIPTION("xHCI Platform Host Controller Driver");
 MODULE_LICENSE("GPL");

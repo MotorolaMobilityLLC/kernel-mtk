@@ -803,4 +803,14 @@ extern bool upmu_is_chr_det(void);
 extern u32 upmu_get_rgs_chrdet(void);
 #endif
 
+#ifdef CONFIG_USB_XHCI_MTK
+extern bool mtk_is_host_mode(void);
+#else
+static inline bool mtk_is_host_mode(void)
+{
+	return false;
+}
+#endif
+
+
 #endif	/* __MUSB_CORE_H__ */
