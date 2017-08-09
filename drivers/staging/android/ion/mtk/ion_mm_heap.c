@@ -11,7 +11,7 @@
 #include <linux/slab.h>
 #include <linux/ion_drv.h>
 #include <linux/mutex.h>
-#include <linux/mmprofile.h>
+#include <mmprofile.h>
 #include <linux/debugfs.h>
 #include <linux/kthread.h>
 #include "ion_profile.h"

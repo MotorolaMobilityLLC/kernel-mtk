@@ -1,6 +1,6 @@
 #if !defined(__ION_PROFILE_H__)
 #define __ION_PROFILE_H__
-#include <linux/mmprofile.h>
+#include <mmprofile.h>
 
 typedef enum {
 	PROFILE_ALLOC = 0,

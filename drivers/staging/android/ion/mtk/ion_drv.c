@@ -25,7 +25,7 @@
 #include <linux/dma-mapping.h>
 #include <linux/err.h>
 #include <linux/export.h>
-#include <linux/mmprofile.h>
+#include <mmprofile.h>
 #include <linux/vmalloc.h>
 #include "ion_profile.h"
 #include <linux/debugfs.h>

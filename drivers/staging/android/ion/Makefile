@@ -12,6 +12,8 @@ obj-$(CONFIG_ION_TEGRA) += tegra/
 
 obj-$(CONFIG_MTK_ION) += mtk/
 
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/mmp/
+
 ifeq ($(CONFIG_MT_ENG_BUILD), y)
 ccflags-y += -DION_RUNTIME_DEBUGGER=1
 else
