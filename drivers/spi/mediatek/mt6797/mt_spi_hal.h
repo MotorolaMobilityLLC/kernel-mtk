@@ -69,8 +69,8 @@
 #define SPI_CMD_RST_MASK					0x4
 #define SPI_CMD_PAUSE_EN_MASK				0x10
 #define SPI_CMD_DEASSERT_MASK				0x20
-#define SPI_CMD_SAMPLE_SEL_MASK           0x40
-#define SPI_CMD_CS_POL_MASK               0x80
+#define SPI_CMD_SAMPLE_SEL_MASK				0x40
+#define SPI_CMD_CS_POL_MASK					0x80
 #define SPI_CMD_CPHA_MASK					0x100
 #define SPI_CMD_CPOL_MASK					0x200
 #define SPI_CMD_RX_DMA_MASK					0x400
@@ -118,6 +118,6 @@ struct mt_spi_t {
 };
 extern void mt_spi_enable_clk(struct mt_spi_t *ms);
 extern void mt_spi_disable_clk(struct mt_spi_t *ms);
-extern void spi_clr_pinctrl(int spi_id);
+extern void spi_set_pinctrl(int spi_id);
 extern void spi_clr_pinctrl(int spi_id);
 #endif
