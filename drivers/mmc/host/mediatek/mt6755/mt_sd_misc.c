@@ -578,10 +578,10 @@ static int simple_sd_ioctl_get_partition_size(struct msdc_ioctl *msdc_ctl)
 
 	switch (msdc_ctl->partition) {
 	case EMMC_PART_BOOT1:
-		partitionsize = msdc_get_other_capacity(host, "boot1");
+		partitionsize = msdc_get_other_capacity(host, "boot0");
 		break;
 	case EMMC_PART_BOOT2:
-		partitionsize = msdc_get_other_capacity(host, "boot2");
+		partitionsize = msdc_get_other_capacity(host, "boot1");
 		break;
 	case EMMC_PART_RPMB:
 		partitionsize = msdc_get_other_capacity(host, "rpmb");
