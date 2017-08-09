@@ -701,7 +701,7 @@ static int mt_spi_next_xfer(struct mt_spi_t *ms, struct spi_message *msg)
 	struct mt_chip_conf *chip_config = (struct mt_chip_conf *)msg->state;
 	u8 mode, cnt, i;
 	int ret = 0;
-	char xfer_rec[16];
+	char xfer_rec[64];
 #ifdef SPI_AUTO_SELECT_MODE
 	u32 reg_val = 0;
 #endif
@@ -881,7 +881,7 @@ static void mt_spi_next_message(struct mt_spi_t *ms)
 {
 	struct spi_message *msg;
 	struct mt_chip_conf *chip_config;
-	char msg_addr[16];
+	char msg_addr[64];
 
 	msg = list_entry(ms->queue.next, struct spi_message, queue);
 	chip_config = (struct mt_chip_conf *)msg->state;
@@ -919,7 +919,7 @@ static int mt_spi_transfer(struct spi_device *spidev, struct spi_message *msg)
 	struct spi_transfer *xfer;
 	struct mt_chip_conf *chip_config;
 	unsigned long flags;
-	char msg_addr[16];
+	char msg_addr[64];
 
 	master = spidev->master;
 	ms = spi_master_get_devdata(master);
