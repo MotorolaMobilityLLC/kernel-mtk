@@ -17,7 +17,7 @@
 #include <asm/stacktrace.h>
 #include <asm/memory.h>
 #include <asm/traps.h>
-/* #include <mach/fiq_smp_call.h> */
+#include <asm/fiq_smp_call.h>
 #include <mach/wd_api.h>
 #ifndef __aarch64__
 #include <smp.h>
@@ -357,7 +357,7 @@ void aee_smp_send_stop(void)
 	cpu = get_HW_cpuid();
 	cpumask_clear_cpu(cpu, &mask);
 	/* mt_fiq_printf("\n fiq_smp_call_function\n"); */
-	/*fiq_smp_call_function(aee_fiq_ipi_cpu_stop, NULL, 0);*/
+	fiq_smp_call_function(aee_fiq_ipi_cpu_stop, NULL, 0);
 
 	/* Wait up to one second for other CPUs to stop */
 	timeout = USEC_PER_SEC;
