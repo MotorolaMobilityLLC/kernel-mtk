@@ -44,6 +44,10 @@
 #define PROC_WK "wdk"
 #define	PROC_MRDUMP_RST	"mrdump_rst"
 
+__weak void mtk_wdt_cpu_callback(struct task_struct *wk_tsk, unsigned long action, int hotcpu, int kicker_init)
+{
+}
+
 static int kwdt_thread(void *arg);
 static int start_kicker(void);
 
@@ -293,8 +297,6 @@ void kicker_cpu_bind(int cpu)
 	else {
 		/* kthread_bind(wk_tsk[cpu], cpu); */
 		WARN_ON_ONCE(set_cpus_allowed_ptr(wk_tsk[cpu], cpumask_of(cpu)) < 0);
-
-		pr_debug("[wdk]bind kicker thread[%d] to cpu[%d]\n", wk_tsk[cpu]->pid, cpu);
 		wake_up_process(wk_tsk[cpu]);
 	}
 }
@@ -677,6 +679,8 @@ static int __cpuinit wk_cpu_callback(struct notifier_block *nfb, unsigned long a
 	default:
 		return NOTIFY_DONE;
 	}
+
+	mtk_wdt_cpu_callback(wk_tsk[hotcpu], action, hotcpu, g_kicker_init);
 
 	return NOTIFY_OK;
 }
