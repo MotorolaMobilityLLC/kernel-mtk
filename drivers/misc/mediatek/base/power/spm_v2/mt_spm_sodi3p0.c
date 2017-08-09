@@ -4,18 +4,11 @@
 #include <linux/spinlock.h>
 #include <linux/delay.h>
 
-#ifdef CONFIG_OF
-#include <linux/of.h>
-#include <linux/of_irq.h>
-#include <linux/of_address.h>
-#endif
-
 #include <mach/irqs.h>
 #include <mach/mt_gpt.h>
 #ifdef CONFIG_MTK_WD_KICKER
 #include <mach/wd_api.h>
 #endif
-#include <mach/mt_secure_api.h>
 
 #include <mt-plat/mt_boot.h>
 #include <mt-plat/mt_cirq.h>
@@ -40,39 +33,6 @@
 #define SODI3_LOGOUT_TIMEOUT_CRITERIA	(20)
 #define SODI3_LOGOUT_INTERVAL_CRITERIA	(5000U) /* unit:ms */
 
-
-#if defined(CONFIG_OF)
-#define MCUCFG_NODE "mediatek,MCUCFG"
-static unsigned long mcucfg_base;
-static unsigned long mcucfg_phys_base;
-#undef MCUCFG_BASE
-#define MCUCFG_BASE (mcucfg_base)
-
-#define M4U_NODE "mediatek,M4U"
-static unsigned long m4u_base;
-static unsigned long m4u_phys_base;
-#undef M4U_BASE
-#define M4U_BASE (m4u_base)
-
-#else /* #if defined (CONFIG_OF) */
-#undef MCUCFG_BASE
-#define MCUCFG_BASE 0xF0200000 /* 0x1020_0000 */
-
-#undef M4U_BASE
-#define M4U_BASE 0xF0205000 /* 0x1020_5000 */
-#endif /* #if defined (CONFIG_OF) */
-
-/* MCUCFG registers */
-#define MP0_AXI_CONFIG		(MCUCFG_BASE + 0x2C)
-#define MP0_AXI_CONFIG_PHYS	(mcucfg_phys_base + 0x2C)
-#define MP1_AXI_CONFIG		(MCUCFG_BASE + 0x22C)
-#define MP1_AXI_CONFIG_PHYS	(mcucfg_phys_base + 0x22C)
-#define ACINACTM		(1 << 4)
-
-/* M4U registers */
-#define MMU_SMI_ASYNC_CFG	(M4U_BASE + 0xB80)
-#define MMU_SMI_ASYNC_CFG_PHYS	(m4u_phys_base + 0xB80)
-#define SMI_COMMON_ASYNC_DCM	(0x3 << 14)
 
 static struct pwr_ctrl sodi3_ctrl = {
 	.wake_src = WAKE_SRC_FOR_SODI3,
@@ -193,43 +153,12 @@ static int memPllCG_prev_status = 1;	/* 1:CG, 0:pwrdn */
 static unsigned int logout_sodi3_cnt;
 static unsigned int logout_selfrefresh_cnt;
 
-static void spm_trigger_wfi_for_sodi3(struct pwr_ctrl *pwrctrl)
-{
-	u32 v0, v1;
 
-	if (is_cpu_pdn(pwrctrl->pcm_flags)) {
-		mt_cpu_dormant(CPU_SODI_MODE);
-	} else {
-		/* backup MPx_AXI_CONFIG */
-		v0 = reg_read(MP0_AXI_CONFIG);
-		v1 = reg_read(MP1_AXI_CONFIG);
-
-		/* disable snoop function */
-		MCUSYS_SMC_WRITE(MP0_AXI_CONFIG, v0 | ACINACTM);
-		MCUSYS_SMC_WRITE(MP1_AXI_CONFIG, v1 | ACINACTM);
-
-		sodi3_debug("enter legacy WFI, MP0_AXI_CONFIG=0x%x, MP1_AXI_CONFIG=0x%x\n",
-			   reg_read(MP0_AXI_CONFIG), reg_read(MP1_AXI_CONFIG));
-
-		/* enter WFI */
-		wfi_with_sync();
-
-		/* restore MP0_AXI_CONFIG */
-		MCUSYS_SMC_WRITE(MP0_AXI_CONFIG, v0);
-		MCUSYS_SMC_WRITE(MP1_AXI_CONFIG, v1);
-
-		sodi3_debug("exit legacy WFI, MP0_AXI_CONFIG=0x%x, MP1_AXI_CONFIG=0x%x\n",
-			   reg_read(MP0_AXI_CONFIG), reg_read(MP1_AXI_CONFIG));
-	}
-}
-
-static u32 mmu_smi_async_cfg;
 static void spm_sodi3_pre_process(void)
 {
 	__spm_pmic_pg_force_on();
 
-	mmu_smi_async_cfg = reg_read(MMU_SMI_ASYNC_CFG);
-	reg_write(MMU_SMI_ASYNC_CFG, mmu_smi_async_cfg | SMI_COMMON_ASYNC_DCM);
+	spm_disable_mmu_smi_async();
 
 	spm_pmic_power_mode(PMIC_PWR_SODI3, 0, 0);
 
@@ -268,8 +197,7 @@ static void spm_sodi3_post_process(void)
 	/* set PMIC WRAP table for normal power control */
 	mt_spm_pmic_wrap_set_phase(PMIC_WRAP_PHASE_NORMAL);
 
-	reg_write(MMU_SMI_ASYNC_CFG, mmu_smi_async_cfg);
-
+	spm_enable_mmu_smi_async();
 	__spm_pmic_pg_force_off();
 }
 
@@ -507,7 +435,7 @@ wake_reason_t spm_go_to_sodi3(u32 spm_flags, u32 spm_data, u32 sodi3_flags)
 	gpt_get_cnt(SPM_SODI3_PROFILE_APXGPT, &soidle3_profile[1]);
 #endif
 
-	spm_trigger_wfi_for_sodi3(pwrctrl);
+	spm_trigger_wfi_for_sodi(pwrctrl);
 
 #ifdef SPM_SODI3_PROFILE_TIME
 	gpt_get_cnt(SPM_SODI3_PROFILE_APXGPT, &soidle3_profile[2]);
@@ -563,55 +491,7 @@ bool spm_get_sodi3_en(void)
 
 void spm_sodi3_init(void)
 {
-#if defined(CONFIG_OF)
-	struct device_node *node;
-	struct resource r;
-
-	/* mcucfg */
-	node = of_find_compatible_node(NULL, NULL, MCUCFG_NODE);
-	if (!node) {
-		sodi3_err("error: cannot find node " MCUCFG_NODE);
-		goto mcucfg_exit;
-	}
-	if (of_address_to_resource(node, 0, &r)) {
-		sodi3_err("error: cannot get phys addr" MCUCFG_NODE);
-		goto mcucfg_exit;
-	}
-	mcucfg_phys_base = r.start;
-
-	mcucfg_base = (unsigned long)of_iomap(node, 0);
-	if (!mcucfg_base) {
-		sodi3_err("error: cannot iomap " MCUCFG_NODE);
-		goto mcucfg_exit;
-	}
-
-	sodi3_debug("mcucfg_base = 0x%u\n", (unsigned int)mcucfg_base);
-
-mcucfg_exit:
-	/* m4u */
-	node = of_find_compatible_node(NULL, NULL, M4U_NODE);
-	if (!node) {
-		sodi3_err("error: cannot find node " M4U_NODE);
-		goto m4u_exit;
-	}
-	if (of_address_to_resource(node, 0, &r)) {
-		sodi3_err("error: cannot get phys addr" M4U_NODE);
-		goto m4u_exit;
-	}
-	m4u_phys_base = r.start;
-
-	m4u_base = (unsigned long)of_iomap(node, 0);
-	if (!m4u_base) {
-		sodi3_err("error: cannot iomap " M4U_NODE);
-		goto m4u_exit;
-	}
-
-	sodi3_debug("m4u_base = 0x%u\n", (unsigned int)m4u_base);
-
-m4u_exit:
 	sodi3_debug("spm_sodi3_init\n");
-#endif
-
 	spm_sodi3_aee_init();
 }
 

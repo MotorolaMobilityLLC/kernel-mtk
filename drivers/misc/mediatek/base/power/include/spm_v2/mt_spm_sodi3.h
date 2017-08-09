@@ -10,7 +10,6 @@
 #include <mt_spm_internal.h>
 
 #if defined(CONFIG_ARM_PSCI) || defined(CONFIG_MTK_PSCI)
-#include <mach/mt_secure_api.h>
 #define MCUSYS_SMC_WRITE(addr, val)  mcusys_smc_write_phy(addr##_PHYS, val)
 #else
 #define MCUSYS_SMC_WRITE(addr, val)  mcusys_smc_write(addr, val)
@@ -121,6 +120,10 @@ static inline void spm_sodi3_aee_init(void)
 
 #define spm_sodi3_reset_footprint() spm_sodi3_aee_init()
 
+
+extern void spm_trigger_wfi_for_sodi(struct pwr_ctrl *pwrctrl);
+extern void spm_enable_mmu_smi_async(void);
+extern void spm_disable_mmu_smi_async(void);
 
 #endif /* __MT_SPM_SODI3_H_ */
 

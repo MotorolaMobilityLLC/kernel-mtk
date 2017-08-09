@@ -193,7 +193,7 @@ static int memPllCG_prev_status = 1;	/* 1:CG, 0:pwrdn */
 static unsigned int logout_sodi_cnt;
 static unsigned int logout_selfrefresh_cnt;
 
-static void spm_trigger_wfi_for_sodi(struct pwr_ctrl *pwrctrl)
+void spm_trigger_wfi_for_sodi(struct pwr_ctrl *pwrctrl)
 {
 	u32 v0, v1;
 
@@ -224,13 +224,22 @@ static void spm_trigger_wfi_for_sodi(struct pwr_ctrl *pwrctrl)
 }
 
 static u32 mmu_smi_async_cfg;
+void spm_disable_mmu_smi_async(void)
+{
+	mmu_smi_async_cfg = reg_read(MMU_SMI_ASYNC_CFG);
+	reg_write(MMU_SMI_ASYNC_CFG, mmu_smi_async_cfg | SMI_COMMON_ASYNC_DCM);
+}
+
+void spm_enable_mmu_smi_async(void)
+{
+	reg_write(MMU_SMI_ASYNC_CFG, mmu_smi_async_cfg);
+}
+
+
 static void spm_sodi_pre_process(void)
 {
 	__spm_pmic_pg_force_on();
-
-	mmu_smi_async_cfg = reg_read(MMU_SMI_ASYNC_CFG);
-	reg_write(MMU_SMI_ASYNC_CFG, mmu_smi_async_cfg | SMI_COMMON_ASYNC_DCM);
-
+	spm_disable_mmu_smi_async();
 	spm_bypass_boost_gpio_set();
 
 #if defined(CONFIG_ARCH_MT6755)
@@ -266,8 +275,7 @@ static void spm_sodi_post_process(void)
 	/* set PMIC WRAP table for normal power control */
 	mt_spm_pmic_wrap_set_phase(PMIC_WRAP_PHASE_NORMAL);
 
-	reg_write(MMU_SMI_ASYNC_CFG, mmu_smi_async_cfg);
-
+	spm_enable_mmu_smi_async();
 	__spm_pmic_pg_force_off();
 }
 

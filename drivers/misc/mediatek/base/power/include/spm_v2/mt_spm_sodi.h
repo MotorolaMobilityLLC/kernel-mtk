@@ -10,7 +10,6 @@
 #include <mt_spm_internal.h>
 
 #if defined(CONFIG_ARM_PSCI) || defined(CONFIG_MTK_PSCI)
-#include <mach/mt_secure_api.h>
 #define MCUSYS_SMC_WRITE(addr, val)  mcusys_smc_write_phy(addr##_PHYS, val)
 #else
 #define MCUSYS_SMC_WRITE(addr, val)  mcusys_smc_write(addr, val)
