@@ -89,13 +89,13 @@ static void StopAudioModDaiCaptureHardware(struct snd_pcm_substream *substream)
 {
 	pr_debug("StopAudioModDaiCaptureHardware\n");
 
-	SetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_MOD_DAI, false);
-
 	/* legacy usagebk97
 	SetIrqEnable(Soc_Aud_IRQ_MCU_MODE_IRQ2_MCU_MODE, false);
 	*/
 
-	irq_remove_user(substream, Soc_Aud_IRQ_MCU_MODE_IRQ1_MCU_MODE);
+	irq_remove_user(substream, Soc_Aud_IRQ_MCU_MODE_IRQ2_MCU_MODE);
+
+	SetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_MOD_DAI, false);
 
 	/*
 	  * connect phone call DL data to dai and disconnect DL to speaker path
@@ -118,7 +118,7 @@ static void StopAudioModDaiCaptureHardware(struct snd_pcm_substream *substream)
 
 static void StartAudioModDaiCaptureHardware(struct snd_pcm_substream *substream)
 {
-	pr_err("StartAudioModDaiCaptureHardware\n");
+	pr_debug("StartAudioModDaiCaptureHardware\n");
 
 	if (substream->runtime->format == SNDRV_PCM_FORMAT_S32_LE ||
 		substream->runtime->format == SNDRV_PCM_FORMAT_U32_LE) {
@@ -138,13 +138,13 @@ static void StartAudioModDaiCaptureHardware(struct snd_pcm_substream *substream)
 	SetIrqEnable(Soc_Aud_IRQ_MCU_MODE_IRQ2_MCU_MODE, true);
 	*/
 
-	irq_add_user(substream,
-		     Soc_Aud_IRQ_MCU_MODE_IRQ2_MCU_MODE,
-		     substream->runtime->rate,
-		     substream->runtime->period_size);
-
 	SetSampleRate(Soc_Aud_Digital_Block_MEM_MOD_DAI, substream->runtime->rate);
 	SetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_MOD_DAI, true);
+
+	irq_add_user(substream,
+		Soc_Aud_IRQ_MCU_MODE_IRQ2_MCU_MODE,
+		substream->runtime->rate,
+		substream->runtime->period_size);
 
 	/*
 	  * connect phone call DL data to dai and disconnect DL to speaker path
