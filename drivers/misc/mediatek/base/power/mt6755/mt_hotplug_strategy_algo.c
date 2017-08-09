@@ -155,7 +155,7 @@ void hps_cal_cores(struct hps_func_data *hps_func)
 				break;
 		}
 		if (hps_func->cores > 0) {
-			for (cpu = hps_func->base_L; cpu < hps_func->limit_LL; cpu++) {
+			for (cpu = hps_func->base_L; cpu < hps_func->limit_L; cpu++) {
 				hps_func->target_L++;
 				hps_func->cores--;
 			}
@@ -170,7 +170,7 @@ void hps_cal_cores(struct hps_func_data *hps_func)
 				break;
 		}
 		if (hps_func->cores > 0) {
-			for (cpu = hps_func->base_L; cpu < hps_func->limit_LL; cpu++) {
+			for (cpu = hps_func->base_LL; cpu < hps_func->limit_LL; cpu++) {
 				hps_func->target_LL++;
 				hps_func->cores--;
 			}
