@@ -3371,8 +3371,6 @@ static long CAMERA_HW_Ioctl(
 
 
     if (_IOC_NONE == _IOC_DIR(a_u4Command)) {
-		PK_ERR("[CAMERA SENSOR] _IOC_NONE == _IOC_DIR\n");
-		goto CAMERA_HW_Ioctl_EXIT;
     }
     else {
     pBuff = kmalloc(_IOC_SIZE(a_u4Command), GFP_KERNEL);
