@@ -317,6 +317,7 @@ static int mjc_open(struct inode *pInode, struct file *pFile)
 
 	MJCDBG("mjc_open() pid = %d\n", current->pid);
 
+#ifdef CONFIG_MTK_CLKMGR
 	/* Gary todo: enable clock */
 	enable_clock(MT_CG_DISP0_SMI_COMMON, "mjc");
 	enable_clock(MT_CG_DISP0_LARB4_AXI_ASIF_MM, "mjc");
@@ -326,6 +327,7 @@ static int mjc_open(struct inode *pInode, struct file *pFile)
 	enable_clock(MT_CG_MJC_TOP_GROUP1, "mjc");
 	enable_clock(MT_CG_MJC_TOP_GROUP2, "mjc");
 	enable_clock(MT_CG_MJC_LARB4_AXI_ASIF, "mjc");
+#endif
 
 #ifdef CONFIG_FPGA_EARLY_PORTING
 	node = of_find_compatible_node(NULL, NULL, "mediatek,-mjc_config-v1");
@@ -373,7 +375,7 @@ static int mjc_release(struct inode *pInode, struct file *pFile)
 	m4u_unregister_fault_callback(M4U_PORT_MJC_MV_WR);
 	m4u_unregister_fault_callback(M4U_PORT_MJC_DMA_RD);
 	m4u_unregister_fault_callback(M4U_PORT_MJC_DMA_WR);
-
+#ifdef CONFIG_MTK_CLKMGR
 	/* Gary todo: disable clock */
 	disable_clock(MT_CG_MJC_SMI_LARB, "mjc");
 	disable_clock(MT_CG_MJC_TOP_GROUP0, "mjc");
@@ -383,7 +385,7 @@ static int mjc_release(struct inode *pInode, struct file *pFile)
 	disable_clock(MT_CG_DISP0_LARB4_AXI_ASIF_MJC, "mjc");
 	disable_clock(MT_CG_DISP0_LARB4_AXI_ASIF_MM, "mjc");
 	disable_clock(MT_CG_MJC_LARB4_AXI_ASIF, "mjc");
-
+#endif
 	return 0;
 }
 
