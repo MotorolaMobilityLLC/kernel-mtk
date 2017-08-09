@@ -46,11 +46,6 @@ unsigned long arch_scale_cpu_capacity(struct sched_domain *sd, int cpu)
 	return per_cpu(cpu_scale, cpu);
 }
 
-unsigned long arch_get_max_cpu_capacity(int cpu)
-{
-	return per_cpu(cpu_scale, cpu);
-}
-
 static void set_capacity_scale(unsigned int cpu, unsigned long capacity)
 {
 	per_cpu(cpu_scale, cpu) = capacity;
@@ -282,6 +277,59 @@ static void update_cpu_capacity(unsigned int cpu)
 		cpu, arch_scale_cpu_capacity(NULL, cpu));
 }
 
+static void __init parse_dt_cpu_capacity(void)
+{
+	const struct cpu_efficiency *cpu_eff;
+	struct device_node *cn = NULL;
+	int cpu = 0, i = 0;
+
+	__cpu_capacity = kcalloc(nr_cpu_ids, sizeof(*__cpu_capacity),
+				 GFP_NOWAIT);
+
+	min_cpu_perf = ULONG_MAX;
+	max_cpu_perf = 0;
+
+	min_cpu_perf = ULONG_MAX;
+	max_cpu_perf = 0;
+	for_each_possible_cpu(cpu) {
+		const u32 *rate;
+		int len;
+		unsigned long cpu_perf;
+
+		/* too early to use cpu->of_node */
+		cn = of_get_cpu_node(cpu, NULL);
+		if (!cn) {
+			pr_err("missing device node for CPU %d\n", cpu);
+			continue;
+		}
+
+		for (cpu_eff = table_efficiency; cpu_eff->compatible; cpu_eff++)
+			if (of_device_is_compatible(cn, cpu_eff->compatible))
+				break;
+
+		if (cpu_eff->compatible == NULL)
+			continue;
+
+		rate = of_get_property(cn, "clock-frequency", &len);
+		if (!rate || len != 4) {
+			pr_err("%s missing clock-frequency property\n",
+				cn->full_name);
+			continue;
+		}
+
+		cpu_perf = ((be32_to_cpup(rate)) >> 20) * cpu_eff->efficiency;
+		cpu_capacity(cpu) = cpu_perf;
+		max_cpu_perf = max(max_cpu_perf, cpu_perf);
+		min_cpu_perf = min(min_cpu_perf, cpu_perf);
+		i++;
+	}
+
+	if (i < num_possible_cpus()) {
+		max_cpu_perf = 0;
+		min_cpu_perf = 0;
+	}
+}
+
 /*
  * Scheduler load-tracking scale-invariance
  *
@@ -322,55 +370,19 @@ unsigned long arch_scale_freq_capacity(struct sched_domain *sd, int cpu)
 	return curr;
 }
 
-static void __init parse_dt_cpu_capacity(void)
+unsigned long arch_get_max_cpu_capacity(int cpu)
 {
-	const struct cpu_efficiency *cpu_eff;
-	struct device_node *cn = NULL;
-	int cpu = 0, i = 0;
+	return per_cpu(cpu_scale, cpu);
+}
 
-	__cpu_capacity = kcalloc(nr_cpu_ids, sizeof(*__cpu_capacity),
-				 GFP_NOWAIT);
+unsigned long arch_get_cur_cpu_capacity(int cpu)
+{
+	unsigned long scale_freq = atomic_long_read(&per_cpu(cpu_freq_capacity, cpu));
 
-	min_cpu_perf = ULONG_MAX;
-	max_cpu_perf = 0;
+	if (!scale_freq)
+		scale_freq = SCHED_CAPACITY_SCALE;
 
-	for_each_possible_cpu(cpu) {
-		const u32 *rate;
-		int len;
-		unsigned long cpu_perf;
-
-		/* too early to use cpu->of_node */
-		cn = of_get_cpu_node(cpu, NULL);
-		if (!cn) {
-			pr_err("missing device node for CPU %d\n", cpu);
-			continue;
-		}
-
-		for (cpu_eff = table_efficiency; cpu_eff->compatible; cpu_eff++)
-			if (of_device_is_compatible(cn, cpu_eff->compatible))
-				break;
-
-		if (cpu_eff->compatible == NULL)
-			continue;
-
-		rate = of_get_property(cn, "clock-frequency", &len);
-		if (!rate || len != 4) {
-			pr_err("%s missing clock-frequency property\n",
-				cn->full_name);
-			continue;
-		}
-
-		cpu_perf = ((be32_to_cpup(rate)) >> 20) * cpu_eff->efficiency;
-		cpu_capacity(cpu) = cpu_perf;
-		max_cpu_perf = max(max_cpu_perf, cpu_perf);
-		min_cpu_perf = min(min_cpu_perf, cpu_perf);
-		i++;
-	}
-
-	if (i < num_possible_cpus()) {
-		max_cpu_perf = 0;
-		min_cpu_perf = 0;
-	}
+	return (per_cpu(cpu_scale, cpu) * scale_freq / SCHED_CAPACITY_SCALE);
 }
 
 /*

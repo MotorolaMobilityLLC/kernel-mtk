@@ -16,12 +16,14 @@ struct cputopo_arm {
 
 extern struct cputopo_arm cpu_topology[NR_CPUS];
 extern unsigned long arch_get_max_cpu_capacity(int);
+extern unsigned long arch_get_cur_cpu_capacity(int);
 
 #define topology_physical_package_id(cpu)	(cpu_topology[cpu].socket_id)
 #define topology_core_id(cpu)		(cpu_topology[cpu].core_id)
 #define topology_core_cpumask(cpu)	(&cpu_topology[cpu].core_sibling)
 #define topology_thread_cpumask(cpu)	(&cpu_topology[cpu].thread_sibling)
-#define topology_max_cpu_capacity(cpu)	(arch_get_max_cpu_capacity(cpu))
+#define topology_max_cpu_capacity(cpu) (arch_get_max_cpu_capacity(cpu))
+#define topology_cur_cpu_capacity(cpu) (arch_get_cur_cpu_capacity(cpu))
 
 void init_cpu_topology(void);
 void store_cpu_topology(unsigned int cpuid);

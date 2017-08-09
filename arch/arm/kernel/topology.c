@@ -47,11 +47,6 @@ unsigned long arch_scale_cpu_capacity(struct sched_domain *sd, int cpu)
 	return per_cpu(cpu_scale, cpu);
 }
 
-unsigned long arch_get_max_cpu_capacity(int cpu)
-{
-	return per_cpu(cpu_scale, cpu);
-}
-
 static void set_capacity_scale(unsigned int cpu, unsigned long capacity)
 {
 	per_cpu(cpu_scale, cpu) = capacity;
@@ -343,6 +338,11 @@ static void update_cpu_capacity(unsigned int cpu)
 		cpu, arch_scale_cpu_capacity(NULL, cpu));
 }
 
+#else
+static inline void parse_dt_topology(void) {}
+static inline void update_cpu_capacity(unsigned int cpuid) {}
+#endif
+
 /*
  * Scheduler load-tracking scale-invariance
  *
@@ -383,12 +383,22 @@ unsigned long arch_scale_freq_capacity(struct sched_domain *sd, int cpu)
 	return curr;
 }
 
-#else
-static inline void parse_dt_topology(void) {}
-static inline void update_cpu_capacity(unsigned int cpuid) {}
-#endif
+unsigned long arch_get_max_cpu_capacity(int cpu)
+{
+	return per_cpu(cpu_scale, cpu);
+}
 
- /*
+unsigned long arch_get_cur_cpu_capacity(int cpu)
+{
+	unsigned long scale_freq = atomic_long_read(&per_cpu(cpu_freq_capacity, cpu));
+
+	if (!scale_freq)
+		scale_freq = SCHED_CAPACITY_SCALE;
+
+	return (per_cpu(cpu_scale, cpu) * scale_freq / SCHED_CAPACITY_SCALE);
+}
+
+/*
  * cpu topology table
  */
 struct cputopo_arm cpu_topology[NR_CPUS];
