@@ -631,6 +631,9 @@ static int ipanic_die(struct notifier_block *self, unsigned long cmd, void *ptr)
 	struct kmsg_dumper dumper;
 	struct die_args *dargs = (struct die_args *)ptr;
 
+	smp_send_stop();
+	LOGI("ipanic: stop cpu as early as possible\n");
+
 	aee_disable_api();
 	__show_regs(dargs->regs);
 	dump_stack();
@@ -651,8 +654,6 @@ static int ipanic_die(struct notifier_block *self, unsigned long cmd, void *ptr)
 
 	if (!has_mt_dump_support())
 		emergency_restart();
-
-	smp_send_stop();
 
 	ipanic_mrdump_mini(AEE_REBOOT_MODE_KERNEL_PANIC, "kernel Oops");
 	memset(&dumper, 0x0, sizeof(struct kmsg_dumper));
