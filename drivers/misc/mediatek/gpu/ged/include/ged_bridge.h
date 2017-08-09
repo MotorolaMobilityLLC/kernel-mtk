@@ -3,6 +3,7 @@
 
 #include "ged_base.h"
 #include "ged_log.h"
+#include "ged_type.h"
 
 typedef struct _GED_BRIDGE_PACKAGE
 {
@@ -26,16 +27,20 @@ typedef struct _GED_BRIDGE_PACKAGE
 #define GED_IOWR(INDEX)  _IOWR(GED_MAGIC, INDEX, GED_BRIDGE_PACKAGE)
 #define GED_GET_BRIDGE_ID(X)	_IOC_NR(X)
 
-/*****************************************************************************
+/******************************************************************************
  *  IOCTL Commands
- *****************************************************************************/
+ ******************************************************************************/
 typedef enum
 {
     GED_BRIDGE_COMMAND_LOG_BUF_GET,
     GED_BRIDGE_COMMAND_LOG_BUF_WRITE,
     GED_BRIDGE_COMMAND_LOG_BUF_RESET,
     GED_BRIDGE_COMMAND_BOOST_GPU_FREQ,
-    GED_BRIDGE_COMMAND_MONITOR_3D_FENCE
+    GED_BRIDGE_COMMAND_MONITOR_3D_FENCE,
+    GED_BRIDGE_COMMAND_QUERY_INFO,
+    GED_BRIDGE_COMMAND_NOTIFY_VSYNC,
+    GED_BRIDGE_COMMAND_DVFS_PROBE,
+    GED_BRIDGE_COMMAND_DVFS_UM_RETURN,
 } GED_BRIDGE_COMMAND_ID;
 
 #define GED_BRIDGE_IO_LOG_BUF_GET			GED_IOWR(GED_BRIDGE_COMMAND_LOG_BUF_GET)
@@ -43,6 +48,10 @@ typedef enum
 #define GED_BRIDGE_IO_LOG_BUF_RESET			GED_IOWR(GED_BRIDGE_COMMAND_LOG_BUF_RESET)
 #define GED_BRIDGE_IO_BOOST_GPU_FREQ		GED_IOWR(GED_BRIDGE_COMMAND_BOOST_GPU_FREQ)
 #define GED_BRIDGE_IO_MONITOR_3D_FENCE      GED_IOWR(GED_BRIDGE_COMMAND_MONITOR_3D_FENCE)
+#define GED_BRIDGE_IO_QUERY_INFO      GED_IOWR(GED_BRIDGE_COMMAND_QUERY_INFO)
+#define GED_BRIDGE_IO_NOTIFY_VSYNC       GED_IOWR(GED_BRIDGE_COMMAND_NOTIFY_VSYNC)
+#define GED_BRIDGE_IO_DVFS_PROBE       GED_IOWR(GED_BRIDGE_COMMAND_DVFS_PROBE)
+#define GED_BRIDGE_IO_DVFS_UM_RETURN GED_IOWR(GED_BRIDGE_COMMAND_DVFS_UM_RETURN)
 
 /*****************************************************************************
  *  LOG_BUF_GET
@@ -129,11 +138,77 @@ typedef struct GED_BRIDGE_IN_MONITOR3DFENCE_TAG
     int fd;
 } GED_BRIDGE_IN_MONITOR3DFENCE;
 
-/* Bridge out structure for RECORDSWAPBUFFERS */
+/* Bridge out structure for MONITOR3DFENCE */
 typedef struct GED_BRIDGE_OUT_MONITOR3DFENCE_TAG
 {
     GED_ERROR eError;
 } GED_BRIDGE_OUT_MONITOR3DFENCE;
+
+/*****************************************************************************
+ *  QUERY INFO
+ *****************************************************************************/
+
+/* Bridge in structure for QUERY INFO*/
+typedef struct GED_BRIDGE_IN_QUERY_INFO_TAG
+{
+    GED_INFO eType;
+} GED_BRIDGE_IN_QUERY_INFO;
+
+
+/* Bridge out structure for QUERY INFO*/
+typedef struct GED_BRIDGE_OUT_QUERY_INFO_TAG
+{
+    unsigned long   retrieve;
+} GED_BRIDGE_OUT_QUERY_INFO;
+/*****************************************************************************
+ *  NOTIFY VSYNC
+ *****************************************************************************/
+
+/* Bridge in structure for VSYNCEVENT */
+typedef struct GED_BRIDGE_IN_NOTIFY_VSYNC_TAG
+{
+    GED_VSYNC_TYPE eType;
+} GED_BRIDGE_IN_NOTIFY_VSYNC;
+
+/* Bridge out structure for VSYNCEVENT */
+typedef struct GED_BRIDGE_OUT_NOTIFY_VSYNC_TAG
+{
+    unsigned long   t;
+    GED_ERROR eError;
+} GED_BRIDGE_OUT_NOTIFY_VSYNC;
+
+/*****************************************************************************
+ *  DVFS PROBE
+ *****************************************************************************/
+
+/* Bridge in structure for SWVSYNCEVENT */
+typedef struct GED_BRIDGE_IN_DVFS_PROBE_TAG
+{
+    int          pid;
+} GED_BRIDGE_IN_DVFS_PROBE;
+
+/* Bridge out structure for RECORDSWAPBUFFERS */
+typedef struct GED_BRIDGE_OUT_DVFS_PROBE_TAG
+{
+    GED_ERROR eError;
+} GED_BRIDGE_OUT_DVFS_PROBE;
+
+/*****************************************************************************
+ *  DVFS UM RETURN
+ *****************************************************************************/
+
+/* Bridge in structure for DVFS_UM_RETURN */
+typedef struct GED_BRIDGE_IN_DVFS_UM_RETURN_TAG
+{
+   unsigned long gpu_tar_freq; 
+   bool bFallback;
+} GED_BRIDGE_IN_DVFS_UM_RETURN;
+
+/* Bridge out structure for DVFS_UM_RETURN */
+typedef struct GED_BRIDGE_OUT_DVFS_UM_RETURN_TAG
+{
+    GED_ERROR eError;
+} GED_BRIDGE_OUT_DVFS_UM_RETURN;
 
 /*****************************************************************************
  *  BRIDGE FUNCTIONS
@@ -158,5 +233,21 @@ int ged_bridge_boost_gpu_freq(
 int ged_bridge_monitor_3D_fence(
     GED_BRIDGE_IN_MONITOR3DFENCE *psMonitor3DFenceINT,
     GED_BRIDGE_OUT_MONITOR3DFENCE *psMonitor3DFenceOUT);
+
+int ged_bridge_query_info(
+    GED_BRIDGE_IN_QUERY_INFO *psQueryInfoINT,
+    GED_BRIDGE_OUT_QUERY_INFO *psQueryInfoOUT);
+
+int ged_bridge_notify_vsync(
+    GED_BRIDGE_IN_NOTIFY_VSYNC *psNotifyVsyncINT,
+    GED_BRIDGE_OUT_NOTIFY_VSYNC *psNotifyVsyncOUT);
+
+int ged_bridge_dvfs_probe(
+    GED_BRIDGE_IN_DVFS_PROBE *psDVFSProbeINT, 
+    GED_BRIDGE_OUT_DVFS_PROBE *psDVFSProbeOUT);
+
+int ged_bridge_dvfs_um_retrun(
+    GED_BRIDGE_IN_DVFS_UM_RETURN *psDVFS_UM_returnINT, 
+    GED_BRIDGE_OUT_DVFS_UM_RETURN *psDVFS_UM_returnOUT);
 
 #endif

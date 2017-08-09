@@ -64,6 +64,22 @@ void* ged_alloc(int i32Size)
     return pvBuf;
 }
 
+void* ged_alloc_atomic(int i32Size)
+{
+    void *pvBuf;
+
+    if (i32Size <= PAGE_SIZE)
+    {
+        pvBuf = kmalloc(i32Size, GFP_ATOMIC);
+    }
+    else
+    {
+        pvBuf = vmalloc(i32Size);
+    }
+
+    return pvBuf;
+}
+
 void ged_free(void* pvBuf, int i32Size)
 {
     if (pvBuf)
@@ -95,5 +111,16 @@ long ged_get_pid(void)
     return (long)current->tgid;
 #endif
 #endif
+}
+
+unsigned long long ged_get_time()
+{
+    unsigned long long temp;
+    
+    preempt_disable();
+    temp = cpu_clock(smp_processor_id());
+    preempt_enable();
+    
+    return temp;
 }
 

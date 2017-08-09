@@ -5,11 +5,11 @@
 #include "ged_type.h"
 
 #ifdef GED_DEBUG
-#define GED_LOGI(...)	printk(KERN_INFO "GED:" __VA_ARGS__)
+#define GED_LOGI(...)	pr_debug("GED:" __VA_ARGS__)
 #else
 #define GED_LOGI(...)
 #endif
-#define GED_LOGE(...)	printk(KERN_ERR "GED:" __VA_ARGS__)
+#define GED_LOGE(...)	pr_debug("GED:" __VA_ARGS__)
 #define GED_CONTAINER_OF(ptr, type, member) ((type *)( ((char *)ptr) - offsetof(type,member) ))
 
 unsigned long ged_copy_to_user(void __user *pvTo, const void *pvFrom, unsigned long ulBytes);
@@ -18,8 +18,12 @@ unsigned long ged_copy_from_user(void *pvTo, const void __user *pvFrom, unsigned
 
 void* ged_alloc(int i32Size);
 
+void* ged_alloc_atomic(int i32Size);
+
 void ged_free(void* pvBuf, int i32Size);
 
 long ged_get_pid(void);
+
+unsigned long long ged_get_time(void);
 
 #endif

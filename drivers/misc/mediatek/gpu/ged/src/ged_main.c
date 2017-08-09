@@ -20,14 +20,13 @@
 #include <linux/wait.h>
 #include <linux/sched.h>
 #include <linux/vmalloc.h>
-#include <linux/disp_assert_layer.h>
-#include <mach/system.h>
+//#include <mach/system.h>
 #include <linux/slab.h>
 #include <linux/spinlock.h>
 #include <linux/semaphore.h>
 #include <linux/workqueue.h>
 #include <linux/kthread.h>
-#include <linux/aee.h>
+#include <mt-plat/aee.h>
 
 #include "ged_debugFS.h"
 #include "ged_log.h"
@@ -35,18 +34,29 @@
 #include "ged_bridge.h"
 #include "ged_profile_dvfs.h"
 #include "ged_monitor_3D_fence.h"
+#include "ged_notify_sw_vsync.h"
+#include "ged_dvfs.h"
+
 
 #define GED_DRIVER_DEVICE_NAME "ged"
 
 #define GED_IOCTL_PARAM_BUF_SIZE 0x3000 //12KB
 
 #ifdef GED_DEBUG
+#define GED_LOG_BUF_COMMON_HWC "HWC"
+static GED_LOG_BUF_HANDLE ghLogBuf_HWC = 0;
 #define GED_LOG_BUF_COMMON_FENCE "FENCE"
 static GED_LOG_BUF_HANDLE ghLogBuf_FENCE = 0;
 #define GED_LOG_BUF_COMMON_GLES "GLES"
 static GED_LOG_BUF_HANDLE ghLogBuf_GLES = 0;
 GED_LOG_BUF_HANDLE ghLogBuf_GED = 0;
 #endif
+
+
+GED_LOG_BUF_HANDLE ghLogBuf_DVFS = 0;
+GED_LOG_BUF_HANDLE ghLogBuf_ged_srv = 0;
+
+
 
 static void* gvIOCTLParamBuf = NULL;
 
@@ -118,6 +128,18 @@ static long ged_dispatch(GED_BRIDGE_PACKAGE *psBridgePackageKM)
             break;
         case GED_BRIDGE_COMMAND_MONITOR_3D_FENCE:
             pFunc = (ged_bridge_func_type*)ged_bridge_monitor_3D_fence;
+            break;
+        case GED_BRIDGE_COMMAND_QUERY_INFO:
+            pFunc = (ged_bridge_func_type*)ged_bridge_query_info;
+            break;            
+        case GED_BRIDGE_COMMAND_NOTIFY_VSYNC:
+            pFunc = (ged_bridge_func_type*)ged_bridge_notify_vsync;
+            break;
+        case GED_BRIDGE_COMMAND_DVFS_PROBE:
+            pFunc = (ged_bridge_func_type*)ged_bridge_dvfs_probe;
+            break;
+        case GED_BRIDGE_COMMAND_DVFS_UM_RETURN:
+            pFunc = (ged_bridge_func_type*)ged_bridge_dvfs_um_retrun;
             break;
         default:
             GED_LOGE("Unknown Bridge ID: %u\n", GED_GET_BRIDGE_ID(psBridgePackageKM->ui32FunctionID));
@@ -244,6 +266,12 @@ static struct miscdevice ged_dev = {
 
 static void ged_exit(void)
 {
+#ifdef GED_DVFS_DEBUG_BUF
+    ged_log_buf_free(ghLogBuf_DVFS);
+    ged_log_buf_free(ghLogBuf_ged_srv);
+    ghLogBuf_DVFS = 0;
+    ghLogBuf_ged_srv = 0;
+#endif   
 #ifdef GED_DEBUG
     ged_log_buf_free(ghLogBuf_GED);
     ghLogBuf_GED = 0;
@@ -251,9 +279,17 @@ static void ged_exit(void)
     ghLogBuf_GLES = 0;
     ged_log_buf_free(ghLogBuf_FENCE);
     ghLogBuf_FENCE = 0;
+    ged_log_buf_free(ghLogBuf_HWC);
+    ghLogBuf_HWC = 0;
 #endif
 
+	ged_dvfs_system_exit();
+	
     ged_profile_dvfs_exit();
+
+    //ged_notify_vsync_system_exit();
+    
+    ged_notify_sw_vsync_system_exit();
 
     ged_hal_exit();
 
@@ -309,6 +345,13 @@ static int ged_init(void)
         goto ERROR;
     }
 
+    err = ged_notify_sw_vsync_system_init();
+    if (unlikely(err != GED_OK))
+    {
+        GED_LOGE("ged: failed to init notify sw vsync!\n");
+        goto ERROR;
+    }
+
     err = ged_profile_dvfs_init();
     if (unlikely(err != GED_OK))
     {
@@ -316,11 +359,30 @@ static int ged_init(void)
         goto ERROR;
     }
 
+
+    err = ged_dvfs_system_init();
+    if (unlikely(err != GED_OK))
+    {
+        GED_LOGE("ged: failed to init common dvfs!\n");
+        goto ERROR;
+    }
+    
+ 
 #ifdef GED_DEBUG
+    ghLogBuf_HWC = ged_log_buf_alloc(4096, 128 * 4096, GED_LOG_BUF_TYPE_RINGBUFFER, GED_LOG_BUF_COMMON_HWC, NULL);
     ghLogBuf_FENCE = ged_log_buf_alloc(256, 128 * 256, GED_LOG_BUF_TYPE_RINGBUFFER, GED_LOG_BUF_COMMON_FENCE, NULL);
     ghLogBuf_GLES = ged_log_buf_alloc(160, 128 * 160, GED_LOG_BUF_TYPE_RINGBUFFER, GED_LOG_BUF_COMMON_GLES, NULL);
     ghLogBuf_GED = ged_log_buf_alloc(32, 64 * 32, GED_LOG_BUF_TYPE_RINGBUFFER, "GED internal", NULL);
 #endif
+
+#ifdef GED_DVFS_DEBUG_BUF
+#ifdef GED_LOG_SIZE_LIMITED
+    ghLogBuf_DVFS =  ged_log_buf_alloc(20*60, 20*60*80, GED_LOG_BUF_TYPE_RINGBUFFER, "DVFS_Log", "ged_dvfs_debug_limited");
+#else
+    ghLogBuf_DVFS =  ged_log_buf_alloc(20*60*10, 20*60*10*80, GED_LOG_BUF_TYPE_RINGBUFFER, "DVFS_Log", "ged_dvfs_debug");
+#endif
+    ghLogBuf_ged_srv =  ged_log_buf_alloc(32, 32*80, GED_LOG_BUF_TYPE_RINGBUFFER, "ged_srv_Log", "ged_srv_debug");
+#endif    
 
     return 0;
 

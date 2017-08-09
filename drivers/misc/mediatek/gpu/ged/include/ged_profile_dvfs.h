@@ -29,4 +29,8 @@ void ged_profile_dvfs_record_clock_on(void);
 
 void ged_profile_dvfs_record_clock_off(void);
 
+void ged_profile_dvfs_record_SW_vsync(unsigned long ulTimeStamp, long lPhase, unsigned long ul3DFenceDoneTime);
+
+void ged_profile_dvfs_record_policy(long lFreq, unsigned int ui32GpuLoading, long lPreT1, unsigned long ulPreFreq, long t0, unsigned long ulCurFreq, long t1, long lPhase);
+
 #endif
