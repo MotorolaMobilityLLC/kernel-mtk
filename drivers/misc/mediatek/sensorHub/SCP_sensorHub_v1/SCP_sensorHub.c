@@ -537,7 +537,6 @@ int SCP_sensorHub_req_send(SCP_SENSOR_HUB_DATA_P data, uint *len, unsigned int w
 				(atomic_read(&(obj_data->wait_rsp)) == 0));
 	del_timer_sync(&obj_data->timer);
 	err = userData->rsp.errCode;
-	SCP_ERR("errcode = %d\n", err);
 	if (t6 - t1 > 3000000LL)
 		SCP_ERR("%llu, %llu, %llu, %llu, %llu, %llu\n", t1, t2, t3, t4, t5, t6);
 	mutex_unlock(&SCP_sensorHub_req_mutex);
@@ -680,7 +679,6 @@ static void SCP_sensorHub_IPI_handler(int id, void *data, unsigned int len)
 						userData->req.action, rsp->rsp.action);
 			memcpy(userData, rsp, len);
 			*userDataLen = len;
-			SCP_ERR("rsp sensor type = %d\n", userData->rsp.sensorType);
 		}
 		t4 = SCP_sensorHub_GetCurNS();
 		atomic_set(&(obj_data->wait_rsp), 0);

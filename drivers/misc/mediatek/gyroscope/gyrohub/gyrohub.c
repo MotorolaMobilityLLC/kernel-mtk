@@ -20,9 +20,9 @@
 #define GYROHUB_DEV_NAME        "gyro_hub"	/* name must different with gsensor gyrohub */
 
 #define GYROS_TAG					"[GYRO] "
-#define GYROS_FUN(f)				pr_err(GYROS_TAG"%s\n", __func__)
+#define GYROS_FUN(f)				pr_debug(GYROS_TAG"%s\n", __func__)
 #define GYROS_ERR(fmt, args...)		pr_err(GYROS_TAG"%s %d : "fmt, __func__, __LINE__, ##args)
-#define GYROS_LOG(fmt, args...)		pr_err(GYROS_TAG fmt, ##args)
+#define GYROS_LOG(fmt, args...)		pr_debug(GYROS_TAG fmt, ##args)
 
 
 static struct gyro_init_info gyrohub_init_info;
