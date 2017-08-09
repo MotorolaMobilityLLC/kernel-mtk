@@ -126,6 +126,7 @@ extern void exm_event_notify(struct exm_info *info);
 
 extern bool extmem_in_mspace(struct vm_area_struct *vma);
 extern unsigned long get_virt_from_mspace(unsigned long pa);
+extern void *extmem_malloc(size_t bytes);
 extern void *extmem_malloc_page_align(size_t bytes);
 extern size_t extmem_get_mem_size(unsigned long pgoff);
 extern void extmem_free(void *mem);
