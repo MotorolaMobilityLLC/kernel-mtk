@@ -190,8 +190,8 @@ static int sys_is_on(enum subsys_id id)
 	return (sta & mask) && (sta_s & mask);
 }
 
-#define	DISP0_CG_MASK	0x00000007		/* bit[2:0] */
-#define	DISP0_DCM_MASK	0xFFFFFFF8
+#define	DISP0_CG_MASK	0x00004007		/* bit[14], bit[2:0] */
+#define	DISP0_DCM_MASK	0xFFFFBFF8
 #define	DISP1_CG_MASK	0xFFFFFEDF
 #define	DISP1_DCM_MASK	0x00000120		/* bit[8], bit[5] */
 
@@ -207,10 +207,10 @@ static void get_all_clock_state(u32 clks[NR_GRPS])
 	clks[CG_INFRA2] = ~idle_readl(INFRA_SW_CG_2_STA); /* INFRA2 */
 
 	if (sys_is_on(SYS_DIS)) {
-		clks[CG_DISP0] = ~((idle_readl(DISP_CG_CON0) & DISP0_CG_MASK) &
-							(idle_readl(DISP_CG_DUMMY1) & DISP0_DCM_MASK));
-		clks[CG_DISP1] = ~((idle_readl(DISP_CG_CON1) & DISP1_CG_MASK) &
-							(idle_readl(DISP_CG_DUMMY2) & DISP1_DCM_MASK));
+		clks[CG_DISP0] = (~idle_readl(DISP_CG_CON0) & DISP0_CG_MASK) |
+							(idle_readl(DISP_CG_DUMMY1) & DISP0_DCM_MASK);
+		clks[CG_DISP1] = (~idle_readl(DISP_CG_CON1) & DISP1_CG_MASK) |
+							(idle_readl(DISP_CG_DUMMY2) & DISP1_DCM_MASK);
 	}
 
 	if (sys_is_on(SYS_ISP))
