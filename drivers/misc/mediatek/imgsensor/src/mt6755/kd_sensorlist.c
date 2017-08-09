@@ -29,6 +29,9 @@
 
 #include "kd_sensorlist.h"
 
+#ifdef CONFIG_MTK_SMI_EXT
+#include "mmdvfs_mgr.h"
+#endif
 #ifdef CONFIG_OF
 /* device tree */
 #include <linux/of.h>
@@ -60,6 +63,9 @@ struct clk *g_camclk_univpll2_d2;
 #define PDAF_DATA_SIZE 4096
 char mtk_ccm_name[camera_info_size] = {0};
 static unsigned int gDrvIndex = 0;
+#ifdef CONFIG_MTK_SMI_EXT
+static int current_mmsys_clk = MMSYS_CLK_MEDIUM;
+#endif
 
 static DEFINE_SPINLOCK(kdsensor_drv_lock);
 
@@ -171,7 +177,7 @@ extern int kdCISModulePowerOn(CAMERA_DUAL_CAMERA_SENSOR_ENUM SensorIdx, char *cu
 /*******************************************************************************
 *
 ********************************************************************************/
-
+#ifndef CONFIG_OF
 static struct platform_device camerahw_platform_device = {
     .name = "image_sensor",
     .id = 0,
@@ -179,6 +185,8 @@ static struct platform_device camerahw_platform_device = {
     .coherent_dma_mask = DMA_BIT_MASK(32),
     }
 };
+#endif
+struct platform_device* pCamerahw_platform_device;
 static struct i2c_client *g_pstI2Cclient;
 static struct i2c_client *g_pstI2Cclient2;
 
@@ -544,21 +552,22 @@ int iBurstWriteReg_multi(u8 *pData, u32 bytes, u16 i2cId, u16 transfer_length)
 
     if (gI2CBusNum == SUPPORT_I2C_BUS_NUM1) {
     if (bytes > MAX_CMD_LEN) {
-        PK_DBG("[iBurstWriteReg] exceed the max write length\n");
+        PK_ERR("[iBurstWriteReg] exceed the max write length\n");
         return 1;
     }
 
     phyAddr = 0;
 
-    buf = dma_alloc_coherent(&(camerahw_platform_device.dev) , bytes, (dma_addr_t *)&phyAddr, GFP_KERNEL);
+    buf = dma_alloc_coherent(&(pCamerahw_platform_device->dev) , bytes, (dma_addr_t *)&phyAddr, GFP_KERNEL);
 
     if (NULL == buf) {
-        PK_DBG("[iBurstWriteReg] Not enough memory\n");
+        PK_ERR("[iBurstWriteReg] Not enough memory\n");
         return -1;
     }
     memset(buf, 0, bytes);
     memcpy(buf, pData, bytes);
     /* PK_DBG("[iBurstWriteReg] bytes = %d, phy addr = 0x%x\n", bytes, phyAddr ); */
+	PK_DBG("transfer_length %d\n",bytes == transfer_length ? transfer_length : (((bytes/transfer_length)<<16)|transfer_length));
 
     old_addr = g_pstI2Cclient->addr;
     spin_lock(&kdsensor_drv_lock);
@@ -578,7 +587,7 @@ int iBurstWriteReg_multi(u8 *pData, u32 bytes, u16 i2cId, u16 transfer_length)
         }
     } while (((ret&0xffff) != transfer_length) && (retry > 0));
 
-    dma_free_coherent(&(camerahw_platform_device.dev), bytes, buf, phyAddr);
+    dma_free_coherent(&(pCamerahw_platform_device->dev), bytes, buf, phyAddr);
     spin_lock(&kdsensor_drv_lock);
     g_pstI2Cclient->addr = old_addr;
     spin_unlock(&kdsensor_drv_lock);
@@ -590,10 +599,10 @@ int iBurstWriteReg_multi(u8 *pData, u32 bytes, u16 i2cId, u16 transfer_length)
         return 1;
     }
     phyAddr = 0;
-    buf = dma_alloc_coherent(&(camerahw_platform_device.dev), bytes, (dma_addr_t *)&phyAddr, GFP_KERNEL);
+    buf = dma_alloc_coherent(&(pCamerahw_platform_device->dev), bytes, (dma_addr_t *)&phyAddr, GFP_KERNEL);
 
     if (NULL == buf) {
-        PK_DBG("[iBurstWriteReg] Not enough memory\n");
+        PK_ERR("[iBurstWriteReg] Not enough memory\n");
         return -1;
     }
     memset(buf, 0, bytes);
@@ -618,7 +627,7 @@ int iBurstWriteReg_multi(u8 *pData, u32 bytes, u16 i2cId, u16 transfer_length)
     } while (((ret&0xffff) != transfer_length) && (retry > 0));
 
 
-    dma_free_coherent(&(camerahw_platform_device.dev), bytes, buf, phyAddr);
+    dma_free_coherent(&(pCamerahw_platform_device->dev), bytes, buf, phyAddr);
     spin_lock(&kdsensor_drv_lock);
     g_pstI2Cclient2->addr = old_addr;
     spin_unlock(&kdsensor_drv_lock);
@@ -651,7 +660,7 @@ int iMultiWriteReg(u8 *pData, u16 lens, u16 i2cId)
     }
 
     if (ret != lens) {
-    PK_DBG("Error sent I2C ret = %d\n", ret);
+    PK_ERR("Error sent I2C ret = %d\n", ret);
     }
     return 0;
 }
@@ -688,7 +697,7 @@ int iWriteRegI2C(u8 *a_pSendData , u16 a_sizeSendData, u16 i2cId)
         i4RetValue = i2c_master_send(g_pstI2Cclient2, a_pSendData, a_sizeSendData);
     }
     if (i4RetValue != a_sizeSendData) {
-        PK_DBG("[CAMERA SENSOR] I2C send failed!!, Addr = 0x%x, Data = 0x%x\n", a_pSendData[0], a_pSendData[1]);
+        PK_ERR("[CAMERA SENSOR] I2C send failed!!, Addr = 0x%x, Data = 0x%x\n", a_pSendData[0], a_pSendData[1]);
     }
     else {
         break;
@@ -2040,13 +2049,13 @@ inline static int  adopt_CAMERA_HW_FeatureControl(void *pBuf)
         /*  */
         if (copy_from_user((void *)pFeaturePara , (void *) pFeatureCtrl->pFeaturePara, FeatureParaLen)) {
         kfree(pFeaturePara);
-        PK_DBG("[CAMERA_HW][pFeaturePara] ioctl copy from user failed\n");
+        PK_ERR("[CAMERA_HW][pFeaturePara] ioctl copy from user failed\n");
         return -EFAULT;
         }
         break;
      case SENSOR_FEATURE_SET_SENSOR_SYNC:    /* Update new sensor exposure time and gain to keep */
         if (copy_from_user((void *)pFeaturePara , (void *) pFeatureCtrl->pFeaturePara, FeatureParaLen)) {
-         PK_DBG("[CAMERA_HW][pFeaturePara] ioctl copy from user failed\n");
+         PK_ERR("[CAMERA_HW][pFeaturePara] ioctl copy from user failed\n");
          return -EFAULT;
     }
     /* keep the information to wait Vsync synchronize */
@@ -2111,7 +2120,7 @@ inline static int  adopt_CAMERA_HW_FeatureControl(void *pBuf)
 #endif
     case SENSOR_FEATURE_SET_ESHUTTER_GAIN:
         if (copy_from_user((void *)pFeaturePara , (void *) pFeatureCtrl->pFeaturePara, FeatureParaLen)) {
-        PK_DBG("[CAMERA_HW][pFeaturePara] ioctl copy from user failed\n");
+        PK_ERR("[CAMERA_HW][pFeaturePara] ioctl copy from user failed\n");
         return -EFAULT;
         }
         /* keep the information to wait Vsync synchronize */
@@ -2155,7 +2164,7 @@ inline static int  adopt_CAMERA_HW_FeatureControl(void *pBuf)
 
 			memset(pValue, 0x0, sizeof(MUINT32));
 			*(pFeaturePara_64 + 1) = (uintptr_t)pValue;
-			PK_DBG("1[CAMERA_HW] %p %p %p\n",
+			PK_ERR("[CAMERA_HW] %p %p %p\n",
 			       (void *)(uintptr_t) (*(pFeaturePara_64 + 1)),
 			       (void *)pFeaturePara_64, (void *)(pValue));
 			if (g_pSensorFunc) {
@@ -2167,7 +2176,7 @@ inline static int  adopt_CAMERA_HW_FeatureControl(void *pBuf)
 									(unsigned int *)
 									&FeatureParaLen);
 			} else {
-				PK_DBG("[CAMERA_HW]ERROR:NULL g_pSensorFunc\n");
+				PK_ERR("[CAMERA_HW]ERROR:NULL g_pSensorFunc\n");
 			}
 			*(pFeaturePara_64 + 1) = *pValue;
 			kfree(pValue);
@@ -3330,6 +3339,7 @@ static long CAMERA_HW_Ioctl_Compat(struct file *filp, unsigned int cmd, unsigned
     case KDIMGSENSORIOC_X_SET_MCLK_PLL:
     case KDIMGSENSORIOC_X_SET_CURRENT_SENSOR:
     case KDIMGSENSORIOC_X_SET_GPIO:
+    case KDIMGSENSORIOC_X_GET_ISP_CLK:
     return filp->f_op->unlocked_ioctl(filp, cmd, arg);
 
     default:
@@ -3443,6 +3453,15 @@ static long CAMERA_HW_Ioctl(
         i4RetValue = kdSetSensorGpio(pBuff);
         break;
 
+    case KDIMGSENSORIOC_X_GET_ISP_CLK:
+#ifdef CONFIG_MTK_SMI_EXT
+	PK_DBG("KDIMGSENSORIOC_X_GET_ISP_CLK current_mmsys_clk=%d\n", current_mmsys_clk);
+	if(current_mmsys_clk == MMSYS_CLK_HIGH)
+		*(unsigned int*)pBuff = 364;
+	else
+#endif
+		*(unsigned int*)pBuff = 286;
+	break;
     default:
         PK_DBG("No such command %d\n",a_u4Command);
         i4RetValue = -EPERM;
@@ -3464,7 +3483,14 @@ CAMERA_HW_Ioctl_EXIT:
     mutex_unlock(&kdCam_Mutex);
     return i4RetValue;
 }
-
+#ifdef CONFIG_MTK_SMI_EXT
+int mmsys_clk_change_cb(int ori_clk_mode, int new_clk_mode)
+{
+	PK_DBG("mmsys_clk_change_cb ori: %d, new: %d, current_mmsys_clk %d\n", ori_clk_mode, new_clk_mode, current_mmsys_clk);
+	current_mmsys_clk = new_clk_mode;
+	return 1;
+}
+#endif
 /*******************************************************************************
 *
 ********************************************************************************/
@@ -3494,7 +3520,9 @@ static int CAMERA_HW_Open(struct inode *a_pstInode, struct file *a_pstFile)
 
     /* kdCISModulePowerOn(DUAL_CAMERA_MAIN_SENSOR,"",false,CAMERA_HW_DRVNAME1); */
     /* kdCISModulePowerOn(DUAL_CAMERA_SUB_SENSOR,"",false,CAMERA_HW_DRVNAME1); */
-
+#ifdef CONFIG_MTK_SMI_EXT
+	mmdvfs_register_mmclk_switch_cb(mmsys_clk_change_cb, MMDVFS_CLIENT_ID_ISP);
+#endif
     }
 
     /*  */
@@ -3513,8 +3541,10 @@ static int CAMERA_HW_Open(struct inode *a_pstInode, struct file *a_pstFile)
 static int CAMERA_HW_Release(struct inode *a_pstInode, struct file *a_pstFile)
 {
     atomic_dec(&g_CamDrvOpenCnt);
-
-    return 0;
+#ifdef CONFIG_MTK_SMI_EXT
+	current_mmsys_clk = MMSYS_CLK_MEDIUM;
+#endif
+return 0;
 }
 
 static const struct file_operations g_stCAMERA_HW_fops =
@@ -3885,6 +3915,7 @@ static int CAMERA_HW_probe(struct platform_device *pdev)
 	mtkcam_gpio_init(pdev);
 #endif
 
+	pCamerahw_platform_device = pdev;
     return i2c_add_driver(&CAMERA_HW_i2c_driver);
 }
 

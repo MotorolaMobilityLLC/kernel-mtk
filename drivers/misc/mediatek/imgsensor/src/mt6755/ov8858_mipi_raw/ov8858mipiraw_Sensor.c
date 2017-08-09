@@ -33,7 +33,7 @@
 #include <linux/fs.h>
 #include <asm/atomic.h>
 #include <linux/types.h>
-
+#include <mt-plat/mt_boot.h>
 #include "kd_camera_typedef.h"
 #include "kd_imgsensor.h"
 #include "kd_imgsensor_define.h"
@@ -56,6 +56,7 @@ typedef enum {
 }OV8858_VERSION;
 
 OV8858_VERSION ov8858version = OV8858R2A;
+enum boot_mode_t bm;
 
 static DEFINE_SPINLOCK(imgsensor_drv_lock);
 
@@ -170,7 +171,7 @@ static imgsensor_info_struct imgsensor_info = {
 	.sensor_interface_type = SENSOR_INTERFACE_TYPE_MIPI,//sensor_interface_type
     .mipi_sensor_type = MIPI_OPHY_NCSI2, //0,MIPI_OPHY_NCSI2;  1,MIPI_OPHY_CSI2
     .mipi_settle_delay_mode = MIPI_SETTLEDELAY_AUTO,//0,MIPI_SETTLEDELAY_AUTO; 1,MIPI_SETTLEDELAY_MANNUAL
-	.sensor_output_dataformat = SENSOR_OUTPUT_FORMAT_RAW_B,//sensor output first pixel color
+	.sensor_output_dataformat = SENSOR_OUTPUT_FORMAT_RAW8_B,//sensor output first pixel color
 	.mclk = 24,//mclk value, suggest 24 or 26 for 24Mhz or 26Mhz
 	.mipi_lane_num = SENSOR_MIPI_2_LANE,//mipi lane num
 	.i2c_addr_table = {0x42, 0x6c, 0xff},//record sensor support all write id addr, only supprt 4must end with 0xff
@@ -203,7 +204,7 @@ static SENSOR_WINSIZE_INFO_STRUCT imgsensor_winsize_info[5] =
 
 
 SENSOR_DPCM_TYPE_ENUM imgsensor_dpcm_info_ov8858[10] =
-{COMP8_NONE,COMP8_DI_2A,COMP8_NONE,COMP8_NONE,COMP8_NONE,COMP8_NONE,COMP8_NONE,COMP8_NONE,COMP8_NONE,COMP8_NONE};
+{COMP8_NONE,COMP8_NONE,COMP8_NONE,COMP8_NONE,COMP8_NONE,COMP8_NONE,COMP8_NONE,COMP8_NONE,COMP8_NONE,COMP8_NONE};
 
 static kal_uint16 read_cmos_sensor(kal_uint32 addr)
 {
@@ -588,7 +589,11 @@ static void sensor_init(void)
 	write_cmos_sensor(0x3018, 0x32); //32 : 2LANE , 72 : 4lane
 	write_cmos_sensor(0x3020, 0x93);
 	write_cmos_sensor(0x3022, 0x01);
-	write_cmos_sensor(0x3031, 0x0a);
+if ( bm == FACTORY_BOOT || bm == ATE_FACTORY_BOOT ){
+		write_cmos_sensor(0x3031, 0x0a);
+}else {
+	write_cmos_sensor(0x3031, 0x08);
+}
 	write_cmos_sensor(0x3034, 0x00);
 	write_cmos_sensor(0x3106, 0x01);
 	write_cmos_sensor(0x3305, 0xf1);
@@ -1093,7 +1098,10 @@ static void capture_setting(kal_uint16 currefps)
     write_cmos_sensor(0x5901, 0x00);
     write_cmos_sensor(0x382d, 0xff);
     write_cmos_sensor(0x3031, 0x08);
-	write_cmos_sensor(0x4316, 0x01);//DPCM
+	if ( bm == FACTORY_BOOT || bm == ATE_FACTORY_BOOT )
+		write_cmos_sensor(0x4316, 0x01);//DPCM
+	else
+		write_cmos_sensor(0x4316, 0x00);//DPCM
     write_cmos_sensor(0x0100, 0x01);
 	mdelay(10);
 }
@@ -1204,8 +1212,10 @@ static void capture_setting(kal_uint16 currefps)
   write_cmos_sensor(0x382d, 0xff);
 
   write_cmos_sensor(0x3031, 0x08);
-  write_cmos_sensor(0x4316, 0x01);//DPCM
-
+ 	if ( bm == FACTORY_BOOT || bm == ATE_FACTORY_BOOT )
+		write_cmos_sensor(0x4316, 0x01);//DPCM
+	else
+		write_cmos_sensor(0x4316, 0x00);//DPCM
 	mdelay(5);  //PLEASE test and remove it; Pengtao
   write_cmos_sensor(0x0100, 0x01);
 }
@@ -1314,7 +1324,10 @@ static void capture_setting(kal_uint16 currefps)
   write_cmos_sensor(0x382d, 0xff);
 
   write_cmos_sensor(0x3031, 0x08);
-  write_cmos_sensor(0x4316, 0x01);//DPCM
+  if ( bm == FACTORY_BOOT || bm == ATE_FACTORY_BOOT )
+	  write_cmos_sensor(0x4316, 0x01);//DPCM
+  else
+	  write_cmos_sensor(0x4316, 0x00);//DPCM
 
   write_cmos_sensor(0x0100, 0x01);
 
@@ -1474,6 +1487,12 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 				if((read_cmos_sensor(0x302A)) == 0XB2){
  				ov8858version = OV8858R2A;
 				SENSORDB("i2c write id: 0x%x, sensor id: 0x%x, ov8858version = %d(0=r2a,1=r1a)\n", imgsensor.i2c_write_id,*sensor_id,ov8858version);
+				bm = get_boot_mode();
+				LOG_INF("bm %d\n",bm);
+				if ( bm == FACTORY_BOOT || bm == ATE_FACTORY_BOOT ){
+					imgsensor_info.sensor_output_dataformat = SENSOR_OUTPUT_FORMAT_RAW_B;
+					imgsensor_dpcm_info_ov8858[1] = COMP8_DI_2A;
+				}
 				return ERROR_NONE;
 				}
 				else if((read_cmos_sensor(0x302A)) == 0XB1){
@@ -1855,6 +1874,12 @@ static kal_uint32 capture(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 		imgsensor.frame_length = imgsensor_info.cap1.framelength;
 		imgsensor.min_frame_length = imgsensor_info.cap1.framelength;
 		imgsensor.autoflicker_en = KAL_FALSE;
+	} else if (imgsensor.current_fps == imgsensor_info.cap2.max_framerate) {//PIP capture: 24fps for less than 13M, 20fps for 16M,15fps for 20M
+        imgsensor.pclk = imgsensor_info.cap2.pclk;
+        imgsensor.line_length = imgsensor_info.cap2.linelength;
+        imgsensor.frame_length = imgsensor_info.cap2.framelength;
+        imgsensor.min_frame_length = imgsensor_info.cap2.framelength;
+        imgsensor.autoflicker_en = KAL_FALSE;
 	} else {
 		if (imgsensor.current_fps != imgsensor_info.cap.max_framerate)
 			LOG_INF("Warning: current_fps %d fps is not support, so use cap1's setting: %d fps!\n",imgsensor_info.cap1.max_framerate/10,imgsensor_info.cap.max_framerate);
