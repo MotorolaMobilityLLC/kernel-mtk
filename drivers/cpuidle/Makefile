@@ -8,6 +8,7 @@ obj-$(CONFIG_DT_IDLE_STATES)		  += dt_idle_states.o
 
 obj-$(CONFIG_ARCH_MT6735)			+= cpuidle-mt6735.o
 obj-$(CONFIG_ARCH_MT6735M)                      += cpuidle-mt6735.o
+obj-$(CONFIG_ARCH_MT6753)			+=  cpuidle-mt6735.o
 
 ##################################################################################
 # ARM SoC drivers
