@@ -950,8 +950,10 @@ void primary_display_sodi_rule_init(void)
 	if (primary_display_is_video_mode()) {
 		spm_sodi_set_vdo_mode(1);
 		spm_sodi_mempll_pwr_mode(1);
+		spm_enable_sodi3(0);
 		spm_enable_sodi(1);
 	} else {
+		spm_enable_sodi3(1);
 		spm_enable_sodi(1);
 	}
 #endif
