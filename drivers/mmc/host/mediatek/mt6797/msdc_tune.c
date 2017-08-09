@@ -164,7 +164,10 @@ int emmc_reinit_tuning(struct mmc_host *mmc)
 	u32 mode = 0;
 	unsigned int caps_hw_reset = 0;
 
-	BUG_ON(!mmc->card);
+	if (mmc->card == NULL) {
+		pr_err("msdc%d emmc is under init, don't reset\n", host->id);
+		return -EINVAL;
+	}
 	if (mmc->card->mmc_avail_type & EXT_CSD_CARD_TYPE_HS400) {
 		mmc->card->mmc_avail_type &= ~EXT_CSD_CARD_TYPE_HS400;
 		pr_err("msdc%d: witch to HS200 mode,reinit card\n", host->id);
@@ -175,7 +178,7 @@ int emmc_reinit_tuning(struct mmc_host *mmc)
 			mmc->caps |= MMC_CAP_HW_RESET;
 		}
 		mmc->ios.timing = MMC_TIMING_LEGACY;
-		mmc->ios.clock = 26000;
+		mmc->ios.clock = 260000;
 		msdc_ops_set_ios(mmc, &mmc->ios);
 		if (mmc_hw_reset(mmc))
 			pr_err("msdc%d switch HS200 failed\n", host->id);
@@ -192,7 +195,7 @@ int emmc_reinit_tuning(struct mmc_host *mmc)
 		div += 1;
 		if (div > EMMC_MAX_FREQ_DIV) {
 			pr_err("msdc%d: max lower freq dev: %d\n", host->id, div);
-			return 1;
+			return -EINVAL;
 		}
 		msdc_clk_stable(host, mode, div, 1);
 		host->sclk = (div == 0) ? host->hclk / 4 : host->hclk / (4 * div);
@@ -211,7 +214,10 @@ int sdcard_reset_tuning(struct mmc_host *mmc)
 	struct msdc_host *host = mmc_priv(mmc);
 	int ret = 0;
 
-	BUG_ON(!mmc->card);
+	if (mmc->card == NULL) {
+		pr_err("msdc%d sdcard is under init, don't reset\n", host->id);
+		return -EINVAL;
+	}
 
 	if (mmc->card->sw_caps.sd3_bus_mode & SD_MODE_UHS_SDR104) {
 		mmc->card->sw_caps.sd3_bus_mode &= ~SD_MODE_UHS_SDR104;
@@ -238,7 +244,7 @@ power_reinit:
 	pr_err("msdc%d reinit card\n",
 		host->id);
 	mmc->ios.timing = MMC_TIMING_LEGACY;
-	mmc->ios.clock = 26000;
+	mmc->ios.clock = 260000;
 	msdc_ops_set_ios(mmc, &mmc->ios);
 	/* power reset sdcard */
 	ret = mmc_hw_reset(mmc);
