@@ -172,13 +172,13 @@ void dump_pmic_info(void)
 
 void spm_fw_version(void)
 {
-	u32 sodi_idx;
+	u32 vcorefs_idx;
 	struct pcm_desc *pcmdesc;
 
-	sodi_idx = spm_get_sodi_pcm_index();
-	pcmdesc = &(dyna_load_pcm[sodi_idx].desc);
+	vcorefs_idx = spm_get_pcm_vcorefs_index();
+	pcmdesc = &(dyna_load_pcm[vcorefs_idx].desc);
 
-	spm_vcorefs_info("SODI_VER        : %s\n", pcmdesc->version);
+	spm_vcorefs_info("VCOREFS_VER     : %s\n", pcmdesc->version);
 }
 
 char *spm_vcorefs_dump_dvfs_regs(char *p)
@@ -389,10 +389,10 @@ static void __go_to_vcore_dvfs(u32 spm_flags, u8 spm_data)
 	struct pcm_desc *pcmdesc;
 	struct pwr_ctrl *pwrctrl;
 #if DYNAMIC_LOAD
-	u32 sodi_idx = spm_get_sodi_pcm_index();
+	u32 vcorefs_idx = spm_get_pcm_vcorefs_index();
 
-	if (dyna_load_pcm[sodi_idx].ready) {
-		pcmdesc = &(dyna_load_pcm[sodi_idx].desc);
+	if (dyna_load_pcm[vcorefs_idx].ready) {
+		pcmdesc = &(dyna_load_pcm[vcorefs_idx].desc);
 		pwrctrl = __spm_vcore_dvfs.pwrctrl;
 	} else {
 		spm_vcorefs_err("[%s] dyna load F/W fail\n", __func__);
@@ -407,8 +407,7 @@ static void __go_to_vcore_dvfs(u32 spm_flags, u8 spm_data)
 
 	set_pwrctrl_pcm_flags(pwrctrl, spm_flags);
 
-	if (!vcorefs_sodi_rekick_lock())
-		__spm_reset_and_init_pcm(pcmdesc);
+	__spm_reset_and_init_pcm(pcmdesc);
 
 	__spm_kick_im_to_fetch(pcmdesc);
 
@@ -423,7 +422,7 @@ static void __go_to_vcore_dvfs(u32 spm_flags, u8 spm_data)
 	__spm_kick_pcm_to_run(pwrctrl);
 
 #if SPM_AEE_RR_REC
-		aee_rr_rec_spm_common_scenario_val(SPM_COMMON_SCENARIO_SODI);
+	aee_rr_rec_spm_common_scenario_val(SPM_COMMON_SCENARIO_SODI);
 #endif
 }
 

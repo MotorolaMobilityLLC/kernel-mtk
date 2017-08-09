@@ -303,16 +303,13 @@ enum dyna_load_pcm_index {
 	DYNA_LOAD_PCM_SUSPEND = 0,
 	DYNA_LOAD_PCM_SUSPEND_BY_MP1,
 #if defined(CONFIG_ARCH_MT6797)
-	DYNA_LOAD_PCM_SODI_LPM,
-	DYNA_LOAD_PCM_SODI_BY_MP1_LPM,
-	DYNA_LOAD_PCM_SODI_HPM,
-	DYNA_LOAD_PCM_SODI_BY_MP1_HPM,
-	DYNA_LOAD_PCM_SODI_ULTRA,
-	DYNA_LOAD_PCM_SODI_BY_MP1_ULTRA,
-#else
+	DYNA_LOAD_PCM_VCOREFS_LPM,
+	DYNA_LOAD_PCM_VCOREFS_HPM,
+	DYNA_LOAD_PCM_VCOREFS_ULTRA,
+#endif
 	DYNA_LOAD_PCM_SODI,
 	DYNA_LOAD_PCM_SODI_BY_MP1,
-#endif
+
 	DYNA_LOAD_PCM_DEEPIDLE,
 	DYNA_LOAD_PCM_DEEPIDLE_BY_MP1,
 	DYNA_LOAD_PCM_MAX,
@@ -415,7 +412,7 @@ extern void __spm_pmic_low_iq_mode(int en);
 extern struct dram_info *g_dram_info_dummy_read;
 
 #if defined(CONFIG_ARCH_MT6797)
-extern u32 spm_get_sodi_pcm_index(void);
+extern u32 spm_get_pcm_vcorefs_index(void);
 #endif
 
 /**************************************

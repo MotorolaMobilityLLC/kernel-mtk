@@ -197,14 +197,13 @@ unsigned int spm_cpu_bitmask_all = MP0_CPU0 |
 /**************************************
  * Function and API
  **************************************/
+#if defined(CONFIG_ARCH_MT6755)
 void __spm_reset_and_init_pcm(const struct pcm_desc *pcmdesc)
 {
 	u32 con1;
 	int retry = 0, timeout = 2000;
 	u32 save_r1, save_r15, save_pcm_sta, save_irq_sta;
-#ifdef SPM_VCORE_EN_MT6755
 	u32 final_r15, final_pcm_sta;
-#endif
 
 	/* [Vcorefs] backup r0 to POWER_ON_VAL0 for MEM Ctrl should work during PCM reset */
 	if (spm_read(PCM_REG1_DATA) == 0x1) {
@@ -214,60 +213,38 @@ void __spm_reset_and_init_pcm(const struct pcm_desc *pcmdesc)
 		save_irq_sta = spm_read(SPM_IRQ_STA);
 		con1 = spm_read(SPM_WAKEUP_EVENT_MASK);
 		spm_write(SPM_WAKEUP_EVENT_MASK, (con1 & ~(0x1)));
-
-#ifdef SPM_VCORE_EN_MT6797
-		spm_write(SPM_SW_RSV_1, (spm_read(SPM_SW_RSV_1) & (0x0)) | SPM_OFFLOAD);
-#endif
 		spm_write(SPM_CPU_WAKEUP_EVENT, 1);
 
-#ifdef SPM_VCORE_EN_MT6797
-		if (is_vcorefs_feature_enable()) {
-			__spm_backup_vcore_dvfs_dram_shuffle();
-#endif
-			while ((spm_read(SPM_IRQ_STA) & PCM_IRQ_ROOT_MASK_LSB) == 0) {
-				if (retry > timeout) {
-					pr_err("[VcoreFS] init state: r15=0x%x r1=0x%x pcmsta=0x%x irqsta=0x%x\n",
-						save_r15, save_r1, save_pcm_sta, save_irq_sta);
-					pr_err("[VcoreFS] CPU waiting F/W ack fail, PCM_FSM_STA: 0x%x, timeout: %d\n",
-								spm_read(PCM_FSM_STA), timeout);
-					pr_err("[VcoreFS] curr state: r15=0x%x r6=0x%x pcmsta=0x%x irqsta=0x%x\n",
-						spm_read(PCM_REG15_DATA), spm_read(PCM_REG6_DATA),
-						spm_read(PCM_FSM_STA), spm_read(SPM_IRQ_STA));
-#ifdef SPM_VCORE_EN_MT6797
-					spm_vcorefs_dump_dvfs_regs(NULL);
-					BUG();
-#else
-					__check_dvfs_halt_source(__spm_vcore_dvfs.pwrctrl->dvfs_halt_src_chk);
-					final_r15     = spm_read(PCM_REG15_DATA);
-					final_pcm_sta = spm_read(PCM_FSM_STA);
-					pr_err("[VcoreFS] next state: r15=0x%x r6=0x%x pcmsta=0x%x irqsta=0x%x\n",
-						final_r15, spm_read(PCM_REG6_DATA),
-						final_pcm_sta, spm_read(SPM_IRQ_STA));
+		while ((spm_read(SPM_IRQ_STA) & PCM_IRQ_ROOT_MASK_LSB) == 0) {
+			if (retry > timeout) {
+				pr_err("[VcoreFS] init state: r15=0x%x r1=0x%x pcmsta=0x%x irqsta=0x%x\n",
+					save_r15, save_r1, save_pcm_sta, save_irq_sta);
+				pr_err("[VcoreFS] CPU waiting F/W ack fail, PCM_FSM_STA: 0x%x, timeout: %d\n",
+							spm_read(PCM_FSM_STA), timeout);
+				pr_err("[VcoreFS] curr state: r15=0x%x r6=0x%x pcmsta=0x%x irqsta=0x%x\n",
+					spm_read(PCM_REG15_DATA), spm_read(PCM_REG6_DATA),
+					spm_read(PCM_FSM_STA), spm_read(SPM_IRQ_STA));
 
-					if (final_r15 == 0 && (final_pcm_sta & 0xFFFF) == 0x8490)
-						break;
+				__check_dvfs_halt_source(__spm_vcore_dvfs.pwrctrl->dvfs_halt_src_chk);
+				final_r15     = spm_read(PCM_REG15_DATA);
+				final_pcm_sta = spm_read(PCM_FSM_STA);
+				pr_err("[VcoreFS] next state: r15=0x%x r6=0x%x pcmsta=0x%x irqsta=0x%x\n",
+					final_r15, spm_read(PCM_REG6_DATA),
+					final_pcm_sta, spm_read(SPM_IRQ_STA));
 
-					pr_err("[VcoreFS] can not reset without idle(r15=0x%x pcm_sta=0x%x)\n",
-						final_r15, final_pcm_sta);
-#endif
-				}
-				udelay(1);
-				retry++;
+				if (final_r15 == 0 && (final_pcm_sta & 0xFFFF) == 0x8490)
+					break;
+
+				pr_err("[VcoreFS] can not reset without idle(r15=0x%x pcm_sta=0x%x)\n",
+					final_r15, final_pcm_sta);
+
 			}
-#ifdef SPM_VCORE_EN_MT6797
+			udelay(1);
+			retry++;
 		}
-
-#if SPM_AEE_RR_REC
-		aee_rr_rec_spm_common_scenario_val(0);
-#endif
-#endif
 
 		spm_write(SPM_CPU_WAKEUP_EVENT, 0);
 		spm_write(SPM_WAKEUP_EVENT_MASK, con1);
-
-#ifdef SPM_VCORE_EN_MT6797
-		spm_write(SPM_SW_RSV_1, (spm_read(SPM_SW_RSV_1) & (0x0)) | SPM_CLEAN_WAKE_EVENT_DONE);
-#endif
 
 		/* backup mem control from r0 to POWER_ON_VAL0 */
 		if (spm_read(SPM_POWER_ON_VAL0) != spm_read(PCM_REG0_DATA)) {
@@ -280,12 +257,6 @@ void __spm_reset_and_init_pcm(const struct pcm_desc *pcmdesc)
 
 		/* [Vcorefs] disable pcm timer after leaving FW */
 		spm_write(PCM_CON1, SPM_REGWR_CFG_KEY | (spm_read(PCM_CON1) & ~PCM_TIMER_EN_LSB));
-
-#ifdef SPM_VCORE_EN_MT6797
-		/* backup vcore state from REG6[24:23] to RSV_5[1:0] */
-		spm_write(SPM_SW_RSV_5, (spm_read(SPM_SW_RSV_5) & ~(0x3)) |
-					((spm_read(PCM_REG6_DATA) & SPM_VCORE_STA_REG) >> 23));
-#endif
 	}
 
 	/* reset PCM */
@@ -306,6 +277,95 @@ void __spm_reset_and_init_pcm(const struct pcm_desc *pcmdesc)
 		  (pcmdesc->replace ? 0 : IM_NONRP_EN_LSB) |
 		  MIF_APBEN_LSB | SCP_APB_INTERNAL_EN_LSB);
 }
+
+#elif defined(CONFIG_ARCH_MT6797)
+void __spm_reset_and_init_pcm(const struct pcm_desc *pcmdesc)
+{
+	u32 con1;
+	int retry = 0, timeout = 5000;
+	u32 save_r1, save_r15, save_pcm_sta, save_irq_sta;
+
+	/* [Vcorefs] backup r0 to POWER_ON_VAL0 for MEM Ctrl should work during PCM reset */
+	if (spm_read(PCM_REG1_DATA) == 0x1) {
+		if (!vcorefs_sodi_rekick_lock()) {
+			save_r1  = spm_read(PCM_REG1_DATA);
+			save_r15 = spm_read(PCM_REG15_DATA);
+			save_pcm_sta = spm_read(PCM_FSM_STA);
+			save_irq_sta = spm_read(SPM_IRQ_STA);
+			con1 = spm_read(SPM_WAKEUP_EVENT_MASK);
+			spm_write(SPM_WAKEUP_EVENT_MASK, (con1 & ~(0x1)));
+			spm_write(SPM_SW_RSV_1, (spm_read(SPM_SW_RSV_1) & (0x0)) | SPM_OFFLOAD);
+			spm_write(SPM_CPU_WAKEUP_EVENT, 1);
+
+			if (is_vcorefs_feature_enable()) {
+				__spm_backup_vcore_dvfs_dram_shuffle();
+				while ((spm_read(SPM_IRQ_STA) & PCM_IRQ_ROOT_MASK_LSB) == 0) {
+					if (retry > timeout) {
+						pr_err("[VcoreFS] init state: r15=0x%x r1=0x%x pcmsta=0x%x irqsta=0x%x\n",
+							save_r15, save_r1, save_pcm_sta, save_irq_sta);
+						pr_err("[VcoreFS] CPU waiting F/W ack fail, PCM_FSM_STA: 0x%x, timeout: %d\n",
+									spm_read(PCM_FSM_STA), timeout);
+						pr_err("[VcoreFS] curr state: r15=0x%x r6=0x%x pcmsta=0x%x irqsta=0x%x\n",
+							spm_read(PCM_REG15_DATA), spm_read(PCM_REG6_DATA),
+							spm_read(PCM_FSM_STA), spm_read(SPM_IRQ_STA));
+
+						spm_vcorefs_dump_dvfs_regs(NULL);
+						BUG();
+					}
+					udelay(1);
+					retry++;
+				}
+			}
+
+#if SPM_AEE_RR_REC
+			aee_rr_rec_spm_common_scenario_val(0);
+#endif
+			spm_write(SPM_CPU_WAKEUP_EVENT, 0);
+			spm_write(SPM_WAKEUP_EVENT_MASK, con1);
+			spm_write(SPM_SW_RSV_1, (spm_read(SPM_SW_RSV_1) & (0x0)) | SPM_CLEAN_WAKE_EVENT_DONE);
+		}
+
+		/* backup mem control from r0 to POWER_ON_VAL0 */
+		if (spm_read(SPM_POWER_ON_VAL0) != spm_read(PCM_REG0_DATA)) {
+			spm_crit("VAL0 from 0x%x to 0x%x\n", spm_read(SPM_POWER_ON_VAL0), spm_read(PCM_REG0_DATA));
+			spm_write(SPM_POWER_ON_VAL0, spm_read(PCM_REG0_DATA));
+		}
+
+		/* disable r0 and r7 to control power */
+		spm_write(PCM_PWR_IO_EN, 0);
+
+		/* [Vcorefs] disable pcm timer after leaving FW */
+		spm_write(PCM_CON1, SPM_REGWR_CFG_KEY | (spm_read(PCM_CON1) & ~PCM_TIMER_EN_LSB));
+
+		/* backup vcore state from REG6[24:23] to RSV_5[1:0] */
+		spm_write(SPM_SW_RSV_5, (spm_read(SPM_SW_RSV_5) & ~(0x3)) |
+					((spm_read(PCM_REG6_DATA) & SPM_VCORE_STA_REG) >> 23));
+	}
+
+	/* reset PCM */
+	spm_write(PCM_CON0, SPM_REGWR_CFG_KEY | PCM_CK_EN_LSB | PCM_SW_RESET_LSB);
+	retry = 0;
+	while ((spm_read(PCM_FSM_STA) & 0x7fffff) != PCM_FSM_STA_DEF) {
+		if (retry > timeout) {
+			spm_crit2("reset pcm PCM_FSM_STA=0x%x\n", spm_read(PCM_FSM_STA));
+			BUG(); /* PCM reset failed */
+		}
+		udelay(1);
+		retry++;
+	}
+	spm_write(PCM_CON0, SPM_REGWR_CFG_KEY | PCM_CK_EN_LSB);
+
+	/* init PCM_CON0 (disable event vector) */
+	spm_write(PCM_CON0, SPM_REGWR_CFG_KEY | PCM_CK_EN_LSB | EN_IM_SLEEP_DVS_LSB);
+
+	/* init PCM_CON1 (disable PCM timer but keep PCM WDT setting) */
+	con1 = spm_read(PCM_CON1) & (PCM_WDT_WAKE_MODE_LSB | PCM_WDT_EN_LSB);
+	spm_write(PCM_CON1, con1 | SPM_REGWR_CFG_KEY | EVENT_LOCK_EN_LSB |
+		  SPM_SRAM_ISOINT_B_LSB | SPM_SRAM_SLEEP_B_LSB |
+		  (pcmdesc->replace ? 0 : IM_NONRP_EN_LSB) |
+		  MIF_APBEN_LSB | SCP_APB_INTERNAL_EN_LSB);
+}
+#endif
 
 void __spm_kick_im_to_fetch(const struct pcm_desc *pcmdesc)
 {

@@ -65,16 +65,14 @@ static char *dyna_load_pcm_path[] = {
 	[DYNA_LOAD_PCM_SUSPEND_BY_MP1] = "pcm_suspend_by_mp1.bin",
 
 #if defined(CONFIG_ARCH_MT6797)
-	[DYNA_LOAD_PCM_SODI_LPM] = "pcm_sodi_ddrdfs_lpm.bin",
-	[DYNA_LOAD_PCM_SODI_BY_MP1_LPM] = "pcm_sodi_ddrdfs_by_mp1_lpm.bin",
-	[DYNA_LOAD_PCM_SODI_HPM] = "pcm_sodi_ddrdfs_hpm.bin",
-	[DYNA_LOAD_PCM_SODI_BY_MP1_HPM] = "pcm_sodi_ddrdfs_by_mp1_hpm.bin",
-	[DYNA_LOAD_PCM_SODI_ULTRA] = "pcm_sodi_ddrdfs_ultra.bin",
-	[DYNA_LOAD_PCM_SODI_BY_MP1_ULTRA] = "pcm_sodi_ddrdfs_by_mp1_ultra.bin",
-#else
-	[DYNA_LOAD_PCM_SODI] = "pcm_sodi_ddrdfs.bin",
-	[DYNA_LOAD_PCM_SODI_BY_MP1] = "pcm_sodi_ddrdfs_by_mp1.bin",
+	[DYNA_LOAD_PCM_VCOREFS_LPM] = "pcm_vcorefs_lpm.bin",
+	[DYNA_LOAD_PCM_VCOREFS_HPM] = "pcm_vcorefs_hpm.bin",
+	[DYNA_LOAD_PCM_VCOREFS_ULTRA] = "pcm_vcorefs_ultra.bin",
 #endif
+
+	[DYNA_LOAD_PCM_SODI] = "pcm_sodi.bin",
+	[DYNA_LOAD_PCM_SODI_BY_MP1] = "pcm_sodi_by_mp1.bin",
+
 	[DYNA_LOAD_PCM_DEEPIDLE] = "pcm_deepidle.bin",
 	[DYNA_LOAD_PCM_DEEPIDLE_BY_MP1] = "pcm_deepidle_by_mp1.bin",
 	[DYNA_LOAD_PCM_MAX] = "pcm_path_max",
@@ -84,23 +82,20 @@ MODULE_FIRMWARE(dyna_load_pcm_path[DYNA_LOAD_PCM_SUSPEND]);
 MODULE_FIRMWARE(dyna_load_pcm_path[DYNA_LOAD_PCM_SUSPEND_BY_MP1]);
 
 #if defined(CONFIG_ARCH_MT6797)
-MODULE_FIRMWARE(dyna_load_pcm_path[DYNA_LOAD_PCM_SODI_LPM]);
-MODULE_FIRMWARE(dyna_load_pcm_path[DYNA_LOAD_PCM_SODI_BY_MP1_LPM]);
-MODULE_FIRMWARE(dyna_load_pcm_path[DYNA_LOAD_PCM_SODI_HPM]);
-MODULE_FIRMWARE(dyna_load_pcm_path[DYNA_LOAD_PCM_SODI_BY_MP1_HPM]);
-MODULE_FIRMWARE(dyna_load_pcm_path[DYNA_LOAD_PCM_SODI_ULTRA]);
-MODULE_FIRMWARE(dyna_load_pcm_path[DYNA_LOAD_PCM_SODI_BY_MP1_ULTRA]);
-#else
+MODULE_FIRMWARE(dyna_load_pcm_path[DYNA_LOAD_PCM_VCOREFS_LPM]);
+MODULE_FIRMWARE(dyna_load_pcm_path[DYNA_LOAD_PCM_VCOREFS_HPM]);
+MODULE_FIRMWARE(dyna_load_pcm_path[DYNA_LOAD_PCM_VCOREFS_ULTRA]);
+#endif
+
 MODULE_FIRMWARE(dyna_load_pcm_path[DYNA_LOAD_PCM_SODI]);
 MODULE_FIRMWARE(dyna_load_pcm_path[DYNA_LOAD_PCM_SODI_BY_MP1]);
-#endif
 MODULE_FIRMWARE(dyna_load_pcm_path[DYNA_LOAD_PCM_DEEPIDLE]);
 MODULE_FIRMWARE(dyna_load_pcm_path[DYNA_LOAD_PCM_DEEPIDLE_BY_MP1]);
 
 
 struct dyna_load_pcm_t dyna_load_pcm[DYNA_LOAD_PCM_MAX];
 #if defined(CONFIG_ARCH_MT6797)
-static unsigned int sodi_fw_mode;
+static unsigned int vcorefs_fw_mode;
 #endif
 
 /* add char device for spm */
@@ -1410,7 +1405,7 @@ void spm_set_register(void __force __iomem *offset, u32 value)
 }
 
 #if defined(CONFIG_ARCH_MT6797)
-void set_sodi_fw_mode(void)
+void set_vcorefs_fw_mode(void)
 {
 	int ddr_khz;
 
@@ -1418,33 +1413,33 @@ void set_sodi_fw_mode(void)
 
 	switch (ddr_khz) {
 	case 1600000:
-		sodi_fw_mode = SODI_FW_LPM;
+		vcorefs_fw_mode = VCOREFS_FW_LPM;
 		break;
 	case 1700000:
-		sodi_fw_mode = SODI_FW_HPM;
+		vcorefs_fw_mode = VCOREFS_FW_HPM;
 		break;
 	case 1866000:
-		sodi_fw_mode = SODI_FW_ULTRA;
+		vcorefs_fw_mode = VCOREFS_FW_ULTRA;
 		break;
 	default:
 		BUG();
 	}
 
-	spm_crit2("[VcoreFS] LPM: 0x%x, HPM: 0x%x, ULTRA: 0x%x\n", SODI_FW_LPM, SODI_FW_HPM, SODI_FW_ULTRA);
-	spm_crit2("[VcoreFS] dram_khz: %d, sodi_fw_mode: 0x%x\n", ddr_khz, sodi_fw_mode);
+	spm_crit2("[VcoreFS] LPM: 0x%x, HPM: 0x%x, ULTRA: 0x%x\n", VCOREFS_FW_LPM, VCOREFS_FW_HPM, VCOREFS_FW_ULTRA);
+	spm_crit2("[VcoreFS] dram_khz: %d, vcorefs_fw_mode: 0x%x\n", ddr_khz, vcorefs_fw_mode);
 }
 
-u32 get_sodi_fw_mode(void)
+u32 get_vcorefs_fw_mode(void)
 {
-	return	sodi_fw_mode;
+	return	vcorefs_fw_mode;
 }
 
-u32 spm_get_sodi_pcm_index(void)
+u32 spm_get_pcm_vcorefs_index(void)
 {
-	switch (get_sodi_fw_mode()) {
-	case SODI_FW_LPM:	return DYNA_LOAD_PCM_SODI_LPM;
-	case SODI_FW_HPM:	return DYNA_LOAD_PCM_SODI_HPM;
-	case SODI_FW_ULTRA:	return DYNA_LOAD_PCM_SODI_ULTRA;
+	switch (get_vcorefs_fw_mode()) {
+	case VCOREFS_FW_LPM:	return DYNA_LOAD_PCM_VCOREFS_LPM;
+	case VCOREFS_FW_HPM:	return DYNA_LOAD_PCM_VCOREFS_HPM;
+	case VCOREFS_FW_ULTRA:	return DYNA_LOAD_PCM_VCOREFS_ULTRA;
 	default:
 		break;
 	}

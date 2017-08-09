@@ -5350,22 +5350,22 @@ static int __init dt_get_ptp_devinfo(unsigned long node, const char *uname, int 
 	eem_error("[VCORE] - Kernel Got efuse 0x%0X\n", soc_efuse);
 
 	/* Read SODI level U, H, L */
-	switch (get_sodi_fw_mode()) {
-	case SODI_FW_LPM: /* 1066/1270/1600 */
+	switch (get_vcorefs_fw_mode()) {
+	case VCOREFS_FW_LPM: /* 1066/1270/1600 */
 		eem_error("[DDR] segment = 1600\n");
 		vcore0 = (DDR1700[((soc_efuse >> 4) & 0x03)] - 60000 + 625 - 1) / 625;
 		vcore1 = (DDR1270[((soc_efuse >> 2) & 0x03)] - 60000 + 625 - 1) / 625;
 		vcore2 = (DDR1066[(soc_efuse & 0x03)] - 60000 + 625 - 1) / 625;
 		break;
 
-	case SODI_FW_HPM: /* 1066/1270/1700 */
+	case VCOREFS_FW_HPM: /* 1066/1270/1700 */
 		eem_error("[DDR] segment = 1700\n");
 		vcore0 = (DDR1700[((soc_efuse >> 4) & 0x03)] - 60000 + 625 - 1) / 625;
 		vcore1 = (DDR1270[((soc_efuse >> 2) & 0x03)] - 60000 + 625 - 1) / 625;
 		vcore2 = (DDR1066[(soc_efuse & 0x03)] - 60000 + 625 - 1) / 625;
 		break;
 
-	case SODI_FW_ULTRA: /* 1066/1270/1866 */
+	case VCOREFS_FW_ULTRA: /* 1066/1270/1866 */
 		eem_error("[DDR] segment = 1866\n");
 		vcore0 = (DDR1866[((soc_efuse >> 6) & 0x03)] - 60000 + 625 - 1) / 625;
 		vcore1 = (DDR1270[((soc_efuse >> 2) & 0x03)] - 60000 + 625 - 1) / 625;

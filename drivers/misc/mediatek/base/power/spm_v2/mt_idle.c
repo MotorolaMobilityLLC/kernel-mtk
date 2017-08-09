@@ -2906,9 +2906,6 @@ static ssize_t soidle_state_read(struct file *filp, char __user *userbuf, size_t
 	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "soidle_by_pass_pg=%u\n", soidle_by_pass_pg);
 	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "soidle_bypass_en=%u\n", soidle_by_pass_en);
 	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "sodi_flags=0x%x\n", sodi_flags);
-#if defined(CONFIG_ARCH_MT6797)
-	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "sodi_fw=0x%x\n", get_sodi_fw_mode());
-#endif
 
 	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "\n*********** soidle command help  ************\n");
 	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf),
@@ -3272,7 +3269,7 @@ void mt_cpuidle_framework_init(void)
 	mt_cpuidle_debugfs_init();
 	mt_idle_hotplug_cb_init();
 #if defined(CONFIG_ARCH_MT6797)
-	set_sodi_fw_mode();
+	set_vcorefs_fw_mode();
 #endif
 #if SPM_MET_TAGGING
 	met_tag_init();

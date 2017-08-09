@@ -237,7 +237,7 @@ static unsigned long int logout_prev_dvfs_time;
 static void spm_sodi_twam_callback(struct twam_sig *ts)
 {
 	sodi_warn("spm twan %s ratio: %5u/1000\n",
-			(twam_str)?"unknown":twam_str[twam_event],
+			(twam_str)?twam_str[twam_event]:"unknown",
 			GET_EVENT_RATIO(ts->sig0));
 }
 
@@ -520,11 +520,7 @@ wake_reason_t spm_go_to_sodi(u32 spm_flags, u32 spm_data, u32 sodi_flags)
 	u32 cpu = spm_data;
 	u32 sodi_idx;
 
-#if defined(CONFIG_ARCH_MT6797)
-	sodi_idx = spm_get_sodi_pcm_index() + cpu / 4;
-#else
 	sodi_idx = DYNA_LOAD_PCM_SODI + cpu / 4;
-#endif
 
 	if (!dyna_load_pcm[sodi_idx].ready) {
 		sodi_err("ERROR: LOAD FIRMWARE FAIL\n");
@@ -644,6 +640,7 @@ UNLOCK_SPM:
 
 #if defined(CONFIG_ARCH_MT6797)
 	spm_sodi_footprint(SPM_SODI_REKICK_VCORE);
+	spm_write(PCM_CON1, SPM_REGWR_CFG_KEY | (spm_read(PCM_CON1) & ~PCM_TIMER_EN_LSB));
 	__spm_backup_vcore_dvfs_dram_shuffle();
 	vcorefs_go_to_vcore_dvfs();
 #endif

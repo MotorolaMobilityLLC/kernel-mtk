@@ -428,11 +428,7 @@ wake_reason_t spm_go_to_sodi3(u32 spm_flags, u32 spm_data, u32 sodi3_flags)
 	u32 cpu = spm_data;
 	u32 sodi_idx;
 
-#if defined(CONFIG_ARCH_MT6797)
-	sodi_idx = spm_get_sodi_pcm_index() + cpu / 4;
-#else
 	sodi_idx = DYNA_LOAD_PCM_SODI + cpu / 4;
-#endif
 
 	if (!dyna_load_pcm[sodi_idx].ready) {
 		sodi3_err("ERROR: LOAD FIRMWARE FAIL\n");
@@ -498,20 +494,6 @@ wake_reason_t spm_go_to_sodi3(u32 spm_flags, u32 spm_data, u32 sodi3_flags)
 #endif
 
 	__spm_sync_vcore_dvfs_power_control(pwrctrl, __spm_vcore_dvfs.pwrctrl);
-
-#if defined(CONFIG_ARCH_MT6797)
-	if (spm_read(SPM_SW_FLAG) & SPM_FLAG_SODI_CG_MODE) {
-		/* the following masks set to be 1 only for SODI CG mode */
-		pwrctrl->md_apsrc1_sel = 1;
-		pwrctrl->md_apsrc0_sel = 1;
-		pwrctrl->conn_apsrc_sel = 1;
-	} else {
-		/* the following masks set to be 0 which dynamic switch by FW */
-		pwrctrl->md_apsrc1_sel = 0;
-		pwrctrl->md_apsrc0_sel = 0;
-		pwrctrl->conn_apsrc_sel = 0;
-	}
-#endif
 
 	__spm_set_power_control(pwrctrl);
 
@@ -586,6 +568,7 @@ UNLOCK_SPM:
 
 #if defined(CONFIG_ARCH_MT6797)
 	spm_sodi3_footprint(SPM_SODI3_REKICK_VCORE);
+	spm_write(PCM_CON1, SPM_REGWR_CFG_KEY | (spm_read(PCM_CON1) & ~PCM_TIMER_EN_LSB));
 	__spm_backup_vcore_dvfs_dram_shuffle();
 	vcorefs_go_to_vcore_dvfs();
 #endif
