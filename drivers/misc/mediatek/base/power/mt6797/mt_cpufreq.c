@@ -2813,14 +2813,14 @@ static int _cpufreq_set_locked_cci(unsigned int cur_cci_khz, unsigned int target
 	if (cur_cci_khz == target_cci_khz)
 		goto out;
 	else
-		cpufreq_dbg
+		cpufreq_ver
 		    ("@%s(), %s: cur_cci_khz = %d, target_cci_khz = %d\n",
 		     __func__, cpu_dvfs_get_name(p_cci), cur_cci_khz, target_cci_khz);
 
 	cur_cci_volt = p_cci->ops->get_cur_volt(p_cci);
 	/* target_cci_volt = _search_available_volt(p_cci, target_cci_khz); */
 
-	cpufreq_dbg
+	cpufreq_ver
 		    ("@%s(), %s: cur_cci_volt = %d, target_cci_volt = %d\n",
 		     __func__, cpu_dvfs_get_name(p_cci), cur_cci_volt, target_cci_volt);
 
@@ -2842,10 +2842,10 @@ static int _cpufreq_set_locked_cci(unsigned int cur_cci_khz, unsigned int target
 			goto out;
 	}
 
-	cpufreq_ver("@%s(): Vproc = %dmv, Vsram = %dmv, freq(%s) = %dKHz\n",
+	cpufreq_dbg("@%s(): Vproc = %dmv, Vsram = %dmv, freq = %dKHz\n",
 		    __func__,
 		    (p_cci->ops->get_cur_volt(p_cci)) / 100,
-		    (p_cci->ops->get_cur_vsram(p_cci) / 100), p_cci->name, p_cci->ops->get_cur_phy_freq(p_cci));
+		    (p_cci->ops->get_cur_vsram(p_cci) / 100), p_cci->ops->get_cur_phy_freq(p_cci));
 out:
 #ifdef CONFIG_CPU_DVFS_AEE_RR_REC
 	aee_rr_rec_cpu_dvfs_status(aee_rr_curr_cpu_dvfs_status() &
@@ -2886,8 +2886,9 @@ static int _cpufreq_set_locked(struct mt_cpu_dvfs *p, unsigned int cur_khz, unsi
 
 	if (cur_khz != get_turbo_freq(p->cpu_id, target_khz)) {
 		cpufreq_dbg
-		    ("@%s(), %s: target_khz = %d (%d), target_volt = %d (%d), num_online_cpus = %d, cur_khz = %d\n",
-		     __func__, cpu_dvfs_get_name(p), target_khz, get_turbo_freq(p->cpu_id, target_khz), target_volt,
+		    ("@%s(), %s: (%d, %d): freq = %d (%d), volt = %d (%d), cpus = %d, cur = %d\n",
+		     __func__, cpu_dvfs_get_name(p), p->idx_opp_ppm_base, p->idx_opp_ppm_limit,
+			 target_khz, get_turbo_freq(p->cpu_id, target_khz), target_volt,
 		     get_turbo_volt(p->cpu_id, target_volt), num_online_cpus(), cur_khz);
 	}
 
