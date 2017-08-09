@@ -879,28 +879,45 @@ int dram_fh_steps_freq(unsigned int step)
 	int freq;
 
 #if defined(CONFIG_ARCH_MT6735)
+	unsigned int d1plus = ((get_devinfo_with_index(47) & (1<<31)) && !(get_devinfo_with_index(47) & (1<<29)) &&
+				!(get_devinfo_with_index(47) & (1<<28))) ? 1 : 0;
 	unsigned int ddr_type = get_ddr_type();
 
 	switch (step) {
 	case 0:
-		if (ddr_type == TYPE_LPDDR2)
-			freq = 1066;
+		if (d1plus == 1)
+			freq = 1466;
 		else
-			freq = 1280;
+			if (ddr_type == TYPE_LPDDR2)
+				freq = 1066;
+			else
+				freq = 1280;
 		break;
 	case 1:
-		freq = 938;
+		if (d1plus == 1)
+			freq = 1313;
+		else
+			freq = 938;
 		break;
 	default:
 		return -1;
 	}
 #elif defined(CONFIG_ARCH_MT6735M)
+	unsigned int d2plus = ((get_devinfo_with_index(47) & (1<<31)) &&
+				(get_devinfo_with_index(47) & (1<<29))) ? 1 : 0;
+
 	switch (step) {
 	case 0:
-		freq = 1066;
+		if (d2plus == 1)
+			freq = 1280;
+		else
+			freq = 1066;
 		break;
 	case 1:
-		freq = 800;
+		if (d2plus == 1)
+			freq = 938;
+		else
+			freq = 800;
 		break;
 	default:
 		return -1;
