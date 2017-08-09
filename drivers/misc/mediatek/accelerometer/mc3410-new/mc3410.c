@@ -328,41 +328,6 @@ static void mc3xxx_mutex_unlock(void)
 	#define mc3xxx_mutex_unlock()			  do {} while (0)
 #endif
 
-static void mcube_rremap(int nDataX, int nDataY)
-{
-	int _nTemp = 0;
-
-	if (MC3XXX_PCODE_3250 == s_bPCODE) {
-		_nTemp = nDataX;
-		nDataX = nDataY;
-		nDataY = -_nTemp;
-		GSE_LOG("[%s] 3250 read remap\n", __func__);
-	} else {
-		if (s_bMPOL & 0x01)
-			nDataX = -nDataX;
-		if (s_bMPOL & 0x02)
-			nDataY = -nDataY;
-	}
-}
-
-static void mcube_wremap(int nDataX, int nDataY)
-{
-	int _nTemp = 0;
-
-	if (MC3XXX_PCODE_3250 == s_bPCODE) {
-		_nTemp = nDataX;
-		nDataX = -nDataY;
-		nDataY = _nTemp;
-		GSE_LOG("[%s] 3250 write remap\n", __func__);
-	} else {
-		if (s_bMPOL & 0x01)
-			nDataX = -nDataX;
-		if (s_bMPOL & 0x02)
-			nDataY = -nDataY;
-		GSE_LOG("[%s] 35X0 remap [s_bMPOL: %d]\n", __func__, s_bMPOL);
-	}
-}
-
 #define IS_MCFM12()	((0xC0 <= s_bHWID) && (s_bHWID <= 0xCF))
 #define IS_MCFM3X()	((0x20 == s_bHWID) || ((0x22 <= s_bHWID) && (s_bHWID <= 0x2F)))
 
@@ -885,7 +850,7 @@ static int MC3XXX_ReadData_RBM(struct i2c_client *client, int data[MC3XXX_AXES_N
 	u8 addr = 0x0d;
 	u8 rbm_buf[MC3XXX_DATA_LEN] = {0};
 	int err = 0;
-
+	int _nTemp = 0;
 	if (NULL == client) {
 		err = -EINVAL;
 		return err;
@@ -906,8 +871,17 @@ static int MC3XXX_ReadData_RBM(struct i2c_client *client, int data[MC3XXX_AXES_N
 	GSE_LOG("RBM<<<<<[%04x %04x %04x]\n", data[MC3XXX_AXIS_X], data[MC3XXX_AXIS_Y], data[MC3XXX_AXIS_Z]);
 	GSE_LOG("RBM<<<<<[%04d %04d %04d]\n", data[MC3XXX_AXIS_X], data[MC3XXX_AXIS_Y], data[MC3XXX_AXIS_Z]);
 
-	mcube_rremap(data[0], data[1]);
-
+	if (MC3XXX_PCODE_3250 == s_bPCODE) {
+		_nTemp = data[MC3XXX_AXIS_X];
+		data[MC3XXX_AXIS_X] = data[MC3XXX_AXIS_Y];
+		data[MC3XXX_AXIS_Y] = -_nTemp;
+		GSE_LOG("[%s] 3250 read remap\n", __func__);
+	} else {
+		if (s_bMPOL & 0x01)
+			data[MC3XXX_AXIS_X] = -data[MC3XXX_AXIS_X];
+		if (s_bMPOL & 0x02)
+			data[MC3XXX_AXIS_Y] = -data[MC3XXX_AXIS_Y]);
+	}
 	return err;
 }
 #endif /* _MC3XXX_SUPPORT_DOT_CALIBRATION_ */
@@ -1211,7 +1185,7 @@ static void	_MC3XXX_ReadData_RBM2RAW(s16 waData[MC3XXX_AXES_NUM])
 static int	MC3XXX_ReadData(struct i2c_client *pt_i2c_client, s16 waData[MC3XXX_AXES_NUM])
 {
 	u8	_baData[MC3XXX_DATA_LEN] = { 0 };
-
+	s16 _nTemp = 0;
 	#ifdef _MC3XXX_SUPPORT_LPF_
 		struct mc3xxx_i2c_data   *_ptPrivData = NULL;
 	#endif
@@ -1296,8 +1270,17 @@ static int	MC3XXX_ReadData(struct i2c_client *pt_i2c_client, s16 waData[MC3XXX_A
 		_MC3XXX_ReadData_RBM2RAW(waData);
 	}
 
-	mcube_rremap(waData[MC3XXX_AXIS_X], waData[MC3XXX_AXIS_Y]);
-
+	if (MC3XXX_PCODE_3250 == s_bPCODE) {
+		_nTemp = waData[MC3XXX_AXIS_X];
+		waData[MC3XXX_AXIS_X] = waData[MC3XXX_AXIS_Y];
+		waData[MC3XXX_AXIS_Y] = -_nTemp;
+		GSE_LOG("[%s] 3250 read remap\n", __func__);
+	} else {
+		if (s_bMPOL & 0x01)
+			waData[MC3XXX_AXIS_X] = -waData[MC3XXX_AXIS_X];
+		if (s_bMPOL & 0x02)
+			waData[MC3XXX_AXIS_Y] = -waData[MC3XXX_AXIS_Y];
+	}
 	return MC3XXX_RETCODE_SUCCESS;
 }
 
@@ -1308,7 +1291,7 @@ static int MC3XXX_ReadOffset(struct i2c_client *client, s16 ofs[MC3XXX_AXES_NUM]
 {
 	int err = 0;
 	u8 off_data[6] = {0};
-
+	s16 _nTemp = 0;
 
 	if (MC3XXX_RESOLUTION_HIGH == s_bResolution) {
 		err = MC3XXX_i2c_read_block(client, MC3XXX_REG_XOUT_EX_L, off_data, MC3XXX_DATA_LEN);
@@ -1332,8 +1315,17 @@ static int MC3XXX_ReadOffset(struct i2c_client *client, s16 ofs[MC3XXX_AXES_NUM]
 
 	GSE_LOG("MC3XXX_ReadOffset %d %d %d\n", ofs[MC3XXX_AXIS_X] , ofs[MC3XXX_AXIS_Y], ofs[MC3XXX_AXIS_Z]);
 
-	mcube_rremap(ofs[0], ofs[1]);
-
+	if (MC3XXX_PCODE_3250 == s_bPCODE) {
+		_nTemp = ofs[0];
+		ofs[0] = ofs[1];
+		ofs[1] = -_nTemp;
+		GSE_LOG("[%s] 3250 read remap\n", __func__);
+	} else {
+		if (s_bMPOL & 0x01)
+			ofs[0] = -ofs[0];
+		if (s_bMPOL & 0x02)
+			ofs[1] = -ofs[1];
+	}
 	return err;
 }
 
@@ -1427,6 +1419,7 @@ static int MC3XXX_WriteCalibration(struct i2c_client *client, int dat[MC3XXX_AXE
 	s16 tmp = 0, x_gain = 0, y_gain = 0, z_gain = 0;
 	s32 x_off = 0, y_off = 0, z_off = 0;
 	int cali[MC3XXX_AXES_NUM] = {0};
+	int _nTemp = 0;
 
 	u8  bMsbFilter	   = 0x3F;
 	s16 wSignBitMask	 = 0x2000;
@@ -1440,7 +1433,18 @@ static int MC3XXX_WriteCalibration(struct i2c_client *client, int dat[MC3XXX_AXE
 	cali[MC3XXX_AXIS_Y] = obj->cvt.sign[MC3XXX_AXIS_Y]*(dat[obj->cvt.map[MC3XXX_AXIS_Y]]);
 	cali[MC3XXX_AXIS_Z] = obj->cvt.sign[MC3XXX_AXIS_Z]*(dat[obj->cvt.map[MC3XXX_AXIS_Z]]);
 
-	mcube_wremap(cali[MC3XXX_AXIS_X], cali[MC3XXX_AXIS_Y]);
+	if (MC3XXX_PCODE_3250 == s_bPCODE) {
+		_nTemp = cali[MC3XXX_AXIS_X];
+		cali[MC3XXX_AXIS_X] = -cali[MC3XXX_AXIS_Y];
+		cali[MC3XXX_AXIS_Y] = _nTemp;
+		GSE_LOG("[%s] 3250 write remap\n", __func__);
+	} else {
+		if (s_bMPOL & 0x01)
+			cali[MC3XXX_AXIS_X] = -cali[MC3XXX_AXIS_X];
+		if (s_bMPOL & 0x02)
+			cali[MC3XXX_AXIS_Y] = -cali[MC3XXX_AXIS_Y];
+		GSE_LOG("[%s] 35X0 remap [s_bMPOL: %d]\n", __func__, s_bMPOL);
+	}
 
 	GSE_LOG("UPDATE dat: (%+3d %+3d %+3d)\n", cali[MC3XXX_AXIS_X], cali[MC3XXX_AXIS_Y], cali[MC3XXX_AXIS_Z]);
 
