@@ -109,7 +109,7 @@ static int mtk_pcm_dl2_stop(struct snd_pcm_substream *substream)
 
 	SetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_DL2, false);
 
-	SetIrqMcuCounter(Soc_Aud_IRQ_MCU_MODE_IRQ1_MCU_MODE, 0);
+	/* SetIrqMcuCounter(Soc_Aud_IRQ_MCU_MODE_IRQ1_MCU_MODE, 0); */
 	SetIrqEnable(Soc_Aud_IRQ_MCU_MODE_IRQ1_MCU_MODE, false);
 
 	/* here start digital part */
@@ -286,6 +286,7 @@ static int mtk_soc_pcm_dl2_close(struct snd_pcm_substream *substream)
 
 		RemoveMemifSubStream(Soc_Aud_Digital_Block_MEM_DL2, substream);
 
+		SetIrqMcuCounter(Soc_Aud_IRQ_MCU_MODE_IRQ1_MCU_MODE, 0);
 		EnableAfe(false);
 		mPrepareDone = false;
 	}
@@ -349,7 +350,7 @@ static int mtk_pcm_dl2_prepare(struct snd_pcm_substream *substream)
 		SetIrqMcuCounter(Soc_Aud_IRQ_MCU_MODE_IRQ1_MCU_MODE, runtime->period_size);
 		SetIrqMcuSampleRate(Soc_Aud_IRQ_MCU_MODE_IRQ1_MCU_MODE, runtime->rate);
 
-		EnableAfe(true);
+		/* EnableAfe(true); */
 		mPrepareDone = true;
 	}
 	return 0;

@@ -2017,7 +2017,7 @@ static void Ext_Speaker_Amp_Change(bool enable)
 			AudDrv_GPIO_EXTAMP2_Select(false, 3);
 #endif
 #endif
-		udelay(500);
+		usleep_range(150, 300);
 #endif
 		/* pr_debug("Ext_Speaker_Amp_Change OFF-\n"); */
 	}
@@ -4489,6 +4489,8 @@ static void mt6331_codec_init_reg(struct snd_soc_codec *codec)
 	/* Turn off AUDNCP_CLKDIV engine clock,Turn off AUD 26M */
 	Ana_Set_Reg(AUDDEC_ANA_CON0, 0xe000, 0xe000);
 	/* Disable HeadphoneL/HeadphoneR/voice short circuit protection */
+	Ana_Set_Reg(AUDDEC_ANA_CON3, 0x4228, 0xffff);
+	/* [5] = 1, disable LO buffer left short circuit protection */
 	Ana_Set_Reg(AFE_PMIC_NEWIF_CFG2, 0x8000, 0x8000);
 	/* Reverse the PMIC clock*/
 	Ana_Set_Reg(DRV_CON2, 0x00e0, 0x00f0);
