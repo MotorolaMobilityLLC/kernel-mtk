@@ -578,7 +578,7 @@ struct ccci_port {
 struct ccci_modem_cfg {
 	unsigned int load_type;
 	unsigned int load_type_saving;
-	unsigned int setting;
+	volatile unsigned int setting;
 };
 #define MD_SETTING_ENABLE (1<<0)
 #define MD_SETTING_RELOAD (1<<1)
@@ -1084,6 +1084,7 @@ static inline int ccci_broadcast_queue_state(struct ccci_modem *md, MD_STATE sta
 		if (match && port->ops->md_state_notice)
 			port->ops->md_state_notice(port, (dir<<31)|(index<<16)|state);
 	}
+
 	return 0;
 }
 

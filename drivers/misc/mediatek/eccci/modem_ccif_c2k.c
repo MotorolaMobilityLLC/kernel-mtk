@@ -1030,13 +1030,23 @@ static int md_ccif_op_start(struct ccci_modem *md)
 {
 	struct md_ccif_ctrl *md_ctrl = (struct md_ccif_ctrl *)md->private_data;
 	char img_err_str[IMG_ERR_STR_LEN];
+	struct ccci_modem *md1 = NULL;
 	int ret = 0;
 
 	/*something do once*/
 	if (md->config.setting & MD_SETTING_FIRST_BOOT) {
 		CCCI_BOOTUP_LOG(md->index, TAG, "CCIF modem is first boot\n");
 		memset_io(md->mem_layout.smem_region_vir, 0, md->mem_layout.smem_region_size);
+		md1 = ccci_get_modem_by_id(MD_SYS1);
+		if (md1) {
+			while (md1->config.setting & MD_SETTING_FIRST_BOOT)
+				;
+			CCCI_BOOTUP_LOG(md->index, TAG, "wait for MD1 starting done\n");
+		} else
+			CCCI_ERROR_LOG(md->index, TAG, "get MD1 modem struct fail\n");
 		md_ccif_ring_buf_init(md);
+		CCCI_BOOTUP_LOG(md->index, TAG, "modem capability 0x%x\n", md->capability);
+		md->config.setting &= ~MD_SETTING_FIRST_BOOT;
 	}
 
 	/*0. init security, as security depends on dummy_char, which is ready very late. */
