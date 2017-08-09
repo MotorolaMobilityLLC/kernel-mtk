@@ -3443,7 +3443,7 @@ static int battery_probe(struct platform_device *dev)
 	BMT_status.POSTFULL_charging_time = 0;
 	BMT_status.SOC = 0;
 	BMT_status.UI_SOC = -100;
-	BMT_status.UI_SOC2 = -100;
+	BMT_status.UI_SOC2 = -1;
 
 	BMT_status.bat_charging_state = CHR_PRE;
 	BMT_status.bat_in_recharging_state = KAL_FALSE;
