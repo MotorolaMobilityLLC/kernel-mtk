@@ -920,8 +920,12 @@ UINT_8 cnmGetBssMaxBw(P_ADAPTER_T prAdapter, UINT_8 ucBssIndex)
 			ucMaxBandwidth = prAdapter->rWifiVar.ucStaBandwidth;
 	} else if (IS_BSS_P2P(prBssInfo)) {
 		/* AP mode */
-		if (p2pFuncIsAPMode(prAdapter->rWifiVar.prP2PConnSettings))
-			ucMaxBandwidth = prAdapter->rWifiVar.ucApBandwidth;
+		if (p2pFuncIsAPMode(prAdapter->rWifiVar.prP2PConnSettings)) {
+			if (prBssInfo->eBand == BAND_2G4)
+				ucMaxBandwidth = prAdapter->rWifiVar.ucAp2gBandwidth;
+			else
+				ucMaxBandwidth = prAdapter->rWifiVar.ucAp5gBandwidth;
+		}
 		/* P2P mode */
 		else {
 			if (prBssInfo->eBand == BAND_2G4)

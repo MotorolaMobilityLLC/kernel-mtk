@@ -83,8 +83,8 @@ VOID rlmBssInitForAP(P_ADAPTER_T prAdapter, P_BSS_INFO_T prBssInfo)
 	prBssInfo->fgAssoc40mBwAllowed = FALSE;
 	prBssInfo->eBssSCO = CHNL_EXT_SCN;
 
-	/* Check if AP can set its bw to 40MHz
-	 * But if any of BSS is setup in 40MHz, the second BSS would prefer to use 20MHz
+	/* Check if AP BW can set to 40MHz
+	 * If any of BSS is setup in 40MHz, the second BSS would prefer to use 20MHz
 	 * in order to remain in SCC case
 	 */
 	if (cnmBss40mBwPermitted(prAdapter, prBssInfo->ucBssIndex)) {
@@ -133,11 +133,12 @@ VOID rlmBssInitForAP(P_ADAPTER_T prAdapter, P_BSS_INFO_T prBssInfo)
 		prBssInfo->ucVhtChannelFrequencyS2 = 0;
 	}
 
-	DBGLOG(RLM, INFO, "WLAN AP SCO=%d BW=%d S1=%d S2=%d CH=%d Band=%d\n",
+	DBGLOG(RLM, INFO, "AP SCO=%d VhtChannelWidth=%d VhtFreqS1=%d VhtFreqS2=%d Band=%d\n",
 			   prBssInfo->eBssSCO,
 			   prBssInfo->ucVhtChannelWidth,
 			   prBssInfo->ucVhtChannelFrequencyS1,
-			   prBssInfo->ucVhtChannelFrequencyS2, prBssInfo->ucVhtChannelWidth, prBssInfo->eBand);
+			   prBssInfo->ucVhtChannelFrequencyS2,
+			   prBssInfo->eBand);
 
 }
 
