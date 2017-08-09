@@ -151,10 +151,7 @@ ifeq ($(CONFIG_HAVE_MTK_IN_HOUSE_TEE_SUPPORT),y)
 obj-$(CONFIG_TRUSTY) += trustzone/
 endif
 
-ifeq (,$(filter $(CONFIG_ARCH_MT8127), y))
 obj-$(CONFIG_THERMAL)   += thermal/
-endif
-
 obj-$(CONFIG_MTK_MULTIBRIDGE_SUPPORT) += multibridge/
 obj-$(CONFIG_MEDIATEK_SOLUTION)	+= aee/
 obj-$(CONFIG_MTK_FMRADIO) += fmradio/
