@@ -568,7 +568,7 @@ static int mt_fh_hal_hopping(enum FH_PLL_ID pll_id, unsigned int dds_value)
 
 		fh_write32(reg_pll_con1, (fh_read32(g_reg_mon[pll_id]) & MASK21b)
 			   | (fh_read32(reg_pll_con1) & 0xFFE00000) | (BIT32));
-		FH_MSG("PLL_CON1: 0x%08x", (fh_read32(reg_pll_con1) & MASK21b));
+		FH_MSG_DEBUG("PLL_CON1: 0x%08x", (fh_read32(reg_pll_con1) & MASK21b));
 	}
 
 	/* 6. switch to register control */
