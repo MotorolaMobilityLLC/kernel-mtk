@@ -155,7 +155,7 @@ static struct ppm_state_transfer state_perf_transfer_LL_ONLY[] = {
 		),
 	TRANS_DATA(
 		L_ONLY,
-#ifdef DISABLE_CLUSTER_MIGRATION
+#ifdef PPM_DISABLE_CLUSTER_MIGRATION
 		0,
 #else
 		PPM_MODE_MASK_JUST_MAKE_ONLY | PPM_MODE_MASK_PERFORMANCE_ONLY,
@@ -828,7 +828,7 @@ enum ppm_power_state ppm_judge_state_by_user_limit(enum ppm_power_state cur_stat
 		break;
 	}
 
-#ifdef DISABLE_CLUSTER_MIGRATION
+#ifdef PPM_DISABLE_CLUSTER_MIGRATION
 	if (new_state == PPM_POWER_STATE_L_ONLY || new_state == PPM_POWER_STATE_4L_LL)
 		new_state = PPM_POWER_STATE_4LL_L;
 #endif

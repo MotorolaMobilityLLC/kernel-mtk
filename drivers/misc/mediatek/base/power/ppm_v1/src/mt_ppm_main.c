@@ -164,7 +164,7 @@ void ppm_main_clear_client_req(struct ppm_client_req *c_req)
 		c_req->cpu_limit[i].advise_cpu_core = -1;
 	}
 
-#ifdef DISABLE_CLUSTER_MIGRATION
+#ifdef PPM_DISABLE_CLUSTER_MIGRATION
 	/* keep at least 1 LL */
 	c_req->cpu_limit[0].min_cpu_core = 1;
 #endif

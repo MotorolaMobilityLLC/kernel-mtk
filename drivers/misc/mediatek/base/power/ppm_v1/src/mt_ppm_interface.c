@@ -372,7 +372,7 @@ static ssize_t ppm_root_cluster_proc_write(struct file *file, const char __user 
 		return -EINVAL;
 
 	if (!kstrtoint(buf, 10, &cluster)) {
-#ifdef DISABLE_CLUSTER_MIGRATION
+#ifdef PPM_DISABLE_CLUSTER_MIGRATION
 		ppm_warn("Cannot set root cluster since cluster migration is disabled!\n");
 #else
 		ppm_lock(&ppm_main_info.lock);

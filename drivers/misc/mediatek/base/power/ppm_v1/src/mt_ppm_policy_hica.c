@@ -245,7 +245,7 @@ void ppm_hica_set_default_limit_by_state(enum ppm_power_state state,
 			policy->req.limit[i].min_cpufreq_idx = get_cluster_min_cpufreq_idx(i);
 			policy->req.limit[i].max_cpufreq_idx = get_cluster_max_cpufreq_idx(i);
 
-#ifdef DISABLE_CLUSTER_MIGRATION
+#ifdef PPM_DISABLE_CLUSTER_MIGRATION
 			/* keep at least 1 LL */
 			if (i == 0)
 				policy->req.limit[i].min_cpu_core = 1;
@@ -486,7 +486,7 @@ static ssize_t ppm_hica_power_state_proc_write(struct file *file, const char __u
 		return -EINVAL;
 
 	if (!kstrtoint(buf, 10, &state)) {
-#ifdef DISABLE_CLUSTER_MIGRATION
+#ifdef PPM_DISABLE_CLUSTER_MIGRATION
 		if (state == PPM_POWER_STATE_L_ONLY || state == PPM_POWER_STATE_4L_LL)
 			ppm_warn("Invalid state(%d) since cluster migration is disabled!\n", state);
 		else
