@@ -453,18 +453,14 @@ static void _hdmi_rdma_irq_handler(DISP_MODULE_ENUM module, unsigned int param)
 
 static int hdmi_fence_release_kthread(void *data)
 {
-/*
-	struct sched_param param = {.sched_priority = RTPM_PRIO_SCRN_UPDATE };
-	sched_setscheduler(current, SCHED_RR, &param);
-*/
 	int layid = 0;
-
-
 	unsigned int session_id = 0;
 	int fence_idx = 0;
 	bool ovl_reg_updated = false;
 	unsigned long input_curr_addr[EXTD_OVERLAY_CNT];
+	struct sched_param param = {.sched_priority = 94 }; /*RTPM_PRIO_SCRN_UPDATE*/
 
+	sched_setscheduler(current, SCHED_RR, &param);
 	for (;;) {
 		wait_event_interruptible(hdmi_fence_release_wq, atomic_read(&hdmi_fence_release_event));
 		atomic_set(&hdmi_fence_release_event, 0);
