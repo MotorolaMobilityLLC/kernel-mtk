@@ -341,8 +341,6 @@ static unsigned int *recordTbl;
 
 /* project includes */
 #include "mach/irqs.h"
-#include "mt_ptp.h"
-#include "mt_cpufreq.h"
 #include "mach/mt_freqhopping.h"
 #include "mach/mtk_rtc_hal.h"
 #include "mach/mt_rtc_hw.h"
@@ -361,7 +359,6 @@ static unsigned int *recordTbl;
 #endif
 
 /* local includes */
-#include "mt_defptp.h"
 
 #ifdef __KERNEL__
 	#include <mt-plat/mt_chip.h>
@@ -370,10 +367,16 @@ static unsigned int *recordTbl;
 	#include "../../../include/mt-plat/mt6797/include/mach/mt_thermal.h"
 	#include "mach/mt_ppm_api.h"
 	#include "mt_gpufreq.h"
+	#include "mt_cpufreq.h"
+	#include "mt_ptp.h"
+	#include "mt_defptp.h"
 	#include "../../../power/mt6797/da9214.h"
 	#include "../../../power/mt6797/fan53555.h"
 #else
+	#include "mach/mt_cpufreq.h"
+	#include "mach/mt_ptp.h"
 	#include "mach/mt_ptpslt.h"
+	#include "mach/mt_defptp.h"
 	#include "kernel2ctp.h"
 	#include "ptp.h"
 	#include "upmu_common.h"
@@ -1607,7 +1610,14 @@ static int base_ops_volt_2_pmic(struct eem_det *det, int volt)
 {
 	FUNC_ENTER(FUNC_LV_HELP);
 	FUNC_EXIT(FUNC_LV_HELP);
-	eem_debug("[%s] default func\n", __func__);
+	/*
+	eem_debug("[%s][%s] volt = %d, pmic = %x\n",
+		__func__,
+		((char *)(det->name) + 8),
+		volt,
+		(((volt) - det->pmic_base + det->pmic_step - 1) / det->pmic_step)
+		);
+	*/
 	return  (((volt) - det->pmic_base + det->pmic_step - 1) / det->pmic_step);
 }
 
@@ -1615,7 +1625,14 @@ static int base_ops_volt_2_eem(struct eem_det *det, int volt)
 {
 	FUNC_ENTER(FUNC_LV_HELP);
 	FUNC_EXIT(FUNC_LV_HELP);
-	eem_debug("[%s] default func\n", __func__);
+	/*
+	eem_debug("[%s][%s] volt = %d, eem = %x\n",
+		__func__,
+		((char *)(det->name) + 8),
+		volt,
+		(((volt) - det->eem_v_base + det->eem_step - 1) / det->eem_step)
+		);
+	*/
 	return (((volt) - det->eem_v_base + det->eem_step - 1) / det->eem_step);
 }
 
@@ -1623,7 +1640,14 @@ static int base_ops_pmic_2_volt(struct eem_det *det, int pmic_val)
 {
 	FUNC_ENTER(FUNC_LV_HELP);
 	FUNC_EXIT(FUNC_LV_HELP);
-	eem_debug("[%s] default func\n", __func__);
+	/*
+	eem_debug("[%s][%s] pmic = %x, volt = %d\n",
+		__func__,
+		((char *)(det->name) + 8),
+		pmic_val,
+		(((pmic_val) * det->pmic_step) + det->pmic_base)
+		);
+	*/
 	return (((pmic_val) * det->pmic_step) + det->pmic_base);
 }
 
@@ -1631,7 +1655,14 @@ static int base_ops_eem_2_pmic(struct eem_det *det, int eem_val)
 {
 	FUNC_ENTER(FUNC_LV_HELP);
 	FUNC_EXIT(FUNC_LV_HELP);
-	eem_debug("[%s] default func\n", __func__);
+	/*
+	eem_debug("[%s][%s] eem = %x, pmic = %x\n",
+		__func__,
+		((char *)(det->name) + 8),
+		eem_val,
+		(((eem_val) * det->eem_step) + det->eem_v_base - det->pmic_base + det->pmic_step - 1) / det->pmic_step
+		);
+	*/
 	return ((((eem_val) * det->eem_step) + det->eem_v_base - det->pmic_base + det->pmic_step - 1) / det->pmic_step);
 }
 
@@ -2517,7 +2548,7 @@ static void eem_set_eem_volt(struct eem_det *det)
 		default:
 			break;
 		}
-		eem_debug("[%s].volt_tbl[%d] = 0x%08X ----- volt_tbl_pmic[%d] = 0x%08X (%d)\n",
+		eem_debug("[%s].volt_tbl[%d] = 0x%X ----- volt_tbl_pmic[%d] = 0x%X (%d)\n",
 			det->name,
 			i, det->volt_tbl[i],
 			i, det->volt_tbl_pmic[i], det->ops->pmic_2_volt(det, det->volt_tbl_pmic[i]));
@@ -2817,11 +2848,11 @@ static inline void handle_init02_isr(struct eem_det *det)
 		}
 		#endif
 		/*
-		eem_error("init02_[%s].volt_tbl[%d] = 0x%08X (%d)\n",
+		eem_error("init02_[%s].volt_tbl[%d] = 0x%X (%d)\n",
 			det->name, i, det->volt_tbl[i], det->ops->pmic_2_volt(det, det->volt_tbl[i]));
 
 		if (NR_FREQ > 8) {
-			eem_error("init02_[%s].volt_tbl[%d] = 0x%08X (%d)\n",
+			eem_error("init02_[%s].volt_tbl[%d] = 0x%X (%d)\n",
 			det->name, i+1, det->volt_tbl[i+1], det->ops->pmic_2_volt(det, det->volt_tbl[i+1]));
 		}
 		*/
@@ -2850,12 +2881,12 @@ static inline void handle_init_err_isr(struct eem_det *det)
 {
 	FUNC_ENTER(FUNC_LV_LOCAL);
 	eem_error("====================================================\n");
-	eem_error("EEM init err: EEMEN(%p) = 0x%08X, EEMINTSTS(%p) = 0x%08X\n",
+	eem_error("EEM init err: EEMEN(%p) = 0x%X, EEMINTSTS(%p) = 0x%X\n",
 		     EEMEN, eem_read(EEMEN),
 		     EEMINTSTS, eem_read(EEMINTSTS));
-	eem_error("EEM_SMSTATE0 (%p) = 0x%08X\n",
+	eem_error("EEM_SMSTATE0 (%p) = 0x%X\n",
 		     EEM_SMSTATE0, eem_read(EEM_SMSTATE0));
-	eem_error("EEM_SMSTATE1 (%p) = 0x%08X\n",
+	eem_error("EEM_SMSTATE1 (%p) = 0x%X\n",
 		     EEM_SMSTATE1, eem_read(EEM_SMSTATE1));
 	eem_error("====================================================\n");
 
@@ -3059,11 +3090,11 @@ static inline void handle_mon_mode_isr(struct eem_det *det)
 		}
 		#endif
 
-		eem_isr_info("mon_[%s].volt_tbl[%d] = 0x%08X (%d)\n",
+		eem_isr_info("mon_[%s].volt_tbl[%d] = 0x%X (%d)\n",
 			det->name, i, det->volt_tbl[i], det->ops->pmic_2_volt(det, det->volt_tbl[i]));
 
 		if (NR_FREQ > 8) {
-			eem_isr_info("mon_[%s].volt_tbl[%d] = 0x%08X (%d)\n",
+			eem_isr_info("mon_[%s].volt_tbl[%d] = 0x%X (%d)\n",
 			det->name, i+1, det->volt_tbl[i+1], det->ops->pmic_2_volt(det, det->volt_tbl[i+1]));
 		}
 	}
@@ -3524,9 +3555,6 @@ static int eem_probe(struct platform_device *pdev)
 					eem_error("clk_prepare_enable failed when enabling mfg clock\n");
 			#endif
 		#endif
-	#else
-		dvfs_disable_by_ptpod();
-		gpu_dvfs_disable_by_ptpod();
 	#endif
 
 	#if (defined(__KERNEL__) && !defined(EARLY_PORTING))
@@ -3586,9 +3614,6 @@ static int eem_probe(struct platform_device *pdev)
 			/* enable frequency hopping (main PLL) */
 			/* mt_fh_popod_restore(); */
 		#endif
-	#else
-		gpu_dvfs_enable_by_ptpod();
-		dvfs_enable_by_ptpod();
 	#endif
 
 	eem_debug("eem_probe ok\n");
@@ -4727,11 +4752,10 @@ int __init eem_init(void)
 		eem_debug("[EEM] get irqnr failed=0x%x\n", eem_irq_number);
 		return 0;
 	}
+	eem_error("[EEM] new_eem_val=%d, ctrl_EEM_Enable=%d\n", new_eem_val, ctrl_EEM_Enable);
 #endif
 
 	get_devinfo(&eem_devinfo);
-
-	eem_error("[EEM] new_eem_val=%d, ctrl_EEM_Enable=%d\n", new_eem_val, ctrl_EEM_Enable);
 
 #if 0 /* def __KERNEL__ */
 	if (new_eem_val == 0) {
@@ -4742,7 +4766,7 @@ int __init eem_init(void)
 
 	/* process_voltage_bin(&eem_devinfo); */ /* LTE voltage bin use I-Chang */
 	if (0 == ctrl_EEM_Enable) {
-		eem_error("ctrl_EEM_Enable = 0x%08X\n", ctrl_EEM_Enable);
+		eem_error("ctrl_EEM_Enable = 0x%X\n", ctrl_EEM_Enable);
 		FUNC_EXIT(FUNC_LV_MODULE);
 		return 0;
 	}
