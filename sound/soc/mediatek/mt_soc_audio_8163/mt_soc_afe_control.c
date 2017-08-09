@@ -843,8 +843,10 @@ void EnableApll1(bool bEnable)
 	pr_debug("%s bEnable = %d", __func__, bEnable);
 	if (bEnable) {
 		if (Aud_APLL_DIV_APLL1_cntr == 0) {
+#ifndef COMMON_CLOCK_FRAMEWORK_API
 			/* set hf_faud_1_ck from apll1_ck */
 			SetClkCfg(AUDIO_CLK_CFG_6, 0x1 << 16, 0x1 << 16);
+#endif
 			/* apll1_div0_pdn power down */
 			SetClkCfg(AUDIO_CLK_AUDDIV_0, 0x1, 0x1);
 
@@ -871,8 +873,10 @@ void EnableApll1(bool bEnable)
 			SetClkCfg(AUDIO_CLK_AUDDIV_0, 0x0, 0x2);
 #endif
 
+#ifndef COMMON_CLOCK_FRAMEWORK_API
 			/* turn on  hf_faud_2_ck */
 			SetClkCfg(AUDIO_CLK_CFG_6, 0x0 << 23, 0x1 << 23);
+#endif
 		}
 		Aud_APLL_DIV_APLL1_cntr++;
 	} else {
@@ -880,8 +884,10 @@ void EnableApll1(bool bEnable)
 		if (Aud_APLL_DIV_APLL1_cntr == 0) {
 			AudDrv_APLL22M_Clk_Off();
 			SetClkCfg(AUDIO_CLK_AUDDIV_0, 0x1, 0x1);
+#ifndef COMMON_CLOCK_FRAMEWORK_API
 			/* turn off hf_faud_2_ck */
 			SetClkCfg(AUDIO_CLK_CFG_6, 0x1 << 23, 0x1 << 23);
+#endif
 		}
 	}
 }
@@ -891,8 +897,10 @@ void EnableApll2(bool bEnable)
 	pr_debug("%s bEnable = %d\n", __func__, bEnable);
 	if (bEnable) {
 		if (Aud_APLL_DIV_APLL2_cntr == 0) {
+#ifndef COMMON_CLOCK_FRAMEWORK_API
 			/* set hf_faud_2_ck from apll2_ck */
 			SetClkCfg(AUDIO_CLK_CFG_6, 0x1 << 24, 0x1 << 24);
+#endif
 			/* apll2_div0_pdn power down */
 			SetClkCfg(AUDIO_CLK_AUDDIV_0, 0x2, 0x2);
 			/* apll2_ck_div0, 98.3030/4 = 24.576M */
@@ -900,8 +908,10 @@ void EnableApll2(bool bEnable)
 			AudDrv_APLL24M_Clk_On();
 			/* apll2_div0_pdn power up */
 			SetClkCfg(AUDIO_CLK_AUDDIV_0, 0x0, 0x2);
+#ifndef COMMON_CLOCK_FRAMEWORK_API
 			/* turn on hf_faud_2_ck */
 			SetClkCfg(AUDIO_CLK_CFG_6, 0x0 << 31, 0x1 << 31);
+#endif
 		}
 		Aud_APLL_DIV_APLL2_cntr++;
 	} else {
@@ -910,8 +920,10 @@ void EnableApll2(bool bEnable)
 			AudDrv_APLL24M_Clk_Off();
 			/* apll2_div0_pdn power down */
 			SetClkCfg(AUDIO_CLK_AUDDIV_0, 0x2, 0x2);
+#ifndef COMMON_CLOCK_FRAMEWORK_API
 			/* turn off hf_faud_2_ck */
 			SetClkCfg(AUDIO_CLK_CFG_6, 0x1 << 31, 0x1 << 31);
+#endif
 		}
 	}
 }

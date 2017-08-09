@@ -30,6 +30,8 @@
 
 #ifdef CONFIG_MTK_CLKMGR
 #define PM_MANAGER_API
+#else
+#define COMMON_CLOCK_FRAMEWORK_API
 #endif
 
 #define AUDIO_MEMORY_SRAM
@@ -145,7 +147,7 @@
 #endif
 
 
-#define PRINTK_AUD_ERROR(format, args...)  pr_debug(format, ##args)
+#define PRINTK_AUD_ERROR(format, args...)  pr_err(format, ##args)
 
 /* if need assert , use AUDIO_ASSERT(true) */
 #define AUDIO_ASSERT(value) BUG_ON(false)

@@ -86,6 +86,7 @@
 #include <asm/div64.h>
 #include <mt-plat/mt_gpio.h>
 #include <linux/clk.h>
+#include <linux/pm_runtime.h>
 #include <linux/delay.h>
 #include <linux/platform_device.h>
 #include <linux/slab.h>
@@ -642,6 +643,9 @@ static struct snd_soc_platform_driver mtk_soc_platform = {
 	.probe = mtk_asoc_dl1_probe,
 };
 
+#ifndef CONFIG_MTK_CLKMGR
+struct platform_device *auddrv_pdev;
+#endif
 static int mtk_soc_dl1_probe(struct platform_device *pdev)
 {
 #ifndef CONFIG_OF
@@ -660,8 +664,16 @@ static int mtk_soc_dl1_probe(struct platform_device *pdev)
 
 	PRINTK_AUDDRV("%s: dev name %s\n", __func__, dev_name(&pdev->dev));
 
+#ifndef CONFIG_MTK_CLKMGR
+	Auddrv_Clk_Init(&pdev->dev);
+
+	pm_runtime_enable(&pdev->dev);
+
+	auddrv_pdev = pdev;
+#endif
+
 #ifndef CONFIG_MTK_LEGACY
-		AudDrv_GPIO_probe(&pdev->dev);
+	AudDrv_GPIO_probe(&pdev->dev);
 #endif
 
 	InitAfeControl();
@@ -697,6 +709,10 @@ static int mtk_asoc_dl1_probe(struct snd_soc_platform *platform)
 static int mtk_afe_remove(struct platform_device *pdev)
 {
 	PRINTK_AUDDRV("%s\n", __func__);
+#ifndef CONFIG_MTK_CLKMGR
+	pm_runtime_disable(&pdev->dev);
+	Auddrv_Clk_Deinit(&pdev->dev);
+#endif
 	snd_soc_unregister_platform(&pdev->dev);
 	return 0;
 }
@@ -711,6 +727,21 @@ static const struct of_device_id mt_soc_pcm_dl1_of_ids[] = {
 	{.compatible = "mediatek,mt8163-soc-pcm-dl1",},
 	{}
 };
+
+#ifndef CONFIG_MTK_CLKMGR
+int power_on_audsys(void)
+{
+	return pm_runtime_get_sync(&auddrv_pdev->dev);
+}
+EXPORT_SYMBOL(power_on_audsys);
+
+int power_off_audsys(void)
+{
+	return pm_runtime_put_sync(&auddrv_pdev->dev);
+}
+EXPORT_SYMBOL(power_off_audsys);
+
+#endif
 
 static int Auddrv_Reg_map_new(void)
 {

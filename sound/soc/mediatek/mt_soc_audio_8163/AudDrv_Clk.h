@@ -69,7 +69,8 @@
 void AudDrv_Clk_AllOn(void);
 
 void Auddrv_Bus_Init(void);
-
+int Auddrv_Clk_Init(void *dev);
+void Auddrv_Clk_Deinit(void *dev);
 void AudDrv_Clk_Power_On(void);
 void AudDrv_Clk_Power_Off(void);
 
@@ -111,6 +112,12 @@ void AudDrv_APLL2Tuner_Clk_Off(void);
 void AudDrv_Emi_Clk_On(void);
 void AudDrv_Emi_Clk_Off(void);
 
+#ifndef CONFIG_MTK_CLKMGR
+int power_on_audsys(void);
+
+int power_off_audsys(void);
+
+#endif
 
 #endif
 
