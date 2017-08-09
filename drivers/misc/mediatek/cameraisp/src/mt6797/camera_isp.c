@@ -7778,8 +7778,8 @@ static MINT32 ISP_open(
 		i = pr_detect_count + 150;
 		set_detect_count(i);
 
-		LOG_DBG("Curr UserCount(%d), (process, pid, tgid)=(%s, %d, %d), first user\n",
-			IspInfo.UserCount, current->comm, current->pid, current->tgid);
+		LOG_DBG("Curr UserCount(%d), (process, pid, tgid)=(%s, %d, %d), log_limit_line(%d), first user\n",
+			IspInfo.UserCount, current->comm, current->pid, current->tgid, i);
 	}
 
 	/* do wait queue head init when re-enter in camera */
@@ -8003,12 +8003,12 @@ static MINT32 ISP_release(
 	} else {
 		spin_unlock(&(IspInfo.SpinLockIspRef));
 	}
-	/*      */
-	LOG_DBG("Curr UserCount(%d), (process, pid, tgid)=(%s, %d, %d),	last user",
-		IspInfo.UserCount, current->comm, current->pid, current->tgid);
 
 	/* kernel log limit back to default */
 	set_detect_count(pr_detect_count);
+	/*      */
+	LOG_DBG("Curr UserCount(%d), (process, pid, tgid)=(%s, %d, %d), log_limit_line(%d),	last user",
+		IspInfo.UserCount, current->comm, current->pid, current->tgid, pr_detect_count);
 
 	/* Close VF when ISP_release */
 	/* reason of close vf is to make sure camera can serve regular after previous abnormal exit */
