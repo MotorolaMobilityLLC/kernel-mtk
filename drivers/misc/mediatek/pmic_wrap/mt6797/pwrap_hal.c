@@ -885,7 +885,7 @@ static void _pwrap_enable(void)
 	WRAP_WR32(PMIC_WRAP_WDT_UNIT, 0xf);
 	WRAP_WR32(PMIC_WRAP_WDT_SRC_EN, 0xffffffff);
 	WRAP_WR32(PMIC_WRAP_TIMER_EN, 0x1);
-	WRAP_WR32(PMIC_WRAP_INT0_EN, 0xffffffff);
+	WRAP_WR32(PMIC_WRAP_INT0_EN, 0xfffffffd);
 	WRAP_WR32(PMIC_WRAP_INT1_EN, 0x0001ffff);
 
 }
