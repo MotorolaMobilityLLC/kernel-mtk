@@ -20,6 +20,8 @@
 #define MODULE_NAME	 "[devinfo]"
 #define DEV_NAME		"devmap"
 #define MAJOR_DEV_NUM	196
+#define DEVINFO_SEGCODE_INDEX 30
+
  /*****************************************************************************
  * IOCTL DEFINITION
  *****************************************************************************/
@@ -29,12 +31,9 @@
 
 #ifdef CONFIG_OF
 /*device information data*/
-#define DEVINFO_MAX_SIZE 100
 struct devinfo_tag {
-	u32 size;
-	u32 tag;
-	u32 data[DEVINFO_MAX_SIZE];	/* device information */
 	u32 data_size;  /* device information size */
+	u32 data[0];	/* device information (dynamically allocate in v2 driver) */
 };
 #endif
 
