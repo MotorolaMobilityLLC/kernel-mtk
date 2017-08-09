@@ -889,7 +889,8 @@ static int kpd_pdrv_probe(struct platform_device *pdev)
 		input_unregister_device(kpd_input_dev);
 		return r;
 	}
-#ifdef CONFIG_KPD_PWRKEY_USE_EINT
+#ifdef CONFIG_MTK_MRDUMP_KEY
+/* This func use as mrdump now, if powerky use kpd eint it need to open another API */
 	mt_eint_register();
 #endif
 
