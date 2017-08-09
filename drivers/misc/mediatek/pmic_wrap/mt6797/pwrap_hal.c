@@ -18,6 +18,7 @@
 #include <linux/of_irq.h>
 #include <linux/of_address.h>
 #endif
+#include <mt-plat/mt_gpio.h>
 #include <mach/mt_pmic_wrap.h>
 #include "pwrap_hal.h"
 
@@ -1075,6 +1076,12 @@ s32 pwrap_init(void)
 #endif
 
 	PWRAPLOG("kernel pwrap_init start!!!!!!!!!!!!!\n");
+	/* For trapping function, pull PWRAP_SPI0_MO pin from high to low*/
+	mt_set_gpio_pull_enable((143 | 0x80000000), 1);
+	mt_set_gpio_pull_select((143 | 0x80000000), 0);
+	PWRAPLOG("Dump GPIO143 pull_en=0x%x,pull_down=0x%x\n", mt_get_gpio_pull_enable(143|0x80000000),
+			mt_get_gpio_pull_select(143 | 0x80000000));
+
 
 	/* toggle PMIC_WRAP and pwrap_spictl reset */
 	__pwrap_soft_reset();
