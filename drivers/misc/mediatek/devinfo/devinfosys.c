@@ -40,6 +40,7 @@ static ssize_t devinfo_show(struct device_driver *driver, char *buf)
 	output[0] = devinfo_get_size();
 	for (i = 0; i < output[0]; i++)
 		output[i + 1] = get_devinfo_with_index(i);
+
 	return (output[0] + 1) * sizeof(unsigned int);
 }
 
@@ -62,6 +63,7 @@ static int __init devinfo_init(void)
 		driver_unregister(&dev_info.driver);
 		return -1;
 	}
+
 	return 0;
 }
 module_init(devinfo_init);

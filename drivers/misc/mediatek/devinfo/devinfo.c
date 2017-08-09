@@ -31,19 +31,26 @@ static long devinfo_ioctl(struct file *file, unsigned int cmd, unsigned long arg
 **************************************************************************/
 u32 devinfo_get_size(void)
 {
-	return ARRAY_SIZE(g_devinfo_data);
+	u32 data_size = 0;
+
+	data_size = ARRAY_SIZE(g_devinfo_data);
+	return data_size;
 }
 
 u32 get_devinfo_with_index(u32 index)
 {
 	int size = devinfo_get_size();
+	u32 ret = 0;
 
 	if ((index >= 0) && (index < size))
-		return g_devinfo_data[index];
+		ret = g_devinfo_data[index];
+	else {
+		pr_warn("devinfo data index out of range:%d\n", index);
+		pr_warn("devinfo data size:%d\n", size);
+		ret = 0xFFFFFFFF;
+	}
 
-	pr_warn("devinfo data index out of range:%d\n", index);
-	pr_warn("devinfo data size:%d\n", size);
-	return 0xFFFFFFFF;
+	return ret;
 }
 /**************************************************************************
 *STATIC FUNCTION
@@ -58,7 +65,6 @@ static const struct file_operations devinfo_fops = {
 #endif
 	.owner = THIS_MODULE,
 };
-
 
 static int devinfo_open(struct inode *inode, struct file *filp)
 {
@@ -102,7 +108,6 @@ static long devinfo_ioctl(struct file *file, unsigned int cmd, unsigned long arg
 	case READ_DEV_DATA:
 		if (copy_from_user((void *)&index, (void __user *)arg, sizeof(u32)))
 			return -1;
-
 		if (index < data_size) {
 			data_read = get_devinfo_with_index(index);
 			ret = copy_to_user((void __user *)arg, (void *)&(data_read), sizeof(u32));
@@ -113,6 +118,7 @@ static long devinfo_ioctl(struct file *file, unsigned int cmd, unsigned long arg
 		}
 		break;
 	}
+
 	return 0;
 }
 
@@ -138,10 +144,10 @@ static int __init devinfo_init(void)
 	struct device *device;
 
 	devinfo_dev = MKDEV(MAJOR_DEV_NUM, 0);
-	pr_debug("[%s]init\n", MODULE_NAME);
+	pr_info("[%s]init\n", MODULE_NAME);
 	ret = register_chrdev_region(devinfo_dev, 1, DEV_NAME);
 	if (ret) {
-		pr_warn("[%s] register device failed, ret:%d\n", MODULE_NAME, ret);
+		pr_info("[%s] register device failed, ret:%d\n", MODULE_NAME, ret);
 		return ret;
 	}
 	/*create class*/
@@ -155,6 +161,7 @@ static int __init devinfo_init(void)
 	/* initialize the device structure and register the device  */
 	cdev_init(&devinfo_cdev, &devinfo_fops);
 	devinfo_cdev.owner = THIS_MODULE;
+
 	ret = cdev_add(&devinfo_cdev, devinfo_dev, 1);
 	if (ret < 0) {
 		pr_warn("[%s] could not allocate chrdev for the device, ret:%d\n", MODULE_NAME, ret);
@@ -172,6 +179,7 @@ static int __init devinfo_init(void)
 		unregister_chrdev_region(devinfo_dev, 1);
 		return ret;
 	}
+
 	return 0;
 }
 
@@ -191,8 +199,9 @@ static int __init devinfo_parse_dt(unsigned long node, const char *uname, int de
 		for (i = 0; i < size; i++)
 			g_devinfo_data[i] = tags->data[i];
 		/* print chip id for debugging purpose */
-		pr_debug("tag_devinfo_data size:%d\n", size);
+		pr_info("tag_devinfo_data size:%d\n", size);
 	}
+
 	return 1;
 }
 
