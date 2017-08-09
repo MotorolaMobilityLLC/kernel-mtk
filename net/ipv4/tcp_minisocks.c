@@ -586,7 +586,7 @@ struct sock *tcp_check_req(struct sock *sk, struct sk_buff *skb,
 		 */
 		if (!inet_rtx_syn_ack(sk, req))
 			req->expires = min(TCP_TIMEOUT_INIT << req->num_timeout,
-					   TCP_RTO_MAX) + jiffies;
+					   sysctl_tcp_rto_max) + jiffies;
 		return NULL;
 	}
 

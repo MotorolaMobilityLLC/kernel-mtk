@@ -2567,7 +2567,7 @@ static int do_tcp_setsockopt(struct sock *sk, int level,
 		/* Translate value in seconds to number of retransmits */
 		icsk->icsk_accept_queue.rskq_defer_accept =
 			secs_to_retrans(val, TCP_TIMEOUT_INIT / HZ,
-					TCP_RTO_MAX / HZ);
+					sysctl_tcp_rto_max / HZ);
 		break;
 
 	case TCP_WINDOW_CLAMP:
@@ -2790,7 +2790,7 @@ static int do_tcp_getsockopt(struct sock *sk, int level,
 		break;
 	case TCP_DEFER_ACCEPT:
 		val = retrans_to_secs(icsk->icsk_accept_queue.rskq_defer_accept,
-				      TCP_TIMEOUT_INIT / HZ, TCP_RTO_MAX / HZ);
+				      TCP_TIMEOUT_INIT / HZ, sysctl_tcp_rto_max / HZ);
 		break;
 	case TCP_WINDOW_CLAMP:
 		val = tp->window_clamp;
