@@ -188,7 +188,7 @@ enum {
 	FLOW_CTRL_ENABLE
 };
 
-#if !defined(CONFIG_MTK_LEGACY)
+#if !defined(CONFIG_MTK_CLKMGR)
 #include <linux/clk.h>
 extern struct clk *clk_scp_sys_md2_main;
 #endif
