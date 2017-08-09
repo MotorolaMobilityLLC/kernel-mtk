@@ -3883,7 +3883,10 @@ static void ISP_EnableClock(MBOOL En)
 		spin_unlock(&(IspInfo.SpinLockClock));
 		Prepare_Enable_ccf_clock(); /* !!cannot be used in spinlock!! */
 #endif
+	/* Disable CAMSYS_HALT1_EN: LSCI & BPCI, To avoid ISP halt keep arise */
+	ISP_WR32(ISP_CAMSYS_CONFIG_BASE + 0x120, 0xFFFFF7EF);
 
+	LOG_INF("enable clock!! ISP halt_en:0x%x", ISP_RD32(ISP_CAMSYS_CONFIG_BASE + 0x120));
 
 	} else {                /* Disable clock. */
 #if defined(EVEREST_EP_NO_CLKMGR) || defined(CONFIG_MTK_CLKMGR)
