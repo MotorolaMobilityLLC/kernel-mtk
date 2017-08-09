@@ -1223,7 +1223,9 @@ out:
 static int pmic_mt_cust_probe(struct platform_device *pdev)
 {
 	struct device_node *np, *nproot, *regulators, *child;
+#ifdef non_ks
 	const struct of_device_id *match;
+#endif
 	int i, ret;
 	unsigned int default_on;
 
