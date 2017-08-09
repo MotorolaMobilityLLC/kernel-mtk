@@ -297,7 +297,8 @@ struct fb_post_video_buffer {
 	unsigned int width, height;
 };
 
-#if defined(CONFIG_ARCH_MT6735) || defined(CONFIG_ARCH_MT6735M) || defined(CONFIG_ARCH_MT6753)
+#if defined(CONFIG_ARCH_MT6735) || defined(CONFIG_ARCH_MT6735M)\
+	|| defined(CONFIG_ARCH_MT6753) || defined(CONFIG_ARCH_MT8160)
 extern unsigned int EnableVSyncLog;
 
 void mtkfb_log_enable(int enable);
@@ -378,7 +379,8 @@ extern long hdmi_handle_cmd(unsigned int cmd, unsigned long arg);
 extern unsigned int vramsize;
 #endif
 
-#if defined(CONFIG_ARCH_MT6735) || defined(CONFIG_ARCH_MT6735M) || defined(CONFIG_ARCH_MT6753)
+#if defined(CONFIG_ARCH_MT6735) || defined(CONFIG_ARCH_MT6735M)\
+	|| defined(CONFIG_ARCH_MT6753) || defined(CONFIG_ARCH_MT8160)
 extern bool is_early_suspended;
 extern void mtkfb_waitVsync(void);
 extern bool is_ipoh_bootup;

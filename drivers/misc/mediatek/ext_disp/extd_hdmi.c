@@ -40,9 +40,15 @@
 #include <linux/atomic.h>
 #include <linux/io.h>
 
-#include <mach/irqs.h>
+#if defined(CONFIG_ARCH_MT8160)
+#ifdef CONFIG_MTK_CLKMGR
 #include <mach/mt_clkmgr.h>
+#endif
+#else
+#include <mach/irqs.h>
 #include "mach/irqs.h"
+#include <mach/mt_clkmgr.h>
+#endif
 
 #include <asm/cacheflush.h>
 #include <asm/tlbflush.h>
