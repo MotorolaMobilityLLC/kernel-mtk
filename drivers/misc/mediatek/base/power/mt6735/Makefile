@@ -28,5 +28,6 @@ obj-y += mt_hotplug.o
 else
 
 obj-$(CONFIG_MTK_PSCI)  += mt_psci.o
+obj-y += mt_cpuidle64.o
 
 endif
