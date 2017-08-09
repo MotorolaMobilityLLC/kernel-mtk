@@ -96,7 +96,7 @@ static void store_rt_mon_info(int cpu, u64 delta_exec, struct task_struct *p)
 
 	mtmon->pid = p->pid;
 	mtmon->prio = p->prio;
-	strncpy(mtmon->comm, p->comm, sizeof(p->comm));
+	strncpy(mtmon->comm, p->comm, sizeof(mtmon->comm));
 	mtmon->cputime = delta_exec;
 	mtmon->isr_time = p->se.mtk_isr_time;
 	mtmon->isr_time_init = p->se.mtk_isr_time;
@@ -140,7 +140,7 @@ void stop_rt_mon_task(int cpu)
 		tsk = find_task_by_vpid(tmp->pid);
 		if (tsk && task_has_rt_policy(tsk)) {
 			tmp->prio = tsk->prio;
-			strncpy(tmp->comm, tsk->comm, sizeof(tsk->comm));
+			strncpy(tmp->comm, tsk->comm, sizeof(tmp->comm));
 			tmp->isr_time = tsk->se.mtk_isr_time;
 			tmp->cost_isrtime = tmp->isr_time - tmp->isr_time_init;
 		}
@@ -312,7 +312,7 @@ void save_mt_rt_mon_info(int cpu, u64 delta_exec, struct task_struct *p)
 	list_for_each_entry(tmp, list_head, list) {
 		if (!find && (tmp->pid == p->pid)) {
 			tmp->prio = p->prio;
-			strncpy(tmp->comm, p->comm, sizeof(p->comm));
+			strncpy(tmp->comm, p->comm, sizeof(tmp->comm));
 			tmp->cputime += delta_exec;
 			find = 1;
 		}
