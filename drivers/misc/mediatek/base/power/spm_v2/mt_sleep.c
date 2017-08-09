@@ -17,9 +17,11 @@
 #include "mt_spm_idle.h"
 #include "mt_spm_mtcmos.h"
 #include "mt_clkmgr.h"
+#include "mt_spm_misc.h"
 #ifdef CONFIG_MT_SND_SOC_6755
 #include <mt_soc_afe_control.h>
 #endif
+
 /**************************************
  * only for internal debug
  **************************************/
@@ -28,7 +30,7 @@
 #define SLP_REPLACE_DEF_WAKESRC     1
 #define SLP_SUSPEND_LOG_EN          1
 #else
-#define SLP_SLEEP_DPIDLE_EN         0
+#define SLP_SLEEP_DPIDLE_EN         1
 #define SLP_REPLACE_DEF_WAKESRC     0
 #define SLP_SUSPEND_LOG_EN          1
 #endif
@@ -36,7 +38,7 @@
 /**************************************
  * SW code for suspend
  **************************************/
-#define slp_read(addr)              (*(volatile u32 *)(addr))
+#define slp_read(addr)              __raw_readl((void __force __iomem *)(addr))
 #define slp_write(addr, val)        mt65xx_reg_sync_writel(val, addr)
 /*
 #define slp_emerg(fmt, args...)     pr_debug(KERN_EMERG "[SLP] " fmt, ##args)
@@ -61,11 +63,8 @@
 static DEFINE_SPINLOCK(slp_lock);
 
 static wake_reason_t slp_wake_reason = WR_NONE;
-/* static bool slp_ck26m_on = 0; */
-/* static bool slp_dump_gpio = 0; */
-bool slp_ck26m_on = 0;
-static bool slp_pars_dpd = 1;
 
+static bool slp_ck26m_on;
 static bool slp_chk_golden = 1;
 bool slp_dump_gpio = 0;
 static bool slp_dump_regs = 1;
@@ -74,17 +73,24 @@ static bool slp_check_mtcmos_pll = 1;
 static u32 slp_spm_flags = {
 #if 0
 	SPM_FLAG_DIS_CPU_PDN |
-	    SPM_FLAG_DIS_INFRA_PDN |
-	    SPM_FLAG_DIS_DDRPHY_PDN |
-	    SPM_FLAG_DIS_DPD | SPM_FLAG_DIS_BUS_CLOCK_OFF | SPM_FLAG_DIS_VPROC_VSRAM_DVS
+	SPM_FLAG_DIS_INFRA_PDN |
+	SPM_FLAG_DIS_DDRPHY_PDN |
+	SPM_FLAG_DIS_DPD |
+	SPM_FLAG_DIS_BUS_CLOCK_OFF |
+	SPM_FLAG_DIS_VPROC_VSRAM_DVS
 #else
-	SPM_FLAG_DIS_INFRA_PDN | SPM_FLAG_DIS_DPD
+	#ifdef CONFIG_MTK_ICUSB_SUPPORT
+	SPM_FLAG_DIS_INFRA_PDN |
+	#endif
+	SPM_FLAG_DIS_DPD |
+	SPM_FLAG_EN_NFC_CLOCK_BUF_CTRL
 #endif
 };
 
 #if SLP_SLEEP_DPIDLE_EN
+/* sync with mt_idle.c spm_deepidle_flags setting */
 static u32 slp_spm_deepidle_flags = {
-	0
+	SPM_FLAG_EN_NFC_CLOCK_BUF_CTRL
 };
 #endif
 
@@ -111,18 +117,27 @@ static int slp_suspend_ops_begin(suspend_state_t state)
 	return 0;
 }
 
+void __attribute__((weak)) mt_power_gs_dump_suspend(void)
+{
+
+}
+
 static int slp_suspend_ops_prepare(void)
 {
 	/* legacy log */
 	slp_notice("@@@@@@@@@@@@@@@@@@@@\n");
 	slp_crit2("Chip_pm_prepare\n");
 	slp_notice("@@@@@@@@@@@@@@@@@@@@\n");
+
+#ifndef CONFIG_MTK_FPGA
+	if (slp_chk_golden)
+		mt_power_gs_dump_suspend();
+#endif
 	return 0;
 }
 
 #ifdef CONFIG_MTKPASR
 /* PASR/DPD Preliminary operations */
-/* extern void mtkpasr_phaseone_ops(void); */
 static int slp_suspend_ops_prepare_late(void)
 {
 	slp_notice("[%s]\n", __func__);
@@ -136,14 +151,6 @@ static void slp_suspend_ops_wake(void)
 }
 
 /* PASR/DPD SW operations */
-/*
-extern int configure_mrw_pasr(u32 segment_rank0, u32 segment_rank1);
-extern int pasr_enter(u32 *sr, u32 *dpd);
-extern int pasr_exit(void);
-extern unsigned long mtkpasr_enable_sr;
-extern void enter_pasr_dpd_config(unsigned char segment_rank0, unsigned char segment_rank1);
-extern void exit_pasr_dpd_config(void);
-*/
 static int enter_pasrdpd(void)
 {
 	int error = 0;
@@ -169,7 +176,7 @@ static int enter_pasrdpd(void)
 			slp_crit2("[%s][%d] No configuration on SR\n", __func__, __LINE__);
 		}
 		/* Configure PASR */
-		/* enter_pasr_dpd_config((sr & 0xFF), (sr >> 0x8)); */
+		enter_pasr_dpd_config((sr & 0xFF), (sr >> 0x8));
 		/* if (mrw_error) { */
 		/* pr_debug(KERN_ERR "[%s][%d] PM: Failed to configure MRW PASR [%d]!\n",
 		 *__FUNCTION__,__LINE__,mrw_error); */
@@ -187,7 +194,7 @@ static void leave_pasrdpd(void)
 	slp_notice("@@@@@@@@@@@@@@@@@@@@\n");
 
 	/* Disable PASR */
-	/* exit_pasr_dpd_config(); */
+	exit_pasr_dpd_config();
 
 	slp_crit2("[%d]\n", __LINE__);
 	/* End PASR/DPD SW operations */
@@ -225,26 +232,26 @@ static int slp_suspend_ops_enter(suspend_state_t state)
 	slp_crit2("Chip_pm_enter\n");
 	slp_notice("@@@@@@@@@@@@@@@@@@@@\n");
 
-
-#if 0
 	if (slp_dump_gpio)
 		gpio_dump_regs();
-#endif
-
 #if 0
 	if (slp_dump_regs)
 		slp_dump_pm_regs();
 #endif
 
 #if 0
+#ifndef CONFIG_MTK_FPGA
 	if (slp_check_mtcmos_pll)
 		slp_check_pm_mtcmos_pll();
 
-	if (!spm_cpusys0_can_power_down()) {
-		slp_error("CANNOT SLEEP DUE TO CPU1/2/3 PON\n");
+	if (!(spm_cpusys0_can_power_down() || spm_cpusys1_can_power_down())) {
+		slp_error("CANNOT SLEEP DUE TO CPUx PON, PWR_STATUS = 0x%x, PWR_STATUS_2ND = 0x%x\n",
+		     slp_read(PWR_STATUS), slp_read(PWR_STATUS_2ND));
+		/* return -EPERM; */
 		ret = -EPERM;
 		goto LEAVE_SLEEP;
 	}
+#endif
 #endif
 
 	if (is_infra_pdn(slp_spm_flags) && !is_cpu_pdn(slp_spm_flags)) {
@@ -252,12 +259,6 @@ static int slp_suspend_ops_enter(suspend_state_t state)
 		ret = -EPERM;
 		goto LEAVE_SLEEP;
 	}
-
-	/* only for test */
-#if 0
-	slp_pasr_en(1, 0x0);
-	slp_dpd_en(1);
-#endif
 
 #if SLP_SLEEP_DPIDLE_EN
 #ifdef CONFIG_MT_SND_SOC_6755
@@ -275,6 +276,13 @@ LEAVE_SLEEP:
 	/* PASR SW operations */
 	leave_pasrdpd();
 #endif
+
+#ifndef CONFIG_MTK_FPGA
+#ifdef CONFIG_MTK_SYSTRACKER
+	systracker_enable();
+#endif
+#endif
+
 	return ret;
 }
 
@@ -363,38 +371,6 @@ bool slp_will_infra_pdn(void)
 	return is_infra_pdn(slp_spm_flags);
 }
 
-/*
- * en: 1: enable pasr, 0: disable pasr
- * value: pasr setting (RK1, MR17 for RK0)
- */
-void slp_pasr_en(bool en, u32 value)
-{
-#if 0				/* no pars */
-	if (slp_pars_dpd) {
-		if (en) {
-			slp_spm_flags &= ~SPM_PASR_DIS;
-			slp_spm_data = value;
-		} else {
-			slp_spm_flags |= SPM_PASR_DIS;
-			slp_spm_data = 0;
-		}
-	}
-#endif
-}
-
-/*
- * en: 1: enable DPD, 0: disable DPD
- */
-void slp_dpd_en(bool en)
-{
-	if (slp_pars_dpd) {
-		if (en)
-			slp_spm_flags &= ~SPM_FLAG_DIS_DPD;
-		else
-			slp_spm_flags |= SPM_FLAG_DIS_DPD;
-	}
-}
-
 void slp_module_init(void)
 {
 	spm_output_sleep_option();
@@ -403,6 +379,10 @@ void slp_module_init(void)
 	suspend_set_ops(&slp_suspend_ops);
 #if SLP_SUSPEND_LOG_EN
 	console_suspend_enabled = 0;
+#endif
+
+#ifndef CONFIG_MTK_FPGA
+	spm_set_suspned_pcm_init_flag(&slp_spm_flags);
 #endif
 }
 
@@ -419,7 +399,6 @@ arch_initcall(spm_fpga_module_init);
 #endif
 */
 module_param(slp_ck26m_on, bool, 0644);
-module_param(slp_pars_dpd, bool, 0644);
 module_param(slp_spm_flags, uint, 0644);
 
 module_param(slp_chk_golden, bool, 0644);

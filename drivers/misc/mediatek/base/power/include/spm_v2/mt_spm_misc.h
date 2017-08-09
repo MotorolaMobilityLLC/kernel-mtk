@@ -79,4 +79,14 @@ extern bool is_already_snap_shot;
 /* power golden setting */
 extern void mt_power_gs_dump_suspend(void);
 
+/* gpio */
+extern void gpio_dump_regs(void);
+
+/* pasr */
+extern void mtkpasr_phaseone_ops(void);
+extern int configure_mrw_pasr(u32 segment_rank0, u32 segment_rank1);
+extern int pasr_enter(u32 *sr, u32 *dpd);
+extern int pasr_exit(void);
+extern unsigned long mtkpasr_enable_sr;
+
 #endif  /* _MT_SPM_MISC_H */

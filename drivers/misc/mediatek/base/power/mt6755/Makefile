@@ -3,12 +3,9 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include/spm_v2/
 
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/irq/$(MTK_PLATFORM)/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/dramc/$(MTK_PLATFORM)/
-ccflags-y += -I$(srctree)/sound/soc/mediatek/mt_soc_audio_6755/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/thermal/fakeHeader/
 
 obj-y += mt_pm_init.o
-#obj-y += mt_sleep.o
-#obj-y += mt_spm_sleep.o
 #obj-y += mt_clkbuf_ctl.o
 #obj-y += mt_dcm.o
 ifeq ($(strip $(CONFIG_MTK_CLKMGR)),y)
