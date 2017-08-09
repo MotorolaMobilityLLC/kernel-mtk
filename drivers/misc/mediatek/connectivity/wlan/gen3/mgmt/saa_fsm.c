@@ -736,7 +736,7 @@ VOID saaFsmRunEventStart(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHdr)
 
 		if ((prAdapter->rWifiVar.ucAvailablePhyTypeSet & PHY_TYPE_SET_802_11N)
 		    && (prStaRec->ucPhyTypeSet & PHY_TYPE_SET_802_11N)) {
-			prBssInfo->fgAssoc40mBwAllowed = cnmBss40mBwPermitted(prAdapter, prBssInfo->ucBssIndex);
+			prBssInfo->fgAssoc40mBwAllowed = cnmBss40mBwPermittedForJoin(prAdapter, prBssInfo->ucBssIndex);
 		} else {
 			prBssInfo->fgAssoc40mBwAllowed = FALSE;
 		}

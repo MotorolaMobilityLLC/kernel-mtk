@@ -871,6 +871,52 @@ BOOLEAN cnmBss40mBwPermitted(P_ADAPTER_T prAdapter, UINT_8 ucBssIndex)
 	return TRUE;
 }
 
+BOOLEAN cnmBss40mBwPermittedForJoin(P_ADAPTER_T prAdapter, UINT_8 ucBssIndex)
+{
+	UINT_8 ucAPBandwidth;
+	P_BSS_DESC_T prBssDesc = NULL;
+	P_BSS_INFO_T prBssInfo;
+	UINT_8 ucMaxBandwidth = MAX_BW_80MHZ;
+
+	ASSERT(prAdapter);
+
+	ucAPBandwidth = cnmGetAPBwPermitted(prAdapter, ucBssIndex);
+	prBssInfo = GET_BSS_INFO_BY_INDEX(prAdapter, ucBssIndex);
+
+	if (IS_BSS_AIS(prBssInfo)) {
+		/* STA mode */
+		prBssDesc = prAdapter->rWifiVar.rAisFsmInfo.prTargetBssDesc;
+		if (prBssDesc->eBand == BAND_2G4)
+			ucMaxBandwidth = prAdapter->rWifiVar.ucSta2gBandwidth;
+		else
+			ucMaxBandwidth = prAdapter->rWifiVar.ucSta5gBandwidth;
+
+		if (ucMaxBandwidth > prAdapter->rWifiVar.ucStaBandwidth)
+			ucMaxBandwidth = prAdapter->rWifiVar.ucStaBandwidth;
+	} else if (IS_BSS_P2P(prBssInfo)) {
+		/* AP mode */
+		if (p2pFuncIsAPMode(prAdapter->rWifiVar.prP2PConnSettings)) {
+			if (prBssInfo->eBand == BAND_2G4)
+				ucMaxBandwidth = prAdapter->rWifiVar.ucAp2gBandwidth;
+			else
+				ucMaxBandwidth = prAdapter->rWifiVar.ucAp5gBandwidth;
+		}
+		/* P2P mode */
+		else {
+			if (prBssInfo->eBand == BAND_2G4)
+				ucMaxBandwidth = prAdapter->rWifiVar.ucP2p2gBandwidth;
+			else
+				ucMaxBandwidth = prAdapter->rWifiVar.ucP2p5gBandwidth;
+		}
+	}
+
+	/* Decide max bandwidth by feature option */
+	if ((ucMaxBandwidth < MAX_BW_40MHZ) || (ucAPBandwidth < MAX_BW_40MHZ))
+		return FALSE;
+
+	return TRUE;
+}
+
 /*----------------------------------------------------------------------------*/
 /*!
 * @brief
