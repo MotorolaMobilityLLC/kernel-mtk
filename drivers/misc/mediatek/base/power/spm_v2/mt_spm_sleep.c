@@ -208,7 +208,11 @@ static struct pwr_ctrl suspend_ctrl = {
 	.md_ddr_dbc_en = 0,
 	.md1_req_mask_b = 1,
 	.md2_req_mask_b = 0,
+#if defined(CONFIG_ARCH_MT6755)
 	.scp_req_mask_b = 0,
+#elif defined(CONFIG_ARCH_MT6797)
+	.scp_req_mask_b = 1,
+#endif
 	.lte_mask_b = 0,
 	.md_apsrc1_sel = 0,
 	.md_apsrc0_sel = 0,
@@ -225,16 +229,21 @@ static struct pwr_ctrl suspend_ctrl = {
 	.md_srcclkena_0_infra_mask_b = 0,
 	.md_srcclkena_1_infra_mask_b = 0,
 	.conn_srcclkena_infra_mask_b = 0,
-	.md32_srcclkena_infra_mask_b = 0,
 #if defined(CONFIG_ARCH_MT6755)
+	.md32_srcclkena_infra_mask_b = 0,
 	.srcclkeni_infra_mask_b = 1,
-#else
+#elif defined(CONFIG_ARCH_MT6797)
+	.md32_srcclkena_infra_mask_b = 1,
 	.srcclkeni_infra_mask_b = 0,
 #endif
 	.md_apsrcreq_0_infra_mask_b = 1,
 	.md_apsrcreq_1_infra_mask_b = 0,
 	.conn_apsrcreq_infra_mask_b = 1,
+#if defined(CONFIG_ARCH_MT6755)
 	.md32_apsrcreq_infra_mask_b = 0,
+#elif defined(CONFIG_ARCH_MT6797)
+	.md32_apsrcreq_infra_mask_b = 1,
+#endif
 	.md_ddr_en_0_mask_b = 1,
 	.md_ddr_en_1_mask_b = 0,
 	.md_vrf18_req_0_mask_b = 1,
@@ -306,9 +315,6 @@ struct spm_lp_scen __spm_suspend = {
 };
 
 #if defined(CONFIG_ARCH_MT6797)
-#define TEMP1	0x100A4000
-#define TEMP2	0x10001000
-#define TEMP3	0x10000000
 #define TEMP4	0x10002000
 #endif
 
@@ -317,28 +323,11 @@ static void spm_suspend_pre_process(struct pwr_ctrl *pwrctrl)
 #if defined(CONFIG_ARCH_MT6755)
 	unsigned int temp;
 #elif defined(CONFIG_ARCH_MT6797)
-	static void __iomem *temp1_base;
-	static void __iomem *temp2_base;
-	static void __iomem *temp3_base;
 	static void __iomem *temp4_base;
-	int reg = 0;
-
-	temp2_base = ioremap(TEMP2, 0x1000);
-	spm_write(temp2_base + 0x84, 0x10);
-
-	temp3_base = ioremap(TEMP3, 0x1000);
-	spm_write(temp3_base + 0x90, spm_read(temp3_base) & 0xFFFF7FFF);
-
-	temp1_base = ioremap(TEMP1, 0x1000);
-	spm_write(temp1_base + 0x20, spm_read(temp1_base) | 0x100);
 
 	temp4_base = ioremap(TEMP4, 0x1000);
 	spm_write(temp4_base + 0x8b0, spm_read(temp4_base) | 0x400);
 	spm_write(temp4_base + 0x8d0, spm_read(temp4_base) & 0xFFFFFBFF);
-
-	pmic_config_interface(0x44a, 0x300, 0x300, 0);
-	pmic_read_interface(0x44a, &reg, 0xffff, 0);
-	spm_crit2("0x44a= :0x%x\n", reg);
 #endif
 
 	__spm_pmic_pg_force_on();
