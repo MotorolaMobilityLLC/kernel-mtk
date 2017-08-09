@@ -1,11 +1,11 @@
 #ifndef __HW_BREAKPOINT_H
 #define __HW_BREAKPOINT_H
 
-typedef int (*wp_handler) (phys_addr_t addr);
+typedef int (*wp_handler) (unsigned long addr);
 
 struct wp_event {
-	phys_addr_t virt;
-	phys_addr_t phys;
+	unsigned long virt;
+	unsigned long phys;
 	int type;
 	wp_handler handler;
 	int in_use;
@@ -32,5 +32,5 @@ struct wp_event {
 
 extern int add_hw_watchpoint(struct wp_event *wp_event);
 extern int del_hw_watchpoint(struct wp_event *wp_event);
-
+extern void reset_watchpoint(void);
 #endif				/* !__HW_BREAKPOINT_H */

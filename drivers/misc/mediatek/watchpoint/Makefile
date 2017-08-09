@@ -1,1 +1,2 @@
-obj-y += $(subst ",,$(CONFIG_MTK_PLATFORM))/
+obj-y += hw_watchpoint.o
+obj-y += mt_dbg.o
