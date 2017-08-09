@@ -1119,7 +1119,7 @@ int BigiDVFSPllSetFreq(unsigned int Freq)
 
 unsigned int BigiDVFSPllGetFreq(void)
 {
-	unsigned int armpllcon1, freq = 0, pos_div = 0;
+	unsigned int freq = 0, pos_div = 0;
 
 	/* iDVFS mode use SWAVG to get Freq */
 	if ((idvfs_init_opt.idvfs_status == 1) ||
@@ -1137,9 +1137,8 @@ unsigned int BigiDVFSPllGetFreq(void)
 	/* return idvfs_init_opt.freq_cur; */
 
 	/* default fcur = 1500MHz */
-	armpllcon1 = idvfs_read(0x102224a4);
-	freq = (((unsigned long long)(armpllcon1 & 0x7fffffff) * 26L) / (1L << 24));
-	pos_div = (1 << ((armpllcon1 >> 12) & 0x7));
+	freq = (((unsigned long long)(idvfs_read(0x102224a4) & 0x7fffffff) * 26L) / (1L << 24));
+	pos_div = (1 << ((idvfs_read(0x102224a0) >> 12) & 0x7));
 
 	idvfs_ver("Legacy iDVFS get PLL Freq = %dMHz, pos_div = %d, output Freq = %dMHZ.\n",
 				freq, pos_div, (freq / pos_div));
