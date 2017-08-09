@@ -229,21 +229,17 @@ static struct pwr_ctrl suspend_ctrl = {
 	.md_srcclkena_0_infra_mask_b = 0,
 	.md_srcclkena_1_infra_mask_b = 0,
 	.conn_srcclkena_infra_mask_b = 0,
-#if defined(CONFIG_ARCH_MT6755)
 	.md32_srcclkena_infra_mask_b = 0,
+#if defined(CONFIG_ARCH_MT6755)
 	.srcclkeni_infra_mask_b = 1,
 #elif defined(CONFIG_ARCH_MT6797)
-	.md32_srcclkena_infra_mask_b = 1,
 	.srcclkeni_infra_mask_b = 0,
 #endif
+
 	.md_apsrcreq_0_infra_mask_b = 1,
 	.md_apsrcreq_1_infra_mask_b = 0,
 	.conn_apsrcreq_infra_mask_b = 1,
-#if defined(CONFIG_ARCH_MT6755)
 	.md32_apsrcreq_infra_mask_b = 0,
-#elif defined(CONFIG_ARCH_MT6797)
-	.md32_apsrcreq_infra_mask_b = 1,
-#endif
 	.md_ddr_en_0_mask_b = 1,
 	.md_ddr_en_1_mask_b = 0,
 	.md_vrf18_req_0_mask_b = 1,
