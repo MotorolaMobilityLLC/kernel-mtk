@@ -3,7 +3,7 @@
 #include <linux/spinlock.h>
 #include <linux/of.h>
 #include <linux/of_address.h>
-#if defined(CONFIG_MTK_LEGACY) || !defined(CONFIG_COMMON_CLK)
+#ifdef CONFIG_MTK_CLKMGR
 #include <mach/mt_clkmgr.h>
 #endif
 
