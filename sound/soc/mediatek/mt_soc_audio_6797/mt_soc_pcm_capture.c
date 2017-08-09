@@ -299,7 +299,7 @@ static int mtk_capture_pcm_hw_params(struct snd_pcm_substream *substream,
 
 	SetVULBuffer(substream, hw_params);
 
-	pr_warn("dma_bytes = %zu dma_area = %p dma_addr = 0x%lx\n",
+	pr_warn("mtk_capture_pcm_hw_params dma_bytes = %zu dma_area = %p dma_addr = 0x%lx\n",
 	       substream->runtime->dma_bytes, substream->runtime->dma_area, (long)substream->runtime->dma_addr);
 	return ret;
 }

@@ -578,7 +578,8 @@ static int Audio_Irqcnt1_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_
 
 	pr_warn("%s()\n", __func__);
 	AudDrv_Clk_On();
-	Afe_Set_Reg(AFE_IRQ_MCU_CNT1, irq1_cnt, 0xffffffff);
+	/* Afe_Set_Reg(AFE_IRQ_MCU_CNT1, irq1_cnt, 0xffffffff); */
+	SetIrqMcuCounter(Soc_Aud_IRQ_MCU_MODE_IRQ1_MCU_MODE, irq1_cnt);
 	AudDrv_Clk_Off();
 	return 0;
 }
@@ -598,7 +599,8 @@ static int Audio_Irqcnt2_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_
 
 	pr_warn("%s()\n", __func__);
 	AudDrv_Clk_On();
-	Afe_Set_Reg(AFE_IRQ_MCU_CNT2, irq1_cnt, 0xffffffff);
+	/* Afe_Set_Reg(AFE_IRQ_MCU_CNT2, irq1_cnt, 0xffffffff); */
+	SetIrqMcuCounter(Soc_Aud_IRQ_MCU_MODE_IRQ2_MCU_MODE, irq1_cnt);
 	AudDrv_Clk_Off();
 	return 0;
 }

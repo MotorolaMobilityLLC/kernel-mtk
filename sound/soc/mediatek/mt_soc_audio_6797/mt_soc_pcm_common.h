@@ -103,7 +103,9 @@ define for PCM settings
 #define Dl1_MAX_BUFFER_SIZE     (32*1024)	/* TODO: KC: see if change to 32k */
 #define Dl1_MIN_PERIOD_SIZE       1
 #define Dl1_MAX_PERIOD_SIZE     Dl1_MAX_BUFFER_SIZE
-#define Dl2_MAX_BUFFER_SIZE     (32*1024)
+
+/* #define Dl2_MAX_BUFFER_SIZE     (32*1024) */ /* for offload */
+#define Dl2_MAX_BUFFER_SIZE     (2*2048)        /* for fast */
 #define Dl2_MIN_PERIOD_SIZE       1
 #define Dl2_MAX_PERIOD_SIZE     Dl2_MAX_BUFFER_SIZE
 

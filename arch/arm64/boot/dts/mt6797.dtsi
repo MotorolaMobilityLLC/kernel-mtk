@@ -2709,6 +2709,10 @@ initrd=0x44000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 			compatible = "mediatek,mt_soc_pcm_offload_gdma";
 		};
 
+		mt_soc_dl2_pcm@11220000 {
+			compatible = "mediatek,mt_soc_pcm_dl2";
+		};
+
 		usb3@11270000 {
 			compatible = "mediatek,usb3";
 			reg = <0x11270000 0x10000>, <0x11280000 0x10000>, <0x11290000 0x10000>;
