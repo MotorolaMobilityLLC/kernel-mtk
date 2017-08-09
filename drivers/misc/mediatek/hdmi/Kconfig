@@ -1,4 +1,9 @@
 # HDMI
+config CUSTOM_KERNEL_HDMI
+	string "CUSTOM_KERNEL_HDMI"
+	help
+	  Kernel sapce mhl driver
+
 config MTK_HDMI_SUPPORT
 	bool "MTK_HDMI_SUPPORT"
 	default n
