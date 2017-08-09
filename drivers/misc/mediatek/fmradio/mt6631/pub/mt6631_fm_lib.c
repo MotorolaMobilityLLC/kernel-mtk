@@ -604,8 +604,16 @@ static fm_s32 mt6631_DspPatch(const fm_u8 *img, fm_s32 len, enum IMG_TYPE type)
 }
 static void mt6631_show_reg(void)
 {
+	fm_u32 host_reg[3] = {0};
 	fm_u32 debug_reg1[3] = {0};
 	fm_u16 debug_reg2[3] = {0};
+
+	mt6631_host_read(0x81024030, &host_reg[0]);
+	mt6631_host_read(0x81021234, &host_reg[1]);
+	mt6631_host_read(0x81021138, &host_reg[2]);
+	WCN_DBG(FM_ALT | CHIP,
+		"host read 0x81024030 = 0x%08x, 0x81021234 = 0x%08x, 0x81021138 = 0x%08x\n",
+		host_reg[0], host_reg[1], host_reg[2]);
 
 	mt6631_top_read(0x00c0, &debug_reg1[0]);
 	mt6631_top_read(0x00c8, &debug_reg1[1]);
