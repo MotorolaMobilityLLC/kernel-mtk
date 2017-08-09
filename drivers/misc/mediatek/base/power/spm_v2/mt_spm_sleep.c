@@ -378,6 +378,11 @@ static void spm_suspend_pre_process(struct pwr_ctrl *pwrctrl)
 	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_SUSPEND,
 			IDX_SP_VCORE_LQ_DIS,
 			temp & ~(1 << MT6351_PMIC_RG_VCORE_VDIFF_ENLOWIQ_SHIFT));
+
+#if  !defined(CONFIG_MTK_TINYSYS_SCP_SUPPORT)
+	pwrctrl->pcm_flags_cust |= 0x20000
+#endif
+
 	if (pwrctrl->pcm_flags_cust & 0x20000) {
 		/* NEW ADD: RG_VSRAM_PROC_MODE_CTRL=HW control */
 		pmic_config_interface(0xA5E, 0x1A06, 0xffff, 0);
