@@ -160,6 +160,9 @@ unsigned int sbTbl[][9] = {
 	{0x02, 0xb, 0x05, 0xa, 0x1, 0x0B0, 0x70a, 0x35, 0x20},/* 286 */
 };
 
+unsigned int gpuSb[8] = {0x54, 0x54, 0x54, 0x40, 0x40, 0x40, 0x40, 0x35};
+unsigned int gpuFy[8] = {0x54, 0x40, 0x40, 0x40, 0x40, 0x35, 0x00, 0x00};
+
 static unsigned int *recordTbl;
 
 /**
@@ -2136,6 +2139,19 @@ static void eem_set_eem_volt(struct eem_det *det)
 		det->volt_tbl_pmic[i] = clamp(det->volt_tbl[i] + det->volt_offset + low_temp_offset + det->pi_offset,
 						det->VMIN + EEM_PMIC_OFFSET,
 						det->VMAX + EEM_PMIC_OFFSET);
+		if (det_to_id(det) == EEM_DET_LITTLE)
+			det->volt_tbl_pmic[i] = min(det->volt_tbl_pmic[i], (*(recordTbl + (i * 9) + 8) & 0x7F));
+		else if (det_to_id(det) == EEM_DET_BIG)
+			det->volt_tbl_pmic[i] = min(det->volt_tbl_pmic[i], (*(recordTbl + (i + 8) * 9 + 8) & 0x7F));
+		else {
+			if (8 == det->num_freq_tbl)
+				det->volt_tbl_pmic[i] = min(det->volt_tbl_pmic[i], gpuSb[i]);
+			else {
+				if (0 == gpuFy[i])
+					break;
+				det->volt_tbl_pmic[i] = min(det->volt_tbl_pmic[i], gpuFy[i]);
+			}
+		}
 	}
 
 #ifdef __KERNEL__
