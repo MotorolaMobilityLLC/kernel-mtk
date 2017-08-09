@@ -17,7 +17,6 @@ ccflags-y += -Idrivers/misc/mediatek/power/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/hibcore
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/$(MTK_PLATFORM)/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat/$(MTK_PLATFORM)/include/
-ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat/
 
 # Object file lists.
 arm64-obj-y		:= cputable.o debug-monitors.o entry.o irq.o fpsimd.o	\

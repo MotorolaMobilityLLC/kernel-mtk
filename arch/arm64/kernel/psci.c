@@ -35,7 +35,6 @@
 #ifdef CONFIG_ARCH_MT6797
 #include <mt6797/da9214.h>
 #include <mach/mt_freqhopping.h>
-#include "mt_freqhopping_drv.h"
 #include <mt_dcm.h>
 #include <mt_clkmgr.h>
 #include <mt_idvfs.h>
@@ -601,18 +600,7 @@ static int cpu_psci_cpu_boot(unsigned int cpu)
 		}
 	}
 
-	/* FH issue, so put a spinlock here to protect MCUMIXED */
-#ifdef CONFIG_ARCH_MT6797
-	if ((cpu == 8) || (cpu == 9))
-		mt_fh_lock();
-#endif
-
 	err = psci_ops.cpu_on(cpu_logical_map(cpu), __pa(secondary_entry));
-
-#ifdef CONFIG_ARCH_MT6797
-	if ((cpu == 8) || (cpu == 9))
-		mt_fh_unlock();
-#endif
 
 #ifdef CONFIG_OCP_IDVFS_CTRL
 	if ((cpu == 0) || (cpu == 1) || (cpu == 2) || (cpu == 3)) {
@@ -805,17 +793,7 @@ static int cpu_psci_cpu_kill(unsigned int cpu)
 #endif
 #endif
 
-#ifdef CONFIG_ARCH_MT6797
-		if ((cpu == 8) || (cpu == 9))
-			mt_fh_lock();
-#endif
-
 		err = psci_ops.affinity_info(cpu_logical_map(cpu), 0);
-
-#ifdef CONFIG_ARCH_MT6797
-		if ((cpu == 8) || (cpu == 9))
-			mt_fh_unlock();
-#endif
 
 		if (err == PSCI_0_2_AFFINITY_LEVEL_OFF) {
 			pr_info("CPU%d killed.\n", cpu);
