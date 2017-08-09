@@ -186,42 +186,17 @@ static unsigned long lowmem_scan(struct shrinker *s, struct shrink_control *sc)
 		return SHRINK_STOP;
 #endif
 
+	/* Subtract CMA free pages from other_free if this is an unmovable page allocation */
+	if (IS_ENABLED(CONFIG_CMA))
+		if (!(sc->gfp_mask & __GFP_MOVABLE))
+			other_free -= global_page_state(NR_FREE_CMA_PAGES);
+
 	if (!spin_trylock(&lowmem_shrink_lock)) {
 		lowmem_print(4, "lowmem_shrink lock failed\n");
 		return SHRINK_STOP;
 	}
 
-#ifdef CONFIG_HIGHMEM
-	/*
-	* Check whether it is caused by low memory in normal zone!
-	* This will help solve over-reclaiming situation while
-	* total free pages is enough, but normal zone is under low memory.
-	*/
-	if (gfp_zone(sc->gfp_mask) == ZONE_NORMAL) {
-		int nid;
-		struct zone *z;
-
-		/* Restore other_free */
-		other_free += totalreserve_pages;
-
-		/* Go through all memory nodes & substract (free, file) from ZONE_HIGHMEM */
-		for_each_online_node(nid) {
-			z = &NODE_DATA(nid)->node_zones[ZONE_HIGHMEM];
-			other_free -= zone_page_state(z, NR_FREE_PAGES);
-			other_file -= zone_page_state(z, NR_FILE_PAGES);
-			/* Don't substract NR_SHMEM twice! */
-			other_file += zone_page_state(z, NR_SHMEM);
-			/* Subtract high watermark of normal zone */
-			z = &NODE_DATA(nid)->node_zones[ZONE_NORMAL];
-			other_free -= high_wmark_pages(z);
-		}
-
-		/* Normalize */
-		other_free *= total_low_ratio;
-		other_file *= total_low_ratio;
-	}
-#endif
-	/* Let it be positive or zero */
+	/* Let other_free be positive or zero */
 	if (other_free < 0) {
 		/* lowmem_print(1, "Original other_free [%d] is too low!\n", other_free); */
 		other_free = 0;
