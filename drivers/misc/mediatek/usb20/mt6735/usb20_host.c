@@ -534,8 +534,10 @@ void mt_usb_otg_init(struct musb *musb)
 		}
 		if (of_property_read_u32_index(usb_node, "drvvbus_gpio", 1, &drvvbus_pin_mode))
 			pr_err("get dtsi drvvbus_pin_mode fail\n");
+		#if defined(CONFIG_MTK_LEGACY)
 		iddig_pin |= 0x80000000;
 		drvvbus_pin |= 0x80000000;
+		#endif
 	}
 
 	iddig_node = of_find_compatible_node(NULL, NULL, "IDDIG-eint");
