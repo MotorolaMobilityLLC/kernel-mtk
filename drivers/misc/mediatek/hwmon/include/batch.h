@@ -75,6 +75,7 @@ struct batch_data_path {
 	int (*get_data)(int handle, struct hwm_sensor_data *data);
 	int (*get_fifo_status)(int *len, int *status, char *reserved,
 		struct batch_timestamp_info *p_batch_timestampe_info);
+	int (*batch_timeout)(void *arg);
 	int samplingPeriodMs;
 	int maxBatchReportLatencyMs;/* report latency for every sensor */
 	int flags;/* reserved */
@@ -107,7 +108,7 @@ struct batch_context {
 	struct wakeup_source read_data_wake_lock;
 	struct batch_dev_list	dev_list;
 
-	uint32_t			active_sensor;
+	uint64_t		active_sensor;
 	int				batch_result;
 	int				flush_result;
 	bool			is_first_data_after_enable;
@@ -125,7 +126,8 @@ enum BATCH_NOTIFY_TYPE {
 	TYPE_BATCHTIMEOUT   = 3,
 	TYPE_BATCHFULL   = 4,
 	TYPE_ERROR = 5,
-	TYPE_DATAREADY   = 6
+	TYPE_DATAREADY   = 6,
+	TYPE_DIRECT_PUSH   = 7
 };
 
 /* driver API for third party vendor */

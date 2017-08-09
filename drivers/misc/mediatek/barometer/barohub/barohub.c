@@ -477,7 +477,7 @@ static int barohub_probe(struct platform_device *pdev)
 		BAR_ERR("baro_register_data_path failed, err = %d\n", err);
 		goto exit_create_attr_failed;
 	}
-	err = batch_register_support_info(ID_PRESSURE, ctl.is_support_batch, data.vender_div, 0);
+	err = batch_register_support_info(ID_PRESSURE, ctl.is_support_batch, data.vender_div, 1);
 	if (err) {
 		BAR_ERR("register baro batch support err = %d\n", err);
 		goto exit_create_attr_failed;

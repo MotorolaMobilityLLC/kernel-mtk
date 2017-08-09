@@ -152,7 +152,7 @@ static int uncali_maghub_local_init(void)
 	ctl.open_report_data = uncali_mag_open_report_data;
 	ctl.enable_nodata = uncali_mag_enable_nodata;
 	ctl.set_delay = uncali_mag_set_delay;
-	ctl.is_report_input_direct = false;
+	ctl.is_report_input_direct = true;
 	ctl.is_support_batch = true;
 	err = uncali_mag_register_control_path(&ctl);
 	if (err) {
@@ -166,6 +166,11 @@ static int uncali_maghub_local_init(void)
 	if (err) {
 		UNMAGHUB_ERR("register uncali_mag data path err\n");
 		goto exit;
+	}
+	err = batch_register_support_info(ID_MAGNETIC_UNCALIBRATED, ctl.is_support_batch, data.vender_div, 1);
+	if (err) {
+		UNMAGHUB_ERR("register magnetic batch support err = %d\n", err);
+		goto exit_create_attr_failed;
 	}
 	return 0;
 exit:

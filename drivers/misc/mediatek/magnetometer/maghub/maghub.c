@@ -711,7 +711,7 @@ static int maghub_probe(struct platform_device *pdev)
 	ctl.o_enable = maghub_o_enable;
 	ctl.o_set_delay = maghub_o_set_delay;
 	ctl.o_open_report_data = maghub_o_open_report_data;
-	ctl.is_report_input_direct = false;
+	ctl.is_report_input_direct = true;
 	ctl.is_support_batch = true;
 
 	err = mag_register_control_path(&ctl);
@@ -730,12 +730,12 @@ static int maghub_probe(struct platform_device *pdev)
 		MAGN_ERR("register data control path err\n");
 		goto create_attr_failed;
 	}
-	err = batch_register_support_info(ID_ORIENTATION, ctl.is_support_batch, mag_data.div_m, 0);
+	err = batch_register_support_info(ID_ORIENTATION, ctl.is_support_batch, mag_data.div_m, 1);
 	if (err) {
 		MAGN_ERR("register orientation batch support err = %d\n", err);
 		goto create_attr_failed;
 	}
-	err = batch_register_support_info(ID_MAGNETIC, ctl.is_support_batch, mag_data.div_o, 0);
+	err = batch_register_support_info(ID_MAGNETIC, ctl.is_support_batch, mag_data.div_o, 1);
 	if (err) {
 		MAGN_ERR("register magnetic batch support err = %d\n", err);
 		goto create_attr_failed;

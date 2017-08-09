@@ -801,7 +801,7 @@ static int accelhub_probe(struct platform_device *pdev)
 	ctl.open_report_data = gsensor_open_report_data;
 	ctl.enable_nodata = gsensor_enable_nodata;
 	ctl.set_delay = gsensor_set_delay;
-	ctl.is_report_input_direct = false;
+	ctl.is_report_input_direct = true;
 	ctl.is_support_batch = true;
 
 	err = acc_register_control_path(&ctl);
@@ -818,7 +818,7 @@ static int accelhub_probe(struct platform_device *pdev)
 		goto exit_create_attr_failed;
 	}
 
-	err = batch_register_support_info(ID_ACCELEROMETER, ctl.is_support_batch, data.vender_div, 0);
+	err = batch_register_support_info(ID_ACCELEROMETER, ctl.is_support_batch, data.vender_div, 1);
 	if (err) {
 		GSE_ERR("register gsensor batch support err = %d\n", err);
 		goto exit_create_attr_failed;

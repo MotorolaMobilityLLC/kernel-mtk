@@ -150,7 +150,7 @@ static int linearacchub_local_init(void)
 	ctl.open_report_data = linearacc_open_report_data;
 	ctl.enable_nodata = linearacc_enable_nodata;
 	ctl.set_delay = linearacc_set_delay;
-	ctl.is_report_input_direct = false;
+	ctl.is_report_input_direct = true;
 	ctl.is_support_batch = true;
 	err = la_register_control_path(&ctl);
 	if (err) {
@@ -163,6 +163,11 @@ static int linearacchub_local_init(void)
 	err = la_register_data_path(&data);
 	if (err) {
 		LNACC_ERR("register linearacc data path err\n");
+		goto exit;
+	}
+	err = batch_register_support_info(ID_LINEAR_ACCELERATION, ctl.is_support_batch, data.vender_div, 1);
+	if (err) {
+		LNACC_ERR("register magnetic batch support err = %d\n", err);
 		goto exit;
 	}
 	return 0;

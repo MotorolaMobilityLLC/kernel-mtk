@@ -33,12 +33,16 @@
 #define    SENSOR_HUB_SET_CONFIG	4
 #define    SENSOR_HUB_SET_CUST		5
 #define    SENSOR_HUB_NOTIFY		6
-#define    SENSOR_HUB_POWER_NOTIFY	8
+#define    SENSOR_HUB_BATCH_TIMEOUT 7
+#define    SENSOR_HUB_SET_TIMESTAMP	8
+#define    SENSOR_HUB_POWER_NOTIFY	9
 
 /* SCP_NOTIFY EVENT */
 #define    SCP_INIT_DONE			0
 #define    SCP_FIFO_FULL			1
 #define    SCP_NOTIFY				2
+#define    SCP_BATCH_TIMEOUT		3
+#define	   SCP_DIRECT_PUSH          4
 
 
 struct SCP_sensorData {
@@ -317,6 +321,7 @@ typedef struct {
 	/* struct sensorFIFO   *bufferBase; */
 	uint32_t bufferBase;/* use int to store buffer DRAM base LSB 32 bits */
 	uint32_t bufferSize;
+	uint64_t ap_timestamp;
 	/* uint32_t    reserved[8]; */
 } SCP_SENSOR_HUB_SET_CONFIG_REQ;
 

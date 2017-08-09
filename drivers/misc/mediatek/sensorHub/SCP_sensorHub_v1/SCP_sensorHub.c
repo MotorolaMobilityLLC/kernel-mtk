@@ -40,6 +40,7 @@ static int SCP_sensorHub_probe(void);
 static int SCP_sensorHub_remove(void);
 static int SCP_sensorHub_local_init(void);
 static int scp_sensorHub_power_adjust(void);
+static int sensor_send_ap_timetamp(void);
 
 typedef enum {
 	SCP_TRC_FUN = 0x01,
@@ -65,6 +66,9 @@ struct SCP_sensorHub_data {
 	struct sensorHub_hw *hw;
 	struct work_struct ipi_work;
 	struct work_struct fifo_full_work;
+
+	struct work_struct batch_timeout_work;
+	struct work_struct direct_push_work;
 	struct work_struct power_notify_work;
 	struct timer_list timer;
 	struct timer_list notify_timer;
@@ -188,7 +192,7 @@ static int SCP_sensorHub_init_client(void)
 	len = sizeof(data.set_config_req);
 
 	SCP_sensorHub_req_send(&data, &len, 1);
-
+	sensor_send_ap_timetamp();
 	SCP_ERR("fwq SCP_sensorHub_init_client done\n");
 
 	return SCP_SENSOR_HUB_SUCCESS;
@@ -207,7 +211,7 @@ static int SCP_sensorHub_extract_data(struct hwm_sensor_data *data, struct data_
 		data->values[4] = data_t->accelerometer_t.y_bias;
 		data->values[5] = data_t->accelerometer_t.z_bias;
 		data->status = (int8_t)data_t->accelerometer_t.status;
-		data->time = data_t->time_stamp;
+		data->time = data_t->time_stamp + data_t->time_stamp_gpt;
 		break;
 	case ID_GRAVITY:
 		data->sensor    = data_t->sensor_type;
@@ -215,7 +219,7 @@ static int SCP_sensorHub_extract_data(struct hwm_sensor_data *data, struct data_
 		data->values[1] = data_t->accelerometer_t.y;
 		data->values[2] = data_t->accelerometer_t.z;
 		data->status = (int8_t)data_t->accelerometer_t.status;
-		data->time = data_t->time_stamp;
+		data->time = data_t->time_stamp + data_t->time_stamp_gpt;
 		break;
 	case ID_LINEAR_ACCELERATION:
 		data->sensor    = data_t->sensor_type;
@@ -223,18 +227,18 @@ static int SCP_sensorHub_extract_data(struct hwm_sensor_data *data, struct data_
 		data->values[1] = data_t->accelerometer_t.y;
 		data->values[2] = data_t->accelerometer_t.z;
 		data->status = (int8_t)data_t->accelerometer_t.status;
-		data->time = data_t->time_stamp;
+		data->time = data_t->time_stamp + data_t->time_stamp_gpt;
 		break;
 	case ID_LIGHT:
 		data->sensor    = data_t->sensor_type;
 		data->values[0] = data_t->light;
-		data->time = data_t->time_stamp;
+		data->time = data_t->time_stamp + data_t->time_stamp_gpt;
 		break;
 	case ID_PRESSURE:
 		data->sensor    = data_t->sensor_type;
 		data->values[0] = data_t->pressure_t.pressure;
 		data->status = (int8_t)data_t->pressure_t.status;
-		data->time = data_t->time_stamp;
+		data->time = data_t->time_stamp + data_t->time_stamp_gpt;
 		break;
 	case ID_GYROSCOPE:
 		data->sensor    = data_t->sensor_type;
@@ -245,7 +249,7 @@ static int SCP_sensorHub_extract_data(struct hwm_sensor_data *data, struct data_
 		data->values[4] = data_t->gyroscope_t.y_bias;
 		data->values[5] = data_t->gyroscope_t.z_bias;
 		data->status = (int8_t)data_t->gyroscope_t.status;
-		data->time = data_t->time_stamp;
+		data->time = data_t->time_stamp + data_t->time_stamp_gpt;
 		break;
 	case ID_GYROSCOPE_UNCALIBRATED:
 		data->sensor	= data_t->sensor_type;
@@ -255,13 +259,13 @@ static int SCP_sensorHub_extract_data(struct hwm_sensor_data *data, struct data_
 		data->values[3] = data_t->uncalibrated_gyro_t.x_bias;
 		data->values[4] = data_t->uncalibrated_gyro_t.y_bias;
 		data->values[5] = data_t->uncalibrated_gyro_t.z_bias;
-		data->time = data_t->time_stamp;
+		data->time = data_t->time_stamp + data_t->time_stamp_gpt;
 		break;
 	case ID_RELATIVE_HUMIDITY:
 		data->sensor    = data_t->sensor_type;
 		data->values[0] = data_t->relative_humidity_t.relative_humidity;
 		data->status = (int8_t)data_t->relative_humidity_t.status;
-		data->time = data_t->time_stamp;
+		data->time = data_t->time_stamp + data_t->time_stamp_gpt;
 		break;
 	case ID_MAGNETIC:
 		data->sensor    = data_t->sensor_type;
@@ -272,7 +276,7 @@ static int SCP_sensorHub_extract_data(struct hwm_sensor_data *data, struct data_
 		data->values[4] = data_t->magnetic_t.y_bias;
 		data->values[5] = data_t->magnetic_t.z_bias;
 		data->status = (int8_t)data_t->magnetic_t.status;
-		data->time = data_t->time_stamp;
+		data->time = data_t->time_stamp + data_t->time_stamp_gpt;
 		break;
 	case ID_MAGNETIC_UNCALIBRATED:
 		data->sensor	= data_t->sensor_type;
@@ -282,15 +286,16 @@ static int SCP_sensorHub_extract_data(struct hwm_sensor_data *data, struct data_
 		data->values[3] = data_t->uncalibrated_mag_t.x_bias;
 		data->values[4] = data_t->uncalibrated_mag_t.y_bias;
 		data->values[5] = data_t->uncalibrated_mag_t.z_bias;
-		data->time = data_t->time_stamp;
+		data->time = data_t->time_stamp + data_t->time_stamp_gpt;
 		break;
 	case ID_GEOMAGNETIC_ROTATION_VECTOR:
 		data->sensor    = data_t->sensor_type;
 		data->values[0] = data_t->magnetic_t.x;
 		data->values[1] = data_t->magnetic_t.y;
 		data->values[2] = data_t->magnetic_t.z;
+		data->values[3] = 1;
 		data->status = (int8_t)data_t->magnetic_t.status;
-		data->time = data_t->time_stamp;
+		data->time = data_t->time_stamp + data_t->time_stamp_gpt;
 		break;
 	case ID_ORIENTATION:
 		data->sensor    = data_t->sensor_type;
@@ -298,28 +303,30 @@ static int SCP_sensorHub_extract_data(struct hwm_sensor_data *data, struct data_
 		data->values[1] = data_t->orientation_t.y;
 		data->values[2] = data_t->orientation_t.z;
 		data->status = (int8_t)data_t->orientation_t.status;
-		data->time = data_t->time_stamp;
+		data->time = data_t->time_stamp + data_t->time_stamp_gpt;
 		break;
 	case ID_ROTATION_VECTOR:
 		data->sensor    = data_t->sensor_type;
 		data->values[0] = data_t->orientation_t.azimuth;
 		data->values[1] = data_t->orientation_t.pitch;
 		data->values[2] = data_t->orientation_t.roll;
+		data->values[3] = 1;
 		data->status = (int8_t)data_t->orientation_t.status;
-		data->time = data_t->time_stamp;
+		data->time = data_t->time_stamp + data_t->time_stamp_gpt;
 		break;
 	case ID_GAME_ROTATION_VECTOR:
 		data->sensor    = data_t->sensor_type;
 		data->values[0] = data_t->orientation_t.azimuth;
 		data->values[1] = data_t->orientation_t.pitch;
 		data->values[2] = data_t->orientation_t.roll;
+		data->values[3] = 1;
 		data->status = (int8_t)data_t->orientation_t.status;
-		data->time = data_t->time_stamp;
+		data->time = data_t->time_stamp + data_t->time_stamp_gpt;
 		break;
 	case ID_STEP_COUNTER:
 		data->sensor    = data_t->sensor_type;
 		data->values[0] = data_t->step_counter_t.accumulated_step_count;
-		data->time = data_t->time_stamp;
+		data->time = data_t->time_stamp + data_t->time_stamp_gpt;
 		break;
 	case ID_PEDOMETER:
 		data->sensor    = data_t->sensor_type;
@@ -327,7 +334,7 @@ static int SCP_sensorHub_extract_data(struct hwm_sensor_data *data, struct data_
 		data->values[1] = data_t->pedometer_t.accumulated_step_length;
 		data->values[2] = data_t->pedometer_t.step_frequency;
 		data->values[3] = data_t->pedometer_t.step_length;
-		data->time = data_t->time_stamp;
+		data->time = data_t->time_stamp + data_t->time_stamp_gpt;
 		break;
 	case ID_PDR:
 		data->sensor    = data_t->sensor_type;
@@ -335,7 +342,7 @@ static int SCP_sensorHub_extract_data(struct hwm_sensor_data *data, struct data_
 		data->values[1] = data_t->pdr_event.y;
 		data->values[2] = data_t->pdr_event.z;
 		data->status = (int8_t)data_t->pdr_event.status;
-		data->time = data_t->time_stamp;
+		data->time = data_t->time_stamp + data_t->time_stamp_gpt;
 		break;
 	default:
 		err = -1;
@@ -362,6 +369,10 @@ static int SCP_sensorHub_ReadSensorData(int handle, struct hwm_sensor_data *sens
 	int offset;
 	int fifo_usage;
 	int err;
+	int64_t ns;
+	struct timespec time;
+
+	time.tv_sec = time.tv_nsec = 0;
 
 	if (SCP_TRC_FUN == atomic_read(&(obj_data->trace)))
 		SCP_FUN();
@@ -440,9 +451,13 @@ static int SCP_sensorHub_ReadSensorData(int handle, struct hwm_sensor_data *sens
 	err = release_scp_semaphore(SEMAPHORE_SENSOR);
 	if (err < 0)
 			SCP_ERR("release_scp_semaphore fail : %d\n", err);
-
+	get_monotonic_boottime(&time);
+	ns = time.tv_sec * 1000000000LL + time.tv_nsec;
 	err = SCP_sensorHub_extract_data(sensorData, &curData);
-
+	/*SCP_LOG("type:%d,now time:%lld scp time: %lld, %d, %d, %d, %d, %d, %d\n",
+		sensorData->sensor, ns, sensorData->time,
+		sensorData->values[0], sensorData->values[1], sensorData->values[2],
+		sensorData->values[3], sensorData->values[4], sensorData->values[5]);*/
 	if (rp <= wp)
 		fifo_usage = (int)(wp - rp);
 	else
@@ -683,6 +698,10 @@ int SCP_sensorHub_req_send(SCP_SENSOR_HUB_DATA_P data, uint *len, unsigned int w
 		break;
 	case SENSOR_HUB_SET_CONFIG:
 		break;
+	case SENSOR_HUB_SET_TIMESTAMP:
+		break;
+	case SENSOR_HUB_BATCH_TIMEOUT:
+		break;
 	case SENSOR_HUB_SET_CUST:
 		break;
 	default:
@@ -761,6 +780,21 @@ static void SCP_fifo_full_work(struct work_struct *work)
 	batch_notify(TYPE_BATCHFULL);
 }
 
+static void SCP_batch_timeout_work(struct work_struct *work)
+{
+	if (SCP_TRC_FUN & atomic_read(&(obj_data->trace)))
+		SCP_FUN();
+
+	batch_notify(TYPE_BATCHTIMEOUT);
+}
+
+static void SCP_direct_push_work(struct work_struct *work)
+{
+	if (SCP_TRC_FUN & atomic_read(&(obj_data->trace)))
+		SCP_FUN();
+
+	batch_notify(TYPE_DIRECT_PUSH);
+}
 static void SCP_sensorHub_req_send_timeout(unsigned long data)
 {
 	if (atomic_read(&(obj_data->wait_rsp)) == 1) {
@@ -805,6 +839,8 @@ static void SCP_sensorHub_IPI_handler(int id, void *data, unsigned int len)
 	case SENSOR_HUB_BATCH:
 	case SENSOR_HUB_SET_CONFIG:
 	case SENSOR_HUB_SET_CUST:
+	case SENSOR_HUB_BATCH_TIMEOUT:
+	case SENSOR_HUB_SET_TIMESTAMP:
 		wake_up_req = true;
 		break;
 	case SENSOR_HUB_NOTIFY:
@@ -818,6 +854,12 @@ static void SCP_sensorHub_IPI_handler(int id, void *data, unsigned int len)
 		break;
 		case SCP_FIFO_FULL:
 			schedule_work(&obj->fifo_full_work);
+			break;
+		case SCP_BATCH_TIMEOUT:
+			schedule_work(&obj->batch_timeout_work);
+			break;
+		case SCP_DIRECT_PUSH:
+			schedule_work(&obj->direct_push_work);
 			break;
 		case SCP_NOTIFY:
 			do_registed_handler = true;
@@ -838,9 +880,11 @@ static void SCP_sensorHub_IPI_handler(int id, void *data, unsigned int len)
 	t2 = SCP_sensorHub_GetCurNS();
 
 	if (ID_SENSOR_MAX_HANDLE < rsp->rsp.sensorType) {
+		if (rsp->rsp.sensorType != ID_SCP_MAX_SENSOR_TYPE) {
 			SCP_ERR("SCP_sensorHub_IPI_handler invalid sensor type %d\n",
 				rsp->rsp.sensorType);
-		return;
+			return;
+		}
 	} else if (true == do_registed_handler) {
 		if (NULL != sensor_handler[rsp->rsp.sensorType])
 				sensor_handler[rsp->rsp.sensorType] (data, len);
@@ -916,14 +960,31 @@ static int SCP_sensorHub_get_data(int handle, struct hwm_sensor_data *sensorData
 
 	return SCP_sensorHub_ReadSensorData(handle, sensorData);
 }
+
+static int SCP_sensorHub_batch_timeout(void *arg)
+{
+	SCP_SENSOR_HUB_DATA req;
+	int len;
+	int err = 0;
+
+	if (SCP_TRC_FUN == atomic_read(&(obj_data->trace)))
+		SCP_FUN();
+
+	req.get_data_req.sensorType = 0;
+	req.get_data_req.action = SENSOR_HUB_BATCH_TIMEOUT;
+	len = sizeof(req.get_data_req);
+
+	err = SCP_sensorHub_req_send(&req, &len, 1);
+	return err;
+}
 static int SCP_sensorHub_get_fifo_status(int *dataLen, int *status, char *reserved,
 					 struct batch_timestamp_info *p_batch_timestampe_info)
 {
 	struct SCP_sensorHub_data *obj = obj_data;
 	int err = 0;
-	SCP_SENSOR_HUB_DATA data;
+	/*SCP_SENSOR_HUB_DATA data;*/
 	char *pStart, *pEnd, *pNext;
-	unsigned int len = 0;
+	/*unsigned int len = 0;*/
 	char *rp, *wp;
 	struct batch_timestamp_info *pt = p_batch_timestampe_info;
 	int i, offset;
@@ -935,12 +996,13 @@ static int SCP_sensorHub_get_fifo_status(int *dataLen, int *status, char *reserv
 
 	*dataLen = 0;
 	*status = 1;
-
+#if 0
 	data.get_data_req.sensorType = 0;
 	data.get_data_req.action = SENSOR_HUB_GET_DATA;
 	len = sizeof(data.get_data_req);
 
 	err = SCP_sensorHub_req_send(&data, &len, 1);
+#endif
 	/*
 	if (0 != err) {
 		SCP_ERR("SCP_sensorHub_req_send error: ret value=%d\n", err);
@@ -1008,7 +1070,7 @@ static int SCP_sensorHub_get_fifo_status(int *dataLen, int *status, char *reserv
 		}
 		(*dataLen)++;
 	}
-	pr_err("liujiang --> %s    7  .\n", __func__);
+	SCP_LOG("liujiang --> %s    7  .\n", __func__);
 	if (SCP_TRC_BATCH & atomic_read(&(obj_data->trace)))
 		SCP_ERR("dataLen = %d, status = %d\n", *dataLen, *status);
 	pStart = (char *)obj->SCP_sensorFIFO + offsetof(struct sensorFIFO, data);
@@ -1124,6 +1186,27 @@ static int SCP_sensorHub_get_fifo_status(int *dataLen, int *status, char *reserv
 
 #endif
 /* when all sensor don't enable, we adjust scp lower power */
+int sensor_send_ap_timetamp(void)
+{
+	SCP_SENSOR_HUB_DATA req;
+	int len;
+	int err = 0;
+	uint64_t ns;
+	struct timespec time;
+
+	time.tv_sec = time.tv_nsec = 0;
+	get_monotonic_boottime(&time);
+	ns = time.tv_sec * 1000000000LL + time.tv_nsec;
+	req.set_config_req.sensorType = 0;
+	req.set_config_req.action = SENSOR_HUB_SET_TIMESTAMP;
+	req.set_config_req.ap_timestamp = ns;
+	len = sizeof(req.set_config_req);
+	err = SCP_sensorHub_req_send(&req, &len, 1);
+	if (err < 0)
+			SCP_ERR("SCP_sensorHub_req_send fail!\n");
+	return err;
+}
+
 static int scp_sensorHub_power_adjust(void)
 {
 	deregister_feature(SENS_FEATURE_ID);
@@ -1136,8 +1219,12 @@ int sensor_enable_to_hub(uint8_t sensorType, int enabledisable)
 	int len;
 	int err = 0;
 
-	if (enabledisable == 1)
+	if (enabledisable == 1) {
 		register_feature(SENS_FEATURE_ID);
+		err = sensor_send_ap_timetamp();
+		if (err < 0)
+			SCP_ERR("sensor_send_ap_timetamp fail!\n");
+	}
 
 	req.activate_req.sensorType = sensorType;
 	req.activate_req.action = SENSOR_HUB_ACTIVATE;
@@ -1740,6 +1827,9 @@ static int SCP_sensorHub_probe(void)
 	atomic_set(&obj->disable_fifo_full_notify, 0);
 	INIT_WORK(&obj->ipi_work, SCP_ipi_work);
 	INIT_WORK(&obj->fifo_full_work, SCP_fifo_full_work);
+
+	INIT_WORK(&obj->batch_timeout_work, SCP_batch_timeout_work);
+	INIT_WORK(&obj->direct_push_work, SCP_direct_push_work);
 	INIT_WORK(&obj->power_notify_work, SCP_power_notify_work);
 
 	init_waitqueue_head(&SCP_sensorHub_req_wq);
@@ -1773,6 +1863,7 @@ static int SCP_sensorHub_probe(void)
 
 	data.get_data = SCP_sensorHub_get_data;
 	data.get_fifo_status = SCP_sensorHub_get_fifo_status;
+	data.batch_timeout = SCP_sensorHub_batch_timeout;
 	data.is_batch_supported = 1;
 	err = batch_register_data_path(ID_SENSOR_MAX_HANDLE, &data);
 	if (err) {

@@ -106,10 +106,11 @@
 #define ID_SHAKE                                        (ID_BASE+SENSOR_TYPE_SHAKE-1)
 #define ID_BRINGTOSEE                                   (ID_BASE+SENSOR_TYPE_BRINGTOSEE-1)
 #define ID_ANSWER_CALL                                   (ID_BASE+SENSOR_TYPE_ANSWER_CALL-1)
-#define ID_SENSOR_MAX_HANDLE	  (ID_BASE+SENSOR_TYPE_BRINGTOSEE)
+#define ID_SENSOR_MAX_HANDLE	  (ID_BASE+SENSOR_TYPE_ANSWER_CALL-1)
 #define ID_NONE							    (ID_SENSOR_MAX_HANDLE+1)
 
 #define ID_OFFSET                           (1)
+#define ID_SCP_MAX_SENSOR_TYPE				(57)
 
 #define MAX_ANDROID_SENSOR_NUM	(ID_SENSOR_MAX_HANDLE+1)
 #define MAX_SENSOR_DATA_UPDATE_ONCE         (20)

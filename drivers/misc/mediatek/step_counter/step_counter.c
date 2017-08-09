@@ -63,7 +63,7 @@ static void step_c_work_func(struct work_struct *work)
 		}
 	}
 	/* report data to input device */
-	STEP_C_LOG("step_c data[%d]\n", cxt->drv_data.counter);
+	/*STEP_C_LOG("step_c data[%d]\n", cxt->drv_data.counter);*/
 
 	step_c_data_report(cxt->idev, cxt->drv_data.counter, cxt->drv_data.status);
 
@@ -456,31 +456,37 @@ static ssize_t step_c_store_batch(struct device *dev, struct device_attribute *a
 				  const char *buf, size_t count)
 {
 	struct step_c_context *cxt = NULL;
+	int res = 0, handle = 0, en = 0;
 
 	STEP_C_LOG("step_c_store_batch buf=%s\n", buf);
 	mutex_lock(&step_c_context_obj->step_c_op_mutex);
 
 	cxt = step_c_context_obj;
 
-	if (!strncmp(buf, "1", 1)) {
-		cxt->is_batch_enable = true;
-		if (true == cxt->is_polling_run) {
-			cxt->is_polling_run = false;
-			del_timer_sync(&cxt->timer);
-			cancel_work_sync(&cxt->report);
-			cxt->drv_data.counter = STEP_C_INVALID_VALUE;
-		}
-	} else if (!strncmp(buf, "0", 1)) {
-		cxt->is_batch_enable = false;
-		if (false == cxt->is_polling_run) {
-			if (false == cxt->step_c_ctl.is_report_input_direct) {
-				mod_timer(&cxt->timer,
-					  jiffies + atomic_read(&cxt->delay) / (1000 / HZ));
-				cxt->is_polling_run = true;
+	res = sscanf(buf, "%d,%d", &handle, &en);
+	if (res != 2)
+		STEP_C_LOG(" step_c_store_batch param error: res = %d\n", res);
+	if (handle == ID_STEP_COUNTER) {
+		if (en == 1) {
+			cxt->is_batch_enable = true;
+			if (true == cxt->is_polling_run) {
+				cxt->is_polling_run = false;
+				del_timer_sync(&cxt->timer);
+				cancel_work_sync(&cxt->report);
+				cxt->drv_data.counter = STEP_C_INVALID_VALUE;
 			}
+		} else if (0 == en) {
+			cxt->is_batch_enable = false;
+			if (false == cxt->is_polling_run) {
+				if (false == cxt->step_c_ctl.is_report_input_direct) {
+					mod_timer(&cxt->timer,
+						  jiffies + atomic_read(&cxt->delay) / (1000 / HZ));
+					cxt->is_polling_run = true;
+				}
+			}
+		} else {
+			STEP_C_ERR(" step_c_store_batch error !!\n");
 		}
-	} else {
-		STEP_C_ERR(" step_c_store_batch error !!\n");
 	}
 	mutex_unlock(&step_c_context_obj->step_c_op_mutex);
 	STEP_C_LOG(" step_c_store_batch done: %d\n", cxt->is_batch_enable);

@@ -152,7 +152,7 @@ static int gmagrotvechub_local_init(void)
 	ctl.open_report_data = gmagrotvec_open_report_data;
 	ctl.enable_nodata = gmagrotvec_enable_nodata;
 	ctl.set_delay = gmagrotvec_set_delay;
-	ctl.is_report_input_direct = false;
+	ctl.is_report_input_direct = true;
 	ctl.is_support_batch = true;
 	err = gmrv_register_control_path(&ctl);
 	if (err) {
@@ -165,6 +165,11 @@ static int gmagrotvechub_local_init(void)
 	err = gmrv_register_data_path(&data);
 	if (err) {
 		GMAGROTVEC_ERR("register gmagrotvec data path err\n");
+		goto exit;
+	}
+	err = batch_register_support_info(ID_GEOMAGNETIC_ROTATION_VECTOR, ctl.is_support_batch, data.vender_div, 1);
+	if (err) {
+		GMAGROTVEC_ERR("register magnetic batch support err = %d\n", err);
 		goto exit;
 	}
 	return 0;
