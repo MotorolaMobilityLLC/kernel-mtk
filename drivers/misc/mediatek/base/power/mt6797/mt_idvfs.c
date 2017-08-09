@@ -649,8 +649,7 @@ int BigiDVFSEnable_hp(void) /* for cpu hot plug call */
 	/* cfg or init OTP then enable OTP channel */
 	if (idvfs_init_opt.otp_endis) {
 		BigOTPEnable();
-		/* 20151112 mark by Wen-wen for OTP internal turn on channel */
-		/* BigiDVFSChannel(2, 1); */
+		BigiDVFSChannel(2, 1);
 	}
 
 	/* enable struct idvfs_status = 1, 1: enable finish */
