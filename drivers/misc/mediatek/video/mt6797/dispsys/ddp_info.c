@@ -261,7 +261,7 @@ unsigned int ddp_module_to_idx(int module)
 }
 
 
-#define DISP_NO_DPI /* FIXME: tmp define */
+/*#define DISP_NO_DPI*/ /* FIXME: tmp define */
 
 DDP_MODULE_DRIVER *ddp_modules_driver[DISP_MODULE_NUM] = {
 	&ddp_driver_ovl,	/* DISP_MODULE_OVL0 = 0, */

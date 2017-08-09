@@ -436,7 +436,7 @@ struct DPI_REGS {
 	struct DPI_REG_ESAV_CODE_SET1 ESAV_CODE_SET1;	/*00AC*/
 
 };
-
+extern struct DPI_REGS *DPI_REG;
 /*
 STATIC_ASSERT((offsetof(struct DPI_REGS, SIZE) == 0x0018));
 STATIC_ASSERT((offsetof(struct DPI_REGS, BG_COLOR) == 0x0038));

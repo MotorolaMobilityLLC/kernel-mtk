@@ -139,8 +139,8 @@ int ddp_dpi_config(DISP_MODULE_ENUM module, disp_ddp_path_config *config,
 		   void *cmdq_handle);
 int ddp_dpi_trigger(DISP_MODULE_ENUM module, void *cmdq);
 int ddp_dpi_reset(DISP_MODULE_ENUM module, void *cmdq_handle);
-int ddp_dpi_ioctl(DISP_MODULE_ENUM module, void *cmdq_handle, unsigned int ioctl_cmd,
-		  unsigned long *params);
+int ddp_dpi_ioctl(DISP_MODULE_ENUM module, void *cmdq_handle, DDP_IOCTL_NAME ioctl_cmd,
+		  void *params);
 
 int _Enable_Interrupt(void);
 

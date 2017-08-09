@@ -2223,7 +2223,9 @@ initrd=0x44000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 			reg = <0x1401e000 0x1000>;
 			interrupts = <GIC_SPI 231 IRQ_TYPE_LEVEL_LOW>;
 		};
-
+    		mhl:mhl@0   {
+			compatible = "mediatek,sii8348-hdmi";
+		};
 		mm_mutex@1401f000 {
 			compatible = "mediatek,mm_mutex";
 			reg = <0x1401f000 0x1000>;

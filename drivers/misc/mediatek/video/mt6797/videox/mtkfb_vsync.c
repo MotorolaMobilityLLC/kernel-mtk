@@ -46,6 +46,7 @@ do { \
 			VSYNC_WRN("[Func]%s\n", __func__); \
 	} while (0)
 
+#undef CONFIG_MTK_HDMI_SUPPORT
 #ifdef CONFIG_MTK_HDMI_SUPPORT
 static EXTD_DRIVER *extd_driver[DEV_MAX_NUM - 1];
 #endif

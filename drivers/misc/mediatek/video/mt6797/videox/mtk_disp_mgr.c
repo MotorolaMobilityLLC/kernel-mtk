@@ -65,6 +65,7 @@
 
 
 #define DDP_OUTPUT_LAYID 4
+#undef CONFIG_MTK_HDMI_SUPPORT
 
 static unsigned int session_config[MAX_SESSION_COUNT];
 static DEFINE_MUTEX(disp_session_lock);

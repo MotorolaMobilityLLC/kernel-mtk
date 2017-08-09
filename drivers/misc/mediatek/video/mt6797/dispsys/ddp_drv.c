@@ -60,7 +60,7 @@
 #include "ddp_info.h"
 
 
-#define DISP_NO_DPI /* FIXME: tmp define */
+/*#define DISP_NO_DPI*/   /* FIXME: tmp define */
 #ifndef DISP_NO_DPI
 #include "ddp_dpi_reg.h"
 #endif
@@ -683,7 +683,7 @@ static int disp_probe(struct platform_device *pdev)
 	mipi_tx0_reg = dispsys_reg[DISP_REG_MIPI0];
 	mipi_tx1_reg = dispsys_reg[DISP_REG_MIPI1];
 #ifndef DISP_NO_DPI
-	DPI_REG = (PDPI_REGS)dispsys_reg[DISP_REG_DPI0];
+	DPI_REG = (struct DPI_REGS *)dispsys_reg[DISP_REG_DPI0];
 #endif
 #ifndef CONFIG_MTK_CLKMGR
 	for (i = 0; i < MAX_DISP_CLK_CNT; i++) {
