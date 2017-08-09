@@ -483,7 +483,7 @@ static int MPU6515_SetDataResolution(struct mpu6515_i2c_data *obj)
 /*----------------------------------------------------------------------------*/
 static int MPU6515_ReadData(struct i2c_client *client, s16 data[MPU6515_AXES_NUM])
 {
-	struct mpu6515_i2c_data *priv = i2c_get_clientdata(client);
+	struct mpu6515_i2c_data *priv;
 	int err = 0;
 	u8 buf[MPU6515_DATA_LEN] = { 0 };
 
@@ -493,6 +493,8 @@ static int MPU6515_ReadData(struct i2c_client *client, s16 data[MPU6515_AXES_NUM
 
 	if (NULL == client)
 		return -EINVAL;
+
+	priv = i2c_get_clientdata(client);
 
 
 	{
@@ -1206,7 +1208,7 @@ static int MPU6515_ReadSensorData(struct i2c_client *client, char *buf, int bufs
 /*----------------------------------------------------------------------------*/
 static int MPU6515_ReadRawData(struct i2c_client *client, char *buf)
 {
-	struct mpu6515_i2c_data *obj = (struct mpu6515_i2c_data *)i2c_get_clientdata(client);
+	struct mpu6515_i2c_data *obj;
 	int res = 0;
 
 #ifdef GSENSOR_UT
@@ -1215,6 +1217,8 @@ static int MPU6515_ReadRawData(struct i2c_client *client, char *buf)
 
 	if (!buf || !client)
 		return -EINVAL;
+
+	obj = (struct mpu6515_i2c_data *)i2c_get_clientdata(client);
 
 
 	if (atomic_read(&obj->suspend))
@@ -2163,13 +2167,14 @@ static int mpu6515_resume(struct i2c_client *client)
 	struct mpu6515_i2c_data *obj = i2c_get_clientdata(client);
 	int err;
 
-	if (atomic_read(&obj->trace) & MPU6515_TRC_INFO)
-		GSE_FUN();
-
 	if (obj == NULL) {
 		GSE_ERR("null pointer!!\n");
 		return -EINVAL;
 	}
+
+	if (atomic_read(&obj->trace) & MPU6515_TRC_INFO)
+		GSE_FUN();
+
 #ifndef CUSTOM_KERNEL_SENSORHUB
 	MPU6515_power(obj->hw, 1);
 #endif				/* #ifndef CUSTOM_KERNEL_SENSORHUB */
@@ -2474,7 +2479,7 @@ static int gsensor_get_data(int *x, int *y, int *z, int *status)
 /*----------------------------------------------------------------------------*/
 static int mpu6515_i2c_detect(struct i2c_client *client, struct i2c_board_info *info)
 {
-	strcpy(info->type, MPU6515_DEV_NAME);
+	strncpy(info->type, MPU6515_DEV_NAME, sizeof(info->type));
 	return 0;
 }
 
