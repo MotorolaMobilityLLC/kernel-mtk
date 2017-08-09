@@ -960,14 +960,16 @@ static int load_elf_binary(struct linux_binprm *bprm)
 			current->mm->brk = current->mm->start_brk =
 				arch_randomize_brk(current->mm);
 
-			pr_alert("%s %d: rand_tries %d vmstack_start %lx vmstack_end %lx org_brk %lx current->mm->brk %lx\n",
-						__func__, __LINE__,
-						rand_tries, bprm->vma->vm_start, bprm->vma->vm_end,
-						org_brk, current->mm->brk);
-
 			if (find_vma_intersection(current->mm, current->mm->brk - PAGE_SIZE,
-						  current->mm->brk + PAGE_SIZE))
+						  current->mm->brk + PAGE_SIZE)) {
+
+				pr_alert("%s %d: rand_tries %d vmstack_start %lx vmstack_end %lx org_brk %lx current->mm->brk %lx\n",
+							__func__, __LINE__,
+							rand_tries, bprm->vma->vm_start, bprm->vma->vm_end,
+							org_brk, current->mm->brk);
+
 				current->mm->brk = current->mm->start_brk = org_brk;
+			}
 			else
 				break;
 		}
@@ -976,11 +978,6 @@ static int load_elf_binary(struct linux_binprm *bprm)
 #endif
 	}
 #endif
-
-	pr_alert("%s %d: final vmstack_start %lx vmstack_end %lx current->mm->brk %lx\n",
-				__func__, __LINE__,
-				bprm->vma->vm_start, bprm->vma->vm_end,
-				current->mm->brk);
 
 	if (current->personality & MMAP_PAGE_ZERO) {
 		/* Why this, you ask???  Well SVr4 maps page 0 as read-only,
