@@ -203,14 +203,13 @@ void EnableFUSB300StateMachine(void)
  ******************************************************************************/
 void StateMachineFUSB300(struct usbtypc *typec)
 {
-#ifdef SKIP_TIMER
 	ConnectionState pre_ConnState = ConnState;
 	ConnectionState new_ConnState;
-#endif
+
 	if (!blnSMEnabled)
 		return;
 
-	fusb_printk(K_INFO, "StateMachineFUSB300+ ConnState=%s\n",
+	fusb_printk(K_DEBUG, "StateMachineFUSB300+ ConnState=%s\n",
 		    string_conection_state[ConnState]);
 
 
@@ -289,9 +288,13 @@ void StateMachineFUSB300(struct usbtypc *typec)
 	/* Clear the advanced interrupt registers once we've gone through the state machines */
 	Registers.Status.InterruptAdv = 0;
 
+	new_ConnState = ConnState;
+
+	fusb_printk(K_INFO, "StateMachineFUSB300- ConnState=%s -> %s\n",
+		string_conection_state[pre_ConnState],
+		string_conection_state[new_ConnState]);
 
 #ifdef SKIP_TIMER
-	new_ConnState = ConnState;
 	if (new_ConnState != pre_ConnState)
 		StateMachineFUSB300(typec);
 #endif
@@ -300,8 +303,6 @@ void StateMachineFUSB300(struct usbtypc *typec)
 		typec->en_irq = 1;
 		enable_irq(typec->irqnum);
 	}
-	fusb_printk(K_INFO, "StateMachineFUSB300- ConnState=%s\n",
-		    string_conection_state[ConnState]);
 }
 
 
