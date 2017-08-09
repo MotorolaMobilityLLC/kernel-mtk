@@ -60,6 +60,16 @@ typedef struct {
 	void *pData;                /* meta data pointer */
 } MMP_MetaData_t;
 
+#ifdef CONFIG_COMPAT
+struct Compat_MMP_MetaData_t {
+	unsigned int data1;         /* data1 (user defined) */
+	unsigned int data2;         /* data2 (user defined) */
+	MMP_MetaDataType data_type; /* meta data type */
+	unsigned int size;          /* meta data size */
+	unsigned int pData;        /* meta data pointer */
+};
+#endif
+
 typedef struct {
 	unsigned int data1;         /* data1 (user defined) */
 	unsigned int data2;         /* data2 (user defined) */
