@@ -11,6 +11,8 @@
 #include "mt_power_gs_array.h"
 
 #define gs_read(addr) (*(volatile u32 *)(addr))
+#define DEBUG_BUF_SIZE 8192
+#define DEBUG_BUF_RANGE 8000
 
 struct proc_dir_entry *mt_power_gs_dir = NULL;
 
@@ -28,10 +30,10 @@ static void mt_power_gs_compare(char *scenario, char *pmic_name,
 				const unsigned int *pmic_gs, unsigned int pmic_gs_len)
 {
 	unsigned int i, k, val1, val2, diff;
-	char *dbg_buf = kmalloc(8192, GFP_NOFS);
+	char *dbg_buf = kmalloc(DEBUG_BUF_SIZE, GFP_NOFS);
 	char *p = dbg_buf;
 
-	for (i = 0; i < pmic_gs_len; i += 3) {
+	for (i = 0; i < pmic_gs_len && p - dbg_buf < DEBUG_BUF_RANGE ; i += 3) {
 		aee_sram_printk("%d\n", i);
 		val1 = gs_pmic_read(pmic_gs[i]) & pmic_gs[i + 1];
 		val2 = pmic_gs[i + 2] & pmic_gs[i + 1];
