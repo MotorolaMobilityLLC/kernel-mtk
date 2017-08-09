@@ -25,6 +25,7 @@
 #include <linux/module.h>
 #include <linux/list_sort.h>
 #include "mt_sched_mon.h"
+#include "mtk_ram_console.h"
 
 #define MAX_THROTTLE_COUNT 5
 
@@ -53,6 +54,7 @@ static DEFINE_SPINLOCK(mt_rt_mon_lock);
 static struct mt_rt_mon_struct buffer[MAX_THROTTLE_COUNT];
 static int rt_mon_count_buffer;
 static unsigned long long rt_start_ts_buffer, rt_end_ts_buffer, rt_dur_ts_buffer;
+char rt_monitor_print_at_AEE_buffer[124];
 /*
  * Ease the printing of nsec fields:
  */
@@ -245,27 +247,30 @@ void mt_rt_mon_print_task(int cpu)
 	}
 	spin_unlock_irqrestore(&mt_rt_mon_lock, irq_flags);
 }
+#define printf_at_AEE(x...)			\
+do {						\
+	snprintf(rt_monitor_print_at_AEE_buffer, sizeof(rt_monitor_print_at_AEE_buffer), x);	\
+	aee_sram_fiq_log(rt_monitor_print_at_AEE_buffer);	\
+} while (0)
 
 void mt_rt_mon_print_task_from_buffer(void)
 {
 	int i;
 
-	pr_err("last throttle information start\n");
-	pr_err("sched: mon_count = %d monitor start[%lld.%06lu] end[%lld.%06lu] dur[%lld.%06lu]\n",
-		rt_mon_count_buffer, SPLIT_NS_H(rt_start_ts_buffer), SPLIT_NS_L(rt_start_ts_buffer),
-		SPLIT_NS_H(rt_end_ts_buffer), SPLIT_NS_L(rt_end_ts_buffer),
-		SPLIT_NS_H((rt_end_ts_buffer - rt_start_ts_buffer)),
-		SPLIT_NS_L((rt_end_ts_buffer - rt_start_ts_buffer)));
-
+	printf_at_AEE("last throttle information start\n");
+	printf_at_AEE("sched: mon_count = %d monitor start[%lld.%06lu] end[%lld.%06lu] dur[%lld.%06lu]\n",
+			rt_mon_count_buffer, SPLIT_NS_H(rt_start_ts_buffer), SPLIT_NS_L(rt_start_ts_buffer),
+			SPLIT_NS_H(rt_end_ts_buffer), SPLIT_NS_L(rt_end_ts_buffer),
+			SPLIT_NS_H((rt_end_ts_buffer - rt_start_ts_buffer)),
+			SPLIT_NS_L((rt_end_ts_buffer - rt_start_ts_buffer)));
 	for (i = 0 ; i < MAX_THROTTLE_COUNT ; i++)  {
-		pr_err("sched:[%s] pid:%d prio:%d cputime[%lld.%06lu] percen[%d.%04d%%] isr_time[%lld.%06lu]\n",
-			buffer[i].comm, buffer[i].pid, buffer[i].prio,
-			SPLIT_NS_H(buffer[i].cost_cputime), SPLIT_NS_L(buffer[i].cost_cputime),
-			buffer[i].cputime_percen_6 / 10000, buffer[i].cputime_percen_6 % 10000,
-			SPLIT_NS_H(buffer[i].isr_time), SPLIT_NS_L(buffer[i].isr_time));
+		printf_at_AEE("sched:[%s] pid:%d prio:%d cputime[%lld.%06lu] percen[%d.%04d%%] isr_time[%lld.%06lu]\n",
+				buffer[i].comm, buffer[i].pid, buffer[i].prio,
+				SPLIT_NS_H(buffer[i].cost_cputime), SPLIT_NS_L(buffer[i].cost_cputime),
+				buffer[i].cputime_percen_6 / 10000, buffer[i].cputime_percen_6 % 10000,
+				SPLIT_NS_H(buffer[i].isr_time), SPLIT_NS_L(buffer[i].isr_time));
 	}
-
-	pr_err("last throttle information end\n");
+	printf_at_AEE("last throttle information end\n");
 }
 
 void mt_rt_mon_switch(int on, int cpu)
