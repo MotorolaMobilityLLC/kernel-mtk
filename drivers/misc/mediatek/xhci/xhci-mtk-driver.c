@@ -789,22 +789,28 @@ void mtk_xhci_set(struct usb_hcd *hcd, struct xhci_hcd *xhci)
 	sif_res = platform_get_resource_byname(pdev, IORESOURCE_MEM, XHCI_SIF_REGS_ADDR_RES_NAME);
 	if (!sif_res)
 		pr_err("%s(%d): cannot get sif resources\n", __func__, __LINE__);
+	else {
+		xhci->sif_regs = (unsigned long)ioremap(sif_res->start,
+						resource_size(sif_res));
 
-
-	xhci->sif_regs = (unsigned long)ioremap(sif_res->start, resource_size(sif_res));
-
-	mtk_xhci_mtk_log("%s(%d): sif_base, logic 0x%p, phys 0x%p\n", __func__, __LINE__,
-		   (void *)(unsigned long)sif_res->start, (void *)xhci->sif_regs);
+		mtk_xhci_mtk_log("%s(%d): sif_base, logic 0x%p, phys 0x%p\n",
+				__func__, __LINE__,
+				(void *)(unsigned long)sif_res->start,
+				(void *)xhci->sif_regs);
+	}
 
 	sif2_res = platform_get_resource_byname(pdev, IORESOURCE_MEM, XHCI_SIF2_REGS_ADDR_RES_NAME);
 	if (!sif2_res)
 		pr_err("%s(%d): cannot get sif2 resources\n", __func__, __LINE__);
+	else {
+		xhci->sif2_regs = (unsigned long)ioremap(sif2_res->start,
+						resource_size(sif2_res));
 
-
-	xhci->sif2_regs = (unsigned long)ioremap(sif2_res->start, resource_size(sif2_res));
-
-	mtk_xhci_mtk_log("%s(%d): sif2_base, logic 0x%p, phys 0x%p\n", __func__, __LINE__,
-		   (void *)(unsigned long)sif2_res->start, (void *)xhci->sif2_regs);
+		mtk_xhci_mtk_log("%s(%d): sif2_base, logic 0x%p, phys 0x%p\n",
+				 __func__, __LINE__,
+				(void *)(unsigned long)sif2_res->start,
+				(void *)xhci->sif2_regs);
+	}
 
 	mtk_xhci_mtk_log("mtk_xhci = 0x%p\n", xhci);
 	mtk_xhci = xhci;
