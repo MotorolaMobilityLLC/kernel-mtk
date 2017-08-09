@@ -1060,9 +1060,6 @@ static inline void ccci_request_struct_init(struct ccci_request *req)
 extern volatile int current_time_zone;
 #endif
 
-extern void __iomem *md1_excp_smem_vir;
-extern unsigned int md1_excp_smem__size;
-
 struct ccci_modem *ccci_allocate_modem(int private_size);
 int ccci_register_modem(struct ccci_modem *modem);
 int ccci_register_dev_node(const char *name, int major_id, int minor);
@@ -1070,6 +1067,7 @@ struct ccci_port *ccci_get_port_for_node(int major, int minor);
 int ccci_send_msg_to_md(struct ccci_modem *md, CCCI_CH ch, CCCI_MD_MSG msg, u32 resv, int blocking);
 int ccci_send_virtual_md_msg(struct ccci_modem *md, CCCI_CH ch, CCCI_MD_MSG msg, u32 resv);
 struct ccci_modem *ccci_get_modem_by_id(int md_id);
+struct ccci_modem *ccci_get_another_modem(int md_id);
 int exec_ccci_kern_func_by_md_id(int md_id, unsigned int id, char *buf, unsigned int len);
 void ccci_dump_log_history(struct ccci_modem *md, int dump_multi_rec, int tx_queue_num, int rx_queue_num);
 void ccci_dump_log_add(struct ccci_modem *md, DIRECTION dir, int queue_index,

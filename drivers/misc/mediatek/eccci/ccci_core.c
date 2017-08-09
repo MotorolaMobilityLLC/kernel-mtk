@@ -37,9 +37,6 @@
 static LIST_HEAD(modem_list);	/* don't use array, due to MD index may not be continuous */
 static void *dev_class;
 
-void __iomem *md1_excp_smem_vir;
-unsigned int md1_excp_smem__size;
-
 /* used for throttling feature - start */
 unsigned long ccci_modem_boot_count[5];
 unsigned long ccci_get_md_boot_count(int md_id)
@@ -264,10 +261,7 @@ void ccci_config_modem(struct ccci_modem *md)
 	md->smem_layout.ccci_exp_smem_base_vir = md->mem_layout.smem_region_vir + CCCI_SMEM_OFFSET_EXCEPTION;
 	md->smem_layout.ccci_exp_smem_size = CCCI_SMEM_SIZE_EXCEPTION;
 	md->smem_layout.ccci_exp_dump_size = CCCI_SMEM_DUMP_SIZE;
-	if (md->index == MD_SYS1) {
-		md1_excp_smem_vir = md->smem_layout.ccci_exp_smem_base_vir;
-		md1_excp_smem__size = md->smem_layout.ccci_exp_dump_size;
-	}
+
 	/* dump region */
 	md->smem_layout.ccci_exp_smem_ccci_debug_vir = md->mem_layout.smem_region_vir + CCCI_SMEM_OFFSET_CCCI_DEBUG;
 	md->smem_layout.ccci_exp_smem_ccci_debug_size = CCCI_SMEM_SIZE_CCCI_DEBUG;
@@ -686,6 +680,19 @@ struct ccci_modem *ccci_get_modem_by_id(int md_id)
 			return md;
 	}
 	return NULL;
+}
+
+struct ccci_modem *ccci_get_another_modem(int md_id)
+{
+	struct ccci_modem *another_md = NULL;
+
+	if (md_id == MD_SYS1 && get_modem_is_enabled(MD_SYS3))
+		another_md = ccci_get_modem_by_id(MD_SYS3);
+
+	if (md_id == MD_SYS3 && get_modem_is_enabled(MD_SYS1))
+		another_md = ccci_get_modem_by_id(MD_SYS1);
+
+	return another_md;
 }
 
 int ccci_get_modem_state(int md_id)

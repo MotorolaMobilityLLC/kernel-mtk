@@ -1424,8 +1424,6 @@ static int md_ccif_dump_info(struct ccci_modem *md, MODEM_DUMP_FLAG flag,
 	if (flag & DUMP_FLAG_CCIF) {
 		md_ccif_dump("Dump CCIF SRAM\n", md);
 		md_ccif_queue_dump(md);
-		CCCI_MEM_LOG_TAG(md->index, TAG, "dump MD1 exception memory start\n");
-		ccci_mem_dump(md->index, md1_excp_smem_vir, md1_excp_smem__size);
 	}
 	/*normal EE*/
 	if (flag & DUMP_FLAG_REG) {

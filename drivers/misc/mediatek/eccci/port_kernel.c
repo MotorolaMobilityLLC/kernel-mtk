@@ -3435,6 +3435,7 @@ void md_ex_monitor2_func(unsigned long data)
 	unsigned long flags;
 	int md_wdt_ee = 0;
 	int ee_on_going = 0;
+	struct ccci_modem *another_md;
 
 	CCCI_ERROR_LOG(md->index, KERN, "MD exception timer 2! ee=%x\n", md->ee_info_flag);
 	CCCI_MEM_LOG_TAG(md->index, KERN, "MD exception timer 2!\n");
@@ -3463,6 +3464,10 @@ void md_ex_monitor2_func(unsigned long data)
 #ifdef MD_UMOLY_EE_SUPPORT
 	}
 #endif
+	/* Dump another modem if necessary*/
+	another_md = ccci_get_another_modem(md->index);
+	if (another_md && another_md->boot_stage == MD_BOOT_STAGE_1)
+		another_md->ops->dump_info(another_md, DUMP_FLAG_CCIF, NULL, 0);
 
 	spin_lock_irqsave(&md->ctrl_lock, flags);
 	md->ee_info_flag = 0;	/* this should be the last action of a regular exception flow,
