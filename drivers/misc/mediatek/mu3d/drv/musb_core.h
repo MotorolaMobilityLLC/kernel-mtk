@@ -50,13 +50,7 @@
 #include <linux/wakelock.h>
 #include <linux/workqueue.h>
 /*#include <mt-plat/battery_common.h>*/
-#ifdef USB_ELBRUS
 #include <mt-plat/charging.h>
-#else
-#ifndef CONFIG_FPGA_EARLY_PORTING
-#include <mt-plat/charging.h>
-#endif
-#endif
 
 struct musb;
 struct musb_hw_ep;

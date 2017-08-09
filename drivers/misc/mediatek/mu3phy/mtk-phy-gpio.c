@@ -22,7 +22,7 @@
 #define SSUSB_I2C_OUT			(GPIO_BASE + 0xd0)
 #define SSUSB_I2C_IN			(GPIO_BASE + 0xd4)
 
-#ifndef USB_ELBRUS /* #ifdef NEVER //USE_GPIO */
+#ifdef NEVER /*USE_GPIO */
 
 /* /////////////////////////////////////////////////////////////// */
 
