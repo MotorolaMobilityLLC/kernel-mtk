@@ -1684,49 +1684,52 @@ ssize_t AudDrv_Reg_Dump(char *buffer, int size)
 bool SetFmI2sConnection(uint32 ConnectionState)
 {
 	SetIntfConnection(ConnectionState,
-			Soc_Aud_AFE_IO_Block_I2S0, Soc_Aud_AFE_IO_Block_HW_GAIN1_OUT);
+			  Soc_Aud_AFE_IO_Block_I2S_CONNSYS,
+			  Soc_Aud_AFE_IO_Block_HW_GAIN1_OUT);
 	SetIntfConnection(ConnectionState,
-			Soc_Aud_AFE_IO_Block_HW_GAIN1_IN, Soc_Aud_AFE_IO_Block_I2S1_DAC);
+			  Soc_Aud_AFE_IO_Block_HW_GAIN1_IN,
+			  Soc_Aud_AFE_IO_Block_I2S1_DAC);
 	SetIntfConnection(ConnectionState,
-			Soc_Aud_AFE_IO_Block_HW_GAIN1_IN, Soc_Aud_AFE_IO_Block_I2S1_DAC_2);
+			  Soc_Aud_AFE_IO_Block_HW_GAIN1_IN,
+			  Soc_Aud_AFE_IO_Block_I2S1_DAC_2);
 	return true;
 }
 
 bool SetFmAwbConnection(uint32 ConnectionState)
 {
 	SetIntfConnection(ConnectionState,
-			Soc_Aud_AFE_IO_Block_I2S0, Soc_Aud_AFE_IO_Block_MEM_AWB);
+			Soc_Aud_AFE_IO_Block_I2S_CONNSYS, Soc_Aud_AFE_IO_Block_MEM_AWB);
 	return true;
 }
 
-bool SetFmI2sInEnable(bool bEnable)
+int SetFmI2sInEnable(bool enable)
 {
-	return Set2ndI2SInEnable(bEnable);
+	return setConnsysI2SInEnable(enable);
 }
 
-bool SetFmI2sIn(AudioDigtalI2S *mDigitalI2S)
+int SetFmI2sIn(AudioDigtalI2S *mDigitalI2S)
 {
-	return Set2ndI2SIn(mDigitalI2S);
+	return setConnsysI2SIn(mDigitalI2S);
 }
 
 bool GetFmI2sInPathEnable(void)
 {
-	return GetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_IN_2);
+	return GetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_IN_CONNSYS);
 }
 
 bool SetFmI2sInPathEnable(bool bEnable)
 {
-	return SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_IN_2, bEnable);
+	return SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_IN_CONNSYS, bEnable);
 }
 
-bool SetFmI2sAsrcEnable(bool bEnable)
+int SetFmI2sAsrcEnable(bool enable)
 {
-	return SetI2SASRCEnable(bEnable);
+	return setConnsysI2SEnable(enable);
 }
 
-bool SetFmI2sAsrcConfig(bool bIsUseASRC, unsigned int dToSampleRate)
+int SetFmI2sAsrcConfig(bool bIsUseASRC, unsigned int dToSampleRate)
 {
-	return SetI2SASRCConfig(bIsUseASRC, dToSampleRate);
+	return setConnsysI2SAsrc(bIsUseASRC, dToSampleRate);
 }
 
 bool SetAncRecordReg(uint32 value, uint32 mask)

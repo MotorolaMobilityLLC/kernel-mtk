@@ -93,6 +93,11 @@ bool SetExtI2SAdcInEnable(bool bEnable);
 
 bool Set2ndI2SAdcIn(AudioDigtalI2S *DigtalI2S);
 
+int setConnsysI2SIn(AudioDigtalI2S *DigtalI2S);
+int setConnsysI2SInEnable(bool enable);
+int setConnsysI2SAsrc(bool bIsUseASRC, unsigned int dToSampleRate);
+int setConnsysI2SEnable(bool enable);
+
 bool GetMrgI2SEnable(void);
 bool SetMrgI2SEnable(bool bEnable, unsigned int sampleRate);
 bool SetDaiBt(AudioDigitalDAIBT *mAudioDaiBt);
@@ -239,12 +244,12 @@ uint32 GetEnableAudioBlockRegAddr(uint32 Aud_block);
 /* FM AP Dependent */
 bool SetFmI2sConnection(uint32 ConnectionState);
 bool SetFmAwbConnection(uint32 ConnectionState);
-bool SetFmI2sInEnable(bool bEnable);
-bool SetFmI2sIn(AudioDigtalI2S *mDigitalI2S);
+int SetFmI2sInEnable(bool enable);
+int SetFmI2sIn(AudioDigtalI2S *mDigitalI2S);
 bool GetFmI2sInPathEnable(void);
 bool SetFmI2sInPathEnable(bool bEnable);
-bool SetFmI2sAsrcEnable(bool bEnable);
-bool SetFmI2sAsrcConfig(bool bIsUseASRC, unsigned int dToSampleRate);
+int SetFmI2sAsrcEnable(bool bEnable);
+int SetFmI2sAsrcConfig(bool bIsUseASRC, unsigned int dToSampleRate);
 
 /* ANC AP Dependent */
 bool SetAncRecordReg(uint32 value, uint32 mask);

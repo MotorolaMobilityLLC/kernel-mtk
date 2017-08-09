@@ -1483,12 +1483,13 @@ bool SetFmAwbConnection(uint32 ConnectionState)
 	return true;
 }
 
-bool SetFmI2sInEnable(bool bEnable)
+int SetFmI2sInEnable(bool enable)
 {
-	return Set2ndI2SInEnable(bEnable);
+	Set2ndI2SInEnable(bEnable);
+	return 0;
 }
 
-bool SetFmI2sIn(AudioDigtalI2S *mDigitalI2S)
+int SetFmI2sIn(AudioDigtalI2S *mDigitalI2S)
 {
 	return Set2ndI2SIn(mDigitalI2S);
 }
@@ -1503,14 +1504,16 @@ bool SetFmI2sInPathEnable(bool bEnable)
 	return SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_IN_2, bEnable);
 }
 
-bool SetFmI2sAsrcEnable(bool bEnable)
+int SetFmI2sAsrcEnable(bool enable)
 {
-	return SetI2SASRCEnable(bEnable);
+	SetI2SASRCEnable(bEnable);
+	return 0;
 }
 
-bool SetFmI2sAsrcConfig(bool bIsUseASRC, unsigned int dToSampleRate)
+int SetFmI2sAsrcConfig(bool bIsUseASRC, unsigned int dToSampleRate)
 {
-	return SetI2SASRCConfig(bIsUseASRC, dToSampleRate);
+	SetI2SASRCConfig(bIsUseASRC, dToSampleRate);
+	return 0;
 }
 
 bool SetAncRecordReg(uint32 value, uint32 mask)

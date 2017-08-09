@@ -1003,6 +1003,105 @@ bool SetI2SAdcIn(AudioDigtalI2S *DigtalI2S)
 	return SetChipI2SAdcIn(DigtalI2S, AudioAdcI2SStatus);
 }
 
+#ifdef AFE_CONNSYS_I2S_CON
+int setConnsysI2SIn(AudioDigtalI2S *mDigitalI2S)
+{
+	unsigned int i2s_con = 0;
+
+	/* slave mode, rate is for asrc */
+	i2s_con |= (mDigitalI2S->mINV_LRCK << 7);
+	i2s_con |= (mDigitalI2S->mI2S_FMT << 3);
+	i2s_con |= (mDigitalI2S->mI2S_SLAVE << 2);
+	i2s_con |= (mDigitalI2S->mI2S_WLEN << 1);
+	i2s_con |= (mDigitalI2S->mI2S_IN_PAD_SEL << 28);
+	pr_debug("%s(), i2s_con= 0x%x", __func__, i2s_con);
+	Afe_Set_Reg(AFE_CONNSYS_I2S_CON, i2s_con, 0xfffffffe);
+
+	return 0;
+}
+
+int setConnsysI2SInEnable(bool enable)
+{
+	pr_warn("%s(), enable = %d", __func__, enable);
+	Afe_Set_Reg(AFE_CONNSYS_I2S_CON, enable, 0x1);
+
+	return 0;
+}
+
+int setConnsysI2SAsrc(bool bIsUseASRC, unsigned int dToSampleRate)
+{
+	unsigned int rate = SampleRateTransform(dToSampleRate,
+						Soc_Aud_Digital_Block_I2S_IN_CONNSYS);
+
+	pr_debug("+%s() bIsUseASRC [%d] dToSampleRate [%d]\n",
+		 __func__,
+		 bIsUseASRC,
+		 dToSampleRate);
+
+	Afe_Set_Reg(AFE_CONNSYS_I2S_CON, bIsUseASRC << 6, 0x1 << 6);
+
+	if (bIsUseASRC) {
+		BUG_ON(!(dToSampleRate == 44100 || dToSampleRate == 48000));
+
+		/* slave mode, set i2s for asrc */
+		Afe_Set_Reg(AFE_CONNSYS_I2S_CON, rate << 8, 0xf << 8);
+
+		if (dToSampleRate == 44100)
+			Afe_Set_Reg(AFE_ASRC_CONNSYS_CON14, 0x001B9000, AFE_MASK_ALL);
+		 else
+			Afe_Set_Reg(AFE_ASRC_CONNSYS_CON14, 0x001E0000, AFE_MASK_ALL);
+
+		Afe_Set_Reg(AFE_ASRC_CONNSYS_CON15, 0x00140000, AFE_MASK_ALL);
+		Afe_Set_Reg(AFE_ASRC_CONNSYS_CON16, 0x00FF5987, AFE_MASK_ALL);
+		Afe_Set_Reg(AFE_ASRC_CONNSYS_CON17, 0x00007EF4, AFE_MASK_ALL);
+		Afe_Set_Reg(AFE_ASRC_CONNSYS_CON16, 0x00FF5986, AFE_MASK_ALL);
+		Afe_Set_Reg(AFE_ASRC_CONNSYS_CON16, 0x00FF5987, AFE_MASK_ALL);
+
+		/* 0:Stereo 1:Mono */
+		Afe_Set_Reg(AFE_ASRC_CONNSYS_CON13, 0, 1 << 16);
+
+		/* Calibration setting */
+		Afe_Set_Reg(AFE_ASRC_CONNSYS_CON20, 0x00036000, AFE_MASK_ALL);
+		Afe_Set_Reg(AFE_ASRC_CONNSYS_CON21, 0x0002FC00, AFE_MASK_ALL);
+	}
+
+	return 0;
+}
+
+int setConnsysI2SEnable(bool enable)
+{
+	if (enable) {
+		Afe_Set_Reg(AFE_ASRC_CONNSYS_CON0, ((1 << 6) | (1 << 0)), ((1 << 6) | (1 << 0)));
+	} else {
+		uint32 dNeedDisableASM = (Afe_Get_Reg(AFE_ASRC_CONNSYS_CON0) & 0x0030) ? 1 : 0;
+
+		Afe_Set_Reg(AFE_ASRC_CONNSYS_CON0, 0, (1 << 6 | dNeedDisableASM));
+	}
+
+	return 0;
+}
+#else
+int setConnsysI2SIn(AudioDigtalI2S *DigtalI2S)
+{
+	return -ENOSYS;
+}
+
+int setConnsysI2SInEnable(bool enable)
+{
+	return -ENOSYS;
+}
+
+int setConnsysI2SAsrc(bool bIsUseASRC, unsigned int dToSampleRate)
+{
+	return -ENOSYS;
+}
+
+int setConnsysI2SEnable(bool enable)
+{
+	return -ENOSYS;
+}
+#endif
+
 bool setDmicPath(bool _enable)
 {
 	uint32 sample_rate =
