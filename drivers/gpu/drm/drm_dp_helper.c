@@ -378,11 +378,10 @@ static int drm_dp_dpcd_access(struct drm_dp_aux *aux, u8 request,
 
 	/*
 	 * The specification doesn't give any recommendation on how often to
-	 * retry native transactions. We used to retry 7 times like for
-	 * aux i2c transactions but real world devices this wasn't
-	 * sufficient, bump to 32 which makes Dell 4k monitors happier.
+	 * retry native transactions, so retry 7 times like for I2C-over-AUX
+	 * transactions.
 	 */
-	for (retry = 0; retry < 32; retry++) {
+	for (retry = 0; retry < 7; retry++) {
 
 		mutex_lock(&aux->hw_mutex);
 		err = aux->transfer(aux, &msg);
@@ -655,10 +654,12 @@ static int drm_dp_i2c_do_msg(struct drm_dp_aux *aux, struct drm_dp_aux_msg *msg)
 
 		case DP_AUX_I2C_REPLY_NACK:
 			DRM_DEBUG_KMS("I2C nack\n");
+			aux->i2c_nack_count++;
 			return -EREMOTEIO;
 
 		case DP_AUX_I2C_REPLY_DEFER:
 			DRM_DEBUG_KMS("I2C defer\n");
+			aux->i2c_defer_count++;
 			usleep_range(400, 500);
 			continue;
 

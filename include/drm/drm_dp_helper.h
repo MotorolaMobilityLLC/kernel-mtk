@@ -303,7 +303,8 @@
 #define DP_TEST_CRC_B_CB		    0x244
 
 #define DP_TEST_SINK_MISC		    0x246
-#define DP_TEST_CRC_SUPPORTED		    (1 << 5)
+# define DP_TEST_CRC_SUPPORTED		    (1 << 5)
+# define DP_TEST_COUNT_MASK		    0x7
 
 #define DP_TEST_RESPONSE		    0x260
 # define DP_TEST_ACK			    (1 << 0)
@@ -313,7 +314,7 @@
 #define DP_TEST_EDID_CHECKSUM		    0x261
 
 #define DP_TEST_SINK			    0x270
-#define DP_TEST_SINK_START	    (1 << 0)
+# define DP_TEST_SINK_START		    (1 << 0)
 
 #define DP_PAYLOAD_TABLE_UPDATE_STATUS      0x2c0   /* 1.2 MST */
 # define DP_PAYLOAD_TABLE_UPDATED           (1 << 0)
@@ -550,6 +551,7 @@ struct drm_dp_aux {
 	struct mutex hw_mutex;
 	ssize_t (*transfer)(struct drm_dp_aux *aux,
 			    struct drm_dp_aux_msg *msg);
+	unsigned i2c_nack_count, i2c_defer_count;
 };
 
 ssize_t drm_dp_dpcd_read(struct drm_dp_aux *aux, unsigned int offset,
@@ -609,4 +611,14 @@ int drm_dp_link_configure(struct drm_dp_aux *aux, struct drm_dp_link *link);
 int drm_dp_aux_register(struct drm_dp_aux *aux);
 void drm_dp_aux_unregister(struct drm_dp_aux *aux);
 
+#define DP_PS8617_OUI 0x1cf8
+
+static inline bool drm_dp_branch_is_ps8617(const u8 buf[3])
+{
+	if (buf[0] == ((DP_PS8617_OUI >> 16) & 0xff) &&
+	    buf[1] == ((DP_PS8617_OUI >> 8) & 0xff) &&
+	    buf[2] == ((DP_PS8617_OUI & 0xff)))
+		return true;
+	return false;
+}
 #endif /* _DRM_DP_HELPER_H_ */

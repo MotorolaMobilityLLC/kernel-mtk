@@ -68,7 +68,7 @@ static unsigned int drm_timestamp_precision = 20;  /* Default to 20 usecs. */
  */
 unsigned int drm_timestamp_monotonic = 1;
 
-static int drm_vblank_offdelay = 5000;    /* Default to 5000 msecs. */
+static int drm_vblank_offdelay = 50;    /* Default to 50 msecs. */
 
 module_param_named(vblankoffdelay, drm_vblank_offdelay, int, 0600);
 module_param_named(timestamp_precision_usec, drm_timestamp_precision, int, 0600);
@@ -131,11 +131,12 @@ static void drm_update_vblank_count(struct drm_device *dev, int crtc)
 
 	/* Reinitialize corresponding vblank timestamp if high-precision query
 	 * available. Skip this step if query unsupported or failed. Will
-	 * reinitialize delayed at next vblank interrupt in that case and
-	 * assign 0 for now, to mark the vblanktimestamp as invalid.
+	 * reinitialize delayed at next vblank interrupt in that case.
 	 */
-	tslot = atomic_read(&vblank->count) + diff;
-	vblanktimestamp(dev, crtc, tslot) = rc ? t_vblank : (struct timeval) {0, 0};
+	if (rc) {
+		tslot = atomic_read(&vblank->count) + diff;
+		vblanktimestamp(dev, crtc, tslot) = t_vblank;
+	}
 
 	smp_mb__before_atomic();
 	atomic_add(diff, &vblank->count);
@@ -829,6 +830,8 @@ drm_get_last_vbltimestamp(struct drm_device *dev, int crtc,
  * vblank events since the system was booted, including lost events due to
  * modesetting activity.
  *
+ * This is the legacy version of drm_crtc_vblank_count().
+ *
  * Returns:
  * The software vblank counter.
  */
@@ -841,6 +844,25 @@ u32 drm_vblank_count(struct drm_device *dev, int crtc)
 	return atomic_read(&vblank->count);
 }
 EXPORT_SYMBOL(drm_vblank_count);
+
+/**
+ * drm_crtc_vblank_count - retrieve "cooked" vblank counter value
+ * @crtc: which counter to retrieve
+ *
+ * Fetches the "cooked" vblank count value that represents the number of
+ * vblank events since the system was booted, including lost events due to
+ * modesetting activity.
+ *
+ * This is the native KMS version of drm_vblank_count().
+ *
+ * Returns:
+ * The software vblank counter.
+ */
+u32 drm_crtc_vblank_count(struct drm_crtc *crtc)
+{
+	return drm_vblank_count(crtc->dev, drm_crtc_index(crtc));
+}
+EXPORT_SYMBOL(drm_crtc_vblank_count);
 
 /**
  * drm_vblank_count_and_time - retrieve "cooked" vblank counter value
@@ -903,6 +925,8 @@ static void send_vblank_event(struct drm_device *dev,
  *
  * Updates sequence # and timestamp on event, and sends it to userspace.
  * Caller must hold event lock.
+ *
+ * This is the legacy version of drm_crtc_send_vblank_event().
  */
 void drm_send_vblank_event(struct drm_device *dev, int crtc,
 		struct drm_pending_vblank_event *e)
@@ -920,6 +944,23 @@ void drm_send_vblank_event(struct drm_device *dev, int crtc,
 	send_vblank_event(dev, e, seq, &now);
 }
 EXPORT_SYMBOL(drm_send_vblank_event);
+
+/**
+ * drm_crtc_send_vblank_event - helper to send vblank event after pageflip
+ * @crtc: the source CRTC of the vblank event
+ * @e: the event to send
+ *
+ * Updates sequence # and timestamp on event, and sends it to userspace.
+ * Caller must hold event lock.
+ *
+ * This is the native KMS version of drm_send_vblank_event().
+ */
+void drm_crtc_send_vblank_event(struct drm_crtc *crtc,
+				struct drm_pending_vblank_event *e)
+{
+	drm_send_vblank_event(crtc->dev, drm_crtc_index(crtc), e);
+}
+EXPORT_SYMBOL(drm_crtc_send_vblank_event);
 
 /**
  * drm_vblank_enable - enable the vblank interrupt on a CRTC
@@ -1190,7 +1231,7 @@ EXPORT_SYMBOL(drm_crtc_vblank_off);
  *
  * This functions restores the vblank interrupt state captured with
  * drm_vblank_off() again. Note that calls to drm_vblank_on() and
- * drm_vblank_off() can be unbalanced and so can also be unconditionaly called
+ * drm_vblank_off() can be unbalanced and so can also be unconditionally called
  * in driver load code to reflect the current hardware state of the crtc.
  *
  * This is the legacy version of drm_crtc_vblank_on().
@@ -1237,7 +1278,7 @@ EXPORT_SYMBOL(drm_vblank_on);
  *
  * This functions restores the vblank interrupt state captured with
  * drm_vblank_off() again. Note that calls to drm_vblank_on() and
- * drm_vblank_off() can be unbalanced and so can also be unconditionaly called
+ * drm_vblank_off() can be unbalanced and so can also be unconditionally called
  * in driver load code to reflect the current hardware state of the crtc.
  *
  * This is the native kms version of drm_vblank_on().
@@ -1593,6 +1634,8 @@ static void drm_handle_vblank_events(struct drm_device *dev, int crtc)
  *
  * Drivers should call this routine in their vblank interrupt handlers to
  * update the vblank counter and send any signals that may be pending.
+ *
+ * This is the legacy version of drm_crtc_handle_vblank().
  */
 bool drm_handle_vblank(struct drm_device *dev, int crtc)
 {
@@ -1669,3 +1712,21 @@ bool drm_handle_vblank(struct drm_device *dev, int crtc)
 	return true;
 }
 EXPORT_SYMBOL(drm_handle_vblank);
+
+/**
+ * drm_crtc_handle_vblank - handle a vblank event
+ * @crtc: where this event occurred
+ *
+ * Drivers should call this routine in their vblank interrupt handlers to
+ * update the vblank counter and send any signals that may be pending.
+ *
+ * This is the native KMS version of drm_handle_vblank().
+ *
+ * Returns:
+ * True if the event was successfully handled, false on failure.
+ */
+bool drm_crtc_handle_vblank(struct drm_crtc *crtc)
+{
+	return drm_handle_vblank(crtc->dev, drm_crtc_index(crtc));
+}
+EXPORT_SYMBOL(drm_crtc_handle_vblank);
