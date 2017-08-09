@@ -52,8 +52,8 @@
 #include <mt-plat/mt_gpio.h>
 #endif
 
-/* for check E2/E1 chip */
-#include <mt-plat/mt_chip.h>
+#include <linux/of.h>
+#include <linux/of_fdt.h>
 
 #ifdef CONFIG_PINCTRL_MT6797
 struct pinctrl *pinctrlaud;
@@ -129,10 +129,10 @@ static struct audio_gpio_attr aud_gpios[GPIO_NUM] = {
 };
 #endif
 
+static unsigned int extbuck_fan53526_exist;
 
 void AudDrv_GPIO_probe(void *dev)
 {
-	unsigned int chip_ver = mt_get_chip_hw_ver();
 #ifdef CONFIG_PINCTRL_MT6797
 	int ret;
 	int i = 0;
@@ -146,16 +146,16 @@ void AudDrv_GPIO_probe(void *dev)
 		return;
 	}
 
-	/* update hpdepop gpio by chip version */
-	pr_warn("%s(), chip_ver = 0x%x\n", __func__, chip_ver);
-	if (chip_ver == 0xCA01) { /* is e2 */
+	/* update hpdepop gpio by PCB version - extbuck fan53526 use gpio111 which may be used by hpdepop */
+	pr_warn("%s(), extbuck_fan53526_exist = %d\n", __func__, extbuck_fan53526_exist);
+	if (extbuck_fan53526_exist) { /* is e2 */
 		struct audio_gpio_attr gpio_hpdepop_high = {"hpdepop-pullhigh_e2", false, NULL};
 		struct audio_gpio_attr gpio_hpdepop_low = {"hpdepop-pulllow_e2", false, NULL};
 
 		aud_gpios[GPIO_HPDEPOP_HIGH] = gpio_hpdepop_high;
 		aud_gpios[GPIO_HPDEPOP_LOW] = gpio_hpdepop_low;
 
-		pr_warn("%s(), e2 chip, update gpio name, high = %s, low = %s\n",
+		pr_warn("%s(), e2 PCB, update gpio name, high = %s, low = %s\n",
 			__func__,
 			aud_gpios[GPIO_HPDEPOP_HIGH].name,
 			aud_gpios[GPIO_HPDEPOP_LOW].name);
@@ -539,3 +539,33 @@ int AudDrv_GPIO_HPDEPOP_Select(int bEnable)
 
 	return retval;
 }
+
+static int __init dt_get_extbuck_info(unsigned long node, const char *uname, int depth, void *data)
+{
+	struct devinfo_extbuck_tag {
+		u32 size;
+		u32 tag;
+		u32 extbuck_fan53526_exist;
+	} *tags;
+	unsigned int size = 0;
+
+	if (depth != 1 || (strcmp(uname, "chosen") != 0 && strcmp(uname, "chosen@0") != 0))
+		return 0;
+
+	tags = (struct devinfo_extbuck_tag *) of_get_flat_dt_prop(node, "atag,extbuck_fan53526", &size);
+
+	if (tags) {
+		extbuck_fan53526_exist = tags->extbuck_fan53526_exist;
+		pr_warn("[%s] fan53526_exist = %d\n", __func__, extbuck_fan53526_exist);
+	}
+	return 0;
+}
+
+static int __init audio_drv_gpio_init(void)
+{
+	of_scan_flat_dt(dt_get_extbuck_info, NULL);
+
+	return 0;
+}
+
+arch_initcall(audio_drv_gpio_init);
