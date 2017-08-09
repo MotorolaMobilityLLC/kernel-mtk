@@ -251,6 +251,7 @@ extern void mrdump_mini_ipanic_done(void);
 extern int mrdump_task_info(unsigned char *buffer, size_t sz_buf);
 extern void aee_rr_rec_exp_type(unsigned int type);
 extern unsigned int aee_rr_curr_exp_type(void);
+extern void aee_rr_rec_scp(void);
 #ifdef CONFIG_SCHED_DEBUG
 extern int sysrq_sched_debug_show_at_AEE(void);
 #endif

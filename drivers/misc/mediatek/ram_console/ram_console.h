@@ -22,4 +22,6 @@ extern struct file *expdb_open(void);
 #ifdef CONFIG_PSTORE
 extern void pstore_bconsole_write(struct console *con, const char *s, unsigned c);
 #endif
+extern u32 scp_dump_pc(void);
+extern u32 scp_dump_lr(void);
 #endif

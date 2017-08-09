@@ -150,6 +150,8 @@ struct last_reboot_reason {
 	uint8_t idvfs_state_manchine;
 
 	uint32_t ocp_2_target_limit;
+	uint32_t scp_pc;
+	uint32_t scp_lr;
 
 	void *kparams;
 };
@@ -1772,6 +1774,49 @@ u32 aee_rr_curr_ocp_2_target_limit(void)
 	return LAST_RR_VAL(ocp_2_target_limit);
 }
 
+void aee_rr_rec_scp_pc(u32 val)
+{
+	if (!ram_console_init_done || !ram_console_buffer)
+		return;
+	LAST_RR_SET(scp_pc, val);
+}
+
+uint32_t aee_rr_curr_scp_pc(void)
+{
+	return LAST_RR_VAL(scp_pc);
+}
+
+void aee_rr_rec_scp_lr(u32 val)
+{
+	if (!ram_console_init_done || !ram_console_buffer)
+		return;
+	LAST_RR_SET(scp_lr, val);
+}
+
+uint32_t aee_rr_curr_scp_lr(void)
+{
+	return LAST_RR_VAL(scp_lr);
+}
+
+__weak uint32_t scp_dump_pc(void)
+{
+	return 0;
+}
+
+__weak uint32_t scp_dump_lr(void)
+{
+	return 0;
+}
+
+void aee_rr_rec_scp(void)
+{
+	u32 pc = scp_dump_pc();
+	u32 lr = scp_dump_lr();
+
+	aee_rr_rec_scp_pc(pc);
+	aee_rr_rec_scp_lr(lr);
+}
+
 void aee_rr_rec_suspend_debug_flag(u32 val)
 {
 	if (!ram_console_init_done || !ram_console_buffer)
@@ -2337,6 +2382,16 @@ void aee_rr_show_thermal_ktime(struct seq_file *m)
 	seq_printf(m, "thermal_ktime: %lld\n", LAST_RRR_VAL(thermal_ktime));
 }
 
+void aee_rr_show_scp_pc(struct seq_file *m)
+{
+	seq_printf(m, "scp_pc: 0x%x\n", LAST_RRR_VAL(scp_pc));
+}
+
+void aee_rr_show_scp_lr(struct seq_file *m)
+{
+	seq_printf(m, "scp_lr: 0x%x\n", LAST_RRR_VAL(scp_lr));
+}
+
 void aee_rr_show_isr_el1(struct seq_file *m)
 {
 	seq_printf(m, "isr_el1: %d\n", LAST_RRR_VAL(isr_el1));
@@ -2494,7 +2549,9 @@ last_rr_show_t aee_rr_show[] = {
 	aee_rr_show_idvfs_swreq_next_pct_x100,
 	aee_rr_show_idvfs_sram_ldo,
 	aee_rr_show_idvfs_state_manchine,
-	aee_rr_show_ocp_2_target_limit
+	aee_rr_show_ocp_2_target_limit,
+	aee_rr_show_scp_pc,
+	aee_rr_show_scp_lr
 };
 
 last_rr_show_cpu_t aee_rr_show_cpu[] = {
