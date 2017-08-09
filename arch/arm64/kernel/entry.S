@@ -114,6 +114,45 @@
 	*/
 	.endm
 
+#ifdef CONFIG_MTK_COMPAT
+	.macro	kernel_entry_compat
+	sub	sp, sp, #S_FRAME_SIZE - S_X16	// room for LR, SP, SPSR, ELR
+	mov	w0, w0				// zero upper 32 bits of x0
+
+	stp	x14, x15, [sp, #-16]!
+	stp	x12, x13, [sp, #-16]!
+	stp	x10, x11, [sp, #-16]!
+	stp	x8, x9, [sp, #-16]!
+	stp	x6, x7, [sp, #-16]!
+	stp	x4, x5, [sp, #-16]!
+	stp	x2, x3, [sp, #-16]!
+	stp	x0, x1, [sp, #-16]!
+
+	mrs	x21, sp_el0
+	get_thread_info tsk			// Ensure MDSCR_EL1.SS is clear,
+	ldr	x19, [tsk, #TI_FLAGS]		// since we can unmask debug
+	disable_step_tsk x19, x20		// exceptions when scheduling.
+	mrs	x22, elr_el1
+	mrs	x23, spsr_el1
+	stp	lr, x21, [sp, #S_LR]
+	stp	x22, x23, [sp, #S_PC]
+
+	/*
+	 * Set syscallno to -1 by default (overridden later if real syscall).
+	 */
+	mvn	x21, xzr
+	str	x21, [sp, #S_SYSCALLNO]
+
+	/*
+	 * Registers that may be useful after this macro is invoked:
+	 *
+	 * x21 - aborted SP
+	 * x22 - aborted PC
+	 * x23 - aborted PSTATE
+	*/
+	.endm
+#endif
+
 	.macro	kernel_exit, el, ret = 0
 	ldp	x21, x22, [sp, #S_PC]		// load ELR, SPSR
 	.if	\el == 0
@@ -148,6 +187,72 @@
 	ldr	lr, [sp], #S_FRAME_SIZE - S_LR	// load LR and restore SP
 	eret					// return to kernel
 	.endm
+
+#ifdef CONFIG_MTK_COMPAT
+	.macro	kernel_exit_compat, ret = 0
+	ldp	x21, x22, [sp, #S_PC]		// load ELR, SPSR
+	ct_user_enter
+	ldr	x23, [sp, #S_SP]		// load return stack pointer
+	.if	\ret
+	ldr	x1, [sp, #S_X1]			// preserve x0 (syscall return)
+	add	sp, sp, S_X2
+	.else
+	ldp	x0, x1, [sp], #16
+	.endif
+	ldp	x2, x3, [sp], #16		// load the rest of the registers
+	ldp	x4, x5, [sp], #16
+	ldp	x6, x7, [sp], #16
+	ldp	x8, x9, [sp], #16
+	msr	elr_el1, x21			// set up the return data
+	msr	spsr_el1, x22
+	msr	sp_el0, x23
+#ifdef CONFIG_ARM64_ERRATUM_845719
+	alternative_insn						\
+	"nop",								\
+	"tbz x22, #4, 1f",						\
+	ARM64_WORKAROUND_845719
+#ifdef CONFIG_PID_IN_CONTEXTIDR
+	alternative_insn						\
+	"nop; nop",							\
+	"mrs x29, contextidr_el1; msr contextidr_el1, x29; 1:",		\
+	ARM64_WORKAROUND_845719
+#else
+	alternative_insn						\
+	"nop",								\
+	"msr contextidr_el1, xzr; 1:",					\
+	ARM64_WORKAROUND_845719
+#endif
+#endif
+	ldp	x10, x11, [sp], #16
+	ldp	x12, x13, [sp], #16
+	ldp	x14, x15, [sp], #16
+	tbnz 	x22, #4, 1f
+
+	ldp	x16, x17, [sp], #16
+	ldp	x18, x19, [sp], #16
+	ldp	x20, x21, [sp], #16
+	ldp	x22, x23, [sp], #16
+	ldp	x24, x25, [sp], #16
+	ldp	x26, x27, [sp], #16
+	ldp	x28, x29, [sp], #16
+	ldr	lr, [sp], #S_FRAME_SIZE - S_LR	// load LR and restore SP
+	eret					// return to kernel
+	// could not run here
+
+1:
+#ifdef CONFIG_ARM64_ERRATUM_845719
+#ifdef CONFIG_PID_IN_CONTEXTIDR
+	mrs     x29, contextidr_el1
+	msr     contextidr_el1, x29
+#else
+	msr     contextidr_el1, xzr
+#endif
+#endif
+	add	sp, sp, #S_X29-S_X15
+	ldr	lr, [sp], #S_FRAME_SIZE - S_LR	// load LR and restore SP
+	eret					// return to kernel
+	.endm
+#endif
 
 	.macro	get_thread_info, rd
 	mov	\rd, sp
@@ -407,7 +512,11 @@ el0_sync:
 #ifdef CONFIG_COMPAT
 	.align	6
 el0_sync_compat:
+#ifdef CONFIG_MTK_COMPAT
+	kernel_entry_compat
+#else
 	kernel_entry 0, 32
+#endif
 	mrs	x25, esr_el1			// read the syndrome register
 	lsr	x24, x25, #ESR_EL1_EC_SHIFT	// exception class
 	cmp	x24, #ESR_EL1_EC_SVC32		// SVC in 32-bit state
@@ -446,7 +555,11 @@ el0_svc_compat:
 
 	.align	6
 el0_irq_compat:
+#ifdef CONFIG_MTK_COMPAT
+	kernel_entry_compat
+#else
 	kernel_entry 0, 32
+#endif
 	b	el0_irq_naked
 #endif
 
@@ -598,7 +711,11 @@ ret_fast_syscall:
 	and	x2, x1, #_TIF_WORK_MASK
 	cbnz	x2, fast_work_pending
 	enable_step_tsk x1, x2
+#ifdef CONFIG_MTK_COMPAT
+	kernel_exit_compat ret = 1
+#else
 	kernel_exit 0, ret = 1
+#endif
 
 /*
  * Ok, we need to do extra processing, enter the slow path.
@@ -628,7 +745,11 @@ ret_to_user:
 	cbnz	x2, work_pending
 	enable_step_tsk x1, x2
 no_work_pending:
+#ifdef CONFIG_MTK_COMPAT
+	kernel_exit_compat ret = 0
+#else
 	kernel_exit 0, ret = 0
+#endif
 ENDPROC(ret_to_user)
 
 /*

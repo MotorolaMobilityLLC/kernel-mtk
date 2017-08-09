@@ -51,6 +51,11 @@ int main(void)
   DEFINE(S_X5,			offsetof(struct pt_regs, regs[5]));
   DEFINE(S_X6,			offsetof(struct pt_regs, regs[6]));
   DEFINE(S_X7,			offsetof(struct pt_regs, regs[7]));
+#ifdef CONFIG_MTK_COMPAT
+	DEFINE(S_X15,			offsetof(struct pt_regs, regs[15]));
+	DEFINE(S_X16,			offsetof(struct pt_regs, regs[16]));
+	DEFINE(S_X29,			offsetof(struct pt_regs, regs[29]));
+#endif
   DEFINE(S_LR,			offsetof(struct pt_regs, regs[30]));
   DEFINE(S_SP,			offsetof(struct pt_regs, sp));
 #ifdef CONFIG_COMPAT
