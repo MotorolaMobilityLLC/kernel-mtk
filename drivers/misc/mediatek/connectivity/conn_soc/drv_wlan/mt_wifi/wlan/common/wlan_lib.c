@@ -1860,6 +1860,9 @@ WLAN_STATUS wlanProcessCommandQueue(IN P_ADAPTER_T prAdapter, IN P_QUE_T prCmdQu
 			if (rStatus == WLAN_STATUS_RESOURCES) {
 				/* no more TC4 resource for further transmission */
 				QUEUE_INSERT_TAIL(prMergeCmdQue, prQueueEntry);
+				DBGLOG(TX, WARN, "No TC4 resource to send cmd, CID=%d, SEQ=%d, CMD type=%d, OID=%d\n",
+					prCmdInfo->ucCID, prCmdInfo->ucCmdSeqNum,
+					prCmdInfo->eCmdType, prCmdInfo->fgIsOid);
 				break;
 			} else if (rStatus == WLAN_STATUS_PENDING) {
 				/* command packet which needs further handling upon response */
@@ -1883,6 +1886,9 @@ WLAN_STATUS wlanProcessCommandQueue(IN P_ADAPTER_T prAdapter, IN P_QUE_T prCmdQu
 						kalOidComplete(prAdapter->prGlueInfo, prCmdInfo->fgSetQuery,
 							       prCmdInfo->u4SetInfoLen, rStatus);
 					}
+					DBGLOG(TX, WARN, "Send CMD, status=%u, CID=%d, SEQ=%d, CMD type=%d, OID=%d\n",
+							rStatus, prCmdInfo->ucCID, prCmdInfo->ucCmdSeqNum,
+							prCmdInfo->eCmdType, prCmdInfo->fgIsOid);
 				}
 
 				/* free the command memory */
