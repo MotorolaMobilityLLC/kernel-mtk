@@ -1955,7 +1955,7 @@ bool SetMemoryPathEnable(uint32 Aud_block, bool bEnable)
 			pr_err("warning , user count <0\n");
 		}
 	}
-	pr_debug("%s Aud_block = %d bEnable = %d mAudioMEMIF[Aud_block]->mUserCount = %d\n", __func__,
+	PRINTK_AUDDRV("%s Aud_block = %d bEnable = %d mAudioMEMIF[Aud_block]->mUserCount = %d\n", __func__,
 		 Aud_block, bEnable, mAudioMEMIF[Aud_block]->mUserCount);
 
 	if (Aud_block > Soc_Aud_Digital_Block_NUM_OF_MEM_INTERFACE)
@@ -3935,7 +3935,7 @@ bool SetHighAddr(Soc_Aud_Digital_Block MemBlock, bool usingdram)
 {
 	bool Hignbitenable = enable_4G() & usingdram;
 
-	pr_debug("%s MemBlock = %d usingdram = %d\n", __func__, MemBlock, usingdram);
+	PRINTK_AUDDRV("%s MemBlock = %d usingdram = %d\n", __func__, MemBlock, usingdram);
 	switch (MemBlock) {
 	case Soc_Aud_Digital_Block_MEM_DL1:
 		Afe_Set_Reg(AFE_MEMIF_MSB, Hignbitenable<<0, 0x1<<0);

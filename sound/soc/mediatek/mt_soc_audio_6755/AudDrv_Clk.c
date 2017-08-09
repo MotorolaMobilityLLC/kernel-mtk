@@ -254,7 +254,7 @@ void AudDrv_Clk_Power_On(void)
 	/* volatile uint32 *AFE_Register = (volatile uint32 *)Get_Afe_Powertop_Pointer(); */
 	uint32 val_tmp;
 
-	pr_debug("%s", __func__);
+	/* pr_debug("%s", __func__); */
 	val_tmp = 0xd;
 	/* mt_reg_sync_writel(val_tmp, AFE_Register); */
 }

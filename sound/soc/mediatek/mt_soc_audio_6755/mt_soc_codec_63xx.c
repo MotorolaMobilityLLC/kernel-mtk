@@ -273,7 +273,7 @@ void SetAnalogSuspend(bool bEnable)
 static int audck_buf_Count;
 void audckbufEnable(bool enable)
 {
-	pr_warn("audckbufEnable audck_buf_Count = %d enable = %d\n", audck_buf_Count, enable);
+	/* pr_warn("audckbufEnable audck_buf_Count = %d enable = %d\n", audck_buf_Count, enable); */
 	mutex_lock(&Ana_buf_Ctrl_Mutex);
 	if (enable) {
 		if (audck_buf_Count == 0) {
@@ -913,8 +913,8 @@ static void SetHprOffsetTrim(void)
 {
 	int OffsetTrimming = mHprTrimOffset - TrimOffset;
 
-	pr_warn("%s OffsetTrimming = %d (mHprTrimOffset(%d)- TrimOffset(%d))\n", __func__,
-		OffsetTrimming, mHprTrimOffset, TrimOffset);
+	/* pr_warn("%s OffsetTrimming = %d (mHprTrimOffset(%d)- TrimOffset(%d))\n", __func__,
+		OffsetTrimming, mHprTrimOffset, TrimOffset); */
 	SetHprOffset(OffsetTrimming);
 }
 
@@ -922,8 +922,8 @@ static void SetHpLOffsetTrim(void)
 {
 	int OffsetTrimming = mHplTrimOffset - TrimOffset;
 
-	pr_warn("%s OffsetTrimming = %d (mHplTrimOffset(%d)- TrimOffset(%d))\n", __func__,
-		OffsetTrimming, mHplTrimOffset, TrimOffset);
+	/* pr_warn("%s OffsetTrimming = %d (mHplTrimOffset(%d)- TrimOffset(%d))\n", __func__,
+		OffsetTrimming, mHplTrimOffset, TrimOffset); */
 	SetHplOffset(OffsetTrimming);
 }
 
@@ -2021,7 +2021,7 @@ static int Ext_Speaker_Amp_Get(struct snd_kcontrol *kcontrol, struct snd_ctl_ele
 static int Ext_Speaker_Amp_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
 
-	pr_debug("%s() gain = %ld\n ", __func__, ucontrol->value.integer.value[0]);
+	/* pr_debug("%s() gain = %ld\n ", __func__, ucontrol->value.integer.value[0]); */
 	if (ucontrol->value.integer.value[0]) {
 		Ext_Speaker_Amp_Change(true);
 		mCodec_data->mAudio_Ana_DevicePower[AUDIO_ANALOG_DEVICE_OUT_EXTSPKAMP] =
@@ -2248,7 +2248,7 @@ static int Headset_Speaker_Amp_Set(struct snd_kcontrol *kcontrol,
 {
 	/* struct snd_soc_codec *codec = snd_kcontrol_chip(kcontrol); */
 
-	pr_warn("%s() gain = %lu\n ", __func__, ucontrol->value.integer.value[0]);
+	/* pr_warn("%s() gain = %lu\n ", __func__, ucontrol->value.integer.value[0]); */
 	if ((ucontrol->value.integer.value[0] == true)
 	    && (mCodec_data->mAudio_Ana_DevicePower[AUDIO_ANALOG_DEVICE_OUT_SPEAKER_HEADSET_R] ==
 		false)) {
@@ -2461,7 +2461,7 @@ static const char *const DAC_DL_PGA_Speaker_GAIN[] = {
 
 static int Lineout_PGAL_Get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
-	pr_warn("Speaker_PGA_Get = %d\n", mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_SPKL]);
+	/* pr_warn("Speaker_PGA_Get = %d\n", mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_SPKL]); */
 	ucontrol->value.integer.value[0] = mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_SPKL];
 	return 0;
 }
@@ -2470,7 +2470,7 @@ static int Lineout_PGAL_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_v
 {
 	int index = 0;
 
-	pr_warn("%s(), index = %d\n", __func__, ucontrol->value.enumerated.item[0]);
+	/* pr_warn("%s(), index = %d\n", __func__, ucontrol->value.enumerated.item[0]); */
 
 	if (ucontrol->value.enumerated.item[0] >= ARRAY_SIZE(DAC_DL_PGA_Speaker_GAIN)) {
 		pr_warn("return -EINVAL\n");
@@ -2490,7 +2490,7 @@ static int Lineout_PGAL_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_v
 
 static int Lineout_PGAR_Get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
-	pr_warn("%s  = %d\n", __func__, mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_SPKR]);
+	/* pr_warn("%s  = %d\n", __func__, mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_SPKR]); */
 	ucontrol->value.integer.value[0] = mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_SPKR];
 	return 0;
 }
@@ -2500,7 +2500,7 @@ static int Lineout_PGAR_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_v
 	/* struct snd_soc_codec *codec = snd_kcontrol_chip(kcontrol); */
 	int index = 0;
 
-	pr_warn("%s(), index = %d\n", __func__, ucontrol->value.enumerated.item[0]);
+	/* pr_warn("%s(), index = %d\n", __func__, ucontrol->value.enumerated.item[0]); */
 
 	if (ucontrol->value.enumerated.item[0] >= ARRAY_SIZE(DAC_DL_PGA_Speaker_GAIN)) {
 		pr_warn("return -EINVAL\n");
@@ -2519,8 +2519,8 @@ static int Lineout_PGAR_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_v
 
 static int Handset_PGA_Get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
-	pr_warn("Handset_PGA_Get = %d\n",
-		mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_HSOUTL]);
+	/* pr_warn("Handset_PGA_Get = %d\n",
+		mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_HSOUTL]); */
 	ucontrol->value.integer.value[0] =
 	    mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_HSOUTL];
 	return 0;
@@ -2531,7 +2531,7 @@ static int Handset_PGA_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_va
 	/* struct snd_soc_codec *codec = snd_kcontrol_chip(kcontrol); */
 	int index = 0;
 
-	pr_warn("%s(), index = %d\n", __func__, ucontrol->value.enumerated.item[0]);
+	/* pr_warn("%s(), index = %d\n", __func__, ucontrol->value.enumerated.item[0]); */
 
 	if (ucontrol->value.enumerated.item[0] >= ARRAY_SIZE(DAC_DL_PGA_Handset_GAIN)) {
 		pr_warn("return -EINVAL\n");
@@ -2551,8 +2551,8 @@ static int Handset_PGA_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_va
 
 static int Headset_PGAL_Get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
-	pr_warn("Headset_PGAL_Get = %d\n",
-		mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_HPOUTL]);
+	/* pr_warn("Headset_PGAL_Get = %d\n",
+		mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_HPOUTL]); */
 	ucontrol->value.integer.value[0] =
 	    mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_HPOUTL];
 	return 0;
@@ -2584,8 +2584,8 @@ static int Headset_PGAL_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_v
 
 static int Headset_PGAR_Get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
-	pr_warn("Headset_PGAR_Get = %d\n",
-		mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_HPOUTR]);
+	/* pr_warn("Headset_PGAR_Get = %d\n",
+		mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_HPOUTR]); */
 	ucontrol->value.integer.value[0] =
 	    mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_HPOUTR];
 	return 0;
@@ -2597,7 +2597,7 @@ static int Headset_PGAR_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_v
 	/* struct snd_soc_codec *codec = snd_kcontrol_chip(kcontrol); */
 	int index = 0;
 
-	pr_warn("%s(), index = %d\n", __func__, ucontrol->value.enumerated.item[0]);
+	/* pr_warn("%s(), index = %d\n", __func__, ucontrol->value.enumerated.item[0]); */
 
 	if (ucontrol->value.enumerated.item[0] >= ARRAY_SIZE(DAC_DL_PGA_Headset_GAIN)) {
 		pr_err("return -EINVAL\n");
