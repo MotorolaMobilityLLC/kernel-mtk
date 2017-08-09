@@ -401,11 +401,12 @@ static ssize_t mt3326_show_pwrctl(struct device *dev, struct device_attribute *a
 	struct gps_drv_obj *obj;
 	ssize_t res;
 
-	obj = (struct gps_drv_obj *)dev_get_drvdata(dev);
 	if (!dev) {
 		GPS_DBG("dev is null!!\n");
 		return 0;
-	} else if (!obj) {
+	}
+	obj = (struct gps_drv_obj *)dev_get_drvdata(dev);
+	if (!obj) {
 		GPS_DBG("drv data is null!!\n");
 		return 0;
 	}
@@ -420,11 +421,12 @@ static ssize_t mt3326_store_pwrctl(struct device *dev, struct device_attribute *
 {
 	struct gps_drv_obj *obj;
 
-	obj = (struct gps_drv_obj *)dev_get_drvdata(dev);
 	if (!dev) {
 		GPS_DBG("dev is null!!\n");
 		return 0;
-	} else if (!obj) {
+	}
+	obj = (struct gps_drv_obj *)dev_get_drvdata(dev);
+	if (!obj) {
 		GPS_DBG("drv data is null!!\n");
 		return 0;
 	}
@@ -444,11 +446,12 @@ static ssize_t mt3326_show_suspend(struct device *dev, struct device_attribute *
 	struct gps_drv_obj *obj;
 	ssize_t res;
 
-	obj = (struct gps_drv_obj *)dev_get_drvdata(dev);
 	if (!dev) {
 		GPS_DBG("dev is null!!\n");
 		return 0;
-	} else if (!obj) {
+	}
+	obj = (struct gps_drv_obj *)dev_get_drvdata(dev);
+	if (!obj) {
 		GPS_DBG("drv data is null!!\n");
 		return 0;
 	}
@@ -463,11 +466,12 @@ static ssize_t mt3326_store_suspend(struct device *dev, struct device_attribute 
 {
 	struct gps_drv_obj *obj;
 
-	obj = (struct gps_drv_obj *)dev_get_drvdata(dev);
 	if (!dev) {
 		GPS_DBG("dev is null!!\n");
 		return 0;
-	} else if (!obj) {
+	}
+	obj = (struct gps_drv_obj *)dev_get_drvdata(dev);
+	if (!obj) {
 		GPS_DBG("drv data is null!!\n");
 		return 0;
 	}
@@ -494,11 +498,12 @@ static ssize_t mt3326_show_status(struct device *dev, struct device_attribute *a
 	char *reason = NULL;
 	int reason_max = (int)(sizeof(str_reason) / sizeof(str_reason[0]));
 
-	obj = (struct gps_drv_obj *)dev_get_drvdata(dev);
 	if (!dev) {
 		GPS_DBG("dev is null!!\n");
 		return 0;
-	} else if (!obj) {
+	}
+	obj = (struct gps_drv_obj *)dev_get_drvdata(dev);
+	if (!obj) {
 		GPS_DBG("drv data is null!!\n");
 		return 0;
 	}
@@ -537,11 +542,12 @@ static ssize_t mt3326_store_status(struct device *dev, struct device_attribute *
 	int res = 0;
 	struct gps_drv_obj *obj;
 
-	obj = (struct gps_drv_obj *)dev_get_drvdata(dev);
 	if (!dev) {
 		GPS_DBG("dev is null!!\n");
 		return 0;
-	} else if (!obj) {
+	}
+	obj = (struct gps_drv_obj *)dev_get_drvdata(dev);
+	if (!obj) {
 		GPS_DBG("drv data is null!!\n");
 		return 0;
 	}
@@ -558,11 +564,12 @@ static ssize_t mt3326_show_state(struct device *dev, struct device_attribute *at
 	ssize_t res;
 	struct gps_drv_obj *obj;
 
-	obj = (struct gps_drv_obj *)dev_get_drvdata(dev);
 	if (!dev) {
 		GPS_DBG("dev is null!!\n");
 		return 0;
-	} else if (!obj) {
+	}
+	obj = (struct gps_drv_obj *)dev_get_drvdata(dev);
+	if (!obj) {
 		GPS_DBG("drv data is null!!\n");
 		return 0;
 	}
@@ -577,11 +584,12 @@ static ssize_t mt3326_store_state(struct device *dev, struct device_attribute *a
 {
 	struct gps_drv_obj *obj;
 
-	obj = (struct gps_drv_obj *)dev_get_drvdata(dev);
 	if (!dev) {
 		GPS_DBG("dev is null!!\n");
 		return 0;
-	} else if (!obj) {
+	}
+	obj = (struct gps_drv_obj *)dev_get_drvdata(dev);
+	if (!obj) {
 		GPS_DBG("drv data is null!!\n");
 		return 0;
 	}
@@ -601,11 +609,12 @@ static ssize_t mt3326_show_pwrsave(struct device *dev, struct device_attribute *
 	ssize_t res;
 	struct gps_drv_obj *obj;
 
-	obj = (struct gps_drv_obj *)dev_get_drvdata(dev);
 	if (!dev) {
 		GPS_DBG("dev is null!!\n");
 		return 0;
-	} else if (!obj) {
+	}
+	obj = (struct gps_drv_obj *)dev_get_drvdata(dev);
+	if (!obj) {
 		GPS_DBG("drv data is null!!\n");
 		return 0;
 	}
@@ -620,11 +629,12 @@ static ssize_t mt3326_store_pwrsave(struct device *dev, struct device_attribute 
 {
 	struct gps_drv_obj *obj;
 
-	obj = (struct gps_drv_obj *)dev_get_drvdata(dev);
 	if (!dev) {
 		GPS_DBG("dev is null!!\n");
 		return 0;
-	} else if (!obj) {
+	}
+	obj = (struct gps_drv_obj *)dev_get_drvdata(dev);
+	if (!obj) {
 		GPS_DBG("drv data is null!!\n");
 		return 0;
 	}
@@ -646,11 +656,12 @@ static ssize_t mt3326_show_rdelay(struct device *dev, struct device_attribute *a
 	ssize_t res;
 	struct gps_drv_obj *obj;
 
-	obj = (struct gps_drv_obj *)dev_get_drvdata(dev);
 	if (!dev) {
 		GPS_DBG("dev is null!!\n");
 		return 0;
-	} else if (!obj) {
+	}
+	obj = (struct gps_drv_obj *)dev_get_drvdata(dev);
+	if (!obj) {
 		GPS_DBG("drv data is null!!\n");
 		return 0;
 	}
@@ -667,11 +678,12 @@ static ssize_t mt3326_store_rdelay(struct device *dev, struct device_attribute *
 	int rdelay;
 	unsigned long val;
 
-	obj = (struct gps_drv_obj *)dev_get_drvdata(dev);
 	if (!dev) {
 		GPS_DBG("dev is null!!\n");
 		return 0;
-	} else if (!obj) {
+	}
+	obj = (struct gps_drv_obj *)dev_get_drvdata(dev);
+	if (!obj) {
 		GPS_DBG("drv data is null!!\n");
 		return 0;
 	}
@@ -749,6 +761,16 @@ long mt3326_gps_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned lon
 {
 	GPS_DBG("mt3326_gps_unlocked_ioctl!!\n");
 	return -ENOIOCTLCMD;
+}
+
+/******************************************************************************/
+long mt3326_gps_compat_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
+{
+	long ret;
+
+	GPS_DBG("mt3326_gps_compat_ioctl!!\n");
+	ret = mt3326_gps_unlocked_ioctl(file, cmd, arg);
+	return ret;
 }
 
 /*****************************************************************************/
@@ -885,6 +907,7 @@ static unsigned int mt3326_gps_poll(struct file *file, poll_table *wait)
 static const struct file_operations mt3326_gps_fops = {
 	.owner = THIS_MODULE,
 	.unlocked_ioctl = mt3326_gps_unlocked_ioctl,
+	.compat_ioctl = mt3326_gps_compat_ioctl,
 	.open = mt3326_gps_open,
 	.read = mt3326_gps_read,
 	.write = mt3326_gps_write,
@@ -917,7 +940,7 @@ static int mt3326_gps_probe(struct platform_device *dev)
 	if (!devobj) {
 		GPS_ERR("-ENOMEM\n");
 		err = -ENOMEM;
-		goto error;
+		return -1;
 	}
 
 	mt3326_gps_hw_init(hw);
@@ -990,15 +1013,20 @@ error:
 /*****************************************************************************/
 static int mt3326_gps_remove(struct platform_device *dev)
 {
-	struct gps_dev_obj *devobj = (struct gps_dev_obj *)platform_get_drvdata(dev);
-	struct gps_drv_obj *drvobj = (struct gps_drv_obj *)dev_get_drvdata(devobj->dev);
 	int err;
+	struct gps_dev_obj *devobj = (struct gps_dev_obj *)platform_get_drvdata(dev);
+	struct gps_drv_obj *drvobj;
 
-	if (!devobj || !drvobj) {
-		GPS_ERR("null pointer: %p, %p\n", devobj, drvobj);
+	if (!devobj) {
+		GPS_ERR("null pointer: %p\n", devobj);
 		return -1;
 	}
 
+	drvobj = (struct gps_drv_obj *)dev_get_drvdata(devobj->dev);
+	if (!drvobj) {
+		GPS_ERR("null pointer: %p\n", drvobj);
+		return -1;
+	}
 	GPS_DBG("Unregistering chardev\n");
 
 	cdev_del(&devobj->chdev);
@@ -1032,10 +1060,16 @@ static int mt3326_gps_suspend(struct platform_device *dev, pm_message_t state)
 {
 	int err = 0;
 	struct gps_dev_obj *devobj = (struct gps_dev_obj *)platform_get_drvdata(dev);
-	struct gps_drv_obj *drvobj = (struct gps_drv_obj *)dev_get_drvdata(devobj->dev);
+	struct gps_drv_obj *drvobj;
 
-	if (!devobj || !drvobj) {
-		GPS_ERR("null pointer: %p, %p\n", devobj, drvobj);
+	if (!devobj) {
+		GPS_ERR("null pointer: %p\n", devobj);
+		return -1;
+	}
+
+	drvobj = (struct gps_drv_obj *)dev_get_drvdata(devobj->dev);
+	if (!drvobj) {
+		GPS_ERR("null pointer: %p\n", drvobj);
 		return -1;
 	}
 
