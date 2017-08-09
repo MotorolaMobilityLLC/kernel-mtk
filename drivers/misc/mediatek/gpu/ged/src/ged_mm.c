@@ -34,9 +34,9 @@ static int mmap_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
 	struct mmap_info *info;
 	/* is the address valid? */			//--changed
 	/*if (address > vma->vm_end) {
-		printk("invalid address\n");
-		//return NOPAGE_SIGBUS;
-		return VM_FAULT_SIGBUS;
+	  printk("invalid address\n");
+	//return NOPAGE_SIGBUS;
+	return VM_FAULT_SIGBUS;
 	}
 	/* the data is in vma->vm_private_data */
 	info = (struct mmap_info *)vma->vm_private_data;
@@ -47,14 +47,14 @@ static int mmap_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
 
 	/* get the page */
 	page = virt_to_page(info);
-	
+
 	/* increment the reference count of this page */
 	get_page(page);
 	vmf->page = page;					//--changed
 	/* type is the page fault type */
 	/*if (type)
-		*type = VM_FAULT_MINOR;
-	*/
+	 *type = VM_FAULT_MINOR;
+	 */
 	return 0;
 }
 
@@ -81,7 +81,7 @@ int ged_dvfs_service_data_close(struct inode *inode, struct file *filp)
 	/* obtain new memory */
 	//kfree(info);
 	free_page(info);
-   gpDVFSdata = NULL;
+	gpDVFSdata = NULL;
 	filp->private_data = NULL;
 	return 0;
 }
@@ -93,7 +93,7 @@ int ged_dvfs_service_data_open(struct inode *inode, struct file *filp)
 	//info = kmalloc(sizeof(GED_DVFS_POLICY_DATA),GFP_KERNEL);
 	info = get_zeroed_page(GFP_KERNEL);
 	//info = kmalloc(sizeof(GED_DVFS_POLICY_DATA),GFP_KERNEL);
-   gpDVFSdata =(GED_DVFS_POLICY_DATA*) info;
+	gpDVFSdata =(GED_DVFS_POLICY_DATA*) info;
 	/* assign this info struct to the file */
 	filp->private_data = info;
 	return 0;
@@ -109,36 +109,36 @@ static const struct file_operations gsDVFSServiceData = {
 
 GED_ERROR ged_mm_init(void)
 {
-    GED_ERROR err = GED_OK;
+	GED_ERROR err = GED_OK;
 
-    err = ged_debugFS_create_entry_dir(
-            "mm",
-            NULL,
-            &gpsMMDir);
+	err = ged_debugFS_create_entry_dir(
+			"mm",
+			NULL,
+			&gpsMMDir);
 
-    if (unlikely(err != GED_OK))
-    {
-        err = GED_ERROR_FAIL;
-        GED_LOGE("ged: failed to create mm dir!\n");
-        goto ERROR;
-    }
+	if (unlikely(err != GED_OK))
+	{
+		err = GED_ERROR_FAIL;
+		GED_LOGE("ged: failed to create mm dir!\n");
+		goto ERROR;
+	}
 
 
 	gpsDvfsServiceData = debugfs_create_file("ged_dvfs_service_data", 0644, gpsMMDir, NULL, &gsDVFSServiceData);
-	
 
-    return err;
+
+	return err;
 
 ERROR:
 
-    ged_mm_exit();
+	ged_mm_exit();
 
-    return err;
+	return err;
 }
 //-----------------------------------------------------------------------------
 void ged_mm_exit(void)
 {
 	debugfs_remove(gpsDvfsServiceData);
-    ged_debugFS_remove_entry_dir(gpsMMDir);
+	ged_debugFS_remove_entry_dir(gpsMMDir);
 }
 //-----------------------------------------------------------------------------
