@@ -745,13 +745,16 @@ static void process_dbg_opt(const char *opt)
 		ret = kstrtoul(p, 10, (unsigned long int *)&met_on);
 		if (ret)
 			pr_err("DISP/%s: errno %d\n", __func__, ret);
+		if (0 == strncmp(p, "1", 1))
+			met_on = 1;
+/*
 		ret = kstrtoul(p + 1, 10, (unsigned long int *)&rdma0_mode);
 		if (ret)
 			pr_err("DISP/%s: errno %d\n", __func__, ret);
 		ret = kstrtoul(p + 1, 10, (unsigned long int *)&rdma1_mode);
 		if (ret)
 			pr_err("DISP/%s: errno %d\n", __func__, ret);
-
+*/
 
 		ddp_init_met_tag(met_on, rdma0_mode, rdma1_mode);
 		DDPMSG("process_dbg_opt, met_on=%d,rdma0_mode %d, rdma1 %d\n", met_on, rdma0_mode,
