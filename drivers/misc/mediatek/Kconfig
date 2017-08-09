@@ -43,10 +43,10 @@ config DMAUSER_PAGES
 	bool "allocate highuser movable pages from dma zone"
 	depends on MTK_LM_MODE
 	help
-	  A interl debug kernel config for testing large memory mode.
+	  An internal debug kernel config for testing large memory mode.
 	  To test if kernel drivers are fully compatible to large
 	  memorys, we replace all GFP_HIGHUSER_MOVABLE/GFP_USER pages by
-	  DMA (<= 4GB) pages. Is makes all drivers have more changes
+	  DMA (<= 4GB) pages. It makes all drivers have more chances
 	  to allocate >= 4GB physical memory.
 
 config MT_ENG_BUILD
