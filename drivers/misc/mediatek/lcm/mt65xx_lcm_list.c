@@ -19,7 +19,6 @@
 #define LCD_DEBUG(fmt, args...)  pr_notice("[KERNEL/LCM]"fmt, ##args)
 #endif
 
-
 LCM_DRIVER *lcm_driver_list[] = {
 #if defined(OTM1284A_HD720_DSI_VDO_TM)
 	&otm1284a_hd720_dsi_vdo_tm_lcm_drv,
@@ -901,6 +900,10 @@ LCM_DRIVER *lcm_driver_list[] = {
 
 #if defined(R69429_WQXGA_DSI_VDO)
 	&r69429_wqxga_dsi_vdo_lcm_drv,
+#endif
+
+#if defined(HX8394C_WXGA_DSI_VDO)
+	&hx8394c_wxga_dsi_vdo_lcm_drv,
 #endif
 };
 
