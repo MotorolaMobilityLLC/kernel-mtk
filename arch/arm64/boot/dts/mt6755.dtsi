@@ -327,30 +327,6 @@
 		reg = <0 0x10231000 0 0x1000>,
 		      <0 0x10232000 0 0x1000>,
 		      <0 0x10200620 0 0x1000>;
-
-		gic-cpuif@0 {
-			compatible = "arm,gic-cpuif";
-			cpuif-id = <0>;
-			cpu = <&cpu0>;
-		};
-
-		gic-cpuif@1 {
-			compatible = "arm,gic-cpuif";
-			cpuif-id = <1>;
-			cpu = <&cpu1>;
-		};
-
-		gic-cpuif@2 {
-			compatible = "arm,gic-cpuif";
-			cpuif-id = <2>;
-			cpu = <&cpu2>;
-		};
-
-		gic-cpuif@3 {
-			compatible = "arm,gic-cpuif";
-			cpuif-id = <3>;
-			cpu = <&cpu3>;
-		};
 	};
 
 	cpuxgpt@10200000 {
@@ -883,16 +859,12 @@
 
 		eintc: eintc@1000b000 {
 			compatible = "mediatek,mt-eic";
-
 			reg = <0x1000b000 0x1000>;
 			interrupts = <GIC_SPI 155 IRQ_TYPE_LEVEL_HIGH>;
-
 			max_deint_cnt = <4>;
 			deint_possible_irq = <191 192 193 194>;
-
 			#interrupt-cells = <2>;
 			interrupt-controller;
-
 			mediatek,max_eint_num = <160>;
 			mediatek,mapping_table_entry = <0>;
 		};
@@ -1022,6 +994,8 @@
 			compatible = "mediatek,sys_cirq";
 			reg = <0x10204000 0x1000>;
 			interrupts = <GIC_SPI 240 IRQ_TYPE_EDGE_FALLING>;
+			cirq_num = <168>;
+			spi_start_offset = <72>;
 		};
 
 		m4u@10205000 {
