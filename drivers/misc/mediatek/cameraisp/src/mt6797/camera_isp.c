@@ -10319,7 +10319,7 @@ void IRQ_INT_ERR_CHECK_CAM(MUINT32 WarnStatus, MUINT32 ErrStatus, ISP_IRQ_TYPE_E
 	if (ErrStatus) {
 		switch (module) {
 		case ISP_IRQ_TYPE_INT_CAM_A_ST:
-			g_ISPIntErr[ISP_IRQ_TYPE_INT_CAM_A_ST] |= ErrStatus;
+			g_ISPIntErr[ISP_IRQ_TYPE_INT_CAM_A_ST] |= (ErrStatus|WarnStatus);
 			LOG_ERR("CAM_A:int_err:0x%x_0x%x\n", WarnStatus, ErrStatus);
 
 			/* DMA ERR print */
@@ -10328,7 +10328,7 @@ void IRQ_INT_ERR_CHECK_CAM(MUINT32 WarnStatus, MUINT32 ErrStatus, ISP_IRQ_TYPE_E
 			}
 			break;
 		case ISP_IRQ_TYPE_INT_CAM_B_ST:
-			g_ISPIntErr[ISP_IRQ_TYPE_INT_CAM_B_ST] |= ErrStatus;
+			g_ISPIntErr[ISP_IRQ_TYPE_INT_CAM_B_ST] |= (ErrStatus|WarnStatus);
 			LOG_ERR("CAM_B:int_err:0x%x_0x%x\n", WarnStatus, ErrStatus);
 
 			/* DMA ERR print */
@@ -10337,27 +10337,27 @@ void IRQ_INT_ERR_CHECK_CAM(MUINT32 WarnStatus, MUINT32 ErrStatus, ISP_IRQ_TYPE_E
 			}
 			break;
 		case ISP_IRQ_TYPE_INT_CAMSV_0_ST:
-			g_ISPIntErr[ISP_IRQ_TYPE_INT_CAMSV_0_ST] |= ErrStatus;
+			g_ISPIntErr[ISP_IRQ_TYPE_INT_CAMSV_0_ST] |= (ErrStatus|WarnStatus);
 			LOG_ERR("CAMSV0:int_err:0x%x_0x%x\n", WarnStatus, ErrStatus);
 			break;
 		case ISP_IRQ_TYPE_INT_CAMSV_1_ST:
-			g_ISPIntErr[ISP_IRQ_TYPE_INT_CAMSV_1_ST] |= ErrStatus;
+			g_ISPIntErr[ISP_IRQ_TYPE_INT_CAMSV_1_ST] |= (ErrStatus|WarnStatus);
 			LOG_ERR("CAMSV1:int_err:0x%x_0x%x\n", WarnStatus, ErrStatus);
 			break;
 		case ISP_IRQ_TYPE_INT_CAMSV_2_ST:
-			g_ISPIntErr[ISP_IRQ_TYPE_INT_CAMSV_2_ST] |= ErrStatus;
+			g_ISPIntErr[ISP_IRQ_TYPE_INT_CAMSV_2_ST] |= (ErrStatus|WarnStatus);
 			LOG_ERR("CAMSV2:int_err:0x%x_0x%x\n", WarnStatus, ErrStatus);
 			break;
 		case ISP_IRQ_TYPE_INT_CAMSV_3_ST:
-			g_ISPIntErr[ISP_IRQ_TYPE_INT_CAMSV_3_ST] |= ErrStatus;
+			g_ISPIntErr[ISP_IRQ_TYPE_INT_CAMSV_3_ST] |= (ErrStatus|WarnStatus);
 			LOG_ERR("CAMSV3:int_err:0x%x_0x%x\n", WarnStatus, ErrStatus);
 			break;
 		case ISP_IRQ_TYPE_INT_CAMSV_4_ST:
-			g_ISPIntErr[ISP_IRQ_TYPE_INT_CAMSV_4_ST] |= ErrStatus;
+			g_ISPIntErr[ISP_IRQ_TYPE_INT_CAMSV_4_ST] |= (ErrStatus|WarnStatus);
 			LOG_ERR("CAMSV4:int_err:0x%x_0x%x\n", WarnStatus, ErrStatus);
 			break;
 		case ISP_IRQ_TYPE_INT_CAMSV_5_ST:
-			g_ISPIntErr[ISP_IRQ_TYPE_INT_CAMSV_5_ST] |= ErrStatus;
+			g_ISPIntErr[ISP_IRQ_TYPE_INT_CAMSV_5_ST] |= (ErrStatus|WarnStatus);
 			LOG_ERR("CAMSV5:int_err:0x%x_0x%x\n", WarnStatus, ErrStatus);
 			break;
 		case ISP_IRQ_TYPE_INT_DIP_A_ST:
