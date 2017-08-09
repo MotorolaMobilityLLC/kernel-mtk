@@ -575,9 +575,12 @@ static struct _function_init_stuff {
 	{
 	"rawbulk-pcv", "pcv", "PCM Voice", 1, 1, 4096, 4096, true, false}, {
 	"rawbulk-modem", "data", "Modem Port", 32, 32, 4096, 4096, true, false}, {
-	"rawbulk-ets", "ets", "ETS Port", 32, 32, 4096, 4096, true, false}, {
+	"rawbulk-dummy0", "dummy0", "DUMMY0", 1, 1, 4096, 4096, true, false}, {
 	"rawbulk-at", "atc", "AT Channel", 3, 3, 4096, 4096, true, false}, {
 	"rawbulk-gps", "gps", "LBS GPS Port", 1, 1, 4096, 4096, true, false}, {
+	"rawbulk-dummy1", "dummy1", "DUMMY1", 1, 1, 4096, 4096, true, false}, {
+	"rawbulk-dummy2", "dummy2", "DUMMY2", 1, 1, 4096, 4096, true, false}, {
+	"rawbulk-ets", "ets", "ETS Port", 32, 32, 4096, 4096, true, false}, {
 	},			/* End of configurations */
 #endif
 };
