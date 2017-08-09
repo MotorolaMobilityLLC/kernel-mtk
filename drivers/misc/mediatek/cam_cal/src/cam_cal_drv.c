@@ -183,7 +183,6 @@ static stCAM_CAL_CMD_INFO_STRUCT *cam_cal_get_cmd_info_ex(unsigned int sensorID)
 
 				if (g_camCalDrvInfo[i].readCMDFunc != NULL) {
 					CAM_CALDB("SensorID=%x, BusID=%d\n", sensorID, g_busNum[g_curBusIdx]);
-					/*g_curBusIdx=(g_curBusIdx+1)%CAM_CAL_I2C_MAX_BUSNUM;*/
 					g_camCalDrvInfo[i].sensorID = sensorID;
 				}
 				break;
@@ -404,14 +403,14 @@ static long cam_cal_drv_ioctl(
 		pcmdInf = cam_cal_get_cmd_info_ex(ptempbuf->sensorID);
 
 		if (pcmdInf != NULL) {
-			CAM_CALDB("pcmdInf != NULL\n");
 			if (pcmdInf->readCMDFunc != NULL)
 				i4RetValue = pcmdInf->readCMDFunc(pcmdInf->client,
 					ptempbuf->u4Offset, pu1Params, ptempbuf->u4Length);
 			else {
 				CAM_CALDB("pcmdInf->readCMDFunc == NULL\n");
 			}
-		}
+		} else
+			CAM_CALDB("pcmdInf == NULL\n");
 
 #ifdef CAM_CALGETDLT_DEBUG
 		do_gettimeofday(&ktv2);
