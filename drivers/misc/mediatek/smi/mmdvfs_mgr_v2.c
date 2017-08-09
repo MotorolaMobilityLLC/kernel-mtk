@@ -18,14 +18,7 @@
 #undef pr_fmt
 #define pr_fmt(fmt) "[" MMDVFS_LOG_TAG "]" fmt
 
-/* MMDVFS SWITCH. NO MMDVFS for 6595 */
-#if IS_ENABLED(CONFIG_ARM64)
-/* 6795 */
 #define MMDVFS_ENABLE	1
-#else
-/* 6595 */
-#define MMDVFS_ENABLE	0
-#endif
 
 #if MMDVFS_ENABLE
 #ifndef MMDVFS_STANDALONE
