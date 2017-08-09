@@ -3319,6 +3319,8 @@ nicTxSetMngPacket(P_ADAPTER_T prAdapter, P_MSDU_INFO_T prMsduInfo,
 		  UINT_8 ucBssIndex, UINT_8 ucStaRecIndex, UINT_8 ucMacHeaderLength,
 		  UINT_16 u2FrameLength, PFN_TX_DONE_HANDLER pfTxDoneHandler, UINT_8 ucRateMode)
 {
+	static UINT_16 u2SwSN;
+
 	ASSERT(prMsduInfo);
 
 	prMsduInfo->ucBssIndex = ucBssIndex;
@@ -3339,6 +3341,10 @@ nicTxSetMngPacket(P_ADAPTER_T prAdapter, P_MSDU_INFO_T prMsduInfo,
 	prMsduInfo->ucPacketType = TX_PACKET_TYPE_MGMT;
 	prMsduInfo->ucUserPriority = 0;
 	prMsduInfo->eSrc = TX_PACKET_MGMT;
+	u2SwSN++;
+	if (u2SwSN > 4095)
+		u2SwSN = 0;
+	nicTxSetPktSequenceNumber(prMsduInfo, u2SwSN);
 }
 
 VOID
