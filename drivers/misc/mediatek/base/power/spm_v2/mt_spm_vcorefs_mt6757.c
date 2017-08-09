@@ -36,22 +36,26 @@
 
 #define SPM_CHK_GUARD_TIME	10
 #define SPM_HPM_HOLD_TIME 1000
+
 /* PCM_REG6_DATA */
-#define SPM_FLAG_DVFS_ACTIVE (1<<23)	/* bit 23 */
-#define SPM_FLAG_DVFS_STATE (1<<24)
+#define SPM_FLAG_DVFS_ACTIVE (1<<22)
+#define SPM_FLAG_DVFS_STATE  (0x3<<23)
+
+/* SPM_SW_RSV_5 */
+#define SPM_DVFS_ACTIVE (1 << 2)
+#define SPM_DVFS_STATE	(3 << 0)
+
 /* bw threshold  for SPM_SW_RSV_5, SPM_SW_RSV_4 */
 #define HPM_THRES_OFFSET	16
 #define LPM_THRES_OFFSET	24
-
-
-/* r6[31] = 1 for DVFS UP, 0 for DVFS DOWN */
-#define is_dvfs_in_progress() (spm_read(PCM_REG6_DATA) & SPM_FLAG_DVFS_ACTIVE)
 
 #ifdef CONFIG_MTK_RAM_CONSOLE
 #define VCOREFS_AEE_RR_REC 1
 #else
 #define VCOREFS_AEE_RR_REC 0
 #endif
+
+int spm_history_opp[NUM_KIR_GROUP];
 
 #if VCOREFS_AEE_RR_REC
 enum spm_vcorefs_step {
@@ -150,15 +154,15 @@ struct spm_lp_scen __spm_vcore_dvfs = {
 inline int _wait_spm_dvfs_idle(int timeout)
 {
 	int i = 0;
-	u32 val = spm_read(PCM_REG6_DATA);
+	u32 val = spm_read(SPM_SW_RSV_5);
 
-	while (!((val & SPM_FLAG_DVFS_ACTIVE) == 0)) {
+	while (!((val & SPM_DVFS_ACTIVE) == 0)) {
 		if (i >= timeout) {
 			i = -EBUSY;
 			break;
 		}
 		udelay(1);
-		val = spm_read(PCM_REG6_DATA);
+		val = spm_read(SPM_SW_RSV_5);
 		i++;
 	}
 	return i;
@@ -168,7 +172,6 @@ inline int _wait_spm_dvfs_idle(int timeout)
 static inline int _wait_spm_dvfs_complete(int opp, int timeout)
 {
 	int i = 0;
-	int target = (opp == OPPI_PERF) ? SPM_DVFS_HPM : SPM_DVFS_LPM;
 	u32 val;
 	struct pwr_ctrl *pwrctrl = __spm_vcore_dvfs.pwrctrl;
 	bool partial = ((pwrctrl->pcm_flags & SPM_FLAG_DIS_VCORE_DFS) != 0);
@@ -176,12 +179,12 @@ static inline int _wait_spm_dvfs_complete(int opp, int timeout)
 	/* wait 10 usec before check status */
 	udelay(SPM_CHK_GUARD_TIME);
 
-	val = spm_read(PCM_REG6_DATA);
+	val = spm_read(SPM_SW_RSV_5);
 	if (partial == true) {
 		udelay(SPM_CHK_GUARD_TIME*10);
 		spm_vcorefs_info("hh: skip chk idle instead of comp (flags=0x%x) udelay(%d)\n",
 				 pwrctrl->pcm_flags, SPM_CHK_GUARD_TIME*10);
-		while (!((val & SPM_FLAG_DVFS_ACTIVE) == 0)) {
+		while (!((val & SPM_DVFS_ACTIVE) == 0)) {
 			if (i >= timeout) {
 				i = -EBUSY;
 				break;
@@ -191,8 +194,8 @@ static inline int _wait_spm_dvfs_complete(int opp, int timeout)
 			i++;
 		}
 	} else {
-		while (!(((val & SPM_FLAG_DVFS_ACTIVE) == 0)
-			 && ((val & SPM_FLAG_DVFS_STATE) == (target << 24)))) {
+		while (!(((val & SPM_DVFS_ACTIVE) == 0)
+			 && ((val & SPM_DVFS_STATE) == opp))) {
 			if (i >= timeout) {
 				i = -EBUSY;
 				break;
@@ -529,31 +532,10 @@ void spm_vcorefs_enable_perform_bw(bool enable)
 	spin_unlock_irqrestore(&__spm_lock, flags);
 }
 
-
-int spm_vcorefs_set_dvfs_hpm_force(int opp, int vcore, int ddr)
+static void spm_vcorefs_config_hpm(int opp)
 {
 	struct pwr_ctrl *pwrctrl = __spm_vcore_dvfs.pwrctrl;
-	int r = 0;
-	unsigned long flags;
-	int timeout = SPM_DVFS_TIMEOUT;
-	int do_check = 1;
 
-	set_aee_vcore_dvfs_status(SPM_VCOREFS_ENTER);
-
-	spin_lock_irqsave(&__spm_lock, flags);
-
-	r = _wait_spm_dvfs_idle(timeout);
-	if (r < 0) {
-		spm_vcorefs_err("wait idle timeout(opp:%d)\n", opp);
-		spm_vcorefs_dump_dvfs_regs(NULL);
-		spm_vcorefs_aee_warn("set_hpm_force_waitidle_timeout(opp:%d)\n", opp);
-		__check_dvfs_halt_source(pwrctrl->dvfs_halt_src_chk);
-		do_check = 0;
-	}
-
-	set_aee_vcore_dvfs_status(SPM_VCOREFS_DVFS_START);
-
-	/* MAIN: "DVFS_FORCE_ON" */
 	if (opp == OPPI_PERF) {
 		pwrctrl->spm_dvfs_force_down = 1;
 		pwrctrl->spm_dvfs_req = 1;
@@ -563,71 +545,12 @@ int spm_vcorefs_set_dvfs_hpm_force(int opp, int vcore, int ddr)
 		pwrctrl->spm_dvfs_req = 0;
 		spm_write(SPM_SRC_REQ, spm_read(SPM_SRC_REQ) & (~SPM_DVFS_REQ_LSB));
 	}
-
-	/* check spm task done status for HPM */
-	if (opp == OPPI_PERF) {
-		r = _wait_spm_dvfs_complete(opp, timeout);
-		if (r < 0) {
-			spm_vcorefs_err("wait complete timeout(opp:%d)\n", opp);
-			spm_vcorefs_dump_dvfs_regs(NULL);
-			spm_vcorefs_aee_warn("set_hpm_force_complete_timeout(opp:%d)\n", opp);
-			__check_dvfs_halt_source(pwrctrl->dvfs_halt_src_chk);
-			do_check = 0;
-		}
-	}
-
-	set_aee_vcore_dvfs_status(SPM_VCOREFS_DVFS_END);
-
-	/* check vcore and ddr for HPM */
-	if (opp == OPPI_PERF) {
-		r = _check_dvfs_result(vcore, ddr);
-		if (r < 0) {
-			spm_vcorefs_err("chk result fail opp:%d\n", opp);
-			spm_vcorefs_dump_dvfs_regs(NULL);
-			if (do_check)
-				BUG();
-		}
-	}
-
-	set_aee_vcore_dvfs_status(SPM_VCOREFS_LEAVE);
-
-	spin_unlock_irqrestore(&__spm_lock, flags);
-
-	return (r > 0) ? 0 : r;
 }
 
-int spm_vcorefs_set_dvfs_hpm(int opp, int vcore, int ddr)
+static void spm_vcorefs_config_hpm_non_force(int opp)
 {
 	struct pwr_ctrl *pwrctrl = __spm_vcore_dvfs.pwrctrl;
-	int r = 0;
-	unsigned long flags;
-	int timeout = SPM_DVFS_TIMEOUT;
-	int do_check = 1;
 
-	bool is_total_bw_enabled = false;
-
-	set_aee_vcore_dvfs_status(SPM_VCOREFS_ENTER);
-
-	if (opp == OPPI_PERF) {
-		/* disable total bw for dvfs result check */
-		is_total_bw_enabled = _get_total_bw_enable();
-		spm_vcorefs_enable_total_bw(false);
-	}
-
-	spin_lock_irqsave(&__spm_lock, flags);
-
-	r = _wait_spm_dvfs_idle(timeout);
-	if (r < 0) {
-		spm_vcorefs_err("wait idle timeout(opp:%d)\n", opp);
-		spm_vcorefs_dump_dvfs_regs(NULL);
-		spm_vcorefs_aee_warn("set_hpm_waitidle_timeout(opp:%d)\n", opp);
-		__check_dvfs_halt_source(pwrctrl->dvfs_halt_src_chk);
-		do_check = 0;
-	}
-
-	set_aee_vcore_dvfs_status(SPM_VCOREFS_DVFS_START);
-
-	/* MAIN: "CPU_MD_DVFS_SOP_FORCE_ON" */
 	if (opp == OPPI_PERF) {
 		pwrctrl->cpu_md_dvfs_sop_force_on = 1;
 		pwrctrl->cpu_md_emi_dvfs_req_prot_dis = 1;
@@ -641,6 +564,107 @@ int spm_vcorefs_set_dvfs_hpm(int opp, int vcore, int ddr)
 			  spm_read(SPM_SRC2_MASK) & (~CPU_MD_EMI_DVFS_REQ_PROT_DIS_LSB));
 		spm_write(SPM_SRC_REQ, spm_read(SPM_SRC_REQ) & (~CPU_MD_DVFS_SOP_FORCE_ON_LSB));
 	}
+}
+
+static void spm_vcorefs_config_ulpm(int opp)
+{
+	struct pwr_ctrl *pwrctrl = __spm_vcore_dvfs.pwrctrl;
+
+	if (opp == OPPI_ULTRA_LOW_PWR) {
+		pwrctrl->sw_ctrl_event_on  = 0;
+		spm_write(SW_CRTL_EVENT, spm_read(SW_CRTL_EVENT) & (~SW_CRTL_EVENT_ON_LSB));
+	} else {
+		pwrctrl->sw_ctrl_event_on  = 1;
+		spm_write(SW_CRTL_EVENT, spm_read(SW_CRTL_EVENT) | SW_CRTL_EVENT_ON_LSB);
+	}
+}
+
+static void spm_vcorefs_config_hpm_fix(int opp)
+{
+	spm_vcorefs_config_hpm(opp);
+}
+
+static void spm_vcorefs_config_lpm_fix(int opp)
+{
+	struct pwr_ctrl *pwrctrl = __spm_vcore_dvfs.pwrctrl;
+
+	if (opp == OPPI_LOW_PWR) {
+		pwrctrl->spm_dvfs_force_down = 0;
+		pwrctrl->sw_ctrl_event_on = 1;
+		spm_write(SPM_SRC_REQ, spm_read(SPM_SRC_REQ) & (~SPM_DVFS_FORCE_DOWN_LSB));
+		spm_write(SW_CRTL_EVENT, spm_read(SW_CRTL_EVENT) | SW_CRTL_EVENT_ON_LSB);
+	} else {
+		pwrctrl->spm_dvfs_force_down = 1;
+		pwrctrl->sw_ctrl_event_on = 1;
+		spm_write(SPM_SRC_REQ, spm_read(SPM_SRC_REQ) | (SPM_DVFS_FORCE_DOWN_LSB));
+		spm_write(SW_CRTL_EVENT, spm_read(SW_CRTL_EVENT) | SW_CRTL_EVENT_ON_LSB);
+	}
+
+}
+
+static void spm_vcorefs_config_ulpm_fix(int opp)
+{
+	struct pwr_ctrl *pwrctrl = __spm_vcore_dvfs.pwrctrl;
+
+	if (opp == OPPI_ULTRA_LOW_PWR) {
+		pwrctrl->spm_dvfs_force_down = 1;
+		spm_write(SPM_SRC_REQ, spm_read(SPM_SRC_REQ) | (SPM_DVFS_FORCE_DOWN_LSB));
+		pwrctrl->md_srcclkena_0_2d_dvfs_req_mask_b = 0;
+		pwrctrl->md_srcclkena_1_2d_dvfs_req_mask_b = 0;
+		pwrctrl->dvfs_up_2d_dvfs_req_mask_b = 0;
+		spm_write(SPM_SW_RSV_6,
+			((pwrctrl->md_srcclkena_0_2d_dvfs_req_mask_b & 0x1) << 0) |
+			((pwrctrl->md_srcclkena_1_2d_dvfs_req_mask_b & 0x1) << 1) |
+			((pwrctrl->dvfs_up_2d_dvfs_req_mask_b & 0x1) << 2));
+		pwrctrl->sw_ctrl_event_on = 0;
+		spm_write(SW_CRTL_EVENT, spm_read(SW_CRTL_EVENT) | SW_CRTL_EVENT_ON_LSB);
+	} else {
+		pwrctrl->sw_ctrl_event_on = 1;
+		spm_write(SW_CRTL_EVENT, spm_read(SW_CRTL_EVENT) | SW_CRTL_EVENT_ON_LSB);
+		pwrctrl->spm_dvfs_force_down = 1;
+		spm_write(SPM_SRC_REQ, spm_read(SPM_SRC_REQ) | (SPM_DVFS_FORCE_DOWN_LSB));
+		pwrctrl->md_srcclkena_0_2d_dvfs_req_mask_b = 1;
+		pwrctrl->md_srcclkena_1_2d_dvfs_req_mask_b = 0;
+		pwrctrl->dvfs_up_2d_dvfs_req_mask_b = 1;
+		spm_write(SPM_SW_RSV_6,
+			((pwrctrl->md_srcclkena_0_2d_dvfs_req_mask_b & 0x1) << 0) |
+			((pwrctrl->md_srcclkena_1_2d_dvfs_req_mask_b & 0x1) << 1) |
+			((pwrctrl->dvfs_up_2d_dvfs_req_mask_b & 0x1) << 2));
+	}
+}
+
+int spm_vcorefs_set_opp(int opp, int vcore, int ddr, bool non_force)
+{
+	struct pwr_ctrl *pwrctrl = __spm_vcore_dvfs.pwrctrl;
+	int r = 0;
+	unsigned long flags;
+	int timeout = SPM_DVFS_TIMEOUT;
+	bool is_total_bw_enabled = false;
+
+	spin_lock_irqsave(&__spm_lock, flags);
+	set_aee_vcore_dvfs_status(SPM_VCOREFS_ENTER);
+
+	r = _wait_spm_dvfs_idle(timeout);
+	if (r < 0) {
+		spm_vcorefs_err("wait idle timeout(opp:%d)\n", opp);
+		spm_vcorefs_dump_dvfs_regs(NULL);
+	}
+
+	set_aee_vcore_dvfs_status(SPM_VCOREFS_DVFS_START);
+	if (non_force == true) {
+		if (opp == OPPI_PERF) {
+			/* disable total bw for dvfs result check */
+			is_total_bw_enabled = _get_total_bw_enable();
+			spm_vcorefs_enable_total_bw(false);
+		}
+		spm_vcorefs_config_hpm_non_force(opp);
+		if (spm_history_opp[KIR_GROUP_HPM] != OPPI_ULTRA_LOW_PWR)
+			spm_vcorefs_config_ulpm(opp);
+	} else {
+		spm_vcorefs_config_hpm(opp);
+		if (spm_history_opp[KIR_GROUP_HPM_NON_FORCE] != OPPI_ULTRA_LOW_PWR)
+			spm_vcorefs_config_ulpm(opp);
+	}
 
 	/* check spm task done status for HPM */
 	if (opp == OPPI_PERF) {
@@ -648,9 +672,8 @@ int spm_vcorefs_set_dvfs_hpm(int opp, int vcore, int ddr)
 		if (r < 0) {
 			spm_vcorefs_err("wait complete timeout(opp:%d)\n", opp);
 			spm_vcorefs_dump_dvfs_regs(NULL);
-			spm_vcorefs_aee_warn("set_hpm_complete_timeout(opp:%d)\n", opp);
+			spm_vcorefs_aee_warn("set_hpm_force_complete_timeout(opp:%d)\n", opp);
 			__check_dvfs_halt_source(pwrctrl->dvfs_halt_src_chk);
-			do_check = 0;
 		}
 	}
 
@@ -662,31 +685,35 @@ int spm_vcorefs_set_dvfs_hpm(int opp, int vcore, int ddr)
 		if (r < 0) {
 			spm_vcorefs_err("chk result fail opp:%d\n", opp);
 			spm_vcorefs_dump_dvfs_regs(NULL);
-			if (do_check)
 				BUG();
 		}
 	}
+
+	if (non_force == true) {
+		if (opp == OPPI_PERF) {
+			/* keep hpm at least 1ms */
+			udelay(SPM_HPM_HOLD_TIME);
+			/* restore to orignal total bw setting */
+			spm_vcorefs_enable_total_bw(is_total_bw_enabled);
+		}
+		spm_history_opp[KIR_GROUP_HPM_NON_FORCE] = opp;
+	} else {
+		spm_history_opp[KIR_GROUP_HPM] = opp;
+	}
+
 	set_aee_vcore_dvfs_status(SPM_VCOREFS_LEAVE);
 
 	spin_unlock_irqrestore(&__spm_lock, flags);
 
-	if (opp == OPPI_PERF) {
-		/* keep hpm at least 1ms */
-		udelay(SPM_HPM_HOLD_TIME);
-		/* restore to orignal total bw setting */
-		spm_vcorefs_enable_total_bw(is_total_bw_enabled);
-	}
-
 	return (r > 0) ? 0 : r;
 }
 
-int spm_vcorefs_set_dvfs_lpm_force(int opp, int vcore, int ddr)
+int spm_vcorefs_set_opp_fix(int opp, int vcore, int ddr)
 {
-	struct pwr_ctrl *pwrctrl = __spm_vcore_dvfs.pwrctrl;
 	int r = 0;
+	struct pwr_ctrl *pwrctrl = __spm_vcore_dvfs.pwrctrl;
 	unsigned long flags;
 	int timeout = SPM_DVFS_TIMEOUT;
-	int do_check = 1;
 
 	set_aee_vcore_dvfs_status(SPM_VCOREFS_ENTER);
 
@@ -696,43 +723,50 @@ int spm_vcorefs_set_dvfs_lpm_force(int opp, int vcore, int ddr)
 	if (r < 0) {
 		spm_vcorefs_err("wait idle timeout(opp:%d)\n", opp);
 		spm_vcorefs_dump_dvfs_regs(NULL);
-		spm_vcorefs_aee_warn("set_lpm_force_waitidle_timeout(opp:%d)\n", opp);
-		__check_dvfs_halt_source(pwrctrl->dvfs_halt_src_chk);
-		do_check = 0;
 	}
 
 	set_aee_vcore_dvfs_status(SPM_VCOREFS_DVFS_START);
 
 	/* spm setting for "DVFS_FORCE_DOWN" */
-	if (opp == OPPI_LOW_PWR) {
-		pwrctrl->spm_dvfs_force_down = 0;
-		spm_write(SPM_SRC_REQ, spm_read(SPM_SRC_REQ) & (~SPM_DVFS_FORCE_DOWN_LSB));
-	} else {
-		pwrctrl->spm_dvfs_force_down = 1;
-		spm_write(SPM_SRC_REQ, spm_read(SPM_SRC_REQ) | (SPM_DVFS_FORCE_DOWN_LSB));
+	switch (opp) {
+	case OPPI_PERF:
+		spm_vcorefs_config_ulpm_fix(opp);
+		spm_vcorefs_config_hpm_fix(opp);
+	break;
+	case OPPI_LOW_PWR:
+		spm_vcorefs_config_lpm_fix(opp);
+	break;
+	case OPPI_ULTRA_LOW_PWR:
+		spm_vcorefs_config_ulpm_fix(opp);
+	break;
+	case OPPI_UNREQ:
+		spm_vcorefs_config_ulpm_fix(opp);
+		spm_vcorefs_config_hpm(opp);
+		spm_vcorefs_config_lpm_fix(opp);
+	break;
+	default:
+		BUG();
 	}
 
 	/* check spm task done status for LPM */
-	if (opp == OPPI_LOW_PWR) {
+	if (opp != OPPI_UNREQ) {
 		r = _wait_spm_dvfs_complete(opp, timeout);
 		if (r < 0) {
 			spm_vcorefs_err("wait complete timeout(opp:%d)\n", opp);
 			spm_vcorefs_dump_dvfs_regs(NULL);
 			spm_vcorefs_aee_warn("set_lpm_force_complete_timeout(opp:%d)\n", opp);
 			__check_dvfs_halt_source(pwrctrl->dvfs_halt_src_chk);
-			do_check = 0;
 		}
 	}
 
 	set_aee_vcore_dvfs_status(SPM_VCOREFS_DVFS_END);
 
 	/* check vcore and ddr for LPM */
-	if (opp == OPPI_LOW_PWR) {
+	if (opp != OPPI_UNREQ) {
 		r = _check_dvfs_result(vcore, ddr);
 		if (r < 0) {
 			spm_vcorefs_err("chk result fail opp:%d\n", opp);
 			spm_vcorefs_dump_dvfs_regs(NULL);
-			if (do_check)
 				BUG();
 		}
 	}
@@ -741,20 +775,7 @@ int spm_vcorefs_set_dvfs_lpm_force(int opp, int vcore, int ddr)
 
 	spin_unlock_irqrestore(&__spm_lock, flags);
 
-	return r;
-}
-
-int spm_vcorefs_set_total_bw(int opp, int vcore, int ddr)
-{
-	/* HPM means to disable total bw,
-	   avoid trigger LPM event */
-
-	if (opp == OPPI_LOW_PWR)
-		spm_vcorefs_enable_total_bw(true);
-	else
-		spm_vcorefs_enable_total_bw(false);
-
-	return 0;
+	return (r > 0) ? 0 : r;
 }
 
 u32 spm_vcorefs_get_MD_status(void)
@@ -770,14 +791,6 @@ int spm_vcorefs_set_cpu_dvfs_req(u32 val, u32 mask)
 	return 0;
 }
 
-bool spm_vcorefs_is_dvfs_in_porgress(void)
-{
-	if (is_dvfs_in_progress() != 0)
-		return true;
-	else
-		return false;
-}
-
 void spm_vcorefs_set_pcm_flag(u32 flag, bool set)
 {
 	struct pwr_ctrl *pwrctrl = __spm_vcore_dvfs.pwrctrl;
@@ -790,4 +803,4 @@ void spm_vcorefs_set_pcm_flag(u32 flag, bool set)
 	spm_write(SPM_SW_FLAG, pwrctrl->pcm_flags);
 }
 
-MODULE_DESCRIPTION("SPM-VCORE_DVFS Driver v0.2");
+MODULE_DESCRIPTION("SPM-VCORE_DVFS Driver v0.3");

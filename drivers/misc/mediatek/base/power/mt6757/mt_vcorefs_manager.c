@@ -157,29 +157,30 @@ static int vcorefs_autok_set_vcore(int kicker, enum dvfs_opp opp)
 /*
  * Sub-main function
  */
-static int _get_dvfs_opp(struct vcorefs_profile *pwrctrl)
+static int _get_dvfs_opp(int kicker)
 {
 	unsigned int opp = UINT_MAX;
-	int i;
+	int i, group;
 	char table[NUM_KICKER * 4 + 1];
 	char *p = table;
 
+	group = vcorefs_get_dvfs_kicker_group(kicker);
 	for (i = 0; i < NUM_KICKER; i++)
 		p += sprintf(p, "%d, ", kicker_table[i]);
 
 	vcorefs_crit("kr opp: %s\n", table);
 
 	for (i = 0; i < NUM_KICKER; i++) {
-		if (kicker_table[i] < 0)
+		if (kicker_table[i] < 0 || group != vcorefs_get_dvfs_kicker_group(i))
 			continue;
 
 		if (kicker_table[i] < opp)
 			opp = kicker_table[i];
 	}
 
-	/* if have no request, set to init OPP */
+	/* if have no request, set to LPM as default */
 	if (opp == UINT_MAX)
-		opp = pwrctrl->plat_init_opp;
+		opp = OPPI_UNREQ;
 
 	return opp;
 }
@@ -263,7 +264,7 @@ int vcorefs_request_dvfs_opp(enum dvfs_kicker kicker, enum dvfs_opp opp)
 				vcorefs_autok_lock_dvfs(kicker, is_lock);
 				vcorefs_autok_set_vcore(kicker, opp);
 			} else {
-				vcorefs_autok_set_vcore(kicker, _get_dvfs_opp(pwrctrl));
+				vcorefs_autok_set_vcore(kicker, _get_dvfs_opp(kicker));
 				vcorefs_autok_lock_dvfs(kicker, is_lock);
 			}
 		} else {
@@ -287,7 +288,7 @@ int vcorefs_request_dvfs_opp(enum dvfs_kicker kicker, enum dvfs_opp opp)
 
 	krconf.kicker = kicker;
 	krconf.opp = opp;
-	krconf.dvfs_opp = _get_dvfs_opp(pwrctrl);
+	krconf.dvfs_opp = _get_dvfs_opp(kicker);
 
 	vcorefs_crit("kicker: %d, opp: %d, dvfs_opp: %d, curr_opp: %d\n",
 		     krconf.kicker, krconf.opp, krconf.dvfs_opp, vcorefs_get_curr_opp());
@@ -441,7 +442,7 @@ static ssize_t vcore_debug_store(struct kobject *kobj, struct kobj_attribute *at
 			krconf.opp = val;
 			krconf.dvfs_opp = val;
 		} else {
-			unsigned int opp = _get_dvfs_opp(pwrctrl);
+			unsigned int opp = _get_dvfs_opp(krconf.kicker);
 
 			krconf.kicker = KIR_SYSFSX;
 			krconf.opp = opp;

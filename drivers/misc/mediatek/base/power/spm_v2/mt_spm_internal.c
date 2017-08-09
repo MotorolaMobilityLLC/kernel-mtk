@@ -550,6 +550,15 @@ void __spm_set_power_control(const struct pwr_ctrl *pwrctrl)
 		((pwrctrl->cpu_md_emi_dvfs_req_prot_dis & 0x1) << 26) |
 		((pwrctrl->dramc_spcmd_apsrc_req_mask_b & 0x1) << 27));
 
+	/* SW_CRTL_EVENT */
+	spm_write(SW_CRTL_EVENT, (pwrctrl->sw_ctrl_event_on & 0x1) << 0);
+
+	/* SPM_SW_RSV_6 */
+	spm_write(SPM_SW_RSV_6,
+		((pwrctrl->md_srcclkena_0_2d_dvfs_req_mask_b & 0x1) << 0) |
+		((pwrctrl->md_srcclkena_1_2d_dvfs_req_mask_b & 0x1) << 1) |
+		((pwrctrl->dvfs_up_2d_dvfs_req_mask_b & 0x1) << 1));
+
 #if 0
 	/* SPM_WAKEUP_EVENT_MASK */
 	spm_write(SPM_WAKEUP_EVENT_MASK,
@@ -1003,25 +1012,27 @@ void __spm_sync_vcore_dvfs_power_control(struct pwr_ctrl *dest_pwr_ctrl, const s
 	dest_pwr_ctrl->sdio_on_dvfs_req_mask_b		= src_pwr_ctrl->sdio_on_dvfs_req_mask_b;
 #if defined(CONFIG_ARCH_MT6757)
 	dest_pwr_ctrl->cpu_md_dvfs_req_merge_mask_b	= src_pwr_ctrl->cpu_md_dvfs_req_merge_mask_b;
+	dest_pwr_ctrl->sw_ctrl_event_on			= src_pwr_ctrl->sw_ctrl_event_on;
+	dest_pwr_ctrl->md_srcclkena_0_2d_dvfs_req_mask_b = src_pwr_ctrl->md_srcclkena_0_2d_dvfs_req_mask_b;
+	dest_pwr_ctrl->md_srcclkena_1_2d_dvfs_req_mask_b = src_pwr_ctrl->md_srcclkena_1_2d_dvfs_req_mask_b;
+	dest_pwr_ctrl->dvfs_up_2d_dvfs_req_mask_b	= src_pwr_ctrl->dvfs_up_2d_dvfs_req_mask_b;
 #else
 	dest_pwr_ctrl->cpu_md_dvfs_erq_merge_mask_b	= src_pwr_ctrl->cpu_md_dvfs_erq_merge_mask_b;
 	dest_pwr_ctrl->md1_ddr_en_dvfs_halt_mask_b	= src_pwr_ctrl->md1_ddr_en_dvfs_halt_mask_b;
 	dest_pwr_ctrl->md2_ddr_en_dvfs_halt_mask_b	= src_pwr_ctrl->md2_ddr_en_dvfs_halt_mask_b;
+	dest_pwr_ctrl->vsync_dvfs_halt_mask_b		= src_pwr_ctrl->vsync_dvfs_halt_mask_b;
 #endif
 	dest_pwr_ctrl->md_srcclkena_0_dvfs_req_mask_b	= src_pwr_ctrl->md_srcclkena_0_dvfs_req_mask_b;
 	dest_pwr_ctrl->md_srcclkena_1_dvfs_req_mask_b	= src_pwr_ctrl->md_srcclkena_1_dvfs_req_mask_b;
 	dest_pwr_ctrl->conn_srcclkena_dvfs_req_mask_b	= src_pwr_ctrl->conn_srcclkena_dvfs_req_mask_b;
 
-#if !defined(CONFIG_ARCH_MT6757)
-	dest_pwr_ctrl->vsync_dvfs_halt_mask_b		= src_pwr_ctrl->vsync_dvfs_halt_mask_b;
-#endif
 	dest_pwr_ctrl->emi_boost_dvfs_req_mask_b	= src_pwr_ctrl->emi_boost_dvfs_req_mask_b;
 	dest_pwr_ctrl->emi_bw_dvfs_req_mask		= src_pwr_ctrl->emi_bw_dvfs_req_mask;
 	dest_pwr_ctrl->cpu_md_emi_dvfs_req_prot_dis	= src_pwr_ctrl->cpu_md_emi_dvfs_req_prot_dis;
 	dest_pwr_ctrl->spm_dvfs_req			= src_pwr_ctrl->spm_dvfs_req;
 	dest_pwr_ctrl->spm_dvfs_force_down		= src_pwr_ctrl->spm_dvfs_force_down;
 	dest_pwr_ctrl->cpu_md_dvfs_sop_force_on		= src_pwr_ctrl->cpu_md_dvfs_sop_force_on;
-#if defined(SPM_VCORE_EN_MT6755)
+#if defined(SPM_VCORE_EN_MT6755) || defined(CONFIG_ARCH_MT6757)
 	dest_pwr_ctrl->dvfs_halt_src_chk = src_pwr_ctrl->dvfs_halt_src_chk;
 #endif
 

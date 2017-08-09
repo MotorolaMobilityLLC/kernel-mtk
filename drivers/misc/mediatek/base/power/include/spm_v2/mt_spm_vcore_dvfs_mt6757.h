@@ -41,12 +41,10 @@
 extern void spm_go_to_vcore_dvfs(u32 spm_flags, u32 spm_data);
 
 /* vcore dvfs request */
-extern int spm_vcorefs_set_dvfs_hpm(int opp, int vcore, int ddr);
-extern int spm_vcorefs_set_dvfs_hpm_force(int opp, int vcore, int ddr);
-extern int spm_vcorefs_set_total_bw(int opp, int vcore, int ddr);	/* OVL >3 & CA Data-Link */
+extern int spm_vcorefs_set_opp(int opp, int vcore, int ddr, bool non_force);
+extern int spm_vcorefs_set_opp_fix(int opp, int vcore, int ddr);
 
 /* debug only */
-extern int spm_vcorefs_set_dvfs_lpm_force(int opp, int vcore, int ddr);
 extern void spm_vcorefs_set_pcm_flag(u32 flag, bool set);
 
 /* bw monitor threshold setting to spm */
@@ -62,7 +60,6 @@ extern int spm_vcorefs_get_clk_mem_pll(void);
 extern char *spm_vcorefs_dump_dvfs_regs(char *p);
 extern int spm_vcorefs_set_cpu_dvfs_req(u32 screen_on, u32 mask);
 extern u32 spm_vcorefs_get_MD_status(void);
-extern bool spm_vcorefs_is_dvfs_in_porgress(void);
 
 /* SRAM debug */
 extern void aee_rr_rec_vcore_dvfs_status(u32 val);

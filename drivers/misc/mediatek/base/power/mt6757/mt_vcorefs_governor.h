@@ -50,9 +50,6 @@ struct kicker_config {
 #define FDDR_S1_KHZ		2667000
 #define FDDR_S2_KHZ		1600000
 
-#define FAXI_S0_KHZ		156000
-#define FAXI_S1_KHZ		136500
-
 enum vcore_trans {
 	TRANS1,
 	TRANS2,
@@ -66,9 +63,11 @@ enum vcore_trans {
 
 enum dvfs_kicker {
 	KIR_MM = 0,
+	KIR_MM_NON_FORCE,
 	KIR_AUDIO,
 	KIR_PERF,
 	KIR_SYSFS,
+	KIR_SYSFS_N,
 	NUM_KICKER,
 
 	/* internal kicker */
@@ -93,15 +92,11 @@ enum dvfs_opp {
 #define OPPI_ULTRA_LOW_PWR OPP_2
 #define OPPI_UNREQ OPP_OFF
 
-enum dvfs_timer {
-	RANGE_0 = 0,
-	RANGE_1 = 50,
-	RANGE_2 = 75,
-	RANGE_3 = 100,
-	RANGE_4 = 125,
-	RANGE_5 = 150,
-	RANGE_6 = 200,
-	NUM_RANGE = 7,
+enum dvfs_kicker_group {
+	KIR_GROUP_HPM = 0,
+	KIR_GROUP_HPM_NON_FORCE,
+	KIR_GROUP_FIX,
+	NUM_KIR_GROUP,
 };
 
 struct opp_profile {
@@ -126,13 +121,11 @@ extern void vcorefs_update_opp_table(char *cmd, int val);
 extern char *governor_get_kicker_name(int id);
 extern char *vcorefs_get_opp_table_info(char *p);
 extern int vcorefs_output_kicker_id(char *name);
+extern int vcorefs_get_dvfs_kicker_group(int kicker);
 extern int governor_debug_store(const char *);
 extern int vcorefs_late_init_dvfs(void);
 extern int kick_dvfs_by_opp_index(struct kicker_config *krconf);
 extern char *governor_get_dvfs_info(char *p);
-bool vcorefs_screen_on_lock_dpidle(void);
-bool vcorefs_screen_on_lock_suspend(void);
-bool vcorefs_screen_on_lock_sodi(void);
 void vcorefs_go_to_vcore_dvfs(void);
 bool vcorefs_sodi_rekick_lock(void);
 

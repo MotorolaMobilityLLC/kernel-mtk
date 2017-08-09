@@ -266,6 +266,13 @@ struct pwr_ctrl {
 	u8 cpu_md_emi_dvfs_req_prot_dis;
 	u8 dramc_spcmd_apsrc_req_mask_b;
 
+	/* SW_CRTL_EVENT */
+	u8 sw_ctrl_event_on;
+
+	/* SPM_SW_RSV_6 */
+	u8 md_srcclkena_0_2d_dvfs_req_mask_b;
+	u8 md_srcclkena_1_2d_dvfs_req_mask_b;
+	u8 dvfs_up_2d_dvfs_req_mask_b;
 #if 0
 	/* SPM_WAKEUP_EVENT_MASK */
 	u32 spm_wakeup_event_mask;

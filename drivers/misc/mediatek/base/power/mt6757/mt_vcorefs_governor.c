@@ -15,7 +15,7 @@
 #include <linux/module.h>
 #include <linux/init.h>
 #include <linux/mutex.h>
-#include <linux/clk.h>	/* CCF */
+
 #include <linux/platform_device.h>
 
 #include <linux/fb.h>
@@ -47,9 +47,6 @@
 static int vcorefs_curr_opp __nosavedata = OPPI_PERF;
 static int vcorefs_prev_opp __nosavedata = OPPI_PERF;
 
-static unsigned int	vcorefs_range[NUM_RANGE] = {RANGE_0, RANGE_1, RANGE_2, RANGE_3, RANGE_4, RANGE_5, RANGE_6};
-static unsigned long	vcorefs_cnt[NUM_RANGE] = {0};
-
 __weak int emmc_autok(void)
 {
 	return 0;
@@ -80,15 +77,6 @@ __weak int sdio_autok(void)
 #define vcore_pmic_to_uv(pmic)	\
 	(((pmic) * VCORE_STEP_UV) + VCORE_BASE_UV)
 
-/* CCF clock */
-#define CCF_CONFIG	1
-
-#if CCF_CONFIG
-struct clk *clk_axi_sel;
-struct clk *clk_syspll_d7;
-struct clk *clk_mux_ulposc_axi_ck_mux;
-#endif
-
 /*
  * struct define
  */
@@ -113,7 +101,6 @@ struct governor_profile {
 
 	int curr_vcore_uv;
 	int curr_ddr_khz;
-	int curr_axi_khz;
 
 	u32 active_autok_kir;
 	u32 autok_kir_group;
@@ -148,7 +135,6 @@ static struct governor_profile governor_ctrl = {
 
 	.curr_vcore_uv = VCORE_0_P_80_UV,
 	.curr_ddr_khz = FDDR_S0_KHZ,
-	.curr_axi_khz = FAXI_S0_KHZ,
 
 	.perform_bw_enable = 0,
 	.perform_bw_lpm_threshold = 0,
@@ -310,6 +296,7 @@ int vcorefs_get_curr_ddr(void)
 
 int vcorefs_get_vcore_by_steps(u32 steps)
 {
+#if !defined(CONFIG_FPGA_EARLY_PORTING) /* todo: check get_vcore_ptp_volt */
 	switch (steps) {
 	case OPP_0:
 		return vcore_pmic_to_uv(get_vcore_ptp_volt(OPP_0));
@@ -325,6 +312,12 @@ int vcorefs_get_vcore_by_steps(u32 steps)
 	}
 
 	return 0;
+#else
+	if (steps == OPP_0)
+		return VCORE_0_P_80_UV;
+	else
+		return VCORE_0_P_70_UV;
+#endif
 }
 
 int vcorefs_get_ddr_by_steps(u32 steps)
@@ -352,7 +345,6 @@ char *vcorefs_get_opp_table_info(char *p)
 		p += sprintf(p, "[OPP_%d] vcore_uv: %d (0x%x)\n", i, opp_ctrl_table[i].vcore_uv,
 			     vcore_uv_to_pmic(opp_ctrl_table[i].vcore_uv));
 		p += sprintf(p, "[OPP_%d] ddr_khz : %d\n", i, opp_ctrl_table[i].ddr_khz);
-		p += sprintf(p, "[OPP_%d] axi_khz : %d\n", i, opp_ctrl_table[i].axi_khz);
 		p += sprintf(p, "\n");
 	}
 
@@ -375,6 +367,32 @@ int vcorefs_output_kicker_id(char *name)
 	return -1;
 }
 
+int vcorefs_get_dvfs_kicker_group(int kicker)
+{
+	int group = KIR_GROUP_HPM;
+
+	switch (kicker) {
+	case KIR_MM_NON_FORCE:
+	case KIR_SYSFS_N:
+		group = KIR_GROUP_HPM_NON_FORCE;
+	break;
+	case KIR_SYSFSX:
+	case KIR_AUTOK_SDIO:
+	case KIR_AUTOK_EMMC:
+	case KIR_AUTOK_SD:
+		group = KIR_GROUP_FIX;
+	break;
+	case KIR_MM:
+	case KIR_PERF:
+	case KIR_AUDIO:
+	case KIR_SYSFS:
+	default:
+		group = KIR_GROUP_HPM;
+	break;
+	}
+	return group;
+}
+
 /*
  * init boot-up OPP from late init
  */
@@ -390,37 +408,6 @@ static int set_init_opp_index(void)
 	} else {
 		return vcorefs_get_curr_opp();
 	}
-}
-
-/*
- *  DVFS working timer
- */
-static void record_dvfs_timer(u32 timer)
-{
-	struct governor_profile *gvrctrl = &governor_ctrl;
-	int i;
-
-	gvrctrl->dvfs_timer = timer;
-
-	if (timer != 0) {
-		for (i = 0; i < NUM_RANGE; i++) {
-			if (i == NUM_RANGE-1) {
-				vcorefs_cnt[i]++;
-				break;
-			} else if (timer > vcorefs_range[i] && timer <= vcorefs_range[i+1]) {
-				vcorefs_cnt[i]++;
-				break;
-			}
-		}
-	}
-}
-
-static void clean_dvfs_counter(int timer)
-{
-	int i;
-
-	for (i = 0; i < NUM_RANGE; i++)
-		vcorefs_cnt[i] = timer;
 }
 
 /*
@@ -484,22 +471,20 @@ static int vcorefs_check_feature_enable(void)
 
 static int vcorefs_enable_vcore(bool enable)
 {
-
 	struct governor_profile *gvrctrl = &governor_ctrl;
+	u32 flag = SPM_FLAG_RUN_COMMON_SCENARIO;
 
 	mutex_lock(&governor_mutex);
 
 	gvrctrl->vcore_dvs = enable;
 
-	if (!gvrctrl->vcore_dvs && !gvrctrl->ddr_dfs) {
-		spm_go_to_vcore_dvfs(SPM_FLAG_RUN_COMMON_SCENARIO | SPM_FLAG_DIS_VCORE_DVS | SPM_FLAG_DIS_VCORE_DFS, 0);
-	} else if (!gvrctrl->vcore_dvs && gvrctrl->ddr_dfs) {
-		spm_go_to_vcore_dvfs(SPM_FLAG_RUN_COMMON_SCENARIO | SPM_FLAG_DIS_VCORE_DVS, 0);
-	} else if (gvrctrl->vcore_dvs && !gvrctrl->ddr_dfs) {
-		spm_go_to_vcore_dvfs(SPM_FLAG_RUN_COMMON_SCENARIO | SPM_FLAG_DIS_VCORE_DFS, 0);
-	} else {
-		spm_go_to_vcore_dvfs(SPM_FLAG_RUN_COMMON_SCENARIO, 0);
-	}
+	if (!gvrctrl->vcore_dvs)
+		flag |= SPM_FLAG_DIS_VCORE_DVS;
+
+	if (!gvrctrl->ddr_dfs)
+		flag |= SPM_FLAG_DIS_VCORE_DFS;
+
+	spm_go_to_vcore_dvfs(flag, 0);
 
 	mutex_unlock(&governor_mutex);
 	return 0;
@@ -508,20 +493,19 @@ static int vcorefs_enable_vcore(bool enable)
 static int vcorefs_enable_ddr(bool enable)
 {
 	struct governor_profile *gvrctrl = &governor_ctrl;
+	u32 flag = SPM_FLAG_RUN_COMMON_SCENARIO;
 
 	mutex_lock(&governor_mutex);
 
 	gvrctrl->ddr_dfs = enable;
 
-	if (!gvrctrl->vcore_dvs && !gvrctrl->ddr_dfs) {
-		spm_go_to_vcore_dvfs(SPM_FLAG_RUN_COMMON_SCENARIO | SPM_FLAG_DIS_VCORE_DVS | SPM_FLAG_DIS_VCORE_DFS, 0);
-	} else if (gvrctrl->vcore_dvs && !gvrctrl->ddr_dfs) {
-		spm_go_to_vcore_dvfs(SPM_FLAG_RUN_COMMON_SCENARIO | SPM_FLAG_DIS_VCORE_DFS, 0);
-	} else if (!gvrctrl->vcore_dvs && gvrctrl->ddr_dfs) {
-		spm_go_to_vcore_dvfs(SPM_FLAG_RUN_COMMON_SCENARIO | SPM_FLAG_DIS_VCORE_DVS, 0);
-	} else {
-		spm_go_to_vcore_dvfs(SPM_FLAG_RUN_COMMON_SCENARIO, 0);
-	}
+	if (!gvrctrl->vcore_dvs)
+		flag |= SPM_FLAG_DIS_VCORE_DVS;
+
+	if (!gvrctrl->ddr_dfs)
+		flag |= SPM_FLAG_DIS_VCORE_DFS;
+
+	spm_go_to_vcore_dvfs(flag, 0);
 
 	mutex_unlock(&governor_mutex);
 	return 0;
@@ -549,8 +533,6 @@ int governor_debug_store(const char *buf)
 			vcorefs_enable_ddr(val);
 		else if (!strcmp(cmd, "freq_dfs"))
 			gvrctrl->freq_dfs = val;
-		else if (!strcmp(cmd, "dvfs_cnt"))
-			clean_dvfs_counter(val);
 		else
 			r = -EPERM;
 	} else {
@@ -562,8 +544,6 @@ int governor_debug_store(const char *buf)
 
 char *governor_get_dvfs_info(char *p)
 {
-	int i;
-
 	struct governor_profile *gvrctrl = &governor_ctrl;
 	int uv = vcorefs_get_curr_vcore();
 
@@ -577,26 +557,15 @@ char *governor_get_dvfs_info(char *p)
 	p += sprintf(p, "[freq_dfs    ]: %d\n", gvrctrl->freq_dfs);
 	p += sprintf(p, "[isr_debug   ]: %d\n", gvrctrl->isr_debug);
 	p += sprintf(p, "[screen_on   ]: %d\n", vcorefs_get_screen_on_state());
-	p += sprintf(p, "[dpidle_lock ]: %d\n", vcorefs_screen_on_lock_dpidle());
-	p += sprintf(p, "[susp_lock   ]: %d\n", vcorefs_screen_on_lock_suspend());
-	p += sprintf(p, "[sodi_lock   ]: %d\n", vcorefs_screen_on_lock_sodi());
 	p += sprintf(p, "[md_dvfs_req ]: 0x%x\n", gvrctrl->md_dvfs_req);
 	p += sprintf(p, "\n");
 
 	p += sprintf(p, "[vcore] uv : %u (0x%x)\n", uv, vcore_uv_to_pmic(uv));
 	p += sprintf(p, "[ddr  ] khz: %u\n", vcorefs_get_curr_ddr());
-	p += sprintf(p, "[axi  ] khz: %u\n", ckgen_meter(1));
 	p += sprintf(p, "\n");
 
-	p += sprintf(p, "[perf_bw_en]: %d\n", gvrctrl->perform_bw_enable);
 	p += sprintf(p, "[LPM_thres ]: 0x%x\n", gvrctrl->perform_bw_lpm_threshold);
 	p += sprintf(p, "[HPM_thres ]: 0x%x\n", gvrctrl->perform_bw_hpm_threshold);
-	p += sprintf(p, "\n");
-
-	p += sprintf(p, "[dvfs_timer]: %u\n", gvrctrl->dvfs_timer);
-	p += sprintf(p, "[dvfs_cnt  ]: ");
-	for (i = 0; i < NUM_RANGE; i++)
-		p += sprintf(p, "[%d] %lu ", vcorefs_range[i], vcorefs_cnt[i]);
 	p += sprintf(p, "\n");
 
 	return p;
@@ -643,116 +612,47 @@ static int set_dvfs_with_opp(struct kicker_config *krconf)
 {
 	struct governor_profile *gvrctrl = &governor_ctrl;
 	struct opp_profile *opp_ctrl_table = opp_table;
-	int timer = 0;
+	int expect_vcore_uv, expect_ddr_khz, opp_idx, kir_group;
+	int r = 0;
 
 	gvrctrl->curr_vcore_uv = vcorefs_get_curr_vcore();
 	gvrctrl->curr_ddr_khz = vcorefs_get_curr_ddr();
 
+	opp_idx = krconf->dvfs_opp;
+	expect_vcore_uv = (gvrctrl->vcore_dvs == 1) ? opp_ctrl_table[opp_idx].vcore_uv : gvrctrl->curr_vcore_uv;
+	expect_ddr_khz = (gvrctrl->ddr_dfs == 1) ? opp_ctrl_table[opp_idx].ddr_khz : gvrctrl->curr_vcore_uv;
+
 	vcorefs_crit("opp: %d, vcore: %u(%u), fddr: %u(%u) %s%s\n",
 		     krconf->dvfs_opp,
-		     opp_ctrl_table[krconf->dvfs_opp].vcore_uv, gvrctrl->curr_vcore_uv,
-		     opp_ctrl_table[krconf->dvfs_opp].ddr_khz, gvrctrl->curr_ddr_khz,
+		     opp_ctrl_table[opp_idx].vcore_uv, gvrctrl->curr_vcore_uv,
+		     opp_ctrl_table[opp_idx].ddr_khz, gvrctrl->curr_ddr_khz,
 		     (gvrctrl->vcore_dvs) ? "[O]" : "[X]",
 		     (gvrctrl->ddr_dfs) ? "[O]" : "[X]");
 
 	if (!gvrctrl->vcore_dvs && !gvrctrl->ddr_dfs)
 		return 0;
 
-#if !defined(CONFIG_FPGA_EARLY_PORTING)
-	timer = spm_set_vcore_dvfs(krconf->dvfs_opp, gvrctrl->md_dvfs_req);
-#endif
+	kir_group = vcorefs_get_dvfs_kicker_group(krconf->kicker);
 
-	if (timer < 0) {
-		vcorefs_err("FAILED: SET VCORE DVFS FAIL\n");
-		return -EBUSY;
+	switch (kir_group) {
+	case KIR_GROUP_HPM:
+		r = spm_vcorefs_set_opp(opp_idx, expect_vcore_uv, expect_ddr_khz, 0);
+	break;
+	case KIR_GROUP_HPM_NON_FORCE:
+		r = spm_vcorefs_set_opp(opp_idx, expect_vcore_uv, expect_ddr_khz, 1);
+	break;
+	case KIR_GROUP_FIX:
+		r = spm_vcorefs_set_opp_fix(opp_idx, expect_vcore_uv, expect_ddr_khz);
+	break;
+	default:
+		BUG();
+	break;
 	}
 
-	record_dvfs_timer(timer);
 	gvrctrl->curr_vcore_uv = opp_ctrl_table[krconf->dvfs_opp].vcore_uv;
 	gvrctrl->curr_ddr_khz = opp_ctrl_table[krconf->dvfs_opp].ddr_khz;
 
-	return 0;
-}
-
-static int set_freq_with_opp(struct kicker_config *krconf)
-{
-	struct governor_profile *gvrctrl = &governor_ctrl;
-	struct opp_profile *opp_ctrl_table = opp_table;
-	int r = 0;
-
-	gvrctrl->curr_axi_khz = ckgen_meter(1);
-
-	vcorefs_crit("opp: %d, faxi: %u(%u) %s\n",
-		     krconf->dvfs_opp,
-		     opp_ctrl_table[krconf->dvfs_opp].axi_khz, gvrctrl->curr_axi_khz,
-		     gvrctrl->freq_dfs ? "[O]" : "[X]");
-
-	if (!gvrctrl->freq_dfs)
-		return 0;
-
-#if CCF_CONFIG
-	r = clk_prepare_enable(clk_axi_sel);
-
-	if (r) {
-		vcorefs_err("*** FAILED: CLOCK PREPARE ENABLE ***\n");
-		BUG_ON(r);
-	}
-
-	switch (krconf->dvfs_opp) {
-	case OPP_0:
-		clk_set_parent(clk_axi_sel, clk_syspll_d7);		/* 158MHz */
-		break;
-	case OPP_1:
-		clk_set_parent(clk_axi_sel, clk_mux_ulposc_axi_ck_mux);	/* 138MHz */
-		break;
-	case OPP_2:
-		clk_set_parent(clk_axi_sel, clk_mux_ulposc_axi_ck_mux);	/* 138MHz */
-		break;
-	default:
-		vcorefs_err("*** FAILED: OPP INDEX IS INCORRECT ***\n");
-		return r;
-	}
-
-	clk_disable_unprepare(clk_axi_sel);
-#endif
-
-	gvrctrl->curr_axi_khz = opp_ctrl_table[krconf->dvfs_opp].axi_khz;
-
 	return r;
-}
-
-static int do_dvfs_for_performance(struct kicker_config *krconf)
-{
-	int r;
-
-	/* for performance: scale UP voltage -> frequency */
-
-	r = set_dvfs_with_opp(krconf);
-	if (r)
-		return -2;
-
-	r = set_freq_with_opp(krconf);
-	if (r)
-		return -3;
-
-	return 0;
-}
-
-static int do_dvfs_for_low_power(struct kicker_config *krconf)
-{
-	int r;
-
-	/* for low power: scale DOWN frequency -> voltage */
-
-	r = set_freq_with_opp(krconf);
-	if (r)
-		return -3;
-
-	r = set_dvfs_with_opp(krconf);
-	if (r)
-		return -2;
-
-	return 0;
 }
 
 /*
@@ -762,10 +662,7 @@ int kick_dvfs_by_opp_index(struct kicker_config *krconf)
 {
 	int r = 0;
 
-	if (krconf->dvfs_opp == OPP_0)
-		r = do_dvfs_for_performance(krconf);
-	else
-		r = do_dvfs_for_low_power(krconf);
+	r = set_dvfs_with_opp(krconf);
 
 	if (r == 0) {
 		vcorefs_prev_opp = krconf->dvfs_opp;
@@ -785,52 +682,9 @@ int kick_dvfs_by_opp_index(struct kicker_config *krconf)
 	return r;
 }
 
-/* it can not enter dpidle when screen on state */
-bool vcorefs_screen_on_lock_dpidle(void)
-{
-	struct governor_profile *gvrctrl = &governor_ctrl;
-	unsigned long flags;
-	int r;
-
-	spin_lock_irqsave(&governor_spinlock, flags);
-	r = gvrctrl->dpidle_lock;
-	spin_unlock_irqrestore(&governor_spinlock, flags);
-
-	return r;
-}
-
-/* it can not enter suspend when screen on state */
-bool vcorefs_screen_on_lock_suspend(void)
-{
-	struct governor_profile *gvrctrl = &governor_ctrl;
-	unsigned long flags;
-	int r;
-
-	spin_lock_irqsave(&governor_spinlock, flags);
-	r = gvrctrl->suspend_lock;
-	spin_unlock_irqrestore(&governor_spinlock, flags);
-
-	return r;
-}
-
-/* it can not enter sodi when doing screen on process */
-bool vcorefs_screen_on_lock_sodi(void)
-{
-	struct governor_profile *gvrctrl = &governor_ctrl;
-	unsigned long flags;
-	int r;
-
-	spin_lock_irqsave(&governor_spinlock, flags);
-	r = gvrctrl->sodi_lock;
-	spin_unlock_irqrestore(&governor_spinlock, flags);
-
-	return r;
-}
-
 static int vcorefs_fb_notifier_callback(struct notifier_block *self, unsigned long event, void *data)
 {
 	struct governor_profile *gvrctrl = &governor_ctrl;
-	struct kicker_config krconf;
 	struct fb_event *evdata = data;
 	int blank;
 	unsigned long flags;
@@ -857,10 +711,6 @@ static int vcorefs_fb_notifier_callback(struct notifier_block *self, unsigned lo
 		gvrctrl->screen_on = 1;
 		spm_go_to_vcore_dvfs(vcorefs_check_feature_enable(), 0);
 
-		if (vcorefs_get_curr_opp() == OPPI_PERF) {
-			krconf.dvfs_opp = OPP_0;
-			set_freq_with_opp(&krconf);
-		}
 
 		spin_lock_irqsave(&governor_spinlock, flags);
 		gvrctrl->sodi_lock = 0;
@@ -872,11 +722,6 @@ static int vcorefs_fb_notifier_callback(struct notifier_block *self, unsigned lo
 		mutex_lock(&governor_mutex);
 
 		vcorefs_crit("SCREEN OFF\n");
-
-		if (vcorefs_get_curr_opp() == OPPI_PERF) {
-			krconf.dvfs_opp = OPP_1;
-			set_freq_with_opp(&krconf);
-		}
 
 		spin_lock_irqsave(&governor_spinlock, flags);
 		gvrctrl->dpidle_lock = 0;
@@ -987,28 +832,6 @@ static struct platform_driver vcorefs_driver = {
 
 static int vcorefs_probe(struct platform_device *pdev)
 {
-#if CCF_CONFIG
-	clk_axi_sel = devm_clk_get(&pdev->dev, "mux_axi");
-	if (IS_ERR(clk_axi_sel)) {
-		vcorefs_err("FAILED: CANNOT GET clk_axi_sel\n");
-		/* BUG(); */
-		return PTR_ERR(clk_axi_sel);
-	}
-
-	clk_syspll_d7 = devm_clk_get(&pdev->dev, "syspll_d7");
-	if (IS_ERR(clk_syspll_d7)) {
-		vcorefs_err("FAILED: CANNOT GET clk_syspll_d7\n");
-		/* BUG(); */
-		return PTR_ERR(clk_syspll_d7);
-	}
-
-	clk_mux_ulposc_axi_ck_mux = devm_clk_get(&pdev->dev, "mux_ulposc_axi_ck_mux");
-	if (IS_ERR(clk_mux_ulposc_axi_ck_mux)) {
-		vcorefs_err("FAILED: CANNOT GET clk_mux_ulposc_axi_ck_mux\n");
-		/* BUG(); */
-		return PTR_ERR(clk_mux_ulposc_axi_ck_mux);
-	}
-#endif
 	return 0;
 }
 
@@ -1089,39 +912,33 @@ static int init_vcorefs_cmd_table(void)
 	/* BUG_ON(gvrctrl->curr_vcore_uv == 0); */
 
 	gvrctrl->curr_ddr_khz = vcorefs_get_curr_ddr();
-	gvrctrl->curr_axi_khz = ckgen_meter(1);
 
 	for (opp = 0; opp < NUM_OPP; opp++) {
 		switch (opp) {
 		case OPPI_PERF:
 			opp_ctrl_table[opp].vcore_uv = vcorefs_get_vcore_by_steps(opp);
 			opp_ctrl_table[opp].ddr_khz = vcorefs_get_ddr_by_steps(opp);
-			opp_ctrl_table[opp].axi_khz = FAXI_S0_KHZ;
 			break;
 		case OPPI_LOW_PWR:
 			opp_ctrl_table[opp].vcore_uv = vcorefs_get_vcore_by_steps(opp);
 			opp_ctrl_table[opp].ddr_khz = vcorefs_get_ddr_by_steps(opp);
-			opp_ctrl_table[opp].axi_khz = FAXI_S1_KHZ;
 			break;
 		case OPPI_ULTRA_LOW_PWR:
 			opp_ctrl_table[opp].vcore_uv = vcorefs_get_vcore_by_steps(opp);
 			opp_ctrl_table[opp].ddr_khz = vcorefs_get_ddr_by_steps(opp);
-			opp_ctrl_table[opp].axi_khz = FAXI_S1_KHZ;
 			break;
 		default:
 			break;
 		}
-		vcorefs_crit("opp %u: vcore_uv: %u, ddr_khz: %u, axi_khz: %u\n",
+		vcorefs_crit("opp %u: vcore_uv: %u, ddr_khz: %u\n",
 								opp,
 								opp_ctrl_table[opp].vcore_uv,
-								opp_ctrl_table[opp].ddr_khz,
-								opp_ctrl_table[opp].axi_khz);
+								opp_ctrl_table[opp].ddr_khz);
 	}
 
-	vcorefs_crit("curr_vcore_uv: %u, curr_ddr_khz: %u, curr_axi_khz: %u\n",
+	vcorefs_crit("curr_vcore_uv: %u, curr_ddr_khz: %u\n",
 							gvrctrl->curr_vcore_uv,
-							gvrctrl->curr_ddr_khz,
-							gvrctrl->curr_axi_khz);
+							gvrctrl->curr_ddr_khz);
 
 	update_vcore_pwrap_cmd(opp_ctrl_table);
 	mutex_unlock(&governor_mutex);

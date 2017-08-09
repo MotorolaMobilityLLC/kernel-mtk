@@ -30,6 +30,8 @@ ccflags-$(CONFIG_MTK_GPU_SPM_DVFS_SUPPORT) += -DMTK_GPU_SPM
 
 obj-y += mt_pm_init.o
 obj-y += mt_static_power.o
+obj-y += mt_vcorefs_manager.o
+obj-y += mt_vcorefs_governor.o
 
 ifneq ($(CONFIG_FPGA_EARLY_PORTING), y)
 
@@ -45,8 +47,6 @@ obj-$(CONFIG_ARCH_MT6757) += mt_clkmgr.o
 #obj-$(CONFIG_ARCH_MT6757M) += mt_spm_sodi.o
 #obj-y += mt_spm_mtcmos.o
 #obj-y += mt_pbm.o
-obj-y += mt_vcorefs_manager.o
-obj-y += mt_vcorefs_governor.o
 obj-y += mt_picachu.o
 obj-y += mt_eem.o
 obj-y += mt_otp.o
