@@ -295,32 +295,7 @@ static void spm_suspend_pre_process(struct pwr_ctrl *pwrctrl)
 {
 #if defined(CONFIG_ARCH_MT6755)
 	unsigned int temp;
-
-	__spm_pmic_pg_force_on();
-
-	spm_pmic_power_mode(PMIC_PWR_SUSPEND, 0, 0);
-
-	/* set PMIC WRAP table for suspend power control */
-	pmic_read_interface_nolock(MT6351_PMIC_RG_VSRAM_PROC_EN_ADDR, &temp, 0xFFFF, 0);
-	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_SUSPEND,
-			IDX_SP_VSRAM_PWR_ON,
-			temp | (1 << MT6351_PMIC_RG_VSRAM_PROC_EN_SHIFT));
-	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_SUSPEND,
-			IDX_SP_VSRAM_SHUTDOWN,
-			temp & ~(1 << MT6351_PMIC_RG_VSRAM_PROC_EN_SHIFT));
-	mt_spm_pmic_wrap_set_phase(PMIC_WRAP_PHASE_SUSPEND);
-
-	/* fpr dpd */
-	if (!(pwrctrl->pcm_flags & SPM_FLAG_DIS_DPD))
-		spm_dpd_init();
-
-	/* Do more low power setting when MD1/C2K/CONN off */
-	if (is_md_c2k_conn_power_off()) {
-		__spm_bsi_top_init_setting();
-
-		__spm_backup_pmic_ck_pdn();
-	}
-#else
+#elif defined(CONFIG_ARCH_MT6797)
 	static void __iomem *temp1_base;
 	static void __iomem *temp2_base;
 	static void __iomem *temp3_base;
@@ -340,32 +315,55 @@ static void spm_suspend_pre_process(struct pwr_ctrl *pwrctrl)
 	spm_write(temp4_base + 0x8b0, spm_read(temp4_base) | 0x400);
 	spm_write(temp4_base + 0x8d0, spm_read(temp4_base) & 0xFFFFFBFF);
 
-	spm_crit2("vcore=0.6\n");
-	pmic_config_interface(0x60c, 0x0, 0xffff, 0);
-	pmic_read_interface(0x60c, &reg, 0xffff, 0);
-	spm_crit2("0x60c= :0x%x\n", reg);
-	pmic_config_interface(0x44a, 0x0b00, 0xffff, 0);
+	pmic_config_interface(0x44a, 0x300, 0x300, 0);
 	pmic_read_interface(0x44a, &reg, 0xffff, 0);
 	spm_crit2("0x44a= :0x%x\n", reg);
 #endif
+
+	__spm_pmic_pg_force_on();
+
+	spm_pmic_power_mode(PMIC_PWR_SUSPEND, 0, 0);
+
+#if defined(CONFIG_ARCH_MT6755)
+	/* set PMIC WRAP table for suspend power control */
+	pmic_read_interface_nolock(MT6351_PMIC_RG_VSRAM_PROC_EN_ADDR, &temp, 0xFFFF, 0);
+	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_SUSPEND,
+			IDX_SP_VSRAM_PWR_ON,
+			temp | (1 << MT6351_PMIC_RG_VSRAM_PROC_EN_SHIFT));
+	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_SUSPEND,
+			IDX_SP_VSRAM_SHUTDOWN,
+			temp & ~(1 << MT6351_PMIC_RG_VSRAM_PROC_EN_SHIFT));
+	mt_spm_pmic_wrap_set_phase(PMIC_WRAP_PHASE_SUSPEND);
+
+	/* fpr dpd */
+	if (!(pwrctrl->pcm_flags & SPM_FLAG_DIS_DPD))
+		spm_dpd_init();
+#endif
+
+	/* Do more low power setting when MD1/C2K/CONN off */
+	if (is_md_c2k_conn_power_off()) {
+		__spm_bsi_top_init_setting();
+
+		__spm_backup_pmic_ck_pdn();
+	}
 }
 
 static void spm_suspend_post_process(struct pwr_ctrl *pwrctrl)
 {
-#if defined(CONFIG_ARCH_MT6755)
 	/* Do more low power setting when MD1/C2K/CONN off */
 	if (is_md_c2k_conn_power_off())
 		__spm_restore_pmic_ck_pdn();
 
+#if defined(CONFIG_ARCH_MT6755)
 	/* fpr dpd */
 	if (!(pwrctrl->pcm_flags & SPM_FLAG_DIS_DPD))
 		spm_dpd_dram_init();
 
 	/* set PMIC WRAP table for normal power control */
 	mt_spm_pmic_wrap_set_phase(PMIC_WRAP_PHASE_NORMAL);
+#endif
 
 	__spm_pmic_pg_force_off();
-#endif
 }
 
 static void spm_set_sysclk_settle(void)
