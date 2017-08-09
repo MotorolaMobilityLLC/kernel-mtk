@@ -3676,9 +3676,9 @@ VOID TdlsexBssExtCapParse(STA_RECORD_T *prStaRec, UINT_8 *pucIE)
 	pucIeExtCap = pucIE + 2;
 	pucIeExtCap += 4;	/* shift to the byte we care about */
 
-	if ((*pucIeExtCap) && BIT(38 - 32))
+	if ((*pucIeExtCap) & BIT(38 - 32))
 		prStaRec->fgTdlsIsProhibited = TRUE;
-	if ((*pucIeExtCap) && BIT(39 - 32))
+	if ((*pucIeExtCap) & BIT(39 - 32))
 		prStaRec->fgTdlsIsChSwProhibited = TRUE;
 
 	DBGLOG(TDLS, TRACE,
