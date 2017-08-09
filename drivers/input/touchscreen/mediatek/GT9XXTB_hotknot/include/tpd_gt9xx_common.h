@@ -261,10 +261,6 @@ enum CHIP_TYPE_T {
 #define MAX_I2C_TRANSFER_SIZE         (MAX_TRANSACTION_LENGTH - GTP_ADDR_LENGTH)
 #define TPD_MAX_RESET_COUNT           3
 
-#define TPD_CALIBRATION_MATRIX_ROTATION_NORMAL {-4096, 0, 3276800, 0, -4096, 5242880, 0, 0}
-#define TPD_CALIBRATION_MATRIX_ROTATION_FACTORY {-4096, 0, 3276800, 0, -4096, 5242880, 0, 0}
-
-
 #define TPD_RESET_ISSUE_WORKAROUND
 #define TPD_HAVE_CALIBRATION
 #define TPD_NO_GPIO
@@ -385,6 +381,10 @@ void force_reset_guitar(void);
 extern u8 is_resetting;
 #endif
 
+#ifdef CONFIG_GTP_USE_GPIO_BUT_NOT_PINCTRL
+extern unsigned int tpd_rst_gpio_number;
+extern unsigned int tpd_int_gpio_number;
+#endif
 extern int touch_irq;
 extern struct i2c_client *i2c_client_point;
 #if defined(CONFIG_GTP_ESD_PROTECT)

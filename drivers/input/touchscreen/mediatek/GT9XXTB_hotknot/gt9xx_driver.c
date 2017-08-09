@@ -19,6 +19,13 @@
 #endif
 #include <linux/proc_fs.h>	/*proc */
 
+#ifdef CONFIG_GTP_USE_GPIO_BUT_NOT_PINCTRL
+#include <linux/of.h>
+#include <linux/of_address.h>
+#include <linux/of_device.h>
+#include <linux/of_gpio.h>
+#include <linux/of_irq.h>
+#endif
 
 int touch_irq;
 static int tpd_flag;
@@ -183,7 +190,34 @@ u8 is_resetting = 0;
 
 /* proc file system */
 static struct proc_dir_entry *gt91xx_config_proc;
+#ifdef CONFIG_GTP_USE_GPIO_BUT_NOT_PINCTRL
+unsigned int tpd_rst_gpio_number = 0;
+unsigned int tpd_int_gpio_number = 0;
+#ifdef CONFIG_OF
+static int of_get_gt9xx_platform_data(struct device *dev)
+{
+	const struct of_device_id *match;
 
+	if (dev->of_node) {
+		match = of_match_device(of_match_ptr(tpd_of_match), dev);
+		if (!match) {
+			GTP_ERROR("Error: No device match found\n");
+			return -ENODEV;
+		}
+	}
+	tpd_rst_gpio_number = of_get_named_gpio(dev->of_node, "rst-gpio", 0);
+	tpd_int_gpio_number = of_get_named_gpio(dev->of_node, "int-gpio", 0);
+	GTP_DEBUG("g_vproc_en_gpio_number %d\n", tpd_rst_gpio_number);
+	GTP_DEBUG("g_vproc_vsel_gpio_number %d\n", tpd_int_gpio_number);
+	return 0;
+}
+#else
+static int of_get_gt9xx_platform_data(struct device *dev)
+{
+	return 0;
+}
+#endif
+#endif
 #ifdef TPD_REFRESH_RATE
 /*******************************************************
 Function:
@@ -1207,6 +1241,37 @@ Note:
   If the INT is high, It means there is pull up resistor attached on the INT pin.
   Pull low the INT pin manaully for FW sync.
 *******************************************************/
+#ifdef CONFIG_GTP_USE_GPIO_BUT_NOT_PINCTRL
+void gtp_int_sync(s32 ms)
+{
+	GTP_DEBUG("There is pull up resisitor attached on the INT pin~!");
+	gpio_direction_output(tpd_int_gpio_number, 0);
+	msleep(50);
+	gpio_direction_input(tpd_int_gpio_number);
+
+}
+
+void gtp_reset_guitar(struct i2c_client *client, s32 ms)
+{
+	GTP_INFO("GTP RESET!\n");
+	gpio_direction_output(tpd_rst_gpio_number, 0);
+	msleep(ms);
+	gpio_direction_output(tpd_int_gpio_number, client->addr == 0x14);
+	msleep(20);
+	gpio_direction_output(tpd_rst_gpio_number, 1);
+	msleep(20);
+
+#if defined(CONFIG_GTP_COMPATIBLE_MODE)
+	if (CHIP_TYPE_GT9F == gtp_chip_type)
+		return;
+#endif
+
+	gtp_int_sync(100);	/* for dbl-system */
+#if defined(CONFIG_GTP_ESD_PROTECT)
+	gtp_init_ext_watchdog(i2c_client_point);
+#endif
+}
+#else
 void gtp_int_sync(s32 ms)
 {
 	tpd_gpio_output(GTP_INT_PORT, 0);
@@ -1219,11 +1284,11 @@ void gtp_reset_guitar(struct i2c_client *client, s32 ms)
 	GTP_INFO("GTP RESET!\n");
 	tpd_gpio_output(GTP_RST_PORT, 0);
 	msleep(ms);
+
 	tpd_gpio_output(GTP_INT_PORT, client->addr == 0x14);
-
 	msleep(20);
-	tpd_gpio_output(GTP_RST_PORT, 1);
 
+	tpd_gpio_output(GTP_RST_PORT, 1);
 	msleep(20);		/* must >= 6ms */
 
 #if defined(CONFIG_GTP_COMPATIBLE_MODE)
@@ -1236,19 +1301,28 @@ void gtp_reset_guitar(struct i2c_client *client, s32 ms)
 	gtp_init_ext_watchdog(i2c_client_point);
 #endif
 }
-
+#endif
 static int tpd_power_on(struct i2c_client *client)
 {
 	int ret = 0;
 	int reset_count = 0;
 
 reset_proc:
+#ifdef CONFIG_GTP_USE_GPIO_BUT_NOT_PINCTRL
+	gpio_direction_output(tpd_int_gpio_number, 0);
+	gpio_direction_output(tpd_rst_gpio_number, 0);
+#else
 	tpd_gpio_output(GTP_RST_PORT, 0);
 	tpd_gpio_output(GTP_INT_PORT, 0);
+#endif
 	msleep(20);
 
 #ifdef TPD_POWER_SOURCE_CUSTOM
+#ifdef CONFIG_GTP_POWER_SOURCE_3300
+	ret = regulator_set_voltage(tpd->reg, 2800000, 3300000);
+#else
 	ret = regulator_set_voltage(tpd->reg, 2800000, 2800000);	/* set 2.8v */
+#endif
 	if (ret)
 		GTP_DEBUG("regulator_set_voltage() failed!\n");
 	ret = regulator_enable(tpd->reg);	/* enable regulator */
@@ -1621,12 +1695,29 @@ static s32 tpd_i2c_probe(struct i2c_client *client, const struct i2c_device_id *
 #if defined(CONFIG_TPD_PROXIMITY)
 	struct hwmsen_object obj_ps;
 #endif
+#ifdef CONFIG_GTP_USE_GPIO_BUT_NOT_PINCTRL
+	of_get_gt9xx_platform_data(&client->dev);
+	/* configure the gpio pins */
+	ret = gpio_request_one(tpd_rst_gpio_number, GPIOF_OUT_INIT_LOW, "touchp_reset");
+	if (ret < 0) {
+		GTP_ERROR("Unable to request gpio reset_pin\n");
+		return -1;
+	}
+	ret = gpio_request_one(tpd_int_gpio_number, GPIOF_IN, "tpd_int");
+	if (ret < 0) {
+		GTP_ERROR("Unable to request gpio int_pin\n");
+		gpio_free(tpd_rst_gpio_number);
+		return -1;
+	}
+#endif
 
 	i2c_client_point = client;
 	ret = tpd_power_on(client);
 
-	if (ret < 0)
+	if (ret < 0) {
 		GTP_ERROR("I2C communication ERROR!");
+		goto out;
+	}
 
 #ifdef VELOCITY_CUSTOM
 	tpd_v_magnify_x = TPD_VELOCITY_CUSTOM_X;
@@ -1660,6 +1751,7 @@ static s32 tpd_i2c_probe(struct i2c_client *client, const struct i2c_device_id *
 	if (IS_ERR(thread)) {
 		err = PTR_ERR(thread);
 		GTP_INFO(TPD_DEVICE "failed create thread: %d\n", err);
+		goto out;
 	}
 
 	if (tpd_dts_data.use_tpd_button) {
@@ -1683,11 +1775,17 @@ static s32 tpd_i2c_probe(struct i2c_client *client, const struct i2c_device_id *
 	   mt_set_gpio_dir(GPIO_CTP_EINT_PIN, GPIO_DIR_IN);
 	   mt_set_gpio_pull_enable(GPIO_CTP_EINT_PIN, GPIO_PULL_DISABLE);
 	 */
-	tpd_gpio_as_int(GTP_INT_PORT);
+#ifdef CONFIG_GTP_USE_GPIO_BUT_NOT_PINCTRL
+	gpio_direction_input(tpd_int_gpio_number);
+	msleep(50);
 
+	node = of_find_compatible_node(NULL, NULL, "mediatek,cap_touch");
+#else
+	tpd_gpio_as_int(GTP_INT_PORT);
 	msleep(50);
 
 	node = of_find_matching_node(NULL, touch_of_match);
+#endif
 	if (node) {
 		touch_irq = irq_of_parse_and_map(node, 0);
 		ret = request_irq(touch_irq,
@@ -1698,7 +1796,11 @@ static s32 tpd_i2c_probe(struct i2c_client *client, const struct i2c_device_id *
 		if (ret > 0) {
 			ret = -1;
 			GTP_ERROR("tpd request_irq IRQ LINE NOT AVAILABLE!.");
+			goto out;
 		}
+	}	else {
+		GTP_ERROR("can't find tpd irq node in dts!");
+		goto out;
 	}
 	/* mt_eint_unmask(CUST_EINT_TOUCH_PANEL_NUM); */
 	enable_irq(touch_irq);
@@ -1726,6 +1828,13 @@ static s32 tpd_i2c_probe(struct i2c_client *client, const struct i2c_device_id *
 	tpd_load_status = 1;
 
 	return 0;
+
+out:
+#ifdef CONFIG_GTP_USE_GPIO_BUT_NOT_PINCTRL
+	gpio_free(tpd_rst_gpio_number);
+	gpio_free(tpd_int_gpio_number);
+#endif
+	return -1;
 }
 
 static irqreturn_t tpd_eint_interrupt_handler(void)
@@ -1745,7 +1854,10 @@ static int tpd_i2c_remove(struct i2c_client *client)
 #if defined(CONFIG_GTP_ESD_PROTECT)
 	destroy_workqueue(gtp_esd_check_workqueue);
 #endif
-
+#ifdef CONFIG_GTP_USE_GPIO_BUT_NOT_PINCTRL
+	gpio_free(tpd_rst_gpio_number);
+	gpio_free(tpd_int_gpio_number);
+#endif
 	return 0;
 }
 
@@ -1762,10 +1874,13 @@ void force_reset_guitar(void)
 	is_resetting = 1;
 	/* mt_eint_mask(CUST_EINT_TOUCH_PANEL_NUM); */
 	disable_irq(touch_irq);
-
+#ifdef CONFIG_GTP_USE_GPIO_BUT_NOT_PINCTRL
+	gpio_direction_output(tpd_int_gpio_number, 0);
+	gpio_direction_output(tpd_rst_gpio_number, 0);
+#else
 	tpd_gpio_output(GTP_RST_PORT, 0);
 	tpd_gpio_output(GTP_INT_PORT, 0);
-
+#endif
 	/* Power off TP */
 #ifdef TPD_POWER_SOURCE_CUSTOM
 	ret = regulator_disable(tpd->reg);
@@ -2639,9 +2754,13 @@ static s8 gtp_enter_sleep(struct i2c_client *client)
 #endif
 
 #if defined(CONFIG_GTP_POWER_CTRL_SLEEP)
-
+#ifdef CONFIG_GTP_USE_GPIO_BUT_NOT_PINCTRL
+	gpio_direction_output(tpd_int_gpio_number, 0);
+	gpio_direction_output(tpd_rst_gpio_number, 0);
+#else
 	tpd_gpio_output(GTP_RST_PORT, 0);
 	tpd_gpio_output(GTP_INT_PORT, 0);
+#endif
 	msleep(20);
 
 #ifdef TPD_POWER_SOURCE_1800
@@ -2658,26 +2777,25 @@ static s8 gtp_enter_sleep(struct i2c_client *client)
 
 	GTP_INFO("GTP enter sleep by poweroff!");
 	return 0;
-
-#else
+#else/*defined(CONFIG_GTP_POWER_CTRL_SLEEP*/
 	{
 		s8 ret = -1;
 		s8 retry = 0;
 		u8 i2c_control_buf[3] = {(u8)(GTP_REG_SLEEP >> 8),
 					 (u8)GTP_REG_SLEEP, 5};
-
+	#ifdef CONFIG_GTP_USE_GPIO_BUT_NOT_PINCTRL
+		gpio_direction_output(tpd_int_gpio_number, 0);
+	#else
 		tpd_gpio_output(GTP_INT_PORT, 0);
+	#endif
 		msleep(20);
 
 		while (retry++ < 5) {
 			ret = gtp_i2c_write(client, i2c_control_buf, 3);
-
 			if (ret > 0) {
 				GTP_INFO("GTP enter sleep!");
-
 				return ret;
 			}
-
 			msleep(20);
 		}
 
@@ -2732,7 +2850,11 @@ static s8 gtp_wakeup_sleep(struct i2c_client *client)
 		u8 opr_buf[2] = { 0 };
 
 		while (retry++ < 10) {
+		#ifdef CONFIG_GTP_USE_GPIO_BUT_NOT_PINCTRL
+			gpio_direction_output(tpd_int_gpio_number, 1);
+		#else
 			tpd_gpio_output(GTP_INT_PORT, 1);
+		#endif
 			msleep(20);
 
 			ret = gtp_i2c_test(client);

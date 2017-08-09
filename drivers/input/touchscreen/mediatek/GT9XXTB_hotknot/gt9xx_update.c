@@ -291,6 +291,18 @@ s32 gup_enter_update_mode(struct i2c_client *client)
 	s32 ret = -1;
 	s32 retry = 0;
 	u8 rd_buf[3];
+#ifdef CONFIG_GTP_USE_GPIO_BUT_NOT_PINCTRL
+	/* step1:RST output low last at least 2ms */
+	gpio_direction_output(tpd_rst_gpio_number, 0);
+	msleep(20);
+
+	/* step2:select I2C slave addr,INT:0--0xBA;1--0x28. */
+	gpio_direction_output(tpd_rst_gpio_number, 1);
+	msleep(20);
+
+	/* step3:RST output high reset guitar */
+	gpio_direction_output(tpd_rst_gpio_number, 1);
+#else
 
 	/* step1:RST output low last at least 2ms */
 	tpd_gpio_output(GTP_RST_PORT, 0);
@@ -302,7 +314,7 @@ s32 gup_enter_update_mode(struct i2c_client *client)
 
 	/* step3:RST output high reset guitar */
 	tpd_gpio_output(GTP_RST_PORT, 1);
-
+#endif
 	/* 20121211 modify start */
 	msleep(20);
 	while (retry++ < 200) {
@@ -338,8 +350,11 @@ s32 gup_enter_update_mode(struct i2c_client *client)
 
 void gup_leave_update_mode(void)
 {
+#ifdef CONFIG_GTP_USE_GPIO_BUT_NOT_PINCTRL
+	gpio_direction_input(tpd_int_gpio_number);
+#else
 	tpd_gpio_as_int(GTP_INT_PORT);
-
+#endif
 	GTP_DEBUG("[leave_update_mode]reset chip.");
 #if defined(CONFIG_GTP_COMPATIBLE_MODE)
 	if (CHIP_TYPE_GT9F == gtp_chip_type) {
@@ -2247,7 +2262,19 @@ s32 gup_enter_update_mode_fl(struct i2c_client *client)
 	s32 ret = -1;
 	/* s32 retry = 0; */
 	/* u8 rd_buf[3]; */
+#ifdef CONFIG_GTP_USE_GPIO_BUT_NOT_PINCTRL
+	/* step1:RST output low last at least 2ms */
+	gpio_direction_output(tpd_rst_gpio_number, 0);
+	msleep(20);
 
+	/* step2:select I2C slave addr,INT:0--0xBA;1--0x28. */
+	gpio_direction_output(tpd_int_gpio_number, (client->addr == 0x14));
+	msleep(20);
+
+	/* step3:RST output high reset guitar */
+	gpio_direction_output(tpd_rst_gpio_number, 1);
+	msleep(20);
+#else
 	/* step1:RST output low last at least 2ms */
 	tpd_gpio_output(GTP_RST_PORT, 0);
 	msleep(20);
@@ -2260,6 +2287,7 @@ s32 gup_enter_update_mode_fl(struct i2c_client *client)
 	tpd_gpio_output(GTP_RST_PORT, 1);
 
 	msleep(20);
+#endif
 
 	/* select addr & hold ss51_dsp */
 	ret = gup_hold_ss51_dsp(client);
@@ -2855,6 +2883,25 @@ static u8 gup_clk_calibration_pin_select(s32 bCh)
 void gup_output_pulse(int t)
 {
 	unsigned long flags;
+
+#ifdef CONFIG_GTP_USE_GPIO_BUT_NOT_PINCTRL
+	/* s32 i; */
+	gpio_direction_output(tpd_int_gpio_number, 0);
+	udelay(10);
+
+	local_irq_save(flags);
+	gpio_direction_output(tpd_int_gpio_number, 1);
+	udelay(50);
+
+	gpio_direction_output(tpd_int_gpio_number, 0);
+	udelay(t - 50);
+
+	gpio_direction_output(tpd_int_gpio_number, 1);
+	local_irq_restore(flags);
+	udelay(20);
+
+	gpio_direction_output(tpd_int_gpio_number, 0);
+#else
 	/* s32 i; */
 
 	tpd_gpio_output(GTP_INT_PORT, 0);
@@ -2872,6 +2919,7 @@ void gup_output_pulse(int t)
 
 	udelay(20);
 	tpd_gpio_output(GTP_INT_PORT, 0);
+#endif
 }
 
 static void gup_sys_clk_init(void)
@@ -2936,8 +2984,11 @@ u8 gup_clk_calibration(void)
 	gup_sys_clk_init();
 	gup_clk_calibration_pin_select(1);	/* use GIO1 to do the calibration */
 
+#ifdef CONFIG_GTP_USE_GPIO_BUT_NOT_PINCTRL
+	gpio_direction_output(tpd_int_gpio_number, 0);
+#else
 	tpd_gpio_output(GTP_INT_PORT, 0);
-
+#endif
 	for (i = INIT_CLK_DAC; i < MAX_CLK_DAC; i++) {
 		if (tpd_halt) {
 			i = 80;	/* if sleeping while calibrating main clock, set it default 80 */
@@ -2955,6 +3006,27 @@ u8 gup_clk_calibration(void)
 		if (count > PULSE_LENGTH * 60)	/* 60= 60Mhz * 1us */
 			break;
 #else
+	#ifdef CONFIG_GTP_USE_GPIO_BUT_NOT_PINCTRL
+		gpio_direction_output(tpd_int_gpio_number, 0);
+
+		/* local_irq_save(flags); */
+		do_gettimeofday(&start);
+		gpio_direction_output(tpd_int_gpio_number, 1);
+		/* local_irq_restore(flags); */
+
+		msleep(20);
+		gpio_direction_output(tpd_int_gpio_number, 0);
+		msleep(20);
+
+		/* local_irq_save(flags); */
+		do_gettimeofday(&end);
+		gpio_direction_output(tpd_int_gpio_number, 1);
+		/* local_irq_restore(flags); */
+
+		count = gup_clk_count_get();
+		udelay(20);
+		gpio_direction_output(tpd_int_gpio_number, 0);
+	#else
 		tpd_gpio_output(GTP_INT_PORT, 0);
 
 		/* local_irq_save(flags); */
@@ -2974,7 +3046,7 @@ u8 gup_clk_calibration(void)
 		count = gup_clk_count_get();
 		udelay(20);
 		tpd_gpio_output(GTP_INT_PORT, 0);
-
+	#endif
 		usec = end.tv_usec - start.tv_usec;
 		sec = end.tv_sec - start.tv_sec;
 		count_ref = 60 * (usec + sec * MILLION);	/* 60= 60Mhz * 1us */
@@ -3009,8 +3081,11 @@ u8 gup_clk_calibration(void)
 	buf = 0x02;
 	i2c_write_bytes(i2c_client_point, 0x41F9, &buf, 1);
 #endif
-
+#ifdef CONFIG_GTP_USE_GPIO_BUT_NOT_PINCTRL
+	gpio_direction_input(tpd_int_gpio_number);
+#else
 	tpd_gpio_as_int(GTP_INT_PORT);
+#endif
 	return i;
 }
 

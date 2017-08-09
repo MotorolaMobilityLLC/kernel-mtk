@@ -249,4 +249,26 @@ config GTP_SLIDE_WAKEUP
 
 	To compile this dirver as a module, choose M here: the
 	module will be called.
+
+config GTP_POWER_SOURCE_3300
+	bool "GTP_POWER_SOURCE_3300"
+	default n
+	help
+	Say Y here if your touch power is 3300mV.
+
+	If unsure, say N.
+
+	To compile this dirver as a module, choose M here: the
+	module will be called.
+
+config GTP_USE_GPIO_BUT_NOT_PINCTRL
+	bool "GTP_USE_GPIO_BUT_NOT_PINCTRL"
+	default n
+	help
+	Say Y here if you can't use pinctrl for rst and eint pin setting.
+
+	If unsure, say N.
+
+	To compile this dirver as a module, choose M here: the
+	module will be called.
 endif
