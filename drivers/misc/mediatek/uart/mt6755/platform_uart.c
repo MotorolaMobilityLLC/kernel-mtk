@@ -37,6 +37,7 @@
 #include "include/mtk_uart_intf.h"
 #include <linux/of_irq.h>
 #include <linux/of_address.h>
+#include <mt-plat/mt_lpae.h>
 
 #if !defined(CONFIG_MTK_LEGACY)
 /* #include <mach/mt_typedefs.h> */
@@ -1122,6 +1123,8 @@ void mtk_uart_dma_setup(struct mtk_uart *uart, struct mtk_uart_dma *dma)
 		reg_sync_writel(dma->vfifo->dmahd, VFF_ADDR(base));
 		reg_sync_writel(dma->vfifo->trig, VFF_THRE(base));
 		reg_sync_writel(dma->vfifo->size, VFF_LEN(base));
+		if (enable_4G())
+			reg_sync_writel(1, VFF_4G_DRAM_SUPPORT(base));
 
 		if (dma->vfifo->type == UART_RX_VFIFO)
 			/* reg_sync_writel(VFF_RX_INT_EN0_B, VFF_INT_EN(base)); */
