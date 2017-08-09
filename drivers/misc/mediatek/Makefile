@@ -71,6 +71,7 @@ endif
 obj-$(CONFIG_MTK_CCCI_DEVICES)	+=  ccci_util/
 obj-$(CONFIG_MTK_NET_CCMNI) +=  ccmni/
 obj-$(CONFIG_MTK_CCCI_EXT)     +=  dual_ccci/
+obj-$(CONFIG_MTK_C2K_SUPPORT) += c2k_ccci/
 obj-$(CONFIG_MTK_ECCCI_DRIVER) +=  eccci/
 
 ifdef CONFIG_CUSTOM_KERNEL_SSW
