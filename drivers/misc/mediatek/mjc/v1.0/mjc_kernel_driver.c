@@ -25,7 +25,12 @@
 
 #include <mt-plat/sync_write.h>
 
+#ifdef CONFIG_MTK_CLKMGR
 #include "mach/mt_clkmgr.h"
+#else
+#include "linux/clk.h"
+#endif
+
 #include "mjc_kernel_driver.h"
 #include "mjc_kernel_compat_driver.h"
 
@@ -72,6 +77,18 @@ static dev_t mjc_devno = MKDEV(MTK_MJC_DEV_MAJOR_NUMBER, 0);
 static struct cdev *g_mjc_cdev;
 static struct class *pMjcClass;
 static struct device *mjcDevice;
+
+#ifndef CONFIG_MTK_CLKMGR
+static struct clk *clk_MM_SMI_COMMON; /* SMI common larb */
+static struct clk *clk_MM_LARB4_AXI_ASIF_MM_CLOCK; /* SMI larb4 axi_asif_mm */
+static struct clk *clk_MM_LARB4_AXI_ASIF_MJC_CLOCK; /* SMI larb4_axi_asif_mjc */
+static struct clk *clk_MJC_SMI_LARB; /* SMI MJC larb */
+static struct clk *clk_MJC_TOP_CLK_0;
+static struct clk *clk_MJC_TOP_CLK_1;
+static struct clk *clk_MJC_TOP_CLK_2;
+static struct clk *clk_MJC_LARB4_ASIF;
+#endif
+
 unsigned long gulRegister, gu1PaReg, gu1PaSize, gulCGRegister;
 int gi4IrqID;
 MJC_WRITE_REG_T gfWriteReg[MJC_FORCE_REG_NUM];
@@ -310,6 +327,7 @@ m4u_callback_ret_t mjc_m4u_fault_callback(int port, unsigned int mva, void *data
 static int mjc_open(struct inode *pInode, struct file *pFile)
 {
 	unsigned long ulFlags;
+	int ret = 0;
 
 #ifdef CONFIG_FPGA_EARLY_PORTING
 	struct device_node *node = NULL;
@@ -327,6 +345,54 @@ static int mjc_open(struct inode *pInode, struct file *pFile)
 	enable_clock(MT_CG_MJC_TOP_GROUP1, "mjc");
 	enable_clock(MT_CG_MJC_TOP_GROUP2, "mjc");
 	enable_clock(MT_CG_MJC_LARB4_AXI_ASIF, "mjc");
+#else
+	ret = clk_prepare_enable(clk_MM_SMI_COMMON);
+	if (ret) {
+		/* print error log & error handling */
+		MJCMSG("[ERROR] mjc_open() clk_MM_SMI_COMMON is not enabled, ret = %d\n", ret);
+	}
+
+	ret = clk_prepare_enable(clk_MM_LARB4_AXI_ASIF_MM_CLOCK);
+	if (ret) {
+		/* print error log & error handling */
+		MJCMSG("[ERROR] mjc_open() clk_MM_LARB4_AXI_ASIF_MM_CLOCK is not enabled, ret = %d\n", ret);
+	}
+
+	ret = clk_prepare_enable(clk_MM_LARB4_AXI_ASIF_MJC_CLOCK);
+	if (ret) {
+		/* print error log & error handling */
+		MJCMSG("[ERROR] mjc_open() clk_MM_LARB4_AXI_ASIF_MJC_CLOCK is not enabled, ret = %d\n", ret);
+	}
+
+	ret = clk_prepare_enable(clk_MJC_SMI_LARB);
+	if (ret) {
+		/* print error log & error handling */
+		MJCMSG("[ERROR] mjc_open() clk_MJC_SMI_LARB is not enabled, ret = %d\n", ret);
+	}
+
+	ret = clk_prepare_enable(clk_MJC_TOP_CLK_0);
+	if (ret) {
+		/* print error log & error handling */
+		MJCMSG("[ERROR] mjc_open() clk_MJC_TOP_CLK_0 is not enabled, ret = %d\n", ret);
+	}
+
+	ret = clk_prepare_enable(clk_MJC_TOP_CLK_1);
+	if (ret) {
+		/* print error log & error handling */
+		MJCMSG("[ERROR] mjc_open() clk_MJC_TOP_CLK_1 is not enabled, ret = %d\n", ret);
+	}
+
+	ret = clk_prepare_enable(clk_MJC_TOP_CLK_2);
+	if (ret) {
+		/* print error log & error handling */
+		MJCMSG("[ERROR] mjc_open() clk_MJC_TOP_CLK_2 is not enabled, ret = %d\n", ret);
+	}
+
+	ret = clk_prepare_enable(clk_MJC_LARB4_ASIF);
+	if (ret) {
+		/* print error log & error handling */
+		MJCMSG("[ERROR] mjc_open() clk_MJC_LARB4_ASIF is not enabled, ret = %d\n", ret);
+	}
 #endif
 
 #ifdef CONFIG_FPGA_EARLY_PORTING
@@ -385,6 +451,15 @@ static int mjc_release(struct inode *pInode, struct file *pFile)
 	disable_clock(MT_CG_DISP0_LARB4_AXI_ASIF_MJC, "mjc");
 	disable_clock(MT_CG_DISP0_LARB4_AXI_ASIF_MM, "mjc");
 	disable_clock(MT_CG_MJC_LARB4_AXI_ASIF, "mjc");
+#else
+	clk_disable_unprepare(clk_MM_SMI_COMMON);
+	clk_disable_unprepare(clk_MM_LARB4_AXI_ASIF_MM_CLOCK);
+	clk_disable_unprepare(clk_MM_LARB4_AXI_ASIF_MJC_CLOCK);
+	clk_disable_unprepare(clk_MJC_SMI_LARB);
+	clk_disable_unprepare(clk_MJC_TOP_CLK_0);
+	clk_disable_unprepare(clk_MJC_TOP_CLK_1);
+	clk_disable_unprepare(clk_MJC_TOP_CLK_2);
+	clk_disable_unprepare(clk_MJC_LARB4_ASIF);
 #endif
 	return 0;
 }
@@ -871,6 +946,56 @@ static int mjc_probe(struct platform_device *pDev)
 		MJCDBG("mjc_probe() success to request dec irq\n");
 	}
 	disable_irq(gi4IrqID);
+
+#ifndef CONFIG_MTK_CLKMGR
+	clk_MM_SMI_COMMON = devm_clk_get(&pDev->dev, "smi-common");
+	if (IS_ERR(clk_MM_SMI_COMMON)) {
+		MJCMSG("[ERROR] Unable to devm_clk_get MM_SMI_COMMON\n");
+		return PTR_ERR(clk_MM_SMI_COMMON);
+	}
+
+	clk_MM_LARB4_AXI_ASIF_MM_CLOCK = devm_clk_get(&pDev->dev, "larb4-axi-asif-mm");
+	if (IS_ERR(clk_MM_LARB4_AXI_ASIF_MM_CLOCK)) {
+		MJCMSG("[ERROR] Unable to devm_clk_get MM_LARB4_AXI_ASIF_MM_CLOCK\n");
+		return PTR_ERR(clk_MM_LARB4_AXI_ASIF_MM_CLOCK);
+	}
+
+	clk_MM_LARB4_AXI_ASIF_MJC_CLOCK = devm_clk_get(&pDev->dev, "larb4-axi-asif-mjc");
+	if (IS_ERR(clk_MM_LARB4_AXI_ASIF_MJC_CLOCK)) {
+		MJCMSG("[ERROR] Unable to devm_clk_get MM_LARB4_AXI_ASIF_MJC_CLOCK\n");
+		return PTR_ERR(clk_MM_LARB4_AXI_ASIF_MJC_CLOCK);
+	}
+
+	clk_MJC_SMI_LARB = devm_clk_get(&pDev->dev, "mjc-smi-larb");
+	if (IS_ERR(clk_MJC_SMI_LARB)) {
+		MJCMSG("[ERROR] Unable to devm_clk_get MJC_SMI_LARB\n");
+		return PTR_ERR(clk_MJC_SMI_LARB);
+	}
+
+	clk_MJC_TOP_CLK_0 = devm_clk_get(&pDev->dev, "top-clk-0");
+	if (IS_ERR(clk_MJC_TOP_CLK_0)) {
+		MJCMSG("[ERROR] Unable to devm_clk_get MJC_TOP_CLK_0\n");
+		return PTR_ERR(clk_MJC_TOP_CLK_0);
+	}
+
+	clk_MJC_TOP_CLK_1 = devm_clk_get(&pDev->dev, "top-clk-1");
+	if (IS_ERR(clk_MJC_TOP_CLK_1)) {
+		MJCMSG("[ERROR] Unable to devm_clk_get MJC_TOP_CLK_1\n");
+		return PTR_ERR(clk_MJC_TOP_CLK_1);
+	}
+
+	clk_MJC_TOP_CLK_2 = devm_clk_get(&pDev->dev, "top-clk-2");
+	if (IS_ERR(clk_MJC_TOP_CLK_2)) {
+		MJCMSG("[ERROR] Unable to devm_clk_get MJC_TOP_CLK_2\n");
+		return PTR_ERR(clk_MJC_TOP_CLK_2);
+	}
+
+	clk_MJC_LARB4_ASIF = devm_clk_get(&pDev->dev, "larb4-asif");
+	if (IS_ERR(clk_MJC_LARB4_ASIF)) {
+		MJCMSG("[ERROR] Unable to devm_clk_get MJC_LARB4_ASIF\n");
+		return PTR_ERR(clk_MJC_LARB4_ASIF);
+	}
+#endif
 
 	return 0;
 }

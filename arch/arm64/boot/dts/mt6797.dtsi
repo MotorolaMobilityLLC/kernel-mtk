@@ -2420,6 +2420,24 @@ initrd=0x44000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 			compatible = "mediatek,mjc_top-v1";
 			reg = <0x12001000 0x1000>;
 			interrupts = <GIC_SPI 243 IRQ_TYPE_LEVEL_LOW>;
+			clocks =
+				<&mmsys MM_SMI_COMMON>,
+				<&mmsys MM_LARB4_AXI_ASIF_MM_CLOCK>,
+				<&mmsys MM_LARB4_AXI_ASIF_MJC_CLOCK>,
+				<&mjcsys MJC_SMI_LARB>,
+				<&mjcsys MJC_TOP_CLK_0>,
+				<&mjcsys MJC_TOP_CLK_1>,
+				<&mjcsys MJC_TOP_CLK_2>,
+				<&mjcsys MJC_LARB4_ASIF>;
+			clock-names =
+				"smi-common",
+				"larb4-axi-asif-mm",
+				"larb4-axi-asif-mjc",
+				"mjc-smi-larb",
+				"top-clk-0",
+				"top-clk-1",
+				"top-clk-2",
+				"larb4-asif";
 		};
 
 		gps {
