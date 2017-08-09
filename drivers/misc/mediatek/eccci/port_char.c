@@ -1012,9 +1012,7 @@ static int c2k_req_push_to_usb(struct ccci_port *port, struct ccci_request *req)
 {
 
 	struct ccci_header *ccci_h = NULL;
-	int ret, read_len, read_count, full_req_done = 0;
-	unsigned long flags;
-	int push_room = 0;
+	int ret, read_len, read_count;
 	int c2k_ch_id;
 
 	if (port->rx_ch == CCCI_C2K_PPP_DATA)
@@ -1054,7 +1052,6 @@ retry_push:
 		goto retry_push;
 	}
 
-exit:
 	return ret?ret:read_len;
 
 }
