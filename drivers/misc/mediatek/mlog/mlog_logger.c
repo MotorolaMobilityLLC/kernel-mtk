@@ -433,8 +433,8 @@ void mlog_buddyinfo(void)
 	struct zone *node_zones;
 	unsigned int order;
 	int zone_nr = 0;
-	unsigned long normal_nr_free[MAX_ORDER];
-	unsigned long high_nr_free[MAX_ORDER];
+	unsigned long normal_nr_free[MAX_ORDER] = {0};
+	unsigned long high_nr_free[MAX_ORDER] = {0};
 
 	for_each_online_node(i) {
 		pg_data_t *pgdat = NODE_DATA(i);
