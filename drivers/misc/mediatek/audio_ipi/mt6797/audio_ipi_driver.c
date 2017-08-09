@@ -69,6 +69,7 @@ static bool b_speech_on;
 static bool b_spm_ap_mdsrc_req_on;
 static bool b_dump_pcm_enable;
 static audio_resv_dram_t *p_resv_dram;
+static uint32_t resv_dram_offset_cur;
 
 
 /*==============================================================================
@@ -82,15 +83,36 @@ static audio_resv_dram_t *p_resv_dram;
  *============================================================================*/
 
 
+static uint32_t get_resv_dram_buf_offset(const uint32_t len)
+{
+	const uint32_t max_resv_dram_a2d_size = 0x2000;
+	uint32_t retval = 0xFFFFFFFF;
+
+	if (len >= 0x2000)
+		retval = 0xFFFFFFFF; /* invalid offset */
+	else if (retval + len < max_resv_dram_a2d_size) {
+		retval = resv_dram_offset_cur;
+		resv_dram_offset_cur += len;
+	} else {
+		retval = 0;
+		resv_dram_offset_cur = len;
+	}
+
+	return retval;
+}
+
 
 static int parsing_ipi_msg_from_user_space(
 	void __user *user_data_ptr,
 	audio_ipi_msg_data_t data_type)
 {
+	uint32_t resv_dram_offset = 0xFFFFFFFF;
+
 	int retval = 0;
 
 	ipi_msg_t ipi_msg;
 	uint32_t msg_len = 0;
+
 
 	/* get message size to read */
 	msg_len = (data_type == AUDIO_IPI_MSG_ONLY)
@@ -108,21 +130,21 @@ static int parsing_ipi_msg_from_user_space(
 
 	/* get dram buf if need */
 	if (ipi_msg.data_type == AUDIO_IPI_DMA) {
-		if (ipi_msg.param1 > p_resv_dram->size) {
-			AUD_LOG_E("dma_data_len %u > p_resv_dram->size %u\n",
-				  ipi_msg.param1, p_resv_dram->size);
+		resv_dram_offset = get_resv_dram_buf_offset(ipi_msg.param1);
+		if (resv_dram_offset == 0xFFFFFFFF) {
+			AUD_LOG_E("dma_data_len %u, no enough memory!!\n", ipi_msg.param1);
 			retval = -1;
 			goto parsing_exit;
 		}
 		retval = copy_from_user(
-				 p_resv_dram->vir_addr,
+				 p_resv_dram->vir_addr + resv_dram_offset,
 				 (void __user *)ipi_msg.dma_addr,
 				 ipi_msg.param1);
 		if (retval != 0) {
 			AUD_LOG_E("dram copy_from_user retval %d\n", retval);
 			goto parsing_exit;
 		}
-		ipi_msg.dma_addr = p_resv_dram->phy_addr;
+		ipi_msg.dma_addr = p_resv_dram->phy_addr + resv_dram_offset;
 	}
 
 	/* get message size to write */
@@ -258,6 +280,8 @@ static int __init audio_ipi_driver_init(void)
 	init_reserved_dram();
 	p_resv_dram = get_reserved_dram();
 	AUD_ASSERT(p_resv_dram != NULL);
+
+	resv_dram_offset_cur = 0;
 
 	audio_ipi_client_phone_call_init();
 
