@@ -21,50 +21,43 @@ BLOCKING_NOTIFIER_HEAD(reboot_notifier_list);
  */
 
 static int notifier_chain_register(struct notifier_block **nl,
-				   struct notifier_block *n)
+		struct notifier_block *n)
 {
 	while ((*nl) != NULL) {
 		if (n->priority > (*nl)->priority)
 			break;
-
 		nl = &((*nl)->next);
 	}
-
 	n->next = *nl;
 	rcu_assign_pointer(*nl, n);
 	return 0;
 }
 
 static int notifier_chain_cond_register(struct notifier_block **nl,
-					struct notifier_block *n)
+		struct notifier_block *n)
 {
 	while ((*nl) != NULL) {
 		if ((*nl) == n)
 			return 0;
-
 		if (n->priority > (*nl)->priority)
 			break;
-
 		nl = &((*nl)->next);
 	}
-
 	n->next = *nl;
 	rcu_assign_pointer(*nl, n);
 	return 0;
 }
 
 static int notifier_chain_unregister(struct notifier_block **nl,
-				     struct notifier_block *n)
+		struct notifier_block *n)
 {
 	while ((*nl) != NULL) {
 		if ((*nl) == n) {
 			rcu_assign_pointer(*nl, n->next);
 			return 0;
 		}
-
 		nl = &((*nl)->next);
 	}
-
 	return -ENOENT;
 }
 
@@ -99,13 +92,11 @@ static int notifier_call_chain(struct notifier_block **nl,
 		next_nb = rcu_dereference_raw(nb->next);
 
 #ifdef CONFIG_DEBUG_NOTIFIERS
-
 		if (unlikely(!func_ptr_is_kernel_text(nb->notifier_call))) {
 			WARN(1, "Invalid notifier called!");
 			nb = next_nb;
 			continue;
 		}
-
 #endif
 
 #if defined(CONFIG_SMP)
@@ -114,7 +105,7 @@ static int notifier_call_chain(struct notifier_block **nl,
 		if (nl == &cpu_chain.head) {
 #if defined(MTK_CPU_HOTPLUG_DEBUG_1)
 			pr_debug("[cpu_ntf] %02lx_%02d, %p\n",
-				 val, index, nb->notifier_call);
+				val, index, nb->notifier_call);
 #endif
 #if defined(MTK_CPU_HOTPLUG_DEBUG_2)
 			aee_rr_rec_hotplug_cpu_event(val & 0xff);
@@ -127,9 +118,9 @@ static int notifier_call_chain(struct notifier_block **nl,
 #endif
 			++index;
 		}
-
 #endif
 #endif /* CONFIG_SMP */
+
 		ret = nb->notifier_call(nb, val, v);
 
 		if (nr_calls)
@@ -137,7 +128,6 @@ static int notifier_call_chain(struct notifier_block **nl,
 
 		if ((ret & NOTIFY_STOP_MASK) == NOTIFY_STOP_MASK)
 			break;
-
 		nb = next_nb;
 		nr_to_call--;
 	}
@@ -158,7 +148,6 @@ static int notifier_call_chain(struct notifier_block **nl,
 		TIMESTAMP_REC(hotplug_ts_rec, TIMESTAMP_FILTER, (long)v, val & 0xff, index & 0xff, 0);
 #endif
 	}
-
 #endif
 #endif /* CONFIG_SMP */
 
@@ -181,7 +170,7 @@ NOKPROBE_SYMBOL(notifier_call_chain);
  *	Currently always returns zero.
  */
 int atomic_notifier_chain_register(struct atomic_notifier_head *nh,
-				   struct notifier_block *n)
+		struct notifier_block *n)
 {
 	unsigned long flags;
 	int ret;
@@ -203,7 +192,7 @@ EXPORT_SYMBOL_GPL(atomic_notifier_chain_register);
  *	Returns zero on success or %-ENOENT on failure.
  */
 int atomic_notifier_chain_unregister(struct atomic_notifier_head *nh,
-				     struct notifier_block *n)
+		struct notifier_block *n)
 {
 	unsigned long flags;
 	int ret;
@@ -273,7 +262,7 @@ NOKPROBE_SYMBOL(atomic_notifier_call_chain);
  *	Currently always returns zero.
  */
 int blocking_notifier_chain_register(struct blocking_notifier_head *nh,
-				     struct notifier_block *n)
+		struct notifier_block *n)
 {
 	int ret;
 
@@ -326,7 +315,7 @@ EXPORT_SYMBOL_GPL(blocking_notifier_chain_cond_register);
  *	Returns zero on success or %-ENOENT on failure.
  */
 int blocking_notifier_chain_unregister(struct blocking_notifier_head *nh,
-				       struct notifier_block *n)
+		struct notifier_block *n)
 {
 	int ret;
 
@@ -377,16 +366,15 @@ int __blocking_notifier_call_chain(struct blocking_notifier_head *nh,
 	if (rcu_access_pointer(nh->head)) {
 		down_read(&nh->rwsem);
 		ret = notifier_call_chain(&nh->head, val, v, nr_to_call,
-					  nr_calls);
+					nr_calls);
 		up_read(&nh->rwsem);
 	}
-
 	return ret;
 }
 EXPORT_SYMBOL_GPL(__blocking_notifier_call_chain);
 
 int blocking_notifier_call_chain(struct blocking_notifier_head *nh,
-				 unsigned long val, void *v)
+		unsigned long val, void *v)
 {
 	return __blocking_notifier_call_chain(nh, val, v, -1, NULL);
 }
@@ -408,7 +396,7 @@ EXPORT_SYMBOL_GPL(blocking_notifier_call_chain);
  *	Currently always returns zero.
  */
 int raw_notifier_chain_register(struct raw_notifier_head *nh,
-				struct notifier_block *n)
+		struct notifier_block *n)
 {
 	return notifier_chain_register(&nh->head, n);
 }
@@ -425,7 +413,7 @@ EXPORT_SYMBOL_GPL(raw_notifier_chain_register);
  *	Returns zero on success or %-ENOENT on failure.
  */
 int raw_notifier_chain_unregister(struct raw_notifier_head *nh,
-				  struct notifier_block *n)
+		struct notifier_block *n)
 {
 	return notifier_chain_unregister(&nh->head, n);
 }
@@ -459,7 +447,7 @@ int __raw_notifier_call_chain(struct raw_notifier_head *nh,
 EXPORT_SYMBOL_GPL(__raw_notifier_call_chain);
 
 int raw_notifier_call_chain(struct raw_notifier_head *nh,
-			    unsigned long val, void *v)
+		unsigned long val, void *v)
 {
 	return __raw_notifier_call_chain(nh, val, v, -1, NULL);
 }
@@ -481,7 +469,7 @@ EXPORT_SYMBOL_GPL(raw_notifier_call_chain);
  *	Currently always returns zero.
  */
 int srcu_notifier_chain_register(struct srcu_notifier_head *nh,
-				 struct notifier_block *n)
+		struct notifier_block *n)
 {
 	int ret;
 
@@ -511,7 +499,7 @@ EXPORT_SYMBOL_GPL(srcu_notifier_chain_register);
  *	Returns zero on success or %-ENOENT on failure.
  */
 int srcu_notifier_chain_unregister(struct srcu_notifier_head *nh,
-				   struct notifier_block *n)
+		struct notifier_block *n)
 {
 	int ret;
 
@@ -564,7 +552,7 @@ int __srcu_notifier_call_chain(struct srcu_notifier_head *nh,
 EXPORT_SYMBOL_GPL(__srcu_notifier_call_chain);
 
 int srcu_notifier_call_chain(struct srcu_notifier_head *nh,
-			     unsigned long val, void *v)
+		unsigned long val, void *v)
 {
 	return __srcu_notifier_call_chain(nh, val, v, -1, NULL);
 }
@@ -585,10 +573,8 @@ EXPORT_SYMBOL_GPL(srcu_notifier_call_chain);
 void srcu_init_notifier_head(struct srcu_notifier_head *nh)
 {
 	mutex_init(&nh->mutex);
-
 	if (init_srcu_struct(&nh->srcu) < 0)
 		BUG();
-
 	nh->head = NULL;
 }
 EXPORT_SYMBOL_GPL(srcu_init_notifier_head);
@@ -596,7 +582,7 @@ EXPORT_SYMBOL_GPL(srcu_init_notifier_head);
 static ATOMIC_NOTIFIER_HEAD(die_chain);
 
 int notrace notify_die(enum die_val val, const char *str,
-		       struct pt_regs *regs, long err, int trap, int sig)
+	       struct pt_regs *regs, long err, int trap, int sig)
 {
 	struct die_args args = {
 		.regs	= regs,

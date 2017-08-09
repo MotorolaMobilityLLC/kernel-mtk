@@ -92,7 +92,7 @@ struct psci_operations {
 	int (*cpu_on)(unsigned long cpuid, unsigned long entry_point);
 	int (*migrate)(unsigned long cpuid);
 	int (*affinity_info)(unsigned long target_affinity,
-			     unsigned long lowest_affinity_level);
+			unsigned long lowest_affinity_level);
 	int (*migrate_info_type)(void);
 };
 
@@ -120,13 +120,10 @@ static int psci_to_linux_errno(int errno)
 	switch (errno) {
 	case PSCI_RET_SUCCESS:
 		return 0;
-
 	case PSCI_RET_NOT_SUPPORTED:
 		return -EOPNOTSUPP;
-
 	case PSCI_RET_INVALID_PARAMS:
 		return -EINVAL;
-
 	case PSCI_RET_DENIED:
 		return -EPERM;
 	};
@@ -137,23 +134,23 @@ static int psci_to_linux_errno(int errno)
 static u32 psci_power_state_pack(struct psci_power_state state)
 {
 	return ((state.id << PSCI_0_2_POWER_STATE_ID_SHIFT)
-		& PSCI_0_2_POWER_STATE_ID_MASK) |
-	       ((state.type << PSCI_0_2_POWER_STATE_TYPE_SHIFT)
-		& PSCI_0_2_POWER_STATE_TYPE_MASK) |
-	       ((state.affinity_level << PSCI_0_2_POWER_STATE_AFFL_SHIFT)
-		& PSCI_0_2_POWER_STATE_AFFL_MASK);
+			& PSCI_0_2_POWER_STATE_ID_MASK) |
+		((state.type << PSCI_0_2_POWER_STATE_TYPE_SHIFT)
+		 & PSCI_0_2_POWER_STATE_TYPE_MASK) |
+		((state.affinity_level << PSCI_0_2_POWER_STATE_AFFL_SHIFT)
+		 & PSCI_0_2_POWER_STATE_AFFL_MASK);
 }
 
 static void psci_power_state_unpack(u32 power_state,
 				    struct psci_power_state *state)
 {
 	state->id = (power_state & PSCI_0_2_POWER_STATE_ID_MASK) >>
-		    PSCI_0_2_POWER_STATE_ID_SHIFT;
+			PSCI_0_2_POWER_STATE_ID_SHIFT;
 	state->type = (power_state & PSCI_0_2_POWER_STATE_TYPE_MASK) >>
-		      PSCI_0_2_POWER_STATE_TYPE_SHIFT;
+			PSCI_0_2_POWER_STATE_TYPE_SHIFT;
 	state->affinity_level =
-		(power_state & PSCI_0_2_POWER_STATE_AFFL_MASK) >>
-		PSCI_0_2_POWER_STATE_AFFL_SHIFT;
+			(power_state & PSCI_0_2_POWER_STATE_AFFL_MASK) >>
+			PSCI_0_2_POWER_STATE_AFFL_SHIFT;
 }
 
 /*
@@ -161,31 +158,31 @@ static void psci_power_state_unpack(u32 power_state,
  * and will not be inlined, allowing us to piggyback on the AAPCS.
  */
 static noinline int __invoke_psci_fn_hvc(u64 function_id, u64 arg0, u64 arg1,
-		u64 arg2)
+					 u64 arg2)
 {
 	asm volatile(
-		__asmeq("%0", "x0")
-		__asmeq("%1", "x1")
-		__asmeq("%2", "x2")
-		__asmeq("%3", "x3")
-		"hvc	#0\n"
-		: "+r"(function_id)
-		: "r"(arg0), "r"(arg1), "r"(arg2));
+			__asmeq("%0", "x0")
+			__asmeq("%1", "x1")
+			__asmeq("%2", "x2")
+			__asmeq("%3", "x3")
+			"hvc	#0\n"
+		: "+r" (function_id)
+		: "r" (arg0), "r" (arg1), "r" (arg2));
 
 	return function_id;
 }
 
 static noinline int __invoke_psci_fn_smc(u64 function_id, u64 arg0, u64 arg1,
-		u64 arg2)
+					 u64 arg2)
 {
 	asm volatile(
-		__asmeq("%0", "x0")
-		__asmeq("%1", "x1")
-		__asmeq("%2", "x2")
-		__asmeq("%3", "x3")
-		"smc	#0\n"
-		: "+r"(function_id)
-		: "r"(arg0), "r"(arg1), "r"(arg2));
+			__asmeq("%0", "x0")
+			__asmeq("%1", "x1")
+			__asmeq("%2", "x2")
+			__asmeq("%3", "x3")
+			"smc	#0\n"
+		: "+r" (function_id)
+		: "r" (arg0), "r" (arg1), "r" (arg2));
 
 	return function_id;
 }
@@ -242,7 +239,7 @@ static int psci_migrate(unsigned long cpuid)
 }
 
 static int psci_affinity_info(unsigned long target_affinity,
-			      unsigned long lowest_affinity_level)
+		unsigned long lowest_affinity_level)
 {
 	int err;
 	u32 fn;
@@ -263,7 +260,7 @@ static int psci_migrate_info_type(void)
 }
 
 static int __maybe_unused cpu_psci_cpu_init_idle(struct device_node *cpu_node,
-		unsigned int cpu)
+						 unsigned int cpu)
 {
 	int i, ret, count = 0;
 	struct psci_power_state *psci_states;
@@ -287,7 +284,6 @@ static int __maybe_unused cpu_psci_cpu_init_idle(struct device_node *cpu_node,
 		return -ENODEV;
 
 	psci_states = kcalloc(count, sizeof(*psci_states), GFP_KERNEL);
-
 	if (!psci_states)
 		return -ENOMEM;
 
@@ -299,7 +295,6 @@ static int __maybe_unused cpu_psci_cpu_init_idle(struct device_node *cpu_node,
 		ret = of_property_read_u32(state_node,
 					   "arm,psci-suspend-param",
 					   &psci_power_state);
-
 		if (ret) {
 			pr_warn(" * %s missing arm,psci-suspend-param property\n",
 				state_node->full_name);
@@ -309,10 +304,9 @@ static int __maybe_unused cpu_psci_cpu_init_idle(struct device_node *cpu_node,
 
 		of_node_put(state_node);
 		pr_debug("psci-power-state %#x index %d\n", psci_power_state,
-			 i);
+							    i);
 		psci_power_state_unpack(psci_power_state, &psci_states[i]);
 	}
-
 	/* Idle states parsed correctly, initialize per-cpu pointer */
 	per_cpu(psci_power_state, cpu) = psci_states;
 	return 0;
@@ -333,15 +327,14 @@ static int get_set_conduit_method(struct device_node *np)
 		return -ENXIO;
 	}
 
-	if (!strcmp("hvc", method))
+	if (!strcmp("hvc", method)) {
 		invoke_psci_fn = __invoke_psci_fn_hvc;
-	else if (!strcmp("smc", method))
+	} else if (!strcmp("smc", method)) {
 		invoke_psci_fn = __invoke_psci_fn_smc;
-	else {
+	} else {
 		pr_warn("invalid \"method\" property: %s\n", method);
 		return -EINVAL;
 	}
-
 	return 0;
 }
 
@@ -379,11 +372,11 @@ static int __init psci_0_2_init(struct device_node *np)
 		goto out_put_node;
 	} else {
 		pr_info("PSCIv%d.%d detected in firmware.\n",
-			PSCI_VERSION_MAJOR(ver),
-			PSCI_VERSION_MINOR(ver));
+				PSCI_VERSION_MAJOR(ver),
+				PSCI_VERSION_MINOR(ver));
 
 		if (PSCI_VERSION_MAJOR(ver) == 0 &&
-		    PSCI_VERSION_MINOR(ver) < 2) {
+				PSCI_VERSION_MINOR(ver) < 2) {
 			err = -EINVAL;
 			pr_err("Conflicting PSCI version detected.\n");
 			goto out_put_node;
@@ -575,9 +568,9 @@ static int cpu_psci_cpu_boot(unsigned int cpu)
 #endif
 
 	if ((cpu == 0) || (cpu == 1) || (cpu == 2) || (cpu == 3)) {
-		if (bypass_cl0_armpll > 0)
+		if (bypass_cl0_armpll > 0) {
 			bypass_cl0_armpll--;
-		else {
+		} else {
 			if (!g_cl0_online) {
 #ifdef CONFIG_ARMPLL_CTRL
 				/* turn on arm pll */
@@ -590,9 +583,9 @@ static int cpu_psci_cpu_boot(unsigned int cpu)
 			}
 		}
 	} else if ((cpu == 4) || (cpu == 5) || (cpu == 6) || (cpu == 7)) {
-		if (bypass_cl1_armpll > 0)
+		if (bypass_cl1_armpll > 0) {
 			bypass_cl1_armpll--;
-		else {
+		} else {
 			if (!g_cl1_online) {
 #ifdef CONFIG_ARMPLL_CTRL
 				/* turn on arm pll */
@@ -607,10 +600,8 @@ static int cpu_psci_cpu_boot(unsigned int cpu)
 	} else if ((cpu == 8) || (cpu == 9)) {
 		if (bypass_boot > 0) {
 #ifdef CONFIG_CL2_BUCK_CTRL
-
 			if (!g_cl2_online)
 				cpu_power_on_buck(cpu, 0);
-
 #endif
 			bypass_boot--;
 		} else {
@@ -638,9 +629,7 @@ static int cpu_psci_cpu_boot(unsigned int cpu)
 			dcm_mcusys_mp2_sync_dcm(1);
 		}
 	}
-
 #ifdef CONFIG_OCP_IDVFS_CTRL
-
 	if ((cpu == 0) || (cpu == 1) || (cpu == 2) || (cpu == 3)) {
 		if (!ocp_cl0_init) {
 			Cluster0_OCP_ON();
@@ -657,7 +646,6 @@ static int cpu_psci_cpu_boot(unsigned int cpu)
 			idvfs_init = 1;
 		}
 	}
-
 #endif
 
 	if (err)
@@ -680,10 +668,8 @@ static int cpu_psci_cpu_boot(unsigned int cpu)
 	*/
 #else
 	int err = psci_ops.cpu_on(cpu_logical_map(cpu), __pa(secondary_entry));
-
 	if (err)
 		pr_err("failed to boot CPU%d (%d)\n", cpu, err);
-
 #endif
 
 #ifdef MTK_IRQ_NEW_DESIGN
@@ -699,7 +685,6 @@ static int cpu_psci_cpu_disable(unsigned int cpu)
 	/* Fail early if we don't have CPU_OFF support */
 	if (!psci_ops.cpu_off)
 		return -EOPNOTSUPP;
-
 	return 0;
 }
 
@@ -728,7 +713,6 @@ static int cpu_kill_pll_buck_ctrl(unsigned int cpu)
 
 	if ((cpu == 0) || (cpu == 1) || (cpu == 2) || (cpu == 3)) {
 		g_cl0_online &= ~(1 << cpu);
-
 		if (!g_cl0_online) {
 #ifdef CONFIG_ARMPLL_CTRL
 			/* switch to SW mode */
@@ -741,7 +725,6 @@ static int cpu_kill_pll_buck_ctrl(unsigned int cpu)
 		}
 	} else if ((cpu == 4) || (cpu == 5) || (cpu == 6) || (cpu == 7)) {
 		g_cl1_online &= ~(1 << (cpu - 4));
-
 		if (!g_cl1_online) {
 #ifdef CONFIG_ARMPLL_CTRL
 			/* switch to SW mode */
@@ -775,7 +758,7 @@ unsigned int last_cl0_online_cpus(unsigned int cpu)
 	    ((cpu == 1) && (g_cl0_online == 2)) ||
 	    ((cpu == 2) && (g_cl0_online == 4)) ||
 	    ((cpu == 3) && (g_cl0_online == 8)))
-		ret = 1;
+			ret = 1;
 
 	return ret;
 }
@@ -788,7 +771,7 @@ unsigned int last_cl1_online_cpus(unsigned int cpu)
 	    ((cpu == 5) && (g_cl1_online == 2)) ||
 	    ((cpu == 6) && (g_cl1_online == 4)) ||
 	    ((cpu == 7) && (g_cl1_online == 8)))
-		ret = 1;
+			ret = 1;
 
 	return ret;
 }
@@ -799,7 +782,7 @@ unsigned int last_cl2_online_cpus(unsigned int cpu)
 
 	if (((cpu == 8) && (g_cl2_online == 1)) ||
 	    ((cpu == 9) && (g_cl2_online == 2)))
-		ret = 1;
+			ret = 1;
 
 	return ret;
 }
@@ -809,10 +792,8 @@ static int cpu_psci_cpu_kill(unsigned int cpu)
 {
 	int err, i;
 
-
 	if (!psci_ops.affinity_info)
 		return 1;
-
 	/*
 	 * cpu_kill could race with cpu_die and we can
 	 * potentially end up declaring this cpu undead
@@ -848,18 +829,14 @@ static int cpu_psci_cpu_kill(unsigned int cpu)
 #endif
 
 #ifdef CONFIG_ARCH_MT6797
-
 		if ((cpu == 8) || (cpu == 9)) {
 			g_cl2_online &= ~(1 << (cpu - 8));
-
 			if (!g_cl2_online) {
 				/* disable MP2 Sync DCM */
 				dcm_mcusys_mp2_sync_dcm(0);
 			}
 		}
-
 #endif
-
 
 #ifdef MTK_CPU_HOTPLUG_DEBUG_3
 		TIMESTAMP_REC(hotplug_ts_rec, TIMESTAMP_FILTER,  cpu, 0, 0, 0);
@@ -892,7 +869,7 @@ static int cpu_psci_cpu_kill(unsigned int cpu)
 	}
 
 	pr_warn("CPU%d may not have shut down cleanly (AFFINITY_INFO reports %d)\n",
-		cpu, err);
+			cpu, err);
 	/* Make op_cpu_kill() fail. */
 	return 0;
 }
@@ -904,19 +881,15 @@ static int psci_suspend_finisher(unsigned long index)
 	struct psci_power_state *state = __get_cpu_var(psci_power_state);
 
 #ifdef CONFIG_MTK_HIBERNATION
-
 	if (index == POWERMODE_HIBERNATE) {
 		int ret;
 
 		pr_warn("%s: hibernating\n", __func__);
 		ret = swsusp_arch_save_image(0);
-
 		if (ret)
 			pr_err("%s: swsusp_arch_save_image fail: %d", __func__, ret);
-
 		return ret;
 	}
-
 #endif
 	return psci_ops.cpu_suspend(state[index - 1],
 				    virt_to_phys(cpu_resume));
@@ -926,7 +899,6 @@ static int __maybe_unused cpu_psci_cpu_suspend(unsigned long index)
 {
 	int ret;
 	struct psci_power_state *state = __get_cpu_var(psci_power_state);
-
 	/*
 	 * idle state index 0 corresponds to wfi, should never be called
 	 * from the cpu_suspend operations
@@ -935,12 +907,9 @@ static int __maybe_unused cpu_psci_cpu_suspend(unsigned long index)
 		return -EINVAL;
 
 #ifdef CONFIG_MTK_HIBERNATION
-
 	if (index == POWERMODE_HIBERNATE)
 		return __cpu_suspend(index, psci_suspend_finisher);
-
 #endif
-
 	if (state[index - 1].type == PSCI_POWER_STATE_TYPE_STANDBY)
 		ret = psci_ops.cpu_suspend(state[index - 1], 0);
 	else
