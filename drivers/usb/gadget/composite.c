@@ -1260,8 +1260,12 @@ composite_setup(struct usb_gadget *gadget, const struct usb_ctrlrequest *ctrl)
 	u16				w_length = le16_to_cpu(ctrl->wLength);
 	struct usb_function		*f = NULL;
 	u8				endp;
+	static DEFINE_RATELIMIT_STATE(ratelimit, 1 * HZ, 10);
 
-	INFO(cdev, "%s bRequest=0x%X\n", __func__, ctrl->bRequest);
+	if (!(ctrl->bRequest == USB_REQ_GET_STATUS
+			|| ctrl->bRequest == USB_REQ_CLEAR_FEATURE
+			|| ctrl->bRequest == USB_REQ_SET_FEATURE))
+		INFO(cdev, "%s bRequest=0x%X\n", __func__, ctrl->bRequest);
 
 	/* partial re-init of the response message; the function or the
 	 * gadget might need to intercept e.g. a control-OUT completion
@@ -1448,7 +1452,8 @@ composite_setup(struct usb_gadget *gadget, const struct usb_ctrlrequest *ctrl)
 	 * interface of the function
 	 */
 	case USB_REQ_GET_STATUS:
-		INFO(cdev, "[COM]USB_REQ_GET_STATUS\n");
+		if (__ratelimit(&ratelimit))
+			INFO(cdev, "[COM]USB_REQ_GET_STATUS\n");
 		if (!gadget_is_superspeed(gadget))
 			goto unknown;
 		if (ctrl->bRequestType != (USB_DIR_IN | USB_RECIP_INTERFACE))
@@ -1472,8 +1477,10 @@ composite_setup(struct usb_gadget *gadget, const struct usb_ctrlrequest *ctrl)
 	 */
 	case USB_REQ_CLEAR_FEATURE:
 	case USB_REQ_SET_FEATURE:
-		INFO(cdev, "[COM]%s w_value=%d\n",
-			((ctrl->bRequest==USB_REQ_SET_FEATURE)? "USB_REQ_SET_FEATURE" : "USB_REQ_CLEAR_FEATURE"), w_value);
+		if (__ratelimit(&ratelimit))
+			INFO(cdev, "[COM][ratelimit]%s w_value=%d\n",
+					((ctrl->bRequest == USB_REQ_SET_FEATURE) ?
+					 "USB_REQ_SET_FEATURE" : "USB_REQ_CLEAR_FEATURE"), w_value);
 		if (!gadget_is_superspeed(gadget))
 			goto unknown;
 		if (ctrl->bRequestType != (USB_DIR_OUT | USB_RECIP_INTERFACE))
@@ -1504,10 +1511,11 @@ composite_setup(struct usb_gadget *gadget, const struct usb_ctrlrequest *ctrl)
 		break;
 	default:
 unknown:
-		INFO(cdev,
-			"non-core control req%02x.%02x v%04x i%04x l%d\n",
-			ctrl->bRequestType, ctrl->bRequest,
-			w_value, w_index, w_length);
+		if (__ratelimit(&ratelimit))
+			INFO(cdev,
+					"[ratelimit]non-core control req%02x.%02x v%04x i%04x l%d\n",
+					ctrl->bRequestType, ctrl->bRequest,
+					w_value, w_index, w_length);
 
 		/* functions always handle their interfaces and endpoints...
 		 * punt other recipients (other, WUSB, ...) to the current
