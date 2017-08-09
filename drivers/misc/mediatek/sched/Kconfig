@@ -202,4 +202,13 @@ config HMP_TRACER
 	  Trace the update of cfs rq, load, and hmp_statisics to evaluate if
 	  the schedule decision is as expected.
 	  If unsure say N here.
+
+config HMP_PACK_SMALL_TASK
+	bool "(EXPERIMENTAL) Packing Small Tasks"
+	depends on SCHED_HMP
+	help
+	  This option enables Packing Small Tasks
+	  Packing small task mechanism is try to limit small tasks to run
+	  on as little CPUs as possible and meke better power efficiency.
+	  If unsure say N here.
 endmenu

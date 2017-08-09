@@ -189,6 +189,96 @@ void sched_init_granularity(void)
 {
 	update_sysctl();
 }
+#ifdef CONFIG_HMP_PACK_SMALL_TASK
+/*
+ * Save the id of the optimal CPU that should be used to pack small tasks
+ * The value -1 is used when no buddy has been found
+ */
+DEFINE_PER_CPU(int, sd_pack_buddy) = {-1};
+
+/* Look for the best buddy CPU that can be used to pack small tasks
+ * We make the assumption that it doesn't wort to pack on CPU that share the
+ * same powerline. We looks for the 1st sched_domain without the
+ * SD_SHARE_POWERLINE flag. Then We look for the sched_group witht the lowest
+ * power per core based on the assumption that their power efficiency is
+ * better */
+void update_packing_domain(int cpu)
+{
+	struct sched_domain *sd;
+	int id = -1;
+
+	sd = rcu_dereference_check_sched_domain(cpu_rq(cpu)->sd);
+	while (sd) {
+		struct sched_group *sg = sd->groups;
+		struct sched_group *pack = sg;
+		struct sched_group *tmp = sg->next;
+
+		/* 1st CPU of the sched domain is a good candidate */
+		if (id == -1)
+			id = cpumask_first(sched_domain_span(sd));
+
+		/* Find sched group of candidate */
+		tmp = sd->groups;
+		do {
+			if (cpumask_test_cpu(id, sched_group_cpus(tmp))) {
+				sg = tmp;
+				break;
+			}
+		} while (tmp = tmp->next, tmp != sd->groups);
+
+		pack = sg;
+		tmp = sg->next;
+
+		/* loop the sched groups to find the best one
+		 * Stop find the best one in the same Load Balance Domain
+		 */
+		while (tmp != sg && !(sd->flags & SD_LOAD_BALANCE)) {
+			if (tmp->sgc->capacity * sg->group_weight <
+					sg->sgc->capacity * tmp->group_weight)
+				pack = tmp;
+			tmp = tmp->next;
+		}
+
+		/* we have found a better group */
+		if (pack != sg)
+			id = cpumask_first(sched_group_cpus(pack));
+
+		/* Look for another CPU than itself */
+		if ((id != cpu) ||
+			((sd->parent) && (sd->parent->flags & SD_LOAD_BALANCE)))
+			break;
+
+		sd = sd->parent;
+	}
+
+	per_cpu(sd_pack_buddy, cpu) = id;
+}
+
+static inline bool is_buddy_busy(int cpu)
+{
+	struct rq *rq;
+
+	if (cpu < 0)
+		return 0;
+
+	rq = cpu_rq(cpu);
+
+	/*
+	 * A busy buddy is a CPU with a high load or a small load with a lot of
+	 * running tasks.
+	 */
+	return ((rq->avg.running_avg_sum << rq->nr_running) >
+			rq->avg.avg_period);
+}
+
+static inline bool is_light_task(struct task_struct *p)
+{
+	/* A light task runs less than 25% in average */
+	return ((p->se.avg.running_avg_sum << 2) < p->se.avg.avg_period);
+}
+
+static int check_pack_buddy(int cpu, struct task_struct *p);
+#endif /* CONFIG_HMP_PACK_SMALL_TASK */
 
 #define WMULT_CONST	(~0U)
 #define WMULT_SHIFT	32
@@ -5473,6 +5563,11 @@ select_task_rq_fair(struct task_struct *p, int prev_cpu, int sd_flag, int wake_f
 		return prev_cpu;
 	}
 
+#ifdef CONFIG_HMP_PACK_SMALL_TASK
+	if (check_pack_buddy(cpu, p))
+		return per_cpu(sd_pack_buddy, cpu);
+#endif /* CONFIG_HMP_PACK_SMALL_TASK */
+
 	/* always put non-kernel forking tasks on a big domain */
 	if (sched_feat(SCHED_HMP) && p->mm && (sd_flag & SD_BALANCE_FORK)) {
 		/* TODO: This part should be functionalized */
@@ -8195,6 +8290,17 @@ redo:
 		goto out_balanced;
 	}
 
+#ifdef CONFIG_HMP_PACK_SMALL_TASK
+	if (cpumask_test_cpu(this_cpu, &hmp_fast_cpu_mask)) {
+		if (per_cpu(sd_pack_buddy, this_cpu) == busiest->cpu &&
+			!is_buddy_busy(per_cpu(sd_pack_buddy, this_cpu))) {
+			schedstat_inc(sd, lb_nobusyq[idle]);
+			goto out_balanced;
+		}
+	}
+#endif
+
+
 	BUG_ON(busiest == env.dst_rq);
 
 	schedstat_add(sd, lb_imbalance[idle], env.imbalance);
@@ -9787,6 +9893,10 @@ static void hmp_force_up_migration(int this_cpu)
 		clbenv.bcpus = &hmp_fast_cpu_mask;
 		sched_update_clbstats(&clbenv);
 
+#ifdef CONFIG_HMP_PACK_SMALL_TASK
+		if (is_light_task(p) && !is_buddy_busy(per_cpu(sd_pack_buddy, curr_cpu)))
+			goto out_force_up;
+#endif
 		/* Check migration threshold */
 		if (!target->active_balance &&
 			hmp_up_migration(curr_cpu, &target_cpu, se, &clbenv)) {
@@ -9797,6 +9907,10 @@ static void hmp_force_up_migration(int this_cpu)
 			trace_sched_hmp_migrate(p, target->push_cpu, 1);
 			hmp_next_up_delay(&p->se, target->push_cpu);
 		}
+
+#ifdef CONFIG_HMP_PACK_SMALL_TASK
+out_force_up:
+#endif /* CONFIG_HMP_PACK_SMALL_TASK */
 
 		raw_spin_unlock_irqrestore(&target->lock, flags);
 		if (force) {
@@ -10430,3 +10544,54 @@ static int __init register_cpufreq_notifier(void)
 }
 core_initcall(register_cpufreq_notifier);
 #endif
+
+#ifdef CONFIG_HMP_PACK_SMALL_TASK
+static int check_pack_buddy(int cpu, struct task_struct *p)
+{
+	int buddy;
+	int L_target;
+
+	if (cpu >= num_possible_cpus() || cpu < 0)
+		return false;
+
+	buddy = per_cpu(sd_pack_buddy, cpu);
+
+	/* Do not pack to buddy whithin little cluster */
+	if (hmp_cpu_is_slow(cpu)) {
+		buddy = cpu;
+		goto check_load;
+	}
+	if (hmp_cpu_is_slow(buddy)) {
+		L_target = hmp_select_cpu(HMP_SELECT_RQ, p, &hmp_slow_cpu_mask, buddy);
+		per_cpu(sd_pack_buddy, cpu) = (L_target == num_possible_cpus()) ? buddy : L_target;
+		buddy = per_cpu(sd_pack_buddy, cpu);
+	}
+
+	/* No pack buddy for this CPU */
+	if (buddy == -1)
+		return false;
+
+check_load:
+	/*
+	 * If a task is waiting for running on the CPU which is its own buddy,
+	 * let the default behavior to look for a better CPU if available
+	 * The threshold has been set to 37.5%
+	 */
+	if ((buddy == cpu)
+		&& ((p->se.avg.running_avg_sum << 3) < (p->se.avg.runnable_avg_sum * 5)))
+		return false;
+
+	/* buddy is not an allowed CPU */
+	if (!cpumask_test_cpu(buddy, tsk_cpus_allowed(p)))
+		return false;
+
+	/*
+	 * If the task is a small one and the buddy is not overloaded,
+	 * we use buddy cpu
+	 */
+	if (!is_light_task(p) || is_buddy_busy(buddy))
+		return false;
+
+	return true;
+}
+#endif /* CONFIG_HMP_PACK_SMALL_TASK */

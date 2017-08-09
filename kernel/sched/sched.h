@@ -1241,6 +1241,9 @@ static inline struct cpuidle_state *idle_get_state(struct rq *rq)
 #endif
 
 extern void sched_init_granularity(void);
+#ifdef CONFIG_HMP_PACK_SMALL_TASK
+extern void update_packing_domain(int cpu);
+#endif /* CONFIG_HMP_PACK_SMALL_TASK */
 extern void update_max_interval(void);
 
 extern void init_sched_dl_class(void);

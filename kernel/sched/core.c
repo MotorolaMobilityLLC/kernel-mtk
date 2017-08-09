@@ -5993,7 +5993,9 @@ cpu_attach_domain(struct sched_domain *sd, struct root_domain *rd, int cpu)
 	tmp = rq->sd;
 	rcu_assign_pointer(rq->sd, sd);
 	destroy_sched_domains(tmp, cpu);
-
+#ifdef CONFIG_HMP_PACK_SMALL_TASK
+	update_packing_domain(cpu);
+#endif
 	update_top_cache_domain(cpu);
 }
 
