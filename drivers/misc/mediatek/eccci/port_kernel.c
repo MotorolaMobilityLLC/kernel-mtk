@@ -911,6 +911,7 @@ static int get_eint_attr_val(struct device_node *node, int index)
 {
 	int value;
 	int ret = 0, type;
+	int covert_AP_to_MD_unit = 1000; /*unit of AP eint is us, but unit of MD eint is ms. So need covertion here.*/
 
 	for (type = 0; type < SIM_HOT_PLUG_EINT_MAX; type++) {
 		ret = of_property_read_u32_index(node, md_eint_struct[type].property,
@@ -941,8 +942,10 @@ static int get_eint_attr_val(struct device_node *node, int index)
 				   md_eint_struct[SIM_HOT_PLUG_EINT_POLARITY].value_sim[index],
 				   md_eint_struct[SIM_HOT_PLUG_EINT_SENSITIVITY].value_sim[index]); */
 				type++;
-			} /* special case: polarity's position == sensitivity's end] */
-			else {
+			} else if (type == SIM_HOT_PLUG_EINT_DEBOUNCETIME) {
+				/*debounce time should divide by 1000 due to different unit in AP and MD.*/
+				md_eint_struct[type].value_sim[index] = value/covert_AP_to_MD_unit;
+			} else {
 				md_eint_struct[type].value_sim[index] = value;
 				/* CCCI_NORMAL_LOG(-1, RPC, "%s: --- %d_%d\n", md_eint_struct[type].property,
 				   md_eint_struct[type].index, md_eint_struct[type].value_sim[index]); */
@@ -990,7 +993,6 @@ int get_eint_attr_DTSVal(char *name, unsigned int name_len, unsigned int type, c
 {
 	int i, sim_value;
 	int *sim_info = (int *)result;
-	int covert_AP_to_MD_unit = 1000; /*unit of AP eint is us, but unit of MD eint is ms. So need covertion here.*/
 
 	if ((name == NULL) || (result == NULL) || (len == NULL))
 		return ERR_SIM_HOT_PLUG_NULL_POINTER;
@@ -1002,7 +1004,7 @@ int get_eint_attr_DTSVal(char *name, unsigned int name_len, unsigned int type, c
 	for (i = 0; i < MD_SIM_MAX; i++) {
 		if (eint_node_prop.ExistFlag & (1 << i)) {
 			if (!(strncmp(name, eint_node_prop.name[i].node_name, name_len))) {
-				sim_value = eint_node_prop.eint_value[type].value_sim[i]/covert_AP_to_MD_unit;
+				sim_value = eint_node_prop.eint_value[type].value_sim[i];
 				*len = sizeof(sim_value);
 				memcpy(sim_info, &sim_value, *len);
 				CCCI_NORMAL_LOG(-1, RPC, "md_eint:%s, sizeof: %d, sim_info: %d, %d\n",
