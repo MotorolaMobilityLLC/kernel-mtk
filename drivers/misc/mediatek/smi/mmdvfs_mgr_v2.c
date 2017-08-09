@@ -74,6 +74,8 @@ int update_mmsys_clk_mode, char *msg);
 static int mmdfvs_adjust_mmsys_clk_by_hopping(int clk_mode);
 static int mmdvfs_set_step_with_mmsys_clk(MTK_SMI_BWC_SCEN scenario, mmdvfs_voltage_enum step,
 int mmsys_clk_mode);
+static int mmdvfs_set_step_with_mmsys_clk_low_low(MTK_SMI_BWC_SCEN scenario, mmdvfs_voltage_enum step,
+int mmsys_clk_mode, int enable_low_low);
 static void notify_mmsys_clk_change(int ori_mmsys_clk_mode, int update_mmsys_clk_mode);
 static int mmsys_clk_change_notify_checked(clk_switch_cb func, int ori_mmsys_clk_mode,
 int update_mmsys_clk_mode, char *msg);
@@ -90,7 +92,7 @@ static int get_smvr_step(int is_hevc, int resolution, int is_p_mode, int fps);
 #endif /* MMDVFS_E1 */
 
 static int check_if_enter_low_low(int low_low_request, int final_step, int current_scenarios,
-int lcd_resolution, int venc_resolution, int is_wfd_enable, int is_mhl_enable);
+int lcd_resolution, int venc_resolution, int is_wfd_enable, int is_mhl_enable, int is_ui_idle);
 
 static int is_cam_monior_work;
 
@@ -109,6 +111,8 @@ static MTK_SMI_BWC_MM_INFO *g_mmdvfs_info;
 static MTK_MMDVFS_CMD g_mmdvfs_cmd;
 /* only for ddr800 */
 static unsigned int g_disp_low_low_request;
+static unsigned int g_disp_is_ui_idle;
+
 
 /* mmdvfs timer for monitor gpu loading */
 typedef struct {
@@ -640,6 +644,12 @@ In SMI_E1 project, the mmsys clk is determined by voltage directly
 and can't be configure indepdently. */
 int mmdvfs_set_step_with_mmsys_clk(MTK_SMI_BWC_SCEN smi_scenario, mmdvfs_voltage_enum step, int mmsys_clk_mode_request)
 {
+	return mmdvfs_set_step_with_mmsys_clk_low_low(smi_scenario, step, mmsys_clk_mode_request, 1);
+}
+
+int mmdvfs_set_step_with_mmsys_clk_low_low(MTK_SMI_BWC_SCEN smi_scenario, mmdvfs_voltage_enum step,
+	int mmsys_clk_mode_request, int enable_low_low)
+{
 	int i, scen_index;
 	unsigned int concurrency;
 	unsigned int scenario = smi_scenario;
@@ -653,7 +663,15 @@ int mmdvfs_set_step_with_mmsys_clk(MTK_SMI_BWC_SCEN smi_scenario, mmdvfs_voltage
 		return 0;
 	}
 
-	if (smi_scenario == ((int)MMDVFS_SCEN_DISP)) {
+	if (smi_scenario == ((int)MMDVFS_SCEN_DISP) || smi_scenario == (int)SMI_BWC_SCEN_UI_IDLE) {
+
+		if (smi_scenario == (int)SMI_BWC_SCEN_UI_IDLE) {
+			if (step == MMDVFS_VOLTAGE_LOW_LOW)
+				g_disp_is_ui_idle = 1;
+			else
+				g_disp_is_ui_idle = 0;
+		}
+
 		if (step == MMDVFS_VOLTAGE_LOW_LOW) {
 			g_disp_low_low_request = 1;
 			step = MMDVFS_VOLTAGE_LOW;
@@ -723,10 +741,10 @@ int mmdvfs_set_step_with_mmsys_clk(MTK_SMI_BWC_SCEN smi_scenario, mmdvfs_voltage
 	else
 		mmsys_clk_mode = mmsys_clk_mode_request;
 
-	if (check_if_enter_low_low(g_disp_low_low_request, final_step,
+	if (enable_low_low && check_if_enter_low_low(g_disp_low_low_request, final_step,
 			g_mmdvfs_concurrency, mmdvfs_get_lcd_resolution(),
 			g_mmdvfs_info->video_record_size[0] * g_mmdvfs_info->video_record_size[1],
-			g_mmdvfs_mgr->is_wfd_enable, g_mmdvfs_mgr->is_mhl_enable)) {
+			g_mmdvfs_mgr->is_wfd_enable, g_mmdvfs_mgr->is_mhl_enable, g_disp_is_ui_idle)) {
 		final_step = MMDVFS_VOLTAGE_LOW_LOW;
 	}
 
@@ -785,12 +803,11 @@ int mmdvfs_set_step_with_mmsys_clk(MTK_SMI_BWC_SCEN smi_scenario, mmdvfs_voltage
 	}
 #endif /* MMDVFS_ENABLE */
 
-	MMDVFSMSG("Set vol scen:(%d, %d),step:%d, low_low:%d, final:%d(0x%x),CMD(%d,%d,0x%x),INFO(%d,%d),CLK:%d\n",
-		scenario, scenario, step, g_disp_low_low_request, final_step, concurrency,
+	MMDVFSMSG("Set scen:(%d,0x%x) step:(%d,%d,%d,0x%x),CMD(%d,%d,0x%x),INFO(%d,%d),CLK:%d,low_low_en:%d\n",
+		scenario, g_mmdvfs_concurrency, step, g_disp_low_low_request, final_step, concurrency,
 		g_mmdvfs_cmd.sensor_size, g_mmdvfs_cmd.sensor_fps, g_mmdvfs_cmd.camera_mode,
 		g_mmdvfs_info->video_record_size[0], g_mmdvfs_info->video_record_size[1],
-		current_mmsys_clk);
-
+		current_mmsys_clk, enable_low_low);
 
 	return 0;
 }
@@ -862,7 +879,8 @@ void mmdvfs_notify_scenario_exit(MTK_SMI_BWC_SCEN scen)
 		mmdvfs_start_cam_monitor(scen, 8);
 
 	/* reset scenario voltage to default when it exits */
-	mmdvfs_set_step(scen, mmdvfs_get_default_step());
+	/* Also force the system to leave low low mode */
+	mmdvfs_set_step_with_mmsys_clk_low_low(scen, mmdvfs_get_default_step(), MMSYS_CLK_MEDIUM, 0);
 }
 
 void mmdvfs_notify_scenario_enter(MTK_SMI_BWC_SCEN scen)
@@ -1143,12 +1161,7 @@ static int notify_cb_func_checked(clk_switch_cb func, int ori_mmsys_clk_mode, in
 
 /* Only for DDR 800 */
 static int check_if_enter_low_low(int low_low_request, int final_step, int current_scenarios, int lcd_resolution,
-int venc_resolution, int is_wfd_enable, int is_mhl_enable){
-
-	if (low_low_request == 0) {
-		MMDVFSMSG("No low low requested from DISP\n");
-		return 0;
-	}
+int venc_resolution, int is_wfd_enable, int is_mhl_enable, int is_ui_idle){
 
 	if (final_step == MMDVFS_VOLTAGE_HIGH) {
 		MMDVFSMSG("Didn't enter low low step due to final step is high\n");
@@ -1169,16 +1182,18 @@ int venc_resolution, int is_wfd_enable, int is_mhl_enable){
 		return 0;
 	}
 
-	/* Only allowd VP, VR or Normal*/
+	/* Only allowd VP, VR or UI idle*/
+	/* Return if vp or vr are not selected and it is not in UI idle mode*/
 	if (((current_scenarios & ((1 << SMI_BWC_SCEN_VP) | (1 << SMI_BWC_SCEN_VR))) == 0)
-			&& (current_scenarios != 0)) {
-		MMDVFSMSG("Didn't enter low low step, only allow VP, VR and UI: 0x%x\n", current_scenarios);
+			&& !(current_scenarios == 0 && is_ui_idle == 1)) {
+		MMDVFSMSG("Didn't enter low low step, only allow VP, VR and UI idle: 0x%x, %d\n",
+		current_scenarios, is_ui_idle);
 		return 0;
 	}
 
 
-	/* If it is VR, check resolution and venc size*/
-	if (current_scenarios & (1 << SMI_BWC_SCEN_VR)) {
+	/* If it is camera VR, check resolution and venc size*/
+	if (current_scenarios & ((1 << SMI_BWC_SCEN_VR) | (1 << SMI_BWC_SCEN_VENC))) {
 		/* WQHD LCD: can't enter low low */
 		if (lcd_resolution == MMDVFS_LCD_SIZE_WQHD) {
 			MMDVFSMSG("Didn't enter low low step in VR with WQHD resolution:%d\n",
@@ -1187,14 +1202,33 @@ int venc_resolution, int is_wfd_enable, int is_mhl_enable){
 		}
 
 		/* venc size < */
-		if (venc_resolution > 1920 * 1080) {
+		if (venc_resolution > 1920 * 1088) {
 			MMDVFSMSG("Didn't enter low low step in VR when venc resolution > 1080p:%d\n",
 			venc_resolution);
 			return 0;
+		} else {
+			return 1;
 		}
 	}
 
-	return 1;
+	/* If it is VP, check the low_low_request only */
+	if (current_scenarios & (1 << SMI_BWC_SCEN_VP)) {
+		if (low_low_request == 1)
+			return 1;
+		MMDVFSMSG("No low low requested from DISP in VP\n");
+		return 0;
+	}
+
+	/* If it is UI idle, check the low_low_request only */
+	if ((current_scenarios == 0) && (is_ui_idle == 1)) {
+		if (low_low_request == 1)
+			return 1;
+		MMDVFSMSG("No low low requested from DISP in idle mode\n");
+		return 0;
+	}
+
+	MMDVFSMSG("No set low low in this scenario: 0x%x\n", current_scenarios);
+	return 0;
 
 }
 
