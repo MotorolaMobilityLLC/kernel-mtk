@@ -3017,9 +3017,9 @@ static int mt_gpufreq_volt_enable_proc_show(struct seq_file *m, void *v)
 	return 0;
 }
 
-/***********************
- * enable specific frequency
- ************************/
+/*
+ * control current vgpu buck
+ */
 static ssize_t mt_gpufreq_volt_enable_proc_write(struct file *file, const char __user *buffer,
 						 size_t count, loff_t *data)
 {
@@ -3035,17 +3035,17 @@ static ssize_t mt_gpufreq_volt_enable_proc_write(struct file *file, const char _
 
 	if (!kstrtoint(desc, 10, &enable)) {
 		if (enable == 0) {
-			mt_gpufreq_voltage_enable_set(0);
 			mt_gpufreq_volt_enable = 0;
 			mt_gpufreq_keep_volt_enable = false;
+			mt_gpufreq_voltage_enable_set(0);
 		} else if (enable == 1) {
-			mt_gpufreq_voltage_enable_set(1);
 			mt_gpufreq_volt_enable = 1;
 			mt_gpufreq_keep_volt_enable = false;
-		} else if (enable == 2) {
 			mt_gpufreq_voltage_enable_set(1);
+		} else if (enable == 2) {
 			mt_gpufreq_volt_enable = 2;
 			mt_gpufreq_keep_volt_enable = true;
+			mt_gpufreq_voltage_enable_set(1);
 		} else
 			gpufreq_warn("bad argument! should be 0/1/2 [0: disable, 1: enable, 2: always on]\n");
 	} else
