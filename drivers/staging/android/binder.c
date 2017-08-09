@@ -2363,6 +2363,43 @@ static void binder_update_transaction_ttid(struct binder_transaction_log *t_log,
 	}
 }
 
+/* this is an addService() transaction identified by:
+* fp->type == BINDER_TYPE_BINDER && tr->target.handle == 0
+ */
+static void parse_service_name(struct binder_transaction_data *tr,
+			struct binder_proc *proc, char *name)
+{
+	unsigned int i, len = 0;
+	char *tmp;
+
+	if (tr->target.handle == 0) {
+		for (i = 0; (2 * i) < tr->data_size; i++) {
+			/* hack into addService() payload:
+			* service name string is located at MAGIC_SERVICE_NAME_OFFSET,
+			* and interleaved with character '\0'.
+			* for example, 'p', '\0', 'h', '\0', 'o', '\0', 'n', '\0', 'e'
+			*/
+			if ((2 * i) < MAGIC_SERVICE_NAME_OFFSET)
+				continue;
+			/* prevent array index overflow */
+			if (len >= (MAX_SERVICE_NAME_LEN - 1))
+				break;
+			tmp = (char *)(uintptr_t)(tr->data.ptr.buffer + (2 * i));
+			len += sprintf(name + len, "%c", *tmp);
+		}
+		name[len] = '\0';
+	} else {
+		name[0] = '\0';
+	}
+	/* via addService of activity service, identify
+	* system_server's process id.
+	*/
+	if (!strcmp(name, "activity")) {
+		system_server_pid = proc->pid;
+		pr_debug("system_server %d\n", system_server_pid);
+	}
+}
+
 #endif
 
 static void binder_transaction(struct binder_proc *proc,
@@ -2754,8 +2791,6 @@ out_err:
 		case BINDER_TYPE_WEAK_BINDER:{
 				struct binder_ref *ref;
 				struct binder_node *node = binder_get_node(proc, fp->binder);
-				unsigned int cnt, len = 0;
-				char *tmp;
 
 				if (node == NULL) {
 					node = binder_new_node(proc, fp->binder, fp->cookie);
@@ -2773,41 +2808,7 @@ out_err:
 					node->accept_fds =
 					    !!(fp->flags & FLAT_BINDER_FLAG_ACCEPTS_FDS);
 #ifdef BINDER_MONITOR
-					/*unsigned int cnt;
-					unsigned int len;
-					char *tmp;
-
-					len = 0;*/
-					/* this is an addService() transaction identified by:
-					* fp->type == BINDER_TYPE_BINDER && tr->target.handle == 0
-					*/
-					if (tr->target.handle == 0) {
-						/* hack into addService() payload:
-						* service name string is located at MAGIC_SERVICE_NAME_OFFSET,
-						* and interleaved with character '\0'.
-						* for example, 'p', '\0', 'h', '\0', 'o', '\0', 'n', '\0', 'e'
-						*/
-						/*for (cnt = 0; (2 * cnt) < tr->data_size; cnt++) {
-							if ((2 * cnt) < MAGIC_SERVICE_NAME_OFFSET)
-								continue;
-							prevent array index overflow */
-							/*if (len >= (MAX_SERVICE_NAME_LEN - 1))
-								break;
-							tmp = (char *)(uintptr_t)(tr->data.ptr.buffer + (2 * cnt));
-							len += sprintf((node->name) + len, "%c", *tmp);
-						}*/
-						node->name[len] = '\0';
-					} else {
-						node->name[0] = '\0';
-					}
-					/* via addService of activity service, identify
-					* system_server's process id.
-					*/
-					if (!strcmp(node->name, "activity")) {
-						system_server_pid = proc->pid;
-						pr_debug("system_server %d\n",
-							system_server_pid);
-					}
+					parse_service_name(tr, proc, node->name);
 #endif
 				}
 				if (fp->cookie != node->cookie) {
