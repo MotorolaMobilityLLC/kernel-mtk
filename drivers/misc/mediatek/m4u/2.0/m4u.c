@@ -8,6 +8,7 @@
 #include <linux/wait.h>
 #include <linux/spinlock.h>
 #include <linux/delay.h>
+#include <linux/fb.h>
 /* #include <linux/earlysuspend.h> */
 #include <linux/mm.h>
 #include <linux/mman.h>
@@ -24,8 +25,8 @@
 #include <asm/page.h>
 #include <linux/proc_fs.h>
 
-#include "m4u.h"
 #include "m4u_priv.h"
+#include "m4u.h"
 #include "m4u_hw.h"
 
 #include <linux/of.h>
