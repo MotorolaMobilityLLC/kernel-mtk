@@ -83,6 +83,10 @@ ifneq (,$(filter $(CONFIG_MTK_PLATFORM), "mt6797"))
 ccflags-y += -DCMDQ_LARGE_MAX_FIRSTERROR_BUFFER
 endif
 
+ifneq (,$(filter $(CONFIG_MTK_PLATFORM), "mt6735" "mt6580" "mt6755" "mt6797"))
+ccflags-y += -DCMDQ_DISP_LEGACY_SUB_SCENARIO
+endif
+
 ccflags-y += -D_CMDQ_DISABLE_MARKER_
 
 ifneq ($(CONFIG_MTK_CMDQ_TAB),y)

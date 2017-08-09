@@ -368,7 +368,6 @@ int cmdq_virtual_disp_thread(CMDQ_SCENARIO_ENUM scenario)
 
 	case CMDQ_SCENARIO_SUB_DISP:
 	case CMDQ_SCENARIO_SUB_ALL:
-	case CMDQ_SCENARIO_MHL_DISP:
 	case CMDQ_SCENARIO_RDMA1_DISP:
 	case CMDQ_SCENARIO_RDMA2_DISP:
 	case CMDQ_SCENARIO_DISP_CONFIG_SUB_GAMMA:
@@ -376,9 +375,16 @@ int cmdq_virtual_disp_thread(CMDQ_SCENARIO_ENUM scenario)
 	case CMDQ_SCENARIO_DISP_CONFIG_SUB_PQ:
 	case CMDQ_SCENARIO_DISP_CONFIG_SUB_PWM:
 	case CMDQ_SCENARIO_SUB_MEMOUT:
+#ifdef CMDQ_DISP_LEGACY_SUB_SCENARIO
 		/* when HW thread 0 enables pre-fetch, */
 		/* any thread 1 operation will let HW thread 0's behavior abnormally */
 		/* forbid thread 1 */
+		return 5;
+#else
+		return 1;
+#endif
+
+	case CMDQ_SCENARIO_MHL_DISP:
 		return 5;
 
 	case CMDQ_SCENARIO_HIGHP_TRIGGER_LOOP:
