@@ -117,5 +117,7 @@ extern bool in_uart_mode;
 extern int usb20_phy_init_debugfs(void);
 /* GIT K318 WORKAROUND */
 /* extern CHARGER_TYPE mt_get_charger_type(void); */
+#include <upmu_common.h>
+bool hwPowerOn(MT65XX_POWER powerId, int powerVolt, char *mode_name);
 
 #endif
