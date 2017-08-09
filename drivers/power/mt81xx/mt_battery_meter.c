@@ -164,7 +164,7 @@ s32 g_rtc_fg_soc = 0;
 s32 g_I_SENSE_offset = 0;
 
 /* aging mechanism */
-#ifdef CONFIG_MTK_ENABLE_AGING_ALGORITHM
+#if defined(CONFIG_MTK_ENABLE_AGING_ALGORITHM) && !defined(CONFIG_POWER_EXT)
 
 static s32 aging_ocv_1;
 static s32 aging_ocv_2;
@@ -2225,7 +2225,7 @@ void reset_parameter_car(void)
 	gFG_pre_columb_count = 0;
 #endif
 
-#ifdef CONFIG_MTK_ENABLE_AGING_ALGORITHM
+#if defined(CONFIG_MTK_ENABLE_AGING_ALGORITHM) && !defined(CONFIG_POWER_EXT)
 	aging_ocv_1 = 0;
 	aging_ocv_2 = 0;
 #endif
@@ -3108,7 +3108,7 @@ static int battery_meter_suspend(struct platform_device *dev, pm_message_t state
 	return 0;
 }
 
-#ifdef CONFIG_MTK_ENABLE_AGING_ALGORITHM
+#if defined(CONFIG_MTK_ENABLE_AGING_ALGORITHM) && !defined(CONFIG_POWER_EXT)
 static void battery_aging_check(void)
 {
 	s32 hw_ocv_after_sleep;
