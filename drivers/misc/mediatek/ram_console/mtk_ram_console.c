@@ -58,6 +58,7 @@ struct last_reboot_reason {
 	uint32_t sodi3_data;
 	uint32_t sodi_data;
 	uint32_t spm_suspend_data;
+	uint32_t spm_common_scenario_data;
 	uint64_t cpu_dormant[NR_CPUS];
 	uint32_t clk_data[8];
 	uint32_t suspend_debug_flag;
@@ -937,6 +938,18 @@ u32 aee_rr_curr_spm_suspend_val(void)
 	return LAST_RR_VAL(spm_suspend_data);
 }
 
+void aee_rr_rec_spm_common_scenario_val(u32 val)
+{
+	if (!ram_console_init_done || !ram_console_buffer)
+		return;
+	LAST_RR_SET(spm_common_scenario_data, val);
+}
+
+u32 aee_rr_curr_spm_common_scenario_val(void)
+{
+	return LAST_RR_VAL(spm_common_scenario_data);
+}
+
 /* special case without MMU, return addr directly, strongly suggest not to use */
 unsigned int *aee_rr_rec_mcdi_wfi(void)
 {
@@ -1751,6 +1764,11 @@ void aee_rr_show_spm_suspend(struct seq_file *m)
 	seq_printf(m, "spm_suspend: 0x%x\n", LAST_RRR_VAL(spm_suspend_data));
 }
 
+void aee_rr_show_spm_common_scenario(struct seq_file *m)
+{
+	seq_printf(m, "spm_common_scenario: 0x%x\n", LAST_RRR_VAL(spm_common_scenario_data));
+}
+
 void aee_rr_show_cpu_dormant(struct seq_file *m, int cpu)
 {
 	seq_printf(m, "  cpu_dormant: 0x%llx\n", LAST_RRR_VAL(cpu_dormant[cpu]));
@@ -2250,6 +2268,7 @@ last_rr_show_t aee_rr_show[] = {
 	aee_rr_show_sodi3,
 	aee_rr_show_sodi,
 	aee_rr_show_spm_suspend,
+	aee_rr_show_spm_common_scenario,
 	aee_rr_show_vcore_dvfs_opp,
 	aee_rr_show_vcore_dvfs_status,
 	aee_rr_show_vcore_dvfs_debug_regs,

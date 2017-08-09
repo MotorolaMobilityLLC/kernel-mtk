@@ -454,6 +454,10 @@ static void __go_to_vcore_dvfs(u32 spm_flags, u8 spm_data)
 	__spm_set_wakeup_event(pwrctrl);
 
 	__spm_kick_pcm_to_run(pwrctrl);
+
+#if SPM_AEE_RR_REC
+		aee_rr_rec_spm_common_scenario_val(SPM_COMMON_SCENARIO_SODI);
+#endif
 }
 
 static void _spm_vcorefs_init_reg(void)

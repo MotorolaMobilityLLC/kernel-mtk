@@ -10,6 +10,7 @@
 #include "mt_spm_internal.h"
 #include "mt_vcorefs_governor.h"
 #include "mt_spm_vcore_dvfs.h"
+#include "mt_spm_misc.h"
 #include <mt-plat/upmu_common.h>
 
 /**************************************
@@ -186,6 +187,10 @@ void __spm_reset_and_init_pcm(const struct pcm_desc *pcmdesc)
 			}
 #ifdef SPM_VCORE_EN_MT6797
 		}
+
+#if SPM_AEE_RR_REC
+		aee_rr_rec_spm_common_scenario_val(0);
+#endif
 #endif
 
 		spm_write(SPM_CPU_WAKEUP_EVENT, 0);

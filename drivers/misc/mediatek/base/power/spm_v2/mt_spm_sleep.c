@@ -784,6 +784,10 @@ RESTORE_IRQ:
 		spm_write(PCM_CON1, SPM_REGWR_CFG_KEY | (spm_read(PCM_CON1) & ~PCM_TIMER_EN_LSB));
 		__spm_kick_pcm_to_run(pwrctrl);
 		spm_crit2("R15: 0x%x\n", spm_read(PCM_REG15_DATA));
+
+#if SPM_AEE_RR_REC
+		aee_rr_rec_spm_common_scenario_val(SPM_COMMON_SCENARIO_SUSPEND);
+#endif
 	}
 #endif
 
