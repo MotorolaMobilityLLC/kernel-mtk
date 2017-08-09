@@ -55,6 +55,7 @@ static int func_lv_mask_idvfs = 500;
 #define IDVFS_DREQ_ENABLE		0
 #define IDVFS_OCP_OTP_ENABLE	1
 #define IDVFS_CCF_I2CV6			1
+#define IDVFS_FMAX_DEFAULT		2500
 
 /*
  * LOG
@@ -437,7 +438,7 @@ idvfs_status, status machine
 
 static struct IDVFS_INIT_OPT idvfs_init_opt = {
 	.idvfs_status = 0,
-	.freq_max = 2500,
+	.freq_max = IDVFS_FMAX_DEFAULT,
 	.freq_min = 510,
 	.freq_cur = 0,
 	.i2c_speed = 0,
@@ -737,7 +738,7 @@ int BigiDVFSEnable_hp(void) /* for cpu hot plug call */
 	BigiDVFSSWAvg(0, 1);
 
 	/* call smc function_id = SMC_IDVFS_BigiDVFSEnable(Fmax, Vproc_mv_x100, Vsram_mv_x100) */
-	SEC_BIGIDVFSENABLE(2500, cur_vproc_mv_x100, cur_vsram_mv_x100);
+	SEC_BIGIDVFSENABLE(IDVFS_FMAX_DEFAULT, cur_vproc_mv_x100, cur_vsram_mv_x100);
 
 	/* enable sw channel status and clear oct/otpl channel status by struct */
 	idvfs_init_opt.channel[IDVFS_CHANNEL_SW].status = 1;
@@ -761,7 +762,7 @@ int BigiDVFSEnable_hp(void) /* for cpu hot plug call */
 	BigiDVFSSWAvgStatus();
 
 	idvfs_ver("[****]iDVFS enable success. Fmax = %d MHz (Range: 500 ~ 3000MHz), Fcur = %dMHz.\n",
-		idvfs_init_opt.freq_max, idvfs_init_opt.freq_cur);
+		IDVFS_FMAX_DEFAULT, idvfs_init_opt.freq_cur);
 
 	/* enable struct idvfs_status = 1, 1: enable finish */
 	idvfs_init_opt.idvfs_status = 1;
@@ -924,13 +925,6 @@ int BigIDVFSFreq(unsigned int Freqpct_x100)
 {
 	unsigned int i, freq_swreq, target_pct_x100 = Freqpct_x100;
 
-	/* check freqpct */
-	/* spec is 2041~10000 percentag */
-	if ((Freqpct_x100 < (100)) || (Freqpct_x100 > (10000))) {
-		idvfs_error("iDVFS FreqPct_x100 = %d%%, range must be 1%%~100%%.\n", Freqpct_x100);
-		return -1;
-	}
-
 #if 1
 	/* idvfs status manchine */
 	/* 1: enable finish, 4: SWREQ start */
@@ -946,6 +940,14 @@ int BigIDVFSFreq(unsigned int Freqpct_x100)
 		return -2;
 	}
 #endif
+
+	/* check freqpct */
+	/* ATF clemp 20.41% ~ 116% percentag */
+	/* ((100% * 100 scaling) / IDVFS_FMAX_DEFAULT) = 4*/
+	/* if ((Freqpct_x100 < (100)) || (Freqpct_x100 > (10000))) { */
+	Freqpct_x100 =  ((Freqpct_x100 <= 100) ? 100 :
+					((Freqpct_x100 >= (idvfs_init_opt.freq_max * 4)) ?
+					 (idvfs_init_opt.freq_max * 4) : Freqpct_x100));
 
 	/* get freq_swreq integer */
 	freq_swreq = (Freqpct_x100 / 100) << 12;
@@ -1032,7 +1034,7 @@ int BigiDVFSSWAvgStatus(void)
 		idvfs_init_opt.freq_cur = 0;
 		idvfs_ver("iDVFS or SW AVG not enable, SWAVG = 0.\n");
 	} else {
-		idvfs_init_opt.freq_cur = ((idvfs_init_opt.freq_max * freqpct_x100) / 10000);
+		idvfs_init_opt.freq_cur = ((IDVFS_FMAX_DEFAULT * freqpct_x100) / 10000);
 		idvfs_ver("iDVFS read SWAvg and Freq_pet_x100 = %d(%%), Freq_cur = %dMHz, sw_avgfreq = 0x%x.\n",
 					freqpct_x100, idvfs_init_opt.freq_cur, sw_avgfreq);
 	}
@@ -1524,8 +1526,16 @@ static ssize_t dvt_test_proc_write(struct file *file, const char __user *buffer,
 			break;
 		case 2:
 			/* Manual ctrl freq */
+			/* echo 2 precent [max_precent] > dvt_test */
 			if (err == 2)
 				rc = BigIDVFSFreq(func_para[0]);
+			else if (err == 3) {
+				func_para[1] =   (func_para[1] <= 3000) ? 3000 :
+								((func_para[1] >= 11600) ? 11600 :
+								  func_para[1]);
+				idvfs_init_opt.freq_max = (func_para[1] / 4);
+				rc = BigIDVFSFreq(func_para[0]);
+			}
 			break;
 		case 3:
 			/* Channel = 0(SW), 1(OCP), 2(OTP), EnDis = 0/1 */
