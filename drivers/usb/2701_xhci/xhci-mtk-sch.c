@@ -276,7 +276,8 @@ static bool need_bw_sch(struct usb_host_endpoint *ep,
 
 	/*
 	 * for LS & FS periodic endpoints which its device don't attach
-	 * to TT are also ignored, root-hub will schedule them directly
+	 * to TT are also ignored, root-hub will schedule them directly,
+	 * but need set @bpkts to 1.
 	 */
 	if (is_fs_or_ls(speed) && !has_tt)
 		return false;
@@ -347,8 +348,17 @@ int xhci_mtk_add_ep_quirk(struct usb_hcd *hcd, struct usb_device *udev,
 		GET_MAX_PACKET(usb_endpoint_maxp(&ep->desc)),
 		usb_endpoint_dir_in(&ep->desc), ep);
 
-	if (!need_bw_sch(ep, udev->speed, slot_ctx->tt_info & TT_SLOT))
+	if (!need_bw_sch(ep, udev->speed, slot_ctx->tt_info & TT_SLOT)) {
+		/*
+		 * set @bpkts to 1 if it is LS or FS periodic endpoint, and its device
+		 * does not connected through an external HS hub
+		 */
+		if (usb_endpoint_xfer_int(&ep->desc)
+			|| usb_endpoint_xfer_isoc(&ep->desc))
+			ep_ctx->reserved[0] |= cpu_to_le32(EP_BPKTS(1));
+
 		return 0;
+	}
 
 	bw_index = get_bw_index(xhci, udev, ep);
 	sch_bw = &sch_array[bw_index];
