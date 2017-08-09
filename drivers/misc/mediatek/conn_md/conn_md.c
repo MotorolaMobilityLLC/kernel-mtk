@@ -468,6 +468,7 @@ static int conn_md_init(void)
 	if (NULL == g_conn_md.p_task) {
 		CONN_MD_ERR_FUNC("create conn_md_thread fail\n");
 		i_ret = -ENOMEM;
+		conn_md_dmp_deinit(g_conn_md.p_msg_dmp_sys);
 		goto conn_md_err;
 	}
 	CONN_MD_INFO_FUNC("create conn_md_thread succeed, wakeup it\n");

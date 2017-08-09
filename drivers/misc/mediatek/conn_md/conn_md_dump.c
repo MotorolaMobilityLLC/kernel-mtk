@@ -47,7 +47,7 @@ int conn_md_dmp_deinit(P_CONN_MD_DMP_MSG_LOG p_log)
 		CONN_MD_WARN_FUNC("invalid log buffer pointer\n");
 		i_ret = CONN_MD_ERR_INVALID_PARAM;
 	}
-	return 0;
+	return i_ret;
 }
 
 int __conn_md_dmp_in(ipc_ilm_t *p_ilm, CONN_MD_MSG_TYPE msg_type, P_CONN_MD_DMP_MSG_LOG p_msg_log)
