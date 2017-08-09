@@ -171,6 +171,8 @@ void mtk_kbase_dpm_setup(int *dfp_weights);
 
 void mtk_kbase_spm_kick(struct pcm_desc *pd);
 
+int mtk_kbase_spm_isonline(void);
+
 void mtk_kbase_spm_acquire(void);
 void mtk_kbase_spm_release(void);
 
@@ -193,6 +195,7 @@ void mtk_kbase_spm_update_table(void);
 
 void mtk_kbase_spm_hal_init(void);
 
+void mtk_gpu_spm_resume_hal(void);
 void mtk_gpu_spm_fix_by_idx(unsigned int idx);
 void mtk_gpu_spm_reset_fix(void);
 

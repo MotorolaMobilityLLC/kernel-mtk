@@ -49,6 +49,20 @@ volatile void *g_TOPCK_base;
 #define MTKCLK_disable_unprepare(clk) \
 	if (config->clk) {  clk_disable_unprepare(config->clk); }
 
+#ifdef MTK_GPU_SPM
+static void mtk_init_spm_dvfs_gpu(void)
+{
+	mtk_kbase_spm_kick(&dvfs_gpu_pcm);
+	mtk_kbase_spm_set_dvfs_en(1);
+
+	/* retrive OPP table */
+	mtk_kbase_spm_update_table();
+
+	/* resume limited value */
+	mtk_gpu_spm_resume_hal();
+}
+#endif
+
 static int pm_callback_power_on(struct kbase_device *kbdev)
 {
 	struct mtk_config *config = kbdev->mtk_config;
@@ -82,18 +96,16 @@ static int pm_callback_power_on(struct kbase_device *kbdev)
 	MFG_write32(0x3f0, 0xffffffff);
 
 #ifdef MTK_GPU_SPM
-#if 0
-	MTKCLK_prepare_enable(clk_gpupm);
-	MTKCLK_prepare_enable(clk_dvfs_gpu);
-	mtk_kbase_spm_acquire();
-	mtk_kbase_spm_con(SPM_RSV_BIT_EN, SPM_RSV_BIT_EN);
-	mtk_kbase_spm_wait();
-	mtk_kbase_spm_release();
-#else
+	if (!mtk_kbase_spm_isonline())
+	{
+		mtk_init_spm_dvfs_gpu();
+		mtk_kbase_spm_con(SPM_RSV_BIT_EN, SPM_RSV_BIT_EN);
+		mtk_kbase_spm_wait();
+	}
+
 	mtk_kbase_spm_acquire();
 	DVFS_GPU_write32(SPM_GPU_POWER, 0x1);
 	mtk_kbase_spm_release();
-#endif
 #endif
 
 #ifdef MTK_GPU_OCP
@@ -132,19 +144,23 @@ static void pm_callback_power_off(struct kbase_device *kbdev)
 #endif
 
 #ifdef MTK_GPU_SPM
-#if 0
-	mtk_kbase_spm_acquire();
-	mtk_kbase_spm_con(0, SPM_RSV_BIT_EN);
-	mtk_kbase_spm_wait();
-	mtk_kbase_spm_release();
-	MTKCLK_disable_unprepare(clk_dvfs_gpu);
-	MTKCLK_disable_unprepare(clk_gpupm);
-#else
 	mtk_kbase_spm_acquire();
 	DVFS_GPU_write32(SPM_GPU_POWER, 0x0);
-	while (DVFS_GPU_read32(SPM_BYPASS_DFP) != 0x1);
+	{
+		int t = 0xffff;
+		while (DVFS_GPU_read32(SPM_BYPASS_DFP) != 0x1 && --t)
+		{
+			if (!mtk_kbase_spm_isonline())
+				break;
+			udelay(1);
+		}
+
+		if (t <= 10)
+		{
+			dev_err(kbdev->dev, "polling BYPASS_DFP fail, rem:%d\n", t);
+		}
+	}
 	mtk_kbase_spm_release(); 
-#endif
 #endif
 
 	MTKCLK_disable_unprepare(clk_mfg_main);
@@ -389,8 +405,8 @@ int mtk_platform_init(struct platform_device *pdev, struct kbase_device *kbdev)
 
 	config->max_volt = 1125;
 	config->max_freq = mt_gpufreq_get_freq_by_idx(0);
-	config->min_volt = 800;
-	config->min_freq = mt_gpufreq_get_freq_by_idx(mt_gpufreq_get_dvfs_table_num()-1);
+	config->min_volt = 850;
+	config->min_freq = mt_gpufreq_get_freq_by_idx(mt_gpufreq_get_dvfs_table_num()-2);
 
 	g_config = kbdev->mtk_config = config;
 
@@ -398,21 +414,17 @@ int mtk_platform_init(struct platform_device *pdev, struct kbase_device *kbdev)
 	MTKCLK_prepare_enable(clk_gpupm);
 	MTKCLK_prepare_enable(clk_dvfs_gpu);
 
-	mtk_kbase_spm_kick(&dvfs_gpu_pcm);
-	mtk_kbase_spm_set_dvfs_en(1);
+	/* init gpu hal */
+	mtk_kbase_spm_hal_init();
 
-#if 0
-	DVFS_GPU_write32(SPM_GPU_POWER, 0x1);
+	/* kick spm_dvfs_gpu */
+	mtk_init_spm_dvfs_gpu();
 
-	MTKCLK_disable_unprepare(clk_dvfs_gpu);
-	MTKCLK_disable_unprepare(clk_gpupm);
-#else
-	DVFS_GPU_write32(SPM_GPU_POWER, 0x0);
+	/* enable it */
 	mtk_kbase_spm_con(SPM_RSV_BIT_EN, SPM_RSV_BIT_EN);
 	mtk_kbase_spm_wait();
-#endif
 
-	mtk_kbase_spm_hal_init();
+	/* create debugging node */
 	if (device_create_file(kbdev->dev, &dev_attr_dvfs_gpu_dump))
 	{
 		dev_err(kbdev->dev, "xxxx dvfs_gpu_dump create fail\n");

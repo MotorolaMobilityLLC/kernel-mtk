@@ -92,6 +92,11 @@ void mtk_kbase_spm_kick(struct pcm_desc *pd)
 	spm_release();
 }
 
+int mtk_kbase_spm_isonline(void)
+{
+	return (DVFS_GPU_read32(0x640) != 0xbabebabe);
+}
+
 void mtk_kbase_spm_con(unsigned int val, unsigned int mask)
 {
 	unsigned int reg = DVFS_GPU_read32(SPM_RSV_CON);
@@ -103,9 +108,13 @@ void mtk_kbase_spm_con(unsigned int val, unsigned int mask)
 void mtk_kbase_spm_wait(void)
 {
 	int retry = 0xffff;
+
 	while (DVFS_GPU_read32(SPM_RSV_STA) != DVFS_GPU_read32(SPM_RSV_CON) /*&& --retry*/)
 	{
 		udelay(1);
+
+		if (!mtk_kbase_spm_isonline())
+			break;
 	}
 
 	if (retry <= 0)

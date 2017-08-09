@@ -251,6 +251,11 @@ void mtk_kbase_spm_hal_init(void)
   	mt_gpufreq_update_volt_registerCB(spm_mtk_gpu_ptpod_update_notify);
 }
 
+void mtk_gpu_spm_resume_hal(void)
+{
+	spm_update_fc();
+}
+
 void mtk_gpu_spm_fix_by_idx(unsigned int idx)
 {
 	glo.idx_fix = idx;
