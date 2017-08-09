@@ -1726,10 +1726,7 @@ VOID nicRxProcessEventPacket(IN P_ADAPTER_T prAdapter, IN OUT P_SW_RFB_T prSwRfb
 	P_WIFI_EVENT_T prEvent;
 	P_GLUE_INFO_T prGlueInfo;
 
-	/*BOOLEAN fgKeepprSwRfb = FALSE;*/
-
 	DEBUGFUNC("nicRxProcessEventPacket");
-	/* DBGLOG(RX, TRACE, ("\n")); */
 
 	ASSERT(prAdapter);
 	ASSERT(prSwRfb);
@@ -2457,7 +2454,7 @@ VOID nicRxProcessEventPacket(IN P_ADAPTER_T prAdapter, IN OUT P_SW_RFB_T prSwRfb
 			P_EVENT_FW_LOG_T prEventLog;
 
 			prEventLog = (P_EVENT_FW_LOG_T) (prEvent->aucBuffer);
-			DBGLOG(RX, EVENT, "[F-L]%s\n", prEventLog->log);
+			DBGLOG(RX, INFO, "[F-L]%s\n", prEventLog->log);
 		}
 		break;
 
