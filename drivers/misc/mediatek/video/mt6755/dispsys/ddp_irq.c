@@ -353,7 +353,7 @@ irqreturn_t disp_irq_handler(int irq, void *dev_id)
 	} else if (irq == dispsys_irq[DISP_REG_AAL]) {
 		module = DISP_MODULE_AAL;
 		reg_val = DISP_REG_GET(DISP_AAL_INTSTA);
-		disp_aal_on_end_of_frame();
+		/*disp_aal_on_end_of_frame();*/
 	} else if (irq == dispsys_irq[DISP_REG_CONFIG]) {	/* MMSYS error intr */
 		reg_val = DISP_REG_GET(DISP_REG_CONFIG_MMSYS_INTSTA) & 0x7;
 		if (reg_val & (1 << 0))

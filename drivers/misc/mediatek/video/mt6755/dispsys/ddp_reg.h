@@ -1166,7 +1166,7 @@ static inline unsigned long disp_addr_convert(unsigned long va)
 
 #define DISP_REG_BACKUP(handle, hSlot, idx, reg32) \
 	do { \
-		if (handle != NULL) { \
+		if (handle != NULL) \
 			if (hSlot) \
 				cmdqRecBackupRegisterToSlot(handle,\
 							hSlot, idx, disp_addr_convert((unsigned long)reg32));\

@@ -132,7 +132,8 @@ int disp_helper_set_option(DISP_HELPER_OPT option, int value)
 	int ret = 0;
 
 	if (option == DISP_OPT_FPS_CALC_WND) {
-		ret = primary_fps_ctx_set_wnd_sz(value);
+		DISPMSG("DISP_OPT_FPS_CALC_WND\n");
+		/*ret = primary_fps_ctx_set_wnd_sz(value);*/
 		if (ret) {
 			DISPERR("%s error to set fps_wnd_sz to %d\n", __func__, value);
 			return ret;

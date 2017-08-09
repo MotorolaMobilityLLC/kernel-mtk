@@ -194,7 +194,7 @@ static void process_dbg_opt(const char *opt)
 		}
 
 		if (level) {
-			disp_bls_set_backlight(level);
+			/*disp_bls_set_backlight(level);*/
 			sprintf(buf, "backlight: %d\n", level);
 		} else {
 			goto Error;
@@ -215,7 +215,7 @@ static void process_dbg_opt(const char *opt)
 			if (opt[3] == '1')
 				pwm_id = DISP_PWM1;
 
-			disp_pwm_set_backlight(pwm_id, level);
+			/*disp_pwm_set_backlight(pwm_id, level);*/
 			sprintf(buf, "PWM 0x%x : %d\n", pwm_id, level);
 		} else {
 			goto Error;
@@ -242,7 +242,10 @@ static void process_dbg_opt(const char *opt)
 			rdma_disable_color_transform(DISP_MODULE_RDMA0);
 		}
 	} else if (0 == strncmp(opt, "aal_dbg:", 8)) {
-		char *p = (char *)opt + 8;
+		int i;
+
+		i = 0;
+/*		char *p = (char *)opt + 8;
 
 		ret = kstrtouint(p, 0, &aal_dbg_en);
 		if (ret) {
@@ -250,7 +253,7 @@ static void process_dbg_opt(const char *opt)
 			return;
 		}
 
-		sprintf(buf, "aal_dbg_en = 0x%x\n", aal_dbg_en);
+		sprintf(buf, "aal_dbg_en = 0x%x\n", aal_dbg_en);*/
 	} else if (0 == strncmp(opt, "corr_dbg:", 9)) {
 		int i;
 

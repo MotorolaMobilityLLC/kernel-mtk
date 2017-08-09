@@ -332,10 +332,10 @@ static int __trigger_display(disp_session_config *config)
 		primary_display_trigger(0, NULL, config->need_merge);
 	} else if (DISP_SESSION_TYPE(session_id) == DISP_SESSION_EXTERNAL) {
 		mutex_lock(&disp_session_lock);
-		ret = external_display_trigger(config->tigger_mode, session_id);
+		/*ret = external_display_trigger(config->tigger_mode, session_id);*/
 		mutex_unlock(&disp_session_lock);
 	} else if (DISP_SESSION_TYPE(session_id) == DISP_SESSION_MEMORY) {
-		ovl2mem_trigger(1, NULL, 0);
+		/*ovl2mem_trigger(1, NULL, 0);*/
 	} else {
 		DISPERR("session type is wrong:0x%08x\n", session_id);
 		ret = -1;
@@ -646,7 +646,7 @@ static int set_memory_buffer(disp_session_input_config *input)
 				input->config[i].layer_enable = 0;
 
 
-			DISPPR_FENCE
+/*			DISPPR_FENCE
 			    ("S+/ML%d/e%d/id%d/%dx%d(%d,%d)(%d,%d)/%s/%d/0x%p/mva0x%x/t%d/sec%d\n",
 			     input->config[i].layer_id, input->config[i].layer_enable,
 			     input->config[i].next_buff_idx, input->config[i].src_width,
@@ -655,16 +655,16 @@ static int set_memory_buffer(disp_session_input_config *input)
 			     input->config[i].tgt_offset_y,
 			     _disp_format_spy(input->config[i].src_fmt), input->config[i].src_pitch,
 			     input->config[i].src_phy_addr, dst_mva, get_ovl2mem_ticket(),
-			     input->config[i].security);
+			     input->config[i].security);*/
 		} else {
 			DISPPR_FENCE("S+/ML%d/e%d/id%d\n", input->config[i].layer_id,
 				     input->config[i].layer_enable, input->config[i].next_buff_idx);
 		}
 
-		/* /disp_sync_put_cached_layer_info(session_id, layer_id, &input->config[i], get_ovl2mem_ticket()); */
-		mtkfb_update_buf_ticket(session_id, layer_id,
+		/* disp_sync_put_cached_layer_info(session_id, layer_id, &input->config[i], get_ovl2mem_ticket()); */
+		/*mtkfb_update_buf_ticket(session_id, layer_id,
 					input->config[i].next_buff_idx,
-					get_ovl2mem_ticket());
+					get_ovl2mem_ticket());*/
 		_sync_convert_fb_layer_to_disp_input(input->session_id,
 						     &(input->config[i]),
 						     (primary_disp_input_config *)&input_params[layer_id],
@@ -686,7 +686,7 @@ static int set_memory_buffer(disp_session_input_config *input)
 		}
 	}
 
-	ovl2mem_input_config((ovl2mem_in_config *)&input_params);
+/*	ovl2mem_input_config((ovl2mem_in_config *)&input_params);*/
 
 	return 0;
 
@@ -778,7 +778,7 @@ static int set_external_buffer(disp_session_input_config *input)
 		}
 	}
 
-	ret = external_display_config_input(input, input->config[0].next_buff_idx, session_id);
+/*	ret = external_display_config_input(input, input->config[0].next_buff_idx, session_id);*/
 
 	if (ret == -2) {
 		for (i = 0; i < input->config_layer_num; i++)
@@ -833,7 +833,7 @@ static int set_primary_buffer(disp_session_input_config *input)
 	int i = 0;
 	int layer_id = 0;
 	unsigned int dst_size = 0;
-	unsigned int dst_mva = 0;
+	unsigned long dst_mva = 0;
 	unsigned int session_id = 0;
 	unsigned int mva_offset = 0;
 	disp_session_sync_info *session_info;
@@ -904,7 +904,7 @@ static int set_primary_buffer(disp_session_input_config *input)
 					      input->config[i].frm_sequence);
 
 			DISPPR_FENCE
-			    ("S+/PL%d/e%d/id%d/%dx%d(%d,%d)(%d,%d)/%s/%d/0x%p/mva0x%08x/sec%d\n",
+			    ("S+/PL%d/e%d/id%d/%dx%d(%d,%d)(%d,%d)/%s/%d/0x%p/mva0x%08lx/sec%d\n",
 			     input->config[i].layer_id, input->config[i].layer_enable,
 			     input->config[i].next_buff_idx, input->config[i].src_width,
 			     input->config[i].src_height, input->config[i].src_offset_x,
@@ -1061,7 +1061,7 @@ static int __set_output(disp_session_output_config *session_output)
 		}
 
 		DISPPR_FENCE
-		    ("S+O/%s%d/L%d(id%d)/L%d(id%d)/%dx%d(%d,%d)/%s/%d/0x%08x/mva0x%08x/sec%d\n",
+		    ("S+O/%s%d/L%d(id%d)/L%d(id%d)/%dx%d(%d,%d)/%s/%d/0x%08x/mva0x%08lx/sec%d\n",
 		     disp_session_mode_spy(session_id), DISP_SESSION_DEV(session_id),
 		     disp_sync_get_output_timeline_id(), session_output->config.buff_idx,
 		     disp_sync_get_output_interface_timeline_id(),
@@ -1081,7 +1081,7 @@ static int __set_output(disp_session_output_config *session_output)
 				     dst_mva);
 		}
 		DISPMSG
-		    ("_ioctl_set_output_buffer done idx 0x%x, mva %x, fmt %x, w %x, h %x (%x %x), p %x\n",
+		    ("_ioctl_set_output_buffer done idx 0x%x, mva %lx, fmt %x, w %x, h %x (%x %x), p %x\n",
 		     session_output->config.buff_idx, dst_mva, session_output->config.fmt,
 		     session_output->config.width, session_output->config.height,
 		     session_output->config.x, session_output->config.y, session_output->config.pitch);
@@ -1098,14 +1098,14 @@ static int __set_output(disp_session_output_config *session_output)
 						(unsigned int)session_output->config.buff_idx);
 		}
 
-		mtkfb_update_buf_ticket(session_id, disp_sync_get_output_timeline_id(),
-					session_output->config.buff_idx, get_ovl2mem_ticket());
+/*		mtkfb_update_buf_ticket(session_id, disp_sync_get_output_timeline_id(),
+					session_output->config.buff_idx, get_ovl2mem_ticket());*/
 		_sync_convert_fb_layer_to_disp_output(session_output->session_id,
 						      &(session_output->config), &primary_output,
 						      dst_mva);
 		primary_output.dirty = 1;
 
-		DISPPR_FENCE("S+/%s%d/L%d/id%d/%dx%d(%d,%d)/%s/%d/%d/0x%p/mva0x%x/t%d/sec%d(%d)\n",
+/*		DISPPR_FENCE("S+/%s%d/L%d/id%d/%dx%d(%d,%d)/%s/%d/%d/0x%p/mva0x%lx/t%d/sec%d(%d)\n",
 			     disp_session_mode_spy(session_id), DISP_SESSION_DEV(session_id),
 			     4,
 			     session_output->config.buff_idx,
@@ -1118,13 +1118,13 @@ static int __set_output(disp_session_output_config *session_output)
 			     session_output->config.pitchUV,
 			     session_output->config.pa,
 			     dst_mva, get_ovl2mem_ticket(),
-			     session_output->config.security, primary_output.security);
+			     session_output->config.security, primary_output.security);*/
 
-		if (dst_mva)
+		/*if (dst_mva)
 			ovl2mem_output_config(&primary_output);
 		else
 			DISPERR("error buffer idx 0x%x\n", session_output->config.buff_idx);
-
+		*/
 		mtkfb_update_buf_info(session_output->session_id, disp_sync_get_output_timeline_id(),
 				      session_output->config.buff_idx, 0,
 				      session_output->config.frm_sequence);
@@ -1132,11 +1132,11 @@ static int __set_output(disp_session_output_config *session_output)
 		if (session_info)
 			dprec_submit(&session_info->event_setoutput, session_output->config.buff_idx, dst_mva);
 
-		DISPMSG
+		/*DISPMSG
 		    ("_ioctl_set_output_buffer done idx 0x%x, mva %x, fmt %x, w %x, h %x, p %x\n",
 		     session_output->config.buff_idx, dst_mva, session_output->config.fmt,
 		     session_output->config.width, session_output->config.height,
-		     session_output->config.pitch);
+		     session_output->config.pitch);*/
 	}
 
 	if (session_info)
@@ -1237,9 +1237,9 @@ int _ioctl_get_info(unsigned long arg)
 	if (DISP_SESSION_TYPE(session_id) == DISP_SESSION_PRIMARY) {
 		primary_display_get_info(&info);
 	} else if (DISP_SESSION_TYPE(session_id) == DISP_SESSION_EXTERNAL) {
-		external_display_get_info(&info, session_id);
+		/*external_display_get_info(&info, session_id);*/
 	} else if (DISP_SESSION_TYPE(session_id) == DISP_SESSION_MEMORY) {
-		ovl2mem_get_info(&info);
+		/*ovl2mem_get_info(&info);*/
 	} else {
 		DISPERR("session type is wrong:0x%08x\n", session_id);
 		return -1;
@@ -1327,9 +1327,10 @@ int _ioctl_wait_vsync(unsigned long arg)
 	if (session_info)
 		dprec_start(&session_info->event_waitvsync, 0, 0);
 
-	if (DISP_SESSION_TYPE(vsync_config.session_id) == DISP_SESSION_EXTERNAL)
-		ret = external_display_wait_for_vsync(&vsync_config, vsync_config.session_id);
-	else
+	if (DISP_SESSION_TYPE(vsync_config.session_id) == DISP_SESSION_EXTERNAL) {
+		/*ret = external_display_wait_for_vsync(&vsync_config, vsync_config.session_id);*/
+		DISPMSG("external_display_wait_for_vsync\n");
+	} else
 		ret = primary_display_wait_for_vsync(&vsync_config);
 
 	if (session_info)
@@ -1361,7 +1362,7 @@ int set_session_mode(disp_session_config *config_info, int force)
 	else
 		DISPERR("[FB]: session(0x%x) swith mode(%d) fail\n", config_info->session_id, config_info->mode);
 
-	external_display_switch_mode(config_info->mode, session_config, config_info->session_id);
+	/*external_display_switch_mode(config_info->mode, session_config, config_info->session_id);*/
 
 	return ret;
 }
@@ -1712,7 +1713,7 @@ static int mtk_disp_mgr_probe(struct platform_device *pdev)
 	    (struct class_device *)device_create(mtk_disp_mgr_class, NULL, mtk_disp_mgr_devno, NULL,
 						 DISP_SESSION_DEVICE);
 	disp_sync_init();
-	external_display_control_init();
+/*	external_display_control_init();*/
 
 	return 0;
 }

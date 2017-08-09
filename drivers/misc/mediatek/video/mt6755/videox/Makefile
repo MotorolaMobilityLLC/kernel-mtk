@@ -8,7 +8,6 @@ obj-y += mtkfb_console.o        \
 		primary_display.o      \
 		disp_lcm.o             \
 		disp_utils.o           \
-		mtkfb_fence.o          \
 		mtk_disp_mgr.o         \
 		compat_mtk_disp_mgr.o \
 		mtk_mira.o             \
