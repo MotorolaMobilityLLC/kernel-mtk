@@ -1018,15 +1018,8 @@ static INT32 wmt_dbg_lte_to_wmt_test(UINT32 opcode, UINT32 msg_len)
 static INT32 wmt_dbg_lte_coex_test(INT32 par1, INT32 par2, INT32 par3)
 {
 	UINT8 *local_buffer = NULL;
-
-	local_buffer = kmalloc(512, GFP_KERNEL);
-	if (!local_buffer) {
-			WMT_ERR_FUNC("local_buffer kmalloc memory fail\n");
-			return 0;
-	}
 	UINT32 handle_len;
 	INT32 iRet = -1;
-
 	static UINT8 wmt_to_lte_test_evt1[] = { 0x02, 0x16, 0x0d, 0x00,
 		0x00, 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09,
 		0xa, 0xb
@@ -1041,6 +1034,12 @@ static INT32 wmt_dbg_lte_coex_test(INT32 par1, INT32 par2, INT32 par3)
 		0x03, 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09,
 		0xa, 0xb
 	};
+
+	local_buffer = kmalloc(512, GFP_KERNEL);
+	if (!local_buffer) {
+		WMT_ERR_FUNC("local_buffer kmalloc memory fail\n");
+		return 0;
+	}
 
 	if (par2 == 1) {
 		handle_len =
