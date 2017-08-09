@@ -20,9 +20,6 @@
 #include <linux/of_address.h>
 #endif
 
-/* #define SELF_TEST */
-#define GPIO_BRINGUP
-
 /* unsigned long GPIO_COUNT=0; */
 /* unsigned long uart_base; */
 /* #define GPIO_BRINGUP 1 */
@@ -72,7 +69,9 @@ int mt6306_set_gpio_dir(unsigned long pin, unsigned long dir)
 int mt_set_gpio_dir_base(unsigned long pin, unsigned long dir)
 {
 	unsigned long bit;
+#ifdef GPIO_BRINGUP
 	unsigned long reg;
+#endif
 	void __iomem *addr;
 
 	if (pin >= MAX_GPIO_PIN)
@@ -166,8 +165,10 @@ int mt_set_gpio_smt_base(unsigned long pin, unsigned long enable)
 {
 	/* unsigned long flags; */
 	void __iomem *addr;
+#ifdef GPIO_BRINGUP
 	unsigned long reg;
 	unsigned long bit = 0;
+#endif
 
 	if (pin >= MAX_GPIO_PIN)
 		return -ERINVAL;
@@ -268,7 +269,9 @@ int mt_get_gpio_ies_base(unsigned long pin)
 
 s32 mt_set_gpio_pull_select_rx_chip(u32 pin, u32 r0, u32 r1)
 {
+#ifdef GPIO_BRINGUP
 	u32 reg = 0;
+#endif
 	void __iomem *r0_addr;
 	void __iomem *r1_addr;
 
@@ -315,12 +318,14 @@ s32 mt_set_gpio_pull_select_rx_chip(u32 pin, u32 r0, u32 r1)
 int mt_set_gpio_pull_select_base(unsigned long pin, unsigned long select)
 {
 
+#ifdef GPIO_BRINGUP
 	u32 reg = 0;
 	u32 pu_reg = 0;
 	u32 pd_reg = 0;
 	unsigned long pupd_bit = 0;
 	unsigned long pu_bit = 0;
 	unsigned long pd_bit = 0;
+#endif
 	void __iomem *puaddr;
 	void __iomem *pdaddr;
 	void __iomem *pupdaddr;
@@ -576,7 +581,9 @@ int mt_set_gpio_out_base(unsigned long pin, unsigned long output)
 {
 	unsigned long bit;
 	void __iomem *addr;
+#ifdef GPIO_BRINGUP
 	unsigned long reg;
+#endif
 
 	if (pin >= MAX_GPIO_PIN)
 		return -ERINVAL;
@@ -809,19 +816,19 @@ void get_io_cfg_vbase(void)
 #ifdef SELF_TEST
 
 	gpio_vbase.gpio_regs = kzalloc(4096*sizeof(void __iomem *), GFP_KERNEL);
-	GPIOLOG("test gpio_vbase.gpio_regs=0x%lx\n", gpio_vbase.gpio_regs);
+	GPIOLOG("test gpio_vbase.gpio_regs=0x%p\n", gpio_vbase.gpio_regs);
 
 	gpio_vbase.IOCFG_L_regs = kzalloc(4096*sizeof(void __iomem *), GFP_KERNEL);
-	GPIOLOG("test gpio_vbase.IOCFG_L_regs=0x%lx\n", gpio_vbase.IOCFG_L_regs);
+	GPIOLOG("test gpio_vbase.IOCFG_L_regs=0x%p\n", gpio_vbase.IOCFG_L_regs);
 
 	gpio_vbase.IOCFG_B_regs = kzalloc(4096*sizeof(void __iomem *), GFP_KERNEL);
-	GPIOLOG("test gpio_vbase.IOCFG_B_regs=0x%lx\n", gpio_vbase.IOCFG_B_regs);
+	GPIOLOG("test gpio_vbase.IOCFG_B_regs=0x%p\n", gpio_vbase.IOCFG_B_regs);
 
 	gpio_vbase.IOCFG_R_regs = kzalloc(4096*sizeof(void __iomem *), GFP_KERNEL);
-	GPIOLOG("test gpio_vbase.IOCFG_R_regs=0x%lx\n", gpio_vbase.IOCFG_R_regs);
+	GPIOLOG("test gpio_vbase.IOCFG_R_regs=0x%p\n", gpio_vbase.IOCFG_R_regs);
 
 	gpio_vbase.IOCFG_T_regs = kzalloc(4096*sizeof(void __iomem *), GFP_KERNEL);
-	GPIOLOG("test gpio_vbase.IOCFG_T_regs=0x%lx\n", gpio_vbase.IOCFG_T_regs);
+	GPIOLOG("test gpio_vbase.IOCFG_T_regs=0x%p\n", gpio_vbase.IOCFG_T_regs);
 /*
 	gpio_vbase.MIPI_TX0_regs = kzalloc(4096*sizeof(void __iomem *), GFP_KERNEL);
 	GPIOLOG("test gpio_vbase.MIPI_TX0_regs=0x%lx\n", gpio_vbase.MIPI_TX0_regs);
@@ -843,7 +850,6 @@ int smt_test(void)
 {
 
 	int i, val;
-	s32 out;
 	int res;
 
 	GPIOLOG("smt_test test+++++\n");
@@ -886,7 +892,6 @@ int output_test(void)
 {
 
 	int i, val;
-	s32 out;
 	int res;
 
 	GPIOLOG("output test+++++\n");
@@ -925,7 +930,6 @@ int output_test(void)
 int direction_test(void)
 {
 	int i, val;
-	s32 out;
 	int res;
 
 	GPIOLOG("direction_test test+++++\n");
@@ -964,7 +968,6 @@ int direction_test(void)
 int mode_test(void)
 {
 	int i, val;
-	s32 out;
 	int res;
 
 	GPIOLOG("mode_test test+++++\n");
@@ -997,7 +1000,6 @@ int mode_test(void)
 int pullen_test(void)
 {
 	int i, val;
-	s32 out;
 	int res;
 
 	GPIOLOG("pullen_test  +++++\n");
@@ -1050,7 +1052,6 @@ int pullen_test(void)
 int pullselect_test(void)
 {
 	int i, val;
-	s32 out;
 	int res;
 
 	GPIOLOG("pullselect_test  +++++\n");

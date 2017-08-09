@@ -4,6 +4,9 @@
 #include "mt-plat/sync_write.h"
 #include <mach/gpio_const.h>
 
+/* #define SELF_TEST
+#define GPIO_BRINGUP */
+
 
 #define GPIO_WR32(addr, data)   mt_reg_sync_writel(data, addr)
 #define GPIO_RD32(addr)         __raw_readl(addr)
