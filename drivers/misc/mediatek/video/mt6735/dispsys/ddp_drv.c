@@ -455,18 +455,8 @@ static int disp_flush(struct file *file, fl_owner_t a_id)
 	return 0;
 }
 
-/* remap register to user space */
 static int disp_mmap(struct file *file, struct vm_area_struct *a_pstVMArea)
 {
-#if defined(CONFIG_TRUSTONIC_TEE_SUPPORT) && defined(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT)
-	a_pstVMArea->vm_page_prot = pgprot_noncached(a_pstVMArea->vm_page_prot);
-	if (remap_pfn_range(a_pstVMArea, a_pstVMArea->vm_start, a_pstVMArea->vm_pgoff,
-			    (a_pstVMArea->vm_end - a_pstVMArea->vm_start), a_pstVMArea->vm_page_prot)) {
-		DDPERR("MMAP failed!!\n");
-		return -1;
-	}
-#endif
-
 	return 0;
 }
 
