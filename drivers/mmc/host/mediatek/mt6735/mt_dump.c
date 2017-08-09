@@ -2047,6 +2047,7 @@ static int simp_emmc_dump_write(unsigned char *buf, unsigned int len,
 	unsigned char *l_buf;
 	unsigned int ret = 1;	/* != 0 means error occur */
 	int err = 0;
+	static int force;/*for dump info*/
 
 	if (0 != len % 512) {
 		/* emmc always in slot0 */
@@ -2084,10 +2085,10 @@ static int simp_emmc_dump_write(unsigned char *buf, unsigned int len,
 #if MTK_MMC_DUMP_DBG
 	pr_debug("write start address = %llu\n", l_start_offset);
 #endif
-
-
-	simp_init_emmc();
-
+	if (force == 0) {
+		simp_init_emmc();
+		force = 1;
+	}
 	for (i = 0; i < (len / 512); i++) {
 		/* code */
 		l_addr = (l_start_offset >> 9) + i;	/*blk address */
