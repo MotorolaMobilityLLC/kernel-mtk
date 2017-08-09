@@ -475,6 +475,9 @@ EXPORT_SYMBOL(wake_up_bat3);
 
 static ssize_t bat_log_write(struct file *filp, const char __user *buff, size_t len, loff_t *data)
 {
+	if (len >= sizeof(proc_bat_data))
+		return -EFAULT;
+
 	if (copy_from_user(&proc_bat_data, buff, len)) {
 		battery_log(BAT_LOG_FULL, "bat_log_write error.\n");
 		return -EFAULT;

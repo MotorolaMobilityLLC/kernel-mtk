@@ -3635,6 +3635,9 @@ signed int battery_meter_get_VSense(void)
 static ssize_t fgadc_log_write(struct file *filp, const char __user *buff,
 			       size_t len, loff_t *data)
 {
+	if (len >= sizeof(proc_fgadc_data))
+		return -EFAULT;
+
 	if (copy_from_user(&proc_fgadc_data, buff, len)) {
 		bm_print(BM_LOG_CRTI, "fgadc_log_write error.\n");
 		return -EFAULT;
