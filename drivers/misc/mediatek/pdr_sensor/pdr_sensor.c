@@ -26,15 +26,14 @@ static void pdr_late_resume(struct early_suspend *h);
 
 static void pdr_work_func(struct work_struct *work)
 {
-
-	struct pdr_context *cxt = NULL;
-	int x, y, z, scalar, status;
-	int64_t nt;
 	struct timespec time;
-	int err;
+	int sensor_data[4];
+	int status = 0;
+	int err = 0;
+	struct pdr_context *cxt = NULL;
+	int64_t nt = 0;
 
 	cxt = pdr_context_obj;
-
 	if (NULL == cxt->pdr_data.get_data)
 		PDR_LOG("pdr driver not register data path\n");
 
@@ -42,24 +41,21 @@ static void pdr_work_func(struct work_struct *work)
 	time = get_monotonic_coarse();
 	nt = time.tv_sec * 1000000000LL + time.tv_nsec;
 
-	err = cxt->pdr_data.get_data(&x, &y, &z, &scalar, &status);
-
+	err = cxt->pdr_data.get_data(sensor_data, &status);
+	/* PDR_ERR("[Bai]>>pdr data:%d,%d,%d,status:%d\n", sensor_data[0], sensor_data[1], sensor_data[2], status); */
 	if (err) {
 		PDR_ERR("get pdr data fails!!\n");
 		goto pdr_loop;
 	} else {
-		{
-			if (0 == x && 0 == y && 0 == z)
-				goto pdr_loop;
+		if (0 == sensor_data[0] && 0 == sensor_data[1] && 0 == sensor_data[2])
+			goto pdr_loop;
 
-			cxt->drv_data.pdr_data.values[0] = x;
-			cxt->drv_data.pdr_data.values[1] = y;
-			cxt->drv_data.pdr_data.values[2] = z;
-			cxt->drv_data.pdr_data.values[3] = scalar;
-			cxt->drv_data.pdr_data.status = status;
-			cxt->drv_data.pdr_data.time = nt;
-
-		}
+		cxt->drv_data.pdr_data.values[0] = sensor_data[0];	/*x axis */
+		cxt->drv_data.pdr_data.values[1] = sensor_data[1];	/*y axis */
+		cxt->drv_data.pdr_data.values[2] = sensor_data[2];	/*z axis */
+		cxt->drv_data.pdr_data.values[3] = sensor_data[3];	/*scalar */
+		cxt->drv_data.pdr_data.status = status;	/*status */
+		cxt->drv_data.pdr_data.time = nt;
 	}
 
 	if (true == cxt->is_first_data_after_enable) {
@@ -68,18 +64,15 @@ static void pdr_work_func(struct work_struct *work)
 		if (PDR_INVALID_VALUE == cxt->drv_data.pdr_data.values[0] ||
 		    PDR_INVALID_VALUE == cxt->drv_data.pdr_data.values[1] ||
 		    PDR_INVALID_VALUE == cxt->drv_data.pdr_data.values[2] ||
-		    PDR_INVALID_VALUE == cxt->drv_data.pdr_data.values[3]
-		    ) {
+		    PDR_INVALID_VALUE == cxt->drv_data.pdr_data.values[3]) {
 			PDR_LOG(" read invalid data\n");
 			goto pdr_loop;
-
 		}
 	}
 	/* report data to input device */
 	/* printk("new pdr work run....\n"); */
 	/* PDR_LOG("pdr data[%d,%d,%d]\n" ,cxt->drv_data.pdr_data.values[0], */
 	/* cxt->drv_data.pdr_data.values[1],cxt->drv_data.pdr_data.values[2]); */
-
 	pdr_data_report(cxt->drv_data.pdr_data.values[0],
 			cxt->drv_data.pdr_data.values[1],
 			cxt->drv_data.pdr_data.values[2],
@@ -103,13 +96,14 @@ static struct pdr_context *pdr_context_alloc_object(void)
 
 	struct pdr_context *obj = kzalloc(sizeof(*obj), GFP_KERNEL);
 
-	PDR_LOG("pdr_context_alloc_object++++\n");
+	/*PDR_ERR("[Bai]>>pdr_context_alloc_object++++\n"); */
 	if (!obj) {
 		PDR_ERR("Alloc pdr object error!\n");
 		return NULL;
 	}
 	atomic_set(&obj->delay, 200);	/*5Hz  set work queue delay time 200ms */
 	atomic_set(&obj->wake, 0);
+
 	INIT_WORK(&obj->report, pdr_work_func);
 	init_timer(&obj->timer);
 	obj->timer.expires = jiffies + atomic_read(&obj->delay) / (1000 / HZ);
@@ -119,7 +113,7 @@ static struct pdr_context *pdr_context_alloc_object(void)
 	obj->is_polling_run = false;
 	mutex_init(&obj->pdr_op_mutex);
 	obj->is_batch_enable = false;	/* for batch mode init */
-	PDR_LOG("pdr_context_alloc_object----\n");
+	/*PDR_ERR("[Bai]>>pdr_context_alloc_object end\n"); */
 	return obj;
 }
 
@@ -153,7 +147,6 @@ static int pdr_real_enable(int enable)
 				PDR_ERR("pdr enable(%d) err = %d\n", enable, err);
 			PDR_LOG("pdr real disable\n");
 		}
-
 	}
 
 	return err;
@@ -271,7 +264,7 @@ static ssize_t pdr_store_active(struct device *dev, struct device_attribute *att
 	struct pdr_context *cxt = NULL;
 	/* int err =0; */
 
-	PDR_LOG("pdr_store_active buf=%s\n", buf);
+	PDR_ERR("[Bai]>> pdr_store_active buf=%s\n", buf);
 	mutex_lock(&pdr_context_obj->pdr_op_mutex);
 	cxt = pdr_context_obj;
 	if (NULL == cxt->pdr_ctl.open_report_data) {
@@ -312,10 +305,10 @@ static ssize_t pdr_store_delay(struct device *dev, struct device_attribute *attr
 			       const char *buf, size_t count)
 {
 	/* struct pdr_context *devobj = (struct pdr_context*)dev_get_drvdata(dev); */
-	int delay;
+	int delay = 0;
 	int mdelay = 0;
 	struct pdr_context *cxt = NULL;
-	int err;
+	int err = 0;
 
 	mutex_lock(&pdr_context_obj->pdr_op_mutex);
 	cxt = pdr_context_obj;
@@ -325,7 +318,7 @@ static ssize_t pdr_store_delay(struct device *dev, struct device_attribute *attr
 		return count;
 	}
 
-	err = kstrtoint(buf, 10, &delay);
+	err = kstrtoint(buf, 10, &delay);	/*ns */
 	if (err != 0) {
 		PDR_ERR("invalid format!!\n");
 		mutex_unlock(&pdr_context_obj->pdr_op_mutex);
@@ -337,8 +330,9 @@ static ssize_t pdr_store_delay(struct device *dev, struct device_attribute *attr
 		atomic_set(&pdr_context_obj->delay, mdelay);
 	}
 	cxt->pdr_ctl.set_delay(delay);
-	PDR_LOG(" pdr_delay %d ns\n", delay);
 	mutex_unlock(&pdr_context_obj->pdr_op_mutex);
+
+	PDR_ERR("[Bai]>> pdr_delay %d(ns) = %d(ms)\n", delay, mdelay);
 	return count;
 }
 
@@ -364,7 +358,6 @@ static ssize_t pdr_show_sensordevnum(struct device *dev, struct device_attribute
 static ssize_t pdr_store_batch(struct device *dev, struct device_attribute *attr,
 			       const char *buf, size_t count)
 {
-
 	struct pdr_context *cxt = NULL;
 
 	/* int err =0; */
@@ -579,7 +572,7 @@ int pdr_register_control_path(struct pdr_control_path *ctl)
 	cxt->pdr_ctl.open_report_data = ctl->open_report_data;
 	cxt->pdr_ctl.enable_nodata = ctl->enable_nodata;
 	cxt->pdr_ctl.is_support_batch = ctl->is_support_batch;
-	cxt->pdr_ctl.is_report_input_direct = ctl->is_report_input_direct;
+	cxt->pdr_ctl.is_report_input_direct = ctl->is_report_input_direct;	/*reserve */
 
 	if (NULL == cxt->pdr_ctl.set_delay || NULL == cxt->pdr_ctl.open_report_data
 	    || NULL == cxt->pdr_ctl.enable_nodata) {
@@ -618,12 +611,11 @@ int pdr_data_report(int x, int y, int z, int scalar, int status)
 	return 0;
 }
 
-static int pdr_probe(struct platform_device *pdev)
+static int pdr_probe(void)
 {
+	int err = 0;
 
-	int err;
-
-	PDR_LOG("+++++++++++++pdr_probe!!\n");
+	/*PDR_ERR("[Bai]>> pdr_probe start==>!!\n"); */
 
 	pdr_context_obj = pdr_context_alloc_object();
 	if (!pdr_context_obj) {
@@ -631,53 +623,35 @@ static int pdr_probe(struct platform_device *pdev)
 		PDR_ERR("unable to allocate devobj!\n");
 		goto exit_alloc_data_failed;
 	}
+
 	/* init real pdreleration driver */
 	err = pdr_real_driver_init();
 	if (err) {
 		PDR_ERR("pdr real driver init fail\n");
 		goto real_driver_init_fail;
 	}
+
 	/* init input dev */
 	err = pdr_input_init(pdr_context_obj);
 	if (err) {
 		PDR_ERR("unable to register pdr input device!\n");
 		goto exit_alloc_input_dev_failed;
 	}
-#if defined(CONFIG_HAS_EARLYSUSPEND) && defined(CONFIG_EARLYSUSPEND)
-	atomic_set(&(pdr_context_obj->early_suspend), 0);
-	pdr_context_obj->early_drv.level = 1;	/* EARLY_SUSPEND_LEVEL_STOP_DRAWING - 1, */
-	pdr_context_obj->early_drv.suspend = pdr_early_suspend,
-	    pdr_context_obj->early_drv.resume = pdr_late_resume,
-	    register_early_suspend(&pdr_context_obj->early_drv);
-#endif
 
-	PDR_LOG("----pdr_probe OK !!\n");
+	PDR_ERR("[Bai]>> pdr_probe OK !!\n");
 	return 0;
 
-	/* exit_hwmsen_create_attr_failed: */
-	/* exit_misc_register_failed: */
-
-	/* exit_err_sysfs: */
-
-	if (err) {
-		PDR_ERR("sysfs node creation error\n");
-		pdr_input_destroy(pdr_context_obj);
-	}
-
-real_driver_init_fail:
 exit_alloc_input_dev_failed:
+	PDR_ERR("[Bai]>> sysfs node creation error\n");
+	pdr_input_destroy(pdr_context_obj);
+real_driver_init_fail:
 	kfree(pdr_context_obj);
-
 exit_alloc_data_failed:
-
-
-	PDR_LOG("----pdr_probe fail !!!\n");
+	PDR_ERR("[Bai]>> pdr_probe fail !!!\n");
 	return err;
 }
 
-
-
-static int pdr_remove(struct platform_device *pdev)
+static int pdr_remove(void)
 {
 	int err = 0;
 
@@ -694,6 +668,7 @@ static int pdr_remove(struct platform_device *pdev)
 	return 0;
 }
 
+#if 0
 #if defined(CONFIG_HAS_EARLYSUSPEND) && defined(CONFIG_EARLYSUSPEND)
 static void pdr_early_suspend(struct early_suspend *h)
 {
@@ -711,7 +686,8 @@ static void pdr_late_resume(struct early_suspend *h)
 		atomic_read(&(pdr_context_obj->early_suspend)));
 }
 #endif
-
+#endif
+#if 0
 static int pdr_suspend(struct platform_device *dev, pm_message_t state)
 {
 	return 0;
@@ -742,19 +718,22 @@ static struct platform_driver pdr_driver = {
 #endif
 		   }
 };
+#endif
 
 int pdr_driver_add(struct pdr_init_info *obj)
 {
 	int err = 0;
 	int i = 0;
 
-	PDR_FUN();
+	/*PDR_FUN(); */
 
 	for (i = 0; i < MAX_CHOOSE_PDR_NUM; i++) {
 		if ((i == 0) && (NULL == pdr_init_list[0])) {
 			PDR_LOG("register gensor driver for the first time\n");
 			if (platform_driver_register(&pdrsensor_driver))
-				PDR_ERR("failed to register gensor driver already exist\n");
+				PDR_ERR("failed to register pdrsensor driver already exist\n");
+			else
+				PDR_ERR("[Bai]>> register pdrsensor driver OK\n");
 		}
 
 		if (NULL == pdr_init_list[i]) {
@@ -764,18 +743,21 @@ int pdr_driver_add(struct pdr_init_info *obj)
 		}
 	}
 	if (i >= MAX_CHOOSE_PDR_NUM) {
-		PDR_ERR("PDR driver add err\n");
+		PDR_ERR("PDR driver Full\n");
 		err = -1;
 	}
 	return err;
-} EXPORT_SYMBOL_GPL(pdr_driver_add);
+}
+EXPORT_SYMBOL_GPL(pdr_driver_add);
 
 static int __init pdr_init(void)
 {
-	PDR_FUN();
+	/*PDR_FUN(); */
 
-	if (platform_driver_register(&pdr_driver)) {
-		PDR_ERR("failed to register rv driver\n");
+	PDR_ERR("[Bai]>> pdr_init\n");
+
+	if (pdr_probe()) {
+		PDR_ERR("failed to register pdr driver\n");
 		return -ENODEV;
 	}
 
@@ -784,13 +766,12 @@ static int __init pdr_init(void)
 
 static void __exit pdr_exit(void)
 {
-	platform_driver_unregister(&pdr_driver);
+	pdr_remove();
 	platform_driver_unregister(&pdrsensor_driver);
 }
 
 late_initcall(pdr_init);
-/* module_init(pdr_init); */
-/* module_exit(pdr_exit); */
+
 MODULE_LICENSE("GPL");
-MODULE_DESCRIPTION("PDRCOPE device driver");
+MODULE_DESCRIPTION("PDR device driver");
 MODULE_AUTHOR("Mediatek");
