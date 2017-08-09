@@ -1880,7 +1880,7 @@ irqreturn_t MTK_M4U_isr(int irq, void *dev_id)
 			if (gM4uPort[m4u_port].enable_tf == 1 && bypass_DISP_TF == 0) {
 				m4u_dump_pte_nolock(m4u_get_domain_by_port(m4u_port), fault_mva);
 
-				m4u_print_port_status(NULL, 1);
+				/* m4u_print_port_status(NULL, 1); */
 
 				/* call user's callback to dump user registers */
 				if (m4u_port < M4U_PORT_UNKNOWN && gM4uPort[m4u_port].fault_fn)
