@@ -39,19 +39,33 @@ static sdio_irq_handler_t *c2k_sdio_eirq_handler;
 static void *c2k_sdio_eirq_data;
 /*static int interrupt_count_c2k;*/
 static atomic_t irq_installed;
+DEFINE_SPINLOCK(irq_en_lock);
+static int irq_enabled;
 
 void c2k_sdio_enable_eirq(void)
 {
+	unsigned long flags;
+
+	spin_lock_irqsave(&irq_en_lock, flags);
 	/*pr_info("[C2K] interrupt enable from %ps\n", __builtin_return_address(0));*/
-	if (atomic_read(&irq_installed))
+	if (atomic_read(&irq_installed) && !irq_enabled) {
 		enable_irq(c2k_sdio_eirq_num);
+		irq_enabled = 1;
+	}
+	spin_unlock_irqrestore(&irq_en_lock, flags);
 }
 
 void c2k_sdio_disable_eirq(void)
 {
+	unsigned long flags;
+
+	spin_lock_irqsave(&irq_en_lock, flags);
 	/*pr_info("[C2K] interrupt disable from %ps\n", __builtin_return_address(0));*/
-	if (atomic_read(&irq_installed))
+	if (atomic_read(&irq_installed) && irq_enabled) {
 		disable_irq_nosync(c2k_sdio_eirq_num);
+		irq_enabled = 0;
+	}
+	spin_unlock_irqrestore(&irq_en_lock, flags);
 }
 
 static irqreturn_t c2k_sdio_eirq_handler_stub(int irq, void *data)
