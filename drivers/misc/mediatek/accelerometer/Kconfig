@@ -18,3 +18,4 @@ config CUSTOM_KERNEL_ACCELEROMETER
 
 source "drivers/misc/mediatek/accelerometer/mc3410-new/Kconfig"
 source "drivers/misc/mediatek/accelerometer/mpu6050g-new/Kconfig"
+source "drivers/misc/mediatek/accelerometer/bma222E-new/Kconfig"

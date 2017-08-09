@@ -52,7 +52,7 @@
 
 	gsensor@4c {
 		compatible = "mediatek,gsensor";
-		reg = <0x4c>;
+		reg = <0x18>;
 	};
 
 	alsps@60 {
