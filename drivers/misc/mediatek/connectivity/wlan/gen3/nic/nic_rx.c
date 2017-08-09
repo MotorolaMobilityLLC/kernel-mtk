@@ -3351,6 +3351,10 @@ VOID nicRxProcessEventPacket(IN P_ADAPTER_T prAdapter, IN OUT P_SW_RFB_T prSwRfb
 			UINT_32 u4Value;
 			UINT_16 u2MsgSize;
 			P_UINT_8 pucMsg;
+			OS_SYSTIME rCurrentTime;
+			static OS_SYSTIME rFwLogStartTime;
+			static UINT_8 ucFwLogLine;
+
 
 			prEventDebugMsg = (P_EVENT_DEBUG_MSG_T) (prEvent->aucBuffer);
 
@@ -3369,8 +3373,18 @@ VOID nicRxProcessEventPacket(IN P_ADAPTER_T prAdapter, IN OUT P_SW_RFB_T prSwRfb
 					ucMsgType = DEBUG_MSG_TYPE_MEM32;
 
 				if (ucMsgType == DEBUG_MSG_TYPE_ASCII) {
-					pucMsg[u2MsgSize] = '\0';
-					DBGLOG(SW4, TRACE, "%s\n", pucMsg);
+					GET_CURRENT_SYSTIME(&rCurrentTime);
+					if (rFwLogStartTime == 0 ||
+						CHECK_FOR_TIMEOUT(rCurrentTime, rFwLogStartTime,
+							MSEC_TO_SYSTIME(1000))) {
+						COPY_SYSTIME(rFwLogStartTime, rCurrentTime);
+						ucFwLogLine = 0;
+					}
+					if (ucFwLogLine < 5) {
+						ucFwLogLine++;
+						pucMsg[u2MsgSize] = '\0';
+						DBGLOG(RX, INFO, "FW:(%d)%s\n", ucFwLogLine, pucMsg);
+					}
 				} else if (ucMsgType == DEBUG_MSG_TYPE_MEM32) {
 					/* dumpMemory32(pucMsg, u2MsgSize); */
 					DBGLOG_MEM32(SW4, TRACE, pucMsg, u2MsgSize);
