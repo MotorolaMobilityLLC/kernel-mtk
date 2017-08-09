@@ -117,7 +117,7 @@ initrd=0x44000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 			cpu-release-addr = <0x0 0x40000200>;
 			clock-frequency = <1391000000>;
 		};
-/*
+
 		cpu4: cpu@100 {
 			device_type = "cpu";
 			compatible = "arm,cortex-a53";
@@ -224,7 +224,6 @@ initrd=0x44000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 				};
 			};
 		};
-*/
 
 		idle-states {
 			entry-method = "arm,psci";
