@@ -1,0 +1,31 @@
+#
+# MTK PMIC configuration
+#
+
+config MTK_PMIC_NEW_ARCH
+	tristate "MediaTek Power Management Unit driver"
+	default n
+	---help---
+	  This selects for MediaTek(R) PMIC driver.
+	  Select y to support MTK PMIC NEW ARCH.
+	  If so, you should choose the corresponding main chip to follow.
+
+	  Select n to support MTK PMIC LEGACY ARCH.
+
+config MTK_PMIC_CHIP_MT6353
+	bool "MediaTek PMIC MT6353"
+	default n
+	---help---
+	  Mediatek PMIC MT6353
+	  Set y to support this driver.
+	  Set n and choose other chip.
+
+if MTK_LDVT
+config MTK_LDVT_PMIC
+	bool "MediaTek PMIC driver for LDVT"
+	default y
+	---help---
+	  MediaTek PMIC driver for LDVT
+	  Set y to support DVT.
+	  Set n to default.
+endif

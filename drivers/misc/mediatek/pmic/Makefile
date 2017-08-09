@@ -1,0 +1,1 @@
+obj-$(CONFIG_MTK_PMIC_CHIP_MT6353) += mt6353/
