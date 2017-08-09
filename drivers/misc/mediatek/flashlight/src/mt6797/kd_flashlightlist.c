@@ -769,7 +769,7 @@ static struct class *flashlight_class;
 static struct device *flashlight_device;
 static struct flashlight_data flashlight_private;
 static dev_t flashlight_devno;
-static struct cdev flashlight_cdev;
+static struct cdev *g_pFlash_CharDrv;
 /* ======================================================================== */
 #define ALLOC_DEVNO
 static int flashlight_probe(struct platform_device *dev)
@@ -787,9 +787,18 @@ static int flashlight_probe(struct platform_device *dev)
 		logI("[flashlight_probe] major: %d, minor: %d ~", MAJOR(flashlight_devno),
 		     MINOR(flashlight_devno));
 	}
-	cdev_init(&flashlight_cdev, &flashlight_fops);
-	flashlight_cdev.owner = THIS_MODULE;
-	err = cdev_add(&flashlight_cdev, flashlight_devno, 1);
+	/* Allocate driver */
+	g_pFlash_CharDrv = cdev_alloc();
+	if (NULL == g_pFlash_CharDrv) {
+		unregister_chrdev_region(flashlight_devno, 1);
+
+		logI("Allocate mem for kobject failed\n");
+
+		return -1;
+	}
+	cdev_init(g_pFlash_CharDrv, &flashlight_fops);
+	g_pFlash_CharDrv->owner = THIS_MODULE;
+	err = cdev_add(g_pFlash_CharDrv, flashlight_devno, 1);
 	if (err) {
 		logI("[flashlight_probe] cdev_add fail: %d ~", err);
 		goto flashlight_probe_error;
@@ -834,7 +843,7 @@ static int flashlight_probe(struct platform_device *dev)
 flashlight_probe_error:
 #ifdef ALLOC_DEVNO
 	if (err == 0)
-		cdev_del(&flashlight_cdev);
+		cdev_del(g_pFlash_CharDrv);
 	if (ret == 0)
 		unregister_chrdev_region(flashlight_devno, 1);
 #else
@@ -850,7 +859,7 @@ static int flashlight_remove(struct platform_device *dev)
 	logI("[flashlight_probe] start\n");
 
 #ifdef ALLOC_DEVNO
-	cdev_del(&flashlight_cdev);
+	cdev_del(g_pFlash_CharDrv);
 	unregister_chrdev_region(flashlight_devno, 1);
 #else
 	unregister_chrdev(MAJOR(flashlight_devno), FLASHLIGHT_DEVNAME);
