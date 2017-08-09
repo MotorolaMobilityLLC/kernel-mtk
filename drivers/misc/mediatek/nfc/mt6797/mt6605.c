@@ -125,6 +125,10 @@ struct pinctrl_state *st_eint_h = NULL;
 struct pinctrl_state *st_eint_l = NULL;
 struct pinctrl_state *st_irq_init = NULL;
 struct pinctrl_state *st_osc_init = NULL;
+struct pinctrl_state *st_cs_low = NULL;
+struct pinctrl_state *st_mo_low = NULL;
+struct pinctrl_state *st_mi_low = NULL;
+struct pinctrl_state *st_sck_low = NULL;
 #endif
 
 /* static struct i2c_board_info nfc_board_info __initdata = */
@@ -1118,6 +1122,30 @@ static int mt_nfc_pinctrl_init(struct platform_device *pdev)
 		pr_debug("%s : pinctrl err, osc_init\n", __func__);
 	}
 
+	st_cs_low = pinctrl_lookup_state(gpctrl, "cs_low");
+	if (IS_ERR(st_cs_low)) {
+		ret = PTR_ERR(st_cs_low);
+		pr_debug("%s : pinctrl err, st_cs_low\n", __func__);
+	}
+
+	st_mo_low = pinctrl_lookup_state(gpctrl, "mo_low");
+	if (IS_ERR(st_mo_low)) {
+		ret = PTR_ERR(st_mo_low);
+		pr_debug("%s : pinctrl err, st_mo_low\n", __func__);
+	}
+
+	st_mi_low = pinctrl_lookup_state(gpctrl, "mi_low");
+	if (IS_ERR(st_mi_low)) {
+		ret = PTR_ERR(st_mi_low);
+		pr_debug("%s : pinctrl err, st_mi_low\n", __func__);
+	}
+
+	st_sck_low = pinctrl_lookup_state(gpctrl, "sck_low");
+	if (IS_ERR(st_sck_low)) {
+		ret = PTR_ERR(st_sck_low);
+		pr_debug("%s : pinctrl err, st_sck_low\n", __func__);
+	}
+
 	/* select state */
 	ret = mt_nfc_pinctrl_select(gpctrl, st_osc_init);
 	usleep_range(900, 1000);
@@ -1132,6 +1160,12 @@ static int mt_nfc_pinctrl_init(struct platform_device *pdev)
 	usleep_range(900, 1000);
 
 	ret = mt_nfc_pinctrl_select(gpctrl, st_eint_l);
+
+	ret = mt_nfc_pinctrl_select(gpctrl, st_cs_low);
+	usleep_range(900, 1000);
+	ret = mt_nfc_pinctrl_select(gpctrl, st_mo_low);
+	ret = mt_nfc_pinctrl_select(gpctrl, st_mi_low);
+	ret = mt_nfc_pinctrl_select(gpctrl, st_sck_low);
 
 end:
 

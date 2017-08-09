@@ -767,7 +767,7 @@ static long mt6605_dev_unlocked_ioctl(struct file *filp, unsigned int cmd,
 
 	struct mt6605_dev *mt6605_dev = filp->private_data;
 	int result = 0;
-	int gpio_dir, gpio_num, tmp_gpio;
+	int gpio_dir, gpio_num = -1, tmp_gpio;
 /*
 	pr_debug("mt6605_dev_unlocked_ioctl: cmd=0x%04x,arg=0x%04lx.\n", cmd,
 		 arg);
@@ -909,6 +909,9 @@ static long mt6605_dev_unlocked_ioctl(struct file *filp, unsigned int cmd,
 		pr_debug("%s, invalid ioctl.\n", __func__);
 		return result;
 	}
+
+	if (-1 == gpio_num)
+		return 0;
 
 	/* if (result != MTK_NFC_PULL_INVALID) { */
 	if (cmd == MTK_NFC_IOCTL_READ) {
