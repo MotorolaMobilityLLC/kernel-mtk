@@ -38,7 +38,6 @@
 /* IDVFS ADDR */ /* TODO: include other head file */
 #ifdef CONFIG_OF
 static void __iomem			*idvfs_base;			/* (0x10220000) */
-static void __iomem			*i2clk_base;			/* */
 static int					idvfs_irq_number;		/* 331 */
 static struct				clk *idvfs_i2c6_clk;	/* i2c6 clk ctrl */
 /* define IDVFS_BASE_ADDR	   ((unsigned long)idvfs_base) */
@@ -55,10 +54,11 @@ static struct				clk *idvfs_i2c6_clk;	/* i2c6 clk ctrl */
 #endif
 
 static int func_lv_mask_idvfs = 500;
-#define IDVFS_DREQ_ENABLE		0
+#define IDVFS_DREQ_ENABLE	1
 #define IDVFS_OCP_OTP_ENABLE	1
-#define IDVFS_CCF_I2CV6			1
-#define IDVFS_FMAX_DEFAULT		2500
+#define IDVFS_CCF_I2CV6		1
+#define IDVFS_INTERRUPT_ENABLE	0
+#define IDVFS_FMAX_DEFAULT	2500
 
 /*
  * LOG
@@ -1277,6 +1277,7 @@ unsigned int BigiDVFSPLLGetPCW(void) /* <1000 ~ = 3000(MHz), with our pos div va
 #ifdef __KERNEL__ /* __KERNEL__ */
 
 /* for iDVFS interrupt ISR handler */
+#if IDVFS_INTERRUPT_ENABLE
 int BigiDVFSISRHandler(void)
 {
 	if ((idvfs_read(0x10222470) & 0x00004000) != 0) {
@@ -1314,54 +1315,40 @@ static irqreturn_t idvfs_big_isr(int irq, void *dev_id)
 	/* FUNC_EXIT(FUNC_LV_MODULE); */
 	return IRQ_HANDLED;
 }
-
-/* enable debug message */
-#define DEBUG 0
-
-#if IDVFS_CCF_I2CV6
-static int idvfs_i2c_probe(struct platform_device *pdev)
-{
-	int err;
-
-	i2clk_base = of_iomap(pdev->dev.of_node, 1);
-	if (!i2clk_base) {
-		idvfs_error("FAILED TO MAP I2CLK BASE MEMORY.\n");
-		return -ENOMEM;
-	}
-
-	/* get CCF I2C6 register */
-	idvfs_i2c6_clk = devm_clk_get(&pdev->dev, "i2c");
-	if (IS_ERR(idvfs_i2c6_clk)) {
-		idvfs_error("FAILED TO GET I2C CLOCK (%ld)\n", PTR_ERR(idvfs_i2c6_clk));
-		return PTR_ERR(idvfs_i2c6_clk);
-	}
-	idvfs_ver("Succest to get I2C6 CLK Ctrl.\n");
-
-	err = clk_prepare(idvfs_i2c6_clk);
-	if (err) {
-		idvfs_error("FAILED TO PREPARE I2C CLOCK (%d). iDVFS only 750MHz.\n", err);
-		idvfs_init_opt.idvfs_status = 0;
-		return err;
-	}
-	idvfs_ver("Parepare I2C6 CLK Ctrl ok.\n");
-
-	return 0;
-}
-#endif /* IDVFS_FFC_I2CV6 */
+#endif
 
 static int idvfs_probe(struct platform_device *pdev)
 {
 	int err = 0;
 
 	idvfs_ver("IDVFS Probe Initial.\n");
-	idvfs_irq_number =	0;
+	idvfs_irq_number = 0;
+
+#if IDVFS_INTERRUPT_ENABLE
+	/*get idvfs irq num*/
+	idvfs_irq_number = irq_of_parse_and_map(pdev->dev.of_node, 0);
+	idvfs_ver("idvfs base = 0x%lx, irq = %d.\n", (unsigned long)idvfs_base, idvfs_irq_number);
 
 	/* get iDVFS IRQ */
-	err	= request_irq(idvfs_irq_number, idvfs_big_isr, IRQF_TRIGGER_HIGH, "idvfs_big_isp", NULL);
+	err = request_irq(idvfs_irq_number, idvfs_big_isr, IRQF_TRIGGER_HIGH, "idvfs_big_isp", NULL);
 	if (err) {
 		idvfs_error("iDVFS IRQ register failed: idvfs_isr_big (%d)\n", err);
 		WARN_ON(1);
+		return err;
 	}
+	idvfs_ver("iDVFS request irq ISR finish IRQ number = %d.\n", idvfs_irq_number);
+#endif
+
+	/* get CCF I2C6 register */
+	idvfs_i2c6_clk = devm_clk_get(&pdev->dev, "i2c");
+	err = clk_prepare(idvfs_i2c6_clk);
+	if (err) {
+		idvfs_error("FAILED TO PREPARE I2C CLOCK (%d). iDVFS only 750MHz.\n", err);
+		idvfs_init_opt.idvfs_status = 0;
+		WARN_ON(1);
+		return err;
+	}
+	idvfs_ver("Parepare I2C6 CLK Ctrl ok.\n");
 
 	return 0;
 }
@@ -1372,7 +1359,6 @@ static int idvfs_remove(struct platform_device *pdev)
 	return 0;
 }
 
-#if 0
 static int idvfs_suspend(struct	platform_device *pdev, pm_message_t state)
 {
 	/*
@@ -1386,8 +1372,6 @@ static int idvfs_suspend(struct	platform_device *pdev, pm_message_t state)
 
 static int idvfs_resume(struct platform_device *pdev)
 {
-	int err;
-
 	/*
 	idvfs_thread = kthread_run(idvfs_thread_handler, 0, "idvfs xxx");
 	if (IS_ERR(idvfs_thread))
@@ -1403,39 +1387,25 @@ static int idvfs_resume(struct platform_device *pdev)
 
 	return 0;
 }
+
+#ifdef CONFIG_OF
+static const struct of_device_id mt_idvfs_of_match[] = {
+	{ .compatible = "mediatek,idvfs", },
+	{},
+};
 #endif
 
-#if IDVFS_CCF_I2CV6
-#ifdef CONFIG_OF
-static const struct of_device_id idvfs_i2c_of_match[] = {
-	{ .compatible = "mediatek,mt6797-dvfsp", },
-	{}
-};
-#endif /* CONFIG_OF */
-
-static struct platform_driver idvfs_i2c_driver = {
-	.probe		= idvfs_i2c_probe,
-	.driver		= {
-	.name		= "idvfs_i2c_clk",
-	.owner		= THIS_MODULE,
-	.of_match_table	= of_match_ptr(idvfs_i2c_of_match),
-	},
-};
-#endif /* IDVFS_CCF_I2CV6 */
-
-static struct platform_device idvfs_pdev = {
-	.name		= "mt_idvfs_devices",
-	.id			= -1,
-};
-
 static struct platform_driver idvfs_pdrv = {
+	.probe		= idvfs_probe,
 	.remove		= idvfs_remove,
 	.shutdown	= NULL,
-	.probe		= idvfs_probe,
-/*	.suspend	= idvfs_suspend,
-	.resume		= idvfs_resume, */
+	.suspend	= idvfs_suspend,
+	.resume		= idvfs_resume,
 	.driver		= {
-	.name		= "mt_idvfs_driver",
+		.name		= "mt_idvfs_driver",
+#ifdef CONFIG_OF
+		.of_match_table = mt_idvfs_of_match,
+#endif
 	},
 };
 
@@ -1812,7 +1782,7 @@ static int _create_procfs(void)
 	}
 
 	for	(i = 0; i < ARRAY_SIZE(entries); i++) {
-		if (!proc_create(entries[i].name, S_IRUGO |	S_IWUSR	| S_IWGRP, dir, entries[i].fops))
+		if (!proc_create(entries[i].name, S_IRUGO | S_IWUSR | S_IWGRP, dir, entries[i].fops))
 			idvfs_error("%s(), create /proc/idvfs/%s failed\n", __func__, entries[i].name);
 	}
 
@@ -1825,43 +1795,31 @@ static int _create_procfs(void)
  */
 static int __init idvfs_init(void)
 {
-	int err = 0;
-	struct device_node *node = NULL;
+	/* ver = mt_get_chip_sw_ver(); */
+	/* ptp2_lo_enable = 1; */
+	/* turn_on_LO();  */
 
+	int err = 0;
+
+	idvfs_base = NULL;
+#if IDVFS_INTERRUPT_ENABLE
+	struct device_node *node = NULL;
 	node = of_find_compatible_node(NULL, NULL, "mediatek,idvfs");
 	if (node) {
 		/* Setup IO addresses */
 		idvfs_base = of_iomap(node, 0);
 		/*get idvfs irq num*/
 		idvfs_irq_number = irq_of_parse_and_map(node, 0);
-
 		idvfs_ver("idvfs base = 0x%lx, irq = %d.\n", (unsigned long)idvfs_base, idvfs_irq_number);
-	}
-
-	/* register platform device/driver */
-	err	= platform_device_register(&idvfs_pdev);
-	if (err) {
-		idvfs_error("fail to register IDVFS device @ %s()\n", __func__);
-		goto out;
-	}
-	err = platform_driver_register(&idvfs_pdrv);
-	if (err) {
-		idvfs_error("fail to register IDVFS device @ %s()\n", __func__);
-		goto out;
-	}
-
-#if IDVFS_CCF_I2CV6
-	/* register platform i2c clk ctrl */
-	err = platform_driver_register(&idvfs_i2c_driver);
-	if (err) {
-		idvfs_error("FAILED TO REGISTER idvfs_i2c_clk DRIVER (%d)\n", err);
-		goto out;
 	}
 #endif
 
-	/* ver = mt_get_chip_sw_ver(); */
-	/* ptp2_lo_enable = 1; */
-	/* turn_on_LO();  */
+	/* register platform driver */
+	err = platform_driver_register(&idvfs_pdrv);
+	if (err) {
+		idvfs_error("fail to register IDVFS driver @ %s()\n", __func__);
+		goto out;
+	}
 
 #ifdef CONFIG_PROC_FS
 	/* init proc */
@@ -1882,7 +1840,6 @@ static void __exit idvfs_exit(void)
 {
 	idvfs_ver("IDVFS de-initialization\n");
 	platform_driver_unregister(&idvfs_pdrv);
-	platform_device_unregister(&idvfs_pdev);
 }
 
 module_init(idvfs_init);
