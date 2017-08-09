@@ -1189,7 +1189,7 @@ int kdSetDriver(unsigned int *pDrvIndex)
 			       sizeof(pSensorList[drvIdx[i]].drvname));
 			/* return sensor ID */
 			/* pDrvIndex[0] = (unsigned int)pSensorList[drvIdx].SensorId; */
-			PK_XLOG_INFO("[kdSetDriver] :[%d][%d][%d][%s][%d]\n", i, g_bEnableDriver[i],
+			PK_XLOG_INFO("[kdSetDriver] :[%d][%d][%d][%s][%lu]\n", i, g_bEnableDriver[i],
 				     g_invokeSocketIdx[i], g_invokeSensorNameStr[i],
 				     sizeof(pSensorList[drvIdx[i]].drvname));
 		}
@@ -2353,9 +2353,9 @@ bool Get_Cam_Regulator(void)
 
 	if (1) {
 		/* check if customer camera node defined */
-		node = of_find_compatible_node(NULL, NULL, "mediatek,regulator_supply");
+		node = of_find_compatible_node(NULL, NULL, "mediatek,camera_hw");
 		if (node) {
-			name = of_get_property(node, "MAIN_CAMERA_POWER_A", NULL);
+			name = of_get_property(node, "vcama_sub", NULL);
 			if (name == NULL) {
 				if (regVCAMA == NULL) {
 					regVCAMA = regulator_get(sensor_device, "vcama");
@@ -2376,7 +2376,7 @@ bool Get_Cam_Regulator(void)
 				/* if customer defined, get customized camera regulator node */
 				sensor_device->of_node =
 				    of_find_compatible_node(NULL, NULL,
-							    "mediatek,regulator_supply");
+							    "mediatek,camera_hw");
 				/* 若你需要sub也定義的話，需要自己加上
 				   if (regVCAMA == NULL) {
 				   regVCAMA_SUB = regulator_get(sensor_device, "SUB_CAMERA_POWER_A");
@@ -2384,19 +2384,23 @@ bool Get_Cam_Regulator(void)
 				 */
 				if (regVCAMA == NULL) {
 					regVCAMA =
-					    regulator_get(sensor_device, "MAIN_CAMERA_POWER_A");
+					    regulator_get(sensor_device, "vcama");
 				}
 				if (regVCAMD == NULL) {
 					regVCAMD =
-					    regulator_get(sensor_device, "MAIN_CAMERA_POWER_D");
+					    regulator_get(sensor_device, "vcamd");
+				}
+				if (regSubVCAMD == NULL) {
+					regSubVCAMD =
+					    regulator_get(sensor_device, "vcamd_sub");
 				}
 				if (regVCAMIO == NULL) {
 					regVCAMIO =
-					    regulator_get(sensor_device, "MAIN_CAMERA_POWER_IO");
+					    regulator_get(sensor_device, "vcamio");
 				}
 				if (regVCAMAF == NULL) {
 					regVCAMAF =
-					    regulator_get(sensor_device, "MAIN_CAMERA_POWER_AF");
+					    regulator_get(sensor_device, "vcamaf");
 				}
 				/* restore original dev.of_node */
 				sensor_device->of_node = kd_node;
@@ -2417,7 +2421,6 @@ bool _hwPowerOn(KD_REGULATOR_TYPE_T type, int powerVolt)
 	bool ret = FALSE;
 	struct regulator *reg = NULL;
 
-	PK_DBG("[_hwPowerOn]before get, powertype:%d powerId:%d\n", type, powerVolt);
 	if (type == VCAMA) {
 		reg = regVCAMA;
 	} else if (type == VCAMD) {
@@ -2429,7 +2432,7 @@ bool _hwPowerOn(KD_REGULATOR_TYPE_T type, int powerVolt)
 	} else
 		return ret;
 
-	if (!IS_ERR(reg)) {
+	if (reg != NULL && !IS_ERR(reg)) {
 		if (regulator_set_voltage(reg, powerVolt, powerVolt) != 0) {
 			PK_DBG
 			    ("[_hwPowerOn]fail to regulator_set_voltage, powertype:%d powerId:%d\n",
@@ -3159,7 +3162,7 @@ static int CAMERA_HW_i2c_remove(struct i2c_client *client)
 
 #ifdef CONFIG_OF
 static const struct of_device_id CAMERA_HW_i2c_of_ids[] = {
-    { .compatible = "mediatek,CAMERA_MAIN", },
+    { .compatible = "mediatek,camera_main", },
 	{}
 };
 #endif
@@ -3356,10 +3359,10 @@ static int CAMERA_HW_i2c_remove2(struct i2c_client *client)
 /*******************************************************************************
 * I2C Driver structure
 ********************************************************************************/
-#if 0
+#if 1
 #ifdef CONFIG_OF
 static const struct of_device_id CAMERA_HW2_i2c_driver_of_ids[] = {
-	{ .compatible = "mediatek,CAMERA_SUB", },
+	{ .compatible = "mediatek,camera_sub", },
 	{}
 };
 #endif
@@ -3371,7 +3374,7 @@ struct i2c_driver CAMERA_HW_i2c_driver2 = {
 	.driver = {
 		   .name = CAMERA_HW_DRVNAME2,
 		   .owner = THIS_MODULE,
-#if 0
+#if 1
 #ifdef CONFIG_OF
 		   .of_match_table = CAMERA_HW2_i2c_driver_of_ids,
 #endif
@@ -3457,7 +3460,7 @@ static int CAMERA_HW_resume2(struct platform_device *pdev)
 #if 1
 #ifdef CONFIG_OF
 static const struct of_device_id CAMERA_HW2_of_ids[] = {
-	{.compatible = "mediatek,CAMERA_HW2",},
+	{.compatible = "mediatek,camera_hw2",},
 	{}
 };
 #endif
@@ -3799,7 +3802,7 @@ static ssize_t CAMERA_HW_Reg_Debug3(struct file *file, const char *buffer, size_
 /* You can refer to CAMERA_HW_probe & CAMERA_HW_i2c_probe */
 #ifdef CONFIG_OF
 static const struct of_device_id CAMERA_HW_of_ids[] = {
-	{.compatible = "mediatek,CAMERA_HW",},
+	{.compatible = "mediatek,camera_hw",},
 	{}
 };
 #endif
