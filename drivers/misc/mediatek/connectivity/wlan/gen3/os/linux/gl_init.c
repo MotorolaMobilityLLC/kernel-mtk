@@ -2293,9 +2293,6 @@ static struct wireless_dev *wlanNetCreate(PVOID pvData)
 	QUEUE_INITIALIZE(&prGlueInfo->rTxQueue);
 	glSetHifInfo(prGlueInfo, (ULONG) pvData);
 
-	/* Init wakelock */
-	wlanWakeLockInit(prGlueInfo);
-
 	/* main thread is created in this function */
 #if CFG_SUPPORT_MULTITHREAD
 	init_waitqueue_head(&prGlueInfo->waitq_rx);
@@ -2311,6 +2308,7 @@ static struct wireless_dev *wlanNetCreate(PVOID pvData)
 
 	if (!prAdapter) {
 		DBGLOG(INIT, ERROR, "Allocating memory to adapter failed\n");
+		glClearHifInfo(prGlueInfo);
 		goto netcreate_err;
 	}
 
@@ -2669,6 +2667,8 @@ bailout:
 			break;
 		}
 #endif
+		/* Init wakelock */
+		wlanWakeLockInit(prGlueInfo);
 
 		prGlueInfo->main_thread = kthread_run(tx_thread, prGlueInfo->prDevHandler, "tx_thread");
 #if CFG_SUPPORT_MULTITHREAD
@@ -2804,31 +2804,12 @@ bailout:
 #endif
 		DBGLOG(INIT, LOUD, "wlanProbe: probe success\n");
 	} else {
-		DBGLOG(INIT, LOUD, "wlanProbe: probe failed\n");
+		DBGLOG(INIT, ERROR, "wlanProbe: probe failed\n");
 		switch (eFailReason) {
 		case FAIL_MET_INIT_PROCFS:
 			kalMetRemoveProcfs();
-			wlanNetUnregister(prWdev);
-			set_bit(GLUE_FLAG_HALT_BIT, &prGlueInfo->ulFlag);
-			/* wake up main thread */
-			wake_up_interruptible(&prGlueInfo->waitq);
-			/* wait main thread stops */
-			wait_for_completion_interruptible(&prGlueInfo->rHaltComp);
-			wlanAdapterStop(prAdapter);
-			glBusFreeIrq(prWdev->netdev, *((P_GLUE_INFO_T *) netdev_priv(prWdev->netdev)));
-			wlanNetDestroy(prWdev);
-			break;
 		case PROC_INIT_FAIL:
 			wlanNetUnregister(prWdev);
-			set_bit(GLUE_FLAG_HALT_BIT, &prGlueInfo->ulFlag);
-			/* wake up main thread */
-			wake_up_interruptible(&prGlueInfo->waitq);
-			/* wait main thread stops */
-			wait_for_completion_interruptible(&prGlueInfo->rHaltComp);
-			wlanAdapterStop(prAdapter);
-			glBusFreeIrq(prWdev->netdev, *((P_GLUE_INFO_T *) netdev_priv(prWdev->netdev)));
-			wlanNetDestroy(prWdev);
-			break;
 		case NET_REGISTER_FAIL:
 			set_bit(GLUE_FLAG_HALT_BIT, &prGlueInfo->ulFlag);
 			/* wake up main thread */
@@ -2836,20 +2817,14 @@ bailout:
 			/* wait main thread stops */
 			wait_for_completion_interruptible(&prGlueInfo->rHaltComp);
 			wlanAdapterStop(prAdapter);
-			glBusFreeIrq(prWdev->netdev, *((P_GLUE_INFO_T *) netdev_priv(prWdev->netdev)));
-			wlanNetDestroy(prWdev);
-			break;
+			wlanWakeLockUninit(prGlueInfo);
 		case ADAPTER_START_FAIL:
 			glBusFreeIrq(prWdev->netdev, *((P_GLUE_INFO_T *) netdev_priv(prWdev->netdev)));
-			wlanNetDestroy(prWdev);
-			break;
 		case BUS_SET_IRQ_FAIL:
 			wlanNetDestroy(prWdev);
 			break;
 		case NET_CREATE_FAIL:
-			break;
 		case BUS_INIT_FAIL:
-			break;
 		default:
 			break;
 		}
