@@ -328,9 +328,9 @@ static unsigned int slidle_condition_mask[NR_GRPS] = {
 };
 #elif defined(CONFIG_ARCH_MT6753)
 static int idle_switch[NR_TYPES] = {
-	1,  /* dpidle switch */
-	1,  /* soidle switch */
-	1,  /* slidle switch */
+	0,  /* dpidle switch */
+	0,  /* soidle switch */
+	0,  /* slidle switch */
 	1,  /* rgidle switch */
 };
 
