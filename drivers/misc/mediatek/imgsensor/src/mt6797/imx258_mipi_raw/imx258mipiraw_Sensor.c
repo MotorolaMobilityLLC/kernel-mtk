@@ -602,20 +602,23 @@ static void set_shutter_frame_time(kal_uint16 shutter, kal_uint16 frame_time)
 {
     unsigned long flags;
     kal_uint16 realtime_fps = 0;
+	kal_int32 dummy_line = 0;
     spin_lock_irqsave(&imgsensor_drv_lock, flags);
     imgsensor.shutter = shutter;
     spin_unlock_irqrestore(&imgsensor_drv_lock, flags);
-
+	//LOG_INF("shutter =%d, frame_time =%d\n", shutter, frame_time);
 
 	/* 0x3500, 0x3501, 0x3502 will increase VBLANK to get exposure larger than frame exposure */
 	/* AE doesn't update sensor gain at capture mode, thus extra exposure lines must be updated here. */
 
 	// OV Recommend Solution
 	// if shutter bigger than frame_length, should extend frame length first
-    spin_lock(&imgsensor_drv_lock);	
+    spin_lock(&imgsensor_drv_lock);
     /*Change frame time*/
-	imgsensor.dummy_line = (frame_time > imgsensor.frame_length) ? (frame_time - imgsensor.frame_length) : 0;
-	imgsensor.frame_length = imgsensor.frame_length + imgsensor.dummy_line;
+	//imgsensor.dummy_line = (frame_time > imgsensor.frame_length) ? (frame_time - imgsensor.frame_length) : 0;
+	//imgsensor.frame_length = imgsensor.frame_length + imgsensor.dummy_line;
+	dummy_line = frame_time - imgsensor.frame_length;
+	imgsensor.frame_length = imgsensor.frame_length + dummy_line;
 	imgsensor.min_frame_length = imgsensor.frame_length;
     //
     if (shutter > imgsensor.min_frame_length - imgsensor_info.margin)
