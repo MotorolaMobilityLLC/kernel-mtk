@@ -645,6 +645,11 @@
 			reg = <0x10000000 0x1000>;
 		};
 
+		usb2jtag: usb2jtag@10000000 {
+			compatible = "mediatek,usb2jtag_v1";
+			reg = <0x10000000 0x1000>, <0x11210000 0x1000>;
+		};
+
 		PWRAP@0x10001000 {
 			compatible = "mediatek,PWRAP";
 			reg = <0x10001000 0x1000>;

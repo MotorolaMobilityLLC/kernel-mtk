@@ -10,9 +10,9 @@ static int mt_usb2jtag_hw_init(void)
 {
 	struct device_node *node = NULL;
 
-	node = of_find_compatible_node(NULL, NULL, "mediatek,mt6735-usb2jtag");
+	node = of_find_compatible_node(NULL, NULL, "mediatek,usb2jtag_v1");
 	if (!node) {
-		pr_err("[USB2JTAG] map node @ mt6735-usb2jtag failed\n");
+		pr_err("[USB2JTAG] map node @ mediatek,usb2jtag_v1 failed\n");
 		return -1;
 	}
 	INFRA_AO_BASE = of_iomap(node, 0);
