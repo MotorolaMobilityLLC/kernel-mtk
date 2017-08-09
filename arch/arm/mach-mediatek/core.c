@@ -12,14 +12,24 @@
 #include <linux/irqchip.h>
 #include <linux/of_platform.h>
 
+#include "../../../drivers/misc/mediatek/base/power/mt6580/mt-smp.h"
+
 #ifdef CONFIG_OF
-static const char *mt_dt_match[] __initconst = {
-	"mediatek,mt6735",
+static const char *mt6580_dt_match[] __initconst = {
 	"mediatek,MT6580",
 	NULL
 };
 
+DT_MACHINE_START(MT6580_DT, "MT6580")
+	.dt_compat	= mt6580_dt_match,
+MACHINE_END
+
+static const char *mt_dt_match[] __initconst = {
+	"mediatek,mt6735",
+	NULL
+};
+
 DT_MACHINE_START(MT6735_DT, "MT6735")
-	.dt_compat = mt_dt_match,
+	.dt_compat	= mt_dt_match,
 MACHINE_END
 #endif
