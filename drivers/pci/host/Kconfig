@@ -91,4 +91,15 @@ config PCI_XGENE
 	  There are 5 internal PCIe ports available. Each port is GEN3 capable
 	  and have varied lanes from x1 to x8.
 
+config PCIE_MTK
+	bool "Mediatek MT7623 PCIe Controller"
+	depends on ARCH_MT7623
+	depends on OF
+	depends on PCI
+	help
+	  Say Y here if you want to enable PCI controller support on Mediatek MT7623.
+	  MT7623 PCIe supports single Root complex (RC) with 3 Root Ports.
+	  Each port supports a Gen2 1-lan Link.
+	  PCIe include one Host/PCI bridge and 3 PCIe MAC.
+
 endmenu

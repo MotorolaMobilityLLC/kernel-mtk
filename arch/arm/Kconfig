@@ -1026,6 +1026,7 @@ config ARCH_MT7623
 	select MFD_SYSCON
 	select CPU_IDLE
 	select ARM_ERRATA_814220
+	select MIGHT_HAVE_PCI
 	select MTK_SYS_CIRQ
 	select MTK_GIC_EXT
 	help
