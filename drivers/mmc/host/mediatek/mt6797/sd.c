@@ -2614,7 +2614,7 @@ static int msdc_dma_config(struct msdc_host *host, struct msdc_dma *dma)
 	u8  blkpad, dwpad, chksum;
 	struct scatterlist *sg = dma->sg;
 	struct gpd_t *gpd;
-	struct bd_t *bd;
+	struct bd_t *bd, vbd = {0};
 
 	switch (dma->mode) {
 	case MSDC_MODE_DMA_BASIC:
@@ -2676,19 +2676,20 @@ static int msdc_dma_config(struct msdc_host *host, struct msdc_dma *dma)
 			N_MSG(DMA, "DMA DESC mode dma_len<%x> dma_address<%llx>",
 				dma_len, (u64)dma_address);
 
-			msdc_init_bd(&bd[j], blkpad, dwpad, dma_address,
+			vbd.next = bd[j].next;
+			msdc_init_bd(&vbd, blkpad, dwpad, dma_address,
 				dma_len);
 
 			if (j == bdlen - 1)
-				bd[j].eol = 1;  /* the last bd */
+				vbd.eol = 1;  /* the last bd */
 			else
-				bd[j].eol = 0;
+				vbd.eol = 0;
 
 			/* checksume need to clear first */
-			bd[j].chksum = 0;
-			bd[j].chksum = (chksum ?
-				msdc_dma_calcs((u8 *) (&bd[j]), 16) : 0);
-
+			vbd.chksum = 0;
+			vbd.chksum = (chksum ?
+				msdc_dma_calcs((u8 *) (&vbd), 16) : 0);
+			memcpy(&bd[j], &vbd, sizeof(struct bd_t));
 			sg++;
 		}
 #ifdef MSDC_DMA_VIOLATION_DEBUG
