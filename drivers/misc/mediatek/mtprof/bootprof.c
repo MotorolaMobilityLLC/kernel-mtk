@@ -19,6 +19,7 @@
 #include <linux/moduleparam.h>
 #include <asm/uaccess.h>
 #include <linux/printk.h>
+#include <log_store_kernel.h>
 
 #include "internal.h"
 #ifdef CONFIG_MT_SCHED_MON_DEFAULT_ENABLE
@@ -98,7 +99,7 @@ static void mt_bootprof_switch(int on)
 			mt_bootprof_enabled = 0;
 			timestamp_off = ts;
 			boot_finish = 1;
-			/* log_store_bootup(); */
+			log_store_bootup();
 			bootup_finish();
 		}
 	}
