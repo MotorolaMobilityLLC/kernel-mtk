@@ -32,7 +32,7 @@ typedef struct{
 /* RX */
 #define FM_RX_RSSI_TH_LONG_MT6631    -296	/* FM radio long antenna RSSI threshold(-4dBuV) */
 #define FM_RX_RSSI_TH_SHORT_MT6631   -296	/* FM radio short antenna RSSI threshold(-4dBuV) */
-#define FM_RX_DESENSE_RSSI_MT6631   -258
+#define FM_RX_DESENSE_RSSI_MT6631   -240
 #define FM_RX_PAMD_TH_MT6631          -12
 #define FM_RX_MR_TH_MT6631           -67
 #define FM_RX_ATDC_TH_MT6631           3496
