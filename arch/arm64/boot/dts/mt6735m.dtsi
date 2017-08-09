@@ -238,6 +238,11 @@ initrd=0x44000000,0x1000000 loglevel=8 androidboot.hardware=mt6735";
 		#size-cells = <1>;
 		ranges;
 
+		gpio: gpio@10211000 {
+			compatible = "mediatek,gpio";
+			reg = <0x10211000 0x1000>;
+		};
+
 		cpuxgpt: cpuxgpt@10200000 {
 			compatible = "mediatek,mt6735-cpuxgpt";
 			reg = <0x10200000 0x1000>;
