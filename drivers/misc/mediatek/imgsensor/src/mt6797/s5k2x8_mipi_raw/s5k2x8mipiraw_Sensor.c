@@ -466,9 +466,9 @@ static void hdr_write_shutter(kal_uint16 le, kal_uint16 se)
     else
         iRation = 0;
 	
-	/*set ration*/
+	/*set ration for auto */
 	iRation = 0x100 * iRation;
-	write_cmos_sensor_twobyte(0x0218, iRation);
+	//write_cmos_sensor_twobyte(0x0218, iRation);
 	
 	/*Short exposure */
 	write_cmos_sensor_twobyte(0x0202,se);
@@ -3486,8 +3486,8 @@ static void capture_setting_WDR(kal_uint16 currefps)
 			/*it would write 0x216 = 0x1, 0x217=0x00*/
 			/*0x216=1 , Enable WDR*/
 			/*0x217=0x00, Use Manual mode to set short /long exp */
-			//write_cmos_sensor_twobyte(0x0216, 0x0100); /*For WDR*/
-			write_cmos_sensor_twobyte(0x0216, 0x0101); /*For WDR using Auot ration*/
+			write_cmos_sensor_twobyte(0x0216, 0x0100); /*For WDR*/
+			//write_cmos_sensor_twobyte(0x0216, 0x0101); /*For WDR using Auot ration*/
 			write_cmos_sensor_twobyte(0x0218, 0x0100);
 			write_cmos_sensor_twobyte(0x021A, 0x0100);
 			write_cmos_sensor_twobyte(0x602A, 0x6944); 
