@@ -1050,7 +1050,7 @@
 
 			clock-frequency = <26000000>;
 			clock-div = <1>;
-			/* clocks = <&infrasys INFRA_UART0>, <&infrasys INFRA_AP_DMA>; */
+			clocks = <&infrasys INFRACFG_AO_UART0_CG>, <&infrasys INFRACFG_AO_AP_DMA_CG>;
 			clock-names = "uart0-main", "uart-apdma";
 	};
 
@@ -1066,7 +1066,7 @@
 
 			clock-frequency = <26000000>;
 			clock-div = <1>;
-			/* clocks = <&infrasys INFRA_UART1>; */
+			clocks = <&infrasys INFRACFG_AO_UART1_CG>;
 			clock-names = "uart1-main";
 	};
 /*
@@ -2083,6 +2083,12 @@
 				"clk_main_parent",
 				"clk_sub_parent";
 		};
+
+	usb3_phy {
+		compatible = "mediatek,usb3_phy";
+		clocks = <&infrasys INFRACFG_AO_SSUSB_TOP_CG>;
+		clock-names = "sssub_clk";
+	};
 
 };
 
