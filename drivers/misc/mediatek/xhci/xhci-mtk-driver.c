@@ -140,8 +140,11 @@ static void mtk_set_iddig_in_detect(void)
 
 static bool mtk_is_charger_4_vol(void)
 {
+#if 0
 	int vol = battery_meter_get_charger_voltage();
-
+#else
+	int vol = 0;
+#endif
 	mtk_xhci_mtk_printk(K_DEBUG, "voltage(%d)\n", vol);
 
 #if defined(CONFIG_USBIF_COMPLIANCE) || defined(CONFIG_POWER_EXT)
@@ -402,7 +405,6 @@ static void mtk_enable_otg_mode(void)
 	bq25898_otg_en(0x01);
 	bq25898_set_boost_ilim(0x01);
 #endif
-#else
 	set_chr_enable_otg(0x1);
 	set_chr_boost_current_limit(500);
 #endif
@@ -419,7 +421,6 @@ static void mtk_disable_otg_mode(void)
 #if defined(CONFIG_MTK_BQ25898_DUAL_SUPPORT)
 	bq25898_otg_en(0x0);
 #endif
-#else
 	set_chr_enable_otg(0x0);
 #endif
 }
