@@ -455,6 +455,8 @@ static void __iomem *g_imgsys_config_base_dase;
 void __iomem *ISP_SENINF0_BASE;
 void __iomem *ISP_SENINF1_BASE;
 void __iomem *ISP_SENINF2_BASE;
+void __iomem *ISP_SENINF3_BASE;
+
 void __iomem *ISP_MMSYS_CONFIG_BASE;
 
 
@@ -3331,6 +3333,41 @@ static MINT32 ISP_DumpReg(void)
 	LOG_INF("isp: 15022188(0x%x)-1502218C(0x%x)-15022194(0x%x)-15022198(0x%x)\n", \
 		ISP_RD32(ISP_DIP_A_BASE + 0x0188), ISP_RD32(ISP_DIP_A_BASE + 0x018C), \
 		ISP_RD32(ISP_DIP_A_BASE + 0x0194), ISP_RD32(ISP_DIP_A_BASE + 0x0198));
+	/*Sensor interface Top mux*/
+	LOG_INF("seninf: 1a040008(0x%x)-1a040010(0x%x)-1a040a10(0x%x)-1a041a10(0x%x)\n", \
+		ISP_RD32(ISP_SENINF0_BASE + 0x0008), ISP_RD32(ISP_SENINF0_BASE + 0x0010), \
+		ISP_RD32(ISP_SENINF0_BASE + 0x0a10), ISP_RD32(ISP_SENINF1_BASE + 0x0a10));
+	/*Sensor interface0 control*/
+	LOG_INF("seninf: 1a040200(0x%x)-1a040204(0x%x)-1a040a00(0x%x)-1a040a14(0x%x)\n", \
+		ISP_RD32(ISP_SENINF0_BASE + 0x0200), ISP_RD32(ISP_SENINF0_BASE + 0x0204), \
+		ISP_RD32(ISP_SENINF0_BASE + 0x0a00), ISP_RD32(ISP_SENINF0_BASE + 0x0a14));
+	LOG_INF("seninf: 1a040a3c(0x%x)-1a040a44(0x%x)-1a040af0(0x%x)-1a040af4(0x%x)\n", \
+		ISP_RD32(ISP_SENINF0_BASE + 0x0a3c), ISP_RD32(ISP_SENINF0_BASE + 0x0a44), \
+		ISP_RD32(ISP_SENINF0_BASE + 0x0af0), ISP_RD32(ISP_SENINF0_BASE + 0x0af4));
+	/*Sensor interface1 control*/
+	LOG_INF("seninf: 1a041200(0x%x)-1a041204(0x%x)-1a041a00(0x%x)-1a041a14(0x%x)\n", \
+		ISP_RD32(ISP_SENINF1_BASE + 0x0200), ISP_RD32(ISP_SENINF1_BASE + 0x0204), \
+		ISP_RD32(ISP_SENINF1_BASE + 0x0a00), ISP_RD32(ISP_SENINF1_BASE + 0x0a14));
+	LOG_INF("seninf: 1a040a3c(0x%x)-1a040a44(0x%x)-1a040af0(0x%x)-1a040af4(0x%x)\n", \
+		ISP_RD32(ISP_SENINF1_BASE + 0x0a3c), ISP_RD32(ISP_SENINF1_BASE + 0x0a44), \
+		ISP_RD32(ISP_SENINF1_BASE + 0x0af0), ISP_RD32(ISP_SENINF1_BASE + 0x0af4));
+	/*Package counter*/
+	LOG_INF("seninf: 1a040a1c(0x%x)-1a041a1c(0x%x)-1a040a1c(0x%x)-1a041a1c(0x%x)\n", \
+		ISP_RD32(ISP_SENINF0_BASE + 0x0a1c), ISP_RD32(ISP_SENINF1_BASE + 0x0a1c), \
+		ISP_RD32(ISP_SENINF0_BASE + 0x0a1c), ISP_RD32(ISP_SENINF1_BASE + 0x0a1c));
+	/*Sensor interface mux*/
+	LOG_INF("seninf: 1a040d00(0x%x)-1a040d08(0x%x)-1a040d14(0x%x)-1a040d18(0x%x)\n", \
+		ISP_RD32(ISP_SENINF0_BASE + 0x0d00), ISP_RD32(ISP_SENINF0_BASE + 0x0d08), \
+		ISP_RD32(ISP_SENINF0_BASE + 0x0d14), ISP_RD32(ISP_SENINF0_BASE + 0x0d18));
+	LOG_INF("seninf: 1a041d00(0x%x)-1a041d08(0x%x)-1a041d14(0x%x)-1a041d18(0x%x)\n", \
+		ISP_RD32(ISP_SENINF1_BASE + 0x0d00), ISP_RD32(ISP_SENINF1_BASE + 0x0d08), \
+		ISP_RD32(ISP_SENINF1_BASE + 0x0d14), ISP_RD32(ISP_SENINF1_BASE + 0x0d18));
+	LOG_INF("seninf: 1a042d00(0x%x)-1a042d08(0x%x)-1a042d14(0x%x)-1a042d18(0x%x)\n", \
+		ISP_RD32(ISP_SENINF2_BASE + 0x0d00), ISP_RD32(ISP_SENINF2_BASE + 0x0d08), \
+		ISP_RD32(ISP_SENINF2_BASE + 0x0d14), ISP_RD32(ISP_SENINF2_BASE + 0x0d18));
+	LOG_INF("seninf: 1a043d00(0x%x)-1a043d08(0x%x)-1a043d14(0x%x)-1a043d18(0x%x)\n", \
+		ISP_RD32(ISP_SENINF3_BASE + 0x0d00), ISP_RD32(ISP_SENINF3_BASE + 0x0d08), \
+		ISP_RD32(ISP_SENINF3_BASE + 0x0d14), ISP_RD32(ISP_SENINF3_BASE + 0x0d18));
 #if 0
 	/*  */
 	/* spin_lock_irqsave(&(IspInfo.SpinLock), flags); */
@@ -9663,7 +9700,17 @@ static MINT32 __init ISP_Init(void)
 	}
 	LOG_DBG("ISP_SENINF2_BASE: %p\n", ISP_SENINF2_BASE);
 
-
+	node = of_find_compatible_node(NULL, NULL, "mediatek,seninf3");
+	if (!node) {
+		LOG_ERR("find mediatek,seninf3 node failed!!!\n");
+		return -ENODEV;
+	}
+	ISP_SENINF3_BASE = of_iomap(node, 0);
+	if (!ISP_SENINF3_BASE) {
+		LOG_ERR("unable to map ISP_SENINF3_BASE registers!!!\n");
+		return -ENODEV;
+	}
+	LOG_DBG("ISP_SENINF3_BASE: %p\n", ISP_SENINF3_BASE);
 	node = of_find_compatible_node(NULL, NULL, "mediatek,mmsys_config");
 	if (!node) {
 		LOG_ERR("find mmsys_config node failed!!!\n");
