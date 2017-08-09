@@ -402,6 +402,7 @@ static void accdet_eint_work_callback(struct work_struct *work)
 #endif
 #if defined(CONFIG_TS3A225E_ACCDET)
 		ACCDET_DEBUG("[Accdet] TS3A225E enable!\n");
+		msleep(300);
 		ts3a225e_write_byte(0x04, 0x01);
 		msleep(500);
 		ts3a225e_read_byte(0x02, &ts3a225e_reg_value[1]);
