@@ -534,6 +534,7 @@ wake_reason_t spm_go_to_sleep(u32 spm_flags, u32 spm_data)
 
 	pwrctrl = __spm_suspend.pwrctrl;
 
+	update_pwrctrl_pcm_flags(&spm_flags);
 	set_pwrctrl_pcm_flags(pwrctrl, spm_flags);
 	set_pwrctrl_pcm_data(pwrctrl, spm_data);
 

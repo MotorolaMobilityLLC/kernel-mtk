@@ -427,14 +427,15 @@ static inline u32 base_va_to_pa(const u32 *base)
 	return (u32) pa;
 }
 
-static inline void set_pwrctrl_pcm_flags(struct pwr_ctrl *pwrctrl, u32 flags)
+static inline void update_pwrctrl_pcm_flags(u32 *flags)
 {
-#if defined(CONFIG_ARCH_MT6755)
 	/* SPM controls NFC clock buffer in RF only */
 	if (!is_clk_buf_from_pmic())
-		flags |= SPM_FLAG_EN_NFC_CLOCK_BUF_CTRL;
-#endif
+		(*flags) |= SPM_FLAG_EN_NFC_CLOCK_BUF_CTRL;
+}
 
+static inline void set_pwrctrl_pcm_flags(struct pwr_ctrl *pwrctrl, u32 flags)
+{
 	if (pwrctrl->pcm_flags_cust == 0)
 		pwrctrl->pcm_flags = flags;
 	else

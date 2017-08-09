@@ -490,6 +490,7 @@ wake_reason_t spm_go_to_dpidle(u32 spm_flags, u32 spm_data, u32 dump_log)
 	else
 		BUG();
 
+	update_pwrctrl_pcm_flags(&spm_flags);
 	set_pwrctrl_pcm_flags(pwrctrl, spm_flags);
 
 	spm_dpidle_before_wfi(cpu);
@@ -615,6 +616,7 @@ wake_reason_t spm_go_to_sleep_dpidle(u32 spm_flags, u32 spm_data)
 	dpidle_timer_val = pwrctrl->timer_val;
 	dpidle_wake_src = pwrctrl->wake_src;
 
+	update_pwrctrl_pcm_flags(&spm_flags);
 	set_pwrctrl_pcm_flags(pwrctrl, spm_flags);
 
 	spm_dpidle_before_wfi(cpu);

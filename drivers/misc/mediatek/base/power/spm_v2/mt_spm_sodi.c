@@ -416,6 +416,7 @@ wake_reason_t spm_go_to_sodi(u32 spm_flags, u32 spm_data, u32 sodi_flags)
 	else
 		spm_flags &= ~SPM_FLAG_SODI_CG_MODE;	/* PDN mode */
 
+	update_pwrctrl_pcm_flags(&spm_flags);
 	set_pwrctrl_pcm_flags(pwrctrl, spm_flags);
 
 	/* enable APxGPT timer */
