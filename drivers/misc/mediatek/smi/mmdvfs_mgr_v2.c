@@ -754,7 +754,9 @@ int mmdvfs_set_step_with_mmsys_clk(MTK_SMI_BWC_SCEN smi_scenario, mmdvfs_voltage
 	}
 #endif /* MMDVFS_ENABLE */
 
-	MMDVFSMSG("Set vol scen:%d,step:%d,final:%d(0x%x),CMD(%d,%d,0x%x),INFO(%d,%d),CLK:%d\n",
+	/* For log message reduction */
+	if (scenario != MMDVFS_CAM_MON_SCEN)
+		MMDVFSMSG("Set vol scen:%d,step:%d,final:%d(0x%x),CMD(%d,%d,0x%x),INFO(%d,%d),CLK:%d\n",
 	scenario, step, final_step, concurrency,
 	g_mmdvfs_cmd.sensor_size, g_mmdvfs_cmd.sensor_fps, g_mmdvfs_cmd.camera_mode,
 	g_mmdvfs_info->video_record_size[0], g_mmdvfs_info->video_record_size[1],
@@ -778,7 +780,7 @@ void mmdvfs_handle_cmd(MTK_MMDVFS_CMD *cmd)
 		mmdvfs_update_cmd(cmd);
 
 		if (!(g_mmdvfs_concurrency & (1 << cmd->scen))) {
-			MMDVFSMSG("invalid set scen %d\n", cmd->scen);
+			/*MMDVFSMSG("invalid set scen %d\n", cmd->scen); */
 			cmd->ret = -1;
 		} else {
 			cmd->ret = mmdvfs_set_step_with_mmsys_clk(cmd->scen,
