@@ -3229,5 +3229,11 @@ static inline int yama_task_prctl(int option, unsigned long arg2,
 }
 #endif /* CONFIG_SECURITY_YAMA */
 
+
+#ifdef CONFIG_MTK_ROOT_TRACE
+extern int sec_trace_root(const struct cred *old, const struct cred *new);
+#endif /* CONFIG_MTK_ROOT_TRACE */
+
+
 #endif /* ! __LINUX_SECURITY_H */
 

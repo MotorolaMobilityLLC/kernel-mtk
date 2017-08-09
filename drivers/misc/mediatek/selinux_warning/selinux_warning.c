@@ -151,19 +151,106 @@ void mtk_audit_hook(char *data)
 	ret = mtk_check_filter(scontext);
 	if (ret >= 0) {
 		pr_warn("[selinux]Enforce: %d, In AEE Warning List scontext: %s\n",
-		selinux_enforcing, scontext);
+			selinux_enforcing, scontext);
 		pname = mtk_get_process(scontext);
 #ifdef CONFIG_MTK_AEE_FEATURE
 		if (pname != 0) {
 			char printbuf[PRINT_BUF_LEN] = { '\0' };
 
-			sprintf(printbuf, "[SELINUX][WARNING]\nCR_DISPATCH_PROCESSNAME:%s\n", pname);
+			sprintf(printbuf, "[SELINUX][WARNING]\nCR_DISPATCH_PROCESSNAME:%s\n",
+				pname);
 			if (selinux_enforcing) {
 				aee_kernel_warning_api(__FILE__, __LINE__,
-					DB_OPT_DEFAULT|DB_OPT_NATIVE_BACKTRACE,	printbuf, data);
+						       DB_OPT_DEFAULT | DB_OPT_NATIVE_BACKTRACE,
+						       printbuf, data);
 			}
 		}
 #endif
 	}
 }
 EXPORT_SYMBOL(mtk_audit_hook);
+
+
+#ifdef CONFIG_MTK_ROOT_TRACE
+
+struct uid0_change_struct {
+	atomic_t to_root_count;
+	atomic_t old_ruid;
+	atomic_t old_suid;
+	atomic_t old_euid;
+} uid0_trace;
+
+static struct platform_driver root_trace = {
+	.driver = {
+		   .name = "root_trace",
+		   .bus = &platform_bus_type,
+		   .owner = THIS_MODULE,
+		   }
+};
+
+static ssize_t root_trace_show(struct device_driver *driver, char *buf)
+{
+	char *ptr = buf;
+
+	sprintf(ptr, "%d\nold_ruid:%d\nold_euid:%d\nold_suid:%d\n",
+		atomic_read(&uid0_trace.to_root_count), atomic_read(&uid0_trace.old_ruid),
+		atomic_read(&uid0_trace.old_euid), atomic_read(&uid0_trace.old_suid));
+
+	return strlen(buf);
+}
+
+DRIVER_ATTR(root_trace, 0444, root_trace_show, NULL);
+
+static int __init root_trace_init(void)
+{
+	int ret = 0;
+
+	/* register driver and create sysfs files */
+	ret = driver_register(&root_trace.driver);
+	if (ret) {
+		pr_warn("fail to register root_trace driver\n");
+		return -1;
+	}
+
+	ret = driver_create_file(&root_trace.driver, &driver_attr_root_trace);
+	if (ret) {
+		pr_warn("[BOOT INIT] Fail to create root_trace sysfs file\n");
+		driver_unregister(&root_trace.driver);
+		return -1;
+	}
+
+	return 0;
+}
+
+
+int sec_trace_root(const struct cred *old, const struct cred *new)
+{
+	int ret = 0;
+	kuid_t root_uid = make_kuid(old->user_ns, 0);
+
+	if ((!new) || (!old))
+		goto _exit;
+
+	if ((uid_eq(new->euid, root_uid) && uid_gt(old->euid, root_uid)) ||
+	    (uid_eq(new->uid, root_uid) && uid_gt(old->uid, root_uid)) ||
+	    (uid_eq(new->suid, root_uid) && uid_gt(old->suid, root_uid))) {
+		atomic_inc(&uid0_trace.to_root_count);
+		atomic_set(&uid0_trace.old_ruid, __kuid_val(old->uid));
+		atomic_set(&uid0_trace.old_euid, __kuid_val(old->euid));
+		atomic_set(&uid0_trace.old_suid, __kuid_val(old->suid));
+		pr_warn("detect to uid root - euid:%d -> euid:%d\n",
+			__kuid_val(old->euid), __kuid_val(new->euid));
+		pr_warn("detect to uid root - ruid:%d -> ruid:%d\n",
+			__kuid_val(old->uid), __kuid_val(new->uid));
+		pr_warn("detect to uid root - suid:%d -> suid:%d\n",
+			__kuid_val(old->suid), __kuid_val(new->suid));
+		pr_warn("to_root_count:%d", atomic_read(&uid0_trace.to_root_count));
+	}
+
+_exit:
+	return ret;
+}
+EXPORT_SYMBOL(sec_trace_root);
+module_init(root_trace_init);
+
+#endif

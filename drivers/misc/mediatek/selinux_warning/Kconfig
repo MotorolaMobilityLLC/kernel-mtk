@@ -4,3 +4,11 @@ config MTK_SELINUX_AEE_WARNING
 	default n
 	---help---
 	  This option enables SELinux violation AEE warning.
+
+config MTK_ROOT_TRACE
+        bool "Enable root trace for uid 0 "
+        default n
+        ---help---
+          This option enables root trace, covering uid x to uid 0 for all uids, excluding fs uid.
+
+
