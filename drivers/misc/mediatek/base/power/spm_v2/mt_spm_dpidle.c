@@ -36,17 +36,6 @@
 #define DPIDLE_TAG     "[DP] "
 #define dpidle_dbg(fmt, args...)	pr_debug(DPIDLE_TAG fmt, ##args)
 
-/* FIXME: for FPGA early porting */
-#define  CONFIG_MTK_LDVT
-
-#ifdef CONFIG_MTK_LDVT
-#define SPM_PWAKE_EN            0
-#define SPM_BYPASS_SYSPWREQ     1
-#else
-#define SPM_PWAKE_EN            1
-#define SPM_BYPASS_SYSPWREQ     0
-#endif
-
 #define WAKE_SRC_FOR_MD32  0
 
 #define I2C_CHANNEL 2
@@ -638,8 +627,10 @@ wake_reason_t spm_go_to_sleep_dpidle(u32 spm_flags, u32 spm_data)
 
 	spm_dpidle_before_wfi(cpu);
 
+#if 0
 #if SPM_PWAKE_EN
 	sec = spm_get_wake_period(-1 /* FIXME */, last_wr);
+#endif
 #endif
 	pwrctrl->timer_val = sec * 32768;
 
