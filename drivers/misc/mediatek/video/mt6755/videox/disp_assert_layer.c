@@ -253,12 +253,13 @@ DAL_STATUS DAL_Clean(void)
 		pr_err("[DDP]* isAEEEnabled from 1 to 0, %d\n", dal_clean_cnt++);
 		isAEEEnabled = 0;
 		DAL_Dynamic_Change_FB_Layer(isAEEEnabled);	/* restore UI layer to DEFAULT_UI_LAYER */
+		primary_display_trigger(0, NULL, 0);
 	}
 
 	dal_shown = false;
 	dal_disable_when_resume = false;
 
-	primary_display_trigger(0, NULL, 0);
+	/*primary_display_trigger(0, NULL, 0);*/
 
 
 End:
@@ -294,6 +295,7 @@ DAL_STATUS DAL_Printf(const char *fmt, ...)
 
 	MMProfileLogEx(ddp_mmp_get_events()->dal_printf, MMProfileFlagStart, 0, 0);
 	DAL_LOCK();
+#if 0
 	if (isAEEEnabled == 0) {
 		pr_err("[DDP] isAEEEnabled from 0 to 1, ASSERT_LAYER=%d, dal_fb_pa %lx\n",
 		       primary_display_get_option("ASSERT_LAYER"), dal_fb_pa);
@@ -306,6 +308,21 @@ DAL_STATUS DAL_Printf(const char *fmt, ...)
 					   DAL_FG_COLOR, DAL_BG_COLOR));
 		show_dal_layer(1);
 	}
+#else
+	{
+		pr_err("[DDP] isAEEEnabled %d ASSERT_LAYER=%d, dal_fb_pa %lx\n",
+			isAEEEnabled, primary_display_get_option("ASSERT_LAYER"), dal_fb_pa);
+
+		if (isAEEEnabled == 0) {
+			isAEEEnabled = 1;
+			DAL_Dynamic_Change_FB_Layer(isAEEEnabled);
+			DAL_CHECK_MFC_RET(MFC_Open(&mfc_handle, dal_fb_addr,
+			   DAL_WIDTH, DAL_HEIGHT, DAL_BPP,
+			   DAL_FG_COLOR, DAL_BG_COLOR));
+		}
+		show_dal_layer(1);
+	}
+#endif
 	va_start(args, fmt);
 	i = vsprintf(dal_print_buffer, fmt, args);
 	BUG_ON(i >= ARRAY_SIZE(dal_print_buffer));

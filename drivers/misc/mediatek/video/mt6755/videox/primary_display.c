@@ -85,6 +85,8 @@
 #include "disp_lowpower.h"
 #include "disp_recovery.h"
 #include "mt_spm_sodi_cmdq.h"
+#include "mt_spm_reg.h"
+#include "mt_spm_idle.h"
 
 #define FRM_UPDATE_SEQ_CACHE_NUM (DISP_INTERNAL_BUFFER_COUNT+1)
 
@@ -111,6 +113,7 @@ static struct task_struct *decouple_update_rdma_config_thread;
 static struct task_struct *decouple_trigger_thread;
 static struct sg_table table;
 
+static int primary_display_recovery_thread(void *data);
 static int decouple_mirror_update_rdma_config_thread(void *data);
 static int decouple_trigger_worker_thread(void *data);
 
@@ -134,6 +137,11 @@ static unsigned int _need_lfr_check(void);
 /* dvfs */
 static atomic_t dvfs_ovl_req_status = ATOMIC_INIT(OPPI_UNREQ);
 static int dvfs_last_ovl_req = OPPI_UNREQ;
+static atomic_t delayed_trigger_kick = ATOMIC_INIT(0);
+/*detect hang and recovery*/
+static struct task_struct *primary_display_Recovery_task;
+static wait_queue_head_t primary_recovery_task_wq;
+static atomic_t primary_recovery_task_wakeup = ATOMIC_INIT(0);
 
 typedef struct {
 	DISP_POWER_STATE state;
@@ -750,6 +758,8 @@ int primary_display_get_debug_state(char *stringbuf, int buf_len)
 		      "|cmdq_handle_config=%p\tcmdq_handle_trigger=%p\tdpmgr_handle=%p\tovl2mem_path_handle=%p\n",
 		      pgc->cmdq_handle_config, pgc->cmdq_handle_trigger, pgc->dpmgr_handle,
 		      pgc->ovl2mem_path_handle);
+	len += scnprintf(stringbuf + len, buf_len - len,
+			"|PathMode:%s\n", session_mode_spy(pgc->session_mode));
 	len += scnprintf(stringbuf + len, buf_len - len, "|Current display driver status=%s + %s\n",
 		      primary_display_is_video_mode() ? "video mode" : "cmd mode",
 		      primary_display_cmdq_enabled() ? "CMDQ Enabled" : "CMDQ Disabled");
@@ -2472,7 +2482,10 @@ int32_t cmdqDdpDumpInfo(uint64_t engineFlag, int level)
 	/* try to set event by CPU to avoid blocking auto test such as Monkey/MTBF */
 	/* cmdqCoreSetEvent(CMDQ_SYNC_TOKEN_STREAM_EOF); */
 	/* cmdqCoreSetEvent(CMDQ_EVENT_DISP_RDMA0_EOF); */
-
+	if (disp_helper_get_option(DISP_OPT_DETECT_RECOVERY)) {
+		atomic_set(&primary_recovery_task_wakeup, 1);
+		wake_up_interruptible(&primary_recovery_task_wq);
+	}
 	return 0;
 }
 
@@ -2625,26 +2638,30 @@ static int decouple_update_rdma_config(void)
 	_primary_path_unlock(__func__);
 	return ret;
 }
-/*
+
 static int _requestCondition(int overlap_layers)
 {
 	int ret = 0;
-	int w = 0;
+	int iwidth = 0;
+	int ihight = 0;
 
-	w = primary_display_get_virtual_width();
-	if (0 == w)
-		w = DISP_GetScreenWidth();
-	if ((720 == w) && (overlap_layers <= DISP_HW_HRT_720P_LYAERS_FOR_HI_PERF))
-		return -1;
-	if ((1080 == w) && (overlap_layers > DISP_HW_HRT_LYAERS_FOR_HI_PERF)) {
-		DISPWARN("overlayed layer num is %d > %d\n", overlap_layers,
-		DISP_HW_HRT_LYAERS_FOR_HI_PERF);
+	ihight = disp_helper_get_option(DISP_OPT_FAKE_LCM_HEIGHT);
+	iwidth = disp_helper_get_option(DISP_OPT_FAKE_LCM_WIDTH);
+
+	if (ihight * iwidth < DISP_HW_HRT_PERF_LCM_AREA_THRESHOLD) {
+		if (overlap_layers <= DISP_HW_HRT_PERF_FOR_LCM_SMALL)
+			return -1;
+	} else {
+		if (overlap_layers > DISP_HW_HRT_PERF_FOR_LCM_BIG_MAX)
+			DISPWARN("overlayed layer num is %d > %d\n", overlap_layers,
+			DISP_HW_HRT_PERF_FOR_LCM_BIG_MAX);
+		if (overlap_layers <= DISP_HW_HRT_PERF_FOR_LCM_BIG)
+			return -1;
 	}
-	if ((1080 == w) && (overlap_layers <= DISP_HW_HRT_LYAERS_FOR_LOW_POWER))
-		return -1;
+
 	return ret;
 }
-*/
+
 static int _request_dvfs_perf(int req)
 {
 	if (is_vcorefs_can_work() != 1)
@@ -2672,7 +2689,7 @@ static int _ovl_fence_release_callback(unsigned long userdata)
 
 	_primary_path_lock(__func__);
 
-	if (real_overlap_layers > DISP_HW_HRT_LYAERS_FOR_LOW_POWER) {
+	if (!_requestCondition(real_overlap_layers)) {
 		_request_dvfs_perf(OPPI_PERF);
 	} else {
 		/* be carefull for race condition !! because callback may delay */
@@ -3266,6 +3283,15 @@ int primary_display_init(char *lcm_name, unsigned int lcm_fps, int is_lcm_inited
 		}
 	}
 
+	if (disp_helper_get_option(DISP_OPT_DETECT_RECOVERY)) {
+		/*thread: path recovery */
+		primary_display_Recovery_task =
+		    kthread_create(primary_display_recovery_thread, NULL,
+				   "display_recovery");
+		init_waitqueue_head(&primary_recovery_task_wq);
+		/*if (disp_helper_get_option(DISP_OPT_BYPASS_OVL))*/
+		wake_up_process(primary_display_Recovery_task);
+	}
 	pgc->lcm_fps = lcm_fps;
 	/* keep lowpower init after setting lcm_fps */
 	primary_display_lowpower_init();
@@ -3530,6 +3556,8 @@ int primary_display_suspend(void)
 
 	DISPDBG("[POWER]dpmanager path power off[begin]\n");
 	dpmgr_path_power_off(pgc->dpmgr_handle, CMDQ_DISABLE);
+	if (primary_display_is_decouple_mode())
+		dpmgr_path_power_off(pgc->ovl2mem_path_handle, CMDQ_DISABLE);
 	if (disp_helper_get_option(DISP_OPT_MET_LOG))
 		set_enterulps(1);
 
@@ -3606,18 +3634,24 @@ int primary_display_resume(void)
 				vdo_mode_type = lcm_param_cv->dsi.mode;
 			if (lcm_mode_status == 1) {
 				lcm_dsi_mode = CMD_MODE;
-				primary_display_sodi_enable(1);
+				spm_sodi_mempll_pwr_mode(0);
+				spm_enable_sodi(1);
 			} else if (lcm_mode_status == 2) {
 				if (vdo_mode_type)
 					lcm_dsi_mode = vdo_mode_type;
 				else
 					lcm_dsi_mode = SYNC_PULSE_VDO_MODE;
-				primary_display_sodi_enable(0);
+				spm_sodi_mempll_pwr_mode(1);
+				spm_enable_sodi(1);
+			} else {
+				lcm_dsi_mode = lcm_param_cv->dsi.mode;
 			}
 			DSI_ForceConfig(1);
 			lcm_param_cv->dsi.mode = lcm_dsi_mode;
 			MMProfileLogEx(ddp_mmp_get_events()->primary_resume, MMProfileFlagPulse, 0, lcm_mode_status);
 			lcm_mode_status = 0;
+			if (disp_helper_get_option(DISP_OPT_CV_BYSUSPEND))
+				primary_display_check_recovery_init();
 		}
 		DISPDBG("lcm_mode_status=%d, lcm_dsi_mode=%d\n", lcm_mode_status, lcm_dsi_mode);
 	}
@@ -4307,12 +4341,7 @@ static int _config_ovl_input(struct disp_frame_cfg_t *cfg,
 	overlap_layers = cfg->overlap_layer_num;
 	data_config->overlap_layer_num = overlap_layers;
 
-	if (overlap_layers > DISP_HW_HRT_LYAERS_FOR_HI_PERF) {
-		DISPWARN("overlayed layer num is %d > %d\n", overlap_layers,
-				DISP_HW_HRT_LYAERS_FOR_HI_PERF);
-	}
-
-	if (overlap_layers > DISP_HW_HRT_LYAERS_FOR_LOW_POWER) {
+	if (!_requestCondition(overlap_layers)) {
 		_request_dvfs_perf(OPPI_PERF);
 		dvfs_last_ovl_req = OPPI_PERF;
 	} else {
@@ -4747,6 +4776,10 @@ int primary_display_switch_mode(int sess_mode, unsigned int session, int force)
 {
 	int ret = 0;
 	_primary_path_lock(__func__);
+	if (bypass_blank && !force) {
+		DISPCHECK("%s DISPLAY UT Return!\n", __func__);
+		goto done;
+	}
 	primary_display_idlemgr_kick((char *)__func__, 0);
 
 	if (!force && primary_display_is_mirror_mode() == _is_mirror_mode(sess_mode)) {
@@ -6484,3 +6517,83 @@ int display_exit_tui(void)
 
 }
 
+int primary_display_signal_recovery(void)
+{
+	DISPCHECK("[Primary Recovery] signal\n");
+	atomic_set(&primary_recovery_task_wakeup, 1);
+	wake_up_interruptible(&primary_recovery_task_wq);
+	return 0;
+}
+
+static int primary_display_recovery_thread(void *data)
+{
+	int ret = 0;
+
+	struct sched_param param = {.sched_priority = 87 };
+
+	sched_setscheduler(current, SCHED_RR, &param);
+	DISPCHECK("[primary_display_recovery_thread]\n");
+	while (1) {
+		msleep(1500);
+		ret =
+		    wait_event_interruptible(primary_recovery_task_wq,
+					     atomic_read
+					     (&primary_recovery_task_wakeup));
+		atomic_set(&primary_recovery_task_wakeup, 0);
+		pr_debug("[Primary Recovery] begin ret %d\n", ret);
+		_primary_path_lock(__func__);
+		if (pgc->state != DISP_SLEPT) {
+			primary_display_idlemgr_kick((char *)__func__, 0);
+			if (ret == 0) {
+				DISPCHECK("[Primary Recovery]stop cmdq trigger loop\n");
+				_cmdq_stop_trigger_loop();
+
+				if (dpmgr_path_is_busy(pgc->dpmgr_handle)) {
+					pr_debug("[ESD]primary display path is busy\n");
+					ret = dpmgr_wait_event_timeout(pgc->dpmgr_handle,
+							DISP_PATH_EVENT_FRAME_DONE, HZ * 1);
+					pr_debug("[ESD]wait frame done ret:%d\n", ret);
+				}
+
+				if (0 != ret) {
+					pr_debug("[Primary Recovery]stop path\n");
+					dpmgr_path_stop(pgc->dpmgr_handle, CMDQ_DISABLE);
+				}
+
+				DISPCHECK("[Primary Recovery] path reset\n");
+				dpmgr_path_reset(pgc->dpmgr_handle, CMDQ_DISABLE);
+
+				DISPCHECK("[Primary Recovery] path start\n");
+				dpmgr_path_start(pgc->dpmgr_handle, CMDQ_DISABLE);
+
+				DISPCHECK("[Primary Recovery]start cmdq trigger loop\n");
+				_cmdq_start_trigger_loop();
+
+				/* (in suspend) when we stop trigger loop
+				* if no other thread is running, cmdq may disable its clock
+				* all cmdq event will be cleared after suspend */
+				cmdqCoreSetEvent(CMDQ_EVENT_DISP_WDMA0_EOF);
+
+				if (primary_display_is_video_mode()) {
+					/* for video mode, need to force trigger here */
+					/* for cmd mode, */
+					/* just set DPREC_EVENT_CMDQ_SET_EVENT_ALLOW when trigger loop start */
+					dpmgr_path_trigger(pgc->dpmgr_handle, NULL, CMDQ_DISABLE);
+				} else {
+					cmdqCoreSetEvent(CMDQ_SYNC_TOKEN_CONFIG_DIRTY);
+					mdelay(40);
+				}
+			}
+		} else {
+			pr_debug
+			    ("[Primary Recovery] can not recovery path in suspend\n");
+		}
+		_primary_path_unlock(__func__);
+		pr_debug("[Primary Recovery]  end\n");
+
+		if (kthread_should_stop())
+			break;
+	}
+	return ret;
+
+}

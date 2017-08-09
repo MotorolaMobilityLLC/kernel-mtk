@@ -367,6 +367,16 @@ void ddp_mmp_ovl_layer(OVL_CONFIG_STRUCT *pLayer, unsigned int down_sample_x,
 			Bitmap.format = MMProfileBitmapRGBA8888;
 			Bitmap.bpp = 32;
 			break;
+		case UFMT_PARGB8888:
+		case UFMT_PABGR8888:
+			Bitmap.format = MMProfileBitmapRGBA8888;
+			Bitmap.bpp = 32;
+			break;
+		case UFMT_PRGBA8888:
+		case UFMT_PBGRA8888:
+			Bitmap.format = MMProfileBitmapBGRA8888;
+			Bitmap.bpp = 32;
+			break;
 		default:
 			DDPERR("ddp_mmp_ovl_layer(), unknown fmt=0x%x,dump raw\n", pLayer->fmt);
 			raw = 1;

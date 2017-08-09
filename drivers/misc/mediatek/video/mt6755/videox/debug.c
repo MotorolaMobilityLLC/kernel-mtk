@@ -403,6 +403,9 @@ static void process_dbg_opt(const char *opt)
 			pr_err("error to parse cmd %s\n", opt);
 			return;
 		}
+	} else if (0 == strncmp(opt, "detect_recovery", 15)) {
+		DISPCHECK("primary_display_signal_recovery\n");
+		primary_display_signal_recovery();
 	} else if (0 == strncmp(opt, "dst_switch:", 11)) {
 		char *p = (char *)opt + 11;
 		uint32_t mode;

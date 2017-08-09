@@ -1297,7 +1297,7 @@ void DSI_PHY_clk_setting(DISP_MODULE_ENUM module, cmdqRecHandle cmdq, LCM_DSI_PA
 	return 0;
 #endif
 
-	int i;
+	int i = 0;
 	unsigned int data_Rate = dsi_params->PLL_CLOCK * 2;
 	unsigned int txdiv = 0;
 	unsigned int txdiv0 = 0;
@@ -1323,7 +1323,7 @@ void DSI_PHY_clk_setting(DISP_MODULE_ENUM module, cmdqRecHandle cmdq, LCM_DSI_PA
 	temp4 = (m_hw_res3 >> 16) & 0xF;
 	temp5 = (m_hw_res3 >> 12) & 0xF;
 #endif
-	i = 0;
+
 	for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
 		/* step 0 */
 		MIPITX_OUTREGBIT(MIPITX_DSI_CLOCK_LANE_REG, DSI_PHY_REG[i]->MIPITX_DSI_CLOCK_LANE,
@@ -1815,6 +1815,11 @@ void DSI_Set_VM_CMD(DISP_MODULE_ENUM module, cmdqRecHandle cmdq)
 DSI_STATUS DSI_EnableVM_CMD(DISP_MODULE_ENUM module, cmdqRecHandle cmdq)
 {
 	int i = 0;
+	if (cmdq)
+		DSI_MASKREG32(cmdq, &DSI_REG[0]->DSI_INTSTA, 0x00000020, 0);
+	else
+		wait_vm_cmd_done = false;
+
 	if (module != DISP_MODULE_DSIDUAL) {
 		for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
 			DSI_OUTREGBIT(cmdq, DSI_START_REG, DSI_REG[i]->DSI_START, VM_CMD_START, 0);
@@ -1824,6 +1829,11 @@ DSI_STATUS DSI_EnableVM_CMD(DISP_MODULE_ENUM module, cmdqRecHandle cmdq)
 		DSI_OUTREGBIT(cmdq, DSI_START_REG, DSI_REG[0]->DSI_START, VM_CMD_START, 0);
 		DSI_OUTREGBIT(cmdq, DSI_START_REG, DSI_REG[0]->DSI_START, VM_CMD_START, 1);
 	}
+	if (cmdq)
+		DSI_POLLREG32(cmdq, &DSI_REG[0]->DSI_INTSTA, 0x00000020, 1);
+	else
+		wait_event_interruptible(_dsi_wait_vm_cmd_done_queue[0], wait_vm_cmd_done);
+
 	return DSI_STATUS_OK;
 }
 
@@ -4477,4 +4487,19 @@ int DSI_check_roi(void)
 void DSI_ForceConfig(int forceconfig)
 {
 	dsi_force_config = forceconfig;
+	/*cv switch by resume*/
+	if (disp_helper_get_option(DISP_OPT_CV_BYSUSPEND)) {
+		if (lcm_mode_status != 0) {
+			if (0 == _dsi_context[0].dsi_params.PLL_CK_CMD)
+				_dsi_context[0].dsi_params.PLL_CK_CMD = _dsi_context[0].dsi_params.PLL_CLOCK;
+			if (0 == _dsi_context[0].dsi_params.PLL_CK_VDO)
+				_dsi_context[0].dsi_params.PLL_CK_VDO = _dsi_context[0].dsi_params.PLL_CLOCK;
+			if (CMD_MODE == lcm_dsi_mode)
+				_dsi_context[0].dsi_params.PLL_CLOCK = _dsi_context[0].dsi_params.PLL_CK_CMD;
+			else if (SYNC_PULSE_VDO_MODE == lcm_dsi_mode ||
+				 SYNC_EVENT_VDO_MODE == lcm_dsi_mode ||
+					BURST_VDO_MODE == lcm_dsi_mode)
+				_dsi_context[0].dsi_params.PLL_CLOCK = _dsi_context[0].dsi_params.PLL_CK_VDO;
+		}
+	}
 }

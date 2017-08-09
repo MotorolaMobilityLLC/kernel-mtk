@@ -249,6 +249,7 @@ extern LCM_DRIVER hx8394c_wxga_dsi_vdo_lcm_drv;
 extern LCM_DRIVER nt35595_truly_fhd_dsi_vdo_lcm_drv;
 extern LCM_DRIVER nt36850_wqhd_dsi_2k_cmd_lcm_drv;
 extern LCM_DRIVER s6e3ha3_wqhd_2k_cmd_lcm_drv;
+extern LCM_DRIVER nt35595_fhd_dsi_cmd_truly_nt50358_720p_extern_lcm_drv;
 
 #ifdef BUILD_LK
 extern void mdelay(unsigned long msec);
