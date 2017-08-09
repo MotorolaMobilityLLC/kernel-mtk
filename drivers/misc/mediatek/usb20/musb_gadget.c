@@ -1666,17 +1666,18 @@ static int musb_gadget_queue(struct usb_ep *ep, struct usb_request *req, gfp_t g
 				musb_kick_D_CmdQ(musb, request);
 
 			} else if (request->request.length == 0) {	/* for UMS special case */
-				unsigned long timeout = jiffies + HZ;
+				int cnt = 50; /* 50*200us, total 10 ms */
 				int is_timeout = 1;
 
 				QMU_WARN("TX ZLP sent case\n");
 
 				/* wait QMU tx done, should be enough in UMS case due to protocol */
-				while (time_before_eq(jiffies, timeout)) {
+				while (cnt--) {
 					if (musb_is_qmu_stop(request->epnum, request->tx ? 0 : 1)) {
 						is_timeout = 0;
 						break;
 					}
+					udelay(200);
 				}
 
 				if (!is_timeout) {

@@ -172,7 +172,7 @@ void musb_tx_zlp_qmu(struct musb *musb, u32 ep_num)
 	/* sent ZLP through PIO */
 	void __iomem *epio = musb->endpoints[ep_num].regs;
 	void __iomem *mbase = musb->mregs;
-	unsigned long timeout = jiffies + HZ;
+	int cnt = 50; /* 50*200us, total 10 ms */
 	int is_timeout = 1;
 	u16 csr;
 
@@ -190,12 +190,13 @@ void musb_tx_zlp_qmu(struct musb *musb, u32 ep_num)
 	musb_writew(epio, MUSB_TXCSR, csr);
 
 	/* wait ZLP sent */
-	while (time_before_eq(jiffies, timeout)) {
+	while (cnt--) {
 		csr = musb_readw(epio, MUSB_TXCSR);
 		if (!(csr & MUSB_TXCSR_TXPKTRDY)) {
 			is_timeout = 0;
 			break;
 		}
+		udelay(200);
 	}
 
 	/* re-enable dma for qmu */
