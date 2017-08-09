@@ -1262,7 +1262,9 @@ int kdSensorSyncFunctionPtr(void)
 
     /* if the delay frame is 0 or 0xFF, stop to count */
     if ((g_NewSensorExpGain.uISPGainDelayFrame != 0xFF) && (g_NewSensorExpGain.uISPGainDelayFrame != 0)) {
-    g_NewSensorExpGain.uISPGainDelayFrame--;
+		spin_lock(&kdsensor_drv_lock);
+		g_NewSensorExpGain.uISPGainDelayFrame--;
+		spin_unlock(&kdsensor_drv_lock);
     }
     mutex_unlock(&kdCam_Mutex);
     return 0;
@@ -1450,7 +1452,8 @@ inline static int adopt_CAMERA_HW_CheckIsAlive(void)
     }
 
     /* reset sensor state after power off */
-    err1 = g_pSensorFunc->SensorClose();
+	if (g_pSensorFunc)
+		err1 = g_pSensorFunc->SensorClose();
     if (ERROR_NONE != err1) {
     PK_DBG("SensorClose\n");
     }
@@ -1974,23 +1977,22 @@ inline static int  adopt_CAMERA_HW_FeatureControl(void *pBuf)
     }
     else
     {
-    if (NULL == pFeatureCtrl->pFeaturePara || NULL == pFeatureCtrl->pFeatureParaLen) {
-        PK_ERR(" NULL arg.\n");
-        return -EFAULT;
-    }
-    }
+		if (NULL == pFeatureCtrl->pFeaturePara || NULL == pFeatureCtrl->pFeatureParaLen) {
+			PK_ERR(" NULL arg.\n");
+			return -EFAULT;
+		}
+		if (copy_from_user((void *)&FeatureParaLen , (void *) pFeatureCtrl->pFeatureParaLen, sizeof(unsigned int))) {
+			PK_ERR(" ioctl copy from user failed\n");
+			return -EFAULT;
+		}
 
-    if (copy_from_user((void *)&FeatureParaLen , (void *) pFeatureCtrl->pFeatureParaLen, sizeof(unsigned int))) {
-    PK_ERR(" ioctl copy from user failed\n");
-    return -EFAULT;
+		pFeaturePara = kmalloc(FeatureParaLen, GFP_KERNEL);
+		if (NULL == pFeaturePara) {
+			PK_ERR(" ioctl allocate mem failed\n");
+			return -ENOMEM;
+		}
+		memset(pFeaturePara, 0x0, FeatureParaLen);
     }
-
-    pFeaturePara = kmalloc(FeatureParaLen, GFP_KERNEL);
-    if (NULL == pFeaturePara) {
-    PK_ERR(" ioctl allocate mem failed\n");
-    return -ENOMEM;
-    }
-    memset(pFeaturePara, 0x0, FeatureParaLen);
 
     /* copy from user */
     switch (pFeatureCtrl->FeatureId)
@@ -3369,6 +3371,8 @@ static long CAMERA_HW_Ioctl(
 
 
     if (_IOC_NONE == _IOC_DIR(a_u4Command)) {
+		PK_ERR("[CAMERA SENSOR] _IOC_NONE == _IOC_DIR\n");
+		goto CAMERA_HW_Ioctl_EXIT;
     }
     else {
     pBuff = kmalloc(_IOC_SIZE(a_u4Command), GFP_KERNEL);
