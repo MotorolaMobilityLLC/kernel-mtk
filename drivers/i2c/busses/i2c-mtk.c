@@ -194,6 +194,11 @@ static inline void mt_i2c_init_hw(struct mt_i2c *i2c)
 		i2c_writew(I2C_DCM_DISABLE, i2c, OFFSET_DCM_EN);
 	i2c_writew(i2c->timing_reg, i2c, OFFSET_TIMING);
 	i2c_writew(i2c->high_speed_reg, i2c, OFFSET_HS);
+	/* DMA warm reset, and waits for EN to become 0 */
+	i2c_writel_dma(I2C_DMA_WARM_RST, i2c, OFFSET_RST);
+	udelay(5);
+	while (i2c_readl_dma(i2c, OFFSET_EN) != 0)
+		dev_err(i2c->dev, "DMA bus hang .\n");
 }
 
 /* calculate i2c port speed */
