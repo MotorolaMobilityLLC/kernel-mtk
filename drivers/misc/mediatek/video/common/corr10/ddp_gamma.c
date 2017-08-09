@@ -40,19 +40,22 @@ static ddp_module_notify g_gamma_ddp_notify;
 
 static int disp_gamma_write_lut_reg(cmdqRecHandle cmdq, disp_gamma_id_t id, int lock);
 
+static int disp_gamma_start(DISP_MODULE_ENUM module, void *cmdq)
+{
+	disp_gamma_write_lut_reg(cmdq, DISP_GAMMA0, 1);
+
+	return 0;
+}
 
 static void disp_gamma_init(disp_gamma_id_t id, unsigned int width, unsigned int height, void *cmdq)
 {
 	DISP_REG_SET(cmdq, DISP_REG_GAMMA_SIZE, (width << 16) | height);
-	disp_gamma_write_lut_reg(cmdq, id, 1);
 }
-
 
 static int disp_gamma_config(DISP_MODULE_ENUM module, disp_ddp_path_config *pConfig, void *cmdq)
 {
 	if (pConfig->dst_dirty)
 		disp_gamma_init(DISP_GAMMA0, pConfig->dst_w, pConfig->dst_h, cmdq);
-
 	return 0;
 }
 
@@ -199,42 +202,43 @@ static int disp_gamma_bypass(DISP_MODULE_ENUM module, int bypass)
 
 static int disp_gamma_power_on(DISP_MODULE_ENUM module, void *handle)
 {
+#if defined(CONFIG_ARCH_MT6755)
+	/* gamma is DCM , do nothing */
+#else
 #ifdef ENABLE_CLK_MGR
 	if (module == DISP_MODULE_GAMMA) {
 #ifdef CONFIG_MTK_CLKMGR
 		enable_clock(MT_CG_DISP0_DISP_GAMMA, "GAMMA");
 #else
-#if defined(CONFIG_ARCH_MT6755)
-		/* ddp_clk_enable(DISP0_DISP_GAMMA); */
-#else
 		ddp_clk_enable(DISP0_DISP_GAMMA);
 #endif
-#endif
 	}
+#endif
 #endif
 	return 0;
 }
 
 static int disp_gamma_power_off(DISP_MODULE_ENUM module, void *handle)
 {
+#if defined(CONFIG_ARCH_MT6755)
+	/* gamma is DCM , do nothing */
+#else
 #ifdef ENABLE_CLK_MGR
 	if (module == DISP_MODULE_GAMMA) {
 #ifdef CONFIG_MTK_CLKMGR
 		disable_clock(MT_CG_DISP0_DISP_GAMMA, "GAMMA");
 #else
-#if defined(CONFIG_ARCH_MT6755)
-		/* ddp_clk_disable(DISP0_DISP_GAMMA); */
-#else
 		ddp_clk_disable(DISP0_DISP_GAMMA);
 #endif
-#endif
 	}
+#endif
 #endif
 	return 0;
 }
 
 
 DDP_MODULE_DRIVER ddp_driver_gamma = {
+	.start = disp_gamma_start,
 	.config = disp_gamma_config,
 	.bypass = disp_gamma_bypass,
 	.set_listener = disp_gamma_set_listener,
@@ -256,18 +260,24 @@ static DISP_CCORR_COEF_T *g_disp_ccorr_coef[DISP_CCORR_TOTAL] = { NULL };
 static ddp_module_notify g_ccorr_ddp_notify;
 
 static int disp_ccorr_write_coef_reg(cmdqRecHandle cmdq, disp_ccorr_id_t id, int lock);
+static void ccorr_dump_reg(void);
 
 
 static void disp_ccorr_init(disp_ccorr_id_t id, unsigned int width, unsigned int height, void *cmdq)
 {
 	DISP_REG_SET(cmdq, DISP_REG_CCORR_SIZE, (width << 16) | height);
-#ifndef CONFIG_FPGA_EARLY_PORTING
-	disp_ccorr_write_coef_reg(cmdq, id, 1);
-#else
-	DISP_REG_SET(cmdq, DISP_REG_CCORR_EN, 1);
-#endif
 }
 
+static int disp_ccorr_start(DISP_MODULE_ENUM module, void *cmdq)
+{
+#ifndef CONFIG_FPGA_EARLY_PORTING
+		disp_ccorr_write_coef_reg(cmdq, 0, 1);
+#else
+		DISP_REG_SET(cmdq, DISP_REG_CCORR_EN, 1);
+		CCORR_DBG("FPGA_EARLY_PORTING");
+#endif
+	return 0;
+}
 
 #define CCORR_REG(base, idx) (base + (idx) * 4 + 0x80)
 
@@ -300,6 +310,7 @@ static int disp_ccorr_write_coef_reg(cmdqRecHandle cmdq, disp_ccorr_id_t id, int
 		     ((ccorr->coef[2][0] << 16) | (ccorr->coef[2][1])));
 	DISP_REG_SET(cmdq, CCORR_REG(ccorr_base, 4), (ccorr->coef[2][2] << 16));
 
+	CCORR_DBG("disp_ccorr_write_coef_reg");
 ccorr_write_coef_unlock:
 
 	if (lock)
@@ -392,14 +403,15 @@ static int disp_ccorr_bypass(DISP_MODULE_ENUM module, int bypass)
 {
 	int relay = 0;
 
-	if (bypass)
+	if (bypass) {
 		relay = 1;
+		DISP_REG_SET(NULL, DISP_REG_CCORR_EN, 0x0);
+	}
 
 	CCORR_DBG("disp_ccorr_bypass(bypass = %d)", bypass);
 
 	return 0;
 }
-
 
 static int disp_ccorr_power_on(DISP_MODULE_ENUM module, void *handle)
 {
@@ -407,14 +419,10 @@ static int disp_ccorr_power_on(DISP_MODULE_ENUM module, void *handle)
 	if (module == DISP_MODULE_CCORR) {
 #ifdef CONFIG_MTK_CLKMGR
 #if !defined(CONFIG_ARCH_MT6580)
-		enable_clock(MT_CG_DISP0_DISP_CCORR, "CCORR");
+		disable_clock(MT_CG_DISP0_DISP_CCORR, "CCORR");
 #endif
-#else
-#if defined(CONFIG_ARCH_MT6755)
-		/* ddp_clk_enable(DISP0_DISP_CCORR); */
 #else
 		ddp_clk_enable(DISP0_DISP_CCORR);
-#endif
 #endif
 	}
 #endif
@@ -430,11 +438,7 @@ static int disp_ccorr_power_off(DISP_MODULE_ENUM module, void *handle)
 		disable_clock(MT_CG_DISP0_DISP_CCORR, "CCORR");
 #endif
 #else
-#if defined(CONFIG_ARCH_MT6755)
-		/* ddp_clk_disable(DISP0_DISP_CCORR); */
-#else
 		ddp_clk_disable(DISP0_DISP_CCORR);
-#endif
 #endif
 	}
 #endif
@@ -444,6 +448,7 @@ static int disp_ccorr_power_off(DISP_MODULE_ENUM module, void *handle)
 
 DDP_MODULE_DRIVER ddp_driver_ccorr = {
 	.config = disp_ccorr_config,
+	.start = disp_ccorr_start,
 	.bypass = disp_ccorr_bypass,
 	.set_listener = disp_ccorr_set_listener,
 	.cmd = disp_ccorr_io,
@@ -453,95 +458,81 @@ DDP_MODULE_DRIVER ddp_driver_ccorr = {
 	.power_off = disp_ccorr_power_off,
 };
 
-
-int ccorr_interface_for_color(unsigned int ccorr_idx,
-	unsigned int ccorr_coef_ref[3][3], void *handle)
+int ccorr_coef_interface(unsigned int ccorr_coef_ref[3][3], void *handle)
 {
-
 	int y, x;
-	unsigned int ccorr_coef[3][3];
-	const unsigned long ccorr_base = DISPSYS_CCORR_BASE;
+	DISP_CCORR_COEF_T *ccorr;
 
-	/* copy coef to local buffer */
+	if (g_disp_ccorr_coef[DISP_CCORR0] == NULL) {
+		g_disp_ccorr_coef[DISP_CCORR0] = kmalloc(sizeof(DISP_CCORR_COEF_T), GFP_KERNEL);
+		if (g_disp_ccorr_coef[DISP_CCORR0] == NULL) {
+			CCORR_ERR("disp_ccorr_set_coef: no memory\n");
+			return -EFAULT;
+		}
+		CCORR_DBG("ccorr_interface_for_color:allocate coef buffer");
+		ccorr = g_disp_ccorr_coef[DISP_CCORR0];
+	} else {
+		ccorr = g_disp_ccorr_coef[DISP_CCORR0];
+	}
+
 	for (y = 0; y < 3; y += 1)
 		for (x = 0; x < 3; x += 1)
-			ccorr_coef[y][x] = ccorr_coef_ref[y][x];
+			ccorr->coef[y][x] = ccorr_coef_ref[y][x];
 
+	CCORR_DBG("== CCORR Coefficient ==");
+	CCORR_DBG("%4d %4d %4d", ccorr->coef[0][0], ccorr->coef[0][1], ccorr->coef[0][2]);
+	CCORR_DBG("%4d %4d %4d", ccorr->coef[1][0], ccorr->coef[1][1], ccorr->coef[1][2]);
+	CCORR_DBG("%4d %4d %4d", ccorr->coef[2][0], ccorr->coef[2][1], ccorr->coef[2][2]);
 
-	if (ccorr_scenario == 1) {/* debug flag for scenario change verification */
-		for (y = 0; y < 3; y += 1)
-			for (x = 0; x < 3; x += 1)
-				ccorr_coef[y][x] = 0;
-
-		switch (ccorr_idx) {
-		case 0:
-			ccorr_coef[0][0] = 1024;
-			break;
-		case 1:
-			ccorr_coef[1][1] = 1024;
-			break;
-		case 2:
-			ccorr_coef[2][2] = 1024;
-			break;
-		default:
-			ccorr_coef[0][0] = 1024;
-			ccorr_coef[1][1] = 1024;
-			break;
-		}
-	}
-
-	CCORR_DBG("== CCORR Coefficient (scenario:%2d)(index:%2d) ==",
-		ccorr_scenario, ccorr_idx);
-	CCORR_DBG("%4d %4d %4d", ccorr_coef[0][0], ccorr_coef[0][1], ccorr_coef[0][2]);
-	CCORR_DBG("%4d %4d %4d", ccorr_coef[1][0], ccorr_coef[1][1], ccorr_coef[1][2]);
-	CCORR_DBG("%4d %4d %4d", ccorr_coef[2][0], ccorr_coef[2][1], ccorr_coef[2][2]);
-
-	DISP_REG_SET(handle, CCORR_REG(ccorr_base, 0),
-	((ccorr_coef[0][0] << 16) | (ccorr_coef[0][1])));
-	DISP_REG_SET(handle, CCORR_REG(ccorr_base, 1),
-	((ccorr_coef[0][2] << 16) | (ccorr_coef[1][0])));
-	DISP_REG_SET(handle, CCORR_REG(ccorr_base, 2),
-	((ccorr_coef[1][1] << 16) | (ccorr_coef[1][2])));
-	DISP_REG_SET(handle, CCORR_REG(ccorr_base, 3),
-	((ccorr_coef[2][0] << 16) | (ccorr_coef[2][1])));
-	DISP_REG_SET(handle, CCORR_REG(ccorr_base, 4),
-	(ccorr_coef[2][2] << 16));
-
-	if (ccorr_coef[0][0] == 1024 && ccorr_coef[1][1] == 1024 && ccorr_coef[2][2] == 1024 &&
-		ccorr_coef[0][1] == 0 && ccorr_coef[0][2] == 0 && ccorr_coef[1][0] == 0 &&
-		ccorr_coef[1][2] == 0 && ccorr_coef[2][0] == 0 && ccorr_coef[2][1] == 0) {
-		DISP_REG_MASK(handle, DISPSYS_CCORR_BASE, 0x0, 0x1);
-		DISP_REG_MASK(handle, DISPSYS_CCORR_BASE + 0x20, 0x1, 0x3);
-
-	} else if (ccorr_coef[0][0] < 512 && ccorr_coef[1][1] < 512 && ccorr_coef[2][2] < 512) {
-		DISP_REG_MASK(handle, DISPSYS_CCORR_BASE, 0x0, 0x1);
-		DISP_REG_MASK(handle, DISPSYS_CCORR_BASE + 0x20, 0x1, 0x3);
-
-	} else {
-		DISP_REG_MASK(handle, DISPSYS_CCORR_BASE, 0x1, 0x1);
-		DISP_REG_MASK(handle, DISPSYS_CCORR_BASE + 0x20, 0x2, 0x3);
-
-	}
+	disp_ccorr_write_coef_reg(handle, DISP_CCORR0, 1);
 
 	return 0;
+
 }
 
+static int ddp_simple_strtoul(char *ptr, unsigned long *res)
+{
+	int i;
+	char buffer[20];
+	int end = 0;
+	int ret = 0;
+
+	for (i = 0; i < 20; i += 1) {
+		end = i;
+		CCORR_DBG("%c\n", ptr[i]);
+		if (ptr[i] < '0' || ptr[i] > '9')
+			break;
+	}
+
+	if (end > 0) {
+		strncpy(buffer, ptr, end);
+		buffer[end] = '\0';
+		ret = kstrtoul(buffer, 0, res);
+
+	}
+	return end;
+
+}
 
 static int ccorr_parse_coef(const char *cmd, void *handle)
 {
-
-	int i, j;
+	int i, j, end;
 	bool stop = false;
 	int count = 0;
-
+	unsigned long temp;
 	unsigned int ccorr_coef[3][3];
 	char *next = (char *)cmd;
 
 	for (i = 0; i < 3; i++) {
 		for (j = 0; j < 3; j++) {
-			ccorr_coef[i][j] = (unsigned int)kstrtoul(next, 0, (unsigned long *)&next);
+			end = ddp_simple_strtoul(next, (unsigned long *)(&temp));
+			next += end;
+
+			ccorr_coef[i][j] = (unsigned int)temp;
 			count++;
+
 			CCORR_DBG("ccorr coef(%3d,%3d)=%d\n", i, j, ccorr_coef[i][j]);
+
 			if (*next == ',')
 				next++;
 			else if (*next == '\0' || *next == '\n') {
@@ -557,22 +548,22 @@ static int ccorr_parse_coef(const char *cmd, void *handle)
 		CCORR_DBG("ccorr coef# not correct\n");
 
 	} else {
-		ccorr_interface_for_color(0, ccorr_coef, handle);
+		ccorr_coef_interface(ccorr_coef, handle);
 		CCORR_DBG("ccorr coef config done\n");
 	}
 	return 0;
 }
 
-
-static int ccorr_parse_triple(const char *cmd, unsigned long *offset, unsigned int *value, unsigned int *mask)
+static int ccorr_parse_triple(const char *cmd, unsigned long *offset, unsigned long *value, unsigned long *mask)
 {
 	int count = 0;
 	char *next = (char *)cmd;
+	int end;
 
 	*value = 0;
 	*mask = 0;
-	*offset = (unsigned long)kstrtoul(next, 0, (unsigned long *)&next);
-
+	end = ddp_simple_strtoul(next, offset);
+	next += end;
 	if (*offset > 0x1000UL || (*offset & 0x3UL) != 0)  {
 		*offset = 0UL;
 		return 0;
@@ -583,18 +574,19 @@ static int ccorr_parse_triple(const char *cmd, unsigned long *offset, unsigned i
 	if (*next == ',')
 		next++;
 
-	*value = (unsigned int)kstrtoul(next, 0, (unsigned long *)&next);
+	end = ddp_simple_strtoul(next, value);
+	next += end;
 	count++;
 
 	if (*next == ',')
 		next++;
 
-	*mask = (unsigned int)kstrtoul(next, 0, (unsigned long *)&next);
+	end = ddp_simple_strtoul(next, mask);
+	next += end;
 	count++;
 
 	return count;
 }
-
 
 static void ccorr_dump_reg(void)
 {
@@ -616,11 +608,10 @@ static void ccorr_dump_reg(void)
 	}
 }
 
-
 void ccorr_test(const char *cmd, char *debug_output)
 {
 	unsigned long offset;
-	unsigned int value, mask;
+	unsigned long value, mask;
 
 	CCORR_DBG("ccorr_test(%s)", cmd);
 
@@ -636,9 +627,10 @@ void ccorr_test(const char *cmd, char *debug_output)
 			mask = 0xffffffff;
 		}
 
-		if (count >= 2)
-			CCORR_DBG("[+0x%03lx] = 0x%08x(%d) & 0x%08x", offset, value, value, mask);
-
+		if (count >= 2) {
+			CCORR_DBG("[+0x%031lx] = 0x%08lx(%d) & 0x%08lx",
+				offset, value, (int)value, mask);
+		}
 
 	} else if (strncmp(cmd, "coef:", 5) == 0) {
 		ccorr_parse_coef(cmd+5, NULL);
@@ -661,10 +653,6 @@ void ccorr_test(const char *cmd, char *debug_output)
 		corr_dbg_en = cmd[4] - '0';
 		corr_dbg_en = (corr_dbg_en > 1) ? 1 : corr_dbg_en;
 		CCORR_DBG("debug log status:%d", corr_dbg_en);
-
-	} else if (strncmp(cmd, "scenario:", 9) == 0) {
-		ccorr_scenario = (cmd[9] == '1' ? 1 : 0);
-		CCORR_DBG("scenario debug mode status:%d", ccorr_scenario);
 
 	} else {
 

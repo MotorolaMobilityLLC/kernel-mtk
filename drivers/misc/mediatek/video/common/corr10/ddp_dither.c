@@ -61,6 +61,9 @@ void disp_dither_init(disp_dither_id_t id, int width, int height,
 
 	DISP_REG_MASK(cmdq, DISP_REG_DITHER_EN, enable, 0x1);
 	DISP_REG_MASK(cmdq, DISP_REG_DITHER_CFG, enable << 1, 1 << 1);
+#if defined(CONFIG_ARCH_MT6755) /* Disable dither MODULE_STALL / SUB_MODULE_STALL  */
+	DISP_REG_MASK(cmdq, DISP_REG_DITHER_CFG, 0 << 8, 1 << 8);
+#endif
 	DISP_REG_SET(cmdq, DISP_REG_DITHER_SIZE, (width << 16) | height);
 }
 
@@ -93,36 +96,36 @@ static int disp_dither_bypass(DISP_MODULE_ENUM module, int bypass)
 
 static int disp_dither_power_on(DISP_MODULE_ENUM module, void *handle)
 {
+#if defined(CONFIG_ARCH_MT6755)
+	/* dither is DCM , do nothing */
+#else
 #ifdef ENABLE_CLK_MGR
 	if (module == DISP_MODULE_DITHER) {
 #ifdef CONFIG_MTK_CLKMGR
 		enable_clock(MT_CG_DISP0_DISP_DITHER, "DITHER");
 #else
-#if defined(CONFIG_ARCH_MT6755)
-		/* ddp_clk_enable(DISP0_DISP_DITHER); */
-#else
 		ddp_clk_enable(DISP0_DISP_DITHER);
 #endif
-#endif
 	}
+#endif
 #endif
 	return 0;
 }
 
 static int disp_dither_power_off(DISP_MODULE_ENUM module, void *handle)
 {
+#if defined(CONFIG_ARCH_MT6755)
+	/* dither is DCM , do nothing */
+#else
 #ifdef ENABLE_CLK_MGR
 	if (module == DISP_MODULE_DITHER) {
 #ifdef CONFIG_MTK_CLKMGR
 		disable_clock(MT_CG_DISP0_DISP_DITHER, "DITHER");
 #else
-#if defined(CONFIG_ARCH_MT6755)
-		/* ddp_clk_disable(DISP0_DISP_DITHER); */
-#else
 		ddp_clk_disable(DISP0_DISP_DITHER);
 #endif
-#endif
 	}
+#endif
 #endif
 	return 0;
 }
