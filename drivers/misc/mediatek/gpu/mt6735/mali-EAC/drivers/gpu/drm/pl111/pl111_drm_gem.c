@@ -1,6 +1,6 @@
 /*
  *
- * (C) COPYRIGHT ARM Limited. All rights reserved.
+ * (C) COPYRIGHT 2012-2015 ARM Limited. All rights reserved.
  *
  * This program is free software and is provided to you under the terms of the
  * GNU General Public License version 2 as published by the Free Software
@@ -31,6 +31,14 @@
 #include <asm/outercache.h>
 #include "pl111_drm.h"
 
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3, 5, 0))
+#include <linux/dma-attrs.h>
+#endif
+
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3, 12, 0))
+#include <drm/drm_vma_manager.h>
+#endif
+
 void pl111_gem_free_object(struct drm_gem_object *obj)
 {
 	struct pl111_gem_bo *bo;
@@ -42,9 +50,12 @@ void pl111_gem_free_object(struct drm_gem_object *obj)
 	if (obj->import_attach)
 		drm_prime_gem_destroy(obj, bo->sgt);
 
+#if (LINUX_VERSION_CODE <= KERNEL_VERSION(3, 11, 0))
 	if (obj->map_list.map != NULL)
 		drm_gem_free_mmap_offset(obj);
-
+#else
+	drm_gem_free_mmap_offset(obj);
+#endif
 	/*
 	 * Only free the backing memory if the object has not been imported.
 	 * If it has been imported, the exporter is in charge to free that
@@ -106,6 +117,21 @@ static int pl111_gem_object_create(struct drm_device *dev, u64 size,
 #endif
 	if (bo->type & PL111_BOT_DMA) {
 		/* scanout compatible - use physically contiguous buffer */
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3, 5, 0))
+		DEFINE_DMA_ATTRS(attrs);
+
+		dma_set_attr(DMA_ATTR_WRITE_COMBINE, &attrs);
+		bo->backing_data.dma.fb_cpu_addr =
+			dma_alloc_attrs(dev->dev, size,
+					&bo->backing_data.dma.fb_dev_addr,
+					GFP_KERNEL,
+					&attrs);
+		if (bo->backing_data.dma.fb_cpu_addr == NULL) {
+			DRM_ERROR("dma_alloc_attrs failed\n");
+			ret = -ENOMEM;
+			goto free_bo;
+		}
+#else
 		bo->backing_data.dma.fb_cpu_addr =
 			dma_alloc_writecombine(dev->dev, size,
 					&bo->backing_data.dma.fb_dev_addr,
@@ -115,13 +141,19 @@ static int pl111_gem_object_create(struct drm_device *dev, u64 size,
 			ret = -ENOMEM;
 			goto free_bo;
 		}
+#endif
 
+#if (LINUX_VERSION_CODE <= KERNEL_VERSION(3, 11, 0))
 		ret = drm_gem_private_object_init(dev, &bo->gem_object,
 							size);
 		if (ret != 0) {
 			DRM_ERROR("DRM could not initialise GEM object\n");
 			goto free_dma;
 		}
+#else
+		drm_gem_private_object_init(dev, &bo->gem_object, size);
+#endif
+
 	} else { /* PL111_BOT_SHM */
 		/* not scanout compatible - use SHM backed object */
 		ret = drm_gem_object_init(dev, &bo->gem_object, size);
@@ -154,11 +186,26 @@ static int pl111_gem_object_create(struct drm_device *dev, u64 size,
 
 obj_release:
 	drm_gem_object_release(&bo->gem_object);
+#if (LINUX_VERSION_CODE <= KERNEL_VERSION(3, 11, 0))
 free_dma:
+#endif
+
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3, 5, 0))
+	if (bo->type & PL111_BOT_DMA) {
+		DEFINE_DMA_ATTRS(attrs);
+
+		dma_set_attr(DMA_ATTR_WRITE_COMBINE, &attrs);
+		dma_free_attrs(dev->dev, size,
+			bo->backing_data.dma.fb_cpu_addr,
+			bo->backing_data.dma.fb_dev_addr,
+			&attrs);
+		}
+#else
 	if (bo->type & PL111_BOT_DMA)
 		dma_free_writecombine(dev->dev, size,
 			bo->backing_data.dma.fb_cpu_addr,
 			bo->backing_data.dma.fb_dev_addr);
+#endif
 free_bo:
 	kfree(bo);
 finish:
@@ -243,6 +290,7 @@ int pl111_dumb_map_offset(struct drm_file *file_priv,
 		goto fail;
 	}
 
+#if (LINUX_VERSION_CODE <= KERNEL_VERSION(3, 11, 0))
 	if (obj->map_list.map == NULL) {
 		ret = drm_gem_create_mmap_offset(obj);
 		if (ret != 0) {
@@ -250,8 +298,20 @@ int pl111_dumb_map_offset(struct drm_file *file_priv,
 			goto fail;
 		}
 	}
+#else
+	ret = drm_gem_create_mmap_offset(obj);
+	if (ret != 0) {
+		drm_gem_object_unreference_unlocked(obj);
+		goto fail;
+	}
+#endif
 
+#if (LINUX_VERSION_CODE <= KERNEL_VERSION(3, 11, 0))
 	*offset = (uint64_t) obj->map_list.hash.key << PAGE_SHIFT;
+#else
+	*offset = drm_vma_node_offset_addr(&obj->vma_node);
+	DRM_DEBUG_KMS("offset = 0x%lx\n", (unsigned long)*offset);
+#endif
 
 	drm_gem_object_unreference_unlocked(obj);
 fail:
@@ -355,7 +415,6 @@ int pl111_bo_mmap(struct drm_gem_object *obj, struct pl111_gem_bo *bo,
 		 * in order to fake coherency.
 		 */
 		fput(vma->vm_file);
-		vma->vm_pgoff = 0;
 		get_file(obj->filp);
 		vma->vm_file = obj->filp;
 
@@ -372,17 +431,28 @@ int pl111_gem_mmap(struct file *file_priv, struct vm_area_struct *vma)
 	int ret;
 	struct drm_file *priv = file_priv->private_data;
 	struct drm_device *dev = priv->minor->dev;
+#if (LINUX_VERSION_CODE <= KERNEL_VERSION(3, 13, 0))
 	struct drm_gem_mm *mm = dev->mm_private;
-	struct drm_local_map *map = NULL;
 	struct drm_hash_item *hash;
+	struct drm_local_map *map = NULL;
+#else
+	struct drm_vma_offset_node *node;
+#endif
 	struct drm_gem_object *obj;
 	struct pl111_gem_bo *bo;
 
 	DRM_DEBUG_KMS("DRM %s\n", __func__);
 
+#if (LINUX_VERSION_CODE <= KERNEL_VERSION(3, 13, 0))
 	drm_ht_find_item(&mm->offset_hash, vma->vm_pgoff, &hash);
 	map = drm_hash_entry(hash, struct drm_map_list, hash)->map;
 	obj = map->handle;
+#else
+	node = drm_vma_offset_exact_lookup(dev->vma_offset_manager,
+			vma->vm_pgoff,
+			vma_pages(vma));
+	obj = container_of(node, struct drm_gem_object, vma_node);
+#endif
 	bo = PL111_BO_FROM_GEM(obj);
 
 	DRM_DEBUG_KMS("DRM %s on pl111_gem_bo %p bo->type 0x%08x\n", __func__, bo, bo->type);
@@ -396,6 +466,11 @@ int pl111_gem_mmap(struct file *file_priv, struct vm_area_struct *vma)
 		DRM_ERROR("failed to mmap\n");
 		return ret;
 	}
+
+	/* Our page fault handler uses the page offset calculated from the vma,
+	 * so we need to remove the gem cookie offset specified in the call.
+	 */
+	vma->vm_pgoff = 0;
 
 	return pl111_bo_mmap(obj, bo, vma, vma->vm_end - vma->vm_start);
 }

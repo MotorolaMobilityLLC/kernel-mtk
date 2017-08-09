@@ -1,6 +1,6 @@
 /*
  *
- * (C) COPYRIGHT ARM Limited. All rights reserved.
+ * (C) COPYRIGHT 2012-2015 ARM Limited. All rights reserved.
  *
  * This program is free software and is provided to you under the terms of the
  * GNU General Public License version 2 as published by the Free Software
@@ -26,6 +26,7 @@
 #include <linux/module.h>
 #include <linux/workqueue.h>
 #include <linux/kds.h>
+#include <linux/kref.h>
 
 #include <asm/atomic.h>
 
@@ -45,14 +46,26 @@ struct kds_resource_set
 	struct list_head      callback_link;
 	struct work_struct    callback_work;
 	atomic_t              cb_queued;
+	/* This resource set will be freed when there are no pending
+	 * callbacks */
+	struct kref           refcount;
 
 	/* This is only initted when kds_waitall() is called. */
 	wait_queue_head_t     wake;
 
 	struct kds_link       resources[0];
+
 };
 
 static DEFINE_SPINLOCK(kds_lock);
+
+static void __resource_set_release(struct kref *ref)
+{
+	struct kds_resource_set *rset = container_of(ref,
+			struct kds_resource_set, refcount);
+
+	kfree(rset);
+}
 
 int kds_callback_init(struct kds_callback *cb, int direct, kds_callback_fn user_cb)
 {
@@ -138,7 +151,7 @@ int kds_resource_term(struct kds_resource *res)
 	if (!list_empty(&res->waiters.link))
 	{
 		spin_unlock_irqrestore(&kds_lock, lflags);
-		pr_err("ERROR: KDS resource is still in use\n");
+		printk(KERN_ERR "ERROR: KDS resource is still in use\n");
 		return -EBUSY;
 	}
 	res->waiters.parent = KDS_INVALID;
@@ -182,6 +195,7 @@ int kds_async_waitall(
 	INIT_LIST_HEAD(&rset->callback_link);
 	INIT_WORK(&rset->callback_work, kds_queued_callback);
 	atomic_set(&rset->cb_queued, 0);
+	kref_init(&rset->refcount);
 
 	for (i = 0; i < number_resources; i++)
 	{
@@ -291,6 +305,7 @@ struct kds_resource_set *kds_waitall(
 	INIT_LIST_HEAD(&rset->callback_link);
 	INIT_WORK(&rset->callback_work, kds_queued_callback);
 	atomic_set(&rset->cb_queued, 0);
+	kref_init(&rset->refcount);
 
 	spin_lock_irqsave(&kds_lock, lflags);
 
@@ -378,6 +393,16 @@ roll_back:
 }
 EXPORT_SYMBOL(kds_waitall);
 
+static void trigger_new_rset_owner(struct kds_resource_set *rset,
+		struct list_head *triggered)
+{
+	if (0 == --rset->pending) {
+		/* new owner now triggered, track for callback later */
+		kref_get(&rset->refcount);
+		list_add(&rset->callback_link, triggered);
+	}
+}
+
 static void __kds_resource_set_release_common(struct kds_resource_set *rset)
 {
 	struct list_head triggered = LIST_HEAD_INIT(triggered);
@@ -423,13 +448,9 @@ static void __kds_resource_set_release_common(struct kds_resource_set *rset)
 					it->state |= KDS_LINK_TRIGGERED;
 					/* a parent to update? */
 					if (it->parent != KDS_RESOURCE)
-					{
-						if (0 == --it->parent->pending)
-						{
-							/* new owner now triggered, track for callback later */
-							list_add(&it->parent->callback_link, &triggered);
-						}
-					}
+						trigger_new_rset_owner(
+								it->parent,
+								&triggered);
 				}
 			}
 			continue;
@@ -449,11 +470,7 @@ static void __kds_resource_set_release_common(struct kds_resource_set *rset)
 			/* link now triggered */
 			it->state |= KDS_LINK_TRIGGERED;
 			/* a parent to update? */
-			if (0 == --it->parent->pending)
-			{
-				/* new owner now triggered, track for callback later */
-				list_add(&it->parent->callback_link, &triggered);
-			}
+			trigger_new_rset_owner(it->parent, &triggered);
 		}
 		/* exclusive releasing ? */
 		else if (rset->resources[i].state & KDS_LINK_EXCLUSIVE)
@@ -467,11 +484,7 @@ static void __kds_resource_set_release_common(struct kds_resource_set *rset)
 
 				it->state |= KDS_LINK_TRIGGERED;
 				/* a parent to update? */
-				if (0 == --it->parent->pending)
-				{
-					/* new owner now triggered, track for callback later */
-					list_add(&it->parent->callback_link, &triggered);
-				}
+				trigger_new_rset_owner(it->parent, &triggered);
 			}
 		}
 	}
@@ -483,6 +496,9 @@ static void __kds_resource_set_release_common(struct kds_resource_set *rset)
 		it = list_first_entry(&triggered, struct kds_resource_set, callback_link);
 		list_del(&it->callback_link);
 		kds_callback_perform(it);
+
+		/* Free the resource set if no callbacks pending */
+		kref_put(&it->refcount, &__resource_set_release);
 	}
 }
 
@@ -509,8 +525,7 @@ void kds_resource_set_release(struct kds_resource_set **pprset)
 	queued = atomic_read(&rset->cb_queued);
 	BUG_ON(queued);
 
-	/* free the resource set */
-	kfree(rset);
+	kref_put(&rset->refcount, &__resource_set_release);
 }
 EXPORT_SYMBOL(kds_resource_set_release);
 
@@ -535,8 +550,7 @@ void kds_resource_set_release_sync(struct kds_resource_set **pprset)
 	 */
 	cancel_work_sync(&rset->callback_work);
 
-	/* free the resource set */
-	kfree(rset);
+	kref_put(&rset->refcount, &__resource_set_release);
 }
 EXPORT_SYMBOL(kds_resource_set_release_sync);
 

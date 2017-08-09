@@ -22,6 +22,6 @@ search_term = '^[\ ]*CONFIG_DMA_SHARED_BUFFER_USES_KDS[\ ]*=[\ ]*y'
 for line in open(linux_config_file, 'r'):
 	if re.search(search_term, line):
 		SConscript( 'src/sconscript' )
-		if Glob('tests/sconscript'):
+		if env['tests'] and Glob('tests/sconscript'):
 			SConscript( 'tests/sconscript' )
 		break

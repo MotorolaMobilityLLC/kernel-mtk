@@ -1,5 +1,5 @@
 #
-# (C) COPYRIGHT 2010-2013 ARM Limited. All rights reserved.
+# (C) COPYRIGHT 2010-2013, 2015 ARM Limited. All rights reserved.
 #
 # This program is free software and is provided to you under the terms of the
 # GNU General Public License version 2 as published by the Free Software
@@ -34,26 +34,19 @@ drm_env['LIBPREFIX'] = ''
 
 src = Glob('*.c')
 
-# Note: cleaning via the Linux kernel build system does not yet work
 if drm_env.GetOption('clean') :
-	makeAction=Action("cd ${SOURCE.dir} && make clean", '$MAKECOMSTR')
+	drm_env.Execute(Action("make clean", 'clean [pl111]'))
+	cmd = drm_env.Command('$STATIC_LIB_PATH/mali_drm.ko', src, [])
 else:
+	# The target is mali_drm.ko, built from the source in pl111_drm/pl111, via the action makeAction
+	# mali_drm.ko will be copied to $STATIC_LIB_PATH after being built by the standard Linux
+	# kernel build system, after which it can be installed to the directory specified if
+	# "libs_install" is set; this is done by LibTarget.
 	makeAction=Action("cd ${SOURCE.dir} && make MALI_DEBUG=${debug} && cp pl111_drm.ko $STATIC_LIB_PATH/mali_drm.ko", '$MAKECOMSTR')
-	
-# The target is mali_drm.ko, built from the source in pl111_drm/pl111, via the action makeAction
-# mali_drm.ko will be copied to $STATIC_LIB_PATH after being built by the standard Linux
-# kernel build system, after which it can be installed to the directory specified if
-# "libs_install" is set; this is done by LibTarget.
-cmd = drm_env.Command('$STATIC_LIB_PATH/mali_drm.ko', src, [makeAction])
+	cmd = drm_env.Command('$STATIC_LIB_PATH/mali_drm.ko', src, [makeAction])
 
 # need Module.symvers from drm.ko
 #drm_env.Depends('$STATIC_LIB_PATH/pl111_drm.ko', '$STATIC_LIB_PATH/drm.ko')
-
-# Until we fathom out how the invoke the Linux build system to clean, we can use Clean
-# to remove generated files.
-patterns = ['*.mod.c', '*.o', '*.ko', '*.a', '.*.cmd', 'modules.order', '.tmp_versions', 'Module.symvers']
-for p in patterns:
-	Clean(cmd, Glob('#kernel/drivers/gpu/drm/pl111/%s' % p))
 
 env.ProgTarget('x11', cmd)
 

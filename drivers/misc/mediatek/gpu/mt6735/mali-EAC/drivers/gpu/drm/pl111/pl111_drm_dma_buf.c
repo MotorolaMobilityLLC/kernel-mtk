@@ -1,6 +1,6 @@
 /*
  *
- * (C) COPYRIGHT ARM Limited. All rights reserved.
+ * (C) COPYRIGHT 2012-2014 ARM Limited. All rights reserved.
  *
  * This program is free software and is provided to you under the terms of the
  * GNU General Public License version 2 as published by the Free Software
@@ -30,6 +30,12 @@
 #include <drm/drm_crtc_helper.h>
 
 #include "pl111_drm.h"
+
+#if (LINUX_VERSION_CODE <= KERNEL_VERSION(3, 11, 0))
+#define export_dma_buf export_dma_buf
+#else
+#define export_dma_buf dma_buf
+#endif
 
 #ifdef CONFIG_DMA_SHARED_BUFFER_USES_KDS
 static void obtain_kds_if_currently_displayed(struct drm_device *dev,
@@ -529,12 +535,16 @@ struct drm_gem_object *pl111_gem_prime_import(struct drm_device *dev,
 		cont_phys += (PAGE_SIZE - sgl->offset);
 	}
 
+#if (LINUX_VERSION_CODE <= KERNEL_VERSION(3, 11, 0))
 	ret = drm_gem_private_object_init(dev, &bo->gem_object,
 					  dma_buf->size);
 	if (ret != 0) {
 		DRM_ERROR("DRM could not import DMA GEM obj\n");
 		goto err_free_buffer;
 	}
+#else
+	drm_gem_private_object_init(dev, &bo->gem_object, dma_buf->size);
+#endif
 
 	if (bo->type & PL111_BOT_DMA) {
 		bo->backing_data.dma.fb_cpu_addr = sg_virt(sgt->sgl);

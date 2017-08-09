@@ -1,6 +1,6 @@
 /*
  *
- * (C) COPYRIGHT ARM Limited. All rights reserved.
+ * (C) COPYRIGHT 2012-2014 ARM Limited. All rights reserved.
  *
  * This program is free software and is provided to you under the terms of the
  * GNU General Public License version 2 as published by the Free Software
@@ -32,6 +32,12 @@
 #include "pl111_drm.h"
 
 static int pl111_crtc_num;
+
+#if (LINUX_VERSION_CODE <= KERNEL_VERSION(3, 11, 0))
+#define export_dma_buf export_dma_buf
+#else
+#define export_dma_buf dma_buf
+#endif
 
 void pl111_common_irq(struct pl111_drm_crtc *pl111_crtc)
 {
@@ -86,6 +92,7 @@ void pl111_common_irq(struct pl111_drm_crtc *pl111_crtc)
 	spin_unlock_irqrestore(&pl111_crtc->current_displaying_lock, flags);
 #endif
 	/* Release DMA buffer on this flip */
+
 	if (bo->gem_object.export_dma_buf != NULL)
 		dma_buf_put(bo->gem_object.export_dma_buf);
 
@@ -158,7 +165,11 @@ int show_framebuffer_on_crtc(struct drm_crtc *crtc,
 	int flips_in_flight;
 	int old_flips_in_flight;
 
+#if (LINUX_VERSION_CODE <= KERNEL_VERSION(3, 14, 0))
 	crtc->fb = fb;
+#else
+	crtc->primary->fb = fb;
+#endif
 
 	bo = PL111_BO_FROM_FRAMEBUFFER(fb);
 	if (bo == NULL) {
@@ -280,7 +291,12 @@ int show_framebuffer_on_crtc(struct drm_crtc *crtc,
 }
 
 int pl111_crtc_page_flip(struct drm_crtc *crtc, struct drm_framebuffer *fb,
+#if (LINUX_VERSION_CODE <= KERNEL_VERSION(3, 11, 0))
 			struct drm_pending_vblank_event *event)
+#else
+			struct drm_pending_vblank_event *event,
+			uint32_t flags)
+#endif
 {
 	DRM_DEBUG_KMS("%s: crtc=%p, fb=%p, event=%p\n",
 			__func__, crtc, fb, event);
@@ -298,14 +314,22 @@ int pl111_crtc_helper_mode_set(struct drm_crtc *crtc,
 
 	DRM_DEBUG_KMS("DRM crtc_helper_mode_set, x=%d y=%d bpp=%d\n",
 			adjusted_mode->hdisplay, adjusted_mode->vdisplay,
+#if (LINUX_VERSION_CODE <= KERNEL_VERSION(3, 14, 0))
 			crtc->fb->bits_per_pixel);
+#else
+			crtc->primary->fb->bits_per_pixel);
+#endif
 
 	duplicated_mode = drm_mode_duplicate(crtc->dev, adjusted_mode);
 	if (!duplicated_mode)
 		return -ENOMEM;
 
 	pl111_crtc->new_mode = duplicated_mode;
+#if (LINUX_VERSION_CODE <= KERNEL_VERSION(3, 14, 0))
 	ret = show_framebuffer_on_crtc(crtc, crtc->fb, false, NULL);
+#else
+	ret = show_framebuffer_on_crtc(crtc, crtc->primary->fb, false, NULL);
+#endif
 	if (ret != 0) {
 		pl111_crtc->new_mode = pl111_crtc->current_mode;
 		drm_mode_destroy(crtc->dev, duplicated_mode);
@@ -340,7 +364,11 @@ bool pl111_crtc_helper_mode_fixup(struct drm_crtc *crtc,
 	 * correctly on Versatile Express due to bandwidth issues
 	 */
 	if (mode->hdisplay == 1024 && mode->vdisplay == 768 &&
+#if (LINUX_VERSION_CODE <= KERNEL_VERSION(3, 14, 0))
 			crtc->fb->bits_per_pixel > 16) {
+#else
+			crtc->primary->fb->bits_per_pixel > 16) {
+#endif
 		DRM_INFO("*WARNING* 1024x768 at > 16 bpp may suffer corruption\n");
 	}
 #endif

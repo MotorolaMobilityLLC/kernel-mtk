@@ -1,6 +1,6 @@
 /*
  *
- * (C) COPYRIGHT ARM Limited. All rights reserved.
+ * (C) COPYRIGHT 2008-2013 ARM Limited. All rights reserved.
  *
  * This program is free software and is provided to you under the terms of the
  * GNU General Public License version 2 as published by the Free Software
@@ -80,7 +80,7 @@ void umpp_core_session_end(umpp_session *session)
 
 	list_for_each_entry_safe(usage, _usage, &session->memory_usage, link)
 	{
-		pr_debug("UMP: Memory usage cleanup, releasing secure ID %d\n", ump_dd_secure_id_get(usage->mem));
+		printk(KERN_WARNING "UMP: Memory usage cleanup, releasing secure ID %d\n", ump_dd_secure_id_get(usage->mem));
 		ump_dd_release(usage->mem);
 		kfree(usage);
 
@@ -103,14 +103,14 @@ ump_dd_handle ump_dd_allocate_64(uint64_t size, ump_alloc_flags flags, ump_dd_se
 
 	if (flags & (~UMP_FLAGS_RANGE))
 	{
-		pr_debug("UMP: allocation flags out of allowed bits range\n");
+		printk(KERN_WARNING "UMP: allocation flags out of allowed bits range\n");
 		return UMP_DD_INVALID_MEMORY_HANDLE;
 	}
 
 	if( ( flags & (UMP_PROT_CPU_RD | UMP_PROT_W_RD | UMP_PROT_X_RD | UMP_PROT_Y_RD | UMP_PROT_Z_RD ) ) == 0 ||
 	    ( flags & (UMP_PROT_CPU_WR | UMP_PROT_W_WR | UMP_PROT_X_WR | UMP_PROT_Y_WR | UMP_PROT_Z_WR )) == 0 )
 	{
-		pr_debug("UMP: allocation flags should have at least one read and one write permission bit set\n");
+		printk(KERN_WARNING "UMP: allocation flags should have at least one read and one write permission bit set\n");
 		return UMP_DD_INVALID_MEMORY_HANDLE;
 	}
 
@@ -355,7 +355,7 @@ void ump_dd_release(ump_dd_handle mem)
 #ifdef CONFIG_KDS
 	if (kds_resource_term(&alloc->kds_res))
 	{
-		pr_err("ump_dd_release: kds_resource_term failed,"
+		printk(KERN_ERR "ump_dd_release: kds_resource_term failed,"
 				"unable to release UMP allocation\n");
 		return;
 	}
@@ -572,7 +572,7 @@ void umpp_dd_cpu_msync_now(ump_dd_handle mem, ump_cpu_msync_op op, void * addres
 	mapping = umpp_dd_find_enclosing_mapping(alloc, vaddr, size);
 	if (NULL == mapping)
 	{
-		pr_debug("UMP: Illegal cache sync address %lx\n", (uintptr_t)vaddr);
+		printk(KERN_WARNING "UMP: Illegal cache sync address %lx\n", (uintptr_t)vaddr);
 		return; /* invalid pointer or size causes out-of-bounds */
 	}
 
@@ -584,7 +584,7 @@ void umpp_dd_cpu_msync_now(ump_dd_handle mem, ump_cpu_msync_op op, void * addres
 	if (umpp_dd_find_start_block(alloc, (virt_page_off + phys_page_off) << PAGE_SHIFT, &block_idx, &block_offset))
 	{
 		/* should not fail as a valid mapping was found, so the phys mem must exists */
-		pr_debug("UMP: Unable to find physical start block with offset %llx\n", virt_page_off + phys_page_off);
+		printk(KERN_WARNING "UMP: Unable to find physical start block with offset %llx\n", virt_page_off + phys_page_off);
 		UMP_ASSERT(0);
 		return;
 	}
@@ -637,14 +637,14 @@ UMP_KERNEL_API_EXPORT ump_dd_handle ump_dd_create_from_phys_blocks_64(const ump_
 
 	if (flags & (~UMP_FLAGS_RANGE))
 	{
-		pr_debug("UMP: allocation flags out of allowed bits range\n");
+		printk(KERN_WARNING "UMP: allocation flags out of allowed bits range\n");
 		return UMP_DD_INVALID_MEMORY_HANDLE;
 	}
 
 	if( ( flags & (UMP_PROT_CPU_RD | UMP_PROT_W_RD | UMP_PROT_X_RD | UMP_PROT_Y_RD | UMP_PROT_Z_RD
 	    | UMP_PROT_CPU_WR | UMP_PROT_W_WR | UMP_PROT_X_WR | UMP_PROT_Y_WR | UMP_PROT_Z_WR )) == 0 )
 	{
-		pr_debug("UMP: allocation flags should have at least one read or write permission bit set\n");
+		printk(KERN_WARNING "UMP: allocation flags should have at least one read or write permission bit set\n");
 		return UMP_DD_INVALID_MEMORY_HANDLE;
 	}
 

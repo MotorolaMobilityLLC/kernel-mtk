@@ -13,6 +13,11 @@
 #
 
 
+Import( 'env' )
+
+if Glob('bus_logger/sconscript'):
+	if env['buslog'] == '1':
+		SConscript('bus_logger/sconscript')
 
 if Glob('dma_buf_lock/sconscript'):
 	SConscript('dma_buf_lock/sconscript')

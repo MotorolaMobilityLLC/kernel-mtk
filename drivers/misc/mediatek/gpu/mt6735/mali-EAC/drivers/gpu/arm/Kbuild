@@ -12,6 +12,7 @@
 #
 #
 
+# MTK: disable GPU
 CONFIG_MALI_MIDGARD := y
 
 obj-$(CONFIG_MALI_MIDGARD) += midgard/
