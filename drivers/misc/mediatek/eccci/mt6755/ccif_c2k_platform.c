@@ -677,7 +677,7 @@ void dump_c2k_register(struct ccci_modem *md, unsigned int dump_flag)
 		ccif_write32(md_ctrl->hw_info->infra_ao_base, INFRA_AO_C2K_CONFIG,
 					(ccif_read32(md_ctrl->hw_info->infra_ao_base, INFRA_AO_C2K_CONFIG) &
 					(~(0x3 << 11))) | (i << 11));
-		for (j = 0; j < 5; j++) {
+		for (j = 0; j < 16; j++) {
 			CCCI_MEM_LOG_TAG(md->index, TAG, "C2K_CONFIG = 0x%x\n",
 					 ccif_read32(md_ctrl->hw_info->infra_ao_base, INFRA_AO_C2K_CONFIG));
 			CCCI_MEM_LOG_TAG(md->index, TAG, "[C2K] C2K_STATUS = 0x%x\n",
