@@ -370,7 +370,7 @@ int md_ccif_let_md_go(struct ccci_modem *md)
 			      (md_ctrl->hw_info->infra_ao_base,
 			       INFRA_AO_C2K_CONFIG)) | (0x1 << 3));
 
-		ccif_write32(md_ctrl->hw_info->sleep_base, POWERON_CONFIG_EN,
+		ccif_write32(md_ctrl->hw_info->sleep_base, AP_POWERON_CONFIG_EN,
 			0x0B160001);
 
 		ccif_write32(md_ctrl->hw_info->sleep_base, SLEEP_CLK_CON,
@@ -378,15 +378,15 @@ int md_ccif_let_md_go(struct ccci_modem *md)
 					 SLEEP_CLK_CON) | 0xc);
 
 		while (((ccif_read32
-			 (md_ctrl->hw_info->sleep_base, PWR_STATUS) & (0x1 << 28)) != (0x1 << 28)) ||
+			 (md_ctrl->hw_info->sleep_base, AP_PWR_STATUS) & (0x1 << 28)) != (0x1 << 28)) ||
 			 ((ccif_read32
-			 (md_ctrl->hw_info->sleep_base, PWR_STATUS_2ND) & (0x1 << 28)) != (0x1 << 28)))
+			 (md_ctrl->hw_info->sleep_base, AP_PWR_STATUS_2ND) & (0x1 << 28)) != (0x1 << 28)))
 			;
 
-		CCCI_INF_MSG(md->index, TAG, "[C2K] PWR_STATUS = 0x%x\n",
-			     ccif_read32(md_ctrl->hw_info->sleep_base, PWR_STATUS));
-		CCCI_INF_MSG(md->index, TAG, "[C2K] PWR_STATUS_2ND = 0x%x\n",
-			     ccif_read32(md_ctrl->hw_info->sleep_base, PWR_STATUS_2ND));
+		CCCI_INF_MSG(md->index, TAG, "[C2K] AP_PWR_STATUS = 0x%x\n",
+			     ccif_read32(md_ctrl->hw_info->sleep_base, AP_PWR_STATUS));
+		CCCI_INF_MSG(md->index, TAG, "[C2K] AP_PWR_STATUS_2ND = 0x%x\n",
+			     ccif_read32(md_ctrl->hw_info->sleep_base, AP_PWR_STATUS_2ND));
 
 		ccif_write32(md_ctrl->hw_info->sleep_base, SLEEP_CLK_CON,
 			     ccif_read32(md_ctrl->hw_info->sleep_base,
@@ -637,10 +637,10 @@ void dump_c2k_boot_status(struct ccci_modem *md)
 
 	CCCI_INF_MSG(md->index, TAG, "C2K_CONFIG = 0x%x\n",
 			 ccif_read32(md_ctrl->hw_info->infra_ao_base, INFRA_AO_C2K_CONFIG));
-	CCCI_INF_MSG(md->index, TAG, "[C2K] PWR_STATUS = 0x%x\n",
-			 ccif_read32(md_ctrl->hw_info->sleep_base, PWR_STATUS));
-	CCCI_INF_MSG(md->index, TAG, "[C2K] PWR_STATUS_2ND = 0x%x\n",
-			 ccif_read32(md_ctrl->hw_info->sleep_base, PWR_STATUS_2ND));
+	CCCI_INF_MSG(md->index, TAG, "[C2K] AP_PWR_STATUS = 0x%x\n",
+			 ccif_read32(md_ctrl->hw_info->sleep_base, AP_PWR_STATUS));
+	CCCI_INF_MSG(md->index, TAG, "[C2K] AP_PWR_STATUS_2ND = 0x%x\n",
+			 ccif_read32(md_ctrl->hw_info->sleep_base, AP_PWR_STATUS_2ND));
 
 	CCCI_INF_MSG(md->index, TAG, "SLEEP_CLK_CON = 0x%x\n",
 			ccif_read32(md_ctrl->hw_info->sleep_base, SLEEP_CLK_CON));
