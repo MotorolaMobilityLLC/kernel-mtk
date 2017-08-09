@@ -27,15 +27,15 @@
 #define FG_METER_RESISTANCE	0
 
 /* Qmax for battery  */
-#define Q_MAX_POS_50	2743
-#define Q_MAX_POS_25 2709
-#define Q_MAX_POS_0 1168
-#define Q_MAX_NEG_10 762
+#define Q_MAX_POS_50	2910
+#define Q_MAX_POS_25	2737
+#define Q_MAX_POS_0	1999
+#define Q_MAX_NEG_10	796
 
-#define Q_MAX_POS_50_H_CURRENT	2688
-#define Q_MAX_POS_25_H_CURRENT 2655
-#define Q_MAX_POS_0_H_CURRENT 1145
-#define Q_MAX_NEG_10_H_CURRENT 747
+#define Q_MAX_POS_50_H_CURRENT	2852
+#define Q_MAX_POS_25_H_CURRENT	2682
+#define Q_MAX_POS_0_H_CURRENT	1959
+#define Q_MAX_NEG_10_H_CURRENT	780
 
 
 /* Discharge Percentage */
@@ -76,15 +76,16 @@
 #define AGING1_LOAD_SOC	70
 #define AGING1_UPDATE_SOC	30
 #define BATTERYPSEUDO100	95
-#define BATTERYPSEUDO1 6
+#define BATTERYPSEUDO1	0
 
 #define Q_MAX_BY_SYS			/*8. Qmax variant by system drop voltage.*/
-#define Q_MAX_SYS_VOLTAGE		3350
-#define SHUTDOWN_GAUGE0
-#define SHUTDOWN_GAUGE1_XMINS
-#define SHUTDOWN_GAUGE1_MINS	60
+/*	#define Q_MAX_SYS_VOLTAGE		3350	*/
+/*	#define SHUTDOWN_GAUGE0	*/
+/*	#define SHUTDOWN_GAUGE1_XMINS	*/
+/*	#define SHUTDOWN_GAUGE1_MINS	60	*/
+#define SHUTDOWN_GAUGE1_MINS	(48*60)
 
-/*#define SHUTDOWN_SYSTEM_VOLTAGE	3400*/
+/*	#define SHUTDOWN_SYSTEM_VOLTAGE	3400	*/
 #define CHARGE_TRACKING_TIME	60
 #define DISCHARGE_TRACKING_TIME	10
 
