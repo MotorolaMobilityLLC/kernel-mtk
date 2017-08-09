@@ -119,7 +119,7 @@ extern unsigned int (*mtk_get_gpu_block_fp)(void);
 extern unsigned int (*mtk_get_gpu_idle_fp)(void);
 extern void (*mtk_do_gpu_dvfs_fp)(unsigned long t, long phase, unsigned long ul3DFenceDoneTime);
 extern void (*mtk_gpu_dvfs_set_mode_fp)(int eMode);
-extern void (ged_monitor_3D_fence_set_disable)(GED_BOOL bFlag);
+extern void ged_monitor_3D_fence_set_enable(GED_BOOL bEnable);
 
 static bool ged_dvfs_policy(
 		unsigned int ui32GPULoading, unsigned int* pui32NewFreqID, 
@@ -314,7 +314,9 @@ void ged_dvfs_vsync_offset_event_switch(GED_DVFS_VSYNC_OFFSET_SWITCH_CMD eEvent,
 			break;
 		case GED_DVFS_VSYNC_OFFSET_TOUCH_EVENT:
 			if(GED_TRUE==bSwitch) // touch boost
+			{
 				ged_dvfs_boost_gpu_freq(); 
+			}
 			(bSwitch)? (g_ui32EventStatus|=GED_EVENT_TOUCH): (g_ui32EventStatus&= (~GED_EVENT_TOUCH));            
 			break;
 		case GED_DVFS_VSYNC_OFFSET_THERMAL_EVENT:
@@ -328,6 +330,7 @@ void ged_dvfs_vsync_offset_event_switch(GED_DVFS_VSYNC_OFFSET_SWITCH_CMD eEvent,
 			break;
 		case GED_DVFS_VSYNC_OFFSET_GAS_EVENT:
 			(bSwitch)? (g_ui32EventStatus|=GED_EVENT_GAS): (g_ui32EventStatus&= (~GED_EVENT_GAS));
+			ged_monitor_3D_fence_set_enable(!bSwitch);
 			ged_dvfs_probe_signal(GED_GAS_SIGNAL_EVENT);
 			break;
 		case GED_DVFS_VSYNC_OFFSET_LOW_POWER_MODE_EVENT:
@@ -424,19 +427,6 @@ GED_ERROR ged_dvfs_um_commit( unsigned long gpu_tar_freq, bool bFallback)
 		}
 	}    
 
-
-
-
-	if(g_eTuningMode==GED_DVFS_LP)
-	{
-		if(ui32NewFreqID!=i32MaxLevel && bFallback==GED_FALSE)
-		{
-			ui32NewFreqID++;
-		}            
-		ged_monitor_3D_fence_set_disable(GED_TRUE);
-	}
-	else
-		ged_monitor_3D_fence_set_disable(GED_FALSE);
 
 
 	ged_log_buf_print(ghLogBuf_DVFS, "[GED_K] rdy to commit (%u)",ui32NewFreqID);
