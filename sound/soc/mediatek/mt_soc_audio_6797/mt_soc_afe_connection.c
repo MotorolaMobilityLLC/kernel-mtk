@@ -91,12 +91,6 @@
 #include <sound/pcm.h>
 #include <sound/jack.h>*/
 
-#ifdef DEBUG_AUDDRV
-#define PRINTK_AUDDRV(format, args...) printk(format, ##args)
-#else
-#define PRINTK_AUDDRV(format, args...)
-#endif
-
 /* mutex lock */
 static DEFINE_MUTEX(afe_connection_mutex);
 
@@ -121,7 +115,7 @@ static char mConnectionState[Soc_Aud_InterConnectionInput_Num_Input]
 static bool CheckBitsandReg(short regaddr, char bits)
 {
 	if (regaddr <= 0 || bits < 0) {
-		printk("regaddr = %x bits = %d\n", regaddr, bits);
+		pr_debug("regaddr = %x bits = %d\n", regaddr, bits);
 		return false;
 	}
 	return true;

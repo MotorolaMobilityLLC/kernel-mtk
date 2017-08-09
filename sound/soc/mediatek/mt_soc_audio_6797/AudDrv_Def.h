@@ -36,7 +36,7 @@
 /*#define DEBUG_AUDDRV */
 /* #define DEBUG_AFE_REG */
 /* #define DEBUG_ANA_REG */
-#define DEBUG_AUD_CLK
+/* #define DEBUG_AUD_CLK */
 #define DEBUG_AUD_HDMI
 /* efine DEBUG_AUD_FMTX */
 /* #define DEBUG_AUD_UL2 */
@@ -142,7 +142,7 @@
 #endif
 
 
-#define PRINTK_AUD_ERROR(format, args...)  pr_debug(format, ##args)
+#define PRINTK_AUD_ERROR(format, args...)  pr_err(format, ##args)
 
 /* if need assert , use AUDIO_ASSERT(true) */
 #define AUDIO_ASSERT(value) BUG_ON(false)
