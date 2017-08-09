@@ -274,6 +274,6 @@ extern int iDVFSAPB_init(void); /* it's only for DA9214 PMIC, return 0: 400K, 1:
 extern void eem_init_det_tmp(void);
 
 /* SW Channel Turbo/Clamp mode */
-int BigIDVFSTurbo(unsigned int Freqpct_x100); /* range 30% ~ 127% */
+int BigIDVFSTurbo(unsigned int Freqpct_x100); /* range 30% ~ 116% */
 
 #endif /* _MT_IDVFS_H  */

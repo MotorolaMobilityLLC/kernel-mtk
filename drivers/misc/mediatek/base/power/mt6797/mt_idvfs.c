@@ -54,11 +54,11 @@ static struct				clk *idvfs_i2c6_clk;	/* i2c6 clk ctrl */
 #endif
 
 static int func_lv_mask_idvfs = 500;
-#define IDVFS_DREQ_ENABLE	1
+#define IDVFS_DREQ_ENABLE		0
 #define IDVFS_OCP_OTP_ENABLE	1
-#define IDVFS_CCF_I2CV6		1
+#define IDVFS_CCF_I2CV6			1
 #define IDVFS_INTERRUPT_ENABLE	0
-#define IDVFS_FMAX_DEFAULT	2500
+#define IDVFS_FMAX_DEFAULT		2500
 
 /*
  * LOG
@@ -1010,9 +1010,9 @@ int BigIDVFSFreq(unsigned int Freqpct_x100)
 /* SW Channel Turbo/Clamp mode */
 int BigIDVFSTurbo(unsigned int Freqpct_x100)
 {
-	/* Clamp min 30% ~ Turbo max 127% */
+	/* Clamp min 30% ~ Turbo max 116% */
 	Freqpct_x100 =  ((Freqpct_x100 <= 3000) ? 3000 :
-					((Freqpct_x100 >= 12700) ? 12700 : Freqpct_x100));
+					((Freqpct_x100 >= 11600) ? 11600 : Freqpct_x100));
 
 	idvfs_init_opt.freq_max = (Freqpct_x100 / (10000 / IDVFS_FMAX_DEFAULT));
 	return 0;
@@ -1801,9 +1801,9 @@ static int __init idvfs_init(void)
 
 	int err = 0;
 
-	idvfs_base = NULL;
 #if IDVFS_INTERRUPT_ENABLE
 	struct device_node *node = NULL;
+
 	node = of_find_compatible_node(NULL, NULL, "mediatek,idvfs");
 	if (node) {
 		/* Setup IO addresses */
@@ -1812,6 +1812,8 @@ static int __init idvfs_init(void)
 		idvfs_irq_number = irq_of_parse_and_map(node, 0);
 		idvfs_ver("idvfs base = 0x%lx, irq = %d.\n", (unsigned long)idvfs_base, idvfs_irq_number);
 	}
+#else
+	idvfs_base = NULL;
 #endif
 
 	/* register platform driver */
