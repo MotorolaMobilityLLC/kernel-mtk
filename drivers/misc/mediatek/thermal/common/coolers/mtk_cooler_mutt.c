@@ -53,7 +53,7 @@ static int curr_adp_mutt_level = -1;
 /* Interal usage */
 /* parameter from adb shell */
 /* this is in milli degree C */
-static int MD_target_t = 60000;
+static int MD_target_t = 58000;
 static int MD_TARGET_T_HIGH;
 static int MD_TARGET_T_LOW;
 static int t_stable_range = 1000;
