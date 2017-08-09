@@ -91,7 +91,9 @@ static void enable_clk(struct mt_spi_t *ms)
 #if defined(CONFIG_MTK_CLKMGR)
 	enable_clock(MT_CG_PERI_SPI0, "spi");
 #else
-	clk_prepare_enable(ms->clk_main);
+	int ret;
+/*	clk_prepare_enable(ms->clk_main); */
+	ret = clk_enable(ms->clk_main);
 #endif
 #endif
 }
@@ -107,7 +109,8 @@ static void disable_clk(struct mt_spi_t *ms)
 #if defined(CONFIG_MTK_CLKMGR)
 	disable_clock(MT_CG_PERI_SPI0, "spi");
 #else
-	clk_disable_unprepare(ms->clk_main);
+/*	clk_disable_unprepare(ms->clk_main); */
+	clk_disable(ms->clk_main);
 #endif
 #endif
 
@@ -131,13 +134,14 @@ static void spi_dump_reg(struct mt_spi_t *ms)
 	SPI_DBG("||*****************************************||\n");
 	SPI_DBG("cfg0:0x%.8x\n", spi_readl(ms, SPI_CFG0_REG));
 	SPI_DBG("cfg1:0x%.8x\n", spi_readl(ms, SPI_CFG1_REG));
+	SPI_DBG("cfg2:0x%.8x\n", spi_readl(ms, SPI_CFG2_REG));
 	SPI_DBG("cmd :0x%.8x\n", spi_readl(ms, SPI_CMD_REG));
 /*	SPI_DBG("spi_tx_data_reg:0x%x\n", spi_readl(ms, SPI_TX_DATA_REG));
 	SPI_DBG("spi_rx_data_reg:0x%x\n", spi_readl(ms, SPI_RX_DATA_REG));*/
 	SPI_DBG("tx_s:0x%.8x\n", spi_readl(ms, SPI_TX_SRC_REG));
 	SPI_DBG("rx_d:0x%.8x\n", spi_readl(ms, SPI_RX_DST_REG));
 	SPI_DBG("sta1:0x%.8x\n", spi_readl(ms, SPI_STATUS1_REG));
-	SPI_DBG(":0x%.8x\n", spi_readl(ms, SPI_PAD_SEL_REG));
+	SPI_DBG("pad_sel:0x%.8x\n", spi_readl(ms, SPI_PAD_SEL_REG));
 	SPI_DBG("||*****************************************||\n");
 
 }
@@ -837,6 +841,7 @@ static void mt_spi_msg_done(struct mt_spi_t *ms, struct spi_message *msg, int st
 		spi_gpio_reset(ms);
 		/*disable_clk(); */
 		disable_clk(ms);
+		SPI_DBG("=======disable_clk=======.\n");
 		/*schedule_work(&mt_spi_msgdone_workqueue);//disable clock */
 
 		wake_unlock(&ms->wk_lock);
@@ -882,7 +887,7 @@ static int mt_spi_transfer(struct spi_device *spidev, struct spi_message *msg)
 	struct spi_transfer *xfer;
 	struct mt_chip_conf *chip_config;
 	unsigned long flags;
-	char msg_addr[16];
+	char msg_addr[32];
 
 	master = spidev->master;
 	ms = spi_master_get_devdata(master);
@@ -954,6 +959,7 @@ static int mt_spi_transfer(struct spi_device *spidev, struct spi_message *msg)
 		/*enable_clk(); */
 
 		enable_clk(ms);
+		SPI_DBG("=======enable_clk=======.\n");
 		mt_spi_next_message(ms);
 	}
 	spin_unlock_irqrestore(&ms->lock, flags);
@@ -1079,6 +1085,7 @@ static int mt_do_spi_setup(struct mt_spi_t *ms, struct mt_chip_conf *chip_config
 	reg_val &= ~(SPI_CMD_TX_ENDIAN_MASK | SPI_CMD_RX_ENDIAN_MASK);
 	reg_val &= ~(SPI_CMD_TXMSBF_MASK | SPI_CMD_RXMSBF_MASK);
 	reg_val &= ~(SPI_CMD_CPHA_MASK | SPI_CMD_CPOL_MASK);
+	reg_val &= ~(SPI_CMD_SAMPLE_SEL_MASK | SPI_CMD_CS_POL_MASK);
 	reg_val |= (chip_config->tx_mlsb << SPI_CMD_TXMSBF_OFFSET);
 	reg_val |= (chip_config->rx_mlsb << SPI_CMD_RXMSBF_OFFSET);
 	reg_val |= (chip_config->tx_endian << SPI_CMD_TX_ENDIAN_OFFSET);
@@ -1180,6 +1187,8 @@ static int mt_spi_setup(struct spi_device *spidev)
 		chip_config->cs_idletime = 2;
 		chip_config->ulthgh_thrsh = 0;
 
+		chip_config->cs_pol = 0;
+		chip_config->sample_sel = 0;
 		chip_config->cpol = 0;
 		chip_config->cpha = 1;
 		chip_config->rx_mlsb = 1;
@@ -1375,7 +1384,21 @@ static int __init mt_spi_probe(struct platform_device *pdev)
 	}
 
 	spi_master_set_devdata(master, ms);
+#if !defined(CONFIG_MTK_CLKMGR)
+	/*
+	 * prepare the clock source
+	 */
+	ret = clk_prepare(ms->clk_main);
+#endif
+	/*
+	 * enable clk before access spi register
+	 */
+	enable_clk(ms);
 	reset_spi(ms);
+	/*
+	 * disable clk when finishing access spi register
+	 */
+	disable_clk(ms);
 
 	ret = spi_register_master(master);
 	if (ret) {
@@ -1385,6 +1408,7 @@ static int __init mt_spi_probe(struct platform_device *pdev)
 		SPI_DBG("spi register master success.\n");
 		return 0;
 	}
+	pr_debug("SPI probe end\n");
  out_free:
 	free_irq(irq, ms);
  out:
@@ -1423,11 +1447,38 @@ static int mt_spi_suspend(struct platform_device *pdev, pm_message_t message)
 {
 	/* if interrupt is enabled,
 	 * then wait for interrupt complete. */
+	struct mt_spi_t *ms;
+	struct spi_master *master = platform_get_drvdata(pdev);
+
+	ms = spi_master_get_devdata(master);
+
+#if !defined(CONFIG_MTK_CLKMGR)
+	/*
+	 * unprepare the clock source
+	 */
+	clk_unprepare(ms->clk_main);
+	SPI_DBG("spi mt_spi_suspend clk_unpreparer success.\n");
+#endif
 	return 0;
 }
 
 static int mt_spi_resume(struct platform_device *pdev)
 {
+#if !defined(CONFIG_MTK_CLKMGR)
+	int ret;
+#endif
+	struct mt_spi_t *ms;
+	struct spi_master *master = platform_get_drvdata(pdev);
+
+	ms = spi_master_get_devdata(master);
+
+#if !defined(CONFIG_MTK_CLKMGR)
+	/*
+	 * prepare the clock source
+	 */
+	ret = clk_prepare(ms->clk_main);
+	SPI_DBG("spi mt_spi_resume clk_prepare success.\n");
+#endif
 	return 0;
 }
 #else
@@ -1461,11 +1512,12 @@ static int __init mt_spi_init(void)
 {
 	int ret;
 
+	pr_debug("SPI init!\n");
 	ret = platform_driver_register(&mt_spi_driver);
 	return ret;
 }
 
-static void __init mt_spi_exit(void)
+static void __exit mt_spi_exit(void)
 {
 	platform_driver_unregister(&mt_spi_driver);
 }

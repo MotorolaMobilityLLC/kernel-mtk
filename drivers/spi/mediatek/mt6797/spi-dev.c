@@ -686,25 +686,26 @@ static int tc_spi_cross_1k(struct spi_device *spi)
 	return ret;
 }
 
+static struct spi_transfer test_xfer;
+static struct spi_transfer test_xfer2;
+static struct spi_transfer test_xfer3;
 static ssize_t spi_msg_store(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
 {
 
 	struct spi_message *p;
 	int ret = 0;
 	struct spi_device *spi;
-	struct spi_transfer transfer;
-	struct spi_transfer transfer2;
-	struct spi_transfer transfer3;
 	struct spi_message msg;
+	struct spi_message msg2;
 	struct mt_chip_conf *chip_config;
 
 	u32 i, len = 4;
 	u32 tx_buffer = 0x12345678;
 	u32 rx_buffer = 0xaaaaaaaa;
 
-	transfer.tx_buf = &tx_buffer;
-	transfer.rx_buf = &rx_buffer;
-	transfer.len = 4;
+	test_xfer.tx_buf = &tx_buffer;
+	test_xfer.rx_buf = &rx_buffer;
+	test_xfer.len = 4;
 
 	spi = container_of(dev, struct spi_device, dev);
 
@@ -717,6 +718,7 @@ static ssize_t spi_msg_store(struct device *dev, struct device_attribute *attr, 
 		goto out;
 	}
 	spi_message_init(&msg);
+	spi_message_init(&msg2);
 
 	if (!strncmp(buf, "-h", 2)) {
 		SPIDEV_MSG("Please input the message of this device to send and receive.\n");
@@ -727,8 +729,8 @@ static ssize_t spi_msg_store(struct device *dev, struct device_attribute *attr, 
 			goto out;
 		}
 		if (!strncmp(buf, "len=", 4) && 1 == sscanf(buf + 4, "%d", &len)) {
-			spi_setup_xfer(&spi->dev, &transfer, len, 0);
-			spi_message_add_tail(&transfer, &msg);
+			spi_setup_xfer(&spi->dev, &test_xfer, len, 0);
+			spi_message_add_tail(&test_xfer, &msg);
 			ret = spi_sync(spi, &msg);
 			if (ret < 0) {
 				SPIDEV_LOG("Message transfer err:%d\n", ret);
@@ -748,8 +750,8 @@ static ssize_t spi_msg_store(struct device *dev, struct device_attribute *attr, 
 			goto out;
 		}
 		if (!strncmp(buf, "len=", 4) && 1 == sscanf(buf + 4, "%d", &len)) {
-			spi_setup_xfer(&spi->dev, &transfer, len, 1);
-			spi_message_add_tail(&transfer, &msg);
+			spi_setup_xfer(&spi->dev, &test_xfer, len, 1);
+			spi_message_add_tail(&test_xfer, &msg);
 			ret = spi_sync(spi, &msg);
 			if (ret < 0) {
 				SPIDEV_LOG("Message transfer err:%d\n", ret);
@@ -777,21 +779,21 @@ static ssize_t spi_msg_store(struct device *dev, struct device_attribute *attr, 
 		chip_config = (struct mt_chip_conf *)spi->controller_data;
 
 		if (!strncmp(buf, "buf", 3)) {	/*case: tx_buf = NULL,rx_buf = NULL*/
-			transfer.len = 8;
-			transfer.tx_buf = NULL;
-			transfer.rx_buf = NULL;
+			test_xfer.len = 8;
+			test_xfer.tx_buf = NULL;
+			test_xfer.rx_buf = NULL;
 		} else if (!strncmp(buf, "len", 3)) {	/*case: tx_buf != NULL,rx_buf != NULL, len = 0*/
-			transfer.len = 0;
-			transfer.tx_buf = kzalloc(8, GFP_KERNEL);
-			transfer.rx_buf = kzalloc(8, GFP_KERNEL);
+			test_xfer.len = 0;
+			test_xfer.tx_buf = kzalloc(8, GFP_KERNEL);
+			test_xfer.rx_buf = kzalloc(8, GFP_KERNEL);
 		} else if (!strncmp(buf, "nomem", 5)) {	/*case: DMA mapping error*/
-			spi_setup_xfer(&spi->dev, &transfer, 8, 0);
+			spi_setup_xfer(&spi->dev, &test_xfer, 8, 0);
 		} else if (!strncmp(buf, "fifo_len", 8)) {	/*case: len exceed FIFO size*/
 			chip_config->com_mod = 0;
-			spi_setup_xfer(&spi->dev, &transfer, 33, 0);
+			spi_setup_xfer(&spi->dev, &test_xfer, 33, 0);
 		} else if (!strncmp(buf, "dma_len", 7)) {	/*case: len exceed DMA size*/
 			chip_config->com_mod = 1;
-			spi_setup_xfer(&spi->dev, &transfer, 1025, 0);
+			spi_setup_xfer(&spi->dev, &test_xfer, 1025, 0);
 		} else if (!strncmp(buf, "xfer", 4)) {	/*case: len exceed DMA size*/
 			;
 		} else if (!strncmp(buf, "msg", 3)) {	/*case: len exceed DMA size*/
@@ -803,7 +805,7 @@ static ssize_t spi_msg_store(struct device *dev, struct device_attribute *attr, 
 		}
 
 		if (strncmp(buf, "xfer", 4)) {	/*case: MSG empty*/
-			spi_message_add_tail(&transfer, &msg);
+			spi_message_add_tail(&test_xfer, &msg);
 		}
 		if (!strncmp(buf, "msg", 3)) {	/*case: message = NULL*/
 			ret = spi_sync(spi, NULL);
@@ -815,18 +817,44 @@ static ssize_t spi_msg_store(struct device *dev, struct device_attribute *attr, 
 			return -100;
 		SPIDEV_LOG("Message transfer error test passed ret:%d\n", ret);
 	} else if (!strncmp(buf, "-pause", 6)) {
-		spi_setup_xfer(&spi->dev, &transfer, 32, 0);
-		spi_message_add_tail(&transfer, &msg);
-		spi_setup_xfer(&spi->dev, &transfer2, 1024, 0);
-		spi_message_add_tail(&transfer2, &msg);
-		spi_setup_xfer(&spi->dev, &transfer3, 32, 0);
-		spi_message_add_tail(&transfer3, &msg);
+		spi_setup_xfer(&spi->dev, &test_xfer, 32, 0);
+		spi_message_add_tail(&test_xfer, &msg);
+		spi_setup_xfer(&spi->dev, &test_xfer2, 1024, 0);
+		spi_message_add_tail(&test_xfer2, &msg);
+		spi_setup_xfer(&spi->dev, &test_xfer3, 32, 0);
+		spi_message_add_tail(&test_xfer3, &msg);
 
 		ret = spi_sync(spi, &msg);
 		if (ret < 0)
 			SPIDEV_LOG("Message transfer err:%d\n", ret);
 		else {
 			ret = spi_recv_check(&msg);
+			if (ret != 0) {
+				ret = -ret;
+				SPIDEV_LOG("Message transfer err:%d\n", ret);
+			}
+		}
+	} else if (!strncmp(buf, "-test", 5)) {
+		spi_setup_xfer(&spi->dev, &test_xfer, 8, 0);
+		spi_message_add_tail(&test_xfer, &msg);
+		ret = spi_sync(spi, &msg);
+		if (ret < 0)
+			SPIDEV_LOG("Message transfer err:%d\n", ret);
+		else {
+			ret = spi_recv_check(&msg);
+			if (ret != 0) {
+				ret = -ret;
+				SPIDEV_LOG("Message transfer err:%d\n", ret);
+			}
+		}
+		spi_setup_xfer(&spi->dev, &test_xfer2, 8, 0);
+		spi_message_add_tail(&test_xfer2, &msg2);
+
+		ret = spi_sync(spi, &msg2);
+		if (ret < 0)
+			SPIDEV_LOG("Message transfer err:%d\n", ret);
+		else {
+			ret = spi_recv_check(&msg2);
 			if (ret != 0) {
 				ret = -ret;
 				SPIDEV_LOG("Message transfer err:%d\n", ret);
