@@ -346,6 +346,7 @@ static unsigned int *recordTbl;
 #include "mach/mt_rtc_hw.h"
 
 #ifdef CONFIG_OF
+	#include <linux/cpu.h>
 	#include <linux/of.h>
 	#include <linux/of_irq.h>
 	#include <linux/of_address.h>
