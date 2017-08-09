@@ -9,3 +9,10 @@ config MTK_CMDQ_TAB
   default n
   help
     CONFIG_MTK_CMDQ_TAB
+
+config MTK_CMDQ_MT2701
+	bool "build MT2701 CMDQ driver"
+	depends on MTK_CMDQ
+	help
+		enable this config to build mt2701 CMDQ
+		This CMDQ module is used for MDP to write MDP HW register
