@@ -1592,22 +1592,15 @@ static int _restore_default_volt(struct mt_cpu_dvfs *p, enum mt_cpu_dvfs_id id)
 	unsigned int freq = 0;
 	unsigned int volt = 0;
 	int idx = 0;
+	struct mt_cpu_dvfs *p_ll, *p_l, *p_cci;
 
-	enum mt_cpu_dvfs_id id_sec, id_cci;
-	struct mt_cpu_dvfs *p_second, *p_cci;
-
-	id_sec = (cpu_dvfs_is(p, MT_CPU_DVFS_LL)) ? MT_CPU_DVFS_L : MT_CPU_DVFS_LL;
-	id_cci = MT_CPU_DVFS_CCI;
-	p_second = id_to_cpu_dvfs(id_sec);
-	p_cci = id_to_cpu_dvfs(id_cci);
+	p_ll = id_to_cpu_dvfs(MT_CPU_DVFS_LL);
+	p_l = id_to_cpu_dvfs(MT_CPU_DVFS_L);
+	p_cci = id_to_cpu_dvfs(MT_CPU_DVFS_CCI);
 
 	FUNC_ENTER(FUNC_LV_HELP);
 
-	BUG_ON(NULL == p);
-	BUG_ON(NULL == p_second);
-	BUG_ON(NULL == p_cci);
-
-	if (!cpu_dvfs_is_available(p) || !cpu_dvfs_is_available(p_second)) {
+	if (!cpu_dvfs_is_available(p_ll) || !cpu_dvfs_is_available(p_l) || !cpu_dvfs_is_available(p_cci)) {
 		FUNC_EXIT(FUNC_LV_HELP);
 		return 0;
 	}
@@ -1630,12 +1623,25 @@ static int _restore_default_volt(struct mt_cpu_dvfs *p, enum mt_cpu_dvfs_id id)
 		idx = _search_available_freq_idx(p, freq, CPUFREQ_RELATION_L);
 
 	/* set volt */
-	if ((get_turbo_volt(p->cpu_id, cpu_dvfs_get_volt_by_idx(p, idx)) >
-		get_turbo_volt(p_second->cpu_id, cpu_dvfs_get_volt_by_idx(p_second, p_second->idx_opp_tbl))) &&
-		(get_turbo_volt(p->cpu_id, cpu_dvfs_get_volt_by_idx(p, idx)) >
-			cpu_dvfs_get_volt_by_idx(p_cci, p_cci->idx_opp_tbl)))
-		ret = _set_cur_volt_locked(p,
-					   get_turbo_volt(p->cpu_id, cpu_dvfs_get_volt_by_idx(p, idx)));
+	if (cpu_dvfs_is(p, MT_CPU_DVFS_CCI)) {
+		if (get_turbo_volt(p->cpu_id, cpu_dvfs_get_volt_by_idx(p, idx)) >
+			MAX(get_turbo_volt(p_ll->cpu_id, cpu_dvfs_get_volt_by_idx(p_ll, p_ll->idx_opp_tbl)),
+				get_turbo_volt(p_l->cpu_id, cpu_dvfs_get_volt_by_idx(p_l, p_l->idx_opp_tbl))))
+				ret = _set_cur_volt_locked(p,
+					get_turbo_volt(p->cpu_id, cpu_dvfs_get_volt_by_idx(p, idx)));
+	} else if (cpu_dvfs_is(p, MT_CPU_DVFS_LL)) {
+		if (get_turbo_volt(p->cpu_id, cpu_dvfs_get_volt_by_idx(p, idx)) >
+			MAX(get_turbo_volt(p_cci->cpu_id, cpu_dvfs_get_volt_by_idx(p_cci, p_cci->idx_opp_tbl)),
+				get_turbo_volt(p_l->cpu_id, cpu_dvfs_get_volt_by_idx(p_l, p_l->idx_opp_tbl))))
+				ret = _set_cur_volt_locked(p,
+					get_turbo_volt(p->cpu_id, cpu_dvfs_get_volt_by_idx(p, idx)));
+	} else {
+		if (get_turbo_volt(p->cpu_id, cpu_dvfs_get_volt_by_idx(p, idx)) >
+			MAX(get_turbo_volt(p_cci->cpu_id, cpu_dvfs_get_volt_by_idx(p_cci, p_cci->idx_opp_tbl)),
+				get_turbo_volt(p_ll->cpu_id, cpu_dvfs_get_volt_by_idx(p_ll, p_ll->idx_opp_tbl))))
+				ret = _set_cur_volt_locked(p,
+					get_turbo_volt(p->cpu_id, cpu_dvfs_get_volt_by_idx(p, idx)));
+	}
 
 	cpufreq_unlock(flags);
 
@@ -1724,23 +1730,14 @@ int mt_cpufreq_update_volt(enum mt_cpu_dvfs_id id, unsigned int *volt_tbl, int n
 	unsigned int freq = 0;
 	unsigned int volt = 0;
 	int idx = 0;
+	struct mt_cpu_dvfs *p_ll, *p_l, *p_cci;
 
-	enum mt_cpu_dvfs_id id_sec, id_cci;
-	struct mt_cpu_dvfs *p_second, *p_cci;
+	p_ll = id_to_cpu_dvfs(MT_CPU_DVFS_LL);
+	p_l = id_to_cpu_dvfs(MT_CPU_DVFS_L);
+	p_cci = id_to_cpu_dvfs(MT_CPU_DVFS_CCI);
 
-	FUNC_ENTER(FUNC_LV_API);
-
-	id_sec = (cpu_dvfs_is(p, MT_CPU_DVFS_LL)) ? MT_CPU_DVFS_L : MT_CPU_DVFS_LL;
-	id_cci = MT_CPU_DVFS_CCI;
-	p_second = id_to_cpu_dvfs(id_sec);
-	p_cci = id_to_cpu_dvfs(id_cci);
-
-	BUG_ON(NULL == p);
-	BUG_ON(NULL == p_second);
-	BUG_ON(NULL == p_cci);
-
-	if (!cpu_dvfs_is_available(p) || !cpu_dvfs_is_available(p_second)) {
-		FUNC_EXIT(FUNC_LV_API);
+	if (!cpu_dvfs_is_available(p_ll) || !cpu_dvfs_is_available(p_l) || !cpu_dvfs_is_available(p_cci)) {
+		FUNC_EXIT(FUNC_LV_HELP);
 		return 0;
 	}
 
@@ -1764,12 +1761,25 @@ int mt_cpufreq_update_volt(enum mt_cpu_dvfs_id id, unsigned int *volt_tbl, int n
 		idx = _search_available_freq_idx(p, freq, CPUFREQ_RELATION_L);
 
 	/* set volt */
-	if ((get_turbo_volt(p->cpu_id, cpu_dvfs_get_volt_by_idx(p, idx)) >
-		get_turbo_volt(p_second->cpu_id, cpu_dvfs_get_volt_by_idx(p_second, p_second->idx_opp_tbl))) &&
-		(get_turbo_volt(p->cpu_id, cpu_dvfs_get_volt_by_idx(p, idx)) >
-		cpu_dvfs_get_volt_by_idx(p_cci, p_cci->idx_opp_tbl)))
-		ret = _set_cur_volt_locked(p,
-					   get_turbo_volt(p->cpu_id, cpu_dvfs_get_volt_by_idx(p, idx)));
+	if (cpu_dvfs_is(p, MT_CPU_DVFS_CCI)) {
+		if (get_turbo_volt(p->cpu_id, cpu_dvfs_get_volt_by_idx(p, idx)) >
+			MAX(get_turbo_volt(p_ll->cpu_id, cpu_dvfs_get_volt_by_idx(p_ll, p_ll->idx_opp_tbl)),
+				get_turbo_volt(p_l->cpu_id, cpu_dvfs_get_volt_by_idx(p_l, p_l->idx_opp_tbl))))
+				ret = _set_cur_volt_locked(p,
+					get_turbo_volt(p->cpu_id, cpu_dvfs_get_volt_by_idx(p, idx)));
+	} else if (cpu_dvfs_is(p, MT_CPU_DVFS_LL)) {
+		if (get_turbo_volt(p->cpu_id, cpu_dvfs_get_volt_by_idx(p, idx)) >
+			MAX(get_turbo_volt(p_cci->cpu_id, cpu_dvfs_get_volt_by_idx(p_cci, p_cci->idx_opp_tbl)),
+				get_turbo_volt(p_l->cpu_id, cpu_dvfs_get_volt_by_idx(p_l, p_l->idx_opp_tbl))))
+				ret = _set_cur_volt_locked(p,
+					get_turbo_volt(p->cpu_id, cpu_dvfs_get_volt_by_idx(p, idx)));
+	} else {
+		if (get_turbo_volt(p->cpu_id, cpu_dvfs_get_volt_by_idx(p, idx)) >
+			MAX(get_turbo_volt(p_cci->cpu_id, cpu_dvfs_get_volt_by_idx(p_cci, p_cci->idx_opp_tbl)),
+				get_turbo_volt(p_ll->cpu_id, cpu_dvfs_get_volt_by_idx(p_ll, p_ll->idx_opp_tbl))))
+				ret = _set_cur_volt_locked(p,
+					get_turbo_volt(p->cpu_id, cpu_dvfs_get_volt_by_idx(p, idx)));
+	}
 
 	cpufreq_unlock(flags);
 
