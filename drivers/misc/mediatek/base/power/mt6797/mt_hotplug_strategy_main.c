@@ -31,7 +31,6 @@
 /*
  * config
  */
-#define HPS_TASK_PRIORITY               (MAX_RT_PRIO - 3)
 
 /*============================================================================*/
 /* Local type definition */
