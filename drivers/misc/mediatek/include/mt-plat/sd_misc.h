@@ -10,7 +10,32 @@
 #include <linux/mmc/sd.h>
 #endif
 
+#ifndef FPGA_PLATFORM
+extern void msdc_set_driving(struct msdc_host *host, struct msdc_hw *hw, bool sd_18);
+#endif
+extern void msdc_dump_padctl(struct msdc_host *host, u32 pin);
+extern u32 msdc_host_mode[HOST_MAX_NUM];
+extern u32 msdc_host_mode2[HOST_MAX_NUM];
 
+extern int mmc_switch(struct mmc_card *card, u8 set, u8 index, u8 value,
+	unsigned int timeout_ms);
+extern int mmc_send_ext_csd(struct mmc_card *card, u8 *ext_csd);
+extern struct msdc_host *mtk_msdc_host[];
+extern struct msdc_host *msdc_get_host(int host_function, bool boot, bool secondary);
+extern int msdc_reinit(struct msdc_host *host);
+
+#if 0
+extern int msdc_get_reserve(void);
+extern u32 msdc_get_capacity(int get_emmc_total);
+extern struct gendisk *mmc_get_disk(struct mmc_card *card);
+extern void msdc_get_driving(struct msdc_host *host, struct msdc_ioctl *msdc_ctl);
+#endif
+
+#ifdef CONFIG_MTK_EMMC_SUPPORT
+/* extern struct excel_info PartInfoEmmc[PART_NUM]; */
+
+extern u32 g_emmc_mode_switch;
+#endif
 
 struct msdc_ioctl {
 	int opcode;
