@@ -21,7 +21,6 @@
 #include <linux/platform_device.h>
 #include <linux/dma-mapping.h>
 #include <linux/kthread.h>
-#include <linux/rtpm_prio.h>
 #include <linux/vmalloc.h>
 #include "disp_assert_layer.h"
 #include <linux/semaphore.h>

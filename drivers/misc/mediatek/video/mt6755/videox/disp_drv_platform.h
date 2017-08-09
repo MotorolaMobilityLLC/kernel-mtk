@@ -65,4 +65,21 @@ typedef enum {
 #define DISP_HW_HRT_LYAERS_FOR_HI_PERF		6
 #define DISP_HW_HRT_720P_LYAERS_FOR_HI_PERF 8
 
+/*add  rtpm prio*/
+
+#ifdef CONFIG_MT_RT_MONITOR
+#define MT_ALLOW_RT_PRIO_BIT 0x10000000
+#else
+#define MT_ALLOW_RT_PRIO_BIT 0x0
+#endif
+
+#define REG_RT_PRIO(x) ((x) | MT_ALLOW_RT_PRIO_BIT)
+
+#define RTPM_PRIO_MM_GROUP_BASE			(10)
+#define RTPM_PRIO_MM_GROUP_H			(RTPM_PRIO_MM_GROUP_BASE+70)
+#define RTPM_PRIO_MM_GROUP_I			(RTPM_PRIO_MM_GROUP_BASE+80)
+/*schedule priority*/
+#define RTPM_PRIO_SCRN_UPDATE               REG_RT_PRIO(RTPM_PRIO_MM_GROUP_I+4)
+#define RTPM_PRIO_FB_THREAD                 REG_RT_PRIO(RTPM_PRIO_MM_GROUP_H+7)
+
 #endif				/* __DISP_DRV_PLATFORM_H__ */
