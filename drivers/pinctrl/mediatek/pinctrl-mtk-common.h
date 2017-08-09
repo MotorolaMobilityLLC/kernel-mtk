@@ -251,6 +251,9 @@ struct mtk_pinctrl_devdata {
 	int (*spec_ies_smt_set)(struct regmap *reg, unsigned int pin,
 			unsigned char align, int value,
 			enum pin_config_param arg);
+	int (*spec_pull_get)(struct regmap *reg, unsigned int pin);
+	int (*spec_ies_get)(struct regmap *reg, unsigned int pin);
+	int (*spec_smt_get)(struct regmap *reg, unsigned int pin);
 	int (*spec_set_gpio_mode)(unsigned long pin, unsigned long mode);
 	int (*mt_set_gpio_dir)(unsigned long pin, unsigned long dir);
 	int (*mt_get_gpio_dir)(unsigned long pin);
@@ -311,6 +314,15 @@ int mtk_pconf_spec_set_ies_smt_range(struct regmap *regmap,
 		const struct mtk_pin_ies_smt_set *ies_smt_infos,
 		unsigned int info_num,
 		unsigned int pin, unsigned char align, int value);
+
+int mtk_spec_pull_get_samereg(struct regmap *regmap,
+		const struct mtk_pin_spec_pupd_set_samereg *pupd_infos,
+		unsigned int info_num, unsigned int pin);
+
+int mtk_spec_get_ies_smt_range(struct regmap *regmap,
+		const struct mtk_pin_ies_smt_set *ies_smt_infos,
+		unsigned int info_num,
+		unsigned int pin);
 
 extern const struct dev_pm_ops mtk_eint_pm_ops;
 #endif /* __PINCTRL_MTK_COMMON_H */
