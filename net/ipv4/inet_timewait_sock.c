@@ -87,10 +87,8 @@ static void __inet_twsk_kill(struct inet_timewait_sock *tw,
 	refcnt += inet_twsk_bind_unhash(tw, hashinfo);
 	spin_unlock(&bhead->lock);
 
-	if (refcnt >= atomic_read(&tw->tw_refcnt))
-		atomic_sub(atomic_read(&tw->tw_refcnt), &tw->tw_refcnt);
-	else
-		atomic_sub(refcnt, &tw->tw_refcnt);
+	BUG_ON(refcnt >= atomic_read(&tw->tw_refcnt));
+	atomic_sub(refcnt, &tw->tw_refcnt);
 }
 
 void inet_twsk_free(struct inet_timewait_sock *tw)
@@ -107,11 +105,6 @@ void inet_twsk_free(struct inet_timewait_sock *tw)
 
 void inet_twsk_put(struct inet_timewait_sock *tw)
 {
-	if (atomic_read(&tw->tw_refcnt) <= 0) {
-		pr_debug("[inet_twsk_put] warning: tw_refcnt = %d\n", atomic_read(&tw->tw_refcnt));
-		inet_twsk_free(tw);
-		return;
-	}
 	if (atomic_dec_and_test(&tw->tw_refcnt))
 		inet_twsk_free(tw);
 }

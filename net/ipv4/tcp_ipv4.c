@@ -1722,6 +1722,9 @@ do_time_wait:
 		inet_twsk_put(inet_twsk(sk));
 		goto csum_error;
 	}
+	if (sk->sk_state == TCP_TIME_WAIT)
+		atomic_inc(&sk->sk_refcnt);
+
 	switch (tcp_timewait_state_process(inet_twsk(sk), skb, th)) {
 	case TCP_TW_SYN: {
 		struct sock *sk2 = inet_lookup_listener(dev_net(skb->dev),
