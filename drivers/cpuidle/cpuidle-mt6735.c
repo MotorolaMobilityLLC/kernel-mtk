@@ -7,8 +7,16 @@
  */
 
 #include <linux/cpuidle.h>
+#include <linux/cpumask.h>
+#include <linux/cpu_pm.h>
+#include <linux/kernel.h>
 #include <linux/module.h>
-#include <linux/printk.h>
+#include <linux/of.h>
+
+#include <asm/cpuidle.h>
+#include <asm/suspend.h>
+
+#include "dt_idle_states.h"
 
 #define IDLE_TAG     "[Power/swap]"
 #define idle_dbg(fmt, args...)		pr_debug(IDLE_TAG fmt, ##args)	/* pr_debug show nothing */
@@ -96,9 +104,63 @@ static struct cpuidle_driver mt6735_cpuidle_driver = {
 	.safe_state_index = 0,
 };
 
+#ifdef CONFIG_ARM64
+
+static const struct of_device_id mt6735_idle_state_match[] __initconst = {
+	{ .compatible = "arm,idle-state" },
+	{ },
+};
+
+/*
+ * arm64_idle_init
+ *
+ * Registers the arm64 specific cpuidle driver with the cpuidle
+ * framework. It relies on core code to parse the idle states
+ * and initialize them using driver data structures accordingly.
+ */
+int __init mt6735_cpuidle_init(void)
+{
+	int cpu, ret;
+	struct cpuidle_driver *drv = &mt6735_cpuidle_driver;
+
+	/*
+	 * Initialize idle states data, starting at index 1.
+	 * This driver is DT only, if no DT idle states are detected (ret == 0)
+	 * let the driver initialization fail accordingly since there is no
+	 * reason to initialize the idle driver if only wfi is supported.
+	 */
+	ret = dt_init_idle_driver(drv, mt6735_idle_state_match, 1);
+	if (ret <= 0) {
+		if (ret)
+			pr_err("failed to initialize idle states\n");
+		return ret ? : -ENODEV;
+	}
+
+	/*
+	 * Call arch CPU operations in order to initialize
+	 * idle states suspend back-end specific data
+	 */
+	for_each_possible_cpu(cpu) {
+		ret = cpu_init_idle(cpu);
+		if (ret) {
+			pr_err("CPU %d failed to init idle CPU ops\n", cpu);
+			return ret;
+		}
+	}
+
+	ret = cpuidle_register(drv, NULL);
+	if (ret) {
+		pr_err("failed to register cpuidle driver\n");
+		return ret;
+	}
+
+	return 0;
+}
+#else
 int __init mt6735_cpuidle_init(void)
 {
 	return cpuidle_register(&mt6735_cpuidle_driver, NULL);
 }
-device_initcall(mt6735_cpuidle_init);
+#endif
 
+device_initcall(mt6735_cpuidle_init);

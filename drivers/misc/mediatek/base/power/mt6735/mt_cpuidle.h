@@ -69,7 +69,7 @@
  * and finally restore context after reset
  *
  * input:
- * data - the flags to decide detail of flow. a bitwise arguments
+ * data - the flags to decide detail of flow a bitwise arguments
  *	-- CPU_DORMANT_MODE
  *	-- CPU_SHUTDOWN_MODE
  *	-- (optional) DORMANT_BREAK_CHECK
@@ -84,8 +84,14 @@
 int mt_cpu_dormant_init(void);
 int mt_cpu_dormant(unsigned long data);
 
+extern void write_cntpctl(int cntpctl);
+extern int read_cntpctl(void);
+extern int read_cpu_id(void);
+extern int read_cluster_id(void);
+extern void mt_save_generic_timer(unsigned int *container, int sw);
+extern void mt_restore_generic_timer(unsigned int *container, int sw);
+
 extern unsigned long *aee_rr_rec_cpu_dormant(void);
 extern unsigned long *aee_rr_rec_cpu_dormant_pa(void);
 
 #endif
-
