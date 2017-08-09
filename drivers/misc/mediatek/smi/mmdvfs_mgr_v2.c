@@ -80,7 +80,8 @@ static void notify_mmsys_clk_change(int ori_mmsys_clk_mode, int update_mmsys_clk
 static int mmsys_clk_change_notify_checked(clk_switch_cb func, int ori_mmsys_clk_mode,
 int update_mmsys_clk_mode, char *msg);
 static mmdvfs_voltage_enum determine_current_mmsys_clk(void);
-static int get_vr_step(int sensor_size, int camera_mode, int venc_resolution);
+static int get_venc_step(int venc_resolution);
+static int get_vr_step(int sensor_size, int camera_mode);
 static int query_vr_step(MTK_MMDVFS_CMD *query_cmd);
 
 #if defined(MMDVFS_E1)
@@ -259,7 +260,7 @@ MTK_MMDVFS_CMD *cmd)
 	case SMI_BWC_SCEN_VR_SLOW:
 		{
 #if defined(MMDVFS_E1)
-			int resolution = 1920*1080;
+			int resolution = 1920 * 1080;
 			int is_p_mode = 0;
 			int fps = 120;
 
@@ -519,37 +520,47 @@ int mmdvfs_set_step(MTK_SMI_BWC_SCEN scenario, mmdvfs_voltage_enum step)
 	return mmdvfs_set_step_with_mmsys_clk(scenario, step, MMSYS_CLK_MEDIUM);
 }
 
+static int get_venc_step(int venc_resolution)
+{
+	int lpm_size_limit = 0;
+	int venc_step = MMDVFS_VOLTAGE_LOW;
+
+	if (mmdvfs_get_lcd_resolution() == MMDVFS_LCD_SIZE_WQHD)
+		/* initialize the venc_size_limit */
+		lpm_size_limit = 1920 * 1080;
+	else
+		/* initialize the venc_size_limit */
+		lpm_size_limit = 4096 * 1716;
+
+	/* Check recording video resoltuion */
+	if (venc_resolution >= lpm_size_limit)
+		venc_step = MMDVFS_VOLTAGE_HIGH;
+
+	return venc_step;
+}
+
 /* If the query_cmd is null, we will not check the information of sensor size
 and fps since the information is set after profile change */
-static int get_vr_step(int sensor_size, int camera_mode, int venc_resolution)
+static int get_vr_step(int sensor_size, int camera_mode)
 {
 	unsigned int hpm_cam_mode = 0;
-	int lpm_size_limit = 0;
+
 	int	vr_step = MMDVFS_VOLTAGE_LOW;
 
 	/* initialize the venc_size_limit */
 	if (mmdvfs_get_lcd_resolution() == MMDVFS_LCD_SIZE_WQHD) {
-		/* initialize the venc_size_limit */
-		lpm_size_limit = 1024 * 768;
 		/* All camera feature triggers HPM mode */
 		hpm_cam_mode = (MMDVFS_CAMERA_MODE_FLAG_PIP | MMDVFS_CAMERA_MODE_FLAG_VFB
 		| MMDVFS_CAMERA_MODE_FLAG_EIS_2_0 | MMDVFS_CAMERA_MODE_FLAG_IVHDR |
 		MMDVFS_CAMERA_MODE_FLAG_STEREO);
 
 	} else {
-		/* initialize the venc_size_limit */
-		lpm_size_limit = 4096 * 1716;
-
 		hpm_cam_mode = (MMDVFS_CAMERA_MODE_FLAG_PIP | MMDVFS_CAMERA_MODE_FLAG_VFB
 		| MMDVFS_CAMERA_MODE_FLAG_EIS_2_0 | MMDVFS_CAMERA_MODE_FLAG_STEREO);
 	}
 
 	/* Check sensor size */
 	if (sensor_size >= MMDVFS_PIXEL_NUM_SENSOR_FULL)
-		vr_step = MMDVFS_VOLTAGE_HIGH;
-
-	/* Check recording video resoltuion */
-	if (venc_resolution > lpm_size_limit)
 		vr_step = MMDVFS_VOLTAGE_HIGH;
 
 	/* Check camera mode flag */
@@ -565,7 +576,8 @@ static int query_vr_step(MTK_MMDVFS_CMD *query_cmd)
 	if (query_cmd == NULL)
 		return MMDVFS_VOLTAGE_LOW;
 	else
-		return get_vr_step(query_cmd->sensor_size, query_cmd->camera_mode, 0);
+		return get_vr_step(query_cmd->sensor_size, query_cmd->camera_mode);
+
 }
 
 #if defined(MMDVFS_E1)
@@ -847,6 +859,11 @@ void mmdvfs_notify_scenario_enter(MTK_SMI_BWC_SCEN scen)
 		mmdvfs_raise_mmsys_by_mux();
 
 	switch (scen) {
+	case SMI_BWC_SCEN_VENC:
+		if (g_mmdvfs_concurrency | (1 << SMI_BWC_SCEN_VR))
+			mmdvfs_set_step(scen, get_venc_step(g_mmdvfs_info->video_record_size[0] *
+			g_mmdvfs_info->video_record_size[1]));
+		break;
 	case SMI_BWC_SCEN_WFD:
 		g_mmdvfs_mgr->is_wfd_enable = 1;
 		#ifdef MMDVFS_E1
@@ -858,19 +875,23 @@ void mmdvfs_notify_scenario_enter(MTK_SMI_BWC_SCEN scen)
 	case SMI_BWC_SCEN_VR:
 		{
 			mmdvfs_voltage_enum vr_step = MMSYS_CLK_LOW;
+			mmdvfs_voltage_enum venc_step = MMSYS_CLK_LOW;
 
-			vr_step = get_vr_step(g_mmdvfs_cmd.sensor_size, g_mmdvfs_cmd.camera_mode,
-			g_mmdvfs_info->video_record_size[0] * g_mmdvfs_info->video_record_size[1]);
+			vr_step = get_vr_step(g_mmdvfs_cmd.sensor_size, g_mmdvfs_cmd.camera_mode);
 
-			if (vr_step == MMDVFS_VOLTAGE_HIGH) {
+			if (g_mmdvfs_concurrency | (1 << SMI_BWC_SCEN_VENC))
+				venc_step = get_venc_step(g_mmdvfs_info->video_record_size[0] *
+				g_mmdvfs_info->video_record_size[1]);
+
+			if (vr_step == MMDVFS_VOLTAGE_HIGH || venc_step == MMDVFS_VOLTAGE_HIGH) {
 				if (g_mmdvfs_cmd.camera_mode & (MMDVFS_CAMERA_MODE_FLAG_VFB |
 					MMDVFS_CAMERA_MODE_FLAG_EIS_2_0))
-					/* Only set HPM mode for EMI BW requirement */
+					/* Only set HPM mode for EMI BW requirement, don't care the mm clock */
 					mmdvfs_set_step(scen, MMDVFS_VOLTAGE_HIGH);
 				else
 					mmdvfs_set_step_with_mmsys_clk(scen, MMDVFS_VOLTAGE_HIGH,
 						MMSYS_CLK_HIGH);
-			}
+				}
 			break;
 		}
 	case SMI_BWC_SCEN_VR_SLOW:

@@ -15,10 +15,10 @@
 #elif defined(SMI_EV)
 	#define SMI_PARAM_BW_OPTIMIZATION (0)
 	#define SMI_PARAM_BUS_OPTIMIZATION (0x0)
-	#define SMI_PARAM_ENABLE_IOCTL (0)
-	#define SMI_PARAM_DISABLE_FREQ_HOPPING (1)
+	#define SMI_PARAM_ENABLE_IOCTL (1)
+	#define SMI_PARAM_DISABLE_FREQ_HOPPING (0)
 	#define SMI_PARAM_DISABLE_FREQ_MUX (1)
-	#define SMI_PARAM_DISABLE_MMDVFS (1)
+	#define SMI_PARAM_DISABLE_MMDVFS (0)
 #endif
 /* ***********debug parameters************/
 
