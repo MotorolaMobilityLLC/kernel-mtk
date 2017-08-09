@@ -1002,8 +1002,6 @@ fs_initcall(dma_debug_do_init);
 
 /* IOMMU */
 
-static int extend_iommu_mapping(struct dma_iommu_mapping *mapping);
-
 static inline dma_addr_t __alloc_iova(struct dma_iommu_mapping *mapping,
 				      size_t size)
 {
@@ -1942,7 +1940,7 @@ static void release_iommu_mapping(struct kref *kref)
 	kfree(mapping);
 }
 
-static int extend_iommu_mapping(struct dma_iommu_mapping *mapping)
+int extend_iommu_mapping(struct dma_iommu_mapping *mapping)
 {
 	int next_bitmap;
 
@@ -1959,6 +1957,7 @@ static int extend_iommu_mapping(struct dma_iommu_mapping *mapping)
 
 	return 0;
 }
+EXPORT_SYMBOL_GPL(extend_iommu_mapping);
 
 void arm_iommu_release_mapping(struct dma_iommu_mapping *mapping)
 {
