@@ -3016,7 +3016,7 @@
                 <mode_arr>10000000</mode_arr>
                 <inpull_en>false</inpull_en>
                 <inpull_selhigh>false</inpull_selhigh>
-                <def_dir>OUT</def_dir>
+                <def_dir>IN</def_dir>
                 <in>true</in>
                 <out>true</out>
                 <out_high>false</out_high>
@@ -3031,7 +3031,7 @@
                 <mode_arr>10000000</mode_arr>
                 <inpull_en>false</inpull_en>
                 <inpull_selhigh>false</inpull_selhigh>
-                <def_dir>OUT</def_dir>
+                <def_dir>IN</def_dir>
                 <in>true</in>
                 <out>true</out>
                 <out_high>false</out_high>
