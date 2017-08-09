@@ -56,6 +56,10 @@
 #define MMDVFS_PIXEL_NUM_13M		(13000000)
 #define MMDVFS_PIXEL_NUM_16M		(16000000)
 
+/* lcd size */
+typedef enum {
+	MMDVFS_LCD_SIZE_HD, MMDVFS_LCD_SIZE_FHD, MMDVFS_LCD_SIZE_WQHD, MMDVFS_LCD_SIZE_END_OF_ENUM
+} mmdvfs_lcd_size_enum;
 
 #if defined(MMDVFS_E1) && defined(SMI_J)
 /* For UT only */
@@ -67,9 +71,11 @@
 
 /* mmdvfs display sizes */
 #define MMDVFS_DISPLAY_SIZE_FHD	(1920 * 1216)
+#define MMDVFS_DISPLAY_SIZE_HD	(1280 * 720)
 
 #define MMDVFS_CLK_SWITCH_CB_MAX 16
 #define MMDVFS_CLK_SWITCH_CLIENT_MSG_MAX 20
+
 
 static int notify_cb_func_checked(clk_switch_cb func, int ori_mmsys_clk_mode,
 int update_mmsys_clk_mode, char *msg);
@@ -82,6 +88,7 @@ int update_mmsys_clk_mode, char *msg);
 static mmdvfs_voltage_enum determine_current_mmsys_clk(void);
 static int get_venc_step(int venc_resolution);
 static int get_vr_step(int sensor_size, int camera_mode);
+static int get_ext_disp_step(mmdvfs_lcd_size_enum disp_resolution);
 static int query_vr_step(MTK_MMDVFS_CMD *query_cmd);
 
 #if defined(MMDVFS_E1)
@@ -139,22 +146,24 @@ typedef enum {
 /* HIGH */
 } mmdvfs_step_enum;
 
-/* lcd size */
-typedef enum {
-	MMDVFS_LCD_SIZE_FHD, MMDVFS_LCD_SIZE_WQHD, MMDVFS_LCD_SIZE_END_OF_ENUM
-} mmdvfs_lcd_size_enum;
+
 
 static mmdvfs_context_struct g_mmdvfs_mgr_cntx;
 static mmdvfs_context_struct * const g_mmdvfs_mgr = &g_mmdvfs_mgr_cntx;
 
 static mmdvfs_lcd_size_enum mmdvfs_get_lcd_resolution(void)
 {
-	if (DISP_GetScreenWidth() * DISP_GetScreenHeight()
-	<= MMDVFS_DISPLAY_SIZE_FHD) {
-		return MMDVFS_LCD_SIZE_FHD;
-	}
+	int lcd_resolution = DISP_GetScreenWidth() * DISP_GetScreenHeight();
+	mmdvfs_lcd_size_enum result = MMDVFS_LCD_SIZE_HD;
 
-	return MMDVFS_LCD_SIZE_WQHD;
+	if (lcd_resolution <= MMDVFS_DISPLAY_SIZE_HD)
+		result = MMDVFS_LCD_SIZE_HD;
+	else if (lcd_resolution <= MMDVFS_DISPLAY_SIZE_FHD)
+		result = MMDVFS_LCD_SIZE_FHD;
+	else
+		result = MMDVFS_LCD_SIZE_WQHD;
+
+	return result;
 }
 
 static mmdvfs_voltage_enum mmdvfs_get_default_step(void)
@@ -337,14 +346,6 @@ static void mmdvfs_update_cmd(MTK_MMDVFS_CMD *cmd)
 	/* } */
 }
 
-/* static void mmdvfs_dump_info(void)
-{
-	MMDVFSMSG("CMD %d %d %d\n", g_mmdvfs_cmd.sensor_size,
-	g_mmdvfs_cmd.sensor_fps, g_mmdvfs_cmd.camera_mode);
-	MMDVFSMSG("INFO VR %d %d\n", g_mmdvfs_info->video_record_size[0],
-	g_mmdvfs_info->video_record_size[1]);
-}
-*/
 
 #ifdef MMDVFS_GPU_MONITOR_ENABLE
 static void mmdvfs_timer_callback(unsigned long data)
@@ -451,7 +452,7 @@ static void mmdvfs_start_cam_monitor(int scen, int delay_hz)
 	else
 			delayed_mmsys_state = current_mmsys_clk;
 
-	MMDVFSMSG("MMDVFS boost:%d\n", delay_hz);
+	/* MMDVFSMSG("MMDVFS boost:%d\n", delay_hz); */
 	mmdvfs_set_step_with_mmsys_clk(MMDVFS_CAM_MON_SCEN, MMDVFS_VOLTAGE_HIGH, delayed_mmsys_state);
 
 	schedule_delayed_work(&g_mmdvfs_cam_work, delay_hz * HZ);
@@ -524,6 +525,20 @@ static int get_venc_step(int venc_resolution)
 		venc_step = MMDVFS_VOLTAGE_HIGH;
 
 	return venc_step;
+}
+
+static int get_ext_disp_step(mmdvfs_lcd_size_enum lcd_size)
+{
+	int result = MMDVFS_VOLTAGE_HIGH;
+#ifdef MMDVFS_E1
+	if (lcd_size != MMDVFS_LCD_SIZE_WQHD)
+		result = MMDVFS_VOLTAGE_LOW;
+#else
+	if (lcd_size == MMDVFS_LCD_SIZE_HD)
+		result = MMDVFS_VOLTAGE_LOW;
+#endif /* MMDVFS_E1 */
+
+	return result;
 }
 
 /* If the query_cmd is null, we will not check the information of sensor size
@@ -856,11 +871,7 @@ void mmdvfs_notify_scenario_enter(MTK_SMI_BWC_SCEN scen)
 		break;
 	case SMI_BWC_SCEN_WFD:
 		g_mmdvfs_mgr->is_wfd_enable = 1;
-		#ifdef MMDVFS_E1
-		if (lcd_size_detected != MMDVFS_LCD_SIZE_WQHD)
-			break;
-		#endif /* MMDVFS_E1 */
-		mmdvfs_set_step(scen, MMDVFS_VOLTAGE_HIGH);
+		mmdvfs_set_step(scen, get_ext_disp_step(lcd_size_detected));
 		break;
 	case SMI_BWC_SCEN_VR:
 		{
@@ -916,13 +927,8 @@ void mmdvfs_mhl_enable(int enable)
 {
 	g_mmdvfs_mgr->is_mhl_enable = enable;
 
-	#ifdef MMDVFS_E1
-	if (mmdvfs_get_lcd_resolution() != MMDVFS_LCD_SIZE_WQHD)
-		return;
-	#endif
-
 	if (enable)
-		mmdvfs_set_step(MMDVFS_SCEN_MHL, MMDVFS_VOLTAGE_HIGH);
+		mmdvfs_set_step(MMDVFS_SCEN_MHL, get_ext_disp_step(mmdvfs_get_lcd_resolution()));
 	else
 		mmdvfs_set_step(MMDVFS_SCEN_MHL, MMDVFS_VOLTAGE_DEFAULT_STEP);
 }
@@ -994,12 +1000,11 @@ static int mmdfvs_adjust_mmsys_clk_by_hopping(int clk_mode)
 			MMDVFSMSG("Doesn't allow mmsys clk adjust from low to high!\n");
 	  } else if (!freq_hopping_disable && current_mmsys_clk != MMSYS_CLK_HIGH) {
 			#ifdef MMDVFS_E1
-				/* MMDVFSMSG("MMSYS_CLK_HIGH request failed: CLK swtich doesn't not support now\n"); */
-				MMDVFSMSG("IMGPLL Freq hopping: FH_PLL: %d, DSS: %d\n", FH_PLL6, 0x114EC5);
+				/* MMDVFSMSG("IMGPLL Freq hopping: FH_PLL: %d, DSS: %d\n", FH_PLL6, 0x114EC5); */
 				mt_dfs_general_pll(FH_PLL6, 0x114EC5); /* IMGPLL */
-				MMDVFSMSG("CODECPLL Freq hopping: FH_PLL: %d, DSS: %d\n", FH_PLL8, 0x130000);
+				/* MMDVFSMSG("CODECPLL Freq hopping: FH_PLL: %d, DSS: %d\n", FH_PLL8, 0x130000); */
 				mt_dfs_general_pll(FH_PLL8, 0x130000); /* CODECPLL */
-				MMDVFSMSG("VDECPLL Freq hopping: FH_PLL: %d, DSS: %d\n", FH_PLL0, 0x133B33);
+				/* MMDVFSMSG("VDECPLL Freq hopping: FH_PLL: %d, DSS: %d\n", FH_PLL0, 0x133B33); */
 				mt_dfs_general_pll(FH_PLL0, 0x133B33); /* VDECPLL */
 			#else
 				/* MMDVFSMSG("Freq hopping: DSS: %d\n", 0xE0000);*/
@@ -1019,13 +1024,11 @@ static int mmdfvs_adjust_mmsys_clk_by_hopping(int clk_mode)
 	} else if (clk_mode == MMSYS_CLK_MEDIUM) {
 		if (!freq_hopping_disable && current_mmsys_clk != MMSYS_CLK_MEDIUM) {
 			#ifdef MMDVFS_E1
-				/* MMDVFSMSG("MMSYS_CLK_MEDIUM request failed: CLK swtich doesn't
-				not support now\n"); */
-				MMDVFSMSG("VDECPLL Freq hopping: FH_PLL: %d, DSS: %d\n", FH_PLL0, 0xD0000);
+				/* MMDVFSMSG("VDECPLL Freq hopping: FH_PLL: %d, DSS: %d\n", FH_PLL0, 0xD0000); */
 				mt_dfs_general_pll(FH_PLL0, 0xD0000); /* VDECPLL */
-				MMDVFSMSG("CODECPLL Freq hopping: FH_PLL: %d, DSS: %d\n", FH_PLL8, 0xC8000);
+				/* MMDVFSMSG("CODECPLL Freq hopping: FH_PLL: %d, DSS: %d\n", FH_PLL8, 0xC8000); */
 				mt_dfs_general_pll(FH_PLL8, 0xC8000); /* CODECPLL */
-				MMDVFSMSG("IMGPLL Freq hopping: FH_PLL: %d, DSS: %d\n", FH_PLL6, 0xC8000);
+				/* MMDVFSMSG("IMGPLL Freq hopping: FH_PLL: %d, DSS: %d\n", FH_PLL6, 0xC8000); */
 				mt_dfs_general_pll(FH_PLL6, 0xC8000); /* IMGPLL */
 
 			#else
