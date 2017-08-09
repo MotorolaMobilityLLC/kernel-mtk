@@ -76,99 +76,96 @@ _lz4k_do_compress_zram(const unsigned char *in, size_t in_len,
 				if (m_pos < in || m_pos >= ip ||
 					((*(unsigned int *)m_pos << 8) !=
 					(ip_content & 0xffffff00))) {
-						++ip;
-						if (__builtin_expect(!!(ip >= ip_end), 0))
-							break;
-						continue;
+					++ip;
+					if (__builtin_expect(!!(ip >= ip_end), 0))
+						break;
+					continue;
 				}
 			}
 		}
 		hash = ((hash << 5) + hash) + (int)bits_buffer32;
 		{
-			size_t lit = ip - ii;
+		size_t lit = ip - ii;
 
-			if (lit > 0) {
-				if (lit == 1) {
+		if (lit <= 0) {
+			if (bitstobeoutput == 32) {
+				*((unsigned int *)op) = bits_buffer32;
+				op += 4;
+				bits_buffer32 = 1;
+				bitstobeoutput = 1;
+			} else {
+				bits_buffer32 |= 1 << bitstobeoutput;
+				bitstobeoutput += 1;
+			}
+		} else if (lit == 1) {
+			int value, bits, code;
+
+			RESERVE_16_BITS();
+			value = lz4k_literalch_encode[*ii++];
+			bits = value >> 9;
+			code = (value & 0x1ff) << 2;
+			STORE_BITS(bits + 2, code);
+		} else if (lit == 2) {
+			int value, bits, code;
+			int value2, bits2, code2;
+
+			RESERVE_16_BITS();
+			if (bitstobeoutput > (32 - 22)) {
+				*op++ = (unsigned char) (bits_buffer32 & 0xff);
+				bits_buffer32 = bits_buffer32 >> 8;
+				bitstobeoutput -= 8;
+			}
+			value = lz4k_literalch_encode[*ii++];
+			bits = value >> 9;
+			code = value & 0x1ff;
+			value2 = lz4k_literalch_encode[*ii++];
+			bits2 = value2 >> 9;
+			code2 = value2 & 0x1ff;
+			bits_buffer32 |=
+			((((code2 << bits) | code) << 4) | 2) << bitstobeoutput;
+			bitstobeoutput += bits2 + bits + 4;
+		} else {
+			if (lit <= 17) {
+				int value, bits, code;
+
+				RESERVE_16_BITS();
+				value = lz4k_literallen_encode[lit];
+				bits = value >> 7;
+				code = (value & 0x7f) << 1;
+				STORE_BITS(bits + 1, code);
+			} else {
+				int code = ((lit - 1) << 6) | 0x3e;
+
+				RESERVE_16_BITS();
+				if (bitstobeoutput > (32 - 18)) {
+					*op++ =
+					(unsigned char) (bits_buffer32 & 0xff);
+					bits_buffer32 = bits_buffer32 >> 8;
+					bitstobeoutput -= 8;
+				}
+				STORE_BITS(17 + 1, code);
+			}
+			while (1) {
+				while (bitstobeoutput < 24) {
 					int value, bits, code;
 
-					RESERVE_16_BITS();
-					value = lz4k_literalch_encode[*ii++];
-					bits = value >> 9;
-					code = (value & 0x1ff) << 2;
-					STORE_BITS(bits + 2, code);
-				} else if (lit == 2) {
-					int value, bits, code;
-					int value2, bits2, code2;
-
-					RESERVE_16_BITS();
-					if (bitstobeoutput > (32 - 22)) {
-						*op++ = (unsigned char) (bits_buffer32 & 0xff);
-						bits_buffer32 = bits_buffer32 >> 8;
-						bitstobeoutput -= 8;
-					}
 					value = lz4k_literalch_encode[*ii++];
 					bits = value >> 9;
 					code = value & 0x1ff;
-					value2 = lz4k_literalch_encode[*ii++];
-					bits2 = value2 >> 9;
-					code2 = value2 & 0x1ff;
-					bits_buffer32 |=
-					((((code2 << bits) | code) << 4) | 2) << bitstobeoutput;
-					bitstobeoutput += bits2 + bits + 4;
-				} else {
-					if (lit <= 17) {
-						int value, bits, code;
-
-						RESERVE_16_BITS();
-						value = lz4k_literallen_encode[lit];
-						bits = value >> 7;
-						code = (value & 0x7f) << 1;
-						STORE_BITS(bits + 1, code);
-					} else {
-						int code = ((lit - 1) << 6) | 0x3e;
-
-						RESERVE_16_BITS();
-						if (bitstobeoutput > (32 - 18)) {
-							*op++ =
-							(unsigned char) (bits_buffer32 & 0xff);
-							bits_buffer32 = bits_buffer32 >> 8;
-							bitstobeoutput -= 8;
-						}
-						STORE_BITS(17 + 1, code);
-					}
-					while (1) {
-						while (bitstobeoutput < 24) {
-							int value, bits, code;
-
-							value = lz4k_literalch_encode[*ii++];
-							bits = value >> 9;
-							code = value & 0x1ff;
-							STORE_BITS(bits, code);
-							if (__builtin_expect(!!(ii == ip), 0)) {
-								goto break_literal_1;
-							}
-						}
-						/* update hash */
-						hash += (int)bits_buffer32;
-						*((unsigned int *)op) = bits_buffer32;
-						op += 3;
-						bits_buffer32 = bits_buffer32 >> 24;
-						bitstobeoutput -= 24;
-					}
+					STORE_BITS(bits, code);
+					if (__builtin_expect(!!(ii == ip), 0))
+						goto break_literal_1;
 				}
 				/* update hash */
 				hash += (int)bits_buffer32;
-			} else {
-				if (bitstobeoutput == 32) {
-					*((unsigned int *)op) = bits_buffer32;
-					op += 4;
-					bits_buffer32 = 1;
-					bitstobeoutput = 1;
-				} else {
-					bits_buffer32 |= 1 << bitstobeoutput;
-					bitstobeoutput += 1;
-				}
+				*((unsigned int *)op) = bits_buffer32;
+				op += 3;
+				bits_buffer32 = bits_buffer32 >> 24;
+				bitstobeoutput -= 24;
 			}
+		}
+		/* update hash */
+		hash += (int)bits_buffer32;
 		}
 
 break_literal_1:
@@ -350,74 +347,7 @@ _lz4k_do_compress(const unsigned char *in, size_t in_len,
 		{
 		size_t lit = ip - ii;
 
-		if (lit > 0) {
-			if (lit == 1) {
-				int value, bits, code;
-
-				RESERVE_16_BITS();
-				value = lz4k_literalch_encode[*ii++];
-				bits = value >> 9;
-				code = (value & 0x1ff) << 2;
-				STORE_BITS(bits + 2, code);
-			} else if (lit == 2) {
-				int value, bits, code;
-				int value2, bits2, code2;
-
-				RESERVE_16_BITS();
-				if (bitstobeoutput > (32 - 22)) {
-					*op++ = (unsigned char)(bits_buffer32 & 0xff);
-					bits_buffer32 = bits_buffer32 >> 8;
-					bitstobeoutput -= 8;
-				}
-				value = lz4k_literalch_encode[*ii++];
-				bits = value >> 9;
-				code = value & 0x1ff;
-				value2 = lz4k_literalch_encode[*ii++];
-				bits2 = value2 >> 9;
-				code2 = value2 & 0x1ff;
-				bits_buffer32 |=
-				    ((((code2 << bits) | code) << 4) | 2) << bitstobeoutput;
-				bitstobeoutput += bits2 + bits + 4;
-			} else {
-				if (lit <= 17) {
-					int value, bits, code;
-
-					RESERVE_16_BITS();
-					value = lz4k_literallen_encode[lit];
-					bits = value >> 7;
-					code = (value & 0x7f) << 1;
-					STORE_BITS(bits + 1, code);
-				} else {
-					int code = ((lit - 1) << 6) | 0x3e;
-
-					RESERVE_16_BITS();
-					if (bitstobeoutput > (32 - 18)) {
-						*op++ =
-						    (unsigned char)(bits_buffer32 & 0xff);
-						bits_buffer32 = bits_buffer32 >> 8;
-						bitstobeoutput -= 8;
-					}
-					STORE_BITS(17 + 1, code);
-				}
-
-				while (1) {
-					while (bitstobeoutput < 24) {
-						int value, bits, code;
-
-						value = lz4k_literalch_encode[*ii++];
-						bits = value >> 9;
-						code = value & 0x1ff;
-						STORE_BITS(bits, code);
-					if (__builtin_expect(!!(ii == ip), 0))
-						goto break_literal_1;
-					}
-					*((unsigned int *)op) = bits_buffer32;
-					op += 3;
-					bits_buffer32 = bits_buffer32 >> 24;
-					bitstobeoutput -= 24;
-				}
-			}
-		} else {
+		if (lit <= 0) {
 			if (bitstobeoutput == 32) {
 				*((unsigned int *)op) = bits_buffer32;
 				op += 4;
@@ -427,10 +357,75 @@ _lz4k_do_compress(const unsigned char *in, size_t in_len,
 				bits_buffer32 |= 1 << bitstobeoutput;
 				bitstobeoutput += 1;
 			}
+		} else if (lit == 1) {
+			int value, bits, code;
+
+			RESERVE_16_BITS();
+			value = lz4k_literalch_encode[*ii++];
+			bits = value >> 9;
+			code = (value & 0x1ff) << 2;
+			STORE_BITS(bits + 2, code);
+		} else if (lit == 2) {
+			int value, bits, code;
+			int value2, bits2, code2;
+
+			RESERVE_16_BITS();
+			if (bitstobeoutput > (32 - 22)) {
+				*op++ = (unsigned char)(bits_buffer32 & 0xff);
+				bits_buffer32 = bits_buffer32 >> 8;
+				bitstobeoutput -= 8;
+			}
+			value = lz4k_literalch_encode[*ii++];
+			bits = value >> 9;
+			code = value & 0x1ff;
+			value2 = lz4k_literalch_encode[*ii++];
+			bits2 = value2 >> 9;
+			code2 = value2 & 0x1ff;
+			bits_buffer32 |=
+			    ((((code2 << bits) | code) << 4) | 2) << bitstobeoutput;
+			bitstobeoutput += bits2 + bits + 4;
+		} else {
+			if (lit <= 17) {
+				int value, bits, code;
+
+				RESERVE_16_BITS();
+				value = lz4k_literallen_encode[lit];
+				bits = value >> 7;
+				code = (value & 0x7f) << 1;
+				STORE_BITS(bits + 1, code);
+			} else {
+				int code = ((lit - 1) << 6) | 0x3e;
+
+				RESERVE_16_BITS();
+				if (bitstobeoutput > (32 - 18)) {
+					*op++ =
+					    (unsigned char)(bits_buffer32 & 0xff);
+					bits_buffer32 = bits_buffer32 >> 8;
+					bitstobeoutput -= 8;
+				}
+				STORE_BITS(17 + 1, code);
+			}
+
+			while (1) {
+				while (bitstobeoutput < 24) {
+					int value, bits, code;
+
+					value = lz4k_literalch_encode[*ii++];
+					bits = value >> 9;
+					code = value & 0x1ff;
+					STORE_BITS(bits, code);
+					if (__builtin_expect(!!(ii == ip), 0))
+						goto break_literal_1;
+				}
+				*((unsigned int *)op) = bits_buffer32;
+				op += 3;
+				bits_buffer32 = bits_buffer32 >> 24;
+				bitstobeoutput -= 24;
+			}
 		}
 		}
 
- break_literal_1:
+break_literal_1:
 
 		m_pos += 3;
 		ip += 3;
@@ -538,7 +533,7 @@ _lz4k_do_compress(const unsigned char *in, size_t in_len,
 		}
 	}
 
- break_literal_2:
+break_literal_2:
 	while (bitstobeoutput >= 8) {
 		*op++ = (unsigned char)(bits_buffer32 & 0xff);
 		bits_buffer32 = bits_buffer32 >> 8;
