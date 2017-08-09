@@ -290,7 +290,7 @@ static void disp_pwm_log(int level_1024, int log_type)
 {
 	int i;
 	struct timeval pwm_time;
-	char buffer[512] = "";
+	char buffer[256] = "";
 
 	do_gettimeofday(&pwm_time);
 	g_pwm_log_buffer[g_pwm_log_index].value = level_1024;
