@@ -754,6 +754,7 @@ static long MMProfileLogMetaInt(MMP_Event event, MMP_LogType type, MMP_MetaData_
 				long bFromUser)
 {
 	unsigned long retn;
+	void __user *pData;
 
 	if (!MMProfileGlobals.enable)
 		return 0;
@@ -826,6 +827,7 @@ static long MMProfileLogMetaInt(MMP_Event event, MMP_LogType type, MMP_MetaData_
 		MMProfile_MetaDataCookie++;
 		if (MMProfile_MetaDataCookie == 0)
 			MMProfile_MetaDataCookie++;
+		pData = (void __user *)(pMetaData->pData);
 		if (((unsigned long)(pNode->meta_data) + pMetaData->size) >
 		    ((unsigned long)pMMProfileMetaBuffer + MMProfileGlobals.meta_buffer_size)) {
 			unsigned long left_size =
@@ -833,25 +835,25 @@ static long MMProfileLogMetaInt(MMP_Event event, MMP_LogType type, MMP_MetaData_
 			    MMProfileGlobals.meta_buffer_size - (unsigned long)(pNode->meta_data);
 			if (bFromUser) {
 				retn =
-				    copy_from_user(pNode->meta_data, pMetaData->pData, left_size);
+				    copy_from_user(pNode->meta_data, pData, left_size);
 				retn =
 				    copy_from_user(pMMProfileMetaBuffer,
-						   (void *)((unsigned long)(pMetaData->pData) +
+						   (void *)((unsigned long)pData +
 							    left_size),
 						   pMetaData->size - left_size);
 			} else {
-				memcpy(pNode->meta_data, pMetaData->pData, left_size);
+				memcpy(pNode->meta_data, pData, left_size);
 				memcpy(pMMProfileMetaBuffer,
-				       (void *)((unsigned long)(pMetaData->pData) + left_size),
+				       (void *)((unsigned long)pData + left_size),
 				       pMetaData->size - left_size);
 			}
 		} else {
 			if (bFromUser)
 				retn =
-				    copy_from_user(pNode->meta_data, pMetaData->pData,
+				    copy_from_user(pNode->meta_data, pData,
 						   pMetaData->size);
 			else
-				memcpy(pNode->meta_data, pMetaData->pData, pMetaData->size);
+				memcpy(pNode->meta_data, pData, pMetaData->size);
 		}
 		mutex_unlock(&MMProfile_MetaBufferMutex);
 	}
