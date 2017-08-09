@@ -273,10 +273,10 @@ int hw_charging_get_charger_type(void)
 		/********* Step A1 ***************/
 		if (1 == hw_bc11_stepA1()) {
 			CHR_Type_num = APPLE_2_1A_CHARGER;
-			battery_log(1, "step A1 : Apple 2.1A CHARGER!\r\n");
+			/*battery_log(1, "step A1 : Apple 2.1A CHARGER!\r\n");*/
 		} else {
 			CHR_Type_num = NONSTANDARD_CHARGER;
-			battery_log(1, "step A1 : Non STANDARD CHARGER!\r\n");
+			/*battery_log(1, "step A1 : Non STANDARD CHARGER!\r\n");*/
 		}
 	} else {
 	/********* Step A2 ***************/
@@ -285,14 +285,14 @@ int hw_charging_get_charger_type(void)
 			if (1 == hw_bc11_stepB2()) {
 				is_dcp_type = true;
 				CHR_Type_num = STANDARD_CHARGER;
-				battery_log(1, "step B2 : STANDARD CHARGER!\r\n");
+				/*battery_log(1, "step B2 : STANDARD CHARGER!\r\n");*/
 			} else {
 				CHR_Type_num = CHARGING_HOST;
-				battery_log(1, "step B2 :  Charging Host!\r\n");
+				/*battery_log(1, "step B2 :  Charging Host!\r\n");*/
 			}
 		} else {
 			CHR_Type_num = STANDARD_HOST;
-			battery_log(1, "step A2 : Standard USB Host!\r\n");
+			/*battery_log(1, "step A2 : Standard USB Host!\r\n");*/
 		}
 
 	}
