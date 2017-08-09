@@ -1,0 +1,1309 @@
+!_TAG_FILE_FORMAT	2	/extended format; --format=1 will not append ;" to lines/
+!_TAG_FILE_SORTED	1	/0=unsorted, 1=sorted, 2=foldcase/
+!_TAG_PROGRAM_AUTHOR	Darren Hiebert	/dhiebert@users.sourceforge.net/
+!_TAG_PROGRAM_NAME	Exuberant Ctags	//
+!_TAG_PROGRAM_URL	http://ctags.sourceforge.net	/official site/
+!_TAG_PROGRAM_VERSION	5.9~svn20110310	//
+ARGS_BLOCK_SIZE	TEEI.h	5;"	d
+ARGS_BLOCK_SIZE	socketFun.c	43;"	d	file:
+Asm	socketFun.c	50;"	d	file:
+BDRV_CALL	switch_queue.c	15;"	d	file:
+BDRV_CALL	teei_client_main.c	175;"	d	file:
+BDRV_CALL	tz_service.c	86;"	d	file:
+BDRV_CALL	utdriver_macro.h	56;"	d
+BDRV_IRQ	teei_client_main.c	106;"	d	file:
+BDRV_IRQ	utdriver_irq.h	6;"	d
+BLOCK_MAX_COUNT	teei_client_main.c	267;"	d	file:
+BLOCK_MAX_COUNT	tz_service.c	109;"	d	file:
+BLOCK_MAX_COUNT	utdriver_macro.h	40;"	d
+BOOT_IRQ	teei_client_main.c	102;"	d	file:
+BOOT_IRQ	utdriver_irq.h	2;"	d
+CALL_TRUSTZONE_API	smc_id.h	7;"	d
+CAPI_CALL	switch_queue.c	13;"	d	file:
+CAPI_CALL	teei_client_main.c	173;"	d	file:
+CAPI_CALL	tz_service.c	84;"	d	file:
+CAPI_CALL	utdriver_macro.h	54;"	d
+CTL_BUFF_SIZE	teei_client_main.c	55;"	d	file:
+CTL_BUFF_SIZE	tz_service.c	31;"	d	file:
+CTL_BUFF_SIZE	utdriver_macro.h	45;"	d
+Cache_line_size	teei_id.h	71;"	d
+D	teei_tee_client_api.h	18;"	d
+END_STATUS	teei_client_main.c	274;"	d	file:
+END_STATUS	tz_service.c	80;"	d	file:
+END_STATUS	utdriver_macro.h	4;"	d
+FAST_ACK_CREAT_FDRV	tz_service.c	58;"	d	file:
+FAST_ACK_CREAT_FDRV	utdriver_macro.h	23;"	d
+FAST_ACK_CREAT_NQ	teei_client_main.c	74;"	d	file:
+FAST_ACK_CREAT_NQ	tz_service.c	52;"	d	file:
+FAST_ACK_CREAT_NQ	utdriver_macro.h	17;"	d
+FAST_ACK_CREAT_SYS_CTL	teei_client_main.c	78;"	d	file:
+FAST_ACK_CREAT_SYS_CTL	tz_service.c	56;"	d	file:
+FAST_ACK_CREAT_SYS_CTL	utdriver_macro.h	21;"	d
+FAST_ACK_CREAT_VDRV	teei_client_main.c	76;"	d	file:
+FAST_ACK_CREAT_VDRV	tz_service.c	54;"	d	file:
+FAST_ACK_CREAT_VDRV	utdriver_macro.h	19;"	d
+FAST_CALL_TYPE	teei_client_main.c	69;"	d	file:
+FAST_CALL_TYPE	tz_service.c	47;"	d	file:
+FAST_CALL_TYPE	utdriver_macro.h	7;"	d
+FAST_CREAT_FDRV	tz_service.c	57;"	d	file:
+FAST_CREAT_FDRV	utdriver_macro.h	22;"	d
+FAST_CREAT_NQ	teei_client_main.c	73;"	d	file:
+FAST_CREAT_NQ	tz_service.c	51;"	d	file:
+FAST_CREAT_NQ	utdriver_macro.h	16;"	d
+FAST_CREAT_SYS_CTL	teei_client_main.c	77;"	d	file:
+FAST_CREAT_SYS_CTL	tz_service.c	55;"	d	file:
+FAST_CREAT_SYS_CTL	utdriver_macro.h	20;"	d
+FAST_CREAT_VDRV	teei_client_main.c	75;"	d	file:
+FAST_CREAT_VDRV	tz_service.c	53;"	d	file:
+FAST_CREAT_VDRV	utdriver_macro.h	18;"	d
+FDRV_ACK_TYPE	teei_client_main.c	83;"	d	file:
+FDRV_ACK_TYPE	tz_service.c	63;"	d	file:
+FDRV_ACK_TYPE	utdriver_macro.h	28;"	d
+FDRV_CALL	switch_queue.c	14;"	d	file:
+FDRV_CALL	teei_client_main.c	174;"	d	file:
+FDRV_CALL	tz_service.c	85;"	d	file:
+FDRV_CALL	utdriver_macro.h	55;"	d
+FP_ACK_IRQ	teei_client_main.c	105;"	d	file:
+FP_ACK_IRQ	utdriver_irq.h	5;"	d
+FP_BUFF_SIZE	teei_client_main.c	276;"	d	file:
+FP_BUFF_SIZE	tz_service.c	76;"	d	file:
+FP_BUFF_SIZE	utdriver_macro.h	43;"	d
+FP_SYS_NO	switch_queue.c	18;"	d	file:
+FP_SYS_NO	teei_client_main.c	178;"	d	file:
+FP_SYS_NO	tz_service.c	77;"	d	file:
+FP_SYS_NO	tz_service.c	89;"	d	file:
+FP_SYS_NO	utdriver_macro.h	42;"	d
+FUCTION_close	socketFun.c	/^	FUCTION_close =                 0x20,$/;"	e	enum:__anon4	file:
+FUCTION_close	tz_service.c	/^	FUCTION_close =			0x20,$/;"	e	enum:__anon2	file:
+FUCTION_connect	socketFun.c	/^	FUCTION_connect =               0x04,$/;"	e	enum:__anon4	file:
+FUCTION_connect	tz_service.c	/^	FUCTION_connect =		0x04,$/;"	e	enum:__anon2	file:
+FUCTION_recv	socketFun.c	/^	FUCTION_recv =                  0x0C,$/;"	e	enum:__anon4	file:
+FUCTION_recv	tz_service.c	/^	FUCTION_recv =			0x0C,$/;"	e	enum:__anon2	file:
+FUCTION_send	socketFun.c	/^	FUCTION_send  =                 0x08,$/;"	e	enum:__anon4	file:
+FUCTION_send	tz_service.c	/^	FUCTION_send  =			0x08,$/;"	e	enum:__anon2	file:
+FUCTION_socket	socketFun.c	/^	FUCTION_socket =                0x0,$/;"	e	enum:__anon4	file:
+FUCTION_socket	tz_service.c	/^	FUCTION_socket =		0x0,$/;"	e	enum:__anon2	file:
+FUNCTION_setsockopt	socketFun.c	/^	FUNCTION_setsockopt =           0x24,$/;"	e	enum:__anon4	file:
+F_CREATE_CTL_ID	teei_client_main.c	62;"	d	file:
+F_CREATE_CTL_ID	tz_service.c	40;"	d	file:
+F_CREATE_NQ_ID	teei_client_main.c	61;"	d	file:
+F_CREATE_NQ_ID	tz_service.c	39;"	d	file:
+F_CREATE_VDRV_ID	teei_client_main.c	63;"	d	file:
+F_CREATE_VDRV_ID	tz_service.c	41;"	d	file:
+Flush_Dcache_By_Area	teei_id.h	/^static inline void Flush_Dcache_By_Area(unsigned long start, unsigned long end)$/;"	f
+GLSCH_FOR_SOTER	sched_status.h	5;"	d
+GLSCH_FOR_SOTER	teei_client_main.c	100;"	d	file:
+GLSCH_HIGH	sched_status.h	3;"	d
+GLSCH_HIGH	teei_client_main.c	99;"	d	file:
+GLSCH_HIGH	tz_service.c	119;"	d	file:
+GLSCH_LOW	sched_status.h	2;"	d
+GLSCH_LOW	teei_client_main.c	98;"	d	file:
+GLSCH_LOW	tz_service.c	118;"	d	file:
+GLSCH_NEG	sched_status.h	4;"	d
+GLSCH_NEG	teei_client_main.c	96;"	d	file:
+GLSCH_NEG	tz_service.c	116;"	d	file:
+GLSCH_NONE	sched_status.h	1;"	d
+GLSCH_NONE	teei_client_main.c	97;"	d	file:
+GLSCH_NONE	tz_service.c	117;"	d	file:
+I	teei_tee_client_api.h	22;"	d
+ID_FIELD_F_FAST_SMC_CALL	nt_smc_call.h	14;"	d
+ID_FIELD_F_STANDARD_SMC_CALL	nt_smc_call.h	15;"	d
+ID_FIELD_T_ARM_SERVICE	nt_smc_call.h	18;"	d
+ID_FIELD_T_CPU_SERVICE	nt_smc_call.h	19;"	d
+ID_FIELD_T_OEM_SERVICE	nt_smc_call.h	21;"	d
+ID_FIELD_T_SIP_SERVICE	nt_smc_call.h	20;"	d
+ID_FIELD_T_STANDARD_SERVICE	nt_smc_call.h	22;"	d
+ID_FIELD_T_TA_SERVICE0	nt_smc_call.h	25;"	d
+ID_FIELD_T_TA_SERVICE1	nt_smc_call.h	26;"	d
+ID_FIELD_T_TRUSTED_OS_SERVICE0	nt_smc_call.h	28;"	d
+ID_FIELD_T_TRUSTED_OS_SERVICE1	nt_smc_call.h	29;"	d
+ID_FIELD_T_TRUSTED_OS_SERVICE2	nt_smc_call.h	31;"	d
+ID_FIELD_T_TRUSTED_OS_SERVICE3	nt_smc_call.h	32;"	d
+ID_FIELD_W_32	nt_smc_call.h	17;"	d
+ID_FIELD_W_64	nt_smc_call.h	16;"	d
+INIT_HEAD	teei_list.h	15;"	d
+INIT_LIST_HEAD	teei_list.h	17;"	d
+INVALID_TYPE	teei_client_main.c	67;"	d	file:
+INVALID_TYPE	tz_service.c	45;"	d	file:
+INVALID_TYPE	utdriver_macro.h	33;"	d
+Invalidate_Dcache_By_Area	teei_id.h	/^static inline void Invalidate_Dcache_By_Area(unsigned long start, unsigned long end)$/;"	f
+LIST_HEAD	teei_list.h	16;"	d
+LIST_POISON_NEXT	teei_list.h	6;"	d
+LIST_POISON_PREV	teei_list.h	5;"	d
+MAKE_SMC_CALL_ID	nt_smc_call.h	34;"	d
+MAX_BUFF_SIZE	teei_client_main.c	53;"	d	file:
+MAX_BUFF_SIZE	tz_service.c	29;"	d	file:
+MAX_BUFF_SIZE	utdriver_macro.h	30;"	d
+MAX_MEMBLOCKS_PER_OPERATION	teei_tee_client_api.h	8;"	d
+MAX_MEMBLOCKS_PER_SESSION	teei_tee_client_api.h	7;"	d
+MAX_OPERATIONS_PER_SESSION	teei_tee_client_api.h	6;"	d
+MAX_SESSIONS_PER_DEVICE	teei_tee_client_api.h	5;"	d
+MESSAGE_LENGTH	tz_service.c	34;"	d	file:
+MESSAGE_LENGTH	utdriver_macro.h	51;"	d
+MESSAGE_SIZE	teei_client_main.c	65;"	d	file:
+MESSAGE_SIZE	tz_service.c	43;"	d	file:
+MESSAGE_SIZE	utdriver_macro.h	35;"	d
+MESSAGE_SIZE	utdriver_macro.h	52;"	d
+Max_count	teei_client_main.c	/^	unsigned int Max_count;$/;"	m	struct:NQ_head	file:
+Max_count	tz_service.c	/^	unsigned int Max_count;$/;"	m	struct:NQ_head	file:
+NQ_BLOCK_SIZE	teei_client_main.c	266;"	d	file:
+NQ_BLOCK_SIZE	tz_service.c	108;"	d	file:
+NQ_BLOCK_SIZE	utdriver_macro.h	39;"	d
+NQ_BUFF_SIZE	teei_client_main.c	265;"	d	file:
+NQ_BUFF_SIZE	tz_service.c	107;"	d	file:
+NQ_BUFF_SIZE	utdriver_macro.h	38;"	d
+NQ_CALL_TYPE	teei_client_main.c	80;"	d	file:
+NQ_CALL_TYPE	tz_service.c	60;"	d	file:
+NQ_CALL_TYPE	utdriver_macro.h	25;"	d
+NQ_SIZE	teei_client_main.c	54;"	d	file:
+NQ_SIZE	tz_service.c	30;"	d	file:
+NQ_SIZE	utdriver_macro.h	37;"	d
+NQ_VALID	teei_client_main.c	57;"	d	file:
+NQ_VALID	tz_service.c	35;"	d	file:
+NQ_VALID	utdriver_macro.h	47;"	d
+NQ_entry	teei_client_main.c	/^struct NQ_entry {$/;"	s	file:
+NQ_entry	tz_service.c	/^struct NQ_entry {$/;"	s	file:
+NQ_head	teei_client_main.c	/^struct NQ_head {$/;"	s	file:
+NQ_head	tz_service.c	/^struct NQ_head {$/;"	s	file:
+NQ_init	tz_service.c	/^void NQ_init(unsigned long NQ_buff)$/;"	f
+NT_DUMP_STATE	nt_smc_call.h	99;"	d
+NT_SCHED_T	nt_smc_call.h	111;"	d
+NT_SCHED_T_FIQ	nt_smc_call.h	127;"	d
+NT_SMC_SWITCH	socketFun.c	46;"	d	file:
+NT_SMC_SWITCH_FIRST	socketFun.c	48;"	d	file:
+NT_SMC_SWITCH_SECOND	socketFun.c	49;"	d	file:
+N_ACK_T_BACKSTAGE	nt_smc_call.h	103;"	d
+N_ACK_T_FOREGROUND	nt_smc_call.h	101;"	d
+N_ACK_T_INVOKE_DRV	nt_smc_call.h	121;"	d
+N_ACK_T_LOAD_IMG	nt_smc_call.h	125;"	d
+N_CPU_CBOOT	nt_smc_call.h	85;"	d
+N_CPU_OFF	nt_smc_call.h	91;"	d
+N_CPU_ON	nt_smc_call.h	89;"	d
+N_CPU_SUSPEND	nt_smc_call.h	87;"	d
+N_GET_PARAM_IN	nt_smc_call.h	93;"	d
+N_INIT_T_BOOT_STAGE1	nt_smc_call.h	105;"	d
+N_INIT_T_FC_BUF	nt_smc_call.h	95;"	d
+N_INVOKE_T_DRV	nt_smc_call.h	117;"	d
+N_INVOKE_T_FAST_CALL	nt_smc_call.h	97;"	d
+N_INVOKE_T_LOAD_TEE	nt_smc_call.h	123;"	d
+N_INVOKE_T_NQ	nt_smc_call.h	115;"	d
+N_INVOKE_T_SYS_CTL	nt_smc_call.h	113;"	d
+N_RAISE_T_EVENT	nt_smc_call.h	119;"	d
+N_SWITCH_CORE	nt_smc_call.h	107;"	d
+N_SWITCH_TO_T_OS_STAGE2	nt_smc_call.h	83;"	d
+PAGE_SIZE	tz_service.c	554;"	d	file:
+REETIME_SYS_NO	switch_queue.c	21;"	d	file:
+REETIME_SYS_NO	teei_client_main.c	181;"	d	file:
+REETIME_SYS_NO	tz_service.c	92;"	d	file:
+REETIME_SYS_NO	utdriver_macro.h	60;"	d
+ROUND_UP	teei_id.h	69;"	d
+SCHD_CALL_TYPE	teei_client_main.c	82;"	d	file:
+SCHD_CALL_TYPE	tz_service.c	62;"	d	file:
+SCHD_CALL_TYPE	utdriver_macro.h	27;"	d
+SCHED_CALL	switch_queue.c	16;"	d	file:
+SCHED_CALL	teei_client_main.c	176;"	d	file:
+SCHED_CALL	tz_service.c	87;"	d	file:
+SCHED_CALL	utdriver_macro.h	57;"	d
+SCHED_IRQ	teei_client_main.c	103;"	d	file:
+SCHED_IRQ	utdriver_irq.h	3;"	d
+SET_BUFFER_BASE	socketFun.c	/^	SET_BUFFER_BASE             =   0xF0,$/;"	e	enum:__anon4	file:
+SET_BUFFER_BASE	tz_service.c	/^	SET_BUFFER_BASE	=		0xF0,$/;"	e	enum:__anon2	file:
+SET_PARAM_BASE	socketFun.c	/^	SET_PARAM_BASE             =    0xF4,$/;"	e	enum:__anon4	file:
+SET_PARAM_BASE	tz_service.c	/^	SET_PARAM_BASE =		0xF4,$/;"	e	enum:__anon2	file:
+SHMEM_DISABLE	tz_service.c	262;"	d	file:
+SHMEM_DISABLE	utdriver_macro.h	12;"	d
+SHMEM_ENABLE	tz_service.c	261;"	d	file:
+SHMEM_ENABLE	utdriver_macro.h	11;"	d
+SMC_CACHE_CTRL	smc_id.h	33;"	d
+SMC_CALL_H_	nt_smc_call.h	11;"	d
+SMC_CALL_RTC_MONITOR_NOT_READY	nt_smc_call.h	38;"	d
+SMC_CALL_RTC_OK	nt_smc_call.h	36;"	d
+SMC_CALL_RTC_UNKNOWN_FUN	nt_smc_call.h	37;"	d
+SMC_CMD_C15RESUME	smc_id.h	17;"	d
+SMC_CMD_CPU0AFTR	smc_id.h	15;"	d
+SMC_CMD_CPU1BOOT	smc_id.h	14;"	d
+SMC_CMD_CPU1BOOT	smc_id.h	37;"	d
+SMC_CMD_INFO	smc_id.h	11;"	d
+SMC_CMD_INIT	smc_id.h	10;"	d
+SMC_CMD_INIT_SECURE_WINDOW	smc_id.h	28;"	d
+SMC_CMD_L2X0CLEANALL	smc_id.h	25;"	d
+SMC_CMD_L2X0CTRL	smc_id.h	19;"	d
+SMC_CMD_L2X0DEBUG	smc_id.h	23;"	d
+SMC_CMD_L2X0FLUSHALL	smc_id.h	24;"	d
+SMC_CMD_L2X0FLUSHRANGE	smc_id.h	26;"	d
+SMC_CMD_L2X0INVALL	smc_id.h	22;"	d
+SMC_CMD_L2X0SETUP1	smc_id.h	20;"	d
+SMC_CMD_L2X0SETUP2	smc_id.h	21;"	d
+SMC_CMD_SECURE_READ	smc_id.h	38;"	d
+SMC_CMD_SECURE_WRITE	smc_id.h	39;"	d
+SMC_CMD_SLEEP	smc_id.h	13;"	d
+SMC_CP15_AUX_CTRL	smc_id.h	31;"	d
+SMC_CP15_L2_PREFETCH	smc_id.h	32;"	d
+SMC_CP15_REG	smc_id.h	30;"	d
+SMC_EINVAL_ADDR	teei_id.h	8;"	d
+SMC_EINVAL_ARG	teei_id.h	9;"	d
+SMC_ENOMEM	teei_id.h	6;"	d
+SMC_EOPNOTSUPP	teei_id.h	7;"	d
+SMC_ERROR	teei_id.h	10;"	d
+SMC_INTERRUPTED	teei_id.h	11;"	d
+SMC_PENDING	teei_id.h	12;"	d
+SMC_SUCCESS	teei_id.h	13;"	d
+SOCKET_BASE	socketFun.c	52;"	d	file:
+SOCKET_BASE	tz_service.c	553;"	d	file:
+SOTER_ERROR_IRQ	teei_client_main.c	108;"	d	file:
+SOTER_ERROR_IRQ	utdriver_irq.h	8;"	d
+SOTER_IRQ	teei_client_main.c	104;"	d	file:
+SOTER_IRQ	utdriver_irq.h	4;"	d
+STANDARD_CALL_TYPE	teei_client_main.c	70;"	d	file:
+STANDARD_CALL_TYPE	tz_service.c	48;"	d	file:
+STANDARD_CALL_TYPE	utdriver_macro.h	8;"	d
+START_STATUS	teei_client_main.c	273;"	d	file:
+START_STATUS	tz_service.c	79;"	d	file:
+START_STATUS	utdriver_macro.h	3;"	d
+STD_ACK_CLOSE_CONTEXT	teei_client_main.c	94;"	d	file:
+STD_ACK_CLOSE_CONTEXT	tz_service.c	74;"	d	file:
+STD_ACK_CLOSE_SESSION	teei_client_main.c	92;"	d	file:
+STD_ACK_CLOSE_SESSION	tz_service.c	72;"	d	file:
+STD_ACK_INIT_CONTEXT	teei_client_main.c	86;"	d	file:
+STD_ACK_INIT_CONTEXT	tz_service.c	66;"	d	file:
+STD_ACK_INVOKE_CMD	teei_client_main.c	90;"	d	file:
+STD_ACK_INVOKE_CMD	tz_service.c	70;"	d	file:
+STD_ACK_OPEN_SESSION	teei_client_main.c	88;"	d	file:
+STD_ACK_OPEN_SESSION	tz_service.c	68;"	d	file:
+STD_CLOSE_CONTEXT	teei_client_main.c	93;"	d	file:
+STD_CLOSE_CONTEXT	tz_service.c	73;"	d	file:
+STD_CLOSE_SESSION	teei_client_main.c	91;"	d	file:
+STD_CLOSE_SESSION	tz_service.c	71;"	d	file:
+STD_INIT_CONTEXT	teei_client_main.c	85;"	d	file:
+STD_INIT_CONTEXT	tz_service.c	65;"	d	file:
+STD_INVOKE_CMD	teei_client_main.c	89;"	d	file:
+STD_INVOKE_CMD	tz_service.c	69;"	d	file:
+STD_NQ_ACK_ID	teei_client_main.c	270;"	d	file:
+STD_NQ_ACK_ID	tz_service.c	112;"	d	file:
+STD_OPEN_SESSION	teei_client_main.c	87;"	d	file:
+STD_OPEN_SESSION	tz_service.c	67;"	d	file:
+SWITCH_IRQ	tz_service.c	37;"	d	file:
+SWITCH_IRQ	utdriver_irq.h	1;"	d
+SW_COMMON_TYPES_H	teei_common_types.h	3;"	d
+TDEBUG	teei_debug.h	17;"	d
+TDEBUG	teei_debug.h	19;"	d
+TDEBUG	teei_debug.h	7;"	d
+TEEC_Context	teei_tee_client_api.h	/^struct TEEC_Context {$/;"	s
+TEEC_ERROR_ACCESS_CONFLICT	teei_tee_api.h	/^	TEEC_ERROR_ACCESS_CONFLICT = 0xFFFF0003 ,$/;"	e	enum:TEEC_Result
+TEEC_ERROR_ACCESS_DENIED	teei_tee_api.h	/^	TEEC_ERROR_ACCESS_DENIED = 0xFFFF0001 ,$/;"	e	enum:TEEC_Result
+TEEC_ERROR_BAD_FORMAT	teei_tee_api.h	/^	TEEC_ERROR_BAD_FORMAT = 0xFFFF0005 ,$/;"	e	enum:TEEC_Result
+TEEC_ERROR_BAD_PARAMETERS	teei_tee_api.h	/^	TEEC_ERROR_BAD_PARAMETERS = 0xFFFF0006 ,$/;"	e	enum:TEEC_Result
+TEEC_ERROR_BAD_STATE	teei_tee_api.h	/^	TEEC_ERROR_BAD_STATE = 0xFFFF0007,$/;"	e	enum:TEEC_Result
+TEEC_ERROR_BUSY	teei_tee_api.h	/^	TEEC_ERROR_BUSY = 0xFFFF000D,$/;"	e	enum:TEEC_Result
+TEEC_ERROR_CANCEL	teei_tee_api.h	/^	TEEC_ERROR_CANCEL = 0xFFFF0002 ,$/;"	e	enum:TEEC_Result
+TEEC_ERROR_COMMUNICATION	teei_tee_api.h	/^	TEEC_ERROR_COMMUNICATION = 0xFFFF000E,$/;"	e	enum:TEEC_Result
+TEEC_ERROR_EXCESS_DATA	teei_tee_api.h	/^	TEEC_ERROR_EXCESS_DATA = 0xFFFF0004 ,$/;"	e	enum:TEEC_Result
+TEEC_ERROR_GENERIC	teei_tee_api.h	/^	TEEC_ERROR_GENERIC = 0xFFFF0000,$/;"	e	enum:TEEC_Result
+TEEC_ERROR_ITEM_NOT_FOUND	teei_tee_api.h	/^	TEEC_ERROR_ITEM_NOT_FOUND = 0xFFFF0008,$/;"	e	enum:TEEC_Result
+TEEC_ERROR_MAC_INVALID	teei_tee_api.h	/^	TEEC_ERROR_MAC_INVALID = 0xFFFF3071,$/;"	e	enum:TEEC_Result
+TEEC_ERROR_NOT_IMPLEMENTED	teei_tee_api.h	/^	TEEC_ERROR_NOT_IMPLEMENTED = 0xFFFF0009,$/;"	e	enum:TEEC_Result
+TEEC_ERROR_NOT_SUPPORTED	teei_tee_api.h	/^	TEEC_ERROR_NOT_SUPPORTED = 0xFFFF000A,$/;"	e	enum:TEEC_Result
+TEEC_ERROR_NO_DATA	teei_tee_api.h	/^	TEEC_ERROR_NO_DATA = 0xFFFF000B,$/;"	e	enum:TEEC_Result
+TEEC_ERROR_OUT_OF_MEMORY	teei_tee_api.h	/^	TEEC_ERROR_OUT_OF_MEMORY = 0xFFFF000C,$/;"	e	enum:TEEC_Result
+TEEC_ERROR_SECURITY	teei_tee_api.h	/^	TEEC_ERROR_SECURITY = 0xFFFF000F,$/;"	e	enum:TEEC_Result
+TEEC_ERROR_SHORT_BUFFER	teei_tee_api.h	/^	TEEC_ERROR_SHORT_BUFFER = 0xFFFF0010,$/;"	e	enum:TEEC_Result
+TEEC_LOGIN_APPLICATION	teei_tee_client_api.h	/^	TEEC_LOGIN_APPLICATION = 0x4 ,$/;"	e	enum:TEEC_login_flags
+TEEC_LOGIN_GROUP	teei_tee_client_api.h	/^	TEEC_LOGIN_GROUP ,$/;"	e	enum:TEEC_login_flags
+TEEC_LOGIN_GROUP_APPLICATION	teei_tee_client_api.h	/^	TEEC_LOGIN_GROUP_APPLICATION = 0x6 ,$/;"	e	enum:TEEC_login_flags
+TEEC_LOGIN_PUBLIC	teei_tee_client_api.h	/^	TEEC_LOGIN_PUBLIC = 0x0,$/;"	e	enum:TEEC_login_flags
+TEEC_LOGIN_USER	teei_tee_client_api.h	/^	TEEC_LOGIN_USER ,$/;"	e	enum:TEEC_login_flags
+TEEC_LOGIN_USER_APPLICATION	teei_tee_client_api.h	/^	TEEC_LOGIN_USER_APPLICATION = 0x5 ,$/;"	e	enum:TEEC_login_flags
+TEEC_MEMREF_PARTIAL_INOUT	teei_tee_client_api.h	/^	TEEC_MEMREF_PARTIAL_INOUT = 0xf$/;"	e	enum:TEEC_param_type
+TEEC_MEMREF_PARTIAL_INPUT	teei_tee_client_api.h	/^	TEEC_MEMREF_PARTIAL_INPUT = 0xd,$/;"	e	enum:TEEC_param_type
+TEEC_MEMREF_PARTIAL_OUTPUT	teei_tee_client_api.h	/^	TEEC_MEMREF_PARTIAL_OUTPUT = 0xe,$/;"	e	enum:TEEC_param_type
+TEEC_MEMREF_TEMP_INOUT	teei_tee_client_api.h	/^	TEEC_MEMREF_TEMP_INOUT,$/;"	e	enum:TEEC_param_type
+TEEC_MEMREF_TEMP_INPUT	teei_tee_client_api.h	/^	TEEC_MEMREF_TEMP_INPUT,$/;"	e	enum:TEEC_param_type
+TEEC_MEMREF_TEMP_OUTPUT	teei_tee_client_api.h	/^	TEEC_MEMREF_TEMP_OUTPUT,$/;"	e	enum:TEEC_param_type
+TEEC_MEMREF_WHOLE	teei_tee_client_api.h	/^	TEEC_MEMREF_WHOLE = 0xc,$/;"	e	enum:TEEC_param_type
+TEEC_MEM_INPUT	teei_tee_client_api.h	/^	TEEC_MEM_INPUT = 0x1,$/;"	e	enum:TEEC_shared_mem_flags
+TEEC_MEM_OUTPUT	teei_tee_client_api.h	/^	TEEC_MEM_OUTPUT = 0x2,$/;"	e	enum:TEEC_shared_mem_flags
+TEEC_NONE	teei_tee_client_api.h	/^	TEEC_NONE = 0x1,$/;"	e	enum:TEEC_param_type
+TEEC_ORIGIN_API	teei_tee_client_api.h	/^	TEEC_ORIGIN_API = 0x1,$/;"	e	enum:TEEC_return_code_origin
+TEEC_ORIGIN_COMMS	teei_tee_client_api.h	/^	TEEC_ORIGIN_COMMS = 0x2,$/;"	e	enum:TEEC_return_code_origin
+TEEC_ORIGIN_TEE	teei_tee_client_api.h	/^	TEEC_ORIGIN_TEE = 0x3,$/;"	e	enum:TEEC_return_code_origin
+TEEC_ORIGIN_TRUSTED_APP	teei_tee_client_api.h	/^	TEEC_ORIGIN_TRUSTED_APP = 0x4,$/;"	e	enum:TEEC_return_code_origin
+TEEC_Operation	teei_tee_client_api.h	/^struct TEEC_Operation {$/;"	s
+TEEC_PARAM_TYPES	teei_tee_client_api.h	11;"	d
+TEEC_Parameter	teei_tee_client_api.h	/^union TEEC_Parameter {$/;"	u
+TEEC_RegisteredMemoryReference	teei_tee_client_api.h	/^struct TEEC_RegisteredMemoryReference {$/;"	s
+TEEC_Result	teei_tee_api.h	/^enum TEEC_Result {$/;"	g
+TEEC_Result	teei_tee_api.h	62;"	d
+TEEC_SUCCESS	teei_tee_api.h	/^	TEEC_SUCCESS = 0x0,$/;"	e	enum:TEEC_Result
+TEEC_Session	teei_tee_client_api.h	/^struct TEEC_Session {$/;"	s
+TEEC_SharedMemory	teei_tee_client_api.h	/^struct TEEC_SharedMemory {$/;"	s
+TEEC_TempMemoryReference	teei_tee_client_api.h	/^struct TEEC_TempMemoryReference {$/;"	s
+TEEC_UUID	teei_client.h	/^struct TEEC_UUID {$/;"	s
+TEEC_UUID	teei_tee_client_api.h	/^struct TEEC_UUID {$/;"	s
+TEEC_VALUE_INOUT	teei_tee_client_api.h	/^	TEEC_VALUE_INOUT,$/;"	e	enum:TEEC_param_type
+TEEC_VALUE_INPUT	teei_tee_client_api.h	/^	TEEC_VALUE_INPUT,$/;"	e	enum:TEEC_param_type
+TEEC_VALUE_OUTPUT	teei_tee_client_api.h	/^	TEEC_VALUE_OUTPUT,$/;"	e	enum:TEEC_param_type
+TEEC_VALUE_UNDEF	teei_tee_client_api.h	14;"	d
+TEEC_Value	teei_tee_client_api.h	/^struct TEEC_Value {$/;"	s
+TEEC_login_flags	teei_tee_client_api.h	/^enum TEEC_login_flags {$/;"	g
+TEEC_param_type	teei_tee_client_api.h	/^enum TEEC_param_type {$/;"	g
+TEEC_return_code_origin	teei_tee_client_api.h	/^enum TEEC_return_code_origin {$/;"	g
+TEEC_shared_mem_flags	teei_tee_client_api.h	/^enum TEEC_shared_mem_flags {$/;"	g
+TEEIC_PARAM_1ST	teei_common.h	/^	TEEIC_PARAM_1ST = 0,$/;"	e	enum:teeic_param_pos
+TEEIC_PARAM_2ND	teei_common.h	/^	TEEIC_PARAM_2ND,$/;"	e	enum:teeic_param_pos
+TEEIC_PARAM_3TD	teei_common.h	/^	TEEIC_PARAM_3TD,$/;"	e	enum:teeic_param_pos
+TEEIC_PARAM_4TH	teei_common.h	/^	TEEIC_PARAM_4TH$/;"	e	enum:teeic_param_pos
+TEEIC_PARAM_A	teei_common.h	/^	TEEIC_PARAM_A = 0,$/;"	e	enum:teeic_param_value
+TEEIC_PARAM_B	teei_common.h	/^	TEEIC_PARAM_B$/;"	e	enum:teeic_param_value
+TEEIC_PARAM_IN	teei_common.h	/^	TEEIC_PARAM_IN = 0,$/;"	e	enum:teeic_param_type
+TEEIC_PARAM_OUT	teei_common.h	/^	TEEIC_PARAM_OUT$/;"	e	enum:teeic_param_type
+TEEI_1K_SIZE	teei_common.h	8;"	d
+TEEI_CLIENT_DEV	teei_client.h	5;"	d
+TEEI_CLIENT_FULL_PATH_DEV_NAME	teei_client.h	4;"	d
+TEEI_CLIENT_IOCTL_CLOSECONTEXT_REQ	teei_client.h	114;"	d
+TEEI_CLIENT_IOCTL_DEC_ARRAY_SPACE	teei_client.h	103;"	d
+TEEI_CLIENT_IOCTL_DEC_UINT32	teei_client.h	101;"	d
+TEEI_CLIENT_IOCTL_ENC_ARRAY	teei_client.h	94;"	d
+TEEI_CLIENT_IOCTL_ENC_ARRAY_SPACE	teei_client.h	96;"	d
+TEEI_CLIENT_IOCTL_ENC_MEM_REF	teei_client.h	98;"	d
+TEEI_CLIENT_IOCTL_ENC_UINT32	teei_client.h	92;"	d
+TEEI_CLIENT_IOCTL_GET_DECODE_TYPE	teei_client.h	109;"	d
+TEEI_CLIENT_IOCTL_INITCONTEXT_REQ	teei_client.h	112;"	d
+TEEI_CLIENT_IOCTL_OPERATION_RELEASE	teei_client.h	105;"	d
+TEEI_CLIENT_IOCTL_SEND_CMD_REQ	teei_client.h	83;"	d
+TEEI_CLIENT_IOCTL_SES_CLOSE_REQ	teei_client.h	87;"	d
+TEEI_CLIENT_IOCTL_SES_INIT_REQ	teei_client.h	117;"	d
+TEEI_CLIENT_IOCTL_SES_OPEN_REQ	teei_client.h	85;"	d
+TEEI_CLIENT_IOCTL_SHR_MEM_ALLOCATE_REQ	teei_client.h	107;"	d
+TEEI_CLIENT_IOCTL_SHR_MEM_FREE_REQ	teei_client.h	89;"	d
+TEEI_CLIENT_IOC_MAGIC	teei_client.h	6;"	d
+TEEI_CMD_TYPE_CLOSE_SESSION	teei_id.h	/^	TEEI_CMD_TYPE_CLOSE_SESSION,$/;"	e	enum:teei_cmd_type
+TEEI_CMD_TYPE_FINALIZE_CONTEXT	teei_id.h	/^	TEEI_CMD_TYPE_FINALIZE_CONTEXT,$/;"	e	enum:teei_cmd_type
+TEEI_CMD_TYPE_INITILIZE_CONTEXT	teei_id.h	/^	TEEI_CMD_TYPE_INITILIZE_CONTEXT,$/;"	e	enum:teei_cmd_type
+TEEI_CMD_TYPE_INVALID	teei_id.h	/^	TEEI_CMD_TYPE_INVALID = 0x0,$/;"	e	enum:teei_cmd_type
+TEEI_CMD_TYPE_INVOKE_COMMAND	teei_id.h	/^	TEEI_CMD_TYPE_INVOKE_COMMAND,$/;"	e	enum:teei_cmd_type
+TEEI_CMD_TYPE_MAX	teei_id.h	/^	TEEI_CMD_TYPE_MAX             = 0x7FFFFFFF$/;"	e	enum:teei_cmd_type
+TEEI_CMD_TYPE_OPEN_SESSION	teei_id.h	/^	TEEI_CMD_TYPE_OPEN_SESSION,$/;"	e	enum:teei_cmd_type
+TEEI_CMD_TYPE_SOCKET_INIT	teei_id.h	/^	TEEI_CMD_TYPE_SOCKET_INIT,$/;"	e	enum:teei_cmd_type
+TEEI_CMD_TYPE_UNKNOWN	teei_id.h	/^	TEEI_CMD_TYPE_UNKNOWN         = 0x7FFFFFFE,$/;"	e	enum:teei_cmd_type
+TEEI_CONFIG_DEV	teei_client_main.c	3271;"	d	file:
+TEEI_CONFIG_FULL_PATH_DEV_NAME	teei_client_main.c	3270;"	d	file:
+TEEI_CONFIG_IOCTL_INIT_TEEI	teei_client_main.c	3300;"	d	file:
+TEEI_CONFIG_IOC_MAGIC	teei_client_main.c	3272;"	d	file:
+TEEI_DRIVERS	tz_service.h	/^	TEEI_DRIVERS,$/;"	e	enum:__anon1
+TEEI_ENC_ARRAY	teei_id.h	/^	TEEI_ENC_ARRAY,$/;"	e	enum:teei_enc_data_type
+TEEI_ENC_INVALID_TYPE	teei_id.h	/^	TEEI_ENC_INVALID_TYPE = 0,$/;"	e	enum:teei_enc_data_type
+TEEI_ENC_UINT32	teei_id.h	/^	TEEI_ENC_UINT32,$/;"	e	enum:teei_enc_data_type
+TEEI_GET_TEEI_CONFIG_STAT	teei_client.h	120;"	d
+TEEI_GLOBAL_CMD_ID_BOOT_ACK	teei_id.h	/^	TEEI_GLOBAL_CMD_ID_BOOT_ACK,$/;"	e	enum:_global_cmd_id
+TEEI_GLOBAL_CMD_ID_CLOSE_SESSION	teei_id.h	/^	TEEI_GLOBAL_CMD_ID_CLOSE_SESSION,$/;"	e	enum:_global_cmd_id
+TEEI_GLOBAL_CMD_ID_INIT_CONTEXT	teei_id.h	/^	TEEI_GLOBAL_CMD_ID_INIT_CONTEXT,$/;"	e	enum:_global_cmd_id
+TEEI_GLOBAL_CMD_ID_INVALID	teei_id.h	/^	TEEI_GLOBAL_CMD_ID_INVALID = 0x0,$/;"	e	enum:_global_cmd_id
+TEEI_GLOBAL_CMD_ID_MAX	teei_id.h	/^	TEEI_GLOBAL_CMD_ID_MAX             = 0x7FFFFFFF$/;"	e	enum:_global_cmd_id
+TEEI_GLOBAL_CMD_ID_OPEN_SESSION	teei_id.h	/^	TEEI_GLOBAL_CMD_ID_OPEN_SESSION,$/;"	e	enum:_global_cmd_id
+TEEI_GLOBAL_CMD_ID_RESUME_ASYNC_TASK	teei_id.h	/^	TEEI_GLOBAL_CMD_ID_RESUME_ASYNC_TASK,$/;"	e	enum:_global_cmd_id
+TEEI_GLOBAL_CMD_ID_UNKNOWN	teei_id.h	/^	TEEI_GLOBAL_CMD_ID_UNKNOWN         = 0x7FFFFFFE,$/;"	e	enum:_global_cmd_id
+TEEI_LOG_IRQ	teei_client_main.c	107;"	d	file:
+TEEI_LOG_IRQ	utdriver_irq.h	7;"	d
+TEEI_MAX_REQ_PARAMS	teei_common.h	6;"	d
+TEEI_MAX_RES_PARAMS	teei_common.h	7;"	d
+TEEI_MEM_REF	teei_id.h	/^	TEEI_MEM_REF,$/;"	e	enum:teei_enc_data_type
+TEEI_MEM_SERVICE_RO	teei_tee_client_api.h	/^	TEEI_MEM_SERVICE_RO = 0x0,$/;"	e	enum:teei_shared_mem_flags
+TEEI_MEM_SERVICE_RW	teei_tee_client_api.h	/^	TEEI_MEM_SERVICE_RW,$/;"	e	enum:teei_shared_mem_flags
+TEEI_MEM_SERVICE_UNDEFINED	teei_tee_client_api.h	/^	TEEI_MEM_SERVICE_UNDEFINED$/;"	e	enum:teei_shared_mem_flags
+TEEI_MEM_SERVICE_WO	teei_tee_client_api.h	/^	TEEI_MEM_SERVICE_WO ,$/;"	e	enum:teei_shared_mem_flags
+TEEI_SECURE_MEM_REF	teei_id.h	/^	TEEI_SECURE_MEM_REF$/;"	e	enum:teei_enc_data_type
+TEEI_SERVICE_MAX	tz_service.h	/^	TEEI_SERVICE_MAX$/;"	e	enum:__anon1
+TEEI_SERVICE_SOCKET	tz_service.h	/^	TEEI_SERVICE_SOCKET,$/;"	e	enum:__anon1
+TEEI_SERVICE_TIME	tz_service.h	/^	TEEI_SERVICE_TIME,$/;"	e	enum:__anon1
+TEEI_SERVICE_VFS	tz_service.h	/^	TEEI_SERVICE_VFS,$/;"	e	enum:__anon1
+TEEI_STATUS_COMPLETE	teei_common.h	/^	TEEI_STATUS_COMPLETE,$/;"	e	enum:teei_cmd_status
+TEEI_STATUS_INCOMPLETE	teei_common.h	/^	TEEI_STATUS_INCOMPLETE = 0,$/;"	e	enum:teei_cmd_status
+TEEI_STATUS_MAX	teei_common.h	/^	TEEI_STATUS_MAX  = 0x7FFFFFFF$/;"	e	enum:teei_cmd_status
+TEEI_TEE_API_H	teei_tee_api.h	3;"	d
+TEEI_VFS_NUM	teei_client_main.c	59;"	d	file:
+TEEI_VFS_NUM	utdriver_macro.h	49;"	d
+TEEI_printer_command	tz_service.c	/^struct TEEI_printer_command {$/;"	s	file:
+TEEI_printer_response	tz_service.c	/^union TEEI_printer_response {$/;"	u	file:
+TEEI_socket_command	TEEI.h	/^struct TEEI_socket_command {$/;"	s
+TEEI_socket_command	socketFun.c	/^struct TEEI_socket_command {$/;"	s	file:
+TEEI_socket_response_type	TEEI.h	/^union TEEI_socket_response_type {$/;"	u
+TEEI_socket_response_type	socketFun.c	/^union TEEI_socket_response_type {$/;"	u	file:
+TEE_NAME_SIZE	teei_client_main.c	272;"	d	file:
+TEE_NAME_SIZE	tz_service.c	114;"	d	file:
+TEE_Result	teei_tee_api.h	61;"	d
+TERR	teei_debug.h	29;"	d
+TERR	teei_debug.h	9;"	d
+TINFO	teei_debug.h	23;"	d
+TINFO	teei_debug.h	26;"	d
+TINFO	teei_debug.h	8;"	d
+TLOG_CONTEXT_LEN	teei_client_main.c	110;"	d	file:
+TLOG_INUSE	teei_client_main.c	114;"	d	file:
+TLOG_MAX_CNT	teei_client_main.c	111;"	d	file:
+TLOG_UNUSE	teei_client_main.c	113;"	d	file:
+TRUST_ZONE	socketFun.c	44;"	d	file:
+TYPE_NONE	teei_client_main.c	71;"	d	file:
+TYPE_NONE	tz_service.c	49;"	d	file:
+TYPE_NONE	utdriver_macro.h	9;"	d
+TYPE_UINT_DEFINED	teei_tee_api.h	5;"	d
+TZDebug	teei_debug.h	11;"	d
+TZ_ACCEPT	socketFun.c	/^	TZ_ACCEPT,$/;"	e	enum:__anon3	file:
+TZ_BIND	socketFun.c	/^	TZ_BIND,$/;"	e	enum:__anon3	file:
+TZ_CLOSE	socketFun.c	/^	TZ_CLOSE,$/;"	e	enum:__anon3	file:
+TZ_CONNECT	socketFun.c	/^	TZ_CONNECT,$/;"	e	enum:__anon3	file:
+TZ_HTONS	socketFun.c	/^	TZ_HTONS,$/;"	e	enum:__anon3	file:
+TZ_INET_ADDR	socketFun.c	/^	TZ_INET_ADDR,$/;"	e	enum:__anon3	file:
+TZ_LISTEN	socketFun.c	/^	TZ_LISTEN,$/;"	e	enum:__anon3	file:
+TZ_RECV	socketFun.c	/^	TZ_RECV,$/;"	e	enum:__anon3	file:
+TZ_SEND	socketFun.c	/^	TZ_SEND,$/;"	e	enum:__anon3	file:
+TZ_SERVICE_H	tz_service.h	2;"	d
+TZ_SETSOCKOPT	socketFun.c	/^	TZ_SETSOCKOPT,$/;"	e	enum:__anon3	file:
+TZ_SOCKET	socketFun.c	/^	TZ_SOCKET = 0x0001,$/;"	e	enum:__anon3	file:
+T_ACK_N_BOOT_OK	nt_smc_call.h	73;"	d
+T_ACK_N_FAST_CALL	nt_smc_call.h	51;"	d
+T_ACK_N_INIT_FC_BUF	nt_smc_call.h	55;"	d
+T_ACK_N_INVOKE_DRV	nt_smc_call.h	67;"	d
+T_ACK_N_KERNEL_OK	nt_smc_call.h	77;"	d
+T_ACK_N_NQ	nt_smc_call.h	65;"	d
+T_ACK_N_OS_READY	nt_smc_call.h	43;"	d
+T_ACK_N_SYS_CTL	nt_smc_call.h	63;"	d
+T_ACK_T_OS_BACKSTAGE	nt_smc_call.h	49;"	d
+T_ACK_T_OS_FOREGROUND	nt_smc_call.h	47;"	d
+T_BOOT_NT_OS	nt_smc_call.h	41;"	d
+T_DUMP_STATE	nt_smc_call.h	53;"	d
+T_GET_BOOT_PARMS	nt_smc_call.h	57;"	d
+T_GET_PARAM_IN	nt_smc_call.h	45;"	d
+T_INVOKE_N_DRV	nt_smc_call.h	69;"	d
+T_INVOKE_N_LOAD_IMG	nt_smc_call.h	75;"	d
+T_RAISE_N_EVENT	nt_smc_call.h	71;"	d
+T_SCHED_NT	nt_smc_call.h	61;"	d
+T_SCHED_NT_IRQ	nt_smc_call.h	79;"	d
+VALID_TYPE	teei_client_main.c	66;"	d	file:
+VALID_TYPE	tz_service.c	44;"	d	file:
+VALID_TYPE	utdriver_macro.h	32;"	d
+VDRV_CALL_TYPE	teei_client_main.c	81;"	d	file:
+VDRV_CALL_TYPE	tz_service.c	61;"	d	file:
+VDRV_CALL_TYPE	utdriver_macro.h	26;"	d
+VDRV_MAX_SIZE	teei_client_main.c	56;"	d	file:
+VDRV_MAX_SIZE	tz_service.c	32;"	d	file:
+VDRV_MAX_SIZE	utdriver_macro.h	14;"	d
+VDRV_MAX_SIZE	utdriver_macro.h	46;"	d
+VFS_SIZE	teei_client_main.c	275;"	d	file:
+VFS_SIZE	tz_service.c	81;"	d	file:
+VFS_SIZE	utdriver_macro.h	5;"	d
+VFS_SYS_NO	switch_queue.c	20;"	d	file:
+VFS_SYS_NO	teei_client_main.c	180;"	d	file:
+VFS_SYS_NO	tz_service.c	91;"	d	file:
+VFS_SYS_NO	utdriver_macro.h	59;"	d
+VIRTUAL_PRINTER_DEV	vprinter_driver.c	29;"	d	file:
+VIRTUAL_PRINTER_FULL_PATH_DEV_NAME	vprinter_driver.c	28;"	d	file:
+Worldtransport	socketFun.c	/^void Worldtransport(int world_name, unsigned long phy_addr)$/;"	f
+__LIB_LIST_H__	teei_list.h	3;"	d
+__TEEI_CLIENT_H_	teei_client.h	2;"	d
+__TEEI_CLIENT_MAIN_H__	teei_client_main.h	2;"	d
+__TEEI_COMMON_H_	teei_common.h	3;"	d
+__TEEI_DEBUG_H_	teei_debug.h	2;"	d
+__TEEI_ID_H_	teei_id.h	3;"	d
+__TEEI_SMC_ID_H__	smc_id.h	3;"	d
+__TEEI_TEE_CLIENT_API_H_	teei_tee_client_api.h	3;"	d
+__TZ_SOCK_H__	SOCK.h	2;"	d
+__TZ_TEEI_ADMIN_MAIN_H__	teei_admin_main.h	2;"	d
+__TZ_TEEI_H__	TEEI.h	2;"	d
+__list_add	teei_list.h	/^static inline void __list_add(struct list *prev,$/;"	f
+__list_del	teei_list.h	/^static inline void __list_del(struct list *node,$/;"	f
+__reetime_handle	tz_service.c	/^int  __reetime_handle(struct service_handler *handler)$/;"	f
+__send_fp_command	teei_client_main.c	/^int __send_fp_command(unsigned long share_memory_size)$/;"	f
+__teei_smc_call	teei_client_main.c	/^int __teei_smc_call(unsigned long local_smc_cmd,$/;"	f
+__vfs_handle	tz_service.c	/^int __vfs_handle(struct service_handler *handler) \/*! invoke handler *\/$/;"	f
+_global_cmd_id	teei_id.h	/^enum _global_cmd_id {$/;"	g
+_teei_smc	teei_client_main.c	/^static u32 _teei_smc(u32 cmd_addr, int size, int valid_flag)$/;"	f	file:
+a	teei_tee_client_api.h	/^	uint32_t a;$/;"	m	struct:TEEC_Value
+ack_fast_call_struct	tz_service.c	/^struct ack_fast_call_struct {$/;"	s	file:
+ack_vdrv_struct	tz_service.c	/^struct ack_vdrv_struct {$/;"	s	file:
+add_bdrv_queue	tz_service.c	/^void add_bdrv_queue(int bdrv_id)$/;"	f
+add_nq_entry	tz_service.c	/^int add_nq_entry(unsigned char *command_buff, int command_length, int valid_flag)$/;"	f
+add_switch_call_link	switch_queue.c	/^static int add_switch_call_link(struct switch_head_struct *head_ent, struct switch_call_struct *ent)$/;"	f	file:
+add_work_entry	switch_queue.c	/^int add_work_entry(int work_type, unsigned long buff)$/;"	f
+addr	TEEI.h	/^	uint32_t addr;$/;"	m	union:TEEI_socket_response_type
+addr	socketFun.c	/^	struct sockaddr addr;$/;"	m	struct:connect_params_t	typeref:struct:connect_params_t::sockaddr	file:
+addr	socketFun.c	/^	uint32_t addr;$/;"	m	union:TEEI_socket_response_type	file:
+addrlen	TEEI.h	/^			int addrlen;$/;"	m	struct:TEEI_socket_command::func_arg::func_accept
+addrlen	TEEI.h	/^			int addrlen;$/;"	m	struct:TEEI_socket_command::func_arg::func_bind
+addrlen	TEEI.h	/^			int addrlen;$/;"	m	struct:TEEI_socket_command::func_arg::func_connect
+addrlen	socketFun.c	/^			int addrlen;$/;"	m	struct:TEEI_socket_command::func_arg::func_accept	file:
+addrlen	socketFun.c	/^			int addrlen;$/;"	m	struct:TEEI_socket_command::func_arg::func_bind	file:
+addrlen	socketFun.c	/^			int addrlen;$/;"	m	struct:TEEI_socket_command::func_arg::func_connect	file:
+addrlen	socketFun.c	/^	int addrlen;$/;"	m	struct:connect_params_t	file:
+af	TEEI.h	/^			int af;$/;"	m	struct:TEEI_socket_command::func_arg::func_socket
+af	socketFun.c	/^			int af;$/;"	m	struct:TEEI_socket_command::func_arg::func_socket	file:
+allocated	teei_tee_client_api.h	/^	uint32_t allocated;$/;"	m	struct:TEEC_SharedMemory
+api_lock	teei_client_main.c	/^struct semaphore api_lock;$/;"	v	typeref:struct:semaphore
+args	TEEI.h	/^	} args;$/;"	m	struct:TEEI_socket_command	typeref:union:TEEI_socket_command::func_arg
+args	socketFun.c	/^	} args;$/;"	m	struct:TEEI_socket_command	typeref:union:TEEI_socket_command::func_arg	file:
+args	tz_service.c	/^	} args;$/;"	m	struct:TEEI_printer_command	typeref:union:TEEI_printer_command::func_arg	file:
+b	teei_tee_client_api.h	/^	uint32_t b;$/;"	m	struct:TEEC_Value
+backlog	TEEI.h	/^			int backlog;$/;"	m	struct:TEEI_socket_command::func_arg::func_listen
+backlog	socketFun.c	/^			int backlog;$/;"	m	struct:TEEI_socket_command::func_arg::func_listen	file:
+bdrv_call_struct	switch_queue.c	/^struct bdrv_call_struct {$/;"	s	file:
+bdrv_call_struct	tz_service.c	/^struct bdrv_call_struct {$/;"	s	file:
+bdrv_call_type	switch_queue.c	/^	int bdrv_call_type;$/;"	m	struct:bdrv_call_struct	file:
+bdrv_call_type	tz_service.c	/^        int bdrv_call_type;$/;"	m	struct:bdrv_call_struct	file:
+bdrv_message_buff	tz_service.c	/^unsigned long bdrv_message_buff = 0;$/;"	v
+bdrv_phy_addr	tz_service.c	/^	unsigned long bdrv_phy_addr;$/;"	m	struct:init_cmdbuf_struct	file:
+boot_sema	teei_client_main.c	/^struct semaphore boot_sema;$/;"	v	typeref:struct:semaphore
+boot_soter_flag	teei_client_main.c	/^unsigned long boot_soter_flag;$/;"	v
+boot_stage1	teei_client_main.c	/^static void boot_stage1(unsigned long vir_address)$/;"	f	file:
+boot_stage1_entry	teei_client_main.c	/^struct boot_stage1_struct boot_stage1_entry;$/;"	v	typeref:struct:boot_stage1_struct
+boot_stage1_struct	teei_client_main.c	/^struct boot_stage1_struct {$/;"	s	file:
+boot_stage2	teei_client_main.c	/^static void boot_stage2(void)$/;"	f	file:
+boot_vfs_addr	teei_client_main.c	/^unsigned long boot_vfs_addr;$/;"	v
+buf	TEEI.h	/^			void *buf;$/;"	m	struct:TEEI_socket_command::func_arg::func_send
+buf	TEEI.h	/^		void *buf;$/;"	m	struct:TEEI_socket_response_type::response_func_recv
+buf	socketFun.c	/^			void *buf;$/;"	m	struct:TEEI_socket_command::func_arg::func_send	file:
+buf	socketFun.c	/^		void *buf;$/;"	m	struct:TEEI_socket_response_type::response_func_recv	file:
+buff_addr	switch_queue.c	/^	unsigned long buff_addr;$/;"	m	struct:switch_call_struct	file:
+buff_vaddr	tz_service.c	/^static unsigned long buff_vaddr;$/;"	v	file:
+buffer	teei_tee_client_api.h	/^	void            *buffer;$/;"	m	struct:TEEC_TempMemoryReference
+buffer	teei_tee_client_api.h	/^	void *buffer;$/;"	m	struct:TEEC_SharedMemory
+buffer_addr	teei_client_main.c	/^	unsigned int buffer_addr;$/;"	m	struct:NQ_entry	file:
+buffer_addr	tz_service.c	/^	unsigned int buffer_addr;$/;"	m	struct:NQ_entry	file:
+cal_time	tz_service.c	/^int cal_time(struct timeval start_time, struct timeval end_time)$/;"	f
+call_no	tz_service.c	/^	int call_no;$/;"	m	struct:work_entry	file:
+check_work_type	switch_queue.c	/^static int check_work_type(int work_type)$/;"	f	file:
+child_type	tz_service.c	/^	unsigned int child_type;$/;"	m	struct:message_head	file:
+client_pid	teei_common.h	/^	int client_pid;$/;"	m	struct:teeic_notify_data
+clockSeqAndNode	teei_client.h	/^	uint8_t clockSeqAndNode[8];$/;"	m	struct:TEEC_UUID
+clockSeqAndNode	teei_tee_client_api.h	/^	uint8_t clockSeqAndNode[8];$/;"	m	struct:TEEC_UUID
+close_params_t	socketFun.c	/^struct close_params_t {$/;"	s	file:
+cmd_addr	teei_client.h	/^	int cmd_addr;$/;"	m	struct:teei_smc_cdata
+cmd_addr	teei_client_main.c	/^	u32 cmd_addr;$/;"	m	struct:tz_work_entry	file:
+cmd_buf	switch_queue.c	/^        void *cmd_buf;$/;"	m	struct:smc_call_struct	file:
+cmd_buf	teei_client_main.c	/^	void *cmd_buf;$/;"	m	struct:smc_call_struct	file:
+cmd_id	switch_queue.c	/^        u32 cmd_id;$/;"	m	struct:smc_call_struct	file:
+cmd_id	teei_client.h	/^	unsigned int cmd_id;$/;"	m	struct:teei_client_encode_cmd
+cmd_id	teei_client_main.c	/^	u32 cmd_id;$/;"	m	struct:smc_call_struct	file:
+cmd_len	switch_queue.c	/^        size_t cmd_len;$/;"	m	struct:smc_call_struct	file:
+cmd_len	teei_client_main.c	/^	size_t cmd_len;$/;"	m	struct:smc_call_struct	file:
+cmd_size	TEEI.h	/^	int cmd_size;$/;"	m	struct:TEEI_socket_command
+cmd_size	socketFun.c	/^	int cmd_size;$/;"	m	struct:TEEI_socket_command	file:
+cmd_size	tz_service.c	/^	int cmd_size;$/;"	m	struct:TEEI_printer_command	file:
+cmd_status	teei_common.h	/^	unsigned int    cmd_status;$/;"	m	struct:teei_smc_cmd
+config_driver_class	teei_client_main.c	/^static struct class *config_driver_class;$/;"	v	typeref:struct:class	file:
+connect_params_t	socketFun.c	/^struct connect_params_t {$/;"	s	file:
+cont_id	teei_client_main.c	/^	unsigned long cont_id;			\/* ID *\/$/;"	m	struct:teei_context	file:
+cont_lock	teei_client_main.c	/^	struct semaphore cont_lock;$/;"	m	struct:teei_context	typeref:struct:teei_context::semaphore	file:
+context	switch_queue.c	/^        u32 context;$/;"	m	struct:smc_call_struct	file:
+context	teei_client_main.c	/^	char context[TLOG_CONTEXT_LEN];$/;"	m	struct:tlog_struct	file:
+context	teei_client_main.c	/^	u32 context;$/;"	m	struct:smc_call_struct	file:
+context	teei_common.h	/^	unsigned int    context;$/;"	m	struct:teei_smc_cmd
+context	teei_tee_client_api.h	/^	struct TEEC_Context *context;$/;"	m	struct:TEEC_SharedMemory	typeref:struct:TEEC_SharedMemory::TEEC_Context
+context_list	teei_client_main.c	/^	struct list_head context_list;$/;"	m	struct:teei_contexts_head	typeref:struct:teei_contexts_head::list_head	file:
+cpu_notify_flag	teei_client_main.c	/^unsigned long cpu_notify_flag = 0;$/;"	v
+create_NQ_struct	tz_service.c	/^struct create_NQ_struct {$/;"	s	file:
+create_cmd_buff	tz_service.c	/^long create_cmd_buff(void)$/;"	f
+create_ctl_buffer	tz_service.c	/^static long create_ctl_buffer(unsigned long msg_buff, unsigned long size)$/;"	f	file:
+create_fdrv_struct	tz_service.c	/^struct create_fdrv_struct {$/;"	s	file:
+create_fp_fdrv	tz_service.c	/^unsigned long create_fp_fdrv(int buff_size)$/;"	f
+create_notify_queue	tz_service.c	/^static long create_notify_queue(unsigned long msg_buff, unsigned long size)$/;"	f	file:
+create_nq_buffer	tz_service.c	/^static int create_nq_buffer(void)$/;"	f	file:
+create_switch_call_struct	switch_queue.c	/^static struct switch_call_struct *create_switch_call_struct(void)$/;"	f	file:
+create_sys_ctl_struct	tz_service.c	/^struct create_sys_ctl_struct {$/;"	s	file:
+create_vdrv_struct	tz_service.c	/^struct create_vdrv_struct {$/;"	s	file:
+ctx_data	teei_client.h	/^struct ctx_data {$/;"	s
+ctx_ret	teei_client.h	/^	int ctx_ret; \/* context return *\/$/;"	m	struct:ctx_data
+current_cpu_id	teei_client_main.c	/^static  int current_cpu_id = 0x00;$/;"	v	file:
+data	teei_client.h	/^	unsigned int data;$/;"	m	struct:teei_client_encode_cmd
+daulOS_VFS_read_share_mem	tz_service.c	/^EXPORT_SYMBOL_GPL(daulOS_VFS_read_share_mem);$/;"	v
+daulOS_VFS_read_share_mem	tz_service.c	/^unsigned char *daulOS_VFS_read_share_mem = NULL;$/;"	v
+daulOS_VFS_share_mem	tz_service.c	/^EXPORT_SYMBOL_GPL(daulOS_VFS_share_mem);$/;"	v
+daulOS_VFS_share_mem	tz_service.c	/^unsigned char *daulOS_VFS_share_mem = NULL;$/;"	v
+daulOS_VFS_write_share_mem	tz_service.c	/^EXPORT_SYMBOL_GPL(daulOS_VFS_write_share_mem);$/;"	v
+daulOS_VFS_write_share_mem	tz_service.c	/^unsigned char *daulOS_VFS_write_share_mem = NULL;$/;"	v
+daulOS_share_mem	tz_service.c	/^EXPORT_SYMBOL_GPL(daulOS_share_mem);$/;"	v
+daulOS_share_mem	tz_service.c	/^unsigned char *daulOS_share_mem = NULL;$/;"	v
+dec_offset	teei_client_main.c	/^	u32  dec_offset;$/;"	m	struct:teei_encode	file:
+dec_res_pos	teei_client_main.c	/^	u32  dec_res_pos;$/;"	m	struct:teei_encode	file:
+deinit	tz_service.h	/^	void (*deinit)(struct service_handler *handler); \/*! ?�务?�止处�? *\/$/;"	m	struct:service_handler
+del_switch_call_link	switch_queue.c	/^static int del_switch_call_link(struct switch_call_struct *ent)$/;"	f	file:
+del_work_entry	switch_queue.c	/^int del_work_entry(struct switch_call_struct *ent)$/;"	f
+destroy_switch_call_struct	switch_queue.c	/^static int destroy_switch_call_struct(struct switch_call_struct *ent)$/;"	f	file:
+dev_file_cnt	teei_client_main.c	/^	u32 dev_file_cnt;$/;"	m	struct:teei_contexts_head	file:
+dev_file_id	switch_queue.c	/^        u32 dev_file_id;$/;"	m	struct:smc_call_struct	file:
+dev_file_id	teei_client_main.c	/^	u32 dev_file_id;$/;"	m	struct:smc_call_struct	file:
+dev_file_id	teei_common.h	/^	int dev_file_id;$/;"	m	struct:teeic_notify_data
+dev_file_id	teei_common.h	/^	unsigned int    dev_file_id;$/;"	m	struct:teei_smc_cmd
+device	teei_tee_client_api.h	/^	struct TEEC_Context *device;$/;"	m	struct:TEEC_Session	typeref:struct:TEEC_Session::TEEC_Context
+device_file_cnt	teei_client_main.c	/^unsigned long device_file_cnt = 0;$/;"	v
+do_service	tz_service.c	/^static void do_service(void *p)$/;"	f	file:
+domain	socketFun.c	/^	int domain;$/;"	m	struct:socket_params_t	file:
+driver_class	teei_client_main.c	/^static struct class *driver_class;$/;"	v	typeref:struct:class	file:
+driver_class	vprinter_driver.c	/^static struct class *driver_class;$/;"	v	typeref:struct:class	file:
+driver_id	tz_service.c	/^	unsigned int driver_id;$/;"	m	struct:fdrv_struct	file:
+driver_type	tz_service.c	/^	unsigned int driver_type;$/;"	m	struct:fdrv_message_head	file:
+drivers_interrupt	tz_service.c	/^static irqreturn_t drivers_interrupt(int irq, void *dummy)$/;"	f	file:
+drivers_interrupt	vprinter_driver.c	/^static irqreturn_t drivers_interrupt(int irq, void *dummy)$/;"	f	file:
+eint_gic_attach	teei_client_main.c	/^static void eint_gic_attach(void)$/;"	f	file:
+enc_id	switch_queue.c	/^        u32 enc_id;$/;"	m	struct:smc_call_struct	file:
+enc_id	teei_client_main.c	/^	u32 enc_id;$/;"	m	struct:smc_call_struct	file:
+enc_id	teei_common.h	/^	int enc_id;$/;"	m	struct:teeic_notify_data
+enc_id	teei_common.h	/^	unsigned int    enc_id;$/;"	m	struct:teei_smc_cmd
+enc_req_offset	teei_client_main.c	/^	u32  enc_req_offset;$/;"	m	struct:teei_encode	file:
+enc_req_pos	teei_client_main.c	/^	u32  enc_req_pos;$/;"	m	struct:teei_encode	file:
+enc_res_offset	teei_client_main.c	/^	u32  enc_res_offset;$/;"	m	struct:teei_encode	file:
+enc_res_pos	teei_client_main.c	/^	u32  enc_res_pos;$/;"	m	struct:teei_encode	file:
+encode_id	teei_client.h	/^	int encode_id;\/* 命令参数编码数据块索引 *\/$/;"	m	struct:teei_client_encode_cmd
+encode_id	teei_client_main.c	/^	int encode_id;$/;"	m	struct:teei_encode	file:
+encode_list	teei_client_main.c	/^	struct list_head encode_list;	\/* link list for the encode of this session *\/$/;"	m	struct:teei_session	typeref:struct:teei_session::list_head	file:
+end_index	teei_client_main.c	/^	unsigned int end_index;$/;"	m	struct:NQ_head	file:
+end_index	tz_service.c	/^	unsigned int end_index;$/;"	m	struct:NQ_head	file:
+error_code	switch_queue.c	/^        int *error_code;$/;"	m	struct:smc_call_struct	file:
+error_code	teei_client_main.c	/^	int *error_code;$/;"	m	struct:smc_call_struct	file:
+error_code	teei_common.h	/^	unsigned int     error_code;$/;"	m	struct:teei_smc_cmd
+etime	tz_service.c	/^struct timeval etime;$/;"	v	typeref:struct:timeval
+fd	TEEI.h	/^			int fd;$/;"	m	struct:TEEI_socket_command::func_arg::func_setsockopt
+fd	teei_tee_client_api.h	/^	uint32_t fd;$/;"	m	struct:TEEC_Context
+fdrv_call_buff_size	switch_queue.c	/^	int fdrv_call_buff_size;$/;"	m	struct:fdrv_call_struct	file:
+fdrv_call_buff_size	teei_client_main.c	/^        int fdrv_call_buff_size;$/;"	m	struct:fdrv_call_struct	file:
+fdrv_call_struct	switch_queue.c	/^struct fdrv_call_struct {$/;"	s	file:
+fdrv_call_struct	teei_client_main.c	/^struct fdrv_call_struct {$/;"	s	file:
+fdrv_call_type	switch_queue.c	/^	int fdrv_call_type;$/;"	m	struct:fdrv_call_struct	file:
+fdrv_call_type	teei_client_main.c	/^        int fdrv_call_type;$/;"	m	struct:fdrv_call_struct	file:
+fdrv_message_buff	tz_service.c	/^unsigned long fdrv_message_buff = 0;$/;"	v
+fdrv_message_head	tz_service.c	/^struct fdrv_message_head {$/;"	s	file:
+fdrv_param_length	tz_service.c	/^	unsigned int fdrv_param_length;$/;"	m	struct:fdrv_message_head	file:
+fdrv_phy_addr	tz_service.c	/^	unsigned int fdrv_phy_addr;$/;"	m	struct:create_fdrv_struct	file:
+fdrv_phy_addr	tz_service.c	/^	unsigned long fdrv_phy_addr;$/;"	m	struct:init_cmdbuf_struct	file:
+fdrv_size	tz_service.c	/^	unsigned int fdrv_size;$/;"	m	struct:create_fdrv_struct	file:
+fdrv_struct	tz_service.c	/^struct fdrv_struct {$/;"	s	file:
+fdrv_type	tz_service.c	/^	unsigned int fdrv_type;$/;"	m	struct:create_fdrv_struct	file:
+fiq_drivers	tz_service.c	/^static struct service_handler fiq_drivers;$/;"	v	typeref:struct:service_handler	file:
+fiq_drivers_deinit	tz_service.c	/^static void fiq_drivers_deinit(struct service_handler *handler)$/;"	f	file:
+fiq_drivers_handle	tz_service.c	/^static int  fiq_drivers_handle(struct service_handler *handler)$/;"	f	file:
+fiq_drivers_init	tz_service.c	/^static void fiq_drivers_init(struct service_handler *handler)$/;"	f	file:
+flags	TEEI.h	/^			int flags;$/;"	m	struct:TEEI_socket_command::func_arg::func_send
+flags	socketFun.c	/^			int flags;$/;"	m	struct:TEEI_socket_command::func_arg::func_send	file:
+flags	socketFun.c	/^	int flags;$/;"	m	struct:recv_params_t	file:
+flags	socketFun.c	/^	int flags;$/;"	m	struct:send_params_t	file:
+flags	teei_client.h	/^	int   flags;$/;"	m	struct:teei_client_encode_cmd
+flags	teei_tee_client_api.h	/^	uint32_t flags;$/;"	m	struct:TEEC_SharedMemory
+forward_call_flag	teei_client_main.c	/^int forward_call_flag = 0;$/;"	v
+fp_buff_addr	tz_service.c	/^unsigned long fp_buff_addr = NULL;$/;"	v
+fp_call_flag	teei_client_main.c	/^int fp_call_flag = 0;$/;"	v
+fp_command_entry	teei_client_main.c	/^struct fp_command_struct fp_command_entry;$/;"	v	typeref:struct:fp_command_struct
+fp_command_struct	teei_client_main.c	/^struct fp_command_struct {$/;"	s	file:
+fp_lock	teei_client_main.c	/^struct semaphore fp_lock;$/;"	v	typeref:struct:semaphore
+func	TEEI.h	/^	int func;$/;"	m	struct:TEEI_socket_command
+func	socketFun.c	/^	int func;$/;"	m	struct:TEEI_socket_command	file:
+func	tz_service.c	/^	int func;$/;"	m	struct:TEEI_printer_command	file:
+func_accept	TEEI.h	/^		struct func_accept {$/;"	s	union:TEEI_socket_command::func_arg
+func_accept	socketFun.c	/^		struct func_accept {$/;"	s	union:TEEI_socket_command::func_arg	file:
+func_accept_args	TEEI.h	/^		} func_accept_args;$/;"	m	union:TEEI_socket_command::func_arg	typeref:struct:TEEI_socket_command::func_arg::func_accept
+func_accept_args	socketFun.c	/^		} func_accept_args;$/;"	m	union:TEEI_socket_command::func_arg	typeref:struct:TEEI_socket_command::func_arg::func_accept	file:
+func_arg	TEEI.h	/^	union func_arg {$/;"	u	struct:TEEI_socket_command
+func_arg	socketFun.c	/^	union func_arg {$/;"	u	struct:TEEI_socket_command	file:
+func_arg	tz_service.c	/^	union func_arg {$/;"	u	struct:TEEI_printer_command	file:
+func_bind	TEEI.h	/^		struct func_bind {$/;"	s	union:TEEI_socket_command::func_arg
+func_bind	socketFun.c	/^		struct func_bind {$/;"	s	union:TEEI_socket_command::func_arg	file:
+func_bind_args	TEEI.h	/^		} func_bind_args;$/;"	m	union:TEEI_socket_command::func_arg	typeref:struct:TEEI_socket_command::func_arg::func_bind
+func_bind_args	socketFun.c	/^		} func_bind_args;$/;"	m	union:TEEI_socket_command::func_arg	typeref:struct:TEEI_socket_command::func_arg::func_bind	file:
+func_close	TEEI.h	/^		struct func_close {$/;"	s	union:TEEI_socket_command::func_arg
+func_close	socketFun.c	/^		struct func_close {$/;"	s	union:TEEI_socket_command::func_arg	file:
+func_close_args	TEEI.h	/^		} func_close_args;$/;"	m	union:TEEI_socket_command::func_arg	typeref:struct:TEEI_socket_command::func_arg::func_close
+func_close_args	socketFun.c	/^		} func_close_args;$/;"	m	union:TEEI_socket_command::func_arg	typeref:struct:TEEI_socket_command::func_arg::func_close	file:
+func_connect	TEEI.h	/^		struct func_connect {$/;"	s	union:TEEI_socket_command::func_arg
+func_connect	socketFun.c	/^		struct func_connect {$/;"	s	union:TEEI_socket_command::func_arg	file:
+func_connect_args	TEEI.h	/^		} func_connect_args;$/;"	m	union:TEEI_socket_command::func_arg	typeref:struct:TEEI_socket_command::func_arg::func_connect
+func_connect_args	socketFun.c	/^		} func_connect_args;$/;"	m	union:TEEI_socket_command::func_arg	typeref:struct:TEEI_socket_command::func_arg::func_connect	file:
+func_htons	TEEI.h	/^		struct func_htons {$/;"	s	union:TEEI_socket_command::func_arg
+func_htons	socketFun.c	/^		struct func_htons {$/;"	s	union:TEEI_socket_command::func_arg	file:
+func_htons_args	TEEI.h	/^		} func_htons_args;$/;"	m	union:TEEI_socket_command::func_arg	typeref:struct:TEEI_socket_command::func_arg::func_htons
+func_htons_args	socketFun.c	/^		} func_htons_args;$/;"	m	union:TEEI_socket_command::func_arg	typeref:struct:TEEI_socket_command::func_arg::func_htons	file:
+func_inet_addr	TEEI.h	/^		struct func_inet_addr {$/;"	s	union:TEEI_socket_command::func_arg
+func_inet_addr	socketFun.c	/^		struct func_inet_addr {$/;"	s	union:TEEI_socket_command::func_arg	file:
+func_inet_addr_args	TEEI.h	/^		} func_inet_addr_args;$/;"	m	union:TEEI_socket_command::func_arg	typeref:struct:TEEI_socket_command::func_arg::func_inet_addr
+func_inet_addr_args	socketFun.c	/^		} func_inet_addr_args;$/;"	m	union:TEEI_socket_command::func_arg	typeref:struct:TEEI_socket_command::func_arg::func_inet_addr	file:
+func_listen	TEEI.h	/^		struct func_listen {$/;"	s	union:TEEI_socket_command::func_arg
+func_listen	socketFun.c	/^		struct func_listen {$/;"	s	union:TEEI_socket_command::func_arg	file:
+func_listen_args	TEEI.h	/^		} func_listen_args;$/;"	m	union:TEEI_socket_command::func_arg	typeref:struct:TEEI_socket_command::func_arg::func_listen
+func_listen_args	socketFun.c	/^		} func_listen_args;$/;"	m	union:TEEI_socket_command::func_arg	typeref:struct:TEEI_socket_command::func_arg::func_listen	file:
+func_recv	TEEI.h	66;"	d
+func_recv	socketFun.c	146;"	d	file:
+func_recv_args	TEEI.h	67;"	d
+func_recv_args	socketFun.c	147;"	d	file:
+func_recv_send	TEEI.h	68;"	d
+func_recv_send	socketFun.c	148;"	d	file:
+func_recv_send_args	TEEI.h	69;"	d
+func_recv_send_args	socketFun.c	149;"	d	file:
+func_send	TEEI.h	/^		struct func_send {$/;"	s	union:TEEI_socket_command::func_arg
+func_send	socketFun.c	/^		struct func_send {$/;"	s	union:TEEI_socket_command::func_arg	file:
+func_send_args	TEEI.h	/^		} func_send_args;$/;"	m	union:TEEI_socket_command::func_arg	typeref:struct:TEEI_socket_command::func_arg::func_send
+func_send_args	socketFun.c	/^		} func_send_args;$/;"	m	union:TEEI_socket_command::func_arg	typeref:struct:TEEI_socket_command::func_arg::func_send	file:
+func_setsockopt	TEEI.h	/^		struct func_setsockopt {$/;"	s	union:TEEI_socket_command::func_arg
+func_setsockopt	socketFun.c	/^		struct func_setsockopt {$/;"	s	union:TEEI_socket_command::func_arg	file:
+func_setsockopt_args	TEEI.h	/^		} func_setsockopt_args;$/;"	m	union:TEEI_socket_command::func_arg	typeref:struct:TEEI_socket_command::func_arg::func_setsockopt
+func_setsockopt_args	socketFun.c	/^		} func_setsockopt_args;$/;"	m	union:TEEI_socket_command::func_arg	typeref:struct:TEEI_socket_command::func_arg::func_setsockopt	file:
+func_socket	TEEI.h	/^		struct func_socket {$/;"	s	union:TEEI_socket_command::func_arg
+func_socket	socketFun.c	/^		struct func_socket {$/;"	s	union:TEEI_socket_command::func_arg	file:
+func_socket_args	TEEI.h	/^		} func_socket_args;$/;"	m	union:TEEI_socket_command::func_arg	typeref:struct:TEEI_socket_command::func_arg::func_socket
+func_socket_args	socketFun.c	/^		} func_socket_args;$/;"	m	union:TEEI_socket_command::func_arg	typeref:struct:TEEI_socket_command::func_arg::func_socket	file:
+func_write	tz_service.c	/^		struct func_write {$/;"	s	union:TEEI_printer_command::func_arg	file:
+func_write_args	tz_service.c	/^		} func_write_args;$/;"	m	union:TEEI_printer_command::func_arg	typeref:struct:TEEI_printer_command::func_arg::func_write	file:
+get_bdrv_id	teei_client_main.c	/^int get_bdrv_id(void)$/;"	f
+get_call_type	switch_queue.c	/^int get_call_type(struct switch_call_struct *ent)$/;"	f
+get_current_cpuid	teei_client_main.c	/^ int get_current_cpuid(void)$/;"	f
+get_end_index	tz_service.c	/^static __always_inline unsigned int get_end_index(struct NQ_head *nq_head)$/;"	f	file:
+get_master_cpu_id	teei_client_main.c	/^static unsigned int get_master_cpu_id(unsigned int gic_irqs)$/;"	f	file:
+get_master_cpu_id	tz_service.c	/^static unsigned int get_master_cpu_id(unsigned int gic_irqs)$/;"	f	file:
+get_nq_entry	tz_service.c	/^unsigned char *get_nq_entry(unsigned char *buffer_addr)$/;"	f
+get_response_smc_cmd	tz_service.c	/^struct teei_smc_cmd *get_response_smc_cmd(void)$/;"	f
+get_switch_queue_ent	switch_queue.c	/^struct switch_call_struct *get_switch_queue_ent(void)$/;"	f
+global_down_lock	teei_client_main.c	/^DECLARE_COMPLETION(global_down_lock);$/;"	v
+global_down_lock	teei_client_main.c	/^EXPORT_SYMBOL_GPL(global_down_lock);$/;"	v
+global_fn	teei_client_main.c	/^int global_fn(void)$/;"	f
+handle	tz_service.h	/^	int (*handle)(struct service_handler *handler); \/*! ?�务调用 *\/$/;"	m	struct:service_handler
+handle_bdrv_call	switch_queue.c	/^int handle_bdrv_call(void *buff)$/;"	f
+handle_capi_call	switch_queue.c	/^int handle_capi_call(void *buff)$/;"	f
+handle_dispatch	tz_service.c	/^void handle_dispatch(void)$/;"	f
+handle_fdrv_call	switch_queue.c	/^int handle_fdrv_call(void *buff)$/;"	f
+handle_sched_call	switch_queue.c	/^int handle_sched_call(void *buff)$/;"	f
+handle_switch_call	switch_queue.c	/^int handle_switch_call(void *buff)$/;"	f
+handler	switch_queue.c	/^	struct service_handler *handler;$/;"	m	struct:bdrv_call_struct	typeref:struct:bdrv_call_struct::service_handler	file:
+handler	tz_service.c	/^	struct service_handler *handler;$/;"	m	struct:reetime_handle_struct	typeref:struct:reetime_handle_struct::service_handler	file:
+handler	tz_service.c	/^	struct service_handler *handler;$/;"	m	struct:vfs_handle_struct	typeref:struct:vfs_handle_struct::service_handler	file:
+handler	tz_service.c	/^        struct service_handler *handler;$/;"	m	struct:bdrv_call_struct	typeref:struct:bdrv_call_struct::service_handler	file:
+hasError	TEEI.h	/^	bool hasError;$/;"	m	union:TEEI_socket_response_type
+hasError	socketFun.c	/^	bool hasError;$/;"	m	union:TEEI_socket_response_type	file:
+head	switch_queue.c	/^	struct list_head head;$/;"	m	struct:switch_head_struct	typeref:struct:switch_head_struct::list_head	file:
+head	teei_client_main.c	/^	struct list_head head;$/;"	m	struct:teei_encode	typeref:struct:teei_encode::list_head	file:
+head	teei_client_main.c	/^	struct list_head head;$/;"	m	struct:teei_shared_mem	typeref:struct:teei_shared_mem::list_head	file:
+head_ref	teei_tee_client_api.h	/^	struct list head_ref;$/;"	m	struct:TEEC_SharedMemory	typeref:struct:TEEC_SharedMemory::list
+id	teei_common.h	/^	unsigned int    id;$/;"	m	struct:teei_smc_cmd
+in_addr	TEEI.h	/^struct in_addr {$/;"	s
+index	teei_client_main.c	/^	void *index;$/;"	m	struct:teei_shared_mem	file:
+info_buf_len	teei_common.h	/^	unsigned int    info_buf_len;$/;"	m	struct:teei_smc_cmd
+info_buf_phys	teei_common.h	/^	unsigned int    info_buf_phys;$/;"	m	struct:teei_smc_cmd
+info_data	switch_queue.c	/^        void *info_data;$/;"	m	struct:smc_call_struct	file:
+info_data	teei_client_main.c	/^	void *info_data;$/;"	m	struct:smc_call_struct	file:
+info_len	switch_queue.c	/^        size_t info_len;$/;"	m	struct:smc_call_struct	file:
+info_len	teei_client_main.c	/^	size_t info_len;$/;"	m	struct:smc_call_struct	file:
+init	tz_service.h	/^	void (*init)(struct service_handler *handler); \/*! ?�务?��??��???*\/$/;"	m	struct:service_handler
+init_all_service_handlers	tz_service.c	/^static int init_all_service_handlers(void)$/;"	f	file:
+init_cmdbuf	tz_service.c	/^static void init_cmdbuf(unsigned long phy_address, unsigned long fdrv_phy_address,$/;"	f	file:
+init_cmdbuf_entry	tz_service.c	/^struct init_cmdbuf_struct init_cmdbuf_entry;$/;"	v	typeref:struct:init_cmdbuf_struct
+init_cmdbuf_struct	tz_service.c	/^struct init_cmdbuf_struct {$/;"	s	file:
+init_nq_head	tz_service.c	/^long init_nq_head(unsigned char *buffer_addr)$/;"	f
+init_smc_work	teei_client_main.c	/^static void init_smc_work(void)$/;"	f	file:
+init_switch_call_struct	switch_queue.c	/^static int init_switch_call_struct(struct switch_call_struct *ent, int work_type, unsigned long buff)$/;"	f	file:
+init_teei_framework	teei_client_main.c	/^static int init_teei_framework(void)$/;"	f	file:
+init_tlog_entry	teei_client_main.c	/^void init_tlog_entry(void)$/;"	f
+invalid_flag	tz_service.c	/^	unsigned int invalid_flag;$/;"	m	struct:message_head	file:
+invoke_fastcall	tz_service.c	/^static void invoke_fastcall(void)$/;"	f	file:
+ip_addr	TEEI.h	/^			char ip_addr[17];$/;"	m	struct:TEEI_socket_command::func_arg::func_inet_addr
+ip_addr	socketFun.c	/^			char ip_addr[17];$/;"	m	struct:TEEI_socket_command::func_arg::func_inet_addr	file:
+irq_call_flag	teei_client_main.c	/^int irq_call_flag = 0;$/;"	v
+is_teei_ready	teei_client_main.c	/^EXPORT_SYMBOL(is_teei_ready);$/;"	v
+is_teei_ready	teei_client_main.c	/^int is_teei_ready(void)$/;"	f
+k_addr	teei_client_main.c	/^	void *k_addr;$/;"	m	struct:teei_shared_mem	file:
+ker_req_data_addr	teei_client_main.c	/^	void *ker_req_data_addr;$/;"	m	struct:teei_encode	file:
+ker_res_data_addr	teei_client_main.c	/^	void *ker_res_data_addr;$/;"	m	struct:teei_encode	file:
+len	TEEI.h	/^			int len;$/;"	m	struct:TEEI_socket_command::func_arg::func_send
+len	socketFun.c	/^			int len;$/;"	m	struct:TEEI_socket_command::func_arg::func_send	file:
+len	socketFun.c	/^	size_t len;$/;"	m	struct:recv_params_t	file:
+len	socketFun.c	/^	size_t len;$/;"	m	struct:send_params_t	file:
+len	teei_client.h	/^	unsigned int len;$/;"	m	struct:teei_client_encode_cmd
+len	teei_client_main.c	/^	u32  len;$/;"	m	struct:teei_shared_mem	file:
+len	teei_common.h	/^	int len;			\/* data length *\/$/;"	m	struct:teei_encode_meta
+length	teei_client_main.c	/^	unsigned int length;$/;"	m	struct:NQ_entry	file:
+length	tz_service.c	/^			int length;$/;"	m	struct:TEEI_printer_command::func_arg::func_write	file:
+length	tz_service.c	/^	unsigned int length;$/;"	m	struct:NQ_entry	file:
+level	TEEI.h	/^			int level;$/;"	m	struct:TEEI_socket_command::func_arg::func_setsockopt
+level	socketFun.c	/^			int level;$/;"	m	struct:TEEI_socket_command::func_arg::func_setsockopt	file:
+link	switch_queue.c	/^	struct list_head link;$/;"	m	struct:switch_call_struct	typeref:struct:switch_call_struct::list_head	file:
+link	teei_client_main.c	/^	struct list_head link;			\/* link list for teei_context *\/$/;"	m	struct:teei_context	typeref:struct:teei_context::list_head	file:
+link	teei_client_main.c	/^	struct list_head link;		\/* link list for teei_session *\/$/;"	m	struct:teei_session	typeref:struct:teei_session::list_head	file:
+list	teei_list.h	/^struct list {$/;"	s
+list_add	teei_list.h	/^static inline void list_add(struct list *head, struct list *new)$/;"	f
+list_add_tail	teei_list.h	/^static inline void list_add_tail(struct list *tnode, struct list *new)$/;"	f
+list_del	teei_list.h	/^static inline void list_del(struct list *node)$/;"	f
+list_empty	teei_list.h	/^static inline int list_empty(struct list *head)$/;"	f
+list_entry	teei_list.h	21;"	d
+list_for_each	teei_list.h	24;"	d
+list_for_each_entry	teei_list.h	27;"	d
+list_for_each_entry_safe	teei_list.h	40;"	d
+list_pop	teei_list.h	/^static inline struct list *list_pop(struct list *head)$/;"	f
+list_pop_tail	teei_list.h	/^static inline struct list *list_pop_tail(struct list *head)$/;"	f
+load_ent	tz_service.c	/^static struct load_soter_entry load_ent;$/;"	v	typeref:struct:load_soter_entry	file:
+load_func	tz_service.c	/^static void load_func(struct work_struct *entry)$/;"	f	file:
+load_soter_entry	tz_service.c	/^struct load_soter_entry {$/;"	s	file:
+load_tee	teei_client_main.c	/^static void load_tee(void)$/;"	f	file:
+local_cmd	switch_queue.c	/^        unsigned long local_cmd; $/;"	m	struct:smc_call_struct	file:
+local_cmd	teei_client_main.c	/^	unsigned long local_cmd;$/;"	m	struct:smc_call_struct	file:
+mask	teei_client_main.c	/^static 	struct cpumask mask = { CPU_BITS_NONE };$/;"	v	typeref:struct:cpumask	file:
+mem_size	teei_client_main.c	/^	unsigned long mem_size;$/;"	m	struct:fp_command_struct	file:
+memref	teei_tee_client_api.h	/^	struct TEEC_RegisteredMemoryReference memref;$/;"	m	union:TEEC_Parameter	typeref:struct:TEEC_Parameter::TEEC_RegisteredMemoryReference
+message_buff	tz_service.c	/^unsigned long message_buff = 0;$/;"	v
+message_head	tz_service.c	/^struct message_head {$/;"	s	file:
+message_type	tz_service.c	/^	unsigned int message_type;$/;"	m	struct:message_head	file:
+meta	teei_client_main.c	/^	struct teei_encode_meta *meta;$/;"	m	struct:teei_encode	typeref:struct:teei_encode::teei_encode_meta	file:
+meta_data	switch_queue.c	/^        void *meta_data;$/;"	m	struct:smc_call_struct	file:
+meta_data	teei_client_main.c	/^	void *meta_data;$/;"	m	struct:smc_call_struct	file:
+meta_data_phys	teei_common.h	/^	unsigned int    meta_data_phys;$/;"	m	struct:teei_smc_cmd
+mt_deint_soft_revert_isr	teei_client_main.c	/^static irqreturn_t mt_deint_soft_revert_isr(unsigned irq, struct irq_desc *desc)$/;"	f	file:
+n_ack_t_invoke_drv	nt_smc_call.h	/^static inline void n_ack_t_invoke_drv($/;"	f
+n_ack_t_load_img	nt_smc_call.h	/^static inline void n_ack_t_load_img($/;"	f
+n_get_param_in	nt_smc_call.h	/^static inline void n_get_param_in($/;"	f
+n_init_t_boot_stage1	nt_smc_call.h	/^static inline void n_init_t_boot_stage1($/;"	f
+n_init_t_fc_buf	nt_smc_call.h	/^static inline void n_init_t_fc_buf($/;"	f
+n_invoke_t_drv	nt_smc_call.h	/^static inline void n_invoke_t_drv($/;"	f
+n_invoke_t_fast_call	nt_smc_call.h	/^static inline void n_invoke_t_fast_call($/;"	f
+n_invoke_t_load_tee	nt_smc_call.h	/^static inline void n_invoke_t_load_tee($/;"	f
+n_invoke_t_nq	nt_smc_call.h	/^static inline void n_invoke_t_nq($/;"	f
+n_invoke_t_sys_ctl	nt_smc_call.h	/^static inline void n_invoke_t_sys_ctl($/;"	f
+n_raise_t_event	nt_smc_call.h	/^static inline void n_raise_t_event($/;"	f
+n_switch_to_t_os_stage2	nt_smc_call.h	/^static inline void n_switch_to_t_os_stage2(void)$/;"	f
+n_t_nq_phy_addr	tz_service.c	/^	unsigned int n_t_nq_phy_addr;$/;"	m	struct:create_NQ_struct	file:
+n_t_size	tz_service.c	/^	unsigned int n_t_size;$/;"	m	struct:create_NQ_struct	file:
+name	teei_client.h	/^	char name[255]; \/* context name *\/$/;"	m	struct:ctx_data
+next	teei_list.h	/^	struct list *next, *prev;$/;"	m	struct:list	typeref:struct:list::list
+nt_bdrv_handler	teei_client_main.c	/^static irqreturn_t nt_bdrv_handler(void)$/;"	f	file:
+nt_boot_irq_handler	teei_client_main.c	/^static irqreturn_t nt_boot_irq_handler(void)$/;"	f	file:
+nt_dump_state	nt_smc_call.h	/^static inline void nt_dump_state(void)$/;"	f
+nt_error_irq_handler	teei_client_main.c	/^static irqreturn_t nt_error_irq_handler(void)$/;"	f	file:
+nt_fp_ack_handler	teei_client_main.c	/^static irqreturn_t nt_fp_ack_handler(void)$/;"	f	file:
+nt_sched_core	nt_smc_call.h	/^static inline void nt_sched_core($/;"	f
+nt_sched_irq_handler	teei_client_main.c	/^static irqreturn_t nt_sched_irq_handler(void)$/;"	f	file:
+nt_sched_t	nt_smc_call.h	/^static inline void nt_sched_t(void)$/;"	f
+nt_sched_t_call	teei_client_main.c	/^void nt_sched_t_call(void)$/;"	f
+nt_sched_t_fiq	nt_smc_call.h	/^static inline void nt_sched_t_fiq($/;"	f
+nt_soter_irq_handler	teei_client_main.c	/^static irqreturn_t nt_soter_irq_handler(void)$/;"	f	file:
+nt_switch_irq_handler	tz_service.c	/^static irqreturn_t nt_switch_irq_handler(void)$/;"	f	file:
+nt_t_buffer	tz_service.c	/^static unsigned long nt_t_buffer;$/;"	v	file:
+ob_addr	TEEI.h	/^			struct sockaddr ob_addr;$/;"	m	struct:TEEI_socket_command::func_arg::func_accept	typeref:struct:TEEI_socket_command::func_arg::func_accept::sockaddr
+ob_addr	TEEI.h	/^			struct sockaddr ob_addr;$/;"	m	struct:TEEI_socket_command::func_arg::func_bind	typeref:struct:TEEI_socket_command::func_arg::func_bind::sockaddr
+ob_addr	TEEI.h	/^			struct sockaddr ob_addr;$/;"	m	struct:TEEI_socket_command::func_arg::func_connect	typeref:struct:TEEI_socket_command::func_arg::func_connect::sockaddr
+ob_addr	socketFun.c	/^			struct sockaddr ob_addr;$/;"	m	struct:TEEI_socket_command::func_arg::func_accept	typeref:struct:TEEI_socket_command::func_arg::func_accept::sockaddr	file:
+ob_addr	socketFun.c	/^			struct sockaddr ob_addr;$/;"	m	struct:TEEI_socket_command::func_arg::func_bind	typeref:struct:TEEI_socket_command::func_arg::func_bind::sockaddr	file:
+ob_addr	socketFun.c	/^			struct sockaddr ob_addr;$/;"	m	struct:TEEI_socket_command::func_arg::func_connect	typeref:struct:TEEI_socket_command::func_arg::func_connect::sockaddr	file:
+offset	teei_client.h	/^	int   offset;$/;"	m	struct:teei_client_encode_cmd
+offset	teei_tee_client_api.h	/^	size_t        offset;$/;"	m	struct:TEEC_RegisteredMemoryReference
+operation_cnt	teei_tee_client_api.h	/^	int operation_cnt;$/;"	m	struct:TEEC_Session
+operation_count	teei_tee_client_api.h	/^	int operation_count;$/;"	m	struct:TEEC_SharedMemory
+optlen	TEEI.h	/^			int optlen;$/;"	m	struct:TEEI_socket_command::func_arg::func_setsockopt
+optlen	socketFun.c	/^			int optlen;$/;"	m	struct:TEEI_socket_command::func_arg::func_setsockopt	file:
+optname	TEEI.h	/^			int optname;$/;"	m	struct:TEEI_socket_command::func_arg::func_setsockopt
+optname	socketFun.c	/^			int optname;$/;"	m	struct:TEEI_socket_command::func_arg::func_setsockopt	file:
+para_vaddr	tz_service.c	/^static unsigned long para_vaddr;$/;"	v	file:
+paramTypes	teei_tee_client_api.h	/^	uint32_t paramTypes;$/;"	m	struct:TEEC_Operation
+param_buf	tz_service.h	/^	void *param_buf; \/*! ?�系统通信缓冲??*\/$/;"	m	struct:service_handler
+param_length	tz_service.c	/^	unsigned int param_length;$/;"	m	struct:message_head	file:
+param_pos	teei_client.h	/^	int param_pos;$/;"	m	struct:teei_client_encode_cmd
+param_pos	teei_common.h	/^	int param_pos;			\/* param order *\/$/;"	m	struct:teei_encode_meta
+param_pos_type	teei_client.h	/^	int param_pos_type;$/;"	m	struct:teei_client_encode_cmd
+param_pos_type	teei_common.h	/^	int param_pos_type;		\/* param type *\/$/;"	m	struct:teei_encode_meta
+param_type	teei_client.h	/^	int   param_type;$/;"	m	struct:teei_client_encode_cmd
+params	teei_client.h	/^	int params[8];$/;"	m	struct:ser_ses_id
+params	teei_tee_client_api.h	/^	union TEEC_Parameter params[4];$/;"	m	struct:TEEC_Operation	typeref:union:TEEC_Operation::TEEC_Parameter
+paramtype	teei_client.h	/^	int paramtype;$/;"	m	struct:ser_ses_id
+parent	teei_tee_client_api.h	/^	struct TEEC_SharedMemory *parent;$/;"	m	struct:TEEC_RegisteredMemoryReference	typeref:struct:TEEC_RegisteredMemoryReference::TEEC_SharedMemory
+parent_cont	teei_client_main.c	/^	struct teei_context *parent_cont;	\/* the teei_context pointer of this session *\/$/;"	m	struct:teei_session	typeref:struct:teei_session::teei_context	file:
+phy_addr	tz_service.c	/^	unsigned long phy_addr;$/;"	m	struct:init_cmdbuf_struct	file:
+portnum	TEEI.h	/^			unsigned short portnum;$/;"	m	struct:TEEI_socket_command::func_arg::func_htons
+portnum	TEEI.h	/^	unsigned short portnum;$/;"	m	union:TEEI_socket_response_type
+portnum	socketFun.c	/^			unsigned short portnum;$/;"	m	struct:TEEI_socket_command::func_arg::func_htons	file:
+portnum	socketFun.c	/^	unsigned short portnum;$/;"	m	union:TEEI_socket_response_type	file:
+post_smc_work	teei_client_main.c	/^static void post_smc_work(u32 cmd_addr)$/;"	f	file:
+post_teei_ack_invoke_drv	tz_service.c	/^static void post_teei_ack_invoke_drv(int cpu_id)$/;"	f	file:
+post_teei_invoke_drv	teei_client_main.c	/^static void post_teei_invoke_drv(int cpu_id)$/;"	f	file:
+post_teei_smc	teei_client_main.c	/^static u32 post_teei_smc(int cpu_id, u32 cmd_addr, int size, int valid_flag)$/;"	f	file:
+prev	teei_list.h	/^	struct list *next, *prev;$/;"	m	struct:list	typeref:struct:list::
+print_context	teei_client_main.c	/^static int print_context(void)$/;"	f	file:
+printer_driver	tz_service.c	/^static struct service_handler printer_driver;$/;"	v	typeref:struct:service_handler	file:
+printer_driver_deinit	tz_service.c	/^static void printer_driver_deinit(struct service_handler *handler) \/*! stop service  *\/$/;"	f	file:
+printer_driver_handle	tz_service.c	/^static int printer_driver_handle(struct service_handler *handler) \/* invoke handler *\/$/;"	f	file:
+printer_driver_init	tz_service.c	/^static void printer_driver_init(struct service_handler *handler) \/*init service *\/$/;"	f	file:
+printer_share_mem	tz_service.c	/^EXPORT_SYMBOL_GPL(printer_share_mem);$/;"	v
+printer_share_mem	tz_service.c	/^unsigned char *printer_share_mem = NULL;$/;"	v
+printer_shmem_flags	tz_service.c	/^EXPORT_SYMBOL_GPL(printer_shmem_flags);$/;"	v
+printer_shmem_flags	tz_service.c	/^unsigned int printer_shmem_flags = 0;$/;"	v
+printer_thread_function	tz_service.c	/^static int printer_thread_function(unsigned long virt_addr, unsigned long para_vaddr, unsigned long buff_vaddr)$/;"	f	file:
+printk	switch_queue.c	23;"	d	file:
+printk	teei_client_main.c	215;"	d	file:
+printk	tz_service.c	293;"	d	file:
+protocol	TEEI.h	/^			int protocol;$/;"	m	struct:TEEI_socket_command::func_arg::func_socket
+protocol	socketFun.c	/^			int protocol;$/;"	m	struct:TEEI_socket_command::func_arg::func_socket	file:
+protocol	socketFun.c	/^	int protocol;$/;"	m	struct:socket_params_t	file:
+psema	switch_queue.c	/^        struct semaphore *psema;$/;"	m	struct:smc_call_struct	typeref:struct:smc_call_struct::semaphore	file:
+psema	teei_client_main.c	/^	struct semaphore *psema;$/;"	m	struct:smc_call_struct	typeref:struct:smc_call_struct::semaphore	file:
+raw	TEEI.h	/^		char raw[ARGS_BLOCK_SIZE];$/;"	m	union:TEEI_socket_command::func_arg
+raw	socketFun.c	/^		char raw[ARGS_BLOCK_SIZE];$/;"	m	union:TEEI_socket_command::func_arg	file:
+recv	TEEI.h	/^	} recv;$/;"	m	union:TEEI_socket_response_type	typeref:struct:TEEI_socket_response_type::response_func_recv
+recv	socketFun.c	/^	} recv;$/;"	m	union:TEEI_socket_response_type	typeref:struct:TEEI_socket_response_type::response_func_recv	file:
+recv_params_t	socketFun.c	/^struct recv_params_t {$/;"	s	file:
+reetime	tz_service.c	/^static struct service_handler reetime;$/;"	v	typeref:struct:service_handler	file:
+reetime_deinit	tz_service.c	/^static void reetime_deinit(struct service_handler *handler)$/;"	f	file:
+reetime_handle	tz_service.c	/^static int reetime_handle(struct service_handler *handler)$/;"	f	file:
+reetime_handle_entry	tz_service.c	/^struct reetime_handle_struct reetime_handle_entry;$/;"	v	typeref:struct:reetime_handle_struct
+reetime_handle_struct	tz_service.c	/^struct reetime_handle_struct {$/;"	s	file:
+reetime_init	tz_service.c	/^static void reetime_init(struct service_handler *handler)$/;"	f	file:
+register_bdrv_handler	teei_client_main.c	/^int register_bdrv_handler(void)$/;"	f
+register_boot_irq_handler	teei_client_main.c	/^int register_boot_irq_handler(void)$/;"	f
+register_error_irq_handler	teei_client_main.c	/^int register_error_irq_handler(void)$/;"	f
+register_fp_ack_handler	teei_client_main.c	/^int register_fp_ack_handler(void)$/;"	f
+register_interrupt_handler	tz_service.c	/^static int register_interrupt_handler(void)$/;"	f	file:
+register_interrupt_handler	vprinter_driver.c	/^static int register_interrupt_handler(void)$/;"	f	file:
+register_sched_irq_handler	teei_client_main.c	/^int register_sched_irq_handler(void)$/;"	f
+register_shared_param_buf	tz_service.c	/^static long register_shared_param_buf(struct service_handler *handler)$/;"	f	file:
+register_soter_irq_handler	teei_client_main.c	/^int register_soter_irq_handler(void)$/;"	f
+register_switch_irq_handler	tz_service.c	/^int register_switch_irq_handler(void)$/;"	f
+register_tlog_handler	teei_client_main.c	/^int register_tlog_handler(void)$/;"	f
+req_buf_len	teei_common.h	/^	unsigned int    req_buf_len;$/;"	m	struct:teei_smc_cmd
+req_buf_phys	teei_common.h	/^	unsigned int    req_buf_phys;$/;"	m	struct:teei_smc_cmd
+reserve	teei_client_main.c	/^	unsigned char reserve[20];$/;"	m	struct:NQ_entry	file:
+reserve	teei_client_main.c	/^	unsigned char reserve[20];$/;"	m	struct:NQ_head	file:
+reserve	tz_service.c	/^	unsigned char reserve[20];$/;"	m	struct:NQ_entry	file:
+reserve	tz_service.c	/^	unsigned char reserve[20];$/;"	m	struct:NQ_head	file:
+resp_buf	switch_queue.c	/^        void *resp_buf; $/;"	m	struct:smc_call_struct	file:
+resp_buf	teei_client_main.c	/^	void *resp_buf;$/;"	m	struct:smc_call_struct	file:
+resp_buf_len	teei_common.h	/^	unsigned int    resp_buf_len;$/;"	m	struct:teei_smc_cmd
+resp_buf_phys	teei_common.h	/^	unsigned int    resp_buf_phys;$/;"	m	struct:teei_smc_cmd
+resp_len	switch_queue.c	/^        size_t resp_len;$/;"	m	struct:smc_call_struct	file:
+resp_len	teei_client_main.c	/^	size_t resp_len;$/;"	m	struct:smc_call_struct	file:
+response_func_recv	TEEI.h	/^	struct response_func_recv {$/;"	s	union:TEEI_socket_response_type
+response_func_recv	socketFun.c	/^	struct response_func_recv {$/;"	s	union:TEEI_socket_response_type	file:
+retVal	switch_queue.c	/^	int retVal;$/;"	m	struct:bdrv_call_struct	file:
+retVal	switch_queue.c	/^	int retVal;$/;"	m	struct:fdrv_call_struct	file:
+retVal	switch_queue.c	/^        int retVal;     $/;"	m	struct:smc_call_struct	file:
+retVal	teei_client_main.c	/^	int retVal;$/;"	m	struct:fp_command_struct	file:
+retVal	teei_client_main.c	/^	int retVal;$/;"	m	struct:smc_call_struct	file:
+retVal	teei_client_main.c	/^        int retVal;$/;"	m	struct:fdrv_call_struct	file:
+retVal	tz_service.c	/^	int retVal;$/;"	m	struct:ack_fast_call_struct	file:
+retVal	tz_service.c	/^	int retVal;$/;"	m	struct:reetime_handle_struct	file:
+retVal	tz_service.c	/^	int retVal;$/;"	m	struct:vfs_handle_struct	file:
+retVal	tz_service.c	/^        int retVal;$/;"	m	struct:bdrv_call_struct	file:
+ret_len	teei_common.h	/^	int ret_len;			\/* return sizeof data *\/$/;"	m	struct:teei_encode_meta
+ret_resp_buf_len	teei_common.h	/^	unsigned int    ret_resp_buf_len;$/;"	m	struct:teei_smc_cmd
+ret_resp_len	switch_queue.c	/^        int *ret_resp_len;$/;"	m	struct:smc_call_struct	file:
+ret_resp_len	teei_client_main.c	/^	int *ret_resp_len;$/;"	m	struct:smc_call_struct	file:
+ret_val	teei_client.h	/^	int ret_val;$/;"	m	struct:teei_smc_cdata
+return_origin	teei_client.h	/^	int return_origin;$/;"	m	struct:ser_ses_id
+return_origin	teei_client.h	/^	int return_origin;$/;"	m	struct:teei_client_encode_cmd
+return_value	teei_client.h	/^	int return_value;$/;"	m	struct:ser_ses_id
+return_value	teei_client.h	/^	int return_value;$/;"	m	struct:teei_client_encode_cmd
+returns	socketFun.c	/^	long returns;$/;"	m	struct:close_params_t	file:
+returns	socketFun.c	/^	long returns;$/;"	m	struct:connect_params_t	file:
+returns	socketFun.c	/^	long returns;$/;"	m	struct:recv_params_t	file:
+returns	socketFun.c	/^	long returns;$/;"	m	struct:send_params_t	file:
+returns	socketFun.c	/^	long returns;$/;"	m	struct:socket_params_t	file:
+s_addr	TEEI.h	/^	unsigned long s_addr; \/* that’s a 32-bit long, or 4 bytes *\/$/;"	m	struct:in_addr
+s_errno	teei_tee_client_api.h	/^	int s_errno;$/;"	m	struct:TEEC_Context
+s_errno	teei_tee_client_api.h	/^	int s_errno;$/;"	m	struct:TEEC_Session
+s_errno	teei_tee_client_api.h	/^	int s_errno;$/;"	m	struct:TEEC_SharedMemory
+s_head	teei_client_main.c	/^	struct list_head s_head;$/;"	m	struct:teei_shared_mem	typeref:struct:teei_shared_mem::list_head	file:
+sa_data	TEEI.h	/^	char sa_data[14];   \/* 14字节协议地址 *\/$/;"	m	struct:sockaddr
+sa_family	TEEI.h	/^	unsigned short sa_family; \/* 地址族 *\/$/;"	m	struct:sockaddr
+search_tlog_entry	teei_client_main.c	/^int search_tlog_entry(void)$/;"	f
+secondary_boot_stage1	teei_client_main.c	/^static void secondary_boot_stage1(void *info)$/;"	f	file:
+secondary_boot_stage2	teei_client_main.c	/^static void secondary_boot_stage2(void *info)$/;"	f	file:
+secondary_init_cmdbuf	tz_service.c	/^static void secondary_init_cmdbuf(void *info)$/;"	f	file:
+secondary_invoke_fastcall	tz_service.c	/^static void secondary_invoke_fastcall(void *info)$/;"	f	file:
+secondary_load_func	tz_service.c	/^static void secondary_load_func(void)$/;"	f	file:
+secondary_load_tee	teei_client_main.c	/^static void secondary_load_tee(void *info)$/;"	f	file:
+secondary_nt_sched_t	teei_client_main.c	/^static void secondary_nt_sched_t(void *info)$/;"	f	file:
+secondary_reetime_handle	tz_service.c	/^static void secondary_reetime_handle(void *info)$/;"	f	file:
+secondary_send_fp_command	teei_client_main.c	/^static void secondary_send_fp_command(void *info)$/;"	f	file:
+secondary_teei_ack_invoke_drv	tz_service.c	/^static void secondary_teei_ack_invoke_drv(void)$/;"	f	file:
+secondary_teei_invoke_drv	teei_client_main.c	/^static void secondary_teei_invoke_drv(void)$/;"	f	file:
+secondary_teei_smc_call	teei_client_main.c	/^static void secondary_teei_smc_call(void *info)$/;"	f	file:
+secondary_teei_smc_handler	teei_client_main.c	/^static void secondary_teei_smc_handler(void *info)$/;"	f	file:
+secondary_vfs_handle	tz_service.c	/^static void secondary_vfs_handle(void *info)$/;"	f	file:
+secure_wq	tz_service.c	/^struct work_queue *secure_wq = NULL;$/;"	v	typeref:struct:work_queue
+send_fp_command	teei_client_main.c	/^int send_fp_command(unsigned long share_memory_size)$/;"	f
+send_params_t	socketFun.c	/^struct send_params_t {$/;"	s	file:
+ser_ses_id	teei_client.h	/^struct ser_ses_id {$/;"	s
+serivce_cmd_flag	tz_service.c	/^static int serivce_cmd_flag;$/;"	v	file:
+service_handler	tz_service.h	/^struct service_handler {$/;"	s
+service_id	teei_common.h	/^	int service_id;$/;"	m	struct:teeic_notify_data
+service_id	teei_tee_client_api.h	/^	int service_id;$/;"	m	struct:TEEC_Session
+service_smc_call	teei_client_main.c	/^int service_smc_call(u32 teei_cmd_type, u32 dev_file_id, u32 svc_id,$/;"	f
+sess_cnt	teei_client_main.c	/^	unsigned long sess_cnt;			\/* session counter *\/$/;"	m	struct:teei_context	file:
+sess_id	teei_client_main.c	/^	int sess_id;			\/* ID *\/$/;"	m	struct:teei_session	file:
+sess_link	teei_client_main.c	/^	struct list_head sess_link;			\/* link list for the sessions of this context *\/$/;"	m	struct:teei_context	typeref:struct:teei_context::list_head	file:
+session_count	teei_tee_client_api.h	/^	int session_count;$/;"	m	struct:TEEC_Context
+session_id	teei_client.h	/^	int session_id;$/;"	m	struct:ser_ses_id
+session_id	teei_client.h	/^	int session_id;$/;"	m	struct:teei_client_encode_cmd
+session_id	teei_client.h	/^	int session_id;$/;"	m	struct:user_ses_init
+session_id	teei_client.h	/^	unsigned int session_id;$/;"	m	struct:teei_session_shared_mem_info
+session_id	teei_common.h	/^	int session_id;$/;"	m	struct:teeic_notify_data
+session_id	teei_tee_client_api.h	/^	int session_id;$/;"	m	struct:TEEC_Session
+set_ack_vdrv_cmd	tz_service.c	/^void set_ack_vdrv_cmd(unsigned int sys_num)$/;"	f
+set_fp_command	tz_service.c	/^void set_fp_command(unsigned long memory_size)$/;"	f
+set_sch_load_img_cmd	tz_service.c	/^void set_sch_load_img_cmd(void)$/;"	f
+set_sch_nq_cmd	tz_service.c	/^void set_sch_nq_cmd(void)$/;"	f
+shared_mem_cnt	teei_client_main.c	/^	int shared_mem_cnt;$/;"	m	struct:teei_shared_mem_head	file:
+shared_mem_cnt	teei_client_main.c	/^	unsigned long shared_mem_cnt;		\/* share memory counter *\/$/;"	m	struct:teei_context	file:
+shared_mem_cnt	teei_tee_client_api.h	/^	uint32_t shared_mem_cnt;$/;"	m	struct:TEEC_Context
+shared_mem_list	teei_client_main.c	/^	struct list_head shared_mem_list;	\/* link list for the share memory of this context *\/$/;"	m	struct:teei_context	typeref:struct:teei_context::list_head	file:
+shared_mem_list	teei_client_main.c	/^	struct list_head shared_mem_list;	\/* link list for the share memory of this session *\/$/;"	m	struct:teei_session	typeref:struct:teei_session::list_head	file:
+shared_mem_list	teei_client_main.c	/^	struct list_head shared_mem_list;$/;"	m	struct:teei_shared_mem_head	typeref:struct:teei_shared_mem_head::list_head	file:
+shared_mem_list	teei_tee_client_api.h	/^	struct list shared_mem_list;$/;"	m	struct:TEEC_Context	typeref:struct:TEEC_Context::list
+sin_addr	TEEI.h	/^	struct in_addr sin_addr;   \/* IP地址 *\/$/;"	m	struct:sockaddr_in	typeref:struct:sockaddr_in::in_addr
+sin_family	TEEI.h	/^	short int sin_family;   \/* 地址族 *\/$/;"	m	struct:sockaddr_in
+sin_port	TEEI.h	/^	unsigned short int sin_port;   \/* 端口号 *\/$/;"	m	struct:sockaddr_in
+sin_zero	TEEI.h	/^	unsigned char sin_zero[8];   \/* 填充0以保持与struct sockaddr同样大小 *\/$/;"	m	struct:sockaddr_in
+size	TEEI.h	/^		unsigned int size;$/;"	m	struct:TEEI_socket_response_type::response_func_recv
+size	socketFun.c	/^		unsigned int size;$/;"	m	struct:TEEI_socket_response_type::response_func_recv	file:
+size	teei_client.h	/^	int size;$/;"	m	struct:teei_smc_cdata
+size	teei_tee_client_api.h	/^	size_t        size;$/;"	m	struct:TEEC_RegisteredMemoryReference
+size	teei_tee_client_api.h	/^	size_t        size;$/;"	m	struct:TEEC_TempMemoryReference
+size	teei_tee_client_api.h	/^	size_t size;$/;"	m	struct:TEEC_SharedMemory
+size	tz_service.h	/^	unsigned size;$/;"	m	struct:service_handler
+smc_call	socketFun.c	/^static void smc_call(uint32_t p1, uint32_t p2, uint32_t p3, uint32_t p4)$/;"	f	file:
+smc_call_entry	teei_client_main.c	/^struct smc_call_struct smc_call_entry;$/;"	v	typeref:struct:smc_call_struct
+smc_call_struct	switch_queue.c	/^struct smc_call_struct {$/;"	s	file:
+smc_call_struct	teei_client_main.c	/^struct smc_call_struct {$/;"	s	file:
+smc_flag	tz_service.c	/^static int smc_flag;$/;"	v	file:
+smc_lock	teei_client_main.c	/^struct semaphore smc_lock;$/;"	v	typeref:struct:semaphore
+sockaddr	TEEI.h	/^struct sockaddr {$/;"	s
+sockaddr_in	TEEI.h	/^struct sockaddr_in {$/;"	s
+socket	tz_service.c	/^static struct service_handler socket;$/;"	v	typeref:struct:service_handler	file:
+socket_buffer_size	TEEI.h	4;"	d
+socket_deinit	tz_service.c	/^static void socket_deinit(struct service_handler *handler)$/;"	f	file:
+socket_handle	tz_service.c	/^static int  socket_handle(struct service_handler *handler)$/;"	f	file:
+socket_init	tz_service.c	/^static void socket_init(struct service_handler *handler)$/;"	f	file:
+socket_params_t	socketFun.c	/^struct socket_params_t {$/;"	s	file:
+socket_thread_function	socketFun.c	/^EXPORT_SYMBOL(socket_thread_function);$/;"	v
+socket_thread_function	socketFun.c	/^int socket_thread_function(unsigned long virt_addr, unsigned long para_vaddr, unsigned long buff_vaddr)$/;"	f
+sockfd	TEEI.h	/^			int sockfd;$/;"	m	struct:TEEI_socket_command::func_arg::func_accept
+sockfd	TEEI.h	/^			int sockfd;$/;"	m	struct:TEEI_socket_command::func_arg::func_bind
+sockfd	TEEI.h	/^			int sockfd;$/;"	m	struct:TEEI_socket_command::func_arg::func_close
+sockfd	TEEI.h	/^			int sockfd;$/;"	m	struct:TEEI_socket_command::func_arg::func_connect
+sockfd	TEEI.h	/^			int sockfd;$/;"	m	struct:TEEI_socket_command::func_arg::func_listen
+sockfd	TEEI.h	/^			int sockfd;$/;"	m	struct:TEEI_socket_command::func_arg::func_send
+sockfd	socketFun.c	/^			int sockfd;$/;"	m	struct:TEEI_socket_command::func_arg::func_accept	file:
+sockfd	socketFun.c	/^			int sockfd;$/;"	m	struct:TEEI_socket_command::func_arg::func_bind	file:
+sockfd	socketFun.c	/^			int sockfd;$/;"	m	struct:TEEI_socket_command::func_arg::func_close	file:
+sockfd	socketFun.c	/^			int sockfd;$/;"	m	struct:TEEI_socket_command::func_arg::func_connect	file:
+sockfd	socketFun.c	/^			int sockfd;$/;"	m	struct:TEEI_socket_command::func_arg::func_listen	file:
+sockfd	socketFun.c	/^			int sockfd;$/;"	m	struct:TEEI_socket_command::func_arg::func_send	file:
+sockfd	socketFun.c	/^			int sockfd;$/;"	m	struct:TEEI_socket_command::func_arg::func_setsockopt	file:
+sockfd	socketFun.c	/^	int sockfd;$/;"	m	struct:close_params_t	file:
+sockfd	socketFun.c	/^	int sockfd;$/;"	m	struct:connect_params_t	file:
+sockfd	socketFun.c	/^	int sockfd;$/;"	m	struct:recv_params_t	file:
+sockfd	socketFun.c	/^	int sockfd;$/;"	m	struct:send_params_t	file:
+soter_error_flag	teei_client_main.c	/^unsigned int soter_error_flag = 0;$/;"	v
+src_context	teei_common.h	/^	unsigned int    src_context;$/;"	m	struct:teei_smc_cmd
+src_id	teei_common.h	/^	unsigned int    src_id;$/;"	m	struct:teei_smc_cmd
+start_index	teei_client_main.c	/^	unsigned int start_index;$/;"	m	struct:NQ_head	file:
+start_index	tz_service.c	/^	unsigned int start_index;$/;"	m	struct:NQ_head	file:
+start_teei_service	tz_service.c	/^static int start_teei_service(void)$/;"	f	file:
+started	teei_tee_client_api.h	/^	uint32_t started;$/;"	m	struct:TEEC_Operation
+stime	tz_service.c	/^struct timeval stime;$/;"	v	typeref:struct:timeval
+svc_id	switch_queue.c	/^        u32 svc_id;$/;"	m	struct:smc_call_struct	file:
+svc_id	teei_client_main.c	/^	u32 svc_id;$/;"	m	struct:smc_call_struct	file:
+switch_call_struct	switch_queue.c	/^struct switch_call_struct$/;"	s	file:
+switch_enable_flag	teei_client_main.c	/^int switch_enable_flag = 0;$/;"	v
+switch_fn	switch_queue.c	/^int switch_fn(void)$/;"	f
+switch_head_struct	switch_queue.c	/^struct switch_head_struct$/;"	s	file:
+switch_queue_head	switch_queue.c	/^static struct switch_head_struct switch_queue_head;$/;"	v	typeref:struct:switch_head_struct	file:
+switch_to_t_os_stages2	teei_client_main.c	/^int switch_to_t_os_stages2(void)$/;"	f
+switch_type	switch_queue.c	/^	int switch_type;$/;"	m	struct:switch_call_struct	file:
+sys_call_no	tz_service.c	/^static int sys_call_no;$/;"	v	file:
+sys_ctl_buffer	teei_client_main.c	/^unsigned long sys_ctl_buffer = NULL;$/;"	v
+sys_ctl_buffer	tz_service.c	/^static unsigned long sys_ctl_buffer;$/;"	v	file:
+sys_ctl_phy_addr	tz_service.c	/^	unsigned int sys_ctl_phy_addr;$/;"	m	struct:create_sys_ctl_struct	file:
+sys_ctl_size	tz_service.c	/^	unsigned int sys_ctl_size;$/;"	m	struct:create_sys_ctl_struct	file:
+sysno	tz_service.c	/^	unsigned int sysno;$/;"	m	struct:ack_vdrv_struct	file:
+sysno	tz_service.h	/^	unsigned int sysno; \/*! ?�务调用??*\/$/;"	m	struct:service_handler
+t_n_nq_phy_addr	tz_service.c	/^	unsigned int t_n_nq_phy_addr;$/;"	m	struct:create_NQ_struct	file:
+t_n_size	tz_service.c	/^	unsigned int t_n_size;$/;"	m	struct:create_NQ_struct	file:
+t_nt_buffer	tz_service.c	/^unsigned long t_nt_buffer;$/;"	v
+t_os_load_image	teei_client_main.c	/^int t_os_load_image(void)$/;"	f
+tee_id	teei_tee_client_api.h	/^	uint32_t tee_id;$/;"	m	struct:TEEC_Context
+tee_name	teei_client_main.c	/^	char tee_name[TEE_NAME_SIZE];		\/* Name *\/$/;"	m	struct:teei_context	file:
+tee_name	teei_tee_client_api.h	/^	char tee_name[255];$/;"	m	struct:TEEC_Context
+teei_ack_invoke_drv	tz_service.c	/^static void teei_ack_invoke_drv(void)$/;"	f	file:
+teei_client_cdev	teei_client_main.c	/^static struct cdev teei_client_cdev;$/;"	v	typeref:struct:cdev	file:
+teei_client_close_session_for_service	teei_client_main.c	/^static int teei_client_close_session_for_service($/;"	f	file:
+teei_client_context_close	teei_client_main.c	/^static int teei_client_context_close(void *private_data, void *argp)$/;"	f	file:
+teei_client_context_init	teei_client_main.c	/^static int teei_client_context_init(void *private_data, void *argp)$/;"	f	file:
+teei_client_decode_array_space	teei_client_main.c	/^static int teei_client_decode_array_space(void *private_data, void *argp)$/;"	f	file:
+teei_client_decode_uint32	teei_client_main.c	/^static int teei_client_decode_uint32(void *private_data, void *argp)$/;"	f	file:
+teei_client_device_no	teei_client_main.c	/^static dev_t teei_client_device_no;$/;"	v	file:
+teei_client_encode_array	teei_client_main.c	/^static int teei_client_encode_array(void *private_data, void *argp)$/;"	f	file:
+teei_client_encode_cmd	teei_client.h	/^struct teei_client_encode_cmd {$/;"	s
+teei_client_encode_mem_ref	teei_client_main.c	/^static int teei_client_encode_mem_ref(void *private_data, void *argp)$/;"	f	file:
+teei_client_encode_uint32	teei_client_main.c	/^static int teei_client_encode_uint32(void *private_data, void *argp)$/;"	f	file:
+teei_client_exit	teei_client_main.c	/^module_exit(teei_client_exit);$/;"	v
+teei_client_exit	teei_client_main.c	/^static void teei_client_exit(void)$/;"	f	file:
+teei_client_fops	teei_client_main.c	/^static const struct file_operations teei_client_fops = {$/;"	v	typeref:struct:file_operations	file:
+teei_client_get_decode_type	teei_client_main.c	/^static int teei_client_get_decode_type(void *private_data, void *argp)$/;"	f	file:
+teei_client_init	teei_client_main.c	/^module_init(teei_client_init);$/;"	v
+teei_client_init	teei_client_main.c	/^static int teei_client_init(void)$/;"	f	file:
+teei_client_ioctl	teei_client_main.c	/^static long teei_client_ioctl(struct file *file, unsigned cmd, unsigned long arg)$/;"	f	file:
+teei_client_mmap	teei_client_main.c	/^static int teei_client_mmap(struct file *filp, struct vm_area_struct *vma)$/;"	f	file:
+teei_client_open	teei_client_main.c	/^static int teei_client_open(struct inode *inode, struct file *file)$/;"	f	file:
+teei_client_operation_release	teei_client_main.c	/^static int teei_client_operation_release(void *private_data, void *argp)$/;"	f	file:
+teei_client_prepare_decode	teei_client_main.c	/^static int teei_client_prepare_decode(void *private_data,$/;"	f	file:
+teei_client_prepare_encode	teei_client_main.c	/^static int teei_client_prepare_encode(void *private_data,$/;"	f	file:
+teei_client_release	teei_client_main.c	/^static int teei_client_release(struct inode *inode, struct file *file)$/;"	f	file:
+teei_client_send_cmd	teei_client_main.c	/^static int teei_client_send_cmd(void *private_data, void *argp)$/;"	f	file:
+teei_client_service_exit	teei_client_main.c	/^static int teei_client_service_exit(void *private_data)$/;"	f	file:
+teei_client_service_init	teei_client_main.c	/^static int teei_client_service_init(struct teei_context *dev_file, struct ser_ses_id *ses_open)$/;"	f	file:
+teei_client_session_close	teei_client_main.c	/^static int teei_client_session_close(void *private_data, void *argp)$/;"	f	file:
+teei_client_session_init	teei_client_main.c	/^static int teei_client_session_init(void *private_data, void *argp)$/;"	f	file:
+teei_client_session_open	teei_client_main.c	/^static int teei_client_session_open(void *private_data, void *argp)$/;"	f	file:
+teei_client_shared_mem_alloc	teei_client_main.c	/^static int teei_client_shared_mem_alloc(void *private_data, void *argp)$/;"	f	file:
+teei_client_shared_mem_free	teei_client_main.c	/^static int teei_client_shared_mem_free(void *private_data, void *argp)$/;"	f	file:
+teei_client_smc_init	teei_client_main.c	/^static void teei_client_smc_init(void)$/;"	f	file:
+teei_cmd_status	teei_common.h	/^enum teei_cmd_status {$/;"	g
+teei_cmd_type	switch_queue.c	/^        u32 teei_cmd_type;$/;"	m	struct:smc_call_struct	file:
+teei_cmd_type	teei_client_main.c	/^	u32 teei_cmd_type;$/;"	m	struct:smc_call_struct	file:
+teei_cmd_type	teei_common.h	/^	unsigned int    teei_cmd_type;$/;"	m	struct:teei_smc_cmd
+teei_cmd_type	teei_id.h	/^enum teei_cmd_type {$/;"	g
+teei_config_cdev	teei_client_main.c	/^static struct cdev teei_config_cdev;$/;"	v	typeref:struct:cdev	file:
+teei_config_device_no	teei_client_main.c	/^static dev_t teei_config_device_no;$/;"	v	file:
+teei_config_flag	teei_client_main.c	/^unsigned long teei_config_flag = 0;$/;"	v
+teei_config_fops	teei_client_main.c	/^static const struct file_operations teei_config_fops = {$/;"	v	typeref:struct:file_operations	file:
+teei_config_init	teei_client_main.c	/^static int teei_config_init(void)$/;"	f	file:
+teei_config_ioctl	teei_client_main.c	/^static long teei_config_ioctl(struct file *file, unsigned cmd, unsigned long arg)$/;"	f	file:
+teei_config_mmap	teei_client_main.c	/^static int teei_config_mmap(struct file *filp, struct vm_area_struct *vma)$/;"	f	file:
+teei_config_open	teei_client_main.c	/^static int teei_config_open(struct inode *inode, struct file *file)$/;"	f	file:
+teei_config_release	teei_client_main.c	/^static int teei_config_release(struct inode *inode, struct file *file)$/;"	f	file:
+teei_context	teei_client_main.c	/^struct teei_context {$/;"	s	file:
+teei_contexts_head	teei_client_main.c	/^static struct teei_contexts_head {$/;"	s	file:
+teei_contexts_head	teei_client_main.c	/^} teei_contexts_head;$/;"	v	typeref:struct:teei_contexts_head	file:
+teei_contexts_sem	teei_client_main.c	/^	struct rw_semaphore teei_contexts_sem;$/;"	m	struct:teei_contexts_head	typeref:struct:teei_contexts_head::rw_semaphore	file:
+teei_cpu_id	teei_client_main.c	/^static int teei_cpu_id[] = {0x0000, 0x0001, 0x0002, 0x0003, 0x0100, 0x0101, 0x0102, 0x0103};$/;"	v	file:
+teei_create_context	teei_client_main.c	/^struct teei_context *teei_create_context(int dev_count)$/;"	f
+teei_create_session	teei_client_main.c	/^struct teei_session *teei_create_session(struct teei_context *cont)$/;"	f
+teei_enc_data_type	teei_id.h	/^enum teei_enc_data_type {$/;"	g
+teei_encode	teei_client_main.c	/^struct teei_encode {$/;"	s	file:
+teei_encode_meta	teei_common.h	/^struct teei_encode_meta {$/;"	s
+teei_fastcall_task	teei_client_main.c	/^static struct task_struct *teei_fastcall_task;$/;"	v	typeref:struct:task_struct	file:
+teei_flags	teei_client_main.c	/^unsigned int teei_flags = 0;$/;"	v
+teei_invoke_drv	teei_client_main.c	/^static void teei_invoke_drv(void)$/;"	f	file:
+teei_sema	teei_common.h	/^	struct semaphore *teei_sema;$/;"	m	struct:teei_smc_cmd	typeref:struct:teei_smc_cmd::semaphore
+teei_service_init	tz_service.c	/^int teei_service_init(void)$/;"	f
+teei_session	teei_client_main.c	/^struct teei_session {$/;"	s	file:
+teei_session_shared_mem_info	teei_client.h	/^struct teei_session_shared_mem_info {$/;"	s
+teei_shared_mem	teei_client_main.c	/^struct teei_shared_mem {$/;"	s	file:
+teei_shared_mem_flags	teei_tee_client_api.h	/^enum teei_shared_mem_flags {$/;"	g
+teei_shared_mem_head	teei_client_main.c	/^struct teei_shared_mem_head {$/;"	s	file:
+teei_smc	teei_client_main.c	/^static u32 teei_smc(u32 cmd_addr, int size, int valid_flag)$/;"	f	file:
+teei_smc_call	teei_client_main.c	/^int teei_smc_call(u32 teei_cmd_type,$/;"	f
+teei_smc_cd	teei_client_main.c	/^static struct teei_smc_cdata teei_smc_cd[NR_CPUS];$/;"	v	typeref:struct:teei_smc_cdata	file:
+teei_smc_cdata	teei_client.h	/^struct teei_smc_cdata {$/;"	s
+teei_smc_cmd	teei_common.h	/^struct teei_smc_cmd {$/;"	s
+teei_switch_task	teei_client_main.c	/^static struct task_struct *teei_switch_task;$/;"	v	typeref:struct:task_struct	file:
+teei_vfs_flag	tz_service.c	/^unsigned long teei_vfs_flag = 0;$/;"	v
+teeic_notify_data	teei_common.h	/^struct teeic_notify_data {$/;"	s
+teeic_param_pos	teei_common.h	/^enum teeic_param_pos {$/;"	g
+teeic_param_type	teei_common.h	/^enum teeic_param_type {$/;"	g
+teeic_param_value	teei_common.h	/^enum teeic_param_value {$/;"	g
+timeHiAndVersion	teei_client.h	/^	uint16_t timeHiAndVersion;$/;"	m	struct:TEEC_UUID
+timeHiAndVersion	teei_tee_client_api.h	/^	uint16_t timeHiAndVersion;$/;"	m	struct:TEEC_UUID
+timeLow	teei_client.h	/^	uint32_t timeLow;$/;"	m	struct:TEEC_UUID
+timeLow	teei_tee_client_api.h	/^	uint32_t timeLow;$/;"	m	struct:TEEC_UUID
+timeMid	teei_client.h	/^	uint16_t timeMid;$/;"	m	struct:TEEC_UUID
+timeMid	teei_tee_client_api.h	/^	uint16_t timeMid;$/;"	m	struct:TEEC_UUID
+timeout	tz_service.c	/^			int timeout;$/;"	m	struct:TEEI_printer_command::func_arg::func_write	file:
+tlog_ent	teei_client_main.c	/^static struct tlog_struct tlog_ent[TLOG_MAX_CNT];$/;"	v	typeref:struct:tlog_struct	file:
+tlog_func	teei_client_main.c	/^void tlog_func(struct work_struct *entry)$/;"	f
+tlog_handler	teei_client_main.c	/^irqreturn_t tlog_handler(void)$/;"	f
+tlog_message_buff	tz_service.c	/^unsigned long tlog_message_buff = 0;$/;"	v
+tlog_phy_addr	tz_service.c	/^	unsigned long tlog_phy_addr;$/;"	m	struct:init_cmdbuf_struct	file:
+tlog_struct	teei_client_main.c	/^struct tlog_struct {$/;"	s	file:
+tmpref	teei_tee_client_api.h	/^	struct TEEC_TempMemoryReference       tmpref;$/;"	m	union:TEEC_Parameter	typeref:struct:TEEC_Parameter::TEEC_TempMemoryReference
+transSize	TEEI.h	/^	unsigned int transSize;$/;"	m	union:TEEI_socket_response_type
+transSize	socketFun.c	/^	unsigned int transSize;$/;"	m	union:TEEI_socket_response_type	file:
+type	TEEI.h	/^			int type;$/;"	m	struct:TEEI_socket_command::func_arg::func_socket
+type	socketFun.c	/^			int type;$/;"	m	struct:TEEI_socket_command::func_arg::func_socket	file:
+type	socketFun.c	/^	int type;$/;"	m	struct:socket_params_t	file:
+type	teei_common.h	/^	int type;$/;"	m	struct:teei_encode_meta
+tz_accept	socketFun.c	/^int tz_accept(int fd, struct sockaddr *upeer_sockaddr, int *upeer_addrlen)$/;"	f
+tz_accept4	socketFun.c	/^int tz_accept4(int fd, struct sockaddr *upeer_sockaddr,$/;"	f
+tz_bind	socketFun.c	/^int tz_bind(int fd, struct sockaddr *addr, int addrlen)$/;"	f
+tz_close	socketFun.c	/^EXPORT_SYMBOL(tz_close);$/;"	v
+tz_close	socketFun.c	/^asmlinkage long tz_close(int fd, unsigned long para_address, unsigned long buffer_addr)$/;"	f
+tz_connect	socketFun.c	/^EXPORT_SYMBOL(tz_connect);$/;"	v
+tz_connect	socketFun.c	/^int tz_connect(int fd, struct sockaddr *address, int addrlen, unsigned long para_address, unsigned long buffer_addr)$/;"	f
+tz_down	tz_service.c	/^void tz_down(struct semaphore *sem)$/;"	f
+tz_driver_cpu_callback	teei_client_main.c	/^static int __cpuinit tz_driver_cpu_callback(struct notifier_block *self,$/;"	f	file:
+tz_driver_cpu_notifer	teei_client_main.c	/^static struct notifier_block tz_driver_cpu_notifer = {$/;"	v	typeref:struct:notifier_block	file:
+tz_free_shared_mem	teei_client_main.c	/^void tz_free_shared_mem(void *addr, size_t size)$/;"	f
+tz_htons	socketFun.c	/^int tz_htons(unsigned short int h)$/;"	f
+tz_inet_addr	socketFun.c	/^EXPORT_SYMBOL(tz_inet_addr);$/;"	v
+tz_inet_addr	socketFun.c	/^long tz_inet_addr(char *cp)$/;"	f
+tz_inet_aton	socketFun.c	/^EXPORT_SYMBOL(tz_inet_aton);$/;"	v
+tz_inet_aton	socketFun.c	/^int tz_inet_aton(char *cp, struct in_addr *addr)$/;"	f
+tz_listen	socketFun.c	/^int tz_listen(int fd, int backlog)$/;"	f
+tz_malloc	teei_client_main.c	/^static void *tz_malloc(size_t size, int flags)$/;"	f	file:
+tz_malloc_shared_mem	teei_client_main.c	/^void *tz_malloc_shared_mem(size_t size, int flags)$/;"	f
+tz_recv	socketFun.c	/^EXPORT_SYMBOL(tz_recv);$/;"	v
+tz_recv	socketFun.c	/^asmlinkage long tz_recv(int fd, void *ubuf, size_t size,$/;"	f
+tz_recvfrom	socketFun.c	/^int tz_recvfrom(int fd, void *ubuf, size_t size,$/;"	f
+tz_sem	teei_client_main.c	/^struct semaphore tz_sem;$/;"	v	typeref:struct:semaphore
+tz_send	socketFun.c	/^EXPORT_SYMBOL(tz_send);$/;"	v
+tz_send	socketFun.c	/^int tz_send(int fd, void *buff, size_t len, unsigned int flags, unsigned long para_address, unsigned long buffer_addr)$/;"	f
+tz_sendto	socketFun.c	/^int tz_sendto(int fd, void *buff, size_t len, unsigned int flags, struct sockaddr *addr, int addr_len)$/;"	f
+tz_setsocketopt	socketFun.c	/^int tz_setsocketopt(int fd, int level, int optname, char *optval,$/;"	f
+tz_shutdown	socketFun.c	/^int tz_shutdown(int fd, int how)$/;"	f
+tz_socket	socketFun.c	/^EXPORT_SYMBOL(tz_socket);$/;"	v
+tz_socket	socketFun.c	/^int tz_socket(int family, int type, int protocol, unsigned long para_address, unsigned long buffer_addr)$/;"	f
+tz_sockfd_lookup_light	socketFun.c	/^static struct socket *tz_sockfd_lookup_light(int fd, int *err, int *fput_needed)$/;"	f	file:
+tz_work_ent	teei_client_main.c	/^static struct tz_work_entry tz_work_ent;$/;"	v	typeref:struct:tz_work_entry	file:
+tz_work_entry	teei_client_main.c	/^struct tz_work_entry {$/;"	s	file:
+tz_work_func	teei_client_main.c	/^static void tz_work_func(struct work_struct *entry)$/;"	f	file:
+tz_wq	teei_client_main.c	/^static struct work_queue *tz_wq;$/;"	v	typeref:struct:work_queue	file:
+u_addr	teei_client_main.c	/^	void *u_addr;$/;"	m	struct:teei_shared_mem	file:
+uint16_t	teei_tee_api.h	8;"	d
+uint32_t	teei_tee_api.h	7;"	d
+uint8_t	teei_tee_api.h	10;"	d
+user_mem_addr	teei_client.h	/^	u32 user_mem_addr;$/;"	m	struct:teei_session_shared_mem_info
+user_ses_init	teei_client.h	/^struct user_ses_init {$/;"	s
+usr_addr	teei_common.h	/^	unsigned long usr_addr;		\/* data address in user space *\/$/;"	m	struct:teei_encode_meta
+ut_queue_lock	teei_client_main.c	/^struct semaphore ut_queue_lock;$/;"	v	typeref:struct:semaphore
+uuid	teei_client.h	/^	struct TEEC_UUID uuid;$/;"	m	struct:ser_ses_id	typeref:struct:ser_ses_id::TEEC_UUID
+valid	teei_client_main.c	/^	int valid;$/;"	m	struct:tlog_struct	file:
+valid_flag	teei_client.h	/^	int valid_flag;$/;"	m	struct:teei_smc_cdata
+valid_flag	teei_client_main.c	/^	unsigned int valid_flag;$/;"	m	struct:NQ_entry	file:
+valid_flag	tz_service.c	/^	unsigned int valid_flag;$/;"	m	struct:NQ_entry	file:
+value	TEEI.h	/^	int value;$/;"	m	union:TEEI_socket_response_type
+value	socketFun.c	/^	int value;$/;"	m	union:TEEI_socket_response_type	file:
+value	teei_tee_client_api.h	/^	struct TEEC_Value                     value;$/;"	m	union:TEEC_Parameter	typeref:struct:TEEC_Parameter::TEEC_Value
+value	tz_service.c	/^	int value;$/;"	m	union:TEEI_printer_response	file:
+value_flag	teei_client.h	/^	int value_flag;$/;"	m	struct:teei_client_encode_cmd
+value_flag	teei_common.h	/^	int value_flag;			\/* value of a or b *\/$/;"	m	struct:teei_encode_meta
+vdrv_buffer	teei_client_main.c	/^unsigned long vdrv_buffer = NULL;$/;"	v
+vdrv_phy_addr	tz_service.c	/^	unsigned int vdrv_phy_addr;$/;"	m	struct:create_vdrv_struct	file:
+vdrv_size	tz_service.c	/^	unsigned int vdrv_size;$/;"	m	struct:create_vdrv_struct	file:
+vdrv_type	tz_service.c	/^	unsigned int vdrv_type;$/;"	m	struct:create_vdrv_struct	file:
+vfs_addr	tz_service.c	/^	unsigned long vfs_addr;$/;"	m	struct:load_soter_entry	file:
+vfs_deinit	tz_service.c	/^static void vfs_deinit(struct service_handler *handler) \/*! stop service  *\/$/;"	f	file:
+vfs_flush_address	tz_service.c	/^EXPORT_SYMBOL_GPL(vfs_flush_address);$/;"	v
+vfs_flush_address	tz_service.c	/^unsigned char *vfs_flush_address = NULL;$/;"	v
+vfs_handle	tz_service.c	/^static int vfs_handle(struct service_handler *handler)$/;"	f	file:
+vfs_handle_entry	tz_service.c	/^struct vfs_handle_struct vfs_handle_entry;$/;"	v	typeref:struct:vfs_handle_struct
+vfs_handle_struct	tz_service.c	/^struct vfs_handle_struct {$/;"	s	file:
+vfs_handler	tz_service.c	/^static struct service_handler vfs_handler;$/;"	v	typeref:struct:service_handler	file:
+vfs_init	tz_service.c	/^static void vfs_init(struct service_handler *handler) \/*! init service *\/$/;"	f	file:
+vfs_thread_function	tz_service.c	/^int vfs_thread_function(unsigned long virt_addr, unsigned long para_vaddr, unsigned long buff_vaddr)$/;"	f
+vfs_write_flag	tz_service.c	/^int vfs_write_flag = 0;$/;"	v
+vir_addr	teei_client_main.c	/^	unsigned long vir_addr;$/;"	m	struct:boot_stage1_struct	file:
+virtual_printer_cdev	vprinter_driver.c	/^static struct cdev virtual_printer_cdev;$/;"	v	typeref:struct:cdev	file:
+virtual_printer_device_no	vprinter_driver.c	/^static dev_t virtual_printer_device_no;$/;"	v	file:
+virtual_printer_exit	vprinter_driver.c	/^module_exit(virtual_printer_exit);$/;"	v
+virtual_printer_exit	vprinter_driver.c	/^static void __exit virtual_printer_exit(void)$/;"	f	file:
+virtual_printer_fops	vprinter_driver.c	/^static const struct file_operations virtual_printer_fops = {$/;"	v	typeref:struct:file_operations	file:
+virtual_printer_init	vprinter_driver.c	/^module_init(virtual_printer_init);$/;"	v
+virtual_printer_init	vprinter_driver.c	/^static int __init virtual_printer_init(void)$/;"	f	file:
+virtual_printer_ioctl	vprinter_driver.c	/^static long virtual_printer_ioctl(struct file *file, unsigned cmd, unsigned long arg)$/;"	f	file:
+virtual_printer_mmap	vprinter_driver.c	/^static int virtual_printer_mmap(struct file *filp, struct vm_area_struct *vma)$/;"	f	file:
+virtual_printer_open	vprinter_driver.c	/^static int virtual_printer_open(struct inode *inode, struct file *file)$/;"	f	file:
+virtual_printer_release	vprinter_driver.c	/^static int virtual_printer_release(struct inode *inode, struct file *file)$/;"	f	file:
+work	teei_client_main.c	/^	struct work_struct work;$/;"	m	struct:tlog_struct	typeref:struct:tlog_struct::work_struct	file:
+work	teei_client_main.c	/^	struct work_struct work;$/;"	m	struct:tz_work_entry	typeref:struct:tz_work_entry::work_struct	file:
+work	tz_service.c	/^	struct work_struct work;$/;"	m	struct:load_soter_entry	typeref:struct:load_soter_entry::work_struct	file:
+work	tz_service.c	/^	struct work_struct work;$/;"	m	struct:work_entry	typeref:struct:work_entry::work_struct	file:
+work_ent	tz_service.c	/^static struct work_entry work_ent;$/;"	v	typeref:struct:work_entry	file:
+work_entry	tz_service.c	/^struct work_entry {$/;"	s	file:
+work_func	tz_service.c	/^static void work_func(struct work_struct *entry)$/;"	f	file:

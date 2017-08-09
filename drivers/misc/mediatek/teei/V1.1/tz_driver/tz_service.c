@@ -24,6 +24,7 @@
 #include "../tz_vfs/VFS.h"
 #include <linux/of.h>
 #include <linux/of_address.h>
+#include <linux/cpu.h>
 
 #define MAX_BUFF_SIZE           (4096)
 #define NQ_SIZE                 (4096)
@@ -78,6 +79,18 @@
 #define START_STATUS		(0)
 #define END_STATUS		(1)
 #define VFS_SIZE		(512 * 1024)
+
+
+#define CAPI_CALL       0x01
+#define FDRV_CALL       0x02
+#define BDRV_CALL       0x03
+#define SCHED_CALL      0x04
+
+#define FP_SYS_NO       100
+
+#define VFS_SYS_NO      0x08
+#define REETIME_SYS_NO  0x07 
+
 unsigned long message_buff = 0;
 unsigned long fdrv_message_buff = 0;
 unsigned long bdrv_message_buff = 0;
@@ -268,6 +281,15 @@ struct timeval etime;
 int vfs_write_flag = 0;
 unsigned long teei_vfs_flag = 0;
 
+
+struct bdrv_call_struct {
+        int bdrv_call_type;
+        struct service_handler *handler;
+        int retVal;
+};
+
+extern int add_work_entry(int work_type, unsigned long buff);
+
 #define printk(fmt, args...) printk("\033[;34m[TEEI][TZDriver]"fmt"\033[0m", ##args)
 /*add by microtrust*/
 static unsigned int get_master_cpu_id(unsigned int gic_irqs)
@@ -328,10 +350,13 @@ static void secondary_teei_ack_invoke_drv(void)
 
 static void post_teei_ack_invoke_drv(int cpu_id)
 {
+	get_online_cpus();
 	smp_call_function_single(cpu_id,
 				secondary_teei_ack_invoke_drv,
 				NULL,
 				1);
+	put_online_cpus();
+	
 	return;
 }
 
@@ -435,7 +460,7 @@ static void reetime_deinit(struct service_handler *handler)
 	return;
 }
 
-static int  __reetime_handle(struct service_handler *handler)
+int  __reetime_handle(struct service_handler *handler)
 {
 	struct timeval tv;
 	void *ptr = NULL;
@@ -478,16 +503,39 @@ static void secondary_reetime_handle(void *info)
 static int reetime_handle(struct service_handler *handler)
 {
 	int cpu_id = 0;
-	down(&smc_lock);
-	reetime_handle_entry.handler = handler;
+	int retVal = 0;
+	struct bdrv_call_struct *reetime_bdrv_ent = NULL;
 
+	down(&smc_lock);
+
+#if 0
+	reetime_handle_entry.handler = handler;
+#else
+	reetime_bdrv_ent = (struct bdrv_call_struct *)kmalloc(sizeof(struct bdrv_call_struct), GFP_KERNEL);
+	reetime_bdrv_ent->handler = handler;
+	reetime_bdrv_ent->bdrv_call_type = REETIME_SYS_NO;
+#endif
 	/* with a wmb() */
 	wmb();
+
+#if 0
+	get_online_cpus();
 	cpu_id = get_current_cpuid();
 	smp_call_function_single(cpu_id, secondary_reetime_handle, (void *)(&reetime_handle_entry), 1);
-
+	put_online_cpus();
+#else
+	retVal = add_work_entry(BDRV_CALL, (unsigned long)reetime_bdrv_ent);
+        if (retVal != 0) {
+                up(&smc_lock);
+                return retVal;
+        }
+#endif
 	rmb();
+#if 0
 	return reetime_handle_entry.retVal;
+#else
+	return 0;
+#endif 
 }
 
 
@@ -579,7 +627,7 @@ static void vfs_deinit(struct service_handler *handler) /*! stop service  */
 }
 
 
-static int __vfs_handle(struct service_handler *handler) /*! invoke handler */
+int __vfs_handle(struct service_handler *handler) /*! invoke handler */
 {
 	/* vfs_thread_function(handler->param_buf, para_vaddr, buff_vaddr); */
 
@@ -613,17 +661,42 @@ static void secondary_vfs_handle(void *info)
 static int vfs_handle(struct service_handler *handler)
 {
 	int cpu_id = 0;
+	int retVal = 0;
+	struct bdrv_call_struct *vfs_bdrv_ent = NULL;
+
 	vfs_thread_function(handler->param_buf, para_vaddr, buff_vaddr);
 	down(&smc_lock);
 
+#if 0
 	vfs_handle_entry.handler = handler;
-
+#else
+	vfs_bdrv_ent = (struct bdrv_call_struct *)kmalloc(sizeof(struct bdrv_call_struct), GFP_KERNEL);
+	vfs_bdrv_ent->handler = handler;
+	vfs_bdrv_ent->bdrv_call_type = VFS_SYS_NO;
+#endif
 	/* with a wmb() */
 	wmb();
+
+#if 0
+	get_online_cpus();
 	cpu_id = get_current_cpuid();
 	smp_call_function_single(cpu_id, secondary_vfs_handle, (void *)(&vfs_handle_entry), 1);
+	put_online_cpus();
+#else
+	Flush_Dcache_By_Area((unsigned long)vfs_bdrv_ent, (unsigned long)vfs_bdrv_ent + sizeof(struct bdrv_call_struct));
+	retVal = add_work_entry(BDRV_CALL, (unsigned long)vfs_bdrv_ent);
+        if (retVal != 0) {
+                up(&smc_lock);
+                return retVal;
+        }
+#endif	
 	rmb();
+
+#if 0
 	return vfs_handle_entry.retVal;
+#else
+	return 0;
+#endif
 }
 
 /**********************************************************************
@@ -698,8 +771,11 @@ static void secondary_invoke_fastcall(void *info)
 static void invoke_fastcall(void)
 {
 	int cpu_id = 0;
+
+	get_online_cpus();
 	cpu_id = get_current_cpuid();
 	smp_call_function_single(cpu_id, secondary_invoke_fastcall, NULL, 1);
+	put_online_cpus();
 }
 
 static long register_shared_param_buf(struct service_handler *handler)
@@ -743,7 +819,7 @@ static long register_shared_param_buf(struct service_handler *handler)
 	msg_body.vdrv_phy_addr = virt_to_phys(handler->param_buf);
 	msg_body.vdrv_size = handler->size;
 
-	//local_irq_save(irq_flag);
+	local_irq_save(irq_flag);
 
 	/* Notify the T_OS that there is ctl_buffer to be created. */
 	memcpy(message_buff, &msg_head, sizeof(struct message_head));
@@ -765,8 +841,7 @@ static long register_shared_param_buf(struct service_handler *handler)
 	memcpy(&msg_head, message_buff, sizeof(struct message_head));
 	memcpy(&msg_ack, message_buff + sizeof(struct message_head), sizeof(struct ack_fast_call_struct));
 
-	//local_irq_restore(irq_flag);
-	
+	local_irq_restore(irq_flag);
 	/*up(&cpu_down_lock);*/
 
 	/* Check the response from T_OS. */
@@ -809,11 +884,11 @@ static void load_func(struct work_struct *entry)
 
 	down(&smc_lock);
 
+	get_online_cpus();
 	cpu_id = get_current_cpuid();
 	printk("[%s][%d]current cpu id[%d] \n", __func__, __LINE__, cpu_id);
-	printk("[%s][%d]current cpu id[%d] \n", __func__, __LINE__, cpu_id);
-	printk("[%s][%d]current cpu id[%d] \n", __func__, __LINE__, cpu_id);
 	smp_call_function_single(cpu_id, secondary_load_func, NULL, 1);
+	put_online_cpus();
 
 	return;
 }
@@ -1014,7 +1089,7 @@ static long create_notify_queue(unsigned long msg_buff, unsigned long size)
 	msg_body.t_n_nq_phy_addr = virt_to_phys(t_nt_buffer);
 	msg_body.t_n_size = size;
 
-	//~ local_irq_save(irq_flag);
+	local_irq_save(irq_flag);
 
 	/* Notify the T_OS that there are two QN to be created. */
 	memcpy(msg_buff, &msg_head, sizeof(struct message_head));
@@ -1036,7 +1111,7 @@ static long create_notify_queue(unsigned long msg_buff, unsigned long size)
 	memcpy(&msg_head, msg_buff, sizeof(struct message_head));
 	memcpy(&msg_ack, msg_buff + sizeof(struct message_head), sizeof(struct ack_fast_call_struct));
 
-	//~ local_irq_restore(irq_flag);
+	local_irq_restore(irq_flag);
 
 	/* Check the response from T_OS. */
 	/*up(&cpu_down_lock);*/
@@ -1097,7 +1172,7 @@ static long create_ctl_buffer(unsigned long msg_buff, unsigned long size)
 	msg_body.sys_ctl_size = size;
 
 
-	//local_irq_save(irq_flag);
+	local_irq_save(irq_flag);
 
 	/* Notify the T_OS that there is ctl_buffer to be created. */
 	memcpy(msg_buff, &msg_head, sizeof(struct message_head));
@@ -1108,7 +1183,7 @@ static long create_ctl_buffer(unsigned long msg_buff, unsigned long size)
 	memcpy(&msg_ack, msg_buff + sizeof(struct message_head), sizeof(struct ack_fast_call_struct));
 
 
-	//local_irq_restore(irq_flag);
+	local_irq_restore(irq_flag);
 
 	/* Check the response from T_OS. */
 
@@ -1444,8 +1519,10 @@ static void init_cmdbuf(unsigned long phy_address, unsigned long fdrv_phy_addres
 	/* with a wmb() */
 	wmb();
 
+	get_online_cpus();
 	cpu_id = get_current_cpuid();
 	smp_call_function_single(cpu_id, secondary_init_cmdbuf, (void *)(&init_cmdbuf_entry), 1);
+	put_online_cpus();
 
 	/* with a rmb() */
 	rmb();
@@ -1544,7 +1621,7 @@ unsigned long create_fp_fdrv(int buff_size)
 	msg_body.fdrv_phy_addr = virt_to_phys(temp_addr);
 	msg_body.fdrv_size = buff_size;
 
-	//local_irq_save(irq_flag);
+	local_irq_save(irq_flag);
 
 	/* Notify the T_OS that there is ctl_buffer to be created. */
 	memcpy(message_buff, &msg_head, sizeof(struct message_head));
@@ -1565,7 +1642,7 @@ unsigned long create_fp_fdrv(int buff_size)
 	memcpy(&msg_head, message_buff, sizeof(struct message_head));
 	memcpy(&msg_ack, message_buff + sizeof(struct message_head), sizeof(struct ack_fast_call_struct));
 
-	//local_irq_restore(irq_flag);
+	local_irq_restore(irq_flag);
 
 	/*up(&cpu_down_lock);*/
 	/* Check the response from T_OS. */

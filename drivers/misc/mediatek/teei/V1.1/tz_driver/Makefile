@@ -9,6 +9,7 @@ ccflags-y += -I$(srctree)/drivers/input/touchscreen/mediatek/
 teei-objs += teei_client_main.o
 #teei-objs += teei_admin_main.o
 teei-objs += tz_service.o
+teei-objs += switch_queue.o
 #teei-objs += socketFun.o
 obj-$(CONFIG_MICROTRUST_TZ_DRIVER) += teei.o
 #obj-$(CONFIG_MICROTRUST_TZ_DRIVER) += tz_driver.o
