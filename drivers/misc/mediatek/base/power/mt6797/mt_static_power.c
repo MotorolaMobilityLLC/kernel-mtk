@@ -253,7 +253,7 @@ int mt_spower_make_table(sptbl_t *spt, spower_raw_t *spower_raw, int wat, int vo
 		/** occupy the free container**/
 		tspt = &tab[(i+1)%spower_raw->table_size];
 
-		SPOWER_INFO("sptab interpolate tab:%d/%d\n",  wat, c);
+		SPOWER_INFO("sptab interpolate tab:%d/%d, i:%d\n",  wat, c, i);
 	}
 
 
@@ -452,17 +452,17 @@ int mt_spower_init(void)
 		return 0;
 
 	devinfo = (int)get_devinfo_with_index(DEVINFO_IDX0); /* P_OD1 */
-	cpubig	= (devinfo >> 8) & 0x0ff;
+	cpubig	= (devinfo >> 8) & 0xff;
 	devinfo_1 = (int)get_devinfo_with_index(DEVINFO_IDX1); /* P_OD3 */
-	gpu	= (devinfo >> 8) & 0x0ff;
+	gpu	= (devinfo_1 >> 8) & 0xff;
 	devinfo_2 = (int)get_devinfo_with_index(DEVINFO_IDX2); /* P_OD5 */
-	vcore	= (devinfo >> 8) & 0x0ff;
+	vcore	= (devinfo_2 >> 8) & 0xff;
 	devinfo_3 = (int)get_devinfo_with_index(DEVINFO_IDX3); /* P_OD7 */
-	cpul	= (devinfo >> 8) & 0x0ff;
+	cpul	= (devinfo_3 >> 8) & 0xff;
 	cpull = cpul;
 	devinfo_4 = (int)get_devinfo_with_index(DEVINFO_IDX4); /* P_OD12 */
-	modem	= (devinfo >> 8) & 0x0ff;
-	vmd1	= (devinfo) & 0x0ff;
+	modem	= (devinfo_4 >> 8) & 0xff;
+	vmd1	= (devinfo_4) & 0xff;
 
 	SPOWER_INFO("[SPOWER] - cpubig/gpu/vcore/cpul/cpull/modem/vmd1 => 0x%x/0x%x/0x%x/0x%x/0x%x/0x%x/0x%x\n",
 		cpubig, gpu, vcore, cpul, cpull, modem, vmd1);
