@@ -24,6 +24,10 @@
 #define MMSYS_CLK_LOW (0)
 #define MMSYS_CLK_HIGH (1)
 #define MMSYS_CLK_MEDIUM (2)
+#define PRI_DISPLAY_MAX_HEIGHT (1920)
+#define PRI_DISPLAY_MAX_WIDTH  (1080)
+#define EXT_DISPLAY_MAX_HEIGHT (1080)
+#define EXT_DISPLAY_MAX_WIDTH  (1920)
 
 
 static unsigned int rdma_fps[RDMA_INSTANCES] = { 60, 60 };
@@ -312,6 +316,29 @@ void rdma_set_ultra_l(unsigned int idx, unsigned int bpp, void *handle, golden_s
 		rdma_golden_setting = &temp_golden_setting;
 	} else
 		rdma_golden_setting = p_golden_setting;
+
+	if (0 == idx) {
+		if (rdma_golden_setting->dst_height > PRI_DISPLAY_MAX_HEIGHT)
+			DDPERR("Pri dst_height = %u beyond support\n", rdma_golden_setting->dst_height);
+
+		if (rdma_golden_setting->dst_width > PRI_DISPLAY_MAX_WIDTH)
+			DDPERR("Pri dst_width = %u beyond support\n", rdma_golden_setting->dst_width);
+	} else if (1 == idx) {
+		/*usually, width is bigger than height in ext_display*/
+		if (rdma_golden_setting->ext_dst_height < rdma_golden_setting->ext_dst_width) {
+			if (rdma_golden_setting->ext_dst_height > EXT_DISPLAY_MAX_HEIGHT)
+				DDPERR("Ext dst_height=%u beyond support\n", rdma_golden_setting->ext_dst_height);
+
+			if (rdma_golden_setting->ext_dst_width > EXT_DISPLAY_MAX_WIDTH)
+				DDPERR("Ext dst_width = %u beyond support\n", rdma_golden_setting->ext_dst_height);
+		} else {
+			if (rdma_golden_setting->ext_dst_height > EXT_DISPLAY_MAX_WIDTH)
+				DDPERR("Ext dst_height=%u beyond support\n", rdma_golden_setting->ext_dst_height);
+
+			if (rdma_golden_setting->ext_dst_width > EXT_DISPLAY_MAX_HEIGHT)
+				DDPERR("Ext st_width = %u beyond support\n", rdma_golden_setting->ext_dst_height);
+		}
+	}
 
 	frame_rate = rdma_golden_setting->fps;
 	if (idx == 1) {
