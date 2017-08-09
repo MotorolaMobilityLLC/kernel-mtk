@@ -17,7 +17,6 @@
 #include <linux/delay.h>
 #include <linux/types.h>
 
-#include <mach/irqs.h>
 #include <mach/mt_rtc_hw.h>
 #include <mach/mtk_rtc_hal.h>
 #include <mtk_rtc_hal_common.h>

@@ -20,6 +20,10 @@ else
               else
                 ifneq (,$(filter y,$(CONFIG_ARCH_MT6755)))
 	                MDI_IP_FOLDER:=mt6351
+	              else
+	                ifneq (,$(filter y,$(CONFIG_ARCH_MT8173)))
+	                MDI_IP_FOLDER:=mt6391
+	                endif
                 endif
               endif
             endif
