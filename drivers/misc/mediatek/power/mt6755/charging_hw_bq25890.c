@@ -622,7 +622,6 @@ static unsigned int charging_set_cv_voltage(void *data)
 	battery_log(BAT_LOG_CRTI, "charging_set_cv_voltage set_cv_voltage=%d\n",
 		    *(unsigned int *) data);
 	set_cv_voltage = bmt_find_closest_level(VBAT_CV_VTH, array_size, *(unsigned int *) data);
-	battery_set_cv_voltage(set_cv_voltage);
 	register_value =
 	    charging_parameter_to_value(VBAT_CV_VTH, GETARRAYNUM(VBAT_CV_VTH), set_cv_voltage);
 	battery_log(BAT_LOG_CRTI, "charging_set_cv_voltage register_value=0x%x\n", register_value);

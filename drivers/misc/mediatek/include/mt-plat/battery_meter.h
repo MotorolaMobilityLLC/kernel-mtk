@@ -374,7 +374,7 @@ extern void fgauge_algo_run_get_init_data(void);
 extern void battery_meter_set_init_flag(kal_bool flag);
 
 #if defined(CONFIG_MTK_HAFG_20)
-unsigned int get_fg_20_cv_voltage(void);
+unsigned int get_cv_voltage(void);
 #endif
 
 #endif /* #ifndef _BATTERY_METER_H */

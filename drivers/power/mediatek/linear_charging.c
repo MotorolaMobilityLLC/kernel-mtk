@@ -104,7 +104,7 @@ CHR_CURRENT_ENUM ulc_cv_charging_current;	/* = AC_CHARGER_CURRENT; */
 kal_bool ulc_cv_charging_current_flag = KAL_FALSE;
 static bool usb_unlimited;
 #if defined(CONFIG_MTK_HAFG_20)
-BATTERY_VOLTAGE_ENUM g_FG_20_cv = BATTERY_VOLT_04_200000_V;
+BATTERY_VOLTAGE_ENUM g_cv_voltage = BATTERY_VOLT_04_200000_V;
 #endif
 
   /* ///////////////////////////////////////////////////////////////////////////////////////// */
@@ -170,9 +170,9 @@ void BATTERY_SetUSBState(int usb_state_value)
 
 /* EXPORT_SYMBOL(BATTERY_SetUSBState); */
 #if defined(CONFIG_MTK_HAFG_20)
-unsigned int get_fg_20_cv_voltage(void)
+unsigned int get_cv_voltage(void)
 {
-	return g_FG_20_cv;
+	return g_cv_voltage;
 }
 #endif
 
@@ -742,7 +742,7 @@ PMU_STATUS do_jeita_state_machine(void)
 		battery_charging_control(CHARGING_CMD_SET_CV_VOLTAGE, &cv_voltage);
 
 		#if defined(CONFIG_MTK_HAFG_20)
-		g_FG_20_cv = cv_voltage;
+		g_cv_voltage = cv_voltage;
 		#endif
 	}
 
@@ -1119,7 +1119,7 @@ if (ta_check_ta_control == KAL_FALSE)
 
 			battery_charging_control(CHARGING_CMD_SET_CV_VOLTAGE, &cv_voltage);
 			#if defined(CONFIG_MTK_HAFG_20)
-			g_FG_20_cv = cv_voltage;
+			g_cv_voltage = cv_voltage;
 			#endif
 #endif
 		}

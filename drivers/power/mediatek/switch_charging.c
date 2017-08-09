@@ -52,20 +52,6 @@
 #include <mach/diso.h>
 #endif
 
-BATTERY_VOLTAGE_ENUM cv_voltage = BATTERY_VOLT_04_200000_V;
-
-BATTERY_VOLTAGE_ENUM battery_get_cv_voltage(void)
-{
-	return cv_voltage;
-}
-
-void battery_set_cv_voltage(BATTERY_VOLTAGE_ENUM cv)
-{
-	cv_voltage = cv;
-}
-
-
-
 /* ============================================================ // */
 /* define */
 /* ============================================================ // */
@@ -89,7 +75,7 @@ CHR_CURRENT_ENUM g_temp_input_CC_value = CHARGE_CURRENT_0_00_MA;
 unsigned int g_usb_state = USB_UNCONFIGURED;
 static bool usb_unlimited;
 #if defined(CONFIG_MTK_HAFG_20)
-BATTERY_VOLTAGE_ENUM g_FG_20_cv = BATTERY_VOLT_04_200000_V;
+BATTERY_VOLTAGE_ENUM g_cv_voltage = BATTERY_VOLT_04_200000_V;
 #endif
 
  /* ///////////////////////////////////////////////////////////////////////////////////////// */
@@ -146,6 +132,13 @@ void BATTERY_SetUSBState(int usb_state_value)
 #endif
 }
 
+
+#if defined(CONFIG_MTK_HAFG_20)
+unsigned int get_cv_voltage(void)
+{
+	return g_cv_voltage;
+}
+#endif
 
 unsigned int get_charging_setting_current(void)
 {
@@ -658,7 +651,7 @@ PMU_STATUS do_jeita_state_machine(void)
 	battery_charging_control(CHARGING_CMD_SET_CV_VOLTAGE, &cv_voltage);
 
 #if defined(CONFIG_MTK_HAFG_20)
-	g_FG_20_cv = cv_voltage;
+	g_cv_voltage = cv_voltage;
 #endif
 
 	return jeita_status;
@@ -1190,7 +1183,7 @@ static void pchr_turn_on_charging(void)
 			battery_charging_control(CHARGING_CMD_SET_CV_VOLTAGE, &cv_voltage);
 
 			#if defined(CONFIG_MTK_HAFG_20)
-			g_FG_20_cv = cv_voltage;
+			g_cv_voltage = cv_voltage;
 			#endif
 #endif
 		}

@@ -3838,7 +3838,7 @@ void bmd_ctrl_cmd_from_user(void *nl_data, struct fgd_nl_msg_t *ret_msg)
 		{
 			unsigned int cv_voltage;
 
-			cv_voltage = get_fg_20_cv_voltage();
+			cv_voltage = get_cv_voltage();
 			ret_msg->fgd_data_len += sizeof(cv_voltage);
 			memcpy(ret_msg->fgd_data, &cv_voltage, sizeof(cv_voltage));
 
