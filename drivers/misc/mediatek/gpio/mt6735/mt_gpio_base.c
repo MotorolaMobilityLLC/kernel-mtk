@@ -111,17 +111,28 @@ int mt_set_gpio_pull_enable_base(unsigned long pin, unsigned long enable)
 	GPIO_WR32(PULLEN_addr[pin].addr, reg);
 #else
 
-	if (PULLEN_offset[pin].offset == -1) {
+	if ((PULLEN_offset[pin].offset == -1) && (pupd_offset[pin].offset == -1)) {
 		gpio_pullen_unsupport[pin] = -1;
 		return GPIO_PULL_EN_UNSUPPORTED;
 	}
 
-	if (enable == GPIO_PULL_DISABLE)
-		GPIO_SET_BITS((1L << (PULLEN_offset[pin].offset)),
-				      PULLEN_addr[pin].addr + 8);
-	else
-		GPIO_SET_BITS((1L << (PULLEN_offset[pin].offset)),
-				      PULLEN_addr[pin].addr + 4);
+	if (PULLEN_offset[pin].offset != -1) {
+		if (enable == GPIO_PULL_DISABLE)
+			GPIO_SET_BITS((1L << (PULLEN_offset[pin].offset)),
+				PULLEN_addr[pin].addr + 8);
+		else
+			GPIO_SET_BITS((1L << (PULLEN_offset[pin].offset)),
+				PULLEN_addr[pin].addr + 4);
+
+	} else {
+
+		if (enable == GPIO_PULL_DISABLE)
+			GPIO_SET_BITS((3L << (pupd_offset[pin].offset)),
+				pupd_addr[pin].addr + 8);
+		else
+			GPIO_SET_BITS((2L << (pupd_offset[pin].offset)),
+				pupd_addr[pin].addr + 4);
+	}
 
 #endif
 
@@ -149,7 +160,7 @@ int mt_get_gpio_pull_enable_base(unsigned long pin)
 
 	bit = pupd_offset[pin].offset;
 	data = GPIO_RD32(pupd_addr[pin].addr);
-	return ((data & (0x7 << bit)) != 0) ? 1 : 0;
+	return ((data & (0x3 << bit)) != 0) ? 1 : 0;
 
 }
 
