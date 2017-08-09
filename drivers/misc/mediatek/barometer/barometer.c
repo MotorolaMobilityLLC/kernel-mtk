@@ -54,8 +54,10 @@ static void baro_work_func(struct work_struct *work)
 	cxt = baro_context_obj;
 	delay_ms = atomic_read(&cxt->delay);
 
-	if (NULL == cxt->baro_data.get_data)
+	if (NULL == cxt->baro_data.get_data) {
 		BARO_LOG("baro driver not register data path\n");
+		return;
+	}
 
 	time.tv_sec = time.tv_nsec = 0;
 	get_monotonic_boottime(&time);
