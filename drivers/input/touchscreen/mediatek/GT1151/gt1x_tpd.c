@@ -951,6 +951,7 @@ static int tpd_local_init(void)
 		}
 		memset(gpDMABuf_va, 0, IIC_DMA_MAX_TRANSFER_SIZE);
 #endif
+	spin_lock_init(&irq_flag_lock);
 	if (i2c_add_driver(&tpd_i2c_driver) != 0) {
 		GTP_ERROR("unable to add i2c driver.");
 		return -1;
@@ -985,7 +986,6 @@ static int tpd_local_init(void)
 
 	GTP_INFO("end %s, %d\n", __func__, __LINE__);
 	tpd_type_cap = 1;
-	spin_lock_init(&irq_flag_lock);
 	return 0;
 }
 
