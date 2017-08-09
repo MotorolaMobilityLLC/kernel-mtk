@@ -391,6 +391,10 @@ static ssize_t spi_store(struct device *dev,
 		if (!chip_config)
 			return -ENOMEM;
 	}
+	if (!buf) {
+		SPIDEV_LOG("buf is NULL.\n");
+		goto out;
+	}
 #ifdef CONFIG_TRUSTONIC_TEE_SUPPORT
 	if (!strncmp(buf, "-1", 2)) { /*TRANSFER*/
 		    SPIDEV_MSG("start to access TL SPI driver.\n");
@@ -419,10 +423,6 @@ static ssize_t spi_store(struct device *dev,
 #endif
 	} else if (!strncmp(buf, "-w", 2)) {
 		buf += 3;
-		if (!buf) {
-			SPIDEV_LOG("buf is NULL.\n");
-			goto out;
-		}
 		if (!strncmp(buf, "setuptime=", 10) && (1 == sscanf(buf+10, "%d", &setuptime))) {
 			SPIDEV_MSG("setuptime is:%d\n", setuptime);
 			chip_config->setuptime = setuptime;
@@ -548,10 +548,10 @@ spi_msg_store(struct device *dev, struct device_attribute *attr,
 		SPIDEV_MSG("Please input the message of this device to send and receive.\n");
 	} else if (!strncmp(buf, "-w", 2)) {
 		buf += 3;
-		if (!buf) {
+		/* if (!buf) {
 			SPIDEV_LOG("Parameter is not enough.\n");
 			goto out;
-		}
+		} */
 		if (!strncmp(buf, "len=", 4) && 1 == sscanf(buf + 4, "%d", &len)) {
 			spi_setup_xfer(&spi->dev, &transfer, len, 0);
 			spi_message_add_tail(&transfer, &msg);
@@ -569,10 +569,10 @@ spi_msg_store(struct device *dev, struct device_attribute *attr,
 		}
 	} else if (!strncmp(buf, "-func", 5)) {
 		buf += 6;
-		if (!buf) {
+		/* if (!buf) {
 			SPIDEV_LOG("Parameter is not enough.\n");
 			goto out;
-		}
+		} */
 		if (!strncmp(buf, "len=", 4) && 1 == sscanf(buf + 4, "%d", &len)) {
 			spi_setup_xfer(&spi->dev, &transfer, len, 1);
 			spi_message_add_tail(&transfer, &msg);
