@@ -9118,7 +9118,7 @@ static int msdc_drv_probe(struct platform_device *pdev)
 	/* set to combo_sdio_request_eirq() for WIFI */
 	/* msdc_eirq_sdio() will be called when EIRQ */
 	if (host->hw->request_sdio_eirq)
-		host->hw->request_sdio_eirq(msdc_eirq_sdio, (void *)host);
+		host->hw->request_sdio_eirq((void *)msdc_eirq_sdio, (void *)host);
 
 #ifdef CONFIG_PM
 	if (host->hw->register_pm) {	/* yes for sdio */
