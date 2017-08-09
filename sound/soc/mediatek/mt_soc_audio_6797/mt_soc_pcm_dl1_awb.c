@@ -78,7 +78,10 @@ static int mtk_afe_dl1_awb_probe(struct snd_soc_platform *platform);
 #define MAX_MIDI_DEVICES
 
 static struct snd_pcm_hardware mtk_dl1_awb_hardware = {
-	.info = (SNDRV_PCM_INFO_INTERLEAVED),
+	.info = (SNDRV_PCM_INFO_MMAP |
+	SNDRV_PCM_INFO_INTERLEAVED |
+	SNDRV_PCM_INFO_RESUME |
+	SNDRV_PCM_INFO_MMAP_VALID),
 	.formats =      SND_SOC_STD_MT_FMTS,
 	.rates =        SOC_HIGH_USE_RATE,
 	.rate_min =     SOC_HIGH_USE_RATE_MIN,
@@ -275,9 +278,6 @@ static int mtk_dl1_awb_pcm_open(struct snd_pcm_substream *substream)
 
 	/* print for hw pcm information */
 	pr_warn("mtk_dl1_awb_pcm_open runtime rate = %d channels = %d\n", runtime->rate, runtime->channels);
-	runtime->hw.info |= SNDRV_PCM_INFO_INTERLEAVED;
-	runtime->hw.info |= SNDRV_PCM_INFO_NONINTERLEAVED;
-	runtime->hw.info |= SNDRV_PCM_INFO_MMAP_VALID;
 
 	if (substream->stream == SNDRV_PCM_STREAM_CAPTURE)
 		pr_warn("SNDRV_PCM_STREAM_CAPTURE\n");
