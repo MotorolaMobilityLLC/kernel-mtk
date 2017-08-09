@@ -321,7 +321,7 @@ static int __init init_fliper(void)
 	struct proc_dir_entry *pe;
 	int ret = 0;
 
-	pe = proc_create("fliper", 0666, NULL, &mt_fliper_fops);
+	pe = proc_create("fliper", 0664, NULL, &mt_fliper_fops);
 	if (!pe)
 		return -ENOMEM;
 	bw_threshold = BW_THRESHOLD;
