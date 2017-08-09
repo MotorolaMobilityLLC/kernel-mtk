@@ -18,7 +18,8 @@ static struct ipanic_mtd_data *ipanic_mtd_ctx;
 
 static int ipanic_mtd_block_read_single(struct ipanic_mtd_data *ctx, loff_t offset, void *buf)
 {
-	int rc, len;
+	int rc;
+	size_t len;
 	int index = offset >> ctx->mtd->writesize_shift;
 
 	if ((index < 0) || (index >= ctx->blk_nr))
@@ -36,7 +37,7 @@ static int ipanic_mtd_block_read_single(struct ipanic_mtd_data *ctx, loff_t offs
 		rc = 0;
 	}
 	if ((rc == 0) && (len != ctx->mtd->writesize)) {
-		LOGE("aee-ipanic: read size mismatch %d\n", len);
+		LOGE("aee-ipanic: read size mismatch %ld\n", len);
 		return -EINVAL;
 	}
 	return rc;
