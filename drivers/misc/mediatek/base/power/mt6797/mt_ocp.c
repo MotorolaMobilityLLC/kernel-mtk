@@ -4165,6 +4165,17 @@ if (sscanf(buf, "%d %d %d %d %d", &function_id, &val[0], &val[1], &val[2], &val[
 			ocp_write(0x10222424, val[3]); /* LO ctrl settings */
 		}
 		break;
+	case 14: /* stop PPM to access OCP */
+		if (sscanf(buf, "%d %d %d", &function_id, &val[0], &val[1]) == 3) {
+			if (val[0] == OCP_LL)
+				ocp_opt.ocp_cluster0_init = val[1];
+			else if (val[0] == OCP_L)
+				ocp_opt.ocp_cluster1_init = val[1];
+			else if (val[0] == OCP_B)
+				ocp_opt.ocp_cluster2_init = val[1];
+			ocp_info("ocp_cluster%d_init = %d", val[0], val[1]);
+		}
+		break;
 	default:
 		break;
 	}
