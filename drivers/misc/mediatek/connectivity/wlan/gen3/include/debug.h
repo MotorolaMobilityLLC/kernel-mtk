@@ -3697,6 +3697,7 @@ typedef enum _ENUM_DBG_MODULE_T {
 
 #if (BUILD_QA_DBG || DBG)
 #ifdef _lint
+#define ASSERT_NOMEM()
 #define ASSERT(_exp) \
 		{ \
 			if (!(_exp)) { \
@@ -3713,6 +3714,7 @@ typedef enum _ENUM_DBG_MODULE_T {
 			} \
 	    }
 #elif defined(WINDOWS_CE)
+#define ASSERT_NOMEM()
 #define UNICODE_TEXT(_msg)  TEXT(_msg)
 #define ASSERT(_exp) \
 		{ \
@@ -3765,6 +3767,7 @@ typedef enum _ENUM_DBG_MODULE_T {
 		}
 #endif /* WINDOWS_CE */
 #else
+#define ASSERT_NOMEM()
 #define ASSERT(_exp)
 #define ASSERT_REPORT(_exp, _fmt)
 #endif /* BUILD_QA_DBG */
