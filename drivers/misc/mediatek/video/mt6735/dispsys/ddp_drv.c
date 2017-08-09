@@ -475,8 +475,9 @@ struct dispsys_device {
 	struct clk *disp_clk[MAX_DISP_CLK_CNT];
 #endif
 };
+
+static struct platform_device mydev;
 static struct dispsys_device *dispsys_dev;
-static int nr_dispsys_dev;
 unsigned int dispsys_irq[DISP_REG_NUM] = { 0 };
 unsigned long dispsys_reg[DISP_REG_NUM] = { 0 };
 
@@ -659,18 +660,34 @@ void disp_clk_disable(enum disp_clk_id id)
 	clk_disable(dispsys_dev->disp_clk[id]);
 }
 
+int disp_clk_prepare_enable(enum disp_clk_id id)
+{
+	int ret = 0;
+
+	ret = clk_prepare_enable(dispsys_dev->disp_clk[id]);
+	if (ret)
+		pr_err("DISPSYS CLK prepare failed: errno %d\n", ret);
+
+	return ret;
+}
+
+void disp_clk_disable_unprepare(enum disp_clk_id id)
+{
+	clk_disable_unprepare(dispsys_dev->disp_clk[id]);
+}
+
 int disp_clk_set_parent(enum disp_clk_id id, enum disp_clk_id parent)
 {
 	return clk_set_parent(dispsys_dev->disp_clk[id], dispsys_dev->disp_clk[parent]);
 }
-#endif /* CONFIG_MTK_CLKMGR */
+#endif				/* CONFIG_MTK_CLKMGR */
 
 static int disp_probe(struct platform_device *pdev)
 {
 	struct class_device;
-	int ret;
+#ifndef CONFIG_MTK_CLKMGR
 	int i;
-	int new_count;
+#endif
 	static unsigned int disp_probe_cnt;
 #if 0
 	struct resource DT_res1;
@@ -679,6 +696,53 @@ static int disp_probe(struct platform_device *pdev)
 
 	if (disp_probe_cnt != 0)
 		return 0;
+
+	/* save pdev for disp_probe_1 */
+	memcpy(&mydev, pdev, sizeof(mydev));
+
+	if (dispsys_dev) {
+		DDPERR("%s: dispsys_dev=0x%p\n", __func__, dispsys_dev);
+		BUG();
+	}
+
+	dispsys_dev = kmalloc(sizeof(struct dispsys_device), GFP_KERNEL);
+	if (!dispsys_dev) {
+		DDPERR("Unable to allocate dispsys_dev\n");
+		return -ENOMEM;
+	}
+#ifndef CONFIG_MTK_CLKMGR
+	for (i = 0; i < MAX_DISP_CLK_CNT; i++) {
+		DDPMSG("DISPSYS get clock %s\n", disp_clk_name[i]);
+		dispsys_dev->disp_clk[i] = devm_clk_get(&pdev->dev, disp_clk_name[i]);
+		if (IS_ERR(dispsys_dev->disp_clk[i]))
+			DDPERR("%s:%d, DISPSYS get %d,%s clock error!!!\n",
+			       __FILE__, __LINE__, i, disp_clk_name[i]);
+		else {
+			switch (i) {
+			case DISP_MTCMOS_CLK:
+			case DISP0_SMI_COMMON:
+			case DISP0_SMI_LARB0:
+				disp_clk_prepare_enable(i);
+				break;
+			default:
+				disp_clk_prepare(i);
+				break;
+			}
+		}
+	}
+#endif				/* CONFIG_MTK_CLKMGR */
+	disp_probe_cnt++;
+
+	return 0;
+}
+
+static int __init disp_probe_1(void)
+{
+	struct class_device;
+	int ret;
+	int i;
+	struct platform_device *pdev = &mydev;
+
 
 #if defined(CONFIG_TRUSTONIC_TEE_SUPPORT) && defined(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT)
 	disp_misc_dev.minor = MISC_DYNAMIC_MINOR;
@@ -694,15 +758,11 @@ static int disp_probe(struct platform_device *pdev)
 	init_tplay_handle(&(pdev->dev)); /* non-zero value for valid VA */
 #endif
 
-	new_count = nr_dispsys_dev + 1;
-	/* dispsys_dev = krealloc(dispsys_dev, sizeof(struct dispsys_device) * new_count, GFP_KERNEL); */
-	dispsys_dev = kcalloc(new_count, sizeof(*dispsys_dev), GFP_KERNEL);
 	if (!dispsys_dev) {
-		DDPERR("Unable to allocate dispsys_dev\n");
+		DDPERR("%s: dispsys_dev=NULL\n", __func__);
 		return -ENOMEM;
 	}
 
-	dispsys_dev = &(dispsys_dev[nr_dispsys_dev]);
 	dispsys_dev->dev = &pdev->dev;
 
 	/* iomap registers and irq */
@@ -744,30 +804,12 @@ static int disp_probe(struct platform_device *pdev)
 		}
 
 	}
-	nr_dispsys_dev = new_count;
 	/* mipi tx reg map here */
 	dsi_reg_va = dispsys_reg[DISP_REG_DSI0];
 	mipi_tx_reg = dispsys_reg[DISP_REG_MIPI];
 #ifndef DISP_NO_DPI
 	DPI_REG = (PDPI_REGS)dispsys_reg[DISP_REG_DPI0];
 #endif
-
-#ifndef CONFIG_MTK_CLKMGR
-	for (i = 0; i < MAX_DISP_CLK_CNT; i++) {
-		pr_debug("DISPSYS get clock %s\n", disp_clk_name[i]);
-		dispsys_dev->disp_clk[i] = devm_clk_get(&pdev->dev, disp_clk_name[i]);
-		if (IS_ERR(dispsys_dev->disp_clk[i]))
-			pr_err("%s:%d, DISPSYS get %s clock error!!!\n",
-			       __FILE__, __LINE__, disp_clk_name[i]);
-		else {
-			if (i != DISP_MTCMOS_CLK)
-				disp_clk_prepare(i);
-		}
-	}
-	/* for (i = 0; i < MAX_DISP_CLK_CNT; i++) {
-		disp_clk_prepare(i);
-	}*/
-#endif /* CONFIG_MTK_CLKMGR */
 
 	/* //// power on MMSYS for early porting */
 #ifdef CONFIG_FPGA_EARLY_PORTING
@@ -902,7 +944,8 @@ static void __exit disp_exit(void)
 
 	platform_driver_unregister(&dispsys_of_driver);
 }
-module_init(disp_init);
+arch_initcall(disp_init);
+module_init(disp_probe_1);
 module_exit(disp_exit);
 MODULE_AUTHOR("Tzu-Meng, Chung <Tzu-Meng.Chung@mediatek.com>");
 MODULE_DESCRIPTION("Display subsystem Driver");

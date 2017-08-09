@@ -299,6 +299,8 @@ int disp_clk_prepare(enum disp_clk_id id);
 void disp_clk_unprepare(enum disp_clk_id id);
 int disp_clk_enable(enum disp_clk_id id);
 void disp_clk_disable(enum disp_clk_id id);
+int disp_clk_prepare_enable(enum disp_clk_id id);
+void disp_clk_disable_unprepare(enum disp_clk_id id);
 int disp_clk_set_parent(enum disp_clk_id id, enum disp_clk_id parent);
 #endif
 
