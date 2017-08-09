@@ -97,19 +97,14 @@ static void ppm_lcmoff_switch(int onoff)
 				lcmoff_policy.req.limit[i].min_cpu_core = get_cluster_min_cpu_core(i);
 				lcmoff_policy.req.limit[i].max_cpu_core = get_cluster_max_cpu_core(i);
 			}
-			ppm_unlock(&lcmoff_policy.lock);
-			ppm_task_wakeup();
-		} else
-			ppm_unlock(&lcmoff_policy.lock);
+		}
 	} else {
 		/* activate lcmoff policy */
-		if (lcmoff_policy.is_enabled) {
+		if (lcmoff_policy.is_enabled)
 			lcmoff_policy.is_activated = true;
-			ppm_unlock(&lcmoff_policy.lock);
-			ppm_task_wakeup();
-		} else
-			ppm_unlock(&lcmoff_policy.lock);
 	}
+
+	ppm_unlock(&lcmoff_policy.lock);
 
 	FUNC_EXIT(FUNC_LV_POLICY);
 }
