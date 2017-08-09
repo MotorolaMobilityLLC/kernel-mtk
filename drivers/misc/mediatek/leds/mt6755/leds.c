@@ -36,6 +36,9 @@
 
 #include "leds_sw.h"
 #include "leds_hal.h"
+#include "ddp_pwm.h"
+#include "mtkfb.h"
+
 
 /* for LED&Backlight bringup, define the dummy API */
 #ifndef CONFIG_MTK_PMIC
@@ -45,18 +48,10 @@ u16 pmic_set_register_value(u32 flagname, u32 val)
 }
 #endif
 
-/*
-static int disp_bls_set_backlight(int level_1024)
+int __weak mtkfb_set_backlight_level(unsigned int level)
 {
 	return 0;
 }
-
-static int mtkfb_set_backlight_level(unsigned int level)
-{
-	return 0;
-}
-#endif
-*/
 
 #ifndef CONFIG_MTK_PWM
 s32 pwm_set_spec_config(struct pwm_spec_config *conf)
@@ -261,24 +256,18 @@ struct cust_mt65xx_led *get_cust_led_dtsi(void)
 					    ("led dts can not get pwm config data.\n");
 
 				switch (pled_dtsi[i].mode) {
-#ifdef CONFIG_MTK_FB
 				case MT65XX_LED_MODE_CUST_LCM:
-#ifdef CONFIG_MTK_VIDEOX
 					pled_dtsi[i].data =
 					    (long)mtkfb_set_backlight_level;
-#endif
 					LEDS_DEBUG
 					    ("kernel:the backlight hw mode is LCM.\n");
 					break;
 				case MT65XX_LED_MODE_CUST_BLS_PWM:
-#ifdef CONFIG_MTK_VIDEOX
 					pled_dtsi[i].data =
 					    (long)disp_bls_set_backlight;
-#endif
 					LEDS_DEBUG
 					    ("kernel:the backlight hw mode is BLS.\n");
 					break;
-#endif
 				default:
 					break;
 				}

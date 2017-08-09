@@ -42,9 +42,5 @@ extern int mt_mt65xx_blink_set(struct led_classdev *led_cdev,
 
 extern struct cust_mt65xx_led *mt_get_cust_led_list(void);
 
-#ifdef CONFIG_MTK_VIDEOX
-extern int disp_bls_set_backlight(int level_1024);
 extern int mtkfb_set_backlight_level(unsigned int level);
-#endif
-
 #endif
