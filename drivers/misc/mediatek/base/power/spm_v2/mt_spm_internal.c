@@ -133,10 +133,13 @@ void __spm_kick_im_to_fetch(const struct pcm_desc *pcmdesc)
 	u32 ptr, len, con0;
 
 	/* tell IM where is PCM code (use slave mode if code existed) */
-	if (pcmdesc->base_dma)
+	if (pcmdesc->base_dma) {
 		ptr = pcmdesc->base_dma;
-	else
+		/* for 4GB mode */
+		MAPPING_DRAM_ACCESS_ADDR(ptr);
+	} else {
 		ptr = base_va_to_pa(pcmdesc->base);
+	}
 	len = pcmdesc->size - 1;
 	if (spm_read(PCM_IM_PTR) != ptr || spm_read(PCM_IM_LEN) != len || pcmdesc->sess > 2) {
 		spm_write(PCM_IM_PTR, ptr);
