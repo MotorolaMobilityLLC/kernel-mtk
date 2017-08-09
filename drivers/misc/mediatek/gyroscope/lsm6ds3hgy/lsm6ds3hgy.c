@@ -579,6 +579,7 @@ static int LSM6DS3H_ReadGyroData(struct i2c_client *client, char *buf, int bufsi
 	char databuf[6];	
 	int data[3];
 	struct lsm6ds3h_gyro_i2c_data *obj = i2c_get_clientdata(client);  
+	s64 tempValue;
 	
 	if(sensor_power == false)
 	{
@@ -609,9 +610,16 @@ static int LSM6DS3H_ReadGyroData(struct i2c_client *client, char *buf, int bufsi
 		}
 #endif	
 #if 1
-		obj->data[LSM6DS3H_AXIS_X] = (s64)(obj->data[LSM6DS3H_AXIS_X]) * LSM6DS3H_GYRO_SENSITIVITY_2000DPS*3142/(180*1000*1000);
-		obj->data[LSM6DS3H_AXIS_Y] = (s64)(obj->data[LSM6DS3H_AXIS_Y]) * LSM6DS3H_GYRO_SENSITIVITY_2000DPS*3142/(180*1000*1000);
-		obj->data[LSM6DS3H_AXIS_Z] = (s64)(obj->data[LSM6DS3H_AXIS_Z]) * LSM6DS3H_GYRO_SENSITIVITY_2000DPS*3142/(180*1000*1000); 
+		/*obj->data is s16, assigned a intermediate multiplication result directly will overflow */
+		tempValue = (s64)(obj->data[LSM6DS3H_AXIS_X]) * LSM6DS3H_GYRO_SENSITIVITY_2000DPS*3142;
+		do_div(tempValue, 180*1000*1000);
+		obj->data[LSM6DS3H_AXIS_X] = (s16)tempValue;
+		tempValue = (s64)(obj->data[LSM6DS3H_AXIS_Y]) * LSM6DS3H_GYRO_SENSITIVITY_2000DPS*3142;
+		do_div(tempValue, 180*1000*1000);
+		obj->data[LSM6DS3H_AXIS_Y] = (s16)tempValue;
+		tempValue = (s64)(obj->data[LSM6DS3H_AXIS_Z]) * LSM6DS3H_GYRO_SENSITIVITY_2000DPS*3142;
+		do_div(tempValue, 180*1000*1000);
+		obj->data[LSM6DS3H_AXIS_Z] = (s16)tempValue;
 
 		obj->data[LSM6DS3H_AXIS_X] += obj->cali_sw[LSM6DS3H_AXIS_X];
 		obj->data[LSM6DS3H_AXIS_Y] += obj->cali_sw[LSM6DS3H_AXIS_Y];
@@ -810,7 +818,7 @@ static int lsm6ds3h_gyro_init_client(struct i2c_client *client, bool enable)
 {
 	struct lsm6ds3h_gyro_i2c_data *obj = i2c_get_clientdata(client);
 	int res = 0;
-	GYRO_FUN();	
+	//GYRO_FUN();
     GYRO_LOG(" lsm6ds3h addr %x!\n",client->addr);
 	//res = LSM6DS3H_CheckDeviceID(client);
 	//if(res != LSM6DS3H_SUCCESS)
@@ -1328,7 +1336,7 @@ static int lsm6ds3h_gyro_suspend(struct i2c_client *client, pm_message_t msg)
 	struct lsm6ds3h_gyro_i2c_data *obj = i2c_get_clientdata(client);    
 	int err = 0;
 	
-	GYRO_FUN(); 
+	//GYRO_FUN();
 
 	if(msg.event == PM_EVENT_SUSPEND)
 	{   
@@ -1506,7 +1514,7 @@ static int lsm6ds3h_gyro_i2c_probe(struct i2c_client *client, const struct i2c_d
 	}
 #endif
 
-
+	ctl.is_use_common_factory = true;
 	err = lsm6ds3h_create_attr(&(lsm6ds3h_gyro_init_info.platform_diver_addr->driver));
 	if(err)
 	{
@@ -1610,7 +1618,7 @@ static int lsm6ds3h_gyro_local_uninit(void)
 {
     //struct gyro_hw *gy_hw = get_cust_gyro_hw();
 
-    GYRO_FUN();    
+   // GYRO_FUN();
     LSM6DS3H_power(hw, 0);  	
     i2c_del_driver(&lsm6ds3h_gyro_i2c_driver);
     return 0;
@@ -1641,7 +1649,7 @@ module_exit(lsm6ds3h_gyro_exit);
 /*----------------------------------------------------------------------------*/
 MODULE_LICENSE("GPL");
 MODULE_DESCRIPTION("LSM6DS3Hh gyroscope driver");
-MODULE_AUTHOR("Xuexi.Bai@mediatek.com");
+MODULE_AUTHOR("Yue.Wu@mediatek.com");
 
 
 
