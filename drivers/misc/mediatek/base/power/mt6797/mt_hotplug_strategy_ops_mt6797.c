@@ -179,11 +179,13 @@ static int hps_algo_heavytsk_det(void)
 	int i, ret;
 
 	i = ret = 0;
-
+	/* Check heavy task value of last cluster if needed*/
+	#if 0
+	if (hps_sys.cluster_info[hps_sys.cluster_num-1].hvyTsk_value)
+			ret = 1;
+	#endif
 	for (i = hps_sys.cluster_num-1; i > 0; i--) {
-		if (!hps_sys.cluster_info[i].hvyTsk_value)
-			continue;
-		else
+		if (hps_sys.cluster_info[i-1].hvyTsk_value)
 			ret = 1;
 
 		hps_sys.cluster_info[i].target_core_num =
