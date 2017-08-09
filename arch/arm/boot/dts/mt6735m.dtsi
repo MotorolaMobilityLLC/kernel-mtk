@@ -690,6 +690,12 @@
 			interrupts = <0 0 0x8>;
 		};
 
+		mcucfg: mcucfg@10200000 {
+			compatible = "mediatek,mt6735-mcucfg";
+			reg = <0x10200000 0x200>;
+			interrupts = <GIC_SPI 71 IRQ_TYPE_LEVEL_HIGH>;
+		};
+
 		RSVD@0x10200200 {
 			compatible = "mediatek,RSVD";
 			reg = <0x10200200 0x200>;
@@ -721,12 +727,12 @@
 			interrupts = <0 136 0x4>;
 		};
 
-		SYS_CIRQ@0x10204000 {
-			compatible = "mediatek,SYS_CIRQ";
+		sys_cirq: sys_cirq@10204000 {
+			compatible = "mediatek,mt6735-sys_cirq";
 			reg = <0x10204000 0x1000>;
-			interrupts = <0 231 0x8>;
-			cirq_num = <159>;
-			spi_start_offset = <72>;
+			interrupts = <GIC_SPI 231 IRQ_TYPE_LEVEL_LOW>;
+			mediatek,cirq_num = <159>;
+			mediatek,spi_start_offset = <72>;
 		};
 
 		M4U@0x10205000 {
@@ -919,8 +925,8 @@
 			reg = <0x10220000 0x8000>;
 		};
 
-		CPU_DBGAPB {
-			compatible = "mediatek,DBG_DEBUG";
+		cpu_dbgapb: cpu_dbgapb {
+			compatible = "mediatek,mt6735-dbg_debug";
 			num = <4>;
 			reg =  <0x10810000 0x1000
 				0x10910000 0x1000
