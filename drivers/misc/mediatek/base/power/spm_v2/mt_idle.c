@@ -486,18 +486,6 @@ void faudintbus_sq2pll(void)
 	clk_writel(CLK_CFG_UPDATE,  1U << 18);
 }
 
-bool cg_i2c3_check_idle_can_enter(unsigned int *block_mask)
-{
-	u32 clk_stat = ~idle_readl(INFRA_SW_CG_1_STA); /* INFRA1 */
-
-	if ((clk_stat & 0x00004000) == 0x00004000) {
-		block_mask[CG_INFRA1] |= 0x00004000;
-		return false;
-	}
-
-	return true;
-}
-
 #define APMIXEDSYS(offset)	(apmixed_base_in_idle + offset)
 
 #if defined(CONFIG_ARCH_MT6755)
@@ -704,8 +692,8 @@ bool soidle3_can_enter(int cpu)
 #endif
 
 	if (soidle3_by_pass_cg == 0) {
-		/* Check if I2C-3 gated since DVFSP will control I2C-3 */
-		if (!cg_i2c3_check_idle_can_enter(soidle3_block_mask)) {
+		/* Check if I2C-appm gated since DVFSP will control it */
+		if (!cg_i2c_appm_check_idle_can_enter(soidle3_block_mask)) {
 #ifdef CONFIG_HYBRID_CPU_DVFS
 			cpuhvfs_unpause_dvfsp_to_run(PAUSE_IDLE);
 			mt_dvfsp_paused_by_idle = false;
@@ -971,8 +959,8 @@ bool soidle_can_enter(int cpu)
 #endif
 
 	if (soidle_by_pass_cg == 0) {
-		/* Check if I2C-3 gated since DVFSP will control I2C-3 */
-		if (!cg_i2c3_check_idle_can_enter(soidle_block_mask)) {
+		/* Check if I2C-appm gated since DVFSP will control it */
+		if (!cg_i2c_appm_check_idle_can_enter(soidle_block_mask)) {
 #ifdef CONFIG_HYBRID_CPU_DVFS
 			cpuhvfs_unpause_dvfsp_to_run(PAUSE_IDLE);
 			mt_dvfsp_paused_by_idle = false;
@@ -1326,8 +1314,8 @@ static bool dpidle_can_enter(int cpu)
 #endif
 
 	if (dpidle_by_pass_cg == 0) {
-		/* Check if I2C-3 gated since DVFSP will control I2C-3 */
-		if (!cg_i2c3_check_idle_can_enter(dpidle_block_mask)) {
+		/* Check if I2C-appm gated since DVFSP will control it */
+		if (!cg_i2c_appm_check_idle_can_enter(dpidle_block_mask)) {
 #ifdef CONFIG_HYBRID_CPU_DVFS
 			cpuhvfs_unpause_dvfsp_to_run(PAUSE_IDLE);
 			mt_dvfsp_paused_by_idle = false;

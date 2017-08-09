@@ -68,6 +68,7 @@ extern const char *reason_name[NR_REASONS];
 const char *cg_grp_get_name(int id);
 bool cg_check_idle_can_enter(
 	unsigned int *condition_mask, unsigned int *block_mask, enum mt_idle_mode mode);
+bool cg_i2c_appm_check_idle_can_enter(unsigned int *block_mask);
 void __init iomap_init(void);
 
 #endif /* __MT_IDLE_INTERNAL_H__ */

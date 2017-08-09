@@ -232,7 +232,11 @@ static ssize_t sodi_ctrl_show(struct kobject *kobj, struct kobj_attribute *attr,
 
 static ssize_t mcdi_ctrl_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
 {
+#if defined(CONFIG_ARCH_MT6755)
 	return show_pwr_ctrl(__spm_mcdi.pwrctrl, buf);
+#else
+	return 0;
+#endif
 }
 #endif
 static ssize_t talking_ctrl_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
@@ -507,7 +511,11 @@ static ssize_t sodi_ctrl_store(struct kobject *kobj, struct kobj_attribute *attr
 static ssize_t mcdi_ctrl_store(struct kobject *kobj, struct kobj_attribute *attr,
 			       const char *buf, size_t count)
 {
+#if defined(CONFIG_ARCH_MT6755)
 	return store_pwr_ctrl(__spm_mcdi.pwrctrl, buf, count);
+#else
+	return 0;
+#endif
 }
 #endif
 
