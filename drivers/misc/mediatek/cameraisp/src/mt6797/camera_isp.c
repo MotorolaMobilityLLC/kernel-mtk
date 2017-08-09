@@ -5421,6 +5421,26 @@ static MINT32 ISP_WaitIrq(ISP_WAIT_IRQ_STRUCT *WaitIrq)
 	irqStatus = IspInfo.IrqInfo.Status[WaitIrq->Type][WaitIrq->EventInfo.St_type][WaitIrq->EventInfo.UserKey];
 	spin_unlock_irqrestore(&(IspInfo.SpinLockIrq[WaitIrq->Type]), flags);
 
+	if (WaitIrq->EventInfo.Clear == ISP_IRQ_CLEAR_NONE) {
+		if (IspInfo.IrqInfo.Status[WaitIrq->Type][WaitIrq->EventInfo.St_type][WaitIrq->EventInfo.UserKey]
+			& WaitIrq->EventInfo.Status) {
+#ifdef ENABLE_WAITIRQ_LOG
+			LOG_INF("%s,%s", "Already have irq!!!: WaitIrq Timeout(%d) Clear(%d), Type(%d), StType(%d)",
+			", IrqStatus(0x%08X), WaitStatus(0x%08X), Timeout(%d), userKey(%d)\n",
+				WaitIrq->EventInfo.Timeout,
+				WaitIrq->EventInfo.Clear,
+				WaitIrq->Type,
+				WaitIrq->EventInfo.St_type,
+				irqStatus,
+				WaitIrq->EventInfo.Status,
+				WaitIrq->EventInfo.Timeout,
+				WaitIrq->EventInfo.UserKey);
+			}
+#endif
+
+			goto NON_CLEAR_WAIT;
+		}
+	}
 #ifdef ENABLE_WAITIRQ_LOG
 	LOG_INF("before wait_event: WaitIrq Timeout(%d) Clear(%d), IRQType(%d), StType(%d), IrqStatus(0x%08X), WaitStatus(0x%08X), Timeout(%d), userKey(%d)\n",
 		WaitIrq->EventInfo.Timeout,
@@ -5486,6 +5506,7 @@ static MINT32 ISP_WaitIrq(ISP_WAIT_IRQ_STRUCT *WaitIrq)
 	}
 #endif
 
+NON_CLEAR_WAIT:
 	/* 3. get interrupt and update time related information that would be return to user */
 	/* do_gettimeofday(&time_ready2return); */
 	sec = cpu_clock(0);     /* ns */
@@ -5493,10 +5514,14 @@ static MINT32 ISP_WaitIrq(ISP_WAIT_IRQ_STRUCT *WaitIrq)
 	usec = do_div(sec, 1000000);    /* sec and usec */
 	time_ready2return.tv_usec = usec;
 	time_ready2return.tv_sec = sec;
-#if 0
+
 
 	spin_lock_irqsave(&(IspInfo.SpinLockIrq[WaitIrq->Type]), flags);
+	IspInfo.IrqInfo.Status[WaitIrq->Type][WaitIrq->EventInfo.St_type][WaitIrq->EventInfo.UserKey]
+		&= (~WaitIrq->EventInfo.Status); /* clear the status if someone get the irq */
+	spin_unlock_irqrestore(&(IspInfo.SpinLockIrq[WaitIrq->Type]), flags);
 
+#if 0
 	/* time period for 3A */
 	if (WaitIrq->EventInfo.Status & IspInfo.IrqInfo.MarkedFlag[WaitIrq->Type][WaitIrq->EventInfo.UserKey]) {
 		WaitIrq->EventInfo.TimeInfo.tMark2WaitSig_usec = (time_getrequest.tv_usec - IspInfo.IrqInfo.MarkedTime_usec[WaitIrq->Type][idx][WaitIrq->EventInfo.UserKey]);
@@ -11954,7 +11979,7 @@ static irqreturn_t ISP_Irq_CAM_A(MINT32 Irq, void *DeviceId)
 			#endif
 
 			IRQ_LOG_KEEPER(module, m_CurrentPPB, _LOG_INF, \
-				       "CAMA P1_SOF_%d_%d(0x%x_0x%x,0x%x_0x%x,0x%x,0x%x,0x%x),int_us:0x%x,cq:0x%x\n", \
+				       "CAMA P1_SOF_%d_%d(0x%x_0x%x,0x%x_0x%x,0x%x,0x%x,%d),int_us:0x%x,cq:0x%x\n", \
 				       sof_count[module], cur_v_cnt, \
 				       (unsigned int)(ISP_RD32(CAM_REG_FBC_IMGO_CTL1(reg_module))), \
 				       (unsigned int)(ISP_RD32(CAM_REG_FBC_IMGO_CTL2(reg_module))), \
@@ -12224,7 +12249,7 @@ static irqreturn_t ISP_Irq_CAM_B(MINT32  Irq, void *DeviceId)
 			#endif
 
 			IRQ_LOG_KEEPER(module, m_CurrentPPB, _LOG_INF, \
-				       "CAMB P1_SOF_%d_%d(0x%x_0x%x,0x%x_0x%x,0x%x,0x%x,0x%x),int_us:0x%x,cq:0x%x\n", \
+				       "CAMB P1_SOF_%d_%d(0x%x_0x%x,0x%x_0x%x,0x%x,0x%x,%d),int_us:0x%x,cq:0x%x\n", \
 				       sof_count[module], cur_v_cnt, \
 				       (unsigned int)(ISP_RD32(CAM_REG_FBC_IMGO_CTL1(reg_module))), \
 				       (unsigned int)(ISP_RD32(CAM_REG_FBC_IMGO_CTL2(reg_module))), \
