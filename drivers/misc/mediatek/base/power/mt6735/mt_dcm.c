@@ -114,8 +114,8 @@ static unsigned long ddrphy_base;
 /* #define DCM_ENABLE_DCM_CFG */
 #define dcm_err(fmt, args...)	pr_err(TAG fmt, ##args)
 #define dcm_warn(fmt, args...)	pr_warn(TAG fmt, ##args)
-#define dcm_info(fmt, args...)	pr_notice(TAG fmt, ##args)
-#define dcm_dbg(fmt, args...)	pr_info(TAG fmt, ##args)
+#define dcm_info(fmt, args...)	pr_warn(TAG fmt, ##args)
+#define dcm_dbg(fmt, args...)	pr_debug(TAG fmt, ##args)
 #define dcm_ver(fmt, args...)	pr_debug(TAG fmt, ##args)
 
 /** macro **/
