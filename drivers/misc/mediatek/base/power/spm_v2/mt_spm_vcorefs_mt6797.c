@@ -37,7 +37,7 @@
 #endif
 
 /* TIMEOUT */
-#define SPM_DVFS_TIMEOUT	7500	/* 7.5ms */
+#define SPM_DVFS_TIMEOUT	10000	/* 10ms */
 #define SPM_DVFS_CON_TIMEOUT	2000	/* 2ms */
 
 /* BW threshold for SPM_SW_RSV_4 */
