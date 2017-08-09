@@ -138,7 +138,6 @@ static int mt_get_md_gpio(char *gpio_name, int len)
 int modem_dtr_set(int on, int low_latency)
 {
 	struct ccci_modem *md = NULL;
-	unsigned char control_signal = 0;
 	struct c2k_ctrl_port_msg c2k_ctl_msg;
 	int ret = 0;
 
@@ -163,7 +162,6 @@ int modem_dtr_set(int on, int low_latency)
 int modem_dcd_state(void)
 {
 	struct ccci_modem *md = NULL;
-	unsigned char control_signal = 0;
 	struct c2k_ctrl_port_msg c2k_ctl_msg;
 	int dcd_state = 0;
 	int ret = 0;

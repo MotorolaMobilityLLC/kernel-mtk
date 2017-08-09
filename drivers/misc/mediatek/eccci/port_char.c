@@ -380,6 +380,7 @@ push_err_out:
 			return -ENOMEM;
 		}
 	}
+	return -ENODEV;
 }
 
 #endif
