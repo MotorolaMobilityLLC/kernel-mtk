@@ -40,6 +40,7 @@
 #define AUDIO_IPI_IOCTL_SEND_PAYLOAD  _IOW(AUDIO_IPI_IOC_MAGIC, 1, unsigned int)
 #define AUDIO_IPI_IOCTL_SEND_DRAM     _IOW(AUDIO_IPI_IOC_MAGIC, 2, unsigned int)
 
+#define AUDIO_IPI_IOCTL_REG_FEATURE   _IOW(AUDIO_IPI_IOC_MAGIC, 98, unsigned int)
 #define AUDIO_IPI_IOCTL_SPM_MDSRC_ON  _IOW(AUDIO_IPI_IOC_MAGIC, 99, unsigned int)
 
 /*==============================================================================
@@ -118,6 +119,17 @@ static long audio_ipi_driver_ioctl(
 	case AUDIO_IPI_IOCTL_SEND_PAYLOAD:
 	case AUDIO_IPI_IOCTL_SEND_DRAM: {
 		parsing_ipi_msg_from_user_space((void __user *)arg);
+		break;
+	}
+	case AUDIO_IPI_IOCTL_REG_FEATURE: {
+		AUD_LOG_V("%s(), AUDIO_IPI_IOCTL_REG_FEATURE(%lu)\n", __func__, arg);
+		if (arg) {
+			register_feature(OPEN_DSP_FEATURE_ID);
+			request_freq();
+		} else {
+			deregister_feature(OPEN_DSP_FEATURE_ID);
+			request_freq();
+		}
 		break;
 	}
 	case AUDIO_IPI_IOCTL_SPM_MDSRC_ON: {
