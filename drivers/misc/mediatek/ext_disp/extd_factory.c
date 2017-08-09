@@ -45,10 +45,10 @@ int hdmi_factory_mode_init(void)
 {
 	EXTD_FACTORY_FUNC();
 
-#ifdef SII8348_SUPPORT
-	hdmi_tx_drv = (struct HDMI_DRIVER *) HDMI_GetDriver();
-#elif defined ANX7805_SUPPORT
+#if defined ANX7805_SUPPORT
 	hdmi_tx_drv = (struct HDMI_DRIVER *) SlimPort_GetDriver();
+#else
+	hdmi_tx_drv = (struct HDMI_DRIVER *) HDMI_GetDriver();
 #endif
 	if (NULL == hdmi_tx_drv) {
 		EXTD_FACTORY_ERR("[hdmi]%s, hdmi_init fail, can not get hdmi driver handle\n", __func__);
