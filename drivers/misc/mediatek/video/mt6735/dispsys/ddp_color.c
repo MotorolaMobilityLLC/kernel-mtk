@@ -1387,7 +1387,7 @@ static void color_write_sw_reg(unsigned int reg_id, unsigned int value)
 static int _color_clock_on(DISP_MODULE_ENUM module, void *cmq_handle)
 {
 #ifdef ENABLE_CLK_MGR
-#if defined(CONFIG_MTK_LEGACY) || !defined(CONFIG_COMMON_CLK)
+#ifdef CONFIG_MTK_CLKMGR
 	enable_clock(MT_CG_DISP0_DISP_COLOR, "DDP");
 #else
 	disp_clk_enable(DISP0_DISP_COLOR);
@@ -1402,7 +1402,7 @@ static int _color_clock_off(DISP_MODULE_ENUM module, void *cmq_handle)
 {
 #ifdef ENABLE_CLK_MGR
 	COLOR_DBG("color[0]_clock_off\n");
-#if defined(CONFIG_MTK_LEGACY) || !defined(CONFIG_COMMON_CLK)
+#ifdef CONFIG_MTK_CLKMGR
 	disable_clock(MT_CG_DISP0_DISP_COLOR, "DDP");
 #else
 	disp_clk_disable(DISP0_DISP_COLOR);
