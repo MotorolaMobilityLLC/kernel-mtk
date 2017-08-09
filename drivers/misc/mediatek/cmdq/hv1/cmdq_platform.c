@@ -16,7 +16,6 @@ const bool cmdq_core_support_sync_non_suspendable(void)
 
 const bool cmdq_core_support_wait_and_receive_event_in_same_tick(void)
 {
-#ifdef CMDQ_MT_CHIP_READY
 	enum chip_sw_ver ver = mt_get_chip_sw_ver();
 	bool support = false;
 
@@ -28,9 +27,6 @@ const bool cmdq_core_support_wait_and_receive_event_in_same_tick(void)
 	}
 
 	return support;
-#else
-	return false;
-#endif
 }
 
 const uint32_t cmdq_core_get_subsys_LSB_in_argA(void)
