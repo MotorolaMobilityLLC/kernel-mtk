@@ -150,6 +150,7 @@ typedef struct {
 	uint32_t output_fence_id;
 	uint32_t interface_fence_id;
 	unsigned long long timestamp;
+	struct ion_client *client;
 } disp_internal_buffer_info;
 
 typedef struct {
@@ -252,6 +253,8 @@ int do_primary_display_switch_mode(int sess_mode, unsigned int session, int need
 int primary_display_check_test(void);
 void _primary_path_switch_dst_lock(void);
 void _primary_path_switch_dst_unlock(void);
+int pd_release_dc_buffer(void);
+int pd_allocate_dc_buffer(void);
 
 /* legancy */
 LCM_PARAMS *DISP_GetLcmPara(void);

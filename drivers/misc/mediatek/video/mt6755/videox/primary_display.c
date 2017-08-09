@@ -76,6 +76,7 @@
 #define FRM_UPDATE_SEQ_CACHE_NUM (DISP_INTERNAL_BUFFER_COUNT+1)
 
 static disp_internal_buffer_info *decouple_buffer_info[DISP_INTERNAL_BUFFER_COUNT];
+static disp_internal_buffer_info *gmo_decouple_buffer_info;
 static RDMA_CONFIG_STRUCT decouple_rdma_config;
 static WDMA_CONFIG_STRUCT decouple_wdma_config;
 static disp_mem_output_config mem_config;
@@ -1703,9 +1704,14 @@ static int _DC_switch_to_DL_fast(void)
 	_cmdq_set_config_handle_dirty();
 	/*if blocking flush won't cause UX issue, we should simplify this code: remove callback *
 	 *else we should move disable_sodi to callback, and change to nonblocking flush */
-	_cmdq_flush_config_handle(0, modify_path_power_off_callback, (old_scenario << 16) | new_scenario);
-	/* modify_path_power_off_callback((old_scenario << 16) | new_scenario); */
-
+	if (disp_helper_get_option(DISP_OPT_GMO_OPTIMIZE)) {
+		_cmdq_flush_config_handle(1, modify_path_power_off_callback, (old_scenario << 16) | new_scenario);
+		modify_path_power_off_callback((old_scenario << 16) | new_scenario);
+		pd_release_dc_buffer();
+	} else {
+		_cmdq_flush_config_handle(0, modify_path_power_off_callback, (old_scenario << 16) | new_scenario);
+		/* modify_path_power_off_callback((old_scenario << 16) | new_scenario); */
+	}
 	MMProfileLogEx(ddp_mmp_get_events()->primary_switch_mode, MMProfileFlagPulse, 2, 1);
 
 	_cmdq_reset_config_handle();
@@ -2063,6 +2069,87 @@ static int init_decouple_buffers(void)
 
 	return 0;
 
+}
+
+static int _allocate_dc_buffer(void)
+{
+	int ret = 0;
+	int i = 0;
+	enum UNIFIED_COLOR_FMT fmt = UFMT_RGB888;
+	int height = disp_helper_get_option(DISP_OPT_FAKE_LCM_HEIGHT);
+	int width = disp_helper_get_option(DISP_OPT_FAKE_LCM_WIDTH);
+	int Bpp = UFMT_GET_Bpp(fmt);
+
+	int buffer_size = width * height * Bpp;
+
+	gmo_decouple_buffer_info = allocat_decouple_buffer(buffer_size);
+	if (gmo_decouple_buffer_info != NULL)
+		for (i = 0; i < DISP_INTERNAL_BUFFER_COUNT; i++)
+			pgc->dc_buf[i] = gmo_decouple_buffer_info->mva;
+	else {
+		DISPERR("_allocate_dc_buffer fail\n");
+		return -1;
+	}
+	DISPDBG("_allocate_dc_buffer mva 0x%x\n", gmo_decouple_buffer_info->mva);
+	/*initialize rdma config */
+	decouple_rdma_config.height = height;
+	decouple_rdma_config.width = width;
+	decouple_rdma_config.idx = 0;
+	decouple_rdma_config.inputFormat = fmt;
+	decouple_rdma_config.pitch = width * Bpp;
+	decouple_rdma_config.security = DISP_NORMAL_BUFFER;
+	decouple_rdma_config.dst_x = 0;
+	decouple_rdma_config.dst_y = 0;
+	decouple_rdma_config.dst_w = disp_helper_get_option(DISP_OPT_FAKE_LCM_WIDTH);
+	decouple_rdma_config.dst_h = disp_helper_get_option(DISP_OPT_FAKE_LCM_HEIGHT);
+
+	/*initialize wdma config */
+	decouple_wdma_config.srcHeight = height;
+	decouple_wdma_config.srcWidth = width;
+	decouple_wdma_config.clipX = 0;
+	decouple_wdma_config.clipY = 0;
+	decouple_wdma_config.clipHeight = height;
+	decouple_wdma_config.clipWidth = width;
+	decouple_wdma_config.outputFormat = fmt;
+	decouple_wdma_config.useSpecifiedAlpha = 1;
+	decouple_wdma_config.alpha = 0xFF;
+	decouple_wdma_config.dstPitch = width * Bpp;
+	decouple_wdma_config.security = DISP_NORMAL_BUFFER;
+	return ret;
+}
+
+static int _release_dc_buffer(void)
+{
+	int ret = 0;
+	int i = 0;
+
+	if (gmo_decouple_buffer_info) {
+		ion_free(gmo_decouple_buffer_info->client, gmo_decouple_buffer_info->handle);
+		ion_client_destroy(gmo_decouple_buffer_info->client);
+		kfree(gmo_decouple_buffer_info);
+		gmo_decouple_buffer_info = NULL;
+		for (i = 0; i < DISP_INTERNAL_BUFFER_COUNT; i++)
+			pgc->dc_buf[i] = 0;
+		DISPDBG("_release_dc_buffer\n");
+	}
+
+	return ret;
+}
+
+int pd_release_dc_buffer(void)
+{
+	int ret = 0;
+
+	ret = _release_dc_buffer();
+	return ret;
+}
+
+int pd_allocate_dc_buffer(void)
+{
+	int ret = 0;
+
+	ret = _allocate_dc_buffer();
+	return ret;
 }
 
 static int _build_path_direct_link(void)
@@ -2972,7 +3059,8 @@ int primary_display_init(char *lcm_name, unsigned int lcm_fps, int is_lcm_inited
 
 	config_display_m4u_port();
 	primary_display_set_max_layer(PRIMARY_SESSION_INPUT_LAYER_COUNT);
-	init_decouple_buffers();
+	if (!disp_helper_get_option(DISP_OPT_GMO_OPTIMIZE))
+		init_decouple_buffers();
 
 	dpmgr_path_set_video_mode(pgc->dpmgr_handle, primary_display_is_video_mode());
 	DISPDBG("primary_display_init->dpmgr_path_init\n");
@@ -4453,6 +4541,8 @@ int do_primary_display_switch_mode(int sess_mode, unsigned int session, int need
 		/*dl mirror to dl */
 	} else if (pgc->session_mode == DISP_SESSION_DIRECT_LINK_MODE
 		   && sess_mode == DISP_SESSION_DECOUPLE_MIRROR_MODE) {
+		if (disp_helper_get_option(DISP_OPT_GMO_OPTIMIZE))
+			pd_allocate_dc_buffer();
 		/* dl to dc mirror  mirror */
 		DL_switch_to_DC_fast(sw_only);
 	} else if (pgc->session_mode == DISP_SESSION_DECOUPLE_MIRROR_MODE

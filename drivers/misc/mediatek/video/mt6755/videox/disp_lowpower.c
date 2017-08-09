@@ -639,7 +639,8 @@ void _vdo_mode_enter_idle(void)
 	    primary_get_sess_mode() == DISP_SESSION_DIRECT_LINK_MODE &&
 	    (disp_helper_get_option(DISP_OPT_IDLEMGR_SWTCH_DECOUPLE) ||
 	     disp_helper_get_option(DISP_OPT_SMART_OVL))) {
-
+		if (disp_helper_get_option(DISP_OPT_GMO_OPTIMIZE))
+			pd_allocate_dc_buffer();
 		/* smart_ovl_try_switch_mode_nolock(); */
 		/* switch to decouple mode */
 		do_primary_display_switch_mode(DISP_SESSION_DECOUPLE_MODE, primary_get_sess_id(), 0, NULL, 0);
