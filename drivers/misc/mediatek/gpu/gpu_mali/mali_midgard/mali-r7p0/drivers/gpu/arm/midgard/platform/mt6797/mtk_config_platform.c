@@ -70,6 +70,9 @@ static int pm_callback_power_on(struct kbase_device *kbdev)
 	base_write32(g_ldo_base+0xfbc, 0x1ff);
 	mt_gpufreq_voltage_enable_set(1);
 
+	/* test: dealy for EMI violation issue */
+	udelay(100);
+
 	MTKCLK_prepare_enable(clk_mfg_async);
 	MTKCLK_prepare_enable(clk_mfg);
 #ifndef MTK_GPU_APM
