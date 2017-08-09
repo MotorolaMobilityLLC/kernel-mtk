@@ -506,7 +506,7 @@ static void otg_int_init(void)
 	pr_debug("USB IDDIG IRQ LINE %d, %d!!\n", IDDIG_EINT_PIN, mt_gpio_to_irq(IDDIG_EINT_PIN));
 	ret = request_irq(usb_iddig_number, mt_usb_ext_iddig_int, IRQF_TRIGGER_LOW, "USB_IDDIG", NULL);
 	#else
-	gpio_request(iddig_pin, "USB_IDDIG");
+	/*gpio_request(iddig_pin, "USB_IDDIG");*/
 	gpio_set_debounce(iddig_pin, 64000);
 	usb_iddig_number = mt_gpio_to_irq(0);
 	ret = request_irq(usb_iddig_number, mt_usb_ext_iddig_int, IRQF_TRIGGER_LOW, "USB_IDDIG", NULL);
