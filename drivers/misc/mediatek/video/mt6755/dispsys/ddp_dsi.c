@@ -406,7 +406,7 @@ static DSI_STATUS DSI_Reset(DISP_MODULE_ENUM module, cmdqRecHandle cmdq)
 	for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
 		irq_en[i] = AS_UINT32(&DSI_REG[i]->DSI_INTEN);
 		DSI_OUTREG32(NULL, &DSI_REG[i]->DSI_INTEN, 0);
-		DISPMSG("\nDSI_RESET backup dsi%d irq:0x%08x ", i, irq_en[i]);
+		DISPDBG("DSI_RESET backup dsi%d irq:0x%08x ", i, irq_en[i]);
 	}
 
 	/* do reset */
@@ -418,7 +418,7 @@ static DSI_STATUS DSI_Reset(DISP_MODULE_ENUM module, cmdqRecHandle cmdq)
 	/* DSI_RESET Protect: restore dsi interrupt */
 	for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
 		DSI_OUTREG32(NULL, &DSI_REG[i]->DSI_INTEN, irq_en[i]);
-		DISPMSG("\nDSI_RESET restore dsi%d irq:0x%08x ", i,
+		DISPDBG("DSI_RESET restore dsi%d irq:0x%08x ", i,
 			AS_UINT32(&DSI_REG[i]->DSI_INTEN));
 	}
 	return DSI_STATUS_OK;
@@ -754,7 +754,7 @@ DSI_STATUS DSI_RestoreRegisters(DISP_MODULE_ENUM module, cmdqRecHandle cmdq)
 		DSI_OUTREG32(cmdq, &DSI_REG[i]->DSI_PHY_TIMECON3,
 			     AS_UINT32(&regs->DSI_PHY_TIMECON3));
 		DSI_OUTREG32(cmdq, &DSI_REG[i]->DSI_VM_CMD_CON, AS_UINT32(&regs->DSI_VM_CMD_CON));
-		DDPMSG("DSI_RestoreRegisters VM_CMD_EN %d TS_VFP_EN %d\n",
+		DDPDBG("DSI_RestoreRegisters VM_CMD_EN %d TS_VFP_EN %d\n",
 		       regs->DSI_VM_CMD_CON.VM_CMD_EN, regs->DSI_VM_CMD_CON.TS_VFP_EN);
 	}
 	return DSI_STATUS_OK;
@@ -1072,7 +1072,7 @@ int MIPITX_IsEnabled(DISP_MODULE_ENUM module, cmdqRecHandle cmdq)
 			ret++;
 	}
 
-	DISPMSG("MIPITX for %s is %s\n", ddp_get_module_name(module), ret ? "on" : "off");
+	DISPDBG("MIPITX for %s is %s\n", ddp_get_module_name(module), ret ? "on" : "off");
 	return ret;
 }
 
@@ -2527,7 +2527,7 @@ int DSI_Send_ROI(DISP_MODULE_ENUM module, void *handle, unsigned int x, unsigned
 	data_array[1] = (y1_MSB << 24) | (y0_LSB << 16) | (y0_MSB << 8) | 0x2b;
 	data_array[2] = (y1_LSB);
 	DSI_set_cmdq(module, handle, data_array, 3, 1);
-	DDPMSG("DSI_Send_ROI Done!\n");
+	DDPDBG("DSI_Send_ROI Done!\n");
 
 	/* data_array[0]= 0x002c3909; */
 	/* DSI_set_cmdq(module, handle, data_array, 1, 0); */
@@ -2998,7 +2998,7 @@ int ddp_dsi_config(DISP_MODULE_ENUM module, disp_ddp_path_config *config, void *
 			DSI_OUTREGBIT(cmdq, DSI_INT_ENABLE_REG, DSI_REG[i]->DSI_INTEN, TE_RDY, 1);
 		}
 	}
-	DISPCHECK("===>01Pmaster: clk:%d\n", _dsi_context[0].dsi_params.PLL_CLOCK);
+	DISPDBG("===>01Pmaster: clk:%d\n", _dsi_context[0].dsi_params.PLL_CLOCK);
 	if (dsi_config->mode != CMD_MODE)
 		dsi_currect_mode = 1;
 #ifndef CONFIG_FPGA_EARLY_PORTING

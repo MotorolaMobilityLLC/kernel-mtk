@@ -649,7 +649,7 @@ static int rdma_clock_on(DISP_MODULE_ENUM module, void *handle)
 #endif
 #endif
 */
-	DDPMSG("rdma_%d_clock_on CG 0x%x\n", idx, DISP_REG_GET(DISP_REG_CONFIG_MMSYS_CG_CON0));
+	DDPDBG("rdma_%d_clock_on CG 0x%x\n", idx, DISP_REG_GET(DISP_REG_CONFIG_MMSYS_CG_CON0));
 	return 0;
 }
 
@@ -673,7 +673,7 @@ static int rdma_clock_off(DISP_MODULE_ENUM module, void *handle)
 #endif
 #endif
 */
-	DDPMSG("rdma_%d_clock_off CG 0x%x\n", idx, DISP_REG_GET(DISP_REG_CONFIG_MMSYS_CG_CON0));
+	DDPDBG("rdma_%d_clock_off CG 0x%x\n", idx, DISP_REG_GET(DISP_REG_CONFIG_MMSYS_CG_CON0));
 	return 0;
 }
 
@@ -925,7 +925,7 @@ static int setup_rdma_sec(DISP_MODULE_ENUM module, disp_ddp_path_config *pConfig
 	cmdq_event_nonsec_end = rdma_to_cmdq_event_nonsec_end(module);
 
 	if (!handle) {
-		DDPMSG("[SVP] bypass rdma sec setting sec=%d,handle=NULL\n", security);
+		DDPDBG("[SVP] bypass rdma sec setting sec=%d,handle=NULL\n", security);
 		return 0;
 	}
 	/* sec setting make sence only in memory mode ! */

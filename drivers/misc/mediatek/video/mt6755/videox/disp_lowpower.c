@@ -502,14 +502,14 @@ void _primary_display_disable_mmsys_clk(void)
 	_blocking_flush();
 	/* no  need lock now */
 	if (disp_helper_get_option(DISP_OPT_USE_CMDQ)) {
-		DISPCHECK("[LP]1.display cmdq trigger loop stop[begin]\n");
+		DISPDBG("[LP]1.display cmdq trigger loop stop[begin]\n");
 		_cmdq_stop_trigger_loop();
 		DISPDBG("[LP]1.display cmdq trigger loop stop[end]\n");
 	}
 
 	DISPDBG("[LP]2.primary display path stop[begin]\n");
 	dpmgr_path_stop(primary_get_dpmgr_handle(), CMDQ_DISABLE);
-	DISPCHECK("[LP]2.primary display path stop[end]\n");
+	DISPDBG("[LP]2.primary display path stop[end]\n");
 
 	if (dpmgr_path_is_busy(primary_get_dpmgr_handle())) {
 		DISPERR("[LP]2.stop display path failed, still busy\n");
@@ -518,7 +518,7 @@ void _primary_display_disable_mmsys_clk(void)
 	}
 
 	/* can not release fence here */
-	DISPCHECK("[LP]3.dpmanager path power off[begin]\n");
+	DISPDBG("[LP]3.dpmanager path power off[begin]\n");
 	dpmgr_path_power_off_bypass_pwm(primary_get_dpmgr_handle(), CMDQ_DISABLE);
 
 	if (primary_display_is_decouple_mode()) {
@@ -545,7 +545,7 @@ void _primary_display_enable_mmsys_clk(void)
 	if (primary_get_sess_mode() != DISP_SESSION_DIRECT_LINK_MODE)
 		return;
 	/* do something */
-	DISPCHECK("[LP]1.dpmanager path power on[begin]\n");
+	DISPDBG("[LP]1.dpmanager path power on[begin]\n");
 	if (primary_display_is_decouple_mode()) {
 		if (primary_get_ovl2mem_handle() == NULL) {
 			DISPERR("display is decouple mode, but ovl2mem_path_handle is null\n");
@@ -554,11 +554,11 @@ void _primary_display_enable_mmsys_clk(void)
 
 		DISPDBG("[LP]1.1 dpmanager path power on: ovl2men [begin]\n");
 		dpmgr_path_power_on(primary_get_ovl2mem_handle(), CMDQ_DISABLE);
-		DISPCHECK("[LP]1.1 dpmanager path power on: ovl2men [end]\n");
+		DISPDBG("[LP]1.1 dpmanager path power on: ovl2men [end]\n");
 	}
 
 	dpmgr_path_power_on_bypass_pwm(primary_get_dpmgr_handle(), CMDQ_DISABLE);
-	DISPCHECK("[LP]1.dpmanager path power on[end]\n");
+	DISPDBG("[LP]1.dpmanager path power on[end]\n");
 	if (disp_helper_get_option(DISP_OPT_MET_LOG))
 		set_enterulps(0);
 
@@ -570,11 +570,9 @@ void _primary_display_enable_mmsys_clk(void)
 	ddp_disconnect_path(DDP_SCENARIO_PRIMARY_ALL, NULL);
 	ddp_disconnect_path(DDP_SCENARIO_PRIMARY_RDMA0_COLOR0_DISP, NULL);
 
-
 	dpmgr_path_connect(primary_get_dpmgr_handle(), CMDQ_DISABLE);
 	if (primary_display_is_decouple_mode())
 		dpmgr_path_connect(primary_get_ovl2mem_handle(), CMDQ_DISABLE);
-
 
 	data_config = dpmgr_path_get_last_config(primary_get_dpmgr_handle());
 
@@ -589,15 +587,12 @@ void _primary_display_enable_mmsys_clk(void)
 		data_config->rdma_dirty = 1;
 		dpmgr_path_config(primary_get_dpmgr_handle(), data_config, NULL);
 
-
 		data_config = dpmgr_path_get_last_config(primary_get_ovl2mem_handle());
 		data_config->dst_dirty = 1;
 		dpmgr_path_config(primary_get_ovl2mem_handle(), data_config, NULL);
 	}
 
-
 	DISPCHECK("[LP]2.dpmanager path config[end]\n");
-
 
 	DISPDBG("[LP]3.dpmgr path start[begin]\n");
 	dpmgr_path_start(primary_get_dpmgr_handle(), CMDQ_DISABLE);
@@ -605,9 +600,7 @@ void _primary_display_enable_mmsys_clk(void)
 	if (primary_display_is_decouple_mode())
 		dpmgr_path_start(primary_get_ovl2mem_handle(), CMDQ_DISABLE);
 
-
-
-	DISPCHECK("[LP]3.dpmgr path start[end]\n");
+	DISPDBG("[LP]3.dpmgr path start[end]\n");
 	if (dpmgr_path_is_busy(primary_get_dpmgr_handle()))
 		DISPERR("[LP]3.Fatal error, we didn't trigger display path but it's already busy\n");
 
@@ -615,15 +608,13 @@ void _primary_display_enable_mmsys_clk(void)
 	if (disp_helper_get_option(DISP_OPT_USE_CMDQ)) {
 		DISPDBG("[LP]4.start cmdq[begin]\n");
 		_cmdq_start_trigger_loop();
-		DISPCHECK("[LP]4.start cmdq[end]\n");
+		DISPDBG("[LP]4.start cmdq[end]\n");
 	}
 
 	/* (in suspend) when we stop trigger loop
 	* if no other thread is running, cmdq may disable its clock
 	* all cmdq event will be cleared after suspend */
 	cmdqCoreSetEvent(CMDQ_EVENT_DISP_WDMA0_EOF);
-
-
 }
 
 /* Share wrot sram end */
@@ -836,7 +827,7 @@ static int _primary_path_idlemgr_monitor_thread(void *data)
 			continue;
 		}
 		MMProfileLogEx(ddp_mmp_get_events()->idlemgr, MMProfileFlagStart, 0, 0);
-		DISPMSG("[disp_lowpower]primary enter idle state\n");
+		DISPDBG("[disp_lowpower]primary enter idle state\n");
 
 		/* enter idle state */
 		primary_display_idlemgr_enter_idle_nolock();
