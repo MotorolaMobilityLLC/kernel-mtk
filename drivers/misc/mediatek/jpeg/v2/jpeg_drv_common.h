@@ -1,10 +1,20 @@
 #ifndef __JPEG_DRV_COMMON_H__
 #define __JPEG_DRV_COMMON_H__
 
-#include <mach/mt_typedefs.h>
+/* #include <mach/mt_typedefs.h> */
 /* #include <mach/typedefs.h> */
 
 #include "jpeg_drv.h"
+
+typedef signed char     kal_int8;
+typedef signed short    kal_int16;
+typedef signed int      kal_int32;
+typedef long long       kal_int64;
+typedef unsigned char   kal_uint8;
+typedef unsigned short  kal_uint16;
+typedef unsigned int    kal_uint32;
+typedef unsigned long long  kal_uint64;
+typedef char            kal_char;
 
 extern kal_uint32 _jpeg_enc_int_status;
 extern kal_uint32 _jpeg_dec_int_status;

@@ -21,7 +21,7 @@
 #include <linux/sched.h>
 #include <linux/slab.h>
 
-#include <linux/xlog.h>
+/* #include <linux/xlog.h> */
 
 #include <linux/io.h>
 
@@ -39,22 +39,22 @@
 #include <linux/wait.h>
 #include <linux/spinlock.h>
 #include <linux/delay.h>
-#include <linux/earlysuspend.h>
+/* #include <linux/earlysuspend.h> */
 /* #include <linux/mm.h> */
 #include <linux/vmalloc.h>
 #include <linux/dma-mapping.h>
 /* #include <linux/slab.h> */
 /* #include <linux/gfp.h> */
-#include <linux/aee.h>
+/* #include <linux/aee.h> */
 #include <linux/timer.h>
-#include <linux/disp_assert_layer.h>
+/* #include <linux/disp_assert_layer.h> */
 /* #include <linux/xlog.h> */
 /* #include <linux/fs.h> */
 
 /* Arch dependent files */
 /* #include <asm/mach/map.h> */
 /* #include <mach/mt6577_pll.h> */
-#include <mach/mt_irq.h>
+/* #include <mach/mt_irq.h> */
 #include <mach/irqs.h>
 
 #ifdef CONFIG_MTK_CLKMGR
@@ -68,7 +68,7 @@
 #include <linux/pagemap.h>
 
 #ifndef FPGA_VERSION
-#include <mach/mt_boot.h>
+/* #include <mach/mt_boot.h> */
 #endif
 
 #include <cmdq_record.h>
@@ -1367,9 +1367,9 @@ static int jpeg_remove(struct platform_device *pdev)
 	JPEG_MSG("JPEG Codec remove\n");
 	/* unregister_chrdev(JPEGDEC_MAJOR, JPEGDEC_DEVNAME); */
 #ifndef FPGA_VERSION
-	free_irq(JPGENC_IRQ_BIT_ID, NULL);
+	free_irq(gJpegqDev.encIrqId, NULL);
 #ifdef JPEG_DEC_DRIVER
-	free_irq(JPGDEC_IRQ_BIT_ID, NULL);
+	free_irq(gJpegqDev.decIrqId, NULL);
 #endif
 
 #endif

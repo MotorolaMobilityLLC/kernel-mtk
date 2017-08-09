@@ -1,6 +1,6 @@
 # drivers/image/jpeg/Makefile
 
-include $(srctree)/drivers/misc/mediatek/Makefile.custom
+#include $(srctree)/drivers/misc/mediatek/Makefile.custom
 
 ccflags-y = -DSDEBUG_T
 
@@ -17,12 +17,12 @@ ifeq ($(CONFIG_ARCH_MT6735),y)
 endif
 
 ifeq ($(CONFIG_ARCH_MT6735M),y)
-  ccflags-y += -I$(srctree)/drivers/misc/mediatek/cmdq/$(MTK_PLATFORM)/mt6735m/
+  ccflags-y += -I$(srctree)/drivers/misc/mediatek/cmdq/$(MTK_PLATFORM)/mt6735/
 endif
 
 ifeq ($(CONFIG_ARCH_MT6753),y)
   ccflags-y += -DJPEG_DEC_IRQ_ENHANCE
-  ccflags-y += -I$(srctree)/drivers/misc/mediatek/cmdq/$(MTK_PLATFORM)/mt6753/
+  ccflags-y += -I$(srctree)/drivers/misc/mediatek/cmdq/$(MTK_PLATFORM)/mt6735/
 endif
 
 #obj-$(CONFIG_MTK_JPEG) += jpeg_driver.o

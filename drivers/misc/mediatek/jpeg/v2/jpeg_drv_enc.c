@@ -1,5 +1,5 @@
 #include <linux/kernel.h>
-#include <linux/xlog.h>
+/* #include <linux/xlog.h> */
 
 #include "jpeg_drv_reg.h"
 #include "jpeg_drv_common.h"

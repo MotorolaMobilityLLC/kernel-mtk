@@ -1,9 +1,11 @@
 #ifndef __JPEG_DRV_6589_REG_H__
 #define __JPEG_DRV_6589_REG_H__
 
-#include <mach/mt_reg_base.h>
+/* #include <mach/mt_reg_base.h> */
 
-#include <mach/sync_write.h>
+/* #include <mach/sync_write.h> */
+#include <mt-plat/sync_write.h>
+
 #include "jpeg_drv.h"
 
 #define JPEG_ENC_BASE   jpeg_dev_get_encoder_base_VA()

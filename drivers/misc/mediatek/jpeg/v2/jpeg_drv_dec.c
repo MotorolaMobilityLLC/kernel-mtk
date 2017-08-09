@@ -1,7 +1,7 @@
 #ifdef JPEG_DEC_DRIVER
 
 #include <linux/kernel.h>
-#include <linux/xlog.h>
+/* #include <linux/xlog.h> */
 
 #define JPEG_MSG pr_debug
 #define JPEG_WRN pr_debug
