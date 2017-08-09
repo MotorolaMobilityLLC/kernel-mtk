@@ -98,17 +98,6 @@ static void spm_mtk_gpu_input_boost_CB(unsigned int index)
 {
 	spm_boost(TRANS2IDX(max_level));
 }
-static void spm_mtk_gpu_ptpod_update_notify(void)
-{
-	struct mtk_config *config = g_config;
-
-	if (config)
-	{
-		MTKCLK_prepare_enable(clk_dvfs_gpu);
-		mtk_kbase_spm_update_table();
-		MTKCLK_disable_unprepare(clk_dvfs_gpu);
-	}
-}
 
 extern void (*mtk_boost_gpu_freq_fp)(void);
 static void ssspm_mtk_boost_gpu_freq(void)
@@ -220,8 +209,33 @@ static unsigned int ssspm_mtk_get_gpu_idle(void)
 	return glo.idle;
 }
 
+static struct workqueue_struct     *g_update_volt_workqueue = NULL;
+static struct work_struct          g_update_volt_work;
+
+static void update_volt_Handle(struct work_struct *_psWork)
+{
+	struct mtk_config *config = g_config;
+
+	if (config)
+	{
+		MTKCLK_prepare_enable(clk_dvfs_gpu);
+		mtk_kbase_spm_update_table();
+		MTKCLK_disable_unprepare(clk_dvfs_gpu);
+	}
+}
+static void spm_mtk_gpu_ptpod_update_notify(void)
+{
+	if (g_update_volt_workqueue)
+	{
+		queue_work(g_update_volt_workqueue, &g_update_volt_work);
+	}
+}
+
 void mtk_kbase_spm_hal_init(void)
 {
+	g_update_volt_workqueue = alloc_ordered_workqueue("mali_wp_update_volt", WQ_FREEZABLE | WQ_MEM_RECLAIM);
+	INIT_WORK(&g_update_volt_work, update_volt_Handle);
+
 	max_level = mt_gpufreq_get_dvfs_table_num() - 1;
 
 	glo.idx_fix = -1;

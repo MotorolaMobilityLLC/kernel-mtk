@@ -111,6 +111,7 @@ struct mtk_config {
 #define SPM_SW_FLOOR_F   0x624 // FLOOR F_VALUE -> Auto to F_REG @ EN=1
 #define SPM_SW_BOOST_IDX 0x628 //
 #define SPM_SW_BOOST_CNT 0x62C // ms
+#define SPM_SW_RECOVER_CNT 0x630 //
 
 #define SPM_RSV_CON      0x648
 //#define SPM_RSV_STA      0x64C // read-only ..

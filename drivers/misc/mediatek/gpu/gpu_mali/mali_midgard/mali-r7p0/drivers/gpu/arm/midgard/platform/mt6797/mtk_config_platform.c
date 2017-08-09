@@ -50,6 +50,19 @@ volatile void *g_TOPCK_base;
 	if (config->clk) {  clk_disable_unprepare(config->clk); }
 
 #ifdef MTK_GPU_SPM
+static unsigned long long _get_time(void)
+{
+	unsigned long long temp;
+
+	preempt_disable();
+	temp = cpu_clock(smp_processor_id());
+	preempt_enable();
+
+	return temp;
+}
+
+static unsigned long long lasttime = 0;
+
 static void mtk_init_spm_dvfs_gpu(void)
 {
 	mtk_kbase_spm_kick(&dvfs_gpu_pcm);
@@ -60,6 +73,8 @@ static void mtk_init_spm_dvfs_gpu(void)
 
 	/* resume limited value */
 	mtk_gpu_spm_resume_hal();
+
+	lasttime = _get_time();
 }
 #endif
 
@@ -106,6 +121,19 @@ static int pm_callback_power_on(struct kbase_device *kbdev)
 		mtk_init_spm_dvfs_gpu();
 	}
 	mtk_kbase_spm_acquire();
+	{
+		unsigned long long now, diff;
+		unsigned long rem;
+
+		now = _get_time();
+
+		diff = now - lasttime;
+		rem = do_div(diff, 1000000); // ms
+
+		if (diff > 16) diff = 16;
+
+		DVFS_GPU_write32(SPM_SW_RECOVER_CNT, diff);
+	}
 	mtk_kbase_spm_con(SPM_RSV_BIT_EN, SPM_RSV_BIT_EN);
 	mtk_kbase_spm_wait();
 	mtk_kbase_spm_release();
@@ -177,6 +205,8 @@ static void pm_callback_power_off(struct kbase_device *kbdev)
 
 	mt_gpufreq_voltage_enable_set(0);
 	base_write32(g_ldo_base+0xfbc, 0x0);
+
+	lasttime = _get_time();
 }
 
 struct kbase_pm_callback_conf pm_callbacks = {
