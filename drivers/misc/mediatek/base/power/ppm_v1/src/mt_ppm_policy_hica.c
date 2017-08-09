@@ -153,7 +153,8 @@ void mt_ppm_hica_update_algo_data(unsigned int cur_loads,
 					ppm_get_power_state_name(ppm_hica_algo_data.new_state)
 					);
 				goto end;
-			} else
+			} else {
+				ppm_hica_algo_data.new_state = cur_state;
 				ppm_dbg(HICA, "[%s(%d)]hold in %s state, loading_cnt = %d, freq_cnt = %d\n",
 					(i == 0) ? "PERF" : "PWR",
 					j,
@@ -161,6 +162,7 @@ void mt_ppm_hica_update_algo_data(unsigned int cur_loads,
 					data->transition_data[j].loading_hold_cnt,
 					data->transition_data[j].freq_hold_cnt
 					);
+			}
 		}
 	}
 
