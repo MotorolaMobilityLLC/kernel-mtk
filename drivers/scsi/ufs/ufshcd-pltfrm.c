@@ -36,10 +36,30 @@
 #include <linux/platform_device.h>
 #include <linux/pm_runtime.h>
 #include <linux/of.h>
+#ifdef CONFIG_MTK_UFS_BOOTING
+#include <linux/of_address.h>   /* mtk patch */
+#include <linux/of_irq.h>       /* mtk patch */
+#endif
 
 #include "ufshcd.h"
+#include "ufs-mtk.h"
 
-static const struct of_device_id ufs_of_match[];
+#ifdef CONFIG_MTK_UFS_BOOTING
+static struct ufs_hba_variant_ops ufs_mtk_vops = {
+	"mediatek.ufs",  /* name */
+	ufs_mtk_init,    /* init */
+	NULL,            /* exit */
+	NULL,            /* clk_scale_notify */
+	NULL,            /* setup_clocks */
+	NULL,            /* setup_regulators */
+	NULL,            /* hce_enable_notify */
+	ufs_mtk_link_startup_notify,  /* link_startup_notify */
+	ufs_mtk_pwr_change_notify,    /* pwr_change_notify */
+	NULL,            /* suspend */
+	NULL,            /* resume */
+};
+#endif
+
 static struct ufs_hba_variant_ops *get_variant_ops(struct device *dev)
 {
 	if (dev->of_node) {
@@ -303,6 +323,44 @@ static int ufshcd_pltfrm_probe(struct platform_device *pdev)
 	struct resource *mem_res;
 	int irq, err;
 	struct device *dev = &pdev->dev;
+#ifdef CONFIG_MTK_UFS_BOOTING
+	void __iomem *mmio_base_infracfg_ao;
+	void __iomem *mmio_base_pericfg;
+	struct device_node *node_infracfg_ao;
+	struct device_node *node_pericfg;
+#endif
+
+#ifdef CONFIG_MTK_UFS_BOOTING
+	/* get mmio_base_infracfg_ao */
+	mmio_base_infracfg_ao = NULL;
+	node_infracfg_ao = of_find_compatible_node(NULL, NULL, "mediatek,infracfg_ao");
+
+	if (node_infracfg_ao) {
+		mmio_base_infracfg_ao = of_iomap(node_infracfg_ao, 0);
+
+	    if (IS_ERR(*(void **)&mmio_base_infracfg_ao)) {
+			err = PTR_ERR(*(void **)&mmio_base_infracfg_ao);
+			dev_err(dev, "error: mmio_base_infracfg_ao init fail\n");
+			mmio_base_infracfg_ao = NULL;
+		}
+	} else
+	    dev_err(dev, "error: node_infracfg_ao init fail\n");
+
+	/* get mmio_base_pericfg */
+	mmio_base_pericfg = NULL;
+	node_pericfg = of_find_compatible_node(NULL, NULL, "mediatek,pericfg");
+
+	if (node_pericfg) {
+		mmio_base_pericfg = of_iomap(node_pericfg, 0);
+
+		if (IS_ERR(*(void **)&mmio_base_pericfg)) {
+			err = PTR_ERR(*(void **)&mmio_base_pericfg);
+			dev_err(dev, "error: mmio_base_pericfg init fail\n");
+			mmio_base_pericfg = NULL;
+		}
+	} else
+	    dev_err(dev, "error: node_pericfg init fail\n");
+#endif
 
 	mem_res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
 	mmio_base = devm_ioremap_resource(dev, mem_res);
@@ -311,12 +369,20 @@ static int ufshcd_pltfrm_probe(struct platform_device *pdev)
 		goto out;
 	}
 
+#ifdef CONFIG_MTK_UFS_DEBUG
+	dev_err(dev, "mmio_base: %p\n", mmio_base);
+#endif
+
 	irq = platform_get_irq(pdev, 0);
 	if (irq < 0) {
 		dev_err(dev, "IRQ resource not available\n");
 		err = -ENODEV;
 		goto out;
 	}
+#ifdef CONFIG_MTK_UFS_DEBUG
+	else
+	    dev_err(dev, "IRQ: %d\n", irq);
+#endif
 
 	err = ufshcd_alloc_host(dev, &hba);
 	if (err) {
@@ -324,7 +390,33 @@ static int ufshcd_pltfrm_probe(struct platform_device *pdev)
 		goto out;
 	}
 
+#ifdef CONFIG_MTK_UFS_BOOTING
+	if (mmio_base_infracfg_ao) {
+		hba->mmio_base_infracfg_ao = mmio_base_infracfg_ao;
+		dev_err(dev, "mmio_base_infracfg_ao: %p\n", hba->mmio_base_infracfg_ao);
+	} else
+		hba->mmio_base_infracfg_ao = NULL;
+
+	if (mmio_base_pericfg) {
+		hba->mmio_base_pericfg = mmio_base_pericfg;
+		dev_err(dev, "mmio_base_pericfg: %p\n", hba->mmio_base_pericfg);
+	} else
+		hba->mmio_base_pericfg = NULL;
+#endif
+
 	hba->vops = get_variant_ops(&pdev->dev);
+
+#ifdef CONFIG_MTK_UFS_BOOTING
+	/* TODO: Change to formal solution: device tree */
+
+	/*
+	 * temporary solution
+	 * forcedly hook mtk_ufs_vop to hba->vops
+	 * formal solution shall be hooked by device tree.
+	 */
+
+	hba->vops = (struct ufs_hba_variant_ops *)&ufs_mtk_vops;
+#endif
 
 	err = ufshcd_parse_clock_info(hba);
 	if (err) {
@@ -374,11 +466,6 @@ static int ufshcd_pltfrm_remove(struct platform_device *pdev)
 	return 0;
 }
 
-static const struct of_device_id ufs_of_match[] = {
-	{ .compatible = "jedec,ufs-1.1"},
-	{},
-};
-
 static const struct dev_pm_ops ufshcd_dev_pm_ops = {
 	.suspend	= ufshcd_pltfrm_suspend,
 	.resume		= ufshcd_pltfrm_resume,
@@ -399,7 +486,19 @@ static struct platform_driver ufshcd_pltfrm_driver = {
 	},
 };
 
+#ifdef CONFIG_MTK_UFS_BOOTING
+int ufshcd_pltfrm_init(void)
+{
+	return platform_driver_register(&ufshcd_pltfrm_driver);
+}
+
+void ufshcd_pltfrm_exit(void)
+{
+	platform_driver_unregister(&ufshcd_pltfrm_driver);
+}
+#else
 module_platform_driver(ufshcd_pltfrm_driver);
+#endif
 
 MODULE_AUTHOR("Santosh Yaragnavi <santosh.sy@samsung.com>");
 MODULE_AUTHOR("Vinayak Holikatti <h.vinayak@samsung.com>");
