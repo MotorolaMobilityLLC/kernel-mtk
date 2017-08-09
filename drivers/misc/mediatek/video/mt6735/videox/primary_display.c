@@ -6208,12 +6208,14 @@ static int _config_ovl_input(disp_session_input_config *session_input,
 	if (DISP_SESSION_TYPE(session_input->session_id) == DISP_SESSION_MEMORY) {
 		p_cur_config_fence = &(pgc->cur_mem_config_fence);
 		p_subtractor_when_free = &(pgc->mem_subtractor_when_free);
+		data_config->is_memory = true;
 	} else {
 		lcm_param = disp_lcm_get_params(pgc->plcm);
 		p_cur_config_fence = &(pgc->cur_config_fence);
 		p_subtractor_when_free = &(pgc->subtractor_when_free);
 		data_config->dst_h = lcm_param->height;
 		data_config->dst_w = lcm_param->width;
+		data_config->is_memory = false;
 	}
 
 	for (i = 0; i < session_input->config_layer_num; i++) {

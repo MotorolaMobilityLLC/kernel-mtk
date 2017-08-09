@@ -96,6 +96,7 @@ typedef struct {
 	bool wdma_dirty;
 	bool dst_dirty;
 	bool roi_dirty;
+	bool is_memory;
 	OVL_CONFIG_STRUCT ovl_config[OVL_LAYER_NUM];
 	RDMA_CONFIG_STRUCT rdma_config;
 	WDMA_CONFIG_STRUCT wdma_config;

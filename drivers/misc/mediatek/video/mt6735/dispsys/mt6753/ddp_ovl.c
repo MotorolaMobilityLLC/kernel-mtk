@@ -475,7 +475,8 @@ static int ovl_layer_config(DISP_MODULE_ENUM module, unsigned int layer,
 			    unsigned int dst_alpha,
 			    unsigned int constant_color,
 			    unsigned int yuv_range,
-			    DISP_BUFFER_TYPE sec, unsigned int is_engine_sec, void *handle)
+			    DISP_BUFFER_TYPE sec, unsigned int is_engine_sec, void *handle,
+			    bool is_memory)
 {
 	int idx = ovl_index(module);
 	unsigned int value = 0;
@@ -548,7 +549,8 @@ static int ovl_layer_config(DISP_MODULE_ENUM module, unsigned int layer,
 		value = value | REG_FLD_VAL((L_CON_FLD_MTX), (color_matrix));
 
 #ifdef CONFIG_MTK_LCM_PHYSICAL_ROTATION_HW
-	value |= 0x600;
+	if (!is_memory)
+		value |= 0x600;
 #endif
 	DISP_REG_SET_DIRTY(handle, DISP_REG_OVL_L0_CON + layer_offset, value);
 
@@ -557,17 +559,24 @@ static int ovl_layer_config(DISP_MODULE_ENUM module, unsigned int layer,
 	DISP_REG_SET_DIRTY(handle, DISP_REG_OVL_L0_SRC_SIZE + layer_offset, dst_h << 16 | dst_w);
 
 #ifdef CONFIG_MTK_LCM_PHYSICAL_ROTATION_HW
-	bg_h = DISP_REG_GET(idx_offset + DISP_REG_OVL_ROI_SIZE);
-	bg_w = bg_h & 0xFFFF;
-	bg_h = bg_h >> 16;
-	DISP_REG_SET_DIRTY(handle, DISP_REG_OVL_L0_OFFSET + layer_offset,
-			   ((bg_h - dst_h - dst_y) << 16) | (bg_w - dst_w - dst_x));
+	if (!is_memory) {
+		bg_h = DISP_REG_GET(idx_offset + DISP_REG_OVL_ROI_SIZE);
+		bg_w = bg_h & 0xFFFF;
+		bg_h = bg_h >> 16;
+		DISP_REG_SET_DIRTY(handle, DISP_REG_OVL_L0_OFFSET + layer_offset,
+				   ((bg_h - dst_h - dst_y) << 16) | (bg_w - dst_w - dst_x));
+	} else {
+		DISP_REG_SET_DIRTY(handle, DISP_REG_OVL_L0_OFFSET + layer_offset, dst_y << 16 | dst_x);
+	}
 #else
 	DISP_REG_SET_DIRTY(handle, DISP_REG_OVL_L0_OFFSET + layer_offset, dst_y << 16 | dst_x);
 #endif
 
 #ifdef CONFIG_MTK_LCM_PHYSICAL_ROTATION_HW
-	offset = src_pitch * (dst_h + src_y - 1) + (src_x + dst_w) * bpp - 1;
+	if (!is_memory)
+		offset = src_pitch * (dst_h + src_y - 1) + (src_x + dst_w) * bpp - 1;
+	else
+		offset = src_x * bpp + src_y * src_pitch;
 #else
 	offset = src_x * bpp + src_y * src_pitch;
 #endif
@@ -1155,7 +1164,7 @@ static int ovl_config_l(DISP_MODULE_ENUM module, disp_ddp_path_config *pConfig, 
 					 pConfig->ovl_config[i].src_alpha, pConfig->ovl_config[i].dst_alpha,
 					 0xff000000,	/* constant_color */
 					 pConfig->ovl_config[i].yuv_range,
-					 pConfig->ovl_config[i].security, has_sec_layer, handle);
+					 pConfig->ovl_config[i].security, has_sec_layer, handle, pConfig->is_memory);
 			DDPMLOG("O%d/L%d/S%d/%s/0x%lx/(%d,%d)/P%d/(%d,%d,%d,%d).\n",
 				module - DISP_MODULE_OVL0,
 				i,
