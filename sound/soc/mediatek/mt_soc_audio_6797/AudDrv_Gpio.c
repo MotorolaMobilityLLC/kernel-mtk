@@ -276,6 +276,7 @@ int AudDrv_GPIO_Request(bool _enable, Soc_Aud_Digital_Block _usage)
 		set_aud_dat_miso(_enable, _usage);
 		break;
 	case Soc_Aud_Digital_Block_ADDA_ANC:
+		set_aud_clk_mosi(_enable);
 		set_aud_dat_miso(_enable, _usage);
 		set_anc_dat_mosi(_enable);
 		break;

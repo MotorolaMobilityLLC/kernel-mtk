@@ -239,7 +239,7 @@
 #define MT_SOC_BTCVSD_RX_DAI_NAME "mt-soc-btcvsd-rx-dai-driver"
 #define MT_SOC_BTCVSD_TX_DAI_NAME "mt-soc-btcvsd-tx-dai-driver"
 #define MT_SOC_MOD_DAI_NAME "mt-soc-moddai-driver"
-
+#define MT_SOC_ANC_NAME "mt-soc-anc-driver"
 
 /* platform name */
 #define MT_SOC_DL1_PCM   "mt-soc-dl1-pcm"
@@ -278,7 +278,7 @@
 #define MT_SOC_BTCVSD_RX_PCM   "mt-soc-btcvsd-rx-pcm"
 #define MT_SOC_BTCVSD_TX_PCM   "mt-soc-btcvsd-tx-pcm"
 #define MT_SOC_MOD_DAI_PCM   "mt-soc-MODDAI-pcm"
-
+#define MT_SOC_ANC_PCM   "mt-soc-anc-pcm"
 
 /* codec dai name */
 #define MT_SOC_CODEC_TXDAI_NAME "mt-soc-codec-tx-dai"
@@ -298,6 +298,7 @@
 #define MT_SOC_CODEC_TDMRX_DAI_NAME "mt-soc-tdmrx-dai-codec"
 #define MT_SOC_CODEC_HP_IMPEDANCE_NAME "mt-soc-codec-hp-impedance-dai"
 #define MT_SOC_CODEC_OFFLOAD_NAME "mt-soc-codec-offload-dai"
+#define MT_SOC_CODEC_ANC_NAME "mt-soc-codec-anc-dai"
 
 #define MT_SOC_CODEC_FMI2S2TXDAI_NAME "mt-soc-codec-fmi2s2tx-dai"
 #define MT_SOC_CODEC_FMI2S2RXDAI_NAME "mt-soc-codec-fmi2s2rx-dai"
@@ -360,5 +361,6 @@
 #define MT_SOC_BTCVSD_CAPTURE_STREAM_NAME "BTCVSD_Capture"
 #define MT_SOC_BTCVSD_PLAYBACK_STREAM_NAME "BTCVSD_Playback"
 #define MT_SOC_OFFLOAD_STREAM_NAME "Offload_Playback"
+#define MT_SOC_ANC_STREAM_NAME "ANC_Playback"
 
 #endif

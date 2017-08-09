@@ -478,6 +478,22 @@ void Afe_Log_Print(void)
 	pr_debug("AFE_ASRC3_CON12 = 0x%x\n", Afe_Get_Reg(AFE_ASRC3_CON12));
 	pr_debug("AFE_ASRC3_CON13 = 0x%x\n", Afe_Get_Reg(AFE_ASRC3_CON13));
 	pr_debug("AFE_ASRC3_CON14 = 0x%x\n", Afe_Get_Reg(AFE_ASRC3_CON14));
+	pr_debug("AFE_GENERAL_REG0 = 0x%x\n", Afe_Get_Reg(AFE_GENERAL_REG0));
+	pr_debug("AFE_GENERAL_REG1 = 0x%x\n", Afe_Get_Reg(AFE_GENERAL_REG1));
+	pr_debug("AFE_GENERAL_REG2 = 0x%x\n", Afe_Get_Reg(AFE_GENERAL_REG2));
+	pr_debug("AFE_GENERAL_REG3 = 0x%x\n", Afe_Get_Reg(AFE_GENERAL_REG3));
+	pr_debug("AFE_GENERAL_REG4 = 0x%x\n", Afe_Get_Reg(AFE_GENERAL_REG4));
+	pr_debug("AFE_GENERAL_REG5 = 0x%x\n", Afe_Get_Reg(AFE_GENERAL_REG5));
+	pr_debug("AFE_GENERAL_REG6 = 0x%x\n", Afe_Get_Reg(AFE_GENERAL_REG6));
+	pr_debug("AFE_GENERAL_REG7 = 0x%x\n", Afe_Get_Reg(AFE_GENERAL_REG7));
+	pr_debug("AFE_GENERAL_REG8 = 0x%x\n", Afe_Get_Reg(AFE_GENERAL_REG8));
+	pr_debug("AFE_GENERAL_REG9 = 0x%x\n", Afe_Get_Reg(AFE_GENERAL_REG9));
+	pr_debug("AFE_GENERAL_REG10 = 0x%x\n", Afe_Get_Reg(AFE_GENERAL_REG10));
+	pr_debug("AFE_GENERAL_REG11 = 0x%x\n", Afe_Get_Reg(AFE_GENERAL_REG11));
+	pr_debug("AFE_GENERAL_REG12 = 0x%x\n", Afe_Get_Reg(AFE_GENERAL_REG12));
+	pr_debug("AFE_GENERAL_REG13 = 0x%x\n", Afe_Get_Reg(AFE_GENERAL_REG13));
+	pr_debug("AFE_GENERAL_REG14 = 0x%x\n", Afe_Get_Reg(AFE_GENERAL_REG14));
+	pr_debug("AFE_GENERAL_REG15 = 0x%x\n", Afe_Get_Reg(AFE_GENERAL_REG15));
 #ifdef CONFIG_FPGA_EARLY_PORTING
 	pr_debug("FPGA_CFG0 = 0x%x\n", Afe_Get_Reg(FPGA_CFG0));
 #endif

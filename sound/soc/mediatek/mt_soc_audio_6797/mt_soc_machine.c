@@ -826,6 +826,27 @@ static ssize_t mt_soc_debug_read(struct file *file, char __user *buf,
 	n += scnprintf(buffer + n, size - n, "APLL2_CON3  = 0x%x\n",
 			GetApmixedCfg(APLL2_CON3));
 
+	n += scnprintf(buffer + n, size - n, "AFE_GENERAL_REG0  = 0x%x\n",
+			Afe_Get_Reg(AFE_GENERAL_REG0));
+	n += scnprintf(buffer + n, size - n, "AFE_GENERAL_REG1  = 0x%x\n",
+			Afe_Get_Reg(AFE_GENERAL_REG1));
+	n += scnprintf(buffer + n, size - n, "AFE_GENERAL_REG2  = 0x%x\n",
+			Afe_Get_Reg(AFE_GENERAL_REG2));
+	n += scnprintf(buffer + n, size - n, "AFE_GENERAL_REG3  = 0x%x\n",
+			Afe_Get_Reg(AFE_GENERAL_REG3));
+	n += scnprintf(buffer + n, size - n, "AFE_GENERAL_REG4  = 0x%x\n",
+			Afe_Get_Reg(AFE_GENERAL_REG4));
+	n += scnprintf(buffer + n, size - n, "AFE_GENERAL_REG5  = 0x%x\n",
+			Afe_Get_Reg(AFE_GENERAL_REG5));
+	n += scnprintf(buffer + n, size - n, "AFE_GENERAL_REG6  = 0x%x\n",
+			Afe_Get_Reg(AFE_GENERAL_REG6));
+	n += scnprintf(buffer + n, size - n, "AFE_GENERAL_REG7  = 0x%x\n",
+			Afe_Get_Reg(AFE_GENERAL_REG7));
+	n += scnprintf(buffer + n, size - n, "AFE_GENERAL_REG8  = 0x%x\n",
+			Afe_Get_Reg(AFE_GENERAL_REG8));
+	n += scnprintf(buffer + n, size - n, "AFE_GENERAL_REG9  = 0x%x\n",
+			Afe_Get_Reg(AFE_GENERAL_REG9));
+
 	n += scnprintf(buffer + n, size - n, "0x1f8  = 0x%x\n",
 			Afe_Get_Reg(AFE_BASE + 0x1f8));
 
@@ -1229,6 +1250,16 @@ static struct snd_soc_dai_link mt_soc_dai_common[] = {
 		.platform_name	= "snd-soc-dummy",
 		.codec_dai_name = MT_SOC_CODEC_OFFLOAD_NAME,
 		.codec_name = MT_SOC_CODEC_NAME,
+	},
+	{
+		.name = "PCM_ANC",
+		.stream_name = MT_SOC_ANC_STREAM_NAME,
+		.cpu_dai_name   = MT_SOC_ANC_NAME,
+		.platform_name  = MT_SOC_ANC_PCM,
+		.codec_dai_name = MT_SOC_CODEC_ANC_NAME,
+		.codec_name = MT_SOC_CODEC_NAME,
+		.init = mt_soc_audio_init,
+		.ops = &mt_machine_audio_ops,
 	},
 };
 

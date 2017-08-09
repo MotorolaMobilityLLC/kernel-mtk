@@ -2877,6 +2877,10 @@
 			compatible = "mediatek,mt_soc_pcm_dl2";
 		};
 
+		mt_soc_anc_pcm@11220000 {
+			compatible = "mediatek,mt_soc_pcm_anc";
+		};
+
 		icusb@11200000 {
 			compatible = "mediatek,icusb";
 			reg = <0x11200000 0x10000>, <0x11210000 0x10000>;

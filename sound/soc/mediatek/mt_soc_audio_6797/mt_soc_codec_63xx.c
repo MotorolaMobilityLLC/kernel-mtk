@@ -1462,9 +1462,19 @@ static struct snd_soc_dai_driver mtk_6331_dai_codecs[] = {
 		      .rates = SNDRV_PCM_RATE_8000_192000,
 		      .formats = SND_SOC_ADV_MT_FMTS,
 		      },
-	 },
+	},
+	{
+		.name = MT_SOC_CODEC_ANC_NAME,
+		.ops = &mt6323_aif1_dai_ops,
+		.playback = {
+			.stream_name = MT_SOC_ANC_STREAM_NAME,
+			.channels_min = 1,
+			.channels_max = 2,
+			.rates = SNDRV_PCM_RATE_8000_48000,
+			.formats = SND_SOC_ADV_MT_FMTS,
+			},
+	}
 };
-
 
 uint32 GetDLNewIFFrequency(unsigned int frequency)
 {
