@@ -31,7 +31,7 @@
 /* #include "mach/mt_cpufreq.h" */
 /* #include "mach/mt_gpufreq.h" */
 /* #include "mach/mt_dormant.h" */
-/* #include "mach/mt_cpuidle.h" */
+#include "mt_cpuidle.h"
 #include <mt_clkbuf_ctl.h>
 /* #include "mach/mt_chip.h" */
 #include <mt-plat/mtk_rtc.h>
@@ -494,10 +494,7 @@ static int __init mt_power_management_init(void)
 
 #if !defined(CONFIG_MTK_FPGA)
 	/* cpu dormant driver init */
-/* **** */
-/*
 	mt_cpu_dormant_init();
-*/
 
 	spm_module_init();
 	slp_module_init();

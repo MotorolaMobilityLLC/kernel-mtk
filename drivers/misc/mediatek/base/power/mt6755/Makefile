@@ -1,5 +1,6 @@
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include/spm_v2/
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/cpuidle_v1/
 
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/irq/$(MTK_PLATFORM)/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/dramc/$(MTK_PLATFORM)/
@@ -56,7 +57,6 @@ ifneq ($(CONFIG_ARM64), y)
 else
 
 obj-$(CONFIG_MTK_PSCI)  += mt_psci.o
-obj-$(CONFIG_ARCH_MT6735) += mt_cpuidle64.o
 
 endif
 

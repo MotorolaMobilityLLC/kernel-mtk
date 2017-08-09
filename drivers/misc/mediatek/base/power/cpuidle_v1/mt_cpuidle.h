@@ -90,6 +90,16 @@ extern int read_cpu_id(void);
 extern int read_cluster_id(void);
 extern void mt_save_generic_timer(unsigned int *container, int sw);
 extern void mt_restore_generic_timer(unsigned int *container, int sw);
+extern void mt_save_l2ctlr(unsigned long l2ctlr);
+extern unsigned long mt_restore_l2ctlr(int);
+extern void mt_goto_cpu_resume(void (*cpu_resume_phys));
+extern int mt_get_data_nommu(int data, unsigned long pva);
+extern void smp(void);
+extern void amp(void);
+extern void disable_dcache_safe(void);
+extern void cpu_wake_up_errata_802022(void);
+extern unsigned *copy_words(volatile unsigned *destination,
+			    volatile unsigned *source, unsigned num_words);
 
 extern unsigned long *aee_rr_rec_cpu_dormant(void);
 extern unsigned long *aee_rr_rec_cpu_dormant_pa(void);

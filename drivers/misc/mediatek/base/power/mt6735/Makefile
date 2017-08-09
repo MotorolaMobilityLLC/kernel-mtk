@@ -1,6 +1,7 @@
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/irq/$(MTK_PLATFORM)/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/dramc/$(MTK_PLATFORM)/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/thermal/fakeHeader/
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/cpuidle_v1/
 
 ifeq ($(CONFIG_ARCH_MT6735),y)
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/video/$(MTK_PLATFORM)/videox/
@@ -37,7 +38,6 @@ obj-y += mt_static_power.o
 obj-y += mt_cpufreq.o
 obj-y += mt_ptp.o
 obj-y += mt_gpufreq.o
-obj-y += mt_cpuidle.o
 
 obj-$(CONFIG_ARCH_MT6753) += mt_gpufreq.o
 
@@ -47,12 +47,10 @@ obj-y += mt-smp.o
 obj-y += hotplug.o
 obj-y += mt-headsmp.o
 obj-y += mt_hotplug.o
-obj-y += cpu_dormant-v7.o
 
 else
 
 obj-$(CONFIG_MTK_PSCI)  += mt_psci.o
-obj-y += cpu_dormant.o
 
 endif
 
