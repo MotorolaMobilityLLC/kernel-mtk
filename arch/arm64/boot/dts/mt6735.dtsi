@@ -814,6 +814,11 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 			interrupts = <GIC_SPI 180 IRQ_TYPE_LEVEL_LOW>;
 		};
 
+		mcu_biu: mcu_biu@10300000 {
+			compatible = "mediatek,mt6735-mcu_biu";
+			reg = <0x10300000 0x8000>;
+		};
+
 		met_smi: met_smi@14016000 {
 			compatible = "mediatek,met_smi";
 			reg = <0x14016000 0x1000>,  /* SMI_COMMON_EXT */
