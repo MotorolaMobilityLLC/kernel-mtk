@@ -3179,6 +3179,8 @@ int _esd_check_config_handle_vdo(void)
 
 	primary_display_esd_cust_bycmdq(1);
 
+	_primary_path_lock(__func__);
+
 #if defined(MTK_FB_SODI_SUPPORT) || !defined(CONFIG_FPGA_EARLY_PORTING)
 	spm_enable_sodi(0);
 #endif
@@ -3195,7 +3197,7 @@ int _esd_check_config_handle_vdo(void)
 	cmdqRecBackupRegisterToSlot(pgc->cmdq_handle_config_esd, pgc->event_status, 1, DISP_REG_CMDQ_TOKEN_VALUE);
 #endif
 
-	_primary_path_lock(__func__);
+
 	/* 2.stop dsi vdo mode */
 	dpmgr_path_build_cmdq(pgc->dpmgr_handle, pgc->cmdq_handle_config_esd, CMDQ_STOP_VDO_MODE);
 
@@ -3221,12 +3223,12 @@ int _esd_check_config_handle_vdo(void)
 		cmdqRecDumpCommand(pgc->cmdq_handle_config_esd);
 	}
 
-	_primary_path_unlock(__func__);
 	ret = cmdqRecFlush(pgc->cmdq_handle_config_esd);
 
 #if defined(MTK_FB_SODI_SUPPORT) || !defined(CONFIG_FPGA_EARLY_PORTING)
 	spm_enable_sodi(1);
 #endif
+	_primary_path_unlock(__func__);
 
 #ifdef DISP_DUMP_EVENT_STATUS
 	{
