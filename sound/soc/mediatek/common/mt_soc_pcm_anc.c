@@ -776,7 +776,7 @@ static ssize_t ANCService_write(struct file *fp, const char __user *data,
 {
 	char temp_str[MAX_TABS * 4];
 
-	pr_debug("ANCService_write write count %d", (int)count);
+	pr_debug("ANCService_write write count %zu", count);
 
 	if (count > MAX_TABS * 4)
 		return -EINVAL;

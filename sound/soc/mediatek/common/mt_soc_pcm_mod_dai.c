@@ -403,7 +403,7 @@ static int mtk_mod_dai_pcm_copy(struct snd_pcm_substream *substream,
 	if (DMA_Read_Ptr + read_size < pModDai_Block->u4BufferSize) {
 		if (copy_to_user((void __user *)Read_Data_Ptr,
 			(pModDai_Block->pucVirtBufAddr + DMA_Read_Ptr), read_size)) {
-			pr_err("%s Fail 1 copy to user Read_Ptr:%p, VirtBufAddr:%p, ReadIdx:0x%x, Read_Ptr:0x%lx,read_size:%lx\n",
+			pr_err("%s Fail 1 copy to user Read_Ptr:%p, VirtBufAddr:%p, ReadIdx:0x%x, Read_Ptr:0x%zx,read_size:%zx\n",
 				__func__, Read_Data_Ptr, pModDai_Block->pucVirtBufAddr,
 				pModDai_Block->u4DMAReadIdx, DMA_Read_Ptr, read_size);
 			return 0;
@@ -433,7 +433,7 @@ static int mtk_mod_dai_pcm_copy(struct snd_pcm_substream *substream,
 		if (copy_to_user((void __user *)Read_Data_Ptr,
 			(pModDai_Block->pucVirtBufAddr + DMA_Read_Ptr), size_1)) {
 
-			pr_debug(" %s 2, read_size1:%x, DataRemained:%x, DMA_Read_Ptr:0x%lx, DMAReadIdx:%x\n",
+			pr_debug(" %s 2, read_size1:%x, DataRemained:%x, DMA_Read_Ptr:0x%zx, DMAReadIdx:%x\n",
 			       __func__, size_1, pModDai_Block->u4DataRemained,
 			       DMA_Read_Ptr, pModDai_Block->u4DMAReadIdx);
 
@@ -454,7 +454,7 @@ static int mtk_mod_dai_pcm_copy(struct snd_pcm_substream *substream,
 
 		if (copy_to_user((void __user *)(Read_Data_Ptr + size_1),
 			(pModDai_Block->pucVirtBufAddr + DMA_Read_Ptr), size_2)) {
-			pr_debug("%s 2 read_size1:%x, DataRemained:%x, DMA_Read_Ptr:0x%lx, DMAReadIdx:%x\n",
+			pr_debug("%s 2 read_size1:%x, DataRemained:%x, DMA_Read_Ptr:0x%zx, DMAReadIdx:%x\n",
 			       __func__, size_1, pModDai_Block->u4DataRemained,
 			       DMA_Read_Ptr, pModDai_Block->u4DMAReadIdx);
 			return read_count << 2;

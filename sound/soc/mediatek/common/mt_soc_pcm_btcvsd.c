@@ -226,9 +226,9 @@ int AudDrv_btcvsd_Allocate_Buffer(kal_uint8 isRX)
 
 			memset((void *)BT_CVSD_Mem.pucRXVirtBufAddr, 0, BT_CVSD_Mem.u4RXBufferSize);
 
-			LOGBT("BT_CVSD_Mem.pucRXVirtBufAddr = %p BT_CVSD_Mem.pucRXPhysBufAddr = 0x%lx\n" ,
+			LOGBT("BT_CVSD_Mem.pucRXVirtBufAddr = %p BT_CVSD_Mem.pucRXPhysBufAddr = %pad\n" ,
 						  BT_CVSD_Mem.pucRXVirtBufAddr,
-						  (unsigned long)BT_CVSD_Mem.pucRXPhysBufAddr);
+						  &BT_CVSD_Mem.pucRXPhysBufAddr);
 
 			btsco.pRX = (BT_SCO_RX_T *)(BT_CVSD_Mem.pucRXVirtBufAddr);
 			btsco.pRX->u4BufferSize = SCO_RX_PACKER_BUF_NUM *
@@ -254,9 +254,9 @@ int AudDrv_btcvsd_Allocate_Buffer(kal_uint8 isRX)
 			}
 			memset((void *)BT_CVSD_Mem.pucTXVirtBufAddr, 0, BT_CVSD_Mem.u4TXBufferSize);
 
-			LOGBT("BT_CVSD_Mem.pucTXVirtBufAddr = 0x%p BT_CVSD_Mem.pucTXPhysBufAddr = 0x%lx\n" ,
+			LOGBT("BT_CVSD_Mem.pucTXVirtBufAddr = 0x%p BT_CVSD_Mem.pucTXPhysBufAddr = %pad\n" ,
 						  BT_CVSD_Mem.pucTXVirtBufAddr,
-						  (unsigned long)BT_CVSD_Mem.pucTXPhysBufAddr);
+						  &BT_CVSD_Mem.pucTXPhysBufAddr);
 
 			btsco.pTX = (BT_SCO_TX_T *)(BT_CVSD_Mem.pucTXVirtBufAddr);
 			btsco.pTX->u4BufferSize = SCO_TX_PACKER_BUF_NUM * SCO_TX_ENCODE_SIZE;
@@ -277,8 +277,8 @@ int AudDrv_btcvsd_Free_Buffer(kal_uint8 isRX)
 
 	if (isRX == 1) {
 		if ((BT_CVSD_Mem.pucRXVirtBufAddr != NULL) && (BT_CVSD_Mem.pucRXPhysBufAddr != 0)) {
-			LOGBT("%s dma_free_coherent pucRXVirtBufAddr = 0x%p pucRXPhysBufAddr = 0x%p",
-					__func__, BT_CVSD_Mem.pucRXVirtBufAddr, (void *)(BT_CVSD_Mem.pucRXPhysBufAddr));
+			LOGBT("%s dma_free_coherent pucRXVirtBufAddr = 0x%p pucRXPhysBufAddr = %pad",
+					__func__, BT_CVSD_Mem.pucRXVirtBufAddr, &BT_CVSD_Mem.pucRXPhysBufAddr);
 			btsco.pRX =  NULL;
 			dma_free_coherent(mDev_btcvsd_rx, BT_CVSD_Mem.u4RXBufferSize,
 								BT_CVSD_Mem.pucRXVirtBufAddr,
@@ -287,14 +287,14 @@ int AudDrv_btcvsd_Free_Buffer(kal_uint8 isRX)
 			BT_CVSD_Mem.pucRXVirtBufAddr = NULL;
 			BT_CVSD_Mem.pucRXPhysBufAddr = 0;
 		} else {
-			pr_warn("%s cannot dma_free_coherent pucRXVirtBufAddr = 0x%p pucRXPhysBufAddr = 0x%p",
-					__func__, BT_CVSD_Mem.pucRXVirtBufAddr, (void *)(BT_CVSD_Mem.pucRXPhysBufAddr));
+			pr_warn("%s cannot dma_free_coherent pucRXVirtBufAddr = 0x%p pucRXPhysBufAddr = %pad",
+					__func__, BT_CVSD_Mem.pucRXVirtBufAddr, &BT_CVSD_Mem.pucRXPhysBufAddr);
 			return -1;
 		}
 	} else {
 		if ((BT_CVSD_Mem.pucTXVirtBufAddr != NULL) && (BT_CVSD_Mem.pucTXPhysBufAddr != 0)) {
-			LOGBT("%s dma_free_coherent pucTXVirtBufAddr = 0x%p pucTXPhysBufAddr = 0x%p",
-					__func__, BT_CVSD_Mem.pucTXVirtBufAddr, (void *)(BT_CVSD_Mem.pucTXPhysBufAddr));
+			LOGBT("%s dma_free_coherent pucTXVirtBufAddr = 0x%p pucTXPhysBufAddr = %pad",
+					__func__, BT_CVSD_Mem.pucTXVirtBufAddr, &BT_CVSD_Mem.pucTXPhysBufAddr);
 			btsco.pTX =  NULL;
 			dma_free_coherent(mDev_btcvsd_tx, BT_CVSD_Mem.u4TXBufferSize,
 								BT_CVSD_Mem.pucTXVirtBufAddr,
@@ -304,8 +304,8 @@ int AudDrv_btcvsd_Free_Buffer(kal_uint8 isRX)
 			BT_CVSD_Mem.pucTXPhysBufAddr = 0;
 
 		} else {
-			pr_warn("%s cannot dma_free_coherent pucTXVirtBufAddr = 0x%p pucTXPhysBufAddr = 0x%p",
-					__func__, BT_CVSD_Mem.pucTXVirtBufAddr, (void *)(BT_CVSD_Mem.pucTXPhysBufAddr));
+			pr_warn("%s cannot dma_free_coherent pucTXVirtBufAddr = 0x%p pucTXPhysBufAddr = %pad",
+					__func__, BT_CVSD_Mem.pucTXVirtBufAddr, &BT_CVSD_Mem.pucTXPhysBufAddr);
 			return -1;
 		}
 	}
@@ -516,12 +516,12 @@ ssize_t AudDrv_btcvsd_read(char __user *data, size_t count)
 		/* ASSERT(read_size % (SCO_RX_PLC_SIZE + BTSCO_CVSD_PACKET_VALID_SIZE) == 0); */
 		BUG_ON(!(read_size % (SCO_RX_PLC_SIZE + BTSCO_CVSD_PACKET_VALID_SIZE) == 0));
 
-		LOGBT("AudDrv_btcvsd_read read_size=%zu, BTSCORX_ReadIdx_tmp=%zu\n", read_size, BTSCORX_ReadIdx_tmp);
-		LOGBT("%s finish0, read_count:%zu,read_size:%zu,DataRemained:0x%lx,iPacket_r:0x%x,iPacket_w:0x%x\r\n",
+		LOGBT("AudDrv_btcvsd_read read_size=%zd, BTSCORX_ReadIdx_tmp=%zd\n", read_size, BTSCORX_ReadIdx_tmp);
+		LOGBT("%s finish0, read_count:%zd,read_size:%zd,DataRemained:0x%lx,iPacket_r:0x%x,iPacket_w:0x%x\r\n",
 				__func__, read_count, read_size,
 				u4DataRemained, btsco.pRX->iPacket_r, btsco.pRX->iPacket_w);
 		if (BTSCORX_ReadIdx_tmp + read_size < btsco.pRX->u4BufferSize) /* copy once */ {
-			LOGBT("%s 1 copy_to_user target=0x%p, source=0x%p, read_size=%zu\n",
+			LOGBT("%s 1 copy_to_user target=0x%p, source=0x%p, read_size=%zd\n",
 					__func__, Read_Data_Ptr,
 					((unsigned char *)btsco.pRX->PacketBuf + BTSCORX_ReadIdx_tmp),
 					read_size);
@@ -529,7 +529,7 @@ ssize_t AudDrv_btcvsd_read(char __user *data, size_t count)
 					((void __user *)Read_Data_Ptr,
 					(void *)((kal_uint8 *)btsco.pRX->PacketBuf + BTSCORX_ReadIdx_tmp),
 					read_size)) {
-				pr_debug("%s Fail 1 copy to user Read_Data_Ptr:%p,PacketBuf:%p,BTSCORX_ReadIdx_tmp:%zu,read_size:%zu",
+				pr_debug("%s Fail 1 copy to user Read_Data_Ptr:%p,PacketBuf:%p,BTSCORX_ReadIdx_tmp:%zd,read_size:%zd",
 						 __func__, Read_Data_Ptr, (kal_uint8 *)btsco.pRX->PacketBuf,
 						 BTSCORX_ReadIdx_tmp, read_size);
 				if (read_count == 0)
@@ -546,7 +546,7 @@ ssize_t AudDrv_btcvsd_read(char __user *data, size_t count)
 
 			Read_Data_Ptr += read_size;
 			count -= read_size;
-			LOGBT("%s finish1, read_sizesize:%zu, pRX->iPacket_r:0x%x, pRX->iPacket_w:%x, count:%zu\r\n",
+			LOGBT("%s finish1, read_sizesize:%zd, pRX->iPacket_r:0x%x, pRX->iPacket_w:%x, count:%zu\r\n",
 					__func__, read_size, btsco.pRX->iPacket_r, btsco.pRX->iPacket_w, count);
 		} else /* copy twice */ {
 			unsigned long size_1 = btsco.pRX->u4BufferSize - BTSCORX_ReadIdx_tmp;
@@ -560,7 +560,7 @@ ssize_t AudDrv_btcvsd_read(char __user *data, size_t count)
 					((void __user *)Read_Data_Ptr,
 					(void *)((kal_uint8 *)btsco.pRX->PacketBuf + BTSCORX_ReadIdx_tmp),
 					size_1)) {
-				LOGBT("%s Fail 2 copy to user Ptr:%p,PacketBuf:%p,ReadIdx_tmp:0x%lx,read_size:%zu",
+				LOGBT("%s Fail 2 copy to user Ptr:%p,PacketBuf:%p,ReadIdx_tmp:0x%zx,read_size:%zd",
 					__func__, Read_Data_Ptr, btsco.pRX->PacketBuf, BTSCORX_ReadIdx_tmp, read_size);
 				if (read_count == 0)
 					return -1;
@@ -583,9 +583,9 @@ ssize_t AudDrv_btcvsd_read(char __user *data, size_t count)
 					((void __user *)(Read_Data_Ptr + size_1),
 					(void *)((kal_uint8 *)btsco.pRX->PacketBuf),
 					size_2)) {
-				LOGBT("%s Fail 3 copy to user Ptr:%p,PacketBuf:%p,ReadIdx_tmp:0x%x,read_size:%d",
+				LOGBT("%s Fail 3 copy to user Ptr:%p,PacketBuf:%p,ReadIdx_tmp:0x%xz,read_size:%zd",
 					__func__, Read_Data_Ptr, btsco.pRX->PacketBuf,
-					(int)BTSCORX_ReadIdx_tmp, (int)read_size);
+					BTSCORX_ReadIdx_tmp, read_size);
 				if (read_count == 0)
 					return -1;
 				else
@@ -624,7 +624,7 @@ ssize_t AudDrv_btcvsd_read(char __user *data, size_t count)
 			}
 		}
 	}
-	LOGBT("AudDrv_btcvsd_read read_count = %zu,read_timeout_limit=%llu\n", read_count, read_timeout_limit);
+	LOGBT("AudDrv_btcvsd_read read_count = %zd,read_timeout_limit=%llu\n", read_count, read_timeout_limit);
 	return read_count;
 }
 
@@ -657,7 +657,7 @@ ssize_t AudDrv_btcvsd_write(const char __user *data, size_t count)
 		if (count <= (kal_uint32) copy_size)
 			copy_size = count;
 
-		LOGBT("AudDrv_btcvsd_write count=%d, copy_size=%d\n", (int)count, copy_size);
+		LOGBT("AudDrv_btcvsd_write count=%zd, copy_size=%d\n", count, copy_size);
 
 		/* ASSERT(copy_size % SCO_TX_ENCODE_SIZE == 0); */
 		BUG_ON(!(copy_size % SCO_TX_ENCODE_SIZE == 0));/*copysize must be multiple of SCO_TX_ENCODE_SIZE*/
@@ -692,9 +692,9 @@ ssize_t AudDrv_btcvsd_write(const char __user *data, size_t count)
 				spin_unlock_irqrestore(&auddrv_btcvsd_tx_lock, flags);
 				data_w_ptr += copy_size;
 				count -= copy_size;
-				LOGBT("%s finish1, copy_size:%d, pTX->iPacket_w:%d, pTX->iPacket_r=%d, count=%d\r\n",
+				LOGBT("%s finish1, copy_size:%d, pTX->iPacket_w:%d, pTX->iPacket_r=%d, count=%zd\r\n",
 						__func__, copy_size, btsco.pTX->iPacket_w,
-						btsco.pTX->iPacket_r, (int)count);
+						btsco.pTX->iPacket_r, count);
 			} else  /* copy twice */ {
 				kal_int32 size_1 = 0, size_2 = 0;
 
@@ -751,17 +751,17 @@ ssize_t AudDrv_btcvsd_write(const char __user *data, size_t count)
 				spin_unlock_irqrestore(&auddrv_btcvsd_tx_lock, flags);
 				count -= copy_size;
 				data_w_ptr += copy_size;
-				LOGBT("%s finish2, copy size:%d, pTX->iPacket_w=%d, pTX->iPacket_r=%d, count:%d\r\n",
+				LOGBT("%s finish2, copy size:%d, pTX->iPacket_w=%d, pTX->iPacket_r=%d, count:%zd\r\n",
 					__func__, copy_size, btsco.pTX->iPacket_w,
-					btsco.pTX->iPacket_r, (int)count);
+					btsco.pTX->iPacket_r, count);
 			}
 		}
 
 		if (count != 0) {
 			kal_uint64 t1, t2;
 
-			LOGBT("%s WAITING...btsco.pTX->iPacket_w=%d, count=%d\n",
-				__func__, btsco.pTX->iPacket_w, (int)count);
+			LOGBT("%s WAITING...btsco.pTX->iPacket_w=%d, count=%zd\n",
+				__func__, btsco.pTX->iPacket_w, count);
 			t1 = sched_clock();
 			BTCVSD_write_wait_queue_flag = 0;
 			ret = wait_event_interruptible_timeout(BTCVSD_Write_Wait_Queue,
