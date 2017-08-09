@@ -4574,7 +4574,7 @@ static int pmic_mt_probe(struct platform_device *dev)
 	PMICLOG("[PMIC_CUSTOM_SETTING_V1] Done\n");
 #endif				/*End of #if !defined CONFIG_MTK_LEGACY */
 
-
+	pmic_auxadc_init();
 /*#if defined(CONFIG_MTK_FPGA)*/
 #if 0
 	PMICLOG("[PMIC_EINT_SETTING] disable when CONFIG_MTK_FPGA\n");
@@ -4873,7 +4873,12 @@ unsigned int pmic_Read_Efuse_HPOffset(int i)
 static int __init pmic_mt_init(void)
 {
 	int ret;
+	unsigned long long ts = 0;
+	unsigned long long ts1 = 0;
+	unsigned long long ts2 = 0;
+	unsigned long long ts3 = 0;
 
+	ts = sched_clock();
 #if !defined CONFIG_HAS_WAKELOCKS
 	wakeup_source_init(&pmicThread_lock, "pmicThread_lock_mt6328 wakelock");
 	wakeup_source_init(&bat_percent_notify_lock, "bat_percent_notify_lock wakelock");
@@ -4882,13 +4887,13 @@ static int __init pmic_mt_init(void)
 	wake_lock_init(&bat_percent_notify_lock, WAKE_LOCK_SUSPEND,
 		       "bat_percent_notify_lock wakelock");
 #endif
-
+	ts1 = sched_clock()-ts;
 #if !defined CONFIG_HAS_WAKELOCKS
 	wakeup_source_init(&dlpt_notify_lock, "dlpt_notify_lock wakelock");
 #else
 	wake_lock_init(&dlpt_notify_lock, WAKE_LOCK_SUSPEND, "dlpt_notify_lock wakelock");
 #endif
-
+	ts2 = sched_clock()-ts;
 #if !defined CONFIG_MTK_LEGACY
 #ifdef CONFIG_OF
 	PMICLOG("pmic_regulator_init_OF\n");
@@ -4912,6 +4917,7 @@ static int __init pmic_mt_init(void)
 #endif				/* End of #ifdef CONFIG_OF */
 #else
 	PMICLOG("pmic_regulator_init\n");
+
 	/* PMIC device driver register*/
 	ret = platform_device_register(&pmic_mt_device);
 	if (ret) {
@@ -4924,11 +4930,9 @@ static int __init pmic_mt_init(void)
 		return ret;
 	}
 #endif				/* End of #if !defined CONFIG_MTK_LEGACY */
-
-
-	pmic_auxadc_init();
-
+	ts3 = sched_clock()-ts;
 	pr_debug("****[pmic_mt_init] Initialization : DONE !!\n");
+	pr_debug("ts=%10llu,ts1=%10llu,ts2=%10llu,ts3=%10llu!!\n", ts, ts1, ts2, ts3);
 
 	return 0;
 }
