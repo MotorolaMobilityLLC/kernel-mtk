@@ -13,7 +13,7 @@
 
 #include <drm/drmP.h>
 #include <drm/drm_gem.h>
-#include <drm/mediatek_drm.h>
+#include <linux/dma-buf.h>
 
 #include "mtk_drm_gem.h"
 
@@ -40,7 +40,7 @@ static struct mtk_drm_gem_obj *mtk_drm_gem_init(struct drm_device *dev,
 }
 
 struct mtk_drm_gem_obj *mtk_drm_gem_create(struct drm_device *dev,
-					   unsigned long size, bool alloc_kmap)
+					   size_t size, bool alloc_kmap)
 {
 	struct mtk_drm_gem_obj *mtk_gem;
 	struct drm_gem_object *obj;
@@ -59,8 +59,8 @@ struct mtk_drm_gem_obj *mtk_drm_gem_create(struct drm_device *dev,
 		dma_set_attr(DMA_ATTR_NO_KERNEL_MAPPING, &mtk_gem->dma_attrs);
 
 	mtk_gem->cookie = dma_alloc_attrs(dev->dev, obj->size,
-				(dma_addr_t *)&mtk_gem->dma_addr, GFP_KERNEL,
-				&mtk_gem->dma_attrs);
+					  &mtk_gem->dma_addr, GFP_KERNEL,
+					  &mtk_gem->dma_attrs);
 	if (!mtk_gem->cookie) {
 		DRM_ERROR("failed to allocate %zx byte dma buffer", obj->size);
 		ret = -ENOMEM;
@@ -70,8 +70,9 @@ struct mtk_drm_gem_obj *mtk_drm_gem_create(struct drm_device *dev,
 	if (alloc_kmap)
 		mtk_gem->kvaddr = mtk_gem->cookie;
 
-	DRM_DEBUG_DRIVER("cookie = %p dma_addr = %pad\n",
-			 mtk_gem->cookie, &mtk_gem->dma_addr);
+	DRM_DEBUG_DRIVER("cookie = %p dma_addr = %pad size = %zu\n",
+			 mtk_gem->cookie, &mtk_gem->dma_addr,
+			 size);
 
 	return mtk_gem;
 
@@ -85,8 +86,11 @@ void mtk_drm_gem_free_object(struct drm_gem_object *obj)
 {
 	struct mtk_drm_gem_obj *mtk_gem = to_mtk_gem_obj(obj);
 
-	dma_free_attrs(obj->dev->dev, obj->size, mtk_gem->cookie,
-		       mtk_gem->dma_addr, &mtk_gem->dma_attrs);
+	if (mtk_gem->sg)
+		drm_prime_gem_destroy(obj, mtk_gem->sg);
+	else
+		dma_free_attrs(obj->dev->dev, obj->size, mtk_gem->cookie,
+			       mtk_gem->dma_addr, &mtk_gem->dma_attrs);
 
 	/* release file pointer to gem object. */
 	drm_gem_object_release(obj);
@@ -100,7 +104,7 @@ int mtk_drm_gem_dumb_create(struct drm_file *file_priv, struct drm_device *dev,
 	struct mtk_drm_gem_obj *mtk_gem;
 	int ret;
 
-	args->pitch = args->width * DIV_ROUND_UP(args->bpp, 8);
+	args->pitch = DIV_ROUND_UP(args->width * args->bpp, 8);
 	#ifdef CONFIG_MALI_DMA_BUF_MAP_ON_ATTACH
 	/*
 	* align to 8 bytes since Mali requires it.
@@ -233,40 +237,36 @@ struct sg_table *mtk_gem_prime_get_sg_table(struct drm_gem_object *obj)
 	return sgt;
 }
 
-int mtk_gem_map_offset_ioctl(struct drm_device *drm, void *data,
-			     struct drm_file *file_priv)
-{
-	struct drm_mtk_gem_map_off *args = data;
-
-	return mtk_drm_gem_dumb_map_offset(file_priv, drm, args->handle,
-					   &args->offset);
-}
-
-int mtk_gem_create_ioctl(struct drm_device *dev, void *data,
-			 struct drm_file *file_priv)
+struct drm_gem_object *mtk_gem_prime_import_sg_table(struct drm_device *dev,
+			struct dma_buf_attachment *attach, struct sg_table *sg)
 {
 	struct mtk_drm_gem_obj *mtk_gem;
-	struct drm_mtk_gem_create *args = data;
 	int ret;
+	struct scatterlist *s;
+	unsigned int i;
+	dma_addr_t expected;
 
-	mtk_gem = mtk_drm_gem_create(dev, args->size, false);
+	mtk_gem = mtk_drm_gem_init(dev, attach->dmabuf->size);
+
 	if (IS_ERR(mtk_gem))
-		return PTR_ERR(mtk_gem);
+		return ERR_PTR(PTR_ERR(mtk_gem));
 
-	/*
-	 * allocate a id of idr table where the obj is registered
-	 * and handle has the id what user can see.
-	 */
-	ret = drm_gem_handle_create(file_priv, &mtk_gem->base, &args->handle);
-	if (ret)
-		goto err_handle_create;
+	expected = sg_dma_address(sg->sgl);
+	for_each_sg(sg->sgl, s, sg->nents, i) {
+		if (sg_dma_address(s) != expected) {
+			DRM_ERROR("sg_table is not contiguous");
+			ret = -EINVAL;
+			goto err_gem_free;
+		}
+		expected = sg_dma_address(s) + sg_dma_len(s);
+	}
 
-	/* drop reference from allocate - handle holds it now. */
-	drm_gem_object_unreference_unlocked(&mtk_gem->base);
+	mtk_gem->dma_addr = sg_dma_address(sg->sgl);
+	mtk_gem->sg = sg;
 
-	return 0;
+	return &mtk_gem->base;
 
-err_handle_create:
-	mtk_drm_gem_free_object(&mtk_gem->base);
-	return ret;
+err_gem_free:
+	kfree(mtk_gem);
+	return ERR_PTR(ret);
 }

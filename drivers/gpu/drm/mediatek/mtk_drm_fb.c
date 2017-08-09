@@ -69,8 +69,8 @@ static const struct drm_framebuffer_funcs mtk_drm_fb_funcs = {
 };
 
 static struct mtk_drm_fb *mtk_drm_framebuffer_init(struct drm_device *dev,
-						   struct drm_mode_fb_cmd2 *mode,
-						   struct drm_gem_object *obj)
+					struct drm_mode_fb_cmd2 *mode,
+					struct drm_gem_object *obj)
 {
 	struct mtk_drm_fb *mtk_fb;
 	int ret;

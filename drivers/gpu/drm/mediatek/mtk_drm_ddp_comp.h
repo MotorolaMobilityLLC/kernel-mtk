@@ -18,6 +18,7 @@
 
 struct device;
 struct device_node;
+struct drm_crtc;
 struct drm_device;
 struct mtk_plane_state;
 
@@ -68,7 +69,7 @@ struct mtk_ddp_comp_funcs {
 		       unsigned int h, unsigned int vrefresh);
 	void (*start)(struct mtk_ddp_comp *comp);
 	void (*stop)(struct mtk_ddp_comp *comp);
-	void (*enable_vblank)(struct mtk_ddp_comp *comp);
+	void (*enable_vblank)(struct mtk_ddp_comp *comp, struct drm_crtc *crtc);
 	void (*disable_vblank)(struct mtk_ddp_comp *comp);
 	void (*layer_on)(struct mtk_ddp_comp *comp, unsigned int idx);
 	void (*layer_off)(struct mtk_ddp_comp *comp, unsigned int idx);
@@ -79,11 +80,15 @@ struct mtk_ddp_comp_funcs {
 struct mtk_ddp_comp_driver_data {
 	enum mtk_ddp_comp_type comp_type;
 	bool do_shadow_reg;
-	unsigned int ovl_addr_offset;
-	unsigned int ovl_fmt_rgb888;
-	unsigned int ovl_fmt_rgb565;
-	unsigned int rdma_fifo_pseudo_size;
-	unsigned int color_offset;
+	union {
+		struct ovl {
+			unsigned int addr_offset;
+			unsigned int fmt_rgb888;
+			unsigned int fmt_rgb565;
+		} ovl;
+		unsigned int rdma_fifo_pseudo_size;
+		unsigned int color_offset;
+	};
 };
 
 struct mtk_ddp_comp {
@@ -116,10 +121,11 @@ static inline void mtk_ddp_comp_stop(struct mtk_ddp_comp *comp)
 		comp->funcs->stop(comp);
 }
 
-static inline void mtk_ddp_comp_enable_vblank(struct mtk_ddp_comp *comp)
+static inline void mtk_ddp_comp_enable_vblank(struct mtk_ddp_comp *comp,
+					      struct drm_crtc *crtc)
 {
 	if (comp->funcs && comp->funcs->enable_vblank)
-		comp->funcs->enable_vblank(comp);
+		comp->funcs->enable_vblank(comp, crtc);
 }
 
 static inline void mtk_ddp_comp_disable_vblank(struct mtk_ddp_comp *comp)

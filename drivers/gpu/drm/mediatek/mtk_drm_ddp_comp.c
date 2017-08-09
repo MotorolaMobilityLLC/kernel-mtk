@@ -25,16 +25,6 @@
 #include "mtk_drm_plane.h"
 #include "mtk_drm_ddp_comp.h"
 
-#define DISP_REG_RDMA_INT_ENABLE		0x0000
-#define DISP_REG_RDMA_INT_STATUS		0x0004
-#define DISP_REG_RDMA_GLOBAL_CON		0x0010
-#define DISP_REG_RDMA_SIZE_CON_0		0x0014
-#define DISP_REG_RDMA_SIZE_CON_1		0x0018
-#define DISP_REG_RDMA_FIFO_CON			0x0040
-#define RDMA_FIFO_UNDERFLOW_EN				BIT(31)
-#define RDMA_FIFO_PSEUDO_SIZE(bytes)			(((bytes) / 16) << 16)
-#define RDMA_OUTPUT_VALID_FIFO_THRESHOLD(bytes)		((bytes) / 16)
-
 #define DISP_REG_BLS_EN				0x0000
 #define DISP_REG_BLS_SRC_SIZE			0x0018
 #define DISP_REG_BLS_PWM_DUTY			0x00a0
@@ -98,43 +88,6 @@ static void mtk_od_start(struct mtk_ddp_comp *comp)
 	writel(1, comp->regs + DISP_OD_EN);
 }
 
-static void mtk_rdma_start(struct mtk_ddp_comp *comp)
-{
-	unsigned int reg;
-
-	writel(0x4, comp->regs + DISP_REG_RDMA_INT_ENABLE);
-	reg = readl(comp->regs + DISP_REG_RDMA_GLOBAL_CON);
-	reg |= 1;
-	writel(reg, comp->regs + DISP_REG_RDMA_GLOBAL_CON);
-}
-
-static void mtk_rdma_config(struct mtk_ddp_comp *comp, unsigned width,
-			    unsigned height, unsigned int vrefresh)
-{
-	unsigned int threshold;
-	unsigned int reg;
-
-	reg = readl(comp->regs + DISP_REG_RDMA_SIZE_CON_0);
-	reg = (reg & ~(0xfff)) | (width & 0xfff);
-	writel(reg, comp->regs + DISP_REG_RDMA_SIZE_CON_0);
-
-	reg = readl(comp->regs + DISP_REG_RDMA_SIZE_CON_1);
-	reg = (reg & ~(0xfffff)) | (height & 0xfffff);
-	writel(reg, comp->regs + DISP_REG_RDMA_SIZE_CON_1);
-
-	/*
-	 * Enable FIFO underflow since DSI and DPI can't be blocked.
-	 * Keep the FIFO pseudo size reset default of 8 KiB. Set the
-	 * output threshold to 6 microseconds with 7/6 overhead to
-	 * account for blanking, and with a pixel depth of 4 bytes:
-	 */
-	threshold = width * height * vrefresh * 4 * 7 / 1000000;
-	reg = RDMA_FIFO_UNDERFLOW_EN |
-	      RDMA_FIFO_PSEUDO_SIZE(comp->data->rdma_fifo_pseudo_size) |
-	      RDMA_OUTPUT_VALID_FIFO_THRESHOLD(threshold);
-	writel(reg, comp->regs + DISP_REG_RDMA_FIFO_CON);
-}
-
 static void mtk_ufoe_start(struct mtk_ddp_comp *comp)
 {
 	writel(UFO_BYPASS, comp->regs + DISP_REG_UFO_START);
@@ -152,11 +105,6 @@ static const struct mtk_ddp_comp_funcs ddp_color = {
 static const struct mtk_ddp_comp_funcs ddp_od = {
 	.config = mtk_od_config,
 	.start = mtk_od_start,
-};
-
-static const struct mtk_ddp_comp_funcs ddp_rdma = {
-	.config = mtk_rdma_config,
-	.start = mtk_rdma_start,
 };
 
 static const struct mtk_ddp_comp_funcs ddp_ufoe = {
@@ -185,7 +133,7 @@ struct mtk_ddp_comp_match {
 	const struct mtk_ddp_comp_funcs *funcs;
 };
 
-static struct mtk_ddp_comp_match mtk_ddp_matches[DDP_COMPONENT_ID_MAX] = {
+static const struct mtk_ddp_comp_match mtk_ddp_matches[DDP_COMPONENT_ID_MAX] = {
 	[DDP_COMPONENT_AAL]	= { MTK_DISP_AAL,	0, NULL },
 	[DDP_COMPONENT_BLS]	= { MTK_DISP_BLS,	0, &ddp_bls },
 	[DDP_COMPONENT_COLOR0]	= { MTK_DISP_COLOR,	0, &ddp_color },
@@ -198,9 +146,9 @@ static struct mtk_ddp_comp_match mtk_ddp_matches[DDP_COMPONENT_ID_MAX] = {
 	[DDP_COMPONENT_OVL0]	= { MTK_DISP_OVL,	0, NULL },
 	[DDP_COMPONENT_OVL1]	= { MTK_DISP_OVL,	1, NULL },
 	[DDP_COMPONENT_PWM0]	= { MTK_DISP_PWM,	0, NULL },
-	[DDP_COMPONENT_RDMA0]	= { MTK_DISP_RDMA,	0, &ddp_rdma },
-	[DDP_COMPONENT_RDMA1]	= { MTK_DISP_RDMA,	1, &ddp_rdma },
-	[DDP_COMPONENT_RDMA2]	= { MTK_DISP_RDMA,	2, &ddp_rdma },
+	[DDP_COMPONENT_RDMA0]	= { MTK_DISP_RDMA,	0, NULL },
+	[DDP_COMPONENT_RDMA1]	= { MTK_DISP_RDMA,	1, NULL },
+	[DDP_COMPONENT_RDMA2]	= { MTK_DISP_RDMA,	2, NULL },
 	[DDP_COMPONENT_UFOE]	= { MTK_DISP_UFOE,	0, &ddp_ufoe },
 	[DDP_COMPONENT_WDMA0]	= { MTK_DISP_WDMA,	0, NULL },
 	[DDP_COMPONENT_WDMA1]	= { MTK_DISP_WDMA,	1, NULL },
@@ -221,39 +169,13 @@ static const struct of_device_id mtk_disp_color_driver_dt_match[] = {
 	  .data = &mt8173_color_driver_data},
 	{},
 };
-MODULE_DEVICE_TABLE(of, mtk_disp_rdma_driver_dt_match);
+MODULE_DEVICE_TABLE(of, mtk_disp_color_driver_dt_match);
 
 static inline struct mtk_ddp_comp_driver_data *mtk_color_get_driver_data(
 	struct device_node *node)
 {
 	const struct of_device_id *of_id =
 		of_match_node(mtk_disp_color_driver_dt_match, node);
-
-	return (struct mtk_ddp_comp_driver_data *)of_id->data;
-}
-
-static struct mtk_ddp_comp_driver_data mt2701_rdma_driver_data = {
-	.rdma_fifo_pseudo_size = SZ_4K,
-};
-
-static struct mtk_ddp_comp_driver_data mt8173_rdma_driver_data = {
-	.rdma_fifo_pseudo_size = SZ_8K,
-};
-
-static const struct of_device_id mtk_disp_rdma_driver_dt_match[] = {
-	{ .compatible = "mediatek,mt2701-disp-rdma",
-	  .data = &mt2701_rdma_driver_data},
-	{ .compatible = "mediatek,mt8173-disp-rdma",
-	  .data = &mt8173_rdma_driver_data},
-	{},
-};
-MODULE_DEVICE_TABLE(of, mtk_disp_rdma_driver_dt_match);
-
-static inline struct mtk_ddp_comp_driver_data *mtk_rdma_get_driver_data(
-	struct device_node *node)
-{
-	const struct of_device_id *of_id =
-		of_match_node(mtk_disp_rdma_driver_dt_match, node);
 
 	return (struct mtk_ddp_comp_driver_data *)of_id->data;
 }
@@ -304,9 +226,7 @@ int mtk_ddp_comp_init(struct device *dev, struct device_node *node,
 
 	type = mtk_ddp_matches[comp_id].type;
 
-	if (type == MTK_DISP_RDMA)
-		comp->data = mtk_rdma_get_driver_data(node);
-	else if (type == MTK_DISP_COLOR)
+	if (type == MTK_DISP_COLOR)
 		comp->data = mtk_color_get_driver_data(node);
 
 	/* Only DMA capable components need the LARB property */
@@ -328,8 +248,10 @@ int mtk_ddp_comp_init(struct device *dev, struct device_node *node,
 	if (!larb_pdev) {
 		dev_warn(dev, "Waiting for larb device %s\n",
 			 larb_node->full_name);
+		of_node_put(larb_node);
 		return -EPROBE_DEFER;
 	}
+	of_node_put(larb_node);
 
 	comp->larb_dev = &larb_pdev->dev;
 

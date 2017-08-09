@@ -14,7 +14,6 @@
 #ifndef MTK_DRM_FB_H
 #define MTK_DRM_FB_H
 
-#define MAX_FB_OBJ	3
 #define FBDEV_BPP	16
 
 struct drm_gem_object *mtk_fb_get_gem_obj(struct drm_framebuffer *fb);

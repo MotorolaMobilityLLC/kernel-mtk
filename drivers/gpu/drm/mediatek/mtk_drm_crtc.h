@@ -24,11 +24,10 @@ int mtk_drm_crtc_enable_vblank(struct drm_device *drm, unsigned int pipe);
 void mtk_drm_crtc_disable_vblank(struct drm_device *drm, unsigned int pipe);
 void mtk_drm_crtc_check_flush(struct drm_crtc *crtc);
 void mtk_drm_crtc_commit(struct drm_crtc *crtc);
-void mtk_crtc_ddp_irq(struct drm_device *drm_dev, struct mtk_ddp_comp *ovl);
+void mtk_crtc_ddp_irq(struct drm_crtc *crtc, struct mtk_ddp_comp *ovl);
 int mtk_drm_crtc_create(struct drm_device *drm_dev,
 			const enum mtk_ddp_comp_id *path,
 			unsigned int path_len);
+void mtk_crtc_ddp_config(struct drm_crtc *crtc, struct mtk_ddp_comp *ovl);
 
-void mtk_crtc_plane_config(struct mtk_drm_plane *plane,
-			   struct mtk_plane_state *state);
 #endif /* MTK_DRM_CRTC_H */

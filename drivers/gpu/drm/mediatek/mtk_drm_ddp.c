@@ -97,7 +97,7 @@ struct mtk_ddp {
 	struct clk			*clk;
 	void __iomem			*regs;
 	struct mtk_disp_mutex		mutex[10];
-	unsigned int			chip_id;
+	const unsigned int		*mutex_mod;
 };
 
 static const unsigned int mutex_mod_mt2701[DDP_COMPONENT_ID_MAX] = {
@@ -273,28 +273,12 @@ void mtk_disp_mutex_unprepare(struct mtk_disp_mutex *mutex)
 	clk_disable_unprepare(ddp->clk);
 }
 
-static const unsigned int *mtk_disp_mutex_mod(struct mtk_ddp *ddp)
-{
-	switch (ddp->chip_id) {
-	case MT8173:
-		return mutex_mod_mt8173;
-	case MT2701:
-		return mutex_mod_mt2701;
-	default:
-		return NULL;
-	}
-}
-
 void mtk_disp_mutex_add_comp(struct mtk_disp_mutex *mutex,
 			     enum mtk_ddp_comp_id id)
 {
 	struct mtk_ddp *ddp = container_of(mutex, struct mtk_ddp,
 					   mutex[mutex->id]);
 	unsigned int reg;
-	const unsigned int *mutex_mod = mtk_disp_mutex_mod(ddp);
-
-	if (!mutex_mod)
-		return;
 
 	WARN_ON(&ddp->mutex[mutex->id] != mutex);
 
@@ -310,7 +294,7 @@ void mtk_disp_mutex_add_comp(struct mtk_disp_mutex *mutex,
 		break;
 	default:
 		reg = readl_relaxed(ddp->regs + DISP_REG_MUTEX_MOD(mutex->id));
-		reg |= mutex_mod[id];
+		reg |= ddp->mutex_mod[id];
 		writel_relaxed(reg, ddp->regs + DISP_REG_MUTEX_MOD(mutex->id));
 		return;
 	}
@@ -324,10 +308,6 @@ void mtk_disp_mutex_remove_comp(struct mtk_disp_mutex *mutex,
 	struct mtk_ddp *ddp = container_of(mutex, struct mtk_ddp,
 					   mutex[mutex->id]);
 	unsigned int reg;
-	const unsigned int *mutex_mod = mtk_disp_mutex_mod(ddp);
-
-	if (!mutex_mod)
-		return;
 
 	WARN_ON(&ddp->mutex[mutex->id] != mutex);
 
@@ -340,7 +320,7 @@ void mtk_disp_mutex_remove_comp(struct mtk_disp_mutex *mutex,
 		break;
 	default:
 		reg = readl_relaxed(ddp->regs + DISP_REG_MUTEX_MOD(mutex->id));
-		reg &= ~mutex_mod[id];
+		reg &= ~(ddp->mutex_mod[id]);
 		writel_relaxed(reg, ddp->regs + DISP_REG_MUTEX_MOD(mutex->id));
 		break;
 	}
@@ -366,7 +346,7 @@ void mtk_disp_mutex_disable(struct mtk_disp_mutex *mutex)
 	writel(0, ddp->regs + DISP_REG_MUTEX_EN(mutex->id));
 }
 
-void mtk_ddp_get_mutex(struct mtk_disp_mutex *mutex)
+void mtk_disp_mutex_acquire(struct mtk_disp_mutex *mutex)
 {
 	struct mtk_ddp *ddp = container_of(mutex, struct mtk_ddp,
 					   mutex[mutex->id]);
@@ -387,7 +367,7 @@ void mtk_ddp_get_mutex(struct mtk_disp_mutex *mutex)
 	}
 }
 
-void mtk_ddp_release_mutex(struct mtk_disp_mutex *mutex)
+void mtk_disp_mutex_release(struct mtk_disp_mutex *mutex)
 {
 	struct mtk_ddp *ddp = container_of(mutex, struct mtk_ddp,
 					   mutex[mutex->id]);
@@ -396,8 +376,8 @@ void mtk_ddp_release_mutex(struct mtk_disp_mutex *mutex)
 }
 
 static const struct of_device_id ddp_driver_dt_match[] = {
-	{ .compatible = "mediatek,mt2701-disp-mutex", .data = (void *)MT2701},
-	{ .compatible = "mediatek,mt8173-disp-mutex", .data = (void *)MT8173},
+	{ .compatible = "mediatek,mt2701-disp-mutex", .data = mutex_mod_mt2701},
+	{ .compatible = "mediatek,mt8173-disp-mutex", .data = mutex_mod_mt8173},
 	{},
 };
 MODULE_DEVICE_TABLE(of, ddp_driver_dt_match);
@@ -431,7 +411,7 @@ static int mtk_ddp_probe(struct platform_device *pdev)
 	}
 
 	of_id = of_match_device(ddp_driver_dt_match, &pdev->dev);
-	ddp->chip_id = (unsigned int)of_id->data;
+	ddp->mutex_mod = of_id->data;
 
 	platform_set_drvdata(pdev, ddp);
 

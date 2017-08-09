@@ -38,17 +38,14 @@
 #define DISP_REG_OVL_RDMA_GMC(n)		(0x00c8 + 0x20 * (n))
 #define DISP_REG_OVL_ADDR(n)			(0x0f40 + 0x20 * (n))
 
-enum OVL_INPUT_FORMAT {
-	OVL_INFMT_RGB565 = 0,
-	OVL_INFMT_RGB888 = 1,
-	OVL_INFMT_RGBA8888 = 2,
-	OVL_INFMT_ARGB8888 = 3,
-};
-
 #define	OVL_RDMA_MEM_GMC	0x40402020
-#define	OVL_AEN			BIT(8)
-#define	OVL_ALPHA		0xff
-#define	OVL_CON_ALPHA		BIT(13)
+
+#define OVL_CON_BYTE_SWAP	BIT(24)
+#define OVL_CON_CLRFMT_RGBA8888	(2 << 12)
+#define OVL_CON_CLRFMT_ARGB8888	(3 << 12)
+#define	OVL_CON_AEN		BIT(8)
+#define	OVL_CON_ALPHA		0xff
+
 #define	OVL_SURFL_EN		BIT(31)
 #define	OVL_DST_BLENDING	BIT(23)
 #define	OVL_SRC_BLENDING	BIT(18)
@@ -56,11 +53,11 @@ enum OVL_INPUT_FORMAT {
 /**
  * struct mtk_disp_ovl - DISP_OVL driver structure
  * @ddp_comp - structure containing type enum and hardware resources
- * @drm_device - backlink to allow the irq handler to find the associated crtc
+ * @crtc - associated crtc to report vblank events to
  */
 struct mtk_disp_ovl {
 	struct mtk_ddp_comp		ddp_comp;
-	struct drm_device		*drm_dev;
+	struct drm_crtc			*crtc;
 };
 
 static irqreturn_t mtk_disp_ovl_irq_handler(int irq, void *dev_id)
@@ -71,18 +68,30 @@ static irqreturn_t mtk_disp_ovl_irq_handler(int irq, void *dev_id)
 	/* Clear frame completion interrupt */
 	writel(0x0, ovl->regs + DISP_REG_OVL_INTSTA);
 
-	mtk_crtc_ddp_irq(priv->drm_dev, ovl);
+	if (!priv->crtc)
+		return IRQ_NONE;
+
+	mtk_crtc_ddp_irq(priv->crtc, ovl);
 
 	return IRQ_HANDLED;
 }
 
-static void mtk_ovl_enable_vblank(struct mtk_ddp_comp *comp)
+static void mtk_ovl_enable_vblank(struct mtk_ddp_comp *comp,
+				  struct drm_crtc *crtc)
 {
+	struct mtk_disp_ovl *priv = container_of(comp, struct mtk_disp_ovl,
+						 ddp_comp);
+
+	priv->crtc = crtc;
 	writel_relaxed(OVL_FME_CPL_INT, comp->regs + DISP_REG_OVL_INTEN);
 }
 
 static void mtk_ovl_disable_vblank(struct mtk_ddp_comp *comp)
 {
+	struct mtk_disp_ovl *priv = container_of(comp, struct mtk_disp_ovl,
+						 ddp_comp);
+
+	priv->crtc = NULL;
 	writel_relaxed(0x0, comp->regs + DISP_REG_OVL_INTEN);
 }
 
@@ -105,46 +114,6 @@ static void mtk_ovl_config(struct mtk_ddp_comp *comp, unsigned int w,
 
 	writel(0x1, comp->regs + DISP_REG_OVL_RST);
 	writel(0x0, comp->regs + DISP_REG_OVL_RST);
-}
-
-static bool has_rb_swapped(unsigned int fmt)
-{
-	switch (fmt) {
-	case DRM_FORMAT_BGR888:
-	case DRM_FORMAT_BGR565:
-	case DRM_FORMAT_ABGR8888:
-	case DRM_FORMAT_XBGR8888:
-	case DRM_FORMAT_BGRA8888:
-	case DRM_FORMAT_BGRX8888:
-		return true;
-	default:
-		return false;
-	}
-}
-
-static unsigned int ovl_fmt_convert(struct mtk_ddp_comp *comp, unsigned int fmt)
-{
-	switch (fmt) {
-	case DRM_FORMAT_RGB888:
-	case DRM_FORMAT_BGR888:
-		return comp->data->ovl_fmt_rgb888;
-	case DRM_FORMAT_RGB565:
-	case DRM_FORMAT_BGR565:
-		return comp->data->ovl_fmt_rgb565;
-	case DRM_FORMAT_RGBX8888:
-	case DRM_FORMAT_RGBA8888:
-	case DRM_FORMAT_BGRX8888:
-	case DRM_FORMAT_BGRA8888:
-		return OVL_INFMT_ARGB8888;
-	case DRM_FORMAT_XRGB8888:
-	case DRM_FORMAT_ARGB8888:
-	case DRM_FORMAT_XBGR8888:
-	case DRM_FORMAT_ABGR8888:
-		return OVL_INFMT_RGBA8888;
-	default:
-		DRM_ERROR("unsupported format[%08x]\n", fmt);
-		return OVL_INFMT_RGB888;
-	}
 }
 
 static void mtk_ovl_layer_on(struct mtk_ddp_comp *comp, unsigned int idx)
@@ -170,8 +139,37 @@ static void mtk_ovl_layer_off(struct mtk_ddp_comp *comp, unsigned int idx)
 	writel(0x0, comp->regs + DISP_REG_OVL_RDMA_CTRL(idx));
 }
 
+static unsigned int ovl_fmt_convert(struct mtk_ddp_comp *comp, unsigned int fmt)
+{
+	switch (fmt) {
+	default:
+	case DRM_FORMAT_RGB565:
+		return comp->data->ovl.fmt_rgb565;
+	case DRM_FORMAT_BGR565:
+		return comp->data->ovl.fmt_rgb565 | OVL_CON_BYTE_SWAP;
+	case DRM_FORMAT_RGB888:
+		return comp->data->ovl.fmt_rgb888;
+	case DRM_FORMAT_BGR888:
+		return comp->data->ovl.fmt_rgb888 | OVL_CON_BYTE_SWAP;
+	case DRM_FORMAT_RGBX8888:
+	case DRM_FORMAT_RGBA8888:
+		return OVL_CON_CLRFMT_ARGB8888 | OVL_CON_AEN | OVL_CON_ALPHA;
+	case DRM_FORMAT_BGRX8888:
+	case DRM_FORMAT_BGRA8888:
+		return OVL_CON_CLRFMT_ARGB8888 | OVL_CON_BYTE_SWAP | OVL_CON_AEN
+					       | OVL_CON_ALPHA;
+	case DRM_FORMAT_XRGB8888:
+	case DRM_FORMAT_ARGB8888:
+		return OVL_CON_CLRFMT_RGBA8888 | OVL_CON_AEN | OVL_CON_ALPHA;
+	case DRM_FORMAT_XBGR8888:
+	case DRM_FORMAT_ABGR8888:
+		return OVL_CON_CLRFMT_RGBA8888 | OVL_CON_BYTE_SWAP | OVL_CON_AEN
+					       | OVL_CON_ALPHA;
+	}
+}
+
 static void mtk_ovl_layer_config(struct mtk_ddp_comp *comp, unsigned int idx,
-		struct mtk_plane_state *state)
+				 struct mtk_plane_state *state)
 {
 	struct mtk_plane_pending_state *pending = &state->pending;
 	unsigned int addr = pending->addr;
@@ -181,20 +179,23 @@ static void mtk_ovl_layer_config(struct mtk_ddp_comp *comp, unsigned int idx,
 	unsigned int src_size = (pending->height << 16) | pending->width;
 	unsigned int con;
 
-	con = has_rb_swapped(fmt) << 24 | ovl_fmt_convert(comp, fmt) << 12;
-	if (con & OVL_CON_ALPHA) {
-		con |= OVL_AEN | OVL_ALPHA;
-		if (force_alpha())
-			pitch |= OVL_SURFL_EN | OVL_DST_BLENDING;
-		else
-			pitch |= OVL_SURFL_EN | OVL_DST_BLENDING | OVL_SRC_BLENDING;
-	}
+	if (!pending->enable)
+		mtk_ovl_layer_off(comp, idx);
 
-	writel(con, comp->regs + DISP_REG_OVL_CON(idx));
-	writel(pitch, comp->regs + DISP_REG_OVL_PITCH(idx));
-	writel(src_size, comp->regs + DISP_REG_OVL_SRC_SIZE(idx));
-	writel(offset, comp->regs + DISP_REG_OVL_OFFSET(idx));
-	writel(addr, comp->regs + (comp->data->ovl_addr_offset + idx * 0x20));
+	con = ovl_fmt_convert(comp, fmt);
+	if (force_alpha())
+		pitch |= OVL_SURFL_EN | OVL_DST_BLENDING;
+	else
+		pitch |= OVL_SURFL_EN | OVL_DST_BLENDING | OVL_SRC_BLENDING;
+
+	writel_relaxed(con, comp->regs + DISP_REG_OVL_CON(idx));
+	writel_relaxed(pitch, comp->regs + DISP_REG_OVL_PITCH(idx));
+	writel_relaxed(src_size, comp->regs + DISP_REG_OVL_SRC_SIZE(idx));
+	writel_relaxed(offset, comp->regs + DISP_REG_OVL_OFFSET(idx));
+	writel_relaxed(addr, comp->regs + (comp->data->ovl.addr_offset + idx * 0x20));
+
+	if (pending->enable)
+		mtk_ovl_layer_on(comp, idx);
 }
 
 static const struct mtk_ddp_comp_funcs mtk_disp_ovl_funcs = {
@@ -209,14 +210,12 @@ static const struct mtk_ddp_comp_funcs mtk_disp_ovl_funcs = {
 };
 
 static int mtk_disp_ovl_bind(struct device *dev, struct device *master,
-		void *data)
+			     void *data)
 {
 	struct mtk_disp_ovl *priv = dev_get_drvdata(dev);
 	struct drm_device *drm_dev = data;
 	int ret;
 	int i;
-
-	priv->drm_dev = drm_dev;
 
 	ret = mtk_ddp_comp_register(drm_dev, &priv->ddp_comp);
 	if (ret < 0) {
@@ -229,11 +228,10 @@ static int mtk_disp_ovl_bind(struct device *dev, struct device *master,
 		mtk_ddp_comp_layer_off(&priv->ddp_comp, i);
 
 	return 0;
-
 }
 
 static void mtk_disp_ovl_unbind(struct device *dev, struct device *master,
-		void *data)
+				void *data)
 {
 	struct mtk_disp_ovl *priv = dev_get_drvdata(dev);
 	struct drm_device *drm_dev = data;
@@ -247,15 +245,11 @@ static const struct component_ops mtk_disp_ovl_component_ops = {
 };
 
 static struct mtk_ddp_comp_driver_data mt2701_ovl_driver_data = {
-	.ovl_addr_offset = 0x0040,
-	.ovl_fmt_rgb565 = 1,
-	.ovl_fmt_rgb888 = 0,
+	.ovl = {0x0040, 1, 0}
 };
 
 static struct mtk_ddp_comp_driver_data mt8173_ovl_driver_data = {
-	.ovl_addr_offset = 0x0f40,
-	.ovl_fmt_rgb565 = 0,
-	.ovl_fmt_rgb888 = 1,
+	.ovl = {0x0f40, 0, 1}
 };
 
 static const struct of_device_id mtk_disp_ovl_driver_dt_match[] = {
@@ -331,6 +325,7 @@ static int mtk_disp_ovl_remove(struct platform_device *pdev)
 
 	return 0;
 }
+
 
 struct platform_driver mtk_disp_ovl_driver = {
 	.probe		= mtk_disp_ovl_probe,

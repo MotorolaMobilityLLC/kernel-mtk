@@ -31,8 +31,6 @@
  * struct mtk_drm_crtc - MediaTek specific crtc structure.
  * @base: crtc object.
  * @enabled: records whether crtc_enable succeeded
- * @do_flush: enabled by atomic_flush, causes plane atomic_update to commit
- *            changed state immediately.
  * @planes: array of 4 mtk_drm_plane structures, one for each overlay plane
  * @pending_planes: whether any plane has pending changes to be applied
  * @config_regs: memory mapped mmsys configuration register space
@@ -44,11 +42,11 @@ struct mtk_drm_crtc {
 	struct drm_crtc			base;
 	bool				enabled;
 
-	bool				do_flush;
 	bool				pending_needs_vblank;
 	struct drm_pending_vblank_event	*event;
 
 	struct mtk_drm_plane		planes[OVL_LAYER_NR];
+	bool				pending_planes;
 
 	void __iomem			*config_regs;
 	struct mtk_disp_mutex		*mutex;
@@ -73,26 +71,6 @@ static inline struct mtk_drm_crtc *to_mtk_crtc(struct drm_crtc *c)
 static inline struct mtk_crtc_state *to_mtk_crtc_state(struct drm_crtc_state *s)
 {
 	return container_of(s, struct mtk_crtc_state, base);
-}
-
-/*
- * Given a DDP source component (OVL or RDMA), find the crtc that has this
- * component as first element of its ddp_comp array. This allows to deliver
- * the source component's end of frame interrupt to the corresponding crtc.
- */
-static struct mtk_drm_crtc *mtk_crtc_by_src_comp(struct mtk_drm_private *priv,
-						 struct mtk_ddp_comp *ddp_comp)
-{
-	struct mtk_drm_crtc *mtk_crtc;
-	int i;
-
-	for (i = 0; i < MAX_CRTC; i++) {
-		mtk_crtc = to_mtk_crtc(priv->crtc[i]);
-		if (mtk_crtc->ddp_comp[0] == ddp_comp)
-			return mtk_crtc;
-	}
-
-	return NULL;
 }
 
 static void mtk_drm_crtc_finish_page_flip(struct mtk_drm_crtc *mtk_crtc)
@@ -173,8 +151,8 @@ static void mtk_drm_crtc_destroy_state(struct drm_crtc *crtc,
 }
 
 static bool mtk_drm_crtc_mode_fixup(struct drm_crtc *crtc,
-		const struct drm_display_mode *mode,
-		struct drm_display_mode *adjusted_mode)
+				    const struct drm_display_mode *mode,
+				    struct drm_display_mode *adjusted_mode)
 {
 	/* Nothing to do here, but this callback is mandatory. */
 	return true;
@@ -183,19 +161,12 @@ static bool mtk_drm_crtc_mode_fixup(struct drm_crtc *crtc,
 static void mtk_drm_crtc_mode_set_nofb(struct drm_crtc *crtc)
 {
 	struct mtk_crtc_state *state = to_mtk_crtc_state(crtc->state);
-	struct mtk_drm_crtc *mtk_crtc = to_mtk_crtc(crtc);
-	struct mtk_ddp_comp *ovl = mtk_crtc->ddp_comp[0];
 
 	state->pending_width = crtc->mode.hdisplay;
 	state->pending_height = crtc->mode.vdisplay;
 	state->pending_vrefresh = crtc->mode.vrefresh;
 	wmb();	/* Make sure the above parameters are set before update */
 	state->pending_config = true;
-
-	if (ovl->data->do_shadow_reg)
-		mtk_ddp_comp_config(ovl, state->pending_width,
-				    state->pending_height,
-				    state->pending_vrefresh);
 }
 
 int mtk_drm_crtc_enable_vblank(struct drm_device *drm, unsigned int pipe)
@@ -204,7 +175,7 @@ int mtk_drm_crtc_enable_vblank(struct drm_device *drm, unsigned int pipe)
 	struct mtk_drm_crtc *mtk_crtc = to_mtk_crtc(priv->crtc[pipe]);
 	struct mtk_ddp_comp *ovl = mtk_crtc->ddp_comp[0];
 
-	mtk_ddp_comp_enable_vblank(ovl);
+	mtk_ddp_comp_enable_vblank(ovl, &mtk_crtc->base);
 
 	return 0;
 }
@@ -292,13 +263,26 @@ static int mtk_crtc_ddp_hw_init(struct mtk_drm_crtc *mtk_crtc)
 	mtk_disp_mutex_add_comp(mtk_crtc->mutex, mtk_crtc->ddp_comp[i]->id);
 	mtk_disp_mutex_enable(mtk_crtc->mutex);
 
-	DRM_DEBUG_DRIVER("ddp_disp_path_power_on %dx%d\n", width, height);
 	for (i = 0; i < mtk_crtc->ddp_comp_nr; i++) {
 		struct mtk_ddp_comp *comp = mtk_crtc->ddp_comp[i];
 
 		mtk_ddp_comp_config(comp, width, height, vrefresh);
 		mtk_ddp_comp_start(comp);
 	}
+
+	/* Initially disable all planes, keep the pending plane state */
+/*	for (i = 0; i < OVL_LAYER_NR; i++) {
+		struct drm_plane *plane = &mtk_crtc->planes[i].base;
+		struct mtk_plane_state *plane_state;
+		bool enable;
+
+		plane_state = to_mtk_plane_state(plane->state);
+		enable = plane_state->pending.enable;
+		plane_state->pending.enable = false;
+		mtk_ddp_comp_layer_config(mtk_crtc->ddp_comp[0], i,
+					  plane_state);
+		plane_state->pending.enable = enable;
+	} */
 
 	return 0;
 
@@ -333,33 +317,6 @@ static void mtk_crtc_ddp_hw_fini(struct mtk_drm_crtc *mtk_crtc)
 	mtk_disp_mutex_unprepare(mtk_crtc->mutex);
 
 	pm_runtime_put(drm->dev);
-}
-
-void mtk_crtc_plane_config(struct mtk_drm_plane *plane,
-			   struct mtk_plane_state *state)
-{
-	struct mtk_drm_crtc *mtk_crtc;
-	struct mtk_ddp_comp *ovl;
-
-	if (state->base.crtc)
-		mtk_crtc = to_mtk_crtc(state->base.crtc);
-	else if (plane->base.crtc)
-		mtk_crtc = to_mtk_crtc(plane->base.crtc);
-	else {
-		DRM_ERROR("plane config w/o crtc\n");
-		return;
-	}
-
-	ovl = mtk_crtc->ddp_comp[0];
-
-	if (ovl->data->do_shadow_reg && !state->pending.enable)
-		mtk_ddp_comp_layer_off(ovl, plane->idx);
-
-	if (ovl->data->do_shadow_reg)
-		mtk_ddp_comp_layer_config(ovl, plane->idx, state);
-
-	if (ovl->data->do_shadow_reg && state->pending.enable)
-		mtk_ddp_comp_layer_on(ovl, plane->idx);
 }
 
 static void mtk_drm_crtc_enable(struct drm_crtc *crtc)
@@ -405,6 +362,7 @@ static void mtk_drm_crtc_disable(struct drm_crtc *crtc)
 		plane_state->pending.enable = false;
 		plane_state->pending.config = true;
 	}
+	mtk_crtc->pending_planes = true;
 
 	/* Wait for planes to be disabled */
 	drm_crtc_wait_one_vblank(crtc);
@@ -413,7 +371,6 @@ static void mtk_drm_crtc_disable(struct drm_crtc *crtc)
 	mtk_crtc_ddp_hw_fini(mtk_crtc);
 	mtk_smi_larb_put(ovl->larb_dev);
 
-	mtk_crtc->do_flush = false;
 	mtk_crtc->enabled = false;
 }
 
@@ -422,6 +379,7 @@ static void mtk_drm_crtc_atomic_begin(struct drm_crtc *crtc,
 {
 	struct mtk_crtc_state *state = to_mtk_crtc_state(crtc->state);
 	struct mtk_drm_crtc *mtk_crtc = to_mtk_crtc(crtc);
+	struct mtk_ddp_comp *ovl = mtk_crtc->ddp_comp[0];
 
 	if (mtk_crtc->event && state->base.event)
 		DRM_ERROR("new event while there is still a pending event\n");
@@ -432,14 +390,21 @@ static void mtk_drm_crtc_atomic_begin(struct drm_crtc *crtc,
 		mtk_crtc->event = state->base.event;
 		state->base.event = NULL;
 	}
+
+	if (ovl->data->do_shadow_reg)
+		mtk_disp_mutex_acquire(mtk_crtc->mutex);
 }
 
-void mtk_drm_crtc_commit(struct drm_crtc *crtc)
+static void mtk_drm_crtc_atomic_flush(struct drm_crtc *crtc,
+				      struct drm_crtc_state *old_crtc_state)
 {
 	struct mtk_drm_crtc *mtk_crtc = to_mtk_crtc(crtc);
 	struct mtk_ddp_comp *ovl = mtk_crtc->ddp_comp[0];
+	unsigned int pending_planes = 0;
 	int i;
 
+	if (mtk_crtc->event)
+		mtk_crtc->pending_needs_vblank = true;
 	for (i = 0; i < OVL_LAYER_NR; i++) {
 		struct drm_plane *plane = &mtk_crtc->planes[i].base;
 		struct mtk_plane_state *plane_state;
@@ -448,34 +413,16 @@ void mtk_drm_crtc_commit(struct drm_crtc *crtc)
 		if (plane_state->pending.dirty) {
 			plane_state->pending.config = true;
 			plane_state->pending.dirty = false;
+			pending_planes |= BIT(i);
 		}
 	}
+	if (pending_planes)
+		mtk_crtc->pending_planes = true;
 
 	if (ovl->data->do_shadow_reg) {
-		mtk_ddp_get_mutex(mtk_crtc->mutex);
-		mtk_ddp_release_mutex(mtk_crtc->mutex);
+		mtk_crtc_ddp_config(crtc, ovl);
+		mtk_disp_mutex_release(mtk_crtc->mutex);
 	}
-}
-
-void mtk_drm_crtc_check_flush(struct drm_crtc *crtc)
-{
-	struct mtk_drm_crtc *mtk_crtc = to_mtk_crtc(crtc);
-
-	if (mtk_crtc->do_flush) {
-		if (mtk_crtc->event)
-			mtk_crtc->pending_needs_vblank = true;
-		mtk_drm_crtc_commit(crtc);
-		mtk_crtc->do_flush = false;
-	}
-}
-
-static void mtk_drm_crtc_atomic_flush(struct drm_crtc *crtc,
-				      struct drm_crtc_state *old_crtc_state)
-{
-	struct mtk_drm_crtc *mtk_crtc = to_mtk_crtc(crtc);
-
-	mtk_crtc->do_flush = true;
-	mtk_drm_crtc_check_flush(crtc);
 }
 
 static const struct drm_crtc_funcs mtk_crtc_funcs = {
@@ -497,13 +444,14 @@ static const struct drm_crtc_helper_funcs mtk_crtc_helper_funcs = {
 };
 
 static int mtk_drm_crtc_init(struct drm_device *drm,
-		struct mtk_drm_crtc *mtk_crtc, struct drm_plane *primary,
-		struct drm_plane *cursor, unsigned int pipe)
+			     struct mtk_drm_crtc *mtk_crtc,
+			     struct drm_plane *primary,
+			     struct drm_plane *cursor, unsigned int pipe)
 {
 	int ret;
 
 	ret = drm_crtc_init_with_planes(drm, &mtk_crtc->base, primary, cursor,
-			&mtk_crtc_funcs);
+					&mtk_crtc_funcs);
 	if (ret)
 		goto err_cleanup_crtc;
 
@@ -516,33 +464,26 @@ err_cleanup_crtc:
 	return ret;
 }
 
-void mtk_crtc_ddp_irq(struct drm_device *drm_dev, struct mtk_ddp_comp *ovl)
+void mtk_crtc_ddp_config(struct drm_crtc *crtc, struct mtk_ddp_comp *ovl)
 {
-	struct mtk_drm_private *priv = drm_dev->dev_private;
-	struct mtk_drm_crtc *mtk_crtc;
-	struct mtk_crtc_state *state;
+	struct mtk_drm_crtc *mtk_crtc = to_mtk_crtc(crtc);
+	struct mtk_crtc_state *state = to_mtk_crtc_state(mtk_crtc->base.state);
 	unsigned int i;
-
-	mtk_crtc = mtk_crtc_by_src_comp(priv, ovl);
-	if (WARN_ON(!mtk_crtc))
-		return;
-
-	state = to_mtk_crtc_state(mtk_crtc->base.state);
 
 	/*
 	 * TODO: instead of updating the registers here, we should prepare
 	 * working registers in atomic_commit and let the hardware command
 	 * queue update module registers on vblank.
 	 */
-	if (!ovl->data->do_shadow_reg) {
-		if (state->pending_config) {
-			mtk_ddp_comp_config(ovl, state->pending_width,
-					    state->pending_height,
-					    state->pending_vrefresh);
+	if (state->pending_config) {
+		mtk_ddp_comp_config(ovl, state->pending_width,
+				    state->pending_height,
+				    state->pending_vrefresh);
 
-			state->pending_config = false;
-		}
+		state->pending_config = false;
+	}
 
+	if (mtk_crtc->pending_planes) {
 		for (i = 0; i < OVL_LAYER_NR; i++) {
 			struct drm_plane *plane = &mtk_crtc->planes[i].base;
 			struct mtk_plane_state *plane_state;
@@ -550,18 +491,20 @@ void mtk_crtc_ddp_irq(struct drm_device *drm_dev, struct mtk_ddp_comp *ovl)
 			plane_state = to_mtk_plane_state(plane->state);
 
 			if (plane_state->pending.config) {
-				if (!plane_state->pending.enable)
-					mtk_ddp_comp_layer_off(ovl, i);
-
 				mtk_ddp_comp_layer_config(ovl, i, plane_state);
-
-				if (plane_state->pending.enable)
-					mtk_ddp_comp_layer_on(ovl, i);
-
 				plane_state->pending.config = false;
 			}
 		}
+		mtk_crtc->pending_planes = false;
 	}
+}
+
+void mtk_crtc_ddp_irq(struct drm_crtc *crtc, struct mtk_ddp_comp *ovl)
+{
+	struct mtk_drm_crtc *mtk_crtc = to_mtk_crtc(crtc);
+
+	if (!ovl->data->do_shadow_reg)
+		mtk_crtc_ddp_config(crtc, ovl);
 
 	mtk_drm_finish_page_flip(mtk_crtc);
 }
@@ -598,11 +541,20 @@ int mtk_drm_crtc_create(struct drm_device *drm_dev,
 	for (i = 0; i < mtk_crtc->ddp_comp_nr; i++) {
 		enum mtk_ddp_comp_id comp_id = path[i];
 		struct mtk_ddp_comp *comp;
+		struct device_node *node;
+
+		node = priv->comp_node[comp_id];
+		if (!node) {
+			dev_err(dev, "Component %d is disabled or missing\n",
+				comp_id);
+			ret = -ENODEV;
+			goto unprepare;
+		}
 
 		comp = priv->ddp_comp[comp_id];
 		if (!comp) {
 			dev_err(dev, "Component %s not initialized\n",
-				priv->comp_node[comp_id]->full_name);
+				node->full_name);
 			ret = -ENODEV;
 			goto unprepare;
 		}
@@ -611,7 +563,7 @@ int mtk_drm_crtc_create(struct drm_device *drm_dev,
 		if (ret) {
 			dev_err(dev,
 				"Failed to prepare clock for component %s: %d\n",
-				priv->comp_node[comp_id]->full_name, ret);
+				node->full_name, ret);
 			goto unprepare;
 		}
 

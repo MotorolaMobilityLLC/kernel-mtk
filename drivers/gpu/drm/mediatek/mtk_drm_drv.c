@@ -25,7 +25,6 @@
 #include <linux/of_address.h>
 #include <linux/of_platform.h>
 #include <linux/pm_runtime.h>
-#include <drm/mediatek_drm.h>
 
 #include "mtk_cec.h"
 #include "mtk_drm_crtc.h"
@@ -186,6 +185,9 @@ static int mtk_drm_kms_init(struct drm_device *drm)
 	arm_iommu_attach_device(drm->dev, dma_mapping);
 #endif
 
+	if (!iommu_present(&platform_bus_type))
+		return -EPROBE_DEFER;
+
 	pdev = of_find_device_by_node(private->mutex_node);
 	if (!pdev) {
 		dev_err(drm->dev, "Waiting for disp-mutex device %s\n",
@@ -291,14 +293,6 @@ static const struct vm_operations_struct mtk_drm_gem_vm_ops = {
 	.close = drm_gem_vm_close,
 };
 
-static const struct drm_ioctl_desc mtk_ioctls[] = {
-	DRM_IOCTL_DEF_DRV(MTK_GEM_CREATE, mtk_gem_create_ioctl,
-			  DRM_UNLOCKED | DRM_AUTH),
-	DRM_IOCTL_DEF_DRV(MTK_GEM_MAP_OFFSET,
-			  mtk_gem_map_offset_ioctl,
-			  DRM_UNLOCKED | DRM_AUTH),
-};
-
 static const struct file_operations mtk_drm_fops = {
 	.owner = THIS_MODULE,
 	.open = drm_open,
@@ -333,9 +327,8 @@ static struct drm_driver mtk_drm_driver = {
 	.gem_prime_export = drm_gem_prime_export,
 	.gem_prime_import = drm_gem_prime_import,
 	.gem_prime_get_sg_table = mtk_gem_prime_get_sg_table,
+	.gem_prime_import_sg_table = mtk_gem_prime_import_sg_table,
 	.gem_prime_mmap = mtk_drm_gem_mmap_buf,
-	.ioctls = mtk_ioctls,
-	.num_ioctls = ARRAY_SIZE(mtk_ioctls),
 	.fops = &mtk_drm_fops,
 
 	.name = DRIVER_NAME,
@@ -494,11 +487,12 @@ static int mtk_drm_probe(struct platform_device *pdev)
 		private->comp_node[comp_id] = of_node_get(node);
 
 		/*
-		 * Currently only the OVL, DSI, and DPI blocks have separate
-		 * component platform drivers and initialize their own DDP
-		 * component structure. The others are initialized here.
+		 * Currently only the OVL, RDMA, DSI, and DPI blocks have
+		 * separate component platform drivers and initialize their own
+		 * DDP component structure. The others are initialized here.
 		 */
 		if (comp_type == MTK_DISP_OVL ||
+		    comp_type == MTK_DISP_RDMA ||
 		    comp_type == MTK_DSI ||
 		    comp_type == MTK_DPI) {
 			dev_info(dev, "Adding component match for %s\n",
@@ -635,6 +629,7 @@ static struct platform_driver mtk_drm_platform_driver = {
 static struct platform_driver * const mtk_drm_drivers[] = {
 	&mtk_drm_platform_driver,
 	&mtk_disp_ovl_driver,
+	&mtk_disp_rdma_driver,
 	&mtk_dsi_driver,
 	&mtk_mipi_tx_driver,
 	&mtk_dpi_driver,

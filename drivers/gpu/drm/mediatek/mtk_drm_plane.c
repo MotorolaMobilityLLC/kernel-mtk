@@ -24,7 +24,7 @@
 #include "mtk_drm_gem.h"
 #include "mtk_drm_plane.h"
 
-static const uint32_t formats[] = {
+static const u32 formats[] = {
 	DRM_FORMAT_XRGB8888,
 	DRM_FORMAT_ARGB8888,
 	DRM_FORMAT_RGB565,
@@ -70,9 +70,8 @@ static void mtk_plane_enable(struct mtk_drm_plane *mtk_plane, bool enable,
 	state->pending.y = y;
 	state->pending.width = dest->x2 - dest->x1;
 	state->pending.height = dest->y2 - dest->y1;
+	wmb(); /* Make sure the above parameters are set before update */
 	state->pending.dirty = true;
-
-	mtk_crtc_plane_config(mtk_plane, state);
 }
 
 static void mtk_plane_reset(struct drm_plane *plane)
@@ -120,7 +119,6 @@ static void mtk_drm_plane_destroy_state(struct drm_plane *plane,
 	__drm_atomic_helper_plane_destroy_state(plane, state);
 	kfree(to_mtk_plane_state(state));
 }
-
 
 static const struct drm_plane_funcs mtk_plane_funcs = {
 	.update_plane = drm_atomic_helper_update_plane,
@@ -171,10 +169,10 @@ static int mtk_plane_atomic_check(struct drm_plane *plane,
 	clip.y2 = crtc_state->mode.vdisplay;
 
 	return drm_plane_helper_check_update(plane, state->crtc, fb,
-					    &src, &dest, &clip,
-					    DRM_PLANE_HELPER_NO_SCALING,
-					    DRM_PLANE_HELPER_NO_SCALING,
-					    true, true, &visible);
+					     &src, &dest, &clip,
+					     DRM_PLANE_HELPER_NO_SCALING,
+					     DRM_PLANE_HELPER_NO_SCALING,
+					     true, true, &visible);
 }
 
 static void mtk_plane_atomic_update(struct drm_plane *plane,
@@ -203,8 +201,6 @@ static void mtk_plane_atomic_update(struct drm_plane *plane,
 	gem = mtk_fb_get_gem_obj(state->base.fb);
 	mtk_gem = to_mtk_gem_obj(gem);
 	mtk_plane_enable(mtk_plane, true, mtk_gem->dma_addr, &dest);
-
-	mtk_drm_crtc_check_flush(crtc);
 }
 
 static void mtk_plane_atomic_disable(struct drm_plane *plane,
@@ -213,7 +209,7 @@ static void mtk_plane_atomic_disable(struct drm_plane *plane,
 	struct mtk_plane_state *state = to_mtk_plane_state(plane->state);
 
 	state->pending.enable = false;
-	wmb();
+	wmb(); /* Make sure the above parameter is set before update */
 	state->pending.dirty = true;
 }
 
@@ -230,8 +226,8 @@ int mtk_plane_init(struct drm_device *dev, struct mtk_drm_plane *mtk_plane,
 	int err;
 
 	err = drm_universal_plane_init(dev, &mtk_plane->base, possible_crtcs,
-			&mtk_plane_funcs, formats, ARRAY_SIZE(formats), type);
-
+				       &mtk_plane_funcs, formats,
+				       ARRAY_SIZE(formats), type);
 	if (err) {
 		DRM_ERROR("failed to initialize plane\n");
 		return err;
