@@ -188,13 +188,14 @@
 #define F_INT_L2_MISS_FIFO_ERR		     F_BIT_SET(6)
 
 #define REG_MMU_INT_MAIN_CONTROL    0x124
-#define F_INT_TRANSLATION_FAULT(MMU)		 F_BIT_SET(0+(((MMU)<<1)|((MMU)<<2)))
-#define F_INT_MAIN_MULTI_HIT_FAULT(MMU)	      F_BIT_SET(1+(((MMU)<<1)|((MMU)<<2)))
-#define F_INT_INVALID_PHYSICAL_ADDRESS_FAULT(MMU)    F_BIT_SET(2+(((MMU)<<1)|((MMU)<<2)))
-#define F_INT_ENTRY_REPLACEMENT_FAULT(MMU)	   F_BIT_SET(3+(((MMU)<<1)|((MMU)<<2)))
-#define F_INT_TLB_MISS_FAULT(MMU)		    F_BIT_SET(4+(((MMU)<<1)|((MMU)<<2)))
-#define F_INT_MISS_FIFO_ERR(MMU)		     F_BIT_SET(5+(((MMU)<<1)|((MMU)<<2)))
-#define F_INT_PFH_FIFO_ERR(MMU)		      F_BIT_SET(6+(((MMU)<<1)|((MMU)<<2)))
+#define F_INT_TRANSLATION_FAULT(MMU)                 F_BIT_SET(0+(MMU)*7)
+#define F_INT_MAIN_MULTI_HIT_FAULT(MMU)              F_BIT_SET(1+(MMU)*7)
+#define F_INT_INVALID_PHYSICAL_ADDRESS_FAULT(MMU)    F_BIT_SET(2+(MMU)*7)
+#define F_INT_ENTRY_REPLACEMENT_FAULT(MMU)           F_BIT_SET(3+(MMU)*7)
+#define F_INT_TLB_MISS_FAULT(MMU)                    F_BIT_SET(4+(MMU)*7)
+#define F_INT_MISS_FIFO_ERR(MMU)                     F_BIT_SET(5+(MMU)*7)
+#define F_INT_PFH_FIFO_ERR(MMU)                      F_BIT_SET(6+(MMU)*7)
+
 
 #define F_INT_MAU(mmu, set)     F_BIT_SET(14+(set)+(mmu*4))
 /* Dual AXI (14+(set)+(mmu*4));  Single AXI (7+(set)+(mmu*4)); */
