@@ -1070,7 +1070,6 @@ static int SCP_sensorHub_get_fifo_status(int *dataLen, int *status, char *reserv
 		}
 		(*dataLen)++;
 	}
-	SCP_LOG("liujiang --> %s    7  .\n", __func__);
 	if (SCP_TRC_BATCH & atomic_read(&(obj_data->trace)))
 		SCP_ERR("dataLen = %d, status = %d\n", *dataLen, *status);
 	pStart = (char *)obj->SCP_sensorFIFO + offsetof(struct sensorFIFO, data);

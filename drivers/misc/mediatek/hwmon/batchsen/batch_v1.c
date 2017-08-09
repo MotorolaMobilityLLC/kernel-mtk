@@ -123,7 +123,7 @@ static int get_fifo_data(struct batch_context *obj)
 		obj->timestamp_info[i].end_t = nt;
 	}
 
-	BATCH_ERR("fwq!! get_fifo_data +++++++++	!\n");
+	/* BATCH_ERR("fwq!! get_fifo_data +++++++++	!\n"); */
 	if ((obj->dev_list.ctl_dev[ID_SENSOR_MAX_HANDLE].flush != NULL)
 		&& (obj->dev_list.data_dev[ID_SENSOR_MAX_HANDLE].get_data != NULL)
 		&& (obj->dev_list.data_dev[ID_SENSOR_MAX_HANDLE].get_fifo_status) != NULL) {
@@ -179,7 +179,7 @@ void batch_end(void)
 	mutex_lock(&batch_hw_mutex);
 	for (handle = 0; handle < ID_SENSOR_MAX_HANDLE; handle++) {
 		if (obj->active_sensor & (1ULL << handle)) {
-			BATCH_ERR("batch_end type: %d\n", handle);
+			/* BATCH_ERR("batch_end type: %d\n", handle); */
 			report_batch_finish(obj->idev, handle);
 		}
 	}
@@ -194,7 +194,7 @@ int  batch_notify(enum BATCH_NOTIFY_TYPE type)
 	struct batch_context *obj = batch_context_obj;
 
 	if (type == TYPE_BATCHFULL) {
-		BATCH_ERR("fwq batch full notify\n");
+		/* BATCH_ERR("fwq batch full notify\n"); */
 		err = get_fifo_data(obj);
 		if (err)
 			BATCH_LOG("fwq!! get fifo data error !\n");
@@ -202,7 +202,7 @@ int  batch_notify(enum BATCH_NOTIFY_TYPE type)
 	}
 
 	if (type == TYPE_BATCHTIMEOUT) {
-		BATCH_ERR("fwq batch timeout notify\n");
+		/* BATCH_ERR("fwq batch timeout notify\n"); */
 		err = get_fifo_data(obj);
 		if (err)
 			BATCH_LOG("fwq!! get fifo data error !\n");
@@ -210,7 +210,7 @@ int  batch_notify(enum BATCH_NOTIFY_TYPE type)
 	}
 
 	if (type == TYPE_DIRECT_PUSH) {
-		BATCH_ERR("fwq direct push notify\n");
+		/* BATCH_ERR("fwq direct push notify\n"); */
 		err = get_fifo_data(obj);
 		if (err)
 			BATCH_LOG("fwq!! get fifo data error !\n");
@@ -245,7 +245,7 @@ static void batch_work_func(struct work_struct *work)
 	if (obj->is_polling_run)
 		mod_timer(&obj->timer, jiffies + atomic_read(&obj->delay)/(1000/HZ));
 
-	BATCH_LOG("fwq!! get data from sensor obj->delay=%d ---------  !\n", atomic_read(&obj->delay));
+	/* BATCH_LOG("fwq!! get data from sensor obj->delay=%d ---------  !\n", atomic_read(&obj->delay)); */
 }
 
 static void batch_poll(unsigned long data)
