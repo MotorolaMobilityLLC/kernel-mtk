@@ -732,6 +732,21 @@ void usb_phy_savecurrent(unsigned int clk_on)
 	U3PhyWriteField32((phys_addr_t) U3D_USBPHYACR5, RG_USB20_HS_100U_U3_EN_OFST,
 			  RG_USB20_HS_100U_U3_EN, 0);
 
+	/* D.S SD:0x11280750 %LE %LONG 0x0000004f
+	 * D.S SD:0x11280700 %LE %LONG 0x00011001
+	 */
+	U3PhyWriteReg32((phys_addr_t) U3D_SSUSB_U2_CTRL_0P, 0x0000004f);
+	U3PhyWriteReg32((phys_addr_t) U3D_SSUSB_IP_PW_CTRL0, 0x00011001);
+
+	/* D.S SD:0x11290808  %LE %LONG 0x00040044
+	 * D.S SD:0x1129030c  %LE %LONG 0x20000000
+	 */
+	U3PhyWriteReg32((phys_addr_t) (u3_sif2_base + 0x808), 0x00040044);
+	U3PhyWriteReg32((phys_addr_t) (u3_sif2_base + 0x30c), 0x20000000);
+
+	/* 0x11290b04[bit29]=0 */
+	U3PhyWriteField32((phys_addr_t) (u3_sif2_base + 0xb04), 29, (0x01<<29), 0x0);
+
 	/* wait 800us */
 	udelay(800);
 
