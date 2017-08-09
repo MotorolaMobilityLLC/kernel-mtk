@@ -1149,6 +1149,7 @@ struct msdc_host {
 	u32 dma_xfer_size;	/* dma transfer size in bytes */
 	int dma_xfer;		/* dma transfer mode */
 
+	u32 write_timeout_ms;
 	u32 timeout_ns;		/* data timeout ns */
 	u32 timeout_clks;	/* data timeout clks */
 
@@ -1218,6 +1219,7 @@ struct msdc_host {
 	/* driver will get a EINT(Level sensitive) when boot up with card insert */
 	struct wakeup_source trans_lock;
 	bool block_bad_card;
+	struct delayed_work write_timeout;
 #ifdef SDIO_ERROR_BYPASS
 	int sdio_error;		/* sdio error can't recovery */
 #endif

@@ -4670,6 +4670,13 @@ static void msdc_dma_start(struct msdc_host *host)
 	sdr_set_bits(MSDC_INTEN, wints);
 
 	N_MSG(DMA, "DMA start");
+
+	if (host->data && host->data->flags & MMC_DATA_WRITE) {
+		host->write_timeout_ms = min(max(host->data->blocks * 500,
+			host->data->timeout_ns / 1000000), 270 * 1000);
+		schedule_delayed_work(&host->write_timeout, msecs_to_jiffies(host->write_timeout_ms));
+		N_MSG(DMA, "DMA Data Busy Timeout:%u ms, schedule_delayed_work", host->write_timeout_ms);
+	}
 }
 
 static void msdc_dma_stop(struct msdc_host *host)
@@ -4679,6 +4686,13 @@ static void msdc_dma_stop(struct msdc_host *host)
 	int count = 1000;
 	u32 wints = MSDC_INTEN_XFER_COMPL | MSDC_INTEN_DATTMO
 		| MSDC_INTEN_DATCRCERR;
+
+	if (host->data && host->data->flags & MMC_DATA_WRITE) {
+		cancel_delayed_work(&host->write_timeout);
+		N_MSG(DMA, "DMA Data Busy Timeout:%u ms, cancel_delayed_work", host->write_timeout_ms);
+		host->write_timeout_ms = 0;
+	}
+
 	/* handle autocmd12 error in msdc_irq */
 	if (host->autocmd & MSDC_AUTOCMD12)
 		wints |= MSDC_INT_ACMDCRCERR | MSDC_INT_ACMDTMO | MSDC_INT_ACMDRDY;
@@ -8612,6 +8626,80 @@ static void msdc_enable_cd_irq(struct msdc_host *host, int enable)
 #endif
 }
 #endif
+
+/* Add this function to check if no interrupt back after write.         *
+ * It may occur when write crc revice, but busy over data->timeout_ns   */
+static void msdc_check_write_timeout(struct work_struct *work)
+{
+	struct msdc_host *host = container_of(work, struct msdc_host, write_timeout.work);
+	void __iomem *base = host->base;
+
+	struct mmc_data  *data = host->data;
+	struct mmc_request *mrq = host->mrq;
+	struct mmc_host *mmc = host->mmc;
+
+	u32 status = 0;
+	u32 state = 0;
+	u32 err = 0;
+	unsigned long tmo;
+
+	if (!data || !mrq || !mmc)
+		return;
+
+	pr_err("[%s]: XXX DMA Data Write Busy Timeout: %u ms, CMD<%d>",
+		__func__, host->write_timeout_ms, mrq->cmd->opcode);
+
+	if (msdc_async_use_dma(data->host_cookie) && (host->tune == 0)) {
+		msdc_dump_info(host->id);
+
+		msdc_dma_stop(host);
+		msdc_dma_clear(host);
+		msdc_reset_hw(host->id);
+
+		tmo = jiffies + POLLING_BUSY;
+
+		spin_lock(&host->lock);
+		do {
+			err = msdc_get_card_status(mmc, host, &status);
+			if (err) {
+				ERR_MSG("CMD13 ERR<%d>", err);
+				break;
+			}
+
+			state = R1_CURRENT_STATE(status);
+			ERR_MSG("check card state<%d>", state);
+			if (state == R1_STATE_DATA || state == R1_STATE_RCV) {
+				ERR_MSG("state<%d> need cmd12 to stop", state);
+				msdc_send_stop(host);
+			} else if (state == R1_STATE_PRG) {
+				ERR_MSG("state<%d> card is busy", state);
+				spin_unlock(&host->lock);
+				msleep(100);
+				spin_lock(&host->lock);
+			}
+
+			if (time_after(jiffies, tmo)) {
+				ERR_MSG("abort timeout. Card stuck in %d state, bad card! remove it!" , state);
+				spin_unlock(&host->lock);
+				/*	if (MSDC_SD == host->hw->host_function)
+					msdc_set_bad_card_and_remove(host);*/
+				spin_lock(&host->lock);
+				break;
+			}
+		} while (state != R1_STATE_TRAN);
+		spin_unlock(&host->lock);
+
+		data->error = (unsigned int)-ETIMEDOUT;
+		host->sw_timeout++;
+
+		if (mrq->done)
+			mrq->done(mrq);
+
+		msdc_gate_clock(host, 1);
+		host->error |= REQ_DAT_ERR;
+	}
+}
+
 /* called by msdc_drv_probe */
 
 static void msdc_init_hw(struct msdc_host *host)
@@ -9540,6 +9628,9 @@ static int msdc_drv_probe(struct platform_device *pdev)
 	atomic_set(&host->ot_work.autok_done, 0);
 #endif
 	/* INIT_DELAYED_WORK(&host->remove_card, msdc_remove_card); */
+
+	INIT_DELAYED_WORK(&host->write_timeout, msdc_check_write_timeout);
+
 	spin_lock_init(&host->lock);
 	spin_lock_init(&host->clk_gate_lock);
 	spin_lock_init(&host->remove_bad_card);
