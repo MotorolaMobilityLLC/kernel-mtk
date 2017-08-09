@@ -18,14 +18,14 @@ struct MGMT_FRAME {
 	UINT_16 u2DurationID;
 };
 
-struct TC_RES_RELEASE_ENTRY {
+typedef struct _TC_RES_RELEASE_ENTRY {
 	UINT_64 u8RelaseTime;
 	UINT_32 u4RelCID;
 	UINT_8	ucTc4RelCnt;
 	UINT_8	ucAvailableTc4;
-};
+} TC_RES_RELEASE_ENTRY, *P_TC_RES_RELEASE_ENTRY;
 
-struct CMD_TRACE_ENTRY {
+typedef struct _CMD_TRACE_ENTRY {
 	UINT_64 u8TxTime;
 	COMMAND_TYPE eCmdType;
 	union {
@@ -33,21 +33,35 @@ struct CMD_TRACE_ENTRY {
 		struct SECURITY_FRAME rSecFrame;
 		struct MGMT_FRAME rMgmtFrame;
 	} u;
-};
+} CMD_TRACE_ENTRY, *P_CMD_TRACE_ENTRY;
+
+typedef struct _COMMAND_ENTRY {
+	UINT_64 u8TxTime;
+	UINT_64 u8ReadFwTime;
+	UINT_32 u4ReadFwValue;
+	UINT_32 u4RelCID;
+	UINT_16 u2Counter;
+	struct COMMAND rCmd;
+} COMMAND_ENTRY, *P_COMMAND_ENTRY;
 
 #define TC_RELEASE_TRACE_BUF_MAX_NUM 100
 #define TXED_CMD_TRACE_BUF_MAX_NUM 100
+#define TXED_COMMAND_BUF_MAX_NUM 10
 
-static struct TC_RES_RELEASE_ENTRY *gprTcReleaseTraceBuffer;
-static struct CMD_TRACE_ENTRY *gprCmdTraceEntry;
+static P_TC_RES_RELEASE_ENTRY gprTcReleaseTraceBuffer;
+static P_CMD_TRACE_ENTRY gprCmdTraceEntry;
+static P_COMMAND_ENTRY gprCommandEntry;
 VOID wlanDebugInit(VOID)
 {
 	/* debug for command/tc4 resource begin */
 	gprTcReleaseTraceBuffer =
-		kalMemAlloc(TC_RELEASE_TRACE_BUF_MAX_NUM * sizeof(struct TC_RES_RELEASE_ENTRY), PHY_MEM_TYPE);
-	kalMemZero(gprTcReleaseTraceBuffer, TC_RELEASE_TRACE_BUF_MAX_NUM * sizeof(struct TC_RES_RELEASE_ENTRY));
-	gprCmdTraceEntry = kalMemAlloc(TXED_CMD_TRACE_BUF_MAX_NUM * sizeof(struct CMD_TRACE_ENTRY), PHY_MEM_TYPE);
-	kalMemZero(gprCmdTraceEntry, TXED_CMD_TRACE_BUF_MAX_NUM * sizeof(struct CMD_TRACE_ENTRY));
+		kalMemAlloc(TC_RELEASE_TRACE_BUF_MAX_NUM * sizeof(TC_RES_RELEASE_ENTRY), PHY_MEM_TYPE);
+	kalMemZero(gprTcReleaseTraceBuffer, TC_RELEASE_TRACE_BUF_MAX_NUM * sizeof(TC_RES_RELEASE_ENTRY));
+	gprCmdTraceEntry = kalMemAlloc(TXED_CMD_TRACE_BUF_MAX_NUM * sizeof(CMD_TRACE_ENTRY), PHY_MEM_TYPE);
+	kalMemZero(gprCmdTraceEntry, TXED_CMD_TRACE_BUF_MAX_NUM * sizeof(CMD_TRACE_ENTRY));
+
+	gprCommandEntry = kalMemAlloc(TXED_COMMAND_BUF_MAX_NUM * sizeof(COMMAND_ENTRY), PHY_MEM_TYPE);
+	kalMemZero(gprCommandEntry, TXED_COMMAND_BUF_MAX_NUM * sizeof(COMMAND_ENTRY));
 	/* debug for command/tc4 resource end */
 }
 
@@ -55,17 +69,33 @@ VOID wlanDebugUninit(VOID)
 {
 	/* debug for command/tc4 resource begin */
 	kalMemFree(gprTcReleaseTraceBuffer, PHY_MEM_TYPE,
-			TC_RELEASE_TRACE_BUF_MAX_NUM * sizeof(struct TC_RES_RELEASE_ENTRY));
-	kalMemFree(gprCmdTraceEntry, PHY_MEM_TYPE, TXED_CMD_TRACE_BUF_MAX_NUM * sizeof(struct CMD_TRACE_ENTRY));
+			TC_RELEASE_TRACE_BUF_MAX_NUM * sizeof(TC_RES_RELEASE_ENTRY));
+	kalMemFree(gprCmdTraceEntry, PHY_MEM_TYPE, TXED_CMD_TRACE_BUF_MAX_NUM * sizeof(CMD_TRACE_ENTRY));
+	kalMemFree(gprCommandEntry, PHY_MEM_TYPE, TXED_COMMAND_BUF_MAX_NUM * sizeof(COMMAND_ENTRY));
 	/* debug for command/tc4 resource end */
 }
 
-VOID wlanTraceTxCmd(P_CMD_INFO_T prCmd)
+VOID wlanReadFwStatus(P_ADAPTER_T prAdapter)
+{
+	static UINT_16 u2CurEntryCmd;
+	P_COMMAND_ENTRY prCurCommand = &gprCommandEntry[u2CurEntryCmd];
+
+	prCurCommand->u8ReadFwTime = sched_clock();
+	HAL_MCR_RD(prAdapter, MCR_D2HRM2R, &prCurCommand->u4ReadFwValue);
+	u2CurEntryCmd++;
+	if (u2CurEntryCmd == TXED_COMMAND_BUF_MAX_NUM)
+		u2CurEntryCmd = 0;
+}
+
+VOID wlanTraceTxCmd(P_ADAPTER_T prAdapter, P_CMD_INFO_T prCmd)
 {
 	static UINT_16 u2CurEntry;
-	struct CMD_TRACE_ENTRY *prCurCmd = &gprCmdTraceEntry[u2CurEntry];
+	static UINT_16 u2CurEntryCmd;
+	P_CMD_TRACE_ENTRY prCurCmd = &gprCmdTraceEntry[u2CurEntry];
+	P_COMMAND_ENTRY prCurCommand = &gprCommandEntry[u2CurEntryCmd];
 
 	prCurCmd->u8TxTime = sched_clock();
+	prCurCommand->u8TxTime = prCurCmd->u8TxTime;
 	prCurCmd->eCmdType = prCmd->eCmdType;
 	if (prCmd->eCmdType == COMMAND_TYPE_MANAGEMENT_FRAME) {
 		P_WLAN_MAC_MGMT_HEADER_T prMgmt = (P_WLAN_MAC_MGMT_HEADER_T)((P_MSDU_INFO_T)prCmd->prPacket)->prPacket;
@@ -82,6 +112,17 @@ VOID wlanTraceTxCmd(P_CMD_INFO_T prCmd)
 		prCurCmd->u.rCmd.ucCmdSeqNum = prCmd->ucCmdSeqNum;
 		prCurCmd->u.rCmd.fgNeedResp = prCmd->fgNeedResp;
 		prCurCmd->u.rCmd.fgSetQuery = prCmd->fgSetQuery;
+
+		prCurCommand->rCmd.ucCID = prCmd->ucCID;
+		prCurCommand->rCmd.ucCmdSeqNum = prCmd->ucCmdSeqNum;
+		prCurCommand->rCmd.fgNeedResp = prCmd->fgNeedResp;
+		prCurCommand->rCmd.fgSetQuery = prCmd->fgSetQuery;
+
+		prCurCommand->u2Counter = u2CurEntryCmd;
+		u2CurEntryCmd++;
+		if (u2CurEntryCmd == TXED_COMMAND_BUF_MAX_NUM)
+			u2CurEntryCmd = 0;
+		HAL_MCR_RD(prAdapter, MCR_D2HRM2R, &prCurCommand->u4RelCID);
 	}
 	u2CurEntry++;
 	if (u2CurEntry == TC_RELEASE_TRACE_BUF_MAX_NUM)
@@ -91,8 +132,7 @@ VOID wlanTraceTxCmd(P_CMD_INFO_T prCmd)
 VOID wlanTraceReleaseTcRes(P_ADAPTER_T prAdapter, PUINT_8 aucTxRlsCnt, UINT_8 ucAvailable)
 {
 	static UINT_16 u2CurEntry;
-	struct TC_RES_RELEASE_ENTRY *prCurBuf = &gprTcReleaseTraceBuffer[u2CurEntry];
-
+	P_TC_RES_RELEASE_ENTRY prCurBuf = &gprTcReleaseTraceBuffer[u2CurEntry];
 	HAL_MCR_RD(prAdapter, MCR_D2HRM2R, &prCurBuf->u4RelCID);
 	prCurBuf->u8RelaseTime = sched_clock();
 	prCurBuf->ucTc4RelCnt = aucTxRlsCnt[TC4_INDEX];
@@ -105,9 +145,8 @@ VOID wlanTraceReleaseTcRes(P_ADAPTER_T prAdapter, PUINT_8 aucTxRlsCnt, UINT_8 uc
 VOID wlanDumpTcResAndTxedCmd(PUINT_8 pucBuf, UINT_32 maxLen)
 {
 	UINT_16 i = 0;
-	struct CMD_TRACE_ENTRY *prCmd = gprCmdTraceEntry;
-	struct TC_RES_RELEASE_ENTRY *prTcRel = gprTcReleaseTraceBuffer;
-
+	P_CMD_TRACE_ENTRY prCmd = gprCmdTraceEntry;
+	P_TC_RES_RELEASE_ENTRY prTcRel = gprTcReleaseTraceBuffer;
 	if (pucBuf) {
 		int bufLen = 0;
 
@@ -161,5 +200,18 @@ VOID wlanDumpTcResAndTxedCmd(PUINT_8 pucBuf, UINT_32 maxLen)
 			prTcRel[i*4+2].ucAvailableTc4, prTcRel[i*4+2].u4RelCID,
 			i*4+3, prTcRel[i*4+3].u8RelaseTime, prTcRel[i*4+3].ucTc4RelCnt,
 			prTcRel[i*4+3].ucAvailableTc4, prTcRel[i*4+3].u4RelCID);
+	}
+}
+VOID wlanDumpCommandFwStatus(VOID)
+{
+	UINT_16 i = 0;
+	P_COMMAND_ENTRY prCmd = gprCommandEntry;
+
+	LOG_FUNC("Start\n");
+	for (; i < TXED_COMMAND_BUF_MAX_NUM; i++) {
+		LOG_FUNC("%d: Time %llu, Content %08x, Count %x, RelCID %08x, ReadFwValue %08x, ReadFwTime %llu\n",
+			i, prCmd[i].u8TxTime, *(PUINT_32)(&prCmd[i].rCmd.ucCID),
+			prCmd[i].u2Counter, prCmd[i].u4RelCID,
+			prCmd[i].u4ReadFwValue, prCmd[i].u8ReadFwTime);
 	}
 }

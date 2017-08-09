@@ -457,8 +457,10 @@ VOID dumpMemory32(IN PUINT_32 pu4StartAddr, IN UINT_32 u4Length);
 VOID wlanDebugInit(VOID);
 VOID wlanDebugUninit(VOID);
 VOID wlanTraceReleaseTcRes(P_ADAPTER_T prAdapter, PUINT_8 aucTxRlsCnt, UINT_8 ucAvailable);
-VOID wlanTraceTxCmd(P_CMD_INFO_T prCmd);
+VOID wlanTraceTxCmd(P_ADAPTER_T prAdapter, P_CMD_INFO_T prCmd);
+VOID wlanReadFwStatus(P_ADAPTER_T prAdapter);
 VOID wlanDumpTcResAndTxedCmd(PUINT_8 pucBuf, UINT_32 maxLen);
+VOID wlanDumpCommandFwStatus(VOID);
 /*******************************************************************************
 *                              F U N C T I O N S
 ********************************************************************************
