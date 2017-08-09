@@ -20,6 +20,7 @@
 #include <asm/uaccess.h>
 #include <mt-plat/sync_write.h>
 #include "mt_dcm.h"
+#include "mt_ptp.h"
 #include <mach/mt_gpt.h>
 
 #if !defined(CONFIG_ARCH_MT6580)
@@ -106,6 +107,14 @@ void __attribute__((weak)) bus_dcm_enable(void)
 
 }
 void __attribute__((weak)) bus_dcm_disable(void)
+{
+
+}
+void __attribute__((weak)) mt_dcm_topckg_enable(void)
+{
+
+}
+void __attribute__((weak)) mt_dcm_topckg_disable(void)
 {
 
 }
@@ -257,7 +266,7 @@ enum {
 static int idle_switch[NR_TYPES] = {
 	0,  /* dpidle switch */
 	0,  /* soidle switch */
-	0,  /* slidle switch */
+	1,  /* slidle switch */
 	1,  /* rgidle switch */
 };
 
@@ -304,7 +313,7 @@ static unsigned int slidle_condition_mask[NR_GRPS] = {
 static int idle_switch[NR_TYPES] = {
 	1,  /* dpidle switch */
 	1,  /* soidle switch */
-	0,  /* slidle switch */
+	1,  /* slidle switch */
 	1,  /* rgidle switch */
 };
 
@@ -350,7 +359,7 @@ static unsigned int slidle_condition_mask[NR_GRPS] = {
 static int idle_switch[NR_TYPES] = {
 	0,  /* dpidle switch */
 	0,  /* soidle switch */
-	0,  /* slidle switch */
+	1,  /* slidle switch */
 	1,  /* rgidle switch */
 };
 
@@ -1141,6 +1150,13 @@ static bool slidle_can_enter(void)
 		goto out;
 	}
 
+#if EN_PTP_OD
+	if (ptp_data[0]) {
+		reason = BY_OTH;
+		goto out;
+	}
+#endif
+
 out:
 	if (reason < NR_REASONS) {
 		slidle_block_cnt[reason]++;
@@ -1152,20 +1168,16 @@ out:
 
 static void slidle_before_wfi(int cpu)
 {
-#if !defined(CONFIG_ARCH_MT6580)
+#if defined(CONFIG_ARCH_MT6735) || defined(CONFIG_ARCH_MT6735M) || defined(CONFIG_ARCH_MT6753)
 	mt_dcm_topckg_enable();
-#else
-	/*TBD*/
 #endif
 }
 
 static void slidle_after_wfi(int cpu)
 {
-#if !defined(CONFIG_ARCH_MT6580)
+#if defined(CONFIG_ARCH_MT6735) || defined(CONFIG_ARCH_MT6735M) || defined(CONFIG_ARCH_MT6753)
 	mt_dcm_topckg_disable();
 	slidle_cnt[cpu]++;
-#else
-	/*TBD*/
 #endif
 }
 
