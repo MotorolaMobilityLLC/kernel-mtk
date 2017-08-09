@@ -4494,11 +4494,11 @@ unsigned int get_vcore_ptp_volt(int uv)
 	unsigned int ret;
 	switch (uv) {
 	case VCORE_VOLT_0:
-		ret = vcore0;
+		ret = ((1000000 / 10) - 60000 + 625 - 1) / 625; /* vcore0; */
 		break;
 
 	case VCORE_VOLT_1:
-		ret = vcore1;
+		ret = ((900000 / 10) - 60000 + 625 - 1) / 625; /* vcore1; */
 		break;
 
 	/* Jade only use 2 level voltage
