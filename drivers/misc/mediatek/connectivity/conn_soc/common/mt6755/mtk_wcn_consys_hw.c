@@ -24,7 +24,7 @@
 ********************************************************************************
 */
 #if defined(CONFIG_MTK_CLKMGR)
-#include <mach/mt_clkmgr.h>
+#include <mt_clkmgr.h>
 #else
 #include <linux/clk.h>
 #endif /* defined(CONFIG_MTK_LEGACY) */
@@ -38,13 +38,8 @@
 #endif
 
 #if CONSYS_PMIC_CTRL_ENABLE
-#include <mach/mt_pm_ldo.h>
-#if defined(CONFIG_MTK_LEGACY)
-#include <mach/upmu_common.h>
-#else
-#include <mach/upmu_hw.h>
+#include <upmu_common.h>
 #include <linux/regulator/consumer.h>
-#endif
 #endif
 
 #ifdef CONFIG_MTK_HIBERNATION
@@ -54,7 +49,7 @@
 #include <linux/of_reserved_mem.h>
 
 #if CONSYS_CLOCK_BUF_CTRL
-#include <mach/mt_clkbuf_ctl.h>
+#include <mt_clkbuf_ctl.h>
 #endif
 
 /*******************************************************************************
@@ -1033,7 +1028,7 @@ INT32 mtk_wcn_consys_hw_restore(struct device *device)
 #endif
 		if (pEmibaseaddr) {
 			WMT_PLAT_INFO_FUNC("EMI mapping OK(0x%p)\n", pEmibaseaddr);
-			memset(pEmibaseaddr, 0, CONSYS_EMI_MEM_SIZE);
+			memset_io(pEmibaseaddr, 0, CONSYS_EMI_MEM_SIZE);
 		} else {
 			WMT_PLAT_ERR_FUNC("EMI mapping fail\n");
 		}
@@ -1114,7 +1109,7 @@ INT32 mtk_wcn_consys_hw_init(void)
 		/* pEmibaseaddr = ioremap_nocache(0x80090400,270*KBYTE); */
 		if (pEmibaseaddr) {
 			WMT_PLAT_INFO_FUNC("EMI mapping OK(0x%p)\n", pEmibaseaddr);
-			memset(pEmibaseaddr, 0, CONSYS_EMI_MEM_SIZE);
+			memset_io(pEmibaseaddr, 0, CONSYS_EMI_MEM_SIZE);
 			iRet = 0;
 		} else {
 			WMT_PLAT_ERR_FUNC("EMI mapping fail\n");
