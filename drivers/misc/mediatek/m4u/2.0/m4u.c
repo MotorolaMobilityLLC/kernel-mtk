@@ -1132,7 +1132,8 @@ long m4u_dma_op(m4u_client_t *client, M4U_PORT_ID port,
 			va, size, L1_CACHE_BYTES);
 
 	table = pMvaInfo->sg_table;
-	npages = PAGE_ALIGN(size) / PAGE_SIZE;
+	/* npages = PAGE_ALIGN(size) / PAGE_SIZE; */
+	npages = M4U_GET_PAGE_NUM(va, size);
 
 	mutex_lock(&gM4u_cache_sync_user_lock);
 
