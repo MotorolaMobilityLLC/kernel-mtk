@@ -464,7 +464,7 @@ void parse_lcm_ops_dt_node(struct device_node *np, LCM_DTS *lcm_dts, unsigned ch
 	}
 	/* parse LCM init table */
 	len = disp_of_getprop_u8(np, "init", dts);
-	if (len < 0) {
+	if (len <= 0) {
 		pr_err("%s:%d: Cannot find LCM init table, cannot skip it!\n", __FILE__, __LINE__);
 		return;
 	}
@@ -528,7 +528,7 @@ void parse_lcm_ops_dt_node(struct device_node *np, LCM_DTS *lcm_dts, unsigned ch
 
 	/* parse LCM compare_id table */
 	len = disp_of_getprop_u8(np, "compare_id", dts);
-	if (len < 0) {
+	if (len <= 0) {
 		pr_warn("%s:%d: Cannot find LCM compare_id table, skip it!\n", __FILE__, __LINE__);
 	} else {
 		if (len > COMPARE_ID_SIZE) {
@@ -593,7 +593,7 @@ void parse_lcm_ops_dt_node(struct device_node *np, LCM_DTS *lcm_dts, unsigned ch
 
 	/* parse LCM suspend table */
 	len = disp_of_getprop_u8(np, "suspend", dts);
-	if (len < 0) {
+	if (len <= 0) {
 		pr_err("%s:%d: Cannot find LCM suspend table, cannot skip it!\n", __FILE__,
 		       __LINE__);
 		return;
@@ -651,7 +651,7 @@ void parse_lcm_ops_dt_node(struct device_node *np, LCM_DTS *lcm_dts, unsigned ch
 
 	/* parse LCM backlight table */
 	len = disp_of_getprop_u8(np, "backlight", dts);
-	if (len < 0) {
+	if (len <= 0) {
 		pr_err("%s:%d: Cannot find LCM backlight table, skip it!\n", __FILE__, __LINE__);
 	} else {
 		if (len > BACKLIGHT_SIZE) {
