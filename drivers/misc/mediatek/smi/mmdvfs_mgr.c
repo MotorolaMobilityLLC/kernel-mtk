@@ -196,13 +196,6 @@ static void mmdvfs_update_cmd(MTK_MMDVFS_CMD *cmd)
 	g_mmdvfs_cmd.camera_mode = cmd->camera_mode;
 }
 
-static void mmdvfs_dump_info(void)
-{
-	MMDVFSMSG("CMD %d %d %d\n", g_mmdvfs_cmd.sensor_size,
-	g_mmdvfs_cmd.sensor_fps, g_mmdvfs_cmd.camera_mode);
-	MMDVFSMSG("INFO VR %d %d\n", g_mmdvfs_info->video_record_size[0],
-	g_mmdvfs_info->video_record_size[1]);
-}
 
 /* delay 4 seconds to go LPM to workaround camera ZSD + PIP issue */
 #if !defined(SMI_D3)
@@ -260,9 +253,6 @@ int mmdvfs_set_step(MTK_SMI_BWC_SCEN scenario, mmdvfs_voltage_enum step)
 		MMDVFSERR("invalid scenario\n");
 		return -1;
 	}
-
-	/* dump information */
-	mmdvfs_dump_info();
 
 	/* go through all scenarios to decide the final step */
 	scen_index = (int)scenario;
