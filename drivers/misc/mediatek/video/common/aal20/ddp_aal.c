@@ -707,7 +707,7 @@ static int aal_io(DISP_MODULE_ENUM module, int msg, unsigned long arg, void *cmd
 			disp_aal_set_interrupt(enabled);
 
 			if (enabled)
-				disp_aal_trigger_refresh(AAL_REFRESH_17MS);
+				disp_aal_trigger_refresh(AAL_REFRESH_33MS);
 
 			break;
 		}
