@@ -1948,7 +1948,7 @@ static void cmdq_core_auto_release_task(TaskStruct *pTask)
 {
 	CMDQ_MSG("-->TASK: Auto release task structure 0x%p begin\n", pTask);
 
-	if (pTask->useWorkQueue) {
+	if (atomic_inc_return(&pTask->useWorkQueue) != 1) {
 		/* this is called via auto release work, no need to put in work queue again */
 		cmdq_core_release_task(pTask);
 	} else {
@@ -1956,7 +1956,6 @@ static void cmdq_core_auto_release_task(TaskStruct *pTask)
 		/* the work item is embeded in pTask already */
 		/* but we need to initialized it */
 		INIT_WORK(&pTask->autoReleaseWork, cmdq_core_release_task_in_queue);
-		pTask->useWorkQueue = true;
 		queue_work(gCmdqContext.taskAutoReleaseWQ, &pTask->autoReleaseWork);
 	}
 
@@ -2801,7 +2800,7 @@ static TaskStruct *cmdq_core_acquire_task(cmdqCommandStruct *pCommandDesc,
 		pTask->reorder = 0;
 		pTask->thread = CMDQ_INVALID_THREAD;
 		pTask->irqFlag = 0x0;
-		pTask->useWorkQueue = false;
+		atomic_set(&pTask->useWorkQueue, 0);
 
 		/* secure exec data */
 		pTask->secData.isSecure = pCommandDesc->secData.isSecure;
@@ -7265,14 +7264,15 @@ int32_t cmdqCoreAutoReleaseTask(TaskStruct *pTask)
 
 	/* the work item is embeded in pTask already */
 	/* but we need to initialized it */
-	if (false == pTask->useWorkQueue) {
-		/* use work queue to release task */
-		INIT_WORK(&pTask->autoReleaseWork, cmdq_core_auto_release_work);
-	} else {
+	if (unlikely(atomic_inc_return(&pTask->useWorkQueue) != 1)) {
 		/* Error occurs when Double INIT_WORK */
 		CMDQ_ERR("[Double INIT WORK] useWorkQueue is already TRUE, pTask(%p)", pTask);
+		return -EFAULT;
 	}
-	pTask->useWorkQueue = true;
+
+	/* use work queue to release task */
+	INIT_WORK(&pTask->autoReleaseWork, cmdq_core_auto_release_work);
+
 	CMDQ_PROF_MMP(cmdq_mmp_get_event()->autoRelease_add,
 		      MMProfileFlagPulse, ((unsigned long)pTask), pTask->thread);
 

@@ -457,7 +457,7 @@ typedef struct TaskStruct {
 	CmdqAsyncFlushCB flushCallback;	/* Callback on AsyncFlush (fire-and-forget) tasks */
 	unsigned long flushData;	/* for callbacks & error handling */
 	struct work_struct autoReleaseWork;	/* Work item when auto release is used */
-	bool useWorkQueue;
+	atomic_t useWorkQueue;
 
 	/* Output section for "read from reg to mem" */
 	uint32_t regCount;
