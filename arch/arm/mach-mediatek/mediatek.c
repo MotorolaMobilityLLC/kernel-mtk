@@ -15,23 +15,12 @@
  */
 #include <linux/init.h>
 #include <asm/mach/arch.h>
-#include <linux/irqchip.h>
-
-#include "common.h"
-
-static void __init mediatek_init_irq(void)
-{
-	init_intpol();
-	irqchip_init();
-}
 
 static const char * const mediatek_board_dt_compat[] = {
 	"mediatek,mt6589",
-	"mediatek,mt2701",
 	NULL,
 };
 
 DT_MACHINE_START(MEDIATEK_DT, "Mediatek Cortex-A7 (Device Tree)")
 	.dt_compat	= mediatek_board_dt_compat,
-	.init_irq       = mediatek_init_irq,
 MACHINE_END
