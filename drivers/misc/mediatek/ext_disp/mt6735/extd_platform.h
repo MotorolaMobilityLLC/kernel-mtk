@@ -2,6 +2,7 @@
 #define __EXTD_PLATFORM_H__
 
 #include "ddp_hal.h"
+#include "disp_drv_platform.h"
 
 
 #define MAX_SESSION_COUNT		5
@@ -16,7 +17,11 @@
 /* /#define EXTD_DBG_USE_INNER_BUF */
 
 /*#define HW_OVERLAY_COUNT  4*/
+#ifdef OVL_TIME_SHARING
+#define EXTD_OVERLAY_CNT  4
+#else
 #define EXTD_OVERLAY_CNT  0
+#endif
 #define HW_DPI_VSYNC_SUPPORT 0
 
 #define DISP_MODULE_RDMA DISP_MODULE_RDMA1

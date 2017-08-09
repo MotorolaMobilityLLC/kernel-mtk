@@ -86,7 +86,9 @@ static int create_external_display_path(unsigned int session, int mode)
 		|| path_info.old_session[DEV_WFD] != DISP_SESSION_MEMORY)) {
 
 			if (ext_disp_wait_ovl_available(0) > 0) {
+#ifndef OVL_TIME_SHARING
 				ovl2mem_init(session);
+#endif
 				ovl2mem_setlayernum(4);
 			} else {
 				MULTI_COTRL_ERR("mhl path: OVL1 can not be split out!\n");
