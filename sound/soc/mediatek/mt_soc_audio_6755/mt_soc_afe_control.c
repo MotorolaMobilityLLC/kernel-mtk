@@ -294,8 +294,10 @@ unsigned int GetPLaybackSramPartial(void)
 {
 	unsigned int Sramsize = AudioSramPlaybackPartialSize;
 
+#if 0	/* Manually check AudioSramPlaybackSize must be smaller than SRAM size */
 	if (Sramsize > AFE_INTERNAL_SRAM_SIZE)
 		Sramsize = AFE_INTERNAL_SRAM_SIZE;
+#endif
 
 	return Sramsize;
 }
@@ -317,9 +319,10 @@ size_t GetCaptureSramSize(void)
 {
 	unsigned int Sramsize = AudioSramCaptureSize;
 
+#if 0	/* Manually check AudioSramCaptureSize must be smaller than SRAM size */
 	if (Sramsize > AFE_INTERNAL_SRAM_SIZE)
 		Sramsize = AFE_INTERNAL_SRAM_SIZE;
-
+#endif
 	return Sramsize;
 }
 
