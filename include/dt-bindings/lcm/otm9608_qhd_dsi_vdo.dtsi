@@ -86,7 +86,7 @@
 		lcm_params-dpi-io_driving_current;
 		lcm_params-dpi-lsb_io_driving_current;
 
-		lcm_params-dsi-mode = <0>;
+		lcm_params-dsi-mode = <1>;
 		lcm_params-dsi-switch_mode = <1>;
 		lcm_params-dsi-DSI_WMEM_CONTI = <0x3C>;
 		lcm_params-dsi-DSI_RMEM_CONTI = <0x3E>;
