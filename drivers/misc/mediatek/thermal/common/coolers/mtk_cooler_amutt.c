@@ -8,7 +8,7 @@
 #include <linux/err.h>
 #include <linux/syscalls.h>
 #include <linux/timer.h>
-#include <mach/mt_ccci_common.h>
+#include <mt_ccci_common.h>
 #include "mt-plat/mtk_thermal_monitor.h"
 #include <linux/uidgid.h>
 

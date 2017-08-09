@@ -8,7 +8,7 @@
 #include <linux/err.h>
 #include <linux/syscalls.h>
 #include "mt-plat/mtk_thermal_monitor.h"
-#include <mach/mt_ccci_common.h>
+#include <mt_ccci_common.h>
 #include <linux/uidgid.h>
 /* extern unsigned long ccci_get_md_boot_count(int md_id); */
 unsigned long __attribute__ ((weak))
