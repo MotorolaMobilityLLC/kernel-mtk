@@ -946,11 +946,10 @@ static int spm_mtcmos_ctrl_mfg_core3(int state)
 			aee_rr_rec_clk(3, spm_read(MFG_SRAM_CON));
 			#endif
 		}
-
-		/* TINFO="Set PWR_ISO = 1" */
-		spm_write(MFG_CORE3_PWR_CON, spm_read(MFG_CORE3_PWR_CON) | PWR_ISO);
 		/* TINFO="Set PWR_CLK_DIS = 1" */
 		spm_write(MFG_CORE3_PWR_CON, spm_read(MFG_CORE3_PWR_CON) | PWR_CLK_DIS);
+		/* TINFO="Set PWR_ISO = 1" */
+		spm_write(MFG_CORE3_PWR_CON, spm_read(MFG_CORE3_PWR_CON) | PWR_ISO);
 		/* TINFO="Set PWR_RST_B = 0" */
 		spm_write(MFG_CORE3_PWR_CON, spm_read(MFG_CORE3_PWR_CON) & ~PWR_RST_B);
 		/* TINFO="Set PWR_ON = 0" */
@@ -989,13 +988,12 @@ static int spm_mtcmos_ctrl_mfg_core3(int state)
 			#endif
 		}
 #endif
-
-		/* TINFO="Set PWR_CLK_DIS = 0" */
-		spm_write(MFG_CORE3_PWR_CON, spm_read(MFG_CORE3_PWR_CON) & ~PWR_CLK_DIS);
-		/* TINFO="Set PWR_ISO = 0" */
-		spm_write(MFG_CORE3_PWR_CON, spm_read(MFG_CORE3_PWR_CON) & ~PWR_ISO);
 		/* TINFO="Set PWR_RST_B = 1" */
 		spm_write(MFG_CORE3_PWR_CON, spm_read(MFG_CORE3_PWR_CON) | PWR_RST_B);
+		/* TINFO="Set PWR_ISO = 0" */
+		spm_write(MFG_CORE3_PWR_CON, spm_read(MFG_CORE3_PWR_CON) & ~PWR_ISO);
+		/* TINFO="Set PWR_CLK_DIS = 0" */
+		spm_write(MFG_CORE3_PWR_CON, spm_read(MFG_CORE3_PWR_CON) & ~PWR_CLK_DIS);
 		/* TINFO="Set SRAM_PDN = 0" */
 		spm_write(MFG_CORE3_PWR_CON, spm_read(MFG_CORE3_PWR_CON) & ~(0x1 << 8));
 		/* TINFO="Wait until MFG_CORE3_SRAM_PDN_ACK = 0" */
@@ -1041,10 +1039,10 @@ static int spm_mtcmos_ctrl_mfg_core2(int state)
 			aee_rr_rec_clk(3, spm_read(MFG_SRAM_CON));
 			#endif
 		}
-		/* TINFO="Set PWR_ISO = 1" */
-		spm_write(MFG_CORE2_PWR_CON, spm_read(MFG_CORE2_PWR_CON) | PWR_ISO);
 		/* TINFO="Set PWR_CLK_DIS = 1" */
 		spm_write(MFG_CORE2_PWR_CON, spm_read(MFG_CORE2_PWR_CON) | PWR_CLK_DIS);
+		/* TINFO="Set PWR_ISO = 1" */
+		spm_write(MFG_CORE2_PWR_CON, spm_read(MFG_CORE2_PWR_CON) | PWR_ISO);
 		/* TINFO="Set PWR_RST_B = 0" */
 		spm_write(MFG_CORE2_PWR_CON, spm_read(MFG_CORE2_PWR_CON) & ~PWR_RST_B);
 		/* TINFO="Set PWR_ON = 0" */
@@ -1083,13 +1081,12 @@ static int spm_mtcmos_ctrl_mfg_core2(int state)
 			#endif
 		}
 #endif
-
-		/* TINFO="Set PWR_CLK_DIS = 0" */
-		spm_write(MFG_CORE2_PWR_CON, spm_read(MFG_CORE2_PWR_CON) & ~PWR_CLK_DIS);
-		/* TINFO="Set PWR_ISO = 0" */
-		spm_write(MFG_CORE2_PWR_CON, spm_read(MFG_CORE2_PWR_CON) & ~PWR_ISO);
 		/* TINFO="Set PWR_RST_B = 1" */
 		spm_write(MFG_CORE2_PWR_CON, spm_read(MFG_CORE2_PWR_CON) | PWR_RST_B);
+		/* TINFO="Set PWR_ISO = 0" */
+		spm_write(MFG_CORE2_PWR_CON, spm_read(MFG_CORE2_PWR_CON) & ~PWR_ISO);
+		/* TINFO="Set PWR_CLK_DIS = 0" */
+		spm_write(MFG_CORE2_PWR_CON, spm_read(MFG_CORE2_PWR_CON) & ~PWR_CLK_DIS);
 		/* TINFO="Set SRAM_PDN = 0" */
 		spm_write(MFG_CORE2_PWR_CON, spm_read(MFG_CORE2_PWR_CON) & ~(0x1 << 8));
 		/* TINFO="Wait until MFG_CORE2_SRAM_PDN_ACK = 0" */
@@ -1123,10 +1120,10 @@ static int spm_mtcmos_ctrl_mfg_core1(int state)
 			aee_rr_rec_clk(3, spm_read(MFG_SRAM_CON));
 			#endif
 		}
-		/* TINFO="Set PWR_ISO = 1" */
-		spm_write(MFG_CORE1_PWR_CON, spm_read(MFG_CORE1_PWR_CON) | PWR_ISO);
 		/* TINFO="Set PWR_CLK_DIS = 1" */
 		spm_write(MFG_CORE1_PWR_CON, spm_read(MFG_CORE1_PWR_CON) | PWR_CLK_DIS);
+		/* TINFO="Set PWR_ISO = 1" */
+		spm_write(MFG_CORE1_PWR_CON, spm_read(MFG_CORE1_PWR_CON) | PWR_ISO);
 		/* TINFO="Set PWR_RST_B = 0" */
 		spm_write(MFG_CORE1_PWR_CON, spm_read(MFG_CORE1_PWR_CON) & ~PWR_RST_B);
 		/* TINFO="Set PWR_ON = 0" */
@@ -1165,13 +1162,12 @@ static int spm_mtcmos_ctrl_mfg_core1(int state)
 			#endif
 		}
 #endif
-
-		/* TINFO="Set PWR_CLK_DIS = 0" */
-		spm_write(MFG_CORE1_PWR_CON, spm_read(MFG_CORE1_PWR_CON) & ~PWR_CLK_DIS);
-		/* TINFO="Set PWR_ISO = 0" */
-		spm_write(MFG_CORE1_PWR_CON, spm_read(MFG_CORE1_PWR_CON) & ~PWR_ISO);
 		/* TINFO="Set PWR_RST_B = 1" */
 		spm_write(MFG_CORE1_PWR_CON, spm_read(MFG_CORE1_PWR_CON) | PWR_RST_B);
+		/* TINFO="Set PWR_ISO = 0" */
+		spm_write(MFG_CORE1_PWR_CON, spm_read(MFG_CORE1_PWR_CON) & ~PWR_ISO);
+		/* TINFO="Set PWR_CLK_DIS = 0" */
+		spm_write(MFG_CORE1_PWR_CON, spm_read(MFG_CORE1_PWR_CON) & ~PWR_CLK_DIS);
 		/* TINFO="Set SRAM_PDN = 0" */
 		spm_write(MFG_CORE1_PWR_CON, spm_read(MFG_CORE1_PWR_CON) & ~(0x1 << 8));
 		/* TINFO="Wait until MFG_CORE1_SRAM_PDN_ACK = 0" */
@@ -1205,10 +1201,10 @@ static int spm_mtcmos_ctrl_mfg_core0(int state)
 			aee_rr_rec_clk(3, spm_read(MFG_SRAM_CON));
 			#endif
 		}
-		/* TINFO="Set PWR_ISO = 1" */
-		spm_write(MFG_CORE0_PWR_CON, spm_read(MFG_CORE0_PWR_CON) | PWR_ISO);
 		/* TINFO="Set PWR_CLK_DIS = 1" */
 		spm_write(MFG_CORE0_PWR_CON, spm_read(MFG_CORE0_PWR_CON) | PWR_CLK_DIS);
+		/* TINFO="Set PWR_ISO = 1" */
+		spm_write(MFG_CORE0_PWR_CON, spm_read(MFG_CORE0_PWR_CON) | PWR_ISO);
 		/* TINFO="Set PWR_RST_B = 0" */
 		spm_write(MFG_CORE0_PWR_CON, spm_read(MFG_CORE0_PWR_CON) & ~PWR_RST_B);
 		/* TINFO="Set PWR_ON = 0" */
@@ -1247,13 +1243,12 @@ static int spm_mtcmos_ctrl_mfg_core0(int state)
 			#endif
 		}
 #endif
-
-		/* TINFO="Set PWR_CLK_DIS = 0" */
-		spm_write(MFG_CORE0_PWR_CON, spm_read(MFG_CORE0_PWR_CON) & ~PWR_CLK_DIS);
-		/* TINFO="Set PWR_ISO = 0" */
-		spm_write(MFG_CORE0_PWR_CON, spm_read(MFG_CORE0_PWR_CON) & ~PWR_ISO);
 		/* TINFO="Set PWR_RST_B = 1" */
 		spm_write(MFG_CORE0_PWR_CON, spm_read(MFG_CORE0_PWR_CON) | PWR_RST_B);
+		/* TINFO="Set PWR_ISO = 0" */
+		spm_write(MFG_CORE0_PWR_CON, spm_read(MFG_CORE0_PWR_CON) & ~PWR_ISO);
+		/* TINFO="Set PWR_CLK_DIS = 0" */
+		spm_write(MFG_CORE0_PWR_CON, spm_read(MFG_CORE0_PWR_CON) & ~PWR_CLK_DIS);
 		/* TINFO="Set SRAM_PDN = 0" */
 		spm_write(MFG_CORE0_PWR_CON, spm_read(MFG_CORE0_PWR_CON) & ~(0x1 << 8));
 		/* TINFO="Wait until MFG_CORE0_SRAM_PDN_ACK = 0" */
