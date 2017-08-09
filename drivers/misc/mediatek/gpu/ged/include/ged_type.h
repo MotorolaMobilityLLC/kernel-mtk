@@ -30,6 +30,7 @@ typedef enum GED_INFO_TAG
     GED_VSYNC_OFFSET,
     GED_EVENT_STATUS,
     GED_EVENT_DEBUG_STATUS,
+    GED_EVENT_GAS_MODE,
     GED_SRV_SUICIDE,
     GED_PRE_HALF_PERIOD,
     GED_LATEST_START,
@@ -54,5 +55,10 @@ typedef struct GED_DVFS_UM_QUERY_PACK_TAG
     unsigned long ulPreCalResetTS_us;
     unsigned long ulWorkingPeriod_us;
 }GED_DVFS_UM_QUERY_PACK;
+
+enum {
+	GAS_CATEGORY_GAME,
+	GAS_CATEGORY_OTHERS,
+};
 
 #endif

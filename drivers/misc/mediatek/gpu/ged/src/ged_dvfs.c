@@ -111,6 +111,7 @@ extern void (ged_monitor_3D_fence_set_disable)(GED_BOOL bFlag);
 static bool ged_dvfs_policy(
     unsigned int ui32GPULoading, unsigned int* pui32NewFreqID, 
     unsigned long t, long phase, unsigned long ul3DFenceDoneTime, bool bRefreshed);
+unsigned long ged_gas_query_mode(void);
 
 unsigned long ged_query_info( GED_INFO eType)
 {
@@ -147,6 +148,8 @@ unsigned long ged_query_info( GED_INFO eType)
             return g_ui32EventStatus;
         case GED_EVENT_DEBUG_STATUS:
             return g_ui32EventDebugStatus;
+	case GED_EVENT_GAS_MODE:
+	    return ged_gas_query_mode();
         case GED_SRV_SUICIDE:
             ged_dvfs_probe_signal(GED_SRV_SUICIDE_EVENT);
             return g_probe_pid;
@@ -159,7 +162,7 @@ unsigned long ged_query_info( GED_INFO eType)
             return 0;
     }
 }
-
+EXPORT_SYMBOL(ged_query_info);
 
 //-----------------------------------------------------------------------------
 void (*ged_dvfs_cal_gpu_utilization_fp)(unsigned int* pui32Loading , unsigned int* pui32Block,unsigned int* pui32Idle) = NULL;
@@ -884,6 +887,15 @@ void set_target_fps(int i32FPS)
     
 }
 
+#ifdef GED_DVFS_ENABLE
+unsigned long ged_gas_query_mode()
+{
+	if (g_ui32EventStatus & GED_EVENT_GAS)
+		return GAS_CATEGORY_OTHERS;
+	else
+		return GAS_CATEGORY_GAME;
+}
+#endif
 
 GED_ERROR ged_dvfs_probe(int pid)
 {
