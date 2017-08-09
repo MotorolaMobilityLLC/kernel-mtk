@@ -1,7 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <dct_cfg>
-    <general chip="MT6797" proj="Everest">
-        <module name="adc" count="6">
+    <general chip="MT6797">
+        <proj>Everest</proj>
+        <module name="adc">
+            <count>6</count>
             <adc0>
                 <varName>TEMPERATURE</varName>
             </adc0>
@@ -12,7 +14,8 @@
                 <varName>ADC_FDD_RF_PARAMS_DYNAMIC_CUSTOM_CH</varName>
             </adc12>
         </module>
-        <module name="clk" count="4">
+        <module name="clk">
+            <count>4</count>
             <rf_clk1>
                 <varName>HW_CONTROL</varName>
             </rf_clk1>
@@ -23,7 +26,8 @@
                 <varName>SW_CONTROL</varName>
             </rf_clk4>
         </module>
-        <module name="eint" count="192">
+        <module name="eint">
+            <count>192</count>
             <eint0>
                 <varName>EXT_BUCK_OC</varName>
                 <debounce_time>0</debounce_time>
@@ -109,7 +113,8 @@
                 <debounce_en>Disable</debounce_en>
             </eint46>
         </module>
-        <module name="gpio" count="262">
+        <module name="gpio">
+            <count>262</count>
             <gpio0>
                 <eint_mode>false</eint_mode>
                 <def_mode>1</def_mode>
@@ -4026,7 +4031,8 @@
                 <smt>true</smt>
             </gpio261>
         </module>
-        <module name="i2c" count="32">
+        <module name="i2c">
+            <count>32</count>
             <i2c_bus0>
                 <speed_kbps>400</speed_kbps>
                 <pullPushEn>false</pullPushEn>
@@ -4173,7 +4179,8 @@
                 <address>0x36</address>
             </device20>
         </module>
-        <module name="md1_eint" count="4">
+        <module name="md1_eint">
+            <count>4</count>
             <eint0>
                 <varName>MD1_SIM1_HOT_PLUG_EINT</varName>
                 <debounce_time>100</debounce_time>
@@ -4195,7 +4202,9 @@
                 <socketType>0</socketType>
             </eint1>
         </module>
-        <module name="pmic" count="8" chip="PMIC_MT6351PMUMP">
+        <module name="pmic">
+            <chip>PMIC_MT6351PMUMP</chip>
+            <count>8</count>
             <pmic0>
                 <ldoVar>VCAMA</ldoVar>
                 <defEn>OFF</defEn>
@@ -4238,7 +4247,9 @@
                 <varName1>SUB_CAMERA_POWER_IO</varName1>
             </pmic7>
         </module>
-        <module name="kpd" column="9" row="8">
+        <module name="kpd">
+            <row>8</row>
+            <column>9</column>
             <keyMatrix>VOLUMEDOWN NC NC NC NC NC NC NC NC
 				NC NC NC NC NC NC NC NC NC
 				NC NC NC NC NC NC NC NC NC
@@ -4257,7 +4268,8 @@
             <pressPeriod>1024</pressPeriod>
             <keyType>NORMAL_TYPE</keyType>
         </module>
-        <module name="power" count="3">
+        <module name="power">
+            <count>3</count>
             <power0>
                 <varName>VMC</varName>
             </power0>
