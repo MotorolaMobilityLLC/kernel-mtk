@@ -264,7 +264,7 @@
 			no-map;
 			size = <0 0xe000>; /* PCM_FIRMWARE_SIZE * DYNA_LOAD_PCM_MAX = 8K * 7 */
 			alignment = <0 0x10000>;
-			alloc-ranges = <0 0x40000000 0 0xc0000000>;
+			alloc-ranges = <0 0x40000000 0 0x80000000>;
 		};
 
 		ram_console-reserved-memory@44400000 {

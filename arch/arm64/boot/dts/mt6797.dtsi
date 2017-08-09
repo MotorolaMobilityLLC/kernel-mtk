@@ -299,7 +299,7 @@ initrd=0x44000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 			no-map;
 			size = <0 0x16000>; /* PCM_FIRMWARE_SIZE * DYNA_LOAD_PCM_MAX = 8K * 11 */
 			alignment = <0 0x10000>;
-			alloc-ranges = <0 0x40000000 0 0xc0000000>;
+			alloc-ranges = <0 0x40000000 0 0x80000000>;
 		};
 
 		/* reserve 64KB at DRAM start + 70MB */
