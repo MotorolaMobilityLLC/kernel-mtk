@@ -461,7 +461,7 @@ static int hmdyhub_probe(struct platform_device *pdev)
 	}
 
 	data.get_data = hmdyhub_get_data;
-	data.vender_div = 100;
+	data.vender_div = 1000;
 	err = hmdy_register_data_path(&data);
 	if (err) {
 		HMDYHUB_ERR("hmdy_register_data_path failed, err = %d\n", err);
