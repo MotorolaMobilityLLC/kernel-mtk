@@ -53,8 +53,6 @@ static int hal_log_print(const char *str, ...)
 
 	pr_err("%s", temp_sring);
 
-/* printk(KERN_INFO "%s",temp_sring); */
-
 	return 0;
 }
 

@@ -58,10 +58,6 @@ do { if (gDbgLevel >= ANT_LOG_WARN)	\
 do { if (gDbgLevel >= ANT_LOG_ERR)	\
 		pr_err(PFX "%s: "   fmt, __func__ , ##arg);	\
 } while (0)
-#define ANT_TRC_FUNC(f)	\
-do { if (gDbgLevel >= ANT_LOG_DBG)	\
-		pr_info(PFX "<%s> <%d>\n", __func__, __LINE__);	\
-} while (0)
 
 #define VERSION "1.0"
 /* #define BT_NVRAM_CUSTOM_NAME "/data/BT_Addr" */
