@@ -67,7 +67,7 @@ static unsigned int c2k_wdt_bit;
 #elif defined(CONFIG_ARCH_MT6735M)
 #define BIU_NODE		"mediatek,mt6735m-mcu_biu"
 #endif
-#define GIC_NODE		"mtk,mt-gic"
+#define GIC_NODE		"mediatek,mt6735-gic"
 #define KP_NODE			"mediatek,mt6735-keypad"
 #define CONSYS_NODE		"mediatek,mt6735-consys"
 #define AUXADC_NODE		"mediatek,mt6735-auxadc"
