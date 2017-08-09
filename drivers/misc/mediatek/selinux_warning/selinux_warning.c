@@ -32,7 +32,7 @@ const char *aee_filter_list[AEE_FILTER_NUM] = {
 /*	"u:r:debuggerd:s0", */
 	"u:r:dhcp:s0",
 	"u:r:dnsmasq:s0",
-	"u:r:drmserver:s0",
+/*	"u:r:drmserver:s0", */
 	"u:r:dumpstate:s0",
 	"u:r:gpsd:s0",
 	"u:r:healthd:s0",
@@ -60,7 +60,7 @@ const char *aee_filter_list[AEE_FILTER_NUM] = {
 /*	"u:r:servicemanager:s0", */
 	"u:r:shared_relro:s0",
 /*	"u:r:shell:s0", */
-	"u:r:system_app:s0",
+/*	"u:r:system_app:s0", */
 /*	"u:r:system_server:s0", */
 	"u:r:surfaceflinger:s0",
 	"u:r:tee:s0",
