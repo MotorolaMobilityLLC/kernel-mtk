@@ -666,7 +666,6 @@
 				regulator-min-microvolt = <900000>;
 				regulator-max-microvolt = <1210000>;
 				regulator-enable-ramp-delay = <264>;
-				regulator-boot-on;
 			};
 
 			mt_pmic_vmipi_ldo_reg: ldo_vmipi {
