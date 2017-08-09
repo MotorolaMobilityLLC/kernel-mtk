@@ -789,12 +789,12 @@ static int cpu_psci_cpu_kill(unsigned int cpu)
 		}
 
 		if (ocp_cl0_init && last_cl0_online_cpus(cpu)) {
-			LittleOCPDisable(0);
+			Cluster0_OCP_OFF();
 			ocp_cl0_init = 0;
 		}
 
 		if (ocp_cl1_init && last_cl1_online_cpus(cpu)) {
-			LittleOCPDisable(1);
+			Cluster1_OCP_OFF();
 			ocp_cl1_init = 0;
 		}
 #endif
