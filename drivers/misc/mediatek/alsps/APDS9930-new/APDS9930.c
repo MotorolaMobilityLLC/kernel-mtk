@@ -179,7 +179,7 @@ static struct i2c_driver APDS9930_i2c_driver = {
 
 static struct APDS9930_priv *APDS9930_obj;
 /*------------------------i2c function for 89-------------------------------------*/
-int APDS9930_i2c_master_operate(struct i2c_client *client, const char *buf, int count, int i2c_flag)
+int APDS9930_i2c_master_operate(struct i2c_client *client, char *buf, int count, int i2c_flag)
 {
 	int res = 0;
 
@@ -197,9 +197,10 @@ int APDS9930_i2c_master_operate(struct i2c_client *client, const char *buf, int 
 		   client->addr |= I2C_WR_FLAG;
 		   client->addr |= I2C_RS_FLAG;
 		 */
-	res = i2c_master_send(client, buf, count);
+		res = i2c_master_send(client, buf, count & 0xFF);
 		/* client->addr &= I2C_MASK_FLAG; */
-	break;
+		res = i2c_master_recv(client, buf, count >> 0x08);
+		break;
 	default:
 		APS_LOG("APDS9930_i2c_master_operate i2c_flag command not support!\n");
 		break;
@@ -478,10 +479,7 @@ int APDS9930_irq_registration(struct i2c_client *client)
 
 	g_APDS9930_ptr = obj;
 
-/*	mt_set_gpio_dir(alsps_int_gpio_number, GPIO_DIR_IN);
-	mt_set_gpio_mode(alsps_int_gpio_number, alsps_int_gpio_number_M_EINT);
-	mt_set_gpio_pull_enable(alsps_int_gpio_number, TRUE);
-	mt_set_gpio_pull_select(alsps_int_gpio_number, GPIO_PULL_UP);*/
+
 	gpio_direction_input(alsps_int_gpio_number);
 
 	ret = request_irq(alsps_irq, alsps_interrupt_handler, IRQF_TRIGGER_FALLING, "als_ps", NULL);
@@ -1045,9 +1043,9 @@ static void APDS9930_irq_work(struct work_struct *work)
 		    ("APDS9930_irq_work APDS9930_CMM_INT_HIGH_THD_LOW after databuf[0]=%d databuf[1]=%d!\n",
 		     databuf[0], databuf[1]);
 #endif
-		err = hwmsen_get_interrupt_data(ID_PROXIMITY, &sensor_data);
+		/*err = hwmsen_get_interrupt_data(ID_PROXIMITY, &sensor_data);
 		if (err)
-			APS_ERR("call hwmsen_get_interrupt_data fail = %d\n", err);
+			APS_ERR("call hwmsen_get_interrupt_data fail = %d\n", err);*/
 
 	}
 
@@ -1642,12 +1640,236 @@ static int APDS9930_i2c_detect(struct i2c_client *client, struct i2c_board_info 
 	strcpy(info->type, APDS9930_DEV_NAME);
 	return 0;
 }
+/* if use  this typ of enable , Gsensor should report inputEvent(x, y, z ,stats, div) to HAL */
+static int als_open_report_data(int open)
+{
+	/* should queuq work to report event if  is_report_input_direct=true */
+	return 0;
+}
 
+/* if use  this typ of enable , Gsensor only enabled but not report inputEvent to HAL */
+
+static int als_enable_nodata(int en)
+{
+	int res = 0;
+#ifdef CUSTOM_KERNEL_SENSORHUB
+	SCP_SENSOR_HUB_DATA req;
+	int len;
+#endif /* #ifdef CUSTOM_KERNEL_SENSORHUB */
+
+	APS_LOG("APDS9930_obj als enable value = %d\n", en);
+
+#ifdef CUSTOM_KERNEL_SENSORHUB
+	if (atomic_read(&APDS9930_obj->init_done)) {
+		req.activate_req.sensorType = ID_LIGHT;
+		req.activate_req.action = SENSOR_HUB_ACTIVATE;
+		req.activate_req.enable = en;
+		len = sizeof(req.activate_req);
+		res = SCP_sensorHub_req_send(&req, &len, 1);
+	} else
+		APS_ERR("sensor hub has not been ready!!\n");
+
+	mutex_lock(&APDS9930_mutex);
+	if (en)
+		set_bit(CMC_BIT_ALS, &APDS9930_obj->enable);
+	else
+		clear_bit(CMC_BIT_ALS, &APDS9930_obj->enable);
+	mutex_unlock(&APDS9930_mutex);
+#else /* #ifdef CUSTOM_KERNEL_SENSORHUB */
+	mutex_lock(&APDS9930_mutex);
+	if (en)
+		set_bit(CMC_BIT_ALS, &APDS9930_obj->enable);
+	else
+		clear_bit(CMC_BIT_ALS, &APDS9930_obj->enable);
+	mutex_unlock(&APDS9930_mutex);
+	if (!APDS9930_obj) {
+		APS_ERR("APDS9930_obj is null!!\n");
+		return -1;
+	}
+	res = APDS9930_enable_als(APDS9930_obj->client, en);
+#endif /* #ifdef CUSTOM_KERNEL_SENSORHUB */
+	if (res) {
+		APS_ERR("als_enable_nodata is failed!!\n");
+		return -1;
+	}
+	return 0;
+}
+
+static int als_set_delay(u64 ns)
+{
+	return 0;
+}
+
+static int als_get_data(int *value, int *status)
+{
+	int err = 0;
+#ifdef CUSTOM_KERNEL_SENSORHUB
+	SCP_SENSOR_HUB_DATA req;
+	int len;
+#else
+	struct APDS9930_priv *obj = NULL;
+#endif /* #ifdef CUSTOM_KERNEL_SENSORHUB */
+
+#ifdef CUSTOM_KERNEL_SENSORHUB
+	if (atomic_read(&APDS9930_obj->init_done)) {
+		req.get_data_req.sensorType = ID_LIGHT;
+		req.get_data_req.action = SENSOR_HUB_GET_DATA;
+		len = sizeof(req.get_data_req);
+		err = SCP_sensorHub_req_send(&req, &len, 1);
+	if (err)
+		APS_ERR("SCP_sensorHub_req_send fail!\n");
+	else {
+		*value = req.get_data_rsp.int16_Data[0];
+		*status = SENSOR_STATUS_ACCURACY_MEDIUM;
+	}
+
+	if (atomic_read(&APDS9930_obj->trace) & CMC_TRC_PS_DATA)
+		APS_LOG("value = %d\n", *value);
+	else {
+		APS_ERR("sensor hub hat not been ready!!\n");
+		err = -1;
+	}
+#else /* #ifdef CUSTOM_KERNEL_SENSORHUB */
+	if (!APDS9930_obj) {
+		APS_ERR("APDS9930_obj is null!!\n");
+		return -1;
+	}
+	obj = APDS9930_obj;
+	err = APDS9930_read_als(obj->client, &obj->als);
+	if (err)
+		err = -1;
+	else {
+		*value = APDS9930_get_als_value(obj, obj->als);
+		if (*value < 0)
+			err = -1;
+		*status = SENSOR_STATUS_ACCURACY_MEDIUM;
+	}
+#endif /* #ifdef CUSTOM_KERNEL_SENSORHUB */
+
+	return err;
+}
+
+/* if use  this typ of enable , Gsensor should report inputEvent(x, y, z ,stats, div) to HAL */
+static int ps_open_report_data(int open)
+{
+	/* should queuq work to report event if  is_report_input_direct=true */
+	return 0;
+}
+
+/* if use  this typ of enable , Gsensor only enabled but not report inputEvent to HAL */
+
+static int ps_enable_nodata(int en)
+{
+	int res = 0;
+#ifdef CUSTOM_KERNEL_SENSORHUB
+	SCP_SENSOR_HUB_DATA req;
+	int len;
+#endif /* #ifdef CUSTOM_KERNEL_SENSORHUB */
+
+	APS_LOG("APDS9930_obj als enable value = %d\n", en);
+
+#ifdef CUSTOM_KERNEL_SENSORHUB
+	if (atomic_read(&APDS9930_obj->init_done)) {
+		req.activate_req.sensorType = ID_PROXIMITY;
+		req.activate_req.action = SENSOR_HUB_ACTIVATE;
+		req.activate_req.enable = en;
+		len = sizeof(req.activate_req);
+		res = SCP_sensorHub_req_send(&req, &len, 1);
+	} else
+		APS_ERR("sensor hub has not been ready!!\n");
+
+	mutex_lock(&APDS9930_mutex);
+	if (en)
+		set_bit(CMC_BIT_PS, &APDS9930_obj->enable);
+	else
+		clear_bit(CMC_BIT_PS, &APDS9930_obj->enable);
+	mutex_unlock(&APDS9930_mutex);
+#else /* #ifdef CUSTOM_KERNEL_SENSORHUB */
+	mutex_lock(&APDS9930_mutex);
+	if (en)
+		set_bit(CMC_BIT_PS, &APDS9930_obj->enable);
+
+	else
+		clear_bit(CMC_BIT_PS, &APDS9930_obj->enable);
+
+	mutex_unlock(&APDS9930_mutex);
+	if (!APDS9930_obj) {
+		APS_ERR("APDS9930_obj is null!!\n");
+		return -1;
+	}
+	res = APDS9930_enable_ps(APDS9930_obj->client, en);
+#endif /* #ifdef CUSTOM_KERNEL_SENSORHUB */
+
+	if (res) {
+		APS_ERR("als_enable_nodata is failed!!\n");
+		return -1;
+	}
+	return 0;
+
+}
+
+static int ps_set_delay(u64 ns)
+{
+	return 0;
+}
+
+static int ps_get_data(int *value, int *status)
+{
+	int err = 0;
+#ifdef CUSTOM_KERNEL_SENSORHUB
+	SCP_SENSOR_HUB_DATA req;
+	int len;
+#endif /* #ifdef CUSTOM_KERNEL_SENSORHUB */
+
+#ifdef CUSTOM_KERNEL_SENSORHUB
+	if (atomic_read(&APDS9930_obj->init_done)) {
+		req.get_data_req.sensorType = ID_PROXIMITY;
+		req.get_data_req.action = SENSOR_HUB_GET_DATA;
+		len = sizeof(req.get_data_req);
+		err = SCP_sensorHub_req_send(&req, &len, 1);
+	if (err) {
+		APS_ERR("SCP_sensorHub_req_send fail!\n");
+		*value = -1;
+		err = -1;
+	} else {
+		*value = req.get_data_rsp.int16_Data[0];
+		*status = SENSOR_STATUS_ACCURACY_MEDIUM;
+	}
+
+	if (atomic_read(&APDS9930_obj->trace) & CMC_TRC_PS_DATA)
+		APS_LOG("value = %d\n", *value)
+	else {
+		APS_ERR("sensor hub has not been ready!!\n");
+		err = -1;
+	}
+#else /* #ifdef CUSTOM_KERNEL_SENSORHUB */
+	if (!APDS9930_obj) {
+		APS_ERR("APDS9930_obj is null!!\n");
+		return -1;
+	}
+
+	err = APDS9930_read_ps(APDS9930_obj->client, &APDS9930_obj->ps);
+	if (err)
+		err = -1;
+	else {
+		*value = APDS9930_get_ps_value(APDS9930_obj, APDS9930_obj->ps);
+		if (*value < 0)
+			err = -1;
+		*status = SENSOR_STATUS_ACCURACY_MEDIUM;
+	}
+#endif /* #ifdef CUSTOM_KERNEL_SENSORHUB */
+
+	return err;
+}
 /*----------------------------------------------------------------------------*/
 static int APDS9930_i2c_probe(struct i2c_client *client, const struct i2c_device_id *id)
 {
 	struct APDS9930_priv *obj;
-	struct hwmsen_object obj_ps, obj_als;
+	/*struct hwmsen_object obj_ps, obj_als;*/
+	struct als_control_path als_ctl = {0};
+	struct als_data_path als_data = {0};
+	struct ps_control_path ps_ctl = {0};
+	struct ps_data_path ps_data = {0};
 	int err = 0;
 
 	APS_FUN();
@@ -1705,13 +1927,12 @@ static int APDS9930_i2c_probe(struct i2c_client *client, const struct i2c_device
 
 	APDS9930_i2c_client = client;
 
-	if (1 == obj->hw->polling_mode_ps)
-		/* if (1) */
+	/*if (1 == obj->hw->polling_mode_ps)
 	{
 		obj_ps.polling = 1;
 	} else {
 		obj_ps.polling = 0;
-	}
+	}*/
 
 	err = APDS9930_init_client(client);
 	if (err)
@@ -1723,8 +1944,10 @@ static int APDS9930_i2c_probe(struct i2c_client *client, const struct i2c_device
 		APS_ERR("APDS9930_device register failed\n");
 		goto exit_misc_device_register_failed;
 	}
+	als_ctl.is_use_common_factory = false;
+	ps_ctl.is_use_common_factory = false;
 
-	obj_ps.self = APDS9930_obj;
+/*	obj_ps.self = APDS9930_obj;
 
 	obj_ps.sensor_operate = APDS9930_ps_operate;
 	err = hwmsen_attach(ID_PROXIMITY, &obj_ps);
@@ -1740,18 +1963,73 @@ static int APDS9930_i2c_probe(struct i2c_client *client, const struct i2c_device
 	if (err) {
 		APS_ERR("attach fail = %d\n", err);
 		goto exit_create_attr_failed;
-	}
+	}*/
 #if defined(CONFIG_HAS_EARLYSUSPEND)
 	obj->early_drv.level = EARLY_SUSPEND_LEVEL_DISABLE_FB - 1,
 		obj->early_drv.suspend = APDS9930_early_suspend,
 		obj->early_drv.resume = APDS9930_late_resume, register_early_suspend(&obj->early_drv);
 #endif
+	als_ctl.open_report_data = als_open_report_data;
+	als_ctl.enable_nodata = als_enable_nodata;
+	als_ctl.set_delay  = als_set_delay;
+	als_ctl.is_report_input_direct = false;
+#ifdef CUSTOM_KERNEL_SENSORHUB
+	als_ctl.is_support_batch = obj->hw->is_batch_supported_als;
+#else
+	als_ctl.is_support_batch = false;
+#endif
+
+	err = als_register_control_path(&als_ctl);
+	if (err) {
+		APS_ERR("register fail = %d\n", err);
+		goto exit_sensor_obj_attach_fail;
+	}
+
+	als_data.get_data = als_get_data;
+	als_data.vender_div = 100;
+	err = als_register_data_path(&als_data);
+	if (err) {
+		APS_ERR("tregister fail = %d\n", err);
+		goto exit_sensor_obj_attach_fail;
+	}
+
+	ps_ctl.open_report_data = ps_open_report_data;
+	ps_ctl.enable_nodata = ps_enable_nodata;
+	ps_ctl.set_delay  = ps_set_delay;
+	ps_ctl.is_report_input_direct = false;
+#ifdef CUSTOM_KERNEL_SENSORHUB
+	ps_ctl.is_support_batch = obj->hw->is_batch_supported_ps;
+#else
+	ps_ctl.is_support_batch = false;
+#endif
+	err = ps_register_control_path(&ps_ctl);
+	if (err) {
+		APS_ERR("register fail = %d\n", err);
+		goto exit_sensor_obj_attach_fail;
+	}
+
+	ps_data.get_data = ps_get_data;
+	ps_data.vender_div = 100;
+	err = ps_register_data_path(&ps_data);
+	if (err) {
+		APS_ERR("tregister fail = %d\n", err);
+		goto exit_sensor_obj_attach_fail;
+	}
+
+	err = batch_register_support_info(ID_LIGHT, als_ctl.is_support_batch, 1, 0);
+	if (err)
+		APS_ERR("register light batch support err = %d\n", err);
+
+	err = batch_register_support_info(ID_PROXIMITY, ps_ctl.is_support_batch, 1, 0);
+	if (err)
+		APS_ERR("register proximity batch support err = %d\n", err);
 
 	APDS9930_init_flag = 0;
 	APS_LOG("%s: OK\n", __func__);
 	return 0;
 
-exit_create_attr_failed:
+/*exit_create_attr_failed:*/
+exit_sensor_obj_attach_fail:
 	misc_deregister(&APDS9930_device);
 exit_misc_device_register_failed:
 exit_init_failed:
