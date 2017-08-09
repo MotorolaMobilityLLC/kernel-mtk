@@ -92,8 +92,11 @@ static const struct of_device_id masp_of_ids[] = {
  ******************************/
 int es_probe(struct platform_device *dev)
 {
-
+	#ifdef CONFIG_ARM64
 	es_base = (unsigned long long)of_iomap(dev->dev.of_node, 0);
+	#else
+	es_base = (unsigned int)of_iomap(dev->dev.of_node, 0);
+	#endif
 	if (!es_base) {
 		pr_err("[%s] ES register remapping failed\n", SEC_DEV_NAME);
 		return -ENXIO;
@@ -206,7 +209,11 @@ static int sec_init(struct platform_device *dev)
 
 	pr_debug("[%s] sec_init (%d)\n", SEC_DEV_NAME, ret);
 
+	#ifdef CONFIG_ARM64
 	hacc_base = (unsigned long long)of_iomap(dev->dev.of_node, 0);
+	#else
+	hacc_base = (unsigned int)of_iomap(dev->dev.of_node, 0);
+	#endif
 	if (!hacc_base) {
 		pr_err("[%s] HACC register remapping failed\n", SEC_DEV_NAME);
 		return -ENXIO;
