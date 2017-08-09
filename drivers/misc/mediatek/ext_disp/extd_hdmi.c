@@ -1140,9 +1140,9 @@ int hdmi_get_dev_info(int is_sf, void *info)
 		dispif_info->isHwVsyncAvailable = HW_DPI_VSYNC_SUPPORT;
 
 		if (hdmi_reschange == HDMI_VIDEO_1920x1080p_30Hz)
-			hdmi_info.vsyncFPS = 30;
+			dispif_info->vsyncFPS = 30;
 		else
-			hdmi_info.vsyncFPS = 60;
+			dispif_info->vsyncFPS = 60;
 
 		if (dispif_info->displayWidth * dispif_info->displayHeight <= 240 * 432)
 			dispif_info->physicalHeight = dispif_info->physicalWidth = 0;
