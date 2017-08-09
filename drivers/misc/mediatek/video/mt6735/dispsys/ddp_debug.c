@@ -709,10 +709,10 @@ static void process_dbg_opt(const char *opt)
 			iounmap((void *)reg_va);
 		}
 	} else if (0 == strncmp(opt, "dbg_log:", 8)) {
-		unsigned int enable = 0;
+		unsigned long int enable = 0;
 
 		p = (char *)opt + 8;
-		ret = kstrtoul(p, 10, (unsigned long int *)&enable);
+		ret = kstrtoul(p, 10, &enable);
 		if (ret)
 			pr_err("DISP/%s: errno %d\n", __func__, ret);
 
