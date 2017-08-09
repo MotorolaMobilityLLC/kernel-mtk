@@ -770,6 +770,11 @@ Add per station flow control when STA is in PS
 ********************************************************************************
 */
 typedef struct _ENHANCE_MODE_DATA_STRUCT_T SDIO_CTRL_T, *P_SDIO_CTRL_T;
+struct ESS_SCAN_RESULT_T {
+	UINT_8 aucBSSID[MAC_ADDR_LEN];
+	UINT_16 u2SSIDLen;
+	UINT_8 aucSSID[32];
+};
 
 typedef struct _WLAN_INFO_T {
 	PARAM_BSSID_EX_T rCurrBssId;
@@ -778,6 +783,9 @@ typedef struct _WLAN_INFO_T {
 	PARAM_BSSID_EX_T arScanResult[CFG_MAX_NUM_BSS_LIST];
 	PUINT_8 apucScanResultIEs[CFG_MAX_NUM_BSS_LIST];
 	UINT_32 u4ScanResultNum;
+
+	struct ESS_SCAN_RESULT_T arScanResultEss[CFG_MAX_NUM_BSS_LIST];
+	UINT_32 u4ScanResultEssNum;
 
 	/* IE pool for Scanning Result */
 	UINT_8 aucScanIEBuf[CFG_MAX_COMMON_IE_BUF_LEN];

@@ -4331,6 +4331,7 @@ VOID aisFsmScanRequest(IN P_ADAPTER_T prAdapter, IN P_PARAM_SSID_T prSsid, IN PU
 
 	if (!prConnSettings->fgIsScanReqIssued) {
 		prConnSettings->fgIsScanReqIssued = TRUE;
+		scanInitEssResult(prAdapter);
 
 		if (prSsid == NULL) {
 			prAisFsmInfo->ucScanSSIDNum = 0;
@@ -4410,6 +4411,7 @@ aisFsmScanRequestAdv(IN P_ADAPTER_T prAdapter,
 
 	if (!prConnSettings->fgIsScanReqIssued) {
 		prConnSettings->fgIsScanReqIssued = TRUE;
+		scanInitEssResult(prAdapter);
 
 		if (ucSsidNum == 0) {
 			prAisFsmInfo->ucScanSSIDNum = 0;

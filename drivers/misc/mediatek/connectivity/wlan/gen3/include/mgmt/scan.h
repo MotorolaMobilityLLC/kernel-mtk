@@ -1001,4 +1001,6 @@ VOID scnGscnGetResultReplyCheckTimeout(IN P_ADAPTER_T prAdapter, ULONG ulParamPt
 
 VOID scnScanDoneTimeout(IN P_ADAPTER_T prAdapter, ULONG ulParamPtr);
 
+VOID scanLogEssResult(P_ADAPTER_T prAdapter);
+VOID scanInitEssResult(P_ADAPTER_T prAdapter);
 #endif /* _SCAN_H */
