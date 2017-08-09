@@ -93,7 +93,7 @@ P_WMT_FUNC_OPS gpWmtFuncOps[4] = {
 */
 
 static WMT_CTX gMtkWmtCtx;
-static UINT8 gLpbkBuf[1024] = { 0 };
+static UINT8 gLpbkBuf[1024+5] = { 0 };
 
 /*******************************************************************************
 *                  F U N C T I O N   D E C L A R A T I O N S

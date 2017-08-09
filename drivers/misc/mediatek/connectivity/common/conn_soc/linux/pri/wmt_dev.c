@@ -109,7 +109,7 @@ static int gWmtMajor = WMT_DEV_MAJOR;
 static struct cdev gWmtCdev;
 static atomic_t gWmtRefCnt = ATOMIC_INIT(0);
 /* WMT driver information */
-static UINT8 gLpbkBuf[1024] = { 0 };
+static UINT8 gLpbkBuf[1024+5] = { 0 };
 
 static UINT32 gLpbkBufLog;	/* George LPBK debug */
 static INT32 gWmtInitDone;
