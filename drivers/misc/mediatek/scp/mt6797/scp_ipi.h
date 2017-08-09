@@ -11,7 +11,8 @@
 #define SCP_DEBUG_SP_REG       (*(volatile unsigned int *)(scpreg.cfg + 0x00A8))
 #define SCP_WDT_REG            (*(volatile unsigned int *)(scpreg.cfg + 0x0084))
 #define SCP_TO_SPM_REG         (*(volatile unsigned int *)(scpreg.cfg + 0x0020))
-
+#define SCP_GENERAL_REG0       (*(volatile unsigned int *)(scpreg.cfg + 0x0050))
+#define SCP_SLEEP_DEBUG_REG    (*(volatile unsigned int *)(scpreg.clkctrl + 0x0028))
 
 #define SCP_IRQ_MD2HOST     (1 << 0)
 #define SCP_IRQ_WDT         (1 << 8)
@@ -44,6 +45,15 @@ typedef enum ipi_id {
 	IPI_ETM_DUMP,
 	IPI_APCCCI,
 	IPI_RAM_DUMP,
+	IPI_DVFS_DEBUG,
+	IPI_DVFS_FIX_OPP_SET,
+	IPI_DVFS_FIX_OPP_EN,
+	IPI_DVFS_LIMIT_OPP_SET,
+	IPI_DVFS_LIMIT_OPP_EN,
+	IPI_DVFS_DISABLE,
+	IPI_DVFS_INFO_DUMP,
+	IPI_DUMP_REG,
+	IPI_SCP_STATE,
 	SCP_NR_IPI,
 } ipi_id;
 
@@ -71,6 +81,7 @@ struct share_obj {
 extern ipi_status scp_ipi_registration(enum ipi_id id, ipi_handler_t handler, const char *name);
 extern ipi_status scp_ipi_send(enum ipi_id id, void *buf, unsigned int len, unsigned int wait);
 extern void scp_ipi_handler(void);
+extern int wake_up_scp(void);
 
 extern unsigned char *scp_send_buff;
 extern unsigned char *scp_recv_buff;
