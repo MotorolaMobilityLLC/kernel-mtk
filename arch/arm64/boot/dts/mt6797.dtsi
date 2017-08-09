@@ -1938,7 +1938,7 @@ initrd=0x44000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 		};
 
 		vdec_gcon@16000000 {
-			compatible = "mediatek,vdec_gcon";
+			compatible = "mediatek,mt6797-vdec_gcon";
 			reg = <0x16000000 0x10000>;
 		};
 
@@ -1949,58 +1949,58 @@ initrd=0x44000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 		};
 
 		vdec@16020000 {
-			compatible = "mediatek,vdec";
+			compatible = "mediatek,mt6797-vdec";
 			reg = <0x16020000 0x10000>;
 			interrupts = <GIC_SPI 240 IRQ_TYPE_LEVEL_LOW>;
 		};
 
 		vld@16021000 {
-			compatible = "mediatek,vld";
+			compatible = "mediatek,mt6797-vld";
 			reg = <0x16021000 0x800>;
 		};
 
 		vld_top@16021800 {
-			compatible = "mediatek,vld_top";
+			compatible = "mediatek,mt6797-vld_top";
 			reg = <0x16021800 0x800>;
 		};
 
 		mc@16022000 {
-			compatible = "mediatek,mc";
+			compatible = "mediatek,mt6797-mc";
 			reg = <0x16022000 0x1000>;
 		};
 
 		avc_vld@16023000 {
-			compatible = "mediatek,avc_vld";
+			compatible = "mediatek,mt6797-avc_vld";
 			reg = <0x16023000 0x1000>;
 		};
 
 		avc_mv@16024000 {
-			compatible = "mediatek,avc_mv";
+			compatible = "mediatek,mt6797-avc_mv";
 			reg = <0x16024000 0x1000>;
 		};
 
 		vdec_pp@16025000 {
-			compatible = "mediatek,vdec_pp";
+			compatible = "mediatek,mt6797-vdec_pp";
 			reg = <0x16025000 0x1000>;
 		};
 
 		vp8_vld@16026800 {
-			compatible = "mediatek,vp8_vld";
+			compatible = "mediatek,mt6797-vp8_vld";
 			reg = <0x16026800 0x800>;
 		};
 
 		vld2@16027800 {
-			compatible = "mediatek,vld2";
+			compatible = "mediatek,mt6797-vld2";
 			reg = <0x16027800 0x800>;
 		};
 
 		hevc_vld@16028000 {
-			compatible = "mediatek,hevc_vld";
+			compatible = "mediatek,mt6797-hevc_vld";
 			reg = <0x16028000 0x1000>;
 		};
 
 		venc_gcon@17000000 {
-			compatible = "mediatek,venc_gcon";
+			compatible = "mediatek,mt6797-venc_gcon";
 			reg = <0x17000000 0x1000>;
 		};
 
@@ -2011,7 +2011,7 @@ initrd=0x44000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 		};
 
 		venc@17002000 {
-			compatible = "mediatek,venc";
+			compatible = "mediatek,mt6797-venc";
 			reg = <0x17002000 0x1000>;
 			interrupts = <GIC_SPI 235 IRQ_TYPE_LEVEL_LOW>;
 		};

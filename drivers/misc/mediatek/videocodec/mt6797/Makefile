@@ -1,25 +1,10 @@
 #include $(srctree)/drivers/misc/mediatek/Makefile.custom
 
-ifeq ($(strip $(CONFIG_ARCH_MT6797)),y)
 vcodec_kernel_driver-objs :=        \
-    videocodec_kernel_driver_D1.o      \
+    videocodec_kernel_driver.o      \
     common/val/src/val.o			\
     common/drv/src/drv_base.o
-endif
 
-ifeq ($(strip $(CONFIG_ARCH_MT6797M)),y)
-vcodec_kernel_driver-objs :=        \
-    videocodec_kernel_driver_D2.o      \
-    common/val/src/val.o			\
-    common/drv/src/drv_base.o
-endif
-
-ifeq ($(strip $(CONFIG_ARCH_MT6753)),y)
-vcodec_kernel_driver-objs :=        \
-    videocodec_kernel_driver_D3.o      \
-    common/val/src/val.o			\
-    common/drv/src/drv_base.o
-endif
 
 obj-$(CONFIG_MTK_VIDEOCODEC_DRIVER) += vcodec_kernel_driver.o
 

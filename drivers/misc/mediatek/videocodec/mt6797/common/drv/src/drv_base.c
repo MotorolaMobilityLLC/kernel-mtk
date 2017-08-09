@@ -141,7 +141,7 @@ VAL_VCODEC_OAL_HW_CONTEXT_T *setCurr_HWLockSlot_Thread_ID(VAL_VCODEC_THREAD_ID_T
 		MODULE_MFV_LOGD
 		    ("[VCODEC][setCurr_HWLockSlot_Thread_ID] VCodecThreadNum = %d, VCodecThreadID = %d\n",
 		     a_prVcodecThreadID.u4VCodecThreadNum, a_prVcodecThreadID.u4VCodecThreadID[i]
-		    );
+			);
 	}
 
 	/* check if current tids exist in oal_hw_context[i].ObjId */
@@ -208,7 +208,7 @@ VAL_VCODEC_OAL_HW_CONTEXT_T *freeCurr_HWLockSlot(VAL_ULONG_T ulpa)
 				oal_hw_context[i].u4VCodecThreadID[j] = -1;
 			}
 			oal_hw_context[i].u4VCodecThreadNum = VCODEC_THREAD_MAX_NUM;
-			oal_hw_context[i].Oal_HW_reg = (VAL_VCODEC_OAL_HW_REGISTER_T *) 0;
+			oal_hw_context[i].Oal_HW_reg = (VAL_VCODEC_OAL_HW_REGISTER_T  *)0;
 			MODULE_MFV_LOGD("[VCODEC] freeCurr_HWLockSlot %d Slot\n", i);
 			return &oal_hw_context[i];
 		}
@@ -235,7 +235,7 @@ void Add_NonCacheMemoryList(VAL_ULONG_T a_ulKVA,
 		    && (grNonCacheMemoryList[u4I].ulKPA == -1L)) {
 			MODULE_MFV_LOGD
 			    ("[VCODEC] Add_NonCacheMemoryList index = %d, VCodecThreadNum = %d, curr_tid = %d\n",
-			     u4I, a_u4VCodecThreadNum, current->pid);
+				u4I, a_u4VCodecThreadNum, current->pid);
 
 			grNonCacheMemoryList[u4I].u4VCodecThreadNum = a_u4VCodecThreadNum;
 			for (u4J = 0; u4J < grNonCacheMemoryList[u4I].u4VCodecThreadNum; u4J++) {

@@ -4,14 +4,14 @@
 #define MFV_IOC_MAGIC    'M'
 
 /* below is control message */
-#define MFV_TEST_CMD                   _IO(MFV_IOC_MAGIC,  0x00)
-#define MFV_INIT_CMD                   _IO(MFV_IOC_MAGIC, 0x01)
-#define MFV_DEINIT_CMD                 _IO(MFV_IOC_MAGIC, 0x02)
+#define MFV_TEST_CMD                            _IO(MFV_IOC_MAGIC,  0x00)
+#define MFV_INIT_CMD                            _IO(MFV_IOC_MAGIC, 0x01)
+#define MFV_DEINIT_CMD                          _IO(MFV_IOC_MAGIC, 0x02)
 #define MFV_SET_CMD_CMD                _IOW(MFV_IOC_MAGIC, 0x03, unsigned int) /* P_MFV_DRV_CMD_QUEUE_T */
 #define MFV_SET_PWR_CMD                _IOW(MFV_IOC_MAGIC, 0x04, unsigned int) /* HAL_POWER_T * */
 #define MFV_SET_ISR_CMD                _IOW(MFV_IOC_MAGIC, 0x05, unsigned int) /* HAL_ISR_T * */
-#define MFV_ALLOC_MEM_CMD              _IOW(MFV_IOC_MAGIC, 0x06, unsigned int)
-#define MFV_FREE_MEM_CMD               _IOW(MFV_IOC_MAGIC, 0x07, unsigned int)
+#define MFV_ALLOC_MEM_CMD                       _IOW(MFV_IOC_MAGIC, 0x06, unsigned int)
+#define MFV_FREE_MEM_CMD                        _IOW(MFV_IOC_MAGIC, 0x07, unsigned int)
 #define MFV_MAKE_PMEM_TO_NONCACHED     _IOW(MFV_IOC_MAGIC, 0x08, unsigned int) /* unsigned int* */
 #define MFV_ALLOC_INT_MEM_CMD          _IOW(MFV_IOC_MAGIC, 0x09, unsigned int) /* VAL_INTMEM_T* */
 #define MFV_FREE_INT_MEM_CMD           _IOW(MFV_IOC_MAGIC, 0x0a, unsigned int) /* VAL_INTMEM_T* */
@@ -41,7 +41,6 @@
 #define VCODEC_UNLOCKHW                _IOW(MFV_IOC_MAGIC, 0x33, unsigned int) /* VAL_HW_LOCK_T * */
 #define VCODEC_MB                      _IOW(MFV_IOC_MAGIC, 0x34, unsigned int) /* VAL_UINT32_T * */
 
-extern unsigned long get_cpu_load(int cpu);
 
 /* #define MFV_GET_CACHECTRLADDR_CMD  _IOR(MFV_IOC_MAGIC, 0x06, int) */
 

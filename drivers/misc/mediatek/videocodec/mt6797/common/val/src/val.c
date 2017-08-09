@@ -17,7 +17,7 @@
 #define MAX_HEAP_SIZE   (0x1000000)
 #ifdef _6573_FPGA
 #define GMC             0xC8000000
-#else				/* _6573_REAL_CHIP E1 address */
+#else /* _6573_REAL_CHIP E1 address */
 #define GMC             0x40000000
 #endif
 
@@ -73,13 +73,13 @@ VAL_RESULT_T eVideoCreateEvent(VAL_EVENT_T *a_prParam, VAL_UINT32_T a_u4ParamSiz
 	pFlag = kmalloc(sizeof(VAL_UINT8_T), GFP_ATOMIC);
 	if (pWaitQueue != VAL_NULL) {
 		init_waitqueue_head(pWaitQueue);
-		a_prParam->pvWaitQueue = (VAL_VOID_T *) pWaitQueue;
+		a_prParam->pvWaitQueue = (VAL_VOID_T *)pWaitQueue;
 	} else {
 		MODULE_MFV_LOGE("[VCODEC][ERROR] Event wait Queue failed to create\n");
 	}
 	if (pFlag != VAL_NULL) {
-		a_prParam->pvReserved = (VAL_VOID_T *) pFlag;
-		*((VAL_UINT8_T *) a_prParam->pvReserved) = VAL_FALSE;
+		a_prParam->pvReserved = (VAL_VOID_T *)pFlag;
+		*((VAL_UINT8_T *)a_prParam->pvReserved) = VAL_FALSE;
 	} else {
 		MODULE_MFV_LOGE("[VCODEC][ERROR] Event flag failed to create\n");
 	}
@@ -92,24 +92,24 @@ VAL_RESULT_T eVideoCloseEvent(VAL_EVENT_T *a_prParam, VAL_UINT32_T a_u4ParamSize
 	wait_queue_head_t *pWaitQueue;
 	VAL_UINT8_T *pFlag;
 
-	pWaitQueue = (wait_queue_head_t *) a_prParam->pvWaitQueue;
-	pFlag = (VAL_UINT8_T *) a_prParam->pvReserved;
+	pWaitQueue = (wait_queue_head_t *)a_prParam->pvWaitQueue;
+	pFlag      = (VAL_UINT8_T *)a_prParam->pvReserved;
 
 	kfree(pWaitQueue);
 	kfree(pFlag);
 
 	a_prParam->pvWaitQueue = VAL_NULL;
-	a_prParam->pvReserved = VAL_NULL;
+	a_prParam->pvReserved  = VAL_NULL;
 	return VAL_RESULT_NO_ERROR;
 }
 
 VAL_RESULT_T eVideoWaitEvent(VAL_EVENT_T *a_prParam, VAL_UINT32_T a_u4ParamSize)
 {
 	wait_queue_head_t *pWaitQueue;
-	long timeout_jiff, i4Ret;
-	VAL_RESULT_T status;
+	long               timeout_jiff, i4Ret;
+	VAL_RESULT_T       status;
 
-	pWaitQueue = (wait_queue_head_t *) a_prParam->pvWaitQueue;
+	pWaitQueue   = (wait_queue_head_t *)a_prParam->pvWaitQueue;
 	timeout_jiff = (a_prParam->u4TimeoutMs) * HZ / 1000;
 	/* MODULE_MFV_LOGD("[MFV]eVideoWaitEvent,a_prParam->u4TimeoutMs=%d, timeout = %ld\n",
 	   a_prParam->u4TimeoutMs,timeout_jiff); */
@@ -128,7 +128,7 @@ VAL_RESULT_T eVideoWaitEvent(VAL_EVENT_T *a_prParam, VAL_UINT32_T a_u4ParamSize)
 		MODULE_MFV_LOGE("[VCODEC] eVideoWaitEvent wake up by %ld", i4Ret);
 		status = VAL_RESULT_NO_ERROR;
 	}
-	*((VAL_UINT8_T *) a_prParam->pvReserved) = VAL_FALSE;
+	*((VAL_UINT8_T *)a_prParam->pvReserved) = VAL_FALSE;
 	return status;
 }
 
@@ -136,16 +136,16 @@ VAL_RESULT_T eVideoSetEvent(VAL_EVENT_T *a_prParam, VAL_UINT32_T a_u4ParamSize)
 {
 	wait_queue_head_t *pWaitQueue;
 	/* MODULE_MFV_LOGD("[MFV]eVideoSetEvent\n"); */
-	pWaitQueue = (wait_queue_head_t *) a_prParam->pvWaitQueue;
+	pWaitQueue = (wait_queue_head_t *)a_prParam->pvWaitQueue;
 	if (a_prParam->pvReserved != VAL_NULL) {
 		/* Add one line comment for avoid kernel coding style, WARNING:BRACES: */
-		*((VAL_UINT8_T *) a_prParam->pvReserved) = VAL_TRUE;
+		*((VAL_UINT8_T *)a_prParam->pvReserved) = VAL_TRUE;
 	} else {
 		MODULE_MFV_LOGE("[VCODEC][ERROR]Event flag should not be null\n");
 	}
 	if (pWaitQueue != VAL_NULL) {
 		/* Add one line comment for avoid kernel coding style, WARNING:BRACES: */
-		wake_up_interruptible(pWaitQueue);
+	wake_up_interruptible(pWaitQueue);
 	} else {
 		MODULE_MFV_LOGE("[VCODEC][ERROR]Wait Queue should not be null\n");
 	}
@@ -159,7 +159,7 @@ VAL_RESULT_T eVideoCreateMutex(VAL_MUTEX_T *a_prParam, VAL_UINT32_T a_u4ParamSiz
 	pLock = kmalloc(sizeof(struct semaphore), GFP_ATOMIC);
 	if (pLock != VAL_NULL) {
 		/* Add one line comment for avoid kernel coding style, WARNING:BRACES: */
-		a_prParam->pvMutex = (VAL_VOID_T *) pLock;
+		a_prParam->pvMutex = (VAL_VOID_T *)pLock;
 	} else {
 		MODULE_MFV_LOGE("[VCODEC][ERROR]Enable to create mutex!\n");
 	}
