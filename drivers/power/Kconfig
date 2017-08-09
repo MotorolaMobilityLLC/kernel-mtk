@@ -402,3 +402,6 @@ source "drivers/power/reset/Kconfig"
 endif # POWER_SUPPLY
 
 source "drivers/power/avs/Kconfig"
+if ARCH_MT8173
+source "drivers/power/mt81xx/Kconfig"
+endif
