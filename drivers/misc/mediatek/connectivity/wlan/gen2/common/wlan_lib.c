@@ -3421,7 +3421,7 @@ WLAN_STATUS wlanUpdateNetworkAddress(IN P_ADAPTER_T prAdapter)
 			return WLAN_STATUS_SUCCESS;
 		}
 #if CFG_SHOW_MACADDR_SOURCE
-		DBGLOG(INIT, INFO, "Using dynamically generated MAC address");
+		DBGLOG(INIT, TRACE, "Using dynamically generated MAC address");
 #endif
 		/* dynamic generate */
 		u4SysTime = kalGetTimeTick();
@@ -4503,10 +4503,10 @@ WLAN_STATUS wlanLoadManufactureData(IN P_ADAPTER_T prAdapter, IN P_REG_INFO_T pr
 			prAdapter->fgEnable5GBand = TRUE;
 	} else
 		prAdapter->fgEnable5GBand = FALSE;
-
+/*
 	DBGLOG(INIT, INFO, "NVRAM 5G Enable(%d) SW_En(%d) HW_Dis(%d)\n",
 	       prRegInfo->ucEnable5GBand, prRegInfo->ucSupport5GBand, prAdapter->fgIsHw5GBandDisabled);
-
+*/
 	/* 4. Send EFUSE data */
 #if  defined(MT6628)
 	wlanChangeNvram6620to6628(prRegInfo->aucEFUSE);
@@ -4532,7 +4532,8 @@ WLAN_STATUS wlanLoadManufactureData(IN P_ADAPTER_T prAdapter, IN P_REG_INFO_T pr
 	prAdapter->rWifiVar.rConnSettings.u2CountryCode =
 	    (((UINT_16) prRegInfo->au2CountryCode[0]) << 8) | (((UINT_16) prRegInfo->au2CountryCode[1]) & BITS(0, 7));
 
-	DBGLOG(INIT, INFO, "NVRAM CountryCode(0x%x 0x%x)\n",
+	DBGLOG(INIT, INFO, "NVRAM 5G Enable(%d) SW_En(%d) HW_Dis(%d) CountryCode(0x%x 0x%x)\n",
+		prRegInfo->ucEnable5GBand, prRegInfo->ucSupport5GBand, prAdapter->fgIsHw5GBandDisabled,
 		prRegInfo->au2CountryCode[0], prRegInfo->au2CountryCode[1]);
 
 #if 0				/* Bandwidth control will be controlled by GUI. 20110930

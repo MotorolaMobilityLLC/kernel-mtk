@@ -1305,7 +1305,7 @@ BOOLEAN glRegisterP2P(P_GLUE_INFO_T prGlueInfo, const char *prDevName, BOOLEAN f
 	prHif = &prGlueInfo->rHifInfo;
 	ASSERT(prHif);
 
-	DBGLOG(P2P, INFO, "glRegisterP2P\n");
+	DBGLOG(P2P, TRACE, "glRegisterP2P\n");
 #if CFG_ENABLE_WIFI_DIRECT_CFG_80211
 	if (!gprP2pWdev) {
 		DBGLOG(P2P, ERROR, "gl_p2p, wireless device is not exist\n");

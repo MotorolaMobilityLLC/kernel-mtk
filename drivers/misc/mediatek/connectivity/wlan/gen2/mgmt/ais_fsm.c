@@ -1156,7 +1156,7 @@ VOID aisFsmInit(IN P_ADAPTER_T prAdapter)
 	P_AIS_SPECIFIC_BSS_INFO_T prAisSpecificBssInfo;
 
 	DEBUGFUNC("aisFsmInit()");
-	DBGLOG(SW1, INFO, "->aisFsmInit()\n");
+	DBGLOG(SW1, TRACE, "->aisFsmInit()\n");
 
 	prAisFsmInfo = &(prAdapter->rWifiVar.rAisFsmInfo);
 	prAisBssInfo = &(prAdapter->rWifiVar.arBssInfo[NETWORK_TYPE_AIS_INDEX]);
