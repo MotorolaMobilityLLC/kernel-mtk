@@ -475,6 +475,7 @@ WLAN_STATUS authSendAuthFrame(IN P_ADAPTER_T prAdapter, IN P_STA_RECORD_T prStaR
 
 	nicTxConfigPktControlFlag(prMsduInfo, MSDU_CONTROL_FLAG_FORCE_TX, TRUE);
 
+	DBGLOG(SAA, INFO, "Send Auth, SeqNo: %d\n", prMsduInfo->ucTxSeqNum);
 	/* 4 <6> Inform TXM  to send this Authentication frame. */
 	nicTxEnqueueMsdu(prAdapter, prMsduInfo);
 
@@ -605,6 +606,7 @@ authSendAuthFrame(IN P_ADAPTER_T prAdapter,
 	/* TODO(Kevin): Also release the unused tail room of the composed MMPDU */
 
 	nicTxConfigPktControlFlag(prMsduInfo, MSDU_CONTROL_FLAG_FORCE_TX, TRUE);
+	DBGLOG(SAA, INFO, "Send Auth Frame, SeqNO: %d\n", prMsduInfo->ucTxSeqNum);
 
 	/* 4 <6> Inform TXM  to send this Authentication frame. */
 	nicTxEnqueueMsdu(prAdapter, prMsduInfo);
@@ -1150,6 +1152,7 @@ WLAN_STATUS authProcessRxDeauthFrame(IN P_SW_RFB_T prSwRfb, IN UINT_8 aucBSSID[]
 	/* 4 <3> Parse the Fixed Fields of Deauthentication Frame Body. */
 	WLAN_GET_FIELD_16(&prDeauthFrame->u2ReasonCode, &u2RxReasonCode);
 	*pu2ReasonCode = u2RxReasonCode;
+	DBGLOG(SAA, INFO, "RX deauth, reason code: %d\n", u2RxReasonCode);
 
 	return WLAN_STATUS_SUCCESS;
 

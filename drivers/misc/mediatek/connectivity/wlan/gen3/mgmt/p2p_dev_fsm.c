@@ -748,10 +748,11 @@ p2pDevFsmRunEventMgmtFrameTxDone(IN P_ADAPTER_T prAdapter,
 			p2pDevFsmStateTransition(prAdapter, prP2pDevFsmInfo, P2P_DEV_STATE_OFF_CHNL_TX);
 
 		if (rTxDoneStatus != TX_RESULT_SUCCESS) {
-			DBGLOG(P2P, TRACE, "Mgmt Frame TX Fail, Status:%d.\n", rTxDoneStatus);
+			DBGLOG(P2P, INFO, "Mgmt Frame TX Fail, Status: %d, SeqNO: %d.\n",
+				rTxDoneStatus, prMsduInfo->ucTxSeqNum);
 		} else {
 			fgIsSuccess = TRUE;
-			DBGLOG(P2P, TRACE, "Mgmt Frame TX Done.\n");
+			DBGLOG(P2P, INFO, "Mgmt Frame TX Done, SeqNO: %d.\n", prMsduInfo->ucTxSeqNum);
 		}
 
 		kalP2PIndicateMgmtTxStatus(prAdapter->prGlueInfo, prMsduInfo, fgIsSuccess);

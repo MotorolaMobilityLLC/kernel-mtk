@@ -1004,6 +1004,7 @@ WLAN_STATUS assocSendReAssocReqFrame(IN P_ADAPTER_T prAdapter, IN P_STA_RECORD_T
 	/* TODO(Kevin): Also release the unused tail room of the composed MMPDU */
 
 	nicTxConfigPktControlFlag(prMsduInfo, MSDU_CONTROL_FLAG_FORCE_TX, TRUE);
+	DBGLOG(SAA, INFO, "Send Assoc Req Frame, SeqNO: %d\n", prMsduInfo->ucTxSeqNum);
 
 	/* 4 <6> Enqueue the frame to send this (Re)Association request frame. */
 	nicTxEnqueueMsdu(prAdapter, prMsduInfo);
@@ -1264,6 +1265,8 @@ assocCheckRxReAssocRspFrameStatus(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRf
 #endif
 	*pu2StatusCode = u2RxStatusCode;
 
+	DBGLOG(SAA, INFO, "RX Assoc Response, u2RxStatusCode: %d\n", u2RxStatusCode);
+
 	return WLAN_STATUS_SUCCESS;
 
 }				/* end of assocCheckRxReAssocRspFrameStatus() */
@@ -1383,6 +1386,7 @@ WLAN_STATUS assocSendDisAssocFrame(IN P_ADAPTER_T prAdapter, IN P_STA_RECORD_T p
 	}
 #endif
 
+	DBGLOG(SAA, INFO, "Send Disassoc frame\n");
 	/* 4 <4> Enqueue the frame to send this (Re)Association request frame. */
 	nicTxEnqueueMsdu(prAdapter, prMsduInfo);
 
@@ -1431,6 +1435,7 @@ assocProcessRxDisassocFrame(IN P_ADAPTER_T prAdapter,
 	/* 4 <3> Parse the Fixed Fields of Deauthentication Frame Body. */
 	WLAN_GET_FIELD_16(&prDisassocFrame->u2ReasonCode, &u2RxReasonCode);
 	*pu2ReasonCode = u2RxReasonCode;
+	DBGLOG(SAA, INFO, "RX disasoc, Reason code: %d\n", u2RxReasonCode);
 
 	return WLAN_STATUS_SUCCESS;
 
@@ -1740,6 +1745,7 @@ WLAN_STATUS assocProcessRxAssocReqFrame(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T 
 #endif
 
 	*pu2StatusCode = u2StatusCode;
+	DBGLOG(AAA, INFO, "RX assoc req, u2StatusCode: %d\n", u2StatusCode);
 
 	return WLAN_STATUS_SUCCESS;
 
@@ -1970,7 +1976,7 @@ WLAN_STATUS assocSendReAssocRespFrame(IN P_ADAPTER_T prAdapter, IN P_STA_RECORD_
 	/* TODO(Kevin): Also release the unused tail room of the composed MMPDU */
 
 	nicTxConfigPktControlFlag(prMsduInfo, MSDU_CONTROL_FLAG_FORCE_TX, TRUE);
-
+	DBGLOG(AAA, INFO, "Send Assoc Response, SeqNo: %d\n", prMsduInfo->ucTxSeqNum);
 	/* 4 <6> Enqueue the frame to send this (Re)Association request frame. */
 	nicTxEnqueueMsdu(prAdapter, prMsduInfo);
 

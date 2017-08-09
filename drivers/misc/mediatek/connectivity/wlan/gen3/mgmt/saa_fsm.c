@@ -776,7 +776,8 @@ saaFsmRunEventTxDone(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMsduInfo, IN E
 
 	ASSERT(prStaRec);
 
-	DBGLOG(SAA, LOUD, "EVENT-TX DONE: Current Time = %d\n", kalGetTimeTick());
+	DBGLOG(SAA, INFO, "EVENT-TX DONE: Current Time = %d status: %d, SeqNO: %d\n",
+			kalGetTimeTick(), rTxDoneStatus, prMsduInfo->ucTxSeqNum);
 
 	/* Trigger statistics log if Auth/Assoc Tx failed */
 	if (rTxDoneStatus != TX_RESULT_SUCCESS)
@@ -987,6 +988,8 @@ VOID saaFsmRunEventRxAuth(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfb)
 
 	if (!IS_AP_STA(prStaRec))
 		return;
+
+	DBGLOG(SAA, INFO, "RX auth, eAuthAssocState: %d\n", prStaRec->eAuthAssocState);
 
 	switch (prStaRec->eAuthAssocState) {
 	case SAA_STATE_SEND_AUTH1:
