@@ -608,6 +608,8 @@ int primary_display_esd_recovery(void)
 
 	DISPDBG("[ESD]stop dpmgr path[begin]\n");
 	dpmgr_path_stop(primary_get_dpmgr_handle(), CMDQ_DISABLE);
+	if (primary_display_is_decouple_mode())
+			dpmgr_path_stop(primary_get_ovl2mem_handle(), CMDQ_DISABLE);
 	DISPCHECK("[ESD]stop dpmgr path[end]\n");
 
 	if (dpmgr_path_is_busy(primary_get_dpmgr_handle())) {
@@ -619,10 +621,68 @@ int primary_display_esd_recovery(void)
 
 	DISPDBG("[ESD]reset display path[begin]\n");
 	dpmgr_path_reset(primary_get_dpmgr_handle(), CMDQ_DISABLE);
+	if (primary_display_is_decouple_mode())
+			dpmgr_path_reset(primary_get_ovl2mem_handle(), CMDQ_DISABLE);
 	DISPCHECK("[ESD]reset display path[end]\n");
 
 	MMProfileLogEx(ddp_mmp_get_events()->esd_recovery_t, MMProfileFlagPulse, 0, 6);
+	{
+		LCM_PARAMS *lcm_param;
+		disp_ddp_path_config *data_config;
+		struct ddp_io_golden_setting_arg gset_arg;
 
+		ddp_disconnect_path(DDP_SCENARIO_PRIMARY_ALL, NULL);
+		ddp_disconnect_path(DDP_SCENARIO_PRIMARY_RDMA0_COLOR0_DISP, NULL);
+		DISPCHECK("cmd/video mode=%d\n", primary_display_is_video_mode());
+		dpmgr_path_set_video_mode(primary_get_dpmgr_handle(), primary_display_is_video_mode());
+
+		dpmgr_path_connect(primary_get_dpmgr_handle(), CMDQ_DISABLE);
+		if (primary_display_is_decouple_mode()) {
+			if (primary_get_ovl2mem_handle())
+				dpmgr_path_connect(primary_get_ovl2mem_handle(), CMDQ_DISABLE);
+			else
+				DISPERR("in decouple_mode but no ovl2mem_path_handle\n");
+		}
+
+		MMProfileLogEx(ddp_mmp_get_events()->primary_resume, MMProfileFlagPulse, 1, 2);
+		lcm_param = disp_lcm_get_params(primary_get_lcm());
+
+		data_config = dpmgr_path_get_last_config(primary_get_dpmgr_handle());
+		memcpy(&(data_config->dispif_config), lcm_param, sizeof(LCM_PARAMS));
+
+		data_config->dst_w = disp_helper_get_option(DISP_OPT_FAKE_LCM_WIDTH);
+		data_config->dst_h = disp_helper_get_option(DISP_OPT_FAKE_LCM_HEIGHT);
+		if (lcm_param->type == LCM_TYPE_DSI) {
+			if (lcm_param->dsi.data_format.format == LCM_DSI_FORMAT_RGB888)
+				data_config->lcm_bpp = 24;
+			else if (lcm_param->dsi.data_format.format == LCM_DSI_FORMAT_RGB565)
+				data_config->lcm_bpp = 16;
+			else if (lcm_param->dsi.data_format.format == LCM_DSI_FORMAT_RGB666)
+				data_config->lcm_bpp = 18;
+		} else if (lcm_param->type == LCM_TYPE_DPI) {
+			if (lcm_param->dpi.format == LCM_DPI_FORMAT_RGB888)
+				data_config->lcm_bpp = 24;
+			else if (lcm_param->dpi.format == LCM_DPI_FORMAT_RGB565)
+				data_config->lcm_bpp = 16;
+			if (lcm_param->dpi.format == LCM_DPI_FORMAT_RGB666)
+				data_config->lcm_bpp = 18;
+		}
+
+		data_config->fps = primary_display_get_fps_nolock();
+		data_config->dst_dirty = 1;
+
+		data_config->ovl_dirty = 1;
+
+		ret = dpmgr_path_config(primary_get_dpmgr_handle(), data_config, NULL);
+		MMProfileLogEx(ddp_mmp_get_events()->primary_resume, MMProfileFlagPulse, 2, 2);
+		data_config->dst_dirty = 0;
+
+		memset(&gset_arg, 0, sizeof(gset_arg));
+		gset_arg.dst_mod_type = dpmgr_path_get_dst_module_type(primary_get_dpmgr_handle());
+		gset_arg.is_decouple_mode = primary_display_is_decouple_mode();
+		dpmgr_path_ioctl(primary_get_dpmgr_handle(), NULL, DDP_OVL_GOLDEN_SETTING, &gset_arg);
+
+	}
 	DISPDBG("[POWER]lcm suspend[begin]\n");
 	disp_lcm_suspend(primary_get_lcm());
 	DISPCHECK("[POWER]lcm suspend[end]\n");
@@ -633,6 +693,8 @@ int primary_display_esd_recovery(void)
 
 	DISPDBG("[ESD]start dpmgr path[begin]\n");
 	dpmgr_path_start(primary_get_dpmgr_handle(), CMDQ_DISABLE);
+	if (primary_display_is_decouple_mode())
+			dpmgr_path_start(primary_get_ovl2mem_handle(), CMDQ_DISABLE);
 	DISPCHECK("[ESD]start dpmgr path[end]\n");
 	if (dpmgr_path_is_busy(primary_get_dpmgr_handle())) {
 		DISPERR("[ESD]Fatal error, we didn't trigger display path but it's already busy\n");
