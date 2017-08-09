@@ -196,4 +196,7 @@ static inline void cpuhvfs_dvfsp_resume(unsigned int on_cluster, struct init_sta
 static inline void cpuhvfs_dump_dvfsp_info(void)	{}
 #endif
 
+/* debug log */
+extern void cpuhvfs_get_pause_status_i2c(void);
+
 #endif	/* _MT_CPUFREQ_HYBRID_ */

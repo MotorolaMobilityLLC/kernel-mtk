@@ -1878,7 +1878,16 @@ static int cspm_module_init(struct cpuhvfs_dvfsp *dvfsp)
 
 	return 0;
 }
-
+/**************************************
+ * [Hybrid DVFS] debug log
+ **************************************/
+extern void cpuhvfs_get_pause_status_i2c(void)
+{
+	cspm_err("pause_src_map = 0x%x\n", pause_src_map);
+	cspm_err("SW_RSV0: 0x%x\n", cspm_read(CSPM_SW_RSV0));
+	cspm_err("SW_RSV1: 0x%x\n", cspm_read(CSPM_SW_RSV1));
+	cspm_err("SW_RSV2: 0x%x\n", cspm_read(CSPM_SW_RSV2));
+}
 
 /**************************************
  * [Hybrid DVFS] Function
