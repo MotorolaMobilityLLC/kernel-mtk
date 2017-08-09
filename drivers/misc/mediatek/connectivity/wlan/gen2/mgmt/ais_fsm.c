@@ -1149,6 +1149,7 @@ VOID aisInitializeConnectionSettings(IN P_ADAPTER_T prAdapter, IN P_REG_INFO_T p
 * @return (none)
 */
 /*----------------------------------------------------------------------------*/
+UINT_32 ucScanTimeoutTimes = 0;
 VOID aisFsmInit(IN P_ADAPTER_T prAdapter)
 {
 	P_AIS_FSM_INFO_T prAisFsmInfo;
@@ -1255,6 +1256,9 @@ VOID aisFsmInit(IN P_ADAPTER_T prAdapter)
 	/* prAisBssInfo->rPmProfSetupInfo.ucBmpDeliveryAC, */
 	/* prAisBssInfo->rPmProfSetupInfo.ucBmpTriggerAC, */
 	/* prAisBssInfo->rPmProfSetupInfo.ucUapsdSp); */
+
+	/*reset ucScanTimeoutTimes value*/
+	ucScanTimeoutTimes = 0;
 
 }				/* end of aisFsmInit() */
 
@@ -2431,7 +2435,7 @@ VOID aisFsmSetChannelInfo(IN P_ADAPTER_T prAdapter, IN P_MSG_SCN_SCAN_REQ ScanRe
 * \return none
 */
 /*----------------------------------------------------------------------------*/
-UINT_32 ucScanTimeoutTimes = 0;
+
 VOID aisFsmRunEventScanDone(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHdr)
 {
 	P_MSG_SCN_SCAN_DONE prScanDoneMsg;
@@ -3877,7 +3881,8 @@ VOID aisFsmRunEventScanDoneTimeOut(IN P_ADAPTER_T prAdapter, ULONG ulParam)
 	prConnSettings = &(prAdapter->rWifiVar.rConnSettings);
 	HifInfo = &prAdapter->prGlueInfo->rHifInfo;
 
-	DBGLOG(AIS, WARN, "aisFsmRunEventScanDoneTimeOut Current[%d]\n", prAisFsmInfo->eCurrentState);
+	DBGLOG(AIS, WARN, "aisFsmRunEventScanDoneTimeOut Current[%d], ucScanTimeoutTimes=%d\n",
+		prAisFsmInfo->eCurrentState, ucScanTimeoutTimes);
 	DBGLOG(AIS, WARN, "Isr/task %u %u %u (0x%x)\n", prGlueInfo->IsrCnt, prGlueInfo->IsrPassCnt,
 			prGlueInfo->TaskIsrCnt, prAdapter->fgIsIntEnable);
 
