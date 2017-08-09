@@ -134,9 +134,9 @@ static void __iomem *pwrap_base;
  * 1:0		RG_XO_EXTBUF1_HD	XO Control Signal of EXTBUF1 Output driving Strength
  */
 #define PMIC_CW13_ADDR				0x701A
-#define PMIC_CW13_DEFAULT_VAL			0xAAAA
+#define PMIC_CW13_DEFAULT_VAL			0x4AAA
 #define PMIC_CW13_XO_EXTBUF_HD_VAL		((0x2 << 0) | (0x2 << 4) \
-						 | (0x2 << 8) | (0x2 << 12))
+						 | (0x2 << 8) | (0 << 12))
 
 #define PMIC_CW14_ADDR				0x701C
 #define PMIC_CW14_XO_EXTBUF3_EN_M_MASK		0x1
