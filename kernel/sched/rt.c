@@ -928,8 +928,8 @@ static inline int balance_runtime(struct rt_rq *rt_rq)
 	return 0;
 }
 #endif /* CONFIG_SMP */
-DEFINE_PER_CPU(u64, old_rt_runtime);
-DEFINE_PER_CPU(u64, init_rt_runtime);
+DEFINE_PER_CPU(u64, old_rt_time);
+DEFINE_PER_CPU(u64, init_rt_time);
 DEFINE_PER_CPU(u64, rt_period_time);
 static int do_sched_rt_period_timer(struct rt_bandwidth *rt_b, int overrun)
 {
@@ -968,7 +968,7 @@ static int do_sched_rt_period_timer(struct rt_bandwidth *rt_b, int overrun)
 			u64 runtime_pre, rt_time_pre;
 
 			raw_spin_lock(&rt_rq->rt_runtime_lock);
-			per_cpu(old_rt_runtime, i) = rt_rq->rt_time;
+			per_cpu(old_rt_time, i) = rt_rq->rt_time;
 			if (rt_rq->rt_throttled) {
 				runtime_pre = rt_rq->rt_runtime;
 				balance_runtime(rt_rq);
@@ -976,7 +976,7 @@ static int do_sched_rt_period_timer(struct rt_bandwidth *rt_b, int overrun)
 			}
 			runtime = rt_rq->rt_runtime;
 			rt_rq->rt_time -= min(rt_rq->rt_time, overrun*runtime);
-			per_cpu(init_rt_runtime, i) = rt_rq->rt_time;
+			per_cpu(init_rt_time, i) = rt_rq->rt_time;
 			/* sched:print throttle*/
 			if (rt_rq->rt_throttled) {
 				printk_deferred("sched: cpu=%d, [%llu -> %llu]",
@@ -1067,7 +1067,7 @@ static int sched_rt_runtime_exceeded(struct rt_rq *rt_rq)
 		int cpu = rq_cpu(rt_rq->rq);
 		/* sched:print throttle*/
 		printk_deferred("sched: initial rt_time %llu, start at %llu\n",
-				per_cpu(init_rt_runtime, cpu), per_cpu(rt_period_time, cpu));
+				per_cpu(init_rt_time, cpu), per_cpu(rt_period_time, cpu));
 		printk_deferred("sched: cpu=%d rt_time %llu <-> runtime",
 				cpu, rt_rq->rt_time);
 		printk_deferred(" [%llu -> %llu], exec_task[%d:%s], prio=%d, exec_delta_time[%llu]",
@@ -1128,6 +1128,9 @@ static void update_curr_rt(struct rq *rq)
 #ifdef CONFIG_MT_RT_THROTTLE_MON
 	struct rt_rq *cpu_rt_rq;
 	u64 runtime;
+	u64 old_exec_start;
+
+	old_exec_start = curr->se.exec_start;
 #endif
 
 	if (curr->sched_class != &rt_sched_class)
@@ -1161,8 +1164,8 @@ static void update_curr_rt(struct rq *rq)
 	cpu_rt_rq = rt_rq_of_se(rt_se);
 	runtime = sched_rt_runtime(cpu_rt_rq);
 	if (cpu_rt_rq->rt_time == 0 && !(cpu_rt_rq->rt_throttled)) {
-		if (curr->se.exec_start < per_cpu(rt_period_time, cpu) &&
-			(per_cpu(old_rt_runtime, cpu) + delta_exec) > runtime) {
+		if (old_exec_start < per_cpu(rt_period_time, cpu) &&
+			(per_cpu(old_rt_time, cpu) + delta_exec) > runtime) {
 			save_mt_rt_mon_info(cpu, delta_exec, curr);
 			mt_rt_mon_switch(MON_STOP, cpu);
 			mt_rt_mon_print_task(cpu);
