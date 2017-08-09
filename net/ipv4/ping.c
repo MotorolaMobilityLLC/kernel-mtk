@@ -984,7 +984,7 @@ void ping_rcv(struct sk_buff *skb)
 		/* sock_put(sk); */			
 		return;
 	}
-	pr_info("[mtk_net][ping_debug]no socket, dropping\n");
+	pr_debug("[mtk_net][ping_debug]no socket, dropping\n");
 
 	/* We're called from icmp_rcv(). kfree_skb() is done there. */
 }
