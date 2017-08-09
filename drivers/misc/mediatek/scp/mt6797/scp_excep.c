@@ -75,6 +75,15 @@ static void scp_dump_buffer_set(unsigned char *buf, unsigned int length)
  */
 void scp_dump_regs(void)
 {
+	if (is_scp_ready()) {
+		pr_err("[SCP} SCP is alive\n");
+		pr_err("[SCP] SCP_DEBUG_PC_REG:0x%x\n", SCP_DEBUG_PC_REG);
+		pr_err("[SCP] SCP_DEBUG_LR_REG:0x%x\n", SCP_DEBUG_LR_REG);
+		pr_err("[SCP] SCP_DEBUG_PSP_REG:0x%x\n", SCP_DEBUG_PSP_REG);
+		pr_err("[SCP] SCP_DEBUG_SP_REG:0x%x\n", SCP_DEBUG_SP_REG);
+	} else {
+		pr_err("[SCP} SCP is dead\n");
+	}
 }
 
 /*
