@@ -125,3 +125,8 @@ config KEYSTONE_IRQ
 	help
 		Support for Texas Instruments Keystone 2 IRQ controller IP which
 		is part of the Keystone 2 IPC mechanism
+
+config MTK_GIC
+       def_bool y if ARM64 && MEDIATEK_SOLUTION
+       select IRQ_DOMAIN
+       select MULTI_IRQ_HANDLER

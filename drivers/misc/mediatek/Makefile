@@ -4,3 +4,4 @@ subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/mach/$(MTK_PLATFORM)/incl
 
 obj-$(CONFIG_MEDIATEK_SOLUTION) += mach/
 obj-$(CONFIG_MTK_SERIAL)	+= uart/
+obj-$(CONFIG_MTK_IRQ) += irq/
