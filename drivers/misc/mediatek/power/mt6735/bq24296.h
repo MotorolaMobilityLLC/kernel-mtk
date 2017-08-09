@@ -173,51 +173,51 @@
   *
   *********************************************************/
 /* CON0---------------------------------------------------- */
-extern void bq24296_set_en_hiz(kal_uint32 val);
-extern void bq24296_set_vindpm(kal_uint32 val);
-extern void bq24296_set_iinlim(kal_uint32 val);
+extern void bq24296_set_en_hiz(unsigned int val);
+extern void bq24296_set_vindpm(unsigned int val);
+extern void bq24296_set_iinlim(unsigned int val);
 /* CON1---------------------------------------------------- */
-extern void bq24296_set_reg_rst(kal_uint32 val);
-extern void bq24296_set_wdt_rst(kal_uint32 val);
-extern void bq24296_set_chg_config(kal_uint32 val);
-extern void bq24296_set_otg_config(kal_uint32 val);
-extern void bq24296_set_sys_min(kal_uint32 val);
-extern void bq24296_set_boost_lim(kal_uint32 val);
+extern void bq24296_set_reg_rst(unsigned int val);
+extern void bq24296_set_wdt_rst(unsigned int val);
+extern void bq24296_set_chg_config(unsigned int val);
+extern void bq24296_set_otg_config(unsigned int val);
+extern void bq24296_set_sys_min(unsigned int val);
+extern void bq24296_set_boost_lim(unsigned int val);
 /* CON2---------------------------------------------------- */
-extern void bq24296_set_ichg(kal_uint32 val);
-extern void bq24296_set_bcold(kal_uint32 val);
-extern void bq24296_set_force_20pct(kal_uint32 val);
+extern void bq24296_set_ichg(unsigned int val);
+extern void bq24296_set_bcold(unsigned int val);
+extern void bq24296_set_force_20pct(unsigned int val);
 /* CON3---------------------------------------------------- */
-extern void bq24296_set_iprechg(kal_uint32 val);
-extern void bq24296_set_iterm(kal_uint32 val);
+extern void bq24296_set_iprechg(unsigned int val);
+extern void bq24296_set_iterm(unsigned int val);
 /* CON4---------------------------------------------------- */
-extern void bq24296_set_vreg(kal_uint32 val);
-extern void bq24296_set_batlowv(kal_uint32 val);
-extern void bq24296_set_vrechg(kal_uint32 val);
+extern void bq24296_set_vreg(unsigned int val);
+extern void bq24296_set_batlowv(unsigned int val);
+extern void bq24296_set_vrechg(unsigned int val);
 /* CON5---------------------------------------------------- */
-extern void bq24296_set_en_term(kal_uint32 val);
-extern void bq24296_set_watchdog(kal_uint32 val);
-extern void bq24296_set_en_timer(kal_uint32 val);
-extern void bq24296_set_chg_timer(kal_uint32 val);
+extern void bq24296_set_en_term(unsigned int val);
+extern void bq24296_set_watchdog(unsigned int val);
+extern void bq24296_set_en_timer(unsigned int val);
+extern void bq24296_set_chg_timer(unsigned int val);
 /* CON6---------------------------------------------------- */
-extern void bq24296_set_treg(kal_uint32 val);
-extern void bq24296_set_boostv(kal_uint32 val);
-extern void bq24296_set_bhot(kal_uint32 val);
+extern void bq24296_set_treg(unsigned int val);
+extern void bq24296_set_boostv(unsigned int val);
+extern void bq24296_set_bhot(unsigned int val);
 /* CON7---------------------------------------------------- */
-extern void bq24296_set_tmr2x_en(kal_uint32 val);
-extern void bq24296_set_batfet_disable(kal_uint32 val);
-extern void bq24296_set_int_mask(kal_uint32 val);
+extern void bq24296_set_tmr2x_en(unsigned int val);
+extern void bq24296_set_batfet_disable(unsigned int val);
+extern void bq24296_set_int_mask(unsigned int val);
 /* CON8---------------------------------------------------- */
-extern kal_uint32 bq24296_get_system_status(void);
-extern kal_uint32 bq24296_get_vbus_stat(void);
-extern kal_uint32 bq24296_get_chrg_stat(void);
-extern kal_uint32 bq24296_get_vsys_stat(void);
+extern unsigned int bq24296_get_system_status(void);
+extern unsigned int bq24296_get_vbus_stat(void);
+extern unsigned int bq24296_get_chrg_stat(void);
+extern unsigned int bq24296_get_vsys_stat(void);
 /* --------------------------------------------------------- */
 extern void bq24296_dump_register(void);
-extern kal_uint32 bq24296_reg_config_interface(kal_uint8 RegNum, kal_uint8 val);
+extern unsigned int bq24296_reg_config_interface(unsigned char RegNum, unsigned char val);
 
-extern kal_uint32 bq24296_read_interface(kal_uint8 RegNum, kal_uint8 *val, kal_uint8 MASK,
-					 kal_uint8 SHIFT);
-extern kal_uint32 bq24296_config_interface(kal_uint8 RegNum, kal_uint8 val, kal_uint8 MASK,
-					   kal_uint8 SHIFT);
+extern unsigned int bq24296_read_interface(unsigned char RegNum, unsigned char *val, unsigned char MASK,
+					 unsigned char SHIFT);
+extern unsigned int bq24296_config_interface(unsigned char RegNum, unsigned char val, unsigned char MASK,
+					   unsigned char SHIFT);
 #endif				/* _bq24296_SW_H_ */

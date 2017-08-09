@@ -1,3 +1,4 @@
+#include <linux/types.h>
 #include <linux/init.h>		/* For init/exit macros */
 #include <linux/module.h>	/* For MODULE_ marcros  */
 #include <linux/platform_device.h>
@@ -50,7 +51,7 @@ static struct i2c_driver ncp1854_driver = {
   *   [Global Variable]
   *
   *********************************************************/
-kal_uint8 ncp1854_reg[ncp1854_REG_NUM] = { 0 };
+unsigned char ncp1854_reg[ncp1854_REG_NUM] = { 0 };
 
 static DEFINE_MUTEX(ncp1854_i2c_access);
 /**********************************************************
@@ -58,7 +59,7 @@ static DEFINE_MUTEX(ncp1854_i2c_access);
   *   [I2C Function For Read/Write ncp1854]
   *
   *********************************************************/
-int ncp1854_read_byte(kal_uint8 cmd, kal_uint8 *returnData)
+int ncp1854_read_byte(unsigned char cmd, unsigned char *returnData)
 {
 	char cmd_buf[1] = { 0x00 };
 	char readData = 0;
@@ -90,7 +91,7 @@ int ncp1854_read_byte(kal_uint8 cmd, kal_uint8 *returnData)
 	return 1;
 }
 
-int ncp1854_write_byte(kal_uint8 cmd, kal_uint8 writeData)
+int ncp1854_write_byte(unsigned char cmd, unsigned char writeData)
 {
 	char write_data[2] = { 0 };
 	int ret = 0;
@@ -119,10 +120,10 @@ int ncp1854_write_byte(kal_uint8 cmd, kal_uint8 writeData)
   *   [Read / Write Function]
   *
   *********************************************************/
-kal_uint32 ncp1854_read_interface(kal_uint8 RegNum, kal_uint8 *val, kal_uint8 MASK,
-				  kal_uint8 SHIFT)
+unsigned int ncp1854_read_interface(unsigned char RegNum, unsigned char *val, unsigned char MASK,
+				  unsigned char SHIFT)
 {
-	kal_uint8 ncp1854_reg = 0;
+	unsigned char ncp1854_reg = 0;
 	int ret = 0;
 
 	battery_log(BAT_LOG_FULL, "--------------------------------------------------\n");
@@ -138,10 +139,10 @@ kal_uint32 ncp1854_read_interface(kal_uint8 RegNum, kal_uint8 *val, kal_uint8 MA
 	return ret;
 }
 
-kal_uint32 ncp1854_config_interface(kal_uint8 RegNum, kal_uint8 val, kal_uint8 MASK,
-				    kal_uint8 SHIFT)
+unsigned int ncp1854_config_interface(unsigned char RegNum, unsigned char val, unsigned char MASK,
+				    unsigned char SHIFT)
 {
-	kal_uint8 ncp1854_reg = 0;
+	unsigned char ncp1854_reg = 0;
 	int ret = 0;
 
 	battery_log(BAT_LOG_FULL, "--------------------------------------------------\n");
@@ -168,350 +169,350 @@ kal_uint32 ncp1854_config_interface(kal_uint8 RegNum, kal_uint8 val, kal_uint8 M
   *
   *********************************************************/
 /* CON0 */
-kal_uint32 ncp1854_get_chip_status(void)
+unsigned int ncp1854_get_chip_status(void)
 {
-	kal_uint32 ret = 0;
-	kal_uint32 val = 0;
+	unsigned int ret = 0;
+	unsigned int val = 0;
 
-	ret = ncp1854_read_interface((kal_uint8) (NCP1854_CON0),
-				     (kal_uint8 *) (&val),
-				     (kal_uint8) (CON0_STATE_MASK), (kal_uint8) (CON0_STATE_SHIFT)
+	ret = ncp1854_read_interface((unsigned char) (NCP1854_CON0),
+				     (unsigned char *) (&val),
+				     (unsigned char) (CON0_STATE_MASK), (unsigned char) (CON0_STATE_SHIFT)
 	    );
 	return val;
 }
 
-kal_uint32 ncp1854_get_batfet(void)
+unsigned int ncp1854_get_batfet(void)
 {
-	kal_uint32 ret = 0;
-	kal_uint32 val = 0;
+	unsigned int ret = 0;
+	unsigned int val = 0;
 
-	ret = ncp1854_read_interface((kal_uint8) (NCP1854_CON0),
-				     (kal_uint8 *) (&val),
-				     (kal_uint8) (CON0_BATFET_MASK), (kal_uint8) (CON0_BATFET_SHIFT)
+	ret = ncp1854_read_interface((unsigned char) (NCP1854_CON0),
+				     (unsigned char *) (&val),
+				     (unsigned char) (CON0_BATFET_MASK), (unsigned char) (CON0_BATFET_SHIFT)
 	    );
 	return val;
 }
 
-kal_uint32 ncp1854_get_statint(void)
+unsigned int ncp1854_get_statint(void)
 {
-	kal_uint32 ret = 0;
-	kal_uint32 val = 0;
+	unsigned int ret = 0;
+	unsigned int val = 0;
 
-	ret = ncp1854_read_interface((kal_uint8) (NCP1854_CON0),
-				     (kal_uint8 *) (&val),
-				     (kal_uint8) (CON0_STATINT_MASK),
-				     (kal_uint8) (CON0_STATINT_SHIFT)
+	ret = ncp1854_read_interface((unsigned char) (NCP1854_CON0),
+				     (unsigned char *) (&val),
+				     (unsigned char) (CON0_STATINT_MASK),
+				     (unsigned char) (CON0_STATINT_SHIFT)
 	    );
 	return val;
 }
 
-kal_uint32 ncp1854_get_faultint(void)
+unsigned int ncp1854_get_faultint(void)
 {
-	kal_uint32 ret = 0;
-	kal_uint32 val = 0;
+	unsigned int ret = 0;
+	unsigned int val = 0;
 
-	ret = ncp1854_read_interface((kal_uint8) (NCP1854_CON0),
-				     (kal_uint8 *) (&val),
-				     (kal_uint8) (CON0_FAULTINT_MASK),
-				     (kal_uint8) (CON0_FAULTINT_SHIFT)
+	ret = ncp1854_read_interface((unsigned char) (NCP1854_CON0),
+				     (unsigned char *) (&val),
+				     (unsigned char) (CON0_FAULTINT_MASK),
+				     (unsigned char) (CON0_FAULTINT_SHIFT)
 	    );
 	return val;
 }
 
 /* CON1 */
-void ncp1854_set_reset(kal_uint32 val)
+void ncp1854_set_reset(unsigned int val)
 {
-	kal_uint32 ret = 0;
+	unsigned int ret = 0;
 
-	ret = ncp1854_config_interface((kal_uint8) (NCP1854_CON1),
-				       (kal_uint8) (val),
-				       (kal_uint8) (CON1_REG_RST_MASK),
-				       (kal_uint8) (CON1_REG_RST_SHIFT)
+	ret = ncp1854_config_interface((unsigned char) (NCP1854_CON1),
+				       (unsigned char) (val),
+				       (unsigned char) (CON1_REG_RST_MASK),
+				       (unsigned char) (CON1_REG_RST_SHIFT)
 	    );
 }
 
-void ncp1854_set_chg_en(kal_uint32 val)
+void ncp1854_set_chg_en(unsigned int val)
 {
-	kal_uint32 ret = 0;
+	unsigned int ret = 0;
 
-	ret = ncp1854_config_interface((kal_uint8) (NCP1854_CON1),
-				       (kal_uint8) (val),
-				       (kal_uint8) (CON1_CHG_EN_MASK),
-				       (kal_uint8) (CON1_CHG_EN_SHIFT)
+	ret = ncp1854_config_interface((unsigned char) (NCP1854_CON1),
+				       (unsigned char) (val),
+				       (unsigned char) (CON1_CHG_EN_MASK),
+				       (unsigned char) (CON1_CHG_EN_SHIFT)
 	    );
 }
 
-void ncp1854_set_otg_en(kal_uint32 val)
+void ncp1854_set_otg_en(unsigned int val)
 {
-	kal_uint32 ret = 0;
+	unsigned int ret = 0;
 
-	ret = ncp1854_config_interface((kal_uint8) (NCP1854_CON1),
-				       (kal_uint8) (val),
-				       (kal_uint8) (CON1_OTG_EN_MASK),
-				       (kal_uint8) (CON1_OTG_EN_SHIFT)
+	ret = ncp1854_config_interface((unsigned char) (NCP1854_CON1),
+				       (unsigned char) (val),
+				       (unsigned char) (CON1_OTG_EN_MASK),
+				       (unsigned char) (CON1_OTG_EN_SHIFT)
 	    );
 }
 
-kal_uint32 ncp1854_get_otg_en(void)
+unsigned int ncp1854_get_otg_en(void)
 {
-	kal_uint32 ret = 0;
-	kal_uint32 val = 0;
+	unsigned int ret = 0;
+	unsigned int val = 0;
 
-	ret = ncp1854_read_interface((kal_uint8) (NCP1854_CON1),
-				     (kal_uint8 *) (&val),
-				     (kal_uint8) (CON1_OTG_EN_MASK), (kal_uint8) (CON1_OTG_EN_SHIFT)
-	    );
-	return val;
-}
-
-void ncp1854_set_fctry_mode(kal_uint32 val)
-{
-	kal_uint32 ret = 0;
-
-	ret = ncp1854_config_interface((kal_uint8) (NCP1854_CON1),
-				       (kal_uint8) (val),
-				       (kal_uint8) (CON1_FCTRY_MOD_MASK),
-				       (kal_uint8) (CON1_FCTRY_MOD_SHIFT)
-	    );
-}
-
-void ncp1854_set_tj_warn_opt(kal_uint32 val)
-{
-	kal_uint32 ret = 0;
-
-	ret = ncp1854_config_interface((kal_uint8) (NCP1854_CON1),
-				       (kal_uint8) (val),
-				       (kal_uint8) (CON1_TJ_WARN_OPT_MASK),
-				       (kal_uint8) (CON1_TJ_WARN_OPT_SHIFT)
-	    );
-}
-
-kal_uint32 ncp1854_get_usb_cfg(void)
-{
-	kal_uint32 ret = 0;
-	kal_uint32 val = 0;
-
-	ret = ncp1854_read_interface((kal_uint8) (NCP1854_CON1),
-				     (kal_uint8 *) (&val),
-				     (kal_uint8) (CON1_JEITA_OPT_MASK),
-				     (kal_uint8) (CON1_JEITA_OPT_SHIFT)
+	ret = ncp1854_read_interface((unsigned char) (NCP1854_CON1),
+				     (unsigned char *) (&val),
+				     (unsigned char) (CON1_OTG_EN_MASK), (unsigned char) (CON1_OTG_EN_SHIFT)
 	    );
 	return val;
 }
 
-void ncp1854_set_tchg_rst(kal_uint32 val)
+void ncp1854_set_fctry_mode(unsigned int val)
 {
-	kal_uint32 ret = 0;
+	unsigned int ret = 0;
 
-	ret = ncp1854_config_interface((kal_uint8) (NCP1854_CON1),
-				       (kal_uint8) (val),
-				       (kal_uint8) (CON1_TCHG_RST_MASK),
-				       (kal_uint8) (CON1_TCHG_RST_SHIFT)
+	ret = ncp1854_config_interface((unsigned char) (NCP1854_CON1),
+				       (unsigned char) (val),
+				       (unsigned char) (CON1_FCTRY_MOD_MASK),
+				       (unsigned char) (CON1_FCTRY_MOD_SHIFT)
 	    );
 }
 
-void ncp1854_set_int_mask(kal_uint32 val)
+void ncp1854_set_tj_warn_opt(unsigned int val)
 {
-	kal_uint32 ret = 0;
+	unsigned int ret = 0;
 
-	ret = ncp1854_config_interface((kal_uint8) (NCP1854_CON1),
-				       (kal_uint8) (val),
-				       (kal_uint8) (CON1_INT_MASK_MASK),
-				       (kal_uint8) (CON1_INT_MASK_SHIFT)
+	ret = ncp1854_config_interface((unsigned char) (NCP1854_CON1),
+				       (unsigned char) (val),
+				       (unsigned char) (CON1_TJ_WARN_OPT_MASK),
+				       (unsigned char) (CON1_TJ_WARN_OPT_SHIFT)
+	    );
+}
+
+unsigned int ncp1854_get_usb_cfg(void)
+{
+	unsigned int ret = 0;
+	unsigned int val = 0;
+
+	ret = ncp1854_read_interface((unsigned char) (NCP1854_CON1),
+				     (unsigned char *) (&val),
+				     (unsigned char) (CON1_JEITA_OPT_MASK),
+				     (unsigned char) (CON1_JEITA_OPT_SHIFT)
+	    );
+	return val;
+}
+
+void ncp1854_set_tchg_rst(unsigned int val)
+{
+	unsigned int ret = 0;
+
+	ret = ncp1854_config_interface((unsigned char) (NCP1854_CON1),
+				       (unsigned char) (val),
+				       (unsigned char) (CON1_TCHG_RST_MASK),
+				       (unsigned char) (CON1_TCHG_RST_SHIFT)
+	    );
+}
+
+void ncp1854_set_int_mask(unsigned int val)
+{
+	unsigned int ret = 0;
+
+	ret = ncp1854_config_interface((unsigned char) (NCP1854_CON1),
+				       (unsigned char) (val),
+				       (unsigned char) (CON1_INT_MASK_MASK),
+				       (unsigned char) (CON1_INT_MASK_SHIFT)
 	    );
 }
 
 /* CON2 */
-void ncp1854_set_wdto_dis(kal_uint32 val)
+void ncp1854_set_wdto_dis(unsigned int val)
 {
-	kal_uint32 ret = 0;
+	unsigned int ret = 0;
 
-	ret = ncp1854_config_interface((kal_uint8) (NCP1854_CON2),
-				       (kal_uint8) (val),
-				       (kal_uint8) (CON2_WDTO_DIS_MASK),
-				       (kal_uint8) (CON2_WDTO_DIS_SHIFT)
+	ret = ncp1854_config_interface((unsigned char) (NCP1854_CON2),
+				       (unsigned char) (val),
+				       (unsigned char) (CON2_WDTO_DIS_MASK),
+				       (unsigned char) (CON2_WDTO_DIS_SHIFT)
 	    );
 }
 
-void ncp1854_set_chgto_dis(kal_uint32 val)
+void ncp1854_set_chgto_dis(unsigned int val)
 {
-	kal_uint32 ret = 0;
+	unsigned int ret = 0;
 
-	ret = ncp1854_config_interface((kal_uint8) (NCP1854_CON2),
-				       (kal_uint8) (val),
-				       (kal_uint8) (CON2_CHGTO_DIS_MASK),
-				       (kal_uint8) (CON2_CHGTO_DIS_SHIFT)
+	ret = ncp1854_config_interface((unsigned char) (NCP1854_CON2),
+				       (unsigned char) (val),
+				       (unsigned char) (CON2_CHGTO_DIS_MASK),
+				       (unsigned char) (CON2_CHGTO_DIS_SHIFT)
 	    );
 }
 
-void ncp1854_set_pwr_path(kal_uint32 val)
+void ncp1854_set_pwr_path(unsigned int val)
 {
-	kal_uint32 ret = 0;
+	unsigned int ret = 0;
 
-	ret = ncp1854_config_interface((kal_uint8) (NCP1854_CON2),
-				       (kal_uint8) (val),
-				       (kal_uint8) (CON2_PWR_PATH_MASK),
-				       (kal_uint8) (CON2_PWR_PATH_SHIFT)
+	ret = ncp1854_config_interface((unsigned char) (NCP1854_CON2),
+				       (unsigned char) (val),
+				       (unsigned char) (CON2_PWR_PATH_MASK),
+				       (unsigned char) (CON2_PWR_PATH_SHIFT)
 	    );
 }
 
-void ncp1854_set_trans_en(kal_uint32 val)
+void ncp1854_set_trans_en(unsigned int val)
 {
-	kal_uint32 ret = 0;
+	unsigned int ret = 0;
 
-	ret = ncp1854_config_interface((kal_uint8) (NCP1854_CON2),
-				       (kal_uint8) (val),
-				       (kal_uint8) (CON2_TRANS_EN_MASK),
-				       (kal_uint8) (CON2_TRANS_EN_SHIFT)
+	ret = ncp1854_config_interface((unsigned char) (NCP1854_CON2),
+				       (unsigned char) (val),
+				       (unsigned char) (CON2_TRANS_EN_MASK),
+				       (unsigned char) (CON2_TRANS_EN_SHIFT)
 	    );
 }
 
-void ncp1854_set_iinset_pin_en(kal_uint32 val)
+void ncp1854_set_iinset_pin_en(unsigned int val)
 {
-	kal_uint32 ret = 0;
+	unsigned int ret = 0;
 
-	ret = ncp1854_config_interface((kal_uint8) (NCP1854_CON2),
-				       (kal_uint8) (val),
-				       (kal_uint8) (CON2_IINSET_PIN_EN_MASK),
-				       (kal_uint8) (CON2_IINSET_PIN_EN_SHIFT)
+	ret = ncp1854_config_interface((unsigned char) (NCP1854_CON2),
+				       (unsigned char) (val),
+				       (unsigned char) (CON2_IINSET_PIN_EN_MASK),
+				       (unsigned char) (CON2_IINSET_PIN_EN_SHIFT)
 	    );
 }
 
-void ncp1854_set_iinlim_en(kal_uint32 val)
+void ncp1854_set_iinlim_en(unsigned int val)
 {
-	kal_uint32 ret = 0;
+	unsigned int ret = 0;
 
-	ret = ncp1854_config_interface((kal_uint8) (NCP1854_CON2),
-				       (kal_uint8) (val),
-				       (kal_uint8) (CON2_IINLIM_EN_MASK),
-				       (kal_uint8) (CON2_IINLIM_EN_SHIFT)
+	ret = ncp1854_config_interface((unsigned char) (NCP1854_CON2),
+				       (unsigned char) (val),
+				       (unsigned char) (CON2_IINLIM_EN_MASK),
+				       (unsigned char) (CON2_IINLIM_EN_SHIFT)
 	    );
 }
 
-void ncp1854_set_aicl_en(kal_uint32 val)
+void ncp1854_set_aicl_en(unsigned int val)
 {
-	kal_uint32 ret = 0;
+	unsigned int ret = 0;
 
-	ret = ncp1854_config_interface((kal_uint8) (NCP1854_CON2),
-				       (kal_uint8) (val),
-				       (kal_uint8) (CON2_AICL_EN_MASK),
-				       (kal_uint8) (CON2_AICL_EN_SHIFT)
+	ret = ncp1854_config_interface((unsigned char) (NCP1854_CON2),
+				       (unsigned char) (val),
+				       (unsigned char) (CON2_AICL_EN_MASK),
+				       (unsigned char) (CON2_AICL_EN_SHIFT)
 	    );
 }
 
 /* CON8 */
-kal_uint32 ncp1854_get_vfet_ok(void)
+unsigned int ncp1854_get_vfet_ok(void)
 {
-	kal_uint32 ret = 0;
-	kal_uint32 val = 0;
+	unsigned int ret = 0;
+	unsigned int val = 0;
 
-	ret = ncp1854_read_interface((kal_uint8) (NCP1854_CON8),
-				     (kal_uint8 *) (&val),
-				     (kal_uint8) (CON8_VFET_OK_MASK),
-				     (kal_uint8) (CON8_VFET_OK_SHIFT)
+	ret = ncp1854_read_interface((unsigned char) (NCP1854_CON8),
+				     (unsigned char *) (&val),
+				     (unsigned char) (CON8_VFET_OK_MASK),
+				     (unsigned char) (CON8_VFET_OK_SHIFT)
 	    );
 	return val;
 }
 
 
 /* CON14 */
-void ncp1854_set_ctrl_vbat(kal_uint32 val)
+void ncp1854_set_ctrl_vbat(unsigned int val)
 {
-	kal_uint32 ret = 0;
+	unsigned int ret = 0;
 
-	ret = ncp1854_config_interface((kal_uint8) (NCP1854_CON14),
-				       (kal_uint8) (val),
-				       (kal_uint8) (CON14_CTRL_VBAT_MASK),
-				       (kal_uint8) (CON14_CTRL_VBAT_SHIFT)
+	ret = ncp1854_config_interface((unsigned char) (NCP1854_CON14),
+				       (unsigned char) (val),
+				       (unsigned char) (CON14_CTRL_VBAT_MASK),
+				       (unsigned char) (CON14_CTRL_VBAT_SHIFT)
 	    );
 }
 
 /* CON15 */
-void ncp1854_set_ichg_high(kal_uint32 val)
+void ncp1854_set_ichg_high(unsigned int val)
 {
-	kal_uint32 ret = 0;
+	unsigned int ret = 0;
 
-	ret = ncp1854_config_interface((kal_uint8) (NCP1854_CON15),
-				       (kal_uint8) (val),
-				       (kal_uint8) (CON15_ICHG_HIGH_MASK),
-				       (kal_uint8) (CON15_ICHG_HIGH_SHIFT)
+	ret = ncp1854_config_interface((unsigned char) (NCP1854_CON15),
+				       (unsigned char) (val),
+				       (unsigned char) (CON15_ICHG_HIGH_MASK),
+				       (unsigned char) (CON15_ICHG_HIGH_SHIFT)
 	    );
 }
 
-void ncp1854_set_ieoc(kal_uint32 val)
+void ncp1854_set_ieoc(unsigned int val)
 {
-	kal_uint32 ret = 0;
+	unsigned int ret = 0;
 
-	ret = ncp1854_config_interface((kal_uint8) (NCP1854_CON15),
-				       (kal_uint8) (val),
-				       (kal_uint8) (CON15_IEOC_MASK), (kal_uint8) (CON15_IEOC_SHIFT)
+	ret = ncp1854_config_interface((unsigned char) (NCP1854_CON15),
+				       (unsigned char) (val),
+				       (unsigned char) (CON15_IEOC_MASK), (unsigned char) (CON15_IEOC_SHIFT)
 	    );
 }
 
-void ncp1854_set_ichg(kal_uint32 val)
+void ncp1854_set_ichg(unsigned int val)
 {
-	kal_uint32 ret = 0;
+	unsigned int ret = 0;
 
-	ret = ncp1854_config_interface((kal_uint8) (NCP1854_CON15),
-				       (kal_uint8) (val),
-				       (kal_uint8) (CON15_ICHG_MASK), (kal_uint8) (CON15_ICHG_SHIFT)
+	ret = ncp1854_config_interface((unsigned char) (NCP1854_CON15),
+				       (unsigned char) (val),
+				       (unsigned char) (CON15_ICHG_MASK), (unsigned char) (CON15_ICHG_SHIFT)
 	    );
 }
 
-kal_uint32 ncp1854_get_ichg(void)
+unsigned int ncp1854_get_ichg(void)
 {
-	kal_uint32 ret = 0;
-	kal_uint32 val = 0;
+	unsigned int ret = 0;
+	unsigned int val = 0;
 
-	ret = ncp1854_read_interface((kal_uint8) NCP1854_CON15,
-				     (kal_uint8 *) &val,
-				     (kal_uint8) CON15_ICHG_MASK, (kal_uint8) CON15_ICHG_SHIFT);
+	ret = ncp1854_read_interface((unsigned char) NCP1854_CON15,
+				     (unsigned char *) &val,
+				     (unsigned char) CON15_ICHG_MASK, (unsigned char) CON15_ICHG_SHIFT);
 	return val;
 }
 
 /* CON16 */
-void ncp1854_set_iweak(kal_uint32 val)
+void ncp1854_set_iweak(unsigned int val)
 {
-	kal_uint32 ret = 0;
+	unsigned int ret = 0;
 
-	ret = ncp1854_config_interface((kal_uint8) (NCP1854_CON16),
-				       (kal_uint8) (val),
-				       (kal_uint8) (CON16_IWEAK_MASK),
-				       (kal_uint8) (CON16_IWEAK_SHIFT)
+	ret = ncp1854_config_interface((unsigned char) (NCP1854_CON16),
+				       (unsigned char) (val),
+				       (unsigned char) (CON16_IWEAK_MASK),
+				       (unsigned char) (CON16_IWEAK_SHIFT)
 	    );
 }
 
-void ncp1854_set_ctrl_vfet(kal_uint32 val)
+void ncp1854_set_ctrl_vfet(unsigned int val)
 {
-	kal_uint32 ret = 0;
+	unsigned int ret = 0;
 
-	ret = ncp1854_config_interface((kal_uint8) (NCP1854_CON16),
-				       (kal_uint8) (val),
-				       (kal_uint8) (CON16_CTRL_VFET_MASK),
-				       (kal_uint8) (CON16_CTRL_VFET_SHIFT)
+	ret = ncp1854_config_interface((unsigned char) (NCP1854_CON16),
+				       (unsigned char) (val),
+				       (unsigned char) (CON16_CTRL_VFET_MASK),
+				       (unsigned char) (CON16_CTRL_VFET_SHIFT)
 	    );
 }
 
-void ncp1854_set_iinlim(kal_uint32 val)
+void ncp1854_set_iinlim(unsigned int val)
 {
-	kal_uint32 ret = 0;
+	unsigned int ret = 0;
 
-	ret = ncp1854_config_interface((kal_uint8) (NCP1854_CON16),
-				       (kal_uint8) (val),
-				       (kal_uint8) (CON16_IINLIM_MASK),
-				       (kal_uint8) (CON16_IINLIM_SHIFT)
+	ret = ncp1854_config_interface((unsigned char) (NCP1854_CON16),
+				       (unsigned char) (val),
+				       (unsigned char) (CON16_IINLIM_MASK),
+				       (unsigned char) (CON16_IINLIM_SHIFT)
 	    );
 }
 
 /* CON17 */
-void ncp1854_set_iinlim_ta(kal_uint32 val)
+void ncp1854_set_iinlim_ta(unsigned int val)
 {
-	kal_uint32 ret = 0;
+	unsigned int ret = 0;
 
-	ret = ncp1854_config_interface((kal_uint8) (NCP1854_CON17),
-				       (kal_uint8) (val),
-				       (kal_uint8) (CON17_IINLIM_TA_MASK),
-				       (kal_uint8) (CON17_IINLIM_TA_SHIFT)
+	ret = ncp1854_config_interface((unsigned char) (NCP1854_CON17),
+				       (unsigned char) (val),
+				       (unsigned char) (CON17_IINLIM_TA_MASK),
+				       (unsigned char) (CON17_IINLIM_TA_SHIFT)
 	    );
 }
 
@@ -570,7 +571,7 @@ exit:
   *   [platform_driver API]
   *
   *********************************************************/
-kal_uint8 g_reg_value_ncp1854 = 0;
+unsigned char g_reg_value_ncp1854 = 0;
 static ssize_t show_ncp1854_access(struct device *dev, struct device_attribute *attr, char *buf)
 {
 	battery_log(BAT_LOG_CRTI, "[show_ncp1854_access] 0x%x\n", g_reg_value_ncp1854);

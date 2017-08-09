@@ -226,79 +226,79 @@
   *
   *********************************************************/
 #define NCP1854_REG_NUM 18
-extern kal_uint8 ncp1854_reg[NCP1854_REG_NUM];
+extern unsigned char ncp1854_reg[NCP1854_REG_NUM];
 
 /* CON0 */
-extern kal_uint32 ncp1854_get_chip_status(void);
+extern unsigned int ncp1854_get_chip_status(void);
 
-extern kal_uint32 ncp1854_get_batfet(void);
+extern unsigned int ncp1854_get_batfet(void);
 
-extern kal_uint32 ncp1854_get_statint(void);
+extern unsigned int ncp1854_get_statint(void);
 
-extern kal_uint32 ncp1854_get_faultint(void);
+extern unsigned int ncp1854_get_faultint(void);
 
 
 /* CON1 */
-extern void ncp1854_set_reset(kal_uint32 val);
+extern void ncp1854_set_reset(unsigned int val);
 
-extern void ncp1854_set_chg_en(kal_uint32 val);
+extern void ncp1854_set_chg_en(unsigned int val);
 
-extern void ncp1854_set_otg_en(kal_uint32 val);
+extern void ncp1854_set_otg_en(unsigned int val);
 
-extern kal_uint32 ncp1854_get_otg_en(void);
+extern unsigned int ncp1854_get_otg_en(void);
 
-extern void ncp1854_set_fctry_mode(kal_uint32 val);
+extern void ncp1854_set_fctry_mode(unsigned int val);
 
 
-extern void ncp1854_set_tj_warn_opt(kal_uint32 val);
+extern void ncp1854_set_tj_warn_opt(unsigned int val);
 
-extern kal_uint32 ncp1854_get_usb_cfg(void);
+extern unsigned int ncp1854_get_usb_cfg(void);
 
-extern void ncp1854_set_tchg_rst(kal_uint32 val);
+extern void ncp1854_set_tchg_rst(unsigned int val);
 
-extern void ncp1854_set_int_mask(kal_uint32 val);
+extern void ncp1854_set_int_mask(unsigned int val);
 
 /* CON2 */
-extern void ncp1854_set_wdto_dis(kal_uint32 val);
+extern void ncp1854_set_wdto_dis(unsigned int val);
 
-extern void ncp1854_set_chgto_dis(kal_uint32 val);
+extern void ncp1854_set_chgto_dis(unsigned int val);
 
-extern void ncp1854_set_pwr_path(kal_uint32 val);
+extern void ncp1854_set_pwr_path(unsigned int val);
 
-extern void ncp1854_set_trans_en(kal_uint32 val);
+extern void ncp1854_set_trans_en(unsigned int val);
 
-extern void ncp1854_set_chg_halt(kal_uint32 val);
+extern void ncp1854_set_chg_halt(unsigned int val);
 
-extern void ncp1854_set_iinset_pin_en(kal_uint32 val);
+extern void ncp1854_set_iinset_pin_en(unsigned int val);
 
-extern void ncp1854_set_iinlim_en(kal_uint32 val);
+extern void ncp1854_set_iinlim_en(unsigned int val);
 
-extern void ncp1854_set_aicl_en(kal_uint32 val);
+extern void ncp1854_set_aicl_en(unsigned int val);
 
 /* CON8 */
-extern kal_uint32 ncp1854_get_vfet_ok(void);
+extern unsigned int ncp1854_get_vfet_ok(void);
 
 /* CON14 */
-extern void ncp1854_set_ctrl_vbat(kal_uint32 val);
+extern void ncp1854_set_ctrl_vbat(unsigned int val);
 
 /* CON15 */
-extern void ncp1854_set_ieoc(kal_uint32 val);
+extern void ncp1854_set_ieoc(unsigned int val);
 
-extern void ncp1854_set_ichg_high(kal_uint32 val);
+extern void ncp1854_set_ichg_high(unsigned int val);
 
-extern void ncp1854_set_ichg(kal_uint32 val);
+extern void ncp1854_set_ichg(unsigned int val);
 
-extern kal_uint32 ncp1854_get_ichg(void);
+extern unsigned int ncp1854_get_ichg(void);
 
 /* CON16 */
-extern void ncp1854_set_iweak(kal_uint32 val);
+extern void ncp1854_set_iweak(unsigned int val);
 
-extern void ncp1854_set_ctrl_vfet(kal_uint32 val);
+extern void ncp1854_set_ctrl_vfet(unsigned int val);
 
-extern void ncp1854_set_iinlim(kal_uint32 val);
+extern void ncp1854_set_iinlim(unsigned int val);
 
 /* CON17 */
-extern void ncp1854_set_iinlim_ta(kal_uint32 val);
+extern void ncp1854_set_iinlim_ta(unsigned int val);
 
 extern void ncp1854_dump_register(void);
 

@@ -1,3 +1,4 @@
+#include <linux/types.h>
 #include <linux/init.h>		/* For init/exit macros */
 #include <linux/module.h>	/* For MODULE_ marcros  */
 #include <linux/platform_device.h>
@@ -50,7 +51,7 @@ static struct i2c_driver bq24296_driver = {
   *   [Global Variable]
   *
   *********************************************************/
-kal_uint8 bq24296_reg[bq24296_REG_NUM] = { 0 };
+unsigned char bq24296_reg[bq24296_REG_NUM] = { 0 };
 
 static DEFINE_MUTEX(bq24296_i2c_access);
 
@@ -61,7 +62,7 @@ int g_bq24296_hw_exist = 0;
   *   [I2C Function For Read/Write bq24296]
   *
   *********************************************************/
-int bq24296_read_byte(kal_uint8 cmd, kal_uint8 *returnData)
+int bq24296_read_byte(unsigned char cmd, unsigned char *returnData)
 {
 	char cmd_buf[1] = { 0x00 };
 	char readData = 0;
@@ -93,7 +94,7 @@ int bq24296_read_byte(kal_uint8 cmd, kal_uint8 *returnData)
 	return 1;
 }
 
-int bq24296_write_byte(kal_uint8 cmd, kal_uint8 writeData)
+int bq24296_write_byte(unsigned char cmd, unsigned char writeData)
 {
 	char write_data[2] = { 0 };
 	int ret = 0;
@@ -122,10 +123,10 @@ int bq24296_write_byte(kal_uint8 cmd, kal_uint8 writeData)
   *   [Read / Write Function]
   *
   *********************************************************/
-kal_uint32 bq24296_read_interface(kal_uint8 RegNum, kal_uint8 *val, kal_uint8 MASK,
-				  kal_uint8 SHIFT)
+unsigned int bq24296_read_interface(unsigned char RegNum, unsigned char *val, unsigned char MASK,
+				  unsigned char SHIFT)
 {
-	kal_uint8 bq24296_reg = 0;
+	unsigned char bq24296_reg = 0;
 	int ret = 0;
 
 	battery_log(BAT_LOG_FULL, "--------------------------------------------------\n");
@@ -142,10 +143,10 @@ kal_uint32 bq24296_read_interface(kal_uint8 RegNum, kal_uint8 *val, kal_uint8 MA
 	return ret;
 }
 
-kal_uint32 bq24296_config_interface(kal_uint8 RegNum, kal_uint8 val, kal_uint8 MASK,
-				    kal_uint8 SHIFT)
+unsigned int bq24296_config_interface(unsigned char RegNum, unsigned char val, unsigned char MASK,
+				    unsigned char SHIFT)
 {
-	kal_uint8 bq24296_reg = 0;
+	unsigned char bq24296_reg = 0;
 	int ret = 0;
 
 	battery_log(BAT_LOG_FULL, "--------------------------------------------------\n");
@@ -167,9 +168,9 @@ kal_uint32 bq24296_config_interface(kal_uint8 RegNum, kal_uint8 val, kal_uint8 M
 }
 
 /* write one register directly */
-kal_uint32 bq24296_reg_config_interface(kal_uint8 RegNum, kal_uint8 val)
+unsigned int bq24296_reg_config_interface(unsigned char RegNum, unsigned char val)
 {
-	kal_uint32 ret = 0;
+	unsigned int ret = 0;
 
 	ret = bq24296_write_byte(RegNum, val);
 
@@ -183,359 +184,359 @@ kal_uint32 bq24296_reg_config_interface(kal_uint8 RegNum, kal_uint8 val)
   *********************************************************/
 /* CON0---------------------------------------------------- */
 
-void bq24296_set_en_hiz(kal_uint32 val)
+void bq24296_set_en_hiz(unsigned int val)
 {
-	kal_uint32 ret = 0;
+	unsigned int ret = 0;
 
-	ret = bq24296_config_interface((kal_uint8) (bq24296_CON0),
-				       (kal_uint8) (val),
-				       (kal_uint8) (CON0_EN_HIZ_MASK),
-				       (kal_uint8) (CON0_EN_HIZ_SHIFT)
+	ret = bq24296_config_interface((unsigned char) (bq24296_CON0),
+				       (unsigned char) (val),
+				       (unsigned char) (CON0_EN_HIZ_MASK),
+				       (unsigned char) (CON0_EN_HIZ_SHIFT)
 	    );
 }
 
-void bq24296_set_vindpm(kal_uint32 val)
+void bq24296_set_vindpm(unsigned int val)
 {
-	kal_uint32 ret = 0;
+	unsigned int ret = 0;
 
-	ret = bq24296_config_interface((kal_uint8) (bq24296_CON0),
-				       (kal_uint8) (val),
-				       (kal_uint8) (CON0_VINDPM_MASK),
-				       (kal_uint8) (CON0_VINDPM_SHIFT)
+	ret = bq24296_config_interface((unsigned char) (bq24296_CON0),
+				       (unsigned char) (val),
+				       (unsigned char) (CON0_VINDPM_MASK),
+				       (unsigned char) (CON0_VINDPM_SHIFT)
 	    );
 }
 
-void bq24296_set_iinlim(kal_uint32 val)
+void bq24296_set_iinlim(unsigned int val)
 {
-	kal_uint32 ret = 0;
+	unsigned int ret = 0;
 
-	ret = bq24296_config_interface((kal_uint8) (bq24296_CON0),
-				       (kal_uint8) (val),
-				       (kal_uint8) (CON0_IINLIM_MASK),
-				       (kal_uint8) (CON0_IINLIM_SHIFT)
+	ret = bq24296_config_interface((unsigned char) (bq24296_CON0),
+				       (unsigned char) (val),
+				       (unsigned char) (CON0_IINLIM_MASK),
+				       (unsigned char) (CON0_IINLIM_SHIFT)
 	    );
 }
 
 /* CON1---------------------------------------------------- */
 
-void bq24296_set_reg_rst(kal_uint32 val)
+void bq24296_set_reg_rst(unsigned int val)
 {
-	kal_uint32 ret = 0;
+	unsigned int ret = 0;
 
-	ret = bq24296_config_interface((kal_uint8) (bq24296_CON1),
-				       (kal_uint8) (val),
-				       (kal_uint8) (CON1_REG_RST_MASK),
-				       (kal_uint8) (CON1_REG_RST_SHIFT)
+	ret = bq24296_config_interface((unsigned char) (bq24296_CON1),
+				       (unsigned char) (val),
+				       (unsigned char) (CON1_REG_RST_MASK),
+				       (unsigned char) (CON1_REG_RST_SHIFT)
 	    );
 }
 
-void bq24296_set_wdt_rst(kal_uint32 val)
+void bq24296_set_wdt_rst(unsigned int val)
 {
-	kal_uint32 ret = 0;
+	unsigned int ret = 0;
 
-	ret = bq24296_config_interface((kal_uint8) (bq24296_CON1),
-				       (kal_uint8) (val),
-				       (kal_uint8) (CON1_WDT_RST_MASK),
-				       (kal_uint8) (CON1_WDT_RST_SHIFT)
+	ret = bq24296_config_interface((unsigned char) (bq24296_CON1),
+				       (unsigned char) (val),
+				       (unsigned char) (CON1_WDT_RST_MASK),
+				       (unsigned char) (CON1_WDT_RST_SHIFT)
 	    );
 }
 
-void bq24296_set_otg_config(kal_uint32 val)
+void bq24296_set_otg_config(unsigned int val)
 {
-	kal_uint32 ret = 0;
+	unsigned int ret = 0;
 
-	ret = bq24296_config_interface((kal_uint8) (bq24296_CON1),
-				       (kal_uint8) (val),
-				       (kal_uint8) (CON1_OTG_CONFIG_MASK),
-				       (kal_uint8) (CON1_OTG_CONFIG_SHIFT)
+	ret = bq24296_config_interface((unsigned char) (bq24296_CON1),
+				       (unsigned char) (val),
+				       (unsigned char) (CON1_OTG_CONFIG_MASK),
+				       (unsigned char) (CON1_OTG_CONFIG_SHIFT)
 	    );
 }
 
-void bq24296_set_chg_config(kal_uint32 val)
+void bq24296_set_chg_config(unsigned int val)
 {
-	kal_uint32 ret = 0;
+	unsigned int ret = 0;
 
-	ret = bq24296_config_interface((kal_uint8) (bq24296_CON1),
-				       (kal_uint8) (val),
-				       (kal_uint8) (CON1_CHG_CONFIG_MASK),
-				       (kal_uint8) (CON1_CHG_CONFIG_SHIFT)
+	ret = bq24296_config_interface((unsigned char) (bq24296_CON1),
+				       (unsigned char) (val),
+				       (unsigned char) (CON1_CHG_CONFIG_MASK),
+				       (unsigned char) (CON1_CHG_CONFIG_SHIFT)
 	    );
 }
 
-void bq24296_set_sys_min(kal_uint32 val)
+void bq24296_set_sys_min(unsigned int val)
 {
-	kal_uint32 ret = 0;
+	unsigned int ret = 0;
 
-	ret = bq24296_config_interface((kal_uint8) (bq24296_CON1),
-				       (kal_uint8) (val),
-				       (kal_uint8) (CON1_SYS_MIN_MASK),
-				       (kal_uint8) (CON1_SYS_MIN_SHIFT)
+	ret = bq24296_config_interface((unsigned char) (bq24296_CON1),
+				       (unsigned char) (val),
+				       (unsigned char) (CON1_SYS_MIN_MASK),
+				       (unsigned char) (CON1_SYS_MIN_SHIFT)
 	    );
 }
 
-void bq24296_set_boost_lim(kal_uint32 val)
+void bq24296_set_boost_lim(unsigned int val)
 {
-	kal_uint32 ret = 0;
+	unsigned int ret = 0;
 
-	ret = bq24296_config_interface((kal_uint8) (bq24296_CON1),
-				       (kal_uint8) (val),
-				       (kal_uint8) (CON1_BOOST_LIM_MASK),
-				       (kal_uint8) (CON1_BOOST_LIM_SHIFT)
+	ret = bq24296_config_interface((unsigned char) (bq24296_CON1),
+				       (unsigned char) (val),
+				       (unsigned char) (CON1_BOOST_LIM_MASK),
+				       (unsigned char) (CON1_BOOST_LIM_SHIFT)
 	    );
 }
 
 /* CON2---------------------------------------------------- */
 
-void bq24296_set_ichg(kal_uint32 val)
+void bq24296_set_ichg(unsigned int val)
 {
-	kal_uint32 ret = 0;
+	unsigned int ret = 0;
 
-	ret = bq24296_config_interface((kal_uint8) (bq24296_CON2),
-				       (kal_uint8) (val),
-				       (kal_uint8) (CON2_ICHG_MASK), (kal_uint8) (CON2_ICHG_SHIFT)
+	ret = bq24296_config_interface((unsigned char) (bq24296_CON2),
+				       (unsigned char) (val),
+				       (unsigned char) (CON2_ICHG_MASK), (unsigned char) (CON2_ICHG_SHIFT)
 	    );
 }
 
-void bq24296_set_bcold(kal_uint32 val)
+void bq24296_set_bcold(unsigned int val)
 {
-	kal_uint32 ret = 0;
+	unsigned int ret = 0;
 
-	ret = bq24296_config_interface((kal_uint8) (bq24296_CON2),
-				       (kal_uint8) (val),
-				       (kal_uint8) (CON2_BCOLD_MASK), (kal_uint8) (CON2_BCOLD_SHIFT)
+	ret = bq24296_config_interface((unsigned char) (bq24296_CON2),
+				       (unsigned char) (val),
+				       (unsigned char) (CON2_BCOLD_MASK), (unsigned char) (CON2_BCOLD_SHIFT)
 	    );
 }
 
-void bq24296_set_force_20pct(kal_uint32 val)
+void bq24296_set_force_20pct(unsigned int val)
 {
-	kal_uint32 ret = 0;
+	unsigned int ret = 0;
 
-	ret = bq24296_config_interface((kal_uint8) (bq24296_CON2),
-				       (kal_uint8) (val),
-				       (kal_uint8) (CON2_FORCE_20PCT_MASK),
-				       (kal_uint8) (CON2_FORCE_20PCT_SHIFT)
+	ret = bq24296_config_interface((unsigned char) (bq24296_CON2),
+				       (unsigned char) (val),
+				       (unsigned char) (CON2_FORCE_20PCT_MASK),
+				       (unsigned char) (CON2_FORCE_20PCT_SHIFT)
 	    );
 }
 
 /* CON3---------------------------------------------------- */
 
-void bq24296_set_iprechg(kal_uint32 val)
+void bq24296_set_iprechg(unsigned int val)
 {
-	kal_uint32 ret = 0;
+	unsigned int ret = 0;
 
-	ret = bq24296_config_interface((kal_uint8) (bq24296_CON3),
-				       (kal_uint8) (val),
-				       (kal_uint8) (CON3_IPRECHG_MASK),
-				       (kal_uint8) (CON3_IPRECHG_SHIFT)
+	ret = bq24296_config_interface((unsigned char) (bq24296_CON3),
+				       (unsigned char) (val),
+				       (unsigned char) (CON3_IPRECHG_MASK),
+				       (unsigned char) (CON3_IPRECHG_SHIFT)
 	    );
 }
 
-void bq24296_set_iterm(kal_uint32 val)
+void bq24296_set_iterm(unsigned int val)
 {
-	kal_uint32 ret = 0;
+	unsigned int ret = 0;
 
-	ret = bq24296_config_interface((kal_uint8) (bq24296_CON3),
-				       (kal_uint8) (val),
-				       (kal_uint8) (CON3_ITERM_MASK), (kal_uint8) (CON3_ITERM_SHIFT)
+	ret = bq24296_config_interface((unsigned char) (bq24296_CON3),
+				       (unsigned char) (val),
+				       (unsigned char) (CON3_ITERM_MASK), (unsigned char) (CON3_ITERM_SHIFT)
 	    );
 }
 
 /* CON4---------------------------------------------------- */
 
-void bq24296_set_vreg(kal_uint32 val)
+void bq24296_set_vreg(unsigned int val)
 {
-	kal_uint32 ret = 0;
+	unsigned int ret = 0;
 
-	ret = bq24296_config_interface((kal_uint8) (bq24296_CON4),
-				       (kal_uint8) (val),
-				       (kal_uint8) (CON4_VREG_MASK), (kal_uint8) (CON4_VREG_SHIFT)
+	ret = bq24296_config_interface((unsigned char) (bq24296_CON4),
+				       (unsigned char) (val),
+				       (unsigned char) (CON4_VREG_MASK), (unsigned char) (CON4_VREG_SHIFT)
 	    );
 }
 
-void bq24296_set_batlowv(kal_uint32 val)
+void bq24296_set_batlowv(unsigned int val)
 {
-	kal_uint32 ret = 0;
+	unsigned int ret = 0;
 
-	ret = bq24296_config_interface((kal_uint8) (bq24296_CON4),
-				       (kal_uint8) (val),
-				       (kal_uint8) (CON4_BATLOWV_MASK),
-				       (kal_uint8) (CON4_BATLOWV_SHIFT)
+	ret = bq24296_config_interface((unsigned char) (bq24296_CON4),
+				       (unsigned char) (val),
+				       (unsigned char) (CON4_BATLOWV_MASK),
+				       (unsigned char) (CON4_BATLOWV_SHIFT)
 	    );
 }
 
-void bq24296_set_vrechg(kal_uint32 val)
+void bq24296_set_vrechg(unsigned int val)
 {
-	kal_uint32 ret = 0;
+	unsigned int ret = 0;
 
-	ret = bq24296_config_interface((kal_uint8) (bq24296_CON4),
-				       (kal_uint8) (val),
-				       (kal_uint8) (CON4_VRECHG_MASK),
-				       (kal_uint8) (CON4_VRECHG_SHIFT)
+	ret = bq24296_config_interface((unsigned char) (bq24296_CON4),
+				       (unsigned char) (val),
+				       (unsigned char) (CON4_VRECHG_MASK),
+				       (unsigned char) (CON4_VRECHG_SHIFT)
 	    );
 }
 
 /* CON5---------------------------------------------------- */
 
-void bq24296_set_en_term(kal_uint32 val)
+void bq24296_set_en_term(unsigned int val)
 {
-	kal_uint32 ret = 0;
+	unsigned int ret = 0;
 
-	ret = bq24296_config_interface((kal_uint8) (bq24296_CON5),
-				       (kal_uint8) (val),
-				       (kal_uint8) (CON5_EN_TERM_MASK),
-				       (kal_uint8) (CON5_EN_TERM_SHIFT)
+	ret = bq24296_config_interface((unsigned char) (bq24296_CON5),
+				       (unsigned char) (val),
+				       (unsigned char) (CON5_EN_TERM_MASK),
+				       (unsigned char) (CON5_EN_TERM_SHIFT)
 	    );
 }
 
-void bq24296_set_watchdog(kal_uint32 val)
+void bq24296_set_watchdog(unsigned int val)
 {
-	kal_uint32 ret = 0;
+	unsigned int ret = 0;
 
-	ret = bq24296_config_interface((kal_uint8) (bq24296_CON5),
-				       (kal_uint8) (val),
-				       (kal_uint8) (CON5_WATCHDOG_MASK),
-				       (kal_uint8) (CON5_WATCHDOG_SHIFT)
+	ret = bq24296_config_interface((unsigned char) (bq24296_CON5),
+				       (unsigned char) (val),
+				       (unsigned char) (CON5_WATCHDOG_MASK),
+				       (unsigned char) (CON5_WATCHDOG_SHIFT)
 	    );
 }
 
-void bq24296_set_en_timer(kal_uint32 val)
+void bq24296_set_en_timer(unsigned int val)
 {
-	kal_uint32 ret = 0;
+	unsigned int ret = 0;
 
-	ret = bq24296_config_interface((kal_uint8) (bq24296_CON5),
-				       (kal_uint8) (val),
-				       (kal_uint8) (CON5_EN_TIMER_MASK),
-				       (kal_uint8) (CON5_EN_TIMER_SHIFT)
+	ret = bq24296_config_interface((unsigned char) (bq24296_CON5),
+				       (unsigned char) (val),
+				       (unsigned char) (CON5_EN_TIMER_MASK),
+				       (unsigned char) (CON5_EN_TIMER_SHIFT)
 	    );
 }
 
-void bq24296_set_chg_timer(kal_uint32 val)
+void bq24296_set_chg_timer(unsigned int val)
 {
-	kal_uint32 ret = 0;
+	unsigned int ret = 0;
 
-	ret = bq24296_config_interface((kal_uint8) (bq24296_CON5),
-				       (kal_uint8) (val),
-				       (kal_uint8) (CON5_CHG_TIMER_MASK),
-				       (kal_uint8) (CON5_CHG_TIMER_SHIFT)
+	ret = bq24296_config_interface((unsigned char) (bq24296_CON5),
+				       (unsigned char) (val),
+				       (unsigned char) (CON5_CHG_TIMER_MASK),
+				       (unsigned char) (CON5_CHG_TIMER_SHIFT)
 	    );
 }
 
 /* CON6---------------------------------------------------- */
 
-void bq24296_set_treg(kal_uint32 val)
+void bq24296_set_treg(unsigned int val)
 {
-	kal_uint32 ret = 0;
+	unsigned int ret = 0;
 
-	ret = bq24296_config_interface((kal_uint8) (bq24296_CON6),
-				       (kal_uint8) (val),
-				       (kal_uint8) (CON6_TREG_MASK), (kal_uint8) (CON6_TREG_SHIFT)
+	ret = bq24296_config_interface((unsigned char) (bq24296_CON6),
+				       (unsigned char) (val),
+				       (unsigned char) (CON6_TREG_MASK), (unsigned char) (CON6_TREG_SHIFT)
 	    );
 }
 
-void bq24296_set_boostv(kal_uint32 val)
+void bq24296_set_boostv(unsigned int val)
 {
-	kal_uint32 ret = 0;
+	unsigned int ret = 0;
 
-	ret = bq24296_config_interface((kal_uint8) (bq24296_CON6),
-				       (kal_uint8) (val),
-				       (kal_uint8) (CON6_BOOSTV_MASK),
-				       (kal_uint8) (CON6_BOOSTV_SHIFT)
+	ret = bq24296_config_interface((unsigned char) (bq24296_CON6),
+				       (unsigned char) (val),
+				       (unsigned char) (CON6_BOOSTV_MASK),
+				       (unsigned char) (CON6_BOOSTV_SHIFT)
 	    );
 }
 
-void bq24296_set_bhot(kal_uint32 val)
+void bq24296_set_bhot(unsigned int val)
 {
-	kal_uint32 ret = 0;
+	unsigned int ret = 0;
 
-	ret = bq24296_config_interface((kal_uint8) (bq24296_CON6),
-				       (kal_uint8) (val),
-				       (kal_uint8) (CON6_BHOT_MASK), (kal_uint8) (CON6_BHOT_SHIFT)
+	ret = bq24296_config_interface((unsigned char) (bq24296_CON6),
+				       (unsigned char) (val),
+				       (unsigned char) (CON6_BHOT_MASK), (unsigned char) (CON6_BHOT_SHIFT)
 	    );
 }
 
 /* CON7---------------------------------------------------- */
 
-void bq24296_set_tmr2x_en(kal_uint32 val)
+void bq24296_set_tmr2x_en(unsigned int val)
 {
-	kal_uint32 ret = 0;
+	unsigned int ret = 0;
 
-	ret = bq24296_config_interface((kal_uint8) (bq24296_CON7),
-				       (kal_uint8) (val),
-				       (kal_uint8) (CON7_TMR2X_EN_MASK),
-				       (kal_uint8) (CON7_TMR2X_EN_SHIFT)
+	ret = bq24296_config_interface((unsigned char) (bq24296_CON7),
+				       (unsigned char) (val),
+				       (unsigned char) (CON7_TMR2X_EN_MASK),
+				       (unsigned char) (CON7_TMR2X_EN_SHIFT)
 	    );
 }
 
-void bq24296_set_batfet_disable(kal_uint32 val)
+void bq24296_set_batfet_disable(unsigned int val)
 {
-	kal_uint32 ret = 0;
+	unsigned int ret = 0;
 
-	ret = bq24296_config_interface((kal_uint8) (bq24296_CON7),
-				       (kal_uint8) (val),
-				       (kal_uint8) (CON7_BATFET_Disable_MASK),
-				       (kal_uint8) (CON7_BATFET_Disable_SHIFT)
+	ret = bq24296_config_interface((unsigned char) (bq24296_CON7),
+				       (unsigned char) (val),
+				       (unsigned char) (CON7_BATFET_Disable_MASK),
+				       (unsigned char) (CON7_BATFET_Disable_SHIFT)
 	    );
 }
 
-void bq24296_set_int_mask(kal_uint32 val)
+void bq24296_set_int_mask(unsigned int val)
 {
-	kal_uint32 ret = 0;
+	unsigned int ret = 0;
 
-	ret = bq24296_config_interface((kal_uint8) (bq24296_CON7),
-				       (kal_uint8) (val),
-				       (kal_uint8) (CON7_INT_MASK_MASK),
-				       (kal_uint8) (CON7_INT_MASK_SHIFT)
+	ret = bq24296_config_interface((unsigned char) (bq24296_CON7),
+				       (unsigned char) (val),
+				       (unsigned char) (CON7_INT_MASK_MASK),
+				       (unsigned char) (CON7_INT_MASK_SHIFT)
 	    );
 }
 
 /* CON8---------------------------------------------------- */
 
-kal_uint32 bq24296_get_system_status(void)
+unsigned int bq24296_get_system_status(void)
 {
-	kal_uint32 ret = 0;
-	kal_uint8 val = 0;
+	unsigned int ret = 0;
+	unsigned char val = 0;
 
-	ret = bq24296_read_interface((kal_uint8) (bq24296_CON8),
-				     (&val), (kal_uint8) (0xFF), (kal_uint8) (0x0)
+	ret = bq24296_read_interface((unsigned char) (bq24296_CON8),
+				     (&val), (unsigned char) (0xFF), (unsigned char) (0x0)
 	    );
 	return val;
 }
 
-kal_uint32 bq24296_get_vbus_stat(void)
+unsigned int bq24296_get_vbus_stat(void)
 {
-	kal_uint32 ret = 0;
-	kal_uint8 val = 0;
+	unsigned int ret = 0;
+	unsigned char val = 0;
 
-	ret = bq24296_read_interface((kal_uint8) (bq24296_CON8),
+	ret = bq24296_read_interface((unsigned char) (bq24296_CON8),
 				     (&val),
-				     (kal_uint8) (CON8_VBUS_STAT_MASK),
-				     (kal_uint8) (CON8_VBUS_STAT_SHIFT)
+				     (unsigned char) (CON8_VBUS_STAT_MASK),
+				     (unsigned char) (CON8_VBUS_STAT_SHIFT)
 	    );
 	return val;
 }
 
-kal_uint32 bq24296_get_chrg_stat(void)
+unsigned int bq24296_get_chrg_stat(void)
 {
-	kal_uint32 ret = 0;
-	kal_uint8 val = 0;
+	unsigned int ret = 0;
+	unsigned char val = 0;
 
-	ret = bq24296_read_interface((kal_uint8) (bq24296_CON8),
+	ret = bq24296_read_interface((unsigned char) (bq24296_CON8),
 				     (&val),
-				     (kal_uint8) (CON8_CHRG_STAT_MASK),
-				     (kal_uint8) (CON8_CHRG_STAT_SHIFT)
+				     (unsigned char) (CON8_CHRG_STAT_MASK),
+				     (unsigned char) (CON8_CHRG_STAT_SHIFT)
 	    );
 	return val;
 }
 
-kal_uint32 bq24296_get_vsys_stat(void)
+unsigned int bq24296_get_vsys_stat(void)
 {
-	kal_uint32 ret = 0;
-	kal_uint8 val = 0;
+	unsigned int ret = 0;
+	unsigned char val = 0;
 
-	ret = bq24296_read_interface((kal_uint8) (bq24296_CON8),
+	ret = bq24296_read_interface((unsigned char) (bq24296_CON8),
 				     (&val),
-				     (kal_uint8) (CON8_VSYS_STAT_MASK),
-				     (kal_uint8) (CON8_VSYS_STAT_SHIFT)
+				     (unsigned char) (CON8_VSYS_STAT_MASK),
+				     (unsigned char) (CON8_VSYS_STAT_SHIFT)
 	    );
 	return val;
 }
@@ -547,8 +548,8 @@ kal_uint32 bq24296_get_vsys_stat(void)
   *********************************************************/
 void bq24296_hw_component_detect(void)
 {
-	kal_uint32 ret = 0;
-	kal_uint8 val = 0;
+	unsigned int ret = 0;
+	unsigned char val = 0;
 
 	ret = bq24296_read_interface(0x0A, &val, 0xFF, 0x0);
 
@@ -612,7 +613,7 @@ exit:
   *   [platform_driver API]
   *
   *********************************************************/
-kal_uint8 g_reg_value_bq24296 = 0;
+unsigned char g_reg_value_bq24296 = 0;
 static ssize_t show_bq24296_access(struct device *dev, struct device_attribute *attr, char *buf)
 {
 	battery_log(BAT_LOG_CRTI, "[show_bq24296_access] 0x%x\n", g_reg_value_bq24296);

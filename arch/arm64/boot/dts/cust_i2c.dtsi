@@ -69,14 +69,4 @@
 		compatible = "mediatek,strobe_main";
 		reg = <0x63>;
 	};
-
 };
-
-&i2c3 {
-	ext_buck@6b {
-		compatible = "mediatek,ext_buck";
-		reg = <0x6b>;
-	};
-
-};
-
