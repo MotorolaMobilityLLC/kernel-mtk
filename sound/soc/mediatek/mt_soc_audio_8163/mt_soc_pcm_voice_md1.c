@@ -197,7 +197,7 @@ static int mtk_voice_pcm_open(struct snd_pcm_substream *substream)
 		mtk_voice_close(substream);
 		return err;
 	}
-	pr_debug("mtk_voice_pcm_open return\n");
+	PRINTK_AUDDRV("mtk_voice_pcm_open return\n");
 	return 0;
 }
 
@@ -216,10 +216,10 @@ static void ConfigAdcI2S(struct snd_pcm_substream *substream)
 
 static int mtk_voice_close(struct snd_pcm_substream *substream)
 {
-	pr_debug("mtk_voice_close\n");
+	PRINTK_AUDDRV("mtk_voice_close\n");
 
 	if (substream->stream == SNDRV_PCM_STREAM_CAPTURE) {
-		pr_debug("%s with SNDRV_PCM_STREAM_CAPTURE\n", __func__);
+		PRINTK_AUDDRV("%s with SNDRV_PCM_STREAM_CAPTURE\n", __func__);
 		AudDrv_Clk_Off();
 		AudDrv_ADC_Clk_Off();
 		AudDrv_ANA_Clk_Off();
@@ -255,7 +255,7 @@ static int mtk_voice_close(struct snd_pcm_substream *substream)
 
 static int mtk_voice_trigger(struct snd_pcm_substream *substream, int cmd)
 {
-	pr_debug("mtk_voice_trigger cmd = %d\n", cmd);
+	PRINTK_AUDDRV("mtk_voice_trigger cmd = %d\n", cmd);
 	switch (cmd) {
 	case SNDRV_PCM_TRIGGER_START:
 	case SNDRV_PCM_TRIGGER_RESUME:

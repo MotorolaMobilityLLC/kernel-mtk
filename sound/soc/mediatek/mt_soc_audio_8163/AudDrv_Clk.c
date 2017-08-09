@@ -243,7 +243,7 @@ void AudDrv_Clk_On(void)
 	PRINTK_AUD_CLK("+AudDrv_Clk_On, Aud_AFE_Clk_cntr:%d\n", Aud_AFE_Clk_cntr);
 	mutex_lock(&auddrv_Clk_mutex);
 	if (Aud_AFE_Clk_cntr == 0) {
-		pr_debug("-----------AudDrv_Clk_On, Aud_AFE_Clk_cntr:%d\n", Aud_AFE_Clk_cntr);
+		PRINTK_AUD_CLK("-----------AudDrv_Clk_On, Aud_AFE_Clk_cntr:%d\n", Aud_AFE_Clk_cntr);
 
 #if defined(COMMON_CLOCK_FRAMEWORK_API)
 		ret = power_on_audsys();
@@ -318,7 +318,7 @@ void AudDrv_Clk_Off(void)
 	mutex_lock(&auddrv_Clk_mutex);
 	Aud_AFE_Clk_cntr--;
 	if (Aud_AFE_Clk_cntr == 0) {
-		pr_debug("------------AudDrv_Clk_Off, Aud_AFE_Clk_cntr:%d\n", Aud_AFE_Clk_cntr);
+		PRINTK_AUD_CLK("------------AudDrv_Clk_Off, Aud_AFE_Clk_cntr:%d\n", Aud_AFE_Clk_cntr);
 #if defined(COMMON_CLOCK_FRAMEWORK_API)
 		Afe_Set_Reg(AUDIO_TOP_CON0, 1 << 25, 1 << 25); /* disable DAC */
 		Afe_Set_Reg(AUDIO_TOP_CON0, 1 << 26, 1 << 26); /* disable DAC_PREDIS */

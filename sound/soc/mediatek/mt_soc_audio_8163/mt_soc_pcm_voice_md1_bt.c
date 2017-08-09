@@ -127,8 +127,6 @@ static int mtk_voice_bt_pcm_open(struct snd_pcm_substream *substream)
 	AudDrv_ANA_Clk_On();
 	AudDrv_Clk_On();
 
-	pr_debug("mtk_voice_bt_pcm_open\n");
-
 	if (substream->stream == SNDRV_PCM_STREAM_CAPTURE) {
 		pr_err("%s with SNDRV_PCM_STREAM_CAPTURE\n", __func__);
 		runtime->rate = 16000;
@@ -140,30 +138,34 @@ static int mtk_voice_bt_pcm_open(struct snd_pcm_substream *substream)
 
 	ret = snd_pcm_hw_constraint_list(runtime, 0, SNDRV_PCM_HW_PARAM_RATE,
 					 &constraints_sample_rates);
+
+	if (ret < 0)
+		pr_err("%s snd_pcm_hw_constraint_list failed\n", __func__);
+
 	ret = snd_pcm_hw_constraint_integer(runtime, SNDRV_PCM_HW_PARAM_PERIODS);
 
 	if (ret < 0)
-		pr_err("snd_pcm_hw_constraint_integer failed\n");
+		pr_err("%s snd_pcm_hw_constraint_integer failed\n", __func__);
 
 	/* print for hw pcm information */
-	pr_debug("mtk_voice_bt_pcm_open runtime rate = %d channels = %d\n",
+	PRINTK_AUDDRV("%s runtime rate = %d channels = %d\n", __func__,
 		runtime->rate, runtime->channels);
 
 	runtime->hw.info |= SNDRV_PCM_INFO_INTERLEAVED;
 	runtime->hw.info |= SNDRV_PCM_INFO_NONINTERLEAVED;
 
 	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK) {
-		pr_debug("SNDRV_PCM_STREAM_PLAYBACK mtkalsa_voice_bt_constraints\n");
+		PRINTK_AUDDRV("%s SNDRV_PCM_STREAM_PLAYBACK\n", __func__);
 		runtime->rate = 16000;
 	}
 
 	if (err < 0) {
-		pr_err("mtk_voice_bt_close\n");
+		pr_err("%s error, close it\n", __func__);
 		mtk_voice_bt_close(substream);
 		return err;
 	}
 
-	pr_debug("mtk_voice_bt_pcm_open return\n");
+	PRINTK_AUDDRV("%s return\n", __func__);
 	return 0;
 }
 
@@ -184,7 +186,8 @@ static void ConfigAdcI2S(struct snd_pcm_substream *substream)
 
 static int mtk_voice_bt_close(struct snd_pcm_substream *substream)
 {
-	pr_debug("mtk_voice_bt_close\n");
+	PRINTK_AUDDRV("mtk_voice_bt_close\n");
+
 	if (substream->stream == SNDRV_PCM_STREAM_CAPTURE) {
 		pr_err("%s with SNDRV_PCM_STREAM_CAPTURE\n", __func__);
 		AudDrv_Clk_Off();
@@ -217,7 +220,7 @@ static int mtk_voice_bt_close(struct snd_pcm_substream *substream)
 
 static int mtk_voice_bt_trigger(struct snd_pcm_substream *substream, int cmd)
 {
-	pr_debug("mtk_voice_bt_trigger cmd = %d\n", cmd);
+	PRINTK_AUDDRV("mtk_voice_bt_trigger cmd = %d\n", cmd);
 	switch (cmd) {
 	case SNDRV_PCM_TRIGGER_START:
 	case SNDRV_PCM_TRIGGER_RESUME:

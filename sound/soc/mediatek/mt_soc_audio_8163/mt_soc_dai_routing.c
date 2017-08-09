@@ -73,20 +73,20 @@ static unsigned int supported_sample_rates[] = {
 #endif
 static int mt6589_routing_startup(struct snd_pcm_substream *substream, struct snd_soc_dai *Daiport)
 {
-	pr_debug("mt6589_routing_startup\n");
+	PRINTK_AUDDRV("mt6589_routing_startup\n");
 	return 0;
 }
 
 static int mt6589_routing_prepare(struct snd_pcm_substream *substream, struct snd_soc_dai *Daiport)
 {
-	pr_debug("mt6589_routing_prepare\n");
+	PRINTK_AUDDRV("mt6589_routing_prepare\n");
 	return 0;
 }
 
 static int mt6589_routing_trigger(struct snd_pcm_substream *substream, int command,
 				  struct snd_soc_dai *Daiport)
 {
-	pr_debug("mt6589_routing_trigger command = %d\n", command);
+	PRINTK_AUDDRV("mt6589_routing_trigger command = %d\n", command);
 	return 0;
 }
 

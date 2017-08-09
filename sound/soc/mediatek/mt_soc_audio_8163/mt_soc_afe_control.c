@@ -221,13 +221,13 @@ unsigned int GetSramState(void)
 
 void SetSramState(unsigned int State)
 {
-	pr_debug("%s state= %d\n", __func__, State);
+	PRINTK_AUDDRV("%s state= %d\n", __func__, State);
 	mAudioSramManager.mMemoryState |= State;
 }
 
 void ClearSramState(unsigned int State)
 {
-	pr_debug("%s state= %d\n", __func__, State);
+	PRINTK_AUDDRV("%s state= %d\n", __func__, State);
 	mAudioSramManager.mMemoryState &= (~State);
 }
 
@@ -1970,12 +1970,12 @@ bool SetMemoryPathEnable(uint32 Aud_block, bool bEnable)
 		mAudioMEMIF[Aud_block]->mUserCount++;
 	} else {
 		mAudioMEMIF[Aud_block]->mUserCount--;
-		if (mAudioMEMIF[Aud_block]->mUserCount == 0)
-			mAudioMEMIF[Aud_block]->mState = false;
 		if (mAudioMEMIF[Aud_block]->mUserCount < 0) {
 			mAudioMEMIF[Aud_block]->mUserCount = 0;
-			pr_warn("warning, user count < 0\n");
+			PRINTK_AUDDRV("warning, user count < 0\n");
 		}
+		if (mAudioMEMIF[Aud_block]->mUserCount == 0)
+			mAudioMEMIF[Aud_block]->mState = false;
 	}
 	PRINTK_AUDDRV("%s Aud_block = %d mAudioMEMIF[Aud_block]->mUserCount = %d\n", __func__,
 		 Aud_block, mAudioMEMIF[Aud_block]->mUserCount);

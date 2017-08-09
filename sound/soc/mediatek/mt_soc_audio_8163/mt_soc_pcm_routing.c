@@ -789,21 +789,21 @@ static const struct snd_kcontrol_new Audio_snd_routing_controls[] = {
 
 void EnAble_Anc_Path(int state)
 {
-	/* 6752 todo? */
-	pr_debug("%s not supported in 6752!!!\n ", __func__);
+	/* todo? */
+	PRINTK_AUDDRV("%s not supported!!!\n ", __func__);
 }
 
 static int m_Anc_State = AUDIO_ANC_ON;
 static int Afe_Anc_Get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
-	pr_debug("%s()\n", __func__);
+	PRINTK_AUDDRV("%s()\n", __func__);
 	ucontrol->value.integer.value[0] = m_Anc_State;
 	return 0;
 }
 
 static int Afe_Anc_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
-	pr_debug("%s()\n", __func__);
+	PRINTK_AUDDRV("%s()\n", __func__);
 	EnAble_Anc_Path(ucontrol->value.integer.value[0]);
 	m_Anc_State = ucontrol->value.integer.value[0];
 	return 0;
@@ -834,14 +834,13 @@ static int mtk_routing_pcm_open(struct snd_pcm_substream *substream)
 	int err = 0;
 	int ret = 0;
 
-	pr_debug("mtk_routing_pcm_open\n");
 	ret = snd_pcm_hw_constraint_list(runtime, 0, SNDRV_PCM_HW_PARAM_RATE,
 					 &constraints_sample_rates);
 	if (ret < 0)
-		pr_err("snd_pcm_hw_constraint_integer failed\n");
+		pr_err("%s snd_pcm_hw_constraint_list failed\n", __func__);
 
 	/* print for hw pcm information */
-	pr_debug("mtk_routing_pcm_open runtime rate = %d channels = %d\n",
+	PRINTK_AUDDRV("%s runtime rate = %d channels = %d\n", __func__,
 		runtime->rate, runtime->channels);
 
 	if (substream->pcm->device & 1) {
@@ -853,25 +852,26 @@ static int mtk_routing_pcm_open(struct snd_pcm_substream *substream)
 		runtime->hw.info &= ~(SNDRV_PCM_INFO_MMAP | SNDRV_PCM_INFO_MMAP_VALID);
 
 	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK)
-		pr_debug("SNDRV_PCM_STREAM_PLAYBACK mtkalsa_playback_constraints\n");
+		PRINTK_AUDDRV("%s SNDRV_PCM_STREAM_PLAYBACK\n", __func__);
 
 	if (err < 0) {
-		pr_err("mtk_routing_pcm_close\n");
+		pr_err("%s error, close it\n", __func__);
 		mtk_routing_pcm_close(substream);
 		return err;
 	}
-	pr_debug("mtk_routing_pcm_open return\n");
+	PRINTK_AUDDRV("%s return\n", __func__);
 	return 0;
 }
 
 static int mtk_routing_pcm_close(struct snd_pcm_substream *substream)
 {
+	PRINTK_AUDDRV("%s\n", __func__);
 	return 0;
 }
 
 static int mtk_routing_pcm_trigger(struct snd_pcm_substream *substream, int cmd)
 {
-	pr_debug("%s cmd = %d\n", __func__, cmd);
+	PRINTK_AUDDRV("%s cmd = %d\n", __func__, cmd);
 	switch (cmd) {
 	case SNDRV_PCM_TRIGGER_START:
 	case SNDRV_PCM_TRIGGER_RESUME:

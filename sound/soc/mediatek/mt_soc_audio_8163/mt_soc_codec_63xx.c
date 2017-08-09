@@ -592,6 +592,7 @@ uint32 GetDLFrequency(uint32 frequency)
 		break;
 	case 48000:
 		Reg_value = 10;
+		break;
 	default:
 		pr_warn("%s, not supported frequency, return with default 8K\n", __func__);
 	}
@@ -908,9 +909,11 @@ uint32 GetDLNewIFFrequency(unsigned int frequency)
 		break;
 	case 48000:
 		Reg_value = 8;
+		break;
 	default:
 		pr_warn("%s, not supported frequency, return with default 8K\n", __func__);
 	}
+	PRINTK_AUDDRV("%s frequency = %d Reg_value = %d\n", __func__, frequency, Reg_value);
 	return Reg_value;
 }
 
@@ -926,10 +929,11 @@ uint32 GetULNewIFFrequency(unsigned int frequency)
 		break;
 	case 48000:
 		Reg_value = 3;
+		break;
 	default:
 		pr_warn("%s, not supported frequency %d\n", __func__, frequency);
 	}
-	PRINTK_AUDDRV("%s Reg_value = %d\n", __func__, Reg_value);
+	PRINTK_AUDDRV("%s frequency = %d Reg_value = %d\n", __func__, frequency, Reg_value);
 	return Reg_value;
 }
 
