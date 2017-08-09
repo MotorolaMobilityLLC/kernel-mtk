@@ -82,23 +82,14 @@ __weak int sdio_autok(void)
 
 /* CCF clock */
 /* #define CCF_CONFIG */
-
-/* SRAM debug info */
-/* #define SRAM_DEBUG */
-
-#ifdef SRAM_DEBUG
-void __iomem *vcorefs_sram_base;
-u32 spm_vcorefs_err_irq = 265;
-#endif
+struct clk *clk_axi_sel;
+struct clk *clk_syspll_d5;
+struct clk *clk_syspll1_d4;
 
 /*
  * struct define
  */
 static DEFINE_MUTEX(governor_mutex);
-
-struct clk *clk_axi_sel;
-struct clk *clk_syspll_d5;
-struct clk *clk_syspll1_d4;
 
 struct governor_profile {
 	bool plat_feature_en;
@@ -185,7 +176,6 @@ static struct opp_profile opp_table[] __nosavedata = {
 static char *kicker_name[] = {
 	"KIR_MM",
 	"KIR_SYSFS",
-	"KIR_MAX",
 	"NUM_KICKER",
 
 	"KIR_LATE_INIT",
@@ -268,23 +258,6 @@ vcorefs_fb_notifier_callback(struct notifier_block *self, unsigned long event, v
 #endif
 
 /*
- * DVFS latency debug
- */
-#ifdef SRAM_DEBUG
-static irqreturn_t spm_vcorefs_err_handler(int irq, void *dev_id)
-{
-
-	vcorefs_err("long latency(up: %d, down: %d)\n",
-				spm_read(VCOREFS_SRAM_DVFS_UP_LATENCY),
-				spm_read(VCOREFS_SRAM_DVFS_DOWN_LATENCY));
-
-	mt_eint_virq_soft_clr(irq);
-
-	return IRQ_HANDLED;
-}
-#endif
-
-/*
  * set vcore cmd
  */
 static void update_vcore_pwrap_cmd(struct opp_profile *opp_ctrl_table)
@@ -349,54 +322,6 @@ void vcorefs_update_opp_table(char *cmd, int val)
 		}
 	}
 }
-
-/*
- *  Sram debug info
- */
-#ifdef SRAM_DEBUG
-static void vcorefs_set_sram_data(int index, u32 data)
-{
-	spm_write(VCOREFS_SRAM_BASE + index * 4, data);
-}
-
-static u32 vcorefs_get_sram_data(int index)
-{
-	return spm_read(VCOREFS_SRAM_BASE + index * 4);
-}
-
-static void vcorefs_init_sram_debug(void)
-{
-	int i;
-
-	if (!vcorefs_sram_base) {
-		vcorefs_err("vcorefs_sram_base is not valid\n");
-		return;
-	}
-
-	for (i = 0; i < 21; i++)
-		vcorefs_set_sram_data(i, 0);
-
-#if 1
-	vcorefs_crit(" *** show previous sram info ***\n");
-	vcorefs_crit("dvs_up_count     : 0x%x\n", spm_read(VCOREFS_SRAM_DVS_UP_COUNT));
-	vcorefs_crit("dfs_up_count     : 0x%x\n", spm_read(VCOREFS_SRAM_DFS_UP_COUNT));
-	vcorefs_crit("dvs_down_count   : 0x%x\n", spm_read(VCOREFS_SRAM_DVS_DOWN_COUNT));
-	vcorefs_crit("dfs_down_count   : 0x%x\n", spm_read(VCOREFS_SRAM_DFS_DOWN_COUNT));
-	vcorefs_crit("dvfs_up_latency  : 0x%x\n", spm_read(VCOREFS_SRAM_DVFS_UP_LATENCY));
-	vcorefs_crit("dvfs_down_latency: 0x%x\n", spm_read(VCOREFS_SRAM_DVFS_DOWN_LATENCY));
-	vcorefs_crit("dvfs_latency spec: 0x%x\n", spm_read(VCOREFS_SRAM_DVFS_LATENCY_SPEC));
-#endif
-	vcorefs_crit("clean debug sram info\n");
-	spm_write(VCOREFS_SRAM_DVS_UP_COUNT, 0);
-	spm_write(VCOREFS_SRAM_DFS_UP_COUNT, 0);
-	spm_write(VCOREFS_SRAM_DVS_DOWN_COUNT, 0);
-	spm_write(VCOREFS_SRAM_DFS_DOWN_COUNT, 0);
-	spm_write(VCOREFS_SRAM_DVFS_UP_LATENCY, 0);
-	spm_write(VCOREFS_SRAM_DVFS_DOWN_LATENCY, 0);
-	spm_write(VCOREFS_SRAM_DVFS_LATENCY_SPEC, DVFS_LATENCY_MAX);
-	vcorefs_crit("dvfs_latency spec set to 0x%x\n", spm_read(VCOREFS_SRAM_DVFS_LATENCY_SPEC));
-}
-#endif
 
 /*
  * Governor extern API
@@ -731,23 +656,6 @@ int governor_debug_store(const char *buf)
 	return r;
 }
 
-#ifdef SRAM_DEBUG
-char *governor_get_sram_debug_info(char *p)
-{
-
-	/* p += sprintf(p, "********** sram debug info **********\n"); */
-	p += sprintf(p, "dvs/dfs up_count  : 0x%x / 0x%x\n", spm_read(VCOREFS_SRAM_DVS_UP_COUNT),
-		     spm_read(VCOREFS_SRAM_DFS_UP_COUNT));
-	p += sprintf(p, "dvs/dfs down_count: 0x%x / 0x%x\n", spm_read(VCOREFS_SRAM_DVS_DOWN_COUNT),
-		     spm_read(VCOREFS_SRAM_DFS_DOWN_COUNT));
-	p += sprintf(p, "dvfs_up_latency   : 0x%x\n", spm_read(VCOREFS_SRAM_DVFS_UP_LATENCY));
-	p += sprintf(p, "dvs_down_latency  : 0x%x\n", spm_read(VCOREFS_SRAM_DVFS_DOWN_LATENCY));
-	p += sprintf(p, "dvfs_latency_spec : 0x%x\n", spm_read(VCOREFS_SRAM_DVFS_LATENCY_SPEC));
-
-	return p;
-}
-#endif
-
 char *governor_get_dvfs_info(char *p)
 {
 	struct governor_profile *gvrctrl = &governor_ctrl;
@@ -784,9 +692,6 @@ char *governor_get_dvfs_info(char *p)
 						RANGE_5, gvrctrl->dvfs_work_timer_5,
 						RANGE_6, gvrctrl->dvfs_work_timer_6,
 						RANGE_7, gvrctrl->dvfs_work_timer_7);
-#ifdef SRAM_DEBUG
-	p = governor_get_sram_debug_info(p);
-#endif
 	return p;
 }
 
@@ -1099,10 +1004,6 @@ int vcorefs_late_init_dvfs(void)
 	struct governor_profile *gvrctrl = &governor_ctrl;
 	bool plat_init_done = true;
 
-#ifdef SRAM_DEBUG
-	vcorefs_init_sram_debug();
-#endif
-
 	if (is_vcorefs_feature_enable())
 		spm_go_to_vcore_dvfs(SPM_FLAG_RUN_COMMON_SCENARIO, 0, gvrctrl->screen_on, gvrctrl->cpu_dvfs_req);
 /* if have common bug need default load F/W when Vcore DVFS disable
@@ -1173,44 +1074,9 @@ static int init_vcorefs_cmd_table(void)
 	return 0;
 }
 
-void init_devices_tree_node(void)
-{
-#ifdef SRAM_DEBUG
-	struct device_node *node;
-
-	node = of_find_compatible_node(NULL, NULL, "mediatek,vcore_dvfs");
-	if (!node)
-		vcorefs_err("find VCORE_DVFS node failed\n");
-
-	vcorefs_sram_base = of_iomap(node, 0);
-	if (!vcorefs_sram_base) {
-		vcorefs_err("FAILED TO MAP SRAM MEMORY OF VCORE DVFS\n");
-		return -ENOMEM;
-	}
-
-	node = of_find_compatible_node(NULL, NULL, "mediatek,spm_vcorefs_err_eint");
-	if (!node) {
-		vcorefs_err("find spm_vcorefs_err_eint failed\n");
-	} else {
-		int ret;
-		u32 ints[2];
-
-		of_property_read_u32_array(node, "debounce", ints, ARRAY_SIZE(ints));
-		mt_gpio_set_debounce(ints[0], ints[1]);
-		spm_vcorefs_err_irq = irq_of_parse_and_map(node, 0);
-		if (!spm_vcorefs_err_irq)
-			vcorefs_err("get spm_vcorefs_err_irq failed\n");
-		ret = request_irq(spm_vcorefs_err_irq, spm_vcorefs_err_handler,
-					IRQF_TRIGGER_HIGH | IRQF_NO_SUSPEND, "spm_vcorefs_err_eint", NULL);
-	}
-#endif
-}
-
 static int __init vcorefs_module_init(void)
 {
 	int r;
-
-	init_devices_tree_node();
 
 	r = init_vcorefs_cmd_table();
 	if (r) {
@@ -1239,9 +1105,6 @@ static int __init vcorefs_module_init(void)
 	r = fb_register_client(&vcorefs_fb_notif);
 #endif
 
-#ifdef SRAM_DEBUG
-	vcorefs_crit("vcorefs_sram_base: %p, spm_vcorefs_err_irq: %d\n", vcorefs_sram_base, spm_vcorefs_err_irq);
-#endif
 	return r;
 }
 

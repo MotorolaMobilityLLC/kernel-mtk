@@ -49,7 +49,6 @@ enum vcore_trans {
 enum dvfs_kicker {
 	KIR_MM = 0,
 	KIR_SYSFS,
-	KIR_MAX,
 	NUM_KICKER,
 
 	/* internal kicker */
@@ -101,25 +100,6 @@ struct opp_profile {
 };
 
 extern int kicker_table[NUM_KICKER];
-
-extern void __iomem *vcorefs_sram_base;
-
-#define VCOREFS_SRAM_BASE		vcorefs_sram_base	/* map 0x0011cf80 */
-
-#define VCOREFS_SRAM_AUTOK_REMARK       (VCOREFS_SRAM_BASE)
-#define VCOREFS_SRAM_SDIO_HPM_PARA      (VCOREFS_SRAM_BASE + 0x04)
-#define VCOREFS_SRAM_SDIO_LPM_PARA      (VCOREFS_SRAM_BASE + 0x2C)
-
-#define VCOREFS_SRAM_DVS_UP_COUNT	(VCOREFS_SRAM_BASE + 0x54)
-#define VCOREFS_SRAM_DFS_UP_COUNT	(VCOREFS_SRAM_BASE + 0x58)
-#define VCOREFS_SRAM_DVS_DOWN_COUNT	(VCOREFS_SRAM_BASE + 0x5c)
-#define VCOREFS_SRAM_DFS_DOWN_COUNT	(VCOREFS_SRAM_BASE + 0x60)
-#define VCOREFS_SRAM_DVFS_UP_LATENCY	(VCOREFS_SRAM_BASE + 0x64)
-#define VCOREFS_SRAM_DVFS_DOWN_LATENCY	(VCOREFS_SRAM_BASE + 0x68)
-#define VCOREFS_SRAM_DVFS_LATENCY_SPEC  (VCOREFS_SRAM_BASE + 0x6c)
-
-/* 1T@32K = 30.5us, 1ms is about 32 T */
-#define DVFS_LATENCY_MAX 32	/* about 1 msc */
 
 /* Governor extern API */
 extern bool is_vcorefs_feature_enable(void);
