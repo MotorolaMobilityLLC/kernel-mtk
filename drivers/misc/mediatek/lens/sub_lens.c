@@ -1,5 +1,5 @@
 /*
- * MD218A voice coil motor driver
+ * SUB AF voice coil motor driver
  *
  *
  */
@@ -12,24 +12,38 @@
 #include <linux/uaccess.h>
 #include <linux/fs.h>
 #include <asm/atomic.h>
-#include "BU6429AF.h"
-#include "kd_camera_typedef.h"
 #ifdef CONFIG_COMPAT
 #include <linux/compat.h>
 #endif
 
+#include "lens_info.h"
+#include "lens_list.h"
 
-#define LENS_I2C_BUSNUM 3
+#define AF_DRVNAME "SUBAF"
 
-#define AF_DRVNAME "BU6429AF"
-#define I2C_SLAVE_ADDRESS        0x18
-#define I2C_REGISTER_ID            0x18
-#define PLATFORM_DRIVER_NAME "lens_actuator_bu6429af"
-#define AF_DRIVER_CLASS_NAME "actuatordrv_bu6429af"
+#if defined(CONFIG_MTK_LEGACY)
+#define I2C_CONFIG_SETTING 1
+#elif defined(CONFIG_OF)
+#define I2C_CONFIG_SETTING 2 /* device tree */
+#else
+#define I2C_CONFIG_SETTING 1
+#endif
 
+
+#if I2C_CONFIG_SETTING == 1
+#define LENS_I2C_BUSNUM 1
+#define I2C_REGISTER_ID            0x27
+#endif
+
+#define PLATFORM_DRIVER_NAME "lens_actuator_sub_af"
+#define AF_DRIVER_CLASS_NAME "actuatordrv_sub_af"
+
+
+#if I2C_CONFIG_SETTING == 1
 static struct i2c_board_info kd_lens_dev __initdata = {
 	I2C_BOARD_INFO(AF_DRVNAME, I2C_REGISTER_ID)
 };
+#endif
 
 #define AF_DEBUG
 #ifdef AF_DEBUG
@@ -38,7 +52,33 @@ static struct i2c_board_info kd_lens_dev __initdata = {
 #define LOG_INF(format, args...)
 #endif
 
+
+static stAF_DrvList g_stAF_DrvList[MAX_NUM_OF_LENS] = {
+	#ifdef CONFIG_MTK_LENS_BU6424AF_SUPPORT
+	{1, AFDRV_BU6424AF, BU6424AF_SetI2Cclient, BU6424AF_Ioctl, BU6424AF_Release},
+	#endif
+	#ifdef CONFIG_MTK_LENS_BU6429AF_SUPPORT
+	{1, AFDRV_BU6429AF, BU6429AF_SetI2Cclient, BU6429AF_Ioctl, BU6429AF_Release},
+	#endif
+	#ifdef CONFIG_MTK_LENS_DW9714AF_SUPPORT
+	{1, AFDRV_DW9714AF, DW9714AF_SetI2Cclient, DW9714AF_Ioctl, DW9714AF_Release},
+	#endif
+	#ifdef CONFIG_MTK_LENS_DW9718AF_SUPPORT
+	{1, AFDRV_DW9718AF, DW9718AF_SetI2Cclient, DW9718AF_Ioctl, DW9718AF_Release},
+	#endif
+	#ifdef CONFIG_MTK_LENS_LC898212AF_SUPPORT
+	{1, AFDRV_LC898212AF, LC898212AF_SetI2Cclient, LC898212AF_Ioctl, LC898212AF_Release},
+	#endif
+	#ifdef CONFIG_MTK_LENS_FM50AF_SUPPORT
+	{1, AFDRV_FM50AF, FM50AF_SetI2Cclient, FM50AF_Ioctl, FM50AF_Release},
+	#endif
+};
+
+static stAF_DrvList *g_pstAF_CurDrv;
+
 static spinlock_t g_AF_SpinLock;
+
+static int g_s4AF_Opened;
 
 static struct i2c_client *g_pstAF_I2Cclient;
 
@@ -46,160 +86,30 @@ static dev_t g_AF_devno;
 static struct cdev *g_pAF_CharDrv;
 static struct class *actuator_class;
 
-static int g_s4AF_Opened;
-static long g_i4MotorStatus;
-static long g_i4Dir;
-static unsigned long g_u4AF_INF;
-static unsigned long g_u4AF_MACRO = 1023;
-static unsigned long g_u4TargetPosition;
-static unsigned long g_u4CurrPosition;
-
-static int g_sr = 3;
-
-static int s4AF_ReadReg(unsigned short *a_pu2Result)
+static long AF_SetMotorName(__user stAF_MotorName *pstMotorName)
 {
-	int i4RetValue = 0;
-	char pBuff[2];
+	long i4RetValue = -1;
+	int i;
+	stAF_MotorName stMotorName;
 
-	i4RetValue = i2c_master_recv(g_pstAF_I2Cclient, pBuff, 2);
-
-	if (i4RetValue < 0) {
-		LOG_INF("I2C read failed!!\n");
-		return -1;
-	}
-
-	*a_pu2Result = (((u16) pBuff[0]) << 2) + (pBuff[1]);
-
-	return 0;
-}
-
-static int s4AF_WriteReg(u16 a_u2Data)
-{
-	int i4RetValue = 0;
-
-	char puSendCmd[2] = { (char)(a_u2Data >> 8) + 0xC0, (char)(a_u2Data & 0xFF) };
-
-	/* LOG_INF("g_sr %d, write %d\n", g_sr, a_u2Data); */
-	g_pstAF_I2Cclient->ext_flag |= I2C_A_FILTER_MSG;
-	i4RetValue = i2c_master_send(g_pstAF_I2Cclient, puSendCmd, 2);
-
-	if (i4RetValue < 0) {
-		LOG_INF("I2C send failed!!\n");
-		return -1;
-	}
-
-	return 0;
-}
-
-static inline int getAFInfo(__user stBU6429AF_MotorInfo *pstMotorInfo)
-{
-	stBU6429AF_MotorInfo stMotorInfo;
-
-	stMotorInfo.u4MacroPosition = g_u4AF_MACRO;
-	stMotorInfo.u4InfPosition = g_u4AF_INF;
-	stMotorInfo.u4CurrentPosition = g_u4CurrPosition;
-	stMotorInfo.bIsSupportSR = TRUE;
-
-	if (g_i4MotorStatus == 1)
-		stMotorInfo.bIsMotorMoving = 1;
-	else
-		stMotorInfo.bIsMotorMoving = 0;
-
-	if (g_s4AF_Opened >= 1)
-		stMotorInfo.bIsMotorOpen = 1;
-	else
-		stMotorInfo.bIsMotorOpen = 0;
-
-	if (copy_to_user(pstMotorInfo, &stMotorInfo, sizeof(stBU6429AF_MotorInfo)))
+	if (copy_from_user(&stMotorName , pstMotorName, sizeof(stAF_MotorName)))
 		LOG_INF("copy to user failed when getting motor information\n");
 
-	return 0;
-}
+	LOG_INF("Set Motor Name : %s\n", stMotorName.uMotorName);
 
-static inline int moveAF(unsigned long a_u4Position)
-{
-	int ret = 0;
+	for (i = 0; i < MAX_NUM_OF_LENS; i++) {
+		if (g_stAF_DrvList[i].uEnable != 1)
+			break;
 
-	if ((a_u4Position > g_u4AF_MACRO) || (a_u4Position < g_u4AF_INF)) {
-		LOG_INF("out of range\n");
-		return -EINVAL;
-	}
-
-	if (g_s4AF_Opened == 1) {
-		unsigned short InitPos;
-
-		ret = s4AF_ReadReg(&InitPos);
-
-		if (ret == 0) {
-			LOG_INF("Init Pos %6d\n", InitPos);
-
-			spin_lock(&g_AF_SpinLock);
-			g_u4CurrPosition = (unsigned long)InitPos;
-			spin_unlock(&g_AF_SpinLock);
-
-		} else {
-			spin_lock(&g_AF_SpinLock);
-			g_u4CurrPosition = 0;
-			spin_unlock(&g_AF_SpinLock);
+		LOG_INF("Search Motor Name : %s\n", g_stAF_DrvList[i].uDrvName);
+		if (strcmp(stMotorName.uMotorName, g_stAF_DrvList[i].uDrvName) == 0) {
+			g_pstAF_CurDrv = &g_stAF_DrvList[i];
+			g_pstAF_CurDrv->pAF_SetI2Cclient(g_pstAF_I2Cclient, &g_AF_SpinLock, &g_s4AF_Opened);
+			i4RetValue = 1;
+			break;
 		}
-
-		spin_lock(&g_AF_SpinLock);
-		g_s4AF_Opened = 2;
-		spin_unlock(&g_AF_SpinLock);
 	}
-
-	if (g_u4CurrPosition < a_u4Position) {
-		spin_lock(&g_AF_SpinLock);
-		g_i4Dir = 1;
-		spin_unlock(&g_AF_SpinLock);
-	} else if (g_u4CurrPosition > a_u4Position) {
-		spin_lock(&g_AF_SpinLock);
-		g_i4Dir = -1;
-		spin_unlock(&g_AF_SpinLock);
-	} else {
-		return 0;
-	}
-
-	spin_lock(&g_AF_SpinLock);
-	g_u4TargetPosition = a_u4Position;
-	spin_unlock(&g_AF_SpinLock);
-
-	/* LOG_INF("move [curr] %d [target] %d\n", g_u4CurrPosition, g_u4TargetPosition); */
-
-	spin_lock(&g_AF_SpinLock);
-	g_sr = 3;
-	g_i4MotorStatus = 0;
-	spin_unlock(&g_AF_SpinLock);
-
-	if (s4AF_WriteReg((unsigned short)g_u4TargetPosition) == 0) {
-		spin_lock(&g_AF_SpinLock);
-		g_u4CurrPosition = (unsigned long)g_u4TargetPosition;
-		spin_unlock(&g_AF_SpinLock);
-	} else {
-		LOG_INF("set I2C failed when moving the motor\n");
-
-		spin_lock(&g_AF_SpinLock);
-		g_i4MotorStatus = -1;
-		spin_unlock(&g_AF_SpinLock);
-	}
-
-	return 0;
-}
-
-static inline int setAFInf(unsigned long a_u4Position)
-{
-	spin_lock(&g_AF_SpinLock);
-	g_u4AF_INF = a_u4Position;
-	spin_unlock(&g_AF_SpinLock);
-	return 0;
-}
-
-static inline int setAFMacro(unsigned long a_u4Position)
-{
-	spin_lock(&g_AF_SpinLock);
-	g_u4AF_MACRO = a_u4Position;
-	spin_unlock(&g_AF_SpinLock);
-	return 0;
+	return i4RetValue;
 }
 
 /* ////////////////////////////////////////////////////////////// */
@@ -208,24 +118,13 @@ static long AF_Ioctl(struct file *a_pstFile, unsigned int a_u4Command, unsigned 
 	long i4RetValue = 0;
 
 	switch (a_u4Command) {
-	case BU6429AFIOC_G_MOTORINFO:
-		i4RetValue = getAFInfo((__user stBU6429AF_MotorInfo *) (a_u4Param));
-		break;
-	case BU6429AFIOC_T_MOVETO:
-		i4RetValue = moveAF(a_u4Param);
-		break;
-
-	case BU6429AFIOC_T_SETINFPOS:
-		i4RetValue = setAFInf(a_u4Param);
-		break;
-
-	case BU6429AFIOC_T_SETMACROPOS:
-		i4RetValue = setAFMacro(a_u4Param);
+	case AFIOC_S_SETDRVNAME:
+		i4RetValue = AF_SetMotorName((__user stAF_MotorName *)(a_u4Param));
 		break;
 
 	default:
-		LOG_INF("No CMD\n");
-		i4RetValue = -EPERM;
+		if (g_pstAF_CurDrv)
+			i4RetValue = g_pstAF_CurDrv->pAF_Ioctl(a_pstFile, a_u4Command, a_u4Param);
 		break;
 	}
 
@@ -265,17 +164,10 @@ static int AF_Release(struct inode *a_pstInode, struct file *a_pstFile)
 {
 	LOG_INF("Start\n");
 
-	if (g_s4AF_Opened == 2) {
-		g_sr = 5;
-		s4AF_WriteReg(200);
-		msleep(20);
-		s4AF_WriteReg(100);
-		msleep(20);
-	}
-
-	if (g_s4AF_Opened) {
-		LOG_INF("Free\n");
-
+	if (g_pstAF_CurDrv) {
+		g_pstAF_CurDrv->pAF_Release(a_pstInode, a_pstFile);
+		g_pstAF_CurDrv = NULL;
+	} else {
 		spin_lock(&g_AF_SpinLock);
 		g_s4AF_Opened = 0;
 		spin_unlock(&g_AF_SpinLock);
@@ -371,20 +263,26 @@ static int AF_i2c_probe(struct i2c_client *client, const struct i2c_device_id *i
 static int AF_i2c_remove(struct i2c_client *client);
 static const struct i2c_device_id AF_i2c_id[] = { {AF_DRVNAME, 0}, {} };
 
+/* Compatible name must be the same with that defined in codegen.dws and cust_i2c.dtsi */
+/* TOOL : kernel-3.10\tools\dct */
+/* PATH : vendor\mediatek\proprietary\custom\#project#\kernel\dct\dct */
+#if I2C_CONFIG_SETTING == 2
+static const struct of_device_id SUBAF_of_match[] = {
+	{.compatible = "mediatek,CAMERA_SUB_AF"},
+	{},
+};
+#endif
+
 static struct i2c_driver AF_i2c_driver = {
 	.probe = AF_i2c_probe,
 	.remove = AF_i2c_remove,
 	.driver.name = AF_DRVNAME,
+#if I2C_CONFIG_SETTING == 2
+	.driver.of_match_table = SUBAF_of_match,
+#endif
 	.id_table = AF_i2c_id,
 };
 
-#if 0
-static int AF_i2c_detect(struct i2c_client *client, int kind, struct i2c_board_info *info)
-{
-	strcpy(info->type, AF_DRVNAME);
-	return 0;
-}
-#endif
 static int AF_i2c_remove(struct i2c_client *client)
 {
 	return 0;
@@ -399,10 +297,6 @@ static int AF_i2c_probe(struct i2c_client *client, const struct i2c_device_id *i
 
 	/* Kirby: add new-style driver { */
 	g_pstAF_I2Cclient = client;
-
-	g_pstAF_I2Cclient->addr = I2C_SLAVE_ADDRESS;
-
-	g_pstAF_I2Cclient->addr = g_pstAF_I2Cclient->addr >> 1;
 
 	/* Register char driver */
 	i4RetValue = Register_AF_CharDrv();
@@ -460,9 +354,11 @@ static struct platform_device g_stAF_device = {
 	.dev = {}
 };
 
-static int __init BU6429AF_i2C_init(void)
+static int __init SUBAF_i2C_init(void)
 {
+	#if I2C_CONFIG_SETTING == 1
 	i2c_register_board_info(LENS_I2C_BUSNUM, &kd_lens_dev, 1);
+	#endif
 
 	if (platform_device_register(&g_stAF_device)) {
 		LOG_INF("failed to register AF driver\n");
@@ -477,13 +373,13 @@ static int __init BU6429AF_i2C_init(void)
 	return 0;
 }
 
-static void __exit BU6429AF_i2C_exit(void)
+static void __exit SUBAF_i2C_exit(void)
 {
 	platform_driver_unregister(&g_stAF_Driver);
 }
-module_init(BU6429AF_i2C_init);
-module_exit(BU6429AF_i2C_exit);
+module_init(SUBAF_i2C_init);
+module_exit(SUBAF_i2C_exit);
 
-MODULE_DESCRIPTION("BU6429AF lens module driver");
+MODULE_DESCRIPTION("SUBAF lens module driver");
 MODULE_AUTHOR("KY Chen <ky.chen@Mediatek.com>");
 MODULE_LICENSE("GPL");

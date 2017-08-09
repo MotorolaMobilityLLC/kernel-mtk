@@ -1,5 +1,5 @@
 /*
- * DW9714AF voice coil motor driver
+ * DW9814AF voice coil motor driver
  *
  *
  */
@@ -12,7 +12,7 @@
 #include "lens_info.h"
 
 
-#define AF_DRVNAME "DW9714AF_DRV"
+#define AF_DRVNAME "DW9814AF_DRV"
 #define AF_I2C_SLAVE_ADDR        0x18
 
 #define AF_DEBUG
@@ -168,7 +168,7 @@ static inline int setAFMacro(unsigned long a_u4Position)
 }
 
 /* ////////////////////////////////////////////////////////////// */
-long DW9714AF_Ioctl(struct file *a_pstFile, unsigned int a_u4Command, unsigned long a_u4Param)
+long DW9814AF_Ioctl(struct file *a_pstFile, unsigned int a_u4Command, unsigned long a_u4Param)
 {
 	long i4RetValue = 0;
 
@@ -203,7 +203,7 @@ long DW9714AF_Ioctl(struct file *a_pstFile, unsigned int a_u4Command, unsigned l
 /* 2.Shut down the device on last close. */
 /* 3.Only called once on last time. */
 /* Q1 : Try release multiple times. */
-int DW9714AF_Release(struct inode *a_pstInode, struct file *a_pstFile)
+int DW9814AF_Release(struct inode *a_pstInode, struct file *a_pstFile)
 {
 	LOG_INF("Start\n");
 
@@ -228,7 +228,7 @@ int DW9714AF_Release(struct inode *a_pstInode, struct file *a_pstFile)
 	return 0;
 }
 
-void DW9714AF_SetI2Cclient(struct i2c_client *pstAF_I2Cclient, spinlock_t *pAF_SpinLock, int *pAF_Opened)
+void DW9814AF_SetI2Cclient(struct i2c_client *pstAF_I2Cclient, spinlock_t *pAF_SpinLock, int *pAF_Opened)
 {
 	g_pstAF_I2Cclient = pstAF_I2Cclient;
 	g_pAF_SpinLock = pAF_SpinLock;
