@@ -132,6 +132,14 @@
 			compatible = "mediatek,pstore";
 			reg = <0 0x44410000 0 0xe0000>;
 		};
+
+		spm-reserve-memory {
+			compatible = "mediatek,spm-reserve-memory";
+			no-map;
+			size = <0 0x38000>; /* PCM_FIRMWARE_SIZE x DYNA_LOAD_PCM_MAX = 16KB x 14 */
+			alignment = <0 0x10000>;
+			alloc-ranges = <0 0x40000000 0 0x80000000>;
+		};
 	};
 
 	gic: interrupt-controller@0C000000 {
