@@ -6,6 +6,7 @@
 #include <linux/delay.h>
 #include <linux/atomic.h>
 #include <mt-plat/aee.h>
+#include <mt-plat/mt_chip.h>
 #include <mach/mt_spm_mtcmos_internal.h>
 
 #include "mt_spm_idle.h"
@@ -54,12 +55,12 @@ struct spm_irq_desc {
 
 static twam_handler_t spm_twam_handler;
 
-unsigned int __attribute__((weak)) mt_get_chip_hw_code(void)
+void __attribute__((weak)) mt_gic_cfg_irq2cpu(unsigned int irq, unsigned int cpu, unsigned int set)
 {
-	return 0x335;
+
 }
 
-void __attribute__((weak)) mt_gic_cfg_irq2cpu(unsigned int irq, unsigned int cpu, unsigned int set)
+void __attribute__((weak)) spm_deepidle_init(void)
 {
 
 }
@@ -335,7 +336,7 @@ int spm_module_init(void)
 
 #ifndef CONFIG_MTK_FPGA
 #if defined(CONFIG_PM)
-#if 0
+#if defined(CONFIG_ARCH_MT6735) /* || defined(CONFIG_ARCH_MT6735M) || defined(CONFIG_ARCH_MT6753) */
 	if (spm_fs_init() != 0)
 		r = -EPERM;
 #endif
@@ -353,7 +354,7 @@ int spm_module_init(void)
 #ifndef CONFIG_MTK_FPGA
 	/* spm_sodi_init(); */
 	/* spm_mcdi_init(); */
-	/* spm_deepidle_init(); */
+	spm_deepidle_init();
 #endif
 
 	if (spm_golden_setting_cmp(1) != 0) {

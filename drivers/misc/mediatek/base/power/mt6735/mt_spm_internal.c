@@ -416,7 +416,6 @@ void __spm_dpidle_sodi_restore_pmic_setting(u32 vsram_vosel_on_lb)
 									MT6328_PMIC_VSRAM_VOSEL_ON_LB_SHIFT);
 }
 
-#if 0
 #ifdef CONFIG_ARCH_MT6753
 #include <mach/mt_clkmgr.h>
 static u32 i2c4_conf_backup;
@@ -444,7 +443,6 @@ void __spm_disable_i2c4_clk(void)
 		disable_clock(MT_CG_PERI_I2C4, "suspend");
 	}
 }
-#endif
 #endif
 
 static u32 spm_dram_dummy_read_flags;

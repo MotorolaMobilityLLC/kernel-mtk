@@ -169,6 +169,16 @@ void __attribute__((weak)) mtkts_wmt_start_thermal_timer(void)
 
 }
 
+wake_reason_t __attribute__((weak)) spm_go_to_dpidle(u32 spm_flags, u32 spm_data)
+{
+	return 0;
+}
+
+void __attribute__((weak)) spm_go_to_sodi(u32 spm_flags, u32 spm_data)
+{
+
+}
+
 bool __attribute__((weak)) spm_get_sodi_en(void)
 {
 	return false;

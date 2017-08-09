@@ -9,9 +9,11 @@
 
 #include <mach/wd_api.h>
 #include <mt-plat/upmu_common.h>
+#include <mt-plat/mt_cirq.h>
 
 #include "mt_spm_idle.h"
 #include "mt_cpufreq.h"
+#include "mt_cpuidle.h"
 
 #include "mt_spm_internal.h"
 
@@ -330,7 +332,7 @@ static long int idle_get_current_time_ms(void)
 static void spm_trigger_wfi_for_dpidle(struct pwr_ctrl *pwrctrl)
 {
 	if (is_cpu_pdn(pwrctrl->pcm_flags)) {
-		wfi_with_sync();
+		mt_cpu_dormant(CPU_DEEPIDLE_MODE);
 	} else {
 		/*
 		 * Mp0_axi_config[4] is one by default. No need to program it before entering suspend.
@@ -440,7 +442,7 @@ wake_reason_t spm_go_to_dpidle(u32 spm_flags, u32 spm_data)
 	struct pwr_ctrl *pwrctrl = __spm_dpidle.pwrctrl;
 
 #if SPM_AEE_RR_REC
-	aee_rr_rec_deepidle_val(1<<SPM_DEEPIDLE_ENTER);
+	aee_rr_rec_deepidle_val(1 << SPM_DEEPIDLE_ENTER);
 #endif
 
 	set_pwrctrl_pcm_flags(pwrctrl, spm_flags);
@@ -455,7 +457,7 @@ wake_reason_t spm_go_to_dpidle(u32 spm_flags, u32 spm_data)
 	mt_cirq_enable();
 
 #if SPM_AEE_RR_REC
-	aee_rr_rec_deepidle_val(aee_rr_curr_deepidle_val()|(1<<SPM_DEEPIDLE_ENTER_UART_SLEEP));
+	aee_rr_rec_deepidle_val(aee_rr_curr_deepidle_val() | (1 << SPM_DEEPIDLE_ENTER_UART_SLEEP));
 #endif
 
 	if (request_uart_to_sleep()) {
