@@ -25,9 +25,6 @@
 
 #if defined(MTK_LCM_DEVICE_TREE_SUPPORT)
 #include <linux/of.h>
-
-#define MAX_INIT_CNT 256
-#define REGFLAG_DELAY 0xFE
 #endif
 
 int _lcm_count(void)
@@ -182,13 +179,7 @@ void _dump_lcm_info(disp_lcm_handle *plcm)
 }
 
 #if defined(MTK_LCM_DEVICE_TREE_SUPPORT)
-#define INIT_SIZE			(sizeof(LCM_DATA)*256)
-#define COMPARE_ID_SIZE	(sizeof(LCM_DATA)*32)
-#define SUSPEND_SIZE		(sizeof(LCM_DATA)*32)
-#define BACKLIGHT_SIZE		(sizeof(LCM_DATA)*32)
-#define MAX_SIZE			(MAX(MAX(MAX(INIT_SIZE, COMPARE_ID_SIZE), SUSPEND_SIZE), BACKLIGHT_SIZE))
-
-static unsigned char dts[MAX_SIZE];
+static unsigned char dts[sizeof(LCM_DATA)*MAX_SIZE];
 static LCM_DTS lcm_dts;
 
 int disp_of_getprop_u32(const struct device_node *np, const char *propname, u32 *out_value)
@@ -454,9 +445,9 @@ void parse_lcm_params_dt_node(struct device_node *np, LCM_PARAMS *lcm_params)
 	disp_of_getprop_u32(np, "lcm_params-dsi-dual_dsi_type", &lcm_params->dsi.dual_dsi_type);
 	disp_of_getprop_u32(np, "lcm_params-dsi-lane_swap_en", &lcm_params->dsi.lane_swap_en);
 	disp_of_getprop_u32(np, "lcm_params-dsi-lane_swap0",
-			    (u32 *) (&(lcm_params->dsi.lane_swap[0])));
+			    (u32 *) (&(lcm_params->dsi.lane_swap[0][0])));
 	disp_of_getprop_u32(np, "lcm_params-dsi-lane_swap1",
-			    (u32 *) (&(lcm_params->dsi.lane_swap[1])));
+			    (u32 *) (&(lcm_params->dsi.lane_swap[1][0])));
 	disp_of_getprop_u32(np, "lcm_params-dsi-vertical_vfp_lp", &lcm_params->dsi.vertical_vfp_lp);
 	disp_of_getprop_u32(np, "lcm_params-physical_width", &lcm_params->physical_width);
 	disp_of_getprop_u32(np, "lcm_params-physical_height", &lcm_params->physical_height);
@@ -481,14 +472,14 @@ void parse_lcm_ops_dt_node(struct device_node *np, LCM_DTS *lcm_dts, unsigned ch
 		pr_err("%s:%d: Cannot find LCM init table, cannot skip it!\n", __FILE__, __LINE__);
 		return;
 	}
-	if (len > INIT_SIZE) {
+	if (len > (sizeof(LCM_DATA)*INIT_SIZE)) {
 		pr_err("%s:%d: LCM init table overflow: %d\n", __FILE__, __LINE__, len);
 		return;
 	}
 	pr_debug("%s:%d: len: %d\n", __FILE__, __LINE__, len);
 
 	tmp = dts;
-	for (i = 0; i < 256; i++) {
+	for (i = 0; i < INIT_SIZE; i++) {
 		lcm_dts->init[i].func = (*tmp) & 0xFF;
 		lcm_dts->init[i].type = (*(tmp + 1)) & 0xFF;
 		lcm_dts->init[i].size = (*(tmp + 2)) & 0xFF;
@@ -534,9 +525,13 @@ void parse_lcm_ops_dt_node(struct device_node *np, LCM_DTS *lcm_dts, unsigned ch
 			tmp = tmp + tmp_len;
 			len = len - tmp_len;
 		} else {
-			lcm_dts->init_size = i + 1;
 			break;
 		}
+	}
+	lcm_dts->init_size = i + 1;
+	if (lcm_dts->init_size > INIT_SIZE) {
+		pr_err("%s:%d: LCM init table overflow: %d\n", __FILE__, __LINE__, len);
+		return;
 	}
 
 	/* parse LCM compare_id table */
@@ -544,14 +539,14 @@ void parse_lcm_ops_dt_node(struct device_node *np, LCM_DTS *lcm_dts, unsigned ch
 	if (len <= 0) {
 		pr_warn("%s:%d: Cannot find LCM compare_id table, skip it!\n", __FILE__, __LINE__);
 	} else {
-		if (len > COMPARE_ID_SIZE) {
+		if (len > (sizeof(LCM_DATA)*COMPARE_ID_SIZE)) {
 			pr_err("%s:%d: LCM compare_id table overflow: %d\n", __FILE__, __LINE__,
 			       len);
 			return;
 		}
 
 		tmp = dts;
-		for (i = 0; i < 32; i++) {
+		for (i = 0; i < COMPARE_ID_SIZE; i++) {
 			lcm_dts->compare_id[i].func = (*tmp) & 0xFF;
 			lcm_dts->compare_id[i].type = (*(tmp + 1)) & 0xFF;
 			lcm_dts->compare_id[i].size = (*(tmp + 2)) & 0xFF;
@@ -606,9 +601,14 @@ void parse_lcm_ops_dt_node(struct device_node *np, LCM_DTS *lcm_dts, unsigned ch
 				tmp = tmp + tmp_len;
 				len = len - tmp_len;
 			} else {
-				lcm_dts->compare_id_size = i + 1;
 				break;
 			}
+		}
+		lcm_dts->compare_id_size = i + 1;
+		if (lcm_dts->compare_id_size > COMPARE_ID_SIZE) {
+			pr_err("%s:%d: LCM compare_id table overflow: %d\n", __FILE__, __LINE__,
+			       len);
+			return;
 		}
 	}
 
@@ -619,13 +619,13 @@ void parse_lcm_ops_dt_node(struct device_node *np, LCM_DTS *lcm_dts, unsigned ch
 		       __LINE__);
 		return;
 	}
-	if (len > SUSPEND_SIZE) {
+	if (len > (sizeof(LCM_DATA)*SUSPEND_SIZE)) {
 		pr_err("%s:%d: LCM suspend table overflow: %d\n", __FILE__, __LINE__, len);
 		return;
 	}
 
 	tmp = dts;
-	for (i = 0; i < 32; i++) {
+	for (i = 0; i < SUSPEND_SIZE; i++) {
 		lcm_dts->suspend[i].func = (*tmp) & 0xFF;
 		lcm_dts->suspend[i].type = (*(tmp + 1)) & 0xFF;
 		lcm_dts->suspend[i].size = (*(tmp + 2)) & 0xFF;
@@ -673,9 +673,13 @@ void parse_lcm_ops_dt_node(struct device_node *np, LCM_DTS *lcm_dts, unsigned ch
 			tmp = tmp + tmp_len;
 			len = len - tmp_len;
 		} else {
-			lcm_dts->suspend_size = i + 1;
 			break;
 		}
+	}
+	lcm_dts->suspend_size = i + 1;
+	if (lcm_dts->suspend_size > SUSPEND_SIZE) {
+		pr_err("%s:%d: LCM suspend table overflow: %d\n", __FILE__, __LINE__, len);
+		return;
 	}
 
 	/* parse LCM backlight table */
@@ -683,14 +687,14 @@ void parse_lcm_ops_dt_node(struct device_node *np, LCM_DTS *lcm_dts, unsigned ch
 	if (len <= 0) {
 		pr_err("%s:%d: Cannot find LCM backlight table, skip it!\n", __FILE__, __LINE__);
 	} else {
-		if (len > BACKLIGHT_SIZE) {
+		if (len > (sizeof(LCM_DATA)*BACKLIGHT_SIZE)) {
 			pr_err("%s:%d: LCM backlight table overflow: %d\n", __FILE__, __LINE__,
 			       len);
 			return;
 		}
 
 		tmp = dts;
-		for (i = 0; i < 32; i++) {
+		for (i = 0; i < BACKLIGHT_SIZE; i++) {
 			lcm_dts->backlight[i].func = (*tmp) & 0xFF;
 			lcm_dts->backlight[i].type = (*(tmp + 1)) & 0xFF;
 			lcm_dts->backlight[i].size = (*(tmp + 2)) & 0xFF;
@@ -735,9 +739,85 @@ void parse_lcm_ops_dt_node(struct device_node *np, LCM_DTS *lcm_dts, unsigned ch
 				tmp = tmp + tmp_len;
 				len = len - tmp_len;
 			} else {
-				lcm_dts->backlight_size = i + 1;
 				break;
 			}
+		}
+		lcm_dts->backlight_size = i + 1;
+		if (lcm_dts->backlight_size > BACKLIGHT_SIZE) {
+			pr_err("%s:%d: LCM backlight table overflow: %d\n", __FILE__, __LINE__,
+			       len);
+			return;
+		}
+	}
+
+	/* parse LCM backlight cmdq table */
+	len = disp_of_getprop_u8(np, "backlight_cmdq", dts);
+	if (len <= 0) {
+		pr_err("%s:%d: Cannot find LCM backlight cmdq table, skip it!\n", __FILE__,
+		       __LINE__);
+	} else {
+		if (len > (sizeof(LCM_DATA)*BACKLIGHT_CMDQ_SIZE)) {
+			pr_err("%s:%d: LCM backlight cmdq table overflow: %d\n", __FILE__, __LINE__,
+			       len);
+			return;
+		}
+
+		tmp = dts;
+		for (i = 0; i < BACKLIGHT_CMDQ_SIZE; i++) {
+			lcm_dts->backlight_cmdq[i].func = (*tmp) & 0xFF;
+			lcm_dts->backlight_cmdq[i].type = (*(tmp + 1)) & 0xFF;
+			lcm_dts->backlight_cmdq[i].size = (*(tmp + 2)) & 0xFF;
+			tmp_len = 3;
+
+			switch (lcm_dts->backlight_cmdq[i].func) {
+			case LCM_FUNC_GPIO:
+				memcpy(&(lcm_dts->backlight_cmdq[i].data_t1), tmp + 3,
+				       lcm_dts->backlight_cmdq[i].size);
+				break;
+
+			case LCM_FUNC_I2C:
+				memcpy(&(lcm_dts->backlight_cmdq[i].data_t2), tmp + 3,
+				       lcm_dts->backlight_cmdq[i].size);
+				break;
+
+			case LCM_FUNC_UTIL:
+				memcpy(&(lcm_dts->backlight_cmdq[i].data_t1), tmp + 3,
+				       lcm_dts->backlight_cmdq[i].size);
+				break;
+
+			case LCM_FUNC_CMD:
+				switch (lcm_dts->backlight_cmdq[i].type) {
+				case LCM_UTIL_WRITE_CMD_V23:
+					memcpy(&(lcm_dts->backlight_cmdq[i].data_t3), tmp + 3,
+					       lcm_dts->backlight_cmdq[i].size);
+					break;
+
+				default:
+					pr_err("%s:%d: %d\n", __FILE__, __LINE__,
+					       lcm_dts->backlight_cmdq[i].type);
+					return;
+				}
+				break;
+
+			default:
+				pr_err("%s:%d: %d\n", __FILE__, __LINE__,
+				       (unsigned int)lcm_dts->backlight_cmdq[i].func);
+				return;
+			}
+			tmp_len = tmp_len + lcm_dts->backlight_cmdq[i].size;
+
+			if (tmp_len < len) {
+				tmp = tmp + tmp_len;
+				len = len - tmp_len;
+			} else {
+				break;
+			}
+		}
+		lcm_dts->backlight_cmdq_size = i + 1;
+		if (lcm_dts->backlight_cmdq_size > BACKLIGHT_CMDQ_SIZE) {
+			pr_err("%s:%d: LCM backlight cmdq table overflow: %d\n", __FILE__, __LINE__,
+			       len);
+			return;
 		}
 	}
 }
@@ -785,26 +865,24 @@ void load_lcm_resources_from_DT(LCM_DRIVER *lcm_drv)
 	memset((unsigned char *)parse_dts, 0x0, sizeof(LCM_DTS));
 
 	sprintf(lcm_node, "mediatek,lcm_params-%s", lcm_name_list[0]);
-	pr_warn("LCM PARAMS DT compatible: %s\n", lcm_node);
+	pr_debug("LCM PARAMS DT compatible: %s\n", lcm_node);
 
 	/* Load LCM parameters from DT */
 	np = of_find_compatible_node(NULL, NULL, lcm_node);
-	if (!np) {
+	if (!np)
 		pr_err("LCM PARAMS DT node: Not found\n");
-	} else {
+	else
 		parse_lcm_params_dt_node(np, &(parse_dts->params));
-	}
 
 	sprintf(lcm_node, "mediatek,lcm_ops-%s", lcm_name_list[0]);
-	pr_warn("LCM OPS DT compatible: %s\n", lcm_node);
+	pr_debug("LCM OPS DT compatible: %s\n", lcm_node);
 
 	/* Load LCM parameters from DT */
 	np = of_find_compatible_node(NULL, NULL, lcm_node);
-	if (!np) {
+	if (!np)
 		pr_err("LCM OPS DT node: Not found\n");
-	} else {
+	else
 		parse_lcm_ops_dt_node(np, parse_dts, tmp_dts);
-	}
 
 	if (lcm_drv->parse_dts)
 		lcm_drv->parse_dts(parse_dts, 1);
@@ -818,12 +896,14 @@ disp_lcm_handle *disp_lcm_probe(char *plcm_name, LCM_INTERFACE_ID lcm_id)
 	int lcmindex = 0;
 	bool isLCMFound = false;
 	bool isLCMInited = false;
-	LCM_DRIVER *lcm_drv = NULL;
-	LCM_PARAMS *lcm_param = NULL;
-	disp_lcm_handle *plcm = NULL;
+
 #if defined(MTK_LCM_DEVICE_TREE_SUPPORT)
 	bool isLCMDtFound = false;
 #endif
+
+	LCM_DRIVER *lcm_drv = NULL;
+	LCM_PARAMS *lcm_param = NULL;
+	disp_lcm_handle *plcm = NULL;
 
 	DISPPRINT("%s\n", __func__);
 	DISPCHECK("plcm_name=%s\n", plcm_name);

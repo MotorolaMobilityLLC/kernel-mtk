@@ -138,7 +138,7 @@ void lcm_common_parse_dts(const LCM_DTS *DTS, unsigned char force_update)
 #if defined(LCM_DEBUG)
 	/* LCM DTS init data set */
 	_LCM_DTS.init_size = 0;
-	memset(dts_init, 0, sizeof(LCM_DATA) * 256);
+	memset(dts_init, 0, sizeof(LCM_DATA) * INIT_SIZE);
 	dts_init->func = LCM_FUNC_UTIL;
 	dts_init->type = LCM_UTIL_RESET;
 	dts_init->size = 1;
@@ -643,7 +643,7 @@ void lcm_common_parse_dts(const LCM_DTS *DTS, unsigned char force_update)
 #if defined(LCM_DEBUG)
 	/* LCM DTS compare_id data set */
 	_LCM_DTS.compare_id_size = 0;
-	memset(dts_compare_id, 0, sizeof(LCM_DATA) * 8);
+	memset(dts_compare_id, 0, sizeof(LCM_DATA) * COMPARE_ID_SIZE);
 	dts_compare_id->func = LCM_FUNC_CMD;
 	dts_compare_id->type = LCM_UTIL_WRITE_CMD_V1;
 	dts_compare_id->size = 5;
@@ -672,7 +672,7 @@ void lcm_common_parse_dts(const LCM_DTS *DTS, unsigned char force_update)
 #if defined(LCM_DEBUG)
 	/* LCM DTS suspend data set */
 	_LCM_DTS.suspend_size = 0;
-	memset(dts_suspend, 0, sizeof(LCM_DATA) * 8);
+	memset(dts_suspend, 0, sizeof(LCM_DATA) * SUSPEND_SIZE);
 	dts_suspend->func = LCM_FUNC_CMD;
 	dts_suspend->type = LCM_UTIL_WRITE_CMD_V2;
 	dts_suspend->size = 2;
@@ -696,7 +696,7 @@ void lcm_common_parse_dts(const LCM_DTS *DTS, unsigned char force_update)
 #if defined(LCM_DEBUG)
 	/* LCM DTS backlight data set */
 	_LCM_DTS.backlight_size = 0;
-	memset(dts_backlight, 0, sizeof(LCM_DATA) * 8);
+	memset(dts_backlight, 0, sizeof(LCM_DATA) * BACKLIGHT_SIZE);
 	dts_backlight->func = LCM_FUNC_CMD;
 	dts_backlight->type = LCM_UTIL_WRITE_CMD_V2;
 	dts_backlight->size = 3;
@@ -714,7 +714,7 @@ void lcm_common_parse_dts(const LCM_DTS *DTS, unsigned char force_update)
 #if defined(LCM_DEBUG)
 	/* LCM DTS backlight cmdq data set */
 	_LCM_DTS.backlight_cmdq_size = 0;
-	memset(dts_backlight_cmdq, 0, sizeof(LCM_DATA) * 8);
+	memset(dts_backlight_cmdq, 0, sizeof(LCM_DATA) * BACKLIGHT_CMDQ_SIZE);
 	dts_backlight_cmdq->func = LCM_FUNC_CMD;
 	dts_backlight_cmdq->type = LCM_UTIL_WRITE_CMD_V2;
 	dts_backlight_cmdq->size = 3;
@@ -759,7 +759,7 @@ void lcm_common_get_params(LCM_PARAMS *params)
 
 void lcm_common_init(void)
 {
-	if (_LCM_DTS.init_size > 256) {
+	if (_LCM_DTS.init_size > INIT_SIZE) {
 		pr_debug("[LCM][ERROR] %s/%d: Init table overflow %d\n", __func__, __LINE__,
 		       _LCM_DTS.init_size);
 		return;
@@ -815,7 +815,7 @@ void lcm_common_init(void)
 
 void lcm_common_suspend(void)
 {
-	if (_LCM_DTS.suspend_size > 32) {
+	if (_LCM_DTS.suspend_size > SUSPEND_SIZE) {
 		pr_debug("[LCM][ERROR] %s/%d: Suspend table overflow %d\n", __func__, __LINE__,
 		       _LCM_DTS.suspend_size);
 		return;
@@ -957,7 +957,7 @@ void lcm_common_setbacklight(unsigned int level)
 	else
 		mapped_level = 0;
 
-	if (_LCM_DTS.backlight_size > 32) {
+	if (_LCM_DTS.backlight_size > BACKLIGHT_SIZE) {
 		pr_debug("[LCM][ERROR] %s/%d: Backlight table overflow %d\n", __func__, __LINE__,
 		       _LCM_DTS.backlight_size);
 		return;
@@ -1026,7 +1026,7 @@ unsigned int lcm_common_compare_id(void)
 	/* default: skip compare id */
 	unsigned int compare = 1;
 
-	if (_LCM_DTS.compare_id_size > 32) {
+	if (_LCM_DTS.compare_id_size > COMPARE_ID_SIZE) {
 		pr_debug("[LCM][ERROR] %s/%d: Compare table overflow %d\n", __func__, __LINE__,
 		       _LCM_DTS.compare_id_size);
 		return 0;
@@ -1101,7 +1101,7 @@ unsigned int lcm_common_ata_check(unsigned char *buffer)
 
 void lcm_common_setbacklight_cmdq(void *handle, unsigned int level)
 {
-	if (_LCM_DTS.backlight_cmdq_size > 32) {
+	if (_LCM_DTS.backlight_cmdq_size > BACKLIGHT_CMDQ_SIZE) {
 		pr_debug("[LCM][ERROR] %s/%d: Backlight cmdq table overflow %d\n", __func__, __LINE__,
 			 _LCM_DTS.backlight_cmdq_size);
 		return;

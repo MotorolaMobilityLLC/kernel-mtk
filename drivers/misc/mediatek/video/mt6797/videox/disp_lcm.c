@@ -23,17 +23,6 @@
 
 #if defined(MTK_LCM_DEVICE_TREE_SUPPORT)
 #include <linux/of.h>
-
-#define MAX_INIT_CNT 256
-#define REGFLAG_DELAY 0xFE
-
-#ifndef MAX
-#define MAX(x, y)   (((x) >= (y)) ? (x) : (y))
-#endif				/* MAX */
-
-#ifndef MIN
-#define MIN(x, y)   (((x) <= (y)) ? (x) : (y))
-#endif				/* MIN */
 #endif
 
 /* This macro and arrya is designed for multiple LCM support */
@@ -182,15 +171,7 @@ void _dump_lcm_info(disp_lcm_handle *plcm)
 }
 
 #if defined(MTK_LCM_DEVICE_TREE_SUPPORT)
-#define INIT_SIZE			(sizeof(LCM_DATA)*256)
-#define COMPARE_ID_SIZE	(sizeof(LCM_DATA)*32)
-#define SUSPEND_SIZE		(sizeof(LCM_DATA)*32)
-#define BACKLIGHT_SIZE		(sizeof(LCM_DATA)*32)
-#define BACKLIGHT_CMDQ_SIZE		(sizeof(LCM_DATA)*32)
-#define MAX_SIZE			(MAX(MAX(MAX(MAX(INIT_SIZE, COMPARE_ID_SIZE), SUSPEND_SIZE), BACKLIGHT_SIZE), \
-							BACKLIGHT_CMDQ_SIZE))
-
-static unsigned char dts[MAX_SIZE];
+static unsigned char dts[sizeof(LCM_DATA)*MAX_SIZE];
 static LCM_DTS lcm_dts;
 
 int disp_of_getprop_u32(const struct device_node *np, const char *propname, u32 *out_value)
@@ -483,14 +464,14 @@ void parse_lcm_ops_dt_node(struct device_node *np, LCM_DTS *lcm_dts, unsigned ch
 		pr_err("%s:%d: Cannot find LCM init table, cannot skip it!\n", __FILE__, __LINE__);
 		return;
 	}
-	if (len > INIT_SIZE) {
+	if (len > (sizeof(LCM_DATA)*INIT_SIZE)) {
 		pr_err("%s:%d: LCM init table overflow: %d\n", __FILE__, __LINE__, len);
 		return;
 	}
 	pr_debug("%s:%d: len: %d\n", __FILE__, __LINE__, len);
 
 	tmp = dts;
-	for (i = 0; i < 256; i++) {
+	for (i = 0; i < INIT_SIZE; i++) {
 		lcm_dts->init[i].func = (*tmp) & 0xFF;
 		lcm_dts->init[i].type = (*(tmp + 1)) & 0xFF;
 		lcm_dts->init[i].size = (*(tmp + 2)) & 0xFF;
@@ -536,9 +517,13 @@ void parse_lcm_ops_dt_node(struct device_node *np, LCM_DTS *lcm_dts, unsigned ch
 			tmp = tmp + tmp_len;
 			len = len - tmp_len;
 		} else {
-			lcm_dts->init_size = i + 1;
 			break;
 		}
+	}
+	lcm_dts->init_size = i + 1;
+	if (lcm_dts->init_size > INIT_SIZE) {
+		pr_err("%s:%d: LCM init table overflow: %d\n", __FILE__, __LINE__, len);
+		return;
 	}
 
 	/* parse LCM compare_id table */
@@ -546,14 +531,14 @@ void parse_lcm_ops_dt_node(struct device_node *np, LCM_DTS *lcm_dts, unsigned ch
 	if (len <= 0) {
 		pr_warn("%s:%d: Cannot find LCM compare_id table, skip it!\n", __FILE__, __LINE__);
 	} else {
-		if (len > COMPARE_ID_SIZE) {
+		if (len > (sizeof(LCM_DATA)*COMPARE_ID_SIZE)) {
 			pr_err("%s:%d: LCM compare_id table overflow: %d\n", __FILE__, __LINE__,
 			       len);
 			return;
 		}
 
 		tmp = dts;
-		for (i = 0; i < 32; i++) {
+		for (i = 0; i < COMPARE_ID_SIZE; i++) {
 			lcm_dts->compare_id[i].func = (*tmp) & 0xFF;
 			lcm_dts->compare_id[i].type = (*(tmp + 1)) & 0xFF;
 			lcm_dts->compare_id[i].size = (*(tmp + 2)) & 0xFF;
@@ -608,9 +593,14 @@ void parse_lcm_ops_dt_node(struct device_node *np, LCM_DTS *lcm_dts, unsigned ch
 				tmp = tmp + tmp_len;
 				len = len - tmp_len;
 			} else {
-				lcm_dts->compare_id_size = i + 1;
 				break;
 			}
+		}
+		lcm_dts->compare_id_size = i + 1;
+		if (lcm_dts->compare_id_size > COMPARE_ID_SIZE) {
+			pr_err("%s:%d: LCM compare_id table overflow: %d\n", __FILE__, __LINE__,
+			       len);
+			return;
 		}
 	}
 
@@ -621,13 +611,13 @@ void parse_lcm_ops_dt_node(struct device_node *np, LCM_DTS *lcm_dts, unsigned ch
 		       __LINE__);
 		return;
 	}
-	if (len > SUSPEND_SIZE) {
+	if (len > (sizeof(LCM_DATA)*SUSPEND_SIZE)) {
 		pr_err("%s:%d: LCM suspend table overflow: %d\n", __FILE__, __LINE__, len);
 		return;
 	}
 
 	tmp = dts;
-	for (i = 0; i < 32; i++) {
+	for (i = 0; i < SUSPEND_SIZE; i++) {
 		lcm_dts->suspend[i].func = (*tmp) & 0xFF;
 		lcm_dts->suspend[i].type = (*(tmp + 1)) & 0xFF;
 		lcm_dts->suspend[i].size = (*(tmp + 2)) & 0xFF;
@@ -675,9 +665,13 @@ void parse_lcm_ops_dt_node(struct device_node *np, LCM_DTS *lcm_dts, unsigned ch
 			tmp = tmp + tmp_len;
 			len = len - tmp_len;
 		} else {
-			lcm_dts->suspend_size = i + 1;
 			break;
 		}
+	}
+	lcm_dts->suspend_size = i + 1;
+	if (lcm_dts->suspend_size > SUSPEND_SIZE) {
+		pr_err("%s:%d: LCM suspend table overflow: %d\n", __FILE__, __LINE__, len);
+		return;
 	}
 
 	/* parse LCM backlight table */
@@ -685,14 +679,14 @@ void parse_lcm_ops_dt_node(struct device_node *np, LCM_DTS *lcm_dts, unsigned ch
 	if (len <= 0) {
 		pr_err("%s:%d: Cannot find LCM backlight table, skip it!\n", __FILE__, __LINE__);
 	} else {
-		if (len > BACKLIGHT_SIZE) {
+		if (len > (sizeof(LCM_DATA)*BACKLIGHT_SIZE)) {
 			pr_err("%s:%d: LCM backlight table overflow: %d\n", __FILE__, __LINE__,
 			       len);
 			return;
 		}
 
 		tmp = dts;
-		for (i = 0; i < 32; i++) {
+		for (i = 0; i < BACKLIGHT_SIZE; i++) {
 			lcm_dts->backlight[i].func = (*tmp) & 0xFF;
 			lcm_dts->backlight[i].type = (*(tmp + 1)) & 0xFF;
 			lcm_dts->backlight[i].size = (*(tmp + 2)) & 0xFF;
@@ -737,9 +731,14 @@ void parse_lcm_ops_dt_node(struct device_node *np, LCM_DTS *lcm_dts, unsigned ch
 				tmp = tmp + tmp_len;
 				len = len - tmp_len;
 			} else {
-				lcm_dts->backlight_size = i + 1;
 				break;
 			}
+		}
+		lcm_dts->backlight_size = i + 1;
+		if (lcm_dts->backlight_size > BACKLIGHT_SIZE) {
+			pr_err("%s:%d: LCM backlight table overflow: %d\n", __FILE__, __LINE__,
+			       len);
+			return;
 		}
 	}
 
@@ -749,14 +748,14 @@ void parse_lcm_ops_dt_node(struct device_node *np, LCM_DTS *lcm_dts, unsigned ch
 		pr_err("%s:%d: Cannot find LCM backlight cmdq table, skip it!\n", __FILE__,
 		       __LINE__);
 	} else {
-		if (len > BACKLIGHT_CMDQ_SIZE) {
+		if (len > (sizeof(LCM_DATA)*BACKLIGHT_CMDQ_SIZE)) {
 			pr_err("%s:%d: LCM backlight cmdq table overflow: %d\n", __FILE__, __LINE__,
 			       len);
 			return;
 		}
 
 		tmp = dts;
-		for (i = 0; i < 32; i++) {
+		for (i = 0; i < BACKLIGHT_CMDQ_SIZE; i++) {
 			lcm_dts->backlight_cmdq[i].func = (*tmp) & 0xFF;
 			lcm_dts->backlight_cmdq[i].type = (*(tmp + 1)) & 0xFF;
 			lcm_dts->backlight_cmdq[i].size = (*(tmp + 2)) & 0xFF;
@@ -803,9 +802,14 @@ void parse_lcm_ops_dt_node(struct device_node *np, LCM_DTS *lcm_dts, unsigned ch
 				tmp = tmp + tmp_len;
 				len = len - tmp_len;
 			} else {
-				lcm_dts->backlight_cmdq_size = i + 1;
 				break;
 			}
+		}
+		lcm_dts->backlight_cmdq_size = i + 1;
+		if (lcm_dts->backlight_cmdq_size > BACKLIGHT_CMDQ_SIZE) {
+			pr_err("%s:%d: LCM backlight cmdq table overflow: %d\n", __FILE__, __LINE__,
+			       len);
+			return;
 		}
 	}
 }

@@ -644,6 +644,23 @@ typedef struct {
 
 
 #if defined(MTK_LCM_DEVICE_TREE_SUPPORT)
+#ifndef MAX
+#define MAX(x, y)   (((x) >= (y)) ? (x) : (y))
+#endif				/* MAX */
+
+#ifndef MIN
+#define MIN(x, y)   (((x) <= (y)) ? (x) : (y))
+#endif				/* MIN */
+
+#define INIT_SIZE			(512)
+#define COMPARE_ID_SIZE	(32)
+#define SUSPEND_SIZE		(32)
+#define BACKLIGHT_SIZE		(32)
+#define BACKLIGHT_CMDQ_SIZE		(32)
+#define MAX_SIZE			(MAX(MAX(MAX(MAX(INIT_SIZE, COMPARE_ID_SIZE), SUSPEND_SIZE), BACKLIGHT_SIZE), \
+							BACKLIGHT_CMDQ_SIZE))
+
+
 typedef struct {
 	char data;
 	char padding[131];
@@ -706,11 +723,11 @@ typedef struct {
 	unsigned int backlight_cmdq_size;
 
 	LCM_PARAMS params;
-	LCM_DATA init[256];
-	LCM_DATA compare_id[32];
-	LCM_DATA suspend[32];
-	LCM_DATA backlight[32];
-	LCM_DATA backlight_cmdq[32];
+	LCM_DATA init[INIT_SIZE];
+	LCM_DATA compare_id[COMPARE_ID_SIZE];
+	LCM_DATA suspend[SUSPEND_SIZE];
+	LCM_DATA backlight[BACKLIGHT_SIZE];
+	LCM_DATA backlight_cmdq[BACKLIGHT_CMDQ_SIZE];
 } LCM_DTS;
 #endif
 
