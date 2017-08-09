@@ -260,6 +260,8 @@ void spm_dpd_init(void)
 	PDEF_DRAMC0_CHA_REG_1E4);
 	writel(readl(PDEF_DRAMC0_CHA_REG_1DC) & 0xfffffffe,
 	PDEF_DRAMC0_CHA_REG_1DC);
+	writel(readl(PDEF_DRAMC0_CHA_REG_1E4) & 0xF7FFFFFF,
+	PDEF_DRAMC0_CHA_REG_1E4);
 
 	mb(); /* flush memory */
 	udelay(2);
@@ -290,6 +292,8 @@ void spm_dpd_init(void)
 	PDEF_DRAMC0_CHB_REG_1E4);
 	writel(readl(PDEF_DRAMC0_CHB_REG_1DC) & 0xfffffffe,
 	PDEF_DRAMC0_CHB_REG_1DC);
+	writel(readl(PDEF_DRAMC0_CHB_REG_1E4) & 0xF7FFFFFF,
+	PDEF_DRAMC0_CHB_REG_1E4);
 
 	mb(); /* flush memory */
 	udelay(2);
@@ -444,6 +448,8 @@ void spm_dpd_dram_init(void)
 	PDEF_DRAMC0_CHA_REG_1DC);
 	writel(readl(PDEF_DRAMC0_CHA_REG_1E4) | recover7_0,
 	PDEF_DRAMC0_CHA_REG_1E4);
+	writel(readl(PDEF_DRAMC0_CHA_REG_1E4) | 0x8000000,
+	PDEF_DRAMC0_CHA_REG_1E4);
 	writel(readl(PDEF_DRAMC0_CHA_REG_1E8) & 0xfbffffff,
 	PDEF_DRAMC0_CHA_REG_1E8);
 	writel(0x00000000, PDEF_DRAMC0_CHA_REG_088);
@@ -570,6 +576,8 @@ void spm_dpd_dram_init(void)
 	writel(readl(PDEF_DRAMC0_CHB_REG_1DC) | recover8,
 	PDEF_DRAMC0_CHB_REG_1DC);
 	writel(readl(PDEF_DRAMC0_CHB_REG_1E4) | recover7_0,
+	PDEF_DRAMC0_CHB_REG_1E4);
+	writel(readl(PDEF_DRAMC0_CHB_REG_1E4) | 0x8000000,
 	PDEF_DRAMC0_CHB_REG_1E4);
 	writel(readl(PDEF_DRAMC0_CHB_REG_1E8) & 0xfbffffff,
 	PDEF_DRAMC0_CHB_REG_1E8);
