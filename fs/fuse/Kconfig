@@ -30,7 +30,7 @@ config FUSE_IO_LOG
 	bool "FUSE IO log"
 	depends on FUSE_FS
 	depends on MT_ENG_BUILD
-	default y
+	default n
 	help
 	  Enable IO trace for performance analysis and application access
 	  pattern study. The trace is only avalible in eng build.
