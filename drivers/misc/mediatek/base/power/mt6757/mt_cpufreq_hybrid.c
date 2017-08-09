@@ -41,38 +41,36 @@
 /**************************************
  * [CPU SPM] Parameter
  **************************************/
-#define CSRAM_BASE		0x0012a000
-#define CSRAM_SIZE		0x3000		/* 12K bytes */
+#define CSRAM_BASE		0x0011c000
+#define CSRAM_SIZE		0xf80		/* 3968 bytes */
 
-#define OFFS_DATA_S		0x02a0
-#define OFFS_WDT_LATCH0		0x02a4
-#define OFFS_WDT_LATCH1		0x02a8
-#define OFFS_WDT_LATCH2		0x02ac
-#define OFFS_FW_RSV3		0x02b0
-#define OFFS_FW_RSV4		0x02b4
-#define OFFS_FW_RSV5		0x02b8
-#define OFFS_FW_RSV6		0x02bc
-#define OFFS_FW_RSV0		0x02c0
-#define OFFS_FW_RSV1		0x02c4
-#define OFFS_FW_RSV2		0x02c8
-#define OFFS_TIMER_OUT1		0x02d0
-#define OFFS_TIMER_OUT2		0x02d4
-#define OFFS_INIT_OPP		0x02e0
-#define OFFS_INIT_FREQ		0x02f0
-#define OFFS_INIT_VOLT		0x0300
-#define OFFS_INIT_VSRAM		0x0310
-#define OFFS_SW_RSV0		0x0320
-#define OFFS_SW_RSV1		0x0324
-#define OFFS_SW_RSV2		0x0328
-#define OFFS_PAUSE_SRC		0x0330
-#define OFFS_DVFS_WAIT		0x0334
-#define OFFS_FUNC_ENTER		0x0338
-#define OFFS_NXLOG_OFFS		0x033c
-#define OFFS_HWGOV_EN		0x0340
-#define OFFS_HWGOV_STIME	0x0344
-#define OFFS_HWGOV_ETIME	0x0348
-#define OFFS_LOG_S		0x03d0
-#define OFFS_LOG_E		0x2ff8
+#define OFFS_DATA_S		0x210
+#define OFFS_WDT_LATCH0		0x214
+#define OFFS_WDT_LATCH1		0x218
+#define OFFS_WDT_LATCH2		0x21c
+#define OFFS_WDT_LATCH3		0x220
+#define OFFS_WDT_LATCH4		0x224
+#define OFFS_TIMER_OUT1		0x228
+#define OFFS_TIMER_OUT2		0x22c
+#define OFFS_FW_RSV0		0x230
+#define OFFS_FW_RSV1		0x234
+#define OFFS_FW_RSV2		0x238
+#define OFFS_FW_RSV6		0x23c
+#define OFFS_FW_RSV7		0x240
+#define OFFS_INIT_OPP		0x250
+#define OFFS_INIT_FREQ		0x260
+#define OFFS_INIT_VOLT		0x270
+#define OFFS_SW_RSV6		0x280
+#define OFFS_SW_RSV7		0x284
+#define OFFS_PAUSE_SRC		0x290
+#define OFFS_DVFS_WAIT		0x294
+#define OFFS_FUNC_ENTER		0x298
+#define OFFS_NXLOG_OFFS		0x29c
+#define OFFS_HWGOV_EN		0x2a0
+#define OFFS_HWGOV_STIME	0x2a4
+#define OFFS_HWGOV_ETIME	0x2a8
+#define OFFS_LOG_S		0x330
+#define OFFS_LOG_E		0xf80
 
 #define DVFS_TIMEOUT		3000		/* us */
 #define SEMA_GET_TIMEOUT	1500		/* us */
@@ -85,13 +83,13 @@
 /**************************************
  * [Hybrid DVFS] Parameter
  **************************************/
-#define ENTRY_EACH_LOG		6		/* need to sync with fetch_dvfs_log_and_notify */
+#define ENTRY_EACH_LOG		4		/* need to sync with fetch_dvfs_log_and_notify */
 
 
 /**************************************
  * [CPU SPM] Definition
  **************************************/
-#define CSPM_BASE		cspm_base	/* map 0x11015000 */
+#define CSPM_BASE		cspm_base	/* map 0x10227000 */
 
 #define CSPM_POWERON_CONFIG_EN		(CSPM_BASE + 0x000)
 #define CSPM_POWER_ON_VAL0		(CSPM_BASE + 0x004)
@@ -126,6 +124,7 @@
 #define CSPM_PCM_EVENT_VECTOR14		(CSPM_BASE + 0x078)
 #define CSPM_PCM_EVENT_VECTOR15		(CSPM_BASE + 0x07c)
 #define CSPM_PCM_EVENT_VECTOR_EN	(CSPM_BASE + 0x080)
+#define CSPM_SW_INT			(CSPM_BASE + 0x08c)
 #define CSPM_SW_INT_SET			(CSPM_BASE + 0x090)
 #define CSPM_SW_INT_CLEAR		(CSPM_BASE + 0x094)
 #define CSPM_SCP_MAILBOX		(CSPM_BASE + 0x098)
@@ -133,6 +132,7 @@
 #define CSPM_TWAM_CON			(CSPM_BASE + 0x0a0)
 #define CSPM_TWAM_WINDOW_LEN		(CSPM_BASE + 0x0a4)
 #define CSPM_TWAM_IDLE_SEL		(CSPM_BASE + 0x0a8)
+#define CSPM_TWAM_CON1			(CSPM_BASE + 0x0ac)
 #define CSPM_CPU_WAKEUP_EVENT		(CSPM_BASE + 0x0b0)
 #define CSPM_IRQ_MASK			(CSPM_BASE + 0x0b4)
 #define CSPM_SRC_REQ			(CSPM_BASE + 0x0b8)
@@ -142,10 +142,6 @@
 #define CSPM_WAKEUP_EVENT_EXT_MASK	(CSPM_BASE + 0x0c8)
 #define CSPM_SCP_CLK_CON		(CSPM_BASE + 0x0d0)
 #define CSPM_PCM_DEBUG_CON		(CSPM_BASE + 0x0d4)
-#define CSPM_TWAM_CON0			(CSPM_BASE + 0x0e0)
-#define CSPM_TWAM_CON1			(CSPM_BASE + 0x0e4)
-#define CSPM_TWAM_CON2			(CSPM_BASE + 0x0e8)
-#define CSPM_TWAM_CON3			(CSPM_BASE + 0x0ec)
 #define CSPM_PCM_REG0_DATA		(CSPM_BASE + 0x100)
 #define CSPM_PCM_REG1_DATA		(CSPM_BASE + 0x104)
 #define CSPM_PCM_REG2_DATA		(CSPM_BASE + 0x108)
@@ -189,104 +185,31 @@
 #define CSPM_TWAM_LAST_STA5		(CSPM_BASE + 0x1b4)
 #define CSPM_TWAM_LAST_STA6		(CSPM_BASE + 0x1b8)
 #define CSPM_TWAM_LAST_STA7		(CSPM_BASE + 0x1bc)
-#define CSPM_TWAM_LAST_STA8		(CSPM_BASE + 0x1c0)
-#define CSPM_TWAM_LAST_STA9		(CSPM_BASE + 0x1c4)
-#define CSPM_TWAM_LAST_STA10		(CSPM_BASE + 0x1c8)
-#define CSPM_TWAM_LAST_STA11		(CSPM_BASE + 0x1cc)
-#define CSPM_TWAM_LAST_STA12		(CSPM_BASE + 0x1d0)
-#define CSPM_TWAM_LAST_STA13		(CSPM_BASE + 0x1d4)
-#define CSPM_TWAM_LAST_STA14		(CSPM_BASE + 0x1d8)
-#define CSPM_TWAM_LAST_STA15		(CSPM_BASE + 0x1dc)
-#define CSPM_TWAM_CURR_STA0		(CSPM_BASE + 0x1e0)
-#define CSPM_TWAM_CURR_STA1		(CSPM_BASE + 0x1e4)
-#define CSPM_TWAM_CURR_STA2		(CSPM_BASE + 0x1e8)
-#define CSPM_TWAM_CURR_STA3		(CSPM_BASE + 0x1ec)
-#define CSPM_TWAM_CURR_STA4		(CSPM_BASE + 0x1f0)
-#define CSPM_TWAM_CURR_STA5		(CSPM_BASE + 0x1f4)
-#define CSPM_TWAM_CURR_STA6		(CSPM_BASE + 0x1f8)
-#define CSPM_TWAM_CURR_STA7		(CSPM_BASE + 0x1fc)
-#define CSPM_TWAM_CURR_STA8		(CSPM_BASE + 0x200)
-#define CSPM_TWAM_CURR_STA9		(CSPM_BASE + 0x204)
-#define CSPM_TWAM_CURR_STA10		(CSPM_BASE + 0x208)
-#define CSPM_TWAM_CURR_STA11		(CSPM_BASE + 0x20c)
-#define CSPM_TWAM_CURR_STA12		(CSPM_BASE + 0x210)
-#define CSPM_TWAM_CURR_STA13		(CSPM_BASE + 0x214)
-#define CSPM_TWAM_CURR_STA14		(CSPM_BASE + 0x218)
-#define CSPM_TWAM_CURR_STA15		(CSPM_BASE + 0x21c)
-#define CSPM_TWAM_TIMER_OUT		(CSPM_BASE + 0x220)
-#define CSPM_M0_REC0			(CSPM_BASE + 0x300)
-#define CSPM_M0_REC1			(CSPM_BASE + 0x304)
-#define CSPM_M0_REC2			(CSPM_BASE + 0x308)
-#define CSPM_M0_REC3			(CSPM_BASE + 0x30c)
-#define CSPM_M0_REC4			(CSPM_BASE + 0x310)
-#define CSPM_M0_REC5			(CSPM_BASE + 0x314)
-#define CSPM_M0_REC6			(CSPM_BASE + 0x318)
-#define CSPM_M0_REC7			(CSPM_BASE + 0x31c)
-#define CSPM_M0_REC8			(CSPM_BASE + 0x320)
-#define CSPM_M0_REC9			(CSPM_BASE + 0x324)
-#define CSPM_M0_REC10			(CSPM_BASE + 0x328)
-#define CSPM_M0_REC11			(CSPM_BASE + 0x32c)
-#define CSPM_M0_REC12			(CSPM_BASE + 0x330)
-#define CSPM_M0_REC13			(CSPM_BASE + 0x334)
-#define CSPM_M0_REC14			(CSPM_BASE + 0x338)
-#define CSPM_M0_REC15			(CSPM_BASE + 0x33c)
-#define CSPM_M0_REC16			(CSPM_BASE + 0x340)
-#define CSPM_M0_REC17			(CSPM_BASE + 0x344)
-#define CSPM_M0_REC18			(CSPM_BASE + 0x348)
-#define CSPM_M0_REC19			(CSPM_BASE + 0x34c)
-#define CSPM_M1_REC0			(CSPM_BASE + 0x350)
-#define CSPM_M1_REC1			(CSPM_BASE + 0x354)
-#define CSPM_M1_REC2			(CSPM_BASE + 0x358)
-#define CSPM_M1_REC3			(CSPM_BASE + 0x35c)
-#define CSPM_M1_REC4			(CSPM_BASE + 0x360)
-#define CSPM_M1_REC5			(CSPM_BASE + 0x364)
-#define CSPM_M1_REC6			(CSPM_BASE + 0x368)
-#define CSPM_M1_REC7			(CSPM_BASE + 0x36c)
-#define CSPM_M1_REC8			(CSPM_BASE + 0x370)
-#define CSPM_M1_REC9			(CSPM_BASE + 0x374)
-#define CSPM_M1_REC10			(CSPM_BASE + 0x378)
-#define CSPM_M1_REC11			(CSPM_BASE + 0x37c)
-#define CSPM_M1_REC12			(CSPM_BASE + 0x380)
-#define CSPM_M1_REC13			(CSPM_BASE + 0x384)
-#define CSPM_M1_REC14			(CSPM_BASE + 0x388)
-#define CSPM_M1_REC15			(CSPM_BASE + 0x38c)
-#define CSPM_M1_REC16			(CSPM_BASE + 0x390)
-#define CSPM_M1_REC17			(CSPM_BASE + 0x394)
-#define CSPM_M1_REC18			(CSPM_BASE + 0x398)
-#define CSPM_M1_REC19			(CSPM_BASE + 0x39c)
-#define CSPM_M2_REC0			(CSPM_BASE + 0x3a0)
-#define CSPM_M2_REC1			(CSPM_BASE + 0x3a4)
-#define CSPM_M2_REC2			(CSPM_BASE + 0x3a8)
-#define CSPM_M2_REC3			(CSPM_BASE + 0x3ac)
-#define CSPM_M2_REC4			(CSPM_BASE + 0x3b0)
-#define CSPM_M2_REC5			(CSPM_BASE + 0x3b4)
-#define CSPM_M2_REC6			(CSPM_BASE + 0x3b8)
-#define CSPM_M2_REC7			(CSPM_BASE + 0x3bc)
-#define CSPM_M2_REC8			(CSPM_BASE + 0x3c0)
-#define CSPM_M2_REC9			(CSPM_BASE + 0x3c4)
-#define CSPM_M2_REC10			(CSPM_BASE + 0x3c8)
-#define CSPM_M2_REC11			(CSPM_BASE + 0x3cc)
-#define CSPM_M2_REC12			(CSPM_BASE + 0x3d0)
-#define CSPM_M2_REC13			(CSPM_BASE + 0x3d4)
-#define CSPM_M2_REC14			(CSPM_BASE + 0x3d8)
-#define CSPM_M2_REC15			(CSPM_BASE + 0x3dc)
-#define CSPM_M2_REC16			(CSPM_BASE + 0x3e0)
-#define CSPM_M2_REC17			(CSPM_BASE + 0x3e4)
-#define CSPM_M2_REC18			(CSPM_BASE + 0x3e8)
-#define CSPM_M2_REC19			(CSPM_BASE + 0x3ec)
+#define CSPM_TWAM_CURR_STA0		(CSPM_BASE + 0x1c0)
+#define CSPM_TWAM_CURR_STA1		(CSPM_BASE + 0x1c4)
+#define CSPM_TWAM_CURR_STA2		(CSPM_BASE + 0x1c8)
+#define CSPM_TWAM_CURR_STA3		(CSPM_BASE + 0x1cc)
+#define CSPM_TWAM_CURR_STA4		(CSPM_BASE + 0x1d0)
+#define CSPM_TWAM_CURR_STA5		(CSPM_BASE + 0x1d4)
+#define CSPM_TWAM_CURR_STA6		(CSPM_BASE + 0x1d8)
+#define CSPM_TWAM_CURR_STA7		(CSPM_BASE + 0x1dc)
+#define CSPM_TWAM_TIMER_OUT		(CSPM_BASE + 0x1e0)
+#define CSPM_PCM_WDT_LATCH3		(CSPM_BASE + 0x1e4)
+#define CSPM_PCM_WDT_LATCH4		(CSPM_BASE + 0x1e8)
 #define CSPM_DVFS_CON			(CSPM_BASE + 0x400)
-#define CSPM_SEMA0_M0			(CSPM_BASE + 0x410)
-#define CSPM_SEMA0_M1			(CSPM_BASE + 0x414)
-#define CSPM_SEMA0_M2			(CSPM_BASE + 0x418)
-#define CSPM_SEMA1_M0			(CSPM_BASE + 0x420)	/* EMI SEMA (LP SPM) */
-#define CSPM_SEMA1_M1			(CSPM_BASE + 0x424)	/* EMI SEMA (CPU SPM) */
-#define CSPM_SEMA1_M2			(CSPM_BASE + 0x428)	/* EMI SEMA (X) */
-#define CSPM_SEMA2_M0			(CSPM_BASE + 0x430)	/* EMI SEMA (LP SPM) */
-#define CSPM_SEMA2_M1			(CSPM_BASE + 0x434)	/* EMI SEMA (SCP) */
-#define CSPM_SEMA2_M2			(CSPM_BASE + 0x438)	/* EMI SEMA (X) */
-#define CSPM_SEMA3_M0			(CSPM_BASE + 0x440)	/* MCU SEMA (FH) */
-#define CSPM_SEMA3_M1			(CSPM_BASE + 0x444)	/* MCU SEMA (CPU SPM) */
-#define CSPM_SEMA3_M2			(CSPM_BASE + 0x448)	/* MCU SEMA (ATF) */
+#define CSPM_MDBSI_CON			(CSPM_BASE + 0x404)
+#define CSPM_BSI_GEN			(CSPM_BASE + 0x410)
+#define CSPM_BSI_EN_SR			(CSPM_BASE + 0x414)
+#define CSPM_BSI_CLK_SR			(CSPM_BASE + 0x418)
+#define CSPM_BSI_D0_SR			(CSPM_BASE + 0x41c)
+#define CSPM_BSI_D1_SR			(CSPM_BASE + 0x420)
+#define CSPM_BSI_D2_SR			(CSPM_BASE + 0x424)
+#define CSPM_AP_SEMA			(CSPM_BASE + 0x428)
+#define CSPM_SPM_SEMA			(CSPM_BASE + 0x42c)
+#define CSPM_SEMA_M0			(CSPM_BASE + 0x480)
+#define CSPM_SEMA_M1			(CSPM_BASE + 0x484)
+#define CSPM_SEMA_M2			(CSPM_BASE + 0x488)
+#define CSPM_SEMA_M3			(CSPM_BASE + 0x48c)
 #define CSPM_MP0_CPU0_WFI_EN		(CSPM_BASE + 0x530)
 #define CSPM_MP0_CPU1_WFI_EN		(CSPM_BASE + 0x534)
 #define CSPM_MP0_CPU2_WFI_EN		(CSPM_BASE + 0x538)
@@ -303,38 +226,30 @@
 #define CSPM_SW_RSV3			(CSPM_BASE + 0x614)
 #define CSPM_SW_RSV4			(CSPM_BASE + 0x618)
 #define CSPM_SW_RSV5			(CSPM_BASE + 0x61c)
-#define CSPM_SW_RSV6			(CSPM_BASE + 0x620)
-#define CSPM_SW_RSV7			(CSPM_BASE + 0x624)
-#define CSPM_SW_RSV8			(CSPM_BASE + 0x628)
-#define CSPM_SW_RSV9			(CSPM_BASE + 0x62c)
-#define CSPM_SW_RSV10			(CSPM_BASE + 0x630)
-#define CSPM_SW_RSV11			(CSPM_BASE + 0x634)
-#define CSPM_SW_RSV12			(CSPM_BASE + 0x638)
-#define CSPM_SW_RSV13			(CSPM_BASE + 0x63c)
-#define CSPM_SW_RSV14			(CSPM_BASE + 0x640)
-#define CSPM_SW_RSV15			(CSPM_BASE + 0x644)
-#define CSPM_RSV_CON			(CSPM_BASE + 0x648)
-#define CSPM_RSV_STA			(CSPM_BASE + 0x64c)
-#define CSPM_M3_REC0			(CSPM_BASE + 0x800)
-#define CSPM_M3_REC1			(CSPM_BASE + 0x804)
-#define CSPM_M3_REC2			(CSPM_BASE + 0x808)
-#define CSPM_M3_REC3			(CSPM_BASE + 0x80c)
-#define CSPM_M3_REC4			(CSPM_BASE + 0x810)
-#define CSPM_M3_REC5			(CSPM_BASE + 0x814)
-#define CSPM_M3_REC6			(CSPM_BASE + 0x818)
-#define CSPM_M3_REC7			(CSPM_BASE + 0x81c)
-#define CSPM_M3_REC8			(CSPM_BASE + 0x820)
-#define CSPM_M3_REC9			(CSPM_BASE + 0x824)
-#define CSPM_M3_REC10			(CSPM_BASE + 0x828)
-#define CSPM_M3_REC11			(CSPM_BASE + 0x82c)
-#define CSPM_M3_REC12			(CSPM_BASE + 0x830)
-#define CSPM_M3_REC13			(CSPM_BASE + 0x834)
-#define CSPM_M3_REC14			(CSPM_BASE + 0x838)
-#define CSPM_M3_REC15			(CSPM_BASE + 0x83c)
-#define CSPM_M3_REC16			(CSPM_BASE + 0x840)
-#define CSPM_M3_REC17			(CSPM_BASE + 0x844)
-#define CSPM_M3_REC18			(CSPM_BASE + 0x848)
-#define CSPM_M3_REC19			(CSPM_BASE + 0x84c)
+#define CSPM_RSV_CON			(CSPM_BASE + 0x620)
+#define CSPM_RSV_STA			(CSPM_BASE + 0x624)
+#define CSPM_SW_RSV6			(CSPM_BASE + 0x628)
+#define CSPM_SW_RSV7			(CSPM_BASE + 0x62c)
+#define CSPM_SPARE0			(CSPM_BASE + 0x630)
+#define CSPM_SPARE1			(CSPM_BASE + 0x634)
+#define CSPM_SPARE2			(CSPM_BASE + 0x638)
+#define CSPM_SPARE3			(CSPM_BASE + 0x63c)
+#define CSPM_SPARE4			(CSPM_BASE + 0x640)
+#define CSPM_SPARE5			(CSPM_BASE + 0x644)
+#define CSPM_SPARE6			(CSPM_BASE + 0x648)
+#define CSPM_SPARE7			(CSPM_BASE + 0x64c)
+#define CSPM_SPARE8			(CSPM_BASE + 0x650)
+#define CSPM_SPARE9			(CSPM_BASE + 0x654)
+#define CSPM_SPARE10			(CSPM_BASE + 0x658)
+#define CSPM_SPARE11			(CSPM_BASE + 0x65c)
+#define CSPM_SPARE12			(CSPM_BASE + 0x660)
+#define CSPM_SPARE13			(CSPM_BASE + 0x664)
+#define CSPM_SPARE14			(CSPM_BASE + 0x668)
+#define CSPM_SPARE15			(CSPM_BASE + 0x66c)
+#define CSPM_SPARE16			(CSPM_BASE + 0x670)
+#define CSPM_SPARE17			(CSPM_BASE + 0x674)
+#define CSPM_SPARE18			(CSPM_BASE + 0x678)
+#define CSPM_SPARE19			(CSPM_BASE + 0x67c)
 
 #define POWER_ON_VAL1_DEF	0x20		/* PCM clock is 26M */
 
@@ -369,52 +284,43 @@
 
 #define PCM_SW_INT0		(1U << 0)
 #define PCM_SW_INT1		(1U << 1)
-#define PCM_SW_INT2		(1U << 2)
-#define PCM_SW_INT3		(1U << 3)
-#define PCM_SW_INT_ALL		(PCM_SW_INT3 | PCM_SW_INT2 | PCM_SW_INT1 | PCM_SW_INT0)
-
-#define TWAM_ENABLE		(1U << 0)
-#define TWAM_SPEED_MODE_EN	(1U << 1)
-#define TWAM_SW_RST		(1U << 2)
-
-#define IRQM_TWAM		(1U << 2)
-#define IRQM_PCM_RETURN		(1U << 3)
-#define IRQM_RET_IRQ0		(1U << 8)
-#define IRQM_RET_IRQ1		(1U << 9)
-#define IRQM_RET_IRQ2		(1U << 10)
-#define IRQM_RET_IRQ3		(1U << 11)
-
-#define IRQM_RET_IRQ_SEC	(IRQM_RET_IRQ3 | IRQM_RET_IRQ2 | IRQM_RET_IRQ1)
-#define IRQM_ALL_EXC_RET0	(IRQM_RET_IRQ_SEC | IRQM_TWAM)
-#define IRQM_ALL		(IRQM_ALL_EXC_RET0 | IRQM_RET_IRQ0 | IRQM_PCM_RETURN)
-
-#define WAKE_SRC_CPU		(1U << 0)
-#define WAKE_SRC_TWAM		(1U << 1)
+#define PCM_SW_INT_ALL		(PCM_SW_INT1 | PCM_SW_INT0)
 
 #define TMT_RISING		0
 #define TMT_FALLING		1
 #define TMT_HIGH_LEVEL		2
 #define TMT_LOW_LEVEL		3
 
-#define TWAM_MON_TYPE0(val)	(((val) & 0x7) << 0)
-#define TWAM_MON_TYPE1(val)	(((val) & 0x7) << 3)
-#define TWAM_MON_TYPE2(val)	(((val) & 0x7) << 6)
-#define TWAM_MON_TYPE3(val)	(((val) & 0x7) << 9)
+#define TWAM_ENABLE		(1U << 0)
+#define TWAM_SPEED_MODE_EN	(1U << 1)
+#define TWAM_SW_RST		(1U << 2)
+#define TWAM_MON_TYPE0(val)	(((val) & 0x3) << 4)
+#define TWAM_MON_TYPE1(val)	(((val) & 0x3) << 6)
+#define TWAM_MON_TYPE2(val)	(((val) & 0x3) << 8)
+#define TWAM_MON_TYPE3(val)	(((val) & 0x3) << 10)
 #define TWAM_SIG_SEL0(val)	(((val) & 0x1f) << 12)
 #define TWAM_SIG_SEL1(val)	(((val) & 0x1f) << 17)
 #define TWAM_SIG_SEL2(val)	(((val) & 0x1f) << 22)
 #define TWAM_SIG_SEL3(val)	(((val) & 0x1f) << 27)
 
-#define R7_MULT_DIV_SEL		(1U << 0)	/* 0: mult, 1: div */
-#define R7_DIV_QRD_SEL		(1U << 1)	/* 0: div_q, 1: div_r */
+#define IRQM_TWAM		(1U << 2)
+#define IRQM_PCM_RETURN		(1U << 3)
+#define IRQM_RET_IRQ0		(1U << 8)
+#define IRQM_RET_IRQ1		(1U << 9)
+
+#define IRQM_RET_IRQ_SEC	(IRQM_RET_IRQ1)
+#define IRQM_ALL_EXC_RET0	(IRQM_RET_IRQ_SEC | IRQM_TWAM)
+#define IRQM_ALL		(IRQM_ALL_EXC_RET0 | IRQM_RET_IRQ0 | IRQM_PCM_RETURN)
+
+#define WAKE_SRC_CPU		(1U << 0)
+#define WAKE_SRC_TWAM		(1U << 1)
+
 #define R7_PCM_TIMER_SET	(1U << 9)
 
 #define IRQS_TWAM		(1U << 2)
 #define IRQS_PCM_RETURN		(1U << 3)
 #define IRQS_SW_INT0		(1U << 4)
 #define IRQS_SW_INT1		(1U << 5)
-#define IRQS_SW_INT2		(1U << 6)
-#define IRQS_SW_INT3		(1U << 7)
 
 #define IRQC_TWAM		IRQS_TWAM
 #define IRQC_PCM_RETURN		IRQS_PCM_RETURN
@@ -434,7 +340,6 @@
 #define SW_F_ASSIGN		(1U << 12)
 #define SW_PAUSE		(1U << 13)
 #define CLUSTER_EN		(1U << 14)
-#define FIT_EN			(1U << 15)
 
 #define SW_F_MIN_MASK		(0xf << 0)
 #define SW_F_MAX_MASK		(0xf << 4)
@@ -444,16 +349,13 @@
 #define F_DES(val)		(((val) & 0xf) << 4)
 #define V_CURR(val)		(((val) & 0x7f) << 8)
 #define FW_DONE			(1U << 15)
-#define VS_CURR(val)		(((val) & 0x7f) << 16)
 
 #define F_CURR_MASK		(0xf << 0)
 #define F_DES_MASK		(0xf << 4)
 #define V_CURR_MASK		(0x7f << 8)
-#define VS_CURR_MASK		(0x7f << 16)
 
 #define LOG_V_MASK		(0x7f << 0)
 #define LOG_F_MASK		(0xf << 7)
-#define LOG_VS_MASK		(0x3f << 26)	/* only 6 bits */
 
 /* pause source flag */
 #define PSF_PAUSE_INIT		(1U << PAUSE_INIT)
@@ -504,6 +406,8 @@ struct pwr_ctrl {
 #define REPO_I_WDT_LATCH0	(OFFS_WDT_LATCH0 / sizeof(u32))
 #define REPO_I_WDT_LATCH1	(OFFS_WDT_LATCH1 / sizeof(u32))
 #define REPO_I_WDT_LATCH2	(OFFS_WDT_LATCH2 / sizeof(u32))
+#define REPO_I_WDT_LATCH3	(OFFS_WDT_LATCH3 / sizeof(u32))
+#define REPO_I_WDT_LATCH4	(OFFS_WDT_LATCH4 / sizeof(u32))
 #define REPO_I_LOG_S		(OFFS_LOG_S / sizeof(u32))
 
 #define REPO_GUARD0		0x55aa55aa
@@ -588,7 +492,6 @@ static u32 cspm_probe_done;
 static struct init_sta suspend_sta = {
 	.opp		= { [0 ... (NUM_CPU_CLUSTER - 1)] = UINT_MAX },
 	.volt		= { [0 ... (NUM_CPU_CLUSTER - 1)] = UINT_MAX },
-	.vsram		= { [0 ... (NUM_CPU_CLUSTER - 1)] = UINT_MAX },
 	.ceiling	= { [0 ... (NUM_CPU_CLUSTER - 1)] = UINT_MAX },
 	.floor		= { [0 ... (NUM_CPU_CLUSTER - 1)] = UINT_MAX },
 };
@@ -626,8 +529,6 @@ static u32 dvfs_fail_ke;
 static u32 sema_fail_ke;
 static u32 pause_fail_ke;
 #endif
-
-static u32 wa_get_emi_sema = 1;
 
 static DEFINE_SPINLOCK(dvfs_lock);
 
@@ -734,13 +635,11 @@ static u32 dbg_repo_bak[DBG_REPO_NUM];
 
 #define csram_write_fw_sta()					\
 do {								\
-	csram_write(OFFS_FW_RSV3, cspm_read(CSPM_SW_RSV3));	\
-	csram_write(OFFS_FW_RSV4, cspm_read(CSPM_SW_RSV4));	\
-	csram_write(OFFS_FW_RSV5, cspm_read(CSPM_SW_RSV5));	\
-	csram_write(OFFS_FW_RSV6, cspm_read(CSPM_SW_RSV6));	\
 	csram_write(OFFS_FW_RSV0, cspm_read(CSPM_SW_RSV0));	\
 	csram_write(OFFS_FW_RSV1, cspm_read(CSPM_SW_RSV1));	\
 	csram_write(OFFS_FW_RSV2, cspm_read(CSPM_SW_RSV2));	\
+	csram_write(OFFS_FW_RSV6, cspm_read(CSPM_SW_RSV6));	\
+	csram_write(OFFS_FW_RSV7, cspm_read(CSPM_SW_RSV7));	\
 } while (0)
 
 #define cspm_get_timestamp()		cspm_read(CSPM_PCM_TIMER_OUT)
@@ -751,14 +650,12 @@ do {								\
 
 #define cspm_curr_freq(reg)		((cspm_read(reg) & F_CURR_MASK) >> 0)
 #define cspm_curr_volt(reg)		((cspm_read(reg) & V_CURR_MASK) >> 8)
-#define cspm_curr_vsram(reg)		((cspm_read(reg) & VS_CURR_MASK) >> 16)
 #define cspm_is_done(reg)		(!!(cspm_read(reg) & FW_DONE))
 
-#define cspm_is_fw_all_done()		(cspm_is_done(CSPM_SW_RSV3) &&	\
-					 cspm_is_done(CSPM_SW_RSV4) &&	\
-					 cspm_is_done(CSPM_SW_RSV5))
+#define cspm_is_fw_all_done()		(cspm_is_done(CSPM_SW_RSV0) &&	\
+					 cspm_is_done(CSPM_SW_RSV1))
 
-#define log_time_curr_offs()		(cspm_read(CSPM_SW_RSV7) - 0xa000)
+#define log_time_curr_offs()		cspm_read(CSPM_SW_RSV3)
 
 #define log_get_volt(log)		(((log) & LOG_V_MASK) >> 0)
 #define log_get_freq(log)		(((log) & LOG_F_MASK) >> 7)
@@ -920,12 +817,7 @@ static void __cspm_register_init(void)
 static void __cspm_reset_and_init_pcm(const struct pcm_desc *pcmdesc)
 {
 	/* do basic init because of Infra power-on reset */
-#if 0
-	/* others will set REGWR_EN for SEMA1/2/3 access */
-	if (!(cspm_read(CSPM_POWERON_CONFIG_EN) & REGWR_EN))
-#else
 	if (!(cspm_read(CSPM_PCM_CON1) & CON1_MIF_APBEN))
-#endif
 		__cspm_register_init();
 
 	/* reset PCM */
@@ -944,7 +836,6 @@ static void __cspm_reset_and_init_pcm(const struct pcm_desc *pcmdesc)
 static void __cspm_kick_im_to_fetch(const struct pcm_desc *pcmdesc)
 {
 	u32 ptr, len, con0;
-	bool emi_access = true;
 
 	/* tell IM where is PCM code (use slave mode if code existed) */
 	ptr = base_va_to_pa(pcmdesc->base);
@@ -955,37 +846,12 @@ static void __cspm_kick_im_to_fetch(const struct pcm_desc *pcmdesc)
 		cspm_write(CSPM_PCM_IM_LEN, len);
 	} else {
 		cspm_write(CSPM_PCM_CON1, cspm_read(CSPM_PCM_CON1) | CON1_CFG_KEY | CON1_IM_SLAVE);
-		emi_access = false;
-	}
-
-	if (wa_get_emi_sema && emi_access) {
-		int i, n = DIV_ROUND_UP(100000, 10) /* 100ms */;
-
-		for (i = 0; i < n; i++) {
-			cspm_write(CSPM_SEMA1_M1, 0x1);
-			if (cspm_read(CSPM_SEMA1_M1) & 0x1)	/* get EMI SEMA */
-				break;
-			udelay(10);
-		}
-		if (i >= n) {
-			cspm_err("SEMA1 0x(%x %x %x) GET TIMEOUT\n",
-					   cspm_read(CSPM_SEMA1_M0),
-					   cspm_read(CSPM_SEMA1_M1),
-					   cspm_read(CSPM_SEMA1_M2));
-			BUG();
-		}
 	}
 
 	/* kick IM to fetch (only toggle IM_KICK) */
 	con0 = cspm_read(CSPM_PCM_CON0) & ~(CON0_IM_KICK | CON0_PCM_KICK);
 	cspm_write(CSPM_PCM_CON0, con0 | CON0_CFG_KEY | CON0_IM_KICK);
 	cspm_write(CSPM_PCM_CON0, con0 | CON0_CFG_KEY);
-
-	if (wa_get_emi_sema && emi_access) {
-		while (!(cspm_read(CSPM_PCM_FSM_STA) & FSM_IM_REDY))	/* wait for IM fetch done */
-			;
-		cspm_write(CSPM_SEMA1_M1, 0x1);		/* release EMI SEMA */
-	}
 }
 
 static void __cspm_init_pcm_register(void)
@@ -1021,24 +887,16 @@ static void __cspm_set_twam_event(const struct pwr_ctrl *pwrctrl)
 	BUG_ON(cspm_read(CSPM_TWAM_TIMER_OUT) != 0);
 
 	/* use TWAM to monitor WFI signals (enabled by FW) */
-	cspm_write(CSPM_TWAM_IDLE_SEL, 0);
-	cspm_write(CSPM_TWAM_CON3, TWAM_SIG_SEL3(15) | TWAM_MON_TYPE3(TMT_HIGH_LEVEL) |
-				   TWAM_SIG_SEL2(14) | TWAM_MON_TYPE2(TMT_HIGH_LEVEL) |
-				   TWAM_SIG_SEL1(13) | TWAM_MON_TYPE1(TMT_HIGH_LEVEL) |
-				   TWAM_SIG_SEL0(12) | TWAM_MON_TYPE0(TMT_HIGH_LEVEL));
-	cspm_write(CSPM_TWAM_CON2, TWAM_SIG_SEL3(11) | TWAM_MON_TYPE3(TMT_HIGH_LEVEL) |
-				   TWAM_SIG_SEL2(10) | TWAM_MON_TYPE2(TMT_HIGH_LEVEL) |
-				   TWAM_SIG_SEL1(9)  | TWAM_MON_TYPE1(TMT_HIGH_LEVEL) |
-				   TWAM_SIG_SEL0(8)  | TWAM_MON_TYPE0(TMT_HIGH_LEVEL));
-	cspm_write(CSPM_TWAM_CON1, TWAM_SIG_SEL3(7)  | TWAM_MON_TYPE3(TMT_HIGH_LEVEL) |
-				   TWAM_SIG_SEL2(6)  | TWAM_MON_TYPE2(TMT_HIGH_LEVEL) |
-				   TWAM_SIG_SEL1(5)  | TWAM_MON_TYPE1(TMT_HIGH_LEVEL) |
-				   TWAM_SIG_SEL0(4)  | TWAM_MON_TYPE0(TMT_HIGH_LEVEL));
-	cspm_write(CSPM_TWAM_CON0, TWAM_SIG_SEL3(3)  | TWAM_MON_TYPE3(TMT_HIGH_LEVEL) |
-				   TWAM_SIG_SEL2(2)  | TWAM_MON_TYPE2(TMT_HIGH_LEVEL) |
-				   TWAM_SIG_SEL1(1)  | TWAM_MON_TYPE1(TMT_HIGH_LEVEL) |
-				   TWAM_SIG_SEL0(0)  | TWAM_MON_TYPE0(TMT_HIGH_LEVEL));
-	cspm_write(CSPM_TWAM_CON, TWAM_SPEED_MODE_EN);
+	cspm_write(CSPM_TWAM_IDLE_SEL, 0x1);
+	cspm_write(CSPM_TWAM_CON1, TWAM_SIG_SEL3(7) | TWAM_MON_TYPE3(TMT_HIGH_LEVEL) |
+				   TWAM_SIG_SEL2(6) | TWAM_MON_TYPE2(TMT_HIGH_LEVEL) |
+				   TWAM_SIG_SEL1(5) | TWAM_MON_TYPE1(TMT_HIGH_LEVEL) |
+				   TWAM_SIG_SEL0(4) | TWAM_MON_TYPE0(TMT_HIGH_LEVEL));
+	cspm_write(CSPM_TWAM_CON,  TWAM_SIG_SEL3(3) | TWAM_MON_TYPE3(TMT_HIGH_LEVEL) |
+				   TWAM_SIG_SEL2(2) | TWAM_MON_TYPE2(TMT_HIGH_LEVEL) |
+				   TWAM_SIG_SEL1(1) | TWAM_MON_TYPE1(TMT_HIGH_LEVEL) |
+				   TWAM_SIG_SEL0(0) | TWAM_MON_TYPE0(TMT_HIGH_LEVEL) |
+				   TWAM_SPEED_MODE_EN);
 	cspm_write(CSPM_TWAM_WINDOW_LEN, 0x733f);	/* 1.135ms */
 }
 
@@ -1061,61 +919,10 @@ static void __cspm_kick_pcm_to_run(const struct pwr_ctrl *pwrctrl, const struct 
 	u32 con0;
 
 	/* init register to match FW expectation */
-	cspm_write(CSPM_M0_REC13, 0x1001af34);
-	cspm_write(CSPM_M0_REC14, 0x1001af38);
-	cspm_write(CSPM_M0_REC15, 0x1001af3c);
-	cspm_write(CSPM_M0_REC16, 0x1001af40);
-	cspm_write(CSPM_M0_REC17, 0x1001af44);
-	cspm_write(CSPM_M0_REC18, 0x1001a204);
-	cspm_write(CSPM_M0_REC19, 0x1);
-	cspm_write(CSPM_M1_REC0,  0x200);
-	cspm_write(CSPM_M1_REC1,  0xffffc1ff);
-	cspm_write(CSPM_M1_REC2,  0x4);
-	cspm_write(CSPM_M1_REC3,  0x8);
-	cspm_write(CSPM_M1_REC4,  0xfffffff3);
-
-	cspm_write(CSPM_M1_REC5,  0x1001af48);
-	cspm_write(CSPM_M1_REC6,  0x1001af4c);
-	cspm_write(CSPM_M1_REC7,  0x1001af50);
-	cspm_write(CSPM_M1_REC8,  0x1001af54);
-	cspm_write(CSPM_M1_REC9,  0x1001af58);
-	cspm_write(CSPM_M1_REC10, 0x1001a214);
-	cspm_write(CSPM_M1_REC11, 0x2);
-	cspm_write(CSPM_M1_REC12, 0x20000);
-	cspm_write(CSPM_M1_REC13, 0xffc1ffff);
-	cspm_write(CSPM_M1_REC14, 0x10);
-	cspm_write(CSPM_M1_REC15, 0x20);
-	cspm_write(CSPM_M1_REC16, 0xffffffcf);
-
-	cspm_write(CSPM_M1_REC17, 0x1001af5c);
-	cspm_write(CSPM_M1_REC18, 0x1001af60);
-	cspm_write(CSPM_M1_REC19, 0x1001af64);
-	cspm_write(CSPM_M2_REC0,  0x1001af68);
-	cspm_write(CSPM_M2_REC1,  0x1001af6c);
-	cspm_write(CSPM_M2_REC2,  0x1001a224);
-	cspm_write(CSPM_M2_REC3,  0x4);
-	cspm_write(CSPM_M2_REC4,  0x2);
-	cspm_write(CSPM_M2_REC5,  0xffffffc1);
-	cspm_write(CSPM_M2_REC6,  0x40);
-	cspm_write(CSPM_M2_REC7,  0x80);
-	cspm_write(CSPM_M2_REC8,  0xffffff3f);
-
-	cspm_write(CSPM_SW_RSV7,  0xa000 + OFFS_LOG_S + 0x0);
-	cspm_write(CSPM_SW_RSV8,  0xa000 + OFFS_LOG_S + 0x4);
-	cspm_write(CSPM_SW_RSV9,  0xa000 + OFFS_LOG_S + 0x8);
-	cspm_write(CSPM_SW_RSV10, 0xa000 + OFFS_LOG_S + 0xc);
-	cspm_write(CSPM_SW_RSV11, 0xa000 + OFFS_LOG_S + 0x10);
-	cspm_write(CSPM_SW_RSV12, 0xa000 + OFFS_LOG_S + 0x14);
-
-	cspm_write(CSPM_RSV_CON,  0x0);
-
-	cspm_write(CSPM_PCM_EVENT_VECTOR1,  0x3e60000);
-	cspm_write(CSPM_PCM_EVENT_VECTOR6,  0x3e60000);
-	cspm_write(CSPM_PCM_EVENT_VECTOR11, 0x3e60000);
-
-	cspm_write(CSPM_PCM_EVENT_VECTOR4,  0x0);
-	cspm_write(CSPM_PCM_EVENT_VECTOR9,  0x0);
-	cspm_write(CSPM_PCM_EVENT_VECTOR14, 0x0);
+	cspm_write(CSPM_SW_RSV3, OFFS_LOG_S + 0x0);
+	cspm_write(CSPM_SW_RSV4, OFFS_LOG_S + 0x4);
+	cspm_write(CSPM_SW_RSV5, OFFS_LOG_S + 0x8);
+	cspm_write(CSPM_RSV_CON, OFFS_LOG_S + 0xc);
 
 	for (i = 0; i < NUM_PHY_CLUSTER; i++) {
 		cspm_write(swctrl_reg[i], SW_F_MAX(opp_sw_to_fw(sta->ceiling[i])) |
@@ -1128,8 +935,7 @@ static void __cspm_kick_pcm_to_run(const struct pwr_ctrl *pwrctrl, const struct 
 
 	for (i = 0; i < NUM_CPU_CLUSTER; i++) {
 		cspm_write(hwsta_reg[i], F_CURR(opp_sw_to_fw(sta->opp[i])) |
-					 V_CURR(sta->volt[i]) |
-					 VS_CURR(sta->vsram[i]));
+					 V_CURR(sta->volt[i]));
 		csram_write(hwsta_offs[i], cspm_read(hwsta_reg[i]));
 	}
 
@@ -1163,7 +969,6 @@ static void __cspm_save_curr_sta(struct init_sta *sta)
 	for (i = 0; i < NUM_CPU_CLUSTER; i++) {
 		sta->opp[i] = opp_fw_to_sw(cspm_curr_freq(hwsta_reg[i]));
 		sta->volt[i] = cspm_curr_volt(hwsta_reg[i]);
-		sta->vsram[i] = cspm_curr_vsram(hwsta_reg[i]);
 
 		if (i < NUM_PHY_CLUSTER) {
 			sta->ceiling[i] = opp_fw_to_sw(cspm_max_freq(swctrl_reg[i]));
@@ -1208,55 +1013,16 @@ static void cspm_dump_debug_info(struct cpuhvfs_dvfsp *dvfsp, const char *fmt, .
 	cspm_err("FW_VER: %s\n", dvfsp->pcmdesc->version);
 
 	cspm_err("PCM_TIMER: %08x\n", cspm_read(CSPM_PCM_TIMER_OUT));
-	cspm_err("PCM_REG15: %u, SEMA3: 0x(%x %x %x), SEMA1: 0x(%x %x %x)\n",
-					   cspm_read(CSPM_PCM_REG15_DATA),
-					   cspm_read(CSPM_SEMA3_M0),
-					   cspm_read(CSPM_SEMA3_M1),
-					   cspm_read(CSPM_SEMA3_M2),
-					   cspm_read(CSPM_SEMA1_M0),
-					   cspm_read(CSPM_SEMA1_M1),
-					   cspm_read(CSPM_SEMA1_M2));
+	cspm_err("PCM_REG15: %u, SEMA: 0x(%x %x)\n",
+					  cspm_read(CSPM_PCM_REG15_DATA),
+					  cspm_read(CSPM_AP_SEMA),
+					  cspm_read(CSPM_SPM_SEMA));
 
+	cspm_err("SW_RSV6: 0x%x\n", cspm_read(CSPM_SW_RSV6));
+	cspm_err("SW_RSV7: 0x%x\n", cspm_read(CSPM_SW_RSV7));
 	cspm_err("SW_RSV0: 0x%x\n", cspm_read(CSPM_SW_RSV0));
 	cspm_err("SW_RSV1: 0x%x\n", cspm_read(CSPM_SW_RSV1));
 	cspm_err("SW_RSV2: 0x%x\n", cspm_read(CSPM_SW_RSV2));
-	cspm_err("SW_RSV3: 0x%x\n", cspm_read(CSPM_SW_RSV3));
-	cspm_err("SW_RSV4: 0x%x\n", cspm_read(CSPM_SW_RSV4));
-	cspm_err("SW_RSV5: 0x%x\n", cspm_read(CSPM_SW_RSV5));
-	cspm_err("SW_RSV6: 0x%x\n", cspm_read(CSPM_SW_RSV6));
-
-	cspm_err("M3_RECx: 0x(%x,%x,%x,%x,%x,%x,%x,%x,%x,%x,%x,%x,%x,%x,%x,%x,%x,%x,%x)\n",
-			      cspm_read(CSPM_M3_REC1),
-			      cspm_read(CSPM_M3_REC2),
-			      cspm_read(CSPM_M3_REC3),
-			      cspm_read(CSPM_M3_REC4),
-			      cspm_read(CSPM_M3_REC5),
-			      cspm_read(CSPM_M3_REC6),
-			      cspm_read(CSPM_M3_REC7),
-			      cspm_read(CSPM_M3_REC8),
-			      cspm_read(CSPM_M3_REC9),
-			      cspm_read(CSPM_M3_REC10),
-			      cspm_read(CSPM_M3_REC11),
-			      cspm_read(CSPM_M3_REC12),
-			      cspm_read(CSPM_M3_REC13),
-			      cspm_read(CSPM_M3_REC14),
-			      cspm_read(CSPM_M3_REC15),
-			      cspm_read(CSPM_M3_REC16),
-			      cspm_read(CSPM_M3_REC17),
-			      cspm_read(CSPM_M3_REC18),
-			      cspm_read(CSPM_M3_REC19));
-	cspm_err("SW_DEBUG: 0x%x\n", cspm_read(CSPM_SW_DEBUG));
-
-	cspm_err("EVT_VECx: 0x(%x,%x,%x,%x,%x,%x,%x,%x,%x)\n",
-			       cspm_read(CSPM_PCM_EVENT_VECTOR2),
-			       cspm_read(CSPM_PCM_EVENT_VECTOR3),
-			       cspm_read(CSPM_PCM_EVENT_VECTOR5),
-			       cspm_read(CSPM_PCM_EVENT_VECTOR7),
-			       cspm_read(CSPM_PCM_EVENT_VECTOR8),
-			       cspm_read(CSPM_PCM_EVENT_VECTOR10),
-			       cspm_read(CSPM_PCM_EVENT_VECTOR12),
-			       cspm_read(CSPM_PCM_EVENT_VECTOR13),
-			       cspm_read(CSPM_PCM_EVENT_VECTOR15));
 
 	cspm_err("PCM_FSM_STA: 0x%x\n", cspm_read(CSPM_PCM_FSM_STA));
 }
@@ -1688,14 +1454,10 @@ static void cspm_cluster_notify_off(struct cpuhvfs_dvfsp *dvfsp, unsigned int cl
 	csram_write(swctrl_offs[cluster], cspm_read(swctrl_reg[cluster]));
 
 	/* FW will set SW_PAUSE when done */
-	if (cluster == CPU_CLUSTER_B) {
-		r = wait_complete_us(cspm_is_paused(swctrl_reg[cluster]), 10, DVFS_TIMEOUT);
-		csram_write_fw_sta();
-	} else {	/* LL, L: DFS only to the lowest frequency */
-		r = wait_complete_us(cspm_curr_freq(hwsta_reg[cluster]) == 0 &&
-				     cspm_is_paused(swctrl_reg[cluster]), 10, DVFS_TIMEOUT);
-		csram_write_fw_sta();
-	}
+	/* LL, L: DFS only to the lowest frequency */
+	r = wait_complete_us(cspm_curr_freq(hwsta_reg[cluster]) == 0 &&
+			     cspm_is_paused(swctrl_reg[cluster]), 10, DVFS_TIMEOUT);
+	csram_write_fw_sta();
 
 	if (r < 0) {
 		cspm_dump_debug_info(dvfsp, "CLUSTER%u OFF TIMEOUT", cluster);
@@ -1735,12 +1497,6 @@ static void __cspm_check_and_update_sta(struct cpuhvfs_dvfsp *dvfsp, struct init
 			sta->volt[i] = suspend_sta.volt[i];
 			suspend_sta.volt[i] = UINT_MAX;
 		}
-		if (sta->vsram[i] == VSRAM_AT_SUSPEND) {
-			BUG_ON(suspend_sta.vsram[i] == UINT_MAX);	/* without suspend */
-
-			sta->vsram[i] = suspend_sta.vsram[i];
-			suspend_sta.vsram[i] = UINT_MAX;
-		}
 		if (sta->ceiling[i] == CEILING_AT_SUSPEND) {
 			BUG_ON(suspend_sta.ceiling[i] == UINT_MAX);	/* without suspend */
 
@@ -1757,12 +1513,11 @@ static void __cspm_check_and_update_sta(struct cpuhvfs_dvfsp *dvfsp, struct init
 		csram_write(OFFS_INIT_OPP + i * sizeof(u32), sta->opp[i]);
 		csram_write(OFFS_INIT_FREQ + i * sizeof(u32), sta->freq[i]);
 		csram_write(OFFS_INIT_VOLT + i * sizeof(u32), sta->volt[i]);
-		csram_write(OFFS_INIT_VSRAM + i * sizeof(u32), sta->vsram[i]);
 
 		if (!suspend || i <= CPU_CLUSTER_L) {
-			cspm_dbgx(KICK, "(%u) cluster%d: opp = %u (%u - %u), freq = %u, volt = 0x%x (0x%x)\n",
+			cspm_dbgx(KICK, "(%u) cluster%d: opp = %u (%u - %u), freq = %u, volt = 0x%x\n",
 					dvfsp->hw_gov_en, i, sta->opp[i], sta->ceiling[i], sta->floor[i],
-					sta->freq[i], sta->volt[i], sta->vsram[i]);
+					sta->freq[i], sta->volt[i]);
 		}
 	}
 }
@@ -1821,15 +1576,13 @@ static void fetch_dvfs_log_and_notify(struct cpuhvfs_dvfsp *dvfsp)
 			next_log_offs += 4;
 		}
 
-		next_log_offs += 4;	/* skip UE log */
 		if (next_log_offs >= OFFS_LOG_E)
 			next_log_offs = OFFS_LOG_S;
 		csram_write(OFFS_NXLOG_OFFS, next_log_offs);
 
-		cspm_dbgx(NOTIFY, "[%08x] log%d opp = (%u %u %u %u), offs = 0x%x (0x%x)\n",
+		cspm_dbgx(NOTIFY, "[%08x] log%d opp = (%u %u %u), offs = 0x%x (0x%x)\n",
 				  log_box[i].time, i, log_box[i].opp[0], log_box[i].opp[1],
-				  log_box[i].opp[2], log_box[i].opp[3],
-				  next_log_offs, log_time_curr_offs());
+				  log_box[i].opp[2], next_log_offs, log_time_curr_offs());
 	}
 
 	if (log_box[0].time == 0 && i >= 2)
@@ -1923,25 +1676,21 @@ static int cspm_probe(struct platform_device *pdev)
 	}
 
 	/* build register mapping for general access */
-	swctrl_reg[CPU_CLUSTER_LL] = CSPM_SW_RSV0;
-	swctrl_reg[CPU_CLUSTER_L] = CSPM_SW_RSV1;
-	swctrl_reg[CPU_CLUSTER_B] = CSPM_SW_RSV2;
+	swctrl_reg[CPU_CLUSTER_LL] = CSPM_SW_RSV6;
+	swctrl_reg[CPU_CLUSTER_L] = CSPM_SW_RSV7;
 
-	hwsta_reg[CPU_CLUSTER_LL] = CSPM_SW_RSV3;
-	hwsta_reg[CPU_CLUSTER_L] = CSPM_SW_RSV4;
-	hwsta_reg[CPU_CLUSTER_B] = CSPM_SW_RSV5;
-	hwsta_reg[CPU_CLUSTER_CCI] = CSPM_SW_RSV6;
+	hwsta_reg[CPU_CLUSTER_LL] = CSPM_SW_RSV0;
+	hwsta_reg[CPU_CLUSTER_L] = CSPM_SW_RSV1;
+	hwsta_reg[CPU_CLUSTER_CCI] = CSPM_SW_RSV2;
 
-	sema_reg[SEMA_FHCTL_DRV] = CSPM_SEMA0_M0;
+	sema_reg[SEMA_FHCTL_DRV] = CSPM_AP_SEMA;
 
-	swctrl_offs[CPU_CLUSTER_LL] = OFFS_SW_RSV0;
-	swctrl_offs[CPU_CLUSTER_L] = OFFS_SW_RSV1;
-	swctrl_offs[CPU_CLUSTER_B] = OFFS_SW_RSV2;
+	swctrl_offs[CPU_CLUSTER_LL] = OFFS_SW_RSV6;
+	swctrl_offs[CPU_CLUSTER_L] = OFFS_SW_RSV7;
 
-	hwsta_offs[CPU_CLUSTER_LL] = OFFS_FW_RSV3;
-	hwsta_offs[CPU_CLUSTER_L] = OFFS_FW_RSV4;
-	hwsta_offs[CPU_CLUSTER_B] = OFFS_FW_RSV5;
-	hwsta_offs[CPU_CLUSTER_CCI] = OFFS_FW_RSV6;
+	hwsta_offs[CPU_CLUSTER_LL] = OFFS_FW_RSV0;
+	hwsta_offs[CPU_CLUSTER_L] = OFFS_FW_RSV1;
+	hwsta_offs[CPU_CLUSTER_CCI] = OFFS_FW_RSV2;
 
 	__cspm_register_init();
 
@@ -2020,44 +1769,11 @@ static int dvfsp_reg_show(struct seq_file *m, void *v)
 	seq_printf(m, "PCM_TIMER  : %08x\n", cspm_read(CSPM_PCM_TIMER_OUT));
 	seq_printf(m, "PCM_REG15  : %u\n"  , cspm_read(CSPM_PCM_REG15_DATA));
 	seq_puts(m,   "============\n");
+	seq_printf(m, "SW_RSV6    : 0x%x\n", cspm_read(CSPM_SW_RSV6));
+	seq_printf(m, "SW_RSV7    : 0x%x\n", cspm_read(CSPM_SW_RSV7));
 	seq_printf(m, "SW_RSV0    : 0x%x\n", cspm_read(CSPM_SW_RSV0));
 	seq_printf(m, "SW_RSV1    : 0x%x\n", cspm_read(CSPM_SW_RSV1));
 	seq_printf(m, "SW_RSV2    : 0x%x\n", cspm_read(CSPM_SW_RSV2));
-	seq_printf(m, "SW_RSV3    : 0x%x\n", cspm_read(CSPM_SW_RSV3));
-	seq_printf(m, "SW_RSV4    : 0x%x\n", cspm_read(CSPM_SW_RSV4));
-	seq_printf(m, "SW_RSV5    : 0x%x\n", cspm_read(CSPM_SW_RSV5));
-	seq_printf(m, "SW_RSV6    : 0x%x\n", cspm_read(CSPM_SW_RSV6));
-	seq_puts(m,   "============\n");
-	seq_printf(m, "M3_REC1    : 0x%x\n", cspm_read(CSPM_M3_REC1));
-	seq_printf(m, "M3_REC2    : 0x%x\n", cspm_read(CSPM_M3_REC2));
-	seq_printf(m, "M3_REC3    : 0x%x\n", cspm_read(CSPM_M3_REC3));
-	seq_printf(m, "M3_REC4    : 0x%x\n", cspm_read(CSPM_M3_REC4));
-	seq_printf(m, "M3_REC5    : 0x%x\n", cspm_read(CSPM_M3_REC5));
-	seq_printf(m, "M3_REC6    : 0x%x\n", cspm_read(CSPM_M3_REC6));
-	seq_printf(m, "M3_REC7    : 0x%x\n", cspm_read(CSPM_M3_REC7));
-	seq_printf(m, "M3_REC8    : 0x%x\n", cspm_read(CSPM_M3_REC8));
-	seq_printf(m, "M3_REC9    : 0x%x\n", cspm_read(CSPM_M3_REC9));
-	seq_printf(m, "M3_REC10   : 0x%x\n", cspm_read(CSPM_M3_REC10));
-	seq_printf(m, "M3_REC11   : 0x%x\n", cspm_read(CSPM_M3_REC11));
-	seq_printf(m, "M3_REC12   : 0x%x\n", cspm_read(CSPM_M3_REC12));
-	seq_printf(m, "M3_REC13   : 0x%x\n", cspm_read(CSPM_M3_REC13));
-	seq_printf(m, "M3_REC14   : 0x%x\n", cspm_read(CSPM_M3_REC14));
-	seq_printf(m, "M3_REC15   : 0x%x\n", cspm_read(CSPM_M3_REC15));
-	seq_printf(m, "M3_REC16   : 0x%x\n", cspm_read(CSPM_M3_REC16));
-	seq_printf(m, "M3_REC17   : 0x%x\n", cspm_read(CSPM_M3_REC17));
-	seq_printf(m, "M3_REC18   : 0x%x\n", cspm_read(CSPM_M3_REC18));
-	seq_printf(m, "M3_REC19   : 0x%x\n", cspm_read(CSPM_M3_REC19));
-	seq_printf(m, "SW_DEBUG   : 0x%x\n", cspm_read(CSPM_SW_DEBUG));
-	seq_puts(m,   "============\n");
-	seq_printf(m, "EVT_VEC2   : 0x%x\n", cspm_read(CSPM_PCM_EVENT_VECTOR2));
-	seq_printf(m, "EVT_VEC3   : 0x%x\n", cspm_read(CSPM_PCM_EVENT_VECTOR3));
-	seq_printf(m, "EVT_VEC5   : 0x%x\n", cspm_read(CSPM_PCM_EVENT_VECTOR5));
-	seq_printf(m, "EVT_VEC7   : 0x%x\n", cspm_read(CSPM_PCM_EVENT_VECTOR7));
-	seq_printf(m, "EVT_VEC8   : 0x%x\n", cspm_read(CSPM_PCM_EVENT_VECTOR8));
-	seq_printf(m, "EVT_VEC10  : 0x%x\n", cspm_read(CSPM_PCM_EVENT_VECTOR10));
-	seq_printf(m, "EVT_VEC12  : 0x%x\n", cspm_read(CSPM_PCM_EVENT_VECTOR12));
-	seq_printf(m, "EVT_VEC13  : 0x%x\n", cspm_read(CSPM_PCM_EVENT_VECTOR13));
-	seq_printf(m, "EVT_VEC15  : 0x%x\n", cspm_read(CSPM_PCM_EVENT_VECTOR15));
 	seq_puts(m,   "============\n");
 	seq_printf(m, "PCM_FSM_STA: 0x%x\n", cspm_read(CSPM_PCM_FSM_STA));
 	seq_printf(m, "HW_GOV*    : %u\n"  , dvfsp->hw_gov_en);
@@ -2076,6 +1792,8 @@ static int dbg_repo_show(struct seq_file *m, void *v)
 		repo[REPO_I_WDT_LATCH0] = cspm_read(CSPM_PCM_FSM_STA);
 		repo[REPO_I_WDT_LATCH1] = cspm_read(CSPM_PCM_REG6_DATA);
 		repo[REPO_I_WDT_LATCH2] = cspm_read(CSPM_SW_RSV5);
+		repo[REPO_I_WDT_LATCH3] = cspm_read(CSPM_SW_RSV6);
+		repo[REPO_I_WDT_LATCH4] = cspm_read(CSPM_SW_RSV7);
 	}
 
 	for (i = 0; i < DBG_REPO_NUM; i++) {
@@ -2118,8 +1836,6 @@ static int create_cpuhvfs_debug_fs(struct cpuhvfs_data *cpuhvfs)
 	debugfs_create_bool("sema_fail_ke", 0644, root, &sema_fail_ke);
 	debugfs_create_bool("pause_fail_ke", 0644, root, &pause_fail_ke);
 
-	debugfs_create_bool("wa_get_emi_sema", 0444, root, &wa_get_emi_sema);
-
 	cpuhvfs->dbg_fs = root;
 
 	return 0;
@@ -2134,10 +1850,14 @@ static void init_cpuhvfs_debug_repo(struct cpuhvfs_data *cpuhvfs)
 	dbg_repo_bak[REPO_I_WDT_LATCH0] = cspm_read(CSPM_PCM_WDT_LATCH0);
 	dbg_repo_bak[REPO_I_WDT_LATCH1] = cspm_read(CSPM_PCM_WDT_LATCH1);
 	dbg_repo_bak[REPO_I_WDT_LATCH2] = cspm_read(CSPM_PCM_WDT_LATCH2);
-	cpuhvfs_crit("WDT_LATCH0: 0x%x, LATCH1: 0x%x, LATCH2: 0x%x\n",
+	dbg_repo_bak[REPO_I_WDT_LATCH3] = cspm_read(CSPM_PCM_WDT_LATCH3);
+	dbg_repo_bak[REPO_I_WDT_LATCH4] = cspm_read(CSPM_PCM_WDT_LATCH4);
+	cpuhvfs_crit("WDT_LATCH0: 0x%x, LATCH1: 0x%x, LATCH2: 0x%x, LATCH3: 0x%x, LATCH4: 0x%x\n",
 		     dbg_repo_bak[REPO_I_WDT_LATCH0],
 		     dbg_repo_bak[REPO_I_WDT_LATCH1],
-		     dbg_repo_bak[REPO_I_WDT_LATCH2]);
+		     dbg_repo_bak[REPO_I_WDT_LATCH2],
+		     dbg_repo_bak[REPO_I_WDT_LATCH3],
+		     dbg_repo_bak[REPO_I_WDT_LATCH4]);
 
 	dbg_repo[0] = REPO_GUARD0;
 	dbg_repo[1] = REPO_GUARD1;
@@ -2157,14 +1877,6 @@ static void init_cpuhvfs_debug_repo(struct cpuhvfs_data *cpuhvfs)
 /**************************************
  * [Hybrid DVFS] API
  **************************************/
-void cpuhvfs_get_pause_status_i2c(void)		/* deprecated */
-{
-	cspm_err("pause_src_map = 0x%x\n", pause_src_map);
-	cspm_err("SW_RSV0: 0x%x\n", cspm_read(CSPM_SW_RSV0));
-	cspm_err("SW_RSV1: 0x%x\n", cspm_read(CSPM_SW_RSV1));
-	cspm_err("SW_RSV2: 0x%x\n", cspm_read(CSPM_SW_RSV2));
-}
-
 void cpuhvfs_dump_dvfsp_info(void)
 {
 	struct cpuhvfs_dvfsp *dvfsp = g_cpuhvfs.dvfsp;
@@ -2485,4 +2197,4 @@ fs_initcall(cpuhvfs_pre_module_init);
 
 #endif	/* CONFIG_HYBRID_CPU_DVFS */
 
-MODULE_DESCRIPTION("Hybrid CPU DVFS Driver v0.7");
+MODULE_DESCRIPTION("Hybrid CPU DVFS Driver v0.1");

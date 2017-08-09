@@ -24,6 +24,10 @@
 #define CONFIG_HYBRID_CPU_DVFS
 /*#define __TRIAL_RUN__*/
 
+#elif defined(CONFIG_ARCH_MT6757)
+/*#define CONFIG_HYBRID_CPU_DVFS*/
+/*#define __TRIAL_RUN__*/
+
 #elif defined(CONFIG_ARCH_MT6797) /*&& defined(CONFIG_MTK_HYBRID_CPU_DVFS)*/
 #include "../mt6797/mt_cpufreq.h"
 #ifdef ENABLE_IDVFS
@@ -45,6 +49,17 @@ enum cpu_cluster {
 	CPU_CLUSTER_LL,
 	CPU_CLUSTER_L,
 	CPU_CLUSTER_B,
+	CPU_CLUSTER_CCI,	/* virtual */
+	NUM_CPU_CLUSTER
+};
+
+#define NUM_PHY_CLUSTER		(NUM_CPU_CLUSTER - 1)
+#define NUM_CPU_OPP		16
+
+#elif defined(CONFIG_ARCH_MT6757)
+enum cpu_cluster {
+	CPU_CLUSTER_LL,
+	CPU_CLUSTER_L,
 	CPU_CLUSTER_CCI,	/* virtual */
 	NUM_CPU_CLUSTER
 };
@@ -162,7 +177,6 @@ extern int cpuhvfs_dvfsp_suspend(void);
 extern void cpuhvfs_dvfsp_resume(unsigned int on_cluster, struct init_sta *sta);
 
 extern void cpuhvfs_dump_dvfsp_info(void);
-extern void cpuhvfs_get_pause_status_i2c(void);		/* deprecated */
 #else
 static inline int cpuhvfs_module_init(void)		{ return -ENODEV; }
 static inline int cpuhvfs_kick_dvfsp_to_run(struct init_sta *sta)	{ return -ENODEV; }
@@ -190,7 +204,6 @@ static inline int cpuhvfs_dvfsp_suspend(void)		{ return 0; }
 static inline void cpuhvfs_dvfsp_resume(unsigned int on_cluster, struct init_sta *sta)	{}
 
 static inline void cpuhvfs_dump_dvfsp_info(void)	{}
-static inline void cpuhvfs_get_pause_status_i2c(void)	{}	/* deprecated */
 #endif
 
 
@@ -204,6 +217,13 @@ static inline void cpuhvfs_register_dvfs_notify(dvfs_notify_t callback)	{}
 
 static inline int cpuhvfs_enable_hw_governor(struct init_sta *sta)	{ return -EPERM; }
 static inline int cpuhvfs_disable_hw_governor(struct init_sta *ret_sta)	{ return 0; }
+#endif
+
+
+#if defined(CONFIG_ARCH_MT6797) && defined(CONFIG_HYBRID_CPU_DVFS)
+extern void cpuhvfs_get_pause_status_i2c(void);		/* deprecated */
+#else
+static inline void cpuhvfs_get_pause_status_i2c(void)	{}
 #endif
 
 #endif	/* _MT_CPUFREQ_HYBRID_ */
