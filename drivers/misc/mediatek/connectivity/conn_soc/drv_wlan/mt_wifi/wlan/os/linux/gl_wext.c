@@ -3329,6 +3329,7 @@ static int wext_set_country(IN struct net_device *prNetDev, IN struct iwreq *iwr
 
 	rStatus = kalIoctl(prGlueInfo, wlanoidSetCountryCode, &aucCountry[0], 2, FALSE, FALSE, TRUE, FALSE, &u4BufLen);
 	wlanUpdateChannelTable(prGlueInfo);
+	p2pUpdateChannelTableByDomain(prGlueInfo);
 	return 0;
 }
 

@@ -1310,12 +1310,10 @@ BOOLEAN p2pNetUnregister(P_GLUE_INFO_T prGlueInfo, BOOLEAN fgIsRtnlLockAcquired)
 /*----------------------------------------------------------------------------*/
 VOID p2pUpdateChannelTableByDomain(P_GLUE_INFO_T prGlueInfo)
 {
-	UINT_8 i, j, uc2gChIdx, uc5gChIdx;
+	UINT_8 i, j;
 	UINT_8 ucMaxChannelNum = ARRAY_SIZE(mtk_2ghz_channels) + ARRAY_SIZE(mtk_5ghz_a_channels);
 	UINT_8 ucNumOfChannel = ucMaxChannelNum;
 	RF_CHANNEL_INFO_T aucChannelList[ucMaxChannelNum];
-
-	uc2gChIdx = uc5gChIdx = 0;
 
 	/* 1. Disable all channel */
 	for (i = 0; i < ARRAY_SIZE(mtk_2ghz_channels); i++) {
@@ -1326,7 +1324,6 @@ VOID p2pUpdateChannelTableByDomain(P_GLUE_INFO_T prGlueInfo)
 		mtk_5ghz_a_channels[i].flags |= IEEE80211_CHAN_DISABLED;
 		mtk_5ghz_a_channels[i].orig_flags |= IEEE80211_CHAN_DISABLED;
 	}
-
 	/* 2. Get current domain channel list */
 	rlmDomainGetChnlList(prGlueInfo->prAdapter, BAND_NULL, ucMaxChannelNum, &ucNumOfChannel, aucChannelList);
 
@@ -1335,31 +1332,29 @@ VOID p2pUpdateChannelTableByDomain(P_GLUE_INFO_T prGlueInfo)
 		switch (aucChannelList[i].eBand) {
 		case BAND_2G4:
 			for (j = 0; j < ARRAY_SIZE(mtk_2ghz_channels); j++) {
-				if (mtk_2ghz_channels[j].hw_value != aucChannelList[i].ucChannelNum)
-					continue;
-				mtk_2ghz_channels[j].flags &= ~IEEE80211_CHAN_DISABLED;
-				mtk_2ghz_channels[j].orig_flags &= ~IEEE80211_CHAN_DISABLED;
-				break;
+				if (mtk_2ghz_channels[j].hw_value == aucChannelList[i].ucChannelNum) {
+					mtk_2ghz_channels[j].flags &= ~IEEE80211_CHAN_DISABLED;
+					mtk_2ghz_channels[j].orig_flags &= ~IEEE80211_CHAN_DISABLED;
+					break;
+				}
 			}
 			break;
 
 		case BAND_5G:
 			for (j = 0; j < ARRAY_SIZE(mtk_5ghz_a_channels); j++) {
-				if (mtk_5ghz_a_channels[j].hw_value != aucChannelList[i].ucChannelNum)
-					continue;
-				mtk_5ghz_a_channels[j].flags &= ~IEEE80211_CHAN_DISABLED;
-				mtk_5ghz_a_channels[j].orig_flags &= ~IEEE80211_CHAN_DISABLED;
-				break;
+				if (mtk_5ghz_a_channels[j].hw_value == aucChannelList[i].ucChannelNum) {
+					mtk_5ghz_a_channels[j].flags &= ~IEEE80211_CHAN_DISABLED;
+					mtk_5ghz_a_channels[j].orig_flags &= ~IEEE80211_CHAN_DISABLED;
+					break;
+				}
 			}
 			break;
 
 		default:
 			DBGLOG(P2P, WARN, "Unknown band.\n");
 			break;
-
 		}
 	}
-
 }
 
 BOOLEAN glP2pCreateWirelessDevice(P_GLUE_INFO_T prGlueInfo)

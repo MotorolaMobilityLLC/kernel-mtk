@@ -85,6 +85,7 @@
 ********************************************************************************
 */
 extern VOID wlanUpdateChannelTable(P_GLUE_INFO_T prGlueInfo);
+extern VOID p2pUpdateChannelTableByDomain(P_GLUE_INFO_T prGlueInfo);
 
 /*******************************************************************************
 *                              C O N S T A N T S
