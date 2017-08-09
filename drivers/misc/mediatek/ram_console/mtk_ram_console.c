@@ -2743,9 +2743,7 @@ last_rr_show_cpu_t aee_rr_show_cpu[] = {
 last_rr_show_t aee_rr_last_xxx[] = {
 	aee_rr_show_last_pc,
 	aee_rr_show_last_bus,
-	aee_rr_show_suspend_debug_flag,
-	aee_rr_show_suspend_debug_regs,
-	aee_rr_show_vcore_dvfs_debug_regs
+	aee_rr_show_suspend_debug_flag
 };
 
 #define array_size(x) (sizeof(x) / sizeof((x)[0]))
