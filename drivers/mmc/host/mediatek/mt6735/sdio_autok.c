@@ -160,7 +160,7 @@ do { \
 		memcpy(log_info+total_msg_size, autok_single, autok_size);    \
 		total_msg_size += autok_size; \
 	}   \
-	pr_err("[AUTO_K]" _fmt, ## args);   \
+	pr_debug("[AUTO_K]" _fmt, ## args);   \
 } while (0)
 #endif
 
@@ -1387,7 +1387,7 @@ static E_RESULT_TYPE autok_cmd_test(struct msdc_host *host)
 
 		if (g_test_read_pattern[0] != tuning_data[i]) {
 #ifdef AUTOK_DEBUG
-			pr_err("write: 0x%x read: 0x%x\r\n", tuning_data[i],
+			pr_debug("write: 0x%x read: 0x%x\r\n", tuning_data[i],
 			       g_test_read_pattern[0]);
 #endif
 			res = E_RESULT_CMP_ERR;

@@ -3212,8 +3212,17 @@ static void msdc_pm(pm_message_t state, void *data)
 
 		host->suspend = 1;
 		host->pm_state = state;
+
 #ifdef MTK_SDIO30_ONLINE_TUNING_SUPPORT
+	if (host->id == 2) {
 		atomic_set(&host->ot_work.autok_done, 0);
+
+		/* true if dwork was pending, false otherwise */
+		if (cancel_delayed_work_sync(&(host->set_vcore_workq)) == 0)
+			pr_warn("** suspend- no pending vcore_workq\n");
+		else
+			pr_warn("** suspend- cancel vcore_workq\n");
+	}
 #endif
 
 		pr_err("msdc%d -> %s Suspend",

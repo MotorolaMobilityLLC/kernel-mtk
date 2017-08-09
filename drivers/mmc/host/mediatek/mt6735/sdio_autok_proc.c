@@ -138,7 +138,7 @@ int autok_mmap_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
 
 	offset = (pgoff << PAGE_SHIFT) + (vma->vm_pgoff << PAGE_SHIFT);
 	if (!dev->data) {
-		pr_warn("no data\n");
+		pr_err("no data\n");
 		return 0;
 	}
 	if (offset >= dev->size)
@@ -353,7 +353,7 @@ static int autok_thread_func(void *data)
 	}
 	time_in_s = (t1.tv_sec - t0.tv_sec);
 	time_in_ms = (t1.tv_usec - t0.tv_usec) >> 10;
-	pr_info("\n[AUTOKK][Stage%d] Timediff is %d.%d(s)\n", (int)stage, time_in_s, time_in_ms);
+	pr_debug("\n[AUTOKK][Stage%d] Timediff is %d.%d(s)\n", (int)stage, time_in_s, time_in_ms);
 
 /* preempt_enable(); */
 	return 0;
@@ -398,10 +398,10 @@ int wait_sdio_autok_ready(void *data)
 
 	btmod = get_boot_mode();
 
-	pr_info("btmod = %d\n", btmod);
+	pr_debug("btmod = %d\n", btmod);
 
 	if ((btmod != NORMAL_BOOT) && (btmod != META_BOOT)) {
-		pr_info("Not META or normal boot, return directly\n");
+		pr_debug("Not META or normal boot, return directly\n");
 		return 0;
 	}
 
@@ -414,7 +414,16 @@ int wait_sdio_autok_ready(void *data)
 #ifndef UT_TEST
 		/* claim host */
 #ifdef CONFIG_SDIOAUTOK_SUPPORT
-		pr_warn("wait_sdio_autok_ready(): is_vcorefs_can_work= %d\n",
+
+		/* ALPS02017456 */
+		/* true if dwork was pending, false otherwise */
+		if (cancel_delayed_work_sync(&(host->set_vcore_workq)) == 0)
+			pr_debug("** no pending vcore_workq\n");
+		else
+			pr_debug("** cancel vcore_workq\n");
+		/* ALPS02017456 */
+
+		pr_debug("wait_sdio_autok_ready(): is_vcorefs_can_work= %d\n",
 			is_vcorefs_can_work());
 		if (vcorefs_request_dvfs_opp(KIR_SDIO, OPPI_PERF) != 0) {	/* performance mode, return 0 pass */
 			/* BUG_ON("vcorefs_request_dvfs_opp@OPPI_PERF fail!\n"); */
@@ -422,7 +431,7 @@ int wait_sdio_autok_ready(void *data)
 		}
 
 		g_autok_vcore_sel[0] = vcorefs_get_curr_voltage();
-		pr_warn("wait_sdio_autok_ready(): vcorefs_get_curr_voltage= %d\n",
+		pr_debug("wait_sdio_autok_ready(): vcorefs_get_curr_voltage= %d\n",
 			vcorefs_get_curr_voltage());
 
 		/* mt_cpufreq_disable(0, true); */
@@ -511,7 +520,7 @@ void init_tune_sdio(struct msdc_host *host)
 				u32 vcore_uv = 0;
 
 				vcore_uv = autok_get_current_vcore_offset();
-				pr_warn
+				pr_debug
 				    ("init_tune_sdio@msdc_autok_apply_param, id:%d vcore_uv:%d\n",
 				     host->id, vcore_uv);
 				msdc_autok_apply_param(host, vcore_uv);
@@ -654,18 +663,18 @@ static ssize_t stage1_store(struct kobject *kobj, struct kobj_attribute *attr,
 		memcpy(&cur_name[2], &cur_voltage[id], sizeof(unsigned int));
 		store_autok(&p_single_autok[id], cur_name, count);
 
-		pr_err("[AUTOKD] Enter Store Autok");
-		pr_err("[AUTOKD] p_single_autok[%d].vol_count=%d", id,
+		pr_debug("[AUTOKD] Enter Store Autok");
+		pr_debug("[AUTOKD] p_single_autok[%d].vol_count=%d", id,
 		       p_single_autok[id].vol_count);
-		pr_err("[AUTOKD] p_single_autok[%d].param_count=%d", id,
+		pr_debug("[AUTOKD] p_single_autok[%d].param_count=%d", id,
 		       p_single_autok[id].param_count);
 		for (i = 0; i < p_single_autok[id].vol_count; i++) {
-			pr_err("[AUTOKD] p_single_autok[%d].vol_list[%d]=%d", id, i,
+			pr_debug("[AUTOKD] p_single_autok[%d].vol_list[%d]=%d", id, i,
 			       p_single_autok[id].vol_list[i]);
 		}
 		for (i = 0; i < p_single_autok[id].vol_count; i++) {
 			for (j = 0; j < p_single_autok[id].param_count; j++)
-				pr_err("[AUTOKD] p_single_autok[%d].ai_data[%d][%d]=%d", id, i, j,
+				pr_debug("[AUTOKD] p_single_autok[%d].ai_data[%d][%d]=%d", id, i, j,
 				       p_single_autok[id].ai_data[i][j].data.sel);
 		}
 		/* [FIXDONE] Start to do autok alforithm; data is in p_single_autok */
