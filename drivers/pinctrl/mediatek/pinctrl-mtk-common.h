@@ -212,7 +212,13 @@ struct mtk_eint_offsets {
  * means when user set smt, input enable is set at the same time. So they
  * also need special control. If special control is success, this should
  * return 0, otherwise return non-zero value.
- * @spec_pinmux_set: Some pins are special, their pinmux need extra setting
+ * @spec_pinmux_set: In some cases, there are two pinmux functions share
+ * the same value in the same segment of pinmux control register. If user
+ * want to use one of the two functions, they need an extra bit setting to
+ * select the right one.
+ * @spec_dir_set: In very few SoCs, direction control registers are not
+ * arranged continuously, they may be cut to parts. So they need special
+ * dir setting.
  *
  * @dir_offset: The direction register offset.
  * @pullen_offset: The pull-up/pull-down enable register offset.
@@ -257,6 +263,7 @@ struct mtk_pinctrl_devdata {
 			enum pin_config_param arg);
 	void (*spec_pinmux_set)(struct regmap *reg, unsigned int pin,
 			unsigned int mode);
+	void (*spec_dir_set)(unsigned int *reg_addr, unsigned int pin);
 	int (*spec_pull_get)(struct regmap *reg, unsigned int pin);
 	int (*spec_ies_get)(struct regmap *reg, unsigned int pin);
 	int (*spec_smt_get)(struct regmap *reg, unsigned int pin);

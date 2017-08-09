@@ -95,6 +95,10 @@ static int mtk_pmx_gpio_set_direction(struct pinctrl_dev *pctldev,
 	}
 
 	reg_addr = mtk_get_port(pctl, offset) + pctl->devdata->dir_offset;
+
+	if (pctl->devdata->spec_dir_set)
+		pctl->devdata->spec_dir_set(&reg_addr, offset);
+
 	bit = BIT(offset & 0xf);
 
 	if (input)
@@ -871,6 +875,10 @@ static int mtk_gpio_get_direction(struct gpio_chip *chip, unsigned offset)
 
 	}
 	reg_addr =  mtk_get_port(pctl, offset) + pctl->devdata->dir_offset;
+
+	if (pctl->devdata->spec_dir_set)
+		pctl->devdata->spec_dir_set(&reg_addr, offset);
+
 	bit = BIT(offset & 0xf);
 	regmap_read(pctl->regmap1, reg_addr, &read_val);
 	return !!(read_val & bit);
