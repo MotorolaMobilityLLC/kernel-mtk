@@ -70,6 +70,8 @@ static const struct isl79986_win_size isl79986_supported_win_sizes[] = {
 	{ W_WIDTH,	H_4CHANNEL },
 };
 
+static int is_testpattern;
+
 struct regval_list {
 	u16 reg_num;
 	u8 value;
@@ -90,7 +92,7 @@ static const struct regval_list isl79986_default_regs_init[] = {
 	{ 0xff, 0x00 },
 	{ 0x03, 0x00 },
 	{ 0x04, 0x08 },
-	{ 0x08, 0x07 },
+	{ 0x08, 0x1f },
 	{ 0x07, 0x12 },
 	{ 0x03, 0x03 },
 	{ 0x04, 0x0a },
@@ -109,7 +111,7 @@ static const struct regval_list isl79986_default_regs_init[] = {
 	/* reset to 1 channel*/
 	{ 0xff, 0x00 },
 	{ 0x07, 0x10 },
-	{ 0x08, 0x07 },
+	{ 0x08, 0x1f },
 	{ 0xff, 0x05 },
 	{ 0x04, 0xe4 },
 	/* regs list end flag reg_num = 0x100 */
@@ -149,10 +151,26 @@ static const struct regval_list isl79986_4_channel_reg_init[] = {
 	/* resume */
 	{ 0xff, 0x00 },
 	{ 0x02, 0x00 },
+	{ 0xff, 0x05 },
+	{ 0x00, 0x00 },
+	/* regs list end flag reg_num = 0x100 */
+	{ 0x100, 0xff }
+};
+
+static const struct regval_list isl79986_test_pattern_regs[] = {
 	/* test pattern */
 	{ 0xff, 0x05 },
 	{ 0x00, 0x00 },
 	{ 0x0d, 0xf0 },
+	/* regs list end flag reg_num = 0x100 */
+	{ 0x100, 0xff }
+};
+
+static const struct regval_list isl79986_rm_test_pattern_regs[] = {
+	/* test pattern */
+	{ 0xff, 0x05 },
+	{ 0x00, 0x00 },
+	{ 0x0d, 0x00 },
 	/* regs list end flag reg_num = 0x100 */
 	{ 0x100, 0xff }
 };
@@ -356,11 +374,14 @@ static int isl79986_s_fmt(struct v4l2_subdev *sd,
 	gpio_direction_output(gpio_index, 0);
 
 	if (mf->height == H_4CHANNEL)
-		return isl79986_write_array(client, isl79986_4_channel_reg_init);
+		isl79986_write_array(client, isl79986_4_channel_reg_init);
 	else if (mf->height == H_1CHANNEL)
-		return isl79986_write_array(client, isl79986_default_regs_init);
+		isl79986_write_array(client, isl79986_default_regs_init);
 
-	return 0;
+	if (is_testpattern)
+		return isl79986_write_array(client, isl79986_test_pattern_regs);
+	else
+		return isl79986_write_array(client, isl79986_rm_test_pattern_regs);
 }
 
 static int isl79986_g_fmt(struct v4l2_subdev *sd,
@@ -594,6 +615,8 @@ static struct i2c_driver isl79986_i2c_driver = {
 	.id_table	= isl79986_id,
 };
 
+module_param(is_testpattern, int, 0644);
+MODULE_PARM_DESC(is_testpattern, "Whether the intersil get test pattern data");
 module_i2c_driver(isl79986_i2c_driver);
 
 MODULE_DESCRIPTION("INTERSIL INTERSIL Camera driver");
