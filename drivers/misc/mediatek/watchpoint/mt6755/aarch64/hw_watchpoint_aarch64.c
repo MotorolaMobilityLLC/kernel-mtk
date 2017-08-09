@@ -517,7 +517,7 @@ out:
 }
 
 static const struct of_device_id dbg_of_ids[] = {
-	{.compatible = "mediatek,mt6735-dbg_debug",},
+	{.compatible = "mediatek,mt6755-dbg_debug",},
 	{}
 };
 
