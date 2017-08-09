@@ -1069,7 +1069,9 @@ static int sched_rt_runtime_exceeded(struct rt_rq *rt_rq)
 			printk_deferred("sched: RT throttling activated\n");
 			mt_sched_printf(sched_rt_info, "cpu=%d rt_throttled=%d",
 					cpu, rt_rq->rt_throttled);
+#ifdef CONFIG_RT_GROUP_SCHED
 			per_cpu(rt_throttling_start, cpu) = rq_clock_task(rt_rq->rq);
+#endif
 #ifdef CONFIG_MTPROF
 			/* sched:rt throttle monitor */
 			mt_rt_mon_switch(MON_STOP);

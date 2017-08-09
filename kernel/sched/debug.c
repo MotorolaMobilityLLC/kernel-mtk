@@ -1089,8 +1089,8 @@ void print_cfs_stats_at_AEE(struct seq_file *m, int cpu)
 
 void print_rt_rq_at_AEE(struct seq_file *m, int cpu, struct rt_rq *rt_rq)
 {
-	int cpu_rq_throttle = rq_cpu(rt_rq->rq);
 #ifdef CONFIG_RT_GROUP_SCHED
+	int cpu_rq_throttle = rq_cpu(rt_rq->rq);
 	SEQ_printf(m, "rt_rq[%d]:%s\n", cpu, task_group_path(rt_rq->tg));
 #else
 	SEQ_printf(m, "rt_rq[%d]:\n", cpu);
@@ -1108,8 +1108,9 @@ void print_rt_rq_at_AEE(struct seq_file *m, int cpu, struct rt_rq *rt_rq)
 			per_cpu(exec_task, cpu).pid,
 			per_cpu(exec_task, cpu).comm,
 			per_cpu(exec_task, cpu).prio);
-
+#ifdef CONFIG_RT_GROUP_SCHED
 	SEQ_printf(m, "  .rt_throttling_start   : [%llu]\n", per_cpu(rt_throttling_start, cpu_rq_throttle));
+#endif
 	PN(rt_time);
 	PN(rt_runtime);
 
