@@ -363,17 +363,17 @@ spm_sodi3_output_log(struct wake_status *wakesta, struct pcm_desc *pcmdesc, int 
 
 				if (wakesta->r12 & WAKE_SRC_R12_PCM_TIMER) {
 					if (wakesta->wake_misc & WAKE_MISC_PCM_TIMER)
-						strcat(buf, " PCM_TIMER");
+						strncat(buf, " PCM_TIMER", sizeof(buf) - strlen(buf) - 1);
 
 					if (wakesta->wake_misc & WAKE_MISC_TWAM)
-						strcat(buf, " TWAM");
+						strncat(buf, " TWAM", sizeof(buf) - strlen(buf) - 1);
 
 					if (wakesta->wake_misc & WAKE_MISC_CPU_WAKE)
-						strcat(buf, " CPU");
+						strncat(buf, " CPU", sizeof(buf) - strlen(buf) - 1);
 				}
 				for (i = 1; i < 32; i++) {
 					if (wakesta->r12 & (1U << i)) {
-						strcat(buf, wakesrc_str[i]);
+						strncat(buf, wakesrc_str[i], sizeof(buf) - strlen(buf) - 1);
 						wr = WR_WAKE_SRC;
 					}
 				}
