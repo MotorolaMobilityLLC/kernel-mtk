@@ -125,7 +125,7 @@ static int func_lv_mask_idvfs = 100;
 
 /* for ram console print flag */
 #ifdef CONFIG_MTK_RAM_CONSOLE
-	#define CONFIG_IDVFS_AEE_RR_REC 0
+	#define CONFIG_IDVFS_AEE_RR_REC 1
 #endif
 
 #if CONFIG_IDVFS_AEE_RR_REC
@@ -889,7 +889,6 @@ int BigIDVFSFreq(unsigned int Freqpct_x100)
 	/* for ram console printf */
 	AEE_RR_REC(idvfs_curr_volt, ((((SEC_BIGIDVFS_READ(0x102224c8) & 0xff00) >> 8) * 10) + 300));
 
-#if 1
 	/* leave lower 505MHz */
 	if ((Freqpct_x100 >= 2000) && (idvfs_init_opt.channel[IDVFS_CHANNEL_SWP].percentage < 2000)) {
 		idvfs_ver("Low Freq leave %uMHz.\n",
@@ -902,10 +901,6 @@ int BigIDVFSFreq(unsigned int Freqpct_x100)
 	} else
 		AEE_RR_REC(idvfs_swavg_curr_pct_x100, (GetDecInterger((((SEC_BIGIDVFS_READ(0x102224cc) >> 16)
 			& 0x7fff) << 4))));
-#else
-	if (Freqpct_x100 >= 2000)
-		mt6797_0x1001AXXX_reg_set(0x274, 0x1f, 0x8);
-#endif
 
 	/* call smc */
 	/* function_id = SMC_IDVFS_BigiDVFSFreq */
@@ -914,7 +909,6 @@ int BigIDVFSFreq(unsigned int Freqpct_x100)
 	/* swreq = cur/max */
 	SEC_BIGIDVFS_WRITE(0x10222498, freq_swreq);
 
-#if 1
 	/* into lower 505MHz */
 	if ((Freqpct_x100 < 2000) && (idvfs_init_opt.channel[IDVFS_CHANNEL_SWP].percentage > 2000)) {
 		idvfs_low_freq_cnt++;
@@ -930,14 +924,6 @@ int BigIDVFSFreq(unsigned int Freqpct_x100)
 			mt6797_0x1001AXXX_reg_set(0x274, 0x1f, 0x1a);
 		udelay(2);
 	}
-#else
-	if (Freqpct_x100 < 2000) {
-		if (Freqpct_x100 < 1300)
-			mt6797_0x1001AXXX_reg_set(0x274, 0x1f, 0x12);
-		else
-			mt6797_0x1001AXXX_reg_set(0x274, 0x1f, 0x1a);
-	}
-#endif
 
 	idvfs_ver("Set Freq: SWP_cur_pct_x100 = %u, SWP_new_pct_x100 = %u, freq_swreq = 0x%x.\n",
 				idvfs_init_opt.channel[IDVFS_CHANNEL_SWP].percentage, Freqpct_x100, freq_swreq);
@@ -1784,13 +1770,13 @@ static ssize_t dvt_test_proc_write(struct file *file, const char __user *buffer,
 				} else if (func_para[0] == 2) {
 					if (func_para[1] == 0) {
 						/* disable pinmux */
-						_idvfs_write_field(IDVFSPROB_BASE + 0x1120, 30:30, 0x1);
+						_idvfs_write_field(IDVFSPROB_BASE + 0x1120, 9:9, 0x1);
 						/* GPU AGPIO prob out volt disable */
 						_idvfs_write(IDVFSPROB_BASE + 0xfd4, 0x000000ff);
 					} else if (func_para[1] == 1) {
 						/* enable pinmux */
 						/* GPU AGPIO enable */
-						_idvfs_write_field(IDVFSPROB_BASE + 0x1120, 30:30, 0x0);
+						_idvfs_write_field(IDVFSPROB_BASE + 0x1120, 9:9, 0x0);
 						/* GPU AGPIO prob out volt enable */
 						_idvfs_write(IDVFSPROB_BASE + 0xfd4, 0x0000ff00);
 					}
