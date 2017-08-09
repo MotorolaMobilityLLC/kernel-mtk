@@ -710,8 +710,11 @@ VOID nicCmdEventQueryStatistics(IN P_ADAPTER_T prAdapter, IN P_CMD_INFO_T prCmdI
 
 VOID nicCmdEventEnterRfTest(IN P_ADAPTER_T prAdapter, IN P_CMD_INFO_T prCmdInfo, IN PUINT_8 pucEventBuf)
 {
+#define WAIT_FW_READY_RETRY_CNT 200
+
 	UINT_32 u4WHISR = 0, u4Value = 0;
 	UINT_16 au2TxCount[16];
+	UINT_16 u2RetryCnt = 0;
 
 	ASSERT(prAdapter);
 	ASSERT(prCmdInfo);
@@ -753,7 +756,7 @@ VOID nicCmdEventEnterRfTest(IN P_ADAPTER_T prAdapter, IN P_CMD_INFO_T prCmdInfo,
 		if (u4Value & WCIR_WLAN_READY) {
 			break;
 		} else if (kalIsCardRemoved(prAdapter->prGlueInfo) == TRUE || fgIsBusAccessFailed == TRUE ||
-			kalIsResetting()) {
+			kalIsResetting() || u2RetryCnt >= WAIT_FW_READY_RETRY_CNT) {
 			if (prCmdInfo->fgIsOid) {
 				/* Update Set Information Length */
 				kalOidComplete(prAdapter->prGlueInfo,
@@ -764,6 +767,7 @@ VOID nicCmdEventEnterRfTest(IN P_ADAPTER_T prAdapter, IN P_CMD_INFO_T prCmdInfo,
 			return;
 		}
 		kalMsleep(10);
+		u2RetryCnt++;
 	}
 
 	/* 5. Clear Interrupt Status */
@@ -794,8 +798,11 @@ VOID nicCmdEventEnterRfTest(IN P_ADAPTER_T prAdapter, IN P_CMD_INFO_T prCmdInfo,
 
 VOID nicCmdEventLeaveRfTest(IN P_ADAPTER_T prAdapter, IN P_CMD_INFO_T prCmdInfo, IN PUINT_8 pucEventBuf)
 {
+#define WAIT_FW_READY_RETRY_CNT 200
+
 	UINT_32 u4WHISR = 0, u4Value = 0;
 	UINT_16 au2TxCount[16];
+	UINT_16 u2RetryCnt = 0;
 
 	ASSERT(prAdapter);
 	ASSERT(prCmdInfo);
@@ -810,7 +817,8 @@ VOID nicCmdEventLeaveRfTest(IN P_ADAPTER_T prAdapter, IN P_CMD_INFO_T prCmdInfo,
 
 		if (u4Value & WCIR_WLAN_READY) {
 			break;
-		} else if (kalIsCardRemoved(prAdapter->prGlueInfo) == TRUE || fgIsBusAccessFailed == TRUE) {
+		} else if (kalIsCardRemoved(prAdapter->prGlueInfo) == TRUE || fgIsBusAccessFailed == TRUE ||
+				kalIsResetting() || u2RetryCnt >= WAIT_FW_READY_RETRY_CNT) {
 			if (prCmdInfo->fgIsOid) {
 				/* Update Set Information Length */
 				kalOidComplete(prAdapter->prGlueInfo,
@@ -820,7 +828,7 @@ VOID nicCmdEventLeaveRfTest(IN P_ADAPTER_T prAdapter, IN P_CMD_INFO_T prCmdInfo,
 			}
 			return;
 		}
-
+		u2RetryCnt++;
 		kalMsleep(10);
 	}
 
