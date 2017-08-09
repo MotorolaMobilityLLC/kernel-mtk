@@ -1223,7 +1223,7 @@ static ssize_t fm_ops_read(struct file *filp, char *buf, size_t len, loff_t *off
 	WCN_DBG(FM_DBG | MAIN, "sizeof(rds_t)=%zu\n", sizeof(rds_t));
 
 	if (!buf || len < sizeof(rds_t)) {
-		WCN_DBG(FM_DBG | MAIN, "fm_read invliad buf\n");
+		WCN_DBG(FM_NTC | MAIN, "fm_read invliad buf\n");
 		return 0;
 	}
 	/* return if FM is resetting */
@@ -1379,7 +1379,7 @@ static ssize_t fm_proc_write(struct file *file, const char *buffer, size_t count
 		return count;
 	}
 
-	if (kstrtoint(tmp_buf, 0, &g_dbg_level) != 1) {
+	if (kstrtouint(tmp_buf, 0, &g_dbg_level)) {
 		WCN_DBG(FM_ERR | MAIN, "failed g_dbg_level = 0x%x\n", g_dbg_level);
 		return -EFAULT;
 	}

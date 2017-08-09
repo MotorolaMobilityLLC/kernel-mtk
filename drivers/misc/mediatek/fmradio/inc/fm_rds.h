@@ -140,16 +140,15 @@ typedef struct rds_t {
 	fm_u8 Switch_TP;
 	fm_u8 PTY;
 	struct rds_af_t AF_Data;
+	struct rds_af_t AFON_Data;
 	fm_u8 Radio_Page_Code;
 	fm_u16 Program_Item_Number_Code;
-	struct rds_af_t AFON_Data;
 	fm_u8 Extend_Country_Code;
 	fm_u16 Language_Code;
 	struct rds_ps_t PS_Data;
 	fm_u8 PS_ON[8];
-	fm_u16 event_status;	/* will use RDSFlag_Struct RDSFlag->flag_status to check which event, is that ok? */
 	struct rds_rt_t RT_Data;
-	fm_u8 PAD1;		/* padding for data aligh */
+	fm_u16 event_status;	/* will use RDSFlag_Struct RDSFlag->flag_status to check which event, is that ok? */
 	struct rds_group_cnt_t gc;
 } rds_t;
 
