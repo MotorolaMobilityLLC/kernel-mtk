@@ -262,6 +262,9 @@ static const struct file_operations mt6605_dev_fops = {
 	.read = mt6605_dev_read,
 	.write = mt6605_dev_write,
 	.open = mt6605_dev_open,
+#ifdef CONFIG_COMPAT
+	.compat_ioctl = mt6605_dev_unlocked_ioctl,
+#endif
 	.unlocked_ioctl = mt6605_dev_unlocked_ioctl,
 };
 
@@ -414,7 +417,7 @@ static int mt6605_probe(struct i2c_client *client,
 	/*                   0); */
 
 	/*  NFC IRQ settings     */
-	node = of_find_compatible_node(NULL, NULL, "mediatek,nfc-gpio-v2");
+	node = of_find_compatible_node(NULL, NULL, "mediatek, IRQ_NFC-eint");
 
 	if (node) {
 
@@ -799,7 +802,7 @@ static long mt6605_dev_unlocked_ioctl(struct file *filp, unsigned int cmd,
 		/*  NFC IRQ settings */
 		node =
 		    of_find_compatible_node(NULL, NULL,
-					    "mediatek,nfc-gpio-v2");
+					    "mediatek, IRQ_NFC-eint");
 
 		if (node) {
 
@@ -899,8 +902,8 @@ static long mt6605_dev_unlocked_ioctl(struct file *filp, unsigned int cmd,
 		return 0;
 	}
 
-	if (tmp_gpio != MTK_NFC_GPIO_EN_B || tmp_gpio != MTK_NFC_GPIO_SYSRST_B
-	    || tmp_gpio != MTK_NFC_GPIO_EINT || tmp_gpio != MTK_NFC_GPIO_IRQ) {
+	if ((tmp_gpio != MTK_NFC_GPIO_EN_B) && (tmp_gpio != MTK_NFC_GPIO_SYSRST_B)
+	    && (tmp_gpio != MTK_NFC_GPIO_EINT) && (tmp_gpio != MTK_NFC_GPIO_IRQ)) {
 		result = MTK_NFC_PULL_INVALID;
 		pr_debug("%s, invalid ioctl.\n", __func__);
 		return result;
