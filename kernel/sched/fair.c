@@ -5403,6 +5403,7 @@ static int find_best_idle_cpu(struct task_struct *p, int prev_cpu)
 {
 	int j = 0, found = nr_cpu_ids;
 	struct cpumask allowed_mask;
+	unsigned long cap, max_cap = 0;
 
 	/* single cluster SMP architecture */
 	if (!arch_is_multi_cluster() && idle_cpu(prev_cpu))
@@ -5417,27 +5418,19 @@ static int find_best_idle_cpu(struct task_struct *p, int prev_cpu)
 		if (!idle_cpu(j))
 			continue;
 
-#ifdef CONFIG_MTK_SCHED_CMP_TGS_WAKEUP
 		if (!arch_is_smp()) { /* multi-cluster HMP architecture */
-			if (arch_better_capacity(j) && (p->se.avg.load_avg_contrib >= cmp_up_threshold)) {
-				mt_sched_printf(sched_cmp,
-					"[heavy task] wakeup load=%ld up_th=%u pid=%d name=%s prev_cpu=%d",
-					p->se.avg.load_avg_contrib, cmp_up_threshold, p->pid, p->comm, prev_cpu);
+			cap = arch_get_max_cpu_capacity(j);
+			if (cap > max_cap) {
 				found = j;
-			} else if (!arch_better_capacity(j) && (p->se.avg.load_avg_contrib < cmp_down_threshold)) {
-				mt_sched_printf(sched_cmp,
-					"[light task] wakeup load=%ld down_th=%u pid=%d name=%s prev_cpu=%d",
-					p->se.avg.load_avg_contrib , cmp_down_threshold, p->pid, p->comm, prev_cpu);
-				found = j;
+				max_cap = cap;
+				mt_sched_printf(sched_lb,
+					"found=%d max_cap=%lu allowed_mask=%lu",
+					found, max_cap, allowed_mask.bits[0]);
 			}
-		} else { /* single cluster SMP architecture */
+		} else {
 			found = j;
 			break;
 		}
-#else
-		found = j;
-		break;
-#endif
 	}
 
 	return found;
