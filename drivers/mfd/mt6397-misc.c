@@ -262,7 +262,7 @@ MODULE_DEVICE_TABLE(of, mt6397_misc_of_match);
 
 static struct platform_driver mt6397_misc_driver = {
 	.driver = {
-		.name = "mt6323-misc",
+		.name = "mt6397-misc",
 		.of_match_table = mt6397_misc_of_match,
 	},
 	.probe	= mt6397_misc_probe,
