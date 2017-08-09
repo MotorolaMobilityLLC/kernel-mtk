@@ -106,6 +106,7 @@ static int lcm_get_vgp_supply(struct device *dev)
 
 	pr_debug("LCM: lcm get supply ok.\n");
 
+	ret = regulator_enable(lcm_vgp_ldo);
 	/* get current voltage settings */
 	ret = regulator_get_voltage(lcm_vgp_ldo);
 	pr_debug("lcm LDO voltage = %d in LK stage\n", ret);
