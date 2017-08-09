@@ -1446,3 +1446,86 @@
 	};
 };
 /* LCM GPIO Kernal Standardization end */
+
+/* SPI GPIO standardization */
+&pio {
+	/* SPI GPIO Settings - Start */
+
+	/* SPI1: cs set, cs clear, clk set, clk clear
+			miso set, miso clear, mosi set, mosi clear*/
+		spi1_gpio_def_cfg:spi1_gpio_default{
+
+	};
+	spi1_cs_set_cfg:spi1_cs_set@gpio237{
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO237__FUNC_SPI1_CS_B>;
+		};
+	};
+	spi1_cs_clr_cfg:spi1_cs_clear@gpio237{
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO237__FUNC_GPIO237>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+	spi1_clk_set_cfg:spi1_clk_set@gpio234{
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO234__FUNC_SPI1_CLK_B>;
+		};
+	};
+	spi1_clk_clr_cfg:spi1_clk_clear@gpio234{
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO234__FUNC_GPIO234>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+	spi1_miso_set_cfg:spi1_miso_set@gpio235{
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO235__FUNC_SPI1_MI_B>;
+		};
+	};
+	spi1_miso_clr_cfg:spi1_miso_clear@gpio235{
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO235__FUNC_GPIO235>;
+			slew-rate = <0>;
+			output-low;
+		};
+	};
+	spi1_mosi_set_cfg:spi1_mosi_set@gpio236{
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO236__FUNC_SPI1_MO_B>;
+		};
+	};
+	spi1_mosi_clr_cfg:spi1_mosi_clear@gpio236{
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO236__FUNC_GPIO236>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+	/* SPI GPIO Settings - End */
+};
+
+&spi1{
+	pinctrl-names = "spi1_gpio_def",
+				"spi1_cs_set",
+				"spi1_cs_clr",
+				"spi1_clk_set",
+				"spi1_clk_clr",
+				"spi1_miso_set",
+				"spi1_miso_clr",
+				"spi1_mosi_set",
+				"spi1_mosi_clr";
+	pinctrl-0 = <&spi1_gpio_def_cfg>;
+	pinctrl-1 = <&spi1_cs_set_cfg>;
+	pinctrl-2 = <&spi1_cs_clr_cfg>;
+	pinctrl-3 = <&spi1_clk_set_cfg>;
+	pinctrl-4 = <&spi1_clk_clr_cfg>;
+	pinctrl-5 = <&spi1_miso_set_cfg>;
+	pinctrl-6 = <&spi1_miso_clr_cfg>;
+	pinctrl-7 = <&spi1_mosi_set_cfg>;
+	pinctrl-8 = <&spi1_mosi_clr_cfg>;
+	status = "okay";
+};
+/* SPI END */
