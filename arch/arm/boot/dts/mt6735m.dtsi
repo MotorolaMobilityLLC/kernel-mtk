@@ -831,10 +831,10 @@
 			interrupts = <GIC_SPI 134 IRQ_TYPE_LEVEL_LOW>;
 		};
 
-		BUS_DBG@0x10208000 {
-			compatible = "mediatek,BUS_DBG";
+		bus_dbg@10208000 {
+			compatible = "mediatek,bus_dbg-v1";
 			reg = <0x10208000 0x1000>;
-			interrupts = <0 137 0x8>;
+			interrupts = <GIC_SPI 137 IRQ_TYPE_LEVEL_LOW>;
 		};
 
 		APMIXED@0x10209000 {
