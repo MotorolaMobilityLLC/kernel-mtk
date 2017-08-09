@@ -306,6 +306,7 @@ VOID nicpmSetFWOwn(IN P_ADAPTER_T prAdapter, IN BOOLEAN fgEnableGlobalInt)
 * \return (none)
 */
 /*----------------------------------------------------------------------------*/
+UINT_32 u4OriRegValue = 0;
 BOOLEAN nicpmSetDriverOwn(IN P_ADAPTER_T prAdapter)
 {
 #define LP_OWN_BACK_TOTAL_DELAY_MS      2000	/* exponential of 2 */
@@ -332,6 +333,7 @@ BOOLEAN nicpmSetDriverOwn(IN P_ADAPTER_T prAdapter)
 		HAL_MCR_RD(prAdapter, MCR_WHLPCR, &u4RegValue);
 
 		if (u4RegValue & WHLPCR_FW_OWN_REQ_SET) {
+			HAL_MCR_RD(prAdapter, MCR_D2HRM2R, &u4OriRegValue);
 			prAdapter->fgIsFwOwn = FALSE;
 			break;
 		} else if (kalIsCardRemoved(prAdapter->prGlueInfo) == TRUE
@@ -342,11 +344,33 @@ BOOLEAN nicpmSetDriverOwn(IN P_ADAPTER_T prAdapter)
 			if (fgIsResetting != TRUE) {
 				UINT_32 u4FwCnt;
 				static unsigned int u4OwnCnt;
-
+				/* MCR_D2HRM2R: low 4 bit means interrupt times,
+				 * high 4 bit means firmware response times.
+				 * ORI_MCR_D2HRM2R: the last successful value.
+				 * for example:
+				 * MCR_D2HRM2R = 0x44, ORI_MCR_D2HRM2R = 0x44
+				 * means firmware no receive interrupt form hardware.
+				 * MCR_D2HRM2R = 0x45, ORI_MCR_D2HRM2R = 0x44
+				 * means firmware no send response.
+				 * MCR_D2HRM2R = 0x55, ORI_MCR_D2HRM2R = 0x44
+				 * means firmware send response, but driver no receive. */
 				HAL_MCR_RD(prAdapter, MCR_D2HRM2R, &u4RegValue);
-				DBGLOG(NIC, WARN, "<WiFi> MCR_D2HRM2R = 0x%x\n", u4RegValue);
+				DBGLOG(NIC, WARN, "<WiFi> [1]MCR_D2HRM2R = 0x%x, ORI_MCR_D2HRM2R = 0x%x\n",
+					u4RegValue, u4OriRegValue);
+
+				HAL_MCR_WR(prAdapter, MCR_WHLPCR, WHLPCR_FW_OWN_REQ_CLR);
+				HAL_MCR_RD(prAdapter, MCR_WHLPCR, &u4RegValue);
+				if (u4RegValue & WHLPCR_FW_OWN_REQ_SET) {
+					HAL_MCR_RD(prAdapter, MCR_D2HRM2R, &u4OriRegValue);
+					prAdapter->fgIsFwOwn = FALSE;
+					break;
+				}
+				HAL_MCR_RD(prAdapter, MCR_D2HRM2R, &u4RegValue);
+				DBGLOG(NIC, WARN, "<WiFi> [2]MCR_D2HRM2R = 0x%x, ORI_MCR_D2HRM2R = 0x%x\n",
+					u4RegValue, u4OriRegValue);
 				DBGLOG(NIC, WARN,
-					"<WiFi> Fatal error! Driver own fail!!!!!!!!!!!! %d\n", u4OwnCnt++);
+					"<WiFi> Fatal error! Driver own fail!!!!!!!!!!!! %d, fgIsBusAccessFailed: %d\n",
+					u4OwnCnt++, fgIsBusAccessFailed);
 
 				DBGLOG(NIC, WARN, "CONNSYS FW CPUINFO:\n");
 				for (u4FwCnt = 0; u4FwCnt < 16; u4FwCnt++)
