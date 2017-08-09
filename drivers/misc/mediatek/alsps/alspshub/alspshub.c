@@ -917,7 +917,7 @@ static int alspshub_probe(struct platform_device *pdev)
 	als_ctl.set_delay = als_set_delay;
 	als_ctl.is_report_input_direct = false;
 
-	als_ctl.is_support_batch = true;
+	als_ctl.is_support_batch = false;
 
 	err = als_register_control_path(&als_ctl);
 	if (err) {
@@ -938,7 +938,7 @@ static int alspshub_probe(struct platform_device *pdev)
 	ps_ctl.set_delay = ps_set_delay;
 	ps_ctl.is_report_input_direct = false;
 
-	ps_ctl.is_support_batch = true;
+	ps_ctl.is_support_batch = false;
 
 	err = ps_register_control_path(&ps_ctl);
 	if (err) {

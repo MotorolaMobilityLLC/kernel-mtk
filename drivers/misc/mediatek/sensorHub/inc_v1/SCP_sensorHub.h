@@ -68,11 +68,14 @@ typedef struct {
 		};
 	};
 	union {
-		int16_t bias[3];
-		struct {
-			int16_t x_bias;
-			int16_t y_bias;
-			int16_t z_bias;
+		int32_t scalar;
+		union {
+			int16_t bias[3];
+			struct {
+				int16_t x_bias;
+				int16_t y_bias;
+				int16_t z_bias;
+			};
 		};
 	};
 	uint16_t status;
@@ -113,8 +116,6 @@ typedef struct {
 typedef struct {
 	uint32_t step_detect;
 } step_detector_event_t;
-
-
 
 typedef enum {
 	GESTURE_NONE,

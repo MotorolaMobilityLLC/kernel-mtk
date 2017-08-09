@@ -117,7 +117,7 @@ static int gmagrotvec_get_data(int *x, int *y, int *z, int *scalar, int *status)
 	*x				= data.magnetic_t.azimuth;
 	*y				= data.magnetic_t.pitch;
 	*z				= data.magnetic_t.roll;
-	*scalar = 1;
+	*scalar				= data.magnetic_t.scalar;
 	*status		= data.magnetic_t.status;
 	GMAGROTVEC_LOG("recv ipi: timestamp: %lld, timestamp_gpt: %lld, x: %d, y: %d, z: %d!\n",
 		time_stamp, time_stamp_gpt, *x, *y, *z);

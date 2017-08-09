@@ -293,7 +293,7 @@ static int SCP_sensorHub_extract_data(struct hwm_sensor_data *data, struct data_
 		data->values[0] = data_t->magnetic_t.x;
 		data->values[1] = data_t->magnetic_t.y;
 		data->values[2] = data_t->magnetic_t.z;
-		data->values[3] = 1;
+		data->values[3] = data_t->magnetic_t.scalar;
 		data->status = (int8_t)data_t->magnetic_t.status;
 		data->time = data_t->time_stamp + data_t->time_stamp_gpt;
 		break;
@@ -310,7 +310,7 @@ static int SCP_sensorHub_extract_data(struct hwm_sensor_data *data, struct data_
 		data->values[0] = data_t->orientation_t.azimuth;
 		data->values[1] = data_t->orientation_t.pitch;
 		data->values[2] = data_t->orientation_t.roll;
-		data->values[3] = 1;
+		data->values[3] = data_t->orientation_t.scalar;
 		data->status = (int8_t)data_t->orientation_t.status;
 		data->time = data_t->time_stamp + data_t->time_stamp_gpt;
 		break;
@@ -319,7 +319,7 @@ static int SCP_sensorHub_extract_data(struct hwm_sensor_data *data, struct data_
 		data->values[0] = data_t->orientation_t.azimuth;
 		data->values[1] = data_t->orientation_t.pitch;
 		data->values[2] = data_t->orientation_t.roll;
-		data->values[3] = 1;
+		data->values[3] = data_t->orientation_t.scalar;
 		data->status = (int8_t)data_t->orientation_t.status;
 		data->time = data_t->time_stamp + data_t->time_stamp_gpt;
 		break;
@@ -1377,6 +1377,7 @@ int sensor_get_data_from_hub(uint8_t sensorType, struct data_unit_t *data)
 		data->magnetic_t.x = data_t->magnetic_t.x;
 		data->magnetic_t.y = data_t->magnetic_t.y;
 		data->magnetic_t.z = data_t->magnetic_t.z;
+		data->magnetic_t.scalar = data_t->magnetic_t.scalar;
 		data->magnetic_t.status = data_t->magnetic_t.status;
 		break;
 	case ID_ORIENTATION:
@@ -1393,6 +1394,7 @@ int sensor_get_data_from_hub(uint8_t sensorType, struct data_unit_t *data)
 		data->orientation_t.azimuth = data_t->orientation_t.azimuth;
 		data->orientation_t.pitch = data_t->orientation_t.pitch;
 		data->orientation_t.roll = data_t->orientation_t.roll;
+		data->orientation_t.scalar = data_t->orientation_t.scalar;
 		data->orientation_t.status = data_t->orientation_t.status;
 		break;
 	case ID_GAME_ROTATION_VECTOR:
@@ -1401,6 +1403,7 @@ int sensor_get_data_from_hub(uint8_t sensorType, struct data_unit_t *data)
 		data->orientation_t.azimuth = data_t->orientation_t.azimuth;
 		data->orientation_t.pitch = data_t->orientation_t.pitch;
 		data->orientation_t.roll = data_t->orientation_t.roll;
+		data->orientation_t.scalar = data_t->orientation_t.scalar;
 		data->orientation_t.status = data_t->orientation_t.status;
 		break;
 	case ID_STEP_COUNTER:
