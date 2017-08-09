@@ -144,7 +144,7 @@ static inline int spi_nor_read_dummy_cycles(struct spi_nor *nor)
 static inline int write_sr(struct spi_nor *nor, u8 val)
 {
 	nor->cmd_buf[0] = val;
-	return nor->write_reg(nor, SPINOR_OP_WRSR, nor->cmd_buf, 1, 0);
+	return nor->write_reg(nor, SPINOR_OP_WRSR, nor->cmd_buf, 1);
 }
 
 /*
@@ -153,7 +153,7 @@ static inline int write_sr(struct spi_nor *nor, u8 val)
  */
 static inline int write_enable(struct spi_nor *nor)
 {
-	return nor->write_reg(nor, SPINOR_OP_WREN, NULL, 0, 0);
+	return nor->write_reg(nor, SPINOR_OP_WREN, NULL, 0);
 }
 
 /*
@@ -161,7 +161,7 @@ static inline int write_enable(struct spi_nor *nor)
  */
 static inline int write_disable(struct spi_nor *nor)
 {
-	return nor->write_reg(nor, SPINOR_OP_WRDI, NULL, 0, 0);
+	return nor->write_reg(nor, SPINOR_OP_WRDI, NULL, 0);
 }
 
 static inline struct spi_nor *mtd_to_spi_nor(struct mtd_info *mtd)
@@ -187,7 +187,7 @@ static inline int set_4byte(struct spi_nor *nor, const struct flash_info *info,
 			write_enable(nor);
 
 		cmd = enable ? SPINOR_OP_EN4B : SPINOR_OP_EX4B;
-		status = nor->write_reg(nor, cmd, NULL, 0, 0);
+		status = nor->write_reg(nor, cmd, NULL, 0);
 		if (need_wren)
 			write_disable(nor);
 
@@ -195,7 +195,7 @@ static inline int set_4byte(struct spi_nor *nor, const struct flash_info *info,
 	default:
 		/* Spansion style */
 		nor->cmd_buf[0] = enable << 7;
-		return nor->write_reg(nor, SPINOR_OP_BRWR, nor->cmd_buf, 1, 0);
+		return nor->write_reg(nor, SPINOR_OP_BRWR, nor->cmd_buf, 1);
 	}
 }
 static inline int spi_nor_sr_ready(struct spi_nor *nor)
@@ -266,7 +266,7 @@ static int erase_chip(struct spi_nor *nor)
 {
 	dev_dbg(nor->dev, " %lldKiB\n", (long long)(nor->mtd.size >> 10));
 
-	return nor->write_reg(nor, SPINOR_OP_CHIP_ERASE, NULL, 0, 0);
+	return nor->write_reg(nor, SPINOR_OP_CHIP_ERASE, NULL, 0);
 }
 
 static int spi_nor_lock_and_prep(struct spi_nor *nor, enum spi_nor_ops ops)
@@ -984,7 +984,7 @@ static int write_sr_cr(struct spi_nor *nor, u16 val)
 	nor->cmd_buf[0] = val & 0xff;
 	nor->cmd_buf[1] = (val >> 8);
 
-	return nor->write_reg(nor, SPINOR_OP_WRSR, nor->cmd_buf, 2, 0);
+	return nor->write_reg(nor, SPINOR_OP_WRSR, nor->cmd_buf, 2);
 }
 
 static int spansion_quad_enable(struct spi_nor *nor)
@@ -1026,7 +1026,7 @@ static int micron_quad_enable(struct spi_nor *nor)
 
 	/* set EVCR, enable quad I/O */
 	nor->cmd_buf[0] = val & ~EVCR_QUAD_EN_MICRON;
-	ret = nor->write_reg(nor, SPINOR_OP_WD_EVCR, nor->cmd_buf, 1, 0);
+	ret = nor->write_reg(nor, SPINOR_OP_WD_EVCR, nor->cmd_buf, 1);
 	if (ret < 0) {
 		dev_err(nor->dev, "error while writing EVCR register\n");
 		return ret;
