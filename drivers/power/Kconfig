@@ -399,10 +399,6 @@ config BATTERY_GOLDFISH
 
 source "drivers/power/reset/Kconfig"
 
-endif # POWER_SUPPLY
-
-source "drivers/power/avs/Kconfig"
-
 if !ARCH_MT8173
 source "drivers/power/mediatek/Kconfig"
 endif
@@ -410,3 +406,6 @@ endif
 if ARCH_MT8173
 source "drivers/power/mt81xx/Kconfig"
 endif
+endif # POWER_SUPPLY
+
+source "drivers/power/avs/Kconfig"
