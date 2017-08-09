@@ -235,17 +235,19 @@ static char *ram_console2_log;
 void last_kmsg_store_to_emmc(void)
 {
 	int buff_size;
+	int res;
 	struct wd_api *wd_api = NULL;
 
-	get_wd_api(&wd_api);
-
-/* if(num_online_cpus() > 1){ */
-	if (wd_api->wd_get_check_bit() > 1) {
-		pr_err("ram_console: online cpu %d!\n", wd_api->wd_get_check_bit());
+	res = get_wd_api(&wd_api);
+	if (res == 0) {
+		/* if(num_online_cpus() > 1){ */
+		if (wd_api->wd_get_check_bit() > 1) {
+			pr_err("ram_console: online cpu %d!\n", wd_api->wd_get_check_bit());
 #ifdef CONFIG_MTPROF
-		if (boot_finish == 0)
-			return;
+			if (boot_finish == 0)
+				return;
 #endif
+		}
 	}
 
 	/* save log to emmc */
