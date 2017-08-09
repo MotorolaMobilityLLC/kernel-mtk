@@ -1190,7 +1190,8 @@ int update_mmsys_clk_mode, char *msg)
 		MMDVFSMSG("notify_cb_func is NULL, not invoked: %s, (%d,%d)\n", msg, ori_mmsys_clk_mode,
 		update_mmsys_clk_mode);
 	} else {
-		MMDVFSMSG("notify_cb_func: %s, (%d,%d)\n", msg, ori_mmsys_clk_mode, update_mmsys_clk_mode);
+		/* MMDVFSMSG("notify_cb_func: %s, (%d,%d)\n", msg, ori_mmsys_clk_mode,
+		update_mmsys_clk_mode); */
 		func(ori_mmsys_clk_mode, update_mmsys_clk_mode);
 		return 1;
 	}
