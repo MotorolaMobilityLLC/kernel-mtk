@@ -60,16 +60,8 @@
 #include "AudDrv_Ana.h"
 #include "AudDrv_Clk.h"
 #include "mt_soc_analog_type.h"
-#if 0
-#include <mach/pmic_mt6323_sw.h>	/* no this */
-#endif
-
 #include "mt_soc_pcm_common.h"
 
-/* static DEFINE_MUTEX(Speaker_Ctrl_Mutex); */
-/* static DEFINE_SPINLOCK(Speaker_lock); */
-/* static int Speaker_Counter = 0; */
-/* static bool  Speaker_Trim_init = false; */
 
 void Speaker_ClassD_Open(void)
 {

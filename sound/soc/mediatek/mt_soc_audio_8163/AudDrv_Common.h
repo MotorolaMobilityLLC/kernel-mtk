@@ -42,9 +42,7 @@
 #include <linux/time.h>
 #include <linux/timer.h>
 #include <mt-plat/sync_write.h>
-/* #include <mt-plat/upmu_common.h> */
-/* #include <linux/xlog.h> */
-/* #include <mach/mt_typedefs.h> */
+#include <mt-plat/upmu_common.h>
 #include <linux/types.h>
 #include "AudDrv_Def.h"
 

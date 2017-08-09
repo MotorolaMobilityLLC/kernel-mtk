@@ -80,17 +80,9 @@
 #include <asm/uaccess.h>
 #include <asm/irq.h>
 #include <asm/io.h>
-/* #include <mach/mt_reg_base.h> */
 #include <asm/div64.h>
-/* #include <linux/aee.h> */
-/* #include <mach/pmic_mt6325_sw.h> */
-/* #include <mach/upmu_common.h> */
-/* #include <mach/upmu_hw.h> */
-/* #include <mach/mt_gpio.h> */
-/* #include <mach/mt_typedefs.h> */
 
 #include <mt-plat/aee.h>
-/* #include <mt-plat/upmu_common.h> */
 
 #include <linux/clk.h>
 #include <linux/delay.h>
@@ -102,7 +94,6 @@
 #include <sound/soc-dapm.h>
 #include <sound/pcm.h>
 #include <sound/jack.h>
-/* #include <asm/mach-types.h> */
 
 /* information about */
 AFE_MEM_CONTROL_T *TDM_VUL_Control_context;

@@ -80,20 +80,11 @@
 #include <linux/proc_fs.h>
 #include <linux/string.h>
 #include <linux/mutex.h>
-/* #include <linux/xlog.h> */
-/* #include <mach/irqs.h> */
 #include <asm/uaccess.h>
 #include <asm/irq.h>
 #include <asm/io.h>
-/* #include <mach/mt_reg_base.h> */
 #include <asm/div64.h>
-/* #include <linux/aee.h> */
-/* #include <mach/upmu_common.h> */
-/* #include <mt-plat/upmu_common.h> */
-#include <mach/upmu_hw.h>
-/* #include <mach/mt_gpio.h> */
 #include <mt-plat/mt_gpio.h>
-/* #include <mach/mt_typedefs.h> */
 #include <linux/clk.h>
 #include <linux/delay.h>
 #include <linux/platform_device.h>
@@ -102,7 +93,6 @@
 #include <sound/soc.h>
 #include <sound/soc-dapm.h>
 #include <sound/pcm.h>
-/* #include <asm/mach-types.h> */
 
 #ifdef CONFIG_OF
 #include <linux/of.h>

@@ -52,21 +52,14 @@
 #include <mach/mt_clkmgr.h>
 #endif
 
-/* #include <mach/mt_pm_ldo.h> */
-/* #include <mach/pmic_mt6325_sw.h> */
-/* #include <mach/upmu_common.h> */
-/* #include <mach/upmu_hw.h> */
-/* #include <mt-plat/upmu_common.h> */
-
 #include "AudDrv_Common.h"
 #include "AudDrv_Clk.h"
 #include "AudDrv_Afe.h"
 #include <linux/spinlock.h>
 #include <linux/delay.h>
-/* #include <mach/mt_idle.h> */
+
 #ifdef _MT_IDLE_HEADER
 #include "mt_idle.h"
-#include "mt_clk_id.h"
 #endif
 
 /*****************************************************************************
@@ -241,7 +234,7 @@ void AudDrv_ANA_Clk_On(void)
 	mutex_lock(&auddrv_pmic_mutex);
 	if (Aud_ANA_Clk_cntr == 0) {
 		PRINTK_AUD_CLK("+AudDrv_ANA_Clk_On, Aud_ANA_Clk_cntr:%d\n", Aud_ANA_Clk_cntr);
-		/* upmu_set_rg_clksq_en_aud(1); */
+		upmu_set_rg_clksq_en_aud(1);
 	}
 	Aud_ANA_Clk_cntr++;
 	mutex_unlock(&auddrv_pmic_mutex);
@@ -256,7 +249,7 @@ void AudDrv_ANA_Clk_Off(void)
 	Aud_ANA_Clk_cntr--;
 	if (Aud_ANA_Clk_cntr == 0) {
 		PRINTK_AUD_CLK("+AudDrv_ANA_Clk_Off disable_clock Ana clk(%x)\n", Aud_ANA_Clk_cntr);
-		/* upmu_set_rg_clksq_en_aud(0); */
+		upmu_set_rg_clksq_en_aud(0);
 		/* Disable ADC clock */
 #ifdef PM_MANAGER_API
 #else

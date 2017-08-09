@@ -46,13 +46,6 @@
  *                E X T E R N A L   R E F E R E N C E S
  *****************************************************************************/
 
-#define CONFIG_MTK_DEEP_IDLE
-#ifdef CONFIG_MTK_DEEP_IDLE
-#ifdef _MT_IDLE_HEADER
-#include "mt_idle.h"
-#endif
-#endif
-
 #include "AudDrv_Common.h"
 #include "AudDrv_Def.h"
 #include "AudDrv_Afe.h"
@@ -61,9 +54,7 @@
 #include "AudDrv_Kernel.h"
 #include "mt_soc_afe_control.h"
 
-/* #include <mach/mt_clkbuf_ctl.h> */
 #include <sound/mt_soc_audio.h>
-
 #include <linux/kernel.h>
 #include <linux/module.h>
 #include <linux/init.h>
@@ -87,20 +78,11 @@
 #include <linux/proc_fs.h>
 #include <linux/string.h>
 #include <linux/mutex.h>
-/* #include <linux/xlog.h> */
-/* #include <mach/irqs.h> */
 #include <asm/uaccess.h>
 #include <asm/irq.h>
 #include <asm/io.h>
-/* #include <mach/mt_reg_base.h> */
 #include <asm/div64.h>
-/* #include <linux/aee.h> */
-/* #include <mach/pmic_mt6325_sw.h> */
-/* #include <mach/upmu_common.h> */
 #include <mach/upmu_hw.h>
-/* #include <mach/mt_gpio.h> */
-/* #include <mach/mt_typedefs.h> */
-/* #include <mt-plat/upmu_common.h> */
 #include <mt-plat/mt_gpio.h>
 
 #include <stdarg.h>
@@ -109,9 +91,7 @@
 #include <linux/clk.h>
 #include <linux/delay.h>
 #include <linux/gpio.h>
-#if 0
-#include <linux/mfd/pm8xxx/pm8921.h>
-#endif
+
 #include <linux/platform_device.h>
 #include <linux/slab.h>
 #include <sound/core.h>
@@ -119,7 +99,6 @@
 #include <sound/soc-dapm.h>
 #include <sound/pcm.h>
 #include <sound/jack.h>
-/* #include <asm/mach-types.h> */
 #include <linux/debugfs.h>
 #include "mt_soc_codec_63xx.h"
 

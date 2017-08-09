@@ -120,7 +120,7 @@ void AudDrv_GPIO_probe(void *dev)
 			       ret);
 		} else {
 			aud_gpios[i].gpio_prepare = true;
-			pr_err("%s pinctrl_lookup_state %s success!\n", __func__, aud_gpios[i].name);
+			pr_debug("%s pinctrl_lookup_state %s success!\n", __func__, aud_gpios[i].name);
 		}
 	}
 }

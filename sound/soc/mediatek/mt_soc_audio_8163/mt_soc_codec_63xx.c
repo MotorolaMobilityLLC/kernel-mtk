@@ -65,7 +65,6 @@
 #include "mt_soc_afe_control.h"
 #include <mach/upmu_hw.h>
 #include <mt-plat/mt_pmic_wrap.h>
-/* #include <mt-plat/upmu_common.h> */
 
 #include "mt_soc_pcm_common.h"
 #include "AudDrv_Common.h"
@@ -86,7 +85,7 @@
 static void Apply_Speaker_Gain(void);
 static void TurnOffDacPower(void);
 static void TurnOnDacPower(void);
-#if 0				/* noe used */
+#if 0				/* not used */
 static void SetDcCompenSation(void);
 #endif
 static void Voice_Amp_Change(bool enable);
@@ -1080,10 +1079,12 @@ static void Audio_Amp_Change(int channels, bool enable)
 
 		}
 
+#if 0 /* do not reset DC calibration value when turn off to fix pop noise issue when turn off */
 		Ana_Set_Reg(ABB_AFE_CON3, 0, 0xffff);	/* LCH cancel DC */
 		Ana_Set_Reg(ABB_AFE_CON4, 0, 0xffff);	/* RCH cancel DC */
 		Ana_Set_Reg(ABB_AFE_CON10, 0x0000, 0x0001);	/* enable DC cpmpensation */
 		DCChangeTrigger();	/* Trigger DC compensation */
+#endif
 
 		if (GetDLStatus() == false)
 			TurnOffDacPower();
@@ -1711,10 +1712,12 @@ static void Headset_Speaker_Amp_Change(bool enable)
 		HeadsetVoloumeRestore();
 
 		if (GetDLStatus() == false) {
+#if 0 /* do not reset DC calibration value when turn off to fix pop noise issue when turn off */
 			Ana_Set_Reg(ABB_AFE_CON3, 0, 0xffff);	/* LCH cancel DC */
 			Ana_Set_Reg(ABB_AFE_CON4, 0, 0xffff);	/* RCH cancel DC */
 			Ana_Set_Reg(ABB_AFE_CON10, 0x0000, 0x0001);	/* enable DC cpmpensation */
 			DCChangeTrigger();	/* Trigger DC compensation */
+#endif
 			TurnOffDacPower();
 		}
 	}

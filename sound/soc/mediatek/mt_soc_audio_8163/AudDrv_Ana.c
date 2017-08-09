@@ -51,7 +51,6 @@
 #include "AudDrv_Clk.h"
 
 /* define this to use wrapper to control */
-/* #define AUDIO_USING_WRAP_DRIVER */
 #ifdef AUDIO_USING_WRAP_DRIVER
 #include <mt-plat/mt_pmic_wrap.h>
 #endif

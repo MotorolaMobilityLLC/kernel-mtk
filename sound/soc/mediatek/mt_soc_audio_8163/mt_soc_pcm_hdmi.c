@@ -826,7 +826,7 @@ static int mtk_pcm_hdmi_start(struct snd_pcm_substream *substream)
 	if (runtime->format == SNDRV_PCM_FORMAT_S32_LE
 	    || runtime->format == SNDRV_PCM_FORMAT_U32_LE) {
 		SetMemIfFetchFormatPerSample(Soc_Aud_Digital_Block_MEM_HDMI,
-					     AFE_WLEN_32_BIT_ALIGN_24BIT_DATA_8BIT_0);
+					     AFE_WLEN_32_BIT_ALIGN_8BIT_0_24BIT_DATA);
 		Afe_Set_Reg(AFE_HDMI_OUT_CON0, 0x2, 0x2);
 	} else
 		SetMemIfFetchFormatPerSample(Soc_Aud_Digital_Block_MEM_HDMI, AFE_WLEN_16_BIT);

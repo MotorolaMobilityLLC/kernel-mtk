@@ -152,7 +152,7 @@ void Afe_Set_Reg(uint32 offset, uint32 value, uint32 mask)
 	if (CheckOffset(offset) == false)
 		return;
 #ifdef AUDIO_MEM_IOREMAP
-	PRINTK_AUDDRV("Afe_Set_Reg AUDIO_MEM_IOREMAP AFE_BASE_ADDRESS = %p\n", AFE_BASE_ADDRESS);
+	PRINTK_AFE_REG("Afe_Set_Reg AUDIO_MEM_IOREMAP AFE_BASE_ADDRESS = %p\n", AFE_BASE_ADDRESS);
 	address = (long)((char *)AFE_BASE_ADDRESS + offset);
 #else
 	address = (long)(AFE_BASE + offset);
@@ -174,7 +174,7 @@ uint32 Afe_Get_Reg(uint32 offset)
 	if (CheckOffset(offset) == false)
 		return 0xffffffff;
 #ifdef AUDIO_MEM_IOREMAP
-	PRINTK_AUDDRV("Afe_Get_Reg AUDIO_MEM_IOREMAP AFE_BASE_ADDRESS = %p, offset = %x\n",
+	PRINTK_AFE_REG("Afe_Get_Reg AUDIO_MEM_IOREMAP AFE_BASE_ADDRESS = %p, offset = %x\n",
 		      AFE_BASE_ADDRESS, offset);
 	address = (long)((char *)AFE_BASE_ADDRESS + offset);
 #else

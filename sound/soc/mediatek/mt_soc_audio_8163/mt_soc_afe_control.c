@@ -68,19 +68,10 @@
 #include <linux/proc_fs.h>
 #include <linux/string.h>
 #include <linux/mutex.h>
-/* #include <mach/irqs.h> */
 #include <asm/uaccess.h>
 #include <asm/irq.h>
 #include <asm/io.h>
-/* #include <mach/mt_reg_base.h> */
 #include <asm/div64.h>
-/* #include <linux/aee.h> */
-/* #include <mach/pmic_mt6325_sw.h> */
-/* #include <mach/upmu_common.h> */
-/* #include <mach/upmu_hw.h> */
-/* #include <mach/mt_gpio.h> */
-/* #include <mach/mt_typedefs.h> */
-/* #include <mt-plat/upmu_common.h> */
 #include <mt-plat/aee.h>
 
 #include <linux/clk.h>
@@ -93,7 +84,6 @@
 #include <sound/soc-dapm.h>
 #include <sound/pcm.h>
 #include <sound/jack.h>
-/* #include <asm/mach-types.h> */
 
 #if !defined(CONFIG_MTK_LEGACY)
 #include <linux/gpio.h>
@@ -102,13 +92,9 @@
 #include <mt-plat/mt_gpio.h>
 #endif
 
-/* #include <mach/mt_boot.h> */
 #include <mt-plat/mt_boot.h>
 #include <mt-plat/mt_boot_common.h>
 
-/* #include <cust_eint.h> */
-/* #include <cust_gpio_usage.h> */
-/* #include <mach/eint.h> */
 #include "AudDrv_Common.h"
 #include "AudDrv_Def.h"
 #include "AudDrv_Afe.h"
