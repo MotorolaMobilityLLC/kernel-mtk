@@ -24,6 +24,9 @@
 #include "mtk_drm_gem.h"
 #include "mtk_drm_plane.h"
 
+#include "../../../media/platform/mtk_mdp/mtk_mdp_core.h"
+
+#define PRIV_BUF	(1920 * 1080 * 4)
 static const u32 formats[] = {
 	DRM_FORMAT_XRGB8888,
 	DRM_FORMAT_ARGB8888,
@@ -63,7 +66,10 @@ static void mtk_plane_enable(struct mtk_drm_plane *mtk_plane, bool enable,
 	}
 
 	state->pending.enable = enable;
-	state->pending.pitch = pitch;
+	if (mtk_plane->changed)
+		state->pending.pitch = drm_rect_width(dest) * 4;
+	else
+		state->pending.pitch = pitch;
 	state->pending.format = format;
 	state->pending.addr = addr;
 	state->pending.x = x;
@@ -133,6 +139,7 @@ static int mtk_plane_atomic_check(struct drm_plane *plane,
 				  struct drm_plane_state *state)
 {
 	struct drm_framebuffer *fb = state->fb;
+	struct drm_crtc *crtc = state->crtc;
 	struct drm_crtc_state *crtc_state;
 	bool visible;
 	struct drm_rect dest = {
@@ -158,21 +165,134 @@ static int mtk_plane_atomic_check(struct drm_plane *plane,
 		return -EFAULT;
 	}
 
-	if (!state->crtc)
+	if (!crtc)
 		return 0;
 
-	crtc_state = drm_atomic_get_crtc_state(state->state, state->crtc);
+	crtc_state = drm_atomic_get_crtc_state(state->state, crtc);
 	if (IS_ERR(crtc_state))
 		return PTR_ERR(crtc_state);
 
 	clip.x2 = crtc_state->mode.hdisplay;
 	clip.y2 = crtc_state->mode.vdisplay;
 
-	return drm_plane_helper_check_update(plane, state->crtc, fb,
-					     &src, &dest, &clip,
-					     DRM_PLANE_HELPER_NO_SCALING,
-					     DRM_PLANE_HELPER_NO_SCALING,
-					     true, true, &visible);
+	if (drm_plane_helper_check_update(plane, crtc, fb, &src, &dest, &clip,
+					  DRM_PLANE_HELPER_NO_SCALING,
+					  DRM_PLANE_HELPER_NO_SCALING,
+					  true, true, &visible) == -ERANGE ||
+					  state->rotation) {
+		struct mtk_mdp_fmt	src_fmt;
+		struct mtk_mdp_fmt	dst_fmt;
+		unsigned int		src_buf_size;
+		unsigned int		dst_buf_size;
+		struct mdp_ctrl		rotate, hflip, vflip, global_alpha;
+		struct mtk_mdp_addr	src_buf_mva;
+		struct mtk_mdp_addr	dst_buf_mva;
+
+		struct drm_gem_object *gem;
+		struct mtk_drm_gem_obj *mtk_gem;
+		struct mtk_drm_plane *mtk_plane = to_mtk_plane(plane);
+		struct mtk_mdp_ctx *ctx = mdp_ctx_global;
+
+		if (NULL == ctx->vpu.param) {
+			mtk_mdp_vpu_init(&ctx->vpu);
+			return -ERANGE;
+		}
+		mtk_plane->changed = true;
+		mtk_plane->gem_idx = 1 - mtk_plane->gem_idx;
+
+		/*set mdp command and sent vi upud*/
+		ctx->s_frame.crop.top = src.y1 >> 16;
+		ctx->s_frame.crop.left = src.x1 >> 16;
+		ctx->s_frame.crop.width = drm_rect_width(&src) >> 16;
+		ctx->s_frame.crop.height = drm_rect_height(&src) >> 16;
+		ctx->s_frame.f_width = fb->width;
+		ctx->s_frame.f_height = fb->height;
+		src_fmt.pixelformat = fb->pixel_format;
+		src_fmt.num_planes = drm_format_num_planes(fb->pixel_format);
+		ctx->s_frame.fmt = &src_fmt;
+		src_buf_size = ctx->s_frame.f_width * ctx->s_frame.f_height;
+		ctx->s_frame.payload[0] = src_buf_size * drm_format_plane_cpp(
+				fb->pixel_format, 0);
+		ctx->s_frame.payload[1] = src_buf_size * drm_format_plane_cpp(
+				fb->pixel_format, 1);
+		ctx->s_frame.payload[2] = src_buf_size * drm_format_plane_cpp(
+				fb->pixel_format, 2);
+		mtk_mdp_hw_set_in_image_format(ctx);
+		mtk_mdp_hw_set_in_size(ctx);
+
+		ctx->d_frame.crop.top = 0;
+		ctx->d_frame.crop.left = 0;
+		ctx->d_frame.crop.width = drm_rect_width(&dest);
+		ctx->d_frame.crop.height = drm_rect_height(&dest);
+		ctx->d_frame.f_width = drm_rect_width(&dest);
+		ctx->d_frame.f_height = drm_rect_height(&dest);
+		dst_fmt.pixelformat = DRM_FORMAT_ARGB8888;
+		dst_fmt.num_planes = 1;
+		ctx->d_frame.fmt = &dst_fmt;
+		dst_buf_size = ctx->d_frame.f_width * ctx->d_frame.f_height * 4;
+		ctx->d_frame.payload[0] = dst_buf_size;
+		ctx->d_frame.payload[1] = 0;
+		ctx->d_frame.payload[2] = 0;
+		mtk_mdp_hw_set_out_image_format(ctx);
+		mtk_mdp_hw_set_out_size(ctx);
+
+		rotate.val = 0;
+		hflip.val = 0;
+		vflip.val = 0;
+		global_alpha.val = 0;
+
+		/* DRM def: in counter clockwise direction
+		 * MDP def: in clockwise direction
+		 */
+		if (state->rotation & BIT(DRM_ROTATE_90))
+			rotate.val = 270;
+		else if (state->rotation & BIT(DRM_ROTATE_180))
+			rotate.val = 180;
+		else if (state->rotation & BIT(DRM_ROTATE_270))
+			rotate.val = 90;
+		else
+			rotate.val = 0;
+
+		if (state->rotation & BIT(DRM_REFLECT_X))
+			hflip.val = 1;
+
+		if (state->rotation & BIT(DRM_REFLECT_Y))
+			vflip.val = 1;
+
+		ctx->ctrls.rotate = &rotate;
+		ctx->ctrls.hflip = &hflip;
+		ctx->ctrls.vflip = &vflip;
+		ctx->ctrls.global_alpha = &global_alpha;
+		mtk_mdp_hw_set_rotation(ctx);
+		mtk_mdp_hw_set_global_alpha(ctx);
+
+		gem = mtk_fb_get_gem_obj(fb);
+		mtk_gem = to_mtk_gem_obj(gem);
+
+		src_buf_mva.y = mtk_gem->dma_addr;
+		src_buf_mva.cb = src_buf_mva.y  + ctx->s_frame.payload[0];
+		src_buf_mva.cr = src_buf_mva.cb + ctx->s_frame.payload[1];
+
+		dst_buf_mva.y = mtk_plane->gem[mtk_plane->gem_idx]->dma_addr;
+		dst_buf_mva.cb = 0;
+		dst_buf_mva.cr = 0;
+
+		mtk_mdp_hw_set_input_addr(ctx, &src_buf_mva);
+		mtk_mdp_hw_set_output_addr(ctx, &dst_buf_mva);
+
+		mtk_mdp_hw_set_sfr_update(ctx);
+
+		ctx->state &= ~MTK_MDP_PARAMS;
+	} else {
+		struct mtk_drm_plane *mtk_plane = to_mtk_plane(plane);
+		struct mtk_mdp_ctx *ctx = mdp_ctx_global;
+
+		mtk_plane->changed = false;
+		if (NULL == ctx->vpu.param)
+			mtk_mdp_vpu_init(&ctx->vpu);
+	}
+
+	return 0;
 }
 
 static void mtk_plane_atomic_update(struct drm_plane *plane,
@@ -200,7 +320,12 @@ static void mtk_plane_atomic_update(struct drm_plane *plane,
 
 	gem = mtk_fb_get_gem_obj(state->base.fb);
 	mtk_gem = to_mtk_gem_obj(gem);
-	mtk_plane_enable(mtk_plane, true, mtk_gem->dma_addr, &dest);
+	if (mtk_plane->changed)
+		mtk_plane_enable(mtk_plane, true,
+				 mtk_plane->gem[mtk_plane->gem_idx]->dma_addr,
+				 &dest);
+	else
+		mtk_plane_enable(mtk_plane, true, mtk_gem->dma_addr, &dest);
 }
 
 static void mtk_plane_atomic_disable(struct drm_plane *plane,
@@ -223,7 +348,7 @@ int mtk_plane_init(struct drm_device *dev, struct mtk_drm_plane *mtk_plane,
 		   unsigned long possible_crtcs, enum drm_plane_type type,
 		   unsigned int zpos)
 {
-	int err;
+	int err, i;
 
 	err = drm_universal_plane_init(dev, &mtk_plane->base, possible_crtcs,
 				       &mtk_plane_funcs, formats,
@@ -235,6 +360,10 @@ int mtk_plane_init(struct drm_device *dev, struct mtk_drm_plane *mtk_plane,
 
 	drm_plane_helper_add(&mtk_plane->base, &mtk_plane_helper_funcs);
 	mtk_plane->idx = zpos;
+
+	mtk_drm_gem_create(dev, 4096, true);
+	for (i = 0; i < 2; i++)
+		mtk_plane->gem[i] = mtk_drm_gem_create(dev, PRIV_BUF, false);
 
 	return 0;
 }
