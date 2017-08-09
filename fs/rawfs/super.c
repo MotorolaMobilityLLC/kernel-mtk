@@ -717,7 +717,7 @@ static int rawfs_mtd_init(struct super_block *sb, void *data, int silent)
 		return -1;
 	}
 	/* Check it's NAND */
-	if (mtd->type != MTD_NANDFLASH) {
+	if (!(mtd->type == MTD_NANDFLASH || mtd->type == MTD_MLCNANDFLASH)) {
 		RAWFS_PRINT(RAWFS_DBG_INIT,
 			"rawfs_mtd_init:  MTD device is not NAND it's type %d",
 			mtd->type);
