@@ -2301,6 +2301,9 @@ static int __init emi_mpu_mod_init(void)
 	pr_err("[EMI MPU] EMI_MPUV = 0x%x\n", mt_emi_reg_read(EMI_MPUV));
 	pr_err("[EMI MPU] EMI_MPUX = 0x%x\n", mt_emi_reg_read(EMI_MPUX));
 
+	/* supoprt GPU to debug, it will return SLVERR when MPU violation */
+	mt_emi_reg_write(mt_emi_reg_read(EMI_MPUO2) | 0x10000000, EMI_MPUO2);
+
 	if (readl(IOMEM(EMI_MPUS))) {
 		pr_err("[EMI MPU] get MPU violation in driver init\n");
 		mt_devapc_emi_initial();
