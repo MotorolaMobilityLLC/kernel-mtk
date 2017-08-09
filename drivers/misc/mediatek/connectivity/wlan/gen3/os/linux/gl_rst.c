@@ -263,10 +263,8 @@ BOOLEAN glResetTrigger(P_ADAPTER_T prAdapter)
 			     (prAdapter->rVerInfo.u2FwOwnVersion & BITS(0, 7)),
 			     (prAdapter->rVerInfo.u2FwPeerVersion >> 8),
 			     (prAdapter->rVerInfo.u2FwPeerVersion & BITS(0, 7)));
-#if 1//MT6797
-#else
-		fgResult = mtk_wcn_wmt_do_reset(WMTDRV_TYPE_WIFI);
-#endif
+
+		fgResult = mtk_wcn_wmt_assert(WMTDRV_TYPE_WIFI, 0x40);
 	}
 #endif
 

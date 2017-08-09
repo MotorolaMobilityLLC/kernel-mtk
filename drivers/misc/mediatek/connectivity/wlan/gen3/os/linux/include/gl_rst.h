@@ -129,7 +129,7 @@ extern int wifi_reset_end(ENUM_RESET_STATUS_T);
 ********************************************************************************
 */
 #if CFG_WMT_RESET_API_SUPPORT
-extern MTK_WCN_BOOL mtk_wcn_wmt_do_reset(ENUM_WMTDRV_TYPE_T type);
+extern MTK_WCN_BOOL mtk_wcn_wmt_assert(ENUM_WMTDRV_TYPE_T type, UINT32 reason);
 #endif
 /*******************************************************************************
 *                              F U N C T I O N S

@@ -85,7 +85,7 @@ typedef void (*PF_WMT_CB) (ENUM_WMTDRV_TYPE_T,	/* Source driver type */
 			break; \
 		} \
 		DBGLOG(INIT, ERROR, "Do core dump and chip reset in %s line %d\n", __func__, __LINE__); \
-		mtk_wcn_wmt_assert(WMTDRV_TYPE_WIFI, 40); \
+		mtk_wcn_wmt_assert(WMTDRV_TYPE_WIFI, 0x40); \
 	} while (0)
 
 #if CFG_CHIP_RESET_SUPPORT
