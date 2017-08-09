@@ -36,7 +36,7 @@ struct wake_lock kpd_suspend_lock;	/* For suspend usage */
 /*for kpd_memory_setting() function*/
 static u16 kpd_keymap[KPD_NUM_KEYS];
 static u16 kpd_keymap_state[KPD_NUM_MEMS];
-#if (defined(CONFIG_ARCH_MT8173) || defined(CONFIG_ARCH_MT8163))
+#if (defined(CONFIG_ARCH_MT8173) || defined(CONFIG_ARCH_MT8163) || defined(CONFIG_ARCH_MT8160))
 static struct wake_lock pwrkey_lock;
 #endif
 /***********************************/
@@ -822,7 +822,7 @@ static int kpd_pdrv_probe(struct platform_device *pdev)
 
 	kpd_get_dts_info(pdev->dev.of_node);
 
-#if (defined(CONFIG_ARCH_MT8173) || defined(CONFIG_ARCH_MT8163))
+#if (defined(CONFIG_ARCH_MT8173) || defined(CONFIG_ARCH_MT8163) || defined(CONFIG_ARCH_MT8160))
 	wake_lock_init(&pwrkey_lock, WAKE_LOCK_SUSPEND, "PWRKEY");
 #endif
 

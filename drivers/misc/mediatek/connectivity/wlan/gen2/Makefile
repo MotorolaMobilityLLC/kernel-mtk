@@ -81,6 +81,9 @@ endif
 ifeq ($(CONFIG_ARCH_MT6580), y)
     MTK_SRAM_SIZE_OPTION=1
 endif
+ifeq ($(CONFIG_ARCH_MT8160), y)
+    MTK_SRAM_SIZE_OPTION=1
+endif
 ifeq ($(CONFIG_ARCH_MT8163), y)
     MTK_SRAM_SIZE_OPTION=1
 endif
