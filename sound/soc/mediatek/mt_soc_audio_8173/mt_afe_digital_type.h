@@ -71,6 +71,11 @@ enum mt_afe_memif_direction {
 	MT_AFE_MEMIF_DIRECTION_INPUT
 };
 
+enum mt_afe_memif_mono_type {
+	L_MONO = 0,
+	R_MONO
+};
+
 enum mt_afe_interconnection_input {
 	INTER_CONN_I00 = 0,
 	INTER_CONN_I01,

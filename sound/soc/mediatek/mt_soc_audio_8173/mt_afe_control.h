@@ -23,6 +23,7 @@ void mt_afe_platform_deinit(void *dev);
 
 void mt_afe_set_sample_rate(uint32_t aud_block, uint32_t sample_rate);
 void mt_afe_set_channels(uint32_t memory_interface, uint32_t channel);
+void mt_afe_set_mono_type(uint32_t memory_interface, uint32_t mono_type);
 
 void mt_afe_set_irq_counter(uint32_t irq_mode, uint32_t counter);
 void mt_afe_set_irq_rate(uint32_t irq_mode, uint32_t sample_rate);

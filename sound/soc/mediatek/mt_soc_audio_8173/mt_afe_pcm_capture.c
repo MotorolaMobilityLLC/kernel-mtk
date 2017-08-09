@@ -19,6 +19,10 @@
 #include <linux/spinlock.h>
 #include <sound/soc.h>
 
+struct mt_pcm_capture_priv {
+	unsigned int mono_type;
+};
+
 
 /*
  *    function implementation
@@ -27,12 +31,15 @@ static int mt_pcm_capture_close(struct snd_pcm_substream *substream);
 
 static void mt_pcm_capture_start_audio_hw(struct snd_pcm_substream *substream)
 {
+	struct snd_pcm_runtime *runtime = substream->runtime;
+	struct snd_soc_pcm_runtime *rtd = substream->private_data;
+	struct mt_pcm_capture_priv *priv = snd_soc_platform_get_drvdata(rtd->platform);
 	struct mt_afe_irq_status irq_status;
 	struct timespec curr_tstamp;
 
 	pr_debug("%s\n", __func__);
 
-	mt_afe_set_i2s_adc_in(substream->runtime->rate);
+	mt_afe_set_i2s_adc_in(runtime->rate);
 
 	mt_afe_set_memif_fetch_format(MT_AFE_DIGITAL_BLOCK_MEM_VUL, MT_AFE_MEMIF_16_BIT);
 	mt_afe_set_out_conn_format(MT_AFE_CONN_OUTPUT_16BIT, INTER_CONN_O09);
@@ -45,17 +52,25 @@ static void mt_pcm_capture_start_audio_hw(struct snd_pcm_substream *substream)
 		mt_afe_enable_memory_path(MT_AFE_DIGITAL_BLOCK_I2S_IN_ADC);
 	}
 
-	mt_afe_set_sample_rate(MT_AFE_DIGITAL_BLOCK_MEM_VUL, substream->runtime->rate);
-	mt_afe_set_channels(MT_AFE_DIGITAL_BLOCK_MEM_VUL, substream->runtime->channels);
+	mt_afe_set_sample_rate(MT_AFE_DIGITAL_BLOCK_MEM_VUL, runtime->rate);
+	mt_afe_set_channels(MT_AFE_DIGITAL_BLOCK_MEM_VUL, runtime->channels);
+
+	if (runtime->channels == 1) {
+		if (priv->mono_type == R_MONO)
+			mt_afe_set_mono_type(MT_AFE_DIGITAL_BLOCK_MEM_VUL, R_MONO);
+		else
+			mt_afe_set_mono_type(MT_AFE_DIGITAL_BLOCK_MEM_VUL, L_MONO);
+	}
+
 	mt_afe_enable_memory_path(MT_AFE_DIGITAL_BLOCK_MEM_VUL);
 
 	/* here to set interrupt */
 	mt_afe_get_irq_state(MT_AFE_IRQ_MCU_MODE_IRQ2, &irq_status);
 	if (likely(!irq_status.status)) {
-		mt_afe_set_irq_counter(MT_AFE_IRQ_MCU_MODE_IRQ2, substream->runtime->period_size);
-		mt_afe_set_irq_rate(MT_AFE_IRQ_MCU_MODE_IRQ2, substream->runtime->rate);
+		mt_afe_set_irq_counter(MT_AFE_IRQ_MCU_MODE_IRQ2, runtime->period_size);
+		mt_afe_set_irq_rate(MT_AFE_IRQ_MCU_MODE_IRQ2, runtime->rate);
 		mt_afe_set_irq_state(MT_AFE_IRQ_MCU_MODE_IRQ2, true);
-		snd_pcm_gettime(substream->runtime, (struct timespec *)&curr_tstamp);
+		snd_pcm_gettime(runtime, (struct timespec *)&curr_tstamp);
 		pr_debug("%s curr_tstamp %ld %ld\n", __func__, curr_tstamp.tv_sec,
 			 curr_tstamp.tv_nsec);
 
@@ -239,6 +254,46 @@ static struct snd_pcm_ops mt_pcm_capture_ops = {
 	.pointer = mt_pcm_capture_pointer,
 };
 
+static const char *const capture_mono_type_function[] = {
+	ENUM_TO_STR(L_MONO),
+	ENUM_TO_STR(R_MONO),
+};
+
+static int capture_mono_type_get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
+{
+	struct snd_soc_component *component = snd_kcontrol_chip(kcontrol);
+	struct mt_pcm_capture_priv *priv = snd_soc_component_get_drvdata(component);
+
+	ucontrol->value.integer.value[0] = priv->mono_type;
+	return 0;
+}
+
+static int capture_mono_type_set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
+{
+	struct snd_soc_component *component = snd_kcontrol_chip(kcontrol);
+	struct mt_pcm_capture_priv *priv = snd_soc_component_get_drvdata(component);
+
+	priv->mono_type = ucontrol->value.integer.value[0];
+	return 0;
+}
+
+static const struct soc_enum mt_pcm_caprure_control_enum[] = {
+	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(capture_mono_type_function),
+			capture_mono_type_function),
+};
+
+static const struct snd_kcontrol_new mt_pcm_capture_controls[] = {
+	SOC_ENUM_EXT("Capture_Mono_Type", mt_pcm_caprure_control_enum[0],
+		capture_mono_type_get, capture_mono_type_set),
+};
+
+static int mt_pcm_capture_probe(struct snd_soc_platform *platform)
+{
+	snd_soc_add_platform_controls(platform, mt_pcm_capture_controls,
+				ARRAY_SIZE(mt_pcm_capture_controls));
+	return 0;
+}
+
 static int mt_pcm_capture_pcm_new(struct snd_soc_pcm_runtime *rtd)
 {
 	struct snd_card *card = rtd->card->snd_card;
@@ -257,6 +312,7 @@ static void mt_pcm_capture_pcm_free(struct snd_pcm *pcm)
 
 static struct snd_soc_platform_driver mt_pcm_capture_platform = {
 	.ops = &mt_pcm_capture_ops,
+	.probe = mt_pcm_capture_probe,
 	.pcm_new = mt_pcm_capture_pcm_new,
 	.pcm_free = mt_pcm_capture_pcm_free,
 };
@@ -264,6 +320,7 @@ static struct snd_soc_platform_driver mt_pcm_capture_platform = {
 static int mt_pcm_capture_dev_probe(struct platform_device *pdev)
 {
 	struct device *dev = &pdev->dev;
+	struct mt_pcm_capture_priv *priv;
 	int rc;
 
 	pr_debug("%s dev name %s\n", __func__, dev_name(dev));
@@ -276,6 +333,13 @@ static int mt_pcm_capture_dev_probe(struct platform_device *pdev)
 		dev_set_name(dev, "%s", MT_SOC_UL1_PCM);
 		pr_debug("%s set dev name %s\n", __func__, dev_name(dev));
 	}
+
+	priv = devm_kzalloc(dev, sizeof(struct mt_pcm_capture_priv), GFP_KERNEL);
+	if (!priv)
+		return -ENOMEM;
+
+	dev_set_drvdata(dev, priv);
+
 	return snd_soc_register_platform(dev, &mt_pcm_capture_platform);
 }
 
