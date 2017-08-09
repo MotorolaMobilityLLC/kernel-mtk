@@ -394,7 +394,7 @@ VOID scnSendScanReqExtCh(IN P_ADAPTER_T prAdapter)
 	prScanInfo = &(prAdapter->rWifiVar.rScanInfo);
 	prScanParam = &prScanInfo->rScanParam;
 
-	prCmdScanReq = kalMemAlloc(sizeof(P_CMD_SCAN_REQ_EXT_CH), VIR_MEM_TYPE);
+	prCmdScanReq = kalMemAlloc(sizeof(CMD_SCAN_REQ_EXT_CH), VIR_MEM_TYPE);
 	if (prCmdScanReq == NULL)
 		return;
 
@@ -450,6 +450,21 @@ VOID scnSendScanReqExtCh(IN P_ADAPTER_T prAdapter)
 			    NULL,
 			    OFFSET_OF(CMD_SCAN_REQ_EXT_CH, aucIE) + prCmdScanReq->u2IELen,
 			    (PUINT_8) prCmdScanReq, NULL, 0);
+	/* sanity check for some scan parameters */
+	if (prCmdScanReq->ucScanType >= SCAN_TYPE_NUM)
+		kalSendAeeWarning("wlan", "wrong scan type %d", prCmdScanReq->ucScanType);
+	else if (prCmdScanReq->ucChannelType >= SCAN_CHANNEL_NUM)
+		kalSendAeeWarning("wlan", "wrong channel type %d", prCmdScanReq->ucChannelType);
+	else if (prCmdScanReq->ucChannelType != SCAN_CHANNEL_SPECIFIED &&
+		prCmdScanReq->ucChannelListNum != 0)
+		kalSendAeeWarning("wlan",
+			"channel list is not NULL but channel type is not specified");
+	else if (prCmdScanReq->ucNetworkType >= NETWORK_TYPE_INDEX_NUM)
+		kalSendAeeWarning("wlan", "wrong network type %d", prCmdScanReq->ucNetworkType);
+	else if (prCmdScanReq->ucSSIDType >= BIT(4)) /* ssid type is wrong */
+		kalSendAeeWarning("wlan", "wrong ssid type %d", prCmdScanReq->ucSSIDType);
+	else if (prCmdScanReq->ucSSIDLength > 32)
+		kalSendAeeWarning("wlan", "wrong ssid length %d", prCmdScanReq->ucSSIDLength);
 
 	kalMemFree(prCmdScanReq, VIR_MEM_TYPE, sizeof(CMD_SCAN_REQ_EXT_CH));
 }
@@ -540,6 +555,22 @@ VOID scnSendScanReq(IN P_ADAPTER_T prAdapter)
 				    NULL,
 				    OFFSET_OF(CMD_SCAN_REQ, aucIE) + prCmdScanReq->u2IELen,
 				    (PUINT_8) prCmdScanReq, NULL, 0);
+		/* sanity check for some scan parameters */
+		if (prCmdScanReq->ucScanType >= SCAN_TYPE_NUM)
+			kalSendAeeWarning("wlan", "wrong scan type %d", prCmdScanReq->ucScanType);
+		else if (prCmdScanReq->ucChannelType >= SCAN_CHANNEL_NUM)
+			kalSendAeeWarning("wlan", "wrong channel type %d", prCmdScanReq->ucChannelType);
+		else if (prCmdScanReq->ucChannelType != SCAN_CHANNEL_SPECIFIED &&
+			prCmdScanReq->ucChannelListNum != 0)
+			kalSendAeeWarning("wlan",
+				"channel list is not NULL but channel type is not specified");
+		else if (prCmdScanReq->ucNetworkType >= NETWORK_TYPE_INDEX_NUM)
+			kalSendAeeWarning("wlan", "wrong network type %d", prCmdScanReq->ucNetworkType);
+		else if (prCmdScanReq->ucSSIDType >= BIT(4)) /* ssid type is wrong */
+			kalSendAeeWarning("wlan", "wrong ssid type %d", prCmdScanReq->ucSSIDType);
+		else if (prCmdScanReq->ucSSIDLength > 32)
+			kalSendAeeWarning("wlan", "wrong ssid length %d", prCmdScanReq->ucSSIDLength);
+
 		kalMemFree(prCmdScanReq, VIR_MEM_TYPE, sizeof(CMD_SCAN_REQ));
 	}
 }
@@ -623,6 +654,20 @@ VOID scnSendScanReqV2ExtCh(IN P_ADAPTER_T prAdapter)
 			    NULL,
 			    OFFSET_OF(CMD_SCAN_REQ_V2_EXT_CH, aucIE) + prCmdScanReq->u2IELen,
 			    (PUINT_8) prCmdScanReq, NULL, 0);
+	/* sanity check for some scan parameters */
+	if (prCmdScanReq->ucScanType >= SCAN_TYPE_NUM)
+		kalSendAeeWarning("wlan", "wrong scan type %d", prCmdScanReq->ucScanType);
+	else if (prCmdScanReq->ucChannelType >= SCAN_CHANNEL_NUM)
+		kalSendAeeWarning("wlan", "wrong channel type %d", prCmdScanReq->ucChannelType);
+	else if (prCmdScanReq->ucChannelType != SCAN_CHANNEL_SPECIFIED &&
+		prCmdScanReq->ucChannelListNum != 0)
+		kalSendAeeWarning("wlan",
+			"channel list is not NULL but channel type is not specified");
+	else if (prCmdScanReq->ucNetworkType >= NETWORK_TYPE_INDEX_NUM)
+		kalSendAeeWarning("wlan", "wrong network type %d", prCmdScanReq->ucNetworkType);
+	else if (prCmdScanReq->ucSSIDType >= BIT(4)) /* ssid type is wrong */
+		kalSendAeeWarning("wlan", "wrong ssid type %d", prCmdScanReq->ucSSIDType);
+
 	kalMemFree(prCmdScanReq, VIR_MEM_TYPE, sizeof(CMD_SCAN_REQ_V2_EXT_CH));
 }
 
@@ -709,6 +754,20 @@ VOID scnSendScanReqV2(IN P_ADAPTER_T prAdapter)
 				    NULL,
 				    OFFSET_OF(CMD_SCAN_REQ_V2, aucIE) + prCmdScanReq->u2IELen,
 				    (PUINT_8) prCmdScanReq, NULL, 0);
+		/* sanity check for some scan parameters */
+		if (prCmdScanReq->ucScanType >= SCAN_TYPE_NUM)
+			kalSendAeeWarning("wlan", "wrong scan type %d", prCmdScanReq->ucScanType);
+		else if (prCmdScanReq->ucChannelType >= SCAN_CHANNEL_NUM)
+			kalSendAeeWarning("wlan", "wrong channel type %d", prCmdScanReq->ucChannelType);
+		else if (prCmdScanReq->ucChannelType != SCAN_CHANNEL_SPECIFIED &&
+			prCmdScanReq->ucChannelListNum != 0)
+			kalSendAeeWarning("wlan",
+				"channel list is not NULL but channel type is not specified");
+		else if (prCmdScanReq->ucNetworkType >= NETWORK_TYPE_INDEX_NUM)
+			kalSendAeeWarning("wlan", "wrong network type %d", prCmdScanReq->ucNetworkType);
+		else if (prCmdScanReq->ucSSIDType >= BIT(4)) /* ssid type is wrong */
+			kalSendAeeWarning("wlan", "wrong ssid type %d", prCmdScanReq->ucSSIDType);
+
 		kalMemFree(prCmdScanReq, VIR_MEM_TYPE, sizeof(CMD_SCAN_REQ_V2));
 	}
 }
