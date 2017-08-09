@@ -217,9 +217,10 @@
 #define MSDC_PATCH_BIT2_CFGRESP   (0x1 << 15)   /* RW */
 #define MSDC_PATCH_BIT2_CFGCRCSTS (0x1 << 28)   /* RW */
 
+#define MSDC_PAD_TUNE_DATWRDLY	  (0x1f <<  0)  /* RW */
 #define MSDC_PAD_TUNE_DATRRDLY	  (0x1f <<  8)	/* RW */
 #define MSDC_PAD_TUNE_CMDRDLY	  (0x1f << 16)  /* RW */
-#define MSDC_PAD_TUNE_CMDRRDLY    (0x1f << 22)  /* RW */
+#define MSDC_PAD_TUNE_CMDRRDLY	  (0x1f << 22)  /* RW */
 #define MSDC_PAD_TUNE_RXDLYSEL    (0x1 << 15)   /* RW */
 
 #define PAD_DS_TUNE_DLY1	  (0x1f << 2)   /* RW */
@@ -336,8 +337,6 @@ struct msdc_host {
 
 	struct clk *src_clk;	/* msdc source clock */
 	struct clk *extra_sclk;	/* msdc extra source clock */
-	struct clk *src_clk_parent; /* src_clk's parent */
-	struct clk *hs400_src;	/* 400Mhz source clock */
 	struct clk *h_clk;      /* msdc h_clk */
 	u32 mclk;		/* mmc subsystem clock frequency */
 	u32 src_clk_freq;	/* source clock frequency */
@@ -345,6 +344,8 @@ struct msdc_host {
 	unsigned char timing;
 	bool vqmmc_enabled;
 	u32 hs400_ds_delay;
+	u32 hs200_cmd_int_delay; /* cmd internal delay for HS200/SDR104 */
+	u32 hs200_write_int_delay; /* write internal delay for HS200/SR104 */
 	struct msdc_save_para save_para; /* used when gate HCLK */
 	const struct mt81xx_mmc_compatible *dev_comp;
 };
@@ -851,7 +852,7 @@ static bool msdc_cmd_done(struct msdc_host *host, int events,
 
 	if (!sbc_error && !(events & MSDC_INT_CMDRDY)) {
 		msdc_reset_hw(host);
-		if (events & MSDC_INT_RSPCRCERR) {
+		if (cmd->flags & MMC_RSP_CRC && events & MSDC_INT_RSPCRCERR) {
 			cmd->error = -EILSEQ;
 			host->error |= REQ_CMD_EIO;
 		} else if (events & MSDC_INT_CMDTMO) {
@@ -889,17 +890,33 @@ static inline bool msdc_cmd_is_ready(struct msdc_host *host,
 		return false;
 	}
 
-	if (mmc_resp_type(cmd) == MMC_RSP_R1B || cmd->data) {
-		tmo = jiffies + msecs_to_jiffies(20);
-		/* R1B or with data, should check SDCBUSY */
-		while ((readl(host->base + SDC_STS) & SDC_STS_SDCBUSY) &&
-				time_before(jiffies, tmo))
-			cpu_relax();
-		if (readl(host->base + SDC_STS) & SDC_STS_SDCBUSY) {
-			dev_err(host->dev, "Controller busy detected\n");
-			host->error |= REQ_CMD_BUSY;
-			msdc_cmd_done(host, MSDC_INT_CMDTMO, mrq, cmd);
-			return false;
+	if (cmd->opcode != MMC_SEND_STATUS) {
+		/* Consider that CMD6 crc error before card was init done,
+		 * mmc_retune() will return directly as host->card is null.
+		 * and CMD6 will retry 3 times, must ensure card is in transfer
+		 * state when retry.
+		 */
+		if (in_interrupt())
+			tmo = jiffies + msecs_to_jiffies(1000);
+		else
+			tmo = jiffies + msecs_to_jiffies(60 * 1000);
+		while (1) {
+			if (!(readl(host->base + MSDC_PS) & BIT(16))) {
+				if (in_interrupt())
+					cpu_relax();
+				else
+					msleep_interruptible(10);
+			} else {
+				break;
+			}
+			/* Timeout if the device never leaves the program state. */
+			if (time_after(jiffies, tmo)) {
+				pr_err("%s: Card stuck in programming state! %s\n",
+				       mmc_hostname(host->mmc), __func__);
+				host->error |= REQ_CMD_BUSY;
+				msdc_cmd_done(host, MSDC_INT_CMDTMO, mrq, cmd);
+				return false;
+			}
 		}
 	}
 	return true;
@@ -1465,21 +1482,32 @@ static int msdc_tune_response(struct mmc_host *mmc, u32 opcode)
 	u32 internal_delay = 0;
 	u32 tune_reg = MSDC_PAD_TUNE;
 	int cmd_err;
-	int i;
+	int i, j;
 
 	if (host->dev_comp->pad_tune0)
 		tune_reg = MSDC_PAD_TUNE0;
 
+	if (mmc->ios.timing == MMC_TIMING_MMC_HS200 ||
+	    mmc->ios.timing == MMC_TIMING_UHS_SDR104)
+		sdr_set_field(host->base + tune_reg,
+			      MSDC_PAD_TUNE_CMDRRDLY, host->hs200_cmd_int_delay);
 	sdr_clr_bits(host->base + MSDC_IOCON, MSDC_IOCON_RSPL);
 	for (i = 0 ; i < PAD_DELAY_MAX; i++) {
 		sdr_set_field(host->base + tune_reg, MSDC_PAD_TUNE_CMDRDLY, i);
-		msdc_send_tuning(mmc, opcode, &cmd_err);
-		if (!cmd_err)
-			rise_delay |= (1 << i);
+		for (j = 0; j < 3; j++) {
+			msdc_send_tuning(mmc, opcode, &cmd_err);
+			if (!cmd_err) {
+				rise_delay |= (1 << i);
+			} else {
+				rise_delay &= ~(1 << i);
+				break;
+			}
+		}
 	}
 	final_rise_delay = get_best_delay(host, rise_delay);
 	/* if rising edge has enough margin, then do not scan falling edge */
-	if (final_rise_delay.maxlen >= 12)
+	if (final_rise_delay.maxlen >= 12 ||
+	    (final_rise_delay.start == 0 && final_rise_delay.maxlen >= 4))
 		goto skip_fall;
 
 	sdr_set_bits(host->base + MSDC_IOCON, MSDC_IOCON_RSPL);
@@ -1505,8 +1533,8 @@ skip_fall:
 		final_delay = final_fall_delay.final_phase;
 	}
 
-	if (host->dev_comp->async_fifo)
-		goto done;
+	if (host->dev_comp->async_fifo || host->hs200_cmd_int_delay)
+		goto skip_internal;
 
 	for (i = 0; i < PAD_DELAY_MAX; i++) {
 		sdr_set_field(host->base + tune_reg,
@@ -1515,12 +1543,12 @@ skip_fall:
 		if (!cmd_err)
 			internal_delay |= (1 << i);
 	}
-	dev_dbg(host->dev, "Final internal delay: 0x%x\n", internal_delay);
+	dev_err(host->dev, "Final internal delay: 0x%x\n", internal_delay);
 	internal_delay_phase = get_best_delay(host, internal_delay);
 	sdr_set_field(host->base + tune_reg, MSDC_PAD_TUNE_CMDRRDLY,
 				internal_delay_phase.final_phase);
-done:
-	dev_dbg(host->dev, "Final cmd pad delay: %x\n", final_delay);
+skip_internal:
+	dev_err(host->dev, "Final cmd pad delay: %x\n", final_delay);
 	return final_delay == 0xff ? -EIO : 0;
 }
 
@@ -1545,7 +1573,8 @@ static int msdc_tune_data(struct mmc_host *mmc, u32 opcode)
 			rise_delay |= (1 << i);
 	}
 	final_rise_delay = get_best_delay(host, rise_delay);
-	if (final_rise_delay.maxlen >= 12)
+	if (final_rise_delay.maxlen >= 12 ||
+	    (final_rise_delay.start == 0 && final_rise_delay.maxlen >= 4))
 		goto skip_fall;
 
 	sdr_set_bits(host->base + MSDC_IOCON, MSDC_IOCON_DSPL);
@@ -1574,6 +1603,11 @@ skip_fall:
 		final_delay = final_fall_delay.final_phase;
 	}
 
+	if (mmc->ios.timing == MMC_TIMING_MMC_HS200 ||
+	    mmc->ios.timing == MMC_TIMING_UHS_SDR104)
+		sdr_set_field(host->base + tune_reg, MSDC_PAD_TUNE_DATWRDLY,
+			      host->hs200_write_int_delay);
+	dev_err(host->dev, "Final data pad delay: %x\n", final_delay);
 	return final_delay == 0xff ? -EIO : 0;
 }
 
@@ -1709,6 +1743,15 @@ static int msdc_drv_probe(struct platform_device *pdev)
 				  &host->hs400_ds_delay))
 		dev_dbg(&pdev->dev, "hs400-ds-delay: %x\n",
 			host->hs400_ds_delay);
+
+	if (!of_property_read_u32(pdev->dev.of_node, "cmd_int_delay",
+				  &host->hs200_cmd_int_delay))
+		dev_dbg(&pdev->dev, "host->hs200_cmd_int_delay: %x\n",
+				host->hs200_cmd_int_delay);
+	if (!of_property_read_u32(pdev->dev.of_node, "write_int_delay",
+				  &host->hs200_write_int_delay))
+		dev_dbg(&pdev->dev, "host->hs200_write_int_delay: %x\n",
+				host->hs200_write_int_delay);
 
 	host->dev = &pdev->dev;
 	host->dev_comp = of_id->data;
