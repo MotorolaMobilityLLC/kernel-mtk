@@ -18,7 +18,9 @@ void lcm_common_suspend(void);
 void lcm_common_resume(void);
 void lcm_common_update(unsigned int x, unsigned int y, unsigned int width, unsigned int height);
 void lcm_common_setbacklight(unsigned int level);
+void lcm_common_setbacklight_cmdq(void *handle, unsigned int level);
 unsigned int lcm_common_compare_id(void);
+unsigned int lcm_common_ata_check(unsigned char *buffer);
 #endif
 
 #endif

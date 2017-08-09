@@ -20,6 +20,13 @@
 static LCM_DTS _LCM_DTS;
 static LCM_UTIL_FUNCS lcm_util;
 
+#define FRAME_WIDTH  _LCM_DTS.params.width
+#define FRAME_HEIGHT  _LCM_DTS.params.height
+
+#define dsi_set_cmdq(pdata, queue_size, force_update) \
+		lcm_util.dsi_set_cmdq(pdata, queue_size, force_update)
+#define read_reg_v2(cmd, buffer, buffer_size) \
+		lcm_util.dsi_dcs_read_lcm_reg_v2(cmd, buffer, buffer_size)
 
 /* --------------------------------------------------------------------------- */
 /* LCM Driver Implementations */
@@ -31,6 +38,7 @@ void lcm_common_parse_dts(const LCM_DTS *DTS, unsigned char force_update)
 	LCM_DATA *dts_compare_id = &(_LCM_DTS.compare_id[0]);
 	LCM_DATA *dts_suspend = &(_LCM_DTS.suspend[0]);
 	LCM_DATA *dts_backlight = &(_LCM_DTS.backlight[0]);
+	LCM_DATA *dts_backlight_cmdq = &(_LCM_DTS.backlight_cmdq[0]);
 
 
 	if ((_LCM_DTS.parsing != 0) && (force_update == 0)) {
@@ -690,6 +698,25 @@ void lcm_common_parse_dts(const LCM_DTS *DTS, unsigned char force_update)
 	_LCM_DTS.backlight_size = DTS->backlight_size;
 #endif
 
+#if defined(LCM_DEBUG)
+	/* LCM DTS backlight cmdq data set */
+	_LCM_DTS.backlight_cmdq_size = 0;
+	memset(dts_backlight_cmdq, 0, sizeof(LCM_DATA) * 8);
+	dts_backlight_cmdq->func = LCM_FUNC_CMD;
+	dts_backlight_cmdq->type = LCM_UTIL_WRITE_CMD_V2;
+	dts_backlight_cmdq->size = 3;
+	dts_backlight_cmdq->data_t3.cmd = 0x51;
+	dts_backlight_cmdq->data_t3.size = 1;
+	dts_backlight_cmdq->data_t3.data[0] = 0xFF;
+	dts_backlight_cmdq = dts_backlight_cmdq + 1;
+	_LCM_DTS.backlight_cmdq_size = _LCM_DTS.backlight_cmdq_size + 1;
+#else
+	memset(dts_backlight_cmdq, 0, sizeof(LCM_DATA) * (DTS->backlight_cmdq_size));
+	memcpy(dts_backlight_cmdq, &(DTS->backlight_cmdq[0]),
+	       sizeof(LCM_DATA) * (DTS->backlight_cmdq_size));
+	_LCM_DTS.backlight_cmdq_size = DTS->backlight_cmdq_size;
+#endif
+
 	_LCM_DTS.parsing = 1;
 }
 
@@ -983,19 +1010,18 @@ void lcm_common_setbacklight(unsigned int level)
 
 unsigned int lcm_common_compare_id(void)
 {
-	unsigned int compare = 0;
+	/* default: skip compare id */
+	unsigned int compare = 1;
 
 	if (_LCM_DTS.compare_id_size > 32) {
-		pr_debug("[LCM][ERROR] %s/%d: Init table overflow %d\n", __func__, __LINE__,
-		       _LCM_DTS.init_size);
+		pr_debug("[LCM][ERROR] %s/%d: Compare table overflow %d\n", __func__, __LINE__,
+		       _LCM_DTS.compare_id_size);
 		return 0;
 	}
 
 	if (_LCM_DTS.parsing != 0) {
 		unsigned int i;
 		LCM_DATA *compare_id;
-
-		lcm_common_init();
 
 		for (i = 0; i < _LCM_DTS.compare_id_size; i++) {
 			compare_id = &(_LCM_DTS.compare_id[i]);
@@ -1048,10 +1074,77 @@ unsigned int lcm_common_compare_id(void)
 		return 0;
 	}
 
-	if (compare == 1)
-		return 1;
-	else
-		return 0;
+	return compare;
+}
+
+
+unsigned int lcm_common_ata_check(unsigned char *buffer)
+{
+#ifndef BUILD_LK
+	return 1;
+#endif
+}
+
+
+void lcm_common_setbacklight_cmdq(void *handle, unsigned int level)
+{
+	if (_LCM_DTS.backlight_cmdq_size > 32) {
+		pr_debug("[LCM][ERROR] %s/%d: Backlight cmdq table overflow %d\n", __func__, __LINE__,
+			 _LCM_DTS.backlight_cmdq_size);
+		return;
+	}
+
+	if (_LCM_DTS.parsing != 0) {
+		unsigned int i;
+		LCM_DATA *backlight_cmdq;
+		LCM_DATA_T3 *backlight_cmdq_data_t3;
+
+		for (i = 0; i < _LCM_DTS.backlight_cmdq_size; i++) {
+			if (i == (_LCM_DTS.backlight_cmdq_size - 1)) {
+				backlight_cmdq = &(_LCM_DTS.backlight_cmdq[i]);
+				backlight_cmdq_data_t3 = &(backlight_cmdq->data_t3);
+				backlight_cmdq_data_t3->data[i] = level;
+			} else
+				backlight_cmdq = &(_LCM_DTS.backlight_cmdq[i]);
+
+			switch (backlight_cmdq->func) {
+			case LCM_FUNC_GPIO:
+				lcm_gpio_set_data(backlight_cmdq->type, &backlight_cmdq->data_t1);
+				break;
+
+			case LCM_FUNC_I2C:
+				lcm_i2c_set_data(backlight_cmdq->type, &backlight_cmdq->data_t2);
+				break;
+
+			case LCM_FUNC_UTIL:
+				lcm_util_set_data(&lcm_util, backlight_cmdq->type,
+						  &backlight_cmdq->data_t1);
+				break;
+
+			case LCM_FUNC_CMD:
+				switch (backlight_cmdq->type) {
+				case LCM_UTIL_WRITE_CMD_V23:
+					lcm_util_set_write_cmd_v23(&lcm_util, handle,
+								   &backlight_cmdq->data_t3, 1);
+					break;
+
+				default:
+					pr_debug("[LCM][ERROR] %s/%d: %d\n", __func__, __LINE__,
+						 (unsigned int)backlight_cmdq->type);
+					return;
+				}
+				break;
+
+			default:
+				pr_debug("[LCM][ERROR] %s/%d: %d\n", __func__, __LINE__,
+					 (unsigned int)backlight_cmdq->func);
+				return;
+			}
+		}
+	} else {
+		pr_debug("[LCM][ERROR] %s/%d: DTS is not parsed\n", __func__, __LINE__);
+		return;
+	}
 }
 
 
@@ -1065,6 +1158,8 @@ LCM_DRIVER lcm_common_drv = {
 	.compare_id = lcm_common_compare_id,
 	.set_backlight = lcm_common_setbacklight,
 	.update = lcm_common_update,
+	.ata_check = lcm_common_ata_check,
+	.set_backlight_cmdq = lcm_common_setbacklight_cmdq,
 	.parse_dts = lcm_common_parse_dts,
 };
 #endif

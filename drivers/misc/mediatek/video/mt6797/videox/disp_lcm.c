@@ -173,7 +173,9 @@ void _dump_lcm_info(disp_lcm_handle *plcm)
 #define COMPARE_ID_SIZE	(sizeof(LCM_DATA)*32)
 #define SUSPEND_SIZE		(sizeof(LCM_DATA)*32)
 #define BACKLIGHT_SIZE		(sizeof(LCM_DATA)*32)
-#define MAX_SIZE			(MAX(MAX(MAX(INIT_SIZE, COMPARE_ID_SIZE), SUSPEND_SIZE), BACKLIGHT_SIZE))
+#define BACKLIGHT_CMDQ_SIZE		(sizeof(LCM_DATA)*32)
+#define MAX_SIZE			(MAX(MAX(MAX(MAX(INIT_SIZE, COMPARE_ID_SIZE), SUSPEND_SIZE), BACKLIGHT_SIZE), \
+							BACKLIGHT_CMDQ_SIZE))
 
 static unsigned char dts[MAX_SIZE];
 static LCM_DTS lcm_dts;
@@ -723,6 +725,72 @@ void parse_lcm_ops_dt_node(struct device_node *np, LCM_DTS *lcm_dts, unsigned ch
 				len = len - tmp_len;
 			} else {
 				lcm_dts->backlight_size = i + 1;
+				break;
+			}
+		}
+	}
+
+	/* parse LCM backlight cmdq table */
+	len = disp_of_getprop_u8(np, "backlight_cmdq", dts);
+	if (len <= 0) {
+		pr_err("%s:%d: Cannot find LCM backlight cmdq table, skip it!\n", __FILE__,
+		       __LINE__);
+	} else {
+		if (len > BACKLIGHT_CMDQ_SIZE) {
+			pr_err("%s:%d: LCM backlight cmdq table overflow: %d\n", __FILE__, __LINE__,
+			       len);
+			return;
+		}
+
+		tmp = dts;
+		for (i = 0; i < 32; i++) {
+			lcm_dts->backlight_cmdq[i].func = (*tmp) & 0xFF;
+			lcm_dts->backlight_cmdq[i].type = (*(tmp + 1)) & 0xFF;
+			lcm_dts->backlight_cmdq[i].size = (*(tmp + 2)) & 0xFF;
+			tmp_len = 3;
+
+			switch (lcm_dts->backlight_cmdq[i].func) {
+			case LCM_FUNC_GPIO:
+				memcpy(&(lcm_dts->backlight_cmdq[i].data_t1), tmp + 3,
+				       lcm_dts->backlight_cmdq[i].size);
+				break;
+
+			case LCM_FUNC_I2C:
+				memcpy(&(lcm_dts->backlight_cmdq[i].data_t2), tmp + 3,
+				       lcm_dts->backlight_cmdq[i].size);
+				break;
+
+			case LCM_FUNC_UTIL:
+				memcpy(&(lcm_dts->backlight_cmdq[i].data_t1), tmp + 3,
+				       lcm_dts->backlight_cmdq[i].size);
+				break;
+
+			case LCM_FUNC_CMD:
+				switch (lcm_dts->backlight_cmdq[i].type) {
+				case LCM_UTIL_WRITE_CMD_V23:
+					memcpy(&(lcm_dts->backlight_cmdq[i].data_t3), tmp + 3,
+					       lcm_dts->backlight_cmdq[i].size);
+					break;
+
+				default:
+					pr_err("%s:%d: %d\n", __FILE__, __LINE__,
+					       lcm_dts->backlight_cmdq[i].type);
+					return;
+				}
+				break;
+
+			default:
+				pr_err("%s:%d: %d\n", __FILE__, __LINE__,
+				       (unsigned int)lcm_dts->backlight_cmdq[i].func);
+				return;
+			}
+			tmp_len = tmp_len + lcm_dts->backlight_cmdq[i].size;
+
+			if (tmp_len < len) {
+				tmp = tmp + tmp_len;
+				len = len - tmp_len;
+			} else {
+				lcm_dts->backlight_cmdq_size = i + 1;
 				break;
 			}
 		}

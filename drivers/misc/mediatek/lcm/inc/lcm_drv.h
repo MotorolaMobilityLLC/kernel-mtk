@@ -688,12 +688,14 @@ typedef struct {
 	unsigned int compare_id_size;
 	unsigned int suspend_size;
 	unsigned int backlight_size;
+	unsigned int backlight_cmdq_size;
 
 	LCM_PARAMS params;
 	LCM_DATA init[256];
 	LCM_DATA compare_id[32];
 	LCM_DATA suspend[32];
 	LCM_DATA backlight[32];
+	LCM_DATA backlight_cmdq[32];
 } LCM_DTS;
 #endif
 
