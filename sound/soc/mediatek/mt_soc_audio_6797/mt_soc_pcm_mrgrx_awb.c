@@ -99,9 +99,6 @@ static void StopAudioAWBHardware(struct snd_pcm_substream *substream)
 	/* here to set interrupt */
 	SetIrqEnable(Soc_Aud_IRQ_MCU_MODE_IRQ2_MCU_MODE, false);
 
-	if (GetI2SDacEnable() == false)
-		SetI2SDacEnable(false);
-
 	/* here to turn off digital part */
 	SetConnection(Soc_Aud_InterCon_DisConnect, Soc_Aud_InterConnectionInput_I15,
 		      Soc_Aud_InterConnectionOutput_O05);

@@ -273,10 +273,13 @@ static int mtk_soc_pcm_hp_impedance_close(struct snd_pcm_substream *substream)
 	/* struct snd_pcm_runtime *runtime = substream->runtime; */
 	pr_warn("%s\n", __func__);
 	if (mPrepareDone == true) {
-		mPrepareDone = false;
 		SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_OUT_DAC, false);
+		if (GetI2SDacEnable() == false)
+			SetI2SDacEnable(false);
+
 		SetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_DL1, false);
 		EnableAfe(false);
+		mPrepareDone = false;
 	}
 	AudDrv_Emi_Clk_Off();
 	AudDrv_Clk_Off();
