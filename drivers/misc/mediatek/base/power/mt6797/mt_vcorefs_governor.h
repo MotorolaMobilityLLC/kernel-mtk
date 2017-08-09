@@ -48,6 +48,7 @@ enum vcore_trans {
 
 enum dvfs_kicker {
 	KIR_MM = 0,
+	KIR_PERF,
 	KIR_SYSFS,
 	NUM_KICKER,
 
