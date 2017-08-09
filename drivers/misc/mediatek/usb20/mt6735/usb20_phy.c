@@ -1,5 +1,8 @@
 #ifdef CONFIG_MTK_CLKMGR
+/* D2 WORKAROUND */
+#ifndef CONFIG_ARCH_MT6735M
 #include <mach/mt_clkmgr.h>
+#endif
 #else
 #include <linux/clk.h>
 #endif
@@ -195,14 +198,20 @@ bool usb_enable_clock(bool enable)
 		real_enable++;
 		enable_phy_clock(true);
 #ifdef CONFIG_MTK_CLKMGR
+/* D2 WORKAROUND */
+#ifndef CONFIG_ARCH_MT6735M
 		res = enable_clock(MT_CG_PERI_USB0, "PERI_USB");
+#endif
 #else
 		res = clk_enable(musb_clk);
 #endif
 	} else if (!enable && count == 1) {
 		real_disable++;
 #ifdef CONFIG_MTK_CLKMGR
+/* D2 WORKAROUND */
+#ifndef CONFIG_ARCH_MT6735M
 		res = disable_clock(MT_CG_PERI_USB0, "PERI_USB");
+#endif
 #else
 		res = 0;
 		clk_disable(musb_clk);

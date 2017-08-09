@@ -30,9 +30,7 @@
 /* GIT K318 WORKAROUND */
 /* #include <mach/upmu_common.h> */
 /* #include <mach/mt_pm_ldo.h> */
-#ifdef CONFIG_MTK_CLKMGR
-#include <mach/mt_clkmgr.h>
-#else
+#ifndef CONFIG_MTK_CLKMGR
 #include <linux/clk.h>
 struct clk *musb_clk;
 #endif
