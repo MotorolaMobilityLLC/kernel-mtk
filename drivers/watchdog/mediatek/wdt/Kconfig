@@ -8,7 +8,13 @@ config MTK_WATCHDOG
 	please note that mediatek watchdog driver don't use
 	watchdog core which define by WATCHDOG_CORE.
 
-# WatchDog
+# common watchdog driver
+config MTK_WATCHDOG_COMMON
+	bool "WatchDog Support Common"
+	---help---
+	Watch dog mtk driver support common code between different Socs.
+
+# enable watchdog or not
 config MTK_WD_KICKER
 	tristate "WatchDog Kicer"
 	default y
