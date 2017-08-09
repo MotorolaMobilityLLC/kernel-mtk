@@ -3439,7 +3439,7 @@ static inline void eem_isr_handler(struct eem_det *det)
 	eemintsts = eem_read(EEMINTSTS);
 	eemen = eem_read(EEMEN);
 
-	eem_error("Bk_No = %d %s-isr, 0x%X, 0x%X\n",
+	eem_debug("Bk_No = %d %s-isr, 0x%X, 0x%X\n",
 		det->ctrl_id, ((char *)(det->name) + 8), eemintsts, eemen);
 
 	if (eemintsts == 0x1) { /* EEM init1 or init2 */
