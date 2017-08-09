@@ -84,19 +84,3 @@ config MD2_SMEM_SIZE
 	   modem 2 share memory size.
 
 
-
-config MTK_MD_SBP_CUSTOM_VALUE
-	string "MTK_MD_SBP_CUSTOM_VALUE"
-	default ""
-	help
-	  Disable MD SBP(Single Binary Platform) feature or not.
-	  Defined: enable MD SBP feature.
-
-
-config MTK_MD2_SBP_CUSTOM_VALUE
-	string "MTK_MD2_SBP_CUSTOM_VALUE"
-	default ""
-	help
-	  Disable MD2 SBP(Single Binary Platform) feature or not.
-	  Defined: enable MD2 SBP feature.
-

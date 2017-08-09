@@ -328,9 +328,6 @@ int set_sim_type(int md_id, int data);
 int get_sim_type(int md_id, int *p_sim_type);
 int enable_get_sim_type(int md_id, unsigned int enable);
 void ccci_dump_md_register(int md_id);
-#ifdef CONFIG_MTK_MD_SBP_CUSTOM_VALUE
-int ccci_set_md_sbp(int md_id, unsigned int md_sbp);
-#endif	/*  CONFIG_MTK_MD_SBP_CUSTOM_VALUE */
 /* Generally, AP and MD has same share memory address after hw remapp.
  * however, if hardware remapp does not work, then need software remap,
  *This variable is used to fix md phy addr does not equeal with AP.
