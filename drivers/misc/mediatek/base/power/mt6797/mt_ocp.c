@@ -470,11 +470,10 @@ int Temp;
 if (ocp_read_field(OCPAPBSTATUS01, 0:0) == 1) {
 	Temp = ocp_read(OCPAPBSTATUS01);
 	/* CapTotLkg: shit 8 bit -> Q8.12 -> integer  (mA/mW) */
-	*Leakage = (((Temp & 0x0FFFFF00) * 1000) >> 20);
-
+	*Leakage = (((Temp & 0x0FFFFF00) >> 8) * 1000) >> 12;
 	/* TotScaler */
 	if (ocp_read_field(OCPAPBCFG24, 25:25) == 1)
-		*Leakage = *Leakage >> (ocp_read_field(OCPAPBCFG24, 24:22) + 1);
+		*Leakage = *Leakage >> (GET_BITS_VAL_OCP(2:0, ~ocp_read_field(OCPAPBCFG24, 24:22)) + 1);
 	else
 		*Leakage = *Leakage << (ocp_read_field(OCPAPBCFG24, 24:22));
 
@@ -973,11 +972,11 @@ if (Cluster == OCP_LL) {
 	if (ocp_read_field((MP0_OCP_CAP_STATUS00), 0:0) == 1) {
 		Temp = ocp_read((MP0_OCP_CAP_STATUS00));
 		/* CapTotLkg: shit 8 bit -> Q8.12 -> integer  (mA, mW) */
-		*Leakage = ((Temp & 0x0FFFFF00) * 1000) >> 20;
+		*Leakage = (((Temp & 0x0FFFFF00) >> 8) * 1000) >> 12;
 
 		/* TotScaler */
 		if (ocp_read_field(MP0_OCP_SCAL, 3:3) == 1)
-			*Leakage = *Leakage >> (ocp_read_field(MP0_OCP_SCAL, 2:0) + 1);
+			*Leakage = *Leakage >> (GET_BITS_VAL_OCP(2:0, ~ocp_read_field(MP0_OCP_SCAL, 2:0)) + 1);
 		else
 			*Leakage = *Leakage << (ocp_read_field(MP0_OCP_SCAL, 2:0));
 
@@ -1002,11 +1001,11 @@ return 1;
 	if (ocp_read_field((MP1_OCP_CAP_STATUS00), 0:0) == 1) {
 		Temp = ocp_read((MP1_OCP_CAP_STATUS00));
 		/* CapTotLkg: shit 8 bit -> Q8.12 -> integer  (mA, mW) */
-		*Leakage = ((Temp & 0x0FFFFF00) * 1000) >> 20;
+		*Leakage = (((Temp & 0x0FFFFF00) >> 8) * 1000) >> 12;
 
 		/* TotScaler */
 		if (ocp_read_field(MP1_OCP_SCAL, 3:3) == 1)
-			*Leakage = *Leakage >> (ocp_read_field(MP1_OCP_SCAL, 2:0) + 1);
+			*Leakage = *Leakage >> (GET_BITS_VAL_OCP(2:0, ~ocp_read_field(MP1_OCP_SCAL, 2:0)) + 1);
 		else
 			*Leakage = *Leakage << (ocp_read_field(MP1_OCP_SCAL, 2:0));
 
@@ -1143,7 +1142,8 @@ if (Cluster == OCP_LL) {
 
 				/* TotScaler */
 				if (ocp_read_field(MP0_OCP_SCAL, 3:3) == 1)
-					*AvgLkg = *AvgLkg >> (ocp_read_field(MP0_OCP_SCAL, 2:0) + 1);
+					*AvgLkg = *AvgLkg >> (GET_BITS_VAL_OCP(2:0,
+								~ocp_read_field(MP0_OCP_SCAL, 2:0)) + 1);
 				else
 					*AvgLkg = *AvgLkg << (ocp_read_field(MP0_OCP_SCAL, 2:0));
 
@@ -1163,7 +1163,8 @@ if (Cluster == OCP_LL) {
 
 				/* TotScaler */
 				if (ocp_read_field(MP1_OCP_SCAL, 3:3) == 1)
-					*AvgLkg = *AvgLkg >> (ocp_read_field(MP1_OCP_SCAL, 2:0) + 1);
+					*AvgLkg = *AvgLkg >> (GET_BITS_VAL_OCP(2:0,
+								~ocp_read_field(MP1_OCP_SCAL, 2:0)) + 1);
 				else
 					*AvgLkg = *AvgLkg << (ocp_read_field(MP1_OCP_SCAL, 2:0));
 
