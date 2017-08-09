@@ -232,7 +232,7 @@ ssize_t GPS_read(struct file *filp, char __user *buf, size_t count, loff_t *f_po
 	}
 #endif
 
-	if (retval) {
+	if (retval > 0) {
 		/* we got something from STP driver */
 		if (copy_to_user(buf, i_buf, retval)) {
 			retval = -EFAULT;
