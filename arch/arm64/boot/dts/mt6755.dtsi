@@ -845,8 +845,8 @@
 			reg = <0x10009000 0x1000>;
 		};
 
-		sej@1000a000 {
-			compatible = "mediatek,sej";
+		hacc@1000a000 {
+			compatible = "mediatek,hacc";
 			reg = <0x1000a000 0x1000>;
 			interrupts = <GIC_SPI 173 IRQ_TYPE_LEVEL_LOW>;
 			clocks = <&infrasys INFRA_SEJ>;

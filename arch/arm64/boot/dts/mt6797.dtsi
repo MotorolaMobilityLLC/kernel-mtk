@@ -810,8 +810,8 @@ initrd=0x44000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 			reg = <0x10009000 0x1000>;
 		};
 
-		sej@1000a000 {
-			compatible = "mediatek,sej";
+		hacc@1000a000 {
+			compatible = "mediatek,hacc";
 			reg = <0x1000a000 0x1000>;
 			interrupts = <GIC_SPI 196 IRQ_TYPE_LEVEL_LOW>;
 		};
