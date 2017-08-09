@@ -5791,7 +5791,7 @@ int fbconfig_get_esd_check_test(uint32_t dsi_id, uint32_t cmd, uint8_t *buffer, 
 		DISPCHECK("[ESD]wait frame done ret:%d\n", ret);
 
 	dpmgr_path_reset(pgc->dpmgr_handle, CMDQ_DISABLE);
-	/*ret = fbconfig_get_esd_check(dsi_id, cmd, buffer, num);*/
+	ret = fbconfig_get_esd_check(dsi_id, cmd, buffer, num);
 	dpmgr_path_start(pgc->dpmgr_handle, CMDQ_DISABLE);
 	DISPCHECK("[ESD]start dpmgr path[end]\n");
 	if (primary_display_is_video_mode()) {

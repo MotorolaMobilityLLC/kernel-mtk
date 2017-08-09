@@ -38,16 +38,16 @@ static DDP_IRQ_CALLBACK irq_callback_table[DISP_MAX_IRQ_CALLBACK];
 
 /* dsi read by cpu should keep esd_check_bycmdq = 0.  */
 /* dsi read by cmdq should keep esd_check_bycmdq = 1. */
-static atomic_t esd_check_bycmdq = ATOMIC_INIT(1);
+atomic_t ESDCheck_byCPU = ATOMIC_INIT(0);
 
 void disp_irq_esd_cust_bycmdq(int enable)
 {
-	atomic_set(&esd_check_bycmdq, enable);
+	atomic_set(&ESDCheck_byCPU, enable ? 0 : 1);
 }
 
 int disp_irq_esd_cust_get(void)
 {
-	return atomic_read(&esd_check_bycmdq);
+	return atomic_read(&ESDCheck_byCPU);
 }
 
 int disp_register_irq_callback(DDP_IRQ_CALLBACK cb)
@@ -187,7 +187,7 @@ irqreturn_t disp_irq_handler(int irq, void *dev_id)
 		reg_val = (DISP_REG_GET(dsi_reg_va + 0xC) & 0xff);
 		reg_temp_val = reg_val;
 		/* rd_rdy don't clear and wait for ESD & Read LCM will clear the bit. */
-		if (disp_irq_esd_cust_get() == 1)
+		if (disp_irq_esd_cust_get() == 0)
 			reg_temp_val = reg_val&0xfffe;
 		DISP_CPU_REG_SET(dsi_reg_va + 0xC, ~reg_temp_val);
 	} else if (irq == dispsys_irq[DISP_REG_OVL0] ||

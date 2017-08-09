@@ -2710,7 +2710,7 @@ int __init mtkfb_init(void)
 	register_early_suspend(&mtkfb_early_suspend_handler);
 #endif
 #endif
-	/*PanelMaster_Init();*/
+	PanelMaster_Init();
 	DBG_Init();
 	mtkfb_ipo_init();
 exit:
