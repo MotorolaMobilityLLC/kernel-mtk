@@ -53,6 +53,7 @@ struct pinctrl_state *eint_as_int, *eint_output0, *eint_output1, *rst_output0, *
 static const struct of_device_id touch_of_match[] = {
 	{ .compatible = "mediatek,mt6735-touch", },
 	{ .compatible = "mediatek,mt6580-touch", },
+	{ .compatible = "mediatek,mt8173-touch", },
 	{},
 };
 
@@ -481,15 +482,19 @@ static int tpd_probe(struct platform_device *pdev)
 	#ifdef CONFIG_MTK_LCM_PHYSICAL_ROTATION
 	if (0 == strncmp(CONFIG_MTK_LCM_PHYSICAL_ROTATION, "90", 2)
 		|| 0 == strncmp(CONFIG_MTK_LCM_PHYSICAL_ROTATION, "270", 3)) {
+#ifndef CONFIG_ARCH_MT8173
 		TPD_RES_Y = DISP_GetScreenWidth();
 		TPD_RES_X = DISP_GetScreenHeight();
+#endif
 	} else
     #endif
 	{
 #ifdef CONFIG_CUSTOM_LCM_X
 #ifndef CONFIG_MTK_FPGA
+#ifndef CONFIG_ARCH_MT8173
 		TPD_RES_X = DISP_GetScreenWidth();
 		TPD_RES_Y = DISP_GetScreenHeight();
+#endif
 #endif
 #else
 #ifdef CONFIG_LCM_WIDTH

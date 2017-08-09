@@ -10,6 +10,6 @@ obj-y   +=  tpd_init.o
 obj-y   +=  tpd_misc.o
 obj-y   +=  tpd_setting.o
 
-ifeq ($(CONFIG_TOUCHSCREEN_MTK_GT1151),y)
-obj-y	+=  GT1151/
-endif
+obj-$(CONFIG_TOUCHSCREEN_MTK_GT1151)	+=  GT1151/
+
+obj-$(CONFIG_TOUCHSCREEN_MTK_SYNAPTICS_I2C_RMI4)	+=  synaptics_i2c_rmi4/

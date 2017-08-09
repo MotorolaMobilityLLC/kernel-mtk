@@ -79,6 +79,7 @@ extern void tpd_button_init(void);
 struct tpd_device {
 	struct device *tpd_dev;
 	struct regulator *reg;
+	struct regulator *io_reg;
 	struct input_dev *dev;
 	struct input_dev *kpd;
 	struct timer_list timer;
