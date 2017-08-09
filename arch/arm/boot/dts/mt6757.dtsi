@@ -1351,9 +1351,19 @@
 	};
 
 	mali@13040000 {
-		compatible = "mediatek,mali";
-		reg = <0 0x13040000 0 0x4000>;
-		interrupts = <GIC_SPI 245 IRQ_TYPE_LEVEL_LOW>;
+		compatible = "arm,malit860", "arm,mali-t86x", "arm,malit8xx", "arm,mali-midgard";
+			reg = <0x13040000 0x4000>;
+			interrupts = <GIC_SPI 264 IRQ_TYPE_LEVEL_LOW>,
+					<GIC_SPI 263 IRQ_TYPE_LEVEL_LOW>,
+					<GIC_SPI 262 IRQ_TYPE_LEVEL_LOW>;
+			interrupt-names = "JOB", "MMU", "GPU";
+			clock-frequency = <700000000>;
+			clocks = <&mfgsys MFGCFG_BG3D>, <&scpsys SCP_SYS_MFG_ASYNC>,
+					 <&scpsys SCP_SYS_MFG>, <&scpsys SCP_SYS_MFG_CORE0>,
+					 <&scpsys SCP_SYS_MFG_CORE1>;
+			clock-names = "mfg-main", "mtcmos-mfg-async",
+							"mtcmos-mfg", "mtcmos-mfg-core0",
+							"mtcmos-mfg-core1";
 	};
 
 	mmsys: mmsys_config@14000000 {
@@ -2045,6 +2055,18 @@
 		reg = <0 0x1a057000 0 0x1000>;
 		interrupts = <GIC_SPI 234 IRQ_TYPE_LEVEL_LOW>;
 	};
+
+	gpufreq {
+		compatible = "mediatek,mt6757-gpufreq";
+		clocks =
+				<&topckgen TOP_MUX_MFG>,
+				<&topckgen TOP_MMPLL_CK>,
+				<&topckgen TOP_SYSPLL_D3>;
+		clock-names =
+				"clk_mux",
+				"clk_main_parent",
+				"clk_sub_parent";
+		};
 
 };
 
