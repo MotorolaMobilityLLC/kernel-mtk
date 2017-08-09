@@ -89,6 +89,7 @@
 #include <mt6311.h>
 #include <mach/mt_pmic.h>
 
+#include <mt-plat/aee.h>
 
 /*****************************************************************************
  * PMIC extern variable
@@ -2103,7 +2104,9 @@ void register_battery_percent_notify(void (*battery_percent_callback) (BATTERY_P
 #ifdef BATTERY_PERCENT_PROTECT
 void exec_battery_percent_callback(BATTERY_PERCENT_LEVEL battery_percent_level)
 {				/*0:no limit */
+#ifdef DISABLE_DLPT_FEATURE
 	int i = 0;
+#endif
 
 	if (g_battery_percent_stop == 1) {
 		PMICLOG("[exec_battery_percent_callback] g_battery_percent_stop=%d\n",
@@ -2532,7 +2535,7 @@ int get_rac_val(void)
 				ret = rac_cal * 1;
 
 		} else if ((curr_1 - curr_2) >= 700 &&
-			   (curr_2 - curr_1) <= 1200 & (volt_2 - volt_1) >= 80) {
+			   ((curr_2 - curr_1) <= 1200) & ((volt_2 - volt_1) >= 80)) {
 			/*40.0mA */
 			rac_cal = ((volt_2 - volt_1) * 1000) / (curr_1 - curr_2);	/*m-ohm */
 
@@ -2569,8 +2572,8 @@ int get_rac_val(void)
 int get_dlpt_imix_spm(void)
 {
 	int rac_val[5], rac_val_avg;
-	int volt[5], curr[5], volt_avg = 0, curr_avg = 0;
-	int imix;
+	/* int volt[5], curr[5], volt_avg = 0, curr_avg = 0; */
+	/* int imix; */
 	int i;
 	static unsigned int pre_ui_soc = 101;
 	unsigned int ui_soc;
@@ -2630,7 +2633,7 @@ int get_dlpt_imix_spm(void)
 
 int get_dlpt_imix(void)
 {
-	int rac_val[5], rac_val_avg;
+	/* int rac_val[5], rac_val_avg; */
 	int volt[5], curr[5], volt_avg = 0, curr_avg = 0;
 	int imix;
 	int i;
@@ -2713,7 +2716,7 @@ int dlpt_notify_handler(void *unused)
 	ktime_t ktime;
 	int pre_ui_soc = 0;
 	int cur_ui_soc = 0;
-	int diff_ui_soc = 1;
+	/* int diff_ui_soc = 1; */
 
 	pre_ui_soc = bat_get_ui_percentage();
 	cur_ui_soc = pre_ui_soc;
@@ -2790,10 +2793,15 @@ int dlpt_notify_handler(void *unused)
 				}
 
 				pre_ui_soc = cur_ui_soc;
-
+				#if 0
 				PMICLOG("[DLPT_final] %d,%d,%d,%d,%d,%d\n",
 					g_imix_val, g_imix_val_pre, pre_ui_soc, cur_ui_soc,
 					diff_ui_soc, IMAX_MAX_VALUE);
+				#else
+				PMICLOG("[DLPT_final] %d,%d,%d,%d,%d\n",
+					g_imix_val, g_imix_val_pre, pre_ui_soc, cur_ui_soc,
+					IMAX_MAX_VALUE);
+				#endif
 			}
 
 		}
@@ -4607,7 +4615,7 @@ static int pmic_mt_probe(struct platform_device *dev)
 {
 	int ret_device_file = 0, i;
 #ifdef DLPT_FEATURE_SUPPORT
-	int *pimix;
+	const int *pimix;
 	int len = 0;
 #endif
 #if defined(CONFIG_MTK_SMART_BATTERY)
@@ -4626,6 +4634,7 @@ static int pmic_mt_probe(struct platform_device *dev)
 	}
 #endif
 #ifdef DLPT_FEATURE_SUPPORT
+	pimix = NULL;
 	if (of_scan_flat_dt(fb_early_init_dt_get_chosen, NULL) > 0)
 		pimix = of_get_flat_dt_prop(pmic_node, "atag,imix_r", &len);
 	if (pimix == NULL) {
