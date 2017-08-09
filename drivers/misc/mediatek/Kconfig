@@ -66,6 +66,25 @@ config MTK_MEMORY_LOWPOWER
 	  different DRAM mode dynamically. It's a
 	  platform-dependent feature.
 
+config MTK_DCS
+	bool "Support Mediatek DDRPHY DCS mechanism"
+	depends on MTK_MEMORY_LOWPOWER
+	default n
+	help
+	  Mediatek DDRPHY DCS mechanism.
+	  It tries to turn off free DDRPHY's power/clock.
+	  This can help system reduce power consumption.
+	  It is based on MTK_MEMORY_LOWPOWER technology.
+
+config MTK_PASR
+	bool "Support Mediatek DRAM PASR mechanism"
+	depends on MTK_MEMORY_LOWPOWER
+	default n
+	help
+	  Mediatek DRAM PASR mechanism.
+	  It tries to turn off free DRAM segment's self-refresh.
+	  This can help system reduce power consumption.
+	  It is based on MTK_MEMORY_LOWPOWER technology.
 
 config MTK_BASE_POWER
 	bool

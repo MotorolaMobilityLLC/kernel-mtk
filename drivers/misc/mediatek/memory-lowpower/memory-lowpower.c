@@ -15,9 +15,79 @@
 #include <asm/page.h>
 #include <asm-generic/memory_model.h>
 
+/* Memory lowpower private header file */
+#include "internal.h"
+
 static struct cma *cma;
 static struct page *cma_pages;
 static DEFINE_MUTEX(memory_lowpower_mutex);
+
+/*
+ * memory_lowpower_cma_base - query the cma's base
+ */
+phys_addr_t memory_lowpower_cma_base(void)
+{
+	return cma_get_base(cma);
+}
+
+/*
+ * memory_lowpower_cma_size - query the cma's size
+ */
+unsigned long memory_lowpower_cma_size(void)
+{
+	return cma_get_size(cma);
+}
+
+/*
+ * get_memory_lowpwer_cma_aligned - allocate aligned cma memory belongs to lowpower cma
+ * @count: Requested number of pages.
+ * @align: Requested alignment of pages (in PAGE_SIZE order).
+ * @pages: Pointer indicates allocated cma buffer.
+ * It returns 0 is success, otherwise returns -1
+ */
+int get_memory_lowpower_cma_aligned(int count, unsigned int align, struct page **pages)
+{
+	int ret = 0;
+
+	mutex_lock(&memory_lowpower_mutex);
+
+	*pages = cma_alloc(cma, count, align);
+	if (*pages == NULL) {
+		pr_alert("lowpower cma allocation failed\n");
+		ret = -1;
+	}
+
+	mutex_unlock(&memory_lowpower_mutex);
+
+	return ret;
+}
+
+/*
+ * put_memory_lowpwer_cma_aligned - free aligned cma memory belongs to lowpower cma
+ * @count: Requested number of pages.
+ * @pages: Pointer indicates allocated cma buffer.
+ * It returns 0 is success, otherwise returns -ENOMEM
+ */
+int put_memory_lowpower_cma_aligned(int count, struct page *pages)
+{
+	int ret;
+
+	mutex_lock(&memory_lowpower_mutex);
+
+	if (pages) {
+		ret = cma_release(cma, pages, count);
+		if (!ret) {
+			pr_err("%s incorrect pages: %p(%lx)\n",
+					__func__,
+					pages, page_to_pfn(pages));
+			return -EINVAL;
+		}
+	}
+
+	mutex_unlock(&memory_lowpower_mutex);
+
+	return 0;
+}
 
 /*
  * get_memory_lowpwer_cma - allocate all cma memory belongs to lowpower cma
