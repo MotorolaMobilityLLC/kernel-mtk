@@ -357,7 +357,7 @@ static long CAM_CAL_Ioctl(
 #ifdef CAM_CALGETDLT_DEBUG
 		do_gettimeofday(&ktv1);
 #endif
-		CAM_CALDB("[CAM_CAL] offset %d\n", ptempbuf->u4Offset);
+		/*CAM_CALDB("[CAM_CAL] offset %d\n", ptempbuf->u4Offset);70681*/
 		CAM_CALDB("[CAM_CAL] length %d\n", ptempbuf->u4Length);
 		/**pu1Params = 0;*/
 		i4RetValue = selective_read_region(ptempbuf->u4Offset, pu1Params, S5K2P8_DEVICE_ID, ptempbuf->u4Length);
