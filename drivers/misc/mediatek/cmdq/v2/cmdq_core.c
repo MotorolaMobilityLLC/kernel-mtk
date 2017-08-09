@@ -3177,19 +3177,19 @@ static int32_t cmdq_core_find_a_free_HW_thread(uint64_t engineFlag,
 			}
 
 			thread = CMDQ_INVALID_THREAD;
-		}
+		} else {
+			insertCookie = pThread[thread].nextCookie % cmdq_core_max_task_in_thread(thread);
+			if (NULL != pThread[thread].pCurTask[insertCookie]) {
+				if (forceLog) {
+					CMDQ_LOG("THREAD: thread %d nextCookie = %d already has task\n",
+						 thread, pThread[thread].nextCookie);
+				} else {
+					CMDQ_VERBOSE("THREAD: thread %d nextCookie = %d already has task\n",
+						     thread, pThread[thread].nextCookie);
+				}
 
-		insertCookie = pThread[thread].nextCookie % cmdq_core_max_task_in_thread(thread);
-		if (NULL != pThread[thread].pCurTask[insertCookie]) {
-			if (forceLog) {
-				CMDQ_LOG("THREAD: thread %d nextCookie = %d already has task\n",
-					 thread, pThread[thread].nextCookie);
-			} else {
-				CMDQ_VERBOSE("THREAD: thread %d nextCookie = %d already has task\n",
-					     thread, pThread[thread].nextCookie);
+				thread = CMDQ_INVALID_THREAD;
 			}
-
-			thread = CMDQ_INVALID_THREAD;
 		}
 	} while (0);
 
@@ -3652,8 +3652,6 @@ static uint32_t *cmdq_core_dump_pc(const TaskStruct *pTask, int thread, const ch
 		const uint32_t op = (insts[3] & 0xFF000000) >> 24;
 
 		cmdq_core_parse_instruction(pcVA, parsedInstruction, sizeof(parsedInstruction));
-		CMDQ_LOG("[%s]Thread %d PC(VA): 0x%p, 0x%08x:0x%08x => %s",
-			 tag, thread, pcVA, insts[2], insts[3], parsedInstruction);
 
 		/* for WFE, we specifically dump the event value */
 		if (op == CMDQ_CODE_WFE) {
@@ -3662,8 +3660,11 @@ static uint32_t *cmdq_core_dump_pc(const TaskStruct *pTask, int thread, const ch
 
 			CMDQ_REG_SET32(CMDQ_SYNC_TOKEN_ID, eventID);
 			regValue = CMDQ_REG_GET32(CMDQ_SYNC_TOKEN_VAL);
-			CMDQ_LOG("[%s]CMDQ_SYNC_TOKEN_VAL of %s is %d\n", tag,
-				 cmdq_core_get_event_name(eventID), regValue);
+			CMDQ_LOG("[%s]Thread %d PC(VA): 0x%p, 0x%08x:0x%08x => %s, value:(%d)",
+			 tag, thread, pcVA, insts[2], insts[3], parsedInstruction, regValue);
+		} else {
+			CMDQ_LOG("[%s]Thread %d PC(VA): 0x%p, 0x%08x:0x%08x => %s",
+			 tag, thread, pcVA, insts[2], insts[3], parsedInstruction);
 		}
 	} else {
 		if (true == pTask->secData.isSecure) {
@@ -3721,6 +3722,21 @@ void cmdq_core_dump_disp_trigger_loop(const char *tag)
 	}
 }
 
+void cmdq_core_dump_disp_trigger_loop_mini(const char *tag)
+{
+	/* we assume the first non-high-priority thread is trigger loop thread. */
+	/* since it will start very early */
+	if (gCmdqContext.thread[CMDQ_MAX_HIGH_PRIORITY_THREAD_COUNT].taskCount
+	    && gCmdqContext.thread[CMDQ_MAX_HIGH_PRIORITY_THREAD_COUNT].pCurTask[1]
+	    && gCmdqContext.thread[CMDQ_MAX_HIGH_PRIORITY_THREAD_COUNT].loopCallback) {
+
+		TaskStruct *pTask =
+		    gCmdqContext.thread[CMDQ_MAX_HIGH_PRIORITY_THREAD_COUNT].pCurTask[1];
+
+		cmdq_core_dump_pc(pTask, CMDQ_MAX_HIGH_PRIORITY_THREAD_COUNT, tag);
+	}
+}
+
 static void cmdq_core_dump_thread_pc(const int32_t thread)
 {
 	int32_t i;
@@ -3739,30 +3755,33 @@ static void cmdq_core_dump_thread_pc(const int32_t thread)
 	for (i = 0; i < cmdq_core_max_task_in_thread(thread); i++) {
 		pTask = pThread->pCurTask[i];
 
-		if (NULL != pTask) {
-			pcVA = cmdq_core_get_pc(pTask, thread, insts);
-			if (pcVA) {
-				const uint32_t op = (insts[3] & 0xFF000000) >> 24;
+		if (NULL == pTask)
+			continue;
 
-				cmdq_core_parse_instruction(pcVA, parsedInstruction,
-							    sizeof(parsedInstruction));
+		pcVA = cmdq_core_get_pc(pTask, thread, insts);
+		if (pcVA) {
+			const uint32_t op = (insts[3] & 0xFF000000) >> 24;
+
+			cmdq_core_parse_instruction(pcVA, parsedInstruction,
+						    sizeof(parsedInstruction));
+
+			/* for wait event case, dump token value */
+			/* for WFE, we specifically dump the event value */
+			if (op == CMDQ_CODE_WFE) {
+				uint32_t regValue = 0;
+				const uint32_t eventID = 0x3FF & insts[3];
+
+				CMDQ_REG_SET32(CMDQ_SYNC_TOKEN_ID, eventID);
+				regValue = CMDQ_REG_GET32(CMDQ_SYNC_TOKEN_VAL);
 				CMDQ_LOG
-				    ("[INFO]task:%p(index:%d), Thread %d PC(VA): 0x%p, 0x%08x:0x%08x => %s",
-				     pTask, i, thread, pcVA, insts[2], insts[3], parsedInstruction);
-
-				/* for wait event case, dump token value */
-				/* for WFE, we specifically dump the event value */
-				if (op == CMDQ_CODE_WFE) {
-					uint32_t regValue = 0;
-					const uint32_t eventID = 0x3FF & insts[3];
-
-					CMDQ_REG_SET32(CMDQ_SYNC_TOKEN_ID, eventID);
-					regValue = CMDQ_REG_GET32(CMDQ_SYNC_TOKEN_VAL);
-					CMDQ_LOG("[INFO]CMDQ_SYNC_TOKEN_VAL of %s is %d\n",
-						 cmdq_core_get_event_name(eventID), regValue);
-				}
-				break;
+				("[INFO]task:%p(ID:%d), Thread %d PC(VA): 0x%p, 0x%08x:0x%08x => %s, value:(%d)",
+				pTask, i, thread, pcVA, insts[2], insts[3], parsedInstruction, regValue);
+			} else {
+				CMDQ_LOG
+				("[INFO]task:%p(ID:%d), Thread %d PC(VA): 0x%p, 0x%08x:0x%08x => %s",
+				pTask, i, thread, pcVA, insts[2], insts[3], parsedInstruction);
 			}
+			break;
 		}
 	}
 }
@@ -6726,18 +6745,16 @@ static int32_t cmdq_core_consume_waiting_list(struct work_struct *_ignore)
 		if (CMDQ_INVALID_THREAD == thread) {
 			/* have to wait, remain in wait list */
 			CMDQ_MSG("<--THREAD: acquire thread fail, need to wait\n");
-			if (needLog) {
-				/* task wait too long */
-				CMDQ_ERR("acquire thread pre-dump for task: 0x%p\n",
-						   pTask);
-				CMDQ_ERR(" thread_prio: %d, task_prio: %d, flag: 0x%llx\n",
-						   thread_prio, pTask->priority, pTask->engineFlag);
+			if (false == needLog)
+				continue;
 
-				dumpTriggerLoop =
-				    (CMDQ_SCENARIO_PRIMARY_DISP == pTask->scenario) ?
-				    (true) : (dumpTriggerLoop);
-			}
-			continue;
+			/* task wait too long */
+			CMDQ_ERR("acquire thread fail, task: 0x%p, thread_prio: %d, task_prio: %d, flag: 0x%llx\n",
+					   pTask, thread_prio, pTask->priority, pTask->engineFlag);
+
+			dumpTriggerLoop =
+			    (CMDQ_SCENARIO_PRIMARY_DISP == pTask->scenario) ?
+			    (true) : (dumpTriggerLoop);
 		}
 
 		pThread = &gCmdqContext.thread[thread];
@@ -6774,7 +6791,7 @@ static int32_t cmdq_core_consume_waiting_list(struct work_struct *_ignore)
 		/* HACK: observe trigger loop status when acquire config thread failed. */
 		int32_t dumpThread = cmdq_get_func()->dispThread(CMDQ_SCENARIO_PRIMARY_DISP);
 
-		cmdq_core_dump_disp_trigger_loop("ACQUIRE");
+		cmdq_core_dump_disp_trigger_loop_mini("ACQUIRE");
 		cmdq_core_dump_thread_pc(dumpThread);
 	}
 
