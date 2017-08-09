@@ -2,7 +2,9 @@
 #define _MT_IDVFS_H
 
 #include <linux/kernel.h>
-#include <mach/mt_secure_api.h>
+#ifdef __MT_IDVFS_C__
+#include "mach/mt_secure_api.h"
+#endif
 
 /*
 #ifdef __MT_IDVFS_C__
@@ -12,7 +14,10 @@
 #endif
 */
 
-#ifdef	__MT_IDVFS_C__
+#ifdef __MT_IDVFS_C__
+#if defined(CONFIG_ARM_PSCI) || defined(CONFIG_MTK_PSCI)
+#define mt_secure_call_idvfs	mt_secure_call
+#else
 /* This is workaround for idvfs use */
 static noinline int mt_secure_call_idvfs(u64 function_id, u64 arg0, u64 arg1, u64 arg2)
 {
@@ -28,6 +33,7 @@ static noinline int mt_secure_call_idvfs(u64 function_id, u64 arg0, u64 arg1, u6
 	ret = (int)reg0;
 	return ret;
 }
+#endif
 #endif
 
 /* define for iDVFS service */

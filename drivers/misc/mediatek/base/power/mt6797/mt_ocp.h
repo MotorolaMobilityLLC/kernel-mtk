@@ -12,6 +12,9 @@
 #include <mach/mt_secure_api.h>
 
 #ifdef	__MT_OCP_C__
+#if defined(CONFIG_ARM_PSCI) || defined(CONFIG_MTK_PSCI)
+#define mt_secure_call_ocp	mt_secure_call
+#else
 /* This is workaround for ocp use */
 static noinline int mt_secure_call_ocp(u64 function_id, u64 arg0, u64 arg1, u64 arg2)
 {
@@ -29,6 +32,7 @@ static noinline int mt_secure_call_ocp(u64 function_id, u64 arg0, u64 arg1, u64 
 	ret = (int)reg0;
 	return ret;
 }
+#endif
 #endif
 
 /*
