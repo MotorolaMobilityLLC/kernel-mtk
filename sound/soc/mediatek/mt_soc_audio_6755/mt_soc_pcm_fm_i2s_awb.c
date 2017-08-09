@@ -138,6 +138,10 @@ static void StartAudioFMI2SAWBHardware(struct snd_pcm_substream *substream)
 		/* set merge interface */
 		SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_IN_2, true);
 
+		/* reset I2S In for 4pin I2S control */
+		if (GetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_4PIN_IN_OUT) == true)
+			Afe_Set_Reg(AFE_I2S_CON, 0x0, 0x1);
+
 		/* Config 2nd I2S IN */
 		memset_io((void *)&m2ndI2SInAttribute, 0, sizeof(m2ndI2SInAttribute));
 
@@ -153,10 +157,11 @@ static void StartAudioFMI2SAWBHardware(struct snd_pcm_substream *substream)
 		if (substream->runtime->rate == 48000)
 			SetI2SASRCConfig(true, 48000);	/* Covert from 32000 Hz to 48000 Hz */
 		else
-		SetI2SASRCConfig(true, 44100);  /* Covert from 32000 Hz to 44100 Hz */
+			SetI2SASRCConfig(true, 44100);  /* Covert from 32000 Hz to 44100 Hz */
+
 		SetI2SASRCEnable(true);
 
-		Set2ndI2SInEnable(true);
+		Afe_Set_Reg(AFE_I2S_CON, 0x1, 0x1);
 	} else
 		SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_IN_2, true);
 
@@ -180,7 +185,7 @@ static int mtk_fm_i2s_awb_alsa_stop(struct snd_pcm_substream *substream)
 	if (GetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_IN_2) == false) {
 		SetI2SASRCEnable(false);
 		SetI2SASRCConfig(false, 0); /* Setting to bypass ASRC */
-		Set2ndI2SInEnable(false);
+		Afe_Set_Reg(AFE_I2S_CON, 0x0, 0x1);
 	}
 
 	return 0;

@@ -3755,6 +3755,7 @@ bool ClrOffloadCbk(Soc_Aud_Digital_Block block, void *offloadstream)
 	return true;
 }
 
+#if 0
 void Enable4pin_I2S0_I2S3(uint32 SampleRate, uint32 wLenBit)
 {
 	/*wLenBit : 0:Soc_Aud_I2S_WLEN_WLEN_32BITS /1:Soc_Aud_I2S_WLEN_WLEN_16BITS */
@@ -3799,6 +3800,85 @@ void Enable4pin_I2S0_I2S3(uint32 SampleRate, uint32 wLenBit)
 
 	Afe_Set_Reg(AFE_I2S_CON3, 0x1, 0x1);	/* Enable I2S3 */
 
+}
+#endif
+
+void Enable4pin_I2S0_I2S3(bool enable, bool low_jitter_on, uint32 samplerate)
+{
+	uint32 Audio_I2S0 = 0;
+	uint32 Audio_I2S3 = 0;
+	uint32 MclkDiv0 = 0;
+	uint32 MclkDiv3 = 0;
+
+	if (enable == true) {
+		if (GetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_4PIN_IN_OUT) == false) {
+			SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_4PIN_IN_OUT, true);
+
+			/** reset **/
+			Afe_Set_Reg(AUDIO_TOP_CON1, 0x2, 0x2);	/* I2S_SOFT_Reset  4 wire i2s mode */
+			Afe_Set_Reg(AUDIO_TOP_CON1, 0x1 << 4, 0x1 << 4);	/* I2S0 clock-gated */
+			Afe_Set_Reg(AUDIO_TOP_CON1, 0x1 << 7, 0x1 << 7);	/* I2S3 clock-gated */
+			/* Set I2S0 configuration */
+			Audio_I2S0 = 0;
+			SetSampleRate(Soc_Aud_Digital_Block_MEM_I2S,  samplerate);
+			Audio_I2S0 |= (1 << 31);
+			Audio_I2S0 |= (Soc_Aud_I2S_IN_PAD_SEL_I2S_IN_FROM_IO_MUX << 28);
+			Audio_I2S0 |= (Soc_Aud_INV_LRCK_NO_INVERSE << 5);
+			Audio_I2S0 |= (Soc_Aud_I2S_FORMAT_I2S << 3);
+			Audio_I2S0 |= (Soc_Aud_I2S_WLEN_WLEN_32BITS << 1);
+			if (low_jitter_on == true)
+				Audio_I2S0 |= Soc_Aud_LOW_JITTER_CLOCK << 12 ; /* Low jitter mode */
+
+			Afe_Set_Reg(AFE_I2S_CON, Audio_I2S0, 0xFFFFFFFE);
+
+			/* Set I2S3 configuration */
+			Audio_I2S3 = 0;
+			Audio_I2S3 |= SampleRateTransform(samplerate) << 8;
+			Audio_I2S3 |= Soc_Aud_I2S_FORMAT_I2S << 3; /* us3 I2s format */
+			Audio_I2S3 |= Soc_Aud_I2S_WLEN_WLEN_32BITS << 1; /* 32bit */
+			if (low_jitter_on == true)
+				Audio_I2S3 |= Soc_Aud_LOW_JITTER_CLOCK << 12 ; /* Low jitter mode */
+
+			Afe_Set_Reg(AFE_I2S_CON3, Audio_I2S3, 0xFFFFFFFE);
+
+			Afe_Set_Reg(AUDIO_TOP_CON1, 0 << 4, 0x1 << 4);	/* Clear I2S0 clock-gated */
+			Afe_Set_Reg(AUDIO_TOP_CON1, 0 << 7, 0x1 << 7);	/* Clear I2S3 clock-gated */
+
+			udelay(200);
+
+			if (low_jitter_on == true) {
+				MclkDiv0 = SetCLkMclk(Soc_Aud_I2S0, samplerate); /* select I2S */
+				/* SetCLkBclk(MclkDiv0, samplerate, 2, Soc_Aud_I2S_WLEN_WLEN_32BITS); */
+
+				MclkDiv3 = SetCLkMclk(Soc_Aud_I2S3, samplerate); /* select I2S */
+				/* SetCLkBclk(MclkDiv3, samplerate, 2, Soc_Aud_I2S_WLEN_WLEN_32BITS); */
+			}
+
+			Afe_Set_Reg(AUDIO_TOP_CON1, 0, 0x2);	/* Clear I2S_SOFT_Reset  4 wire i2s mode */
+			Afe_Set_Reg(AFE_I2S_CON, 0x1, 0x1);	/* Enable I2S0 */
+			Afe_Set_Reg(AFE_I2S_CON3, 0x1, 0x1);	/* Enable I2S3 */
+			EnableAfe(true);
+		}
+	} else if (enable == false) {
+		SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_4PIN_IN_OUT, false);
+		if (GetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_4PIN_IN_OUT) == false) {
+			/* Clear Low jitter mode setting */
+			if (low_jitter_on == true) {
+				if (GetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_IN_2) == false)
+					Afe_Set_Reg(AFE_I2S_CON,  0, 1 << 12);
+
+				Afe_Set_Reg(AFE_I2S_CON3, 0, 1 << 12);
+			}
+
+			if (GetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_IN_2) == false)
+				Afe_Set_Reg(AFE_I2S_CON,  0x0, 0x1);
+
+			Afe_Set_Reg(AFE_I2S_CON3, 0x0, 0x1);
+
+			udelay(20);
+			EnableAfe(false);
+		}
+	}
 }
 
 void AudDrv_checkDLISRStatus(void)

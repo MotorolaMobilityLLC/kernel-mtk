@@ -106,6 +106,8 @@ bool EnableSideToneFilter(bool stf_on);
 bool SetModemPcmEnable(int modem_index, bool modem_pcm_on);
 bool SetModemPcmConfig(int modem_index, AudioDigitalPCM p_modem_pcm_attribute);
 
+void Enable4pin_I2S0_I2S3(bool enable, bool low_jitter_on, uint32 samplerate);
+
 bool Set2ndI2SIn(AudioDigtalI2S *mDigitalI2S);
 bool Set2ndI2SInConfig(unsigned int sampleRate, bool bIsSlaveMode);
 bool Set2ndI2SInEnable(bool bEnable);
