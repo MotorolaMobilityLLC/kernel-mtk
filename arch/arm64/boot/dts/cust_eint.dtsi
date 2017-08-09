@@ -69,3 +69,8 @@
 	};
 
 };
+&touch {
+	interrupt-parent = <&eintc>;
+	interrupts = <10 2>;
+	debounce = <10 0>;
+};

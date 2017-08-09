@@ -144,6 +144,7 @@ extern void tpd_get_dts_info(void);
 #define GTP_INT_PORT    1
 extern void tpd_gpio_as_int(int pin);
 extern void tpd_gpio_output(int pin, int level);
+extern struct of_device_id touch_of_match[];
 #ifdef TPD_DEBUG_CODE
 #include "tpd_debug.h"
 #endif

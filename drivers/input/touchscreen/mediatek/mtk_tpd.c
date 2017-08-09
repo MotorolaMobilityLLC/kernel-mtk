@@ -50,7 +50,7 @@ struct tpd_dts_info tpd_dts_data;
 struct pinctrl *pinctrl1;
 struct pinctrl_state *pins_default;
 struct pinctrl_state *eint_as_int, *eint_output0, *eint_output1, *rst_output0, *rst_output1;
-static const struct of_device_id touch_of_match[] = {
+struct of_device_id touch_of_match[] = {
 	{ .compatible = "mediatek,mt6735-touch", },
 	{ .compatible = "mediatek,mt6580-touch", },
 	{ .compatible = "mediatek,mt8173-touch", },

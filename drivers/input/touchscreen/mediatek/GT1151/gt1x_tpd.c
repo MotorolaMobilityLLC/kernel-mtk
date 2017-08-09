@@ -454,7 +454,7 @@ static int tpd_irq_registration(void)
 
 	GTP_INFO("Device Tree Tpd_irq_registration!");
 
-	node = of_find_compatible_node(NULL, NULL, "mediatek, TOUCH_PANEL-eint");
+	node = of_find_matching_node(node, touch_of_match);
 	if (node) {
 		of_property_read_u32_array(node, "debounce", ints, ARRAY_SIZE(ints));
 		gpio_set_debounce(ints[0], ints[1]);
