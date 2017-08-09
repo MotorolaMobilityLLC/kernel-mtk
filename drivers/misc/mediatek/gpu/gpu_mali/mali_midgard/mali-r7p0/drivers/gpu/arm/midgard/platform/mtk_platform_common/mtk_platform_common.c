@@ -295,7 +295,7 @@ int mtk_set_mt_gpufreq_target(int freq_id)
 	if (MTK_VGPU_POWER_ON == mtk_get_vgpu_power_on_flag()) {
 		return  mt_gpufreq_target(freq_id);
 	} else {
-		pr_alert("MALI: VGPU power is off, ignore set freq: %d. \n",freq_id);
+		///pr_alert("MALI: VGPU power is off, ignore set freq: %d. \n",freq_id);
 	}
 
 	return 0;
