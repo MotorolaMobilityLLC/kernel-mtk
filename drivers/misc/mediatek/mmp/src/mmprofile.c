@@ -46,7 +46,17 @@
 
 #define TAG_MMPROFILE "mmprofile"
 
+#ifdef CONFIG_TRACING
+
+#define ENABLE_MMP_TRACING
+#ifdef ENABLE_MMP_TRACING
+#define MMP_TRACING
+#endif
+
+#endif /* CONFIG_TRACING */
+
 static bool mmp_log_on;
+static bool mmp_trace_log_on;
 
 #define MMP_LOG(prio, fmt, arg...) \
 	do { \
@@ -587,7 +597,8 @@ static int MMProfileRegisterStaticEvents(int sync)
 	return ret;
 }
 
-#ifdef CONFIG_TRACING
+/* the MMP_TRACING is defined only when CONFIG_TRACING is defined and we enable mmp to trace its API. */
+#ifdef MMP_TRACING
 static unsigned long __read_mostly tracing_mark_write_addr;
 static inline void __mt_update_tracing_mark_write_addr(void)
 {
@@ -597,21 +608,27 @@ static inline void __mt_update_tracing_mark_write_addr(void)
 
 static inline void mmp_kernel_trace_begin(char *name)
 {
-	__mt_update_tracing_mark_write_addr();
-	event_trace_printk(tracing_mark_write_addr, "B|%d|%s\n", current->tgid, name);
+	if (mmp_trace_log_on) {
+		__mt_update_tracing_mark_write_addr();
+		event_trace_printk(tracing_mark_write_addr, "B|%d|%s\n", current->tgid, name);
+	}
 }
 
 static inline void mmp_kernel_trace_counter(char *name, int count)
 {
-	__mt_update_tracing_mark_write_addr();
-	event_trace_printk(tracing_mark_write_addr,
-			   "C|%d|%s|%d\n", in_interrupt() ? -1 : current->tgid, name, count);
+	if (mmp_trace_log_on) {
+		__mt_update_tracing_mark_write_addr();
+		event_trace_printk(tracing_mark_write_addr,
+			"C|%d|%s|%d\n", in_interrupt() ? -1 : current->tgid, name, count);
+	}
 }
 
 static inline void mmp_kernel_trace_end(void)
 {
-	__mt_update_tracing_mark_write_addr();
-	event_trace_printk(tracing_mark_write_addr, "E\n");
+	if (mmp_trace_log_on) {
+		__mt_update_tracing_mark_write_addr();
+		event_trace_printk(tracing_mark_write_addr, "E\n");
+	}
 }
 #else
 static inline void mmp_kernel_trace_begin(char *name)
@@ -1257,6 +1274,32 @@ static const struct file_operations mmprofile_dbgfs_global_fops = {
 
 /* Debug FS end */
 
+static char cmd_buf[128];
+static void process_dbg_cmd(char *cmd)
+{
+	if (0 == strncmp(cmd, "mmp_log_on:", 11)) {
+		char *p = (char *)cmd + 11;
+		int value;
+
+		if (0 == kstrtoul(p, 10, &value) && 0 != value)
+			mmp_log_on = 1;
+		else
+			mmp_log_on = 0;
+		MMP_MSG("mmp_log_on=%d\n", mmp_log_on);
+	} else if (0 == strncmp(cmd, "mmp_trace_log_on:", 17)) {
+		char *p = (char *)cmd + 17;
+		int value;
+
+		if (0 == kstrtoul(p, 10, &value) && 0 != value)
+			mmp_trace_log_on = 1;
+		else
+			mmp_trace_log_on = 0;
+		MMP_MSG("mmp_trace_log_on=%d\n", mmp_trace_log_on);
+	} else {
+		MMP_MSG("invalid mmp debug command: %s\n", NULL != cmd ? cmd : "(empty)");
+	}
+}
+
 /* Driver specific begin */
 /*
 static dev_t mmprofile_devno;
@@ -1281,7 +1324,19 @@ static ssize_t mmprofile_read(struct file *file, char __user *data, size_t len, 
 static ssize_t mmprofile_write(struct file *file, const char __user *data, size_t len,
 			       loff_t *ppos)
 {
-	return 0;
+	ssize_t ret;
+	size_t length = len;
+
+	if (length > 127)
+		length = 127;
+	ret = length;
+
+	if (copy_from_user(&cmd_buf, data, length))
+		return -EFAULT;
+
+	cmd_buf[length] = 0;
+	process_dbg_cmd(cmd_buf);
+	return ret;
 }
 
 static long mmprofile_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
@@ -1806,6 +1861,8 @@ static int mmprofile_probe(void)
 	    (struct class_device *)device_create(mmprofile_class, NULL, mmprofile_devno, NULL,
 						 MMP_DEVNAME);
 #endif
+	mmp_log_on = false;
+	mmp_trace_log_on = false;
 	/* Create debugfs */
 	g_pDebugFSDir = debugfs_create_dir("mmprofile", NULL);
 	if (g_pDebugFSDir) {
