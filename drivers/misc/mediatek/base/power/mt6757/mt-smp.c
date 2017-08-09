@@ -140,21 +140,27 @@ int __cpuinit mt_smp_boot_secondary(unsigned int cpu, struct task_struct *idle)
 		mt_reg_sync_writel(SLAVE1_MAGIC_NUM, SLAVE1_MAGIC_REG);
 		HOTPLUG_INFO("SLAVE1_MAGIC_NUM:%x\n", SLAVE1_MAGIC_NUM);
 #endif
+#ifdef CONFIG_HOTPLUG_WITH_POWER_CTRL
 		spm_mtcmos_ctrl_cpu1(STA_POWER_ON, 1);
+#endif
 		break;
 	case 2:
 #ifdef CONFIG_MTK_FPGA
 		mt_reg_sync_writel(SLAVE2_MAGIC_NUM, SLAVE2_MAGIC_REG);
 		HOTPLUG_INFO("SLAVE2_MAGIC_NUM:%x\n", SLAVE2_MAGIC_NUM);
 #endif
+#ifdef CONFIG_HOTPLUG_WITH_POWER_CTRL
 		spm_mtcmos_ctrl_cpu2(STA_POWER_ON, 1);
+#endif
 		break;
 	case 3:
 #ifdef CONFIG_MTK_FPGA
 		mt_reg_sync_writel(SLAVE3_MAGIC_NUM, SLAVE3_MAGIC_REG);
 		HOTPLUG_INFO("SLAVE3_MAGIC_NUM:%x\n", SLAVE3_MAGIC_NUM);
 #endif
+#ifdef CONFIG_HOTPLUG_WITH_POWER_CTRL
 		spm_mtcmos_ctrl_cpu3(STA_POWER_ON, 1);
+#endif
 		break;
 
 	default:
@@ -207,7 +213,7 @@ void __init mt_smp_init_cpus(void)
 		num_possible_cpus());
 	pr_emerg("@@@### num_present_cpus(): %u ###@@@\n", num_present_cpus());
 
-	irq_total_secondary_cpus = num_possible_cpus() - 1;
+	/* irq_total_secondary_cpus = num_possible_cpus() - 1; */
 }
 
 void __init mt_smp_prepare_cpus(unsigned int max_cpus)
@@ -238,7 +244,7 @@ void __init mt_smp_prepare_cpus(unsigned int max_cpus)
 	smp_set_boot_addr();
 
 	/* initial spm_mtcmos memory map */
-	spm_mtcmos_cpu_init();
+	/* spm_mtcmos_cpu_init(); */
 }
 
 struct smp_operations __initdata mt_smp_ops = {

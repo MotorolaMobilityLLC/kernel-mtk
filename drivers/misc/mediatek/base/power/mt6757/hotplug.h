@@ -71,6 +71,7 @@
 
 /* power on/off cpu*/
 #define CONFIG_HOTPLUG_WITH_POWER_CTRL
+ #undef CONFIG_HOTPLUG_WITH_POWER_CTRL
 
 /* global variable */
 extern atomic_t hotplug_cpu_count;
