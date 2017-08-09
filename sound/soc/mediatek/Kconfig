@@ -42,6 +42,7 @@ config SND_SOC_MT8173_MT6391_MACH
     tristate "ASoC Audio driver for MT8173 with MT6391 codec"
     depends on ARCH_MT8173
     select SND_SOC_MT8173
+    select SND_SOC_MT6391
     help
         This adds audio driver for MT8173 platform with the MT6391 audio codec.
 
