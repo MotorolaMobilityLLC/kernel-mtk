@@ -369,7 +369,7 @@ typedef struct {
 #define AUDIO_HW_PHYSICAL_BASE  (0x11220000L)
 #define AUDIO_CLKCFG_PHYSICAL_BASE  (0x10000000L)
 /* need enable this register before access all register */
-#define AUDIO_POWER_TOP (0x1000629cL)
+#define AUDIO_POWER_TOP (0x10006314L)
 #define AUDIO_INFRA_BASE (0x10001000L)
 #define AUDIO_HW_VIRTUAL_BASE   (0xF1220000L)
 
