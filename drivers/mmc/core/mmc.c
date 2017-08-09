@@ -1680,9 +1680,6 @@ static int mmc_awake(struct mmc_host *host)
 	if (err)
 		return err;
 
-	if (!(host->caps & MMC_CAP_WAIT_WHILE_BUSY))
-		mmc_delay(DIV_ROUND_UP(card->ext_csd.sa_timeout, 10000));
-
 	err = mmc_select_card(host->card);
 
 	return err;
