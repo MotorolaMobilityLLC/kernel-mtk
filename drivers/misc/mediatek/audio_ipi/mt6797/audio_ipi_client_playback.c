@@ -1,3 +1,16 @@
+/*
+* Copyright (C) 2016 MediaTek Inc.
+*
+* This program is free software; you can redistribute it and/or modify
+* it under the terms of the GNU General Public License version 2 as
+* published by the Free Software Foundation.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+* See http://www.gnu.org/licenses/gpl-2.0.html for more details.
+*/
+
 #include "audio_ipi_client_playback.h"
 
 #include <linux/module.h>       /* needed by all modules */
@@ -22,7 +35,6 @@
 #include <linux/of_fdt.h>
 #include <linux/ioport.h>
 #include <linux/kthread.h>
-#include <linux/rtpm_prio.h>
 #include <linux/wakelock.h>
 
 
@@ -223,7 +235,7 @@ static int dump_kthread(void *data)
 
 	pcm_dump_t *pcm_dump = NULL;
 
-	struct sched_param param = {.sched_priority = RTPM_PRIO_SCRN_UPDATE };
+	struct sched_param param = {.sched_priority = 85 }; /* RTPM_PRIO_AUDIO_PLAYBACK */
 
 	sched_setscheduler(current, SCHED_RR, &param);
 
