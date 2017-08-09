@@ -1167,6 +1167,7 @@ static int emmc_rpmb_open_session(void)
 	MSG(INFO, "%s start\n", __func__);
 
 	do {
+		msleep(2000);
 
 		/* open device */
 		mc_ret = mc_open_device(rpmb_devid);
@@ -1202,6 +1203,12 @@ static int emmc_rpmb_open_session(void)
 
 		if (mc_ret != MC_DRV_OK) {
 			MSG(ERR, "%s, mc_open_session failed.(%d)\n", __func__, cnt);
+
+			mc_ret = mc_free_wsm(rpmb_devid, rpmb_dci);
+			MSG(ERR, "%s, free wsm result (%d)\n", __func__, mc_ret);
+
+			mc_ret = mc_close_device(rpmb_devid);
+			MSG(ERR, "%s, try free wsm and close device\n", __func__);
 			cnt++;
 			continue;
 		}
