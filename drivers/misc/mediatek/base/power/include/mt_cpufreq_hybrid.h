@@ -139,6 +139,8 @@ extern void cpuhvfs_notify_cluster_off(unsigned int cluster);
 extern int cpuhvfs_set_target_opp(unsigned int cluster, unsigned int index, unsigned int *ret_volt);
 extern unsigned int cpuhvfs_get_curr_volt(unsigned int cluster);
 
+extern void cpuhvfs_set_opp_limit(unsigned int cluster, unsigned int ceiling, unsigned int floor);
+
 extern int cpuhvfs_get_dvfsp_semaphore(enum sema_user user);
 extern void cpuhvfs_release_dvfsp_semaphore(enum sema_user user);
 
@@ -162,6 +164,9 @@ static inline void cpuhvfs_notify_cluster_off(unsigned int cluster)	{ BUG(); }
 static inline int cpuhvfs_set_target_opp(unsigned int cluster, unsigned int index,
 					 unsigned int *ret_volt)	{ return -ENODEV; }
 static inline unsigned int cpuhvfs_get_curr_volt(unsigned int cluster)	{ return UINT_MAX; }
+
+static inline void cpuhvfs_set_opp_limit(unsigned int cluster, unsigned int ceiling,
+					 unsigned int floor)		{}
 
 static inline int cpuhvfs_get_dvfsp_semaphore(enum sema_user user)	{ return 0; }
 static inline void cpuhvfs_release_dvfsp_semaphore(enum sema_user user)	{}

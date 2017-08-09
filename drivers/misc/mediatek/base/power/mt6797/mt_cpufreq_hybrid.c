@@ -1,3 +1,16 @@
+/*
+ * Copyright (C) 2015 MediaTek Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ */
+
 #include <linux/kernel.h>
 #include <linux/module.h>
 #include <linux/platform_device.h>
@@ -435,6 +448,7 @@
 #define DLF_SEMA		(1U << 3)
 #define DLF_PAUSE		(1U << 4)
 #define DLF_STOP		(1U << 5)
+#define DLF_LIMIT		(1U << 6)
 
 /* function enter flag */
 #define FEF_DVFS		(1U << 0)
@@ -492,6 +506,9 @@ struct cpuhvfs_dvfsp {
 	int (*set_target)(struct cpuhvfs_dvfsp *dvfsp, unsigned int cluster, unsigned int index,
 			  unsigned int *ret_volt);
 	unsigned int (*get_volt)(struct cpuhvfs_dvfsp *dvfsp, unsigned int cluster);
+
+	void (*set_limit)(struct cpuhvfs_dvfsp *dvfsp, unsigned int cluster, unsigned int ceiling,
+			  unsigned int floor);
 
 	int (*get_sema)(struct cpuhvfs_dvfsp *dvfsp, enum sema_user user);
 	void (*release_sema)(struct cpuhvfs_dvfsp *dvfsp, enum sema_user user);
@@ -564,6 +581,7 @@ static u32 pause_log_en = PSF_PAUSE_SUSPEND |
  * dbgx_log_en[31:16]: show on MobileLog
  */
 static u32 dbgx_log_en = /*(DLF_DVFS << 16) |*/
+			 /*DLF_LIMIT |*/
 			 DLF_STOP |
 			 DLF_PAUSE |
 			 /*DLF_SEMA |*/
@@ -597,6 +615,9 @@ static int cspm_set_target_opp(struct cpuhvfs_dvfsp *dvfsp, unsigned int cluster
 			       unsigned int *ret_volt);
 static unsigned int cspm_get_curr_volt(struct cpuhvfs_dvfsp *dvfsp, unsigned int cluster);
 
+static void cspm_set_opp_limit(struct cpuhvfs_dvfsp *dvfsp, unsigned int cluster,
+			       unsigned int ceiling, unsigned int floor);
+
 static int cspm_get_semaphore(struct cpuhvfs_dvfsp *dvfsp, enum sema_user user);
 static void cspm_release_semaphore(struct cpuhvfs_dvfsp *dvfsp, enum sema_user user);
 
@@ -624,6 +645,8 @@ static struct cpuhvfs_dvfsp g_dvfsp = {
 
 	.set_target	= cspm_set_target_opp,
 	.get_volt	= cspm_get_curr_volt,
+
+	.set_limit	= cspm_set_opp_limit,
 
 	.get_sema	= cspm_get_semaphore,
 	.release_sema	= cspm_release_semaphore,
@@ -1273,6 +1296,33 @@ static void cspm_release_semaphore(struct cpuhvfs_dvfsp *dvfsp, enum sema_user u
 	}
 }
 
+static void cspm_set_opp_limit(struct cpuhvfs_dvfsp *dvfsp, unsigned int cluster,
+			       unsigned int ceiling, unsigned int floor)
+{
+	u32 f_max, f_min, swctrl;
+
+	if (cluster >= NUM_PHY_CLUSTER)		/* CCI */
+		return;
+
+	spin_lock(&dvfs_lock);
+	if (!dvfsp->hw_gov_en) {
+		ceiling = 0;
+		floor = NUM_CPU_OPP - 1;
+	}
+
+	f_max = opp_sw_to_fw(ceiling);
+	f_min = opp_sw_to_fw(floor);
+
+	cspm_dbgx(LIMIT, "(%u) cluster%u limit, ceiling = (%u, %u), floor = (%u, %u)\n",
+			 dvfsp->hw_gov_en, cluster, ceiling, f_max, floor, f_min);
+
+	swctrl = cspm_read(swctrl_reg[cluster]);
+	swctrl &= ~(SW_F_MAX_MASK | SW_F_MIN_MASK);
+	cspm_write(swctrl_reg[cluster], swctrl | SW_F_MAX(f_max) | SW_F_MIN(f_min));
+	csram_write(swctrl_offs[cluster], cspm_read(swctrl_reg[cluster]));
+	spin_unlock(&dvfs_lock);
+}
+
 static int cspm_set_target_opp(struct cpuhvfs_dvfsp *dvfsp, unsigned int cluster, unsigned int index,
 			       unsigned int *ret_volt)
 {
@@ -1289,8 +1339,8 @@ static int cspm_set_target_opp(struct cpuhvfs_dvfsp *dvfsp, unsigned int cluster
 	spin_lock(&dvfs_lock);
 	csram_write(OFFS_FUNC_ENTER, (cluster << 24) | (index << 16) | FEF_DVFS);
 
-	cspm_dbgx(DVFS, "cluster%u dvfs, opp = (%u, %u), map = 0x%x\n",
-			cluster, index, f_des, pause_src_map);
+	cspm_dbgx(DVFS, "(%u) cluster%u dvfs, opp = (%u, %u), pause = 0x%x\n",
+			dvfsp->hw_gov_en, cluster, index, f_des, pause_src_map);
 
 	while (pause_src_map != 0) {
 		csram_write(OFFS_DVFS_WAIT, (cluster << 8) | index);
@@ -1350,8 +1400,8 @@ static void cspm_cluster_notify_on(struct cpuhvfs_dvfsp *dvfsp, unsigned int clu
 	csram_write(hwsta_offs[cluster], hwsta);
 	csram_write(swctrl_offs[cluster], swctrl);
 
-	cspm_dbgx(CLUSTER, "[%08x] cluster%u on, pause = 0x%x, swctrl = 0x%x (0x%x)\n",
-			   time, cluster, pause_src_map, swctrl, hwsta);
+	cspm_dbgx(CLUSTER, "(%u) [%08x] cluster%u on, pause = 0x%x, swctrl = 0x%x (0x%x)\n",
+			   dvfsp->hw_gov_en, time, cluster, pause_src_map, swctrl, hwsta);
 
 	BUG_ON(!(swctrl & SW_PAUSE));	/* not paused at cluster off */
 
@@ -1391,8 +1441,8 @@ static void cspm_cluster_notify_off(struct cpuhvfs_dvfsp *dvfsp, unsigned int cl
 	csram_write(hwsta_offs[cluster], hwsta);
 	csram_write(swctrl_offs[cluster], swctrl);
 
-	cspm_dbgx(CLUSTER, "[%08x] cluster%u off, pause = 0x%x, swctrl = 0x%x (0x%x)\n",
-			   time, cluster, pause_src_map, swctrl, hwsta);
+	cspm_dbgx(CLUSTER, "(%u) [%08x] cluster%u off, pause = 0x%x, swctrl = 0x%x (0x%x)\n",
+			   dvfsp->hw_gov_en, time, cluster, pause_src_map, swctrl, hwsta);
 
 	BUG_ON(!(swctrl & CLUSTER_EN));		/* already off */
 
@@ -1474,8 +1524,8 @@ static void __cspm_check_and_update_sta(struct cpuhvfs_dvfsp *dvfsp, struct init
 		csram_write(OFFS_INIT_VOLT + i * sizeof(u32), sta->volt[i]);
 		csram_write(OFFS_INIT_VSRAM + i * sizeof(u32), sta->vsram[i]);
 
-		cspm_dbgx(KICK, "cluster%d: opp = %u (%u - %u), freq = %u, volt = 0x%x (0x%x)\n",
-				i, sta->opp[i], sta->ceiling[i], sta->floor[i],
+		cspm_dbgx(KICK, "(%u) cluster%d: opp = %u (%u - %u), freq = %u, volt = 0x%x (0x%x)\n",
+				dvfsp->hw_gov_en, i, sta->opp[i], sta->ceiling[i], sta->floor[i],
 				sta->freq[i], sta->volt[i], sta->vsram[i]);
 	}
 }
@@ -1871,6 +1921,24 @@ void cpuhvfs_release_dvfsp_semaphore(enum sema_user user)
 	dvfsp->release_sema(dvfsp, user);
 }
 
+void cpuhvfs_set_opp_limit(unsigned int cluster, unsigned int ceiling, unsigned int floor)
+{
+	struct cpuhvfs_dvfsp *dvfsp = g_cpuhvfs.dvfsp;
+
+	if (cluster >= NUM_CPU_CLUSTER || ceiling >= NUM_CPU_OPP || floor >= NUM_CPU_OPP)
+		return;
+
+	if (ceiling > floor) {
+		cpuhvfs_err("OPP FLOOR IS OVER CEILING\n");
+		return;
+	}
+
+	if (is_dvfsp_uninit(dvfsp))
+		return;
+
+	dvfsp->set_limit(dvfsp, cluster, ceiling, floor);
+}
+
 /**
  * Current voltage (PMIC value) will be saved in @ret_volt if succeed
  */
@@ -1997,4 +2065,4 @@ fs_initcall(cpuhvfs_pre_module_init);
 
 #endif	/* CONFIG_HYBRID_CPU_DVFS */
 
-MODULE_DESCRIPTION("Hybrid CPU DVFS Driver v0.1");
+MODULE_DESCRIPTION("Hybrid CPU DVFS Driver v0.2");
