@@ -38,7 +38,7 @@
 #define MT_CCF_BRINGUP	0
 #endif
 
-#define	CHECK_PWR_ST	0
+#define	CHECK_PWR_ST	1
 
 #ifndef GENMASK
 #define GENMASK(h, l)	(((U32_C(1) << ((h) - (l) + 1)) - 1) << (l))
