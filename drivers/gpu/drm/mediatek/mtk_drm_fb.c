@@ -12,53 +12,69 @@
  */
 
 #include <drm/drmP.h>
-#include <drm/drm_gem.h>
 #include <drm/drm_crtc_helper.h>
 #include <drm/drm_fb_helper.h>
+#include <drm/drm_gem.h>
 
-#include "mediatek_drm_drv.h"
-#include "mediatek_drm_fb.h"
-#include "mediatek_drm_gem.h"
+#include "mtk_drm_drv.h"
+#include "mtk_drm_fb.h"
+#include "mtk_drm_gem.h"
 
+/*
+ * mtk specific framebuffer structure.
+ *
+ * @fb: drm framebuffer object.
+ * @gem_obj: array of gem objects.
+ */
+struct mtk_drm_fb {
+	struct drm_framebuffer	base;
+	/* For now we only support a single plane */
+	struct drm_gem_object	*gem_obj;
+};
 
-static int mtk_drm_fb_create_handle(struct drm_framebuffer *fb,
-					struct drm_file *file_priv,
-					unsigned int *handle)
+#define to_mtk_fb(x) container_of(x, struct mtk_drm_fb, base)
+
+struct drm_gem_object *mtk_fb_get_gem_obj(struct drm_framebuffer *fb)
 {
 	struct mtk_drm_fb *mtk_fb = to_mtk_fb(fb);
 
-	return drm_gem_handle_create(file_priv, mtk_fb->gem_obj[0], handle);
+	return mtk_fb->gem_obj;
+}
+
+static int mtk_drm_fb_create_handle(struct drm_framebuffer *fb,
+				    struct drm_file *file_priv,
+				    unsigned int *handle)
+{
+	struct mtk_drm_fb *mtk_fb = to_mtk_fb(fb);
+
+	return drm_gem_handle_create(file_priv, mtk_fb->gem_obj, handle);
 }
 
 static void mtk_drm_fb_destroy(struct drm_framebuffer *fb)
 {
-	unsigned int i;
 	struct mtk_drm_fb *mtk_fb = to_mtk_fb(fb);
-	struct drm_gem_object *gem;
-	int nr = drm_format_num_planes(fb->pixel_format);
 
 	drm_framebuffer_cleanup(fb);
 
-	for (i = 0; i < nr; i++) {
-		gem = mtk_fb->gem_obj[i];
-		drm_gem_object_unreference_unlocked(gem);
-	}
+	drm_gem_object_unreference_unlocked(mtk_fb->gem_obj);
 
 	kfree(mtk_fb);
 }
 
-static struct drm_framebuffer_funcs mediatek_drm_fb_funcs = {
+static const struct drm_framebuffer_funcs mtk_drm_fb_funcs = {
 	.create_handle = mtk_drm_fb_create_handle,
 	.destroy = mtk_drm_fb_destroy,
 };
 
 static struct mtk_drm_fb *mtk_drm_framebuffer_init(struct drm_device *dev,
-			    struct drm_mode_fb_cmd2 *mode,
-			    struct drm_gem_object **obj)
+					   struct drm_mode_fb_cmd2 *mode,
+					   struct drm_gem_object *obj)
 {
 	struct mtk_drm_fb *mtk_fb;
-	unsigned int i;
 	int ret;
+
+	if (drm_format_num_planes(mode->pixel_format) != 1)
+		return ERR_PTR(-EINVAL);
 
 	mtk_fb = kzalloc(sizeof(*mtk_fb), GFP_KERNEL);
 	if (!mtk_fb)
@@ -66,12 +82,12 @@ static struct mtk_drm_fb *mtk_drm_framebuffer_init(struct drm_device *dev,
 
 	drm_helper_mode_fill_fb_struct(&mtk_fb->base, mode);
 
-	for (i = 0; i < drm_format_num_planes(mode->pixel_format); i++)
-		mtk_fb->gem_obj[i] = obj[i];
+	mtk_fb->gem_obj = obj;
 
-	ret = drm_framebuffer_init(dev, &mtk_fb->base, &mediatek_drm_fb_funcs);
+	ret = drm_framebuffer_init(dev, &mtk_fb->base, &mtk_drm_fb_funcs);
 	if (ret) {
 		DRM_ERROR("failed to initialize framebuffer\n");
+		kfree(mtk_fb);
 		return ERR_PTR(ret);
 	}
 
@@ -84,10 +100,10 @@ static int mtk_drm_fb_mmap(struct fb_info *info, struct vm_area_struct *vma)
 	struct drm_fb_helper *helper = info->par;
 	struct mtk_drm_fb *mtk_fb = to_mtk_fb(helper->fb);
 
-	return mtk_drm_gem_mmap_buf(mtk_fb->gem_obj[0], vma);
+	return mtk_drm_gem_mmap_buf(mtk_fb->gem_obj, vma);
 }
 
-static struct fb_ops mediatek_fb_ops = {
+static struct fb_ops mtk_fb_ops = {
 	.owner = THIS_MODULE,
 	.fb_fillrect = sys_fillrect,
 	.fb_copyarea = sys_copyarea,
@@ -101,7 +117,7 @@ static struct fb_ops mediatek_fb_ops = {
 };
 
 static int mtk_fbdev_probe(struct drm_fb_helper *helper,
-			     struct drm_fb_helper_surface_size *sizes)
+			   struct drm_fb_helper_surface_size *sizes)
 {
 	struct drm_device *dev = helper->dev;
 	struct drm_mode_fb_cmd2 mode = { 0 };
@@ -116,15 +132,16 @@ static int mtk_fbdev_probe(struct drm_fb_helper *helper,
 
 	mode.width = sizes->surface_width;
 	mode.height = sizes->surface_height;
-	mode.pitches[0] = sizes->surface_width * ((sizes->surface_bpp + 7) / 8);
+	mode.pitches[0] = sizes->surface_width *
+			  DIV_ROUND_UP(sizes->surface_bpp, 8);
 	mode.pixel_format = drm_mode_legacy_fb_format(sizes->surface_bpp,
-							sizes->surface_depth);
+						      sizes->surface_depth);
 
 	mode.height = mode.height;/* << 1; for fb use? */
 	size = mode.pitches[0] * mode.height;
 	dev_info(dev->dev, "mtk_fbdev_probe %dx%d bpp %d pitch %d size %zu\n",
-		mode.width, mode.height, sizes->surface_bpp, mode.pitches[0],
-		size);
+		 mode.width, mode.height, sizes->surface_bpp, mode.pitches[0],
+		 size);
 
 	mtk_gem = mtk_drm_gem_create(dev, size, true);
 	if (IS_ERR(mtk_gem)) {
@@ -134,7 +151,7 @@ static int mtk_fbdev_probe(struct drm_fb_helper *helper,
 
 	gem = &mtk_gem->base;
 
-	mtk_fb = mtk_drm_framebuffer_init(dev, &mode, &gem);
+	mtk_fb = mtk_drm_framebuffer_init(dev, &mode, gem);
 	if (IS_ERR(mtk_fb)) {
 		dev_err(dev->dev, "failed to allocate DRM framebuffer\n");
 		err = PTR_ERR(mtk_fb);
@@ -154,7 +171,7 @@ static int mtk_fbdev_probe(struct drm_fb_helper *helper,
 
 	info->par = helper;
 	info->flags = FBINFO_FLAG_DEFAULT;
-	info->fbops = &mediatek_fb_ops;
+	info->fbops = &mtk_fb_ops;
 
 	err = fb_alloc_cmap(&info->cmap, 256, 0);
 	if (err < 0) {
@@ -165,7 +182,7 @@ static int mtk_fbdev_probe(struct drm_fb_helper *helper,
 	drm_fb_helper_fill_fix(info, fb->pitches[0], fb->depth);
 	drm_fb_helper_fill_var(info, helper, fb->width, fb->height);
 
-	offset = info->var.xoffset * (fb->bits_per_pixel + 7) / 8;
+	offset = info->var.xoffset * DIV_ROUND_UP(fb->bits_per_pixel, 8);
 	offset += info->var.yoffset * fb->pitches[0];
 
 	strcpy(info->fix.id, "mtk");
@@ -190,14 +207,13 @@ fini:
 	return err;
 }
 
-static struct drm_fb_helper_funcs mediatek_drm_fb_helper_funcs = {
+static const struct drm_fb_helper_funcs mtk_drm_fb_helper_funcs = {
 	.fb_probe = mtk_fbdev_probe,
 };
 
 int mtk_fbdev_create(struct drm_device *dev)
 {
-	struct mtk_drm_private *priv =
-		(struct mtk_drm_private *)dev->dev_private;
+	struct mtk_drm_private *priv = dev->dev_private;
 	struct drm_fb_helper *fbdev;
 	int ret;
 
@@ -205,10 +221,10 @@ int mtk_fbdev_create(struct drm_device *dev)
 	if (!fbdev)
 		return -ENOMEM;
 
-	drm_fb_helper_prepare(dev, fbdev, &mediatek_drm_fb_helper_funcs);
+	drm_fb_helper_prepare(dev, fbdev, &mtk_drm_fb_helper_funcs);
 
 	ret = drm_fb_helper_init(dev, fbdev, dev->mode_config.num_crtc,
-						dev->mode_config.num_connector);
+				 dev->mode_config.num_connector);
 	if (ret) {
 		dev_err(dev->dev, "failed to initialize DRM FB helper\n");
 		goto fini;
@@ -237,10 +253,9 @@ fini:
 
 void mtk_fbdev_destroy(struct drm_device *dev)
 {
-	struct mtk_drm_private *priv =
-		(struct mtk_drm_private *)dev->dev_private;
-	struct drm_fb_helper *fbdev = priv->fb_helper;
-	struct fb_info *info = priv->fb_helper->fbdev;
+	struct mtk_drm_private *priv = dev->dev_private;
+	struct drm_fb_helper *helper = priv->fb_helper;
+	struct fb_info *info = helper->fbdev;
 
 	if (info) {
 		int err;
@@ -255,19 +270,17 @@ void mtk_fbdev_destroy(struct drm_device *dev)
 		framebuffer_release(info);
 	}
 
-	if (fbdev->fb) {
-		drm_framebuffer_unregister_private(fbdev->fb);
-		mtk_drm_fb_destroy(fbdev->fb);
+	if (helper->fb) {
+		drm_framebuffer_unregister_private(helper->fb);
+		mtk_drm_fb_destroy(helper->fb);
 	}
 
-	drm_fb_helper_fini(fbdev);
-	kfree(fbdev);
+	drm_fb_helper_fini(helper);
 }
 
 void mtk_drm_mode_output_poll_changed(struct drm_device *dev)
 {
-	struct mtk_drm_private *priv =
-		(struct mtk_drm_private *)dev->dev_private;
+	struct mtk_drm_private *priv = dev->dev_private;
 
 	if (priv->fb_helper)
 		drm_fb_helper_hotplug_event(priv->fb_helper);
@@ -278,43 +291,38 @@ struct drm_framebuffer *mtk_drm_mode_fb_create(struct drm_device *dev,
 					       struct drm_file *file,
 					       struct drm_mode_fb_cmd2 *cmd)
 {
-	unsigned int hsub, vsub, i;
 	struct mtk_drm_fb *mtk_fb;
-	struct drm_gem_object *gem[MAX_FB_OBJ];
-	int err;
+	struct drm_gem_object *gem;
+	unsigned int width = cmd->width;
+	unsigned int height = cmd->height;
+	unsigned int size, bpp;
+	int ret;
 
-	hsub = drm_format_horz_chroma_subsampling(cmd->pixel_format);
-	vsub = drm_format_vert_chroma_subsampling(cmd->pixel_format);
-	for (i = 0; i < drm_format_num_planes(cmd->pixel_format); i++) {
-		unsigned int width = cmd->width / (i ? hsub : 1);
-		unsigned int height = cmd->height / (i ? vsub : 1);
-		unsigned int size, bpp;
+	if (drm_format_num_planes(cmd->pixel_format) != 1)
+		return ERR_PTR(-EINVAL);
 
-		gem[i] = drm_gem_object_lookup(dev, file, cmd->handles[i]);
-		if (!gem[i]) {
-			err = -ENOENT;
-			goto unreference;
-		}
+	gem = drm_gem_object_lookup(dev, file, cmd->handles[0]);
+	if (!gem)
+		return ERR_PTR(-ENOENT);
 
-		bpp = drm_format_plane_cpp(cmd->pixel_format, i);
-		size = (height - 1) * cmd->pitches[i] + width * bpp;
-		size += cmd->offsets[i];
+	bpp = drm_format_plane_cpp(cmd->pixel_format, 0);
+	size = (height - 1) * cmd->pitches[0] + width * bpp;
+	size += cmd->offsets[0];
 
-		if (gem[i]->size < size) {
-			err = -EINVAL;
-			goto unreference;
-		}
+	if (gem->size < size) {
+		ret = -EINVAL;
+		goto unreference;
 	}
 
 	mtk_fb = mtk_drm_framebuffer_init(dev, cmd, gem);
+	if (IS_ERR(mtk_fb)) {
+		ret = PTR_ERR(mtk_fb);
+		goto unreference;
+	}
 
 	return &mtk_fb->base;
 
 unreference:
-	while (i--)
-		drm_gem_object_unreference_unlocked(gem[i]);
-
-	return ERR_PTR(err);
+	drm_gem_object_unreference_unlocked(gem);
+	return ERR_PTR(ret);
 }
-
-

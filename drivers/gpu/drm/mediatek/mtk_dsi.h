@@ -11,8 +11,12 @@
  * GNU General Public License for more details.
  */
 
-#ifndef _MEDIATEK_DRM_DSI_H_
-#define _MEDIATEK_DRM_DSI_H_
+#ifndef _MTK_DSI_H_
+#define _MTK_DSI_H_
+
+#include <drm/drm_crtc.h>
+
+struct phy;
 
 struct mtk_dsi {
 	struct drm_device *drm_dev;
@@ -54,7 +58,9 @@ static inline struct mtk_dsi *encoder_to_dsi(struct drm_encoder *e)
 	return container_of(e, struct mtk_dsi, encoder);
 }
 
-#define connector_to_dsi(c) container_of(c, struct mtk_dsi, conn)
+static inline struct mtk_dsi *connector_to_dsi(struct drm_connector *c)
+{
+	return container_of(c, struct mtk_dsi, conn);
+}
 
 #endif
-

@@ -11,32 +11,19 @@
  * GNU General Public License for more details.
  */
 
-#ifndef MEDIATEK_DRM_FB_H
-#define MEDIATEK_DRM_FB_H
+#ifndef MTK_DRM_FB_H
+#define MTK_DRM_FB_H
 
-#define MAX_FB_OBJ	4
+#define MAX_FB_OBJ	3
 #define FBDEV_BPP	16
 
-/*
- * mtk specific framebuffer structure.
- *
- * @fb: drm framebuffer object.
- * @mtk_gem_obj: array of mtk specific gem object containing a gem object.
- */
-struct mtk_drm_fb {
-	struct drm_framebuffer	base;
-	struct drm_gem_object	*gem_obj[MAX_FB_OBJ]; /* FIXME? mtk_gem_obj? */
-};
-
-#define to_mtk_fb(x) container_of(x, struct mtk_drm_fb, base)
-
-void mtk_drm_mode_output_poll_changed(struct drm_device *dev);
+struct drm_gem_object *mtk_fb_get_gem_obj(struct drm_framebuffer *fb);
 struct drm_framebuffer *mtk_drm_mode_fb_create(struct drm_device *dev,
 					       struct drm_file *file,
 					       struct drm_mode_fb_cmd2 *cmd);
 
+void mtk_drm_mode_output_poll_changed(struct drm_device *dev);
 int mtk_fbdev_create(struct drm_device *dev);
 void mtk_fbdev_destroy(struct drm_device *dev);
 
-#endif /* MEDIATEK_DRM_FB_H */
-
+#endif /* MTK_DRM_FB_H */

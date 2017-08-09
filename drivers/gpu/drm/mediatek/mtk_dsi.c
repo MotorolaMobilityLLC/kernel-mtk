@@ -44,13 +44,13 @@
 #include <video/mipi_display.h>
 #include <video/videomode.h>
 
-#include "mediatek_drm_drv.h"
-#include "mediatek_drm_crtc.h"
+#include "mtk_drm_drv.h"
+#include "mtk_drm_crtc.h"
 
-#include "mediatek_drm_ddp.h"
+#include "mtk_drm_ddp.h"
 
-#include "mediatek_drm_gem.h"
-#include "mediatek_drm_dsi.h"
+#include "mtk_drm_gem.h"
+#include "mtk_dsi.h"
 
 #define DSI_VIDEO_FIFO_DEPTH	(1920 / 4)
 #define DSI_HOST_FIFO_DEPTH	64
@@ -1372,9 +1372,9 @@ static int mtk_dsi_probe(struct platform_device *pdev)
 	if (ret) {
 		dev_err(&pdev->dev, "failed to request mediatek dsi irq\n");
 		return -EPROBE_DEFER;
-	} else {
-		DRM_INFO("dsi irq num is 0x%x\n", dsi->irq);
 	}
+
+	DRM_INFO("dsi irq num is 0x%x\n", dsi->irq);
 
 	init_waitqueue_head(&_dsi_cmd_done_wait_queue);
 	init_waitqueue_head(&_dsi_dcs_read_wait_queue);
@@ -1393,7 +1393,7 @@ static int mtk_dsi_probe(struct platform_device *pdev)
 	}
 
 	DRM_INFO("dsi_reg_base = 0x%x, dsi_tx_reg_base = 0x%x\n",
-		(unsigned int)dsi->dsi_reg_base, (unsigned int)dsi->dsi_tx_reg_base);
+	(unsigned int)dsi->dsi_reg_base, (unsigned int)dsi->dsi_tx_reg_base);
 
 	return 0;
 }

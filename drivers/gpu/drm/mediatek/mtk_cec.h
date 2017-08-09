@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2014 MediaTek Inc.
+ * Author: Jie Qiu <jie.qiu@mediatek.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -10,11 +11,15 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  */
+#ifndef _MTK_CEC_H
+#define _MTK_CEC_H
 
-#ifndef MEDIATEK_DRM_DEBUGFS_H
-#define MEDIATEK_DRM_DEBUGFS_H
+struct device;
 
-void mediatek_drm_debugfs_init(struct drm_device *dev);
-void mediatek_drm_debugfs_deinit(void);
+void mtk_cec_set_hpd_event(struct device *dev,
+			   void (*hotplug_event)(bool hpd, void *data),
+			   void *hotplug_event_data);
+bool mtk_cec_hpd_high(struct device *dev);
+int mtk_cec_irq(struct device *dev);
 
-#endif /* MEDIATEK_DRM_DEBUGFS_H */
+#endif /* _MTK_CEC_H */

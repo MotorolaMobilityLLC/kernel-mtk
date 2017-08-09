@@ -2,7 +2,7 @@ config DRM_MEDIATEK
 	tristate "DRM Support for Mediatek SoCs"
 	depends on DRM
 	depends on ARCH_MEDIATEK || (ARM && COMPILE_TEST)
-#	select MTK_SMI
+	select MTK_SMI
 	select DRM_PANEL
 	select DRM_MIPI_DSI
 	select DRM_PANEL_SIMPLE
@@ -30,5 +30,6 @@ config DRM_MEDIATEK_FBDEV
 config DRM_MEDIATEK_HDMI
 	tristate "DRM HDMI Support for Mediatek SoCs"
 	depends on DRM_MEDIATEK
+	select GENERIC_PHY
 	help
 	  DRM/KMS HDMI driver for Mediatek SoCs
