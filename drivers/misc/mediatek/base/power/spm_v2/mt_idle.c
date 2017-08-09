@@ -392,6 +392,29 @@ static unsigned long mcidle_block_cnt[NR_CPUS][NR_REASONS] = { {0}, {0} };
 u64 mcidle_timer_before_wfi[NR_CPUS];
 static unsigned int idle_spm_lock;
 
+/* Workaround of static analysis defect*/
+int idle_gpt_get_cnt(unsigned int id, unsigned int *ptr)
+{
+	unsigned int val[2] = {0};
+	int ret = 0;
+
+	ret = gpt_get_cnt(id, val);
+	*ptr = val[0];
+
+	return ret;
+}
+
+int idle_gpt_get_cmp(unsigned int id, unsigned int *ptr)
+{
+	unsigned int val[2] = {0};
+	int ret = 0;
+
+	ret = gpt_get_cmp(id, val);
+	*ptr = val[0];
+
+	return ret;
+}
+
 long int idle_get_current_time_ms(void)
 {
 	struct timeval t;
@@ -963,8 +986,8 @@ void soidle_after_wfi(int cpu)
 		/* waked up by other wakeup source */
 		unsigned int cnt, cmp;
 
-		gpt_get_cnt(idle_gpt, &cnt);
-		gpt_get_cmp(idle_gpt, &cmp);
+		idle_gpt_get_cnt(idle_gpt, &cnt);
+		idle_gpt_get_cmp(idle_gpt, &cmp);
 		if (unlikely(cmp < cnt)) {
 			idle_err("[%s]GPT%d: counter = %10u, compare = %10u\n",
 					__func__, idle_gpt + 1, cnt, cmp);
@@ -1329,8 +1352,8 @@ void spm_dpidle_after_wfi(int cpu, u32 spm_debug_flag)
 		/* waked up by other wakeup source */
 		unsigned int cnt, cmp;
 
-		gpt_get_cnt(idle_gpt, &cnt);
-		gpt_get_cmp(idle_gpt, &cmp);
+		idle_gpt_get_cnt(idle_gpt, &cnt);
+		idle_gpt_get_cmp(idle_gpt, &cmp);
 		if (unlikely(cmp < cnt)) {
 			idle_err("[%s]GPT%d: counter = %10u, compare = %10u\n", __func__,
 					idle_gpt + 1, cnt, cmp);

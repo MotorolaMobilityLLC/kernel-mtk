@@ -771,6 +771,29 @@ const char *cg_grp_get_name(int id)
 	return cg_group_name[id];
 }
 
+/* Workaround of static analysis defect*/
+int idle_gpt_get_cnt(unsigned int id, unsigned int *ptr)
+{
+	unsigned int val[2] = {0};
+	int ret = 0;
+
+	ret = gpt_get_cnt(id, val);
+	*ptr = val[0];
+
+	return ret;
+}
+
+int idle_gpt_get_cmp(unsigned int id, unsigned int *ptr)
+{
+	unsigned int val[2] = {0};
+	int ret = 0;
+
+	ret = gpt_get_cmp(id, val);
+	*ptr = val[0];
+
+	return ret;
+}
+
 static long int idle_get_current_time_ms(void)
 {
 	struct timeval t;
@@ -958,8 +981,8 @@ void soidle_after_wfi(int cpu)
 		/* waked up by other wakeup source */
 		unsigned int cnt, cmp;
 
-		gpt_get_cnt(idle_gpt, &cnt);
-		gpt_get_cmp(idle_gpt, &cmp);
+		idle_gpt_get_cnt(idle_gpt, &cnt);
+		idle_gpt_get_cmp(idle_gpt, &cmp);
 		if (unlikely(cmp < cnt)) {
 			idle_warn("[%s]GPT%d: counter = %10u, compare = %10u\n", __func__,
 					idle_gpt + 1, cnt, cmp);
@@ -1132,8 +1155,8 @@ void spm_dpidle_after_wfi(void)
 		/* waked up by other wakeup source */
 		unsigned int cnt, cmp;
 
-		gpt_get_cnt(idle_gpt, &cnt);
-		gpt_get_cmp(idle_gpt, &cmp);
+		idle_gpt_get_cnt(idle_gpt, &cnt);
+		idle_gpt_get_cmp(idle_gpt, &cmp);
 		if (unlikely(cmp < cnt)) {
 			idle_warn("[%s]GPT%d: counter = %10u, compare = %10u\n", __func__,
 					idle_gpt + 1, cnt, cmp);
