@@ -27,6 +27,7 @@
 #include <linux/slab.h>
 #include <linux/export.h>
 #include <linux/module.h>
+#include <asm/memory.h>
 
 #include "u_serial.h"
 
@@ -369,6 +370,9 @@ __acquires(&port->port_lock)
 	bool			do_tty_wake = false;
 	static unsigned int	skip = 0;
 	static DEFINE_RATELIMIT_STATE(ratelimit, 1 * HZ, 10);
+
+	if (!virt_addr_valid(port->port_usb->in))
+			return 0;
 
 	while (!list_empty(pool)) {
 		struct usb_request	*req;
