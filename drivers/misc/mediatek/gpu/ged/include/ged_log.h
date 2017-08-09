@@ -70,4 +70,10 @@ void ged_log_system_exit(void);
 
 int ged_log_buf_write(GED_LOG_BUF_HANDLE hLogBuf, const char __user *pszBuffer, int i32Count);
 
+void ged_log_trace_begin(char *name);
+
+void ged_log_trace_end(void);
+
+void ged_log_trace_counter(char *name, int count);
+
 #endif

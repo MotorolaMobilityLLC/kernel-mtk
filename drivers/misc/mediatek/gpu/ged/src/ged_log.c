@@ -29,6 +29,8 @@
 #include "ged_profile_dvfs.h"
 #include "ged_hashtable.h"
 
+#include <linux/ftrace_event.h>
+
 enum
 {
 	/* 0x00 - 0xff reserved for internal buffer type */
@@ -993,6 +995,34 @@ int ged_log_buf_write(GED_LOG_BUF_HANDLE hLogBuf, const char __user *pszBuffer, 
 	GED_LOG_BUF *psGEDLogBuf = ged_log_buf_from_handle(hLogBuf);
 	return __ged_log_buf_write(psGEDLogBuf, pszBuffer, i32Count);
 }
+
+static unsigned long __read_mostly tracing_mark_write_addr = 0;
+static inline void __mt_update_tracing_mark_write_addr(void)
+{
+        if(unlikely(0 == tracing_mark_write_addr))
+        tracing_mark_write_addr = kallsyms_lookup_name("tracing_mark_write");
+}
+
+void ged_log_trace_begin(char *name)
+{
+        __mt_update_tracing_mark_write_addr();
+        event_trace_printk(tracing_mark_write_addr, "B|%d|%s\n", current->tgid, name);
+}
+EXPORT_SYMBOL(ged_log_trace_begin);
+ 
+void ged_log_trace_end(void)
+{
+        __mt_update_tracing_mark_write_addr();
+        event_trace_printk(tracing_mark_write_addr, "E\n");
+}
+EXPORT_SYMBOL(ged_log_trace_end);
+ 
+void ged_log_trace_counter(char *name, int count)
+{
+        __mt_update_tracing_mark_write_addr();
+        event_trace_printk(tracing_mark_write_addr, "C|5566|%s|%d\n", name, count);
+}
+EXPORT_SYMBOL(ged_log_trace_counter);
 
 EXPORT_SYMBOL(ged_log_buf_alloc);
 EXPORT_SYMBOL(ged_log_buf_reset);
