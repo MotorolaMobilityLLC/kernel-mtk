@@ -9,6 +9,7 @@ struct cputopo_arm {
 	int thread_id;
 	int core_id;
 	int socket_id;
+	unsigned int partno;
 	cpumask_t thread_sibling;
 	cpumask_t core_sibling;
 };
@@ -24,12 +25,38 @@ void init_cpu_topology(void);
 void store_cpu_topology(unsigned int cpuid);
 const struct cpumask *cpu_coregroup_mask(int cpu);
 
-#else
+/* Extras of CPU & Cluster functions */
+extern int arch_cpu_is_big(unsigned int cpu);
+extern int arch_cpu_is_little(unsigned int cpu);
+extern int arch_is_multi_cluster(void);
+extern int arch_is_big_little(void);
+extern int arch_get_nr_clusters(void);
+extern int arch_get_cluster_id(unsigned int cpu);
+extern void arch_get_cluster_cpus(struct cpumask *cpus, int cluster_id);
+
+#else /* !CONFIG_ARM_CPU_TOPOLOGY */
 
 static inline void init_cpu_topology(void) { }
 static inline void store_cpu_topology(unsigned int cpuid) { }
 
-#endif
+static inline int arch_cpu_is_big(unsigned int cpu) { return 0; }
+static inline int arch_cpu_is_little(unsigned int cpu) { return 1; }
+static inline int arch_is_multi_cluster(void) { return 0; }
+static inline int arch_is_big_little(void) { return 0; }
+static inline int arch_get_nr_clusters(void) { return 1; }
+static inline int arch_get_cluster_id(unsigned int cpu) { return 0; }
+static inline void arch_get_cluster_cpus(struct cpumask *cpus, int cluster_id)
+{
+	cpumask_clear(cpus);
+	if (0 == cluster_id) {
+		unsigned int cpu;
+
+		for_each_possible_cpu(cpu)
+			cpumask_set_cpu(cpu, cpus);
+	}
+}
+
+#endif /* CONFIG_ARM_CPU_TOPOLOGY */
 
 #include <asm-generic/topology.h>
 

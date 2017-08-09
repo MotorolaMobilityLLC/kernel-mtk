@@ -70,6 +70,9 @@ struct cpu_efficiency {
  */
 static const struct cpu_efficiency table_efficiency[] = {
 	{"arm,cortex-a15", 3891},
+	{"arm,cortex-a17", 3276},
+	{"arm,cortex-a12", 3276},
+	{"arm,cortex-a53", 2520},
 	{"arm,cortex-a7",  2048},
 	{NULL, },
 };
@@ -265,6 +268,8 @@ void store_cpu_topology(unsigned int cpuid)
 		cpuid_topo->socket_id = -1;
 	}
 
+	cpuid_topo->partno = read_cpuid_part();
+
 	update_siblings_masks(cpuid);
 
 	update_cpu_capacity(cpuid);
@@ -315,4 +320,91 @@ void __init init_cpu_topology(void)
 
 	/* Set scheduler topology descriptor */
 	set_sched_topology(arm_topology);
+}
+
+/*
+ * Extras of CPU & Cluster functions
+ */
+int arch_cpu_is_big(unsigned int cpu)
+{
+	struct cputopo_arm *arm_cputopo = &cpu_topology[cpu];
+
+	switch (arm_cputopo->partno) {
+	case ARM_CPU_PART_CORTEX_A12:
+	case ARM_CPU_PART_CORTEX_A17:
+	case ARM_CPU_PART_CORTEX_A15:
+		return 1;
+	default:
+		return 0;
+	}
+}
+
+int arch_cpu_is_little(unsigned int cpu)
+{
+	return !arch_cpu_is_big(cpu);
+}
+
+int arch_is_big_little(void)
+{
+	static int __arch_big_little = -1;
+	unsigned int cpu;
+	int has_big = 0, has_little = 0;
+
+	if (__arch_big_little != -1)
+		return __arch_big_little;
+
+	for_each_possible_cpu(cpu) {
+		if (arch_cpu_is_big(cpu))
+			has_big = 1;
+		else
+			has_little = 1;
+	}
+	__arch_big_little = (has_big && has_little) ? 1 : 0;
+
+	return __arch_big_little;
+}
+
+int arch_get_nr_clusters(void)
+{
+	static int __arch_nr_clusters = -1;
+	int max_id = 0;
+	unsigned int cpu;
+
+	if (__arch_nr_clusters != -1)
+		return __arch_nr_clusters;
+
+	/* assume socket id is monotonic increasing without gap. */
+	for_each_possible_cpu(cpu) {
+		struct cputopo_arm *arm_cputopo = &cpu_topology[cpu];
+
+		if (arm_cputopo->socket_id > max_id)
+			max_id = arm_cputopo->socket_id;
+	}
+	__arch_nr_clusters = max_id + 1;
+	return __arch_nr_clusters;
+}
+
+int arch_is_multi_cluster(void)
+{
+	return arch_get_nr_clusters() > 1 ? 1 : 0;
+}
+
+int arch_get_cluster_id(unsigned int cpu)
+{
+	struct cputopo_arm *arm_cputopo = &cpu_topology[cpu];
+
+	return arm_cputopo->socket_id < 0 ? 0 : arm_cputopo->socket_id;
+}
+
+void arch_get_cluster_cpus(struct cpumask *cpus, int cluster_id)
+{
+	unsigned int cpu;
+
+	cpumask_clear(cpus);
+	for_each_possible_cpu(cpu) {
+		struct cputopo_arm *arm_cputopo = &cpu_topology[cpu];
+
+		if (arm_cputopo->socket_id == cluster_id)
+			cpumask_set_cpu(cpu, cpus);
+	}
 }
