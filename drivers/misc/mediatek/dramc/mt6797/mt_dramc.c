@@ -44,15 +44,14 @@ void __iomem *TOPCKGEN_BASE_ADDR;
 void __iomem *DRAMCAO_CHB_BASE_ADDR;
 void __iomem *INFRACFG_AO_BASE_ADDR;
 void __iomem *DRAMCNAO_CHB_BASE_ADDR;
-void __iomem *SLEEP_BASE_ADDR;
 
 static DEFINE_MUTEX(dram_dfs_mutex);
 int org_dram_data_rate = 0;
 unsigned char old_IC = 0;
 unsigned char DFS_type = 0;
-
+#if 0 /* if0 for tmp */
 static unsigned int enter_pdp_cnt;
-
+#endif /* if0 for tmp */
 /*extern bool spm_vcorefs_is_dvfs_in_porgress(void);*/
 #define Reg_Sync_Writel(addr, val)   writel(val, IOMEM(addr))
 #define Reg_Readl(addr) readl(IOMEM(addr))
@@ -207,446 +206,353 @@ void dram_HQA_adjust_voltage(void)
 }
 #endif
 
+#if 0  /* if0 for tmp */
 void spm_dpd_init(void)
 {
-	unsigned int u4value = 0;
+	/* backup mr4, zqcs config for future restore*/
 	unsigned int recover7_0;
 	unsigned int recover8;
+	unsigned int recover;
 
-	/* p->channel = CHANNEL_A; */
-	recover7_0 = readl(PDEF_DRAMC0_CHA_REG_1E4) & 0x00ff0000;
-	recover8 = readl(PDEF_DRAMC0_CHA_REG_1DC) & 0x00000001;
-	u4value = recover7_0 | recover8;
-	writel(u4value, PDEF_SPM_PASR_DPD_0);
-	writel(readl(PDEF_DRAMC0_CHA_REG_1E8) | 0x04000000,
-	PDEF_DRAMC0_CHA_REG_1E8);
-	writel(readl(PDEF_DRAMC0_CHA_REG_1E4) & 0xff00ffff,
-	PDEF_DRAMC0_CHA_REG_1E4);
-	writel(readl(PDEF_DRAMC0_CHA_REG_1DC) & 0xfffffffe,
-	PDEF_DRAMC0_CHA_REG_1DC);
+	recover7_0 = readl(PDEF_DRAMC0_REG_1E4) & 0x00ff0000;
+	recover8   = readl(PDEF_DRAMC0_REG_1DC) & 0x00000001;
+	recover = recover7_0 | recover8;
 
-	mb(); /* flush memory */
+	spm_set_register(SPM_PASR_DPD_0, recover);
+
+	/*-----try, disable MR4(0x1E8[26]=1)*/
+	writel(readl(PDEF_DRAMC0_REG_1E8) | 0x04000000, PDEF_DRAMC0_REG_1E8);
+
+	/*Set ZQCSCNT7~0(0x1e4[23:16]) = 0: disable ZQCS*/
+	/*When doing ZQCS,
+	special_command_enable will wakeup RANK1's CKE. This is wrong.*/
+	writel(readl(PDEF_DRAMC0_REG_1E4) & 0xff00ffff, PDEF_DRAMC0_REG_1E4);
+
+	/*20150402 add, ZQCSCNT8 is added in Jade*/
+	/* set R_DMZQCSCNT8(0x1DC[0])=0*/
+	writel(readl(PDEF_DRAMC0_REG_1DC) & 0xfffffffe, PDEF_DRAMC0_REG_1DC);
+	/*
+	*MDM_TM_WAIT_US = 2;
+	while (*MDM_TM_WAIT_US > 0)
+		;
+	*/
+	mb();
 	udelay(2);
 
-	writel(readl(PDEF_DRAMC0_CHA_REG_1DC) | 0x04000000,
-	PDEF_DRAMC0_CHA_REG_1DC);
+	/*20150319 add, set MIOCKCTRLOFF(0x1dc[26])=1: not stop to DRAM clock!*/
+	writel(readl(PDEF_DRAMC0_REG_1DC) | 0x04000000, PDEF_DRAMC0_REG_1DC);
 
-	mb(); /* flush memory */
+	/*20150319 add, wait 100ns*/
+	/*
+	*MDM_TM_WAIT_US = 1;
+	while (*MDM_TM_WAIT_US > 0)
+		;
+	*/
+	mb();
 	udelay(1);
 
-	writel(readl(PDEF_DRAMC0_CHA_REG_1EC) & 0xffefffff,
-	PDEF_DRAMC0_CHA_REG_1EC);
-	writel(readl(PDEF_DRAMC0_CHA_REG_0F4) | 0x00100000,
-	PDEF_DRAMC0_CHA_REG_0F4);
-	writel(readl(PDEF_DRAMC0_CHA_REG_110) & 0xffdfffff,
-	PDEF_DRAMC0_CHA_REG_110);
-	writel(readl(PDEF_DRAMC0_CHA_REG_1EC) | 0x00010000,
-	PDEF_DRAMC0_CHA_REG_1EC);
+	/*Set CKE2RANK(0x1ec[20])=0: let CKE1 and CKE0 independent*/
+	writel(readl(PDEF_DRAMC0_REG_1EC) & 0xffefffff, PDEF_DRAMC0_REG_1EC);
 
-	/*p->channel = CHANNEL_B; */
-	recover7_0 = readl(PDEF_DRAMC0_CHB_REG_1E4) & 0x00ff0000;
-	recover8 = readl(PDEF_DRAMC0_CHB_REG_1DC) & 0x00000001;
-	u4value = recover7_0 | recover8;
-	writel(u4value, PDEF_SPM_PASR_DPD_3);
-	writel(readl(PDEF_DRAMC0_CHB_REG_1E8) | 0x04000000,
-	PDEF_DRAMC0_CHB_REG_1E8);
-	writel(readl(PDEF_DRAMC0_CHB_REG_1E4) & 0xff00ffff,
-	PDEF_DRAMC0_CHB_REG_1E4);
-	writel(readl(PDEF_DRAMC0_CHB_REG_1DC) & 0xfffffffe,
-	PDEF_DRAMC0_CHB_REG_1DC);
+	/*20150319 add, set R_DMCKE1FIXON(0xF4[20])=1*/
+	writel(readl(PDEF_DRAMC0_REG_0F4) | 0x00100000, PDEF_DRAMC0_REG_0F4);
 
-	mb(); /* flush memory */
-	udelay(2);
+	/*SW set RK1SRF(0x110[21])=0: RK1 can not enter SRF*/
+	writel(readl(PDEF_DRAMC0_REG_110) & 0xffdfffff, PDEF_DRAMC0_REG_110);
 
-	writel(readl(PDEF_DRAMC0_CHB_REG_1DC) | 0x04000000,
-	PDEF_DRAMC0_CHB_REG_1DC);
+	/*Set DISDMOEDIS(0x1ec[16])=1:
+	CA can not be floating because RK1 want to DPD after RK0 enter SRF.*/
+	writel(readl(PDEF_DRAMC0_REG_1EC) | 0x00010000, PDEF_DRAMC0_REG_1EC);
 
-	mb(); /* flush memory */
-	udelay(1);
-
-	writel(readl(PDEF_DRAMC0_CHB_REG_1EC) & 0xffefffff,
-	PDEF_DRAMC0_CHB_REG_1EC);
-	writel(readl(PDEF_DRAMC0_CHB_REG_0F4) | 0x00100000,
-	PDEF_DRAMC0_CHB_REG_0F4);
-	writel(readl(PDEF_DRAMC0_CHA_REG_110) & 0xffdfffff,
-	PDEF_DRAMC0_CHB_REG_110);
-	writel(readl(PDEF_DRAMC0_CHB_REG_1EC) | 0x00010000,
-	PDEF_DRAMC0_CHB_REG_1EC);
 }
 
-void spm_dpd_dram_init(void)
+void spm_dpd_dram_init(void) /*void spm_dpd_dram_init_1(void)*/
 {
-	unsigned int u4value = 0;
 	unsigned int recover7_0;
 	unsigned int recover8;
-	unsigned int u4value_E4 = 0;
-	unsigned int u4value_F4 = 0;
-	unsigned int frequency = 0;
 
-	/* p->channel = CHANNEL_A; */
-	u4value_E4 = readl(PDEF_DRAMC0_CHA_REG_0E4);
-	u4value_F4 = readl(PDEF_DRAMC0_CHA_REG_0F4);
-	writel(readl(PDEF_DRAMC0_CHA_REG_0F4) & 0xffdfffff,
-	PDEF_DRAMC0_CHA_REG_0F4);
-	writel(readl(PDEF_DRAMC0_CHA_REG_110) | 0x80000000,
-	PDEF_DRAMC0_CHA_REG_110);
+	/*20150319 add, recover, set R_DMCKE1FIXOFF(0xF4[21])=0*/
+	writel(readl(PDEF_DRAMC0_REG_0F4) & 0xffdfffff, PDEF_DRAMC0_REG_0F4);
 
-	mb(); /* flush memory */
+	/* DPD DRAM initialization first part - Exit PDP*/
+
+	/*SW set RK1DPDX(0x110[31])=1*/
+	writel(readl(PDEF_DRAMC0_REG_110) | 0x80000000, PDEF_DRAMC0_REG_110);
+
+	/*20150325 */
+	/*wait100ns*/
+	/*
+	*MDM_TM_WAIT_US = 1;
+	while (*MDM_TM_WAIT_US > 0)
+		;
+	*/
+	mb();
 	udelay(1);
 
-	writel(readl(PDEF_DRAMC0_CHA_REG_110) | 0x00200000,
-	PDEF_DRAMC0_CHA_REG_110);
+	/*SW set RK1SRF(0x110[21])=1*/
+	writel(readl(PDEF_DRAMC0_REG_110) | 0x00200000, PDEF_DRAMC0_REG_110);
 
-	mb(); /* flush memory */
+	/* 5. wait 220us*/
+	/*SW delay 220us*/
+	/*
+	*MDM_TM_WAIT_US = 220;
+	while (*MDM_TM_WAIT_US > 0)
+		;
+	*/
+	mb();
 	udelay(220);
 
-	writel(readl(PDEF_DRAMC0_CHA_REG_0E4) | 0x00000004,
-	PDEF_DRAMC0_CHA_REG_0E4);
-	writel(readl(PDEF_DRAMC0_CHA_REG_0F4) | 0x00100000,
-	PDEF_DRAMC0_CHA_REG_0F4);
-	writel(readl(PDEF_DRAMC0_CHA_REG_1EC) | 0x00100000,
-	PDEF_DRAMC0_CHA_REG_1EC);
-	writel(readl(PDEF_DRAMC0_CHA_REG_0F4) | 0x00100000,
-	PDEF_DRAMC0_CHA_REG_0F4);
-	writel(readl(PDEF_DRAMC0_CHA_REG_138) & 0xffff7fff,
-	PDEF_DRAMC0_CHA_REG_138);
-	writel(readl(PDEF_DRAMC0_CHA_REG_1DC) & 0xfffffffd,
-	PDEF_DRAMC0_CHA_REG_1DC);
-	writel(0x1000003f, PDEF_DRAMC0_CHA_REG_088);
-	writel(readl(PDEF_DRAMC0_CHA_REG_1E4) | 0x00000001,
-	PDEF_DRAMC0_CHA_REG_1E4);
+	/* 6.execute spm_dpd_init_2()*/
 
-	mb(); /* flush memory */
+	/*fix CKE, R_DMCKEFIXON*/
+	writel(readl(PDEF_DRAMC0_REG_0E4) | 0x00000004, PDEF_DRAMC0_REG_0E4);
+
+	/*move here*/
+	/*SW recover CKE2RANK(0x1EC[20]) -> CKE1 is the same as CKE0*/
+	writel(readl(PDEF_DRAMC0_REG_1EC) | 0x00100000, PDEF_DRAMC0_REG_1EC);
+
+	/*20150325 add*/
+	/*set R_DMCKE1FIXON(0xF4[20])=1*/
+	writel(readl(PDEF_DRAMC0_REG_0F4) | 0x00100000, PDEF_DRAMC0_REG_0F4);
+
+	/*set R_DMPREALL_OPTION(0x138[15])=0*/
+	writel(readl(PDEF_DRAMC0_REG_138) & 0xffff7fff, PDEF_DRAMC0_REG_138);
+
+	/*set R_DMDCMEN2(0x1DC[1])=0*/
+	writel(readl(PDEF_DRAMC0_REG_1DC) & 0xfffffffd, PDEF_DRAMC0_REG_1DC);
+
+	/*Set MRS value - for rank1, Reset(0x3F)*/
+	writel(0x1000003f, PDEF_DRAMC0_REG_088);
+	/*Set MRWEN=1 (0x1E4[0]) -> Mode register write command enable*/
+	writel(readl(PDEF_DRAMC0_REG_1E4) | 0x00000001, PDEF_DRAMC0_REG_1E4);
+	/*SW delay 10us*/
+	/*
+	*MDM_TM_WAIT_US = 10;
+	while (*MDM_TM_WAIT_US > 0)
+		;
+	*/
+	mb();
 	udelay(10);
+	/*Set MRWEN=0 (0x1E4[0]) -> Mode register write command disable*/
+	writel(readl(PDEF_DRAMC0_REG_1E4) & 0xfffffffe, PDEF_DRAMC0_REG_1E4);
 
-	writel(readl(PDEF_DRAMC0_CHA_REG_1E4) & 0xfffffffe,
-	PDEF_DRAMC0_CHA_REG_1E4);
-	writel(0x10ff000a, PDEF_DRAMC0_CHA_REG_088);
-	writel(readl(PDEF_DRAMC0_CHA_REG_1E4) | 0x00000001,
-	PDEF_DRAMC0_CHA_REG_1E4);
-
-	mb(); /* flush memory */
+	/*Set MRS value - for rank1,
+	Calibration command after initialization (0x0A)*/
+	writel(0x10ff000a, PDEF_DRAMC0_REG_088);
+	/*Set MRWEN=1 (0x1E4[0]) -> Mode register write command enable*/
+	writel(readl(PDEF_DRAMC0_REG_1E4) | 0x00000001, PDEF_DRAMC0_REG_1E4);
+	/*SW delay 1.2us*/
+	/*
+	*MDM_TM_WAIT_US = 1;
+	while (*MDM_TM_WAIT_US > 0)
+		;
+	*/
+	mb();
 	udelay(2);
 
-	writel(readl(PDEF_DRAMC0_CHA_REG_1E4) & 0xfffffffe,
-	PDEF_DRAMC0_CHA_REG_1E4);
-	writel(0x10010003, PDEF_DRAMC0_CHA_REG_088);
-	writel(readl(PDEF_DRAMC0_CHA_REG_1E4) | 0x00000001,
-	PDEF_DRAMC0_CHA_REG_1E4);
+	/*Set MRWEN=0 (0x1E4[0]) -> Mode register write command disable*/
+	writel(readl(PDEF_DRAMC0_REG_1E4) & 0xfffffffe, PDEF_DRAMC0_REG_1E4);
 
-	mb(); /* flush memory */
+	/*Set MRS value - for rank1,
+	I/O Config-1(0x03) - 40-Ohm typical pull-down/pull-up*/
+	writel(0x10010003, PDEF_DRAMC0_REG_088);
+	/*Set MRWEN=1 (0x1E4[0]) -> Mode register write command enable*/
+	writel(readl(PDEF_DRAMC0_REG_1E4) | 0x00000001, PDEF_DRAMC0_REG_1E4);
+	/*SW delay 1.2us*/
+	/*
+	*MDM_TM_WAIT_US = 1;
+	while (*MDM_TM_WAIT_US > 0)
+		;
+	*/
+	mb();
 	udelay(2);
 
-	writel(readl(PDEF_DRAMC0_CHA_REG_1E4) & 0xfffffffe,
-	PDEF_DRAMC0_CHA_REG_1E4);
-	writel(0x10830001, PDEF_DRAMC0_CHA_REG_088);
-	writel(readl(PDEF_DRAMC0_CHA_REG_1E4) | 0x00000001,
-	PDEF_DRAMC0_CHA_REG_1E4);
+	/*Set MRWEN=0 (0x1E4[0]) -> Mode register write command disable*/
+	writel(readl(PDEF_DRAMC0_REG_1E4) & 0xfffffffe, PDEF_DRAMC0_REG_1E4);
 
-	mb(); /* flush memory */
+	/*Set MRS value - for rank1, Device Feature1(0x01) - BL=8, nWR=8*/
+	writel(0x10830001, PDEF_DRAMC0_REG_088);
+	/*Set MRWEN=1 (0x1E4[0]) -> Mode register write command enable*/
+	writel(readl(PDEF_DRAMC0_REG_1E4) | 0x00000001, PDEF_DRAMC0_REG_1E4);
+	/*SW delay 1.2us*/
+	/*
+	*MDM_TM_WAIT_US = 1;
+	while (*MDM_TM_WAIT_US > 0)
+		;
+	*/
+	mb();
 	udelay(2);
 
-	writel(readl(PDEF_DRAMC0_CHA_REG_1E4) & 0xfffffffe,
-	PDEF_DRAMC0_CHA_REG_1E4);
+	/*Set MRWEN=0 (0x1E4[0]) -> Mode register write command disable*/
+	writel(readl(PDEF_DRAMC0_REG_1E4) & 0xfffffffe, PDEF_DRAMC0_REG_1E4);
 
-	frequency = get_dram_data_rate() / 2;
-	if (frequency <= 533)
-		u4value = 0x10160002;/*u4MR2Value = 0x14;*/
-	else if (frequency == 635)
-		u4value = 0x10180002;/*u4MR2Value = 0x1e;*/
-	else if (frequency == 800)
-		u4value = 0x101a0002;/*u4MR2Value = 0x1c;*/
-	else
-		u4value = 0x101a0002;/*u4MR2Value = 0x1a;*/
-
-	writel(u4value, PDEF_DRAMC0_CHA_REG_088);
-	writel(readl(PDEF_DRAMC0_CHA_REG_1E4) | 0x00000001,
-	PDEF_DRAMC0_CHA_REG_1E4);
-
-	mb(); /* flush memory */
+	/*Set MRS value - for rank1,
+	Device Feature 2(0x02) - RL=12 / WL=9 (<= 800 MHz)*/
+	writel(0x101c0002, PDEF_DRAMC0_REG_088);
+	/*Set MRWEN=1 (0x1E4[0]) -> Mode register write command enable*/
+	writel(readl(PDEF_DRAMC0_REG_1E4) | 0x00000001, PDEF_DRAMC0_REG_1E4);
+	/*SW delay 1.2us*/
+	/*
+	*MDM_TM_WAIT_US = 1;
+	while (*MDM_TM_WAIT_US > 0)
+		;
+	*/
+	mb();
 	udelay(2);
 
-	writel(readl(PDEF_DRAMC0_CHA_REG_1E4) & 0xfffffffe,
-	PDEF_DRAMC0_CHA_REG_1E4);
-	writel(0x1000000b, PDEF_DRAMC0_CHA_REG_088);
-	writel(readl(PDEF_DRAMC0_CHA_REG_1E4) | 0x00000001,
-	PDEF_DRAMC0_CHA_REG_1E4);
+	/*Set MRWEN=0 (0x1E4[0]) -> Mode register write command disable*/
+	writel(readl(PDEF_DRAMC0_REG_1E4) & 0xfffffffe, PDEF_DRAMC0_REG_1E4);
 
-	mb(); /* flush memory */
+	/*Set MRS value - for rank1, Device Feature11(0x0b) - disable ODT*/
+	writel(0x1000000b, PDEF_DRAMC0_REG_088);
+	/*Set MRWEN=1 (0x1E4[0]) -> Mode register write command enable*/
+	writel(readl(PDEF_DRAMC0_REG_1E4) | 0x00000001, PDEF_DRAMC0_REG_1E4);
+	/*SW delay 1.2us*/
+	/*
+	*MDM_TM_WAIT_US = 1;
+	while (*MDM_TM_WAIT_US > 0)
+		;
+	*/
+	mb();
 	udelay(2);
 
-	writel(readl(PDEF_DRAMC0_CHA_REG_1E4) & 0xfffffffe,
-	PDEF_DRAMC0_CHA_REG_1E4);
-	writel(readl(PDEF_DRAMC0_CHA_REG_1DC) | 0x00000002,
-	PDEF_DRAMC0_CHA_REG_1DC);
-	writel(readl(PDEF_DRAMC0_CHA_REG_138) | 0x00008000,
-	PDEF_DRAMC0_CHA_REG_138);
-	writel(readl(PDEF_DRAMC0_CHA_REG_0F4) & 0xffefffff,
-	PDEF_DRAMC0_CHA_REG_0F4);
-	writel(readl(PDEF_DRAMC0_CHA_REG_110) & 0x7fffffff,
-	PDEF_DRAMC0_CHA_REG_110);
-	writel(u4value_E4, PDEF_DRAMC0_CHA_REG_0E4);
-	writel(u4value_F4, PDEF_DRAMC0_CHA_REG_0F4);
+	/*Set MRWEN=0 (0x1E4[0]) -> Mode register write command disable*/
+	writel(readl(PDEF_DRAMC0_REG_1E4) & 0xfffffffe, PDEF_DRAMC0_REG_1E4);
 
-	u4value = readl(PDEF_SPM_PASR_DPD_0);
-	recover7_0 = (u4value & 0x00ff0000);
-	recover8 = u4value & 0x00000001;
+	/*20150325 add*/
+	/* set R_DMDCMEN2(0x1DC[1])=1*/
+	writel(readl(PDEF_DRAMC0_REG_1DC) | 0x00000002, PDEF_DRAMC0_REG_1DC);
 
-	writel(readl(PDEF_DRAMC0_CHA_REG_1DC) | recover8,
-	PDEF_DRAMC0_CHA_REG_1DC);
-	writel(readl(PDEF_DRAMC0_CHA_REG_1E4) | recover7_0,
-	PDEF_DRAMC0_CHA_REG_1E4);
-	writel(readl(PDEF_DRAMC0_CHA_REG_1E8) & 0xfbffffff,
-	PDEF_DRAMC0_CHA_REG_1E8);
-	writel(0x00000000, PDEF_DRAMC0_CHA_REG_088);
+	/* set R_DMPREALL_OPTION(0x138[15])=1*/  /*recover*/
+	writel(readl(PDEF_DRAMC0_REG_138) | 0x00008000, PDEF_DRAMC0_REG_138);
 
-	/* p->channel = CHANNEL_B; */
-	u4value_E4 = readl(PDEF_DRAMC0_CHB_REG_0E4);
-	u4value_F4 = readl(PDEF_DRAMC0_CHB_REG_0F4);
-	writel(readl(PDEF_DRAMC0_CHB_REG_0F4) & 0xffdfffff,
-	PDEF_DRAMC0_CHB_REG_0F4);
-	writel(readl(PDEF_DRAMC0_CHB_REG_110) | 0x80000000,
-	PDEF_DRAMC0_CHB_REG_110);
+	/* set R_DMCKE1FIXON(0xF4[20])=0*/
+	writel(readl(PDEF_DRAMC0_REG_0F4) & 0xffefffff, PDEF_DRAMC0_REG_0F4);
 
-	mb(); /* flush memory */
-	udelay(1);
+	/*SW set RK1DPDX(0x110[31])=0*/
+	writel(readl(PDEF_DRAMC0_REG_110) & 0x7fffffff, PDEF_DRAMC0_REG_110);
 
-	writel(readl(PDEF_DRAMC0_CHB_REG_110) | 0x00200000,
-	PDEF_DRAMC0_CHB_REG_110);
+	/*release fix CKE*/
+	writel(readl(PDEF_DRAMC0_REG_0E4) & 0xfffffffb, PDEF_DRAMC0_REG_0E4);
 
-	mb(); /* flush memory */
-	udelay(220);
+	recover7_0 = spm_get_register(SPM_PASR_DPD_0) & 0x00ff0000;
+	recover8   = spm_get_register(SPM_PASR_DPD_0) & 0x00000001;
 
-	writel(readl(PDEF_DRAMC0_CHB_REG_0E4) | 0x00000004,
-	PDEF_DRAMC0_CHB_REG_0E4);
-	writel(readl(PDEF_DRAMC0_CHB_REG_0F4) | 0x00100000,
-	PDEF_DRAMC0_CHB_REG_0F4);
-	writel(readl(PDEF_DRAMC0_CHB_REG_1EC) | 0x00100000,
-	PDEF_DRAMC0_CHB_REG_1EC);
-	writel(readl(PDEF_DRAMC0_CHB_REG_0F4) | 0x00100000,
-	PDEF_DRAMC0_CHB_REG_0F4);
-	writel(readl(PDEF_DRAMC0_CHB_REG_138) & 0xffff7fff,
-	PDEF_DRAMC0_CHB_REG_138);
-	writel(readl(PDEF_DRAMC0_CHB_REG_1DC) & 0xfffffffd,
-	PDEF_DRAMC0_CHB_REG_1DC);
-	writel(0x1000003f, PDEF_DRAMC0_CHB_REG_088);
-	writel(readl(PDEF_DRAMC0_CHB_REG_1E4) | 0x00000001,
-	PDEF_DRAMC0_CHB_REG_1E4);
+	/*SW recover ZQCSCNT7~0(0x1E4[23:16]) to allow ZQCS*/
+	writel(readl(PDEF_DRAMC0_REG_1DC) | recover8, PDEF_DRAMC0_REG_1DC);
+	/*20150402 add, ZQCSCNT8 is added in Jade*/
+	/* set R_DMZQCSCNT8(0x1DC[0])=? */ /*recover the original value*/
+	writel(readl(PDEF_DRAMC0_REG_1E4) | recover7_0, PDEF_DRAMC0_REG_1E4);
 
-	mb(); /* flush memory */
-	udelay(10);
+	/*-----try, release disable MR4(0x1E8[26]=0)*/
+	writel(readl(PDEF_DRAMC0_REG_1E8) & 0xfbffffff, PDEF_DRAMC0_REG_1E8);
 
-	writel(readl(PDEF_DRAMC0_CHB_REG_1E4) & 0xfffffffe,
-	PDEF_DRAMC0_CHB_REG_1E4);
-	writel(0x10ff000a, PDEF_DRAMC0_CHB_REG_088);
-	writel(readl(PDEF_DRAMC0_CHB_REG_1E4) | 0x00000001,
-	PDEF_DRAMC0_CHB_REG_1E4);
-
-	mb(); /* flush memory */
-	udelay(2);
-
-	writel(readl(PDEF_DRAMC0_CHB_REG_1E4) & 0xfffffffe,
-	PDEF_DRAMC0_CHB_REG_1E4);
-	writel(0x10010003, PDEF_DRAMC0_CHB_REG_088);
-	writel(readl(PDEF_DRAMC0_CHB_REG_1E4) | 0x00000001,
-	PDEF_DRAMC0_CHB_REG_1E4);
-
-	mb(); /* flush memory */
-	udelay(2);
-
-	writel(readl(PDEF_DRAMC0_CHB_REG_1E4) & 0xfffffffe,
-	PDEF_DRAMC0_CHB_REG_1E4);
-	writel(0x10830001, PDEF_DRAMC0_CHB_REG_088);
-	writel(readl(PDEF_DRAMC0_CHB_REG_1E4) | 0x00000001,
-	PDEF_DRAMC0_CHB_REG_1E4);
-
-	mb(); /* flush memory */
-	udelay(2);
-
-	writel(readl(PDEF_DRAMC0_CHB_REG_1E4) & 0xfffffffe,
-	PDEF_DRAMC0_CHB_REG_1E4);
-
-	frequency = get_dram_data_rate() / 2;
-	if (frequency <= 533)
-		u4value = 0x10160002;/*u4MR2Value = 0x14;*/
-	else if (frequency == 635)
-		u4value = 0x10180002;/*u4MR2Value = 0x1e;*/
-	else if (frequency == 800)
-		u4value = 0x101a0002;/*u4MR2Value = 0x1c;*/
-	else
-		u4value = 0x101a0002;/*u4MR2Value = 0x1a;*/
-
-	writel(u4value, PDEF_DRAMC0_CHB_REG_088);
-	writel(readl(PDEF_DRAMC0_CHB_REG_1E4) | 0x00000001,
-	PDEF_DRAMC0_CHB_REG_1E4);
-
-	mb(); /* flush memory */
-	udelay(2);
-
-	writel(readl(PDEF_DRAMC0_CHB_REG_1E4) & 0xfffffffe,
-	PDEF_DRAMC0_CHB_REG_1E4);
-	writel(0x1000000b, PDEF_DRAMC0_CHB_REG_088);
-	writel(readl(PDEF_DRAMC0_CHB_REG_1E4) | 0x00000001,
-	PDEF_DRAMC0_CHB_REG_1E4);
-
-	mb(); /* flush memory */
-	udelay(2);
-
-	writel(readl(PDEF_DRAMC0_CHB_REG_1E4) & 0xfffffffe,
-	PDEF_DRAMC0_CHB_REG_1E4);
-	writel(readl(PDEF_DRAMC0_CHB_REG_1DC) | 0x00000002,
-	PDEF_DRAMC0_CHB_REG_1DC);
-	writel(readl(PDEF_DRAMC0_CHB_REG_138) | 0x00008000,
-	PDEF_DRAMC0_CHB_REG_138);
-	writel(readl(PDEF_DRAMC0_CHB_REG_0F4) & 0xffefffff,
-	PDEF_DRAMC0_CHB_REG_0F4);
-	writel(readl(PDEF_DRAMC0_CHB_REG_110) & 0x7fffffff,
-	PDEF_DRAMC0_CHB_REG_110);
-	writel(u4value_E4, PDEF_DRAMC0_CHB_REG_0E4);
-	writel(u4value_F4, PDEF_DRAMC0_CHB_REG_0F4);
-
-	u4value = readl(PDEF_SPM_PASR_DPD_3);
-	recover7_0 = (u4value & 0x00ff0000);
-	recover8 = u4value & 0x00000001;
-	writel(readl(PDEF_DRAMC0_CHB_REG_1DC) | recover8,
-	PDEF_DRAMC0_CHB_REG_1DC);
-	writel(readl(PDEF_DRAMC0_CHB_REG_1E4) | recover7_0,
-	PDEF_DRAMC0_CHB_REG_1E4);
-	writel(readl(PDEF_DRAMC0_CHB_REG_1E8) & 0xfbffffff,
-	PDEF_DRAMC0_CHB_REG_1E8);
-	writel(0x00000000, PDEF_DRAMC0_CHB_REG_088);
+	/*Recover MRSRK(0x88[28])=0, MRRRK(0x88[26])=0*/
+	writel(0x00000000, PDEF_DRAMC0_REG_088);
 }
 
 int enter_pasr_dpd_config(unsigned char segment_rank0,
 			   unsigned char segment_rank1)
 {
+	/* for D-3, support run time MRW */
 	unsigned int rank_pasr_segment[2];
-	/*unsigned int dramc0_spcmd, dramc0_pd_ctrl;
-	//unsigned int dramc0_pd_ctrl_2, dramc0_padctl4, dramc0_1E8; */
+	unsigned int dramc0_spcmd, dramc0_pd_ctrl;
+	unsigned int dramc0_pd_ctrl_2, dramc0_padctl4, dramc0_1E8;
 	unsigned int i, cnt = 1000;
-	unsigned int u4value_1E4 = 0;
-	unsigned int u4value_1E8 = 0;
-	unsigned int u4value_E4 = 0;
-	unsigned int u4value_F4 = 0;
 
 	rank_pasr_segment[0] = segment_rank0 & 0xFF;	/* for rank0 */
 	rank_pasr_segment[1] = segment_rank1 & 0xFF;	/* for rank1 */
 	pr_warn("[DRAMC0] PASR r0 = 0x%x  r1 = 0x%x\n",
 	rank_pasr_segment[0], rank_pasr_segment[1]);
 
-	/*Channel-A*/
-	u4value_E4 = readl(PDEF_DRAMC0_CHA_REG_0E4);
-	u4value_F4 = readl(PDEF_DRAMC0_CHA_REG_0F4);
-	u4value_1E8 = readl(PDEF_DRAMC0_CHA_REG_1E8);
-	u4value_1E4 = readl(PDEF_DRAMC0_CHA_REG_1E4);
+	/* backup original data */
+	dramc0_spcmd = readl(PDEF_DRAMC0_REG_1E4);
+	dramc0_pd_ctrl = readl(PDEF_DRAMC0_REG_1DC);
+	dramc0_padctl4 = readl(PDEF_DRAMC0_REG_0E4);
+	dramc0_1E8 = readl(PDEF_DRAMC0_REG_1E8);
 
-	writel(readl(PDEF_DRAMC0_CHA_REG_1E8) | 0x04000000,
-	PDEF_DRAMC0_CHA_REG_1E8);
-	writel(readl(PDEF_DRAMC0_CHA_REG_1E4) & 0xF7FFFFFF,
-	PDEF_DRAMC0_CHA_REG_1E4);
+	/* disable MR4(0x1E8[26]=1) */
+	writel(dramc0_1E8 | 0x04000000, PDEF_DRAMC0_REG_1E8);
 
-	mb(); /* flush memory */
-	udelay(2);
+	/* Set ZQCSCNT7~0(0x1e4[23:16]) = 0
+	ZQCSCNT8(0x1DC[0]) = 0: disable ZQCS */
+	writel(dramc0_spcmd & 0xff00ffff, PDEF_DRAMC0_REG_1E4);
+	writel(dramc0_pd_ctrl & 0xfffffffe, PDEF_DRAMC0_REG_1DC);
 
-	writel(readl(PDEF_DRAMC0_CHA_REG_0E4) | 0x00000004,
-	PDEF_DRAMC0_CHA_REG_0E4);
-	writel(readl(PDEF_DRAMC0_CHA_REG_0F4) | 0x00100000,
-	PDEF_DRAMC0_CHA_REG_0F4);
+	/* Set MIOCKCTRLOFF(0x1dc[26])=1: not stop to DRAM clock! */
+	dramc0_pd_ctrl_2 = readl(PDEF_DRAMC0_REG_1DC);
+	writel(dramc0_pd_ctrl_2 | 0x04000000, PDEF_DRAMC0_REG_1DC);
+
+	/* fix CKE */
+	writel(dramc0_padctl4 | 0x00000004, PDEF_DRAMC0_REG_0E4);
+
+	udelay(1);
 
 	for (i = 0; i < 2; i++) {
-		if ((i == 1) && (rank_pasr_segment[i] == 0xFF))
-			continue;
-
+		/* set MRS settings include rank number,
+		segment information and MRR17 */
 		writel(((i << 28) | (rank_pasr_segment[i] << 16) | 0x00000011),
-		PDEF_DRAMC0_CHA_REG_088);
-		writel(readl(PDEF_DRAMC0_CHA_REG_1E4) | 0x00000001,
-		PDEF_DRAMC0_CHA_REG_1E4);
+		PDEF_DRAMC0_REG_088);
+		/* Mode register write command enable */
+		writel(0x00000001, PDEF_DRAMC0_REG_1E4);
 
+		/* wait MRW command response */
+		/* wait >1us */
+		/* gpt_busy_wait_us(1); */
 		do {
 			if (cnt-- == 0) {
 				pr_warn("[DRAMC0] PASR MRW fail!\n");
-				return -1; }
+				return -1;
+			}
 			udelay(1);
-			} while ((readl(PDEF_DRAMC0_CHA_REG_3B8)
-			& 0x00000001) == 0x0);
+		} while ((readl(PDEF_DRAMC0_REG_3B8) & 0x00000001) == 0x0);
+		mb(); /* flsush */
 
-		writel(readl(PDEF_DRAMC0_CHA_REG_1E4) & 0xfffffffe,
-		PDEF_DRAMC0_CHA_REG_1E4);
+		/* Mode register write command disable */
+		writel(0x0, PDEF_DRAMC0_REG_1E4);
 	}
 
-	writel(u4value_E4, PDEF_DRAMC0_CHA_REG_0E4);
-	writel(u4value_F4, PDEF_DRAMC0_CHA_REG_0F4);
-	writel(u4value_1E4, PDEF_DRAMC0_CHA_REG_1E4);
-	writel(u4value_1E8, PDEF_DRAMC0_CHA_REG_1E8);
-	writel(0, PDEF_DRAMC0_CHA_REG_088);
+	/* release MR4 */
+	writel(dramc0_1E8, PDEF_DRAMC0_REG_1E8);
 
-	/*Channel-B*/
-	u4value_E4 = readl(PDEF_DRAMC0_CHB_REG_0E4);
-	u4value_F4 = readl(PDEF_DRAMC0_CHB_REG_0F4);
-	u4value_1E8 = readl(PDEF_DRAMC0_CHB_REG_1E8);
-	u4value_1E4 = readl(PDEF_DRAMC0_CHB_REG_1E4);
-	writel(readl(PDEF_DRAMC0_CHB_REG_1E8) | 0x04000000,
-	PDEF_DRAMC0_CHB_REG_1E8);
-	writel(readl(PDEF_DRAMC0_CHB_REG_1E4) & 0xF7FFFFFF,
-	PDEF_DRAMC0_CHB_REG_1E4);
+	/* release fix CKE */
+	writel(dramc0_padctl4, PDEF_DRAMC0_REG_0E4);
 
-	mb(); /*flush memory */
-	udelay(2);
+	/* recover Set MIOCKCTRLOFF(0x1dc[26]) */
+	/* Set MIOCKCTRLOFF(0x1DC[26])=0: stop to DRAM clock */
+	writel(dramc0_pd_ctrl, PDEF_DRAMC0_REG_1DC);
 
-	writel(readl(PDEF_DRAMC0_CHB_REG_0E4) | 0x00000004,
-	PDEF_DRAMC0_CHB_REG_0E4);
-	writel(readl(PDEF_DRAMC0_CHB_REG_0F4) | 0x00100000,
-	PDEF_DRAMC0_CHB_REG_0F4);
+	/* writel(0x00000004, PDEF_DRAMC0_REG_088); */
+	pr_warn("[DRAMC0] PASR offset 0x88 = 0x%x\n",
+	readl(PDEF_DRAMC0_REG_088));
+	writel(dramc0_spcmd, PDEF_DRAMC0_REG_1E4);
 
-	for (i = 0; i < 2; i++) {
-		if ((i == 1) && (rank_pasr_segment[i] == 0xFF))
-			continue;
-		writel(((i << 28) | (rank_pasr_segment[i] << 16) | 0x00000011),
-		PDEF_DRAMC0_CHB_REG_088);
-		writel(readl(PDEF_DRAMC0_CHB_REG_1E4) | 0x00000001,
-		PDEF_DRAMC0_CHB_REG_1E4);
-
-		do {
-			if (cnt-- == 0) {
-				pr_warn("[DRAMC0] PASR MRW fail!\n");
-				return -1; }
-			udelay(1);
-			} while ((readl(PDEF_DRAMC0_CHB_REG_3B8)
-			& 0x00000001) == 0x0);
-		writel(readl(PDEF_DRAMC0_CHB_REG_1E4) & 0xfffffffe,
-		PDEF_DRAMC0_CHB_REG_1E4);
-	}
-
-	writel(u4value_E4, PDEF_DRAMC0_CHB_REG_0E4);
-	writel(u4value_F4, PDEF_DRAMC0_CHB_REG_0F4);
-	writel(u4value_1E4, PDEF_DRAMC0_CHB_REG_1E4);
-	writel(u4value_1E8, PDEF_DRAMC0_CHB_REG_1E8);
-	writel(0, PDEF_DRAMC0_CHB_REG_088);
-
+/*all segments of rank1 are not reserved -> rank1 enter DPD*/
 	if (segment_rank1 == 0xFF) {
 		enter_pdp_cnt++;
 		spm_dpd_init();
 	}
 
 	return 0;
+
+	/*slp_pasr_en(1, segment_rank0 | (segment_rank1 << 8));*/
 }
 
 int exit_pasr_dpd_config(void)
 {
 	int ret;
-	unsigned char rk1 = 0;
 	/*slp_dpd_en(0);*/
 	/*slp_pasr_en(0, 0);*/
 	if (enter_pdp_cnt == 1) {
 		enter_pdp_cnt--;
 		spm_dpd_dram_init();
-		rk1 = 0xFF;
 	}
 
-	ret = enter_pasr_dpd_config(0, rk1);
+	ret = enter_pasr_dpd_config(0, 0);
 
 	return ret;
 }
+#endif /* if0 for tmp */
 
 #define MEM_TEST_SIZE 0x2000
 #define PATTERN1 0x5A5A5A5A
@@ -2005,17 +1911,6 @@ static int dram_dt_init(void)
 		pr_err("[DRAMC]can't find INFRACFG_AO compatible node\n");
 		return -1;
 	}
-
-	node = of_find_compatible_node(NULL, NULL, "mediatek,sleep");
-	if (node) {
-		SLEEP_BASE_ADDR = of_iomap(node, 0);
-		pr_warn("[DRAMC]get SLEEP_BASE_ADDR @ %p\n",
-		INFRACFG_AO_BASE_ADDR);
-	} else {
-		pr_err("[DRAMC]can't find SLEEP_BASE_ADDR compatible node\n");
-		return -1;
-	}
-
 	if (of_scan_flat_dt(dt_scan_dram_info, NULL) > 0) {
 		pr_warn("[DRAMC]find dt_scan_dram_info\n");
 	} else {
