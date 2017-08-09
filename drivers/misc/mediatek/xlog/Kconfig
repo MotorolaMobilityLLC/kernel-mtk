@@ -1,0 +1,8 @@
+config HAVE_XLOG_SUPPORT
+	bool "HAVE_XLOG_SUPPORT"
+	default y
+	help
+	  It decide whether the system has XLOG mechanism. XLOG is a log
+	  filter mechanism which can filter the logs by tag before they are
+	  written to log buffer
+	  it for user space.
