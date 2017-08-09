@@ -18,7 +18,6 @@
  *
  ****************************************************************************/
 #include "linux/delay.h"
-#include <mt-plat/mt_typedefs.h>
 #include <mt-plat/upmu_common.h>
 #include <mt-plat/mt_chip.h>
 #ifdef CONFIG_OF
@@ -29,6 +28,14 @@
 #endif
 #define PMIC_32K_LESS_DETECT_V1      1
 #define PMIC_CO_TSX_V1               1
+
+#define PMIC_READ_REGISTER_UINT32(reg)	(*(volatile uint32_t *const)(reg))
+#define PMIC_INREG32(x)	PMIC_READ_REGISTER_UINT32((uint32_t *)((void *)(x)))
+#define PMIC_WRITE_REGISTER_UINT32(reg, val)	((*(volatile uint32_t *const)(reg)) = (val))
+#define PMIC_OUTREG32(x, y)	PMIC_WRITE_REGISTER_UINT32((uint32_t *)((void *)(x)), (uint32_t)(y))
+
+#define PMIC_DRV_Reg32(addr)             PMIC_INREG32(addr)
+#define PMIC_DRV_WriteReg32(addr, data)  PMIC_OUTREG32(addr, data)
 
 int PMIC_MD_INIT_SETTING_V1(void)
 {
@@ -73,14 +80,14 @@ int PMIC_MD_INIT_SETTING_V1(void)
 		modem_temp_base = of_iomap(modem_temp_node, 0);
 	}
 	/* modem temp */
-	DRV_WriteReg32(modem_temp_base, 0x011f);
-	pr_err("[PMIC] TEMP_SHARE_CTRL:0x%x\n", DRV_Reg32(modem_temp_base));
+	PMIC_DRV_WriteReg32(modem_temp_base, 0x011f);
+	pr_err("[PMIC] TEMP_SHARE_CTRL:0x%x\n", PMIC_DRV_Reg32(modem_temp_base));
 	/* modem temp */
-	DRV_WriteReg32(modem_temp_base + 0x04, 0x013f);
+	PMIC_DRV_WriteReg32(modem_temp_base + 0x04, 0x013f);
 	/* modem temp */
-	DRV_WriteReg32(modem_temp_base, 0x0);
-	pr_err("[PMIC] TEMP_SHARE_CTRL:0x%x _RATIO:0x%x\n", DRV_Reg32(modem_temp_base),
-		DRV_Reg32(modem_temp_base + 0x04));
+	PMIC_DRV_WriteReg32(modem_temp_base, 0x0);
+	pr_err("[PMIC] TEMP_SHARE_CTRL:0x%x _RATIO:0x%x\n", PMIC_DRV_Reg32(modem_temp_base),
+		PMIC_DRV_Reg32(modem_temp_base + 0x04));
 #endif
 	return ret;
 }
