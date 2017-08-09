@@ -16,6 +16,14 @@ config MTK_DISABLE_PICACHU
           at the voltage calibration during booting. It increases
 	  the voltage when needed.
 
+config MTK_DISABLE_SODI
+	bool "Disable SODI"
+	---help---
+	  SODI is short for the Screen On Deep Idle.
+	  It's a power saving mode when the screen is still truned on,
+	  but the device always display the same image.
+	  Select if you want to disable it.
+
 config MTK_HYBRID_CPU_DVFS
 	bool "MediaTek Hybrid CPU DVFS support"
 	default n

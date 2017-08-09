@@ -307,7 +307,11 @@ enum {
 /* Idle handler on/off */
 static int idle_switch[NR_TYPES] = {
 	1,  /* dpidle switch */
+#if defined(CONFIG_MTK_DISABLE_SODI)
+	0,  /* soidle switch */
+#else
 	1,  /* soidle switch */
+#endif
 	1,  /* slidle switch */
 	1,  /* rgidle switch */
 };
