@@ -305,7 +305,7 @@ static int IMM_auxadc_GetOneChannelValue(int dwChannel, int data[4], int *rawdat
 
 	mutex_unlock(&mutex_get_cali_value);
 
-	return 0;
+	return ret;
 
 }
 
@@ -1521,7 +1521,7 @@ static int adc_channel_info_init(void)
 	used_channel_counter++;
 #endif
 
-	return 0;
+	return used_channel_counter;
 
 }
 #endif
@@ -1531,8 +1531,13 @@ static int mt_auxadc_probe(struct platform_device *dev)
 {
 	int ret = 0;
 	struct device *adc_dev = NULL;
+#if !defined(CONFIG_MTK_LEGACY)
+#ifdef CONFIG_OF
 	int used_channel_counter = 0;
 	int of_value = 0;
+#endif
+#endif
+
 
 #if !defined(CONFIG_MTK_LEGACY)
 #ifdef CONFIG_OF
