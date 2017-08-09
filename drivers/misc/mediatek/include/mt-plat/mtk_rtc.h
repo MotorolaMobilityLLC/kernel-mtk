@@ -36,23 +36,17 @@ extern void rtc_disable_writeif(void);
 extern void rtc_mark_recovery(void);
 #if defined(CONFIG_MTK_KERNEL_POWER_OFF_CHARGING)
 extern void rtc_mark_kpoc(void);
-#endif
+#endif/*if defined(CONFIG_MTK_KERNEL_POWER_OFF_CHARGING)*/
 extern void rtc_mark_fast(void);
 extern u16 rtc_rdwr_uart_bits(u16 *val);
-
 extern void rtc_bbpu_power_down(void);
-
 extern void rtc_read_pwron_alarm(struct rtc_wkalrm *alm);
-
-
 extern int get_rtc_spare_fg_value(void);
 extern int set_rtc_spare_fg_value(int val);
-
 extern void rtc_irq_handler(void);
-
 extern bool crystal_exist_status(void);
-
-#else
+extern void mt_power_off(void);
+#else/*ifdef CONFIG_MTK_RTC*/
 #define rtc_read_hw_time()              ({ 0; })
 #define rtc_gpio_enable_32k(user)	do {} while (0)
 #define rtc_gpio_disable_32k(user)	do {} while (0)
@@ -64,18 +58,15 @@ extern bool crystal_exist_status(void);
 #define rtc_mark_recovery()             do {} while (0)
 #if defined(CONFIG_MTK_KERNEL_POWER_OFF_CHARGING)
 #define rtc_mark_kpoc()                 do {} while (0)
-#endif
+#endif/*if defined(CONFIG_MTK_KERNEL_POWER_OFF_CHARGING)*/
 #define rtc_mark_fast()		        do {} while (0)
 #define rtc_rdwr_uart_bits(val)		({ 0; })
 #define rtc_bbpu_power_down()		do {} while (0)
 #define rtc_read_pwron_alarm(alm)	do {} while (0)
-
 #define get_rtc_spare_fg_value()	({ 0; })
 #define set_rtc_spare_fg_value(val)	({ 0; })
-
 #define rtc_irq_handler()			do {} while (0)
-
 #define crystal_exist_status()		do {} while (0)
-#endif
-
+#define mt_power_off()		do {} while (0)
+#endif/*ifdef CONFIG_MTK_RTC*/
 #endif

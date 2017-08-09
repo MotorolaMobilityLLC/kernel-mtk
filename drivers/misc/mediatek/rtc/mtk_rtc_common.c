@@ -69,6 +69,7 @@
 #include <mt-plat/mt_boot_common.h>
 #endif
 /* #include <linux/printk.h> */
+#include <mt_reboot.h>
 
 #define RTC_NAME	"mt-rtc"
 #define RTC_RELPWR_WHEN_XRST	1	/* BBPU = 0 when xreset_rstb goes low */
@@ -385,6 +386,31 @@ void rtc_bbpu_power_down(void)
 	spin_lock_irqsave(&rtc_lock, flags);
 	hal_rtc_bbpu_pwdn();
 	spin_unlock_irqrestore(&rtc_lock, flags);
+}
+
+void mt_power_off(void)
+{
+	int count = 0;
+
+	rtc_xinfo("mt_power_off\n");
+
+	/* pull PWRBB low */
+	rtc_bbpu_power_down();
+
+	while (1) {
+#if defined(CONFIG_POWER_EXT)
+		/* EVB */
+		rtc_xinfo("EVB without charger\n");
+#else
+		/* Phone */
+		mdelay(100);
+		rtc_xinfo("Phone with charger\n");
+		/*TODO if (pmic_chrdet_status() == KAL_TRUE || count > 10)*/
+		if (count > 10)
+			arch_reset(0, "charger");
+		count++;
+#endif
+	}
 }
 
 void rtc_read_pwron_alarm(struct rtc_wkalrm *alm)
