@@ -1474,7 +1474,7 @@ static int md_ccif_ring_buf_init(struct ccci_modem *md)
 		md_ctrl->rxq[i].ccif_ch = D2H_RINGQ0 + i;
 		md_ctrl->rxq[i].worker =
 		    alloc_workqueue("rx%d_worker",
-				    WQ_UNBOUND | WQ_MEM_RECLAIM | WQ_HIGHPRI, 1,
+				    WQ_UNBOUND | WQ_MEM_RECLAIM, 1,
 				    i);
 		INIT_WORK(&md_ctrl->rxq[i].qwork, ccif_rx_work);
 		/*tx */
