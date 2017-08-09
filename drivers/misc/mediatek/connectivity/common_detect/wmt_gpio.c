@@ -266,12 +266,61 @@ INT32 wmt_gpio_init(struct platform_device *pdev)
 				}
 			}
 		}
+
+		pr_err("wmt_gpio: gpio init start!\n");
+		if (DEFAULT_PIN_ID != gpio_ctrl_info.gpio_ctrl_state[GPIO_COMBO_PMU_EN_PIN].gpio_num) {
+			gpio_direction_output(gpio_ctrl_info.gpio_ctrl_state[GPIO_COMBO_PMU_EN_PIN].gpio_num,
+					0);
+			pr_err("wmt_gpio:set GPIO_COMBO_PMU_EN_PIN out to 0: %d!\n",
+					gpio_get_value(gpio_ctrl_info.gpio_ctrl_state[GPIO_COMBO_PMU_EN_PIN].gpio_num));
+		}
+
+		if (DEFAULT_PIN_ID != gpio_ctrl_info.gpio_ctrl_state[GPIO_COMBO_RST_PIN].gpio_num) {
+			gpio_direction_output(gpio_ctrl_info.gpio_ctrl_state[GPIO_COMBO_RST_PIN].gpio_num,
+					0);
+			pr_err("wmt_gpio:set GPIO_COMBO_RST_PIN out to 0: %d!\n",
+					gpio_get_value(gpio_ctrl_info.gpio_ctrl_state[GPIO_COMBO_RST_PIN].gpio_num));
+		}
+
 		if (gpio_ctrl_info.gpio_ctrl_state[GPIO_WIFI_EINT_PIN].gpio_state[GPIO_IN_PULLUP]) {
 			pinctrl_select_state(gpio_ctrl_info.pinctrl_info,
 					gpio_ctrl_info.gpio_ctrl_state[GPIO_WIFI_EINT_PIN].gpio_state[GPIO_IN_PULLUP]);
 			pr_err("wmt_gpio:set GPIO_WIFI_EINT_PIN to GPIO_IN_PULLUP done!\n");
 		} else
 			pr_err("wmt_gpio:set GPIO_WIFI_EINT_PIN to GPIO_IN_PULLUP fail, is NULL!\n");
+
+		if (gpio_ctrl_info.gpio_ctrl_state[GPIO_PCM_DAICLK_PIN].gpio_state[GPIO_PULL_DIS]) {
+			pinctrl_select_state(gpio_ctrl_info.pinctrl_info,
+					gpio_ctrl_info.gpio_ctrl_state[GPIO_PCM_DAICLK_PIN].gpio_state[GPIO_PULL_DIS]);
+			pr_err("wmt_gpio:set GPIO_PCM_DAICLK_PIN to GPIO_PULL_DIS done!\n");
+		} else
+			pr_err("wmt_gpio:set GPIO_PCM_DAICLK_PIN to GPIO_PULL_DIS fail, is NULL!\n");
+
+		if (gpio_ctrl_info.gpio_ctrl_state[GPIO_PCM_DAIPCMIN_PIN].gpio_state[GPIO_PULL_DIS]) {
+			pinctrl_select_state(gpio_ctrl_info.pinctrl_info,
+					gpio_ctrl_info.gpio_ctrl_state[GPIO_PCM_DAIPCMIN_PIN].
+					gpio_state[GPIO_PULL_DIS]);
+			pr_err("wmt_gpio:set GPIO_PCM_DAIPCMIN_PIN to GPIO_PULL_DIS done!\n");
+		} else
+			pr_err("wmt_gpio:set GPIO_PCM_DAIPCMIN_PIN to GPIO_PULL_DIS fail, is NULL!\n");
+
+		if (gpio_ctrl_info.gpio_ctrl_state[GPIO_PCM_DAIPCMOUT_PIN].gpio_state[GPIO_PULL_DIS]) {
+			pinctrl_select_state(gpio_ctrl_info.pinctrl_info,
+					gpio_ctrl_info.gpio_ctrl_state[GPIO_PCM_DAIPCMOUT_PIN].
+					gpio_state[GPIO_PULL_DIS]);
+			pr_err("wmt_gpio:set GPIO_PCM_DAIPCMOUT_PIN to GPIO_PULL_DIS done!\n");
+		} else
+			pr_err("wmt_gpio:set GPIO_PCM_DAIPCMOUT_PIN to GPIO_PULL_DIS fail, is NULL!\n");
+
+		if (gpio_ctrl_info.gpio_ctrl_state[GPIO_PCM_DAISYNC_PIN].gpio_state[GPIO_PULL_DIS]) {
+			pinctrl_select_state(gpio_ctrl_info.pinctrl_info,
+					gpio_ctrl_info.gpio_ctrl_state[GPIO_PCM_DAISYNC_PIN].
+					gpio_state[GPIO_PULL_DIS]);
+			pr_err("wmt_gpio:set GPIO_PCM_DAISYNC_PIN to GPIO_PULL_DIS done!\n");
+		} else
+			pr_err("wmt_gpio:set GPIO_PCM_DAISYNC_PIN to GPIO_PULL_DIS fail, is NULL!\n");
+
+		pr_err("wmt_gpio: gpio init done!\n");
 	} else {
 		pr_err("wmt_gpio:can't find pinctrl dev!\n");
 		iret = -1;
