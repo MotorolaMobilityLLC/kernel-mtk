@@ -362,6 +362,7 @@ struct msdc_host {
 	u32                     xfer_size;      /* total transferred size */
 
 	struct msdc_dma         dma;            /* dma channel */
+	u64                     dma_mask;
 	u32                     dma_addr;       /* dma transfer address */
 	u32                     dma_left_size;  /* dma transfer left size */
 	u32                     dma_xfer_size;  /* dma transfer size in bytes */

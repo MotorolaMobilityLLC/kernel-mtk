@@ -5644,6 +5644,9 @@ static int msdc_drv_probe(struct platform_device *pdev)
 	host->power_control     = NULL;
 	host->power_switch      = NULL;
 
+	host->dma_mask          = DMA_BIT_MASK(33);
+	mmc_dev(mmc)->dma_mask  = &host->dma_mask;
+
 #ifndef FPGA_PLATFORM
 	if (msdc_get_ccf_clk_pointer(pdev, host))
 		return 1;
