@@ -56,14 +56,13 @@
 #include "f_eem.c"
 #include "u_ether.c"
 
-//#define CONFIG_MTK_C2K_SUPPORT
-#ifndef CONFIG_MTK_ECCCI_C2K
+
 #ifdef CONFIG_MTK_C2K_SUPPORT
 #include "viatel_rawbulk.h"
 int rawbulk_bind_config(struct usb_configuration *c, int transfer_id);
 int rawbulk_function_setup(struct usb_function *f, const struct usb_ctrlrequest *ctrl);
 #endif
-#endif
+
 
 MODULE_AUTHOR("Mike Lockwood");
 MODULE_DESCRIPTION("Android Composite USB Driver");

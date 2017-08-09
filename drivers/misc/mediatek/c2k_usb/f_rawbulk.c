@@ -28,7 +28,7 @@
 #include <linux/types.h>
 #include <linux/device.h>
 #include <linux/usb/composite.h>
-#include <mach/viatel_rawbulk.h>
+#include "viatel_rawbulk.h"
 
 /* int setdtr, data_connect; */
 /* struct work_struct flow_control; */

@@ -43,9 +43,9 @@
 #include <linux/list.h>
 #include <linux/spinlock.h>
 #include <linux/workqueue.h>
-#include <mach/viatel_rawbulk.h>
 #include <linux/moduleparam.h>
 #include <mach/mt_ccci_common.h>
+#include "viatel_rawbulk.h"
 /* #include "modem_sdio.h" */
 
 #ifdef CONFIG_MTK_ECCCI_C2K
