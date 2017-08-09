@@ -114,5 +114,4 @@ bool ext_disp_path_source_is_RDMA(unsigned int session);
 int ext_disp_is_dim_layer(unsigned long mva);
 
 extern int is_dim_layer(unsigned long mva);
-
 #endif

@@ -232,10 +232,8 @@ int disp_destroy_session(disp_session_config *config)
 
 	mutex_unlock(&disp_session_lock);
 
-#ifdef CONFIG_MTK_HDMI_SUPPORT
 	if (DISP_SESSION_TYPE(config->session_id) != DISP_SESSION_PRIMARY)
 		external_display_switch_mode(config->mode, session_config, config->session_id);
-#endif
 
 	/* 2. Destroy this session */
 	if (ret == 0)
@@ -301,26 +299,16 @@ char *disp_session_mode_spy(unsigned int session_id)
 		return "Unknown";
 	}
 }
-
-#if 0 /* defined but not used */
-static unsigned int get_current_ticket(void)
-{
-	return dprec_get_vsync_count();
-}
-#endif
-
 static int __trigger_display(disp_session_config *config)
 {
 	int ret = 0;
-	/* int i = 0; */
+
 	unsigned int session_id = 0;
-	/* int present_fence_idx = -1; */
+
 	disp_session_sync_info *session_info;
 
 	session_id = config->session_id;
-
 	session_info = disp_get_session_sync_info_for_debug(session_id);
-
 	if (session_info) {
 		unsigned int proc_name = (current->comm[0] << 24) |
 		    (current->comm[1] << 16) | (current->comm[2] << 8) | (current->comm[3] << 0);
@@ -338,12 +326,10 @@ static int __trigger_display(disp_session_config *config)
 	if (DISP_SESSION_TYPE(session_id) == DISP_SESSION_PRIMARY) {
 		pr_err("%s: legecy API are not supported!\n", __func__);
 		BUG();
-#ifdef CONFIG_MTK_HDMI_SUPPORT
 	} else if (DISP_SESSION_TYPE(session_id) == DISP_SESSION_EXTERNAL) {
 		mutex_lock(&disp_session_lock);
 		ret = external_display_trigger(config->tigger_mode, session_id);
 		mutex_unlock(&disp_session_lock);
-#endif
 	} else if (DISP_SESSION_TYPE(session_id) == DISP_SESSION_MEMORY) {
 		ovl2mem_trigger(1, NULL, 0);
 	} else {
@@ -614,7 +600,6 @@ static int _sync_convert_fb_layer_to_disp_input(unsigned int session_id, disp_in
 	return 0;
 }
 #endif
-
 static int set_memory_buffer(disp_session_input_config *input)
 {
 	int i = 0;
@@ -624,12 +609,12 @@ static int set_memory_buffer(disp_session_input_config *input)
 	unsigned int session_id = 0;
 	disp_session_sync_info *session_info;
 
+
 	session_id = input->session_id;
 	session_info = disp_get_session_sync_info_for_debug(session_id);
 
 	for (i = 0; i < input->config_layer_num; i++) {
 		dst_mva = 0;
-
 		layer_id = input->config[i].layer_id;
 		if (input->config[i].layer_enable) {
 			if (input->config[i].buffer_source == DISP_BUFFER_ALPHA) {
@@ -695,6 +680,7 @@ static int set_memory_buffer(disp_session_input_config *input)
 	ovl2mem_input_config(input);
 
 	return 0;
+
 }
 
 static int set_external_buffer(disp_session_input_config *input)
@@ -761,6 +747,7 @@ static int set_external_buffer(disp_session_input_config *input)
 		if (input->config[i].layer_enable) {
 			/*which is calculated by pitch and ROI. */
 			unsigned int Bpp, x, y, pitch;
+
 			x = input->config[i].src_offset_x;
 			y = input->config[i].src_offset_y;
 			pitch = input->config[i].src_pitch;
@@ -782,9 +769,7 @@ static int set_external_buffer(disp_session_input_config *input)
 		}
 	}
 
-#ifdef CONFIG_MTK_HDMI_SUPPORT
 	ret = external_display_config_input(input, input->config[0].next_buff_idx, session_id);
-#endif
 
 	if (ret == -2) {
 		for (i = 0; i < input->config_layer_num; i++)
@@ -895,7 +880,6 @@ static int input_config_preprocess(struct disp_frame_cfg_t *cfg)
 		if (session_info)
 			dprec_submit(&session_info->event_setinput, cfg->input_cfg[i].next_buff_idx, dst_mva);
 	}
-
 	return 0;
 }
 
@@ -909,6 +893,7 @@ static int __set_input(disp_session_input_config *session_input, int overlap_lay
 	session_id = session_input->session_id;
 
 	session_info = disp_get_session_sync_info_for_debug(session_id);
+
 	if (session_info)
 		dprec_start(&session_info->event_setinput, overlap_layer_num, session_input->config_layer_num);
 
@@ -933,6 +918,7 @@ static int __set_input(disp_session_input_config *session_input, int overlap_lay
 
 
 	return ret;
+
 }
 
 int _ioctl_set_input_buffer(unsigned long arg)
@@ -942,6 +928,7 @@ int _ioctl_set_input_buffer(unsigned long arg)
 	disp_session_input_config *session_input;
 
 	session_input = kmalloc(sizeof(*session_input), GFP_KERNEL);
+
 	if (!session_input)
 		return -ENOMEM;
 
@@ -950,7 +937,6 @@ int _ioctl_set_input_buffer(unsigned long arg)
 		return -EFAULT;
 	}
 	ret = __set_input(session_input, 4);
-
 	kfree(session_input);
 	return ret;
 }
@@ -1052,8 +1038,8 @@ static int __set_output(disp_session_output_config *session_output)
 	disp_session_sync_info *session_info;
 
 	session_id = session_output->session_id;
-
 	session_info = disp_get_session_sync_info_for_debug(session_id);
+
 	if (session_info)
 		dprec_start(&session_info->event_setoutput, session_output->config.buff_idx, 0);
 
@@ -1110,6 +1096,7 @@ static int __set_output(disp_session_output_config *session_output)
 		     session_output->config.pitch);
 	}
 
+
 	if (session_info)
 		dprec_done(&session_info->event_setoutput, session_output->config.buff_idx, 0);
 
@@ -1129,6 +1116,7 @@ int _ioctl_set_output_buffer(unsigned long arg)
 	return __set_output(&session_output);
 }
 
+
 static int __frame_config_set_input(struct disp_frame_cfg_t *frame_cfg)
 {
 	int ret = 0;
@@ -1144,7 +1132,6 @@ static int __frame_config_set_input(struct disp_frame_cfg_t *frame_cfg)
 	memcpy(session_input->config, frame_cfg->input_cfg, sizeof(frame_cfg->input_cfg));
 
 	ret = __set_input(session_input, frame_cfg->overlap_layer_num);
-
 	kfree(session_input);
 	return ret;
 }
@@ -1165,7 +1152,6 @@ static int __frame_config_set_output(struct disp_frame_cfg_t *frame_cfg)
 static int __frame_config_trigger(struct disp_frame_cfg_t *frame_cfg)
 {
 	disp_session_config config;
-
 	config.session_id = frame_cfg->session_id;
 	config.need_merge = 0;
 	config.present_fence_idx = frame_cfg->present_fence_idx;
@@ -1178,8 +1164,10 @@ int _ioctl_frame_config(unsigned long arg)
 {
 	struct disp_frame_cfg_t *frame_cfg = kzalloc(sizeof(struct disp_frame_cfg_t), GFP_KERNEL);
 
-	if (frame_cfg == NULL)
-		return -ENOMEM;
+	if (frame_cfg == NULL) {
+		pr_err("error: kzalloc %zu memory fail!\n", sizeof(*frame_cfg));
+		return -EFAULT;
+	}
 
 	if (copy_from_user(frame_cfg, (void __user *)arg, sizeof(*frame_cfg))) {
 		pr_err("[FB Driver]: copy_from_user failed! line:%d\n", __LINE__);
@@ -1320,11 +1308,9 @@ int _ioctl_wait_vsync(unsigned long arg)
 	if (session_info)
 		dprec_start(&session_info->event_waitvsync, 0, 0);
 
-#ifdef CONFIG_MTK_HDMI_SUPPORT
 	if (DISP_SESSION_TYPE(vsync_config.session_id) == DISP_SESSION_EXTERNAL)
 		ret = external_display_wait_for_vsync(&vsync_config, vsync_config.session_id);
 	else
-#endif
 		ret = primary_display_wait_for_vsync(&vsync_config);
 
 	if (session_info)
@@ -1361,9 +1347,7 @@ int set_session_mode(disp_session_config *config_info, int force)
 	else
 		DISPERR("[FB]: session(0x%x) swith mode(%d) fail\n", config_info->session_id, config_info->mode);
 
-#ifdef CONFIG_MTK_HDMI_SUPPORT
 	external_display_switch_mode(config_info->mode, session_config, config_info->session_id);
-#endif
 
 	return ret;
 }
@@ -1768,9 +1752,7 @@ static int mtk_disp_mgr_probe(struct platform_device *pdev)
 	    (struct class_device *)device_create(mtk_disp_mgr_class, NULL, mtk_disp_mgr_devno, NULL,
 						 DISP_SESSION_DEVICE);
 	disp_sync_init();
-#ifdef CONFIG_MTK_HDMI_SUPPORT
 	external_display_control_init();
-#endif
 
 	return 0;
 }

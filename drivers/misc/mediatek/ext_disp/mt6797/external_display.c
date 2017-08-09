@@ -33,7 +33,6 @@
 #include "extd_hdmi_types.h"
 #include "external_display.h"
 
-#include "primary_display.h"
 #include "disp_session.h"
 #include "display_recorder.h"
 #include "extd_info.h"
@@ -280,6 +279,7 @@ static int _init_vsync_fake_monitor(int fps)
 static int _build_path_direct_link(void)
 {
 	int ret = 0;
+	M4U_PORT_STRUCT sPort;
 
 	DISP_MODULE_ENUM dst_module = 0;
 
@@ -297,24 +297,20 @@ static int _build_path_direct_link(void)
 	dst_module = DISP_MODULE_DPI;
 	dpmgr_path_set_dst_module(pgc->dpmgr_handle, dst_module);
 	/* EXT_DISP_LOG("dpmgr set dst module FINISHED(%s)\n", ddp_get_module_name(dst_module)); */
-	{
-		M4U_PORT_STRUCT sPort;
-		sPort.ePortID = M4U_PORT_DISP_OVL1;
-		sPort.Virtuality = ext_disp_use_m4u;
-		sPort.Security = 0;
-		sPort.Distance = 1;
-		sPort.Direction = 0;
-		ret = m4u_config_port(&sPort);
-		if (ret == 0) {
-			EXT_DISP_LOG("config M4U Port %s to %s SUCCESS\n",
-				ddp_get_module_name(DISP_MODULE_OVL1), ext_disp_use_m4u ? "virtual" : "physical");
-		} else {
-			EXT_DISP_LOG("config M4U Port %s to %s FAIL(ret=%d)\n", ddp_get_module_name(M4U_PORT_DISP_OVL1),
-				ext_disp_use_m4u ? "virtual" : "physical", ret);
-			return -1;
-		}
+	sPort.ePortID = M4U_PORT_DISP_OVL1;
+	sPort.Virtuality = ext_disp_use_m4u;
+	sPort.Security = 0;
+	sPort.Distance = 1;
+	sPort.Direction = 0;
+	ret = m4u_config_port(&sPort);
+	if (ret == 0) {
+		EXT_DISP_LOG("config M4U Port %s to %s SUCCESS\n",
+			ddp_get_module_name(DISP_MODULE_OVL1), ext_disp_use_m4u ? "virtual" : "physical");
+	} else {
+		EXT_DISP_LOG("config M4U Port %s to %s FAIL(ret=%d)\n", ddp_get_module_name(M4U_PORT_DISP_OVL1),
+			ext_disp_use_m4u ? "virtual" : "physical", ret);
+		return -1;
 	}
-
 
 	dpmgr_set_lcm_utils(pgc->dpmgr_handle, NULL);
 	dpmgr_enable_event(pgc->dpmgr_handle, DISP_PATH_EVENT_IF_VSYNC);
@@ -338,6 +334,7 @@ static int _build_path_single_layer(void)
 static int _build_path_rdma_dpi(void)
 {
 	int ret = 0;
+	M4U_PORT_STRUCT sPort;
 
 	DISP_MODULE_ENUM dst_module = 0;
 
@@ -355,25 +352,19 @@ static int _build_path_rdma_dpi(void)
 	dpmgr_path_set_dst_module(pgc->dpmgr_handle, dst_module);
 	EXT_DISP_LOG("dpmgr set dst module FINISHED(%s)\n", ddp_get_module_name(dst_module));
 
-	{
-/*#ifdef MTK_FB_RDMA1_SUPPORT*/
-		M4U_PORT_STRUCT sPort;
-
-		sPort.ePortID = M4U_PORT_DISP_RDMA1;
-		sPort.Virtuality = ext_disp_use_m4u;
-		sPort.Security = 0;
-		sPort.Distance = 1;
-		sPort.Direction = 0;
-		ret = m4u_config_port(&sPort);
-		if (ret == 0) {
-			EXT_DISP_LOG("config M4U Port %s to %s SUCCESS\n",
-				ddp_get_module_name(DISP_MODULE_RDMA1), ext_disp_use_m4u ? "virtual" : "physical");
-		} else {
-			EXT_DISP_LOG("config M4U Port %s to %s FAIL(ret=%d)\n",
-				ddp_get_module_name(DISP_MODULE_RDMA1), ext_disp_use_m4u ? "virtual" : "physical", ret);
-			return -1;
-		}
-/*#endif*/
+	sPort.ePortID = M4U_PORT_DISP_RDMA1;
+	sPort.Virtuality = ext_disp_use_m4u;
+	sPort.Security = 0;
+	sPort.Distance = 1;
+	sPort.Direction = 0;
+	ret = m4u_config_port(&sPort);
+	if (ret == 0) {
+		EXT_DISP_LOG("config M4U Port %s to %s SUCCESS\n", ddp_get_module_name(DISP_MODULE_RDMA1),
+			ext_disp_use_m4u ? "virtual" : "physical");
+	} else {
+		EXT_DISP_LOG("config M4U Port %s to %s FAIL(ret=%d)\n", ddp_get_module_name(DISP_MODULE_RDMA1),
+			ext_disp_use_m4u ? "virtual" : "physical", ret);
+		return -1;
 	}
 
 	dpmgr_set_lcm_utils(pgc->dpmgr_handle, NULL);
@@ -526,7 +517,7 @@ static void _cmdq_insert_wait_frame_done_token(int clear_event)
 static int _convert_disp_input_to_rdma(RDMA_CONFIG_STRUCT *dst, disp_input_config *src,
 	unsigned int screen_w, unsigned int screen_h)
 {
-	/*int right_edge = 0;
+/*	int right_edge = 0;
 	int bottom_edge = 0;*/
 	unsigned int Bpp = 0;
 	unsigned long mva_offset = 0;
@@ -574,11 +565,10 @@ static int _convert_disp_input_to_rdma(RDMA_CONFIG_STRUCT *dst, disp_input_confi
 
 static int _convert_disp_input_to_ovl(OVL_CONFIG_STRUCT *dst, disp_input_config *src)
 {
-	int ret = 0;
 	int force_disable_alpha = 0;
 	enum UNIFIED_COLOR_FMT tmp_fmt;
 	unsigned int Bpp = 0;
-	/*unsigned int bpp = 0;*/
+
 	if (!src || !dst) {
 		EXT_DISP_ERR("%s src(0x%p) or dst(0x%p) is null\n", __func__, src, dst);
 		return -1;
@@ -640,13 +630,12 @@ static int _convert_disp_input_to_ovl(OVL_CONFIG_STRUCT *dst, disp_input_config 
 		dst->source = OVL_LAYER_SOURCE_MEM;
 	}
 
-	return ret;
+	return 0;
 }
 
 static int _ext_disp_trigger(int blocking, void *callback, unsigned int userdata)
 {
 	bool reg_flush = false;
-	/*disp_session_vsync_config vsync_config;*/
 
 	EXT_DISP_FUNC();
 
@@ -889,14 +878,14 @@ int ext_disp_wait_for_vsync(void *config, unsigned int session)
 	_ext_disp_path_unlock();
 
 	_ext_disp_vsync_lock(session);
-	ret = dpmgr_wait_event_timeout(pgc->dpmgr_handle, DISP_PATH_EVENT_IF_VSYNC, HZ / 25);
+	ret = dpmgr_wait_event_timeout(pgc->dpmgr_handle, DISP_PATH_EVENT_IF_VSYNC, 50);
 
 	if (ret == -2) {
 		EXT_DISP_LOG("vsync for ext display path not enabled yet\n");
 		_ext_disp_vsync_unlock(session);
 		return -1;
 	}
-	EXT_DISP_LOG("ext_disp_wait_for_vsync - vsync signaled\n");
+	/*EXT_DISP_LOG("ext_disp_wait_for_vsync - vsync signaled\n");*/
 	c->vsync_ts = get_current_time_us();
 	c->vsync_cnt++;
 
@@ -1005,7 +994,7 @@ int ext_disp_trigger(int blocking, void *callback, unsigned int userdata, unsign
 
 	pgc->state = EXTD_RESUME;
 	_ext_disp_path_unlock();
-	EXT_DISP_LOG("ext_disp_trigger done\n");
+	/*EXT_DISP_LOG("ext_disp_trigger done\n");*/
 
 	return ret;
 }
@@ -1065,6 +1054,7 @@ int ext_disp_config_input_multiple(disp_session_input_config *input, int idx, un
 	int layer_cnt = 0;
 	int config_layer_id = 0;
 	M4U_PORT_STRUCT sPort;
+
 	/* /EXT_DISP_FUNC(); */
 
 	disp_ddp_path_config *data_config;
