@@ -82,6 +82,8 @@ int m4u_invalid_tlb(int m4u_id, int L2_en, int isInvAll, unsigned int mva_start,
 
 	reg |= F_MMU_INV_EN_L1;
 
+	spin_lock(&gM4u_reg_lock);
+
 	M4U_WriteReg32(m4u_base, REG_INVLID_SEL, reg);
 
 	if (isInvAll)
@@ -112,6 +114,8 @@ int m4u_invalid_tlb(int m4u_id, int L2_en, int isInvAll, unsigned int mva_start,
 		M4U_WriteReg32(m4u_base, REG_MMU_CPE_DONE, 0);
 	}
 
+	spin_unlock(&gM4u_reg_lock);
+
 	return 0;
 }
 
@@ -128,60 +132,6 @@ void m4u_invalid_tlb_by_range(m4u_domain_t *m4u_domain, unsigned int mva_start, 
 		m4u_invalid_tlb(i, gM4U_L2_enable, 0, mva_start, mva_end);
    /* m4u_invalid_tlb_all(0); */
    /* m4u_invalid_tlb_all(1); */
-}
-
-void m4u_invalid_tlb_sec(int m4u_id, int L2_en, int isInvAll, unsigned int mva_start, unsigned int mva_end)
-{
-	unsigned int reg = 0;
-	unsigned long m4u_base = gM4UBaseAddr[m4u_id];
-
-	if (mva_start >= mva_end)
-		isInvAll = 1;
-
-	if (!isInvAll) {
-		mva_start = round_down(mva_start, SZ_4K);
-		mva_end = round_up(mva_end, SZ_4K);
-	}
-
-	reg = F_MMU_INV_SEC_EN_L2;
-	reg |= F_MMU_INV_SEC_EN_L1;
-
-	M4U_WriteReg32(m4u_base, REG_INVLID_SEL_SEC, reg);
-
-	if (isInvAll)
-		M4U_WriteReg32(m4u_base, REG_MMU_INVLD_SEC, F_MMU_INV_SEC_ALL);
-	else {
-		/*
-		unsigned int type_start = m4u_get_pt_type(gPgd_nonsec, mva_start);
-		unsigned int type_end = m4u_get_pt_type(gPgd_nonsec, mva_end);
-		unsigned int type = max(type_start, type_end);
-		unsigned int alignment;
-		if(type > MMU_PT_TYPE_SUPERSECTION)
-			type = MMU_PT_TYPE_SUPERSECTION;
-		alignment = m4u_get_pt_type_size(type) - 1;
-
-		M4U_WriteReg32(m4u_base, REG_MMU_INVLD_SA ,mva_start & (~alignment));
-		M4U_WriteReg32(m4u_base, REG_MMU_INVLD_EA, mva_end | alignment);
-		M4U_WriteReg32(m4u_base, REG_MMU_INVLD, F_MMU_INV_RANGE);
-		 */
-
-		M4U_WriteReg32(m4u_base, REG_MMU_INVLD_SA_SEC , mva_start);
-		M4U_WriteReg32(m4u_base, REG_MMU_INVLD_EA_SEC, mva_end);
-		M4U_WriteReg32(m4u_base, REG_MMU_INVLD_SEC, F_MMU_INV_SEC_RANGE);
-	}
-
-	if (!isInvAll) {
-		while (!M4U_ReadReg32(m4u_base, REG_MMU_CPE_DONE_SEC))
-			;
-		M4U_WriteReg32(m4u_base, REG_MMU_CPE_DONE_SEC, 0);
-	}
-}
-
-void m4u_invalid_tlb_sec_by_range(int m4u_id,
-				    unsigned int mva_start,
-				    unsigned int mva_end)
-{
-	m4u_invalid_tlb_sec(m4u_id, gM4U_L2_enable, 0, mva_start, mva_end);
 }
 
 static int __m4u_dump_rs_info(unsigned int va[], unsigned int pa[], unsigned int st[], unsigned int pte[])
