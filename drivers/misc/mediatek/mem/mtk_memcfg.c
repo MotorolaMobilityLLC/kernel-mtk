@@ -29,6 +29,7 @@
 #include <linux/mod_devicetable.h>
 #include <linux/io.h>
 #include <linux/memblock.h>
+#include <linux/sort.h>
 
 #define MTK_MEMCFG_SIMPLE_BUFFER_LEN 16
 #define MTK_MEMCFG_LARGE_BUFFER_LEN (2048)
@@ -44,6 +45,63 @@ static struct mtk_memcfg_info_buf mtk_memcfg_layout_buf = {
 	.max_len = MTK_MEMCFG_LARGE_BUFFER_LEN,
 	.curr_pos = 0,
 };
+
+static void mtk_memcfg_show_layout_region(struct seq_file *m, char *name,
+		unsigned long end, unsigned long size, int is_end);
+
+static void mtk_memcfg_show_layout_region_gap(struct seq_file *m,
+		unsigned long end, unsigned long size);
+
+static int mtk_memcfg_layout_phy_count;
+static int mtk_memcfg_layout_debug_count;
+static int sort_layout;
+
+struct mtk_memcfg_layout_info {
+	char name[20];
+	unsigned long start;
+	unsigned long size;
+};
+
+static struct mtk_memcfg_layout_info mtk_memcfg_layout_info_phy[20];
+static struct mtk_memcfg_layout_info mtk_memcfg_layout_info_debug[20];
+
+int mtk_memcfg_memory_layout_info_compare(const void *p1, const void *p2)
+{
+	if (((struct mtk_memcfg_layout_info *)p1)->start > ((struct mtk_memcfg_layout_info *)p2)->start)
+		return 1;
+	return -1;
+}
+
+void mtk_memcfg_sort_memory_layout(void)
+{
+	if (sort_layout != 0)
+		return;
+	sort(&mtk_memcfg_layout_info_phy, mtk_memcfg_layout_phy_count,
+			sizeof(struct mtk_memcfg_layout_info),
+			mtk_memcfg_memory_layout_info_compare, NULL);
+	sort(&mtk_memcfg_layout_info_debug, mtk_memcfg_layout_debug_count,
+			sizeof(struct mtk_memcfg_layout_info),
+			mtk_memcfg_memory_layout_info_compare, NULL);
+	sort_layout = 1;
+}
+
+void mtk_memcfg_write_memory_layout_info(int type, const char *name, unsigned long
+		start, unsigned long size)
+{
+	struct mtk_memcfg_layout_info *info;
+
+	if (type == MTK_MEMCFG_MEMBLOCK_PHY)
+		info = &mtk_memcfg_layout_info_phy[mtk_memcfg_layout_phy_count++];
+	else if (type == MTK_MEMCFG_MEMBLOCK_DEBUG)
+		info = &mtk_memcfg_layout_info_debug[mtk_memcfg_layout_debug_count++];
+	else
+		BUG();
+
+	strncpy(info->name, name, sizeof(info->name) - 1);
+	info->name[sizeof(info->name) - 1] = '\0';
+	info->start = start;
+	info->size = size;
+}
 
 static unsigned long mtk_memcfg_late_warning_flag;
 
@@ -71,6 +129,32 @@ void mtk_memcfg_late_warning(unsigned long flag)
 
 static int mtk_memcfg_memory_layout_show(struct seq_file *m, void *v)
 {
+	int i = 0;
+	struct mtk_memcfg_layout_info *info, *prev;
+
+	mtk_memcfg_sort_memory_layout();
+
+	seq_puts(m, "Physical layout:\n");
+	for (i = mtk_memcfg_layout_phy_count - 1; i > 0; i--) {
+		info = &mtk_memcfg_layout_info_phy[i];
+		prev = &mtk_memcfg_layout_info_phy[i - 1];
+
+		mtk_memcfg_show_layout_region(m, info->name,
+				info->start + info->size,
+				info->size, 0);
+
+		if (info->start > prev->start + prev->size) {
+			mtk_memcfg_show_layout_region_gap(m, info->start,
+					info->start - (prev->start + prev->size));
+		}
+	}
+	info = &mtk_memcfg_layout_info_phy[0];
+	mtk_memcfg_show_layout_region(m, info->name,
+			info->start + info->size,
+			info->size, 1);
+
+	seq_puts(m, "\n");
+	seq_puts(m, "Debug Info:\n");
 	seq_printf(m, "%s", mtk_memcfg_layout_buf.buf);
 	seq_printf(m, "buffer usage: %lu/%lu\n",
 		   (mtk_memcfg_layout_buf.curr_pos <=
@@ -82,6 +166,39 @@ static int mtk_memcfg_memory_layout_show(struct seq_file *m, void *v)
 	return 0;
 }
 
+static void mtk_memcfg_show_layout_region(struct seq_file *m, char *name,
+		unsigned long end, unsigned long size, int is_end)
+{
+	int i = 0;
+	int name_length = strlen(name);
+	int padding = (30 - name_length - 2) / 2;
+	int odd = (30 - name_length - 2) % 2;
+
+	seq_printf(m, "------------------------------  0x%08lx\n", end);
+	seq_puts(m, "-                            -\n");
+	seq_puts(m, "-");
+	for (i = 0; i < padding; i++)
+		seq_puts(m, " ");
+	seq_printf(m, "%s", name);
+	for (i = 0; i < padding + odd; i++)
+		seq_puts(m, " ");
+	seq_printf(m, "- size : (0x%0lx)\n", size);
+	seq_puts(m, "-                            -\n");
+
+	if (is_end)
+		seq_printf(m, "------------------------------  0x%0lx\n"
+				, end - size);
+}
+
+
+static void mtk_memcfg_show_layout_region_gap(struct seq_file *m,
+		unsigned long end, unsigned long size)
+{
+	seq_printf(m, "------------------------------  0x%08lx\n", end);
+	seq_puts(m, "-                            -\n");
+	seq_printf(m, "-~~~~~~~~~~~~~~~~~~~~~~~~~~~~-  size : (0x%0lx)\n", size);
+	seq_puts(m, "-                            -\n");
+}
 static int mtk_memcfg_memory_layout_open(struct inode *inode, struct file *file)
 {
 	return single_open(file, mtk_memcfg_memory_layout_show, NULL);

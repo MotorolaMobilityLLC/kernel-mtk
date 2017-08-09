@@ -168,13 +168,16 @@ static int __init __reserved_mem_alloc_size(unsigned long node,
 	*res_base = base;
 	*res_size = size;
 
-	if (nomap)
+	if (nomap) {
+		mtk_memcfg_write_memory_layout_info(MTK_MEMCFG_MEMBLOCK_PHY,
+				uname, base, size);
 		MTK_MEMCFG_LOG_AND_PRINTK(
 			"[PHY layout]%s   :   0x%08llx - 0x%08llx (0x%llx)\n",
 			uname,
 			(unsigned long long)base,
 			(unsigned long long)base + size - 1,
 			(unsigned long long)size);
+	}
 
 	return 0;
 }
