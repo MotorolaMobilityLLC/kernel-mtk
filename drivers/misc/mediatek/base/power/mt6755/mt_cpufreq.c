@@ -2264,6 +2264,10 @@ static void _mt_cpufreq_set(struct cpufreq_policy *policy, enum mt_cpu_dvfs_id i
 	cur_freq = p->ops->get_cur_phy_freq(p);
 	target_freq = cpu_dvfs_get_freq_by_idx(p, new_opp_idx);
 
+	if (abs(new_opp_idx - p->idx_opp_tbl) < 2 && new_opp_idx != 0 &&
+		new_opp_idx != p->nr_opp_tbl - 1)
+		log = 0;
+
 #ifdef CONFIG_CPU_FREQ
 	ret = _cpufreq_set_locked(p, cur_freq, target_freq, policy, target_volt, log);
 #else
