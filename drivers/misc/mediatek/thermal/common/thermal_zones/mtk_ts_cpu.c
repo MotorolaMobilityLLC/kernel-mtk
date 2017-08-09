@@ -1443,7 +1443,7 @@ static int tscpu_thermal_suspend(struct platform_device *dev, pm_message_t state
 
 		do {
 			temp = (DRV_Reg32(THAHBST0) >> 16);
-			if (cnt > 10)
+			if ((cnt + 1) % 10 == 0)
 				pr_err("THAHBST0 = 0x%x, cnt = %d, %d\n", temp, cnt, __LINE__);
 
 			udelay(50);
@@ -1454,7 +1454,7 @@ static int tscpu_thermal_suspend(struct platform_device *dev, pm_message_t state
 
 		do {
 			temp = (DRV_Reg32(THAHBST0) >> 16);
-			if (cnt > 10)
+			if ((cnt + 1) % 10 == 0)
 				pr_err("THAHBST0 = 0x%x, cnt = %d, %d\n", temp, cnt, __LINE__);
 
 			udelay(2);
@@ -1521,7 +1521,7 @@ static int tscpu_thermal_resume(struct platform_device *dev)
 
 		do {
 			temp = (DRV_Reg32(THAHBST0) >> 16);
-			if (cnt > 10)
+			if ((cnt + 1) % 10 == 0)
 				pr_err("THAHBST0 = 0x%x, cnt = %d, %d\n", temp, cnt, __LINE__);
 
 			udelay(50);
@@ -1532,7 +1532,7 @@ static int tscpu_thermal_resume(struct platform_device *dev)
 
 		do {
 			temp = (DRV_Reg32(THAHBST0) >> 16);
-			if (cnt > 10)
+			if ((cnt + 1) % 10 == 0)
 				pr_err("THAHBST0 = 0x%x, cnt = %d, %d\n", temp, cnt, __LINE__);
 
 			udelay(2);
@@ -1924,7 +1924,7 @@ static void tscpu_thermal_pause(void)
 
 	do {
 		temp = (DRV_Reg32(THAHBST0) >> 16);
-		if (cnt > 10)
+		if ((cnt + 1) % 10 == 0)
 			pr_err("THAHBST0 = 0x%x, cnt = %d, %d\n", temp, cnt, __LINE__);
 
 		udelay(50);
@@ -1935,7 +1935,7 @@ static void tscpu_thermal_pause(void)
 
 	do {
 		temp = (DRV_Reg32(THAHBST0) >> 16);
-		if (cnt > 10)
+		if ((cnt + 1) % 10 == 0)
 			pr_err("THAHBST0 = 0x%x, cnt = %d, %d\n", temp, cnt, __LINE__);
 
 		udelay(2);
@@ -1980,7 +1980,7 @@ static void tscpu_thermal_release(void)
 
 	do {
 		temp = (DRV_Reg32(THAHBST0) >> 16);
-		if (cnt > 10)
+		if ((cnt + 1) % 10 == 0)
 			pr_err("THAHBST0 = 0x%x, cnt = %d, %d\n", temp, cnt, __LINE__);
 
 		udelay(50);
@@ -1991,7 +1991,7 @@ static void tscpu_thermal_release(void)
 
 	do {
 		temp = (DRV_Reg32(THAHBST0) >> 16);
-		if (cnt > 10)
+		if ((cnt + 1) % 10 == 0)
 			pr_err("THAHBST0 = 0x%x, cnt = %d, %d\n", temp, cnt, __LINE__);
 
 		udelay(2);
@@ -2174,7 +2174,7 @@ static void init_thermal(void)
 
 	while (cnt < 50) {
 		temp = (DRV_Reg32(THAHBST0) >> 16);
-		if (cnt > 10)
+		if ((cnt + 1) % 10 == 0)
 			pr_debug("THAHBST0 = 0x%x,cnt=%d, %d\n", temp, cnt, __LINE__);
 		if (temp == 0x0) {
 			/* pause all periodoc temperature sensing point 0~2 */
