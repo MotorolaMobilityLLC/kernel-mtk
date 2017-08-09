@@ -895,8 +895,16 @@ static ssize_t ffs_epfile_io(struct file *file, struct ffs_io_data *io_data)
 				ret = -EIO;
 			} else if (unlikely(
 				   wait_for_completion_interruptible(done))) {
+				spin_lock_irq(&epfile->ffs->eps_lock);
+				/*
+				 * While we were acquiring lock endpoint got
+				 * disabled (disconnect) or changed
+				 * (composition switch)
+				 */
+				if (epfile->ep == ep)
+					usb_ep_dequeue(ep->ep, req);
+				spin_unlock_irq(&epfile->ffs->eps_lock);
 				ret = -EINTR;
-				usb_ep_dequeue(ep->ep, req);
 			} else {
 				/*
 				 * XXX We may end up silently droping data
@@ -905,7 +913,18 @@ static ssize_t ffs_epfile_io(struct file *file, struct ffs_io_data *io_data)
 				 * to maxpacketsize), we may end up with more
 				 * data then user space has space for.
 				 */
-				ret = ep->status;
+				spin_lock_irq(&epfile->ffs->eps_lock);
+				/*
+				 * While we were acquiring lock endpoint got
+				 * disabled (disconnect) or changed
+				 * (composition switch)
+				 */
+				if (epfile->ep == ep)
+					ret = ep->status;
+				else
+					ret = -ENODEV;
+				spin_unlock_irq(&epfile->ffs->eps_lock);
+
 				if (io_data->read && ret > 0) {
 					ret = min_t(size_t, ret, io_data->len);
 
@@ -3259,6 +3278,7 @@ static void ffs_func_unbind(struct usb_configuration *c,
 		if (ep->ep && ep->req)
 			usb_ep_free_request(ep->ep, ep->req);
 		ep->req = NULL;
+		ep->ep = NULL;
 		++ep;
 	} while (--count);
 	spin_unlock_irqrestore(&func->ffs->eps_lock, flags);
