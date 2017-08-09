@@ -1452,7 +1452,7 @@ static int __m4u_sec_init(void)
 		goto out;
 	}
 
-	m4u_get_pgd(NULL, 0, &pgd_va, &pt_pa_nonsec, &size);
+	m4u_get_pgd(NULL, 0, &pgd_va, (void *)&pt_pa_nonsec, &size);
 
 	m4u_tci_msg->cmd = CMD_M4UTL_INIT;
 	m4u_tci_msg->init_param.nonsec_pt_pa = pt_pa_nonsec;
@@ -1838,7 +1838,7 @@ out:
 	return ret;
 }
 
-static void m4u_early_suspend(struct early_suspend *h)
+/* static void m4u_early_suspend(struct early_suspend *h)
 {
 	M4UMSG("m4u_early_suspend +, %d\n", m4u_tee_en);
 
@@ -1861,7 +1861,57 @@ static struct early_suspend mtk_m4u_early_suspend_driver = {
 	.level = EARLY_SUSPEND_LEVEL_DISABLE_FB + 251,
 	.suspend = m4u_early_suspend,
 	.resume = m4u_late_resume,
-};
+}; */
+
+static void m4u_early_suspend(void)
+{
+	M4UMSG("m4u_early_suspend +, %d\n", m4u_tee_en);
+
+	if (m4u_tee_en)
+		m4u_reg_backup_sec();
+	M4UMSG("m4u_early_suspend -\n");
+}
+
+static void m4u_late_resume(void)
+{
+	M4UMSG("m4u_late_resume +, %d\n", m4u_tee_en);
+
+	if (m4u_tee_en)
+		m4u_reg_restore_sec();
+
+	M4UMSG("m4u_late_resume -\n");
+}
+
+static struct notifier_block m4u_fb_notifier;
+static int m4u_fb_notifier_callback(struct notifier_block *self, unsigned long event, void *data)
+{
+	struct fb_event *evdata = data;
+	INT32 blank;
+
+	M4UMSG("m4u_fb_notifier_callback %ld, %d\n", event , FB_EVENT_BLANK);
+
+	if (event != FB_EVENT_BLANK)
+		return 0;
+
+	blank = *(INT32 *)evdata->data;
+
+	switch (blank) {
+	case FB_BLANK_UNBLANK:
+	case FB_BLANK_NORMAL:
+		m4u_late_resume();
+		break;
+	case FB_BLANK_VSYNC_SUSPEND:
+	case FB_BLANK_HSYNC_SUSPEND:
+		break;
+	case FB_BLANK_POWERDOWN:
+		m4u_early_suspend();
+		break;
+	default:
+		return -EINVAL;
+	}
+
+	return 0;
+}
 
 #if 1
 int m4u_map_nonsec_buf(int port, unsigned int mva, unsigned int size)
