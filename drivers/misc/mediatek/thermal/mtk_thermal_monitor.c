@@ -1775,7 +1775,7 @@ static int mtk_thermal_wrapper_get_temp
 	int ret = 0;
 	struct thermal_zone_device_ops *ops;
 	int nTemperature;
-	unsigned long raw_temp;
+	unsigned long raw_temp = 0;
 #if MTK_THERMAL_MONITOR_MEASURE_GET_TEMP_OVERHEAD
 	long int t = _get_current_time_us();
 	long int dur = 0;
