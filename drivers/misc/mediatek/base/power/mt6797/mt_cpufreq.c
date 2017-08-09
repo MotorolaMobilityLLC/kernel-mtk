@@ -3150,13 +3150,12 @@ static int _search_available_freq_idx_under_v(struct mt_cpu_dvfs *p, unsigned in
 	BUG_ON(NULL == p);
 
 	/* search available voltage */
-	for (i = p->nr_opp_tbl - 1; i >= 0; i--) {
-		if (volt <= cpu_dvfs_get_volt_by_idx(p, i))
+	for (i = 0; i < p->nr_opp_tbl; i++) {
+		if (volt >= cpu_dvfs_get_volt_by_idx(p, i))
 			break;
 	}
 
-	if (i < 0)
-		return 0; /* i.e. target_khz > p->opp_tbl[0].cpufreq_khz */
+	BUG_ON(i >= p->nr_opp_tbl);
 
 	FUNC_EXIT(FUNC_LV_HELP);
 
