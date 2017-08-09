@@ -1,7 +1,7 @@
 #ifndef __MT_DBG_H
 #define __MT_DBG_H
 
-#define DBG_REG_DUMP
+/* #define DBG_REG_DUMP */
 
 unsigned int *mt_save_dbg_regs(unsigned int *p, unsigned int cpuid);
 void mt_restore_dbg_regs(unsigned int *p, unsigned int cpuid);
