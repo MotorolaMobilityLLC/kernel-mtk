@@ -90,7 +90,7 @@ static void handle_h264_enc_encode_msg(struct venc_h264_handle *hndl,
 static void h264_enc_vpu_ipi_handler(void *data, unsigned int len, void *priv)
 {
 	struct venc_vpu_ipi_msg_common *msg = data;
-	struct venc_h264_handle *hndl = (struct venc_h264_handle *)msg->venc_inst;
+	struct venc_h264_handle *hndl = (struct venc_h264_handle *)(uintptr_t)msg->venc_inst;
 
 	mtk_vcodec_debug_enter(hndl);
 

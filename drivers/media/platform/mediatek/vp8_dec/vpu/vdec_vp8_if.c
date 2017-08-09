@@ -162,7 +162,7 @@ static int vdec_vp8_init(struct mtk_vcodec_ctx *ctx, struct mtk_vcodec_mem *bs,
 
 	inst->ctx = ctx;
 	inst->dev = mtk_vcodec_get_plat_dev(ctx);
-	mtk_vcodec_debug(inst, "bs va=%p dma=%llx sz=0x%lx", bs->va,
+	mtk_vcodec_debug(inst, "bs va=%p dma=%llx sz=0x%zx", bs->va,
 			 (u64)bs->dma_addr, bs->size);
 
 	data = (*(bs_va + 9) << 24) | (*(bs_va + 8) << 16) |

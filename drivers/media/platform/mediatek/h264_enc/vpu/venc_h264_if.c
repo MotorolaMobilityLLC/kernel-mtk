@@ -97,7 +97,7 @@ static int h264_alloc_work_buf(struct venc_h264_handle *handle)
 			}
 			wb[i].pa = handle->work_buf[i].dma_addr;
 		}
-		mtk_vcodec_debug(handle, "buf[%d] va=0x%p pa=0x%p size=0x%lx", i,
+		mtk_vcodec_debug(handle, "buf[%d] va=0x%p pa=0x%p size=0x%zx", i,
 				 handle->work_buf[i].va,
 				 (void *)handle->work_buf[i].dma_addr,
 				 handle->work_buf[i].size);

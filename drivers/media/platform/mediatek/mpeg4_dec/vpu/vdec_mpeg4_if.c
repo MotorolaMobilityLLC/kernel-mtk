@@ -75,7 +75,7 @@ static int alloc_mc_buffer(struct vdec_mpeg4_inst *inst, struct vdec_pic_info *p
 		}
 
 		vsi->mc_buf[i].dma_addr = (uint64_t) mem->dma_addr;
-		vsi->mc_buf[i].va_addr = (uint64_t) mem->va;
+		vsi->mc_buf[i].va_addr = (uintptr_t) mem->va;
 		memset(mem->va + pic->buf_w * pic->buf_h, 0x80, pic->buf_w * pic->buf_h / 2);
 
 		mtk_vcodec_debug(inst, "Get va=%p dma=%llx size=%zx", mem->va,
@@ -101,7 +101,7 @@ static int alloc_dcacmv_buffer(struct vdec_mpeg4_inst *inst, struct vdec_pic_inf
 	}
 
 	vsi->dcacmv_buf.dma_addr = (uint64_t) mem->dma_addr;
-	vsi->dcacmv_buf.va_addr = (uint64_t) mem->va;
+	vsi->dcacmv_buf.va_addr = (uintptr_t) mem->va;
 
 	mtk_vcodec_debug(inst, "Get va=%p dma=%llx size=%zx", mem->va, (uint64_t) mem->dma_addr,
 			 mem->size);
@@ -124,7 +124,7 @@ static int alloc_nocodec_buffer(struct vdec_mpeg4_inst *inst, struct vdec_pic_in
 	}
 
 	vsi->nocodec_buf.dma_addr = (uint64_t) mem->dma_addr;
-	vsi->nocodec_buf.va_addr = (uint64_t) mem->va;
+	vsi->nocodec_buf.va_addr = (uintptr_t) mem->va;
 
 	mtk_vcodec_debug(inst, "Get va=%p dma=%llx size=%zx", mem->va, (uint64_t) mem->dma_addr,
 			 mem->size);
@@ -147,7 +147,7 @@ static int alloc_datapar_buffer(struct vdec_mpeg4_inst *inst, struct vdec_pic_in
 	}
 
 	vsi->datapar_buf.dma_addr = (uint64_t) mem->dma_addr;
-	vsi->datapar_buf.va_addr = (uint64_t) mem->va;
+	vsi->datapar_buf.va_addr = (uintptr_t) mem->va;
 
 	mtk_vcodec_debug(inst, "Get va=%p dma=%llx size=%zx", mem->va, (uint64_t) mem->dma_addr,
 			 mem->size);
@@ -170,7 +170,7 @@ static int alloc_mv_buffer(struct vdec_mpeg4_inst *inst, struct vdec_pic_info *p
 	}
 
 	vsi->mv_buf.dma_addr = (uint64_t) mem->dma_addr;
-	vsi->mv_buf.va_addr = (uint64_t) mem->va;
+	vsi->mv_buf.va_addr = (uintptr_t) mem->va;
 
 	mtk_vcodec_debug(inst, "Get va=%p dma=%llx size=%zx", mem->va, (uint64_t) mem->dma_addr,
 			 mem->size);
@@ -265,12 +265,12 @@ static void get_dpb_size(struct vdec_mpeg4_inst *inst, unsigned int *dpb_sz)
 static void get_disp_fb(struct vdec_mpeg4_inst *inst, struct vdec_fb **out_fb)
 {
 	struct vdec_mpeg4_vsi *vsi = inst->vsi;
-	struct vdec_fb *fb = (struct vdec_fb *)vsi->disp_fb.fb_va;
+	struct vdec_fb *fb = (struct vdec_fb *)(uintptr_t)vsi->disp_fb.fb_va;
 
 	if (fb != NULL) {
 		fb->status |= FB_ST_DISPLAY;
 		vsi->disp_fb = vsi->disp_ready_fb;
-		vsi->disp_ready_fb.fb_va = NULL;
+		vsi->disp_ready_fb.fb_va = 0;
 
 		mtk_vcodec_debug(inst, "get_disp_fb (0x%p -> 0x%p)", fb, fb->base.va);
 	} else
@@ -283,12 +283,12 @@ static void get_disp_fb(struct vdec_mpeg4_inst *inst, struct vdec_fb **out_fb)
 static void get_free_fb(struct vdec_mpeg4_inst *inst, struct vdec_fb **out_fb)
 {
 	struct vdec_mpeg4_vsi *vsi = inst->vsi;
-	struct vdec_fb *fb = (struct vdec_fb *)vsi->free_fb.fb_va;
+	struct vdec_fb *fb = (struct vdec_fb *)(uintptr_t)vsi->free_fb.fb_va;
 
 	if (fb != NULL) {
 		fb->status |= FB_ST_FREE;
 		vsi->free_fb = vsi->free_ready_fb;
-		vsi->free_ready_fb.fb_va = NULL;
+		vsi->free_ready_fb.fb_va = 0;
 
 		mtk_vcodec_debug(inst, "get_free_fb (0x%p -> 0x%p)", fb, fb->base.va);
 	} else
@@ -301,8 +301,8 @@ static void add_free_fb(struct vdec_mpeg4_inst *inst, struct vdec_fb *fb)
 {
 	struct vdec_mpeg4_vsi *vsi = inst->vsi;
 
-	if (vsi->free_fb.fb_va == NULL)
-		vsi->free_fb.fb_va = (uint64_t) fb;
+	if (vsi->free_fb.fb_va == 0)
+		vsi->free_fb.fb_va = (uintptr_t)fb;
 	else
 		mtk_vcodec_debug(inst, "free_fb is not empty");
 }
@@ -328,7 +328,7 @@ static int vdec_mpeg4_init(struct mtk_vcodec_ctx *ctx,
 
 	if (bs) {
 		send_bs.dma_addr = (uint64_t) bs->dma_addr;
-		send_bs.va_addr = (uint64_t) bs->va;
+		send_bs.va_addr = (uintptr_t) bs->va;
 		send_bs.size = (uint32_t) bs->size;
 	}
 	mtk_vcodec_debug(inst, "bs va=%llx dma=%llx sz=0x%x", send_bs.va_addr,
@@ -372,7 +372,7 @@ static int vdec_mpeg4_decode(unsigned long h_vdec, struct mtk_vcodec_mem *bs,
 	mtk_vcodec_debug_enter(inst);
 
 	if (bs) {
-		send_bs.va_addr = (uint64_t) bs->va;
+		send_bs.va_addr = (uintptr_t) bs->va;
 		send_bs.dma_addr = (uint64_t) bs->dma_addr;
 		send_bs.size = (uint32_t) bs->size;
 		mtk_vcodec_debug(inst, "bs va=%llx dma=%llx sz=0x%x", (uint64_t) send_bs.va_addr,
@@ -381,7 +381,7 @@ static int vdec_mpeg4_decode(unsigned long h_vdec, struct mtk_vcodec_mem *bs,
 		return vdec_mpeg4_vpu_reset(inst->vpu_inst);
 
 	if (fb) {
-		send_fb.fb_va = (uint64_t) fb;
+		send_fb.fb_va = (uintptr_t) fb;
 		send_fb.dma_addr = (uint64_t) fb->base.dma_addr;
 	}
 	mtk_vcodec_debug(inst, "fb fb_va=%llx dma=%llx", (uint64_t) send_fb.fb_va,

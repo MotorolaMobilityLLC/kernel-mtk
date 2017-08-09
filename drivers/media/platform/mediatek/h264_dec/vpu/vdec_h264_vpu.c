@@ -91,7 +91,7 @@ struct vdec_h264_ipi_dec_start {
 
 static void handle_init_ack_msg(struct vdec_h264_ipi_init_ack *msg)
 {
-	struct vdec_h264_inst *inst = (struct vdec_h264_inst *)msg->vdec_inst;
+	struct vdec_h264_inst *inst = (struct vdec_h264_inst *)(uintptr_t)msg->vdec_inst;
 	unsigned long vpu_addr;
 	void *shmem_va[VDEC_SHMEM_MAX];
 	int i;
@@ -122,7 +122,7 @@ static void h264_dec_vpu_ipi_handler(void *data, unsigned int len, void *priv)
 	struct vdec_h264_inst *inst;
 
 	msg = (struct vdec_vpu_ipi_ack *)data;
-	inst = (struct vdec_h264_inst *)msg->vdec_inst;
+	inst = (struct vdec_h264_inst *)(uintptr_t)msg->vdec_inst;
 
 	mtk_vcodec_debug(inst, "+ id=%X", msg->msg_id);
 

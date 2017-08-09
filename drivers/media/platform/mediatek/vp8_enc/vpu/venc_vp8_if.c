@@ -72,7 +72,7 @@ static int vp8_enc_alloc_work_buf(struct venc_vp8_handle *hndl)
 			wb[i].pa = hndl->work_buf[i].dma_addr;
 
 			mtk_vcodec_debug(hndl,
-					 "work_buf[%d] va=0x%p,pa=0x%p,size=0x%lx",
+					 "work_buf[%d] va=0x%p,pa=0x%p,size=0x%zx",
 					 i, hndl->work_buf[i].va,
 					 (void *)hndl->work_buf[i].dma_addr,
 					 hndl->work_buf[i].size);
@@ -166,7 +166,7 @@ static int vp8_enc_compose_one_frame(struct venc_vp8_handle *hndl,
 	tag_sz = (is_key == 0) ? 10 : 3;
 
 	if (bs_buf->size <= bs_hdr_len + bs_size_frm + tag_sz) {
-		mtk_vcodec_err(hndl, "bitstream buf size is too small(%ld)",
+		mtk_vcodec_err(hndl, "bitstream buf size is too small(%zd)",
 			       bs_buf->size);
 		return -EINVAL;
 	}

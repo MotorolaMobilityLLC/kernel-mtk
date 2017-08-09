@@ -68,7 +68,7 @@ static void handle_init_ack_msg(struct vdec_vp8_inst *inst, void *data)
 static void vp8_dec_vpu_ipi_handler(void *data, unsigned int len, void *priv)
 {
 	struct vdec_vpu_ipi_ack *msg = data;
-	struct vdec_vp8_inst *inst = (struct vdec_vp8_inst *)msg->vdec_inst;
+	struct vdec_vp8_inst *inst = (struct vdec_vp8_inst *)(uintptr_t)msg->vdec_inst;
 
 	mtk_vcodec_debug(inst, "+ id=%X", msg->msg_id);
 	inst->vpu.failure = msg->status;

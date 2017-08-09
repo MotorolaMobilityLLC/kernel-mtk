@@ -55,7 +55,7 @@ static void handle_init_ack_msg(struct vdec_vp9_inst *inst, void *data)
 static void vp9_dec_vpu_ipi_handler(void *data, unsigned int len, void *priv)
 {
 	struct vdec_vpu_ipi_ack *msg = data;
-	struct vdec_vp9_inst *inst = (struct vdec_vp9_inst *)msg->vdec_inst;
+	struct vdec_vp9_inst *inst = (struct vdec_vp9_inst *)(uintptr_t)msg->vdec_inst;
 
 	inst->vpu.failure = msg->status;
 

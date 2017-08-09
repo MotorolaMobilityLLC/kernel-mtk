@@ -32,7 +32,7 @@ static void handle_vp8_enc_init_msg(struct venc_vp8_handle *hndl, void *data)
 static void vp8_enc_vpu_ipi_handler(void *data, unsigned int len, void *priv)
 {
 	struct venc_vpu_ipi_msg_common *msg = data;
-	struct venc_vp8_handle *hndl = (struct venc_vp8_handle *)msg->venc_inst;
+	struct venc_vp8_handle *hndl = (struct venc_vp8_handle *)(uintptr_t)msg->venc_inst;
 
 	mtk_vcodec_debug(hndl, "->msg_id=%x status=%d",
 			 msg->msg_id, msg->status);

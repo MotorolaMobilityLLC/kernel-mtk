@@ -106,7 +106,7 @@ static void handle_init_ack_msg(struct vdec_mpeg4_ipi_init_ack *msg)
 {
 	struct vdec_mpeg4_vpu_inst *vpu;
 
-	vpu = (struct vdec_mpeg4_vpu_inst *)msg->ack.vdec_inst;
+	vpu = (struct vdec_mpeg4_vpu_inst *)(uintptr_t)msg->ack.vdec_inst;
 	mtk_vcodec_debug(vpu, "+ vdec_inst = %p", vpu);
 
 	/* mapping VPU address to kernel virtual address */
@@ -125,7 +125,7 @@ static void mpeg4_dec_vpu_ipi_handler(void *msg, unsigned int len, void *priv)
 	struct vdec_mpeg4_vpu_inst *vpu;
 
 	ack = (struct vdec_vpu_ipi_ack *)msg;
-	vpu = (struct vdec_mpeg4_vpu_inst *)ack->vdec_inst;
+	vpu = (struct vdec_mpeg4_vpu_inst *)(uintptr_t)ack->vdec_inst;
 
 	mtk_vcodec_debug(vpu, "+ id=%X", ack->msg_id);
 
@@ -212,7 +212,7 @@ int vdec_mpeg4_vpu_init(struct vdec_mpeg4_vpu_inst *vpu, struct vdec_mpeg4_bs *b
 	}
 
 	msg.msg_id = AP_IPIMSG_DEC_INIT;
-	msg.vdec_inst = (uint64_t) vpu;
+	msg.vdec_inst = (uint64_t)(uintptr_t)vpu;
 	memcpy(&msg.bs, bs, sizeof(*bs));
 	mtk_vcodec_debug(vpu, "vdec_inst=0x%llx bs_sz=0x%x", msg.vdec_inst, msg.bs.size);
 

@@ -160,7 +160,7 @@ static int vdec_vp9_init(struct mtk_vcodec_ctx *ctx, struct mtk_vcodec_mem *bs,
 	inst->dev = mtk_vcodec_get_plat_dev(ctx);
 	(*h_vdec) = (unsigned long)inst;
 
-	mtk_vcodec_debug(inst, "Input BS Size = %ld\n", bs->size);
+	mtk_vcodec_debug(inst, "Input BS Size = %zd\n", bs->size);
 
 	ipi_data[0] = *((unsigned int *)bs->va);
 	ipi_data[1] = *((unsigned int *)(bs->va + 4));
@@ -225,7 +225,7 @@ static int vdec_vp9_decode(unsigned long h_vdec, struct mtk_vcodec_mem *bs,
 	}
 
 	if (bs != NULL) {
-		mtk_vcodec_debug(inst, "Input BS Size = %ld", bs->size);
+		mtk_vcodec_debug(inst, "Input BS Size = %zd", bs->size);
 #if VP9_DECODE_BENCHMARK
 		inst->total_input_bs_size += bs->size;
 #endif

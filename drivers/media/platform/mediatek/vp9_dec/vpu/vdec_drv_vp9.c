@@ -797,9 +797,9 @@ struct vdec_fb *vp9_rm_from_fb_use_list(struct vdec_vp9_inst
 	list_for_each_entry(node, &inst->fb_use_list, list) {
 		fb = (struct vdec_fb *)node->fb;
 #ifdef Y_C_SEPARATE
-		if (fb->base_y.va == addr) {
+		if ((unsigned long)fb->base_y.va == addr) {
 #else
-		if (fb->base.va == addr) {
+		if ((unsigned long)fb->base.va == addr) {
 #endif
 			list_move_tail(&node->list, &inst->available_fb_node_list);
 			break;
