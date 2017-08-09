@@ -25,6 +25,7 @@
 #include "ddp_path.h"
 #include "ddp_aal.h"
 #include "ddp_pwm.h"
+#include <ddp_od.h>
 #include "ddp_dither.h"
 #include "ddp_info.h"
 #include "ddp_dsi.h"
@@ -297,6 +298,8 @@ static void process_dbg_opt(const char *opt)
 		/*dither_test(opt + 12, buf);*/
 	} else if (0 == strncmp(opt, "ccorr_test:", 11)) {
 		/*ccorr_test(opt + 11, buf);*/
+	} else if (0 == strncmp(opt, "od_test:", 8)) {
+		od_test(opt + 8, buf);
 	} else if (0 == strncmp(opt, "dump_reg:", 9)) {
 		char *p = (char *)opt + 9;
 		unsigned int module;
