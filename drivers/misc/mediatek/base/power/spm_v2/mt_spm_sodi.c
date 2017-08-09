@@ -42,20 +42,6 @@
 /**************************************
  * only for internal debug
  **************************************/
-
-#define SODI_TAG     "[SODI] "
-#define SODI3_TAG    "[SODI3] "
-
-#define sodi_err(fmt, args...)     pr_err(SODI_TAG fmt, ##args)
-#define sodi_warn(fmt, args...)    pr_warn(SODI_TAG fmt, ##args)
-#define sodi_debug(fmt, args...)   pr_debug(SODI_TAG fmt, ##args)
-
-#define so_err(fg, fmt, args...)   ((fg&SODI_FLAG_3P0)?pr_err(SODI3_TAG fmt, ##args):pr_err(SODI_TAG fmt, ##args))
-#define so_warn(fg, fmt, args...)  ((fg&SODI_FLAG_3P0)?pr_warn(SODI3_TAG fmt, ##args):pr_warn(SODI_TAG fmt, ##args))
-#define so_debug(fg, fmt, args...) ((fg&SODI_FLAG_3P0)?pr_debug(SODI3_TAG fmt, ##args):pr_debug(SODI_TAG fmt, ##args))
-
-#define SPM_BYPASS_SYSPWREQ         0
-
 #define LOG_BUF_SIZE                    (256)
 #define SODI_LOGOUT_TIMEOUT_CRITERIA    (20)
 #define SODI_LOGOUT_MAXTIME_CRITERIA    (2000)
@@ -315,14 +301,13 @@ struct spm_lp_scen __spm_sodi = {
 	.pwrctrl = &sodi_ctrl,
 };
 
-/* 0:power-down mode, 1:CG mode */
 static bool gSpm_SODI_mempll_pwr_mode;
 static bool gSpm_sodi_en;
 #if defined(CONFIG_ARCH_MT6797)
 static bool gSpm_lcm_vdo_mode;
 #endif
 
-static unsigned long int sodi_logout_prev_time;
+static long int sodi_logout_prev_time;
 static int pre_emi_refresh_cnt;
 static int memPllCG_prev_status = 1;	/* 1:CG, 0:pwrdn */
 static unsigned int logout_sodi_cnt;
@@ -399,7 +384,7 @@ static void spm_sodi_pre_process(void)
 	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_DEEPIDLE, IDX_DI_VSRAM_NORMAL, val);
 #endif
 
-	pmic_read_interface_nolock(MT6351_TOP_CON, &val, 0x037F, 0);
+	pmic_read_interface_nolock(MT6351_TOP_CON, &val, ALL_TOP_CON_MASK, 0);
 	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_DEEPIDLE,
 					IDX_DI_SRCCLKEN_IN2_NORMAL,
 					val | (1 << MT6351_PMIC_RG_SRCLKEN_IN2_EN_SHIFT));
@@ -412,7 +397,7 @@ static void spm_sodi_pre_process(void)
 #endif
 
 	/* Do more low power setting when MD1/C2K/CONN off */
-	if (is_md_c2k_conn_power_off()) /* TODO: || defined(CONFIG_ARCH_MT6757) */
+	if (is_md_c2k_conn_power_off())
 		__spm_bsi_top_init_setting();
 }
 
@@ -426,26 +411,35 @@ static void spm_sodi_post_process(void)
 	spm_enable_mmu_smi_async();
 }
 
-static bool spm_sodi_assert(struct wake_status *wakesta, unsigned long int curr_time)
-{
-	bool logout = false;
-
-	if (unlikely((wakesta->assert_pc != 0) || (wakesta->r12 == 0)))
-		logout = true;
 #if defined(CONFIG_ARCH_MT6797)
-	if ((logout == true) && ((wakesta->r12_ext&WAKE_SRC_R12_EXT_VCORE_DVFS_B) == 0)) {
-		static unsigned long int logout_prev_dvfs_time;
+#define is_dvfs_wakeup(r12_ext) ((r12_ext&WAKE_SRC_R12_EXT_VCORE_DVFS_B) != 0)
+static bool spm_sodi_assert(struct wake_status *wakesta)
+{
+	if (likely((wakesta->assert_pc == 0) && (wakesta->r12 != 0)))
+		return false;
 
-		if (curr_time - logout_prev_dvfs_time > 20U)
-			logout_prev_dvfs_time = curr_time;
-		else
-			logout = false;
+	if (is_dvfs_wakeup(wakesta->r12_ext)) {
+		static long int logout_prev_dvfs_time;
+		long int curr_time = spm_get_current_time_ms();
+
+		wakesta->r12 = WAKE_SRC_R12_PCM_TIMER;
+		if ((curr_time - logout_prev_dvfs_time < 20))
+			return false;
+
+		logout_prev_dvfs_time = curr_time;
 	}
-#endif
-	return logout;
-}
 
-static int spm_sodi_is_not_gpt_event(struct wake_status *wakesta, unsigned long int curr_time)
+	return true;
+}
+#else
+static inline bool spm_sodi_assert(struct wake_status *wakesta)
+{
+	return (wakesta->assert_pc != 0) || (wakesta->r12 == 0);
+}
+#endif
+
+
+static int spm_sodi_is_not_gpt_event(struct wake_status *wakesta, long int curr_time)
 {
 	bool logout = false;
 
@@ -481,7 +475,7 @@ static inline bool spm_sodi_change_emi_state(struct wake_status *wakesta)
 				(spm_read(SPM_PASR_DPD_0) > 0 && pre_emi_refresh_cnt == 0);
 }
 
-static inline bool spm_sodi_last_logout(unsigned long int curr_time)
+static inline bool spm_sodi_last_logout(long int curr_time)
 {
 	return (curr_time - sodi_logout_prev_time) > SODI_LOGOUT_INTERVAL_CRITERIA;
 }
@@ -490,11 +484,11 @@ wake_reason_t
 spm_sodi_output_log(struct wake_status *wakesta, struct pcm_desc *pcmdesc, int vcore_status, u32 sodi_flags)
 {
 	wake_reason_t wr = WR_NONE;
-	unsigned long int sodi_logout_curr_time = 0;
+	long int sodi_logout_curr_time = 0;
 	int need_log_out = SODI_LOGOUT_NONE;
 
 	if (sodi_flags&SODI_FLAG_NO_LOG) {
-		if (spm_sodi_assert(wakesta, UINT_MAX)) {
+		if (spm_sodi_assert(wakesta)) {
 			so_err(sodi_flags, "PCM ASSERT AT SPM_PC = 0x%0x (%s), R12 = 0x%x, R13 = 0x%x, DEBUG_FLAG = 0x%x\n",
 				wakesta->assert_pc, pcmdesc->version,
 				wakesta->r12, wakesta->r13, wakesta->debug_flag);
@@ -508,7 +502,7 @@ spm_sodi_output_log(struct wake_status *wakesta, struct pcm_desc *pcmdesc, int v
 	} else {
 		sodi_logout_curr_time = spm_get_current_time_ms();
 
-		if (spm_sodi_assert(wakesta, sodi_logout_curr_time)) {
+		if (spm_sodi_assert(wakesta)) {
 			need_log_out = SODI_LOGOUT_ASSERT;
 		} else if (spm_sodi_is_not_gpt_event(wakesta, sodi_logout_curr_time)) {
 			need_log_out = SODI_LOGOUT_NOT_GPT_EVENT;
@@ -575,9 +569,8 @@ spm_sodi_output_log(struct wake_status *wakesta, struct pcm_desc *pcmdesc, int v
 					if (wakesta->wake_misc & WAKE_MISC_CPU_WAKE)
 						strncat(buf, " CPU", sizeof(buf) - strlen(buf) - 1);
 #if defined(CONFIG_ARCH_MT6797)
-					if (wakesta->r12_ext == WAKE_SRC_R12_EXT_VCORE_DVFS_B) {
+					if (is_dvfs_wakeup(wakesta->r12_ext))
 						strncat(buf, " vcore dvfs", sizeof(buf) - strlen(buf) - 1);
-					}
 #endif
 				}
 				for (i = 1; i < 32; i++) {
@@ -603,6 +596,17 @@ spm_sodi_output_log(struct wake_status *wakesta, struct pcm_desc *pcmdesc, int v
 	}
 	return wr;
 }
+
+static void rekick_sodi_common_scenario(void)
+{
+#if defined(CONFIG_ARCH_MT6797)
+	spm_sodi_footprint(SPM_SODI_REKICK_VCORE);
+	spm_write(PCM_CON1, SPM_REGWR_CFG_KEY | (spm_read(PCM_CON1) & ~PCM_TIMER_EN_LSB));
+	__spm_backup_vcore_dvfs_dram_shuffle();
+	vcorefs_go_to_vcore_dvfs();
+#endif
+}
+
 
 wake_reason_t spm_go_to_sodi(u32 spm_flags, u32 spm_data, u32 sodi_flags)
 {
@@ -630,7 +634,7 @@ wake_reason_t spm_go_to_sodi(u32 spm_flags, u32 spm_data, u32 sodi_flags)
 
 	spm_sodi_footprint(SPM_SODI_ENTER);
 
-	if (gSpm_SODI_mempll_pwr_mode == 1)
+	if (gSpm_SODI_mempll_pwr_mode == MEMPLL_CG_MODE)
 		spm_flags |= SPM_FLAG_SODI_CG_MODE;	/* CG mode */
 	else
 		spm_flags &= ~SPM_FLAG_SODI_CG_MODE;	/* PDN mode */
@@ -735,14 +739,8 @@ UNLOCK_SPM:
 	/* stop APxGPT timer and enable caore0 local timer */
 	soidle_after_wfi(cpu);
 
-#if defined(CONFIG_ARCH_MT6797)
-	if (wr != WR_UART_BUSY) {
-		spm_sodi_footprint(SPM_SODI_REKICK_VCORE);
-		spm_write(PCM_CON1, SPM_REGWR_CFG_KEY | (spm_read(PCM_CON1) & ~PCM_TIMER_EN_LSB));
-		__spm_backup_vcore_dvfs_dram_shuffle();
-		vcorefs_go_to_vcore_dvfs();
-	}
-#endif
+	if (wr != WR_UART_BUSY)
+		rekick_sodi_common_scenario();
 
 	spm_sodi_reset_footprint();
 	return wr;

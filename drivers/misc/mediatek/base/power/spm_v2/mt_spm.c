@@ -1803,7 +1803,6 @@ void spm_pmic_power_mode(int mode, int force, int lock)
 		spm_pmic_set_ldo(MT6351_LDO_VA18_CON0, 0, 1, 0, PMIC_LDO_SRCLKEN_NA, lock);	/* For Audio MP3 */
 		spm_pmic_set_ldo(MT6351_LDO_VA10_CON0, 0, 1, 1, PMIC_LDO_SRCLKEN2, lock);
 		break;
-#if !defined(CONFIG_ARCH_MT6757)
 	case PMIC_PWR_SODI3:
 #if defined(CONFIG_ARCH_MT6755)
 		spm_pmic_set_vcore(VCORE_VOSEL_SLEEP_0P9, lock);
@@ -1816,6 +1815,22 @@ void spm_pmic_power_mode(int mode, int force, int lock)
 		spm_pmic_set_ldo(MT6351_LDO_VIO18_CON0, 0, 1, 1, PMIC_LDO_SRCLKEN0, lock);
 		spm_pmic_set_ldo(MT6351_LDO_VA18_CON0, 0, 1, 1, PMIC_LDO_SRCLKEN0, lock);
 		spm_pmic_set_ldo(MT6351_LDO_VA10_CON0, 0, 1, 1, PMIC_LDO_SRCLKEN0, lock);
+#elif defined(CONFIG_ARCH_MT6757)
+		spm_pmic_set_vcore(VCORE_VOSEL_SLEEP_0P7, lock);
+		spm_pmic_set_vsram_md(VSRAM_MD_VOSEL_SLEEP_0P8, lock);
+		spm_pmic_set_buck(MT6351_BUCK_VCORE_CON0, 0, 1, 0, PMIC_BUCK_SRCLKEN_NA, lock);
+		spm_pmic_set_buck(MT6351_BUCK_VSRAM_MD_CON0, 0, 1, 0, PMIC_BUCK_SRCLKEN_NA, lock);
+		spm_pmic_set_buck(MT6351_BUCK_VS1_CON0, 0, 1, 0, PMIC_BUCK_SRCLKEN0, lock);
+		spm_pmic_set_buck(MT6351_BUCK_VS2_CON0, 0, 1, 0, PMIC_BUCK_SRCLKEN0, lock);
+		if (get_ddr_type() == TYPE_LPDDR3)
+			spm_pmic_set_ldo(MT6351_LDO_VDRAM_CON0, 0, 1, 1, PMIC_LDO_SRCLKEN0, lock);
+		else
+			spm_pmic_set_ldo(MT6351_LDO_VDRAM_CON0, 0, 0, 0, PMIC_LDO_SRCLKEN_NA, lock);
+		spm_pmic_set_ldo(MT6351_LDO_VUSB33_CON0, 0, 1, 0, PMIC_LDO_SRCLKEN0, lock);
+		spm_pmic_set_ldo(MT6351_LDO_VIO28_CON0, 0, 1, 0, PMIC_LDO_SRCLKEN0, lock);
+		spm_pmic_set_ldo(MT6351_LDO_VIO18_CON0, 0, 1, 0, PMIC_LDO_SRCLKEN0, lock);
+		spm_pmic_set_ldo(MT6351_LDO_VA18_CON0, 0, 1, 0, PMIC_LDO_SRCLKEN0, lock);
+		spm_pmic_set_ldo(MT6351_LDO_VA10_CON0, 0, 1, 0, PMIC_LDO_SRCLKEN0, lock);
 #elif defined(CONFIG_ARCH_MT6797)
 		spm_pmic_set_vcore(VCORE_VOSEL_SLEEP_0P77, lock);
 		spm_pmic_set_buck(MT6351_BUCK_VCORE_CON0, 0, 1, 0, PMIC_BUCK_SRCLKEN0, lock);
@@ -1835,7 +1850,6 @@ void spm_pmic_power_mode(int mode, int force, int lock)
 	case PMIC_PWR_SODI:
 		/* nothing */
 		break;
-#endif
 	case PMIC_PWR_SUSPEND:
 #if defined(CONFIG_ARCH_MT6755)
 		spm_pmic_set_vcore(VCORE_VOSEL_SLEEP_0P7, lock);

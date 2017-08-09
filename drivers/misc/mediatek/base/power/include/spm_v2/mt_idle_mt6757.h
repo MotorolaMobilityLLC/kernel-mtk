@@ -125,5 +125,14 @@ extern void __iomem  *apmixed_base_in_idle;
 #define MFG_ASYNC_PWR_STA_MASK  BIT(23)
 #define AUDIO_PWR_STA_MASK      BIT(24)
 
+
+#define MUX_DISP_PWM             CLK_CFG_7
+#define DISP_PWM_CLK_26M         0
+#define DISP_PWM_UNIVPLL2_D4     1
+#define DISP_PWM_LPOSC_D4        2
+#define DISP_PWM_LPOSC_D8        3
+#define DISP_PWM_LPOSC_MASK      (BIT(2))
+#define AUXADC_CG_STA            BIT(10)
+
 #endif /* __MT_IDLE_MT6757__H__ */
 

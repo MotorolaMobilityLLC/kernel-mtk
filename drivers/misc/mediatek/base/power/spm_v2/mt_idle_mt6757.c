@@ -310,21 +310,26 @@ bool cg_i2c_appm_check_idle_can_enter(unsigned int *block_mask)
 	return true;
 }
 
-char pll_name[NR_PLLS][10] = {
-	"UNIVPLL",
-	"MMPLL",
-	"MSDCPLL",
-	"VENCPLL",
+struct pll_info {
+	const unsigned int reg;
+	const char name[10];
+};
+
+static struct pll_info soidle3_pll[NR_PLLS] = {
+	{0x230, "UNIVPLL"},
+	{0x240, "MMPLL"},
+	{0x250, "MSDCPLL"},
+	{0x260, "VENCPLL"},
 };
 
 const char *pll_grp_get_name(int id)
 {
-	return pll_name[id];
+	return soidle3_pll[id].name;
 }
 
 int is_pll_on(int id)
 {
-	return idle_readl(APMIXEDSYS(0x230 + id * 0x10)) & 0x1;
+	return idle_readl(APMIXEDSYS(soidle3_pll[id].reg)) & 0x1;
 }
 
 bool pll_check_idle_can_enter(unsigned int *condition_mask, unsigned int *block_mask)
@@ -420,16 +425,15 @@ const char *cg_grp_get_name(int id)
 	return cg_group_name[id];
 }
 
+
 bool is_disp_pwm_rosc(void)
 {
-	u32 sta = idle_readl(CLK_CFG_7) & 0x3;
-
-	return (sta == 2) || (sta == 3);
+	return (idle_readl(MUX_DISP_PWM) & DISP_PWM_LPOSC_MASK) != 0;
 }
 
 bool is_auxadc_released(void)
 {
-	if ((~idle_readl(INFRA_SW_CG_0_STA) & 0x400) == 0x400) {
+	if ((~idle_readl(INFRA_SW_CG_0_STA) & AUXADC_CG_STA) != 0) {
 		idle_err("AUXADC CG does not be released\n");
 		return false;
 	}

@@ -172,9 +172,6 @@
 #endif
 
 
-#define reg_read(addr)         __raw_readl(IOMEM(addr))
-#define reg_write(addr, val)   mt_reg_sync_writel((val), ((void *)addr))
-
 #ifdef SPM_SODI3_PROFILE_TIME
 extern unsigned int	soidle3_profile[4];
 #endif
@@ -235,12 +232,6 @@ static inline void spm_sodi3_aee_init(void)
 }
 
 #define spm_sodi3_reset_footprint() spm_sodi3_aee_init()
-
-
-extern void spm_trigger_wfi_for_sodi(struct pwr_ctrl *pwrctrl);
-extern void spm_enable_mmu_smi_async(void);
-extern void spm_disable_mmu_smi_async(void);
-wake_reason_t spm_sodi_output_log(struct wake_status *wakesta, struct pcm_desc *pcmdesc, int vcore_status, u32 sodi_flags);
 
 #endif /* __MT_SPM_SODI3_H_ */
 

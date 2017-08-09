@@ -18,7 +18,7 @@
 #include "mt_idle_internal.h"
 
 #define SPM_MET_TAGGING  0
-#define IDLE_LOG_BUF_LEN 500
+#define IDLE_LOG_BUF_LEN 512
 
 #define APXGPT_SYS_TICKS_PER_US ((u32)(13))
 #define APXGPT_RTC_TICKS_PER_MS ((u32)(32))

@@ -32,6 +32,7 @@
 #include <mt-plat/mt_io.h>
 
 #include <mt_clkbuf_ctl.h>
+#include <mt_spm_sodi.h>
 #include <mt_spm_sodi3.h>
 #include <mt_idle_profile.h>
 
@@ -40,12 +41,7 @@
  * only for internal debug
  **************************************/
 
-#define SODI3_TAG     "[SODI3] "
-#define sodi3_err(fmt, args...)		pr_err(SODI3_TAG fmt, ##args)
-#define sodi3_warn(fmt, args...)	pr_warn(SODI3_TAG fmt, ##args)
-#define sodi3_debug(fmt, args...)	pr_debug(SODI3_TAG fmt, ##args)
-
-#define SPM_BYPASS_SYSPWREQ         0
+#define PCM_SEC_TO_TICK(sec)        (sec * 32768)
 
 unsigned int __attribute__((weak)) pmic_read_interface_nolock(unsigned int RegNum,
 					unsigned int *val, unsigned int MASK, unsigned int SHIFT)
@@ -299,7 +295,7 @@ static void spm_sodi3_pre_process(void)
 	__spm_pmic_low_iq_mode(1);
 #endif
 
-	pmic_read_interface_nolock(MT6351_TOP_CON, &val, 0x037F, 0);
+	pmic_read_interface_nolock(MT6351_TOP_CON, &val, ALL_TOP_CON_MASK, 0);
 	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_DEEPIDLE,
 					IDX_DI_SRCCLKEN_IN2_NORMAL,
 					val | (1 << MT6351_PMIC_RG_SRCLKEN_IN2_EN_SHIFT));
@@ -338,6 +334,17 @@ static void spm_sodi3_post_process(void)
 	spm_enable_mmu_smi_async();
 }
 
+static void rekick_sodi3_common_scenario(void)
+{
+#if defined(CONFIG_ARCH_MT6797)
+	spm_sodi3_footprint(SPM_SODI3_REKICK_VCORE);
+	spm_write(PCM_CON1, SPM_REGWR_CFG_KEY | (spm_read(PCM_CON1) & ~PCM_TIMER_EN_LSB));
+	__spm_backup_vcore_dvfs_dram_shuffle();
+	vcorefs_go_to_vcore_dvfs();
+#endif
+}
+
+
 wake_reason_t spm_go_to_sodi3(u32 spm_flags, u32 spm_data, u32 sodi3_flags)
 {
 	u32 sec = 2;
@@ -370,7 +377,7 @@ wake_reason_t spm_go_to_sodi3(u32 spm_flags, u32 spm_data, u32 sodi3_flags)
 
 	spm_sodi3_footprint(SPM_SODI3_ENTER);
 
-	if (spm_get_sodi_mempll() == 1)
+	if (spm_get_sodi_mempll() == MEMPLL_CG_MODE)
 		spm_flags |= SPM_FLAG_SODI_CG_MODE;	/* CG mode */
 	else
 		spm_flags &= ~SPM_FLAG_SODI_CG_MODE;	/* PDN mode */
@@ -378,7 +385,7 @@ wake_reason_t spm_go_to_sodi3(u32 spm_flags, u32 spm_data, u32 sodi3_flags)
 	update_pwrctrl_pcm_flags(&spm_flags);
 	set_pwrctrl_pcm_flags(pwrctrl, spm_flags);
 
-	pwrctrl->timer_val = sec * 32768;
+	pwrctrl->timer_val = PCM_SEC_TO_TICK(sec);
 
 #ifdef CONFIG_MTK_WD_KICKER
 	wd_ret = get_wd_api(&wd_api);
@@ -498,14 +505,8 @@ UNLOCK_SPM:
 	}
 #endif
 
-#if defined(CONFIG_ARCH_MT6797)
-	if (wr != WR_UART_BUSY) {
-		spm_sodi3_footprint(SPM_SODI3_REKICK_VCORE);
-		spm_write(PCM_CON1, SPM_REGWR_CFG_KEY | (spm_read(PCM_CON1) & ~PCM_TIMER_EN_LSB));
-		__spm_backup_vcore_dvfs_dram_shuffle();
-		vcorefs_go_to_vcore_dvfs();
-	}
-#endif
+	if (wr != WR_UART_BUSY)
+		rekick_sodi3_common_scenario();
 
 	spm_sodi3_reset_footprint();
 	return wr;

@@ -128,7 +128,7 @@ static bool mt_dvfsp_paused_by_idle;
 #endif
 
 #define NR_CMD_BUF		128
-#define LOG_BUF_LEN		500
+#define CMD_BUF_LEN		512
 #define DBG_BUF_LEN		4096
 
 /* FIXME: early porting */
@@ -2148,7 +2148,7 @@ void mt_idle_init(void)
 /* debugfs                 */
 /***************************/
 static char dbg_buf[DBG_BUF_LEN] = { 0 };
-static char cmd_buf[512] = { 0 };
+static char cmd_buf[CMD_BUF_LEN] = { 0 };
 
 /* idle_state */
 static int _idle_state_open(struct seq_file *s, void *data)
