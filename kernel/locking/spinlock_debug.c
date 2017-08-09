@@ -72,14 +72,18 @@ static void spin_bug(raw_spinlock_t *lock, const char *msg)
 {
 	char aee_str[50];
 
+	/*
 	if (!debug_locks_off())
 		return;
-
+	*/
 	spin_dump(lock, msg);
 	snprintf(aee_str, 50, "Spinlock %s :%s\n", current->comm, msg);
-	if (!strcmp(msg, "bad magic")) {
+	if ((!strcmp(msg, "bad magic")) || (!strcmp(msg, "already unlocked"))
+		|| (!strcmp(msg, "wrong owner")) || (!strcmp(msg, "wrong CPU"))) {
+		pr_emerg("%s\n", aee_str);
 		pr_emerg("[spindebug] maybe use an un-initial spin_lock or mem corrupt\n");
-		pr_emerg("[spindebug] bad magic:%08x, should be %08x\n", lock->magic, SPINLOCK_MAGIC);
+		pr_emerg("[spindebug] maybe already unlocked or wrong owner or wrong CPU\n");
+		pr_emerg("[spindebug] maybe bad magic:%08x, should be %08x\n", lock->magic, SPINLOCK_MAGIC);
 		pr_emerg(">>>>>>>>>>>>>> Let's KE <<<<<<<<<<<<<<\n");
 		BUG_ON(1);
 	}
