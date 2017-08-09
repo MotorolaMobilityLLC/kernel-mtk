@@ -978,7 +978,7 @@ static inline void dump_md_image(int md_id, void *start_addr, u32 offset, u32 le
 
 }
 
-
+static int check_if_bypass_header(struct file *filp, int *img_size);
 static int load_std_firmware(int md_id, struct file *filp, struct ccci_image_info *img)
 {
 	void __iomem *start;
@@ -990,40 +990,88 @@ static int load_std_firmware(int md_id, struct file *filp, struct ccci_image_inf
 	void *end_addr;
 	const int size_per_read = 1024 * 1024;
 	const int size = 1024;
+	int img_size = 0;
+	int hdr_size = 0;
+	int curr_read;
 
 	curr_fs = get_fs();
 	set_fs(KERNEL_DS);
 
 	load_addr = img->address;
-	filp->f_pos = img->offset;
 
-	while (1) {
-		/* Map 1M memory */
-		start = ioremap_nocache((load_addr + read_size), size_per_read);
-		/*CCCI_UTIL_DBG_MSG_WITH_ID(md_id, "map 0x%p --> 0x%p\n", (void*)(load_addr+read_size), start); */
-		if (start <= 0) {
-			CCCI_UTIL_ERR_MSG_WITH_ID(md_id, "image ioremap fail: %p\n", start);
-			set_fs(curr_fs);
-			return -CCCI_ERR_LOAD_IMG_NOMEM;
+	if (img->offset != 0)
+		filp->f_pos = img->offset;
+	else {
+		hdr_size = check_if_bypass_header(filp, &img_size);
+		if (hdr_size != 0) {
+			img->size = img_size;
+			filp->f_pos = hdr_size;
+		} else
+			filp->f_pos = 0; /* move offset back to 0 */
+	}
+
+	if (hdr_size) {
+		CCCI_UTIL_ERR_MSG("read size according to header(%d)\n", img_size);
+		while (1) {
+			/* Map 1M memory */
+			start = ioremap_nocache((load_addr + read_size), size_per_read);
+			if (start <= 0) {
+				CCCI_UTIL_ERR_MSG_WITH_ID(md_id, "image ioremap fail: %p\n", start);
+				set_fs(curr_fs);
+				return -CCCI_ERR_LOAD_IMG_NOMEM;
+			}
+
+			if (size_per_read > (img_size-read_size))
+				curr_read = img_size-read_size;
+			else
+				curr_read = size_per_read;
+			ret = (int)filp->f_op->read(filp, start, curr_read, &filp->f_pos);
+			/*make sure image size isn't 0 */
+			if ((ret < 0) || (ret > curr_read) || ((ret == 0) && (read_size == 0))) {
+				CCCI_UTIL_ERR_MSG_WITH_ID(md_id, "image read fail: size=%d+\n", ret);
+				ret = -CCCI_ERR_LOAD_IMG_FILE_READ;
+				goto error;
+			} else if (ret == curr_read) {
+				read_size += ret;
+				iounmap(start);
+				CCCI_UTIL_ERR_MSG_WITH_ID(md_id, "image read num %d\n", ret);
+				if (ret == 0)
+					break;
+			} else {
+				iounmap(start);
+				CCCI_UTIL_ERR_MSG_WITH_ID(md_id, "image read num %d--\n", ret);
+				break;
+			}
 		}
+	} else {
+		CCCI_UTIL_ERR_MSG("legacy load\n");
+		while (1) {
+			/* Map 1M memory */
+			start = ioremap_nocache((load_addr + read_size), size_per_read);
+			if (start <= 0) {
+				CCCI_UTIL_ERR_MSG_WITH_ID(md_id, "image ioremap fail: %p\n", start);
+				set_fs(curr_fs);
+				return -CCCI_ERR_LOAD_IMG_NOMEM;
+			}
 
-		ret = (int)filp->f_op->read(filp, start, size_per_read, &filp->f_pos);
-		/*make sure image size isn't 0 */
-		if ((ret < 0) || (ret > size_per_read) || ((ret == 0) && (read_size == 0))) {
-			CCCI_UTIL_ERR_MSG_WITH_ID(md_id, "image read fail: size=%d\n", ret);
-			ret = -CCCI_ERR_LOAD_IMG_FILE_READ;
-			goto error;
-		} else if (ret == size_per_read) {
-			read_size += ret;
-			iounmap(start);
-		} else {
-			read_size += ret;
-			/* Note here, signatured image has file tail info. */
-			img->size = read_size - img->tail_length;
-			CCCI_UTIL_DBG_MSG_WITH_ID(md_id, "%s, image size=0x%x, read size:%d, tail:%d\n",
+			ret = (int)filp->f_op->read(filp, start, size_per_read, &filp->f_pos);
+			/*make sure image size isn't 0 */
+			if ((ret < 0) || (ret > size_per_read) || ((ret == 0) && (read_size == 0))) {
+				CCCI_UTIL_ERR_MSG_WITH_ID(md_id, "image read fail: size=%d\n", ret);
+				ret = -CCCI_ERR_LOAD_IMG_FILE_READ;
+				goto error;
+			} else if (ret == size_per_read) {
+				read_size += ret;
+				iounmap(start);
+			} else {
+				read_size += ret;
+				/* Note here, signatured image has file tail info. */
+				img->size = read_size - img->tail_length;
+				CCCI_UTIL_DBG_MSG_WITH_ID(md_id, "%s, image size=0x%x, read size:%d, tail:%d\n",
 						  img->file_name, img->size, read_size, img->tail_length);
-			iounmap(start);
-			break;
+				iounmap(start);
+				break;
+			}
 		}
 	}
 
@@ -1311,4 +1359,55 @@ int md_capability(int md_id, int wm_id, int curr_md_type)
 		return 0;
 	}
 	return -3;
+}
+
+#define IMG_MAGIC		0x58881688
+#define EXT_MAGIC		0x58891689
+
+#define IMG_NAME_SIZE		32
+#define IMG_HDR_SIZE		512
+typedef union {
+	struct {
+		unsigned int magic;	/* always IMG_MAGIC */
+		unsigned int dsize;	/* image size, image header and padding are not included */
+		char name[IMG_NAME_SIZE];
+		unsigned int maddr;	/* image load address in RAM */
+		unsigned int mode;	/* maddr is counted from the beginning or end of RAM */
+		/* extension */
+		unsigned int ext_magic;	/* always EXT_MAGIC */
+		unsigned int hdr_size;	/* header size is 512 bytes currently, but may extend in the future */
+		unsigned int hdr_version; /* see HDR_VERSION */
+		unsigned int img_type;	/* please refer to #define beginning with SEC_IMG_TYPE_ */
+		unsigned int img_list_end; /* end of image list? 0: this image is followed by another image 1: end */
+		unsigned int align_size; /* image size alignment setting in bytes, 16 by default for AES encryption */
+		unsigned int dsize_extend; /* high word of image size for 64 bit address support */
+		unsigned int maddr_extend; /* high word of image load address in RAM for 64 bit address support */
+	} info;
+	unsigned char data[IMG_HDR_SIZE];
+} prt_img_hdr_t;
+
+int check_if_bypass_header(struct file *filp, int *img_size)
+{
+	char buf[64];
+	int ret;
+	prt_img_hdr_t *hdr_ptr;
+
+	filp->f_pos = 0; /* make sure read from 0 */
+
+	ret = (int)filp->f_op->read(filp, buf, 64, &filp->f_pos);
+	if (ret != 64) {
+		CCCI_UTIL_ERR_MSG("Can't read enough data(%d)\n", ret);
+		return 0;
+	}
+
+	hdr_ptr = (prt_img_hdr_t *)buf;
+	if ((hdr_ptr->info.magic == IMG_MAGIC) && (hdr_ptr->info.ext_magic == EXT_MAGIC)) {
+		CCCI_UTIL_ERR_MSG("This image has header, bypass %d bytes\n", (int)hdr_ptr->info.hdr_size);
+		if (img_size)
+			*img_size = hdr_ptr->info.dsize;
+		return (int)hdr_ptr->info.hdr_size;
+	}
+
+	CCCI_UTIL_ERR_MSG("This image does not find header, no need bypass\n");
+	return 0;
 }
