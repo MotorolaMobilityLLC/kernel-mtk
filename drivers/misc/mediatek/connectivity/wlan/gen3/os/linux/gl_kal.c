@@ -2578,7 +2578,7 @@ kalQoSFrameClassifierAndPacketInfo(IN P_GLUE_INFO_T prGlueInfo,
 
 	default:
 		/* 4 <4> Handle 802.3 format if LEN <= 1500 */
-		if (u4PacketLen <= ETH_802_3_MAX_LEN)
+		if (u2EtherType <= ETH_802_3_MAX_LEN)
 			prTxPktInfo->u2Flag |= BIT(ENUM_PKT_802_3);
 		break;
 	}
