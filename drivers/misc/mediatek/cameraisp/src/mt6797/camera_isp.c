@@ -4319,6 +4319,7 @@ typedef struct {
 /*  */
 /* isr dbg log , sw isr response counter , +1 when sw recieve 1 sof isr. */
 static volatile MUINT32 sof_count[ISP_IRQ_TYPE_AMOUNT] = {0};
+volatile int Vsync_cnt[2] = {0, 0};
 
 /* keep current frame status */
 static volatile CAM_FrameST FrameStatus[ISP_IRQ_TYPE_AMOUNT] = {0};
@@ -6308,7 +6309,34 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 			}
 		}
 		break;
-	default: {
+	case ISP_GET_VSYNC_CNT:
+		if (copy_from_user(&DebugFlag[0], (void *)Param, sizeof(MUINT32)) != 0) {
+			LOG_ERR("get cur sof from user fail");
+			Ret = -EFAULT;
+		} else {
+			switch (DebugFlag[0]) {
+			case ISP_IRQ_TYPE_INT_CAM_A_ST:
+				DebugFlag[1] = Vsync_cnt[0];
+				break;
+			case ISP_IRQ_TYPE_INT_CAM_B_ST:
+				DebugFlag[1] = Vsync_cnt[1];
+				break;
+			default:
+				LOG_ERR("err TG(0x%x)\n", DebugFlag[0]);
+				Ret = -EFAULT;
+				break;
+			}
+		}
+		if (copy_to_user((void *)Param, &DebugFlag[1], sizeof(MUINT32)) != 0) {
+			LOG_ERR("copy to user fail");
+			Ret = -EFAULT;
+		}
+		break;
+	case ISP_RESET_VSYNC_CNT:
+		Vsync_cnt[0] = Vsync_cnt[1] = 0;
+		break;
+	default:
+	{
 		LOG_ERR("Unknown Cmd(%d)\n", Cmd);
 		Ret = -EPERM;
 		break;
@@ -6693,6 +6721,8 @@ static long ISP_ioctl_compat(struct file *filp, unsigned int cmd, unsigned long 
 	case ISP_UPDATE_BURSTQNUM:
 	case ISP_QUERY_BURSTQNUM:
 	case ISP_DUMP_REG:
+	case ISP_GET_VSYNC_CNT:
+	case ISP_RESET_VSYNC_CNT:
 		return filp->f_op->unlocked_ioctl(filp, cmd, arg);
 	default:
 		return -ENOIOCTLCMD;
@@ -11171,14 +11201,18 @@ static irqreturn_t ISP_Irq_CAM_A(MINT32 Irq, void *DeviceId)
 		IRQ_LOG_KEEPER(module, m_CurrentPPB, _LOG_INF, \
 			       "CAMA P1_HW_DON_%d\n", \
 			       (sof_count[module]) ? \
-			       (sof_count[module] - 1) : (sof_count[module]));
+				   (sof_count[module] - 1) : (sof_count[module]));
 	}
 
 	spin_lock(&(IspInfo.SpinLockIrq[module]));
+	if (IrqStatus & VS_INT_ST) {
+		Vsync_cnt[0]++;
+		LOG_INF("CAMA N3D:0x%x\n", Vsync_cnt[0]);
+	}
 	if (IrqStatus & SW_PASS1_DON_ST) {
-		sec = cpu_clock(0);     /* ns */
-		do_div(sec, 1000);    /* usec */
-		usec = do_div(sec, 1000000);    /* sec and usec */
+		sec = cpu_clock(0);	/* ns */
+		do_div(sec, 1000);	  /* usec */
+		usec = do_div(sec, 1000000);	/* sec and usec */
 		/* update pass1 done time stamp for eis user(need match with the time stamp in image header) */
 		IspInfo.IrqInfo.LastestSigTime_usec[module][10] = (unsigned int)(usec);
 		IspInfo.IrqInfo.LastestSigTime_sec[module][10] = (unsigned int)(sec);
@@ -11353,14 +11387,18 @@ static irqreturn_t ISP_Irq_CAM_B(MINT32  Irq, void *DeviceId)
 		IRQ_LOG_KEEPER(module, m_CurrentPPB, _LOG_INF, \
 			       "CAMB P1_HW_DON_%d\n", \
 			       (sof_count[module]) ? \
-			       (sof_count[module] - 1) : (sof_count[module]));
+				   (sof_count[module] - 1) : (sof_count[module]));
 	}
 
 	spin_lock(&(IspInfo.SpinLockIrq[module]));
+	if (IrqStatus & VS_INT_ST) {
+		Vsync_cnt[1]++;
+		/* LOG_INF("CAMB N3D:0x%x\n",Vsync_cnt[1]); */
+	}
 	if (IrqStatus & SW_PASS1_DON_ST) {
-		sec = cpu_clock(0);     /* ns */
-		do_div(sec, 1000);    /* usec */
-		usec = do_div(sec, 1000000);    /* sec and usec */
+		sec = cpu_clock(0);	/* ns */
+		do_div(sec, 1000);	  /* usec */
+		usec = do_div(sec, 1000000);	/* sec and usec */
 		/* update pass1 done time stamp for eis user(need match with the time stamp in image header) */
 		IspInfo.IrqInfo.LastestSigTime_usec[module][10] = (unsigned int)(usec);
 		IspInfo.IrqInfo.LastestSigTime_sec[module][10] = (unsigned int)(sec);

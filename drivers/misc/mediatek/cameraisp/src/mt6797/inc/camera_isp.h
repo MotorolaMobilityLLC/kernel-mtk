@@ -487,6 +487,8 @@ typedef enum {
 	ISP_CMD_FLUSH_IRQ_REQUEST, /* flush signal */
 	ISP_CMD_GET_START_TIME,
 	ISP_CMD_VF_LOG, /* dbg only, prt log on kernel when vf_en is driven */
+	ISP_CMD_GET_VSYNC_CNT,
+	ISP_CMD_RESET_VSYNC_CNT,
 } ISP_CMD_ENUM;
 
 
@@ -525,6 +527,8 @@ typedef enum {
 
 #define ISP_WAKELOCK_CTRL           _IOWR(ISP_MAGIC, ISP_CMD_WAKELOCK_CTRL, unsigned long)
 #define ISP_VF_LOG                  _IOW(ISP_MAGIC, ISP_CMD_VF_LOG,         unsigned char*)
+#define ISP_GET_VSYNC_CNT           _IOWR(ISP_MAGIC, ISP_CMD_GET_VSYNC_CNT,      unsigned int)
+#define ISP_RESET_VSYNC_CNT         _IOW(ISP_MAGIC, ISP_CMD_RESET_VSYNC_CNT,      unsigned int)
 
 #ifdef CONFIG_COMPAT
 #define COMPAT_ISP_READ_REGISTER    _IOWR(ISP_MAGIC, ISP_CMD_READ_REG,      compat_ISP_REG_IO_STRUCT)
