@@ -485,9 +485,17 @@ static ssize_t ppm_hica_power_state_proc_write(struct file *file, const char __u
 	if (!buf)
 		return -EINVAL;
 
-	if (!kstrtoint(buf, 10, &state))
+	if (!kstrtoint(buf, 10, &state)) {
+#ifdef DISABLE_CLUSTER_MIGRATION
+		if (state == PPM_POWER_STATE_L_ONLY || state == PPM_POWER_STATE_4L_LL)
+			ppm_warn("Invalid state(%d) since cluster migration is disabled!\n", state);
+		else
+			fix_power_state = (state == -1) ? PPM_POWER_STATE_NONE : state;
+#else
 		fix_power_state = (state == -1) ? PPM_POWER_STATE_NONE : state;
-	else
+#endif
+		ppm_info("@%s: fix_power_state = %s\n", __func__, ppm_get_power_state_name(fix_power_state));
+	} else
 		ppm_err("echo (state idx) > /proc/ppm/policy/hica_power_state\n");
 
 	free_page((unsigned long)buf);

@@ -372,12 +372,16 @@ static ssize_t ppm_root_cluster_proc_write(struct file *file, const char __user 
 		return -EINVAL;
 
 	if (!kstrtoint(buf, 10, &cluster)) {
+#ifdef DISABLE_CLUSTER_MIGRATION
+		ppm_warn("Cannot set root cluster since cluster migration is disabled!\n");
+#else
 		ppm_lock(&ppm_main_info.lock);
 		ppm_main_info.fixed_root_cluster = (cluster >= (int)ppm_main_info.cluster_num) ? -1 : cluster;
 		ppm_unlock(&ppm_main_info.lock);
 
 		if (ppm_main_info.fixed_root_cluster != -1)
 			ppm_hica_fix_root_cluster_changed(ppm_main_info.fixed_root_cluster);
+#endif
 	} else
 		ppm_err("echo (cluster_id) > /proc/ppm/policy/hica_root_cluster\n");
 

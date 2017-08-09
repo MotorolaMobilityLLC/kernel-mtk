@@ -788,6 +788,11 @@ enum ppm_power_state ppm_judge_state_by_user_limit(enum ppm_power_state cur_stat
 		break;
 	}
 
+#ifdef DISABLE_CLUSTER_MIGRATION
+	if (new_state == PPM_POWER_STATE_L_ONLY || new_state == PPM_POWER_STATE_4L_LL)
+		new_state = PPM_POWER_STATE_4LL_L;
+#endif
+
 	ppm_ver("Judge: output --> [%s]\n", ppm_get_power_state_name(new_state));
 
 	return new_state;
