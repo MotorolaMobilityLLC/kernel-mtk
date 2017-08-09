@@ -426,17 +426,6 @@ static void disp_pwm_test_pin_mux(void)
 	const unsigned long reg_base = pwm_get_reg_base(DISP_PWM1);
 
 #ifdef CONFIG_MTK_CLKMGR
-	mt_set_gpio_mode(GPIO55, GPIO_MODE_07);  /* For DVT PIN MUX verification only, not normal path */
-	mt_set_gpio_dir(GPIO55, GPIO_DIR_OUT);   /* For DVT PIN MUX verification only, not normal path */
-
-	mt_set_gpio_mode(GPIO69, GPIO_MODE_01); /* For DVT PIN MUX verification only, not normal path */
-	mt_set_gpio_dir(GPIO69, GPIO_DIR_OUT);  /* For DVT PIN MUX verification only, not normal path */
-
-	mt_set_gpio_mode(GPIO129, GPIO_MODE_02); /* For DVT PIN MUX verification only, not normal path */
-	mt_set_gpio_dir(GPIO129, GPIO_DIR_OUT);  /* For DVT PIN MUX verification only, not normal path */
-
-	enable_clock(MT_CG_PERI_DISP_PWM, "PWM");
-
 #else
 	disp_clk_enable(DISP_PWM);
 	disp_dts_gpio_select_state(DTS_GPIO_STATE_PWM_TEST_PINMUX_55);
