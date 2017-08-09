@@ -8,3 +8,10 @@ config MTK_CLKMGR
           disabling, and querying status. If this config is not set,
           system will use COMMON_CLK instead.
 
+config MTK_DISABLE_PICACHU
+        bool "Disable Picachu"
+        default n
+        ---help---
+          PICACHU (PI CAlibration and CHaracterization Utility) aims
+          at the voltage calibration during booting. It increases
+	  the voltage when needed.
