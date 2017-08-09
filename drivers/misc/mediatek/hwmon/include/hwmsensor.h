@@ -64,6 +64,8 @@
 #define SENSOR_STRING_TYPE_BRINGTOSEE               "android.sensor.bring_to_see"
 #define SENSOR_TYPE_ANSWER_CALL          (44)
 #define SENSOR_STRING_TYPE_ANSWERCALL               "android.sensor.answer_call"
+#define SENSOR_TYPE_STATIONARY          (45)
+#define SENSOR_STRING_TYPE_STATIONARY               "android.sensor.stationary"
 
 /*---------------------------------------------------------------------------*/
 #define ID_BASE							0
@@ -106,7 +108,8 @@
 #define ID_SHAKE                                        (ID_BASE+SENSOR_TYPE_SHAKE-1)
 #define ID_BRINGTOSEE                                   (ID_BASE+SENSOR_TYPE_BRINGTOSEE-1)
 #define ID_ANSWER_CALL                                   (ID_BASE+SENSOR_TYPE_ANSWER_CALL-1)
-#define ID_SENSOR_MAX_HANDLE	  (ID_BASE+SENSOR_TYPE_ANSWER_CALL-1)
+#define ID_STATIONARY                                   (ID_BASE+SENSOR_TYPE_STATIONARY-1)
+#define ID_SENSOR_MAX_HANDLE	  (ID_BASE+SENSOR_TYPE_STATIONARY-1)
 #define ID_NONE							    (ID_SENSOR_MAX_HANDLE+1)
 
 #define ID_OFFSET                           (1)
@@ -278,7 +281,9 @@
 #define PEDO_INPUTDEV_NAME               "m_pedo_input"
 #define PEDO_MISC_DEV_NAME               "m_pedo_misc"
 
-
+#define GES_PL_DEV_NAME                 "m_ges_pl"
+#define GES_INPUTDEV_NAME               "m_ges_input"
+#define GES_MISC_DEV_NAME               "m_ges_misc"
 
 #define EVENT_TYPE_SENSOR				0x01
 #define EVENT_TYPE_SENSOR_EXT				0x02
@@ -293,6 +298,9 @@
 #define EVENT_SENSOR_GRAVITY			SENSOR_PRESSURE
 #define EVENT_SENSOR_LINEAR_ACCELERATION		SENSOR_TEMPRERATURE
 #define EVENT_SENSOR_ROTATION_VECTOR	SENSOR_PROXIMITY
+#define EVENT_TYPE_INPK_VALUE            0x1
+#define EVENT_TYPE_STATIONARY_VALUE      0x2
+
 /*-----------------------------------------------------------------------------*/
 
 enum {

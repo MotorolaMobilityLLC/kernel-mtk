@@ -54,6 +54,7 @@ obj-$(CONFIG_CUSTOM_KERNEL_PICK_UP_SENSOR)	+= pick_up_sensor/
 obj-$(CONFIG_CUSTOM_KERNEL_SHAKE_SENSOR)	+= shake_sensor/
 obj-$(CONFIG_CUSTOM_KERNEL_FACE_DOWN_SENSOR)	+= face_down_sensor/
 obj-$(CONFIG_CUSTOM_KERNEL_IN_POCKET_SENSOR)	+= in_pocket_sensor/
+obj-$(CONFIG_CUSTOM_KERNEL_GESTURE_SENSOR) += gesture/
 obj-$(CONFIG_CUSTOM_KERNEL_PEDOMETER)	+= pedometer/
 obj-$(CONFIG_CUSTOM_KERNEL_HEART)	+= heart_rate_sensor/
 obj-$(CONFIG_CUSTOM_KERNEL_TILT_DETECTOR_SENSOR)	+= tilt_detector_sensor/
