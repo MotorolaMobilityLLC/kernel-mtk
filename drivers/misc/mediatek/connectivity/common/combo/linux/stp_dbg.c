@@ -958,12 +958,11 @@ INT32 wcn_core_dump_nl(P_WCN_CORE_DUMP_T dmp, PUINT8 buf, INT32 len)
 static VOID stp_dbg_dump_data(PUINT8 pBuf, PINT8 title, INT32 len)
 {
 	INT32 k = 0;
-	PUINT8 str = NULL;
+	char str[240] = {""};
 	INT32 strp = 0;
 	INT32 strlen = 0;
 	pr_warn(" %s-len:%d\n", title, len);
 	/* pr_warn("    ", title, len); */
-	str = (PUINT8)osal_malloc(len);
 	for (k = 0; k < len; k++) {
 		if (strp < 200) {
 			strlen = osal_sprintf(&str[strp], "0x%02x ", pBuf[k]);
@@ -975,8 +974,6 @@ static VOID stp_dbg_dump_data(PUINT8 pBuf, PINT8 title, INT32 len)
 	}
 	osal_sprintf(&str[strp], "--end\n");
 	pr_warn("%s", str);
-	if (str)
-		osal_free(str);
 }
 
 
