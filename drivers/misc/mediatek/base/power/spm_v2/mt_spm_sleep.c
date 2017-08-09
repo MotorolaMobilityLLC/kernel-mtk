@@ -317,6 +317,8 @@ static void spm_suspend_pre_process(struct pwr_ctrl *pwrctrl)
 	unsigned int temp;
 #endif
 
+	__spm_pmic_low_iq_mode(1);
+
 	__spm_pmic_pg_force_on();
 
 	spm_pmic_power_mode(PMIC_PWR_SUSPEND, 0, 0);
@@ -362,6 +364,8 @@ static void spm_suspend_post_process(struct pwr_ctrl *pwrctrl)
 	/* set PMIC WRAP table for normal power control */
 	mt_spm_pmic_wrap_set_phase(PMIC_WRAP_PHASE_NORMAL);
 #endif
+
+	__spm_pmic_low_iq_mode(0);
 
 	__spm_pmic_pg_force_off();
 }

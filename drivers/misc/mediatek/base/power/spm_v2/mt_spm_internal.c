@@ -902,4 +902,17 @@ void __spm_pmic_pg_force_off(void)
 			MT6351_PMIC_RG_STRUP_VIO18_PG_ENB_SHIFT);
 }
 
+void __spm_pmic_low_iq_mode(int en)
+{
+#if defined(CONFIG_ARCH_MT6797)
+	if (en) {
+		pmic_config_interface_nolock(MT6351_VCORE_ANA_CON7, 1, 0x1, 1);
+		pmic_config_interface_nolock(MT6351_VGPU_ANA_CON7, 1, 0x1, 1);
+	} else {
+		pmic_config_interface_nolock(MT6351_VCORE_ANA_CON7, 0, 0x1, 1);
+		pmic_config_interface_nolock(MT6351_VGPU_ANA_CON7, 0, 0x1, 1);
+	}
+#endif
+}
+
 MODULE_DESCRIPTION("SPM-Internal Driver v0.1");
