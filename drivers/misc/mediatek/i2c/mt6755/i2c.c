@@ -22,6 +22,7 @@
 #include <asm/io.h>
 #include <mt-plat/aee.h>
 #include <mt-plat/sync_write.h>
+#include <mt-plat/mt_lpae.h>
 #ifdef CONFIG_MTK_CLKMGR
 #include <mach/mt_clkmgr.h>
 #endif
@@ -647,6 +648,8 @@ static void _i2c_write_reg(struct mt_i2c_t *i2c)
 					   i2c->pdmabase + OFFSET_RX_MEM_ADDR);
 			mt_reg_sync_writel(i2c->trans_data.data_size,
 					   i2c->pdmabase + OFFSET_RX_LEN);
+			if (enable_4G())
+				mt_reg_sync_writel(0x1, i2c->pdmabase + OFFSET_AWHP);
 		} else if (I2C_MASTER_WR == i2c->op) {
 			mt_reg_sync_writel(0x0000, i2c->pdmabase + OFFSET_INT_FLAG);
 			mt_reg_sync_writel(0x0000, i2c->pdmabase + OFFSET_CON);
@@ -654,6 +657,8 @@ static void _i2c_write_reg(struct mt_i2c_t *i2c)
 					   i2c->pdmabase + OFFSET_TX_MEM_ADDR);
 			mt_reg_sync_writel(i2c->trans_data.data_size,
 					   i2c->pdmabase + OFFSET_TX_LEN);
+			if (enable_4G())
+				mt_reg_sync_writel(0x1, i2c->pdmabase + OFFSET_ARHP);
 		} else {
 			mt_reg_sync_writel(0x0000, i2c->pdmabase + OFFSET_INT_FLAG);
 			mt_reg_sync_writel(0x0000, i2c->pdmabase + OFFSET_CON);
@@ -665,6 +670,10 @@ static void _i2c_write_reg(struct mt_i2c_t *i2c)
 					   i2c->pdmabase + OFFSET_TX_LEN);
 			mt_reg_sync_writel(i2c->trans_data.trans_auxlen,
 					   i2c->pdmabase + OFFSET_RX_LEN);
+			if (enable_4G()) {
+				mt_reg_sync_writel(0x1, i2c->pdmabase + OFFSET_AWHP);
+				mt_reg_sync_writel(0x1, i2c->pdmabase + OFFSET_ARHP);
+			}
 		}
 		/* record dma info for debug */
 		record_i2c_dma_info(i2c);
