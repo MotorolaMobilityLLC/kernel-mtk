@@ -5965,6 +5965,7 @@ int fbconfig_get_esd_check_test(UINT32 dsi_id, UINT32 cmd, UINT8 *buffer, UINT32
 		goto done;
 	}
 	primary_display_esd_check_enable(0);
+	disp_irq_esd_cust_bycmdq(0);
 	/* / 1: stop path */
 	_cmdq_stop_trigger_loop();
 	if (dpmgr_path_is_busy(pgc->dpmgr_handle))
@@ -5990,6 +5991,7 @@ int fbconfig_get_esd_check_test(UINT32 dsi_id, UINT32 cmd, UINT8 *buffer, UINT32
 	 * all cmdq event will be cleared after suspend */
 	cmdqCoreSetEvent(CMDQ_EVENT_DISP_WDMA0_EOF);
 	DISPCHECK("[ESD]start cmdq trigger loop[end]\n");
+	disp_irq_esd_cust_bycmdq(1);
 	primary_display_esd_check_enable(1);
 	_primary_path_unlock(__func__);
 
