@@ -711,7 +711,7 @@ static int ccmni_init(int md_id, ccmni_ccci_ops_t *ccci_info)
 	}
 
 	if ((ctlb->ccci_ops->md_ability & MODEM_CAP_CCMNI_IRAT) != 0) {
-		if (ctlb->ccci_ops->irat_md_id < 0 || ctlb->ccci_ops->irat_md_id > MAX_MD_NUM) {
+		if (ctlb->ccci_ops->irat_md_id < 0 || ctlb->ccci_ops->irat_md_id >= MAX_MD_NUM) {
 			CCMNI_ERR_MSG(md_id, "md%d IRAT fail because invalid irat md(%d)\n",
 				md_id, ctlb->ccci_ops->irat_md_id);
 			ret = -EINVAL;
@@ -738,9 +738,16 @@ static int ccmni_init(int md_id, ccmni_ccci_ops_t *ccci_info)
 				ccmni = ctlb->ccmni_inst[i];
 			else
 				ccmni = kzalloc(sizeof(ccmni_instance_t), GFP_KERNEL);
-			ccmni_irat_src = kzalloc(sizeof(ccmni_instance_t), GFP_KERNEL);
-			if (unlikely(ccmni == NULL || ccmni_irat_src == NULL)) {
+			if (unlikely(ccmni == NULL)) {
 				CCMNI_ERR_MSG(md_id, "alloc ccmni instance fail\n");
+				ret = -ENOMEM;
+				goto alloc_mem_fail;
+			}
+
+			ccmni_irat_src = kzalloc(sizeof(ccmni_instance_t), GFP_KERNEL);
+			if (unlikely(ccmni_irat_src == NULL)) {
+				CCMNI_ERR_MSG(md_id, "alloc ccmni_irat instance fail\n");
+				kfree(ccmni);
 				ret = -ENOMEM;
 				goto alloc_mem_fail;
 			}
