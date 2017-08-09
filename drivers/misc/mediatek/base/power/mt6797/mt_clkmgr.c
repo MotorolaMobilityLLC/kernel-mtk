@@ -226,7 +226,66 @@ int pll_is_on(int id)
 	return state;
 }
 EXPORT_SYMBOL(pll_is_on);
+void enable_armpll_ll(void)
+{
+	clk_writel(ARMCAXPLL0_PWR_CON0, (clk_readl(ARMCAXPLL0_PWR_CON0) | 0x01));
+	udelay(1);
+	clk_writel(ARMCAXPLL0_PWR_CON0, (clk_readl(ARMCAXPLL0_PWR_CON0) & 0xfffffffd));
+	clk_writel(ARMCAXPLL0_CON1, (clk_readl(ARMCAXPLL0_CON1) | 0xC0000000));
+	clk_writel(ARMCAXPLL0_CON0, (clk_readl(ARMCAXPLL0_CON0) | 0x01));
+	udelay(200);
+}
+EXPORT_SYMBOL(enable_armpll_ll);
+void disable_armpll_ll(void)
+{
+	clk_writel(ARMCAXPLL0_CON0, (clk_readl(ARMCAXPLL0_CON0) & 0xfffffffe));
+	clk_writel(ARMCAXPLL0_PWR_CON0, (clk_readl(ARMCAXPLL0_PWR_CON0) | 0x00000002));
+	clk_writel(ARMCAXPLL0_PWR_CON0, (clk_readl(ARMCAXPLL0_PWR_CON0) & 0xfffffffe));
+}
+EXPORT_SYMBOL(disable_armpll_ll);
 
+void enable_armpll_l(void)
+{
+	clk_writel(ARMCAXPLL1_PWR_CON0, (clk_readl(ARMCAXPLL1_PWR_CON0) | 0x01));
+	udelay(1);
+	clk_writel(ARMCAXPLL1_PWR_CON0, (clk_readl(ARMCAXPLL1_PWR_CON0) & 0xfffffffd));
+	clk_writel(ARMCAXPLL1_CON1, (clk_readl(ARMCAXPLL1_CON1) | 0xC0000000));
+	clk_writel(ARMCAXPLL1_CON0, (clk_readl(ARMCAXPLL1_CON0) | 0x01));
+	udelay(200);
+}
+EXPORT_SYMBOL(enable_armpll_l);
+void disable_armpll_l(void)
+{
+	clk_writel(ARMCAXPLL1_CON0, (clk_readl(ARMCAXPLL1_CON0) & 0xfffffffe));
+	clk_writel(ARMCAXPLL1_PWR_CON0, (clk_readl(ARMCAXPLL1_PWR_CON0) | 0x00000002));
+	clk_writel(ARMCAXPLL1_PWR_CON0, (clk_readl(ARMCAXPLL1_PWR_CON0) & 0xfffffffe));
+}
+EXPORT_SYMBOL(disable_armpll_l);
+void switch_armpll_l_hwmode(int enable)
+{
+	/* ARM CA15*/
+	if (enable == 1) {
+		clk_writel(MCU_PLL_CON0, (clk_readl(MCU_PLL_CON0) & 0xffffdddd));
+		clk_writel(MCU_PLL_CON1, (clk_readl(MCU_PLL_CON1) & 0xffffffdd));
+	} else{
+		clk_writel(MCU_PLL_CON0, (clk_readl(MCU_PLL_CON0) | 0x00002222));
+		clk_writel(MCU_PLL_CON1, (clk_readl(MCU_PLL_CON1) | 0x00000022));
+	}
+}
+EXPORT_SYMBOL(switch_armpll_l_hwmode);
+
+void switch_armpll_ll_hwmode(int enable)
+{
+	/* ARM CA7*/
+	if (enable == 1) {
+		clk_writel(MCU_PLL_CON0, (clk_readl(MCU_PLL_CON0) & 0xffffeeee));
+		clk_writel(MCU_PLL_CON1, (clk_readl(MCU_PLL_CON1) & 0xffffffee));
+	} else {
+		clk_writel(MCU_PLL_CON0, (clk_readl(MCU_PLL_CON0) | 0x00001111));
+		clk_writel(MCU_PLL_CON1, (clk_readl(MCU_PLL_CON1) | 0x00000011));
+	}
+}
+EXPORT_SYMBOL(switch_armpll_ll_hwmode);
 /************************************************
  **********         subsys part        **********
  ************************************************/

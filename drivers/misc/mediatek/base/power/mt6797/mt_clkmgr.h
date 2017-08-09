@@ -277,4 +277,11 @@ extern void mt_clkmgr_init(void);
 extern void slp_check_pm_mtcmos_pll(void);
 extern void clk_misc_cfg_ops(bool flag);
 
+/* pll API */
+extern void enable_armpll_ll(void);
+extern void disable_armpll_ll(void);
+extern void enable_armpll_l(void);
+extern void disable_armpll_l(void);
+extern void switch_armpll_l_hwmode(int enable);
+extern void switch_armpll_ll_hwmode(int enable);
 #endif
