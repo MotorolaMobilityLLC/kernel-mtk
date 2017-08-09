@@ -98,3 +98,22 @@ void mt_set_ppm_state_registerCB(met_set_ppm_state_funcMET pCB)
 }
 EXPORT_SYMBOL(mt_set_ppm_state_registerCB);
 
+void mt_ppm_set_5A_limit_throttle(bool enable)
+{
+	FUNC_ENTER(FUNC_LV_API);
+#ifdef PPM_VPROC_5A_LIMIT_CHECK
+	ppm_lock(&ppm_main_info.lock);
+	if (!ppm_main_info.is_5A_limit_enable) {
+		ppm_unlock(&ppm_main_info.lock);
+		goto end;
+	}
+	ppm_main_info.is_5A_limit_on = enable;
+	ppm_info("is_5A_limit_on = %d\n", ppm_main_info.is_5A_limit_on);
+	ppm_unlock(&ppm_main_info.lock);
+
+	ppm_task_wakeup();
+end:
+#endif
+	FUNC_EXIT(FUNC_LV_API);
+}
+

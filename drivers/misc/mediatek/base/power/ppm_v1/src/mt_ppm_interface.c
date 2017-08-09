@@ -425,7 +425,7 @@ static ssize_t ppm_root_cluster_proc_write(struct file *file, const char __user 
 			ppm_hica_fix_root_cluster_changed(ppm_main_info.fixed_root_cluster);
 #endif
 	} else
-		ppm_err("echo (cluster_id) > /proc/ppm/policy/hica_root_cluster\n");
+		ppm_err("echo (cluster_id) > /proc/ppm/root_cluster\n");
 
 	free_page((unsigned long)buf);
 	return count;
@@ -450,6 +450,68 @@ end:
 	return 0;
 }
 
+#ifdef PPM_VPROC_5A_LIMIT_CHECK
+static int ppm_5A_limit_enable_proc_show(struct seq_file *m, void *v)
+{
+	seq_printf(m, "%d\n", ppm_main_info.is_5A_limit_enable);
+
+	return 0;
+}
+
+static ssize_t ppm_5A_limit_enable_proc_write(struct file *file, const char __user *buffer,
+					size_t count, loff_t *pos)
+{
+	int enable;
+
+	char *buf = ppm_copy_from_user_for_proc(buffer, count);
+
+	if (!buf)
+		return -EINVAL;
+
+	if (!kstrtoint(buf, 10, &enable)) {
+		ppm_lock(&ppm_main_info.lock);
+		ppm_main_info.is_5A_limit_enable = (enable == 0) ? false : true;
+		ppm_info("is_5A_limit_enable = %d\n", ppm_main_info.is_5A_limit_enable);
+		ppm_unlock(&ppm_main_info.lock);
+
+		ppm_task_wakeup();
+	} else
+		ppm_err("echo 1(enable)/0(disable) > /proc/ppm/5A_limit_enable\n");
+
+	free_page((unsigned long)buf);
+	return count;
+}
+
+static int ppm_5A_limit_onoff_proc_show(struct seq_file *m, void *v)
+{
+	seq_printf(m, "%d\n", ppm_main_info.is_5A_limit_on);
+
+	return 0;
+}
+
+static ssize_t ppm_5A_limit_onoff_proc_write(struct file *file, const char __user *buffer,
+					size_t count, loff_t *pos)
+{
+	int onoff;
+
+	char *buf = ppm_copy_from_user_for_proc(buffer, count);
+
+	if (!buf)
+		return -EINVAL;
+
+	if (!kstrtoint(buf, 10, &onoff)) {
+		if (!onoff)
+			mt_ppm_set_5A_limit_throttle(false);
+		else
+			mt_ppm_set_5A_limit_throttle(true);
+	} else
+		ppm_err("echo 1(on)/0(off) > /proc/ppm/5A_limit_onoff\n");
+
+	free_page((unsigned long)buf);
+	return count;
+}
+#endif
+
 PROC_FOPS_RW(func_debug);
 PROC_FOPS_RW(debug);
 PROC_FOPS_RW(enabled);
@@ -459,6 +521,10 @@ PROC_FOPS_RW(policy_status);
 PROC_FOPS_RW(mode);
 PROC_FOPS_RW(root_cluster);
 PROC_FOPS_RO(dump_dvfs_table);
+#ifdef PPM_VPROC_5A_LIMIT_CHECK
+PROC_FOPS_RW(5A_limit_enable);
+PROC_FOPS_RW(5A_limit_onoff);
+#endif
 
 int ppm_procfs_init(void)
 {
@@ -480,6 +546,10 @@ int ppm_procfs_init(void)
 		PROC_ENTRY(policy_status),
 		PROC_ENTRY(mode),
 		PROC_ENTRY(root_cluster),
+#ifdef PPM_VPROC_5A_LIMIT_CHECK
+		PROC_ENTRY(5A_limit_enable),
+		PROC_ENTRY(5A_limit_onoff),
+#endif
 	};
 
 	dir = proc_mkdir("ppm", NULL);

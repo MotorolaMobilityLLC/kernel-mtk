@@ -55,6 +55,11 @@ struct ppm_data ppm_main_info = {
 	.fixed_root_cluster = -1,
 	.min_power_budget = ~0,
 
+#ifdef PPM_VPROC_5A_LIMIT_CHECK
+	.is_5A_limit_enable = true,
+	.is_5A_limit_on = false,
+#endif
+
 	.dvfs_tbl_type = DVFS_TABLE_TYPE_FY,
 
 	.ppm_pm_ops = {
@@ -762,6 +767,28 @@ static void ppm_main_calc_new_limit(void)
 		);
 	}
 
+#ifdef PPM_VPROC_5A_LIMIT_CHECK
+	if (ppm_main_info.is_5A_limit_enable && ppm_main_info.is_5A_limit_on) {
+		for (i = 0; i < c_req->cluster_num; i++) {
+			if (c_req->cpu_limit[i].max_cpufreq_idx > get_cluster_max_cpufreq_idx(i)
+				|| c_req->cpu_limit[i].max_cpu_core < get_cluster_max_cpu_core(i))
+				break;
+		}
+
+		/* apply 5A throttle since freq and core are not limit yet */
+		if (i == c_req->cluster_num) {
+			for (i = 0; i < c_req->cluster_num; i++) {
+				c_req->cpu_limit[i].max_cpufreq_idx = PPM_5A_LIMIT_FREQ_IDX;
+				if (c_req->cpu_limit[i].min_cpufreq_idx < PPM_5A_LIMIT_FREQ_IDX)
+					c_req->cpu_limit[i].min_cpufreq_idx = PPM_5A_LIMIT_FREQ_IDX;
+				if (c_req->cpu_limit[i].has_advise_freq &&
+					c_req->cpu_limit[i].advise_cpufreq_idx < PPM_5A_LIMIT_FREQ_IDX)
+					c_req->cpu_limit[i].advise_cpufreq_idx = PPM_5A_LIMIT_FREQ_IDX;
+			}
+		}
+	}
+#endif
+
 	/* fill root cluster */
 	c_req->root_cluster = ppm_get_root_cluster_by_state(ppm_main_info.cur_power_state);
 
@@ -812,6 +839,13 @@ static enum ppm_power_state ppm_main_hica_state_decision(void)
 	final_state = cur_hica_state;
 
 	ppm_main_info.min_power_budget = ~0;
+
+#ifdef PPM_IC_SEGMENT_CHECK
+	if (ppm_main_info.fix_state_by_segment != PPM_POWER_STATE_NONE) {
+		final_state = ppm_main_info.fix_state_by_segment;
+		goto skip_pwr_check;
+	}
+#endif
 
 	/* For power budget related policy: find the min power budget */
 	/* For other policies: use callback to decide the state for each policy */
@@ -1347,6 +1381,10 @@ static int ppm_main_data_init(void)
 	wake_up_process(ppm_main_info.ppm_task);
 	ppm_info("@%s: ppm task start success, pid: %d\n", __func__,
 			ppm_main_info.ppm_task->pid);
+#endif
+
+#ifdef PPM_IC_SEGMENT_CHECK
+	ppm_main_info.fix_state_by_segment = ppm_check_fix_state_by_segment();
 #endif
 
 #ifdef CONFIG_MTK_RAM_CONSOLE

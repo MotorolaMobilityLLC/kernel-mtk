@@ -232,6 +232,17 @@ static ssize_t ppm_userlimit_max_cpu_core_proc_write(struct file *file, const ch
 			goto out;
 		}
 
+#ifdef PPM_IC_SEGMENT_CHECK
+		if (!max_core) {
+			if ((id == 0 && ppm_main_info.fix_state_by_segment == PPM_POWER_STATE_LL_ONLY)
+				|| (id == 1 && ppm_main_info.fix_state_by_segment == PPM_POWER_STATE_L_ONLY)) {
+				ppm_err("@%s: Cannot disable cluster %d due to fix_state_by_segment is %s\n",
+					__func__, id, ppm_get_power_state_name(ppm_main_info.fix_state_by_segment));
+				goto out;
+			}
+		}
+#endif
+
 		ppm_lock(&userlimit_policy.lock);
 
 		if (!userlimit_policy.is_enabled) {

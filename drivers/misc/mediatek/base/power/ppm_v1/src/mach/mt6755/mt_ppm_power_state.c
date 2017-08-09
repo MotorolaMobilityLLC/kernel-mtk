@@ -765,6 +765,13 @@ void ppm_limit_check_for_user_limit(enum ppm_power_state cur_state, struct ppm_p
 				req->limit[0].min_cpu_core = 0;
 				req->limit[1].min_cpu_core = sum;
 				ppm_ver("Judge: merge LL and L min core = %d\n", sum);
+#ifdef PPM_IC_SEGMENT_CHECK
+			} else if (ppm_main_info.fix_state_by_segment == PPM_POWER_STATE_L_ONLY) {
+				req->limit[0].min_cpu_core = 0;
+				req->limit[1].min_cpu_core = min(sum, get_cluster_max_cpu_core(1));
+				ppm_ver("Judge: merge LL and L min core = %d(sum = %d)\n",
+					req->limit[1].min_cpu_core, sum);
+#endif
 			} else {
 				ppm_ver("Judge: cannot merge to L! LL min = %d, L min = %d\n",
 					LL_min_core, L_min_core);
@@ -806,4 +813,24 @@ unsigned int ppm_get_root_cluster_by_state(enum ppm_power_state cur_state)
 
 	return root_cluster;
 }
+
+#ifdef PPM_IC_SEGMENT_CHECK
+enum ppm_power_state ppm_check_fix_state_by_segment(void)
+{
+	unsigned int segment = get_devinfo_with_index(21) & 0xFF;
+	enum ppm_power_state fix_state = PPM_POWER_STATE_NONE;
+
+	switch (segment) {
+	case 0x43: /* fix L only */
+		fix_state = PPM_POWER_STATE_L_ONLY;
+		break;
+	default:
+		break;
+	}
+
+	ppm_info("segment = 0x%x, fix_state = %s\n", segment, ppm_get_power_state_name(fix_state));
+
+	return fix_state;
+}
+#endif
 

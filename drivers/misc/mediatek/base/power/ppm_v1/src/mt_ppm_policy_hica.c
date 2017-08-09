@@ -121,6 +121,11 @@ void mt_ppm_hica_update_algo_data(unsigned int cur_loads,
 		cur_state == PPM_POWER_STATE_NONE)
 		goto end;
 
+#ifdef PPM_IC_SEGMENT_CHECK
+	if (ppm_main_info.fix_state_by_segment != PPM_POWER_STATE_NONE)
+		goto end;
+#endif
+
 	/* skip HICA if DVFS is not ready (we cannot get current freq...) */
 	if (!ppm_main_info.client_info[PPM_CLIENT_DVFS].limit_cb)
 		goto end;

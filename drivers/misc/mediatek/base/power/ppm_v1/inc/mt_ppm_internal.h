@@ -238,10 +238,20 @@ struct ppm_data {
 	/* status */
 	enum ppm_mode cur_mode;
 	enum ppm_power_state cur_power_state;
+#ifdef PPM_IC_SEGMENT_CHECK
+	enum ppm_power_state fix_state_by_segment;
+#endif
 	bool is_enabled;
 	bool is_in_suspend;
 	int fixed_root_cluster;
 	unsigned int min_power_budget;
+
+#ifdef PPM_VPROC_5A_LIMIT_CHECK
+	/* enable = 0: skip 5A limit check */
+	/* on/off is controlled by thermal */
+	bool is_5A_limit_enable;
+	bool is_5A_limit_on;
+#endif
 
 	/* platform settings */
 	unsigned int cluster_num;
