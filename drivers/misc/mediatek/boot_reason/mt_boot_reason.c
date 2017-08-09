@@ -37,7 +37,7 @@ static atomic_t g_br_errcnt = ATOMIC_INIT(0);
 static atomic_t g_br_status = ATOMIC_INIT(0);
 
 #ifdef CONFIG_OF
-static int dt_get_boot_reason(unsigned long node, const char *uname, int depth, void *data)
+static int __init dt_get_boot_reason(unsigned long node, const char *uname, int depth, void *data)
 {
 	char *ptr = NULL, *br_ptr = NULL;
 

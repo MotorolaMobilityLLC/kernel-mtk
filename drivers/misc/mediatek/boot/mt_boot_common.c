@@ -40,7 +40,7 @@ struct tag_bootmode {
 	u32 tag;
 	u32 bootmode;
 };
-static int dt_get_boot_common(unsigned long node, const char *uname, int depth, void *data)
+static int __init dt_get_boot_common(unsigned long node, const char *uname, int depth, void *data)
 {
 	struct tag_bootmode *tags = NULL;
 
