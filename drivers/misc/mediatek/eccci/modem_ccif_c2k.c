@@ -446,6 +446,34 @@ static inline void md_ccif_tx_rx_printk(struct ccci_modem *md, struct sk_buff *s
 	};
 }
 
+static int ccif_check_flow_ctrl(struct ccci_modem *md, unsigned int qno, struct ccci_ringbuf *rx_buf)
+{
+	struct md_ccif_ctrl *md_ctrl = (struct md_ccif_ctrl *)md->private_data;
+	int is_busy, buf_size = 0;
+	int ret = 0;
+
+	is_busy = ccif_is_md_queue_busy(md_ctrl, qno);
+	if (is_busy < 0) {
+		CCCI_DEBUG_LOG(md->index, TAG, "ccif flow ctrl: check modem return %d\n", is_busy);
+		return 0;
+	}
+	if (is_busy > 0) {
+		buf_size = rx_buf->rx_control.write - rx_buf->rx_control.read;
+		if (buf_size < 0)
+			buf_size += rx_buf->rx_control.length;
+		if (buf_size < rx_buf->rx_control.length / 2) {
+			if (md->md_state == READY) {
+				ret = ccci_send_msg_to_md(md, CCCI_CONTROL_TX, C2K_FLOW_CTRL_MSG, qno, 0);
+				if (ret < 0)
+					CCCI_ERROR_LOG(md->index, TAG, "fail to resume md Q%d, ret0x%x\n", qno, ret);
+				else
+					CCCI_NORMAL_LOG(md->index, TAG, "flow ctrl: notify md resume Q%d\n", qno);
+			}
+		}
+	}
+	return ret;
+}
+
 static void md_ccif_traffic_monitor_func(unsigned long data)
 {
 	struct ccci_modem *md = (struct ccci_modem *)data;
@@ -607,6 +635,9 @@ static int ccif_rx_collect(struct md_ccif_queue *queue, int budget,
 				queue->debug_id = 0;
 			}
 			ccci_ringbuf_move_rpointer(md->index, rx_buf, pkg_size);
+			if (likely(md->capability & MODEM_CAP_TXBUSY_STOP))
+				ccif_check_flow_ctrl(md, queue->index, rx_buf);
+
 			if (ccci_h->channel == CCCI_MD_LOG_RX) {
 				rx_data_cnt += pkg_size - 16;
 				pkg_num++;
@@ -772,12 +803,22 @@ static void md_ccif_reset_queue(struct ccci_modem *md)
 {
 	int i;
 	struct md_ccif_ctrl *md_ctrl = (struct md_ccif_ctrl *)md->private_data;
+	unsigned long flags;
 
 	CCCI_NORMAL_LOG(md->index, TAG, "md_ccif_reset_queue\n");
 	for (i = 0; i < QUEUE_NUM; ++i) {
+		spin_lock_irqsave(&md_ctrl->rxq[i].rx_lock, flags);
 		ccci_ringbuf_reset(md->index, md_ctrl->rxq[i].ringbuf, 0);
+		spin_unlock_irqrestore(&md_ctrl->rxq[i].rx_lock, flags);
+
+		spin_lock_irqsave(&md_ctrl->txq[i].tx_lock, flags);
 		ccci_ringbuf_reset(md->index, md_ctrl->txq[i].ringbuf, 1);
+		spin_unlock_irqrestore(&md_ctrl->txq[i].tx_lock, flags);
+
+		ccif_wake_up_tx_queue(md, i);
+		md_ctrl->txq[i].wakeup = 0;
 	}
+	ccif_reset_busy_queue(md_ctrl);
 }
 
 static void md_ccif_exception(struct ccci_modem *md, HIF_EX_STAGE stage)
@@ -945,6 +986,7 @@ static inline void md_ccif_queue_struct_init(struct md_ccif_queue *queue,
 	spin_lock_init(&queue->tx_lock);
 	atomic_set(&queue->rx_on_going, 0);
 	queue->debug_id = 0;
+	queue->wakeup = 0;
 	queue->budget = RX_BUGDET;
 }
 
@@ -1145,12 +1187,11 @@ static int md_ccif_op_send_request(struct ccci_modem *md, unsigned char qno,
 	struct md_ccif_ctrl *md_ctrl = (struct md_ccif_ctrl *)md->private_data;
 	struct md_ccif_queue *queue = NULL;
 	/*struct ccci_header *ccci_h = (struct ccci_header *)req->skb->data; */
-	int ret;
+	int ret, md_flow_ctrl = 0;
 	static char lp_qno;
 	/*struct ccci_header *ccci_h; */
 	unsigned long flags;
 	int ccci_to_c2k_ch = 0;
-	int retry_count = 0;
 	struct ccci_header *ccci_h;
 
 	if (qno == 0xFF)
@@ -1237,38 +1278,36 @@ static int md_ccif_op_send_request(struct ccci_modem *md, unsigned char qno,
 		/*send ccif request */
 		md_ccif_send(md, queue->ccif_ch);
 		spin_unlock_irqrestore(&queue->tx_lock, flags);
-		if (queue->debug_id == 1) {
-			CCCI_NORMAL_LOG(md->index, TAG,
-				     "TX:OK on q%d,txw=%d,txr=%d,rxw=%d,rxr=%d\n",
-				     qno, queue->ringbuf->tx_control.write,
-				     queue->ringbuf->tx_control.read,
-				     queue->ringbuf->rx_control.write,
-				     queue->ringbuf->rx_control.read);
-
-			queue->debug_id = 0;
-		}
 	} else {
-		spin_unlock_irqrestore(&queue->tx_lock, flags);
-		if (queue->debug_id == 0) {
-			CCCI_NORMAL_LOG(md->index, TAG,
-				     "TX:busy on q%d,txw=%d,txr=%d,rxw=%d,rxr=%d\n",
-				     qno, queue->ringbuf->tx_control.write,
-				     queue->ringbuf->tx_control.read,
-				     queue->ringbuf->rx_control.write,
-				     queue->ringbuf->rx_control.read);
-			queue->debug_id = 1;
-		}
-		if (IS_PASS_SKB(md, qno))
-			return -EBUSY;
-		else if (req && req->blocking) {
-			if (retry_count++ < 2000000) {
-				udelay(5); /*5us * 2000000 = 10s*/
+		md_flow_ctrl = ccif_is_md_flow_ctrl_supported(md_ctrl);
+		if (likely(md->capability & MODEM_CAP_TXBUSY_STOP) && md_flow_ctrl > 0) {
+			ccif_set_busy_queue(md_ctrl, qno);
+			/*double check tx buffer after set busy bit. it is to avoid tx buffer is empty now*/
+			if (unlikely(ccci_ringbuf_writeable(md->index, queue->ringbuf, skb->len) > 0)) {
+				ccif_clear_busy_queue(md_ctrl, qno);
+				spin_unlock_irqrestore(&queue->tx_lock, flags);
 				goto retry;
 			} else {
-				CCCI_INF_MSG(md->index, TAG, "retry fail on q%d\n", qno);
-				/*return EBUSY for blocking write?*/
-				return -EBUSY;
+				CCCI_NORMAL_LOG(md->index, TAG, "flow ctrl: TX busy on Q%d\n", queue->index);
+				ccci_broadcast_queue_state(md, TX_FULL, OUT, queue->index);
 			}
+		} else
+			CCCI_NORMAL_LOG(md->index, TAG, "flow ctrl is invalid, cap = %d, md_flow_ctrl = %d\n",
+				md->capability, md_flow_ctrl);
+
+		spin_unlock_irqrestore(&queue->tx_lock, flags);
+
+		if (req && req->blocking) {
+			if (md_flow_ctrl > 0) {
+				CCCI_NORMAL_LOG(md->index, TAG, "flow ctrl: Q%d is blocking, skb->len = %d\n",
+					queue->index, skb->len);
+				ret = wait_event_interruptible_exclusive(queue->req_wq, (queue->wakeup != 0));
+				queue->wakeup = 0;
+				if (ret == -ERESTARTSYS)
+					return -EINTR;
+			}
+			CCCI_NORMAL_LOG(md->index, TAG, "tx retry for Q%d\n", queue->index);
+				goto retry;
 		} else {
 			if (md->data_usb_bypass)
 				return -ENOMEM;
@@ -1644,6 +1683,10 @@ static int md_ccif_ring_buf_init(struct ccci_modem *md)
 		buf += bufsize;
 		md_ctrl->total_smem_size += bufsize;
 	}
+	/*flow control zone is behind ring buffer zone*/
+	md_ctrl->flow_ctrl = (struct ccif_flow_control *)(md->smem_layout.ccci_ccif_smem_base_vir +
+		md_ctrl->total_smem_size);
+	md_ctrl->total_smem_size += sizeof(struct ccif_flow_control);
 	md->smem_layout.ccci_ccif_smem_size = md_ctrl->total_smem_size;
 	return 0;
 }

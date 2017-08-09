@@ -796,6 +796,7 @@ enum {
 	/*c2k ctrl msg start from 0x200*/
 	C2K_STATUS_IND_MSG = 0x201, /* for usb bypass */
 	C2K_STATUS_QUERY_MSG = 0x202, /* for usb bypass */
+	C2K_FLOW_CTRL_MSG = 0x205,
 	C2K_HB_MSG = 0x207,
 	C2K_CCISM_SHM_INIT = 0x209,
 	C2K_CCISM_SHM_INIT_ACK = 0x20A,

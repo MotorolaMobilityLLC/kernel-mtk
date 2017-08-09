@@ -1068,6 +1068,25 @@ static inline int ccci_port_ask_more_request(struct ccci_port *port)
 	return ret;
 }
 
+static inline int ccci_broadcast_queue_state(struct ccci_modem *md, MD_STATE state, DIRECTION dir, unsigned int index)
+{
+	struct ccci_port *port;
+	int i, match = 0;
+
+	for (i = 0; i < md->port_number; i++) {
+		port = md->ports + i;
+		/* consider network data/ack queue design */
+		if (md->md_state == EXCEPTION)
+			match = dir == OUT ? index == port->txq_exp_index : index == port->rxq_exp_index;
+		else
+			match = dir == OUT ? index == port->txq_index
+			    || index == (port->txq_exp_index & 0x0F) : index == port->rxq_index;
+		if (match && port->ops->md_state_notice)
+			port->ops->md_state_notice(port, (dir<<31)|(index<<16)|state);
+	}
+	return 0;
+}
+
 /* structure initialize */
 static inline void ccci_port_struct_init(struct ccci_port *port, struct ccci_modem *md)
 {

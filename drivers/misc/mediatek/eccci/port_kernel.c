@@ -65,6 +65,7 @@
 #endif
 
 #include "modem_cldma.h"
+#include "modem_ccif.h"
 
 static void ccci_ee_info_dump(struct ccci_modem *md);
 static void ccci_aed(struct ccci_modem *md, unsigned int dump_flag, char *aed_str, int db_opt);
@@ -627,6 +628,13 @@ static void control_msg_handler(struct ccci_port *port, struct ccci_request *req
 			md->dtr_state = 0;
 	} else if (ccci_h->data[1] == C2K_CCISM_SHM_INIT_ACK && md->index == MD_SYS3) {
 		ccci_update_md_boot_stage(md, MD_ACK_SCP_INIT);
+	} else if (ccci_h->data[1] == C2K_FLOW_CTRL_MSG && md->index == MD_SYS3) {
+		CCCI_NORMAL_LOG(md->index, KERN, "flow ctrl msg: queue = 0x%x\n", ccci_h->reserved);
+		if (likely(md->capability & MODEM_CAP_TXBUSY_STOP && (ccci_h->reserved < QUEUE_NUM))) {
+			ccif_wake_up_tx_queue(md, ccci_h->reserved);
+			/*special for net queue*/
+			ccci_broadcast_queue_state(md, TX_IRQ, OUT, ccci_h->reserved);
+		}
 	} else {
 		CCCI_ERROR_LOG(md->index, KERN, "receive unknown data from CCCI_CONTROL_RX = %d\n", ccci_h->data[1]);
 	}

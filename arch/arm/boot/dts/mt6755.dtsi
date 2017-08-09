@@ -1095,7 +1095,7 @@
 			cell-index = <2>;
 			ccif,major = <169>;
 			ccif,minor_base = <0>;
-			ccif,capability = <0>;
+			ccif,capability = <2>;	//tx busy stop
 			mediatek,md_smem_size = <0x400000>; //md share memory size
 			clocks = <&scpsys SCP_SYS_MD2>;
 			clock-names = "scp-sys-md2-main";
