@@ -326,9 +326,12 @@ int __attribute__((weak)) localtimer_set_next_event(unsigned long evt)
 #endif
 
 static char log_buf[500];
+static char log_buf_2[500];
 
 static unsigned long long idle_block_log_prev_time;
 static unsigned int idle_block_log_time_criteria = 5000;	/* 5 sec */
+static unsigned long long idle_cnt_dump_prev_time;
+static unsigned int idle_cnt_dump_criteria = 10000;			/* 10 sec */
 
 /* Slow Idle */
 static unsigned int     slidle_block_mask[NR_GRPS] = {0x0};
@@ -345,6 +348,7 @@ static unsigned int     soidle3_timer_cmp;
 static unsigned int     soidle3_time_critera = 65000; /* 5ms */
 static unsigned int     soidle3_block_time_critera = 30000; /* 30sec */
 static unsigned long    soidle3_cnt[NR_CPUS] = {0};
+static unsigned long    soidle3_last_cnt[NR_CPUS] = {0};
 static unsigned long    soidle3_block_cnt[NR_REASONS] = {0};
 static unsigned long long soidle3_block_prev_time;
 static bool             soidle3_by_pass_cg;
@@ -364,6 +368,7 @@ static unsigned int     soidle_timer_cmp;
 static unsigned int     soidle_time_critera = 26000; /* 2ms */
 static unsigned int     soidle_block_time_critera = 30000; /* 30sec */
 static unsigned long    soidle_cnt[NR_CPUS] = {0};
+static unsigned long    soidle_last_cnt[NR_CPUS] = {0};
 static unsigned long    soidle_block_cnt[NR_REASONS] = {0};
 static unsigned long long soidle_block_prev_time;
 static bool             soidle_by_pass_cg;
@@ -384,6 +389,7 @@ static unsigned int     dpidle_timer_cmp;
 static unsigned int     dpidle_time_critera = 26000;
 static unsigned int     dpidle_block_time_critera = 30000; /* default 30sec */
 static unsigned long    dpidle_cnt[NR_CPUS] = {0};
+static unsigned long    dpidle_last_cnt[NR_CPUS] = {0};
 static unsigned long    dpidle_f26m_cnt[NR_CPUS] = {0};
 static unsigned long    dpidle_block_cnt[NR_REASONS] = {0};
 static unsigned long long dpidle_block_prev_time;
@@ -1761,9 +1767,88 @@ static int (*idle_select_handlers[NR_TYPES]) (int) = {
 	rgidle_select_handler,
 };
 
+void dump_idle_cnt_in_interval(int cpu)
+{
+	int i = 0;
+	char *p = log_buf;
+	char *p2 = log_buf_2;
+	unsigned long long idle_cnt_dump_curr_time = 0;
+	bool have_dpidle = false;
+	bool have_soidle3 = false;
+	bool have_soidle = false;
+
+	if (idle_cnt_dump_prev_time == 0)
+		idle_cnt_dump_prev_time = idle_get_current_time_ms();
+
+	idle_cnt_dump_curr_time = idle_get_current_time_ms();
+
+	if (!(cpu == 0 || cpu == 4))
+		return;
+
+	if (!((idle_cnt_dump_curr_time - idle_cnt_dump_prev_time) > idle_cnt_dump_criteria))
+		return;
+
+	/* dump idle count */
+	/* deepidle */
+	p = log_buf;
+	for (i = 0; i < nr_cpu_ids; i++) {
+		if ((dpidle_cnt[i] - dpidle_last_cnt[i]) != 0) {
+			p += sprintf(p, "[%d] = %lu, ", i, dpidle_cnt[i] - dpidle_last_cnt[i]);
+			have_dpidle = true;
+		}
+
+		dpidle_last_cnt[i] = dpidle_cnt[i];
+	}
+
+	if (have_dpidle)
+		p2 += sprintf(p2, "DP: %s --- ", log_buf);
+	else
+		p2 += sprintf(p2, "DP: No enter --- ");
+
+	/* sodi3 */
+	p = log_buf;
+	for (i = 0; i < nr_cpu_ids; i++) {
+		if ((soidle3_cnt[i] - soidle3_last_cnt[i]) != 0) {
+			p += sprintf(p, "[%d] = %lu, ", i, soidle3_cnt[i] - soidle3_last_cnt[i]);
+			have_soidle3 = true;
+		}
+
+		soidle3_last_cnt[i] = soidle3_cnt[i];
+	}
+
+	if (have_soidle3)
+		p2 += sprintf(p2, "SODI3: %s --- ", log_buf);
+	else
+		p2 += sprintf(p2, "SODI3: No enter --- ");
+
+	/* sodi3 */
+	p = log_buf;
+	for (i = 0; i < nr_cpu_ids; i++) {
+		if ((soidle_cnt[i] - soidle_last_cnt[i]) != 0) {
+			p += sprintf(p, "[%d] = %lu, ", i, soidle_cnt[i] - soidle_last_cnt[i]);
+			have_soidle = true;
+		}
+
+		soidle_last_cnt[i] = soidle_cnt[i];
+	}
+
+	if (have_soidle)
+		p2 += sprintf(p2, "SODI: %s --- ", log_buf);
+	else
+		p2 += sprintf(p2, "SODI: No enter --- ");
+
+	/* dump log */
+	idle_warn("%s\n", log_buf_2);
+
+	/* update time base */
+	idle_cnt_dump_prev_time = idle_cnt_dump_curr_time;
+}
+
 int mt_idle_select(int cpu)
 {
 	int i = NR_TYPES - 1;
+
+	dump_idle_cnt_in_interval(cpu);
 
 	for (i = 0; i < NR_TYPES; i++) {
 		if (idle_select_handlers[i] (cpu))
