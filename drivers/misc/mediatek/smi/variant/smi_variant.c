@@ -912,10 +912,10 @@ static void mtk_smi_common_put(struct device *smidev, bool pm)
 {
 	struct mtk_smi_common *smipriv = dev_get_drvdata(smidev);
 
-	clk_disable_unprepare(smipriv->clk_smi);
-	clk_disable_unprepare(smipriv->clk_apb);
 	if (pm)
 		pm_runtime_put(smidev);
+	clk_disable_unprepare(smipriv->clk_smi);
+	clk_disable_unprepare(smipriv->clk_apb);
 }
 
 static int _mtk_smi_larb_get(struct device *larbdev, bool pm)
@@ -996,7 +996,7 @@ static int mtk_smi_larb_runtime_suspend(struct device *dev)
 	ret |= clk_enable(larbpriv->clk_smi);
 	if (ret) {
 		dev_warn(dev, "runtime suspend clk fail %d\n", ret);
-		return ret;
+		return 0;
 	}
 	larb_reg_backup(idx);
 
@@ -1022,7 +1022,7 @@ static int mtk_smi_larb_runtime_resume(struct device *dev)
 	ret |= clk_enable(larbpriv->clk_smi);
 	if (ret) {
 		dev_warn(dev, "runtime resume clk fail %d\n", ret);
-		return ret;
+		return 0;
 	}
 	larb_reg_restore(idx);
 
@@ -1037,6 +1037,8 @@ static int mtk_smi_larb_runtime_resume(struct device *dev)
 static const struct dev_pm_ops mtk_smi_larb_ops = {
 	SET_RUNTIME_PM_OPS(mtk_smi_larb_runtime_suspend,
 			   mtk_smi_larb_runtime_resume, NULL)
+	SET_SYSTEM_SLEEP_PM_OPS(mtk_smi_larb_runtime_suspend,
+			   mtk_smi_larb_runtime_resume)
 };
 
 static int mtk_smi_larb_probe(struct platform_device *pdev)
