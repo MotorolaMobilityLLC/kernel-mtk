@@ -457,12 +457,12 @@ static irqreturn_t gpio_irq_cbp_excp_ind(int irq, void *data)
 
 	LOGPRT(LOG_ERR, "%s: receive c2k exception interrupt...\n", __func__);
 	spin_lock_irqsave(&cdata->modem->status_lock, flags);
-	if (cdata->modem->status != MD_OFF) {
+	if (cdata->modem->status != MD_OFF && cdata->modem->status != MD_EXCEPTION) {
 		cdata->modem->status = MD_EXCEPTION;
 		modem_notify_event(MDM_EVT_NOTIFY_EXCP);
 		queue_work(cbp_excp_ind->excp_wq, &cbp_excp_ind->excp_work);
 	} else {
-		LOGPRT(LOG_ERR, "%s: md off now, ignore this EE\n", __func__);
+		LOGPRT(LOG_ERR, "%s: md status is %u now, ignore this EE\n", __func__, cdata->modem->status);
 	}
 	spin_unlock_irqrestore(&cdata->modem->status_lock, flags);
 #if defined(CONFIG_MTK_LEGACY)
