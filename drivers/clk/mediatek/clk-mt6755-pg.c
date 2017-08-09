@@ -1605,7 +1605,7 @@ static int enable_subsys(enum subsys_id id)
 
 	BUG_ON(!sys);
 
-#if MT_CCF_BRINGUP
+#if 0				/*MT_CCF_BRINGUP */
 /*	pr_debug("[CCF] %s: sys=%s, id=%d\n", __func__, sys->name, id);*/
 	switch (id) {
 	case SYS_MD1:
@@ -1658,7 +1658,7 @@ static int disable_subsys(enum subsys_id id)
 
 	BUG_ON(!sys);
 
-#if MT_CCF_BRINGUP
+#if 0				/*MT_CCF_BRINGUP */
 /*	pr_debug("[CCF] %s: sys=%s, id=%d\n", __func__, sys->name, id);*/
 	switch (id) {
 	case SYS_DIS:
@@ -1730,7 +1730,7 @@ static void pg_disable(struct clk_hw *hw)
 static int pg_is_enabled(struct clk_hw *hw)
 {
 	struct mt_power_gate *pg = to_power_gate(hw);
-#if MT_CCF_BRINGUP
+#if 0				/*MT_CCF_BRINGUP */
 	return 1;
 #endif /* MT_CCF_BRINGUP */
 
@@ -1969,11 +1969,9 @@ static void __init mt_scpsys_init(struct device_node *node)
 	if (r)
 		pr_err("[CCF] %s:could not register clock provide\n", __func__);
 
-#if !MT_CCF_BRINGUP
 	/* subsys init: per modem owner request, disable modem power first */
-/*	disable_subsys(SYS_MD1);
-	disable_subsys(SYS_MD2);*/
-#endif /* !MT_CCF_BRINGUP */
+	disable_subsys(SYS_MD1);
+	disable_subsys(SYS_MD2);
 	spm_mtcmos_ctrl_mfg_async(STA_POWER_ON);
 	spm_mtcmos_ctrl_mfg2(STA_POWER_ON);
 }
