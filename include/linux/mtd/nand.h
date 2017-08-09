@@ -52,6 +52,19 @@ extern int nand_unlock(struct mtd_info *mtd, loff_t ofs, uint64_t len);
 #define NAND_MAX_CHIPS		8
 
 /*
+ * This constant declares the max. oobsize / page, which
+ * is supported now. If you add a chip with bigger oobsize/page
+ * adjust this accordingly.
+ */
+#define NAND_MAX_OOBSIZE	1024
+#define NAND_MAX_PAGESIZE	16384
+
+#ifdef CONFIG_MTK_MTD_NAND
+/* Using in cache mecahnism. As the minimum read size of device */
+#define NAND_MAX_SUBPAGE_SIZE       (1024)
+#define NAND_MAX_SUBPAGE_SPARE_SIZE (128)
+#endif
+/*
  * Constants for hardware specific CLE/ALE/NCE function
  *
  * These are bits which can be or'ed to set/clear multiple
@@ -513,6 +526,7 @@ struct nand_ecc_ctrl {
  * @ecccalc:	buffer pointer for calculated ECC, size is oobsize.
  * @ecccode:	buffer pointer for ECC read from flash, size is oobsize.
  * @databuf:	buffer pointer for data, size is (page size + oobsize).
+ * @subpagebuf:	buffer pointer for sub page read, cache mechanism.
  *
  * Do not change the order of buffers. databuf and oobrbuf must be in
  * consecutive order.
@@ -521,6 +535,9 @@ struct nand_buffers {
 	uint8_t	*ecccalc;
 	uint8_t	*ecccode;
 	uint8_t *databuf;
+#ifdef CONFIG_MTK_MTD_NAND
+	uint8_t subpagebuf[NAND_MAX_SUBPAGE_SIZE + NAND_MAX_SUBPAGE_SPARE_SIZE];
+#endif
 };
 
 /**
@@ -658,6 +675,30 @@ struct nand_chip {
 	int (*onfi_get_features)(struct mtd_info *mtd, struct nand_chip *chip,
 			int feature_addr, uint8_t *subfeature_para);
 	int (*setup_read_retry)(struct mtd_info *mtd, int retry_mode);
+#ifdef CONFIG_MTK_MTD_NAND
+	/*
+	* Accerate page read and erase process by using driver function call.
+	* Skip command send in mtd.
+	*/
+	int (*read_page)(struct mtd_info *mtd, struct nand_chip *chip,
+			u8 *buf, int page);
+	int (*erase_hw)(struct mtd_info *mtd, int page);
+	/*
+	* sub-page read related members
+	*/
+
+	/* subpage read will be triggered if this API is
+	* hooked by driver, otherwise normal page read
+	* will only be triggered.
+	*/
+	int (*read_subpage)(struct mtd_info *mtd, struct nand_chip *chip,
+			u8 *buf, int page, int subpage_begin, int subpage_cnt);
+
+	/* indicating subpage size, must be assigned in
+	* driver's initialization stage.
+	*/
+	int subpage_size;
+#endif
 
 	int chip_delay;
 	unsigned int options;
@@ -693,6 +734,7 @@ struct nand_chip {
 
 	uint8_t *oob_poi;
 	struct nand_hw_control *controller;
+	struct nand_ecclayout *ecclayout;
 
 	struct nand_ecc_ctrl ecc;
 	struct nand_buffers *buffers;
@@ -926,6 +968,17 @@ static inline int onfi_get_sync_timing_mode(struct nand_chip *chip)
 	return le16_to_cpu(chip->onfi_params.src_sync_timing_mode);
 }
 
+#ifdef CONFIG_MTK_MTD_NAND
+/* Record size read from FS for performance log. */
+struct mtd_perf_log {
+	unsigned int read_size_0_512;
+	unsigned int read_size_512_1K;
+	unsigned int read_size_1K_2K;
+	unsigned int read_size_2K_3K;
+	unsigned int read_size_3K_4K;
+	unsigned int read_size_Above_4K;
+};
+#endif
 /*
  * Check if it is a SLC nand.
  * The !nand_is_slc() can be used to check the MLC/TLC nand chips.
@@ -1012,4 +1065,17 @@ struct nand_sdr_timings {
 
 /* get timing characteristics from ONFI timing mode. */
 const struct nand_sdr_timings *onfi_async_timing_mode_to_sdr_timings(int mode);
+#ifdef CONFIG_MTK_MTD_NAND
+extern void nand_enable_clock(void);
+extern void nand_disable_clock(void);
+#endif
+
+#ifdef CONFIG_MTK_MLC_NAND_SUPPORT
+extern bool g_b2Die_CS;
+extern bool mtk_nand_IsRawPartition(loff_t logical_address);
+#endif
+
+#define PMT_POOL_SIZE (2)
+
+int nand_get_device(struct mtd_info *mtd, int new_state);
 #endif /* __LINUX_MTD_NAND_H */

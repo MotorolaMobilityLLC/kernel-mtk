@@ -48,6 +48,9 @@
 #include <linux/leds.h>
 #include <linux/io.h>
 #include <linux/mtd/partitions.h>
+#ifdef CONFIG_MTK_MTD_NAND
+#include <asm/cache.h>		/* for ARCH_DMA_MINALIGN */
+#endif
 
 /* Define default oob placement schemes for large and small page devices */
 static struct nand_ecclayout nand_oob_8 = {
@@ -93,8 +96,6 @@ static struct nand_ecclayout nand_oob_128 = {
 		 .length = 78} }
 };
 
-static int nand_get_device(struct mtd_info *mtd, int new_state);
-
 static int nand_do_write_oob(struct mtd_info *mtd, loff_t to,
 			     struct mtd_oob_ops *ops);
 
@@ -109,7 +110,24 @@ static int check_offs_len(struct mtd_info *mtd,
 {
 	struct nand_chip *chip = mtd->priv;
 	int ret = 0;
+#ifdef CONFIG_MTK_MLC_NAND_SUPPORT
+	int block_size;
 
+	if (mtk_nand_IsRawPartition(ofs))
+		block_size = (1ULL << (chip->phys_erase_shift - 1));
+	else
+		block_size = (1ULL << chip->phys_erase_shift);
+	/* Start address must align on block boundary */
+	if (ofs & (block_size - 1)) {
+		pr_debug("%s: unaligned address\n", __func__);
+		ret = -EINVAL;
+	}
+	/* Length must align on block boundary */
+	if (len & (block_size - 1)) {
+		pr_debug("%s: length not block aligned\n", __func__);
+		ret = -EINVAL;
+	}
+#else
 	/* Start address must align on block boundary */
 	if (ofs & ((1ULL << chip->phys_erase_shift) - 1)) {
 		pr_debug("%s: unaligned address\n", __func__);
@@ -121,7 +139,15 @@ static int check_offs_len(struct mtd_info *mtd,
 		pr_debug("%s: length not block aligned\n", __func__);
 		ret = -EINVAL;
 	}
+#endif
 
+#ifdef CONFIG_MTK_MTD_NAND
+	/* Do not allow past end of device */
+	if (ofs + len > (mtd->size + PMT_POOL_SIZE * mtd->erasesize)) {
+		pr_debug("%s: Past end of device\n", __func__);
+		ret = -EINVAL;
+	}
+#endif
 	return ret;
 }
 
@@ -131,18 +157,22 @@ static int check_offs_len(struct mtd_info *mtd,
  *
  * Release chip lock and wake up anyone waiting on the device.
  */
-static void nand_release_device(struct mtd_info *mtd)
+void nand_release_device(struct mtd_info *mtd)
 {
 	struct nand_chip *chip = mtd->priv;
 
 	/* Release the controller and the chip */
 	spin_lock(&chip->controller->lock);
 	chip->controller->active = NULL;
+#ifdef CONFIG_MTK_MTD_NAND
+	if (chip->state != FL_READY && chip->state != FL_PM_SUSPENDED)
+		nand_disable_clock();
+#endif
 	chip->state = FL_READY;
 	wake_up(&chip->controller->wq);
 	spin_unlock(&chip->controller->lock);
 }
-
+EXPORT_SYMBOL_GPL(nand_release_device);
 /**
  * nand_read_byte - [DEFAULT] read one byte from the chip
  * @mtd: MTD device structure
@@ -803,8 +833,7 @@ static void panic_nand_get_device(struct nand_chip *chip,
  *
  * Get the device and lock it for exclusive access
  */
-static int
-nand_get_device(struct mtd_info *mtd, int new_state)
+int nand_get_device(struct mtd_info *mtd, int new_state)
 {
 	struct nand_chip *chip = mtd->priv;
 	spinlock_t *lock = &chip->controller->lock;
@@ -818,6 +847,10 @@ retry:
 		chip->controller->active = chip;
 
 	if (chip->controller->active == chip && chip->state == FL_READY) {
+#ifdef CONFIG_MTK_MTD_NAND
+		if (new_state != FL_READY && new_state != FL_PM_SUSPENDED)
+			nand_enable_clock();
+#endif
 		chip->state = new_state;
 		spin_unlock(lock);
 		return 0;
@@ -863,6 +896,20 @@ static void panic_nand_wait(struct mtd_info *mtd, struct nand_chip *chip,
 	}
 }
 
+#ifdef CONFIG_MTK_MTD_NAND
+u8 mtk_nand_util_time_before(struct timeval *time_a, struct timeval *time_b)
+{
+	if (time_a->tv_sec < time_b->tv_sec)
+		return 1;
+
+	if (time_a->tv_sec > time_b->tv_sec)
+		return 0;
+
+	if (time_a->tv_usec < time_b->tv_usec)
+		return 1;
+	return 0;
+}				/* timeval_diff() */
+#endif
 /**
  * nand_wait - [DEFAULT] wait until the command is done
  * @mtd: MTD device structure
@@ -877,7 +924,22 @@ static int nand_wait(struct mtd_info *mtd, struct nand_chip *chip)
 
 	int status, state = chip->state;
 	unsigned long timeo = (state == FL_ERASING ? 400 : 20);
+#ifdef CONFIG_MTK_MTD_NAND
+	struct timeval timer_timeout, timer_cur;
+#endif
+#ifdef CONFIG_MTK_MTD_NAND
+	do_gettimeofday(&timer_timeout);
 
+	if (state == FL_ERASING)
+		timer_timeout.tv_usec += 400 * 1000;	/* 400 ms */
+	else
+		timer_timeout.tv_usec += 20 * 1000;	/* 20 ms */
+
+	if (timer_timeout.tv_usec >= 1000000) {
+		timer_timeout.tv_usec -= 1000000;
+		timer_timeout.tv_sec += 1;
+	}
+#endif
 	led_trigger_event(nand_led_trigger, LED_FULL);
 
 	/*
@@ -891,8 +953,20 @@ static int nand_wait(struct mtd_info *mtd, struct nand_chip *chip)
 	if (in_interrupt() || oops_in_progress)
 		panic_nand_wait(mtd, chip, timeo);
 	else {
+#ifdef CONFIG_MTK_MTD_NAND
+		/*
+		 * use non-jiffies-based method for timeout detection to prevent
+		 * jiffies issue due to dynamic tick (CONFIG_NO_HZ is on)
+		 */
+		while (1) {
+			do_gettimeofday(&timer_cur);
+
+			if (0 == mtk_nand_util_time_before(&timer_cur, &timer_timeout))
+				break;	/* timeout */
+#else
 		timeo = jiffies + msecs_to_jiffies(timeo);
 		while (time_before(jiffies, timeo)) {
+#endif
 			if (chip->dev_ready) {
 				if (chip->dev_ready(mtd))
 					break;
@@ -1492,6 +1566,9 @@ static uint8_t *nand_transfer_oob(struct nand_chip *chip, uint8_t *oob,
 	return NULL;
 }
 
+#ifdef CONFIG_MTK_MTD_NAND
+struct mtd_perf_log g_MtdPerfLog = { 0 };
+#endif
 /**
  * nand_setup_read_retry - [INTERN] Set the READ RETRY mode
  * @mtd: MTD device structure
@@ -1540,7 +1617,23 @@ static int nand_do_read_ops(struct mtd_info *mtd, loff_t from,
 	unsigned int max_bitflips = 0;
 	int retry_mode = 0;
 	bool ecc_fail = false;
+#ifdef CONFIG_MTK_MTD_NAND
+	if (readlen < 512) {
+		g_MtdPerfLog.read_size_0_512++;
+	} else if ((512 <= readlen) && (readlen < 1024)) {
+		g_MtdPerfLog.read_size_512_1K++;
+	} else if ((1024 <= readlen) && (readlen < 2048)) {
+		g_MtdPerfLog.read_size_1K_2K++;
+	} else if ((2048 <= readlen) && (readlen < 3072)) {
+		g_MtdPerfLog.read_size_2K_3K++;
+	} else if ((3072 <= readlen) && (readlen < 4096)) {
+		g_MtdPerfLog.read_size_3K_4K++;
+	} else {
+		g_MtdPerfLog.read_size_Above_4K +=
+		    ((readlen + mtd->writesize - 1) / mtd->writesize);
+	}
 
+#endif
 	chipnr = (int)(from >> chip->chip_shift);
 	chip->select_chip(mtd, chipnr);
 
@@ -1575,8 +1668,11 @@ static int nand_do_read_ops(struct mtd_info *mtd, loff_t from,
 						 __func__, buf);
 
 read_retry:
+#ifdef CONFIG_MTK_MTD_NAND
+			ret = chip->read_page(mtd, chip, bufpoi, page);
+#else
 			chip->cmdfunc(mtd, NAND_CMD_READ0, 0x00, page);
-
+#endif
 			/*
 			 * Now read the page into the buffer.  Absent an error,
 			 * the read methods return max bitflips per ecc step.
@@ -1700,6 +1796,442 @@ read_retry:
 	return max_bitflips;
 }
 
+#ifdef CONFIG_MTK_MTD_NAND
+
+/* #define _SNAND_SUBPAGE_READ_DBG */
+
+#define MTK_NSS_CACHEV_MAX_CNT      (CONFIG_MTK_NSS_CACHEV_MAX_CNT)
+
+int g_mtk_nss_cachev_cnt = 0;
+u32 g_mtk_nss_timestamp = 0;
+
+typedef struct {
+	int val;
+	unsigned int timestamp;
+	int part_begin;
+	int part_end;
+	u8 *buf;
+} mtk_nss_cachev_struct;
+
+mtk_nss_cachev_struct g_mtk_nss_cachev[MTK_NSS_CACHEV_MAX_CNT];
+
+void mtk_nss_add_cache(mtk_nss_cachev_struct *cache, int cache_idx, int target_val, int part_begin,
+		       int part_end, u32 *timestamp)
+{
+	cache[cache_idx].val = target_val;
+	cache[cache_idx].part_begin = part_begin;
+	cache[cache_idx].part_end = part_end;
+	cache[cache_idx].timestamp = *timestamp;
+	*timestamp = *timestamp + 1;
+
+#ifdef _SNAND_SUBPAGE_READ_DBG
+	pr_debug("[CacheV-I] Add,idx %d,page %d,begin %d,end %d,stamp %d\n", cache_idx, target_val,
+	       part_begin, part_end, *timestamp - 1);
+#endif
+}
+
+int mtk_nss_get_victim(mtk_nss_cachev_struct *cache)
+{
+	int i;
+	unsigned int min_timestamp = 0xFFFFFFFF;
+	int min_idx = -1;
+
+	for (i = 0; i < g_mtk_nss_cachev_cnt; i++) {
+		if (cache[i].val == -1)
+			return i;
+		if (cache[i].timestamp < min_timestamp) {
+			min_timestamp = cache[i].timestamp;
+			min_idx = i;
+		}
+	}
+
+#ifdef _SNAND_SUBPAGE_READ_DBG
+	pr_debug("[CacheV-I] GetVic,idx %d\n", min_idx);
+#endif
+
+	return min_idx;
+}
+
+void mtk_nss_invalidate_cache_by_val(mtk_nss_cachev_struct *cache, int target_val)
+{
+	int i;
+
+	for (i = 0; i < g_mtk_nss_cachev_cnt; i++) {
+		if (cache[i].val == target_val)
+			cache[i].val = -1;
+	}
+
+#ifdef _SNAND_SUBPAGE_READ_DBG
+	pr_debug("[CacheV-I] Invalidate,idx %d,val %d\n", i, target_val);
+#endif
+}
+
+void mtk_nss_invalidate_cache_by_idx(mtk_nss_cachev_struct *cache, int idx)
+{
+	cache[idx].val = -1;
+
+#ifdef _SNAND_SUBPAGE_READ_DBG
+	pr_debug("[CacheV-I] Invalidate,idx %d\n", idx);
+#endif
+}
+
+void mtk_nss_invalidate_all_cache(mtk_nss_cachev_struct *cache)
+{
+	int i;
+
+	for (i = 0; i < g_mtk_nss_cachev_cnt; i++)
+		cache[i].val = -1;
+
+#ifdef _SNAND_SUBPAGE_READ_DBG
+	pr_debug("[CacheV-I] Invalidate all\n");
+#endif
+}
+
+void mtk_nss_invalidate_cache_by_range(mtk_nss_cachev_struct *cache, int val_min, int val_max)
+{
+	int i;
+
+	for (i = 0; i < g_mtk_nss_cachev_cnt; i++) {
+		if ((cache[i].val >= val_min) && (cache[i].val <= val_max)) {
+			cache[i].val = -1;
+
+#ifdef _SNAND_SUBPAGE_READ_DBG
+			pr_debug("[CacheV-I] Invalidate idx %d (by range)\n", i);
+#endif
+		}
+	}
+}
+
+int mtk_nss_if_cache_hit(mtk_nss_cachev_struct *cache, int target_val, int part_begin,
+			 int part_end, uint32_t *timestamp, int *hit_type)
+{
+	int i;
+
+	for (i = 0; i < g_mtk_nss_cachev_cnt; i++) {
+		if (cache[i].val == target_val) {
+			if ((part_begin >= cache[i].part_begin) && (part_end <= cache[i].part_end))
+				*hit_type = 0;
+
+			else if (part_end <= cache[i].part_end)
+				*hit_type = 1;
+			else if (part_begin >= cache[i].part_begin)
+				*hit_type = 2;
+			else
+				*hit_type = 3;
+
+			*timestamp = *timestamp + 1;
+			cache[i].timestamp = *timestamp;
+
+#ifdef _SNAND_SUBPAGE_READ_DBG
+			pr_debug("[CacheV-I] Hit,idx %d,page %d,blk %d,begin %d,end %d,hit_type %d\n",
+			       i, cache[i].val, cache[i].val / 64, cache[i].part_begin,
+			       cache[i].part_end, *hit_type);
+#endif
+
+			return i;
+		}
+	}
+
+#ifdef _SNAND_SUBPAGE_READ_DBG
+	pr_debug("[CacheV-I] Miss,tar_page %d,begin %d,end %d\n", target_val, part_begin, part_end);
+#endif
+
+	*hit_type = -1;
+
+	return -1;
+}
+
+void mtk_nss_init_cache(struct mtd_info *mtd)
+{
+	struct nand_chip *chip = mtd->priv;
+	int j;
+
+	if (NULL != chip->read_subpage) {
+		for (j = 0; j < MTK_NSS_CACHEV_MAX_CNT; j++) {
+			g_mtk_nss_cachev[j].buf =
+			    kmalloc(mtd->writesize + ARCH_DMA_MINALIGN, GFP_KERNEL);
+
+			if (NULL != g_mtk_nss_cachev[j].buf) {
+				if ((unsigned long)(g_mtk_nss_cachev[j].buf) & (ARCH_DMA_MINALIGN -
+										1)) {
+					g_mtk_nss_cachev[j].buf =
+					    (u8 *) ((unsigned long)(g_mtk_nss_cachev[j].buf) +
+						    (ARCH_DMA_MINALIGN -
+						     ((unsigned long)(g_mtk_nss_cachev[j].
+								      buf) & (ARCH_DMA_MINALIGN -
+									      1))));
+				}
+
+				g_mtk_nss_cachev[j].val = -1;	/* initialize each CacheV */
+				g_mtk_nss_cachev[j].timestamp = 0;
+
+				pr_debug("[NSS] idx: %d, buf: 0x%lX\n", j,
+				       (unsigned long)(g_mtk_nss_cachev[j].buf));
+			} else {
+				break;	/* can't malloc, just leave */
+			}
+		}
+
+		g_mtk_nss_cachev_cnt = j;
+
+		pr_debug("[NSS] Init OK, cnt: %d, aligned size: %d\n", g_mtk_nss_cachev_cnt,
+		       ARCH_DMA_MINALIGN);
+	} else {
+		g_mtk_nss_cachev_cnt = 0;
+
+		pr_debug("[NSS] Disabled\n");
+	}
+}
+
+static int nand_do_read_ops_ex(struct mtd_info *mtd, loff_t from, struct mtd_oob_ops *ops)
+{
+	int chipnr, page, realpage, col, bytes, aligned;
+	struct nand_chip *chip = mtd->priv;
+	struct mtd_ecc_stats stats;
+	int ret = 0;
+	uint32_t readlen = ops->len;
+	uint32_t oobreadlen = ops->ooblen;
+	uint32_t max_oobsize = ops->mode == MTD_OPS_AUTO_OOB ? mtd->oobavail : mtd->oobsize;
+	uint8_t *bufpoi, *oob, *buf;
+
+	uint32_t total_byte_read = 0;
+	static int last_page = -1;
+	int subpage_begin, subpage_end;
+
+	int toread;
+	int hit_idx;
+	int victim_idx;
+	int hit_type;
+	int temp_int;
+
+	stats = mtd->ecc_stats;
+
+	chipnr = (int)(from >> chip->chip_shift);
+	chip->select_chip(mtd, chipnr);
+
+	realpage = (int)(from >> chip->page_shift);
+	page = realpage & chip->pagemask;
+
+	col = (int)(from & (mtd->writesize - 1));
+
+	buf = ops->datbuf;
+	oob = ops->oobbuf;
+
+#ifdef _SNAND_SUBPAGE_READ_DBG
+	pr_debug
+	    ("[CacheV] -MTD1,from %u,readlen %d,page %i,last_page %d,blk %d,col %d,buf %X,oob %X\n",
+	     (u32) from, readlen, page, last_page, page / 64, col, buf, oob);
+#endif
+
+	while (1) {
+		bytes = min(mtd->writesize - col, readlen);
+		aligned = (bytes == mtd->writesize);
+
+		if (likely(!oob)) {
+			col = (int)((from + total_byte_read) & (mtd->writesize - 1));
+			subpage_begin = col / chip->subpage_size;
+			subpage_end = (col + bytes - 1) / chip->subpage_size;
+
+			hit_idx =
+			    mtk_nss_if_cache_hit(g_mtk_nss_cachev, realpage, subpage_begin,
+						 subpage_end, &g_mtk_nss_timestamp, &hit_type);
+
+#ifdef _SNAND_SUBPAGE_READ_DBG
+/*			pr_debug
+			    ("[CacheV] -MTD2-1,from %u,page %i,blk %d,col %d,
+			    bytes %d,subbegin %d,subend %d,hit_idx %d,hit_type %d\n",
+			     (u32) (from + total_byte_read), page, page / 64, col, bytes,
+			     subpage_begin, subpage_end, hit_idx, hit_type);
+*/
+#endif
+
+			if (-1 != hit_idx) {
+				if (0 != hit_type) {
+					if (1 == hit_type) {
+						temp_int =
+						    g_mtk_nss_cachev[hit_idx].part_begin -
+						    subpage_begin;
+
+						ret =
+						    chip->read_subpage(mtd, chip,
+								       g_mtk_nss_cachev[hit_idx].
+								       buf +
+								       (subpage_begin *
+									chip->subpage_size), page,
+								       subpage_begin, temp_int);
+
+						g_mtk_nss_cachev[hit_idx].part_begin =
+						    subpage_begin;
+					} else if (hit_type == 2) {
+						temp_int =
+						    subpage_end -
+						    g_mtk_nss_cachev[hit_idx].part_end;
+
+						ret =
+						    chip->read_subpage(mtd, chip,
+								       g_mtk_nss_cachev[hit_idx].
+								       buf +
+								       ((g_mtk_nss_cachev[hit_idx].
+									 part_end +
+									 1) * chip->subpage_size),
+								       page,
+								       g_mtk_nss_cachev[hit_idx].
+								       part_end + 1, temp_int);
+
+						g_mtk_nss_cachev[hit_idx].part_end = subpage_end;
+					} else {
+						ret =
+						    chip->read_page(mtd, chip,
+								    g_mtk_nss_cachev[hit_idx].buf,
+								    page);
+
+						g_mtk_nss_cachev[hit_idx].part_begin = 0;
+						g_mtk_nss_cachev[hit_idx].part_end =
+						    ((mtd->writesize / chip->subpage_size) - 1);
+					}
+				}
+				/* NOTE: Perfect Match needs nothing else to do */
+
+				memcpy(buf, g_mtk_nss_cachev[hit_idx].buf + col, bytes);
+			} else {
+				victim_idx = mtk_nss_get_victim(g_mtk_nss_cachev);
+
+				if ((realpage == (last_page + 1)) ||	/* favor sequential read */
+				    ((subpage_end - subpage_begin + 1) ==
+				     (mtd->writesize / chip->subpage_size))) {
+					ret =
+					    chip->read_page(mtd, chip,
+							    g_mtk_nss_cachev[victim_idx].buf, page);
+
+					g_mtk_nss_cachev[victim_idx].part_begin = 0;
+					g_mtk_nss_cachev[victim_idx].part_end =
+					    ((mtd->writesize / chip->subpage_size) - 1);
+
+					mtk_nss_add_cache(g_mtk_nss_cachev, victim_idx, realpage, 0,
+							  (mtd->writesize / chip->subpage_size) - 1,
+							  &g_mtk_nss_timestamp);
+				} else {
+					temp_int = (subpage_end - subpage_begin + 1);
+
+					ret =
+					    chip->read_subpage(mtd, chip,
+							       g_mtk_nss_cachev[victim_idx].buf +
+							       (subpage_begin * chip->subpage_size),
+							       page, subpage_begin, temp_int);
+
+					mtk_nss_add_cache(g_mtk_nss_cachev, victim_idx, realpage,
+							  subpage_begin, subpage_end,
+							  &g_mtk_nss_timestamp);
+				}
+
+				memcpy(buf, g_mtk_nss_cachev[victim_idx].buf + col, bytes);
+			}
+		} else {
+			victim_idx = -1;
+
+			if (aligned)
+				bufpoi = buf;
+			else {
+				victim_idx = mtk_nss_get_victim(g_mtk_nss_cachev);
+
+				mtk_nss_invalidate_cache_by_idx(g_mtk_nss_cachev, victim_idx);
+
+				bufpoi = g_mtk_nss_cachev[victim_idx].buf;
+			}
+
+#ifdef _SNAND_SUBPAGE_READ_DBG
+			pr_debug("[CacheV] -MTD2-2,aligned %d,victim_idx %d\n", aligned, victim_idx);
+#endif
+
+			ret = chip->read_page(mtd, chip, bufpoi, page);
+
+			/* for data part */
+
+			if (!aligned && bytes)
+				memcpy(buf, bufpoi + col, bytes);
+			/* for oob */
+			{
+				toread = min(oobreadlen, max_oobsize);
+
+				if (toread) {
+					oob = nand_transfer_oob(chip, oob, ops, toread);
+
+					oobreadlen -= toread;
+				}
+			}
+
+			if (-1 != victim_idx)
+				mtk_nss_invalidate_cache_by_idx(g_mtk_nss_cachev, victim_idx);
+		}
+
+		/* read error, discard cache and leave */
+		if (ret < 0) {
+			mtk_nss_invalidate_cache_by_val(g_mtk_nss_cachev, realpage);
+
+			break;
+		}
+		/* discard cache in these cases */
+		if (!oob &	/* NOTE. oob will not occupy CacheV here */
+		    (0 != (mtd->ecc_stats.failed - stats.failed)) || (ops->mode == MTD_OPS_RAW)) {
+			mtk_nss_invalidate_cache_by_val(g_mtk_nss_cachev, realpage);
+		}
+
+		if (!(chip->options & NAND_NEED_READRDY)) {
+			/*
+			 * Apply delay or wait for ready/busy pin. Do
+			 * this before the AUTOINCR check, so no
+			 * problems arise if a chip which does auto
+			 * increment is marked as NOAUTOINCR by the
+			 * board driver.
+			 */
+			if (!chip->dev_ready)
+				udelay(chip->chip_delay);
+			else
+				nand_wait_ready(mtd);
+		}
+
+		buf += bytes;
+
+		readlen -= bytes;
+
+		total_byte_read += bytes;
+
+		last_page = realpage;
+
+		if (!readlen)
+			break;
+
+		/* For subsequent reads align to page boundary */
+		col = 0;
+
+		/* Increment page address */
+		realpage++;
+
+		page = realpage & chip->pagemask;
+
+		/* Check, if we cross a chip boundary */
+		if (!page) {
+			chipnr++;
+			chip->select_chip(mtd, -1);
+			chip->select_chip(mtd, chipnr);
+		}
+	}
+
+	ops->retlen = ops->len - (size_t) readlen;
+
+	if (oob)
+		ops->oobretlen = ops->ooblen - oobreadlen;
+
+	if (ret)
+		return ret;
+
+	if (mtd->ecc_stats.failed - stats.failed)
+		return -EBADMSG;
+
+	return mtd->ecc_stats.corrected - stats.corrected ? -EUCLEAN : 0;
+}
+
+#endif				/* CONFIG_MTK_MTD_NAND */
 /**
  * nand_read - [MTD Interface] MTD compatibility function for nand_do_read_ecc
  * @mtd: MTD device structure
@@ -1721,7 +2253,14 @@ static int nand_read(struct mtd_info *mtd, loff_t from, size_t len,
 	ops.datbuf = buf;
 	ops.oobbuf = NULL;
 	ops.mode = MTD_OPS_PLACE_OOB;
+#ifdef CONFIG_MTK_MTD_NAND
+	if (g_mtk_nss_cachev_cnt)
+		ret = nand_do_read_ops_ex(mtd, from, &ops);
+	else
+		ret = nand_do_read_ops(mtd, from, &ops);
+#else
 	ret = nand_do_read_ops(mtd, from, &ops);
+#endif
 	*retlen = ops.retlen;
 	nand_release_device(mtd);
 	return ret;
@@ -1880,6 +2419,16 @@ static int nand_do_read_oob(struct mtd_info *mtd, loff_t from,
 	uint8_t *buf = ops->oobbuf;
 	int ret = 0;
 
+#ifdef CONFIG_MTK_MTD_NAND
+	/* variable we need for checksum */
+	u8 oob_checksum = 0;
+	u8 i, j;
+	bool empty = true;
+	struct nand_oobfree *free_entry;
+
+	g_MtdPerfLog.read_size_0_512++;
+#endif
+
 	pr_debug("%s: from = 0x%08Lx, len = %i\n",
 			__func__, (unsigned long long)from, readlen);
 
@@ -1920,6 +2469,21 @@ static int nand_do_read_oob(struct mtd_info *mtd, loff_t from,
 
 		if (ret < 0)
 			break;
+#ifdef CONFIG_MTK_MTD_NAND
+		oob_checksum = 0;
+		for (i = 0; i < MTD_MAX_OOBFREE_ENTRIES && chip->ecc.layout->oobfree[i].length; i++) {
+			free_entry = (struct nand_oobfree *)(chip->ecc.layout->oobfree) + i;
+			for (j = 0; j < free_entry->length; j++) {
+				oob_checksum ^= chip->oob_poi[free_entry->offset + j];
+				if (chip->oob_poi[free_entry->offset + j] != 0xFF)
+					empty = false;
+			}
+		}
+
+		if (!empty
+		    && (oob_checksum != chip->oob_poi[free_entry->offset + free_entry->length]))
+			return -EIO;
+#endif
 
 		len = min(len, readlen);
 		buf = nand_transfer_oob(chip, buf, ops, len);
@@ -1976,11 +2540,19 @@ static int nand_read_oob(struct mtd_info *mtd, loff_t from,
 	ops->retlen = 0;
 
 	/* Do not allow reads past end of device */
+#ifdef CONFIG_MTK_MTD_NAND
+	if (ops->datbuf && (from + ops->len) > (mtd->size + PMT_POOL_SIZE * mtd->erasesize)) {
+		pr_debug("%s: attempt to read beyond end of device\n",
+				__func__);
+		return -EINVAL;
+	}
+#else
 	if (ops->datbuf && (from + ops->len) > mtd->size) {
 		pr_debug("%s: attempt to read beyond end of device\n",
 				__func__);
 		return -EINVAL;
 	}
+#endif
 
 	nand_get_device(mtd, FL_READING);
 
@@ -1996,8 +2568,16 @@ static int nand_read_oob(struct mtd_info *mtd, loff_t from,
 
 	if (!ops->datbuf)
 		ret = nand_do_read_oob(mtd, from, ops);
-	else
+	else {
+#ifdef CONFIG_MTK_MTD_NAND
+		if (g_mtk_nss_cachev_cnt)
+			ret = nand_do_read_ops_ex(mtd, from, ops);
+		else
+			ret = nand_do_read_ops(mtd, from, ops);
+#else
 		ret = nand_do_read_ops(mtd, from, ops);
+#endif
+	}
 
 out:
 	nand_release_device(mtd);
@@ -2407,12 +2987,18 @@ static int nand_do_write_ops(struct mtd_info *mtd, loff_t to,
 	realpage = (int)(to >> chip->page_shift);
 	page = realpage & chip->pagemask;
 	blockmask = (1 << (chip->phys_erase_shift - chip->page_shift)) - 1;
-
+#ifdef CONFIG_MTK_MLC_NAND_SUPPORT
+	if (mtk_nand_IsRawPartition(to))
+		blockmask = (1ULL << (chip->phys_erase_shift - chip->page_shift - 1)) - 1;
+#endif
 	/* Invalidate the page cache, when we write to the cached page */
 	if (to <= ((loff_t)chip->pagebuf << chip->page_shift) &&
 	    ((loff_t)chip->pagebuf << chip->page_shift) < (to + ops->len))
 		chip->pagebuf = -1;
 
+#ifdef CONFIG_MTK_MTD_NAND
+	mtk_nss_invalidate_cache_by_val(g_mtk_nss_cachev, realpage);
+#endif
 	/* Don't allow multipage oob writes with offset */
 	if (oob && ops->ooboffs && (ops->ooboffs + ops->ooblen > oobmaxlen)) {
 		ret = -EINVAL;
@@ -2504,6 +3090,9 @@ static int panic_nand_write(struct mtd_info *mtd, loff_t to, size_t len,
 	struct mtd_oob_ops ops;
 	int ret;
 
+#ifdef CONFIG_MTK_MTD_NAND
+	nand_enable_clock();
+#endif
 	/* Wait for the device to get ready */
 	panic_nand_wait(mtd, chip, 400);
 
@@ -2518,6 +3107,9 @@ static int panic_nand_write(struct mtd_info *mtd, loff_t to, size_t len,
 	ret = nand_do_write_ops(mtd, to, &ops);
 
 	*retlen = ops.retlen;
+#ifdef CONFIG_MTK_MTD_NAND
+	nand_disable_clock();
+#endif
 	return ret;
 }
 
@@ -2648,11 +3240,19 @@ static int nand_write_oob(struct mtd_info *mtd, loff_t to,
 	ops->retlen = 0;
 
 	/* Do not allow writes past end of device */
+#ifdef CONFIG_MTK_MTD_NAND
+	if (ops->datbuf && (to + ops->len) > (mtd->size + PMT_POOL_SIZE * mtd->erasesize)) {
+		pr_debug("%s: attempt to write beyond end of device\n",
+				__func__);
+		return -EINVAL;
+	}
+#else
 	if (ops->datbuf && (to + ops->len) > mtd->size) {
 		pr_debug("%s: attempt to write beyond end of device\n",
 				__func__);
 		return -EINVAL;
 	}
+#endif
 
 	nand_get_device(mtd, FL_WRITING);
 
@@ -2719,6 +3319,9 @@ int nand_erase_nand(struct mtd_info *mtd, struct erase_info *instr,
 	int page, status, pages_per_block, ret, chipnr;
 	struct nand_chip *chip = mtd->priv;
 	loff_t len;
+#ifdef CONFIG_MTK_MLC_NAND_SUPPORT
+	bool raw_partition = false;
+#endif
 
 	pr_debug("%s: start = 0x%012llx, len = %llu\n",
 			__func__, (unsigned long long)instr->addr,
@@ -2736,6 +3339,12 @@ int nand_erase_nand(struct mtd_info *mtd, struct erase_info *instr,
 
 	/* Calculate pages in each block */
 	pages_per_block = 1 << (chip->phys_erase_shift - chip->page_shift);
+#ifdef CONFIG_MTK_MLC_NAND_SUPPORT
+	if (mtk_nand_IsRawPartition(instr->addr)) {
+		raw_partition = true;
+		pages_per_block = 1 << (chip->phys_erase_shift - chip->page_shift - 1);
+	}
+#endif
 
 	/* Select the NAND device */
 	chip->select_chip(mtd, chipnr);
@@ -2770,9 +3379,14 @@ int nand_erase_nand(struct mtd_info *mtd, struct erase_info *instr,
 		if (page <= chip->pagebuf && chip->pagebuf <
 		    (page + pages_per_block))
 			chip->pagebuf = -1;
+#ifdef CONFIG_MTK_MTD_NAND
+		mtk_nss_invalidate_cache_by_range(g_mtk_nss_cachev, page,
+						  page + pages_per_block - 1);
 
+		status = chip->erase_hw(mtd, page & chip->pagemask);
+#else
 		status = chip->erase(mtd, page & chip->pagemask);
-
+#endif
 		/*
 		 * See if operation failed and additional status checks are
 		 * available
@@ -2792,7 +3406,14 @@ int nand_erase_nand(struct mtd_info *mtd, struct erase_info *instr,
 		}
 
 		/* Increment page address and decrement length */
+#ifdef CONFIG_MTK_MLC_NAND_SUPPORT
+		if (raw_partition)
+			len -= (1ULL << (chip->phys_erase_shift - 1));
+		else
+			len -= (1ULL << chip->phys_erase_shift);
+#else
 		len -= (1ULL << chip->phys_erase_shift);
+#endif
 		page += pages_per_block;
 
 		/* Check, if we cross a chip boundary */
@@ -3822,11 +4443,20 @@ int nand_scan_ident(struct mtd_info *mtd, int maxchips,
 	}
 	if (i > 1)
 		pr_info("%d chips detected\n", i);
-
 	/* Store the number of chips and calc total size for mtd */
 	chip->numchips = i;
 	mtd->size = i * chip->chipsize;
-
+#ifdef defined(CONFIG_MTK_MLC_NAND_SUPPORT) && defined(CFG_2CS_NAND)
+	if (g_b2Die_CS && (i > 1)) {
+		chip->pagemask = (mtd->size >> chip->page_shift) - 1;
+		if (mtd->size & 0xffffffff)
+			chip->chip_shift = ffs((unsigned)mtd->size) - 1;
+		else {
+			chip->chip_shift = ffs((unsigned)(mtd->size >> 32));
+			chip->chip_shift += 32 - 1;
+		}
+	}
+#endif
 	return 0;
 }
 EXPORT_SYMBOL(nand_scan_ident);
@@ -4205,6 +4835,9 @@ int nand_scan(struct mtd_info *mtd, int maxchips)
 	}
 
 	ret = nand_scan_ident(mtd, maxchips, NULL);
+#ifdef CONFIG_MTK_MTD_NAND
+	mtk_nss_init_cache(mtd);	/* init CacheV (if CacheV is disabled by driver, do nothing inside) */
+#endif
 	if (!ret)
 		ret = nand_scan_tail(mtd);
 	return ret;

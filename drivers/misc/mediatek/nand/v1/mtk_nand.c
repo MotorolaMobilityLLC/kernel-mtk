@@ -4624,7 +4624,7 @@ int mtk_nand_erase_hw(struct mtd_info *mtd, int page)
 
 	PL_NAND_BEGIN(pl_time_write);
 	PL_TIME_RAND_ERASE(chip, page, time);
-	chip->erase_cmd(mtd, page);
+	chip->erase(mtd, page);
 	PL_NAND_RESET(time);
 	result = chip->waitfunc(mtd, chip);
 	PL_NAND_END(pl_time_write, duration);
@@ -5762,7 +5762,7 @@ static int mtk_nand_probe(struct platform_device *pdev)
 	nand_chip->ecc.write_oob = mtk_nand_write_oob;
 	nand_chip->ecc.read_oob = mtk_nand_read_oob;
 	nand_chip->block_markbad = mtk_nand_block_markbad;
-	nand_chip->erase = mtk_nand_erase;
+	nand_chip->erase_hw = mtk_nand_erase;
 	nand_chip->block_bad = mtk_nand_block_bad;
 	nand_chip->init_size = mtk_nand_init_size;
 	mtk_nand_init_hw(host);
