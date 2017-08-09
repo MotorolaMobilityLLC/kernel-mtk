@@ -34,7 +34,7 @@
 #include "hif_sdio_chrdev.h"
 
 #if MTK_HIF_SDIO_AUTOK_ENABLED
-#include <mach/mt_boot.h>
+#include <mt_boot.h>
 #endif
 
 #define mmc_power_up_ext(x)

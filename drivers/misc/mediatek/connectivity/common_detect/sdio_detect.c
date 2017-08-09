@@ -20,7 +20,7 @@
 #include "wmt_detect.h"
 
 #if MTK_HIF_SDIO_AUTOK_ENABLED
-#include <mach/mt_boot.h>
+#include <mt_boot.h>
 #endif
 
 unsigned int gComboChipId = -1;
