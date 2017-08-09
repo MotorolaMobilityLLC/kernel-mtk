@@ -6638,6 +6638,22 @@ int primary_display_switch_mode(int sess_mode, unsigned int session, int force)
 	if (pgc->state == DISP_SLEPT) {
 		DISPMSG("primary display switch from %s to %s in suspend state!!!\n",
 			session_mode_spy(pgc->session_mode), session_mode_spy(sess_mode));
+
+#ifdef OVL_TIME_SHARING
+		/*
+		Allow system to switch mode between Deouple and Decouple Mirror when time-sharing support.
+		Since system may use extension path to output data even when the primay path has suspended.
+		*/
+		if (pgc->session_mode == DISP_SESSION_DECOUPLE_MODE
+			&& sess_mode == DISP_SESSION_DECOUPLE_MIRROR_MODE) {
+			pgc->session_mode = sess_mode;
+			DISPMSG("primary display is %s mode now\n", session_mode_spy(pgc->session_mode));
+		} else if (pgc->session_mode == DISP_SESSION_DECOUPLE_MIRROR_MODE
+			&& sess_mode == DISP_SESSION_DECOUPLE_MODE) {
+			pgc->session_mode = sess_mode;
+			DISPMSG("primary display is %s mode now\n", session_mode_spy(pgc->session_mode));
+		}
+#endif
 		goto done;
 	}
 	DISPMSG("primary display will switch from %s to %s\n", session_mode_spy(pgc->session_mode),
