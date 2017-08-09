@@ -4,7 +4,6 @@ $(warning "MTK_ROOT_BUILD secwidevine")
 include $(MTK_ROOT_BUILD)/Makefile
 else
 $(warning "custom build secwidevine")
-include $(srctree)/drivers/misc/mediatek/Makefile.custom
 endif
 
 ifeq ($(CONFIG_TRUSTONIC_TEE_SUPPORT),y)
