@@ -3335,7 +3335,7 @@ static bool TurnOnADcPowerACC(int ADCType, bool enable)
 			/* UL sample rate and mode configure */
 
 			/* fixed 260k path for 8/16/32/48 */
-			if (useUl260k() && SampleRate_VUL1 <= 48000) {
+			if (useUl260k() && (SampleRate_VUL1 <= 48000)) {
 				/* anc ul path src on */
 				anc_ul_src_enable(true);
 				/* ANC clk pdn release */
@@ -3350,7 +3350,8 @@ static bool TurnOnADcPowerACC(int ADCType, bool enable)
 			Ana_Set_Reg(AFE_UL_SRC_CON0_L, 0x0000, 0x0001);
 			/* UL turn off */
 
-			if (SampleRate_VUL1 <= 48000) {
+			/* fixed 260k path for 8/16/32/48 */
+			if (useUl260k() && (SampleRate_VUL1 <= 48000)) {
 				/* anc ul path src off */
 				anc_ul_src_enable(false);
 				/* ANC clk pdn enable */
@@ -3721,7 +3722,7 @@ static bool TurnOnADcPowerDCC(int ADCType, bool enable, int ECMmode)
 			/* UL sample rate and mode configure */
 
 			/* fixed 260k path for 8/16/32/48 */
-			if (useUl260k() && SampleRate_VUL1 <= 48000) {
+			if (useUl260k() && (SampleRate_VUL1 <= 48000)) {
 				/* anc ul path src on */
 				anc_ul_src_enable(true);
 				/* ANC clk pdn release */
@@ -3741,7 +3742,8 @@ static bool TurnOnADcPowerDCC(int ADCType, bool enable, int ECMmode)
 			Ana_Set_Reg(AFE_UL_SRC_CON0_L, 0x0000, 0xffff);
 			/* UL turn off */
 
-			if (SampleRate_VUL1 <= 48000) {
+			/* fixed 260k path for 8/16/32/48 */
+			if (useUl260k() && (SampleRate_VUL1 <= 48000)) {
 				/* anc ul path src off */
 				anc_ul_src_enable(false);
 				/* ANC clk pdn enable */
