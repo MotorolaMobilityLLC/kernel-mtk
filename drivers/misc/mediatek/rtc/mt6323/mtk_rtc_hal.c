@@ -40,6 +40,7 @@
 #include <mt_gpio.h>
 /*#include <mach/sync_write.h>
 #include "mach/ext_wd_drv.h"*/
+#include <mt-plat/charging.h>
 
 #define hal_rtc_xinfo(fmt, args...)		\
 	pr_notice(fmt, ##args)
@@ -52,8 +53,6 @@
 
 /* Causion, can only use this hardcode in MT6323*/
 #define GPIO_SRCLKEN_PIN (37 | 0x80000000)
-
-/*TODO: extern bool pmic_chrdet_status(void);*/
 
 /*
 	RTC_FGSOC = 0,
@@ -192,9 +191,8 @@ void hal_rtc_bbpu_pwdn(void)
 		rtc_write_trigger();
 	}
 	ret_val = hal_rtc_get_spare_register(RTC_32K_LESS);
-	/*TODO if (!ret_val && pmic_chrdet_status() == false) {*/
+	if (!ret_val && pmic_chrdet_status() == KAL_FALSE) {
 #if 0
-	if (!ret_val) {
 		/* 1.   Set SRCLKENAs GPIO GPIO as Output Mode, Output Low */
 		mt_set_gpio_dir(GPIO_SRCLKEN_PIN, GPIO_DIR_OUT);
 		mt_set_gpio_out(GPIO_SRCLKEN_PIN, GPIO_OUT_ZERO);

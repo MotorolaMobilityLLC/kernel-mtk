@@ -512,8 +512,11 @@ extern void mt_power_off(void);
 extern unsigned int mt6311_get_chip_id(void);
 extern int is_mt6311_exist(void);
 extern int is_mt6311_sw_ready(void);
-
 extern BATTERY_VOLTAGE_ENUM battery_get_cv_voltage(void);
 extern void battery_set_cv_voltage(BATTERY_VOLTAGE_ENUM cv);
-
+#if defined(CONFIG_MTK_SMART_BATTERY)
+extern kal_bool pmic_chrdet_status(void);
+#else
+__weak kal_bool pmic_chrdet_status(void);
+#endif
 #endif				/* #ifndef _CHARGING_H */

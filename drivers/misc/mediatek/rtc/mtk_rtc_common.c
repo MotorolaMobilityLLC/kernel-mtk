@@ -70,6 +70,7 @@
 #endif
 /* #include <linux/printk.h> */
 #include <mt_reboot.h>
+#include <mt-plat/charging.h>
 
 #define RTC_NAME	"mt-rtc"
 #define RTC_RELPWR_WHEN_XRST	1	/* BBPU = 0 when xreset_rstb goes low */
@@ -406,8 +407,7 @@ void mt_power_off(void)
 		/* Phone */
 		mdelay(100);
 		rtc_xinfo("Phone with charger\n");
-		/*TODO if (pmic_chrdet_status() == KAL_TRUE || count > 10)*/
-		if (count > 10)
+		if (pmic_chrdet_status() == KAL_TRUE || count > 10)
 			arch_reset(0, "charger");
 		count++;
 #endif

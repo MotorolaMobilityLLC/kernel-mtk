@@ -38,8 +38,6 @@
 #endif
 
 #include <mt_gpio.h>
-/*#include <mach/sync_write.h>
-#include "mach/ext_wd_drv.h"*/
 
 #define hal_rtc_xinfo(fmt, args...)		\
 	pr_notice(fmt, ##args)
@@ -52,8 +50,6 @@
 
 /* Causion, can only use this hardcode in MT6323*/
 #define GPIO_SRCLKEN_PIN (37 | 0x80000000)
-
-/*TODO: extern bool pmic_chrdet_status(void);*/
 
 /*
 	RTC_FGSOC = 0,

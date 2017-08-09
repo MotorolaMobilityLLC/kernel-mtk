@@ -134,7 +134,6 @@ u16 hal_rtc_get_gpio_32k_status(void)
 		return 0;
 	else
 		return 1;
-
 }
 
 void hal_rtc_set_gpio_32k_status(u16 user, bool enable)

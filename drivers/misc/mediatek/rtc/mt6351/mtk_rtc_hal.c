@@ -39,6 +39,7 @@
 #endif
 
 #include <mt_gpio.h>
+#include <mt-plat/charging.h>
 
 #define hal_rtc_xinfo(fmt, args...)		\
 	pr_notice(fmt, ##args)
@@ -184,8 +185,7 @@ void hal_rtc_bbpu_pwdn(void)
 	}
 	ret_val = hal_rtc_get_spare_register(RTC_32K_LESS);
 #if !defined(CONFIG_MTK_FPGA)
-	/*TODO if (!ret_val && pmic_chrdet_status() == false) {*/
-	if (!ret_val) {
+	if (!ret_val && pmic_chrdet_status() == KAL_FALSE) {
 		/* 1.   Set SRCLKENAs GPIO GPIO as Output Mode, Output Low */
 		mt_set_gpio_dir(GPIO_SRCLKEN_PIN, GPIO_DIR_OUT);
 		mt_set_gpio_out(GPIO_SRCLKEN_PIN, GPIO_OUT_ZERO);
