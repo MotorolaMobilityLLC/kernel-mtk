@@ -1041,7 +1041,7 @@ static irqreturn_t mpu_violation_irq(int irq, void *dev_id)
 	return IRQ_HANDLED;
 }
 
-#if defined(CONFIG_MTKPASR)
+#if defined(CONFIG_MTK_PASR)
 /* Acquire DRAM Setting for PASR/DPD */
 void acquire_dram_setting(struct basic_dram_setting *pasrdpd)
 {

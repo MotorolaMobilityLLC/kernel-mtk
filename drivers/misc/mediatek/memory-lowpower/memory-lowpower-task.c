@@ -189,6 +189,12 @@ out:
 	MLPT_PRINT("%s: [%d] spfn[%lu] epfn[%lu]\n", __func__, which, *spfn, *epfn);
 }
 
+/* Check whether memory_lowpower_task is initialized */
+bool memory_lowpower_task_inited(void)
+{
+	return (memory_lowpower_task != NULL);
+}
+
 /* Register API for memory lowpower operation */
 void register_memory_lowpower_operation(struct memory_lowpower_operation *handler)
 {
@@ -494,6 +500,10 @@ static int __init memory_lowpower_init_pm_ops(void)
 int __init memory_lowpower_task_init(void)
 {
 	int ret = 0;
+
+	/* Is memory lowpower initialized */
+	if (!memory_lowpower_inited())
+		goto out;
 
 	/* Start a kernel thread */
 	memory_lowpower_task = kthread_run(memory_lowpower_entry, NULL, "memory_lowpower_task");

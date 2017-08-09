@@ -63,8 +63,14 @@ static struct memory_lowpower_operation mtkdcs_handler = {
 static int __init mtkdcs_init(void)
 {
 	pr_debug("%s ++\n", __func__);
+
+	/* Check whether memory lowpower task is initialized */
+	if (!memory_lowpower_task_inited())
+		goto out;
+
 	/* Register feature operations */
 	register_memory_lowpower_operation(&mtkdcs_handler);
+out:
 	pr_debug("%s --\n", __func__);
 	return 0;
 }

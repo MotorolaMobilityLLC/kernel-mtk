@@ -24,15 +24,26 @@ static inline void SetMlps##uname(unsigned long *state) \
 static inline void ClearMlps##uname(unsigned long *state) \
 			{ clear_bit(MLP_##lname, state); }
 
-#define MEMORY_LOWPOWER_STATE(uname, lname) (TEST_MEMORY_LOWPOWER_STATE(uname, lname) \
-	SET_MEMORY_LOWPOWER_STATE(uname, lname)	CLEAR_MEMORY_LOWPOWER_STATE(uname, lname))
+TEST_MEMORY_LOWPOWER_STATE(Init, INIT)
+TEST_MEMORY_LOWPOWER_STATE(ScreenOn, SCREENON)
+TEST_MEMORY_LOWPOWER_STATE(ScreenIdle, SCREENIDLE)
+TEST_MEMORY_LOWPOWER_STATE(Enable, ENABLE)
+TEST_MEMORY_LOWPOWER_STATE(EnableDCS, ENABLE_DCS)
+TEST_MEMORY_LOWPOWER_STATE(EnablePASR, ENABLE_PASR)
 
-MEMORY_LOWPOWER_STATE(Init, INIT)
-MEMORY_LOWPOWER_STATE(ScreenOn, SCREENON)	/*MEMORY_LOWPOWER_STATE(ScreenOff, SCREENOFF)*/
-MEMORY_LOWPOWER_STATE(ScreenIdle, SCREENIDLE)
-MEMORY_LOWPOWER_STATE(Enable, ENABLE)
-MEMORY_LOWPOWER_STATE(EnableDCS, ENABLE_DCS)
-MEMORY_LOWPOWER_STATE(EnablePASR, ENABLE_PASR)
+SET_MEMORY_LOWPOWER_STATE(Init, INIT)
+SET_MEMORY_LOWPOWER_STATE(ScreenOn, SCREENON)
+SET_MEMORY_LOWPOWER_STATE(ScreenIdle, SCREENIDLE)
+SET_MEMORY_LOWPOWER_STATE(Enable, ENABLE)
+SET_MEMORY_LOWPOWER_STATE(EnableDCS, ENABLE_DCS)
+SET_MEMORY_LOWPOWER_STATE(EnablePASR, ENABLE_PASR)
+
+CLEAR_MEMORY_LOWPOWER_STATE(Init, INIT)
+CLEAR_MEMORY_LOWPOWER_STATE(ScreenOn, SCREENON)
+CLEAR_MEMORY_LOWPOWER_STATE(ScreenIdle, SCREENIDLE)
+CLEAR_MEMORY_LOWPOWER_STATE(Enable, ENABLE)
+CLEAR_MEMORY_LOWPOWER_STATE(EnableDCS, ENABLE_DCS)
+CLEAR_MEMORY_LOWPOWER_STATE(EnablePASR, ENABLE_PASR)
 
 #define IS_ACTION_SCREENON(action)	(action == MLP_SCREENON)
 #define IS_ACTION_SCREENOFF(action)	(action == MLP_SCREENOFF)
@@ -84,10 +95,13 @@ struct memory_lowpower_operation {
  * Operations are called in reverse order for disable/restore.
  */
 
+/* memory-lowpower-task APIs */
+extern bool memory_lowpower_task_inited(void);
 extern void register_memory_lowpower_operation(struct memory_lowpower_operation *handler);
 extern void unregister_memory_lowpower_operation(struct memory_lowpower_operation *handler);
 
 /* memory-lowpower APIs */
+extern bool memory_lowpower_inited(void);
 extern int get_memory_lowpower_cma(void);
 extern int put_memory_lowpower_cma(void);
 extern int get_memory_lowpower_cma_aligned(int count, unsigned int align, struct page **pages);

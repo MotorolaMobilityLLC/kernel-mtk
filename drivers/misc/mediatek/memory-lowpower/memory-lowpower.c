@@ -23,6 +23,14 @@ static struct page *cma_pages;
 static DEFINE_MUTEX(memory_lowpower_mutex);
 
 /*
+ * Check whether memory_lowpower is initialized
+ */
+bool memory_lowpower_inited(void)
+{
+	return (cma != NULL);
+}
+
+/*
  * memory_lowpower_cma_base - query the cma's base
  */
 phys_addr_t memory_lowpower_cma_base(void)
@@ -227,7 +235,7 @@ static int __init memory_lowpower_debug_init(void)
 {
 	struct dentry *dentry;
 
-	if (!cma) {
+	if (!memory_lowpower_inited()) {
 		pr_err("memory-lowpower cma is not inited\n");
 		return 1;
 	}

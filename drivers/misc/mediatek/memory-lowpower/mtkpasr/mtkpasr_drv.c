@@ -11,13 +11,10 @@
 /* PASR private header file */
 #include "mtkpasr_drv.h"
 
-/* Print wrapper */
-#define MTKPASR_PRINT(args...)	do {} while (0) /* pr_alert(args) */
-
 static struct mtkpasr_bank *mtkpasr_banks;
 static int num_banks;
 static int mtkpasr_enable = 1;
-unsigned long bank_pfns;
+static unsigned long bank_pfns;
 
 /* Internal control parameters */
 static unsigned long mtkpasr_triggered, mtkpasr_on, mtkpasr_srmask;
@@ -79,6 +76,8 @@ static int mtkpasr_config(int times, get_range_t func)
 
 	/* APMCU flow */
 	MTKPASR_PRINT("%s: PASR[0x%lx]\n", __func__, mtkpasr_on);
+	if (enter_pasr_dpd_config(mtkpasr_on & 0xFF, mtkpasr_on >> 0x8) != 0)
+		MTKPASR_PRINT("%s: failed to program DRAMC!\n", __func__);
 
 	++mtkpasr_triggered;
 
@@ -100,6 +99,8 @@ static int mtkpasr_restore(void)
 
 	mtkpasr_on = 0x0;
 	/* APMCU flow */
+	if (exit_pasr_dpd_config() != 0)
+		MTKPASR_PRINT("%s: failed to program DRAMC!\n", __func__);
 
 	MTKPASR_PRINT("%s:-\n", __func__);
 
@@ -236,7 +237,7 @@ static int __init mtkpasr_construct_bankrank(void)
 	start_pfn = memory_lowpower_cma_base() >> PAGE_SHIFT;
 	end_pfn = start_pfn + (memory_lowpower_cma_size() >> PAGE_SHIFT);
 	bank_pfns = 0;
-	ret = mtkpasr_init_range(start_pfn, end_pfn);
+	ret = mtkpasr_init_range(start_pfn, end_pfn, &bank_pfns);
 	if (ret <= 0 || bank_pfns == 0) {
 		MTKPASR_PRINT("%s: failed to init mtkpasr range ret[%d] bank_pfns[%lu]\n", __func__, ret, bank_pfns);
 		return -1;
@@ -255,8 +256,10 @@ static int __init mtkpasr_construct_bankrank(void)
 		ret = query_bank_rank_information(i, &start_pfn, &end_pfn, &segn);
 
 		/* No valid bank, just break */
-		if (ret < 0)
+		if (ret < 0) {
+			MTKPASR_PRINT("%s bank[%d] ret[%d]\n", __func__, i, ret);
 			break;
+		}
 
 		/* Set mtkpasr_banks */
 		mtkpasr_banks[i].start_pfn = start_pfn;
@@ -280,6 +283,10 @@ static int __init mtkpasr_construct_bankrank(void)
 static int __init mtkpasr_init(void)
 {
 	MTKPASR_PRINT("%s ++\n", __func__);
+
+	/* Check whether memory lowpower task is initialized */
+	if (!memory_lowpower_task_inited())
+		goto out;
 
 	/* Create SYSFS interface */
 	if (sysfs_create_group(power_kobj, &mtkpasr_attr_group))
