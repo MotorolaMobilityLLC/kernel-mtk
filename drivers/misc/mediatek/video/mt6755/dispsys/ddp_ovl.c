@@ -682,9 +682,9 @@ static noinline void print_layer_config_args(int module, int local_layer, OVL_CO
 	DDPDBG("fmt=%s, addr=%lx, keyEn=%d, key=%d, aen=%d, alpha=%d,",
 		unified_color_fmt_name(ovl_cfg->fmt), ovl_cfg->addr,
 		ovl_cfg->keyEn, ovl_cfg->key, ovl_cfg->aen, ovl_cfg->alpha);
-	DDPDBG("sur_aen=%d,sur_alpha=0x%x,yuv_range=%d,sec=%d\n",
+	DDPDBG("sur_aen=%d,sur_alpha=0x%x,yuv_range=%d,sec=%d,const_bld=%d\n",
 		ovl_cfg->sur_aen, (ovl_cfg->dst_alpha << 2) | ovl_cfg->src_alpha,
-		ovl_cfg->yuv_range, ovl_cfg->security);
+		ovl_cfg->yuv_range, ovl_cfg->security, ovl_cfg->const_bld);
 }
 
 static int ovl_is_sec[OVL_NUM];

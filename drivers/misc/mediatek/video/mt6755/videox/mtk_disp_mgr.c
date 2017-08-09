@@ -518,6 +518,14 @@ const char *_disp_format_spy(DISP_FORMAT format)
 		return "YUV420_P";
 	case DISP_FORMAT_YV12:
 		return "YV12";
+	case DISP_FORMAT_PABGR8888:
+		return "PABGR";
+	case DISP_FORMAT_PARGB8888:
+		return "PARGB";
+	case DISP_FORMAT_PBGRA8888:
+		return "PBGRA";
+	case DISP_FORMAT_PRGBA8888:
+		return "PRGBA";
 	default:
 		return "unknown";
 	}
