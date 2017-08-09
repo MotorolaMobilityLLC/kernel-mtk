@@ -1711,8 +1711,7 @@ static int musb_core_init(u16 musb_type, struct musb *musb)
 	musb->hwvers = musb_read_hwvers(mbase);
 	snprintf(aRevision, 32, "%d.%d%s", MUSB_HWVERS_MAJOR(musb->hwvers),
 		 MUSB_HWVERS_MINOR(musb->hwvers), (musb->hwvers & MUSB_HWVERS_RC) ? "RC" : "");
-	pr_debug("%s: %sHDRC RTL version %s %s\n",
-	       musb_driver_name, type, aRevision, aDate);
+	pr_debug("%s: %sHDRC RTL version %s %s\n", musb_driver_name, type, aRevision, aDate);
 
 	/* configure ep0 */
 	musb_configure_ep0(musb);
@@ -2001,7 +2000,7 @@ musb_srp_store(struct device *dev, struct device_attribute *attr, const char *bu
 	unsigned short srp;
 
 	/* if (sscanf(buf, "%hu", &srp) != 1 || (srp != 1)) { */
-	if (kstrtol(buf, 10, &srp) != 0 || (srp != 1)) { /* KS format requirement, sscanf -> kstrtol */
+	if (kstrtol(buf, 10, &srp) != 0 || (srp != 1)) {	/* KS format requirement, sscanf -> kstrtol */
 		DBG(0, "SRP: Value must be 1\n");
 		return -EINVAL;
 	}
@@ -2584,7 +2583,9 @@ static struct platform_driver musb_driver = {
 	.driver = {
 		   .name = (char *)musb_driver_name,
 		   .bus = &platform_bus_type,
+#ifndef CONFIG_MACH_MT2701
 		   .of_match_table = apusb_of_ids,
+#endif
 		   .owner = THIS_MODULE,
 		   .pm = MUSB_DEV_PM_OPS,
 		   },
@@ -2603,8 +2604,12 @@ static int __init musb_init(void)
 	pr_info("%s: version " MUSB_VERSION ", ?dma?, otg (peripheral+host)\n", musb_driver_name);
 	return platform_driver_register(&musb_driver);
 }
-fs_initcall(musb_init);
 
+#ifdef CONFIG_MACH_MT2701
+module_init(musb_init);
+#else
+fs_initcall(musb_init);
+#endif
 static void __exit musb_cleanup(void)
 {
 	platform_driver_unregister(&musb_driver);
