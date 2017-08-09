@@ -814,7 +814,7 @@ int32_t cmdq_sec_submit_to_secure_world_async_unlocked(uint32_t iwcCommand,
 				   " config_duration_ms[%d], cmdId[%d]\n", duration, iwcCommand);
 		if (msgOffset > 0) {
 			/* print message */
-			CMDQ_LOG("%s", longMsg);
+			CMDQ_MSG("%s", longMsg);
 		}
 	}
 	return status;
