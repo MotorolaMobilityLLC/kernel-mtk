@@ -37,6 +37,11 @@
 #include <linux/freezer.h>
 #include <linux/oom.h>
 #include <linux/numa.h>
+#ifdef CONFIG_HAS_EARLYSUSPEND
+#include <linux/earlysuspend.h>
+#endif
+#include <linux/cpumask.h>
+#include <linux/fb.h>
 
 #include <asm/tlbflush.h>
 #include "internal.h"
@@ -1705,6 +1710,125 @@ static void ksm_do_scan(unsigned int scan_npages)
 	}
 }
 
+/*
+ * LCH_ADD: ksm kernel control interface for run or stop
+ * flags: 1(KSM_RUN_MERGE) sets ksmd running
+ *            0 sets ksmd stop running
+ * return: 0 success
+ *            others error
+ */
+#define KSM_KCTL_INTERFACE
+
+#ifdef KSM_KCTL_INTERFACE
+static ssize_t ksm_run_change(unsigned long flags)
+{
+	int err = 0;
+
+	if (flags > KSM_RUN_UNMERGE)
+		return -EINVAL;
+
+	/*
+	 * KSM_RUN_MERGE sets ksmd running, and 0 stops it running.
+	 * KSM_RUN_UNMERGE stops it running and unmerges all rmap_items,
+	 * breaking COW to free the pages_shared (but leaves mm_slots
+	 * on the list for when ksmd may be set running again).
+	 */
+
+	mutex_lock(&ksm_thread_mutex);
+	wait_while_offlining();
+	if (ksm_run != flags) {
+		ksm_run = flags;
+		if (flags & KSM_RUN_UNMERGE) {
+			set_current_oom_origin();
+			err = unmerge_and_remove_all_rmap_items();
+			clear_current_oom_origin();
+			if (err)
+				ksm_run = KSM_RUN_STOP;
+		}
+	}
+	mutex_unlock(&ksm_thread_mutex);
+
+	if (flags & KSM_RUN_MERGE)
+		wake_up_interruptible(&ksm_thread_wait);
+
+	return err;
+}
+
+static void ksm_tuning_pressure(void)
+{
+#if NR_CPUS > 1
+	if (bat_is_charger_exist() == KAL_TRUE) {
+		if (ksm_thread_sleep_millisecs == 20 &&
+			ksm_thread_pages_to_scan == 100)
+			return;
+		/*set to default value */
+		ksm_thread_sleep_millisecs = 20;
+		ksm_thread_pages_to_scan = 100;
+	} else {
+		int num_cpus = num_online_cpus();
+		int three_quater_cpus = ((3 * num_possible_cpus() * 10)/4 + 5)/10;
+		int one_half_cpus = num_possible_cpus() >> 1;
+
+		if (num_cpus >= three_quater_cpus) {
+			ksm_thread_sleep_millisecs = 20;
+			ksm_thread_pages_to_scan = 100;
+		} else if (num_cpus >= one_half_cpus) {
+			ksm_thread_sleep_millisecs = 3000;
+			ksm_thread_pages_to_scan = 200;
+		} else {
+			ksm_thread_sleep_millisecs = 10000;
+			ksm_thread_pages_to_scan = 200;
+		}
+	}
+#endif
+}
+
+#ifdef CONFIG_HAS_EARLYSUSPEND
+static void ksm_early_suspend(struct early_suspend *h)
+{
+	ksm_run_change(KSM_RUN_STOP);
+}
+
+static void ksm_late_resume(struct early_suspend *h)
+{
+	ksm_run_change(KSM_RUN_MERGE);
+}
+
+static struct early_suspend ksm_early_suspend_handler = {
+	.suspend = ksm_early_suspend,
+	.resume = ksm_late_resume,
+};
+#else /* no CONFIG_HAS_EARLYSUSPEND*/
+static int ksm_fb_notifier_callback(struct notifier_block *p,
+				unsigned long event, void *data)
+{
+	int blank;
+
+	if (event != FB_EVENT_BLANK)
+		return 0;
+
+	blank = *(int *)((struct fb_event *)data)->data;
+
+	if (blank == FB_BLANK_UNBLANK) { /*LCD ON*/
+		ksm_run_change(KSM_RUN_MERGE);
+	} else if (blank == FB_BLANK_POWERDOWN) { /*LCD OFF*/
+		ksm_run_change(KSM_RUN_STOP);
+	}
+
+	return 0;
+}
+
+static struct notifier_block ksm_fb_notifier = {
+	.notifier_call = ksm_fb_notifier_callback,
+}
+#endif
+#else /* no KSM_KCTL_INTERFACE*/
+static ssize_t ksm_run_change(unsigned long flags)
+{
+}
+#endif
+EXPORT_SYMBOL(ksm_run_change);
+
 static int ksmd_should_run(void)
 {
 	return (ksm_run & KSM_RUN_MERGE) && !list_empty(&ksm_mm_head.mm_list);
@@ -1713,13 +1837,19 @@ static int ksmd_should_run(void)
 static int ksm_scan_thread(void *nothing)
 {
 	set_freezable();
-	set_user_nice(current, 5);
+	/* M: set KSMD's priority to the lowest value */
+	set_user_nice(current, 19);
+	/* set_user_nice(current, 5); */
 
 	while (!kthread_should_stop()) {
 		mutex_lock(&ksm_thread_mutex);
 		wait_while_offlining();
-		if (ksmd_should_run())
+		if (ksmd_should_run()) {
+		#ifdef KSM_KCTL_INTERFACE
+			ksm_tuning_pressure();
+		#endif
 			ksm_do_scan(ksm_thread_pages_to_scan);
+		}
 		mutex_unlock(&ksm_thread_mutex);
 
 		try_to_freeze();
@@ -2331,6 +2461,21 @@ static int __init ksm_init(void)
 	/* There is no significance to this priority 100 */
 	hotplug_memory_notifier(ksm_memory_callback, 100);
 #endif
+
+#ifdef KSM_KCTL_INTERFACE
+#ifdef CONFIG_HAS_EARLYSUSPEND
+	register_early_suspend(&ksm_early_suspend_handler);
+#else
+	err = fb_register_client(&ksm_fb_notifier);
+	if (err) {
+		pr_err("ksm: unable to register fb_notifier\n");
+		kthread_stop(ksm_thread);
+		sysfs_remove_group(mm_kobj, &ksm_attr_group);
+		goto out_free;
+	}
+#endif
+#endif
+
 	return 0;
 
 out_free:
