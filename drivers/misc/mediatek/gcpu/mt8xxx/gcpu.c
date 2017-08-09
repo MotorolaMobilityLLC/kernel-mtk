@@ -52,6 +52,7 @@
 static struct clk *gcpu_clk;
 
 static const struct of_device_id gcpu_of_ids[] = {
+	{.compatible = "mediatek,mt8127-gcpu"},
 	{.compatible = "mediatek,mt8163-gcpu"},
 	{}
 };
