@@ -3359,7 +3359,7 @@ static void _mt_cpufreq_set(struct cpufreq_policy *policy, enum mt_cpu_dvfs_id i
 	FUNC_ENTER(FUNC_LV_LOCAL);
 
 #ifndef __TRIAL_RUN__
-	if (!policy)
+	if (!policy || !p->mt_policy)
 #endif
 		return;
 
@@ -3379,6 +3379,7 @@ static void _mt_cpufreq_set(struct cpufreq_policy *policy, enum mt_cpu_dvfs_id i
 
 	/* get current idx here to avoid idx synchronization issue */
 	if (new_opp_idx == -1) {
+		policy = p->mt_policy;
 		new_opp_idx = p->idx_opp_tbl;
 		log = 0;
 	}
