@@ -22,12 +22,18 @@
 
 static struct i2c_client *new_client;
 
-static ssize_t max_i2c_write(const char  *data, size_t count);
-static int max_i2c_master_send(const struct i2c_client *client, const char *buf, int count);
 static int max98926_WriteReg(u16 a_u2Addr, u16 a_u2Data);
 static int max98926_ReadReg(u16 a_u2Addr, unsigned short *a_pu2Result);
-static int max98926_regulator_config(struct i2c_client *i2c, bool pullup, bool on);
 static void max98926_set_sense_data(struct max98926_priv *max98926);
+
+/*
+extern int mtk_i2c_transfer(struct i2c_adapter *adap, struct i2c_msg *msgs, int num,
+					u32 ext_flag, u32 timing);
+*/
+/*
+static int max98926_regulator_config(struct i2c_client *i2c, bool pullup, bool on);
+*/
+
 
 static const char *const dai_text[] = {
 	"Left", "Right", "LeftRight", "LeftRightDiv2",
@@ -66,9 +72,8 @@ static int max98926_spk_zcd_put(struct snd_kcontrol *kcontrol,
 				struct snd_ctl_elem_value *ucontrol)
 {
 	struct snd_soc_component *component = snd_kcontrol_chip(kcontrol);
-	struct snd_soc_component *codec =  component->codec;
-	struct max98926_priv *max98926 = snd_soc_codec_get_drvdata(codec);
-	int ret, reg;
+	struct snd_soc_codec *codec =  component->codec;
+	int ret;
 
 	ret = snd_soc_read(codec,
 			   max98926_DAI_CLK_DIV_N_LSBS);
@@ -76,12 +81,15 @@ static int max98926_spk_zcd_put(struct snd_kcontrol *kcontrol,
 	return 1;
 }
 
+/*
 static int reg_set_optimum_mode_check(struct regulator *reg, int load_uA)
 {
 	return (regulator_count_voltages(reg) > 0) ?
 	       regulator_set_optimum_mode(reg, load_uA) : 0;
 }
+*/
 
+/*
 static int max98926_regulator_config(struct i2c_client *i2c, bool pullup, bool on)
 {
 	struct regulator *max98926_vcc_i2c;
@@ -139,7 +147,9 @@ error_reg_opt_i2c:
 
 	return rc;
 }
+*/
 
+#if 0
 static struct reg_default max98926_reg[] = {
 	{ 0x0B, 0x00 }, /* IRQ Enable0 */
 	{ 0x0C, 0x00 }, /* IRQ Enable1 */
@@ -189,6 +199,7 @@ static struct reg_default max98926_reg[] = {
 	{ 0x38, 0x00 }, /* Global Enable */
 	{ 0x3A, 0x00 }, /* Boost Limiter */
 };
+#endif
 
 static const struct soc_enum max98926_dai_enum =
 	SOC_ENUM_SINGLE(max98926_GAIN, 5, ARRAY_SIZE(dai_text), dai_text);
@@ -230,13 +241,12 @@ static int max98926_put_switch_mixer(struct snd_kcontrol *kcontrol,
 				     struct snd_ctl_elem_value *ucontrol)
 {
 	struct snd_soc_component *component = snd_kcontrol_chip(kcontrol);
-	struct snd_soc_component *codec = component->codec;
-	struct snd_soc_dapm_widget *widget = snd_kcontrol_chip(kcontrol);
+	const struct snd_soc_dapm_widget *widget = component->dapm_widgets;
 
 	if (ucontrol->value.integer.value[0])
-		snd_soc_dapm_mixer_update_power(widget, kcontrol, 1, NULL);
+		snd_soc_dapm_mixer_update_power(widget->dapm, kcontrol, 1, NULL);
 	else
-		snd_soc_dapm_mixer_update_power(widget, kcontrol, 0 , NULL);
+		snd_soc_dapm_mixer_update_power(widget->dapm, kcontrol, 0 , NULL);
 	return 1;
 }
 
@@ -250,7 +260,6 @@ static int max98926_dac_event(struct snd_soc_dapm_widget *w,
 			      struct snd_kcontrol *kcontrol, int event)
 {
 	struct snd_soc_codec *codec = w->codec;
-	struct max98926_priv *max98926 = snd_soc_codec_get_drvdata(codec);
 
 	switch (event) {
 	case SND_SOC_DAPM_PRE_PMU:
@@ -276,8 +285,7 @@ static int pdm_enable_channel_ev(struct snd_soc_dapm_widget *w,
 				 struct snd_kcontrol *kcontrol, int event)
 {
 	struct snd_soc_codec *codec = w->codec;
-	struct max98926_priv *max98926 = snd_soc_codec_get_drvdata(codec);
-	int ret, reg;
+	int ret;
 
 	ret = snd_soc_read(codec,
 			   max98926_DAI_CLK_DIV_N_LSBS);
@@ -335,6 +343,7 @@ static const struct snd_soc_dapm_widget max98926_dapm_widgets[] = {
 	SND_SOC_DAPM_INPUT("Speaker_Pdm"),
 };
 
+
 static const struct snd_soc_dapm_route max98926_audio_map[] = {
 	{"DAI IN MUX", "Left", "DAI_OUT"},
 	{"DAI IN MUX", "Right", "DAI_OUT"},
@@ -376,6 +385,7 @@ static const struct snd_soc_dapm_route max98926_audio_map[] = {
 #endif
 };
 
+/*
 static bool max98926_volatile_register(struct device *dev, unsigned int reg)
 {
 	switch (reg) {
@@ -397,7 +407,9 @@ static bool max98926_volatile_register(struct device *dev, unsigned int reg)
 		return false;
 	}
 }
+*/
 
+/*
 static bool max98926_readable_register(struct device *dev, unsigned int reg)
 {
 	switch (reg) {
@@ -410,16 +422,17 @@ static bool max98926_readable_register(struct device *dev, unsigned int reg)
 		return true;
 	}
 }
+*/
 
 DECLARE_TLV_DB_SCALE(max98926_spk_tlv, -600, 100, 0);
 
+/*
 static int max98926_reg_put(struct snd_kcontrol *kcontrol,
 			    struct snd_ctl_elem_value *ucontrol, unsigned int reg,
 			    unsigned int mask, unsigned int shift)
 {
 	struct snd_soc_component *component = snd_kcontrol_chip(kcontrol);
-	struct snd_soc_component *codec = component->codec;
-	struct max98926_priv *max98926 = snd_soc_codec_get_drvdata(codec);
+	struct snd_soc_codec *codec = component->codec;
 	unsigned int sel = ucontrol->value.integer.value[0];
 
 	pr_err("%s codec = %p\n", __func__, codec);
@@ -429,6 +442,7 @@ static int max98926_reg_put(struct snd_kcontrol *kcontrol,
 	       __func__, reg, sel);
 	return 0;
 }
+*/
 
 
 static int speaker_enable;
@@ -444,7 +458,7 @@ static int max98926_spk_enable_put(struct snd_kcontrol *kcontrol,
 				   struct snd_ctl_elem_value *ucontrol)
 {
 	struct snd_soc_component *component = snd_kcontrol_chip(kcontrol);
-	struct snd_soc_component *codec = component->codec;
+	struct snd_soc_codec *codec = component->codec;
 	struct max98926_priv *max98926 = snd_soc_codec_get_drvdata(codec);
 
 	pr_err("%s , codec = %p\n", __func__, codec);
@@ -452,21 +466,21 @@ static int max98926_spk_enable_put(struct snd_kcontrol *kcontrol,
 	if (ucontrol->value.integer.value[0] == 1) {
 		snd_soc_update_bits(codec, max98926_BLOCK_ENABLE,
 				    (M98926_SPK_EN_MASK | M98926_BST_EN_MASK |
-				     M98926_ADC_IMON_EN_MASK | M98926_ADC_VMON_EN_MASK,
+				     M98926_ADC_IMON_EN_MASK | M98926_ADC_VMON_EN_MASK|
 				     M98926_SPK_EN_MASK | M98926_BST_EN_MASK |
 				     M98926_ADC_IMON_EN_MASK | M98926_ADC_VMON_EN_MASK),
 				    (M98926_SPK_EN_MASK | M98926_BST_EN_MASK |
-				     M98926_ADC_IMON_EN_MASK | M98926_ADC_VMON_EN_MASK,
+				     M98926_ADC_IMON_EN_MASK | M98926_ADC_VMON_EN_MASK|
 				     M98926_SPK_EN_MASK | M98926_BST_EN_MASK |
 				     M98926_ADC_IMON_EN_MASK | M98926_ADC_VMON_EN_MASK)
 				   );
 		snd_soc_update_bits(codec, max98926_BLOCK_ENABLE,
 				    (M98926_SPK_EN_MASK | M98926_BST_EN_MASK |
-				     M98926_ADC_IMON_EN_MASK | M98926_ADC_VMON_EN_MASK,
+				     M98926_ADC_IMON_EN_MASK | M98926_ADC_VMON_EN_MASK|
 				     M98926_SPK_EN_MASK | M98926_BST_EN_MASK |
 				     M98926_ADC_IMON_EN_MASK | M98926_ADC_VMON_EN_MASK),
 				    (M98926_SPK_EN_MASK | M98926_BST_EN_MASK |
-				     M98926_ADC_IMON_EN_MASK | M98926_ADC_VMON_EN_MASK,
+				     M98926_ADC_IMON_EN_MASK | M98926_ADC_VMON_EN_MASK|
 				     M98926_SPK_EN_MASK | M98926_BST_EN_MASK |
 				     M98926_ADC_IMON_EN_MASK | M98926_ADC_VMON_EN_MASK)
 				   );
@@ -717,7 +731,7 @@ static int max98926_dai_hw_params(struct snd_pcm_substream *substream,
 {
 	struct snd_soc_codec *codec = dai->codec;
 	struct max98926_priv *max98926 = snd_soc_codec_get_drvdata(codec);
-	int ret, reg;
+	int ret;
 
 	ret = snd_soc_read(codec,
 			   max98926_DAI_CLK_DIV_N_LSBS);
@@ -845,7 +859,7 @@ static int max98926_probe(struct snd_soc_codec *codec)
 	snd_soc_write(codec, max98926_BOOST_LIMITER, 0xF8);
 
 	if (codec->dev->of_node)
-		dev_set_name(&codec->dev, "%s", "MAX98926_MT");
+		dev_set_name(codec->dev, "%s", "MAX98926_MT");
 
 	return 0;
 }
@@ -853,7 +867,6 @@ static int max98926_probe(struct snd_soc_codec *codec)
 static unsigned int max98926_read(struct snd_soc_codec *codec, unsigned int addr)
 {
 	unsigned short Ret = 0;
-
 	max98926_ReadReg((unsigned short)addr, (unsigned short *)&Ret);
 	return Ret;
 }
@@ -861,7 +874,6 @@ static unsigned int max98926_read(struct snd_soc_codec *codec, unsigned int addr
 static int max98926_write(struct snd_soc_codec *codec, unsigned int adrress, unsigned int value)
 {
 	int ret = 0;
-
 	ret = max98926_WriteReg(adrress , value);
 	return ret;
 }
@@ -879,6 +891,7 @@ static struct snd_soc_codec_driver soc_codec_dev_max98926 = {
 	.write = max98926_write,
 };
 
+/*
 static struct regmap_config max98926_regmap = {
 	.reg_bits         = 8,
 	.val_bits         = 8,
@@ -889,50 +902,14 @@ static struct regmap_config max98926_regmap = {
 	.readable_reg     = max98926_readable_register,
 	.cache_type       = REGCACHE_RBTREE,
 };
+*/
 
-
-static ssize_t max_i2c_write(const char  *data, size_t count)
-{
-	int ret;
-
-	pr_err("%s count = %zu\n", __func__, count);
-	ret = max_i2c_master_send(new_client, data, count);
-	return ret;
-}
-
-
-static int max_i2c_master_send(const struct i2c_client *client, const char *buf, int count)
-{
-	int ret;
-	struct i2c_adapter *adap = client->adapter;
-	struct i2c_msg msg;
-
-#ifdef CONFIG_MTK_I2C_EXTENSION
-	if (count <= 8)
-		msg.addr = client->addr & I2C_MASK_FLAG;
-	 else
-		msg.addr = client->addr & I2C_MASK_FLAG | I2C_DMA_FLAG;
-#endif
-	msg.flags = client->flags & I2C_M_TEN;
-	msg.len = count;
-	msg.buf = (char *)buf;
-#ifdef CONFIG_MTK_I2C_EXTENSION
-	msg.ext_flag = client->ext_flag;
-#endif
-	ret = i2c_transfer(adap, &msg, 1);
-
-	/*
-	 * If everything went ok (i.e. 1 msg transmitted), return #bytes
-	 * transmitted, else error code.
-	 */
-	return (ret == 1) ? count : ret;
-}
 
 static int max98926_WriteReg(u16 a_u2Addr, u16 a_u2Data)
 {
-	pr_err("%s\n", __func__);
 	int  i4RetValue = 0;
 	char puSendCmd[2] = {(char)a_u2Addr , (char)a_u2Data};
+	pr_warn("%s\n", __func__);
 
 #ifdef CONFIG_MTK_I2C_EXTENSION
 	new_client->ext_flag = 0;
@@ -949,20 +926,22 @@ static int max98926_WriteReg(u16 a_u2Addr, u16 a_u2Data)
 
 static int max98926_ReadReg(u16 a_u2Addr, unsigned short *a_pu2Result)
 {
-	int  i4RetValue = 0;
-	char pBuff;
-	int ret;
+
+#ifndef CONFIG_MTK_I2C_EXTENSION
+	unsigned char buffer[2];
 	struct i2c_adapter *adap = new_client->adapter;
-	unsigned short buffer[2];
+	int ret;
+#endif
 
 #ifdef CONFIG_MTK_I2C_EXTENSION
-	new_client->ext_flag  = ((new_client->ext_flag) & I2C_MASK_FLAG) | I2C_WR_FLAG | I2C_RS_FLAG;
+	new_client->ext_flag  = (((new_client->ext_flag) & I2C_MASK_FLAG) | I2C_WR_FLAG | I2C_RS_FLAG);
 
-	if (i2c_master_send(new_client, &a_u2Addr, 1 << 8 | 1) != 1)
+	if (i2c_master_send(new_client, (const char*)&a_u2Addr, 1 << 8 | 1) != 1)
 		pr_err("max98926_ReadReg  I2C send failed!!\n");
 
 	*a_pu2Result = a_u2Addr;
 #else
+
 	struct i2c_msg wr_msgs[2];
 
 	wr_msgs[0].addr = new_client->addr;
@@ -975,7 +954,14 @@ static int max98926_ReadReg(u16 a_u2Addr, unsigned short *a_pu2Result)
 	wr_msgs[1].len = 1;
 	wr_msgs[1].buf = &buffer[1];
 
-	ret = i2c_transfer(adap, &wr_msgs, 2);
+	ret = i2c_transfer(adap, &wr_msgs[0], 2);
+
+	/*
+	mtk_i2c_transfer(adap, &wr_msgs,2, 0,100000);
+	*/
+
+	pr_err("%s mtk_i2c_transfer \n", __func__);
+
 	*a_pu2Result = buffer[1];
 #endif
 
@@ -986,17 +972,17 @@ static int max98926_ReadReg(u16 a_u2Addr, unsigned short *a_pu2Result)
 static int max98926_i2c_probe(struct i2c_client *i2c,
 			      const struct i2c_device_id *id)
 {
-	pr_err("%s\n", __func__);
+	int ret;
+	u32 value;
+	struct max98926_priv *max98926 = NULL;
+
 	new_client = i2c;
 #ifdef CONFIG_MTK_I2C_EXTENSION
 	new_client->timing = 100;
 	new_client->ext_flag  = ((new_client->ext_flag) & I2C_MASK_FLAG) | I2C_WR_FLAG | I2C_RS_FLAG;
 #endif
 
-	struct snd_soc_codec *codec = NULL;
-	int ret, reg;
-	u32 value;
-	struct max98926_priv *max98926 = NULL;
+	pr_err("%s\n", __func__);
 	/*
 	max98926_regulator_config(i2c, of_property_read_bool(i2c->dev.of_node,
 		"max98926,i2c-pull-up"), 1);
@@ -1050,7 +1036,6 @@ static int max98926_i2c_probe(struct i2c_client *i2c,
 		dev_err(&i2c->dev, "Failed to register codec: %d\n", ret);
 	pr_err("%s ret = %d\n", __func__, ret);
 
-err_out:
 	return ret;
 }
 
