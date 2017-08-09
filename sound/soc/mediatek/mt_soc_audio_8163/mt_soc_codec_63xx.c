@@ -3502,7 +3502,7 @@ static int mtk_mt6323_codec_dev_remove(struct platform_device *pdev)
 #ifdef CONFIG_OF
 static const struct of_device_id mt_soc_codec_63xx_of_ids[] = {
 
-	{.compatible = "mediatek,mt_soc_codec_63xx",},
+	{.compatible = "mediatek,mt8163-soc-codec-63xx",},
 	{}
 };
 
@@ -3511,7 +3511,7 @@ static int Auddrv_getGPIO_info(void)
 {
 	struct device_node *node = NULL;
 
-	node = of_find_compatible_node(NULL, NULL, "mediatek,mt_soc_codec_63xx");
+	node = of_find_compatible_node(NULL, NULL, "mediatek,mt8163-soc-codec-63xx");
 	if (node) {
 		if (of_property_read_u32_index(node, "extspkamp-gpio", 0, &pin_extspkamp)) {
 			if_config = 0;

@@ -540,7 +540,7 @@ static int mtk_dummy_codec_dev_remove(struct platform_device *pdev)
 
 #ifdef CONFIG_OF
 static const struct of_device_id mt_soc_codec_dummy_of_ids[] = {
-	{ .compatible = "mediatek,mt_soc_codec_dummy", },
+	{ .compatible = "mediatek,mt8163-soc-codec-dummy", },
 	{}
 };
 #endif

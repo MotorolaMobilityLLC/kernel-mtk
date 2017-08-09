@@ -696,7 +696,7 @@ static int mtk_fmtx_remove(struct platform_device *pdev)
 #ifdef CONFIG_OF
 static const struct of_device_id mt_soc_pcm_fmtx_of_ids[] = {
 
-	{.compatible = "mediatek,mt_soc_pcm_fmtx",},
+	{.compatible = "mediatek,mt8163-soc-pcm-fmtx",},
 	{}
 };
 #endif

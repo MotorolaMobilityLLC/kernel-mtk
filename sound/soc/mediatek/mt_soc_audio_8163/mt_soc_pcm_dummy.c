@@ -241,7 +241,7 @@ static int mtk_afedummy_remove(struct platform_device *pdev)
 #ifdef CONFIG_OF
 static const struct of_device_id mt_soc_pcm_dummy_of_ids[] = {
 
-	{.compatible = "mediatek,mt_soc_pcm_dummy",},
+	{.compatible = "mediatek,mt8163-soc-pcm-dummy",},
 	{}
 };
 #endif

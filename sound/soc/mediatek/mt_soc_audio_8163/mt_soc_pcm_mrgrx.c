@@ -430,7 +430,7 @@ static int mtk_mrgrx_remove(struct platform_device *pdev)
 #ifdef CONFIG_OF
 static const struct of_device_id mt_soc_pcm_mrgrx_of_ids[] = {
 
-	{.compatible = "mediatek,mt_soc_pcm_mrgrx",},
+	{.compatible = "mediatek,mt8163-soc-pcm-mrgrx",},
 	{}
 };
 #endif

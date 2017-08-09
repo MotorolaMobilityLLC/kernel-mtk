@@ -582,7 +582,7 @@ static int mtk_dai_stub_dev_remove(struct platform_device *pdev)
 #ifdef CONFIG_OF
 static const struct of_device_id mt_soc_dai_stub_of_ids[] = {
 
-	{.compatible = "mediatek,mt_soc_dai_stub",},
+	{.compatible = "mediatek,mt8163-soc-dai-stub",},
 	{}
 };
 #endif

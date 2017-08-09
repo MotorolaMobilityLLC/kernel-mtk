@@ -1131,7 +1131,7 @@ const struct dev_pm_ops mtk_routing_pm_ops = {
 
 #ifdef CONFIG_OF
 static const struct of_device_id mt_soc_pcm_routing_of_ids[] = {
-	{.compatible = "mediatek,mt_soc_pcm_routing",},
+	{.compatible = "mediatek,mt8163-soc-pcm-routing",},
 	{}
 };
 #endif

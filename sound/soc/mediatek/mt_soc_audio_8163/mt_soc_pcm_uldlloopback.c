@@ -386,7 +386,7 @@ static int mtk_afe_uldlloopback_remove(struct platform_device *pdev)
 #ifdef CONFIG_OF
 static const struct of_device_id mt_soc_pcm_uldlloopback_of_ids[] = {
 
-	{.compatible = "mediatek,mt_soc_pcm_uldlloopback",},
+	{.compatible = "mediatek,mt8163-soc-pcm-uldlloopback",},
 	{}
 };
 #endif

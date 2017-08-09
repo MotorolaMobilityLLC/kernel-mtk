@@ -606,7 +606,7 @@ static int mtk_capture2_remove(struct platform_device *pdev)
 #ifdef CONFIG_OF
 static const struct of_device_id mt_soc_pcm_capture2_of_ids[] = {
 
-	{.compatible = "mediatek,mt_soc_pcm_capture2",},
+	{.compatible = "mediatek,mt8163-soc-pcm-capture2",},
 	{}
 };
 #endif

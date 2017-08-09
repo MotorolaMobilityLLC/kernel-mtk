@@ -718,7 +718,7 @@ int AFE_BASE_PHY;
 
 static const struct of_device_id mt_soc_pcm_dl1_of_ids[] = {
 
-	{.compatible = "mediatek,mt_soc_pcm_dl1",},
+	{.compatible = "mediatek,mt8163-soc-pcm-dl1",},
 	{}
 };
 
@@ -726,7 +726,7 @@ static int Auddrv_Reg_map_new(void)
 {
 	struct device_node *node = NULL;
 
-	node = of_find_compatible_node(NULL, NULL, "mediatek,mt_soc_pcm_dl1");
+	node = of_find_compatible_node(NULL, NULL, "mediatek,mt8163-soc-pcm-dl1");
 
 	if (node) {
 		/* Setup IO addresses */
@@ -754,7 +754,7 @@ static int Auddrv_OF_ParseGPIO(void)
 {
 	struct device_node *node = NULL;
 
-	node = of_find_compatible_node(NULL, NULL, "mediatek,mt_soc_pcm_dl1");
+	node = of_find_compatible_node(NULL, NULL, "mediatek,mt8163-soc-pcm-dl1");
 	if (node) {
 		if_config1 = 1;
 		if_config2 = 1;

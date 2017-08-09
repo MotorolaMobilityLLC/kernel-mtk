@@ -453,7 +453,7 @@ const struct dev_pm_ops mtk_voice_md2_bt_pm_ops = {
 #ifdef CONFIG_OF
 static const struct of_device_id mt_soc_pcm_voice_md2_bt_of_ids[] = {
 
-	{.compatible = "mediatek,mt_soc_pcm_voice_md2_bt",},
+	{.compatible = "mediatek,mt8163-soc-pcm-voice-md2-bt",},
 	{}
 };
 #endif
