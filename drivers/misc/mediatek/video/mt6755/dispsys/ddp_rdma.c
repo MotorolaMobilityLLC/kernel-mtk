@@ -273,6 +273,7 @@ void rdma_set_ultra_l(unsigned int idx, unsigned int bpp, void *handle, golden_s
 	golden_setting_context temp_golden_setting;
 	unsigned int frame_rate;
 	long long temp;
+	long long temp_for_div;
 
 	if (p_golden_setting == NULL) {
 		DDPDUMP("[disp_lowpower]p_golden_setting is NULL\n");
@@ -393,12 +394,16 @@ void rdma_set_ultra_l(unsigned int idx, unsigned int bpp, void *handle, golden_s
 	else
 		fill_rate = 960*mmsysclk*3/16; /* FIFO depth / us  */
 
-	if (idx == 0)
-		consume_rate = rdma_golden_setting->dst_width*rdma_golden_setting->dst_height*frame_rate*bpp/(8*1000);
-	else
+	if (idx == 0) {
+		consume_rate = rdma_golden_setting->dst_width*rdma_golden_setting->dst_height*frame_rate*bpp;
+		do_div(consume_rate, 8*1000);
+	} else {
 		consume_rate = rdma_golden_setting->ext_dst_width
-		*rdma_golden_setting->ext_dst_height*frame_rate*bpp/(8*1000);
-	consume_rate = 1200*consume_rate/(16*1000);
+		*rdma_golden_setting->ext_dst_height*frame_rate*bpp;
+		do_div(consume_rate, 8*1000);
+	}
+	consume_rate = 1200*consume_rate;
+	do_div(consume_rate, 16*1000);
 
 	preultra_low = preultra_low_us * consume_rate;
 	if (preultra_low%1000)
@@ -432,18 +437,23 @@ void rdma_set_ultra_l(unsigned int idx, unsigned int bpp, void *handle, golden_s
 
 
 	issue_req_threshold = (fifo_valid_size - preultra_low) < 255  ? (fifo_valid_size - preultra_low) : 255;
-	temp = rdma_golden_setting->rdma_width * rdma_golden_setting->rdma_height * bpp / (16*8) - 1;
+	temp = rdma_golden_setting->rdma_width * rdma_golden_setting->rdma_height * bpp;
+	do_div(temp, 16*8);
+	temp--;
+
 	output_valid_fifo_threshold = preultra_low < temp ? preultra_low : temp;
 
-	temp = fifo_valid_size - 1200 * (fill_rate - consume_rate)/1000000;
+	temp_for_div = 1200 * (fill_rate - consume_rate);
+	do_div(temp_for_div, 1000000);
+	temp = fifo_valid_size - temp_for_div;
 	if (temp < 0)
 		sodi_threshold_high = preultra_high;
 	else
-		sodi_threshold_high = preultra_high > (fifo_valid_size - 1200 * (fill_rate - consume_rate)/1000000)
-			? preultra_high : (fifo_valid_size - 1200 * (fill_rate - consume_rate)/1000000);
+		sodi_threshold_high = preultra_high > temp ? preultra_high : temp;
 
+	sodi_threshold_low = (ultra_low_us*10 + 4) * consume_rate;
+	sodi_threshold_low = sodi_threshold_low / 10;
 
-	sodi_threshold_low = (ultra_low_us*10 + 4) * consume_rate / 10;
 	if (sodi_threshold_low % 1000)
 		sodi_threshold_low = sodi_threshold_low/1000 + 1;
 	else

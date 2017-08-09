@@ -4748,7 +4748,7 @@ static int smart_ovl_try_switch_mode_nolock(void)
 	disp_path_handle disp_handle = NULL;
 	disp_ddp_path_config *data_config = NULL;
 	int i, stable;
-	unsigned long long DL_bw, DC_bw;
+	unsigned long long DL_bw, DC_bw, bw_th;
 
 	if (!disp_helper_get_option(DISP_OPT_SMART_OVL))
 		return 0;
@@ -4802,12 +4802,16 @@ static int smart_ovl_try_switch_mode_nolock(void)
 	DC_bw = (ovl_sz + rdma_sz) * hwc_fps + rdma_sz * lcm_fps;
 
 	if (pgc->session_mode == DISP_SESSION_DIRECT_LINK_MODE) {
-		if (DC_bw < DL_bw*4/5) {
+		bw_th = DL_bw*4;
+		do_div(bw_th, 5);
+		if (DC_bw < bw_th) {
 			/* switch to DC */
 			do_primary_display_switch_mode(DISP_SESSION_DECOUPLE_MODE, pgc->session_id, 0, NULL, 0);
 		}
 	} else {
-		if (DL_bw < DC_bw*4/5) {
+		bw_th = DC_bw*4;
+		do_div(bw_th, 5);
+		if (DL_bw < bw_th) {
 			/* switch to DL */
 			do_primary_display_switch_mode(DISP_SESSION_DIRECT_LINK_MODE, pgc->session_id, 0, NULL, 0);
 		}
