@@ -1256,7 +1256,7 @@ static unsigned int charging_set_ta20_current_pattern(void *data)
 	int i, j = 0;
 	int flag;
 	CHR_VOLTAGE_ENUM chr_vol = *(CHR_VOLTAGE_ENUM *) data;
-	int errcnt = 0;
+
 
 	bq25890_set_VINDPM(0x13);
 	bq25890_set_ichg(8);
@@ -1282,7 +1282,6 @@ static unsigned int charging_set_ta20_current_pattern(void *data)
 				battery_log(BAT_LOG_CRTI,
 					"charging_set_ta20_current_pattern fail1: idx:%d target:%d actual:%d\n",
 					i, PEOFFTIME, cptime[j][1]);
-				errcnt = 1;
 				return STATUS_FAIL;
 			}
 			j++;
@@ -1295,7 +1294,6 @@ static unsigned int charging_set_ta20_current_pattern(void *data)
 				battery_log(BAT_LOG_CRTI,
 					"charging_set_ta20_current_pattern fail2: idx:%d target:%d actual:%d\n",
 					i, PEOFFTIME, cptime[j][1]);
-				errcnt = 1;
 				return STATUS_FAIL;
 			}
 			j++;
@@ -1310,7 +1308,6 @@ static unsigned int charging_set_ta20_current_pattern(void *data)
 				battery_log(BAT_LOG_CRTI,
 					"charging_set_ta20_current_pattern fail3: idx:%d target:%d actual:%d\n",
 					i, PEOFFTIME, cptime[j][1]);
-				errcnt = 1;
 				return STATUS_FAIL;
 			}
 			j++;
@@ -1323,7 +1320,6 @@ static unsigned int charging_set_ta20_current_pattern(void *data)
 				battery_log(BAT_LOG_CRTI,
 					"charging_set_ta20_current_pattern fail4: idx:%d target:%d actual:%d\n",
 					i, PEOFFTIME, cptime[j][1]);
-				errcnt = 1;
 				return STATUS_FAIL;
 			}
 			j++;
@@ -1339,7 +1335,6 @@ static unsigned int charging_set_ta20_current_pattern(void *data)
 		battery_log(BAT_LOG_CRTI,
 			"charging_set_ta20_current_pattern fail5: idx:%d target:%d actual:%d\n",
 			i, PEOFFTIME, cptime[j][1]);
-		errcnt = 1;
 		return STATUS_FAIL;
 	}
 	j++;
@@ -1349,14 +1344,14 @@ static unsigned int charging_set_ta20_current_pattern(void *data)
 	bq25890_set_iinlim(0xc);
 
 	battery_log(BAT_LOG_CRTI,
-	"[charging_set_ta20_current_pattern]:err:%d chr_vol:%d bit:%d time:%3d %3d %3d %3d %3d %3d %3d %3d %3d %3d %3d!!\n",
-	errcnt, chr_vol, value,
+	"[charging_set_ta20_current_pattern]:chr_vol:%d bit:%d time:%3d %3d %3d %3d %3d %3d %3d %3d %3d %3d %3d!!\n",
+	chr_vol, value,
 	cptime[1][0], cptime[2][0], cptime[3][0], cptime[4][0], cptime[5][0],
 	cptime[6][0], cptime[7][0], cptime[8][0], cptime[9][0], cptime[10][0], cptime[11][0]);
 
 	battery_log(BAT_LOG_CRTI,
-	"[charging_set_ta20_current_pattern2]:err:%d chr_vol:%d bit:%d time:%3d %3d %3d %3d %3d %3d %3d %3d %3d %3d %3d!!\n",
-	errcnt, chr_vol, value,
+	"[charging_set_ta20_current_pattern2]:chr_vol:%d bit:%d time:%3d %3d %3d %3d %3d %3d %3d %3d %3d %3d %3d!!\n",
+	chr_vol, value,
 	cptime[1][1], cptime[2][1], cptime[3][1], cptime[4][1], cptime[5][1],
 	cptime[6][1], cptime[7][1], cptime[8][1], cptime[9][1], cptime[10][1], cptime[11][1]);
 
@@ -1364,10 +1359,8 @@ static unsigned int charging_set_ta20_current_pattern(void *data)
 	bq25890_set_ico_en_start(1);
 	bq25890_set_iinlim(0x3f);
 
-	if (errcnt == 0)
-		return STATUS_OK;
+	return STATUS_OK;
 
-	return STATUS_FAIL;
 }
 
 
