@@ -108,7 +108,12 @@ static fh_pll_t g_fh_pll[FH_PLL_NUM] = {
 	/* Enable SSC for RF desense */
 	{FH_FH_ENABLE_SSC,	FH_PLL_ENABLE,		0,	ARMCA7PLL_DEF_FREQ,		0},
 	{FH_FH_DISABLE,		FH_PLL_ENABLE,		0,	MAINPLL_DEF_FREQ,		0},
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+	/* Enable SSC for RF desense */
+	{FH_FH_ENABLE_SSC,	FH_PLL_ENABLE,		0,	MEMPLL_DEF_FREQ,		0},
+#else
 	{FH_FH_DISABLE,		FH_PLL_ENABLE,		0,	MEMPLL_DEF_FREQ,		0},
+#endif
 	/* MMPLL SSC > GPU perf fail */
 	{FH_FH_DISABLE,		FH_PLL_ENABLE,		0,	MMPLL_DEF_FREQ,			0},
 	{FH_FH_DISABLE,		FH_PLL_ENABLE,		0,	MPLL_DEF_FREQ,			0},
@@ -143,7 +148,7 @@ static const struct freqhopping_ssc ssc_mainpll_setting[] = {
 static const struct freqhopping_ssc ssc_mempll_setting[] = {
 	{0, 0, 0, 0, 0, 0},/* Means disable */
 	{0, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF},/* Means User-Define */
-	{MEMPLL_DEF_FREQ, 0, 6, 0, 8, 0x1C000}, /* 0 ~ -8% *//* Df changed to 6 */
+	{MEMPLL_DEF_FREQ, 0, 6, 0, 4, 0x1C000}, /* 0 ~ -4% *//* Df changed to 6 */
 	{0, 0, 0, 0, 0, 0} /* EOF */
 };
 
@@ -287,6 +292,10 @@ static void mt_fh_hal_default_conf(void)
     /* default enable ARMCA15 and ARMCA7 PLL SSC for RF desense problems. */
 	freqhopping_config(FH_ARMCA15_PLLID, g_default_freq[FH_ARMCA15_PLLID], true);
 	freqhopping_config(FH_ARMCA7_PLLID, g_default_freq[FH_ARMCA7_PLLID], true);
+	/* default enable MEMPLL SSC for B41 2600MHz desense problems. */
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+	freqhopping_config(FH_MEM_PLLID, g_default_freq[FH_MEM_PLLID], true);
+#endif
 
 #if 1
 	/* Default turn off all PLL SSC on Jade */
