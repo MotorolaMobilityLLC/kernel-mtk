@@ -36,6 +36,8 @@
 #include <mt6797/da9214.h>
 #include <mach/mt_freqhopping.h>
 #include <mt_clkmgr.h>
+#include <mt_idvfs.h>
+#include <mt_ocp.h>
 #endif
 
 #ifdef MTK_IRQ_NEW_DESIGN
@@ -52,6 +54,7 @@
  #undef CONFIG_CL2_BUCK_CTRL
 #define CONFIG_ARMPLL_CTRL	1
  #undef CONFIG_ARMPLL_CTRL
+#define CONFIG_OCP_IDVFS_CTRL	1
 
 int bypass_boot = 2;
 int bypass_cl0_armpll = 3;
@@ -59,6 +62,12 @@ int bypass_cl1_armpll = 4;
 char g_cl0_online = 1;	/* cpu0 is online */
 char g_cl1_online = 0;
 char g_cl2_online = 0;
+
+#ifdef CONFIG_OCP_IDVFS_CTRL
+int ocp_cl0_init = 0;
+int ocp_cl1_init = 0;
+int idvfs_init = 0;
+#endif
 #endif
 
 struct psci_power_state {
@@ -568,6 +577,28 @@ static int cpu_psci_cpu_boot(unsigned int cpu)
 
 	err = psci_ops.cpu_on(cpu_logical_map(cpu), __pa(secondary_entry));
 
+#ifdef CONFIG_OCP_IDVFS_CTRL
+	if ((cpu == 0) || (cpu == 1) || (cpu == 2) || (cpu == 3)) {
+		if (!ocp_cl0_init) {
+			pr_err("OXOXOX %s %d OXOXOX\n", __func__, __LINE__);
+			Cluster0_OCP_ON();
+			ocp_cl0_init = 1;
+		}
+	} else if ((cpu == 4) || (cpu == 5) || (cpu == 6) || (cpu == 7)) {
+		if (!ocp_cl1_init) {
+			pr_err("OXOXOX %s %d OXOXOX\n", __func__, __LINE__);
+			Cluster0_OCP_ON();
+			ocp_cl1_init = 1;
+		}
+	} else if ((cpu == 8) || (cpu == 9)) {
+		if (!idvfs_init) {
+			pr_err("OXOXOX %s %d OXOXOX\n", __func__, __LINE__);
+			BigiDVFSEnable_hp();
+			idvfs_init = 1;
+		}
+	}
+#endif
+
 	if (err)
 		pr_err("failed to boot CPU%d (%d)\n", cpu, err);
 	else {
@@ -685,6 +716,23 @@ static int cpu_psci_cpu_kill(unsigned int cpu)
 	 */
 
 	for (i = 0; i < 10; i++) {
+#ifdef CONFIG_OCP_IDVFS_CTRL
+		if (cpu == 8 && idvfs_init) {
+			BigiDVFSDisable_hp();
+			idvfs_init = 0;
+		}
+
+		if (cpu == 0 && ocp_cl0_init) {
+			LittleOCPDisable(0);
+			ocp_cl0_init = 0;
+		}
+
+		if (cpu == 4 && ocp_cl1_init) {
+			LittleOCPDisable(1);
+			ocp_cl1_init = 0;
+		}
+#endif
+
 		err = psci_ops.affinity_info(cpu_logical_map(cpu), 0);
 		if (err == PSCI_0_2_AFFINITY_LEVEL_OFF) {
 			pr_info("CPU%d killed.\n", cpu);
