@@ -1,4 +1,5 @@
 #include <linux/slab.h>
+#include <linux/delay.h>
 
 #include "cmdq_sec.h"
 #include "cmdq_def.h"
@@ -142,7 +143,7 @@ int32_t cmdq_sec_open_session_impl(uint32_t deviceId,
 				   uint32_t wsmSize, struct mc_session_handle *pSessionHandle)
 {
 	int32_t status = 0;
-	int cnt = 0;
+	int retry_cnt = 0, max_retry = 30;
 	enum mc_result mcRet = MC_DRV_OK;
 
 	if (NULL == pWsm || NULL == pSessionHandle) {
@@ -159,8 +160,9 @@ int32_t cmdq_sec_open_session_impl(uint32_t deviceId,
 	do {
 		mcRet = mc_open_session(pSessionHandle, uuid, pWsm, wsmSize);
 		if (MC_DRV_OK != mcRet) {
-			CMDQ_ERR("[SEC]_SESSION_OPEN: err[0x%x]\n", mcRet);
-			cnt++;
+			CMDQ_ERR("[SEC]_SESSION_OPEN: err[0x%x], retry[%d]\n", mcRet, retry_cnt);
+			retry_cnt++;
+			msleep_interruptible(2000);
 			status = -1;
 			continue;
 		}
@@ -168,9 +170,14 @@ int32_t cmdq_sec_open_session_impl(uint32_t deviceId,
 		/* Open Session success */
 		status = 0;
 		break;
+	} while (retry_cnt < max_retry);
 
-		CMDQ_MSG("[SEC]_SESSION_OPEN: status[%d], mcRet[0x%x], cnt[%d]\n", status, mcRet, cnt);
-	} while (cnt < 30);
+	if (retry_cnt >= max_retry) {
+		/* print error message */
+		CMDQ_ERR("[SEC]_SESSION_OPEN fail: status[%d], mcRet[0x%x], retry[%d]\n", status, mcRet, retry_cnt);
+	} else {
+		CMDQ_MSG("[SEC]_SESSION_OPEN: status[%d], mcRet[0x%x], retry[%d]\n", status, mcRet, retry_cnt);
+	}
 
 	return status;
 }
