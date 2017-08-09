@@ -661,7 +661,8 @@ static int _disp_primary_path_idle_detect_thread(void *data)
 				}
 			}
 #endif
-			DISPMSG("[LP] - enter: %d, flag:%d,%d\n", enter_cnt++,
+			enter_cnt++;
+			pr_debug("[LP] - enter: %d, flag:%d,%d\n", enter_cnt,
 				atomic_read(&isDdp_Idle), atomic_read(&idle_detect_flag));
 			atomic_set(&isDdp_Idle, 1);
 			primary_display_save_power_for_idle(1, 1);
@@ -677,16 +678,18 @@ static int _disp_primary_path_idle_detect_thread(void *data)
 		atomic_set(&idle_detect_flag, 0);
 		/* printk("[ddp_idle]ret=%d\n", ret); */
 		if (kthread_should_stop()) {
-			pr_debug("[LP] stop: %d, flag:%d,%d\n", stop_cnt++,
+			stop_cnt++;
+			pr_debug("[LP] stop: %d, flag:%d,%d\n", stop_cnt,
 				 atomic_read(&isDdp_Idle), atomic_read(&idle_detect_flag));
 			break;
 		}
 
-		pr_debug("[LP] end: %d, flag:%d,%d\n", end_cnt++, atomic_read(&isDdp_Idle),
+		end_cnt++;
+		pr_debug("[LP] end: %d, flag:%d,%d\n", end_cnt, atomic_read(&isDdp_Idle),
 			 atomic_read(&idle_detect_flag));
 		if (enter_cnt != end_cnt) {
 			pr_err("[LP][ASSERT]%d, %d, %d\n", enter_cnt, end_cnt, stop_cnt);
-			/* ASSERT(0); */
+			ASSERT(0);
 		}
 	}
 
