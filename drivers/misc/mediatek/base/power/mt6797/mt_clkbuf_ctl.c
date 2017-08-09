@@ -36,6 +36,7 @@
 #include <linux/of.h>
 #include <linux/of_address.h>
 #include <linux/ratelimit.h>
+#include <linux/workqueue.h>
 
 #include <mt-plat/sync_write.h>
 #include <mt_spm.h>
@@ -158,6 +159,8 @@ static void __iomem *pwrap_base;
 static bool is_clkbuf_initiated;
 static bool g_is_flightmode_on;
 static bool clkbuf_debug;
+
+struct delayed_work clkbuf_delayed_work;
 
 /* false: rf_clkbuf, true: pmic_clkbuf */
 static bool is_pmic_clkbuf;
@@ -391,6 +394,26 @@ void clk_buf_config_mdjtag_gpio_pull_down(void)
 }
 #endif /* CONFIG_MT_ENG_BUILD */
 
+static void clkbuf_delayed_worker(struct work_struct *work)
+{
+	bool srcclkena_o1 = false;
+
+	srcclkena_o1 = (spm_read(PCM_REG13_DATA) & R13_MD1_VRF18_REQ)
+			&& R13_MD1_VRF18_REQ;
+	clk_buf_warn("%s: g_is_flightmode_on=%d, srcclkena_o1=%u, pcm_reg13=0x%x\n",
+		     __func__, g_is_flightmode_on, srcclkena_o1,
+		     spm_read(PCM_REG13_DATA));
+
+	BUG_ON(clkbuf_debug && g_is_flightmode_on && srcclkena_o1);
+
+	mutex_lock(&clk_buf_ctrl_lock);
+
+	if (g_is_flightmode_on)
+		spm_clk_buf_ctrl(clk_buf_swctrl);
+
+	mutex_unlock(&clk_buf_ctrl_lock);
+}
+
 /* for spm driver use */
 bool is_clk_buf_under_flightmode(void)
 {
@@ -400,15 +423,33 @@ bool is_clk_buf_under_flightmode(void)
 /* for ccci driver to notify this */
 void clk_buf_set_by_flightmode(bool is_flightmode_on)
 {
+	bool srcclkena_o1 = false;
+
+	srcclkena_o1 = (spm_read(PCM_REG13_DATA) & R13_MD1_VRF18_REQ)
+			&& R13_MD1_VRF18_REQ;
+	clk_buf_warn("%s: g/is_flightmode_on=%d->%d, srcclkena_o1=%u, pcm_reg13=0x%x\n",
+		     __func__, g_is_flightmode_on, is_flightmode_on,
+		     srcclkena_o1, spm_read(PCM_REG13_DATA));
+
 	mutex_lock(&clk_buf_ctrl_lock);
 
-	g_is_flightmode_on = is_flightmode_on;
-	clk_buf_warn("%s: is_flightmode_on=%d\n", __func__, g_is_flightmode_on);
+	if (g_is_flightmode_on == is_flightmode_on) {
+		mutex_unlock(&clk_buf_ctrl_lock);
+		return;
+	}
 
-	if (g_is_flightmode_on)
-		spm_clk_buf_ctrl(clk_buf_swctrl);
-	else
-		spm_clk_buf_ctrl(clk_buf_swctrl_modem_on);
+	g_is_flightmode_on = is_flightmode_on;
+
+	if (!is_pmic_clkbuf) {
+		if (g_is_flightmode_on) {
+			schedule_delayed_work(&clkbuf_delayed_work,
+					      msecs_to_jiffies(2000));
+			/* spm_clk_buf_ctrl(clk_buf_swctrl); */
+		} else {
+			cancel_delayed_work(&clkbuf_delayed_work);
+			spm_clk_buf_ctrl(clk_buf_swctrl_modem_on);
+		}
+	}
 
 	mutex_unlock(&clk_buf_ctrl_lock);
 }
@@ -587,31 +628,32 @@ static ssize_t clk_buf_ctrl_show(struct kobject *kobj, struct kobj_attribute *at
 {
 	int len = 0;
 	char *p = buf;
+	bool srcclkena_o1 = false;
 
-	p += sprintf(p, "********** RF clock buffer state (%c) flightmode=%d **********\n",
-		     (is_pmic_clkbuf ? 'X' : 'O'), g_is_flightmode_on);
-	p += sprintf(p, "CKBUF1_BB   SW(1)/HW(2) CTL: %d, Disable(0)/Enable(1): %d/%d\n",
+	p += sprintf(p, "********** RF clock buffer state (%s) flightmode(FM)=%d **********\n",
+		     (is_pmic_clkbuf ? "off" : "on"), g_is_flightmode_on);
+	p += sprintf(p, "CKBUF1_BB   SW(1)/HW(2) CTL: %d, Dis(0)/En(1) of FM=1:%d, FM=0:%d\n",
 		     CLK_BUF1_STATUS, clk_buf_swctrl[0],
 		     clk_buf_swctrl_modem_on[0]);
-	p += sprintf(p, "CKBUF2_NONE SW(1)/HW(2) CTL: %d, Disable(0)/Enable(1): %d/%d\n",
+	p += sprintf(p, "CKBUF2_NONE SW(1)/HW(2) CTL: %d, Dis(0)/En(1) of FM=1:%d, FM=0:%d\n",
 		     CLK_BUF2_STATUS, clk_buf_swctrl[1],
 		     clk_buf_swctrl_modem_on[1]);
-	p += sprintf(p, "CKBUF3_NFC  SW(1)/HW(2) CTL: %d, Disable(0)/Enable(1): %d/%d\n",
+	p += sprintf(p, "CKBUF3_NFC  SW(1)/HW(2) CTL: %d, Dis(0)/En(1) of FM=1:%d, FM=0:%d\n",
 		     CLK_BUF3_STATUS, clk_buf_swctrl[2],
 		     clk_buf_swctrl_modem_on[2]);
-	p += sprintf(p, "CKBUF4_AUD  SW(1)/HW(2) CTL: %d, Disable(0)/Enable(1): %d/%d\n",
+	p += sprintf(p, "CKBUF4_AUD  SW(1)/HW(2) CTL: %d, Dis(0)/En(1) of FM=1:%d, FM=0:%d\n",
 		     CLK_BUF4_STATUS, clk_buf_swctrl[3],
 		     clk_buf_swctrl_modem_on[3]);
 #ifdef ENABLE_PMIC_CLK_BUFFER
-	p += sprintf(p, "********** PMIC clock buffer state (%c) **********\n",
-		     (is_pmic_clkbuf ? 'O' : 'X'));
-	p += sprintf(p, "CKBUF1_BB   SW(1)/HW(2) CTL: %d, Disable(0)/Enable(1): %d\n",
+	p += sprintf(p, "********** PMIC clock buffer state (%s) **********\n",
+		     (is_pmic_clkbuf ? "on" : "off"));
+	p += sprintf(p, "CKBUF1_BB   SW(1)/HW(2) CTL: %d, Dis(0)/En(1): %d\n",
 		     CLK_BUF5_STATUS_PMIC, pmic_clk_buf_swctrl[0]);
-	p += sprintf(p, "CKBUF2_CONN SW(1)/HW(2) CTL: %d, Disable(0)/Enable(1): %d\n",
+	p += sprintf(p, "CKBUF2_CONN SW(1)/HW(2) CTL: %d, Dis(0)/En(1): %d\n",
 		     CLK_BUF6_STATUS_PMIC, pmic_clk_buf_swctrl[1]);
-	p += sprintf(p, "CKBUF3_NFC  SW(1)/HW(2) CTL: %d, Disable(0)/Enable(1): %d\n",
+	p += sprintf(p, "CKBUF3_NFC  SW(1)/HW(2) CTL: %d, Dis(0)/En(1): %d\n",
 		     CLK_BUF7_STATUS_PMIC, pmic_clk_buf_swctrl[2]);
-	p += sprintf(p, "CKBUF4_RF   SW(1)/HW(2) CTL: %d, Disable(0)/Enable(1): %d\n",
+	p += sprintf(p, "CKBUF4_RF   SW(1)/HW(2) CTL: %d, Dis(0)/En(1): %d\n",
 		     CLK_BUF8_STATUS_PMIC, pmic_clk_buf_swctrl[3]);
 	p += sprintf(p, "\n********** clock buffer command help **********\n");
 	p += sprintf(p, "BSI  switch on/off: echo bsi en1 en2 en3 en4 > /sys/power/clk_buf/clk_buf_ctrl\n");
@@ -638,6 +680,12 @@ static ssize_t clk_buf_ctrl_show(struct kobject *kobj, struct kobj_attribute *at
 		     PMIC_CLK_BUF7_DRIVING_CURR,
 		     PMIC_CLK_BUF8_DRIVING_CURR);
 #endif /* ENABLE_PMIC_CLK_BUFFER */
+	srcclkena_o1 = (spm_read(PCM_REG13_DATA) & R13_MD1_VRF18_REQ)
+			&& R13_MD1_VRF18_REQ;
+	p += sprintf(p, "srcclkena_o1=%u, pcm_reg13=0x%x, MD1_PWR_CON=0x%x, C2K_PWR_CON=0x%x\n",
+		     srcclkena_o1, spm_read(PCM_REG13_DATA),
+		     spm_read(MD1_PWR_CON), spm_read(C2K_PWR_CON));
+
 	len = p - buf;
 
 	return len;
@@ -978,6 +1026,8 @@ bool clk_buf_init(void)
 #ifndef CONFIG_MT_ENG_BUILD
 	clk_buf_config_mdjtag_gpio_pull_down();
 #endif
+
+	INIT_DELAYED_WORK(&clkbuf_delayed_work, clkbuf_delayed_worker);
 
 	is_clkbuf_initiated = true;
 
