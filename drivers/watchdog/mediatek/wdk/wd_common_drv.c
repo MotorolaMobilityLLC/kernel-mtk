@@ -71,6 +71,9 @@ static int wdt_start;
 static int g_enable = 1;
 static struct work_struct wdk_work;
 static struct workqueue_struct *wdk_workqueue;
+static unsigned int lasthpg_act;
+static unsigned int lasthpg_cpu;
+static unsigned long long lasthpg_t;
 
 static char cmd_buf[256];
 
@@ -307,12 +310,18 @@ void wk_cpu_update_bit_flag(int cpu, int plug_status)
 		spin_lock(&lock);
 		cpus_kick_bit |= (1 << cpu);
 		kick_bit = 0;
+		lasthpg_cpu = cpu;
+		lasthpg_act = plug_status;
+		lasthpg_t = sched_clock();
 		spin_unlock(&lock);
 	}
 	if (0 == plug_status) {	/* plug off */
 		spin_lock(&lock);
 		cpus_kick_bit &= (~(1 << cpu));
 		kick_bit = 0;
+		lasthpg_cpu = cpu;
+		lasthpg_act = plug_status;
+		lasthpg_t = sched_clock();
 		spin_unlock(&lock);
 	}
 }
@@ -386,8 +395,10 @@ static int kwdt_thread(void *arg)
 
 	for (;;) {
 
-		if (kthread_should_stop())
+		if (kthread_should_stop()) {
+			pr_err("[WDK] kthread_should_stop do !!\n");
 			break;
+		}
 		spin_lock(&lock);
 		cpu = smp_processor_id();
 		loc_wk_wdt = g_wd_api;
@@ -416,8 +427,9 @@ static int kwdt_thread(void *arg)
 						/* aee_rr_rec_wdk_kick_jiffies(jiffies); */
 					}
 					pr_debug
-					    ("[WDK], local_bit:0x%x, cpu:%d, check bit0x:%x,RT[%lld]\n",
-					     local_bit, cpu, wk_check_kick_bit(), sched_clock());
+					    ("[WDK],local_bit:0x%x,cpu:%d,check bit0x:%x,%d,%d,%lld,RT[%lld]\n",
+					     local_bit, cpu, wk_check_kick_bit(), lasthpg_cpu, lasthpg_act,
+					     lasthpg_t, sched_clock());
 					if (local_bit == wk_check_kick_bit()) {
 						printk_deferred("[WDK]: kick Ex WDT,RT[%lld]\n",
 								sched_clock());
