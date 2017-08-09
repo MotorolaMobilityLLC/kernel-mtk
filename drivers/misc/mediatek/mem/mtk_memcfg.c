@@ -93,6 +93,7 @@ static int mtk_memcfg_memory_layout_open(struct inode *inode, struct file *file)
 
 static LIST_HEAD(frag_page_list);
 static DEFINE_SPINLOCK(frag_page_list_lock);
+static DEFINE_MUTEX(frag_task_lock);
 static unsigned long mtk_memcfg_frag_round;
 static struct kmem_cache *frag_page_cache;
 
@@ -204,13 +205,18 @@ mtk_memcfg_frag_write(struct file *file, const char __user *buffer,
 			return -EFAULT;
 		state -= '0';
 		pr_alert("%s state = %d\n", __func__, state);
-		if (state) {
+
+		mutex_lock(&frag_task_lock);
+		if (state && !p) {
 			pr_alert("activate do_fragmentation kthread\n");
 			p = kthread_create(do_fragmentation, NULL,
 					   "fragmentationd");
 			if (!IS_ERR(p))
 				wake_up_process(p);
+			else
+				p = 0;
 		}
+		mutex_unlock(&frag_task_lock);
 	}
 	return count;
 }
