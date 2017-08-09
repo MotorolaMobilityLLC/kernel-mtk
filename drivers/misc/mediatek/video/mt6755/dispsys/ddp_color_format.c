@@ -89,6 +89,14 @@ char *unified_color_fmt_name(enum UNIFIED_COLOR_FMT fmt)
 		return "NV24";
 	case UFMT_NV42:
 		return "NV42";
+	case UFMT_PARGB8888:
+		return "PARGB8888";
+	case UFMT_PABGR8888:
+		return "PABGR8888";
+	case UFMT_PRGBA8888:
+		return "PRGBA8888";
+	case UFMT_PBGRA8888:
+		return "PBGRA8888";
 	default:
 		return "fmt_unknown";
 	}
@@ -102,6 +110,8 @@ static enum UNIFIED_COLOR_FMT display_engine_supported_color[] = {
 	UFMT_RGBA8888, UFMT_BGRA8888,
 	UFMT_ARGB8888, UFMT_ABGR8888,
 	UFMT_XRGB8888, UFMT_RGBX8888,
+	UFMT_PARGB8888, UFMT_PABGR8888,
+	UFMT_PRGBA8888, UFMT_PBGRA8888,
 	UFMT_UYVY, UFMT_VYUY,
 	UFMT_YUYV, UFMT_YVYU,
 	/* wdma supported */
@@ -119,16 +129,17 @@ int is_unified_color_fmt_supported(enum UNIFIED_COLOR_FMT ufmt)
 	return 0;
 }
 
-enum UNIFIED_COLOR_FMT display_fmt_reg_to_unified_fmt(int fmt_reg_val, int swap)
+enum UNIFIED_COLOR_FMT display_fmt_reg_to_unified_fmt(int fmt_reg_val, int byteswap, int rgbswap)
 {
 	int i;
 	enum UNIFIED_COLOR_FMT ufmt;
 	for (i = 0; i < ARRAY_SIZE(display_engine_supported_color); i++) {
 		ufmt = display_engine_supported_color[i];
-		if (UFMT_GET_FORMAT(ufmt) == fmt_reg_val && UFMT_GET_SWAP(ufmt) == swap)
+		if (UFMT_GET_FORMAT(ufmt) == fmt_reg_val && UFMT_GET_BYTESWAP(ufmt) == byteswap &&
+			UFMT_GET_RGBSWAP(ufmt) == rgbswap)
 			return ufmt;
 	}
-	DDPERR("unknown_fmt fmt=%d, swap=%d\n", fmt_reg_val, swap);
+	DDPERR("unknown_fmt fmt=%d, byteswap=%d, rgbswap=%d\n", fmt_reg_val, byteswap, rgbswap);
 	return UFMT_UNKNOWN;
 }
 
@@ -165,6 +176,14 @@ enum UNIFIED_COLOR_FMT disp_fmt_to_unified_fmt(DISP_FORMAT src_fmt)
 		return UFMT_I420;
 	case DISP_FORMAT_YV12:
 		return UFMT_YV12;
+	case DISP_FORMAT_PARGB8888:
+		return UFMT_PARGB8888;
+	case DISP_FORMAT_PABGR8888:
+		return UFMT_PABGR8888;
+	case DISP_FORMAT_PRGBA8888:
+		return UFMT_PRGBA8888;
+	case DISP_FORMAT_PBGRA8888:
+		return UFMT_PBGRA8888;
 	default:
 		DDPERR("Invalid color format: 0x%x\n", src_fmt);
 		BUG();
@@ -172,20 +191,56 @@ enum UNIFIED_COLOR_FMT disp_fmt_to_unified_fmt(DISP_FORMAT src_fmt)
 	}
 }
 
-int ufmt_disable_X_channel(enum UNIFIED_COLOR_FMT src_fmt, enum UNIFIED_COLOR_FMT *dst_fmt)
+int ufmt_disable_X_channel(enum UNIFIED_COLOR_FMT src_fmt, enum UNIFIED_COLOR_FMT *dst_fmt,
+	int *const_bld)
 {
 	int ret = 1;
+
 	switch (src_fmt) {
 	case UFMT_XRGB8888:
 		*dst_fmt = UFMT_ARGB8888;
+		if (const_bld)
+			*const_bld = 1;
 		break;
 	case UFMT_XBGR8888:
 		*dst_fmt = UFMT_ABGR8888;
+		if (const_bld)
+			*const_bld = 1;
 		break;
 	case UFMT_RGBX8888:
 		*dst_fmt = UFMT_RGBA8888;
+		if (const_bld)
+			*const_bld = 1;
 		break;
 	case UFMT_BGRX8888:
+		*dst_fmt = UFMT_BGRA8888;
+		if (const_bld)
+			*const_bld = 1;
+		break;
+	default:
+		*dst_fmt = src_fmt;
+		if (const_bld)
+			*const_bld = 0;
+		ret = 0;
+		break;
+	}
+	return ret;
+}
+int ufmt_disable_P(enum UNIFIED_COLOR_FMT src_fmt, enum UNIFIED_COLOR_FMT *dst_fmt)
+{
+	int ret = 1;
+
+	switch (src_fmt) {
+	case UFMT_PARGB8888:
+		*dst_fmt = UFMT_ARGB8888;
+		break;
+	case UFMT_PABGR8888:
+		*dst_fmt = UFMT_ABGR8888;
+		break;
+	case UFMT_PRGBA8888:
+		*dst_fmt = UFMT_RGBA8888;
+		break;
+	case UFMT_PBGRA8888:
 		*dst_fmt = UFMT_BGRA8888;
 		break;
 	default:
@@ -195,7 +250,6 @@ int ufmt_disable_X_channel(enum UNIFIED_COLOR_FMT src_fmt, enum UNIFIED_COLOR_FM
 	}
 	return ret;
 }
-
 unsigned int ufmt_get_rgb(unsigned int fmt)
 {
 	return UFMT_GET_RGB(fmt);
@@ -216,9 +270,13 @@ unsigned int ufmt_get_format(unsigned int fmt)
 {
 	return UFMT_GET_FORMAT(fmt);
 }
-unsigned int ufmt_get_swap(unsigned int fmt)
+unsigned int ufmt_get_byteswap(unsigned int fmt)
 {
-	return UFMT_GET_SWAP(fmt);
+	return UFMT_GET_BYTESWAP(fmt);
+}
+unsigned int ufmt_get_rgbswap(unsigned int fmt)
+{
+	return UFMT_GET_RGBSWAP(fmt);
 }
 unsigned int ufmt_get_id(unsigned int fmt)
 {
@@ -227,5 +285,28 @@ unsigned int ufmt_get_id(unsigned int fmt)
 unsigned int ufmt_get_Bpp(unsigned int fmt)
 {
 	return UFMT_GET_Bpp(fmt);
+}
+unsigned int ufmt_is_old_fmt(unsigned int fmt)
+{
+	int old_fmt = 0;
+
+	switch (fmt) {
+	case UFMT_PARGB8888:
+		old_fmt = 1;
+		break;
+	case UFMT_PABGR8888:
+		old_fmt = 1;
+		break;
+	case UFMT_PRGBA8888:
+		old_fmt = 1;
+		break;
+	case UFMT_PBGRA8888:
+		old_fmt = 1;
+		break;
+	default:
+		old_fmt = 0;
+		break;
+	}
+	return old_fmt;
 }
 

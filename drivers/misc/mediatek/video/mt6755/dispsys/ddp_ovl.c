@@ -266,6 +266,7 @@ static int ovl_layer_config(DISP_MODULE_ENUM module,
 {
 	unsigned int value = 0;
 	unsigned int Bpp, input_swap, input_fmt;
+	unsigned int rgb_swap = 0;
 	int is_rgb;
 	int color_matrix = 0x4;
 	int rotate = 0;
@@ -300,7 +301,7 @@ static int ovl_layer_config(DISP_MODULE_ENUM module,
 		format = UFMT_RGB888;
 	}
 	Bpp = ufmt_get_Bpp(format);
-	input_swap = ufmt_get_swap(format);
+	input_swap = ufmt_get_byteswap(format);
 	input_fmt = ufmt_get_format(format);
 	is_rgb = ufmt_get_rgb(format);
 
@@ -345,7 +346,14 @@ static int ovl_layer_config(DISP_MODULE_ENUM module,
 		 REG_FLD_VAL((L_CON_FLD_APHA), (cfg->alpha)) |
 		 REG_FLD_VAL((L_CON_FLD_SKEN), (cfg->keyEn)) |
 		 REG_FLD_VAL((L_CON_FLD_BTSW), (input_swap)));
-
+	if (ufmt_is_old_fmt(format)) {
+		if (format == UFMT_PARGB8888 || format == UFMT_PABGR8888 ||
+			format == UFMT_PRGBA8888 || format == UFMT_PBGRA8888) {
+			rgb_swap = ufmt_get_rgbswap(format);
+			value |= REG_FLD_VAL((L_CON_FLD_RGB_SWAP), (rgb_swap));
+		}
+		value |= REG_FLD_VAL((L_CON_FLD_CLRFMT_MAN), (1));
+	}
 	if (!is_rgb)
 		value = value | REG_FLD_VAL((L_CON_FLD_MTX), (color_matrix));
 
@@ -408,6 +416,8 @@ static int ovl_layer_config(DISP_MODULE_ENUM module,
 	value = (REG_FLD_VAL((L_PITCH_FLD_SUR_ALFA), (value)) |
 		 REG_FLD_VAL((L_PITCH_FLD_LSP), (cfg->src_pitch)));
 
+	if (cfg->const_bld)
+		value = value | REG_FLD_VAL((L_PITCH_FLD_CONST_BLD), (1));
 	DISP_REG_SET(handle, DISP_REG_OVL_L0_PITCH + layer_offset, value);
 
 	return 0;
@@ -629,6 +639,9 @@ void ovl_get_info(DISP_MODULE_ENUM module, void *data)
 										   layer_off +
 										   DISP_REG_OVL_L0_CON),
 								DISP_REG_GET_FIELD(L_CON_FLD_BTSW,
+										   layer_off +
+										   DISP_REG_OVL_L0_CON),
+								DISP_REG_GET_FIELD(L_CON_FLD_RGB_SWAP,
 										   layer_off +
 										   DISP_REG_OVL_L0_CON));
 			p->addr = DISP_REG_GET(layer_off + DISP_REG_OVL_L0_ADDR);
@@ -1007,6 +1020,8 @@ static void ovl_dump_layer_info(int layer, unsigned long layer_offset)
 	    display_fmt_reg_to_unified_fmt(DISP_REG_GET_FIELD
 					   (L_CON_FLD_CFMT, DISP_REG_OVL_L0_CON + layer_offset),
 					   DISP_REG_GET_FIELD(L_CON_FLD_BTSW,
+							      DISP_REG_OVL_L0_CON + layer_offset),
+						DISP_REG_GET_FIELD(L_CON_FLD_RGB_SWAP,
 							      DISP_REG_OVL_L0_CON + layer_offset));
 
 	DDPDUMP("layer%d: w=%d,h=%d,off(x=%d,y=%d),pitch=%d,addr=0x%x,fmt=%s,source=%s,aen=%d,alpha=%d\n",
