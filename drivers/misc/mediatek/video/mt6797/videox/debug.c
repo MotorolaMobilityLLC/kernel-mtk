@@ -637,7 +637,7 @@ static ssize_t debug_read(struct file *file, char __user *ubuf, size_t count, lo
 
 	DISPFUNC();
 
-	n += debug_get_info(debug_buffer + n, debug_bufmax - n);
+	n = debug_get_info(debug_buffer, debug_bufmax);
 	/* debug_info_dump_to_printk(); */
 out:
 	if (is_mipi_enterulps())
