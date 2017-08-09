@@ -364,7 +364,7 @@ int spm_module_init(void)
 	spm_set_pcm_init_flag();
 
 #ifdef SPM_VCORE_EN
-/*	spm_go_to_vcore_dvfs(SPM_VCORE_DVFS_EN, 0); */
+	spm_go_to_vcore_dvfs(SPM_VCORE_DVFS_EN, 0);
 #else
 #if defined(CONFIG_ARCH_MT6735)
 	/* only for common solution, no DVS */
