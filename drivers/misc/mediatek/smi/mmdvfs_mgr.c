@@ -481,7 +481,9 @@ int mmdvfs_get_mmdvfs_profile(void)
 {
 
 	int mmdvfs_profile_id = MMDVFS_PROFILE_UNKNOWN;
+#if defined(SMI_D1) || defined(SMI_D2)
 	unsigned int segment_code = 0;
+#endif
 
 #ifdef MMDVFS_USE_APMCU_CLK_MUX_SWITCH
 	segment_code = _GET_BITS_VAL_(31 : 25, get_devinfo_with_index(47));
