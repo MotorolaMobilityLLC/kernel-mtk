@@ -43,15 +43,21 @@ struct fuse_proc_info {
 	struct fuse_rw_info misc;
 };
 
+struct fuse_iolog_t {
+	struct timespec _tstart, _tend;
+	__u32 size;
+	unsigned int opcode;
+};
+
 #define FUSE_IOLOG_MAX     12
 #define FUSE_IOLOG_BUFLEN  512
 #define FUSE_IOLOG_LATENCY 1
 
-#define FUSE_IOLOG_INIT()   struct timespec _tstart, _tend
-#define FUSE_IOLOG_START()  get_monotonic_boottime(&_tstart)
-#define FUSE_IOLOG_END()    get_monotonic_boottime(&_tend)
-#define FUSE_IOLOG_US()     fuse_iolog_timeus_diff(&_tstart, &_tend)
-#define FUSE_IOLOG_PRINT(iobytes, type)  fuse_iolog_add(iobytes, type, &_tstart, &_tend)
+#define FUSE_IOLOG_INIT(iobytes, type)   struct fuse_iolog_t _iolog = { .size = iobytes, .opcode = type }
+#define FUSE_IOLOG_START()  get_monotonic_boottime(&_iolog._tstart)
+#define FUSE_IOLOG_END()    get_monotonic_boottime(&_iolog._tend)
+#define FUSE_IOLOG_US()     fuse_iolog_timeus_diff(&_iolog._tstart, &_iolog._tend)
+#define FUSE_IOLOG_PRINT()  fuse_iolog_add(_iolog.size, _iolog.opcode, &_iolog._tstart, &_iolog._tend)
 
 #else
 
