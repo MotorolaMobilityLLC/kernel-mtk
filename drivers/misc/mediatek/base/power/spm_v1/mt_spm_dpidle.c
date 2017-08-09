@@ -1118,10 +1118,12 @@ wake_reason_t spm_go_to_dpidle(u32 spm_flags, u32 spm_data, u32 dump_log)
 	aee_rr_rec_deepidle_val(aee_rr_curr_deepidle_val() | (1 << SPM_DEEPIDLE_ENTER_UART_SLEEP));
 #endif
 
+#if !defined(CONFIG_ARCH_MT6580)
 	if (request_uart_to_sleep()) {
 		wr = WR_UART_BUSY;
 		goto RESTORE_IRQ;
 	}
+#endif
 
 	__spm_reset_and_init_pcm(pcmdesc);
 
@@ -1165,7 +1167,9 @@ wake_reason_t spm_go_to_dpidle(u32 spm_flags, u32 spm_data, u32 dump_log)
 	aee_rr_rec_deepidle_val(aee_rr_curr_deepidle_val() | (1 << SPM_DEEPIDLE_ENTER_UART_AWAKE));
 #endif
 
+#if !defined(CONFIG_ARCH_MT6580)
 	request_uart_to_wakeup();
+#endif
 
 	wr = spm_output_wake_reason(&wakesta, pcmdesc, dump_log);
 
