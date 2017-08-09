@@ -8929,6 +8929,7 @@ static int msdc_drv_probe(struct platform_device *pdev)
 #if defined(CFG_DEV_MSDC2)
 	if (strcmp(pdev->dev.of_node->name, "msdc2") == 0) {
 		host->mmc->pm_flags |= MMC_PM_KEEP_POWER;
+		host->mmc->pm_caps |= MMC_PM_KEEP_POWER;
 		/* FIXME: host->hw = &msdc2_hw; */
 		host->hw->clk_src = MSDC30_CLKSRC_200MHZ;
 		host->hw->cmd_edge = MSDC_SMPL_FALLING;
@@ -8972,6 +8973,7 @@ static int msdc_drv_probe(struct platform_device *pdev)
 #if defined(CFG_DEV_MSDC3)
 	if (strcmp(pdev->dev.of_node->name, "msdc3") == 0) {
 		host->mmc->pm_flags |= MMC_PM_KEEP_POWER;
+		host->mmc->pm_caps |= MMC_PM_KEEP_POWER;
 		host->hw->clk_src = MSDC30_CLKSRC_200MHZ;
 		host->hw->cmd_edge = MSDC_SMPL_RISING;
 		host->hw->rdata_edge = MSDC_SMPL_RISING;
