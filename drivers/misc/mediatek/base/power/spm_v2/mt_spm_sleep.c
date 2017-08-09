@@ -351,9 +351,9 @@ static void spm_suspend_pre_process(struct pwr_ctrl *pwrctrl)
 	if (!(pwrctrl->pcm_flags & SPM_FLAG_DIS_DPD))
 		spm_dpd_init();
 
+#endif
 	/* for afcdac setting */
 	clk_buf_write_afcdac();
-#endif
 
 	/* Do more low power setting when MD1/C2K/CONN off */
 	if (is_md_c2k_conn_power_off()) {

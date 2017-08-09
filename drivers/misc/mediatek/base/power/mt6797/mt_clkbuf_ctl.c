@@ -443,7 +443,6 @@ void clk_buf_get_rf_drv_curr(void *rf_drv_curr)
 /* Called by ccci driver to keep afcdac value sent from modem */
 void clk_buf_save_afc_val(unsigned int afcdac)
 {
-#if 0
 	if (is_pmic_clkbuf)
 		return;
 
@@ -456,13 +455,11 @@ void clk_buf_save_afc_val(unsigned int afcdac)
 
 	clk_buf_warn("%s: afcdac=0x%x, SPM_BSI_EN_SR=0x%x\n", __func__,
 		     afcdac_val, spm_read(SPM_BSI_EN_SR));
-#endif
 }
 
 /* Called by suspend driver to write afcdac into SPM register */
 void clk_buf_write_afcdac(void)
 {
-#if 0
 	if (is_pmic_clkbuf)
 		return;
 
@@ -470,7 +467,6 @@ void clk_buf_write_afcdac(void)
 	clk_buf_warn("%s: afcdac=0x%x, SPM_BSI_EN_SR=0x%x, afcdac_updated=%d\n",
 		     __func__, afcdac_val, spm_read(SPM_BSI_EN_SR),
 		     is_clkbuf_afcdac_updated);
-#endif
 }
 
 static ssize_t clk_buf_ctrl_store(struct kobject *kobj, struct kobj_attribute *attr,
@@ -901,11 +897,9 @@ bool clk_buf_init(void)
 		clk_buf_pmic_wrap_init();
 		clk_buf_clear_rf_setting();
 	} else { /* VCTCXO @RF */
-#if 0
 		spm_write(SPM_BSI_EN_SR, afcdac_val);
 		clk_buf_warn("%s: afcdac=0x%x, SPM_BSI_EN_SR=0x%x\n", __func__,
 			     afcdac_val, spm_read(SPM_BSI_EN_SR));
-#endif
 	}
 
 	is_clkbuf_initiated = true;
