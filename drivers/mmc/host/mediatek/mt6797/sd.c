@@ -4171,7 +4171,12 @@ int msdc_error_tuning(struct mmc_host *mmc,  struct mmc_request *mrq)
 		host->err_cmd != MMC_STOP_TRANSMISSION)) {
 		goto end;
 	}
-
+	/* If RESP CRC occur in sending CMD13 in mmc_blk_err_check, send stop
+	 * first to insure device is in transfer state
+	 */
+	if ((mrq->cmd->opcode == MMC_SEND_STATUS) &&
+			(host->err_cmd == MMC_SEND_STATUS))
+		msdc_send_stop(host);
 	/* pr_err("msdc%d: transfer err %d timing:%d\n",
 		host->id, autok_err_type, mmc->ios.timing); */
 
