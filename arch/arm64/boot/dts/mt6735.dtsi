@@ -1096,11 +1096,11 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 			interrupts = <0 136 0x4>;
 		};
 
-		M4U@0x10205000 {
+		m4u@10205000 {
 			cell-index = <0>;
-			compatible = "mediatek,M4U";
+			compatible = "mediatek,m4u";
 			reg = <0x10205000 0x1000>;
-			interrupts = <0 146 0x8>;
+			interrupts = <GIC_SPI 146 IRQ_TYPE_LEVEL_LOW>;
 			clocks = <&infrasys INFRA_M4U>,
 				<&mmsys MM_DISP0_SMI_COMMON>,
 				<&mmsys MM_DISP0_SMI_LARB0>,
