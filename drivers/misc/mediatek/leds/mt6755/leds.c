@@ -1026,7 +1026,7 @@ int mt_mt65xx_led_set_cust(struct cust_mt65xx_led *cust, int level)
 		return 1;
 
 	case MT65XX_LED_MODE_GPIO:
-		LEDS_DEBUG("brightness_set_cust:go GPIO mode!!!!!\n");
+		/* LEDS_DEBUG("brightness_set_cust:go GPIO mode!!!!!\n"); */
 		return ((cust_set_brightness) (cust->data)) (level);
 
 	case MT65XX_LED_MODE_PMIC:
@@ -1058,7 +1058,7 @@ int mt_mt65xx_led_set_cust(struct cust_mt65xx_led *cust, int level)
 	case MT65XX_LED_MODE_CUST_LCM:
 		if (strcmp(cust->name, "lcd-backlight") == 0)
 			bl_brightness_hal = level;
-		LEDS_DEBUG("brightness_set_cust:backlight control by LCM\n");
+		/* LEDS_DEBUG("brightness_set_cust:backlight control by LCM\n"); */
 		/* warning for this API revork */
 		return ((cust_brightness_set) (cust->data)) (level, bl_div_hal);
 
@@ -1108,9 +1108,9 @@ void mt_mt65xx_led_set(struct led_classdev *led_cdev, enum led_brightness level)
 				    (level * CONFIG_LIGHTNESS_MAPPING_VALUE) /
 				    255;
 			}
-			LEDS_DEBUG
+			/* LEDS_DEBUG
 			    ("Set Backlight directly %d at time %lu, mapping level is %d\n",
-			     led_data->level, jiffies, level);
+			     led_data->level, jiffies, level); */
 			/* mt_mt65xx_led_set_cust(&led_data->cust, led_data->level); */
 			disp_aal_notify_backlight_changed((((1 <<
 							     MT_LED_INTERNAL_LEVEL_BIT_CNT)
@@ -1135,9 +1135,9 @@ void mt_mt65xx_led_set(struct led_classdev *led_cdev, enum led_brightness level)
 				    (level * CONFIG_LIGHTNESS_MAPPING_VALUE) /
 				    255;
 			}
-			LEDS_DEBUG
+			/* LEDS_DEBUG
 			    ("Set Backlight directly %d at time %lu, mapping level is %d\n",
-			     led_data->level, jiffies, level);
+			     led_data->level, jiffies, level); */
 			if (MT65XX_LED_MODE_CUST_BLS_PWM == led_data->cust.mode) {
 				mt_mt65xx_led_set_cust(&led_data->cust,
 						       ((((1 <<
