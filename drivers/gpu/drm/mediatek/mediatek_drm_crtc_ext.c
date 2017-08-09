@@ -392,6 +392,7 @@ static int crtc_ext_probe(struct platform_device *pdev)
 	node = of_parse_phandle(dev->of_node, "ddp", 0);
 	if (!node) {
 		dev_err(dev, "crtc_ext_probe: Get ddp node fail.\n");
+		ret = -EINVAL;
 		goto err;
 	}
 
@@ -433,23 +434,31 @@ static int crtc_ext_probe(struct platform_device *pdev)
 
 	regs = platform_get_resource(pdev, IORESOURCE_MEM, 0);
 	ctx->ovl1_regs = devm_ioremap_resource(dev, regs);
-	if (IS_ERR(ctx->ovl1_regs))
-		return PTR_ERR(ctx->ovl1_regs);
+	if (IS_ERR(ctx->ovl1_regs)) {
+		ret = PTR_ERR(ctx->ovl1_regs);
+		goto err;
+	}
 
 	regs = platform_get_resource(pdev, IORESOURCE_MEM, 1);
 	ctx->rdma1_regs = devm_ioremap_resource(dev, regs);
-	if (IS_ERR(ctx->rdma1_regs))
-		return PTR_ERR(ctx->rdma1_regs);
+	if (IS_ERR(ctx->rdma1_regs)) {
+		ret = PTR_ERR(ctx->rdma1_regs);
+		goto err;
+	}
 
 	regs = platform_get_resource(pdev, IORESOURCE_MEM, 2);
 	ctx->color1_regs = devm_ioremap_resource(dev, regs);
-	if (IS_ERR(ctx->color1_regs))
-		return PTR_ERR(ctx->color1_regs);
+	if (IS_ERR(ctx->color1_regs)) {
+		ret = PTR_ERR(ctx->color1_regs);
+		goto err;
+	}
 
 	regs = platform_get_resource(pdev, IORESOURCE_MEM, 3);
 	ctx->gamma_regs = devm_ioremap_resource(dev, regs);
-	if (IS_ERR(ctx->gamma_regs))
-		return PTR_ERR(ctx->gamma_regs);
+	if (IS_ERR(ctx->gamma_regs)) {
+		ret = PTR_ERR(ctx->gamma_regs);
+		goto err;
+	}
 
 	irq = platform_get_irq(pdev, 0);
 	ret = devm_request_irq(dev, irq, crtc_ext_irq_handler,

@@ -114,7 +114,7 @@ static struct sg_table *
 	mtk_attach->dir = dir;
 	attach->priv = mtk_attach;
 
-	DRM_DEBUG_PRIME("buffer size = 0x%lx\n", attach->dmabuf->size);
+	DRM_DEBUG_PRIME("buffer size = 0x%zx\n", attach->dmabuf->size);
 
 err_unlock:
 	mutex_unlock(&dev->struct_mutex);
@@ -251,7 +251,7 @@ struct drm_gem_object *mtk_dmabuf_prime_import(struct drm_device *drm_dev,
 	mtk_gem_obj->sgt = sgt;
 	mtk_gem_obj->base.import_attach = attach;
 
-	DRM_DEBUG_PRIME("dma_addr = %pad, size = 0x%lx\n",
+	DRM_DEBUG_PRIME("dma_addr = %pad, size = 0x%zx\n",
 			&mtk_gem_obj->dma_addr,	dma_buf->size);
 
 	return &mtk_gem_obj->base;

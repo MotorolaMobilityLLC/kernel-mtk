@@ -19,9 +19,6 @@
 void mediatek_ovl_enable_vblank(void __iomem *disp_base);
 void mediatek_ovl_disable_vblank(void __iomem *disp_base);
 void mediatek_ovl_clear_vblank(void __iomem *disp_base);
-void mediatek_od_enable_vblank(void __iomem *drm_disp_base);
-void mediatek_od_disable_vblank(void __iomem *drm_disp_base);
-void mediatek_od_clear_vblank(void __iomem *drm_disp_base);
 void mediatek_ovl_config(void __iomem *ovl_base,
 		unsigned int w, unsigned int h);
 void mediatek_ovl_layer_on(void __iomem *ovl_base);

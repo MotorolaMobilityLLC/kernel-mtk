@@ -86,8 +86,8 @@ struct mtk_drm_gem_obj *mtk_drm_gem_create(struct drm_device *dev,
 		}
 	}
 
-	DRM_INFO("kvaddr = %p dma_addr = %llx\n",
-			mtk_gem->kvaddr, mtk_gem->dma_addr);
+	DRM_INFO("kvaddr = %p dma_addr = %pad\n",
+			mtk_gem->kvaddr, &mtk_gem->dma_addr);
 
 	return mtk_gem;
 err_get_sgtable:

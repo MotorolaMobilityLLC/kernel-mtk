@@ -506,7 +506,6 @@ void mediatek_drm_debugfs_init(struct drm_device *dev)
 	struct mtk_drm_private *priv = dev->dev_private;
 	struct mtk_drm_crtc *mtk_crtc;
 	struct crtc_main_context *ctx0;
-	struct crtc_ext_context  *ctx1;
 	struct ddp_context *ddp;
 
 	struct device_node *node;

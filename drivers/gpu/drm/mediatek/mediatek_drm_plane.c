@@ -118,21 +118,6 @@ err_mutex:
 	return ret;
 }
 
-static int mediatek_plane_get_size(int start, unsigned length, unsigned last)
-{
-	int end = start + length;
-	int size = 0;
-
-	if (start <= 0) {
-		if (end > 0)
-			size = min_t(unsigned, end, last);
-	} else if (start <= last) {
-		size = min_t(unsigned, last - start, length);
-	}
-
-	return size;
-}
-
 static int mediatek_check_plane(struct drm_plane *plane,
 	struct drm_framebuffer *fb)
 {

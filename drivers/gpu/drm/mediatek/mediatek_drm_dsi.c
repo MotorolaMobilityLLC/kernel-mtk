@@ -954,22 +954,6 @@ struct bridge_init {
 	struct device_node *node_dptx;
 };
 
-static int mtk_drm_attach_lcm_bridge(struct drm_bridge *bridge,
-		struct drm_encoder *encoder)
-{
-	int ret;
-
-	encoder->bridge = bridge;
-	bridge->encoder = encoder;
-	ret = drm_bridge_attach(encoder->dev, bridge);
-	if (ret) {
-		DRM_ERROR("Failed to attach bridge to drm\n");
-		return ret;
-	}
-
-	return 0;
-}
-
 static int mtk_dsi_create_conn_enc(struct mtk_dsi *dsi)
 {
 	int ret;

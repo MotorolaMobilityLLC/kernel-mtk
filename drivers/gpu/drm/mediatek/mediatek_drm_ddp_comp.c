@@ -352,39 +352,11 @@ static void mediatek_rdma_config_direct_link(void __iomem *rdma_base,
 	fifo_threashold =
 	    fifo_threashold > fifo_pseudo_length ? fifo_pseudo_length : fifo_threashold;
 
-	writel((1 << 31) | (fifo_pseudo_length << 16) | fifo_threashold, 
+	writel((1 << 31) | (fifo_pseudo_length << 16) | fifo_threashold,
 		rdma_base + DISP_REG_RDMA_FIFO_CON);
 
 	writel(0, rdma_base + DISP_REG_RDMA_MEM_START_ADDR);
 	writel(0x3F, rdma_base + DISP_REG_RDMA_INT_ENABLE);
-}
-
-void mediatek_od_enable_vblank(void __iomem *disp_base)
-{
-	writel(0x1, disp_base + DISP_OD_INTEN);
-}
-
-void mediatek_od_disable_vblank(void __iomem *disp_base)
-{
-	writel(0x0, disp_base + DISP_OD_INTEN);
-}
-
-void mediatek_od_clear_vblank(void __iomem *disp_base)
-{
-	writel(0x0, disp_base + DISP_OD_INTS);
-}
-
-static void mediatek_od_start(void __iomem *od_base, unsigned int w,
-	unsigned int h)
-{
-	writel(w << 16 | h, od_base + DISP_OD_SIZE);
-	writel(OD_RELAY_MODE, od_base + DISP_OD_CFG);
-	writel(1, od_base + DISP_OD_EN);
-}
-
-static void mediatek_ufoe_start(void __iomem *ufoe_base)
-{
-	writel(UFO_BYPASS, ufoe_base + DISP_REG_UFO_START);
 }
 
 static void mediatek_color_start(void __iomem *color_base)
