@@ -47,6 +47,7 @@ static int lastpc_plt_dump(struct lastpc_plt *plt, char *buf, int len)
 	void __iomem *mcu_base = plt->common->base + 0x410;
 	int ret = -1, cnt = num_possible_cpus();
 	char *ptr = buf;
+	char *ptr_end = buf + len;
 	unsigned long pc_value;
 	unsigned long fp_value;
 	unsigned long sp_value;
@@ -60,6 +61,7 @@ static int lastpc_plt_dump(struct lastpc_plt *plt, char *buf, int len)
 	char str[KSYM_SYMBOL_LEN];
 	int i;
 	int cluster, cpu_in_cluster;
+	int strlen = 0;
 
 	if (cnt < 0)
 		return ret;
@@ -85,10 +87,21 @@ static int lastpc_plt_dump(struct lastpc_plt *plt, char *buf, int len)
 		    (sp_value_h << 32) |
 		    readl(IOMEM((mcu_base + 0x18) + (cpu_in_cluster << 5) + (0x100 * cluster)));
 		kallsyms_lookup(pc_value, &size, &offset, NULL, str);
-		ptr +=
-		    sprintf(ptr,
-			    "[LAST PC] CORE_%d PC = 0x%lx(%s + 0x%lx), FP = 0x%lx, SP = 0x%lx\n", i,
-			    pc_value, str, offset, fp_value, sp_value);
+
+		strlen = snprintf(ptr, ptr_end - ptr,
+				   "[LAST PC] CORE_%d PC = 0x%lx(%s + 0x%lx), ",
+				   i, pc_value, str, offset);
+		if (strlen < 0)
+			goto overflow;
+
+		ptr += strlen;
+		strlen = snprintf(ptr, ptr_end - ptr,
+				  "FP = 0x%lx, SP = 0x%lx\n",
+				  fp_value, sp_value);
+		if (strlen < 0)
+			goto overflow;
+
+		ptr += strlen;
 		pr_err("[LAST PC] CORE_%d PC = 0x%lx(%s), FP = 0x%lx, SP = 0x%lx\n", i, pc_value,
 			  str, fp_value, sp_value);
 	}
@@ -104,45 +117,29 @@ static int lastpc_plt_dump(struct lastpc_plt *plt, char *buf, int len)
 		sp_value =
 		    readl(IOMEM((mcu_base + 0xc) + (cpu_in_cluster << 5) + (0x100 * cluster)));
 		kallsyms_lookup((unsigned long)pc_value, &size, &offset, NULL, str);
-		ptr +=
-		    sprintf(ptr,
-			    "[LAST PC] CORE_%d PC = 0x%lx(%s + 0x%lx), FP = 0x%lx, SP = 0x%lx\n", i,
-			    pc_value, str, offset, fp_value, sp_value);
+
+		strlen = snprintf(ptr, ptr_end - ptr,
+				  "[LAST PC] CORE_%d PC = 0x%lx(%s + 0x%lx), ",
+				  i, pc_value, str, offset);
+
+		if (strlen < 0)
+			goto overflow;
+		ptr += strlen;
+		strlen = snprintf(ptr, ptr_end - ptr,
+				  "FP = 0x%lx, SP = 0x%lx\n",
+				   fp_value, sp_value);
+		if (strlen < 0)
+			goto overflow;
+		ptr += strlen;
 		pr_err("[LAST PC] CORE_%d PC = 0x%lx(%s), FP = 0x%lx, SP = 0x%lx\n", i, pc_value,
 			  str, fp_value, sp_value);
 	}
 #endif
-
-#if 0
-	/* Get PC, FP, SP and save to buf */
-	for (i = 0; i < cnt; i++) {
-		/* this calculation assumes that we have 4 cores in the first cluster, and 2 clusters in the system */
-		cluster = i / 4;
-		cpu_in_cluster = i % 4;
-		if (cluster == 0) {
-			writel(LASTPC + i, MUX_CONTOL_C0_REG);
-			pc_value = readl(MUX_READ_C0_REG);
-			writel(LASTSP + i, MUX_CONTOL_C0_REG);
-			sp_value = readl(MUX_READ_C0_REG);
-			writel(LASTFP + i, MUX_CONTOL_C0_REG);
-			fp_value = readl(MUX_READ_C0_REG);
-			kallsyms_lookup((unsigned long)pc_value, &size, &offset, NULL, str);
-			ptr +=
-			    sprintf(ptr, "CORE_%d PC = 0x%x(%s + 0x%lx), FP = 0x%x, SP = 0x%x\n", i,
-				    pc_value, str, offset, fp_value, sp_value);
-		} else {
-			writel(LASTPC_MAGIC_NUM[cpu_in_cluster], MUX_CONTOL_C1_REG);
-			pc_value = readl(MUX_READ_C1_REG);
-			writel(LASTPC_MAGIC_NUM[cpu_in_cluster] + 1, MUX_CONTOL_C1_REG);
-			pc_i1_value = readl(MUX_READ_C1_REG);
-			ptr +=
-			    sprintf(ptr, "CORE_%d PC_i0 = 0x%x, PC_i1 = 0x%x\n", i, pc_value,
-				    pc_i1_value);
-		}
-	}
-#endif
-
 	return 0;
+
+overflow:
+	pr_err("[LAST PC] string buffer overflow\n");
+	return -1;
 }
 
 static int reboot_test(struct lastpc_plt *plt)
