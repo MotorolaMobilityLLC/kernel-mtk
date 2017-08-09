@@ -2103,7 +2103,7 @@ int get_emmc_dump_status(void)
 	return partition_ready_flag;
 }
 
-static void get_emmc_dump_info(void)
+static void get_emmc_dump_info(struct work_struct *work)
 {
 	struct hd_struct *lp_hd_struct = NULL;
 	lp_hd_struct = get_part("expdb");
@@ -2124,7 +2124,7 @@ static void get_emmc_dump_info(void)
 }
 
 static struct delayed_work get_dump_info;
-static int __init init_get_dump_work(struct work_struct *work)
+static int __init init_get_dump_work(void)
 {
 	INIT_DELAYED_WORK(&get_dump_info, get_emmc_dump_info);
 	if (schedule_delayed_work(&get_dump_info, 100))
@@ -2132,5 +2132,5 @@ static int __init init_get_dump_work(struct work_struct *work)
 
 	return 0;
 }
-late_initcall_sync(get_emmc_dump_info);
+late_initcall_sync(init_get_dump_work);
 #endif

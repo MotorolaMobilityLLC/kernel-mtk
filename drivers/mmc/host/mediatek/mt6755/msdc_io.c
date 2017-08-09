@@ -893,6 +893,11 @@ void msdc_pin_config_by_id(u32 id, u32 mode)
 {
 	u32 val0, val1;
 
+	if ((mode != MSDC_PIN_PULL_NONE)
+	 && (mode != MSDC_PIN_PULL_DOWN)
+	 && (mode != MSDC_PIN_PULL_UP))
+		return;
+
 	switch (id) {
 	case 0:
 		/*Attention: don't pull CLK high; Don't toggle RST to prevent

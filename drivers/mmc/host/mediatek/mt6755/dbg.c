@@ -822,6 +822,20 @@ static int multi_rw_compare_core(int host_num, int read, uint address,
 	u8 wData_len;
 	u8 *wData;
 
+	if (host_num >= HOST_MAX_NUM || host_num < 0) {
+		pr_err("[%s]invalid host id: %d\n", __func__, host_num);
+		return -1;
+	}
+
+	host_ctl = mtk_msdc_host[host_num];
+	mmc = host_ctl->mmc;
+
+	if (!host_ctl || !host_ctl->mmc || !host_ctl->mmc->card) {
+		pr_err(" No card initialized in host[%d]\n", host_num);
+		result = -1;
+		goto free;
+	}
+
 	if (type == MMC_TYPE_MMC) {
 		wData = wData_emmc;
 		wData_len = 16;
@@ -831,17 +845,6 @@ static int multi_rw_compare_core(int host_num, int read, uint address,
 	} else
 		return -1;
 
-	if (host_num >= HOST_MAX_NUM || host_num < 0) {
-		pr_err("[%s]invalid host id: %d\n", __func__, host_num);
-		return -1;
-	}
-
-	if (!host_ctl || !host_ctl->mmc || !host_ctl->mmc->card) {
-		pr_err(" No card initialized in host[%d]\n", host_num);
-		result = -1;
-		goto free;
-	}
-
 	/*allock memory for test buf*/
 	multi_rwbuf = kzalloc((MSDC_MULTI_BUF_LEN), GFP_KERNEL);
 	if (multi_rwbuf == NULL) {
@@ -849,9 +852,6 @@ static int multi_rw_compare_core(int host_num, int read, uint address,
 		goto free;
 	}
 	rPtr = wPtr = (u8 *)multi_rwbuf;
-
-	host_ctl = mtk_msdc_host[host_num];
-	mmc = host_ctl->mmc;
 
 	if (!is_card_present(host_ctl)) {
 		pr_err("  [%s]: card is removed!\n", __func__);
