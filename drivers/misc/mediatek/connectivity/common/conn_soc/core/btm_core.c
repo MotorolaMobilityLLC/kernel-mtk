@@ -474,6 +474,7 @@ static INT32 _stp_btm_handler(MTKSTP_BTM_T *stp_btm, P_STP_BTM_OP pStpOp)
 		g_paged_dump_len = 0;
 		issue_type = STP_FW_ASSERT_ISSUE;
 		/*packet number depend on dump_num get from register:0xf0080044 ,support jade*/
+		wcn_core_dump_deinit_gcoredump();
 		dump_num = wmt_plat_get_dump_info(p_ecsi->p_ecso->emi_apmem_ctrl_chip_page_dump_num);
 		if (dump_num != 0) {
 				packet_num = dump_num;

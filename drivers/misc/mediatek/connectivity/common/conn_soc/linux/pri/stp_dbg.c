@@ -275,6 +275,12 @@ INT32 wcn_core_dump_deinit(P_WCN_CORE_DUMP_T dmp)
 	return 0;
 }
 
+INT32 wcn_core_dump_deinit_gcoredump(VOID)
+{
+	wcn_core_dump_deinit(g_core_dump);
+	return 0;
+}
+
 static INT32 wcn_core_dump_check_end(PUINT8 buf, INT32 len)
 {
 	if (strnstr(buf, "coredump end", len))
@@ -434,6 +440,7 @@ INT32 wcn_core_dump_reset(P_WCN_CORE_DUMP_T dmp, UINT32 timeout)
 	osal_memset(dmp->info, 0, STP_CORE_DUMP_INFO_SZ + 1);
 
 	wcn_core_dump_deinit(dmp);
+	g_core_dump = wcn_core_dump_init(STP_CORE_DUMP_INIT_SIZE, STP_CORE_DUMP_TIMEOUT);
 
 	return 0;
 }
@@ -1996,6 +2003,7 @@ MTKSTP_DBG_T *stp_dbg_init(void *btm_half)
 
 	/* bind to netlink */
 	stp_dbg_nl_init();
+	g_core_dump = wcn_core_dump_init(STP_CORE_DUMP_INIT_SIZE, STP_CORE_DUMP_TIMEOUT);
 	g_stp_dbg_cpupcr = stp_dbg_cpupcr_init();
 	g_stp_dbg_dmaregs = stp_dbg_dmaregs_init();
 
