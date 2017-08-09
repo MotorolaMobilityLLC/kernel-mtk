@@ -159,6 +159,38 @@ static ssize_t synaptics_rmi4_full_pm_cycle_store(struct device *dev,
 
 #endif
 #endif
+
+unsigned int tpd_rst_gpio_number = 0;
+unsigned int tpd_int_gpio_number = 0;
+
+#ifdef CONFIG_OF
+static int of_get_synaptic_platform_data(struct device *dev)
+{
+	/*int ret, num;*/
+
+	if (dev->of_node) {
+		const struct of_device_id *match;
+
+		match = of_match_device(of_match_ptr(synaptics_dt_match), dev);
+		if (!match) {
+			TPD_DEBUG("Error: No device match found\n");
+			return -ENODEV;
+		}
+	}
+	tpd_rst_gpio_number = of_get_named_gpio(dev->of_node, "rst-gpio", 0);
+	tpd_int_gpio_number = of_get_named_gpio(dev->of_node, "int-gpio", 0);
+
+	TPD_DEBUG("g_vproc_en_gpio_number %d\n", tpd_rst_gpio_number);
+	TPD_DEBUG("g_vproc_vsel_gpio_number %d\n", tpd_int_gpio_number);
+	return 0;
+}
+#else
+static int of_get_synaptic_platform_data(struct device *dev)
+{
+	return 0;
+}
+#endif
+
 #if PROXIMITY
 static ssize_t synaptics_rmi4_f51_enables_show(struct device *dev,
 					       struct device_attribute *attr, char *buf);
@@ -1670,6 +1702,22 @@ static int tpd_probe(struct i2c_client *client, const struct i2c_device_id *id)
 	mutex_init(&(ts->io_ctrl_mutex));
 
 
+	of_get_synaptic_platform_data(&client->dev);
+	/* configure the gpio pins */
+	retval = gpio_request_one(tpd_rst_gpio_number, GPIOF_OUT_INIT_LOW,
+				 "touchp_reset");
+	if (retval < 0) {
+		TPD_DMESG("Unable to request gpio reset_pin\n");
+		return -1;
+	}
+	retval = gpio_request_one(tpd_int_gpio_number, GPIOF_IN,
+				 "tpd_int");
+	if (retval < 0) {
+		TPD_DMESG("Unable to request gpio int_pin\n");
+		gpio_free(tpd_rst_gpio_number);
+		return -1;
+	}
+
 	retval = regulator_enable(tpd->reg);
 	if (retval != 0) {
 		dev_err(&client->dev, "Failed to enable reg-vgp6: %d\n", retval);
@@ -1681,9 +1729,11 @@ static int tpd_probe(struct i2c_client *client, const struct i2c_device_id *id)
 		goto err_query_device;
 	}
 	msleep(20);
-	tpd_gpio_output(GTP_RST_PORT, 0);
+	/*tpd_gpio_output(GTP_RST_PORT, 0);*/
+	gpio_direction_output(tpd_rst_gpio_number, 0);
 	msleep(50);
-	tpd_gpio_output(GTP_RST_PORT, 1);
+	/*tpd_gpio_output(GTP_RST_PORT, 1);*/
+	gpio_direction_output(tpd_rst_gpio_number, 1);
 	msleep(50);
 
 
@@ -1878,12 +1928,15 @@ static void tpd_resume(struct device *h)
 	/* hwPowerOn(MT6323_POWER_LDO_VGP2,  VOL_1800, "TP"); */
 	msleep(20);
 #endif
-	tpd_gpio_output(GTP_RST_PORT, 0);
+	/*tpd_gpio_output(GTP_RST_PORT, 0);*/
+	gpio_direction_output(tpd_rst_gpio_number, 0);
 	msleep(50);
-	tpd_gpio_output(GTP_RST_PORT, 1);
+	/*tpd_gpio_output(GTP_RST_PORT, 1);*/
+	gpio_direction_output(tpd_rst_gpio_number, 1);
 	msleep(50);
 	/* Recovery EINT Mode */
-	tpd_gpio_as_int(GTP_INT_PORT);
+	/*tpd_gpio_as_int(GTP_INT_PORT);*/
+	gpio_direction_input(tpd_int_gpio_number);
 
 	if ((tpd_i2c_read_data(ts->client, 0xEE, &data, 1)) < 0) {
 		if (reset_count-- > 0)
@@ -1923,9 +1976,11 @@ static void tpd_suspend(struct device *h)
 	tpd_sw_power(ts->client, 0);
 #else
 	/* Set EINT PIN to low */
-	tpd_gpio_output(GTP_INT_PORT, 0);
+	/*tpd_gpio_output(GTP_INT_PORT, 0);*/
+	gpio_direction_output(tpd_int_gpio_number, 0);
 	/* Set RST PIN to low */
-	tpd_gpio_output(GTP_RST_PORT, 0);
+	/*tpd_gpio_output(GTP_RST_PORT, 0);*/
+	gpio_direction_output(tpd_rst_gpio_number, 0);
 
 	retval = regulator_disable(tpd->io_reg);
 	if (retval != 0)
