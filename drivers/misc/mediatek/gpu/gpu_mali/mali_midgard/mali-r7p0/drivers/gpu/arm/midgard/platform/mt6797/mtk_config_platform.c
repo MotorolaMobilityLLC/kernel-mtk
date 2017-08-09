@@ -241,14 +241,20 @@ struct kbase_platform_config *kbase_get_platform_config(void)
 
 int kbase_platform_early_init(void)
 {
-	/* MTK: TODO, using device_treee */
-	g_ldo_base = ioremap_nocache(0x10001000, 0x1000);
-	g_MFG_base = ioremap_nocache(0x13000000, 0x1000);
-	g_DVFS_GPU_base = ioremap_nocache(0x11016000, 0x1000);
-	g_DFP_base = ioremap_nocache(0x13020000, 0x1000);
-	g_TOPCK_base = ioremap_nocache(0x10000000, 0x1000);
+    /* Make sure the power control is ready */
+    if (!is_fan53555_exist() || !is_fan53555_sw_ready())
+    {
+        return -EPROBE_DEFER;
+    }
 
-	return 0;
+    /* MTK: TODO, using device_treee */
+    g_ldo_base = ioremap_nocache(0x10001000, 0x1000);
+    g_MFG_base = ioremap_nocache(0x13000000, 0x1000);
+    g_DVFS_GPU_base = ioremap_nocache(0x11016000, 0x1000);
+    g_DFP_base = ioremap_nocache(0x13020000, 0x1000);
+    g_TOPCK_base = ioremap_nocache(0x10000000, 0x1000);
+
+    return 0;
 }
 
 #ifdef MTK_GPU_SPM

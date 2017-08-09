@@ -23,6 +23,7 @@
 #define fan53555_REG_NUM 6
 
 extern int is_fan53555_exist(void);
+extern int is_fan53555_sw_ready(void);
 extern void fan53555_dump_register(void);
 extern unsigned int fan53555_read_interface(unsigned char RegNum, unsigned char *val,
 					    unsigned char MASK, unsigned char SHIFT);
