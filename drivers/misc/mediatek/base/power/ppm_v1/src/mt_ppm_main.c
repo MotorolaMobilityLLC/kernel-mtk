@@ -553,11 +553,19 @@ int mt_ppm_main(void)
 	if (!ppm_main_info.is_enabled || ppm_main_info.is_in_suspend)
 		goto end;
 
+#ifdef CONFIG_MTK_RAM_CONSOLE
+	aee_rr_rec_ppm_step(1);
+#endif
+
 	prev_state = ppm_main_info.cur_power_state;
 
 	/* select new state */
 	next_state = ppm_main_hica_state_decision();
 	ppm_main_info.cur_power_state = next_state;
+
+#ifdef CONFIG_MTK_RAM_CONSOLE
+	aee_rr_rec_ppm_step(2);
+#endif
 
 	/* update active policy's limit according to current state */
 	list_for_each_entry(pos, &ppm_main_info.policy_list, link) {
@@ -570,8 +578,16 @@ int mt_ppm_main(void)
 		}
 	}
 
+#ifdef CONFIG_MTK_RAM_CONSOLE
+	aee_rr_rec_ppm_step(3);
+#endif
+
 	/* calculate final limit and fill-in client request structure */
 	ppm_main_calc_new_limit();
+
+#ifdef CONFIG_MTK_RAM_CONSOLE
+	aee_rr_rec_ppm_step(4);
+#endif
 
 #ifdef PPM_CLUSTER_MIGRATION_BOOST
 	if (prev_state == PPM_POWER_STATE_L_ONLY && next_state == PPM_POWER_STATE_LL_ONLY) {
@@ -619,6 +635,20 @@ int mt_ppm_main(void)
 		}
 
 		trace_ppm_update(policy_mask, ppm_main_info.min_power_budget, c_req->root_cluster, buf);
+
+#ifdef CONFIG_MTK_RAM_CONSOLE
+		for (i = 0; i < c_req->cluster_num; i++) {
+			aee_rr_rec_ppm_cluster_limit(i,
+				(c_req->cpu_limit[i].min_cpufreq_idx << 24) |
+				(c_req->cpu_limit[i].max_cpufreq_idx << 16) |
+				(c_req->cpu_limit[i].min_cpu_core << 8) |
+				(c_req->cpu_limit[i].max_cpu_core)
+			);
+		}
+		aee_rr_rec_ppm_cur_state(next_state);
+		aee_rr_rec_ppm_min_pwr_bgt(ppm_main_info.min_power_budget);
+		aee_rr_rec_ppm_policy_mask(policy_mask);
+#endif
 
 #ifdef PPM_THERMAL_ENHANCEMENT
 		{
@@ -742,6 +772,10 @@ nofity_end:
 #if PPM_UPDATE_STATE_DIRECT_TO_MET
 	if (NULL != g_pSet_PPM_State && prev_state != next_state)
 		g_pSet_PPM_State((unsigned int)next_state);
+#endif
+
+#ifdef CONFIG_MTK_RAM_CONSOLE
+	aee_rr_rec_ppm_step(0);
 #endif
 
 end:
@@ -953,6 +987,17 @@ static int ppm_main_data_init(void)
 	wake_up_process(ppm_main_info.ppm_task);
 	ppm_info("@%s: ppm task start success, pid: %d\n", __func__,
 			ppm_main_info.ppm_task->pid);
+#endif
+
+#ifdef CONFIG_MTK_RAM_CONSOLE
+	/* init SRAM debug info */
+	for_each_ppm_clusters(i)
+		aee_rr_rec_ppm_cluster_limit(i, 0);
+	aee_rr_rec_ppm_cur_state(ppm_main_info.cur_power_state);
+	aee_rr_rec_ppm_min_pwr_bgt(ppm_main_info.min_power_budget);
+	aee_rr_rec_ppm_policy_mask(0);
+	aee_rr_rec_ppm_step(0);
+	aee_rr_rec_ppm_waiting_for_pbm(0);
 #endif
 
 	ppm_info("@%s: done!\n", __func__);

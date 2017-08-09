@@ -98,7 +98,13 @@ void mt_ppm_dlpt_kick_PBM(struct ppm_cluster_status *cluster_status, unsigned in
 		budget, power_idx, total_core, max_volt);
 
 #ifndef DISABLE_PBM_FEATURE
+#ifdef CONFIG_MTK_RAM_CONSOLE
+	aee_rr_rec_ppm_waiting_for_pbm(1);
 	kicker_pbm_by_cpu(budget, total_core, max_volt);
+	aee_rr_rec_ppm_waiting_for_pbm(0);
+#else
+	kicker_pbm_by_cpu(budget, total_core, max_volt);
+#endif
 #endif
 
 end:

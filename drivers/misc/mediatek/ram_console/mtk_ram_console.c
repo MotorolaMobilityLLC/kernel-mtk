@@ -79,6 +79,13 @@ struct last_reboot_reason {
 	uint32_t vcore_dvfs_opp;
 	uint32_t vcore_dvfs_status;
 
+	uint32_t ppm_cluster_limit[8];
+	uint8_t ppm_step;
+	uint8_t ppm_cur_state;
+	uint32_t ppm_min_pwr_bgt;
+	uint32_t ppm_policy_mask;
+	uint8_t ppm_waiting_for_pbm;
+
 	uint8_t cpu_dvfs_vproc_big;
 	uint8_t cpu_dvfs_vproc_little;
 	uint8_t cpu_dvfs_oppidx;
@@ -1044,6 +1051,48 @@ u32 aee_rr_curr_vcore_dvfs_status(void)
 	return LAST_RR_VAL(vcore_dvfs_status);
 }
 
+void aee_rr_rec_ppm_cluster_limit(int id, u32 val)
+{
+	if (!ram_console_init_done || !ram_console_buffer)
+		return;
+	LAST_RR_SET_WITH_ID(ppm_cluster_limit, id, val);
+}
+
+void aee_rr_rec_ppm_step(u8 val)
+{
+	if (!ram_console_init_done || !ram_console_buffer)
+		return;
+	LAST_RR_SET(ppm_step, val);
+}
+
+void aee_rr_rec_ppm_cur_state(u8 val)
+{
+	if (!ram_console_init_done || !ram_console_buffer)
+		return;
+	LAST_RR_SET(ppm_cur_state, val);
+}
+
+void aee_rr_rec_ppm_min_pwr_bgt(u32 val)
+{
+	if (!ram_console_init_done || !ram_console_buffer)
+		return;
+	LAST_RR_SET(ppm_min_pwr_bgt, val);
+}
+
+void aee_rr_rec_ppm_policy_mask(u32 val)
+{
+	if (!ram_console_init_done || !ram_console_buffer)
+		return;
+	LAST_RR_SET(ppm_policy_mask, val);
+}
+
+void aee_rr_rec_ppm_waiting_for_pbm(u8 val)
+{
+	if (!ram_console_init_done || !ram_console_buffer)
+		return;
+	LAST_RR_SET(ppm_waiting_for_pbm, val);
+}
+
 void aee_rr_rec_cpu_dvfs_vproc_big(u8 val)
 {
 	if (!ram_console_init_done || !ram_console_buffer)
@@ -2004,6 +2053,39 @@ void aee_rr_show_vcore_dvfs_status(struct seq_file *m)
 	seq_printf(m, "vcore_dvfs_status: 0x%x\n", LAST_RRR_VAL(vcore_dvfs_status));
 }
 
+void aee_rr_show_ppm_cluster_limit(struct seq_file *m)
+{
+	int i = 0;
+
+	for (i = 0; i < 8; i++)
+		seq_printf(m, "ppm_cluster_limit: 0x%08x\n", LAST_RRR_VAL(ppm_cluster_limit[i]));
+}
+
+void aee_rr_show_ppm_step(struct seq_file *m)
+{
+	seq_printf(m, "ppm_step: 0x%x\n", LAST_RRR_VAL(ppm_step));
+}
+
+void aee_rr_show_ppm_cur_state(struct seq_file *m)
+{
+	seq_printf(m, "ppm_cur_state: 0x%x\n", LAST_RRR_VAL(ppm_cur_state));
+}
+
+void aee_rr_show_ppm_min_pwr_bgt(struct seq_file *m)
+{
+	seq_printf(m, "ppm_min_pwr_bgt: %d\n", LAST_RRR_VAL(ppm_min_pwr_bgt));
+}
+
+void aee_rr_show_ppm_policy_mask(struct seq_file *m)
+{
+	seq_printf(m, "ppm_policy_mask: 0x%x\n", LAST_RRR_VAL(ppm_policy_mask));
+}
+
+void aee_rr_show_ppm_waiting_for_pbm(struct seq_file *m)
+{
+	seq_printf(m, "ppm_waiting_for_pbm: 0x%x\n", LAST_RRR_VAL(ppm_waiting_for_pbm));
+}
+
 void aee_rr_show_cpu_dvfs_vproc_big(struct seq_file *m)
 {
 	seq_printf(m, "cpu_dvfs_vproc_big: 0x%x\n", LAST_RRR_VAL(cpu_dvfs_vproc_big));
@@ -2558,6 +2640,12 @@ last_rr_show_t aee_rr_show[] = {
 	aee_rr_show_vcore_dvfs_status,
 	aee_rr_show_vcore_dvfs_debug_regs,
 	aee_rr_show_clk,
+	aee_rr_show_ppm_cluster_limit,
+	aee_rr_show_ppm_step,
+	aee_rr_show_ppm_cur_state,
+	aee_rr_show_ppm_min_pwr_bgt,
+	aee_rr_show_ppm_policy_mask,
+	aee_rr_show_ppm_waiting_for_pbm,
 	aee_rr_show_cpu_dvfs_vproc_big,
 	aee_rr_show_cpu_dvfs_vproc_little,
 	aee_rr_show_cpu_dvfs_oppidx,

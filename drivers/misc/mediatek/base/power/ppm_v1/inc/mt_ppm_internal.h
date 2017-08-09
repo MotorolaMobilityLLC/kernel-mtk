@@ -418,6 +418,16 @@ extern void ppm_profile_exit(void);
 extern void ppm_profile_state_change_notify(enum ppm_power_state old_state, enum ppm_power_state new_state);
 extern void ppm_profile_update_client_exec_time(enum ppm_client client, unsigned long long time);
 
+/* SRAM debugging */
+#ifdef CONFIG_MTK_RAM_CONSOLE
+extern void aee_rr_rec_ppm_cluster_limit(int id, u32 val);
+extern void aee_rr_rec_ppm_step(u8 val);
+extern void aee_rr_rec_ppm_cur_state(u8 val);
+extern void aee_rr_rec_ppm_min_pwr_bgt(u32 val);
+extern void aee_rr_rec_ppm_policy_mask(u32 val);
+extern void aee_rr_rec_ppm_waiting_for_pbm(u8 val);
+#endif
+
 #ifdef __cplusplus
 }
 #endif
