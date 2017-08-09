@@ -3501,14 +3501,15 @@ static bool TurnOnADcPowerDmic(int ADCType, bool enable)
 				if (SampleRate_VUL1 <= 48000) {
 					/* use cic out */
 					Ana_Set_Reg(AFE_UL_SRC_CON0_H, 0x1 << 4, 0x1 << 4);
-				} else {	/* hires */
+				} else { /* hires */
 					/* use 4.33MHz mode */
 					Ana_Set_Reg(AFE_UL_SRC_CON0_L, 0x1 << 6, 0x1 << 6);
 				}
+				Ana_Set_Reg(AFE_UL_SRC_CON0_L, 0x0003, 0xffBf);
+				/* digmic input mode 3.25MHz, select SDM 3-level mode, UL turn on */
+			} else {
+				Ana_Set_Reg(AFE_UL_SRC_CON0_L, 0x0003, 0xffff);
 			}
-
-			Ana_Set_Reg(AFE_UL_SRC_CON0_L, 0x0003, 0xffBf);
-			/* digmic input mode 3.25MHz, select SDM 3-level mode, UL turn on */
 		}
 	} else {
 		if (GetAdcStatus() == false) {
