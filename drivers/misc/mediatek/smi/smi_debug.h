@@ -1,11 +1,12 @@
-#ifndef __MT6735_SMI_DEBUG_H__
-#define __MT6735_SMI_DEBUG_H__
+#ifndef _SMI_DEBUG_H_
+#define _SMI_DEBUG_H_
 
-#define SMI_DBG_DISPSYS (1<<0)
-#define SMI_DBG_VDEC (1<<1)
-#define SMI_DBG_IMGSYS (1<<2)
-#define SMI_DBG_VENC (1<<3)
-#define SMI_DBG_MJC (1<<4)
+
+#define SMI_DBG_DISPSYS (smi_dbg_disp_mask)
+#define SMI_DBG_VDEC (smi_dbg_vdec_mask)
+#define SMI_DBG_IMGSYS (smi_dbg_imgsys_mask)
+#define SMI_DBG_VENC (smi_dbg_venc_mask)
+#define SMI_DBG_MJC (smi_dbg_mjc_mask)
 
 #define SMI_DGB_LARB_SELECT(smi_dbg_larb, n) ((smi_dbg_larb) & (1<<n))
 
@@ -18,6 +19,16 @@ int smi_debug_bus_hanging_detect(unsigned int larbs, int show_dump);
 int smi_debug_bus_hanging_detect_ext(unsigned int larbs, int show_dump, int output_gce_buffer);
 
 #endif
+void smi_dumpCommonDebugMsg(int output_gce_buffer);
+void smi_dumpLarbDebugMsg(unsigned int u4Index, int output_gce_buffer);
+void smi_dumpDebugMsg(void);
 
+extern int smi_larb_clock_is_on(unsigned int larb_index);
 
-#endif				/* __MT6735_SMI_DEBUG_H__ */
+extern unsigned int smi_dbg_disp_mask;
+extern unsigned int smi_dbg_vdec_mask;
+extern unsigned int smi_dbg_imgsys_mask;
+extern unsigned int smi_dbg_venc_mask;
+extern unsigned int smi_dbg_mjc_mask;
+
+#endif				/* _SMI_DEBUG_H__ */

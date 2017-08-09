@@ -2087,25 +2087,24 @@
 				"venc-venc";
 		};
 
-		smi_common@14017000 {
+		smi_common@14016000 {
 			compatible = "mediatek,smi_common";
-			reg = <0x14017000 0x1000>,	/* SMI_COMMON */
+			reg = <0x14016000 0x1000>,	/* SMI_COMMON */
 				<0x14015000 0x1000>,	/* LARB 0 */
 				<0x16010000 0x10000>,	/* LARB 1 */
 				<0x15001000 0x1000>,	/* LARB 2 */
 				<0x17001000 0x1000>;	/* LARB 3 */
-
 			clocks = <&mmsys MM_DISP0_SMI_COMMON>,
 				<&mmsys MM_DISP0_SMI_LARB0>,
 				<&imgsys IMG_IMAGE_LARB2_SMI>,
 				<&vdecsys VDEC1_LARB>,
+				<&vencsys VENC_VENC>,
 				<&vencsys VENC_LARB>,
 				<&scpsys SCP_SYS_VEN>,
 				<&scpsys SCP_SYS_VDE>,
 				<&scpsys SCP_SYS_ISP>,
 				<&scpsys SCP_SYS_DIS>;
-
-			clock-names = "smi-common", "smi-larb0", "img-larb2", "vdec1-larb", "venc-larb",
+			clock-names = "smi-common", "smi-larb0", "img-larb2", "vdec1-larb", "venc-venc", "venc-larb",
 			"mtcmos-ven", "mtcmos-vde", "mtcmos-isp", "mtcmos-dis";
 		};
 

@@ -1,4 +1,4 @@
-#if ((defined(D1) || defined(D2) || defined(D3)) && !IS_ENABLED(CONFIG_FPGA_EARLY_PORTING))
+#if ((defined(SMI_D1) || defined(SMI_D2) || defined(SMI_D3)) && !IS_ENABLED(CONFIG_FPGA_EARLY_PORTING))
 #define MMDVFS_ENABLE 1
 #endif
 
@@ -82,14 +82,14 @@ static enum mmdvfs_lcd_size_enum mmdvfs_get_lcd_resolution(void)
 
 static mmdvfs_voltage_enum mmdvfs_get_default_step(void)
 {
-#if defined(D3)
+#if defined(SMI_D3)
 	return MMDVFS_VOLTAGE_LOW;
-#else               /* defined(D3) */
+#else               /* defined(SMI_D3) */
 	if (mmdvfs_get_lcd_resolution() == MMDVFS_LCD_SIZE_HD)
 		return MMDVFS_VOLTAGE_LOW;
 
 	return MMDVFS_VOLTAGE_HIGH;
-#endif              /* defined(D3) */
+#endif              /* defined(SMI_D3) */
 }
 
 static mmdvfs_voltage_enum mmdvfs_get_current_step(void)
@@ -126,7 +126,7 @@ MTK_MMDVFS_CMD *cmd)
 
 	/* HIGH level scenarios */
 	switch (scenario) {
-#if defined(D2)         /* D2 ISP >= 6M HIGH */
+#if defined(SMI_D2)         /* D2 ISP >= 6M HIGH */
 	case SMI_BWC_SCEN_VR_SLOW:
 	case SMI_BWC_SCEN_VR:
 	if (cmd->sensor_size >= MMDVFS_PIXEL_NUM_SENSOR_6M)
@@ -169,7 +169,7 @@ static void mmdvfs_dump_info(void)
 }
 
 /* delay 4 seconds to go LPM to workaround camera ZSD + PIP issue */
-#if !defined(D3)
+#if !defined(SMI_D3)
 static void mmdvfs_cam_work_handler(struct work_struct *work)
 {
 	MMDVFSMSG("CAM handler %d\n", jiffies_to_msecs(jiffies));
@@ -193,7 +193,7 @@ static void mmdvfs_start_cam_monitor(void)
 	schedule_delayed_work(&g_mmdvfs_cam_work, MMDVFS_CAM_MON_DELAY);
 }
 
-#endif              /* !defined(D3) */
+#endif              /* !defined(SMI_D3) */
 
 int mmdvfs_set_step(MTK_SMI_BWC_SCEN scenario, mmdvfs_voltage_enum step)
 {
@@ -204,7 +204,7 @@ int mmdvfs_set_step(MTK_SMI_BWC_SCEN scenario, mmdvfs_voltage_enum step)
 	return 0;
 #endif
 
-#if defined(D1)
+#if defined(SMI_D1)
 	/* D1 FHD always HPM. do not have to trigger vcore dvfs. */
 	if (mmdvfs_get_lcd_resolution() == MMDVFS_LCD_SIZE_FHD)
 		return 0;
@@ -314,7 +314,7 @@ void mmdvfs_notify_scenario_exit(MTK_SMI_BWC_SCEN scen)
 
 	MMDVFSMSG("leave %d\n", scen);
 
-#if !defined(D3)        /* d3 does not need this workaround because the MMCLK is always the highest */
+#if !defined(SMI_D3)        /* d3 does not need this workaround because the MMCLK is always the highest */
 	/*
 	 * keep HPM for 4 seconds after exiting camera scenarios to get rid of
 	 * cam framework will let us go to normal scenario for a short time
@@ -325,7 +325,7 @@ void mmdvfs_notify_scenario_exit(MTK_SMI_BWC_SCEN scen)
 	|| (scen == SMI_BWC_SCEN_ICFP)) {
 		mmdvfs_start_cam_monitor();
 	}
-#endif              /* !defined(D3) */
+#endif              /* !defined(SMI_D3) */
 
 	/* reset scenario voltage to default when it exits */
 	mmdvfs_set_step(scen, mmdvfs_get_default_step());
@@ -341,12 +341,12 @@ void mmdvfs_notify_scenario_enter(MTK_SMI_BWC_SCEN scen)
 
 	/* ISP ON = high */
 	switch (scen) {
-#if defined(D2)         /* d2 sensor > 6M */
+#if defined(SMI_D2)         /* d2 sensor > 6M */
 	case SMI_BWC_SCEN_VR:
 	mmdvfs_set_step(scen, mmdvfs_query(scen, NULL));
 	break;
 	case SMI_BWC_SCEN_VR_SLOW:
-#elif defined(D1)       /* default VR high */
+#elif defined(SMI_D1)       /* default VR high */
 	case SMI_BWC_SCEN_VR:
 	case SMI_BWC_SCEN_VR_SLOW:
 #else               /* D3 */
