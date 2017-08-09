@@ -333,7 +333,7 @@ void wdt_arch_reset(char mode)
 		wdt_mode_val = wdt_mode_val | (MTK_WDT_MODE_KEY|MTK_WDT_MODE_EXTEN);
 
 	/*set latch register to 0 for SW reset*/
-	mt_reg_sync_writel((MTK_WDT_LENGTH_CTL_KEY | 0x0), MTK_WDT_LATCH_CTL);
+	/* mt_reg_sync_writel((MTK_WDT_LENGTH_CTL_KEY | 0x0), MTK_WDT_LATCH_CTL); */
 	mt_reg_sync_writel(wdt_mode_val, MTK_WDT_MODE);
 	pr_debug("wdt_arch_reset called end MTK_WDT_MODE =%x\n", wdt_mode_val);
 	udelay(100);
