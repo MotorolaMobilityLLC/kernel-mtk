@@ -329,7 +329,7 @@ enum hrtimer_restart ged_sw_vsync_check_cb( struct hrtimer *timer )
 			INIT_WORK(&psNotify->sWork, ged_notify_sw_sync_work_handle);
 			psNotify->t = temp;
 			do_div(psNotify->t,1000);
-			psNotify->phase = GED_DVFS_FALLBACK;
+			psNotify->phase = GED_DVFS_TIMER_BACKUP;
 			psNotify->ul3DFenceDoneTime = 0;
 			queue_work(g_psNotifyWorkQueue, &psNotify->sWork);
 			ged_log_buf_print(ghLogBuf_DVFS, "[GED_K] Timer kick	(ts=%llu) ", temp);
@@ -340,22 +340,6 @@ enum hrtimer_restart ged_sw_vsync_check_cb( struct hrtimer *timer )
 	return HRTIMER_NORESTART;
 }
 
-
-enum hrtimer_restart ged_swvsync_alarm_cb( struct hrtimer *timer )
-{
-	GED_NOTIFY_SW_SYNC* psNotify;
-	psNotify = (GED_NOTIFY_SW_SYNC*)ged_alloc_atomic(sizeof(GED_NOTIFY_SW_SYNC));
-	if (psNotify)
-	{
-		INIT_WORK(&psNotify->sWork, ged_notify_sw_sync_work_handle);
-		psNotify->t = 0;
-		psNotify->phase = GED_DVFS_FALLBACK;
-		psNotify->ul3DFenceDoneTime = 0;
-		queue_work(g_psNotifyWorkQueue, &psNotify->sWork);
-		ged_log_buf_print(ghLogBuf_DVFS, "[GED_K] Alarm kick");
-	}	
-	return HRTIMER_NORESTART;
-}
 
 bool ged_gpu_power_on_notified = 0;
 bool ged_gpu_power_off_notified = 0;
@@ -426,7 +410,7 @@ void ged_sodi_stop(void)
 			{
 				INIT_WORK(&psNotify->sWork, ged_notify_sw_sync_work_handle);
 				psNotify->t = ns_cur_time;
-				psNotify->phase = GED_DVFS_FALLBACK;
+				psNotify->phase = GED_DVFS_TIMER_BACKUP;
 				psNotify->ul3DFenceDoneTime = 0;
 				queue_work(g_psNotifyWorkQueue, &psNotify->sWork);								
 			}						

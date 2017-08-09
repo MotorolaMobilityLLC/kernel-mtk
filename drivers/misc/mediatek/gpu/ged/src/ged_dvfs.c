@@ -481,7 +481,7 @@ static bool ged_dvfs_policy(
 	}
 
 	
-	if(g_gpu_timer_based_emu)
+	if(g_gpu_timer_based_emu) // conventional timer-based policy
 	{
 	if (ui32GPULoading >= 99)
 	{
@@ -524,8 +524,20 @@ static bool ged_dvfs_policy(
 		}
 	}
 	}
-	else
+	else if(GED_DVFS_TIMER_BACKUP==phase) // easy to boost in offscreen case
 	{
+		if (ui32GPULoading >= 50)
+		{
+			i32NewFreqID -= 1;
+		}
+		else if (ui32GPULoading <= 30)
+	{
+			i32NewFreqID += 1;
+		}
+	}
+	else // vsync-based fallback mode
+	{
+			
 		if (ui32GPULoading >= 70)
 		{
 			i32NewFreqID -= 1;
@@ -808,7 +820,7 @@ void ged_dvfs_run(unsigned long t, long phase, unsigned long ul3DFenceDoneTime)
 		bError=ged_dvfs_cal_gpu_utilization(&gpu_loading, &gpu_block, &gpu_idle);
 
 #ifdef GED_DVFS_UM_CAL        
-		if(GED_DVFS_FALLBACK==phase) // timer-based DVFS use only
+		if(GED_DVFS_TIMER_BACKUP==phase) // timer-backup DVFS use only
 #endif             
 		{
 
