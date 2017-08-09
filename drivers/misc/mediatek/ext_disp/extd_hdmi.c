@@ -1352,6 +1352,9 @@ int hdmi_get_edid(void *edid_info)
 			pv_get_info.ui4_pal_resolution &= (~SINK_1080P60);
 			pv_get_info.ui4_pal_resolution |= SINK_1080P30;
 		}
+
+		pv_get_info.ui4_pal_resolution &= (~SINK_2160p30);
+		pv_get_info.ui4_pal_resolution &= (~SINK_2160p24);
 #endif
 	}
 
