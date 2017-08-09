@@ -1737,20 +1737,13 @@ static fm_s32 mt6630_rdsTx_Support(fm_s32 *sup)
 
 static fm_s32 MT6630_Rds_Tx_Enable(void)
 {
-	fm_s32 ret = 0;
-	fm_u16 pkt_size;
-
 	mt6630_set_bits(0xC7, 0x0800, 0xF7FF);
 	return 0;
 }
 
 static fm_s32 MT6630_Rds_Tx_Disable(void)
 {
-	fm_s32 ret = 0;
-	fm_u16 pkt_size;
-
 	mt6630_set_bits(0xC7, 0x0000, 0xF7FF);
-
 	return 0;
 }
 
