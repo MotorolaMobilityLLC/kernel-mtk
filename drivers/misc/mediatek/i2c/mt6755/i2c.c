@@ -1481,11 +1481,13 @@ static s32 mt_i2c_probe(struct platform_device *pdev)
 	i2c->base = of_iomap(pdev->dev.of_node, 0);
 	if (!i2c->base) {
 		I2CERR("I2C iomap failed\n");
+		kfree(i2c);
 		return -ENODEV;
 	}
 
 	if (of_property_read_u32(pdev->dev.of_node, "cell-index", &pdev->id)) {
 		I2CERR("I2C get cell-index failed\n");
+		kfree(i2c);
 		return -ENODEV;
 	}
 	i2c->id = pdev->id;
@@ -1493,6 +1495,7 @@ static s32 mt_i2c_probe(struct platform_device *pdev)
 	irq = irq_of_parse_and_map(pdev->dev.of_node, 0);
 	if (!irq) {
 		I2CERR("I2C get irq failed\n");
+		kfree(i2c);
 		return -ENODEV;
 	}
 
@@ -1553,12 +1556,14 @@ static s32 mt_i2c_probe(struct platform_device *pdev)
 	i2c->clk_main = devm_clk_get(&pdev->dev, "main");
 	if (IS_ERR(i2c->clk_main)) {
 		I2CERR("cannot get main clock, err=%ld\n", PTR_ERR(i2c->clk_main));
+		kfree(i2c);
 		return PTR_ERR(i2c->clk_main);
 	}
 
 	i2c->clk_dma = devm_clk_get(&pdev->dev, "dma");
 	if (IS_ERR(i2c->clk_dma)) {
 		I2CERR("cannot get dma clock, err=%ld\n", PTR_ERR(i2c->clk_dma));
+		kfree(i2c);
 		return PTR_ERR(i2c->clk_dma);
 	}
 #endif
