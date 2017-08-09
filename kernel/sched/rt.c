@@ -4,6 +4,9 @@
  */
 
 #include "sched.h"
+#if defined(CONFIG_MT_SCHED_TRACE)
+#include <trace/events/sched.h>
+#endif
 
 #include <linux/slab.h>
 #ifdef CONFIG_MTPROF
@@ -1347,6 +1350,18 @@ select_task_rq_rt(struct task_struct *p, int cpu, int sd_flag, int flags)
 	 * This test is optimistic, if we get it wrong the load-balancer
 	 * will have to sort it out.
 	 */
+#if defined(CONFIG_MT_SCHED_TRACE)
+	if (curr) {
+		mt_sched_printf(sched_rt_info,
+				"1 select_task_rq_rt cpu=%d p=%d:%s:prio=%d:0x%x curr=%d:%s:prio=%d:0x%x",
+				cpu, p->pid, p->comm, p->prio, p->nr_cpus_allowed, curr->pid,
+				curr->comm, curr->prio, curr->nr_cpus_allowed);
+	} else {
+		mt_sched_printf(sched_rt_info, "1 select_task_rq_rt cpu=%d p=%d:%s:prio=%d:0x%x",
+				cpu, p->pid, p->comm, p->prio, p->nr_cpus_allowed);
+	}
+#endif
+
 	if (curr && unlikely(rt_task(curr)) &&
 	    (curr->nr_cpus_allowed < 2 ||
 	     curr->prio <= p->prio)) {
@@ -1354,6 +1369,8 @@ select_task_rq_rt(struct task_struct *p, int cpu, int sd_flag, int flags)
 
 		if (target != -1)
 			cpu = target;
+
+		mt_sched_printf(sched_rt_info, "2. select_task_rq_rt %d:%s to cpu=%d", p->pid, p->comm, cpu);
 	}
 	rcu_read_unlock();
 
@@ -1389,6 +1406,7 @@ static void check_preempt_equal_prio(struct rq *rq, struct task_struct *p)
  */
 static void check_preempt_curr_rt(struct rq *rq, struct task_struct *p, int flags)
 {
+	mt_sched_printf(sched_rt_info, "check_preempt_curr_rt %d:%d:%s", p->prio, rq->curr->prio, p->comm);
 	if (p->prio < rq->curr->prio) {
 		resched_curr(rq);
 		return;
@@ -1541,6 +1559,9 @@ static int find_lowest_rq(struct task_struct *task)
 	int this_cpu = smp_processor_id();
 	int cpu      = task_cpu(task);
 
+	mt_sched_printf(sched_rt_info,
+			"1 find_lowest_rq lowest_mask=0x%lx, task->cpus_allowed=0x%lx",
+			lowest_mask->bits[0], task->cpus_allowed.bits[0]);
 	/* Make sure the mask is initialized first */
 	if (unlikely(!lowest_mask))
 		return -1;
@@ -1631,6 +1652,8 @@ static struct rq *find_lock_lowest_rq(struct task_struct *task, struct rq *rq)
 			 * migrated already or had its affinity changed.
 			 * Also make sure that it wasn't scheduled on its rq.
 			 */
+			mt_sched_printf(sched_rt_info, "1. find_lock_lowest_rq %d %d %d %s",
+					lowest_rq->cpu, rq->cpu, task->pid, task->comm);
 			if (unlikely(task_rq(task) != rq ||
 				     !cpumask_test_cpu(lowest_rq->cpu,
 						       tsk_cpus_allowed(task)) ||
