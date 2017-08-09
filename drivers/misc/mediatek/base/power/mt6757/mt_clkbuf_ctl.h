@@ -25,35 +25,22 @@
 #include <cust_clk_buf.h>
 #endif
 
-#include <mach/gpio_const.h>
-#include <mt-plat/mt_gpio.h>
-
 #if 1 /*TODO: need add Pad name@DCT tool */
-#define MT_CPIO_INDEX_OFS 0x80000000
-
 #ifndef GPIO_RFIC0_BSI_CS
-#define GPIO_RFIC0_BSI_CS         (GPIO159 | MT_CPIO_INDEX_OFS)   /* RFIC0_BSI_CS = GPIO159 */
+#define GPIO_RFIC0_BSI_CS         (GPIO159 | 0x80000000)   /* RFIC0_BSI_CS = GPIO159 */
 #endif
 #ifndef GPIO_RFIC0_BSI_CK
-#define GPIO_RFIC0_BSI_CK         (GPIO160 | MT_CPIO_INDEX_OFS)   /* RFIC0_BSI_CK = GPIO160 */
+#define GPIO_RFIC0_BSI_CK         (GPIO160 | 0x80000000)   /* RFIC0_BSI_CK = GPIO160 */
 #endif
 #ifndef GPIO_RFIC0_BSI_D0
-#define GPIO_RFIC0_BSI_D0         (GPIO69  | MT_CPIO_INDEX_OFS)    /* RFIC0_BSI_D0 = GPIO69 */
+#define GPIO_RFIC0_BSI_D0         (GPIO69  | 0x80000000)    /* RFIC0_BSI_D0 = GPIO69 */
 #endif
 #ifndef GPIO_RFIC0_BSI_D1
-#define GPIO_RFIC0_BSI_D1         (GPIO68  | MT_CPIO_INDEX_OFS)    /* RFIC0_BSI_D1 = GPIO68 */
+#define GPIO_RFIC0_BSI_D1         (GPIO68  | 0x80000000)    /* RFIC0_BSI_D1 = GPIO68 */
 #endif
 #ifndef GPIO_RFIC0_BSI_D2
-#define GPIO_RFIC0_BSI_D2         (GPIO67  | MT_CPIO_INDEX_OFS)    /* RFIC0_BSI_D2 = GPIO67 */
+#define GPIO_RFIC0_BSI_D2         (GPIO67  | 0x80000000)    /* RFIC0_BSI_D2 = GPIO67 */
 #endif
-
-#ifndef GPIO_KPROW1
-#define GPIO_KPROW1            (GPIO107  | MT_CPIO_INDEX_OFS)    /* KPROW1 = GPIO107 */
-#endif
-#ifndef GPIO_KPROW2
-#define GPIO_KPROW2            (GPIO108  | MT_CPIO_INDEX_OFS)    /* KPROW2 = GPIO108 */
-#endif
-
 #endif
 
 enum clk_buf_id {
@@ -92,19 +79,10 @@ typedef enum {
 	CLK_BUF_SW_ENABLE  = 1,
 } CLK_BUF_SWCTRL_STATUS_T;
 
-struct mdjtag_gpio_config {
-	GPIO_MODE mode;
-	GPIO_PULL_EN pull_enable;
-	GPIO_PULL pull_select;
-	GPIO_IES ies;
-};
-
 #define CLKBUF_NUM      4
 
 #define STA_CLK_ON      1
 #define STA_CLK_OFF     0
-
-/* #define ENABLE_PMIC_CLK_BUFFER */
 
 bool clk_buf_ctrl(enum clk_buf_id id, bool onoff);
 void clk_buf_get_swctrl_status(CLK_BUF_SWCTRL_STATUS_T *status);
@@ -118,6 +96,5 @@ bool is_clk_buf_under_flightmode(void);
 bool is_clk_buf_from_pmic(void);
 
 extern struct mutex clk_buf_ctrl_lock;
-extern struct kobject *power_kobj;
 #endif
 
