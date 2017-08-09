@@ -352,6 +352,16 @@ extern struct proc_dir_entry *profile_dir;
 extern unsigned int ppm_func_lv_mask;
 extern unsigned int ppm_debug;
 extern met_set_ppm_state_funcMET g_pSet_PPM_State;
+#ifdef PPM_USE_EFFICIENCY_TABLE
+extern int *freq_idx_mapping_tbl;
+extern int *freq_idx_mapping_tbl_r;
+extern int *freq_idx_mapping_tbl_big;
+extern int *freq_idx_mapping_tbl_big_r;
+extern int *efficiency_B[3];
+extern int *efficiency_LxLL[5][5];
+extern int *delta_power_B[3];
+extern int *delta_power_LxLL[5][5];
+#endif
 
 /*==============================================================*/
 /* APIs								*/
@@ -378,7 +388,7 @@ extern struct ppm_power_tbl_data ppm_get_power_table(void);
 #ifdef PPM_THERMAL_ENHANCEMENT
 extern struct ppm_power_tbl_data ppm_get_tlp3_power_table(void);
 #endif
-extern void ppm_main_pwr_tbl_calibration(void);
+extern void ppm_pwr_tbl_calibration(void);
 #else
 extern const struct ppm_power_tbl_data ppm_get_power_table(void);
 #ifdef PPM_THERMAL_ENHANCEMENT
@@ -401,6 +411,9 @@ extern int ppm_get_table_idx_by_pwr(enum ppm_power_state state, unsigned int pwr
 #ifdef PPM_THERMAL_ENHANCEMENT
 extern int ppm_get_tlp3_table_idx_by_pwr(enum ppm_power_state state, unsigned int pwr_idx);
 extern bool ppm_is_need_to_check_tlp3_table(enum ppm_power_state state, unsigned int pwr_idx);
+#endif
+#ifdef PPM_USE_EFFICIENCY_TABLE
+extern void ppm_init_efficiency_table(void);
 #endif
 
 /* main */

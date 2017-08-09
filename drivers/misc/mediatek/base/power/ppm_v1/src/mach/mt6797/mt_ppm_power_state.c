@@ -1543,7 +1543,7 @@ static void ppm_main_pwr_tbl_cpy(struct ppm_power_tbl *dest, struct ppm_power_tb
 	}
 }
 
-void ppm_main_pwr_tbl_calibration(void)
+void ppm_pwr_tbl_calibration(void)
 {
 	struct ppm_power_tbl_data power_table = ppm_get_power_table();
 #ifdef PPM_THERMAL_ENHANCEMENT
@@ -1678,6 +1678,58 @@ void ppm_main_pwr_tbl_calibration(void)
 				ref_tbl.pwr_idx_ref_tbl[i].l2_power[j]
 				);
 #endif
+		}
+	}
+}
+#endif
+
+#ifdef PPM_USE_EFFICIENCY_TABLE
+#include "mt_ppm_efficiency_table.h"
+
+int *freq_idx_mapping_tbl;
+int *freq_idx_mapping_tbl_r;
+int *freq_idx_mapping_tbl_big;
+int *freq_idx_mapping_tbl_big_r;
+int *efficiency_B[3];
+int *efficiency_LxLL[5][5];
+int *delta_power_B[3];
+int *delta_power_LxLL[5][5];
+
+void ppm_init_efficiency_table(void)
+{
+	int i, j;
+
+	if (ppm_main_info.dvfs_tbl_type == DVFS_TABLE_TYPE_SB) {
+		freq_idx_mapping_tbl = freq_idx_mapping_tbl_sb;
+		freq_idx_mapping_tbl_r = freq_idx_mapping_tbl_sb_r;
+		freq_idx_mapping_tbl_big = freq_idx_mapping_tbl_sb_big;
+		freq_idx_mapping_tbl_big_r = freq_idx_mapping_tbl_sb_big_r;
+
+		for (i = 0; i < 3; i++) {
+			efficiency_B[i] = efficiency_B_SB[i];
+			delta_power_B[i] = delta_power_B_SB[i];
+		}
+		for (i = 0; i < 5; i++) {
+			for (j = 0; j < 5; j++) {
+				efficiency_LxLL[i][j] = efficiency_LxLL_SB[i][j];
+				delta_power_LxLL[i][j] = delta_power_LxLL_SB[i][j];
+			}
+		}
+	} else {
+		freq_idx_mapping_tbl = freq_idx_mapping_tbl_fy;
+		freq_idx_mapping_tbl_r = freq_idx_mapping_tbl_fy_r;
+		freq_idx_mapping_tbl_big = freq_idx_mapping_tbl_fy_big;
+		freq_idx_mapping_tbl_big_r = freq_idx_mapping_tbl_fy_big_r;
+
+		for (i = 0; i < 3; i++) {
+			efficiency_B[i] = efficiency_B_FY[i];
+			delta_power_B[i] = delta_power_B_FY[i];
+		}
+		for (i = 0; i < 5; i++) {
+			for (j = 0; j < 5; j++) {
+				efficiency_LxLL[i][j] = efficiency_LxLL_FY[i][j];
+				delta_power_LxLL[i][j] = delta_power_LxLL_FY[i][j];
+			}
 		}
 	}
 }

@@ -68,6 +68,16 @@ extern unsigned int hps_get_hvytsk(unsigned int cluster_id);
 
 #define PPM_DISABLE_BIG_FOR_LP_MODE	(1)
 
+#define PPM_USE_EFFICIENCY_TABLE	(1)
+#ifdef PPM_USE_EFFICIENCY_TABLE
+#define PPM_EFFICIENCY_TABLE_USE_CORE_LIMIT	(1)
+#ifdef PPM_EFFICIENCY_TABLE_USE_CORE_LIMIT
+#define PPM_EFFICIENCY_TABLE_MAX_FREQ_IDX 8
+#else
+#define PPM_EFFICIENCY_TABLE_MAX_FREQ_IDX 7
+#endif
+#endif
+
 /* DLPT mode */
 #define PPM_DLPT_DEFAULT_MODE	(HYBRID_MODE)
 #define DLPT_MAX_REAL_POWER_FY	(12504)

@@ -85,6 +85,292 @@ struct ppm_data ppm_main_info = {
 	.ppm_event = ATOMIC_INIT(0),
 };
 
+#ifdef PPM_USE_EFFICIENCY_TABLE
+int prev_max_cpufreq_idx[3] = {0, 0, 0};
+int Core_limit[3] = {4, 4, 2};
+
+void ppm_main_update_req_by_pwr(enum ppm_power_state new_state, struct ppm_policy_req *req)
+{
+	int power_budget = req->power_budget;
+	/* lookup efficiency table */
+	int opp[3];
+	int i;
+	struct cpumask cluster_cpu, online_cpu;
+	int delta_power;
+	int activeCoreNumB;
+	int activeCoreNumL;
+	int activeCoreNumLL;
+	int LxLL;
+	unsigned int power;
+	/* Get power index of current OPP */
+	unsigned int curr_power = 0/* = mt_ppm_thermal_get_cur_power()*/;
+	struct ppm_cluster_status cluster_status[3];
+	struct ppm_cluster_status cluster_status_rebase[3];
+	int LxLLisLimited = 0;
+#ifdef PPM_EFFICIENCY_TABLE_USE_CORE_LIMIT
+	int B_limit = Core_limit[2];
+	int L_limit = Core_limit[1];
+	int LL_limit = Core_limit[0];
+#endif
+
+	/* skip if DVFS is not ready (we cannot get current freq...) */
+	if (!ppm_main_info.client_info[PPM_CLIENT_DVFS].limit_cb)
+		return;
+
+	for_each_ppm_clusters(i) {
+		arch_get_cluster_cpus(&cluster_cpu, i);
+		cpumask_and(&online_cpu, &cluster_cpu, cpu_online_mask);
+
+		cluster_status[i].core_num = cpumask_weight(&online_cpu);
+		cluster_status[i].volt = 0;	/* don't care */
+		if (!cluster_status[i].core_num)
+			cluster_status[i].freq_idx = -1;
+		else
+#ifdef PPM_FAST_ATM_SUPPORT
+			cluster_status[i].freq_idx = ppm_main_freq_to_idx(i,
+					mt_cpufreq_get_cur_phy_freq_no_lock(i), CPUFREQ_RELATION_L);
+#else
+			cluster_status[i].freq_idx = ppm_main_freq_to_idx(i,
+					mt_cpufreq_get_cur_phy_freq(i), CPUFREQ_RELATION_L);
+#endif
+		ppm_ver("[%d] core = %d, freq_idx = %d\n",
+			i, cluster_status[i].core_num, cluster_status[i].freq_idx);
+		/* copy cluster_status data structure */
+		cluster_status_rebase[i] = cluster_status[i];
+	}
+
+#ifdef PPM_EFFICIENCY_TABLE_USE_CORE_LIMIT
+	for (i = 0; i <= 2; i++) {
+		if (cluster_status_rebase[i].core_num > Core_limit[i])
+			cluster_status_rebase[i].core_num = Core_limit[i];
+	}
+#endif
+	if (cluster_status_rebase[0].core_num == 0 && cluster_status_rebase[1].core_num == 0) {
+		if (Core_limit[0] > 0) {
+			cluster_status_rebase[0].core_num = 1;
+			cluster_status_rebase[0].freq_idx = 0;
+		} else {
+			cluster_status_rebase[1].core_num = 1;
+			cluster_status_rebase[1].freq_idx = 0;
+		}
+	}
+
+	/* use L cluster frequency */
+	if (cluster_status_rebase[1].core_num > 0)
+		cluster_status_rebase[0].freq_idx = cluster_status_rebase[1].freq_idx;
+
+	if (cluster_status_rebase[0].freq_idx <= prev_max_cpufreq_idx[0])
+		LxLLisLimited = 1;
+	if (cluster_status_rebase[1].freq_idx <= prev_max_cpufreq_idx[1])
+		LxLLisLimited = 1;
+
+	power = ppm_find_pwr_idx(cluster_status_rebase);
+	curr_power = (power == -1) ? mt_ppm_thermal_get_max_power() : (unsigned int)power;
+
+	/* convert current OPP(frequency only) from 16 to 8 */
+	if (cluster_status_rebase[2].freq_idx >= 0)
+		opp[0] = freq_idx_mapping_tbl_big_r[cluster_status_rebase[2].freq_idx];
+	else
+		opp[0] = -1;
+	if (cluster_status_rebase[1].freq_idx >= 0)
+		opp[1] = freq_idx_mapping_tbl_r[cluster_status_rebase[1].freq_idx];
+	else
+		opp[1] = -1;
+	if (cluster_status_rebase[0].freq_idx >= 0)
+		opp[2] = freq_idx_mapping_tbl_r[cluster_status_rebase[0].freq_idx];
+	else
+		opp[2] = -1;
+
+	delta_power = power_budget - curr_power;
+
+	/* Get Active Core number of each cluster */
+	activeCoreNumB = cluster_status_rebase[2].core_num;
+	activeCoreNumL = cluster_status_rebase[1].core_num;
+	activeCoreNumLL = cluster_status_rebase[0].core_num;
+
+	/* Which Cluster in L and LL is active (1: L is on 2: L is off) */
+	LxLL = 0;
+	if (activeCoreNumL > 0)
+		LxLL = 1;
+	else if (activeCoreNumLL > 0)
+		LxLL = 2;
+
+#ifdef PPM_EFFICIENCY_TABLE_USE_CORE_LIMIT
+	req->limit[0].max_cpu_core = LL_limit;
+	req->limit[1].max_cpu_core = L_limit;
+	req->limit[2].max_cpu_core = B_limit;
+#endif
+
+	if (activeCoreNumB < 0)
+		activeCoreNumB = 0;
+	if (activeCoreNumL < 0)
+		activeCoreNumL = 0;
+	if (activeCoreNumLL < 0)
+		activeCoreNumLL = 0;
+
+	ppm_ver("power_budget %d delta_power %d curr_power %d opp %d%d%d %d%d%d\n",
+				power_budget, delta_power, curr_power, opp[0], opp[1], opp[2],
+				activeCoreNumB, activeCoreNumL, activeCoreNumLL);
+
+	/* increase ferquency limit */
+	if (delta_power >= 0) {
+		while (1) {
+			int ChoosenCluster = -1, MaxEfficiency = 0, ChoosenPower = 0;
+
+			/* Big Clister */
+			if (activeCoreNumB > 0 && opp[0] > 0
+				&& delta_power > delta_power_B[activeCoreNumB][opp[0]-1]) {
+				MaxEfficiency = efficiency_B[activeCoreNumB][opp[0]-1];
+				ChoosenCluster = 0;
+				ChoosenPower = delta_power_B[activeCoreNumB][opp[0]-1];
+			}
+
+			ppm_ver("power_budget %d delta_power %d curr_power %d opp %d%d%d %d%d%d %d %d\n",
+					power_budget, delta_power, curr_power, opp[0], opp[1], opp[2],
+					activeCoreNumB, activeCoreNumL, activeCoreNumLL,
+					prev_max_cpufreq_idx[LxLL], cluster_status_rebase[2-LxLL].freq_idx);
+			ppm_ver("prev_max_cpufreq_idx[LxLL] %d opp[LxLL] %d\n",
+					prev_max_cpufreq_idx[LxLL], opp[LxLL]);
+
+			/* LxLL Cluster */
+			if (LxLL && opp[LxLL] > 0
+				&& delta_power > delta_power_LxLL[activeCoreNumL][activeCoreNumLL][opp[LxLL]-1]
+				&& efficiency_LxLL[activeCoreNumL][activeCoreNumLL][opp[LxLL]-1] > MaxEfficiency
+				&& (LxLLisLimited || opp[0])) {
+				MaxEfficiency = efficiency_LxLL[activeCoreNumL][activeCoreNumLL][opp[LxLL]-1];
+				ChoosenCluster = 1;
+				ChoosenPower = delta_power_LxLL[activeCoreNumL][activeCoreNumLL][opp[LxLL]-1];
+			}
+
+			/* exceed power budget or all active core is highest freq. */
+			if (ChoosenCluster == -1) {
+#ifdef PPM_EFFICIENCY_TABLE_USE_CORE_LIMIT
+				if (opp[LxLL] == 0) {
+					while (LL_limit < 4 && delta_power >
+						delta_power_LxLL[activeCoreNumL][LL_limit+1][7]) {
+						delta_power -= delta_power_LxLL[activeCoreNumL][LL_limit + 1][7];
+						req->limit[0].max_cpu_core = ++LL_limit;
+					}
+					while (L_limit < 4 && delta_power >
+						delta_power_LxLL[L_limit+1][activeCoreNumLL][7]) {
+						delta_power -= delta_power_LxLL[L_limit+1][activeCoreNumLL][7];
+						req->limit[1].max_cpu_core = ++L_limit;
+					}
+					while (B_limit < 2 && delta_power > delta_power_B[B_limit+1][7]) {
+						delta_power -= delta_power_B[B_limit+1][7];
+						req->limit[2].max_cpu_core = ++B_limit;
+					}
+				}
+#endif
+				break;
+			}
+			/* if choose Cluster LxLL, change opp of active cluster only */
+			if (ChoosenCluster == 1) {
+				if (activeCoreNumL > 0)
+					opp[1] -= 1;
+				if (activeCoreNumLL > 0)
+					opp[2] -= 1;
+			} else
+				opp[ChoosenCluster] -= 1;
+
+			delta_power -= ChoosenPower;
+			/* curr_power += ChoosenPower; */
+
+		}
+	} else {
+		while (delta_power < 0) {
+			int ChoosenCluster = -1;
+			int MinEfficiency = 10000;	/* should be bigger than max value of efficiency_* array */
+			int ChoosenPower = 0;
+
+			/* B */
+			if (activeCoreNumB > 0 && opp[0] < PPM_EFFICIENCY_TABLE_MAX_FREQ_IDX) {
+				MinEfficiency = efficiency_B[activeCoreNumB][opp[0]];
+				ChoosenCluster = 0;
+				ChoosenPower = delta_power_B[activeCoreNumB][opp[0]];
+			}
+			/* LxLL */
+			if (LxLL && opp[LxLL] < PPM_EFFICIENCY_TABLE_MAX_FREQ_IDX
+				&& efficiency_LxLL[activeCoreNumL][activeCoreNumLL][opp[LxLL]] < MinEfficiency) {
+				MinEfficiency = efficiency_LxLL[activeCoreNumL][activeCoreNumLL][opp[LxLL]];
+				ChoosenCluster = 1;
+				ChoosenPower = delta_power_LxLL[activeCoreNumL][activeCoreNumLL][opp[LxLL]];
+			}
+			if (ChoosenCluster == -1) {
+				ppm_err("Failed to find lower OPP: budget %d delta %d curr_power %d opp %d%d%d %d%d%d\n",
+					power_budget, delta_power, curr_power, opp[0], opp[1], opp[2],
+					activeCoreNumB, activeCoreNumL, activeCoreNumLL);
+				break;
+			}
+
+			/* if choose Cluster LxLL, change opp of active cluster only */
+			if (ChoosenCluster == 1) {
+				if (activeCoreNumL > 0)
+					opp[1] += 1;
+				if (activeCoreNumLL > 0)
+					opp[2] += 1;
+			} else
+				opp[ChoosenCluster] += 1;
+			/* Limit Core */
+#ifdef PPM_EFFICIENCY_TABLE_USE_CORE_LIMIT
+			if (opp[0] == 8 && activeCoreNumB > 0) {
+				req->limit[2].max_cpu_core = --activeCoreNumB;
+				opp[0] = 7;
+			} else if (opp[LxLL] == 8) {
+				if (activeCoreNumL > 1 || (activeCoreNumLL > 0 && activeCoreNumL > 0))
+					req->limit[1].max_cpu_core = --activeCoreNumL;
+				else if (activeCoreNumLL > 1)
+					req->limit[0].max_cpu_core = --activeCoreNumLL;
+				if (activeCoreNumL > 0)
+					opp[1] = 7;
+				if (activeCoreNumLL > 0)
+					opp[2] = 7;
+			}
+#endif
+
+			delta_power += ChoosenPower;
+			curr_power -= ChoosenPower;
+		}
+	}
+
+	ppm_ver("power_budget %d delta_power %d curr_power %d opp %d%d%d\n",
+		power_budget, delta_power, curr_power, opp[0], opp[1], opp[2]);
+
+	/* Set frequency limit */
+	/* For non share buck */
+#if 0
+	if (opp[2] >= 0 && activeCoreNumLL > 0)
+		req->limit[0].max_cpufreq_idx = freq_idx_mapping_tbl[opp[2]];
+	if (opp[1] >= 0 && activeCoreNumL > 0)
+		req->limit[1].max_cpufreq_idx = freq_idx_mapping_tbl[opp[1]];
+#endif
+
+	/* Set all frequency limit of the cluster */
+	/* Set OPP of Cluser n to opp[n] */
+	req->limit[0].max_cpufreq_idx = freq_idx_mapping_tbl[opp[LxLL]];
+	req->limit[1].max_cpufreq_idx = freq_idx_mapping_tbl[opp[LxLL]];
+
+	if (opp[0] >= 0 && activeCoreNumB > 0)
+		req->limit[2].max_cpufreq_idx = freq_idx_mapping_tbl_big[opp[0]];
+	else
+		req->limit[2].max_cpufreq_idx = 0;
+
+#if 0
+	/* prevent hotplug from HICA */
+	req->limit[0].max_cpu_core = 4;
+	req->limit[1].max_cpu_core = 4;
+	req->limit[2].max_cpu_core = 2;
+#endif
+
+	for (i = 0; i < req->cluster_num; i++) {
+		/* error check */
+		if (req->limit[i].max_cpufreq_idx > req->limit[i].min_cpufreq_idx)
+			req->limit[i].min_cpufreq_idx = req->limit[i].max_cpufreq_idx;
+		if (req->limit[i].max_cpu_core < req->limit[i].min_cpu_core)
+			req->limit[i].min_cpu_core = req->limit[i].max_cpu_core;
+	}
+}
+#else
 void ppm_main_update_req_by_pwr(enum ppm_power_state new_state, struct ppm_policy_req *req)
 {
 	int index, i;
@@ -126,6 +412,7 @@ tbl_lookup_done:
 	} else
 		ppm_dbg(MAIN, "@%s: index not found!", __func__);
 }
+#endif
 
 int ppm_main_freq_to_idx(unsigned int cluster_id,
 					unsigned int freq, unsigned int relation)
@@ -384,7 +671,7 @@ static void ppm_main_calc_new_limit(void)
 {
 	struct ppm_policy_data *pos;
 	int i, active_cnt = 0;
-	bool is_ptp_activate = false;
+	bool is_ptp_activate = false, is_all_cluster_zero = true;
 	struct ppm_client_req *c_req = &(ppm_main_info.client_req);
 	struct ppm_client_req *last_req = &(ppm_main_info.last_req);
 
@@ -425,6 +712,9 @@ static void ppm_main_calc_new_limit(void)
 
 	/* set freq idx to previous limit if nr_cpu in the cluster is 0 */
 	for (i = 0; i < c_req->cluster_num; i++) {
+		if (c_req->cpu_limit[i].max_cpu_core)
+			is_all_cluster_zero = false;
+
 		if ((!c_req->cpu_limit[i].min_cpu_core && !c_req->cpu_limit[i].max_cpu_core)
 			|| (c_req->cpu_limit[i].has_advise_core && !c_req->cpu_limit[i].advise_cpu_core)) {
 			c_req->cpu_limit[i].min_cpufreq_idx = last_req->cpu_limit[i].min_cpufreq_idx;
@@ -432,6 +722,10 @@ static void ppm_main_calc_new_limit(void)
 			c_req->cpu_limit[i].has_advise_freq = last_req->cpu_limit[i].has_advise_freq;
 			c_req->cpu_limit[i].advise_cpufreq_idx = last_req->cpu_limit[i].advise_cpufreq_idx;
 		}
+#ifdef PPM_USE_EFFICIENCY_TABLE
+		prev_max_cpufreq_idx[i] = c_req->cpu_limit[i].max_cpufreq_idx;
+		Core_limit[i] = c_req->cpu_limit[i].max_cpu_core;
+#endif
 
 		ppm_ver("Final Result: [%d] --> (%d)(%d)(%d)(%d) (%d)(%d)(%d)(%d)\n",
 			i,
@@ -451,6 +745,34 @@ static void ppm_main_calc_new_limit(void)
 
 	/* fill ptpod activate flag */
 	c_req->is_ptp_policy_activate = is_ptp_activate;
+
+	/* Trigger exception if all cluster max core limit is 0 */
+	if (is_all_cluster_zero) {
+		struct ppm_policy_data *pos;
+		unsigned int i = 0;
+
+		ppm_err("all cluster max core limit are 0, dump all active policy data...\n");
+
+		/* dump all policy data for debugging */
+		ppm_info("Current state = %s\n", ppm_get_power_state_name(ppm_main_info.cur_power_state));
+
+		list_for_each_entry(pos, &ppm_main_info.policy_list, link) {
+			ppm_lock(&pos->lock);
+			if (pos->is_activated) {
+				ppm_info("[%d] %s: perf_idx = %d, pwr_bdgt = %d\n",
+						pos->policy, pos->name, pos->req.perf_idx, pos->req.power_budget);
+				for_each_ppm_clusters(i) {
+					ppm_info("cluster %d: (%d)(%d)(%d)(%d)\n", i,
+						pos->req.limit[i].min_cpufreq_idx, pos->req.limit[i].max_cpufreq_idx,
+						pos->req.limit[i].min_cpu_core, pos->req.limit[i].max_cpu_core);
+				}
+				ppm_info("\n");
+			}
+			ppm_unlock(&pos->lock);
+		}
+
+		BUG();
+	}
 
 	FUNC_EXIT(FUNC_LV_MAIN);
 }
@@ -567,6 +889,20 @@ int mt_ppm_main(void)
 	aee_rr_rec_ppm_step(2);
 #endif
 
+#ifdef PPM_EFFICIENCY_TABLE_USE_CORE_LIMIT
+	/* reset Core_limit if state changed */
+	if (prev_state != next_state) {
+		struct ppm_power_state_data *state_info = ppm_get_power_state_info();
+
+		for (i = 0; i < ppm_main_info.cluster_num; i++) {
+			if (next_state >= PPM_POWER_STATE_NONE)
+				Core_limit[i] = get_cluster_max_cpu_core(i);
+			else
+				Core_limit[i] = state_info[next_state].cluster_limit->state_limit[i].max_cpu_core;
+		}
+	}
+#endif
+
 	/* update active policy's limit according to current state */
 	list_for_each_entry(pos, &ppm_main_info.policy_list, link) {
 		if ((pos->is_activated || pos->policy == PPM_POLICY_HICA)
@@ -672,8 +1008,9 @@ int mt_ppm_main(void)
 					notify_dvfs = true;
 
 					/* check for log reduction */
-					if (!(max_freq < 8 && max_freq_ori < 8 && abs(max_freq - max_freq_ori) < 5)
-					|| !(min_freq > 8 && min_freq_ori > 8 && abs(min_freq - min_freq_ori) < 5))
+					if (c_req->cpu_limit[i].max_cpu_core != 0
+						&& (abs(max_freq - max_freq_ori) >= 5
+						|| abs(min_freq - min_freq_ori) >= 5))
 						log_print = true;
 				}
 

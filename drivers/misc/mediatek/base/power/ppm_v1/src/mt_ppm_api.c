@@ -39,11 +39,17 @@ void mt_ppm_set_dvfs_table(unsigned int cpu, struct cpufreq_frequency_table *tbl
 			for (j = 0; j < num; j++)
 				ppm_info("%d: %d KHz\n", j, ppm_main_info.cluster_info[i].dvfs_tbl[j].frequency);
 
+			/* data init after CPU segment is confirmed */
+			if (i == ppm_main_info.cluster_num - 1) {
 #ifdef PPM_POWER_TABLE_CALIBRATION
-			/* start calibration after receiving last cluster's DVFS table */
-			if (i == ppm_main_info.cluster_num - 1)
-				ppm_main_pwr_tbl_calibration();
+				/* start calibration after receiving last cluster's DVFS table */
+				ppm_pwr_tbl_calibration();
 #endif
+#ifdef PPM_USE_EFFICIENCY_TABLE
+				/* init efficiency table */
+				ppm_init_efficiency_table();
+#endif
+			}
 
 			ppm_unlock(&ppm_main_info.lock);
 

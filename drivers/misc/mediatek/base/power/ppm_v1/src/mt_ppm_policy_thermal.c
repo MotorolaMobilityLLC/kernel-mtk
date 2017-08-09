@@ -82,7 +82,25 @@ unsigned int mt_ppm_thermal_get_min_power(void)
 
 unsigned int mt_ppm_thermal_get_max_power(void)
 {
+#ifdef PPM_USE_EFFICIENCY_TABLE
+	struct ppm_cluster_status cluster_status_rebase[3];
+	unsigned int power;
+
+	cluster_status_rebase[0].core_num = 4;
+	cluster_status_rebase[0].freq_idx = 0;
+	cluster_status_rebase[1].core_num = 4;
+	cluster_status_rebase[1].freq_idx = 0;
+	cluster_status_rebase[2].core_num = 2;
+	cluster_status_rebase[2].freq_idx = 0;
+
+	power = ppm_find_pwr_idx(cluster_status_rebase);
+	if (power > 0)
+		return power;
+	else
+		return ppm_get_power_table().power_tbl[0].power_idx;
+#else
 	return ppm_get_power_table().power_tbl[0].power_idx;
+#endif
 }
 
 unsigned int mt_ppm_thermal_get_cur_power(void)
