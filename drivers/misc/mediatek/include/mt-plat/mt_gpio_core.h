@@ -21,9 +21,9 @@
 #define VERSION     GPIO_DEVICE
 
 #define GPIOTAG                "[GPIO] "
-#define GPIOLOG(fmt, arg...)   printk(GPIOTAG fmt, ##arg)
-#define GPIOMSG(fmt, arg...)   printk(fmt, ##arg)
-#define GPIOERR(fmt, arg...)   printk(GPIOTAG "%5d: "fmt, __LINE__, ##arg)
+#define GPIOLOG(fmt, arg...)   pr_debug(GPIOTAG fmt, ##arg)
+#define GPIOMSG(fmt, arg...)   pr_debug(fmt, ##arg)
+#define GPIOERR(fmt, arg...)   pr_err(GPIOTAG "%5d: "fmt, __LINE__, ##arg)
 #define GPIOFUC(fmt, arg...)	/* printk(GPIOTAG "%s\n", __FUNCTION__) */
 /*----------------------------------------------------------------------------*/
 /* Error Code No. */

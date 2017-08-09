@@ -696,7 +696,7 @@ int mt_set_gpio_mode_base(unsigned long pin, unsigned long mode)
 
 
 #endif
-	GPIOERR("%s:pin:%ld, mode:%ld, value:0x%x\n", __func__, pin, mode, GPIO_RD32(addr));
+	/* GPIOERR("%s:pin:%ld, mode:%ld, value:0x%x\n", __func__, pin, mode, GPIO_RD32(addr)); */
 
 	return RSUCCESS;
 }
