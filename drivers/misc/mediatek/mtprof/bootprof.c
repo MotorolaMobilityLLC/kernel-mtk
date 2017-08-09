@@ -27,19 +27,18 @@
 #endif
 #include <mt_cpufreq.h>
 
-#define BOOT_STR_SIZE 256 /* Before: 128 */
+#define BOOT_STR_SIZE 256
 #define BOOT_LOG_NUM 192
-/* Memory Usage
- * Before: (128+8)*64 = 8704.
- * Now: (64+8)*128 = 9216 */
+#define TRACK_TASK_COMM
 
 struct boot_log_struct {
-	u64 timestamp;
-	char *event;
+	/* task cmdline for first 16 bytes
+	 * and boot event for the rest if TRACK_TASK_COMM is on */
+	char *comm_event;
 #ifdef TRACK_TASK_COMM
 	pid_t pid;
-	char comm[TASK_COMM_LEN];
 #endif
+	u64 timestamp;
 } mt_bootprof[BOOT_LOG_NUM];
 
 static int boot_log_count;
@@ -70,16 +69,20 @@ void log_boot(char *str)
 	p->timestamp = ts;
 #ifdef TRACK_TASK_COMM
 	p->pid = current->pid;
-	memcpy(p->comm, current->comm, TASK_COMM_LEN);
+	n += TASK_COMM_LEN;
 #endif
-	p->event = kzalloc(n, GFP_ATOMIC | __GFP_NORETRY |
-			   __GFP_NOWARN);
-	if (!p->event) {
-		/* pr_err("log_boot alloc size %zu fail\n", n); */
+	p->comm_event = kzalloc(n, GFP_ATOMIC | __GFP_NORETRY |
+			  __GFP_NOWARN);
+	if (!p->comm_event) {
 		mt_bootprof_enabled = false;
 		goto out;
 	}
-	memcpy(p->event, str, n);
+#ifdef TRACK_TASK_COMM
+	memcpy(p->comm_event, current->comm, TASK_COMM_LEN);
+	memcpy(p->comm_event + TASK_COMM_LEN, str, n - TASK_COMM_LEN);
+#else
+	memcpy(p->comm_event, str, n);
+#endif
 	boot_log_count++;
 out:
 	mutex_unlock(&mt_bootprof_lock);
@@ -154,6 +157,7 @@ mt_bootprof_write(struct file *filp, const char *ubuf, size_t cnt, loff_t *data)
 static int mt_bootprof_show(struct seq_file *m, void *v)
 {
 	int i;
+	struct boot_log_struct *p;
 
 	SEQ_printf(m, "----------------------------------------\n");
 	SEQ_printf(m, "%d	    BOOT PROF (unit:msec)\n", mt_bootprof_enabled);
@@ -172,15 +176,22 @@ static int mt_bootprof_show(struct seq_file *m, void *v)
 		   nsec_high(timestamp_on), nsec_low(timestamp_on));
 
 	for (i = 0; i < boot_log_count; i++) {
-		if (!mt_bootprof[i].event)
+		p = &mt_bootprof[i];
+		if (!p->comm_event)
 			continue;
-		SEQ_printf(m, "%10Ld.%06ld : %s\n",
-			   nsec_high(mt_bootprof[i].timestamp),
-			   nsec_low(mt_bootprof[i].timestamp),
 #ifdef TRACK_TASK_COMM
-			   mt_bootprof[i].pid, mt_bootprof[i].comm,
+#define FMT "%10Ld.%06ld :%5d-%-16s: %s\n"
+#else
+#define FMT "%10Ld.%06ld : %s\n"
 #endif
-			   mt_bootprof[i].event);
+		SEQ_printf(m, FMT, nsec_high(p->timestamp),
+			   nsec_low(p->timestamp),
+#ifdef TRACK_TASK_COMM
+			   p->pid, p->comm_event, p->comm_event + TASK_COMM_LEN
+#else
+			   p->comm_event
+#endif
+			   );
 	}
 
 	SEQ_printf(m, "%10Ld.%06ld : OFF\n",

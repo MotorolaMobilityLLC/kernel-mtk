@@ -786,6 +786,7 @@ static int __init_or_module do_one_initcall_debug(initcall_t fn)
 int __init_or_module do_one_initcall(initcall_t fn)
 {
 	unsigned long long ts = 0;
+	unsigned long msec_rem;
 	int count = preempt_count();
 	int ret;
 	char msgbuf[64];
@@ -815,7 +816,8 @@ int __init_or_module do_one_initcall(initcall_t fn)
 	WARN(msgbuf[0], "initcall %pF returned with %s\n", fn, msgbuf);
 	if (ts > 15000000) {
 		/* log more than 15ms initcalls */
-		snprintf(msgbuf, 64, "%pf %10llu ns", fn, ts);
+		msec_rem = do_div(ts, NSEC_PER_MSEC);
+		snprintf(msgbuf, 64, "%pf %5llu.%06lums", fn, ts, msec_rem);
 #ifdef CONFIG_MTPROF
 		log_boot(msgbuf);
 #endif
