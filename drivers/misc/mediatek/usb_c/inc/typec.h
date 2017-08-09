@@ -72,6 +72,19 @@ struct usbc_pin_ctrl {
 	struct pinctrl_state *fusb340_sel_low;
 	struct pinctrl_state *fusb340_sel_high;
 };
+#elif defined(CONFIG_USB_C_SWITCH_ANX7418)
+struct usbc_pin_ctrl {
+	struct pinctrl_state *rst_n_init;
+	struct pinctrl_state *rst_n_low;
+	struct pinctrl_state *rst_n_high;
+
+	struct pinctrl_state *pwr_en_init;
+	struct pinctrl_state *pwr_en_low;
+	struct pinctrl_state *pwr_en_high;
+
+	struct pinctrl_state *cbl_det_init;
+	struct pinctrl_state *intp_init;
+};
 #endif
 
 /*
@@ -101,6 +114,9 @@ struct usbtypc {
 };
 #elif defined(CONFIG_USB_C_SWITCH_ANX7418)
 struct usbtypc {
+	struct pinctrl *pinctrl;
+	struct usbc_pin_ctrl *pin_cfg;
+	struct device *pinctrl_dev;
 	struct i2c_client *i2c_hd;
 	struct typec_switch_data *host_driver;
 	struct typec_switch_data *device_driver;
