@@ -31,6 +31,7 @@
 #include <mt_vcorefs_manager.h>
 
 #include <mach/mt_emi_bm.h>
+#include "mt_cpufreq.h"
 
 #define SEQ_printf(m, x...)\
 	do {\
@@ -45,6 +46,7 @@
 #define Y_steps (4200/X_ms)
 
 #define MIN_DEFAULT_LPM 500
+int l_boost_flag;
 /*
 #if 0
 extern void BM_Enable(const unsigned int);
@@ -325,7 +327,7 @@ fliper_pm_callback(struct notifier_block *nb,
 	switch (action) {
 
 	case PM_SUSPEND_PREPARE:
-		enable_fliper_polling();
+		disable_fliper_polling();
 		break;
 	case PM_HIBERNATION_PREPARE:
 		break;
@@ -333,7 +335,7 @@ fliper_pm_callback(struct notifier_block *nb,
 	case PM_POST_SUSPEND:
 		pr_debug(TAG"Resume, restore CG configuration\n");
 		cg_set_threshold(cg_lpm_bw_threshold, cg_hpm_bw_threshold);
-		disable_fliper_polling();
+		enable_fliper_polling();
 		break;
 
 	case PM_POST_HIBERNATION:
@@ -376,14 +378,17 @@ static void mt_power_pef_transfer_work(void)
 		cg_hpm_bw_threshold -= 500;
 		cg_set_threshold(cg_lpm_bw_threshold, cg_hpm_bw_threshold);
 		step = Y_steps;
+		l_boost_flag = 1;
 	}
 	if (count > 26 && cg_lpm_bw_threshold >= MIN_DEFAULT_LPM)
 		step = Y_steps;
 
 	if (count <= 26)
 		step--;
-	if (step <= 0)
+	if (step <= 0) {
 		cg_restore_threshold();
+		l_boost_flag = 0;
+	}
 }
 /*--------------------INIT------------------------*/
 #define TIME_5SEC_IN_MS 5000
