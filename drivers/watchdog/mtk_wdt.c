@@ -33,6 +33,9 @@
 #include <linux/delay.h>
 #include <linux/reset-controller.h>
 #include <linux/reset.h>
+#ifdef CONFIG_MT6397_MISC
+#include <linux/mfd/mt6397/rtc_misc.h>
+#endif
 
 #define WDT_MAX_TIMEOUT		31
 #define WDT_MIN_TIMEOUT		1
@@ -211,6 +214,14 @@ static int mtk_reset_handler(struct notifier_block *this, unsigned long mode,
 
 	mtk_wdt = container_of(this, struct mtk_wdt_dev, restart_handler);
 	wdt_base = mtk_wdt->wdt_base;
+
+#ifdef CONFIG_MT6397_MISC
+	if (cmd && !strcmp(cmd, "recovery")) {
+		mtk_misc_mark_recovery();
+	} else if (cmd && !strcmp(cmd, "bootloader")) {
+		mtk_misc_mark_fast();
+	}
+#endif
 
 	while (1) {
 		writel(WDT_SWRST_KEY, wdt_base + WDT_SWRST);
