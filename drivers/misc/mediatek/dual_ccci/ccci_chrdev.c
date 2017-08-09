@@ -39,11 +39,6 @@ struct ccci_dev_client *md_logger_client = NULL;
 static spinlock_t md_logger_lock;
 static unsigned int catch_more;
 
-#ifdef CONFIG_MTK_MD_SBP_CUSTOM_VALUE
-static unsigned int md_sbp_code;
-static unsigned int md_sbp_code_default;
-#endif				/* CONFIG_MTK_MD_SBP_CUSTOM_VALUE */
-
 unsigned int __weak get_sim_switch_type(void)
 {
 	CCCI_MSG("%s is not implement!!! line:%d\n", __func__, __LINE__);
@@ -1349,55 +1344,6 @@ static long ccci_vir_chr_ioctl(struct file *file, unsigned int cmd,
 			CCCI_MSG_INF(md_id, "chr", "send signal %d to rild %d ret=%ld\n", sig, pid, ret);
 		}
 		break;
-
-#ifdef CONFIG_MTK_MD_SBP_CUSTOM_VALUE
-	case CCCI_IOC_GET_MD_SBP_CFG:
-		CCCI_MSG_INF(md_id, "chr", "SBP confg length:%d!\n",
-			     strlen(CONFIG_MTK_MD_SBP_CUSTOM_VALUE));
-		if (strlen(CONFIG_MTK_MD_SBP_CUSTOM_VALUE) > 0) {
-			if (!md_sbp_code_default) {
-				int tmpret =
-				    kstrtouint(CONFIG_MTK_MD_SBP_CUSTOM_VALUE,
-					       0, &md_sbp_code_default);
-				if (!tmpret) {
-					CCCI_MSG_INF(md_id, "chr",
-						     "GET_MD_SBP_CFG: get config sbp code:%d!\n",
-						     md_sbp_code_default);
-				} else {
-					CCCI_MSG_INF(md_id, "chr",
-						     "GET_MD_SBP_CFG: get config sbp code fail! ret:%d, Config val:%s\n",
-						     tmpret,
-						     CONFIG_MTK_MD_SBP_CUSTOM_VALUE);
-				}
-			} else {
-				CCCI_MSG_INF(md_id, "chr",
-					     "GET_MD_SBP_CFG: config sbp code:%d!\n",
-					     md_sbp_code_default);
-			}
-
-			ret =
-			    put_user(md_sbp_code_default,
-				     (unsigned int __user *)arg);
-
-		} else {
-			ret = -ENOTTY;
-		}
-		break;
-
-	case CCCI_IOC_SET_MD_SBP_CFG:
-		if (copy_from_user
-		    (&md_sbp_code, (void __user *)arg, sizeof(unsigned int))) {
-			CCCI_MSG_INF(md_id, "chr",
-				     "SET_MD_SBP_CFG: copy_from_user fail!\n");
-			ret = -EFAULT;
-		} else {
-			CCCI_MSG_INF(md_id, "chr",
-				     "SET_MD_SBP_CFG: set md sbp code:0x%x!\n",
-				     md_sbp_code);
-			ccci_set_md_sbp(md_id, md_sbp_code);
-		}
-		break;
-#endif				/*  CONFIG_MTK_MD_SBP_CUSTOM_VALUE */
 
 	default:
 		CCCI_MSG_INF(md_id, "chr", "illegal IOCTL %X called by %s\n",

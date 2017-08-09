@@ -1396,8 +1396,7 @@ static void config_ap_runtime_data(struct ccci_modem *md, struct ap_query_md_fea
 	ccif_write32(&ap_rt_data->tail_pattern, 0, AP_FEATURE_QUERY_PATTERN);
 }
 
-static int md_ccif_op_send_runtime_data(struct ccci_modem *md,
-					unsigned int sbp_code)
+static int md_ccif_op_send_runtime_data(struct ccci_modem *md)
 {
 	int packet_size = sizeof(struct ap_query_md_feature) + sizeof(struct ccci_header);
 	struct ccci_header *ccci_h;
@@ -1407,8 +1406,6 @@ static int md_ccif_op_send_runtime_data(struct ccci_modem *md,
 
 	ccci_h = (struct ccci_header *)&md_ctrl->ccif_sram_layout->up_header;
 	ap_rt_data = (struct ap_query_md_feature *)&md_ctrl->ccif_sram_layout->ap_rt_data;
-
-	CCCI_BOOTUP_LOG(md->index, KERN, "new api for sending rt data, sbp_code %u\n", sbp_code);
 
 	ccci_set_ap_region_protection(md);
 	/*header */

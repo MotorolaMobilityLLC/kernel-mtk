@@ -52,10 +52,6 @@
 #ifdef ENABLE_32K_CLK_LESS
 #include <mt-plat/mtk_rtc.h>
 #endif
-/* -------------ccci sbp feature define---------------------*/
-#ifdef CONFIG_MTK_MD_SBP_CUSTOM_VALUE
-static unsigned int md_sbp_value[MAX_MD_NUM];
-#endif	/*  CONFIG_MTK_MD_SBP_CUSTOM_VALUE */
 /* ------------------- md control variable define---------------------*/
 struct md_ctl_block_t {
 	struct mutex ccci_md_boot_mutex;	/*  for ccci_mb_mutex */
@@ -84,6 +80,7 @@ struct md_ctl_block_t {
 	unsigned int ee_info_got;
 	unsigned int ee_info_flag;
 	unsigned int mdl_mode;
+	unsigned int sbp_code;
 	spinlock_t ctl_lock;
 	unsigned int m_md_id;
 	struct ccci_reset_sta reset_sta[NR_CCCI_RESET_USER];
@@ -824,22 +821,6 @@ int ccci_dump_md_register_ext(int md_id, char buf[], unsigned int len)
 }
 #endif /* ENABLE_DUMP_MD_REG */
 
-#ifdef CONFIG_MTK_MD_SBP_CUSTOM_VALUE
-int ccci_set_md_sbp(int md_id, unsigned int md_sbp)
-{
-	CCCI_MSG_INF(md_id, "ctl", "ccci_set_md_sbp(%d, 0x%x)\n", md_id,
-		     md_sbp);
-
-	switch (md_id) {
-	case MD_SYS1:
-		md_sbp_value[MD_SYS1] = md_sbp;
-		return 0;
-
-	default:
-		return -1;
-	}
-}
-#endif	/*  CONFIG_MTK_MD_SBP_CUSTOM_VALUE */
 
 void config_misc_info(int md_id, unsigned int base[], unsigned int size)
 {
@@ -905,19 +886,11 @@ void config_misc_info(int md_id, unsigned int base[], unsigned int size)
 		(FEATURE_NOT_SUPPORT << (MISC_MD_COCLK_SETTING * 2));
 #endif /*  ENABLE_GPS_MD_COCLK */
 
-#ifdef CONFIG_MTK_MD_SBP_CUSTOM_VALUE
 	CCCI_MSG_INF(md_id, "ctl",
 		"config_misc_info() md_id:%d, sbp_code:0x%x\n",
-		md_id, md_sbp_value[md_id]);
-	if (md_sbp_value[md_id] > 0) {
-		misc_info.feature_4_val[0] = md_sbp_value[md_id];
-		misc_info.support_mask |=
-			(FEATURE_SUPPORT << (MISC_MD_SBP_SETTING * 2));
-	}
-#else
-	CCCI_MSG_INF(md_id, "ctl",
-		"config_misc_info() NOT support MISC_MD_SBP_SETTING\n");
-#endif	/*  CONFIG_MTK_MD_SBP_CUSTOM_VALUE */
+		md_id, md_ctlb[md_id]->sbp_code);
+	misc_info.feature_4_val[0] = md_ctlb[md_id]->sbp_code;
+	misc_info.support_mask |= (FEATURE_SUPPORT << (MISC_MD_SBP_SETTING * 2));
 	memcpy(base, &misc_info, sizeof(struct misc_info_t));
 }
 
@@ -1986,10 +1959,12 @@ int ccci_set_md_boot_data(int md_id, unsigned int data[], int len)
 	int ret = 0;
 
 	ctl_b = md_ctlb[md_id];
-	if (len > 0 && data != NULL)
-		ctl_b->mdl_mode = data[0];
-	else
-		ret = -1;
+	if (len <= 0 || data == NULL)
+		return -1;
+
+	ctl_b->mdl_mode = data[0];
+	ctl_b->sbp_code = data[1];
+
 	return ret;
 }
 /* ccci_start_modem: do start modem operation */

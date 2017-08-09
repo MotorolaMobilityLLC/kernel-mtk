@@ -720,7 +720,7 @@ struct ccci_modem_ops {
 	int (*start_queue)(struct ccci_modem *md, unsigned char qno, DIRECTION dir);
 	int (*stop_queue)(struct ccci_modem *md, unsigned char qno, DIRECTION dir);
 	int (*napi_poll)(struct ccci_modem *md, unsigned char rxqno, struct napi_struct *napi, int weight);
-	int (*send_runtime_data)(struct ccci_modem *md, unsigned int sbp_code);
+	int (*send_runtime_data)(struct ccci_modem *md);
 	int (*broadcast_state)(struct ccci_modem *md, MD_STATE state);
 	int (*force_assert)(struct ccci_modem *md, MD_COMM_TYPE type);
 	int (*dump_info)(struct ccci_modem *md, MODEM_DUMP_FLAG flag, void *buff, int length);
@@ -860,7 +860,6 @@ struct ccci_modem {
 	struct ccci_image_info img_info[IMG_NUM];
 	unsigned int sim_type;
 	unsigned int sbp_code;
-	unsigned int sbp_code_default;
 	unsigned int mdlg_mode;
 	unsigned char critical_user_active[CRIT_USR_MAX];
 	unsigned int md_img_exist[MAX_IMG_NUM];

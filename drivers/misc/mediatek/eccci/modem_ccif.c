@@ -846,7 +846,7 @@ static void dump_runtime_data(struct ccci_modem *md, struct modem_runtime *runti
 	CCCI_NORMAL_LOG(md->index, TAG, "----------------------------------------------\n");
 }
 
-static int md_ccif_op_send_runtime_data(struct ccci_modem *md, unsigned int sbp_code)
+static int md_ccif_op_send_runtime_data(struct ccci_modem *md)
 {
 	int packet_size = sizeof(struct ccci_header) + sizeof(struct modem_runtime);
 	struct md_ccif_ctrl *md_ctrl = (struct md_ccif_ctrl *)md->private_data;
@@ -929,15 +929,12 @@ static int md_ccif_op_send_runtime_data(struct ccci_modem *md, unsigned int sbp_
 	ccif_write32(&runtime->support_mask, 0, tmp);
 
 	/* MD2 SBP code */
-	if (sbp_code > 0) {
-		/* runtime->support_mask |= (FEATURE_SUPPORT<<(MISC_MD_SBP_SETTING * 2)); */
-		/* runtime->feature_4_val[0] = sbp_code; */
-		ccif_write32(&runtime->feature_4_val[0], 0, sbp_code);
-		tmp = ccif_read32(&runtime->support_mask, 0);
-		tmp &= ~(FEATURE_SUPPORT << (MISC_MD_SBP_SETTING * 2));
-		tmp |= (FEATURE_SUPPORT << (MISC_MD_SBP_SETTING * 2));
-		ccif_write32(&runtime->support_mask, 0, tmp);
-	}
+	ccif_write32(&runtime->feature_4_val[0], 0, md->sbp_code);
+	ccif_write32(&runtime->feature_4_val[1], 0, 0); /*reserve for wm_id*/
+	tmp = ccif_read32(&runtime->support_mask, 0);
+	tmp &= ~(FEATURE_SUPPORT << (MISC_MD_SBP_SETTING * 2));
+	tmp |= (FEATURE_SUPPORT << (MISC_MD_SBP_SETTING * 2));
+	ccif_write32(&runtime->support_mask, 0, tmp);
 
 	/* CCCI debug */
 #if defined(FEATURE_SEQ_CHECK_EN) || defined(FEATURE_POLL_MD_EN)

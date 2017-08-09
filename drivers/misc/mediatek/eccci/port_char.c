@@ -651,7 +651,7 @@ static long dev_char_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 		break;
 	case CCCI_IOC_SEND_RUN_TIME_DATA:
 		if (ch == CCCI_MONITOR_CH) {
-			ret = md->ops->send_runtime_data(md, md->sbp_code);
+			ret = md->ops->send_runtime_data(md);
 		} else {
 			CCCI_NORMAL_LOG(md->index, CHAR, "Set runtime by invalid user(%u) called by %s\n", ch,
 				     current->comm);
@@ -921,51 +921,6 @@ static long dev_char_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 		if (copy_to_user((void __user *)arg, ccci_setting, sizeof(struct ccci_setting))) {
 			CCCI_NORMAL_LOG(md->index, CHAR, "CCCI_IOC_GET_CFG_SETTING: copy_to_user fail\n");
 			ret = -EFAULT;
-		}
-		break;
-
-	case CCCI_IOC_GET_MD_SBP_CFG:
-		if (!md->sbp_code_default) {
-			unsigned char *sbp_custom_value = NULL;
-
-			if (md->index == MD_SYS1) {
-#if defined(CONFIG_MTK_MD_SBP_CUSTOM_VALUE)
-				sbp_custom_value = CONFIG_MTK_MD_SBP_CUSTOM_VALUE;
-#else
-				sbp_custom_value = "";
-#endif
-			} else if (md->index == MD_SYS2) {
-#if defined(CONFIG_MTK_MD2_SBP_CUSTOM_VALUE)
-				sbp_custom_value = CONFIG_MTK_MD2_SBP_CUSTOM_VALUE;
-#else
-				sbp_custom_value = "";
-#endif
-			}
-			if ((sbp_custom_value == NULL) || (!strcmp(sbp_custom_value, "0")))
-				sbp_custom_value = "";
-			ret = kstrtouint(sbp_custom_value, 0, &md->sbp_code_default);
-			if (!ret) {
-				CCCI_BOOTUP_LOG(md->index, CHAR, "CCCI_IOC_GET_MD_SBP_CFG: get config sbp code:%d!\n",
-					     md->sbp_code_default);
-			} else {
-				CCCI_BOOTUP_LOG(md->index, CHAR,
-					     "CCCI_IOC_GET_MD_SBP_CFG: get config sbp code fail! ret:%ld, Config val:%s\n",
-					     ret, sbp_custom_value);
-			}
-		} else {
-			CCCI_BOOTUP_LOG(md->index, CHAR, "CCCI_IOC_GET_MD_SBP_CFG: config sbp code:%d!\n",
-				     md->sbp_code_default);
-		}
-		ret = put_user(md->sbp_code_default, (unsigned int __user *)arg);
-		break;
-
-	case CCCI_IOC_SET_MD_SBP_CFG:
-		if (copy_from_user(&md->sbp_code, (void __user *)arg, sizeof(unsigned int))) {
-			CCCI_BOOTUP_LOG(md->index, CHAR, "CCCI_IOC_SET_MD_SBP_CFG: copy_from_user fail!\n");
-			ret = -EFAULT;
-		} else {
-			CCCI_BOOTUP_LOG(md->index, CHAR, "CCCI_IOC_SET_MD_SBP_CFG: set md sbp code:0x%x!\n",
-							md->sbp_code);
 		}
 		break;
 

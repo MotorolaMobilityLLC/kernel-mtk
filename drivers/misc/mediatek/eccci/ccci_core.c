@@ -915,10 +915,11 @@ int ccci_set_md_boot_data(struct ccci_modem *md, unsigned int data[], int len)
 {
 	int ret = 0;
 
-	if (len > 0 && data != NULL)
-		md->mdlg_mode = data[0];
-	else
-		ret = -1;
+	if (len < 0 || data == NULL)
+		return -1;
+	md->mdlg_mode = data[0];
+	md->sbp_code  = data[1];
+
 	return ret;
 }
 

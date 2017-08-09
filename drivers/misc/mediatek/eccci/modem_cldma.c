@@ -3184,7 +3184,7 @@ static void config_ap_runtime_data(struct ccci_modem *md, struct ap_query_md_fea
 	ap_feature->tail_pattern = AP_FEATURE_QUERY_PATTERN;
 }
 
-static int md_cd_send_runtime_data_v2(struct ccci_modem *md, unsigned int sbp_code)
+static int md_cd_send_runtime_data_v2(struct ccci_modem *md)
 {
 	int packet_size = sizeof(struct ap_query_md_feature) + sizeof(struct ccci_header);
 	struct ccci_request *req = NULL;
@@ -3197,8 +3197,6 @@ static int md_cd_send_runtime_data_v2(struct ccci_modem *md, unsigned int sbp_co
 		return -CCCI_ERR_ALLOCATE_MEMORY_FAIL;
 	ccci_h = (struct ccci_header *)req->skb->data;
 	ap_rt_data = (struct ap_query_md_feature *)(req->skb->data + sizeof(struct ccci_header));
-
-	CCCI_BOOTUP_LOG(md->index, TAG, "new api for sending rt data, sbp_code %u\n", sbp_code);
 
 	ccci_set_ap_region_protection(md);
 	/*header */
@@ -3222,7 +3220,7 @@ static int md_cd_send_runtime_data_v2(struct ccci_modem *md, unsigned int sbp_co
 	return ret;
 }
 
-static int md_cd_send_runtime_data(struct ccci_modem *md, unsigned int sbp_code)
+static int md_cd_send_runtime_data(struct ccci_modem *md)
 {
 	int packet_size = sizeof(struct modem_runtime) + sizeof(struct ccci_header);
 	struct ccci_request *req = NULL;
@@ -3237,7 +3235,7 @@ static int md_cd_send_runtime_data(struct ccci_modem *md, unsigned int sbp_code)
 	struct timeval t;
 #endif
 	if (md->runtime_version == AP_MD_HS_V2) {
-		ret = md_cd_send_runtime_data_v2(md, sbp_code);
+		ret = md_cd_send_runtime_data_v2(md);
 		return ret;
 	}
 
@@ -3305,14 +3303,12 @@ static int md_cd_send_runtime_data(struct ccci_modem *md, unsigned int sbp_code)
 	runtime->feature_2_val[0] = random_seed;
 	runtime->support_mask |= (FEATURE_SUPPORT << (MISC_RAND_SEED * 2));
 	/* SBP + WM_ID */
-	if ((sbp_code > 0) || (md->config.load_type)) {
-		runtime->support_mask |= (FEATURE_SUPPORT << (MISC_MD_SBP_SETTING * 2));
-		runtime->feature_4_val[0] = sbp_code;
+	runtime->support_mask |= (FEATURE_SUPPORT << (MISC_MD_SBP_SETTING * 2));
+	runtime->feature_4_val[0] = md->sbp_code;
 	if (md->config.load_type < modem_ultg)
 		runtime->feature_4_val[1] = 0;
 	else
 		runtime->feature_4_val[1] = get_md_wm_id_map(md->config.load_type);
-	}
 
 	/* CCCI debug */
 #if defined(FEATURE_SEQ_CHECK_EN) || defined(FEATURE_POLL_MD_EN)

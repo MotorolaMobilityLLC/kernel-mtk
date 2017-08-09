@@ -417,7 +417,8 @@ static int prepare_runtime_data(struct ccci_modem *md, struct ccci_request *req)
 					rt_f_element.feature[1] = 0;
 				else
 					rt_f_element.feature[1] = get_md_wm_id_map(md->config.load_type);
-				CCCI_BOOTUP_LOG(md->index, KERN, "wmid[%d]\n", rt_f_element.feature[1]);
+				CCCI_BOOTUP_LOG(md->index, KERN, "sbp=0x%x,wmid[%d]\n",
+					rt_f_element.feature[0], rt_f_element.feature[1]);
 				append_runtime_feature(&rt_data, &rt_feature, &rt_f_element);
 				break;
 			case MISC_INFO_CCCI:
