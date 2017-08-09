@@ -28,6 +28,8 @@
 #include <linux/of_address.h>
 #endif
 
+#include "mt_devinfo.h"
+
 static struct clk *ssusb_bus_clk;
 static struct clk *ssusb_ref_clk;
 static struct clk *ssusb_sys_clk;
@@ -886,6 +888,7 @@ void usb_phy_savecurrent(unsigned int clk_on)
 void usb_phy_recover(unsigned int clk_on)
 {
 	PHY_INT32 ret;
+	PHY_INT32 evalue;
 
 	os_printk(K_INFO, "%s clk_on=%d+\n", __func__, clk_on);
 
@@ -1068,17 +1071,17 @@ void usb_phy_recover(unsigned int clk_on)
 	U3PhyWriteField32((phys_addr_t) (SSUSB_SIFSLV_U3PHYD_BASE + 0x14), 24, (0xff<<24), 0x8f);
 	U3PhyWriteField32((phys_addr_t) (SSUSB_SIFSLV_U3PHYD_BASE + 0x10), 31, (0x01<<31), 0x01);
 	U3PhyWriteField32((phys_addr_t) (SSUSB_SIFSLV_U3PHYD_BASE + 0x10), 24, (0x1f<<24), 0x10);
-	U3PhyWriteField32((phys_addr_t) (U3D_USB30_PHYA_REG0), 10, (0x1f<<10), 0x2d);
+	U3PhyWriteField32((phys_addr_t) (U3D_USB30_PHYA_REG0), 10, (0x3f<<10), 0x2d);
 
 	/*
-	 * MWriteS32 0x11290a04 (MREAD("S32", asd:0x11290A04)&~(0x1f<<8)|0x2D<<8);rg_ssusb_idrv_3p5db[5:0]
+	 * MWriteS32 0x11290a04 (MREAD("S32", asd:0x11290A04)&~(0x3f<<8)|0x2D<<8);rg_ssusb_idrv_3p5db[5:0]
 	 * MWriteS32 0x11290a04 (MREAD("S32", asd:0x11290a04)&~(0x01<<14)|0x01<<14);rg_ssusb_force_idrv_3p5db
-	 * MWriteS32 0x11290a04 (MREAD("S32", asd:0x11290A04)&~(0x1f<<16)|0x13<<16);rg_ssusb_idem_3p5db[5:0]
+	 * MWriteS32 0x11290a04 (MREAD("S32", asd:0x11290A04)&~(0x3f<<16)|0x13<<16);rg_ssusb_idem_3p5db[5:0]
 	 * MWriteS32 0x11290a04 (MREAD("S32", asd:0x11290A04)&~(0x01<<22)|0x01<<22);rg_ssusb_force_idem_3p5db
 	 */
-	U3PhyWriteField32((phys_addr_t) (u3_sif2_base + 0xa04), 8, (0x1f<<8), 0x2c);
+	U3PhyWriteField32((phys_addr_t) (u3_sif2_base + 0xa04), 8, (0x3f<<8), 0x2c);
 	U3PhyWriteField32((phys_addr_t) (u3_sif2_base + 0xa04), 14, (0x01<<14), 0x01);
-	U3PhyWriteField32((phys_addr_t) (u3_sif2_base + 0xa04), 16, (0x1f<<16), 0x16);
+	U3PhyWriteField32((phys_addr_t) (u3_sif2_base + 0xa04), 16, (0x3f<<16), 0x16);
 	U3PhyWriteField32((phys_addr_t) (u3_sif2_base + 0xa04), 22, (0x01<<22), 0x01);
 
 	/* MWriteS32 0x1129095c (MREAD("S32", asd:0x1129095c)&~(0x1f<<24)|0x02<<24) ;rg_ssusb_cdr_bir_ltd1[4:0]
@@ -1093,6 +1096,34 @@ void usb_phy_recover(unsigned int clk_on)
 
 	/* D.S SD:0x1129030c  %LE %LONG 0x00000000 */
 	U3PhyWriteReg32((phys_addr_t) (u3_sif2_base + 0x30c), 0x00000000);
+
+	/* efuse setting */
+	evalue = (get_devinfo_with_index(36) & (0x1f<<8)) >> 8;
+	if (evalue) {
+		os_printk(K_INFO, "apply efuse setting, RG_USB20_INTR_CAL=0x%x\n", evalue);
+		U3PhyWriteField32((phys_addr_t) U3D_USBPHYACR1, RG_USB20_INTR_CAL_OFST,
+			  RG_USB20_INTR_CAL, evalue);
+	}
+
+	evalue = (get_devinfo_with_index(37) & (0x1f<<16)) >> 16;
+	if (evalue) {
+		os_printk(K_INFO, "apply efuse setting, RG_SSUSB_RX_IMPSEL=0x%x\n", evalue);
+		U3PhyWriteField32((phys_addr_t) U3D_PHYD_IMPCAL1, RG_SSUSB_RX_IMPSEL_OFST,
+			  RG_SSUSB_RX_IMPSEL, evalue);
+	}
+
+	evalue = (get_devinfo_with_index(37) & (0x3f<<21)) >> 21;
+	if (evalue) {
+		os_printk(K_INFO, "apply efuse setting, SSUSB_IEXT_INTR_CTRL=0x%x\n", evalue);
+		U3PhyWriteField32((phys_addr_t) (U3D_USB30_PHYA_REG0), 10, (0x3f<<10), evalue);
+	}
+
+	evalue = (get_devinfo_with_index(37) & (0x1f<<27)) >> 27;
+	if (evalue) {
+		os_printk(K_INFO, "apply efuse setting, RG_SSUSB_TX_IMPSEL=0x%x\n", evalue);
+		U3PhyWriteField32((phys_addr_t) U3D_PHYD_IMPCAL0, RG_SSUSB_TX_IMPSEL_OFST,
+			  RG_SSUSB_TX_IMPSEL, evalue);
+	}
 
 	/* Wait 800 usec */
 	udelay(800);
