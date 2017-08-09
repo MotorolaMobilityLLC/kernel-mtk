@@ -1363,7 +1363,7 @@ static int mtk_driving_get(struct gpio_chip *chip, unsigned offset)
 	return ((val & mask) >> shift);
 }
 
-static int mt_gpio_show_pin(struct device *dev, struct device_attribute *attr, char *buf)
+static ssize_t mt_gpio_show_pin(struct device *dev, struct device_attribute *attr, char *buf)
 {
 	int len = 0;
 	int bufLen = PAGE_SIZE;
@@ -1396,7 +1396,7 @@ static int mt_gpio_show_pin(struct device *dev, struct device_attribute *attr, c
 	return len;
 }
 
-static int mt_gpio_store_pin(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
+static ssize_t mt_gpio_store_pin(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
 {
 	int pin, val;
 	int val_set;
