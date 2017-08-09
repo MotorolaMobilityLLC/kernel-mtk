@@ -591,7 +591,7 @@ static int log_store(int facility, int level,
 	if (printk_too_much_enable == 1) {
 		if (detect_count_change) {
 			detect_count_change = false;
-			t_base = t_base + DETECT_TIME*15;
+			t_base = msg->ts_nsec + DETECT_TIME*15;
 		}
 		if (flag_toomuch == false && t_base < msg->ts_nsec) {
 			first_msg = (struct printk_log *)(log_buf + log_first_idx);
