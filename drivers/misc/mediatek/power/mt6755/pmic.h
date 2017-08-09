@@ -34,7 +34,6 @@ do {					\
 #define pmic_spm_crit2(fmt, args...)		\
 do {					\
 	aee_sram_printk(fmt, ##args);	\
-	pmic_debug(fmt, ##args);		\
 } while (0)
 #endif
 
