@@ -8,6 +8,7 @@
 #define EMI_ARBD    (EMI_BASE_ADDR + 0x118)
 #define EMI_ARBE    (EMI_BASE_ADDR + 0x120)
 #define EMI_ARBF    (EMI_BASE_ADDR + 0x128)
+#define EMI_ARBG_2ND     (EMI_BASE_ADDR + 0x134)
 #define EMI_ARBG    (EMI_BASE_ADDR + 0x130)
 #define EMI_ARBH    (EMI_BASE_ADDR + 0x138)
 #define EMI_BMEN    (EMI_BASE_ADDR + 0x400)

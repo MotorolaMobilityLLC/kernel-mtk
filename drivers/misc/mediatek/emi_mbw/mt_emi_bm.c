@@ -62,13 +62,13 @@ void BM_Init(void)
 		mt_reg_sync_writel(readl(IOMEM(EMI_ARBF)) &
 		~0x00008000, EMI_ARBF);
 	}
-#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_MT6797)
+
 	if (readl(IOMEM(EMI_ARBG_2ND)) & 0x00008000) {
 		g_cBWL |= 1 << 6;
 		mt_reg_sync_writel(readl(IOMEM(EMI_ARBG_2ND)) &
 		~0x00008000, EMI_ARBG_2ND);
 	}
-#else
+#if defined(CONFIG_ARCH_MT6797)
 	if (readl(IOMEM(EMI_ARBG)) & 0x00008000) {
 		g_cBWL |= 1 << 6;
 		mt_reg_sync_writel(readl(IOMEM(EMI_ARBG)) &
@@ -121,13 +121,12 @@ void BM_DeInit(void)
 		0x00008000, EMI_ARBF);
 	}
 
-#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_MT6797)
 	if (g_cBWL & (1 << 6)) {
 		g_cBWL &= ~(1 << 6);
 		mt_reg_sync_writel(readl(IOMEM(EMI_ARBG_2ND)) |
 		0x00008000, EMI_ARBG_2ND);
 	}
-#else
+#if defined(CONFIG_ARCH_MT6797)
 	if (g_cBWL & (1 << 6)) {
 		g_cBWL &= ~(1 << 6);
 		mt_reg_sync_writel(readl(IOMEM(EMI_ARBG)) |
