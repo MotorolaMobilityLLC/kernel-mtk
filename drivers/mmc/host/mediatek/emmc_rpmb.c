@@ -60,7 +60,7 @@ static dciMessage_t *rpmb_dci;
 #define DBG_EVT_ERR  (1 << 31) /* Error event */
 #define DBG_EVT_ALL  (0xffffffff)
 
-#define DBG_EVT_MASK (DBG_EVT_ALL)
+#define DBG_EVT_MASK (DBG_EVT_ERR)
 
 #define MSG(evt, fmt, args...) \
 do {\
