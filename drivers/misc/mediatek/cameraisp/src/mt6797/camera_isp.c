@@ -657,11 +657,12 @@ int pr_detect_count;
 #define ENABLE_KEEP_ION_HANDLE
 
 #ifdef ENABLE_KEEP_ION_HANDLE
+#define _ion_keep_max_   (64)/*32*/
 #include "ion_drv.h" /*g_ion_device*/
 static struct ion_client *pIon_client;
-static MINT32 G_WRDMA_IonCt[CAM_MAX][_dma_max_wr_][32] = { { {0} } };
-static MINT32 G_WRDMA_IonFd[CAM_MAX][_dma_max_wr_][32] = { { {0} } };
-static struct ion_handle *G_WRDMA_IonHnd[CAM_MAX][_dma_max_wr_][32] = { { {NULL} } };
+static MINT32 G_WRDMA_IonCt[CAM_MAX][_dma_max_wr_][_ion_keep_max_] = { { {0} } };
+static MINT32 G_WRDMA_IonFd[CAM_MAX][_dma_max_wr_][_ion_keep_max_] = { { {0} } };
+static struct ion_handle *G_WRDMA_IonHnd[CAM_MAX][_dma_max_wr_][_ion_keep_max_] = { { {NULL} } };
 static spinlock_t SpinLock_IonHnd[CAM_MAX][_dma_max_wr_]; /* protect G_WRDMA_IonHnd & G_WRDMA_IonFd */
 #endif
 /*******************************************************************************
@@ -5636,9 +5637,13 @@ static MINT32 ISP_FLUSH_IRQ(ISP_WAIT_IRQ_STRUCT *irqinfo)
 {
 	unsigned long flags; /* old: MUINT32 flags;*//* FIX to avoid build warning */
 
+	LOG_INF("type(%d)userKey(%d)St_type(%d)St(0x%x)",
+		irqinfo->Type, irqinfo->EventInfo.UserKey, irqinfo->EventInfo.St_type, irqinfo->EventInfo.Status);
+
 	/* 1. enable signal */
 	spin_lock_irqsave(&(IspInfo.SpinLockIrq[irqinfo->Type]), flags);
-	IspInfo.IrqInfo.Status[irqinfo->Type][irqinfo->EventInfo.UserKey][irqinfo->EventInfo.St_type] |= irqinfo->EventInfo.Status;
+	IspInfo.IrqInfo.Status[irqinfo->Type][irqinfo->EventInfo.St_type][irqinfo->EventInfo.UserKey]
+		|= irqinfo->EventInfo.Status;
 	spin_unlock_irqrestore(&(IspInfo.SpinLockIrq[irqinfo->Type]), flags);
 
 	/* 2. force to wake up the user that are waiting for that signal */
@@ -6224,7 +6229,7 @@ static void ISP_ion_free_handle_by_module(MUINT32 module)
 		LOG_INF("[ion_free_hd_by_module]%d\n", module);
 
 	for (i = 0; i < _dma_max_wr_; i++) {
-		for (j = 0; j < 32 ; j++) {
+		for (j = 0; j < _ion_keep_max_ ; j++) {
 			spin_lock(&(SpinLock_IonHnd[module][i]));
 			/* */
 			if (G_WRDMA_IonFd[module][i][j] == 0) {
@@ -6761,7 +6766,7 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 	/*  */
 	case ISP_FLUSH_IRQ_REQUEST:
 		if (copy_from_user(&IrqInfo, (void *)Param, sizeof(ISP_WAIT_IRQ_STRUCT)) == 0) {
-			if ((IrqInfo.EventInfo.UserKey >= IRQ_USER_NUM_MAX) || (IrqInfo.EventInfo.UserKey < 1)) {
+			if ((IrqInfo.EventInfo.UserKey >= IRQ_USER_NUM_MAX) || (IrqInfo.EventInfo.UserKey < 0)) {
 				LOG_ERR("invalid userKey(%d), max(%d)\n", IrqInfo.EventInfo.UserKey, IRQ_USER_NUM_MAX);
 				Ret = -EFAULT;
 				break;
@@ -7141,7 +7146,7 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 				break;
 			}
 			if (IonNode.memID <= 0) {
-				LOG_ERR("ion_import: invalid ion fd(%d)\n", IonNode.memID);
+				LOG_ERR("ion_import: dma(%d)invalid ion fd(%d)\n", IonNode.dmaPort, IonNode.memID);
 				Ret = -EFAULT;
 				break;
 			}
@@ -7149,13 +7154,13 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 			spin_lock(&(SpinLock_IonHnd[IonNode.devNode][IonNode.dmaPort]));
 			/* */
 			/* check if memID is exist */
-			for (i = 0; i < 32; i++) {
+			for (i = 0; i < _ion_keep_max_; i++) {
 				if (G_WRDMA_IonFd[IonNode.devNode][IonNode.dmaPort][i] == IonNode.memID)
 					break;
 			}
 			spin_unlock(&(SpinLock_IonHnd[IonNode.devNode][IonNode.dmaPort]));
 			/* */
-			if (i < 32) {
+			if (i < _ion_keep_max_) {
 				if (IspInfo.DebugMask & ISP_DBG_ION_CTRL) {
 					LOG_INF("ion_import: already exist: dev(%d)dma(%d)i(%d)fd(%d)Hnd(0x%p)\n",
 						IonNode.devNode, IonNode.dmaPort, i, IonNode.memID,
@@ -7172,7 +7177,7 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 			handle = ISP_ion_import_handle(pIon_client, IonNode.memID);
 			/* */
 			spin_lock(&(SpinLock_IonHnd[IonNode.devNode][IonNode.dmaPort]));
-			for (i = 0; i < 32; i++) {
+			for (i = 0; i < _ion_keep_max_; i++) {
 				if (G_WRDMA_IonFd[IonNode.devNode][IonNode.dmaPort][i] == 0) {
 					G_WRDMA_IonFd[IonNode.devNode][IonNode.dmaPort][i] = IonNode.memID;
 					G_WRDMA_IonHnd[IonNode.devNode][IonNode.dmaPort][i] = handle;
@@ -7192,8 +7197,9 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 			}
 			spin_unlock(&(SpinLock_IonHnd[IonNode.devNode][IonNode.dmaPort]));
 			/* */
-			if (i == 32) {
-				LOG_ERR("ion_import: no empty space in list(%d)\n", IonNode.memID);
+			if (i == _ion_keep_max_) {
+				LOG_ERR("ion_import: dma(%d)no empty space in list(%d_%d)\n",
+					IonNode.dmaPort, IonNode.memID, _ion_keep_max_);
 				Ret = -EFAULT;
 			}
 		} else {
@@ -7226,11 +7232,11 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 
 			/* check if memID is exist */
 			spin_lock(&(SpinLock_IonHnd[IonNode.devNode][IonNode.dmaPort]));
-			for (i = 0; i < 32; i++) {
+			for (i = 0; i < _ion_keep_max_; i++) {
 				if (G_WRDMA_IonFd[IonNode.devNode][IonNode.dmaPort][i] == IonNode.memID)
 					break;
 			}
-			if (i == 32) {
+			if (i == _ion_keep_max_) {
 				spin_unlock(&(SpinLock_IonHnd[IonNode.devNode][IonNode.dmaPort]));
 				LOG_ERR("ion_free: can't find ion dev(%d)dma(%d)fd(%d) in list\n",
 					IonNode.devNode, IonNode.dmaPort, IonNode.memID);
@@ -11757,6 +11763,8 @@ static int32_t ISP_PopBufTimestamp(MUINT32 module, MUINT32 dma_id, S_START_T *pT
 		case _flko_:
 		case _aao_:
 		case _afo_:
+		case _rsso_:
+		case _pdo_:
 			break;
 		default:
 			LOG_ERR("Unsupport dma:x%x", dma_id);
