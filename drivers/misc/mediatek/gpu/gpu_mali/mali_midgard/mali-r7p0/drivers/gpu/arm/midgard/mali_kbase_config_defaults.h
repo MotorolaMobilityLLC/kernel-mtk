@@ -187,7 +187,8 @@ enum {
 /*
  * Default scheduling tick granuality
  */
-#define DEFAULT_JS_SCHEDULING_PERIOD_NS    (100000000u) /* 100ms */
+//#define DEFAULT_JS_SCHEDULING_PERIOD_NS    (100000000u) /* 100ms */
+#define DEFAULT_JS_SCHEDULING_PERIOD_NS    (400000000u) /* MTK Modified: 400ms */
 
 /*
  * Default minimum number of scheduling ticks before jobs are soft-stopped.
