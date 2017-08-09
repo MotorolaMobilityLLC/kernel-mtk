@@ -517,6 +517,31 @@ static int mmc_wait_tran(struct mmc_host *host)
 	return 0;
 }
 
+/*
+	check write
+*/
+static int mmc_check_write(struct mmc_host *host, struct mmc_request *mrq)
+{
+	int ret = 0;
+	u32 status = 0;
+
+	if (mrq->cmd->opcode == MMC_WRITE_REQUESTED_QUEUE) {
+		ret = mmc_blk_status_check(host->card, &status);
+
+		if ((status & R1_WP_VIOLATION) || host->wp_error) {
+			mrq->data->error = -EROFS;
+			pr_err("[%s]: data error = %d, status=0x%x, line:%d\n",
+				__func__, mrq->data->error, status, __LINE__);
+		}
+		mmc_wait_tran(host);
+		mrq->data->error = 0;
+		host->wp_error = 0;
+		atomic_set(&host->cq_w, false);
+	}
+
+	return ret;
+}
+
 void mmc_run_queue_thread_cmd(void *data)
 {
 	struct mmc_host *host = data;
@@ -676,6 +701,7 @@ void mmc_run_queue_thread_dat(void *data)
 				cmd = mrq2->cmd;
 				task_id = (cmd->arg >> 16) & 0x1f;
 
+				mmc_check_write(host, mrq2);
 				err = mrq2->areq->err_check(host->card, mrq2->areq);
 				mmc_post_req(host, mrq2, 0);
 
