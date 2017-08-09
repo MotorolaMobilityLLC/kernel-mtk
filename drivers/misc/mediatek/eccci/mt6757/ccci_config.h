@@ -56,7 +56,6 @@
 #define FEATURE_CONN_MD_EXP_EN
 #endif
 #define FEATURE_USING_4G_MEMORY_API
-#define FEATURE_VLTE_SUPPORT
 /*#define FEATURE_LOW_BATTERY_SUPPORT disable for customer complaint*/
 #ifdef CONFIG_MTK_FPGA
 #define FEATURE_FPGA_PORTING
@@ -67,7 +66,7 @@
 #define FEATURE_C2K_ALWAYS_ON
 #define FEATURE_DBM_SUPPORT
 
-#define ENABLE_EMI_PROTECTION
+/*#define ENABLE_EMI_PROTECTION*/
 #ifdef ENABLE_EMI_PROTECTION
 #define SET_EMI_STEP_BY_STAGE
 /* #define SET_AP_MPU_REGION */ /*no need set ap region in Jade */

@@ -1740,7 +1740,6 @@ static irqreturn_t md_cd_wdt_isr(int irq, void *data)
 	ccci_set_exp_region_protection(md);
 #endif
 	/* 1. disable MD WDT */
-	del_timer(&md_ctrl->bus_timeout_timer);
 #ifdef ENABLE_MD_WDT_DBG
 	unsigned int state;
 
@@ -1759,16 +1758,6 @@ static irqreturn_t md_cd_wdt_isr(int irq, void *data)
 	return IRQ_HANDLED;
 }
 
-void md_cd_ap2md_bus_timeout_timer_func(unsigned long data)
-{
-	struct ccci_modem *md = (struct ccci_modem *)data;
-	struct md_cd_ctrl *md_ctrl = (struct md_cd_ctrl *)md->private_data;
-
-	CCCI_NORMAL_LOG(md->index, TAG, "MD bus timeout but no WDT IRQ\n");
-	/* same as WDT ISR */
-	schedule_work(&md_ctrl->wdt_work);
-}
-
 #ifdef ENABLE_HS1_POLLING_TIMER
 void md_cd_hs1_polling_timer_func(unsigned long data)
 {
@@ -1781,17 +1770,6 @@ void md_cd_hs1_polling_timer_func(unsigned long data)
 }
 #endif
 
-#if 0
-static irqreturn_t md_cd_ap2md_bus_timeout_isr(int irq, void *data)
-{
-	struct ccci_modem *md = (struct ccci_modem *)data;
-	struct md_cd_ctrl *md_ctrl = (struct md_cd_ctrl *)md->private_data;
-
-	CCCI_NORMAL_LOG(md->index, TAG, "MD bus timeout IRQ\n");
-	mod_timer(&md_ctrl->bus_timeout_timer, jiffies + 5 * HZ);
-	return IRQ_HANDLED;
-}
-#endif
 static int md_cd_ccif_send(struct ccci_modem *md, int channel_id)
 {
 	int busy = 0;
@@ -3686,9 +3664,6 @@ static int ccci_modem_probe(struct platform_device *plat_dev)
 	tasklet_init(&md_ctrl->ccif_irq_task, md_ccif_irq_tasklet, (unsigned long)md);
 	tasklet_init(&md_ctrl->cldma_rxq0_task, md_cldma_rxq0_tasklet, (unsigned long)md);
 	mutex_init(&md_ctrl->ccif_wdt_mutex);
-	init_timer(&md_ctrl->bus_timeout_timer);
-	md_ctrl->bus_timeout_timer.function = md_cd_ap2md_bus_timeout_timer_func;
-	md_ctrl->bus_timeout_timer.data = (unsigned long)md;
 #ifdef ENABLE_HS1_POLLING_TIMER
 	init_timer(&md_ctrl->hs1_polling_timer);
 	md_ctrl->hs1_polling_timer.function = md_cd_hs1_polling_timer_func;
@@ -3705,7 +3680,6 @@ static int ccci_modem_probe(struct platform_device *plat_dev)
 	md_ctrl->cldma_irq_id = md_ctrl->hw_info->cldma_irq_id;
 	md_ctrl->ap_ccif_irq_id = md_ctrl->hw_info->ap_ccif_irq_id;
 	md_ctrl->md_wdt_irq_id = md_ctrl->hw_info->md_wdt_irq_id;
-	md_ctrl->ap2md_bus_timeout_irq_id = md_ctrl->hw_info->ap2md_bus_timeout_irq_id;
 	md_ctrl->cldma_irq_worker =
 	    alloc_workqueue("md%d_cldma_worker", WQ_UNBOUND | WQ_MEM_RECLAIM | WQ_HIGHPRI, 1, md->index + 1);
 	INIT_WORK(&md_ctrl->cldma_irq_work, cldma_irq_work);

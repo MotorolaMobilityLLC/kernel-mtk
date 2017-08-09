@@ -146,7 +146,6 @@ int md_cd_get_modem_hw_info(struct platform_device *dev_ptr, struct ccci_dev_cfg
 		hw_info->cldma_irq_flags = IRQF_TRIGGER_NONE;
 		hw_info->ap_ccif_irq_flags = IRQF_TRIGGER_NONE;
 		hw_info->md_wdt_irq_flags = IRQF_TRIGGER_NONE;
-		hw_info->ap2md_bus_timeout_irq_flags = IRQF_TRIGGER_NONE;
 
 		hw_info->sram_size = CCIF_SRAM_SIZE;
 		hw_info->md_rgu_base = MD_RGU_BASE;
@@ -286,6 +285,12 @@ int md_cd_io_remap_md_side_register(struct ccci_modem *md)
 {
 	struct md_cd_ctrl *md_ctrl = (struct md_cd_ctrl *)md->private_data;
 	struct md_pll_reg *md_reg;
+	struct device_node *node;
+	unsigned long infra_cfg_base;
+
+	/* Get infra cfg ao base */
+	node = of_find_compatible_node(NULL, NULL, "mediatek,infracfg");
+	infra_cfg_base = (unsigned long)of_iomap(node, 0);
 
 	md_ctrl->cldma_ap_pdn_base = (void __iomem *)(md_ctrl->hw_info->cldma_ap_pdn_base);
 	md_ctrl->cldma_ap_ao_base = (void __iomem *)(md_ctrl->hw_info->cldma_ap_ao_base);
@@ -297,10 +302,8 @@ int md_cd_io_remap_md_side_register(struct ccci_modem *md)
 	md_ctrl->md_global_con0 = ioremap_nocache(MD_GLOBAL_CON0, 0x4);
 
 	md_ctrl->md_bus_status = ioremap_nocache(MD_BUS_STATUS_BASE, MD_BUS_STATUS_LENGTH);
-	/* md_ctrl->md_pc_monitor = ioremap_nocache(MD_PC_MONITOR_BASE, MD_PC_MONITOR_LENGTH); */
 	md_ctrl->md_topsm_status = ioremap_nocache(MD_TOPSM_STATUS_BASE, MD_TOPSM_STATUS_LENGTH);
 	md_ctrl->md_ost_status = ioremap_nocache(MD_OST_STATUS_BASE, MD_OST_STATUS_LENGTH);
-	/* md_ctrl->md_pll = ioremap_nocache(MD_PLL_BASE, MD_PLL_LENGTH); */
 
 	md_reg = kzalloc(sizeof(struct md_pll_reg), GFP_KERNEL);
 	if (md_reg == NULL) {
@@ -312,24 +315,20 @@ int md_cd_io_remap_md_side_register(struct ccci_modem *md)
 	md_reg->md_pc_mon2 = ioremap_nocache(MD_PC_MONITORL1_BASE, MD_PC_MONITORL1_LENGTH);
 	md_reg->md_clkSW = ioremap_nocache(MD_CLKSW_BASE, MD_CLKSW_LENGTH);
 	md_reg->md_dcm = ioremap_nocache(MD_GLOBAL_CON_DCM_BASE, MD_GLOBAL_CON_DCM_LEN);
-	md_reg->psmcu_misc = ioremap_nocache(PSMCU_MISC_BASE, 4);
 	md_reg->md_peri_misc = ioremap_nocache(MD_PERI_MISC_BASE, MD_PERI_MISC_LEN);
 	md_reg->md_L1_a0 = ioremap_nocache(MDL1A0_BASE, MDL1A0_LEN);
 	md_reg->md_top_Pll = ioremap_nocache(MDTOP_PLLMIXED_BASE, 4);
 	md_reg->md_sys_clk = ioremap_nocache(MDSYS_CLKCTL_BASE, MDSYS_CLKCTL_LEN);
 	/*md_reg->md_l1_conf = ioremap_nocache(L1_BASE_MADDR_MDL1_CONF, 4);*/
 
-	md_reg->md_busreg1 = ioremap_nocache(MD_BUSREG_DUMP_ADDR1, MD_BUSREG_DUMP_LEN1);
-	md_reg->md_busreg2 = ioremap_nocache(MD_BUSREG_DUMP_ADDR2, MD_BUSREG_DUMP_LEN2);
+	md_reg->md_busreg1 = ioremap_nocache(MD_BUS_DUMP_ADDR1, MD_BUS_DUMP_LEN1);
+	md_reg->md_busreg2 = ioremap_nocache(MD_BUS_DUMP_ADDR2, MD_BUS_DUMP_LEN2);
 	md_reg->md_busrec = ioremap_nocache(MD_BUSREC_DUMP_ADDR, MD_BUSREC_DUMP_LEN);
-	md_reg->md_ect_0 = ioremap_nocache(MD_ECT_DUMP_ADDR0, MD_ECT_DUMP_LEN0);
+	md_reg->md_busrec_L1 = ioremap_nocache(MD_BUSREC_L1_DUMP_ADDR, MD_BUSREC_L1_DUMP_LEN);
+	md_reg->md_dbgsys_clk = ioremap_nocache(MD_DBGSYS_CLK_ADDR, MD_DBGSYS_CLK_LEN);
 	md_reg->md_ect_1 = ioremap_nocache(MD_ECT_DUMP_ADDR1, MD_ECT_DUMP_LEN1);
 	md_reg->md_ect_2 = ioremap_nocache(MD_ECT_DUMP_ADDR2, MD_ECT_DUMP_LEN2);
 	md_reg->md_ect_3 = ioremap_nocache(MD_ECT_DUMP_ADDR3, MD_ECT_DUMP_LEN3);
-	md_reg->md_bootup_0 = ioremap_nocache(MD_Bootup_DUMP_ADDR0, MD_Bootup_DUMP_LEN0);
-	md_reg->md_bootup_1 = ioremap_nocache(MD_Bootup_DUMP_ADDR1, MD_Bootup_DUMP_LEN1);
-	md_reg->md_bootup_2 = ioremap_nocache(MD_Bootup_DUMP_ADDR2, MD_Bootup_DUMP_LEN2);
-	md_reg->md_bootup_3 = ioremap_nocache(MD_Bootup_DUMP_ADDR3, MD_Bootup_DUMP_LEN3);
 	md_reg->md_clk_ctl01 = ioremap_nocache(MD_Clkctrl_DUMP_ADDR01, MD_Clkctrl_DUMP_LEN01);
 	md_reg->md_clk_ctl02 = ioremap_nocache(MD_Clkctrl_DUMP_ADDR02, MD_Clkctrl_DUMP_LEN02);
 	md_reg->md_clk_ctl03 = ioremap_nocache(MD_Clkctrl_DUMP_ADDR03, MD_Clkctrl_DUMP_LEN03);
@@ -345,8 +344,8 @@ int md_cd_io_remap_md_side_register(struct ccci_modem *md)
 	md_reg->md_clk_ctl13 = ioremap_nocache(MD_Clkctrl_DUMP_ADDR13, MD_Clkctrl_DUMP_LEN13);
 	md_reg->md_clk_ctl14 = ioremap_nocache(MD_Clkctrl_DUMP_ADDR14, MD_Clkctrl_DUMP_LEN14);
 	md_reg->md_clk_ctl15 = ioremap_nocache(MD_Clkctrl_DUMP_ADDR15, MD_Clkctrl_DUMP_LEN15);
-	md_reg->md_boot_stats0 = ioremap_nocache(MD1_CFG_BOOT_STATS0, 4);
-	md_reg->md_boot_stats1 = ioremap_nocache(MD1_CFG_BOOT_STATS1, 4);
+	md_reg->md_boot_stats0 = (void __iomem *)(infra_cfg_base + MD1_CFG_BOOT_STATS0);
+	md_reg->md_boot_stats1 = (void __iomem *)(infra_cfg_base + MD1_CFG_BOOT_STATS1);
 
 	md_ctrl->md_pll_base = md_reg;
 
@@ -374,9 +373,7 @@ void md_cd_dump_md_bootup_status(struct ccci_modem *md)
 	struct md_cd_ctrl *md_ctrl = (struct md_cd_ctrl *)md->private_data;
 	struct md_pll_reg *md_reg = md_ctrl->md_pll_base;
 
-	md_cd_lock_modem_clock_src(1);
 	/*To avoid AP/MD interface delay, dump 3 times, and buy-in the 3rd dump value.*/
-
 	ccci_read32(md_reg->md_boot_stats0, 0);	/* dummy read */
 	ccci_read32(md_reg->md_boot_stats0, 0);	/* dummy read */
 	CCCI_NOTICE_LOG(md->index, TAG, "md_boot_stats0:0x%X\n", ccci_read32(md_reg->md_boot_stats0, 0));
@@ -384,7 +381,6 @@ void md_cd_dump_md_bootup_status(struct ccci_modem *md)
 	ccci_read32(md_reg->md_boot_stats1, 0);	/* dummy read */
 	ccci_read32(md_reg->md_boot_stats1, 0);	/* dummy read */
 	CCCI_NOTICE_LOG(md->index, TAG, "md_boot_stats1:0x%X\n", ccci_read32(md_reg->md_boot_stats1, 0));
-	md_cd_lock_modem_clock_src(0);
 }
 
 void md_cd_dump_debug_register(struct ccci_modem *md)
@@ -406,16 +402,16 @@ void md_cd_dump_debug_register(struct ccci_modem *md)
 	/* 2. TOPSM */
 	if (md->md_dbg_dump_flag & (1 << MD_DBG_DUMP_TOPSM)) {
 		CCCI_MEM_LOG_TAG(md->index, TAG, "Dump MD TOPSM status 0x%x\n", MD_TOPSM_STATUS_BASE);
-		ccci_write32(md_reg->md_busreg1, 0x94, 0xE7C5);/* pre-action: permission */
+		ccci_write32(md_reg->md_busreg1, R_DBGSYS_CLK_PMS_1, 0xE7C5);/* pre-action: permission */
 		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP,
 				md_ctrl->md_topsm_status, MD_TOPSM_STATUS_LENGTH);
 	}
 	/* 3. PC Monitor */
 	if (md->md_dbg_dump_flag & (1 << MD_DBG_DUMP_PCMON)) {
 		CCCI_MEM_LOG_TAG(md->index, TAG, "Dump MD PC monitor 0x%x\n", (MD_PC_MONITOR_BASE + 0x100));
-		ccci_write32(md_reg->md_busreg1, 0x94, 0xE7C5);/* pre-action: permission */
+		ccci_write32(md_reg->md_busreg1, R_DBGSYS_CLK_PMS_1, 0xE7C5);/* pre-action: permission */
 		/* pre-action: Open Dbgsys clock */
-		md_addr = md_reg->md_ect_0;
+		md_addr = md_reg->md_dbgsys_clk;
 		reg_value = ccci_read32(md_addr, 4);
 		reg_value |= (0x1 << 3);
 		CCCI_MEM_LOG(md->index, TAG, "[pre-action]write: %p=0x%x\n", (md_addr + 4), reg_value);
@@ -443,31 +439,31 @@ void md_cd_dump_debug_register(struct ccci_modem *md)
 	/* 4. MD RGU */
 	if (md->md_dbg_dump_flag & (1 << MD_DBG_DUMP_MDRGU)) {
 		CCCI_MEM_LOG_TAG(md->index, TAG, "Dump MD RGU 0x%x\n", MD_RGU_BASE);
-		ccci_write32(md_reg->md_busreg1, 0x94, 0xE7C5); /* pre-action */
-		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_ctrl->md_rgu_base, 0x8B);
-		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, (md_ctrl->md_rgu_base + 0x200), 0x60);
+		ccci_write32(md_reg->md_busreg1, R_DBGSYS_CLK_PMS_1, 0xE7C5); /* pre-action */
+		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_ctrl->md_rgu_base, 0x88);
+		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, (md_ctrl->md_rgu_base + 0x200), 0x5C);
 	}
 	/* 5 OST */
 	if (md->md_dbg_dump_flag & (1 << MD_DBG_DUMP_OST)) {
 		CCCI_MEM_LOG_TAG(md->index, TAG, "Dump MD OST status %x\n", MD_OST_STATUS_BASE);
-		ccci_write32(md_reg->md_busreg1, 0x94, 0xE7C5); /* pre-action */
+		ccci_write32(md_reg->md_busreg1, R_DBGSYS_CLK_PMS_1, 0xE7C5); /* pre-action */
 		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_ctrl->md_ost_status, MD_OST_STATUS_LENGTH);
 	}
 	/* 6. Bus status */
 	if (md->md_dbg_dump_flag & (1 << MD_DBG_DUMP_BUS)) {
 		CCCI_MEM_LOG_TAG(md->index, TAG, "Dump MD Bus status %x\n", MD_BUS_STATUS_BASE);
-		ccci_write32(md_reg->md_busreg1, 0x94, 0xE7C5);/* pre-action: permission */
-		ccci_write32(md_reg->md_busreg1, 0x9C, 0x65);/* pre-action: permission */
+		ccci_write32(md_reg->md_busreg1, R_DBGSYS_CLK_PMS_1, 0xE7C5);/* pre-action: permission */
+		ccci_write32(md_reg->md_busreg1, R_DBGSYS_CLK_PMS_2, 0x65);/* pre-action: permission */
 		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_ctrl->md_bus_status, 0x38);
 		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, (md_ctrl->md_bus_status + 0x100), 0x30);
-		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_reg->md_busreg1, MD_BUSREG_DUMP_LEN1);
-		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_reg->md_busreg2, MD_BUSREG_DUMP_LEN2);
+		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_reg->md_busreg1, MD_BUS_DUMP_LEN1);
+		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_reg->md_busreg2, MD_BUS_DUMP_LEN2);
 	}
 	/* 7. dump PLL */
 	if (md->md_dbg_dump_flag & (1 << MD_DBG_DUMP_PLL)) {
 		CCCI_MEM_LOG_TAG(md->index, TAG, "Dump MD PLL\n");
-		ccci_write32(md_reg->md_busreg1, 0x94, 0xE7C5);/* pre-action: permission */
-		ccci_write32(md_reg->md_busreg1, 0x9C, 0x65);/* pre-action: permission */
+		ccci_write32(md_reg->md_busreg1, R_DBGSYS_CLK_PMS_1, 0xE7C5);/* pre-action: permission */
+		ccci_write32(md_reg->md_busreg1, R_DBGSYS_CLK_PMS_2, 0x65);/* pre-action: permission */
 		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_reg->md_clkSW, 0x4C);
 		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_reg->md_clk_ctl01, MD_Clkctrl_DUMP_LEN01);
 		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_reg->md_clk_ctl02, MD_Clkctrl_DUMP_LEN02);
@@ -487,10 +483,10 @@ void md_cd_dump_debug_register(struct ccci_modem *md)
 	}
 	/* 8. Bus REC */
 	if (md->md_dbg_dump_flag & (1 << MD_DBG_DUMP_BUSREC)) {
-		CCCI_MEM_LOG_TAG(md->index, TAG, "Dump MD Bus REC%x\n", MD_BUSREC_DUMP_ADDR);
-		ccci_write32(md_reg->md_busreg1, 0x94, 0xE7C5);/* pre-action: permission */
+		CCCI_MEM_LOG_TAG(md->index, TAG, "Dump MD Bus REC PC %x\n", MD_BUSREC_DUMP_ADDR);
+		ccci_write32(md_reg->md_busreg1, R_DBGSYS_CLK_PMS_1, 0xE7C5);/* pre-action: permission */
 		/* pre-action: Open Dbgsys clock */
-		md_addr = md_reg->md_ect_0;
+		md_addr = md_reg->md_dbgsys_clk;
 		reg_value = ccci_read32(md_addr, 4);
 		reg_value |= (0x1 << 3);
 		CCCI_MEM_LOG(md->index, TAG, "[pre-action]write: %p=0x%x\n", (md_addr + 4), reg_value);
@@ -505,17 +501,23 @@ void md_cd_dump_debug_register(struct ccci_modem *md)
 		ccci_write32(md_reg->md_busrec, 0x4, 0x1);/* pre-action */
 		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_reg->md_busrec, MD_BUSREC_DUMP_LEN);
 		ccci_write32(md_reg->md_busrec, 0x4, 0x3);/* post-action */
+
+		CCCI_MEM_LOG_TAG(md->index, TAG, "Dump MD Bus REC L1 %x, len=%x\n",
+			MD_BUSREC_L1_DUMP_ADDR + 0x800, 0x41C);
+		ccci_write32(md_reg->md_busrec_L1, 0x804, 0x1);/* pre-action */
+		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_reg->md_busrec_L1 + 0x800, 0x41C);
+		ccci_write32(md_reg->md_busrec_L1, 0x804, 0x3);/* post-action */
 	}
 	/* 9. ECT: must after 4 TO PSM */
 	if (md->md_dbg_dump_flag & (1 << MD_DBG_DUMP_ECT)) {
-		CCCI_MEM_LOG_TAG(md->index, TAG, "Dump MD ECT 0x%x\n", MD_ECT_DUMP_ADDR0);
-		ccci_write32(md_reg->md_busreg1, 0x94, 0xE7C5);/* pre-action: permission */
+		CCCI_MEM_LOG_TAG(md->index, TAG, "Dump MD ECT\n");
+		ccci_write32(md_reg->md_busreg1, R_DBGSYS_CLK_PMS_1, 0xE7C5);/* pre-action: permission */
 		/* pre-action: Open Dbgsys clock */
-		md_addr = md_reg->md_ect_0;
+		md_addr = md_reg->md_dbgsys_clk;
 		reg_value = ccci_read32(md_addr, 4);
 		reg_value |= (0x1 << 3);
 		CCCI_MEM_LOG(md->index, TAG, "[pre-action]write: %p=0x%x\n", (md_addr + 4), reg_value);
-		ccci_write32(md_addr, 4, reg_value);	/* clear bit[29] */
+		ccci_write32(md_addr, 4, reg_value);
 		reg_value = ccci_read32(md_addr, 4);
 		CCCI_MEM_LOG(md->index, TAG, "[pre-action] read: %p=0x%x\n", (md_addr + 4), reg_value);
 		reg_value = ccci_read32(md_addr, 0x20);
@@ -523,7 +525,7 @@ void md_cd_dump_debug_register(struct ccci_modem *md)
 		while (!(ccci_read32(md_addr, 0x20)&(1<<3)))
 			;
 		CCCI_MEM_LOG(md->index, TAG, "[pre-action]after 0x%x\n", reg_value);
-		md_addr = md_reg->md_ect_0;
+		md_addr = md_reg->md_dbgsys_clk;
 		reg_value = ccci_read32(md_addr, 4);
 		reg_value |= (0x1 << 3);
 		CCCI_MEM_LOG(md->index, TAG, "[pre-action] write: %p=0x%x\n", (md_addr + 4), reg_value);
@@ -535,9 +537,11 @@ void md_cd_dump_debug_register(struct ccci_modem *md)
 		while (!(ccci_read32(md_addr, 0x20)&(1<<3)))
 			;
 		CCCI_MEM_LOG(md->index, TAG, "[pre-action] after 0x%x\n", reg_value);
-
+		CCCI_MEM_LOG_TAG(md->index, TAG, "Dump MD ECT 0x%x,len=0x%x\n", MD_ECT_DUMP_ADDR1, MD_ECT_DUMP_LEN1);
 		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_reg->md_ect_1, MD_ECT_DUMP_LEN1);
+		CCCI_MEM_LOG_TAG(md->index, TAG, "Dump MD ECT 0x%x,len=0x%x\n", MD_ECT_DUMP_ADDR2, MD_ECT_DUMP_LEN2);
 		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_reg->md_ect_2, MD_ECT_DUMP_LEN2);
+		CCCI_MEM_LOG_TAG(md->index, TAG, "Dump MD ECT 0x%x,len=0x%x\n", MD_ECT_DUMP_ADDR3, MD_ECT_DUMP_LEN3);
 		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_reg->md_ect_3, MD_ECT_DUMP_LEN3);
 	}
 #endif
@@ -612,10 +616,7 @@ static void md1_pcore_sram_turn_on(struct ccci_modem *md)
 /*Turn on MD pcore SRAM access permission for AP*/
 static void md1_pcore_sram_pms_turn_on(struct ccci_modem *md)
 {
-	unsigned int val = 0;
 	void __iomem *base = md_sram_pms_base;
-	struct md_cd_ctrl *md_ctrl = (struct md_cd_ctrl *)md->private_data;
-	struct md_pll_reg *md_pll = md_ctrl->md_pll_base;
 
 	ccci_write32(base, MD_SRAM_MDSYS_MD_PMS, 0xFFFF);
 	ccci_write32(base, MD_SRAM_MDPERISYS1_MD_PMS, 0xFFFF);
@@ -634,20 +635,11 @@ static void md1_pcore_sram_pms_turn_on(struct ccci_modem *md)
 	ccci_write32(base, MD_SRAM_MDPERISYS2_L1_PMS, 0xFFFF);
 	ccci_write32(base, MD_SRAM_PSMCUAPB_L1_PMS, 0xFFFF);
 	ccci_write32(base, MD_SRAM_L1SYS_PMS, 0xFFFF);
-	val = ccci_read32(md_pll->md_peri_misc, R_PD_PSMCU_SRAM_PMS);
-	/*Turn on access right for pcore sram 0x200D0000 */
-	val |= (1 << 13); /*set bit[13]*/
-	ccci_write32(md_pll->md_peri_misc, R_PD_PSMCU_SRAM_PMS, val);
-	CCCI_NORMAL_LOG(md->index, TAG, "Enable R_PD_PSMCU_SRAM_PMS(0x%x) access\n",
-		ccci_read32(md_pll->md_peri_misc, R_PD_PSMCU_SRAM_PMS));
 }
 
 static void md1_pcore_sram_pms_turn_off(struct ccci_modem *md)
 {
-	unsigned int val = 0;
 	void __iomem *base = md_sram_pms_base;
-	struct md_cd_ctrl *md_ctrl = (struct md_cd_ctrl *)md->private_data;
-	struct md_pll_reg *md_pll = md_ctrl->md_pll_base;
 
 	ccci_write32(base, MD_SRAM_MDSYS_MD_PMS, 0xFFFF);
 	ccci_write32(base, MD_SRAM_MDPERISYS1_MD_PMS, 0xFFFF);
@@ -666,12 +658,6 @@ static void md1_pcore_sram_pms_turn_off(struct ccci_modem *md)
 	ccci_write32(base, MD_SRAM_MDPERISYS2_L1_PMS, 0xFFFF);
 	ccci_write32(base, MD_SRAM_PSMCUAPB_L1_PMS, 0xFFFF);
 	ccci_write32(base, MD_SRAM_L1SYS_PMS, 0x0001);
-	/*Turn off access right for pcore sram 0x200D0000 */
-	val = ccci_read32(md_pll->md_peri_misc, R_PD_PSMCU_SRAM_PMS);
-	val &= ~(1 << 13); /*clear bit[13]*/
-	ccci_write32(md_pll->md_peri_misc, R_PD_PSMCU_SRAM_PMS, val);
-	CCCI_NORMAL_LOG(md->index, TAG, "disable R_PD_PSMCU_SRAM_PMS(0x%x) access\n",
-		ccci_read32(md_pll->md_peri_misc, R_PD_PSMCU_SRAM_PMS));
 }
 static void md1_pcore_sram_on(struct ccci_modem *md)
 {

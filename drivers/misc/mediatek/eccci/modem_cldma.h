@@ -253,12 +253,10 @@ struct md_cd_ctrl {
 	unsigned int cldma_irq_id;
 	unsigned int ap_ccif_irq_id;
 	unsigned int md_wdt_irq_id;
-	unsigned int ap2md_bus_timeout_irq_id;
 
 	unsigned long cldma_irq_flags;
 	unsigned long ap_ccif_irq_flags;
 	unsigned long md_wdt_irq_flags;
-	unsigned long ap2md_bus_timeout_irq_flags;
 
 	struct md_hw_info *hw_info;
 };
