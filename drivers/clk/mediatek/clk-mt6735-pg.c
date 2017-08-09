@@ -19,6 +19,7 @@
 #include <linux/slab.h>
 #include <linux/delay.h>
 #include <linux/clkdev.h>
+#include <linux/ratelimit.h>
 
 #include "clk-mtk-v1.h"
 #include "clk-mt6735-pg.h"
@@ -266,6 +267,7 @@ static struct subsys *id_to_sys(unsigned int id)
 	return id < NR_SYSS ? &syss[id] : NULL;
 }
 
+#if MT_CCF_BRINGUP
 /** sync from mt_spm_mtcmos.c for bring up */
 static int spm_mtcmos_ctrl_connsys(int state)
 {
@@ -275,7 +277,7 @@ static int spm_mtcmos_ctrl_connsys(int state)
 	unsigned long flags;
 	int count = 0;
 
-	pr_debug("[CCF] %s: state=%d: S\n", __func__, state);
+	pr_debug_ratelimited("[CCF] %s: state=%d: S\n", __func__, state);
 	spm_mtcmos_noncpu_lock(flags);
 
 	if (state == STA_POWER_DOWN) {
@@ -326,6 +328,7 @@ static int spm_mtcmos_ctrl_connsys(int state)
 
 	return err;
 }
+#endif /* MT_CCF_BRINGUP */
 
 static int spm_mtcmos_ctrl_mdsys1(int state)
 {
@@ -334,7 +337,7 @@ static int spm_mtcmos_ctrl_mdsys1(int state)
 	unsigned long flags;
 	int count = 0;
 
-	pr_debug("[CCF] %s: state=%d: S\n", __func__, state);
+	pr_debug_ratelimited("[CCF] %s: state=%d: S\n", __func__, state);
 	spm_mtcmos_noncpu_lock(flags);
 
 	if (state == STA_POWER_DOWN) {
@@ -414,6 +417,7 @@ static int spm_mtcmos_ctrl_mdsys1(int state)
 	return err;
 }
 
+#if MT_CCF_BRINGUP
 static int spm_mtcmos_ctrl_mdsys2(int state)
 {
 	int err = 0;
@@ -421,7 +425,7 @@ static int spm_mtcmos_ctrl_mdsys2(int state)
 	unsigned long flags;
 	int count = 0;
 
-	pr_debug("[CCF] %s: state=%d: S\n", __func__, state);
+	pr_debug_ratelimited("[CCF] %s: state=%d: S\n", __func__, state);
 	spm_mtcmos_noncpu_lock(flags);
 
 	if (state == STA_POWER_DOWN) {
@@ -472,6 +476,7 @@ static int spm_mtcmos_ctrl_mdsys2(int state)
 
 	return err;
 }
+#endif /* MT_CCF_BRINGUP */
 
 static void set_bus_protect(int en, uint32_t mask, unsigned long expired)
 {
@@ -518,8 +523,10 @@ static int spm_mtcmos_power_off_general_locked(struct subsys *sys,
 /* } */
 /* #endif */
 
-	pr_debug("[CCF] %s: sys=%s, wait_power_ack=%d, ext_pwr_delay=%d\n",
+#if MT_CCF_DEBUG
+	pr_debug_ratelimited("[CCF] %s: sys=%s, wait_power_ack=%d, ext_pwr_delay=%d\n",
 		 __func__, sys->name, wait_power_ack, ext_pwr_delay);
+#endif /* MT_CCF_DEBUG */
 
 	/* BUS_PROTECT */
 	if (sys->bus_prot_mask)
@@ -578,8 +585,10 @@ static int spm_mtcmos_power_on_general_locked(
 /* } */
 /* #endif */
 
-	pr_debug("[CCF] %s: sys=%s, wait_power_ack=%d, ext_pwr_delay=%d\n",
+#if MT_CCF_DEBUG
+	pr_debug_ratelimited("[CCF] %s: sys=%s, wait_power_ack=%d, ext_pwr_delay=%d\n",
 		 __func__, sys->name, wait_power_ack, ext_pwr_delay);
+#endif /* MT_CCF_DEBUG */
 
 	clk_setl(PWR_ON_BIT, ctl_addr);
 	clk_setl(PWR_ON_2ND_BIT, ctl_addr);

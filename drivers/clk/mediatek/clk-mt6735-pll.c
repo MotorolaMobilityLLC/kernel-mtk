@@ -22,7 +22,7 @@
 #include "clk-mt6735-pll.h"
 
 #if !defined(MT_CCF_DEBUG) || !defined(MT_CCF_BRINGUP)
-#define MT_CCF_DEBUG	1
+#define MT_CCF_DEBUG	0
 #define MT_CCF_BRINGUP	0
 #endif
 
