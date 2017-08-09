@@ -220,7 +220,7 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 		consys-reserve-memory {
 			compatible = "mediatek,consys-reserve-memory";
 			no-map;
-			size = <0 0x200000>;
+			size = <0 0x100000>;
 			alignment = <0 0x200000>;
 		};
 	};
@@ -686,13 +686,13 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 			interrupts = <GIC_SPI 114 IRQ_TYPE_LEVEL_LOW>;
 		};
 
-		btif_tx:btif_tx@11000880 {
+		btif_tx: btif_tx@11000880 {
 			compatible = "mediatek,btif_tx";
 			reg = <0x11000880 0x80>;
 			interrupts = <GIC_SPI 113 IRQ_TYPE_LEVEL_LOW>;
 		};
 
-		btif_rx:btif_rx@11000900 {
+		btif_rx: btif_rx@11000900 {
 			compatible = "mediatek,btif_rx";
 			reg = <0x11000900 0x80>;
 			interrupts = <GIC_SPI 114 IRQ_TYPE_LEVEL_LOW>;
@@ -921,7 +921,7 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 			interrupts = <GIC_SPI 125 IRQ_TYPE_LEVEL_LOW>;
 		};
 
-		btif:btif@1100c000 {
+		btif: btif@1100c000 {
 			compatible = "mediatek,btif";
 			reg = <0x1100c000 0x1000>;
 			interrupts = <GIC_SPI 90 IRQ_TYPE_LEVEL_LOW>;

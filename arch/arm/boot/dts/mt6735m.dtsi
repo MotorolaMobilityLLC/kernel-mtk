@@ -135,7 +135,7 @@
 				consys-reserve-memory {
 						compatible = "mediatek,consys-reserve-memory";
 						no-map;
-						size = <0 0x200000>;
+						size = <0 0x100000>;
 						alignment = <0 0x200000>;
 				};
 
