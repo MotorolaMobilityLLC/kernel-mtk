@@ -84,7 +84,7 @@ static void mt_pcm_hdmi_set_interconnection(unsigned int connection_state, unsig
 	switch (channels) {
 	case 8:
 		mt_afe_set_connection(connection_state, INTER_CONN_I36, INTER_CONN_O36);
-		mt_afe_set_connection(connection_state, INTER_CONN_I37, INTER_CONNT_O37);
+		mt_afe_set_connection(connection_state, INTER_CONN_I37, INTER_CONN_O37);
 		/* fall-through */
 	case 6:
 		mt_afe_set_connection(connection_state, INTER_CONN_I34, INTER_CONN_O32);
