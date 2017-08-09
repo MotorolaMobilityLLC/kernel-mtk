@@ -511,7 +511,7 @@ int BigiDVFSEnable_hp(void) /* for cpu hot plug call */
 #else /* ENABLE_IDVFS */
 
 	unsigned char ret_volt = 0;
-	unsigned int cur_vproc_mv_x100, cur_vsram_mv_x100, vosel;
+	unsigned int cur_vproc_mv_x100, cur_vsram_mv_x100;
 
 #if 1
 	/* for back legacy DVFS mode debug */
@@ -582,6 +582,7 @@ int BigiDVFSEnable_hp(void) /* for cpu hot plug call */
 	da9214_read_interface(0xd9, &ret_volt, 0x7f, 0);
 	cur_vproc_mv_x100 = ((DA9214_STEP_TO_MV(ret_volt & 0x7f)) * 100);
 
+#if 0
 	/* get current vsarm volt */
 	/* cur_vsram_mv_x100 = BigiDVFSSRAMLDOGet(); */
 	vosel = (SEC_BIGIDVFS_READ(0x102222b0) & 0xf);
@@ -602,21 +603,21 @@ int BigiDVFSEnable_hp(void) /* for cpu hot plug call */
 		cur_vsram_mv_x100 = (((vosel - 3) * 2500) + 90000);
 		break;
 	}
+#else
+	BigiDVFSSRAMLDOSet(118000);
+	cur_vsram_mv_x100 = 118000;
+	udelay(20); /* wait LDO set stable */
+#endif
 
 	idvfs_ver("iDVFS enable cur Vproc = %d(mv_x100), Vsarm = %d(mv_x100).\n",
 			cur_vproc_mv_x100, cur_vsram_mv_x100);
 
-	/* set and get current vsram volt */
 #if IDVFS_DREQ_ENABLE
-	/* enable iDVFS for Vproc workaround to setting 880mv */
-	/* ...... */
-
-	/* DREQ ON */
-	BigiDVFSSRAMLDOSet(118000);
-	BigDREQHWEn(1060, 1020);
-#else
-	/* DREQ off */
-	BigiDVFSSRAMLDOSet(118000);
+	/* BigDREQHWEn(1130, 1030); DREQ ON */
+	SEC_BIGIDVFS_WRITE(0x102222b8, 0xc1500);
+	SEC_BIGIDVFS_WRITE(0x102222b8, 0xc1501);
+	SEC_BIGIDVFS_WRITE(0x102222b8, 0xc1505);
+	udelay(50); /* wait DREQ stable */
 #endif
 
 	/* auto set AVG status*/
@@ -634,7 +635,8 @@ int BigiDVFSEnable_hp(void) /* for cpu hot plug call */
 
 	/* normal start percentage 30% */
 	idvfs_init_opt.channel[IDVFS_CHANNEL_SWP].percentage = 3000;
-	aee_rr_rec_idvfs_swreq_pct_x100(3000);
+	aee_rr_rec_idvfs_swreq_prev_pct_x100(3000);
+	aee_rr_rec_idvfs_swreq_next_pct_x100(3000);
 	idvfs_init_opt.freq_cur = 750;
 
 	/* idvfs_ver("iDVFS Enable OCP/OTP channel.\n"); */
@@ -875,6 +877,9 @@ int BigIDVFSFreq(unsigned int Freqpct_x100)
 		}
 	}
 
+	/* for ram console printf */
+	aee_rr_rec_idvfs_swreq_prev_volt((((SEC_BIGIDVFS_READ(0x102224c8) & 0xff00) >> 8) * 10) + 300);
+
 	/* call smc */
 	/* function_id = SMC_IDVFS_BigiDVFSFreq */
 	/* rc = SEC_BIGIDVFSFREQ(temp_pct_x100); */
@@ -883,9 +888,13 @@ int BigIDVFSFreq(unsigned int Freqpct_x100)
 	SEC_BIGIDVFS_WRITE(0x10222498, freq_swreq);
 	idvfs_ver("Set Freq: SWP_cur_pct_x100 = %d, SWP_new_pct_x100 = %d, freq_swreq = 0x%x.\n",
 				idvfs_init_opt.channel[IDVFS_CHANNEL_SWP].percentage, Freqpct_x100, freq_swreq);
-	idvfs_init_opt.channel[IDVFS_CHANNEL_SWP].percentage = Freqpct_x100;
-	aee_rr_rec_idvfs_swreq_pct_x100(Freqpct_x100);
+	/* for ram console printf */
+	aee_rr_rec_idvfs_swreq_prev_pct_x100(idvfs_init_opt.channel[IDVFS_CHANNEL_SWP].percentage);
+	aee_rr_rec_idvfs_swreq_next_pct_x100(Freqpct_x100);
 	aee_rr_rec_idvfs_swreq_cnt(++idvfs_init_opt.idvfs_swreq_cnt);
+
+	/* store current freq pct */
+	idvfs_init_opt.channel[IDVFS_CHANNEL_SWP].percentage = Freqpct_x100;
 
 	/* idvfs status manchine, 1: enable finish,
 	5: disable and wait SWREQ finish, 6: SWREQ finish can into disable*/
@@ -1244,8 +1253,10 @@ static void _mt_idvfs_aee_init(void)
 {
 	aee_rr_rec_idvfs_ctrl_reg(0);
 	aee_rr_rec_idvfs_enable_cnt(0);
-	aee_rr_rec_idvfs_swreq_pct_x100(0);
 	aee_rr_rec_idvfs_swreq_cnt(0);
+	aee_rr_rec_idvfs_swreq_prev_volt(0);
+	aee_rr_rec_idvfs_swreq_prev_pct_x100(0);
+	aee_rr_rec_idvfs_swreq_next_pct_x100(0);
 	aee_rr_rec_idvfs_sram_ldo(0);
 	aee_rr_rec_idvfs_state_manchine(0);
 }
@@ -1495,7 +1506,7 @@ static int dvt_test_proc_show(struct seq_file *m, void *v)
 	case 10:
 		i = SEC_BIGIDVFS_READ(0x102224c8);
 		seq_printf(m, "Debug cur_vsram[7:0] = %d, cur_vproc[15:8] = %dmv, next_vproc[15:8] = %dmv.\n",
-		(i & 0xff), (((i & 0xff00) >> 8) * 10), (((i & 0xff0000) >> 16) * 10));
+		(i & 0xff), ((((i & 0xff00) >> 8) * 10) + 300), ((((i & 0xff0000) >> 16) * 10) + 300));
 		break;
 	}
 
