@@ -1180,10 +1180,6 @@ static void spm_suspend_pre_process(struct pwr_ctrl *pwrctrl)
 	/* spm_write(0xF0000204 , spm_read(0xF0000204) | (1 << 0));  // BUS 26MHz enable */
 	/* spm_write(0xF0001108 , 0x0); */
 
-#ifdef CONFIG_MD32_SUPPORT
-	/* spm_write(MD32_BASE+0x2C, (spm_read(MD32_BASE+0x2C) & ~0xFFFF) | 0xcafe); */
-#endif
-
 #if 0
 	pwrap_read(0x2c2, &rdata1);
 	pwrap_write(0x2c2, 0x0123);
@@ -1210,10 +1206,6 @@ static void spm_suspend_post_process(struct pwr_ctrl *pwrctrl)
 			  rdata2);
 		BUG();
 	}
-#endif
-
-#ifdef CONFIG_MD32_SUPPORT
-	/* spm_write(MD32_BASE+0x2C, spm_read(MD32_BASE+0x2C) & ~0xFFFF); */
 #endif
 
 	/* set PMIC WRAP table for normal power control */
@@ -1350,10 +1342,6 @@ static wake_reason_t spm_output_wake_reason(struct wake_status *wakesta, struct 
 		log_wakesta_index = 0;
 #endif
 
-#ifdef CONFIG_MD32_SUPPORT
-	md32_flag = spm_read(MD32_BASE + 0x2C);
-	md32_flag2 = spm_read(MD32_BASE + 0x30);
-#endif
 	spm_warn("suspend dormant state = %d, md32_flag = 0x%x, md32_flag2 = %d\n",
 		  spm_dormant_sta, md32_flag, md32_flag2);
 	spm_warn("log_wakesta_index = %d\n", log_wakesta_index);
