@@ -26,7 +26,6 @@ typedef struct {
 
 
 int mau_config(MTK_MAU_CONFIG *pMauConf);
-int mau_dump_status(int larb);
 
 
 /* --------------------------------------------------------------------------- */

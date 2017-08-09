@@ -19,7 +19,7 @@
 #include <linux/of_address.h>
 #include <linux/of_irq.h>
 #include <linux/of_platform.h>
-
+#include <linux/property.h>
 #if IS_ENABLED(CONFIG_COMPAT)
 #include <linux/uaccess.h>
 #include <linux/compat.h>
@@ -39,26 +39,17 @@
 #define SMI_LOG_TAG "SMI"
 
 #define LARB_BACKUP_REG_SIZE 128
-#ifdef MT73
+
 #define SMI_COMMON_BACKUP_REG_NUM   10
 
-/* SMI COMMON register list to be backuped */
+/*
+ * SMI COMMON register list to be backuped
+ * for some socs which do not have some register, it's OK to read and write to
+ * the non-exist offset.
+ */
 static unsigned short g_smi_common_backup_reg_offset[SMI_COMMON_BACKUP_REG_NUM] = {
 	0x200, 0x204, 0x208, 0x20c, 0x210, 0x214, 0x220, 0x230, 0x234, 0x238
 };
-
-#elif defined MT27
-/*
- * MT8127 do not have the following register, offset(0x220, 0x238),
- * which are SMI_BUS_SEL and SMI_FIFO2_TH, so do not backup them.
- */
-#define SMI_COMMON_BACKUP_REG_NUM   8
-
-static unsigned short g_smi_common_backup_reg_offset[SMI_COMMON_BACKUP_REG_NUM] = {
-	0x200, 0x204, 0x208, 0x20c, 0x210, 0x214, 0x230, 0x234
-};
-
-#endif
 
 #define SF_HWC_PIXEL_MAX_NORMAL  (2560 * 1600 * 7)
 #define SF_HWC_PIXEL_MAX_VR   (2560 * 1600 * 7)
@@ -90,7 +81,7 @@ static unsigned int g_smi_common_backup[SMI_COMMON_BACKUP_REG_NUM];
 
 /* To keep the HW's init value*/
 static bool is_default_value_saved;
-static unsigned int default_val_smi_l1arb[SMI_LARB_NR] = { 0 };
+static unsigned int default_val_smi_l1arb[SMI_LARB_NR_MAX] = { 0 };
 
 static unsigned int wifi_disp_transaction;
 
@@ -102,7 +93,7 @@ static unsigned int smi_tuning_mode;
 
 static unsigned int smi_profile = SMI_BWC_SCEN_NORMAL;
 
-static unsigned int *pLarbRegBackUp[SMI_LARB_NR];
+static unsigned int *pLarbRegBackUp[SMI_LARB_NR_MAX];
 static int g_bInited;
 
 static MTK_SMI_BWC_MM_INFO g_smi_bwc_mm_info = { 0, 0, {0, 0}, {0, 0},
@@ -138,7 +129,7 @@ static long MTK_SMI_COMPAT_ioctl(struct file *filp, unsigned int cmd, unsigned l
 */
 static unsigned long get_larb_base_addr(int larb_id)
 {
-	if (larb_id >= SMI_LARB_NR || larb_id < 0 || !smi_data)
+	if (larb_id > smi_data->larb_nr || larb_id < 0 || !smi_data)
 		return SMI_ERROR_ADDR;
 	else
 		return smi_data->larb_base[larb_id];
@@ -207,7 +198,7 @@ static void backup_larb_smi(int index)
 	int total_port_num = 0;
 
 	/* boundary check for larb_port_num and larb_port_backup access */
-	if (index < 0 || index >= SMI_LARB_NR)
+	if (index < 0 || index > smi_data->larb_nr)
 		return;
 
 	total_port_num = smi_data->smi_priv->larb_port_num[index];
@@ -241,7 +232,7 @@ static void restore_larb_smi(int index)
 	int total_port_num = 0;
 
 	/* boundary check for larb_port_num and larb_port_backup access */
-	if (index < 0 || index >= SMI_LARB_NR)
+	if (index < 0 || index > smi_data->larb_nr)
 		return;
 
 	total_port_num = smi_data->smi_priv->larb_port_num[index];
@@ -263,10 +254,10 @@ static void restore_larb_smi(int index)
 		larb_offset += 4;
 	}
 
-#ifndef MT27
 	/* we do not backup 0x20 because it is a fixed setting */
-	M4U_WriteReg32(larb_base, 0x20, smi_data->smi_priv->larb_vc_setting[index]);
-#endif
+	if (smi_data->smi_priv->plat == MTK_PLAT_MT8173 || smi_data->smi_priv->plat == MTK_PLAT_MT8163)
+		M4U_WriteReg32(larb_base, 0x20, smi_data->smi_priv->larb_vc_setting[index]);
+
 	/* turn off EMI empty OSTD dobule, fixed setting */
 	M4U_WriteReg32(larb_base, 0x2c, 4);
 
@@ -286,9 +277,9 @@ static int larb_reg_backup(int larb)
 
 	if (0 == larb)
 		g_bInited = 0;
-#ifndef MT27
-	m4u_larb_backup_sec(larb);
-#endif
+	if (smi_data->smi_priv->plat == MTK_PLAT_MT8173 || smi_data->smi_priv->plat == MTK_PLAT_MT8163)
+		m4u_larb_backup_sec(larb);
+
 	return 0;
 }
 
@@ -355,9 +346,9 @@ int larb_reg_restore(int larb)
 	/*M4U_WriteReg32(larb_base, SMI_ROUTE_SEL, *(pReg++) ); */
 
 	smi_larb_init(larb);
-#ifndef MT27
-	m4u_larb_restore_sec(larb);
-#endif
+	if (smi_data->smi_priv->plat == MTK_PLAT_MT8173 || smi_data->smi_priv->plat == MTK_PLAT_MT8163)
+		m4u_larb_restore_sec(larb);
+
 	return 0;
 }
 
@@ -451,7 +442,7 @@ static int smi_bwc_config(MTK_SMI_BWC_CONFIG *p_conf, unsigned int *pu4LocalCnt)
 	}
 #endif
 	/* turn on larb clock */
-	for (i = 0; i < SMI_LARB_NR; i++)
+	for (i = 0; i <= smi_data->larb_nr; i++)
 		mtk_smi_larb_clock_on(i, true);
 
 	spin_lock(&g_SMIInfo.SMI_lock);
@@ -522,7 +513,15 @@ static int smi_bwc_config(MTK_SMI_BWC_CONFIG *p_conf, unsigned int *pu4LocalCnt)
 	switch (eFinalScen) {
 	case SMI_BWC_SCEN_VP:
 		SMIMSG("[SMI_PROFILE] : %s\n", "SMI_BWC_VP");
-		smicur->vp_setting(smi_data);
+		if (smi_data->smi_priv->plat != MTK_PLAT_MT8163)
+			smicur->vp_setting(smi_data);
+		else {
+			if (wifi_disp_transaction)
+				smicur->vp_setting(smi_data);
+			else
+				smicur->vp_wfd_setting(smi_data);
+		}
+
 		g_smi_bwc_mm_info.hw_ovl_limit = SF_HWC_PIXEL_MAX_VP;
 		break;
 
@@ -588,30 +587,12 @@ static int smi_bwc_config(MTK_SMI_BWC_CONFIG *p_conf, unsigned int *pu4LocalCnt)
 	spin_unlock(&g_SMIInfo.SMI_lock);
 
 	/*turn off larb clock */
-	for (i = 0; i < SMI_LARB_NR; i++)
+	for (i = 0; i <= smi_data->larb_nr; i++)
 		mtk_smi_larb_clock_off(i, true);
 
 	/* Since send uevent may trigger sleeping, we must send the event after releasing spin lock */
 	ovl_limit_uevent(smi_profile, g_smi_bwc_mm_info.hw_ovl_limit);
-#ifndef MT27
-	/* force 30 fps in VR slow motion, because disp driver set fps apis got mutex,
-	 * call these APIs only when necessary */
-	{
-		static unsigned int current_fps;
 
-		if ((eFinalScen == SMI_BWC_SCEN_VR_SLOW) && (current_fps != 30)) {
-			/* force 30 fps in VR slow motion profile */
-			primary_display_force_set_vsync_fps(30);
-			current_fps = 30;
-			SMIMSG("[SMI_PROFILE] set 30 fps\n");
-		} else if ((eFinalScen != SMI_BWC_SCEN_VR_SLOW) && (current_fps == 30)) {
-			/* back to normal fps */
-			current_fps = primary_display_get_fps();
-			primary_display_force_set_vsync_fps(current_fps);
-			SMIMSG("[SMI_PROFILE] back to %u fps\n", current_fps);
-		}
-	}
-#endif
 	SMIMSG("SMI_PROFILE to:%d %s,cur:%d,%d,%d,%d\n", p_conf->scenario,
 	       (p_conf->b_on_off ? "on" : "off"), eFinalScen,
 	       g_SMIInfo.pu4ConcurrencyTable[SMI_BWC_SCEN_NORMAL],
@@ -631,7 +612,7 @@ err_clkoff:
 	spin_unlock(&g_SMIInfo.SMI_lock);
 
 	/*turn off larb clock */
-	for (i = 0; i < SMI_LARB_NR; i++)
+	for (i = 0; i <= smi_data->larb_nr; i++)
 		mtk_smi_larb_clock_off(i, true);
 	return 0;
 }
@@ -645,7 +626,7 @@ int smi_common_init(void)
 {
 	int i;
 
-	for (i = 0; i < SMI_LARB_NR; i++) {
+	for (i = 0; i <= smi_data->larb_nr; i++) {
 		pLarbRegBackUp[i] = kmalloc(LARB_BACKUP_REG_SIZE, GFP_KERNEL | __GFP_ZERO);
 		if (pLarbRegBackUp[i] == NULL)
 			SMIERR("pLarbRegBackUp kmalloc fail %d\n", i);
@@ -729,8 +710,6 @@ void smi_bwc_mm_info_set(int property_id, long val1, long val2)
 }
 
 /* GMP end */
-
-
 
 static long smi_ioctl(struct file *pFile, unsigned int cmd, unsigned long param)
 {
@@ -987,7 +966,7 @@ static int mtk_smi_larb_runtime_suspend(struct device *dev)
 
 	if (!fglarbcallback)
 		return 0;
-	if (idx >= SMI_LARB_NR)
+	if (idx > smi_data->larb_nr)
 		return 0;
 
 	ret = _mtk_smi_larb_get(dev, false);
@@ -1010,7 +989,7 @@ static int mtk_smi_larb_runtime_resume(struct device *dev)
 
 	if (!fglarbcallback)
 		return 0;
-	if (idx >= SMI_LARB_NR)
+	if (idx > smi_data->larb_nr)
 		return 0;
 
 	ret = _mtk_smi_larb_get(dev, false);
@@ -1097,6 +1076,7 @@ static int mtk_smi_larb_remove(struct platform_device *pdev)
 
 static const struct of_device_id mtk_smi_larb_of_ids[] = {
 	{ .compatible = "mediatek,mt8173-smi-larb", },
+	{ .compatible = "mediatek,mt8163-smi-larb", },
 	{ .compatible = "mediatek,mt8127-smi-larb", },
 	{}
 };
@@ -1113,11 +1093,32 @@ static struct platform_driver mtk_smi_larb_driver = {
 	}
 };
 
+static int mtk_smi_probe(struct platform_device *pdev);
+static int mtk_smi_remove(struct platform_device *pdev);
+
+static const struct of_device_id mtk_smi_of_ids[] = {
+	{ .compatible = "mediatek,mt8173-smi", .data = &smi_mt8173_priv, },
+	{ .compatible = "mediatek,mt8163-smi", .data = &smi_mt8163_priv, },
+	{ .compatible = "mediatek,mt8127-smi", .data = &smi_mt8127_priv, },
+	{}
+};
+
+static struct platform_driver mtk_smi_driver = {
+	.probe	= mtk_smi_probe,
+	.remove = mtk_smi_remove,
+	.driver	= {
+		.name = "mtk-smi",
+		.of_match_table = mtk_smi_of_ids,
+	}
+};
+
 static int mtk_smi_probe(struct platform_device *pdev)
 {
 	struct device *dev = &pdev->dev;
 	struct mtk_smi_common *smipriv;
 	struct resource *res;
+	const struct of_device_id *of_id;
+	const struct mtk_smi_priv *priv;
 
 	if (!dev->pm_domain)
 		return -EPROBE_DEFER;
@@ -1142,6 +1143,13 @@ static int mtk_smi_probe(struct platform_device *pdev)
 	smi_data->smicommon = dev;
 	smi_data->smi_common_base = (unsigned long)smipriv->base;
 
+	of_id = of_match_node(mtk_smi_of_ids, dev->of_node);
+	if (!of_id)
+		return -EINVAL;
+
+	priv = of_id->data;
+	smi_data->smi_priv = priv;
+
 	pm_runtime_enable(dev);
 	dev_set_drvdata(dev, smipriv);
 	return 0;
@@ -1153,20 +1161,6 @@ static int mtk_smi_remove(struct platform_device *pdev)
 	return 0;
 }
 
-static const struct of_device_id mtk_smi_of_ids[] = {
-	{ .compatible = "mediatek,mt8173-smi",},
-	{ .compatible = "mediatek,mt8127-smi",},
-	{}
-};
-
-static struct platform_driver mtk_smi_driver = {
-	.probe	= mtk_smi_probe,
-	.remove = mtk_smi_remove,
-	.driver	= {
-		.name = "mtk-smi",
-		.of_match_table = mtk_smi_of_ids,
-	}
-};
 
 static int __init smi_init(void)
 {
@@ -1201,12 +1195,6 @@ static int __init smi_init(void)
 
 	SMI_DBG_Init();
 
-	#if defined MT73
-	smi_data->smi_priv = &smi_mt8173_priv;
-	#elif defined MT27
-	smi_data->smi_priv = &smi_mt8127_priv;
-	#endif
-
 	SMIMSG("smi_init done\n");
 
 	return 0;
@@ -1240,22 +1228,21 @@ static void smi_dumpCommonDebugMsg(void)
 	       M4U_ReadReg32(u4Base, 0x204), M4U_ReadReg32(u4Base, 0x208));
 	SMIMSG("[0x20C,0x210,0x214]=[0x%x,0x%x,0x%x]\n", M4U_ReadReg32(u4Base, 0x20C),
 	       M4U_ReadReg32(u4Base, 0x210), M4U_ReadReg32(u4Base, 0x214));
-	#ifdef MT73
-	SMIMSG("[0x220,0x230,0x234,0x238]=[0x%x,0x%x,0x%x,0x%x]\n", M4U_ReadReg32(u4Base, 0x220),
-	       M4U_ReadReg32(u4Base, 0x230), M4U_ReadReg32(u4Base, 0x234), M4U_ReadReg32(u4Base,
-											 0x238));
-	SMIMSG("[0x400,0x404,0x408]=[0x%x,0x%x,0x%x]\n", M4U_ReadReg32(u4Base, 0x400),
-	       M4U_ReadReg32(u4Base, 0x404), M4U_ReadReg32(u4Base, 0x408));
+	if (smi_data->smi_priv->plat == MTK_PLAT_MT8173 || smi_data->smi_priv->plat == MTK_PLAT_MT8163) {
+		SMIMSG("[0x220,0x230,0x234,0x238]=[0x%x,0x%x,0x%x,0x%x]\n", M4U_ReadReg32(u4Base, 0x220),
+		       M4U_ReadReg32(u4Base, 0x230), M4U_ReadReg32(u4Base, 0x234), M4U_ReadReg32(u4Base,
+												 0x238));
+		SMIMSG("[0x400,0x404,0x408]=[0x%x,0x%x,0x%x]\n", M4U_ReadReg32(u4Base, 0x400),
+		       M4U_ReadReg32(u4Base, 0x404), M4U_ReadReg32(u4Base, 0x408));
 
-	#elif defined MT27
+	} else if (smi_data->smi_priv->plat == MTK_PLAT_MT8127) {
+		SMIMSG("[0x218,0x230,0x234,0x238]=[0x%x,0x%x,0x%x,0x%x]\n", M4U_ReadReg32(u4Base, 0x218),
+		       M4U_ReadReg32(u4Base, 0x230), M4U_ReadReg32(u4Base, 0x234), M4U_ReadReg32(u4Base,
+												 0x238));
+		SMIMSG("[0x400,0x404,]=[0x%x,0x%x]\n", M4U_ReadReg32(u4Base, 0x400),
+		       M4U_ReadReg32(u4Base, 0x404));
+	}
 
-	SMIMSG("[0x218,0x230,0x234,0x238]=[0x%x,0x%x,0x%x,0x%x]\n", M4U_ReadReg32(u4Base, 0x218),
-	       M4U_ReadReg32(u4Base, 0x230), M4U_ReadReg32(u4Base, 0x234), M4U_ReadReg32(u4Base,
-											 0x238));
-	SMIMSG("[0x400,0x404,]=[0x%x,0x%x]\n", M4U_ReadReg32(u4Base, 0x400),
-	       M4U_ReadReg32(u4Base, 0x404));
-
-	#endif
 
 	/* TBD: M4U should dump these, the offset of MT27 have been checked and same with the followings. */
 /*
@@ -1280,25 +1267,24 @@ static void smi_dumpLarbDebugMsg(unsigned int u4Index)
 	if (u4Base == SMI_ERROR_ADDR) {
 		SMIMSG("Doesn't support reg dump for Larb%d\n", u4Index);
 	} else {
+		unsigned int u4Offset = 0;
+
 		SMIMSG("===SMI LARB%d reg dump===\n", u4Index);
 
-		#ifdef MT73
-		SMIMSG("[0x0,0x8,0x10]=[0x%x,0x%x,0x%x]\n", M4U_ReadReg32(u4Base, 0x0),
-		       M4U_ReadReg32(u4Base, 0x8), M4U_ReadReg32(u4Base, 0x10));
-		SMIMSG("[0x24,0x50,0x60]=[0x%x,0x%x,0x%x]\n", M4U_ReadReg32(u4Base, 0x24),
-		       M4U_ReadReg32(u4Base, 0x50), M4U_ReadReg32(u4Base, 0x60));
-		SMIMSG("[0xa0,0xa4,0xa8]=[0x%x,0x%x,0x%x]\n", M4U_ReadReg32(u4Base, 0xa0),
-		       M4U_ReadReg32(u4Base, 0xa4), M4U_ReadReg32(u4Base, 0xa8));
-		SMIMSG("[0xac,0xb0,0xb4]=[0x%x,0x%x,0x%x]\n", M4U_ReadReg32(u4Base, 0xac),
-		       M4U_ReadReg32(u4Base, 0xb0), M4U_ReadReg32(u4Base, 0xb4));
-		SMIMSG("[0xb8,0xbc,0xc0]=[0x%x,0x%x,0x%x]\n", M4U_ReadReg32(u4Base, 0xb8),
-		       M4U_ReadReg32(u4Base, 0xbc), M4U_ReadReg32(u4Base, 0xc0));
-		SMIMSG("[0xc8,0xcc]=[0x%x,0x%x]\n", M4U_ReadReg32(u4Base, 0xc8),
-		       M4U_ReadReg32(u4Base, 0xcc));
-		#elif defined MT27
-		{
-			unsigned int u4Offset = 0;
-
+		if (smi_data->smi_priv->plat == MTK_PLAT_MT8173 || smi_data->smi_priv->plat == MTK_PLAT_MT8163) {
+			SMIMSG("[0x0,0x8,0x10]=[0x%x,0x%x,0x%x]\n", M4U_ReadReg32(u4Base, 0x0),
+			       M4U_ReadReg32(u4Base, 0x8), M4U_ReadReg32(u4Base, 0x10));
+			SMIMSG("[0x24,0x50,0x60]=[0x%x,0x%x,0x%x]\n", M4U_ReadReg32(u4Base, 0x24),
+			       M4U_ReadReg32(u4Base, 0x50), M4U_ReadReg32(u4Base, 0x60));
+			SMIMSG("[0xa0,0xa4,0xa8]=[0x%x,0x%x,0x%x]\n", M4U_ReadReg32(u4Base, 0xa0),
+			       M4U_ReadReg32(u4Base, 0xa4), M4U_ReadReg32(u4Base, 0xa8));
+			SMIMSG("[0xac,0xb0,0xb4]=[0x%x,0x%x,0x%x]\n", M4U_ReadReg32(u4Base, 0xac),
+			       M4U_ReadReg32(u4Base, 0xb0), M4U_ReadReg32(u4Base, 0xb4));
+			SMIMSG("[0xb8,0xbc,0xc0]=[0x%x,0x%x,0x%x]\n", M4U_ReadReg32(u4Base, 0xb8),
+			       M4U_ReadReg32(u4Base, 0xbc), M4U_ReadReg32(u4Base, 0xc0));
+			SMIMSG("[0xc8,0xcc]=[0x%x,0x%x]\n", M4U_ReadReg32(u4Base, 0xc8),
+			       M4U_ReadReg32(u4Base, 0xcc));
+		} else if (smi_data->smi_priv->plat == MTK_PLAT_MT8127) {
 			SMIMSG("[0x0,0x10,0x60]=[0x%x,0x%x,0x%x]\n", M4U_ReadReg32(u4Base, 0x0),
 			       M4U_ReadReg32(u4Base, 0x10), M4U_ReadReg32(u4Base, 0x60));
 			SMIMSG("[0x64,0x8c,0x450]=[0x%x,0x%x,0x%x]\n", M4U_ReadReg32(u4Base, 0x64),
@@ -1308,10 +1294,10 @@ static void smi_dumpLarbDebugMsg(unsigned int u4Index)
 			SMIMSG("[0x610,0x614]=[0x%x,0x%x]\n", M4U_ReadReg32(u4Base, 0x610),
 			       M4U_ReadReg32(u4Base, 0x614));
 
-			for (u4Offset = 0x200; u4Offset < 0x200 + SMI_LARB_NR * 4; u4Offset += 4)
-				SMIMSG("[0x%x = 0x%x ]\n", u4Offset, M4U_ReadReg32(u4Base , u4Offset));
 		}
-		#endif
+
+		for (u4Offset = 0x200; u4Offset <= 0x200 + smi_data->larb_nr * 4; u4Offset += 4)
+			SMIMSG("[0x%x = 0x%x ]\n", u4Offset, M4U_ReadReg32(u4Base , u4Offset));
 	}
 }
 
@@ -1373,7 +1359,7 @@ void smi_dumpDebugMsg(void)
 	smi_dumpCommonDebugMsg();
 
 	/* dump all SMI LARB */
-	for (u4Index = 0; u4Index < SMI_LARB_NR; u4Index++)
+	for (u4Index = 0; u4Index <= smi_data->larb_nr; u4Index++)
 		smi_dumpLarbDebugMsg(u4Index);
 }
 
@@ -1387,8 +1373,8 @@ int smi_debug_bus_hanging_detect(unsigned int larbs, int show_dump)
 	/* Keep the dump result */
 	unsigned char smi_common_busy_count = 0;
 	/*volatile */ unsigned int reg_temp = 0;
-	unsigned char smi_larb_busy_count[SMI_LARB_NR] = { 0 };
-	unsigned char smi_larb_mmu_status[SMI_LARB_NR] = { 0 };
+	unsigned char smi_larb_busy_count[SMI_LARB_NR_MAX] = { 0 };
+	unsigned char smi_larb_mmu_status[SMI_LARB_NR_MAX] = { 0 };
 
 	/* dump resister and save resgister status */
 	for (dump_time = 0; dump_time < 5; dump_time++) {
@@ -1403,7 +1389,7 @@ int smi_debug_bus_hanging_detect(unsigned int larbs, int show_dump)
 		if (show_dump != 0)
 			smi_dumpCommonDebugMsg();
 
-		for (u4Index = 0; u4Index < SMI_LARB_NR; u4Index++) {
+		for (u4Index = 0; u4Index <= smi_data->larb_nr; u4Index++) {
 			unsigned long u4Base = get_larb_base_addr(u4Index);
 
 			if (u4Base != SMI_ERROR_ADDR) {
@@ -1421,7 +1407,7 @@ int smi_debug_bus_hanging_detect(unsigned int larbs, int show_dump)
 	}
 
 	/* Show the checked result */
-	for (i = 0; i < SMI_LARB_NR; i++) {	/* Check each larb */
+	for (i = 0; i <= smi_data->larb_nr; i++) {	/* Check each larb */
 		if (SMI_DGB_LARB_SELECT(larbs, i)) {
 			/* larb i has been selected */
 			/* Get status code */
