@@ -370,6 +370,10 @@ static int port_net_init(struct ccci_port *port)
 		atomic_set(&mbim_ccmni_index[port->md_id], -1);
 
 		eccci_ccmni_ops.md_ability |= port_proxy_get_capability(port->port_proxy);
+#if defined CONFIG_MTK_IRAT_SUPPORT
+		CCCI_INIT_LOG(port->md_id, NET, "clear MODEM_CAP_SGIO flag for IRAT enable\n");
+		eccci_ccmni_ops.md_ability &= (~(MODEM_CAP_SGIO));
+#endif
 		if (port->md_id == MD_SYS1)
 			ccmni_ops.init(port->md_id, &eccci_ccmni_ops);
 		else if (port->md_id == MD_SYS3)
@@ -382,12 +386,17 @@ static int port_net_recv_skb(struct ccci_port *port, struct sk_buff *skb)
 {
 	struct ccci_header *ccci_h = (struct ccci_header *)skb->data;
 	int mbim_ccmni_current = 0;
+#ifdef CCCI_SKB_TRACE
+	unsigned long long *netif_rx_profile;
+	unsigned long long netif_time;
+#endif
 #ifdef PORT_NET_TRACE
 	unsigned long long rx_cb_time;
 	unsigned long long total_time;
 
 	total_time = sched_clock();
 #endif
+
 	skb_pull(skb, sizeof(struct ccci_header));
 	CCCI_DEBUG_LOG(port->md_id, NET, "port %s recv: 0x%08X, 0x%08X, %08X, 0x%08X\n", port->name,
 		     ccci_h->data[0], ccci_h->data[1], ccci_h->channel, ccci_h->reserved);
@@ -401,7 +410,19 @@ static int port_net_recv_skb(struct ccci_port *port, struct sk_buff *skb)
 #ifdef PORT_NET_TRACE
 	rx_cb_time = sched_clock();
 #endif
+
+#ifdef CCCI_SKB_TRACE
+	netif_rx_profile = port_proxy_get_md_net_rx_profile(port->port_proxy);
+	netif_rx_profile[4] = sched_clock() - (unsigned long long)skb->tstamp.tv64;
+	skb->tstamp.tv64 = 0;
+	netif_time = sched_clock();
+#endif
 	ccmni_ops.rx_callback(port->md_id, GET_CCMNI_IDX(port), skb, NULL);
+
+#ifdef CCCI_SKB_TRACE
+	netif_rx_profile[3] = sched_clock() - netif_time;
+	ccmni_ops.dump_rx_status(port->md_id, ccci_h->channel, netif_rx_profile);
+#endif
 #ifdef PORT_NET_TRACE
 	rx_cb_time = sched_clock() - rx_cb_time;
 	total_time = sched_clock() - total_time;

@@ -1480,3 +1480,8 @@ void *port_proxy_get_mdee(struct port_proxy *proxy_p)
 	return ccci_md_get_mdee(proxy_p->md_obj);
 }
 
+unsigned long long *port_proxy_get_md_net_rx_profile(struct port_proxy *proxy_p)
+{
+	return ccci_md_get_net_rx_profile(proxy_p->md_obj);
+}
+

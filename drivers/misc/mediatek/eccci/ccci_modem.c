@@ -268,10 +268,6 @@ int ccci_md_register(struct ccci_modem *md)
 		return ret;
 	ccci_md_config(md);
 
-#if defined CONFIG_MTK_IRAT_SUPPORT
-	CCCI_INIT_LOG(md->index, TAG, "clear MODEM_CAP_SGIO flag for no support\n");
-	md->capability &= (~(MODEM_CAP_SGIO));
-#endif
 	md->mdee_obj = mdee_alloc(md->index, md);
 	/* must be after modem config to get smem layout */
 	md->port_proxy_obj = port_proxy_alloc(md->index, md->capability, md->napi_queue_mask, md);

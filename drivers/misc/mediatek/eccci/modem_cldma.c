@@ -488,6 +488,9 @@ again:
 			ccci_md_recv_skb(md, skb);
 			ret = 0;
 		} else {
+#ifdef CCCI_SKB_TRACE
+			skb->tstamp.tv64 = sched_clock();
+#endif
 			ccci_skb_enqueue(&queue->skb_list, skb);
 			wake_up_all(&queue->rx_wq);
 			ret = 0;
@@ -641,16 +644,19 @@ static int cldma_net_rx_push_thread(void *arg)
 		}
 		if (kthread_should_stop())
 			break;
-#ifdef CCCI_SKB_TRACE
-		md->netif_rx_profile[4] = sched_clock();
-#endif
 		skb = ccci_skb_dequeue(&queue->skb_list);
 		if (!skb)
 			continue;
+
+#ifdef CCCI_SKB_TRACE
+		md->netif_rx_profile[6] = sched_clock();
+		if (count > 0)
+			skb->tstamp.tv64 = sched_clock();
+#endif
 		ccci_md_recv_skb(md, skb);
 		count++;
 #ifdef CCCI_SKB_TRACE
-		md->netif_rx_profile[4] = sched_clock() - md->netif_rx_profile[4];
+		md->netif_rx_profile[6] = sched_clock() - md->netif_rx_profile[6];
 		md->netif_rx_profile[5] = count;
 		trace_ccci_skb_rx(md->netif_rx_profile);
 #endif

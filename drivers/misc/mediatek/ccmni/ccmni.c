@@ -45,13 +45,13 @@
 #include <linux/device.h>
 #include <linux/debugfs.h>
 #include "ccmni.h"
+#include "ccci_debug.h"
 
 #define ENABLE_GRO
 #define IS_CCMNI_LAN(dev)    (strncmp(dev->name, "ccmni-lan", 9) == 0)
 
 ccmni_ctl_block_t *ccmni_ctl_blk[MAX_MD_NUM];
 unsigned int ccmni_debug_level = 0;
-unsigned long long net_rx_delay[4];
 
 /********************internal function*********************/
 static void ccmni_make_etherframe(void *_eth_hdr, unsigned char *mac_addr, unsigned int packet_type)
@@ -817,6 +817,9 @@ static int ccmni_rx_callback(int md_id, int ccmni_idx, struct sk_buff *skb, void
 	ccmni_instance_t *ccmni = NULL;
 	struct net_device *dev = NULL;
 	int pkt_type, skb_len;
+#if defined(CCCI_SKB_TRACE)
+	struct iphdr *iph;
+#endif
 
 	if (unlikely(ctlb == NULL || ctlb->ccci_ops == NULL)) {
 		CCMNI_ERR_MSG(md_id, "invalid CCMNI%d ctrl/ops struct\n", ccmni_idx);
@@ -852,10 +855,10 @@ static int ccmni_rx_callback(int md_id, int ccmni_idx, struct sk_buff *skb, void
 #endif
 
 #if defined(CCCI_SKB_TRACE)
-	struct iphdr *iph = (struct iphdr *)skb->data;
-
-	net_rx_delay[2] = iph->id;
-	net_rx_delay[3] = sched_clock();
+	iph = (struct iphdr *)skb->data;
+	ctlb->net_rx_delay[2] = iph->id;
+	ctlb->net_rx_delay[0] = dev->stats.rx_bytes + skb_len;
+	ctlb->net_rx_delay[1] = dev->stats.tx_bytes;
 #endif
 
 	if (likely(ctlb->ccci_ops->md_ability & MODEM_CAP_NAPI)) {
@@ -872,12 +875,6 @@ static int ccmni_rx_callback(int md_id, int ccmni_idx, struct sk_buff *skb, void
 	}
 	dev->stats.rx_packets++;
 	dev->stats.rx_bytes += skb_len;
-
-#if defined(CCCI_SKB_TRACE)
-	net_rx_delay[3] = sched_clock() - net_rx_delay[3];
-	net_rx_delay[0] = dev->stats.rx_bytes - 40*dev->stats.rx_packets;
-	net_rx_delay[1] = dev->stats.tx_bytes - 40*dev->stats.tx_packets;
-#endif
 
 	wake_lock_timeout(&ctlb->ccmni_wakelock, HZ);
 
@@ -1011,7 +1008,11 @@ static void ccmni_dump(int md_id, int ccmni_idx, unsigned int flag)
 
 static void ccmni_dump_rx_status(int md_id, int ccmni_idx, unsigned long long *status)
 {
-	memcpy(status, net_rx_delay, sizeof(net_rx_delay));
+	ccmni_ctl_block_t *ctlb = ccmni_ctl_blk[md_id];
+
+	status[0] = ctlb->net_rx_delay[0];
+	status[1] = ctlb->net_rx_delay[1];
+	status[2] = ctlb->net_rx_delay[2];
 }
 
 static struct ccmni_ch *ccmni_get_ch(int md_id, int ccmni_idx)

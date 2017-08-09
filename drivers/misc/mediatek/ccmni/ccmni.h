@@ -91,6 +91,7 @@ typedef struct ccmni_ctl_block {
 	unsigned int       md_sta;
 	struct wake_lock   ccmni_wakelock;
 	char               wakelock_name[16];
+	unsigned long long net_rx_delay[4];
 } ccmni_ctl_block_t;
 
 struct ccmni_dev_ops {

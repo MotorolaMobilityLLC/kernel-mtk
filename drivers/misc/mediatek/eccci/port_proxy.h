@@ -155,6 +155,7 @@ void port_proxy_md_hs2_msg_notify(struct port_proxy *proxy_p, struct sk_buff *sk
 void *port_proxy_get_mdee(struct port_proxy *proxy_p);
 unsigned int port_proxy_get_poll_seq_num(struct port_proxy *proxy_p);
 int port_proxy_ccism_shm_init_ack_hdlr(struct port_proxy *proxy_p, unsigned int data);
+unsigned long long *port_proxy_get_md_net_rx_profile(struct port_proxy *proxy_p);
 static inline int port_proxy_get_critical_user(struct port_proxy *proxy_p, int user_id)
 {
 	return ((proxy_p->critical_user_active & (1 << user_id)) >> user_id);

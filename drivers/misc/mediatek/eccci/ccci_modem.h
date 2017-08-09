@@ -445,6 +445,15 @@ static inline int ccci_md_napi_check_and_notice(struct ccci_modem *md, int qno)
 		return 0;
 }
 
+static inline unsigned long long *ccci_md_get_net_rx_profile(struct ccci_modem *md)
+{
+#ifdef CCCI_SKB_TRACE
+		return md->netif_rx_profile;
+#else
+		return NULL;
+#endif
+}
+
 #ifdef FEATURE_SCP_CCCI_SUPPORT
 static inline int ccci_md_scp_ipi_send(struct ccci_modem *md, int op_id, void *data)
 {
