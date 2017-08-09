@@ -22,5 +22,9 @@ endif
 #  obj-y += $(CONFIG_MTK_PLATFORM)/
 #endif
 
+ifeq ($(CONFIG_ARCH_MT8173),y)
+  obj-y += $(CONFIG_MTK_PLATFORM)/
+endif
+
 #this moment do not have other folder
 #obj-y += $(subst ",,$(CONFIG_MTK_PLATFORM))/
