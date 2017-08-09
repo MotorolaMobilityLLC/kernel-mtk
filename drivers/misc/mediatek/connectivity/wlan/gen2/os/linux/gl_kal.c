@@ -3523,7 +3523,7 @@ kalUpdateRSSI(IN P_GLUE_INFO_T prGlueInfo,
 	if (pStats) {
 		pStats->qual.qual = cLinkQuality;
 		pStats->qual.noise = 0;
-		pStats->qual.updated = IW_QUAL_QUAL_UPDATED | IW_QUAL_NOISE_UPDATED;
+		pStats->qual.updated = IW_QUAL_QUAL_UPDATED | IW_QUAL_NOISE_UPDATED | IW_QUAL_DBM;
 		pStats->qual.level = 0x100 + cRssi;
 		pStats->qual.updated |= IW_QUAL_LEVEL_UPDATED;
 	}
