@@ -837,11 +837,17 @@ int get_kicker_group_opp(int kicker, int group_id)
 	u32 group_kickers;
 	int id = -1;
 	int i, result_opp = (NUM_OPP - 1);	/* the lowest power mode, OPP_1 for JADE */
+	int total = sizeof(spm_dvfs_func_list) / sizeof(spm_dvfs_func_list[0]);
 
 	if (group_id < 0)
 		id = find_spm_dvfs_func_group(kicker);
 	else
 		id = group_id;
+
+	if (id < 0 || id >= total) {
+		vcorefs_err("Invalid group id(%d), return default opp(%d)\n", id, result_opp);
+		return result_opp;
+	}
 
 	group_kickers = spm_dvfs_func_list[id].kicker_mask;
 	for (i = 0; i < NUM_KICKER; i++) {
@@ -863,18 +869,24 @@ static int set_dvfs_with_opp(struct governor_profile *gvrctrl, struct kicker_con
 	int group_id = -1;
 	int expect_vcore_uv;
 	int expect_ddr_khz;
+	int opp_idx;
 
 	/* struct opp_profile *opp_ctrl_table = opp_table; */
 	gvrctrl->curr_vcore_uv = vcorefs_get_curr_vcore();
 	gvrctrl->curr_ddr_khz = vcorefs_get_curr_ddr();
 
+	if (krconf->dvfs_opp < 0)
+		opp_idx = (NUM_OPP - 1);
+	else
+		opp_idx = krconf->dvfs_opp;
+
 	if (gvrctrl->vcore_dvs == 1)
-		expect_vcore_uv = opp_ctrl_table[krconf->dvfs_opp].vcore_uv;
+		expect_vcore_uv = opp_ctrl_table[opp_idx].vcore_uv;
 	else
 		expect_vcore_uv = gvrctrl->curr_vcore_uv;
 
 	if (gvrctrl->ddr_dfs == 1)
-		expect_ddr_khz = opp_ctrl_table[krconf->dvfs_opp].ddr_khz;
+		expect_ddr_khz = opp_ctrl_table[opp_idx].ddr_khz;
 	else
 		expect_ddr_khz = gvrctrl->curr_ddr_khz;
 
