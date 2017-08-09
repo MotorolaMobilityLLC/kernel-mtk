@@ -592,6 +592,7 @@ static int larb_clock_prepare(int larb_id, int enable_mtcmos)
 			smi_prepare_clk(smi_dev->larb0_mtcmos, "larb0_mtcmos");
 			smi_prepare_clk(smi_dev->larb4_mtcmos, "larb4_mtcmos");
 		}
+		smi_prepare_clk(smi_dev->smi_common_clk, "smi_common_clk");
 		smi_prepare_clk(smi_dev->smi_larb4_mjc_clk, "smi_larb4_mjc_clk");
 		smi_prepare_clk(smi_dev->smi_larb4_mm_clk, "smi_larb4_mm_clk");
 		smi_prepare_clk(smi_dev->smi_larb4_mjc_smi_larb_clk, "smi_larb4_mjc_smi_larb_clk");
