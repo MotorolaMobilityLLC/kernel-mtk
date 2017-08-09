@@ -281,7 +281,7 @@ void bif_waitfor_slave(void)
 	} while (reg_val == 0);
 
 	if (reg_val == 1)
-		battery_log(BAT_LOG_CRTI, "[BIF][waitfor_slave]OK at loop=%d.\n", loop_i);
+		battery_log(BAT_LOG_FULL, "[BIF][waitfor_slave]OK at loop=%d.\n", loop_i);
 
 }
 
@@ -296,7 +296,7 @@ int bif_powerup_slave(void)
 		battery_log(BAT_LOG_CRTI, "[BIF][powerup_slave] set BIF power up register\n");
 		pmic_set_register_value(PMIC_BIF_POWER_UP, 1);
 
-		battery_log(BAT_LOG_CRTI, "[BIF][powerup_slave] trigger BIF module\n");
+		battery_log(BAT_LOG_FULL, "[BIF][powerup_slave] trigger BIF module\n");
 		pmic_set_register_value(PMIC_BIF_TRASACT_TRIGGER, 1);
 
 		udelay(10);
@@ -404,7 +404,7 @@ int bif_write8(int addr, int *data)
 
 	era = (addr & 0xFF00) >> 8;
 	wra = addr & 0x00FF;
-	battery_log(BAT_LOG_CRTI, "[BIF][bif_write8]ERA=%x, WRA=%x\n", era, wra);
+	battery_log(BAT_LOG_FULL, "[BIF][bif_write8]ERA=%x, WRA=%x\n", era, wra);
 	/*set command sequence */
 	bif_cmd[0] = SDA | MW3790;
 	bif_cmd[1] = ERA | era;	/*[15:8] */
@@ -444,7 +444,7 @@ int bif_write8(int addr, int *data)
 	} while (bat_lost == 1 || total_valid == 1 || timeout == 1);
 
 	if (ret == 1)
-		battery_log(BAT_LOG_CRTI, "[BIF][bif_write8] OK for %d loop(s)\n", loop_i);
+		battery_log(BAT_LOG_FULL, "[BIF][bif_write8] OK for %d loop(s)\n", loop_i);
 	else
 		battery_log(BAT_LOG_CRTI, "[BIF][bif_write8] Failed for %d loop(s)\n", loop_i);
 
@@ -470,7 +470,7 @@ int bif_read8(int addr, int *data)
 
 	era = (addr & 0xFF00) >> 8;
 	rra = addr & 0x00FF;
-	battery_log(BAT_LOG_CRTI, "[BIF][bif_read8]ERA=%x, RRA=%x\n", era, rra);
+	battery_log(BAT_LOG_FULL, "[BIF][bif_read8]ERA=%x, RRA=%x\n", era, rra);
 	/*set command sequence */
 	bif_cmd[0] = SDA | MW3790;
 	bif_cmd[1] = ERA | era;	/*[15:8] */
@@ -511,7 +511,7 @@ int bif_read8(int addr, int *data)
 	/*Read data */
 	if (ret == 1) {
 		val = pmic_get_register_value(PMIC_BIF_DATA_0);
-		battery_log(BAT_LOG_CRTI, "[BIF][bif_read8] OK d0=0x%x, for %d loop(s)\n",
+		battery_log(BAT_LOG_FULL, "[BIF][bif_read8] OK d0=0x%x, for %d loop(s)\n",
 			    val, loop_i);
 	} else
 		battery_log(BAT_LOG_CRTI, "[BIF][bif_read8] Failed for %d loop(s)\n", loop_i);
@@ -539,7 +539,7 @@ int bif_read16(int addr)
 
 	era = (addr & 0xFF00) >> 8;
 	rra = addr & 0x00FF;
-	battery_log(BAT_LOG_CRTI, "[BIF][bif_read16]ERA=%x, RRA=%x\n", era, rra);
+	battery_log(BAT_LOG_FULL, "[BIF][bif_read16]ERA=%x, RRA=%x\n", era, rra);
 	/*set command sequence */
 	bif_cmd[0] = SDA | MW3790;
 	bif_cmd[1] = BC | RBL2;	/* read back 2 bytes */
@@ -586,7 +586,7 @@ int bif_read16(int addr)
 		d1 = pmic_get_register_value(PMIC_BIF_DATA_1);
 		val = 0xFF & d1;
 		val = val | ((d0 & 0xFF) << 8);
-		battery_log(BAT_LOG_CRTI, "[BIF][bif_read16] OK d0=0x%x, d1=0x%x for %d loop(s)\n",
+		battery_log(BAT_LOG_FULL, "[BIF][bif_read16] OK d0=0x%x, d1=0x%x for %d loop(s)\n",
 			    d0, d1, loop_i);
 	} else
 		battery_log(BAT_LOG_CRTI, "[BIF][bif_read16] Failed for %d loop(s)\n", loop_i);
