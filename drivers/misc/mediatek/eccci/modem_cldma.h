@@ -35,7 +35,7 @@
 #define CHECKSUM_SIZE 0		/* 12 */
 /* #define CLDMA_NO_TX_IRQ */
 #ifndef CLDMA_NO_TX_IRQ
-#define ENABLE_CLDMA_TIMER
+/* #define ENABLE_CLDMA_TIMER */
 #endif
 #define CLDMA_NET_TX_BD
 

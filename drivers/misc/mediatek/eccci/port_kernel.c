@@ -2245,13 +2245,11 @@ static void ccci_md_ee_info_dump(struct ccci_modem *md)
 
 	ex_info = kmalloc(EE_BUF_LEN_UMOLY, GFP_ATOMIC);
 	if (ex_info == NULL) {
-		ex_info = buf_fail;
 		CCCI_EXP_MSG(md->index, KERN, "Fail alloc Mem for ex_info!\n");
 		goto err_exit;
 	}
 	ex_info_temp = kmalloc(EE_BUF_LEN_UMOLY, GFP_ATOMIC);
 	if (ex_info_temp == NULL) {
-		ex_info = buf_fail;
 		CCCI_EXP_MSG(md->index, KERN, "Fail alloc Mem for ex_info_temp!\n");
 		goto err_exit;
 	}
@@ -2447,6 +2445,8 @@ err_exit:
 		CCCI_EXP_INF_MSG(md->index, KERN, "C2K EE, No need trigger DB\n");
 	else if ((debug_info->type == MD_EX_DUMP_EMI_CHECK) && (Is_MD_EMI_voilation() == 0))
 		CCCI_EXP_INF_MSG(md->index, KERN, "Not MD EMI violation, No need trigger DB\n");
+	else if (ex_info == NULL)
+		ccci_aed(md, dump_flag, buf_fail, db_opt);
 	else
 		ccci_aed(md, dump_flag, ex_info, db_opt);
 	if (debug_info->more_info == MD_EE_CASE_ONLY_SWINT)
@@ -2809,7 +2809,6 @@ static void ccci_ee_info_dump(struct ccci_modem *md)
 
 	ex_info = kmalloc(EE_BUF_LEN, GFP_ATOMIC);
 	if (ex_info == NULL) {
-		ex_info = buf_fail;
 		CCCI_ERR_MSG(md->index, KERN, "Fail alloc Mem for ex_info!\n");
 		goto err_exit;
 	}
@@ -2987,6 +2986,8 @@ err_exit:
 		CCCI_INF_MSG(md->index, KERN, "C2K EE, No need trigger DB\n");
 	else if (debug_info->type == CC_MD1_EXCEPTION)
 		CCCI_INF_MSG(md->index, KERN, "MD1 EE, No need trigger DB\n");
+	else if (ex_info == NULL)
+		ccci_aed(md, dump_flag, buf_fail, db_opt);
 	else
 		ccci_aed(md, dump_flag, ex_info, db_opt);
 	if (debug_info->more_info == MD_EE_CASE_ONLY_SWINT)
@@ -3231,7 +3232,7 @@ void md_ex_monitor_func(unsigned long data)
 	CCCI_EXP_INF_MSG(md->index, KERN, "Dump MD EX log\n");
 #ifdef MD_UMOLY_EE_SUPPORT
 	if (md->index == MD_SYS1) {
-		ccci_mem_dump(md->index, md->smem_layout.ccci_exp_smem_base_vir, (2048 + 512));
+		ccci_mem_dump(md->index, md->smem_layout.ccci_exp_smem_mdss_debug_vir, (2048 + 512));
 		ccci_mem_dump(md->index, (md->smem_layout.ccci_exp_smem_mdss_debug_vir + 6 * 1024), 2048);
 	} else
 #endif
