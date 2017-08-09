@@ -804,6 +804,28 @@ void ppm_limit_check_for_user_limit(enum ppm_power_state cur_state, struct ppm_p
 	}
 }
 
+unsigned int ppm_get_root_cluster_by_state(enum ppm_power_state cur_state)
+{
+	unsigned int root_cluster = PPM_CLUSTER_LL;
+
+	switch (cur_state) {
+	case PPM_POWER_STATE_L_ONLY:
+	case PPM_POWER_STATE_4L_LL:
+		root_cluster = PPM_CLUSTER_L;
+		break;
+	case PPM_POWER_STATE_NONE:
+		root_cluster = (ppm_main_info.fixed_root_cluster == -1) ? PPM_CLUSTER_LL
+				: (unsigned int)ppm_main_info.fixed_root_cluster;
+		break;
+	case PPM_POWER_STATE_LL_ONLY:
+	case PPM_POWER_STATE_4LL_L:
+	default:
+		break;
+	}
+
+	return root_cluster;
+}
+
 #if PPM_HW_OCP_SUPPORT
 static unsigned int max_power;
 #define MAX_OCP_TARGET_POWER	127000

@@ -348,6 +348,7 @@ extern enum ppm_power_state ppm_judge_state_by_user_limit(enum ppm_power_state c
 			struct ppm_userlimit_data user_limit);
 extern void ppm_limit_check_for_user_limit(enum ppm_power_state cur_state, struct ppm_policy_req *req,
 			struct ppm_userlimit_data user_limit);
+extern unsigned int ppm_get_root_cluster_by_state(enum ppm_power_state cur_state);
 
 /* main */
 extern void ppm_main_update_req_by_pwr(enum ppm_power_state new_state, struct ppm_policy_req *req);
