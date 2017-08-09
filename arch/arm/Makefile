@@ -300,8 +300,12 @@ MTK_PROJECT := $(CONFIG_ARCH_MTK_PROJECT:"%"=%)
 export MTK_PLATFORM MTK_PROJECT MTK_TARGET_PROJECT
 KBUILD_CPPFLAGS += -I$(srctree)/drivers/misc/mediatek/include/mt-plat/$(MTK_PLATFORM)/include
 KBUILD_CPPFLAGS += -I$(srctree)/arch/arm/mach-mediatek/include/
+-include $(srctree)/scripts/drvgen/drvgen.mk
+archprepare: $(DRVGEN_FILE_LIST)
+dtbs: $(DRVGEN_FILE_LIST)
 
 boot := arch/arm/boot
+
 
 archprepare:
 	$(Q)$(MAKE) $(build)=arch/arm/tools include/generated/mach-types.h
