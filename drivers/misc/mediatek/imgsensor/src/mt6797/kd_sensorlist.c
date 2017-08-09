@@ -2097,6 +2097,7 @@ inline static int adopt_CAMERA_HW_GetInfo2(void *pBuf)
     pSensorInfo->SensorModeNum                            = pInfo[IDNum]->SensorModeNum;
     pSensorInfo->SettleDelayMode                          = pInfo[IDNum]->SettleDelayMode;
     pSensorInfo->PDAF_Support                             = pInfo[IDNum]->PDAF_Support;
+	pSensorInfo->HDR_Support                              = pInfo[IDNum]->HDR_Support;
 	pSensorInfo->IMGSENSOR_DPCM_TYPE_PRE                  = pInfo[IDNum]->DPCM_INFO;
 	pSensorInfo->IMGSENSOR_DPCM_TYPE_CAP                  = pInfo1[IDNum]->DPCM_INFO;
 	pSensorInfo->IMGSENSOR_DPCM_TYPE_VD                   = pInfo2[IDNum]->DPCM_INFO;
