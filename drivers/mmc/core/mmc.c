@@ -1821,9 +1821,9 @@ static int _mmc_suspend(struct mmc_host *host, bool is_suspend)
 	if (mmc_can_poweroff_notify(host->card) &&
 		((host->caps2 & MMC_CAP2_FULL_PWR_CYCLE) || !is_suspend))
 		err = mmc_poweroff_notify(host->card, notify_type);
-	else if (mmc_can_sleep(host->card) && mmc_card_keep_power(host)) {
+	else if (mmc_can_sleep(host->card)) {
 		err = mmc_sleep(host);
-		if (!err)
+		if (!err && mmc_card_keep_power(host))
 			mmc_card_set_sleep(host->card);
 	} else if (!mmc_host_is_spi(host))
 		err = mmc_deselect_cards(host);
