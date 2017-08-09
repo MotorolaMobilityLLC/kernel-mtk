@@ -225,6 +225,16 @@
 			reg = <0 0x44400000 0 0x10000>;
 		};
 
+		preloader-reserved-memory@44800000 {
+			compatible = "mediatek,preloader";
+			reg = <0 0x44800000 0 0x200000>;
+		};
+
+		lk-reserved-memory@46000000 {
+			compatible = "mediatek,lk";
+			reg = <0 0x46000000 0 0x900000>;
+		};
+
 		minirdump-reserved-memory@444f0000 {
 			compatible = "mediatek, minirdump";
 			reg = <0 0x444f0000 0 0x10000>;
