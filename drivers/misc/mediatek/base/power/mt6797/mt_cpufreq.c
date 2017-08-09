@@ -2948,6 +2948,9 @@ static int _cpufreq_set_locked(struct mt_cpu_dvfs *p, unsigned int cur_khz, unsi
 
 	FUNC_ENTER(FUNC_LV_HELP);
 
+	if (dvfs_disable_flag == 1)
+		return 0;
+
 	if (!policy) {
 		cpufreq_err("Can't get policy of %s\n", cpu_dvfs_get_name(p));
 		goto out;
@@ -3266,6 +3269,9 @@ static int __cpuinit _mt_cpufreq_cpu_CB(struct notifier_block *nfb, unsigned lon
 	struct cpumask cpu_online_cpumask;
 	unsigned int cpus;
 	unsigned long flags;
+
+	if (dvfs_disable_flag == 1)
+		return NOTIFY_OK;
 
 	/* This is for cci */
 	id_cci = MT_CPU_DVFS_CCI;
