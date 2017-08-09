@@ -405,6 +405,17 @@ static int mtk_platform_device_probe(struct platform_device *pdev, struct kbase_
 int mtk_platform_init(struct platform_device *pdev, struct kbase_device *kbdev)
 {
 	int ret = 0;
+	unsigned int gpu_efuse;
+	extern int g_mtk_gpu_efuse_set_already;
+
+	kbasep_pm_read_present_cores(kbdev);
+	gpu_efuse = (get_devinfo_with_index(3) >> 7)&0x01;
+	if( gpu_efuse == 1 )
+		kbdev->pm.debug_core_mask = (u64)1;	 // 1-core
+	else
+		kbdev->pm.debug_core_mask = (u64)3;	 // 2-core
+
+	g_mtk_gpu_efuse_set_already = 1;
 
 	ret = mtk_platform_device_probe(pdev, kbdev);
 

@@ -30,6 +30,8 @@ atomic_t g_mtk_gpu_total_memory_usage_in_pages;
 atomic_t g_mtk_gpu_peak_memory_usage_in_pages;
 static mtk_gpu_meminfo_type g_mtk_gpu_meminfo[MTK_MEMINFO_SIZE];
 
+int g_mtk_gpu_efuse_set_already = 0;
+
 extern u32 kbasep_get_gl_utilization(void);
 extern u32 kbasep_get_cl_js0_utilization(void);
 extern u32 kbasep_get_cl_js1_utilization(void);
