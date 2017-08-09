@@ -33,40 +33,40 @@ do {									\
 #define bm_warn(fmt, args...)   \
 do {									\
 	if (Enable_FGADC_LOG >= BMLOG_WARNING_LEVEL) {		\
-		pr_err(fmt, ##args); \
+		pr_warn(fmt, ##args); \
 	}								   \
 } while (0)
 
 #define bm_notice(fmt, args...)   \
 do {									\
 	if (Enable_FGADC_LOG >= BMLOG_NOTICE_LEVEL) {			\
-		pr_err(fmt, ##args); \
+		pr_notice(fmt, ##args); \
 	}								   \
 } while (0)
 
 #define bm_info(fmt, args...)   \
 do {									\
 	if (Enable_FGADC_LOG >= BMLOG_INFO_LEVEL) {		\
-		pr_err(fmt, ##args); \
+		pr_info(fmt, ##args); \
 	}								   \
 } while (0)
 
 #define bm_debug(fmt, args...)   \
 do {									\
 	if (Enable_FGADC_LOG >= BMLOG_DEBUG_LEVEL) {		\
-		pr_err(fmt, ##args); \
+		pr_debug(fmt, ##args); \
 	}								   \
 } while (0)
 
 #define bm_trace(fmt, args...)\
 do {									\
 	if (Enable_FGADC_LOG >= BMLOG_TRACE_LEVEL) {			\
-		pr_err(fmt, ##args);\
+		pr_debug(fmt, ##args);\
 	}						\
 } while (0)
 
 
-#define BM_DAEMON_DEFAULT_LOG_LEVEL 7
+#define BM_DAEMON_DEFAULT_LOG_LEVEL 3
 
 
 /* ============================================================ */
