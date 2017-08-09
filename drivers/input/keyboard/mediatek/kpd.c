@@ -66,8 +66,9 @@ static int kpd_pdrv_resume(struct platform_device *pdev);
 #endif
 
 static const struct of_device_id kpd_of_match[] = {
-	{.compatible = "mediatek,mt6735-keypad"},
 	{.compatible = "mediatek,mt6580-keypad"},
+	{.compatible = "mediatek,mt6735-keypad"},
+	{.compatible = "mediatek,mt6755-keypad"},
 	{.compatible = "mediatek,mt8173-keypad"},
 	{},
 };

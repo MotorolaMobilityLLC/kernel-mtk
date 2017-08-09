@@ -3,9 +3,10 @@
 #include <linux/of.h>
 #include <linux/of_address.h>
 #include <linux/of_irq.h>
-#ifdef CONFIG_MTK_TC1_FM_AT_SUSPEND
+#ifdef CONFIG_MT_SND_SOC_6755
 #include <mt_soc_afe_control.h>
 #endif
+
 #define KPD_DEBUG	KPD_YES
 
 #define KPD_SAY		"kpd: "
@@ -22,9 +23,7 @@ static u8 kpd_pwrkey_state = !KPD_PWRKEY_POLARITY;
 #endif
 
 static int kpd_show_hw_keycode = 1;
-#ifndef EVB_PLATFORM
 static int kpd_enable_lprst = 1;
-#endif
 static u16 kpd_keymap_state[KPD_NUM_MEMS] = {
 	0xffff, 0xffff, 0xffff, 0xffff, 0x00ff
 };
@@ -71,7 +70,6 @@ void sb_kpd_disable(void)
 }
 #endif
 
-#ifndef EVB_PLATFORM
 static void enable_kpd(int enable)
 {
 	if (enable == 1) {
@@ -82,7 +80,6 @@ static void enable_kpd(int enable)
 		kpd_print("KEYPAD is disabled\n");
 	}
 }
-#endif
 
 void kpd_slide_qwerty_init(void)
 {
@@ -117,7 +114,8 @@ void kpd_slide_qwerty_init(void)
 
 	mt_eint_set_sens(KPD_SLIDE_EINT, KPD_SLIDE_SENSITIVE);
 	mt_eint_set_hw_debounce(KPD_SLIDE_EINT, KPD_SLIDE_DEBOUNCE);
-	mt_eint_registration(KPD_SLIDE_EINT, true, KPD_SLIDE_POLARITY, kpd_slide_eint_handler, false);
+	mt_eint_registration(KPD_SLIDE_EINT, true, KPD_SLIDE_POLARITY,
+			     kpd_slide_eint_handler, false);
 
 	power_op = powerOff_slidePin_interface();
 	if (!power_op)
@@ -169,7 +167,7 @@ static void kpd_factory_mode_handler(void)
 			pressed = !(new_state[i] & mask);
 			if (kpd_show_hw_keycode) {
 				kpd_print(KPD_SAY "(%s) factory_mode HW keycode = %u\n",
-				       pressed ? "pressed" : "released", hw_keycode);
+					  pressed ? "pressed" : "released", hw_keycode);
 			}
 			BUG_ON(hw_keycode >= KPD_NUM_KEYS);
 			linux_keycode = kpd_dts_data.kpd_hw_init_map[hw_keycode];
@@ -226,7 +224,6 @@ void kpd_auto_test_for_factorymode(void)
 /********************************************************************/
 void long_press_reboot_function_setting(void)
 {
-#ifndef EVB_PLATFORM
 	if (kpd_enable_lprst && get_boot_mode() == NORMAL_BOOT) {
 		kpd_info("Normal Boot long press reboot selection\n");
 #ifdef CONFIG_KPD_PMIC_LPRST_TD
@@ -269,17 +266,17 @@ void long_press_reboot_function_setting(void)
 		pmic_set_register_value(PMIC_RG_HOMEKEY_RST_EN, 0x00);
 #endif
 	}
-#else
-	pmic_set_register_value(PMIC_RG_PWRKEY_RST_EN, 0x00);
-	pmic_set_register_value(PMIC_RG_HOMEKEY_RST_EN, 0x00);
-#endif
+}
+
+/* FM@suspend */
+bool __attribute__ ((weak)) ConditionEnterSuspend(void)
+{
+	return true;
 }
 
 /********************************************************************/
 void kpd_wakeup_src_setting(int enable)
 {
-#ifndef EVB_PLATFORM
-#ifdef CONFIG_MTK_TC1_FM_AT_SUSPEND
 	int is_fm_radio_playing = 0;
 
 	/* If FM is playing, keep keypad as wakeup source */
@@ -297,16 +294,6 @@ void kpd_wakeup_src_setting(int enable)
 			enable_kpd(0);
 		}
 	}
-#else
-	if (enable == 1) {
-		kpd_print("enable kpd work!\n");
-		enable_kpd(1);
-	} else {
-		kpd_print("disable kpd work!\n");
-		enable_kpd(0);
-	}
-#endif
-#endif
 }
 
 /********************************************************************/
@@ -348,7 +335,7 @@ void kpd_pmic_rstkey_hal(unsigned long pressed)
 			input_sync(kpd_input_dev);
 			if (kpd_show_hw_keycode) {
 				kpd_print(KPD_SAY "(%s) HW keycode =%d using PMIC\n",
-				       pressed ? "pressed" : "released", kpd_dts_data.kpd_sw_rstkey);
+					  pressed ? "pressed" : "released", kpd_dts_data.kpd_sw_rstkey);
 			}
 		}
 	}
@@ -364,7 +351,6 @@ void kpd_pmic_pwrkey_hal(unsigned long pressed)
 			kpd_print(KPD_SAY "(%s) HW keycode =%d using PMIC\n",
 			       pressed ? "pressed" : "released", kpd_dts_data.kpd_sw_pwrkey);
 		}
-		/*ZH CHEN*/
 		/*aee_powerkey_notify_press(pressed);*/
 	}
 #endif
@@ -391,13 +377,57 @@ void kpd_pwrkey_handler_hal(unsigned long data)
 #endif
 }
 
+#ifdef CONFIG_MTK_MRDUMP_KEY
+static int mrdump_eint_state;
+static int mrdump_ext_rst_irq;
+static irqreturn_t mrdump_rst_eint_handler(int irq, void *data)
+{
+	/* bool pressed; */
+
+	if (mrdump_eint_state == 0) {
+		irq_set_irq_type(mrdump_ext_rst_irq, IRQ_TYPE_LEVEL_HIGH);
+		mrdump_eint_state = 1;
+	} else {
+		irq_set_irq_type(mrdump_ext_rst_irq, IRQ_TYPE_LEVEL_LOW);
+		mrdump_eint_state = 0;
+	}
+
+	input_report_key(kpd_input_dev, KEY_RESTART, mrdump_eint_state);
+	input_sync(kpd_input_dev);
+
+	return IRQ_HANDLED;
+}
+#endif
+
 /***********************************************************************/
 void mt_eint_register(void)
 {
+#ifdef CONFIG_MTK_MRDUMP_KEY
+	int ints[2] = {0, 0};
+	int ret;
+	struct device_node *node;
+
+	/* register EINT handler for MRDUMP_EXT_RST key */
+	node = of_find_compatible_node(NULL, NULL, "mediatek, mrdump_ext_rst-eint");
+	if (!node)
+		kpd_print("can't find compatible node\n");
+	else {
+		of_property_read_u32_array(node, "debounce", ints, ARRAY_SIZE(ints));
+		mt_gpio_set_debounce(ints[0], ints[1]);
+
+		mrdump_ext_rst_irq = irq_of_parse_and_map(node, 0);
+		ret = request_irq(mrdump_ext_rst_irq, mrdump_rst_eint_handler,
+				  IRQF_TRIGGER_NONE, "mrdump_ext_rst-eint", NULL);
+		if (ret > 0)
+			kpd_print("EINT IRQ LINE NOT AVAILABLE\n");
+	}
+#endif
+
 #ifdef CONFIG_KPD_PWRKEY_USE_EINT
 	mt_eint_set_sens(KPD_PWRKEY_EINT, KPD_PWRKEY_SENSITIVE);
 	mt_eint_set_hw_debounce(KPD_PWRKEY_EINT, KPD_PWRKEY_DEBOUNCE);
-	mt_eint_registration(KPD_PWRKEY_EINT, true, KPD_PWRKEY_POLARITY, kpd_pwrkey_eint_handler, false);
+	mt_eint_registration(KPD_PWRKEY_EINT, true, KPD_PWRKEY_POLARITY,
+			     kpd_pwrkey_eint_handler, false);
 #endif
 }
 

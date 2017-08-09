@@ -930,10 +930,10 @@ clocks {
 			reg = <0x1000F000 0x1000>;
 		};
 
-		KP@0x10010000 {
-			compatible = "mediatek,KP";
+		keypad: keypad@10010000 {
+			compatible = "mediatek,mt6755-keypad", "mediatek,kp";
 			reg = <0x10010000 0x1000>;
-			interrupts = <0 164 0x2>;
+			interrupts = <GIC_SPI 164 IRQ_TYPE_EDGE_FALLING>;
 		};
 
 		TOPMISC@0x10011000 {
