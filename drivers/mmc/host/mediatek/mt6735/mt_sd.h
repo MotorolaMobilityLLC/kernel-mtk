@@ -1549,12 +1549,6 @@ extern unsigned int mt_eint_get_polarity_external(unsigned int eint_num);
 #endif
 extern int msdc_cache_ctrl(struct msdc_host *host, unsigned int enable,
 	u32 *status);
-#if defined(CFG_DEV_MSDC2)
-extern struct msdc_hw msdc2_hw;
-#endif
-#if defined(CFG_DEV_MSDC3)
-extern struct msdc_hw msdc3_hw;
-#endif
 
 extern int msdc_setting_parameter(struct msdc_hw *hw, unsigned int *para);
 /*workaround for VMC 1.8v -> 1.84v */
@@ -1571,6 +1565,17 @@ extern void __iomem *topckgen_reg_base;
 
 /* move from board.h */
 typedef void (*pm_callback_t)(pm_message_t state, void *data);
+
+#ifdef CONFIG_MTK_COMBO_COMM
+#include <mt-plat/mtk_wcn_cmb_stub.h>
+#define CFG_DEV_MSDC2
+#endif
+
+#ifdef CONFIG_MTK_C2K_SUPPORT
+#include <mach/mt_c2k_sdio.h>
+#define CFG_DEV_MSDC3
+#define C2K_USE_EINT
+#endif
 
 #define MSDC_CD_PIN_EN      (1 << 0)	/* card detection pin is wired   */
 #define MSDC_WP_PIN_EN      (1 << 1)	/* write protection pin is wired */

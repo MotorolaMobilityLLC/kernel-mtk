@@ -8725,7 +8725,7 @@ int msdc_of_parse(struct mmc_host *mmc)
 		host->id = 0;
 	else if (0 == strcmp(np->name, "msdc1"))
 		host->id = 1;
-	else if (0 == strcmp(np->name, "MSDC2"))
+	else if (0 == strcmp(np->name, "msdc2"))
 		host->id = 2;
 	else
 		host->id = 3;
@@ -8796,11 +8796,11 @@ static int msdc_drv_probe(struct platform_device *pdev)
 	u16 l_val;
 #endif
 
-	if (0 == strcmp(pdev->dev.of_node->name, "MSDC2")) {
+	if (0 == strcmp(pdev->dev.of_node->name, "msdc2")) {
 #ifndef CFG_DEV_MSDC2
 		return 1;
 #endif
-	} else if (0 == strcmp(pdev->dev.of_node->name, "MSDC3")) {
+	} else if (0 == strcmp(pdev->dev.of_node->name, "msdc3")) {
 #ifndef CFG_DEV_MSDC3
 		return 1;
 #endif
@@ -8907,17 +8907,91 @@ static int msdc_drv_probe(struct platform_device *pdev)
 		pdev->id = 1;
 
 #if defined(CFG_DEV_MSDC2)
-	if (strcmp(pdev->dev.of_node->name, "MSDC2") == 0) {
-		host->hw = &msdc2_hw;
+	if (strcmp(pdev->dev.of_node->name, "msdc2") == 0) {
+		/* FIXME: host->hw = &msdc2_hw; */
+		host->hw->clk_src = MSDC30_CLKSRC_200MHZ;
+		host->hw->cmd_edge = MSDC_SMPL_FALLING;
+		host->hw->rdata_edge = MSDC_SMPL_FALLING;
+		host->hw->wdata_edge = MSDC_SMPL_FALLING;
+		host->hw->clk_drv = 2;
+		host->hw->cmd_drv = 2;
+		host->hw->dat_drv = 2;
+		host->hw->data_pins = 4;
+		host->hw->data_offset = 0;
+		host->hw->flags = MSDC_EXT_SDIO_IRQ | MSDC_HIGHSPEED | MSDC_UHS1;
+		host->hw->dat0rddly = 0;
+		host->hw->dat1rddly = 0;
+		host->hw->dat2rddly = 0;
+		host->hw->dat3rddly = 0;
+		host->hw->dat4rddly = 0;
+		host->hw->dat5rddly = 0;
+		host->hw->dat6rddly = 0;
+		host->hw->dat7rddly = 0;
+		host->hw->datwrddly = 0;
+		host->hw->cmdrrddly = 0;
+		host->hw->cmdrddly = 0;
+		host->hw->cmdrtactr_sdr50 = 0x1;
+		host->hw->wdatcrctactr_sdr50 = 0x1;
+		host->hw->intdatlatcksel_sdr50 = 0x0;
+		host->hw->cmdrtactr_sdr200 = 0x3;
+		host->hw->wdatcrctactr_sdr200 = 0x3;
+		host->hw->intdatlatcksel_sdr200 = 0x0;
+		host->hw->host_function	= MSDC_SDIO;
+		host->hw->boot = 0;
+		host->hw->request_sdio_eirq = mt_sdio_ops[2].sdio_request_eirq;
+		host->hw->enable_sdio_eirq = mt_sdio_ops[2].sdio_enable_eirq;
+		host->hw->disable_sdio_eirq = mt_sdio_ops[2].sdio_disable_eirq;
+		host->hw->register_pm = mt_sdio_ops[2].sdio_register_pm;
+
 		pdev->id = 2;
-		pr_err("platform_data hw:0x%p, is msdc2_hw\n", host->hw);
+		pr_debug("platform_data hw:0x%p @ msdc2_hw\n", host->hw);
 	}
 #endif
+
 #if defined(CFG_DEV_MSDC3)
-	if (strcmp(pdev->dev.of_node->name, "MSDC3") == 0) {
-		host->hw = &msdc3_hw;
+	if (strcmp(pdev->dev.of_node->name, "msdc3") == 0) {
+		host->hw->clk_src = MSDC30_CLKSRC_200MHZ;
+		host->hw->cmd_edge = MSDC_SMPL_RISING;
+		host->hw->rdata_edge = MSDC_SMPL_RISING;
+		host->hw->wdata_edge = MSDC_SMPL_RISING;
+		host->hw->clk_drv = 0;
+		host->hw->cmd_drv = 0;
+		host->hw->dat_drv = 0;
+		host->hw->data_pins = 4;
+		host->hw->data_offset = 0;
+#ifdef C2K_USE_EINT
+		host->hw->flags = MSDC_EXT_SDIO_IRQ | MSDC_HIGHSPEED;
+#else
+		host->hw->flags = MSDC_SDIO_IRQ | MSDC_HIGHSPEED;
+#endif
+		host->hw->dat0rddly = 0;
+		host->hw->dat1rddly = 0;
+		host->hw->dat2rddly = 0;
+		host->hw->dat3rddly = 0;
+		host->hw->dat4rddly = 0;
+		host->hw->dat5rddly = 0;
+		host->hw->dat6rddly = 0;
+		host->hw->dat7rddly = 0;
+		host->hw->datwrddly = 0;
+		host->hw->cmdrrddly = 0;
+		host->hw->cmdrddly = 0;
+		host->hw->cmdrtactr_sdr50 = 0x0;
+		host->hw->wdatcrctactr_sdr50 = 0x0;
+		host->hw->intdatlatcksel_sdr50 = 0x0;
+		host->hw->cmdrtactr_sdr200 = 0x0;
+		host->hw->wdatcrctactr_sdr200 = 0x0;
+		host->hw->intdatlatcksel_sdr200 = 0x0;
+		host->hw->host_function = MSDC_SDIO;
+		host->hw->boot = 0;
+#ifdef C2K_USE_EINT
+		host->hw->request_sdio_eirq = c2k_sdio_request_eirq;
+		host->hw->enable_sdio_eirq = c2k_sdio_enable_eirq;
+		host->hw->disable_sdio_eirq = c2k_sdio_disable_eirq;
+#endif
+		host->hw->register_pm = c2k_sdio_register_pm;
+
 		pdev->id = 3;
-		pr_err("platform_data hw:0x%p, is msdc3_hw\n", host->hw);
+		pr_debug("platform_data hw:0x%p @ msdc3_hw\n", host->hw);
 	}
 #endif
 
