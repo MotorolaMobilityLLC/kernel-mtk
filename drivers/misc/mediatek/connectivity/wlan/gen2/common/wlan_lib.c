@@ -3952,6 +3952,7 @@ WLAN_STATUS wlanQueryPermanentAddress(IN P_ADAPTER_T prAdapter)
 *         WLAN_STATUS_FAILURE
 */
 /*----------------------------------------------------------------------------*/
+UINT_32 g_u2FwIDVersion = 0;
 WLAN_STATUS wlanQueryNicCapability(IN P_ADAPTER_T prAdapter)
 {
 	UINT_8 ucCmdSeqNum;
@@ -4025,6 +4026,7 @@ WLAN_STATUS wlanQueryNicCapability(IN P_ADAPTER_T prAdapter)
 	prAdapter->fgIsEfuseValid = (BOOLEAN) prEventNicCapability->ucEfuseValid;
 	prAdapter->fgIsEmbbededMacAddrValid = (BOOLEAN) prEventNicCapability->ucMacAddrValid;
 
+	g_u2FwIDVersion = (prAdapter->rVerInfo.u2FwProductID << 16) | (prAdapter->rVerInfo.u2FwOwnVersion);
 #if (CFG_SUPPORT_TDLS == 1)
 	if (prEventNicCapability->ucFeatureSet & (1 << FEATURE_SET_OFFSET_TDLS))
 		prAdapter->fgTdlsIsSup = TRUE;
