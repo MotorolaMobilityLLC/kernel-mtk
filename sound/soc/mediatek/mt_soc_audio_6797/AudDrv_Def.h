@@ -297,7 +297,7 @@
 #define MT_SOC_CODEC_VOIPCALLBTINDAI_NAME "mt-soc-codec-voipcall-btin-dai"
 #define MT_SOC_CODEC_TDMRX_DAI_NAME "mt-soc-tdmrx-dai-codec"
 #define MT_SOC_CODEC_HP_IMPEDANCE_NAME "mt-soc-codec-hp-impedance-dai"
-
+#define MT_SOC_CODEC_OFFLOAD_NAME "mt-soc-codec-offload-dai"
 
 #define MT_SOC_CODEC_FMI2S2TXDAI_NAME "mt-soc-codec-fmi2s2tx-dai"
 #define MT_SOC_CODEC_FMI2S2RXDAI_NAME "mt-soc-codec-fmi2s2rx-dai"
@@ -359,5 +359,6 @@
 #define MT_SOC_FM_I2S_CAPTURE_STREAM_NAME "FM_I2S_Capture"
 #define MT_SOC_BTCVSD_CAPTURE_STREAM_NAME "BTCVSD_Capture"
 #define MT_SOC_BTCVSD_PLAYBACK_STREAM_NAME "BTCVSD_Playback"
+#define MT_SOC_OFFLOAD_STREAM_NAME "Offload_Playback"
 
 #endif

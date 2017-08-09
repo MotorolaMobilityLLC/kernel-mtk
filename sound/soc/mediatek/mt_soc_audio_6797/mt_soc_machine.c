@@ -1180,17 +1180,6 @@ static struct snd_soc_dai_link mt_soc_dai_common[] = {
 		.init = mt_soc_audio_init,
 		.ops = &mt_machine_audio_ops,
 	},
-	/*{
-		.name = "OFFLOAD_GDMA_OUT",
-		.stream_name = MT_SOC_OFFLOAD_GDMA_STREAM_NAME,
-		.cpu_dai_name   = MT_SOC_OFFLOAD_GDMA_NAME,
-		.platform_name  = MT_SOC_OFFLOAD_GDMA_PCM,
-		.codec_dai_name = MT_SOC_CODEC_OFFLOAD_GDMA_DAI_NAME,
-		.codec_name = MT_SOC_CODEC_DUMMY_NAME,
-		.init = mt_soc_audio_init,
-		 .ops = &mt_machine_audio_ops,/
-		.compr_ops = &mt_machine_audio_compr_ops,
-	},*/
 	{
 		.name = "MultiMedia_DL2",
 		.stream_name = MT_SOC_DL2_STREAM_NAME,
@@ -1202,37 +1191,46 @@ static struct snd_soc_dai_link mt_soc_dai_common[] = {
 		.ops = &mt_machine_audio_ops,
 	},
 #ifdef CONFIG_MTK_BTCVSD_ALSA
-	 {
-	 .name = "BTCVSD_RX",
-	 .stream_name = MT_SOC_BTCVSD_CAPTURE_STREAM_NAME,
-	 .cpu_dai_name   = MT_SOC_BTCVSD_RX_DAI_NAME,
-	 .platform_name  = MT_SOC_BTCVSD_RX_PCM,
-	 .codec_dai_name = MT_SOC_CODEC_BTCVSD_RX_DAI_NAME,
-	 .codec_name = MT_SOC_CODEC_DUMMY_NAME,
-	 .init = mt_soc_audio_init,
-	 .ops = &mt_machine_audio_ops,
-	 },
-	 {
-	 .name = "BTCVSD_TX",
-	 .stream_name = MT_SOC_BTCVSD_PLAYBACK_STREAM_NAME,
-	 .cpu_dai_name   = MT_SOC_BTCVSD_TX_DAI_NAME,
-	 .platform_name  = MT_SOC_BTCVSD_TX_PCM,
-	 .codec_dai_name = MT_SOC_CODEC_BTCVSD_TX_DAI_NAME,
-	 .codec_name = MT_SOC_CODEC_DUMMY_NAME,
-	 .init = mt_soc_audio_init,
-	 .ops = &mt_machine_audio_ops,
-	 },
+	{
+		.name = "BTCVSD_RX",
+		.stream_name = MT_SOC_BTCVSD_CAPTURE_STREAM_NAME,
+		.cpu_dai_name   = MT_SOC_BTCVSD_RX_DAI_NAME,
+		.platform_name  = MT_SOC_BTCVSD_RX_PCM,
+		.codec_dai_name = MT_SOC_CODEC_BTCVSD_RX_DAI_NAME,
+		.codec_name = MT_SOC_CODEC_DUMMY_NAME,
+		.init = mt_soc_audio_init,
+		.ops = &mt_machine_audio_ops,
+	},
+	{
+		.name = "BTCVSD_TX",
+		.stream_name = MT_SOC_BTCVSD_PLAYBACK_STREAM_NAME,
+		.cpu_dai_name   = MT_SOC_BTCVSD_TX_DAI_NAME,
+		.platform_name  = MT_SOC_BTCVSD_TX_PCM,
+		.codec_dai_name = MT_SOC_CODEC_BTCVSD_TX_DAI_NAME,
+		.codec_name = MT_SOC_CODEC_DUMMY_NAME,
+		.init = mt_soc_audio_init,
+		.ops = &mt_machine_audio_ops,
+	},
 #endif
 	{
-	.name = "MOD_DAI_CAPTURE",
-	.stream_name = MT_SOC_MODDAI_STREAM_NAME,
-	.cpu_dai_name	= MT_SOC_MOD_DAI_NAME,
-	.platform_name	= MT_SOC_MOD_DAI_PCM,
-	.codec_dai_name = MT_SOC_CODEC_MOD_DAI_NAME,
-	.codec_name = MT_SOC_CODEC_DUMMY_NAME,
-	.init = mt_soc_audio_init,
-	.ops = &mt_machine_audio_ops,
-	},};
+		.name = "MOD_DAI_CAPTURE",
+		.stream_name = MT_SOC_MODDAI_STREAM_NAME,
+		.cpu_dai_name	= MT_SOC_MOD_DAI_NAME,
+		.platform_name	= MT_SOC_MOD_DAI_PCM,
+		.codec_dai_name = MT_SOC_CODEC_MOD_DAI_NAME,
+		.codec_name = MT_SOC_CODEC_DUMMY_NAME,
+		.init = mt_soc_audio_init,
+		.ops = &mt_machine_audio_ops,
+	},
+	{
+		.name = "OFFLOAD",
+		.stream_name = MT_SOC_OFFLOAD_STREAM_NAME,
+		.cpu_dai_name	= "snd-soc-dummy-dai",
+		.platform_name	= "snd-soc-dummy",
+		.codec_dai_name = MT_SOC_CODEC_OFFLOAD_NAME,
+		.codec_name = MT_SOC_CODEC_NAME,
+	},
+};
 
 static struct snd_soc_dai_link mt_soc_extspk_dai[] = {
 	{
