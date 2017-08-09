@@ -8,6 +8,7 @@ subdir-ccflags-y += -Werror -I$(srctree)/drivers/mmc/host/mediatek/$(MTK_PLATFOR
 obj-$(CONFIG_MTK_BASE_POWER) += base/
 obj-$(CONFIG_MEDIATEK_SOLUTION)	+= sched/
 obj-$(CONFIG_MEDIATEK_SOLUTION) += mach/
+obj-$(CONFIG_MTK_GPT_COMMON) += gpt/
 obj-$(CONFIG_MTK_SERIAL)	+= uart/
 obj-$(CONFIG_MTK_IRQ) += irq/
 obj-$(CONFIG_MTK_SYS_CIRQ) += cirq/
