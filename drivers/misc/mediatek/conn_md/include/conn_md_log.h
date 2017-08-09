@@ -27,7 +27,7 @@
 #include <linux/proc_fs.h>
 #include <linux/kernel.h>
 
-#define DBG_LOG_STR_SIZE 512
+#define DBG_LOG_STR_SIZE 256
 
 extern int g_conn_md_dbg_lvl;
 
