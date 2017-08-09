@@ -127,6 +127,7 @@ const char *disp_helper_option_string[DISP_OPT_NUM] = {
 	"DISP_OPT_RDMA_UNDERFLOW_AEE",
 	"DISP_OPT_GMO_OPTIMIZE",
 	"DISP_OPT_CV_BYSUSPEND",
+	"DISP_OPT_DELAYED_TRIGGER",
 };
 
 

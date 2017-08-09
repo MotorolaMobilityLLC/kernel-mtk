@@ -794,6 +794,8 @@ void _cmd_mode_enter_idle(void)
 			;/*mmdvfs_notify_mmclk_switch_request(MMDVFS_EVENT_OVL_SINGLE_LAYER_EXIT);*/
 		/* need delay to make sure done??? */
 		_primary_display_disable_mmsys_clk();
+		/* Enable SODI3 after mmsys is disabled */
+		spm_enable_sodi3(1);
 	}
 
 
@@ -802,8 +804,11 @@ void _cmd_mode_leave_idle(void)
 {
 	DISPMSG("[disp_lowpower]%s\n", __func__);
 
-	if (disp_helper_get_option(DISP_OPT_IDLEMGR_ENTER_ULPS))
+	if (disp_helper_get_option(DISP_OPT_IDLEMGR_ENTER_ULPS)) {
+		/* Disable SODI3 before mmsys is enabled */
+		spm_enable_sodi3(0);
 		_primary_display_enable_mmsys_clk();
+	}
 
 
 	if (disp_helper_get_option(DISP_OPT_SHARE_SRAM))
