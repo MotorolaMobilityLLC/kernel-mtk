@@ -59,9 +59,15 @@ static ktime_t ktime;
  */
 static int _hps_timer_callback(unsigned long data)
 {
+	int ret;
 	/*hps_warn("_hps_timer_callback\n"); */
-	if (hps_ctxt.tsk_struct_ptr)
-		wake_up_process(hps_ctxt.tsk_struct_ptr);
+	if (hps_ctxt.tsk_struct_ptr) {
+		ret = wake_up_process(hps_ctxt.tsk_struct_ptr);
+		if (!ret)
+			pr_err("hps task wake up fail %d\n", ret);
+	} else {
+		pr_err("hps ptr is NULL\n");
+	}
 	return HRTIMER_NORESTART;
 }
 
