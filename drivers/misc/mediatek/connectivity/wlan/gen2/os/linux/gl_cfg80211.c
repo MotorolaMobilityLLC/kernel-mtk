@@ -1477,6 +1477,7 @@ int mtk_cfg80211_remain_on_channel(struct wiphy *wiphy,
 			i4Rslt = -ENOMEM;
 			break;
 		}
+		kalMemZero(prMsgChnlReq, sizeof(MSG_REMAIN_ON_CHANNEL_T));
 
 		prMsgChnlReq->rMsgHdr.eMsgId = MID_MNY_AIS_REMAIN_ON_CHANNEL;
 		prMsgChnlReq->u8Cookie = *cookie;
