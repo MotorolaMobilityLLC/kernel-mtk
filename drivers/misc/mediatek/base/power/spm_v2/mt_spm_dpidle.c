@@ -469,6 +469,7 @@ static wake_reason_t spm_output_wake_reason(struct wake_status *wakesta, struct 
 	wake_reason_t wr = WR_NONE;
 	unsigned long int dpidle_log_print_curr_time = 0;
 	bool log_print = false;
+	static bool timer_out_too_short;
 
 	if (dump_log == DEEPIDLE_LOG_FULL) {
 		wr = __spm_output_wake_reason(wakesta, pcmdesc, false);
@@ -478,21 +479,29 @@ static wake_reason_t spm_output_wake_reason(struct wake_status *wakesta, struct 
 
 		if (wakesta->assert_pc != 0)
 			log_print = true;
+#if 0
 		/* Not wakeup by GPT */
 		else if ((wakesta->r12 & (0x1 << 4)) == 0)
 			log_print = true;
 		else if (wakesta->timer_out <= DPIDLE_LOG_PRINT_TIMEOUT_CRITERIA)
 			log_print = true;
+#endif
 		else if ((dpidle_log_print_curr_time - dpidle_log_print_prev_time) > DPIDLE_LOG_DISCARD_CRITERIA)
 			log_print = true;
 
+		if (wakesta->timer_out <= DPIDLE_LOG_PRINT_TIMEOUT_CRITERIA)
+			timer_out_too_short = true;
+
 		/* Print SPM log */
 		if (log_print == true) {
-			dpidle_dbg("dpidle_log_discard_cnt = %d\n", dpidle_log_discard_cnt);
+			dpidle_dbg("dpidle_log_discard_cnt = %d, timer_out_too_short = %d\n",
+						dpidle_log_discard_cnt,
+						timer_out_too_short);
 			wr = __spm_output_wake_reason(wakesta, pcmdesc, false);
 
 			dpidle_log_print_prev_time = dpidle_log_print_curr_time;
 			dpidle_log_discard_cnt = 0;
+			timer_out_too_short = false;
 		} else {
 			dpidle_log_discard_cnt++;
 
