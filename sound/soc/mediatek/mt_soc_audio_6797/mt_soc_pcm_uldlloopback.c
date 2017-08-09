@@ -133,13 +133,14 @@ static int mtk_uldlloopback_open(struct snd_pcm_substream *substream)
 	int ret = 0;
 
 	pr_warn("%s\n", __func__);
-	AudDrv_Clk_On();
-	AudDrv_ADC_Clk_On();	/* TODO: sholud move to later sequence, where can have hires or not info */
 	if (substream->stream == SNDRV_PCM_STREAM_CAPTURE) {
 		pr_err("%s  with mtk_uldlloopback_open\n", __func__);
 		runtime->rate = 48000;
 		return 0;
 	}
+
+	AudDrv_Clk_On();
+	AudDrv_ADC_Clk_On();
 
 	runtime->hw = mtk_uldlloopback_hardware;
 	memcpy((void *)(&(runtime->hw)), (void *)&mtk_uldlloopback_hardware ,
@@ -147,6 +148,9 @@ static int mtk_uldlloopback_open(struct snd_pcm_substream *substream)
 
 	ret = snd_pcm_hw_constraint_list(runtime, 0, SNDRV_PCM_HW_PARAM_RATE,
 					 &constraints_sample_rates);
+	if (ret < 0)
+		pr_warn("snd_pcm_hw_constraint_list failed\n");
+
 	ret = snd_pcm_hw_constraint_integer(runtime, SNDRV_PCM_HW_PARAM_PERIODS);
 
 	if (ret < 0)
