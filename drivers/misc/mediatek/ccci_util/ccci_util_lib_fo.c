@@ -307,7 +307,11 @@ static void parse_option_setting_from_lk(void)
 	int i = 0;
 	int val;
 	char *name;
+	int using_default = 1;
 	int opt_list_size = ccci_get_opt_tbl_item_num();
+
+	CCCI_UTIL_INF_MSG("Dumy default setting(@P/K)\n");
+	ccci_dump_opt_tbl();
 
 	for (i = 0; i < opt_list_size; i++) {
 		name = ccci_get_opt_name_by_idx(i);
@@ -315,10 +319,18 @@ static void parse_option_setting_from_lk(void)
 			continue;
 		if (find_ccci_tag_inf(name, (char *)&val, sizeof(int)) != sizeof(int))
 			CCCI_UTIL_ERR_MSG("%s using default\n", name);
-		else
+		else {
+			using_default = 0;
 			ccci_update_opt_tbl(name, val);
+		}
 	}
-	ccci_dump_opt_tbl();
+
+	if (using_default)
+		CCCI_UTIL_INF_MSG("All option using default setting\n");
+	else {
+		CCCI_UTIL_INF_MSG("LK has new setting, Dumy final option setting\n");
+		ccci_dump_opt_tbl();
+	}
 
 	/* Enter here mean's kernel dt not reserve memory */
 	/* So, change to using kernel option to deside if modem is enabled */
@@ -428,15 +440,15 @@ static int parse_meta_boot_arguments(unsigned int *raw_ptr)
 }
 
 /*---- Memeory info parsing section --------------------- */
-static unsigned int md_resv_mem_size[MAX_MD_NUM];	/* MD ROM+RAM */
-static unsigned int md_resv_smem_size[MAX_MD_NUM];	/* share memory */
-static unsigned int md_resv_size_list[MAX_MD_NUM];
+static unsigned int md_resv_mem_size[MAX_MD_NUM_AT_LK];	/* MD ROM+RAM */
+static unsigned int md_resv_smem_size[MAX_MD_NUM_AT_LK];	/* share memory */
+static unsigned int md_resv_size_list[MAX_MD_NUM_AT_LK];
 static unsigned int resv_smem_size;
 static unsigned int md1md3_resv_smem_size;
 
-static phys_addr_t md_resv_mem_list[MAX_MD_NUM];
-static phys_addr_t md_resv_mem_addr[MAX_MD_NUM];
-static phys_addr_t md_resv_smem_addr[MAX_MD_NUM];
+static phys_addr_t md_resv_mem_list[MAX_MD_NUM_AT_LK];
+static phys_addr_t md_resv_mem_addr[MAX_MD_NUM_AT_LK];
+static phys_addr_t md_resv_smem_addr[MAX_MD_NUM_AT_LK];
 static phys_addr_t resv_smem_addr;
 static phys_addr_t md1md3_resv_smem_addr;
 
@@ -532,7 +544,7 @@ static void md_mem_info_parsing(void)
 				(unsigned long long)curr->size);
 		}
 
-		if ((md_id < MAX_MD_NUM) && (md_resv_mem_size[md_id] == 0)) {
+		if ((md_id < MAX_MD_NUM_AT_LK) && (md_resv_mem_size[md_id] == 0)) {
 			md_resv_mem_size[md_id] = curr->size;
 			md_resv_mem_addr[md_id] = (phys_addr_t)curr->base_addr;
 			if (curr->errno & 0x80)
@@ -877,7 +889,7 @@ int modem_run_env_ready(int md_id)
 int get_md_resv_mem_info(int md_id, phys_addr_t *r_rw_base, unsigned int *r_rw_size, phys_addr_t *srw_base,
 			 unsigned int *srw_size)
 {
-	if (md_id >= MAX_MD_NUM)
+	if (md_id >= MAX_MD_NUM_AT_LK)
 		return -1;
 
 	if (r_rw_base != NULL)
@@ -921,7 +933,7 @@ unsigned int get_modem_is_enabled(int md_id)
 
 int get_modem_support_cap(int md_id)
 {
-	if (md_id < MAX_MD_NUM) {
+	if (md_id < MAX_MD_NUM_AT_LK) {
 		if (((get_boot_mode() == META_BOOT) || (get_boot_mode() == ADVMETA_BOOT))
 		    && (meta_md_support[md_id] != 0))
 			return meta_md_support[md_id];
@@ -933,7 +945,7 @@ int get_modem_support_cap(int md_id)
 
 int set_modem_support_cap(int md_id, int new_val)
 {
-	if (md_id < MAX_MD_NUM) {
+	if (md_id < MAX_MD_NUM_AT_LK) {
 		if (((get_boot_mode() == META_BOOT) || (get_boot_mode() == ADVMETA_BOOT))
 			&& (meta_md_support[md_id] != 0)) {
 			if (s_g_curr_ccci_fo_version == CCCI_FO_VER_02) {
@@ -966,7 +978,7 @@ int set_modem_support_cap(int md_id, int new_val)
 
 int get_md_type_from_lk(int md_id)
 {
-	if (md_id < MAX_MD_NUM)
+	if (md_id < MAX_MD_NUM_AT_LK)
 		return md_type_at_lk[md_id];
 	return 0;
 }
@@ -1009,7 +1021,6 @@ int ccci_parse_meta_md_setting(unsigned char args[])
 	case MD_SYS1:
 	case MD_SYS2:
 	case MD_SYS3:
-	case MD_SYS5:
 		if (md_setting_flag == MD_2G_FLAG)
 			meta_md_support[active_id] = modem_2g;
 		else if (md_setting_flag == MD_WG_FLAG)
@@ -1024,6 +1035,9 @@ int ccci_parse_meta_md_setting(unsigned char args[])
 			meta_md_support[active_id] = modem_sglte;
 		CCCI_UTIL_INF_MSG("META MD%d to type:%d\n", active_id + 1, meta_md_support[active_id]);
 		break;
+	case MD_SYS5:
+	default:
+		return -1;
 	}
 	return 0;
 }
@@ -1107,7 +1121,7 @@ static void cal_md_settings_v2(struct device_node *node)
 	CCCI_UTIL_INF_MSG("using kernel dt mem setting for md\n");
 
 	/* MTK_MD*_SUPPORT */
-	for (i  = 0; i < MAX_MD_NUM; i++) {
+	for (i  = 0; i < MAX_MD_NUM_AT_LK; i++) {
 		snprintf(tmp_buf, sizeof(tmp_buf), "opt_md%d_support", (i + 1));
 		val = ccci_get_opt_val(tmp_buf);
 		if (val > 0)
@@ -1115,7 +1129,7 @@ static void cal_md_settings_v2(struct device_node *node)
 	}
 
 	/* MD*_SMEM_SIZE */
-	for (i = 0; i < MAX_MD_NUM; i++) {
+	for (i = 0; i < MAX_MD_NUM_AT_LK; i++) {
 		snprintf(tmp_buf, 30, "mediatek,md%d-smem-size", i+1);
 		if (0 == of_property_read_u32(node, tmp_buf, &tmp)) {
 			CCCI_UTIL_INF_MSG("DT[%s]:%08X\n", tmp_buf, tmp);
@@ -1143,7 +1157,7 @@ static void cal_md_settings_v2(struct device_node *node)
 	}
 
 	/* MD ROM and RW part */
-	for (i = 0; i < MAX_MD_NUM; i++) {
+	for (i = 0; i < MAX_MD_NUM_AT_LK; i++) {
 		if (s_g_md_usage_case & (1 << i)) {
 			md_resv_mem_size[i] = md_resv_size_list[i];
 			md_resv_mem_addr[i] = md_resv_mem_list[i];
@@ -1261,7 +1275,7 @@ int ccci_util_fo_init(void)
 		ccci_parse_meta_md_setting(md_info_tag_val);
 
 		/* Calculate memory layout */
-		for (idx = 0; idx < MAX_MD_NUM; idx++)
+		for (idx = 0; idx < MAX_MD_NUM_AT_LK; idx++)
 			cal_md_settings(idx);
 	} else {
 		CCCI_UTIL_INF_MSG("using v2.\n");
