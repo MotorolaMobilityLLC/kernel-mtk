@@ -54,7 +54,6 @@ static int mtk_governor_select(struct cpuidle_driver *drv, struct cpuidle_device
 	int state;
 
 	state = mt_idle_select(data->cpu);
-	state = (state >= drv->state_count) ? 0 : state;
 
 	return state;
 }
