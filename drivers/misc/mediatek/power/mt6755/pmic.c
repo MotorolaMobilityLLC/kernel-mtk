@@ -25,6 +25,7 @@
 #include <linux/sched.h>
 #include <linux/spinlock.h>
 #include <linux/interrupt.h>
+#include <linux/irqflags.h>
 #include <linux/list.h>
 #include <linux/mutex.h>
 #include <linux/kthread.h>
@@ -133,6 +134,8 @@ static int pmic_regulator_ldo_init(struct platform_device *pdev);
 #endif				/* End of #ifdef CONFIG_OF */
 
 static DEFINE_MUTEX(pmic_access_mutex);
+/*--- Global suspend state ---*/
+static bool pmic_suspend_state;
 
 
 unsigned int pmic_read_vbif28_volt(unsigned int *val)
@@ -156,6 +159,9 @@ unsigned int pmic_read_interface(unsigned int RegNum, unsigned int *val, unsigne
 #if defined(CONFIG_PMIC_HW_ACCESS_EN)
 	unsigned int pmic_reg = 0;
 	unsigned int rdata;
+
+	if ((pmic_suspend_state == true) && irqs_disabled())
+		return pmic_read_interface_nolock(RegNum, val, MASK, SHIFT);
 
 	mutex_lock(&pmic_access_mutex);
 
@@ -377,6 +383,9 @@ unsigned int pmic_config_interface(unsigned int RegNum, unsigned int val, unsign
 #if defined(CONFIG_PMIC_HW_ACCESS_EN)
 	unsigned int pmic_reg = 0;
 	unsigned int rdata;
+
+	if ((pmic_suspend_state == true) && irqs_disabled())
+		return pmic_config_interface_nolock(RegNum, val, MASK, SHIFT);
 
 	mutex_lock(&pmic_access_mutex);
 
@@ -4375,6 +4384,8 @@ static int pmic_mt_probe(struct platform_device *dev)
 		PMICLOG("Get car_tune_value from cust header\n");
 	}
 #endif
+	/*--- initailize pmic_suspend_state ---*/
+	pmic_suspend_state = false;
 #ifdef DLPT_FEATURE_SUPPORT
 	if (of_scan_flat_dt(fb_early_init_dt_get_chosen, NULL) > 0)
 		pimix = of_get_flat_dt_prop(pmic_node, "atag,imix_r", &len);
@@ -4550,6 +4561,7 @@ static void pmic_mt_shutdown(struct platform_device *dev)
 
 static int pmic_mt_suspend(struct platform_device *dev, pm_message_t state)
 {
+	pmic_suspend_state = true;
 
 	PMICLOG("******** MT pmic driver suspend!! ********\n");
 
@@ -4580,6 +4592,7 @@ static int pmic_mt_suspend(struct platform_device *dev, pm_message_t state)
 
 static int pmic_mt_resume(struct platform_device *dev)
 {
+	pmic_suspend_state = false;
 
 	PMICLOG("******** MT pmic driver resume!! ********\n");
 
