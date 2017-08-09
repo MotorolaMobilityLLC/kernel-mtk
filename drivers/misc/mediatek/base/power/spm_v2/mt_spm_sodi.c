@@ -198,6 +198,9 @@ struct spm_lp_scen __spm_sodi = {
 /* 0:power-down mode, 1:CG mode */
 static bool gSpm_SODI_mempll_pwr_mode;
 static bool gSpm_sodi_en;
+#if defined(CONFIG_ARCH_MT6797)
+static bool gSpm_lcm_vdo_mode;
+#endif
 
 static unsigned long int sodi_logout_prev_time;
 static int pre_emi_refresh_cnt;
@@ -597,6 +600,18 @@ UNLOCK_SPM:
 	vcorefs_go_to_vcore_dvfs();
 	return wr;
 }
+
+#if defined(CONFIG_ARCH_MT6797)
+void spm_sodi_set_vdo_mode(bool vdo_mode)
+{
+	gSpm_lcm_vdo_mode = vdo_mode;
+}
+bool spm_get_cmd_mode(void)
+{
+	return !gSpm_lcm_vdo_mode;
+}
+#endif
+
 
 void spm_sodi_mempll_pwr_mode(bool pwr_mode)
 {

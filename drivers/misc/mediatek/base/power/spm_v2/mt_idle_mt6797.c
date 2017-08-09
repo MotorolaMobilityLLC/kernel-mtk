@@ -3,6 +3,7 @@
 
 #include <mach/mt_spm_mtcmos_internal.h>
 
+#include <mt_spm_idle.h>
 #include "mt_idle_internal.h"
 
 #define IDLE_TAG     "Power/swap "
@@ -289,8 +290,9 @@ bool cg_check_idle_can_enter(
 						ISP_PWR_STA_MASK |
 						VDE_PWR_STA_MASK |
 						VEN_PWR_STA_MASK |
-						MJC_PWR_STA_MASK |
-						DIS_PWR_STA_MASK))
+						MJC_PWR_STA_MASK))
+				return false;
+			if (spm_get_cmd_mode() && (sta & DIS_PWR_STA_MASK))
 				return false;
 		}
 	}
