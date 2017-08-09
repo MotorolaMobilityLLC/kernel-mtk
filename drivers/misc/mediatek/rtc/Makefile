@@ -33,10 +33,6 @@ endif
 
 MDP_COMMON_FOLDER:= ./
 
-ifneq (,$(filter $(strip $(MTK_PLATFORM)), mt8163))
-MDI_IP_FOLDER:=mt8163
-endif
-
 #Top level common code
 obj-$(CONFIG_MTK_RTC) += mtk_rtc_common.o mtk_rtc_hal_common.o
 
