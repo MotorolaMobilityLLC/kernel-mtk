@@ -1,3 +1,23 @@
+/* drivers/input/touchscreen/gt9xx_driver.c
+ *
+ * 2010 - 2012 Goodix Technology.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be a reference
+ * to you, when you are integrating the GOODiX's CTP IC into your system,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * General Public License for more details.
+ *
+ * Version:1.2
+ *      V1.0:2012/08/31,first release.
+ *      V1.2:2012/10/15,add force update,GT9110P pid map
+ */
+
 #include "tpd.h"
 
 #include "gt9xx_config.h"

@@ -1,3 +1,33 @@
+/* drivers/input/touchscreen/gt9xx_driver.c
+ *
+ * 2010 - 2012 Goodix Technology.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be a reference
+ * to you, when you are integrating the GOODiX's CTP IC into your system,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * General Public License for more details.
+ *
+ * Version:1.6
+ * Revision Record:
+ *      V1.0:  first release. by Andrew, 2012/08/27.
+ *      V1.2:  modify gt9110p pid map, by Andrew, 2012/10/15
+ *      V1.4:
+ *          1. modify gup_enter_update_mode,
+ *          2. rewrite i2c read/write func
+ *          3. check update file checksum
+ *                  by Andrew, 2012/12/12
+ *      v1.6:
+ *          1. delete GTP_FW_DOWNLOAD related things.
+ *          2. add GTP_DEF_FW_UPDATE switch to update fw by gtp_default_fw in *.h directly
+ *                  by Meta, 2013/04/18
+ */
+
 #include "tpd.h"
 #define GUP_FW_INFO
 #include "tpd_custom_gt9xx.h"
