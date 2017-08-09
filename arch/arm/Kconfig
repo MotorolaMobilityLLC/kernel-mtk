@@ -976,6 +976,7 @@ config ARCH_MT6755
 	select PINCTRL_MT6755
 	select MTK_POWER_GS
 	select MTK_LM_MODE
+	select POWER_SUPPLY
 	help
 	  This enable support for MediaTek MT6755
 
