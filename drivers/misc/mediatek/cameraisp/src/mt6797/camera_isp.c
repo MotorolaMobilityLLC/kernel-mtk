@@ -591,10 +591,11 @@ typedef struct
 ********************************************************************************/
 
 static volatile MINT32 FirstUnusedIrqUserKey=1;
-typedef struct
-{
-    char* userName; //name for the user that register a userKey
-    int userKey;    //the user key for that user
+#define USERKEY_STR_LEN 128
+
+typedef struct {
+	char userName[USERKEY_STR_LEN];	/* name for the user that register a userKey */
+	int userKey; /* the user key for that user */
 }UserKeyInfo;
 static volatile UserKeyInfo IrqUserKey_UserInfo[IRQ_USER_NUM_MAX];        /* array for recording the user name for a specific user key */
 
@@ -5008,23 +5009,20 @@ static MINT32 ISP_REGISTER_IRQ_USERKEY(char* userName)
        //2. check the user had registered or not
        for(i=1;i<FirstUnusedIrqUserKey;i++) //index 0 is for all the users that do not register irq first
        {
-           if(strcmp(IrqUserKey_UserInfo[i].userName,userName)==0)
-           {
-               key=IrqUserKey_UserInfo[i].userKey;
-               break;
-           }
+			if (strcmp((void *)IrqUserKey_UserInfo[i].userName, userName) == 0) {
+				key = IrqUserKey_UserInfo[i].userKey;
+				break;
+			}
        }
 
-       //3.return new userkey for user if the user had not registered before
-       if(key>0)
-       {
-       }
-       else
-       {
-           IrqUserKey_UserInfo[i].userName=userName;
-           IrqUserKey_UserInfo[i].userKey=FirstUnusedIrqUserKey;
-           key=FirstUnusedIrqUserKey;
-           FirstUnusedIrqUserKey++;
+		/* 3.return new userkey for user if the user had not registered before */
+		if (key <= 0) {
+			/* IrqUserKey_UserInfo[i].userName=userName; */
+			memset((void *)IrqUserKey_UserInfo[i].userName, 0, sizeof(IrqUserKey_UserInfo[i].userName));
+			strcpy((void *)IrqUserKey_UserInfo[i].userName, userName);
+			IrqUserKey_UserInfo[i].userKey = FirstUnusedIrqUserKey;
+			key = FirstUnusedIrqUserKey;
+			FirstUnusedIrqUserKey++;
        }
     }
 
@@ -5467,8 +5465,8 @@ static MINT32 ISP_WaitIrq(ISP_WAIT_IRQ_STRUCT * WaitIrq)
 #endif
 
 EXIT:
-    /* 4. clear mark flag / reset marked time / reset time related infor and passedby signal count */
-    spin_lock_irqsave(&(IspInfo.SpinLockIrq[WaitIrq->Type]), flags);
+	/* 4. clear mark flag / reset marked time / reset time related infor and passedby signal count */
+	spin_lock_irqsave(&(IspInfo.SpinLockIrq[WaitIrq->Type]), flags);
     if (WaitIrq->EventInfo.Status & IspInfo.IrqInfo.MarkedFlag[WaitIrq->Type][WaitIrq->EventInfo.St_type][WaitIrq->EventInfo.UserKey])
     {
         IspInfo.IrqInfo.MarkedFlag[WaitIrq->Type][WaitIrq->EventInfo.St_type][WaitIrq->EventInfo.UserKey] &= (~WaitIrq->EventInfo.Status);
@@ -6728,7 +6726,7 @@ static MINT32 ISP_open(
     for (i = 0; i < IRQ_USER_NUM_MAX; i++)
     {
     FirstUnusedIrqUserKey=1;
-    IrqUserKey_UserInfo[i].userName="DefaultUserNametoAllocMem";
+	strcpy((void *)IrqUserKey_UserInfo[i].userName, "DefaultUserNametoAllocMem");
     IrqUserKey_UserInfo[i].userKey=-1;
     }
     /*  */
@@ -6818,7 +6816,7 @@ EXIT:
     }
 
 
-    LOG_DBG("- X. Ret: %d. UserCount: %d.\n", Ret, IspInfo.UserCount);
+	LOG_INF("- X. Ret: %d. UserCount: %d.\n", Ret, IspInfo.UserCount);
     return Ret;
 
 }
@@ -6902,7 +6900,7 @@ static MINT32 ISP_release(
 	/*      */
     for(i=0;i<IRQ_USER_NUM_MAX;i++){
         FirstUnusedIrqUserKey=1;
-        IrqUserKey_UserInfo[i].userName="DefaultUserNametoAllocMem";
+		strcpy((void *)IrqUserKey_UserInfo[i].userName, "DefaultUserNametoAllocMem");
         IrqUserKey_UserInfo[i].userKey=-1;
     }
     if (IspInfo.BufInfo.Read.pData != NULL){
@@ -6939,7 +6937,7 @@ EXIT:
 	ISP_EnableClock(MFALSE);
 	LOG_DBG("isp release G_u4EnableClockCount: %d", G_u4EnableClockCount);
 
-	LOG_DBG("- X. UserCount: %d.", IspInfo.UserCount);
+	LOG_INF("- X. UserCount: %d.", IspInfo.UserCount);
     return 0;
 }
 
