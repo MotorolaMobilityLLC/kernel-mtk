@@ -1492,11 +1492,11 @@ static long mpu6050_compat_ioctl(struct file *file, unsigned int cmd, unsigned l
 	if (!file->f_op || !file->f_op->unlocked_ioctl)
 		return -ENOTTY;
 
-    /* printk("akm8963_compat_ioctl arg: 0x%lx, arg32: 0x%p\n",arg, arg32); */
+    /* pr_debug("akm8963_compat_ioctl arg: 0x%lx, arg32: 0x%p\n",arg, arg32); */
 
 	switch (cmd) {
 	case COMPAT_GYROSCOPE_IOCTL_INIT:
-		/* printk("akm8963_compat_ioctl COMPAT_ECS_IOCTL_WRITE\n"); */
+		/* pr_debug("akm8963_compat_ioctl COMPAT_ECS_IOCTL_WRITE\n"); */
 		if (arg32 == NULL) {
 			GYRO_ERR("invalid argument.");
 			return -EINVAL;

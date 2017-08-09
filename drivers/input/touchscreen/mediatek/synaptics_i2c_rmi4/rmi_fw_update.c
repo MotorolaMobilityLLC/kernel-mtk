@@ -2241,7 +2241,7 @@ static int synaptics_rmi4_reset_device(struct synaptics_rmi4_data *rmi4_data)
 	msleep(100);
 
 /*	list_for_each_entry(fhandler, &rmi->support_fn_list, link) {
-		printk("kfree handler = 0x%x\n", fhandler);
+		pr_debug("kfree handler = 0x%x\n", fhandler);
 		if (fhandler) {
 			if (fhandler->fn_number == SYNAPTICS_RMI4_F1A)
 				synaptics_rmi4_f1a_kfree(fhandler);
@@ -2366,7 +2366,7 @@ static int synaptics_rmi4_fwu_init(struct i2c_client *client)
 	attr_kobj = kobject_create_and_add("syna_reflash", NULL);
 		retval = sysfs_create_group(attr_kobj,&syna_attr_group);
 		   if(!attr_kobj|| retval){
-				printk("failed to create board_properties\n");
+				pr_err("failed to create board_properties\n");
 				goto err_sysfs;
 */
 /* fwu_start_reflash(); */
