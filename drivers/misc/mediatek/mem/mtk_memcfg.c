@@ -204,6 +204,41 @@ mtk_memcfg_frag_write(struct file *file, const char __user *buffer,
 
 /* end of kenerl memory fragmentation trigger */
 
+static int mtk_memcfg_oom_show(struct seq_file *m, void *v)
+{
+	seq_puts(m, "oom-trigger\n");
+
+	return 0;
+}
+
+static int mtk_memcfg_oom_open(struct inode *inode, struct file *file)
+{
+	return single_open(file, mtk_memcfg_oom_show, NULL);
+}
+
+static ssize_t
+mtk_memcfg_oom_write(struct file *file, const char __user *buffer,
+		      size_t count, loff_t *pos)
+{
+	static char state;
+
+	if (count > 0) {
+		if (get_user(state, buffer))
+			return -EFAULT;
+		state -= '0';
+		pr_alert("%s state = %d\n", __func__, state);
+		if (state) {
+			pr_alert("oom test, trying to kill system under oom scenario\n");
+			/* exhaust all memory */
+			for (;;)
+				alloc_pages(GFP_KERNEL, 0);
+		}
+	}
+	return count;
+}
+
+/* end of kenerl out-of-memory(oom) trigger */
+
 static int __init mtk_memcfg_init(void)
 {
 	return 0;
@@ -228,6 +263,14 @@ static const struct file_operations mtk_memcfg_frag_operations = {
 	.release = single_release,
 };
 
+static const struct file_operations mtk_memcfg_oom_operations = {
+	.open = mtk_memcfg_oom_open,
+	.write = mtk_memcfg_oom_write,
+	.read = seq_read,
+	.llseek = seq_lseek,
+	.release = single_release,
+};
+
 #ifdef CONFIG_SLUB_DEBUG
 static const struct file_operations proc_slabtrace_operations = {
 	.open = slabtrace_open,
@@ -236,6 +279,7 @@ static const struct file_operations proc_slabtrace_operations = {
 	.release = single_release,
 };
 #endif
+
 static int __init mtk_memcfg_late_init(void)
 {
 	struct proc_dir_entry *entry = NULL;
@@ -254,13 +298,13 @@ static int __init mtk_memcfg_late_init(void)
 		if (!entry)
 			pr_err("create memory_layout proc entry failed\n");
 
-		/* display kernel memory layout */
+		/* fragmentation test */
 		entry = proc_create("frag-trigger",
 				    S_IRUGO | S_IWUSR, mtk_memcfg_dir,
 				    &mtk_memcfg_frag_operations);
 
 		if (!entry)
-			pr_err("create memory_layout proc entry failed\n");
+			pr_err("create frag-trigger proc entry failed\n");
 
 		frag_page_cache = kmem_cache_create("frag_page_cache",
 						    sizeof(struct frag_page),
@@ -268,6 +312,14 @@ static int __init mtk_memcfg_late_init(void)
 
 		if (!frag_page_cache)
 			pr_err("create frag_page_cache failed\n");
+
+		/* oom test */
+		entry = proc_create("oom-trigger",
+				    S_IRUGO | S_IWUSR, mtk_memcfg_dir,
+				    &mtk_memcfg_oom_operations);
+
+		if (!entry)
+			pr_err("create oom entry failed\n");
 
 #ifdef CONFIG_SLUB_DEBUG
 		/* slabtrace - full slub object backtrace */
