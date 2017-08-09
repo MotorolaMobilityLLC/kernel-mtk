@@ -58,6 +58,11 @@
 #include "console_cmdline.h"
 #include "braille.h"
 
+/* if log overrided */
+#define KERNEL_LOG_OVERFLOW "kernel log overflow"
+bool overflow_info_flag = false;
+u64 overflow_gap = 0;
+
 int printk_too_much_enable = 0;
 #define DETECT_COUNT_MIN 100
 /* Some options {*/
@@ -1126,16 +1131,13 @@ static size_t print_prefix(const struct printk_log *msg, bool syslog, char *buf)
 	}
 
 	len += print_time(msg->ts_nsec, buf ? buf + len : NULL);
-#if defined(CONFIG_MT_ENG_BUILD) && defined(CONFIG_LOG_TOO_MUCH_WARNING)
 
-	if (syslog == false && printk_too_much_enable == 1) {
+	if (syslog == false && printk_disable_uart == false) {
 		if (buf)
 			len += sprintf(buf+len, "<%d>", smp_processor_id());
 		else
 			len += snprintf(NULL, 0, "<%d>", smp_processor_id());
 	}
-
-#endif
 
 	return len;
 }
@@ -1198,12 +1200,17 @@ static size_t msg_print_text(const struct printk_log *msg, enum log_flags prev,
 
 	return len;
 }
-
 static int syslog_print(char __user *buf, int size)
 {
 	char *text;
 	struct printk_log *msg;
 	int len = 0;
+	char addinfo_buf[150];
+	char *addinfo = addinfo_buf;
+	int add_len = 0;
+	static int pre_pid = -1;
+	int current_pid = current->pid;
+	unsigned long long over_gap = 0;
 
 	text = kmalloc(LOG_LINE_MAX + PREFIX_MAX, GFP_KERNEL);
 	if (!text)
@@ -1212,14 +1219,24 @@ static int syslog_print(char __user *buf, int size)
 	while (size > 0) {
 		size_t n;
 		size_t skip;
+		add_len = 0;
 
 		raw_spin_lock_irq(&logbuf_lock);
+		/* exist uread log overflow  */
+		if (overflow_info_flag == true) {
+			add_len += scnprintf(addinfo, 150, "<%s gap: %llu>\n", KERNEL_LOG_OVERFLOW, overflow_gap);
+			overflow_info_flag = false;
+		}
 		if (syslog_seq < log_first_seq) {
 			/* messages are gone, move to first one */
+			over_gap = log_first_seq - syslog_seq;
 			syslog_seq = log_first_seq;
 			syslog_idx = log_first_idx;
 			syslog_prev = 0;
 			syslog_partial = 0;
+			if (add_len >= 0 && add_len < 150)
+				add_len += scnprintf(addinfo + add_len, 150 - add_len, "< %s gap: %llu >\n", KERNEL_LOG_OVERFLOW, over_gap);
+
 		}
 		if (syslog_seq == log_next_seq) {
 			raw_spin_unlock_irq(&logbuf_lock);
@@ -1257,6 +1274,27 @@ static int syslog_print(char __user *buf, int size)
 		len += n;
 		size -= n;
 		buf += n;
+
+		if (syslog_partial == 0) {
+			if (-1 == pre_pid) {
+				pre_pid = current_pid;
+			} else if (current_pid != pre_pid) {
+				if (add_len >= 0 && add_len < 150)
+					add_len += scnprintf(addinfo + add_len, 150 - add_len, "<%d -> %d>\n", pre_pid, current_pid);
+				pre_pid = current_pid;
+			}
+
+			if (add_len > 0 && (size + 1 - add_len) >= 0) {
+				if (copy_to_user(buf - 1, addinfo_buf, add_len)) {
+					if (!len)
+						len = -EFAULT;
+					break;
+				}
+				len += add_len - 1;
+				size -= add_len - 1;
+				buf += add_len - 1;
+			}
+		}
 	}
 
 	kfree(text);
@@ -1442,10 +1480,13 @@ int do_syslog(int type, char __user *buf, int len, bool from_file)
 		raw_spin_lock_irq(&logbuf_lock);
 		if (syslog_seq < log_first_seq) {
 			/* messages are gone, move to first one */
+			/* calculate the gap */
+			overflow_gap = log_first_seq - syslog_seq;
 			syslog_seq = log_first_seq;
 			syslog_idx = log_first_idx;
 			syslog_prev = 0;
 			syslog_partial = 0;
+			overflow_info_flag = true;
 		}
 		if (from_file) {
 			/*
