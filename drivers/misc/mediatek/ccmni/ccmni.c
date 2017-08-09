@@ -520,12 +520,12 @@ static int ccmni_ioctl(struct net_device *dev, struct ifreq *ifr, int cmd)
 		}
 
 		if (dev != ccmni->dev) {
+			CCMNI_INF_MSG(md_id, "SIOCCCMNICFG: %s iRAT on MD%d, diff dev(%s->%s)\n",
+				dev->name, (ifr->ifr_ifru.ifru_ivalue+1), ccmni->dev->name, dev->name);
 			ccmni->dev = dev;
 			atomic_set(&ccmni->usage, 0);
 			ccmni->tx_busy_cnt[0] = 0;
 			ccmni->tx_busy_cnt[1] = 0;
-			CCMNI_INF_MSG(md_id, "SIOCCCMNICFG: %s iRAT on MD%d, diff dev(%s->%s)\n",
-				dev->name, (ifr->ifr_ifru.ifru_ivalue+1), ccmni->dev->name, dev->name);
 			break;
 		}
 
@@ -537,13 +537,15 @@ static int ccmni_ioctl(struct net_device *dev, struct ifreq *ifr, int cmd)
 
 		ctlb_irat = ccmni_ctl_blk[md_id_irat];
 		if (ccmni->index >= ctlb_irat->ccci_ops->ccmni_num) {
-			CCMNI_ERR_MSG(md_id, "SIOCSCCMNICFG: %s iRAT fail, ccmni_idx(%d) > md%d_ccmni_num(%d)\n",
-				dev->name, ccmni->index, md_id, ctlb_irat->ccci_ops->ccmni_num);
+			CCMNI_ERR_MSG(md_id, "SIOCSCCMNICFG: %s iRAT(MD%d->MD%d) fail,index(%d)>max_num(%d)\n",
+				dev->name, md_id, md_id_irat, ccmni->index, ctlb_irat->ccci_ops->ccmni_num);
 			break;
 		}
 		ccmni_irat = ctlb_irat->ccmni_inst[ccmni->index];
 		usage_cnt = atomic_read(&ccmni->usage);
 		atomic_set(&ccmni_irat->usage, usage_cnt);
+		/* fix dev!=ccmni_irat->dev issue when MD3-CC3MNI -> MD3-CCMNI */
+		ccmni_irat->dev = dev;
 		memcpy(netdev_priv(dev), ccmni_irat, sizeof(ccmni_instance_t));
 
 		ctlb = ccmni_ctl_blk[md_id];
@@ -553,9 +555,9 @@ static int ccmni_ioctl(struct net_device *dev, struct ifreq *ifr, int cmd)
 		ccmni_tmp->tx_busy_cnt[1] = ccmni->tx_busy_cnt[1];
 
 		CCMNI_INF_MSG(md_id,
-			"SIOCCCMNICFG: %s iRAT MD%d->MD%d, dev_cnt=%d, md_cnt=%d, md_irat_cnt=%d\n",
+			"SIOCCCMNICFG: %s iRAT MD%d->MD%d, dev_cnt=%d, md_cnt=%d, md_irat_cnt=%d, irat_dev=%s\n",
 			dev->name, (md_id+1), (ifr->ifr_ifru.ifru_ivalue+1), atomic_read(&ccmni->usage),
-			atomic_read(&ccmni_tmp->usage), atomic_read(&ccmni_irat->usage));
+			atomic_read(&ccmni_tmp->usage), atomic_read(&ccmni_irat->usage), ccmni_irat->dev->name);
 		break;
 
 	default:
@@ -866,7 +868,6 @@ static int ccmni_rx_callback(int md_id, int rx_ch, struct sk_buff *skb, void *pr
 	if (unlikely(ctlb == NULL || ctlb->ccci_ops == NULL)) {
 		CCMNI_ERR_MSG(md_id, "invalid CCMNI ctrl/ops struct for RX_CH(%d)\n", rx_ch);
 		dev_kfree_skb(skb);
-		dev->stats.rx_dropped++;
 		return -1;
 	}
 
@@ -874,7 +875,6 @@ static int ccmni_rx_callback(int md_id, int rx_ch, struct sk_buff *skb, void *pr
 	if (unlikely(ccmni_idx < 0)) {
 		CCMNI_ERR_MSG(md_id, "CCMNI rx(%d) skb ch error\n", rx_ch);
 		dev_kfree_skb(skb);
-		dev->stats.rx_dropped++;
 		return -1;
 	}
 	ccmni = ctlb->ccmni_inst[ccmni_idx];
