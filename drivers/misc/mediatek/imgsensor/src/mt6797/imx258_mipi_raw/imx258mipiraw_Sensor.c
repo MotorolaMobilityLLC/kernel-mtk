@@ -173,7 +173,7 @@ static imgsensor_struct imgsensor = {
 	.autoflicker_en = KAL_FALSE,  //auto flicker enable: KAL_FALSE for disable auto flicker, KAL_TRUE for enable auto flicker
 	.test_pattern = KAL_FALSE,		//test pattern mode or not. KAL_FALSE for in test pattern mode, KAL_TRUE for normal output
 	.current_scenario_id = MSDK_SCENARIO_ID_CAMERA_PREVIEW,//current scenario id
-	.ihdr_en = 0, //sensor need support LE, SE with HDR feature
+	.hdr_mode = 0, //sensor need support LE, SE with HDR feature
 	.i2c_write_id = 0x34,//record current sensor's i2c write id
 };
 
@@ -1852,7 +1852,7 @@ static void normal_video_setting(kal_uint16 currefps, kal_uint8  pdaf_mode)
 	write_cmos_sensor(0x020E,0x01);
 	write_cmos_sensor(0x020F,0x00);
 
-	if(imgsensor.ihdr_en == 1)
+	if(imgsensor.hdr_mode == 1)
 	{
 		if(imx258_type == IMX258_HDR_TYPE)
 		{
@@ -1912,7 +1912,7 @@ static void normal_video_setting(kal_uint16 currefps, kal_uint8  pdaf_mode)
 			write_cmos_sensor(0x0220,0x00);
 		}
 	}
-	LOG_INF("imgsensor.ihdr_en in video mode:%d\n",imgsensor.ihdr_en);
+	LOG_INF("imgsensor.hdr_mode in video mode:%d\n",imgsensor.hdr_mode);
 
 
 	write_cmos_sensor(0x0100,0x01);
@@ -2262,7 +2262,7 @@ static kal_uint32 open(void)
 	imgsensor.min_frame_length = imgsensor_info.pre.framelength;
 	imgsensor.dummy_pixel = 0;
 	imgsensor.dummy_line = 0;
-	imgsensor.ihdr_en = 0;
+	imgsensor.hdr_mode = 0;
 	imgsensor.test_pattern = KAL_FALSE;
 	imgsensor.current_fps = imgsensor_info.pre.max_framerate;
 	spin_unlock(&imgsensor_drv_lock);
@@ -2398,7 +2398,7 @@ static kal_uint32 normal_video(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 	//imgsensor.current_fps = 300;
 	imgsensor.autoflicker_en = KAL_FALSE;
 	spin_unlock(&imgsensor_drv_lock);
-	LOG_INF("ihdr enable :%d\n", imgsensor.ihdr_en);
+	LOG_INF("ihdr enable :%d\n", imgsensor.hdr_mode);
 	normal_video_setting(imgsensor.current_fps,imgsensor.pdaf_mode);
 	return ERROR_NONE;
 }	/*	normal_video   */
@@ -2852,10 +2852,11 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 			spin_unlock(&imgsensor_drv_lock);
 			break;
 		case SENSOR_FEATURE_SET_HDR:
+			/* HDR mODE : 0: disable HDR, 1:IHDR, 2:HDR, 9:ZHDR */
 			LOG_INF("ihdr enable :%d\n", (BOOL)*feature_data);
 			spin_lock(&imgsensor_drv_lock);
-			imgsensor.ihdr_en = (BOOL)*feature_data;
-			LOG_INF("ihdr enable :%d\n", imgsensor.ihdr_en);
+			imgsensor.hdr_mode = (BOOL)*feature_data;
+			LOG_INF("ihdr enable :%d\n", imgsensor.hdr_mode);
 			spin_unlock(&imgsensor_drv_lock);
 			break;
 		case SENSOR_FEATURE_GET_CROP_INFO:

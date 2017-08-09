@@ -67,8 +67,8 @@ typedef struct imgsensor_struct {
 	kal_bool   autoflicker_en;		//record autoflicker enable or disable
 	kal_bool test_pattern;			//record test pattern mode or not
 	MSDK_SCENARIO_ID_ENUM current_scenario_id;//current scenario id
-	kal_uint8  ihdr_en;				//ihdr enable or disable
-    kal_uint8  pdaf_mode;				//ihdr enable or disable
+	kal_uint8  hdr_mode;				//HDR mODE : 0: disable HDR, 1:IHDR, 2:HDR, 9:ZHDR
+    kal_uint8  pdaf_mode;				//PDAF enable or disable
 	kal_uint8 i2c_write_id;			//record current sensor's i2c write id
 } imgsensor_struct;
 

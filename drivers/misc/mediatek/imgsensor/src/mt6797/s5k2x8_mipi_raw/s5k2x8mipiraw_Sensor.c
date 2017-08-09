@@ -26,10 +26,7 @@
 #include <linux/uaccess.h>
 #include <linux/fs.h>
 #include <asm/atomic.h>
-//#include <asm/system.h>
-//#include <linux/xlog.h>
 
-//FW
 #include <linux/kernel.h>
 #include <linux/slab.h>
 #include <linux/err.h>
@@ -40,12 +37,6 @@
 
 #include "s5k2x8mipiraw_Sensor.h"
 
-// Gionee pangfei 20150402 add for CR01460764 begin
-#ifdef CONFIG_GN_BSP_MTK_DEVICE_CHECK
-#include <linux/gn_device_check.h>
-extern int gn_set_device_info(struct gn_device_info gn_dev_info);
-#endif
-// Gionee pangfei 20150402 add for CR01460764 end
 
 //#include "s5k2x8_otp.h"
 /****************************Modify Following Strings for Debug****************************/
@@ -58,8 +49,6 @@ kal_uint32 chip_id = 0;
 static DEFINE_SPINLOCK(imgsensor_drv_lock);
 #define ORIGINAL_VERSION 1
 //#define SLOW_MOTION_120FPS
-
-#if 1
 static imgsensor_info_struct imgsensor_info = {
     .sensor_id = S5K2X8_SENSOR_ID,        //record sensor id defined in Kd_imgsensor.h
 
@@ -68,7 +57,6 @@ static imgsensor_info_struct imgsensor_info = {
 	.pre = {
 		.pclk = 720000000,				//record different mode's pclk
 		.linelength = 6864,				//record different mode's linelength
-		//.framelength =2330, //			//record different mode's framelength
 		.framelength =2300, //			//record different mode's framelength
 		.startx = 0,					//record different mode's startx of grabwindow
 		.starty = 0,					//record different mode's starty of grabwindow
@@ -134,61 +122,6 @@ static imgsensor_info_struct imgsensor_info = {
 		.mipi_data_lp2hs_settle_dc = 85,//unit , ns
 		.max_framerate = 890,
 	},
-// Gionee <zhangpj> <2014-11-11> modify for CR01402897 <custom1_zsd> begin
-#if ORIGINAL_VERSION
-#else
-	.custom1 = {  //custom1_zsd
-	#if 1
-		.pclk = 720000000,				//record different mode's pclk
-		.linelength = 7640, 			//record different mode's linelength
-		.framelength =3292, //			//record different mode's framelength
-		.startx = 0,					//record different mode's startx of grabwindow
-		.starty = 0,					//record different mode's starty of grabwindow
-		.grabwindow_width = 5632,		//record different mode's width of grabwindow
-		.grabwindow_height = 3168,		//record different mode's height of grabwindow
-
-		/*	 following for MIPIDataLowPwr2HighSpeedSettleDelayCount by different scenario	*/
-		.mipi_data_lp2hs_settle_dc = 85,  //unit , ns
-		/*	 following for GetDefaultFramerateByScenario()	*/
-		.max_framerate = 283,
-		#else
-		.pclk = 720000000,				//record different mode's pclk
-		.linelength = 6864,				//record different mode's linelength
-		.framelength =2300, //			//record different mode's framelength
-		.startx = 0,					//record different mode's startx of grabwindow
-		.starty = 0,					//record different mode's starty of grabwindow
-		.grabwindow_width = 2816,		//record different mode's width of grabwindow
-		.grabwindow_height = 2112,		//record different mode's height of grabwindow
-
-		/*	 following for MIPIDataLowPwr2HighSpeedSettleDelayCount by different scenario	*/
-		.mipi_data_lp2hs_settle_dc = 85,  //unit , ns
-		/*	 following for GetDefaultFramerateByScenario()	*/
-		.max_framerate = 450,
-
-		#endif
-	},
-#endif
-// Gionee <zhangpj> <2014-11-11> modify for CR01402897 <custom1_zsd> end
-
-// Gionee <pangfei>  modify for CR01402897 <custom2_video> begin
-#if ORIGINAL_VERSION
-#else
-	.custom2 = {  //custom1_zsd
-		.pclk = 720000000,				//record different mode's pclk
-		.linelength = 6864, 			//record different mode's linelength
-		.framelength =2300, //			//record different mode's framelength
-		.startx = 0,					//record different mode's startx of grabwindow
-		.starty = 0,					//record different mode's starty of grabwindow
-		.grabwindow_width = 2816,		//record different mode's width of grabwindow
-		.grabwindow_height = 2112,		//record different mode's height of grabwindow
-
-		/*	 following for MIPIDataLowPwr2HighSpeedSettleDelayCount by different scenario	*/
-		.mipi_data_lp2hs_settle_dc = 85,  //unit , ns
-		/*	 following for GetDefaultFramerateByScenario()	*/
-		.max_framerate = 450,
-	},
-#endif
-// Gionee <pangfei>  modify for CR01402897 <custom2_video> end
 	.margin = 16,
 	.min_shutter = 1,
 	.max_frame_length = 0xffff,
@@ -197,33 +130,12 @@ static imgsensor_info_struct imgsensor_info = {
 	.ae_ispGain_delay_frame = 2,
 	.ihdr_support = 0,	  //1, support; 0,not support
 	.ihdr_le_firstline = 0,  //1,le first ; 0, se first
-	// Gionee <zhangpj> <2014-11-11> modify for CR01402897 <custom1_zsd> begin
-#if ORIGINAL_VERSION
 	.sensor_mode_num = 5,	  //support sensor mode num
-#else
-	.sensor_mode_num = 7,//custom2_video add 1 pangfei
-#endif
-	// Gionee <zhangpj> <2014-11-11> modify for CR01402897 <custom1_zsd> end
-
 	.cap_delay_frame = 3,
 	.pre_delay_frame = 3,
 	.video_delay_frame = 3,
 	.hs_video_delay_frame = 3,
 	.slim_video_delay_frame = 3,
-	// Gionee <zhangpj> <2014-11-11> modify for CR01402897 <custom1_zsd> begin
-#if ORIGINAL_VERSION
-#else
-	.custom1_delay_frame = 3,
-#endif
-	// Gionee <zhangpj> <2014-11-11> modify for CR01402897 <custom1_zsd> end
-
-	// Gionee <pangfei>  modify for CR01402897 <custom2_video> begin
-#if ORIGINAL_VERSION
-#else
-	.custom2_delay_frame = 3,
-#endif
-	// Gionee <pangfei>  modify for CR01402897 <custom2_video> end
-
 	.isp_driving_current = ISP_DRIVING_6MA,
 	.sensor_interface_type = SENSOR_INTERFACE_TYPE_MIPI,
 	.mipi_sensor_type = MIPI_OPHY_NCSI2, //0,MIPI_OPHY_NCSI2;  1,MIPI_OPHY_CSI2
@@ -232,7 +144,6 @@ static imgsensor_info_struct imgsensor_info = {
 	.mclk = 24,
 	.mipi_lane_num = SENSOR_MIPI_4_LANE,
 	.i2c_addr_table = { 0x5A, 0xff},
-
 };
 
 
@@ -247,27 +158,23 @@ static imgsensor_struct imgsensor = {
 	.autoflicker_en = KAL_FALSE,  //auto flicker enable: KAL_FALSE for disable auto flicker, KAL_TRUE for enable auto flicker
 	.test_pattern = KAL_FALSE,		//test pattern mode or not. KAL_FALSE for in test pattern mode, KAL_TRUE for normal output
 	.current_scenario_id = MSDK_SCENARIO_ID_CAMERA_PREVIEW,//current scenario id
-	.ihdr_en = KAL_FALSE, //sensor need support LE, SE with HDR feature
+	.hdr_mode = KAL_FALSE, //sensor need support LE, SE with HDR feature
 	.i2c_write_id = 0x5A,
 };
 
 
 /* Sensor output window information */
-static SENSOR_WINSIZE_INFO_STRUCT imgsensor_winsize_info[7] =
+static SENSOR_WINSIZE_INFO_STRUCT imgsensor_winsize_info[5] =
 /* full_w; full_h; x0_offset; y0_offset; w0_size; h0_size; scale_w; scale_h; x1_offset;  y1_offset;  w1_size;  h1_size;
      x2_tg_offset;   y2_tg_offset;  w2_tg_size;  h2_tg_size;*/
 {
- //{ 7356, 4542,     862,   159, 5632, 4224, 5632, 4224,         0,        0, 5632, 4224,	  0,	0, 5632, 4224}, // Preview
  { 5664, 4256, 16, 16,  5632, 4224, 2816, 2112, 0, 0, 2816, 2112, 0, 0, 2816, 2112}, // Preview
  { 5664, 4256, 16, 16,  5632, 4224, 5632, 4224, 0, 0, 5632, 4224, 0, 0, 5632, 4224}, // capture
  { 5664, 4256, 16, 544, 5632, 3168, 5632, 3168, 0, 0, 5632, 3168, 0, 0, 5632, 3168}, // normal_video
-
  { 5664, 4256, 16, 544, 5632, 3168, 2816, 1584, 0, 0, 2816, 1584, 0, 0, 2816, 1584}, // hs_video
  { 5664, 4256, 16, 544, 5632, 3168, 1408,  792, 0, 0, 1408,  792, 0, 0, 1408,  792}, // slim_video
- { 5664, 4256, 16, 544, 5632, 3168, 5632, 3168, 0, 0, 5632, 3168, 0, 0, 5632, 3168},//custom1_zsd
- { 5664, 4256, 16, 16,  5632, 4224, 2816, 2112, 0, 0, 2816, 2112, 0, 0, 2816, 2112}//custom2
 };
-#endif
+
 //#define USE_OIS
 #ifdef USE_OIS
 #define OIS_I2C_WRITE_ID 0x48
@@ -7397,13 +7304,6 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
     kal_uint8 i = 0;
     kal_uint8 retry = 5;
 
-	// Gionee pangfei 20150402 add for CR01460764 begin
-	#ifdef CONFIG_GN_BSP_MTK_DEVICE_CHECK
-		struct gn_device_info gn_mydev_info;
-		gn_mydev_info.gn_dev_type = GN_DEVICE_TYPE_MAIN_CAM;
-	#endif
-	// Gionee pangfei 20150402 add for CR01460764 end
-
     while (imgsensor_info.i2c_addr_table[i] != 0xff) {
         spin_lock(&imgsensor_drv_lock);
         imgsensor.i2c_write_id = imgsensor_info.i2c_addr_table[i];
@@ -7418,12 +7318,7 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
                if (*sensor_id == imgsensor_info.sensor_id) {
                 LOG_INF("i2c write id: 0x%x, sensor id: 0x%x\n", imgsensor.i2c_write_id,*sensor_id);
 
-// Gionee pangfei 20150402 add for CR01460764 begin
-#ifdef CONFIG_GN_BSP_MTK_DEVICE_CHECK
-				strcpy(gn_mydev_info.name, "semco_s5k2x8");
-				gn_set_device_info(gn_mydev_info);
-#endif
-// Gionee pangfei 20150402 add for CR01460764 end
+
                 return ERROR_NONE;
             }
             LOG_INF("Read sensor id fail, write id: 0x%x, id: 0x%x\n", imgsensor.i2c_write_id,*sensor_id);
@@ -7538,7 +7433,7 @@ LOG_INF("JEFF xxxxxx140 20fps\n");
     imgsensor.min_frame_length = imgsensor_info.pre.framelength;
     imgsensor.dummy_pixel = 0;
     imgsensor.dummy_line = 0;
-    imgsensor.ihdr_en = KAL_FALSE;
+    imgsensor.hdr_mode = KAL_FALSE;
     imgsensor.test_pattern = KAL_FALSE;
     imgsensor.current_fps = imgsensor_info.pre.max_framerate;
     spin_unlock(&imgsensor_drv_lock);
@@ -7779,75 +7674,6 @@ static kal_uint32 slim_video(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
     return ERROR_NONE;
 }    /*    slim_video     */
 
-// Gionee <zhangpj> <2014-11-11> modify for CR01402897 <custom1_zsd> begin
-#if ORIGINAL_VERSION
-#else
-static kal_uint32 Custom1(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
-                      MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
-{
-    LOG_INF("E\n");
-
-    spin_lock(&imgsensor_drv_lock);
-    imgsensor.sensor_mode = IMGSENSOR_MODE_CUSTOM1;
-    imgsensor.pclk = imgsensor_info.custom1.pclk;
-    imgsensor.line_length = imgsensor_info.custom1.linelength;
-    imgsensor.frame_length = imgsensor_info.custom1.framelength;
-    imgsensor.min_frame_length = imgsensor_info.custom1.framelength;
-    imgsensor.autoflicker_en = KAL_FALSE;
-    spin_unlock(&imgsensor_drv_lock);
-    if(chip_id == 0x0203)
-		{
-	 		normal_video_setting_10(imgsensor.current_fps);
-		}
-	else if(chip_id == 0x022C)
-			{
-	 			normal_video_setting_11(imgsensor.current_fps);
-			}
-			else
-					{
-	 					normal_video_setting_11(imgsensor.current_fps);
-					}
-    //preview_setting();
-    return ERROR_NONE;
-}   /*  Custom1   */
-#endif
-// Gionee <zhangpj> <2014-11-11> modify for CR01402897 <custom1_zsd> end
-
-// Gionee <pangfei>  modify for CR01402897 <custom2_video> begin
-#if ORIGINAL_VERSION
-#else
-static kal_uint32 Custom2(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
-                      MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
-{
-    LOG_INF("E\n");
-
-    spin_lock(&imgsensor_drv_lock);
-    imgsensor.sensor_mode = IMGSENSOR_MODE_CUSTOM1;
-    imgsensor.pclk = imgsensor_info.custom2.pclk;
-    imgsensor.line_length = imgsensor_info.custom2.linelength;
-    imgsensor.frame_length = imgsensor_info.custom2.framelength;
-    imgsensor.min_frame_length = imgsensor_info.custom2.framelength;
-    imgsensor.autoflicker_en = KAL_FALSE;
-    spin_unlock(&imgsensor_drv_lock);
-   	if(chip_id == 0x0203)
-			{
-				preview_setting_10();
-			}
-			else if(chip_id == 0x022C)
-					{
-						preview_setting_11();
-					}
-					else
-							{
-								preview_setting_11();
-							}
-
-    return ERROR_NONE;
-}   /*  Custom2   */
-#endif
-// Gionee <pangfei>  modify for CR01402897 <custom2_video> end
-
-
 static kal_uint32 get_resolution(MSDK_SENSOR_RESOLUTION_INFO_STRUCT *sensor_resolution)
 {
     LOG_INF("E\n");
@@ -7866,21 +7692,7 @@ static kal_uint32 get_resolution(MSDK_SENSOR_RESOLUTION_INFO_STRUCT *sensor_reso
 
     sensor_resolution->SensorSlimVideoWidth     = imgsensor_info.slim_video.grabwindow_width;
     sensor_resolution->SensorSlimVideoHeight     = imgsensor_info.slim_video.grabwindow_height;
-	// Gionee <zhangpj> <2014-11-11> modify for CR01402897 <custom1_zsd> begin
-#if ORIGINAL_VERSION
-#else
-	sensor_resolution->SensorCustom1Width	 = imgsensor_info.custom1.grabwindow_width;
-	sensor_resolution->SensorCustom1Height	 = imgsensor_info.custom1.grabwindow_height;
-#endif
-	// Gionee <zhangpj> <2014-11-11> modify for CR01402897 <custom1_zsd> end
-
-	// Gionee <pangfei>  modify for CR01402897 <custom2_video> begin
-#if ORIGINAL_VERSION
-#else
-	sensor_resolution->SensorCustom2Width	 = imgsensor_info.custom2.grabwindow_width;
-	sensor_resolution->SensorCustom2Height	 = imgsensor_info.custom2.grabwindow_height;
-#endif
-	// Gionee <pangfei>  modify for CR01402897 <custom2_video> end
+	
     return ERROR_NONE;
 }    /*    get_resolution    */
 
@@ -7913,19 +7725,6 @@ static kal_uint32 get_info(MSDK_SCENARIO_ID_ENUM scenario_id,
     sensor_info->VideoDelayFrame = imgsensor_info.video_delay_frame;
     sensor_info->HighSpeedVideoDelayFrame = imgsensor_info.hs_video_delay_frame;
     sensor_info->SlimVideoDelayFrame = imgsensor_info.slim_video_delay_frame;
-	// Gionee <zhangpj> <2014-11-11> modify for CR01402897 <custom1_zsd> begin
-#if ORIGINAL_VERSION
-#else
-	sensor_info->Custom1DelayFrame = imgsensor_info.custom1_delay_frame;
-#endif
-	// Gionee <zhangpj> <2014-11-11> modify for CR01402897 <custom1_zsd> end
-
-	// Gionee <pangfei>  modify for CR01402897 <custom2_video> begin
-#if ORIGINAL_VERSION
-#else
-	sensor_info->Custom2DelayFrame = imgsensor_info.custom2_delay_frame;
-#endif
-	// Gionee <pangfei>  modify for CR01402897 <custom2_video> end
 
     sensor_info->SensorMasterClockSwitch = 0; /* not use */
     sensor_info->SensorDrivingCurrent = imgsensor_info.isp_driving_current;
@@ -7989,31 +7788,6 @@ static kal_uint32 get_info(MSDK_SCENARIO_ID_ENUM scenario_id,
             sensor_info->MIPIDataLowPwr2HighSpeedSettleDelayCount = imgsensor_info.slim_video.mipi_data_lp2hs_settle_dc;
 
             break;
-// Gionee <zhangpj> <2014-11-11> modify for CR01402897 <custom1_zsd> begin
-#if ORIGINAL_VERSION
-#else
-		case MSDK_SCENARIO_ID_CUSTOM1:
-			sensor_info->SensorGrabStartX = imgsensor_info.custom1.startx;
-			sensor_info->SensorGrabStartY = imgsensor_info.custom1.starty;
-
-			sensor_info->MIPIDataLowPwr2HighSpeedSettleDelayCount = imgsensor_info.custom1.mipi_data_lp2hs_settle_dc;
-
-			break;
-#endif
-// Gionee <zhangpj> <2014-11-11> modify for CR01402897 <custom1_zsd> end
-
-// Gionee <pangfei>  modify for CR01402897 <custom2_video> begin
-#if ORIGINAL_VERSION
-#else
-		case MSDK_SCENARIO_ID_CUSTOM2:
-			sensor_info->SensorGrabStartX = imgsensor_info.custom2.startx;
-			sensor_info->SensorGrabStartY = imgsensor_info.custom2.starty;
-
-			sensor_info->MIPIDataLowPwr2HighSpeedSettleDelayCount = imgsensor_info.custom2.mipi_data_lp2hs_settle_dc;
-
-			break;
-#endif
-// Gionee <pangfei>  modify for CR01402897 <custom2_video> end
         default:
             sensor_info->SensorGrabStartX = imgsensor_info.pre.startx;
             sensor_info->SensorGrabStartY = imgsensor_info.pre.starty;
@@ -8049,24 +7823,6 @@ static kal_uint32 control(MSDK_SCENARIO_ID_ENUM scenario_id, MSDK_SENSOR_EXPOSUR
         case MSDK_SCENARIO_ID_SLIM_VIDEO:
             slim_video(image_window, sensor_config_data);
             break;
-// Gionee <zhangpj> <2014-11-11> modify for CR01402897 <custom1_zsd> begin
-#if ORIGINAL_VERSION
-#else
-		case MSDK_SCENARIO_ID_CUSTOM1:
-			Custom1(image_window, sensor_config_data);
-			break;
-#endif
-// Gionee <zhangpj> <2014-11-11> modify for CR01402897 <custom1_zsd> end
-
-// Gionee <pangfei>  modify for CR01402897 <custom2_video> begin
-#if ORIGINAL_VERSION
-#else
-		case MSDK_SCENARIO_ID_CUSTOM2:
-			Custom2(image_window, sensor_config_data);
-			break;
-#endif
-// Gionee <pangfei>  modify for CR01402897 <custom2_video> end
-
         default:
             LOG_INF("Error ScenarioId setting");
             preview(image_window, sensor_config_data);
@@ -8175,41 +7931,6 @@ static kal_uint32 set_max_framerate_by_scenario(MSDK_SCENARIO_ID_ENUM scenario_i
             spin_unlock(&imgsensor_drv_lock);
             //set_dummy();
             break;
-
-// Gionee <zhangpj> <2014-11-11> modify for CR01402897 <custom1_zsd> begin
-#if ORIGINAL_VERSION
-#else
-		case MSDK_SCENARIO_ID_CUSTOM1:
-			frame_length = imgsensor_info.custom1.pclk / framerate * 10 / imgsensor_info.custom1.linelength;
-			spin_lock(&imgsensor_drv_lock);
-			imgsensor.dummy_line = (frame_length > imgsensor_info.custom1.framelength) ? (frame_length - imgsensor_info.custom1.framelength) : 0;
-			if (imgsensor.dummy_line < 0)
-				imgsensor.dummy_line = 0;
-			imgsensor.frame_length = imgsensor_info.custom1.framelength + imgsensor.dummy_line;
-			imgsensor.min_frame_length = imgsensor.frame_length;
-			spin_unlock(&imgsensor_drv_lock);
-			//set_dummy();
-			break;
-#endif
-// Gionee <zhangpj> <2014-11-11> modify for CR01402897 <custom1_zsd> end
-
-// Gionee <pangfei>  modify for CR01402897 <custom2_video> begin
-#if ORIGINAL_VERSION
-#else
-		case MSDK_SCENARIO_ID_CUSTOM2:
-			frame_length = imgsensor_info.custom2.pclk / framerate * 10 / imgsensor_info.custom2.linelength;
-			spin_lock(&imgsensor_drv_lock);
-			imgsensor.dummy_line = (frame_length > imgsensor_info.custom2.framelength) ? (frame_length - imgsensor_info.custom2.framelength) : 0;
-			if (imgsensor.dummy_line < 0)
-				imgsensor.dummy_line = 0;
-			imgsensor.frame_length = imgsensor_info.custom2.framelength + imgsensor.dummy_line;
-			imgsensor.min_frame_length = imgsensor.frame_length;
-			spin_unlock(&imgsensor_drv_lock);
-			//set_dummy();
-			break;
-#endif
-// Gionee <pangfei>  modify for CR01402897 <custom2_video> end
-
         default:  //coding with  preview scenario by default
             frame_length = imgsensor_info.pre.pclk / framerate * 10 / imgsensor_info.pre.linelength;
             spin_lock(&imgsensor_drv_lock);
@@ -8245,24 +7966,6 @@ static kal_uint32 get_default_framerate_by_scenario(MSDK_SCENARIO_ID_ENUM scenar
         case MSDK_SCENARIO_ID_SLIM_VIDEO:
             *framerate = imgsensor_info.slim_video.max_framerate;
             break;
-// Gionee <zhangpj> <2014-11-11> modify for CR01402897 <custom1_zsd> begin
-#if ORIGINAL_VERSION
-#else
-		case MSDK_SCENARIO_ID_CUSTOM1:
-			*framerate = imgsensor_info.custom1.max_framerate;
-			break;
-#endif
-// Gionee <zhangpj> <2014-11-11> modify for CR01402897 <custom1_zsd> end
-
-// Gionee <zhangpj>  modify for CR01402897 <custom2_video> begin
-#if ORIGINAL_VERSION
-#else
-		case MSDK_SCENARIO_ID_CUSTOM2:
-			*framerate = imgsensor_info.custom2.max_framerate;
-			break;
-#endif
-// Gionee <zhangpj>  modify for CR01402897 <custom2_video> end
-
         default:
             break;
     }
@@ -8377,7 +8080,7 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
         case SENSOR_FEATURE_SET_HDR:
             LOG_INF("ihdr enable :%d\n", (BOOL)*feature_data);
             spin_lock(&imgsensor_drv_lock);
-            imgsensor.ihdr_en = (BOOL)*feature_data;
+            imgsensor.hdr_mode = (BOOL)*feature_data;
             spin_unlock(&imgsensor_drv_lock);
             break;
         case SENSOR_FEATURE_GET_CROP_INFO:
@@ -8398,24 +8101,6 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
                 case MSDK_SCENARIO_ID_SLIM_VIDEO:
                     memcpy((void *)wininfo,(void *)&imgsensor_winsize_info[4],sizeof(SENSOR_WINSIZE_INFO_STRUCT));
                     break;
-// Gionee <zhangpj> <2014-11-11> modify for CR01402897 <custom1_zsd> begin
-#if ORIGINAL_VERSION
-#else
-				case MSDK_SCENARIO_ID_CUSTOM1:
-					memcpy((void *)wininfo,(void *)&imgsensor_winsize_info[5],sizeof(SENSOR_WINSIZE_INFO_STRUCT));
-					break;
-#endif
-// Gionee <zhangpj> <2014-11-11> modify for CR01402897 <custom1_zsd> end
-
-// Gionee <zhangpj>  modify for CR01402897 <custom2_video> begin
-#if ORIGINAL_VERSION
-#else
-				case MSDK_SCENARIO_ID_CUSTOM2:
-					memcpy((void *)wininfo,(void *)&imgsensor_winsize_info[5],sizeof(SENSOR_WINSIZE_INFO_STRUCT));
-					break;
-#endif
-// Gionee <zhangpj>  modify for CR01402897 <custom2_video> end
-
                 case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
                 default:
                     memcpy((void *)wininfo,(void *)&imgsensor_winsize_info[0],sizeof(SENSOR_WINSIZE_INFO_STRUCT));
