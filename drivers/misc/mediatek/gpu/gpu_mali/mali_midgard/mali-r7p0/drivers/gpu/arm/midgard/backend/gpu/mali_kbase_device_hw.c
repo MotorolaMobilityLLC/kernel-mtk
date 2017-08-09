@@ -33,6 +33,11 @@ void kbase_reg_write(struct kbase_device *kbdev, u16 offset, u32 value,
 	KBASE_DEBUG_ASSERT(kctx == NULL || kctx->as_nr != KBASEP_AS_NR_INVALID);
 	KBASE_DEBUG_ASSERT(kbdev->dev != NULL);
 
+#ifdef MTK_MT6797_DEBUG
+	if (offset == SHADER_PWROFF_LO)
+		return;
+#endif
+
 	if ((offset >= MEMORY_MANAGEMENT_BASE) && (offset <= (MEMORY_MANAGEMENT_BASE+0xFFF))) {
 		kbdev->mmu_reg_trace[0][kbdev->mmu_reg_trace_index] = offset;
 		kbdev->mmu_reg_trace[1][kbdev->mmu_reg_trace_index] = value;
