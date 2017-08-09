@@ -336,7 +336,11 @@ static int mtk_asoc_pcm_btcvsd_tx_new(struct snd_soc_pcm_runtime *rtd)
 
 static int mtk_asoc_pcm_btcvsd_tx_platform_probe(struct snd_soc_platform *platform)
 {
-	LOGBT("%s\n", __func__);
+	pr_warn("%s\n", __func__);
+
+	AudDrv_Allocate_mem_Buffer(mDev_btcvsd_tx,
+			Soc_Aud_Digital_Block_MEM_BTCVSD_TX, sizeof(BT_SCO_TX_T));
+	BT_CVSD_Mem.TX_btcvsd_dma_buf = Get_Mem_Buffer(Soc_Aud_Digital_Block_MEM_BTCVSD_TX);
 
 	snd_soc_add_platform_controls(platform, mtk_btcvsd_loopback_controls,
 									ARRAY_SIZE(mtk_btcvsd_loopback_controls));
@@ -381,10 +385,6 @@ static int mtk_btcvsd_tx_probe(struct platform_device *pdev)
 		memset((void *)&BT_CVSD_Mem, 0, sizeof(CVSD_MEMBLOCK_T));
 		isProbeDone = 1;
 	}
-
-	/* allocate dram */
-	AudDrv_Allocate_mem_Buffer(mDev_btcvsd_tx, Soc_Aud_Digital_Block_MEM_BTCVSD_TX, sizeof(BT_SCO_TX_T));
-	BT_CVSD_Mem.TX_btcvsd_dma_buf =  Get_Mem_Buffer(Soc_Aud_Digital_Block_MEM_BTCVSD_TX);
 
 	return snd_soc_register_platform(&pdev->dev, &mtk_btcvsd_tx_soc_platform);
 }

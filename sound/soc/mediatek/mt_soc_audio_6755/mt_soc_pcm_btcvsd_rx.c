@@ -405,6 +405,16 @@ static int mtk_asoc_pcm_btcvsd_rx_new(struct snd_soc_pcm_runtime *rtd)
 	return ret;
 }
 
+static int mtk_asoc_pcm_btcvsd_rx_platform_probe(struct snd_soc_platform *platform)
+{
+	pr_warn("%s\n", __func__);
+
+	AudDrv_Allocate_mem_Buffer(mDev_btcvsd_rx,
+			Soc_Aud_Digital_Block_MEM_BTCVSD_RX, sizeof(BT_SCO_RX_T));
+	BT_CVSD_Mem.RX_btcvsd_dma_buf = Get_Mem_Buffer(Soc_Aud_Digital_Block_MEM_BTCVSD_RX);
+	return 0;
+}
+
 static struct snd_pcm_ops mtk_btcvsd_rx_ops = {
 	.open =     mtk_pcm_btcvsd_rx_open,
 	.close =    mtk_pcm_btcvsd_rx_close,
@@ -421,6 +431,7 @@ static struct snd_pcm_ops mtk_btcvsd_rx_ops = {
 static struct snd_soc_platform_driver mtk_btcvsd_rx_soc_platform = {
 	.ops        = &mtk_btcvsd_rx_ops,
 	.pcm_new    = mtk_asoc_pcm_btcvsd_rx_new,
+	.probe      = mtk_asoc_pcm_btcvsd_rx_platform_probe,
 };
 
 static int mtk_btcvsd_rx_probe(struct platform_device *pdev)
@@ -489,11 +500,6 @@ static int mtk_btcvsd_rx_probe(struct platform_device *pdev)
 #endif
 	pr_debug("[BTCVSD probe] BTSYS_PKV_BASE_ADDRESS = %p BTSYS_SRAM_BANK2_BASE_ADDRESS = %p\n",
 				BTSYS_PKV_BASE_ADDRESS, BTSYS_SRAM_BANK2_BASE_ADDRESS);
-
-	/* allocate dram */
-	AudDrv_Allocate_mem_Buffer(mDev_btcvsd_rx, Soc_Aud_Digital_Block_MEM_BTCVSD_RX, sizeof(BT_SCO_RX_T));
-	BT_CVSD_Mem.RX_btcvsd_dma_buf =  Get_Mem_Buffer(Soc_Aud_Digital_Block_MEM_BTCVSD_RX);
-
 
 	return snd_soc_register_platform(&pdev->dev, &mtk_btcvsd_rx_soc_platform);
 }
