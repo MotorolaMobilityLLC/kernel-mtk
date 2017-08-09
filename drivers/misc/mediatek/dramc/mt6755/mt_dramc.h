@@ -14,11 +14,14 @@ Registers define
 #define PDEF_DRAMC0_REG_1E8	IOMEM((DRAMCAO_BASE_ADDR + 0x01e8))
 #define PDEF_DRAMC0_REG_1EC	IOMEM((DRAMCAO_BASE_ADDR + 0x01ec))
 #define SPM_PASR_DPD_0		IOMEM((SLEEP_BASE_ADDR + 0x0630))
-#define _CLK_CFG_0_SET		IOMEM((TOPCKGEN_BASE_ADDR + 0x0044))
+#define _CLK_CFG_0_SET		IOMEM((TOPCKGEN_BASE_ADDR + 0x0040))
 
 /*=========================
 Define
 =========================*/
+#define DUAL_FREQ_HIGH		900
+#define DUAL_FREQ_LOW		650
+#define DATA_RATE_THRESHOLD	15
 #define MPLL_CON0_OFFSET	0x280
 #define MPLL_CON1_OFFSET	0x284
 #define MEMPLL5_OFFSET		0x614
@@ -112,6 +115,13 @@ int dram_steps_freq(unsigned int step);
 int dram_can_support_fh(void);
 void spm_dpd_init(void);
 void spm_dpd_dram_init(void);
+unsigned int support_4GB_mode(void);
+extern void *mt_dramc_base_get(void);
+extern void *mt_dramc_nao_base_get(void);
+extern void *mt_ddrphy_base_get(void);
+unsigned int ucDram_Register_Read(unsigned int u4reg_addr);
+void ucDram_Register_Write(unsigned int u4reg_addr, unsigned int u4reg_value);
+
 
 enum DDRTYPE {
 	TYPE_DDR1 = 1,
