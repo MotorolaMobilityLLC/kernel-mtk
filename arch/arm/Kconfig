@@ -836,6 +836,7 @@ config ARCH_MT6735M
 	select MFD_SYSCON
 	select CPU_IDLE
 	select ARM_MT6735_CPUIDLE
+	select MTK_BASE_POWER
 	help
 	 This enables support for MediaTek MT6735M
 	 Support for k35mv1
