@@ -1407,8 +1407,12 @@ static ssize_t emi_mpu_show(struct device_driver *driver, char *buf)
 {
 	char *ptr = buf;
 	unsigned int start, end;
-	unsigned int reg_value, reg_value2;
-	unsigned int d0, d1, d2, d3, d4, d5, d6, d7;
+	unsigned int reg_value;
+	unsigned int d0, d1, d2, d3;
+#if defined(CONFIG_ARCH_MT6735) || defined(CONFIG_ARCH_MT6753)
+	unsigned int d4, d5, d6, d7, reg_value2;
+#endif
+
 	static const char *permission[7] = {
 		"No protect",
 		"Only R/W for secure access",
