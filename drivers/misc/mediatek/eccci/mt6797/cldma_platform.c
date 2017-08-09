@@ -9,7 +9,7 @@
 #endif				/*CONFIG_MTK_CLKMGR */
 
 #ifdef FEATURE_RF_CLK_BUF
-#include <mach/mt_clkbuf_ctl.h>
+#include <mt_clkbuf_ctl.h>
 #endif
 #ifdef FEATURE_INFORM_NFC_VSIM_CHANGE
 #include <mach/mt6605.h>
