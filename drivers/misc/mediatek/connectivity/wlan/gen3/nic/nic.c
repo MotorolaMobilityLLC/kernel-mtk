@@ -2134,6 +2134,8 @@ UINT_8 nicGetVhtS1(UINT_8 ucPrimaryChannel)
 		return 106;
 	else if (ucPrimaryChannel >= 116 && ucPrimaryChannel <= 128)
 		return 122;
+	else if (ucPrimaryChannel >= 132 && ucPrimaryChannel <= 144)
+		return 138;
 	else if (ucPrimaryChannel >= 149 && ucPrimaryChannel <= 161)
 		return 155;
 	return 0;

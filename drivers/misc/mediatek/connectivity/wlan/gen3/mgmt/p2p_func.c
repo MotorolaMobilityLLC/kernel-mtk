@@ -474,48 +474,69 @@ enum p2p_action_frame_type {
 	P2P_PROV_DISC_RESP = 8
 };
 VOID p2pFuncTagActionActionP2PFrame(IN P_MSDU_INFO_T prMgmtTxMsdu,
+			P_WLAN_ACTION_FRAME prActFrame,
 			UINT_8 ucP2pAction)
 {
 	switch (ucP2pAction) {
 	case P2P_GO_NEG_REQ:
-		DBGLOG(P2P, INFO, "Found P2P_GO_NEG_REQ, SeqNO: %d\n",
+		DBGLOG(P2P, INFO, "Found P2P_GO_NEG_REQ, SA: %pM - DA: %pM, SeqNO: %d\n",
+			prActFrame->aucSrcAddr,
+			prActFrame->aucDestAddr,
 			prMgmtTxMsdu->ucTxSeqNum);
 		break;
 	case P2P_GO_NEG_RESP:
-		DBGLOG(P2P, INFO, "Found P2P_GO_NEG_RESP, SeqNO: %d\n",
+		DBGLOG(P2P, INFO, "Found P2P_GO_NEG_RESP, SA: %pM - DA: %pM, SeqNO: %d\n",
+			prActFrame->aucSrcAddr,
+			prActFrame->aucDestAddr,
 			prMgmtTxMsdu->ucTxSeqNum);
 		break;
 	case P2P_GO_NEG_CONF:
-		DBGLOG(P2P, INFO, "Found P2P_GO_NEG_CONF, SeqNO: %d\n",
+		DBGLOG(P2P, INFO, "Found P2P_GO_NEG_CONF, SA: %pM - DA: %pM, SeqNO: %d\n",
+			prActFrame->aucSrcAddr,
+			prActFrame->aucDestAddr,
 			prMgmtTxMsdu->ucTxSeqNum);
 		break;
 	case P2P_INVITATION_REQ:
-		DBGLOG(P2P, INFO, "Found P2P_INVITATION_REQ, SeqNO: %d\n",
+		DBGLOG(P2P, INFO, "Found P2P_INVITATION_REQ, SA: %pM - DA: %pM, SeqNO: %d\n",
+			prActFrame->aucSrcAddr,
+			prActFrame->aucDestAddr,
 			prMgmtTxMsdu->ucTxSeqNum);
 		break;
 	case P2P_INVITATION_RESP:
-		DBGLOG(P2P, INFO, "Found P2P_INVITATION_RESP, SeqNO: %d\n",
+		DBGLOG(P2P, INFO, "Found P2P_INVITATION_RESP, SA: %pM - DA: %pM, SeqNO: %d\n",
+			prActFrame->aucSrcAddr,
+			prActFrame->aucDestAddr,
 			prMgmtTxMsdu->ucTxSeqNum);
 		break;
 	case P2P_DEV_DISC_REQ:
-		DBGLOG(P2P, INFO, "Found P2P_DEV_DISC_REQ, SeqNO: %d\n",
+		DBGLOG(P2P, INFO, "Found P2P_DEV_DISC_REQ, SA: %pM - DA: %pM, SeqNO: %d\n",
+			prActFrame->aucSrcAddr,
+			prActFrame->aucDestAddr,
 			prMgmtTxMsdu->ucTxSeqNum);
 		break;
 	case P2P_DEV_DISC_RESP:
-		DBGLOG(P2P, INFO, "Found P2P_DEV_DISC_RESP, SeqNO: %d\n",
+		DBGLOG(P2P, INFO, "Found P2P_DEV_DISC_RESP, SA: %pM - DA: %pM, SeqNO: %d\n",
+			prActFrame->aucSrcAddr,
+			prActFrame->aucDestAddr,
 			prMgmtTxMsdu->ucTxSeqNum);
 		break;
 	case P2P_PROV_DISC_REQ:
-		DBGLOG(P2P, INFO, "Found P2P_PROV_DISC_REQ, SeqNO: %d\n",
+		DBGLOG(P2P, INFO, "Found P2P_PROV_DISC_REQ, SA: %pM - DA: %pM, SeqNO: %d\n",
+			prActFrame->aucSrcAddr,
+			prActFrame->aucDestAddr,
 			prMgmtTxMsdu->ucTxSeqNum);
 		break;
 	case P2P_PROV_DISC_RESP:
-		DBGLOG(P2P, INFO, "Found P2P_PROV_DISC_RES, SeqNO: %d\n",
+		DBGLOG(P2P, INFO, "Found P2P_PROV_DISC_RES, SA: %pM, - DA: %pM, SeqNO: %d\n",
+			prActFrame->aucSrcAddr,
+			prActFrame->aucDestAddr,
 			prMgmtTxMsdu->ucTxSeqNum);
 		break;
 	default:
-		DBGLOG(P2P, INFO, "Unknown P2P action type: 0x%x: SeqNo: %d\n",
+		DBGLOG(P2P, INFO, "Unknown P2P action type: 0x%x, SA: %pM - DA: %pM, SeqNo: %d\n",
 			ucP2pAction,
+			prActFrame->aucSrcAddr,
+			prActFrame->aucDestAddr,
 			prMgmtTxMsdu->ucTxSeqNum);
 		break;
 	}
@@ -529,6 +550,10 @@ VOID p2pFuncTagActionActionFrame(IN P_MSDU_INFO_T prMgmtTxMsdu,
 
 	switch (ucAction) {
 	case WLAN_PA_20_40_BSS_COEX:
+		DBGLOG(P2P, INFO, "Found WLAN_PA_20_40_BSS_COEX, SA: %pM - DA: %pM, SeqNo: %d\n",
+			prActFrame->aucSrcAddr,
+			prActFrame->aucDestAddr,
+			prMgmtTxMsdu->ucTxSeqNum);
 		break;
 	case WLAN_PA_VENDOR_SPECIFIC:
 		pucVendor = (PUINT_8)prActFrame + 26;
@@ -538,37 +563,55 @@ VOID p2pFuncTagActionActionFrame(IN P_MSDU_INFO_T prMgmtTxMsdu,
 			if (*(pucVendor + 3) == 0x09)
 				/* found p2p IE */
 				p2pFuncTagActionActionP2PFrame(prMgmtTxMsdu,
-					*(pucVendor + 4));
+					prActFrame, *(pucVendor + 4));
 			else if (*(pucVendor + 3) == 0x0a)
 				/* found WFD IE */
-				DBGLOG(P2P, INFO, "Found WFD IE\n");
+				DBGLOG(P2P, INFO, "Found WFD IE, SA: %pM - DA: %pM\n",
+					prActFrame->aucSrcAddr,
+					prActFrame->aucDestAddr);
 			else
-				DBGLOG(P2P, INFO, "Found Other vendor 0x%x\n",
-					*(pucVendor + 3));
+				DBGLOG(P2P, INFO, "Found Other vendor 0x%x, SA: %pM - DA: %pM\n",
+					*(pucVendor + 3),
+					prActFrame->aucSrcAddr,
+					prActFrame->aucDestAddr);
 		}
 		break;
 	case WLAN_PA_GAS_INITIAL_REQ:
-		DBGLOG(P2P, INFO, "Found WLAN_PA_GAS_INITIAL_REQ, SeqNo: %d\n",
+		DBGLOG(P2P, INFO, "Found WLAN_PA_GAS_INITIAL_REQ, SA: %pM - DA: %pM, SeqNo: %d\n",
+			prActFrame->aucSrcAddr,
+			prActFrame->aucDestAddr,
 			prMgmtTxMsdu->ucTxSeqNum);
 		break;
 	case WLAN_PA_GAS_INITIAL_RESP:
-		DBGLOG(P2P, INFO, "Found WLAN_PA_GAS_INITIAL_RESP, SeqNo: %d\n",
+		DBGLOG(P2P, INFO, "Found WLAN_PA_GAS_INITIAL_RESP, SA: %pM - DA: %pM, SeqNo: %d\n",
+			prActFrame->aucSrcAddr,
+			prActFrame->aucDestAddr,
 			prMgmtTxMsdu->ucTxSeqNum);
 		break;
 	case WLAN_PA_GAS_COMEBACK_REQ:
-		DBGLOG(P2P, INFO, "Found WLAN_PA_GAS_COMEBACK_REQ, SeqNo: %d\n",
+		DBGLOG(P2P, INFO, "Found WLAN_PA_GAS_COMEBACK_REQ, SA: %pM - DA: %pM, SeqNo: %d\n",
+			prActFrame->aucSrcAddr,
+			prActFrame->aucDestAddr,
 			prMgmtTxMsdu->ucTxSeqNum);
 		break;
 	case WLAN_PA_GAS_COMEBACK_RESP:
-		DBGLOG(P2P, INFO, "Found WLAN_PA_GAS_COMEBACK_RESP, SeqNo: %d\n",
+		DBGLOG(P2P, INFO, "Found WLAN_PA_GAS_COMEBACK_RESP, SA: %pM - DA: %pM, SeqNo: %d\n",
+			prActFrame->aucSrcAddr,
+			prActFrame->aucDestAddr,
 			prMgmtTxMsdu->ucTxSeqNum);
 		break;
 	case WLAN_TDLS_DISCOVERY_RESPONSE:
-		DBGLOG(P2P, INFO, "Found WLAN_TDLS_DISCOVERY_RESPONSE, SeqNo: %d\n",
+		DBGLOG(P2P, INFO, "Found WLAN_TDLS_DISCOVERY_RESPONSE, SA: %pM - DA: %pM, SeqNo: %d\n",
+			prActFrame->aucSrcAddr,
+			prActFrame->aucDestAddr,
 			prMgmtTxMsdu->ucTxSeqNum);
 		break;
 	default:
-		DBGLOG(P2P, INFO, "%s: Unknown action: 0x%x\n", __func__, ucAction);
+		DBGLOG(P2P, INFO, "Unknown action: 0x%x, SA: %pM - DA: %pM, SeqNo: %d\n",
+			ucAction,
+			prActFrame->aucSrcAddr,
+			prActFrame->aucDestAddr,
+			prMgmtTxMsdu->ucTxSeqNum);
 	}
 }
 VOID p2pFuncTagActionCategoryFrame(IN P_MSDU_INFO_T prMgmtTxMsdu,
@@ -581,73 +624,108 @@ VOID p2pFuncTagActionCategoryFrame(IN P_MSDU_INFO_T prMgmtTxMsdu,
 	switch (ucCategory) {
 
 	case WLAN_ACTION_SPECTRUM_MGMT:
-		DBGLOG(P2P, INFO, "Found WLAN_ACTION_SPECTRUM_MGMT, SeqNO: %d\n",
+		DBGLOG(P2P, INFO, "Found WLAN_ACTION_SPECTRUM_MGMT, SA: %pM - DA: %pM, SeqNO: %d\n",
+			prActFrame->aucSrcAddr,
+			prActFrame->aucDestAddr,
 			prMgmtTxMsdu->ucTxSeqNum);
 		break;
 	case WLAN_ACTION_QOS:
-		DBGLOG(P2P, INFO, "Found WLAN_ACTION_QOS, SeqNO: %d\n",
+		DBGLOG(P2P, INFO, "Found WLAN_ACTION_QOS, SA: %pM - DA: %pM, SeqNO: %d\n",
+			prActFrame->aucSrcAddr,
+			prActFrame->aucDestAddr,
 			prMgmtTxMsdu->ucTxSeqNum);
 		break;
 	case WLAN_ACTION_DLS:
-		DBGLOG(P2P, INFO, "Found WLAN_ACTION_DLS, SeqNO: %d\n",
+		DBGLOG(P2P, INFO, "Found WLAN_ACTION_DLS, SA: %pM - DA: %pM, SeqNO: %d\n",
+			prActFrame->aucSrcAddr,
+			prActFrame->aucDestAddr,
 			prMgmtTxMsdu->ucTxSeqNum);
 		break;
 	case WLAN_ACTION_BLOCK_ACK:
-		DBGLOG(P2P, INFO, "Found WLAN_ACTION_BLOCK_ACK, SeqNO: %d\n",
+		DBGLOG(P2P, INFO, "Found WLAN_ACTION_BLOCK_ACK, SA: %pM - DA: %pM, SeqNO: %d\n",
+			prActFrame->aucSrcAddr,
+			prActFrame->aucDestAddr,
 			prMgmtTxMsdu->ucTxSeqNum);
 		break;
 	case WLAN_ACTION_PUBLIC:
-		DBGLOG(P2P, INFO, "Found WLAN_ACTION_PUBLIC, SeqNO: %d\n",
+		DBGLOG(P2P, INFO, "Found WLAN_ACTION_PUBLIC, SA: %pM - DA: %pM, SeqNO: %d\n",
+			prActFrame->aucSrcAddr,
+			prActFrame->aucDestAddr,
 			prMgmtTxMsdu->ucTxSeqNum);
 		ucAction = prActFrame->ucAction;
 		p2pFuncTagActionActionFrame(prMgmtTxMsdu, prActFrame, ucAction);
 		break;
 	case WLAN_ACTION_RADIO_MEASUREMENT:
-		DBGLOG(P2P, INFO, "Found WLAN_ACTION_RADIO_MEASUREMENT, SeqNO: %d\n",
+		DBGLOG(P2P, INFO, "Found WLAN_ACTION_RADIO_MEASUREMENT, SA: %pM - DA: %pM, SeqNO: %d\n",
+			prActFrame->aucSrcAddr,
+			prActFrame->aucDestAddr,
 			prMgmtTxMsdu->ucTxSeqNum);
 		break;
 	case WLAN_ACTION_FT:
-		DBGLOG(P2P, INFO, "Found WLAN_ACTION_FT, SeqNO: %d\n",
+		DBGLOG(P2P, INFO, "Found WLAN_ACTION_FT, SA: %pM - DA: %pM, SeqNO: %d\n",
+			prActFrame->aucSrcAddr,
+			prActFrame->aucDestAddr,
 			prMgmtTxMsdu->ucTxSeqNum);
 		break;
 	case WLAN_ACTION_HT:
-		DBGLOG(P2P, INFO, "Found WLAN_ACTION_HT, SeqNO: %d\n",
+		DBGLOG(P2P, INFO, "Found WLAN_ACTION_HT, SA: %pM - DA: %pM, SeqNO: %d\n",
+			prActFrame->aucSrcAddr,
+			prActFrame->aucDestAddr,
 			prMgmtTxMsdu->ucTxSeqNum);
 		break;
 	case WLAN_ACTION_SA_QUERY:
-		DBGLOG(P2P, INFO, "Found WLAN_ACTION_SA_QUERY, SeqNO: %d\n",
+		DBGLOG(P2P, INFO, "Found WLAN_ACTION_SA_QUERY, SA: %pM - DA: %pM, SeqNO: %d\n",
+			prActFrame->aucSrcAddr,
+			prActFrame->aucDestAddr,
 			prMgmtTxMsdu->ucTxSeqNum);
 		break;
 	case WLAN_ACTION_PROTECTED_DUAL:
-		DBGLOG(P2P, INFO, "Found WLAN_ACTION_PROTECTED_DUAL, SeqNO: %d\n",
+		DBGLOG(P2P, INFO, "Found WLAN_ACTION_PROTECTED_DUAL, SA: %pM - DA: %pM, SeqNO: %d\n",
+			prActFrame->aucSrcAddr,
+			prActFrame->aucDestAddr,
 			prMgmtTxMsdu->ucTxSeqNum);
 		break;
 	case WLAN_ACTION_WNM:
-		DBGLOG(P2P, INFO, "Found WLAN_ACTION_WNM, SeqNO: %d\n",
+		DBGLOG(P2P, INFO, "Found WLAN_ACTION_WNM, SA: %pM - DA: %pM, SeqNO: %d\n",
+			prActFrame->aucSrcAddr,
+			prActFrame->aucDestAddr,
 			prMgmtTxMsdu->ucTxSeqNum);
 		break;
 	case WLAN_ACTION_UNPROTECTED_WNM:
-		DBGLOG(P2P, INFO, "Found WLAN_ACTION_UNPROTECTED_WNM, SeqNO: %d\n",
+		DBGLOG(P2P, INFO, "Found WLAN_ACTION_UNPROTECTED_WNM, SA: %pM - DA: %pM, SeqNO: %d\n",
+			prActFrame->aucSrcAddr,
+			prActFrame->aucDestAddr,
 			prMgmtTxMsdu->ucTxSeqNum);
 		break;
 	case WLAN_ACTION_TDLS:
-		DBGLOG(P2P, INFO, "Found WLAN_ACTION_TDLS, SeqNO: %d\n",
+		DBGLOG(P2P, INFO, "Found WLAN_ACTION_TDLS, SA: %pM - DA: %pM, SeqNO: %d\n",
+			prActFrame->aucSrcAddr,
+			prActFrame->aucDestAddr,
 			prMgmtTxMsdu->ucTxSeqNum);
 		break;
 	case WLAN_ACTION_SELF_PROTECTED:
-		DBGLOG(P2P, INFO, "Found WLAN_ACTION_SELF_PROTECTED, SeqNO: %d\n",
+		DBGLOG(P2P, INFO, "Found WLAN_ACTION_SELF_PROTECTED, SA: %pM - DA: %pM, SeqNO: %d\n",
+			prActFrame->aucSrcAddr,
+			prActFrame->aucDestAddr,
 			prMgmtTxMsdu->ucTxSeqNum);
 		break;
 	case WLAN_ACTION_WMM: /* WMM Specification 1.1 */
-		DBGLOG(P2P, INFO, "Found WLAN_ACTION_WMM, SeqNO: %d\n",
+		DBGLOG(P2P, INFO, "Found WLAN_ACTION_WMM, SA: %pM - DA: %pM, SeqNO: %d\n",
+			prActFrame->aucSrcAddr,
+			prActFrame->aucDestAddr,
 			prMgmtTxMsdu->ucTxSeqNum);
 		break;
 	case WLAN_ACTION_VENDOR_SPECIFIC:
-		DBGLOG(P2P, INFO, "Found WLAN_ACTION_VENDOR_SPECIFIC, SeqNO: %d\n",
+		DBGLOG(P2P, INFO, "Found WLAN_ACTION_VENDOR_SPECIFIC, SA: %pM - DA: %pM, SeqNO: %d\n",
+			prActFrame->aucSrcAddr,
+			prActFrame->aucDestAddr,
 			prMgmtTxMsdu->ucTxSeqNum);
 		break;
 	default:
-		DBGLOG(P2P, INFO, "Unknown Category: 0x%x\n", ucCategory);
+		DBGLOG(P2P, INFO, "Unknown Category: 0x%x, SA: %pM - DA: %pM\n",
+			ucCategory,
+			prActFrame->aucSrcAddr,
+			prActFrame->aucDestAddr);
 	}
 }
 
@@ -670,6 +748,7 @@ p2pFuncTagMgmtFrame(IN P_MSDU_INFO_T prMgmtTxMsdu)
 {
 	/* P_MSDU_INFO_T prTxMsduInfo = (P_MSDU_INFO_T)NULL; */
 	P_WLAN_MAC_HEADER_T prWlanHdr = (P_WLAN_MAC_HEADER_T) NULL;
+	P_WLAN_PROBE_RSP_FRAME_T prProbRspHdr = (P_WLAN_PROBE_RSP_FRAME_T)NULL;
 	UINT_16 u2TxFrameCtrl;
 	P_WLAN_ACTION_FRAME prActFrame;
 	UINT_8 ucCategory;
@@ -684,7 +763,10 @@ p2pFuncTagMgmtFrame(IN P_MSDU_INFO_T prMgmtTxMsdu)
 	switch (u2TxFrameCtrl) {
 	case MAC_FRAME_PROBE_RSP:
 
-		DBGLOG(P2P, INFO, "TX Probe Resposne Frame, seqNo: %d\n", prMgmtTxMsdu->ucTxSeqNum);
+		prProbRspHdr = (P_WLAN_PROBE_RSP_FRAME_T) prWlanHdr;
+		DBGLOG(P2P, INFO, "TX Probe Resposne Frame, SA: %pM - DA: %pM, seqNo: %d\n",
+			prProbRspHdr->aucSrcAddr, prProbRspHdr->aucDestAddr,
+			prMgmtTxMsdu->ucTxSeqNum);
 
 		break;
 
@@ -696,7 +778,12 @@ p2pFuncTagMgmtFrame(IN P_MSDU_INFO_T prMgmtTxMsdu)
 
 		break;
 	default:
-		DBGLOG(P2P, INFO, "MGMT frame:, un-tagged frame seqNo: %d\n", prMgmtTxMsdu->ucTxSeqNum);
+		DBGLOG(P2P, INFO, "MGMT:, un-tagged frame type: 0x%x, A1: %pM, A2: %pM, A3: %pM seqNo: %d\n",
+			u2TxFrameCtrl,
+			prWlanHdr->aucAddr1,
+			prWlanHdr->aucAddr2,
+			prWlanHdr->aucAddr3,
+			prMgmtTxMsdu->ucTxSeqNum);
 		break;
 	}
 }
@@ -768,6 +855,8 @@ p2pFuncTxMgmtFrame(IN P_ADAPTER_T prAdapter,
 		nicTxConfigPktControlFlag(prMgmtTxMsdu, MSDU_CONTROL_FLAG_FORCE_TX, TRUE);
 
 		p2pFuncTagMgmtFrame(prMgmtTxMsdu);
+
+		nicTxSetPktLifeTime(prMgmtTxMsdu, 500);
 
 		nicTxEnqueueMsdu(prAdapter, prMgmtTxMsdu);
 

@@ -964,6 +964,11 @@ VOID kalP2PIndicateMgmtTxStatus(IN P_GLUE_INFO_T prGlueInfo, IN P_MSDU_INFO_T pr
 
 		prGlueP2pInfo = prGlueInfo->prP2PInfo;
 
+		if (!prMsduInfo->prPacket) {
+			DBGLOG(P2P, INFO, "Buffer Cookie has been freed, do not access cookie\n");
+			break;
+		}
+
 		pu8GlCookie =
 		    (PUINT_64) ((ULONG) prMsduInfo->prPacket +
 				(ULONG) prMsduInfo->u2FrameLength + MAC_TX_RESERVED_FIELD);

@@ -303,6 +303,12 @@ p2pRoleStatePrepare_To_REQING_CHANNEL_STATE(IN P_ADAPTER_T prAdapter,
 		prChnlReqInfo->ucCenterFreqS2 = 0;
 		DBGLOG(P2P, TRACE, "p2pRoleStatePrepare_To_REQING_CHANNEL_STATE\n");
 
+		if (prChnlReqInfo->ucReqChnlNum > 161) {
+			DBGLOG(P2P, INFO, "Channels above 161 only use 20M bandwidth\n");
+			prChnlReqInfo->ucCenterFreqS1 = 0;
+			prChnlReqInfo->eChannelWidth = CW_20_40MHZ;
+		}
+
 		/* Reset */
 		prBssInfo->ucPrimaryChannel = ucChannelBackup;
 		prBssInfo->eBand = eBandBackup;

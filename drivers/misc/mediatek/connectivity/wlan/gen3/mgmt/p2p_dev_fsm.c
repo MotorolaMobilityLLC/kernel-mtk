@@ -419,6 +419,12 @@ VOID p2pDevFsmRunEventScanRequest(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsg
 			u4ChnlListSize = sizeof(RF_CHANNEL_INFO_T) * prScanReqInfo->ucNumChannelList;
 			kalMemCopy(prScanReqInfo->arScanChannelList,
 				   prP2pScanReqMsg->arChannelListInfo, u4ChnlListSize);
+			if (prP2pScanReqMsg->u4NumChannel == 1) {
+				DBGLOG(P2P, INFO, "Enlarge Dwell time to 100ms, Channel Number: %d\n",
+					prP2pScanReqMsg->u4NumChannel);
+
+				prScanReqInfo->u2PassiveDewellTime = 100;
+			}
 		} else {
 			/* If channel number is ZERO.
 			 * It means do a FULL channel scan.
@@ -496,7 +502,7 @@ VOID p2pDevFsmRunEventChannelRequest(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T pr
 	do {
 		ASSERT_BREAK((prAdapter != NULL) && (prMsgHdr != NULL));
 
-		DBGLOG(P2P, INFO, "p2pDevFsmRunEventChannelRequest\n");
+		DBGLOG(P2P, TRACE, "p2pDevFsmRunEventChannelRequest\n");
 
 		prP2pDevFsmInfo = prAdapter->rWifiVar.prP2pDevFsmInfo;
 
@@ -579,6 +585,22 @@ VOID p2pDevFsmRunEventChannelAbort(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMs
 			ASSERT((prP2pDevFsmInfo->eCurrentState == P2P_DEV_STATE_REQING_CHANNEL) ||
 			       (prP2pDevFsmInfo->eCurrentState == P2P_DEV_STATE_CHNL_ON_HAND));
 
+			if (prP2pDevFsmInfo->eCurrentState == P2P_DEV_STATE_REQING_CHANNEL) {
+
+				kalP2PIndicateChannelReady(prAdapter->prGlueInfo,
+							   prChnlReqInfo->u8Cookie,
+							   prChnlReqInfo->ucReqChnlNum,
+							   prChnlReqInfo->eBand,
+							   prChnlReqInfo->eChnlSco,
+							   prChnlReqInfo->u4MaxInterval);
+
+				kalP2PIndicateChannelExpired(prAdapter->prGlueInfo,
+								 prChnlReqInfo->u8Cookie,
+								 prChnlReqInfo->ucReqChnlNum,
+								 prChnlReqInfo->eBand,
+								 prChnlReqInfo->eChnlSco);
+			}
+
 			p2pDevFsmRunEventAbort(prAdapter, prP2pDevFsmInfo);
 
 			break;
@@ -592,10 +614,23 @@ VOID p2pDevFsmRunEventChannelAbort(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMs
 
 				if (prP2pMsgChnlReq->u8Cookie == prChnlAbortMsg->u8Cookie) {
 					LINK_REMOVE_KNOWN_ENTRY(&prChnlReqInfo->rP2pChnlReqLink, prLinkEntry);
-					cnmMemFree(prAdapter, prP2pMsgChnlReq);
-					DBGLOG(P2P, TRACE,
-					       "p2pDevFsmRunEventChannelAbort: Channel Abort, cookie found:%d\n",
+					DBGLOG(P2P, INFO, "Channel Abort. Indicating event, cookie found: 0x%llu\n",
 						prChnlAbortMsg->u8Cookie);
+
+					kalP2PIndicateChannelReady(prAdapter->prGlueInfo,
+								   prP2pMsgChnlReq->u8Cookie,
+								   prP2pMsgChnlReq->rChannelInfo.ucChannelNum,
+								   prP2pMsgChnlReq->rChannelInfo.eBand,
+								   prP2pMsgChnlReq->eChnlSco,
+								   prP2pMsgChnlReq->u4Duration);
+
+					kalP2PIndicateChannelExpired(prAdapter->prGlueInfo,
+									 prP2pMsgChnlReq->u8Cookie,
+									 prP2pMsgChnlReq->rChannelInfo.ucChannelNum,
+									 prP2pMsgChnlReq->rChannelInfo.eBand,
+									 prP2pMsgChnlReq->eChnlSco);
+
+					cnmMemFree(prAdapter, prP2pMsgChnlReq);
 					break;
 				}
 			}
