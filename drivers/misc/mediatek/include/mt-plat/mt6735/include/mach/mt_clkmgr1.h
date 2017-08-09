@@ -315,4 +315,10 @@ extern void slp_check_pm_mtcmos_pll(void);
 /* sram debug */
 extern void aee_rr_rec_clk(int id, u32 val);
 
+#ifdef CONFIG_MMC_MTK
+extern void msdc_clk_status(int *status);
+#else
+void msdc_clk_status(int *status) { *status = 0; }
+#endif
+
 #endif

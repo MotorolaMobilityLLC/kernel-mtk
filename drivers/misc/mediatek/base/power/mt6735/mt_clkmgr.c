@@ -11,15 +11,11 @@
 #include <linux/device.h>
 #include <linux/platform_device.h>
 #include <linux/smp.h>
-/* #include <linux/earlysuspend.h> */
 #include <linux/io.h>
 
-/* **** */
-/* #include <mach/mt_typedefs.h> */
 #include <mt-plat/sync_write.h>
 /* FIXME: change to mt_clkmgr.h after CCF is ready */
 #include <mach/mt_clkmgr1_legacy.h>
-/* #include <mach/mt_dcm.h> */
 #include "mt_spm.h"
 #include <mach/mt_spm_mtcmos.h>
 /* #include <mach/mt_spm_sleep.h> */
@@ -90,7 +86,7 @@ void __iomem *clk_venc_gcon_base;
 
 #define clk_readl(addr) \
 	readl(addr)
-    /* DRV_Reg32(addr) */
+	/* DRV_Reg32(addr) */
 
 #define clk_writel(addr, val)   \
 	mt_reg_sync_writel(val, addr)
@@ -463,8 +459,7 @@ static struct pll plls[NR_PLLS] = {
 	/* .base_addr = ARMCA7PLL_CON0, */
 	/* .pwr_addr = ARMCA7PLL_PWR_CON0, */
 	 .ops = &arm_pll_ops,
-	/* **** */
-	/* .hp_id = FH_ARM_PLLID, */
+	.hp_id = FH_ARM_PLLID,
 	.hp_switch = 1,
 	}, {
 	.name = __stringify(MAINPLL),
@@ -474,8 +469,7 @@ static struct pll plls[NR_PLLS] = {
 	/* .base_addr = MAINPLL_CON0, */
 	/* .pwr_addr = MAINPLL_PWR_CON0, */
 	.ops = &sdm_pll_ops,
-	/* **** */
-	/* .hp_id = FH_MAIN_PLLID, */
+	.hp_id = FH_MAIN_PLLID,
 	.hp_switch = 1,
 	}, {
 	.name = __stringify(MSDCPLL),
@@ -485,8 +479,7 @@ static struct pll plls[NR_PLLS] = {
 	/* .base_addr = MSDCPLL_CON0, */
 	/* .pwr_addr = MSDCPLL_PWR_CON0, */
 	.ops = &sdm_pll_ops,
-	/* **** */
-	/* .hp_id = FH_MSDC_PLLID, */
+	.hp_id = FH_MSDC_PLLID,
 	.hp_switch = 1,
 	}, {
 	 .name = __stringify(UNIVPLL),
@@ -504,8 +497,7 @@ static struct pll plls[NR_PLLS] = {
 	/* .base_addr = MMPLL_CON0, */
 	/* .pwr_addr = MMPLL_PWR_CON0, */
 	.ops = &sdm_pll_ops,
-	/* **** */
-	/* .hp_id = FH_MM_PLLID, */
+	.hp_id = FH_MM_PLLID,
 	.hp_switch = 1,
 	}, {
 	.name = __stringify(VENCPLL),
@@ -515,8 +507,7 @@ static struct pll plls[NR_PLLS] = {
 	/* .base_addr = VENCPLL_CON0, */
 	/* .pwr_addr = VENCPLL_PWR_CON0, */
 	.ops = &sdm_pll_ops,
-	/* **** */
-	/* .hp_id = FH_VENC_PLLID, */
+	.hp_id = FH_VENC_PLLID,
 	.hp_switch = 1,
 	}, {
 	.name = __stringify(TVDPLL),
@@ -526,8 +517,7 @@ static struct pll plls[NR_PLLS] = {
 	/* .base_addr = TVDPLL_CON0, */
 	/* .pwr_addr = TVDPLL_PWR_CON0, */
 	.ops = &sdm_pll_ops,
-	/* **** */
-	/* .hp_id = FH_TVD_PLLID, */
+	.hp_id = FH_TVD_PLLID,
 	.hp_switch = 1,
 	}, /* {
 	.name = __stringify(MPLL),
@@ -1308,26 +1298,26 @@ static int vde_sys_disable_op(struct subsys *sys)
 /*
 static int mjc_sys_enable_op(struct subsys *sys)
 {
-    int err;
+	int err;
 #ifdef SYS_LOG
-    clk_info("[%s]: sys->name=%s\n", __func__, sys->name);
+	clk_info("[%s]: sys->name=%s\n", __func__, sys->name);
 #endif
 
-    err = spm_mtcmos_ctrl_mjc(STA_POWER_ON);
-    larb_restore(MT_LARB_MJC);
-    return err;
+	err = spm_mtcmos_ctrl_mjc(STA_POWER_ON);
+	larb_restore(MT_LARB_MJC);
+	return err;
 }
 
 static int mjc_sys_disable_op(struct subsys *sys)
 {
-    int err;
+	int err;
 #ifdef SYS_LOG
-    clk_info("[%s]: sys->name=%s\n", __func__, sys->name);
+	clk_info("[%s]: sys->name=%s\n", __func__, sys->name);
 #endif
 
-    larb_backup(MT_LARB_MJC);
-    err = spm_mtcmos_ctrl_mjc(STA_POWER_DOWN);
-    return err;
+	larb_backup(MT_LARB_MJC);
+	err = spm_mtcmos_ctrl_mjc(STA_POWER_DOWN);
+	return err;
 }
 */
 static int ven_sys_enable_op(struct subsys *sys)
@@ -1357,24 +1347,24 @@ static int ven_sys_disable_op(struct subsys *sys)
 /*
 static int aud_sys_enable_op(struct subsys *sys)
 {
-    int err;
+	int err;
 #ifdef SYS_LOG
-    clk_info("[%s]: sys->name=%s\n", __func__, sys->name);
+	clk_info("[%s]: sys->name=%s\n", __func__, sys->name);
 #endif
 
-    err = spm_mtcmos_ctrl_aud(STA_POWER_ON);
-    return err;
+	err = spm_mtcmos_ctrl_aud(STA_POWER_ON);
+	return err;
 }
 
 static int aud_sys_disable_op(struct subsys *sys)
 {
-    int err;
+	int err;
 #ifdef SYS_LOG
-    clk_info("[%s]: sys->name=%s\n", __func__, sys->name);
+	clk_info("[%s]: sys->name=%s\n", __func__, sys->name);
 #endif
 
-    err = spm_mtcmos_ctrl_aud(STA_POWER_DOWN);
-    return err;
+	err = spm_mtcmos_ctrl_aud(STA_POWER_DOWN);
+	return err;
 }
 */
 
@@ -1689,10 +1679,10 @@ int md_power_on(int id)
 	clkmgr_lock(flags);
 	err = subsys_enable_internal(sys, "md");
 /*
-    if(id == 0)
-	spm_mtcmos_ctrl_mdsys1(STA_POWER_ON);
-    else
-	spm_mtcmos_ctrl_mdsys2(STA_POWER_ON);
+	if(id == 0)
+		spm_mtcmos_ctrl_mdsys1(STA_POWER_ON);
+	else
+		spm_mtcmos_ctrl_mdsys2(STA_POWER_ON);
 */
 	clkmgr_unlock(flags);
 
@@ -1754,10 +1744,10 @@ int md_power_off(int id, unsigned int timeout)
 	clkmgr_lock(flags);
 	err = subsys_disable_internal(sys, 0, "md");
 /*
-    if(id == 0)
-	spm_mtcmos_ctrl_mdsys1(STA_POWER_DOWN);
-    else
-	spm_mtcmos_ctrl_mdsys2(STA_POWER_DOWN);
+	if(id == 0)
+		spm_mtcmos_ctrl_mdsys1(STA_POWER_DOWN);
+	else
+		spm_mtcmos_ctrl_mdsys2(STA_POWER_DOWN);
 */
 	clkmgr_unlock(flags);
 
@@ -2381,15 +2371,15 @@ static struct clkmux_ops clkmux_ops = {
 static struct clkmux_ops hd_audio_clkmux_ops = {
 	.enable = clkmux_enable_op,
 	.disable = clkmux_disable_op,
-};*/
+};
+*/
 /*
 static void audio_clkmux_enable_op(struct clkmux *mux)
 {
 #ifdef MUX_LOG
-    //clk_info("[%s]: mux->name=%s\n", __func__, mux->name);
-    clk_dbg("[%s]: mux->name=%s\n", __func__, mux->name);
+	clk_dbg("[%s]: mux->name=%s\n", __func__, mux->name);
 #endif
-    clk_clrl(mux->base_addr, mux->pdn_mask);
+	clk_clrl(mux->base_addr, mux->pdn_mask);
 };
 */
 static struct clkmux_ops audio_clkmux_ops = {
@@ -3190,8 +3180,8 @@ int mt_enable_clock(int id, char *name)
 	clk_info("[%s]: id=%d, names=%s\n", __func__, id, name);
 #else
 /*
-    if ((id == MT_CG_DISP0_SMI_COMMON))
-	clk_dbg("[%s]: id=%d, names=%s\n", __func__, id, name);
+	if ((id == MT_CG_DISP0_SMI_COMMON))
+		clk_dbg("[%s]: id=%d, names=%s\n", __func__, id, name);
 */
 #endif
 
@@ -3223,8 +3213,8 @@ int mt_disable_clock(int id, char *name)
 	clk_info("[%s]: id=%d, names=%s\n", __func__, id, name);
 #else
 /*
-    if (id == MT_CG_DISP0_SMI_COMMON)
-	clk_dbg("[%s]: id=%d, names=%s\n", __func__, id, name);
+	if (id == MT_CG_DISP0_SMI_COMMON)
+		clk_dbg("[%s]: id=%d, names=%s\n", __func__, id, name);
 */
 #endif
 
@@ -3574,6 +3564,23 @@ static void mt_subsys_init(void)
 	}
 }
 
+static void pll_bootup_pdn(void)
+{
+	pr_warn("%s: close TVDPLL/APLL1/APLL2 during init\n", __func__);
+
+	clk_clrl(TVDPLL_CON0, 0x1);
+	clk_setl(TVDPLL_PWR_CON0, PLL_ISO_EN);
+	clk_clrl(TVDPLL_PWR_CON0, PLL_PWR_ON);
+
+	clk_clrl(APLL1_CON0, 0x1);
+	clk_setl(APLL1_PWR_CON0, PLL_ISO_EN);
+	clk_clrl(APLL1_PWR_CON0, PLL_PWR_ON);
+
+	clk_clrl(APLL2_CON0, 0x1);
+	clk_setl(APLL2_PWR_CON0, PLL_ISO_EN);
+	clk_clrl(APLL2_PWR_CON0, PLL_PWR_ON);
+}
+
 static void mt_plls_init(void)
 {
 	int i;
@@ -3898,8 +3905,11 @@ int mt_clkmgr_init(void)
 	mt_muxs_init();
 	mt_clks_init();
 
+#if !MT_CCF_BRINGUP
+	pll_bootup_pdn();
+#endif /* !MT_CCF_BRINGUP */
+
 	initialized = 1;
-/* **** */
 	mt_freqhopping_init();
 	print_grp_regs();
 
@@ -3908,57 +3918,45 @@ int mt_clkmgr_init(void)
 	return 0;
 }
 
-/* **** */
-/*
-#ifdef CONFIG_MTK_MMC
-extern void msdc_clk_status(int * status);
-#else
-void msdc_clk_status(int * status) { *status = 0; }
-#endif
-
-
-#define VEN_PWR_STA_MASK    (0x1 << 8)
-#define VDE_PWR_STA_MASK    (0x1 << 7)
-#define ISP_PWR_STA_MASK    (0x1 << 5)
-#define MFG_PWR_STA_MASK    (0x1 << 4)
+#define VEN_PWR_STA_MASK	(0x1 << 8)
+#define VDE_PWR_STA_MASK	(0x1 << 7)
+#define ISP_PWR_STA_MASK	(0x1 << 5)
+#define MFG_PWR_STA_MASK	(0x1 << 4)
 
 bool clkmgr_idle_can_enter(unsigned int *condition_mask, unsigned int *block_mask)
 {
-    int i,j;
-    unsigned int sd_mask = 0;
-    unsigned int cg_mask = 0;
+	int i, j;
+	unsigned int sd_mask = 0;
+	unsigned int cg_mask = 0;
 
 #ifdef PLL_CLK_LINK
-    unsigned int sta;
+	unsigned int sta;
 #endif
-    msdc_clk_status(&sd_mask);
-    if (sd_mask) {
-	block_mask[CG_PERI] |= sd_mask;
-	return false;
-    }
-
-    for (i = CG_INFRA; i < NR_GRPS; i++) {
-	cg_mask = grps[i].state & condition_mask[i];
-	if (cg_mask)
-		{
-			for (j = CG_INFRA; j < NR_GRPS; j++)
-			{
-				block_mask[j] = grps[j].state & condition_mask[j];
-			}
-
-	    //block_mask[i] |= cg_mask;
-	    return false;
+	msdc_clk_status(&sd_mask);
+	if (sd_mask) {
+		block_mask[CG_PERI] |= sd_mask;
+		return false;
 	}
-    }
+
+	for (i = CG_INFRA; i < NR_GRPS; i++) {
+		cg_mask = grps[i].state & condition_mask[i];
+		if (cg_mask) {
+			for (j = CG_INFRA; j < NR_GRPS; j++)
+				block_mask[j] = grps[j].state & condition_mask[j];
+
+			/* block_mask[i] |= cg_mask; */
+			return false;
+		}
+	}
 
 #ifdef PLL_CLK_LINK
-    sta = clk_readl(SPM_PWR_STATUS);
-    if (sta & (MFG_PWR_STA_MASK | ISP_PWR_STA_MASK | VDE_PWR_STA_MASK | VEN_PWR_STA_MASK))
-	return false;
+	sta = clk_readl(SPM_PWR_STATUS);
+	if (sta & (MFG_PWR_STA_MASK | ISP_PWR_STA_MASK | VDE_PWR_STA_MASK | VEN_PWR_STA_MASK))
+		return false;
 #endif
-    return true;
+	return true;
 }
-*/
+
 static unsigned int clk_cfg_4;
 void clkmgr_faudintbus_pll2sq(void)
 {
@@ -4791,12 +4789,6 @@ static int mt_clkmgr_debug_module_init(void)
 
 	mt_clkmgr_debug_init();
 
-#if 0
-#ifdef CONFIG_HAS_EARLYSUSPEND
-	register_early_suspend(&mt_clkmgr_early_suspend_handler);
-#endif
-#endif
-
 	ret = platform_device_register(&clkmgr_device);
 	if (ret) {
 		clk_info("clkmgr_device register fail(%d)\n", ret);
@@ -4841,7 +4833,6 @@ late_initcall(mt_clkmgr_late_init);
 
 void all_force_off(void)
 {
-/* **** */
 #if 0
 
 	clk_info("All force off\n");
