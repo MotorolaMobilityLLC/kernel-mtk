@@ -713,6 +713,16 @@ static int mtkfb_remove(struct device *dev)
 	return 0;
 }
 
+int mtkfb_set_backlight_mode(unsigned int mode)
+{
+	return 0;
+}
+
+int mtkfb_set_backlight_level(unsigned int level)
+{
+	return 0;
+}
+
 int mtkfb_ipo_init(void)
 {
 	return 0;

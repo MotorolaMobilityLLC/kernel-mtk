@@ -217,6 +217,16 @@ static int mtkfb_set_par(struct fb_info *fbi)
 	return 0;
 }
 
+int mtkfb_set_backlight_mode(unsigned int mode)
+{
+	return 0;
+}
+
+int mtkfb_set_backlight_level(unsigned int level)
+{
+	return 0;
+}
+
 static int mtkfb_pan_display_impl(struct fb_var_screeninfo *var, struct fb_info *info)
 {
 
