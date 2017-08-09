@@ -54,25 +54,11 @@ extern void mt_irq_set_polarity(unsigned int irq, unsigned int polarity);
 /* In order with the suquence of device nodes defined in dtsi */
 typedef enum {
 	ISP_IMGSYS_CONFIG_IDX = 0,
-	ISP_SMI_LARB6_IDX,
 	ISP_DIP_A_IDX, /* Remider: Add this device node manually in .dtsi */
-	ISP_DIP_A0_IDX,
-	ISP_DIP_A1_IDX,
-	ISP_DIP_A_NBC_IDX,
 	ISP_CAMSYS_CONFIG_IDX,
-	ISP_SMI_LARB2_IDX,
 	ISP_UNI_A_IDX, /* CAMTOP in .dtsi */
 	ISP_CAM_A_IDX,
 	ISP_CAM_B_IDX,
-	ISP_CAMTOP_SET_IDX,
-	ISP_CAMA_SET_IDX,
-	ISP_CAMB_SET_IDX,
-	ISP_CAMTOP_INNER_IDX,
-	ISP_CAMA_INNER_IDX,
-	ISP_CAMB_INNER_IDX,
-	ISP_CAMTOP_CLR_IDX,
-	ISP_CAMA_CLR_IDX,
-	ISP_CAMB_CLR_IDX,
 	ISP_CAMSV0_IDX,
 	ISP_CAMSV1_IDX,
 	ISP_CAMSV2_IDX,

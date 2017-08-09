@@ -352,6 +352,26 @@ const ISR_TABLE IRQ_CB_TBL[ISP_IRQ_TYPE_AMOUNT] = {
 	{NULL,                      0,  "camtop"} /* UNI */ /* QQ temp */
 };
 
+/*
+ * Note!!! The order and member of .compatible must be the same with that in
+ *  "ISP_DEV_NODE_ENUM" in camera_isp.h
+ */
+static const struct of_device_id isp_of_ids[] = {
+	{ .compatible = "mediatek,imgsys_config", },
+	{ .compatible = "mediatek,dip_a", }, /* Remider: Add this device node manually in .dtsi */
+	{ .compatible = "mediatek,camsys_config", },
+	{ .compatible = "mediatek,camtop", },
+	{ .compatible = "mediatek,cama", },
+	{ .compatible = "mediatek,camb", },
+	{ .compatible = "mediatek,camsv00", },
+	{ .compatible = "mediatek,camsv01", },
+	{ .compatible = "mediatek,camsv10", },
+	{ .compatible = "mediatek,camsv11", },
+	{ .compatible = "mediatek,camsv20", },
+	{ .compatible = "mediatek,camsv21", },
+	{}
+};
+
 #endif
 /* //////////////////////////////////////////////////////////////////////////////////////////// */
 /*  */
@@ -4216,8 +4236,6 @@ static void ISP_EnableClock(MBOOL En)
 #endif
 	/* Disable CAMSYS_HALT1_EN: LSCI & BPCI, To avoid ISP halt keep arise */
 	ISP_WR32(ISP_CAMSYS_CONFIG_BASE + 0x120, 0xFFFFF7EF);
-
-	LOG_INF("enable clock!! ISP halt_en:0x%x", ISP_RD32(ISP_CAMSYS_CONFIG_BASE + 0x120));
 
 	} else {                /* Disable clock. */
 #if defined(EVEREST_EP_NO_CLKMGR) || defined(CONFIG_MTK_CLKMGR)
@@ -9767,41 +9785,6 @@ int ISP_pm_restore_noirq(struct device *device)
 /*---------------------------------------------------------------------------*/
 #endif /*CONFIG_PM*/
 /*---------------------------------------------------------------------------*/
-#ifdef CONFIG_OF
-/*
- * Note!!! The order and member of .compatible must be the same with that in
- *  "ISP_DEV_NODE_ENUM" in camera_isp.h
- */
-static const struct of_device_id isp_of_ids[] = {
-	{ .compatible = "mediatek,imgsys_config", },
-	{ .compatible = "mediatek,smi_larb6", },
-	{ .compatible = "mediatek,dip_a", }, /* Remider: Add this device node manually in .dtsi */
-	{ .compatible = "mediatek,dip_a0", },
-	{ .compatible = "mediatek,dip_a1", },
-	{ .compatible = "mediatek,dip_a_nbc", },
-	{ .compatible = "mediatek,camsys_config", },
-	{ .compatible = "mediatek,smi_larb2", },
-	{ .compatible = "mediatek,camtop", },
-	{ .compatible = "mediatek,cama", },
-	{ .compatible = "mediatek,camb", },
-	{ .compatible = "mediatek,camtop_set", },
-	{ .compatible = "mediatek,cama_set", },
-	{ .compatible = "mediatek,camb_set", },
-	{ .compatible = "mediatek,camtop_inner", },
-	{ .compatible = "mediatek,cama_inner", },
-	{ .compatible = "mediatek,camb_inner", },
-	{ .compatible = "mediatek,camtop_clr", },
-	{ .compatible = "mediatek,cama_clr", },
-	{ .compatible = "mediatek,camb_clr", },
-	{ .compatible = "mediatek,camsv00", },
-	{ .compatible = "mediatek,camsv01", },
-	{ .compatible = "mediatek,camsv10", },
-	{ .compatible = "mediatek,camsv11", },
-	{ .compatible = "mediatek,camsv20", },
-	{ .compatible = "mediatek,camsv21", },
-	{}
-};
-#endif
 
 struct dev_pm_ops ISP_pm_ops = {
 	.suspend = ISP_pm_suspend,
