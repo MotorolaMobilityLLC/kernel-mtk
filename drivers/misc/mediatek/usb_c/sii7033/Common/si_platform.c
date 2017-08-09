@@ -14,6 +14,7 @@
 #include "si_usbpd_main.h"
 
 #include <linux/of_irq.h>
+#include <typec.h>
 
 void sii_platform_block_write8(const uint8_t addr, const uint8_t *p_data, uint16_t size)
 {
@@ -151,6 +152,14 @@ void sii_platform_vbus_gpio_control(struct sii70xx_drv_context *drv_context, uin
 
 void sii70xx_platform_reset(struct sii70xx_drv_context *drv_context)
 {
+	struct usbtypc *typec;
+
+	typec = g_exttypec;
+	pinctrl_select_state(typec->pinctrl, typec->pin_cfg->sii7033_rst_low);
+	msleep(20);
+	pinctrl_select_state(typec->pinctrl, typec->pin_cfg->sii7033_rst_high);
+
+	pr_err("rst_n=0x%x, out=%d\n", 251, gpio_get_value(251));
 #if 0
 	/*TODO... */
 	int retval = 0;

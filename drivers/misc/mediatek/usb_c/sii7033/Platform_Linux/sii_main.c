@@ -133,6 +133,8 @@ void sii70xx_gpio_init(void)
 	u32 ints[2] = { 0, 0 };
 	unsigned int gpiopin, debounce;
 
+	pinctrl_select_state(g_exttypec->pinctrl, g_exttypec->pin_cfg->sii7033_rst_init);
+
 	node = of_find_compatible_node(NULL, NULL, "mediatek,fusb300-eint");
 	if (node) {
 		of_property_read_u32_array(node, "debounce", ints, ARRAY_SIZE(ints));
@@ -144,6 +146,7 @@ void sii70xx_gpio_init(void)
 	}
 
 	g_exttypec->irqnum = irq_of_parse_and_map(node, 0);
+	g_exttypec->en_irq = 1;
 	pr_err("sii70xx_gpio_init : %d\n", g_exttypec->irqnum);
 }
 
@@ -151,7 +154,7 @@ int usb_redriver_init(struct usbtypc *typec)
 {
 	int retval = 0;
 	int u3_eq_c1 = 197;
-	int u3_eq_c2 = 198;
+	int u3_eq_c2 = 196;
 
 	typec->u_rd = kzalloc(sizeof(struct usb_redriver), GFP_KERNEL);
 	typec->u_rd->c1_gpio = u3_eq_c1;
@@ -298,7 +301,7 @@ static int usbc_pinctrl_probe(struct platform_device *pdev)
 
 		pr_info("pinctrl=%p\n", typec->pinctrl);
 
-			/********************************************************/
+		/********************************************************/
 		typec->pin_cfg->re_c1_init =
 		    pinctrl_lookup_state(typec->pinctrl, "redriver_c1_init");
 		if (IS_ERR(typec->pin_cfg->re_c1_init))
@@ -306,18 +309,38 @@ static int usbc_pinctrl_probe(struct platform_device *pdev)
 		else
 			pr_info("Find redriver_c1_init\n");
 
-			/********************************************************/
-
+		/********************************************************/
 		typec->pin_cfg->re_c2_init =
 		    pinctrl_lookup_state(typec->pinctrl, "redriver_c2_init");
 		if (IS_ERR(typec->pin_cfg->re_c2_init))
 			pr_info("Can *NOT* find redriver_c2_init\n");
 		else
 			pr_info("Find redriver_c2_init\n");
+		/********************************************************/
+		typec->pin_cfg->sii7033_rst_init =
+			pinctrl_lookup_state(typec->pinctrl, "sii7033_rst_init");
+		if (IS_ERR(typec->pin_cfg->sii7033_rst_init))
+			pr_info("Can *NOT* find sii7033_rst_init\n");
+		else
+			pr_info("Find sii7033_rst_init\n");
 
-			/********************************************************/
-			/********************************************************/
-			/********************************************************/
+		/********************************************************/
+		typec->pin_cfg->sii7033_rst_low =
+		    pinctrl_lookup_state(typec->pinctrl, "sii7033_rst_low");
+		if (IS_ERR(typec->pin_cfg->sii7033_rst_low))
+			pr_info("Can *NOT* find sii7033_rst_low\n");
+		else
+			pr_info("Find sii7033_rst_low\n");
+
+		/********************************************************/
+		typec->pin_cfg->sii7033_rst_high =
+		    pinctrl_lookup_state(typec->pinctrl, "sii7033_rst_high");
+		if (IS_ERR(typec->pin_cfg->sii7033_rst_high))
+			pr_info("Can *NOT* find sii7033_rst_high\n");
+		else
+			pr_info("Find sii7033_rst_high\n");
+
+		/********************************************************/
 		pr_info("Finish parsing pinctrl\n");
 	}
 	return retval;
@@ -373,7 +396,8 @@ static int sii_i2c_probe(struct i2c_client *client, const struct i2c_device_id *
 	i2c_dev_client = client;
 	usbpd_pf_i2c_init(client->adapter);
 
-	g_exttypec = kzalloc(sizeof(struct usbtypc), GFP_KERNEL);
+	if (!g_exttypec)
+		g_exttypec = kzalloc(sizeof(struct usbtypc), GFP_KERNEL);
 	sii70xx_gpio_init();
 	usb_redriver_init(g_exttypec);
 	g_exttypec->en_irq = 1;

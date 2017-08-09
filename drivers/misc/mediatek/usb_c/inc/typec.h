@@ -76,6 +76,9 @@ struct usbc_pin_ctrl {
 struct usbc_pin_ctrl {
 	struct pinctrl_state *re_c1_init;
 	struct pinctrl_state *re_c2_init;
+	struct pinctrl_state *sii7033_rst_init;
+	struct pinctrl_state *sii7033_rst_low;
+	struct pinctrl_state *sii7033_rst_high;
 };
 #elif defined(CONFIG_USB_C_SWITCH_ANX7418)
 struct usbc_pin_ctrl {
