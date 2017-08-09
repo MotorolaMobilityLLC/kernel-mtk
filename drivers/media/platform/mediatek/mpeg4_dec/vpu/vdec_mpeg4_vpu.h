@@ -18,7 +18,6 @@
 struct vdec_mpeg4_mem {
 	uint32_t size;
 	uint64_t dma_addr;
-	uint64_t va_addr;
 };
 
 struct vdec_mpeg4_wb {
@@ -29,11 +28,18 @@ struct vdec_mpeg4_wb {
 struct vdec_mpeg4_bs {
 	uint32_t size;
 	uint64_t dma_addr;
+#ifdef DEBUG_HW_PARSE
 	uint64_t va_addr;
+#endif
 };
 
 struct vdec_mpeg4_fb {
+#ifdef Y_C_SEPARATE
+	uint64_t y_dma_addr;
+	uint64_t c_dma_addr;
+#else
 	uint64_t dma_addr;
+#endif
 	uint64_t fb_va;
 };
 

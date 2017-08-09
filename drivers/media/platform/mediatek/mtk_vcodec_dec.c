@@ -457,7 +457,7 @@ void mtk_vdec_worker(struct work_struct *work)
 
 #ifdef Y_C_SEPARATE
 	mtk_v4l2_debug(8,
-			"idx=%d Framebuf  pfb=%p VA=%p Y_DMA=%llx C_DMA=%llx Size=0x%lx",
+			"idx=%d Framebuf  pfb=%p VA=%p Y_DMA=%llx C_DMA=%llx Size=0x%zx",
 			dst_buf->v4l2_buf.index, pfb,
 			pfb->base_y.va, (u64)pfb->base_y.dma_addr,
 			(u64)pfb->base_c.dma_addr, pfb->base_y.size);
