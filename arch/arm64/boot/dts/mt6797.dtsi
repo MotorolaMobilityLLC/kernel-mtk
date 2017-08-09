@@ -3226,6 +3226,36 @@ initrd=0x44000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 			compatible = "mediatek,imgsys_config";
 			reg = <0x15000000  0x1000>;
 			#clock-cells = <1>;
+			/* Camera CCF */
+			clocks = <&scpsys SCP_SYS_DIS>,
+				<&mmsys MM_SMI_COMMON>,
+				<&scpsys SCP_SYS_ISP>,
+				<&imgsys IMG_LARB6>,
+				<&imgsys IMG_DIP>,
+				<&imgsys IMG_DPE>,
+				<&imgsys IMG_FDVT>,
+				<&camsys CAM_LARB2>,
+				<&camsys CAM_CAMSYS>,
+				<&camsys CAM_CAMTG>,
+				<&camsys CAM_SENINF>,
+				<&camsys CAM_CAMSV0>,
+				<&camsys CAM_CAMSV1>,
+				<&camsys CAM_CAMSV2>;
+
+			clock-names = "ISP_SCP_SYS_DIS",
+				"ISP_MM_SMI_COMMON",
+				"ISP_SCP_SYS_ISP",
+				"ISP_IMG_LARB6",
+				"ISP_IMG_DIP",
+				"ISP_IMG_DPE",
+				"ISP_IMG_FDVT",
+				"ISP_CAM_LARB2",
+				"ISP_CAM_CAMSYS",
+				"ISP_CAM_CAMTG",
+				"ISP_CAM_SENINF",
+				"ISP_CAM_CAMSV0",
+				"ISP_CAM_CAMSV1",
+				"ISP_CAM_CAMSV2";
 		};
 
 		smi_larb6@15001000 {
