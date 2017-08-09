@@ -2729,7 +2729,6 @@ void do_chrdet_int_task(void)
 			battery_log(BAT_LOG_CRTI, "[do_chrdet_int_task] charger exist!\n");
 			BMT_status.charger_exist = KAL_TRUE;
 
-			cable_in_uevent = 1;
 
 			wake_lock(&battery_suspend_lock);
 
@@ -2786,6 +2785,8 @@ void do_chrdet_int_task(void)
 #endif
 
 		}
+
+		cable_in_uevent = 1;
 
 		/* reset_parameter_dod_charger_plug_event(); */
 		wakeup_fg_algo(FG_CHARGER);
