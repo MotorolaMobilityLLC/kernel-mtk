@@ -260,7 +260,13 @@ static unsigned long set_adaptive_wifi_tput_limit(unsigned int cur_tput, unsigne
 			limit_upper_bound = cur_tput;
 		}
 		limit_tput = (prev_limit_tput * limit_ratio) / init_wifi_tput_ratio;
-		limit_tput = clamp(limit_tput, min_wifi_tput, limit_upper_bound);
+
+		if (limit_upper_bound >= min_wifi_tput)
+			limit_tput = clamp(limit_tput, min_wifi_tput, limit_upper_bound);
+		else
+			limit_tput = -1;
+
+
 		prev_limit_tput = limit_tput;
 	}
 
