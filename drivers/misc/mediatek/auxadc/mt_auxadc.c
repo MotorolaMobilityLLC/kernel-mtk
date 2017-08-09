@@ -58,6 +58,9 @@ static struct clk *clk_auxadc;
 #ifdef CONFIG_OF
 void __iomem *auxadc_base = NULL;
 void __iomem *auxadc_apmix_base = NULL;
+#if defined(CONFIG_ARCH_MT6735) || defined(CONFIG_ARCH_MT6735M) || defined(CONFIG_ARCH_MT6753)
+void __iomem *auxadc_efuse_base = NULL;
+#endif
 #endif
 
 #if !defined(CONFIG_MTK_CLKMGR)
@@ -196,7 +199,14 @@ static int IMM_auxadc_GetOneChannelValue(int dwChannel, int data[4], int *rawdat
 	int idle_count = 0;
 	int data_ready_count = 0;
 	int ret = 0;
-
+#if defined(CONFIG_ARCH_MT6735) || defined(CONFIG_ARCH_MT6735M) || defined(CONFIG_ARCH_MT6753)
+	u32 cali_reg = 0;
+	u32 cali_ge_a = 0;
+	u32 cali_oe_a = 0;
+	u32 cali_ge = 0;
+	u32 cali_oe = 0;
+	u32 gain = 1;
+#endif
 	mutex_lock(&mutex_get_cali_value);
 
 #if !defined(CONFIG_MTK_CLKMGR)
@@ -221,7 +231,18 @@ static int IMM_auxadc_GetOneChannelValue(int dwChannel, int data[4], int *rawdat
 	}
 #endif
 #endif
-
+#if defined(CONFIG_ARCH_MT6735) || defined(CONFIG_ARCH_MT6735M) || defined(CONFIG_ARCH_MT6753)
+	cali_reg = (*(volatile unsigned int * const)(ADC_CALI_EN_A_REG));
+	if ((cali_reg & (1 << 10)) != 0) {
+		cali_oe_a = cali_reg & 0x3FF;
+		cali_ge_a = ((cali_reg & 0x3FF0000) >> 16);
+		cali_ge = (cali_ge_a - 512)/4096;
+		cali_oe = cali_oe_a - 512;
+		gain = 1 + cali_ge;
+	}
+	pr_debug("[AUXADC] cali_reg(%x),cali_oe_a(%x), cali_ge_a(%x),cali_ge(%x),cali_oe(%x),gain(%x)\n",
+		(cali_reg & (1 << 10)), cali_oe_a, cali_ge_a, cali_ge, cali_oe, gain);
+#endif
 	if (dwChannel == PAD_AUX_XP || dwChannel == PAD_AUX_YM)
 		mt_auxadc_disable_penirq();
 	/* step1 check con2 if auxadc is busy */
@@ -278,12 +299,21 @@ static int IMM_auxadc_GetOneChannelValue(int dwChannel, int data[4], int *rawdat
 	/* step6 read data */
 
 	channel[dwChannel] = AUXADC_DRV_ReadReg16(AUXADC_DAT0 + dwChannel * 0x04) & 0x0FFF;
+#if defined(CONFIG_ARCH_MT6735) || defined(CONFIG_ARCH_MT6735M) || defined(CONFIG_ARCH_MT6753)
+	if (NULL != rawdata)
+		*rawdata = (channel[dwChannel] - cali_oe)/gain;
+
+	pr_debug("[adc_api: imm mode raw data => channel[%d] = %d\n", dwChannel, channel[dwChannel]);
+	data[0] = (channel[dwChannel] / 1000);
+	data[1] = (channel[dwChannel] % 1000);
+	pr_debug("[adc_api]: imm mode => channel[%d] = %d.%02d\n", dwChannel, data[0], data[1]);
+#else
 	if (NULL != rawdata)
 		*rawdata = channel[dwChannel];
 
 	data[0] = (channel[dwChannel] * 150 / AUXADC_PRECISE / 100);
 	data[1] = ((channel[dwChannel] * 150 / AUXADC_PRECISE) % 100);
-
+#endif
 #if !defined(CONFIG_MTK_CLKMGR)
 	if (clk_auxadc) {
 		clk_disable_unprepare(clk_auxadc);
@@ -328,6 +358,22 @@ static int IMM_auxadc_GetOneChannelValue_Cali(int Channel, int *voltage)
 
 }
 
+#if defined(CONFIG_ARCH_MT6735) || defined(CONFIG_ARCH_MT6735M) || defined(CONFIG_ARCH_MT6753)
+static struct task_struct *thread;
+
+static int auxadc_test_cali(void *unused)
+{
+	int data[4], raw;
+
+	do {
+		msleep(5000);
+		IMM_auxadc_GetOneChannelValue(0, data, &raw);
+		pr_debug("[AUXADC] adc channel 0 value: (%d);%d.%d\n", raw, data[0], data[1]);
+	} while (1);
+
+	return 0;
+}
+#endif
 static void mt_auxadc_cal_prepare(void)
 {
 	/* no voltage calibration */
@@ -335,6 +381,9 @@ static void mt_auxadc_cal_prepare(void)
 
 void mt_auxadc_hal_init(struct platform_device *dev)
 {
+#if defined(CONFIG_ARCH_MT6735) || defined(CONFIG_ARCH_MT6735M) || defined(CONFIG_ARCH_MT6753)
+	int err = 0;
+#endif
 #ifdef CONFIG_OF
 	struct device_node *node;
 
@@ -354,10 +403,27 @@ void mt_auxadc_hal_init(struct platform_device *dev)
 	if (!auxadc_base)
 		pr_err("[AUXADC] base failed\n");
 
+#if defined(CONFIG_ARCH_MT6735) || defined(CONFIG_ARCH_MT6735M) || defined(CONFIG_ARCH_MT6753)
+	node = of_find_compatible_node(NULL, NULL, "mediatek,EFUSEC");
+	if (!node)
+		pr_debug("[AUXADC] find node failed\n");
+
+	auxadc_efuse_base = of_iomap(node, 0);
+	if (!auxadc_efuse_base)
+		pr_debug("[AUXADC] auxadc_efuse_base base failed\n");
+
+	pr_debug("[AUXADC]: auxadc_efuse_base:0x%p\n", auxadc_efuse_base);
+#endif
 	pr_debug("[AUXADC]: auxadc:0x%p\n", auxadc_base);
 
 #endif
-
+#if defined(CONFIG_ARCH_MT6735) || defined(CONFIG_ARCH_MT6735M) || defined(CONFIG_ARCH_MT6753)
+	thread = kthread_run(auxadc_test_cali, 0, "adc_cali_test");
+	if (IS_ERR(thread)) {
+		err = PTR_ERR(thread);
+		pr_debug("[AUXADC] failed to create kernel thread: %d\n", err);
+	}
+#endif
 	mt_auxadc_cal_prepare();
 	/* AUXADC_DRV_SetBits16((volatile u16 *)AUXADC_CON_RTP, 1);             //disable RTP */
 }

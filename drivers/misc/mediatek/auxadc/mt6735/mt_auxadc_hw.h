@@ -4,11 +4,13 @@
 #ifdef CONFIG_OF
 extern void __iomem *auxadc_base;
 extern void __iomem *auxadc_apmix_base;
+extern void __iomem *auxadc_efuse_base;
 #undef AUXADC_BASE
 #undef APMIXED_BASE
+#undef EFUSEC_BASE
 #define AUXADC_BASE auxadc_base
 #define APMIXED_BASE auxadc_apmix_base
-
+#define EFUSEC_BASE auxadc_efuse_base
 #else
 #include <mach/mt_reg_base.h>
 #endif
@@ -16,7 +18,7 @@ extern void __iomem *auxadc_apmix_base;
 #define ADC_CHANNEL_MAX 16
 
 #define MT_PDN_PERI_AUXADC MT_CG_PERI_AUXADC
-
+#define ADC_CALI_EN_A_REG		(EFUSEC_BASE + 0x548)
 #define AUXADC_NODE "mediatek,mt6735-auxadc"
 
 #define AUXADC_CON0             (AUXADC_BASE + 0x000)
