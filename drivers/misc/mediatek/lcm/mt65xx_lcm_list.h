@@ -8,6 +8,8 @@ extern LCM_DRIVER lcm_common_drv;
 #else
 extern LCM_DRIVER otm1282a_hd720_dsi_vdo_60hz_lcm_drv;
 extern LCM_DRIVER otm1282a_hd720_dsi_vdo_lcm_drv;
+extern LCM_DRIVER nt35595_fhd_dsi_cmd_truly_8163_lcm_drv;
+extern LCM_DRIVER nt35523_wxga_dsi_vdo_8163_lcm_drv;
 extern LCM_DRIVER vvx10f008b00_wuxga_dsi_vdo_lcm_drv;
 extern LCM_DRIVER r63319_wqhd_dsi_vdo_truly_lcm_drv;
 extern LCM_DRIVER nt35598_wqhd_dsi_vdo_truly_lcm_drv;
