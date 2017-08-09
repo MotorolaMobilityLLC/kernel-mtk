@@ -72,6 +72,7 @@ static const struct of_device_id kpd_of_match[] = {
 	{.compatible = "mediatek,mt6755-keypad"},
 	{.compatible = "mediatek,mt8173-keypad"},
 	{.compatible = "mediatek,mt6797-keypad"},
+	{.compatible = "mediatek,mt8163-keypad"},
 	{},
 };
 
@@ -795,8 +796,10 @@ static int kpd_pdrv_probe(struct platform_device *pdev)
 	kpd_info("kp base: 0x%p, addr:0x%p,  kp irq: %d\n", kp_base, &kp_base, kp_irqnr);
 	/* initialize and register input device (/dev/input/eventX) */
 	kpd_input_dev = input_allocate_device();
-	if (!kpd_input_dev)
+	if (!kpd_input_dev) {
+		kpd_print("input allocate device fail.\n");
 		return -ENOMEM;
+	}
 
 	kpd_input_dev->name = KPD_NAME;
 	kpd_input_dev->id.bustype = BUS_HOST;
