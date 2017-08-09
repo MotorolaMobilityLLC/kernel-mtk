@@ -273,8 +273,10 @@ static int mt_pcm_dl1_prestart(struct snd_pcm_substream *substream)
 		mt_afe_set_connection(INTER_CONNECT, INTER_CONN_I05, INTER_CONN_O00);
 		mt_afe_set_connection(INTER_CONNECT, INTER_CONN_I06, INTER_CONN_O01);
 
+#ifdef ENABLE_I2S0_CLK_RESYNC
 		/* i2s0 soft reset begin */
 		mt_afe_set_reg(AUDIO_TOP_CON1, 0x2, 0x2);
+#endif
 
 		mt_afe_set_sample_rate(MT_AFE_DIGITAL_BLOCK_MEM_I2S, runtime->rate);
 
@@ -314,9 +316,11 @@ static int mt_pcm_dl1_prestart(struct snd_pcm_substream *substream)
 
 		mt_afe_enable_2nd_i2s_out();
 
+#ifdef ENABLE_I2S0_CLK_RESYNC
 		/* i2s0 soft reset end */
 		udelay(1);
 		mt_afe_set_reg(AUDIO_TOP_CON1, 0x0, 0x2);
+#endif
 
 		priv->enable_i2s0 = true;
 	}
