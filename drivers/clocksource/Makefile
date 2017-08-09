@@ -44,6 +44,7 @@ obj-$(CONFIG_VF_PIT_TIMER)	+= vf_pit_timer.o
 obj-$(CONFIG_CLKSRC_QCOM)	+= qcom-timer.o
 obj-$(CONFIG_MTK_TIMER)		+= mtk_timer.o
 obj-$(CONFIG_ARCH_MT6797)	+= cpuxgpt_mt6797.o gpt_mt6797.o arch_timer_mt6797.o
+obj-$(CONFIG_ARCH_MT8173)	+= cpuxgpt_mt8173.o
 
 ifneq (,$(filter $(CONFIG_ARCH_MT6735) $(CONFIG_ARCH_MT6735M) $(CONFIG_ARCH_MT6753) $(CONFIG_ARCH_MT6755) $(CONFIG_ARCH_MT6797) $(CONFIG_ARCH_MT6580), y))
 else
