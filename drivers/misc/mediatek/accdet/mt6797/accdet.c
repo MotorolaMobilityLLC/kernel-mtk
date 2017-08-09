@@ -12,6 +12,9 @@
 /*----------------------------------------------------------------------
 static variable defination
 ----------------------------------------------------------------------*/
+/* for accdet_read_audio_res */
+#define RET_LT_5K		-1/* less than 5k ohm, return -1 */
+#define RET_GT_5K		0/* greater than 5k ohm, return 0 */
 
 #define REGISTER_VALUE(x)   (x - 1)
 static int button_press_debounce = 0x400;
@@ -106,8 +109,29 @@ char *accdet_report_string[4] = {
 	/* "Double_check"*/
 };
 /****************************************************************/
-/***        export function                                                                        **/
+/***        export function                                    **/
 /****************************************************************/
+/* get plug-in Resister just for audio call */
+int accdet_read_audio_res(unsigned int res_value)
+{
+	ACCDET_DEBUG("[accdet_read_audio_res]resister value: R=%u(ohm)\n", res_value);
+	/* res < 5k ohm normal device; res >= 5k ohm, lineout device */
+	if (res_value < 5000)
+		return RET_LT_5K;
+
+	mutex_lock(&accdet_eint_irq_sync_mutex);
+	if (1 == eint_accdet_sync_flag) {
+		cable_type = LINE_OUT_DEVICE;
+		accdet_status = LINE_OUT;
+		/* update state */
+		switch_set_state((struct switch_dev *)&accdet_data, cable_type);
+		ACCDET_DEBUG("[accdet_read_audio_res]update state:%d\n", cable_type);
+	}
+	mutex_unlock(&accdet_eint_irq_sync_mutex);
+
+	return RET_GT_5K;
+}
+EXPORT_SYMBOL(accdet_read_audio_res);
 
 void accdet_detect(void)
 {
