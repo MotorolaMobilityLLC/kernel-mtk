@@ -244,7 +244,7 @@ enum {
 /* Idle handler on/off */
 static int idle_switch[NR_TYPES] = {
 	0,  /* dpidle switch */
-	0,  /* soidle switch */
+	1,  /* soidle switch */
 	1,  /* slidle switch */
 	1,  /* rgidle switch */
 };
