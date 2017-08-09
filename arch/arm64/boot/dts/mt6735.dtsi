@@ -1128,6 +1128,12 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 			clock-names = "MDP_TDSHP";
 		};
 
+		dpi@14012000 {
+			compatible = "mediatek,mt6735-dpi";
+			reg = <0x14012000 0x1000>;
+			interrupts = <GIC_SPI 204 IRQ_TYPE_LEVEL_LOW>;
+		};
+
 		dispsys: dispsys@14007000 {
 			compatible = "mediatek,mt6735-dispsys";
 
@@ -1235,6 +1241,10 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 				      "TVDPLL_D2",
 				      "DPI_CK",
 				      "DISP_MTCMOS_CLK";
+		};
+
+		hdmi:hdmi@0 {
+			compatible = "mediatek,sii8348-hdmi";
 		};
 
 		smi_larb0@14015000 {
