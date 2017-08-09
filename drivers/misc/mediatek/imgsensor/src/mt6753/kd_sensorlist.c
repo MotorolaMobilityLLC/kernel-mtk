@@ -9,12 +9,13 @@
 #include <linux/slab.h>
 #include <linux/proc_fs.h>   /* proc file use */
 #include <linux/dma-mapping.h>
-#include <linux/xlog.h>
+#include <linux/module.h>/*Luke++150701=For 3.18 build pass*/
+/*#include <linux/xlog.h> *//*Luke--150701=For 3.18 build pass*/
 #include <linux/seq_file.h>
-#include <mach/sync_write.h>
-
-#include "../camera/kd_camera_hw.h"
-
+#include <sync_write.h> /*Luke--150701=For 3.18 build pass*/
+#include <linux/types.h>
+#include "kd_camera_hw.h"
+#include "kd_camera_typedef.h"
 #include "kd_imgsensor.h"
 #include "kd_imgsensor_define.h"
 #include "kd_camera_feature.h"
@@ -36,7 +37,9 @@
 #include <linux/compat.h>
 #endif
 
-#include <mach/mt_chip.h>
+/*#include <mach/mt_chip.h>*//*Luke--150701=For 3.18 build pass */
+#include <mt_chip.h>/*Luke++150701=For 3.18 build pass */
+#undef CONFIG_MTK_LEGACY/*LukeHu++1500701=For Kernel 3.18 build pass*/
 /*kernel standard for CCF*/
 #ifdef CONFIG_MTK_CLKMGR
 /* mt_clkmgr */
@@ -162,9 +165,9 @@ static inline void KD_IMGSENSOR_PROFILE(char *tag) {}
 /*******************************************************************************
 *
 ********************************************************************************/
+/*LukeHu--150703=For Kernel Build Pass*/
 extern int kdCISModulePowerOn(CAMERA_DUAL_CAMERA_SENSOR_ENUM SensorIdx, char *currSensorName, BOOL On, char *mode_name);
-/* extern ssize_t strobe_VDIrq(void);  //cotta : add for high current solution */
-
+extern ssize_t strobe_VDIrq(void);  //cotta : add for high current solution
 /*******************************************************************************
 *
 ********************************************************************************/
@@ -2192,10 +2195,13 @@ static inline int kdSetSensorGpio(int *pBuf)
     #define GPIO_CMPCLK_M_CMCSK   GPIO_MODE_02
 #endif
     int ret = 0;
+    #if defined CONFIG_MTK_LEGACY
     IMGSENSOR_GPIO_STRUCT *pSensorgpio = (IMGSENSOR_GPIO_STRUCT *)pBuf;
+    #endif
 
     PK_DBG("[CAMERA SENSOR] kdSetSensorGpio enable=%d, type=%d\n",
     pSensorgpio->GpioEnable, pSensorgpio->SensroInterfaceType);
+
 #if defined CONFIG_MTK_LEGACY
 #ifndef CONFIG_MTK_FPGA
     /* Please use DCT to set correct GPIO setting (below message only for debug) */
@@ -2266,8 +2272,8 @@ static inline int kdSetSensorGpio(int *pBuf)
 #if !defined(CONFIG_MTK_LEGACY)
 bool Get_Cam_Regulator(void)
 {
-	int ret;
-	char *name = NULL;
+	/*int ret;*/
+	struct regulator *name = NULL;
 	struct device_node *node = NULL, *kd_node;
 	if (1) {
 		/* check if customer camera node defined */

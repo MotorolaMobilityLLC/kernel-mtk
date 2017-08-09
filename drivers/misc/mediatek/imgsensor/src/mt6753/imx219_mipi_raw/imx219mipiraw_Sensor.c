@@ -291,7 +291,7 @@ static void write_cmos_sensor(kal_uint32 addr, kal_uint32 para)
 	iWriteRegI2C(pu_send_cmd, 3, imgsensor.i2c_write_id);
 }
 
-static void set_dummy()
+static void set_dummy(void)
 {
 	LOG_INF("dummyline = %d, dummypixels = %d \n", imgsensor.dummy_line, imgsensor.dummy_pixel);
 	/* you can set dummy by imgsensor.dummy_line and imgsensor.dummy_pixel, or you can set dummy by imgsensor.frame_length and imgsensor.line_length */
@@ -302,7 +302,7 @@ static void set_dummy()
 
 }	/*	set_dummy  */
 
-static kal_uint32 return_sensor_id()
+static kal_uint32 return_sensor_id(void)
 {
 	return ((read_cmos_sensor(0x0000) << 8) | read_cmos_sensor(0x0001));
 	//int sensorid;
@@ -879,7 +879,7 @@ static void normal_video_setting(kal_uint16 currefps)
 	}
 
 }
-static void hs_video_setting()
+static void hs_video_setting(void)
 {
 	LOG_INF("E\n");
 
@@ -946,7 +946,7 @@ static void hs_video_setting()
 
 }
 
-static void slim_video_setting()
+static void slim_video_setting(void)
 {
 	LOG_INF("E\n");
 	write_cmos_sensor(0x0100,   0x00);
