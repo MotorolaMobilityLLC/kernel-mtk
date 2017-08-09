@@ -6,6 +6,7 @@
  *
  */
 
+#include <dt-bindings/clock/mt6797-clk.h>
 #include <dt-bindings/interrupt-controller/arm-gic.h>
 #include <dt-bindings/interrupt-controller/irq.h>
 #include <dt-bindings/mmc/mt6797-msdc.h>
@@ -160,6 +161,21 @@ initrd=0x44000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 		interrupts = <GIC_PPI 9 IRQ_TYPE_LEVEL_HIGH>;
 
 	};
+
+	clocks {
+		clk_null: clk_null {
+			compatible = "fixed-clock";
+			#clock-cells = <0>;
+			clock-frequency = <0>;
+		};
+
+		clk26m: clk26m {
+			compatible = "fixed-clock";
+			#clock-cells = <0>;
+			clock-frequency = <26000000>;
+		};
+	};
+
 	mt_pmic_regulator {
 		compatible = "mediatek,mt_pmic";
 		/*reg = <0x01>*/
@@ -495,14 +511,22 @@ initrd=0x44000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 					<0x0800000C 0x0004>;
 		};
 
-		topckgen@10000000 {
+		topckgen: topckgen@10000000 {
 			compatible = "mediatek,topckgen";
 			reg = <0x10000000 0x1000>;
+			#clock-cells = <1>;
 		};
 
-		infracfg_ao@10001000 {
+		scpsys: scpsys@10001000 {
+			compatible = "mediatek,mt6797-scpsys";
+			reg = <0x10001000 0x1000>, <0x10006000 0x1000>;
+			#clock-cells = <1>;
+		};
+
+		infrasys: infracfg_ao@10001000 {
 			compatible = "mediatek,infracfg_ao";
 			reg = <0x10001000 0x1000>;
+			#clock-cells = <1>;
 		};
 
 		iocfg_l@10002000 {
@@ -606,9 +630,10 @@ initrd=0x44000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 			mediatek,mapping_table_entry = <0>;
 		};
 
-		apmixed@1000c000 {
+		apmixedsys: apmixed@1000c000 {
 			compatible = "mediatek,apmixed";
 			reg = <0x1000c000 0x1000>;
+			#clock-cells = <1>;
 		};
 
 		fhctl@1000cf00 {
@@ -1345,10 +1370,11 @@ initrd=0x44000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 			 compatible = "usb-nop-xceiv";
 		};
 
-		audio@11220000 {
+		audiosys: audio@11220000 {
 			compatible = "mediatek,audio";
 			reg = <0x11220000 0x10000>;
 			interrupts = <GIC_SPI 151 IRQ_TYPE_LEVEL_LOW>;
+			#clock-cells = <1>;
 		};
 
 		audgpio:mt_soc_dl1_pcm@11220000 {
@@ -1546,9 +1572,10 @@ initrd=0x44000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 			interrupts = <GIC_SPI 242 IRQ_TYPE_LEVEL_LOW>;
 		};
 
-		g3d_config@13000000 {
+		mfgsys: g3d_config@13000000 {
 			compatible = "mediatek,g3d_config";
 			reg = <0x13000000 0x1000>;
+			#clock-cells = <1>;
 		};
 
 		g3d_vad_config@13001000 {
@@ -1567,10 +1594,11 @@ initrd=0x44000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 			interrupts = <GIC_SPI 262 IRQ_TYPE_LEVEL_LOW>;
 		};
 
-		mmsys_config@14000000 {
+		mmsys: mmsys_config@14000000 {
 			compatible = "mediatek,mmsys_config";
 			reg = <0x14000000 0x1000>;
 			interrupts = <GIC_SPI 232 IRQ_TYPE_LEVEL_LOW>;
+			#clock-cells = <1>;
 		};
 
 		mdp_rdma0@14001000 {
@@ -1839,9 +1867,10 @@ initrd=0x44000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 			reg = <0x14022000 0x1000>;
 		};
 
-		imgsys_config@15000000  {
+		imgsys: imgsys_config@15000000  {
 			compatible = "mediatek,imgsys_config";
 			reg = <0x15000000  0x1000>;
+			#clock-cells = <1>;
 		};
 
 		smi_larb6@15001000 {
@@ -1886,9 +1915,10 @@ initrd=0x44000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 			interrupts = <GIC_SPI 259 IRQ_TYPE_LEVEL_LOW>;
 		};
 
-		camsys_config@1a000000  {
+		camsys: camsys_config@1a000000  {
 			compatible = "mediatek,camsys_config";
 			reg = <0x1a000000  0x1000>;
+			#clock-cells = <1>;
 		};
 
 		smi_larb2@1a001000 {
@@ -2038,9 +2068,10 @@ initrd=0x44000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 			interrupts = <GIC_SPI 257 IRQ_TYPE_LEVEL_LOW>;
 		};
 
-		vdec_gcon@16000000 {
+		vdecsys: vdec_gcon@16000000 {
 			compatible = "mediatek,mt6797-vdec_gcon";
 			reg = <0x16000000 0x10000>;
+			#clock-cells = <1>;
 		};
 
 		smi_larb1@16010000 {
@@ -2100,9 +2131,10 @@ initrd=0x44000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 			reg = <0x16028000 0x1000>;
 		};
 
-		venc_gcon@17000000 {
+		vencsys: venc_gcon@17000000 {
 			compatible = "mediatek,mt6797-venc_gcon";
 			reg = <0x17000000 0x1000>;
+			#clock-cells = <1>;
 		};
 
 		smi_larb3@17001000 {
@@ -2117,10 +2149,11 @@ initrd=0x44000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 			interrupts = <GIC_SPI 235 IRQ_TYPE_LEVEL_LOW>;
 		};
 
-		mjc_config@12000000 {
+		mjcsys: mjc_config@12000000 {
 			compatible = "mediatek,mjc_config-v1";
 			reg = <0x12000000 0x1000>;
 			interrupts = <GIC_SPI 244 IRQ_TYPE_LEVEL_LOW>;
+			#clock-cells = <1>;
 		};
 
 		mjc_top@12001000 {
