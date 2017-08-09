@@ -1033,12 +1033,13 @@ unsigned int get_dram_data_rate_from_reg(void)
 		}
 
 	u2real_freq = u2real_freq >> u1MPDIV_Sel;
-	pr_err("[DRAMC] GetPhyFrequency: %d\n", u2real_freq);
+	/* pr_err("[DRAMC] GetPhyFrequency: %d\n", u2real_freq); */
 	return u2real_freq;
 }
 
 void DVFS_gating_auto_save(void)
 {
+#if 1
 	unsigned int u4HWTrackPICH0R0, u4HWTrackPICH0R1;
 	unsigned int u4HWTrackUICH0R0P0, u4HWTrackUICH0R1P0;
 	unsigned int u4HWTrackUICH0R0P1, u4HWTrackUICH0R1P1;
@@ -1623,6 +1624,7 @@ void DVFS_gating_auto_save(void)
 
 	/* *(UINT32P)DRAMC_WBR  = 0x0;          */
 	writel(0x7, IOMEM(INFRACFG_AO_BASE_ADDR + 0x0A4));
+#endif
 }
 
 unsigned int get_dram_data_rate(void)
@@ -1633,7 +1635,7 @@ unsigned int get_dram_data_rate(void)
 
 	/* DVFS owner to request provide a spec. frequency,
 	not real frequency */
-	if (MEMPLL_FOUT == 1866)
+	if (MEMPLL_FOUT == 1820)
 		MEMPLL_FOUT = 1866;
 	else if (MEMPLL_FOUT == 1716)
 		MEMPLL_FOUT = 1700;
