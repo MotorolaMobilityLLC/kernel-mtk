@@ -543,7 +543,7 @@ static int newseg(struct ipc_namespace *ns, struct ipc_params *params)
 		if  ((shmflg & SHM_NORESERVE) &&
 				sysctl_overcommit_memory != OVERCOMMIT_NEVER)
 			acctflag = VM_NORESERVE;
-		file = shmem_file_setup(name, size, acctflag);
+		file = shmem_file_setup(name, size, acctflag, 0);
 	}
 	error = PTR_ERR(file);
 	if (IS_ERR(file))

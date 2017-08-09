@@ -3686,6 +3686,9 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
 					HIGHMEM regardless of setting
 					of CONFIG_HIGHPTE.
 
+	uuid_debug=	(Boolean) whether to enable debugging of TuxOnIce's
+			uuid support.
+
 	vdso=		[X86,SH]
 			On X86_32, this is an alias for vdso32=.  Otherwise:
 

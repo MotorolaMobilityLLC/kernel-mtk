@@ -27,6 +27,8 @@
 #define NETLINK_ECRYPTFS	19
 #define NETLINK_RDMA		20
 #define NETLINK_CRYPTO		21	/* Crypto layer */
+#define NETLINK_TOI_USERUI	22	/* TuxOnIce's userui */
+#define NETLINK_TOI_USM		23	/* Userspace storage manager */
 
 #define NETLINK_INET_DIAG	NETLINK_SOCK_DIAG
 

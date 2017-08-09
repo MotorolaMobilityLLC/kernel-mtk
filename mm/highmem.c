@@ -126,6 +126,7 @@ unsigned int nr_free_highpages (void)
 
 	return pages;
 }
+EXPORT_SYMBOL_GPL(nr_free_highpages);
 
 static int pkmap_count[LAST_PKMAP];
 static  __cacheline_aligned_in_smp DEFINE_SPINLOCK(kmap_lock);

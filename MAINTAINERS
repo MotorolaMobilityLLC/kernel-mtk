@@ -9568,6 +9568,13 @@ S:	Maintained
 F:	drivers/tc/
 F:	include/linux/tc.h
 
+TUXONICE (ENHANCED HIBERNATION)
+P:	Nigel Cunningham
+M:	nigel@tuxonice.net
+L:	tuxonice-devel@tuxonice.net
+W:	http://tuxonice.net
+S:	Maintained
+
 U14-34F SCSI DRIVER
 M:	Dario Ballabio <ballabio_dario@emc.com>
 L:	linux-scsi@vger.kernel.org

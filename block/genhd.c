@@ -17,6 +17,8 @@
 #include <linux/kobj_map.h>
 #include <linux/mutex.h>
 #include <linux/idr.h>
+#include <linux/ctype.h>
+#include <linux/fs_uuid.h>
 #include <linux/log2.h>
 #include <linux/pm_runtime.h>
 
@@ -1393,6 +1395,88 @@ int invalidate_partition(struct gendisk *disk, int partno)
 }
 
 EXPORT_SYMBOL(invalidate_partition);
+
+dev_t blk_lookup_fs_info(struct fs_info *seek)
+{
+	dev_t devt = MKDEV(0, 0);
+	struct class_dev_iter iter;
+	struct device *dev;
+	int best_score = 0;
+
+	class_dev_iter_init(&iter, &block_class, NULL, &disk_type);
+	while (best_score < 3 && (dev = class_dev_iter_next(&iter))) {
+		struct gendisk *disk = dev_to_disk(dev);
+		struct disk_part_iter piter;
+		struct hd_struct *part;
+
+		disk_part_iter_init(&piter, disk, DISK_PITER_INCL_PART0);
+
+		while (best_score < 3 && (part = disk_part_iter_next(&piter))) {
+			int score = part_matches_fs_info(part, seek);
+
+			if (score > best_score) {
+				devt = part_devt(part);
+				best_score = score;
+			}
+		}
+		disk_part_iter_exit(&piter);
+	}
+	class_dev_iter_exit(&iter);
+	return devt;
+}
+EXPORT_SYMBOL_GPL(blk_lookup_fs_info);
+
+/* Caller uses NULL, key to start. For each match found, we return a bdev on
+ * which we have done blkdev_get, and we do the blkdev_put on block devices
+ * that are passed to us. When no more matches are found, we return NULL.
+ */
+struct block_device *next_bdev_of_type(struct block_device *last,
+	const char *key)
+{
+	dev_t devt = MKDEV(0, 0);
+	struct class_dev_iter iter;
+	struct device *dev;
+	struct block_device *next = NULL, *bdev;
+	int got_last = 0;
+
+	if (!key)
+		goto out;
+
+	class_dev_iter_init(&iter, &block_class, NULL, &disk_type);
+	while (!devt && (dev = class_dev_iter_next(&iter))) {
+		struct gendisk *disk = dev_to_disk(dev);
+		struct disk_part_iter piter;
+		struct hd_struct *part;
+
+		disk_part_iter_init(&piter, disk, DISK_PITER_INCL_PART0);
+
+		while ((part = disk_part_iter_next(&piter))) {
+			bdev = bdget(part_devt(part));
+			if (last && !got_last) {
+				if (last == bdev)
+					got_last = 1;
+				continue;
+			}
+
+			if (blkdev_get(bdev, FMODE_READ, 0))
+				continue;
+
+			if (bdev_matches_key(bdev, key)) {
+				next = bdev;
+				break;
+			}
+
+			blkdev_put(bdev, FMODE_READ);
+		}
+		disk_part_iter_exit(&piter);
+	}
+	class_dev_iter_exit(&iter);
+out:
+	if (last)
+		blkdev_put(last, FMODE_READ);
+	return next;
+}
+EXPORT_SYMBOL_GPL(next_bdev_of_type);
 
 /*
  * Disk events - monitor disk events like media change and eject request.

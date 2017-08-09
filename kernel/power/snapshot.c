@@ -35,6 +35,10 @@
 #include <asm/tlbflush.h>
 #include <asm/io.h>
 
+#include "tuxonice_modules.h"
+#include "tuxonice_builtin.h"
+#include "tuxonice_alloc.h"
+#include "tuxonice_pageflags.h"
 #include "power.h"
 
 static int swsusp_page_is_free(struct page *);
@@ -97,6 +101,9 @@ static void *get_image_page(gfp_t gfp_mask, int safe_needed)
 {
 	void *res;
 
+	if (toi_running)
+		return (void *)toi_get_nonconflicting_page();
+
 	res = (void *)get_zeroed_page(gfp_mask);
 	if (safe_needed)
 		while (res && swsusp_page_is_free(virt_to_page(res))) {
@@ -142,6 +149,11 @@ static inline void free_image_page(void *addr, int clear_nosave_free)
 
 	page = virt_to_page(addr);
 
+	if (toi_running) {
+		toi__free_page(29, page);
+		return;
+	}
+
 	swsusp_unset_page_forbidden(page);
 	if (clear_nosave_free)
 		swsusp_unset_page_free(page);
@@ -158,8 +170,7 @@ struct linked_page {
 	char data[LINKED_PAGE_DATA_SIZE];
 } __packed;
 
-static inline void
-free_list_of_pages(struct linked_page *list, int clear_page_nosave)
+static inline void free_list_of_pages(struct linked_page *list, int clear_page_nosave)
 {
 	while (list) {
 		struct linked_page *lp = list->next;
@@ -191,8 +202,7 @@ struct chain_allocator {
 	int safe_needed;	/* if set, only "safe" pages are allocated */
 };
 
-static void
-chain_init(struct chain_allocator *ca, gfp_t gfp_mask, int safe_needed)
+static void chain_init(struct chain_allocator *ca, gfp_t gfp_mask, int safe_needed)
 {
 	ca->chain = NULL;
 	ca->used_space = LINKED_PAGE_DATA_SIZE;
@@ -282,14 +292,14 @@ struct rtree_node {
  * populated memory zone.
  */
 struct mem_zone_bm_rtree {
-	struct list_head list;		/* Link Zones together         */
-	struct list_head nodes;		/* Radix Tree inner nodes      */
+	struct list_head list;	/* Link Zones together         */
+	struct list_head nodes;	/* Radix Tree inner nodes      */
 	struct list_head leaves;	/* Radix Tree leaves           */
 	unsigned long start_pfn;	/* Zone start page frame       */
-	unsigned long end_pfn;		/* Zone end page frame + 1     */
+	unsigned long end_pfn;	/* Zone end page frame + 1     */
 	struct rtree_node *rtree;	/* Radix Tree Root             */
-	int levels;			/* Number of Radix Tree Levels */
-	unsigned int blocks;		/* Number of Bitmap Blocks     */
+	int levels;		/* Number of Radix Tree Levels */
+	unsigned int blocks;	/* Number of Bitmap Blocks     */
 };
 
 /* strcut bm_position is used for browsing memory bitmaps */
@@ -301,13 +311,15 @@ struct bm_position {
 	int node_bit;
 };
 
+#define BM_POSITION_SLOTS (NR_CPUS * 2)
+
 struct memory_bitmap {
 	struct list_head zones;
 	struct linked_page *p_list;	/* list of pages used to store zone
 					 * bitmap objects and bitmap block
 					 * objects
 					 */
-	struct bm_position cur;	/* most recently used bit position */
+	struct bm_position cur[BM_POSITION_SLOTS];	/* most recently used bit position */
 };
 
 /* Functions that operate on memory bitmaps */
@@ -328,8 +340,7 @@ struct memory_bitmap {
  *	corresponding linked list passed in by the *list parameter.
  */
 static struct rtree_node *alloc_rtree_node(gfp_t gfp_mask, int safe_needed,
-					   struct chain_allocator *ca,
-					   struct list_head *list)
+					   struct chain_allocator *ca, struct list_head *list)
 {
 	struct rtree_node *node;
 
@@ -371,8 +382,7 @@ static int add_rtree_block(struct mem_zone_bm_rtree *zone, gfp_t gfp_mask,
 
 	/* Make sure the rtree has enough levels */
 	for (i = zone->levels; i < levels_needed; i++) {
-		node = alloc_rtree_node(gfp_mask, safe_needed, ca,
-					&zone->nodes);
+		node = alloc_rtree_node(gfp_mask, safe_needed, ca, &zone->nodes);
 		if (!node)
 			return -ENOMEM;
 
@@ -394,8 +404,7 @@ static int add_rtree_block(struct mem_zone_bm_rtree *zone, gfp_t gfp_mask,
 		int index;
 
 		if (!node) {
-			node = alloc_rtree_node(gfp_mask, safe_needed, ca,
-						&zone->nodes);
+			node = alloc_rtree_node(gfp_mask, safe_needed, ca, &zone->nodes);
 			if (!node)
 				return -ENOMEM;
 			*dst = node;
@@ -413,8 +422,7 @@ static int add_rtree_block(struct mem_zone_bm_rtree *zone, gfp_t gfp_mask,
 	return 0;
 }
 
-static void free_zone_bm_rtree(struct mem_zone_bm_rtree *zone,
-			       int clear_nosave_free);
+static void free_zone_bm_rtree(struct mem_zone_bm_rtree *zone, int clear_nosave_free);
 
 /*
  *	create_zone_bm_rtree - create a radix tree for one zone
@@ -423,17 +431,16 @@ static void free_zone_bm_rtree(struct mem_zone_bm_rtree *zone,
  *	This function also allocated and builds the radix tree for the
  *	zone.
  */
-static struct mem_zone_bm_rtree *
-create_zone_bm_rtree(gfp_t gfp_mask, int safe_needed,
-		     struct chain_allocator *ca,
-		     unsigned long start, unsigned long end)
+static struct mem_zone_bm_rtree *create_zone_bm_rtree(gfp_t gfp_mask, int safe_needed,
+						      struct chain_allocator *ca,
+						      unsigned long start, unsigned long end)
 {
 	struct mem_zone_bm_rtree *zone;
 	unsigned int i, nr_blocks;
 	unsigned long pages;
 
 	pages = end - start;
-	zone  = chain_alloc(ca, sizeof(struct mem_zone_bm_rtree));
+	zone = chain_alloc(ca, sizeof(struct mem_zone_bm_rtree));
 	if (!zone)
 		return NULL;
 
@@ -460,8 +467,7 @@ create_zone_bm_rtree(gfp_t gfp_mask, int safe_needed,
  *	structure itself is not freed here nor are the rtree_node
  *	structs.
  */
-static void free_zone_bm_rtree(struct mem_zone_bm_rtree *zone,
-			       int clear_nosave_free)
+static void free_zone_bm_rtree(struct mem_zone_bm_rtree *zone, int clear_nosave_free)
 {
 	struct rtree_node *node;
 
@@ -472,14 +478,35 @@ static void free_zone_bm_rtree(struct mem_zone_bm_rtree *zone,
 		free_image_page(node->data, clear_nosave_free);
 }
 
-static void memory_bm_position_reset(struct memory_bitmap *bm)
+void memory_bm_position_reset(struct memory_bitmap *bm)
 {
-	bm->cur.zone = list_entry(bm->zones.next, struct mem_zone_bm_rtree,
-				  list);
-	bm->cur.node = list_entry(bm->cur.zone->leaves.next,
-				  struct rtree_node, list);
-	bm->cur.node_pfn = 0;
-	bm->cur.node_bit = 0;
+	int index;
+
+	for (index = 0; index < BM_POSITION_SLOTS; index++) {
+		bm->cur[index].zone = list_entry(bm->zones.next, struct mem_zone_bm_rtree, list);
+		bm->cur[index].node = list_entry(bm->cur[index].zone->leaves.next,
+						 struct rtree_node, list);
+		bm->cur[index].node_pfn = 0;
+		bm->cur[index].node_bit = 0;
+	}
+}
+
+static void memory_bm_clear_current(struct memory_bitmap *bm, int index);
+
+/**
+ *      memory_bm_clear
+ *      @param bm - The bitmap to clear
+ *
+ *      Only run while single threaded - locking not needed
+ */
+void memory_bm_clear(struct memory_bitmap *bm)
+{
+	memory_bm_position_reset(bm);
+
+	while (memory_bm_next_pfn(bm, 0) != BM_END_OF_MAP)
+		memory_bm_clear_current(bm, 0);
+
+	memory_bm_position_reset(bm);
 }
 
 static void memory_bm_free(struct memory_bitmap *bm, int clear_nosave_free);
@@ -566,8 +593,7 @@ static int create_mem_extents(struct list_head *list, gfp_t gfp_mask)
 /**
   *	memory_bm_create - allocate memory for a memory bitmap
   */
-static int
-memory_bm_create(struct memory_bitmap *bm, gfp_t gfp_mask, int safe_needed)
+static int memory_bm_create(struct memory_bitmap *bm, gfp_t gfp_mask, int safe_needed)
 {
 	struct chain_allocator ca;
 	struct list_head mem_extents;
@@ -584,8 +610,7 @@ memory_bm_create(struct memory_bitmap *bm, gfp_t gfp_mask, int safe_needed)
 	list_for_each_entry(ext, &mem_extents, hook) {
 		struct mem_zone_bm_rtree *zone;
 
-		zone = create_zone_bm_rtree(gfp_mask, safe_needed, &ca,
-					    ext->start, ext->end);
+		zone = create_zone_bm_rtree(gfp_mask, safe_needed, &ca, ext->start, ext->end);
 		if (!zone) {
 			error = -ENOMEM;
 			goto Error;
@@ -594,12 +619,13 @@ memory_bm_create(struct memory_bitmap *bm, gfp_t gfp_mask, int safe_needed)
 	}
 
 	bm->p_list = ca.chain;
+
 	memory_bm_position_reset(bm);
- Exit:
+Exit:
 	free_mem_extents(&mem_extents);
 	return error;
 
- Error:
+Error:
 	bm->p_list = ca.chain;
 	memory_bm_free(bm, PG_UNSAFE_CLEAR);
 	goto Exit;
@@ -630,14 +656,23 @@ static void memory_bm_free(struct memory_bitmap *bm, int clear_nosave_free)
  *	It walks the radix tree to find the page which contains the bit for
  *	pfn and returns the bit position in **addr and *bit_nr.
  */
-static int memory_bm_find_bit(struct memory_bitmap *bm, unsigned long pfn,
-			      void **addr, unsigned int *bit_nr)
+int memory_bm_find_bit(struct memory_bitmap *bm, int index,
+		       unsigned long pfn, void **addr, unsigned int *bit_nr)
 {
 	struct mem_zone_bm_rtree *curr, *zone;
 	struct rtree_node *node;
 	int i, block_nr;
 
-	zone = bm->cur.zone;
+	if (!bm->cur[index].zone) {
+		/* Reset */
+		bm->cur[index].zone = list_entry(bm->zones.next, struct mem_zone_bm_rtree, list);
+		bm->cur[index].node = list_entry(bm->cur[index].zone->leaves.next,
+						 struct rtree_node, list);
+		bm->cur[index].node_pfn = 0;
+		bm->cur[index].node_bit = 0;
+	}
+
+	zone = bm->cur[index].zone;
 
 	if (pfn >= zone->start_pfn && pfn < zone->end_pfn)
 		goto zone_found;
@@ -661,12 +696,12 @@ zone_found:
 	 * node for our pfn.
 	 */
 
-	node = bm->cur.node;
-	if (((pfn - zone->start_pfn) & ~BM_BLOCK_MASK) == bm->cur.node_pfn)
+	node = bm->cur[index].node;
+	if (((pfn - zone->start_pfn) & ~BM_BLOCK_MASK) == bm->cur[index].node_pfn)
 		goto node_found;
 
-	node      = zone->rtree;
-	block_nr  = (pfn - zone->start_pfn) >> BM_BLOCK_SHIFT;
+	node = zone->rtree;
+	block_nr = (pfn - zone->start_pfn) >> BM_BLOCK_SHIFT;
 
 	for (i = zone->levels; i > 0; i--) {
 		int index;
@@ -679,9 +714,9 @@ zone_found:
 
 node_found:
 	/* Update last position */
-	bm->cur.zone = zone;
-	bm->cur.node = node;
-	bm->cur.node_pfn = (pfn - zone->start_pfn) & ~BM_BLOCK_MASK;
+	bm->cur[index].zone = zone;
+	bm->cur[index].node = node;
+	bm->cur[index].node_pfn = (pfn - zone->start_pfn) & ~BM_BLOCK_MASK;
 
 	/* Set return values */
 	*addr = node->data;
@@ -690,66 +725,66 @@ node_found:
 	return 0;
 }
 
-static void memory_bm_set_bit(struct memory_bitmap *bm, unsigned long pfn)
+void memory_bm_set_bit(struct memory_bitmap *bm, int index, unsigned long pfn)
 {
 	void *addr;
 	unsigned int bit;
 	int error;
 
-	error = memory_bm_find_bit(bm, pfn, &addr, &bit);
+	error = memory_bm_find_bit(bm, index, pfn, &addr, &bit);
 	BUG_ON(error);
 	set_bit(bit, addr);
 }
 
-static int mem_bm_set_bit_check(struct memory_bitmap *bm, unsigned long pfn)
+int mem_bm_set_bit_check(struct memory_bitmap *bm, int index, unsigned long pfn)
 {
 	void *addr;
 	unsigned int bit;
 	int error;
 
-	error = memory_bm_find_bit(bm, pfn, &addr, &bit);
+	error = memory_bm_find_bit(bm, index, pfn, &addr, &bit);
 	if (!error)
 		set_bit(bit, addr);
 
 	return error;
 }
 
-static void memory_bm_clear_bit(struct memory_bitmap *bm, unsigned long pfn)
+void memory_bm_clear_bit(struct memory_bitmap *bm, int index, unsigned long pfn)
 {
 	void *addr;
 	unsigned int bit;
 	int error;
 
-	error = memory_bm_find_bit(bm, pfn, &addr, &bit);
+	error = memory_bm_find_bit(bm, index, pfn, &addr, &bit);
 	BUG_ON(error);
 	clear_bit(bit, addr);
 }
 
-static void memory_bm_clear_current(struct memory_bitmap *bm)
+static void memory_bm_clear_current(struct memory_bitmap *bm, int index)
 {
 	int bit;
 
-	bit = max(bm->cur.node_bit - 1, 0);
-	clear_bit(bit, bm->cur.node->data);
+	bit = max(bm->cur[index].node_bit - 1, 0);
+	clear_bit(bit, bm->cur[index].node->data);
 }
 
-static int memory_bm_test_bit(struct memory_bitmap *bm, unsigned long pfn)
+int memory_bm_test_bit(struct memory_bitmap *bm, int index, unsigned long pfn)
 {
 	void *addr;
 	unsigned int bit;
 	int error;
 
-	error = memory_bm_find_bit(bm, pfn, &addr, &bit);
+	error = memory_bm_find_bit(bm, index, pfn, &addr, &bit);
 	BUG_ON(error);
 	return test_bit(bit, addr);
 }
 
-static bool memory_bm_pfn_present(struct memory_bitmap *bm, unsigned long pfn)
+static bool memory_bm_pfn_present(struct memory_bitmap *bm, int index, unsigned long pfn)
 {
 	void *addr;
 	unsigned int bit;
 
-	return !memory_bm_find_bit(bm, pfn, &addr, &bit);
+	return !memory_bm_find_bit(bm, index, pfn, &addr, &bit);
 }
 
 /*
@@ -762,25 +797,24 @@ static bool memory_bm_pfn_present(struct memory_bitmap *bm, unsigned long pfn)
  *
  *	Returns true if there is a next node, false otherwise.
  */
-static bool rtree_next_node(struct memory_bitmap *bm)
+static bool rtree_next_node(struct memory_bitmap *bm, int index)
 {
-	bm->cur.node = list_entry(bm->cur.node->list.next,
-				  struct rtree_node, list);
-	if (&bm->cur.node->list != &bm->cur.zone->leaves) {
-		bm->cur.node_pfn += BM_BITS_PER_BLOCK;
-		bm->cur.node_bit  = 0;
+	bm->cur[index].node = list_entry(bm->cur[index].node->list.next, struct rtree_node, list);
+	if (&bm->cur[index].node->list != &bm->cur[index].zone->leaves) {
+		bm->cur[index].node_pfn += BM_BITS_PER_BLOCK;
+		bm->cur[index].node_bit = 0;
 		touch_softlockup_watchdog();
 		return true;
 	}
 
 	/* No more nodes, goto next zone */
-	bm->cur.zone = list_entry(bm->cur.zone->list.next,
-				  struct mem_zone_bm_rtree, list);
-	if (&bm->cur.zone->list != &bm->zones) {
-		bm->cur.node = list_entry(bm->cur.zone->leaves.next,
-					  struct rtree_node, list);
-		bm->cur.node_pfn = 0;
-		bm->cur.node_bit = 0;
+	bm->cur[index].zone = list_entry(bm->cur[index].zone->list.next,
+					 struct mem_zone_bm_rtree, list);
+	if (&bm->cur[index].zone->list != &bm->zones) {
+		bm->cur[index].node = list_entry(bm->cur[index].zone->leaves.next,
+						 struct rtree_node, list);
+		bm->cur[index].node_pfn = 0;
+		bm->cur[index].node_bit = 0;
 		return true;
 	}
 
@@ -798,38 +832,28 @@ static bool rtree_next_node(struct memory_bitmap *bm)
  *	It is required to run memory_bm_position_reset() before the
  *	first call to this function.
  */
-static unsigned long memory_bm_next_pfn(struct memory_bitmap *bm)
+unsigned long memory_bm_next_pfn(struct memory_bitmap *bm, int index)
 {
 	unsigned long bits, pfn, pages;
 	int bit;
 
+	index += num_possible_cpus();	/* Iteration state is separated from get/set/test */
+
 	do {
-		pages	  = bm->cur.zone->end_pfn - bm->cur.zone->start_pfn;
-		bits      = min(pages - bm->cur.node_pfn, BM_BITS_PER_BLOCK);
-		bit	  = find_next_bit(bm->cur.node->data, bits,
-					  bm->cur.node_bit);
+		pages = bm->cur[index].zone->end_pfn - bm->cur[index].zone->start_pfn;
+		bits = min(pages - bm->cur[index].node_pfn, BM_BITS_PER_BLOCK);
+		bit = find_next_bit(bm->cur[index].node->data, bits, bm->cur[index].node_bit);
 		if (bit < bits) {
-			pfn = bm->cur.zone->start_pfn + bm->cur.node_pfn + bit;
-			bm->cur.node_bit = bit + 1;
+			pfn = bm->cur[index].zone->start_pfn + bm->cur[index].node_pfn + bit;
+			bm->cur[index].node_bit = bit + 1;
 			return pfn;
 		}
-	} while (rtree_next_node(bm));
+	} while (rtree_next_node(bm, index));
 
 	return BM_END_OF_MAP;
 }
 
-/**
- *	This structure represents a range of page frames the contents of which
- *	should not be saved during the suspend.
- */
-
-struct nosave_region {
-	struct list_head list;
-	unsigned long start_pfn;
-	unsigned long end_pfn;
-};
-
-static LIST_HEAD(nosave_regions);
+LIST_HEAD(nosave_regions);
 
 /**
  *	register_nosave_region - register a range of page frames the contents
@@ -838,8 +862,7 @@ static LIST_HEAD(nosave_regions);
  */
 
 void __init
-__register_nosave_region(unsigned long start_pfn, unsigned long end_pfn,
-			 int use_kmalloc)
+__register_nosave_region(unsigned long start_pfn, unsigned long end_pfn, int use_kmalloc)
 {
 	struct nosave_region *region;
 
@@ -848,8 +871,7 @@ __register_nosave_region(unsigned long start_pfn, unsigned long end_pfn,
 
 	if (!list_empty(&nosave_regions)) {
 		/* Try to extend the previous region (they should be sorted) */
-		region = list_entry(nosave_regions.prev,
-					struct nosave_region, list);
+		region = list_entry(nosave_regions.prev, struct nosave_region, list);
 		if (region->end_pfn == start_pfn) {
 			region->end_pfn = end_pfn;
 			goto Report;
@@ -865,10 +887,10 @@ __register_nosave_region(unsigned long start_pfn, unsigned long end_pfn,
 	region->start_pfn = start_pfn;
 	region->end_pfn = end_pfn;
 	list_add_tail(&region->list, &nosave_regions);
- Report:
-	printk(KERN_INFO "PM: Registered nosave memory: [mem %#010llx-%#010llx]\n",
-		(unsigned long long) start_pfn << PAGE_SHIFT,
-		((unsigned long long) end_pfn << PAGE_SHIFT) - 1);
+Report:
+	pr_warn("PM: Registered nosave memory: [mem %#010llx-%#010llx]\n",
+	       (unsigned long long)start_pfn << PAGE_SHIFT,
+	       ((unsigned long long)end_pfn << PAGE_SHIFT) - 1);
 }
 
 /*
@@ -888,37 +910,36 @@ static struct memory_bitmap *free_pages_map;
 void swsusp_set_page_free(struct page *page)
 {
 	if (free_pages_map)
-		memory_bm_set_bit(free_pages_map, page_to_pfn(page));
+		memory_bm_set_bit(free_pages_map, 0, page_to_pfn(page));
 }
 
 static int swsusp_page_is_free(struct page *page)
 {
-	return free_pages_map ?
-		memory_bm_test_bit(free_pages_map, page_to_pfn(page)) : 0;
+	return free_pages_map ? memory_bm_test_bit(free_pages_map, 0, page_to_pfn(page)) : 0;
 }
 
 void swsusp_unset_page_free(struct page *page)
 {
 	if (free_pages_map)
-		memory_bm_clear_bit(free_pages_map, page_to_pfn(page));
+		memory_bm_clear_bit(free_pages_map, 0, page_to_pfn(page));
 }
 
 static void swsusp_set_page_forbidden(struct page *page)
 {
 	if (forbidden_pages_map)
-		memory_bm_set_bit(forbidden_pages_map, page_to_pfn(page));
+		memory_bm_set_bit(forbidden_pages_map, 0, page_to_pfn(page));
 }
 
 int swsusp_page_is_forbidden(struct page *page)
 {
 	return forbidden_pages_map ?
-		memory_bm_test_bit(forbidden_pages_map, page_to_pfn(page)) : 0;
+	    memory_bm_test_bit(forbidden_pages_map, 0, page_to_pfn(page)) : 0;
 }
 
 static void swsusp_unset_page_forbidden(struct page *page)
 {
 	if (forbidden_pages_map)
-		memory_bm_clear_bit(forbidden_pages_map, page_to_pfn(page));
+		memory_bm_clear_bit(forbidden_pages_map, 0, page_to_pfn(page));
 }
 
 /**
@@ -937,9 +958,9 @@ static void mark_nosave_pages(struct memory_bitmap *bm)
 		unsigned long pfn;
 
 		pr_debug("PM: Marking nosave pages: [mem %#010llx-%#010llx]\n",
-			 (unsigned long long) region->start_pfn << PAGE_SHIFT,
-			 ((unsigned long long) region->end_pfn << PAGE_SHIFT)
-				- 1);
+			 (unsigned long long)region->start_pfn << PAGE_SHIFT,
+			 ((unsigned long long)region->end_pfn << PAGE_SHIFT)
+			 - 1);
 
 		for (pfn = region->start_pfn; pfn < region->end_pfn; pfn++)
 			if (pfn_valid(pfn)) {
@@ -949,7 +970,7 @@ static void mark_nosave_pages(struct memory_bitmap *bm)
 				 * touch the PFNs for which the error is
 				 * returned anyway.
 				 */
-				mem_bm_set_bit_check(bm, pfn);
+				mem_bm_set_bit_check(bm, 0, pfn);
 			}
 	}
 }
@@ -962,10 +983,10 @@ static bool is_nosave_page(unsigned long pfn)
 		if (pfn >= region->start_pfn && pfn < region->end_pfn) {
 			pr_err("PM: %#010llx in e820 nosave region: "
 			       "[mem %#010llx-%#010llx]\n",
-			       (unsigned long long) pfn << PAGE_SHIFT,
-			       (unsigned long long) region->start_pfn << PAGE_SHIFT,
-			       ((unsigned long long) region->end_pfn << PAGE_SHIFT)
-					- 1);
+			       (unsigned long long)pfn << PAGE_SHIFT,
+			       (unsigned long long)region->start_pfn << PAGE_SHIFT,
+			       ((unsigned long long)region->end_pfn << PAGE_SHIFT)
+			       - 1);
 			return true;
 		}
 	}
@@ -1015,11 +1036,11 @@ int create_basic_memory_bitmaps(void)
 
 	return 0;
 
- Free_second_object:
+Free_second_object:
 	kfree(bm2);
- Free_first_bitmap:
- 	memory_bm_free(bm1, PG_UNSAFE_CLEAR);
- Free_first_object:
+Free_first_bitmap:
+	memory_bm_free(bm1, PG_UNSAFE_CLEAR);
+Free_first_object:
 	kfree(bm1);
 	return -ENOMEM;
 }
@@ -1061,8 +1082,7 @@ unsigned int snapshot_additional_pages(struct zone *zone)
 	unsigned int rtree, nodes;
 
 	rtree = nodes = DIV_ROUND_UP(zone->spanned_pages, BM_BITS_PER_BLOCK);
-	rtree += DIV_ROUND_UP(rtree * sizeof(struct rtree_node),
-			      LINKED_PAGE_DATA_SIZE);
+	rtree += DIV_ROUND_UP(rtree * sizeof(struct rtree_node), LINKED_PAGE_DATA_SIZE);
 	while (nodes > 1) {
 		nodes = DIV_ROUND_UP(nodes, BM_ENTRIES_PER_LEVEL);
 		rtree += nodes;
@@ -1096,7 +1116,7 @@ static unsigned int count_free_highmem_pages(void)
  *	We should save the page if it isn't Nosave or NosaveFree, or Reserved,
  *	and it isn't a part of a free chunk of pages.
  */
-static struct page *saveable_highmem_page(struct zone *zone, unsigned long pfn)
+struct page *saveable_highmem_page(struct zone *zone, unsigned long pfn)
 {
 	struct page *page;
 
@@ -1109,8 +1129,7 @@ static struct page *saveable_highmem_page(struct zone *zone, unsigned long pfn)
 
 	BUG_ON(!PageHighMem(page));
 
-	if (swsusp_page_is_forbidden(page) ||  swsusp_page_is_free(page) ||
-	    PageReserved(page))
+	if (swsusp_page_is_forbidden(page) || swsusp_page_is_free(page) || PageReserved(page))
 		return NULL;
 
 	if (page_is_guard(page))
@@ -1143,12 +1162,7 @@ static unsigned int count_highmem_pages(void)
 	}
 	return n;
 }
-#else
-static inline void *saveable_highmem_page(struct zone *z, unsigned long p)
-{
-	return NULL;
-}
-#endif /* CONFIG_HIGHMEM */
+#endif				/* CONFIG_HIGHMEM */
 
 /**
  *	saveable_page - Determine whether a non-highmem page should be included
@@ -1158,7 +1172,7 @@ static inline void *saveable_highmem_page(struct zone *z, unsigned long p)
  *	of pages statically defined as 'unsaveable', and it isn't a part of
  *	a free chunk of pages.
  */
-static struct page *saveable_page(struct zone *zone, unsigned long pfn)
+struct page *saveable_page(struct zone *zone, unsigned long pfn)
 {
 	struct page *page;
 
@@ -1239,11 +1253,9 @@ static void safe_copy_page(void *dst, struct page *s_page)
 
 
 #ifdef CONFIG_HIGHMEM
-static inline struct page *
-page_is_saveable(struct zone *zone, unsigned long pfn)
+static inline struct page *page_is_saveable(struct zone *zone, unsigned long pfn)
 {
-	return is_highmem(zone) ?
-		saveable_highmem_page(zone, pfn) : saveable_page(zone, pfn);
+	return is_highmem(zone) ? saveable_highmem_page(zone, pfn) : saveable_page(zone, pfn);
 }
 
 static void copy_data_page(unsigned long dst_pfn, unsigned long src_pfn)
@@ -1278,13 +1290,11 @@ static void copy_data_page(unsigned long dst_pfn, unsigned long src_pfn)
 
 static inline void copy_data_page(unsigned long dst_pfn, unsigned long src_pfn)
 {
-	safe_copy_page(page_address(pfn_to_page(dst_pfn)),
-				pfn_to_page(src_pfn));
+	safe_copy_page(page_address(pfn_to_page(dst_pfn)), pfn_to_page(src_pfn));
 }
-#endif /* CONFIG_HIGHMEM */
+#endif				/* CONFIG_HIGHMEM */
 
-static void
-copy_data_pages(struct memory_bitmap *copy_bm, struct memory_bitmap *orig_bm)
+static void copy_data_pages(struct memory_bitmap *copy_bm, struct memory_bitmap *orig_bm)
 {
 	struct zone *zone;
 	unsigned long pfn;
@@ -1296,15 +1306,15 @@ copy_data_pages(struct memory_bitmap *copy_bm, struct memory_bitmap *orig_bm)
 		max_zone_pfn = zone_end_pfn(zone);
 		for (pfn = zone->zone_start_pfn; pfn < max_zone_pfn; pfn++)
 			if (page_is_saveable(zone, pfn))
-				memory_bm_set_bit(orig_bm, pfn);
+				memory_bm_set_bit(orig_bm, 0, pfn);
 	}
 	memory_bm_position_reset(orig_bm);
 	memory_bm_position_reset(copy_bm);
-	for(;;) {
-		pfn = memory_bm_next_pfn(orig_bm);
+	for (;;) {
+		pfn = memory_bm_next_pfn(orig_bm, 0);
 		if (unlikely(pfn == BM_END_OF_MAP))
 			break;
-		copy_data_page(memory_bm_next_pfn(copy_bm), pfn);
+		copy_data_page(memory_bm_next_pfn(copy_bm, 0), pfn);
 	}
 }
 
@@ -1350,8 +1360,8 @@ void swsusp_free(void)
 	memory_bm_position_reset(free_pages_map);
 
 loop:
-	fr_pfn = memory_bm_next_pfn(free_pages_map);
-	fb_pfn = memory_bm_next_pfn(forbidden_pages_map);
+	fr_pfn = memory_bm_next_pfn(free_pages_map, 0);
+	fb_pfn = memory_bm_next_pfn(forbidden_pages_map, 0);
 
 	/*
 	 * Find the next bit set in both bitmaps. This is guaranteed to
@@ -1359,16 +1369,16 @@ loop:
 	 */
 	do {
 		if (fb_pfn < fr_pfn)
-			fb_pfn = memory_bm_next_pfn(forbidden_pages_map);
+			fb_pfn = memory_bm_next_pfn(forbidden_pages_map, 0);
 		if (fr_pfn < fb_pfn)
-			fr_pfn = memory_bm_next_pfn(free_pages_map);
+			fr_pfn = memory_bm_next_pfn(free_pages_map, 0);
 	} while (fb_pfn != fr_pfn);
 
 	if (fr_pfn != BM_END_OF_MAP && pfn_valid(fr_pfn)) {
 		struct page *page = pfn_to_page(fr_pfn);
 
-		memory_bm_clear_current(forbidden_pages_map);
-		memory_bm_clear_current(free_pages_map);
+		memory_bm_clear_current(forbidden_pages_map, 0);
+		memory_bm_clear_current(free_pages_map, 0);
 		__free_page(page);
 		goto loop;
 	}
@@ -1403,7 +1413,7 @@ static unsigned long preallocate_image_pages(unsigned long nr_pages, gfp_t mask)
 		page = alloc_image_page(mask);
 		if (!page)
 			break;
-		memory_bm_set_bit(&copy_bm, page_to_pfn(page));
+		memory_bm_set_bit(&copy_bm, 0, page_to_pfn(page));
 		if (PageHighMem(page))
 			alloc_highmem++;
 		else
@@ -1415,8 +1425,7 @@ static unsigned long preallocate_image_pages(unsigned long nr_pages, gfp_t mask)
 	return nr_alloc;
 }
 
-static unsigned long preallocate_image_memory(unsigned long nr_pages,
-					      unsigned long avail_normal)
+static unsigned long preallocate_image_memory(unsigned long nr_pages, unsigned long avail_normal)
 {
 	unsigned long alloc;
 
@@ -1447,26 +1456,24 @@ static unsigned long __fraction(u64 x, u64 multiplier, u64 base)
 }
 
 static unsigned long preallocate_highmem_fraction(unsigned long nr_pages,
-						unsigned long highmem,
-						unsigned long total)
+						  unsigned long highmem, unsigned long total)
 {
 	unsigned long alloc = __fraction(nr_pages, highmem, total);
 
 	return preallocate_image_pages(alloc, GFP_IMAGE | __GFP_HIGHMEM);
 }
-#else /* CONFIG_HIGHMEM */
+#else				/* CONFIG_HIGHMEM */
 static inline unsigned long preallocate_image_highmem(unsigned long nr_pages)
 {
 	return 0;
 }
 
 static inline unsigned long preallocate_highmem_fraction(unsigned long nr_pages,
-						unsigned long highmem,
-						unsigned long total)
+							 unsigned long highmem, unsigned long total)
 {
 	return 0;
 }
-#endif /* CONFIG_HIGHMEM */
+#endif				/* CONFIG_HIGHMEM */
 
 /**
  * free_unnecessary_pages - Release preallocated pages not needed for the image
@@ -1498,7 +1505,7 @@ static void free_unnecessary_pages(void)
 	memory_bm_position_reset(&copy_bm);
 
 	while (to_free_normal > 0 || to_free_highmem > 0) {
-		unsigned long pfn = memory_bm_next_pfn(&copy_bm);
+		unsigned long pfn = memory_bm_next_pfn(&copy_bm, 0);
 		struct page *page = pfn_to_page(pfn);
 
 		if (PageHighMem(page)) {
@@ -1512,7 +1519,7 @@ static void free_unnecessary_pages(void)
 			to_free_normal--;
 			alloc_normal--;
 		}
-		memory_bm_clear_bit(&copy_bm, pfn);
+		memory_bm_clear_bit(&copy_bm, 0, pfn);
 		swsusp_unset_page_forbidden(page);
 		swsusp_unset_page_free(page);
 		__free_page(page);
@@ -1540,11 +1547,11 @@ static unsigned long minimum_image_size(unsigned long saveable)
 	unsigned long size;
 
 	size = global_page_state(NR_SLAB_RECLAIMABLE)
-		+ global_page_state(NR_ACTIVE_ANON)
-		+ global_page_state(NR_INACTIVE_ANON)
-		+ global_page_state(NR_ACTIVE_FILE)
-		+ global_page_state(NR_INACTIVE_FILE)
-		- global_page_state(NR_FILE_MAPPED);
+	    + global_page_state(NR_ACTIVE_ANON)
+	    + global_page_state(NR_INACTIVE_ANON)
+	    + global_page_state(NR_ACTIVE_FILE)
+	    + global_page_state(NR_INACTIVE_FILE)
+	    - global_page_state(NR_FILE_MAPPED);
 
 	return saveable <= size ? 0 : saveable - size;
 }
@@ -1579,7 +1586,7 @@ int hibernate_preallocate_memory(void)
 	struct timeval start, stop;
 	int error;
 
-	printk(KERN_INFO "PM: Preallocating image memory... ");
+	pr_warn("PM: Preallocating image memory... ");
 	do_gettimeofday(&start);
 
 	error = memory_bm_create(&orig_bm, GFP_IMAGE, PG_ANY);
@@ -1620,8 +1627,7 @@ int hibernate_preallocate_memory(void)
 	size += page_key_additional_pages(saveable);
 
 	/* Compute the maximum number of saveable pages to leave in memory. */
-	max_size = (count - (size + PAGES_FOR_IO)) / 2
-			- 2 * DIV_ROUND_UP(reserved_size, PAGE_SIZE);
+	max_size = (count - (size + PAGES_FOR_IO)) / 2 - 2 * DIV_ROUND_UP(reserved_size, PAGE_SIZE);
 	/* Compute the desired number of image pages specified by image_size. */
 	size = DIV_ROUND_UP(image_size, PAGE_SIZE);
 	if (size > max_size)
@@ -1708,15 +1714,15 @@ int hibernate_preallocate_memory(void)
 	 */
 	free_unnecessary_pages();
 
- out:
+out:
 	do_gettimeofday(&stop);
-	printk(KERN_CONT "done (allocated %lu pages)\n", pages);
+	pr_warn("done (allocated %lu pages)\n", pages);
 	swsusp_show_speed(&start, &stop, pages, "Allocated");
 
 	return 0;
 
- err_out:
-	printk(KERN_CONT "\n");
+err_out:
+	pr_warn("\n");
 	swsusp_free();
 	return -ENOMEM;
 }
@@ -1739,9 +1745,11 @@ static unsigned int count_pages_for_highmem(unsigned int nr_highmem)
 	return nr_highmem;
 }
 #else
-static unsigned int
-count_pages_for_highmem(unsigned int nr_highmem) { return 0; }
-#endif /* CONFIG_HIGHMEM */
+static unsigned int count_pages_for_highmem(unsigned int nr_highmem)
+{
+	return 0;
+}
+#endif				/* CONFIG_HIGHMEM */
 
 /**
  *	enough_free_mem - Make sure we have enough free memory for the
@@ -1759,7 +1767,7 @@ static int enough_free_mem(unsigned int nr_pages, unsigned int nr_highmem)
 
 	nr_pages += count_pages_for_highmem(nr_highmem);
 	pr_debug("PM: Normal pages needed: %u + %u, available pages: %u\n",
-		nr_pages, PAGES_FOR_IO, free);
+		 nr_pages, PAGES_FOR_IO, free);
 
 	return free > nr_pages + PAGES_FOR_IO;
 }
@@ -1782,8 +1790,7 @@ static inline int get_highmem_buffer(int safe_needed)
  *	highmem pages is lesser than that, allocate them all.
  */
 
-static inline unsigned int
-alloc_highmem_pages(struct memory_bitmap *bm, unsigned int nr_highmem)
+static inline unsigned int alloc_highmem_pages(struct memory_bitmap *bm, unsigned int nr_highmem)
 {
 	unsigned int to_alloc = count_free_highmem_pages();
 
@@ -1795,16 +1802,21 @@ alloc_highmem_pages(struct memory_bitmap *bm, unsigned int nr_highmem)
 		struct page *page;
 
 		page = alloc_image_page(__GFP_HIGHMEM);
-		memory_bm_set_bit(bm, page_to_pfn(page));
+		memory_bm_set_bit(bm, 0, page_to_pfn(page));
 	}
 	return nr_highmem;
 }
 #else
-static inline int get_highmem_buffer(int safe_needed) { return 0; }
+static inline int get_highmem_buffer(int safe_needed)
+{
+	return 0;
+}
 
-static inline unsigned int
-alloc_highmem_pages(struct memory_bitmap *bm, unsigned int n) { return 0; }
-#endif /* CONFIG_HIGHMEM */
+static inline unsigned int alloc_highmem_pages(struct memory_bitmap *bm, unsigned int n)
+{
+	return 0;
+}
+#endif				/* CONFIG_HIGHMEM */
 
 /**
  *	swsusp_alloc - allocate memory for the suspend image
@@ -1820,7 +1832,7 @@ alloc_highmem_pages(struct memory_bitmap *bm, unsigned int n) { return 0; }
 
 static int
 swsusp_alloc(struct memory_bitmap *orig_bm, struct memory_bitmap *copy_bm,
-		unsigned int nr_pages, unsigned int nr_highmem)
+	     unsigned int nr_pages, unsigned int nr_highmem)
 {
 	if (nr_highmem > 0) {
 		if (get_highmem_buffer(PG_ANY))
@@ -1838,13 +1850,13 @@ swsusp_alloc(struct memory_bitmap *orig_bm, struct memory_bitmap *copy_bm,
 			page = alloc_image_page(GFP_ATOMIC | __GFP_COLD);
 			if (!page)
 				goto err_out;
-			memory_bm_set_bit(copy_bm, page_to_pfn(page));
+			memory_bm_set_bit(copy_bm, 0, page_to_pfn(page));
 		}
 	}
 
 	return 0;
 
- err_out:
+err_out:
 	swsusp_free();
 	return -ENOMEM;
 }
@@ -1853,20 +1865,23 @@ asmlinkage __visible int swsusp_save(void)
 {
 	unsigned int nr_pages, nr_highmem;
 
-	printk(KERN_INFO "PM: Creating hibernation image:\n");
+	if (toi_running)
+		return toi_post_context_save();
+
+	pr_warn("PM: Creating hibernation image:\n");
 
 	drain_local_pages(NULL);
 	nr_pages = count_data_pages();
 	nr_highmem = count_highmem_pages();
-	printk(KERN_INFO "PM: Need to copy %u pages\n", nr_pages + nr_highmem);
+	pr_warn("PM: Need to copy %u pages\n", nr_pages + nr_highmem);
 
 	if (!enough_free_mem(nr_pages, nr_highmem)) {
-		printk(KERN_ERR "PM: Not enough free memory\n");
+		pr_err("PM: Not enough free memory\n");
 		return -ENOMEM;
 	}
 
 	if (swsusp_alloc(&orig_bm, &copy_bm, nr_pages, nr_highmem)) {
-		printk(KERN_ERR "PM: Memory allocation failed\n");
+		pr_err("PM: Memory allocation failed\n");
 		return -ENOMEM;
 	}
 
@@ -1886,8 +1901,7 @@ asmlinkage __visible int swsusp_save(void)
 	nr_copy_pages = nr_pages;
 	nr_meta_pages = DIV_ROUND_UP(nr_pages * sizeof(long), PAGE_SIZE);
 
-	printk(KERN_INFO "PM: Hibernation image created (%d pages copied)\n",
-		nr_pages);
+	pr_warn("PM: Hibernation image created (%d pages copied)\n", nr_pages);
 
 	return 0;
 }
@@ -1900,28 +1914,28 @@ static int init_header_complete(struct swsusp_info *info)
 	return 0;
 }
 
-static char *check_image_kernel(struct swsusp_info *info)
+char *check_image_kernel(struct swsusp_info *info)
 {
 	if (info->version_code != LINUX_VERSION_CODE)
 		return "kernel version";
-	if (strcmp(info->uts.sysname,init_utsname()->sysname))
+	if (strcmp(info->uts.sysname, init_utsname()->sysname))
 		return "system type";
-	if (strcmp(info->uts.release,init_utsname()->release))
+	if (strcmp(info->uts.release, init_utsname()->release))
 		return "kernel release";
-	if (strcmp(info->uts.version,init_utsname()->version))
+	if (strcmp(info->uts.version, init_utsname()->version))
 		return "version";
-	if (strcmp(info->uts.machine,init_utsname()->machine))
+	if (strcmp(info->uts.machine, init_utsname()->machine))
 		return "machine";
 	return NULL;
 }
-#endif /* CONFIG_ARCH_HIBERNATION_HEADER */
+#endif				/* CONFIG_ARCH_HIBERNATION_HEADER */
 
 unsigned long snapshot_get_image_size(void)
 {
 	return nr_copy_pages + nr_meta_pages + 1;
 }
 
-static int init_header(struct swsusp_info *info)
+int init_header(struct swsusp_info *info)
 {
 	memset(info, 0, sizeof(struct swsusp_info));
 	info->num_physpages = get_num_physpages();
@@ -1937,13 +1951,12 @@ static int init_header(struct swsusp_info *info)
  *	are stored in the array @buf[] (1 page at a time)
  */
 
-static inline void
-pack_pfns(unsigned long *buf, struct memory_bitmap *bm)
+static inline void pack_pfns(unsigned long *buf, struct memory_bitmap *bm)
 {
 	int j;
 
 	for (j = 0; j < PAGE_SIZE / sizeof(long); j++) {
-		buf[j] = memory_bm_next_pfn(bm);
+		buf[j] = memory_bm_next_pfn(bm, 0);
 		if (unlikely(buf[j] == BM_END_OF_MAP))
 			break;
 		/* Save page key for data page (s390 only). */
@@ -1994,7 +2007,7 @@ int snapshot_read_next(struct snapshot_handle *handle)
 	} else {
 		struct page *page;
 
-		page = pfn_to_page(memory_bm_next_pfn(&copy_bm));
+		page = pfn_to_page(memory_bm_next_pfn(&copy_bm, 0));
 		if (PageHighMem(page)) {
 			/* Highmem pages are copied to the buffer,
 			 * because we can't return with a kmapped
@@ -2036,7 +2049,7 @@ static int mark_unsafe_pages(struct memory_bitmap *bm)
 	/* Mark pages that correspond to the "original" pfns as "unsafe" */
 	memory_bm_position_reset(bm);
 	do {
-		pfn = memory_bm_next_pfn(bm);
+		pfn = memory_bm_next_pfn(bm, 0);
 		if (likely(pfn != BM_END_OF_MAP)) {
 			if (likely(pfn_valid(pfn)) && !is_nosave_page(pfn))
 				swsusp_set_page_free(pfn_to_page(pfn));
@@ -2050,16 +2063,15 @@ static int mark_unsafe_pages(struct memory_bitmap *bm)
 	return 0;
 }
 
-static void
-duplicate_memory_bitmap(struct memory_bitmap *dst, struct memory_bitmap *src)
+static void duplicate_memory_bitmap(struct memory_bitmap *dst, struct memory_bitmap *src)
 {
 	unsigned long pfn;
 
 	memory_bm_position_reset(src);
-	pfn = memory_bm_next_pfn(src);
+	pfn = memory_bm_next_pfn(src, 0);
 	while (pfn != BM_END_OF_MAP) {
-		memory_bm_set_bit(dst, pfn);
-		pfn = memory_bm_next_pfn(src);
+		memory_bm_set_bit(dst, 0, pfn);
+		pfn = memory_bm_next_pfn(src, 0);
 	}
 }
 
@@ -2071,7 +2083,7 @@ static int check_header(struct swsusp_info *info)
 	if (!reason && info->num_physpages != get_num_physpages())
 		reason = "memory size";
 	if (reason) {
-		printk(KERN_ERR "PM: Image mismatch: %s\n", reason);
+		pr_err("PM: Image mismatch: %s\n", reason);
 		return -EPERM;
 	}
 	return 0;
@@ -2081,8 +2093,7 @@ static int check_header(struct swsusp_info *info)
  *	load header - check the image header and copy data from it
  */
 
-static int
-load_header(struct swsusp_info *info)
+static int load_header(struct swsusp_info *info)
 {
 	int error;
 
@@ -2110,8 +2121,8 @@ static int unpack_orig_pfns(unsigned long *buf, struct memory_bitmap *bm)
 		/* Extract and buffer page key for data page (s390 only). */
 		page_key_memorize(buf + j);
 
-		if (memory_bm_pfn_present(bm, buf[j]))
-			memory_bm_set_bit(bm, buf[j]);
+		if (memory_bm_pfn_present(bm, 0, buf[j]))
+			memory_bm_set_bit(bm, 0, buf[j]);
 		else
 			return -EFAULT;
 	}
@@ -2154,12 +2165,12 @@ static unsigned int count_highmem_image_pages(struct memory_bitmap *bm)
 	unsigned int cnt = 0;
 
 	memory_bm_position_reset(bm);
-	pfn = memory_bm_next_pfn(bm);
+	pfn = memory_bm_next_pfn(bm, 0);
 	while (pfn != BM_END_OF_MAP) {
 		if (PageHighMem(pfn_to_page(pfn)))
 			cnt++;
 
-		pfn = memory_bm_next_pfn(bm);
+		pfn = memory_bm_next_pfn(bm, 0);
 	}
 	return cnt;
 }
@@ -2180,8 +2191,7 @@ static unsigned int safe_highmem_pages;
 
 static struct memory_bitmap *safe_highmem_bm;
 
-static int
-prepare_highmem_image(struct memory_bitmap *bm, unsigned int *nr_highmem_p)
+static int prepare_highmem_image(struct memory_bitmap *bm, unsigned int *nr_highmem_p)
 {
 	unsigned int to_alloc;
 
@@ -2204,7 +2214,7 @@ prepare_highmem_image(struct memory_bitmap *bm, unsigned int *nr_highmem_p)
 		page = alloc_page(__GFP_HIGHMEM);
 		if (!swsusp_page_is_free(page)) {
 			/* The page is "safe", set its bit the bitmap */
-			memory_bm_set_bit(bm, page_to_pfn(page));
+			memory_bm_set_bit(bm, 0, page_to_pfn(page));
 			safe_highmem_pages++;
 		}
 		/* Mark the page as allocated */
@@ -2235,8 +2245,7 @@ prepare_highmem_image(struct memory_bitmap *bm, unsigned int *nr_highmem_p)
 
 static struct page *last_highmem_page;
 
-static void *
-get_highmem_page_buffer(struct page *page, struct chain_allocator *ca)
+static void *get_highmem_page_buffer(struct page *page, struct chain_allocator *ca)
 {
 	struct highmem_pbe *pbe;
 	void *kaddr;
@@ -2262,7 +2271,7 @@ get_highmem_page_buffer(struct page *page, struct chain_allocator *ca)
 
 		/* Copy of the page will be stored in high memory */
 		kaddr = buffer;
-		tmp = pfn_to_page(memory_bm_next_pfn(safe_highmem_bm));
+		tmp = pfn_to_page(memory_bm_next_pfn(safe_highmem_bm, 0));
 		safe_highmem_pages--;
 		last_highmem_page = tmp;
 		pbe->copy_page = tmp;
@@ -2309,27 +2318,39 @@ static inline void free_highmem_data(void)
 		free_image_page(buffer, PG_UNSAFE_CLEAR);
 }
 #else
-static inline int get_safe_write_buffer(void) { return 0; }
-
-static unsigned int
-count_highmem_image_pages(struct memory_bitmap *bm) { return 0; }
-
-static inline int
-prepare_highmem_image(struct memory_bitmap *bm, unsigned int *nr_highmem_p)
+static inline int get_safe_write_buffer(void)
 {
 	return 0;
 }
 
-static inline void *
-get_highmem_page_buffer(struct page *page, struct chain_allocator *ca)
+static unsigned int count_highmem_image_pages(struct memory_bitmap *bm)
+{
+	return 0;
+}
+
+static inline int prepare_highmem_image(struct memory_bitmap *bm, unsigned int *nr_highmem_p)
+{
+	return 0;
+}
+
+static inline void *get_highmem_page_buffer(struct page *page, struct chain_allocator *ca)
 {
 	return ERR_PTR(-EINVAL);
 }
 
-static inline void copy_last_highmem_page(void) {}
-static inline int last_highmem_page_copied(void) { return 1; }
-static inline void free_highmem_data(void) {}
-#endif /* CONFIG_HIGHMEM */
+static inline void copy_last_highmem_page(void)
+{
+}
+
+static inline int last_highmem_page_copied(void)
+{
+	return 1;
+}
+
+static inline void free_highmem_data(void)
+{
+}
+#endif				/* CONFIG_HIGHMEM */
 
 /**
  *	prepare_image - use the memory bitmap @bm to mark the pages that will
@@ -2347,8 +2368,7 @@ static inline void free_highmem_data(void) {}
 
 #define PBES_PER_LINKED_PAGE	(LINKED_PAGE_DATA_SIZE / sizeof(struct pbe))
 
-static int
-prepare_image(struct memory_bitmap *new_bm, struct memory_bitmap *bm)
+static int prepare_image(struct memory_bitmap *new_bm, struct memory_bitmap *bm)
 {
 	unsigned int nr_pages, nr_highmem;
 	struct linked_page *sp_list, *lp;
@@ -2421,7 +2441,7 @@ prepare_image(struct memory_bitmap *new_bm, struct memory_bitmap *bm)
 	}
 	return 0;
 
- Free:
+Free:
 	swsusp_free();
 	return error;
 }
@@ -2435,7 +2455,7 @@ static void *get_buffer(struct memory_bitmap *bm, struct chain_allocator *ca)
 {
 	struct pbe *pbe;
 	struct page *page;
-	unsigned long pfn = memory_bm_next_pfn(bm);
+	unsigned long pfn = memory_bm_next_pfn(bm, 0);
 
 	if (pfn == BM_END_OF_MAP)
 		return ERR_PTR(-EFAULT);
@@ -2573,13 +2593,12 @@ void snapshot_write_finalize(struct snapshot_handle *handle)
 int snapshot_image_loaded(struct snapshot_handle *handle)
 {
 	return !(!nr_copy_pages || !last_highmem_page_copied() ||
-			handle->cur <= nr_meta_pages + nr_copy_pages);
+		 handle->cur <= nr_meta_pages + nr_copy_pages);
 }
 
 #ifdef CONFIG_HIGHMEM
 /* Assumes that @buf is ready and points to a "safe" page */
-static inline void
-swap_two_pages_data(struct page *p1, struct page *p2, void *buf)
+static inline void swap_two_pages_data(struct page *p1, struct page *p2, void *buf)
 {
 	void *kaddr1, *kaddr2;
 
@@ -2621,4 +2640,86 @@ int restore_highmem(void)
 	free_image_page(buf, PG_UNSAFE_CLEAR);
 	return 0;
 }
-#endif /* CONFIG_HIGHMEM */
+#endif				/* CONFIG_HIGHMEM */
+
+struct memory_bitmap *pageset1_map, *pageset2_map, *free_map, *nosave_map,
+	*pageset1_copy_map, *io_map, *page_resave_map, *compare_map;
+
+int resume_attempted;
+EXPORT_SYMBOL_GPL(resume_attempted);
+
+int memory_bm_write(struct memory_bitmap *bm, int (*rw_chunk)
+		     (int rw, struct toi_module_ops *owner, char *buffer, int buffer_size))
+{
+	int result;
+
+	memory_bm_position_reset(bm);
+
+	do {
+		result = rw_chunk(WRITE, NULL, (char *)bm->cur[0].node->data, PAGE_SIZE);
+
+		if (result)
+			return result;
+	} while (rtree_next_node(bm, 0));
+	return 0;
+}
+
+int memory_bm_read(struct memory_bitmap *bm, int (*rw_chunk)
+		    (int rw, struct toi_module_ops *owner, char *buffer, int buffer_size))
+{
+	int result;
+
+	memory_bm_position_reset(bm);
+
+	do {
+		result = rw_chunk(READ, NULL, (char *)bm->cur[0].node->data, PAGE_SIZE);
+
+		if (result)
+			return result;
+
+	} while (rtree_next_node(bm, 0));
+	return 0;
+}
+
+int memory_bm_space_needed(struct memory_bitmap *bm)
+{
+	unsigned long bytes = 0;
+
+	memory_bm_position_reset(bm);
+	do {
+		bytes += PAGE_SIZE;
+	} while (rtree_next_node(bm, 0));
+	return bytes;
+}
+
+int toi_alloc_bitmap(struct memory_bitmap **bm)
+{
+	int error;
+	struct memory_bitmap *bm1;
+
+	bm1 = kzalloc(sizeof(struct memory_bitmap), GFP_KERNEL);
+	if (!bm1)
+		return -ENOMEM;
+
+	pr_warn("Bitmap allocated is %p.\n", bm1);
+
+	error = memory_bm_create(bm1, GFP_KERNEL, PG_ANY);
+	if (error) {
+		pr_warn("Error returned - %d.\n", error);
+		kfree(bm1);
+		return -ENOMEM;
+	}
+
+	*bm = bm1;
+	return 0;
+}
+
+void toi_free_bitmap(struct memory_bitmap **bm)
+{
+	if (!*bm)
+		return;
+
+	memory_bm_free(*bm, 0);
+	kfree(*bm);
+	*bm = NULL;
+}

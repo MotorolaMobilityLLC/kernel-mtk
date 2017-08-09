@@ -8,6 +8,7 @@
 #include <linux/writeback.h>
 #include <linux/sysctl.h>
 #include <linux/gfp.h>
+#include <linux/export.h>
 #include "internal.h"
 
 /* A global variable is a bit ugly, but it keeps the code simple */
@@ -49,6 +50,13 @@ static void drop_slab(void)
 		nr_objects = shrink_slab(&shrink, 1000, 1000);
 	} while (nr_objects > 10);
 }
+
+/* For TuxOnIce */
+void drop_pagecache(void)
+{
+	iterate_supers(drop_pagecache_sb, NULL);
+}
+EXPORT_SYMBOL_GPL(drop_pagecache);
 
 int drop_caches_sysctl_handler(struct ctl_table *table, int write,
 	void __user *buffer, size_t *length, loff_t *ppos)

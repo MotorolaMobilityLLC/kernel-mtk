@@ -2087,6 +2087,7 @@ int drop_caches_sysctl_handler(struct ctl_table *, int,
 unsigned long shrink_slab(struct shrink_control *shrink,
 			  unsigned long nr_pages_scanned,
 			  unsigned long lru_pages);
+void drop_pagecache(void);
 
 #ifndef CONFIG_MMU
 #define randomize_va_space 0

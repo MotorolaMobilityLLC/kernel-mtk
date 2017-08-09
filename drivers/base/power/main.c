@@ -914,6 +914,7 @@ void dpm_resume(pm_message_t state)
 	cpufreq_resume();
 	trace_suspend_resume(TPS("dpm_resume"), state.event, false);
 }
+EXPORT_SYMBOL_GPL(dpm_resume);
 
 /**
  * device_complete - Complete a PM transition for given device.
@@ -994,6 +995,7 @@ void dpm_complete(pm_message_t state)
 	mutex_unlock(&dpm_list_mtx);
 	trace_suspend_resume(TPS("dpm_complete"), state.event, false);
 }
+EXPORT_SYMBOL_GPL(dpm_complete);
 
 /**
  * dpm_resume_end - Execute "resume" callbacks and complete system transition.
@@ -1572,6 +1574,7 @@ int dpm_suspend(pm_message_t state)
 	trace_suspend_resume(TPS("dpm_suspend"), state.event, false);
 	return error;
 }
+EXPORT_SYMBOL_GPL(dpm_suspend);
 
 /**
  * device_prepare - Prepare a device for system power transition.
@@ -1691,6 +1694,7 @@ int dpm_prepare(pm_message_t state)
 	trace_suspend_resume(TPS("dpm_prepare"), state.event, false);
 	return error;
 }
+EXPORT_SYMBOL_GPL(dpm_prepare);
 
 /**
  * dpm_suspend_start - Prepare devices for PM transition and suspend them.

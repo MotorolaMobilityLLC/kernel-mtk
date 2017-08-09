@@ -12,6 +12,7 @@
 #include <linux/suspend.h>
 #include <linux/syscalls.h>
 #include <linux/reboot.h>
+#include <linux/export.h>
 #include <linux/string.h>
 #include <linux/device.h>
 #include <linux/miscdevice.h>
@@ -43,6 +44,7 @@ static struct snapshot_data {
 } snapshot_state;
 
 atomic_t snapshot_device_available = ATOMIC_INIT(1);
+EXPORT_SYMBOL_GPL(snapshot_device_available);
 
 static int snapshot_open(struct inode *inode, struct file *filp)
 {

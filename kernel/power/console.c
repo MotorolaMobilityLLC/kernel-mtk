@@ -138,6 +138,7 @@ int pm_prepare_console(void)
 	orig_kmsg = vt_kmsg_redirect(SUSPEND_CONSOLE);
 	return 0;
 }
+EXPORT_SYMBOL_GPL(pm_prepare_console);
 
 void pm_restore_console(void)
 {
@@ -149,3 +150,4 @@ void pm_restore_console(void)
 		vt_kmsg_redirect(orig_kmsg);
 	}
 }
+EXPORT_SYMBOL_GPL(pm_restore_console);
