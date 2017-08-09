@@ -98,8 +98,6 @@ typedef signed char MINT8;
 /* #include "../../cmdq/mt6797/cmdq_core.h" */
 
 /* CCF */
-#define __DPE_USE_CommonClockFrameWork_API__
-#ifdef __DPE_USE_CommonClockFrameWork_API__
 #if !defined(CONFIG_MTK_LEGACY) && defined(CONFIG_COMMON_CLK) /*CCF*/
 #include <linux/clk.h>
 typedef struct{
@@ -111,7 +109,6 @@ typedef struct{
 } DPE_CLK_STRUCT;
 DPE_CLK_STRUCT dpe_clk;
 #endif				/* !defined(CONFIG_MTK_LEGACY) && defined(CONFIG_COMMON_CLK)  */
-#endif				/* __DPE_USE_CommonClockFrameWork_API;*/
 typedef signed int MINT32;
 /*  */
 typedef bool MBOOL;
@@ -126,7 +123,6 @@ typedef bool MBOOL;
 #define DPE_DEV_NAME                "camera-dpe"
 
 #define EVEREST_EP_CODE_MARK	/* Mark codes first, should check it in later */
-#define EVEREST_EP_NO_CLKMGR	/* Clkmgr is not ready in early porting, en/disable clock  by hardcode */
 #define EVEREST_EP_DEBUG_LOG
 #define DPE_USE_GCE
 #define DPE_DEBUG_USE
@@ -277,8 +273,6 @@ static int nr_DPE_devs;
 #define ISP_DPE_BASE                  (DPE_devs[DPE_DEV_NODE_IDX].regs)
 /* #define ISP_DPE_BASE                  (gISPSYS_Reg[DPE_DEV_NODE_IDX]) */
 
-void __iomem *ISP_IMGSYS_CONFIG_BASE;
-void __iomem *ISP_CAMSYS_CONFIG_BASE;
 
 
 #else
@@ -537,14 +531,6 @@ static SV_LOG_STR gSvLog[DPE_IRQ_TYPE_AMOUNT];
 #define IRQ_LOG_PRINTER(irq, ppb, logT)
 #endif
 
-
-/* Everest top registers */
-#define CAMSYS_REG_CG_CON               (ISP_CAMSYS_CONFIG_BASE + 0x0)
-#define IMGSYS_REG_CG_CON               (ISP_IMGSYS_CONFIG_BASE + 0x0)
-#define CAMSYS_REG_CG_SET               (ISP_CAMSYS_CONFIG_BASE + 0x4)
-#define IMGSYS_REG_CG_SET               (ISP_IMGSYS_CONFIG_BASE + 0x4)
-#define CAMSYS_REG_CG_CLR               (ISP_CAMSYS_CONFIG_BASE + 0x8)
-#define IMGSYS_REG_CG_CLR               (ISP_IMGSYS_CONFIG_BASE + 0x8)
 
 /* Everest DPE registers */
 #define DPE_RST_HW                    (DPE_BASE_HW)
@@ -2191,7 +2177,6 @@ static MINT32 DPE_DumpReg(void)
 	return Ret;
 }
 
-#ifdef __DPE_USE_CommonClockFrameWork_API__
 #if !defined(CONFIG_MTK_LEGACY) && defined(CONFIG_COMMON_CLK) /*CCF*/
 static inline void DPE_Prepare_ccf_clock(void)
 {
@@ -2301,22 +2286,16 @@ static inline void DPE_Disable_Unprepare_ccf_clock(void)
 	clk_disable_unprepare(dpe_clk.CG_SCP_SYS_DIS);
 }
 #endif
-#endif
-
 
 /*******************************************************************************
 *
 ********************************************************************************/
 static void DPE_EnableClock(MBOOL En)
 {
-	MUINT32 setReg;
-
 	if (En) {		/* Enable clock. */
 		/* LOG_DBG("Dpe clock enbled. g_u4EnableClockCount: %d.", g_u4EnableClockCount); */
 		switch (g_u4EnableClockCount) {
 		case 0:
-#ifndef EVEREST_EP_NO_CLKMGR
-#ifdef __DPE_USE_CommonClockFrameWork_API__
 #if !defined(CONFIG_MTK_LEGACY) && defined(CONFIG_COMMON_CLK) /*CCF*/
 			    DPE_Prepare_Enable_ccf_clock();
 #else
@@ -2329,16 +2308,6 @@ static void DPE_EnableClock(MBOOL En)
 			/* enable_clock(MT_CG_IMAGE_FD, "CAMERA"); */
 			enable_clock(MT_CG_IMAGE_LARB2_SMI, "CAMERA");
 #endif				/* #if !defined(CONFIG_MTK_LEGACY) && defined(CONFIG_COMMON_CLK)  */
-#endif				/* #ifdef __DPE_USE_CommonClockFrameWork_API__ */
-#else
-			/* Enable clock by hardcode:
-			   1. CAMSYS_CG_CLR (0x1A000008) = 0xffffffff;
-			   2. IMG_CG_CLR (0x15000008) = 0xffffffff;
-			 */
-			setReg = 0xFFFFFFFF;
-			DPE_WR32(CAMSYS_REG_CG_CLR, setReg);
-			DPE_WR32(IMGSYS_REG_CG_CLR, setReg);
-#endif				/* #ifndef EVEREST_EP_NO_CLKMGR */
 			break;
 		default:
 			break;
@@ -2354,8 +2323,6 @@ static void DPE_EnableClock(MBOOL En)
 		spin_unlock(&(DPEInfo.SpinLockDPE));
 		switch (g_u4EnableClockCount) {
 		case 0:
-#ifndef EVEREST_EP_NO_CLKMGR
-#ifdef __DPE_USE_CommonClockFrameWork_API__
 #if !defined(CONFIG_MTK_LEGACY) && defined(CONFIG_COMMON_CLK) /*CCF*/
 			    DPE_Disable_Unprepare_ccf_clock();
 #else
@@ -2369,16 +2336,6 @@ static void DPE_EnableClock(MBOOL En)
 			disable_clock(MT_CG_IMAGE_LARB2_SMI, "CAMERA");
 			disable_clock(MT_CG_DDPE0_SMI_COMMON, "CAMERA");
 #endif				/* #if !defined(CONFIG_MTK_LEGACY) && defined(CONFIG_COMMON_CLK) */
-#endif				/* #ifdef __DPE_USE_CommonClockFrameWork_API__ */
-#else
-			/* Disable clock by hardcode:
-			   1. CAMSYS_CG_SET (0x1A000004) = 0xffffffff;
-			   2. IMG_CG_SET (0x15000004) = 0xffffffff;
-			 */
-			setReg = 0xFFFFFFFF;
-			DPE_WR32(CAMSYS_REG_CG_SET, setReg);
-			DPE_WR32(IMGSYS_REG_CG_SET, setReg);
-#endif				/* EVEREST_EP_NO_CLKMGR */
 			break;
 		default:
 			break;
@@ -2391,15 +2348,9 @@ static void DPE_EnableClock(MBOOL En)
 ********************************************************************************/
 static inline void DPE_Reset(void)
 {
-	/*MUINT32 Reg;
-	MUINT32 setReg;*/
-
 	LOG_DBG("- E.");
 
 	LOG_DBG(" DPE Reset start!\n");
-
-	DPE_WR32(CAMSYS_REG_CG_CLR, 0xFFFFFFFF);
-	DPE_WR32(IMGSYS_REG_CG_CLR, 0xFFFFFFFF);
 	spin_lock(&(DPEInfo.SpinLockDPERef));
 
 	if (DPEInfo.UserCount > 1) {
@@ -4348,7 +4299,6 @@ static MINT32 DPE_probe(struct platform_device *pDev)
 			dev_err(&pDev->dev, "register char failed");
 			return Ret;
 		}
-#ifdef __DPE_USE_CommonClockFrameWork_API__
 #if !defined(CONFIG_MTK_LEGACY) && defined(CONFIG_COMMON_CLK) /*CCF*/
 		    /*CCF: Grab clock pointer (struct clk*) */
 		dpe_clk.CG_SCP_SYS_DIS = devm_clk_get(&pDev->dev, "CG_SCP_SYS_DIS");
@@ -4378,7 +4328,6 @@ static MINT32 DPE_probe(struct platform_device *pDev)
 			return PTR_ERR(dpe_clk.CG_IMGSYS_DPE);
 		}
 #endif				/* !defined(CONFIG_MTK_LEGACY) && defined(CONFIG_COMMON_CLK)  */
-#endif				/* __DPE_USE_CommonClockFrameWork_API__ */
 
 
 		/* Create class register */
@@ -4888,7 +4837,6 @@ static MINT32 __init DPE_Init(void)
 {
 	MINT32 Ret = 0, j;
 	void *tmp;
-	struct device_node *node = NULL;
 	/* FIX-ME: linux-3.10 procfs API changed */
 	/* use proc_create */
 	struct proc_dir_entry *proc_entry;
@@ -4904,33 +4852,6 @@ static MINT32 __init DPE_Init(void)
 		LOG_ERR("platform_driver_register fail");
 		return Ret;
 	}
-	/*  */
-
-	node = of_find_compatible_node(NULL, NULL, "mediatek,imgsys_config");
-	if (!node) {
-		LOG_ERR("find mediatek,IMGSYS_CONFIG node failed!!!\n");
-		return -ENODEV;
-	}
-	ISP_IMGSYS_CONFIG_BASE = of_iomap(node, 0);
-	if (!ISP_IMGSYS_CONFIG_BASE) {
-		LOG_ERR("unable to map ISP_IMGSYS_CONFIG_BASE registers!!!\n");
-		return -ENODEV;
-	}
-	LOG_DBG("ISP_IMGSYS_CONFIG_BASE: %lx\n", (unsigned long)ISP_IMGSYS_CONFIG_BASE);
-
-
-	node = of_find_compatible_node(NULL, NULL, "mediatek,camsys_config");
-	if (!node) {
-		LOG_ERR("find mediatek,CAMSYS_CONFIG node failed!!!\n");
-		return -ENODEV;
-	}
-	ISP_CAMSYS_CONFIG_BASE = of_iomap(node, 0);
-	if (!ISP_CAMSYS_CONFIG_BASE) {
-		LOG_ERR("unable to map ISP_CAMSYS_CONFIG_BASE registers!!!\n");
-		return -ENODEV;
-	}
-	LOG_DBG("ISP_CAMSYS_CONFIG_BASE: %lx\n", (unsigned long)ISP_CAMSYS_CONFIG_BASE);
-
 
 #if 0
 	struct device_node *node = NULL;
