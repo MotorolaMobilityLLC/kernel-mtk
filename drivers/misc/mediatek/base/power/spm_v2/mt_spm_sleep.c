@@ -130,6 +130,7 @@ struct wake_status spm_wakesta; /* record last wakesta */
 	WAKE_SRC_R12_CCIF1_EVENT_B | \
 	WAKE_SRC_R12_CSYSPWREQ_B | \
 	WAKE_SRC_R12_MD1_WDT_B | \
+	WAKE_SRC_R12_CLDMA_EVENT_B | \
 	WAKE_SRC_R12_SEJ_WDT_GPT_B)
 #endif
 #define WAKE_SRC_FOR_MD32  0 \
@@ -242,9 +243,9 @@ static struct pwr_ctrl suspend_ctrl = {
 
 	.spm_apsrc_req = 1,
 	.spm_f26m_req = 1,
-	.spm_lte_req = 1,
-	.spm_infra_req = 1,
-	.spm_vrf18_req = 1,
+	.spm_lte_req = 0,
+	.spm_infra_req = 0,
+	.spm_vrf18_req = 0,
 #else
 	.spm_apsrc_req = 0,
 	.spm_f26m_req = 0,
@@ -283,6 +284,12 @@ struct spm_lp_scen __spm_suspend = {
 	.wakestatus = &suspend_info[0],
 };
 
+#if defined(CONFIG_ARCH_MT6797)
+#define TEMP1	0x100A4000
+#define TEMP2	0x10001000
+#define TEMP3	0x10000000
+#endif
+
 static void spm_suspend_pre_process(struct pwr_ctrl *pwrctrl)
 {
 #if defined(CONFIG_ARCH_MT6755)
@@ -313,7 +320,28 @@ static void spm_suspend_pre_process(struct pwr_ctrl *pwrctrl)
 		__spm_backup_pmic_ck_pdn();
 	}
 #else
-	spm_write(BIG_CLK_CON, spm_read(BIG_CLK_CON) | 0x1f);
+	static void __iomem *temp1_base;
+	static void __iomem *temp2_base;
+	static void __iomem *temp3_base;
+	int reg = 0;
+
+	temp2_base = ioremap(TEMP2, 0x1000);
+	spm_write(temp2_base + 0x84, 0x10);
+
+	temp3_base = ioremap(TEMP3, 0x1000);
+	spm_write(temp3_base + 0x90, spm_read(temp3_base) & 0xFFFF7FFF);
+
+	temp1_base = ioremap(TEMP1, 0x1000);
+	spm_write(temp1_base + 0x20, spm_read(temp1_base) | 0x100);
+
+	spm_crit2("vcore=0.6\n");
+	pmic_config_interface(0x60c, 0x0, 0xffff, 0);
+	pmic_read_interface(0x60c, &reg, 0xffff, 0);
+	spm_crit2("0x60c= :0x%x\n", reg);
+	pmic_config_interface(0x44a, 0x0b00, 0xffff, 0);
+	pmic_read_interface(0x44a, &reg, 0xffff, 0);
+	spm_crit2("0x44a= :0x%x\n", reg);
+
 	spm_write(LITTLE_CLK_CON, spm_read(LITTLE_CLK_CON) | 0x1f);
 #endif
 }
