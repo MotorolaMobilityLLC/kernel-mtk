@@ -1,4 +1,5 @@
 ccflags-y  += -I$(srctree)/drivers/misc/mediatek/base/power/$(MTK_PLATFORM)
+ccflags-y  += -I$(srctree)/drivers/misc/mediatek/base/power/include
 obj-y += mt_power_gs.o
 #obj-y += mt_power_gs_cg_array.o
 #obj-y += mt_power_gs_dcm_array.o

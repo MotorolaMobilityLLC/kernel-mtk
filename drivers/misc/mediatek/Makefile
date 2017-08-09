@@ -157,3 +157,4 @@ obj-y	+= ppm/
 
 #widevine drm
 obj-$(CONFIG_TRUSTONIC_TEE_SUPPORT) += secwidevine/
+obj-$(CONFIG_MTK_POWER_GS)      += power_gs/
