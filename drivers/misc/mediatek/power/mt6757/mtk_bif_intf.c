@@ -1,5 +1,7 @@
 #include <mt-plat/upmu_common.h>
+#include <mt-plat/charging.h>
 #include <linux/errno.h>
+#include <linux/delay.h>
 #include "mtk_bif_intf.h"
 
 #ifdef CONFIG_MTK_BIF_SUPPORT
@@ -442,7 +444,7 @@ int mtk_bif_init(void)
 	vbat = 0;
 	if (bif_checked != 1) {
 		bif_init();
-		charging_get_bif_vbat(&vbat);
+		mtk_bif_get_vbat(&vbat);
 		if (vbat != 0) {
 			battery_log(BAT_LOG_CRTI, "[BIF]BIF battery detected.\n");
 			bif_exist = 1;
