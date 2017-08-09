@@ -33,6 +33,15 @@ config MTK_EMMC_SUPPORT_OTP
 
 	  If unsure, say N.
 
+config MMC_MT81XX
+	tristate "MediaTek MT81XX SD/MMC driver support"
+	help
+	  This selects the MediaTek(R) MMC MT81XX serial driver, if enable,
+	  will use the driver at meidatek/common, but not use meidatek/${platform}.
+	  Note that this driver only support EMMC/SD, do not support SDIO.
+
+	  If unsure, say N.
+
 config MMC_ARMMMCI
 	tristate "ARM AMBA Multimedia Card Interface support"
 	depends on ARM_AMBA
