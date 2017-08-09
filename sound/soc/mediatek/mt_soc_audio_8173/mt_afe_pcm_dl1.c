@@ -36,6 +36,7 @@ struct mt_pcm_dl1_priv {
 	bool enable_i2s0;
 	bool enable_i2s0_low_jitter;
 	bool enable_i2s1_low_jitter;
+	bool enable_sram;
 	unsigned int playback_mux;
 	unsigned int i2s0_clock_mode;
 	unsigned int i2s1_clock_mode;
@@ -143,6 +144,8 @@ static int mt_pcm_dl1_hw_params(struct snd_pcm_substream *substream,
 {
 	struct snd_pcm_runtime *runtime = substream->runtime;
 	struct snd_dma_buffer *dma_buf = &substream->dma_buffer;
+	struct snd_soc_pcm_runtime *rtd = substream->private_data;
+	struct mt_pcm_dl1_priv *priv = snd_soc_platform_get_drvdata(rtd->platform);
 	int ret = 0;
 	size_t buffer_size = params_buffer_bytes(hw_params);
 
@@ -153,17 +156,24 @@ static int mt_pcm_dl1_hw_params(struct snd_pcm_substream *substream,
 	dma_buf->private_data = NULL;
 
 #ifdef AUDIO_MEMORY_SRAM
-	if (unlikely(buffer_size > DL1_MAX_BUFFER_SIZE)) {
-		pr_warn("%s request size %zu > max size %d\n",
-			__func__, buffer_size, DL1_MAX_BUFFER_SIZE);
-		buffer_size = DL1_MAX_BUFFER_SIZE;
+	if (buffer_size > mt_afe_get_sram_size()) {
+		pr_debug("%s force to use dram for size %zu\n", __func__, buffer_size);
+		priv->enable_sram = false;
+	} else {
+		priv->enable_sram = true;
 	}
-	substream->runtime->dma_bytes = buffer_size;
-	substream->runtime->dma_area = (unsigned char *)mt_afe_get_sram_base_ptr();
-	substream->runtime->dma_addr = mt_afe_get_sram_phy_addr();
 #else
-	ret = snd_pcm_lib_malloc_pages(substream, buffer_size);
+	priv->enable_sram = false;
 #endif
+
+	if (priv->enable_sram) {
+		substream->runtime->dma_bytes = buffer_size;
+		substream->runtime->dma_area = (unsigned char *)mt_afe_get_sram_base_ptr();
+		substream->runtime->dma_addr = mt_afe_get_sram_phy_addr();
+	} else {
+		ret = snd_pcm_lib_malloc_pages(substream, buffer_size);
+		mt_afe_emi_clk_on();
+	}
 
 	if (ret >= 0)
 		mt_afe_init_dma_buffer(MT_AFE_MEM_CTX_DL1, runtime);
@@ -181,13 +191,18 @@ static int mt_pcm_dl1_hw_params(struct snd_pcm_substream *substream,
 
 static int mt_pcm_dl1_hw_free(struct snd_pcm_substream *substream)
 {
+	struct snd_soc_pcm_runtime *rtd = substream->private_data;
+	struct mt_pcm_dl1_priv *priv = snd_soc_platform_get_drvdata(rtd->platform);
+	int ret = 0;
+
 	pr_debug("%s\n", __func__);
 
-#ifdef AUDIO_MEMORY_SRAM
-	return 0;
-#else
-	return snd_pcm_lib_free_pages(substream);
-#endif
+	if (!priv->enable_sram) {
+		ret = snd_pcm_lib_free_pages(substream);
+		mt_afe_emi_clk_off();
+	}
+
+	return ret;
 }
 
 static int mt_pcm_dl1_prepare(struct snd_pcm_substream *substream)

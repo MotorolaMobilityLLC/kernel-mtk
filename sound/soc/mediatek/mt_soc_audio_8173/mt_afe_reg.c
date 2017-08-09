@@ -31,6 +31,7 @@ static void *spm_base_address;
 static void *topckgen_base_address;
 static void *apmixedsys_base_address;
 static phys_addr_t afe_sram_phy_address = AFE_INTERNAL_SRAM_PHY_BASE;
+static uint32_t afe_sram_size = AFE_INTERNAL_SRAM_SIZE;
 
 
 int mt_afe_reg_remap(void *dev)
@@ -73,6 +74,7 @@ int mt_afe_reg_remap(void *dev)
 		goto exit;
 	}
 	afe_sram_phy_address = res.start;
+	afe_sram_size = resource_size(&res);
 
 	/* TOPCKGEN register base */
 	node = of_find_compatible_node(NULL, NULL, "mediatek,mt8173-topckgen");
@@ -247,6 +249,11 @@ void *mt_afe_get_sram_base_ptr()
 phys_addr_t mt_afe_get_sram_phy_addr(void)
 {
 	return afe_sram_phy_address;
+}
+
+uint32_t mt_afe_get_sram_size(void)
+{
+	return afe_sram_size;
 }
 
 void mt_afe_log_print(void)

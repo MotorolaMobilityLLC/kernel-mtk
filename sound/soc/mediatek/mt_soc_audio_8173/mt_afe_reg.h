@@ -316,6 +316,7 @@ void mt_afe_spm_set_reg(uint32_t offset, uint32_t value, uint32_t mask);
 
 void *mt_afe_get_sram_base_ptr(void);
 phys_addr_t mt_afe_get_sram_phy_addr(void);
+uint32_t mt_afe_get_sram_size(void);
 
 void mt_afe_log_print(void);
 

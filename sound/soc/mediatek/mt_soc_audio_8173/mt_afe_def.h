@@ -93,8 +93,8 @@
      PCM buffer size and period size setting
 */
 
-#define DL1_MAX_BUFFER_SIZE     (32*1024)
-#define DL2_MAX_BUFFER_SIZE     (32*1024)
+#define DL1_MAX_BUFFER_SIZE     (128*1024)
+#define DL2_MAX_BUFFER_SIZE     (128*1024)
 #define UL1_MAX_BUFFER_SIZE     (32*1024)
 #define UL2_MAX_BUFFER_SIZE     (32*1024)
 #define BT_DL_MAX_BUFFER_SIZE   (16*1024)
