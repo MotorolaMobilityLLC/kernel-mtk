@@ -380,6 +380,10 @@ static void mtk_enable_otg_mode(void)
 #elif defined(CONFIG_MTK_OTG_PMIC_BOOST_5V)
 	mtk_enable_pmic_otg_mode();
 #endif
+#if defined(CONFIG_MTK_BQ25898_DUAL_SUPPORT)
+	bq25898_otg_en(0x01);
+	bq25898_set_boost_ilim(0x01);
+#endif
 }
 
 static void mtk_disable_otg_mode(void)
@@ -388,6 +392,9 @@ static void mtk_disable_otg_mode(void)
 	bq25890_otg_en(0x0);
 #elif defined(CONFIG_MTK_OTG_PMIC_BOOST_5V)
 	mtk_disable_pmic_otg_mode();
+#endif
+#if defined(CONFIG_MTK_BQ25898_DUAL_SUPPORT)
+	bq25898_otg_en(0x0);
 #endif
 }
 
@@ -709,19 +716,21 @@ void mtk_unload_xhci_on_ipo(void)
 #endif
 
 #ifdef CONFIG_USB_C_SWITCH
-static void typec_otg_enable(void)
+static int typec_otg_enable(void *data)
 {
-	mtk_idpin_cur_stat = IDPIN_IN_HOST;
 	int ret = 0;
+
+	mtk_idpin_cur_stat = IDPIN_IN_HOST;
 
 	ret = mtk_xhci_driver_load();
 	if (!ret) {
 		mtk_xhci_wakelock_lock();
 		switch_set_state(&mtk_otg_state, 1);
 	}
+	return ret;
 }
 
-static void typec_otg_disable(void)
+static int typec_otg_disable(void *data)
 {
 	mtk_xhci_disPortPower();
 	/* USB PLL Force settings */
@@ -730,6 +739,8 @@ static void typec_otg_disable(void)
 	switch_set_state(&mtk_otg_state, 0);
 	mtk_xhci_wakelock_unlock();
 	mtk_idpin_cur_stat = IDPIN_OUT;
+
+	return 0;
 }
 static struct typec_switch_data typec_host_driver = {
 	.name = "xhci-mtk",
