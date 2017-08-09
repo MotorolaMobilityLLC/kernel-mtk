@@ -2166,18 +2166,8 @@ VOID aisFsmSteps(IN P_ADAPTER_T prAdapter, ENUM_AIS_STATE_T eNextState)
 				prScanReqMsg->ucChannelListNum = 1;
 				prScanReqMsg->arChnlInfoList[0].eBand = eBand;
 				prScanReqMsg->arChnlInfoList[0].ucChannelNum = ucChannel;
-			} else if (prAdapter->aePreferBand[NETWORK_TYPE_AIS_INDEX] == BAND_NULL) {
-				if (prAdapter->fgEnable5GBand == TRUE)
-					prScanReqMsg->eScanChannel = SCAN_CHANNEL_FULL;
-				else
-					prScanReqMsg->eScanChannel = SCAN_CHANNEL_2G4;
-			} else if (prAdapter->aePreferBand[NETWORK_TYPE_AIS_INDEX] == BAND_2G4) {
-				prScanReqMsg->eScanChannel = SCAN_CHANNEL_2G4;
-			} else if (prAdapter->aePreferBand[NETWORK_TYPE_AIS_INDEX] == BAND_5G) {
-				prScanReqMsg->eScanChannel = SCAN_CHANNEL_5G;
 			} else {
-				prScanReqMsg->eScanChannel = SCAN_CHANNEL_FULL;
-				ASSERT(0);
+				aisFsmSetChannelInfo(prAdapter, prScanReqMsg);
 			}
 
 			if (prAisFsmInfo->u4ScanIELength > 0) {
@@ -2320,6 +2310,91 @@ VOID aisFsmSteps(IN P_ADAPTER_T prAdapter, ENUM_AIS_STATE_T eNextState)
 	return;
 
 }				/* end of aisFsmSteps() */
+
+/*----------------------------------------------------------------------------*/
+/*!
+* \brief
+*
+* \param[in]
+*
+* \return none
+*/
+/*----------------------------------------------------------------------------*/
+VOID aisFsmSetChannelInfo(IN P_ADAPTER_T prAdapter, IN P_MSG_SCN_SCAN_REQ ScanReqMsg)
+{
+	/*get scan channel infro from prAdapter->prGlueInfo->prScanRequest*/
+	struct cfg80211_scan_request *scan_req_t = NULL;
+	struct ieee80211_channel *channel_tmp = NULL;
+	int i = 0;
+	int j = 0;
+	UINT_8 channel_num = 0;
+	UINT_8 channel_counts = 0;
+
+	if ((prAdapter == NULL) || (ScanReqMsg == NULL))
+		return;
+
+	if (prAdapter->prGlueInfo->prScanRequest != NULL) {
+		scan_req_t = prAdapter->prGlueInfo->prScanRequest;
+		if ((scan_req_t != NULL) && (scan_req_t->n_channels != 0) &&
+			(scan_req_t->channels != NULL)) {
+			channel_counts = scan_req_t->n_channels;
+			DBGLOG(AIS, TRACE, "channel_counts=%d\n", channel_counts);
+
+			while (j < channel_counts) {
+				channel_tmp = scan_req_t->channels[j];
+
+				DBGLOG(AIS, TRACE, "set channel band=%d\n", channel_tmp->band);
+				if (channel_tmp->band >= IEEE80211_BAND_60GHZ) {
+					j++;
+					continue;
+				}
+				if (i >= MAXIMUM_OPERATION_CHANNEL_LIST)
+					break;
+				if (channel_tmp->band == IEEE80211_BAND_2GHZ)
+					ScanReqMsg->arChnlInfoList[i].eBand = BAND_2G4;
+				else if (channel_tmp->band == IEEE80211_BAND_5GHZ)
+					ScanReqMsg->arChnlInfoList[i].eBand = BAND_5G;
+
+				DBGLOG(AIS, TRACE, "set channel channel_rer =%d\n",
+					channel_tmp->center_freq);
+
+				channel_num = (UINT_8)nicFreq2ChannelNum(
+					channel_tmp->center_freq * 1000);
+
+				DBGLOG(AIS, TRACE, "set channel channel_num=%d\n",
+					channel_num);
+				ScanReqMsg->arChnlInfoList[i].ucChannelNum = channel_num;
+
+				j++;
+				i++;
+			}
+		}
+		DBGLOG(AIS, TRACE, "set channel i=%d\n", i);
+		if (i > 0) {
+			ScanReqMsg->ucChannelListNum = i;
+			ScanReqMsg->eScanChannel = SCAN_CHANNEL_SPECIFIED;
+		} else {
+			if (prAdapter->aePreferBand[NETWORK_TYPE_AIS_INDEX]
+				== BAND_NULL) {
+				if (prAdapter->fgEnable5GBand == TRUE)
+					ScanReqMsg->eScanChannel = SCAN_CHANNEL_FULL;
+				else
+					ScanReqMsg->eScanChannel = SCAN_CHANNEL_2G4;
+				} else if (prAdapter->aePreferBand[NETWORK_TYPE_AIS_INDEX]
+						== BAND_2G4) {
+					ScanReqMsg->eScanChannel = SCAN_CHANNEL_2G4;
+				} else if (prAdapter->aePreferBand[NETWORK_TYPE_AIS_INDEX]
+						== BAND_5G) {
+					ScanReqMsg->eScanChannel = SCAN_CHANNEL_5G;
+				} else {
+					ScanReqMsg->eScanChannel = SCAN_CHANNEL_FULL;
+					ASSERT(0);
+				}
+		}
+	}
+
+}
+
 
 /*----------------------------------------------------------------------------*/
 /*!

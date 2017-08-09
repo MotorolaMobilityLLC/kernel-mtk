@@ -682,16 +682,18 @@ int mtk_cfg80211_scan(struct wiphy *wiphy,
 	if (request->ie_len > 0)
 		rScanRequest.pucIE = (PUINT_8) (request->ie);
 
+	prGlueInfo->prScanRequest = request;
 	rStatus = kalIoctl(prGlueInfo,
 			   wlanoidSetBssidListScanAdv,
 			   &rScanRequest, sizeof(PARAM_SCAN_REQUEST_ADV_T), FALSE, FALSE, FALSE, &u4BufLen);
 
 	if (rStatus != WLAN_STATUS_SUCCESS) {
+		prGlueInfo->prScanRequest = NULL;
 		DBGLOG(REQ, WARN, "scan error:%lx\n", rStatus);
 		return -EINVAL;
 	}
 
-	prGlueInfo->prScanRequest = request;
+	/*prGlueInfo->prScanRequest = request;*/
 
 	return 0;
 }
