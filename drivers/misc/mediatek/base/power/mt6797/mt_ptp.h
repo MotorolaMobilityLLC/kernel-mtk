@@ -97,6 +97,14 @@ enum eem_det_id {
 	NR_EEM_DET,
 };
 
+enum mt_eem_cpu_id {
+	MT_EEM_CPU_LL,
+	MT_EEM_CPU_L,
+	MT_EEM_CPU_B,
+	MT_EEM_CPU_CCI,
+
+	NR_MT_EEM_CPU,
+};
 
 /* Global variable for SW EFUSE*/
 /* TODO: FIXME #include "devinfo.h" */

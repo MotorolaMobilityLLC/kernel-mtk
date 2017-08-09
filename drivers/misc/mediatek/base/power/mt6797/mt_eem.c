@@ -437,6 +437,7 @@ static unsigned int cpu_speed;
 #include <linux/file.h>
 #include <linux/delay.h>
 #include <linux/types.h>
+#include <linux/topology.h>
 
 /* project includes */
 #include "mach/irqs.h"
@@ -495,6 +496,8 @@ static unsigned int ctrl_EEM_Enable = 1;
 #else
 static unsigned int ctrl_EEM_Enable = 1;
 #endif
+static unsigned int ctrl_ITurbo = 0, ITurboRun;
+static int eem_log_en;
 
 static unsigned int checkEfuse;
 static unsigned int informGpuEEMisReady;
@@ -1046,7 +1049,15 @@ struct eem_devinfo {
  */
 static DEFINE_SPINLOCK(eem_spinlock);
 static DEFINE_MUTEX(record_mutex);
+
+/* CPU callback */
+static int __cpuinit _mt_eem_cpu_CB(struct notifier_block *nfb,
+					unsigned long action, void *hcpu);
+static struct notifier_block __refdata _mt_eem_cpu_notifier = {
+	.notifier_call = _mt_eem_cpu_CB,
+};
 #endif
+
 /**
  * EEM controllers
  */
@@ -2308,10 +2319,11 @@ static enum hrtimer_restart eem_log_timer_func(struct hrtimer *timer)
 		eem_error("Timer Bank = %d (%d) - (", det->ctrl_id, det->ops->get_temp(det));
 		for (i = 0; i < det->num_freq_tbl - 1; i++)
 			eem_error("%d, ", det->ops->pmic_2_volt(det, det->volt_tbl_pmic[i]));
-		eem_error("%d) - (0x%x), sts(%d)\n",
+		eem_error("%d) - (0x%x), sts(%d), It(%d)\n",
 			det->ops->pmic_2_volt(det, det->volt_tbl_pmic[i]),
 			det->t250,
-			det->ops->get_status(det));
+			det->ops->get_status(det),
+			ITurboRun);
 		/*
 		det->freq_tbl[0],
 		det->freq_tbl[1],
@@ -3611,6 +3623,77 @@ int ptp_isr(void)
 #endif
 }
 
+#define SINGLE_CPU_NUM 1
+static int __cpuinit _mt_eem_cpu_CB(struct notifier_block *nfb,
+					unsigned long action, void *hcpu)
+{
+	unsigned int cpu = (unsigned long)hcpu;
+	unsigned int online_cpus = num_online_cpus();
+	struct device *dev;
+	enum mt_eem_cpu_id cluster_id;
+
+	/* CPU mask - Get on-line cpus per-cluster */
+	struct cpumask eem_cpumask;
+	struct cpumask cpu_online_cpumask;
+	unsigned int cpus;
+
+	if (0 == ctrl_ITurbo) {
+		eem_debug("Default I-Turbo off !!");
+		return NOTIFY_OK;
+	}
+
+	/* Current active CPU is belong which cluster */
+	cluster_id = arch_get_cluster_id(cpu);
+
+	/* How many CPU in this cluster, present by bit mask
+		ex:	B	L	LL
+			00	1111	0000 */
+	arch_get_cluster_cpus(&eem_cpumask, cluster_id);
+
+	/* How many CPU online in this cluster */
+	cpumask_and(&cpu_online_cpumask, &eem_cpumask, cpu_online_mask);
+	cpus = cpumask_weight(&cpu_online_cpumask);
+
+	if (eem_log_en)
+		eem_error("@%s():%d, cpu = %d, act = %lu, on_cpus = %d, clst = %d, clst_cpu = %d\n"
+		, __func__, __LINE__, cpu, action, online_cpus, cluster_id, cpus);
+
+	dev = get_cpu_device(cpu);
+
+	if (dev) {
+		switch (action) {
+		case CPU_POST_DEAD:
+			if (SINGLE_CPU_NUM == online_cpus) { /* Online cpu is single */
+				arch_get_cluster_cpus(&eem_cpumask, MT_EEM_CPU_L);
+				cpumask_and(&cpu_online_cpumask, &eem_cpumask, cpu_online_mask);
+				cpus = cpumask_weight(&cpu_online_cpumask);
+				if (eem_log_en)
+					eem_error("L_cluster_cpus = (%d)\n", cpus);
+				if (SINGLE_CPU_NUM == cpus) { /* The single cpu located at L cluster */
+					if (0 == ITurboRun) {
+						ITurboRun = 1;
+						eem_error("ITurbo(1) L_cc(%d)\n", cpus);
+					} else {
+						eem_debug("ITurbo(1)ed L_cc(%d)\n", cpus);
+					}
+				}
+			}
+		break;
+		case CPU_UP_PREPARE:
+			if (1 == ITurboRun) {
+				ITurboRun = 0;
+				if (eem_log_en)
+					eem_error("ITurbo(0) ->(%d), c(%d), cc(%d)\n", online_cpus, cluster_id, cpus);
+			} else {
+				if (eem_log_en)
+					eem_error("ITurbo(0)ed ->(%d), c(%d), cc(%d)\n", online_cpus, cluster_id, cpus);
+			}
+		break;
+		}
+	}
+	return NOTIFY_OK;
+}
+
 void eem_init02(void)
 {
 	struct eem_det *det;
@@ -4018,6 +4101,7 @@ static int eem_probe(struct platform_device *pdev)
 			ckgen_meter(1),
 			ckgen_meter(2));
 		*/
+	register_hotcpu_notifier(&_mt_eem_cpu_notifier);
 	#endif
 	eem_debug("eem_probe ok\n");
 	FUNC_EXIT(FUNC_LV_MODULE);
@@ -4298,7 +4382,6 @@ out:
 /*
  * show current EEM data
  */
-static int eem_log_en;
 static int eem_dump_proc_show(struct seq_file *m, void *v)
 {
 	struct eem_det *det;
