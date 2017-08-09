@@ -7007,7 +7007,7 @@ static MINT32 ISP_mmap(struct file *pFile, struct vm_area_struct *pVma)
 		break;
 	case GPIO_BASE_HW:
 		if (length > 0x1000) {
-			LOG_ERR("mmap range error :module(0x%x),length(0x%lx),MIPI_RX_RANGE(0x%x)!\n", pfn, length, 0x2000);
+			LOG_ERR("mmap range error :module(0x%x),length(0x%lx),GPIO_RX_RANGE(0x%x)!\n", pfn, length, 0x1000);
 			return -EAGAIN;
 		}
 		break;

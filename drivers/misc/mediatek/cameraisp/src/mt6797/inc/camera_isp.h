@@ -33,7 +33,7 @@ extern void mt_irq_set_polarity(unsigned int irq, unsigned int polarity); */
 #define UNI_A_BASE_HW   0x1A003000
 #define SENINF_BASE_HW  0x1A040000
 #define MIPI_RX_BASE_HW 0x10217000
-#define GPIO_BASE_HW    0x10005000
+#define GPIO_BASE_HW    0x10002000
 
 #define ISP_REG_RANGE           (PAGE_SIZE)
 #define ISP_REG_PER_DIP_RANGE   (PAGE_SIZE*5)
