@@ -690,8 +690,8 @@ static int m4u_debug_set(void *data, u64 val)
 		m4u_config_port(&port);
 		/* port.ePortID = M4U_PORT_MDP_WROT1;
 		m4u_config_port(&port); */
-		port.ePortID = M4U_PORT_IMGO;
-		m4u_config_port(&port);
+		/* port.ePortID = M4U_PORT_IMGO;
+		m4u_config_port(&port); */
 		port.ePortID = M4U_PORT_VENC_RCPU;
 		m4u_config_port(&port);
 		/* port.ePortID = M4U_PORT_MJC_MV_RD;
