@@ -41,7 +41,6 @@
 /* project includes */
 /* #include "mach/mt_thermal.h" */
 #include "mach/mt_pmic_wrap.h"
-#include "mach/mt_clkmgr.h"
 #include "mach/mt_freqhopping.h"
 /* #include "mach/mt_ptp.h"
 #include "mach/mt_static_power.h"
@@ -72,6 +71,49 @@
 /*=============================================================*/
 /* Macro definition                                            */
 /*=============================================================*/
+#if defined(CONFIG_OF)
+static unsigned long infracfg_ao_base;
+static unsigned long topckgen_base;
+static unsigned long apmixed_base;
+
+#define INFRACFG_AO_NODE "mediatek,INFRACFG_AO"
+#define TOPCKGEN_NODE "mediatek,CKSYS"
+#define APMIXED_NODE "mediatek,APMIXED"
+
+#undef INFRACFG_AO_BASE
+#undef TOPCKGEN_BASE
+#undef APMIXED_BASE
+
+#define INFRACFG_AO_BASE        (infracfg_ao_base)	/* 0xF0001000 */
+#define TOPCKGEN_BASE           (topckgen_base)		/* 0xF0000000 */
+#define APMIXED_BASE              (apmixed_base)	/* 0xF000C000 */
+
+#else				/* #if defined (CONFIG_OF) */
+#undef INFRACFG_AO_BASE
+#undef TOPCKGEN_BASE
+#undef APMIXED_BASE
+
+#define INFRACFG_AO_BASE        0xF0001000
+#define TOPCKGEN_BASE           0xF0000000
+#define APMIXED_BASE            0xF000C000
+#endif				/* #if defined (CONFIG_OF) */
+
+#define ARMCA15PLL_CON0         (APMIXED_BASE + 0x200)
+#define ARMCA15PLL_CON1         (APMIXED_BASE + 0x204)
+#define ARMCA15PLL_CON2         (APMIXED_BASE + 0x208)
+#define ARMCA7PLL_CON0          (APMIXED_BASE + 0x210)
+#define ARMCA7PLL_CON1          (APMIXED_BASE + 0x214)
+#define ARMCA7PLL_CON2          (APMIXED_BASE + 0x218)
+
+/* INFRASYS Register */
+#define TOP_CKMUXSEL            (INFRACFG_AO_BASE + 0x00)
+#define TOP_CKDIV1              (INFRACFG_AO_BASE + 0x08)
+#define INFRA_TOPCKGEN_CKDIV1_BIG (INFRACFG_AO_BASE + 0x0024)
+#define INFRA_TOPCKGEN_CKDIV1_SML (INFRACFG_AO_BASE + 0x0028)
+#define INFRA_TOPCKGEN_CKDIV1_BUS (INFRACFG_AO_BASE + 0x002C)
+
+/* TOPCKGEN Register */
+#define CLK_MISC_CFG_0          (TOPCKGEN_BASE + 0x104)
 
 /*
  * CONFIG
@@ -160,15 +202,8 @@ ktime_t max[NR_SET_V_F];
 #define CPUFREQ_LAST_FREQ_LEVEL    (CPU_DVFS_FREQ7_LL)
 
 /* Fix me */
-#define clk_infracfg_ao_base 0
-#define clk_cksys_base 0
-#define INFRA_TOPCKGEN_CKDIV1_BUS 0
-#define INFRA_TOPCKGEN_CKDIV1_BIG 0
-#define INFRA_TOPCKGEN_CKDIV1_SML 0
 #define FH_ARMCA7_PLLID 0
 #define FH_ARMCA15_PLLID 1
-#define ARMCA7PLL_CON1 0
-#define ARMCA15PLL_CON1 0
 
 /* Debugging */
 #undef TAG
@@ -2863,14 +2898,14 @@ static int _mt_cpufreq_init(struct cpufreq_policy *policy)
 				p->freq_tbl = opp_tbl_method_L_e1;
 			else
 				p->freq_tbl = opp_tbl_method_L_e2;
-			p->armpll_addr = ARMCA15PLL_CON1;
+			p->armpll_addr = (unsigned int *)ARMCA15PLL_CON1;
 			p->armpll_clk_src = TOP_CKMUXSEL_ARMPLL_L;
 		} else {
 			if (lv == CPU_LEVEL_0)
 				p->freq_tbl = opp_tbl_method_LL_e1;
 			else
 				p->freq_tbl = opp_tbl_method_LL_e2;
-			p->armpll_addr = ARMCA7PLL_CON1;
+			p->armpll_addr = (unsigned int *)ARMCA7PLL_CON1;
 			p->armpll_clk_src = TOP_CKMUXSEL_ARMPLL_LL;
 		}
 
@@ -3929,7 +3964,53 @@ static int _create_procfs(void)
 	return 0;
 }
 #endif
+#ifdef CONFIG_OF
+static int mt_cpufreq_dts_map(void)
+{
+	struct device_node *node;
 
+	/* topckgen */
+	node = of_find_compatible_node(NULL, NULL, TOPCKGEN_NODE);
+	if (!node) {
+		cpufreq_info("error: cannot find node " TOPCKGEN_NODE);
+		BUG();
+	}
+	topckgen_base = (unsigned long)of_iomap(node, 0);
+	if (!topckgen_base) {
+		cpufreq_info("error: cannot iomap " TOPCKGEN_NODE);
+		BUG();
+	}
+
+	/* infracfg_ao */
+	node = of_find_compatible_node(NULL, NULL, INFRACFG_AO_NODE);
+	if (!node) {
+		cpufreq_info("error: cannot find node " INFRACFG_AO_NODE);
+		BUG();
+	}
+	infracfg_ao_base = (unsigned long)of_iomap(node, 0);
+	if (!infracfg_ao_base) {
+		cpufreq_info("error: cannot iomap " INFRACFG_AO_NODE);
+		BUG();
+	}
+
+	/* apmixed */
+	node = of_find_compatible_node(NULL, NULL, APMIXED_NODE);
+	if (!node) {
+		cpufreq_info("error: cannot find node " APMIXED_NODE);
+		BUG();
+	}
+	apmixed_base = (unsigned long)of_iomap(node, 0);
+	if (!apmixed_base) {
+		cpufreq_info("error: cannot iomap " APMIXED_NODE);
+		BUG();
+	}
+}
+#else
+static int mt_cpufreq_dts_map(void)
+{
+	return 0;
+}
+#endif
 /*
 * Module driver
 */
@@ -3942,6 +4023,7 @@ static int __init _mt_cpufreq_pdrv_init(void)
 	return 0;
 	FUNC_ENTER(FUNC_LV_MODULE);
 
+	mt_cpufreq_dts_map();
 	debug_vsram = get_cur_vsram(NULL);
 	debug_vproc = get_cur_volt_extbuck(NULL);
 
