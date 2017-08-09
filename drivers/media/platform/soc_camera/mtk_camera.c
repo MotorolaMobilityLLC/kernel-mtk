@@ -43,6 +43,11 @@
 	V4L2_MBUS_PCLK_SAMPLE_RISING | V4L2_MBUS_PCLK_SAMPLE_FALLING | \
 	V4L2_MBUS_DATA_ACTIVE_HIGH)
 
+/* vdoin supported width of resolution*/
+#define MTK_VDOIN_SUPPORTED_WIDTH_720P_STANDARD			0x2d0
+#define MTK_VDOIN_SUPPORTED_WIDTH_720P				0x2e0
+#define MTK_VDOIN_SUPPORTED_HEIGHT_4CHANNEL			0x3bf
+#define MTK_VDOIN_SUPPORTED_HEIGHT_1CHANNEL			0xef
 /*vdoin register offset*/
 #define MTK_VDOIN_EN_REG					0x00
 #define MTK_VDOIN_MODE_REG					0x04
@@ -74,7 +79,8 @@
 /*cmd*/
 #define MTK_VDOIN_MODE_CMD					0x30328408
 /* Y ACTLINE [27:16] & U ACTLINE [11:0] 239 */
-#define MTK_VDOIN_DW_NEED_CMD			0x00ef00ef
+#define MTK_VDOIN_DW_NEED_CMD_1CHANNEL				0x00ef00ef
+#define MTK_VDOIN_DW_NEED_CMD_4CHANNEL				0x03bf03bf
 #define MTK_VDOIN_HPIXEL_CMD					0x0
 #define MTK_VDOIN_HBLACK_CMD					0x280
 /* miss 1 byte */
@@ -83,14 +89,21 @@
 #define MTK_VDOIN_WRAP_3D_CMD					0x00070007
 #define MTK_VDOIN_WRAP_3D_VSYNC_CMD				0x00ef00ef
 /* HACTCNT & HCNT 1440(720) (1440)*/
-#define MTK_VDOIN_HCNT_SET_CMD					0x05a005a0
+#define MTK_VDOIN_HCNT_SET_CMD_720				0x05a005a0
+/* HACTCNT & HCNT 1472(736) (1472)*/
+#define MTK_VDOIN_HCNT_SET_CMD_736				0x05c005c0
 /* UV HACTCNT/16-1 & Y HACTCNT/16-1  44*/
-#define MTK_VDOIN_HCNT_SET1_CMD					0x002c002c
+#define MTK_VDOIN_HCNT_SET1_CMD_720				0x002c002c
+/* UV HACTCNT/16-1 & Y HACTCNT/16-1  45*/
+#define MTK_VDOIN_HCNT_SET1_CMD_736				0x002d002d
 #define MTK_VDOIN_HSCALE_CMD					0x80808080
 /* ACTLINE [11:0]  239*/
-#define MTK_VDOIN_ACT_LINE_CMD					0x000040ef
+#define MTK_VDOIN_ACT_LINE_CMD_1CHANNEL				0x000040ef
+#define MTK_VDOIN_ACT_LINE_CMD_4CHANNEL				0x000043bf
 /* horizntal dram cunt [15:16] 45   [14]frame interrupt [5:7]0  [0:2]1*/
-#define MTK_VDOIN_VSCALE_CMD					0x002d5007
+#define MTK_VDOIN_VSCALE_CMD_720				0x002d5007
+/* horizntal dram cunt [15:16] 46   [14]frame interrupt [5:7]0  [0:2]1*/
+#define MTK_VDOIN_VSCALE_CMD_736				0x002e5007
 #define MTK_VDOIN_PIC_CMD					0x0
 #define MTK_VDOIN_DEBUG4_CMD					0x00000100
 #define MTK_VDOIN_DEBUG5_CMD					0x00001000
@@ -487,6 +500,24 @@ static int mtk_camera_set_fmt(struct soc_camera_device *icd,
 	pix->field		= mf.field;
 	pix->colorspace		= mf.colorspace;
 	icd->current_fmt	= xlate;
+
+	/*if the width is 736, it need to reset vdoin Horizontal count and VSCALE REG */
+	if (mf.width == MTK_VDOIN_SUPPORTED_WIDTH_720P) {
+		writel(MTK_VDOIN_HCNT_SET_CMD_736, (pcdev->reg_vdoin_base + MTK_VDOIN_HCNT_SET_REG));
+		writel(MTK_VDOIN_HCNT_SET1_CMD_736, (pcdev->reg_vdoin_base + MTK_VDOIN_HCNT_SET1_REG));
+		writel(MTK_VDOIN_VSCALE_CMD_736, (pcdev->reg_vdoin_base + MTK_VDOIN_VSCALE_REG));
+	} else if (mf.width == MTK_VDOIN_SUPPORTED_WIDTH_720P_STANDARD) {
+		writel(MTK_VDOIN_HCNT_SET_CMD_720, (pcdev->reg_vdoin_base + MTK_VDOIN_HCNT_SET_REG));
+		writel(MTK_VDOIN_HCNT_SET1_CMD_720, (pcdev->reg_vdoin_base + MTK_VDOIN_HCNT_SET1_REG));
+		writel(MTK_VDOIN_VSCALE_CMD_720, (pcdev->reg_vdoin_base + MTK_VDOIN_VSCALE_REG));
+	}
+	if (((mf.height >> 1) - 1) == MTK_VDOIN_SUPPORTED_HEIGHT_4CHANNEL) {
+		writel(MTK_VDOIN_ACT_LINE_CMD_4CHANNEL, (pcdev->reg_vdoin_base + MTK_VDOIN_ACT_LINE_REG));
+		writel(MTK_VDOIN_DW_NEED_CMD_4CHANNEL, (pcdev->reg_vdoin_base + MTK_VDOIN_DW_NEED_REG));
+	} else if (((mf.height >> 1) - 1) == MTK_VDOIN_SUPPORTED_HEIGHT_1CHANNEL) {
+		writel(MTK_VDOIN_ACT_LINE_CMD_1CHANNEL, (pcdev->reg_vdoin_base + MTK_VDOIN_ACT_LINE_REG));
+		writel(MTK_VDOIN_DW_NEED_CMD_1CHANNEL, (pcdev->reg_vdoin_base + MTK_VDOIN_DW_NEED_REG));
+	}
 	return ret;
 }
 
@@ -832,18 +863,18 @@ static const struct dev_pm_ops mtk_camera_pm = {
 static int mtk_vdoin_init(void __iomem *base)
 {
 	writel(MTK_VDOIN_MODE_CMD, (base + MTK_VDOIN_MODE_REG));
-	writel(MTK_VDOIN_DW_NEED_CMD, (base + MTK_VDOIN_DW_NEED_REG));
+	writel(MTK_VDOIN_DW_NEED_CMD_1CHANNEL, (base + MTK_VDOIN_DW_NEED_REG));
 	writel(MTK_VDOIN_HPIXEL_CMD, (base + MTK_VDOIN_HPIXEL_REG));
 	writel(MTK_VDOIN_HBLACK_CMD, (base + MTK_VDOIN_HBLACK_REG));
 	writel(MTK_VDOIN_INPUT_CTRL_CMD, (base + MTK_VDOIN_INPUT_CTRL_REG));
 	writel(MTK_VDOIN_TOP_BOT_SLINE_CMD, (base + MTK_VDOIN_TOP_BOT_SLINE_REG));
 	writel(MTK_VDOIN_WRAP_3D_CMD, (base + MTK_VDOIN_WRAP_3D_REG));
 	writel(MTK_VDOIN_WRAP_3D_VSYNC_CMD, (base + MTK_VDOIN_WRAP_3D_VSYNC_REG));
-	writel(MTK_VDOIN_HCNT_SET_CMD, (base + MTK_VDOIN_HCNT_SET_REG));
-	writel(MTK_VDOIN_HCNT_SET1_CMD, (base + MTK_VDOIN_HCNT_SET1_REG));
+	writel(MTK_VDOIN_HCNT_SET_CMD_720, (base + MTK_VDOIN_HCNT_SET_REG));
+	writel(MTK_VDOIN_HCNT_SET1_CMD_720, (base + MTK_VDOIN_HCNT_SET1_REG));
 	writel(MTK_VDOIN_HSCALE_CMD, (base + MTK_VDOIN_HSCALE_REG));
-	writel(MTK_VDOIN_ACT_LINE_CMD, (base + MTK_VDOIN_ACT_LINE_REG));
-	writel(MTK_VDOIN_VSCALE_CMD, (base + MTK_VDOIN_VSCALE_REG));
+	writel(MTK_VDOIN_ACT_LINE_CMD_1CHANNEL, (base + MTK_VDOIN_ACT_LINE_REG));
+	writel(MTK_VDOIN_VSCALE_CMD_720, (base + MTK_VDOIN_VSCALE_REG));
 	writel(MTK_VDOIN_PIC_CMD, (base + MTK_VDOIN_PIC_REG));
 	writel(MTK_VDOIN_DEBUG4_CMD, (base + MTK_VDOIN_DEBUG4_REG));
 	writel(MTK_VDOIN_DEBUG5_CMD, (base + MTK_VDOIN_DEBUG5_REG));

@@ -35,11 +35,6 @@
 #define INTERSIL_MAX_WIDTH	2592
 #define INTERSIL_MAX_HEIGHT	720
 
-/* default sizes */
-#define INTERSIL_DEFAULT_WIDTH	720
-#define INTERSIL_DEFAULT_HEIGHT	480
-#define INTERSIL_4CHENNEL_HEIGHT (INTERSIL_DEFAULT_HEIGHT * 4)
-
 /* minimum extra blanking */
 #define BLANKING_EXTRA_WIDTH		500
 #define BLANKING_EXTRA_HEIGHT		20
@@ -51,6 +46,29 @@
  */
 #define BLANKING_MIN_HEIGHT		1000
 #define SENSOR_ID                   (0x86)
+
+/* Supported resolutions */
+enum isl79986_width {
+	W_TESTWIDTH	= 720,
+	W_WIDTH		= 736,
+};
+
+enum isl79986_height {
+	H_1CHANNEL	= 480,
+	H_4CHANNEL	= 1920,
+};
+
+struct isl79986_win_size {
+	enum isl79986_width width;
+	enum isl79986_height height;
+};
+
+static const struct isl79986_win_size isl79986_supported_win_sizes[] = {
+	{ W_TESTWIDTH,	H_1CHANNEL },
+	{ W_TESTWIDTH,	H_4CHANNEL },
+	{ W_WIDTH,	H_1CHANNEL },
+	{ W_WIDTH,	H_4CHANNEL },
+};
 
 struct regval_list {
 	u16 reg_num;
@@ -83,32 +101,12 @@ static const struct regval_list isl79986_default_regs_init[] = {
 	{ 0x00, 0x80 },
 	{ 0xff, 0x00 },
 	{ 0x02, 0x1f },
-	/* delay */
-	{ 0xff, 0x00 },
-	{ 0xff, 0x00 },
-	{ 0xff, 0x00 },
-	{ 0xff, 0x00 },
-	{ 0xff, 0x00 },
-	{ 0xff, 0x00 },
-	{ 0xff, 0x00 },
-	{ 0xff, 0x00 },
-	{ 0xff, 0x00 },
-	{ 0xff, 0x00 },
-	{ 0xff, 0x00 },
-	{ 0xff, 0x00 },
-	{ 0xff, 0x00 },
-	{ 0xff, 0x00 },
-	{ 0xff, 0x00 },
-	{ 0xff, 0x00 },
-	{ 0xff, 0x00 },
-	{ 0xff, 0x00 },
-	{ 0xff, 0x00 },
-	{ 0xff, 0x00 },
 	/* resume */
 	{ 0xff, 0x00 },
 	{ 0x02, 0x00 },
 	{ 0xff, 0x05 },
 	{ 0x00, 0x00 },
+	/* reset to 1 channel*/
 	{ 0xff, 0x00 },
 	{ 0x07, 0x10 },
 	{ 0x08, 0x07 },
@@ -117,6 +115,48 @@ static const struct regval_list isl79986_default_regs_init[] = {
 	/* regs list end flag reg_num = 0x100 */
 	{ 0x100, 0xff }
 };
+
+static const struct regval_list isl79986_4_channel_reg_init[] = {
+	{ 0xff, 0x0f },
+	{ 0x33, 0x85 },
+	{ 0x2f, 0xe6 },
+	{ 0xff, 0x05 },
+	{ 0x0a, 0x67 },
+	{ 0x11, 0xa0 },
+	{ 0x34, 0x10 },
+	{ 0x00, 0x02 },
+	{ 0xff, 0x00 },
+	{ 0x03, 0x00 },
+	{ 0x04, 0x08 },
+	{ 0x08, 0x1f },
+	{ 0x07, 0x12 },
+	{ 0x03, 0x03 },
+	{ 0x04, 0x0a },
+	/* fix screen tingle */
+	{ 0xff, 0x01 },
+	{ 0x43, 0x00 },
+	{ 0xff, 0x02 },
+	{ 0x43, 0x00 },
+	{ 0xff, 0x03 },
+	{ 0x43, 0x00 },
+	{ 0xff, 0x04 },
+	{ 0x43, 0x00 },
+	/* soft reset */
+	{ 0xff, 0x05 },
+	{ 0x00, 0x80 },
+	{ 0xff, 0x00 },
+	{ 0x02, 0x1f },
+	/* resume */
+	{ 0xff, 0x00 },
+	{ 0x02, 0x00 },
+	/* test pattern */
+	{ 0xff, 0x05 },
+	{ 0x00, 0x00 },
+	{ 0x0d, 0xf0 },
+	/* regs list end flag reg_num = 0x100 */
+	{ 0x100, 0xff }
+};
+
 static const struct regval_list isl79986_default_regs_finalise[] = {
 	{ 0x0f, 0x0f },
 	{ 0x37, 0x47 },
@@ -262,17 +302,22 @@ static int isl79986_write_array(struct i2c_client *client,
 	return 0;
 }
 
-/* select nearest higher resolution for capture */
-static void isl79986_res_roundup(u32 *width, u32 *height)
+/* Select the nearest higher resolution for capture */
+static const struct isl79986_win_size *isl79986_select_win(u32 *width, u32 *height)
 {
+	int i, default_size = ARRAY_SIZE(isl79986_supported_win_sizes) - 1;
 
-	if (*width != INTERSIL_DEFAULT_WIDTH)
-		*width = INTERSIL_DEFAULT_WIDTH;
-
-	if (*height >= INTERSIL_4CHENNEL_HEIGHT)
-		*height = INTERSIL_4CHENNEL_HEIGHT;
-	else
-		*height = INTERSIL_DEFAULT_HEIGHT;
+	for (i = 0; i < ARRAY_SIZE(isl79986_supported_win_sizes); i++) {
+		if (isl79986_supported_win_sizes[i].width  >= *width &&
+			isl79986_supported_win_sizes[i].height >= *height) {
+			*width = isl79986_supported_win_sizes[i].width;
+			*height = isl79986_supported_win_sizes[i].height;
+			return &isl79986_supported_win_sizes[i];
+		}
+	}
+	*width = isl79986_supported_win_sizes[default_size].width;
+	*height = isl79986_supported_win_sizes[default_size].height;
+	return &isl79986_supported_win_sizes[default_size];
 }
 
 static int isl79986_try_fmt(struct v4l2_subdev *sd,
@@ -280,8 +325,7 @@ static int isl79986_try_fmt(struct v4l2_subdev *sd,
 {
 	const struct isl79986_datafmt *fmt = isl79986_find_datafmt(mf->code);
 
-	isl79986_res_roundup(&mf->width, &mf->height);
-
+	isl79986_select_win(&mf->width, &mf->height);
 	if (!fmt) {
 		mf->code	= isl79986_colour_fmts[0].code;
 		mf->colorspace	= isl79986_colour_fmts[0].colorspace;
@@ -295,6 +339,7 @@ static int isl79986_try_fmt(struct v4l2_subdev *sd,
 static int isl79986_s_fmt(struct v4l2_subdev *sd,
 			struct v4l2_mbus_framefmt *mf)
 {
+	int gpio_index;
 	struct i2c_client *client = v4l2_get_subdevdata(sd);
 	struct isl79986 *priv = to_isl79986(client);
 
@@ -304,6 +349,16 @@ static int isl79986_s_fmt(struct v4l2_subdev *sd,
 
 	isl79986_try_fmt(sd, mf);
 	priv->fmt = isl79986_find_datafmt(mf->code);
+
+	/* camera reset and pwdn*/
+	gpio_index = of_get_named_gpio(client->dev.of_node, "gpios", 0);
+	gpio_direction_output(gpio_index, 1);
+	gpio_direction_output(gpio_index, 0);
+
+	if (mf->height == H_4CHANNEL)
+		return isl79986_write_array(client, isl79986_4_channel_reg_init);
+	else if (mf->height == H_1CHANNEL)
+		return isl79986_write_array(client, isl79986_default_regs_init);
 
 	return 0;
 }
@@ -495,11 +550,11 @@ static int isl79986_probe(struct i2c_client *client,
 
 	priv->fmt		= &isl79986_colour_fmts[0];
 
-	priv->crop_rect.width	= INTERSIL_DEFAULT_WIDTH;
-	priv->crop_rect.height	= INTERSIL_DEFAULT_HEIGHT;
-	priv->crop_rect.left	= (INTERSIL_MAX_WIDTH - INTERSIL_DEFAULT_WIDTH) / 2;
-	priv->crop_rect.top	= (INTERSIL_MAX_HEIGHT - INTERSIL_DEFAULT_HEIGHT) / 2;
-	priv->total_width = INTERSIL_DEFAULT_WIDTH + BLANKING_EXTRA_WIDTH;
+	priv->crop_rect.width	= W_TESTWIDTH;
+	priv->crop_rect.height	= H_1CHANNEL;
+	priv->crop_rect.left	= (INTERSIL_MAX_WIDTH - W_TESTWIDTH) / 2;
+	priv->crop_rect.top	= (INTERSIL_MAX_HEIGHT - H_1CHANNEL) / 2;
+	priv->total_width = W_TESTWIDTH + BLANKING_EXTRA_WIDTH;
 	priv->total_height = BLANKING_MIN_HEIGHT;
 
 	subdev = i2c_get_clientdata(client);
