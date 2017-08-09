@@ -167,6 +167,7 @@ void smp_write_dbgdscr_callback(void *info)
 	unsigned long tmp = *val;
 
 	ARM_DBG_WRITE(c0, c2, 2, tmp);
+	saved_dbgdscr = tmp;
 }
 
 void smp_read_dbgoslsr_callback(void *info)
@@ -201,6 +202,7 @@ void smp_write_dbgvcr_callback(void *info)
 	unsigned long tmp = *val;
 
 	ARM_DBG_WRITE(c0, c7, 0, tmp);
+	saved_dbgvcr = tmp;
 }
 
 

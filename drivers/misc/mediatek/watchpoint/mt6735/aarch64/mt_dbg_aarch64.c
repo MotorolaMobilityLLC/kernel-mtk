@@ -10,6 +10,8 @@
 
 struct dbgreg_set dbgregs[8];
 
+unsigned long saved_MDSCR_EL1;
+
 #ifdef DBG_REG_DUMP
 void dump_dbgregs(int cpuid)
 {
@@ -298,7 +300,8 @@ int __cpuinit dbgregs_hotplug_callback(struct notifier_block *nfb, unsigned long
 #endif
 	switch (action) {
 	case CPU_STARTING:
-		smp_call_function_single(0, smp_read_MDSCR_EL1_callback, &args, 1);
+		/* smp_call_function_single(0, smp_read_MDSCR_EL1_callback, &args, 1); */
+		args = saved_MDSCR_EL1;
 #ifdef DBG_REG_DUMP
 		pr_debug("[MTK WP] cpu %lx do %s, CPU0's _MDSCR_EL1=0x%x\n", this_cpu, __func__,
 			  args);

@@ -167,6 +167,7 @@ void smp_write_MDSCR_EL1_callback(void *info)
 	unsigned int tmp = *val;
 
 	asm volatile ("msr  MDSCR_EL1, %0" : : "r" (tmp));
+	saved_MDSCR_EL1 = tmp;
 }
 
 void smp_read_OSLSR_EL1_callback(void *info)

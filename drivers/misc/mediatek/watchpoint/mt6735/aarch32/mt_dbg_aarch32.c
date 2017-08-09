@@ -9,6 +9,8 @@
 #include "mt_dbg_aarch32.h"
 
 struct dbgreg_set dbgregs[8];
+unsigned long saved_dbgdscr;
+unsigned long saved_dbgvcr;
 
 #ifdef DBG_REG_DUMP
 void dump_dbgregs(int cpuid)
@@ -264,7 +266,6 @@ void mt_copy_dbg_regs(int to, int from)
 int __cpuinit dbgregs_hotplug_callback(struct notifier_block *nfb, unsigned long action, void *hcpu)
 {
 	unsigned int this_cpu = (unsigned int)hcpu;
-	unsigned long args;
 	struct wp_trace_context_t *wp_context;
 
 	register_wp_context(&wp_context);
@@ -272,7 +273,6 @@ int __cpuinit dbgregs_hotplug_callback(struct notifier_block *nfb, unsigned long
 	cs_cpu_write(wp_context->debug_regs[this_cpu], DBGOSLAR, ~UNLOCK_KEY);
 	cs_cpu_write(wp_context->debug_regs[0], DBGLAR, UNLOCK_KEY);
 	cs_cpu_write(wp_context->debug_regs[0], DBGOSLAR, ~UNLOCK_KEY);
-	args = args & 0xf;
 #ifdef DBG_REG_DUMP
 	pr_debug("[MTK WP] cpu %x do %s,action: 0x%lx\n", this_cpu, __func__, action);
 #endif
@@ -280,11 +280,11 @@ int __cpuinit dbgregs_hotplug_callback(struct notifier_block *nfb, unsigned long
 	case CPU_STARTING:
 #ifdef DBG_REG_DUMP
 		pr_debug("[MTK WP] cpu %x do %s, CPU0's _MDSCR_EL1=0x%lx, action 0x%lx\n",
-			  this_cpu, __func__, args, action);
+			  this_cpu, __func__, saved_dbgdscr, action);
 #endif
 		cs_cpu_read(wp_context->debug_regs[0], DBGWVR + (0 << 4));
-		smp_call_function_single(0, smp_read_dbgdscr_callback, &args, 1);
-		ARM_DBG_WRITE(c0, c2, 2, args);
+		/* smp_call_function_single(0, smp_read_dbgdscr_callback, &args, 1); */
+		ARM_DBG_WRITE(c0, c2, 2, saved_dbgdscr);
 		ARM_DBG_WRITE(c0, c0, 6, cs_cpu_read(wp_context->debug_regs[0], DBGWVR + (0 << 4)));
 		ARM_DBG_WRITE(c0, c1, 6, cs_cpu_read(wp_context->debug_regs[0], DBGWVR + (1 << 4)));
 		ARM_DBG_WRITE(c0, c2, 6, cs_cpu_read(wp_context->debug_regs[0], DBGWVR + (2 << 4)));
@@ -309,8 +309,8 @@ int __cpuinit dbgregs_hotplug_callback(struct notifier_block *nfb, unsigned long
 		ARM_DBG_WRITE(c0, c4, 5, cs_cpu_read(wp_context->debug_regs[0], DBGBCR + (4 << 4)));
 		ARM_DBG_WRITE(c0, c5, 5, cs_cpu_read(wp_context->debug_regs[0], DBGBCR + (5 << 4)));
 		isb();
-		smp_call_function_single(0, smp_read_dbgvcr_callback, &args, 1);
-		ARM_DBG_WRITE(c0, c7, 0, args);
+		/* smp_call_function_single(0, smp_read_dbgvcr_callback, &args, 1); */
+		ARM_DBG_WRITE(c0, c7, 0, saved_dbgvcr);
 		/*
 		   smp_call_function_single(0,smp_read_dbgsdsr_callback,&args,1);
 		   smp_write_dbgsdsr_callback(&args);
