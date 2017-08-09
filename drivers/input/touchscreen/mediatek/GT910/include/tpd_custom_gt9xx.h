@@ -115,7 +115,7 @@ extern s32 gup_update_proc(void *dir);
 /* #define TPD_WARP_X */
 /* #define TPD_WARP_Y */
 
-#define GTP_DEBUG_ON          1
+#define GTP_DEBUG_ON          0
 #define GTP_DEBUG_ARRAY_ON    0
 #define GTP_DEBUG_FUNC_ON     0
 
