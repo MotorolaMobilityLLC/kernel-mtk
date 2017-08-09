@@ -181,6 +181,10 @@ static int simple_sd_ioctl_multi_rw(struct msdc_ioctl *msdc_ctl)
 #if DEBUG_MMC_IOCTL
 	pr_debug("user want access %d partition\n", msdc_ctl->partition);
 #endif
+	memset(&msdc_data, 0, sizeof(struct mmc_data));
+	memset(&msdc_mrq, 0, sizeof(struct mmc_request));
+	memset(&msdc_cmd, 0, sizeof(struct mmc_command));
+	memset(&msdc_stop, 0, sizeof(struct mmc_command));
 
 	ret = mmc_send_ext_csd(host_ctl->mmc->card, l_buf);
 	if (ret) {
@@ -220,11 +224,6 @@ static int simple_sd_ioctl_multi_rw(struct msdc_ioctl *msdc_ctl)
 		msdc_ctl->result = -1;
 		goto multi_end;
 	}
-
-	memset(&msdc_data, 0, sizeof(struct mmc_data));
-	memset(&msdc_mrq, 0, sizeof(struct mmc_request));
-	memset(&msdc_cmd, 0, sizeof(struct mmc_command));
-	memset(&msdc_stop, 0, sizeof(struct mmc_command));
 
 #ifdef MTK_MSDC_USE_CMD23
 	memset(&msdc_sbc, 0, sizeof(struct mmc_command));
@@ -387,6 +386,9 @@ static int simple_sd_ioctl_single_rw(struct msdc_ioctl *msdc_ctl)
 #if DEBUG_MMC_IOCTL
 	pr_debug("user want access %d partition\n", msdc_ctl->partition);
 #endif
+	memset(&msdc_data, 0, sizeof(struct mmc_data));
+	memset(&msdc_mrq, 0, sizeof(struct mmc_request));
+	memset(&msdc_cmd, 0, sizeof(struct mmc_command));
 
 	ret = mmc_send_ext_csd(host_ctl->mmc->card, l_buf);
 	if (ret) {
@@ -429,9 +431,7 @@ static int simple_sd_ioctl_single_rw(struct msdc_ioctl *msdc_ctl)
 #if DEBUG_MMC_IOCTL
 	pr_debug("start MSDC_SINGLE_READ_WRITE !!\n");
 #endif
-	memset(&msdc_data, 0, sizeof(struct mmc_data));
-	memset(&msdc_mrq, 0, sizeof(struct mmc_request));
-	memset(&msdc_cmd, 0, sizeof(struct mmc_command));
+
 
 	msdc_mrq.cmd = &msdc_cmd;
 	msdc_mrq.data = &msdc_data;
@@ -888,11 +888,7 @@ static int simple_mmc_get_disk_info(struct mbr_part_info *mpi, unsigned char *na
 			mpi->start_sector = part->start_sect;
 			mpi->nr_sects = part->nr_sects;
 			mpi->part_no = part->partno;
-			if (part->info)
-				mpi->part_name = part->info->volname;
-			else
-				mpi->part_name = no_partition_name;
-
+			mpi->part_name = part->info->volname;
 			disk_part_iter_exit(&piter);
 			return 0;
 		}
@@ -1074,6 +1070,10 @@ static long simple_sd_ioctl(struct file *file, unsigned int cmd, unsigned long a
 	} else {
 		if (copy_from_user(&msdc_ctl, (struct msdc_ioctl *)arg, sizeof(struct msdc_ioctl)))
 			return -EFAULT;
+		if (msdc_ctl.host_num > (HOST_MAX_NUM - 1)) {
+			pr_err("msdc:host id=%d is not available.\n", msdc_ctl.host_num);
+			return -EINVAL;
+		}
 
 		switch (msdc_ctl.opcode) {
 		case MSDC_SINGLE_READ_WRITE:
