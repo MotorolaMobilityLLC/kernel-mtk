@@ -1456,7 +1456,7 @@ static ssize_t store_AUXADC_channel(struct device *dev, struct device_attribute 
 	}
 	pr_debug("[adc_driver] start flag =%d\n", start_flag);
 	g_start_debug_thread = start_flag;
-	if (1 == start_flag) {
+	if ('1' == start_flag) {
 		thread = kthread_run(dbug_thread, 0, "AUXADC");
 
 		if (IS_ERR(thread)) {
