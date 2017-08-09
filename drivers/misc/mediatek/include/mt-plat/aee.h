@@ -42,6 +42,7 @@ typedef enum {
 	AE_ANR,			/* Error or Warning or Defect */
 	AE_RESMON,
 	AE_MODEM_WARNING,
+	AE_WTF,
 	AE_WRN_ERR_END,
 	AE_MANUAL,		/* Manual Raise */
 	AE_EXP_CLASS_END,
