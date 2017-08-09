@@ -46,7 +46,7 @@ extern  int iReadData(unsigned int  ui4_offset, unsigned int  ui4_length, unsign
 */
 
 static imgsensor_info_struct imgsensor_info = {
-	.sensor_id = IMX214_MONO_SENSOR_ID,
+	.sensor_id = 0x214,//IMX214_MONO_SENSOR_ID,
 
 	.checksum_value =0xc15d2913,
 
@@ -149,10 +149,10 @@ static imgsensor_info_struct imgsensor_info = {
 	.sensor_interface_type = SENSOR_INTERFACE_TYPE_MIPI,
 	.mipi_sensor_type = MIPI_OPHY_NCSI2, //0,MIPI_OPHY_NCSI2;  1,MIPI_OPHY_CSI2
 	.mipi_settle_delay_mode = MIPI_SETTLEDELAY_AUTO, //0,MIPI_SETTLEDELAY_AUTO; 1,MIPI_SETTLEDELAY_MANNUAL
-	.sensor_output_dataformat = SENSOR_OUTPUT_FORMAT_RAW_B,
+	.sensor_output_dataformat = SENSOR_OUTPUT_FORMAT_RAW_MONO,
 	.mclk = 24,
 	.mipi_lane_num = SENSOR_MIPI_4_LANE,
-	.i2c_addr_table = {0x34,0x20,0xff},
+	.i2c_addr_table = {0x20,0xff},/*Mono and bayer use different Slave ID*/
 };
 
 

@@ -152,7 +152,7 @@ static imgsensor_info_struct imgsensor_info = {
 	.sensor_output_dataformat = SENSOR_OUTPUT_FORMAT_RAW_B,
 	.mclk = 24,
 	.mipi_lane_num = SENSOR_MIPI_4_LANE,
-	.i2c_addr_table = {0x34,0x20,0xff},
+	.i2c_addr_table = {0x34,0xff},
 };
 
 
