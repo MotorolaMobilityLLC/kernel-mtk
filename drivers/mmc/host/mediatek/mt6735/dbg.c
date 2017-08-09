@@ -1871,7 +1871,7 @@ static int msdc_debug_proc_show(struct seq_file *m, void *v)
 */
 static int rwThread(void *data)
 {
-	int error, i = 0;
+	int error = 0, i = 0;
 	ulong p = (ulong) data;
 	int id = p & 0x3;
 	int mode = (p >> 4) & 0x3;

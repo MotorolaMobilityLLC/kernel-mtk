@@ -8338,9 +8338,10 @@ void msdc_dump_gpd_bd(int id)
 	struct gpd_t *gpd;
 	struct bd_t *bd;
 
-	if (id < 0 || id >= HOST_MAX_NUM)
+	if (id < 0 || id >= HOST_MAX_NUM) {
 		pr_err("[%s]: invalid host id: %d\n", __func__, id);
-
+		return;
+	}
 	host = mtk_msdc_host[id];
 	if (host == NULL) {
 		pr_err("[%s]: host0 or host0->dma is NULL\n", __func__);
@@ -8656,7 +8657,7 @@ static int msdc_get_pinctl_settings(struct msdc_host *host)
 	return 0;
 }
 
-static int msdc_get_rigister_settings(struct msdc_host *host)
+static void msdc_get_rigister_settings(struct msdc_host *host)
 {
 	struct mmc_host *mmc = host->mmc;
 	struct device_node *np = mmc->parent->of_node;
@@ -8683,7 +8684,7 @@ static int msdc_get_rigister_settings(struct msdc_host *host)
 		of_property_read_u8(register_setting_node, "wdata_edge", &host->hw->wdata_edge);
 	} else {
 		pr_err("[MSDC%d] register_setting is not found in DT.\n", host->id);
-		return 1;
+		return;
 	}
 /*parse ett*/
 	if (of_property_read_u32(register_setting_node, "ett-hs200-cells", &host->hw->ett_hs200_count))
