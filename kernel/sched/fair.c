@@ -9896,6 +9896,22 @@ out_unlock:
 	return 0;
 }
 
+/* For debugging purpose, to depart functions of cpu_stop to make call_stack clear. */
+static int hmp_idle_pull_cpu_stop(void *data)
+{
+	return hmp_active_task_migration_cpu_stop(data);
+}
+
+static int hmp_force_up_cpu_stop(void *data)
+{
+	return hmp_active_task_migration_cpu_stop(data);
+}
+
+static int hmp_force_down_cpu_stop(void *data)
+{
+	return hmp_active_task_migration_cpu_stop(data);
+}
+
 /*
  * Heterogenous Multi-Processor (HMP) Global Load Balance
  */
@@ -10008,18 +10024,20 @@ static void hmp_force_down_migration(int this_cpu)
 	if (!target->active_balance &&
 		hmp_down_migration(this_cpu, &target_cpu, se, &clbenv) &&
 		!cpu_park(cpu_of(target))) {
-		get_task_struct(p);
-		target->active_balance = 1; /* force down */
-		target->push_cpu = target_cpu;
-		target->migrate_task = p;
-		force = 1;
-		trace_sched_hmp_migrate(p, target->push_cpu, 1);
-		hmp_next_down_delay(&p->se, target->push_cpu);
+		if (p->state != TASK_DEAD) {
+			get_task_struct(p);
+			target->active_balance = 1; /* force down */
+			target->push_cpu = target_cpu;
+			target->migrate_task = p;
+			force = 1;
+			trace_sched_hmp_migrate(p, target->push_cpu, 1);
+			hmp_next_down_delay(&p->se, target->push_cpu);
+		}
 	}
 	raw_spin_unlock_irqrestore(&target->lock, flags);
 	if (force) {
 		if (stop_one_cpu_dispatch(cpu_of(target),
-			hmp_active_task_migration_cpu_stop,
+			hmp_force_down_cpu_stop,
 			target, &target->active_balance_work)) {
 			put_task_struct(p); /* out of rq->lock */
 			raw_spin_lock_irqsave(&target->lock, flags);
@@ -10142,13 +10160,15 @@ static void hmp_force_up_migration(int this_cpu)
 		if (!target->active_balance &&
 			hmp_up_migration(curr_cpu, &target_cpu, se, &clbenv) &&
 			!cpu_park(cpu_of(target))) {
-			get_task_struct(p);
-			target->active_balance = 1; /* force up */
-			target->push_cpu = target_cpu;
-			target->migrate_task = p;
-			force = 1;
-			trace_sched_hmp_migrate(p, target->push_cpu, 1);
-			hmp_next_up_delay(&p->se, target->push_cpu);
+			if (p->state != TASK_DEAD) {
+				get_task_struct(p);
+				target->active_balance = 1; /* force up */
+				target->push_cpu = target_cpu;
+				target->migrate_task = p;
+				force = 1;
+				trace_sched_hmp_migrate(p, target->push_cpu, 1);
+				hmp_next_up_delay(&p->se, target->push_cpu);
+			}
 		}
 
 #ifdef CONFIG_HMP_PACK_SMALL_TASK
@@ -10158,7 +10178,7 @@ out_force_up:
 		raw_spin_unlock_irqrestore(&target->lock, flags);
 		if (force) {
 			if (stop_one_cpu_dispatch(cpu_of(target),
-				hmp_active_task_migration_cpu_stop,
+				hmp_force_up_cpu_stop,
 				target, &target->active_balance_work)) {
 				put_task_struct(p); /* out of rq->lock */
 				raw_spin_lock_irqsave(&target->lock, flags);
@@ -10254,18 +10274,20 @@ static unsigned int hmp_idle_pull(int this_cpu)
 	/* now we have a candidate */
 	raw_spin_lock_irqsave(&target->lock, flags);
 	if (!target->active_balance && (task_rq(p) == target) && !cpu_park(cpu_of(target))) {
-		get_task_struct(p);
-		target->push_cpu = this_cpu;
-		target->migrate_task = p;
-		trace_sched_hmp_migrate(p, target->push_cpu, 3);
-		hmp_next_up_delay(&p->se, target->push_cpu);
-		target->active_balance = 1; /* idle pull */
-		force = 1;
+		if (p->state != TASK_DEAD) {
+			get_task_struct(p);
+			target->push_cpu = this_cpu;
+			target->migrate_task = p;
+			trace_sched_hmp_migrate(p, target->push_cpu, 3);
+			hmp_next_up_delay(&p->se, target->push_cpu);
+			target->active_balance = 1; /* idle pull */
+			force = 1;
+		}
 	}
 	raw_spin_unlock_irqrestore(&target->lock, flags);
 	if (force) {
 		if (stop_one_cpu_dispatch(cpu_of(target),
-			hmp_active_task_migration_cpu_stop,
+			hmp_idle_pull_cpu_stop,
 			target, &target->active_balance_work)) {
 			put_task_struct(p); /* out of rq->lock */
 			raw_spin_lock_irqsave(&target->lock, flags);
