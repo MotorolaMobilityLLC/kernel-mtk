@@ -357,7 +357,7 @@ void spm_dpd_dram_init(void)
 	else if (frequency == 800)
 		u4value = 0x101a0002;/*u4MR2Value = 0x1c;*/
 	else
-		u4value = 0x101a0002;/*u4MR2Value = 0x1a;*/
+		u4value = 0x101c0002;/*u4MR2Value = 0x1a;*/
 
 	writel(u4value, PDEF_DRAMC0_CHA_REG_088);
 	writel(readl(PDEF_DRAMC0_CHA_REG_1E4) | 0x00000001,
@@ -474,7 +474,7 @@ void spm_dpd_dram_init(void)
 	else if (frequency == 800)
 		u4value = 0x101a0002;/*u4MR2Value = 0x1c;*/
 	else
-		u4value = 0x101a0002;/*u4MR2Value = 0x1a;*/
+		u4value = 0x101c0002;/*u4MR2Value = 0x1a;*/
 
 	writel(u4value, PDEF_DRAMC0_CHB_REG_088);
 	writel(readl(PDEF_DRAMC0_CHB_REG_1E4) | 0x00000001,
@@ -528,6 +528,8 @@ int enter_pasr_dpd_config(unsigned char segment_rank0,
 	unsigned int u4value_1E8 = 0;
 	unsigned int u4value_E4 = 0;
 	unsigned int u4value_F4 = 0;
+
+	return 0; /* temp to disable pasr for gating error issue */
 
 	rank_pasr_segment[0] = segment_rank0 & 0xFF;	/* for rank0 */
 	rank_pasr_segment[1] = segment_rank1 & 0xFF;	/* for rank1 */
