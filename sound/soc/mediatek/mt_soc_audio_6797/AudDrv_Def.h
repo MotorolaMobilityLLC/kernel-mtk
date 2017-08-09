@@ -38,8 +38,8 @@
 /* #define DEBUG_AFE_REG */
 /* #define DEBUG_ANA_REG */
 /* #define DEBUG_AUD_CLK */
-#define DEBUG_AUD_HDMI
-/* efine DEBUG_AUD_FMTX */
+/* #define DEBUG_AUD_HDMI*/
+/* #define DEBUG_AUD_FMTX */
 /* #define DEBUG_AUD_UL2 */
 /* #define DEBUG_AUD_UL1 */
 /* #define DEBUG_AUD_DL1 */
