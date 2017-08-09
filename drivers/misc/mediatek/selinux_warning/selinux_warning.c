@@ -170,7 +170,7 @@ void mtk_audit_hook(char *data)
 		if (pname != 0) {
 			char printbuf[PRINT_BUF_LEN] = { '\0' };
 
-			sprintf(printbuf, "[SELINUX][WARNING]\nCR_DISPATCH_PROCESSNAME:%s\n",
+			snprintf(printbuf, PRINT_BUF_LEN-1 , "[SELINUX][WARNING]\nCR_DISPATCH_PROCESSNAME:%s\n",
 				pname);
 			if (selinux_enforcing) {
 				aee_kernel_warning_api(__FILE__, __LINE__,
