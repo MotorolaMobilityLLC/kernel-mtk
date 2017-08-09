@@ -563,36 +563,39 @@ static spinlock_t emi_mpu_lock;
 struct timer_list emi_axi_vio_timer;
 #endif
 
-char *smi_larb0_port[17] = {
-	"disp_ovl_0", "disp_rdma_0", "disp_wdma_0",
-	"disp_ovl_1", "disp_rdma_1", "disp_wdma_1",
-	"ufod_rdma0", "ufod_rdma1", "ufod_rdma2",
-	"ufod_rdma3", "ufod_rdma4", "ufod_rdma5",
-	"ufod_rdma6", "ufod_rdma7", "mdp_rdma",
-	"mdp_wdma", "mdp_wrot"};
-char *smi_larb1_port[9] =  {
-	"hw_vdec_mc_ext", "hw_vdec_pp_ext",
-	"hw_vdec_vld_ext", "hw_vdec_avc_mv_ext",
-	"hw_vdec_pred_rd_ext", "hw_vdec_pred_wr_ext",
-	"hw_vdec_ppwarp_ext"};
-char *smi_larb2_port[21] = {
-	"cam_imgo", "cam_rrzo", "cam_aao",
-	"cam_esfko", "cam_imgo_s", "cam_isci",
-	"cam_isci_d", "cam_bpci", "cam_bpci_d",
-	"cam_ufdi",	"cam_imgi", "cam_img2o",
-	"cam_img3o", "cam_vipi", "cam_vip2i",
-	"cam_vip3i", "cam_icei", "cam_rb",
-	"cam_rp", "cam_wr"};
-char *smi_larb3_port[19] = {
-	"venc_rcpu", "venc_rec", "venc_bsdma",
-	"venc_sv_comv", "vend_rd_comv", "jpgenc_rdma",
-	"jpgenc_bsdma", "jpgdec_wdma", "jpgdec_bsdma",
-	"venc_cur_luma", "venc_cur_chroma", "venc_ref_luma",
-	"vend_ref_chroma", "redmc_wdma",
-	"venc_nbm_rdma", "venc_nbm_wdma"};
-char *smi_larb4_port[4] = {
-	"mjc_mv_rd", "mjc_mv_wr",
-	"mjc_dma_rd", "mjc_dma_wr"};
+char *smi_larb0_port[7] = {
+	"LARB0_display", "LARB0_display", "LARB0_display",
+	"LARB0_display", "LARB0_MDP", "LARB0_MDP",
+	"LARB0_MDP"};
+char *smi_larb1_port[10] =  {
+	"LARB1_VDEC", "LARB1_VDEC",
+	"LARB1_VDEC", "LARB1_VDEC",
+	"LARB1_VDEC", "LARB1_VDEC",
+	"LARB1_VDEC", "LARB1_VDEC", "LARB1_VDEC",
+	"LARB1_VDEC"};
+char *smi_larb2_port[14] = {
+	"LARB2_ISP", "LARB2_ISP", "LARB2_ISP",
+	"LARB2_ISP", "LARB2_ISP", "LARB2_ISP",
+	"LARB2_ISP", "LARB2_ISP", "LARB2_ISP",
+	"LARB2_ISP", "LARB2_ISP", "LARB2_ISP",
+	"LARB2_ISP", "LARB2_ISP"};
+char *smi_larb3_port[15] = {
+	"LARB3_VENC", "LARB3_VENC", "LARB3_VENC",
+	"LARB3_VENC", "LARB3_VENC", "LARB3_VENC",
+	"LARB3_JPEG", "LARB3_JPEG", "LARB3_JPEG",
+	"LARB3_VENC", "LARB3_VENC", "LARB3_VENC",
+	"LARB3_VENC", "LARB3_VENC", "LARB3_VENC"};
+char *smi_larb4_port[5] = {
+	"LARB4_MJC", "LARB4_MJC", "LARB4_MJC",
+	"LARB4_MJC", "LARB4_MJC"};
+char *smi_larb5_port[9] = {
+	"LARB5_display", "LARB5_display", "LARB5_display",
+	"LARB5_display", "LARB5_OD", "LARB5_OD",
+	"LARB5_display", "LARB5_MDP", "LARB5_MDP"};
+char *smi_larb6_port[10] = {
+	"LARB6_ISP", "LARB6_ISP", "LARB6_ISP",
+	"LARB6_ISP", "LARB6_ISP", "LARB6_Face",
+	"LARB6_Face", "LARB6_Face", "LARB6_Depth", "LARB6_Depth"};
 
 static int __match_id(u32 axi_id, int tbl_idx, u32 port_ID)
 {
@@ -615,7 +618,7 @@ static int __match_id(u32 axi_id, int tbl_idx, u32 port_ID)
 		case 5:	/* MASTER_MM_CH2 */
 			 /*MM*/ mm_larb = axi_id >> 7;
 			smi_port = (axi_id & 0x7F) >> 2;
-			if (mm_larb == 0x0) {
+			if (mm_larb == 0x0) {	/* smi_larb0 */
 				if (smi_port >= ARRAY_SIZE(smi_larb0_port)) {
 					pr_err("[EMI MPU ERROR] Invalidate master ID! lookup smi table failed!\n");
 					return 0;
@@ -623,7 +626,7 @@ static int __match_id(u32 axi_id, int tbl_idx, u32 port_ID)
 				pr_err("Violation master name is %s (%s).\n",
 				mst_tbl[tbl_idx].name,
 				smi_larb0_port[smi_port]);
-			} else if (mm_larb == 0x1) {
+			} else if (mm_larb == 0x1) {	/* smi_larb1 */
 				if (smi_port >= ARRAY_SIZE(smi_larb1_port)) {
 					pr_err("[EMI MPU ERROR] Invalidate master ID! lookup smi table failed!\n");
 					return 0;
@@ -631,7 +634,7 @@ static int __match_id(u32 axi_id, int tbl_idx, u32 port_ID)
 				pr_err("Violation master name is %s (%s).\n",
 				mst_tbl[tbl_idx].name,
 				smi_larb1_port[smi_port]);
-			} else if (mm_larb == 0x2) {
+			} else if (mm_larb == 0x2) {	/* smi_larb2 */
 				if (smi_port >= ARRAY_SIZE(smi_larb2_port)) {
 					pr_err("[EMI MPU ERROR] Invalidate master ID! lookup smi table failed!\n");
 					return 0;
@@ -646,7 +649,31 @@ static int __match_id(u32 axi_id, int tbl_idx, u32 port_ID)
 				}
 				pr_err("Violation master name is %s (%s).\n",
 				mst_tbl[tbl_idx].name,
-				       smi_larb3_port[smi_port]);
+				smi_larb3_port[smi_port]);
+			} else if (mm_larb == 0x4) {	/* smi_larb4 */
+				if (smi_port >= ARRAY_SIZE(smi_larb4_port)) {
+					pr_err("[EMI MPU ERROR] Invalidate master ID! lookup smi table failed!\n");
+					return 0;
+				}
+				pr_err("Violation master name is %s (%s).\n",
+				mst_tbl[tbl_idx].name,
+				smi_larb4_port[smi_port]);
+			} else if (mm_larb == 0x5) {	/* smi_larb5 */
+				if (smi_port >= ARRAY_SIZE(smi_larb5_port)) {
+					pr_err("[EMI MPU ERROR] Invalidate master ID! lookup smi table failed!\n");
+					return 0;
+				}
+				pr_err("Violation master name is %s (%s).\n",
+				mst_tbl[tbl_idx].name,
+				smi_larb5_port[smi_port]);
+			} else if (mm_larb == 0x6) {	/* smi_larb6 */
+				if (smi_port >= ARRAY_SIZE(smi_larb6_port)) {
+					pr_err("[EMI MPU ERROR] Invalidate master ID! lookup smi table failed!\n");
+					return 0;
+				}
+				pr_err("Violation master name is %s (%s).\n",
+				mst_tbl[tbl_idx].name,
+				smi_larb6_port[smi_port]);
 			} else {	/*MM IOMMU Internal Used */
 				pr_err("Violation master name is %s.\n",
 				mst_tbl[tbl_idx].name);
@@ -722,6 +749,8 @@ static char *__id2name(u32 id)
 	int i;
 	u32 axi_ID;
 	u32 port_ID;
+	u32 mm_larbID;
+	u32 smi_portID;
 
 	axi_ID = (id >> 3) & 0x00001FFF;
 	port_ID = id & 0x00000007;
@@ -729,8 +758,29 @@ static char *__id2name(u32 id)
 	pr_err("[EMI MPU] axi_id = %x, port_id = %x\n", axi_ID, port_ID);
 
 	for (i = 0; i < ARRAY_SIZE(mst_tbl); i++) {
-		if (__match_id(axi_ID, i, port_ID))
-			return mst_tbl[i].name;
+		if (__match_id(axi_ID, i, port_ID))	{
+			if ((port_ID == 2) || (port_ID == 5)) {
+				mm_larbID = axi_ID >> 7;
+				smi_portID = (axi_ID & 0x7F) >> 2;
+				if (mm_larbID == 0x0)
+					return smi_larb0_port[smi_portID];
+				else if (mm_larbID == 0x1)
+					return smi_larb1_port[smi_portID];
+				else if (mm_larbID == 0x2)
+					return smi_larb2_port[smi_portID];
+				else if (mm_larbID == 0x3)
+					return smi_larb3_port[smi_portID];
+				else if (mm_larbID == 0x4)
+					return smi_larb4_port[smi_portID];
+				else if (mm_larbID == 0x5)
+					return smi_larb5_port[smi_portID];
+				else if (mm_larbID == 0x6)
+					return smi_larb6_port[smi_portID];
+				else
+					return mst_tbl[i].name;
+			} else
+				return mst_tbl[i].name;
+		}
 	}
 
 	return (char *)UNKNOWN_MASTER;
