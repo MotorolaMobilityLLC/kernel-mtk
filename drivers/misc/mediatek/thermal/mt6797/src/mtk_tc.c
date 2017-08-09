@@ -385,19 +385,19 @@ EXPORT_SYMBOL(get_thermal_slope_intercept);
 /* chip dependent */
 void mtkts_dump_cali_info(void)
 {
-	tscpu_printk("[cal] g_adc_ge_t      = 0x%d\n", g_adc_ge_t);
-	tscpu_printk("[cal] g_adc_oe_t      = 0x%d\n", g_adc_oe_t);
-	tscpu_printk("[cal] g_degc_cali     = 0x%d\n", g_degc_cali);
-	tscpu_printk("[cal] g_adc_cali_en_t = 0x%d\n", g_adc_cali_en_t);
-	tscpu_printk("[cal] g_o_slope       = 0x%d\n", g_o_slope);
-	tscpu_printk("[cal] g_o_slope_sign  = 0x%d\n", g_o_slope_sign);
-	tscpu_printk("[cal] g_id            = 0x%d\n", g_id);
+	tscpu_printk("[cal] g_adc_ge_t      = %d\n", g_adc_ge_t);
+	tscpu_printk("[cal] g_adc_oe_t      = %d\n", g_adc_oe_t);
+	tscpu_printk("[cal] g_degc_cali     = %d\n", g_degc_cali);
+	tscpu_printk("[cal] g_adc_cali_en_t = %d\n", g_adc_cali_en_t);
+	tscpu_printk("[cal] g_o_slope       = %d\n", g_o_slope);
+	tscpu_printk("[cal] g_o_slope_sign  = %d\n", g_o_slope_sign);
+	tscpu_printk("[cal] g_id            = %d\n", g_id);
 
-	tscpu_printk("[cal] g_o_vtsmcu1     = 0x%d\n", g_o_vtsmcu1);
-	tscpu_printk("[cal] g_o_vtsmcu2     = 0x%d\n", g_o_vtsmcu2);
-	tscpu_printk("[cal] g_o_vtsmcu3     = 0x%d\n", g_o_vtsmcu3);
-	tscpu_printk("[cal] g_o_vtsmcu4     = 0x%d\n", g_o_vtsmcu4);
-	tscpu_printk("[cal] g_o_vtsabb     = 0x%d\n", g_o_vtsabb);
+	tscpu_printk("[cal] g_o_vtsmcu1     = %d\n", g_o_vtsmcu1);
+	tscpu_printk("[cal] g_o_vtsmcu2     = %d\n", g_o_vtsmcu2);
+	tscpu_printk("[cal] g_o_vtsmcu3     = %d\n", g_o_vtsmcu3);
+	tscpu_printk("[cal] g_o_vtsmcu4     = %d\n", g_o_vtsmcu4);
+	tscpu_printk("[cal] g_o_vtsabb     = %d\n", g_o_vtsabb);
 }
 
 
@@ -475,7 +475,7 @@ void tscpu_thermal_cal_prepare(void)
 		g_o_slope = 0;
 	}
 
-	/*mtkts_dump_cali_info();*/
+	mtkts_dump_cali_info();
 }
 
 void tscpu_thermal_cal_prepare_2(U32 ret)
@@ -1205,20 +1205,23 @@ void tscpu_reset_thermal(void)
 int tscpu_read_temperature_info(struct seq_file *m, void *v)
 {
 	seq_printf(m, "current temp:%d\n", tscpu_read_curr_temp);
+	seq_printf(m, "[cal] g_adc_ge_t      = %d\n", g_adc_ge_t);
+	seq_printf(m, "[cal] g_adc_oe_t      = %d\n", g_adc_oe_t);
+	seq_printf(m, "[cal] g_degc_cali     = %d\n", g_degc_cali);
+	seq_printf(m, "[cal] g_adc_cali_en_t = %d\n", g_adc_cali_en_t);
+	seq_printf(m, "[cal] g_o_slope       = %d\n", g_o_slope);
+	seq_printf(m, "[cal] g_o_slope_sign  = %d\n", g_o_slope_sign);
+	seq_printf(m, "[cal] g_id            = %d\n", g_id);
+
+	seq_printf(m, "[cal] g_o_vtsmcu1     = %d\n", g_o_vtsmcu1);
+	seq_printf(m, "[cal] g_o_vtsmcu2     = %d\n", g_o_vtsmcu2);
+	seq_printf(m, "[cal] g_o_vtsmcu3     = %d\n", g_o_vtsmcu3);
+	seq_printf(m, "[cal] g_o_vtsmcu4     = %d\n", g_o_vtsmcu4);
+	seq_printf(m, "[cal] g_o_vtsabb     = %d\n", g_o_vtsabb);
+
 	seq_printf(m, "calefuse1:0x%x\n", calefuse1);
 	seq_printf(m, "calefuse2:0x%x\n", calefuse2);
 	seq_printf(m, "calefuse3:0x%x\n", calefuse3);
-	seq_printf(m, "g_adc_ge_t:%d\n", g_adc_ge_t);
-	seq_printf(m, "g_adc_oe_t:%d\n", g_adc_oe_t);
-	seq_printf(m, "g_degc_cali:%d\n", g_degc_cali);
-	seq_printf(m, "g_adc_cali_en_t:%d\n", g_adc_cali_en_t);
-	seq_printf(m, "g_o_slope:%d\n", g_o_slope);
-	seq_printf(m, "g_o_slope_sign:%d\n", g_o_slope_sign);
-	seq_printf(m, "g_id:%d\n", g_id);
-	seq_printf(m, "g_o_vtsmcu1:%d\n", g_o_vtsmcu1);
-	seq_printf(m, "g_o_vtsmcu2:%d\n", g_o_vtsmcu2);
-	seq_printf(m, "g_o_vtsabb:%d\n", g_o_vtsabb);
-
 	return 0;
 }
 

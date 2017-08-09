@@ -141,6 +141,5 @@ extern int mtk_gpufreq_register(struct mt_gpufreq_power_table_info *freqs, int n
 
 extern int get_target_tj(void);
 extern int mtk_thermal_get_tpcb_target(void);
-extern void thermal_set_big_speed(U32 tempMonCtl1, U32 tempMonCtl2, U32 tempAhbPoll);
-
+extern void thermal_set_big_core_speed(U32 tempMonCtl1, U32 tempMonCtl2, U32 tempAhbPoll);
 #endif
