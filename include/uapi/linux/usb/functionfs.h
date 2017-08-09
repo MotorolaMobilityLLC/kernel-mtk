@@ -10,12 +10,17 @@
 
 enum {
 	FUNCTIONFS_DESCRIPTORS_MAGIC = 1,
-	FUNCTIONFS_STRINGS_MAGIC     = 2
+	FUNCTIONFS_STRINGS_MAGIC = 2,
+	FUNCTIONFS_DESCRIPTORS_MAGIC_V2 = 3,
 };
 
-#define FUNCTIONFS_SS_DESC_MAGIC 0x0055DE5C
-
-#ifndef __KERNEL__
+enum functionfs_flags {
+	FUNCTIONFS_HAS_FS_DESC = 1,
+	FUNCTIONFS_HAS_HS_DESC = 2,
+	FUNCTIONFS_HAS_SS_DESC = 4,
+	FUNCTIONFS_HAS_MS_OS_DESC = 8,
+	FUNCTIONFS_VIRTUAL_ADDR = 16,
+};
 
 /* Descriptor of an non-audio endpoint */
 struct usb_endpoint_descriptor_no_audio {
@@ -28,17 +33,54 @@ struct usb_endpoint_descriptor_no_audio {
 	__u8  bInterval;
 } __attribute__((packed));
 
+struct usb_functionfs_descs_head_v2 {
+	__le32 magic;
+	__le32 length;
+	__le32 flags;
+	/*
+	 * __le32 fs_count, hs_count, fs_count; must be included manually in
+	 * the structure taking flags into consideration.
+	 */
+} __attribute__((packed));
 
-/*
- * All numbers must be in little endian order.
- */
-
+/* Legacy format, deprecated as of 3.14. */
 struct usb_functionfs_descs_head {
 	__le32 magic;
 	__le32 length;
 	__le32 fs_count;
 	__le32 hs_count;
+} __attribute__((packed, deprecated));
+
+/* MS OS Descriptor header */
+struct usb_os_desc_header {
+	__u8	interface;
+	__le32	dwLength;
+	__le16	bcdVersion;
+	__le16	wIndex;
+	union {
+		struct {
+			__u8	bCount;
+			__u8	Reserved;
+		};
+		__le16	wCount;
+	};
 } __attribute__((packed));
+
+struct usb_ext_compat_desc {
+	__u8	bFirstInterfaceNumber;
+	__u8	Reserved1;
+	__u8	CompatibleID[8];
+	__u8	SubCompatibleID[8];
+	__u8	Reserved2[6];
+};
+
+struct usb_ext_prop_desc {
+	__le32	dwSize;
+	__le32	dwPropertyDataType;
+	__le16	wPropertyNameLength;
+} __attribute__((packed));
+
+#ifndef __KERNEL__
 
 /*
  * Descriptors format:
@@ -168,6 +210,12 @@ struct usb_functionfs_event {
  * active returns -ENODEV.
  */
 #define	FUNCTIONFS_ENDPOINT_REVMAP	_IO('g', 129)
+
+/*
+ * Returns endpoint descriptor. If function is not active returns -ENODEV.
+ */
+#define	FUNCTIONFS_ENDPOINT_DESC	_IOR('g', 130, \
+					     struct usb_endpoint_descriptor)
 
 
 

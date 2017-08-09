@@ -2,8 +2,37 @@
 #include <linux/module.h>
 #include <linux/slab.h>
 #include <linux/device.h>
+#include <linux/nls.h>
 #include <linux/usb/composite.h>
 #include <linux/usb/gadget_configfs.h>
+#include "configfs.h"
+#include "u_f.h"
+#include "u_os_desc.h"
+
+#ifdef CONFIG_USB_CONFIGFS_UEVENT
+#include <linux/platform_device.h>
+#include <linux/kdev_t.h>
+#include <linux/usb/ch9.h>
+
+#ifdef CONFIG_USB_CONFIGFS_F_ACC
+extern int acc_ctrlrequest(struct usb_composite_dev *cdev,
+				const struct usb_ctrlrequest *ctrl);
+void acc_disconnect(void);
+#endif
+static struct class *android_class;
+static struct device *android_device;
+static int index;
+
+struct device *create_function_device(char *name)
+{
+	if (android_device && !IS_ERR(android_device))
+		return device_create(android_class, android_device,
+			MKDEV(0, index++), NULL, name);
+	else
+		return ERR_PTR(-EINVAL);
+}
+EXPORT_SYMBOL_GPL(create_function_device);
+#endif
 
 int check_user_usb_string(const char *name,
 		struct usb_gadget_strings *stringtab_dev)
@@ -42,7 +71,8 @@ struct gadget_info {
 	struct config_group functions_group;
 	struct config_group configs_group;
 	struct config_group strings_group;
-	struct config_group *default_groups[4];
+	struct config_group os_desc_group;
+	struct config_group *default_groups[5];
 
 	struct mutex lock;
 	struct usb_gadget_strings *gstrings[MAX_USB_STRING_LANGS + 1];
@@ -55,6 +85,15 @@ struct gadget_info {
 #endif
 	struct usb_composite_driver composite;
 	struct usb_composite_dev cdev;
+	bool use_os_desc;
+	char b_vendor_code;
+	char qw_sign[OS_STRING_QW_SIGN_LEN];
+#ifdef CONFIG_USB_CONFIGFS_UEVENT
+	bool connected;
+	bool sw_connected;
+	struct work_struct work;
+	struct device *dev;
+#endif
 };
 
 struct config_usb_cfg {
@@ -76,6 +115,10 @@ struct gadget_strings {
 
 	struct config_group group;
 	struct list_head list;
+};
+
+struct os_desc {
+	struct config_group group;
 };
 
 struct gadget_config_name {
@@ -250,7 +293,7 @@ static ssize_t gadget_dev_desc_UDC_store(struct gadget_info *gi,
 
 	mutex_lock(&gi->lock);
 
-	if (!strlen(name)) {
+	if (!strlen(name) || strcmp(name, "none") == 0) {
 		ret = unregister_gadget(gi);
 		if (ret)
 			goto err;
@@ -393,6 +436,11 @@ static int config_usb_cfg_link(
 	}
 
 	f = usb_get_function(fi);
+	if (f == NULL) {
+		/* Are we trying to symlink PTP without MTP function? */
+		ret = -EINVAL; /* Invalid Configuration */
+		goto out;
+	}
 	if (IS_ERR(f)) {
 		ret = PTR_ERR(f);
 		goto out;
@@ -557,12 +605,19 @@ static struct config_group *function_make(
 
 	fi = usb_get_function_instance(func_name);
 	if (IS_ERR(fi))
-		return ERR_PTR(PTR_ERR(fi));
+		return ERR_CAST(fi);
 
 	ret = config_item_set_name(&fi->group.cg_item, name);
 	if (ret) {
 		usb_put_function_instance(fi);
 		return ERR_PTR(ret);
+	}
+	if (fi->set_inst_name) {
+		ret = fi->set_inst_name(fi, instance_name);
+		if (ret) {
+			usb_put_function_instance(fi);
+			return ERR_PTR(ret);
+		}
 	}
 
 	gi = container_of(group, struct gadget_info, functions_group);
@@ -728,6 +783,524 @@ static void gadget_strings_attr_release(struct config_item *item)
 USB_CONFIG_STRING_RW_OPS(gadget_strings);
 USB_CONFIG_STRINGS_LANG(gadget_strings, gadget_info);
 
+static inline struct os_desc *to_os_desc(struct config_item *item)
+{
+	return container_of(to_config_group(item), struct os_desc, group);
+}
+
+CONFIGFS_ATTR_STRUCT(os_desc);
+CONFIGFS_ATTR_OPS(os_desc);
+
+static ssize_t os_desc_use_show(struct os_desc *os_desc, char *page)
+{
+	struct gadget_info *gi;
+
+	gi = to_gadget_info(os_desc->group.cg_item.ci_parent);
+
+	return sprintf(page, "%d", gi->use_os_desc);
+}
+
+static ssize_t os_desc_use_store(struct os_desc *os_desc, const char *page,
+				 size_t len)
+{
+	struct gadget_info *gi;
+	int ret;
+	bool use;
+
+	gi = to_gadget_info(os_desc->group.cg_item.ci_parent);
+
+	mutex_lock(&gi->lock);
+	ret = strtobool(page, &use);
+	if (!ret) {
+		gi->use_os_desc = use;
+		ret = len;
+	}
+	mutex_unlock(&gi->lock);
+
+	return ret;
+}
+
+static struct os_desc_attribute os_desc_use =
+	__CONFIGFS_ATTR(use, S_IRUGO | S_IWUSR,
+			os_desc_use_show,
+			os_desc_use_store);
+
+static ssize_t os_desc_b_vendor_code_show(struct os_desc *os_desc, char *page)
+{
+	struct gadget_info *gi;
+
+	gi = to_gadget_info(os_desc->group.cg_item.ci_parent);
+
+	return sprintf(page, "%d", gi->b_vendor_code);
+}
+
+static ssize_t os_desc_b_vendor_code_store(struct os_desc *os_desc,
+					   const char *page, size_t len)
+{
+	struct gadget_info *gi;
+	int ret;
+	u8 b_vendor_code;
+
+	gi = to_gadget_info(os_desc->group.cg_item.ci_parent);
+
+	mutex_lock(&gi->lock);
+	ret = kstrtou8(page, 0, &b_vendor_code);
+	if (!ret) {
+		gi->b_vendor_code = b_vendor_code;
+		ret = len;
+	}
+	mutex_unlock(&gi->lock);
+
+	return ret;
+}
+
+static struct os_desc_attribute os_desc_b_vendor_code =
+	__CONFIGFS_ATTR(b_vendor_code, S_IRUGO | S_IWUSR,
+			os_desc_b_vendor_code_show,
+			os_desc_b_vendor_code_store);
+
+static ssize_t os_desc_qw_sign_show(struct os_desc *os_desc, char *page)
+{
+	struct gadget_info *gi;
+
+	gi = to_gadget_info(os_desc->group.cg_item.ci_parent);
+
+	memcpy(page, gi->qw_sign, OS_STRING_QW_SIGN_LEN);
+
+	return OS_STRING_QW_SIGN_LEN;
+}
+
+static ssize_t os_desc_qw_sign_store(struct os_desc *os_desc, const char *page,
+				     size_t len)
+{
+	struct gadget_info *gi;
+	int res, l;
+
+	gi = to_gadget_info(os_desc->group.cg_item.ci_parent);
+	l = min((int)len, OS_STRING_QW_SIGN_LEN >> 1);
+	if (page[l - 1] == '\n')
+		--l;
+
+	mutex_lock(&gi->lock);
+	res = utf8s_to_utf16s(page, l,
+			      UTF16_LITTLE_ENDIAN, (wchar_t *) gi->qw_sign,
+			      OS_STRING_QW_SIGN_LEN);
+	if (res > 0)
+		res = len;
+	mutex_unlock(&gi->lock);
+
+	return res;
+}
+
+static struct os_desc_attribute os_desc_qw_sign =
+	__CONFIGFS_ATTR(qw_sign, S_IRUGO | S_IWUSR,
+			os_desc_qw_sign_show,
+			os_desc_qw_sign_store);
+
+static struct configfs_attribute *os_desc_attrs[] = {
+	&os_desc_use.attr,
+	&os_desc_b_vendor_code.attr,
+	&os_desc_qw_sign.attr,
+	NULL,
+};
+
+static void os_desc_attr_release(struct config_item *item)
+{
+	struct os_desc *os_desc = to_os_desc(item);
+	kfree(os_desc);
+}
+
+static int os_desc_link(struct config_item *os_desc_ci,
+			struct config_item *usb_cfg_ci)
+{
+	struct gadget_info *gi = container_of(to_config_group(os_desc_ci),
+					struct gadget_info, os_desc_group);
+	struct usb_composite_dev *cdev = &gi->cdev;
+	struct config_usb_cfg *c_target =
+		container_of(to_config_group(usb_cfg_ci),
+			     struct config_usb_cfg, group);
+	struct usb_configuration *c;
+	int ret;
+
+	mutex_lock(&gi->lock);
+	list_for_each_entry(c, &cdev->configs, list) {
+		if (c == &c_target->c)
+			break;
+	}
+	if (c != &c_target->c) {
+		ret = -EINVAL;
+		goto out;
+	}
+
+	if (cdev->os_desc_config) {
+		ret = -EBUSY;
+		goto out;
+	}
+
+	cdev->os_desc_config = &c_target->c;
+	ret = 0;
+
+out:
+	mutex_unlock(&gi->lock);
+	return ret;
+}
+
+static int os_desc_unlink(struct config_item *os_desc_ci,
+			  struct config_item *usb_cfg_ci)
+{
+	struct gadget_info *gi = container_of(to_config_group(os_desc_ci),
+					struct gadget_info, os_desc_group);
+	struct usb_composite_dev *cdev = &gi->cdev;
+
+	mutex_lock(&gi->lock);
+	if (gi->udc_name)
+		unregister_gadget(gi);
+	cdev->os_desc_config = NULL;
+	WARN_ON(gi->udc_name);
+	mutex_unlock(&gi->lock);
+	return 0;
+}
+
+static struct configfs_item_operations os_desc_ops = {
+	.release                = os_desc_attr_release,
+	.show_attribute         = os_desc_attr_show,
+	.store_attribute        = os_desc_attr_store,
+	.allow_link		= os_desc_link,
+	.drop_link		= os_desc_unlink,
+};
+
+static struct config_item_type os_desc_type = {
+	.ct_item_ops	= &os_desc_ops,
+	.ct_attrs	= os_desc_attrs,
+	.ct_owner	= THIS_MODULE,
+};
+
+CONFIGFS_ATTR_STRUCT(usb_os_desc);
+CONFIGFS_ATTR_OPS(usb_os_desc);
+
+
+static inline struct usb_os_desc_ext_prop
+*to_usb_os_desc_ext_prop(struct config_item *item)
+{
+	return container_of(item, struct usb_os_desc_ext_prop, item);
+}
+
+CONFIGFS_ATTR_STRUCT(usb_os_desc_ext_prop);
+CONFIGFS_ATTR_OPS(usb_os_desc_ext_prop);
+
+static ssize_t ext_prop_type_show(struct usb_os_desc_ext_prop *ext_prop,
+				  char *page)
+{
+	return sprintf(page, "%d", ext_prop->type);
+}
+
+static ssize_t ext_prop_type_store(struct usb_os_desc_ext_prop *ext_prop,
+				   const char *page, size_t len)
+{
+	struct usb_os_desc *desc = to_usb_os_desc(ext_prop->item.ci_parent);
+	u8 type;
+	int ret;
+
+	if (desc->opts_mutex)
+		mutex_lock(desc->opts_mutex);
+	ret = kstrtou8(page, 0, &type);
+	if (ret)
+		goto end;
+	if (type < USB_EXT_PROP_UNICODE || type > USB_EXT_PROP_UNICODE_MULTI) {
+		ret = -EINVAL;
+		goto end;
+	}
+
+	if ((ext_prop->type == USB_EXT_PROP_BINARY ||
+	    ext_prop->type == USB_EXT_PROP_LE32 ||
+	    ext_prop->type == USB_EXT_PROP_BE32) &&
+	    (type == USB_EXT_PROP_UNICODE ||
+	    type == USB_EXT_PROP_UNICODE_ENV ||
+	    type == USB_EXT_PROP_UNICODE_LINK))
+		ext_prop->data_len <<= 1;
+	else if ((ext_prop->type == USB_EXT_PROP_UNICODE ||
+		   ext_prop->type == USB_EXT_PROP_UNICODE_ENV ||
+		   ext_prop->type == USB_EXT_PROP_UNICODE_LINK) &&
+		   (type == USB_EXT_PROP_BINARY ||
+		   type == USB_EXT_PROP_LE32 ||
+		   type == USB_EXT_PROP_BE32))
+		ext_prop->data_len >>= 1;
+	ext_prop->type = type;
+	ret = len;
+
+end:
+	if (desc->opts_mutex)
+		mutex_unlock(desc->opts_mutex);
+	return ret;
+}
+
+static ssize_t ext_prop_data_show(struct usb_os_desc_ext_prop *ext_prop,
+				  char *page)
+{
+	int len = ext_prop->data_len;
+
+	if (ext_prop->type == USB_EXT_PROP_UNICODE ||
+	    ext_prop->type == USB_EXT_PROP_UNICODE_ENV ||
+	    ext_prop->type == USB_EXT_PROP_UNICODE_LINK)
+		len >>= 1;
+	memcpy(page, ext_prop->data, len);
+
+	return len;
+}
+
+static ssize_t ext_prop_data_store(struct usb_os_desc_ext_prop *ext_prop,
+				   const char *page, size_t len)
+{
+	struct usb_os_desc *desc = to_usb_os_desc(ext_prop->item.ci_parent);
+	char *new_data;
+	size_t ret_len = len;
+
+	if (page[len - 1] == '\n' || page[len - 1] == '\0')
+		--len;
+	new_data = kmemdup(page, len, GFP_KERNEL);
+	if (!new_data)
+		return -ENOMEM;
+
+	if (desc->opts_mutex)
+		mutex_lock(desc->opts_mutex);
+	kfree(ext_prop->data);
+	ext_prop->data = new_data;
+	desc->ext_prop_len -= ext_prop->data_len;
+	ext_prop->data_len = len;
+	desc->ext_prop_len += ext_prop->data_len;
+	if (ext_prop->type == USB_EXT_PROP_UNICODE ||
+	    ext_prop->type == USB_EXT_PROP_UNICODE_ENV ||
+	    ext_prop->type == USB_EXT_PROP_UNICODE_LINK) {
+		desc->ext_prop_len -= ext_prop->data_len;
+		ext_prop->data_len <<= 1;
+		ext_prop->data_len += 2;
+		desc->ext_prop_len += ext_prop->data_len;
+	}
+	if (desc->opts_mutex)
+		mutex_unlock(desc->opts_mutex);
+	return ret_len;
+}
+
+static struct usb_os_desc_ext_prop_attribute ext_prop_type =
+	__CONFIGFS_ATTR(type, S_IRUGO | S_IWUSR,
+			ext_prop_type_show, ext_prop_type_store);
+
+static struct usb_os_desc_ext_prop_attribute ext_prop_data =
+	__CONFIGFS_ATTR(data, S_IRUGO | S_IWUSR,
+			ext_prop_data_show, ext_prop_data_store);
+
+static struct configfs_attribute *ext_prop_attrs[] = {
+	&ext_prop_type.attr,
+	&ext_prop_data.attr,
+	NULL,
+};
+
+static void usb_os_desc_ext_prop_release(struct config_item *item)
+{
+	struct usb_os_desc_ext_prop *ext_prop = to_usb_os_desc_ext_prop(item);
+
+	kfree(ext_prop); /* frees a whole chunk */
+}
+
+static struct configfs_item_operations ext_prop_ops = {
+	.release		= usb_os_desc_ext_prop_release,
+	.show_attribute		= usb_os_desc_ext_prop_attr_show,
+	.store_attribute	= usb_os_desc_ext_prop_attr_store,
+};
+
+static struct config_item *ext_prop_make(
+		struct config_group *group,
+		const char *name)
+{
+	struct usb_os_desc_ext_prop *ext_prop;
+	struct config_item_type *ext_prop_type;
+	struct usb_os_desc *desc;
+	char *vlabuf;
+
+	vla_group(data_chunk);
+	vla_item(data_chunk, struct usb_os_desc_ext_prop, ext_prop, 1);
+	vla_item(data_chunk, struct config_item_type, ext_prop_type, 1);
+
+	vlabuf = kzalloc(vla_group_size(data_chunk), GFP_KERNEL);
+	if (!vlabuf)
+		return ERR_PTR(-ENOMEM);
+
+	ext_prop = vla_ptr(vlabuf, data_chunk, ext_prop);
+	ext_prop_type = vla_ptr(vlabuf, data_chunk, ext_prop_type);
+
+	desc = container_of(group, struct usb_os_desc, group);
+	ext_prop_type->ct_item_ops = &ext_prop_ops;
+	ext_prop_type->ct_attrs = ext_prop_attrs;
+	ext_prop_type->ct_owner = desc->owner;
+
+	config_item_init_type_name(&ext_prop->item, name, ext_prop_type);
+
+	ext_prop->name = kstrdup(name, GFP_KERNEL);
+	if (!ext_prop->name) {
+		kfree(vlabuf);
+		return ERR_PTR(-ENOMEM);
+	}
+	desc->ext_prop_len += 14;
+	ext_prop->name_len = 2 * strlen(ext_prop->name) + 2;
+	if (desc->opts_mutex)
+		mutex_lock(desc->opts_mutex);
+	desc->ext_prop_len += ext_prop->name_len;
+	list_add_tail(&ext_prop->entry, &desc->ext_prop);
+	++desc->ext_prop_count;
+	if (desc->opts_mutex)
+		mutex_unlock(desc->opts_mutex);
+
+	return &ext_prop->item;
+}
+
+static void ext_prop_drop(struct config_group *group, struct config_item *item)
+{
+	struct usb_os_desc_ext_prop *ext_prop = to_usb_os_desc_ext_prop(item);
+	struct usb_os_desc *desc = to_usb_os_desc(&group->cg_item);
+
+	if (desc->opts_mutex)
+		mutex_lock(desc->opts_mutex);
+	list_del(&ext_prop->entry);
+	--desc->ext_prop_count;
+	kfree(ext_prop->name);
+	desc->ext_prop_len -= (ext_prop->name_len + ext_prop->data_len + 14);
+	if (desc->opts_mutex)
+		mutex_unlock(desc->opts_mutex);
+	config_item_put(item);
+}
+
+static struct configfs_group_operations interf_grp_ops = {
+	.make_item	= &ext_prop_make,
+	.drop_item	= &ext_prop_drop,
+};
+
+static struct configfs_item_operations interf_item_ops = {
+	.show_attribute		= usb_os_desc_attr_show,
+	.store_attribute	= usb_os_desc_attr_store,
+};
+
+static ssize_t interf_grp_compatible_id_show(struct usb_os_desc *desc,
+					     char *page)
+{
+	memcpy(page, desc->ext_compat_id, 8);
+	return 8;
+}
+
+static ssize_t interf_grp_compatible_id_store(struct usb_os_desc *desc,
+					      const char *page, size_t len)
+{
+	int l;
+
+	l = min_t(int, 8, len);
+	if (page[l - 1] == '\n')
+		--l;
+	if (desc->opts_mutex)
+		mutex_lock(desc->opts_mutex);
+	memcpy(desc->ext_compat_id, page, l);
+	desc->ext_compat_id[l] = '\0';
+
+	if (desc->opts_mutex)
+		mutex_unlock(desc->opts_mutex);
+
+	return len;
+}
+
+static struct usb_os_desc_attribute interf_grp_attr_compatible_id =
+	__CONFIGFS_ATTR(compatible_id, S_IRUGO | S_IWUSR,
+			interf_grp_compatible_id_show,
+			interf_grp_compatible_id_store);
+
+static ssize_t interf_grp_sub_compatible_id_show(struct usb_os_desc *desc,
+						 char *page)
+{
+	memcpy(page, desc->ext_compat_id + 8, 8);
+	return 8;
+}
+
+static ssize_t interf_grp_sub_compatible_id_store(struct usb_os_desc *desc,
+						  const char *page, size_t len)
+{
+	int l;
+
+	l = min_t(int, 8, len);
+	if (page[l - 1] == '\n')
+		--l;
+	if (desc->opts_mutex)
+		mutex_lock(desc->opts_mutex);
+	memcpy(desc->ext_compat_id + 8, page, l);
+	desc->ext_compat_id[l + 8] = '\0';
+
+	if (desc->opts_mutex)
+		mutex_unlock(desc->opts_mutex);
+
+	return len;
+}
+
+static struct usb_os_desc_attribute interf_grp_attr_sub_compatible_id =
+	__CONFIGFS_ATTR(sub_compatible_id, S_IRUGO | S_IWUSR,
+			interf_grp_sub_compatible_id_show,
+			interf_grp_sub_compatible_id_store);
+
+static struct configfs_attribute *interf_grp_attrs[] = {
+	&interf_grp_attr_compatible_id.attr,
+	&interf_grp_attr_sub_compatible_id.attr,
+	NULL
+};
+
+int usb_os_desc_prepare_interf_dir(struct config_group *parent,
+				   int n_interf,
+				   struct usb_os_desc **desc,
+				   char **names,
+				   struct module *owner)
+{
+	struct config_group **f_default_groups, *os_desc_group,
+				**interface_groups;
+	struct config_item_type *os_desc_type, *interface_type;
+
+	vla_group(data_chunk);
+	vla_item(data_chunk, struct config_group *, f_default_groups, 2);
+	vla_item(data_chunk, struct config_group, os_desc_group, 1);
+	vla_item(data_chunk, struct config_group *, interface_groups,
+		 n_interf + 1);
+	vla_item(data_chunk, struct config_item_type, os_desc_type, 1);
+	vla_item(data_chunk, struct config_item_type, interface_type, 1);
+
+	char *vlabuf = kzalloc(vla_group_size(data_chunk), GFP_KERNEL);
+	if (!vlabuf)
+		return -ENOMEM;
+
+	f_default_groups = vla_ptr(vlabuf, data_chunk, f_default_groups);
+	os_desc_group = vla_ptr(vlabuf, data_chunk, os_desc_group);
+	os_desc_type = vla_ptr(vlabuf, data_chunk, os_desc_type);
+	interface_groups = vla_ptr(vlabuf, data_chunk, interface_groups);
+	interface_type = vla_ptr(vlabuf, data_chunk, interface_type);
+
+	parent->default_groups = f_default_groups;
+	os_desc_type->ct_owner = owner;
+	config_group_init_type_name(os_desc_group, "os_desc", os_desc_type);
+	f_default_groups[0] = os_desc_group;
+
+	os_desc_group->default_groups = interface_groups;
+	interface_type->ct_item_ops = &interf_item_ops;
+	interface_type->ct_group_ops = &interf_grp_ops;
+	interface_type->ct_attrs = interf_grp_attrs;
+	interface_type->ct_owner = owner;
+
+	while (n_interf--) {
+		struct usb_os_desc *d;
+
+		d = desc[n_interf];
+		d->owner = owner;
+		config_group_init_type_name(&d->group, "", interface_type);
+		config_item_set_name(&d->group.cg_item, "interface.%s",
+				     names[n_interf]);
+		interface_groups[n_interf] = &d->group;
+	}
+
+	return 0;
+}
+EXPORT_SYMBOL(usb_os_desc_prepare_interf_dir);
+
 static int configfs_do_nothing(struct usb_composite_dev *cdev)
 {
 	WARN_ON(1);
@@ -736,6 +1309,9 @@ static int configfs_do_nothing(struct usb_composite_dev *cdev)
 
 int composite_dev_prepare(struct usb_composite_driver *composite,
 		struct usb_composite_dev *dev);
+
+int composite_os_desc_req_prepare(struct usb_composite_dev *cdev,
+				  struct usb_ep *ep0);
 
 static void purge_configs_funcs(struct gadget_info *gi)
 {
@@ -757,6 +1333,7 @@ static void purge_configs_funcs(struct gadget_info *gi)
 			}
 		}
 		c->next_interface_id = 0;
+		memset(c->interface, 0, sizeof(c->interface));
 		c->superspeed = 0;
 		c->highspeed = 0;
 		c->fullspeed = 0;
@@ -785,7 +1362,7 @@ static int configfs_composite_bind(struct usb_gadget *gadget,
 	ret = -EINVAL;
 
 	if (list_empty(&gi->cdev.configs)) {
-		pr_err("Need atleast one configuration in %s.\n",
+		pr_err("Need at least one configuration in %s.\n",
 				gi->composite.name);
 		goto err_comp_cleanup;
 	}
@@ -796,7 +1373,7 @@ static int configfs_composite_bind(struct usb_gadget *gadget,
 
 		cfg = container_of(c, struct config_usb_cfg, c);
 		if (list_empty(&cfg->func_list)) {
-			pr_err("Config %s/%d of %s needs atleast one function.\n",
+			pr_err("Config %s/%d of %s needs at least one function.\n",
 			      c->label, c->bConfigurationValue,
 			      gi->composite.name);
 			goto err_comp_cleanup;
@@ -831,6 +1408,12 @@ static int configfs_composite_bind(struct usb_gadget *gadget,
 		gi->cdev.desc.iSerialNumber = s[USB_GADGET_SERIAL_IDX].id;
 	}
 
+	if (gi->use_os_desc) {
+		cdev->use_os_string = true;
+		cdev->b_vendor_code = gi->b_vendor_code;
+		memcpy(cdev->qw_sign, gi->qw_sign, OS_STRING_QW_SIGN_LEN);
+	}
+
 	/* Go through all configs, attach all functions */
 	list_for_each_entry(c, &gi->cdev.configs, list) {
 		struct config_usb_cfg *cfg;
@@ -859,11 +1442,19 @@ static int configfs_composite_bind(struct usb_gadget *gadget,
 		list_for_each_entry_safe(f, tmp, &cfg->func_list, list) {
 			list_del(&f->list);
 			ret = usb_add_function(c, f);
-			if (ret)
+			if (ret) {
+				list_add(&f->list, &cfg->func_list);
 				goto err_purge_funcs;
+			}
 		}
 		usb_ep_autoconfig_reset(cdev->gadget);
 	}
+	if (cdev->use_os_string) {
+		ret = composite_os_desc_req_prepare(cdev, gadget->ep0);
+		if (ret)
+			goto err_purge_funcs;
+	}
+
 	usb_ep_autoconfig_reset(cdev->gadget);
 	return 0;
 
@@ -873,6 +1464,60 @@ err_comp_cleanup:
 	composite_dev_cleanup(cdev);
 	return ret;
 }
+
+#ifdef CONFIG_USB_CONFIGFS_UEVENT
+static void android_work(struct work_struct *data)
+{
+	struct gadget_info *gi = container_of(data, struct gadget_info, work);
+	struct usb_composite_dev *cdev = &gi->cdev;
+	char *disconnected[2] = { "USB_STATE=DISCONNECTED", NULL };
+	char *connected[2]    = { "USB_STATE=CONNECTED", NULL };
+	char *configured[2]   = { "USB_STATE=CONFIGURED", NULL };
+	/* 0-connected 1-configured 2-disconnected*/
+	bool status[3] = { false, false, false };
+	unsigned long flags;
+	bool uevent_sent = false;
+
+	spin_lock_irqsave(&cdev->lock, flags);
+	if (cdev->config)
+		status[1] = true;
+
+	if (gi->connected != gi->sw_connected) {
+		if (gi->connected)
+			status[0] = true;
+		else
+			status[2] = true;
+		gi->sw_connected = gi->connected;
+	}
+	spin_unlock_irqrestore(&cdev->lock, flags);
+
+	if (status[0]) {
+		kobject_uevent_env(&android_device->kobj,
+					KOBJ_CHANGE, connected);
+		pr_info("%s: sent uevent %s\n", __func__, connected[0]);
+		uevent_sent = true;
+	}
+
+	if (status[1]) {
+		kobject_uevent_env(&android_device->kobj,
+					KOBJ_CHANGE, configured);
+		pr_info("%s: sent uevent %s\n", __func__, configured[0]);
+		uevent_sent = true;
+	}
+
+	if (status[2]) {
+		kobject_uevent_env(&android_device->kobj,
+					KOBJ_CHANGE, disconnected);
+		pr_info("%s: sent uevent %s\n", __func__, disconnected[0]);
+		uevent_sent = true;
+	}
+
+	if (!uevent_sent) {
+		pr_info("%s: did not send uevent (%d %d %p)\n", __func__,
+			gi->connected, gi->sw_connected, cdev->config);
+	}
+}
+#endif
 
 static void configfs_composite_unbind(struct usb_gadget *gadget)
 {
@@ -891,13 +1536,78 @@ static void configfs_composite_unbind(struct usb_gadget *gadget)
 	set_gadget_data(gadget, NULL);
 }
 
+#ifdef CONFIG_USB_CONFIGFS_UEVENT
+static int android_setup(struct usb_gadget *gadget,
+			const struct usb_ctrlrequest *c)
+{
+	struct usb_composite_dev *cdev = get_gadget_data(gadget);
+	unsigned long flags;
+	struct gadget_info *gi = container_of(cdev, struct gadget_info, cdev);
+	int value = -EOPNOTSUPP;
+	struct usb_function_instance *fi;
+
+	spin_lock_irqsave(&cdev->lock, flags);
+	if (!gi->connected) {
+		gi->connected = 1;
+		schedule_work(&gi->work);
+	}
+	spin_unlock_irqrestore(&cdev->lock, flags);
+	list_for_each_entry(fi, &gi->available_func, cfs_list) {
+		if (fi != NULL && fi->f != NULL && fi->f->setup != NULL) {
+			value = fi->f->setup(fi->f, c);
+			if (value >= 0)
+				break;
+		}
+	}
+
+#ifdef CONFIG_USB_CONFIGFS_F_ACC
+	if (value < 0)
+		value = acc_ctrlrequest(cdev, c);
+#endif
+
+	if (value < 0)
+		value = composite_setup(gadget, c);
+
+	spin_lock_irqsave(&cdev->lock, flags);
+	if (c->bRequest == USB_REQ_SET_CONFIGURATION &&
+						cdev->config) {
+		schedule_work(&gi->work);
+	}
+	spin_unlock_irqrestore(&cdev->lock, flags);
+
+	return value;
+}
+
+static void android_disconnect(struct usb_gadget *gadget)
+{
+	struct usb_composite_dev        *cdev = get_gadget_data(gadget);
+	struct gadget_info *gi = container_of(cdev, struct gadget_info, cdev);
+
+	/* accessory HID support can be active while the
+		accessory function is not actually enabled,
+		so we need to inform it when we are disconnected.
+	*/
+
+#ifdef CONFIG_USB_CONFIGFS_F_ACC
+	acc_disconnect();
+#endif
+	gi->connected = 0;
+	schedule_work(&gi->work);
+	composite_disconnect(gadget);
+}
+#endif
+
 static const struct usb_gadget_driver configfs_driver_template = {
 	.bind           = configfs_composite_bind,
 	.unbind         = configfs_composite_unbind,
-
+#ifdef CONFIG_USB_CONFIGFS_UEVENT
+	.setup          = android_setup,
+	.disconnect     = android_disconnect,
+#else
 	.setup          = composite_setup,
+	.reset          = composite_disconnect,
 	.disconnect     = composite_disconnect,
-
+#endif
 	.max_speed	= USB_SPEED_SUPER,
 	.driver = {
 		.owner          = THIS_MODULE,
@@ -905,20 +1615,106 @@ static const struct usb_gadget_driver configfs_driver_template = {
 	},
 };
 
+#ifdef CONFIG_USB_CONFIGFS_UEVENT
+static ssize_t state_show(struct device *pdev, struct device_attribute *attr,
+			char *buf)
+{
+	struct gadget_info *dev = dev_get_drvdata(pdev);
+	struct usb_composite_dev *cdev;
+	char *state = "DISCONNECTED";
+	unsigned long flags;
+
+	if (!dev)
+		goto out;
+
+	cdev = &dev->cdev;
+
+	if (!cdev)
+		goto out;
+
+	spin_lock_irqsave(&cdev->lock, flags);
+	if (cdev->config)
+		state = "CONFIGURED";
+	else if (dev->connected)
+		state = "CONNECTED";
+	spin_unlock_irqrestore(&cdev->lock, flags);
+out:
+	return sprintf(buf, "%s\n", state);
+}
+
+static DEVICE_ATTR(state, S_IRUGO, state_show, NULL);
+
+static struct device_attribute *android_usb_attributes[] = {
+	&dev_attr_state,
+	NULL
+};
+
+static int android_device_create(struct gadget_info *gi)
+{
+	struct device_attribute **attrs;
+	struct device_attribute *attr;
+
+	INIT_WORK(&gi->work, android_work);
+	android_device = device_create(android_class, NULL,
+				MKDEV(0, 0), NULL, "android0");
+	if (IS_ERR(android_device))
+		return PTR_ERR(android_device);
+
+	dev_set_drvdata(android_device, gi);
+
+	attrs = android_usb_attributes;
+	while ((attr = *attrs++)) {
+		int err;
+
+		err = device_create_file(android_device, attr);
+		if (err) {
+			device_destroy(android_device->class,
+				       android_device->devt);
+			return err;
+		}
+	}
+
+	return 0;
+}
+
+static void android_device_destroy(void)
+{
+	struct device_attribute **attrs;
+	struct device_attribute *attr;
+
+	attrs = android_usb_attributes;
+	while ((attr = *attrs++))
+		device_remove_file(android_device, attr);
+	device_destroy(android_device->class, android_device->devt);
+}
+#else
+static inline int android_device_create(struct gadget_info *gi)
+{
+	return 0;
+}
+
+static inline void android_device_destroy(void)
+{
+}
+#endif
+
 static struct config_group *gadgets_make(
 		struct config_group *group,
 		const char *name)
 {
 	struct gadget_info *gi;
+	struct device_attribute **attrs;
+	struct device_attribute *attr;
+	int err;
 
 	gi = kzalloc(sizeof(*gi), GFP_KERNEL);
 	if (!gi)
 		return ERR_PTR(-ENOMEM);
-
 	gi->group.default_groups = gi->default_groups;
 	gi->group.default_groups[0] = &gi->functions_group;
 	gi->group.default_groups[1] = &gi->configs_group;
 	gi->group.default_groups[2] = &gi->strings_group;
+	gi->group.default_groups[3] = &gi->os_desc_group;
 
 	config_group_init_type_name(&gi->functions_group, "functions",
 			&functions_type);
@@ -926,6 +1722,8 @@ static struct config_group *gadgets_make(
 			&config_desc_type);
 	config_group_init_type_name(&gi->strings_group, "strings",
 			&gadget_strings_strings_type);
+	config_group_init_type_name(&gi->os_desc_group, "os_desc",
+			&os_desc_type);
 
 	gi->composite.bind = configfs_do_nothing;
 	gi->composite.unbind = configfs_do_nothing;
@@ -950,6 +1748,9 @@ static struct config_group *gadgets_make(
 	if (!gi->composite.gadget_driver.function)
 		goto err;
 
+	if (android_device_create(gi) < 0)
+		goto err;
+
 #ifdef CONFIG_USB_OTG
 	gi->otg.bLength = sizeof(struct usb_otg_descriptor);
 	gi->otg.bDescriptorType = USB_DT_OTG;
@@ -959,6 +1760,7 @@ static struct config_group *gadgets_make(
 	config_group_init_type_name(&gi->group, name,
 				&gadget_root_type);
 	return &gi->group;
+
 err:
 	kfree(gi);
 	return ERR_PTR(-ENOMEM);
@@ -966,7 +1768,11 @@ err:
 
 static void gadgets_drop(struct config_group *group, struct config_item *item)
 {
+	struct device_attribute **attrs;
+	struct device_attribute *attr;
+
 	config_item_put(item);
+	android_device_destroy();
 }
 
 static struct configfs_group_operations gadgets_ops = {
@@ -989,6 +1795,14 @@ static struct configfs_subsystem gadget_subsys = {
 	.su_mutex = __MUTEX_INITIALIZER(gadget_subsys.su_mutex),
 };
 
+void unregister_gadget_item(struct config_item *item)
+{
+	struct gadget_info *gi = to_gadget_info(item);
+
+	unregister_gadget(gi);
+}
+EXPORT_SYMBOL_GPL(unregister_gadget_item);
+
 static int __init gadget_cfs_init(void)
 {
 	int ret;
@@ -996,6 +1810,13 @@ static int __init gadget_cfs_init(void)
 	config_group_init(&gadget_subsys.su_group);
 
 	ret = configfs_register_subsystem(&gadget_subsys);
+
+#ifdef CONFIG_USB_CONFIGFS_UEVENT
+	android_class = class_create(THIS_MODULE, "android_usb");
+	if (IS_ERR(android_class))
+		return PTR_ERR(android_class);
+#endif
+
 	return ret;
 }
 module_init(gadget_cfs_init);
@@ -1003,5 +1824,10 @@ module_init(gadget_cfs_init);
 static void __exit gadget_cfs_exit(void)
 {
 	configfs_unregister_subsystem(&gadget_subsys);
+#ifdef CONFIG_USB_CONFIGFS_UEVENT
+	if (!IS_ERR(android_class))
+		class_destroy(android_class);
+#endif
+
 }
 module_exit(gadget_cfs_exit);
