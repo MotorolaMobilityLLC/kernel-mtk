@@ -1523,4 +1523,7 @@ int kalMetRemoveProcfs(void);
 UINT_64 kalGetBootTime(void);
 
 INT_32 kalReadToFile(const PUINT_8 pucPath, PUINT_8 pucData, UINT_32 u4Size, PUINT_32 pu4ReadSize);
+#if CFG_SUPPORT_WAKEUP_REASON_DEBUG
+BOOLEAN kalIsWakeupByWlan(P_ADAPTER_T  prAdapter);
+#endif
 #endif /* _GL_KAL_H */

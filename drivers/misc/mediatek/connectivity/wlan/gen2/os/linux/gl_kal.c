@@ -705,6 +705,9 @@
 #if CFG_SUPPORT_AGPS_ASSIST
 #include <net/netlink.h>
 #endif
+#if CFG_SUPPORT_WAKEUP_REASON_DEBUG
+#include <mt_sleep.h>
+#endif
 
 /*******************************************************************************
 *                              C O N S T A N T S
@@ -4395,3 +4398,44 @@ VOID kalSchedScanStopped(IN P_GLUE_INFO_T prGlueInfo)
 	DBGLOG(SCN, TRACE, "tx_thread return from kalSchedScanStoppped\n");
 
 }
+
+#if CFG_SUPPORT_WAKEUP_REASON_DEBUG
+/* if SPM is not implement this function, we will use this default one */
+wake_reason_t __weak slp_get_wake_reason(VOID)
+{
+	return WR_NONE;
+}
+/* if SPM is not implement this function, we will use this default one */
+UINT_32 __weak spm_get_last_wakeup_src(VOID)
+{
+	return 0;
+}
+
+/*----------------------------------------------------------------------------*/
+/*!
+* \brief    To check if device if wake up by wlan
+*
+* \param[in]
+*           prAdapter
+*
+* \return
+*           TRUE: wake up by wlan; otherwise, FALSE
+*/
+/*----------------------------------------------------------------------------*/
+BOOLEAN kalIsWakeupByWlan(P_ADAPTER_T  prAdapter)
+{
+	/* SUSPEND_FLAG_FOR_WAKEUP_REASON is set means system has suspended, but may be failed
+		duo to some driver suspend failed. so we need help of function slp_get_wake_reason */
+	if (test_and_clear_bit(SUSPEND_FLAG_FOR_WAKEUP_REASON, &prAdapter->ulSuspendFlag) == 0)
+		return FALSE;
+	/* if slp_get_wake_reason or spm_get_last_wakeup_src is NULL, it means SPM module didn't implement
+		it. then we should return FALSE always. otherwise,  if slp_get_wake_reason returns WR_WAKE_SRC,
+		then it means the host is suspend successfully. */
+	if (slp_get_wake_reason() != WR_WAKE_SRC)
+		return FALSE;
+	/* spm_get_last_wakeup_src will returns the last wakeup source,
+		WAKE_SRC_CONN2AP is connsys */
+	return !!(spm_get_last_wakeup_src() & WAKE_SRC_CONN2AP);
+}
+#endif
+

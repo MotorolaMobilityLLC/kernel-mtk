@@ -1248,6 +1248,7 @@ wlanAdapterStart(IN P_ADAPTER_T prAdapter,
 
 	/* 4 <0.1> reset fgIsBusAccessFailed */
 	fgIsBusAccessFailed = FALSE;
+	prAdapter->ulSuspendFlag = 0;
 
 	do {
 		u4Status = nicAllocateAdapterMemory(prAdapter);

@@ -53,7 +53,8 @@ extern UINT_8 keyStructBuf[100];	/* add/remove key shared buffer */
 #endif
 
 extern struct delayed_work sched_workq;
-
+extern struct semaphore g_halt_sem;
+extern int g_u4HaltFlag;
 /*******************************************************************************
 *                              C O N S T A N T S
 ********************************************************************************
@@ -289,7 +290,8 @@ int mtk_p2p_cfg80211_testmode_sw_cmd(IN struct wiphy *wiphy, IN void *data, IN i
 #else
 #error "Please ENABLE kernel config (CONFIG_NL80211_TESTMODE) to support Wi-Fi Direct"
 #endif
-
+int	mtk_cfg80211_suspend(struct wiphy *wiphy, struct cfg80211_wowlan *wow);
+int mtk_cfg80211_resume(struct wiphy *wiphy);
 /*******************************************************************************
 *                              F U N C T I O N S
 ********************************************************************************

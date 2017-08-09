@@ -965,7 +965,6 @@
 #define CFG_SUPPORT_TXR_ENC			0	/* enhanced tx rate switch */
 
 #define CFG_SUPPORT_PERSIST_NETDEV		0	/* create NETDEV when system bootup */
-
 /*------------------------------------------------------------------------------
  * SLT Option
  *------------------------------------------------------------------------------
@@ -1226,6 +1225,7 @@
  */
 #define CFG_ENABLE_FULL_PM                      1
 #define CFG_ENABLE_WAKEUP_ON_LAN                0
+#define CFG_SUPPORT_WAKEUP_REASON_DEBUG			0	/* debug which packet wake up host */
 
 #define CFG_INIT_POWER_SAVE_PROF                    ENUM_PSP_FAST_SWITCH
 

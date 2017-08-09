@@ -1366,7 +1366,7 @@ struct _ADAPTER_T {
 #endif
 
 	UINT_32 u4AirDelayTotal;	/*  dbg privilege power mode, always keep in active */
-
+	ULONG	ulSuspendFlag;
 };				/* end of _ADAPTER_T */
 
 /*******************************************************************************
@@ -1383,6 +1383,9 @@ struct _ADAPTER_T {
 *                                 M A C R O S
 ********************************************************************************
 */
+#define SUSPEND_FLAG_FOR_WAKEUP_REASON	(0)
+#define SUSPEND_FLAG_CLEAR_WHEN_RESUME	(1)
+
 /*----------------------------------------------------------------------------*/
 /* Macros for BSS_INFO_T - Flag of Net Active                                 */
 /*----------------------------------------------------------------------------*/

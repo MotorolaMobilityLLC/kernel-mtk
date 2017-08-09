@@ -1177,6 +1177,8 @@ VOID scnEventNloDone(IN P_ADAPTER_T prAdapter, IN P_EVENT_NLO_DONE_T prNloDone)
 		if (prNloParam->fgStopAfterIndication == TRUE)
 			prScanInfo->fgNloScanning = FALSE;
 
+		kalMemZero(&prNloParam->aprPendingBssDescToInd[0],
+					CFG_SCAN_SSID_MATCH_MAX_NUM * sizeof(P_BSS_DESC_T));
 	} else {
 		DBGLOG(SCN, INFO, "Unexpected NLO-DONE event\n");
 	}
