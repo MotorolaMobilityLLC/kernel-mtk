@@ -137,7 +137,10 @@ extern void musb_g_suspend(struct musb *);
 extern void musb_g_resume(struct musb *);
 extern void musb_g_wakeup(struct musb *);
 extern void musb_g_disconnect(struct musb *);
-
+#ifdef CONFIG_DEBUG_FS
+extern unsigned musb_uart_debug;
+extern int usb20_phy_init_debugfs(void);
+#endif
 /****************************** HOST ROLE ***********************************/
 
 #define	is_host_capable()	(1)
