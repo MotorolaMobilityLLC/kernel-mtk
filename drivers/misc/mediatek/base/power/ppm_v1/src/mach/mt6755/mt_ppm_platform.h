@@ -43,6 +43,9 @@ extern "C" {
 #define get_cluster_ptpod_fix_freq_idx(id)	PTPOD_FREQ_IDX	/* the same for each cluster */
 #define get_cluster_suspend_fix_freq(id)	\
 	((id == 0) ? SUSPEND_FREQ_LL : SUSPEND_FREQ_L)
+#define get_max_real_power_by_segment(seg)	\
+	((ppm_main_info.dvfs_tbl_type == DVFS_TABLE_TYPE_SB) ? DLPT_MAX_REAL_POWER_SB	\
+	: DLPT_MAX_REAL_POWER_FY)
 
 /*==============================================================*/
 /* Enum								*/

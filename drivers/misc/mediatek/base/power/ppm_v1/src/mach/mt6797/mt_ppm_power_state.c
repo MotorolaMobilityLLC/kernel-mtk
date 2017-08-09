@@ -269,6 +269,15 @@ const struct ppm_power_tbl_data power_table_SB = {
 	.nr_power_tbl = ARRAY_SIZE(cpu_tlp_power_tbl_SB),
 };
 
+#ifdef PPM_POWER_TABLE_CALIBRATION
+struct ppm_power_tbl_data power_table_MB = {
+#else
+const struct ppm_power_tbl_data power_table_MB = {
+#endif
+	.power_tbl = cpu_tlp_power_tbl_MB,
+	.nr_power_tbl = ARRAY_SIZE(cpu_tlp_power_tbl_MB),
+};
+
 const struct ppm_pwr_idx_ref_tbl_data pwr_idx_ref_tbl_FY = {
 	.pwr_idx_ref_tbl = cpu_pwr_idx_ref_tbl_FY,
 	.nr_pwr_idx_ref_tbl = ARRAY_SIZE(cpu_pwr_idx_ref_tbl_FY),
@@ -277,6 +286,11 @@ const struct ppm_pwr_idx_ref_tbl_data pwr_idx_ref_tbl_FY = {
 const struct ppm_pwr_idx_ref_tbl_data pwr_idx_ref_tbl_SB = {
 	.pwr_idx_ref_tbl = cpu_pwr_idx_ref_tbl_SB,
 	.nr_pwr_idx_ref_tbl = ARRAY_SIZE(cpu_pwr_idx_ref_tbl_SB),
+};
+
+const struct ppm_pwr_idx_ref_tbl_data pwr_idx_ref_tbl_MB = {
+	.pwr_idx_ref_tbl = cpu_pwr_idx_ref_tbl_MB,
+	.nr_pwr_idx_ref_tbl = ARRAY_SIZE(cpu_pwr_idx_ref_tbl_MB),
 };
 
 /* PPM power state static data */
@@ -323,6 +337,29 @@ struct ppm_power_state_data pwr_state_info_SB[NR_PPM_POWER_STATE] = {
 		.name = __stringify(4L_LL),
 		.state = PPM_POWER_STATE_4L_LL,
 		PWR_STATE_TBLS(4L_LL, SB)
+	},
+};
+
+struct ppm_power_state_data pwr_state_info_MB[NR_PPM_POWER_STATE] = {
+	[0] = {
+		.name = __stringify(LL_ONLY),
+		.state = PPM_POWER_STATE_LL_ONLY,
+		PWR_STATE_TBLS(LL_ONLY, MB)
+	},
+	[1] = {
+		.name = __stringify(L_ONLY),
+		.state = PPM_POWER_STATE_L_ONLY,
+		PWR_STATE_TBLS(L_ONLY, MB)
+	},
+	[2] = {
+		.name = __stringify(4LL_L),
+		.state = PPM_POWER_STATE_4LL_L,
+		PWR_STATE_TBLS(4LL_L, MB)
+	},
+	[3] = {
+		.name = __stringify(4L_LL),
+		.state = PPM_POWER_STATE_4L_LL,
+		PWR_STATE_TBLS(4L_LL, MB)
 	},
 };
 
@@ -537,8 +574,9 @@ static struct ppm_pwr_idx_ref_tbl_data ppm_get_pwr_idx_ref_tbl(void)
 static const struct ppm_pwr_idx_ref_tbl_data ppm_get_pwr_idx_ref_tbl(void)
 #endif
 {
-	return (ppm_main_info.dvfs_tbl_type == DVFS_TABLE_TYPE_FY)
-		? pwr_idx_ref_tbl_FY : pwr_idx_ref_tbl_SB;
+	return (ppm_main_info.dvfs_tbl_type == DVFS_TABLE_TYPE_SB) ? pwr_idx_ref_tbl_SB
+		: (ppm_main_info.dvfs_tbl_type == DVFS_TABLE_TYPE_MB) ? pwr_idx_ref_tbl_MB
+		: pwr_idx_ref_tbl_FY;
 }
 
 /*==============================================================*/
@@ -546,8 +584,9 @@ static const struct ppm_pwr_idx_ref_tbl_data ppm_get_pwr_idx_ref_tbl(void)
 /*==============================================================*/
 struct ppm_power_state_data *ppm_get_power_state_info(void)
 {
-	return (ppm_main_info.dvfs_tbl_type == DVFS_TABLE_TYPE_FY)
-		? pwr_state_info_FY : pwr_state_info_SB;
+	return (ppm_main_info.dvfs_tbl_type == DVFS_TABLE_TYPE_SB) ? pwr_state_info_SB
+		: (ppm_main_info.dvfs_tbl_type == DVFS_TABLE_TYPE_MB) ? pwr_state_info_MB
+		: pwr_state_info_FY;
 }
 
 #ifdef PPM_POWER_TABLE_CALIBRATION
@@ -556,8 +595,9 @@ struct ppm_power_tbl_data ppm_get_power_table(void)
 const struct ppm_power_tbl_data ppm_get_power_table(void)
 #endif
 {
-	return (ppm_main_info.dvfs_tbl_type == DVFS_TABLE_TYPE_FY)
-		? power_table_FY : power_table_SB;
+	return (ppm_main_info.dvfs_tbl_type == DVFS_TABLE_TYPE_SB) ? power_table_SB
+		: (ppm_main_info.dvfs_tbl_type == DVFS_TABLE_TYPE_MB) ? power_table_MB
+		: power_table_FY;
 }
 
 const char *ppm_get_power_state_name(enum ppm_power_state state)
@@ -565,7 +605,7 @@ const char *ppm_get_power_state_name(enum ppm_power_state state)
 	if (state >= NR_PPM_POWER_STATE)
 		return "NONE";
 
-	/* the state name is the same between FY and SB */
+	/* the state name is the same for each segment */
 	return pwr_state_info_FY[state].name;
 }
 

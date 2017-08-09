@@ -42,8 +42,9 @@ extern unsigned int hps_get_hvytsk(unsigned int cluster_id);
 #define PPM_DLPT_DEFAULT_MODE	(HYBRID_MODE)
 #define DLPT_MAX_REAL_POWER_FY	(12504)
 #define DLPT_MAX_REAL_POWER_SB	(18381)
+#define DLPT_MAX_REAL_POWER_MB	(12504)	/* TBD */
 
-#define	LCMOFF_MIN_FREQ		(598000)	/* TODO: check this */
+#define	LCMOFF_MIN_FREQ		(598000)
 #define	PTPOD_FREQ_IDX_FY	(7)
 #define	PTPOD_FREQ_IDX_FY_B	(8)
 #define	PTPOD_FREQ_IDX_SB	(9)
@@ -72,6 +73,10 @@ extern unsigned int hps_get_hvytsk(unsigned int cluster_id);
 	((id == PPM_CLUSTER_LL) ? SUSPEND_FREQ_LL	\
 	: (id == PPM_CLUSTER_L) ? SUSPEND_FREQ_L	\
 	: SUSPEND_FREQ_B)
+#define get_max_real_power_by_segment(seg)		\
+	((ppm_main_info.dvfs_tbl_type == DVFS_TABLE_TYPE_SB) ? DLPT_MAX_REAL_POWER_SB	\
+	: (ppm_main_info.dvfs_tbl_type == DVFS_TABLE_TYPE_MB) ? DLPT_MAX_REAL_POWER_MB	\
+	: DLPT_MAX_REAL_POWER_FY)
 
 /*==============================================================*/
 /* Enum								*/

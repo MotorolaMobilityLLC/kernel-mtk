@@ -150,15 +150,14 @@ static unsigned int ppm_dlpt_calc_trans_precentage(void)
 {
 	struct ppm_power_tbl_data power_table = ppm_get_power_table();
 	unsigned int max_pwr_idx = power_table.power_tbl[0].power_idx;
+	unsigned int max_real_power = get_max_real_power_by_segment(ppm_main_info.dvfs_tbl_type);
 
 	/* dvfs table is null means ppm doesn't know chip type now */
 	/* return 100 to make default ratio is 1 and check real ratio next time */
 	if (!ppm_main_info.cluster_info[0].dvfs_tbl)
 		return 100;
 
-	dlpt_percentage_to_real_power = (ppm_main_info.dvfs_tbl_type == DVFS_TABLE_TYPE_FY)
-		? (max_pwr_idx * 100 + (DLPT_MAX_REAL_POWER_FY - 1)) / DLPT_MAX_REAL_POWER_FY
-		: (max_pwr_idx * 100 + (DLPT_MAX_REAL_POWER_SB - 1)) / DLPT_MAX_REAL_POWER_SB;
+	dlpt_percentage_to_real_power = (max_pwr_idx * 100 + (max_real_power - 1)) / max_real_power;
 
 	return dlpt_percentage_to_real_power;
 }

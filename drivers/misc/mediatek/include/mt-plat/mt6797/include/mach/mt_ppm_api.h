@@ -22,6 +22,7 @@ enum ppm_client {
 enum dvfs_table_type {
 	DVFS_TABLE_TYPE_FY = 0,
 	DVFS_TABLE_TYPE_SB,
+	DVFS_TABLE_TYPE_MB,
 
 	NR_DVFS_TABLE_TYPE,
 };
