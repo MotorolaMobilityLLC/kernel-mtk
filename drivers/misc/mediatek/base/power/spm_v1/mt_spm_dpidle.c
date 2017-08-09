@@ -1071,24 +1071,20 @@ static u32 vsram_vosel_on_lb;
 #endif
 static void spm_dpidle_pre_process(void)
 {
-#if !defined(CONFIG_ARCH_MT6580)
 	/* set PMIC WRAP table for deepidle power control */
 	mt_cpufreq_set_pmic_phase(PMIC_WRAP_PHASE_DEEPIDLE);
 #if defined(CONFIG_ARM_MT6735) || defined(CONFIG_ARM_MT6735M) || defined(CONFIG_ARCH_MT6753)
 	vsram_vosel_on_lb = __spm_dpidle_sodi_set_pmic_setting();
 #endif
-#endif
 }
 
 static void spm_dpidle_post_process(void)
 {
-#if !defined(CONFIG_ARCH_MT6580)
 #if defined(CONFIG_ARM_MT6735) || defined(CONFIG_ARM_MT6735M) || defined(CONFIG_ARCH_MT6753)
 	__spm_dpidle_sodi_restore_pmic_setting(vsram_vosel_on_lb);
 #endif
 	/* set PMIC WRAP table for normal power control */
 	mt_cpufreq_set_pmic_phase(PMIC_WRAP_PHASE_NORMAL);
-#endif
 }
 
 wake_reason_t spm_go_to_dpidle(u32 spm_flags, u32 spm_data, u32 dump_log)

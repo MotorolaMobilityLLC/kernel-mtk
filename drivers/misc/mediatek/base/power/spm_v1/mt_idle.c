@@ -1440,15 +1440,10 @@ static inline void soidle_post_handler(void)
 static u32 slp_spm_SODI_flags = {
 	0
 };
-#if !defined(CONFIG_ARCH_MT6580)
+
 u32 slp_spm_deepidle_flags = {
 	0
 };
-#else
-u32 slp_spm_deepidle_flags = {
-	SPM_CPU_PDN_DIS|SPM_CPU_DVS_DIS
-};
-#endif
 
 static inline void dpidle_pre_handler(void)
 {
