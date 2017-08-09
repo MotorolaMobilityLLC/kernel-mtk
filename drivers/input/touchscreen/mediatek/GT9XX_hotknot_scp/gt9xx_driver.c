@@ -3161,7 +3161,7 @@ static void tpd_resume(struct device *h)
 
 	ret = request_irq(touch_irq, (irq_handler_t) tpd_eint_interrupt_handler,
 		gtp_eint_trigger_type, "touch-eint", NULL);
-
+	enable_irq(touch_irq);
 #else
 
 	mutex_lock(&i2c_access);
@@ -3170,7 +3170,7 @@ static void tpd_resume(struct device *h)
 
 	ret = request_irq(touch_irq, (irq_handler_t) tpd_eint_interrupt_handler,
 		gtp_eint_trigger_type, "touch-eint", NULL);
-
+	enable_irq(touch_irq);
 	mutex_unlock(&i2c_access);
 #endif
 
