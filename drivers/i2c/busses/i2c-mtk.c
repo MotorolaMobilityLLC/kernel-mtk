@@ -853,6 +853,44 @@ err_exit:
 }
 #endif
 
+#ifdef CONFIG_TRUSTONIC_TEE_SUPPORT
+int i2c_tui_enable_clock(void)
+{
+	struct i2c_adapter *adap;
+	struct mt_i2c *i2c;
+
+	adap = i2c_get_adapter(4);
+	if (!adap) {
+		pr_err("Cannot get adapter\n");
+		return -1;
+	}
+
+	i2c = i2c_get_adapdata(adap);
+	clk_prepare_enable(i2c->clk_main);
+	clk_prepare_enable(i2c->clk_dma);
+
+	return 0;
+}
+
+int i2c_tui_disable_clock(void)
+{
+	struct i2c_adapter *adap;
+	struct mt_i2c *i2c;
+
+	adap = i2c_get_adapter(4);
+	if (!adap) {
+		pr_err("Cannot get adapter\n");
+		return -1;
+	}
+
+	i2c = i2c_get_adapdata(adap);
+	clk_disable_unprepare(i2c->clk_dma);
+	clk_disable_unprepare(i2c->clk_main);
+
+	return 0;
+}
+#endif
+
 static int mt_i2c_transfer(struct i2c_adapter *adap,
 	struct i2c_msg msgs[], int num)
 {
