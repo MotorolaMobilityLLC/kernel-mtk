@@ -219,7 +219,8 @@
 #define SPM_PASR_DPD_1                 (SPM_BASE + 0x634)
 #define SPM_PASR_DPD_2                 (SPM_BASE + 0x638)
 #define SPM_PASR_DPD_3                 (SPM_BASE + 0x63C)
-
+#define SPM_INFRA_MISC			(SPM_INFRACFG_AO_BASE + 0xf0c)
+#define MD_SRC_REQ_BIT			0
 /* POWERON_CONFIG_EN (0x10006000+0x000) */
 #define BCLK_CG_EN_LSB                      (1U << 0)       /* 1b */
 #define PROJECT_CODE_LSB                    (1U << 16)      /* 16b */

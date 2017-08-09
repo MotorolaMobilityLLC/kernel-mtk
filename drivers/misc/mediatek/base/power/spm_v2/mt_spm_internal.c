@@ -551,27 +551,6 @@ void __spm_sync_vcore_dvfs_power_control(struct pwr_ctrl *dest_pwr_ctrl, const s
 	}
 }
 
-void __spm_enable_i2c3_clk(void)
-{
-#if !defined(CONFIG_MTK_CLKMGR)
-	clk_prepare_enable(i2c3_clk_main);
-#else
-	enable_clock(MT_CG_PERI_I2C3, "suspend");
-#endif
-
-	/* reset i2c3 */
-	spm_write(scp_i2c3_base + 0x50, 1);
-}
-
-void __spm_disable_i2c3_clk(void)
-{
-#if !defined(CONFIG_MTK_CLKMGR)
-	clk_prepare_enable(i2c3_clk_main);
-#else
-	disable_clock(MT_CG_PERI_I2C3, "suspend");
-#endif
-}
-
 #ifdef CONFIG_OF
 static int dt_scan_memory(unsigned long node, const char *uname, int depth, void *data)
 {
@@ -698,6 +677,7 @@ void __spm_restore_pmic_ck_pdn(void)
 
 void __spm_bsi_top_init_setting(void)
 {
+#ifdef CONFIG_ARCH_MT6755
 		/* BSI_TOP init setting */
 		spm_write(spm_bsi1cfg + 0x2004, 0x8000A824);
 		spm_write(spm_bsi1cfg + 0x2010, 0x20001201);
@@ -705,6 +685,7 @@ void __spm_bsi_top_init_setting(void)
 		spm_write(spm_bsi1cfg + 0x2020, 0x0e001841);
 		spm_write(spm_bsi1cfg + 0x2024, 0x150b0000);
 		spm_write(spm_bsi1cfg + 0x2030, 0x1);
+#endif
 }
 
 void __spm_pmic_pg_force_on(void)

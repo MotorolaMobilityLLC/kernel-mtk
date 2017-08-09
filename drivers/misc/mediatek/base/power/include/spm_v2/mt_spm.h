@@ -7,13 +7,12 @@
 
 #ifdef CONFIG_OF
 extern void __iomem *spm_base;
-extern void __iomem *scp_i2c0_base;
-extern void __iomem *scp_i2c1_base;
-extern void __iomem *scp_i2c2_base;
 extern void __iomem *spm_infracfg_ao_base;
 extern void __iomem *spm_cksys_base;
 extern void __iomem *spm_mcucfg;
+#if defined(CONFIG_ARCH_MT6755)
 extern void __iomem *spm_bsi1cfg;
+#endif
 extern void __iomem *spm_ddrphy_base;
 extern u32 spm_irq_0;
 extern u32 spm_irq_1;
@@ -26,6 +25,7 @@ extern u32 spm_irq_7;
 
 #undef SPM_BASE
 #define SPM_BASE spm_base
+#define SPM_INFRACFG_AO_BASE spm_infracfg_ao_base
 #else
 #include <mach/mt_reg_base.h>
 #endif
@@ -36,16 +36,7 @@ extern u32 spm_irq_7;
 /**************************************
  * Config and Parameter
  **************************************/
-
-/* FIXME: for bring up */
 #ifdef CONFIG_OF
-#undef SPM_I2C0_BASE
-#undef SPM_I2C1_BASE
-#undef SPM_I2C2_BASE
-#define SPM_I2C0_BASE	scp_i2c0_base
-#define SPM_I2C1_BASE	scp_i2c1_base
-#define SPM_I2C2_BASE	scp_i2c2_base
-
 #define SPM_IRQ0_ID		spm_irq_0
 #define SPM_IRQ1_ID		spm_irq_1
 #define SPM_IRQ2_ID		spm_irq_2
@@ -54,21 +45,6 @@ extern u32 spm_irq_7;
 #define SPM_IRQ5_ID		spm_irq_5
 #define SPM_IRQ6_ID		spm_irq_6
 #define SPM_IRQ7_ID		spm_irq_7
-#else
-#define SPM_BASE		SLEEP_BASE
-
-#define SPM_I2C0_BASE	0xF0059C00	/* SCP_I2C0_BASE */
-#define SPM_I2C1_BASE	0xF0059C00	/* SCP_I2C1_BASE */
-#define SPM_I2C2_BASE	0xF0059C00	/* SCP_I2C2_BASE */
-
-#define SPM_IRQ0_ID		195	/* SLEEP_IRQ_BIT0_ID */
-#define SPM_IRQ1_ID		196	/* SLEEP_IRQ_BIT1_ID */
-#define SPM_IRQ2_ID		197	/* SLEEP_IRQ_BIT2_ID */
-#define SPM_IRQ3_ID		198	/* SLEEP_IRQ_BIT3_ID */
-#define SPM_IRQ4_ID		199	/* SLEEP_IRQ_BIT4_ID */
-#define SPM_IRQ5_ID		200	/* SLEEP_IRQ_BIT5_ID */
-#define SPM_IRQ6_ID		201	/* SLEEP_IRQ_BIT6_ID */
-#define SPM_IRQ7_ID		202	/* SLEEP_IRQ_BIT7_ID */
 #endif
 
 #include "mt_spm_reg.h"

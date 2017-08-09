@@ -542,12 +542,13 @@ wake_reason_t spm_go_to_sleep(u32 spm_flags, u32 spm_data)
 #endif
 	pwrctrl->timer_val = sec * 32768;
 
-#ifndef CONFIG_MTK_FPGA
 #ifdef CONFIG_MTK_WD_KICKER
 	wd_ret = get_wd_api(&wd_api);
-	if (!wd_ret)
+	if (!wd_ret) {
+		wd_api->wd_spmwdt_mode_config(WD_REQ_EN, WD_REQ_RST_MODE);
 		wd_api->wd_suspend_notify();
-#endif
+	} else
+		spm_crit2("FAILED TO GET WD API\n");
 #endif
 
 	spm_suspend_pre_process(pwrctrl);
@@ -627,16 +628,16 @@ RESTORE_IRQ:
 
 	spm_suspend_post_process(pwrctrl);
 
-#ifndef CONFIG_MTK_FPGA
 #ifdef CONFIG_MTK_WD_KICKER
-	if (!pwrctrl->wdt_disable) {
-		if (!wd_ret)
+	if (!wd_ret) {
+		if (!pwrctrl->wdt_disable)
 			wd_api->wd_resume_notify();
-	} else {
-		spm_crit2("pwrctrl->wdt_disable %d\n", pwrctrl->wdt_disable);
+		else
+			spm_crit2("pwrctrl->wdt_disable %d\n", pwrctrl->wdt_disable);
+		wd_api->wd_spmwdt_mode_config(WD_REQ_DIS, WD_REQ_RST_MODE);
 	}
 #endif
-#endif
+
 #if SPM_AEE_RR_REC
 	aee_rr_rec_spm_suspend_val(0);
 #endif

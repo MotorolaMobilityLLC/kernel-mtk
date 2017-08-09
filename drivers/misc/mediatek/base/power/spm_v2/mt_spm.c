@@ -92,17 +92,16 @@ static struct cdev gSPMDetectCdev;
 
 #ifdef CONFIG_OF
 void __iomem *spm_base;
-void __iomem *scp_i2c0_base;
-void __iomem *scp_i2c1_base;
-void __iomem *scp_i2c2_base;
-void __iomem *scp_i2c3_base;
 void __iomem *spm_infracfg_ao_base;
 void __iomem *spm_ddrphy_base;
 void __iomem *spm_cksys_base;
 void __iomem *spm_mcucfg;
+#if defined(CONFIG_ARCH_MT6755)
 void __iomem *spm_bsi1cfg;
+#endif
 u32 gpio_base_addr;
 struct clk *i2c3_clk_main;
+#if defined(CONFIG_ARCH_MT6755)
 u32 spm_irq_0 = 197;
 u32 spm_irq_1 = 198;
 u32 spm_irq_2 = 199;
@@ -111,6 +110,9 @@ u32 spm_irq_4 = 201;
 u32 spm_irq_5 = 202;
 u32 spm_irq_6 = 203;
 u32 spm_irq_7 = 204;
+#else
+u32 spm_irq_0 = 180;
+#endif
 
 #ifdef SPM_VCORE_EN_MT6755
 u32 spm_vcorefs_start_irq = 152;
@@ -205,7 +207,7 @@ static irqreturn_t spm_irq0_handler(int irq, void *dev_id)
 	return IRQ_HANDLED;
 }
 
-#ifndef CONFIG_MTK_FPGA
+#if defined(CONFIG_ARCH_MT6755)
 static irqreturn_t spm_irq_aux_handler(u32 irq_id)
 {
 	u32 isr;
@@ -261,9 +263,9 @@ static int spm_irq_register(void)
 {
 	int i, err, r = 0;
 #ifdef CONFIG_OF
+#if defined(CONFIG_ARCH_MT6755)
 	struct spm_irq_desc irqdesc[] = {
 		{.irq = 0, .handler = spm_irq0_handler,},
-#ifndef CONFIG_MTK_FPGA
 		{.irq = 0, .handler = spm_irq1_handler,},
 		{.irq = 0, .handler = spm_irq2_handler,},
 		{.irq = 0, .handler = spm_irq3_handler,},
@@ -271,11 +273,14 @@ static int spm_irq_register(void)
 		{.irq = 0, .handler = spm_irq5_handler,},
 		{.irq = 0, .handler = spm_irq6_handler,},
 		{.irq = 0, .handler = spm_irq7_handler,}
-#endif
 	};
-
+#elif defined(CONFIG_ARCH_MT6797)
+	struct spm_irq_desc irqdesc[] = {
+		{.irq = 0, .handler = spm_irq0_handler,}
+	};
+#endif
 	irqdesc[0].irq = SPM_IRQ0_ID;
-#ifndef CONFIG_MTK_FPGA
+#if defined(CONFIG_ARCH_MT6755)
 	irqdesc[1].irq = SPM_IRQ1_ID;
 	irqdesc[2].irq = SPM_IRQ2_ID;
 	irqdesc[3].irq = SPM_IRQ3_ID;
@@ -284,20 +289,6 @@ static int spm_irq_register(void)
 	irqdesc[6].irq = SPM_IRQ6_ID;
 	irqdesc[7].irq = SPM_IRQ7_ID;
 #endif
-#else
-	struct spm_irq_desc irqdesc[] = {
-		{.irq = SPM_IRQ0_ID, .handler = spm_irq0_handler,},
-#ifndef CONFIG_MTK_FPGA
-		{.irq = SPM_IRQ1_ID, .handler = spm_irq1_handler,},
-		{.irq = SPM_IRQ2_ID, .handler = spm_irq2_handler,},
-		{.irq = SPM_IRQ3_ID, .handler = spm_irq3_handler,},
-		{.irq = SPM_IRQ4_ID, .handler = spm_irq4_handler,},
-		{.irq = SPM_IRQ5_ID, .handler = spm_irq5_handler,},
-		{.irq = SPM_IRQ6_ID, .handler = spm_irq6_handler,},
-		{.irq = SPM_IRQ7_ID, .handler = spm_irq7_handler,}
-#endif
-	};
-#endif
 	for (i = 0; i < ARRAY_SIZE(irqdesc); i++) {
 		err = request_irq(irqdesc[i].irq, irqdesc[i].handler,
 				  IRQF_TRIGGER_LOW | IRQF_NO_SUSPEND | IRQF_PERCPU, "SPM", NULL);
@@ -305,21 +296,8 @@ static int spm_irq_register(void)
 			spm_err("FAILED TO REQUEST IRQ%d (%d)\n", i, err);
 			r = -EPERM;
 		}
-#ifndef CONFIG_ARM64
-		/* FIXME: 32-bit platform does NOT have mt_gic_cfg_irq2cpu() */
-#if 0
-		/* assign each SPM IRQ to each CPU */
-		mt_gic_cfg_irq2cpu(irqdesc[i].irq, 0, 0);
-		mt_gic_cfg_irq2cpu(irqdesc[i].irq, i % num_possible_cpus(), 1);
-#endif
-#else
-		/* DO NOT call irq_force_affinity().
-		 * We need all cpus to get interrupt status.
-		 */
-		/* irq_force_affinity(irqdesc[i].irq, cpumask_of(i % num_possible_cpus())); */
-#endif
 	}
-
+#endif
 	return r;
 }
 
@@ -361,7 +339,7 @@ static void spm_register_init(void)
 #ifdef CONFIG_OF
 	struct device_node *node;
 
-	node = of_find_compatible_node(NULL, NULL, "mediatek,SLEEP");
+	node = of_find_compatible_node(NULL, NULL, "mediatek,sleep");
 	if (!node)
 		spm_err("find SLEEP node failed\n");
 	spm_base = of_iomap(node, 0);
@@ -371,7 +349,7 @@ static void spm_register_init(void)
 	spm_irq_0 = irq_of_parse_and_map(node, 0);
 	if (!spm_irq_0)
 		spm_err("get spm_irq_0 failed\n");
-#ifndef CONFIG_MTK_FPGA
+#if defined(CONFIG_ARCH_MT6755)
 	spm_irq_1 = irq_of_parse_and_map(node, 1);
 	if (!spm_irq_1)
 		spm_err("get spm_irq_1 failed\n");
@@ -394,44 +372,15 @@ static void spm_register_init(void)
 	if (!spm_irq_7)
 		spm_err("get spm_irq_7 failed\n");
 #endif
-
-	node = of_find_compatible_node(NULL, NULL, "mediatek,I2C0");
-	if (!node)
-		spm_err("find I2C0 node failed\n");
-	scp_i2c0_base = of_iomap(node, 0);
-	if (!scp_i2c0_base)
-		spm_err("base scp_i2c0_base failed\n");
-
-	node = of_find_compatible_node(NULL, NULL, "mediatek,I2C1");
-	if (!node)
-		spm_err("find I2C1 node failed\n");
-	scp_i2c1_base = of_iomap(node, 0);
-	if (!scp_i2c1_base)
-		spm_err("base scp_i2c1_base failed\n");
-
-	node = of_find_compatible_node(NULL, NULL, "mediatek,I2C2");
-	if (!node)
-		spm_err("find I2C2 node failed\n");
-	scp_i2c2_base = of_iomap(node, 0);
-	if (!scp_i2c2_base)
-		spm_err("base scp_i2c2_base failed\n");
-
-	node = of_find_compatible_node(NULL, NULL, "mediatek,I2C3");
-	if (!node)
-		spm_err("find I2C3 node failed\n");
-	scp_i2c3_base = of_iomap(node, 0);
-	if (!scp_i2c3_base)
-		spm_err("base scp_i2c3_base failed\n");
-
 	/* cksys_base */
-	node = of_find_compatible_node(NULL, NULL, "mediatek,TOPCKGEN");
+	node = of_find_compatible_node(NULL, NULL, "mediatek,topckgen");
 	if (!node)
 		spm_err("[CLK_CKSYS] find node failed\n");
 	spm_cksys_base = of_iomap(node, 0);
 	if (!spm_cksys_base)
 		spm_err("[CLK_CKSYS] base failed\n");
 
-	node = of_find_compatible_node(NULL, NULL, "mediatek,INFRACFG_AO");
+	node = of_find_compatible_node(NULL, NULL, "mediatek,infracfg_ao");
 	if (!node)
 		spm_err("[CLK_INFRACFG_AO] find node failed\n");
 	spm_infracfg_ao_base = of_iomap(node, 0);
@@ -439,13 +388,13 @@ static void spm_register_init(void)
 		spm_err("[CLK_INFRACFG_AO] base failed\n");
 
 	/* mcucfg */
-	node = of_find_compatible_node(NULL, NULL, "mediatek,MCUCFG");
+	node = of_find_compatible_node(NULL, NULL, "mediatek,mcucfg");
 	if (!node)
 		spm_err("[MCUCFG] find node failed\n");
 	spm_mcucfg = of_iomap(node, 0);
 	if (!spm_mcucfg)
 		spm_err("[MCUCFG] base failed\n");
-
+#if defined(CONFIG_ARCH_MT6755)
 	/* bsi1cfg */
 	node = of_find_compatible_node(NULL, NULL, "mediatek,bpi_bsi_slv1");
 	if (!node)
@@ -453,8 +402,8 @@ static void spm_register_init(void)
 	spm_bsi1cfg = of_iomap(node, 0);
 	if (!spm_bsi1cfg)
 		spm_err("[bsi1] base failed\n");
-
-	node = of_find_compatible_node(NULL, NULL, "mediatek,DDRPHY");
+#endif
+	node = of_find_compatible_node(NULL, NULL, "mediatek,ddrphy");
 	if (!node)
 		spm_err("find DDRPHY node failed\n");
 	spm_ddrphy_base = of_iomap(node, 0);
@@ -495,18 +444,18 @@ static void spm_register_init(void)
 	spm_err("spm_vcorefs_start_irq = %d, spm_vcorefs_end_irq = %d\n", spm_vcorefs_start_irq,
 		spm_vcorefs_end_irq);
 #endif
-	spm_err
-	    ("spm_base = %p, scp_i2c0_base = %p, scp_i2c1_base = %p, scp_i2c2_base = %p, scp_i2c3_base = %p\n",
-	     spm_base, scp_i2c0_base, scp_i2c1_base, scp_i2c2_base, scp_i2c3_base);
-	spm_err("spm_irq_0 = %d, spm_irq_1 = %d, spm_irq_2 = %d, spm_irq_3 = %d\n", spm_irq_0,
+	spm_err("spm_base = %p, spm_irq_0 = %d\n", spm_base, spm_irq_0);
+#if defined(CONFIG_ARCH_MT6755)
+	spm_err("spm_irq_1 = %d, spm_irq_2 = %d, spm_irq_3 = %d\n",
 		spm_irq_1, spm_irq_2, spm_irq_3);
 	spm_err("spm_irq_4 = %d, spm_irq_5 = %d, spm_irq_6 = %d, spm_irq_7 = %d\n", spm_irq_4,
 		spm_irq_5, spm_irq_6, spm_irq_7);
+#endif
 	spm_err("cksys_base = %p, infracfg_ao_base = %p, spm_mcucfg = %p\n", spm_cksys_base,
 		spm_infracfg_ao_base, spm_mcucfg);
 
 	/* GPIO */
-	node = of_find_compatible_node(NULL, NULL, "mediatek,GPIO");
+	node = of_find_compatible_node(NULL, NULL, "mediatek,gpio");
 	if (!node)
 		spm_err("find mediatek,GPIO failed\n");
 	if (of_property_read_u32_array(node, "reg", &gpio_base_addr, 1))
@@ -516,14 +465,13 @@ static void spm_register_init(void)
 	spin_lock_irqsave(&__spm_lock, flags);
 
 	/* md resource request selection */
-#ifndef CONFIG_MTK_FPGA
+
 #ifdef CONFIG_MTK_C2K_SUPPORT
-	spm_write(spm_infracfg_ao_base + 0xf0c,
-		  (spm_read(spm_infracfg_ao_base + 0xf0c) & ~0xff) | 0x6d);
+	spm_write(SPM_INFRA_MISC, (spm_read(SPM_INFRA_MISC) &
+		~(0xff << MD_SRC_REQ_BIT)) | (0x6d << MD_SRC_REQ_BIT));
 #else
-	spm_write(spm_infracfg_ao_base + 0xf0c,
-		  (spm_read(spm_infracfg_ao_base + 0xf0c) & ~0xff) | 0x29);
-#endif
+	spm_write(SPM_INFRA_MISC, (spm_read(SPM_INFRA_MISC) &
+		~(0xff << MD_SRC_REQ_BIT)) | (0x29 << MD_SRC_REQ_BIT));
 #endif
 
 	/* enable register control */
@@ -579,39 +527,32 @@ static void spm_register_init(void)
 int spm_module_init(void)
 {
 	int r = 0;
+#if defined(CONFIG_ARCH_MT6755)
 	u32 reg_val;
-	/* This following setting is moved to LK by WDT init, because of DTS init level issue */
-#ifndef CONFIG_MTK_FPGA
+#endif
 #ifdef CONFIG_MTK_WD_KICKER
 	struct wd_api *wd_api;
 #endif
-#endif
 
 	spm_register_init();
-
 	if (spm_irq_register() != 0)
 		r = -EPERM;
-
-#ifndef CONFIG_MTK_FPGA
 #if defined(CONFIG_PM)
 	if (spm_fs_init() != 0)
 		r = -EPERM;
 #endif
-#endif
-	/* This following setting is moved to LK by WDT init, because of DTS init level issue */
-#ifndef CONFIG_MTK_FPGA
+
+#if 0
 #ifdef CONFIG_MTK_WD_KICKER
 	get_wd_api(&wd_api);
 	if (wd_api->wd_spmwdt_mode_config) {
-		wd_api->wd_spmwdt_mode_config(WD_REQ_EN, WD_REQ_RST_MODE);
+		wd_api->wd_spmwdt_mode_config(WD_REQ_DIS, WD_REQ_RST_MODE);
 	} else {
 		spm_err("FAILED TO GET WD API\n");
 		r = -ENODEV;
 	}
 #endif
 #endif
-
-#ifndef CONFIG_MTK_FPGA
 	spm_sodi3_init();
 	spm_sodi_init();
 	spm_mcdi_init();
@@ -622,8 +563,7 @@ int spm_module_init(void)
 		/* aee_kernel_warning("SPM Warring", "dram golden setting mismach"); */
 	}
 #endif
-
-#endif
+#if defined(CONFIG_ARCH_MT6755)
 	spm_set_dummy_read_addr();
 
 	/* debug code */
@@ -637,7 +577,7 @@ int spm_module_init(void)
 	spm_crit("[PMIC]vcore vosel_on=0x%x\n", reg_val);
 	r = pmic_read_interface_nolock(MT6351_WDTDBG_CON1, &reg_val, 0xffff, 0);
 	spm_crit("[PMIC]wdtdbg_con1-after : 0x%x\n", reg_val);
-
+#endif
 /* set Vcore DVFS bootup opp by ddr shuffle opp */
 #if defined(CONFIG_ARCH_MT6755)
 	if (spm_read(SPM_POWER_ON_VAL0) & (1 << 14)) {
