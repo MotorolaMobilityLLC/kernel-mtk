@@ -438,7 +438,34 @@ static long fm_ops_ioctl(struct file *filp, fm_u32 cmd, unsigned long arg)
 
 			break;
 		}
+	case FM_IOCTL_PMIC_RDWR:
+		{
+			struct fm_pmic_rw_parm parm_ctl;
 
+			WCN_DBG(FM_DBG | MAIN, "FM_IOCTL_PMIC_RDWR\n");
+
+			if (copy_from_user(&parm_ctl, (void *)arg, sizeof(struct fm_pmic_rw_parm))) {
+				ret = -EFAULT;
+				goto out;
+			}
+
+			if (parm_ctl.rw_flag == 0)
+				ret = fm_pmic_write(fm, parm_ctl.addr, parm_ctl.val);
+			else
+				ret = fm_pmic_read(fm, parm_ctl.addr, &parm_ctl.val);
+
+			if (ret < 0)
+				goto out;
+
+			if ((parm_ctl.rw_flag == 0x01) && (!ret)) {
+				if (copy_to_user((void *)arg, &parm_ctl, sizeof(struct fm_pmic_rw_parm))) {
+					ret = -EFAULT;
+					goto out;
+				}
+			}
+
+			break;
+		}
 	case FM_IOCTL_GETCHIPID:{
 			fm_u16 chipid;
 

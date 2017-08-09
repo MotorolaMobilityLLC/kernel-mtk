@@ -179,6 +179,8 @@ struct fm_basic_interface {
 	fm_s32 (*write)(fm_u8 addr, fm_u16 val);
 	fm_s32 (*top_read)(fm_u16 addr, fm_u32 *val);
 	fm_s32 (*top_write)(fm_u16 addr, fm_u32 val);
+	fm_s32 (*pmic_read)(fm_u8 addr, fm_u32 *val);
+	fm_s32 (*pmic_write)(fm_u8 addr, fm_u32 val);
 	fm_s32 (*host_read)(fm_u32 addr, fm_u32 *val);
 	fm_s32 (*host_write)(fm_u32 addr, fm_u32 val);
 	fm_s32 (*setbits)(fm_u8 addr, fm_u16 bits, fm_u16 msk);

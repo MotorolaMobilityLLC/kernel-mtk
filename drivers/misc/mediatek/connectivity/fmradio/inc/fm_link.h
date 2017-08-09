@@ -60,6 +60,10 @@ enum {
 	FM_HOST_WRITE_OPCODE = 0x19,
 	CSPI_WRITE_OPCODE = 0x20,
 	CSPI_READ_OPCODE = 0x21,	/* common SPI read */
+	FM_READ_PMIC_CR_OPCODE = 0x23,
+	FM_WRITE_PMIC_CR_OPCODE = 0x24,
+	FM_MODIFY_PMIC_CR_OPCODE = 0x25,
+	FM_OPCODE_MAX
 };
 
 enum {
@@ -71,14 +75,14 @@ enum {
 	FLAG_I2C_RD = (1 << FI2C_READ_OPCODE),
 	FLAG_I2C_WR = (1 << FI2C_WRITE_OPCODE),
 	FLAG_EN = (1 << FM_ENABLE_OPCODE),
-	FLAG_RST = (1 << FM_RESET_OPCODE),
+	FLAG_PMIC_READ = (1 << 8),
 	FLAG_TUNE = (1 << FM_TUNE_OPCODE),
 	FLAG_SEEK = (1 << FM_SEEK_OPCODE),
 	FLAG_SCAN = (1 << FM_SCAN_OPCODE),
 	FLAG_RDS_RX_EN = (1 << RDS_RX_ENABLE_OPCODE),
 	FLAG_RDS_DATA = (1 << RDS_RX_DATA_OPCODE),
 	FLAG_RAMPDOWN = (1 << FM_RAMPDOWN_OPCODE),
-	FLAG_MCUCLK = (1 << FM_MCUCLK_SEL_OPCODE),
+	FLAG_PMIC_MODIFY = (1 << 15),
 	FLAG_MODEMCLK = (1 << FM_MODEMCLK_SEL_OPCODE),
 	FLAG_RDS_TX = (1 << RDS_TX_OPCODE),
 	FLAG_PATCH = (1 << FM_PATCH_DOWNLOAD_OPCODE),
@@ -106,6 +110,7 @@ struct fm_res_ctx {
 	fm_s8 cqi[FM_CQI_BUF_SIZE];
 	struct rds_rx_t rds_rx_result;
 	fm_u32 cspi_rd;		/* common spi read data */
+	fm_u8 pmic_result[8];
 };
 
 #define FM_TRACE_ENABLE
@@ -201,6 +206,7 @@ struct fm_trace_fifo_t {
 #define COEFF_TIMEOUT           (3)
 #define HWCOEFF_TIMEOUT         (3)
 #define ROM_TIMEOUT             (3)
+#define PMIC_CONTROL_TIMEOUT    (3)
 
 struct fm_link_event {
 	struct fm_flag_event *ln_event;

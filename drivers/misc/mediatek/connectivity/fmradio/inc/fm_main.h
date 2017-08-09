@@ -285,7 +285,12 @@ struct fm_host_rw_parm {
 	fm_u32 addr;
 	fm_u32 val;
 };
-
+struct fm_pmic_rw_parm {
+	fm_u8 err;
+	fm_u8 rw_flag;		/* 0:write, 1:read */
+	fm_u8 addr;
+	fm_u32 val;
+};
 enum {
 	FM_SUBSYS_RST_OFF,
 	FM_SUBSYS_RST_START,
@@ -360,6 +365,8 @@ extern fm_s32 fm_top_read(struct fm *fm, fm_u16 addr, fm_u32 *val);
 extern fm_s32 fm_top_write(struct fm *fm, fm_u16 addr, fm_u32 val);
 extern fm_s32 fm_host_read(struct fm *fm, fm_u32 addr, fm_u32 *val);
 extern fm_s32 fm_host_write(struct fm *fm, fm_u32 addr, fm_u32 val);
+extern fm_s32 fm_pmic_read(struct fm *fm, fm_u8 addr, fm_u32 *val);
+extern fm_s32 fm_pmic_write(struct fm *fm, fm_u8 addr, fm_u32 val);
 extern fm_s32 fm_chipid_get(struct fm *fm, fm_u16 *chipid);
 extern fm_s32 fm_monostereo_get(struct fm *fm, fm_u16 *ms);
 extern fm_s32 fm_monostereo_set(struct fm *fm, fm_s32 ms);

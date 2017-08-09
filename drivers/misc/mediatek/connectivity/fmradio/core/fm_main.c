@@ -1118,6 +1118,40 @@ fm_s32 fm_host_write(struct fm *fm, fm_u32 addr, fm_u32 val)
 	return ret;
 }
 
+fm_s32 fm_pmic_read(struct fm *fm, fm_u8 addr, fm_u32 *val)
+{
+	fm_s32 ret = 0;
+
+	if (fm_low_ops.bi.pmic_read == NULL) {
+		pr_err("%s,invalid pointer\n", __func__);
+		return -FM_EPARA;
+	}
+	if (FM_LOCK(fm_ops_lock))
+		return -FM_ELOCK;
+
+	ret = fm_low_ops.bi.pmic_read(addr, val);
+
+	FM_UNLOCK(fm_ops_lock);
+	return ret;
+}
+
+fm_s32 fm_pmic_write(struct fm *fm, fm_u8 addr, fm_u32 val)
+{
+	fm_s32 ret = 0;
+
+	if (fm_low_ops.bi.pmic_write == NULL) {
+		pr_err("%s,invalid pointer\n", __func__);
+		return -FM_EPARA;
+	}
+	if (FM_LOCK(fm_ops_lock))
+		return -FM_ELOCK;
+
+	ret = fm_low_ops.bi.pmic_write(addr, val);
+
+	FM_UNLOCK(fm_ops_lock);
+	return ret;
+}
+
 fm_s32 fm_chipid_get(struct fm *fm, fm_u16 *chipid)
 {
 	if (chipid == NULL) {
@@ -1864,13 +1898,7 @@ static void fm_tx_rtc_ctrl_worker_func(unsigned long data)
 		rtcInfo.drift = -FM_GPS_RTC_DRIFT_MAX;
 		goto out;
 	}
-	/*
-	   //get current time
-	   do_gettimeofday(&curTime);
-	   if((curTime.tv_sec - rtcInfo.tv.tv_sec) > rtcInfo.tvThd.tv_sec){
-	   FM_LOG_WAR(D_MAIN,"time diff over it's threshlod\n");
-	   goto out;
-	   } */
+
 	curTime = jiffies;
 	if (((long)curTime - (long)rtcInfo.stamp) / HZ > rtcInfo.tvThd.tv_sec) {
 		WCN_DBG(FM_WAR | MAIN, "time diff over it's threshlod\n");
@@ -1971,13 +1999,6 @@ fm_s32 fm_get_gps_rtc_info(struct fm_gps_rtc_info *src)
 
 	FM_UNLOCK(fm_rtc_mutex);
 
-	/*
-	   //send event to info fm_tx_rtc_ctrl_work
-	   if(timer_sys.tx_rtc_ctrl_en == FM_TX_RTC_CTRL_ENABLE){
-	   FM_LOG_DBG(D_TIMER,"fm_tx_rtc_ctrl_work, ticks:%d\n", jiffies_to_msecs(jiffies));
-	   queue_work(fm->fm_timer_workqueue, &fm->fm_tx_rtc_ctrl_work);
-	   }
-	 */
 
 out:
 	return ret;

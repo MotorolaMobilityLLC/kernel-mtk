@@ -378,7 +378,20 @@ fm_s32 fm_event_parser(fm_s32(*rds_parser) (struct rds_rx_t *, fm_s32))
 					FM_EVENT_SEND(link_event->ln_event, (1 << opcode));
 					break;
 				}
+			case FM_WRITE_PMIC_CR_OPCODE:
+			case FM_MODIFY_PMIC_CR_OPCODE:
+				{
+					link_event->result.pmic_result[0] = rx_buf[i];
 
+					FM_EVENT_SEND(link_event->ln_event, FLAG_PMIC_MODIFY);
+					break;
+				}
+			case FM_READ_PMIC_CR_OPCODE:
+				{
+					fm_memcpy(&link_event->result.pmic_result[0], &rx_buf[i], length);
+					FM_EVENT_SEND(link_event->ln_event, FLAG_PMIC_READ);
+					break;
+				}
 			case RDS_RX_DATA_OPCODE:
 
 				/* check if the rds data is long enough */

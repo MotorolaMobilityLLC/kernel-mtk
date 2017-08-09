@@ -491,3 +491,74 @@ fm_s32 fm_host_set_reg(fm_u8 *buf, fm_s32 buf_size, fm_u32 addr, fm_u32 value)
 		buf[0], buf[1], buf[2], buf[3], buf[4], buf[5], buf[6], buf[7], buf[8], buf[9], buf[10], buf[11]);
 	return 12;
 }
+
+fm_s32 fm_pmic_get_reg(fm_u8 *buf, fm_s32 buf_size, fm_u8 addr)
+{
+	if (buf_size < TX_BUF_SIZE)
+		return -1;
+
+	if (buf == NULL)
+		return -2;
+
+	buf[0] = FM_TASK_COMMAND_PKT_TYPE;
+	buf[1] = FM_READ_PMIC_CR_OPCODE;
+	buf[2] = 0x01;
+	buf[3] = 0x00;
+	buf[4] = addr;
+
+	WCN_DBG(FM_DBG | CHIP, "%02x %02x %02x %02x %02x\n", buf[0], buf[1], buf[2],
+		buf[3], buf[4]);
+	return 5;
+}
+
+fm_s32 fm_pmic_set_reg(fm_u8 *buf, fm_s32 buf_size, fm_u8 addr, fm_u32 val)
+{
+	if (buf_size < TX_BUF_SIZE)
+		return -1;
+
+	if (buf == NULL)
+		return -2;
+
+	buf[0] = FM_TASK_COMMAND_PKT_TYPE;
+	buf[1] = FM_WRITE_PMIC_CR_OPCODE;
+	buf[2] = 0x05;
+	buf[3] = 0x00;
+	buf[4] = addr;
+	buf[5] = (fm_u8) ((val) & 0x00FF);
+	buf[6] = (fm_u8) ((val >> 8) & 0x00FF);
+	buf[7] = (fm_u8) ((val >> 16) & 0x00FF);
+	buf[8] = (fm_u8) ((val >> 24) & 0x00FF);
+
+	WCN_DBG(FM_DBG | CHIP, "%02x %02x %02x %02x %02x %02x %02x %02x %02x\n",
+		buf[0], buf[1], buf[2], buf[3], buf[4], buf[5], buf[6], buf[7], buf[8]);
+	return 9;
+}
+
+fm_s32 fm_pmic_mod_reg(fm_u8 *buf, fm_s32 buf_size, fm_u8 addr, fm_u32 mask_and, fm_u32 mask_or)
+{
+	if (buf_size < TX_BUF_SIZE)
+		return -1;
+
+	if (buf == NULL)
+		return -2;
+
+	buf[0] = FM_TASK_COMMAND_PKT_TYPE;
+	buf[1] = FM_MODIFY_PMIC_CR_OPCODE;
+	buf[2] = 0x09;
+	buf[3] = 0x00;
+	buf[4] = addr;
+	buf[5] = (fm_u8) ((mask_and) & 0x00FF);
+	buf[6] = (fm_u8) ((mask_and >> 8) & 0x00FF);
+	buf[7] = (fm_u8) ((mask_and >> 16) & 0x00FF);
+	buf[8] = (fm_u8) ((mask_and >> 24) & 0x00FF);
+	buf[9] = (fm_u8) ((mask_or) & 0x00FF);
+	buf[10] = (fm_u8) ((mask_or >> 8) & 0x00FF);
+	buf[11] = (fm_u8) ((mask_or >> 16) & 0x00FF);
+	buf[12] = (fm_u8) ((mask_or >> 24) & 0x00FF);
+
+	WCN_DBG(FM_DBG | CHIP, "%02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x\n", buf[0],
+		buf[1], buf[2], buf[3], buf[4], buf[5], buf[6], buf[7], buf[8], buf[9], buf[10], buf[11], buf[12]);
+
+	return 13;
+}
+
