@@ -155,7 +155,11 @@ unsigned int ppm_hica_get_table_idx_by_perf(enum ppm_power_state state, unsigned
 {
 	int i;
 	struct ppm_power_state_data *state_info;
+#ifdef PPM_POWER_TABLE_CALIBRATION
+	struct ppm_state_sorted_pwr_tbl_data *tbl;
+#else
 	const struct ppm_state_sorted_pwr_tbl_data *tbl;
+#endif
 	struct ppm_power_tbl_data power_table = ppm_get_power_table();
 
 	if (state > NR_PPM_POWER_STATE || (perf_idx == -1)) {
@@ -191,7 +195,11 @@ unsigned int ppm_hica_get_table_idx_by_pwr(enum ppm_power_state state, unsigned 
 {
 	int i;
 	struct ppm_power_state_data *state_info;
+#ifdef PPM_POWER_TABLE_CALIBRATION
+	struct ppm_state_sorted_pwr_tbl_data *tbl;
+#else
 	const struct ppm_state_sorted_pwr_tbl_data *tbl;
+#endif
 	struct ppm_power_tbl_data power_table = ppm_get_power_table();
 
 	if (state > NR_PPM_POWER_STATE || (pwr_idx == ~0)) {

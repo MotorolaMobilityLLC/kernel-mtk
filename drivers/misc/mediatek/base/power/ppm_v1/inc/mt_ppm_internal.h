@@ -278,7 +278,11 @@ struct ppm_state_sorted_pwr_tbl_data {
 		unsigned int value;
 		/* to store better perf_idx but lower pwr_idx one in pwr_sorted_tbl */
 		unsigned int advise_index;
+#ifdef PPM_POWER_TABLE_CALIBRATION
+	} *sorted_tbl;
+#else
 	} const *sorted_tbl;
+#endif
 	const size_t size;
 };
 
@@ -308,8 +312,13 @@ struct ppm_power_state_data {
 	const struct ppm_state_cluster_limit_data *cluster_limit;
 
 	/* power table */
+#ifdef PPM_POWER_TABLE_CALIBRATION
+	struct ppm_state_sorted_pwr_tbl_data *pwr_sorted_tbl;
+	struct ppm_state_sorted_pwr_tbl_data *perf_sorted_tbl;
+#else
 	const struct ppm_state_sorted_pwr_tbl_data *pwr_sorted_tbl;
 	const struct ppm_state_sorted_pwr_tbl_data *perf_sorted_tbl;
+#endif
 
 	/* state transfer data */
 	struct ppm_state_transfer_data *transfer_by_pwr;
@@ -348,7 +357,11 @@ extern bool ppm_lcmoff_is_policy_activated(void);
 
 /* Power state/Power table */
 extern struct ppm_power_state_data *ppm_get_power_state_info(void);
+#ifdef PPM_POWER_TABLE_CALIBRATION
+extern struct ppm_power_tbl_data ppm_get_power_table(void);
+#else
 extern const struct ppm_power_tbl_data ppm_get_power_table(void);
+#endif
 extern const char *ppm_get_power_state_name(enum ppm_power_state state);
 extern enum ppm_power_state ppm_change_state_with_fix_root_cluster(
 			enum ppm_power_state cur_state, int cluster);

@@ -30,6 +30,13 @@ extern unsigned int hps_get_hvytsk(unsigned int cluster_id);
 #endif
 
 #define DISABLE_CLUSTER_MIGRATION	(1)
+/* #define PPM_POWER_TABLE_CALIBRATION	(1) */
+#ifdef PPM_POWER_TABLE_CALIBRATION
+#include "mt_static_power.h"
+/* TBD */
+#define BIG_LKG_EFUSE_MIN		(100)
+#define BIG_LKG_EFUSE_MAX		(500)
+#endif
 
 /* DLPT mode */
 #define PPM_DLPT_DEFAULT_MODE	(HYBRID_MODE)
@@ -90,6 +97,19 @@ enum ppm_cluster {
 /*==============================================================*/
 /* Data Structures						*/
 /*==============================================================*/
+#ifdef PPM_POWER_TABLE_CALIBRATION
+struct ppm_power_tbl {
+	unsigned int index;
+	struct {
+		int opp_lv;
+		unsigned int core_num;
+	} cluster_cfg[NR_PPM_CLUSTERS];
+	unsigned int perf_idx;
+	unsigned int power_idx_min;
+	unsigned int power_idx_max;
+	unsigned int power_idx;
+};
+#else
 struct ppm_power_tbl {
 	const unsigned int index;
 	struct {
@@ -99,9 +119,14 @@ struct ppm_power_tbl {
 	const unsigned int perf_idx;
 	const unsigned int power_idx;
 };
+#endif
 
 struct ppm_power_tbl_data {
+#ifdef PPM_POWER_TABLE_CALIBRATION
+	struct ppm_power_tbl *power_tbl;
+#else
 	const struct ppm_power_tbl *power_tbl;
+#endif
 	const unsigned int nr_power_tbl;
 };
 
@@ -127,6 +152,9 @@ extern unsigned int ppm_set_ocp(unsigned int limited_power, unsigned int percent
 #if PPM_DLPT_ENHANCEMENT
 extern unsigned int ppm_calc_total_power(struct ppm_cluster_status *cluster_status,
 					unsigned int cluster_num, unsigned int percentage);
+#endif
+#ifdef PPM_POWER_TABLE_CALIBRATION
+extern void ppm_gen_sorted_table(void);
 #endif
 
 #ifdef __cplusplus

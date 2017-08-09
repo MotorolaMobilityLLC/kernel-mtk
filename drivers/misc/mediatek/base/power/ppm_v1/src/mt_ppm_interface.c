@@ -146,6 +146,12 @@ static int ppm_dump_power_table_proc_show(struct seq_file *m, void *v)
 {
 	unsigned int i, j;
 	struct ppm_power_tbl_data power_table = ppm_get_power_table();
+	struct ppm_power_state_data *state_info = ppm_get_power_state_info();
+#ifdef PPM_POWER_TABLE_CALIBRATION
+	struct ppm_state_sorted_pwr_tbl_data *perf_tbl, *pwr_tbl;
+#else
+	const struct ppm_state_sorted_pwr_tbl_data *perf_tbl, *pwr_tbl;
+#endif
 
 	for_each_pwr_tbl_entry(i, power_table) {
 		seq_printf(m, "[%d]\t= ", power_table.power_tbl[i].index);
@@ -161,6 +167,38 @@ static int ppm_dump_power_table_proc_show(struct seq_file *m, void *v)
 			power_table.power_tbl[i].perf_idx,
 			power_table.power_tbl[i].power_idx
 		);
+	}
+
+	/* dump sorted tables */
+	if (ppm_debug > 0) {
+		for_each_ppm_power_state(i) {
+			perf_tbl = state_info[i].perf_sorted_tbl;
+			pwr_tbl = state_info[i].pwr_sorted_tbl;
+
+			seq_puts(m, "\n==========================================\n");
+			seq_printf(m, "perf sorted table for %s", state_info[i].name);
+			seq_puts(m, "\n==========================================\n");
+			for (j = 0; j < perf_tbl->size; j++) {
+				seq_printf(m, "[%d,\t%d,\t%d]\n",
+					perf_tbl->sorted_tbl[j].index,
+					perf_tbl->sorted_tbl[j].value,
+					perf_tbl->sorted_tbl[j].advise_index
+					);
+			}
+			seq_puts(m, "\n==========================================\n");
+			seq_printf(m, "pwr sorted table for %s", state_info[i].name);
+			seq_puts(m, "\n==========================================\n");
+			for (j = 0; j < pwr_tbl->size; j++) {
+				seq_printf(m, "[%d,\t%d,\t%d]\n",
+					pwr_tbl->sorted_tbl[j].index,
+					pwr_tbl->sorted_tbl[j].value,
+					pwr_tbl->sorted_tbl[j].advise_index
+					);
+			}
+		}
+#ifdef PPM_POWER_TABLE_CALIBRATION
+		seq_printf(m, "\nbig efuse = %d\n", mt_spower_get_efuse_lkg(MT_SPOWER_CPUBIG));
+#endif
 	}
 
 	return 0;

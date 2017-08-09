@@ -69,6 +69,93 @@ struct ppm_data ppm_main_info = {
 	.ppm_event = ATOMIC_INIT(0),
 };
 
+#ifdef PPM_POWER_TABLE_CALIBRATION
+static void ppm_main_pwr_tbl_cpy(struct ppm_power_tbl *dest, struct ppm_power_tbl *src)
+{
+	int i;
+
+	dest->index = src->index;
+	dest->perf_idx = src->perf_idx;
+	dest->power_idx = src->power_idx;
+	dest->power_idx_max = src->power_idx_max;
+	dest->power_idx_min = src->power_idx_min;
+
+	for_each_ppm_clusters(i) {
+		dest->cluster_cfg[i].opp_lv = src->cluster_cfg[i].opp_lv;
+		dest->cluster_cfg[i].core_num = src->cluster_cfg[i].core_num;
+	}
+}
+
+static int __init ppm_main_pwr_tbl_calibration(void)
+{
+	struct ppm_power_tbl_data power_table = ppm_get_power_table();
+	int big_lkg_efuse = mt_spower_get_efuse_lkg(MT_SPOWER_CPUBIG);
+	unsigned int lkg_ratio, diff = BIG_LKG_EFUSE_MAX - BIG_LKG_EFUSE_MIN;
+	unsigned int i, j, p_max, p_min;
+	char buf[64];
+	char *ptr;
+
+	lkg_ratio = (big_lkg_efuse >= BIG_LKG_EFUSE_MAX) ? 100
+		: (big_lkg_efuse <= BIG_LKG_EFUSE_MIN) ? 0
+		: ((big_lkg_efuse - BIG_LKG_EFUSE_MIN) * 100 + (diff - 1)) / diff;
+
+	ppm_info("big_lkg_efuse = %d, lkg_ratio = %d\n", big_lkg_efuse, lkg_ratio);
+
+	/* calibrate power_idx */
+	for_each_pwr_tbl_entry(i, power_table) {
+		p_max = power_table.power_tbl[i].power_idx_max;
+		p_min = power_table.power_tbl[i].power_idx_min;
+		power_table.power_tbl[i].power_idx = p_min + ((p_max - p_min) * lkg_ratio + (100 - 1)) / 100;
+	}
+
+	/* sort power table by power budget */
+	for (i = power_table.nr_power_tbl; i > 0; i--) {
+		for (j = 1; j < i; j++) {
+			struct ppm_power_tbl *prev = &(power_table.power_tbl[j - 1]);
+			struct ppm_power_tbl *cur = &(power_table.power_tbl[j]);
+
+			if (prev->power_idx < cur->power_idx) {
+				struct ppm_power_tbl tmp;
+
+				ppm_main_pwr_tbl_cpy(&tmp, prev);
+				ppm_main_pwr_tbl_cpy(prev, cur);
+				ppm_main_pwr_tbl_cpy(cur, &tmp);
+			}
+		}
+	}
+
+	/* dump power table */
+	ppm_info("PPM power table:\n");
+	for_each_pwr_tbl_entry(i, power_table) {
+		ptr = buf;
+		memset(buf, 0, sizeof(buf));
+
+		ptr += sprintf(ptr, "[%d] = ", power_table.power_tbl[i].index);
+
+		for_each_ppm_clusters(j) {
+			ptr += sprintf(ptr, "(%d, %d), ",
+				power_table.power_tbl[i].cluster_cfg[j].opp_lv,
+				power_table.power_tbl[i].cluster_cfg[j].core_num
+			);
+		}
+
+		ptr += sprintf(ptr, "%d, %d",
+			power_table.power_tbl[i].perf_idx,
+			power_table.power_tbl[i].power_idx
+		);
+
+		ppm_info("%s\n", buf);
+	}
+	ppm_info("\n");
+
+	/* generate pwr/perf sorted table for each state */
+	ppm_gen_sorted_table();
+
+	/* TBD: calibrate pwr_idx ref tbl HERE! */
+
+	return 0;
+}
+#endif
 
 void ppm_main_update_req_by_pwr(enum ppm_power_state new_state, struct ppm_policy_req *req)
 {
@@ -947,6 +1034,9 @@ static void __exit ppm_main_exit(void)
 }
 
 arch_initcall(ppm_main_init);
+#ifdef PPM_POWER_TABLE_CALIBRATION
+late_initcall(ppm_main_pwr_tbl_calibration);
+#endif
 module_exit(ppm_main_exit);
 
 MODULE_DESCRIPTION("MediaTek PPM Driver v0.1");
