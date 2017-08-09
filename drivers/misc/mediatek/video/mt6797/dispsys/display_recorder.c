@@ -1145,13 +1145,6 @@ int dprec_mmp_dump_rdma_layer(void *rdma_layer, unsigned int rdma_num)
 	return -1;
 }
 
-
-#define LOGGER_BUFFER_SIZE (16 * 1024)
-#define ERROR_BUFFER_COUNT 2
-#define FENCE_BUFFER_COUNT 22
-#define DEBUG_BUFFER_COUNT 4
-#define DUMP_BUFFER_COUNT 2
-
 struct logger_buffer {
 	char **buffer_ptr;
 	unsigned int len;
@@ -1181,7 +1174,7 @@ void init_log_buffer(void)
 	/*
 	1. Allocate debug buffer. This buffer used to store the output data.
 	*/
-	debug_buffer = kzalloc(sizeof(char *) * (4096 + 30 * 16 * 1024), GFP_KERNEL);
+	debug_buffer = kzalloc(sizeof(char) * DEBUG_BUFFER_SIZE, GFP_KERNEL);
 	if (!debug_buffer)
 		goto err;
 
