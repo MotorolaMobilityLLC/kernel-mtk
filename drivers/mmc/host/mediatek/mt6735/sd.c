@@ -1015,6 +1015,7 @@ static int msdc_clk_stable(struct msdc_host *host, u32 mode, u32 div,
 #endif
 #endif
 			msdc_dump_info(host->id);
+		}
 			retry = 3;
 			sdr_set_field(MSDC_CFG, MSDC_CFG_CKDIV, div);
 			msdc_retry(!(sdr_read32(MSDC_CFG) & MSDC_CFG_CKSTB),
@@ -1026,7 +1027,6 @@ static int msdc_clk_stable(struct msdc_host *host, u32 mode, u32 div,
 				break;
 			retry_cnt += 1;
 
-		}
 	} while (!retry);
 
 	return 0;
