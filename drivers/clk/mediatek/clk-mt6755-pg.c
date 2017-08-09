@@ -338,6 +338,62 @@ int spm_topaxi_protect(unsigned int mask_value, int en)
 	return 0;
 }
 
+void reset_infra_md(void)
+{
+	unsigned long flags;
+	int count = 0;
+	u32 infra_topaxi_protecten = 0;
+	u32 infra_topaxi_protecten_1 = 0;
+
+	spm_mtcmos_noncpu_lock(flags);
+	spm_write(POWERON_CONFIG_EN, (SPM_PROJECT_CODE << 16) | (0x1 << 0));
+/* step.1 */
+	infra_topaxi_protecten = spm_read(INFRA_TOPAXI_PROTECTEN);
+	infra_topaxi_protecten_1 = spm_read(INFRA_TOPAXI_PROTECTEN_1);
+/* step.2 */
+	spm_write(INFRA_TOPAXI_PROTECTEN_1,
+			  spm_read(INFRA_TOPAXI_PROTECTEN_1) | MD1_PROT_MASK);
+	spm_write(INFRA_TOPAXI_PROTECTEN_1,
+			  spm_read(INFRA_TOPAXI_PROTECTEN_1) | C2K_PROT_MASK);
+/* step.3 */
+		while ((spm_read(INFRA_TOPAXI_PROTECTSTA1_1) & MD1_PROT_CHECK_MASK) !=
+		       MD1_PROT_CHECK_MASK) {
+				count++;
+				if (count > 2000) {
+					pr_err("Check MDSYS bus protect ready TIMEOUT!\r\n");
+					break;
+				}
+		}
+		count = 0;
+		while ((spm_read(INFRA_TOPAXI_PROTECTSTA1_1) & C2K_PROT_MASK) != C2K_PROT_MASK) {
+			count++;
+				if (count > 2000) {
+					pr_err("Check C2K bus protect ready TIMEOUT!\r\n");
+					break;
+				}
+		}
+/* step.4 */
+	spm_write(INFRA_TOPAXI_PROTECTEN,
+			  spm_read(INFRA_TOPAXI_PROTECTEN) | MDSYS_INTF_INFRA_PROT_MASK);
+/* step.5 */
+		count = 0;
+		while ((spm_read(INFRA_TOPAXI_PROTECTSTA1) & MDSYS_INTF_INFRA_PROT_MASK) !=
+		       MDSYS_INTF_INFRA_PROT_MASK) {
+				count++;
+				if (count > 2000) {
+					pr_err("Check INFRA_MD bus protect ready TIMEOUT!\r\n");
+					break;
+			}
+		}
+/* step.6 */
+	spm_write(MDSYS_INTF_INFRA_PWR_CON, spm_read(MDSYS_INTF_INFRA_PWR_CON) & ~PWR_RST_B);
+	spm_write(MDSYS_INTF_INFRA_PWR_CON, spm_read(MDSYS_INTF_INFRA_PWR_CON) | PWR_RST_B);
+/* step.7 */
+	spm_write(INFRA_TOPAXI_PROTECTEN, infra_topaxi_protecten);
+	spm_write(INFRA_TOPAXI_PROTECTEN_1, infra_topaxi_protecten_1);
+	spm_mtcmos_noncpu_unlock(flags);
+}
+
 static struct subsys *id_to_sys(unsigned int id)
 {
 	return id < NR_SYSS ? &syss[id] : NULL;
