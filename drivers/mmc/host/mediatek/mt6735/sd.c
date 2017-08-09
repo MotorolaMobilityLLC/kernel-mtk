@@ -721,7 +721,7 @@ static void dump_audio_info(void)
 */
 static void dump_axi_bus_info(void)
 {
-	return; /*weiping fix */
+#if 0
 	if (infracfg_ao_reg_base && infracfg_reg_base && pericfg_reg_base) {
 		pr_err("=============== AXI BUS INFO =============");
 		pr_err("reg[0x10001224]=0x%x", sdr_read32(infracfg_ao_reg_base + 0x224));
@@ -733,6 +733,8 @@ static void dump_axi_bus_info(void)
 	} else
 		pr_err("infracfg_ao_reg=%p,infracfg_reg_base=%p,pericfg_reg_base=%p\n",
 			infracfg_ao_reg_base, infracfg_reg_base, pericfg_reg_base);
+#endif
+	return;
 }
 
 static void dump_emi_info(void)
@@ -740,7 +742,7 @@ static void dump_emi_info(void)
 	unsigned int i = 0;
 	unsigned int addr = 0;
 
-	return;	/*weiping fix */
+#if 0
 	if (emi_reg_base) {
 		pr_err("=============== EMI INFO =============");
 		pr_err("before, reg[0x102034e8]=0x%x",
@@ -762,6 +764,9 @@ static void dump_emi_info(void)
 		}
 	} else
 		pr_err("emi_reg_base = %p\n", emi_reg_base);
+#endif
+
+	return;
 }
 
 void msdc_dump_info(u32 id)
@@ -1010,17 +1015,18 @@ static int msdc_clk_stable(struct msdc_host *host, u32 mode, u32 div,
 #endif
 #endif
 			msdc_dump_info(host->id);
+			retry = 3;
+			sdr_set_field(MSDC_CFG, MSDC_CFG_CKDIV, div);
+			msdc_retry(!(sdr_read32(MSDC_CFG) & MSDC_CFG_CKSTB),
+				retry, cnt, host->id);
+			if (retry == 0)
+				msdc_dump_info(host->id);
+			msdc_reset_hw(host->id);
+			if (retry_cnt == 2)
+				break;
+			retry_cnt += 1;
+
 		}
-		retry = 3;
-		sdr_set_field(MSDC_CFG, MSDC_CFG_CKDIV, div);
-		msdc_retry(!(sdr_read32(MSDC_CFG) & MSDC_CFG_CKSTB),
-			retry, cnt, host->id);
-		if (retry == 0)
-			msdc_dump_info(host->id);
-		msdc_reset_hw(host->id);
-		if (retry_cnt == 2)
-			break;
-		retry_cnt += 1;
 	} while (!retry);
 
 	return 0;
@@ -1946,7 +1952,7 @@ static void msdc_set_bad_card_and_remove(struct msdc_host *host)
 	unsigned long flags;
 
 	if (host == NULL) {
-		ERR_MSG("WARN: host is NULL");
+		pr_err("WARN: host is NULL\n");
 		return;
 	}
 	host->card_inserted = 0;
@@ -2588,7 +2594,7 @@ int msdc_reinit(struct msdc_host *host)
 	unsigned long tmo = 12;
 
 	if (!host) {
-		ERR_MSG("msdc_host is NULL");
+		pr_err("msdc_host is NULL\n");
 		return -1;
 	}
 	if (host->hw->host_function != MSDC_SD)
@@ -2797,7 +2803,7 @@ static u32 msdc_status_verify_case4(struct msdc_host *host,
 	u32 state = 0;
 	u32 err = 0;		/*0: can tune normaly; 1: tune pass; */
 
-	if (cmd->arg && (0x1UL << 15))
+	if (cmd->arg & (0x1UL << 15))
 		return MSDC_VERIFY_NEED_NOT_TUNE;
 
 	while (1) {
