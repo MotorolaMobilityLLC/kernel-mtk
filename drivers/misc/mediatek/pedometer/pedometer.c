@@ -1,5 +1,5 @@
 
-#include "pedometer_v1.h"
+#include "pedometer.h"
 
 struct pedo_context *pedo_context_obj = NULL;
 
@@ -292,7 +292,7 @@ static ssize_t pedo_store_delay(struct device *dev, struct device_attribute *att
 	}
 
 	ret = kstrtoint(buf, 10, &delay);
-	if (1 != ret) {
+	if (0 != ret) {
 		PEDO_ERR("invalid format!!\n");
 		mutex_unlock(&pedo_context_obj->pedo_op_mutex);
 		return count;
@@ -456,7 +456,7 @@ static int pedo_misc_init(struct pedo_context *cxt)
 	int err = 0;
 
 	cxt->mdev.minor = MISC_DYNAMIC_MINOR;
-	cxt->mdev.name = PDR_MISC_DEV_NAME;
+	cxt->mdev.name = PEDO_MISC_DEV_NAME;
 	err = misc_register(&cxt->mdev);
 	if (err)
 		PEDO_ERR("unable to register pedo misc device!!\n");
@@ -480,18 +480,18 @@ static int pedo_input_init(struct pedo_context *cxt)
 	if (NULL == dev)
 		return -ENOMEM;
 
-	dev->name = PDR_INPUTDEV_NAME;
+	dev->name = PEDO_INPUTDEV_NAME;
 
-	input_set_capability(dev, EV_ABS, EVENT_TYPE_PEDO_LENGTH);
-	input_set_capability(dev, EV_ABS, EVENT_TYPE_PEDO_FREQUENCY);
-	input_set_capability(dev, EV_ABS, EVENT_TYPE_PEDO_COUNT);
-	input_set_capability(dev, EV_ABS, EVENT_TYPE_PEDO_DISTANCE);
+	input_set_capability(dev, EV_REL, EVENT_TYPE_PEDO_LENGTH);
+	input_set_capability(dev, EV_REL, EVENT_TYPE_PEDO_FREQUENCY);
+	input_set_capability(dev, EV_REL, EVENT_TYPE_PEDO_COUNT);
+	input_set_capability(dev, EV_REL, EVENT_TYPE_PEDO_DISTANCE);
 	input_set_capability(dev, EV_ABS, EVENT_TYPE_PEDO_STATUS);
 
-	input_set_abs_params(dev, EVENT_TYPE_PEDO_LENGTH, PEDO_VALUE_MIN, PEDO_VALUE_MAX, 0, 0);
+	/* input_set_abs_params(dev, EVENT_TYPE_PEDO_LENGTH, PEDO_VALUE_MIN, PEDO_VALUE_MAX, 0, 0);
 	input_set_abs_params(dev, EVENT_TYPE_PEDO_FREQUENCY, PEDO_VALUE_MIN, PEDO_VALUE_MAX, 0, 0);
 	input_set_abs_params(dev, EVENT_TYPE_PEDO_COUNT, PEDO_VALUE_MIN, PEDO_VALUE_MAX, 0, 0);
-	input_set_abs_params(dev, EVENT_TYPE_PEDO_DISTANCE, PEDO_VALUE_MIN, PEDO_VALUE_MAX, 0, 0);
+	input_set_abs_params(dev, EVENT_TYPE_PEDO_DISTANCE, PEDO_VALUE_MIN, PEDO_VALUE_MAX, 0, 0); */
 	input_set_abs_params(dev, EVENT_TYPE_PEDO_STATUS, PEDO_STATUS_MIN, PEDO_STATUS_MAX, 0, 0);
 	input_set_drvdata(dev, cxt);
 
@@ -505,12 +505,12 @@ static int pedo_input_init(struct pedo_context *cxt)
 	return 0;
 }
 
-DEVICE_ATTR(pedoenablenodata, S_IWUSR | S_IRUGO, pedo_show_enable_nodata, pedo_store_enable_nodata);
-DEVICE_ATTR(pedoactive, S_IWUSR | S_IRUGO, pedo_show_active, pedo_store_active);
-DEVICE_ATTR(pedodelay, S_IWUSR | S_IRUGO, pedo_show_delay, pedo_store_delay);
-DEVICE_ATTR(pedobatch, S_IWUSR | S_IRUGO, pedo_show_batch, pedo_store_batch);
-DEVICE_ATTR(pedoflush, S_IWUSR | S_IRUGO, pedo_show_flush, pedo_store_flush);
-DEVICE_ATTR(pedodevnum, S_IWUSR | S_IRUGO, pedo_show_devnum, NULL);
+DEVICE_ATTR(pedoenablenodata,     S_IWUSR | S_IRUGO, pedo_show_enable_nodata, pedo_store_enable_nodata);
+DEVICE_ATTR(pedoactive,     S_IWUSR | S_IRUGO, pedo_show_active, pedo_store_active);
+DEVICE_ATTR(pedodelay,      S_IWUSR | S_IRUGO, pedo_show_delay,  pedo_store_delay);
+DEVICE_ATTR(pedobatch,     S_IWUSR | S_IRUGO, pedo_show_batch, pedo_store_batch);
+DEVICE_ATTR(pedoflush,      S_IWUSR | S_IRUGO, pedo_show_flush,  pedo_store_flush);
+DEVICE_ATTR(pedodevnum,      S_IWUSR | S_IRUGO, pedo_show_devnum,  NULL);
 
 static struct attribute *pedo_attributes[] = {
 	&dev_attr_pedoenablenodata.attr,
@@ -582,9 +582,9 @@ int pedo_data_report(struct hwm_sensor_data *data, int status)
 	PEDO_LOG("pedo_data_report! %d, %d, %d, %d\n", data->values[0],
 		 data->values[1], data->values[2], data->values[3]);
 	cxt = pedo_context_obj;
-	input_report_rel(cxt->idev, EVENT_TYPE_PEDO_LENGTH, data->values[0]);
-	input_report_rel(cxt->idev, EVENT_TYPE_PEDO_FREQUENCY, data->values[1]);
-	input_report_rel(cxt->idev, EVENT_TYPE_PEDO_COUNT, data->values[2]);
+	input_report_rel(cxt->idev, EVENT_TYPE_PEDO_COUNT, data->values[0]);
+	input_report_rel(cxt->idev, EVENT_TYPE_PEDO_LENGTH, data->values[1]);
+	input_report_rel(cxt->idev, EVENT_TYPE_PEDO_FREQUENCY, data->values[2]);
 	input_report_rel(cxt->idev, EVENT_TYPE_PEDO_DISTANCE, data->values[3]);
 	input_report_abs(cxt->idev, EVENT_TYPE_PEDO_STATUS, status);
 	input_sync(cxt->idev);

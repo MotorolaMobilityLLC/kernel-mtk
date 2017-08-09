@@ -176,6 +176,7 @@ static int gyrohub_ReadGyroData(char *buf, int bufsize)
 	uint64_t time_stamp_gpt = 0;
 	int gyro[GYROHUB_AXES_NUM];
 	int err = 0;
+	int status = 0;
 
 	if (!atomic_read(&obj->scp_init_done)) {
 		GYROS_ERR("sensor hub has not been ready!!\n");
@@ -198,12 +199,12 @@ static int gyrohub_ReadGyroData(char *buf, int bufsize)
 	gyro[GYROHUB_AXIS_X]	= data.gyroscope_t.x;
 	gyro[GYROHUB_AXIS_Y]	= data.gyroscope_t.y;
 	gyro[GYROHUB_AXIS_Z]	= data.gyroscope_t.z;
-
+	status					= data.gyroscope_t.status;
 	GYROS_LOG("recv ipi: timestamp: %lld, timestamp_gpt: %lld, x: %d, y: %d, z: %d!\n", time_stamp, time_stamp_gpt,
 		gyro[GYROHUB_AXIS_X], gyro[GYROHUB_AXIS_Y], gyro[GYROHUB_AXIS_Z]);
 
 
-	sprintf(buf, "%04x %04x %04x", gyro[GYROHUB_AXIS_X], gyro[GYROHUB_AXIS_Y], gyro[GYROHUB_AXIS_Z]);
+	sprintf(buf, "%04x %04x %04x %04x", gyro[GYROHUB_AXIS_X], gyro[GYROHUB_AXIS_Y], gyro[GYROHUB_AXIS_Z], status);
 
 	if (atomic_read(&obj->trace) & GYRO_TRC_DATA)
 		GYROS_LOG("gsensor data: %s!\n", buf);
@@ -782,9 +783,7 @@ static int gyrohub_get_data(int *x, int *y, int *z, int *status)
 		GYROS_ERR("gyrohub_ReadGyroData fail!!\n");
 		return -1;
 	}
-	if (3 == sscanf(buff, "%x %x %x", x, y, z))
-		*status = SENSOR_STATUS_ACCURACY_MEDIUM;
-
+	sscanf(buff, "%x %x %x %x", x, y, z, status);
 	return 0;
 }
 static int scp_ready_event(struct notifier_block *this, unsigned long event, void *ptr)

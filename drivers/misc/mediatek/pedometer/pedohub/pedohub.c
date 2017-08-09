@@ -13,7 +13,7 @@
 
 #include <hwmsensor.h>
 #include "pedohub.h"
-#include <pedometer_v1.h>
+#include <pedometer.h>
 #include <SCP_sensorHub.h>
 #include <linux/notifier.h>
 #include "scp_helper.h"

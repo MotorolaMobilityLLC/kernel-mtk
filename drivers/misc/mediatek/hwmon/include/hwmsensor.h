@@ -38,22 +38,26 @@
 #define SENSOR_TYPE_WAKE_GESTURE        23
 #define SENSOR_TYPE_GLANCE_GESTURE      24
 #define SENSOR_TYPE_PICK_UP_GESTURE     25
+#define SENSOR_TYPE_WRIST_TILT_GESTURE  26
 
-#define SENSOR_TYPE_PEDOMETER           (26)
+#define SENSOR_TYPE_PEDOMETER           (35)
 #define SENSOR_STRING_TYPE_PEDOMETER                 "android.sensor.pedometer"
-#define SENSOR_TYPE_IN_POCKET           (27)
+#define SENSOR_TYPE_IN_POCKET           (36)
 #define SENSOR_STRING_TYPE_IN_POCKET                 "android.sensor.in_pocket"
-#define SENSOR_TYPE_ACTIVITY            (28)
+#define SENSOR_TYPE_ACTIVITY            (37)
 #define SENSOR_STRING_TYPE_ACTIVITY                  "android.sensor.activity"
-#define SENSOR_TYPE_PDR					29 /*Add kernel driver*/
-#define SENSOR_TYPE_FREEFALL				30
-#define SENSOR_TYPE_ACCELEROMETER_UNCALIBRATED		31 /*Add kernel driver*/
+#define SENSOR_TYPE_PDR					38 /*Add kernel driver*/
+#define SENSOR_STRING_TYPE_PDR                  "android.sensor.pdr"
+#define SENSOR_TYPE_FREEFALL				39
+#define SENSOR_STRING_TYPE_FREEFALL                "android.sensor.freefall"
+#define SENSOR_TYPE_ACCELEROMETER_UNCALIBRATED		40 /*Add kernel driver*/
+#define SENSOR_STRING_TYPE_ACCELEROMETER_UNCALIBRATED    "android.sensor.accelerometer_uncalibrated"
 
-#define SENSOR_TYPE_FACE_DOWN           (37)
+#define SENSOR_TYPE_FACE_DOWN           (41)
 #define SENSOR_STRING_TYPE_FACE_DOWN                 "android.sensor.face_down"
-#define SENSOR_TYPE_SHAKE               (38)
+#define SENSOR_TYPE_SHAKE               (42)
 #define SENSOR_STRING_TYPE_SHAKE                     "android.sensor.shake"
-#define SENSOR_TYPE_BRINGTOSEE          (39)
+#define SENSOR_TYPE_BRINGTOSEE          (43)
 #define SENSOR_STRING_TYPE_BRINGTOSEE               "android.sensor.bring_to_see"
 
 /*---------------------------------------------------------------------------*/
@@ -84,7 +88,9 @@
 #define ID_WAKE_GESTURE					(ID_BASE+SENSOR_TYPE_WAKE_GESTURE-1)
 #define ID_GLANCE_GESTURE				(ID_BASE+SENSOR_TYPE_GLANCE_GESTURE-1)
 #define ID_PICK_UP_GESTURE				(ID_BASE+SENSOR_TYPE_PICK_UP_GESTURE-1)
-#define ID_PEDOMETER                    (ID_BASE+SENSOR_TYPE_PEDOMETER-1)
+#define ID_WRIST_TITL_GESTURE      (ID_BASE+SENSOR_TYPE_WRIST_TILT_GESTURE-1)
+
+#define ID_PEDOMETER                                    (ID_BASE+SENSOR_TYPE_PEDOMETER-1)
 #define ID_IN_POCKET                    (ID_BASE+SENSOR_TYPE_IN_POCKET-1)
 #define ID_ACTIVITY                     (ID_BASE+SENSOR_TYPE_ACTIVITY-1)
 #define ID_PDR							(ID_BASE+SENSOR_TYPE_PDR-1)
@@ -132,6 +138,7 @@
 #define SENSOR_WAKE_GESTURE         (1 << ID_WAKE_GESTURE)
 #define SENSOR_GLANCE_GESTURE       (1 << ID_GLANCE_GESTURE)
 #define SENSOR_PICK_UP_GESTURE      (1 << ID_PICK_UP_GESTURE)
+#define SENSOR_WRIST_TITL_GESTURE   (1 << ID_WRIST_TITL_GESTURE)
 
 #define SENSOR_PEDOMETER                    (1 << ID_PEDOMETER)
 #define SENSOR_IN_POCKET                    (1 << ID_IN_POCKET)
@@ -255,9 +262,9 @@
 #define FREEFALL_INPUTDEV_NAME               "m_frfl_input"
 #define FREEFALL_MISC_DEV_NAME               "m_frfl_misc"
 
-#define PDR_PL_DEV_NAME                 "m_pdr_pl"
-#define PDR_INPUTDEV_NAME               "m_pdr_input"
-#define PDR_MISC_DEV_NAME               "m_pdr_misc"
+#define PEDO_PL_DEV_NAME                 "m_pedo_pl"
+#define PEDO_INPUTDEV_NAME               "m_pedo_input"
+#define PEDO_MISC_DEV_NAME               "m_pedo_misc"
 
 
 

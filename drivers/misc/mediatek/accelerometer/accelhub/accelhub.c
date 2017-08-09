@@ -205,7 +205,7 @@ static int accelhub_ReadSensorData(char *buf, int bufsize)
 	struct data_unit_t data;
 	int acc[ACCELHUB_AXES_NUM];
 	int err = 0;
-
+	int status = 0;
 	if (!atomic_read(&obj->scp_init_done)) {
 		GSE_ERR("sensor hub has not been ready!!\n");
 		return -1;
@@ -225,10 +225,11 @@ static int accelhub_ReadSensorData(char *buf, int bufsize)
 	acc[ACCELHUB_AXIS_X] = data.accelerometer_t.x;
 	acc[ACCELHUB_AXIS_Y] = data.accelerometer_t.y;
 	acc[ACCELHUB_AXIS_Z] = data.accelerometer_t.z;
-	/*GSE_LOG("recv ipi: timestamp: %lld, timestamp_gpt: %lld, x: %d, y: %d, z: %d!\n", time_stamp, time_stamp_gpt,
-		acc[ACCELHUB_AXIS_X], acc[ACCELHUB_AXIS_Y], acc[ACCELHUB_AXIS_Z]);*/
+	status				 = data.accelerometer_t.status;
+	/*GSE_ERR("accelhub_ReadSensorData: timestamp: %lld, timestamp_gpt: %lld, x: %d, y: %d, z: %d, status:%d!\n", time_stamp, time_stamp_gpt,
+		acc[ACCELHUB_AXIS_X], acc[ACCELHUB_AXIS_Y], acc[ACCELHUB_AXIS_Z], status);*/
 
-	sprintf(buf, "%04x %04x %04x", acc[ACCELHUB_AXIS_X], acc[ACCELHUB_AXIS_Y], acc[ACCELHUB_AXIS_Z]);
+	sprintf(buf, "%04x %04x %04x %04x", acc[ACCELHUB_AXIS_X], acc[ACCELHUB_AXIS_Y], acc[ACCELHUB_AXIS_Z], status);
 	if (atomic_read(&obj->trace) & ACCELHUB_TRC_IOCTL)
 		GSE_LOG("gsensor data: %s!\n", buf);
 
@@ -726,8 +727,7 @@ static int gsensor_get_data(int *x, int *y, int *z, int *status)
 		GSE_ERR("accelhub_ReadSensorData fail!!\n");
 		return -1;
 	}
-	if (3 == sscanf(buff, "%x %x %x", x, y, z))
-		*status = SENSOR_STATUS_ACCURACY_MEDIUM;
+	sscanf(buff, "%x %x %x %x", x, y, z, status);
 
 	if (atomic_read(&obj->trace) & ACCELHUB_TRC_RAWDATA)
 		GSE_ERR("x = %d, y = %d, z = %d\n", *x, *y, *z);
