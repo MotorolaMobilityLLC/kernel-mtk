@@ -32,7 +32,7 @@ static struct tilt_context *tilt_context_alloc_object(void)
 	}
 	atomic_set(&obj->wake, 0);
 	mutex_init(&obj->tilt_op_mutex);
-
+	obj->is_batch_enable = false;
 	TILT_LOG("tilt_context_alloc_object----\n");
 	return obj;
 }
@@ -44,11 +44,12 @@ int tilt_notify(void)
 	struct tilt_context *cxt = NULL;
 
 	cxt = tilt_context_obj;
-	TILT_LOG("tilt_notify++++\n");
-
-	value = 1;
-	input_report_rel(cxt->idev, EVENT_TYPE_TILT_VALUE, value);
-	input_sync(cxt->idev);
+	if (true == cxt->is_active_data) {
+		TILT_LOG("tilt_notify++++\n");
+		value = 1;
+		input_report_rel(cxt->idev, EVENT_TYPE_TILT_VALUE, value);
+		input_sync(cxt->idev);
+	}
 
 	return err;
 }
@@ -68,6 +69,12 @@ static int tilt_real_enable(int enable)
 			return 0;
 
 		if (false == cxt->is_active_data) {
+			if (NULL != cxt->tilt_ctl.set_delay) {
+				if (cxt->is_batch_enable == false)
+					cxt->tilt_ctl.set_delay(66000000);
+			} else {
+				TILT_ERR("tilt set delay = NULL\n");
+			}
 			err = cxt->tilt_ctl.open_report_data(1);
 			if (err) {
 				err = cxt->tilt_ctl.open_report_data(1);
@@ -212,8 +219,19 @@ static ssize_t tilt_store_batch(struct device *dev, struct device_attribute *att
 				const char *buf, size_t count)
 {
 	int len = 0;
+	struct tilt_context *cxt = NULL;
 
-	TILT_LOG(" not support now\n");
+	cxt = tilt_context_obj;
+	TILT_LOG("tilt_store_batch buf=%s\n", buf);
+	mutex_lock(&cxt->tilt_op_mutex);
+
+	if (!strncmp(buf, "1", 1))
+		cxt->is_batch_enable = true;
+	else if (!strncmp(buf, "0", 1))
+		cxt->is_batch_enable = false;
+	else
+		TILT_ERR(" tilt_store_batch error !!\n");
+	mutex_unlock(&cxt->tilt_op_mutex);
 	return len;
 }
 
@@ -408,8 +426,9 @@ int tilt_register_control_path(struct tilt_control_path *ctl)
 /* cxt->tilt_ctl.enable = ctl->enable; */
 /* cxt->tilt_ctl.enable_nodata = ctl->enable_nodata; */
 	cxt->tilt_ctl.open_report_data = ctl->open_report_data;
+	cxt->tilt_ctl.set_delay = ctl->set_delay;
 
-	if (NULL == cxt->tilt_ctl.open_report_data) {
+	if (NULL == cxt->tilt_ctl.open_report_data || NULL == cxt->tilt_ctl.set_delay) {
 		TILT_LOG("tilt register control path fail\n");
 		return -1;
 	}

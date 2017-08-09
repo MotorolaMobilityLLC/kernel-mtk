@@ -222,6 +222,11 @@ static int activityhub_local_init(void)
 		ACTVTY_ERR("SCP_sensorHub_rsp_registration fail!!\n");
 		goto exit_create_attr_failed;
 	}
+	err = batch_register_support_info(ID_ACTIVITY, ctl.is_support_batch, 1, 1);
+	if (err) {
+		ACTVTY_ERR("register activity batch support err = %d\n", err);
+		goto exit_create_attr_failed;
+	}
 	return 0;
  exit:
 	activityhub_delete_attr(&(activityhub_init_info.platform_diver_addr->driver));

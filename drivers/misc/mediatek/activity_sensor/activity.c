@@ -77,7 +77,7 @@ static void act_work_func(struct work_struct *work)
 			cxt->drv_data.probability[9] = data8_t[9];
 			cxt->drv_data.probability[10] = data8_t[10];
 			cxt->drv_data.probability[11] = data8_t[11];
-			ACT_LOG("act probability %d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d\n",
+			/* ACT_ERR("act probability %d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d\n",
 				cxt->drv_data.probability[0],
 				cxt->drv_data.probability[1],
 				cxt->drv_data.probability[2],
@@ -89,7 +89,7 @@ static void act_work_func(struct work_struct *work)
 				cxt->drv_data.probability[8],
 				cxt->drv_data.probability[9],
 				cxt->drv_data.probability[10],
-				cxt->drv_data.probability[11]);
+				cxt->drv_data.probability[11]); */
 			cxt->drv_data.status = status;
 			cxt->drv_data.time = nt;
 		}
@@ -396,12 +396,39 @@ static ssize_t act_store_batch(struct device *dev, struct device_attribute *attr
 	mutex_lock(&act_context_obj->act_op_mutex);
 	cxt = act_context_obj;
 	if (cxt->act_ctl.is_support_batch) {
-		if (!strncmp(buf, "1", 1))
+		if (!strncmp(buf, "1", 1)) {
 			cxt->is_batch_enable = true;
-		else if (!strncmp(buf, "0", 1))
+			if (true == cxt->is_polling_run) {
+				cxt->is_polling_run = false;
+				smp_mb();  /* for memory barrier */
+				del_timer_sync(&cxt->timer);
+				smp_mb();  /* for memory barrier */
+				cancel_work_sync(&cxt->report);
+				cxt->drv_data.probability[0] = ACT_INVALID_VALUE;
+				cxt->drv_data.probability[1] = ACT_INVALID_VALUE;
+				cxt->drv_data.probability[2] = ACT_INVALID_VALUE;
+				cxt->drv_data.probability[3] = ACT_INVALID_VALUE;
+				cxt->drv_data.probability[4] = ACT_INVALID_VALUE;
+				cxt->drv_data.probability[5] = ACT_INVALID_VALUE;
+				cxt->drv_data.probability[6] = ACT_INVALID_VALUE;
+				cxt->drv_data.probability[7] = ACT_INVALID_VALUE;
+				cxt->drv_data.probability[8] = ACT_INVALID_VALUE;
+				cxt->drv_data.probability[9] = ACT_INVALID_VALUE;
+				cxt->drv_data.probability[10] = ACT_INVALID_VALUE;
+				cxt->drv_data.probability[11] = ACT_INVALID_VALUE;
+			}
+		} else if (!strncmp(buf, "0", 1)) {
 			cxt->is_batch_enable = false;
-		else
+			if (false == cxt->is_polling_run) {
+				if (false == cxt->act_ctl.is_report_input_direct && true == cxt->is_active_data) {
+					mod_timer(&cxt->timer,
+						  jiffies + atomic_read(&cxt->delay) / (1000 / HZ));
+					cxt->is_polling_run = true;
+				}
+			}
+		} else {
 			ACT_ERR(" act_store_batch error !!\n");
+		}
 	} else {
 		ACT_LOG(" act_store_batch not support\n");
 	}

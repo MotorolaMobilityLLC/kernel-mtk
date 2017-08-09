@@ -50,14 +50,17 @@ int wag_notify(void)
 	struct wag_context *cxt = NULL;
 
 	cxt = wag_context_obj;
-	WAG_LOG("wag_notify++++\n");
 
-	value = 1;
-	input_report_rel(cxt->idev, EVENT_TYPE_WAG_VALUE, value);
-	input_sync(cxt->idev);
+	if (true == cxt->is_active_data) {
+		pr_err("wag_notify++++\n");
 
-	wake_lock(&wag_lock);
-	mod_timer(&cxt->notify_timer, jiffies + HZ / 5);
+		value = 1;
+		input_report_rel(cxt->idev, EVENT_TYPE_WAG_VALUE, value);
+		input_sync(cxt->idev);
+
+		wake_lock(&wag_lock);
+		mod_timer(&cxt->notify_timer, jiffies + HZ / 5);
+	}
 
 	return err;
 }

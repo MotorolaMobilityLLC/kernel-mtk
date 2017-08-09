@@ -68,8 +68,9 @@ typedef enum {
 struct tilt_control_path {
 /* int (*enable_nodata)(int en);//only enable not report event to HAL */
 	int (*open_report_data)(int open);	/* open data rerport to HAL */
-/* int (*enable)(int en); */
-	/* bool is_support_batch;//version2.used for batch mode support flag */
+	int (*set_delay)(uint64_t delay);	/* open data rerport to HAL */
+	bool is_report_input_direct;
+	bool is_support_batch;/* version2.used for batch mode support flag */
 };
 
 struct tilt_data_path {

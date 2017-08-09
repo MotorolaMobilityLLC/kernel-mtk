@@ -62,6 +62,9 @@ static int IDToSensorType(int id)
 	case ID_PRESSURE:
 		sensorType = SENSOR_TYPE_PRESSURE;
 		break;
+	case ID_HUMIDITY:
+		sensorType = SENSOR_TYPE_HUMIDITY;
+		break;
 	case ID_TEMPRERATURE:
 		sensorType = SENSOR_TYPE_TEMPERATURE;
 		break;
@@ -80,6 +83,21 @@ static int IDToSensorType(int id)
 	case ID_PDR:
 		sensorType = SENSOR_TYPE_PDR;
 		break;
+	case ID_WAKE_GESTURE:
+		sensorType = SENSOR_TYPE_WAKE_GESTURE;
+		break;
+	case ID_PICK_UP_GESTURE:
+		sensorType = SENSOR_TYPE_PICK_UP_GESTURE;
+		break;
+	case ID_GLANCE_GESTURE:
+		sensorType = SENSOR_TYPE_GLANCE_GESTURE;
+		break;
+	case ID_ACTIVITY:
+		sensorType = SENSOR_TYPE_ACTIVITY;
+		break;
+	case ID_TILT_DETECTOR:
+		sensorType = SENSOR_TYPE_TILT_DETECTOR;
+		break;
 	default:
 		sensorType = -1;
 	}
@@ -92,11 +110,26 @@ static int batch_update_polling_rate(void)
 	struct batch_context *obj = batch_context_obj;
 	int idx = 0;
 	int mindelay = 0;
+	int onchange_delay = 0;
 
 	for (idx = 0; idx < ID_SENSOR_MAX_HANDLE; idx++) {
-		if ((obj->active_sensor & (1ULL << idx)) && (0 != obj->dev_list.data_dev[idx].maxBatchReportLatencyMs))
-			mindelay = ((obj->dev_list.data_dev[idx].maxBatchReportLatencyMs < mindelay)
-				|| (mindelay == 0)) ? obj->dev_list.data_dev[idx].maxBatchReportLatencyMs:mindelay;
+		if ((obj->active_sensor & (1ULL << idx)) &&
+			(0 != obj->dev_list.data_dev[idx].maxBatchReportLatencyMs)) {
+			switch (idx) {
+			case ID_LIGHT:
+			case ID_PROXIMITY:
+			case ID_HUMIDITY:
+			case ID_STEP_COUNTER:
+			case ID_STEP_DETECTOR:
+			case ID_TILT_DETECTOR:
+				onchange_delay = obj->dev_list.data_dev[idx].maxBatchReportLatencyMs - 2000;
+				break;
+			default:
+				onchange_delay = obj->dev_list.data_dev[idx].maxBatchReportLatencyMs;
+				break;
+			}
+			mindelay = ((onchange_delay < mindelay) || (mindelay == 0)) ? onchange_delay : mindelay;
+		}
 
 	}
 	BATCH_LOG("get polling rate min value (%d) !\n", mindelay);
@@ -357,8 +390,12 @@ static ssize_t batch_store_active(struct device *dev, struct device_attribute *a
 					&& (cxt->dev_list.data_dev[ID_SENSOR_MAX_HANDLE].get_fifo_status) != NULL
 					&& (cxt->dev_list.data_dev[ID_SENSOR_MAX_HANDLE].batch_timeout) != NULL) {
 						mutex_lock(&batch_data_mutex);
+						/* in practice, this is too aggressive, but guaranteed to be enough
+						*to flush empty the fifo. */
 						res = cxt->dev_list.data_dev[ID_SENSOR_MAX_HANDLE]
 							.batch_timeout((void *)&arg);
+						/*res = cxt->dev_list.data_dev[ID_SENSOR_MAX_HANDLE]
+							.batch_timeout((void *)&arg);*/
 						mutex_unlock(&batch_data_mutex);
 				}
 		}
@@ -368,6 +405,7 @@ static ssize_t batch_store_active(struct device *dev, struct device_attribute *a
 	* Do flush before call enable_hw_batch to make sure flush finish. */
 		/*report_data_once(handle);*/
 	} else if (1 == en) {
+		msleep(100);
 		cxt->active_sensor = cxt->active_sensor | (1ULL << handle);
 		time.tv_sec = 0;
 		time.tv_nsec = 0;

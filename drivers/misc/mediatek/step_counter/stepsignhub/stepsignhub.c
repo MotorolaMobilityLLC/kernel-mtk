@@ -121,8 +121,8 @@ static int step_c_enable_nodata(int en)
 {
 	int ret = 0;
 
-	if (en == 1)
-		ret = sensor_set_delay_to_hub(ID_STEP_COUNTER, 66);
+	/* if (en == 1)
+		ret = sensor_set_delay_to_hub(ID_STEP_COUNTER, 66); */
 	ret = sensor_enable_to_hub(ID_STEP_COUNTER, en);
 	return ret;
 }
@@ -131,8 +131,8 @@ static int step_d_enable_nodata(int en)
 {
 	int ret = 0;
 
-	if (en == 1)
-		ret = sensor_set_delay_to_hub(ID_STEP_DETECTOR, 66);
+	/* if (en == 1)
+		ret = sensor_set_delay_to_hub(ID_STEP_DETECTOR, 66); */
 	ret = sensor_enable_to_hub(ID_STEP_DETECTOR, en);
 	return ret;
 }
@@ -155,6 +155,13 @@ static int step_c_set_delay(u64 delay)
 	return sensor_set_delay_to_hub(ID_STEP_COUNTER, delayms);
 }
 
+static int step_d_set_delay(u64 delay)
+{
+	unsigned int delayms = 0;
+
+	delayms = delay / 1000 / 1000;
+	return sensor_set_delay_to_hub(ID_STEP_DETECTOR, delayms);
+}
 static int step_counter_get_data(uint32_t *counter, int *status)
 {
 	int err = 0;
@@ -252,7 +259,8 @@ static int step_chub_local_init(void)
 	ctl.enable_nodata = step_c_enable_nodata;
 	ctl.enable_step_detect = step_d_enable_nodata;
 	ctl.enable_significant = step_s_enable_nodata;
-	ctl.set_delay = step_c_set_delay;
+	ctl.step_c_set_delay = step_c_set_delay;
+	ctl.step_d_set_delay = step_d_set_delay;
 	ctl.is_report_input_direct = false;
 	ctl.is_support_batch = true;
 	err = step_c_register_control_path(&ctl);
@@ -283,6 +291,17 @@ static int step_chub_local_init(void)
 		STEP_CDS_ERR("SCP_sensorHub_rsp_registration fail!!\n");
 		goto exit_create_attr_failed;
 	}
+	err = batch_register_support_info(ID_STEP_DETECTOR, ctl.is_support_batch, 1, 1);
+	if (err) {
+		STEP_CDS_ERR("register hmdy batch support err = %d\n", err);
+		goto exit_create_attr_failed;
+	}
+	err = batch_register_support_info(ID_STEP_COUNTER, ctl.is_support_batch, 1, 1);
+	if (err) {
+		STEP_CDS_ERR("register hmdy batch support err = %d\n", err);
+		goto exit_create_attr_failed;
+	}
+
 	return 0;
 exit:
 	step_chub_delete_attr(&(step_cdshub_init_info.platform_diver_addr->driver));

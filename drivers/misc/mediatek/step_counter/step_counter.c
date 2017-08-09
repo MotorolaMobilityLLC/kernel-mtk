@@ -102,7 +102,8 @@ static struct step_c_context *step_c_context_alloc_object(void)
 	obj->is_first_data_after_enable = false;
 	obj->is_polling_run = false;
 	mutex_init(&obj->step_c_op_mutex);
-	obj->is_batch_enable = false;	/* for batch mode init */
+	obj->is_step_c_batch_enable = false;	/* for batch mode init */
+	obj->is_step_d_batch_enable = false;	/* for batch mode init */
 
 	STEP_C_LOG("step_c_context_alloc_object----\n");
 	return obj;
@@ -144,6 +145,12 @@ static int step_d_real_enable(int enable)
 
 	cxt = step_c_context_obj;
 	if (1 == enable) {
+		if (NULL != cxt->step_c_ctl.step_d_set_delay) {
+			if (cxt->is_step_d_batch_enable == false)
+				cxt->step_c_ctl.step_d_set_delay(66000000);
+		} else {
+			STEP_C_ERR("step_d set delay = NULL\n");
+		}
 		err = cxt->step_c_ctl.enable_step_detect(1);
 		if (err) {
 			err = cxt->step_c_ctl.enable_step_detect(1);
@@ -208,6 +215,12 @@ static int step_c_real_enable(int enable)
 	if (1 == enable) {
 
 		if (true == cxt->is_active_data || true == cxt->is_active_nodata) {
+			if (NULL != cxt->step_c_ctl.step_c_set_delay) {
+				if (cxt->is_step_c_batch_enable == false)
+					cxt->step_c_ctl.step_c_set_delay(66000000);
+			} else {
+				STEP_C_ERR("step_c set delay = NULL\n");
+			}
 			err = cxt->step_c_ctl.enable_nodata(1);
 			if (err) {
 				err = cxt->step_c_ctl.enable_nodata(1);
@@ -250,7 +263,7 @@ static int step_c_enable_data(int enable)
 		cxt->is_active_data = true;
 		cxt->is_first_data_after_enable = true;
 		cxt->step_c_ctl.open_report_data(1);
-		if (false == cxt->is_polling_run && cxt->is_batch_enable == false) {
+		if (false == cxt->is_polling_run && cxt->is_step_c_batch_enable == false) {
 			if (false == cxt->step_c_ctl.is_report_input_direct) {
 				mod_timer(&cxt->timer,
 					  jiffies + atomic_read(&cxt->delay) / (1000 / HZ));
@@ -420,8 +433,8 @@ static ssize_t step_c_store_delay(struct device *dev, struct device_attribute *a
 
 	mutex_lock(&step_c_context_obj->step_c_op_mutex);
 	cxt = step_c_context_obj;
-	if (NULL == cxt->step_c_ctl.set_delay) {
-		STEP_C_LOG("step_c_ctl set_delay NULL\n");
+	if (NULL == cxt->step_c_ctl.step_c_set_delay) {
+		STEP_C_LOG("step_c_ctl step_c_set_delay NULL\n");
 		mutex_unlock(&step_c_context_obj->step_c_op_mutex);
 		return count;
 	}
@@ -436,7 +449,7 @@ static ssize_t step_c_store_delay(struct device *dev, struct device_attribute *a
 		mdelay = (int)delay / 1000 / 1000;
 		atomic_set(&step_c_context_obj->delay, mdelay);
 	}
-	cxt->step_c_ctl.set_delay(delay);
+	cxt->step_c_ctl.step_c_set_delay(delay);
 	STEP_C_LOG(" step_c_delay %d ns\n", delay);
 	mutex_unlock(&step_c_context_obj->step_c_op_mutex);
 	return count;
@@ -468,7 +481,7 @@ static ssize_t step_c_store_batch(struct device *dev, struct device_attribute *a
 		STEP_C_LOG(" step_c_store_batch param error: res = %d\n", res);
 	if (handle == ID_STEP_COUNTER) {
 		if (en == 1) {
-			cxt->is_batch_enable = true;
+			cxt->is_step_c_batch_enable = true;
 			if (true == cxt->is_polling_run) {
 				cxt->is_polling_run = false;
 				del_timer_sync(&cxt->timer);
@@ -476,7 +489,7 @@ static ssize_t step_c_store_batch(struct device *dev, struct device_attribute *a
 				cxt->drv_data.counter = STEP_C_INVALID_VALUE;
 			}
 		} else if (0 == en) {
-			cxt->is_batch_enable = false;
+			cxt->is_step_c_batch_enable = false;
 			if (false == cxt->is_polling_run) {
 				if (false == cxt->step_c_ctl.is_report_input_direct) {
 					mod_timer(&cxt->timer,
@@ -487,9 +500,16 @@ static ssize_t step_c_store_batch(struct device *dev, struct device_attribute *a
 		} else {
 			STEP_C_ERR(" step_c_store_batch error !!\n");
 		}
+	} else if (handle == ID_STEP_DETECTOR) {
+		if (en == 1)
+			cxt->is_step_d_batch_enable = true;
+		else if (0 == en)
+			cxt->is_step_d_batch_enable = false;
+		else
+			STEP_C_ERR(" step_d_store_batch error !!\n");
 	}
 	mutex_unlock(&step_c_context_obj->step_c_op_mutex);
-	STEP_C_LOG(" step_c_store_batch done: %d\n", cxt->is_batch_enable);
+	STEP_C_LOG(" step_c_store_batch done: %d\n", cxt->is_step_c_batch_enable);
 	return count;
 
 }
@@ -703,7 +723,8 @@ int step_c_register_control_path(struct step_c_control_path *ctl)
 	int err = 0;
 
 	cxt = step_c_context_obj;
-	cxt->step_c_ctl.set_delay = ctl->set_delay;
+	cxt->step_c_ctl.step_c_set_delay = ctl->step_c_set_delay;
+	cxt->step_c_ctl.step_d_set_delay = ctl->step_d_set_delay;
 	cxt->step_c_ctl.open_report_data = ctl->open_report_data;
 	cxt->step_c_ctl.enable_nodata = ctl->enable_nodata;
 	cxt->step_c_ctl.is_support_batch = ctl->is_support_batch;
@@ -712,8 +733,8 @@ int step_c_register_control_path(struct step_c_control_path *ctl)
 	cxt->step_c_ctl.enable_significant = ctl->enable_significant;
 	cxt->step_c_ctl.enable_step_detect = ctl->enable_step_detect;
 
-	if (NULL == cxt->step_c_ctl.set_delay || NULL == cxt->step_c_ctl.open_report_data
-	    || NULL == cxt->step_c_ctl.enable_nodata
+	if (NULL == cxt->step_c_ctl.step_c_set_delay || NULL == cxt->step_c_ctl.open_report_data
+	    || NULL == cxt->step_c_ctl.enable_nodata || NULL == cxt->step_c_ctl.step_d_set_delay
 	    || NULL == cxt->step_c_ctl.enable_significant
 	    || NULL == cxt->step_c_ctl.enable_step_detect) {
 		STEP_C_LOG("step_c register control path fail\n");

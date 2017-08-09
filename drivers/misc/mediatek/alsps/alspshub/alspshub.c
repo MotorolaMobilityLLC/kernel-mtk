@@ -735,8 +735,8 @@ static int als_get_data(int *value, int *status)
 			time_stamp_gpt = data.time_stamp_gpt;
 			*value = data.light;
 
-			APS_LOG("recv ipi: timestamp: %lld, timestamp_gpt: %lld, light: %d!\n",
-				time_stamp, time_stamp_gpt, *value);
+			/*APS_LOG("recv ipi: timestamp: %lld, timestamp_gpt: %lld, light: %d!\n",
+				time_stamp, time_stamp_gpt, *value);*/
 			*status = SENSOR_STATUS_ACCURACY_MEDIUM;
 		}
 
@@ -917,7 +917,7 @@ static int alspshub_probe(struct platform_device *pdev)
 	als_ctl.set_delay = als_set_delay;
 	als_ctl.is_report_input_direct = false;
 
-	als_ctl.is_support_batch = false;
+	als_ctl.is_support_batch = true;
 
 	err = als_register_control_path(&als_ctl);
 	if (err) {
@@ -938,7 +938,7 @@ static int alspshub_probe(struct platform_device *pdev)
 	ps_ctl.set_delay = ps_set_delay;
 	ps_ctl.is_report_input_direct = false;
 
-	ps_ctl.is_support_batch = false;
+	ps_ctl.is_support_batch = true;
 
 	err = ps_register_control_path(&ps_ctl);
 	if (err) {
@@ -954,13 +954,13 @@ static int alspshub_probe(struct platform_device *pdev)
 		goto exit_create_attr_failed;
 	}
 
-	err = batch_register_support_info(ID_LIGHT, als_ctl.is_support_batch, 1, 0);
+	err = batch_register_support_info(ID_LIGHT, als_ctl.is_support_batch, 1, 1);
 	if (err) {
 		APS_ERR("register light batch support err = %d\n", err);
 		goto exit_create_attr_failed;
 	}
 
-	err = batch_register_support_info(ID_PROXIMITY, ps_ctl.is_support_batch, 1, 0);
+	err = batch_register_support_info(ID_PROXIMITY, ps_ctl.is_support_batch, 1, 1);
 	if (err) {
 		APS_ERR("register proximity batch support err = %d\n", err);
 		goto exit_create_attr_failed;

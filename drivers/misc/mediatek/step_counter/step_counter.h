@@ -75,7 +75,8 @@ struct step_c_control_path {
 	int (*enable_nodata)(int en);/* only enable not report event to HAL */
 	int (*enable_step_detect)(int en);
 	int (*enable_significant)(int en);
-	int (*set_delay)(u64 delay);
+	int (*step_c_set_delay)(u64 delay);
+	int (*step_d_set_delay)(u64 delay);
 	bool is_report_input_direct;
 	bool is_support_batch;/* version2.used for batch mode support flag */
 };
@@ -126,7 +127,8 @@ struct step_c_context {
 	bool			is_active_data;		/* Active and HAL need data . */
 	bool		is_first_data_after_enable;
 	bool		is_polling_run;
-	bool		is_batch_enable;	/* version2.this is used for judging whether sensor is in batch mode */
+	bool		is_step_c_batch_enable;	/* version2.this is used for judging whether sensor is in batch mode */
+	bool		is_step_d_batch_enable;	/* version2.this is used for judging whether sensor is in batch mode */
 };
 
 /* for auto detect */

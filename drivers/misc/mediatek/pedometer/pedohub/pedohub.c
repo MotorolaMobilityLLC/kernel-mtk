@@ -172,6 +172,11 @@ static int pedohub_local_init(void)
 		PEDOHUB_ERR("register pedometer data path err\n");
 		goto exit;
 	}
+	err = batch_register_support_info(ID_PEDOMETER, ctl.is_support_batch, 1, 1);
+	if (err) {
+		PEDOHUB_ERR("register TILT batch support err = %d\n", err);
+		goto exit_create_attr_failed;
+	}
 	return 0;
 exit:
 	pedohub_delete_attr(&(pedohub_init_info.platform_diver_addr->driver));

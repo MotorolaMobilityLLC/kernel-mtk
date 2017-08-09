@@ -313,7 +313,10 @@ struct hwm_sensor_data {
 	/* sensor identifier */
 	int sensor;
 	/* sensor values */
-	int	values[6];
+	union {
+		int values[6];
+		uint8_t probability[12];
+	};
 	/* sensor values divide */
 	uint32_t value_divide;
 	/* sensor accuracy */
@@ -331,7 +334,10 @@ struct compat_hwm_sensor_data {
 	/* sensor identifier */
 	compat_int_t sensor;
 	/* sensor values */
-	compat_int_t	values[6];
+	union {
+		compat_int_t	values[6];
+		uint8_t probability[12];
+	};
 	/* sensor values divide */
 	compat_uint_t value_divide;
 	/* sensor accuracy */

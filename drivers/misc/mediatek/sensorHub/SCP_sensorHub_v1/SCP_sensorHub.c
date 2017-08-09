@@ -234,6 +234,11 @@ static int SCP_sensorHub_extract_data(struct hwm_sensor_data *data, struct data_
 		data->values[0] = data_t->light;
 		data->time = data_t->time_stamp + data_t->time_stamp_gpt;
 		break;
+	case ID_PROXIMITY:
+		data->sensor	= data_t->sensor_type;
+		data->values[0] = data_t->proximity_t.oneshot;
+		data->time = data_t->time_stamp + data_t->time_stamp_gpt;
+		break;
 	case ID_PRESSURE:
 		data->sensor    = data_t->sensor_type;
 		data->values[0] = data_t->pressure_t.pressure;
@@ -328,6 +333,16 @@ static int SCP_sensorHub_extract_data(struct hwm_sensor_data *data, struct data_
 		data->values[0] = data_t->step_counter_t.accumulated_step_count;
 		data->time = data_t->time_stamp + data_t->time_stamp_gpt;
 		break;
+	case ID_STEP_DETECTOR:
+		data->sensor    = data_t->sensor_type;
+		data->values[0] = data_t->step_detector_t.step_detect;
+		data->time = data_t->time_stamp + data_t->time_stamp_gpt;
+		break;
+	case ID_TILT_DETECTOR:
+		data->sensor    = data_t->sensor_type;
+		data->values[0] = data_t->tilt_event.state;
+		data->time = data_t->time_stamp + data_t->time_stamp_gpt;
+		break;
 	case ID_PEDOMETER:
 		data->sensor    = data_t->sensor_type;
 		data->values[0] = data_t->pedometer_t.accumulated_step_count;
@@ -342,6 +357,54 @@ static int SCP_sensorHub_extract_data(struct hwm_sensor_data *data, struct data_
 		data->values[1] = data_t->pdr_event.y;
 		data->values[2] = data_t->pdr_event.z;
 		data->status = (int8_t)data_t->pdr_event.status;
+		data->time = data_t->time_stamp + data_t->time_stamp_gpt;
+		break;
+	case ID_SIGNIFICANT_MOTION:
+		data->sensor    = data_t->sensor_type;
+		data->values[0] = data_t->smd_t.state;
+		data->time = data_t->time_stamp + data_t->time_stamp_gpt;
+		break;
+	case ID_GLANCE_GESTURE:
+		data->sensor    = data_t->sensor_type;
+		data->values[0] = data_t->gesture_data_t.probability;
+		data->time = data_t->time_stamp + data_t->time_stamp_gpt;
+		break;
+	case ID_WAKE_GESTURE:
+		data->sensor	= data_t->sensor_type;
+		data->values[0] = data_t->gesture_data_t.probability;
+		data->time = data_t->time_stamp + data_t->time_stamp_gpt;
+		break;
+	case ID_PICK_UP_GESTURE:
+		data->sensor	= data_t->sensor_type;
+		data->values[0] = data_t->gesture_data_t.probability;
+		data->time = data_t->time_stamp + data_t->time_stamp_gpt;
+		break;
+	case ID_ACTIVITY:
+		data->sensor	= data_t->sensor_type;
+		data->probability[STILL] =
+		    data_t->activity_data_t.probability[STILL];
+		data->probability[STANDING] =
+		    data_t->activity_data_t.probability[STANDING];
+		data->probability[SITTING] =
+		    data_t->activity_data_t.probability[SITTING];
+		data->probability[LYING] =
+		    data_t->activity_data_t.probability[LYING];
+		data->probability[ON_FOOT] =
+		    data_t->activity_data_t.probability[ON_FOOT];
+		data->probability[WALKING] =
+		    data_t->activity_data_t.probability[WALKING];
+		data->probability[RUNNING] =
+		    data_t->activity_data_t.probability[RUNNING];
+		data->probability[CLIMBING] =
+		    data_t->activity_data_t.probability[CLIMBING];
+		data->probability[ON_BICYCLE] =
+		    data_t->activity_data_t.probability[ON_BICYCLE];
+		data->probability[IN_VEHICLE] =
+		    data_t->activity_data_t.probability[IN_VEHICLE];
+		data->probability[TILTING] =
+		    data_t->activity_data_t.probability[TILTING];
+		data->probability[UNKNOWN] =
+		    data_t->activity_data_t.probability[UNKNOWN];
 		data->time = data_t->time_stamp + data_t->time_stamp_gpt;
 		break;
 	default:

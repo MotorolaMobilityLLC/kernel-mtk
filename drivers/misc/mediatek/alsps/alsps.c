@@ -70,7 +70,7 @@ static void als_work_func(struct work_struct *work)
 			goto als_loop;
 		}
 	}
-	ALSPS_LOG(" als data[%d]\n" , cxt->drv_data.als_data.values[0]);
+	/* ALSPS_LOG(" als data[%d]\n" , cxt->drv_data.als_data.values[0]); */
 	als_data_report(cxt->idev,
 	cxt->drv_data.als_data.values[0],
 	cxt->drv_data.als_data.status);

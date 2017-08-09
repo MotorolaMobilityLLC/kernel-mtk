@@ -130,10 +130,15 @@ static int tilt_detect_open_report_data(int open)
 {
 	int ret = 0;
 
-	if (open == 1)
-		ret = sensor_set_delay_to_hub(ID_TILT_DETECTOR, 20);
 	ret = sensor_enable_to_hub(ID_TILT_DETECTOR, open);
 	return ret;
+}
+static int tilt_detect_set_delay(uint64_t delay)
+{
+	unsigned int delayms = 0;
+
+	delayms = delay / 1000 / 1000;
+	return sensor_set_delay_to_hub(ID_TILT_DETECTOR, delayms);
 }
 static int SCP_sensorHub_notify_handler(void *data, unsigned int len)
 {
@@ -171,6 +176,9 @@ static int tiltdetecthub_local_init(void)
 		goto exit_create_attr_failed;
 	}
 	ctl.open_report_data = tilt_detect_open_report_data;
+	ctl.set_delay = tilt_detect_set_delay;
+	ctl.is_report_input_direct = false;
+	ctl.is_support_batch = true;
 	err = tilt_register_control_path(&ctl);
 	if (err) {
 		TILTDETHUB_ERR("register tilt_detect control path err\n");
@@ -187,6 +195,11 @@ static int tiltdetecthub_local_init(void)
 	err = SCP_sensorHub_rsp_registration(ID_TILT_DETECTOR, SCP_sensorHub_notify_handler);
 	if (err) {
 		TILTDETHUB_ERR("SCP_sensorHub_rsp_registration fail!!\n");
+		goto exit_create_attr_failed;
+	}
+	err = batch_register_support_info(ID_TILT_DETECTOR, ctl.is_support_batch, 1, 1);
+	if (err) {
+		TILTDETHUB_ERR("register TILT batch support err = %d\n", err);
 		goto exit_create_attr_failed;
 	}
 	return 0;
