@@ -2048,6 +2048,16 @@ static unsigned int get_cur_phy_freq(struct mt_cpu_dvfs *p)
 		cpufreq_ver("@%s: cur_khz = %d, con1[0x%p] = 0x%x, ckdiv1_val = 0x%x\n",
 			__func__, cur_khz, p->armpll_addr, con1, ckdiv1);
 
+	if (cur_khz == 0) {
+		cpufreq_err("@%s: cur_khz = %d, con1[0x%p] = 0x%x, ckdiv1_val = 0x%x\n",
+			__func__, cur_khz, p->armpll_addr, con1, ckdiv1);
+		/* Retry again */
+		con1 = cpufreq_read(p->armpll_addr);
+		cur_khz = _cpu_freq_calc(con1, ckdiv1);
+		cpufreq_err("@%s: cur_khz = %d, con1[0x%p] = 0x%x, ckdiv1_val = 0x%x\n",
+			__func__, cur_khz, p->armpll_addr, con1, ckdiv1);
+	}
+
 	FUNC_EXIT(FUNC_LV_LOCAL);
 
 	return cur_khz;
