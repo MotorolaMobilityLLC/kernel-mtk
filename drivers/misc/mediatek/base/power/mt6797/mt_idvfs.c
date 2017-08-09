@@ -613,9 +613,9 @@ int BigiDVFSEnable_hp(void) /* for cpu hot plug call */
 	da9214_read_interface(0x5e, &ret_val, 0xff, 0);
 	AEE_RR_REC(idvfs_curr_volt, ((AEE_RR_CURR(idvfs_curr_volt) & 0x00ff) | (ret_val << 8)));
 
-	/* fix sarm = 1180mv */
-	BigiDVFSSRAMLDOSet(118000);
-	cur_vsram_mv_x100 = 118000;
+	/* fix sarm = 1180mv, change to 1200mv due to t-mode */
+	BigiDVFSSRAMLDOSet(120000);
+	cur_vsram_mv_x100 = 120000;
 	udelay(20); /* wait LDO set stable */
 
 	idvfs_ver("iDVFS enable cur Vproc = %u(mv_x100), Vsarm = %u(mv_x100).\n",
