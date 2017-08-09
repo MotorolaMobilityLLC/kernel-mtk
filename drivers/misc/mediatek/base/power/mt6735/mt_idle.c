@@ -303,7 +303,7 @@ static unsigned int dpidle_condition_mask[NR_GRPS] = {
 
 static unsigned int soidle_condition_mask[NR_GRPS] = {
 	0x00000088, /* INFRA: */
-	0x37FA0FFC, /* PERI0: */
+	0x37FC0FFC, /* PERI0: */
 	0x000033FC, /* DISP0: */
 	0x00000030, /* DISP1: */
 	0x00000FE1, /* IMAGE: */
