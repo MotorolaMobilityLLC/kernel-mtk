@@ -54,6 +54,7 @@
 #include <cust_gpio_usage.h>
 #endif
 #if defined(CONFIG_ARCH_MT6797)
+#include <mt_spm_pmic_wrap.h>
 #include "../../../include/mt-plat/mt6797/include/mach/mt_thermal.h"
 #endif
 #ifndef dmac_map_area
@@ -1109,6 +1110,8 @@ int spm_module_late_init(void)
 #if defined(CONFIG_ARCH_MT6797)
 	debugfs_create_file("scp_debug", S_IRUGO, spm_dir, NULL, &spm_scp_debug_fops);
 	pmic_hwcid = pmic_get_register_value(PMIC_HWCID);
+	if (pmic_hwcid == 0x5140)
+		mt_spm_update_pmic_wrap();
 #endif
 
 	for (i = DYNA_LOAD_PCM_SUSPEND; i < DYNA_LOAD_PCM_MAX; i++)

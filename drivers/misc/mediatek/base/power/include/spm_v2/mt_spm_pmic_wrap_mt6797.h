@@ -74,4 +74,6 @@ enum {
 	NR_IDX_DI,
 };
 
+void mt_spm_update_pmic_wrap(void);
+
 #endif				/* __MT_SPM_PMIC_WRAP_H__ */
