@@ -130,7 +130,7 @@ unsigned int L_Freq_SB[16] = {
 
 /* LL */
 unsigned int LL_Freq_FY[16] = {
-	1391000, 13390000, 1287000, 1222000, 1118000, 1066000, 949000, 897000,
+	1391000, 1339000, 1287000, 1222000, 1118000, 1066000, 949000, 897000,
 	806000, 715000, 624000, 559000, 481000, 416000, 338000, 221000};
 
 unsigned int LL_Freq_SB[16] = {
@@ -1890,6 +1890,7 @@ static void get_freq_table_cpu(struct eem_det *det)
 					,
 					det->max_freq_khz);
 		}
+		/* eem_debug("Timer Bank = %d, freq_procent = (%d)\n", det->ctrl_id, det->freq_tbl[i]); */
 		if (0 == det->freq_tbl[i])
 			break;
 	}
@@ -2542,7 +2543,7 @@ static void eem_set_eem_volt(struct eem_det *det)
 		default:
 			break;
 		}
-		eem_debug("[%s].volt_tbl[%d] = 0x%X ----- volt_tbl_pmic[%d] = 0x%X (%d)\n",
+		eem_debug("eem_set_eem_volt, [%s].volt_tbl[%d] = 0x%X ----- volt_tbl_pmic[%d] = 0x%X (%d)\n",
 			det->name,
 			i, det->volt_tbl[i],
 			i, det->volt_tbl_pmic[i], det->ops->pmic_2_volt(det, det->volt_tbl_pmic[i]));
@@ -2997,7 +2998,7 @@ static inline void handle_mon_mode_isr(struct eem_det *det)
 	det->t250 = eem_read(TEMP);
 
 	if (((det->t250 & 0xff)  > 0x4b) && ((det->t250  & 0xff) < 0xd3)) {
-		eem_error("thermal sensor init has not been completed.(temp = 0x%08X)\n", det->t250);
+		eem_error("thermal sensor init has not been completed.(temp = 0x%X)\n", det->t250);
 		goto out;
 	}
 
@@ -3981,6 +3982,10 @@ static int eem_cur_volt_proc_show(struct seq_file *m, void *v)
 		seq_printf(m, "EEM[%s] read current voltage fail\n", det->name);
 
 	if ((EEM_CTRL_GPU != det->ctrl_id) && (EEM_CTRL_SOC != det->ctrl_id)) {
+		for (i = 0; i < det->num_freq_tbl; i++)
+			seq_printf(m, "EEM_HW, det->volt_tbl[%d] = [%x], det->volt_tbl_pmic[%d] = [%x]\n",
+			i, det->volt_tbl[i], i, det->volt_tbl_pmic[i]);
+
 		for (i = 0; i < NR_FREQ; i++) {
 			seq_printf(m, "(iDVFS, 0x%x)(Vs, 0x%x) (Vp, 0x%x, %d) (F_Setting)(%x, %x, %x, %x, %x)\n",
 				(det->recordRef[i*2] >> 14) & 0x3FFFF,
