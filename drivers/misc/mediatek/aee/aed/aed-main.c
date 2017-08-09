@@ -1344,6 +1344,7 @@ static long aed_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 			/* Try to prevent overrun */
 			dal_show->msg[sizeof(dal_show->msg) - 1] = 0;
 #ifdef CONFIG_MTK_FB
+			LOGD("AEE CALL DAL_Printf now\n");
 			DAL_Printf("%s", dal_show->msg);
 #endif
 
@@ -1362,7 +1363,9 @@ static long aed_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 			dal_setcolor.background = 0xff0000;	/*red */
 
 #ifdef CONFIG_MTK_FB
+			LOGD("AEE CALL DAL_SetColor now\n");
 			DAL_SetColor(dal_setcolor.foreground, dal_setcolor.background);
+			LOGD("AEE CALL DAL_Clean now\n");
 			DAL_Clean();
 #endif
 			break;
@@ -1383,7 +1386,9 @@ static long aed_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 				goto EXIT;
 			}
 #ifdef CONFIG_MTK_FB
+			LOGD("AEE CALL DAL_SetColor now\n");
 			DAL_SetColor(dal_setcolor.foreground, dal_setcolor.background);
+			LOGD("AEE CALL DAL_SetScreenColor now\n");
 			DAL_SetScreenColor(dal_setcolor.screencolor);
 #endif
 			break;
@@ -1811,11 +1816,14 @@ void aee_kernel_dal_api(const char *file, const int line, const char *msg)
 			&& (force_red_screen == AEE_FORCE_RED_SCREEN))) {
 			dal_setcolor.foreground = 0xff00ff;	/* fg: purple */
 			dal_setcolor.background = 0x00ff00;	/* bg: green */
+			LOGD("AEE CALL DAL_SetColor now\n");
 			DAL_SetColor(dal_setcolor.foreground, dal_setcolor.background);
 			dal_setcolor.screencolor = 0xff0000;	/* screen:red */
+			LOGD("AEE CALL DAL_SetScreenColor now\n");
 			DAL_SetScreenColor(dal_setcolor.screencolor);
 			strncpy(dal_show->msg, msg, sizeof(dal_show->msg) - 1);
 			dal_show->msg[sizeof(dal_show->msg) - 1] = 0;
+			LOGD("AEE CALL DAL_Printf now\n");
 			DAL_Printf("%s", dal_show->msg);
 		} else {
 			LOGD("DAL not allowed (mode %d)\n", aee_mode);
