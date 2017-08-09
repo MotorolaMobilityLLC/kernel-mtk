@@ -124,6 +124,7 @@ struct four_key_threshold {
 };
 struct head_dts_data {
 	int mic_mode_vol;
+	unsigned int eint_level_pol;/* eintlevel polarity,8,high level;4, low level */
 	struct headset_mode_settings headset_debounce;
 	int accdet_plugout_debounce;
 	int accdet_mic_mode;

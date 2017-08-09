@@ -20,7 +20,7 @@ struct head_dts_data accdet_dts_data;
 s8 accdet_auxadc_offset;
 int accdet_irq;
 unsigned int gpiopin, headsetdebounce;
-unsigned int accdet_eint_type;
+unsigned int accdet_eint_type = IRQ_TYPE_LEVEL_LOW;/* default low level*/
 struct headset_mode_settings *cust_headset_settings;
 #define ACCDET_DEBUG(format, args...) pr_debug(format, ##args)
 #define ACCDET_INFO(format, args...) pr_warn(format, ##args)
@@ -1122,6 +1122,7 @@ int accdet_get_dts_data(void)
 		of_property_read_u32(node, "accdet-mic-vol", &accdet_dts_data.mic_mode_vol);
 		of_property_read_u32(node, "accdet-plugout-debounce", &accdet_dts_data.accdet_plugout_debounce);
 		of_property_read_u32(node, "accdet-mic-mode", &accdet_dts_data.accdet_mic_mode);
+		of_property_read_u32(node, "headset-eint-level-pol", &accdet_dts_data.eint_level_pol);
 		#ifdef CONFIG_FOUR_KEY_HEADSET
 		of_property_read_u32_array(node, "headset-four-key-threshold", four_key, ARRAY_SIZE(four_key));
 		memcpy(&accdet_dts_data.four_key, four_key+1, sizeof(struct four_key_threshold));
@@ -1135,7 +1136,6 @@ int accdet_get_dts_data(void)
 		     accdet_dts_data.three_key.mid_key, accdet_dts_data.three_key.up_key,
 		     accdet_dts_data.three_key.down_key);
 		#endif
-
 		memcpy(&accdet_dts_data.headset_debounce, debounce, sizeof(debounce));
 		cust_headset_settings = &accdet_dts_data.headset_debounce;
 		ACCDET_INFO("[Accdet]pwm_width = %x, pwm_thresh = %x\n deb0 = %x, deb1 = %x, mic_mode = %d\n",
@@ -1189,10 +1189,18 @@ static inline void accdet_init(void)
 	pmic_pwrap_write(ACCDET_DEBOUNCE3, cust_headset_settings->debounce3);
 	pmic_pwrap_write(ACCDET_DEBOUNCE4, ACCDET_DE4);
 #endif
+
 	/*enable INT */
 #ifdef CONFIG_ACCDET_EINT_IRQ
+	if (cur_eint_state == EINT_PIN_PLUG_OUT) {
+		if (IRQ_TYPE_LEVEL_HIGH == accdet_dts_data.eint_level_pol) {
+			accdet_eint_type = IRQ_TYPE_LEVEL_HIGH;
+			pmic_pwrap_write(ACCDET_IRQ_STS, pmic_pwrap_read(ACCDET_IRQ_STS) | EINT_IRQ_POL_HIGH);
+		}
+	}
 	pmic_pwrap_write(ACCDET_IRQ_STS, pmic_pwrap_read(ACCDET_IRQ_STS) & (~IRQ_EINT_CLR_BIT));
 #endif
+
 #ifdef CONFIG_ACCDET_EINT
 	pmic_pwrap_write(ACCDET_IRQ_STS, pmic_pwrap_read(ACCDET_IRQ_STS) & (~IRQ_CLR_BIT));
 #endif
