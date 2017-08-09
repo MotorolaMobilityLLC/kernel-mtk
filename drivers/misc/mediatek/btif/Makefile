@@ -6,6 +6,7 @@ ifneq ($(KERNELRELEASE),)
 	MTK_PLATFORM := $(subst ",,$(CONFIG_MTK_PLATFORM))
 	subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat/$(MTK_PLATFORM)/include
 	subdir-ccflags-y += -I$(srctree)/arch/arm/mach-$(MTK_PLATFORM)/include/mach
+	subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat
 
     obj-y += common/
 

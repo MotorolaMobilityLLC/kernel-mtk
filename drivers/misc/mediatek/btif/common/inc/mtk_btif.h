@@ -20,6 +20,7 @@
 #include <linux/string.h>
 #include <linux/time.h>		/* gettimeofday */
 #include <asm-generic/bug.h>
+#include <mt_lpae.h>
 
 #include "btif_pub.h"
 #include "btif_dma_pub.h"

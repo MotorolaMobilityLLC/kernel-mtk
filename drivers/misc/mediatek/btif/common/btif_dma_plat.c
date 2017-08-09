@@ -1396,3 +1396,18 @@ int _btif_dma_dump_dbg_reg(void)
 	return 0;
 }
 
+void hal_btif_tx_dma_vff_set_for_4g(void)
+{
+	BTIF_DBG_FUNC("Set btif tx_vff_addr bit29\n");
+	BTIF_SET_BIT(TX_DMA_VFF_ADDR_BIT29(mtk_btif_tx_dma.base), DMA_VFF_BIT29_OFFSET);
+	BTIF_DBG_FUNC("Dump value of bit29 0x%x:(0x%x)\n", TX_DMA_VFF_ADDR_BIT29(mtk_btif_tx_dma.base),
+					BTIF_READ32(TX_DMA_VFF_ADDR_BIT29(mtk_btif_tx_dma.base)));
+}
+void hal_btif_rx_dma_vff_set_for_4g(void)
+{
+	BTIF_DBG_FUNC("Set btif rx_vff_addr bit29\n");
+	BTIF_SET_BIT(RX_DMA_VFF_ADDR_BIT29(mtk_btif_rx_dma.base), DMA_VFF_BIT29_OFFSET);
+	BTIF_DBG_FUNC("Dump value of bit29 0x%x:(0x%x)\n", RX_DMA_VFF_ADDR_BIT29(mtk_btif_rx_dma.base),
+					BTIF_READ32(RX_DMA_VFF_ADDR_BIT29(mtk_btif_rx_dma.base)));
+}
+
