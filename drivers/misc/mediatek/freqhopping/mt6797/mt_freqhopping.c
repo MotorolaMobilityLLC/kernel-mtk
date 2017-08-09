@@ -218,6 +218,58 @@ static unsigned long g_reg_pll_con1[FH_PLL_NUM];
 /*****************************************************************************/
 /* Special Function for Everest BUS issue */
 /*****************************************************************************/
+#define hs_read32(reg)          readl((void __iomem *)reg)
+#define hs_write32(reg, val)    mt_reg_sync_writel((val), (reg))
+
+static void __iomem *g_sema_base;
+static unsigned long g_reg_sema3_m0;
+#define SEMA_GET_TIMEOUT	2000	/* us */
+
+static int mt6797_0x1001AXXX_get_semaphore(void)
+{
+	int i;
+	int n = DIV_ROUND_UP(SEMA_GET_TIMEOUT, 10);
+
+	FH_MSG_DEBUG("mt6797_0x1001AXXX_get_semaphore+");
+
+	if (g_initialize == 0) {
+		FH_MSG("(Warning) %s FHCTL isn't ready.\n", __func__);
+		return 0;
+	}
+
+	FH_MSG_DEBUG("0x1001AXXX sema get %lx\n", g_reg_sema3_m0);
+
+	for (i = 0; i < n; i++) {
+		hs_write32(g_reg_sema3_m0, 0x1);
+		if (hs_read32(g_reg_sema3_m0) & 0x1)
+			return 0;
+
+		udelay(10);
+	}
+
+	FH_MSG("0x1001AXXX SEMA_USER GET TIMEOUT");
+	BUG_ON(1);
+
+	return -EBUSY;
+}
+
+static void mt6797_0x1001AXXX_release_semaphore(void)
+{
+
+	if (g_initialize == 0) {
+		FH_MSG("(Warning) %s FHCTL isn't ready.", __func__);
+		return;
+	}
+
+
+	FH_MSG("0x1001AXXX sema release\n");
+
+	if (hs_read32(g_reg_sema3_m0) & 0x1) {
+		hs_write32(g_reg_sema3_m0, 0x1);
+		BUG_ON(hs_read32(g_reg_sema3_m0) & 0x1);	/* semaphore release failed */
+	}
+}
+
 
 /* 0x1001AXX bus access should use the API to protect
  * All clock driver might call the API when access 0x1001AXX address.
@@ -226,6 +278,7 @@ void mt6797_0x1001AXXX_lock(void)
 {
 	spin_lock(&g_mt6797_0x1001AXXX_lock);
 
+#if 0
 	/* HW Semaphore -- GET */
 	if (0 != cpuhvfs_get_dvfsp_semaphore(SEMA_FHCTL_DRV)) {
 		if (0 != cpuhvfs_get_dvfsp_semaphore(SEMA_FHCTL_DRV)) {
@@ -233,11 +286,23 @@ void mt6797_0x1001AXXX_lock(void)
 			BUG_ON(1);
 		}
 	}
+#else
+	if (0 != mt6797_0x1001AXXX_get_semaphore()) {
+		if (0 != mt6797_0x1001AXXX_get_semaphore()) {
+			FH_MSG("[ERROR] mt_pause_armpll() HW sema time out 4ms");
+			BUG_ON(1);
+		}
+	}
+#endif
 }
 
 void mt6797_0x1001AXXX_unlock(void)
 {
+#if 0
 	cpuhvfs_release_dvfsp_semaphore(SEMA_FHCTL_DRV);
+#else
+	mt6797_0x1001AXXX_release_semaphore();
+#endif
 	spin_unlock(&g_mt6797_0x1001AXXX_lock);
 }
 
@@ -1525,6 +1590,25 @@ static int __reg_base_addr_init(void)
 	FH_MSG("g_apmixed_base:0x%lx", (unsigned long)g_apmixed_base);
 	FH_MSG("g_mcumixed_base:0x%lx", (unsigned long)g_mcumixed_base);
 
+	/*****************************************************/
+	/* [Everest issue] Special code for 0x1001AXXX accese */
+	/* DVFSP HW semaphore. */
+	{
+		struct device_node *sema_node;
+
+		sema_node = of_find_compatible_node(NULL, NULL, "mediatek,mt6797-dvfsp");
+		g_sema_base = of_iomap(sema_node, 0);
+		g_reg_sema3_m0 = (unsigned long)g_sema_base + (0x440);
+
+		{
+			unsigned long g_reg_test;
+
+			g_reg_test = (unsigned long)ioremap_nocache(0x11015000, 1024);
+			hs_write32(g_reg_test, 0x0b160001);	/* mt6797-dvfsp enable internal CG bit */
+		}
+	}
+	/******************************************************/
+
 	__reg_tbl_init();
 
 	return 0;
@@ -1551,6 +1635,8 @@ static void mt_fh_hal_init(void)
 
 	/* Global Variable Init */
 	__global_var_init();
+
+	g_initialize = 1;
 
 	/* FHCTL IP Init */
 	for (i = 0; i < FH_PLL_NUM; ++i) {
@@ -1597,8 +1683,6 @@ static void mt_fh_hal_init(void)
 			mt6797_0x1001AXXX_unlock();
 		}		/* if-else */
 	}			/* for */
-
-	g_initialize = 1;
 
 	FH_MSG("mt_fh_hal_init done");
 }
