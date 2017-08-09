@@ -2872,7 +2872,7 @@ int ddp_dsi_set_lcm_utils(DISP_MODULE_ENUM module, LCM_DRIVER *lcm_drv)
 		utils->dsi_set_cmdq_V3 = DSI_set_cmdq_V3_Wrapper_DSIDual;
 		utils->dsi_dcs_read_lcm_reg_v2 = DSI_dcs_read_lcm_reg_v2_wrapper_DSIDUAL;
 		utils->dsi_set_cmdq_V22 = DSI_set_cmdq_V2_DSIDual;
-		/* utils->dsi_set_cmdq_V22 = DSI_set_cmdq_V22_Wrapper_DSIDual; */
+		utils->dsi_set_cmdq_V23 = DSI_set_cmdq_V2_DSIDual;
 #endif
 	}
 
