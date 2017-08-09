@@ -56,7 +56,7 @@ extern int nand_unlock(struct mtd_info *mtd, loff_t ofs, uint64_t len);
  * is supported now. If you add a chip with bigger oobsize/page
  * adjust this accordingly.
  */
-#define NAND_MAX_OOBSIZE	1024
+#define NAND_MAX_OOBSIZE	2368
 #define NAND_MAX_PAGESIZE	16384
 
 #ifdef CONFIG_MTK_MTD_NAND
@@ -111,12 +111,28 @@ extern int nand_unlock(struct mtd_info *mtd, loff_t ofs, uint64_t len);
 
 #define NAND_CMD_NONE		-1
 
+#define SET_SLC_MODE_CMD 0xA2
+#define LOW_PG_SELECT_CMD 0x01
+#define MID_PG_SELECT_CMD 0x02
+#define HIGH_PG_SELECT_CMD 0x03
+#define PROGRAM_1ST_CYCLE_CMD 0x09
+#define PROGRAM_2ND_CYCLE_CMD 0x0D
+#define CHANGE_COLUNM_ADDR_1ST_CMD 0x05
+#define CHANGE_COLUNM_ADDR_2ND_CMD 0xE0
+#define PROGRAM_LEFT_PLANE_CMD 0x11
+#define PROGRAM_RIGHT_PLANE_CMD 0x1A
+#define NOT_KEEP_ERASE_LVL_15NM_CMD 0xC6
+#define NOT_KEEP_ERASE_LVL_A19NM_CMD 0xDF
+
 /* Status bits */
 #define NAND_STATUS_FAIL	0x01
 #define NAND_STATUS_FAIL_N1	0x02
 #define NAND_STATUS_TRUE_READY	0x20
 #define NAND_STATUS_READY	0x40
 #define NAND_STATUS_WP		0x80
+#if defined(CONFIG_MTK_TLC_NAND_SUPPORT)
+#define SLC_MODE_OP_FALI    (0x04)
+#endif
 
 /*
  * Constants for ECC_MODES
@@ -158,6 +174,8 @@ typedef enum {
  * autoincrement.
  */
 #define NAND_NEED_READRDY	0x00000100
+
+#define NAND_NO_READRDY		0x00000100
 
 /* Chip does not allow subpage writes */
 #define NAND_NO_SUBPAGE_WRITE	0x00000200
@@ -1070,9 +1088,18 @@ extern void nand_enable_clock(void);
 extern void nand_disable_clock(void);
 #endif
 
-#ifdef CONFIG_MTK_MLC_NAND_SUPPORT
+#if (defined(CONFIG_MTK_MLC_NAND_SUPPORT) || defined(CONFIG_MTK_TLC_NAND_SUPPORT))
 extern bool g_b2Die_CS;
 extern bool mtk_nand_IsRawPartition(loff_t logical_address);
+extern u64 part_get_startaddress(u64 byte_address, u32 *idx);
+#endif
+
+#if defined(CONFIG_MTK_TLC_NAND_SUPPORT)
+extern int mtk_nand_write_tlc_block(struct mtd_info *mtd, struct nand_chip *chip,
+				uint8_t *buf, u32 page);
+extern bool mtk_block_istlc(u64 addr);
+extern bool mtk_is_normal_tlc_nand(void);
+extern u64 mtk_nand_device_size(void);
 #endif
 
 #define PMT_POOL_SIZE (2)

@@ -487,7 +487,7 @@ ssize_t dumchar_write(struct file *filp, const char __user *buf, size_t count, l
 #ifdef CONFIG_MTK_EMMC_SUPPORT
 	loff_t pos = 0;
 #endif
-#ifdef CONFIG_MTK_COMBO_NAND_SUPPORT
+#if defined(CONFIG_MTK_COMBO_NAND_SUPPORT) || defined(CONFIG_MTK_TLC_NAND_SUPPORT)
 	struct mtd_info *mtd;
 	unsigned int writesize = -1;
 #endif
@@ -500,7 +500,8 @@ ssize_t dumchar_write(struct file *filp, const char __user *buf, size_t count, l
 		show_stack(NULL, NULL);
 		return -EINVAL;
 	}
-#ifdef CONFIG_MTK_COMBO_NAND_SUPPORT
+
+#if defined(CONFIG_MTK_COMBO_NAND_SUPPORT) || defined(CONFIG_MTK_TLC_NAND_SUPPORT)
 	mtd_for_each_device(mtd) {
 		if (dev->mtd_index == mtd->index) {
 			writesize = mtd->writesize;

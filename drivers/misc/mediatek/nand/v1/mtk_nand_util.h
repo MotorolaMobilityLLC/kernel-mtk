@@ -36,10 +36,6 @@
     #define ASSERT(expr)        BUG_ON(!(expr))
 #endif
 
-#ifndef BOOL
-typedef unsigned char  BOOL;
-#endif
-
 #define DRV_Reg8(x) __raw_readb(x)
 #define DRV_Reg16(x) __raw_readw(x)
 #define DRV_Reg32(x) __raw_readl(x)
@@ -106,9 +102,10 @@ struct NAND_CMD {
 	u32 pureReadOOBNum;
 #endif
 };
-
+extern struct flashdev_info_t gn_devinfo;
 extern void mt_irq_set_sens(unsigned int irq, unsigned int sens);
 extern void mt_irq_set_polarity(unsigned int irq, unsigned int polarity);
+
 bool mtk_nand_SetFeature(struct mtd_info *mtd, u16 cmd, u32 addr, u8 *value, u8 bytes);
 bool mtk_nand_GetFeature(struct mtd_info *mtd, u16 cmd, u32 addr, u8 *value, u8 bytes);
 extern void part_init_pmt(struct mtd_info *mtd, u8 *buf);
@@ -119,6 +116,21 @@ extern struct mtd_partition g_pasStatic_Partition[];
 extern int part_num;
 extern struct mtd_partition g_exist_Partition[];
 extern struct mtd_partition g_pasStatic_Partition[PART_MAX_COUNT];
+#if defined(CONFIG_MTK_TLC_NAND_SUPPORT)
+extern int mtk_nand_write_tlc_block_hw(struct mtd_info *mtd, struct nand_chip *chip,
+				uint8_t *buf, u32 mapped_block);
+extern bool mtk_block_istlc(u64 addr);
+extern u64 OFFSET(u32 block);
+extern void mtk_slc_blk_addr(u64 addr, u32 *blk_num, u32 *page_in_block);
+extern bool mtk_block_istlc(u64 addr);
+extern void mtk_pmt_reset(void);
+extern bool mtk_nand_IsBMTPOOL(loff_t logical_address);
+#endif
+#if defined(CONFIG_MTK_TLC_NAND_SUPPORT)
+bool mtk_is_normal_tlc_nand(void);
+int mtk_nand_tlc_block_mark(struct mtd_info *mtd, struct nand_chip *chip, u32 mapped_block);
+#endif
+
 
 void show_stack(struct task_struct *tsk, unsigned long *sp);
 extern int mtk_nand_interface_async(void);
@@ -145,6 +157,7 @@ struct mtk_nand_host_hw {
 	unsigned int nand_ecc_size;
 	unsigned int nand_ecc_bytes;
 	unsigned int nand_ecc_mode;
+	unsigned int nand_fdm_size;            /*FDM size, for 8163 tlc*/
 };
 extern struct mtk_nand_host_hw mtk_nand_hw;
 

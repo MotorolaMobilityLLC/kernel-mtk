@@ -81,7 +81,7 @@
 #endif
 
 #ifndef RAND_START_ADDR
-#define RAND_START_ADDR   1024
+#define RAND_START_ADDR   0
 #endif
 
 
