@@ -1753,6 +1753,9 @@
 			interrupts = <GIC_SPI 77 IRQ_TYPE_LEVEL_LOW>;
 		};
 	};
+	lcm: lcm {
+		compatible = "mediatek,lcm";
+	};
 
 /* sensor part */
 		hwmsensor@0 {
@@ -1993,3 +1996,4 @@
 	};
 };
 /*CLDMA end*/
+
