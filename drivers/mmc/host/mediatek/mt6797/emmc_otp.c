@@ -117,7 +117,6 @@ struct msdc_host *emmc_otp_get_host(void)
 unsigned int emmc_get_wp_size(void)
 {
 	unsigned char l_ext_csd[512];
-	unsigned char csd[512];
 	u32 *resp = NULL;
 	struct msdc_host *host_ctl;
 	unsigned int write_prot_grpsz = 0;

@@ -123,7 +123,7 @@ int msdc_can_apply_cache(unsigned long long start_addr,
 	return 1;
 }
 
-int msdc_get_cache_region(void)
+void msdc_get_cache_region(struct work_struct *work)
 {
 	struct hd_struct *lp_hd_struct = NULL;
 
@@ -154,8 +154,6 @@ int msdc_get_cache_region(void)
 	pr_err("cache(0x%llX~0x%llX, usrdata(0x%llX~0x%llX)\n",
 		g_cache_part_start, g_cache_part_end,
 		g_usrdata_part_start, g_usrdata_part_end);
-	return 0;
-
 }
 EXPORT_SYMBOL(msdc_get_cache_region);
 static struct delayed_work get_cache_info;

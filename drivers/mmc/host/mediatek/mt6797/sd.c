@@ -1861,6 +1861,11 @@ static u32 msdc_command_resp_polling(struct msdc_host *host,
 		    (cmd->opcode != 1)) {
 			msdc_dump_info(host->id);
 		}
+		if (cmd->opcode == MMC_STOP_TRANSMISSION) {
+			cmd->error = 0;
+			pr_err("msdc%d: send stop TMO, device status: %x\n",
+					host->id, host->device_status);
+		}
 		if ((cmd->opcode == 5) && emmc_do_sleep_awake)
 			msdc_dump_info(host->id);
 
@@ -4173,6 +4178,24 @@ int msdc_stop_and_wait_busy(struct msdc_host *host, struct mmc_request *mrq)
 	return 0;
 
 }
+int msdc_wait_busy(struct msdc_host *host, struct mmc_request *mrq)
+{
+	void __iomem *base = host->base;
+	unsigned long polling_tmo = 0;
+
+	polling_tmo = jiffies + POLLING_BUSY;
+	pr_err("msdc%d, waiting device is not busy\n", host->id);
+	do {
+		msleep(100);
+		if (time_after(jiffies, polling_tmo)) {
+			pr_err("msdc%d, device stuck in PRG!\n",
+					host->id);
+			return -1;
+		}
+	} while ((MSDC_READ32(MSDC_PS) & 0x10000) != 0x10000);
+	return 0;
+
+}
 int msdc_error_tuning(struct mmc_host *mmc,  struct mmc_request *mrq)
 {
 	struct msdc_host *host = mmc_priv(mmc);
@@ -4224,7 +4247,15 @@ int msdc_error_tuning(struct mmc_host *mmc,  struct mmc_request *mrq)
 		if (msdc_stop_and_wait_busy(host, mrq))
 			goto recovery;
 	}
-
+	/* If mmc_send_stop resp crc, host must wait device is not busy
+	 * Then resend CMD12, this time CMD12 will TMO, but device is in
+	 * transfer status. driver return cmd->error = 0
+	 */
+	if ((mrq->cmd->opcode == MMC_STOP_TRANSMISSION) &&
+		(host->err_cmd == MMC_STOP_TRANSMISSION)) {
+		if (msdc_wait_busy(host, mrq))
+			goto recovery;
+	}
 	if (host->hw->host_function == MSDC_EMMC ||
 		host->hw->host_function == MSDC_SD) {
 		switch (mmc->ios.timing) {

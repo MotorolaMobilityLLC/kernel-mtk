@@ -2028,7 +2028,7 @@ int execute_online_tuning_hs400(struct msdc_host *host, u8 *res)
 	unsigned int uCmdEdge = 0;
 	u64 RawData64 = 0LL;
 	unsigned int score = 0;
-	unsigned int i, j, k, cycle_value;
+	unsigned int j, k, cycle_value;
 	struct AUTOK_REF_INFO uCmdDatInfo;
 	struct AUTOK_SCAN_RES *pBdInfo;
 	char tune_result_str64[65];
@@ -2373,7 +2373,7 @@ int execute_online_tuning_hs200(struct msdc_host *host, u8 *res)
 	unsigned int uCmdEdge = 0;
 	u64 RawData64 = 0LL;
 	unsigned int score = 0;
-	unsigned int i, j, k, cycle_value;
+	unsigned int j, k, cycle_value;
 	struct AUTOK_REF_INFO uCmdDatInfo;
 	struct AUTOK_SCAN_RES *pBdInfo;
 	char tune_result_str64[65];
@@ -2483,7 +2483,7 @@ int execute_online_tuning(struct msdc_host *host, u8 *res)
 	unsigned int uDatEdge = 0;
 	u64 RawData64 = 0LL;
 	unsigned int score = 0;
-	unsigned int i, j, k;
+	unsigned int j, k;
 	unsigned int opcode = MMC_SEND_TUNING_BLOCK;
 	struct AUTOK_REF_INFO uCmdDatInfo;
 	struct AUTOK_SCAN_RES *pBdInfo;

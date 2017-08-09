@@ -761,7 +761,7 @@ void msdc_dump_info(u32 id);
 void msdc_dump_register(struct msdc_host *host);
 void msdc_dump_register_core(u32 id, void __iomem *base);
 void msdc_dump_dbg_register_core(u32 id, void __iomem *base);
-int msdc_get_cache_region(void);
+void msdc_get_cache_region(struct work_struct *work);
 u64 msdc_get_capacity(int get_emmc_total);
 int msdc_get_card_status(struct mmc_host *mmc, struct msdc_host *host,
 	u32 *status);
