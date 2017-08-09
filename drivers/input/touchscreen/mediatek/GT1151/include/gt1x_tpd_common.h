@@ -423,5 +423,6 @@ extern bool upmu_is_chr_det(void);
 #endif
 #endif
 extern struct tpd_filter_t tpd_filter;
+extern wait_queue_head_t init_waiter;
 
 #endif /* GT1X_TPD_COMMON_H__ */

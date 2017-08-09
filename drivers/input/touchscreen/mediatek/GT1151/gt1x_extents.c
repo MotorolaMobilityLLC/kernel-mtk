@@ -120,7 +120,7 @@ int gesture_enter_doze(void)
 			GTP_DEBUG("GTP has been working in doze mode!");
 			return 0;
 		}
-		mdelay(20);
+		msleep(20);
 	}
 	GTP_ERROR("GTP send doze cmd failed.");
 	return -1;
@@ -238,7 +238,7 @@ static s32 hotknot_enter_transfer_mode(void)
 
 	gt1x_irq_disable();
 	gt1x_send_cmd(GTP_CMD_HN_TRANSFER, 0);
-	mdelay(100);
+	msleep(100);
 	gt1x_irq_enable();
 
 	ret = gt1x_i2c_read(0x8140, buffer, sizeof(buffer));

@@ -50,6 +50,7 @@ static struct notifier_block pm_notifier_block;
 static int tpd_polling_time = 50;
 static DECLARE_WAIT_QUEUE_HEAD(waiter);
 static DECLARE_WAIT_QUEUE_HEAD(pm_waiter);
+DECLARE_WAIT_QUEUE_HEAD(init_waiter);
 DEFINE_MUTEX(i2c_access);
 unsigned int touch_irq = 0;
 u8 int_type = 0;
@@ -353,7 +354,7 @@ static int tpd_power_on(void)
 	gt1x_power_switch(SWITCH_ON);
 
 	gt1x_select_addr();
-	mdelay(20);
+	msleep(20);
 
 	if (gt1x_get_chip_type() != 0)
 		return -1;
@@ -413,7 +414,7 @@ void gt1x_power_switch(s32 state)
 
 	GTP_GPIO_OUTPUT(GTP_RST_PORT, 0);
 	GTP_GPIO_OUTPUT(GTP_INT_PORT, 0);
-	mdelay(20);
+	msleep(20);
 
 	switch (state) {
 	case SWITCH_ON:
@@ -566,7 +567,7 @@ static int tpd_registration(void *client)
 
 	GTP_GPIO_AS_INT(GTP_INT_PORT);
 
-	mdelay(50);
+	msleep(50);
 	/* EINT device tree, default EINT enable */
 	tpd_irq_registration();
 
@@ -593,7 +594,7 @@ static int tpd_registration(void *client)
 static s32 tpd_i2c_probe(struct i2c_client *client, const struct i2c_device_id *id)
 {
 	int err = 0;
-	int count = 0;
+	/*int count = 0;*/
 
 	GTP_INFO("tpd_i2c_probe start.");
 #ifdef CONFIG_MTK_BOOT
@@ -606,16 +607,20 @@ static s32 tpd_i2c_probe(struct i2c_client *client, const struct i2c_device_id *
 		GTP_INFO(TPD_DEVICE " failed to create probe thread: %d\n", err);
 		return err;
 	}
-
+	GTP_INFO("tpd_i2c_probe start.wait_event_interruptible");
+	wait_event_interruptible(init_waiter, check_flag == true);
+	GTP_INFO("tpd_i2c_probe end.wait_event_interruptible");
+/*
 	do {
 		GTP_INFO("ZH tpd_i2c_probe A count = %d", count);
-		mdelay(20);
+		msleep(20);
 		GTP_INFO("ZH tpd_i2c_probe B count = %d", count);
 		count++;
 		if (check_flag == true)
 			break;
 	} while (count < 300);
 	GTP_INFO("tpd_i2c_probe done.count = %d, flag = %d", count, tpd_load_status);
+*/
 	return 0;
 }
 
@@ -755,7 +760,7 @@ static int tpd_event_handler(void *unused)
 			tpd_flag = 0;
 		} else {
 			GTP_DEBUG("Polling coordinate mode!");
-			mdelay(tpd_polling_time);
+			msleep(tpd_polling_time);
 		}
 
 		set_current_state(TASK_RUNNING);
@@ -1055,7 +1060,7 @@ static void tpd_suspend(struct device *h)
 	}
 
 	mutex_unlock(&i2c_access);
-	mdelay(58);
+	msleep(58);
 }
 
 /* Function to manage power-on resume */

@@ -214,7 +214,7 @@ static int gt1x_search_update_files(void)
 
 	GTP_INFO("Search firmware file...");
 	while (retry-- > 0) {
-		mdelay(500);
+		msleep(500);
 
 		/*check if rootfs is ready*/
 		if (gt1x_check_fs_mounted("/data")) {
@@ -631,7 +631,7 @@ int gt1x_run_ss51_isp(u8 *ss51_isp, int length)
 		return ret;
 	}
 
-	mdelay(100);
+	msleep(100);
 	/*check run state*/
 	ret = gt1x_i2c_read(0x8006, buffer, 2);
 	if (ret) {
@@ -727,7 +727,7 @@ int gt1x_burn_subsystem(struct fw_subsystem_info *subsystem)
 		wait_time = 200;
 		while (wait_time > 0) {
 			wait_time--;
-			mdelay(20);
+			msleep(20);
 			ret = gt1x_i2c_read(0x8022, buffer, 1);
 			if (ret)
 				continue;
@@ -790,7 +790,7 @@ int gt1x_read_flash(u32 addr, int length)
 	wait_time = 200;
 	while (wait_time > 0) {
 		wait_time--;
-		mdelay(20);
+		msleep(20);
 		ret = gt1x_i2c_read(0x8022, buffer, 1);
 		if (ret)
 			continue;
@@ -914,7 +914,7 @@ int gt1x_update_firmware(char *filename)
 		goto gt1x_update_exit;
 	}
 	update_info.progress = 5;
-	mdelay(800);
+	msleep(800);
 
 	for (i = 1; i < update_info.firmware->subsystem_count; i++) {
 		GTP_INFO("subsystem: %d", update_info.firmware->subsystem[i].type);
@@ -1020,7 +1020,7 @@ int gt1x_hold_ss51_dsp(void)
 	u8 buffer[2];
 
 	gt1x_select_addr();
-	mdelay(20);
+	msleep(20);
 	/*old ss51_dsp*/
 	ret = __gt1x_hold_ss51_dsp_20();
 	if (ret)
@@ -1245,7 +1245,7 @@ int gt1x_startup_patch(void)
 	buffer[0] = 0x00;
 	ret |= gt1x_i2c_write(_rRW_MISCTL__SWRST_B0_, buffer, 1);
 
-	mdelay(200);
+	msleep(200);
 
 	return ret;
 }
