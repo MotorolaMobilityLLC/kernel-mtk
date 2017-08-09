@@ -3338,8 +3338,7 @@ void autok_msdc_tx_setting(struct msdc_host *host, struct mmc_ios *ios)
 	void __iomem *base = host->base;
 
 	if (host->id == 0) {
-		if ((ios->timing == MMC_TIMING_MMC_HS400) &&
-		    (ios->clock >= 100000000)) {
+		if (ios->timing == MMC_TIMING_MMC_HS400) {
 			MSDC_SET_FIELD(EMMC50_CFG0,
 				MSDC_EMMC50_CFG_TXSKEW_SEL,
 				AUTOK_MSDC0_HS400_TXSKEW);
