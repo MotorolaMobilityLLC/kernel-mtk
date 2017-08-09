@@ -144,7 +144,7 @@ static imgsensor_info_struct imgsensor_info = {
 	.sensor_interface_type = SENSOR_INTERFACE_TYPE_MIPI,
 	.mipi_sensor_type = MIPI_OPHY_NCSI2, //0,MIPI_OPHY_NCSI2;  1,MIPI_OPHY_CSI2
 	.mipi_settle_delay_mode = MIPI_SETTLEDELAY_AUTO,//0,MIPI_SETTLEDELAY_AUTO; 1,MIPI_SETTLEDELAY_MANNUAL
-	.sensor_output_dataformat = SENSOR_OUTPUT_FORMAT_RAW_Gr,
+	.sensor_output_dataformat = SENSOR_OUTPUT_FORMAT_RAW_Gb, //SENSOR_OUTPUT_FORMAT_RAW_B, //SENSOR_OUTPUT_FORMAT_RAW_Gr,
 	.mclk = 24,
 	.mipi_lane_num = SENSOR_MIPI_2_LANE,
 	.i2c_addr_table = {0x20, 0x6c, 0xff},
@@ -307,11 +307,12 @@ static void write_shutter_frame_time(kal_uint16 shutter, kal_uint16 frame_time)
 
 	// OV Recommend Solution
 	// if shutter bigger than frame_length, should extend frame length first
-
-	/*Change frame time*/
-	imgsensor.min_frame_length = imgsensor.frame_length = frame_time;
-	
 	spin_lock(&imgsensor_drv_lock);
+    /*Change frame time*/
+	imgsensor.dummy_line = (frame_time > imgsensor_info.pre.framelength) ? (frame_time - imgsensor_info.pre.framelength) : 0;
+	imgsensor.frame_length = imgsensor_info.pre.framelength + imgsensor.dummy_line;
+	imgsensor.min_frame_length = imgsensor.frame_length;
+
 	if (shutter > imgsensor.min_frame_length - imgsensor_info.margin)
 		imgsensor.frame_length = shutter + imgsensor_info.margin;
 	else
@@ -466,7 +467,7 @@ static void ihdr_write_shutter_gain(kal_uint16 le, kal_uint16 se, kal_uint16 gai
 }
 
 
-#if 0
+#if 1
 static void set_mirror_flip(kal_uint8 image_mirror)
 {
 	LOG_INF("image_mirror = %d\n", image_mirror);
@@ -631,6 +632,8 @@ static void sensor_init(void)
 
 	// streaming ON
 	write_cmos_sensor(0x0100,0x01);
+    
+    set_mirror_flip(3);
 }	/*	sensor_init  */
 
 
