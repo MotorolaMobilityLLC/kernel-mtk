@@ -1182,6 +1182,9 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 				      "DISP_MTCMOS_CLK";
 		};
 
+		lcm_mode: lcm_mode {
+			compatible = "mediatek,lcm_mode";
+		};
 
 		smi_larb0@14015000 {
 			compatible = "mediatek,smi_larb0";
