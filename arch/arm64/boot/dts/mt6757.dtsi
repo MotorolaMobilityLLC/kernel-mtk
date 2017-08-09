@@ -2413,6 +2413,36 @@
 		gpio-osc = <99>;
 	};
 
+	gsensor@0 {
+		compatible = "mediatek,gsensor";
+		/* vgsensor-supply = <&mt_pmic_vio28_ldo_reg>; */
+	};
+
+	alsps:als_ps@0 {
+		compatible = "mediatek,als_ps";
+		/* valsps-supply = <&mt_pmic_vio28_ldo_reg>; */
+	};
+
+	gyroscope:gyroscope@0 {
+		compatible = "mediatek,gyroscope";
+		/* vgyro-supply = <&mt_pmic_vio28_ldo_reg>; */
+	};
+
+	barometer@0 {
+		compatible = "mediatek,barometer";
+		/* vbarometer-supply = <&mt_pmic_vio28_ldo_reg>; */
+	};
+
+	m_baro_pl@0 {
+		compatible = "mediatek,m_baro_pl";
+		/* vbarometer-supply = <&mt_pmic_vio28_ldo_reg>; */
+	};
+
+	msensor@0 {
+		compatible = "mediatek,msensor";
+		/* vmsensor-supply = <&mt_pmic_vio28_ldo_reg>; */
+	};
+
 	irq_nfc: irq_nfc@ {
 		compatible = "mediatek,irq_nfc-eint";
 	};
