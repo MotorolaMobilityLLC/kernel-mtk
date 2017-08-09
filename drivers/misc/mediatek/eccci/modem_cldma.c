@@ -2073,6 +2073,7 @@ static inline int cldma_sw_init(struct ccci_modem *md)
 			     ret);
 		return ret;
 	}
+	atomic_inc(&md_ctrl->ccif_irq_enabled);
 #endif
 	return 0;
 }
@@ -2298,6 +2299,11 @@ static int md_cd_start(struct ccci_modem *md)
 	/* 7. let modem go */
 	md_cd_let_md_go(md);
 	wdt_enable_irq(md_ctrl);
+	if (atomic_read(&md_ctrl->ccif_irq_enabled) == 0) {
+		enable_irq(md_ctrl->ap_ccif_irq_id);
+		atomic_inc(&md_ctrl->ccif_irq_enabled);
+		CCCI_BOOTUP_LOG(md->index, TAG, "enable ccif irq1\n");
+	}
 	/* 8. start CLDMA */
 #ifdef ENABLE_CLDMA_AP_SIDE
 	CCCI_BOOTUP_LOG(md->index, TAG, "CLDMA AP side clock is always on\n");
@@ -2417,7 +2423,13 @@ static int md_cd_reset(struct ccci_modem *md)
 		return -CCCI_ERR_MD_IN_RESET;
 	}
 
-	if (md->flight_mode != MD_FIGHT_MODE_ENTER && md->md_state == EXCEPTION &&
+	if (md->flight_mode == MD_FIGHT_MODE_ENTER && atomic_read(&md_ctrl->ccif_irq_enabled) == 1) {
+			disable_irq(md_ctrl->ap_ccif_irq_id);
+			atomic_dec(&md_ctrl->ccif_irq_enabled);
+			CCCI_NORMAL_LOG(md->index, TAG, "Reset when MD state: %d, %d, %d\n",
+					md->md_state, md->boot_stage, md->ex_stage);
+
+	} else if (md->flight_mode != MD_FIGHT_MODE_ENTER && md->md_state == EXCEPTION &&
 		md->boot_stage != MD_BOOT_STAGE_EXCEPTION && md->ex_stage != EX_INIT_DONE) {
 
 		CCCI_NORMAL_LOG(md->index, TAG, "Will reset after MD exception!\n");
@@ -2557,6 +2569,7 @@ static int md_cd_stop(struct ccci_modem *md, unsigned int timeout)
 
 	/* ACK CCIF for MD. while entering flight mode, we may send something after MD slept */
 	cldma_write32(md_ctrl->md_ccif_base, APCCIF_ACK, cldma_read32(md_ctrl->md_ccif_base, APCCIF_RCHNUM));
+	cldma_write32(md_ctrl->ap_ccif_base, APCCIF_ACK, cldma_read32(md_ctrl->ap_ccif_base, APCCIF_RCHNUM));
 
 	md_cd_check_emi_state(md, 0);	/* Check EMI after */
 	return 0;
@@ -3846,6 +3859,7 @@ static int ccci_modem_probe(struct platform_device *plat_dev)
 	atomic_set(&md_ctrl->reset_on_going, 0);
 	atomic_set(&md_ctrl->wdt_enabled, 1); /* IRQ is default enabled after request_irq */
 	atomic_set(&md_ctrl->cldma_irq_enabled, 1);
+	atomic_set(&md_ctrl->ccif_irq_enabled, 0);
 	INIT_WORK(&md_ctrl->wdt_work, md_cd_wdt_work);
 #if TRAFFIC_MONITOR_INTERVAL
 	init_timer(&md_ctrl->traffic_monitor);

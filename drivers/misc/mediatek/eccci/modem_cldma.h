@@ -180,6 +180,7 @@ struct md_cd_ctrl {
 	atomic_t reset_on_going;
 	atomic_t wdt_enabled;
 	atomic_t cldma_irq_enabled;
+	atomic_t ccif_irq_enabled;
 	char trm_wakelock_name[32];
 	struct wake_lock trm_wake_lock;
 	char peer_wakelock_name[32];
