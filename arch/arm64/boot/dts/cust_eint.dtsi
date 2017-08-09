@@ -8,6 +8,9 @@
  * EINT DTSI File
 *************************/
 
+#include <dt-bindings/interrupt-controller/irq.h>
+#include <dt-bindings/interrupt-controller/arm-gic.h>
+
 &eintc {
 	IRQ_NFC@2 {
 		compatible = "mediatek, IRQ_NFC-eint";

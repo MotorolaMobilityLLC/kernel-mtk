@@ -1874,4 +1874,3 @@ clocks {
 
 };
 
-/include/ "cust_eint.dtsi"

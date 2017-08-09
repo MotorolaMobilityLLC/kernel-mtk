@@ -1768,7 +1768,7 @@
 };
 
 /* /include/ "cust_clk_buf.dtsi" */
-/include/ "cust_eint.dtsi"
+#include "cust_eint.dtsi"
 /include/ "cust_kpd.dtsi"
 /include/ "cust_i2c.dtsi"
 /* /include/ "cust_pmic.dtsi" */
