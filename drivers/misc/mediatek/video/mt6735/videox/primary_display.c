@@ -72,11 +72,7 @@
 #include "mtk_disp_mgr.h"
 #include "ddp_wdma.h"
 #include "ddp_wdma_ex.h"
-
-
-#ifndef MT_CG_DISP0_DISP_WDMA0
-#define MT_CG_DISP0_DISP_WDMA0	(13+64)
-#endif
+#include "mt_clk_id.h"
 
 typedef void (*fence_release_callback) (unsigned int data);
 unsigned int is_hwc_enabled = 0;
