@@ -65,7 +65,7 @@ void __cpuinit mt_smp_secondary_init(unsigned int cpu)
 	pr_debug("Slave cpu init\n");
 	HOTPLUG_INFO("platform_secondary_init, cpu: %d\n", cpu);
 
-	mt_gic_secondary_init();
+	/* mt_gic_secondary_init(); */
 
 	/*
 	 * let the primary processor know we're out of the
