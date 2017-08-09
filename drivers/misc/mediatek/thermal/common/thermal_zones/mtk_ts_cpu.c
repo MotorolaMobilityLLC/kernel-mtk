@@ -1970,7 +1970,7 @@ void tscpu_cancel_thermal_timer(void)
 {
 	/* stop thermal framework polling when entering deep idle */
 	if (thz_dev)
-		cancel_delayed_work_sync(&(thz_dev->poll_queue));
+		cancel_delayed_work(&(thz_dev->poll_queue));
 
 #ifdef FAST_RESPONSE_ATM
 	atm_cancel_hrtimer();

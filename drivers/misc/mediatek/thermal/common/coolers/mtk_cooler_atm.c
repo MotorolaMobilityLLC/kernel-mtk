@@ -1768,7 +1768,7 @@ static void tscpu_cooler_create_fs(void)
 #ifdef FAST_RESPONSE_ATM
 void atm_cancel_hrtimer(void)
 {
-	hrtimer_cancel(&atm_hrtimer);
+	hrtimer_try_to_cancel(&atm_hrtimer);
 }
 
 void atm_restart_hrtimer(void)
