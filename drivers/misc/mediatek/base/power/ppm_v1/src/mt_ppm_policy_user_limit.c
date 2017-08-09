@@ -144,10 +144,9 @@ static ssize_t ppm_userlimit_min_cpu_core_proc_write(struct file *file, const ch
 		if (userlimit_data.limit[id].max_core_num != -1
 			&& min_core != -1
 			&& min_core > userlimit_data.limit[id].max_core_num) {
-			ppm_err("@%s: min_core(%d) > max_core(%d)\n", __func__, min_core,
-				userlimit_data.limit[id].max_core_num);
-			ppm_unlock(&userlimit_policy.lock);
-			goto out;
+			ppm_warn("@%s: min_core(%d) > max_core(%d), sync to max core!\n",
+				__func__, min_core, userlimit_data.limit[id].max_core_num);
+			min_core = userlimit_data.limit[id].max_core_num;
 		}
 
 		if (min_core != userlimit_data.limit[id].min_core_num) {
@@ -223,10 +222,9 @@ static ssize_t ppm_userlimit_max_cpu_core_proc_write(struct file *file, const ch
 		if (userlimit_data.limit[id].min_core_num != -1
 			&& max_core != -1
 			&& max_core < userlimit_data.limit[id].min_core_num) {
-			ppm_err("@%s: max_core(%d) < min_core(%d)\n", __func__, max_core,
-				userlimit_data.limit[id].min_core_num);
-			ppm_unlock(&userlimit_policy.lock);
-			goto out;
+			ppm_warn("@%s: max_core(%d) < min_core(%d), overwrite min core!\n",
+				__func__, max_core, userlimit_data.limit[id].min_core_num);
+			userlimit_data.limit[id].min_core_num = max_core;
 		}
 
 		if (max_core != userlimit_data.limit[id].max_core_num) {
