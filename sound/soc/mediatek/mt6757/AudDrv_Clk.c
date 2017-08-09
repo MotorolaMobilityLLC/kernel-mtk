@@ -2137,7 +2137,9 @@ void SetCLkBclk(uint32 MckDiv, uint32 SampleRate, uint32 Channels, uint32 Wlengt
 	if (I2s_Bck_div > 0)
 		I2s_Bck_div--;
 
+	/* Follow MT6755: No TDM
 	Afe_Set_Reg(CLK_AUDDIV_2, I2s_Bck_div << 8, 0x0000ff00);
+	*/
 
 }
 

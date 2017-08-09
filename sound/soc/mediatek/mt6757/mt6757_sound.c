@@ -453,7 +453,7 @@ void Afe_Log_Print(void)
 	pr_debug("AFE_IRQ_MCU_CNT7 = 0x%x\n", Afe_Get_Reg(AFE_IRQ_MCU_CNT7));
 	pr_debug("AFE_APLL1_TUNER_CFG = 0x%x\n", Afe_Get_Reg(AFE_APLL1_TUNER_CFG));
 	pr_debug("AFE_APLL2_TUNER_CFG = 0x%x\n", Afe_Get_Reg(AFE_APLL2_TUNER_CFG));
-	pr_debug("AFE_CON33 = 0x%x\n", Afe_Get_Reg(AFE_CON33));
+	pr_debug("AFE_CONN33 = 0x%x\n", Afe_Get_Reg(AFE_CONN33));
 	pr_debug("AFE_GAIN1_CON0 = 0x%x\n", Afe_Get_Reg(AFE_GAIN1_CON0));
 	pr_debug("AFE_GAIN1_CON1 = 0x%x\n", Afe_Get_Reg(AFE_GAIN1_CON1));
 	pr_debug("AFE_GAIN1_CON2 = 0x%x\n", Afe_Get_Reg(AFE_GAIN1_CON2));
@@ -1408,8 +1408,8 @@ ssize_t AudDrv_Reg_Dump(char *buffer, int size)
 			Afe_Get_Reg(AFE_APLL1_TUNER_CFG));
 	n += scnprintf(buffer + n, size - n, "AFE_APLL2_TUNER_CFG    = 0x%x\n",
 			Afe_Get_Reg(AFE_APLL2_TUNER_CFG));
-	n += scnprintf(buffer + n, size - n, "AFE_CON33    = 0x%x\n",
-			Afe_Get_Reg(AFE_CON33));
+	n += scnprintf(buffer + n, size - n, "AFE_CONN33    = 0x%x\n",
+			Afe_Get_Reg(AFE_CONN33));
 	n += scnprintf(buffer + n, size - n, "AFE_GAIN1_CON0		   = 0x%x\n",
 			Afe_Get_Reg(AFE_GAIN1_CON0));
 	n += scnprintf(buffer + n, size - n, "AFE_GAIN1_CON1		   = 0x%x\n",

@@ -21,7 +21,7 @@
  *
  * Project:
  * --------
- *   MT6797  Audio Driver Afe Register setting
+ *   MT6757  Audio Driver Afe Register setting
  *
  * Description:
  * ------------
@@ -360,7 +360,7 @@ typedef struct {
 #define AUDIO_HW_PHYSICAL_BASE  (0x11220000L)
 #define AUDIO_CLKCFG_PHYSICAL_BASE  (0x10000000L)
 /* need enable this register before access all register */
-#define AUDIO_POWER_TOP (0x10006314L)
+#define AUDIO_POWER_TOP (0x1000629cL)
 #define AUDIO_INFRA_BASE (0x10001000L)
 #define AUDIO_HW_VIRTUAL_BASE   (0xF1220000L)
 
@@ -378,11 +378,10 @@ typedef struct {
 #define AFE_INTERNAL_SRAM_SIZE  (0xC000) /* 48k, for normal mode */
 
 /* Dram */
-#define AFE_EXTERNAL_DRAM_SIZE  (0x8000) /* 32k */
+#define AFE_EXTERNAL_DRAM_SIZE  (0xC000) /* 48k */
 
 /* IRQ */
 #define AFE_IRQ_MASK  (0x43)
-
 /*****************************************************************************
  *                         M A C R O
  *****************************************************************************/
@@ -515,7 +514,7 @@ typedef struct {
 #define AFE_IRQ_MCU_CNT7          (AFE_BASE + 0x03dc)
 #define AFE_APLL1_TUNER_CFG       (AFE_BASE + 0x03f0)
 #define AFE_APLL2_TUNER_CFG       (AFE_BASE + 0x03f4)
-#define AFE_CON33                 (AFE_BASE + 0x0408)
+#define AFE_CONN33                (AFE_BASE + 0x0408)
 #define AFE_GAIN1_CON0            (AFE_BASE + 0x0410)
 #define AFE_GAIN1_CON1            (AFE_BASE + 0x0414)
 #define AFE_GAIN1_CON2            (AFE_BASE + 0x0418)

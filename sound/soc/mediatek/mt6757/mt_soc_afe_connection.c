@@ -95,6 +95,7 @@ const uint32 mConnectionReg[Soc_Aud_InterConnectionOutput_Num_Output] = {
 	AFE_CONN15, AFE_CONN16, AFE_CONN17, AFE_CONN18, AFE_CONN19,
 	AFE_CONN20, AFE_CONN21, AFE_CONN22, AFE_CONN23, AFE_CONN24,
 	AFE_CONN25, AFE_CONN26, AFE_CONN27, AFE_CONN28, AFE_CONN29,
+	AFE_CONN30, AFE_CONN31, AFE_CONN32, AFE_CONN33
 	};
 
 /**
@@ -576,6 +577,22 @@ static bool CheckBitsandReg(short regaddr, char bits)
 	return true;
 }
 
+uint32 GetConnectionShiftReg(uint32 Output)
+{
+	if (Soc_Aud_InterConnectionOutput_O32 > Output)
+		return AFE_CONN_RS;
+	else
+		return AFE_CONN_RS1;
+}
+
+uint32 GetConnectionShiftOffset(uint32 Output)
+{
+	if (Soc_Aud_InterConnectionOutput_O32 > Output)
+		return Output;
+	else
+		return (Output - Soc_Aud_InterConnectionOutput_O32);
+}
+
 bool SetConnectionState(uint32 ConnectionState, uint32 Input, uint32 Output)
 {
 	/* printk("SetinputConnection ConnectionState = %d
@@ -620,8 +637,11 @@ bool SetConnectionState(uint32 ConnectionState, uint32 Input, uint32 Output)
 	case Soc_Aud_InterCon_ConnectionShift:
 	{
 		/* printk("nConnectionState = %d\n", ConnectionState); */
-		if (CheckBitsandReg(AFE_CONN_RS, Input)) {
-			Afe_Set_Reg(AFE_CONN_RS, 1 << Input, 1 << Input);
+		uint32 shiftReg = GetConnectionShiftReg(Output);
+		uint32 shiftOffset = GetConnectionShiftOffset(Output);
+
+		if (CheckBitsandReg(shiftReg, Input)) {
+			Afe_Set_Reg(shiftReg, 1 << shiftOffset, 1 << shiftOffset);
 			mConnectionState[Input][Output] |= Soc_Aud_InterCon_ConnectionShift;
 		}
 		break;

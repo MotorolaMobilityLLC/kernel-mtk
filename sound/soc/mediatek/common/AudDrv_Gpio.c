@@ -81,7 +81,7 @@ enum audio_system_gpio_type {
 	GPIO_TDM_MODE0,
 	GPIO_TDM_MODE1,
 #if MT6755_PIN
-	GPIO_DEFAULT,
+	/* GPIO_DEFAULT, */
 	GPIO_PMIC_MODE0,
 	GPIO_PMIC_MODE1,
 	GPIO_I2S_MODE0,
@@ -125,7 +125,7 @@ static struct audio_gpio_attr aud_gpios[GPIO_NUM] = {
 	[GPIO_TDM_MODE1] = {"aud_tdm_mode1", false, NULL},
 
 #if MT6755_PIN
-	[GPIO_DEFAULT] = {"default", false, NULL},
+	/* [GPIO_DEFAULT] = {"default", false, NULL}, */
 	[GPIO_PMIC_MODE0] = {"audpmicclk-mode0", false, NULL},
 	[GPIO_PMIC_MODE1] = {"audpmicclk-mode1", false, NULL},
 	[GPIO_I2S_MODE0] = {"audi2s1-mode0", false, NULL},

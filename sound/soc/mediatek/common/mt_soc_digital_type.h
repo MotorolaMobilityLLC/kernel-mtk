@@ -215,9 +215,14 @@ typedef enum {
 	Soc_Aud_InterConnectionOutput_O27,
 	Soc_Aud_InterConnectionOutput_O28,
 	Soc_Aud_InterConnectionOutput_O29,
+	Soc_Aud_InterConnectionOutput_O30,
+	Soc_Aud_InterConnectionOutput_O31,
+	Soc_Aud_InterConnectionOutput_O32,
+	Soc_Aud_InterConnectionOutput_O33,
 	Soc_Aud_InterConnectionOutput_Num_Output
 } Soc_Aud_InterConnectionOutput;
 
+#ifdef _NON_COMMON_FEATURE_READY
 typedef enum {
 	Soc_Aud_InterConnectionInput_I30,
 	Soc_Aud_InterConnectionInput_I31,
@@ -229,7 +234,6 @@ typedef enum {
 	Soc_Aud_InterConnectionInput_I37,
 } Soc_Aud_Hdmi_InterConnectionInput;
 
-
 typedef enum {
 	Soc_Aud_InterConnectionOutput_O30,
 	Soc_Aud_InterConnectionOutput_O31,
@@ -240,7 +244,7 @@ typedef enum {
 	Soc_Aud_InterConnectionOutput_O36,
 	Soc_Aud_InterConnectionOutput_O37,
 } Soc_Aud_Hdmi_InterConnectionOutput;
-
+#endif
 
 typedef enum {
 	Soc_Aud_InterCon_DisConnect = 0x0,

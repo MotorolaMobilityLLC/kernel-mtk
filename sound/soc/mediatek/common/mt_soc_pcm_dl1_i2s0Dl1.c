@@ -783,7 +783,7 @@ static int mtk_I2S0dl1_remove(struct platform_device *pdev)
 
 #ifdef CONFIG_OF
 static const struct of_device_id mt_soc_pcm_dl1_i2s0Dl1_of_ids[] = {
-	{ .compatible = "mediatek,mt_soc_pcm_dl1_i2s0Dl1", },
+	{ .compatible = "mediatek,mt_soc_pcm_dl1_i2s0dl1", },
 	{}
 };
 #endif
