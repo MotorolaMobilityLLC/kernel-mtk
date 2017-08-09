@@ -1,4 +1,3 @@
-#include <mach/mt_typedefs.h>
 #include <linux/types.h>
 #include "primary_display.h"
 #include "ddp_hal.h"

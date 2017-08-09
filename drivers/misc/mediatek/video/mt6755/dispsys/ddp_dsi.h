@@ -2,7 +2,7 @@
 #define __DSI_DRV_H__
 
 
-#include <mach/mt_typedefs.h>
+#include <linux/types.h>
 
 #include "lcm_drv.h"
 #include "ddp_hal.h"
@@ -135,13 +135,13 @@ extern "C" {
 	} DSI_T3_INS, *PDSI_T3_INS;
 
 	typedef struct {
-		UINT8 TXDIV0;
-		UINT8 TXDIV1;
-		UINT32 SDM_PCW;
-		UINT8 SSC_PH_INIT;
-		UINT16 SSC_PRD;
-		UINT16 SSC_DELTA1;
-		UINT16 SSC_DELTA;
+		uint8_t TXDIV0;
+		uint8_t TXDIV1;
+		uint32_t SDM_PCW;
+		uint8_t SSC_PH_INIT;
+		uint16_t SSC_PRD;
+		uint16_t SSC_DELTA1;
+		uint16_t SSC_DELTA;
 	} DSI_PLL_CONFIG;
 
 	typedef enum {
@@ -168,17 +168,17 @@ extern "C" {
 	extern bool is_ipoh_bootup;
 
 
-	void DSI_ChangeClk(DISP_MODULE_ENUM module, UINT32 clk);
-	INT32 DSI_ssc_enable(UINT32 dsi_idx, UINT32 en);
-	UINT32 PanelMaster_get_CC(UINT32 dsi_idx);
-	void PanelMaster_set_CC(UINT32 dsi_index, UINT32 enable);
-	UINT32 PanelMaster_get_dsi_timing(UINT32 dsi_index, MIPI_SETTING_TYPE type);
-	UINT32 PanelMaster_get_TE_status(UINT32 dsi_idx);
-	void PanelMaster_DSI_set_timing(UINT32 dsi_index, MIPI_TIMING timing);
+	void DSI_ChangeClk(DISP_MODULE_ENUM module, uint32_t clk);
+	int32_t DSI_ssc_enable(uint32_t dsi_idx, uint32_t en);
+	uint32_t PanelMaster_get_CC(uint32_t dsi_idx);
+	void PanelMaster_set_CC(uint32 dsi_index, uint32_t enable);
+	uint32_t PanelMaster_get_dsi_timing(uint32_t dsi_index, MIPI_SETTING_TYPE type);
+	uint32_t PanelMaster_get_TE_status(uint32_t dsi_idx);
+	void PanelMaster_DSI_set_timing(uint32_t dsi_index, MIPI_TIMING timing);
 	unsigned int PanelMaster_set_PM_enable(unsigned int value);
-	UINT32 DSI_dcs_read_lcm_reg_v2(DISP_MODULE_ENUM module, cmdqRecHandle cmdq, UINT8 cmd,
-				       UINT8 *buffer, UINT8 buffer_size);
-	void *get_dsi_params_handle(UINT32 dsi_idx);
+	uint32_t DSI_dcs_read_lcm_reg_v2(DISP_MODULE_ENUM module, cmdqRecHandle cmdq, uint8_t cmd,
+				       uint8_t *buffer, uint8_t buffer_size);
+	void *get_dsi_params_handle(uint32_t dsi_idx);
 	void dsi_analysis(DISP_MODULE_ENUM module);
 	void DSI_LFR_UPDATE(DISP_MODULE_ENUM module, cmdqRecHandle cmdq);
 	void DSI_Set_LFR(DISP_MODULE_ENUM module, cmdqRecHandle cmdq, unsigned int mode,

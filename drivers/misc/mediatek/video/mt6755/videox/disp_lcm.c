@@ -8,7 +8,6 @@
 
 /* This macro and arrya is designed for multiple LCM support */
 /* for multiple LCM, we should assign I/F Port id in lcm driver, such as DPI0, DSI0/1 */
-static disp_lcm_handle _disp_lcm_driver[MAX_LCM_NUMBER] = { 0 };
 
 int _lcm_count(void)
 {
@@ -20,10 +19,14 @@ int _is_lcm_inited(disp_lcm_handle *plcm)
 	if (plcm) {
 		if (plcm->params && plcm->drv)
 			return 1;
-	} else {
-		DISPERR("WARNING, invalid lcm handle: %p\n", plcm);
-		return 0;
+		else {
+			DISPERR("WARNING,params|drv is null!\n");
+			return 0;
+		}
 	}
+
+	DISPERR("WARNING, invalid lcm handle: %p\n", plcm);
+	return 0;
 }
 
 LCM_PARAMS *_get_lcm_params_by_handle(disp_lcm_handle *plcm)
@@ -44,7 +47,6 @@ LCM_PARAMS *_get_lcm_driver_by_handle(disp_lcm_handle *plcm)
 
 void _dump_lcm_info(disp_lcm_handle *plcm)
 {
-	int i = 0;
 	LCM_DRIVER *l = NULL;
 	LCM_PARAMS *p = NULL;
 
@@ -147,7 +149,6 @@ disp_lcm_handle *disp_lcm_probe(char *plcm_name, LCM_INTERFACE_ID lcm_id, int is
 {
 	DISPFUNC();
 
-	int ret = 0;
 	int lcmindex = 0;
 	bool isLCMFound = false;
 	bool isLCMInited = false;
@@ -191,7 +192,6 @@ disp_lcm_handle *disp_lcm_probe(char *plcm_name, LCM_INTERFACE_ID lcm_id, int is
 		if (plcm_name == NULL) {
 			/* TODO: we need to detect all the lcm driver */
 		} else {
-			int i = 0;
 
 			for (i = 0; i < _lcm_count(); i++) {
 				lcm_drv = lcm_driver_list[i];
@@ -330,8 +330,6 @@ int disp_lcm_update(disp_lcm_handle *plcm, int x, int y, int w, int h, int force
 {
 	DISPDBGFUNC();
 	LCM_DRIVER *lcm_drv = NULL;
-	LCM_INTERFACE_ID lcm_id = LCM_INTERFACE_NOTDEFINED;
-	LCM_PARAMS *plcm_param = NULL;
 	int ret = 0;
 
 	if (_is_lcm_inited(plcm)) {
@@ -524,7 +522,6 @@ void *disp_lcm_switch_mode(disp_lcm_handle *plcm, int mode)
 int disp_lcm_is_video_mode(disp_lcm_handle *plcm)
 {
 	/* DISPFUNC(); */
-	LCM_PARAMS *lcm_param = NULL;
 	LCM_INTERFACE_ID lcm_id = LCM_INTERFACE_NOTDEFINED;
 
 	if (_is_lcm_inited(plcm))

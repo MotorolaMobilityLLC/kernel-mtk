@@ -1,11 +1,10 @@
-#include <linux/xlog.h>
 #include "disp_drv_log.h"
-#include <linux/ion_drv.h>
+#include "ion_drv.h"
 #include <linux/slab.h>
 #include <linux/wait.h>
 #include <linux/sched.h>
 
-#include <mach/m4u.h>
+#include "m4u.h"
 #include "mtk_sync.h"
 #include "debug.h"
 #include "ddp_ovl.h"

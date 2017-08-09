@@ -13,7 +13,7 @@
 #include "ddp_dump.h"
 #include "lcm_drv.h"
 #include "primary_display.h"
-#include <mach/m4u_port.h>
+#include "m4u.h"
 
 
 static unsigned int rdma_fps[RDMA_INSTANCES] = { 60, 60 };
@@ -146,9 +146,9 @@ void rdma_set_ultra(unsigned int idx, unsigned int width, unsigned int height, u
 	static const unsigned int ultra_low_time = 6;	/* in unit of us */
 	static const unsigned int pre_ultra_low_time = 8;	/* in unit of us */
 	static const unsigned int pre_ultra_high_time = 9;	/* in unit of us */
-	static const unsigned int fifo_size = 512;
+	/*static const unsigned int fifo_size = 512;*/
 	static const unsigned int fifo_valid_line_ratio = 125;	/* valid size 1/8 line; */
-	static const unsigned int fifo_min_size = 32;
+	/*static const unsigned int fifo_min_size = 32;*/
 	/* working variables */
 	unsigned int consume_levels_per_sec;
 	unsigned int ultra_low_level;

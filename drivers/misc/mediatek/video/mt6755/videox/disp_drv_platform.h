@@ -2,17 +2,15 @@
 #define __DISP_DRV_PLATFORM_H__
 
 #include <linux/dma-mapping.h>
-#include <mach/mt_typedefs.h>
-#include <mach/mt_gpio.h>
-#include <mach/m4u.h>
-#include <mach/mt_reg_base.h>
+#include "m4u.h"
+/*#include <mach/mt_reg_base.h>*/
 #ifdef CONFIG_MTK_CLKMGR
 #include <mach/mt_clkmgr.h>
 #endif
-#include <mach/mt_irq.h>
-#include <mach/sync_write.h>
+
+#include <mt-plat/sync_write.h>
 #include <board-custom.h>
-#include <linux/disp_assert_layer.h>
+#include "disp_assert_layer.h"
 
 #include "ddp_hal.h"
 #include "ddp_drv.h"

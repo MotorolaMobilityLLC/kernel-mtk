@@ -31,7 +31,7 @@ static unsigned int disp_global_stage = MAGIC_CODE | DISP_HELPER_STAGE_EARLY_POR
 static unsigned int disp_global_stage = MAGIC_CODE | DISP_HELPER_STAGE_NORMAL;
 #endif
 
-static _is_E1(void)
+static int _is_E1(void)
 {
 	CHIP_SW_VER ver = mt_get_chip_sw_ver();
 
@@ -41,7 +41,7 @@ static _is_E1(void)
 	return 0;
 }
 
-static _is_E2(void)
+static int _is_E2(void)
 {
 	CHIP_SW_VER ver = mt_get_chip_sw_ver();
 
@@ -51,22 +51,22 @@ static _is_E2(void)
 	return 0;
 }
 
-static _is_E3(void)
+static int _is_E3(void)
 {
 	return !(_is_E1() || _is_E2());
 }
 
-static _is_early_porting_stage(void)
+static int _is_early_porting_stage(void)
 {
 	return (disp_global_stage & (~MAGIC_CODE)) == DISP_HELPER_STAGE_EARLY_PORTING;
 }
 
-static _is_bringup_stage(void)
+static int _is_bringup_stage(void)
 {
 	return (disp_global_stage & (~MAGIC_CODE)) == DISP_HELPER_STAGE_BRING_UP;
 }
 
-static _is_normal_stage(void)
+static int _is_normal_stage(void)
 {
 	return (disp_global_stage & (~MAGIC_CODE)) == DISP_HELPER_STAGE_NORMAL;
 }
@@ -289,6 +289,7 @@ const char *disp_helper_stage_spy(void)
 		return "BRINGUP";
 	else if (disp_helper_get_stage() == DISP_HELPER_STAGE_NORMAL)
 		return "NORMAL";
+	return NULL;
 }
 
 void disp_helper_option_init(void)

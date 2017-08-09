@@ -44,7 +44,7 @@ static int compat_put_disp_caps_info(compat_disp_caps_info * data32 __user,		dis
 	return err;
 }
 
-
+/*
 static int compat_get_disp_session_layer_num_config(compat_disp_session_layer_num_config * data32 __user,
 									disp_session_layer_num_config * data __user)
 {
@@ -74,7 +74,7 @@ static int compat_put_disp_session_layer_num_config(compat_disp_session_layer_nu
 
 	return err;
 }
-
+*/
 static int compat_get_disp_session_output_config(compat_disp_session_output_config * data32 __user,
 					disp_session_output_config * data __user)
 {
@@ -126,7 +126,7 @@ static int compat_get_disp_session_output_config(compat_disp_session_output_conf
 
 	return err;
 }
-
+/*
 static int compat_put_disp_session_output_config(compat_disp_session_output_config * data32 __user,
 							disp_session_output_config * data __user)
 {
@@ -178,7 +178,7 @@ static int compat_put_disp_session_output_config(compat_disp_session_output_conf
 
 	return err;
 }
-
+*/
 static int compat_get_disp_session_input_config(compat_disp_session_input_config * data32 __user,
 						disp_session_input_config * data __user)
 {
@@ -297,7 +297,7 @@ static int compat_get_disp_session_input_config(compat_disp_session_input_config
 	}
 	return err;
 }
-
+/*
 static int compat_put_disp_session_input_config(compat_disp_session_input_config * data32 __user,
 							disp_session_input_config * data __user)
 {
@@ -416,13 +416,12 @@ static int compat_put_disp_session_input_config(compat_disp_session_input_config
 	}
 	return err;
 }
-
+*/
 static int compat_get_disp_session_vsync_config(
 			compat_disp_session_vsync_config * data32 __user,
 			disp_session_vsync_config * data __user)
 {
 	compat_uint_t u;
-	compat_int_t i;
 	compat_long_t l;
 	int err;
 
@@ -437,12 +436,11 @@ static int compat_get_disp_session_vsync_config(
 
 	return err;
 }
-
+/*
 static int compat_put_disp_session_vsync_config(compat_disp_session_vsync_config * data32 __user,
 					disp_session_vsync_config * data __user)
 {
 	compat_uint_t u;
-	compat_int_t i;
 	compat_long_t l;
 	int err;
 
@@ -457,7 +455,7 @@ static int compat_put_disp_session_vsync_config(compat_disp_session_vsync_config
 
 	return err;
 }
-
+*/
 
 static int compat_get_disp_session_info(compat_disp_session_info * data32 __user,
 					disp_session_info * data __user)
@@ -655,7 +653,6 @@ static int compat_get_disp_present_fence(compat_disp_present_fence * data32 __us
 									disp_present_fence * data __user)
 {
 	compat_uint_t u;
-	compat_int_t i;
 	int err;
 
 	err = get_user(u, &(data32->session_id));
@@ -675,7 +672,6 @@ static int compat_put_disp_present_fence(compat_disp_present_fence * data32 __us
 							disp_present_fence * data __user)
 {
 	compat_uint_t u;
-	compat_int_t i;
 	int err;
 
 	err = get_user(u, &(data->session_id));
@@ -863,8 +859,8 @@ int _compat_ioctl_destroy_session(struct file *file, unsigned long arg)
 
 	DISPCHECK("COMPAT_DISP_IOCTL_DESTROY_SESSION\n");
 
-	compat_disp_session_config __user *data32;
-	disp_session_config __user *data;
+	compat_disp_session_config *data32 __user;
+	disp_session_config *data __user;
 
 	data32 = compat_ptr(arg);
 	data = compat_alloc_user_space(sizeof(disp_session_config));
@@ -893,9 +889,9 @@ int _compat_ioctl_trigger_session(struct file *file, unsigned long arg)
 
 	DISPCHECK("COMPAT_DISP_IOCTL_TRIGGER_SESSION\n");
 
-	compat_disp_session_config __user *data32;
+	compat_disp_session_config *data32 __user;
 
-	disp_session_config __user *data;
+	disp_session_config *data __user;
 
 	data32 = compat_ptr(arg);
 	data = compat_alloc_user_space(sizeof(disp_session_config));
@@ -923,9 +919,9 @@ int _compat_ioctl_prepare_present_fence(struct file *file, unsigned long arg)
 
 	DISPCHECK("COMPAT_DISP_IOCTL_TRIGGER_SESSION\n");
 
-	compat_disp_present_fence __user *data32;
+	compat_disp_present_fence *data32 __user;
 
-	disp_present_fence __user *data;
+	disp_present_fence *data __user;
 
 	data32 = compat_ptr(arg);
 
@@ -958,14 +954,12 @@ int _compat_ioctl_get_info(struct file *file, unsigned long arg)
 {
 	int ret = 0;
 	int err = 0;
-	int dev = 0;
-	unsigned int session_id = 0;
 
 	DISPCHECK("COMPAT_DISP_IOCTL_GET_INFO\n");
 
-	compat_disp_session_info __user *data32;
+	compat_disp_session_info *data32 __user;
 
-	disp_session_info __user *data;
+	disp_session_info *data __user;
 
 	data32 = compat_ptr(arg);
 
@@ -1002,12 +996,9 @@ int _compat_ioctl_prepare_buffer(struct file *file, unsigned long arg, ePREPARE_
 
 	DISPCHECK("COMPAT_DISP_IOCTL_PREPARE_BUFFER\n");
 
-	unsigned int session_id = 0;
-	struct mtkfb_fence_buf_info *buf, *buf2;
+	compat_disp_buffer_info *data32 __user;
 
-	compat_disp_buffer_info __user *data32;
-
-	disp_buffer_info __user *data;
+	disp_buffer_info *data __user;
 
 	data32 = compat_ptr(arg);
 
@@ -1037,7 +1028,6 @@ int _compat_ioctl_prepare_buffer(struct file *file, unsigned long arg, ePREPARE_
 	}
 
 	return ret;
-
 }
 
 
@@ -1048,11 +1038,11 @@ int _compat_ioctl_wait_vsync(struct file *file, unsigned long arg)
 
 	DISPCHECK("COMPAT_DISP_IOCTL_WAIT_VSYNC\n");
 
-	compat_disp_session_vsync_config __user *data32;
+	compat_disp_session_vsync_config *data32 __user;
 
-	disp_session_vsync_config __user *data;
+	disp_session_vsync_config *data __user;
 
-	data32 = compat_ptr(arg);
+	data32 = (compat_disp_session_vsync_config *)compat_ptr(arg);
 
 	data = compat_alloc_user_space(sizeof(disp_session_vsync_config));
 
@@ -1076,16 +1066,14 @@ int _compat_ioctl_set_input_buffer(struct file *file, unsigned long arg)
 {
 	int ret = 0;
 	int err = 0;
-	unsigned int session_id = 0;
-	unsigned int dst_mva = 0;
 
 	DISPCHECK("COMPAT_DISP_IOCTL_SET_INPUT_BUFFER\n");
 
-	compat_disp_session_input_config __user *data32;
+	compat_disp_session_input_config *data32 __user;
 
-	disp_session_input_config __user *data;
+	disp_session_input_config *data __user;
 
-	data32 = compat_ptr(arg);
+	data32 = (compat_disp_session_input_config *)compat_ptr(arg);
 	data = compat_alloc_user_space(sizeof(disp_session_input_config));
 
 	if (data == NULL) {
@@ -1108,9 +1096,9 @@ int _compat_ioctl_get_display_caps(struct file *file, unsigned long arg)
 	int ret = 0;
 	int err = 0;
 
-	compat_disp_caps_info __user *data32;
+	compat_disp_caps_info *data32 __user;
 
-	disp_caps_info __user *data;
+	disp_caps_info *data __user;
 
 	data32 = compat_ptr(arg);
 	data = compat_alloc_user_space(sizeof(disp_caps_info));
@@ -1141,9 +1129,11 @@ int _compat_ioctl_set_vsync(struct file *file, unsigned long arg)
 {
 	int ret = 0;
 	int err = 0;
+	int *pdata;
 
-	compat_uint_t __user *data32;
-	unsigned int __user data;
+	compat_uint_t *data32 __user;
+
+	unsigned int data __user;
 
 	data32 = compat_ptr(arg);
 
@@ -1151,8 +1141,8 @@ int _compat_ioctl_set_vsync(struct file *file, unsigned long arg)
 		DISPERR("compat_get_fps fail!\n");
 		return err;
 	}
-
-	ret = file->f_op->unlocked_ioctl(file, DISP_IOCTL_SET_VSYNC_FPS, (unsigned long)data);
+	pdata = &data;
+	ret = file->f_op->unlocked_ioctl(file, DISP_IOCTL_SET_VSYNC_FPS, (unsigned long)pdata);
 	return ret;
 }
 
@@ -1161,8 +1151,8 @@ int _compat_ioctl_set_session_mode(struct file *file, unsigned long arg)
 	int ret = 0;
 	int err = 0;
 
-	compat_disp_session_config __user *data32;
-	disp_session_config __user *data;
+	compat_disp_session_config *data32 __user;
+	disp_session_config *data __user;
 
 	data32 = compat_ptr(arg);
 	data = compat_alloc_user_space(sizeof(disp_session_config));
@@ -1190,11 +1180,10 @@ int _compat_ioctl_set_output_buffer(struct file *file, unsigned long arg)
 
 	DISPCHECK("COMPAT_DISP_IOCTL_SET_OUTPUT_BUFFER\n");
 
-	compat_disp_session_output_config __user *data32;
+	compat_disp_session_output_config *data32 __user;
+	disp_session_output_config *data __user;
 
-	disp_session_output_config __user *data;
-
-	data32 = compat_ptr(arg);
+	data32 = (compat_disp_session_output_config *)compat_ptr(arg);
 	data = compat_alloc_user_space(sizeof(disp_session_output_config));
 
 	if (data == NULL) {

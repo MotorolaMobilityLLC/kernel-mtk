@@ -133,6 +133,6 @@ typedef struct {
 
 } FBCONFIG_DISP_IF;
 void Panel_Master_DDIC_config(void);
-int fbconfig_get_esd_check(DSI_INDEX dsi_id, UINT32 cmd, UINT8 *buffer, UINT32 num);
+int fbconfig_get_esd_check(DSI_INDEX dsi_id, uint32_t cmd, uint8_t *buffer, uint32_t num);
 
 #endif				/* __FBCONFIG_KDEBUG_H */

@@ -1,9 +1,9 @@
+#define LOG_TAG "color_fmt"
+
 #include <linux/kernel.h>
 #include <asm-generic/bug.h>
 #include "ddp_info.h"
 #include "ddp_log.h"
-
-#define LOG_TAG "color_fmt"
 
 char *unified_color_fmt_name(enum UNIFIED_COLOR_FMT fmt)
 {

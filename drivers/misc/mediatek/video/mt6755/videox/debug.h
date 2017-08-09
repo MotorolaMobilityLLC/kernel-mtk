@@ -4,7 +4,7 @@
 void DBG_Init(void);
 void DBG_Deinit(void);
 
-#include <linux/mmprofile.h>
+#include "mmprofile.h"
 
 #ifdef MTKFB_DBG
 #include "disp_drv_log.h"

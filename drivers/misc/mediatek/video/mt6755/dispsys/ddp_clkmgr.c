@@ -31,6 +31,7 @@ int ddp_set_clk_handle(struct clk *pclk, unsigned int n)
 		return -1;
 	}
 	ddp_clk[n] = pclk;
+	DDPMSG("ddp_clk[%d] %p\n", n, ddp_clk[n]);
 	return ret;
 }
 
@@ -38,11 +39,13 @@ int ddp_clk_prepare(eDDP_CLK_ID id)
 {
 	int ret = 0;
 
-	if (NULL == ddp_clk[id])
+	if (NULL == ddp_clk[id]) {
+		DDPERR("DISPSYS CLK %d NULL\n", id);
 		return -1;
+	}
 	ret = clk_prepare(ddp_clk[id]);
 	if (ret)
-		DDPERR("DISPSYS CLK prepare failed: errno %d\n", ret);
+		DDPERR("DISPSYS CLK prepare failed: errno %d id %d\n", ret, id);
 
 	return ret;
 }
@@ -51,8 +54,10 @@ int ddp_clk_unprepare(eDDP_CLK_ID id)
 {
 	int ret = 0;
 
-	if (NULL == ddp_clk[id])
+	if (NULL == ddp_clk[id]) {
+		DDPERR("DISPSYS CLK %d NULL\n", id);
 		return -1;
+	}
 	clk_unprepare(ddp_clk[id]);
 	return ret;
 }
@@ -61,12 +66,14 @@ int ddp_clk_enable(eDDP_CLK_ID id)
 {
 	int ret = 0;
 
-	if (NULL == ddp_clk[id])
+	if (NULL == ddp_clk[id]) {
+		DDPERR("DISPSYS CLK %d NULL\n", id);
 		return -1;
+	}
 
 	ret = clk_enable(ddp_clk[id]);
 	if (ret)
-		DDPERR("DISPSYS CLK enable failed: errno %d\n", ret);
+		DDPERR("DISPSYS CLK enable failed: errno %d id=%d\n", ret, id);
 
 	return ret;
 }
@@ -75,9 +82,10 @@ int ddp_clk_disable(eDDP_CLK_ID id)
 {
 	int ret = 0;
 
-	if (NULL == ddp_clk[id])
+	if (NULL == ddp_clk[id]) {
+		DDPERR("DISPSYS CLK %d NULL\n", id);
 		return -1;
-
+	}
 	clk_disable(ddp_clk[id]);
 	return ret;
 }
@@ -86,8 +94,10 @@ int ddp_clk_prepare_enable(eDDP_CLK_ID id)
 {
 	int ret = 0;
 
-	if (NULL == ddp_clk[id])
+	if (NULL == ddp_clk[id]) {
+		DDPERR("DISPSYS CLK %d NULL\n", id);
 		return -1;
+	}
 	ret = clk_prepare_enable(ddp_clk[id]);
 	if (ret)
 		DDPERR("DISPSYS CLK prepare failed: errno %d\n", ret);
@@ -99,16 +109,19 @@ int ddp_clk_unprepare_disable(eDDP_CLK_ID id)
 {
 	int ret = 0;
 
-	if (NULL == ddp_clk[id])
+	if (NULL == ddp_clk[id]) {
+		DDPERR("DISPSYS CLK %d NULL\n", id);
 		return -1;
+	}
 	clk_disable_unprepare(ddp_clk[id]);
 	return ret;
 }
 int ddp_clk_set_parent(eDDP_CLK_ID id, eDDP_CLK_ID parent)
 {
-	if ((NULL == ddp_clk[id]) || (NULL == ddp_clk[parent]))
+	if ((NULL == ddp_clk[id]) || (NULL == ddp_clk[parent])) {
+		DDPERR("DISPSYS CLK %d or parent %d NULL\n", id, parent);
 		return -1;
-
+	}
 	return clk_set_parent(ddp_clk[id], ddp_clk[parent]);
 }
 

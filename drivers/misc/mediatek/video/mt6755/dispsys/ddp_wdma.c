@@ -11,7 +11,7 @@
 #include "ddp_info.h"
 #include "ddp_wdma.h"
 #include "primary_display.h"
-#include <mach/m4u_port.h>
+#include "m4u.h"
 
 #define ALIGN_TO(x, n)  \
 	(((x) + ((n) - 1)) & ~((n) - 1))

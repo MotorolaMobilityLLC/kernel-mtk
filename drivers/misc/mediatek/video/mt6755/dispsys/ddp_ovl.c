@@ -5,7 +5,7 @@
 #else
 #include "ddp_clkmgr.h"
 #endif
-#include <mach/m4u_port.h>
+#include "m4u.h"
 #include <linux/delay.h>
 #include "ddp_info.h"
 #include "ddp_hal.h"
@@ -132,13 +132,10 @@ unsigned long ovl_to_index(DISP_MODULE_ENUM module)
 
 static inline DISP_MODULE_ENUM ovl_index_to_module(int index)
 {
-	int i;
-
 	if (index >= OVL_NUM) {
 		DDPERR("invalid ovl index=%d\n", index);
 		BUG();
 	}
-
 	return ovl_index_module[index];
 }
 
@@ -766,7 +763,7 @@ static int ovl_config_l(DISP_MODULE_ENUM module, disp_ddp_path_config *pConfig, 
 int ovl_build_cmdq(DISP_MODULE_ENUM module, void *cmdq_trigger_handle, CMDQ_STATE state)
 {
 	int ret = 0;
-	int reg_pa = DISP_REG_OVL_FLOW_CTRL_DBG & 0x1fffffff;
+	/*int reg_pa = DISP_REG_OVL_FLOW_CTRL_DBG & 0x1fffffff;*/
 
 	if (cmdq_trigger_handle == NULL) {
 		DDPERR("cmdq_trigger_handle is NULL\n");
@@ -1029,7 +1026,9 @@ void ovl_dump_analysis(DISP_MODULE_ENUM module)
 			ovl_dump_layer_info(i, layer_offset);
 		else
 			DDPDUMP("layer%d: disabled\n", i);
-		unsigned int rdma_ctrl = DISP_REG_GET(layer_offset + DISP_REG_OVL_RDMA0_CTRL);
+		unsigned int rdma_ctrl;
+
+		rdma_ctrl = DISP_REG_GET(layer_offset + DISP_REG_OVL_RDMA0_CTRL);
 
 		DDPDUMP("ovl rdma%d status:(en=%d, fifo_used %d, GMC=0x%x)\n", i,
 			REG_FLD_VAL_GET(RDMA0_CTRL_FLD_RDMA_EN, rdma_ctrl),

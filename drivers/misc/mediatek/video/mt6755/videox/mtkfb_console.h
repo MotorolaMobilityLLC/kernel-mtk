@@ -1,12 +1,12 @@
 #ifndef __MTK_FB_CONSOLE_H__
 #define __MTK_FB_CONSOLE_H__
 
-#include <mach/mt_typedefs.h>
-
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+#include <linux/types.h>
+#include <mt-plat/mt_typedefs.h>
 
 #define MFC_CHECK_RET(expr)             \
 do {                                \

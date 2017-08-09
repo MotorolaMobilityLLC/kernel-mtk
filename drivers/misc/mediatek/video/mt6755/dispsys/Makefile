@@ -1,11 +1,24 @@
 # drivers/dispsys
-include $(srctree)/drivers/misc/mediatek/Makefile.custom
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/video/include/ \
+             -I$(srctree)/drivers/misc/mediatek/video/common/ \
+             -I$(srctree)/drivers/misc/mediatek/video/$(MTK_PLATFORM)/videox/ \
+             -I$(srctree)/drivers/misc/mediatek/cmdq/v2/ \
+             -I$(srctree)/drivers/misc/mediatek/cmdq/v2/$(MTK_PLATFORM)/ \
+             -I$(srctree)/drivers/misc/mediatek/base/power/mt6755/ \
+             -I$(srctree)/drivers/misc/mediatek/lcm/inc
 
+subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/m4u/$(MTK_PLATFORM) \
+                    -I$(srctree)/drivers/misc/mediatek/m4u/$(MTK_PLATFORM)/mt6755
 
+subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/mmp/
+
+subdir-ccflags-$(CONFIG_MTK_LCM) += -I$(srctree)/drivers/misc/mediatek/lcm/inc
 ifeq ($(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT),y)
 ifeq ($(CONFIG_TRUSTONIC_TEE_SUPPORT),y)
 include $(srctree)/drivers/misc/mediatek/gud/Makefile.include
 ccflags-y += \
+	 -I$(srctree)/drivers/misc/mediatek/gud/$(MTK_PLATFORM)/gud/MobiCoreKernelApi/public \
+	 -I$(srctree)/drivers/misc/mediatek/gud/$(MTK_PLATFORM)/gud/MobiCoreKernelApi/include \
 	 -I$(srctree)/../vendor/trustonic/platform/$(MTK_PLATFORM)/trustlets/tplay/Tltplay/public
 
 endif

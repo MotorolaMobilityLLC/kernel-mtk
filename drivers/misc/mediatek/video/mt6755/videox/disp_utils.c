@@ -3,7 +3,7 @@
 #include <linux/vmalloc.h>
 #include <linux/semaphore.h>
 #include <linux/time.h>
-#include <mach/m4u.h>
+#include "m4u.h"
 #include <linux/delay.h>
 #include <linux/slab.h>
 #include "disp_drv_log.h"

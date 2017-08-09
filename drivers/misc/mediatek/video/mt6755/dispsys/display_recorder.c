@@ -6,9 +6,8 @@
 #include <linux/kthread.h>
 #include <linux/mutex.h>
 #include <linux/string.h>
-#include <linux/printk.h>
 #include <stdarg.h>
-#include <linux/met_drv.h>
+#include <mt-plat/met_drv.h>
 
 #include "ddp_mmp.h"
 #include "debug.h"

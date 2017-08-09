@@ -1,7 +1,6 @@
 #ifndef __DISP_DRV_LOG_H__
 #define __DISP_DRV_LOG_H__
 #include "display_recorder.h"
-#include <linux/xlog.h>
 #include "ddp_debug.h"
 #define DISP_LOG_PRINT(level, sub_module, fmt, arg...)      \
 	    pr_debug(fmt, ##arg)

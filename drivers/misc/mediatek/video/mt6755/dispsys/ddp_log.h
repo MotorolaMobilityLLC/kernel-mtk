@@ -1,7 +1,7 @@
 #ifndef _H_DDP_LOG_
 #define _H_DDP_LOG_
-#include <linux/xlog.h>
-#include <linux/aee.h>
+#include <mt-plat/aee.h>
+#include <linux/printk.h>
 #include "display_recorder.h"
 #include "ddp_debug.h"
 #ifndef LOG_TAG

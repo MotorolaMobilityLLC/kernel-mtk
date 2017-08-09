@@ -3,15 +3,15 @@
 #include <linux/string.h>
 #include <linux/uaccess.h>
 #include <linux/debugfs.h>
-#include <linux/aee.h>
-#include <linux/disp_assert_layer.h>
+#include <mt-plat/aee.h>
+#include "disp_assert_layer.h"
 #include <linux/dma-mapping.h>
 #include <linux/delay.h>
 #include <linux/sched.h>
 #include <linux/interrupt.h>
 #include <linux/time.h>
 
-#include <mach/m4u.h>
+#include "m4u.h"
 #include <mach/m4u_port.h>
 
 #include "disp_drv_ddp.h"

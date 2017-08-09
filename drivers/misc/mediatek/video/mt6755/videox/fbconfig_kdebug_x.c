@@ -6,7 +6,7 @@
 #include <linux/sched.h>
 #include <linux/debugfs.h>
 #include <linux/wait.h>
-#include <mach/mt_typedefs.h>
+#include <linux/types.h>
 #include "m4u.h"
 #include "mtkfb.h"
 #include "debug.h"
@@ -16,6 +16,7 @@
 #include "primary_display.h"
 #include "ddp_ovl.h"
 #include "ddp_dsi.h"
+#include "m4u_priv.h"
 
 /* #include "disp_drv.h" */
 /* #include "lcd_drv.h" */
@@ -24,7 +25,7 @@
 /* This part is for customization parameters of D-IC and DSI . */
 /* **************************************************************************** */
 
-BOOL fbconfig_start_LCM_config;
+bool fbconfig_start_LCM_config;
 #define FBCONFIG_MDELAY(n)	(PM_lcm_utils_dsi0.mdelay((n)))
 #define SET_RESET_PIN(v)	(PM_lcm_utils_dsi0.set_reset_pin((v)))
 #define dsi_set_cmdq(pdata, queue_size, force_update) PM_lcm_utils_dsi0.dsi_set_cmdq(pdata, queue_size, force_update)
@@ -112,7 +113,7 @@ static DISP_MODULE_ENUM pm_get_dsi_handle(DSI_INDEX dsi_id)
 		return DISP_MODULE_UNKNOWN;
 }
 
-int fbconfig_get_esd_check(DSI_INDEX dsi_id, UINT32 cmd, UINT8 *buffer, UINT32 num)
+int fbconfig_get_esd_check(DSI_INDEX dsi_id, uint32_t cmd, uint8_t *buffer, uint32_t num)
 {
 	int array[4];
 	int ret;
@@ -156,7 +157,7 @@ void Panel_Master_DDIC_config(void)
 	}
 
 }
-
+/*
 static void print_from_head_to_tail(void)
 {
 	int i;
@@ -175,7 +176,7 @@ static void print_from_head_to_tail(void)
 	pr_debug("DDIC=====>:print_from_head_to_tail  END\n");
 
 }
-
+*/
 static void free_list_memory(void)
 {
 	struct list_head *p, *n;
@@ -195,7 +196,7 @@ static void free_list_memory(void)
 
 }
 
-static ssize_t fbconfig_open(struct inode *inode, struct file *file)
+static int fbconfig_open(struct inode *inode, struct file *file)
 {
 	PM_TOOL_T *pm_params;
 
@@ -235,7 +236,7 @@ static long fbconfig_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 	int ret = 0;
 	void __user *argp = (void __user *)arg;
 	PM_TOOL_T *pm = (PM_TOOL_T *) pm_get_handle();
-	UINT32 dsi_id = pm->dsi_id;
+	uint32_t dsi_id = pm->dsi_id;
 	LCM_DSI_PARAMS *pParams = get_dsi_params_handle(dsi_id);
 
 	switch (cmd) {
@@ -278,7 +279,6 @@ static long fbconfig_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 		}
 	case DRIVER_IC_CONFIG:
 		{
-			int i;
 			CONFIG_RECORD_LIST *record_tmp_list = kmalloc(sizeof(CONFIG_RECORD_LIST), GFP_KERNEL);
 
 			if (copy_from_user
@@ -304,9 +304,9 @@ static long fbconfig_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 		}
 	case MIPI_SET_CC:
 		{
-			UINT32 enable = 0;
+			uint32_t enable = 0;
 
-			if (get_user(enable, (UINT32 __user *) argp)) {
+			if (get_user(enable, (uint32_t __user *) argp)) {
 				pr_debug("[MIPI_SET_CC]: copy_from_user failed! line:%d\n",
 				       __LINE__);
 				return -EFAULT;
@@ -317,7 +317,7 @@ static long fbconfig_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 
 	case LCM_GET_DSI_CONTINU:
 		{
-			UINT32 ret = PanelMaster_get_CC(dsi_id);
+			uint32_t ret = PanelMaster_get_CC(dsi_id);
 
 			/* need to improve ,0 now means nothing but one parameter.... */
 			pr_debug("LCM_GET_DSI_CONTINU=>DSI: %d\n", ret);
@@ -325,9 +325,9 @@ static long fbconfig_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 		}
 	case MIPI_SET_CLK:
 		{
-			UINT32 clk = 0;
+			uint32_t clk = 0;
 
-			if (get_user(clk, (UINT32 __user *) argp)) {
+			if (get_user(clk, (uint32_t __user *) argp)) {
 				pr_debug("[MIPI_SET_CLK]: copy_from_user failed! line:%d\n",
 				       __LINE__);
 				return -EFAULT;
@@ -338,7 +338,7 @@ static long fbconfig_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 		}
 	case LCM_GET_DSI_CLK:
 		{
-			UINT32 clk = pParams->PLL_CLOCK;
+			uint32_t clk = pParams->PLL_CLOCK;
 
 			pr_debug("LCM_GET_DSI_CLK=>dsi:%d\n", clk);
 			return put_user(clk, (unsigned long *)argp);
@@ -359,7 +359,7 @@ static long fbconfig_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 
 	case LCM_GET_DSI_SSC:
 		{
-			UINT32 ssc = pParams->ssc_range;
+			uint32_t ssc = pParams->ssc_range;
 
 			if (pParams->ssc_disable)
 				ssc = 0;
@@ -368,7 +368,7 @@ static long fbconfig_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 
 	case LCM_GET_DSI_LANE_NUM:
 		{
-			UINT32 lane_num = pParams->LANE_NUM;
+			uint32_t lane_num = pParams->LANE_NUM;
 
 			pr_debug("Panel Master=>LCM_GET_DSI_Lane_num=>dsi:%d\r\n", lane_num);
 			return put_user(lane_num, (unsigned long *)argp);
@@ -384,7 +384,7 @@ static long fbconfig_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 		}
 	case LCM_GET_DSI_TIMING:
 		{
-			UINT32 ret;
+			uint32_t ret;
 			MIPI_TIMING timing;
 
 			if (copy_from_user(&timing, (void __user *)argp, sizeof(timing))) {
@@ -537,7 +537,7 @@ static long fbconfig_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 		}
 	case TE_SET_ENABLE:
 		{
-			UINT32 te_enable = 0;
+			uint32_t te_enable = 0;
 
 			if (get_user(te_enable, (unsigned long *)argp))
 				return -EFAULT;

@@ -3,9 +3,9 @@
 
 #include "ddp_hal.h"
 #include "ddp_manager.h"
-#include <mach/mt_typedefs.h>
 #include <linux/types.h>
 #include "disp_session.h"
+#include <mt-plat/mt_typedefs.h>
 
 typedef enum {
 	DIRECT_LINK_MODE,
@@ -233,19 +233,19 @@ int primary_display_get_max_layer(void);
 /* legancy */
 LCM_PARAMS *DISP_GetLcmPara(void);
 LCM_DRIVER *DISP_GetLcmDrv(void);
-UINT32 DISP_GetVRamSize(void);
-UINT32 DISP_GetFBRamSize(void);
-UINT32 DISP_GetPages(void);
-UINT32 DISP_GetScreenBpp(void);
-UINT32 DISP_GetScreenWidth(void);
-UINT32 DISP_GetScreenHeight(void);
-UINT32 DISP_GetActiveHeight(void);
-UINT32 DISP_GetActiveWidth(void);
+uint32_t DISP_GetVRamSize(void);
+uint32_t DISP_GetFBRamSize(void);
+uint32_t DISP_GetPages(void);
+uint32_t DISP_GetScreenBpp(void);
+uint32_t DISP_GetScreenWidth(void);
+uint32_t DISP_GetScreenHeight(void);
+uint32_t DISP_GetActiveHeight(void);
+uint32_t DISP_GetActiveWidth(void);
 unsigned long get_dim_layer_mva_addr(void);
 int disp_hal_allocate_framebuffer(phys_addr_t pa_start, phys_addr_t pa_end, unsigned long *va,
 				  unsigned long *mva);
 int Panel_Master_dsi_config_entry(const char *name, void *config_value);
-int fbconfig_get_esd_check_test(UINT32 dsi_id, UINT32 cmd, UINT8 *buffer, UINT32 num);
+int fbconfig_get_esd_check_test(uint32_t dsi_id, uint32_t cmd, UINT8 *buffer, uint32_t num);
 
 
 /* defined in mtkfb.c should move to mtkfb.h*/

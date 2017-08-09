@@ -2,7 +2,7 @@
 #include <linux/mm.h>
 #include <linux/mm_types.h>
 #include <linux/module.h>
-#include <generated/autoconf.h>
+/*#include <generated/autoconf.h>*/
 #include <linux/init.h>
 #include <linux/types.h>
 #include <linux/cdev.h>
@@ -31,9 +31,7 @@
 #include <linux/kthread.h>
 #include <linux/mutex.h>
 #include <linux/compat.h>
-
-#include <mach/m4u.h>
-
+#include "disp_assert_layer.h"
 #include "mtk_sync.h"
 #include "debug.h"
 #include "disp_drv_log.h"
@@ -187,7 +185,6 @@ done:
 static int release_session_buffer(unsigned int session)
 {
 	int i = 0;
-	int buff_idx = 0;
 
 	mutex_lock(&disp_session_lock);
 
@@ -213,7 +210,7 @@ int disp_destroy_session(disp_session_config *config)
 {
 	int ret = -1;
 	unsigned int session = config->session_id;
-	int i, idx;
+	int i;
 
 	DISPMSG("disp_destroy_session, 0x%x", config->session_id);
 
@@ -305,17 +302,13 @@ static unsigned int get_current_ticket(void)
 static int __trigger_display(disp_session_config *config)
 {
 	int ret = 0;
-	int i = 0;
 	unsigned int session_id = 0;
-	int present_fence_idx = -1;
 	unsigned long ticket = 0;
+	disp_session_sync_info *session_info;
 
 	session_id = config->session_id;
-
 	ticket = primary_display_get_ticket();
-
-	disp_session_sync_info *session_info = disp_get_session_sync_info_for_debug(session_id);
-
+	session_info = disp_get_session_sync_info_for_debug(session_id);
 	if (session_info) {
 		unsigned int proc_name = (current->comm[0] << 24) |
 		    (current->comm[1] << 16) | (current->comm[2] << 8) | (current->comm[3] << 0);
@@ -350,7 +343,6 @@ static int __trigger_display(disp_session_config *config)
 
 	if (session_info)
 		dprec_done(&session_info->event_trigger, 0, 0);
-
 
 	return ret;
 }
@@ -542,7 +534,6 @@ static int _sync_convert_fb_layer_to_disp_input(unsigned int session_id, disp_in
 						unsigned int dst_mva)
 {
 	unsigned int layerpitch = 0;
-	unsigned int layerbpp = 0;
 
 	dst->layer = src->layer_id;
 
@@ -1203,9 +1194,13 @@ static int __frame_config_trigger(struct disp_frame_cfg_t *frame_cfg)
 int _ioctl_frame_config(unsigned long arg)
 {
 	void __user *argp = (void __user *)arg;
-	struct disp_frame_cfg_t frame_cfg;
+	struct disp_frame_cfg_t *frame_cfg;
 
-	if (copy_from_user(&frame_cfg, (void __user *)arg, sizeof(frame_cfg))) {
+	frame_cfg = kzalloc(sizeof(struct disp_frame_cfg_t), GFP_KERNEL);
+	if (frame_cfg == NULL)
+		return -EFAULT;
+
+	if (copy_from_user(frame_cfg, (void __user *)arg, sizeof(*frame_cfg))) {
 		pr_err("[FB Driver]: copy_from_user failed! line:%d\n", __LINE__);
 		return -EFAULT;
 	}

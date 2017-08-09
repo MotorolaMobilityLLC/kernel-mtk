@@ -1,9 +1,9 @@
 #ifndef __H_DDP_MMP__
 #define __H_DDP_MMP__
 
-#include <linux/mmprofile.h>
+#include "mmprofile.h"
 #include "ddp_info.h"
-#include "disp_session.h"
+#include "ddp_ovl.h"
 typedef struct {
 	MMP_Event DDP;
 	MMP_Event layerParent;

@@ -2,7 +2,7 @@
 #define _DDP_RDMA_API_H_
 #include "ddp_info.h"
 
-#define RDMA_INSTANCES  1
+#define RDMA_INSTANCES  2
 #define RDMA_MAX_WIDTH  4095
 #define RDMA_MAX_HEIGHT 4095
 
@@ -17,27 +17,27 @@ enum RDMA_MODE {
 };
 
 typedef struct _rdma_color_matrix {
-	UINT32 C00;
-	UINT32 C01;
-	UINT32 C02;
-	UINT32 C10;
-	UINT32 C11;
-	UINT32 C12;
-	UINT32 C20;
-	UINT32 C21;
-	UINT32 C22;
+	uint32_t C00;
+	uint32_t C01;
+	uint32_t C02;
+	uint32_t C10;
+	uint32_t C11;
+	uint32_t C12;
+	uint32_t C20;
+	uint32_t C21;
+	uint32_t C22;
 } rdma_color_matrix;
 
 typedef struct _rdma_color_pre {
-	UINT32 ADD0;
-	UINT32 ADD1;
-	UINT32 ADD2;
+	uint32_t ADD0;
+	uint32_t ADD1;
+	uint32_t ADD2;
 } rdma_color_pre;
 
 typedef struct _rdma_color_post {
-	UINT32 ADD0;
-	UINT32 ADD1;
-	UINT32 ADD2;
+	uint32_t ADD0;
+	uint32_t ADD1;
+	uint32_t ADD2;
 } rdma_color_post;
 
 

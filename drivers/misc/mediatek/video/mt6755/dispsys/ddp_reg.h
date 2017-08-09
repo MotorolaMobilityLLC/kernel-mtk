@@ -1,8 +1,9 @@
 #ifndef _DDP_REG_H_
 #define _DDP_REG_H_
-#include <mach/sync_write.h>
-#include <mach/mt_typedefs.h>
-#include <mach/mt_reg_base.h>
+#include <mt-plat/sync_write.h>
+#include <mt-plat/mt_typedefs.h>
+/* #include <mach/mt_reg_base.h> */
+#include <linux/types.h>
 #include "display_recorder.h"
 #include "cmdq_record.h"
 #include "cmdq_core.h"
@@ -829,7 +830,7 @@ typedef struct {
 	DSI_VACT_NL_REG DSI_VACT_NL;	/* 002C */
 	DSI_LFR_CON_REG DSI_LFR_CON;	/* 0030 */
 	DSI_LFR_STA_REG DSI_LFR_STA;	/* 0034 */
-	UINT32 rsv_38[6];	/* 0038..004C */
+	uint32_t rsv_38[6];	/* 0038..004C */
 	DSI_HSA_WC_REG DSI_HSA_WC;	/* 0050 */
 	DSI_HBP_WC_REG DSI_HBP_WC;	/* 0054 */
 	DSI_HFP_WC_REG DSI_HFP_WC;	/* 0058 */
@@ -837,23 +838,23 @@ typedef struct {
 	DSI_CMDQ_CTRL_REG DSI_CMDQ_SIZE;	/* 0060 */
 	DSI_HSTX_CKLP_REG DSI_HSTX_CKL_WC;	/* 0064 */
 	DSI_HSTX_CKLP_WC_AUTO_RESULT_REG DSI_HSTX_CKL_WC_AUTO_RESULT;	/* 0068 */
-	UINT32 rsv_006C[2];	/* 006c..0070 */
+	uint32_t rsv_006C[2];	/* 006c..0070 */
 	DSI_RX_DATA_REG DSI_RX_DATA0;	/* 0074 */
 	DSI_RX_DATA_REG DSI_RX_DATA1;	/* 0078 */
 	DSI_RX_DATA_REG DSI_RX_DATA2;	/* 007c */
 	DSI_RX_DATA_REG DSI_RX_DATA3;	/* 0080 */
 	DSI_RACK_REG DSI_RACK;	/* 0084 */
 	DSI_TRIG_STA_REG DSI_TRIG_STA;	/* 0088 */
-	UINT32 rsv_008C;	/* 008C */
+	uint32_t rsv_008C;	/* 008C */
 	DSI_MEM_CONTI_REG DSI_MEM_CONTI;	/* 0090 */
 	DSI_FRM_BC_REG DSI_FRM_BC;	/* 0094 */
 	DSI_3D_CON_REG DSI_3D_CON;	/* 0098 */
-	UINT32 rsv_009C;	/* 009c */
+	uint32_t rsv_009C;	/* 009c */
 	DSI_TIME_CON0_REG DSI_TIME_CON0;	/* 00A0 */
 	DSI_TIME_CON1_REG DSI_TIME_CON1;	/* 00A4 */
 
-	UINT32 rsv_00A8[22];	/* 0A8..0FC */
-	UINT32 DSI_PHY_PCPAT;	/* 00100 */
+	uint32_t rsv_00A8[22];	/* 0A8..0FC */
+	uint32_t DSI_PHY_PCPAT;	/* 00100 */
 
 	DSI_PHY_LCCON_REG DSI_PHY_LCCON;	/* 0104 */
 	DSI_PHY_LD0CON_REG DSI_PHY_LD0CON;	/* 0108 */
@@ -862,12 +863,12 @@ typedef struct {
 	DSI_PHY_TIMCON1_REG DSI_PHY_TIMECON1;	/* 0114 */
 	DSI_PHY_TIMCON2_REG DSI_PHY_TIMECON2;	/* 0118 */
 	DSI_PHY_TIMCON3_REG DSI_PHY_TIMECON3;	/* 011C */
-	UINT32 rsv_0120[4];	/* 0120..012c */
+	uint32_t rsv_0120[4];	/* 0120..012c */
 	DSI_VM_CMD_CON_REG DSI_VM_CMD_CON;	/* 0130 */
-	UINT32 DSI_VM_CMD_DATA0;	/* 0134 */
-	UINT32 DSI_VM_CMD_DATA4;	/* 0138 */
-	UINT32 DSI_VM_CMD_DATA8;	/* 013C */
-	UINT32 DSI_VM_CMD_DATAC;	/* 0140 */
+	uint32_t DSI_VM_CMD_DATA0;	/* 0134 */
+	uint32_t DSI_VM_CMD_DATA4;	/* 0138 */
+	uint32_t DSI_VM_CMD_DATA8;	/* 013C */
+	uint32_t DSI_VM_CMD_DATAC;	/* 0140 */
 	DSI_CKSM_OUT_REG DSI_CKSM_OUT;	/* 0144 */
 	DSI_STATE_DBG0_REG DSI_STATE_DBG0;	/* 0148 */
 	DSI_STATE_DBG1_REG DSI_STATE_DBG1;	/* 014C */
@@ -880,13 +881,13 @@ typedef struct {
 	DSI_STATE_DBG8_REG DSI_STATE_DBG8;	/* 0168 */
 	DSI_STATE_DBG9_REG DSI_STATE_DBG9;	/* 016C */
 	DSI_DEBUG_SEL_REG DSI_DEBUG_SEL;	/* 0170 */
-	UINT32 rsv174;		/* 0174 */
-	UINT32 DSI_BIST_PATTERN;	/* 0178 */
+	uint32_t rsv174;		/* 0174 */
+	uint32_t DSI_BIST_PATTERN;	/* 0178 */
 	DSI_BIST_CON_REG DSI_BIST_CON;	/* 017C */
-	UINT32 DSI_VM_CMD_DATA10;	/* 00180 */
-	UINT32 DSI_VM_CMD_DATA14;	/* 00184 */
-	UINT32 DSI_VM_CMD_DATA18;	/* 00188 */
-	UINT32 DSI_VM_CMD_DATA1C;	/* 0018C */
+	uint32_t DSI_VM_CMD_DATA10;	/* 00180 */
+	uint32_t DSI_VM_CMD_DATA14;	/* 00184 */
+	uint32_t DSI_VM_CMD_DATA18;	/* 00188 */
+	uint32_t DSI_VM_CMD_DATA1C;	/* 0018C */
 } volatile DSI_REGS, *PDSI_REGS;
 
 /* 0~1 TYPE ,2 BTA,3 HS, 4 CL,5 TE,6~7 RESV, 8~15 DATA_ID,16~23 DATA_0,24~31 DATA_1 */
@@ -919,11 +920,11 @@ typedef struct {
 	MIPITX_DSI_DATA_LANE1_REG MIPITX_DSI_DATA_LANE1;	/* 000C */
 	MIPITX_DSI_DATA_LANE2_REG MIPITX_DSI_DATA_LANE2;	/* 0010 */
 	MIPITX_DSI_DATA_LANE3_REG MIPITX_DSI_DATA_LANE3;	/* 0014 */
-	UINT32 rsv_18[10];	/* 0018..003C */
+	uint32_t rsv_18[10];	/* 0018..003C */
 
 	MIPITX_DSI_TOP_CON_REG MIPITX_DSI_TOP_CON;	/* 0040 */
 	MIPITX_DSI_BG_CON_REG MIPITX_DSI_BG_CON;	/* 0044 */
-	UINT32 rsv_48[2];	/* 0048..004C */
+	uint32_t rsv_48[2];	/* 0048..004C */
 	MIPITX_DSI_PLL_CON0_REG MIPITX_DSI_PLL_CON0;	/* 0050 */
 	MIPITX_DSI_PLL_CON1_REG MIPITX_DSI_PLL_CON1;	/* 0054 */
 	MIPITX_DSI_PLL_CON2_REG MIPITX_DSI_PLL_CON2;	/* 0058 */
@@ -931,7 +932,7 @@ typedef struct {
 	MIPITX_DSI_PLL_CHG_REG MIPITX_DSI_PLL_CHG;	/* 0060 */
 	MIPITX_DSI_PLL_TOP_REG MIPITX_DSI_PLL_TOP;	/* 0064 */
 	MIPITX_DSI_PLL_PWR_REG MIPITX_DSI_PLL_PWR;	/* 0068 */
-	UINT32 rsv_6C;		/* 006C */
+	uint32_t rsv_6C;		/* 006C */
 	MIPITX_DSI_RGS_REG MIPITX_DSI_RGS;	/* 0070 */
 	MIPITX_DSI_GPI_EN_REG MIPITX_DSI_GPI_EN;	/* 0074 */
 	MIPITX_DSI_GPI_PULL_REG MIPITX_DSI_GPI_PULL;	/* 0078 */
@@ -942,12 +943,14 @@ typedef struct {
 	MIPITX_DSI_SW_CTRL_CON1_REG MIPITX_DSI_SW_CTRL_CON1;	/* 0088 */
 	MIPITX_DSI_SW_CTRL_CON2_REG MIPITX_DSI_SW_CTRL_CON2;	/* 008C */
 	MIPITX_DSI_DBG_CON_REG MIPITX_DSI_DBG_CON;	/* 0090 */
-	UINT32 MIPITX_DSI_DBG_OUT;	/* 0084 */
+	uint32_t MIPITX_DSI_DBG_OUT;	/* 0084 */
 	MIPITX_DSI_APB_ASYNC_STA_REG MIPITX_DSI_APB_ASYNC_STA;	/* 0098 */
 
 } volatile DSI_PHY_REGS, *PDSI_PHY_REGS;
 
+/*
 #ifndef BUILD_LK
+
 STATIC_ASSERT(0x0050 == offsetof(DSI_PHY_REGS, MIPITX_DSI_PLL_CON0));
 STATIC_ASSERT(0x0070 == offsetof(DSI_PHY_REGS, MIPITX_DSI_RGS));
 STATIC_ASSERT(0x0080 == offsetof(DSI_PHY_REGS, MIPITX_DSI_SW_CTRL_EN));
@@ -959,10 +962,9 @@ STATIC_ASSERT(0x011C == offsetof(DSI_REGS, DSI_PHY_TIMECON3));
 STATIC_ASSERT(0x017C == offsetof(DSI_REGS, DSI_BIST_CON));
 STATIC_ASSERT(0x0100 == offsetof(DSI_REGS, DSI_PHY_PCPAT));
 
-
-STATIC_ASSERT(0x0098 == offsetof(DSI_REGS, DSI_3D_CON));
+STATIC_ASSERT((uint32_t)0x0098 == offsetof(DSI_REGS, DSI_3D_CON));
 #endif
-
+*/
 /* mipi and dsi's extern variable */
 extern volatile unsigned long dispsys_reg[DISP_REG_NUM];
 extern unsigned long ddp_reg_pa_base[DISP_REG_NUM];
@@ -1093,6 +1095,15 @@ extern volatile unsigned long dsi_reg_va;
 			dprec_reg_op(NULL, reg32, val, 0x00000000);\
 		mt_reg_sync_writel(val, (volatile unsigned long*)(reg32));\
 	} while (0)
+#define DISP_CPU_REG_SET_FIELD(field, reg32, val)  \
+	do {                                \
+		if (0)\
+			dprec_reg_op(NULL, (unsigned long)(reg32), val<<REG_FLD_SHIFT(field), REG_FLD_MASK(field));\
+		mt_reg_sync_writel(\
+			((unsigned int)(*(volatile unsigned long *)(reg32))&~REG_FLD_MASK(field))|REG_FLD_VAL((field),\
+			(val)),\
+			(volatile unsigned long *)reg32);  \
+	} while (0)
 
 /* after apply device tree va/pa is not mapped by a fixed offset */
 static inline unsigned long disp_addr_convert(unsigned long va)
@@ -1104,19 +1115,18 @@ static inline unsigned long disp_addr_convert(unsigned long va)
 			return ddp_reg_pa_base[i] + (va & 0xfffl);
 	}
 	pr_err("DDP/can not find reg addr for va=0x%lx!\n", va);
-	BUG();
 	return 0;
 }
 
 
 #define DISP_REG_MASK(handle, reg32, val, mask)	\
 	do { \
-		dprec_reg_op(handle, reg32, val, mask);\
-		 if (handle == NULL) { \
-			mt_reg_sync_writel((unsigned int)(INREG32(reg32)&~(mask))|(val), (reg32));\
-		 } else { \
-			cmdqRecWrite(handle, disp_addr_convert(reg32), val, mask); \
-		 }	\
+		dprec_reg_op((void *)handle, (unsigned long)reg32, val, mask);\
+		 if (handle == NULL) \
+			mt_reg_sync_writel((unsigned int)(INREG32(reg32)&~(mask))|(val), \
+				(volatile unsigned long *)(reg32));\
+		 else \
+			cmdqRecWrite((cmdqRecHandle)handle, disp_addr_convert((unsigned long)reg32), val, mask); \
 	} while (0)
 
 #define DISP_REG_SET(handle, reg32, val) \
@@ -1124,22 +1134,22 @@ static inline unsigned long disp_addr_convert(unsigned long va)
 		if (handle == NULL) { \
 			mt_reg_sync_writel(val, (volatile unsigned long*)(reg32));\
 		} else { \
-			dprec_reg_op(handle, reg32, val, 0x00000000);\
-			cmdqRecWrite(handle, disp_addr_convert(reg32), val, ~0); \
+			dprec_reg_op(handle, (unsigned int)(reg32), val, 0x00000000);\
+			cmdqRecWrite(handle, disp_addr_convert((unsigned long)(reg32)), val, ~0); \
 		}  \
 	} while (0)
-
 
 #define DISP_REG_SET_FIELD(handle, field, reg32, val)  \
 	do {  \
 		if (handle == NULL) { \
-			unsigned int regval; \
-			regval = __raw_readl((volatile unsigned long*)(reg32)); \
-			regval  = regval & ~REG_FLD_MASK(field) | REG_FLD_VAL((field), (val)); \
-			mt_reg_sync_writel(regval, (reg32));  \
+			mt_reg_sync_writel(\
+			(__raw_readl((volatile unsigned long *)(reg32)) & ~REG_FLD_MASK(field))|REG_FLD_VAL((field),\
+			(val)),\
+			(volatile unsigned long *)(reg32));  \
 		} else { \
-			dprec_reg_op(handle, (reg32), val<<REG_FLD_SHIFT(field), REG_FLD_MASK(field));\
-			cmdqRecWrite(handle, disp_addr_convert(reg32), val<<REG_FLD_SHIFT(field), REG_FLD_MASK(field));\
+			dprec_reg_op(handle, (unsigned long)(reg32), val<<REG_FLD_SHIFT(field), REG_FLD_MASK(field));\
+			cmdqRecWrite(handle, disp_addr_convert((unsigned long)(reg32)),\
+					val<<REG_FLD_SHIFT(field), REG_FLD_MASK(field));\
 		} \
 	} while (0)
 
@@ -1149,8 +1159,8 @@ static inline unsigned long disp_addr_convert(unsigned long va)
 			while (!((DISP_REG_GET(reg32))&val))\
 				; \
 		} else { \
-			dprec_reg_op(handle, reg32, val, 0x00000000);\
-			cmdqRecPoll(handle, disp_addr_convert(reg32), val, mask); \
+			dprec_reg_op(handle, (unsigned int)(reg32), val, 0x00000000);\
+			cmdqRecPoll(handle, disp_addr_convert((unsigned long)(reg32)), val, mask); \
 		}  \
 	} while (0)
 
@@ -1158,8 +1168,8 @@ static inline unsigned long disp_addr_convert(unsigned long va)
 	do { \
 		if (handle != NULL) { \
 			if (hSlot) \
-				cmdqRecBackupRegisterToSlot(handle, hSlot, idx, disp_addr_convert(reg32));\
-		}  \
+				cmdqRecBackupRegisterToSlot(handle,\
+							hSlot, idx, disp_addr_convert((unsigned long)reg32));\
 	} while (0)
 
 /* field definition */
@@ -1538,16 +1548,14 @@ static inline unsigned long disp_addr_convert(unsigned long va)
 #define DISP_REG_DPI_TGEN_VPORCH_RODD				(DISPSYS_DPI_BASE + 0x074)
 #define DISP_REG_DPI_TGEN_VWIDTH_REVEN				(DISPSYS_DPI_BASE + 0x078)
 #define DISP_REG_DPI_TGEN_VPORCH_REVEN				(DISPSYS_DPI_BASE + 0x07c)
-#define DISP_REG_DPI_ESAV_VTIM_L					(DISPSYS_DPI_BASE + 0x080)
-#define DISP_REG_DPI_ESAV_VTIM_R					(DISPSYS_DPI_BASE + 0x084)
-#define DISP_REG_DPI_ESAV_VTIM_R					(DISPSYS_DPI_BASE + 0x088)
+#define DISP_REG_DPI_ESAV_VTIM_LODD					(DISPSYS_DPI_BASE + 0x080)
+#define DISP_REG_DPI_ESAV_VTIM_LEVEN				(DISPSYS_DPI_BASE + 0x084)
+#define DISP_REG_DPI_ESAV_VTIM_RODD					(DISPSYS_DPI_BASE + 0x088)
 #define DISP_REG_DPI_CLPF_SETTING					(DISPSYS_DPI_BASE + 0x08c)
 #define DISP_REG_DPI_Y_LIMIT						(DISPSYS_DPI_BASE + 0x090)
 #define DISP_REG_DPI_C_LIMIT						(DISPSYS_DPI_BASE + 0x094)
 #define DISP_REG_DPI_YUV422_SETTING					(DISPSYS_DPI_BASE + 0x098)
 #define DISP_REG_DPI_EMBSYNC_SETTING				(DISPSYS_DPI_BASE + 0x09c)
-#define DISP_REG_DPI_ESAV_CODE_SET0					(DISPSYS_DPI_BASE + 0x0a0)
-#define DISP_REG_DPI_ESAV_CODE_SET1					(DISPSYS_DPI_BASE + 0x0a4)
 #define DISP_REG_DPI_ESAV_CODE_SET0					(DISPSYS_DPI_BASE + 0x0a8)
 #define DISP_REG_DPI_ESAV_CODE_SET1					(DISPSYS_DPI_BASE + 0x0ac)
 #define DISP_REG_DPI_BLANK_CODE_SET					(DISPSYS_DPI_BASE + 0x0b0)

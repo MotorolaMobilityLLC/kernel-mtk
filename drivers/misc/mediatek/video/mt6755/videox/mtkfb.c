@@ -1,4 +1,4 @@
-#include <generated/autoconf.h>
+/*#include <generated/autoconf.h>*/
 #include <linux/module.h>
 #include <linux/mm.h>
 #include <linux/init.h>
@@ -7,15 +7,12 @@
 #include <linux/device.h>
 #include <linux/platform_device.h>
 #include <linux/dma-mapping.h>
-#include <linux/earlysuspend.h>
 #include <linux/kthread.h>
 #include <linux/rtpm_prio.h>
 #include <linux/vmalloc.h>
-#include <linux/disp_assert_layer.h>
+#include "disp_assert_layer.h"
 #include <linux/semaphore.h>
-#include <linux/xlog.h>
 #include <linux/mutex.h>
-#include <linux/leds-mt65xx.h>
 #include <linux/suspend.h>
 #include <linux/of_fdt.h>
 #include <linux/of.h>
@@ -2476,7 +2473,6 @@ static void mtkfb_early_suspend(struct early_suspend *h)
 
 	DISPMSG("[FB Driver] enter early_suspend\n");
 
-	mt65xx_leds_brightness_set(MT65XX_LED_TYPE_LCD, LED_OFF);
 
 	msleep(30);
 

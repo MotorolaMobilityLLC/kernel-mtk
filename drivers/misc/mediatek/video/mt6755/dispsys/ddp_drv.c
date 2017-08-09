@@ -25,8 +25,7 @@
 #include <linux/sched.h>
 #include <linux/kthread.h>
 #include <linux/timer.h>
-#include <mach/mt_smi.h>
-#include <linux/xlog.h>
+/* #include <mach/mt_smi.h> */
 #include <linux/proc_fs.h>
 #include <linux/miscdevice.h>
 /* ION */
@@ -39,7 +38,6 @@
 #include <linux/of_irq.h>
 #include <linux/of_address.h>
 #include <asm/io.h>
-#include <mach/mt_smi.h>
 #include <mach/irqs.h>
 #include <mach/mt_reg_base.h>
 #include <mach/mt_irq.h>
@@ -50,8 +48,8 @@
 #include "ddp_clkmgr.h"
 #endif
 #include <mach/mt_irq.h>
-#include <mach/sync_write.h>
-#include <mach/m4u.h>
+#include <mt-plat/sync_write.h>
+#include "m4u.h"
 
 #include "ddp_drv.h"
 #include "ddp_reg.h"
@@ -677,8 +675,8 @@ static int disp_probe(struct platform_device *pdev)
 			DDPERR("%s:%d, DISPSYS get %d,%s clock error!!!\n",
 				   __FILE__, __LINE__, i, disp_clk_name[i]);
 		else {
-			if (i != DISP_MTCMOS_CLK)
 				if (!ddp_set_clk_handle(dispsys_dev->disp_clk[i], i))
+					if (i != DISP_MTCMOS_CLK)
 						ddp_clk_prepare(i);
 		}
 	}

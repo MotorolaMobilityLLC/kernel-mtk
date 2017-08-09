@@ -428,7 +428,6 @@ static void mmsys_config_dump_analysis(void)
 	char clock_on[512] = { '\0' };
 	char *pos = NULL;
 	char *name;
-	int len = 0;
 
 	unsigned int valid0 = DISP_REG_GET(DISP_REG_CONFIG_DISP_DL_VALID_0);
 	unsigned int valid1 = DISP_REG_GET(DISP_REG_CONFIG_DISP_DL_VALID_1);
@@ -760,7 +759,7 @@ static void dither_dump_analyze(void)
 	     DISP_REG_GET(DISP_REG_DITHER_OUT_CNT) & 0x1fff,
 	     (DISP_REG_GET(DISP_REG_DITHER_OUT_CNT) >> 16) & 0x1fff);
 }
-
+/*
 static void ufoe_dump_reg(void)
 {
 	DDPDUMP("==DISP UFOE REGS==\n");
@@ -770,7 +769,7 @@ static void ufoe_dump_analysis(void)
 {
 	DDPDUMP("==DISP UFOE ANALYSIS==\n");
 }
-
+*/
 static void dsi_dump_reg(DISP_MODULE_ENUM module)
 {
 	int i = 0;

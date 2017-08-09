@@ -3,7 +3,8 @@
 #include <linux/semaphore.h>
 #include <linux/slab.h>
 
-#include <mach/mt_typedefs.h>
+#include <linux/bug.h>
+#include <linux/types.h>
 #include "mtkfb_console.h"
 #include "ddp_hal.h"
 
@@ -31,7 +32,7 @@
 
 #define MAKE_TWO_RGB565_COLOR(high, low)  (((low) << 16) | (high))
 
-inline MFC_STATUS MFC_LOCK(void)
+inline MFC_STATUS MFC_LOCK(MFC_CONTEXT *ctxt)
 {
 	if (down_interruptible(&ctxt->sem)) {
 		pr_err("[MFC] ERROR: Can't get semaphore in %s()\n",
@@ -42,8 +43,10 @@ inline MFC_STATUS MFC_LOCK(void)
 	return MFC_STATUS_OK;
 }
 
-#define MFC_UNLOCK() up(&ctxt->sem)
-
+inline void MFC_UNLOCK(MFC_CONTEXT *ctxt)
+{
+	up(&ctxt->sem);
+}
 
 /* --------------------------------------------------------------------------- */
 UINT32 MFC_Get_Cursor_Offset(MFC_HANDLE handle)
@@ -295,10 +298,10 @@ MFC_STATUS MFC_SetColor(MFC_HANDLE handle, unsigned int fg_color, unsigned int b
 	if (!ctxt)
 		return MFC_STATUS_INVALID_ARGUMENT;
 
-	MFC_LOCK();
+	MFC_LOCK(ctxt);
 	ctxt->fg_color = fg_color;
 	ctxt->bg_color = bg_color;
-	MFC_UNLOCK();
+	MFC_UNLOCK(ctxt);
 
 	return MFC_STATUS_OK;
 }
@@ -311,9 +314,9 @@ MFC_STATUS MFC_ResetCursor(MFC_HANDLE handle)
 	if (!ctxt)
 		return MFC_STATUS_INVALID_ARGUMENT;
 
-	MFC_LOCK();
+	MFC_LOCK(ctxt);
 	ctxt->cursor_row = ctxt->cursor_col = 0;
-	MFC_UNLOCK();
+	MFC_UNLOCK(ctxt);
 
 	return MFC_STATUS_OK;
 }
@@ -327,14 +330,14 @@ MFC_STATUS MFC_Print(MFC_HANDLE handle, const char *str)
 	if (!ctxt || !str)
 		return MFC_STATUS_INVALID_ARGUMENT;
 
-	MFC_LOCK();
+	MFC_LOCK(ctxt);
 
 	count = strlen(str);
 
 	while (count--)
 		_MFC_Putc(ctxt, *str++);
 
-	MFC_UNLOCK();
+	MFC_UNLOCK(ctxt);
 
 	return MFC_STATUS_OK;
 }
@@ -349,7 +352,7 @@ MFC_STATUS MFC_SetMem(MFC_HANDLE handle, const char *str, UINT32 color)
 	if (!ctxt || !str)
 		return MFC_STATUS_INVALID_ARGUMENT;
 
-	MFC_LOCK();
+	MFC_LOCK(ctxt);
 
 	count = strlen(str);
 	count = count * MFC_FONT_WIDTH;
@@ -360,7 +363,7 @@ MFC_STATUS MFC_SetMem(MFC_HANDLE handle, const char *str, UINT32 color)
 			*ptr++ = color;
 	}
 
-	MFC_UNLOCK();
+	MFC_UNLOCK(ctxt);
 
 	return MFC_STATUS_OK;
 }
@@ -375,7 +378,7 @@ MFC_STATUS MFC_LowMemory_Printf(MFC_HANDLE handle, const char *str, UINT32 fg_co
 	if (!ctxt || !str)
 		return MFC_STATUS_INVALID_ARGUMENT;
 
-	MFC_LOCK();
+	MFC_LOCK(ctxt);
 
 	count = strlen(str);
 /* //store cursor_col and row for printf low memory char temply */
@@ -400,7 +403,7 @@ MFC_STATUS MFC_LowMemory_Printf(MFC_HANDLE handle, const char *str, UINT32 fg_co
 /* ///////// */
 
 
-	MFC_UNLOCK();
+	MFC_UNLOCK(ctxt);
 
 	return MFC_STATUS_OK;
 }
