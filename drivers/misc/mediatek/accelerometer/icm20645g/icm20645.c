@@ -810,6 +810,7 @@ static int icm20645_init_client(struct i2c_client *client, int reset_cali)
 {
 	struct icm20645_i2c_data *obj = i2c_get_clientdata(client);
 	int res = 0;
+	int retry_fail = 0 ;
 
 	icm20645_gpio_config();
 	res = ICM20645_selclk(client);
@@ -822,10 +823,18 @@ static int icm20645_init_client(struct i2c_client *client, int reset_cali)
 		GSE_ERR("Check ID error\n");
 		return res;
 	}
-	res = ICM20645_SetPowerMode(client, true);
-	if (res != ICM20645_SUCCESS) {
-		GSE_ERR("set power error\n");
-		return res;
+	for (; retry_fail < 10; retry_fail++) {
+		res = ICM20645_SetPowerMode(client, true);
+		if (res != ICM20645_SUCCESS) {
+			GSE_ERR("set power error\n");
+			udelay(5);
+			continue;
+		}
+		if (retry_fail == 9) {
+			GSE_ERR("set power error, retry 10 times\n");
+			return res;
+		}
+		break;
 	}
 	res = ICM20645_SetDataFormat(client, (ACCEL_DLPFCFG | ICM20645_RANGE_16G | ACCEL_FCHOICE));
 	if (res != ICM20645_SUCCESS) {
