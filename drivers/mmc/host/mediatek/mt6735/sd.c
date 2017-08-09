@@ -8757,6 +8757,9 @@ int msdc_of_parse(struct mmc_host *mmc)
 	if (of_find_property(np, "msdc-sys-suspend", &len))
 		host->hw->flags |= MSDC_SYS_SUSPEND;
 
+	if (of_find_property(np, "sd_need_power", &len))
+		host->hw->flags |= MSDC_SD_NEED_POWER;
+
 	/*Returns 0 on success, -EINVAL if the property does not exist,
 	* -ENODATA if property does not have a value, and -EOVERFLOW if the
 	* property data isn't large enough.*/
