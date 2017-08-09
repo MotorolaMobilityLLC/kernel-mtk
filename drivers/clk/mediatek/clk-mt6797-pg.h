@@ -1,5 +1,5 @@
-#ifndef __DRV_CLK_MT6755_PG_H
-#define __DRV_CLK_MT6755_PG_H
+#ifndef __DRV_CLK_MT6797_PG_H
+#define __DRV_CLK_MT6797_PG_H
 
 enum subsys_id {
 	SYS_MD1 = 0,

@@ -19,7 +19,7 @@
 
 #include "clk-mtk-v1.h"
 #include "clk-pll-v1.h"
-#include "clk-mt6735-pll.h"
+#include "clk-mt6797-pll.h"
 
 #if !defined(MT_CCF_DEBUG) || !defined(MT_CCF_BRINGUP)
 #define MT_CCF_DEBUG	0

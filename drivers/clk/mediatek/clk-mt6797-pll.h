@@ -1,5 +1,5 @@
-#ifndef __DRV_CLK_MT6735_PLL_H
-#define __DRV_CLK_MT6735_PLL_H
+#ifndef __DRV_CLK_MT6797_PLL_H
+#define __DRV_CLK_MT6797_PLL_H
 
 /*
  * This is a private header file. DO NOT include it except clk-*.c.
