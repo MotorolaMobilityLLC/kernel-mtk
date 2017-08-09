@@ -1257,7 +1257,7 @@ composite_setup(struct usb_gadget *gadget, const struct usb_ctrlrequest *ctrl)
 	u16				w_length = le16_to_cpu(ctrl->wLength);
 	struct usb_function		*f = NULL;
 	u8				endp;
-	static DEFINE_RATELIMIT_STATE(ratelimit, 1 * HZ, 10);
+	static DEFINE_RATELIMIT_STATE(ratelimit, 1 * HZ, 5);
 
 	if (!(ctrl->bRequest == USB_REQ_GET_STATUS
 			|| ctrl->bRequest == USB_REQ_CLEAR_FEATURE
@@ -1572,9 +1572,12 @@ unknown:
 
 done:
 	if(value < 0) {
-		INFO(cdev, "[COM]composite_setup: value=%d,"
-				"bRequestType=0x%x, bRequest=0x%x, w_value=0x%x, w_length=0x%x \n", value,
-				ctrl->bRequestType,	ctrl->bRequest, w_value, w_length);
+		if (__ratelimit(&ratelimit)) {
+			INFO(cdev, "[COM]composite_setup: value=%d,bRequestType=0x%x, bRequest=0x%x\n",
+			    value, ctrl->bRequestType, ctrl->bRequest);
+			INFO(cdev, "[COM]composite_setup: w_value=0x%x, w_length=0x%x\n",
+			    w_value, w_length);
+		}
 	}
 	/* device either stalls (value < 0) or reports success */
 	return value;
