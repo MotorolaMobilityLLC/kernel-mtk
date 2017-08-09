@@ -2171,7 +2171,7 @@ struct mtk_power_gate scp_clks[] __initdata = {
 	PGATE(SCP_SYS_CONN, pg_conn, NULL, NULL, SYS_CONN),
 	PGATE(SCP_SYS_DIS, pg_dis, NULL, mm_sel, SYS_DIS),
 	PGATE(SCP_SYS_ISP, pg_isp, NULL, mm_sel, SYS_ISP),
-	PGATE(SCP_SYS_VDE, pg_vde, NULL, mm_sel, SYS_VDE),
+	PGATE(SCP_SYS_VDE, pg_vde, NULL, vdec_sel, SYS_VDE),
 	PGATE(SCP_SYS_MFG_ASYNC, pg_mfg_async, NULL, NULL, SYS_MFG_ASYNC),
 	PGATE(SCP_SYS_MFG, pg_mfg, pg_mfg_async, mfg_sel, SYS_MFG),
 	PGATE(SCP_SYS_MFG_CORE3, pg_mfg_core3, pg_mfg, NULL, SYS_MFG_CORE3),

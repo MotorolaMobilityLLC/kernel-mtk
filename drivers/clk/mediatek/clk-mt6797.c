@@ -1272,10 +1272,10 @@ static struct mtk_gate_regs vdec1_cg_regs = {
 };
 
 static struct mtk_gate vdec_clks[] __initdata = {
-	GATE(VDEC_CKEN_ENG, vdec_cken_eng, venc_sel, vdec0_cg_regs, 8, CLK_GATE_INVERSE),
-	GATE(VDEC_ACTIVE, vdec_active, venc_sel, vdec0_cg_regs, 4, CLK_GATE_INVERSE),
-	GATE(VDEC_CKEN, vdec_cken, venc_sel, vdec0_cg_regs, 0, CLK_GATE_INVERSE),
-	GATE(VDEC_LARB1_CKEN, vdec_larb1_cken, venc_sel, vdec1_cg_regs, 0, CLK_GATE_INVERSE),
+	GATE(VDEC_CKEN_ENG, vdec_cken_eng, vdec_sel, vdec0_cg_regs, 8, CLK_GATE_INVERSE),
+	GATE(VDEC_ACTIVE, vdec_active, vdec_sel, vdec0_cg_regs, 4, CLK_GATE_INVERSE),
+	GATE(VDEC_CKEN, vdec_cken, vdec_sel, vdec0_cg_regs, 0, CLK_GATE_INVERSE),
+	GATE(VDEC_LARB1_CKEN, vdec_larb1_cken, mm_sel, vdec1_cg_regs, 0, CLK_GATE_INVERSE),
 };
 
 static void __init init_clk_vdecsys(void __iomem *vdecsys_base, struct clk_onecell_data *clk_data)
