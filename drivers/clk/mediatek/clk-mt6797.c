@@ -405,7 +405,7 @@ void __iomem  *camsys_base;
 #define AUD_0_CG   0x0F0C0304
 #define AUD_1_CG   0x00030000
 #define MFG_CG     0x00000001/*set*/
-#define MM_0_CG   0xFFFFFFFF
+#define MM_0_CG   0xFFFFFFF8
 #define MM_1_CG   0x000003F0
 #define MM_DUMMY_0_CG   0xFFFFBFF8/*function on off*/
 #define MM_DUMMY_1_CG   0x00000120/*function on off*/
