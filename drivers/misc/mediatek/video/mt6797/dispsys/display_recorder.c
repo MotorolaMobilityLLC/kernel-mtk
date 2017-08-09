@@ -1564,4 +1564,10 @@ char *get_dprec_status_ptr(int buffer_idx)
 {
 	return NULL;
 }
+char *debug_buffer = NULL;
+bool is_buffer_init = false;
+void init_log_buffer(void)
+{
+
+}
 #endif

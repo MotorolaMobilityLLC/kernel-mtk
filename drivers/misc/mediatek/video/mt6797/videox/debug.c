@@ -537,6 +537,7 @@ static void process_dbg_opt(const char *opt)
 			DDPMSG("dump_layer En %d\n", gCaptureWdmaLayerEnable);
 		}
 	} else if (0 == strncmp(opt, "dump_rdma_layer:", 16)) {
+#if defined(CONFIG_MT_ENG_BUILD) || !defined(CONFIG_MTK_GMO_RAM_OPTIMIZE)
 		if (0 == strncmp(opt + 16, "on", 2)) {
 			ret = sscanf(opt, "dump_rdma_layer:on,%d,%d\n",
 				     &gCapturePriLayerDownX, &gCapturePriLayerDownY);
@@ -557,6 +558,7 @@ static void process_dbg_opt(const char *opt)
 			gCaptureRdmaLayerEnable = 0;
 			DDPMSG("dump_layer En %d\n", gCaptureRdmaLayerEnable);
 		}
+#endif
 	} else if (0 == strncmp(opt, "enable_idlemgr:", 15)) {
 		char *p = (char *)opt + 15;
 		UINT32 flg;
