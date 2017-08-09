@@ -454,12 +454,12 @@ void aee_wdt_irq_info(void)
 	wdt_log_length +=
 	    dump_idle_info((wdt_log_buf + wdt_log_length), (sizeof(wdt_log_buf) - wdt_log_length));
 #endif
+	aee_sram_fiq_log(wdt_log_buf);
 
 #ifdef CONFIG_MT_SCHED_MONITOR
 	aee_rr_rec_fiq_step(AEE_FIQ_STEP_WDT_IRQ_SCHED);
 	mt_aee_dump_sched_traces();
 #endif
-	aee_sram_fiq_log(wdt_log_buf);
 
 	/* avoid lock prove to dump_stack in __debug_locks_off() */
 	xchg(&debug_locks, 0);
