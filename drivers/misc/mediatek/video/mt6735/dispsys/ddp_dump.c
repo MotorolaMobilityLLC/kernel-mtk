@@ -8,6 +8,7 @@
 #include "ddp_ovl.h"
 #include "ddp_wdma.h"
 #include "ddp_rdma.h"
+#include "ddp_rdma_ex.h"
 
 #if defined(MTK_FB_SODI_SUPPORT)
 #include "mt_spm.h"

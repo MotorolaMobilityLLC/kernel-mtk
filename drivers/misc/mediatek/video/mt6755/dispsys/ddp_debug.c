@@ -25,6 +25,7 @@
 #include "ddp_info.h"
 #include "ddp_dsi.h"
 #include "ddp_rdma.h"
+#include "ddp_rdma_ex.h"
 #include "ddp_manager.h"
 #include "ddp_log.h"
 #include "ddp_met.h"

@@ -42,6 +42,7 @@
 #include "cmdq_record.h"
 #include "cmdq_reg.h"
 #include "cmdq_core.h"
+#include "ddp_rdma.h"
 #include "ddp_manager.h"
 #include "mtkfb_fence.h"
 #include "display_recorder.h"

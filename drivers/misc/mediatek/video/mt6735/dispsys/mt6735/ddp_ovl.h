@@ -58,6 +58,5 @@ void ovl_set_status(DISP_OVL1_STATUS status);
 unsigned int ddp_ovl_get_cur_addr(bool rdma_mode, int layerid);
 
 struct DDP_MODULE_DRIVER;
-extern struct DDP_MODULE_DRIVER ddp_driver_ovl;
 
 #endif

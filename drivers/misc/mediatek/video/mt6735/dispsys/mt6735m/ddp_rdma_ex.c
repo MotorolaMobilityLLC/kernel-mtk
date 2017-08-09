@@ -9,6 +9,7 @@
 #include "ddp_reg.h"
 #include "ddp_matrix_para.h"
 #include "ddp_rdma.h"
+#include "ddp_rdma_ex.h"
 #include "ddp_dump.h"
 #include "lcm_drv.h"
 #include "primary_display.h"
@@ -16,24 +17,6 @@
 #include "ddp_drv.h"
 #include "ddp_debug.h"
 #include "ddp_irq.h"
-
-enum RDMA_INPUT_FORMAT {
-	RDMA_INPUT_FORMAT_BGR565 = 0,
-	RDMA_INPUT_FORMAT_RGB888 = 1,
-	RDMA_INPUT_FORMAT_RGBA8888 = 2,
-	RDMA_INPUT_FORMAT_ARGB8888 = 3,
-	RDMA_INPUT_FORMAT_VYUY = 4,
-	RDMA_INPUT_FORMAT_YVYU = 5,
-
-	RDMA_INPUT_FORMAT_RGB565 = 6,
-	RDMA_INPUT_FORMAT_BGR888 = 7,
-	RDMA_INPUT_FORMAT_BGRA8888 = 8,
-	RDMA_INPUT_FORMAT_ABGR8888 = 9,
-	RDMA_INPUT_FORMAT_UYVY = 10,
-	RDMA_INPUT_FORMAT_YUYV = 11,
-
-	RDMA_INPUT_FORMAT_UNKNOWN = 32,
-};
 
 static unsigned int rdma_fps[RDMA_INSTANCES] = { 60, 60 };
 
@@ -79,7 +62,7 @@ static enum RDMA_INPUT_FORMAT rdma_input_format_convert(DpColorFormat fmt)
 		rdma_fmt = RDMA_INPUT_FORMAT_YUYV;
 		break;
 	default:
-		DDPERR("rdma_fmt_convert fmt=%d, rdma_fmt=%d\n", fmt, rdma_fmt);
+		DDPERR("rdma_input_format_convert fmt=%d, rdma_fmt=%d\n", fmt, rdma_fmt);
 	}
 	return rdma_fmt;
 }
@@ -240,32 +223,11 @@ static char *rdma_intput_format_name(enum RDMA_INPUT_FORMAT fmt, int swap)
 	return "unknown";
 }
 
-static unsigned int rdma_index(DISP_MODULE_ENUM module)
-{
-	int idx = 0;
-
-	switch (module) {
-	case DISP_MODULE_RDMA0:
-		idx = 0;
-		break;
-	case DISP_MODULE_RDMA1:
-		idx = 1;
-		break;
-	case DISP_MODULE_RDMA2:
-		idx = 2;
-		break;
-	default:
-		DDPERR("invalid rdma module=%d\n", module); /* invalid module */
-		ASSERT(0);
-	}
-	return idx;
-}
-
 int rdma_enable_irq(DISP_MODULE_ENUM module, void *handle, DDP_IRQ_LEVEL irq_level)
 {
 	unsigned int idx = rdma_index(module);
 
-	ASSERT(idx <= 2);
+	ASSERT(idx <= RDMA_INSTANCES);
 
 	switch (irq_level) {
 	case DDP_IRQ_LEVEL_ALL:
@@ -289,7 +251,7 @@ int rdma_start(DISP_MODULE_ENUM module, void *handle)
 {
 	unsigned int idx = rdma_index(module);
 
-	ASSERT(idx <= 2);
+	ASSERT(idx <= RDMA_INSTANCES);
 
 	DISP_REG_SET(handle, idx * DISP_RDMA_INDEX_OFFSET + DISP_REG_RDMA_INT_ENABLE, 0x3E);
 	DISP_REG_SET_FIELD(handle, GLOBAL_CON_FLD_ENGINE_EN,
@@ -302,7 +264,7 @@ int rdma_stop(DISP_MODULE_ENUM module, void *handle)
 {
 	unsigned int idx = rdma_index(module);
 
-	ASSERT(idx <= 2);
+	ASSERT(idx <= RDMA_INSTANCES);
 
 	DISP_REG_SET_FIELD(handle, GLOBAL_CON_FLD_ENGINE_EN,
 			   idx * DISP_RDMA_INDEX_OFFSET + DISP_REG_RDMA_GLOBAL_CON, 0);
@@ -317,7 +279,7 @@ int rdma_reset(DISP_MODULE_ENUM module, void *handle)
 	int ret = 0;
 	unsigned int idx = rdma_index(module);
 
-	ASSERT(idx <= 2);
+	ASSERT(idx <= RDMA_INSTANCES);
 
 	DISP_REG_SET_FIELD(handle, GLOBAL_CON_FLD_SOFT_RESET,
 			   idx * DISP_RDMA_INDEX_OFFSET + DISP_REG_RDMA_GLOBAL_CON, 1);
@@ -457,7 +419,7 @@ static int rdma_config(DISP_MODULE_ENUM module,
 	     idx, mode, address, rdma_intput_format_name(inputFormat, input_swap), pitch, width,
 	     height, sec);
 #endif
-	ASSERT(idx <= 2);
+	ASSERT(idx <= RDMA_INSTANCES);
 	if ((width > RDMA_MAX_WIDTH) || (height > RDMA_MAX_HEIGHT))
 		DDPERR("RDMA input overflow, w=%d, h=%d, max_w=%d, max_h=%d\n", width, height,
 		       RDMA_MAX_WIDTH, RDMA_MAX_HEIGHT);
@@ -531,14 +493,7 @@ static int rdma_config(DISP_MODULE_ENUM module,
 	return 0;
 }
 
-void rdma_set_target_line(DISP_MODULE_ENUM module, unsigned int line, void *handle)
-{
-	unsigned int idx = rdma_index(module);
-
-	DISP_REG_SET(handle, idx * DISP_RDMA_INDEX_OFFSET + DISP_REG_RDMA_TARGET_LINE, line);
-}
-
-static int rdma_clock_on(DISP_MODULE_ENUM module, void *handle)
+int rdma_clock_on(DISP_MODULE_ENUM module, void *handle)
 {
 	unsigned int idx = rdma_index(module);
 #ifdef ENABLE_CLK_MGR
@@ -560,7 +515,7 @@ static int rdma_clock_on(DISP_MODULE_ENUM module, void *handle)
 	return 0;
 }
 
-static int rdma_clock_off(DISP_MODULE_ENUM module, void *handle)
+int rdma_clock_off(DISP_MODULE_ENUM module, void *handle)
 {
 	unsigned int idx = rdma_index(module);
 #ifdef ENABLE_CLK_MGR
@@ -579,18 +534,6 @@ static int rdma_clock_off(DISP_MODULE_ENUM module, void *handle)
 	}
 #endif
 	DDPMSG("rdma_%d_clock_off CG 0x%x\n", idx, DISP_REG_GET(DISP_REG_CONFIG_MMSYS_CG_CON0));
-	return 0;
-}
-
-static int rdma_init(DISP_MODULE_ENUM module, void *handle)
-{
-	rdma_clock_on(module, handle);
-	return 0;
-}
-
-static int rdma_deinit(DISP_MODULE_ENUM module, void *handle)
-{
-	rdma_clock_off(module, handle);
 	return 0;
 }
 
@@ -688,13 +631,6 @@ static int rdma_dump(DISP_MODULE_ENUM module, int level)
 	rdma_dump_reg(module);
 
 	return 0;
-}
-
-void rdma_get_address(DISP_MODULE_ENUM module, unsigned long *addr)
-{
-	unsigned int idx = rdma_index(module);
-
-	*addr = DISP_REG_GET(DISP_REG_RDMA_MEM_START_ADDR + DISP_RDMA_INDEX_OFFSET * idx);
 }
 
 void rdma_get_info(int idx, RDMA_BASIC_STRUCT *info)

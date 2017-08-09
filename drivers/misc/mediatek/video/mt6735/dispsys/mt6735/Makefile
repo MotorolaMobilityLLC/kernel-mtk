@@ -1,6 +1,8 @@
 # drivers/dispsys/mt6735
 
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/video/include/ \
+             -I$(srctree)/drivers/misc/mediatek/video/common/   \
+             -I$(srctree)/drivers/misc/mediatek/video/common/rdma10/ \
              -I$(srctree)/drivers/misc/mediatek/video/$(MTK_PLATFORM)/videox/ \
              -I$(srctree)/drivers/misc/mediatek/video/$(MTK_PLATFORM)/videox/mt6735/ \
              -I$(srctree)/drivers/misc/mediatek/cmdq/v2/ \
@@ -22,6 +24,6 @@ endif
 
 #driver
 obj-y += ddp_ovl.o
-obj-y += ddp_rdma.o
+obj-y += ddp_rdma_ex.o
 
 # EOF

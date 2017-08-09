@@ -18,7 +18,6 @@
 #include "ddp_hal.h"
 /* #include "ddp_drv.h" */
 #include "ddp_path.h"
-#include "ddp_rdma.h"
 #include "ddp_ovl.h"
 
 

@@ -6,6 +6,7 @@
 #include "ddp_ovl.h"
 #include "ddp_wdma.h"
 #include "ddp_rdma.h"
+#include "ddp_rdma_ex.h"
 #include "ddp_dsi.h"
 
 static char *ddp_signal_0(int bit)

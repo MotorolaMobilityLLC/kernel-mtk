@@ -150,11 +150,11 @@ extern DDP_MODULE_DRIVER *ddp_modules_driver[DISP_MODULE_NUM];
 extern DDP_MODULE_DRIVER ddp_driver_dpi;
 #endif
 /* ovl */
-/* extern DDP_MODULE_DRIVER ddp_driver_ovl; */
+extern DDP_MODULE_DRIVER ddp_driver_ovl;
 /* rdma */
-/* extern DDP_MODULE_DRIVER ddp_driver_rdma; */
+extern DDP_MODULE_DRIVER ddp_driver_rdma;
 /* wdma */
-/* extern DDP_MODULE_DRIVER ddp_driver_wdma; */
+extern DDP_MODULE_DRIVER ddp_driver_wdma;
 /* color */
 extern DDP_MODULE_DRIVER ddp_driver_color;
 /* aal */

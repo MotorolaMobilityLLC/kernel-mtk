@@ -15,7 +15,6 @@
 #include "ddp_hal.h"
 #include "ddp_drv.h"
 #include "ddp_path.h"
-#include "ddp_rdma.h"
 
 /* #include <mach/mt6585_pwm.h> */
 /* #include <mach/boot.h> */

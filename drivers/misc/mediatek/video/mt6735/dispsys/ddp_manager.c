@@ -15,6 +15,7 @@
 #include "ddp_debug.h"
 #include "ddp_manager.h"
 #include "ddp_rdma.h"
+#include "ddp_rdma_ex.h"
 #include "ddp_ovl.h"
 
 #include "ddp_log.h"
