@@ -1266,6 +1266,70 @@ VOID rlmFillVhtOpIE(P_ADAPTER_T prAdapter, P_BSS_INFO_T prBssInfo, P_MSDU_INFO_T
 
 #endif
 
+static VOID rlmReviseMaxBw(P_ADAPTER_T prAdapter, UINT_8 ucBssIndex, P_ENUM_CHNL_EXT_T peExtend,
+			PUINT_8 peChannelWidth, PUINT_8 pucS1, PUINT_8 pucPrimaryCh)
+{
+	UINT_8 ucMaxBandwidth = MAX_BW_80MHZ;
+	UINT_8 ucCurrentBandwidth = MAX_BW_20MHZ;
+	UINT_8 ucOffset = (MAX_BW_80MHZ - CW_80MHZ);
+
+	ucMaxBandwidth = cnmGetBssMaxBw(prAdapter, ucBssIndex);
+
+	if (*peChannelWidth > CW_20_40MHZ) {
+		/*case BW > 80 , 160 80P80 */
+		ucCurrentBandwidth = (UINT_8)*peChannelWidth + ucOffset;
+	} else {
+		/*case BW20 BW40 */
+		if (*peExtend != CHNL_EXT_SCN) {
+			/*case BW40 */
+			ucCurrentBandwidth = MAX_BW_40MHZ;
+		}
+	}
+
+	if (ucCurrentBandwidth > ucMaxBandwidth) {
+		DBGLOG(RLM, INFO, "Decreasse the BW to (%d)\n", ucMaxBandwidth);
+
+		if (ucMaxBandwidth <= MAX_BW_40MHZ) {
+			/*BW20 * BW40*/
+			*peChannelWidth = CW_20_40MHZ;
+
+			if (ucMaxBandwidth == MAX_BW_20MHZ)
+				*peExtend = CHNL_EXT_SCN;
+		} else {
+			/*BW80, BW160, BW80P80*/
+			/*ucMaxBandwidth Must be MAX_BW_80MHZ,MAX_BW_160MHZ,MAX_BW_80MHZ*/
+			/*peExtend should not change*/
+			*peChannelWidth = (ucMaxBandwidth - ucOffset);
+
+			if (ucMaxBandwidth == MAX_BW_80MHZ) {
+				/*modify S1 for Bandwidth 160 downgrade 80 case*/
+				if (ucCurrentBandwidth == MAX_BW_160MHZ) {
+
+					if ((*pucPrimaryCh >= 36) && (*pucPrimaryCh <= 48))
+						*pucS1 = 42;
+					else if ((*pucPrimaryCh >= 52) && (*pucPrimaryCh <= 64))
+						*pucS1 = 58;
+					else if ((*pucPrimaryCh >= 100) && (*pucPrimaryCh <= 102))
+						*pucS1 = 106;
+					else if ((*pucPrimaryCh >= 116) && (*pucPrimaryCh <= 128))
+						*pucS1 = 122;
+					else if ((*pucPrimaryCh >= 132) && (*pucPrimaryCh <= 144))
+						*pucS1 = 138; /*160 downgrade should not in this case*/
+					else if ((*pucPrimaryCh >= 149) && (*pucPrimaryCh <= 161))
+						*pucS1 = 155; /*160 downgrade should not in this case*/
+					else
+						DBGLOG(RLM, INFO,
+							"Check connect 160 downgrde (%d) case\n", ucMaxBandwidth);
+
+					DBGLOG(RLM, INFO, "Decreasse the BW160 to BW80, shift S1 to (%d)\n", *pucS1);
+				}
+			}
+		}
+
+		DBGLOG(RLM, INFO, "Modify ChannelWidth (%d) and Extend (%d)\n", *peChannelWidth, *peExtend);
+	}
+}
+
 /*----------------------------------------------------------------------------*/
 /*!
 * \brief This function should be invoked to update parameters of associated AP.
@@ -1677,6 +1741,10 @@ static UINT_8 rlmRecIeInfoForClient(P_ADAPTER_T prAdapter, P_BSS_INFO_T prBssInf
 		DBGLOG(RLM, INFO, "Ch : DFS has Appeared\n");
 	}
 #endif
+
+	rlmReviseMaxBw(prAdapter, prBssInfo->ucBssIndex, &prBssInfo->eBssSCO, &prBssInfo->ucVhtChannelWidth,
+		&prBssInfo->ucVhtChannelFrequencyS1, &prBssInfo->ucPrimaryChannel);
+
 	if (!rlmDomainIsValidRfSetting(prAdapter, prBssInfo->eBand,
 				       prBssInfo->ucPrimaryChannel, prBssInfo->eBssSCO,
 				       prBssInfo->ucVhtChannelWidth, prBssInfo->ucVhtChannelFrequencyS1,

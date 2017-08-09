@@ -4291,12 +4291,12 @@ VOID mqmProcessAssocReq(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfb, IN PUIN
 
 	/* Determine whether QoS is enabled with the association */
 	else {
+		prStaRec->u4Flags = 0;
 		IE_FOR_EACH(pucIE, u2IELength, u2Offset) {
 			switch (IE_ID(pucIE)) {
 			case ELEM_ID_VENDOR:
 				mqmParseAssocReqWmmIe(prAdapter, pucIE, prStaRec);
 
-				prStaRec->u4Flags = 0;
 #if CFG_SUPPORT_MTK_SYNERGY
 				if (rlmParseCheckMTKOuiIE(prAdapter, pucIE, &u4Flags))
 					prStaRec->u4Flags = u4Flags;
@@ -4389,13 +4389,13 @@ VOID mqmProcessAssocRsp(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfb, IN PUIN
 
 	/* Determine whether QoS is enabled with the association */
 	else {
+		prStaRec->u4Flags = 0;
 		IE_FOR_EACH(pucIE, u2IELength, u2Offset) {
 			switch (IE_ID(pucIE)) {
 			case ELEM_ID_VENDOR:
 				/* Process WMM related IE */
 				mqmParseAssocRspWmmIe(pucIE, prStaRec);
 
-				prStaRec->u4Flags = 0;
 #if CFG_SUPPORT_MTK_SYNERGY
 				if (rlmParseCheckMTKOuiIE(prAdapter, pucIE, &u4Flags))
 					prStaRec->u4Flags = u4Flags;
