@@ -19,6 +19,11 @@
 /* #include "mach/mt_reg_base.h" */
 /* #include "mach/mt_typedefs.h" */
 #include "mt_spm.h"
+#include "mt_sleep.h"
+#include "mt_dcm.h"
+#include "mt_clkmgr.h"
+#include "mt_cpufreq.h"
+#include "mt_gpufreq.h"
 /* #include "mach/mt_sleep.h" */
 /* #include "mach/mt_dcm.h" */
 #include <mach/mt_clkmgr.h>
@@ -452,7 +457,10 @@ static int __init mt_power_management_init(void)
 	/* pm_power_off = mt_power_off; */
 
 	#if !defined(CONFIG_MTK_FPGA)
-
+#if defined(CONFIG_ARCH_MT6735)
+spm_module_init();
+slp_module_init();
+#endif
 	/* cpu dormant driver init */
 /* **** */
 /*
