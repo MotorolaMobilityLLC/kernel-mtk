@@ -1066,7 +1066,7 @@ static int port_char_recv_req(struct ccci_port *port, struct ccci_request *req)
 	unsigned long flags;	/* as we can not tell the context, use spin_lock_irqsafe for safe */
 
 	if (!atomic_read(&port->usage_cnt) &&
-		(port->rx_ch != CCCI_UART2_RX && port->rx_ch != CCCI_C2K_AT &&
+		(port->rx_ch != CCCI_UART2_RX && port->rx_ch != CCCI_C2K_AT && port->rx_ch != CCCI_PCM_RX &&
 			port->rx_ch != CCCI_FS_RX && port->rx_ch != CCCI_RPC_RX))
 		goto drop;
 
