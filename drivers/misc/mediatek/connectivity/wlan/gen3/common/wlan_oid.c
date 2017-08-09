@@ -5423,6 +5423,10 @@ wlanoidQueryLinkSpeed(IN P_ADAPTER_T prAdapter,
 * \retval WLAN_STATUS_INVALID_LENGTH
 */
 /*----------------------------------------------------------------------------*/
+#if defined(MT6797)
+extern UINT_8 **g_pHifRegBaseAddr;
+#endif
+
 WLAN_STATUS
 wlanoidQueryMcrRead(IN P_ADAPTER_T prAdapter,
 		    IN PVOID pvQueryBuffer, IN UINT_32 u4QueryBufferLen, OUT PUINT_32 pu4QueryInfoLen)
@@ -5457,11 +5461,25 @@ wlanoidQueryMcrRead(IN P_ADAPTER_T prAdapter,
 
 	/* Check if access F/W Domain MCR (due to WiFiSYS is placed from 0x6000-0000 */
 	if (prMcrRdInfo->u4McrOffset & 0xFFFF0000) {
+#if defined(MT6797)		
+		UINT32 val = 0x77777777;
+#endif		
 		/* fill command */
 		rCmdAccessReg.u4Address = prMcrRdInfo->u4McrOffset;
 		rCmdAccessReg.u4Data = 0;
+#if defined(MT6797)		
+		if ((prMcrRdInfo->u4McrOffset & 0xFFFF0000) == 0x180f0000){
 
-		return wlanSendSetQueryCmd(prAdapter,
+			val = readl((volatile UINT_32 *)((*g_pHifRegBaseAddr) + (prMcrRdInfo->u4McrOffset & 0xffff)));
+
+			DBGLOG(INIT, TRACE, "sarah MCR Read: Offset = %#08lx, Data = %#08lx\n",
+						   prMcrRdInfo->u4McrOffset, val);
+
+
+		}
+		else
+#endif
+			return wlanSendSetQueryCmd(prAdapter,
 					   CMD_ID_ACCESS_REG,
 					   FALSE,
 					   TRUE,
@@ -5478,6 +5496,8 @@ wlanoidQueryMcrRead(IN P_ADAPTER_T prAdapter,
 		       prMcrRdInfo->u4McrOffset, prMcrRdInfo->u4McrData);
 		return WLAN_STATUS_SUCCESS;
 	}
+
+	return WLAN_STATUS_SUCCESS;
 }				/* end of wlanoidQueryMcrRead() */
 
 /*----------------------------------------------------------------------------*/
@@ -5662,7 +5682,17 @@ wlanoidSetMcrWrite(IN P_ADAPTER_T prAdapter,
 
 		/* Check if access F/W Domain MCR */
 	if (prMcrWrInfo->u4McrOffset & 0xFFFF0000) {
+#if defined(MT6797)
+		if ((prMcrWrInfo->u4McrOffset & 0xFFFF0000) == 0x180f0000){
 
+			writel(prMcrWrInfo->u4McrData, (volatile UINT_32 *)((*g_pHifRegBaseAddr) + (prMcrWrInfo->u4McrOffset & 0xffff)));
+
+			DBGLOG(INIT, TRACE, "sarah MCR write: Offset = %#08lx, wData = %#08lx\n",
+						   prMcrWrInfo->u4McrOffset, prMcrWrInfo->u4McrData);
+
+			return WLAN_STATUS_SUCCESS;
+		}
+#endif
 		/* 0x9000 - 0x9EFF reserved for FW */
 #if CFG_SUPPORT_SWCR
 		if ((prMcrWrInfo->u4McrOffset >> 16) == 0x9F00) {

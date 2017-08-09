@@ -32,6 +32,23 @@
 *                             D A T A   T Y P E S
 ********************************************************************************
 */
+#if defined(MT6797)
+typedef INT_32(*wmt_wlan_probe_cb) (VOID);
+typedef INT_32(*wmt_wlan_remove_cb) (VOID);
+typedef INT_32(*wmt_wlan_bus_cnt_get_cb) (VOID);
+typedef INT_32(*wmt_wlan_bus_cnt_clr_cb) (VOID);
+
+typedef struct _MTK_WCN_WMT_WLAN_CB_INFO {
+	wmt_wlan_probe_cb wlan_probe_cb;
+	wmt_wlan_remove_cb wlan_remove_cb;
+	wmt_wlan_bus_cnt_get_cb wlan_bus_cnt_get_cb;
+	wmt_wlan_bus_cnt_clr_cb wlan_bus_cnt_clr_cb;
+} MTK_WCN_WMT_WLAN_CB_INFO, *P_MTK_WCN_WMT_WLAN_CB_INFO;
+
+extern INT_32 mtk_wcn_wmt_wlan_reg(P_MTK_WCN_WMT_WLAN_CB_INFO pWmtWlanCbInfo);
+extern INT_32 mtk_wcn_wmt_wlan_unreg(VOID);
+#endif
+
 typedef enum _ENUM_RESET_STATUS_T {
 	RESET_FAIL,
 	RESET_SUCCESS

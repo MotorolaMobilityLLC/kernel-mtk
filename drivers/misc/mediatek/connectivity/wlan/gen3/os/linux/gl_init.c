@@ -2203,10 +2203,10 @@ static struct wireless_dev *wlanNetCreate(PVOID pvData)
 	}
 
 	/* 4 <1.3> co-relate wiphy & prDev */
-#if MTK_WCN_HIF_SDIO
+#if (MTK_WCN_HIF_SDIO == 1)
 	mtk_wcn_hif_sdio_get_dev(*((MTK_WCN_HIF_SDIO_CLTCTX *) pvData), &prDev);
 #else
-	prDev = &((struct sdio_func *)pvData)->dev;
+	prDev = pvData;
 #endif
 	if (!prDev)
 		DBGLOG(INIT, ERROR, "unable to get struct dev for wlan\n");
@@ -2477,7 +2477,7 @@ static void wlan_late_resume(struct early_suspend *h)
 }
 #endif
 
-#if (MTK_WCN_HIF_SDIO && CFG_SUPPORT_MTK_ANDROID_KK)
+
 
 int set_p2p_mode_handler(struct net_device *netdev, PARAM_CUSTOM_P2P_SET_STRUCT_T p2pmode)
 {
@@ -2518,7 +2518,7 @@ void set_dbg_level_handler(unsigned char dbg_lvl[DBG_MODULE_NUM])
 
 	/* kalMemCopy(aucDebugModule, dbg_lvl, sizeof(aucDebugModule)); */
 }
-#endif
+
 
 /*----------------------------------------------------------------------------*/
 /*!
@@ -2591,7 +2591,8 @@ static INT_32 wlanProbe(PVOID pvData)
 		prAdapter->u4CSUMFlags = (CSUM_OFFLOAD_EN_TX_TCP | CSUM_OFFLOAD_EN_TX_UDP | CSUM_OFFLOAD_EN_TX_IP);
 #endif
 
-#if CFG_SUPPORT_CFG_FILE
+/* Sarah */
+#if 0//CFG_SUPPORT_CFG_FILE
 		{
 			PUINT_8 pucConfigBuf;
 			UINT_32 u4ConfigReadLen;
@@ -2786,7 +2787,7 @@ bailout:
 		glRegisterAmpc(prGlueInfo);
 #endif
 
-#if (CFG_ENABLE_WIFI_DIRECT && MTK_WCN_HIF_SDIO && CFG_SUPPORT_MTK_ANDROID_KK)
+#if (CFG_ENABLE_WIFI_DIRECT)
 		register_set_p2p_mode_handler(set_p2p_mode_handler);
 #endif
 	} while (FALSE);
@@ -2800,11 +2801,14 @@ bailout:
 		DBGLOG(INIT, LOUD, "wlanProbe: probe failed\n");
 	}
 
+
+#if 0/* Sarah */
 	wlanCfgSetSwCtrl(prGlueInfo->prAdapter);
 
 	wlanCfgSetChip(prGlueInfo->prAdapter);
 
 	wlanCfgSetCountryCode(prGlueInfo->prAdapter);
+#endif
 
 #if (CFG_MET_PACKET_TRACE_SUPPORT == 1)
 	DBGLOG(INIT, TRACE, "init MET procfs...\n");
@@ -2838,7 +2842,7 @@ static VOID wlanRemove(VOID)
 		DBGLOG(INIT, ERROR, "0 == u4WlanDevNum\n");
 		return;
 	}
-#if (CFG_ENABLE_WIFI_DIRECT && MTK_WCN_HIF_SDIO && CFG_SUPPORT_MTK_ANDROID_KK)
+#if (CFG_ENABLE_WIFI_DIRECT)
 	register_set_p2p_mode_handler(NULL);
 #endif
 
@@ -2989,9 +2993,9 @@ static int initWlan(void)
 	if (gprWdev)
 		glP2pCreateWirelessDevice((P_GLUE_INFO_T) wiphy_priv(gprWdev->wiphy));
 
-#if (MTK_WCN_HIF_SDIO && CFG_SUPPORT_MTK_ANDROID_KK)
+
 	register_set_dbg_level_handler(set_dbg_level_handler);
-#endif
+
 
 	ret = ((glRegisterBus(wlanProbe, wlanRemove) == WLAN_STATUS_SUCCESS) ? 0 : -EIO);
 
@@ -3051,13 +3055,22 @@ EXPORT_SYMBOL(mtk_wcn_wlan_gen3_exit);
 
 #elif (MTK_WCN_HIF_SDIO == 0)
 
-device_initcall(initWlan);
+int mtk_wcn_wlan_gen3_init(void)
+{
+	return initWlan();
+}
+EXPORT_SYMBOL(mtk_wcn_wlan_gen3_init);
 
-#endif
+void mtk_wcn_wlan_gen3_exit(void)
+{
+     return exitWlan();
+}
+EXPORT_SYMBOL(mtk_wcn_wlan_gen3_exit);
 
 #else
 
 module_init(initWlan);
 module_exit(exitWlan);
 
+#endif
 #endif

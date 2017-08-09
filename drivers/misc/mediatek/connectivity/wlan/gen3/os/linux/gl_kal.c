@@ -894,6 +894,18 @@ static PUINT_8 apucFwPath[] = {
 	NULL
 };
 
+#if defined(MT6797)
+
+static PUINT_8 apucFwName[] = {
+	(PUINT_8) CFG_FW_FILENAME "_6797",
+	NULL
+};
+
+static PPUINT_8 appucFwNameTable[] = {
+	apucFwName
+};
+
+#else
 /* E2 */
 static PUINT_8 apucFwNameE2[] = {
 	(PUINT_8) CFG_FW_FILENAME "_MT6630_E2",
@@ -923,7 +935,7 @@ static PPUINT_8 appucFwNameTable[] = {
 	apucFwNameE3,
 	apucFwNameE3,
 };
-
+#endif
 /*----------------------------------------------------------------------------*/
 /*!
 * \brief This function is provided by GLUE Layer for internal driver stack to
@@ -941,7 +953,12 @@ WLAN_STATUS kalFirmwareOpen(IN P_GLUE_INFO_T prGlueInfo)
 	UINT_8 ucPathIdx, ucNameIdx;
 	PPUINT_8 apucNameTable;
 	UINT_8 ucMaxEcoVer = (sizeof(appucFwNameTable) / sizeof(PPUINT_8));
+#if defined(MT6797)
+	UINT_8 ucCurEcoVer = 1;
+#else
 	UINT_8 ucCurEcoVer = wlanGetEcoVersion(prGlueInfo->prAdapter);
+
+#endif	
 	UINT_8 aucFwName[128];
 	BOOLEAN fgResult = FALSE;
 

@@ -145,6 +145,13 @@
 #define NIC_DEVICE_ID       "MT6630"
 #define NIC_DEVICE_ID_LOW   "mt6630"
 #endif
+
+#if defined(MT6797)
+#define NIC_NAME            "MT6797"
+#define NIC_DEVICE_ID       "MT6797"
+#define NIC_DEVICE_ID_LOW   "MT6797"
+#endif
+
 #endif
 
 /* NIC driver information */

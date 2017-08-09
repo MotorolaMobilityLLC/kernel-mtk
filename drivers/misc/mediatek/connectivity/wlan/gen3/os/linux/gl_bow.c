@@ -1258,7 +1258,7 @@ BOOLEAN kalInitBowDevice(IN P_GLUE_INFO_T prGlueInfo, IN const char *prDevName)
 		prGlueInfo->rBowInfo.prDevHandler->netdev_ops = &bow_netdev_ops;
 
 #if (MTK_WCN_HIF_SDIO == 0)
-		SET_NETDEV_DEV(prGlueInfo->rBowInfo.prDevHandler, &(prHif->func->dev));
+		SET_NETDEV_DEV(prGlueInfo->rBowInfo.prDevHandler, prHif->Dev);
 #endif
 
 		register_netdev(prGlueInfo->rBowInfo.prDevHandler);

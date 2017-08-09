@@ -4,7 +4,11 @@
 WLAN_CHIP_LIST:=-UMT6620 -UMT6628 -UMT5931 -UMT6630
 ccflags-y += $(WLAN_CHIP_LIST)
 
+ifneq ($(filter "CONSYS_6797",$(CONFIG_MTK_COMBO_CHIP)),)
+WLAN_CHIP_ID=MT6797
+else
 WLAN_CHIP_ID=MT6630
+endif
 
 ccflags-y += -DCFG_SUPPORT_DEBUG_FS=0
 ccflags-y += -DWLAN_INCLUDE_PROC
@@ -59,10 +63,20 @@ else
     ccflags-y += -DCFG_MET_PACKET_TRACE_SUPPORT=0
 endif
 
+ifeq ($(WLAN_CHIP_ID), MT6797)
+else
 ccflags-y += -D_HIF_SDIO=1
+endif
+
 
 ccflags-y += -DDBG=0
+
+ifeq ($(WLAN_CHIP_ID), MT6797)
+ccflags-y += -I$(src)/os -I$(src)/os/linux/include -I$(src)/os/linux/hif/ahb_sdioLike/include
+else
 ccflags-y += -I$(src)/os -I$(src)/os/linux/include -I$(src)/os/linux/hif/sdio/include
+endif
+
 ccflags-y += -I$(src)/include -I$(src)/include/nic -I$(src)/include/mgmt
 
 MODULE_NAME := wlan_gen3
@@ -74,10 +88,14 @@ obj-$(CONFIG_MTK_COMBO_WIFI) += $(MODULE_NAME).o
 # ---------------------------------------------------
 COMMON_DIR  := common/
 OS_DIR      := os/linux/
-HIF_DIR	    := os/linux/hif/sdio/
 NIC_DIR     := nic/
 MGMT_DIR    := mgmt/
 
+ifeq ($(WLAN_CHIP_ID), MT6797)
+HIF_DIR     := os/linux/hif/ahb_sdioLike/
+else
+HIF_DIR	    := os/linux/hif/sdio/
+endif
 
 # ---------------------------------------------------
 # Objects List
@@ -166,8 +184,16 @@ MGMT_OBJS += $(MGMT_DIR)wapi.o
 
 OS_OBJS += $(OS_DIR)gl_proc.o
 
-HIF_OBJS :=  $(HIF_DIR)arm.o \
-             $(HIF_DIR)sdio.o
+
+HIF_OBJS :=  $(HIF_DIR)arm.o
+ifeq ($(WLAN_CHIP_ID), MT6797)
+HIF_OBJS += $(HIF_DIR)ahb.o\
+			$(HIF_DIR)ahb_pdma.o\
+			$(HIF_DIR)sdio_bus_driver.o
+else
+HIF_OBJS += $(HIF_DIR)sdio.o			
+endif
+
 
 $(MODULE_NAME)-objs  += $(COMMON_OBJS)
 $(MODULE_NAME)-objs  += $(NIC_OBJS)

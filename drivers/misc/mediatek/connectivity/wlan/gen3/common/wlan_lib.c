@@ -1355,6 +1355,10 @@ VOID wlanAdapterDestroy(IN P_ADAPTER_T prAdapter)
 	kalMemFree(prAdapter, VIR_MEM_TYPE, sizeof(ADAPTER_T));
 }
 
+#if defined(MT6797)
+extern UINT_8 __iomem *pEmibaseaddr;
+#endif
+
 /*----------------------------------------------------------------------------*/
 /*!
 * \brief Initialize the adapter. The sequence is
@@ -1386,6 +1390,9 @@ wlanAdapterStart(IN P_ADAPTER_T prAdapter,
 	BOOLEAN fgValidHead;
 	const UINT_32 u4CRCOffset = offsetof(FIRMWARE_DIVIDED_DOWNLOAD_T, u4NumOfEntries);
 #endif
+#endif
+#if defined(MT6797)
+/*	static UINT_8 fgEmiDownloaded = FALSE; */
 #endif
 
 	ASSERT(prAdapter);
@@ -1432,7 +1439,7 @@ wlanAdapterStart(IN P_ADAPTER_T prAdapter,
 
 		prAdapter->u4OsPacketFilter = PARAM_PACKET_FILTER_SUPPORTED;
 
-#if defined(MT6630)
+#if defined(MT6630) || defined(MT6797)
 		DBGLOG(INIT, TRACE, "wlanAdapterStart(): Acquiring LP-OWN\n");
 		ACQUIRE_POWER_CONTROL_FROM_PM(prAdapter);
 		DBGLOG(INIT, TRACE, "wlanAdapterStart(): Acquiring LP-OWN-end\n");
@@ -1467,8 +1474,12 @@ wlanAdapterStart(IN P_ADAPTER_T prAdapter,
 		}
 #endif
 
+#if 0//Sarah
+
 		/* 4 <2.3> Overwrite debug level settings */
 		wlanCfgSetDebugLevel(prAdapter);
+
+#endif
 
 		/* 4 <3> Initialize Tx */
 		nicTxInitialize(prAdapter);
@@ -1478,7 +1489,7 @@ wlanAdapterStart(IN P_ADAPTER_T prAdapter,
 		nicRxInitialize(prAdapter);
 
 #if CFG_ENABLE_FW_DOWNLOAD
-#if defined(MT6630)
+#if defined(MT6630) || defined(MT6797)
 		if (pvFwImageMapFile) {
 			/* 1. disable interrupt, download is done by polling mode only */
 			nicDisableInterrupt(prAdapter);
@@ -1504,8 +1515,12 @@ wlanAdapterStart(IN P_ADAPTER_T prAdapter,
 			}
 
 			/* 3b. engage divided firmware downloading */
-			if (fgValidHead == TRUE) {
-				for (i = 0; i < prFwHead->u4NumOfEntries; i++) {
+			if (fgValidHead == TRUE) 
+			{			
+				for (i = 0; i < prFwHead->u4NumOfEntries; i++) 
+				{						
+					if (i < 2) 
+					{ /* IDLM */				
 					u4Status = wlanImageSectionDownloadStage(prAdapter,
 										 pvFwImageMapFile, i,
 										 u4FwImageFileLength, TRUE,
@@ -1513,7 +1528,22 @@ wlanAdapterStart(IN P_ADAPTER_T prAdapter,
 					if (u4Status == WLAN_STATUS_FAILURE)
 						break;
 				}
-			} else
+#if 0/* MT6797 TODO	*/
+					else /* EMI */
+					{
+					printk("i %d, pEmibaseaddr %x, gConEmiPhyBase %p, SecOfS %x, SecLen %x, fgEmiDownloaded %d\n", i, pEmibaseaddr, gConEmiPhyBase, prFwHead->arSection[i].u4Offset, prFwHead->arSection[i].u4Length, fgEmiDownloaded);
+
+						if (!fgEmiDownloaded)
+						{
+							kalMemCopy(pEmibaseaddr, pvFwImageMapFile + prFwHead->arSection[i].u4Offset,prFwHead->arSection[i].u4Length);					
+						}
+						if (i == (prFwHead->u4NumOfEntries -1))
+							fgEmiDownloaded = TRUE;	
+					}				
+#endif	
+				}
+			} 
+			else
 #endif
 			{
 				u4Status = wlanImageSectionDownloadStage(prAdapter,
@@ -1758,7 +1788,7 @@ wlanImageSectionDownloadStage(IN P_ADAPTER_T prAdapter,
 #endif
 
 #if CFG_ENABLE_FW_DOWNLOAD
-#if defined(MT6630)
+#if defined(MT6630) || defined(MT6797)
 #if CFG_ENABLE_FW_DIVIDED_DOWNLOAD
 	/* 3a. parse file header for decision of divided firmware download or not */
 	prFwHead = (P_FIRMWARE_DIVIDED_DOWNLOAD_T) pvFwImageMapFile;
@@ -1767,14 +1797,24 @@ wlanImageSectionDownloadStage(IN P_ADAPTER_T prAdapter,
 			if (wlanImageSectionConfig(prAdapter,
 						   prFwHead->arSection[index].u4DestAddr,
 						   prFwHead->arSection[index].u4Length,
-						   index == 0 ? TRUE : FALSE) != WLAN_STATUS_SUCCESS) {
+						   index == 0 ? TRUE : FALSE
+#if defined(MT6797)
+							,prFwHead->arSection[index].ucEnc ? TRUE : FALSE
+							,prFwHead->arSection[index].ucKIdx
+#endif
+				) 
+						   != WLAN_STATUS_SUCCESS) {
+								   
 				DBGLOG(INIT, ERROR, "Firmware download configuration failed!\n");
 
 				u4Status = WLAN_STATUS_FAILURE;
 				break;
 			}
 
-			for (j = 0; j < prFwHead->arSection[index].u4Length; j += CMD_PKT_SIZE_FOR_IMAGE) {
+			else 
+			{	
+				for (j = 0; j < prFwHead->arSection[index].u4Length; j += CMD_PKT_SIZE_FOR_IMAGE) 				
+					{
 				if (j + CMD_PKT_SIZE_FOR_IMAGE < prFwHead->arSection[index].u4Length)
 					u4ImgSecSize = CMD_PKT_SIZE_FOR_IMAGE;
 				else
@@ -1791,14 +1831,19 @@ wlanImageSectionDownloadStage(IN P_ADAPTER_T prAdapter,
 					break;
 				}
 			}
-
+			}
 			/* escape from loop if any pending error occurs */
 			if (u4Status == WLAN_STATUS_FAILURE)
 				break;
 
 		} else {
 			if (wlanImageSectionConfig(prAdapter,
-						   u4FwLoadAddr, u4FwImageFileLength, TRUE) != WLAN_STATUS_SUCCESS) {
+						   u4FwLoadAddr, u4FwImageFileLength, TRUE
+#if defined(MT6797)
+							,TRUE
+							,0
+#endif
+				) != WLAN_STATUS_SUCCESS) {
 				DBGLOG(INIT, ERROR, "Firmware download configuration failed!\n");
 
 				u4Status = WLAN_STATUS_FAILURE;
@@ -3258,7 +3303,12 @@ BOOLEAN wlanIsHandlerAllowedInRFTest(IN PFN_OID_HANDLER_FUNC pfnOidHandler, IN B
 */
 /*----------------------------------------------------------------------------*/
 WLAN_STATUS
+#if defined(MT6797)
+wlanImageSectionConfig
+		(IN P_ADAPTER_T prAdapter, IN UINT_32 u4DestAddr, IN UINT_32 u4ImgSecSize, IN BOOLEAN fgReset, IN UINT_8 ucEnc, IN UINT_8 ucKIdx)
+#else
 wlanImageSectionConfig(IN P_ADAPTER_T prAdapter, IN UINT_32 u4DestAddr, IN UINT_32 u4ImgSecSize, IN BOOLEAN fgReset)
+#endif
 {
 	P_CMD_INFO_T prCmdInfo;
 	P_INIT_HIF_TX_HEADER_T prInitHifTxHeader;
@@ -3295,20 +3345,31 @@ wlanImageSectionConfig(IN P_ADAPTER_T prAdapter, IN UINT_32 u4DestAddr, IN UINT_
 
 	prInitHifTxHeader->rInitWifiCmd.ucCID = INIT_CMD_ID_DOWNLOAD_CONFIG;
 	prInitHifTxHeader->rInitWifiCmd.ucPktTypeID = INIT_CMD_PACKET_TYPE_ID;
+	prInitHifTxHeader->rInitWifiCmd.ucReserved= 0;
 	prInitHifTxHeader->rInitWifiCmd.ucSeqNum = ucCmdSeqNum;
 
 	/* 5. Setup CMD_DOWNLOAD_CONFIG */
 	prInitCmdDownloadConfig = (P_INIT_CMD_DOWNLOAD_CONFIG) (prInitHifTxHeader->rInitWifiCmd.aucBuffer);
 	prInitCmdDownloadConfig->u4Address = u4DestAddr;
 	prInitCmdDownloadConfig->u4Length = u4ImgSecSize;
-	prInitCmdDownloadConfig->u4DataMode = 0
+	prInitCmdDownloadConfig->u4DataMode = 0;
+
+	/* ACK needed */	
 #if CFG_ENABLE_FW_DOWNLOAD_ACK
-	    | DOWNLOAD_CONFIG_ACK_OPTION	/* ACK needed */
+	prInitCmdDownloadConfig->u4DataMode |= DOWNLOAD_CONFIG_ACK_OPTION;	
 #endif
+
+
 #if CFG_ENABLE_FW_ENCRYPTION
-	    | DOWNLOAD_CONFIG_ENCRYPTION_MODE
+#if defined(MT6797)
+	if (ucEnc){
+		prInitCmdDownloadConfig->u4DataMode |= DOWNLOAD_CONFIG_ENCRYPTION_MODE;
+		prInitCmdDownloadConfig->u4DataMode |= (ucKIdx & BITS(0,1))<< DOWNLOAD_CONFIG_ENCRYPT_IDX_OFFSET;
+	}
+#else
+	prInitCmdDownloadConfig->u4DataMode |= DOWNLOAD_CONFIG_ENCRYPTION_MODE;	
 #endif
-	    ;
+#endif
 
 	if (fgReset == TRUE)
 		prInitCmdDownloadConfig->u4DataMode |= DOWNLOAD_CONFIG_RESET_OPTION;
@@ -3422,7 +3483,12 @@ wlanFwDvdDwnloadHandler(IN P_ADAPTER_T prAdapter,
 		if (wlanImageSectionConfig(prAdapter,
 					   prFwHead->arSection[i].u4DestAddr,
 					   prFwHead->arSection[i].u4Length,
-					   i == 0 ? TRUE : FALSE) != WLAN_STATUS_SUCCESS) {
+					   i == 0 ? TRUE : FALSE
+#if defined(MT6797)
+						,prFwHead->arSection[i].ucEnc ? TRUE : FALSE
+						,prFwHead->arSection[i].ucKIdx
+#endif
+			) != WLAN_STATUS_SUCCESS) {
 			DBGLOG(INIT, ERROR, "Firmware download configuration failed!\n");
 			*u4Status = WLAN_STATUS_FAILURE;
 			break;
@@ -6433,13 +6499,14 @@ WLAN_STATUS wlanCfgGet(IN P_ADAPTER_T prAdapter, const PCHAR pucKey, PCHAR pucVa
 
 UINT_32 wlanCfgGetUint32(IN P_ADAPTER_T prAdapter, const PCHAR pucKey, UINT_32 u4ValueDef)
 {
-	P_WLAN_CFG_ENTRY_T prWlanCfgEntry;
+/*	P_WLAN_CFG_ENTRY_T prWlanCfgEntry; */
 	P_WLAN_CFG_T prWlanCfg;
-	UINT_32 u4Value;
-	INT_32 u4Ret;
+/*	UINT_32 u4Value; */
+/*	INT_32 u4Ret; */
 
 	prWlanCfg = prAdapter->prWlanCfg;
 
+#if 0/* Sarah */
 	ASSERT(prWlanCfg);
 
 	u4Value = u4ValueDef;
@@ -6454,17 +6521,24 @@ UINT_32 wlanCfgGetUint32(IN P_ADAPTER_T prAdapter, const PCHAR pucKey, UINT_32 u
 	}
 
 	return u4Value;
+
+#else
+
+	return u4ValueDef;
+
+#endif
 }
 
 INT_32 wlanCfgGetInt32(IN P_ADAPTER_T prAdapter, const PCHAR pucKey, INT_32 i4ValueDef)
 {
-	P_WLAN_CFG_ENTRY_T prWlanCfgEntry;
+/*	P_WLAN_CFG_ENTRY_T prWlanCfgEntry; */
 	P_WLAN_CFG_T prWlanCfg;
-	INT_32 i4Value = 0;
-	INT_32 i4Ret = 0;
+/*	INT_32 i4Value = 0; */
+/*	INT_32 i4Ret = 0; */
 
 	prWlanCfg = prAdapter->prWlanCfg;
 
+#if 0/* Sarah */
 	ASSERT(prWlanCfg);
 
 	i4Value = i4ValueDef;
@@ -6479,6 +6553,12 @@ INT_32 wlanCfgGetInt32(IN P_ADAPTER_T prAdapter, const PCHAR pucKey, INT_32 i4Va
 	}
 
 	return i4Value;
+
+#else
+
+	return i4ValueDef;
+
+#endif
 }
 
 WLAN_STATUS wlanCfgSet(IN P_ADAPTER_T prAdapter, const PCHAR pucKey, PCHAR pucValue, UINT_32 u4Flags)

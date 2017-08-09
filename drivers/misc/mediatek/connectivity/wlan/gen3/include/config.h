@@ -31,7 +31,11 @@
 #ifdef CONFIG_X86
 #define MTK_WCN_HIF_SDIO            0
 #else
+#if defined(MT6797)
+#define MTK_WCN_HIF_SDIO        0
+#else
 #define MTK_WCN_HIF_SDIO            1
+#endif
 #endif
 #else
 #define MTK_WCN_HIF_SDIO            0
@@ -135,8 +139,14 @@
  * Flags for HIFSYS Interface
  *------------------------------------------------------------------------------
  */
+#if defined(MT6797)
+#define MTK_WCN_SINGLE_MODULE           	0 /* 1: without WMT */
+#endif
+
 #ifdef _lint
+#if defined(MT6630)
 #define _HIF_SDIO   1
+#endif
 #endif
 
 /* 1(default): Enable SDIO ISR & TX/RX status enhance mode
@@ -184,7 +194,7 @@
  * Flags and Parameters for Integration
  *------------------------------------------------------------------------------
  */
-#if defined(MT6630)
+#if defined(MT6630) || defined(MT6797)
 #define CFG_MULTI_ECOVER_SUPPORT    1
 
 #define CFG_ENABLE_CAL_LOG          1
@@ -437,7 +447,7 @@
 #define CFG_ENABLE_FW_DOWNLOAD_ACK              1
 #define CFG_ENABLE_FW_ENCRYPTION                1
 
-#if defined(MT6630)
+#if defined(MT6630) || defined(MT6797)
 #define CFG_ENABLE_FW_DIVIDED_DOWNLOAD		1
 #else
 #define CFG_ENABLE_FW_DIVIDED_DOWNLOAD		0
@@ -447,6 +457,13 @@
 #define CFG_FW_LOAD_ADDRESS                     0x00091400
 #define CFG_OVERRIDE_FW_START_ADDRESS           0
 #define CFG_FW_START_ADDRESS                    0x00091400
+
+#elif defined(MT6797)
+#define CFG_FW_LOAD_ADDRESS                     0x000a2800
+#define CFG_OVERRIDE_FW_START_ADDRESS           0
+#define CFG_FW_START_ADDRESS                    0x000a2800
+
+#else
 #endif
 
 /*------------------------------------------------------------------------------

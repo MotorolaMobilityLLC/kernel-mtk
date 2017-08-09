@@ -1502,7 +1502,9 @@ BOOLEAN glRegisterP2P(P_GLUE_INFO_T prGlueInfo, const char *prDevName, BOOLEAN f
 			"unable to get struct dev for p2p\n");
 	}
 #else
-	prDev = &(prHif->func->dev);
+
+	prDev = prHif->Dev;
+
 #endif
 	prGlueInfo->prP2PInfo->prWdev = gprP2pWdev;
 	/*set_wiphy_dev(gprP2pWdev->wiphy, prDev);*/
@@ -1546,7 +1548,7 @@ BOOLEAN glRegisterP2P(P_GLUE_INFO_T prGlueInfo, const char *prDevName, BOOLEAN f
 /* prGlueInfo->prP2PInfo->prDevHandler->wireless_handlers    = &mtk_p2p_wext_handler_def; */
 
 #if (MTK_WCN_HIF_SDIO == 0)
-	SET_NETDEV_DEV(prGlueInfo->prP2PInfo->prDevHandler, &(prHif->func->dev));
+	SET_NETDEV_DEV(prGlueInfo->prP2PInfo->prDevHandler, prHif->Dev);
 #endif
 
 #if CFG_ENABLE_WIFI_DIRECT_CFG_80211

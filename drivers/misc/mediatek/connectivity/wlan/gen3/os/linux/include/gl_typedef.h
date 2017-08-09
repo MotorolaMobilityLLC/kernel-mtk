@@ -60,6 +60,9 @@
 #ifndef _GL_TYPEDEF_H
 #define _GL_TYPEDEF_H
 
+
+#include "config.h"
+
 #if CFG_ENABLE_EARLY_SUSPEND
 #include <linux/earlysuspend.h>
 #endif
@@ -115,6 +118,7 @@ typedef signed char CHAR, *PCHAR, **PPCHAR;
 typedef signed char INT_8, *PINT_8, **PPINT_8;
 typedef signed short INT_16, *PINT_16, **PPINT_16;
 typedef signed int INT_32, *PINT_32, **PPINT_32;
+typedef unsigned int UINT32, *PUINT32, **PPUINT32;
 typedef signed long LONG, *PLONG, **PPLONG;
 typedef signed long long INT_64, *PINT_64, **PPINT_64;
 

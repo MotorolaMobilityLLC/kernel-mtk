@@ -68,6 +68,7 @@
 ********************************************************************************
 */
 BOOLEAN fgIsResetting = FALSE;
+UINT32 g_IsNeedDoChipReset;
 
 /*******************************************************************************
 *                           P R I V A T E   D A T A
@@ -102,9 +103,10 @@ static void *glResetCallback(ENUM_WMTDRV_TYPE_T eSrcType,
 /*----------------------------------------------------------------------------*/
 VOID glResetInit(VOID)
 {
+#if (defined(MT6797) && (MTK_WCN_SINGLE_MODULE == 0)) || defined(MT6630)
 	/* 1. Register reset callback */
 	mtk_wcn_wmt_msgcb_reg(WMTDRV_TYPE_WIFI, (PF_WMT_CB) glResetCallback);
-
+#endif
 	/* 2. Initialize reset work */
 	INIT_WORK(&(wifi_rst.rst_work), mtk_wifi_reset);
 }
@@ -121,8 +123,10 @@ VOID glResetInit(VOID)
 /*----------------------------------------------------------------------------*/
 VOID glResetUninit(VOID)
 {
+#if (defined(MT6797) && (MTK_WCN_SINGLE_MODULE == 0)) || defined(MT6630)
 	/* 1. Deregister reset callback */
 	mtk_wcn_wmt_msgcb_unreg(WMTDRV_TYPE_WIFI);
+#endif
 }
 
 /*----------------------------------------------------------------------------*/
@@ -259,8 +263,10 @@ BOOLEAN glResetTrigger(P_ADAPTER_T prAdapter)
 			     (prAdapter->rVerInfo.u2FwOwnVersion & BITS(0, 7)),
 			     (prAdapter->rVerInfo.u2FwPeerVersion >> 8),
 			     (prAdapter->rVerInfo.u2FwPeerVersion & BITS(0, 7)));
-
+#if 1//MT6797
+#else
 		fgResult = mtk_wcn_wmt_do_reset(WMTDRV_TYPE_WIFI);
+#endif
 	}
 #endif
 

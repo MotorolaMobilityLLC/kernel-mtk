@@ -454,7 +454,7 @@ BOOLEAN nicpmSetAcpiPowerD0(IN P_ADAPTER_T prAdapter)
 		prAdapter->rAcpiState = ACPI_STATE_D0;
 		prAdapter->fgIsEnterD3ReqIssued = FALSE;
 
-#if defined(MT6630)
+#if defined(MT6630) || defined(MT6797) 
 		/* 1. Request Ownership to enter F/W download state */
 		ACQUIRE_POWER_CONTROL_FROM_PM(prAdapter);
 #if !CFG_ENABLE_FULL_PM
@@ -476,7 +476,7 @@ BOOLEAN nicpmSetAcpiPowerD0(IN P_ADAPTER_T prAdapter)
 			DBGLOG(NIC, ERROR, "Fail to load FW image from file!\n");
 			pvFwImageMapFile = NULL;
 		}
-#if defined(MT6630)
+#if defined(MT6630) || defined(MT6797) 
 		if (pvFwImageMapFile) {
 			/* 3.1 disable interrupt, download is done by polling mode only */
 			nicDisableInterrupt(prAdapter);
@@ -506,8 +506,13 @@ BOOLEAN nicpmSetAcpiPowerD0(IN P_ADAPTER_T prAdapter)
 #endif
 			{
 				if (wlanImageSectionConfig(prAdapter,
-							   u4FwLoadAddr, u4FwImgLength, TRUE) != WLAN_STATUS_SUCCESS) {
-					DBGLOG(NIC, ERROR, "Firmware download configuration failed!\n");
+							   u4FwLoadAddr, u4FwImgLength, TRUE
+#if defined(MT6797) 
+							,TRUE
+							,0
+#endif							   
+					) != WLAN_STATUS_SUCCESS) {
+					DBGLOG(INIT, ERROR, "Firmware download configuration failed!\n");
 
 					u4Status = WLAN_STATUS_FAILURE;
 					break;

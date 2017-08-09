@@ -712,6 +712,30 @@ typedef struct _REG_INFO_T {
 
 } REG_INFO_T, *P_REG_INFO_T;
 
+#if defined(MT6797)
+/* for divided firmware loading */
+typedef struct _FWDL_SECTION_INFO_T {
+	UINT_32 u4Offset;
+	UINT_8 	ucKIdx;
+	UINT_8 	ucEnc;
+	UINT_16 u2Reserved;
+	UINT_32 u4Length;
+	UINT_32 u4DestAddr;
+} FWDL_SECTION_INFO_T, *P_FWDL_SECTION_INFO_T;
+
+typedef struct _FIRMWARE_DIVIDED_DOWNLOAD_T {
+	UINT_32 u4Signature;
+	UINT_32 u4CRC;		/* CRC calculated without first 8 bytes included */
+	UINT_32 u4NumOfEntries;
+	UINT_16 u2MajorNumber;
+	UINT_16 u2MinorNumber;
+	UINT_32 u4ChipInfo;
+	UINT_32 u4Reserved;
+	FWDL_SECTION_INFO_T arSection[];
+} FIRMWARE_DIVIDED_DOWNLOAD_T, *P_FIRMWARE_DIVIDED_DOWNLOAD_T;
+
+#else
+
 /* for divided firmware loading */
 typedef struct _FWDL_SECTION_INFO_T {
 	UINT_32 u4Offset;
@@ -727,6 +751,8 @@ typedef struct _FIRMWARE_DIVIDED_DOWNLOAD_T {
 	UINT_32 u4Reserved;
 	FWDL_SECTION_INFO_T arSection[];
 } FIRMWARE_DIVIDED_DOWNLOAD_T, *P_FIRMWARE_DIVIDED_DOWNLOAD_T;
+#endif
+
 
 typedef struct _PARAM_MCR_RW_STRUCT_T {
 	UINT_32 u4McrOffset;
@@ -971,7 +997,11 @@ typedef enum _ENUM_TX_PROFILING_TAG_T {
 	((UINT_32)(UINT_8)(ch0) | ((UINT_32)(UINT_8)(ch1) << 8) |   \
 	((UINT_32)(UINT_8)(ch2) << 16) | ((UINT_32)(UINT_8)(ch3) << 24))
 
+#if defined(MT6797)
+#define MTK_WIFI_SIGNATURE BUILD_SIGN('M', 'T', 'K', 'E')
+#else
 #define MTK_WIFI_SIGNATURE BUILD_SIGN('M', 'T', 'K', 'W')
+#endif
 
 #define IS_FEATURE_ENABLED(_ucFeature) \
 	(((_ucFeature) == FEATURE_ENABLED) || ((_ucFeature) == FEATURE_FORCE_ENABLED))
@@ -1060,8 +1090,15 @@ BOOLEAN wlanIsHandlerNeedHwAccess(IN PFN_OID_HANDLER_FUNC pfnOidHandler, IN BOOL
 VOID wlanSetPromiscuousMode(IN P_ADAPTER_T prAdapter, IN BOOLEAN fgEnablePromiscuousMode);
 
 #if CFG_ENABLE_FW_DOWNLOAD
+
+#if defined(MT6797)
+WLAN_STATUS
+wlanImageSectionConfig
+		(IN P_ADAPTER_T prAdapter, IN UINT_32 u4DestAddr, IN UINT_32 u4ImgSecSize, IN BOOLEAN fgReset, IN UINT_8 ucEnc, IN UINT_8 ucKIdx);
+#else
 WLAN_STATUS
 wlanImageSectionConfig(IN P_ADAPTER_T prAdapter, IN UINT_32 u4DestAddr, IN UINT_32 u4ImgSecSize, IN BOOLEAN fgReset);
+#endif
 
 WLAN_STATUS wlanImageSectionDownload(IN P_ADAPTER_T prAdapter, IN UINT_32 u4ImgSecSize, IN PUINT_8 pucImgSecBuf);
 

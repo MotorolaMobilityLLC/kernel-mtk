@@ -127,7 +127,8 @@
 #define CIPHER_SUITE_GCMP               10
 
 /* Todo:: Move to register */
-#if defined(MT6630)
+
+#if defined(MT6630) || defined(MT6797)
 #define WTBL_RESERVED_ENTRY             255
 #else
 #define WTBL_RESERVED_ENTRY             255

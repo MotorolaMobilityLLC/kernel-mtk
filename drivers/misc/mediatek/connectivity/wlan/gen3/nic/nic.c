@@ -903,6 +903,15 @@ static IST_EVENT_FUNCTION apfnEventFuncTable[] = {
 ********************************************************************************
 */
 
+#if defined(MT6797)
+BOOLEAN
+HifIsFwOwn(
+    P_ADAPTER_T prAdapter
+    )
+{
+	return prAdapter->fgIsFwOwn;
+}
+#endif
 /*----------------------------------------------------------------------------*/
 /*!
 * @brief This routine is responsible for the allocation of the data structures
@@ -1096,9 +1105,11 @@ VOID nicReleaseAdapterMemory(IN P_ADAPTER_T prAdapter)
 VOID nicDisableInterrupt(IN P_ADAPTER_T prAdapter)
 {
 	ASSERT(prAdapter);
-
+#if defined(MT6797)
+	HAL_MCR_WR(prAdapter, MCR_WHLPCR, WHLPCR_INT_EN_CLR);
+#else
 	HAL_BYTE_WR(prAdapter, MCR_WHLPCR, WHLPCR_INT_EN_CLR);
-
+#endif
 	prAdapter->fgIsIntEnable = FALSE;
 }
 
@@ -1138,7 +1149,11 @@ VOID nicEnableInterrupt(IN P_ADAPTER_T prAdapter)
 	}
 	/* If INT was not enabled, enable it now */
 	else if (!fgIsIntEnableCache)
+#if defined(MT6797)
+		HAL_MCR_WR(prAdapter, MCR_WHLPCR, WHLPCR_INT_EN_SET);
+#else
 		HAL_BYTE_WR(prAdapter, MCR_WHLPCR, WHLPCR_INT_EN_SET);
+#endif
 
 }				/* end of nicEnableInterrupt() */
 
@@ -1421,10 +1436,12 @@ WLAN_STATUS nicInitializeAdapter(IN P_ADAPTER_T prAdapter)
 	prAdapter->fgIsReadRevID = FALSE;
 
 	do {
+		#if !defined(MT6797)
 		if (!nicVerifyChipID(prAdapter)) {
 			u4Status = WLAN_STATUS_FAILURE;
 			break;
 		}
+		#endif
 		/* 4 <1> MCR init */
 		nicMCRInit(prAdapter);
 

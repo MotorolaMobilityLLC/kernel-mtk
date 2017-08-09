@@ -284,44 +284,36 @@ do { \
 
 #else /* #if defined(_HIF_SDIO) */
 #define HAL_MCR_RD(_prAdapter, _u4Offset, _pu4Value) \
-{ \
+do{ \
 	if (_prAdapter->rAcpiState == ACPI_STATE_D3) { \
 		ASSERT(0); \
 	} \
 	kalDevRegRead(_prAdapter->prGlueInfo, _u4Offset, _pu4Value); \
-}
+}while(0)
 
 #define HAL_MCR_WR(_prAdapter, _u4Offset, _u4Value) \
-{ \
+do{ \
 	if (_prAdapter->rAcpiState == ACPI_STATE_D3) { \
 		ASSERT(0); \
 	} \
 	kalDevRegWrite(_prAdapter->prGlueInfo, _u4Offset, _u4Value); \
-}
+}while(0)
 
 #define HAL_PORT_RD(_prAdapter, _u4Port, _u4Len, _pucBuf, _u4ValidBufSize) \
-{ \
+do{ \
 	if (_prAdapter->rAcpiState == ACPI_STATE_D3) { \
 		ASSERT(0); \
 	} \
 	kalDevPortRead(_prAdapter->prGlueInfo, _u4Port, _u4Len, _pucBuf, _u4ValidBufSize); \
-}
+}while(0)
 
 #define HAL_PORT_WR(_prAdapter, _u4Port, _u4Len, _pucBuf, _u4ValidBufSize) \
-{ \
+do{ \
 	if (_prAdapter->rAcpiState == ACPI_STATE_D3) { \
 		ASSERT(0); \
 	} \
 	kalDevPortWrite(_prAdapter->prGlueInfo, _u4Port, _u4Len, _pucBuf, _u4ValidBufSize); \
-}
-
-#define HAL_BYTE_WR(_prAdapter, _u4Port, _ucBuf) \
-{ \
-	if (_prAdapter->rAcpiState == ACPI_STATE_D3) { \
-		ASSERT(0); \
-	} \
-	kalDevWriteWithSdioCmd52(_prAdapter->prGlueInfo, _u4Port, _ucBuf); \
-}
+}while(0)
 
 #endif /* #if defined(_HIF_SDIO) */
 
@@ -332,7 +324,7 @@ do { \
 		((u4PortId == 0) ? MCR_WRDR0 : MCR_WRDR1), \
 		u4Len, \
 		pvBuf, \
-		_u4ValidBufSize/*temp!!*//*4Kbyte*/) \
+		_u4ValidBufSize/*temp!!*//*4Kbyte*/); \
 }
 
 #define HAL_WRITE_TX_PORT(_prAdapter, _u4Len, _pucBuf, _u4ValidBufSize) \
@@ -345,7 +337,7 @@ do { \
 		MCR_WTDR1, \
 		_u4Len, \
 		_pucBuf, \
-		_u4ValidBufSize/*temp!!*//*4KByte*/) \
+		_u4ValidBufSize/*temp!!*//*4KByte*/); \
 }
 
 /* The macro to read the given MCR several times to check if the wait
