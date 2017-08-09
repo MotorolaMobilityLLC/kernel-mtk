@@ -149,7 +149,11 @@ static struct pwr_ctrl suspend_ctrl = {
 	.md_srcclkena_1_infra_mask_b = 0,
 	.conn_srcclkena_infra_mask_b = 0,
 	.md32_srcclkena_infra_mask_b = 0,
+#if defined(CONFIG_ARCH_MT6755)
+	.srcclkeni_infra_mask_b = 1,
+#else
 	.srcclkeni_infra_mask_b = 0,
+#endif
 	.md_apsrcreq_0_infra_mask_b = 1,
 	.md_apsrcreq_1_infra_mask_b = 0,
 	.conn_apsrcreq_infra_mask_b = 1,
