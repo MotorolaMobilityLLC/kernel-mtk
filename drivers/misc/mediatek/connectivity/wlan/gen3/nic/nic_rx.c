@@ -2300,6 +2300,7 @@ VOID nicRxProcessMonitorPacket(IN P_ADAPTER_T prAdapter, IN OUT P_SW_RFB_T prSwR
 *
 */
 /*----------------------------------------------------------------------------*/
+static UINT_32 u4LastRxPacketTime;
 VOID nicRxProcessDataPacket(IN P_ADAPTER_T prAdapter, IN OUT P_SW_RFB_T prSwRfb)
 {
 	P_RX_CTRL_T prRxCtrl;
@@ -2399,11 +2400,13 @@ VOID nicRxProcessDataPacket(IN P_ADAPTER_T prAdapter, IN OUT P_SW_RFB_T prSwRfb)
 
 				switch (prRetSwRfb->eDst) {
 				case RX_PKT_DESTINATION_HOST:
-#if ARP_MONITER_ENABLE
 					prStaRec = cnmGetStaRecByIndex(prAdapter, prRetSwRfb->ucStaRecIdx);
-					if (prStaRec && IS_STA_IN_AIS(prStaRec))
+					if (prStaRec && IS_STA_IN_AIS(prStaRec)) {
+#if ARP_MONITER_ENABLE
 						qmHandleRxArpPackets(prAdapter, prRetSwRfb);
 #endif
+						u4LastRxPacketTime = kalGetTimeTick();
+					}
 					nicRxProcessPktWithoutReorder(prAdapter, prRetSwRfb);
 					break;
 
@@ -3145,8 +3148,17 @@ VOID nicRxProcessEventPacket(IN P_ADAPTER_T prAdapter, IN OUT P_SW_RFB_T prSwRfb
 
 			prBssInfo = GET_BSS_INFO_BY_INDEX(prAdapter, prEventBssBeaconTimeout->ucBssIndex);
 
-			if (prEventBssBeaconTimeout->ucBssIndex == prAdapter->prAisBssInfo->ucBssIndex)
+			if (prEventBssBeaconTimeout->ucBssIndex == prAdapter->prAisBssInfo->ucBssIndex) {
+				if (prEventBssBeaconTimeout->ucReasonCode == BEACON_TIMEOUT_DUE_2_NO_TX_DONE_EVENT)
+					break;
+
+				if (!CHECK_FOR_TIMEOUT(kalGetTimeTick(), u4LastRxPacketTime, SEC_TO_MSEC(2))) {
+					DBGLOG(RX, INFO, "Ignore beacon timeout\n");
+					break;
+				}
+
 				aisBssBeaconTimeout(prAdapter);
+			}
 #if CFG_ENABLE_WIFI_DIRECT
 			else if (prBssInfo->eNetworkType == NETWORK_TYPE_P2P)
 				p2pRoleFsmRunEventBeaconTimeout(prAdapter, prBssInfo);
