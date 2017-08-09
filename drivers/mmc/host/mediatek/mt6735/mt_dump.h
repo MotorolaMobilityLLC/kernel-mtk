@@ -266,11 +266,6 @@ static unsigned int simp_msdc_ldo_power(unsigned int on, MT65XX_POWER powerId,
 #endif
 #endif
 
-extern struct msdc_hw msdc0_hw;
-#if defined(CFG_DEV_MSDC1)
-extern struct msdc_hw msdc1_hw;
-#endif
-
 #endif /* end of __EMMC_INIT__ */
 
 

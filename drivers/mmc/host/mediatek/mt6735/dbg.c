@@ -20,7 +20,6 @@
 #include <linux/mm_types.h>
 /* end for fpga early porting */
 #include "dbg.h"
-#include "board.h"
 #ifndef FPGA_PLATFORM
 #ifdef CONFIG_MTK_CLKMGR
 #include <mach/mt_clkmgr.h>
@@ -1853,14 +1852,17 @@ static int msdc_debug_proc_show(struct seq_file *m, void *v)
 	seq_printf(m, "-> Clokc SRC selection Host[2]<%d>\n", msdc_clock_src[2]);
 	seq_printf(m, "-> Clokc SRC selection Host[3]<%d>\n", msdc_clock_src[3]);
 	seq_puts(m, "=========================================\n\n");
-#ifdef CFG_DEV_MSDC0
-	seq_puts(m, "Index<4> msdc0 hw parameter and ett settings:\n");
-	msdc_hw_parameter_debug(mtk_msdc_host[0]->hw, m, v);
-#endif
-#ifdef CFG_DEV_MSDC1
-	seq_puts(m, "Index<5> msdc1 hw parameter:\n");
-	msdc_hw_parameter_debug(mtk_msdc_host[1]->hw, m, v);
-#endif
+
+	if (mtk_msdc_host[0]) {
+		seq_puts(m, "Index<4> msdc0 hw parameter and ett settings:\n");
+		msdc_hw_parameter_debug(mtk_msdc_host[0]->hw, m, v);
+	}
+
+	if (mtk_msdc_host[1]) {
+		seq_puts(m, "Index<5> msdc1 hw parameter:\n");
+		msdc_hw_parameter_debug(mtk_msdc_host[1]->hw, m, v);
+	}
+
 	return 0;
 }
 
@@ -2094,22 +2096,15 @@ static ssize_t msdc_debug_proc_write(struct file *file, const char *buf, size_t 
 		if (id >= HOST_MAX_NUM || id < 0)
 			pr_err("[****SD_Debug****]msdc host_id error when modify msdc reg\n");
 		else {
-#if defined(CFG_DEV_MSDC0)
-			if (id == 0)
+			if (id == 0 && mtk_msdc_host[0])
 				base = mtk_msdc_host[0]->base;
-#endif
-#if defined(CFG_DEV_MSDC1)
-			if (id == 1)
+			if (id == 1 && mtk_msdc_host[1])
 				base = mtk_msdc_host[1]->base;
-#endif
-#if defined(CFG_DEV_MSDC2)
-			if (id == 2)
+			if (id == 2 && mtk_msdc_host[2])
 				base = mtk_msdc_host[2]->base;
-#endif
-#if defined(CFG_DEV_MSDC3)
-			if (id == 3)
+			if (id == 3 && mtk_msdc_host[3])
 				base = mtk_msdc_host[3]->base;
-#endif
+
 			host = mtk_msdc_host[id];
 			if ((offset == 0x18 || offset == 0x1C) && p1 != 4) {
 				pr_err
@@ -2883,26 +2878,18 @@ static int msdc_debug_proc_read_FT_show(struct seq_file *m, void *data)
 	u8 u8_wdat, u8_cmddat;
 	u8 u8_DDLSEL;
 
-	if (CONFIG_MTK_WCN_CMB_SDIO_SLOT == 0) {
-#if defined(CFG_DEV_MSDC0)
+	if (CONFIG_MTK_WCN_CMB_SDIO_SLOT == 0 && mtk_msdc_host[0]) {
 		base = mtk_msdc_host[0]->base;
 		msdc_id = 0;
-#endif
-	} else if (CONFIG_MTK_WCN_CMB_SDIO_SLOT == 1) {
-#if defined(CFG_DEV_MSDC1)
+	} else if (CONFIG_MTK_WCN_CMB_SDIO_SLOT == 1 && mtk_msdc_host[1]) {
 		base = mtk_msdc_host[1]->base;
 		msdc_id = 1;
-#endif
-	} else if (CONFIG_MTK_WCN_CMB_SDIO_SLOT == 2) {
-#if defined(CFG_DEV_MSDC2)
+	} else if (CONFIG_MTK_WCN_CMB_SDIO_SLOT == 2 && mtk_msdc_host[2]) {
 		base = mtk_msdc_host[2]->base;
 		msdc_id = 2;
-#endif
-	} else if (CONFIG_MTK_WCN_CMB_SDIO_SLOT == 3) {
-#if defined(CFG_DEV_MSDC3)
+	} else if (CONFIG_MTK_WCN_CMB_SDIO_SLOT == 3 && mtk_msdc_host[3]) {
 		base = mtk_msdc_host[3]->base;
 		msdc_id = 3;
-#endif
 	}
 #ifndef FPGA_PLATFORM
 #ifdef CONFIG_MTK_CLKMGR
@@ -3024,22 +3011,14 @@ static ssize_t msdc_debug_proc_write_FT(struct file *file, const char __user *bu
 	pr_err("i_case=%d i_par1=%d i_par2=%d\n", i_case, i_par1, i_par2);
 
 #if defined(CONFIG_MTK_WCN_CMB_SDIO_SLOT)
-#if defined(CFG_DEV_MSDC0)
-	if (CONFIG_MTK_WCN_CMB_SDIO_SLOT == 0)
+	if (CONFIG_MTK_WCN_CMB_SDIO_SLOT == 0 && mtk_msdc_host[0])
 		base = mtk_msdc_host[0]->base;
-#endif
-#if defined(CFG_DEV_MSDC1)
-	if (CONFIG_MTK_WCN_CMB_SDIO_SLOT == 1)
+	if (CONFIG_MTK_WCN_CMB_SDIO_SLOT == 1 && mtk_msdc_host[1])
 		base = mtk_msdc_host[1]->base;
-#endif
-#if defined(CFG_DEV_MSDC2)
-	if (CONFIG_MTK_WCN_CMB_SDIO_SLOT == 2)
+	if (CONFIG_MTK_WCN_CMB_SDIO_SLOT == 2 && mtk_msdc_host[2])
 		base = mtk_msdc_host[2]->base;
-#endif
-#if defined(CFG_DEV_MSDC3)
-	if (CONFIG_MTK_WCN_CMB_SDIO_SLOT == 3)
+	if (CONFIG_MTK_WCN_CMB_SDIO_SLOT == 3 && mtk_msdc_host[3])
 		base = mtk_msdc_host[3]->base;
-#endif
 #else
 	return -1;
 #endif

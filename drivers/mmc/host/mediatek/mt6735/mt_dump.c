@@ -6,7 +6,6 @@
 				/* #include <linux/ioport.h> *//* for */
 #include <linux/mm_types.h>
 				/* #include <linux/kernel.h> *//* for __raw_readl ... */
-/* #include <mach/board.h> */
 #include <asm/io.h>		/* __raw_readl */
 #include <asm/arch_timer.h>
 
@@ -602,7 +601,6 @@ static unsigned int simp_msdc_init(struct simp_mmc_host *mmc_host)
 		break;
 
 	case 1:
-#if defined(CFG_DEV_MSDC1)
 		sdr_set_field(MSDC1_GPIO_DRV0_G4_ADDR, MSDC1_DRV_CMD_MASK, p_msdc_hw[1]->cmd_drv);
 		sdr_set_field(MSDC1_GPIO_DRV0_G4_ADDR, MSDC1_DRV_CLK_MASK, p_msdc_hw[1]->clk_drv);
 		sdr_set_field(MSDC1_GPIO_DRV0_G4_ADDR, MSDC1_DRV_DAT_MASK, p_msdc_hw[1]->dat_drv);
@@ -610,7 +608,6 @@ static unsigned int simp_msdc_init(struct simp_mmc_host *mmc_host)
 		sdr_set_field(MSDC2_GPIO_SMT_G0_ADDR, MSDC2_SMT_ALL_MASK, 0x7);
 
 		sdr_set_field(MSDC1_GPIO_PUPD0_G4_ADDR, MSDC1_PUPD_CMD_CLK_DAT_MASK, 0x222262);
-#endif
 		break;
 	default:
 		break;
@@ -2552,12 +2549,12 @@ EXPORT_SYMBOL(card_dump_func_read);
 
 static void simp_msdc_hw_init(void)
 {
-#ifdef CFG_DEV_MSDC0
-	p_msdc_hw[0] = mtk_msdc_host[0]->hw;
-#endif
-#ifdef CFG_DEV_MSDC1
-	p_msdc_hw[1] = mtk_msdc_host[1]->hw;
-#endif
+	if (mtk_msdc_host[0])
+		p_msdc_hw[0] = mtk_msdc_host[0]->hw;
+
+	if (mtk_msdc_host[1])
+		p_msdc_hw[1] = mtk_msdc_host[1]->hw;
+
 #ifdef CFG_DEV_MSDC2
 	p_msdc_hw[2] = &msdc2_hw;
 #endif

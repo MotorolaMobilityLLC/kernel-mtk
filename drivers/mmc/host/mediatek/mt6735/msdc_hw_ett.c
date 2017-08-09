@@ -1,6 +1,5 @@
 /* weiping fix */
 #if 0
-#include <mach/board.h>
 #include <mach/mt_chip.h>
 #endif
 

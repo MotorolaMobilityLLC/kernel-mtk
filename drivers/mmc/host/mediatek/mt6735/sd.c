@@ -9180,19 +9180,12 @@ static int msdc_drv_probe(struct platform_device *pdev)
 #ifdef FPGA_PLATFORM
 	u16 l_val;
 #endif
-	if (0 == strcmp(pdev->dev.of_node->name, "MSDC0")) {
-#ifndef CFG_DEV_MSDC0
-		return 1;
-#endif
-	} else if (0 == strcmp(pdev->dev.of_node->name, "MSDC1")) {
-#ifndef CFG_DEV_MSDC1
-		return 1;
-#endif
-	} else if (0 == strcmp(pdev->dev.of_node->name, "MSDC2")) {
+
+	if (0 == strcmp(pdev->dev.of_node->name, "MSDC2")) {
 #ifndef CFG_DEV_MSDC2
 		return 1;
 #endif
-	} else {
+	} else if (0 == strcmp(pdev->dev.of_node->name, "MSDC3")) {
 #ifndef CFG_DEV_MSDC3
 		return 1;
 #endif
@@ -9292,21 +9285,12 @@ static int msdc_drv_probe(struct platform_device *pdev)
 	l_val = sdr_read16(PWR_GPIO_EO);
 	pr_debug("[%s]: pwr gpio dir = 0x%x\n", __func__, l_val);
 #endif
-#ifdef CFG_DEV_MSDC0
-	/* Get custom node in Device tree, if not set, use default */
-	if (strcmp(pdev->dev.of_node->name, "MSDC0") == 0) {
+
+	if (strcmp(pdev->dev.of_node->name, "MSDC0") == 0)
 		pdev->id = 0;
-		msdc_cust_node = of_find_compatible_node(NULL, NULL,
-			"mediatek,MSDC0_custom");
-	}
-#endif
-#ifdef CFG_DEV_MSDC1
-	if (strcmp(pdev->dev.of_node->name, "MSDC1") == 0) {
+	else if (strcmp(pdev->dev.of_node->name, "MSDC1") == 0)
 		pdev->id = 1;
-		msdc_cust_node = of_find_compatible_node(NULL, NULL,
-			"mediatek,MSDC1_custom");
-	}
-#endif
+
 #if defined(CFG_DEV_MSDC2)
 	if (strcmp(pdev->dev.of_node->name, "MSDC2") == 0) {
 		host->hw = &msdc2_hw;
@@ -9761,8 +9745,9 @@ static int msdc_drv_resume(struct platform_device *pdev)
 #endif
 #ifdef CONFIG_OF
 static const struct of_device_id msdc_of_ids[] = {
-	{.compatible = "mediatek,MSDC0",},
-	{.compatible = "mediatek,MSDC1",},
+	{.compatible = "mediatek,mt6735-mmc",},
+	{.compatible = "mediatek,mt6735m-mmc",},
+	{.compatible = "mediatek,mt6753-mmc",},
 	{.compatible = "mediatek,MSDC2",},
 	{.compatible = "mediatek,MSDC3",},
 	{},

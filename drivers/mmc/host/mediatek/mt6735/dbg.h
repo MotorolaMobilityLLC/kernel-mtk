@@ -15,13 +15,6 @@ extern void __iomem *toprgu_reg_base;
 extern void __iomem *apmixed_reg_base1;
 extern void __iomem *topckgen_reg_base;
 
-#ifdef CFG_DEV_MSDC0
-extern struct msdc_hw msdc0_hw;
-#endif
-#ifdef CFG_DEV_MSDC1
-extern struct msdc_hw msdc1_hw;
-#endif
-
 extern void msdc_dump_info(u32 id);
 extern struct msdc_host *mtk_msdc_host[];
 

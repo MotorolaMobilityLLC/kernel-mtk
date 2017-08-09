@@ -21,7 +21,6 @@
 #include <queue.h>
 #include "mt_sd.h"
 #include <mt-plat/sd_misc.h>
-#include "board-custom.h"
 
 #ifndef FPGA_PLATFORM
 #ifdef CONFIG_MTK_CLKMGR
@@ -615,38 +614,14 @@ static int simple_sd_ioctl_set_driving(struct msdc_ioctl *msdc_ctl)
 	if ((msdc_ctl->host_num < 0) || (msdc_ctl->host_num >= HOST_MAX_NUM)) {
 		pr_err("invalid host num: %d\n", msdc_ctl->host_num);
 		return -EINVAL;
-	} else if (msdc_ctl->host_num == 0) {
-#ifndef CFG_DEV_MSDC0
-		pr_err("host%d is not config\n", msdc_ctl->host_num);
-		return -EINVAL;
-#endif
-	} else if (msdc_ctl->host_num == 1) {
-#ifndef CFG_DEV_MSDC1
-		pr_err("host%d is not config\n", msdc_ctl->host_num);
-		return -EINVAL;
-#endif
-	} else if (msdc_ctl->host_num == 2) {
-#ifndef CFG_DEV_MSDC2
-		pr_err("host%d is not config\n", msdc_ctl->host_num);
-		return -EINVAL;
-#endif
-	} else if (msdc_ctl->host_num == 3) {
-#ifndef CFG_DEV_MSDC3
-		pr_err("host%d is not config\n", msdc_ctl->host_num);
-		return -EINVAL;
-#endif
-	} else if (msdc_ctl->host_num == 4) {
-#ifndef CFG_DEV_MSDC4
-		pr_err("host%d is not config\n", msdc_ctl->host_num);
-		return -EINVAL;
-#endif
-	} else {
-		pr_err("invalid host num: %d\n", msdc_ctl->host_num);
-		return -EINVAL;
 	}
 
-	host = mtk_msdc_host[msdc_ctl->host_num];
-	BUG_ON(!host);
+	if (mtk_msdc_host[msdc_ctl->host_num])
+		host = mtk_msdc_host[msdc_ctl->host_num];
+	else {
+		pr_err("host%d is not config\n", msdc_ctl->host_num);
+		return -EINVAL;
+	}
 
 	base = host->base;
 #ifndef FPGA_PLATFORM
@@ -693,38 +668,14 @@ static int simple_sd_ioctl_get_driving(struct msdc_ioctl *msdc_ctl)
 	if ((msdc_ctl->host_num < 0) || (msdc_ctl->host_num >= HOST_MAX_NUM)) {
 		pr_err("invalid host num: %d\n", msdc_ctl->host_num);
 		return -EINVAL;
-	} else if (msdc_ctl->host_num == 0) {
-#ifndef CFG_DEV_MSDC0
-		pr_err("host%d is not config\n", msdc_ctl->host_num);
-		return -EINVAL;
-#endif
-	} else if (msdc_ctl->host_num == 1) {
-#ifndef CFG_DEV_MSDC1
-		pr_err("host%d is not config\n", msdc_ctl->host_num);
-		return -EINVAL;
-#endif
-	} else if (msdc_ctl->host_num == 2) {
-#ifndef CFG_DEV_MSDC2
-		pr_err("host%d is not config\n", msdc_ctl->host_num);
-		return -EINVAL;
-#endif
-	} else if (msdc_ctl->host_num == 3) {
-#ifndef CFG_DEV_MSDC3
-		pr_err("host%d is not config\n", msdc_ctl->host_num);
-		return -EINVAL;
-#endif
-	} else if (msdc_ctl->host_num == 4) {
-#ifndef CFG_DEV_MSDC4
-		pr_err("host%d is not config\n", msdc_ctl->host_num);
-		return -EINVAL;
-#endif
-	} else {
-		pr_err("invalid host num: %d\n", msdc_ctl->host_num);
-		return -EINVAL;
 	}
 
-	host = mtk_msdc_host[msdc_ctl->host_num];
-	BUG_ON(!host);
+	if (mtk_msdc_host[msdc_ctl->host_num])
+		host = mtk_msdc_host[msdc_ctl->host_num];
+	else {
+		pr_err("host%d is not config\n", msdc_ctl->host_num);
+		return -EINVAL;
+	}
 
 	base = host->base;
 #ifndef FPGA_PLATFORM
@@ -762,33 +713,10 @@ static int simple_sd_ioctl_sd30_mode_switch(struct msdc_ioctl *msdc_ctl)
 	if ((msdc_ctl->host_num < 0) || (msdc_ctl->host_num >= HOST_MAX_NUM)) {
 		pr_err("invalid host num: %d\n", msdc_ctl->host_num);
 		return -EINVAL;
-	} else if (msdc_ctl->host_num == 0) {
-#ifndef CFG_DEV_MSDC0
+	}
+
+	if (!mtk_msdc_host[msdc_ctl->host_num]) {
 		pr_err("host%d is not config\n", msdc_ctl->host_num);
-		return -EINVAL;
-#endif
-	} else if (msdc_ctl->host_num == 1) {
-#ifndef CFG_DEV_MSDC1
-		pr_err("host%d is not config\n", msdc_ctl->host_num);
-		return -EINVAL;
-#endif
-	} else if (msdc_ctl->host_num == 2) {
-#ifndef CFG_DEV_MSDC2
-		pr_err("host%d is not config\n", msdc_ctl->host_num);
-		return -EINVAL;
-#endif
-	} else if (msdc_ctl->host_num == 3) {
-#ifndef CFG_DEV_MSDC3
-		pr_err("host%d is not config\n", msdc_ctl->host_num);
-		return -EINVAL;
-#endif
-	} else if (msdc_ctl->host_num == 4) {
-#ifndef CFG_DEV_MSDC4
-		pr_err("host%d is not config\n", msdc_ctl->host_num);
-		return -EINVAL;
-#endif
-	} else {
-		pr_err("invalid host num: %d\n", msdc_ctl->host_num);
 		return -EINVAL;
 	}
 
