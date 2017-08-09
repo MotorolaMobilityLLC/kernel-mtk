@@ -1211,7 +1211,7 @@ static struct snd_soc_dai_link mt_soc_extspk_dai[] = {
 	{
 		.name = "FM_Playback_Ext_Speaker",
 		.stream_name = MT_SOC_FMPLAYBACK_EXTSPEAKER_STREAM_NAME,
-		.cpu_dai_name   = MT_SOC_VOICEMD2_EXTSPKDAI_NAME,
+		.cpu_dai_name   = MT_SOC_FM_PLAYBACK_EXTSPKDAI_NAME,
 		.platform_name  = MT_SOC_FM_I2S_PCM,
 		.codec_dai_name = "max98926-aif1",
 		.codec_name = "MAX98926_MT",
