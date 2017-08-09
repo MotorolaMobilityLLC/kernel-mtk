@@ -4,15 +4,10 @@ ifeq ($(CONFIG_MTK_CCCI_EXT), y)
 
 #include $(MTK_ROOT_BUILD)/Makefile
 
-#CCCI_PLATFORM_DRIVER_DIR :=  $(wildcard $(obj)/$(call to-root,$(obj))mediatek/platform/$(call lc,\
-#                               $(CONFIG_MTK_PLATFORM))/kernel/drivers/ccci)
-#CCCI_PLATFORM_DRIVER_DIR :=  $(srctree)/mediatek/platform/$(call lc,$(CONFIG_MTK_PLATFORM))/kernel/drivers/dual_ccci
-CCCI_PLATFORM_DRIVER_DIR := $(srctree)/drivers/misc/mediatek/dual_ccci
-ifeq ($(CCCI_PLATFORM_DRIVER_DIR),)
+CCCI_DRIVER_DIR := $(srctree)/drivers/misc/mediatek/dual_ccci
+ifeq ($(CCCI_DRIVER_DIR),)
 $(error Invalid ccci platform path, please check)
 endif
-
-obj-y += $(subst ",,$(CONFIG_MTK_PLATFORM))/
 
 obj-$(CONFIG_MTK_CCCI_DRIVER) += ccci.o
 ccci-y :=ccci_init.o
@@ -32,7 +27,7 @@ ccci-y +=ccmni_pfp.o
 ccci-y +=ccci_mk_node.o
 ccci-y +=ccci_statistics.o
 
-#include $(CCCI_PLATFORM_DRIVER_DIR)/Makefile
+#include $(CCCI_DRIVER_DIR)/Makefile
 
 ifeq ($(CONFIG_MTK_CCCI_DRIVER), y)
 ccflags-y += -DENABLE_CCCI_DRV_BUILDIN
@@ -40,7 +35,10 @@ endif
 
 clean-files += $(patsubst $(obj)/%,%,$(wildcard $(obj)/*~))
 
-ccflags-y  += -I$(srctree)/../bionic/libc/kernel/common/linux  -I$(srctree)/$(obj)/include  -I$(CCCI_PLATFORM_DRIVER_DIR)/include
+ccflags-y  += -I$(srctree)/../bionic/libc/kernel/common/linux
+ccflags-y  += -I$(srctree)/$(obj)/include
+ccflags-y  += -I$(CCCI_DRIVER_DIR)/include
+ccflags-y  += -I$(CCCI_DRIVER_DIR)/$(CONFIG_MTK_PLATFORM)/include
 
 ifneq ($(TARGET_BUILD_VARIANT),user)
 #ccflags-y  += -DCCCI_DEBUG_ON -D__CCCI_LOG__  -DCCCI_MD_DEBUG_ON  #-save-temps

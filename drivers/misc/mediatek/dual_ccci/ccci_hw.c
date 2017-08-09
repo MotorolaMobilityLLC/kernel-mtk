@@ -87,7 +87,7 @@ static int __ccif_v1_dump_reg(struct ccif_t *ccif, unsigned int buf[], int len)
 	buf[j++] = ccci_read32(MD_CCIF_START(ccif->m_reg_base));
 	buf[j++] = ccci_read32(CCIF_RCHNUM(ccif->m_reg_base));
 	curr_ccif_smem_addr =
-	    (volatile unsigned int *)CCIF_TXCHDATA(ccif->m_reg_base);
+	    (unsigned int *)CCIF_TXCHDATA(ccif->m_reg_base);
 	for (i = 0; i < 4 * 16; i++)
 		buf[j++] = curr_ccif_smem_addr[i];
 
@@ -330,7 +330,7 @@ static int __ccif_v1_intr_handler(struct ccif_t *ccif)
 	int i;
 	int rx_ch;
 	int md_id = ccif->m_md_id;
-	bool reg_err = FALSE;
+	int reg_err = 0;
 	unsigned int msg[4];
 
 	CCCI_FUNC_ENTRY(md_id);
@@ -354,7 +354,7 @@ static int __ccif_v1_intr_handler(struct ccif_t *ccif)
 #ifdef CCIF_DEBUG
 				if (phy_ch_data.channel >= CCCI_MAX_CH_NUM) {
 					if (!reg_err) {
-						reg_err = TRUE;
+						reg_err = 1;
 						__ccif_v1_dump_reg(ccif, NULL,
 								   0);
 						CCCI_MSG_INF(md_id, "cci",
@@ -440,7 +440,7 @@ static int __ccif_v1_intr_handler(struct ccif_t *ccif)
 
 #ifdef CCIF_DEBUG
 	if (reg_err) {
-		reg_err = FALSE;
+		reg_err = 0;
 		msg[0] = 0xFFFFFFFF;
 		msg[1] = 0x5B5B5B5B;
 		msg[2] = CCCI_FORCE_ASSERT_CH;

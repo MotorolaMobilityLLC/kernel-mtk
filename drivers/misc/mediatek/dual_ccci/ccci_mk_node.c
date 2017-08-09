@@ -377,9 +377,8 @@ int ccci_attr_install(void)
 
 	memset(ccci_sys_info, 0, sizeof(struct ccci_info_t));
 
-	ret =
-	    kobject_init_and_add(&ccci_sys_info->kobj, &ccci_ktype, kernel_kobj,
-				 CCCI_KOBJ_NAME);
+	ret = kobject_init_and_add(&ccci_sys_info->kobj, &ccci_ktype,
+			(struct kobject *)kernel_kobj, CCCI_KOBJ_NAME);
 	if (ret < 0) {
 		kobject_put(&ccci_sys_info->kobj);
 		CCCI_MSG("fail to add ccci kobject in kernel\n");

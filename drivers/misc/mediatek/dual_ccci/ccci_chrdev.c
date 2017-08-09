@@ -1260,7 +1260,7 @@ static long ccci_vir_chr_ioctl(struct file *file, unsigned int cmd,
 	case CCCI_IOC_GET_MD_IMG_EXIST:
 		memset(md_img_exist, 0, sizeof(md_img_exist));
 		scanned_num =
-		    scan_image_list(md_id, "modem_%d_%s_n.img", &md_img_exist,
+		    scan_image_list(md_id, "modem_%d_%s_n.img", md_img_exist,
 				    MD_IMG_MAX_CNT);
 		if (scanned_num < 1) {
 			CCCI_MSG_INF(md_id, "chr",

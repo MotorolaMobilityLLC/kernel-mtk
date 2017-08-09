@@ -112,7 +112,6 @@ len_n stands for the length of RX memory's Data field of Buffer[n] (not includin
 #include <linux/if_ether.h>
 #include <linux/bitops.h>
 #include <linux/dma-mapping.h>
-#include <mach/mt_typedefs.h>
 
 #define  CCCI_NETWORK           0
 #define  CCMNI_MTU              1500

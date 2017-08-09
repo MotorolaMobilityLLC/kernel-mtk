@@ -650,7 +650,9 @@ static int ccci_tty_open(struct inode *inode, struct file *file)
 		/* CCCI_MSG("<tty>%s opening ttyC%d, %s\n", current->comm, index, name); */
 		tty_instance->reset_handle =
 			ccci_reset_register(md_id, name);
-		ASSERT(tty_instance->reset_handle >= 0);
+		if (tty_instance->reset_handle < 0)
+			CCCI_ERR_INF(md_id, "fs ", "tty_instance->reset_handle %d< 0\n",
+				tty_instance->reset_handle);
 	}
 	return ret;
 }
@@ -871,16 +873,12 @@ int ccci_tty_init(int md_id)
 	else if (md_id == MD_SYS2)
 		snprintf(ctlb->node_name, 16, "ccci%d_tty", md_id + 1);
 
-	ASSERT(ccci_uart_base_req
-	       (md_id, 0, (int *)&ctlb->uart1_shared_mem, &smem_phy,
-		&smem_size) == 0);
+	ccci_uart_base_req(md_id, 0, (int *)&ctlb->uart1_shared_mem, &smem_phy, &smem_size);
 	/* CCCI_DBG_MSG(md_id, "tty", "TTY0 %x:%x:%d\n", (unsigned int)ctlb->uart1_shared_mem,  */
 	/*             (unsigned int)smem_phy, smem_size); */
 
 	/*  Get tty config information */
-	ASSERT(ccci_get_sub_module_cfg
-	       (md_id, "tty", (char *)&tty_buf_len,
-		sizeof(int)) == sizeof(int));
+	ccci_get_sub_module_cfg(md_id, "tty", (char *)&tty_buf_len, sizeof(int));
 	tty_buf_len = (tty_buf_len - sizeof(struct shared_mem_tty_t)) / 2;
 	ctlb->tty_buf_size = tty_buf_len;
 
@@ -893,12 +891,8 @@ int ccci_tty_init(int md_id)
 	ctlb->uart1_shared_mem->rx_control.write = 0;
 
 	/*  meta related channel register */
-	ASSERT(register_to_logic_ch
-	       (md_id, CCCI_UART1_RX, ccci_tty_callback, ctlb) == 0);
-	/* ASSERT(ccci_register(CCCI_UART1_RX_ACK, ccci_tty_callback, NULL) == CCCI_SUCCESS); */
-	/* ASSERT(ccci_register(CCCI_UART1_TX,     ccci_tty_callback, NULL) == CCCI_SUCCESS); */
-	ASSERT(register_to_logic_ch
-	       (md_id, CCCI_UART1_TX_ACK, ccci_tty_callback, ctlb) == 0);
+	register_to_logic_ch(md_id, CCCI_UART1_RX, ccci_tty_callback, ctlb);
+	register_to_logic_ch(md_id, CCCI_UART1_TX_ACK, ccci_tty_callback, ctlb);
 
 	ctlb->ccci_tty_meta.need_reset = 0;
 	ctlb->ccci_tty_meta.reset_handle = -1;
@@ -915,9 +909,7 @@ int ccci_tty_init(int md_id)
 	ccci_tty_instance_init(&ctlb->ccci_tty_meta);
 
 	/*  MUX section */
-	ASSERT(ccci_uart_base_req
-	       (md_id, 1, (int *)&ctlb->uart2_shared_mem, &smem_phy,
-		&smem_size) == 0);
+	ccci_uart_base_req(md_id, 1, (int *)&ctlb->uart2_shared_mem, &smem_phy, &smem_size);
 	/* CCCI_DBG_MSG(md_id, "tty", "TTY1 %x:%x:%d\n", (unsigned int)ctlb->uart2_shared_mem,  */
 	/*             (unsigned int)smem_phy, smem_size); */
 
@@ -930,12 +922,8 @@ int ccci_tty_init(int md_id)
 	ctlb->uart2_shared_mem->rx_control.write = 0;
 
 	/*  modem related channel registration. */
-	ASSERT(register_to_logic_ch
-	       (md_id, CCCI_UART2_RX, ccci_tty_callback, ctlb) == 0);
-	/* ASSERT(ccci_register(CCCI_UART2_RX_ACK, ccci_tty_callback, NULL) == CCCI_SUCCESS); */
-	/* ASSERT(ccci_register(CCCI_UART2_TX,     ccci_tty_callback, NULL) == CCCI_SUCCESS); */
-	ASSERT(register_to_logic_ch
-	       (md_id, CCCI_UART2_TX_ACK, ccci_tty_callback, ctlb) == 0);
+	register_to_logic_ch(md_id, CCCI_UART2_RX, ccci_tty_callback, ctlb);
+	register_to_logic_ch(md_id, CCCI_UART2_TX_ACK, ccci_tty_callback, ctlb);
 
 	/*  modem reset registration. */
 	ctlb->ccci_tty_modem.need_reset = 1;
@@ -953,9 +941,7 @@ int ccci_tty_init(int md_id)
 	ccci_tty_instance_init(&ctlb->ccci_tty_modem);
 
 	/*  for IPC uart */
-	ASSERT(ccci_uart_base_req
-	       (md_id, 5, (int *)&ctlb->uart3_shared_mem, &smem_phy,
-		&smem_size) == 0);
+	ccci_uart_base_req(md_id, 5, (int *)&ctlb->uart3_shared_mem, &smem_phy, &smem_size);
 	/* CCCI_DBG_MSG(md_id, "tty", "TTY2 %x:%x:%d\n", (unsigned int)ctlb->uart3_shared_mem,  */
 	/*             (unsigned int)smem_phy, smem_size); */
 
@@ -966,12 +952,8 @@ int ccci_tty_init(int md_id)
 	ctlb->uart3_shared_mem->rx_control.read = 0;
 	ctlb->uart3_shared_mem->rx_control.write = 0;
 	/*  IPC related channel register */
-	ASSERT(register_to_logic_ch
-	       (md_id, CCCI_IPC_UART_RX, ccci_tty_callback, ctlb) == 0);
-	/* ASSERT(ccci_register(CCCI_IPC_UART_RX_ACK, ccci_tty_callback, NULL) == CCCI_SUCCESS); */
-	/* ASSERT(ccci_register(CCCI_IPC_UART_TX,     ccci_tty_callback, NULL) == CCCI_SUCCESS); */
-	ASSERT(register_to_logic_ch
-	       (md_id, CCCI_IPC_UART_TX_ACK, ccci_tty_callback, ctlb) == 0);
+	register_to_logic_ch(md_id, CCCI_IPC_UART_RX, ccci_tty_callback, ctlb);
+	register_to_logic_ch(md_id, CCCI_IPC_UART_TX_ACK, ccci_tty_callback, ctlb);
 
 	/*  IPC reset register */
 	ctlb->ccci_tty_ipc.need_reset = 0;
@@ -990,9 +972,7 @@ int ccci_tty_init(int md_id)
 
 #ifdef CONFIG_MTK_ICUSB_SUPPORT
 	/*  for ICUSB uart */
-	ASSERT(ccci_uart_base_req
-	       (md_id, 6, (int *)&ctlb->uart4_shared_mem, &smem_phy,
-		&smem_size) == 0);
+	ccci_uart_base_req(md_id, 6, (int *)&ctlb->uart4_shared_mem, &smem_phy,	&smem_size);
 	/* CCCI_DBG_MSG(md_id, "tty", "TTY2 %x:%x:%d\n", (unsigned int)ctlb->uart3_shared_mem,  */
 	/*             (unsigned int)smem_phy, smem_size); */
 	ctlb->uart4_shared_mem->tx_control.length = tty_buf_len;
@@ -1002,12 +982,8 @@ int ccci_tty_init(int md_id)
 	ctlb->uart4_shared_mem->rx_control.read = 0;
 	ctlb->uart4_shared_mem->rx_control.write = 0;
 	/*  IPC related channel register */
-	ASSERT(register_to_logic_ch
-	       (md_id, CCCI_ICUSB_RX, ccci_tty_callback, ctlb) == 0);
-	/* ASSERT(ccci_register(CCCI_IPC_UART_RX_ACK, ccci_tty_callback, NULL) == CCCI_SUCCESS); */
-	/* ASSERT(ccci_register(CCCI_IPC_UART_TX,     ccci_tty_callback, NULL) == CCCI_SUCCESS); */
-	ASSERT(register_to_logic_ch
-	       (md_id, CCCI_ICUSB_TX_ACK, ccci_tty_callback, ctlb) == 0);
+	register_to_logic_ch(md_id, CCCI_ICUSB_RX, ccci_tty_callback, ctlb);
+	register_to_logic_ch(md_id, CCCI_ICUSB_TX_ACK, ccci_tty_callback, ctlb);
 
 	/*  IPC reset register */
 	ctlb->ccci_tty_icusb.need_reset = 0;

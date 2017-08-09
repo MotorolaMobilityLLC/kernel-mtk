@@ -21,7 +21,7 @@
 #include <linux/random.h>
 #include <linux/platform_device.h>
 #if defined(CONFIG_MTK_AEE_FEATURE)
-#include <linux/aee.h>
+#include <mt-plat/aee.h>
 #endif
 #include <mt_spm_sleep.h>
 #include <mt-plat/mt_boot.h>

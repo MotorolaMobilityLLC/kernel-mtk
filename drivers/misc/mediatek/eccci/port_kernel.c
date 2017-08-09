@@ -17,7 +17,7 @@
 #include <sec_export.h>
 #endif
 #if defined(CONFIG_MTK_AEE_FEATURE)
-#include <linux/aee.h>
+#include <mt-plat/aee.h>
 #else
 #define DB_OPT_DEFAULT    (0)	/* Dummy macro define to avoid build error */
 #define DB_OPT_FTRACE   (0)	/* Dummy macro define to avoid build error */

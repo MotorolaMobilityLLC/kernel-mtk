@@ -164,7 +164,7 @@ void find_task_to_clear(IPC_TASK task_table[], unsigned int to_id)
 					     __func__, i, task_table[i].to_id);
 			} else if (task->w_jiffies == task_table[i].w_jiffies) {
 				CCCI_DBG_MSG(ctl_b->m_md_id, "ipc",
-					     "[Error]Wrong time stamp(%lld, %lld), select task->to_id(%d:%d)\n",
+					     "[Error]Wrong time stamp(%ld, %ld), select task->to_id(%d:%d)\n",
 					     task->w_jiffies,
 					     task_table[i].w_jiffies, tmp,
 					     task->to_id);

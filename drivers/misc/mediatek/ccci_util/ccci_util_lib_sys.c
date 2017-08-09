@@ -613,7 +613,7 @@ int ccci_common_sysfs_init(void)
 
 	memset(ccci_sys_info, 0, sizeof(struct ccci_info));
 
-	ret = kobject_init_and_add(&ccci_sys_info->kobj, &ccci_ktype, kernel_kobj, CCCI_KOBJ_NAME);
+	ret = kobject_init_and_add(&ccci_sys_info->kobj, &ccci_ktype, (struct kobject *)kernel_kobj, CCCI_KOBJ_NAME);
 	if (ret < 0) {
 		kobject_put(&ccci_sys_info->kobj);
 		CCCI_UTIL_ERR_MSG("fail to add ccci kobject\n");

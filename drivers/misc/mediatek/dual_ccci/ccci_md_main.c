@@ -31,12 +31,14 @@
 #include <linux/delay.h>
 #include <linux/wakelock.h>
 #include <linux/rtc.h>
-#include <linux/aee.h>
 #include <linux/atomic.h>
 #include <linux/random.h>
-#include <mach/mtk_rtc.h>
 #include <ccci.h>
 #include <ccif.h>
+#include <mt-plat/aee.h>
+#ifdef ENABLE_32K_CLK_LESS
+#include <mach/mtk_rtc.h>
+#endif
 /* -------------ccci sbp feature define---------------------*/
 #ifdef CONFIG_MTK_MD_SBP_CUSTOM_VALUE
 static unsigned int md_sbp_value[MAX_MD_NUM];
@@ -829,7 +831,9 @@ void config_misc_info(int md_id, unsigned int base[], unsigned int size)
 {
 	struct misc_info_t misc_info;
 	int str[2];
+#ifdef ENABLE_RANDOM_SEED
 	unsigned int random_seed = 0;
+#endif
 
 	if (NULL == base)
 		return;
@@ -2265,7 +2269,6 @@ int ccci_reset_register(int md_id, char *name)
 		return handle;
 	}
 	mutex_unlock(&ctl_b->ccci_reset_mutex);
-	ASSERT(0);
 	return -CCCI_ERR_ASSERT_ERR;
 }
 

@@ -95,7 +95,7 @@ typedef struct {
 	spinlock_t lock;
 	unsigned long flag;
 	atomic_t user;
-	u64 w_jiffies;
+	unsigned long w_jiffies;
 	uint32 to_id;
 	struct fasync_struct *fasync;
 	ipc_ilm_t *ilm_p;

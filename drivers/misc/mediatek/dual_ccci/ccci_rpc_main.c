@@ -195,13 +195,15 @@ static void ccci_rpc_work(struct work_struct *work)
 {
 	int pkt_num = 0;
 	int ret_val = 0;
-	int resp_inx;
 	unsigned int buf_idx = 0;
 	struct RPC_PKT pkt[IPC_RPC_MAX_ARG_NUM] = { {0}, };
 	struct RPC_BUF *rpc_buf_tmp = NULL;
 	unsigned int tmp_data[4];
 	struct rpc_ctl_block_t *ctl_b = container_of(work, struct rpc_ctl_block_t, rpc_work);
 	int md_id = ctl_b->m_md_id;
+#ifdef _DEBUG_RPCD
+	int resp_inx;
+#endif
 
 	CCCI_RPC_MSG(md_id, "ccci_rpc_work++\n");
 
@@ -311,7 +313,7 @@ static int rpc_get_share_mem_index(struct file *file)
 	struct rpc_ctl_block_t *ctl_b = (struct rpc_ctl_block_t *) file->private_data;
 
 	if (ctl_b == NULL) {
-		ASSERT(ctl_b != NULL);
+		CCCI_ERR_MSG(ctl_b->m_md_id, "rpc_get_share_mem_index:ctl_b == NULL\n");
 		return -EFAULT;
 	}
 #ifdef _DEBUG_RPCD
@@ -351,8 +353,6 @@ static void wakeup_rpc_work(struct rpc_ctl_block_t *ctl_b)
 
 static void ccci_rpc_resetfifo(struct rpc_ctl_block_t *ctl_b)
 {
-	ASSERT(ctl_b != NULL);
-
 	CCCI_MSG("(%d) ccci_rpc_resetfifo\n", ctl_b->m_md_id);
 
 	spin_lock_bh(&ctl_b->rpc_fifo_lock);
@@ -402,7 +402,6 @@ static int rpc_daemon_send_helper(struct file *file, unsigned long arg)
 #endif
 
 	if (ctl_b == NULL) {
-		ASSERT(ctl_b != NULL);
 		ret = -EFAULT;
 		goto _send_return;
 	}
@@ -611,12 +610,9 @@ int __init ccci_rpc_init(int md_id)
 	rpc_ctl_block[md_id] = ctl_b;
 
 	/*  Get rpc config information */
-	ASSERT(ccci_get_sub_module_cfg
-	       (md_id, "rpc", (char *)&rpc_cfg, sizeof(struct rpc_cfg_inf_t))
-	       == sizeof(struct rpc_cfg_inf_t));
+	ccci_get_sub_module_cfg(md_id, "rpc", (char *)&rpc_cfg, sizeof(struct rpc_cfg_inf_t));
 
-	ASSERT(ccci_rpc_base_req
-	       (md_id, &rpc_buf_vir, &rpc_buf_phy, &rpc_buf_len) == 0);
+	ccci_rpc_base_req(md_id, &rpc_buf_vir, &rpc_buf_phy, &rpc_buf_len);
 	ctl_b->rpc_buf_vir = (struct RPC_BUF *) rpc_buf_vir;
 	ctl_b->rpc_buf_phy = (unsigned int)rpc_buf_phy;
 	ctl_b->rpc_buf_len = rpc_buf_len;
@@ -646,14 +642,10 @@ int __init ccci_rpc_init(int md_id)
 		     "rpc_buf_vir=0x%p, rpc_buf_phy=0x%08X, rpc_buf_len=0x%08X\n",
 		     ctl_b->rpc_buf_vir, ctl_b->rpc_buf_phy,
 		     ctl_b->rpc_buf_len);
-	ASSERT(ctl_b->rpc_buf_vir != NULL);
-	ASSERT(ctl_b->rpc_buf_len != 0);
-	ASSERT(register_to_logic_ch
-	       (md_id, CCCI_RPC_RX, ccci_rpc_callback, ctl_b) == 0);
+	register_to_logic_ch(md_id, CCCI_RPC_RX, ccci_rpc_callback, ctl_b);
 
 #if defined(CONFIG_MTK_TC1_FEATURE)
-	ASSERT(register_to_logic_ch
-	       (md_id, CCCI_RPC_TX, ccci_rpc_callback, ctl_b) == 0);
+	register_to_logic_ch(md_id, CCCI_RPC_TX, ccci_rpc_callback, ctl_b);
 	ret = rpc_device_init(ctl_b);
 	if (0 != ret)
 		goto _KFIFO_ALLOC_FAIL;

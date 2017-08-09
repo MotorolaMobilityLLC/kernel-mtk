@@ -974,9 +974,8 @@ static int ccmni_v2_create_instance(int md_id, int channel)
 		goto _ccmni_create_instance_exit;
 	}
 
-	ASSERT(ccci_ccmni_v2_ctl_mem_base_req
-	       (md_id, ccmni->channel, (int *)&ccmni->shared_mem,
-		&ccmni->shared_mem_phys_addr, &size) == 0);
+	ccci_ccmni_v2_ctl_mem_base_req(md_id, ccmni->channel,
+		(int *)&ccmni->shared_mem, &ccmni->shared_mem_phys_addr, &size);
 
 	if (ccmni->shared_mem == NULL) {
 		CCCI_MSG_INF(md_id, "net", "CCMNI%d allocate memory fail\n",
@@ -1081,10 +1080,8 @@ static int ccmni_v2_create_instance(int md_id, int channel)
 
 	/*  Register this ccmni instance to the ccci driver. */
 	/*  pass it the notification handler. */
-	ASSERT(register_to_logic_ch
-	       (md_id, uart_rx, ccmni_v2_callback, (void *)ccmni) == 0);
-	ASSERT(register_to_logic_ch
-	       (md_id, uart_tx_ack, ccmni_v2_callback, (void *)ccmni) == 0);
+	register_to_logic_ch(md_id, uart_rx, ccmni_v2_callback, (void *)ccmni);
+	register_to_logic_ch(md_id, uart_tx_ack, ccmni_v2_callback, (void *)ccmni);
 
 	/*  Initialize the spinlock. */
 	spin_lock_init(&ccmni->spinlock);

@@ -17,7 +17,6 @@
 
 #ifndef __CCCI_COMMON_H__
 #define __CCCI_COMMON_H__
-#include <linux/xlog.h>
 #include <ccci_cfg.h>
 #include <ccci_err_no.h>
 #include <ccci_md.h>

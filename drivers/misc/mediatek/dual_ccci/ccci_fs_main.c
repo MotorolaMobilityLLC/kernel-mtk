@@ -295,8 +295,8 @@ static int ccci_fs_open(struct inode *inode, struct file *file)
 
 	/*  modem reset registration. */
 	ctl_b->reset_handle = ccci_reset_register(md_id, "CCCI_FS");
-	ASSERT(ctl_b->reset_handle >= 0);
-
+	if (ctl_b->reset_handle < 0)
+		CCCI_ERR_INF(md_id, "fs ", "ctl_b->reset_handle %d < 0\n", ctl_b->reset_handle);
 	return 0;
 }
 
@@ -354,12 +354,10 @@ static int ccci_fs_start(int md_id)
 	spin_unlock_irqrestore(&ctl_b->fs_spinlock, flag);
 
 	/*  modem related channel registration. */
-	ASSERT(ccci_fs_base_req
-	       (md_id, (int *)&ctl_b->fs_buffers, &ctl_b->fs_buffers_phys_addr,
-		&ctl_b->fs_smem_size) == 0);
+	ccci_fs_base_req(md_id, (int *)&ctl_b->fs_buffers, &ctl_b->fs_buffers_phys_addr,
+		&ctl_b->fs_smem_size);
 
-	ASSERT(register_to_logic_ch(md_id, CCCI_FS_RX, ccci_fs_callback, ctl_b)
-	       == 0);
+	register_to_logic_ch(md_id, CCCI_FS_RX, ccci_fs_callback, ctl_b);
 
 	return 0;
 }
@@ -376,7 +374,7 @@ static void ccci_fs_stop(int md_id)
 	ctl_b = fs_ctl_block[md_id];
 	if (ctl_b->fs_buffers != NULL) {
 		kfifo_free(&ctl_b->fs_fifo);
-		ASSERT(un_register_to_logic_ch(md_id, CCCI_FS_RX) == 0);
+		un_register_to_logic_ch(md_id, CCCI_FS_RX);
 		ctl_b->fs_buffers = NULL;
 		ctl_b->fs_buffers_phys_addr = 0;
 	}

@@ -34,7 +34,6 @@
 #include <linux/dma-mapping.h>
 #include <linux/bitops.h>
 #include <linux/timer.h>
-#include <mach/mt_typedefs.h>
 #include <ccmni_pfp.h>
 #include <ccci_tty.h>
 #include <ccci.h>
@@ -717,10 +716,8 @@ static int ccmni_create_instance(int md_id, int channel)
 	}
 
 	/*   CCCI channel registration. */
-	ASSERT(ccci_uart_base_req
-	       (md_id, CCMNI_UART_OFFSET + ccmni->channel,
-		(int *)&ccmni->shared_mem, &ccmni->shared_mem_phys_addr,
-		&size) == CCCI_SUCCESS);
+	ccci_uart_base_req(md_id, CCMNI_UART_OFFSET + ccmni->channel,
+		(int *)&ccmni->shared_mem, &ccmni->shared_mem_phys_addr, &size);
 
 	if (ccmni->shared_mem == NULL) {
 		CCCI_MSG_INF(md_id, "net", "CCMNI%d allocate memory fail\n",
@@ -781,10 +778,8 @@ static int ccmni_create_instance(int md_id, int channel)
 
 	/*  Register this ccmni instance to the ccci driver. */
 	/*  pass it the notification handler. */
-	ASSERT(register_to_logic_ch
-	       (md_id, uart_rx, ccmni_callback, (void *)ccmni) == 0);
-	ASSERT(register_to_logic_ch
-	       (md_id, uart_tx_ack, ccmni_callback, (void *)ccmni) == 0);
+	register_to_logic_ch(md_id, uart_rx, ccmni_callback, (void *)ccmni);
+	register_to_logic_ch(md_id, uart_tx_ack, ccmni_callback, (void *)ccmni);
 
 	/*  Initialize the spinlock. */
 	spin_lock_init(&ccmni->spinlock);

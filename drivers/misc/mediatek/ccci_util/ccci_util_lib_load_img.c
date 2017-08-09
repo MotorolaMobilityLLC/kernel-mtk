@@ -29,7 +29,7 @@
 #include "ccci_util_log.h"
 #include "ccci_util_lib_main.h"
 #if defined(CONFIG_MTK_AEE_FEATURE)
-#include <linux/aee.h>
+#include <mt-plat/aee.h>
 #endif
 #define ENABLE_MEM_SIZE_CHECK
 #define MAX_MD_NUM (6)		/* Max 4 internal + Max 2 exteranl */
