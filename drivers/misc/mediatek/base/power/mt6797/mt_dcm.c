@@ -514,9 +514,13 @@ int dcm_infra(ENUM_INFRA_DCM on)
 		reg_write(INFRA_BUS_DCM_CTRL, aor(reg_read(INFRA_BUS_DCM_CTRL),
 						 ~INFRA_BUS_DCM_CTRL_MASK,
 						 INFRA_BUS_DCM_CTRL_EN));
+
+#if 0 /* workaround to avoid access dram reg fail */
 		reg_write(P2P_RX_CLK_ON, aor(reg_read(P2P_RX_CLK_ON),
 						 ~P2P_RX_CLK_ON_MASK,
 						 P2P_RX_CLK_ON_EN));
+#endif
+
 		reg_write(INFRA_MISC_2, aor(reg_read(INFRA_MISC_2),
 						 ~INFRA_MISC_2_MASK,
 						 INFRA_MISC_2_EN));
@@ -524,9 +528,13 @@ int dcm_infra(ENUM_INFRA_DCM on)
 		reg_write(INFRA_BUS_DCM_CTRL, aor(reg_read(INFRA_BUS_DCM_CTRL),
 						 ~INFRA_BUS_DCM_CTRL_MASK,
 						 INFRA_BUS_DCM_CTRL_DIS));
+
+#if 0 /* workaround to avoid access dram reg fail*/
 		reg_write(P2P_RX_CLK_ON, aor(reg_read(P2P_RX_CLK_ON),
 						 ~P2P_RX_CLK_ON_MASK,
 						 P2P_RX_CLK_ON_DIS));
+#endif
+
 		reg_write(INFRA_MISC_2, aor(reg_read(INFRA_MISC_2),
 						 ~INFRA_MISC_2_MASK,
 						 INFRA_MISC_2_DIS));
@@ -1438,7 +1446,7 @@ enum {
 		       DDRPHY_DCM_TYPE | MEM_DCM_TYPE | USB_DCM_TYPE | \
 		       ICUSB_DCM_TYPE | AUDIO_DCM_TYPE | SSUSB_DCM_TYPE)
 
-#define INIT_DCM_TYPE  (ARMCORE_DCM_TYPE | MCUSYS_DCM_TYPE | /*INFRA_DCM_TYPE |*/ \
+#define INIT_DCM_TYPE  (ARMCORE_DCM_TYPE | MCUSYS_DCM_TYPE | INFRA_DCM_TYPE | \
 		       PERI_DCM_TYPE | /* EMI_DCM_TYPE | DRAMC_DCM_TYPE |*/ \
 		       /*| DDRPHY_DCM_TYPE */ MEM_DCM_TYPE | USB_DCM_TYPE | \
 		       ICUSB_DCM_TYPE | AUDIO_DCM_TYPE | SSUSB_DCM_TYPE | MEM_DCM_TYPE)
@@ -1622,12 +1630,12 @@ void dcm_set_state(unsigned int type, int state)
 			type &= ~(dcm->typeid);
 
 			dcm->saved_state = state;
-			#if 0
+			#if 1
 			if (dcm->disable_refcnt == 0) {
 			#endif
 				dcm->current_state = state;
 				dcm->func(dcm->current_state);
-			#if 0
+			#if 1
 			}
 			#endif
 
@@ -1825,7 +1833,7 @@ static ssize_t dcm_state_show(struct kobject *kobj, struct kobj_attribute *attr,
 	p += sprintf(p, "\n********** dcm_state help *********\n");
 	p += sprintf(p, "set:		echo set [mask] [mode] > /sys/power/dcm_state\n");
 	p += sprintf(p, "set:		echo default [mask] > /sys/power/dcm_state\n");
-#if 0
+#if 1
 	p += sprintf(p, "disable:	echo disable [mask] > /sys/power/dcm_state\n");
 	p += sprintf(p, "restore:	echo restore [mask] > /sys/power/dcm_state\n");
 	p += sprintf(p, "dump:		echo dump [mask] > /sys/power/dcm_state\n");
@@ -2128,7 +2136,6 @@ int sync_dcm_set_cpu_div(unsigned int cci, unsigned int mp0, unsigned int mp1)
 	return 0;
 }
 
-#if 1
 int sync_dcm_set_cci_freq(unsigned int cci)
 {
 	mt_dcm_init();
@@ -2229,4 +2236,3 @@ int sync_dcm_set_mp2_freq(unsigned int mp2)
 
 	return 0;
 }
-#endif
