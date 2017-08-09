@@ -690,7 +690,7 @@
 BOOLEAN fgIsUnderSuspend = false;
 
 struct semaphore g_halt_sem;
-int g_u4HaltFlag = 0;
+int g_u4HaltFlag = 1;
 
 #if CFG_ENABLE_WIFI_DIRECT
 spinlock_t g_p2p_lock;
@@ -1548,6 +1548,9 @@ static void createWirelessDevice(void)
 		return;
 	}
 
+	/* initialize semaphore for ioctl */
+	sema_init(&g_halt_sem, 1);
+	g_u4HaltFlag = 1;
 	/* <1.2> Create wiphy */
 	prWiphy = wiphy_new(&mtk_wlan_ops, sizeof(GLUE_INFO_T));
 	if (!prWiphy) {
@@ -2386,8 +2389,6 @@ static struct wireless_dev *wlanNetCreate(PVOID pvData)
 	/* initialize semaphore for ioctl */
 	sema_init(&prGlueInfo->ioctl_sem, 1);
 
-	/* initialize semaphore for ioctl */
-	sema_init(&g_halt_sem, 1);
 	glSetHifInfo(prGlueInfo, (ULONG) pvData);
 
 	/* 4 <8> Init Queues */
