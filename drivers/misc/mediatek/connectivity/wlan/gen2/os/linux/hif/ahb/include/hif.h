@@ -159,6 +159,7 @@ typedef struct _GL_HIF_INFO_T {
 #define MTK_CHIP_ID_6735    0x6735
 #define MTK_CHIP_ID_6580    0x6580
 #define MTK_CHIP_ID_6755    0x6755
+#define MTK_CHIP_ID_7623    0x7623
 
 	UINT_32 ChipID;
 

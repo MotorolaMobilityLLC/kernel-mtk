@@ -114,6 +114,7 @@ NIC_DIR     := nic/
 MGMT_DIR    := mgmt/
 DMA_DIR     := ../../../../platform/$(call lc,$(MTK_PLATFORM))/kernel/drivers/wifi/
 PLAT_DIR    := os/linux/plat/$(MTK_PLATFORM)/
+HIF_AHB_PDMA := $(HIF_DIR)$(MTK_PLATFORM)/
 #$(call lc,$(MTK_PLATFORM))
 
 
@@ -215,9 +216,12 @@ ifeq ($(WLAN_PROC), y)
 OS_OBJS += gl_proc.o
 endif
 
+ifeq ($(CONFIG_ARCH_MT7623), y)
+HIF_AHB_PDMA = $(HIF_DIR)/mt8127/
+endif
 HIF_OBJS :=  $(HIF_DIR)arm.o \
              $(HIF_DIR)ahb.o \
-             $(HIF_DIR)$(MTK_PLATFORM)/ahb_pdma.o
+             $(HIF_AHB_PDMA)ahb_pdma.o
 ifeq ($(CONFIG_ARCH_MT6755), y)
 PLAT_OBJS := $(PLAT_DIR)plat_priv.o
 $(MODULE_NAME)-objs  += $(PLAT_OBJS)

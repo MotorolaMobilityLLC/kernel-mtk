@@ -302,7 +302,8 @@ static struct miscdevice MtkAhbDriver = {
 
 #ifdef CONFIG_OF
 static const struct of_device_id apwifi_of_ids[] = {
-	{.compatible = "mediatek,wifi",},
+	{.compatible = "mediatek,wifi", .data = (void *)0},
+	{.compatible = "mediatek,mt7623-wifi", .data = (void *)0x7623},
 	{}
 };
 #endif
@@ -429,6 +430,7 @@ VOID glResetHif(GLUE_INFO_T *GlueInfo)
 VOID glSetHifInfo(GLUE_INFO_T *GlueInfo, ULONG ulCookie)
 {
 	GL_HIF_INFO_T *HifInfo;
+	const struct of_device_id *of_id;
 
 	/* Init HIF */
 	ASSERT(GlueInfo);
@@ -449,15 +451,18 @@ VOID glSetHifInfo(GLUE_INFO_T *GlueInfo, ULONG ulCookie)
 	HifInfo->fgDmaEnable = FALSE;
 	HifInfo->DmaRegBaseAddr = 0;
 	HifInfo->DmaOps = NULL;
-
-	/* read chip ID */
-	HifInfo->ChipID = HIF_REG_READL(HifInfo, MCR_WCIR) & 0xFFFF;
-	if (HifInfo->ChipID == 0x0321 || HifInfo->ChipID == 0x0335 || HifInfo->ChipID == 0x0337)
-		HifInfo->ChipID = 0x6735;	/* Denali ChipID transition */
-	if (HifInfo->ChipID == 0x0326)
-		HifInfo->ChipID = 0x6755;
+	of_id = of_match_node(apwifi_of_ids, HifAhbPDev->dev.of_node);
+	if (of_id) {
+		HifInfo->ChipID = (UINT_32)(unsigned long)of_id->data;
+	} else {
+		/* read chip ID */
+		HifInfo->ChipID = HIF_REG_READL(HifInfo, MCR_WCIR) & 0xFFFF;
+		if (HifInfo->ChipID == 0x0321 || HifInfo->ChipID == 0x0335 || HifInfo->ChipID == 0x0337)
+			HifInfo->ChipID = 0x6735;	/* Denali ChipID transition */
+		if (HifInfo->ChipID == 0x0326)
+			HifInfo->ChipID = 0x6755;
+	}
 	DBGLOG(INIT, INFO, "[WiFi/HIF] ChipID = 0x%x\n", HifInfo->ChipID);
-
 #ifdef CONFIG_OF
 #if !defined(CONFIG_MTK_CLKMGR)
 	HifInfo->clk_wifi_dma = devm_clk_get(&HifAhbPDev->dev, "wifi-dma");
@@ -543,6 +548,7 @@ VOID glGetChipInfo(GLUE_INFO_T *GlueInfo, UINT_8 *pucChipBuf)
 	case MTK_CHIP_ID_6735:
 	case MTK_CHIP_ID_6580:
 	case MTK_CHIP_ID_6755:
+	case MTK_CHIP_ID_7623:
 		kalSprintf(pucChipBuf, "%04x", HifInfo->ChipID);
 		break;
 	default:
