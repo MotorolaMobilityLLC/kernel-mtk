@@ -1983,7 +1983,7 @@
 			cell-index = <2>;
 			ccif,major = <169>;
 			ccif,minor_base = <0>;
-			ccif,capability = <0>;
+			ccif,capability = <2>;	//tx busy stop
 			mediatek,md_smem_size = <0x400000>; //md share memory size
 			clocks = <&scpsys SCP_SYS_C2K>;
 			clock-names = "scp-sys-c2k-main";
