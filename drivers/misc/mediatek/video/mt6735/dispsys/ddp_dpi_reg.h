@@ -300,6 +300,40 @@ struct DPI_REG_ESAV_CODE_SET1 {
 	unsigned rsv_17:15;
 };
 
+typedef struct {
+	unsigned INT_MATRIX_SEL     :5;
+	unsigned rsv_3              :3;
+	unsigned MATRIX_BIT         :2;
+	unsigned rsv_2              :2;
+	unsigned EXT_MATRIX_EN      :1;
+	unsigned rsv_19             :19;
+} DPI_REG_MATRIX_SET;
+
+typedef struct {
+	unsigned MATRIX_COFEF_00     :13;
+	unsigned rsv_13              :3;
+	unsigned MATRIX_COFEF_01     :13;
+	unsigned rsv_29              :3;
+} DPI_REG_MATRIX_COEF;
+
+typedef struct {
+	unsigned MATRIX_COFEF_00     :13;
+	unsigned rsv_19              :19;
+} DPI_REG_MATRIX_COEF_ONE;
+
+
+typedef struct {
+	unsigned MATRIX_OFFSET_0    :13;
+	unsigned rsv_3              :3;
+	unsigned MATRIX_OFFSET_1    :13;
+	unsigned rsv              :3;
+} DPI_REG_MATRIX_OFFSET;
+
+typedef struct {
+	unsigned MATRIX_OFFSET_0    :13;
+	unsigned rsv_19             :19;
+} DPI_REG_MATRIX_OFFSET_ONE;
+
 struct DPI_REG_PATTERN {
 	unsigned PAT_EN:1;
 	unsigned rsv_1:3;
@@ -434,6 +468,17 @@ struct DPI_REGS {
 	struct DPI_REG_EMBSYNC_SETTING EMBSYNC_SETTING;	/*00A4*/
 	struct DPI_REG_ESAV_CODE_SET0 ESAV_CODE_SET0;	/*00A8*/
 	struct DPI_REG_ESAV_CODE_SET1 ESAV_CODE_SET1;	/*00AC*/
+	unsigned int                    rsv_4;   /* 00B0*/
+	DPI_REG_MATRIX_SET  MATRIX_SET;          /*00B4*/
+	DPI_REG_MATRIX_COEF MATRIX_COEF_00;      /*00B8*/
+	DPI_REG_MATRIX_COEF MATRIX_COEF_02;      /*00BC*/
+	DPI_REG_MATRIX_COEF MATRIX_COEF_11;      /*00C0*/
+	DPI_REG_MATRIX_COEF MATRIX_COEF_20;      /*00C4*/
+	DPI_REG_MATRIX_COEF_ONE   MATRIX_COEF_22;      /*00C8*/
+	DPI_REG_MATRIX_OFFSET     MATRIX_IN_OFFSET_0;  /*00CC*/
+	DPI_REG_MATRIX_OFFSET_ONE MATRIX_IN_OFFSET_2;  /*00D0*/
+	DPI_REG_MATRIX_OFFSET     MATRIX_OUT_OFFSET_0; /*00D4*/
+	DPI_REG_MATRIX_OFFSET_ONE MATRIX_OUT_OFFSET_2; /*00D8*/
 
 };
 

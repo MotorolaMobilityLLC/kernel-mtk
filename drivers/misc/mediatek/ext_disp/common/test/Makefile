@@ -43,12 +43,8 @@ ccflags-y +=	-DHDMI_MT8193_SUPPORT
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/hdmi/mt8193/
 endif
 
-obj-y :=  \
-    external_display.o \
-    ./../mtk_extd_mgr.o   \
-    ./../extd_debug.o \
-    ./../extd_utils.o \
-    ./../extd_hdmi.o \
-    ./../extd_epd.o \
-    ./../extd_multi_control.o \
-    ./../extd_factory.o
+$(warning "lwlwlw")
+obj-y +=  \
+    dpi_dvt_test.o \
+    dpi_dvt_platform.o \
+    ddp_dpi_ext.o

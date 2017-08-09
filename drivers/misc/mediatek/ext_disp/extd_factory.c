@@ -6,6 +6,8 @@
 #include "extd_info.h"
 #include "external_display.h"
 
+#include "dpi_dvt_test.h"
+
 #if defined(CONFIG_MTK_HDMI_SUPPORT)
 static struct HDMI_DRIVER *hdmi_tx_drv;
 static int is_context_inited;
@@ -236,6 +238,7 @@ int hdmi_factory_mode_test(enum HDMI_FACTORY_TEST test_step, void *info)
 			 */
 			int test_type = ((long int)info >> 24);
 			int resolution = (((long int)info >> 16) & 0xFF);
+			int test_case = resolution;
 			int io_driving = ((long int)info & 0xFFFF);
 
 			EXTD_FACTORY_LOG("STEP3_START_DPI_AND_CONFIG +\n");
@@ -253,10 +256,8 @@ int hdmi_factory_mode_test(enum HDMI_FACTORY_TEST test_step, void *info)
 
 				EXTD_FACTORY_LOG("[hdmi] Not need video config for DPI HQA\n");
 			} else if (test_type == 2) {	/* DVT */
-#ifdef HDMI_DPI_DVT_TEST	/* Need to add dvt header file */
 				EXTD_FACTORY_LOG("[hdmi] Start DPI DVT Test\n");
-				hdmi_dvt_dpi_ioctl(test_case);
-#endif
+				dpi_dvt_ioctl(test_case);
 			}
 
 			break;

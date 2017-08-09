@@ -147,6 +147,7 @@ int _Enable_Interrupt(void);
 enum AviColorSpace_e {
 	acsRGB = 0, acsYCbCr422 = 1, acsYCbCr444 = 2, acsFuture = 3
 };
+extern struct DPI_REGS *DPI_REG;
 #ifdef __cplusplus
 }
 #endif
