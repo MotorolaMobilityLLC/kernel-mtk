@@ -251,6 +251,18 @@ void __attribute__((weak)) pll_if_on(void)
 	/* temporarily fix build fail */
 }
 
+bool __attribute__((weak)) spm_cpusys0_can_power_down(void)
+{
+	/* temporarily fix build fail */
+	return false;
+}
+
+bool __attribute__((weak)) spm_cpusys1_can_power_down(void)
+{
+	/* temporarily fix build fail */
+	return false;
+}
+
 #ifdef CONFIG_MTK_SYSTRACKER
 void __attribute__ ((weak)) systracker_enable(void)
 {
