@@ -600,6 +600,30 @@ static void process_dbg_opt(const char *opt)
 			primary_display_manual_unlock();
 			return;
 		}
+	} else if (0 == strncmp(opt, "dvfs_test:", 10)) {
+		char *p = (char *)opt + 10;
+		unsigned long int val;
+
+		ret = kstrtoul(p, 16, &val);
+		if (ret)
+			pr_err("DISP/%s: errno %d\n", __func__, ret);
+
+		switch (val) {
+		case 0:
+		case 1:
+		case 2:
+			/* normal test */
+			primary_display_switch_mmsys_clk(dvfs_test, val);
+			break;
+
+		default:
+			/* finish */
+			break;
+		}
+
+		pr_err("DISP/ERROR " "DVFS mode:%d->%ld\n", dvfs_test, val);
+
+		dvfs_test = val;
 	} else if (0 == strncmp(opt, "mobile:", 7)) {
 		if (0 == strncmp(opt + 7, "on", 2))
 			g_mobilelog = 1;

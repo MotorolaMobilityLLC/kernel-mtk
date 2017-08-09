@@ -87,6 +87,9 @@
 #include "ddp_wdma.h"
 #include "ddp_wdma_ex.h"
 #include "mt_clk_id.h"
+#include "mmdvfs_mgr.h"
+#include "mt_smi.h"
+#include <mach/mt_freqhopping.h>
 
 typedef void (*fence_release_callback) (unsigned int data);
 unsigned int is_hwc_enabled = 0;
@@ -735,6 +738,94 @@ int primary_display_cmdq_set_reg(unsigned int addr, unsigned int val)
 	return 0;
 }
 #endif
+
+unsigned int dvfs_test = 0xFF;
+static atomic_t gMmsysClk = ATOMIC_INIT(0xFF);
+
+static void set_mmsys_clk(unsigned int clk)
+{
+	if (atomic_read(&gMmsysClk) != clk)
+		atomic_set(&gMmsysClk, clk);
+}
+
+static unsigned int get_mmsys_clk(void)
+{
+	return atomic_read(&gMmsysClk);
+}
+
+static int _switch_mmsys_clk(int mmsys_clk_old, int mmsys_clk_new)
+{
+	int ret = -1;
+	cmdqRecHandle handle;
+
+	DISPMSG("[LP]: %s\n", __func__);
+	if (mmsys_clk_new == get_mmsys_clk())
+		return ret;
+
+	/* 1.create and reset cmdq */
+	cmdqRecCreate(CMDQ_SCENARIO_PRIMARY_DISP, &handle);
+
+	cmdqRecReset(handle);
+
+	/* wait eof */
+	_cmdq_insert_wait_frame_done_token_mira(handle);
+
+	cmdqRecWrite(handle, 0x10210048, 0x07000000, 0x07000000);	/* clear */
+	cmdqRecWrite(handle, 0x10210044, 0x06000000, 0x07000000);	/* set syspll2_d2 */
+
+	DISPMSG("[DISP] DVFS mode=%d, profile=%d\n", mmsys_clk_new, mmdvfs_get_mmdvfs_profile());
+	switch (mmsys_clk_new) {
+	case MMSYS_CLK_LOW:
+		cmdqRecWrite(handle, 0x10209254, 0x830E0000, 0xFFFFFFFF);	/* update */
+		break;
+
+	case MMSYS_CLK_MEDIUM:
+		/* by frequency hopping */
+		goto cmdq_d;
+
+	case MMSYS_CLK_HIGH:
+		if (mmdvfs_get_mmdvfs_profile() == MMDVFS_PROFILE_D2_P_PLUS)
+			cmdqRecWrite(handle, 0x10209254, 0x82110000, 0xFFFFFFFF);	/* update */
+		else if (mmdvfs_get_mmdvfs_profile() == MMDVFS_PROFILE_D2_M_PLUS)
+			cmdqRecWrite(handle, 0x10209254, 0x820F0000, 0xFFFFFFFF);	/* update */
+		break;
+
+	default:
+		DISPERR("[DISP] DVFS mode=%d\n", mmsys_clk_new);
+		goto cmdq_d;
+	}
+
+	/* wait rdma0_sof: only used for video mode & trigger loop need wait and clear rdma0 sof */
+	cmdqRecWaitNoClear(handle, CMDQ_EVENT_DISP_RDMA0_SOF);
+
+	cmdqRecWrite(handle, 0x10210048, 0x07000000, 0x07000000);	/* clear */
+	cmdqRecWrite(handle, 0x10210044, 0x01000000, 0x07000000);	/* set vencpll_ck */
+
+	cmdqRecFlush(handle);
+
+cmdq_d:
+	cmdqRecDestroy(handle);
+
+	/* set rdma golden setting parameters */
+	set_mmsys_clk(mmsys_clk_new);
+
+	return get_mmsys_clk();
+
+}
+
+int primary_display_switch_mmsys_clk(int mmsys_clk_old, int mmsys_clk_new)
+{
+	int ret = -1;
+
+	/* need lock */
+	DISPMSG("[LP] %s\n", __func__);
+
+	primary_display_manual_lock();
+	ret = _switch_mmsys_clk(mmsys_clk_old, mmsys_clk_new);
+	primary_display_manual_unlock();
+
+	return ret;
+}
 
 int primary_display_set_secondary_display(int add, DISP_SESSION_TYPE type)
 {
@@ -1548,6 +1639,9 @@ static void _cmdq_build_trigger_loop(void)
 		ret = cmdqRecWait(pgc->cmdq_handle_trigger,
 				  dpmgr_path_get_mutex(pgc->dpmgr_handle) +
 				  CMDQ_EVENT_MUTEX0_STREAM_EOF);
+
+		/* wait and clear rdma0_sof for vfp change */
+		cmdqRecClearEventToken(pgc->cmdq_handle_trigger, CMDQ_EVENT_DISP_RDMA0_SOF);
 
 		if (gEnableSWTrigger == 1)
 			DISP_REG_SET(pgc->cmdq_handle_trigger, DISP_REG_CONFIG_MUTEX_EN(DISP_OVL_SEPARATE_MUTEX_ID), 1);
@@ -5129,6 +5223,10 @@ int primary_display_init(char *lcm_name, unsigned int lcm_fps)
 #endif
 
 	pgc->dc_type = DISP_OUTPUT_DECOUPLE;
+
+	if ((mmdvfs_get_mmdvfs_profile() == MMDVFS_PROFILE_D2_P_PLUS) ||
+	    (mmdvfs_get_mmdvfs_profile() == MMDVFS_PROFILE_D2_M_PLUS))
+		register_mmclk_switch_cb(primary_display_switch_mmsys_clk, _switch_mmsys_clk);
 done:
 
 	/* disable OVL TF in video mode, cause cmdq/sodi log is not ready, avoid too much TF issue */

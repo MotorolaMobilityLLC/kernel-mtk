@@ -23,6 +23,9 @@
 #ifndef __MTKFB_DEBUG_H
 #define __MTKFB_DEBUG_H
 
+extern unsigned int dvfs_test;
+extern int primary_display_switch_mmsys_clk(int mmsys_clk_old, int mmsys_clk_new);
+
 void DBG_Init(void);
 void DBG_Deinit(void);
 
