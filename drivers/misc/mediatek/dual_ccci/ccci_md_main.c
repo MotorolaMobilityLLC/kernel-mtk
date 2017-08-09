@@ -37,7 +37,7 @@
 #include <ccif.h>
 #include <mt-plat/aee.h>
 #ifdef ENABLE_32K_CLK_LESS
-#include <mach/mtk_rtc.h>
+#include <mt-plat/mtk_rtc.h>
 #endif
 /* -------------ccci sbp feature define---------------------*/
 #ifdef CONFIG_MTK_MD_SBP_CUSTOM_VALUE
