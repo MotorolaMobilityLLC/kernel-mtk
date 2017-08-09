@@ -3250,7 +3250,7 @@ static int __cpuinit _mt_cpufreq_cpu_CB(struct notifier_block *nfb, unsigned lon
 
 #if 0
 					if (!disable_idvfs_flag)
-						BigiDVFSDisable();
+						BigiDVFSDisable_hp();
 #endif
 				}
 				cpufreq_unlock(flags);
@@ -3734,15 +3734,10 @@ static int _mt_cpufreq_init(struct cpufreq_policy *policy)
 		cpufreq_lock(flags);
 		p->armpll_is_available = 1;
 #if 0
-		unsigned int cur_vproc_mv_x100, cur_vsram_mv_x100 = 0;
 /* #ifdef ENABLE_IDVFS */
 		if (MT_CPU_DVFS_B == id) {
 			if (!disable_idvfs_flag) {
-				cur_vproc_mv_x100 = p->ops->get_cur_volt(p);
-				cur_vsram_mv_x100 = p->ops->get_cur_vsram(p);
-				eem_init_det_tmp();
-				BigiDVFSSWAvg(0, 1);
-				ret = BigiDVFSEnable(IDVFS_FMAX, cur_vproc_mv_x100, cur_vsram_mv_x100);
+				BigiDVFSEnable_hp();
 			}
 		}
 #endif
@@ -4713,7 +4708,7 @@ static ssize_t cpufreq_idvfs_mode_proc_write(struct file *file, const char __use
 			rc = 0;
 #endif
 			if (!rc) {
-				BigiDVFSDisable();
+				BigiDVFSDisable_hp();
 				p->ops = &dvfs_ops_B;
 				disable_idvfs_flag = 1;
 			}
