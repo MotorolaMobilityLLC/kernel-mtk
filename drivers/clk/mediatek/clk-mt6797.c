@@ -316,6 +316,8 @@ while (0)
 #define	mm_larb4_axi_asif_mjc_clock "mm_larb4_axi_asif_mjc_clock"
 #define	mm_disp_ovl0_mout_clock     "mm_disp_ovl0_mout_clock"
 #define	mm_fake_eng2                "mm_fake_eng2"
+#define	mm_dsi0_interface_clock	"mm_dsi0_interface_clock"
+#define	mm_dsi1_interface_clock	"mm_dsi1_interface_clock"
 
 /* MJC */
 #define	mjc_smi_larb    "mjc_smi_larb"
@@ -1148,6 +1150,8 @@ static struct mtk_gate mm_clks[] __initdata = {
 	GATE(MM_LARB4_AXI_ASIF_MJC_CLOCK, mm_larb4_axi_asif_mjc_clock, mjc_sel, mm1_cg_regs, 7, 0),
 	GATE(MM_DISP_OVL0_MOUT_CLOCK, mm_disp_ovl0_mout_clock, mm_sel, mm1_cg_regs, 8, 0),
 	GATE(MM_FAKE_ENG2, mm_fake_eng2, mm_sel, mm1_cg_regs, 9, 0),
+	GATE(MM_DSI0_INTERFACE_CLOCK, mm_dsi0_interface_clock, clk_null, mm1_cg_regs, 1, 0),
+	GATE(MM_DSI1_INTERFACE_CLOCK, mm_dsi1_interface_clock, clk_null, mm1_cg_regs, 3, 0),
 };
 
 static void __init init_clk_mmsys(void __iomem *mmsys_base, struct clk_onecell_data *clk_data)

@@ -12,18 +12,11 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/cmdq/v2/$(MTK_PLATFORM)/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/lcm/inc/
 endif
 
-#obj-y += mt_pm_init.o
+obj-y += mt_pm_init.o
 obj-y += mt_clkbuf_ctl.o
 #obj-y += mt_dcm.o
-#ifeq ($(strip $(CONFIG_MTK_CLKMGR)),y)
-#obj-y += mt_clkmgr_common_legacy.o
-#obj-$(CONFIG_ARCH_MT6797) += mt_clkmgr_legacy.o
-#obj-$(CONFIG_ARCH_MT6797M) += mt_clkmgr2.o
-#obj-$(CONFIG_ARCH_MT6753) += mt_clkmgr_legacy.o
-#else
-#obj-y += mt_clkmgr_common.o
-#obj-$(CONFIG_ARCH_MT6797) += mt_clkmgr.o
-#endif
+obj-y += mt_clkmgr_common.o
+obj-$(CONFIG_ARCH_MT6797) += mt_clkmgr.o
 #obj-$(CONFIG_ARCH_MT6797) += mt_spm_dpidle.o
 #obj-$(CONFIG_ARCH_MT6797M) += mt_spm_dpidle.o
 #obj-$(CONFIG_ARCH_MT6753) += mt_spm_dpidle.o

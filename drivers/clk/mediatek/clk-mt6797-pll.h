@@ -11,4 +11,4 @@ extern const struct clk_ops mt_clk_mm_pll_ops;
 extern const struct clk_ops mt_clk_univ_pll_ops;
 extern const struct clk_ops mt_clk_aud_pll_ops;
 
-#endif				/* __DRV_CLK_MT6735_PLL_H */
+#endif
