@@ -3,4 +3,3 @@ config MTK_POWER_GS
   default yes
   help
     CONFIG_MTK_POWER_GS
-

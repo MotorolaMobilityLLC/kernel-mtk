@@ -21,7 +21,7 @@ static u16 gs_pmic_read(u16 reg)
 	u32 ret = 0;
 	u32 reg_val = 0;
 
-	ret = pmic_read_interface(reg, &reg_val, 0xFFFF, 0x0);
+	ret = pmic_read_interface_nolock(reg, &reg_val, 0xFFFF, 0x0);
 
 	return (u16)reg_val;
 }
@@ -36,13 +36,15 @@ static void mt_power_gs_compare(char *scenario, char *pmic_name,
 	if (!dbg_buf)
 		return;
 
+	p += sprintf(p, "\nScenario - PMIC - Addr  - Value  - Mask   - Golden - Wrong Bit\n");
+
 	for (i = 0; i < pmic_gs_len && p - dbg_buf < DEBUG_BUF_RANGE ; i += 3) {
 		aee_sram_printk("%d\n", i);
 		val1 = gs_pmic_read(pmic_gs[i]) & pmic_gs[i + 1];
 		val2 = pmic_gs[i + 2] & pmic_gs[i + 1];
 
 		if (val1 != val2) {
-			p += sprintf(p, "%s - %s - 0x%x - 0x%x - 0x%x - 0x%x -",
+			p += sprintf(p, "%s - %s - 0x%x - 0x%04x - 0x%04x - 0x%04x -",
 				     scenario, pmic_name, pmic_gs[i], gs_pmic_read(pmic_gs[i]),
 				     pmic_gs[i + 1], pmic_gs[i + 2]);
 
@@ -61,15 +63,15 @@ static void mt_power_gs_compare(char *scenario, char *pmic_name,
 void mt_power_gs_dump_suspend(void)
 {
 #ifdef CONFIG_ARCH_MT6580
-	mt_power_gs_compare("Suspend", "6325",
+	mt_power_gs_compare("Suspend ", "6325",
 			    MT6325_PMIC_REG_gs_flightmode_suspend_mode,
 			    MT6325_PMIC_REG_gs_flightmode_suspend_mode_len);
 #elif defined CONFIG_ARCH_MT6735 || defined CONFIG_ARCH_MT6735M || defined CONFIG_ARCH_MT6753
-	mt_power_gs_compare("Suspend", "6328",
+	mt_power_gs_compare("Suspend ", "6328",
 			    MT6328_PMIC_REG_gs_flightmode_suspend_mode,
 			    MT6328_PMIC_REG_gs_flightmode_suspend_mode_len);
 #elif defined CONFIG_ARCH_MT6755 || defined CONFIG_ARCH_MT6797
-	mt_power_gs_compare("Suspend", "6351",
+	mt_power_gs_compare("Suspend ", "6351",
 			    MT6351_PMIC_REG_gs_flightmode_suspend_mode,
 			    MT6351_PMIC_REG_gs_flightmode_suspend_mode_len);
 #endif
@@ -79,7 +81,7 @@ EXPORT_SYMBOL(mt_power_gs_dump_suspend);
 void mt_power_gs_dump_dpidle(void)
 {
 #if defined CONFIG_ARCH_MT6755 || defined CONFIG_ARCH_MT6797
-	mt_power_gs_compare("DPIdle", "6351",
+	mt_power_gs_compare("DPIdle  ", "6351",
 			    MT6351_PMIC_REG_gs_early_suspend_deep_idle__mode,
 			    MT6351_PMIC_REG_gs_early_suspend_deep_idle__mode_len);
 #endif
