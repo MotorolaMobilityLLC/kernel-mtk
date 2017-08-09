@@ -28,7 +28,7 @@
 #include <linux/of_address.h>
 #include <linux/of_irq.h>
 #include <linux/irqchip/mtk-gic-extend.h>
-
+#include <linux/io.h>
 
 void __iomem *GIC_DIST_BASE;
 void __iomem *INT_POL_CTL0;
@@ -222,8 +222,11 @@ static int __init mtk_gic_ext_init(void)
 
 	node = of_find_compatible_node(NULL, NULL, "arm,gic-400");
 	if (!node) {
-		pr_err("[gic_ext] find arm,gic-400 node failed\n");
-		return -EINVAL;
+		node = of_find_compatible_node(NULL, NULL, "arm,cortex-a7-gic");
+		if (!node) {
+			pr_err("[gic_ext] find arm,gic node failed\n");
+			return -EINVAL;
+		}
 	}
 
 	GIC_DIST_BASE = of_iomap(node, 0);
@@ -232,7 +235,7 @@ static int __init mtk_gic_ext_init(void)
 
 	node = of_find_compatible_node(NULL, NULL, "mediatek,mt6577-sysirq");
 	if (!node) {
-		pr_err("[gic_ext] find arm,gic-400 node failed\n");
+		pr_err("[gic_ext] find mediatek,mt6577-sysirq node failed\n");
 		return -EINVAL;
 	}
 

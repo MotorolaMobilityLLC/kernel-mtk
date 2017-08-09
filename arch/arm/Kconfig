@@ -987,6 +987,8 @@ config ARCH_MT8127
 	select MFD_SYSCON
 	select CPU_IDLE
 	select ARM_ERRATA_814220
+	select MTK_SYS_CIRQ
+	select MTK_GIC_EXT
 	help
 	  This enable support for MediaTek MT8127
 
