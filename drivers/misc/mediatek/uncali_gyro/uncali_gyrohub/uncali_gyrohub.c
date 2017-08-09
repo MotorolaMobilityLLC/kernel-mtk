@@ -117,9 +117,9 @@ static int uncali_gyro_get_data(int *dat, int *offset, int *status)
 	dat[0] = data.uncalibrated_gyro_t.x - data.uncalibrated_gyro_t.x_bias;
 	dat[1] = data.uncalibrated_gyro_t.y - data.uncalibrated_gyro_t.y_bias;
 	dat[2] = data.uncalibrated_gyro_t.z - data.uncalibrated_gyro_t.z_bias;
-	offset[0] = data.uncalibrated_gyro_t.x_bias;
-	offset[1] = data.uncalibrated_gyro_t.y_bias;
-	offset[2] = data.uncalibrated_gyro_t.z_bias;
+	offset[0] = 0 - data.uncalibrated_gyro_t.x_bias;
+	offset[1] = 0 - data.uncalibrated_gyro_t.y_bias;
+	offset[2] = 0 - data.uncalibrated_gyro_t.z_bias;
 	*status = data.uncalibrated_gyro_t.status;
 	/*UNGYROHUB_ERR("x:%d,y:%d,z:%d,x_bias:%d,ybias:%d,z_bias:%d,status:%d\n", dat[0],
 			dat[1], dat[2], offset[0], offset[1],

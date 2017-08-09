@@ -117,9 +117,9 @@ static int uncali_mag_get_data(int *dat, int *offset, int *status)
 	dat[0] = data.uncalibrated_mag_t.x - data.uncalibrated_mag_t.x_bias;
 	dat[1] = data.uncalibrated_mag_t.y - data.uncalibrated_mag_t.z_bias;
 	dat[2] = data.uncalibrated_mag_t.z - data.uncalibrated_mag_t.z_bias;
-	offset[0] = data.uncalibrated_mag_t.x_bias;
-	offset[1] = data.uncalibrated_mag_t.y_bias;
-	offset[2] = data.uncalibrated_mag_t.z_bias;
+	offset[0] = 0 - data.uncalibrated_mag_t.x_bias;
+	offset[1] = 0 - data.uncalibrated_mag_t.y_bias;
+	offset[2] = 0 - data.uncalibrated_mag_t.z_bias;
 	*status = data.uncalibrated_mag_t.status;
 	return 0;
 }
@@ -161,6 +161,7 @@ static int uncali_maghub_local_init(void)
 	}
 
 	data.get_data = uncali_mag_get_data;
+	data.vender_div = 100;
 	err = uncali_mag_register_data_path(&data);
 	if (err) {
 		UNMAGHUB_ERR("register uncali_mag data path err\n");
