@@ -78,16 +78,21 @@
 #define I2C_CONTROL_WRAPPER             (0x1 << 0)
 
 #define I2C_DRV_NAME		"mt-i2c"
+#define I2CTAG          "[I2C]"
 
 enum DMA_REGS_OFFSET {
 	OFFSET_INT_FLAG = 0x0,
 	OFFSET_INT_EN = 0x04,
 	OFFSET_EN = 0x08,
+	OFFSET_RST = 0x0C,
+	OFFSET_STOP = 0x10,
+	OFFSET_FLUSH = 0x14,
 	OFFSET_CON = 0x18,
-	OFFSET_TX_MEM_ADDR = 0x1c,
+	OFFSET_TX_MEM_ADDR = 0x1C,
 	OFFSET_RX_MEM_ADDR = 0x20,
 	OFFSET_TX_LEN = 0x24,
 	OFFSET_RX_LEN = 0x28,
+	OFFSET_INT_BUF_SIZE = 0x38,
 };
 
 enum i2c_trans_st_rs {
