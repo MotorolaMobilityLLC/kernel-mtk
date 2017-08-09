@@ -31,6 +31,9 @@ static const struct mfd_cell mt6397_devs[] = {
 	}, {
 		.name = "mt6397-pinctrl",
 		.of_compatible = "mediatek,mt6397-pinctrl",
+	},  {
+		.name = "mt6397-codec",
+		.of_compatible = "mediatek,mt6397-codec",
 	},
 };
 
