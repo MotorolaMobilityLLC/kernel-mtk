@@ -217,6 +217,7 @@ config ARCH_MT6753
 	select MTK_SYSTRACKER
 	select MTK_SYS_CIRQ
 	select MTK_EIC
+	select MTK_GIC
 	select ARMV7_COMPAT
 	select ARMV7_COMPAT_CPUINFO
 	select CPU_IDLE
