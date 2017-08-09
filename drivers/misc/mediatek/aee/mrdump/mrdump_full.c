@@ -469,7 +469,8 @@ static int param_set_mrdump_enable(const char *val, const struct kernel_param *k
 
 	res = get_wd_api(&wd_api);
 	if (res < 0) {
-		return pr_alert("wd_ddr_reserved_mode, get wd api error %d\n", res);
+		pr_alert("wd_ddr_reserved_mode, get wd api error %d\n", res);
+		return res;
 	}
 
 	/* Always disable if version not matched...cannot enable manually. */
