@@ -107,6 +107,7 @@ kbase_create_context(struct kbase_device *kbdev, bool is_compat)
 
 	kctx->tgid = current->tgid;
 	kctx->pid = current->pid;
+	sprintf(kctx->process_name, "%s", current->group_leader->comm);
 	init_waitqueue_head(&kctx->event_queue);
 
 	kctx->cookies = KBASE_COOKIE_MASK;

@@ -32,6 +32,13 @@ void kbase_reg_write(struct kbase_device *kbdev, u16 offset, u32 value,
 	KBASE_DEBUG_ASSERT(kbdev->pm.backend.gpu_powered);
 	KBASE_DEBUG_ASSERT(kctx == NULL || kctx->as_nr != KBASEP_AS_NR_INVALID);
 	KBASE_DEBUG_ASSERT(kbdev->dev != NULL);
+
+	if ((offset >= MEMORY_MANAGEMENT_BASE) && (offset <= (MEMORY_MANAGEMENT_BASE+0xFFF))) {
+		kbdev->mmu_reg_trace[0][kbdev->mmu_reg_trace_index] = offset;
+		kbdev->mmu_reg_trace[1][kbdev->mmu_reg_trace_index] = value;
+		kbdev->mmu_reg_trace_index = (kbdev->mmu_reg_trace_index + 1)%TRACE_MMU_REG_COUNT;
+	}
+
 	dev_dbg(kbdev->dev, "w: reg %04x val %08x", offset, value);
 	writel(value, kbdev->reg + offset);
 	if (kctx && kctx->jctx.tb)
@@ -49,6 +56,13 @@ u32 kbase_reg_read(struct kbase_device *kbdev, u16 offset,
 	KBASE_DEBUG_ASSERT(kctx == NULL || kctx->as_nr != KBASEP_AS_NR_INVALID);
 	KBASE_DEBUG_ASSERT(kbdev->dev != NULL);
 	val = readl(kbdev->reg + offset);
+/*
+	if ((offset >= MEMORY_MANAGEMENT_BASE) && (offset <= (MEMORY_MANAGEMENT_BASE+0xFFF))) {
+		kbdev->mmu_reg_trace[0][kbdev->mmu_reg_trace_index] = offset | 0xf0000000;
+		kbdev->mmu_reg_trace[1][kbdev->mmu_reg_trace_index] = val;
+		kbdev->mmu_reg_trace_index = (kbdev->mmu_reg_trace_index + 1)%TRACE_MMU_REG_COUNT;
+	}
+*/
 	dev_dbg(kbdev->dev, "r: reg %04x val %08x", offset, val);
 	if (kctx && kctx->jctx.tb)
 		kbase_device_trace_register_access(kctx, REG_READ, offset, val);
@@ -57,6 +71,13 @@ u32 kbase_reg_read(struct kbase_device *kbdev, u16 offset,
 
 KBASE_EXPORT_TEST_API(kbase_reg_read);
 #endif /* !defined(CONFIG_MALI_NO_MALI) */
+extern bool kbase_debug_gpu_mem_mapping_check_pa(u64 pa);
+void kbasep_gpu_fault_worker(struct work_struct *data)
+{
+	struct gpu_fault_event *event = container_of(data, struct gpu_fault_event, gpu_fault_work);
+	kbase_debug_gpu_mem_mapping_check_pa(event->gpu_fault_address);
+	kfree(event);
+}
 
 /**
  * kbase_report_gpu_fault - Report a GPU fault.
@@ -84,6 +105,13 @@ static void kbase_report_gpu_fault(struct kbase_device *kbdev, int multiple)
 			address);
 	if (multiple)
 		dev_warn(kbdev->dev, "There were multiple GPU faults - some have not been reported\n");
+{
+	struct gpu_fault_event *event;
+	event = kmalloc(sizeof(event), GFP_ATOMIC);
+	event->gpu_fault_address = address;
+	INIT_WORK(&event->gpu_fault_work, kbasep_gpu_fault_worker);
+	queue_work(kbdev->gpu_fault_wq, &event->gpu_fault_work);
+}
 }
 
 void kbase_gpu_interrupt(struct kbase_device *kbdev, u32 val)

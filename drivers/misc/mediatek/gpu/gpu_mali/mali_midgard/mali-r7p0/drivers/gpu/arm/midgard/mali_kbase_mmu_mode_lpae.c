@@ -174,7 +174,7 @@ static void entry_set_pte(u64 *entry, phys_addr_t phy)
 
 static void entry_invalidate(u64 *entry)
 {
-	page_table_entry_set(entry, ENTRY_IS_INVAL);
+	page_table_entry_set(entry, ENTRY_IS_INVAL | ((*entry) & ~0x3));
 }
 
 static struct kbase_mmu_mode const lpae_mode = {

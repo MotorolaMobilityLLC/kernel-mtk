@@ -593,7 +593,7 @@ static void mmu_insert_pages_failure_recovery(struct kbase_context *kctx, u64 vp
 		kunmap_atomic(pgd_page);
 	}
 }
-
+extern bool kbase_debug_gpu_mem_mapping_check_pa(u64 pa);
 /*
  * Map the single page 'phys' 'nr' of times, starting at GPU PFN 'vpfn'
  */
@@ -665,6 +665,9 @@ int kbase_mmu_insert_single_page(struct kbase_context *kctx, u64 vpfn,
 			KBASE_DEBUG_ASSERT(0 == (pgd_page[ofs] & 1UL));
 			kctx->kbdev->mmu_mode->entry_set_ate(&pgd_page[ofs],
 					phys, flags);
+			kctx->map_pa_trace[0][kctx->map_pa_trace_index] = vpfn;
+			kctx->map_pa_trace[1][kctx->map_pa_trace_index] = phys;
+			kctx->map_pa_trace_index = (kctx->map_pa_trace_index+1)%TRACE_MAP_COUNT;
 		}
 
 		vpfn += count;
@@ -756,8 +759,11 @@ int kbase_mmu_insert_pages(struct kbase_context *kctx, u64 vpfn,
 			KBASE_DEBUG_ASSERT(0 == (pgd_page[ofs] & 1UL));
 			kctx->kbdev->mmu_mode->entry_set_ate(&pgd_page[ofs],
 					phys[i], flags);
+			kctx->map_pa_trace[0][kctx->map_pa_trace_index] = vpfn;
+			kctx->map_pa_trace[1][kctx->map_pa_trace_index] = phys[i];
+			kctx->map_pa_trace_index = (kctx->map_pa_trace_index+1)%TRACE_MAP_COUNT;
 		}
-
+		
 		phys += count;
 		vpfn += count;
 		nr -= count;
@@ -774,6 +780,7 @@ int kbase_mmu_insert_pages(struct kbase_context *kctx, u64 vpfn,
 		recover_required = true;
 		recover_count += count;
 	}
+
 	return 0;
 }
 
@@ -904,8 +911,12 @@ int kbase_mmu_teardown_pages(struct kbase_context *kctx, u64 vpfn, size_t nr)
 			return -ENOMEM;
 		}
 
-		for (i = 0; i < count; i++)
+		for (i = 0; i < count; i++) {
+			kctx->unmap_pa_trace[0][kctx->unmap_pa_trace_index] = vpfn;
+			kctx->unmap_pa_trace[1][kctx->unmap_pa_trace_index] = pgd_page[index + i];
+			kctx->unmap_pa_trace_index = (kctx->unmap_pa_trace_index+1)%TRACE_MAP_COUNT;
 			mmu_mode->entry_invalidate(&pgd_page[index + i]);
+		}
 
 		vpfn += count;
 		nr -= count;
@@ -976,9 +987,13 @@ int kbase_mmu_update_pages(struct kbase_context *kctx, u64 vpfn, phys_addr_t *ph
 			return -ENOMEM;
 		}
 
-		for (i = 0; i < count; i++)
+		for (i = 0; i < count; i++) {
 			mmu_mode->entry_set_ate(&pgd_page[index + i], phys[i],
 					flags);
+			kctx->map_pa_trace[0][kctx->map_pa_trace_index] = vpfn;
+			kctx->map_pa_trace[1][kctx->map_pa_trace_index] = phys[i];
+			kctx->map_pa_trace_index = (kctx->map_pa_trace_index+1)%TRACE_MAP_COUNT;
+		}
 
 		phys += count;
 		vpfn += count;
@@ -1781,6 +1796,7 @@ void kbase_mmu_interrupt_process(struct kbase_device *kbdev, struct kbase_contex
 		queue_work(as->pf_wq, &as->work_pagefault);
 		atomic_inc(&kbdev->faults_pending);
 	}
+
 }
 
 void kbase_flush_mmu_wqs(struct kbase_device *kbdev)
