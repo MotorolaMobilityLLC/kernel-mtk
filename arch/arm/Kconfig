@@ -904,6 +904,30 @@ config ARCH_MT6580
 	select MFD_SYSCON
 	help
 	  This enable support for MediaTek MT6580
+
+config ARCH_MT6755
+	bool "MediaTek MT6755"
+	select GENERIC_TIME
+	select GENERIC_CLOCKEVENTS
+	select ARCH_HAS_CPUFREQ
+	select ARM_AMBA
+	select CPU_V7
+	select HAVE_SMP
+	select NEED_MACH_MEMORY_H
+	select IRQ_DOMAIN
+	select IRQ_DOMAIN_DEBUG
+	select GENERIC_SCHED_CLOCK
+	select ARCH_REQUIRE_GPIOLIB
+	select MTK_EIC
+	select ARMV7_COMPAT
+        select ARMV7_COMPAT_CPUINFO
+	select CPU_IDLE
+	select PINCTRL
+	help
+	  This enable support for MediaTek MT6755
+
+
+
 endchoice
 
 menu "Multiple platform selection"
