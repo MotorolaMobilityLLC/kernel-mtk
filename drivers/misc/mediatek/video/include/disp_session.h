@@ -174,7 +174,7 @@ typedef struct disp_session_config_t {
 typedef struct {
 	unsigned int session_id;
 	unsigned int vsync_cnt;
-	long int vsync_ts;
+	unsigned long long vsync_ts;
 	int lcm_fps;
 } disp_session_vsync_config;
 
@@ -287,6 +287,10 @@ typedef struct disp_session_info_t {
 	unsigned int isOVLDisabled;
 	unsigned int is3DSupport;
 	unsigned int const_layer_num;
+	/* updateFPS: fps of HWC trigger display */
+	/* notes: for better Accuracy, updateFPS = real_fps*100 */
+	unsigned int updateFPS;
+	unsigned int is_updateFPS_stable;
 } disp_session_info;
 
 typedef struct disp_buffer_info_t {
@@ -345,6 +349,7 @@ typedef struct disp_caps_t {
 #endif
 	unsigned int disp_feature;
 	int is_support_frame_cfg_ioctl;
+	int is_output_rotated;
 } disp_caps_info;
 
 typedef struct disp_session_buf_t {
