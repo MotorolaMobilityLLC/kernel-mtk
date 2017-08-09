@@ -380,8 +380,11 @@ void rdma_set_ultra_l(unsigned int idx, unsigned int bpp, void *handle, golden_s
 	else
 		fill_rate = 960*mmsysclk*3/16; /* FIFO depth / us  */
 
-	if (idx == 0)
-		consume_rate = rdma_golden_setting->dst_width*rdma_golden_setting->dst_height*frame_rate*bpp/(8*1000);
+	if (idx == 0) {
+		consume_rate = rdma_golden_setting->dst_width * rdma_golden_setting->dst_height;
+		consume_rate /= (8*1000);
+		consume_rate *= frame_rate * bpp;
+	}
 	else
 		consume_rate = rdma_golden_setting->ext_dst_width
 		*rdma_golden_setting->ext_dst_height*frame_rate*bpp/(8*1000);
