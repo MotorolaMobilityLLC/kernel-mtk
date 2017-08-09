@@ -802,6 +802,45 @@ static int _switch_mmsys_clk(int mmsys_clk_old, int mmsys_clk_new)
 	if (mmsys_clk_new == get_mmsys_clk())
 		return ret;
 
+	if (pgc->state == DISP_SLEPT) {
+		DISP_REG_MASK(NULL, DISP_REG_CONFIG_C13, 0x07000000, 0x07000000);	/* clear */
+		DISP_REG_MASK(NULL, DISP_REG_CONFIG_C12, 0x06000000, 0x07000000);	/* set syspll2_d2 */
+
+		DISPMSG("[DISP] DVFS mode=%d, profile=%d, state=0x%x\n", mmsys_clk_new,
+			mmdvfs_get_mmdvfs_profile(), pgc->state);
+		switch (mmsys_clk_new) {
+		case MMSYS_CLK_LOW:
+			DISP_REG_MASK(NULL, DISP_REG_VENCPLL_CON1, 0x830E0000, 0xFFFFFFFF);	/* update */
+			break;
+
+		case MMSYS_CLK_MEDIUM:
+			/* by frequency hopping */
+			goto cpu_d;
+
+		case MMSYS_CLK_HIGH:
+			if (mmdvfs_get_mmdvfs_profile() == MMDVFS_PROFILE_D2_P_PLUS)
+				DISP_REG_MASK(NULL, DISP_REG_VENCPLL_CON1, 0x82110000, 0xFFFFFFFF);	/* update */
+			else if (mmdvfs_get_mmdvfs_profile() == MMDVFS_PROFILE_D2_M_PLUS)
+				DISP_REG_MASK(NULL, DISP_REG_VENCPLL_CON1, 0x820F0000, 0xFFFFFFFF);	/* update */
+			break;
+
+		default:
+			DISPERR("[DISP] DVFS mode=%d\n", mmsys_clk_new);
+			goto cpu_d;
+		}
+
+		udelay(40);
+
+		DISP_REG_MASK(NULL, DISP_REG_CONFIG_C13, 0x07000000, 0x07000000);	/* clear */
+		DISP_REG_MASK(NULL, DISP_REG_CONFIG_C12, 0x01000000, 0x07000000);	/* set vencpll_ck */
+
+cpu_d:
+		/* set rdma golden setting parameters */
+		set_mmsys_clk(mmsys_clk_new);
+
+		return get_mmsys_clk();
+	}
+
 	/* 1.create and reset cmdq */
 	cmdqRecCreate(CMDQ_SCENARIO_PRIMARY_DISP, &handle);
 
@@ -813,7 +852,8 @@ static int _switch_mmsys_clk(int mmsys_clk_old, int mmsys_clk_new)
 	cmdqRecWrite(handle, 0x10210048, 0x07000000, 0x07000000);	/* clear */
 	cmdqRecWrite(handle, 0x10210044, 0x06000000, 0x07000000);	/* set syspll2_d2 */
 
-	DISPMSG("[DISP] DVFS mode=%d, profile=%d\n", mmsys_clk_new, mmdvfs_get_mmdvfs_profile());
+	DISPMSG("[DISP] DVFS mode=%d, profile=%d, state=0x%x\n", mmsys_clk_new,
+		mmdvfs_get_mmdvfs_profile(), pgc->state);
 	switch (mmsys_clk_new) {
 	case MMSYS_CLK_LOW:
 		cmdqRecWrite(handle, 0x10209254, 0x830E0000, 0xFFFFFFFF);	/* update */
