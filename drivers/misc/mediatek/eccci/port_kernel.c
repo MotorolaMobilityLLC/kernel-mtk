@@ -2003,12 +2003,13 @@ static void status_msg_handler(struct ccci_port *port, struct ccci_request *req)
 
 
 	del_timer(&port->modem->md_status_timeout);
-	CCCI_REPEAT_LOG(port->modem->index, KERN,
+	if (port->modem->index == MD_SYS1)
+		CCCI_REPEAT_LOG(port->modem->index, KERN,
 			"modem status info seq=0x%X, cldma_isr=%5lu.%06lu, q0_rx=%5lu.%06lu, rx_done=%5lu.%06lu\n",
-			*(((u32 *) ccci_h) + 2),
-			(unsigned long)ts_nsec1, rem_nsec1 / 1000,
-			(unsigned long)ts_nsec2, rem_nsec2 / 1000,
-			(unsigned long)ts_nsec3, rem_nsec3 / 1000);
+				*(((u32 *) ccci_h) + 2),
+				(unsigned long)ts_nsec1, rem_nsec1 / 1000,
+				(unsigned long)ts_nsec2, rem_nsec2 / 1000,
+				(unsigned long)ts_nsec3, rem_nsec3 / 1000);
 	ccci_util_cmpt_mem_dump(md->index, CCCI_DUMP_REPEAT, req->skb->data, req->skb->len);
 	req->policy = RECYCLE;
 	ccci_free_req(req);

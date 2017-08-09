@@ -71,6 +71,7 @@ struct md_ccif_ctrl {
 	void __iomem *md_boot_slave_Key;
 	void __iomem *md_boot_slave_En;
 
+	struct timer_list traffic_monitor;
 	struct work_struct wdt_work;
 	struct md_hw_info *hw_info;
 };

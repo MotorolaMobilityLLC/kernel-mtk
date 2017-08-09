@@ -61,6 +61,7 @@
 
 #define BOOT_TIMER_ON 10	/*10 */
 #define BOOT_TIMER_HS1 10	/*10 */
+#define CCIF_TRAFFIC_MONITOR_INTERVAL 10
 
 #define NET_RX_QUEUE_MASK 0x4
 #define NAPI_QUEUE_MASK NET_RX_QUEUE_MASK	/*Rx, only Rx-exclusive port can enable NAPI */
@@ -410,18 +411,6 @@ static inline void md_ccif_tx_rx_printk(struct ccci_modem *md, struct sk_buff *s
 	unsigned int dump_len = data_len > 16 ? 16 : data_len;
 
 	switch (ccci_h->channel) {
-	/*debug level*/
-	case CCCI_C2K_AT:
-	case CCCI_C2K_AT2:
-	case CCCI_C2K_AT3:
-	case CCCI_C2K_AT4:
-		if (is_tx)
-			CCCI_DEBUG_LOG(md->index, TAG, "TX:OK on Q%d: %x %x %x %x, seq(%d)\n", qno, ccci_h->data[0],
-				ccci_h->data[1], *(((u32 *) ccci_h) + 2), ccci_h->reserved, ccci_h->seq_num);
-		else
-			CCCI_DEBUG_LOG(md->index, TAG, "Q%d Rx msg %x %x %x %x, seq(%d)\n", qno, ccci_h->data[0],
-				ccci_h->data[1], *(((u32 *) ccci_h) + 2), ccci_h->reserved, ccci_h->seq_num);
-		break;
 	/*info level*/
 	case CCCI_UART1_TX:
 	case CCCI_UART1_RX:
@@ -438,9 +427,50 @@ static inline void md_ccif_tx_rx_printk(struct ccci_modem *md, struct sk_buff *s
 		if (data_len > 0)
 			c2k_mem_dump(skb->data + sizeof(struct ccci_header), dump_len);
 		break;
+	case CCCI_CCMNI1_TX:
+	case CCCI_CCMNI2_TX:
+	case CCCI_CCMNI3_TX:
+		md->logic_ch_pkt_pre_cnt[ccci_h->channel]++;
+		break;
 	default:
 		break;
 	};
+}
+
+static void md_ccif_traffic_monitor_func(unsigned long data)
+{
+	struct ccci_modem *md = (struct ccci_modem *)data;
+	struct md_ccif_ctrl *md_ctrl = (struct md_ccif_ctrl *)md->private_data;
+	struct ccci_port *port;
+	unsigned long long port_full = 0;	/* hardcode, port number should not be larger than 64 */
+	unsigned int i;
+
+	for (i = 0; i < md->port_number; i++) {
+		port = md->ports + i;
+		if (port->flags & PORT_F_RX_FULLED)
+			port_full |= (1 << i);
+		if (port->tx_busy_count != 0 || port->rx_busy_count != 0) {
+			CCCI_REP_MSG(md->index, TAG, "port %s busy count %d/%d\n", port->name,
+				     port->tx_busy_count, port->rx_busy_count);
+			port->tx_busy_count = 0;
+			port->rx_busy_count = 0;
+		}
+		if (port->ops->dump_info)
+			port->ops->dump_info(port, 0);
+	}
+	ccci_channel_dump_packet_counter(md);
+	/*pre_cnt for tx, pkt_cont for rx*/
+	CCCI_REPEAT_LOG(md->index, TAG,
+		"traffic(AT): tx:[%d]%ld, [%d]%ld, [%d]%ld, [%d]%ld rx:[%d]%ld, [%d]%ld, [%d]%ld, [%d]%ld\n",
+		     CCCI_C2K_AT, md->logic_ch_pkt_pre_cnt[CCCI_C2K_AT],
+		     CCCI_C2K_AT2, md->logic_ch_pkt_pre_cnt[CCCI_C2K_AT2],
+		     CCCI_C2K_AT3, md->logic_ch_pkt_pre_cnt[CCCI_C2K_AT3],
+		     CCCI_C2K_AT4, md->logic_ch_pkt_pre_cnt[CCCI_C2K_AT4],
+		     CCCI_C2K_AT, md->logic_ch_pkt_cnt[CCCI_C2K_AT],
+		     CCCI_C2K_AT2, md->logic_ch_pkt_cnt[CCCI_C2K_AT2],
+		     CCCI_C2K_AT3, md->logic_ch_pkt_cnt[CCCI_C2K_AT3],
+		     CCCI_C2K_AT4, md->logic_ch_pkt_cnt[CCCI_C2K_AT4]);
+	mod_timer(&md_ctrl->traffic_monitor, jiffies + CCIF_TRAFFIC_MONITOR_INTERVAL * HZ);
 }
 
 atomic_t lb_dl_q;
@@ -535,6 +565,7 @@ static int ccif_rx_collect(struct md_ccif_queue *queue, int budget,
 				queue->index, *(((u32 *) ccci_h) + 2));
 
 		md_ccif_tx_rx_printk(md, skb, queue->index, 0);
+		ccci_channel_update_packet_counter(md, ccci_h);
 
 		if (ccci_h->channel == CCCI_C2K_LB_DL)
 			atomic_set(&lb_dl_q, queue->index);
@@ -983,6 +1014,7 @@ static int md_ccif_op_start(struct ccci_modem *md)
 	atomic_set(&md_ctrl->reset_on_going, 0);
 	/*5. start timer */
 	mod_timer(&md->bootup_timer, jiffies + BOOT_TIMER_ON * HZ);
+	mod_timer(&md_ctrl->traffic_monitor, jiffies + CCIF_TRAFFIC_MONITOR_INTERVAL * HZ);
 	/*6. let modem go */
 	md->ops->broadcast_state(md, BOOTING);
 	md_ccif_let_md_go(md);
@@ -1010,6 +1042,8 @@ static int md_ccif_op_stop(struct ccci_modem *md, unsigned int timeout)
 		flush_work(&md_ctrl->rxq[idx].qwork);
 
 	CCCI_NORMAL_LOG(md->index, TAG, "ccif flush_work done, %d\n", ret);
+
+	del_timer(&md_ctrl->traffic_monitor);
 	/* clear occupied channel */
 	while (tx_channel < 16) {
 		if (ccif_read32(md_ctrl->ccif_ap_base, APCCIF_BUSY) & (1<<tx_channel))
@@ -1636,6 +1670,10 @@ static int md_ccif_probe(struct platform_device *dev)
 		     (unsigned long)md);
 	INIT_WORK(&md_ctrl->ccif_sram_work, md_ccif_sram_rx_work);
 	INIT_WORK(&md_ctrl->wdt_work, md_ccif_wdt_work);
+	init_timer(&md_ctrl->traffic_monitor);
+	md_ctrl->traffic_monitor.function = md_ccif_traffic_monitor_func;
+	md_ctrl->traffic_monitor.data = (unsigned long)md;
+
 	md_ctrl->channel_id = 0;
 
 	/*register modem */
