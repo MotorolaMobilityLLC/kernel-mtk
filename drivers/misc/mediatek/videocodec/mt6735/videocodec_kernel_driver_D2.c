@@ -58,7 +58,7 @@
 #include "mt_irq.h"
 #endif
 */
-/* #include <mt_smi.h> */
+#include <mt_smi.h>
 #define ENABLE_MMDVFS_VDEC
 #ifdef ENABLE_MMDVFS_VDEC
 /* <--- MM DVFS related */
@@ -67,8 +67,8 @@
 #define MONITOR_DURATION_MS 4000
 
 /* dvfs patch */
-#define MMDVFS_VOLTAGE_LOW 0
-#define MMDVFS_VOLTAGE_HIGH 1
+/* #define MMDVFS_VOLTAGE_LOW 0 */
+/* #define MMDVFS_VOLTAGE_HIGH 1 */
 
 #define DVFS_LOW     MMDVFS_VOLTAGE_LOW
 #define DVFS_HIGH    MMDVFS_VOLTAGE_HIGH
@@ -94,7 +94,7 @@ VAL_UINT32_T TimeDiffMs(VAL_TIME_T timeOld, VAL_TIME_T timeNew)
 }
 
 /* raise/drop voltage */
-#if 1 /* dvfs patch */
+#if 0 /* dvfs patch */
 void SendDvfsRequest(int level)
 {
 }

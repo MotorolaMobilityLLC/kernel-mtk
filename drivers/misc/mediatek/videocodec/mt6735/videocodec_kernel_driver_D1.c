@@ -71,10 +71,11 @@
 #define MODULE_MFV_LOGD(...)
 #endif
 
-/* #define ENABLE_MMDVFS_VDEC */
+#define ENABLE_MMDVFS_VDEC
 #ifdef ENABLE_MMDVFS_VDEC
 /* <--- MM DVFS related */
-/* #include <mt_smi.h> */
+#include <mt_smi.h>
+
 #define DROP_PERCENTAGE     50
 #define RAISE_PERCENTAGE    90
 #define MONITOR_DURATION_MS 4000
