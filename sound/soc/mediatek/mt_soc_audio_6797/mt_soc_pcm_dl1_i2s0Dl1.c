@@ -61,7 +61,7 @@
 
 static DEFINE_SPINLOCK(auddrv_I2S0dl1_lock);
 static AFE_MEM_CONTROL_T *pI2S0dl1MemControl;
-static struct snd_dma_buffer *Dl1I2S0_Playback_dma_buf;
+static struct snd_dma_buffer Dl1I2S0_Playback_dma_buf;
 static unsigned int mPlaybackDramState;
 
 /*
@@ -125,10 +125,17 @@ static int Audio_Irqcnt1_Get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_
 
 static int Audio_Irqcnt1_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
+	pr_debug("%s(), irq_user_id = %p, irq1_cnt = %d, value = %ld\n",
+		__func__,
+		irq_user_id,
+		irq1_cnt,
+		ucontrol->value.integer.value[0]);
+
+	if (irq1_cnt == ucontrol->value.integer.value[0])
+		return 0;
+
 	irq1_cnt = ucontrol->value.integer.value[0];
 
-	pr_debug("%s(), irq_user_id = %p, irq1_cnt = %d\n",
-		__func__, irq_user_id, irq1_cnt);
 	AudDrv_Clk_On();
 	if (irq_user_id && irq1_cnt)
 		irq_update_user(irq_user_id,
@@ -161,8 +168,8 @@ static struct snd_pcm_hardware mtk_I2S0dl1_hardware = {
 	.rate_max =     SOC_HIGH_USE_RATE_MAX,
 	.channels_min =     SOC_NORMAL_USE_CHANNELS_MIN,
 	.channels_max =     SOC_NORMAL_USE_CHANNELS_MAX,
-	.buffer_bytes_max = SOC_NORMAL_USE_BUFFERSIZE_MAX,
-	.period_bytes_max = SOC_NORMAL_USE_BUFFERSIZE_MAX,
+	.buffer_bytes_max = SOC_HIFI_BUFFER_SIZE,
+	.period_bytes_max = SOC_HIFI_BUFFER_SIZE,
 	.periods_min =      SOC_NORMAL_USE_PERIODS_MIN,
 	.periods_max =     SOC_NORMAL_USE_PERIODS_MAX,
 	.fifo_size =        0,
@@ -173,7 +180,7 @@ static int mtk_pcm_I2S0dl1_stop(struct snd_pcm_substream *substream)
 {
 	/* AFE_BLOCK_T *Afe_Block = &(pI2S0dl1MemControl->rBlock); */
 
-	PRINTK_AUDDRV("%s\n", __func__);
+	pr_warn("%s\n", __func__);
 
 	irq_user_id = NULL;
 	irq_remove_user(substream, Soc_Aud_IRQ_MCU_MODE_IRQ1_MCU_MODE);
@@ -286,14 +293,17 @@ static int mtk_pcm_I2S0dl1_hw_params(struct snd_pcm_substream *substream,
 	int ret = 0;
 
 	substream->runtime->dma_bytes = params_buffer_bytes(hw_params);
-	if (AllocateAudioSram(&substream->runtime->dma_addr,	&substream->runtime->dma_area,
-		substream->runtime->dma_bytes, substream) == 0) {
+	if (substream->runtime->dma_bytes <= GetPLaybackSramFullSize() &&
+	    AllocateAudioSram(&substream->runtime->dma_addr,
+			      &substream->runtime->dma_area,
+			      substream->runtime->dma_bytes,
+			      substream) == 0) {
 		AudDrv_Allocate_DL1_Buffer(mDev, substream->runtime->dma_bytes,
 			substream->runtime->dma_addr, substream->runtime->dma_area);
 		SetHighAddr(Soc_Aud_Digital_Block_MEM_DL1, false);
 	} else {
-		substream->runtime->dma_area = Dl1I2S0_Playback_dma_buf->area;
-		substream->runtime->dma_addr = Dl1I2S0_Playback_dma_buf->addr;
+		substream->runtime->dma_area = Dl1I2S0_Playback_dma_buf.area;
+		substream->runtime->dma_addr = Dl1I2S0_Playback_dma_buf.addr;
 		SetHighAddr(Soc_Aud_Digital_Block_MEM_DL1, true);
 		SetDL1Buffer(substream, hw_params);
 		mPlaybackDramState = true;
@@ -315,6 +325,7 @@ static int mtk_pcm_I2S0dl1_hw_free(struct snd_pcm_substream *substream)
 		mPlaybackDramState = false;
 	} else
 		freeAudioSram((void *)substream);
+
 	return 0;
 }
 
@@ -330,8 +341,6 @@ static int mtk_pcm_I2S0dl1_open(struct snd_pcm_substream *substream)
 	struct snd_pcm_runtime *runtime = substream->runtime;
 
 	mPlaybackDramState = false;
-
-	mtk_I2S0dl1_hardware.buffer_bytes_max = GetPLaybackSramFullSize();
 
 	pr_warn("mtk_I2S0dl1_hardware.buffer_bytes_max = %zu mPlaybackDramState = %d\n",
 	       mtk_I2S0dl1_hardware.buffer_bytes_max,
@@ -493,7 +502,7 @@ static int mtk_pcm_I2S0dl1_start(struct snd_pcm_substream *substream)
 {
 	struct snd_pcm_runtime *runtime = substream->runtime;
 
-	PRINTK_AUDDRV("%s\n", __func__);
+	pr_warn("%s\n", __func__);
 	/* here start digital part */
 
 	SetConnection(Soc_Aud_InterCon_Connection, Soc_Aud_InterConnectionInput_I05,
@@ -772,9 +781,16 @@ static int mtk_afe_I2S0dl1_probe(struct snd_soc_platform *platform)
 	snd_soc_add_platform_controls(platform, Audio_snd_I2S0dl1_controls,
 				      ARRAY_SIZE(Audio_snd_I2S0dl1_controls));
 	/* allocate dram */
-	AudDrv_Allocate_mem_Buffer(platform->dev, Soc_Aud_Digital_Block_MEM_DL1,
-				   Dl1_MAX_BUFFER_SIZE);
-	Dl1I2S0_Playback_dma_buf =  Get_Mem_Buffer(Soc_Aud_Digital_Block_MEM_DL1);
+	Dl1I2S0_Playback_dma_buf.area = dma_alloc_coherent(platform->dev,
+						SOC_HIFI_BUFFER_SIZE,
+						&Dl1I2S0_Playback_dma_buf.addr,
+						GFP_KERNEL | GFP_DMA);
+	if (!Dl1I2S0_Playback_dma_buf.area)
+		return -ENOMEM;
+
+	Dl1I2S0_Playback_dma_buf.bytes = SOC_HIFI_BUFFER_SIZE;
+	pr_debug("area = %p\n", Dl1I2S0_Playback_dma_buf.area);
+
 	return 0;
 }
 

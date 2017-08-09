@@ -192,6 +192,7 @@ define for PCM settings
 #define SOC_NORMAL_USE_PERIODS_MAX     16
 #define SOC_NORMAL_USE_BUFFERSIZE_MAX     (48*1024)	/* TODO: KC: need to reserve 4k for md32 */
 
+#define SOC_HIFI_BUFFER_SIZE (128 * 1024)
 
 #define SOC_HIGH_USE_RATE        (SNDRV_PCM_RATE_CONTINUOUS | SNDRV_PCM_RATE_8000_192000)
 #define SOC_HIGH_USE_RATE_MIN        8000
