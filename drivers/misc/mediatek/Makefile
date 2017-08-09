@@ -38,6 +38,7 @@ obj-$(CONFIG_MTK_DRAMC) += dramc/
 obj-$(CONFIG_MTK_SYNC) += sync/
 obj-$(CONFIG_MTK_FREQ_HOPPING) += freqhopping/
 obj-$(CONFIG_MTK_WFD_SUPPORT)  += uibc/
+obj-$(CONFIG_MTK_SECURITY_SW_SUPPORT) +=masp/
 
 ifneq ($(wildcard $(srctree)/drivers/misc/mediatek/met/),)
 obj-$(CONFIG_MTK_MET) += met/
