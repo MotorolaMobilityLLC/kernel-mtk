@@ -9,7 +9,7 @@
 #endif
 
 #include <mt-plat/sync_write.h>
-#include <board-custom.h>
+/*#include <board-custom.h>*/
 #include "disp_assert_layer.h"
 
 #include "ddp_hal.h"
