@@ -11,6 +11,8 @@
 #include <mt_gpufreq.h>
 #include <fan53555.h>
 
+#include "ged_dvfs.h"
+
 //#define MTK_GPU_DPM
 //#define MTK_GPU_SPM
 #define MTK_GPU_APM
@@ -179,6 +181,10 @@ static int pm_callback_power_on(struct kbase_device *kbdev)
 	MFG_write32(MFG_OCP_DCM_CON, 0x1);
 #endif
 
+#ifdef ENABLE_COMMON_DVFS
+    ged_dvfs_gpu_clock_switch_notify(1);
+#endif
+
 	return 1;
 }
 
@@ -207,6 +213,11 @@ static void pm_callback_power_off(struct kbase_device *kbdev)
 	MTKCLK_disable_unprepare(clk_mfg_async);
 
 	mt6797_gpu_set_power(0);
+
+#ifdef ENABLE_COMMON_DVFS
+    ged_dvfs_gpu_clock_switch_notify(0);
+#endif
+
 }
 
 struct kbase_pm_callback_conf pm_callbacks = {
@@ -373,6 +384,8 @@ int mtk_platform_init(struct platform_device *pdev, struct kbase_device *kbdev)
 		dev_err(kbdev->dev, "xxxx dvfs_gpu_dump create fail\n");
 	}
 #endif
+
+        fan53555_config_interface(2, 5, 7, 4); 
 
 	return 0;
 }

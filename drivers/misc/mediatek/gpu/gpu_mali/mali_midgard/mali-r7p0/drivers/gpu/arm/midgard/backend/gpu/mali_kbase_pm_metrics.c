@@ -301,6 +301,8 @@ void MTKCalGpuUtilization(unsigned int* pui32Loading , unsigned int* pui32Block,
 
 	utilisation = kbase_pm_get_dvfs_utilisation_old(kbdev, &util_gl_share,
 			util_cl_share, now);
+
+	kbase_pm_reset_dvfs_utilisation_unlocked(kbdev, now);
 //-------------
 
 	if(pui32Loading)
