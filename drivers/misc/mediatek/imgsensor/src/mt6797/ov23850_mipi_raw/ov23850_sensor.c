@@ -4385,7 +4385,6 @@ static kal_uint32 set_max_framerate_by_scenario(MSDK_SCENARIO_ID_ENUM scenario_i
             //set_dummy();
             break;
         case MSDK_SCENARIO_ID_CAMERA_CAPTURE_JPEG:
-        //case MSDK_SCENARIO_ID_CAMERA_ZSD:
             frameHeight = imgsensor_info.cap.pclk / framerate * 10 / imgsensor_info.cap.linelength;
             spin_lock(&imgsensor_drv_lock);
             imgsensor.dummy_line = frameHeight - imgsensor_info.cap.framelength;

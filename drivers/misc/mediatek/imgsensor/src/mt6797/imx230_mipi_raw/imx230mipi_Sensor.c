@@ -181,7 +181,7 @@ static SENSOR_WINSIZE_INFO_STRUCT imgsensor_winsize_info[5] =
  { 5344, 4016,    0,  568, 5344, 2880, 1280,  720, 0000, 0000, 1280,  720,      0,    0, 1280,  720}, //hight speed video
  { 5344, 4016,    0,  504, 5344, 3006, 1280,  720, 0000, 0000, 1280,  720,      0,    0, 1280,  720}};// slim video
 
- /*VC1 for HDR(DT=0X35) , VC2 for PDAF(DT=0X36), unit : 8bit*/
+ /*VC1 for HDR(DT=0X35) , VC2 for PDAF(DT=0X36), unit : 10bit*/
  static SENSOR_VC_INFO_STRUCT SENSOR_VC_INFO[3]=
  {/* Preview mode setting */
  {0x03, 0x0a,   0x00,   0x08, 0x40, 0x00,

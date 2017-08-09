@@ -33,9 +33,9 @@
 #include "kd_imgsensor_define.h"
 #include "kd_imgsensor_errcode.h"
 
-#include "imx214mipiraw_Sensor.h"
+#include "imx214mipimono_Sensor.h"
 
-#define PFX "IMX214_camera_sensor"
+#define PFX "IMX214_MONO_camera_sensor"
 #define LOG_INF(format, args...)	pr_debug(PFX "[%s] " format, __FUNCTION__, ##args)
 
 static DEFINE_SPINLOCK(imgsensor_drv_lock);
@@ -46,7 +46,7 @@ extern  int iReadData(unsigned int  ui4_offset, unsigned int  ui4_length, unsign
 */
 
 static imgsensor_info_struct imgsensor_info = {
-	.sensor_id = IMX214_SENSOR_ID,
+	.sensor_id = IMX214_MONO_SENSOR_ID,
 
 	.checksum_value =0xc15d2913,
 
@@ -390,7 +390,7 @@ static kal_uint16 read_cmos_sensor(kal_uint32 addr)
 
 #define write_cmos_sensor(addr, para) iWriteReg((u16) addr , (u32) para , 1,  imgsensor.i2c_write_id)
 
-static kal_uint32 imx214_ATR(UINT16 DarkLimit, UINT16 OverExp)
+static kal_uint32 imx214_MONO_ATR(UINT16 DarkLimit, UINT16 OverExp)
 {
     write_cmos_sensor(0x6e50,sensorATR_Info[DarkLimit].DarkLimit_H);
     write_cmos_sensor(0x6e51,sensorATR_Info[DarkLimit].DarkLimit_L);
@@ -1071,7 +1071,7 @@ static void preview_setting_HDR(void)
     //LE/SE ration 1,2,4,8
     write_cmos_sensor(0x0222,0x08);
     //ATR
-    imx214_ATR(3,3);
+    imx214_MONO_ATR(3,3);
 #if 0
     /*
     *   FAE PROVIDIE
@@ -1680,7 +1680,7 @@ static void fullsize_setting_HDR(kal_uint16 currefps)
     //LE/SE ration 1,2,4,8
     write_cmos_sensor(0x0222,0x08);
     //ATR
-    imx214_ATR(3,3);
+    imx214_MONO_ATR(3,3);
 
     // Normal: 0x00, ZigZag: 0x01
     if(imgsensor.ihdr_mode == 9)
@@ -2547,7 +2547,7 @@ static kal_uint32 set_test_pattern_mode(kal_bool enable)
 	return ERROR_NONE;
 }
 
-static kal_uint32 imx214_awb_gain(SET_SENSOR_AWB_GAIN *pSetSensorAWB)
+static kal_uint32 imx214_mono_awb_gain(SET_SENSOR_AWB_GAIN *pSetSensorAWB)
 {
 
     UINT32 rgain_32, grgain_32, gbgain_32, bgain_32;
@@ -2701,7 +2701,7 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
             }
             break;
         case SENSOR_FEATURE_SET_AWB_GAIN:
-            imx214_awb_gain(pSetSensorAWB);
+            imx214_mono_awb_gain(pSetSensorAWB);
             break;
         case SENSOR_FEATURE_SET_HDR_SHUTTER:
             LOG_INF("SENSOR_FEATURE_SET_HDR_SHUTTER LE=%d, SE=%d\n",(UINT16)*feature_data,(UINT16)*(feature_data+1));
@@ -2724,8 +2724,7 @@ static SENSOR_FUNCTION_STRUCT sensor_func = {
 };
 
 //kin0603
-UINT32 IMX214_MIPI_RAW_SensorInit(PSENSOR_FUNCTION_STRUCT *pfFunc)
-//UINT32 IMX214_MIPI_SensorInit(PSENSOR_FUNCTION_STRUCT *pfFunc)
+UINT32 IMX214_MIPI_MONO_SensorInit(PSENSOR_FUNCTION_STRUCT *pfFunc)
 {
 	/* To Do : Check Sensor status here */
 	if (pfFunc!=NULL)
