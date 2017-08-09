@@ -170,7 +170,7 @@ static unsigned int bblpm_cnt;
 static unsigned int g_pmic_cw13_rg_val = PMIC_CW13_DEFAULT_VAL;
 /* FIXME: Before MP, using suggested driving current to test. */
 /* #define TEST_SUGGEST_RF_DRIVING_CURR_BEFORE_MP */
-#define TEST_SUGGEST_PMIC_DRIVING_CURR_BEFORE_MP
+/* #define TEST_SUGGEST_PMIC_DRIVING_CURR_BEFORE_MP */
 
 #if !defined(CONFIG_MTK_LEGACY)
 static unsigned int CLK_BUF1_STATUS, CLK_BUF2_STATUS,
