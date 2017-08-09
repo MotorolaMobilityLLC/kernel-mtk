@@ -1344,7 +1344,7 @@ const struct file_operations m4u_debug_port_fops = {
 	.open = m4u_debug_port_open,
 	.read = seq_read,
 	.llseek = seq_lseek,
-	.release = seq_release,
+	.release = single_release,
 };
 
 int m4u_debug_mva_show(struct seq_file *s, void *unused)
@@ -1362,7 +1362,7 @@ const struct file_operations m4u_debug_mva_fops = {
 	.open = m4u_debug_mva_open,
 	.read = seq_read,
 	.llseek = seq_lseek,
-	.release = seq_release,
+	.release = single_release,
 };
 
 int m4u_debug_buf_show(struct seq_file *s, void *unused)
@@ -1380,7 +1380,7 @@ const struct file_operations m4u_debug_buf_fops = {
 	.open = m4u_debug_buf_open,
 	.read = seq_read,
 	.llseek = seq_lseek,
-	.release = seq_release,
+	.release = single_release,
 };
 
 int m4u_debug_monitor_show(struct seq_file *s, void *unused)
@@ -1398,7 +1398,7 @@ const struct file_operations m4u_debug_monitor_fops = {
 	.open = m4u_debug_monitor_open,
 	.read = seq_read,
 	.llseek = seq_lseek,
-	.release = seq_release,
+	.release = single_release,
 };
 
 int m4u_debug_register_show(struct seq_file *s, void *unused)
@@ -1416,7 +1416,7 @@ const struct file_operations m4u_debug_register_fops = {
 	.open = m4u_debug_register_open,
 	.read = seq_read,
 	.llseek = seq_lseek,
-	.release = seq_release,
+	.release = single_release,
 };
 
 int m4u_debug_init(struct m4u_device *m4u_dev)
