@@ -117,5 +117,5 @@ struct mt_spi_t {
 #endif				/* !defined(CONFIG_MTK_CLKMGR) */
 };
 extern void mt_spi_enable_clk(struct mt_spi_t *ms);
-extern void mt_spi_enable_clk(struct mt_spi_t *ms);
+extern void mt_spi_disable_clk(struct mt_spi_t *ms);
 #endif
