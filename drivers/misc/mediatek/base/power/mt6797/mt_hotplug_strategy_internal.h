@@ -142,6 +142,14 @@ typedef enum {
 	ACTION_ROOT_2_BIG,	/*bit 14, 0x4000 */
 	ACTION_COUNT
 } hps_ctxt_action_e;
+
+typedef enum {
+	HPS_FUNC_CTRL_HPS,	/* bit  0, 0x0001 */
+	HPS_FUNC_CTRL_RUSH,	/* bit  1, 0x0002 */
+	HPS_FUNC_CTRL_HVY_TSK,	/* bit  2, 0x0004 */
+	HPS_FUNC_CTRL_COUNT
+} hps_ctxt_func_ctrl_e;
+
 #define HPS_SYS_CHANGE_ROOT	(0x001)
 struct hps_sys_ops {
 	char *func_name;
@@ -197,6 +205,7 @@ typedef struct hps_ctxt_struct {
 	unsigned int power_mode;
 	unsigned int ppm_power_mode;
 	unsigned int heavy_task_enabled;
+	unsigned int hps_func_control;
 	/* core */
 	struct mutex lock;	/* Synchronizes accesses */
 	struct mutex break_lock;	/* Synchronizes accesses */

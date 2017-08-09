@@ -330,6 +330,22 @@ void hps_define_root_cluster(struct hps_sys_struct *hps_sys)
 	mutex_unlock(&hps_ctxt.para_lock);
 }
 
+void hps_set_funct_ctrl(void)
+{
+	if (!hps_ctxt.enabled)
+		hps_ctxt.hps_func_control &= ~(1 << HPS_FUNC_CTRL_HPS);
+	else
+		hps_ctxt.hps_func_control |= (1 << HPS_FUNC_CTRL_HPS);
+	if (!hps_ctxt.rush_boost_enabled)
+		hps_ctxt.hps_func_control &= ~(1 << HPS_FUNC_CTRL_RUSH);
+	else
+		hps_ctxt.hps_func_control |= (1 << HPS_FUNC_CTRL_RUSH);
+	if (!hps_ctxt.heavy_task_enabled)
+		hps_ctxt.hps_func_control &= ~(1 << HPS_FUNC_CTRL_HVY_TSK);
+	else
+		hps_ctxt.hps_func_control |= (1 << HPS_FUNC_CTRL_HVY_TSK);
+}
+
 void hps_algo_main(void)
 {
 	unsigned int i, val, base_val, action_print, origin_root, action_break;
@@ -343,33 +359,34 @@ void hps_algo_main(void)
 	char *hvytsk_ptr = str_hvytsk;
 	char *target_ptr = str_target;
 	static unsigned int hrtbt_dbg;
+	/* Initial value */
+	base_val = action_print = action_break = hps_sys.total_online_cores = 0;
+	hps_sys.up_load_avg = hps_sys.down_load_avg = hps_sys.tlp_avg = hps_sys.rush_cnt = 0;
+	hps_sys.action_id = origin_root = 0;
+
+
 	/*
 	 * run algo or not by hps_ctxt.enabled
 	 */
-	if (!hps_ctxt.enabled) {
-		atomic_set(&hps_ctxt.is_ondemand, 0);
-		return;
-	}
+	if ((u64) ktime_to_ms(ktime_sub(ktime_get(), hps_ctxt.hps_hrt_ktime)) >= HPS_HRT_DBG_MS)
+		action_print = hrtbt_dbg = 1;
+	else
+		hrtbt_dbg = 0;
+
+	mutex_lock(&hps_ctxt.lock);
+	hps_ctxt.action = ACTION_NONE;
+	atomic_set(&hps_ctxt.is_ondemand, 0);
+
+	if (!hps_ctxt.enabled)
+		goto HPS_END;
 
 	/*
 	 * algo - begin
 	 */
-	mutex_lock(&hps_ctxt.lock);
-	if ((u64) ktime_to_ms(ktime_sub(ktime_get(), hps_ctxt.hps_hrt_ktime)) >= HPS_HRT_DBG_MS)
-		hrtbt_dbg = 1;
-	else
-		hrtbt_dbg = 0;
-
-	hps_ctxt.action = ACTION_NONE;
-	atomic_set(&hps_ctxt.is_ondemand, 0);
-	/* Initial value */
-	base_val = action_print = action_break = hps_sys.total_online_cores = 0;
-	hps_sys.up_load_avg = hps_sys.down_load_avg = hps_sys.tlp_avg = hps_sys.rush_cnt = 0;
-	hps_sys.action_id = 0;
-	/* Calculate base core num and reset data structure */
-	mutex_lock(&hps_ctxt.para_lock);
 
 	/*Back up limit and base value for check */
+
+	mutex_lock(&hps_ctxt.para_lock);
 	for (i = 0; i < hps_sys.cluster_num; i++) {
 		hps_sys.cluster_info[i].base_value = hps_sys.cluster_info[i].ref_base_value;
 		hps_sys.cluster_info[i].limit_value = hps_sys.cluster_info[i].ref_limit_value;
@@ -482,6 +499,7 @@ void hps_algo_main(void)
 		}
 	}
 #endif
+HPS_END:
 	if (action_print || hrtbt_dbg) {
 		int online, target, ref_limit, ref_base, criteria_limit, criteria_base, hvytsk;
 		if (0 == get_efuse_status())
@@ -530,10 +548,12 @@ void hps_algo_main(void)
 		}
 		mutex_unlock(&hps_ctxt.para_lock);
 		if (action_print) {
+			hps_set_funct_ctrl();
 			if (action_break)
 				hps_warn
 				    ("(0x%X)%s action break!! (%u)(%u)(%u) %s %s%s-->%s%s (%u)(%u)(%u)(%u) %s\n",
-				     hps_sys.action_id, str_online, hps_ctxt.cur_loads,
+				     ((hps_ctxt.hps_func_control << 12) | hps_sys.action_id),
+				     str_online, hps_ctxt.cur_loads,
 				     hps_ctxt.cur_tlp, hps_ctxt.cur_iowait, str_hvytsk,
 				     str_criteria_limit, str_criteria_base,
 				     str_ref_limit, str_ref_base,
@@ -543,7 +563,8 @@ void hps_algo_main(void)
 			else {
 				hps_warn
 				    ("(0x%X)%s action end (%u)(%u)(%u) %s %s%s (%u)(%u)(%u)(%u) %s\n",
-				     hps_sys.action_id, str_online, hps_ctxt.cur_loads,
+				     ((hps_ctxt.hps_func_control << 12) | hps_sys.action_id),
+				     str_online, hps_ctxt.cur_loads,
 				     hps_ctxt.cur_tlp, hps_ctxt.cur_iowait, str_hvytsk,
 				     str_criteria_limit, str_criteria_base, hps_sys.up_load_avg,
 				     hps_sys.down_load_avg, hps_sys.tlp_avg, hps_sys.rush_cnt,
@@ -559,13 +580,15 @@ void hps_algo_main(void)
 	}
 #if HPS_HRT_BT_EN
 	if (hrtbt_dbg) {
+		hps_set_funct_ctrl();
 		hps_warn("(0x%X)%s HRT_BT_DBG (%u)(%u)(%u) %s %s%s (%u)(%u)(%u)(%u) %s\n",
-			 hps_sys.action_id, str_online, hps_ctxt.cur_loads, hps_ctxt.cur_tlp,
+			 ((hps_ctxt.hps_func_control << 12) | hps_sys.action_id),
+			 str_online, hps_ctxt.cur_loads, hps_ctxt.cur_tlp,
 			 hps_ctxt.cur_iowait, str_hvytsk, str_criteria_limit,
 			 str_criteria_base, hps_sys.up_load_avg, hps_sys.down_load_avg,
 			 hps_sys.tlp_avg, hps_sys.rush_cnt, str_target);
-		hps_ctxt.hps_hrt_ktime = ktime_get();
 		hrtbt_dbg = 0;
+		hps_ctxt.hps_hrt_ktime = ktime_get();
 	}
 #endif
 	action_print = 0;
