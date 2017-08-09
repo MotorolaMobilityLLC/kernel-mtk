@@ -89,6 +89,9 @@ enum eem_det_id {
 /* TODO: FIXME #include "devinfo.h" */
 extern u32 get_devinfo_with_index(u32 index);
 
+/* Global variabel for Idvfs */
+extern unsigned int infoIdvfs;
+
 #ifdef CONFIG_MTK_RAM_CONSOLE
 	#define CONFIG_EEM_AEE_RR_REC 1
 #endif
