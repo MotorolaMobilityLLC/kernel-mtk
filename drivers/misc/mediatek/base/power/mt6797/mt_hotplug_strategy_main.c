@@ -85,7 +85,7 @@ hps_ctxt_t hps_ctxt = {
 	.state = STATE_LATE_RESUME,
 
 	/* enabled */
-	.enabled = 0,
+	.enabled = 1,
 	.suspend_enabled = 1,
 	.cur_dump_enabled = 0,
 	.stats_dump_enabled = 0,
@@ -557,7 +557,9 @@ static int __init hps_init(void)
 
 	return r;
 }
-module_init(hps_init);
+
+/*module_init(hps_init);*/
+late_initcall(hps_init);
 
 /*
  * module exit function

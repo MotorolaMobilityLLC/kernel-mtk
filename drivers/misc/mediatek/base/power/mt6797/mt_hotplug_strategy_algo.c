@@ -71,7 +71,7 @@ static void hps_algo_do_cluster_action(unsigned int cluster_id)
 	cpu_id_min = hps_sys.cluster_info[cluster_id].cpu_id_min;
 	cpu_id_max = hps_sys.cluster_info[cluster_id].cpu_id_max;
 
-	if (target_cores > online_cores) {	/*Power upcpus */
+	if (target_cores > online_cores) {	/*Power up cpus */
 		for (cpu = cpu_id_min; cpu <= cpu_id_max; ++cpu) {
 			if (!cpu_online(cpu)) {	/* For CPU offline */
 				if (cpu_up(cpu))
@@ -82,7 +82,7 @@ static void hps_algo_do_cluster_action(unsigned int cluster_id)
 				break;
 		}
 
-	} else {		/*Power downcpus */
+	} else {		/*Power down cpus */
 		for (cpu = cpu_id_max; cpu >= cpu_id_min; --cpu) {
 			if (cpu_online(cpu)) {
 				if (cpu_down(cpu))
@@ -132,7 +132,7 @@ int hps_cal_core_num(struct hps_sys_struct *hps_sys, unsigned int core_val, unsi
 	}
 
 	for (i = 0; i < hps_sys->cluster_num; i++) {
-		if (hps_sys->cluster_info[i].is_root == 1)	/* Skip root cluster */
+		if (root_cluster == i)	/* Skip root cluster */
 			continue;
 		for (cpu = hps_sys->cluster_info[i].base_value;
 		     cpu < hps_sys->cluster_info[i].limit_value;
@@ -164,12 +164,14 @@ void hps_define_root_cluster(struct hps_sys_struct *hps_sys)
 void hps_algo_main(void)
 {
 	unsigned int i, val, base_val, action_print, origin_root;
-	char str_online[64], str_criteria_limit[64], str_criteria_base[64], str_target[64];
+	char str_online[64], str_criteria_limit[64], str_criteria_base[64], str_target[64],
+	    str_hvytsk[64];
 	char *online_ptr = str_online;
 	char *criteria_limit_ptr = str_criteria_limit;
 	char *criteria_base_ptr = str_criteria_base;
+	char *hvytsk_ptr = str_hvytsk;
 	char *target_ptr = str_target;
-
+	static unsigned int hrtbt_dbg;
 	/*
 	 * run algo or not by hps_ctxt.enabled
 	 */
@@ -184,7 +186,7 @@ void hps_algo_main(void)
 	mutex_lock(&hps_ctxt.lock);
 	hps_ctxt.action = ACTION_NONE;
 	atomic_set(&hps_ctxt.is_ondemand, 0);
-
+	hrtbt_dbg++;
 	/* Initial value */
 	base_val = action_print = hps_sys.total_online_cores = 0;
 	hps_sys.up_load_avg = hps_sys.down_load_avg = hps_sys.tlp_avg = hps_sys.rush_cnt = 0;
@@ -224,109 +226,6 @@ void hps_algo_main(void)
 	}
 	if (hps_ctxt.stats_dump_enabled)
 		hps_ctxt_print_algo_stats_tlp(0);
-#if 0
-/* ALGO_RUSH_BOOST: */
-	/*
-	 * algo - rush boost
-	 */
-	if (hps_ctxt.rush_boost_enabled) {
-		if (hps_ctxt.cur_loads > hps_ctxt.rush_boost_threshold * hps_sys.total_online_cores)
-			++hps_ctxt.rush_count;
-		else
-			hps_ctxt.rush_count = 0;
-		if (hps_ctxt.rush_boost_times == 1)
-			hps_ctxt.tlp_avg = hps_ctxt.cur_tlp;
-		if ((hps_ctxt.rush_count >= hps_ctxt.rush_boost_times) &&
-		    (hps_sys.total_online_cores * 100 < hps_ctxt.tlp_avg)) {
-			val = hps_ctxt.tlp_avg / 100 + (hps_ctxt.tlp_avg % 100 ? 1 : 0);
-			BUG_ON(!(val > hps_sys.total_online_cores));
-			if (val > num_possible_cpus())
-				val = num_possible_cpus();
-			val -= base_val;
-			hps_sys.tlp_avg = hps_ctxt.tlp_avg;
-			hps_sys.rush_cnt = hps_ctxt.rush_count;
-			hps_cal_core_num(&hps_sys, val, base_val);
-			goto ALGO_END_WITH_ACTION;
-		}
-	}
-
-
-	/* if (hps_ctxt.rush_boost_enabled) */
-	/* ALGO_UP: */
-	/*
-	 * algo - cpu up
-	 */
-	if (hps_sys.total_online_cores < num_possible_cpus()) {
-		/*
-		 * update history - up
-		 */
-		val = hps_ctxt.up_loads_history[hps_ctxt.up_loads_history_index];
-		hps_ctxt.up_loads_history[hps_ctxt.up_loads_history_index] = hps_ctxt.cur_loads;
-		hps_ctxt.up_loads_sum += hps_ctxt.cur_loads;
-		hps_ctxt.up_loads_history_index =
-		    (hps_ctxt.up_loads_history_index + 1 ==
-		     hps_ctxt.up_times) ? 0 : hps_ctxt.up_loads_history_index + 1;
-		++hps_ctxt.up_loads_count;
-		/* XXX: use >= or >, which is benifit? use > */
-		if (hps_ctxt.up_loads_count > hps_ctxt.up_times) {
-			BUG_ON(hps_ctxt.up_loads_sum < val);
-			hps_ctxt.up_loads_sum -= val;
-		}
-		if (hps_ctxt.stats_dump_enabled)
-			hps_ctxt_print_algo_stats_up(0);
-		if (hps_ctxt.up_times == 1)
-			hps_ctxt.up_loads_sum = hps_ctxt.cur_loads;
-		if (hps_ctxt.up_loads_count >= hps_ctxt.up_times) {
-			if (hps_ctxt.up_loads_sum >
-			    hps_ctxt.up_threshold * hps_ctxt.up_times *
-			    hps_sys.total_online_cores) {
-				val = hps_sys.total_online_cores + 1;
-				val -= base_val;
-				hps_sys.up_load_avg = hps_ctxt.up_loads_sum / hps_ctxt.up_times;
-				hps_cal_core_num(&hps_sys, val, base_val);
-				goto ALGO_END_WITH_ACTION;
-			}
-		}		/* if (hps_ctxt.up_loads_count >= hps_ctxt.up_times) */
-	}
-
-/* ALGO_DOWN: */
-	/*
-	 * algo - cpu down (inc. quick landing)
-	 */
-	if (hps_sys.total_online_cores > 1) {
-		/*
-		 * update history - down
-		 */
-		val = hps_ctxt.down_loads_history[hps_ctxt.down_loads_history_index];
-		hps_ctxt.down_loads_history[hps_ctxt.down_loads_history_index] = hps_ctxt.cur_loads;
-		hps_ctxt.down_loads_sum += hps_ctxt.cur_loads;
-		hps_ctxt.down_loads_history_index =
-		    (hps_ctxt.down_loads_history_index + 1 ==
-		     hps_ctxt.down_times) ? 0 : hps_ctxt.down_loads_history_index + 1;
-		++hps_ctxt.down_loads_count;
-		/* XXX: use >= or >, which is benifit? use > */
-		if (hps_ctxt.down_loads_count > hps_ctxt.down_times) {
-			BUG_ON(hps_ctxt.down_loads_sum < val);
-			hps_ctxt.down_loads_sum -= val;
-		}
-		if (hps_ctxt.stats_dump_enabled)
-			hps_ctxt_print_algo_stats_down(0);
-		if (hps_ctxt.down_times == 1)
-			hps_ctxt.down_loads_sum = hps_ctxt.cur_loads;
-		if (hps_ctxt.down_loads_count >= hps_ctxt.down_times) {
-			unsigned int down_threshold = hps_ctxt.down_threshold * hps_ctxt.down_times;
-
-			val = hps_sys.total_online_cores;
-			while (hps_ctxt.down_loads_sum < down_threshold * (val - 1))
-				--val;
-			BUG_ON(val < 0);
-			val -= base_val;
-			hps_sys.down_load_avg = hps_ctxt.down_loads_sum / hps_ctxt.down_times;
-			hps_cal_core_num(&hps_sys, val, base_val);
-			goto ALGO_END_WITH_ACTION;
-		}		/* if (hps_ctxt.down_loads_count >= hps_ctxt.down_times) */
-	}
-#else
 	for (i = 0; i < hps_sys.func_num; i++) {
 		if (hps_sys.hps_sys_ops[i].enabled == 1) {
 			if (hps_sys.hps_sys_ops[i].hps_sys_func_ptr()) {
@@ -335,15 +234,10 @@ void hps_algo_main(void)
 			}
 		}
 	}
-	if (hps_sys.action_id)
-		goto ALGO_END_WITH_ACTION;
-#endif
-	goto ALGO_END_WO_ACTION;
 
 	/*
 	 * algo - end
 	 */
-ALGO_END_WITH_ACTION:
 	/*Base and limit check */
 	hps_check_base_limit(&hps_sys);
 
@@ -368,8 +262,8 @@ ALGO_END_WITH_ACTION:
 		}
 	}
 
-	if (action_print) {
-		int online, target, criteria_limit, criteria_base;
+	if (action_print || hrtbt_dbg >= HPS_HRT_BT_DBG) {
+		int online, target, criteria_limit, criteria_base, hvytsk;
 
 		online = target = criteria_limit = criteria_base = 0;
 		for (i = 0; i < hps_sys.cluster_num; i++) {
@@ -396,21 +290,34 @@ ALGO_END_WITH_ACTION:
 				    hps_sys.cluster_info[i].limit_value);
 			criteria_base =
 			    sprintf(criteria_base_ptr, "(%d)", hps_sys.cluster_info[i].base_value);
+			hvytsk = sprintf(hvytsk_ptr, "(%d)", hps_sys.cluster_info[i].hvyTsk_value);
 
 			online_ptr += online;
 			target_ptr += target;
 			criteria_limit_ptr += criteria_limit;
 			criteria_base_ptr += criteria_base;
+			hvytsk_ptr += hvytsk;
 		}
-		hps_warn("(0x%X)%s action end (%u)(%u)(%u)(%u) %s%s (%u)(%u)(%u)(%u) %s\n",
+		if (action_print) {
+			hps_warn("(0x%X)%s action end (%u)(%u)(%u) %s %s%s (%u)(%u)(%u)(%u) %s\n",
+				 hps_sys.action_id, str_online, hps_ctxt.cur_loads,
+				 hps_ctxt.cur_tlp, hps_ctxt.cur_iowait, str_hvytsk,
+				 str_criteria_limit, str_criteria_base, hps_sys.up_load_avg,
+				 hps_sys.down_load_avg, hps_sys.tlp_avg, hps_sys.rush_cnt,
+				 str_target);
+			hps_ctxt_reset_stas_nolock();
+		}
+	}
+#if HPS_HRT_BT_EN
+	if (hrtbt_dbg >= HPS_HRT_BT_DBG) {
+		hps_warn("(0x%X)%s HRT_BT_DBG (%u)(%u)(%u) %s %s%s (%u)(%u)(%u)(%u) %s\n",
 			 hps_sys.action_id, str_online, hps_ctxt.cur_loads, hps_ctxt.cur_tlp,
-			 hps_ctxt.cur_iowait, hps_ctxt.cur_nr_heavy_task, str_criteria_limit,
+			 hps_ctxt.cur_iowait, str_hvytsk, str_criteria_limit,
 			 str_criteria_base, hps_sys.up_load_avg, hps_sys.down_load_avg,
 			 hps_sys.tlp_avg, hps_sys.rush_cnt, str_target);
+		hrtbt_dbg = 0;
 	}
-	hps_ctxt_reset_stas_nolock();
-
-ALGO_END_WO_ACTION:
+#endif
 	action_print = 0;
 	mutex_unlock(&hps_ctxt.lock);
 }

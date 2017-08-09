@@ -63,6 +63,7 @@ extern int hps_get_num_possible_cpus(unsigned int *little_cpu_ptr, unsigned int 
 extern int hps_get_num_online_cpus(unsigned int *little_cpu_ptr, unsigned int *big_cpu_ptr);
 extern int hps_set_PPM_request(unsigned int little_min, unsigned int little_max,
 			       unsigned int big_min, unsigned int big_max);
+extern unsigned int hps_get_hvytsk(unsigned int cluster_id);
 /*=============================================================*/
 /* End */
 /*=============================================================*/

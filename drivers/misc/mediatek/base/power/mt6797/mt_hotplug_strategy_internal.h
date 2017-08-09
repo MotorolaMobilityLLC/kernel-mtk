@@ -62,6 +62,10 @@
 #define EN_HPS_LOG                          (1)
 #define EN_ISR_LOG                          (0)
 
+#define HPS_HRT_BT_DBG						(75)
+#define HPS_HRT_BT_EN						(1)
+
+#define HPS_BIG_CLUSTER_ID					(2)
 /*
  * LOG
  */
@@ -168,6 +172,7 @@ struct hps_cluster_info {
 	unsigned int limit_value;
 	unsigned int base_value;
 	unsigned int is_root;
+	unsigned int hvyTsk_value;
 	unsigned int online_core_num;
 	unsigned int target_core_num;
 };
@@ -367,7 +372,7 @@ extern int hps_cpu_is_cpu_little(int cpu);
 extern unsigned int hps_cpu_get_percpu_load(int cpu);
 extern unsigned int hps_cpu_get_nr_heavy_task(void);
 extern void hps_cpu_get_tlp(unsigned int *avg, unsigned int *iowait_avg);
-
+extern unsigned int sched_get_nr_heavy_task2(int cluster_id);
 /*=============================================================*/
 /* End */
 /*=============================================================*/

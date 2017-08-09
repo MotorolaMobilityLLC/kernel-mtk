@@ -73,14 +73,24 @@ static long int hps_get_current_time_ms(void)
 	return ((t.tv_sec & 0xFFF) * 1000000 + t.tv_usec) / 1000;
 }
 
+unsigned int hps_get_hvytsk(unsigned int cluster_id)
+{
+	if (cluster_id >= hps_sys.cluster_num)
+		return 0xFFEE;
+	else
+		return hps_sys.cluster_info[cluster_id].hvyTsk_value;
+}
+
+
 static void hps_get_sysinfo(void)
 {
 	unsigned int cpu;
 	char str1[64];
 	char str2[64];
-	int i, j;
+	int i, j, idx;
 	char *str1_ptr = str1;
 	char *str2_ptr = str2;
+
 	/*
 	 * calculate cpu loading
 	 */
@@ -104,7 +114,9 @@ static void hps_get_sysinfo(void)
 	}
 
 	/*Get heavy task information */
-	hps_ctxt.cur_nr_heavy_task = hps_cpu_get_nr_heavy_task();
+	/*hps_ctxt.cur_nr_heavy_task = hps_cpu_get_nr_heavy_task(); */
+	for (idx = 0; idx < hps_sys.cluster_num; idx++)
+		hps_sys.cluster_info[idx].hvyTsk_value = sched_get_nr_heavy_task2(idx);
 
 	/*Get sys TLP information */
 	hps_cpu_get_tlp(&hps_ctxt.cur_tlp, &hps_ctxt.cur_iowait);
@@ -155,8 +167,7 @@ static int _hps_task_main(void *data)
 		/*Get sys status */
 		hps_get_sysinfo();
 
-		mt_ppm_hica_update_algo_data(hps_ctxt.cur_loads, hps_ctxt.cur_nr_heavy_task,
-					     hps_ctxt.cur_tlp);
+		mt_ppm_hica_update_algo_data(hps_ctxt.cur_loads, 0, hps_ctxt.cur_tlp);
 
 		/*Execute PPM main function */
 		mt_ppm_main();

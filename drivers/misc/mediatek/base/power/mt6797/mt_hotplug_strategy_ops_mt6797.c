@@ -38,6 +38,11 @@
 /*============================================================================*/
 /* Local function definition */
 /*============================================================================*/
+
+/*Return value of function*/
+/* return 0 => Break function of HPS  */
+/* return 1 => Need to travel functions of HPS  */
+
 static int cal_base_cores(void)
 {
 	int i, base_val;
@@ -73,10 +78,11 @@ static int hps_algo_rush_boost(void)
 		hps_sys.rush_cnt = hps_ctxt.rush_count;
 		hps_cal_core_num(&hps_sys, val, base_val);
 
+		/*Disable rush boost in big cluster */
+		hps_sys.cluster_info[HPS_BIG_CLUSTER_ID].target_core_num = 0;
 		return 1;
-	}
-
-	return 0;
+	} else
+		return 0;
 }
 
 /*
@@ -112,6 +118,9 @@ static int hps_algo_up(void)
 				val -= base_val;
 				hps_sys.up_load_avg = hps_ctxt.up_loads_sum / hps_ctxt.up_times;
 				hps_cal_core_num(&hps_sys, val, base_val);
+
+				/*Disable operation of in big cluster */
+				hps_sys.cluster_info[HPS_BIG_CLUSTER_ID].target_core_num = 0;
 				return 1;
 			}
 		}		/* if (hps_ctxt.up_loads_count >= hps_ctxt.up_times) */
@@ -153,8 +162,12 @@ static int hps_algo_down(void)
 				--val;
 			BUG_ON(val < 0);
 			val -= base_val;
+
 			hps_sys.down_load_avg = hps_ctxt.down_loads_sum / hps_ctxt.down_times;
 			hps_cal_core_num(&hps_sys, val, base_val);
+
+			/*Disable operation of  big cluster */
+			hps_sys.cluster_info[HPS_BIG_CLUSTER_ID].target_core_num = 0;
 			return 1;
 		}		/* if (hps_ctxt.down_loads_count >= hps_ctxt.down_times) */
 	}
@@ -163,7 +176,30 @@ static int hps_algo_down(void)
 
 static int hps_algo_heavytsk_det(void)
 {
-	return 0;
+	int i, ret;
+
+	i = ret = 0;
+
+	for (i = 0; i < hps_sys.cluster_num; i++) {
+		if (!hps_sys.cluster_info[i].hvyTsk_value)
+			continue;
+		else
+			ret = 1;
+
+		if ((i + 1) < hps_sys.cluster_num) {
+			hps_sys.cluster_info[i + 1].base_value =
+			    max(hps_sys.cluster_info[i + 1].base_value,
+				hps_sys.cluster_info[i].hvyTsk_value);
+		}
+		if (i - 1 >= 0)
+			hps_sys.cluster_info[i].target_core_num =
+			    max(hps_sys.cluster_info[i].online_core_num,
+				hps_sys.cluster_info[i].base_value);
+		else
+			hps_sys.cluster_info[i].target_core_num =
+			    hps_sys.cluster_info[i].online_core_num;
+	}
+	return ret;
 }
 
 static int hps_algo_perf_indicator(void)
