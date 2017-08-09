@@ -97,6 +97,10 @@ static DEFINE_MUTEX(g_mutex);
 static struct pinctrl *flashlight_pinctrl;
 static struct pinctrl_state *flashlight_hwen_high;
 static struct pinctrl_state *flashlight_hwen_low;
+static struct pinctrl_state *flashlight_torch_high;
+static struct pinctrl_state *flashlight_torch_low;
+static struct pinctrl_state *flashlight_flash_high;
+static struct pinctrl_state *flashlight_flash_low;
 
 int flashlight_gpio_init(struct platform_device *pdev)
 {
@@ -111,30 +115,86 @@ int flashlight_gpio_init(struct platform_device *pdev)
 	flashlight_hwen_high = pinctrl_lookup_state(flashlight_pinctrl, "hwen_high");
 	if (IS_ERR(flashlight_hwen_high)) {
 		ret = PTR_ERR(flashlight_hwen_high);
-		logI("%s : pinctrl err, flashlight_hwen_high\n", __func__);
+		logI("%s : init err, flashlight_hwen_high\n", __func__);
 	}
 
 	flashlight_hwen_low = pinctrl_lookup_state(flashlight_pinctrl, "hwen_low");
 	if (IS_ERR(flashlight_hwen_low)) {
 		ret = PTR_ERR(flashlight_hwen_low);
-		logI("%s : pinctrl err, flashlight_hwen_low\n", __func__);
+		logI("%s : init err, flashlight_hwen_low\n", __func__);
 	}
+
+	/* Flashlight TORCH pin initialization */
+	flashlight_torch_high = pinctrl_lookup_state(flashlight_pinctrl, "torch_high");
+	if (IS_ERR(flashlight_torch_high)) {
+		ret = PTR_ERR(flashlight_torch_high);
+		logI("%s : init err, flashlight_torch_high\n", __func__);
+	}
+
+	flashlight_torch_low = pinctrl_lookup_state(flashlight_pinctrl, "torch_low");
+	if (IS_ERR(flashlight_torch_low)) {
+		ret = PTR_ERR(flashlight_torch_low);
+		logI("%s : init err, flashlight_torch_low\n", __func__);
+	}
+
+	/* Flashlight FLASH pin initialization */
+	flashlight_flash_high = pinctrl_lookup_state(flashlight_pinctrl, "flash_high");
+	if (IS_ERR(flashlight_flash_high)) {
+		ret = PTR_ERR(flashlight_flash_high);
+		logI("%s : init err, flashlight_flash_high\n", __func__);
+	}
+
+	flashlight_flash_low = pinctrl_lookup_state(flashlight_pinctrl, "flash_low");
+	if (IS_ERR(flashlight_flash_low)) {
+		ret = PTR_ERR(flashlight_flash_low);
+		logI("%s : init err, flashlight_flash_low\n", __func__);
+	}
+
 	return ret;
 }
 
-int flashlight_gpio_hwen_high(void)
+int flashlight_gpio_set(int pin , int state)
 {
-	if (flashlight_pinctrl == NULL || flashlight_hwen_high == NULL)
-		return 0;
-	return pinctrl_select_state(flashlight_pinctrl, flashlight_hwen_high);
+	int ret = 0;
+
+	if (IS_ERR(flashlight_pinctrl)) {
+		logI("%s : set err, flashlight_pinctrl not available\n", __func__);
+		return -1;
+	}
+
+	switch (pin) {
+	case FLASHLIGHT_PIN_HWEN:
+		if (state == STATE_LOW && !IS_ERR(flashlight_hwen_low))
+			pinctrl_select_state(flashlight_pinctrl, flashlight_hwen_low);
+		else if (state == STATE_HIGH && !IS_ERR(flashlight_hwen_high))
+			pinctrl_select_state(flashlight_pinctrl, flashlight_hwen_high);
+		else
+			logI("%s : set err, pin(%d) state(%d)\n", __func__, pin, state);
+		break;
+	case FLASHLIGHT_PIN_TORCH:
+		if (state == STATE_LOW && !IS_ERR(flashlight_torch_low))
+			pinctrl_select_state(flashlight_pinctrl, flashlight_torch_low);
+		else if (state == STATE_HIGH && !IS_ERR(flashlight_torch_high))
+			pinctrl_select_state(flashlight_pinctrl, flashlight_torch_high);
+		else
+			logI("%s : set err, pin(%d) state(%d)\n", __func__, pin, state);
+		break;
+	case FLASHLIGHT_PIN_FLASH:
+		if (state == STATE_LOW && !IS_ERR(flashlight_flash_low))
+			pinctrl_select_state(flashlight_pinctrl, flashlight_flash_low);
+		else if (state == STATE_HIGH && !IS_ERR(flashlight_flash_high))
+			pinctrl_select_state(flashlight_pinctrl, flashlight_flash_high);
+		else
+			logI("%s : set err, pin(%d) state(%d)\n", __func__, pin, state);
+		break;
+	default:
+			logI("%s : set err, pin(%d) state(%d)\n", __func__, pin, state);
+		break;
+	}
+	logI("%s : pin(%d) state(%d)\n", __func__, pin, state);
+	return ret;
 }
 
-int flashlight_gpio_hwen_low(void)
-{
-	if (flashlight_pinctrl == NULL || flashlight_hwen_low == NULL)
-		return 0;
-	return pinctrl_select_state(flashlight_pinctrl, flashlight_hwen_low);
-}
 /* ============================== */
 /* functions */
 /* ============================== */
@@ -817,7 +877,7 @@ static void flashlight_shutdown(struct platform_device *dev)
 
 #ifdef CONFIG_OF
 static const struct of_device_id FLASHLIGHT_of_match[] = {
-	{.compatible = "mediatek,camera_flashlight"},
+	{.compatible = "mediatek,mt6797-flashlight"},
 	{},
 };
 #endif

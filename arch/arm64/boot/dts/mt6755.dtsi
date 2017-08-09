@@ -2451,6 +2451,10 @@
 			compatible = "mediatek,battery";
 		};
 
+		flashlight: flashlight {
+			compatible = "mediatek,mt6755-flashlight";
+		};
+
 		bat_metter {
 			compatible = "mediatek,bat_meter";
 			/* cust_charging.h */

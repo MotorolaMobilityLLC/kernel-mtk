@@ -401,15 +401,7 @@ int init_lm3643(void)
 	int ret;
 	char buf[2];
 
-/*
-	if(mt_set_gpio_mode(FLASH_GPIO_EN,GPIO_MODE_00))
-		PK_DBG("[constant_flashlight] set gpio mode failed!!\n");
-	if(mt_set_gpio_dir(FLASH_GPIO_EN,GPIO_DIR_OUT))
-		PK_DBG("[constant_flashlight] set gpio dir failed!!\n");
-	if(mt_set_gpio_out(FLASH_GPIO_EN,GPIO_OUT_ONE))
-		PK_DBG("[constant_flashlight] set gpio failed!!\n");
-*/
-	flashlight_gpio_hwen_high();
+	flashlight_gpio_set(FLASHLIGHT_PIN_HWEN, STATE_HIGH);
 
 	buf[0] = 0x01; /* Enable Register */
 	buf[1] = 0x00;
@@ -459,10 +451,7 @@ int FL_Init(void)
 int FL_Uninit(void)
 {
 	FL_Disable();
-/*
-	mt_set_gpio_out(FLASH_GPIO_EN,GPIO_OUT_ZERO);
-*/
-	flashlight_gpio_hwen_low();
+	flashlight_gpio_set(FLASHLIGHT_PIN_HWEN, STATE_LOW);
 	return 0;
 }
 

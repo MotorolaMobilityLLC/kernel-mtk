@@ -4004,7 +4004,7 @@
 		};
 
 		flashlight: flashlight@ {
-			compatible = "mediatek,camera_flashlight";
+			compatible = "mediatek,mt6797-flashlight";
 		};
 
 		gps {
