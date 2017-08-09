@@ -221,9 +221,6 @@ static INT32 _stp_btm_handler(MTKSTP_BTM_T *stp_btm, P_STP_BTM_OP pStpOp)
 
 		/*whole chip reset */
 	case STP_OPID_BTM_RST:
-		/* Flush dump data, and reset compressor */
-		STP_BTM_INFO_FUNC("Flush dump data\n");
-		wcn_core_dump_flush(0);
 		STP_BTM_INFO_FUNC("whole chip reset start!\n");
 		STP_BTM_INFO_FUNC("....+\n");
 		if (stp_btm->wmt_notify) {
