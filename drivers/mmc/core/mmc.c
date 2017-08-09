@@ -1303,6 +1303,21 @@ static int mmc_init_card(struct mmc_host *host, u32 ocr,
 	if (err)
 		goto err;
 
+#ifdef CONFIG_MMC_FFU
+	if (oldcard && (oldcard->state & MMC_STATE_FFUED)) {
+		/* After FFU, some fields in CID may change,
+		   so just copy new CID into card->raw_cid */
+		memcpy((void *)oldcard->raw_cid, (void *)cid, sizeof(cid));
+		err = mmc_decode_cid(oldcard);
+		if (err)
+			goto free_card;
+
+		card = oldcard;
+		card->nr_parts = 0;
+		oldcard = NULL;
+
+	} else
+#endif
 	if (oldcard) {
 		if (memcmp(cid, oldcard->raw_cid, sizeof(cid)) != 0) {
 			err = -ENOENT;
@@ -1594,6 +1609,13 @@ err:
 
 	return err;
 }
+
+#ifdef CONFIG_MMC_FFU
+int mmc_reinit_oldcard(struct mmc_host *host)
+{
+	return mmc_init_card(host, host->card->ocr, host->card);
+}
+#endif
 
 static int mmc_can_sleep(struct mmc_card *card)
 {

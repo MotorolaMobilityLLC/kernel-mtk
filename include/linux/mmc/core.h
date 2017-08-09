@@ -202,6 +202,10 @@ extern int mmc_flush_cache(struct mmc_card *);
 
 extern int mmc_detect_card_removed(struct mmc_host *host);
 
+#if defined(CONFIG_MMC_FFU)
+extern int mmc_reinit_oldcard(struct mmc_host *host);
+#endif
+
 /**
  *	mmc_claim_host - exclusively claim a host
  *	@host: mmc host to claim

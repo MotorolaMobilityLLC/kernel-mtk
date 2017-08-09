@@ -314,6 +314,9 @@ struct mmc_card {
 #ifdef MTK_BKOPS_IDLE_MAYA	/* maya is 1<<11 */
 #define MMC_STATE_NEED_BKOPS	(1<<12)	/* card needs to do BKOPS */
 #endif
+#ifdef CONFIG_MMC_FFU
+#define MMC_STATE_FFUED         (1<<22)     /* card has been FFUed */
+#endif
 #define MMC_STATE_SUSPENDED	(1<<6)		/* card is suspended */
 #define MMC_STATE_SLEEP     (1<<9)      /*card is sleep */
 	unsigned int		quirks; 	/* card quirks */
