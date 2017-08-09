@@ -497,6 +497,7 @@ static unsigned int ctrl_EEM_Enable = 1;
 static unsigned int ctrl_EEM_Enable = 1;
 #endif
 static unsigned int ctrl_ITurbo = 0, ITurboRun;
+static unsigned int ITurbo_offset[16];
 static int eem_log_en;
 static int isGPUDCBDETOverflow, is2LDCBDETOverflow, isLDCBDETOverflow, isCCIDCBDETOverflow;
 
@@ -575,6 +576,7 @@ static void eem_restore_eem_volt(struct eem_det *det);
 /* CPU */
 #define CPU_PMIC_BASE	(30000) /* 45000 for MT6313 */
 #define CPU_PMIC_STEP	(1000) /* 625 for MT6313 */
+#define MAX_ITURBO_OFFSET	(3000) /* 30mV */
 
 /* GPU */
 #define GPU_PMIC_BASE	(60300)
@@ -2072,6 +2074,10 @@ static void get_freq_table_cpu(struct eem_det *det)
 					det->max_freq_khz);
 		}
 		/* eem_debug("Timer Bank = %d, freq_procent = (%d)\n", det->ctrl_id, det->freq_tbl[i]); */
+		if ((det_to_id(det) == EEM_DET_L) && (1 == ctrl_ITurbo))
+			ITurbo_offset[i] = det->ops->volt_2_eem(det, MAX_ITURBO_OFFSET + det->eem_v_base) *
+						(det->freq_tbl[i] - det->freq_tbl[NR_FREQ]) /
+						(det->freq_tbl[0] - det->freq_tbl[NR_FREQ]);
 		if (0 == det->freq_tbl[i])
 			break;
 	}
@@ -2704,7 +2710,7 @@ static void eem_init_det(struct eem_det *det, struct eem_devinfo *devinfo)
 static void eem_set_eem_volt(struct eem_det *det)
 {
 #if SET_PMIC_VOLT
-	unsigned i;
+	unsigned i, ITurboRunSet = 0;
 	int cur_temp, low_temp_offset;
 	struct eem_ctrl *ctrl = id_to_eem_ctrl(det->ctrl_id);
 
@@ -2717,8 +2723,13 @@ static void eem_set_eem_volt(struct eem_det *det)
 		else
 			low_temp_offset = det->ops->volt_2_eem(det, 6250 + det->eem_v_base);
 
+		if ((EEM_CTRL_L == det->ctrl_id) && (1 == ITurboRun))
+			ITurboRunSet = 0;
+
 		ctrl->volt_update |= EEM_VOLT_UPDATE;
 	} else {
+		if ((EEM_CTRL_L == det->ctrl_id) && (1 == ITurboRun))
+			ITurboRunSet = 1;
 		low_temp_offset = 0;
 		ctrl->volt_update |= EEM_VOLT_UPDATE;
 	}
@@ -2753,11 +2764,20 @@ static void eem_set_eem_volt(struct eem_det *det)
 			min(
 			(unsigned int)(clamp(
 				det->ops->eem_2_pmic(det,
-					(det->volt_tbl[i] + det->volt_offset + low_temp_offset)) + det->pi_offset,
+					(det->volt_tbl[i] + det->volt_offset + low_temp_offset -
+						((1 == ITurboRunSet) ? ITurbo_offset[i] : 0))) +
+					det->pi_offset,
 				det->ops->eem_2_pmic(det, det->VMIN),
 				det->ops->eem_2_pmic(det, det->VMAX))),
 			(unsigned int)(*(recordTbl + ((i + 16) * 8) + 7) & 0x7F)
 			);
+
+			if (eem_log_en)
+				eem_error("L->hw_v[%d]=0x%X, V(%d)L(%d)I(%d)P(%d) volt_tbl_pmic[%d]=0x%X (%d)\n",
+					i, det->volt_tbl[i],
+					det->volt_offset, low_temp_offset, ITurbo_offset[i], det->pi_offset,
+					i, det->volt_tbl_pmic[i], det->ops->pmic_2_volt(det, det->volt_tbl_pmic[i]));
+
 			break;
 
 		case EEM_CTRL_2L:
@@ -3706,7 +3726,7 @@ static int __cpuinit _mt_eem_cpu_CB(struct notifier_block *nfb,
 						eem_error("ITurbo(1) L_cc(%d)\n", cpus);
 						ITurboRun = 1;
 						mt_ptp_lock(&flags);
-						/* eem_set_eem_volt(det); */
+						eem_set_eem_volt(det);
 						mt_ptp_unlock(&flags);
 					} else {
 						eem_debug("ITurbo(1)ed L_cc(%d)\n", cpus);
@@ -3720,7 +3740,7 @@ static int __cpuinit _mt_eem_cpu_CB(struct notifier_block *nfb,
 					eem_error("ITurbo(0) ->(%d), c(%d), cc(%d)\n", online_cpus, cluster_id, cpus);
 				ITurboRun = 0;
 				mt_ptp_lock(&flags);
-				/* eem_set_eem_volt(det); */
+				eem_set_eem_volt(det);
 				mt_ptp_unlock(&flags);
 			} else {
 				if (eem_log_en)
@@ -3974,7 +3994,7 @@ void get_devinfo(struct eem_devinfo *p)
 	val[2] = 0x187E3D12; /* 0x18A73D12 */
 	val[3] = 0x00560003;
 	val[4] = 0x187E6103; /* 0x18A46103 */
-	val[5] = 0x00450003;
+	val[5] = 0x00450013;
 	val[6] = 0x187E5E06; /* 0x18A25E06 */
 	val[7] = 0x00450003;
 	val[8] = 0x187E6004; /* 0x18A56004 */
@@ -4775,8 +4795,12 @@ out:
 
 static int eem_iturbo_en_proc_show(struct seq_file *m, void *v)
 {
+	int i;
+
 	FUNC_ENTER(FUNC_LV_HELP);
 	seq_printf(m, "%s\n", ((ctrl_ITurbo) ? "Enable" : "Disable"));
+	for (i = 0; i < NR_FREQ; i++)
+		seq_printf(m, "ITurbo_offset[%d] = %d (0.00625 per step)\n", i, ITurbo_offset[i]);
 	FUNC_EXIT(FUNC_LV_HELP);
 
 	return 0;
@@ -5489,6 +5513,9 @@ int __init eem_init(void)
 		FUNC_EXIT(FUNC_LV_MODULE);
 		return 0;
 	}
+
+	/* Read E-Fuse to control ITurbo mode */
+	ctrl_ITurbo = eem_devinfo.CPU_L_TURBO;
 
 #ifdef __KERNEL__
 	/*
