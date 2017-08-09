@@ -918,7 +918,7 @@ static int set_hrt_bound(void)
 	if (primary_display_get_lcm_refresh_rate() == 120) {
 		emi_lower_bound = OD_EMI_LOWER_BOUND;
 		emi_upper_bound = OD_EMI_UPPER_BOUND;
-		larb_upper_bound = OD_LARB_LOWER_BOUND;
+		larb_lower_bound = OD_LARB_LOWER_BOUND;
 		larb_upper_bound = OD_LARB_UPPER_BOUND;
 #ifdef HRT_DEBUG
 		DISPMSG("120hz hrt bound\n");
