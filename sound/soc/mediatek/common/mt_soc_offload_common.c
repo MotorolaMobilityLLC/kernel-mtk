@@ -483,23 +483,30 @@ static void mtk_compr_offload_drain(bool enable, int draintype)
 
 static int mtk_compr_offload_open(void)
 {
+	afe_offload_block.buf.u4BufferSize = 0;
+#ifdef CONFIG_MTK_TINYSYS_SCP_SUPPORT
 	scp_reserve_mblock_t MP3DRAM;
 
 	memset(&MP3DRAM, 0, sizeof(MP3DRAM));
 	MP3DRAM.num = MP3_MEM_ID;
-	/* 1. Get DRAM */
-	afe_offload_block.buf.u4BufferSize = 0;
-#ifdef CONFIG_MTK_TINYSYS_SCP_SUPPORT
 	p_resv_dram = get_reserved_dram();
 	MP3DRAM.start_phys = get_reserve_mem_phys(MP3DRAM.num);
 	MP3DRAM.start_virt = get_reserve_mem_virt(MP3DRAM.num);
 	MP3DRAM.size = get_reserve_mem_size(MP3DRAM.num) - RESERVE_DRAMPLAYBACKSIZE;
-#endif
-	irq7_user = false;
-	mPlaybackDramState = false;
 	afe_offload_block.buf.pucPhysBufAddr = (kal_uint32)MP3DRAM.start_phys;
 	afe_offload_block.buf.pucVirtBufAddr = (kal_uint8 *) MP3DRAM.start_virt;
 	afe_offload_block.buf.u4BufferSize = (kal_uint32)MP3DRAM.size;
+#else
+	afe_offload_block.buf.pucVirtBufAddr = dma_alloc_coherent(&offloaddev,
+		(OFFLOAD_SIZE_BYTES), &afe_offload_block.buf.pucPhysBufAddr,
+		GFP_KERNEL);
+	if (afe_offload_block.buf.pucVirtBufAddr != NULL)
+		afe_offload_block.buf.u4BufferSize = (kal_uint32)OFFLOAD_SIZE_BYTES;
+	else
+		return -1;
+#endif
+	irq7_user = false;
+	mPlaybackDramState = false;
 	memset_io((void *)afe_offload_block.buf.pucVirtBufAddr, 0,
 		  afe_offload_block.buf.u4BufferSize);
 	afe_offload_block.hw_buffer_size = GetPLaybackSramFullSize();

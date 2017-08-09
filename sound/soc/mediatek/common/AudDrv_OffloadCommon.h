@@ -60,7 +60,9 @@
 
 #include <sound/compress_driver.h>
 #include <sound/pcm.h>
+#ifdef CONFIG_MTK_TINYSYS_SCP_SUPPORT
 #include "scp_helper.h"
+#endif
 /***********************************************************************************
 ** OFFLOAD Service Control Message
 ************************************************************************************/
@@ -110,12 +112,12 @@ struct OFFLOAD_TIMESTAMP_T {
 	kal_uint32 pcm_io_frames;
 	kal_uint32 sampling_rate;
 };
-
+#ifdef CONFIG_COMPAT
 typedef struct {
 	compat_uptr_t tmpBuffer;
 	compat_uint_t  bytes;
 } OFFLOAD_WRITE_KERNEL_T;
-
+#endif
 typedef struct {
 	void	*tmpBuffer;
 	unsigned int  bytes;
@@ -184,7 +186,9 @@ void OffloadService_SetDrainCbk(void (*setDrain)(bool enable, int draintype));
 void OffloadService_SetDrain(bool enable, int draintype);
 int OffloadService_Write(void __user *param);
 int OffloadService_CopyDatatoRAM(void __user *buf, size_t count);
+#ifdef CONFIG_MTK_TINYSYS_SCP_SUPPORT
 extern phys_addr_t get_reserve_mem_phys(scp_reserve_mem_id_t id);
 extern phys_addr_t get_reserve_mem_virt(scp_reserve_mem_id_t id);
 extern phys_addr_t get_reserve_mem_size(scp_reserve_mem_id_t id);
+#endif
 #endif
