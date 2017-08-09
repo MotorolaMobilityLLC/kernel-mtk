@@ -27,7 +27,6 @@
 #include <mt-plat/sync_write.h>
 #include <mt_spm.h>
 #include <mach/mt_clkmgr.h>
-#include <mt_spm_sleep.h>
 /* #include <mach/mt_gpio.h> */
 /* #include <mach/mt_gpio_core.h> */
 #include <mt_clkbuf_ctl.h>
@@ -38,7 +37,11 @@
 #define clk_buf_err(fmt, args...)		pr_err(TAG fmt, ##args)
 #define clk_buf_warn(fmt, args...)		pr_warn(TAG fmt, ##args)
 #define clk_buf_warn_limit(fmt, args...)	pr_warn_ratelimited(TAG fmt, ##args)
-#define clk_buf_dbg(fmt, args...)		pr_debug(TAG fmt, ##args)
+#define clk_buf_dbg(fmt, args...)			\
+	do {						\
+		if (clkbuf_debug)			\
+			pr_warn(TAG fmt, ##args);	\
+	} while (0)
 
 /*
  * LOCK
@@ -122,6 +125,10 @@ static void __iomem *pwrap_base;
 /* FIXME: only for bring up Co-TSX before DT is ready */
 /* #define CLKBUF_COTSX_BRINGUP */
 
+static bool is_clkbuf_initiated;
+static bool g_is_flightmode_on;
+static bool clkbuf_debug;
+
 /* false: rf_clkbuf, true: pmic_clkbuf */
 static bool is_pmic_clkbuf;
 
@@ -168,6 +175,13 @@ static CLK_BUF_SWCTRL_STATUS_T  clk_buf_swctrl[CLKBUF_NUM] = {
 	CLK_BUF_SW_DISABLE
 #endif
 };
+
+static CLK_BUF_SWCTRL_STATUS_T  clk_buf_swctrl_modem_on[CLKBUF_NUM] = {
+	CLK_BUF_SW_ENABLE,
+	CLK_BUF_SW_DISABLE,
+	CLK_BUF_SW_ENABLE,
+	CLK_BUF_SW_ENABLE
+};
 #else /* For Bring-up */
 static CLK_BUF_SWCTRL_STATUS_T  clk_buf_swctrl[CLKBUF_NUM] = {
 	CLK_BUF_SW_ENABLE,
@@ -175,6 +189,14 @@ static CLK_BUF_SWCTRL_STATUS_T  clk_buf_swctrl[CLKBUF_NUM] = {
 	CLK_BUF_SW_ENABLE,
 	CLK_BUF_SW_ENABLE
 };
+
+static CLK_BUF_SWCTRL_STATUS_T  clk_buf_swctrl_modem_on[CLKBUF_NUM] = {
+	CLK_BUF_SW_ENABLE,
+	CLK_BUF_SW_ENABLE,
+	CLK_BUF_SW_ENABLE,
+	CLK_BUF_SW_ENABLE
+};
+
 #endif
 
 static CLK_BUF_SWCTRL_STATUS_T  pmic_clk_buf_swctrl[CLKBUF_NUM] = {
@@ -190,8 +212,6 @@ static void spm_clk_buf_ctrl(CLK_BUF_SWCTRL_STATUS_T *status)
 	u32 spm_val;
 	int i;
 
-	spm_ap_mdsrc_req(1);
-
 	spm_val = spm_read(SPM_MDBSI_CON) & ~0x7;
 
 	for (i = 1; i < CLKBUF_NUM; i++)
@@ -200,8 +220,6 @@ static void spm_clk_buf_ctrl(CLK_BUF_SWCTRL_STATUS_T *status)
 	spm_write(SPM_MDBSI_CON, spm_val);
 
 	udelay(2);
-
-	spm_ap_mdsrc_req(0);
 #endif
 }
 
@@ -226,6 +244,28 @@ static void pmic_clk_buf_ctrl(CLK_BUF_SWCTRL_STATUS_T *status)
 		     status[PMIC_CLK_BUF_CONN],
 		     status[PMIC_CLK_BUF_NFC]);
 #endif /*everest early porting*/
+}
+
+/* for spm driver use */
+bool is_clk_buf_under_flightmode(void)
+{
+	return g_is_flightmode_on;
+}
+
+/* for ccci driver to notify this */
+void clk_buf_set_by_flightmode(bool is_flightmode_on)
+{
+	mutex_lock(&clk_buf_ctrl_lock);
+
+	g_is_flightmode_on = is_flightmode_on;
+	clk_buf_warn("%s: is_flightmode_on=%d\n", __func__, g_is_flightmode_on);
+
+	if (g_is_flightmode_on)
+		spm_clk_buf_ctrl(clk_buf_swctrl);
+	else
+		spm_clk_buf_ctrl(clk_buf_swctrl_modem_on);
+
+	mutex_unlock(&clk_buf_ctrl_lock);
 }
 
 bool clk_buf_ctrl(enum clk_buf_id id, bool onoff)
@@ -253,12 +293,15 @@ bool clk_buf_ctrl(enum clk_buf_id id, bool onoff)
 	clk_buf_warn("clk_buf_ctrl is disabled for bring-up\n");
 	return false;
 #else
+	clk_buf_dbg("%s: id=%d, onoff=%d, is_flightmode_on=%d\n", __func__,
+		     id, onoff, g_is_flightmode_on);
 
 	mutex_lock(&clk_buf_ctrl_lock);
 
 	clk_buf_swctrl[id] = onoff;
 
-	spm_clk_buf_ctrl(clk_buf_swctrl);
+	if (g_is_flightmode_on)
+		spm_clk_buf_ctrl(clk_buf_swctrl);
 
 	mutex_unlock(&clk_buf_ctrl_lock);
 
@@ -269,8 +312,18 @@ bool clk_buf_ctrl(enum clk_buf_id id, bool onoff)
 void clk_buf_get_swctrl_status(CLK_BUF_SWCTRL_STATUS_T *status)
 {
 	int i;
-	for (i = 0; i < CLKBUF_NUM; i++)
-		status[i] = clk_buf_swctrl[i];
+
+	clk_buf_warn("%s: is_flightmode_on=%d, swctrl:clkbuf3=%d/%d, clkbuf4=%d/%d\n",
+		     __func__, g_is_flightmode_on,
+		     clk_buf_swctrl[2], clk_buf_swctrl_modem_on[2],
+		     clk_buf_swctrl[3], clk_buf_swctrl_modem_on[3]);
+
+	for (i = 0; i < CLKBUF_NUM; i++) {
+		if (g_is_flightmode_on)
+			status[i] = clk_buf_swctrl[i];
+		else
+			status[i] = clk_buf_swctrl_modem_on[i];
+	}
 }
 
 static ssize_t clk_buf_ctrl_store(struct kobject *kobj, struct kobj_attribute *attr,
@@ -288,10 +341,15 @@ static ssize_t clk_buf_ctrl_store(struct kobject *kobj, struct kobj_attribute *a
 		if (is_pmic_clkbuf)
 			return -EINVAL;
 
+		mutex_lock(&clk_buf_ctrl_lock);
+
 		for (i = 0; i < CLKBUF_NUM; i++)
 			clk_buf_swctrl[i] = clk_buf_en[i];
 
-		spm_clk_buf_ctrl(clk_buf_swctrl);
+		if (g_is_flightmode_on)
+			spm_clk_buf_ctrl(clk_buf_swctrl);
+
+		mutex_unlock(&clk_buf_ctrl_lock);
 
 		return count;
 	}
@@ -317,16 +375,20 @@ static ssize_t clk_buf_ctrl_show(struct kobject *kobj, struct kobj_attribute *at
 	int len = 0;
 	char *p = buf;
 
-	p += sprintf(p, "********** RF clock buffer state (%c) **********\n",
-		     (is_pmic_clkbuf ? 'X' : 'O'));
-	p += sprintf(p, "CKBUF1_BB   SW(1)/HW(2) CTL: %d, Disable(0)/Enable(1): %d\n",
-		     CLK_BUF1_STATUS, clk_buf_swctrl[0]);
-	p += sprintf(p, "CKBUF2_NONE SW(1)/HW(2) CTL: %d, Disable(0)/Enable(1): %d\n",
-		     CLK_BUF2_STATUS, clk_buf_swctrl[1]);
-	p += sprintf(p, "CKBUF3_NFC  SW(1)/HW(2) CTL: %d, Disable(0)/Enable(1): %d\n",
-		     CLK_BUF3_STATUS, clk_buf_swctrl[2]);
-	p += sprintf(p, "CKBUF4_AUD  SW(1)/HW(2) CTL: %d, Disable(0)/Enable(1): %d\n",
-		     CLK_BUF4_STATUS, clk_buf_swctrl[3]);
+	p += sprintf(p, "********** RF clock buffer state (%c) flightmode=%d **********\n",
+		     (is_pmic_clkbuf ? 'X' : 'O'), g_is_flightmode_on);
+	p += sprintf(p, "CKBUF1_BB   SW(1)/HW(2) CTL: %d, Disable(0)/Enable(1): %d/%d\n",
+		     CLK_BUF1_STATUS, clk_buf_swctrl[0],
+		     clk_buf_swctrl_modem_on[0]);
+	p += sprintf(p, "CKBUF2_NONE SW(1)/HW(2) CTL: %d, Disable(0)/Enable(1): %d/%d\n",
+		     CLK_BUF2_STATUS, clk_buf_swctrl[1],
+		     clk_buf_swctrl_modem_on[1]);
+	p += sprintf(p, "CKBUF3_NFC  SW(1)/HW(2) CTL: %d, Disable(0)/Enable(1): %d/%d\n",
+		     CLK_BUF3_STATUS, clk_buf_swctrl[2],
+		     clk_buf_swctrl_modem_on[2]);
+	p += sprintf(p, "CKBUF4_AUD  SW(1)/HW(2) CTL: %d, Disable(0)/Enable(1): %d/%d\n",
+		     CLK_BUF4_STATUS, clk_buf_swctrl[3],
+		     clk_buf_swctrl_modem_on[3]);
 	p += sprintf(p, "********** PMIC clock buffer state (%c) **********\n",
 		     (is_pmic_clkbuf ? 'O' : 'X'));
 	p += sprintf(p, "CKBUF1_BB   SW(1)/HW(2) CTL: %d, Disable(0)/Enable(1): %d\n",
@@ -346,11 +408,44 @@ static ssize_t clk_buf_ctrl_show(struct kobject *kobj, struct kobj_attribute *at
 	return len;
 }
 
+static ssize_t clk_buf_debug_store(struct kobject *kobj, struct kobj_attribute *attr,
+				  const char *buf, size_t count)
+{
+	int debug = 0;
+
+	if (!kstrtoint(buf, 10, &debug)) {
+		if (debug == 0)
+			clkbuf_debug = false;
+		else if (debug == 1)
+			clkbuf_debug = true;
+		else
+			clk_buf_warn("bad argument!! should be 0 or 1 [0: disable, 1: enable]\n");
+	} else
+		return -EPERM;
+
+	return count;
+}
+
+static ssize_t clk_buf_debug_show(struct kobject *kobj, struct kobj_attribute *attr,
+				 char *buf)
+{
+	int len = 0;
+	char *p = buf;
+
+	p += sprintf(p, "clkbuf_debug=%d\n", clkbuf_debug);
+
+	len = p - buf;
+
+	return len;
+}
+
 DEFINE_ATTR_RW(clk_buf_ctrl);
+DEFINE_ATTR_RW(clk_buf_debug);
 
 static struct attribute *clk_buf_attrs[] = {
 	/* for clock buffer control */
 	__ATTR_OF(clk_buf_ctrl),
+	__ATTR_OF(clk_buf_debug),
 
 	/* must */
 	NULL,
@@ -361,32 +456,38 @@ static struct attribute_group spm_attr_group = {
 	.attrs	= clk_buf_attrs,
 };
 
-
 bool is_clk_buf_from_pmic(void)
 {
 #if 0 /*everest early porting: used for PMIC clockbuf*/
 	unsigned int reg = 0;
+	bool ret = false;
+
+	if (is_clkbuf_initiated)
+		return is_pmic_clkbuf;
 
 	/* switch to debug mode */
-	pmic_config_interface(PMIC_CW15_ADDR, 0x1,
+	pmic_config_interface_nolock(PMIC_CW15_ADDR, 0x1,
 			      PMIC_CW15_DCXO_STATIC_AUXOUT_EN_MASK,
 			      PMIC_CW15_DCXO_STATIC_AUXOUT_EN_SHIFT);
-	pmic_config_interface(PMIC_CW15_ADDR, 0x3,
+	pmic_config_interface_nolock(PMIC_CW15_ADDR, 0x3,
 			      PMIC_CW15_DCXO_STATIC_AUXOUT_SEL_MASK,
 			      PMIC_CW15_DCXO_STATIC_AUXOUT_SEL_SHIFT);
 	/* bit 6, 7, 8, 9 => 32K Less Mode, Buffer Mode, RTC Mode, Off Mode */
-	pmic_read_interface(PMIC_CW00_ADDR, &reg,
+	pmic_read_interface_nolock(PMIC_CW00_ADDR, &reg,
 			    PMIC_REG_MASK, PMIC_REG_SHIFT);
 	/* switch back from debug mode */
-	pmic_config_interface(PMIC_CW15_ADDR, 0x0,
+	pmic_config_interface_nolock(PMIC_CW15_ADDR, 0x0,
 			      PMIC_CW15_DCXO_STATIC_AUXOUT_EN_MASK,
 			      PMIC_CW15_DCXO_STATIC_AUXOUT_EN_SHIFT);
 	if ((reg & 0x200) == 0x200) {
 		clk_buf_warn_limit("clkbuf is from RF, CW00=0x%x\n", reg);
-		return false;
+		ret = false;
+	} else {
+		clk_buf_warn_limit("clkbuf is from PMIC, CW00=0x%x\n", reg);
+		ret = true;
 	}
-	clk_buf_warn_limit("clkbuf is from PMIC, PMIC_CW00_ADDR=0x%x\n", reg);
-	return true;
+
+	return ret;
 #else
 	return false;
 #endif /*everest early porting: used for PMIC clockbuf*/
@@ -461,11 +562,10 @@ static int clk_buf_fs_init(void)
 bool clk_buf_init(void)
 {
 	struct device_node *node;
-	u32 vals[4];
-
 
 #if !defined(CONFIG_MTK_LEGACY)
 #if 1 /* for kernel 3.18 */
+	u32 vals[4];
 
 	node = of_find_compatible_node(NULL, NULL, "mediatek,rf_clock_buffer");
 	if (node) {
@@ -514,6 +614,9 @@ bool clk_buf_init(void)
 	}
 #endif /* for kernel 3.18 */
 #endif /* CONFIG_MTK_LEGACY */
+	if (is_clkbuf_initiated)
+		return false;
+
 	if (clk_buf_fs_init())
 		return false;
 
@@ -535,6 +638,9 @@ bool clk_buf_init(void)
 		clk_buf_pmic_wrap_init();
 	}
 #endif /*everest early porting*/
+
+	is_clkbuf_initiated = true;
+
 	return true;
 }
 
