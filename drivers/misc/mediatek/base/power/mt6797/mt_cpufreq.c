@@ -46,7 +46,7 @@
 #include <mach/upmu_sw.h>
 #include <mach/upmu_hw.h>
 /* #include "mach/mt_hotplug_strategy.h" */
-/* #include "mach/mt_ppm_api.h" */
+#include "mach/mt_ppm_api.h"
 #include "mach/mt_pbm.h"
 
 
@@ -1675,7 +1675,7 @@ unsigned int mt_cpufreq_get_leakage_mw(enum mt_cpu_dvfs_id id)
 #ifndef DISABLE_PBM_FEATURE
 static void _kick_PBM_by_cpu(struct mt_cpu_dvfs *p)
 {
-#if 0
+#if 1
 	struct mt_cpu_dvfs *p_dvfs[NR_MT_CPU_DVFS];
 	struct cpumask dvfs_cpumask[NR_MT_CPU_DVFS];
 	struct cpumask cpu_online_cpumask[NR_MT_CPU_DVFS];
@@ -3151,7 +3151,7 @@ static unsigned int _calc_new_cci_opp_idx(struct mt_cpu_dvfs *p, int new_opp_idx
 	return new_cci_opp_idx;
 }
 
-#if 0
+#if 1
 static void ppm_limit_callback(struct ppm_client_req req)
 {
 	struct ppm_client_req *ppm = (struct ppm_client_req *)&req;
@@ -3208,13 +3208,21 @@ static void ppm_limit_callback(struct ppm_client_req req)
 		if (!ignore_ppm[i]) {
 			get_online_cpus();
 			cpumask_and(&cpu_online_cpumask, &dvfs_cpumask[i], cpu_online_mask);
-			cpulist_scnprintf(str1, sizeof(str1), &cpu_online_mask);
-			cpulist_scnprintf(str2, sizeof(str2), &cpu_online_cpumask);
+			cpulist_scnprintf(str1, sizeof(str1), (const struct cpumask *)&cpu_online_mask);
+			cpulist_scnprintf(str2, sizeof(str2), (const struct cpumask *)&cpu_online_cpumask);
 			cpufreq_ver("cpu_online_mask = %s, cpu_online_cpumask for little = %s\n", str1, str2);
 			ret = -1;
 			for_each_cpu(j, &cpu_online_cpumask) {
 				policy[i] = cpufreq_cpu_get(j);
 				if (policy[i]) {
+					if (p->idx_opp_ppm_limit == -1)
+						policy[i]->max = cpu_dvfs_get_max_freq(p);
+					else
+						policy[i]->max = cpu_dvfs_get_freq_by_idx(p, p->idx_opp_ppm_limit);
+					if (p->idx_opp_ppm_base == -1)
+						policy[i]->min = cpu_dvfs_get_min_freq(p);
+					else
+						policy[i]->min = cpu_dvfs_get_freq_by_idx(p, p->idx_opp_ppm_base);
 					cpufreq_cpu_put(policy[i]);
 					ret = 0;
 					break;
@@ -3536,7 +3544,7 @@ static int _mt_cpufreq_pdrv_probe(struct platform_device *pdev)
 			p->nr_opp_tbl = opp_tbl_info->size;
 			p->freq_tbl_for_cpufreq = table;
 		}
-#if 0
+#if 1
 		/* lv should be sync with DVFS_TABLE_TYPE_SB */
 		if (j != MT_CPU_DVFS_CCI)
 				mt_ppm_set_dvfs_table(p->cpu_id, p->freq_tbl_for_cpufreq, opp_tbl_info->size, lv);
@@ -3547,7 +3555,7 @@ static int _mt_cpufreq_pdrv_probe(struct platform_device *pdev)
 	cpufreq_register_driver(&_mt_cpufreq_driver);
 #endif
 	register_hotcpu_notifier(&_mt_cpufreq_cpu_notifier);
-	/* mt_ppm_register_client(PPM_CLIENT_DVFS, &ppm_limit_callback); */
+	mt_ppm_register_client(PPM_CLIENT_DVFS, &ppm_limit_callback);
 
 	FUNC_EXIT(FUNC_LV_MODULE);
 
