@@ -40,6 +40,8 @@
 static struct clk *musb_clk;
 #endif
 
+bool sib_mode = false;
+
 #ifdef USB_CLK_DEBUG
 void __iomem *usb_debug_clk_infracfg_base;
 #define MODULE_SW_CG_2_SET	(usb_debug_clk_infracfg_base + 0xa4)
@@ -371,6 +373,68 @@ void usb_phy_switch_to_usb(void)
 #define RG_SSUSB_VUSB10_ON (1<<5)
 #define RG_SSUSB_VUSB10_ON_OFST (5)
 
+#ifdef CONFIG_MTK_SIB_USB_SWITCH
+void usb_phy_sib_enable_switch(bool enable)
+{
+	/*
+	 * It's MD debug usage. No need to care low power.
+	 * Thus, no power off BULK and Clock at the end of function.
+	 * MD SIB still needs these power and clock source.
+	 */
+	pmic_set_register_value(MT6351_PMIC_RG_VUSB33_EN, 0x01);
+	pmic_set_register_value(MT6351_PMIC_RG_VA10_EN, 0x01);
+	pmic_set_register_value(MT6351_PMIC_RG_VA10_VOSEL, 0x02);
+
+	usb_enable_clock(true);
+	udelay(50);
+	/* Set RG_SSUSB_VUSB10_ON as 1 after VUSB10 ready */
+	U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_USB30_PHYA_REG0, RG_SSUSB_VUSB10_ON_OFST,
+			  RG_SSUSB_VUSB10_ON, 1);
+
+	U3PhyWriteReg32((phys_addr_t) (u3_sif_base + 0x700), 0x00031000);  /* SSUSB_IP_SW_RST = 0    */
+	U3PhyWriteReg32((phys_addr_t) (u3_sif_base + 0x704), 0x00000000);  /* SSUSB_IP_HOST_PDN = 0  */
+	U3PhyWriteReg32((phys_addr_t) (u3_sif_base + 0x708), 0x00000000);  /* SSUSB_IP_DEV_PDN = 0   */
+	U3PhyWriteReg32((phys_addr_t) (u3_sif_base + 0x70C), 0x00000000);  /* SSUSB_IP_PCIE_PDN = 0  */
+	U3PhyWriteReg32((phys_addr_t) (u3_sif_base + 0x730), 0x0000000C);  /* SSUSB_U3_PORT_DIS/SSUSB_U3_PORT_PDN = 0*/
+
+	/*
+	 * USBMAC mode is 0x62910002 (bit 1)
+	 * MDSIB  mode is 0x62910008 (bit 3)
+	 * 0x0629 just likes a signature. Can't be removed.
+	 */
+	if (enable) {
+		U3PhyWriteReg32((phys_addr_t) (u3_sif2_base+0x300), 0x62910008);
+		sib_mode = true;
+	} else {
+		U3PhyWriteReg32((phys_addr_t) (u3_sif2_base+0x300), 0x62910002);
+		sib_mode = false;
+	}
+}
+
+bool usb_phy_sib_enable_switch_status(void)
+{
+	int reg;
+	bool ret;
+
+	pmic_set_register_value(MT6351_PMIC_RG_VUSB33_EN, 0x01);
+	pmic_set_register_value(MT6351_PMIC_RG_VA10_EN, 0x01);
+	pmic_set_register_value(MT6351_PMIC_RG_VA10_VOSEL, 0x02);
+
+	usb_enable_clock(true);
+	udelay(50);
+	U3PhyWriteField32((uintptr_t) U3D_USB30_PHYA_REG0, RG_SSUSB_VUSB10_ON_OFST, RG_SSUSB_VUSB10_ON, 1);
+
+	reg = U3PhyReadReg32((uintptr_t) u3_sif2_base+0x300);
+	if (reg == 0x62910008)
+		ret = true;
+	else
+		ret = false;
+
+	return ret;
+}
+#endif
+
+
 /*This "power on/initial" sequence refer to "6593_USB_PORT0_PWR Sequence 20130729.xls"*/
 PHY_INT32 phy_init_soc(struct u3phy_info *info)
 {
@@ -602,6 +666,11 @@ void usb_phy_savecurrent(unsigned int clk_on)
 	PHY_INT32 ret;
 
 	os_printk(K_INFO, "%s clk_on=%d+\n", __func__, clk_on);
+
+	if (sib_mode) {
+		pr_err("%s sib_mode can't savecurrent\n", __func__);
+		return;
+	}
 
 #ifdef CONFIG_MTK_UART_USB_SWITCH
 	if (!in_uart_mode) {
