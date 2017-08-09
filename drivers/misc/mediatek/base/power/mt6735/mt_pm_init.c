@@ -458,10 +458,6 @@ static int __init mt_power_management_init(void)
 	/* pm_power_off = mt_power_off; */
 
 	#if !defined(CONFIG_MTK_FPGA)
-#if defined(CONFIG_ARCH_MT6735)
-spm_module_init();
-slp_module_init();
-#endif
 	/* cpu dormant driver init */
 /* **** */
 /*
@@ -483,6 +479,8 @@ slp_module_init();
 */
 
 #ifndef CONFIG_ARCH_MT6753
+	spm_module_init();
+	slp_module_init();
 	mt_clkmgr_init();
 #endif
 

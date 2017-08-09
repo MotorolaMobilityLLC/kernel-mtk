@@ -1402,11 +1402,6 @@ wake_reason_t spm_go_to_sleep(u32 spm_flags, u32 spm_data)
 	temp_b = spm_read(PMIC_WRAP_DVFS_WDATA3);
 	spm_write(SPM_PCM_PASR_DPD_3, (temp_b << 16)|temp_a);
 #endif
-#elif defined(CONFIG_ARCH_MT6735M)
-	temp_a = spm_read(PMIC_WRAP_DVFS_WDATA2);
-	temp_b = spm_read(PMIC_WRAP_DVFS_WDATA3);
-	spm_write(SPM_PCM_PASR_DPD_3, (temp_b << 16)|temp_a);
-
 #elif defined(CONFIG_ARCH_MT6753)
 	spm_write(PMIC_WRAP_DVFS_ADR10, 0x454);
 	spm_write(PMIC_WRAP_DVFS_WDATA10, 0x3E62);

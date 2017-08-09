@@ -17,10 +17,11 @@
 #include "mt_spm_idle.h"
 #include "mt_spm_mtcmos.h"
 #include "mt_clkmgr.h"
-
+/*
 #if defined(CONFIG_ARCH_MT6735M)
 #include <mt_soc_afe_control.h>
 #endif
+*/
 /**************************************
  * only for internal debug
  **************************************/
@@ -29,11 +30,15 @@
 #define SLP_REPLACE_DEF_WAKESRC     1
 #define SLP_SUSPEND_LOG_EN          1
 #else
+/*
 #if defined(CONFIG_ARCH_MT6735M)
 #define SLP_SLEEP_DPIDLE_EN         1
 #else
+*/
 #define SLP_SLEEP_DPIDLE_EN         0
+/*
 #endif
+*/
 #define SLP_REPLACE_DEF_WAKESRC     0
 #define SLP_SUSPEND_LOG_EN          1
 #endif
@@ -208,6 +213,7 @@ static void leave_pasrdpd(void)
 static int slp_suspend_ops_enter(suspend_state_t state)
 {
 	int ret = 0;
+/*
 	#if defined(CONFIG_ARCH_MT6735M)
 		int fm_radio_is_playing = 0;
 			if (ConditionEnterSuspend() == true)
@@ -215,6 +221,7 @@ static int slp_suspend_ops_enter(suspend_state_t state)
 		else
 			fm_radio_is_playing = 1;
 	#endif
+*/
 #ifdef CONFIG_MTKPASR
     /* PASR SW operations */
 		enter_pasrdpd();
@@ -251,7 +258,7 @@ static int slp_suspend_ops_enter(suspend_state_t state)
 				goto LEAVE_SLEEP;
 		}
 
-
+/*
 #if defined(CONFIG_ARCH_MT6735M)
 #if SLP_SLEEP_DPIDLE_EN
 		if ((slp_ck26m_on) || (fm_radio_is_playing))
@@ -260,7 +267,7 @@ static int slp_suspend_ops_enter(suspend_state_t state)
 #endif
 #endif
 		slp_wake_reason = spm_go_to_sleep(slp_spm_flags, slp_spm_data);
-
+*/
 LEAVE_SLEEP:
 #ifdef CONFIG_MTKPASR
     /* PASR SW operations */
