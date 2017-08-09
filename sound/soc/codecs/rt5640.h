@@ -13,7 +13,7 @@
 #define _RT5640_H
 
 #include <sound/rt5640.h>
-
+#include <linux/clk.h>
 /* Info */
 #define RT5640_RESET				0x00
 #define RT5640_VENDOR_ID			0xfd
@@ -2095,6 +2095,9 @@ struct rt5640_priv {
 	int pll_out;
 
 	bool hp_mute;
+
+	struct clk *mclk;
+	bool mclk_on;
 };
 
 int rt5640_dmic_enable(struct snd_soc_codec *codec,
