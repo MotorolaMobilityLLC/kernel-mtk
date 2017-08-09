@@ -308,20 +308,27 @@ static void parse_option_setting_from_lk(void)
 	int val;
 	char *name;
 	int using_default = 1;
+	int using_lk_setting;
 	int opt_list_size = ccci_get_opt_tbl_item_num();
 
-	CCCI_UTIL_INF_MSG("Dumy default setting(@P/K)\n");
-	ccci_dump_opt_tbl();
+	if (find_ccci_tag_inf("opt_using_lk_val", (char *)&val, sizeof(int)) != sizeof(int))
+		using_lk_setting = 0;
+	else if (val > 0)
+		using_lk_setting = 1;
+	else
+		using_lk_setting = 0;
 
-	for (i = 0; i < opt_list_size; i++) {
-		name = ccci_get_opt_name_by_idx(i);
-		if (name == NULL)
-			continue;
-		if (find_ccci_tag_inf(name, (char *)&val, sizeof(int)) != sizeof(int))
-			CCCI_UTIL_ERR_MSG("%s using default\n", name);
-		else {
-			using_default = 0;
-			ccci_update_opt_tbl(name, val);
+	if (using_lk_setting) {
+		for (i = 0; i < opt_list_size; i++) {
+			name = ccci_get_opt_name_by_idx(i);
+			if (name == NULL)
+				continue;
+			if (find_ccci_tag_inf(name, (char *)&val, sizeof(int)) != sizeof(int))
+				CCCI_UTIL_ERR_MSG("%s using default\n", name);
+			else {
+				using_default = 0;
+				ccci_update_opt_tbl(name, val);
+			}
 		}
 	}
 
@@ -1249,6 +1256,7 @@ int ccci_util_fo_init(void)
 	struct device_node *node = NULL;
 	CCCI_UTIL_INF_MSG("ccci_util_fo_init 0.\n");
 
+	CCCI_UTIL_INF_MSG("Dump default setting(@P/K)\n");
 	ccci_dump_opt_tbl();
 
 	if (collect_lk_boot_arguments() == 0) {
