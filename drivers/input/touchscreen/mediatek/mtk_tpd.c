@@ -71,7 +71,7 @@ void tpd_get_dts_info(void)
 
 	node1 = of_find_matching_node(node1, touch_of_match);
 	if (node1) {
-		of_property_read_u32(node1, "tpd-key-dim-local", &tpd_dts_data.touch_max_num);
+		of_property_read_u32(node1, "tpd-max-touch-num", &tpd_dts_data.touch_max_num);
 		of_property_read_u32(node1, "use-tpd-button", &tpd_dts_data.use_tpd_button);
 		pr_debug("[tpd]use-tpd-button = %d\n", tpd_dts_data.use_tpd_button);
 		of_property_read_u32_array(node1, "tpd-resolution",
