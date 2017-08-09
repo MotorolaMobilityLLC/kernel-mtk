@@ -19,3 +19,10 @@ config CRYPTO_SHA256_ARM
 	  using optimized ARM assembler and NEON, when available.
           SHA-224/256 digest algorithm (ARM-asm and NEON)
           from linaro.org
+
+config MTK_ADVERTISE_CE_SUPPORT
+	bool "advertise availability of v8 Crypto instructions"
+	default n
+	help
+	  Select if you want to advertise the availability of the
+          ARMv8 Crypto instructions (PMULL, AES, SHA1, SHA2, CRC32).

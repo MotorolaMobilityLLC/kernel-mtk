@@ -374,7 +374,10 @@ void __init early_print(const char *str, ...)
 
 static void __init cpuid_init_hwcaps(void)
 {
-	unsigned int divide_instrs, vmsa, features, block;
+	unsigned int divide_instrs, vmsa, features;
+#ifdef CONFIG_MTK_ADVERTISE_CE_SUPPORT
+	unsigned int block;
+#endif
 
 	if (cpu_architecture() < CPU_ARCH_ARMv7)
 		return;
@@ -393,6 +396,7 @@ static void __init cpuid_init_hwcaps(void)
 	if (vmsa >= 5)
 		elf_hwcap |= HWCAP_LPAE;
 
+#ifdef CONFIG_MTK_ADVERTISE_CE_SUPPORT
 	/*
 	 * ID_ISAR5 contains 4-bit wide signed feature blocks.
 	 * The blocks we test below represent incremental functionality
@@ -423,6 +427,15 @@ static void __init cpuid_init_hwcaps(void)
 	block = (features >> 16) & 0xf;
 	if (block && !(block & 0x8))
 		elf_hwcap2 |= HWCAP2_CRC32;
+#else
+	/* check for supported v8 Crypto instructions */
+	features = read_cpuid_ext(CPUID_EXT_ISAR5);
+
+	vmsa = cpuid_feature_extract_field(features, 12);
+	if (vmsa >= 1)
+		elf_hwcap2 |= HWCAP2_SHA2;
+#endif
+
 }
 
 static void __init elf_hwcap_fixup(void)
