@@ -451,7 +451,7 @@ static int mtk_voice_pm_ops_resume(struct device *device)
 	b_modem1_speech_on = (bool)(Afe_Get_Reg(PCM2_INTF_CON) & 0x1);
 	b_modem2_speech_on = (bool)(Afe_Get_Reg(PCM_INTF_CON1) & 0x1);
 	AudDrv_Clk_Off();
-	if (b_modem1_speech_on == true || b_modem2_speech_on == true) {
+	if (b_modem1_speech_on == true || b_modem2_speech_on == true || speech_md_usage_control == true) {
 		AudDrv_AUDINTBUS_Sel(1); /*George  syspll1_d4 */
 		return 0;
 	}

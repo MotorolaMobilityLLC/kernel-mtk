@@ -399,52 +399,6 @@ static int mtk_voice_md2_remove(struct platform_device *pdev)
 	return 0;
 }
 
-
-/* supend and resume function */
-static int mtk_voice_md2_pm_ops_suspend(struct device *device)
-{
-	/* if now in phone call state, not suspend!! */
-	bool b_modem1_speech_on;
-	bool b_modem2_speech_on;
-
-	AudDrv_Clk_On();/* should enable clk for access reg */
-	b_modem1_speech_on = (bool)(Afe_Get_Reg(PCM2_INTF_CON) & 0x1);
-	b_modem2_speech_on = (bool)(Afe_Get_Reg(PCM_INTF_CON1) & 0x1);
-	AudDrv_Clk_Off();/* should enable clk for access reg */
-	if (b_modem1_speech_on == true || b_modem2_speech_on == true) {
-		AudDrv_AUDINTBUS_Sel(0);
-		return 0;
-	}
-	return 0;
-}
-
-static int mtk_voice_md2_pm_ops_resume(struct device *device)
-{
-	bool b_modem1_speech_on;
-	bool b_modem2_speech_on;
-
-	AudDrv_Clk_On();/* should enable clk for access reg */
-	b_modem1_speech_on = (bool)(Afe_Get_Reg(PCM2_INTF_CON) & 0x1);
-	b_modem2_speech_on = (bool)(Afe_Get_Reg(PCM_INTF_CON1) & 0x1);
-	AudDrv_Clk_Off();
-	if (b_modem1_speech_on == true || b_modem2_speech_on == true) {
-		AudDrv_AUDINTBUS_Sel(1); /* syspll1_d4 */
-		return 0;
-	}
-
-	return 0;
-}
-
-const struct dev_pm_ops mtk_voice_md2_pm_ops = {
-	.suspend = mtk_voice_md2_pm_ops_suspend,
-	.resume = mtk_voice_md2_pm_ops_resume,
-	.freeze = NULL,
-	.thaw = NULL,
-	.poweroff = NULL,
-	.restore = NULL,
-	.restore_noirq = NULL,
-};
-
 #ifdef CONFIG_OF
 static const struct of_device_id mt_soc_pcm_voice_md2_of_ids[] = {
 	{ .compatible = "mediatek,mt_soc_pcm_voice_md2", },
@@ -458,9 +412,6 @@ static struct platform_driver mtk_voice_md2_driver = {
 		.owner = THIS_MODULE,
 #ifdef CONFIG_OF
 		.of_match_table = mt_soc_pcm_voice_md2_of_ids,
-#endif
-#ifdef CONFIG_PM
-		.pm     = &mtk_voice_md2_pm_ops,
 #endif
 	},
 	.probe = mtk_voice_md2_probe,
