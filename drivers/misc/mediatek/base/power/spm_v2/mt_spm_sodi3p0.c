@@ -66,7 +66,11 @@ static struct pwr_ctrl sodi3_ctrl = {
 
 	/* SPM_SRC_REQ */
 	.spm_apsrc_req = 0,
+#if defined(CONFIG_ARCH_MT6755)
+	.spm_f26m_req = 1,
+#elif defined(CONFIG_ARCH_MT6797)
 	.spm_f26m_req = 0,
+#endif
 	.spm_lte_req = 0,
 	.spm_infra_req = 0,
 	.spm_vrf18_req = 0,
@@ -152,7 +156,11 @@ struct spm_lp_scen __spm_sodi3 = {
 	.pwrctrl = &sodi3_ctrl,
 };
 
+#if defined(CONFIG_ARCH_MT6755)
+static bool gSpm_sodi3_en = true;
+#elif defined(CONFIG_ARCH_MT6797)
 static bool gSpm_sodi3_en;
+#endif
 
 static unsigned long int sodi3_logout_prev_time;
 static int pre_emi_refresh_cnt;

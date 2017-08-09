@@ -44,6 +44,10 @@
 
 #define FEATURE_ENABLE_SODI2P5
 
+#if defined(CONFIG_ARCH_MT6797)
+#define FEATURE_ENABLE_F26MSLEEP
+#endif
+
 /*
 * MCDI DVT IPI Test and GPT test
 * GPT need to modify mt_idle.c and mt_spm_mcdi.c
@@ -742,9 +746,15 @@ void soidle3_before_wfi(int cpu)
 	if ((int)soidle3_timer_left2 <= 0)
 		gpt_set_cmp(idle_gpt, 1); /* Trigger idle_gpt Timerout imediately */
 	else
+#ifdef FEATURE_ENABLE_F26MSLEEP
 		gpt_set_cmp(idle_gpt, div_u64(soidle3_timer_left2, 406.25));
+#else
+		gpt_set_cmp(idle_gpt, soidle3_timer_left2);
+#endif
 
+#ifdef FEATURE_ENABLE_F26MSLEEP
 	gpt_set_clk(idle_gpt, GPT_CLK_SRC_RTC, GPT_CLK_DIV_1);
+#endif
 
 	start_gpt(idle_gpt);
 #else
@@ -758,7 +768,9 @@ void soidle3_after_wfi(int cpu)
 #ifdef CONFIG_SMP
 	if (gpt_check_and_ack_irq(idle_gpt)) {
 		localtimer_set_next_event(1);
+#ifdef FEATURE_ENABLE_F26MSLEEP
 		gpt_set_clk(idle_gpt, GPT_CLK_SRC_SYS, GPT_CLK_DIV_1);
+#endif
 	} else {
 		/* waked up by other wakeup source */
 		unsigned int cnt, cmp;
@@ -771,8 +783,12 @@ void soidle3_after_wfi(int cpu)
 			BUG();
 		}
 
+#ifdef FEATURE_ENABLE_F26MSLEEP
 		localtimer_set_next_event((cmp-cnt) * 1625 / 4);
 		gpt_set_clk(idle_gpt, GPT_CLK_SRC_SYS, GPT_CLK_DIV_1);
+#else
+		localtimer_set_next_event(cmp-cnt);
+#endif
 
 		stop_gpt(idle_gpt);
 	}
