@@ -1133,10 +1133,16 @@
 		mediatek,buffermode_used;
 	};
 
-	spi1@1100a000 {
-		compatible = "mediatek,spi1";
+	spi0: spi@1100a000 {
+		compatible = "mediatek,mt6757-spi";
+		cell-index = <0>;
+		spi-padmacro = <0>;
 		reg = <0 0x1100a000 0 0x1000>;
 		interrupts = <GIC_SPI 118 IRQ_TYPE_LEVEL_LOW>;
+		clocks = <&infrasys INFRACFG_AO_SPI0_CG>;
+		clock-names = "main";
+		clock-frequency = <109000000>;
+		clock-div = <1>;
 	};
 
 	therm_ctrl@1100b000 {
@@ -1177,10 +1183,16 @@
 		clock-div = <10>;
 	};
 
-	spi2@11010000 {
-		compatible = "mediatek,spi2";
+	spi1: spi@11010000 {
+		compatible = "mediatek,mt6757-spi";
+		cell-index = <1>;
+		spi-padmacro = <0>;
 		reg = <0 0x11010000 0 0x1000>;
 		interrupts = <GIC_SPI 122 IRQ_TYPE_LEVEL_LOW>;
+		clocks = <&infrasys INFRACFG_AO_SPI1_CG>;
+		clock-names = "main";
+		clock-frequency = <109000000>;
+		clock-div = <1>;
 	};
 
 	i2c5: i2c@11011000 {
@@ -1195,16 +1207,28 @@
 		mediatek,appm_used;
 	};
 
-	spi3@11012000 {
-		compatible = "mediatek,spi3";
+	spi2: spi@11012000 {
+		compatible = "mediatek,mt6757-spi";
+		cell-index = <2>;
+		spi-padmacro = <0>;
 		reg = <0 0x11012000 0 0x1000>;
 		interrupts = <GIC_SPI 128 IRQ_TYPE_LEVEL_LOW>;
+		clocks = <&infrasys INFRACFG_AO_SPI2_CG>;
+		clock-names = "main";
+		clock-frequency = <109000000>;
+		clock-div = <1>;
 	};
 
-	spi4@11013000 {
-		compatible = "mediatek,spi4";
+	spi3: spi@11013000 {
+		compatible = "mediatek,mt6757-spi";
+		cell-index = <3>;
+		spi-padmacro = <0>;
 		reg = <0 0x11013000 0 0x1000>;
 		interrupts = <GIC_SPI 129 IRQ_TYPE_LEVEL_LOW>;
+		clocks = <&infrasys INFRACFG_AO_SPI3_CG>;
+		clock-names = "main";
+		clock-frequency = <109000000>;
+		clock-div = <1>;
 	};
 
 	i2c1: i2c@11014000 {
@@ -1257,16 +1281,28 @@
 		clock-div = <10>;
 	};
 
-	spi5@11018000 {
-		compatible = "mediatek,spi5";
+	spi4: spi@11018000 {
+		compatible = "mediatek,mt6757-spi";
+		cell-index = <4>;
+		spi-padmacro = <0>;
 		reg = <0 0x11018000 0 0x1000>;
 		interrupts = <GIC_SPI 273 IRQ_TYPE_LEVEL_LOW>;
+		clocks = <&infrasys INFRACFG_AO_SPI4_CG>;
+		clock-names = "main";
+		clock-frequency = <109000000>;
+		clock-div = <1>;
 	};
 
-	spi6@11019000 {
-		compatible = "mediatek,spi6";
+	spi5: spi@11019000 {
+		compatible = "mediatek,mt6757-spi";
+		cell-index = <5>;
+		spi-padmacro = <0>;
 		reg = <0 0x11019000 0 0x1000>;
 		interrupts = <GIC_SPI 274 IRQ_TYPE_LEVEL_LOW>;
+		clocks = <&infrasys INFRACFG_AO_SPI5_CG>;
+		clock-names = "main";
+		clock-frequency = <109000000>;
+		clock-div = <1>;
 	};
 
 	usb0@11200000 {
