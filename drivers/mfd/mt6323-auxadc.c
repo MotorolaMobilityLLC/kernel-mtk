@@ -340,7 +340,7 @@ static int mt6323_auxadc_raw_to_voltage(int dwChannel, u32 adc_result_raw)
  * This returns the current voltage of the specified channel in mV,
  * zero for not supported channel, a negative number on error.
  */
-unsigned int PMIC_IMM_GetOneChannelValue(int dwChannel, int deCount, int trimd)
+int PMIC_IMM_GetOneChannelValue(int dwChannel, int deCount, int trimd)
 {
 	int ret;
 	int sample_times = 0;
