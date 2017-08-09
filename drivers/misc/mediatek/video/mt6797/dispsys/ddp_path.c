@@ -1186,17 +1186,25 @@ int ddp_check_engine_status(int mutexID)
 
 int ddp_path_top_clock_on(void)
 {
+	static int need_enable;
 #ifdef ENABLE_CLK_MGR
 	DDPMSG("ddp path top clock on\n");
 #ifdef CONFIG_MTK_CLKMGR
 	enable_clock(MT_CG_DISP0_SMI_COMMON, "DDP_SMI");
 	enable_clock(MT_CG_DISP0_SMI_LARB0, "DDP_LARB0");
 #else
-	ddp_clk_prepare_enable(DISP_MTCMOS_CLK);
-	/* ddp_clk_prepare_enable(MM_VENCPLL); */
-	ddp_clk_enable(DISP0_SMI_COMMON);
-	ddp_clk_enable(DISP0_SMI_LARB0);
-	ddp_clk_enable(DISP0_SMI_LARB5);
+	if (need_enable) {
+		if (disp_helper_get_option(DISP_OPT_DYNAMIC_SWITCH_MMSYSCLK))
+			ddp_clk_prepare_enable(MM_VENCPLL);
+		ddp_clk_prepare_enable(DISP_MTCMOS_CLK);
+		ddp_clk_prepare_enable(DISP0_SMI_COMMON);
+		ddp_clk_prepare_enable(DISP0_SMI_LARB0);
+		ddp_clk_prepare_enable(DISP0_SMI_LARB5);
+	} else {
+		need_enable = 1;
+		if (disp_helper_get_option(DISP_OPT_DYNAMIC_SWITCH_MMSYSCLK))
+			ddp_clk_prepare_enable(MM_VENCPLL);
+	}
 #endif
 	/* enable_clock(MT_CG_DISP0_MUTEX_32K   , "DDP_MUTEX"); */
 	DDPMSG("ddp CG:%x\n", DISP_REG_GET(DISP_REG_CONFIG_MMSYS_CG_CON0));
@@ -1218,11 +1226,13 @@ int ddp_path_top_clock_off(void)
 	disable_clock(MT_CG_DISP0_SMI_LARB0, "DDP_LARB0");
 	disable_clock(MT_CG_DISP0_SMI_COMMON, "DDP_SMI");
 #else
-	ddp_clk_disable(DISP0_SMI_LARB5);
-	ddp_clk_disable(DISP0_SMI_LARB0);
-	ddp_clk_disable(DISP0_SMI_COMMON);
-	/* ddp_clk_disable_unprepare(MM_VENCPLL); */
+	ddp_clk_disable_unprepare(DISP0_SMI_LARB5);
+	ddp_clk_disable_unprepare(DISP0_SMI_LARB0);
+	ddp_clk_disable_unprepare(DISP0_SMI_COMMON);
 	ddp_clk_disable_unprepare(DISP_MTCMOS_CLK);
+	if (disp_helper_get_option(DISP_OPT_DYNAMIC_SWITCH_MMSYSCLK))
+		ddp_clk_disable_unprepare(MM_VENCPLL);
+
 #endif
 #endif
 	return 0;

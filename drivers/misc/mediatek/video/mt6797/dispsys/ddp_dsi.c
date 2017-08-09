@@ -3708,7 +3708,7 @@ int ddp_dsi_power_off(DISP_MODULE_ENUM module, void *cmdq_handle)
 		if (module == DISP_MODULE_DSI1 || module == DISP_MODULE_DSIDUAL) {
 #ifndef CONFIG_MTK_CLKMGR
 			ddp_clk_disable(DISP1_DSI1_MM_CLOCK);
-			ddp_clk_enable(DISP1_DSI1_INTERFACE_CLOCK);
+			ddp_clk_disable(DISP1_DSI1_INTERFACE_CLOCK);
 #endif
 			if (ret > 0) {
 				DISP_LOG_PRINT(ANDROID_LOG_WARN, "DSI",
