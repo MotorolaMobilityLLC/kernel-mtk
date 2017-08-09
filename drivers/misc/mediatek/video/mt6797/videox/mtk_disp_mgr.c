@@ -1420,6 +1420,8 @@ const char *_session_ioctl_spy(unsigned int cmd)
 		return "DISP_IOCTL_GET_PQINDEX";
 	case DISP_IOCTL_SET_PQINDEX:
 		return "DISP_IOCTL_SET_PQINDEX";
+	case DISP_IOCTL_SET_COLOR_REG:
+		return "DISP_IOCTL_SET_COLOR_REG";
 	case DISP_IOCTL_SET_TDSHPINDEX:
 		return "DISP_IOCTL_SET_TDSHPINDEX";
 	case DISP_IOCTL_GET_TDSHPINDEX:
@@ -1519,6 +1521,7 @@ long mtk_disp_mgr_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 	case DISP_IOCTL_GET_PQPARAM:
 	case DISP_IOCTL_SET_PQINDEX:
 	case DISP_IOCTL_GET_PQINDEX:
+	case DISP_IOCTL_SET_COLOR_REG:
 	case DISP_IOCTL_SET_TDSHPINDEX:
 	case DISP_IOCTL_GET_TDSHPINDEX:
 	case DISP_IOCTL_SET_PQ_CAM_PARAM:
@@ -1685,6 +1688,7 @@ static long mtk_disp_mgr_compat_ioctl(struct file *file, unsigned int cmd,  unsi
 	case DISP_IOCTL_GET_PQPARAM:
 	case DISP_IOCTL_SET_PQINDEX:
 	case DISP_IOCTL_GET_PQINDEX:
+	case DISP_IOCTL_SET_COLOR_REG:
 	case DISP_IOCTL_SET_TDSHPINDEX:
 	case DISP_IOCTL_GET_TDSHPINDEX:
 	case DISP_IOCTL_SET_PQ_CAM_PARAM:

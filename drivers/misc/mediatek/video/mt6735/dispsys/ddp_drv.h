@@ -63,7 +63,7 @@ typedef struct {
 #define GLOBAL_SAT_SIZE 10
 #define CONTRAST_SIZE 10
 #define BRIGHTNESS_SIZE 10
-#define PARTIAL_Y_SIZE 28
+#define PARTIAL_Y_SIZE 16
 #define PQ_HUE_ADJ_PHASE_CNT 4
 #define PQ_SAT_ADJ_PHASE_CNT 4
 #define PQ_PARTIALS_CONTROL 5
@@ -130,6 +130,21 @@ typedef struct {
 	unsigned char SKY_TONE_H[COLOR_TUNING_INDEX][SKY_TONE_SIZE];
 	unsigned int CCORR_COEF[CCORR_COEF_CNT][3][3];
 } DISPLAY_PQ_T;
+
+typedef struct {
+	unsigned short GLOBAL_SAT;
+	unsigned short CONTRAST;
+	unsigned short BRIGHTNESS;
+	unsigned char PARTIAL_Y[PARTIAL_Y_SIZE];
+	unsigned char PURP_TONE_S[PQ_PARTIALS_CONTROL][PURP_TONE_SIZE];
+	unsigned char SKIN_TONE_S[PQ_PARTIALS_CONTROL][SKIN_TONE_SIZE];
+	unsigned char GRASS_TONE_S[PQ_PARTIALS_CONTROL][GRASS_TONE_SIZE];
+	unsigned char SKY_TONE_S[PQ_PARTIALS_CONTROL][SKY_TONE_SIZE];
+	unsigned char PURP_TONE_H[PURP_TONE_SIZE];
+	unsigned char SKIN_TONE_H[SKIN_TONE_SIZE];
+	unsigned char GRASS_TONE_H[GRASS_TONE_SIZE];
+	unsigned char SKY_TONE_H[SKY_TONE_SIZE];
+} DISPLAY_COLOR_REG_T;
 
 typedef struct {
 
@@ -317,7 +332,7 @@ struct device *disp_get_device(void);
 #define DISP_IOCTL_PQ_SET_DC_PARAM  _IOW(DISP_IOCTL_MAGIC, 76, DISP_PQ_DC_PARAM)
 #define DISP_IOCTL_WRITE_SW_REG     _IOW(DISP_IOCTL_MAGIC, 77, DISP_WRITE_REG)	/* also defined in atci_pq_cmd.h */
 #define DISP_IOCTL_READ_SW_REG      _IOWR(DISP_IOCTL_MAGIC, 78, DISP_READ_REG)	/* also defined in atci_pq_cmd.h */
-
+#define DISP_IOCTL_SET_COLOR_REG    _IOWR(DISP_IOCTL_MAGIC, 79, DISPLAY_COLOR_REG_T)
 
 /* OD */
 #define DISP_IOCTL_OD_CTL           _IOWR(DISP_IOCTL_MAGIC, 80 , DISP_OD_CMD)
