@@ -307,14 +307,27 @@ void cmdq_dev_init_MDP_PA(struct device_node *node)
 	int status;
 	uint32_t gceDispMutex[2] = {0, 0};
 	uint32_t *pMDPBaseAddress = cmdq_core_get_whole_DTS_Data()->MDPBaseAddress;
-
-	do {
-		status = of_property_read_u32_array(node, "disp_mutex_reg", gceDispMutex, ARRAY_SIZE(gceDispMutex));
-		if (status < 0)
-			break;
-
-		pMDPBaseAddress[CMDQ_MDP_PA_BASE_MM_MUTEX] = gceDispMutex[0];
-	} while (0);
+	long module_pa_start;
+	long module_pa_end;
+	
+	cmdq_dev_get_module_PA("mediatek,mm_mutex", 0,
+					    &module_pa_start,
+					    &module_pa_end);
+	
+	if (module_pa_start == 0) {
+		CMDQ_ERR("DEV: init mm_mutex PA fail!!\n");
+		do {
+			status = of_property_read_u32_array(node, "disp_mutex_reg", gceDispMutex, ARRAY_SIZE(gceDispMutex));
+			if (status < 0)
+				break;
+		
+			pMDPBaseAddress[CMDQ_MDP_PA_BASE_MM_MUTEX] = gceDispMutex[0];
+		} while (0);
+	} else {
+		pMDPBaseAddress[CMDQ_MDP_PA_BASE_MM_MUTEX] = module_pa_start;
+	}
+	CMDQ_MSG("MM_MUTEX PA: start = 0x%x\n", pMDPBaseAddress[CMDQ_MDP_PA_BASE_MM_MUTEX]);
+		
 #endif
 }
 
