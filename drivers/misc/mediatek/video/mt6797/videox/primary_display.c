@@ -2635,7 +2635,7 @@ static int _decouple_update_rdma_config_nolock(void)
 
 			tmpConfig.height = primary_display_get_height();
 			tmpConfig.width = primary_display_get_width();
-
+			tmpConfig.yuv_range = 1; /* BT601 */
 #ifdef _DEBUG_DITHER_HANG_
 			if (primary_display_is_video_mode()) {
 				cmdqRecBackupRegisterToSlot(cmdq_handle, pgc->dither_status_info,
