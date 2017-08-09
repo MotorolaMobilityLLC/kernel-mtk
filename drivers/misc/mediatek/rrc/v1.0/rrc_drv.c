@@ -399,7 +399,7 @@ static int rrc_set_refresh_rate_kthread_func(void *data)
 		_is_new_change_refresh_event = 1;
 
 
-		if (target_refresh != RRC_DRV_NONE && target_refresh != curr_refresh) {
+		if (target_refresh != RRC_DRV_NONE) {
 
 			if (target_refresh == RRC_DRV_60Hz) {
 
