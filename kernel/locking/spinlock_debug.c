@@ -16,6 +16,7 @@
 #include <linux/kernel.h>
 #include <linux/printk.h>
 #include <mt-plat/aee.h>
+
 #ifdef CONFIG_MTPROF
 #include "mt_sched_mon.h"
 #endif
@@ -121,7 +122,13 @@ static inline void debug_spin_unlock(raw_spinlock_t *lock)
 	lock->owner = SPINLOCK_OWNER_INIT;
 	lock->owner_cpu = -1;
 }
-
+#ifdef CONFIG_MTK_LOCK_DEBUG
+static void show_cpu_backtrace(void *ignored)
+{
+	pr_emerg("spinlock debug show lock owenr CPU%d:\n", smp_processor_id());
+	show_stack(NULL, NULL);
+}
+#endif
 /*
  Select appropriate loop counts to 1~2sec
 */
@@ -142,7 +149,6 @@ static void __spin_lock_debug(raw_spinlock_t *lock)
 	char aee_str[50];
 	unsigned long long t1, t2, t3;
 	struct task_struct *owner = NULL;
-	struct task_struct *task;
 
 #ifdef CONFIG_MTPROF
 	MT_trace_raw_spin_lock_s(lock);
@@ -191,13 +197,11 @@ static void __spin_lock_debug(raw_spinlock_t *lock)
 #ifdef CONFIG_SMP
 			trigger_all_cpu_backtrace();
 #endif
-
-			task = find_task_by_vpid(owner->pid);
-			if (task) {
-				pr_emerg("spinlock debug show lock owenr[%s/%d] info\n", task->comm, task->pid);
+			if (owner) {
+				pr_emerg("spinlock debug show lock owenr[%s/%d] info\n", owner->comm, owner->pid);
+				smp_call_function_single(lock->owner_cpu, show_cpu_backtrace, NULL, 0);
 				if (debug_locks)
-					debug_show_held_locks(task);
-				show_stack(task, NULL);
+					debug_show_held_locks(owner);
 			}
 
 			/* ensure debug_locks is true,then can call aee */
