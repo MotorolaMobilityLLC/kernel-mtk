@@ -128,21 +128,21 @@ static int ocp1_irq1_number;
 #endif
 
 typedef struct OCP_STAT {
-	int IntEnDis;
-	int IRQ1;
-	int IRQ0;
-	int CapToLkg;
-	int CapOCCGPct;
-	int CaptureValid;
-	int CapTotAct;
-	int CapMAFAct;
-	int CGAvgValid;
-	int CGAvg;
-	int TopRawLkg;
-	int CPU0RawLkg;
-	int CPU1RawLkg;
-	int CPU2RawLkg;
-	int CPU3RawLkg;
+	unsigned int IntEnDis;
+	unsigned int IRQ1;
+	unsigned int IRQ0;
+	unsigned int CapToLkg;
+	unsigned int CapOCCGPct;
+	unsigned int CaptureValid;
+	unsigned int CapTotAct;
+	unsigned int CapMAFAct;
+	unsigned int CGAvgValid;
+	unsigned long long CGAvg;
+	unsigned int TopRawLkg;
+	unsigned int CPU0RawLkg;
+	unsigned int CPU1RawLkg;
+	unsigned int CPU2RawLkg;
+	unsigned int CPU3RawLkg;
 } OCP_STAT;
 
 static struct OCP_STAT ocp_status[3] = {
@@ -539,7 +539,18 @@ return 0;
 
 }
 
+int BigOCPMAFAct(unsigned int *CapMAFAct)
+{
+if (ocp_read_field(OCPAPBSTATUS01, 0:0) == 1)
+	*CapMAFAct = (ocp_read_field(OCPAPBSTATUS03, 19:0) * 1000) >> 12; /* mA(mW)*/
+else
+	*CapMAFAct = 0x0;
 
+	if (HW_API_DEBUG_ON)
+		ocp_info("ocp: big CapMAFAct=%d\n",  *CapMAFAct);
+
+return 0;
+}
 
 /* Little CPU */
 int LittleOCPConfig(int VOffInmV, int VStepInuV)
@@ -967,6 +978,122 @@ return 1;
 }
 
 }
+
+
+int LittleOCPAvgPwr(int Cluster, int EnDis, int Count)
+{
+
+if (!((Cluster == OCP_LL) || (Cluster == OCP_L))) {
+	if (HW_API_RET_DEBUG_ON)
+		ocp_err("parameter Cluster OCP_LL/OCP_L must be 0/1\n");
+
+return -1;
+}
+
+if (!((EnDis == OCP_DISABLE) || (EnDis == OCP_ENABLE))) {
+	if (HW_API_RET_DEBUG_ON)
+		ocp_err("parameter EnDis must be 1/0\n");
+
+return -1;
+}
+
+if ((Count < 0) || (Count > 4194304)) {
+	if (HW_API_RET_DEBUG_ON)
+		ocp_err("parameter Count must be 0 ~ 4194304\n");
+
+return -1;
+}
+
+if (Cluster == OCP_LL) {
+	ocp_write_field(MP0_OCP_GENERAL_CTRL, 1:1, EnDis);
+	ocp_write_field(MP0_OCP_DBG_IFCTRL, 1:1, EnDis);
+	ocp_write_field(MP0_OCP_DBG_IFCTRL1, 21:0, Count);
+	ocp_write_field(MP0_OCP_DBG_STAT, 0:0, ~ocp_read_field(MP0_OCP_DBG_STAT, 0:0));
+	}
+else if (Cluster == OCP_L) {
+	ocp_write_field(MP1_OCP_GENERAL_CTRL, 1:1, EnDis);
+	ocp_write_field(MP1_OCP_DBG_IFCTRL, 1:1, EnDis);
+	ocp_write_field(MP1_OCP_DBG_IFCTRL1, 21:0, Count);
+	ocp_write_field(MP1_OCP_DBG_STAT, 0:0, ~ocp_read_field(MP1_OCP_DBG_STAT, 0:0));
+}
+
+return 0;
+}
+
+int LittleOCPAvgPwrGet(int Cluster, unsigned long long *AvgPwr)
+{
+
+if (!((Cluster == OCP_LL) || (Cluster == OCP_L))) {
+	if (HW_API_RET_DEBUG_ON)
+		ocp_err("parameter Cluster OCP_LL/OCP_L must be 0/1\n");
+
+return -1;
+}
+
+if (Cluster == OCP_LL) {
+	if (ocp_read_field(MP0_OCP_DBG_STAT, 31:31) == 1) {
+		if (ocp_read_field(MP0_OCP_OC_CTRL, 1:0) == 0) {
+				*AvgPwr = ((((((unsigned long long)ocp_read(MP0_OCP_DBG_LKG_H) << 32) +
+				(unsigned long long)ocp_read(MP0_OCP_DBG_LKG_L)) * 32) /
+				(unsigned long long)ocp_read_field(MP0_OCP_DBG_IFCTRL1, 21:0)) * 1000) >> 12;
+		} else if (ocp_read_field(MP0_OCP_OC_CTRL, 1:0) == 1) {
+				*AvgPwr = ((((((unsigned long long)ocp_read(MP0_OCP_DBG_ACT_H) << 32) +
+				(unsigned long long)ocp_read(MP0_OCP_DBG_ACT_L)) * 32) /
+				(unsigned long long)ocp_read_field(MP0_OCP_DBG_IFCTRL1, 21:0)) * 1000) >> 12;
+		}
+	} else {
+		*AvgPwr = 0;
+	}
+} else if (Cluster == OCP_L) {
+	if (ocp_read_field(MP1_OCP_DBG_STAT, 31:31) == 1) {
+		if (ocp_read_field(MP1_OCP_OC_CTRL, 1:0) == 0) {
+				*AvgPwr = ((((((unsigned long long)ocp_read(MP1_OCP_DBG_LKG_H) << 32) +
+				(unsigned long long)ocp_read(MP1_OCP_DBG_LKG_L)) * 32) /
+				(unsigned long long)ocp_read_field(MP1_OCP_DBG_IFCTRL1, 21:0)) * 1000) >> 12;
+		} else if (ocp_read_field(MP1_OCP_OC_CTRL, 1:0) == 1) {
+				*AvgPwr = ((((((unsigned long long)ocp_read(MP1_OCP_DBG_ACT_H) << 32) +
+				(unsigned long long)ocp_read(MP1_OCP_DBG_ACT_L)) * 32) /
+				(unsigned long long)ocp_read_field(MP1_OCP_DBG_IFCTRL1, 21:0)) * 1000) >> 12;
+		}
+	} else {
+		*AvgPwr = 0;
+	}
+
+
+}
+
+return 0;
+}
+
+int LittleOCPMAFAct(int Cluster, unsigned int *CapMAFAct)
+{
+if (Cluster == OCP_LL) {
+	if (ocp_read_field(MP0_OCP_CAP_STATUS00, 0:0) == 1) {
+		*CapMAFAct = (ocp_read_field(MP0_OCP_CAP_STATUS02, 19:0) * 1000) >> 12; /* mA(mW)*/
+
+	if (HW_API_DEBUG_ON)
+		ocp_info("ocp: CL0 MAFAct=%d\n", *CapMAFAct);
+
+	} else {
+		*CapMAFAct = 0x0;
+
+	}
+
+} else if (Cluster == OCP_L) {
+	if (ocp_read_field(MP1_OCP_CAP_STATUS00, 0:0) == 1) {
+		*CapMAFAct = (ocp_read_field(MP1_OCP_CAP_STATUS02, 19:0) * 1000) >> 12; /* mA(mW)*/
+
+	if (HW_API_DEBUG_ON)
+		ocp_info("ocp: CL1 MAFAct=%d\n", *CapMAFAct);
+
+	} else {
+		*CapMAFAct = 0x0;
+
+	}
+	}
+return 0;
+}
+
 
 
 /* Cluster 2 DREQ */
@@ -1553,7 +1680,7 @@ char *buf = _copy_from_user_for_proc(buffer, count);
 	if (!buf)
 		return -EINVAL;
 
-if (!(kstrtoint(buf, 10, &function_id))) {
+if (sscanf(buf, "%d %d %d %d %d", &function_id, &val[0], &val[1], &val[2], &val[3]) > 0) {
 	switch (function_id) {
 	case 3:
 		if (sscanf(buf, "%d %d %d", &function_id, &val[0], &val[1]) == 3)
@@ -1618,7 +1745,7 @@ char *buf = _copy_from_user_for_proc(buffer, count);
 if (!buf)
 	return -EINVAL;
 
-if (!(kstrtoint(buf, 10, &function_id))) {
+if (sscanf(buf, "%d %d %d", &function_id, &val[0], &val[1]) > 0) {
 	switch (function_id) {
 	case 4:
 		if (sscanf(buf, "%d %d %d", &function_id, &val[0], &val[1]) == 3)
@@ -1686,7 +1813,7 @@ char *buf = _copy_from_user_for_proc(buffer, count);
 if (!buf)
 	return -EINVAL;
 
-if (!(kstrtoint(buf, 10, &function_id))) {
+if (sscanf(buf, "%d %d %d", &function_id, &val[0], &val[1]) > 0) {
 		switch (function_id) {
 		case 4:
 			if (sscanf(buf, "%d %d %d", &function_id, &val[0], &val[1]) == 3)
@@ -1756,7 +1883,7 @@ seq_printf(m, "CaptureValid = %d\n", ocp_status[2].CaptureValid);
 seq_printf(m, "CapTotAct    = %d mA(mW)\n", ocp_status[2].CapTotAct);
 /* seq_printf(m, "CapMAFAct  = %d\n", ocp_status[2].CapMAFAct); */
 seq_printf(m, "CGAvgValid   = %d\n", ocp_status[2].CGAvgValid);
-seq_printf(m, "CGAvg        = %d %%\n", ocp_status[2].CGAvg);
+seq_printf(m, "CGAvg        = %llu %%\n", ocp_status[2].CGAvg);
 /*
 seq_printf(m, "TopRawLkg  = %d * 1.5uA\n", ocp_status[2].TopRawLkg);
 seq_printf(m, "CPU0RawLkg = %d * 1.5uA\n", ocp_status[2].CPU0RawLkg);
@@ -1776,7 +1903,7 @@ char *buf = _copy_from_user_for_proc(buffer, count);
 if (!buf)
 	return -EINVAL;
 
-if (!(kstrtoint(buf, 10, &function_id))) {
+if (sscanf(buf, "%d %d %d", &function_id, &val[0], &val[1]) > 0) {
 		switch (function_id) {
 		case 0:
 			if (sscanf(buf, "%d %d %d", &function_id, &val[0], &val[1]) == 3)
@@ -1852,7 +1979,7 @@ char *buf = _copy_from_user_for_proc(buffer, count);
 if (!buf)
 	return -EINVAL;
 
-if (!(kstrtoint(buf, 10, &function_id))) {
+if (sscanf(buf, "%d %d %d", &function_id, &val[0], &val[1]) > 0) {
 	switch (function_id) {
 	case 0:
 		if (sscanf(buf, "%d %d %d", &function_id, &val[0], &val[1]) == 3)
@@ -1926,7 +2053,7 @@ char *buf = _copy_from_user_for_proc(buffer, count);
 if (!buf)
 	return -EINVAL;
 
-if (!(kstrtoint(buf, 10, &function_id))) {
+if (sscanf(buf, "%d %d %d", &function_id, &val[0], &val[1]) > 0) {
 	switch (function_id) {
 	case 0:
 		if (sscanf(buf, "%d %d %d", &function_id, &val[0], &val[1]) == 3)
@@ -1983,7 +2110,7 @@ seq_printf(m, "CaptureValid = %d\n", ocp_status[2].CaptureValid);
 seq_printf(m, "CapTotAct    = %d mA(mW)\n", ocp_status[2].CapTotAct);
 seq_printf(m, "CapMAFAct    = %d mA(mW)\n", ocp_status[2].CapMAFAct);
 seq_printf(m, "CGAvgValid   = %d\n", ocp_status[2].CGAvgValid);
-seq_printf(m, "CGAvg        = %d %%\n", ocp_status[2].CGAvg);
+seq_printf(m, "CGAvg        = %llu %%)\n", ocp_status[2].CGAvg);
 seq_printf(m, "TopRawLkg    = %d * 1.5uA\n", ocp_status[2].TopRawLkg);
 seq_printf(m, "CPU0RawLkg   = %d * 1.5uA\n", ocp_status[2].CPU0RawLkg);
 seq_printf(m, "CPU1RawLkg   = %d * 1.5uA\n", ocp_status[2].CPU1RawLkg);
@@ -1995,6 +2122,11 @@ if (Reg_Debug_on) {
 
 	for (i = 0; i < 148; i += 4)
 		seq_printf(m, "Addr: 0x%x = %x\n", (OCPAPBSTATUS00 + i), ocp_read(OCPAPBSTATUS00 + i));
+
+	seq_printf(m, "Addr: 0x10206660 = %x\n", ocp_read(0x10206660));
+	seq_printf(m, "Addr: 0x10206664 = %x\n", ocp_read(0x10206664));
+	seq_printf(m, "Addr: 0x10206668 = %x\n", ocp_read(0x10206668));
+	seq_printf(m, "Addr: 0x1020666C = %x\n", ocp_read(0x1020666C));
 }
 
 return 0;
@@ -2005,7 +2137,7 @@ loff_t *pos)
 {
 int EnDis, Edge, Count1, Trig, CGAvgSel;
 int Leakage, Total, ClkPct;
-unsigned int CGAvg;
+unsigned int CGAvg, CapMAFAct;
 int TopRawLkg, CPU0RawLkg, CPU1RawLkg;
 char *buf = _copy_from_user_for_proc(buffer, count);
 
@@ -2018,7 +2150,8 @@ if (!((ocp_read_field(OCPAPBCFG00, 0:0) == 1) || (ocp_read_field(OCPAPBCFG00, 1:
 	return count;
 }
 
-if (!(kstrtoint(buf, 10, &EnDis))) {
+
+if (sscanf(buf, "%d %d %d %d", &EnDis, &Edge, &Count1, &Trig) > 0) {
 	switch (EnDis) {
 	case 0:
 		BigOCPCapture(0, 0, 0, 0);
@@ -2049,8 +2182,7 @@ if (!(kstrtoint(buf, 10, &EnDis))) {
 		ocp_info("Cluster 2 BigOCPCaptureStatus : Leakage = %d, Total = %d, ClkPct = %d (
 		valid = %d)\n", Leakage, Total, ClkPct, ocp_read_field(OCPAPBSTATUS01, 0:0));
 		*/
-break;
-
+		break;
 	case 4:
 		BigOCPClkAvg(0, 0);
 		ocp_status[2].CGAvgValid = 0;
@@ -2082,6 +2214,11 @@ break;
 		valid = %d)\n", TopRawLkg, CPU0RawLkg, CPU1RawLkg, ocp_read_field(OCPAPBSTATUS01, 0:0));
 		*/
 		break;
+	case 8:
+			BigOCPMAFAct(&CapMAFAct);
+			ocp_status[2].CapMAFAct = CapMAFAct;
+			ocp_status[2].CaptureValid = ocp_read_field(OCPAPBSTATUS01, 0:0);
+			break;
 	case 9:
 		if (sscanf(buf, "%d %d", &EnDis, &Count1) == 2)
 			Reg_Debug_on = Count1;
@@ -2110,10 +2247,8 @@ seq_printf(m, "CapOCCGPct   = %d %%\n", ocp_status[0].CapOCCGPct);
 seq_printf(m, "CaptureValid = %d\n", ocp_status[0].CaptureValid);
 seq_printf(m, "CapTotAct    = %d mA(mW)\n", ocp_status[0].CapTotAct);
 seq_printf(m, "CapMAFAct    = %d mA(mW)\n", ocp_status[0].CapMAFAct);
-/*
-seq_printf(m, "CGAvgValid = %d\n", ocp_status[0].CGAvgValid);
-seq_printf(m, "CGAvg      = %d %%\n", ocp_status[0].CGAvg);
-*/
+seq_printf(m, "AvgPwrValid  = %d\n", ocp_status[0].CGAvgValid);
+seq_printf(m, "AvgPwr       = %llu mA(mW)\n", ocp_status[0].CGAvg);
 seq_printf(m, "TopRawLkg    = %d * 1.5uA\n", ocp_status[0].TopRawLkg);
 seq_printf(m, "CPU0RawLkg   = %d * 1.5uA\n", ocp_status[0].CPU0RawLkg);
 seq_printf(m, "CPU1RawLkg   = %d * 1.5uA\n", ocp_status[0].CPU1RawLkg);
@@ -2125,6 +2260,12 @@ if (Reg_Debug_on) {
 
 	for (i = 0; i < 524 ; i += 4)
 		seq_printf(m, "Addr: 0x%x = %x\n", (MP0_OCP_IRQSTATE + i), ocp_read(MP0_OCP_IRQSTATE + i));
+
+		seq_printf(m, "Addr: 0x102217FC = %x\n", ocp_read(MP0_OCP_GENERAL_CTRL));
+		seq_printf(m, "Addr: 0x10221250 = %x\n", ocp_read(MP0_OCP_DBG_ACT_L));
+		seq_printf(m, "Addr: 0x10221254 = %x\n", ocp_read(MP0_OCP_DBG_ACT_H));
+		seq_printf(m, "Addr: 0x10221260 = %x\n", ocp_read(MP0_OCP_DBG_LKG_L));
+		seq_printf(m, "Addr: 0x10221264 = %x\n", ocp_read(MP0_OCP_DBG_LKG_H));
 }
 return 0;
 }
@@ -2132,7 +2273,8 @@ return 0;
 static ssize_t ocp_cluster0_capture_proc_write(struct file *file, const char __user *buffer, size_t count, loff_t *pos)
 {
 int EnDis, Edge, Count1, Trig;
-int Leakage, Total, ClkPct;
+int Leakage, Total, ClkPct, CapMAFAct;
+unsigned long long AvgPwr;
 int TopRawLkg, CPU0RawLkg, CPU1RawLkg, CPU2RawLkg, CPU3RawLkg;
 char *buf = _copy_from_user_for_proc(buffer, count);
 
@@ -2145,7 +2287,7 @@ if (ocp_read_field(MP0_OCP_ENABLE, 6:0) != 0x7D) {
 	return count;
 }
 
-if (!(kstrtoint(buf, 10, &EnDis))) {
+if (sscanf(buf, "%d %d %d %d", &EnDis, &Edge, &Count1, &Trig) > 0) {
 	switch (EnDis) {
 	case 0:
 		LittleOCPCapture(0, 0, 0, 0, 0);
@@ -2176,7 +2318,22 @@ if (!(kstrtoint(buf, 10, &EnDis))) {
 		valid = %d)\n", Leakage, Total, ClkPct, ocp_read_field(MP0_OCP_CAP_STATUS00,0:0));
 		*/
 		break;
-	case 3:
+	case 5:
+			if (sscanf(buf, "%d %d %d", &EnDis, &Edge, &Count1) == 3) {
+				if (LittleOCPAvgPwr(0, Edge, Count1) != 0)
+					ocp_err("LittleOCPAvgPwr enable fail!");
+			}
+			break;
+	case 6:
+			LittleOCPAvgPwrGet(0, &AvgPwr);
+			ocp_status[0].CGAvgValid = ocp_read_field(MP0_OCP_DBG_STAT, 31:31);
+				ocp_status[0].CGAvg = AvgPwr;
+				/*
+				ocp_info("Cluster 0 LittleOCPAvgPwrGet: AvgPwr = %llu
+				(valid = %d)\n", AvgPwr, ocp_read_field(MP0_OCP_DBG_STAT, 31:31));
+				*/
+			break;
+	case 7:
 		CL0OCPCaptureRawLkgStatus(&TopRawLkg, &CPU0RawLkg, &CPU1RawLkg, &CPU2RawLkg, &CPU3RawLkg);
 		ocp_status[0].TopRawLkg = TopRawLkg;
 		ocp_status[0].CPU0RawLkg = CPU0RawLkg;
@@ -2190,12 +2347,17 @@ if (!(kstrtoint(buf, 10, &EnDis))) {
 		MP0_OCP_CAP_STATUS00,0:0));
 		*/
 		break;
+	case 8:
+			LittleOCPMAFAct(0, &CapMAFAct);
+			ocp_status[0].CapMAFAct = CapMAFAct;
+			ocp_status[0].CaptureValid = ocp_read_field(MP0_OCP_CAP_STATUS00, 0:0);
+			break;
 	case 9:
 		if (sscanf(buf, "%d %d", &EnDis, &Count1) == 2)
 			Reg_Debug_on = Count1;
 
 		/*
-		for (Count1 = 0; Count1 < 524; Count1 += 4)
+			for (Count1 = 0; Count1 < 524; Count1 += 4)
 			ocp_info("Address: 0x%x = %x\n", (MP0_OCP_IRQSTATE + Count1), ocp_read(
 			MP0_OCP_IRQSTATE + Count1));
 		*/
@@ -2220,9 +2382,8 @@ seq_printf(m, "CapOCCGPct   = %d %%\n", ocp_status[1].CapOCCGPct);
 seq_printf(m, "CaptureValid = %d\n", ocp_status[1].CaptureValid);
 seq_printf(m, "CapTotAct    = %d mA(mW)\n", ocp_status[1].CapTotAct);
 seq_printf(m, "CapMAFAct    = %d mA(mW)\n", ocp_status[1].CapMAFAct);
-/* seq_printf(m, "CGAvgValid = %d\n", ocp_status[1].CGAvgValid);
-seq_printf(m, "CGAvg = %d %%\n", ocp_status[1].CGAvg);
-*/
+seq_printf(m, "AvgPwrValid  = %d\n", ocp_status[1].CGAvgValid);
+seq_printf(m, "AvgPwr       = %llu mA(mW)\n", ocp_status[1].CGAvg);
 seq_printf(m, "TopRawLkg    = %d * 1.5uA\n", ocp_status[1].TopRawLkg);
 seq_printf(m, "CPU0RawLkg   = %d * 1.5uA\n", ocp_status[1].CPU0RawLkg);
 seq_printf(m, "CPU1RawLkg   = %d * 1.5uA\n", ocp_status[1].CPU1RawLkg);
@@ -2234,6 +2395,12 @@ if (Reg_Debug_on) {
 
 	for (i = 0; i < 524; i += 4)
 		seq_printf(m, "Addr: 0x%x = %x\n", (MP1_OCP_IRQSTATE + i), ocp_read(MP1_OCP_IRQSTATE + i));
+
+		seq_printf(m, "Addr: 0x102237FC = %x\n", ocp_read(MP1_OCP_GENERAL_CTRL));
+		seq_printf(m, "Addr: 0x10223250 = %x\n", ocp_read(MP1_OCP_DBG_ACT_L));
+		seq_printf(m, "Addr: 0x10223254 = %x\n", ocp_read(MP1_OCP_DBG_ACT_H));
+		seq_printf(m, "Addr: 0x10223260 = %x\n", ocp_read(MP1_OCP_DBG_LKG_L));
+		seq_printf(m, "Addr: 0x10223264 = %x\n", ocp_read(MP1_OCP_DBG_LKG_H));
 }
 
 return 0;
@@ -2242,7 +2409,8 @@ return 0;
 static ssize_t ocp_cluster1_capture_proc_write(struct file *file, const char __user *buffer, size_t count, loff_t *pos)
 {
 int EnDis, Edge, Count1, Trig;
-int Leakage, Total, ClkPct;
+int Leakage, Total, ClkPct, CapMAFAct;
+unsigned long long AvgPwr;
 int TopRawLkg, CPU0RawLkg, CPU1RawLkg, CPU2RawLkg, CPU3RawLkg;
 char *buf = _copy_from_user_for_proc(buffer, count);
 
@@ -2255,7 +2423,7 @@ if (ocp_read_field(MP1_OCP_ENABLE, 6:0) != 0x7D) {
 	return count;
 }
 
-if (!(kstrtoint(buf, 10, &EnDis))) {
+if (sscanf(buf, "%d %d %d %d", &EnDis, &Edge, &Count1, &Trig) > 0) {
 	switch (EnDis) {
 	case 0:
 		LittleOCPCapture(1, 0, 0, 0, 0);
@@ -2286,7 +2454,22 @@ if (!(kstrtoint(buf, 10, &EnDis))) {
 		valid = %d)\n", Leakage, Total, ClkPct, ocp_read_field(MP1_OCP_CAP_STATUS00,0:0));
 		*/
 		break;
-	case 3:
+	case 5:
+			if (sscanf(buf, "%d %d %d", &EnDis, &Edge, &Count1) == 3) {
+				if (LittleOCPAvgPwr(1, Edge, Count1) != 0)
+					ocp_err("LittleOCPAvgPwr enable fail!");
+			}
+		break;
+	case 6:
+			LittleOCPAvgPwrGet(1, &AvgPwr);
+			ocp_status[1].CGAvgValid = ocp_read_field(MP1_OCP_DBG_STAT, 31:31);
+			ocp_status[1].CGAvg = AvgPwr;
+			/*
+			ocp_info("Cluster 1 LittleOCPAvgPwrGet: AvgPwr = %llu
+			(valid = %d)\n", AvgPwr, ocp_read_field(MP1_OCP_DBG_STAT, 31:31));
+			*/
+			break;
+	case 7:
 		CL1OCPCaptureRawLkgStatus(&TopRawLkg, &CPU0RawLkg, &CPU1RawLkg, &CPU2RawLkg, &CPU3RawLkg);
 		ocp_status[1].TopRawLkg = TopRawLkg;
 		ocp_status[1].CPU0RawLkg = CPU0RawLkg;
@@ -2300,10 +2483,14 @@ if (!(kstrtoint(buf, 10, &EnDis))) {
 		MP0_OCP_CAP_STATUS00,0:0));
 		*/
 		break;
+	case 8:
+			LittleOCPMAFAct(1, &CapMAFAct);
+			ocp_status[1].CapMAFAct = CapMAFAct;
+			ocp_status[1].CaptureValid = ocp_read_field(MP1_OCP_CAP_STATUS00, 0:0);
+			break;
 	case 9:
 		if (sscanf(buf, "%d %d", &EnDis, &Count1) == 2)
 			Reg_Debug_on = Count1;
-
 		/*
 			for (Count1 = 0; Count1 < 524; Count1 += 4)
 			ocp_info("Address: 0x%x = %x\n", (MP1_OCP_IRQSTATE + Count1), ocp_read(
@@ -2343,7 +2530,7 @@ char *buf = _copy_from_user_for_proc(buffer, count);
 if (!buf)
 	return -EINVAL;
 
-if (!(kstrtoint(buf, 10, &function_id))) {
+if (sscanf(buf, "%d %d %d", &function_id, &val[0], &val[1]) > 0) {
 	switch (function_id) {
 	case 0:
 		if (sscanf(buf, "%d %d %d", &function_id, &val[0], &val[1]) == 3) {
@@ -2480,7 +2667,7 @@ char *buf = _copy_from_user_for_proc(buffer, count);
 if (!buf)
 	return -EINVAL;
 
-if (!(kstrtoint(buf, 10, &function_id))) {
+if (sscanf(buf, "%d %d %d %d %d", &function_id, &val[0], &val[1], &val[2], &val[3]) > 0) {
 	switch (function_id) {
 	case 1:
 		/* LkgMon TM1 */
@@ -3605,7 +3792,7 @@ int err = 0;
 
 #if 1
 struct device_node *node = NULL;
-node = of_find_compatible_node(NULL, NULL, "mediatek,OCP_CFG");
+node = of_find_compatible_node(NULL, NULL, "mediatek,ocp_cfg");
 if (node) {
 	/* Setup IO addresses */
 	ocp_base = of_iomap(node, 0);

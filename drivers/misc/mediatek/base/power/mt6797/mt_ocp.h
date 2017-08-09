@@ -116,6 +116,16 @@ extern void __iomem *ocp_base;  /*0x10220000 */
 #define MP0_OCP_CAP_STATUS06   (OCP_BASE_ADDR + 0x101C)
 #define MP0_OCP_CAP_STATUS07   (OCP_BASE_ADDR + 0x1020)
 #define MP0_OCP_ENABLE         (OCP_BASE_ADDR + 0x1040)
+#define MP0_OCP_OC_CTRL        (OCP_BASE_ADDR + 0x105C)
+#define MP0_OCP_GENERAL_CTRL   (OCP_BASE_ADDR + 0x17FC)
+#define MP0_OCP_DBG_IFCTRL     (OCP_BASE_ADDR + 0x1200)
+#define MP0_OCP_DBG_IFCTRL1    (OCP_BASE_ADDR + 0x1204)
+#define MP0_OCP_DBG_STAT       (OCP_BASE_ADDR + 0x1208)
+#define MP0_OCP_DBG_ACT_L      (OCP_BASE_ADDR + 0x1250)
+#define MP0_OCP_DBG_ACT_H      (OCP_BASE_ADDR + 0x1254)
+#define MP0_OCP_DBG_LKG_L      (OCP_BASE_ADDR + 0x1260)
+#define MP0_OCP_DBG_LKG_H      (OCP_BASE_ADDR + 0x1264)
+
 
 /* L */
 #define MP1_OCP_IRQSTATE       (OCP_BASE_ADDR + 0x3000)
@@ -128,6 +138,15 @@ extern void __iomem *ocp_base;  /*0x10220000 */
 #define MP1_OCP_CAP_STATUS06   (OCP_BASE_ADDR + 0x301C)
 #define MP1_OCP_CAP_STATUS07   (OCP_BASE_ADDR + 0x3020)
 #define MP1_OCP_ENABLE         (OCP_BASE_ADDR + 0x3040)
+#define MP1_OCP_OC_CTRL        (OCP_BASE_ADDR + 0x305C)
+#define MP1_OCP_GENERAL_CTRL   (OCP_BASE_ADDR + 0x37FC)
+#define MP1_OCP_DBG_IFCTRL     (OCP_BASE_ADDR + 0x3200)
+#define MP1_OCP_DBG_IFCTRL1    (OCP_BASE_ADDR + 0x3204)
+#define MP1_OCP_DBG_STAT       (OCP_BASE_ADDR + 0x3208)
+#define MP1_OCP_DBG_ACT_L      (OCP_BASE_ADDR + 0x3250)
+#define MP1_OCP_DBG_ACT_H      (OCP_BASE_ADDR + 0x3254)
+#define MP1_OCP_DBG_LKG_L      (OCP_BASE_ADDR + 0x3260)
+#define MP1_OCP_DBG_LKG_H      (OCP_BASE_ADDR + 0x3264)
 
 /* for ALL */
 #define OCP_MA    (0x0)
@@ -222,8 +241,43 @@ extern void __iomem *ocp_base;  /*0x10220000 */
 #define LITTLE_SRAMDREQ  (0x10001000)
 
 
-#undef OCP_EXTERN
 #endif
+
+/* OCP */
+extern int BigOCPConfig(int VOffInmV, int VStepInuV);
+extern int BigOCPSetTarget(int OCPMode, int Target);
+extern int BigOCPEnable(int OCPMode, int Units, int ClkPctMin, int FreqPctMin);
+extern void BigOCPDisable(void);
+extern int BigOCPCapture(int EnDis, int Edge, int Count, int Trig);
+extern int BigOCPCaptureStatus(int *Leakage, int *Total, int *ClkPct);
+extern int BigOCPClkAvg(int EnDis, int CGAvgSel);
+extern int BigOCPClkAvgStatus(unsigned int *CGAvg);
+extern int BigOCPCaptureRawLkgStatus(int *TopRawLkg, int *CPU0RawLkg, int *CPU1RawLkg);
+extern int BigOCPMAFAct(unsigned int *CapMAFAct);
+
+extern int LittleOCPConfig(int VOffInmV, int VStepInuV);
+extern int LittleOCPSetTarget(int Cluster, int Target);
+extern int LittleOCPEnable(int Cluster, int Units, int ClkPctMin);
+extern int LittleOCPDisable(int Cluster);
+extern int LittleOCPDVFSSet(int Cluster, int FreqMHz, int VoltInmV);
+extern int LittleOCPCapture(int Cluster, int EnDis, int Edge, int Count, int Trig);
+extern int LittleOCPCaptureGet(int Cluster, int *Leakage, int *Total, int *ClkPct);
+extern int CL0OCPCaptureRawLkgStatus(int *TopRawLkg, int *CPU0RawLkg,
+			int *CPU1RawLkg, int *CPU2RawLkg, int *CPU3RawLkg);
+extern int CL1OCPCaptureRawLkgStatus(int *TopRawLkg, int *CPU0RawLkg,
+			int *CPU1RawLkg, int *CPU2RawLkg, int *CPU3RawLkg);
+extern int LittleOCPAvgPwr(int Cluster, int EnDis, int Count);
+extern int LittleOCPAvgPwrGet(int Cluster, unsigned long long *AvgPwr);
+extern int LittleOCPMAFAct(int Cluster, unsigned int *CapMAFAct);
+/* DREQ + SRAMLDO */
+extern int BigSRAMLDOEnable(int mVolts);
+extern int BigDREQHWEn(int VthHi, int VthLo);
+extern int BigDREQSWEn(int Value);
+extern int BigDREQGet(void);
+extern int LittleDREQSWEn(int EnDis);
+extern int LittleDREQGet(void);
+
+
 
 extern unsigned int da9214_config_interface(unsigned char RegNum, unsigned char val,
 unsigned char MASK, unsigned char SHIFT);
