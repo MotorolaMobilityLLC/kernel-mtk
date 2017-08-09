@@ -646,6 +646,7 @@ enum ppm_power_state ppm_judge_state_by_user_limit(enum ppm_power_state cur_stat
 	int sum = LL_core_min + L_core_min;
 	int B_core_min = user_limit.limit[PPM_CLUSTER_B].min_core_num;
 	int B_core_max = user_limit.limit[PPM_CLUSTER_B].max_core_num;
+	int root_cluster = ppm_main_info.fixed_root_cluster;
 
 	ppm_ver("Judge: input --> [%s] (%d)(%d)(%d)(%d)(%d)(%d) [(%d)(%d)]\n",
 		ppm_get_power_state_name(cur_state), LL_core_min, LL_core_max,
@@ -678,6 +679,8 @@ enum ppm_power_state ppm_judge_state_by_user_limit(enum ppm_power_state cur_stat
 		if (B_core_min <= 0) {
 			new_state = (LL_core_max == 0) ? PPM_POWER_STATE_L_ONLY
 				: (L_core_min <= 0 || L_core_max == 0) ? cur_state
+				/* should not go to L only due to root cluster is fixed at LL */
+				: (L_core_min > 0 && root_cluster == PPM_CLUSTER_LL) ? PPM_POWER_STATE_4LL_L
 				: (LL_core_min <= 0) ? PPM_POWER_STATE_L_ONLY
 				/* merge to L cluster */
 				: (sum <= L_core_max && L_freq_max >= LL_freq_min) ? PPM_POWER_STATE_L_ONLY
@@ -734,14 +737,16 @@ enum ppm_power_state ppm_judge_state_by_user_limit(enum ppm_power_state cur_stat
 	}
 
 	/* check root cluster is fixed or not */
-	switch (ppm_main_info.fixed_root_cluster) {
+	switch (root_cluster) {
 	case PPM_CLUSTER_LL:
-		if (new_state == PPM_POWER_STATE_L_ONLY || new_state == PPM_POWER_STATE_4L_LL)
-			new_state = PPM_POWER_STATE_NONE;
+		new_state = (new_state == PPM_POWER_STATE_L_ONLY) ? PPM_POWER_STATE_NONE
+			: (new_state == PPM_POWER_STATE_4L_LL) ? PPM_POWER_STATE_4LL_L
+			: new_state;
 		break;
 	case PPM_CLUSTER_L:
-		if (new_state == PPM_POWER_STATE_LL_ONLY || new_state == PPM_POWER_STATE_4LL_L)
-			new_state = PPM_POWER_STATE_NONE;
+		new_state = (new_state == PPM_POWER_STATE_LL_ONLY) ? PPM_POWER_STATE_NONE
+			: (new_state == PPM_POWER_STATE_4LL_L) ? PPM_POWER_STATE_4L_LL
+			: new_state;
 		break;
 	default:
 		break;

@@ -588,6 +588,8 @@ enum ppm_power_state ppm_judge_state_by_user_limit(enum ppm_power_state cur_stat
 	case PPM_POWER_STATE_LL_ONLY:
 		new_state = (LL_core_max == 0) ? PPM_POWER_STATE_L_ONLY
 			: (L_core_min <= 0 || L_core_max == 0) ? cur_state
+			/* should not go to L only due to root cluster is fixed at LL */
+			: (L_core_min > 0 && ppm_main_info.fixed_root_cluster == 0) ? PPM_POWER_STATE_4LL_L
 			: (LL_core_min <= 0) ? PPM_POWER_STATE_L_ONLY
 			: (LL_core_min == 4) ? PPM_POWER_STATE_4LL_L
 			: (L_core_min == 4) ? PPM_POWER_STATE_4L_LL
@@ -628,12 +630,14 @@ enum ppm_power_state ppm_judge_state_by_user_limit(enum ppm_power_state cur_stat
 	/* check root cluster is fixed or not */
 	switch (ppm_main_info.fixed_root_cluster) {
 	case 0:
-		if (new_state == PPM_POWER_STATE_L_ONLY || new_state == PPM_POWER_STATE_4L_LL)
-			new_state = PPM_POWER_STATE_NONE;
+		new_state = (new_state == PPM_POWER_STATE_L_ONLY) ? PPM_POWER_STATE_NONE
+			: (new_state == PPM_POWER_STATE_4L_LL) ? PPM_POWER_STATE_4LL_L
+			: new_state;
 		break;
 	case 1:
-		if (new_state == PPM_POWER_STATE_LL_ONLY || new_state == PPM_POWER_STATE_4LL_L)
-			new_state = PPM_POWER_STATE_NONE;
+		new_state = (new_state == PPM_POWER_STATE_LL_ONLY) ? PPM_POWER_STATE_NONE
+			: (new_state == PPM_POWER_STATE_4LL_L) ? PPM_POWER_STATE_4L_LL
+			: new_state;
 		break;
 	default:
 		break;
