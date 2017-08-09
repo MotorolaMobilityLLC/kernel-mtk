@@ -141,6 +141,10 @@ static struct c2k_port c2k_ports[] = {
 	{AT2_CH_C2K, AT2_CH_C2K, CCCI_C2K_AT2, CCCI_C2K_AT2,},	/*AT2 for rild, new */
 	{AT3_CH_C2K, AT3_CH_C2K, CCCI_C2K_AT3, CCCI_C2K_AT3,},	/*AT3 for rild, new */
 	{AT4_CH_C2K, AT4_CH_C2K, CCCI_C2K_AT4, CCCI_C2K_AT4,},	/*AT4 for rild, new */
+	{AT5_CH_C2K, AT5_CH_C2K, CCCI_C2K_AT5, CCCI_C2K_AT5,},	/*AT4 for rild, new */
+	{AT6_CH_C2K, AT6_CH_C2K, CCCI_C2K_AT6, CCCI_C2K_AT6,},	/*AT4 for rild, new */
+	{AT7_CH_C2K, AT7_CH_C2K, CCCI_C2K_AT7, CCCI_C2K_AT7,},	/*AT4 for rild, new */
+	{AT8_CH_C2K, AT8_CH_C2K, CCCI_C2K_AT8, CCCI_C2K_AT8,},	/*AT4 for rild, new */
 	{AGPS_CH_C2K, AGPS_CH_C2K, CCCI_IPC_UART_TX, CCCI_IPC_UART_RX,},	/*agps channel */
 	{MD2AP_LOOPBACK_C2K, MD2AP_LOOPBACK_C2K, CCCI_C2K_LB_DL, CCCI_C2K_LB_DL,},
 	{LOOPBACK_C2K, LOOPBACK_C2K, CCCI_LB_IT_TX, CCCI_LB_IT_RX,},
@@ -466,15 +470,25 @@ static void md_ccif_traffic_monitor_func(unsigned long data)
 	ccci_channel_dump_packet_counter(md);
 	/*pre_cnt for tx, pkt_cont for rx*/
 	CCCI_REPEAT_LOG(md->index, TAG,
-		"traffic(AT): tx:[%d]%ld, [%d]%ld, [%d]%ld, [%d]%ld rx:[%d]%ld, [%d]%ld, [%d]%ld, [%d]%ld\n",
+		"traffic(AT): tx:[%d]%ld, [%d]%ld, [%d]%ld, [%d]%ld, [%d]%ld, [%d]%ld, [%d]%ld, [%d]%ld\n",
 		     CCCI_C2K_AT, md->logic_ch_pkt_pre_cnt[CCCI_C2K_AT],
 		     CCCI_C2K_AT2, md->logic_ch_pkt_pre_cnt[CCCI_C2K_AT2],
 		     CCCI_C2K_AT3, md->logic_ch_pkt_pre_cnt[CCCI_C2K_AT3],
 		     CCCI_C2K_AT4, md->logic_ch_pkt_pre_cnt[CCCI_C2K_AT4],
+		     CCCI_C2K_AT5, md->logic_ch_pkt_pre_cnt[CCCI_C2K_AT5],
+		     CCCI_C2K_AT6, md->logic_ch_pkt_pre_cnt[CCCI_C2K_AT6],
+		     CCCI_C2K_AT7, md->logic_ch_pkt_pre_cnt[CCCI_C2K_AT7],
+		     CCCI_C2K_AT8, md->logic_ch_pkt_pre_cnt[CCCI_C2K_AT8]);
+	CCCI_REPEAT_LOG(md->index, TAG,
+		"traffic(AT): rx:[%d]%ld, [%d]%ld, [%d]%ld, [%d]%ld, [%d]%ld, [%d]%ld, [%d]%ld, [%d]%ld\n",
 		     CCCI_C2K_AT, md->logic_ch_pkt_cnt[CCCI_C2K_AT],
 		     CCCI_C2K_AT2, md->logic_ch_pkt_cnt[CCCI_C2K_AT2],
 		     CCCI_C2K_AT3, md->logic_ch_pkt_cnt[CCCI_C2K_AT3],
-		     CCCI_C2K_AT4, md->logic_ch_pkt_cnt[CCCI_C2K_AT4]);
+		     CCCI_C2K_AT4, md->logic_ch_pkt_cnt[CCCI_C2K_AT4],
+		     CCCI_C2K_AT5, md->logic_ch_pkt_cnt[CCCI_C2K_AT5],
+		     CCCI_C2K_AT6, md->logic_ch_pkt_cnt[CCCI_C2K_AT6],
+		     CCCI_C2K_AT7, md->logic_ch_pkt_cnt[CCCI_C2K_AT7],
+		     CCCI_C2K_AT8, md->logic_ch_pkt_cnt[CCCI_C2K_AT8]);
 	mod_timer(&md_ctrl->traffic_monitor, jiffies + CCIF_TRAFFIC_MONITOR_INTERVAL * HZ);
 }
 

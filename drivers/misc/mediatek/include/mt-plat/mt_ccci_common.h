@@ -622,6 +622,10 @@ typedef enum {
 	CCCI_C2K_AT2,	/*rild AT2 ch for c2k*/
 	CCCI_C2K_AT3,	/*rild AT3 ch for c2k*/
 	CCCI_C2K_AT4,	/*rild AT4 ch for c2k*/
+	CCCI_C2K_AT5,	/*rild AT5 ch for c2k*/
+	CCCI_C2K_AT6,	/*rild AT6 ch for c2k*/
+	CCCI_C2K_AT7,	/*rild AT7 ch for c2k*/
+	CCCI_C2K_AT8,	/*rild AT8 ch for c2k*/
 	CCCI_C2K_LB_DL,	/*downlink loopback*/
 
 	/* virtual channels */
@@ -656,6 +660,10 @@ enum c2k_channel {
 	NET6_CH_C2K = 17,	/*need sync with c2k */
 	NET7_CH_C2K = 18,
 	NET8_CH_C2K = 19,
+	AT5_CH_C2K = 20,
+	AT6_CH_C2K = 21,
+	AT7_CH_C2K = 22,
+	AT8_CH_C2K = 23,
 
 	C2K_MAX_CH_NUM,
 

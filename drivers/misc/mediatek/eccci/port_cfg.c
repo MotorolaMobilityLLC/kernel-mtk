@@ -157,6 +157,10 @@ static struct ccci_port md3_ccci_ports[] = {
 	{CCCI_C2K_AT2, CCCI_C2K_AT2, 5, 5, 0xFF, 0xFF, 0, &char_port_ops, 21, "ccci3_at2",},
 	{CCCI_C2K_AT3, CCCI_C2K_AT3, 5, 5, 0xFF, 0xFF, 0, &char_port_ops, 22, "ccci3_at3",},
 	{CCCI_C2K_AT4, CCCI_C2K_AT4, 5, 5, 0xFF, 0xFF, 0, &char_port_ops, 23, "ccci3_at4",},
+	{CCCI_C2K_AT5, CCCI_C2K_AT5, 5, 5, 0xFF, 0xFF, 0, &char_port_ops, 24, "ccci3_at5",},
+	{CCCI_C2K_AT6, CCCI_C2K_AT6, 5, 5, 0xFF, 0xFF, 0, &char_port_ops, 25, "ccci3_at6",},
+	{CCCI_C2K_AT7, CCCI_C2K_AT7, 5, 5, 0xFF, 0xFF, 0, &char_port_ops, 26, "ccci3_at7",},
+	{CCCI_C2K_AT8, CCCI_C2K_AT8, 5, 5, 0xFF, 0xFF, 0, &char_port_ops, 27, "ccci3_at8",},
 	{CCCI_C2K_LB_DL, CCCI_C2K_LB_DL, 5, 5, 0xFF, 0xFF, 0, &char_port_ops, 24, "ccci3_lb_dl",},
 /* sys port */
 	{CCCI_CONTROL_TX, CCCI_CONTROL_RX, 0, 0, 0, 0, 0, &kernel_port_ops, 0, "ccci3_ctrl",},
