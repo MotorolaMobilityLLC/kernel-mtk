@@ -247,9 +247,7 @@ void msdc_oc_check(struct msdc_host *host)
 
 void msdc_emmc_power(struct msdc_host *host, u32 on)
 {
-	unsigned long tmo = 0;
 	void __iomem *base = host->base;
-	unsigned int sa_timeout;
 
 	if (on == 0) {
 		if ((MSDC_READ32(MSDC_PS) & 0x10000) != 0x10000)
