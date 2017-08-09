@@ -329,6 +329,7 @@ static int get_set_conduit_method(struct device_node *np)
 	return 0;
 }
 
+#ifndef CONFIG_ARCH_MT6797
 static void psci_sys_reset(enum reboot_mode reboot_mode, const char *cmd)
 {
 	invoke_psci_fn(PSCI_0_2_FN_SYSTEM_RESET, 0, 0, 0);
@@ -338,6 +339,7 @@ static void psci_sys_poweroff(void)
 {
 	invoke_psci_fn(PSCI_0_2_FN_SYSTEM_OFF, 0, 0, 0);
 }
+#endif
 
 /*
  * PSCI Function IDs for v0.2+ are well defined so use
