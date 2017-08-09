@@ -36,6 +36,7 @@
 #include <mt-plat/upmu_common.h>
 
 #include "leds_sw.h"
+#include "leds_hal.h"
 
 /* for LED&Backlight bringup, define the dummy API */
 #ifndef CONFIG_MTK_PMIC
