@@ -716,12 +716,14 @@ static unsigned int _mt_cpufreq_get_cpu_level(void)
 	cpufreq_ver("from efuse: function code 0 = 0x%x, function code 1 = 0x%x\n", func_code_0,
 		     func_code_1);
 
-	if (func_code_1 == 0)
+	if ((func_code_1 == 0) || (func_code_1 == 3))
 		lv = CPU_LEVEL_0;
 	else if (func_code_1 == 1)
 		lv = CPU_LEVEL_1;
-	else /* if (func_code_1 == 2) */
+	else if ((func_code_1 == 2) || (func_code_1 == 7))
 		lv = CPU_LEVEL_2;
+	else
+		lv = CPU_LEVEL_0;
 
 	/* get CPU clock-frequency from DT */
 #ifdef CONFIG_OF
@@ -3292,7 +3294,7 @@ static int _cpufreq_set_locked(struct mt_cpu_dvfs *p, unsigned int cur_khz, unsi
 		    (p->ops->get_cur_vsram(p) / 100), p->name, p->ops->get_cur_phy_freq(p));
 
 		/* trigger exception if freq/volt not correct during stress */
-		if (do_dvfs_stress_test
+		if (do_dvfs_stress_test && !p->dvfs_disable_by_suspend
 #ifdef CONFIG_HYBRID_CPU_DVFS
 		    && (!enable_cpuhvfs || cur_khz != target_khz)
 #endif

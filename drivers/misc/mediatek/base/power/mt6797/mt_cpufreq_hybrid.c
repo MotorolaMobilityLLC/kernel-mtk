@@ -34,9 +34,8 @@
 
 
 /**************************************
- * [CPU SPM] Config
+ * [Hybrid DVFS] Config
  **************************************/
-static u32 wa_get_emi_sema = 1;
 
 
 /**************************************
@@ -621,6 +620,8 @@ static u32 sema_fail_ke;
 static u32 pause_fail_ke;
 #endif
 
+static u32 wa_get_emi_sema = 1;
+
 static DEFINE_SPINLOCK(dvfs_lock);
 
 static DECLARE_WAIT_QUEUE_HEAD(dvfs_wait);
@@ -875,7 +876,7 @@ static void __cspm_pcm_sw_reset(void)
 
 static void __cspm_register_init(void)
 {
-	/* enable register control */
+	/* enable register write */
 	cspm_write(CSPM_POWERON_CONFIG_EN, REGWR_CFG_KEY | REGWR_EN);
 
 	/* init power control register */
@@ -1378,6 +1379,8 @@ static int cspm_get_semaphore(struct cpuhvfs_dvfsp *dvfsp, enum sema_user user)
 
 	cspm_dbgx(SEMA, "sema get, user = %u\n", user);
 
+	cspm_write(CSPM_POWERON_CONFIG_EN, REGWR_CFG_KEY | REGWR_EN);	/* enable register write */
+
 	for (i = 0; i < n; i++) {
 		cspm_write(sema_reg[user], 0x1);
 		if (cspm_read(sema_reg[user]) & 0x1)
@@ -1403,6 +1406,8 @@ static void cspm_release_semaphore(struct cpuhvfs_dvfsp *dvfsp, enum sema_user u
 		return;
 
 	cspm_dbgx(SEMA, "sema release, user = %u\n", user);
+
+	cspm_write(CSPM_POWERON_CONFIG_EN, REGWR_CFG_KEY | REGWR_EN);	/* enable register write */
 
 	if (cspm_read(sema_reg[user]) & 0x1) {
 		cspm_write(sema_reg[user], 0x1);
@@ -1878,16 +1883,7 @@ static int cspm_module_init(struct cpuhvfs_dvfsp *dvfsp)
 
 	return 0;
 }
-/**************************************
- * [Hybrid DVFS] debug log
- **************************************/
-extern void cpuhvfs_get_pause_status_i2c(void)
-{
-	cspm_err("pause_src_map = 0x%x\n", pause_src_map);
-	cspm_err("SW_RSV0: 0x%x\n", cspm_read(CSPM_SW_RSV0));
-	cspm_err("SW_RSV1: 0x%x\n", cspm_read(CSPM_SW_RSV1));
-	cspm_err("SW_RSV2: 0x%x\n", cspm_read(CSPM_SW_RSV2));
-}
+
 
 /**************************************
  * [Hybrid DVFS] Function
@@ -2051,6 +2047,14 @@ static void init_cpuhvfs_debug_repo(struct cpuhvfs_data *cpuhvfs)
 /**************************************
  * [Hybrid DVFS] API
  **************************************/
+void cpuhvfs_get_pause_status_i2c(void)		/* deprecated */
+{
+	cspm_err("pause_src_map = 0x%x\n", pause_src_map);
+	cspm_err("SW_RSV0: 0x%x\n", cspm_read(CSPM_SW_RSV0));
+	cspm_err("SW_RSV1: 0x%x\n", cspm_read(CSPM_SW_RSV1));
+	cspm_err("SW_RSV2: 0x%x\n", cspm_read(CSPM_SW_RSV2));
+}
+
 void cpuhvfs_dump_dvfsp_info(void)
 {
 	struct cpuhvfs_dvfsp *dvfsp = g_cpuhvfs.dvfsp;
@@ -2327,4 +2331,4 @@ fs_initcall(cpuhvfs_pre_module_init);
 
 #endif	/* CONFIG_HYBRID_CPU_DVFS */
 
-MODULE_DESCRIPTION("Hybrid CPU DVFS Driver v0.5");
+MODULE_DESCRIPTION("Hybrid CPU DVFS Driver v0.6");

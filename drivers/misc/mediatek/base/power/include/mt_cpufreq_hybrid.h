@@ -165,7 +165,7 @@ extern int cpuhvfs_dvfsp_suspend(void);
 extern void cpuhvfs_dvfsp_resume(unsigned int on_cluster, struct init_sta *sta);
 
 extern void cpuhvfs_dump_dvfsp_info(void);
-extern void cpuhvfs_get_pause_status_i2c(void);
+extern void cpuhvfs_get_pause_status_i2c(void);		/* deprecated */
 #else
 static inline int cpuhvfs_module_init(void)		{ return -ENODEV; }
 static inline int cpuhvfs_kick_dvfsp_to_run(struct init_sta *sta)	{ return -ENODEV; }
@@ -195,9 +195,7 @@ static inline int cpuhvfs_dvfsp_suspend(void)		{ return 0; }
 static inline void cpuhvfs_dvfsp_resume(unsigned int on_cluster, struct init_sta *sta)	{}
 
 static inline void cpuhvfs_dump_dvfsp_info(void)	{}
-extern void cpuhvfs_get_pause_status_i2c(void)	{}
+static inline void cpuhvfs_get_pause_status_i2c(void)	{}	/* deprecated */
 #endif
-
-
 
 #endif	/* _MT_CPUFREQ_HYBRID_ */
