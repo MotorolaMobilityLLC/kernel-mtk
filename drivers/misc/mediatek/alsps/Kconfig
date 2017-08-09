@@ -16,3 +16,4 @@ config MTK_AUTO_DETECT_ALSPS
           usually only one ALSPS driver can be probed.
 
 source "drivers/misc/mediatek/alsps/cm36652-new/Kconfig"
+source "drivers/misc/mediatek/alsps/APDS9930-new/Kconfig"
