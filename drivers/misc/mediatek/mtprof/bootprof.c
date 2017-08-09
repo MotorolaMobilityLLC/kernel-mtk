@@ -8,7 +8,6 @@
 #include <linux/printk.h>
 
 #include "internal.h"
-#include "mt_cputime.h"
 
 #define BOOT_STR_SIZE 128
 #ifdef CONFIG_MT_ENG_BUILD
@@ -40,10 +39,6 @@ void log_boot(char *str)
 		return;
 	ts = sched_clock();
 	pr_err("BOOTPROF:%10Ld.%06ld:%s\n", nsec_high(ts), nsec_low(ts), str);
-	if (strncmp("BOOT_Animation:START", str, 20) == 0)
-		mt_cputime_switch(1);
-	if (strncmp("BOOT_Animation:END", str, 17) == 0)
-		mt_cputime_switch(0);
 	if (boot_log_count >= BOOT_LOG_NUM) {
 		pr_err("[BOOTPROF] not enuough bootprof buffer\n");
 		return;

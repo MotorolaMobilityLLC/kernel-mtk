@@ -144,6 +144,7 @@ void __irq_wake_thread(struct irq_desc *desc, struct irqaction *action)
 	wake_up_process(action->thread);
 }
 
+#if defined(CONFIG_MTPROF_CPUTIME) || defined(CONFIG_MT_RT_THROTTLE_MON)
 static void save_isr_info(unsigned int irq, struct irqaction *action,
 			  unsigned long long start, unsigned long long end)
 {
@@ -194,7 +195,6 @@ static void save_isr_info(unsigned int irq, struct irqaction *action,
 		return;
 	}
 #endif
-#ifdef CONFIG_MT_RT_THROTTLE_MON
 	/* only record dur in mtk_isr_time if:
 	 * CONFIG_MTPROF_CPUTIME defined but not enabled, or
 	 * CONFIG_MTPROF_CPUTIME not defined
@@ -202,8 +202,8 @@ static void save_isr_info(unsigned int irq, struct irqaction *action,
 	if ((current->policy == SCHED_FIFO || current->policy == SCHED_RR)
 	    && mt_rt_mon_enable())
 		current->se.mtk_isr_time += dur;
-#endif
 }
+#endif
 
 irqreturn_t
 handle_irq_event_percpu(struct irq_desc *desc, struct irqaction *action)

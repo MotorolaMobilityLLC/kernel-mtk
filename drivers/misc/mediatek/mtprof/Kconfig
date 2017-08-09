@@ -1,6 +1,5 @@
 config MTPROF
 	bool "Enable MTK profiler/debugger tool"
-	default n
 	help
 	  CONFIG_MTPROF define if mtk profiling tools should be built-in or not. It
 	  includes workqueue debugger, signal debugger, cputime, bootprof, and other
@@ -21,7 +20,6 @@ config MTK_LOCK_DEBUG
 config MTPROF_CPUTIME
 	bool "thread cputime profiling"
 	depends on SCHEDSTATS
-        default n
 	help
 	  CONFIG_MTPROF_CPUTIME is used to measure process/irq execution time and export
 	  the information in /proc/mtprof/cputime. Say Y here to enable thread cputime
@@ -30,7 +28,6 @@ config MTPROF_CPUTIME
 
 config MTK_WQ_DEBUG
 	bool "mtk workqueue debug"
-	default n
 	help
 	  CONFIG_MTK_WQ_DEBUG define if workqueue debugging should be built-in or not
 	  It will add logs to monitor work activation, queue, and execution. Say y to
