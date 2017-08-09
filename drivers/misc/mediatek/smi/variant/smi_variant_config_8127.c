@@ -24,6 +24,21 @@ static void mt8127_init_setting(struct mtk_smi_data *smidev, bool *default_saved
 			u32 *default_smi_val, unsigned int larbid)
 {
 
+	if (!(*default_saved)) {
+		SMIMSG("Save default config:\n");
+		default_smi_val[0] = M4U_ReadReg32(SMI_COMMON_EXT_BASE, REG_OFFSET_SMI_L1ARB0);
+		default_smi_val[1] = M4U_ReadReg32(SMI_COMMON_EXT_BASE, REG_OFFSET_SMI_L1ARB1);
+		default_smi_val[2] = M4U_ReadReg32(SMI_COMMON_EXT_BASE, REG_OFFSET_SMI_L1ARB2);
+
+		SMIMSG("l1arb[0-2]= 0x%x,  0x%x, 0x%x\n", default_smi_val[0],
+		       default_smi_val[1], default_smi_val[2]);
+		*default_saved = true;
+	}
+
+	/* Keep the HW's init setting in REG_SMI_L1ARB0 ~ REG_SMI_L1ARB4 */
+	M4U_WriteReg32(SMI_COMMON_EXT_BASE, REG_OFFSET_SMI_L1ARB0, default_smi_val[0]);
+	M4U_WriteReg32(SMI_COMMON_EXT_BASE, REG_OFFSET_SMI_L1ARB1, default_smi_val[1]);
+	M4U_WriteReg32(SMI_COMMON_EXT_BASE, REG_OFFSET_SMI_L1ARB2, default_smi_val[2]);
 
 	SMIMSG("Current Setting: GPU - new");
 	if (!SMI_COMMON_EXT_BASE || !LARB0_BASE) {
