@@ -37,9 +37,9 @@ void __iomem  *apmixed_base_in_idle;
 
 /* Idle handler on/off */
 int idle_switch[NR_TYPES] = {
-	0,	/* dpidle switch */
+	1,	/* dpidle switch */
 	0,	/* soidle3 switch */
-	0,	/* soidle switch */
+	1,	/* soidle switch */
 #ifdef CONFIG_CPU_ISOLATION
 	1,	/* mcidle switch */
 #else
