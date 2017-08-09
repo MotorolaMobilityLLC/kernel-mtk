@@ -646,7 +646,8 @@ int iWriteRegI2CTiming(u8 *a_pSendData , u16 a_sizeSendData, u16 i2cId, u16 timi
 	i2c_msg_size = 1;
 	ret = mtk_i2c_transfer(pClient->adapter, msg, i2c_msg_size, 0, speed_timing);
 	if (ret != i2c_msg_size) {
-		PK_ERR("[iWriteRegI2CTiming] I2C send failed (0x%x)! timing(0=%d) \n", ret,speed_timing);
+		PK_ERR("[iWriteRegI2CTiming]I2C failed(0x%x)! Data[0]=0x%x, Data[1]=0x%x,timing(0=%d)\n", 
+			ret, a_pSendData[0], a_pSendData[1],speed_timing);
 	}
     return 0;
 }
