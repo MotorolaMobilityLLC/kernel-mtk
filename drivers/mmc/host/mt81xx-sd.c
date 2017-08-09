@@ -90,6 +90,8 @@
 #define MSDC_CFG_CKSTB          (0x1 << 7)	/* R  */
 #define MSDC_CFG_CKDIV          (0xff << 8)	/* RW */
 #define MSDC_CFG_CKMOD          (0x3 << 16)	/* RW */
+#define MSDC_CFG_CKDIV_EXTRA    (0xfff << 8)	/* RW */
+#define MSDC_CFG_CKMOD_EXTRA    (0x3 << 20)	/* RW */
 
 /* MSDC_IOCON mask */
 #define MSDC_IOCON_SDR104CKS    (0x1 << 0)	/* RW */
@@ -280,6 +282,10 @@ struct msdc_save_para {
 	u32 emmc50_cfg0;
 };
 
+struct mt81xx_mmc_compatible {
+	u8 clk_div_bits;
+};
+
 struct msdc_host {
 	struct device *dev;
 	struct mmc_host *mmc;	/* mmc structure */
@@ -319,6 +325,31 @@ struct msdc_host {
 	unsigned char timing;
 	bool vqmmc_enabled;
 	struct msdc_save_para save_para; /* used when gate HCLK */
+	const struct mt81xx_mmc_compatible *dev_comp;
+};
+
+static const struct mt81xx_mmc_compatible mt8135_compat = {
+	.clk_div_bits = 8,
+};
+
+static const struct mt81xx_mmc_compatible mt8163_compat = {
+	.clk_div_bits = 12,
+};
+
+static const struct mt81xx_mmc_compatible mt8173_compat = {
+	.clk_div_bits = 8,
+};
+
+static const struct mt81xx_mmc_compatible mt2701_compat = {
+	.clk_div_bits = 12,
+};
+
+static const struct of_device_id msdc_of_ids[] = {
+	{ .compatible = "mediatek,mt8135-mmc", .data = &mt8135_compat},
+	{ .compatible = "mediatek,mt8163-mmc", .data = &mt8163_compat},
+	{ .compatible = "mediatek,mt8173-mmc", .data = &mt8173_compat},
+	{ .compatible = "mediatek,mt2701-mmc", .data = &mt2701_compat},
+	{}
 };
 
 static void sdr_set_bits(void __iomem *reg, u32 bs)
@@ -484,7 +515,10 @@ static void msdc_set_timeout(struct msdc_host *host, u32 ns, u32 clks)
 		timeout = (ns + clk_ns - 1) / clk_ns + clks;
 		/* in 1048576 sclk cycle unit */
 		timeout = (timeout + (0x1 << 20) - 1) >> 20;
-		sdr_get_field(host->base + MSDC_CFG, MSDC_CFG_CKMOD, &mode);
+		if (host->dev_comp->clk_div_bits == 8)
+			sdr_get_field(host->base + MSDC_CFG, MSDC_CFG_CKMOD, &mode);
+		else
+			sdr_get_field(host->base + MSDC_CFG, MSDC_CFG_CKMOD_EXTRA, &mode);
 		/*DDR mode will double the clk cycles for data timeout */
 		timeout = mode >= 2 ? timeout * 2 : timeout;
 		timeout = timeout > 1 ? timeout - 1 : 0;
@@ -552,8 +586,15 @@ static void msdc_set_mclk(struct msdc_host *host, unsigned char timing, u32 hz)
 			sclk = (host->src_clk_freq >> 2) / div;
 		}
 	}
-	sdr_set_field(host->base + MSDC_CFG, MSDC_CFG_CKMOD | MSDC_CFG_CKDIV,
-			(mode << 8) | (div % 0xff));
+	if (host->dev_comp->clk_div_bits == 8)
+		sdr_set_field(host->base + MSDC_CFG,
+				MSDC_CFG_CKMOD | MSDC_CFG_CKDIV,
+				(mode << 8) | (div % 0xff));
+	else
+		sdr_set_field(host->base + MSDC_CFG,
+				MSDC_CFG_CKMOD_EXTRA | MSDC_CFG_CKDIV_EXTRA,
+				(mode << 8) | (div % 0xfff));
+
 	sdr_set_bits(host->base + MSDC_CFG, MSDC_CFG_CKPDN);
 	while (!(readl(host->base + MSDC_CFG) & MSDC_CFG_CKSTB))
 		cpu_relax();
@@ -1442,12 +1483,17 @@ static int msdc_drv_probe(struct platform_device *pdev)
 	struct mmc_host *mmc;
 	struct msdc_host *host;
 	struct resource *res;
+	const struct of_device_id *of_id;
 	int ret;
 
 	if (!pdev->dev.of_node) {
 		dev_err(&pdev->dev, "No DT found\n");
 		return -EINVAL;
 	}
+
+	of_id = of_match_node(msdc_of_ids, pdev->dev.of_node);
+	if (!of_id)
+		return -EINVAL;
 	/* Allocate MMC host for this device */
 	mmc = mmc_alloc_host(sizeof(struct msdc_host), &pdev->dev);
 	if (!mmc)
@@ -1516,11 +1562,15 @@ static int msdc_drv_probe(struct platform_device *pdev)
 	}
 
 	host->dev = &pdev->dev;
+	host->dev_comp = of_id->data;
 	host->mmc = mmc;
 	host->src_clk_freq = clk_get_rate(host->src_clk);
 	/* Set host parameters to mmc */
 	mmc->ops = &mt_msdc_ops;
-	mmc->f_min = host->src_clk_freq / (4 * 255);
+	if (host->dev_comp->clk_div_bits == 8)
+		mmc->f_min = host->src_clk_freq / (4 * 255);
+	else
+		mmc->f_min = host->src_clk_freq / (4 * 4095);
 
 	mmc->caps |= MMC_CAP_ERASE | MMC_CAP_CMD23;
 	/* MMC core transfer sizes tunable parameters */
@@ -1673,11 +1723,6 @@ static const struct dev_pm_ops msdc_dev_pm_ops = {
 	SET_SYSTEM_SLEEP_PM_OPS(pm_runtime_force_suspend,
 				pm_runtime_force_resume)
 	SET_RUNTIME_PM_OPS(msdc_runtime_suspend, msdc_runtime_resume, NULL)
-};
-
-static const struct of_device_id msdc_of_ids[] = {
-	{   .compatible = "mediatek,mt8135-mmc", },
-	{}
 };
 
 static struct platform_driver mt_msdc_driver = {
