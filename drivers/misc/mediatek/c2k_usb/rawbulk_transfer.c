@@ -50,6 +50,7 @@
 
 #ifdef CONFIG_MTK_ECCCI_C2K
 #include <mt-plat/mt_ccci_common.h>
+#define FS_CH_C2K 4
 #endif
 
 #define terr(t, fmt, args...) pr_err("Rawbulk [%s]:" fmt "\n", t->name,  ##args)
