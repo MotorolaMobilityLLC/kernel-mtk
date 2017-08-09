@@ -47,7 +47,8 @@
 int g_current_sample_gl_utilization = 0;
 int g_current_sample_cl_utilization[2] = {0};
 
-#ifndef ENABLE_COMMON_DVFS	
+#ifndef ENABLE_COMMON_DVFS
+#ifndef CONFIG_MTK_GPU_SPM_DVFS_SUPPORT
 static enum hrtimer_restart dvfs_callback(struct hrtimer *timer)
 {
 	unsigned long flags;
@@ -69,6 +70,7 @@ static enum hrtimer_restart dvfs_callback(struct hrtimer *timer)
 
 	return HRTIMER_NORESTART;
 }
+#endif
 #endif
 #endif /* CONFIG_MALI_MIDGARD_DVFS */
 
@@ -95,7 +97,8 @@ int kbasep_pm_metrics_init(struct kbase_device *kbdev)
 	spin_lock_init(&kbdev->pm.backend.metrics.lock);
 
 #ifdef CONFIG_MALI_MIDGARD_DVFS
-#ifndef ENABLE_COMMON_DVFS	
+#ifndef ENABLE_COMMON_DVFS
+#ifndef CONFIG_MTK_GPU_SPM_DVFS_SUPPORT
 	kbdev->pm.backend.metrics.timer_active = true;
 	hrtimer_init(&kbdev->pm.backend.metrics.timer, CLOCK_MONOTONIC,
 							HRTIMER_MODE_REL);
@@ -104,6 +107,7 @@ int kbasep_pm_metrics_init(struct kbase_device *kbdev)
 	hrtimer_start(&kbdev->pm.backend.metrics.timer,
 			HR_TIMER_DELAY_MSEC(kbdev->pm.dvfs_period),
 			HRTIMER_MODE_REL);
+#endif
 #endif            
 #endif /* CONFIG_MALI_MIDGARD_DVFS */
 
