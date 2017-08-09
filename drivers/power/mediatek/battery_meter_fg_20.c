@@ -3922,6 +3922,9 @@ void bmd_ctrl_cmd_from_user(void *nl_data, struct fgd_nl_msg_t *ret_msg)
 	case FG_DAEMON_CMD_FGADC_RESET:
 		bm_debug("[fg_res] fgadc_reset\n");
 		battery_meter_ctrl(BATTERY_METER_CMD_HW_RESET, NULL);
+#ifdef FG_BAT_INT
+					reset_fg_bat_int = KAL_TRUE;
+#endif
 		break;
 
 	case FG_DAEMON_CMD_GET_BATTERY_PLUG_STATUS:
