@@ -835,3 +835,150 @@
 	};
 };
 /* DISPSYS GPIO end */
+/* CAMERA GPIO standardization */
+&pio {
+	camera_pins_cam0_rst0: cam0@0 {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO32__FUNC_GPIO32>;
+			slew-rate = <1>; /*direction 0:in, 1:out*/
+			output-low;/*direction out used only. output_low or high*/
+		};
+	};
+	camera_pins_cam0_rst1: cam0@1 {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO32__FUNC_GPIO32>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+	camera_pins_cam0_pnd0: cam0@2 {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO28__FUNC_GPIO28>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+	camera_pins_cam0_pnd1: cam0@3 {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO28__FUNC_GPIO28>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+	camera_pins_cam1_rst0: cam1@0 {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO33__FUNC_GPIO33>;
+			slew-rate = <1>; /*direction 0:in, 1:out*/
+			output-low;/*direction out used only. output_low or high*/
+		};
+	};
+	camera_pins_cam1_rst1: cam1@1 {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO33__FUNC_GPIO33>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+	camera_pins_cam1_pnd0: cam1@2 {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO29__FUNC_GPIO29>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+	camera_pins_cam1_pnd1: cam1@3 {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO29__FUNC_GPIO29>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+	camera_pins_cam2_rst0: cam2@0 {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO35__FUNC_GPIO35>;
+			slew-rate = <1>; /*direction 0:in, 1:out*/
+			output-low;/*direction out used only. output_low or high*/
+		};
+	};
+	camera_pins_cam2_rst1: cam2@1 {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO35__FUNC_GPIO35>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+	camera_pins_cam2_pnd0: cam2@2 {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO34__FUNC_GPIO34>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+	camera_pins_cam2_pnd1: cam2@3 {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO34__FUNC_GPIO34>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+	camera_pins_cam_ldo_vcama_0: cam0@vcama0 {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO253__FUNC_GPIO253>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+	camera_pins_cam_ldo_vcama_1: cam1@vcama1 {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO253__FUNC_GPIO253>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+	camera_pins_cam_ldo_vcamd_0: cam0@vcamd0 {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO110__FUNC_GPIO110>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+	camera_pins_cam_ldo_vcamd_1: cam1@vcamd1 {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO110__FUNC_GPIO110>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+	camera_pins_default: camdefault {
+	};
+};
+
+&kd_camera_hw1 {
+	pinctrl-names = "default",
+			"cam0_rst0", "cam0_rst1", "cam0_pnd0", "cam0_pnd1",
+			"cam1_rst0", "cam1_rst1", "cam1_pnd0", "cam1_pnd1",
+			"cam2_rst0", "cam2_rst1", "cam2_pnd0", "cam2_pnd1",
+			"cam_ldo_vcama_0", "cam_ldo_vcama_1", "cam_ldo_vcamd_0", "cam_ldo_vcamd_1";
+	pinctrl-0 = <&camera_pins_default>;
+	pinctrl-1 = <&camera_pins_cam0_rst0>;
+	pinctrl-2 = <&camera_pins_cam0_rst1>;
+	pinctrl-3 = <&camera_pins_cam0_pnd0>;
+	pinctrl-4 = <&camera_pins_cam0_pnd1>;
+	pinctrl-5 = <&camera_pins_cam1_rst0>;
+	pinctrl-6 = <&camera_pins_cam1_rst1>;
+	pinctrl-7 = <&camera_pins_cam1_pnd0>;
+	pinctrl-8 = <&camera_pins_cam1_pnd1>;
+	/* for main2 */
+	pinctrl-9 = <&camera_pins_cam2_rst0>;
+	pinctrl-10 = <&camera_pins_cam2_rst1>;
+	pinctrl-11 = <&camera_pins_cam2_pnd0>;
+	pinctrl-12 = <&camera_pins_cam2_pnd1>;
+	/* for ldo control by gpio */
+	pinctrl-13 = <&camera_pins_cam_ldo_vcama_0>;
+	pinctrl-14 = <&camera_pins_cam_ldo_vcama_1>;
+	pinctrl-15 = <&camera_pins_cam_ldo_vcamd_0>;
+	pinctrl-16 = <&camera_pins_cam_ldo_vcamd_1>;
+	status = "okay";
+};
+/* CAMERA GPIO end */
+
