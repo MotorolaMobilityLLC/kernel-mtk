@@ -31,21 +31,18 @@
 
 void __iomem *toprgu_base = 0;
 int wdt_irq_id = 0;
+#define AP_RGU_WDT_IRQ_ID    wdt_irq_id
 
 #define DRV_NAME "mtk-wdt"
 
 static const struct of_device_id rgu_of_match[] = {
+	{.compatible = "mediatek,mt2701-rgu"},
+	{.compatible = "mediatek,mt8163-rgu"},
 	{.compatible = "mediatek,mt8173-rgu"},
 	{}
 };
 
 MODULE_DEVICE_TABLE(of, rgu_of_match);
-
-
-/*
- * IRQ ID
- */
-#define AP_RGU_WDT_IRQ_ID    wdt_irq_id
 
 /*
  * internal variables
@@ -276,24 +273,10 @@ int mtk_wdt_swsysret_config(int bit, int set_value)
 	return 0;
 }
 
-unsigned long get_base_by_name(const char *name)
-{
-	unsigned long VA = 0;
-	struct device_node *node = NULL;
-
-	node = of_find_compatible_node(NULL, NULL, name);
-	if (node)
-		VA = (unsigned long)of_iomap(node, 0);
-
-	return VA;
-}
 int mtk_wdt_request_en_set(int mark_bit, WD_REQ_CTL en)
 {
 	int res = 0;
 	unsigned int tmp;
-
-	if (!toprgu_base)
-		toprgu_base = (void *)get_base_by_name("mediatek,mt8173-rgu");
 
 	spin_lock(&rgu_reg_operation_spinlock);
 	tmp = __raw_readl(MTK_WDT_REQ_MODE);
@@ -457,11 +440,10 @@ static int mtk_wdt_probe(struct platform_device *dev)
 	pr_debug("RGU base: 0x%p  RGU irq: %d\n", toprgu_base, wdt_irq_id);
 
 #ifndef __USING_DUMMY_WDT_DRV__	/* FPGA will set this flag */
-
 #ifndef CONFIG_FIQ_GLUE
 	pr_debug("******** MTK WDT register irq ********\n");
 	ret = request_irq(AP_RGU_WDT_IRQ_ID, (irq_handler_t)mtk_wdt_isr,
-			  IRQF_TRIGGER_FALLING, "mt_wdt", NULL);
+			  IRQF_TRIGGER_NONE, DRV_NAME, NULL);
 #else
 	pr_debug("******** MTK WDT register fiq ********\n");
 	ret = request_fiq(AP_RGU_WDT_IRQ_ID, wdt_fiq, IRQF_TRIGGER_FALLING, NULL);
@@ -569,36 +551,15 @@ static struct platform_driver mtk_wdt_driver = {
 	.probe = mtk_wdt_probe,
 	.remove = mtk_wdt_remove,
 	.shutdown = mtk_wdt_shutdown,
-/* .suspend        = mtk_wdt_suspend, */
-/* .resume = mtk_wdt_resume, */
+	/*.suspend = mtk_wdt_suspend,
+	.resume = mtk_wdt_resume,*/
 	.driver = {
 		   .name = DRV_NAME,
 		   .of_match_table = rgu_of_match,
 	},
 };
 
-/*
- * init and exit function
- */
-static int __init mtk_wdt_init(void)
-{
-	int ret;
-
-	ret = platform_driver_register(&mtk_wdt_driver);
-	if (ret) {
-		pr_err("****[mtk_wdt_driver] Unable to register driver (%d)\n", ret);
-		return ret;
-	}
-	pr_alert("mtk_wdt_init ok\n");
-	return 0;
-}
-
-static void __exit mtk_wdt_exit(void)
-{
-}
-
-arch_initcall(mtk_wdt_init);
-module_exit(mtk_wdt_exit);
+module_platform_driver(mtk_wdt_driver);
 
 MODULE_AUTHOR("MTK");
 MODULE_DESCRIPTION("MTK Watchdog Device Driver");
