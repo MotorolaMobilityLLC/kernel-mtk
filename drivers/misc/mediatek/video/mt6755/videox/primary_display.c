@@ -6054,9 +6054,17 @@ int Panel_Master_dsi_config_entry(const char *name, void *config_value)
 	/* / 1: stop path */
 	_cmdq_stop_trigger_loop();
 
-	if (dpmgr_path_is_busy(pgc->dpmgr_handle))
-		DISPCHECK("[ESD]wait frame done ret:%d\n", ret);
+	if (dpmgr_path_is_busy(pgc->dpmgr_handle)) {
+		int event_ret;
 
+		DISPCHECK("[ESD]wait frame done ret:%d\n", ret);
+		event_ret = dpmgr_wait_event_timeout(pgc->dpmgr_handle, DISP_PATH_EVENT_FRAME_DONE, HZ * 1);
+		if (event_ret <= 0) {
+			DISPERR("wait frame done in suspend timeout\n");
+			primary_display_diagnose();
+			ret = -1;
+		}
+	}
 
 	dpmgr_path_stop(pgc->dpmgr_handle, CMDQ_DISABLE);
 	DISPCHECK("[ESD]stop dpmgr path[end]\n");
