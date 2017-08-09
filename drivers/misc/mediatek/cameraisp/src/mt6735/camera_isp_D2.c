@@ -2519,9 +2519,16 @@ static long ISP_REF_CNT_CTRL_FUNC(unsigned long Param)
 			imem_ref_cnt = (MINT32) atomic_read(&g_imem_ref_cnt[ref_cnt_ctrl.id]);
 			LOG_DBG("g_imem_ref_cnt[%d]: %d.", ref_cnt_ctrl.id, imem_ref_cnt);
 
-			if ((imem_ref_cnt == 0) && (ref_cnt_ctrl.ctrl == ISP_REF_CNT_DEC_AND_RESET_IF_LAST_ONE)) {	/* No user left and ctrl is RESET_IF_LAST_ONE, do ISP reset. */
-				ISP_Reset();
-				LOG_DBG("ISP_REF_CNT_DEC_AND_RESET_IF_LAST_ONE. Do ISP_Reset");
+			if((imem_ref_cnt == 0))   
+			{   
+				if(ref_cnt_ctrl.ctrl == ISP_REF_CNT_DEC_AND_RESET_IF_LAST_ONE) /* No user left and ctrl is RESET_IF_LAST_ONE, do ISP reset. */
+				{
+                    /* camera1. single thread, we rest p1p2 after all the object are destroyed */
+                    ISP_Reset();
+                    LOG_DBG("ISP_REF_CNT_DEC_AND_RESET_IF_LAST_ONE. Do ISP_Reset");
+				}
+				/* we do not care ISP_REF_CNT_DEC_AND_RESET_P1_IF_LAST_ONE and ISP_REF_CNT_DEC_AND_RESET_P2_IF_LAST_ONE */
+				/* due to we could only rest all in this series */
 			}
 
 			/* unlock here */

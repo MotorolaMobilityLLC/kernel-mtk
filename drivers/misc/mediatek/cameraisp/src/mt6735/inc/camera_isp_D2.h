@@ -344,6 +344,8 @@ typedef enum {
 	ISP_REF_CNT_INC,	/* 1 */
 	ISP_REF_CNT_DEC,	/* 2 */
 	ISP_REF_CNT_DEC_AND_RESET_IF_LAST_ONE,	/* 3 */
+    ISP_REF_CNT_DEC_AND_RESET_P1_IF_LAST_ONE,    /* 4 */
+    ISP_REF_CNT_DEC_AND_RESET_P2_IF_LAST_ONE,    /* 5 */
 	ISP_REF_CNT_MAX
 } ISP_REF_CNT_CTRL_ENUM;
 /*  */
@@ -351,6 +353,8 @@ typedef enum {
 	ISP_REF_CNT_ID_IMEM,	/* 0 */
 	ISP_REF_CNT_ID_ISP_FUNC,	/* 1 */
 	ISP_REF_CNT_ID_GLOBAL_PIPE,	/* 2 */
+    ISP_REF_CNT_ID_P1_PIPE,     /* 3 */
+    ISP_REF_CNT_ID_P2_PIPE,     /* 4 */
 	ISP_REF_CNT_ID_MAX,
 } ISP_REF_CNT_ID_ENUM;
 /*  */
