@@ -267,7 +267,7 @@ static void mt6797_0x1001AXXX_release_semaphore(void)
 	}
 
 
-	FH_MSG("0x1001AXXX sema release\n");
+	FH_MSG_DEBUG("0x1001AXXX sema release\n");
 
 	if (hs_read32(g_reg_sema3_m0) & 0x1) {
 		hs_write32(g_reg_sema3_m0, 0x1);
