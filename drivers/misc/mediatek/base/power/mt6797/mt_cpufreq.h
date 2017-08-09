@@ -65,6 +65,8 @@ extern void aee_rr_rec_cpu_dvfs_status(u8 val);
 extern u8 aee_rr_curr_cpu_dvfs_status(void);
 extern void aee_rr_rec_cpu_dvfs_step(u8 val);
 extern u8 aee_rr_curr_cpu_dvfs_step(void);
+extern void aee_rr_rec_cpu_dvfs_cb(u8 val);
+extern u8 aee_rr_curr_cpu_dvfs_cb(void);
 #endif
 
 /* PTP-OD */

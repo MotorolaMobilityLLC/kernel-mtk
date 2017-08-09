@@ -72,6 +72,7 @@ struct last_reboot_reason {
 	uint8_t cpu_dvfs_cci_oppidx;
 	uint8_t cpu_dvfs_status;
 	uint8_t cpu_dvfs_step;
+	uint8_t cpu_dvfs_cb;
 
 	uint8_t gpu_dvfs_vgpu;
 	uint8_t gpu_dvfs_oppidx;
@@ -1069,6 +1070,18 @@ u8 aee_rr_curr_cpu_dvfs_step(void)
 	return LAST_RR_VAL(cpu_dvfs_step);
 }
 
+void aee_rr_rec_cpu_dvfs_cb(u8 val)
+{
+	if (!ram_console_init_done || !ram_console_buffer)
+		return;
+	LAST_RR_SET(cpu_dvfs_cb, val);
+}
+
+u8 aee_rr_curr_cpu_dvfs_cb(void)
+{
+	return LAST_RR_VAL(cpu_dvfs_cb);
+}
+
 void aee_rr_rec_gpu_dvfs_vgpu(u8 val)
 {
 	if (!ram_console_init_done || !ram_console_buffer)
@@ -1888,6 +1901,11 @@ void aee_rr_show_cpu_dvfs_step(struct seq_file *m)
 	seq_printf(m, "cpu_dvfs_step: 0x%x\n", LAST_RRR_VAL(cpu_dvfs_step));
 }
 
+void aee_rr_show_cpu_dvfs_cb(struct seq_file *m)
+{
+	seq_printf(m, "cpu_dvfs_cb: 0x%x\n", LAST_RRR_VAL(cpu_dvfs_cb));
+}
+
 void aee_rr_show_gpu_dvfs_vgpu(struct seq_file *m)
 {
 	seq_printf(m, "gpu_dvfs_vgpu: 0x%x\n", LAST_RRR_VAL(gpu_dvfs_vgpu));
@@ -2373,6 +2391,7 @@ last_rr_show_t aee_rr_show[] = {
 	aee_rr_show_cpu_dvfs_cci_oppidx,
 	aee_rr_show_cpu_dvfs_status,
 	aee_rr_show_cpu_dvfs_step,
+	aee_rr_show_cpu_dvfs_cb,
 	aee_rr_show_gpu_dvfs_vgpu,
 	aee_rr_show_gpu_dvfs_oppidx,
 	aee_rr_show_gpu_dvfs_status,
