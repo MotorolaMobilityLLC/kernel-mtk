@@ -60,6 +60,7 @@ void __iomem *SMI_BASE_ADDR = NULL;
 static unsigned int enable_4gb;
 static unsigned int vio_addr;
 static unsigned int emi_physical_offset;
+static unsigned int enable_gpu_aee;
 
 struct mst_tbl_entry {
 	u32 master;
@@ -913,6 +914,9 @@ static int mpu_check_violation(void)
 	pr_err("[EMI MPU] Debug info end------------------------------------------\n");
 
 #ifdef CONFIG_MTK_AEE_FEATURE
+	if ((enable_gpu_aee == 0) && (((master_ID & 0x7) == MASTER_MFG))) {
+		pr_err("[EMI MPU] GPU make violatin but will NOT trigger AEE.\n");
+	} else {
 	if (wr_vio != 0) {
 		/* EMI violation is relative to MD at user build*/
 		#ifndef CONFIG_MT_ENG_BUILD
@@ -942,6 +946,7 @@ static int mpu_check_violation(void)
 				     mt_emi_reg_read(EMI_MPUI),
 				     "CRDISPATCH_KEY:EMI MPU Violation Issue/",
 				     master_name);
+		}
 		}
 		}
 #endif
@@ -1133,12 +1138,12 @@ static ssize_t emi_mpu_show(struct device_driver *driver, char *buf)
 	unsigned int d0, d1, d2, d3, d4, d5, d6, d7;
 	static const char *permission[7] = {
 		"No",
-		"SEC_RW",
-		"SEC_RW_NSEC_R",
-		"SEC_RW_NSEC_W",
-		"SEC_R_NSEC_R",
+		"S_RW",
+		"S_RW_NS_R",
+		"S_RW_NS_W",
+		"S_R_NS_R",
 		"FORBIDDEN",
-		"SEC_R_NSEC_RW"
+		"S_R_NS_RW"
 	};
 
 	reg_value = mt_emi_reg_read(EMI_MPUA);
@@ -1710,7 +1715,52 @@ const char *buf, size_t count)
 	return count;
 }
 
+static ssize_t emi_mpu_gpu_show(struct device_driver *driver, char *buf)
+{
+	char *ptr = buf;
+
+	ptr += sprintf(ptr, "AEE(0:disable, 1:enable):%x\n", enable_gpu_aee);
+	if (enable_gpu_aee)
+		ptr += sprintf(ptr, "GPU's violation will trigger AEE\n");
+	else
+		ptr += sprintf(ptr, "GPU's violation will NOT trigger AEE\n");
+
+	return strlen(buf);
+}
+static ssize_t emi_mpu_gpu_store(struct device_driver *driver,
+const char *buf, size_t count)
+{
+	char *command;
+	char *ptr;
+
+	if ((strlen(buf) + 1) > MAX_EMI_MPU_STORE_CMD_LEN) {
+		pr_err("emi_mpu_gpu_store command overflow.");
+		return count;
+	}
+	pr_err("emi_mpu_gpu_store: %s\n", buf);
+
+	command = kmalloc((size_t) MAX_EMI_MPU_STORE_CMD_LEN, GFP_KERNEL);
+	if (!command)
+		return count;
+
+	strcpy(command, buf);
+	ptr = (char *)buf;
+
+	if (!strncmp(buf, EN_MPU_STR, strlen(EN_MPU_STR))) {
+		enable_gpu_aee = 1;
+	} else if (!strncmp(buf, DIS_MPU_STR, strlen(DIS_MPU_STR))) {
+		enable_gpu_aee = 0;
+	} else {
+		enable_gpu_aee = 0;
+		pr_err("Unknown emi_mpu_gpu command.\n");
+	}
+
+	kfree(command);
+
+	return count;
+}
 DRIVER_ATTR(mpu_config, 0644, emi_mpu_show, emi_mpu_store);
+DRIVER_ATTR(mpu_gpu_config, 0644, emi_mpu_gpu_show, emi_mpu_gpu_store);
 
 void mtk_search_full_pgtab(void)
 {
@@ -2356,6 +2406,12 @@ static int __init emi_mpu_mod_init(void)
 	ret = driver_create_file(&emi_mpu_ctrl.driver, &driver_attr_mpu_config);
 	if (ret)
 		pr_err("Fail to create MPU config sysfs file.\n");
+
+	ret = driver_create_file(&emi_mpu_ctrl.driver,
+	&driver_attr_mpu_gpu_config);
+	if (ret)
+		pr_err("Fail to create MPU for GPU config sysfs file.\n");
+
 #ifdef ENABLE_EMI_CHKER
 ret = driver_create_file(&emi_mpu_ctrl.driver, &driver_attr_emi_axi_vio);
 
