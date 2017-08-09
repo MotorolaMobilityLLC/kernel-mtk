@@ -7,6 +7,10 @@
 #include <linux/platform_device.h>
 #include <linux/miscdevice.h>
 
+#if defined(CONFIG_TRUSTONIC_TEE_SUPPORT) && defined(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT)
+#define M4U_TEE_SERVICE_ENABLE
+#endif
+
 #include "m4u.h"
 #include "m4u_reg.h"
 #include "../2.0/m4u_pgtable.h"
@@ -14,13 +18,7 @@
 #define M4UMSG(string, args...)	pr_err("M4U"string, ##args)
 #define M4UINFO(string, args...) pr_debug("M4U"string, ##args)
 
-
 #include "m4u_hw.h"
-
-#if defined(CONFIG_TRUSTONIC_TEE_SUPPORT) && defined(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT)
-#define M4U_TEE_SERVICE_ENABLE
-#endif
-
 
 /* #define M4U_FPGAPORTING */
 /* #define M4U_PROFILE */
@@ -69,6 +67,9 @@ extern void MMProfileStart(int start);
 #define register_larb_monitor(...)
 #endif
 
+#ifdef M4U_TEE_SERVICE_ENABLE
+extern int gM4U_L2_enable;
+#endif
 
 #ifdef CONFIG_MTK_CLKMGR
 #include <mach/mt_clkmgr.h>
