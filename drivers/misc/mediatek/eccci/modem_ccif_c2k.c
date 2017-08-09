@@ -566,7 +566,9 @@ static void ccif_rx_work(struct work_struct *work)
 static irqreturn_t md_cd_wdt_isr(int irq, void *data)
 {
 	struct ccci_modem *md = (struct ccci_modem *)data;
+#ifdef ENABLE_MD_WDT_DBG
 	struct md_ccif_ctrl *md_ctrl = (struct md_ccif_ctrl *)md->private_data;
+#endif
 	int ret = 0;
 
 	CCCI_INF_MSG(md->index, TAG, "MD WDT IRQ\n");
@@ -1312,6 +1314,7 @@ static int md_ccif_ee_callback(struct ccci_modem *md, MODEM_EE_FLAG flag)
 	if (flag & EE_FLAG_DISABLE_WDT)
 		disable_irq_nosync(md_ctrl->md_wdt_irq_id);
 
+	return 0;
 }
 
 static struct ccci_modem_ops md_ccif_ops = {

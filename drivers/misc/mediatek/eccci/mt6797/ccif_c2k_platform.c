@@ -88,10 +88,10 @@ int md_ccif_get_modem_hw_info(struct platform_device *dev_ptr,
 		of_property_read_u32(dev_ptr->dev.of_node, "ccif,capability",
 				     &dev_cfg->capability);
 
-		hw_info->ap_ccif_base = of_iomap(dev_ptr->dev.of_node, 0);
+		hw_info->ap_ccif_base = (unsigned long)of_iomap(dev_ptr->dev.of_node, 0);
 		/*hw_info->md_ccif_base = hw_info->ap_ccif_base+0x1000; */
 		node = of_find_compatible_node(NULL, NULL, "mediatek,MD_CCIF1");
-		hw_info->md_ccif_base = of_iomap(node, 0);
+		hw_info->md_ccif_base = (unsigned long)of_iomap(node, 0);
 
 		hw_info->ap_ccif_irq_id =
 		    irq_of_parse_and_map(dev_ptr->dev.of_node, 0);
@@ -501,8 +501,8 @@ void reset_md1_md3_pccif(struct ccci_modem *md)
 		memset_io(md->mem_layout.md1_md3_smem_vir, 0, md->mem_layout.md1_md3_smem_size);
 
 	pr_debug("[C2K] Dump MD1 PCCIF\n");
-	ccci_mem_dump(-1, hw_info->md1_pccif_base, 0x300);
+	ccci_mem_dump(-1, (void *)hw_info->md1_pccif_base, 0x300);
 	pr_debug("[C2K] Dump MD3 PCCIF\n");
-	ccci_mem_dump(-1, hw_info->md3_pccif_base, 0x300);
+	ccci_mem_dump(-1, (void *)hw_info->md3_pccif_base, 0x300);
 }
 

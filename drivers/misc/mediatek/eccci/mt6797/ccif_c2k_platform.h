@@ -56,9 +56,6 @@
 #define MDPLL1_CON0              0x2C8	/*	((UINT32P)(APMIXED_BASE+0x02C8))	*/
 
 #define INFRA_TOPAXI_PROTECTEN_1 0x250	/*((UINT32P)(INFRACFG_AO_BASE+0x250))*/
-#define POWERON_CONFIG_EN        0x000	/*((UINT32P)(SLEEP_BASE+0x000))*/
-#define PWR_STATUS               0x180	/*((UINT32P)(SLEEP_BASE+0x180))*/
-#define PWR_STATUS_2ND           0x184	/*((UINT32P)(SLEEP_BASE+0x184))*/
 #define PWR_RST_B     0
 #define PWR_ISO       1
 #define PWR_ON        2
