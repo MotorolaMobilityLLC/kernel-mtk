@@ -24,12 +24,14 @@
 #include "clk-mtk-v1.h"
 #include "clk-gate-v1.h"
 
-/*#if !defined(MT_CCF_DEBUG) || !defined(MT_CCF_BRINGUP)
+#if !defined(MT_CCF_DEBUG) || !defined(MT_CCF_BRINGUP)
 #define MT_CCF_DEBUG	1
+#if defined(CONFIG_ARCH_MT6755)
+#define MT_CCF_BRINGUP  1
+#else
 #define MT_CCF_BRINGUP	0
-#endif*/
-#define MT_CCF_DEBUG	0
-#define MT_CCF_BRINGUP	1
+#endif
+#endif
 /*
  * clk_gate
  */
