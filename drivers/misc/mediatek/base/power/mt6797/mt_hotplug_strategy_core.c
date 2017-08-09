@@ -163,8 +163,10 @@ static int _hps_task_main(void *data)
 			goto HPS_WAIT_EVENT;
 		}
 #endif
-			/*Get sys status */
-			hps_get_sysinfo();
+		/* if (!hps_ctxt.is_interrupt) { */
+		/*Get sys status */
+		hps_get_sysinfo();
+
 		if (!hps_ctxt.is_interrupt) {
 			mt_ppm_hica_update_algo_data(hps_ctxt.cur_loads, 0, hps_ctxt.cur_tlp);
 
@@ -216,14 +218,15 @@ HPS_WAIT_EVENT:
  */
 int hps_task_start(void)
 {
-	struct sched_param param = {.sched_priority = HPS_TASK_PRIORITY };
-
 	if (hps_ctxt.tsk_struct_ptr == NULL) {
+		/* struct sched_param param = {.sched_priority = HPS_TASK_RT_PRIORITY }; */
+
 		hps_ctxt.tsk_struct_ptr = kthread_create(_hps_task_main, NULL, "hps_main");
 		if (IS_ERR(hps_ctxt.tsk_struct_ptr))
 			return PTR_ERR(hps_ctxt.tsk_struct_ptr);
 
-		sched_setscheduler_nocheck(hps_ctxt.tsk_struct_ptr, SCHED_NORMAL, &param);
+		/*sched_setscheduler_nocheck(hps_ctxt.tsk_struct_ptr, SCHED_NORMAL, &param); */
+		set_user_nice(hps_ctxt.tsk_struct_ptr, HPS_TASK_NORMAL_PRIORITY);
 		get_task_struct(hps_ctxt.tsk_struct_ptr);
 		wake_up_process(hps_ctxt.tsk_struct_ptr);
 		hps_warn("hps_task_start success, ptr: %p, pid: %d\n", hps_ctxt.tsk_struct_ptr,

@@ -99,7 +99,7 @@ static int hps_algo_rush_boost(void)
 		hps_cal_core_num(&hps_sys, val, base_val);
 
 		/*Disable rush boost in big cluster */
-		if (0 == get_efuse_status())
+		if (0 == get_efuse_status() || (!hps_ctxt.heavy_task_enabled))
 			hps_sys.cluster_info[HPS_BIG_CLUSTER_ID].target_core_num = 0;
 		return 1;
 	} else
@@ -144,7 +144,7 @@ static int hps_algo_up(void)
 				hps_cal_core_num(&hps_sys, val, base_val);
 
 				/*Disable operation of in big cluster */
-				if (0 == get_efuse_status())
+				if (0 == get_efuse_status() || (!hps_ctxt.heavy_task_enabled))
 					hps_sys.cluster_info[HPS_BIG_CLUSTER_ID].target_core_num =
 					    0;
 				return 1;
@@ -197,7 +197,7 @@ static int hps_algo_down(void)
 			hps_cal_core_num(&hps_sys, val, base_val);
 
 			/*Disable operation of  big cluster */
-			if (0 == get_efuse_status())
+			if (0 == get_efuse_status() || (!hps_ctxt.heavy_task_enabled))
 				hps_sys.cluster_info[HPS_BIG_CLUSTER_ID].target_core_num = 0;
 			return 1;
 		}		/* if (hps_ctxt.down_loads_count >= hps_ctxt.down_times) */

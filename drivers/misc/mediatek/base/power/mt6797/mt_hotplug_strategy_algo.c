@@ -407,7 +407,7 @@ void hps_algo_main(void)
 			}
 		}
 	}
-	if (get_efuse_status() != 0) {
+	if ((get_efuse_status() != 0) || (hps_ctxt.heavy_task_enabled)) {
 		if (hps_algo_heavytsk_det())
 			hps_sys.action_id = 0xE1;
 	}

@@ -89,7 +89,7 @@ hps_ctxt_t hps_ctxt = {
 	.suspend_enabled = 1,
 	.cur_dump_enabled = 0,
 	.stats_dump_enabled = 0,
-
+	.heavy_task_enabled = 1,
 	/* core */
 	.lock = __MUTEX_INITIALIZER(hps_ctxt.lock),	/* Synchronizes accesses to loads statistics */
 	.break_lock = __MUTEX_INITIALIZER(hps_ctxt.break_lock),	/* Synchronizes accesses to control break of hps */
@@ -210,6 +210,7 @@ void hps_ctxt_reset_stas_nolock(void)
 		hps_ctxt.down_threshold = 85;
 		hps_ctxt.up_threshold = 95;
 		hps_ctxt.rush_boost_enabled = 0;
+		hps_ctxt.heavy_task_enabled = 0;
 		break;
 	case 2:		/*Just make mode */
 	case 3:		/*Performance mode */
@@ -218,6 +219,7 @@ void hps_ctxt_reset_stas_nolock(void)
 		hps_ctxt.down_threshold = 85;
 		hps_ctxt.up_threshold = 95;
 		hps_ctxt.rush_boost_enabled = 1;
+		hps_ctxt.heavy_task_enabled = 1;
 		break;
 	default:
 		break;

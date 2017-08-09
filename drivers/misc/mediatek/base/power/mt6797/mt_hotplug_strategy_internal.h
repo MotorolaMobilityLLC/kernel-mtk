@@ -30,7 +30,8 @@
 /*
  * CONFIG - compile time
  */
-#define HPS_TASK_PRIORITY                   (-20)
+#define HPS_TASK_RT_PRIORITY                   (MAX_RT_PRIO - 3)
+#define HPS_TASK_NORMAL_PRIORITY                   (MIN_NICE)
 #define HPS_TIMER_INTERVAL_MS               (40)
 
 #define HPS_PERIODICAL_BY_WAIT_QUEUE        (1)
@@ -195,7 +196,7 @@ typedef struct hps_ctxt_struct {
 	unsigned int stats_dump_enabled;
 	unsigned int power_mode;
 	unsigned int ppm_power_mode;
-
+	unsigned int heavy_task_enabled;
 	/* core */
 	struct mutex lock;	/* Synchronizes accesses */
 	struct mutex break_lock;	/* Synchronizes accesses */
