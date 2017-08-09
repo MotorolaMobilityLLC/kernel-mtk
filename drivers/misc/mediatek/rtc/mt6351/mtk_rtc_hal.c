@@ -170,7 +170,7 @@ void hal_rtc_set_gpio_32k_status(u16 user, bool enable)
 		rtc_write(RTC_PDN1, pdn1);
 		rtc_write_trigger();
 	}
-	hal_rtc_xinfo("RTC_GPIO user %d enable = %d 32k (0x%x)\n", user, enable, pdn1);
+	hal_rtc_xinfo("RTC_GPIO user %d enable = %d 32k (0x%x), RTC_CON = %x\n", user, enable, pdn1, rtc_read(RTC_CON));
 }
 
 void rtc_disable_2sec_reboot(void)
