@@ -321,6 +321,7 @@ extern asmlinkage void dump_stack(void) __cold;
 		if (unlikely(descriptor.flags & _DPRINTK_FLAGS_PRINT)) \
 			barrier();   \
 		__print_once = true;				\
+		printk(KERN_EMERG "[name:"KBUILD_MODNAME"&]"pr_fmt(fmt), ##__VA_ARGS__); \
 	}	else								\
 		printk(KERN_EMERG "[name:"KBUILD_MODNAME"&]"pr_fmt(fmt), ##__VA_ARGS__); \
 })
@@ -334,6 +335,7 @@ extern asmlinkage void dump_stack(void) __cold;
 		if (unlikely(descriptor.flags & _DPRINTK_FLAGS_PRINT)) \
 			barrier();   \
 		__print_once = true;				\
+		printk(KERN_ALERT "[name:"KBUILD_MODNAME"&]"pr_fmt(fmt), ##__VA_ARGS__); \
 	}	else								\
 		printk(KERN_ALERT "[name:"KBUILD_MODNAME"&]"pr_fmt(fmt), ##__VA_ARGS__); \
 })
@@ -346,6 +348,7 @@ extern asmlinkage void dump_stack(void) __cold;
 		if (unlikely(descriptor.flags & _DPRINTK_FLAGS_PRINT)) \
 			barrier();   \
 		__print_once = true;				\
+		printk(KERN_CRIT "[name:"KBUILD_MODNAME"&]"pr_fmt(fmt), ##__VA_ARGS__); \
 	}	else								\
 		printk(KERN_CRIT "[name:"KBUILD_MODNAME"&]"pr_fmt(fmt), ##__VA_ARGS__); \
 })
@@ -359,6 +362,7 @@ extern asmlinkage void dump_stack(void) __cold;
 		if (unlikely(descriptor.flags & _DPRINTK_FLAGS_PRINT)) \
 			barrier();   \
 		__print_once = true;				\
+		printk(KERN_ERR "[name:"KBUILD_MODNAME"&]"pr_fmt(fmt), ##__VA_ARGS__); \
 	}	else								\
 		printk(KERN_ERR "[name:"KBUILD_MODNAME"&]"pr_fmt(fmt), ##__VA_ARGS__); \
 })
@@ -371,6 +375,7 @@ extern asmlinkage void dump_stack(void) __cold;
 		if (unlikely(descriptor.flags & _DPRINTK_FLAGS_PRINT)) \
 			barrier();   \
 		__print_once = true;				\
+		printk(KERN_WARNING "[name:"KBUILD_MODNAME"&]"pr_fmt(fmt), ##__VA_ARGS__); \
 	}	else								\
 		printk(KERN_WARNING "[name:"KBUILD_MODNAME"&]"pr_fmt(fmt), ##__VA_ARGS__); \
 })
@@ -384,6 +389,7 @@ extern asmlinkage void dump_stack(void) __cold;
 		if (unlikely(descriptor.flags & _DPRINTK_FLAGS_PRINT)) \
 			barrier();   \
 		__print_once = true;				\
+		printk(KERN_NOTICE "[name:"KBUILD_MODNAME"&]"pr_fmt(fmt), ##__VA_ARGS__); \
 	}	else								\
 		printk(KERN_NOTICE "[name:"KBUILD_MODNAME"&]"pr_fmt(fmt), ##__VA_ARGS__); \
 })
@@ -396,6 +402,7 @@ extern asmlinkage void dump_stack(void) __cold;
 		if (unlikely(descriptor.flags & _DPRINTK_FLAGS_PRINT)) \
 			barrier();   \
 		__print_once = true;				\
+		printk(KERN_INFO "[name:"KBUILD_MODNAME"&]"pr_fmt(fmt), ##__VA_ARGS__); \
 	}	else								\
 		printk(KERN_INFO "[name:"KBUILD_MODNAME"&]"pr_fmt(fmt), ##__VA_ARGS__); \
 })
@@ -408,6 +415,7 @@ extern asmlinkage void dump_stack(void) __cold;
 		if (unlikely(descriptor.flags & _DPRINTK_FLAGS_PRINT)) \
 			barrier();   \
 		__print_once = true;				\
+		printk(KERN_CONT "[name:"KBUILD_MODNAME"&]"pr_fmt(fmt), ##__VA_ARGS__); \
 	}	else								\
 		printk(KERN_CONT "[name:"KBUILD_MODNAME"&]"pr_fmt(fmt), ##__VA_ARGS__); \
 })
