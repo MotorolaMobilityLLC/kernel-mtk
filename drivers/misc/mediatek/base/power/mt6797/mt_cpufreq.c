@@ -3321,8 +3321,10 @@ static void _mt_cpufreq_set(struct cpufreq_policy *policy, enum mt_cpu_dvfs_id i
 	if (ktime_to_us(delta[SET_DVFS]) > ktime_to_us(max[SET_DVFS]))
 		max[SET_DVFS] = delta[SET_DVFS];
 
-	p->idx_opp_tbl = new_opp_idx;
-	p_cci->idx_opp_tbl = new_cci_opp_idx;
+	if (p->idx_opp_tbl != new_opp_idx) {
+		p->idx_opp_tbl = new_opp_idx;
+		p_cci->idx_opp_tbl = new_cci_opp_idx;
+	}
 
 #ifndef DISABLE_PBM_FEATURE
 	if (!ret && !p->dvfs_disable_by_suspend)
