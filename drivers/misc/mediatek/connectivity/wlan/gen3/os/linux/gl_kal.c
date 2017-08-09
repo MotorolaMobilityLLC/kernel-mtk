@@ -901,6 +901,9 @@ static mm_segment_t orgfs;
 static PUINT_8 apucFwPath[] = {
 	(PUINT_8) "/storage/sdcard0/",
 	(PUINT_8) "/etc/firmware/",
+#if !CONFIG_ANDROID
+	(PUINT_8) "/lib/firmware/",
+#endif
 	NULL
 };
 
@@ -3194,8 +3197,7 @@ int hif_thread(void *data)
 	struct net_device *dev = data;
 	P_GLUE_INFO_T prGlueInfo = *((P_GLUE_INFO_T *) netdev_priv(dev));
 	int ret = 0;
-	KAL_WAKE_LOCK_T rHifThreadWakeLock;
-
+	KAL_WAKELOCK_DECLARE(rHifThreadWakeLock);
 	KAL_WAKE_LOCK_INIT(prGlueInfo->prAdapter, &rHifThreadWakeLock, "WLAN hif_thread");
 	KAL_WAKE_LOCK(prGlueInfo->prAdapter, &rHifThreadWakeLock);
 
@@ -3281,14 +3283,12 @@ int rx_thread(void *data)
 	QUE_T rTempRxQue;
 	P_QUE_T prTempRxQue = NULL;
 	P_QUE_ENTRY_T prQueueEntry = NULL;
-
 	int ret = 0;
-	KAL_WAKE_LOCK_T rRxThreadWakeLock;
 	UINT_32 u4LoopCount;
 
 	/* for spin lock acquire and release */
 	KAL_SPIN_LOCK_DECLARATION();
-
+	KAL_WAKELOCK_DECLARE(rRxThreadWakeLock);
 	KAL_WAKE_LOCK_INIT(prGlueInfo->prAdapter, &rRxThreadWakeLock, "WLAN rx_thread");
 	KAL_WAKE_LOCK(prGlueInfo->prAdapter, &rRxThreadWakeLock);
 
@@ -3375,7 +3375,7 @@ int tx_thread(void *data)
 	P_GL_IO_REQ_T prIoReq = NULL;
 	int ret = 0;
 	BOOLEAN fgNeedHwAccess = FALSE;
-	KAL_WAKE_LOCK_T rTxThreadWakeLock;
+	KAL_WAKELOCK_DECLARE(rTxThreadWakeLock);
 
 #if CFG_SUPPORT_MULTITHREAD
 	prGlueInfo->u4TxThreadPid = KAL_GET_CURRENT_THREAD_ID();

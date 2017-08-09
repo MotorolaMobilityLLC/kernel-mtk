@@ -1126,7 +1126,9 @@
 */
 #include "precomp.h"
 #include "mgmt/ais_fsm.h"
+#if defined(MT6797)
 #include <mach/emi_mpu.h>
+#endif
 
 /*******************************************************************************
 *                              C O N S T A N T S

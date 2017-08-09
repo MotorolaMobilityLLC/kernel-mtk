@@ -774,8 +774,11 @@ typedef enum _ENUM_KAL_MEM_ALLOCATION_TYPE_E {
 
 #if CONFIG_ANDROID		/* Defined in Android kernel source */
 typedef struct wake_lock KAL_WAKE_LOCK_T, *P_KAL_WAKE_LOCK_T;
+#define KAL_WAKELOCK_DECLARE(_lock) \
+	struct wake_lock _lock
 #else
 typedef UINT_32 KAL_WAKE_LOCK_T, *P_KAL_WAKE_LOCK_T;
+#define KAL_WAKELOCK_DECLARE(_lock)
 #endif
 
 #if CFG_SUPPORT_AGPS_ASSIST
@@ -982,7 +985,7 @@ struct KAL_HALT_CTRL_T {
 #define KAL_WAKE_LOCK(_prAdapter, _prWakeLock)
 #define KAL_WAKE_LOCK_TIMEOUT(_prAdapter, _prWakeLock, _u4Timeout)
 #define KAL_WAKE_UNLOCK(_prAdapter, _prWakeLock)
-#define KAL_WAKE_LOCK_ACTIVE(_prAdapter, _prWakeLock)
+#define KAL_WAKE_LOCK_ACTIVE(_prAdapter, _prWakeLock) FALSE
 #endif
 
 /*----------------------------------------------------------------------------*/

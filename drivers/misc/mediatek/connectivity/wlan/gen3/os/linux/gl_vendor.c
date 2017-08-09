@@ -400,7 +400,7 @@ int mtk_cfg80211_vendor_set_scan_config(struct wiphy *wiphy, struct wireless_dev
 	P_GLUE_INFO_T prGlueInfo = NULL;
 
 	PARAM_WIFI_GSCAN_CMD_PARAMS rWifiScanCmd;
-	struct nlattr *attr[GSCAN_ATTRIBUTE_NUM_SCANS_TO_CACHE + 1];
+	struct nlattr **attr;
 	int i, k;
 	static struct nla_policy policy[GSCAN_ATTRIBUTE_NUM_SCANS_TO_CACHE + 1] = {
 		[GSCAN_ATTRIBUTE_NUM_AP_PER_SCAN] = {.type = NLA_U32},
@@ -411,17 +411,28 @@ int mtk_cfg80211_vendor_set_scan_config(struct wiphy *wiphy, struct wireless_dev
 	ASSERT(wiphy);
 	ASSERT(wdev);
 	if ((data == NULL) || !data_len)
-		goto nla_put_failure;
+		return -1;
+
+	attr = kalMemAlloc(sizeof(struct nlattr *) * (GSCAN_ATTRIBUTE_SIGNIFICANT_CHANGE_FLUSH + 1), VIR_MEM_TYPE);
+
+	if (!attr) {
+		DBGLOG(SCN, ERROR, "%s: kalMemAlloc fail for nlattr\n", __func__);
+		return -1;
+	}
 
 	DBGLOG(SCN, INFO, "%s for vendor command: data_len=%d \r\n", __func__, data_len);
-	for (i = 0; i < 2; i++)
+
+	for (i = 0; i < 2; i++) {
 		DBGLOG(SCN, INFO, "0x%x 0x%x 0x%x 0x%x \r\n", *((UINT_32 *) data + i * 4),
 		       *((UINT_32 *) data + i * 4 + 1), *((UINT_32 *) data + i * 4 + 2),
 		       *((UINT_32 *) data + i * 4 + 3));
+	}
+
 	kalMemZero(&rWifiScanCmd, sizeof(rWifiScanCmd));
 	kalMemZero(attr, sizeof(struct nlattr *) * (GSCAN_ATTRIBUTE_NUM_SCANS_TO_CACHE + 1));
 
 	nla_parse_nested(attr, GSCAN_ATTRIBUTE_NUM_SCANS_TO_CACHE, (struct nlattr *)(data - NLA_HDRLEN), policy);
+
 	for (k = GSCAN_ATTRIBUTE_NUM_AP_PER_SCAN; k <= GSCAN_ATTRIBUTE_NUM_SCANS_TO_CACHE; k++) {
 		if (attr[k]) {
 			switch (k) {
@@ -437,6 +448,7 @@ int mtk_cfg80211_vendor_set_scan_config(struct wiphy *wiphy, struct wireless_dev
 			}
 		}
 	}
+
 	DBGLOG(REQ, TRACE, "attr=0x%x, attr2=0x%x", *(UINT_32 *)attr[GSCAN_ATTRIBUTE_NUM_AP_PER_SCAN],
 		*(UINT_32 *)attr[GSCAN_ATTRIBUTE_REPORT_THRESHOLD]);
 
@@ -450,10 +462,8 @@ int mtk_cfg80211_vendor_set_scan_config(struct wiphy *wiphy, struct wireless_dev
 			   wlanoidSetGSCNAConfig,
 			   &rWifiScanCmd, sizeof(PARAM_WIFI_GSCAN_CMD_PARAMS), FALSE, FALSE, TRUE, &u4BufLen);
 
+	kalMemFree(attr, VIR_MEM_TYPE, (sizeof(struct nlattr *) * (GSCAN_ATTRIBUTE_NUM_SCANS_TO_CACHE + 1)));
 	return 0;
-
-nla_put_failure:
-	return -1;
 }
 
 int mtk_cfg80211_vendor_set_significant_change(struct wiphy *wiphy, struct wireless_dev *wdev,
