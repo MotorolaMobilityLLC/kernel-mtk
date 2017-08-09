@@ -206,11 +206,11 @@ struct md_pll_reg {
 #define MD_BUSREC_DUMP_LEN    (0x41C)
 #define MD_ECT_DUMP_ADDR0   0x200D0A00
 #define MD_ECT_DUMP_LEN0    (0x30)
-#define MD_ECT_DUMP_ADDR1   0x10478130
+#define MD_ECT_DUMP_ADDR1   0x10378130
 #define MD_ECT_DUMP_LEN1    (8)
-#define MD_ECT_DUMP_ADDR2   0x1046B130
+#define MD_ECT_DUMP_ADDR2   0x1036B130
 #define MD_ECT_DUMP_LEN2    (8)
-#define MD_ECT_DUMP_ADDR3   0x1046C130
+#define MD_ECT_DUMP_ADDR3   0x1036C130
 #define MD_ECT_DUMP_LEN3    (8)
 #define MD_Bootup_DUMP_ADDR0   0x20060100
 #define MD_Bootup_DUMP_LEN0    (4)

@@ -609,8 +609,9 @@ void md1_pll_init(struct ccci_modem *md)
 	md1_pll_on(md);
 	ROr2W(md_pll->md_peri_misc, R_L1_PMS, 0x7);
 
-	/* modify PSMCU2EMI bus divider from 3 to 4. */
-	ROr2W(md_pll->md_sys_clk, R_PSMCU_AO_CLK_CTL, 0x83);
+	/* From everest and then, PSMCU2EMI bus divider need to be 3,
+	 * if it used old value 4 as jade, it can be failed in corner case. */
+	ROr2W(md_pll->md_sys_clk, R_PSMCU_AO_CLK_CTL, 0x82);
 
 	ROr2W(md_pll->md_L1_a0, R_L1MCU_PWR_AWARE, (1<<16));
 
