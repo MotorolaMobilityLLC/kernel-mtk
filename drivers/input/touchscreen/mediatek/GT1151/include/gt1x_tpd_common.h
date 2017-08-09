@@ -79,6 +79,13 @@ extern int tpd_em_log;
 #define GTP_INT_TRIGGER  1	/*0:Rising 1:Falling*/
 #define GTP_WAKEUP_LEVEL 1
 #endif
+#ifdef CONFIG_MTK_LCM_PHYSICAL_ROTATION_HW
+#define GTP_WARP_X_ON         1
+#define GTP_WARP_Y_ON         1
+#else
+#define GTP_WARP_X_ON         0
+#define GTP_WARP_Y_ON         0
+#endif
 
 #define GTP_MAX_TOUCH    5
 #ifdef CONFIG_GTP_WITH_STYLUS
@@ -164,13 +171,13 @@ extern int tpd_em_log;
 
 #define GTP_I2C_ADDRESS				0xBA
 
-#ifdef CONFIG_GTP_WARP_X_ON
+#if GTP_WARP_X_ON
 #define GTP_WARP_X(x_max, x) (x_max - 1 - x)
 #else
 #define GTP_WARP_X(x_max, x) x
 #endif
 
-#ifdef CONFIG_GTP_WARP_Y_ON
+#if GTP_WARP_Y_ON
 #define GTP_WARP_Y(y_max, y) (y_max - 1 - y)
 #else
 #define GTP_WARP_Y(y_max, y) y
