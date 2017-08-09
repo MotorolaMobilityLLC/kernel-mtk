@@ -3181,7 +3181,7 @@ int primary_display_init(char *lcm_name, unsigned int lcm_fps, int is_lcm_inited
 
 	DISPCHECK("primary_display_init->dpmgr_path_config\n");
 
-	data_config = NULL;
+
 	data_config = dpmgr_path_get_last_config(pgc->dpmgr_handle);
 	memcpy(&(data_config->dispif_config), lcm_param, sizeof(LCM_PARAMS));
 	data_config->dst_w = disp_helper_get_option(DISP_OPT_FAKE_LCM_WIDTH);
@@ -3781,7 +3781,7 @@ int primary_display_resume(void)
 		DISPDBG("[POWER]start cmdq[begin]--IPOH\n");
 		if (disp_helper_get_option(DISP_OPT_USE_CMDQ))
 			_cmdq_start_trigger_loop();
-
+		enable_idlemgr(1);
 		DISPDBG("[POWER]start cmdq[end]--IPOH\n");
 		/*pgc->state = DISP_ALIVE;*/
 		goto done;
@@ -3939,6 +3939,8 @@ int primary_display_resume(void)
 		DISPCHECK("[POWER]triggger cmdq[begin]\n");
 		if (_should_reset_cmdq_config_handle())
 			_cmdq_reset_config_handle();
+		if (_should_insert_wait_frame_done_token())
+			_cmdq_insert_wait_frame_done_token_mira(pgc->cmdq_handle_config);
 		dpmgr_map_event_to_irq(pgc->dpmgr_handle, DISP_PATH_EVENT_IF_VSYNC, DDP_IRQ_DSI0_EXT_TE);
 		dpmgr_enable_event(pgc->dpmgr_handle, DISP_PATH_EVENT_IF_VSYNC);
 
@@ -3988,6 +3990,7 @@ int primary_display_ipoh_restore(void)
 {
 	DISPMSG("primary_display_ipoh_restore In\n");
 	DISPDBG("ESD check stop[begin]\n");
+	enable_idlemgr(0);
 	primary_display_esd_check_enable(0);
 	DISPCHECK("ESD check stop[end]\n");
 	if (NULL != pgc->cmdq_handle_trigger) {
@@ -4298,6 +4301,7 @@ static DISP_HELPER_OPT opt_backup_name[OPT_BACKUP_NUM] = {
 };
 
 static int opt_backup_value[OPT_BACKUP_NUM];
+unsigned int idlemgr_flag_backup;
 
 static int disp_enter_svp(SVP_STATE state)
 {
@@ -4314,6 +4318,7 @@ static int disp_enter_svp(SVP_STATE state)
 			/* switch to DL */
 			do_primary_display_switch_mode(DISP_SESSION_DIRECT_LINK_MODE, pgc->session_id, 0, NULL, 0);
 		}
+		idlemgr_flag_backup = set_idlemgr(0, 0);
 	}
 
 	return 0;
@@ -4328,6 +4333,7 @@ static int disp_leave_svp(SVP_STATE state)
 		for (i = 0; i < OPT_BACKUP_NUM; i++)
 			disp_helper_set_option(opt_backup_name[i], opt_backup_value[i]);
 
+		set_idlemgr(idlemgr_flag_backup, 0);
 	}
 	return 0;
 }
@@ -5029,7 +5035,7 @@ static int smart_ovl_try_switch_mode_nolock(void)
 	disp_path_handle disp_handle = NULL;
 	disp_ddp_path_config *data_config = NULL;
 	int i, stable;
-	unsigned long long DL_bw, DC_bw;
+	unsigned long long DL_bw, DC_bw, bw_th;
 
 	if (!disp_helper_get_option(DISP_OPT_SMART_OVL))
 		return 0;
@@ -5085,12 +5091,16 @@ static int smart_ovl_try_switch_mode_nolock(void)
 	DC_bw = (ovl_sz + rdma_sz) * hwc_fps + rdma_sz * lcm_fps;
 
 	if (pgc->session_mode == DISP_SESSION_DIRECT_LINK_MODE) {
-		if (DC_bw < DL_bw*4/5) {
+		bw_th = DL_bw*4;
+		do_div(bw_th, 5);
+		if (DC_bw < bw_th) {
 			/* switch to DC */
 			do_primary_display_switch_mode(DISP_SESSION_DECOUPLE_MODE, pgc->session_id, 0, NULL, 0);
 		}
 	} else {
-		if (DL_bw < DC_bw*4/5) {
+		bw_th = DC_bw*4;
+		do_div(bw_th, 5);
+		if (DL_bw < bw_th) {
 			/* switch to DL */
 			do_primary_display_switch_mode(DISP_SESSION_DIRECT_LINK_MODE, pgc->session_id, 0, NULL, 0);
 		}

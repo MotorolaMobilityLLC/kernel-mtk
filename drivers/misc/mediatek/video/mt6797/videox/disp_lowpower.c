@@ -1093,11 +1093,35 @@ void set_rdma_width_height(unsigned int width, unsigned height)
 void enable_idlemgr(unsigned int flag)
 {
 	if (flag) {
-		DISPCHECK("[disp_lowpower]enabel idlemgr\n");
+		DISPCHECK("[disp_lowpower]enable idlemgr\n");
 		atomic_set(&idlemgr_task_wakeup, 1);
 		wake_up_interruptible(&(idlemgr_pgc->idlemgr_wait_queue));
-	} else
+	} else {
 		DISPCHECK("[disp_lowpower]disable idlemgr\n");
 		atomic_set(&idlemgr_task_wakeup, 0);
-		primary_display_idlemgr_kick(__func__, 1);
+		primary_display_idlemgr_kick((char *)__func__, 1);
+	}
+}
+unsigned int get_idlemgr_flag(void)
+{
+	unsigned int idlemgr_flag;
+
+	idlemgr_flag = atomic_read(&idlemgr_task_wakeup);
+	return idlemgr_flag;
+}
+
+unsigned int set_idlemgr(unsigned int flag, int need_lock)
+{
+	unsigned int old_flag = atomic_read(&idlemgr_task_wakeup);
+
+	if (flag) {
+		DISPCHECK("[disp_lowpower]enable idlemgr\n");
+		atomic_set(&idlemgr_task_wakeup, 1);
+		wake_up_interruptible(&(idlemgr_pgc->idlemgr_wait_queue));
+	} else {
+		DISPCHECK("[disp_lowpower]disable idlemgr\n");
+		atomic_set(&idlemgr_task_wakeup, 0);
+		primary_display_idlemgr_kick((char *)__func__, need_lock);
+	}
+	return old_flag;
 }

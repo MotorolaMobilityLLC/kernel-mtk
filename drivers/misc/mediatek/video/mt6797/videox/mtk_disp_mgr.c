@@ -956,6 +956,7 @@ int _ioctl_set_input_buffer(unsigned long arg)
 
 	if (copy_from_user(session_input, argp, sizeof(*session_input))) {
 		DISPERR("[FB]: copy_from_user failed! line:%d\n", __LINE__);
+		kfree(session_input);
 		return -EFAULT;
 	}
 	ret = __set_input(session_input, 4);
@@ -1195,6 +1196,7 @@ int _ioctl_frame_config(unsigned long arg)
 
 	if (copy_from_user(frame_cfg, (void __user *)arg, sizeof(*frame_cfg))) {
 		pr_err("[FB Driver]: copy_from_user failed! line:%d\n", __LINE__);
+		kfree(frame_cfg);
 		return -EFAULT;
 	}
 

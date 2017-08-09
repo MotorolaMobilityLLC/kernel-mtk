@@ -41,6 +41,8 @@ void set_is_dc(unsigned int is_dc);
 unsigned int set_one_layer(unsigned int is_onelayer);
 void set_rdma_width_height(unsigned int width, unsigned height);
 void enable_idlemgr(unsigned int flag);
+unsigned int get_idlemgr_flag(void);
+unsigned int set_idlemgr(unsigned int flag, int need_lock);
 int _blocking_flush(void);
 /**************************************** for met******************************************* */
 /*
