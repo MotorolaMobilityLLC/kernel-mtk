@@ -287,6 +287,25 @@ void gic_clear_primask(void)
 	writel_relaxed(0xf0, base + GIC_CPU_PRIMASK);
 }
 
+void mt_set_irq_priority(unsigned int irq, unsigned int priority)
+{
+	unsigned int bit_offset = (irq % 4) * 8;
+	unsigned int reg_offset = irq / 4 * 4;
+	u32 val = readl(IOMEM(GIC_DIST_BASE +
+			GIC_DIST_PRI + reg_offset));
+	val &= ~(0xff << bit_offset);
+	val |= (priority << bit_offset);
+	writel_relaxed(val, IOMEM(GIC_DIST_BASE + GIC_DIST_PRI + reg_offset));
+}
+
+unsigned int mt_get_irq_priority(unsigned int irq)
+{
+	unsigned int bit_offset = (irq % 4) * 8;
+	unsigned int reg_offset = irq / 4 * 4;
+
+	return (readl(IOMEM(GIC_DIST_BASE + GIC_DIST_PRI + reg_offset)) >> bit_offset) & 0xff;
+}
+
 #ifdef CONFIG_SMP
 static int gic_set_affinity(struct irq_data *d, const struct cpumask *mask_val, bool force)
 {

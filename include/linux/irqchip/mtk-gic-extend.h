@@ -20,6 +20,8 @@
 #define MT_POLARITY_LOW		0
 #define MT_POLARITY_HIGH	1
 
+#define MT_MAX_PRIO_SPM		0
+
 enum {
 	IRQ_MASK_HEADER = 0xF1F1F1F1,
 	IRQ_MASK_FOOTER = 0xF2F2F2F2
@@ -51,6 +53,8 @@ void mt_irq_set_pending_for_sleep(unsigned int irq);
 extern void mt_irq_set_pending(unsigned int irq);
 extern unsigned int mt_irq_get_pending(unsigned int irq);
 void mt_gic_set_priority(unsigned int irq);
+void mt_set_irq_priority(unsigned int irq, unsigned int priority);
+unsigned int mt_get_irq_priority(unsigned int irq);
 
 /* set the priority mask to 0x10 for masking all irqs to this cpu */
 void gic_set_primask(void);
