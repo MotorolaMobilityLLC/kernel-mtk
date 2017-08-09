@@ -28,6 +28,8 @@ extern void __iomem *auxadc_efuse_base;
 #include <mach/mt_reg_base.h>
 #endif
 
+#define AUXADC_CLOCK_BY_SPM
+
 #define EFUSE_CALI
 #define ADC_GE_A_MASK 0xffc00
 #define ADC_GE_A_SHIFT 10

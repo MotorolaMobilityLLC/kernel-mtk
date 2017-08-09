@@ -497,6 +497,7 @@ void mt_auxadc_hal_init(struct platform_device *dev)
 static void mt_auxadc_hal_suspend(void)
 {
 	pr_debug("******** MT auxadc driver suspend!! ********\n");
+#if !defined(AUXADC_CLOCK_BY_SPM)
 #if !defined(CONFIG_MTK_CLKMGR)
 	if (clk_auxadc)
 		clk_disable_unprepare(clk_auxadc);
@@ -506,11 +507,13 @@ static void mt_auxadc_hal_suspend(void)
 		pr_err("hwEnableClock AUXADC failed.");
 #endif
 #endif
+#endif
 }
 
 static void mt_auxadc_hal_resume(void)
 {
 	pr_debug("******** MT auxadc driver resume!! ********\n");
+#if !defined(AUXADC_CLOCK_BY_SPM)
 #if !defined(CONFIG_MTK_CLKMGR)
 	if (clk_auxadc)
 		clk_prepare_enable(clk_auxadc);
@@ -518,6 +521,7 @@ static void mt_auxadc_hal_resume(void)
 #ifndef CONFIG_MTK_FPGA
 	if (enable_clock(MT_PDN_PERI_AUXADC, "AUXADC"))
 		pr_err("hwEnableClock AUXADC failed!!!.");
+#endif
 #endif
 #endif
 	mt_auxadc_power_on();
