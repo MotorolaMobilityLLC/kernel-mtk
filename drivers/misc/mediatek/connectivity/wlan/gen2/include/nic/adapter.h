@@ -1138,23 +1138,21 @@ typedef struct _P2P_FUNCTION_LINKER {
 
 /*
  *State Machine:
- *-->STOP: Turn on/off WiFi
- *-->DISABLE: Screen was off (wlanHandleSystemSuspend)
- *-->ENABLE: Screen was on (wlanHandleSystemResume)
+ *-->STOP: No Tx/Rx traffic
+ *-->DISABLE: Screen is off
+ *-->ENABLE: Screen is on && Tx/Rx traffic is active
  *----->clear DISABLE
  *-->RUNNING: Screen was on && Tx/Rx was ongoing (wlanHardStartXmit/kalRxIndicatePkts)
-*/
-struct GL_PER_MON_T {
+ */
+struct PERF_MONITOR_T {
 	TIMER_T rPerfMonTimer;
 	ULONG ulPerfMonFlag;
 	ULONG ulLastTxBytes;
 	ULONG ulLastRxBytes;
 	ULONG ulP2PLastTxBytes;
 	ULONG ulP2PLastRxBytes;
-	/*in bps*/
-	ULONG ulThroughput;
-	/*in ms*/
-	UINT32 u4UpdatePeriod;
+	ULONG ulThroughput; /*in bps*/
+	UINT32 u4UpdatePeriod; /*in ms*/
 	UINT32 u4TarPerfLevel;
 	UINT32 u4CurrPerfLevel;
 };
@@ -1390,7 +1388,7 @@ struct _ADAPTER_T {
 
 	UINT_32 u4AirDelayTotal;	/*  dbg privilege power mode, always keep in active */
 	ULONG	ulSuspendFlag;
-	struct GL_PER_MON_T rPerMonitor;
+	struct PERF_MONITOR_T rPerMonitor;
 };				/* end of _ADAPTER_T */
 
 /*******************************************************************************
@@ -1461,9 +1459,9 @@ struct _ADAPTER_T {
 		}
 #endif
 
-#define PERF_MON_DISABLE_BIT_OFF    (0)
-#define PERF_MON_STOP_BIT_OFF       (1)
-#define PERF_MON_RUNNING_BIT_OFF    (2)
+#define PERF_MON_DISABLE_BIT    (0)
+#define PERF_MON_STOP_BIT       (1)
+#define PERF_MON_RUNNING_BIT    (2)
 
 #define THROUGHPUT_L1_THRESHOLD		(20*1024*1024)
 #define THROUGHPUT_L2_THRESHOLD		(60*1024*1024)

@@ -568,6 +568,7 @@
 #include <linux/cdev.h>		/* for cdev interface */
 
 #include <linux/firmware.h>	/* for firmware download */
+#include <linux/fb.h>
 
 #if defined(_HIF_SDIO)
 #include <linux/mmc/sdio.h>

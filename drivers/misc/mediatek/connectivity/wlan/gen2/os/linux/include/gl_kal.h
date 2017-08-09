@@ -1551,13 +1551,14 @@ VOID kalHaltUnlock(VOID);
 VOID kalSetHalted(BOOLEAN fgHalt);
 BOOLEAN kalIsHalted(VOID);
 
-INT32 kalPerMonInit(IN P_GLUE_INFO_T prGlueInfo);
-INT32 kalPerMonDisable(IN P_GLUE_INFO_T prGlueInfo);
-INT32 kalPerMonEnable(IN P_GLUE_INFO_T prGlueInfo);
-INT32 kalPerMonStart(IN P_GLUE_INFO_T prGlueInfo);
-INT32 kalPerMonStop(IN P_GLUE_INFO_T prGlueInfo);
-INT32 kalPerMonDestroy(IN P_GLUE_INFO_T prGlueInfo);
+INT_32 kalPerMonInit(IN P_GLUE_INFO_T prGlueInfo);
+INT_32 kalPerMonDisable(IN P_GLUE_INFO_T prGlueInfo);
+INT_32 kalPerMonEnable(IN P_GLUE_INFO_T prGlueInfo);
+INT_32 kalPerMonStart(IN P_GLUE_INFO_T prGlueInfo);
+INT_32 kalPerMonStop(IN P_GLUE_INFO_T prGlueInfo);
+INT_32 kalPerMonDestroy(IN P_GLUE_INFO_T prGlueInfo);
 VOID kalPerMonHandler(IN P_ADAPTER_T prAdapter, ULONG ulParam);
-INT32 kalBoostCpu(UINT_32 core_num);
-
+INT_32 kalBoostCpu(UINT_32 core_num);
+INT_32 kalFbNotifierReg(IN P_GLUE_INFO_T prGlueInfo);
+VOID kalFbNotifierUnReg(VOID);
 #endif /* _GL_KAL_H */

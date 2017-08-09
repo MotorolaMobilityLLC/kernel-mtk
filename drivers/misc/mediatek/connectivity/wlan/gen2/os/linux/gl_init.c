@@ -2528,8 +2528,6 @@ void wlanHandleSystemSuspend(void)
 	prGlueInfo = *((P_GLUE_INFO_T *) netdev_priv(prDev));
 	ASSERT(prGlueInfo);
 
-	kalPerMonDisable(prGlueInfo);
-
 	if (!prDev || !(prDev->ip_ptr) ||
 	    !((struct in_device *)(prDev->ip_ptr))->ifa_list ||
 	    !(&(((struct in_device *)(prDev->ip_ptr))->ifa_list->ifa_local))) {
@@ -2635,8 +2633,6 @@ void wlanHandleSystemResume(void)
 	/* <3> acquire the prGlueInfo */
 	prGlueInfo = *((P_GLUE_INFO_T *) netdev_priv(prDev));
 	ASSERT(prGlueInfo);
-
-	kalPerMonEnable(prGlueInfo);
 
 	/*
 	   We will receive the event in rx, we will check if the status is the same in driver
@@ -3192,6 +3188,7 @@ bailout:
 	if (i4Status == WLAN_STATUS_SUCCESS) {
 		/*Init performance monitor structure */
 		kalPerMonInit(prGlueInfo);
+		kalFbNotifierReg(prGlueInfo);
 		/* probe ok */
 		DBGLOG(INIT, TRACE, "wlanProbe ok\n");
 	} else {
@@ -3251,6 +3248,7 @@ static VOID wlanRemove(VOID)
 		return;
 	}
 
+	kalFbNotifierUnReg();
 	kalPerMonDestroy(prGlueInfo);
 #if CFG_ENABLE_WIFI_DIRECT
 	/* avoid remove & p2p off command simultaneously */
