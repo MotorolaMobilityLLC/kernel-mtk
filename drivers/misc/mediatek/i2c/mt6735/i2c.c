@@ -1008,6 +1008,7 @@ static s32 mt_i2c_do_transfer(struct mt_i2c_t *i2c, struct mt_i2c_msg *msgs, s32
 	return num;
 }
 
+#ifndef CONFIG_MTK_I2C_EXTENSION
 static s32 standard_i2c_start_xfer(struct mt_i2c_t *i2c, struct i2c_msg *msg)
 {
 	s32 return_value = 0;
@@ -1153,7 +1154,7 @@ static s32 standard_i2c_transfer(struct i2c_adapter *adap, struct i2c_msg msgs[]
 	else
 		return -EREMOTEIO;
 }
-EXPORT_SYMBOL(standard_i2c_transfer);
+#endif
 
 int mtk_i2c_transfer(struct i2c_adapter *adap, struct mt_i2c_msg msgs[], s32 num)
 {
