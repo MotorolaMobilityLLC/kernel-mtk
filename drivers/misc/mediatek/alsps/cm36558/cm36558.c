@@ -1284,7 +1284,7 @@ static int CM36558_init_client(struct i2c_client *client)
 		databuf[1] = 0x01;
 	else
 		databuf[1] = 0x03;
-	databuf[2] = 0x00;
+	databuf[2] = 0x01;
 	res = CM36558_i2c_master_operate(client, databuf, 0x3, I2C_FLAG_WRITE);
 	if (res <= 0) {
 		APS_ERR("i2c_master_send function err\n");
