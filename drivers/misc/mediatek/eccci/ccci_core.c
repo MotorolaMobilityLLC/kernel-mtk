@@ -631,6 +631,9 @@ struct ccci_modem *ccci_allocate_modem(int private_size)
 	md->md_status_timeout.function = md_status_timeout_func;
 	md->md_status_timeout.data = (unsigned long)md;
 
+	snprintf(md->md_wakelock_name, sizeof(md->md_wakelock_name), "md%d_wakelock", md->index + 1);
+	wake_lock_init(&md->md_wake_lock, WAKE_LOCK_SUSPEND, md->md_wakelock_name);
+
 	spin_lock_init(&md->ctrl_lock);
 	for (i = 0; i < ARRAY_SIZE(md->rx_ch_ports); i++)
 		INIT_LIST_HEAD(&md->rx_ch_ports[i]);

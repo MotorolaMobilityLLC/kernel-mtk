@@ -877,6 +877,8 @@ struct ccci_modem {
 #endif
 	/* unsigned char private_data[0];
 	do NOT use this manner, otherwise spinlock inside private_data will trigger alignment exception */
+	char md_wakelock_name[32];
+	struct wake_lock md_wake_lock;
 };
 
 /* APIs */

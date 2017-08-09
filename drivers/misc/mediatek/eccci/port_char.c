@@ -693,6 +693,7 @@ static long dev_char_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 	case CCCI_IOC_LEAVE_DEEP_FLIGHT:
 		CCCI_NOTICE_LOG(md->index, CHAR, "leave MD flight mode ioctl called by %s\n", current->comm);
 		ccci_event_log("md%d: leave MD flight mode ioctl called by %s\n", md->index, current->comm);
+		wake_lock_timeout(&md->md_wake_lock, 10 * HZ);
 #ifdef MD_UMOLY_EE_SUPPORT
 		md->flight_mode = MD_FIGHT_MODE_LEAVE; /* leave flight mode */
 #endif
