@@ -36,7 +36,7 @@
 #include <linux/compat.h>
 #endif
 #include "kd_flashlight.h"
-/*#include <mach/mt_pbm.h>*/
+#include <mach/mt_pbm.h>
 
 
 
@@ -468,7 +468,7 @@ static long flashlight_ioctl_core(struct file *file, unsigned int cmd, unsigned 
 
 			pF = g_pFlashInitFunc[sensorDevIndex][strobeIndex][partIndex];
 			if (pF != 0) {
-				/*kicker_pbm_by_flash(kdArg.arg);*/
+				kicker_pbm_by_flash(kdArg.arg);
 				i4RetValue = pF->flashlight_ioctl(cmd, kdArg.arg);
 
 			} else {
