@@ -230,10 +230,10 @@ static unsigned int *recordTbl;
 	#include <mt-plat/mt_chip.h>
 	#include <mt-plat/mt_gpio.h>
 	#include "mt-plat/upmu_common.h"
-	#include "../../../include/mt-plat/mt6797/include/mach/mt_thermal.h"
+	#include "mach/mt_thermal.h"
 	#include "mach/mt_ppm_api.h"
 	#include "mt_gpufreq.h"
-	#include "../../../power/mt6797/mt6311.h"
+	#include "../../../power/mt6755/mt6311.h"
 	/* #include "mach/mt6311.h" */
 
 #else
