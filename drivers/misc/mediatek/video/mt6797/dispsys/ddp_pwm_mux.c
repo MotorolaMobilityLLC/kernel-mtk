@@ -26,6 +26,9 @@ static void __iomem *disp_pmw_mux_base;
 #define MUX_UPDATE_ADDR (disp_pmw_mux_base + 0x4)
 #endif
 #endif
+#ifndef OSC_ULPOSC_ADDR /* rosc control register address */
+#define OSC_ULPOSC_ADDR (disp_pmw_osc_base + 0x458)
+#endif
 
 /* clock hard code access API */
 #define DRV_Reg32(addr) INREG32(addr)
@@ -43,7 +46,7 @@ eDDP_CLK_ID disp_pwm_get_clkid(unsigned int clk_req)
 
 	switch (clk_req) {
 	case 0:
-		clkid = -1; /* ULPOSC 29M */
+		clkid = ULPOSC_D8; /* ULPOSC 29M */
 		break;
 	case 1:
 		clkid = ULPOSC_D2; /* ULPOSC 117M */
@@ -202,34 +205,85 @@ static int get_ulposc_status(void)
  * hardcode turn on/off ROSC api
  *
 *****************************************************************************/
+static int ulposc_on(void)
+{
+	unsigned int regosc;
+
+	if (get_ulposc_base() == -1)
+		return -1;
+
+	regosc = clk_readl(OSC_ULPOSC_ADDR);
+	/* PWM_MSG("ULPOSC config : 0x%08x", regosc); */
+
+	/* OSC EN = 1 */
+	regosc = regosc | 0x1;
+	clk_writel(OSC_ULPOSC_ADDR, regosc);
+	regosc = clk_readl(OSC_ULPOSC_ADDR);
+	/* PWM_MSG("ULPOSC config : 0x%08x after en", regosc); */
+	udelay(11);
+
+	/* OSC RST	*/
+	regosc = regosc | 0x2;
+	clk_writel(OSC_ULPOSC_ADDR, regosc);
+	regosc = clk_readl(OSC_ULPOSC_ADDR);
+	/* PWM_MSG("ULPOSC config : 0x%08x after rst 1", regosc); */
+	udelay(40);
+	regosc = regosc & 0xfffffffd;
+	clk_writel(OSC_ULPOSC_ADDR, regosc);
+	regosc = clk_readl(OSC_ULPOSC_ADDR);
+	/* PWM_MSG("ULPOSC config : 0x%08x after rst 0", regosc); */
+	udelay(130);
+
+	/* OSC CG_EN = 1 */
+	regosc = regosc | 0x4;
+	clk_writel(OSC_ULPOSC_ADDR, regosc);
+	regosc = clk_readl(OSC_ULPOSC_ADDR);
+	/* PWM_MSG("ULPOSC config : 0x%08x after cg_en", regosc); */
+
+	return 0;
+
+}
+
+static int ulposc_off(void)
+{
+	unsigned int regosc;
+
+	if (get_ulposc_base() == -1)
+		return -1;
+
+	regosc = clk_readl(OSC_ULPOSC_ADDR);
+
+	/* OSC CG_EN = 0 */
+	regosc = regosc & (~0x4);
+	clk_writel(OSC_ULPOSC_ADDR, regosc);
+	regosc = clk_readl(OSC_ULPOSC_ADDR);
+	/* PWM_MSG("ULPOSC config : 0x%08x after cg_en", regosc); */
+
+	udelay(40);
+
+	/* OSC EN = 0 */
+	regosc = regosc & (~0x1);
+	clk_writel(OSC_ULPOSC_ADDR, regosc);
+	regosc = clk_readl(OSC_ULPOSC_ADDR);
+	/* PWM_MSG("ULPOSC config : 0x%08x after en", regosc); */
+
+	return 0;
+}
+
 static int ulposc_enable(eDDP_CLK_ID clkid)
 {
-#if 0 /* MT6797 CCF ULPOSC power on/off not ready */
-	int ret = 0;
-
-	ret = ddp_clk_prepare_enable(clkid);
+	ulposc_on();
 	get_ulposc_status();
 
-	return ret;
-#else
-	get_ulposc_status();
 	return 0;
-#endif
 }
 
 static int ulposc_disable(eDDP_CLK_ID clkid)
 {
-#if 0 /* MT6797 CCF ULPOSC power on/off not ready */
-	int ret = 0;
-
-	ret = ddp_clk_disable_unprepare(clkid);
+	ulposc_off();
 	get_ulposc_status();
 
-	return ret;
-#else
-	get_ulposc_status();
 	return 0;
-#endif
 }
 
 /*****************************************************************************
