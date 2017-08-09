@@ -15,7 +15,7 @@
 #ifndef FPGA_PLATFORM
 extern void msdc_set_driving(struct msdc_host *host, struct msdc_hw *hw, bool sd_18);
 #endif
-extern void msdc_dump_padctl(struct msdc_host *host);
+/* void msdc_dump_padctl(struct msdc_host *host); */
 extern u32 msdc_host_mode[HOST_MAX_NUM];
 extern u32 msdc_host_mode2[HOST_MAX_NUM];
 
@@ -25,7 +25,6 @@ extern int mmc_send_ext_csd(struct mmc_card *card, u8 *ext_csd);
 extern struct msdc_host *mtk_msdc_host[];
 extern struct msdc_host *msdc_get_host(int host_function, bool boot, bool secondary);
 extern int msdc_reinit(struct msdc_host *host);
-
 #if 0
 extern int msdc_get_reserve(void);
 extern u32 msdc_get_capacity(int get_emmc_total);
@@ -68,6 +67,7 @@ struct msdc_ioctl {
 	int sd30_power_control;
 };
 
+extern  int simple_sd_ioctl_rw(struct msdc_ioctl *msdc_ctl);
 /**************for msdc_ssc***********************/
 #define AUDPLL_CTL_REG12                (0xF0007070)
 #define AUDPLL_CTL_REG01                (0xF00071E0)

@@ -7,17 +7,19 @@
 #include <linux/mmc/host.h>
 #include <linux/mmc/mmc.h>
 #include <linux/mmc/card.h>
-#include <linux/mmc/sd_misc.h>
-#include <mach/mt_typedefs.h>
-#include <mach/mt_pm_ldo.h>     /* hwPowerOn */
+#include <mt-plat/sd_misc.h>
+#include <linux/types.h>
+/* #include <mt-plat/mt_pm_ldo.h> */     /* hwPowerOn */
+/*
 #include <mach/upmu_common.h>
 #include <mach/upmu_sw.h>
 #include <mach/upmu_hw.h>
+*/
 /* FIXME: There is no mt_reg_base.h */
 /* #include <mach/mt_reg_base.h> */
-#include <mach/board.h>
+#include  "board.h"
 
-#include <mach/partition.h>
+#include <mt-plat/partition.h>
 
 #ifndef FPGA_PLATFORM
 #include <mach/mt_clkmgr.h>
