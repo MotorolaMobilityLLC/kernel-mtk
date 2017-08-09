@@ -333,7 +333,7 @@ void _acquire_wrot_resource_nolock(CMDQ_EVENT_ENUM resourceEvent)
 		0x1400F000+0xb0, 1, ~0);
 	if (acquireResult < 0) {
 		/* acquire resource fail */
-		DISPERR("acquire resource fail\n");
+		DISPMSG("acquire resource fail\n");
 
 		cmdqRecDestroy(handle);
 		return;

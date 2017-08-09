@@ -201,14 +201,15 @@ irqreturn_t disp_irq_handler(int irq, void *dev_id)
 	DDPIRQ("disp_irq_handler, irq=%d, module=%s\n",
 	       irq, ddp_get_module_name(disp_irq_module(irq)));
 
-	if (irq == dispsys_irq[DISP_REG_DSI0]) {
-		module = DISP_MODULE_DSI0;
-		reg_val = (DISP_REG_GET(dsi_reg_va + 0xC) & 0xff);
+	if (irq == dispsys_irq[DISP_REG_DSI0] || irq == dispsys_irq[DISP_REG_DSI1]) {
+		index = (irq == dispsys_irq[DISP_REG_DSI0]) ? 0 : 1;
+		module = (irq == dispsys_irq[DISP_REG_DSI0]) ? DISP_MODULE_DSI0 : DISP_MODULE_DSI1;
+		reg_val = (DISP_REG_GET(dsi_reg_va[index] + 0xC) & 0xff);
 		reg_temp_val = reg_val;
 		/* rd_rdy don't clear and wait for ESD & Read LCM will clear the bit. */
 		if (disp_irq_esd_cust_get() == 1)
 			reg_temp_val = reg_val & 0xfffe;
-		DISP_CPU_REG_SET(dsi_reg_va + 0xC, ~reg_temp_val);
+		DISP_CPU_REG_SET(dsi_reg_va[index] + 0xC, ~reg_temp_val);
 	} else if (irq == dispsys_irq[DISP_REG_OVL0] ||
 		   irq == dispsys_irq[DISP_REG_OVL1] ||
 		   irq == dispsys_irq[DISP_REG_OVL0_2L] || irq == dispsys_irq[DISP_REG_OVL1_2L]) {

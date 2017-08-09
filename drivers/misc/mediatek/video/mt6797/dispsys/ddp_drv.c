@@ -100,7 +100,7 @@ volatile unsigned long dispsys_reg[DISP_REG_NUM] = { 0 };
 
 volatile unsigned long mipi_tx0_reg = 0;
 volatile unsigned long mipi_tx1_reg = 0;
-volatile unsigned long dsi_reg_va = 0;
+volatile unsigned long dsi_reg_va[2] = { 0 };
 /* from DTS, should be synced with DTS */
 unsigned long ddp_reg_pa_base[DISP_REG_NUM] = {
 	0x14000000,	/* CONFIG*/
@@ -766,7 +766,8 @@ static int __init disp_probe_1(void)
 		       ddp_reg_pa_base[i]);
 	}
 	/* mipi tx reg map here */
-	dsi_reg_va = dispsys_reg[DISP_REG_DSI0];
+	dsi_reg_va[0] = dispsys_reg[DISP_REG_DSI0];
+	dsi_reg_va[1] = dispsys_reg[DISP_REG_DSI1];
 	mipi_tx0_reg = dispsys_reg[DISP_REG_MIPI0];
 	mipi_tx1_reg = dispsys_reg[DISP_REG_MIPI1];
 #ifndef DISP_NO_DPI

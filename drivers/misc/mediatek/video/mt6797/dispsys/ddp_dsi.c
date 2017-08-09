@@ -46,8 +46,6 @@
 #include "ddp_clkmgr.h"
 #endif
 
-#define ENABLE_CLK_MGR /* FIXME: tmp define */
-
 #define DSI_OUTREG32(cmdq, addr, val) DISP_REG_SET(cmdq, addr, val)
 #define DSI_BACKUPREG32(cmdq, hSlot, idx, addr) DISP_REG_BACKUP(cmdq, hSlot, idx, addr)
 #define DSI_POLLREG32(cmdq, addr, mask, value) DISP_REG_CMDQ_POLLING(cmdq, addr, value, mask)
@@ -639,16 +637,15 @@ int DSI_WaitVMDone(DISP_MODULE_ENUM module)
 static void DSI_WaitForNotBusy(DISP_MODULE_ENUM module, cmdqRecHandle cmdq)
 {
 	int i = 0;
-#if defined(MTK_NO_DISP_IN_LK)
-	unsigned int count = 0;
 	unsigned int tmp = 0;
-#else
+	unsigned int count = 0;
+#if !defined(MTK_NO_DISP_IN_LK)
 	static const long WAIT_TIMEOUT = 2 * HZ;	/* 2 sec */
 	int ret = 0;
 #endif
 
 	if (cmdq) {
-		/* for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) */
+		for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++)
 			DSI_POLLREG32(cmdq, &DSI_REG[i]->DSI_INTSTA, 0x80000000, 0x0);
 		return;
 	}
@@ -670,7 +667,7 @@ static void DSI_WaitForNotBusy(DISP_MODULE_ENUM module, cmdqRecHandle cmdq)
 		/* msleep(1); */
 
 		if (count++ > 1000000000) {
-			DISPERR("dsi wait not busy timeout\n");
+			DISPERR("dsi%d wait for not busy timeout\n", i);
 			DSI_DumpRegisters(module, 1);
 			DSI_Reset(module, NULL);
 			break;
@@ -678,12 +675,35 @@ static void DSI_WaitForNotBusy(DISP_MODULE_ENUM module, cmdqRecHandle cmdq)
 	}
 #else
 	for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
-		ret = wait_event_interruptible_timeout(_dsi_cmd_done_wait_queue[i],
-						       !(DSI_REG[i]->DSI_INTSTA.BUSY), WAIT_TIMEOUT);
-		if (0 == ret) {
-			DISPERR("dsi wait not busy timeout\n");
-			DSI_DumpRegisters(module, 1);
-			DSI_Reset(module, NULL);
+		if (i == 0) {
+			ret = wait_event_interruptible_timeout(_dsi_cmd_done_wait_queue[i],
+							       !(DSI_REG[i]->DSI_INTSTA.BUSY), WAIT_TIMEOUT);
+			if (0 == ret) {
+				DISPERR("dsi%d wait event for not busy timeout\n", i);
+				DSI_DumpRegisters(module, 1);
+				DSI_Reset(module, NULL);
+			}
+		}
+	}
+
+	/* make sure DSI not busy in case wait_event is interrupted */
+	for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
+		while (1) {
+			tmp = INREG32(&DSI_REG[i]->DSI_INTSTA);
+			if (!(tmp & 0x80000000))
+				break;
+
+			/* if(count %1000) */
+			/* DISPMSG("dsi state:0x%08x, 0x%08x\n", tmp, INREG32(&DSI_REG[i]->DSI_STATE_DBG6)); */
+
+			/* msleep(1); */
+
+			if (count++ > 1000000000) {
+				DISPERR("polling dsi%d wait for not busy timeout\n", i);
+				DSI_DumpRegisters(module, 1);
+				DSI_Reset(module, NULL);
+				break;
+			}
 		}
 	}
 #endif
@@ -723,11 +743,11 @@ DSI_STATUS DSI_Wakeup(DISP_MODULE_ENUM module, cmdqRecHandle cmdq)
 			} while (ret <= 0 && cnt <= 2);
 		}
 		if (ret == 0) {
-			DISPERR("dsi %d  wait sleep out timeout\n", i);
+			DISPERR("dsi%d wait_sleepout timeout\n", i);
 			DSI_DumpRegisters(module, 2);
 			DSI_Reset(module, NULL);
 		} else if (ret < 0) {
-			DISPERR("dsi %d wait sleep out weake up by signal ret %d\n", i, ret);
+			DISPERR("dsi%d wait_sleepout is woken up by signal ret %d\n", i, ret);
 			mdelay(5);
 		}
 		DSI_OUTREGBIT(cmdq, DSI_START_REG, DSI_REG[i]->DSI_START, SLEEPOUT_START, 0);
@@ -2283,9 +2303,6 @@ void DSI_set_cmdq_V2(DISP_MODULE_ENUM module, cmdqRecHandle cmdq, unsigned cmd, 
 						     AS_UINT32(&vm_cmdq));
 				}
 			}
-			/* start DSI VM CMDQ */
-			if (force_update)
-				DSI_EnableVM_CMD(module, cmdq);
 		} else { /* cmd mode */
 			DSI_WaitForNotBusy(module, cmdq);
 
@@ -2380,11 +2397,17 @@ void DSI_set_cmdq_V2(DISP_MODULE_ENUM module, cmdqRecHandle cmdq, unsigned cmd, 
 					DSI_OUTREG32(cmdq, &DSI_REG[d]->DSI_CMDQ_SIZE, 1);
 				}
 			}
-			DSI_OUTREG32(cmdq, &DSI_REG[1]->DSI_CMDQ_SIZE, 0); /* FIXME: [cc] */
-			if (force_update) {
-				DSI_Start(module, cmdq);
-				DSI_WaitForNotBusy(module, cmdq);
-			}
+		}
+	}
+
+	if (0 != DSI_REG[0]->DSI_MODE_CTRL.MODE) { /* not in cmd mode */
+		/* start DSI VM CMDQ */
+		if (force_update)
+			DSI_EnableVM_CMD(module, cmdq);
+	} else {
+		if (force_update) {
+			DSI_Start(module, cmdq);
+			DSI_WaitForNotBusy(module, cmdq);
 		}
 	}
 }
@@ -2554,18 +2577,6 @@ void DSI_set_cmdq(DISP_MODULE_ENUM module, cmdqRecHandle cmdq, unsigned int *pda
 				vm_cmdq.CM_DATA_1 = ((pdata[0] >> 24) & 0xFF);
 				OUTREG32(&DSI_REG->DSI_VM_CMD_CON, AS_UINT32(&vm_cmdq));
 			}
-			/* start DSI VM CMDQ */
-			if (force_update) {
-				MMProfileLogEx(MTKFB_MMP_Events.DSICmd, MMProfileFlagStart,
-					       *(unsigned int *)(&DSI_VM_CMD_REG->data[0]),
-					       *(unsigned int *)(&DSI_VM_CMD_REG->data[1]));
-				DSI_EnableVM_CMD();
-
-				/* must wait VM CMD done? */
-				MMProfileLogEx(MTKFB_MMP_Events.DSICmd, MMProfileFlagEnd,
-					       *(unsigned int *)(&DSI_VM_CMD_REG->data[2]),
-					       *(unsigned int *)(&DSI_VM_CMD_REG->data[3]));
-			}
 #endif
 		} else {
 			ASSERT(queue_size <= 32);
@@ -2585,12 +2596,28 @@ void DSI_set_cmdq(DISP_MODULE_ENUM module, cmdqRecHandle cmdq, unsigned int *pda
 			}
 
 			DSI_OUTREG32(cmdq, &DSI_REG[i]->DSI_CMDQ_SIZE, queue_size);
+		}
+	}
 
-			if (force_update) {
-				DSI_OUTREG32(cmdq, &DSI_REG[1]->DSI_CMDQ_SIZE, 0); /* FIXME: [cc] */
-				DSI_Start(module, cmdq);
-				DSI_WaitForNotBusy(module, cmdq);
-			}
+	if (0 != DSI_REG[0]->DSI_MODE_CTRL.MODE) {
+#if 0
+		/* start DSI VM CMDQ */
+		if (force_update) {
+			MMProfileLogEx(MTKFB_MMP_Events.DSICmd, MMProfileFlagStart,
+				       *(unsigned int *)(&DSI_VM_CMD_REG->data[0]),
+				       *(unsigned int *)(&DSI_VM_CMD_REG->data[1]));
+			DSI_EnableVM_CMD();
+
+			/* must wait VM CMD done? */
+			MMProfileLogEx(MTKFB_MMP_Events.DSICmd, MMProfileFlagEnd,
+				       *(unsigned int *)(&DSI_VM_CMD_REG->data[2]),
+				       *(unsigned int *)(&DSI_VM_CMD_REG->data[3]));
+		}
+#endif
+	} else {
+		if (force_update) {
+			DSI_Start(module, cmdq);
+			DSI_WaitForNotBusy(module, cmdq);
 		}
 	}
 }
@@ -2817,6 +2844,7 @@ int ddp_dsi_set_lcm_utils(DISP_MODULE_ENUM module, LCM_DRIVER *lcm_drv)
 
 		lcm_drv->get_params(&lcm_param);
 
+#if 0
 		if (lcm_param.lcm_cmd_if == LCM_INTERFACE_DSI0) {
 			utils->dsi_set_cmdq = DSI_set_cmdq_wrapper_DSI0;
 			utils->dsi_set_cmdq_V2 = DSI_set_cmdq_V2_Wrapper_DSI0;
@@ -2838,6 +2866,14 @@ int ddp_dsi_set_lcm_utils(DISP_MODULE_ENUM module, LCM_DRIVER *lcm_drv)
 			/* utils->dsi_set_cmdq_V22 = DSI_set_cmdq_V22_Wrapper_DSIDual; */
 			utils->dsi_set_cmdq_V23 = DSI_set_cmdq_V2_DSIDual;
 		}
+#else
+		utils->dsi_set_cmdq = DSI_set_cmdq_wrapper_DSIDual;
+		utils->dsi_set_cmdq_V2 = DSI_set_cmdq_V2_Wrapper_DSIDual;
+		utils->dsi_set_cmdq_V3 = DSI_set_cmdq_V3_Wrapper_DSIDual;
+		utils->dsi_dcs_read_lcm_reg_v2 = DSI_dcs_read_lcm_reg_v2_wrapper_DSIDUAL;
+		utils->dsi_set_cmdq_V22 = DSI_set_cmdq_V2_DSIDual;
+		/* utils->dsi_set_cmdq_V22 = DSI_set_cmdq_V22_Wrapper_DSIDual; */
+#endif
 	}
 
 #ifndef CONFIG_FPGA_EARLY_PORTING
@@ -3262,7 +3298,7 @@ int ddp_dsi_start(DISP_MODULE_ENUM module, void *cmdq)
 		DSI_OUTREGBIT(cmdq, DSI_COM_CTRL_REG, DSI_REG[0]->DSI_COM_CTRL, DSI_DUAL_EN, 0);
 		DSI_OUTREGBIT(cmdq, DSI_COM_CTRL_REG, DSI_REG[1]->DSI_COM_CTRL, DSI_DUAL_EN, 0);
 
-		DSI_Send_ROI(DISP_MODULE_DSI0, cmdq, g_lcm_x, g_lcm_y, _dsi_context[i].lcm_width,
+		DSI_Send_ROI(module, cmdq, g_lcm_x, g_lcm_y, _dsi_context[i].lcm_width,
 			     _dsi_context[i].lcm_height);
 
 		/* must set DSI_START to 0 before set dsi_dual_en, don't know why.2014.02.15 */

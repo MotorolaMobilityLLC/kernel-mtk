@@ -1057,7 +1057,7 @@ extern volatile unsigned long dispsys_reg[DISP_REG_NUM];
 extern unsigned long ddp_reg_pa_base[DISP_REG_NUM];
 extern volatile unsigned long mipi_tx0_reg;
 extern volatile unsigned long mipi_tx1_reg;
-extern volatile unsigned long dsi_reg_va;
+extern volatile unsigned long dsi_reg_va[2];
 
 /* DTS will assign reigister address dynamically, so can not define to 0x1000 */
 /* #define DISP_INDEX_OFFSET 0x1000 */
