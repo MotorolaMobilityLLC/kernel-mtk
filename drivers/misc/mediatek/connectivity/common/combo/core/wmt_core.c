@@ -2408,7 +2408,7 @@ INT32 opfunc_flash_patch_down(P_WMT_OP pWmtOp)
 		case WMT_FLASH_PATCH_END_PKT:
 			gFlashBuf[4] = u4PatchSeq;
 			/*WMT command length cal */
-			wmtCmdLen = u4PatchSize;
+			wmtCmdLen = u4PatchSize + 1;
 			wmtPktLen = u4PatchSize + sizeof(WMT_FLASH_PATCH_DWN_CMD);
 			gFlashBuf[2] = wmtCmdLen & 0xFF;
 			gFlashBuf[3] = (wmtCmdLen & 0xFF00) >> 16;
