@@ -1005,7 +1005,9 @@ void mt_gpufreq_restore_default_volt(void)
 			    mt_gpufreqs[i].gpufreq_volt);
 	}
 
+#ifndef MTK_GPU_SPM
 	mt_gpufreq_volt_switch(g_cur_gpu_volt, mt_gpufreqs[g_cur_gpu_OPPidx].gpufreq_volt);
+#endif
 
 	g_cur_gpu_volt = mt_gpufreqs[g_cur_gpu_OPPidx].gpufreq_volt;
 
@@ -1034,7 +1036,9 @@ unsigned int mt_gpufreq_update_volt(unsigned int pmic_volt[], unsigned int array
 			    mt_gpufreqs[i].gpufreq_volt);
 	}
 
+#ifndef MTK_GPU_SPM
 	mt_gpufreq_volt_switch(g_cur_gpu_volt, mt_gpufreqs[g_cur_gpu_OPPidx].gpufreq_volt);
+#endif
 
 	g_cur_gpu_volt = mt_gpufreqs[g_cur_gpu_OPPidx].gpufreq_volt;
 	if (NULL != g_pGpufreq_ptpod_update_notify)
