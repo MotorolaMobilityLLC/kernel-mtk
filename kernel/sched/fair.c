@@ -4764,9 +4764,9 @@ static inline unsigned int hmp_domain_min_load(struct hmp_domain *hmpd,
 	return min_runnable_load ? min_runnable_load / (LOAD_AVG_MAX + 1) : 0;
 }
 #else
-static int __init hmp_cpu_mask_setup(void) {}
+static int __init hmp_cpu_mask_setup(void) { return 1; }
 static int hmp_select_task_rq_fair(int sd_flag, struct task_struct *p,
-			int prev_cpu, int new_cpu) {}
+			int prev_cpu, int new_cpu) { return new_cpu; }
 static void hmp_online_cpu(int cpu) {}
 static void hmp_offline_cpu(int cpu) {}
 #endif /* CONFIG_SCHED_HMP */
