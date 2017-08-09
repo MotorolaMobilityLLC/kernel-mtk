@@ -107,8 +107,9 @@ static int notifier_call_chain(struct notifier_block **nl,
 				val, index, nb->notifier_call);
 #endif
 #if defined(MTK_CPU_HOTPLUG_DEBUG_2)
-			aee_rr_rec_hotplug(0, val & 0xff, index & 0xff,
-				(unsigned long)nb->notifier_call);
+			aee_rr_rec_hotplug_cpu_event(val & 0xff);
+			aee_rr_rec_hotplug_cb_index(index & 0xff);
+			aee_rr_rec_hotplug_cb_fp((unsigned long)nb->notifier_call);
 #endif
 			++index;
 		}
@@ -133,8 +134,9 @@ static int notifier_call_chain(struct notifier_block **nl,
 		pr_debug("[cpu_ntf] %02lx_%02d, %p\n", val, index, 0);
 #endif
 #if defined(MTK_CPU_HOTPLUG_DEBUG_2)
-		/* aee_rr_rec_hoplug(0, val & 0xff, index & 0xff); */
-		aee_rr_rec_hotplug(0, val & 0xff, index & 0xff, 0);
+		aee_rr_rec_hotplug_cpu_event(val & 0xff);
+		aee_rr_rec_hotplug_cb_index(index & 0xff);
+		aee_rr_rec_hotplug_cb_fp(0);
 #endif
 	}
 #endif

@@ -60,10 +60,10 @@ struct last_reboot_reason {
 
 	uint64_t jiffies_last_sched[NR_CPUS];
 	char last_sched_comm[NR_CPUS][TASK_COMM_LEN];
-
-	uint8_t hotplug_data1[NR_CPUS];
-	uint8_t hotplug_data2;
-	uint64_t hotplug_data3;
+	uint8_t hotplug_footprint[NR_CPUS];
+	uint8_t hotplug_cpu_event;
+	uint8_t hotplug_cb_index;
+	uint64_t hotplug_cb_fp;
 
 	uint32_t mcdi_wfi;
 	uint32_t mcdi_r15;
@@ -862,28 +862,33 @@ void aee_rr_rec_last_sched_jiffies(int cpu, u64 jiffies, const char *comm)
 	mb();			/*TODO:need add comments */
 }
 
-void aee_rr_rec_hoplug(int cpu, u8 data1, u8 data2)
+void aee_rr_rec_hotplug_footprint(int cpu, u8 fp)
 {
 	if (!ram_console_init_done || !ram_console_buffer)
 		return;
-	if (cpu >= 0 && cpu < num_possible_cpus()) {
-		LAST_RR_SET_WITH_ID(hotplug_data1, cpu, data1);
-		if (cpu == 0)
-			LAST_RR_SET(hotplug_data2, data2);
-	}
+	if (cpu >= 0 && cpu < num_possible_cpus())
+		LAST_RR_SET_WITH_ID(hotplug_footprint, cpu, fp);
 }
 
-void aee_rr_rec_hotplug(int cpu, u8 data1, u8 data2, unsigned long data3)
+void aee_rr_rec_hotplug_cpu_event(u8 val)
 {
 	if (!ram_console_init_done || !ram_console_buffer)
 		return;
-	if (cpu >= 0 && cpu < num_possible_cpus()) {
-		LAST_RR_SET_WITH_ID(hotplug_data1, cpu, data1);
-		if (cpu == 0) {
-			LAST_RR_SET(hotplug_data2, data2);
-			LAST_RR_SET(hotplug_data3, (uint64_t) data3);
-		}
-	}
+	LAST_RR_SET(hotplug_cpu_event, val);
+}
+
+void aee_rr_rec_hotplug_cb_index(u8 val)
+{
+	if (!ram_console_init_done || !ram_console_buffer)
+		return;
+	LAST_RR_SET(hotplug_cb_index, val);
+}
+
+void aee_rr_rec_hotplug_cb_fp(unsigned long val)
+{
+	if (!ram_console_init_done || !ram_console_buffer)
+		return;
+	LAST_RR_SET(hotplug_cb_fp, val);
 }
 
 void aee_rr_rec_clk(int id, u32 val)
@@ -1879,23 +1884,18 @@ void aee_rr_show_jiffies_last_irq_exit(struct seq_file *m, int cpu)
 	seq_printf(m, "%llu)\n", LAST_RRR_VAL(jiffies_last_irq_exit[cpu]));
 }
 
-void aee_rr_show_hotplug_data1(struct seq_file *m, int cpu)
+void aee_rr_show_hotplug_footprint(struct seq_file *m, int cpu)
 {
-	seq_printf(m, "  hotplug: %d, ", LAST_RRR_VAL(hotplug_data1[cpu]));
+	seq_printf(m, "  hotplug: %d\n", LAST_RRR_VAL(hotplug_footprint[cpu]));
 }
 
-void aee_rr_show_hotplug_data2(struct seq_file *m, int cpu)
+void aee_rr_show_hotplug_status(struct seq_file *m)
 {
-	if (cpu == 0)
-		seq_printf(m, "%d, ", LAST_RRR_VAL(hotplug_data2));
+	seq_printf(m, "CPU hotplug status:\n notifier: %d, %d, 0x%llx\n",
+		   LAST_RRR_VAL(hotplug_cpu_event),
+		   LAST_RRR_VAL(hotplug_cb_index), LAST_RRR_VAL(hotplug_cb_fp));
 }
 
-void aee_rr_show_hotplug_data3(struct seq_file *m, int cpu)
-{
-	if (cpu == 0)
-		seq_printf(m, "0x%llx", LAST_RRR_VAL(hotplug_data3));
-	seq_puts(m, "\n");
-}
 
 void aee_rr_show_mcdi(struct seq_file *m)
 {
@@ -2551,7 +2551,9 @@ last_rr_show_t aee_rr_show[] = {
 	aee_rr_show_idvfs_state_manchine,
 	aee_rr_show_ocp_2_target_limit,
 	aee_rr_show_scp_pc,
-	aee_rr_show_scp_lr
+	aee_rr_show_scp_lr,
+	aee_rr_show_hotplug_status
+
 };
 
 last_rr_show_cpu_t aee_rr_show_cpu[] = {
@@ -2559,9 +2561,7 @@ last_rr_show_cpu_t aee_rr_show_cpu[] = {
 	aee_rr_show_jiffies_last_irq_enter,
 	aee_rr_show_last_irq_exit,
 	aee_rr_show_jiffies_last_irq_exit,
-	aee_rr_show_hotplug_data1,
-	aee_rr_show_hotplug_data2,
-	aee_rr_show_hotplug_data3,
+	aee_rr_show_hotplug_footprint,
 	aee_rr_show_cpu_dormant,
 };
 
