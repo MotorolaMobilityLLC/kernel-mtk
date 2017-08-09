@@ -322,7 +322,7 @@ void disp_helper_option_init(void)
 	disp_helper_set_option(DISP_OPT_IDLEMGR_ENTER_ULPS,		1);
 
 	/* 3. cmd mode + vdo mode */
-	disp_helper_set_option(DISP_OPT_DYNAMIC_SWITCH_MMSYSCLK,	0);
+	disp_helper_set_option(DISP_OPT_DYNAMIC_SWITCH_MMSYSCLK,	1);
 	disp_helper_set_option(DISP_OPT_DYNAMIC_RDMA_GOLDEN_SETTING,	1);
 
 	disp_helper_set_option(DISP_OPT_MET_LOG,			0);
@@ -352,8 +352,6 @@ int disp_helper_get_option_list(char *stringbuf, int buf_len)
 	int len = 0;
 	int i = 0;
 	for (i = 0; i < DISP_OPT_NUM; i++) {
-		DISPMSG("Option: [%s] Value: [%d]\n", disp_helper_option_spy(i),
-			disp_helper_get_option(i));
 		len +=
 		    scnprintf(stringbuf + len, buf_len - len, "Option: [%d][%s] Value: [%d]\n", i,
 			      disp_helper_option_spy(i), disp_helper_get_option(i));

@@ -1195,7 +1195,7 @@ int ddp_path_top_clock_on(void)
 #else
 	if (need_enable) {
 		if (disp_helper_get_option(DISP_OPT_DYNAMIC_SWITCH_MMSYSCLK))
-			ddp_clk_prepare_enable(MM_VENCPLL);
+			;/*ddp_clk_prepare_enable(MM_VENCPLL);*/
 		ddp_clk_prepare_enable(DISP_MTCMOS_CLK);
 		ddp_clk_prepare_enable(DISP0_SMI_COMMON);
 		ddp_clk_prepare_enable(DISP0_SMI_LARB0);
@@ -1203,7 +1203,7 @@ int ddp_path_top_clock_on(void)
 	} else {
 		need_enable = 1;
 		if (disp_helper_get_option(DISP_OPT_DYNAMIC_SWITCH_MMSYSCLK))
-			ddp_clk_prepare_enable(MM_VENCPLL);
+			;/*ddp_clk_prepare_enable(MM_VENCPLL);*/
 	}
 #endif
 	/* enable_clock(MT_CG_DISP0_MUTEX_32K   , "DDP_MUTEX"); */
@@ -1231,7 +1231,7 @@ int ddp_path_top_clock_off(void)
 	ddp_clk_disable_unprepare(DISP0_SMI_COMMON);
 	ddp_clk_disable_unprepare(DISP_MTCMOS_CLK);
 	if (disp_helper_get_option(DISP_OPT_DYNAMIC_SWITCH_MMSYSCLK))
-		ddp_clk_disable_unprepare(MM_VENCPLL);
+		;/*ddp_clk_disable_unprepare(MM_VENCPLL);*/
 
 #endif
 #endif

@@ -2602,11 +2602,9 @@ static int decouple_update_rdma_config(void)
 
 static int _request_dvfs_perf(int req)
 {
-	if (is_vcorefs_can_work() != 1)
-		return 0;
-
 	if (atomic_read(&dvfs_ovl_req_status) != req) {
-		vcorefs_request_dvfs_opp(KIR_OVL, req);
+		mmdvfs_set_step(MMDVFS_SCEN_DISP, (req == OPPI_PERF) ? MMDVFS_VOLTAGE_HIGH :
+			MMDVFS_VOLTAGE_LOW);
 		atomic_set(&dvfs_ovl_req_status, req);
 	}
 
@@ -3571,7 +3569,7 @@ int primary_display_suspend(void)
 
 	/* switch to vencpll before disable mmsys clk */
 	if (disp_helper_get_option(DISP_OPT_DYNAMIC_SWITCH_MMSYSCLK))
-		mmdvfs_notify_mmclk_switch_request(MMDVFS_EVENT_OVL_SINGLE_LAYER_EXIT);
+		;/* mmdvfs_notify_mmclk_switch_request(MMDVFS_EVENT_OVL_SINGLE_LAYER_EXIT); */
 	/* blocking flush before stop trigger loop */
 	_blocking_flush();
 	MMProfileLogEx(ddp_mmp_get_events()->primary_suspend, MMProfileFlagPulse, 0, 1);
@@ -4360,7 +4358,7 @@ static int _config_ovl_input(struct disp_frame_cfg_t *cfg,
 	data_config->overlap_layer_num = overlap_layers;
 
 	if (overlap_layers > DISP_HW_HRT_LYAERS_FOR_HI_PERF)
-		DISPWARN("overlayed layer num is %d > %d\n", overlap_layers, DISP_HW_HRT_LYAERS_FOR_HI_PERF);
+		DISPCHECK("overlayed layer num is %d > %d\n", overlap_layers, DISP_HW_HRT_LYAERS_FOR_HI_PERF);
 
 	if (overlap_layers > DISP_HW_HRT_LYAERS_FOR_LOW_POWER &&
 		primary_display_is_directlink_mode()) {

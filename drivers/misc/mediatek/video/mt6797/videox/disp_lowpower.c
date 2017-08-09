@@ -171,9 +171,9 @@ static void set_is_display_idle(unsigned int is_displayidle)
 		/* notify to mmsys mgr */
 		if (disp_helper_get_option(DISP_OPT_DYNAMIC_SWITCH_MMSYSCLK)) {
 			if (is_displayidle)
-				mmdvfs_notify_mmclk_switch_request(MMDVFS_EVENT_UI_IDLE_ENTER);
+				;/*mmdvfs_notify_mmclk_switch_request(MMDVFS_EVENT_UI_IDLE_ENTER);*/
 			else
-				mmdvfs_notify_mmclk_switch_request(MMDVFS_EVENT_UI_IDLE_EXIT);
+				;/*mmdvfs_notify_mmclk_switch_request(MMDVFS_EVENT_UI_IDLE_EXIT);*/
 		}
 	}
 
@@ -413,7 +413,7 @@ int _switch_mmsys_clk(int mmsys_clk_old, int mmsys_clk_new)
 {
 	int ret = 0;
 	cmdqRecHandle handle;
-	unsigned int need_disable_pll = 0;
+	/*unsigned int need_disable_pll = 0;*/
 	disp_ddp_path_config *pconfig = dpmgr_path_get_last_config_notclear(primary_get_dpmgr_handle());
 
 	DISPMSG("[disp_lowpower]%s\n", __func__);
@@ -433,31 +433,31 @@ int _switch_mmsys_clk(int mmsys_clk_old, int mmsys_clk_new)
 	if (mmsys_clk_old == MMSYS_CLK_HIGH && mmsys_clk_new == MMSYS_CLK_LOW) {
 		/* 2.wait sof */
 		_cmdq_insert_wait_frame_done_token_mira(handle);
-
+#if 0
 		ddp_clk_prepare_enable(MUX_MM);
 		ddp_clk_prepare_enable(SYSPLL2_D2);
 		cmdqRecWrite(handle, 0x10000048, 0x07000000, 0x07000000); /* clear */
 		cmdqRecWrite(handle, 0x10000044, 0x04000000, 0x04000000); /* set syspll2_d2 */
 		cmdqRecWrite(handle, 0x10000004, 8, 8); /* update */
-
+#endif
 		/* set rdma golden setting parameters */
 		set_mmsys_clk(MMSYS_CLK_LOW);
-		need_disable_pll = MM_VENCPLL;
+		/*need_disable_pll = MM_VENCPLL;*/
 
 	} else if (mmsys_clk_old == MMSYS_CLK_LOW && mmsys_clk_new == MMSYS_CLK_HIGH) {
 		/* 2.wait sof */
 		_cmdq_insert_wait_frame_done_token_mira(handle);
-
+#if 0
 		/* enable vencpll */
 		ddp_clk_prepare_enable(MUX_MM);
 		ddp_clk_prepare_enable(MM_VENCPLL);
 		cmdqRecWrite(handle, 0x10000048, 0x07000000, 0x07000000); /* clear */
 		cmdqRecWrite(handle, 0x10000044, 0x02000000, 0x02000000); /* set vencpll */
 		cmdqRecWrite(handle, 0x10000004, 8, 8); /* update */
-
+#endif
 		/* set rdma golden setting parameters */
 		set_mmsys_clk(MMSYS_CLK_HIGH);
-		need_disable_pll = SYSPLL2_D2;
+		/*need_disable_pll = SYSPLL2_D2;*/
 
 	} else {
 		goto cmdq_d;
@@ -474,7 +474,7 @@ int _switch_mmsys_clk(int mmsys_clk_old, int mmsys_clk_new)
 cmdq_d:
 	cmdqRecDestroy(handle);
 
-	_switch_mmsys_clk_callback(need_disable_pll);
+	/*_switch_mmsys_clk_callback(need_disable_pll);*/
 	return get_mmsys_clk();
 }
 
@@ -772,7 +772,7 @@ void _cmd_mode_enter_idle(void)
 	if (disp_helper_get_option(DISP_OPT_IDLEMGR_ENTER_ULPS)) {
 		/* switch to vencpll before disable mmsys clk */
 		if (disp_helper_get_option(DISP_OPT_DYNAMIC_SWITCH_MMSYSCLK))
-			mmdvfs_notify_mmclk_switch_request(MMDVFS_EVENT_OVL_SINGLE_LAYER_EXIT);
+			;/*mmdvfs_notify_mmclk_switch_request(MMDVFS_EVENT_OVL_SINGLE_LAYER_EXIT);*/
 		/* need delay to make sure done??? */
 		_primary_display_disable_mmsys_clk();
 	}
@@ -929,7 +929,7 @@ int primary_display_lowpower_init(void)
 
 	if (disp_helper_get_option(DISP_OPT_DYNAMIC_SWITCH_MMSYSCLK))
 		/* callback with lock or without lock ??? */
-		register_mmclk_switch_cb(primary_display_switch_mmsys_clk, _switch_mmsys_clk);
+		;/*register_mmclk_switch_cb(primary_display_switch_mmsys_clk, _switch_mmsys_clk);*/
 
 	/* cmd mode always enable share sram */
 	if (disp_helper_get_option(DISP_OPT_SHARE_SRAM))

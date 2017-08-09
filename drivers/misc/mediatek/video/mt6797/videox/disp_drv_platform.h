@@ -51,8 +51,8 @@ typedef enum {
 #define MAX_SESSION_COUNT					5
 
 /* macros for display path hardware */
-#define DISP_HW_HRT_LYAERS_FOR_LOW_POWER	4
-#define DISP_HW_HRT_LYAERS_FOR_HI_PERF		6
+#define DISP_HW_HRT_LYAERS_FOR_LOW_POWER	3
+#define DISP_HW_HRT_LYAERS_FOR_HI_PERF		4
 #define FBCONFIG_SHOULD_KICK_IDLEMGR
 
 
