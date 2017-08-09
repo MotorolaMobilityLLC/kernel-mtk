@@ -64,7 +64,7 @@ static int _hps_timer_callback(unsigned long data)
 	if (hps_ctxt.tsk_struct_ptr) {
 		ret = wake_up_process(hps_ctxt.tsk_struct_ptr);
 		if (!ret)
-			pr_err("hps task wake up fail %d\n", ret);
+			pr_err("[INFO] hps task has waked up[%d]\n", ret);
 	} else {
 		pr_err("hps ptr is NULL\n");
 	}
