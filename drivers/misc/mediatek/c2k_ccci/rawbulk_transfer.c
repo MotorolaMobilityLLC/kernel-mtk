@@ -769,7 +769,6 @@ static void downstream_complete(struct usb_ep *ep, struct usb_request *req)
 		spin_unlock(&transfer->usb_down_lock);
 		transfer->repush2modem.ntrans++;
 		transfer->downstream.ntrans--;
-		spin_unlock(&transfer->modem_block_lock);
 		return;
 	}
 
