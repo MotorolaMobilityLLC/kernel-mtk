@@ -28,10 +28,11 @@
 #include <linux/seq_file.h>
 #include <linux/types.h>
 #include <asm/io.h>
-#include "mt-plat/aee.h"
-#include "mt-plat/sync_write.h"
 #include <asm/topology.h>
 #include <linux/suspend.h>
+#include <mt-plat/sync_write.h>
+#include <mt-plat/mt_io.h>
+#include <mt-plat/aee.h>
 
 #ifdef CONFIG_OF
 #include <linux/of.h>
@@ -50,14 +51,7 @@
 #include "mach/mt_hotplug_strategy.h"
 #include "mach/mt_ppm_api.h"
 #include "mach/mt_pbm.h"
-#include "mt-plat/mt_devinfo.h"
-
-#ifndef __KERNEL__
-#include "freqhop_sw.h"
-#include "mt6311.h"
-#else
-#include "mach/mt6311.h"
-#endif  */
+#include "mt-plat/mt_devinfo.h" */
 
 /* local includes */
 #include "mt_cpufreq.h"
@@ -276,8 +270,9 @@ enum ppb_power_mode {
 /*
  * REG ACCESS
  */
-#define cpufreq_read(addr)                  DRV_Reg32(addr)
-#define cpufreq_write(addr, val)            mt_reg_sync_writel(val, addr)
+#define cpufreq_read(addr)         __raw_readl(IOMEM(addr))
+#define cpufreq_write(addr, val)   mt_reg_sync_writel((val), ((void *)addr))
+
 #define cpufreq_write_mask(addr, mask, val) \
 cpufreq_write(addr, (cpufreq_read(addr) & ~(_BITMASK_(mask))) | _BITS_(mask, val))
 

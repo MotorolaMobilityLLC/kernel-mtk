@@ -5,7 +5,7 @@
 
 #ifndef __MT_CPUFREQ_H__
 #define __MT_CPUFREQ_H__
-#include "mt_typedefs.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -64,13 +64,11 @@ typedef void (*cpuVoltsampler_func) (enum mt_cpu_dvfs_id, unsigned int mv);
 /* PMIC */
 extern int is_ext_buck_sw_ready(void);
 extern int is_ext_buck_exist(void);
-extern void mt6311_set_vdvfs11_vosel(kal_uint8 val);
-extern void mt6311_set_vdvfs11_vosel_on(kal_uint8 val);
-extern void mt6311_set_vdvfs11_vosel_ctrl(kal_uint8 val);
-extern kal_uint32 mt6311_read_byte(kal_uint8 cmd, kal_uint8 *returnData);
-extern void mt6311_set_buck_test_mode(kal_uint8 val);
-extern unsigned int get_pmic_mt6325_cid(void);
-extern kal_uint32 mt6311_get_chip_id(void);
+extern void mt6311_set_vdvfs11_vosel(unsigned char val);
+extern void mt6311_set_vdvfs11_vosel_on(unsigned char val);
+extern void mt6311_set_vdvfs11_vosel_ctrl(unsigned char val);
+extern unsigned int mt6311_read_byte(unsigned char cmd, unsigned char *returnData);
+extern unsigned int mt6311_get_chip_id(void);
 
 extern u32 get_devinfo_with_index(u32 index);
 extern void (*cpufreq_freq_check)(enum mt_cpu_dvfs_id id);
