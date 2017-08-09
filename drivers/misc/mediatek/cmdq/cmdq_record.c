@@ -205,6 +205,7 @@ static int32_t cmdq_append_wpr_command(cmdqRecHandle handle, CMDQ_CODE_ENUM code
 				       uint32_t argA, uint32_t argB, uint32_t argAType,
 				       uint32_t argBType)
 {
+	int32_t status = 0;
 	int32_t subsys;
 	uint32_t *pCommand;
 	bool bUseGPR = false;
@@ -256,18 +257,23 @@ static int32_t cmdq_append_wpr_command(cmdqRecHandle handle, CMDQ_CODE_ENUM code
 			newArgAType = 1;
 #else
 			CMDQ_ERR("func:%s failed since CMDQ doesn't support GPR\n", __func__);
-			return -EFAULT;
+			status = -EFAULT;
 #endif
 		} else if (0 == argAType && 0 > subsys) {
 			CMDQ_ERR("REC: Unsupported memory base address 0x%08x\n", argA);
-			return -EFAULT;
+			status = -EFAULT;
+		} else {
+			/* compose final argA according to subsys table */
+			newArgA = (argA & 0xffff) | ((subsys & 0x1f) << subsysBit);
 		}
-		/* compose final argA according to subsys table */
-		newArgA = (argA & 0xffff) | ((subsys & 0x1f) << subsysBit);
 	} else {
 		/* compose final argA according GPR value */
 		newArgA = ((argA & 0x1f) << 16);
 	}
+
+	if (status < 0)
+		return status;
+
 	argType = (newArgAType << 2) | (argBType << 1);
 
 	/* newArgA is the HW register address to access from or GPR value store the HW register address */
