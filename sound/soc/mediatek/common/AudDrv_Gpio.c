@@ -76,9 +76,8 @@ enum audio_system_gpio_type {
 	GPIO_VOW_CLK_MISO_ON,
 	GPIO_ANC_DAT_MOSI_OFF,
 	GPIO_ANC_DAT_MOSI_ON,
-	GPIO_SMARTPA_MODE0,
-	GPIO_SMARTPA_MODE1,
-	GPIO_SMARTPA_MODE3,
+	GPIO_SMARTPA_RESET,
+	GPIO_SMARTPA_ON,
 	GPIO_TDM_MODE0,
 	GPIO_TDM_MODE1,
 #if MT6755_PIN
@@ -119,9 +118,8 @@ static struct audio_gpio_attr aud_gpios[GPIO_NUM] = {
 	[GPIO_ANC_DAT_MOSI_OFF] = {"anc_dat_mosi_off", false, NULL},
 	[GPIO_ANC_DAT_MOSI_ON] = {"anc_dat_mosi_on", false, NULL},
 
-	[GPIO_SMARTPA_MODE0] = {"aud_smartpa_mode0", false, NULL},
-	[GPIO_SMARTPA_MODE1] = {"aud_smartpa_mode1", false, NULL},
-	[GPIO_SMARTPA_MODE3] = {"aud_smartpa_mode3", false, NULL},
+	[GPIO_SMARTPA_RESET] = {"aud_smartpa_reset", false, NULL},
+	[GPIO_SMARTPA_ON] = {"aud_smartpa_on", false, NULL},
 	[GPIO_TDM_MODE0] = {"aud_tdm_mode0", false, NULL},
 	[GPIO_TDM_MODE1] = {"aud_tdm_mode1", false, NULL},
 
@@ -364,13 +362,10 @@ int AudDrv_GPIO_SMARTPA_Select(int mode)
 #else
 	switch (mode) {
 	case 0:
-		AudDrv_GPIO_Select(GPIO_SMARTPA_MODE0);
+		AudDrv_GPIO_Select(GPIO_SMARTPA_RESET);
 		break;
 	case 1:
-		AudDrv_GPIO_Select(GPIO_SMARTPA_MODE1);
-		break;
-	case 3:
-		AudDrv_GPIO_Select(GPIO_SMARTPA_MODE3);
+		AudDrv_GPIO_Select(GPIO_SMARTPA_ON);
 		break;
 	default:
 		pr_err("%s(), invalid mode = %d", __func__, mode);
