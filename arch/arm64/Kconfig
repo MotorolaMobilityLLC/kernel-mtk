@@ -175,6 +175,7 @@ config ARCH_MT6735
 	select MTK_EIC
 	select ARMV7_COMPAT
 	select ARMV7_COMPAT_CPUINFO
+	select CPU_IDLE
 	help
 	  This enable support for MediaTek MT6735
 
