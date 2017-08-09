@@ -29,7 +29,7 @@ static unsigned int disp_global_stage = MAGIC_CODE | DISP_HELPER_STAGE_EARLY_POR
 /*static unsigned int disp_global_stage = MAGIC_CODE | DISP_HELPER_STAGE_BRING_UP;*/
 static unsigned int disp_global_stage = MAGIC_CODE | DISP_HELPER_STAGE_NORMAL;
 #endif
-
+/*
 static int _is_E1(void)
 {
 	CHIP_SW_VER ver = mt_get_chip_sw_ver();
@@ -49,7 +49,7 @@ static int _is_E2(void)
 
 	return 0;
 }
-/*
+
 static int _is_E3(void)
 {
 	return !(_is_E1() || _is_E2());

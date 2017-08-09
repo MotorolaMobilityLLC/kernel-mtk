@@ -115,7 +115,6 @@ static int wdma_config_yuv420(DISP_MODULE_ENUM module,
 {
 	unsigned int idx = wdma_index(module);
 	unsigned int idx_offst = idx * DISP_WDMA_INDEX_OFFSET;
-	size_t size;
 	unsigned int u_off = 0;
 	unsigned int v_off = 0;
 	unsigned int u_stride = 0;

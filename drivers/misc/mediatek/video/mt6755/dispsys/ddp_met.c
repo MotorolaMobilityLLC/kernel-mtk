@@ -6,10 +6,8 @@
 #include "ddp_irq.h"
 #include "ddp_reg.h"
 #include "ddp_met.h"
-#include "ddp_path.h"
 #include "ddp_ovl.h"
 #include "ddp_rdma.h"
-#include "DpDataType.h"
 
 #define DDP_IRQ_EER_ID				(0xFFFF0000)
 #define DDP_IRQ_FPS_ID				(DDP_IRQ_EER_ID + 1)
@@ -229,9 +227,8 @@ static void met_irq_handler(DISP_MODULE_ENUM module, unsigned int reg_val)
 		index = module - DISP_MODULE_OVL0;
 		if (reg_val & (1 << 1)) {/*EOF*/
 			ddp_inout_info_tag(index);
-			if (met_mmsys_event_disp_ovl_eof)
-				met_mmsys_event_disp_ovl_eof(index);
-		}
+			/*if (met_mmsys_event_disp_ovl_eof)
+				met_mmsys_event_disp_ovl_eof(index);*/
 
 		break;
 

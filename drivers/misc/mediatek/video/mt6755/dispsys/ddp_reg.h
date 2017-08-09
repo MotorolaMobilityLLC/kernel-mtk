@@ -1134,8 +1134,8 @@ static inline unsigned long disp_addr_convert(unsigned long va)
 		if (handle == NULL) { \
 			mt_reg_sync_writel(val, (volatile unsigned long*)(reg32));\
 		} else { \
-			dprec_reg_op(handle, (unsigned int)(reg32), val, 0x00000000);\
-			cmdqRecWrite(handle, disp_addr_convert((unsigned long)(reg32)), val, ~0); \
+			dprec_reg_op((void *)handle, reg32, val, 0x00000000);\
+			cmdqRecWrite((cmdqRecHandle)handle, disp_addr_convert(reg32), val, ~0); \
 		}  \
 	} while (0)
 

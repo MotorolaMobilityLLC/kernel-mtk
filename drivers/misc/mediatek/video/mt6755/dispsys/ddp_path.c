@@ -3,7 +3,6 @@
 #include "ddp_log.h"
 
 #include <linux/types.h>
-#include <mach/mt_typedefs.h>
 #ifdef CONFIG_MTK_CLKMGR
 #include <mach/mt_clkmgr.h>
 #else

@@ -79,18 +79,19 @@ static int primary_display_basic_test(int layer_num, int w, int h, DISP_FORMAT f
 	unsigned int Bpp;
 	int frame, i, ret;
 	enum UNIFIED_COLOR_FMT ufmt;
-
-	ufmt = disp_fmt_to_unified_fmt(fmt);
-	Bpp = UFMT_GET_bpp(ufmt) / 8;
-
+	int enable = 0;
 	/* allocate buffer */
-	unsigned long size = w * h * Bpp;
+	unsigned long size;
 	unsigned char *buf_va;
 	dma_addr_t buf_pa;
 	unsigned int buf_mva;
-	unsigned long size_align = round_up(size, PAGE_SIZE);
+	unsigned long size_align;
 	m4u_client_t *client;
 
+	ufmt = disp_fmt_to_unified_fmt(fmt);
+	Bpp = UFMT_GET_bpp(ufmt) / 8;
+	size_align = round_up(size, PAGE_SIZE);
+	size = w * h * Bpp;
 	DISPMSG("%s: layer_num=%u,w=%d,h=%d,fmt=%s,frame_num=%d,vsync=%d, size=%lu\n",
 		__func__, layer_num, w, h, unified_color_fmt_name(ufmt), frame_num, vsync, size);
 
@@ -119,10 +120,8 @@ static int primary_display_basic_test(int layer_num, int w, int h, DISP_FORMAT f
 			DISPMSG("m4u_alloc_mva returns fail: %d\n", ret);
 		DDPMSG("%s MVA is 0x%x PA is 0x%pa\n", __func__, buf_mva, &buf_pa);
 	}
-
-
 	draw_buffer(buf_va, w, h, ufmt, 255, 0, 0, 255);
-	int enable = 0;
+
 
 	for (frame = 0; frame < frame_num; frame++) {
 
@@ -140,9 +139,9 @@ static int primary_display_basic_test(int layer_num, int w, int h, DISP_FORMAT f
 			input_config.config[i].layer_enable = enable;
 			input_config.config[i].src_base_addr = 0;
 			if (disp_helper_get_option(DISP_OPT_USE_M4U))
-				input_config.config[i].src_phy_addr = (unsigned long)buf_mva;
+				input_config.config[i].src_phy_addr = (void *)buf_mva;
 			else
-				input_config.config[i].src_phy_addr = buf_pa;
+				input_config.config[i].src_phy_addr = (void *)buf_pa;
 			input_config.config[i].next_buff_idx = -1;
 			input_config.config[i].src_fmt = fmt;
 			input_config.config[i].src_pitch = w;
@@ -224,7 +223,7 @@ static void process_dbg_opt(const char *opt)
 		char *tmp;
 		int value, i;
 
-		tmp = opt + 7;
+		tmp = (char *)opt + 7;
 		for (i = 0; i < 100; i++) {
 			if (tmp[i] != ',' && tmp[i] != ' ')
 				option[i] = tmp[i];
@@ -321,16 +320,14 @@ static void process_dbg_opt(const char *opt)
 	} else if (0 == strncmp(opt, "lfr_setting:", 12)) {
 		unsigned int enable;
 		unsigned int mode;
+		unsigned int type = 0;
+		unsigned int skip_num = 1;
 
 		ret = sscanf(opt, "lfr_setting:%d,%d\n", &enable, &mode);
 		if (ret != 2) {
 			pr_err("error to parse cmd %s\n", opt);
 			return;
 		}
-		LCM_PARAMS lcm_param;
-		/* unsigned int  mode=3; */
-		unsigned int type = 0;
-		unsigned int skip_num = 1;
 
 		DDPMSG("--------------enable/disable lfr--------------\n");
 		if (enable) {
@@ -470,7 +467,6 @@ static void process_dbg_opt(const char *opt)
 	}
 
 	if (0 == strncmp(opt, "primary_basic_test:", 19)) {
-		char *p = (char *)opt + 19;
 		int layer_num, w, h, fmt, frame_num, vsync;
 
 		ret = sscanf(opt, "primary_basic_test:%d,%d,%d,%d,%d,%d\n",
@@ -503,6 +499,9 @@ static void process_dbg_opt(const char *opt)
 		pan_display_test(frame_num, bpp);
 	}
 
+Error:
+	pr_debug("parse command error!\n\n%s",
+		       STR_HELP);
 }
 
 
@@ -516,7 +515,7 @@ static void process_dbg_cmd(char *cmd)
 		process_dbg_opt(tok);
 }
 
-static ssize_t debug_open(struct inode *inode, struct file *file)
+static int debug_open(struct inode *inode, struct file *file)
 {
 	file->private_data = inode->i_private;
 	return 0;
@@ -524,7 +523,6 @@ static ssize_t debug_open(struct inode *inode, struct file *file)
 
 int debug_get_info(unsigned char *stringbuf, int buf_len)
 {
-	int i = 0;
 	int n = 0;
 
 	DISPFUNC();
@@ -569,7 +567,6 @@ void debug_info_dump_to_printk(char *buf, int buf_len)
 static ssize_t debug_read(struct file *file, char __user *ubuf, size_t count, loff_t *ppos)
 {
 	const int debug_bufmax = sizeof(debug_buffer) - 1;
-	int i = 0;
 	int n = 0;
 
 	DISPFUNC();

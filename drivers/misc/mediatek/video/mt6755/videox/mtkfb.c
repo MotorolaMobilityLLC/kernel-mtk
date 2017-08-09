@@ -23,7 +23,7 @@
 /* #include <asm/mach-types.h> */
 #include <asm/cacheflush.h>
 #include <asm/io.h>
-#include <linux/ion_drv.h>
+#include "ion_drv.h"
 #include <mach/dma.h>
 /* #include <mach/irqs.h> */
 #include <linux/dma-mapping.h>

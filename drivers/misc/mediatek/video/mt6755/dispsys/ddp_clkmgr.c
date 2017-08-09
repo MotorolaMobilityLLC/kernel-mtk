@@ -143,12 +143,11 @@ int ddp_set_mipi26m(int en)
 int ddp_parse_apmixed_base(void)
 {
 	int ret = 0;
+	struct device_node *node;
 
 	if (parsed_apmixed)
 		return ret;
 
-	int i = 0;
-	struct device_node *node;
 
 	node = of_find_compatible_node(NULL, NULL, "mediatek,APMIXED");
 	if (!node) {

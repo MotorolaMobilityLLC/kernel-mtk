@@ -335,6 +335,7 @@ static void mutex_dump_analysis(void)
 	char *p = NULL;
 	int len = 0;
 	unsigned int val;
+	unsigned int regval;
 
 	DDPDUMP("==DISP Mutex Analysis==\n");
 	for (i = 0; i < 5; i++) {
@@ -350,7 +351,7 @@ static void mutex_dump_analysis(void)
 				REG_FLD_VAL_GET(SOF_FLD_MUTEX0_EOF_WAIT, val));
 
 		p += len;
-		unsigned int regval = DISP_REG_GET(DISP_REG_CONFIG_MUTEX_MOD(i));
+		regval = DISP_REG_GET(DISP_REG_CONFIG_MUTEX_MOD(i));
 
 		for (j = 0; j < 32; j++) {
 			if ((regval & (1 << j))) {
@@ -804,7 +805,6 @@ static void dpi_dump_reg(void)
 	DDPDUMP("DPI+Color Bar    : 0x%04x : 0x%08x\n", 0xF00, INREG32(DISPSYS_DPI_BASE + 0xF00));
 	DDPDUMP("DPI MMSYS_CG_CON0: 0x%08x\n", INREG32(DISP_REG_CONFIG_MMSYS_CG_CON0));
 	DDPDUMP("DPI MMSYS_CG_CON1: 0x%08x\n", INREG32(DISP_REG_CONFIG_MMSYS_CG_CON1));
-	return 0;
 }
 
 static void dpi_dump_analysis(void)

@@ -409,14 +409,14 @@ void ddp_mmp_ovl_layer(OVL_CONFIG_STRUCT *pLayer, unsigned int down_sample_x,
 void ddp_mmp_wdma_layer(WDMA_CONFIG_STRUCT *wdma_layer, unsigned int wdma_num,
 			unsigned int down_sample_x, unsigned int down_sample_y)
 {
+	MMP_MetaDataBitmap_t Bitmap;
+	MMP_MetaData_t meta;
+	int raw = 0;
+
 	if (wdma_num > 1) {
 		DDPERR("dprec_mmp_dump_wdma_layer is error %d\n", wdma_num);
 		return;
 	}
-
-	MMP_MetaDataBitmap_t Bitmap;
-	MMP_MetaData_t meta;
-	int raw = 0;
 
 	Bitmap.data1 = wdma_layer->dstAddress;
 	Bitmap.width = wdma_layer->srcWidth;
@@ -483,22 +483,19 @@ void ddp_mmp_wdma_layer(WDMA_CONFIG_STRUCT *wdma_layer, unsigned int wdma_num,
 			       wdma_layer->outputFormat);
 		}
 	}
-
-	return 0;
-
 }
 
 void ddp_mmp_rdma_layer(RDMA_CONFIG_STRUCT *rdma_layer, unsigned int rdma_num,
 			unsigned int down_sample_x, unsigned int down_sample_y)
 {
+	MMP_MetaDataBitmap_t Bitmap;
+	MMP_MetaData_t meta;
+	int raw = 0;
+
 	if (rdma_num > 1) {
 		DDPERR("dump_rdma_layer is error %d\n", rdma_num);
 		return;
 	}
-
-	MMP_MetaDataBitmap_t Bitmap;
-	MMP_MetaData_t meta;
-	int raw = 0;
 
 	Bitmap.data1 = rdma_layer->address;
 	Bitmap.width = rdma_layer->width;
@@ -541,7 +538,7 @@ void ddp_mmp_rdma_layer(RDMA_CONFIG_STRUCT *rdma_layer, unsigned int rdma_num,
 		Bitmap.down_sample_x = down_sample_x;
 		Bitmap.down_sample_y = down_sample_y;
 		if (m4u_mva_map_kernel
-		    (rdma_layer->address, Bitmap.data_size, (unsigned int *)&Bitmap.pData,
+		    (rdma_layer->address, Bitmap.data_size, (unsigned long int *)&Bitmap.pData,
 		     &Bitmap.data_size) == 0) {
 			MMProfileLogMetaBitmap(DDP_MMP_Events.rdma_dump[rdma_num],
 					       MMProfileFlagPulse, &Bitmap);
@@ -555,7 +552,7 @@ void ddp_mmp_rdma_layer(RDMA_CONFIG_STRUCT *rdma_layer, unsigned int rdma_num,
 		meta.data_type = MMProfileMetaRaw;
 		meta.size = rdma_layer->pitch * rdma_layer->height;
 		if (m4u_mva_map_kernel
-		    (rdma_layer->address, meta.size, (unsigned int *)&meta.pData,
+		    (rdma_layer->address, meta.size, (unsigned long int *)&meta.pData,
 		     &meta.size) == 0) {
 			MMProfileLogMeta(DDP_MMP_Events.rdma_dump[rdma_num], MMProfileFlagPulse,
 					 &meta);
@@ -566,8 +563,6 @@ void ddp_mmp_rdma_layer(RDMA_CONFIG_STRUCT *rdma_layer, unsigned int rdma_num,
 			       rdma_layer->inputFormat);
 		}
 	}
-
-	return 0;
 }
 
 

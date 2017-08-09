@@ -12,7 +12,6 @@
 #include <linux/time.h>
 
 #include "m4u.h"
-#include <mach/m4u_port.h>
 
 #include "disp_drv_ddp.h"
 

@@ -37,7 +37,7 @@ LCM_PARAMS *_get_lcm_params_by_handle(disp_lcm_handle *plcm)
 	return NULL;
 }
 
-LCM_PARAMS *_get_lcm_driver_by_handle(disp_lcm_handle *plcm)
+LCM_DRIVER *_get_lcm_driver_by_handle(disp_lcm_handle *plcm)
 {
 	if (plcm)
 		return plcm->drv;
@@ -372,6 +372,7 @@ int disp_lcm_esd_check(disp_lcm_handle *plcm)
 int disp_lcm_esd_recover(disp_lcm_handle *plcm)
 {
 	LCM_DRIVER *lcm_drv = NULL;
+	int ret = 0;
 
 	DISPFUNC();
 	if (_is_lcm_inited(plcm)) {
@@ -392,6 +393,7 @@ int disp_lcm_esd_recover(disp_lcm_handle *plcm)
 int disp_lcm_suspend(disp_lcm_handle *plcm)
 {
 	LCM_DRIVER *lcm_drv = NULL;
+	int ret = 0;
 
 	DISPFUNC();
 	if (_is_lcm_inited(plcm)) {
@@ -414,6 +416,7 @@ int disp_lcm_suspend(disp_lcm_handle *plcm)
 int disp_lcm_resume(disp_lcm_handle *plcm)
 {
 	LCM_DRIVER *lcm_drv = NULL;
+	int ret = 0;
 
 	DISPFUNC();
 	if (_is_lcm_inited(plcm)) {
@@ -515,18 +518,20 @@ void *disp_lcm_switch_mode(disp_lcm_handle *plcm, int mode)
 
 int disp_lcm_is_video_mode(disp_lcm_handle *plcm)
 {
+	LCM_PARAMS *lcm_param = NULL;
+
 	if (_is_lcm_inited(plcm))
 		lcm_param = plcm->params;
 	else
-		ASSERT(0);
+		BUG();
 
 	switch (lcm_param->type) {
 	case LCM_TYPE_DBI:
-		return FALSE;
+		return false;
 	case LCM_TYPE_DSI:
 		break;
 	case LCM_TYPE_DPI:
-		return TRUE;
+		return true;
 	default:
 		DISPMSG("[LCM] TYPE: unknown\n");
 		break;
@@ -535,18 +540,19 @@ int disp_lcm_is_video_mode(disp_lcm_handle *plcm)
 	if (lcm_param->type == LCM_TYPE_DSI) {
 		switch (lcm_param->dsi.mode) {
 		case CMD_MODE:
-			return FALSE;
+			return false;
 		case SYNC_PULSE_VDO_MODE:
 		case SYNC_EVENT_VDO_MODE:
 		case BURST_VDO_MODE:
-			return TRUE;
+			return true;
 		default:
 			DISPMSG("[LCM] DSI Mode: Unknown\n");
 			break;
 		}
 	}
 
-	ASSERT(0);
+	BUG();
+	return 0;
 }
 
 int disp_lcm_set_lcm_cmd(disp_lcm_handle *plcm, void *cmdq_handle, unsigned int *lcm_cmd,

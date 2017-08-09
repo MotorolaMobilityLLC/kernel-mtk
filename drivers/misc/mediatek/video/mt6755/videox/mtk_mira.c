@@ -4,7 +4,6 @@
 
 #include <linux/kernel.h>
 #include <linux/mm.h>
-#include <linux/xlog.h>
 #include <linux/proc_fs.h>
 #include <linux/module.h>
 

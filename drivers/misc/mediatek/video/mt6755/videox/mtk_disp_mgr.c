@@ -634,9 +634,9 @@ static int set_memory_buffer(disp_session_input_config *input)
 				input->config[i].security = DISP_NORMAL_BUFFER;
 			}
 			if (input->config[i].src_phy_addr) {
-				dst_mva = (unsigned int)input->config[i].src_phy_addr;
+				dst_mva = (unsigned long)input->config[i].src_phy_addr;
 			} else {
-				disp_sync_query_buf_info(session_id, layer_id,
+				disp_sync_query_buf_info(session_id, (unsigned int)layer_id,
 							 (unsigned int)input->
 							 config[i].next_buff_idx, &dst_mva,
 							 &dst_size);
@@ -662,14 +662,18 @@ static int set_memory_buffer(disp_session_input_config *input)
 		}
 
 		/* /disp_sync_put_cached_layer_info(session_id, layer_id, &input->config[i], get_ovl2mem_ticket()); */
-		mtkfb_update_buf_ticket(session_id, layer_id, input->config[i].next_buff_idx,
+		mtkfb_update_buf_ticket(session_id, layer_id,
+					input->config[i].next_buff_idx,
 					get_ovl2mem_ticket());
-		_sync_convert_fb_layer_to_disp_input(input->session_id, &(input->config[i]),
-						     &input_params[layer_id], dst_mva);
+		_sync_convert_fb_layer_to_disp_input(input->session_id,
+						     &(input->config[i]),
+						     (primary_disp_input_config *)&input_params[layer_id],
+						     (unsigned int)dst_mva);
 		input_params[layer_id].dirty = 1;
 
 		if (input->config[i].layer_enable) {
-			mtkfb_update_buf_info(input->session_id, input->config[i].layer_id,
+			mtkfb_update_buf_info(input->session_id,
+					      input->config[i].layer_id,
 					      input->config[i].next_buff_idx, 0,
 					      input->config[i].frm_sequence);
 		}
@@ -682,7 +686,7 @@ static int set_memory_buffer(disp_session_input_config *input)
 		}
 	}
 
-	ovl2mem_input_config(&input_params);
+	ovl2mem_input_config((ovl2mem_in_config *)&input_params);
 
 	return 0;
 
@@ -785,19 +789,57 @@ static int set_external_buffer(disp_session_input_config *input)
 	return 0;
 }
 
+static int draw_disp_info(disp_session_input_config *input)
+{
+	/* draw disp info */
+	fpsEx fps;
+	char disp_tmp[1024];
+	char disp_info[1024];
+	int dst_layer_id = 0;
+
+	dprec_logger_get_result_value(DPREC_LOGGER_RDMA0_TRANSFER_1SECOND, &fps);
+	sprintf(disp_info, "rdma_fps = %lld.%03lld, count = %lld,", fps.fps, fps.fps_low, fps.count);
+
+	dprec_logger_get_result_value(DPREC_LOGGER_OVL_FRAME_COMPLETE_1SECOND, &fps);
+	sprintf(disp_tmp, "ovl_fps = %lld.%03lld, count = %lld,", fps.fps, fps.fps_low, fps.count);
+	strcat(disp_info, disp_tmp);
+
+	dprec_logger_get_result_value(DPREC_LOGGER_PQ_TRIGGER_1SECOND, &fps);
+	sprintf(disp_tmp, "PQ trigger = %lld.%03lld, count = %lld,", fps.fps, fps.fps_low, fps.count);
+	strcat(disp_info, disp_tmp);
+
+	sprintf(disp_tmp, primary_display_is_video_mode() ? "vdo mode," : "cmd mode,");
+	strcat(disp_info, disp_tmp);
+	screen_logger_add_message("disp info", MESSAGE_REPLACE, disp_info);
+
+	for (i = 0; i < input->config_layer_num; i++) {
+		if (input->config[i].tgt_offset_y == 0) {
+			dst_layer_id = dst_layer_id > input->config[i].layer_id ?
+				dst_layer_id : input->config[i].layer_id;
+		}
+	}
+
+	dynamic_debug_msg_print(input->config[dst_layer_id].src_phy_addr,
+				input->config[dst_layer_id].tgt_width,
+				input->config[dst_layer_id].tgt_height,
+				input->config[dst_layer_id].src_pitch,
+				4);
+	return 0;
+}
+
 static int set_primary_buffer(disp_session_input_config *input)
 {
 	int i = 0;
-	int ret = 0;
 	int layer_id = 0;
 	unsigned int dst_size = 0;
 	unsigned int dst_mva = 0;
 	unsigned int session_id = 0;
 	unsigned int mva_offset = 0;
+	disp_session_sync_info *session_info;
 
 	session_id = input->session_id;
 
-	disp_session_sync_info *session_info = disp_get_session_sync_info_for_debug(session_id);
+	session_info = disp_get_session_sync_info_for_debug(session_id);
 
 	if (input->config_layer_num == 0
 	    || input->config_layer_num > primary_display_get_max_layer()) {
@@ -833,10 +875,13 @@ static int set_primary_buffer(disp_session_input_config *input)
 				input->config[i].security = DISP_NORMAL_BUFFER;
 			}
 			if (input->config[i].src_phy_addr) {
-				dst_mva = input->config[i].src_phy_addr;
+				dst_mva = (unsigned long)input->config[i].src_phy_addr;
 			} else {
-				disp_sync_query_buf_info(session_id, layer_id,
-						(unsigned int)input->config[i].next_buff_idx, &dst_mva, &dst_size);
+				disp_sync_query_buf_info(session_id, (unsigned int)layer_id,
+							 (unsigned int)
+							 input->config
+							 [i].next_buff_idx,
+							 &dst_mva, &dst_size);
 			}
 
 			input->config[i].src_phy_addr = dst_mva;
@@ -876,44 +921,7 @@ static int set_primary_buffer(disp_session_input_config *input)
 		if (session_info)
 			dprec_submit(&session_info->event_setinput, input->config[i].next_buff_idx, dst_mva);
 	}
-
-	/* draw disp info */
-	fpsEx fps;
-
-	dprec_logger_get_result_value(DPREC_LOGGER_RDMA0_TRANSFER_1SECOND, &fps);
-	char disp_tmp[1024];
-	char disp_info[1024];
-
-	sprintf(disp_info, "rdma_fps = %lld.%03lld, count = %lld,", fps.fps, fps.fps_low, fps.count);
-
-	dprec_logger_get_result_value(DPREC_LOGGER_OVL_FRAME_COMPLETE_1SECOND, &fps);
-	sprintf(disp_tmp, "ovl_fps = %lld.%03lld, count = %lld,", fps.fps, fps.fps_low, fps.count);
-	strcat(disp_info, disp_tmp);
-
-	dprec_logger_get_result_value(DPREC_LOGGER_PQ_TRIGGER_1SECOND, &fps);
-	sprintf(disp_tmp, "PQ trigger = %lld.%03lld, count = %lld,", fps.fps, fps.fps_low, fps.count);
-	strcat(disp_info, disp_tmp);
-
-	sprintf(disp_tmp, primary_display_is_video_mode() ? "vdo mode," : "cmd mode,");
-	strcat(disp_info, disp_tmp);
-	screen_logger_add_message("disp info", MESSAGE_REPLACE, disp_info);
-
-	int dst_layer_id = 0;
-
-	for (i = 0; i < input->config_layer_num; i++) {
-		if (input->config[i].tgt_offset_y == 0) {
-			dst_layer_id = dst_layer_id > input->config[i].layer_id ?
-				dst_layer_id : input->config[i].layer_id;
-		}
-	}
-
-	dynamic_debug_msg_print(input->config[dst_layer_id].src_phy_addr,
-				input->config[dst_layer_id].tgt_width,
-				input->config[dst_layer_id].tgt_height,
-				input->config[dst_layer_id].src_pitch,
-				4);
-done:
-
+	draw_disp_info(input);
 	primary_display_config_input_multiple(input);
 
 	return 0;
@@ -924,11 +932,12 @@ static int __set_input(disp_session_input_config *session_input)
 {
 	int ret = 0;
 	unsigned int session_id = 0;
+	disp_session_sync_info *session_info;
 
 	session_input->setter = SESSION_USER_HWC;
 	session_id = session_input->session_id;
 
-	disp_session_sync_info *session_info = disp_get_session_sync_info_for_debug(session_id);
+	session_info = disp_get_session_sync_info_for_debug(session_id);
 
 	if (session_info)
 		dprec_start(&session_info->event_setinput, 0, session_input->config_layer_num);
@@ -960,7 +969,6 @@ int _ioctl_set_input_buffer(unsigned long arg)
 {
 	int ret = 0;
 	void __user *argp = (void __user *)arg;
-	unsigned int session_id = 0;
 	disp_session_input_config session_input;
 
 	if (copy_from_user(&session_input, argp, sizeof(session_input))) {
@@ -975,7 +983,7 @@ static int _sync_convert_fb_layer_to_disp_output(unsigned int session_id, disp_o
 {
 	dst->fmt = disp_fmt_to_unified_fmt(src->fmt);
 
-	dst->vaddr = src->va;
+	dst->vaddr = (unsigned long)src->va;
 	dst->security = src->security;
 	dst->w = src->width;
 	dst->h = src->height;
@@ -1308,14 +1316,14 @@ int _ioctl_wait_vsync(unsigned long arg)
 	int ret = 0;
 	void __user *argp = (void __user *)arg;
 	disp_session_vsync_config vsync_config;
-	int dev = 0;
+	disp_session_sync_info *session_info;
 
 	if (copy_from_user(&vsync_config, argp, sizeof(vsync_config))) {
 		DISPMSG("[FB]: copy_from_user failed! line:%d\n", __LINE__);
 		return -EFAULT;
 	}
 
-	disp_session_sync_info *session_info =
+	session_info =
 	    disp_get_session_sync_info_for_debug(vsync_config.session_id);
 	if (session_info)
 		dprec_start(&session_info->event_waitvsync, 0, 0);
@@ -1729,7 +1737,6 @@ static int mtk_disp_mgr_resume(struct platform_device *pdev)
 {
 	return 0;
 }
-
 
 static struct platform_driver mtk_disp_mgr_driver = {
 	.probe = mtk_disp_mgr_probe,

@@ -544,10 +544,12 @@ static int disp_is_intr_enable(DISP_REG_ENUM module)
 	}
 }
 
-m4u_callback_ret_t disp_m4u_callback(int port, unsigned long mva, void *data)
+m4u_callback_ret_t disp_m4u_callback(int port, unsigned int mva, void *data)
 {
 	DISP_MODULE_ENUM module = DISP_MODULE_OVL0;
+	m4u_callback_ret_t ret;
 
+	ret = M4U_CALLBACK_HANDLED;
 	DDPERR("fault call port=%d, mva=0x%lx, data=0x%p\n", port, mva, data);
 	switch (port) {
 	case M4U_PORT_DISP_OVL0:
@@ -569,10 +571,12 @@ m4u_callback_ret_t disp_m4u_callback(int port, unsigned long mva, void *data)
 		module = DISP_MODULE_WDMA1;
 		break;
 	default:
+	ret = M4U_CALLBACK_NOT_HANDLED;
 		DDPERR("unknown port=%d\n", port);
 	}
 	ddp_dump_analysis(module);
 	ddp_dump_reg(module);
+	return ret;
 }
 
 
@@ -645,7 +649,7 @@ static int disp_probe(struct platform_device *pdev)
 			DDPERR("Unable to ioremap registers, of_iomap fail, i=%d\n", i);
 			return -ENOMEM;
 		}
-		dispsys_reg[i] = dispsys_dev->regs[i];
+		dispsys_reg[i] = (unsigned long)dispsys_dev->regs[i];
 		/* check physical register */
 		of_address_to_resource(pdev->dev.of_node, i, &res);
 		if (ddp_reg_pa_base[i] != res.start)

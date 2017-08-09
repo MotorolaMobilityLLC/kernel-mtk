@@ -11,16 +11,17 @@
 #include <linux/of.h>
 #include <linux/of_irq.h>
 #include <linux/slab.h>
-#include <linux/ion_drv.h>
-#include <linux/mtk_ion.h>
-#include <mach/mt_idle.h>
-#include <mach/mt_spm.h>	/* for sodi reg addr define */
-#include <mach/mt_spm_idle.h>
-#include "mach/eint.h"
+#include "mtk_ion.h"
+#include "ion_drv.h"
+/*#include <mach/mt_idle.h>*/
+/*#include <mach/mt_spm.h>*/
+/*#include <mach/mt_spm_idle.h>*/
+/*#include "mach/eint.h"*/
+#if defined(CONFIG_MTK_LEGACY)
 #include <cust_eint.h>
-#include <mach/mt_smi.h>
-#include <mach/m4u.h>
-#include <mach/m4u_port.h>
+#endif
+#include "mt-plat/mt_smi.h"
+#include "m4u.h"
 
 #include "disp_drv_platform.h"
 #include "debug.h"
