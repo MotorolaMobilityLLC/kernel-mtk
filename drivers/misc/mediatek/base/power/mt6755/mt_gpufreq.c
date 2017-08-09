@@ -290,7 +290,18 @@ static struct mt_gpufreq_table_info mt_gpufreq_opp_tbl_e2_1[] = {
 
 /* Segment3: 350M */
 static struct mt_gpufreq_table_info mt_gpufreq_opp_tbl_e2_2[] = {
+	GPUOP(GPU_DVFS_FREQ8, GPU_DVFS_VOLT1, 0),
+};
+
+/* fake Segment2: 520M */
+static struct mt_gpufreq_table_info mt_gpufreq_opp_tbl_e2_3[] = {
+	GPUOP(GPU_DVFS_FREQ4, GPU_DVFS_VOLT1, 0),
 	GPUOP(GPU_DVFS_FREQ8, GPU_DVFS_VOLT3, 1),
+};
+
+/* fake Segment3: 350M */
+static struct mt_gpufreq_table_info mt_gpufreq_opp_tbl_e2_4[] = {
+	GPUOP(GPU_DVFS_FREQ8, GPU_DVFS_VOLT3, 0),
 };
 #endif
 
@@ -412,6 +423,7 @@ static unsigned int mt_gpufreq_pbm_limited_index;	/* Limited frequency index for
 
 #ifdef MT_GPUFREQ_GPU_SOURCE_FROM_VCORE
 static int g_last_gpu_dvs_result = 0x7F;
+static unsigned int fake_segment;
 #endif
 
 /* weak function declaration */
@@ -489,28 +501,48 @@ static unsigned int mt_gpufreq_get_dvfs_table_type(void)
 		return 3;
 #endif
 
+#ifdef MT_GPUFREQ_GPU_SOURCE_FROM_VCORE
+	unsigned int segment = get_devinfo_with_index(21) & 0xFF;
+#ifdef CONFIG_OF
+	static const struct of_device_id gpu_ids[] = {
+		{.compatible = "arm,malit6xx"},
+		{.compatible = "arm,mali-midgard"},
+		{ /* sentinel */ }
+	};
+	struct device_node *node;
+
+	node = of_find_matching_node(NULL, gpu_ids);
+	if (!node)
+		gpufreq_info("@%s: no GPU node found\n", __func__);
+	else {
+		if (!of_property_read_u32(node, "fake-segment", &fake_segment))
+			gpufreq_info("@%s: fake_segment=%d\n", __func__, fake_segment);
+		else
+			gpufreq_info("@%s: no fake-segment property\n", __func__);
+	}
+#endif
+
+	gpufreq_info("Segment code = 0x%x\n", segment);
+
+	switch (segment) {
+	case 0x42:
+		type = 1;
+		break;
+	case 0x43:
+		type = 2;
+		break;
+	case 0x41:
+	default:
+		type = 0;
+		break;
+	}
+
+	return type;
+#else /* !MT_GPUFREQ_GPU_SOURCE_FROM_VCORE */
+
 	mt_gpufreq_dvfs_mmpll_spd_bond = (get_devinfo_with_index(GPUFREQ_EFUSE_INDEX) >>
 			      EFUSE_MFG_SPD_BOND_SHIFT) & EFUSE_MFG_SPD_BOND_MASK;
 	gpufreq_info("GPU frequency bounding from efuse = 0x%x\n", mt_gpufreq_dvfs_mmpll_spd_bond);
-
-#ifdef MT_GPUFREQ_GPU_SOURCE_FROM_VCORE
-	{
-		unsigned int segment = get_devinfo_with_index(21) & 0xFF;
-
-		gpufreq_info("Segment code = 0x%x\n", segment);
-
-		switch (segment) {
-		case 0x41:
-			return 0;
-		case 0x42:
-			return 1;
-		case 0x43:
-			return 2;
-		default:
-			return 0;
-		}
-	}
-#endif
 
 	/* No efuse or free run? use clock-frequency from device tree to determine GPU table type! */
 	if (mt_gpufreq_dvfs_mmpll_spd_bond == 0) {
@@ -574,6 +606,7 @@ static unsigned int mt_gpufreq_get_dvfs_table_type(void)
 	}
 
 	return type;
+#endif
 }
 
 #ifdef MT_GPUFREQ_INPUT_BOOST
@@ -785,6 +818,10 @@ static void mt_gpufreq_set_initial(void)
 	cur_freq = _mt_gpufreq_get_cur_freq();
 
 #ifdef MT_GPUFREQ_GPU_SOURCE_FROM_VCORE
+	/* slow down gpu freq for MT6738 since default freq is 520MHz */
+	if (cur_freq > mt_gpufreqs[g_gpufreq_max_id].gpufreq_khz)
+		mt_gpufreq_clock_switch(mt_gpufreqs[g_gpufreq_max_id].gpufreq_khz);
+
 	/* keep in default freq since Vcore DVFS is not ready yet */
 	for (i = 0; i < mt_gpufreqs_num; i++) {
 		if (cur_freq == mt_gpufreqs[i].gpufreq_khz) {
@@ -887,7 +924,9 @@ unsigned int mt_gpufreq_voltage_enable_set(unsigned int enable)
 	}
 
 #ifdef MT_GPUFREQ_GPU_SOURCE_FROM_VCORE
-	if (is_vcorefs_can_work() < 0)
+	if ((is_vcorefs_can_work() < 0) ||
+	    (mt_gpufreq_dvfs_table_type == 1 && fake_segment != 2) ||
+	    (mt_gpufreq_dvfs_table_type == 2))
 		goto end;
 
 	if (enable == 0) {
@@ -1265,9 +1304,6 @@ static int mt_setup_gpufreqs_table(struct mt_gpufreq_table_info *freqs, int num)
 	g_limited_max_id = 0;
 	g_limited_min_id = mt_gpufreqs_num - 1;
 
-	gpufreq_info("@%s: g_cur_gpu_freq = %d, g_cur_gpu_volt = %d\n",
-		     __func__, g_cur_gpu_freq, g_cur_gpu_volt);
-
 	mt_setup_gpufreqs_power_table(num);
 
 	return 0;
@@ -1406,6 +1442,11 @@ static int mt_gpufreq_volt_switch(unsigned int new_oppidx)
 {
 	gpufreq_dbg("@%s: new_oppidx = %d\n", __func__, new_oppidx);
 
+	if ((is_vcorefs_can_work() < 0) ||
+	    (mt_gpufreq_dvfs_table_type == 1 && fake_segment != 2) ||
+	    (mt_gpufreq_dvfs_table_type == 2)) /* Segment2 & 3: use Vcore2 */
+		return 0;
+
 	BUG_ON(new_oppidx >= mt_gpufreqs_num);
 
 	switch (mt_gpufreqs[new_oppidx].gpufreq_khz) {
@@ -1525,7 +1566,11 @@ static unsigned int _mt_gpufreq_get_cur_freq(void)
 static unsigned int _mt_gpufreq_get_cur_volt(void)
 {
 #ifdef MT_GPUFREQ_GPU_SOURCE_FROM_VCORE
-	return vcorefs_get_curr_vcore() / 10;
+	if ((mt_gpufreq_dvfs_table_type == 0) ||  /* Segment1: 680M use Vcore1 */
+	    (fake_segment != 0))
+		return vcorefs_get_curr_vcore() / 10;
+	else /* Segment2 & 3: use Vcore2 */
+		return GPU_DVFS_VOLT1;
 #else
 	return mt_gpufreq_pmic_wrap_to_volt(pmic_get_register_value(PMIC_BUCK_VGPU_VOSEL_ON));
 #endif
@@ -1680,7 +1725,7 @@ unsigned int mt_gpufreq_target(unsigned int idx)
 
 #ifdef MT_GPUFREQ_GPU_SOURCE_FROM_VCORE
 	/* only 1 OPP, no need to DVFS */
-	if (mt_gpufreq_dvfs_table_type == 2) {
+	if ((mt_gpufreq_dvfs_table_type == 2) || (fake_segment == 3)) {
 		mutex_unlock(&mt_gpufreq_lock);
 		return 0;
 	}
@@ -2465,12 +2510,23 @@ static int mt_gpufreq_pdrv_probe(struct platform_device *pdev)
 	if (mt_gpufreq_dvfs_table_type == 0)	/* Segment1: 680M */
 		mt_setup_gpufreqs_table(mt_gpufreq_opp_tbl_e2_0,
 					ARRAY_SIZE(mt_gpufreq_opp_tbl_e2_0));
-	else if (mt_gpufreq_dvfs_table_type == 1)	/* Segment2: 520M */
-		mt_setup_gpufreqs_table(mt_gpufreq_opp_tbl_e2_1,
-					ARRAY_SIZE(mt_gpufreq_opp_tbl_e2_1));
-	else if (mt_gpufreq_dvfs_table_type == 2)	/* Segment3: 350M */
-		mt_setup_gpufreqs_table(mt_gpufreq_opp_tbl_e2_2,
-					ARRAY_SIZE(mt_gpufreq_opp_tbl_e2_2));
+	else if (mt_gpufreq_dvfs_table_type == 1) {
+		if (fake_segment == 0) /* Segment2: 520M */
+			mt_setup_gpufreqs_table(mt_gpufreq_opp_tbl_e2_1,
+						ARRAY_SIZE(mt_gpufreq_opp_tbl_e2_1));
+		else if (fake_segment == 2) /* fake Segment2: max 520M, flavor:_50 */
+			mt_setup_gpufreqs_table(mt_gpufreq_opp_tbl_e2_3,
+						ARRAY_SIZE(mt_gpufreq_opp_tbl_e2_3));
+		else /* fake Segment2: max 350M, flavor:_50_k2_720p */
+			mt_setup_gpufreqs_table(mt_gpufreq_opp_tbl_e2_4,
+						ARRAY_SIZE(mt_gpufreq_opp_tbl_e2_4));
+	} else if (mt_gpufreq_dvfs_table_type == 2)
+		if (fake_segment == 0) /* Segment3: 350M */
+			mt_setup_gpufreqs_table(mt_gpufreq_opp_tbl_e2_2,
+						ARRAY_SIZE(mt_gpufreq_opp_tbl_e2_2));
+		else /* fake Segment3: max 350M, flavor:_38 */
+			mt_setup_gpufreqs_table(mt_gpufreq_opp_tbl_e2_4,
+						ARRAY_SIZE(mt_gpufreq_opp_tbl_e2_4));
 	else
 		mt_setup_gpufreqs_table(mt_gpufreq_opp_tbl_e2_0,
 					ARRAY_SIZE(mt_gpufreq_opp_tbl_e2_0));
@@ -3241,10 +3297,15 @@ static int mt_gpufreq_var_dump_proc_show(struct seq_file *m, void *v)
 			   mt_gpufreq_power_limited_index_array[i]);
 
 	seq_printf(m, "_mt_gpufreq_get_cur_freq = %u KHz\n", _mt_gpufreq_get_cur_freq());
+	seq_printf(m, "_mt_gpufreq_get_cur_volt = %u mV\n", _mt_gpufreq_get_cur_volt() / 100);
 	seq_printf(m, "mt_gpufreq_volt_enable_state = %d\n", mt_gpufreq_volt_enable_state);
 	seq_printf(m, "mt_gpufreq_dvfs_table_type = %d\n", mt_gpufreq_dvfs_table_type);
 	seq_printf(m, "mt_gpufreq_dvfs_mmpll_spd_bond = %d\n", mt_gpufreq_dvfs_mmpll_spd_bond);
 	seq_printf(m, "mt_gpufreq_ptpod_disable_idx = %d\n", mt_gpufreq_ptpod_disable_idx);
+#ifdef MT_GPUFREQ_GPU_SOURCE_FROM_VCORE
+	seq_printf(m, "fake_segment=%u, is_vcorefs_can_work=%d\n",
+		   fake_segment, is_vcorefs_can_work());
+#endif
 
 	return 0;
 }
