@@ -146,6 +146,7 @@ extern unsigned int pmic_config_interface_nolock(unsigned int RegNum,
 	unsigned int SHIFT);
 extern unsigned short pmic_set_register_value(PMU_FLAGS_LIST_ENUM flagname, unsigned int val);
 extern unsigned short pmic_get_register_value(PMU_FLAGS_LIST_ENUM flagname);
+extern unsigned short pmic_get_register_value_nolock(PMU_FLAGS_LIST_ENUM flagname);
 extern unsigned short bc11_set_register_value(PMU_FLAGS_LIST_ENUM flagname, unsigned int val);
 extern unsigned short bc11_get_register_value(PMU_FLAGS_LIST_ENUM flagname);
 extern void upmu_set_reg_value(unsigned int reg, unsigned int reg_val);
