@@ -389,7 +389,7 @@ static int ddp_pwm_power_on(DISP_MODULE_ENUM module, void *handle)
 #if defined(CONFIG_ARCH_MT6755)
 		/* ddp_clk_enable(DISP_PWM); */
 #else
-		disp_clk_enable(DISP_PWM);
+		ddp_clk_enable(DISP_PWM);
 #endif
 #endif
 	}
@@ -417,7 +417,7 @@ static int ddp_pwm_power_off(DISP_MODULE_ENUM module, void *handle)
 #if defined(CONFIG_ARCH_MT6755)
 		/* ddp_clk_disable(DISP_PWM); */
 #else
-		disp_clk_disable(DISP_PWM);
+		ddp_clk_disable(DISP_PWM);
 #endif
 #endif
 	}

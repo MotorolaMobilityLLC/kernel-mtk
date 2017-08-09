@@ -385,7 +385,7 @@ static int _disp_primary_path_dsi_clock_on(unsigned int level)
 		unsigned long flags;
 
 #ifndef CONFIG_MTK_CLKMGR
-		disp_clk_prepare(DISP_MTCMOS_CLK);
+		ddp_clk_prepare(DISP_MTCMOS_CLK);
 #endif
 		spin_lock_irqsave(&gLockTopClockOff, flags);
 		isDSIOff = 0;
@@ -406,7 +406,7 @@ static int _disp_primary_path_dsi_clock_off(unsigned int level)
 		isDSIOff = 1;
 		spin_unlock_irqrestore(&gLockTopClockOff, flags);
 #ifndef CONFIG_MTK_CLKMGR
-		disp_clk_unprepare(DISP_MTCMOS_CLK);
+		ddp_clk_unprepare(DISP_MTCMOS_CLK);
 #endif
 	}
 
@@ -517,7 +517,7 @@ int primary_display_save_power_for_idle(int enter, unsigned int need_primary_loc
 					isIdlePowerOff = 1;
 					spin_unlock_irqrestore(&gLockTopClockOff, flags);
 #ifndef CONFIG_MTK_CLKMGR
-					disp_clk_unprepare(DISP_MTCMOS_CLK);
+					ddp_clk_unprepare(DISP_MTCMOS_CLK);
 #endif
 					/* DISPMSG("off MM clock end.\n"); */
 					DISPMSG("***start dump regs! clk_stat_check\n");
@@ -533,7 +533,7 @@ int primary_display_save_power_for_idle(int enter, unsigned int need_primary_loc
 
 					DISPMSG("on MM clock start.\n");
 #ifndef CONFIG_MTK_CLKMGR
-					disp_clk_prepare(DISP_MTCMOS_CLK);
+					ddp_clk_prepare(DISP_MTCMOS_CLK);
 #endif
 					spin_lock_irqsave(&gLockTopClockOff, flags);
 					isIdlePowerOff = 0;
@@ -2075,7 +2075,7 @@ static int _DL_switch_to_DC_fast(void)
 
 	dpmgr_path_set_video_mode(pgc->ovl2mem_path_handle, 0);
 #ifndef CONFIG_MTK_CLKMGR
-	disp_clk_prepare(DISP_MTCMOS_CLK);
+	ddp_clk_prepare(DISP_MTCMOS_CLK);
 #endif
 	dpmgr_path_init(pgc->ovl2mem_path_handle, CMDQ_ENABLE);
 
@@ -2146,7 +2146,7 @@ static int _DC_switch_to_DL_fast(void)
 	dpmgr_path_deinit(pgc->ovl2mem_path_handle,
 			  (int)(unsigned long)pgc->cmdq_handle_ovl1to2_config);
 #ifndef CONFIG_MTK_CLKMGR
-	disp_clk_unprepare(DISP_MTCMOS_CLK);
+	ddp_clk_unprepare(DISP_MTCMOS_CLK);
 #endif
 	dpmgr_destroy_path(pgc->ovl2mem_path_handle, pgc->cmdq_handle_ovl1to2_config);
 	/*clear sof token for next dl to dc */
@@ -2482,7 +2482,7 @@ static int __build_path_direct_link(void)
 	/* set video mode must before path_init */
 	dpmgr_path_set_video_mode(pgc->dpmgr_handle, primary_display_is_video_mode());
 #ifndef CONFIG_MTK_CLKMGR
-	disp_clk_prepare(DISP_MTCMOS_CLK);
+	ddp_clk_prepare(DISP_MTCMOS_CLK);
 #endif
 #ifndef MTK_FB_CMDQ_DISABLE
 	dpmgr_path_init(pgc->dpmgr_handle, CMDQ_ENABLE);
@@ -2550,7 +2550,7 @@ static int _build_path_rdma_to_dsi(void)
 	if (primary_display_is_video_mode())
 		_cmdq_insert_wait_frame_done_token();
 #ifndef CONFIG_MTK_CLKMGR
-	disp_clk_prepare(DISP_MTCMOS_CLK);
+	ddp_clk_prepare(DISP_MTCMOS_CLK);
 #endif
 	dpmgr_path_init(pgc->dpmgr_handle, CMDQ_ENABLE);
 
@@ -5110,7 +5110,7 @@ int primary_display_deinit(void)
 	_cmdq_stop_trigger_loop();
 	dpmgr_path_deinit(pgc->dpmgr_handle, CMDQ_DISABLE);
 #ifndef CONFIG_MTK_CLKMGR
-	disp_clk_unprepare(DISP_MTCMOS_CLK);
+	ddp_clk_unprepare(DISP_MTCMOS_CLK);
 #endif
 	_primary_path_unlock(__func__);
 	return 0;
@@ -5362,7 +5362,7 @@ int primary_display_suspend(void)
 		dpmgr_path_power_off(pgc->ovl2mem_path_handle, CMDQ_DISABLE);
 
 #ifndef CONFIG_MTK_CLKMGR
-	disp_clk_unprepare(DISP_MTCMOS_CLK);
+	ddp_clk_unprepare(DISP_MTCMOS_CLK);
 #endif
 	MMProfileLogEx(ddp_mmp_get_events()->primary_suspend, MMProfileFlagPulse, 0, 8);
 	display_path_idle_cnt = 0;
@@ -5410,7 +5410,7 @@ int primary_display_resume(void)
 	}
 	MMProfileLogEx(ddp_mmp_get_events()->primary_resume, MMProfileFlagPulse, 0, 1);
 #ifndef CONFIG_MTK_CLKMGR
-	disp_clk_prepare(DISP_MTCMOS_CLK);
+	ddp_clk_prepare(DISP_MTCMOS_CLK);
 #endif
 	DISPCHECK("dpmanager path power on[begin]\n");
 	dpmgr_path_power_on(pgc->dpmgr_handle, CMDQ_DISABLE);
@@ -7082,27 +7082,27 @@ int primary_display_enable_path_cg(int enable)
 		ret += disable_clock(MT_CG_DISP0_SMI_LARB0, "Debug2");
 		ret += disable_clock(MT_CG_DISP0_SMI_COMMON, "Debug2");
 #else
-		disp_clk_disable(DISP1_DSI_ENGINE);
-		disp_clk_disable(DISP1_DSI_DIGITAL);
-		disp_clk_disable(DISP0_DISP_OVL0);
-		disp_clk_disable(DISP0_DISP_COLOR);
-		disp_clk_disable(DISP0_DISP_CCORR);
-		disp_clk_disable(DISP0_DISP_AAL);
-		disp_clk_disable(DISP0_DISP_GAMMA);
-		disp_clk_disable(DISP0_DISP_DITHER);
-		disp_clk_disable(DISP0_DISP_RDMA0);
+		ddp_clk_disable(DISP1_DSI_ENGINE);
+		ddp_clk_disable(DISP1_DSI_DIGITAL);
+		ddp_clk_disable(DISP0_DISP_OVL0);
+		ddp_clk_disable(DISP0_DISP_COLOR);
+		ddp_clk_disable(DISP0_DISP_CCORR);
+		ddp_clk_disable(DISP0_DISP_AAL);
+		ddp_clk_disable(DISP0_DISP_GAMMA);
+		ddp_clk_disable(DISP0_DISP_DITHER);
+		ddp_clk_disable(DISP0_DISP_RDMA0);
 
-		disp_clk_disable(DISP_PWM);
+		ddp_clk_disable(DISP_PWM);
 
-		/*disp_clk_disable(DISP0_MUTEX_32K); */
-		disp_clk_disable(DISP0_SMI_LARB0);
-		disp_clk_disable(DISP0_SMI_COMMON);
+		/*ddp_clk_disable(DISP0_MUTEX_32K); */
+		ddp_clk_disable(DISP0_SMI_LARB0);
+		ddp_clk_disable(DISP0_SMI_COMMON);
 
-		/*disp_clk_disable(DISP0_MUTEX_32K); */
-		disp_clk_disable(DISP0_SMI_LARB0);
-		disp_clk_disable(DISP0_SMI_COMMON);
-		disp_clk_disable(DISP_MTCMOS_CLK);
-		disp_clk_unprepare(DISP_MTCMOS_CLK);
+		/*ddp_clk_disable(DISP0_MUTEX_32K); */
+		ddp_clk_disable(DISP0_SMI_LARB0);
+		ddp_clk_disable(DISP0_SMI_COMMON);
+		ddp_clk_disable(DISP_MTCMOS_CLK);
+		ddp_clk_unprepare(DISP_MTCMOS_CLK);
 #endif
 
 	} else {
@@ -7127,27 +7127,27 @@ int primary_display_enable_path_cg(int enable)
 		ret += enable_clock(MT_CG_DISP0_SMI_LARB0, "Debug2");
 		ret += enable_clock(MT_CG_DISP0_SMI_COMMON, "Debug2");
 #else
-		disp_clk_prepare(DISP_MTCMOS_CLK);
-		ret += disp_clk_enable(DISP_MTCMOS_CLK);
-		ret += disp_clk_enable(DISP1_DSI_ENGINE);
-		ret += disp_clk_enable(DISP1_DSI_DIGITAL);
-		ret += disp_clk_enable(DISP0_DISP_OVL0);
-		ret += disp_clk_enable(DISP0_DISP_COLOR);
-		ret += disp_clk_enable(DISP0_DISP_CCORR);
-		ret += disp_clk_enable(DISP0_DISP_AAL);
-		ret += disp_clk_enable(DISP0_DISP_GAMMA);
-		ret += disp_clk_enable(DISP0_DISP_DITHER);
-		ret += disp_clk_enable(DISP0_DISP_RDMA0);
+		ddp_clk_prepare(DISP_MTCMOS_CLK);
+		ret += ddp_clk_enable(DISP_MTCMOS_CLK);
+		ret += ddp_clk_enable(DISP1_DSI_ENGINE);
+		ret += ddp_clk_enable(DISP1_DSI_DIGITAL);
+		ret += ddp_clk_enable(DISP0_DISP_OVL0);
+		ret += ddp_clk_enable(DISP0_DISP_COLOR);
+		ret += ddp_clk_enable(DISP0_DISP_CCORR);
+		ret += ddp_clk_enable(DISP0_DISP_AAL);
+		ret += ddp_clk_enable(DISP0_DISP_GAMMA);
+		ret += ddp_clk_enable(DISP0_DISP_DITHER);
+		ret += ddp_clk_enable(DISP0_DISP_RDMA0);
 
-		ret += disp_clk_enable(DISP_PWM);
+		ret += ddp_clk_enable(DISP_PWM);
 
-		/*ret += disp_clk_enable(DISP0_MUTEX_32K); */
-		ret += disp_clk_enable(DISP0_SMI_LARB0);
-		ret += disp_clk_enable(DISP0_SMI_COMMON);
+		/*ret += ddp_clk_enable(DISP0_MUTEX_32K); */
+		ret += ddp_clk_enable(DISP0_SMI_LARB0);
+		ret += ddp_clk_enable(DISP0_SMI_COMMON);
 
-		/*ret += disp_clk_enable(DISP0_MUTEX_32K); */
-		ret += disp_clk_enable(DISP0_SMI_LARB0);
-		ret += disp_clk_enable(DISP0_SMI_COMMON);
+		/*ret += ddp_clk_enable(DISP0_MUTEX_32K); */
+		ret += ddp_clk_enable(DISP0_SMI_LARB0);
+		ret += ddp_clk_enable(DISP0_SMI_COMMON);
 #endif
 	}
 

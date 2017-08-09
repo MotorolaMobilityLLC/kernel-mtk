@@ -241,9 +241,9 @@ enum DPI_STATUS ddp_dpi_ConfigPclk(cmdqRecHandle cmdq, unsigned int clk_req, enu
 	clkmux_sel(MT_MUX_DPI0, clksrc, "DPI");
 #else
 /*
-	disp_clk_enable(MUX_DPI0);
-	disp_clk_set_parent(MUX_DPI0, clksrc);
-	disp_clk_disable(MUX_DPI0);
+	ddp_clk_enable(MUX_DPI0);
+	ddp_clk_set_parent(MUX_DPI0, clksrc);
+	ddp_clk_disable(MUX_DPI0);
 */
 #endif
 	DPI_OUTREG32(NULL, TVDPLL_CON0, 0xc0000101);	/*TVDPLL enable*/
@@ -440,8 +440,8 @@ int ddp_dpi_power_on(DISP_MODULE_ENUM module, void *cmdq_handle)
 		ret += enable_clock(MT_CG_DISP1_DPI_ENGINE, "DPI");
 #else
 /*
-		ret += disp_clk_enable(DISP1_DPI_PIXEL);
-		ret += disp_clk_enable(DISP1_DPI_ENGINE);
+		ret += ddp_clk_enable(DISP1_DPI_PIXEL);
+		ret += ddp_clk_enable(DISP1_DPI_ENGINE);
 */
 #endif
 #endif
@@ -467,8 +467,8 @@ int ddp_dpi_power_off(DISP_MODULE_ENUM module, void *cmdq_handle)
 		ret += disable_clock(MT_CG_DISP1_DPI_ENGINE, "DPI");
 #else
 /*
-		disp_clk_disable(DISP1_DPI_PIXEL);
-		disp_clk_disable(DISP1_DPI_ENGINE);
+		ddp_clk_disable(DISP1_DPI_PIXEL);
+		ddp_clk_disable(DISP1_DPI_ENGINE);
 */
 #endif
 #endif

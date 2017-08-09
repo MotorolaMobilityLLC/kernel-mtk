@@ -270,7 +270,7 @@ typedef enum {
 #define DISP_IOCTL_SET_TPLAY_HANDLE    _IOW(DISP_IOCTL_MAGIC, 200, unsigned int)
 
 #ifndef CONFIG_MTK_CLKMGR
-enum disp_clk_id {
+typedef enum disp_clk_id {
 	DISP0_SMI_COMMON = 0,
 	DISP0_SMI_LARB0,
 	DISP0_DISP_OVL0,
@@ -293,15 +293,15 @@ enum disp_clk_id {
 	DPI_CK,
 	DISP_MTCMOS_CLK,
 	MAX_DISP_CLK_CNT
-};
+} eDDP_CLK_ID;
 
-int disp_clk_prepare(enum disp_clk_id id);
-void disp_clk_unprepare(enum disp_clk_id id);
-int disp_clk_enable(enum disp_clk_id id);
-void disp_clk_disable(enum disp_clk_id id);
-int disp_clk_prepare_enable(enum disp_clk_id id);
-void disp_clk_disable_unprepare(enum disp_clk_id id);
-int disp_clk_set_parent(enum disp_clk_id id, enum disp_clk_id parent);
+int ddp_clk_prepare(eDDP_CLK_ID id);
+int ddp_clk_unprepare(eDDP_CLK_ID id);
+int ddp_clk_enable(eDDP_CLK_ID id);
+int ddp_clk_disable(eDDP_CLK_ID id);
+int ddp_clk_prepare_enable(eDDP_CLK_ID id);
+int ddp_clk_disable_unprepare(eDDP_CLK_ID id);
+int ddp_clk_set_parent(eDDP_CLK_ID id, eDDP_CLK_ID parent);
 #endif
 
 extern unsigned int dispsys_irq[DISP_REG_NUM];

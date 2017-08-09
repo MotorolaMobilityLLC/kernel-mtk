@@ -465,11 +465,7 @@ static int aal_clock_on(DISP_MODULE_ENUM module, void *cmq_handle)
 #ifdef CONFIG_MTK_CLKMGR
 	enable_clock(MT_CG_DISP0_DISP_AAL, "aal");
 #else
-#if defined(CONFIG_ARCH_MT6755)
 	ddp_clk_enable(DISP0_DISP_AAL);
-#else
-	disp_clk_enable(DISP0_DISP_AAL);
-#endif
 #endif
 	AAL_DBG("aal_clock_on CG 0x%x", DISP_REG_GET(DISP_REG_CONFIG_MMSYS_CG_CON0));
 #endif
@@ -489,11 +485,7 @@ static int aal_clock_off(DISP_MODULE_ENUM module, void *cmq_handle)
 #ifdef CONFIG_MTK_CLKMGR
 	disable_clock(MT_CG_DISP0_DISP_AAL, "aal");
 #else
-#if defined(CONFIG_ARCH_MT6755)
 	ddp_clk_disable(DISP0_DISP_AAL);
-#else
-	disp_clk_disable(DISP0_DISP_AAL);
-#endif
 #endif
 #endif
 #endif

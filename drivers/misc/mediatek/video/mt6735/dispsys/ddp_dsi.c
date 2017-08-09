@@ -2849,8 +2849,8 @@ int ddp_dsi_init(DISP_MODULE_ENUM module, void *cmdq)
 			ret += enable_clock(MT_CG_DISP1_DSI_ENGINE, "DSI");
 			ret += enable_clock(MT_CG_DISP1_DSI_DIGITAL, "DSI");
 #else
-			ret += disp_clk_enable(DISP1_DSI_ENGINE);
-			ret += disp_clk_enable(DISP1_DSI_DIGITAL);
+			ret += ddp_clk_enable(DISP1_DSI_ENGINE);
+			ret += ddp_clk_enable(DISP1_DSI_DIGITAL);
 #endif
 
 			if (ret > 0)
@@ -2863,8 +2863,8 @@ int ddp_dsi_init(DISP_MODULE_ENUM module, void *cmdq)
 			ret += enable_clock(MT_CG_DISP1_DSI1_ENGINE, "DSI1");
 			ret += enable_clock(MT_CG_DISP1_DSI1_DIGITAL, "DSI1");
 #else
-			ret += disp_clk_enable(DISP1_DSI1_ENGINE);
-			ret += disp_clk_enable(DISP1_DSI1_DIGITAL);
+			ret += ddp_clk_enable(DISP1_DSI1_ENGINE);
+			ret += ddp_clk_enable(DISP1_DSI1_DIGITAL);
 #endif
 
 			if (ret > 0)
@@ -3350,8 +3350,8 @@ int ddp_dsi_clk_on(DISP_MODULE_ENUM module, void *cmdq_handle, unsigned int leve
 		ret += enable_clock(MT_CG_DISP1_DSI_ENGINE, "DSI");
 		ret += enable_clock(MT_CG_DISP1_DSI_DIGITAL, "DSI");
 #else
-		ret += disp_clk_enable(DISP1_DSI_ENGINE);
-		ret += disp_clk_enable(DISP1_DSI_DIGITAL);
+		ret += ddp_clk_enable(DISP1_DSI_ENGINE);
+		ret += ddp_clk_enable(DISP1_DSI_DIGITAL);
 #endif
 
 		if (ret > 0)
@@ -3379,8 +3379,8 @@ int ddp_dsi_clk_off(DISP_MODULE_ENUM module, void *cmdq_handle, unsigned int lev
 		ret += disable_clock(MT_CG_DISP1_DSI_ENGINE, "DSI");
 		ret += disable_clock(MT_CG_DISP1_DSI_DIGITAL, "DSI");
 #else
-		disp_clk_disable(DISP1_DSI_ENGINE);
-		disp_clk_disable(DISP1_DSI_DIGITAL);
+		ddp_clk_disable(DISP1_DSI_ENGINE);
+		ddp_clk_disable(DISP1_DSI_DIGITAL);
 #endif
 
 		if (ret > 0)
@@ -3531,8 +3531,8 @@ int ddp_dsi_power_on(DISP_MODULE_ENUM module, void *cmdq_handle)
 				ret += enable_clock(MT_CG_DISP1_DSI_ENGINE, "DSI");
 				ret += enable_clock(MT_CG_DISP1_DSI_DIGITAL, "DSI");
 #else
-				ret += disp_clk_enable(DISP1_DSI_ENGINE);
-				ret += disp_clk_enable(DISP1_DSI_DIGITAL);
+				ret += ddp_clk_enable(DISP1_DSI_ENGINE);
+				ret += ddp_clk_enable(DISP1_DSI_DIGITAL);
 #endif
 
 				if (ret > 0)
@@ -3550,8 +3550,8 @@ int ddp_dsi_power_on(DISP_MODULE_ENUM module, void *cmdq_handle)
 			ret += enable_clock(MT_CG_DISP1_DSI_ENGINE, "DSI");
 			ret += enable_clock(MT_CG_DISP1_DSI_DIGITAL, "DSI");
 #else
-			ret += disp_clk_enable(DISP1_DSI_ENGINE);
-			ret += disp_clk_enable(DISP1_DSI_DIGITAL);
+			ret += ddp_clk_enable(DISP1_DSI_ENGINE);
+			ret += ddp_clk_enable(DISP1_DSI_DIGITAL);
 #endif
 
 			if (ret > 0)
@@ -3564,8 +3564,8 @@ int ddp_dsi_power_on(DISP_MODULE_ENUM module, void *cmdq_handle)
 			ret += enable_clock(MT_CG_DISP1_DSI1_ENGINE, "DSI1");
 			ret += enable_clock(MT_CG_DISP1_DSI1_DIGITAL, "DSI1");
 #else
-			ret += disp_clk_enable(DISP1_DSI1_ENGINE);
-			ret += disp_clk_enable(DISP1_DSI1_DIGITAL);
+			ret += ddp_clk_enable(DISP1_DSI1_ENGINE);
+			ret += ddp_clk_enable(DISP1_DSI1_DIGITAL);
 #endif
 
 			if (ret > 0)
@@ -3665,8 +3665,8 @@ int ddp_dsi_power_off(DISP_MODULE_ENUM module, void *cmdq_handle)
 			ret += disable_clock(MT_CG_DISP1_DSI_ENGINE, "DSI");
 			ret += disable_clock(MT_CG_DISP1_DSI_DIGITAL, "DSI");
 #else
-			disp_clk_disable(DISP1_DSI_ENGINE);
-			disp_clk_disable(DISP1_DSI_DIGITAL);
+			ddp_clk_disable(DISP1_DSI_ENGINE);
+			ddp_clk_disable(DISP1_DSI_DIGITAL);
 #endif
 
 			if (ret > 0)
@@ -3679,8 +3679,8 @@ int ddp_dsi_power_off(DISP_MODULE_ENUM module, void *cmdq_handle)
 			ret += disable_clock(MT_CG_DISP1_DSI1_ENGINE, "DSI1");
 			ret += disable_clock(MT_CG_DISP1_DSI1_DIGITAL, "DSI1");
 #else
-			disp_clk_disable(DISP1_DSI1_ENGINE);
-			disp_clk_disable(DISP1_DSI1_DIGITAL);
+			ddp_clk_disable(DISP1_DSI1_ENGINE);
+			ddp_clk_disable(DISP1_DSI1_DIGITAL);
 #endif
 
 			if (ret > 0)

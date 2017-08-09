@@ -944,10 +944,10 @@ int ddp_path_top_clock_on(void)
 	static int need_enable;
 
 	if (need_enable) {
-		disp_clk_prepare_enable(DISP_MTCMOS_CLK);
-		disp_clk_prepare_enable(DISP0_SMI_COMMON);
-		disp_clk_prepare_enable(DISP0_SMI_LARB0);
-		/* disp_clk_prepare_enable(MT_CG_DISP0_MUTEX_32K); */
+		ddp_clk_prepare_enable(DISP_MTCMOS_CLK);
+		ddp_clk_prepare_enable(DISP0_SMI_COMMON);
+		ddp_clk_prepare_enable(DISP0_SMI_LARB0);
+		/* ddp_clk_prepare_enable(MT_CG_DISP0_MUTEX_32K); */
 	} else {
 		need_enable = 1;
 	}
@@ -973,10 +973,10 @@ int ddp_path_top_clock_off(void)
 	disable_clock(MT_CG_DISP0_SMI_LARB0, "DDP");
 	disable_clock(MT_CG_DISP0_SMI_COMMON, "DDP");
 #else
-	/*disp_clk_disable_unprepare(DISP0_MUTEX_32K); */
-	disp_clk_disable_unprepare(DISP0_SMI_LARB0);
-	disp_clk_disable_unprepare(DISP0_SMI_COMMON);
-	disp_clk_disable_unprepare(DISP_MTCMOS_CLK);
+	/*ddp_clk_disable_unprepare(DISP0_MUTEX_32K); */
+	ddp_clk_disable_unprepare(DISP0_SMI_LARB0);
+	ddp_clk_disable_unprepare(DISP0_SMI_COMMON);
+	ddp_clk_disable_unprepare(DISP_MTCMOS_CLK);
 #endif
 #endif
 	return 0;
@@ -989,9 +989,9 @@ int ddp_path_lp_top_clock_on(void)
 	enable_clock(MT_CG_DISP0_SMI_COMMON, "DDP");
 	enable_clock(MT_CG_DISP0_SMI_LARB0, "DDP");
 #else
-	disp_clk_enable(DISP_MTCMOS_CLK);
-	disp_clk_enable(DISP0_SMI_COMMON);
-	disp_clk_enable(DISP0_SMI_LARB0);
+	ddp_clk_enable(DISP_MTCMOS_CLK);
+	ddp_clk_enable(DISP0_SMI_COMMON);
+	ddp_clk_enable(DISP0_SMI_LARB0);
 #endif
 #endif
 	return 0;
@@ -1004,9 +1004,9 @@ int ddp_path_lp_top_clock_off(void)
 	disable_clock(MT_CG_DISP0_SMI_LARB0, "DDP");
 	disable_clock(MT_CG_DISP0_SMI_COMMON, "DDP");
 #else
-	disp_clk_disable(DISP0_SMI_LARB0);
-	disp_clk_disable(DISP0_SMI_COMMON);
-	disp_clk_disable(DISP_MTCMOS_CLK);
+	ddp_clk_disable(DISP0_SMI_LARB0);
+	ddp_clk_disable(DISP0_SMI_COMMON);
+	ddp_clk_disable(DISP_MTCMOS_CLK);
 #endif
 #endif
 	return 0;

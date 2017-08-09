@@ -99,7 +99,7 @@ static int disp_dither_power_on(DISP_MODULE_ENUM module, void *handle)
 #if defined(CONFIG_ARCH_MT6755)
 		/* ddp_clk_enable(DISP0_DISP_DITHER); */
 #else
-		disp_clk_enable(DISP0_DISP_DITHER);
+		ddp_clk_enable(DISP0_DISP_DITHER);
 #endif
 #endif
 	}
@@ -117,7 +117,7 @@ static int disp_dither_power_off(DISP_MODULE_ENUM module, void *handle)
 #if defined(CONFIG_ARCH_MT6755)
 		/* ddp_clk_disable(DISP0_DISP_DITHER); */
 #else
-		disp_clk_disable(DISP0_DISP_DITHER);
+		ddp_clk_disable(DISP0_DISP_DITHER);
 #endif
 #endif
 	}

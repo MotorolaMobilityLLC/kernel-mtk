@@ -205,7 +205,7 @@ static int disp_gamma_power_on(DISP_MODULE_ENUM module, void *handle)
 #if defined(CONFIG_ARCH_MT6755)
 		/* ddp_clk_enable(DISP0_DISP_GAMMA); */
 #else
-		disp_clk_enable(DISP0_DISP_GAMMA);
+		ddp_clk_enable(DISP0_DISP_GAMMA);
 #endif
 #endif
 	}
@@ -223,7 +223,7 @@ static int disp_gamma_power_off(DISP_MODULE_ENUM module, void *handle)
 #if defined(CONFIG_ARCH_MT6755)
 		/* ddp_clk_disable(DISP0_DISP_GAMMA); */
 #else
-		disp_clk_disable(DISP0_DISP_GAMMA);
+		ddp_clk_disable(DISP0_DISP_GAMMA);
 #endif
 #endif
 	}
@@ -411,7 +411,7 @@ static int disp_ccorr_power_on(DISP_MODULE_ENUM module, void *handle)
 #if defined(CONFIG_ARCH_MT6755)
 		/* ddp_clk_enable(DISP0_DISP_CCORR); */
 #else
-		disp_clk_enable(DISP0_DISP_CCORR);
+		ddp_clk_enable(DISP0_DISP_CCORR);
 #endif
 #endif
 	}
@@ -431,7 +431,7 @@ static int disp_ccorr_power_off(DISP_MODULE_ENUM module, void *handle)
 #if defined(CONFIG_ARCH_MT6755)
 		/* ddp_clk_disable(DISP0_DISP_CCORR); */
 #else
-		disp_clk_disable(DISP0_DISP_CCORR);
+		ddp_clk_disable(DISP0_DISP_CCORR);
 #endif
 #endif
 	}

@@ -690,7 +690,7 @@ int ovl_clock_on(DISP_MODULE_ENUM module, void *handle)
 #ifdef CONFIG_MTK_CLKMGR
 		enable_clock(MT_CG_DISP0_DISP_OVL0, "OVL0");
 #else
-		disp_clk_enable(DISP0_DISP_OVL0);
+		ddp_clk_enable(DISP0_DISP_OVL0);
 #endif
 	}
 
@@ -714,7 +714,7 @@ int ovl_clock_off(DISP_MODULE_ENUM module, void *handle)
 #ifdef CONFIG_MTK_CLKMGR
 		disable_clock(MT_CG_DISP0_DISP_OVL0, "OVL0");
 #else
-		disp_clk_disable(DISP0_DISP_OVL0);
+		ddp_clk_disable(DISP0_DISP_OVL0);
 #endif
 	}
 
@@ -733,7 +733,7 @@ int ovl_resume(DISP_MODULE_ENUM module, void *handle)
 #ifdef CONFIG_MTK_CLKMGR
 		enable_clock(MT_CG_DISP0_DISP_OVL0, "OVL0");
 #else
-		disp_clk_enable(DISP0_DISP_OVL0);
+		ddp_clk_enable(DISP0_DISP_OVL0);
 #endif
 	}
 #endif
@@ -752,13 +752,13 @@ int ovl_suspend(DISP_MODULE_ENUM module, void *handle)
 #ifdef CONFIG_MTK_CLKMGR
 		disable_clock(MT_CG_DISP0_DISP_OVL0 + idx, "OVL0");
 #else
-		disp_clk_disable(DISP0_DISP_OVL0 + idx);
+		ddp_clk_disable(DISP0_DISP_OVL0 + idx);
 #endif
 	} else {
 #ifdef CONFIG_MTK_CLKMGR
 		disable_clock(MT_CG_DISP0_DISP_OVL0 + idx, "OVL1");
 #else
-		disp_clk_disable(DISP0_DISP_OVL0 + idx);
+		ddp_clk_disable(DISP0_DISP_OVL0 + idx);
 #endif
 	}
 #endif

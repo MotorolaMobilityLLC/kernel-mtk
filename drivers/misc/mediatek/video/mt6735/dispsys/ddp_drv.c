@@ -628,7 +628,7 @@ const char *disp_clk_name[MAX_DISP_CLK_CNT] = {
 	"DISP_MTCMOS_CLK"
 };
 
-int disp_clk_prepare(enum disp_clk_id id)
+int ddp_clk_prepare(eDDP_CLK_ID id)
 {
 	int ret = 0;
 
@@ -639,12 +639,15 @@ int disp_clk_prepare(enum disp_clk_id id)
 	return ret;
 }
 
-void disp_clk_unprepare(enum disp_clk_id id)
+int ddp_clk_unprepare(eDDP_CLK_ID id)
 {
+	int ret = 0;
+
 	clk_unprepare(dispsys_dev->disp_clk[id]);
+	return ret;
 }
 
-int disp_clk_enable(enum disp_clk_id id)
+int ddp_clk_enable(eDDP_CLK_ID id)
 {
 	int ret = 0;
 
@@ -655,12 +658,15 @@ int disp_clk_enable(enum disp_clk_id id)
 	return ret;
 }
 
-void disp_clk_disable(enum disp_clk_id id)
+int ddp_clk_disable(eDDP_CLK_ID id)
 {
+	int ret = 0;
+
 	clk_disable(dispsys_dev->disp_clk[id]);
+	return ret;
 }
 
-int disp_clk_prepare_enable(enum disp_clk_id id)
+int ddp_clk_prepare_enable(eDDP_CLK_ID id)
 {
 	int ret = 0;
 
@@ -671,12 +677,15 @@ int disp_clk_prepare_enable(enum disp_clk_id id)
 	return ret;
 }
 
-void disp_clk_disable_unprepare(enum disp_clk_id id)
+int ddp_clk_disable_unprepare(eDDP_CLK_ID id)
 {
+	int ret = 0;
+
 	clk_disable_unprepare(dispsys_dev->disp_clk[id]);
+	return ret;
 }
 
-int disp_clk_set_parent(enum disp_clk_id id, enum disp_clk_id parent)
+int ddp_clk_set_parent(eDDP_CLK_ID id, eDDP_CLK_ID parent)
 {
 	return clk_set_parent(dispsys_dev->disp_clk[id], dispsys_dev->disp_clk[parent]);
 }
@@ -722,10 +731,10 @@ static int disp_probe(struct platform_device *pdev)
 			case DISP_MTCMOS_CLK:
 			case DISP0_SMI_COMMON:
 			case DISP0_SMI_LARB0:
-				disp_clk_prepare_enable(i);
+				ddp_clk_prepare_enable(i);
 				break;
 			default:
-				disp_clk_prepare(i);
+				ddp_clk_prepare(i);
 				break;
 			}
 		}
@@ -939,7 +948,7 @@ static void __exit disp_exit(void)
 	int i = 0;
 
 	for (i = 0; i < MAX_DISP_CLK_CNT; i++)
-		disp_clk_unprepare(i);
+		ddp_clk_unprepare(i);
 #endif
 
 	platform_driver_unregister(&dispsys_of_driver);

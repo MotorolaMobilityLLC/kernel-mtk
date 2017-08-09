@@ -364,7 +364,7 @@ static int wdma_clock_on(DISP_MODULE_ENUM module, void *handle)
 #ifdef CONFIG_MTK_CLKMGR
 		enable_clock(MT_CG_DISP0_DISP_WDMA0, "WDMA0");
 #else
-		disp_clk_enable(DISP0_DISP_WDMA0);
+		ddp_clk_enable(DISP0_DISP_WDMA0);
 #endif
 	}
 #endif
@@ -380,7 +380,7 @@ static int wdma_clock_off(DISP_MODULE_ENUM module, void *handle)
 #ifdef CONFIG_MTK_CLKMGR
 		disable_clock(MT_CG_DISP0_DISP_WDMA0, "WDMA0");
 #else
-		disp_clk_disable(DISP0_DISP_WDMA0);
+		ddp_clk_disable(DISP0_DISP_WDMA0);
 #endif
 	}
 #endif

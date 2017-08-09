@@ -1555,7 +1555,7 @@ int dpmgr_path_idle_off(disp_path_handle dp_handle, void *cmdq_handle, unsigned 
 #ifdef CONFIG_MTK_CLKMGR
 		enable_clock(MT_CG_PERI_DISP_PWM, "screen_idle");
 #else
-		disp_clk_enable(DISP_PWM);
+		ddp_clk_enable(DISP_PWM);
 #endif
 	}
 
@@ -1617,7 +1617,7 @@ int dpmgr_path_idle_on(disp_path_handle dp_handle, void *cmdq_handle, unsigned i
 #ifdef CONFIG_MTK_CLKMGR
 		disable_clock(MT_CG_PERI_DISP_PWM, "screen_idle");
 #else
-		disp_clk_disable(DISP_PWM);
+		ddp_clk_disable(DISP_PWM);
 #endif
 	}
 
