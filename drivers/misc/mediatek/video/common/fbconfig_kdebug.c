@@ -222,14 +222,12 @@ static void free_list_memory(void)
 static int fbconfig_open(struct inode *inode, struct file *file)
 {
 	PM_TOOL_T *pm_params;
-	/*PM_TOOL_T *pm;*/
 	file->private_data = inode->i_private;
 	pm_params = (PM_TOOL_T *) pm_get_handle();
 	PanelMaster_set_PM_enable(1);
 	pm_params->pLcm_drv = DISP_GetLcmDrv();
 	pm_params->pLcm_params = DISP_GetLcmPara();
 
-	/*pm = (PM_TOOL_T *) pm_get_handle();*/
 	if (pm_params->pLcm_params->lcm_if == LCM_INTERFACE_DSI_DUAL)
 		pm_params->dsi_id = PM_DSI_DUAL;
 	else if (pm_params->pLcm_params->lcm_if == LCM_INTERFACE_DSI1)
@@ -440,17 +438,14 @@ static long fbconfig_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 	case FB_LAYER_GET_EN:
 	{
 		PM_LAYER_EN layers;
-		OVL_BASIC_STRUCT *ovl_all;
+		OVL_BASIC_STRUCT ovl_all[TOTAL_OVL_LAYER_NUM];
 		int i = 0;
 
-		ovl_all = kzalloc(sizeof(OVL_BASIC_STRUCT) * TOTAL_OVL_LAYER_NUM, GFP_KERNEL);
-		if (NULL == ovl_all)
-			return -ENOMEM;
 #ifdef PRIMARY_THREE_OVL_CASCADE
 		ovl_get_info(DISP_MODULE_OVL0_2L, ovl_all);
 		ovl_get_info(DISP_MODULE_OVL0, &ovl_all[2]);
 		ovl_get_info(DISP_MODULE_OVL1_2L, &ovl_all[6]);
-		for (i = 0; i < TOTAL_OVL_LAYER_NUM; ++i)
+		for (i = 0; i < TOTAL_OVL_LAYER_NUM; i++)
 			layers.layer_en[i] = (ovl_all[i].layer_en ? 1 : 0);
 #else
 		ovl_get_info(DISP_MODULE_OVL0, ovl_all);
@@ -465,21 +460,17 @@ static long fbconfig_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 		layers.layer_en[i + 7] = (ovl_all[7].layer_en ? 1 : 0);
 #endif
 #endif
-		pr_debug("[LAYER_GET_EN]:L0:%d L1:%d L2:%d L3:%d\n", ovl_all[0].layer_en,
-			 ovl_all[1].layer_en, ovl_all[2].layer_en, ovl_all[3].layer_en);
+		pr_debug("[FB_LAYER_GET_EN] L0:%d L1:%d L2:%d L3:%d\n",
+			ovl_all[0].layer_en, ovl_all[1].layer_en, ovl_all[2].layer_en, ovl_all[3].layer_en);
 		return copy_to_user(argp, &layers, sizeof(layers)) ? -EFAULT : 0;
 	}
 	case FB_LAYER_GET_INFO:
 	{
 		PM_LAYER_INFO layer_info;
-		OVL_BASIC_STRUCT *ovl_all;
+		OVL_BASIC_STRUCT ovl_all[TOTAL_OVL_LAYER_NUM];
 
-		ovl_all = kzalloc(sizeof(OVL_BASIC_STRUCT) * TOTAL_OVL_LAYER_NUM, GFP_KERNEL);
-		if (NULL == ovl_all)
-			return -ENOMEM;
 		if (copy_from_user(&layer_info, (void __user *)argp, sizeof(layer_info))) {
-			pr_debug("[TE_SET_ENABLE]: copy_from_user failed! line:%d\n",
-				 __LINE__);
+			pr_debug("[FB_LAYER_GET_INFO]: copy_from_user failed! line:%d\n", __LINE__);
 			return -EFAULT;
 		}
 		global_layer_id = layer_info.index;
@@ -493,22 +484,16 @@ static long fbconfig_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 		layer_info.height = ovl_all[layer_info.index].src_h;
 		layer_info.width = ovl_all[layer_info.index].src_w;
 		layer_info.fmt = DP_COLOR_BITS_PER_PIXEL(ovl_all[layer_info.index].fmt);
-		layer_info.layer_size =
-			ovl_all[layer_info.index].src_pitch * ovl_all[layer_info.index].src_h;
-		pr_debug("===>: layer_size:0x%x height:%d\n", layer_info.layer_size,
-			 layer_info.height);
-		pr_debug("===>: width:%d src_pitch:%d\n", layer_info.width,
-			 ovl_all[layer_info.index].src_pitch);
+		layer_info.layer_size = ovl_all[layer_info.index].src_pitch * ovl_all[layer_info.index].src_h;
+		pr_debug("===>: layer_size:0x%x height:%d\n", layer_info.layer_size, layer_info.height);
+		pr_debug("===>: width:%d src_pitch:%d\n", layer_info.width, ovl_all[layer_info.index].src_pitch);
 		pr_debug("===>: layer_id:%d fmt:%d\n", global_layer_id, layer_info.fmt);
 		pr_debug("===>: layer_en:%d\n", (ovl_all[layer_info.index].layer_en));
-		if ((layer_info.height == 0) || (layer_info.width == 0)
-		    || (ovl_all[layer_info.index].layer_en == 0)) {
-			pr_debug("===> is 000 Errorrrr!!\n");
+		if ((layer_info.height == 0) || (layer_info.width == 0) || (ovl_all[layer_info.index].layer_en == 0)) {
+			pr_debug("===> Error, height/width is 0 or layer_en == 0!!\n");
 			return -2;
 		} else
-			return copy_to_user(argp, &layer_info,
-					    sizeof(layer_info)) ? -EFAULT : 0;
-
+			return copy_to_user(argp, &layer_info, sizeof(layer_info)) ? -EFAULT : 0;
 	}
 	case FB_LAYER_DUMP:
 	{
@@ -519,11 +504,8 @@ static long fbconfig_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 		unsigned int mapped_size = 0;
 		unsigned int real_mva = 0;
 		unsigned int real_size = 0;
-		OVL_BASIC_STRUCT *ovl_all;
+		OVL_BASIC_STRUCT ovl_all[TOTAL_OVL_LAYER_NUM];
 
-		ovl_all = kzalloc(sizeof(OVL_BASIC_STRUCT) * TOTAL_OVL_LAYER_NUM, GFP_KERNEL);
-		if (NULL == ovl_all)
-			return -ENOMEM;
 #ifdef PRIMARY_THREE_OVL_CASCADE
 		ovl_get_info(DISP_MODULE_OVL0_2L, ovl_all);
 		ovl_get_info(DISP_MODULE_OVL0, &ovl_all[2]);
@@ -531,39 +513,33 @@ static long fbconfig_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 #else
 		ovl_get_info(DISP_MODULE_OVL0, ovl_all);
 #endif
-		layer_size =
-			ovl_all[global_layer_id].src_pitch * ovl_all[global_layer_id].src_h;
+		layer_size = ovl_all[global_layer_id].src_pitch * ovl_all[global_layer_id].src_h;
 		mva = ovl_all[global_layer_id].addr;
 		pr_debug("layer_size=%d, src_pitch=%d, h=%d, mva=0x%x,\n",
-			 layer_size, ovl_all[global_layer_id].src_pitch,
-			 ovl_all[global_layer_id].src_h, mva);
+			 layer_size, ovl_all[global_layer_id].src_pitch, ovl_all[global_layer_id].src_h, mva);
 
 		if ((layer_size != 0) && (ovl_all[global_layer_id].layer_en != 0)) {
-			/*pr_debug("sxk==>FB_LAYER_DUMP==>layer_size is %d   mva is 0x%x\n",layer_size,mva); */
 			ret = m4u_query_mva_info(mva, layer_size, &real_mva, &real_size);
 			if (ret < 0) {
-				pr_debug
-					("m4u_query_mva_info error:mva is 0x%x layer size is %d\n",
-					 mva, layer_size);
+				pr_debug("m4u_query_mva_info error: ret=%d mva=0x%x layer_size=%d\n",
+					ret, mva, layer_size);
 				return ret;
 			}
 			ret = m4u_mva_map_kernel(real_mva, real_size, &kva, &mapped_size);
 			if (ret < 0) {
-				pr_debug("m4u_mva_map_kernel error: ret=%d 0x%x %d\r\n", ret,
-					 real_mva, real_size);
+				pr_debug("m4u_mva_map_kernel error: ret=%d real_mva=0x%x real_size=%d\n",
+					ret, real_mva, real_size);
 				return ret;
 			}
 			if (layer_size > mapped_size) {
-				pr_debug("==>layer size(0x%x)>mapped size(0x%x)!!!",
-					 layer_size, mapped_size);
+				pr_debug("==>layer size(0x%x)>mapped size(0x%x)!!!\n", layer_size, mapped_size);
 				return -EFAULT;
 			}
 			pr_debug("==> addr from user space is 0x%p\n", argp);
-			pr_debug("==> kva is 0x%lx real_mva %x mva %x mmaped size is %dlayer_size is %d\n",
-				 kva, real_mva, mva, mapped_size, layer_size);
-			ret =
-				copy_to_user(argp, (void *)kva + (mva - real_mva),
-					     layer_size - (mva - real_mva)) ? -EFAULT : 0;
+			pr_debug("==> kva=0x%lx real_mva=%x mva=%x mmaped_size=%d layer_size=%d\n",
+				kva, real_mva, mva, mapped_size, layer_size);
+			ret = copy_to_user(argp,
+				(void *)kva + (mva - real_mva), layer_size - (mva - real_mva)) ? -EFAULT : 0;
 			m4u_mva_unmap_kernel(real_mva, real_size, kva);
 			return ret;
 		} else
