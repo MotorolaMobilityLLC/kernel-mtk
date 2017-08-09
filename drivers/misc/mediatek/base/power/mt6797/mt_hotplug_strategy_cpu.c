@@ -12,6 +12,7 @@
 #include <linux/init.h>		/* module_init, module_exit */
 #include <linux/sched.h>	/* sched_get_percpu_load, sched_get_nr_heavy_task */
 #include <linux/slab.h>
+#include <asm/cpu_ops.h>	/* cpu_ops[] */
 /* local includes */
 #include "mt_hotplug_strategy_internal.h"
 
@@ -151,6 +152,14 @@ int hps_cpu_init(void)
 	struct cpumask cpu_mask;
 
 	hps_warn("hps_cpu_init\n");
+
+	for (i = setup_max_cpus; i < num_possible_cpus(); i++) {
+		if (!cpu_ops[i])
+			BUG();
+		if (cpu_ops[i]->cpu_prepare(i))
+			BUG();
+		set_cpu_present(i, true);
+	}
 
 	/* =======================================New algo. definition ========================================== */
 	hps_sys.cluster_num = (unsigned int)arch_get_nr_clusters();
