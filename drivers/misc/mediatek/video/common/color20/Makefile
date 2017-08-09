@@ -31,8 +31,8 @@ else ifeq ($(strip $(MTK_PQ_COLOR_MODE)),OFF)
     ccflags-y += -DDISP_COLOR_OFF
 endif
 
-ifeq (y, $(filter y, $(CONFIG_ARCH_MT6755)))
-#ccflags-y += -DCCORR_SUPPORT
+ifeq (y, $(filter y, $(CONFIG_ARCH_MT6755) $(CONFIG_ARCH_MT6797)))
+    ccflags-y += -DCCORR_SUPPORT
 endif
 
 ifeq ($(strip $(MTK_PQ_COLOR_MODE)),MDP)

@@ -882,7 +882,13 @@ static DISPLAY_TDSHP_T g_TDSHP_Index;
 static unsigned int g_split_en;
 static unsigned int g_split_window_x = 0xFFFF0000;
 static unsigned int g_split_window_y = 0xFFFF0000;
-static unsigned long g_color_window = 0x40106051;
+
+#if defined(CONFIG_ARCH_MT6797)
+	static unsigned long g_color_window = 0x40185E57;
+#else
+	static unsigned long g_color_window = 0x40106051;
+#endif
+
 static unsigned long g_color0_dst_w;
 static unsigned long g_color0_dst_h;
 static unsigned long g_color1_dst_w;
@@ -903,13 +909,21 @@ int tdshp_index_init = 0;
 #define TDSHP_PA_BASE   0x14009000
 #define TDSHP1_PA_BASE  0x1400A000
 static unsigned long g_tdshp1_va;
+#elif defined(CONFIG_ARCH_MT6797)
+#define TDSHP_PA_BASE   0x14009000
 #else
 #define TDSHP_PA_BASE   0x14006000
 #endif
+
 #ifdef DISP_MDP_COLOR_ON
+#if defined(CONFIG_ARCH_MT6797)
+#define MDP_COLOR_PA_BASE 0x1400A000
+#else
 #define MDP_COLOR_PA_BASE 0x14007000
+#endif
 static unsigned long g_mdp_color_va;
 #endif
+
 static unsigned long g_tdshp_va;
 
 void disp_color_set_window(unsigned int sat_upper, unsigned int sat_lower,
@@ -985,8 +999,11 @@ void DpEngine_COLORonInit(DISP_MODULE_ENUM module, void *__cmdq)
 		offset = C1_OFFSET;
 
 	if (g_color_bypass == 0) {
+#if defined(CONFIG_ARCH_MT6797)
+		_color_reg_set(cmdq, DISP_COLOR_CFG_MAIN + offset, (1 << 21) | (1 << 20) | (1 << 15) | (0 << 8));
+#else
 		_color_reg_set(cmdq, DISP_COLOR_CFG_MAIN + offset, (1 << 8));	/* enable wide_gamut */
-		_color_reg_set(cmdq, DISP_COLOR_START + offset, 0x00000001);	/* color start */
+#endif
 	} else {
 		_color_reg_set_field(cmdq, CFG_MAIN_FLD_COLOR_DBUF_EN, DISP_COLOR_CFG_MAIN + offset,
 				     0x1);
@@ -1060,7 +1077,11 @@ void DpEngine_COLORonConfig(DISP_MODULE_ENUM module, void *__cmdq)
 	}
 
 	/* for partial Y contour issue */
+#if defined(CONFIG_ARCH_MT6797)
+	_color_reg_mask(cmdq, DISP_COLOR_LUMA_ADJ + offset, 0x40, 0x0000007F);
+#else
 	_color_reg_mask(cmdq, DISP_COLOR_LUMA_ADJ + offset, 0x0, 0x0000007F);
+#endif
 
 	/* config parameter from customer color_index.h */
 	_color_reg_set(cmdq, DISP_COLOR_G_PIC_ADJ_MAIN_1,
@@ -1267,6 +1288,39 @@ void DpEngine_COLORonConfig(DISP_MODULE_ENUM module, void *__cmdq)
 		_color_reg_set(cmdq, DISP_COLOR_LOCAL_HUE_CD_0 + offset + 4 * index, u4Temp);
 	}
 
+#if defined(CONFIG_ARCH_MT6797)
+	/* S Gain By Y */
+	_color_reg_set(cmdq, DISP_COLOR_S_GAIN_BY_Y0_0 + offset,   0x78808080);
+	_color_reg_set(cmdq, DISP_COLOR_S_GAIN_BY_Y0_1 + offset,   0x72767676);
+	_color_reg_set(cmdq, DISP_COLOR_S_GAIN_BY_Y0_2 + offset,   0x66806E6F);
+	_color_reg_set(cmdq, DISP_COLOR_S_GAIN_BY_Y0_3 + offset,   0x6D696564);
+	_color_reg_set(cmdq, DISP_COLOR_S_GAIN_BY_Y0_4 + offset,   0x806C6C80);
+	_color_reg_set(cmdq, DISP_COLOR_S_GAIN_BY_Y64_0 + offset,  0x80808080);
+	_color_reg_set(cmdq, DISP_COLOR_S_GAIN_BY_Y64_1 + offset,  0x80808080);
+	_color_reg_set(cmdq, DISP_COLOR_S_GAIN_BY_Y64_2 + offset,  0x6F807676);
+	_color_reg_set(cmdq, DISP_COLOR_S_GAIN_BY_Y64_3 + offset,  0x75726E6D);
+	_color_reg_set(cmdq, DISP_COLOR_S_GAIN_BY_Y64_4 + offset,  0x80807480);
+	_color_reg_set(cmdq, DISP_COLOR_S_GAIN_BY_Y128_0 + offset, 0x80808080);
+	_color_reg_set(cmdq, DISP_COLOR_S_GAIN_BY_Y128_1 + offset, 0x80808080);
+	_color_reg_set(cmdq, DISP_COLOR_S_GAIN_BY_Y128_2 + offset, 0x78808080);
+	_color_reg_set(cmdq, DISP_COLOR_S_GAIN_BY_Y128_3 + offset, 0x80808077);
+	_color_reg_set(cmdq, DISP_COLOR_S_GAIN_BY_Y128_4 + offset, 0x7A808080);
+	_color_reg_set(cmdq, DISP_COLOR_S_GAIN_BY_Y192_0 + offset, 0x79808080);
+	_color_reg_set(cmdq, DISP_COLOR_S_GAIN_BY_Y192_1 + offset, 0x77767576);
+	_color_reg_set(cmdq, DISP_COLOR_S_GAIN_BY_Y192_2 + offset, 0x80808080);
+	_color_reg_set(cmdq, DISP_COLOR_S_GAIN_BY_Y192_3 + offset, 0x80808080);
+	_color_reg_set(cmdq, DISP_COLOR_S_GAIN_BY_Y192_4 + offset, 0x72718080);
+	_color_reg_set(cmdq, DISP_COLOR_S_GAIN_BY_Y256_0 + offset, 0x73808080);
+	_color_reg_set(cmdq, DISP_COLOR_S_GAIN_BY_Y256_1 + offset, 0x706E6D6F);
+	_color_reg_set(cmdq, DISP_COLOR_S_GAIN_BY_Y256_2 + offset, 0x80807572);
+	_color_reg_set(cmdq, DISP_COLOR_S_GAIN_BY_Y256_3 + offset, 0x73707280);
+	_color_reg_set(cmdq, DISP_COLOR_S_GAIN_BY_Y256_4 + offset, 0x69677380);
+
+	/* LSP */
+	_color_reg_set(cmdq, DISP_COLOR_LSP_1 + offset, (0x0 << 0) | (0x7 << 7) | (0x50 << 14) | (0x50 << 22));
+	_color_reg_set(cmdq, DISP_COLOR_LSP_2 + offset, (0x7F << 0) | (0x7F << 8) | (0x50 << 16) | (0x7 << 23));
+#endif
+
 	/* color window */
 
 	_color_reg_set(cmdq, DISP_COLOR_TWO_D_WINDOW_1 + offset, g_color_window);
@@ -1294,7 +1348,12 @@ static void color_write_hw_reg(DISP_MODULE_ENUM module,
 	}
 
 	/* for partial Y contour issue */
+#if defined(CONFIG_ARCH_MT6797)
+	_color_reg_mask(cmdq, DISP_COLOR_LUMA_ADJ + offset, 0x40, 0x0000007F);
+#else
 	_color_reg_mask(cmdq, DISP_COLOR_LUMA_ADJ + offset, 0x0, 0x0000007F);
+#endif
+
 
 	_color_reg_set(cmdq, DISP_COLOR_G_PIC_ADJ_MAIN_1 + offset,
 		(color_reg->BRIGHTNESS << 16) | color_reg->CONTRAST);
@@ -1462,7 +1521,7 @@ static void color_write_hw_reg(DISP_MODULE_ENUM module,
 		_color_reg_set(cmdq, DISP_COLOR_LOCAL_HUE_CD_0 + offset + 4 * index, u4Temp);
 	}
 
-#if 0
+#if defined(CONFIG_ARCH_MT6797)
 	/* S Gain By Y */
 	_color_reg_set(cmdq, DISP_COLOR_S_GAIN_BY_Y0_0 + offset,   0x78808080);
 	_color_reg_set(cmdq, DISP_COLOR_S_GAIN_BY_Y0_1 + offset,   0x72767676);
@@ -1844,7 +1903,7 @@ static void color_write_sw_reg(unsigned int reg_id, unsigned int value)
 
 static int _color_clock_on(DISP_MODULE_ENUM module, void *cmq_handle)
 {
-#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_MT6797)
+#if defined(CONFIG_ARCH_MT6755)
 	/* color is DCM , do nothing */
 	return 0;
 #endif
@@ -1875,7 +1934,7 @@ static int _color_clock_on(DISP_MODULE_ENUM module, void *cmq_handle)
 
 static int _color_clock_off(DISP_MODULE_ENUM module, void *cmq_handle)
 {
-#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_MT6797)
+#if defined(CONFIG_ARCH_MT6755)
 	/* color is DCM , do nothing */
 	return 0;
 #endif

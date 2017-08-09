@@ -1312,7 +1312,7 @@ static inline unsigned long disp_addr_convert(unsigned long va)
 #define DISP_COLOR_INTERNAL_IP_HEIGHT   (DISPSYS_COLOR0_BASE+0xC54)
 #define DISP_COLOR_CM1_EN               (DISPSYS_COLOR0_BASE+0xC60)
 #define DISP_COLOR_CM2_EN               (DISPSYS_COLOR0_BASE+0xCA0)
-
+#define DISP_COLOR_R0_CRC               (DISPSYS_COLOR0_BASE+0xCF0)
 
 /* field definition */
 /* ------------------------------------------------------------- */

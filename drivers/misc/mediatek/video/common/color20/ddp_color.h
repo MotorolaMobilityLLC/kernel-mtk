@@ -75,8 +75,10 @@ enum {
 #define MIRAVISION_HW_VERSION       (7)
 #elif defined(CONFIG_ARCH_MT6755)
 #define MIRAVISION_HW_VERSION       (8)
-#else
+#elif defined(CONFIG_ARCH_MT6797)
 #define MIRAVISION_HW_VERSION       (9)
+#else
+#define MIRAVISION_HW_VERSION       (0)
 #endif
 
 #define MIRAVISION_SW_VERSION       (1)	/* 1:Android Lollipop */
