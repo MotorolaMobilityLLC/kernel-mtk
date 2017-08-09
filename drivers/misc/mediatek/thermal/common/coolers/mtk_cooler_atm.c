@@ -1801,13 +1801,13 @@ static void tscpu_cooler_create_fs(void)
 
 
 		/* +ASC+ */
-		entry = proc_create("clatm", S_IRUGO | S_IWUSR, mtktscpu_dir, &mtktscpu_atm_fops);
+		entry = proc_create("clatm", S_IRUGO | S_IWUSR | S_IWGRP, mtktscpu_dir, &mtktscpu_atm_fops);
 		if (entry)
 			proc_set_user(entry, uid, gid);
 		/* -ASC- */
 
 #if THERMAL_HEADROOM
-		entry = proc_create("clthp", S_IRUGO | S_IWUSR, mtktscpu_dir, &mtktscpu_thp_fops);
+		entry = proc_create("clthp", S_IRUGO | S_IWUSR | S_IWGRP, mtktscpu_dir, &mtktscpu_thp_fops);
 		if (entry)
 			proc_set_user(entry, uid, gid);
 #endif
