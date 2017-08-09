@@ -625,12 +625,14 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 		vdecsys: vdecsys@0x16000000 {
 			compatible = "mediatek,mt6735-vdecsys";
 			reg = <0x16000000 0x1000>;
+			interrupts = <GIC_SPI 179 IRQ_TYPE_LEVEL_LOW>;
 			#clock-cells = <1>;
 		};
 
 		vencsys: vencsys@0x17000000 {
 			compatible = "mediatek,mt6735-vencsys";
 			reg = <0x17000000 0x1000>;
+			interrupts = <GIC_SPI 180 IRQ_TYPE_LEVEL_LOW>;
 			#clock-cells = <1>;
 		};
 
@@ -638,6 +640,54 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 			compatible = "mediatek,mt6735-scpsys";
 			reg = <0x10000000 0x1000>, <0x10006000 0x1000>;
 			#clock-cells = <1>;
+		};
+
+		vdec_gcon: vdec_gcon@16000000 {
+			compatible = "mediatek,mt6735-vdec_gcon";
+			reg = <0x16000000 0x1000>;
+			interrupts = <GIC_SPI 179 IRQ_TYPE_LEVEL_LOW>;
+			clocks =
+			<&mmsys MM_DISP0_SMI_COMMON>,
+			<&vdecsys VDEC0_VDEC>,
+			<&vdecsys VDEC1_LARB>,
+			<&vencsys VENC_VENC>,
+			<&vencsys VENC_LARB>,
+			<&topckgen TOP_MUX_VDEC>,
+			<&topckgen TOP_SYSPLL1_D2>,
+			<&topckgen TOP_SYSPLL1_D4>,
+			<&scpsys SCP_SYS_VDE>,
+			<&scpsys SCP_SYS_VEN>,
+			<&scpsys SCP_SYS_DIS>;
+			clock-names =
+			"MT_CG_DISP0_SMI_COMMON",
+			"MT_CG_VDEC0_VDEC",
+			"MT_CG_VDEC1_LARB",
+			"MT_CG_VENC_VENC",
+			"MT_CG_VENC_LARB",
+			"MT_CG_TOP_MUX_VDEC",
+			"MT_CG_TOP_SYSPLL1_D2",
+			"MT_CG_TOP_SYSPLL1_D4",
+			"MT_SCP_SYS_VDE",
+			"MT_SCP_SYS_VEN",
+			"MT_SCP_SYS_DIS";
+		};
+
+		vdec: vdec@16020000 {
+			compatible = "mediatek,mt6735-vdec";
+			reg = <0x16020000 0x10000>;
+			interrupts = <GIC_SPI 179 IRQ_TYPE_LEVEL_LOW>;
+		};
+
+		venc_gcon: venc_gcon@17000000 {
+			compatible = "mediatek,mt6735-venc_gcon";
+			reg = <0x17000000 0x1000>;
+			interrupts = <GIC_SPI 180 IRQ_TYPE_LEVEL_LOW>;
+		};
+
+		venc: venc@17002000 {
+			compatible = "mediatek,mt6735-venc";
+			reg = <0x17002000 0x1000>;
+			interrupts = <GIC_SPI 180 IRQ_TYPE_LEVEL_LOW>;
 		};
 
 		keypad: keypad@10003000 {

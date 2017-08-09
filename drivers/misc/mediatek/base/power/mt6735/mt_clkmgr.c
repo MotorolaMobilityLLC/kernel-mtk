@@ -3860,14 +3860,14 @@ void iomap(void)
 	if (!clk_imgsys_base)
 		pr_err("[CLK_IMGSYS_CONFIG] base failed\n");
 /* vdec_gcon */
-	node = of_find_compatible_node(NULL, NULL, "mediatek,VDEC_GCON");
+	node = of_find_compatible_node(NULL, NULL, "mediatek,mt6735-vdec_gcon");
 	if (!node)
 		pr_err("[CLK_VDEC_GCON] find node failed\n");
 	clk_vdec_gcon_base = of_iomap(node, 0);
 	if (!clk_vdec_gcon_base)
 		pr_err("[CLK_VDEC_GCON] base failed\n");
 /* venc_gcon */
-	node = of_find_compatible_node(NULL, NULL, "mediatek,VENC_GCON");
+	node = of_find_compatible_node(NULL, NULL, "mediatek,mt6735-venc_gcon");
 	if (!node)
 		pr_err("[CLK_VENC_GCON] find node failed\n");
 	clk_venc_gcon_base = of_iomap(node, 0);

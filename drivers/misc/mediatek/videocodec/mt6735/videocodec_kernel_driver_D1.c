@@ -26,11 +26,11 @@
 #include "mach/sync_write.h"
 /* #include "mach/mt_reg_base.h" */
 
-#if !defined(CONFIG_MTK_LEGACY) && defined(CONFIG_COMMON_CLK)
+#ifndef CONFIG_MTK_CLKMGR
 #include <linux/clk.h>
-#else   /* defined(CONFIG_MTK_LEGACY) || !defined(CONFIG_COMMON_CLK) */
+#else
 #include "mach/mt_clkmgr.h"
-#endif  /* !defined(CONFIG_MTK_LEGACY) && defined(CONFIG_COMMON_CLK) */
+#endif
 
 #ifdef CONFIG_MTK_HIBERNATION
 #include "mach/mtk_hibernate_dpm.h"
@@ -92,11 +92,11 @@ static VAL_TIME_T   gMMDFVFSMonitorEndTime;
 static VAL_UINT32_T gHWLockInterval;
 static VAL_INT32_T  gHWLockMaxDuration;
 
-#if !defined(CONFIG_MTK_LEGACY) && defined(CONFIG_COMMON_CLK)
+#ifndef CONFIG_MTK_CLKMGR
 static struct clk *clk_MT_CG_TOP_MUX_VDEC;      /* TOP_MUX_VDEC */
 static struct clk *clk_MT_CG_TOP_SYSPLL1_D2;    /* TOP_SYSPLL1_D2 */
 static struct clk *clk_MT_CG_TOP_SYSPLL1_D4;    /* TOP_SYSPLL1_D4 */
-#endif  /* !defined(CONFIG_MTK_LEGACY) && defined(CONFIG_COMMON_CLK) */
+#endif
 
 VAL_UINT32_T TimeDiffMs(VAL_TIME_T timeOld, VAL_TIME_T timeNew)
 {
@@ -112,9 +112,9 @@ void SendDvfsRequest(int level)
 
 	if (level == MMDVFS_VOLTAGE_LOW) {
 		MFV_LOGE("[VCODEC][MMDVFS_VDEC] SendDvfsRequest(MMDVFS_VOLTAGE_LOW)");
-#if defined(CONFIG_MTK_LEGACY) || !defined(CONFIG_COMMON_CLK)
+#ifdef CONFIG_MTK_CLKMGR
 		clkmux_sel(MT_MUX_VDEC, 3, "MMDVFS_VOLTAGE_LOW");   /* 136.5MHz */
-#else   /* #if !defined(CONFIG_MTK_LEGACY) && defined(CONFIG_COMMON_CLK) */
+#else
 		ret = clk_prepare_enable(clk_MT_CG_TOP_MUX_VDEC);
 		if (ret) {
 			/* print error log & error handling */
@@ -122,14 +122,14 @@ void SendDvfsRequest(int level)
 		}
 		clk_set_parent(clk_MT_CG_TOP_MUX_VDEC, clk_MT_CG_TOP_SYSPLL1_D4);
 		clk_disable_unprepare(clk_MT_CG_TOP_MUX_VDEC);
-#endif  /* #if defined(CONFIG_MTK_LEGACY) || !defined(CONFIG_COMMON_CLK) */
+#endif
 		ret = mmdvfs_set_step(SMI_BWC_SCEN_VP, MMDVFS_VOLTAGE_LOW);
 	} else if (level == MMDVFS_VOLTAGE_HIGH) {
 		MFV_LOGE("[VCODEC][MMDVFS_VDEC] SendDvfsRequest(MMDVFS_VOLTAGE_HIGH)");
 		ret = mmdvfs_set_step(SMI_BWC_SCEN_VP, MMDVFS_VOLTAGE_HIGH);
-#if defined(CONFIG_MTK_LEGACY) || !defined(CONFIG_COMMON_CLK)
+#ifdef CONFIG_MTK_CLKMGR
 		clkmux_sel(MT_MUX_VDEC, 1, "MMDVFS_VOLTAGE_HIGH");  /* 273MHz */
-#else   /* #if !defined(CONFIG_MTK_LEGACY) && defined(CONFIG_COMMON_CLK) */
+#else
 		ret = clk_prepare_enable(clk_MT_CG_TOP_MUX_VDEC);
 		if (ret) {
 			/* print error log & error handling */
@@ -137,7 +137,7 @@ void SendDvfsRequest(int level)
 		}
 		clk_set_parent(clk_MT_CG_TOP_MUX_VDEC, clk_MT_CG_TOP_SYSPLL1_D2);
 		clk_disable_unprepare(clk_MT_CG_TOP_MUX_VDEC);
-#endif  /* #if defined(CONFIG_MTK_LEGACY) || !defined(CONFIG_COMMON_CLK) */
+#endif
 	} else {
 		MFV_LOGE("[VCODEC][MMDVFS_VDEC] OOPS: level = %d\n", level);
 	}
@@ -260,7 +260,7 @@ static struct cdev *vcodec_cdev;
 static struct class *vcodec_class;
 static struct device *vcodec_device;
 
-#if !defined(CONFIG_MTK_LEGACY) && defined(CONFIG_COMMON_CLK)
+#ifndef CONFIG_MTK_CLKMGR
 static struct clk *clk_MT_CG_DISP0_SMI_COMMON;  /* MM_DISP0_SMI_COMMON */
 static struct clk *clk_MT_CG_VDEC0_VDEC;        /* VDEC0_VDEC */
 static struct clk *clk_MT_CG_VDEC1_LARB;        /* VDEC1_LARB */
@@ -271,7 +271,7 @@ static struct clk *clk_MT_CG_VENC_LARB;         /* VENC_LARB */
 static struct clk *clk_MT_SCP_SYS_VDE;          /* SCP_SYS_VDE */
 static struct clk *clk_MT_SCP_SYS_VEN;          /* SCP_SYS_VEN */
 static struct clk *clk_MT_SCP_SYS_DIS;          /* SCP_SYS_DIS */
-#endif  /* !defined(CONFIG_MTK_LEGACY) && defined(CONFIG_COMMON_CLK) */
+#endif
 
 static DEFINE_MUTEX(IsOpenedLock);
 static DEFINE_MUTEX(PWRLock);
@@ -374,8 +374,9 @@ void vdec_power_on(void)
 	mutex_lock(&VdecPWRLock);
 	gu4VdecPWRCounter++;
 	mutex_unlock(&VdecPWRLock);
+	ret = 0;
 
-#if defined(CONFIG_MTK_LEGACY) || !defined(CONFIG_COMMON_CLK)
+#ifdef CONFIG_MTK_CLKMGR
 	/* Central power on */
 	enable_clock(MT_CG_DISP0_SMI_COMMON, "VDEC");
 	enable_clock(MT_CG_VDEC0_VDEC, "VDEC");
@@ -383,7 +384,7 @@ void vdec_power_on(void)
 #ifdef VDEC_USE_L2C
 	/* enable_clock(MT_CG_INFRA_L2C_SRAM, "VDEC"); */
 #endif
-#else   /* #if !defined(CONFIG_MTK_LEGACY) && defined(CONFIG_COMMON_CLK) */
+#else
 	ret = clk_prepare_enable(clk_MT_SCP_SYS_DIS);
 	if (ret) {
 		/* print error log & error handling */
@@ -413,7 +414,7 @@ void vdec_power_on(void)
 		/* print error log & error handling */
 		MFV_LOGE("[VCODEC][ERROR][vdec_power_on] clk_MT_CG_VDEC1_LARB is not enabled, ret = %d\n", ret);
 	}
-#endif  /* #if defined(CONFIG_MTK_LEGACY) || !defined(CONFIG_COMMON_CLK) */
+#endif
 }
 
 void vdec_power_off(void)
@@ -423,7 +424,7 @@ void vdec_power_off(void)
 		MFV_LOGD("[VCODEC] gu4VdecPWRCounter = 0\n");
 	} else {
 		gu4VdecPWRCounter--;
-#if defined(CONFIG_MTK_LEGACY) || !defined(CONFIG_COMMON_CLK)
+#ifdef CONFIG_MTK_CLKMGR
 		/* Central power off */
 		disable_clock(MT_CG_VDEC0_VDEC, "VDEC");
 		disable_clock(MT_CG_VDEC1_LARB, "VDEC");
@@ -431,13 +432,13 @@ void vdec_power_off(void)
 #ifdef VDEC_USE_L2C
 		/* disable_clock(MT_CG_INFRA_L2C_SRAM, "VDEC"); */
 #endif
-#else   /* #if !defined(CONFIG_MTK_LEGACY) && defined(CONFIG_COMMON_CLK) */
+#else
 		clk_disable_unprepare(clk_MT_CG_VDEC1_LARB);
 		clk_disable_unprepare(clk_MT_CG_VDEC0_VDEC);
 		clk_disable_unprepare(clk_MT_SCP_SYS_VDE);
 		clk_disable_unprepare(clk_MT_CG_DISP0_SMI_COMMON);
 		clk_disable_unprepare(clk_MT_SCP_SYS_DIS);
-#endif  /* #if defined(CONFIG_MTK_LEGACY) || !defined(CONFIG_COMMON_CLK) */
+#endif
 	}
 	mutex_unlock(&VdecPWRLock);
 }
@@ -448,9 +449,10 @@ void venc_power_on(void)
 	mutex_lock(&VencPWRLock);
 	gu4VencPWRCounter++;
 	mutex_unlock(&VencPWRLock);
+	ret = 0;
 
 	MFV_LOGD("[VCODEC] venc_power_on +\n");
-#if defined(CONFIG_MTK_LEGACY) || !defined(CONFIG_COMMON_CLK)
+#ifdef CONFIG_MTK_CLKMGR
 	enable_clock(MT_CG_DISP0_SMI_COMMON, "VENC");
 	enable_clock(MT_CG_VENC_VENC, "VENC");
 	enable_clock(MT_CG_VENC_LARB , "VENC");
@@ -458,7 +460,7 @@ void venc_power_on(void)
 #ifdef VENC_USE_L2C
 	enable_clock(MT_CG_INFRA_L2C_SRAM, "VENC");
 #endif
-#else   /* #if !defined(CONFIG_MTK_LEGACY) && defined(CONFIG_COMMON_CLK) */
+#else
 	ret = clk_prepare_enable(clk_MT_SCP_SYS_DIS);
 	if (ret) {
 		/* print error log & error handling */
@@ -488,7 +490,7 @@ void venc_power_on(void)
 		/* print error log & error handling */
 		MFV_LOGE("[VCODEC][ERROR][venc_power_on] clk_MT_CG_VENC_LARB is not enabled, ret = %d\n", ret);
 	}
-#endif  /* #if defined(CONFIG_MTK_LEGACY) || !defined(CONFIG_COMMON_CLK) */
+#endif
 
 	MFV_LOGD("[VCODEC] venc_power_on -\n");
 }
@@ -501,20 +503,20 @@ void venc_power_off(void)
 	} else {
 		gu4VencPWRCounter--;
 		MFV_LOGD("[VCODEC] venc_power_off +\n");
-#if defined(CONFIG_MTK_LEGACY) || !defined(CONFIG_COMMON_CLK)
+#ifdef CONFIG_MTK_CLKMGR
 		disable_clock(MT_CG_VENC_VENC, "VENC");
 		disable_clock(MT_CG_VENC_LARB, "VENC");
 		disable_clock(MT_CG_DISP0_SMI_COMMON, "VENC");
 #ifdef VENC_USE_L2C
 		disable_clock(MT_CG_INFRA_L2C_SRAM, "VENC");
 #endif
-#else   /* #if !defined(CONFIG_MTK_LEGACY) && defined(CONFIG_COMMON_CLK) */
+#else
 		clk_disable_unprepare(clk_MT_CG_VENC_LARB);
 		clk_disable_unprepare(clk_MT_CG_VENC_VENC);
 		clk_disable_unprepare(clk_MT_SCP_SYS_VEN);
 		clk_disable_unprepare(clk_MT_CG_DISP0_SMI_COMMON);
 		clk_disable_unprepare(clk_MT_SCP_SYS_DIS);
-#endif  /* #if defined(CONFIG_MTK_LEGACY) || !defined(CONFIG_COMMON_CLK) */
+#endif
 		MFV_LOGD("[VCODEC] venc_power_off -\n");
 	}
 	mutex_unlock(&VencPWRLock);
@@ -1942,7 +1944,7 @@ static int compat_copy_struct(
 static long vcodec_unlocked_compat_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 {
 	long ret = 0;
-	MFV_LOGD("vcodec_unlocked_compat_ioctl: 0x%x\n", cmd);
+	/* MFV_LOGD("vcodec_unlocked_compat_ioctl: 0x%x\n", cmd); */
 	switch (cmd) {
 	case VCODEC_ALLOC_NON_CACHE_BUFFER:
 	case VCODEC_FREE_NON_CACHE_BUFFER: {
@@ -2336,7 +2338,7 @@ static int vcodec_probe(struct platform_device *dev)
 	disable_irq(VDEC_IRQ_ID);
 	disable_irq(VENC_IRQ_ID);
 
-#if !defined(CONFIG_MTK_LEGACY) && defined(CONFIG_COMMON_CLK)
+#ifndef CONFIG_MTK_CLKMGR
 	clk_MT_CG_DISP0_SMI_COMMON = devm_clk_get(&dev->dev, "MT_CG_DISP0_SMI_COMMON");
 	if (IS_ERR(clk_MT_CG_DISP0_SMI_COMMON)) {
 		MFV_LOGE("[VCODEC][ERROR] Unable to devm_clk_get MT_CG_DISP0_SMI_COMMON\n");
@@ -2404,7 +2406,7 @@ static int vcodec_probe(struct platform_device *dev)
 		MFV_LOGE("[VCODEC][ERROR] Unable to devm_clk_get MT_SCP_SYS_DIS\n");
 		return PTR_ERR(clk_MT_SCP_SYS_DIS);
 	}
-#endif  /* !defined(CONFIG_MTK_LEGACY) && defined(CONFIG_COMMON_CLK) */
+#endif
 
 	MFV_LOGD("vcodec_probe Done\n");
 
@@ -2439,7 +2441,7 @@ static int vcodec_pm_restore_noirq(struct device *device)
 #endif
 
 static const struct of_device_id vcodec_of_match[] = {
-	{ .compatible = "mediatek,VDEC_GCON", },
+	{ .compatible = "mediatek,mt6735-vdec_gcon", },
 	{/* sentinel */}
 };
 
@@ -2472,7 +2474,7 @@ static int __init vcodec_driver_init(void)
 
 	{
 		struct device_node *node = NULL;
-		node = of_find_compatible_node(NULL, NULL, "mediatek,VENC");
+		node = of_find_compatible_node(NULL, NULL, "mediatek,mt6735-venc");
 		KVA_VENC_BASE = (VAL_ULONG_T)of_iomap(node, 0);
 		VENC_IRQ_ID =  irq_of_parse_and_map(node, 0);
 		KVA_VENC_IRQ_STATUS_ADDR =    KVA_VENC_BASE + 0x05C;
@@ -2481,7 +2483,7 @@ static int __init vcodec_driver_init(void)
 
 	{
 		struct device_node *node = NULL;
-		node = of_find_compatible_node(NULL, NULL, "mediatek,VDEC_FULL_TOP");
+		node = of_find_compatible_node(NULL, NULL, "mediatek,mt6735-vdec");
 		KVA_VDEC_BASE = (VAL_ULONG_T)of_iomap(node, 0);
 		VDEC_IRQ_ID =  irq_of_parse_and_map(node, 0);
 		KVA_VDEC_MISC_BASE = KVA_VDEC_BASE + 0x0000;
@@ -2489,7 +2491,7 @@ static int __init vcodec_driver_init(void)
 	}
 	{
 		struct device_node *node = NULL;
-		node = of_find_compatible_node(NULL, NULL, "mediatek,VDEC_GCON");
+		node = of_find_compatible_node(NULL, NULL, "mediatek,mt6735-vdec_gcon");
 		KVA_VDEC_GCON_BASE = (VAL_ULONG_T)of_iomap(node, 0);
 
 		MFV_LOGD("[VCODEC][DeviceTree] KVA_VENC_BASE(0x%lx), KVA_VDEC_BASE(0x%lx), KVA_VDEC_GCON_BASE(0x%lx)",
