@@ -127,7 +127,7 @@ if (1) {	\
 }			\
 }
 #ifdef CMDQ_AEE_READY
-#define CMDQ_AEE(tag, string, args...) \
+#define CMDQ_AEE_EX(DB_OPTs, tag, string, args...) \
 {		\
 do {			\
 	char dispatchedTag[50]; \
@@ -135,10 +135,20 @@ do {			\
 	pr_err("[CMDQ][AEE]"string, ##args); \
 	cmdq_core_save_first_dump("[CMDQ][AEE]"string, ##args); \
 	cmdq_core_turnoff_first_dump(); \
-	aee_kernel_warning_api(__FILE__, __LINE__, DB_OPT_DEFAULT | DB_OPT_PROC_CMDQ_INFO | DB_OPT_MMPROFILE_BUFFER, \
+	aee_kernel_warning_api(__FILE__, __LINE__, \
+		DB_OPT_DEFAULT | DB_OPT_PROC_CMDQ_INFO | DB_OPT_MMPROFILE_BUFFER | DB_OPTs, \
 		dispatchedTag, "error: "string, ##args); \
 } while (0);	\
 }
+
+#define CMDQ_AEE(tag, string, args...) \
+{ \
+	if (0 == strncmp(tag, "DISP", 4)) \
+		CMDQ_AEE_EX(DB_OPT_DUMP_DISPLAY, tag, string, ##args) \
+	else \
+		CMDQ_AEE_EX(0, tag, string, ##args) \
+}
+
 #else
 #define CMDQ_AEE(tag, string, args...) \
 {		\
