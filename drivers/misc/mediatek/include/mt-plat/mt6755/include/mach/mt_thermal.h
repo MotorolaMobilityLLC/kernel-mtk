@@ -13,8 +13,6 @@
 #include "mtk_thermal_typedefs.h"
 #include "mt_gpufreq.h"
 
-/* 1: thermal catm turn on:1, turn off:0*/
-#define THERMAL_CATM_USER  (0)
 /*
 Bank0 : CPU_mp0     (TS_MCU4)
 Bank1 : SOC+GPU     (TS_MCU1, TS_MCU2, TS_MCU3)
@@ -73,60 +71,6 @@ typedef enum {
 
 	MTK_THERMAL_SENSOR_CPU_COUNT
 } MTK_THERMAL_SENSOR_CPU_ID_MET;
-
-typedef enum {
-	TA_DAEMON_CMD_GET_INIT_FLAG = 0,
-	TA_DAEMON_CMD_SET_DAEMON_PID,
-	TA_DAEMON_CMD_NOTIFY_DAEMON,
-	TA_DAEMON_CMD_NOTIFY_DAEMON_CATMINIT,
-	TA_DAEMON_CMD_SET_TTJ,
-	TA_DAEMON_CMD_GET_TPCB,
-
-	TA_DAEMON_CMD_TO_KERNEL_NUMBER
-} TA_DAEMON_CTRL_CMD_TO_KERNEL; /*must sync userspace/kernel: TA_DAEMON_CTRL_CMD_FROM_USER*/
-
-#define TAD_NL_MSG_T_HDR_LEN 12
-#define TAD_NL_MSG_MAX_LEN 2048
-
-struct tad_nl_msg_t {
-	unsigned int tad_cmd;
-	unsigned int tad_data_len;
-	unsigned int tad_ret_data_len;
-	char tad_data[TAD_NL_MSG_MAX_LEN];
-};
-
-enum {
-	TA_CATMPLUS = 1,
-	TA_CONTINUOUS = 2,
-	TA_CATMPLUS_TTJ = 3
-};
-
-
-struct cATM_params_t {
-	int CATM_ON;
-	int K_TT;
-	int K_SUM_TT_LOW;
-	int K_SUM_TT_HIGH;
-	int MIN_SUM_TT;
-	int MAX_SUM_TT;
-	int MIN_TTJ;
-	int CATMP_STEADY_TTJ_DELTA;
-};
-struct continuetm_params_t {
-	int STEADY_TARGET_TJ;
-	int MAX_TARGET_TJ;
-	int TRIP_TPCB;
-	int STEADY_TARGET_TPCB;
-};
-
-
-struct CATM_T {
-	struct cATM_params_t t_catm_par;
-	struct continuetm_params_t t_continuetm_par;
-};
-extern struct CATM_T thermal_atm_t;
-int wakeup_ta_algo(int flow_state);
-int ta_get_ttj(void);
 
 
 extern int tscpu_get_cpu_temp_met(MTK_THERMAL_SENSOR_CPU_ID_MET id);

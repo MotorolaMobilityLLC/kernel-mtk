@@ -838,11 +838,11 @@ static int tscpu_read_opp(struct seq_file *m, void *v)
 	if (!mtk_get_gpu_loading(&gpu_loading))
 		gpu_loading = 0;
 
-	seq_printf(m, "%d,%d,%d,%d,%d,%d,%d\n",
+	seq_printf(m, "%d,%d,%d,%d,%d\n",
 		   (int)((cpu_power != 0x7FFFFFFF) ? cpu_power : 0),
 		   (int)((gpu_power != 0x7FFFFFFF) ? gpu_power : 0),
 		   /* ((NULL == mtk_thermal_get_gpu_loading_fp) ? 0 : mtk_thermal_get_gpu_loading_fp()), */
-		   (int)gpu_loading, (int)mt_gpufreq_get_cur_freq(), get_target_tj(), tscpu_next_fp_factor, interval);
+		   (int)gpu_loading, (int)mt_gpufreq_get_cur_freq(), get_target_tj());
 
 #else
 	seq_printf(m, "%d,%d,0,%d\n",

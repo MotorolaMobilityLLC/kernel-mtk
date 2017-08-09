@@ -71,4 +71,4 @@ obj-$(CONFIG_THERMAL) += mtk_cooler_dtm.o
 obj-$(CONFIG_THERMAL) += mtk_cooler_sysrst.o
 endif
 
-#obj-$(CONFIG_THERMAL) += mtk_ta.o
+obj-$(CONFIG_THERMAL) += mtk_ta.o

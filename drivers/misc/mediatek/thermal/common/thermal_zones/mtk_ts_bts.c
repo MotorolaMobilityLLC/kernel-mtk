@@ -16,6 +16,7 @@
 #include "mt-plat/mtk_thermal_monitor.h"
 #include "mtk_thermal_typedefs.h"
 #include "mach/mt_thermal.h"
+#include "mt-plat/mtk_thermal_platform.h"
 #include <linux/uidgid.h>
 #include <tmp_bts.h>
 #include <linux/slab.h>
@@ -584,9 +585,9 @@ int mtkts_bts_get_hw_temp(void)
 
 	mutex_unlock(&BTS_lock);
 
-#if 0 /*def THERMAL_CATM_USER*/
-	wakeup_ta_algo(TA_CATMPLUS_TTJ);
-#endif
+
+	if (tsatm_thermal_get_catm_type() == 2)
+		wakeup_ta_algo(TA_CATMPLUS_TTJ);
 
 	bts_cur_temp = t_ret;
 

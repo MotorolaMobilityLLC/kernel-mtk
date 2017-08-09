@@ -8,6 +8,7 @@
 #include "mt-plat/mtk_thermal_monitor.h"
 #include "mtk_thermal_typedefs.h"
 #include "mach/mt_thermal.h"
+#include "mt-plat/mtk_thermal_platform.h"
 #include <mach/mt_clkmgr.h>
 #include <mt_ptp.h>
 #include <mach/wd_api.h>
@@ -141,7 +142,7 @@ static int thp_threshold_tj;
 #endif
 
 #if CONTINUOUS_TM
-static int ctm_on; /* 2: cATM+, 1: cATMv1, 0: off */
+static int ctm_on = -1; /* 2: cATM+, 1: cATMv1, 0: off */
 static int MAX_TARGET_TJ = -1;
 static int STEADY_TARGET_TJ = -1;
 static int TRIP_TPCB = -1;
@@ -225,6 +226,14 @@ mt_gpufreq_get_max_power(void)
    static int step9_mask[11] = {0,0,0,0,0,0,0,0,0,1,1};
    static int step10_mask[11]= {0,0,0,0,0,0,0,0,0,0,1};
  */
+
+int tsatm_thermal_get_catm_type(void)
+{
+	tscpu_dprintk("tsatm_thermal_get_catm_type ctm_on = %d\n", ctm_on);
+	return ctm_on;
+}
+
+
 int mtk_thermal_get_tpcb_target(void)
 {
 	return STEADY_TARGET_TPCB;
@@ -337,31 +346,13 @@ EXPORT_SYMBOL(tscpu_get_min_gpu_pwr);
  * from thermal config: MAX_TARGET_TJ, STEADY_TARGET_TJ, MIN_TTJ, TRIP_TPCB...etc
  * cATM+'s parameters: K_SUM_TT_HIGH, K_SUM_TT_LOW
  */
-#if 0/*def THERMAL_CATM_USER*/
+
 struct CATM_T thermal_atm_t;
-#endif
+
 
 static void catmplus_update_params(void)
 {
-#if 1/*ndef THERMAL_CATM_USER*/
-	/* temp solution: use 1st target Tj also the trip point of 1st ATM cooler as MIN_TTJ */
-	/* MIN_TTJ = TARGET_TJS[0]; */
-	/* Avoid updated from mtk_ts_cpu.c, abandon above temp solution */
-	MIN_TTJ = STEADY_TARGET_TJ;
-	STEADY_TARGET_TJ = MAX_TARGET_TJ - CATMP_STEADY_TTJ_DELTA;
-	/* The trip point of mtktscpu which cATM starts to work */
 
-	K_TT = ((MAX_TARGET_TJ - STEADY_TARGET_TJ)<<10) / (STEADY_TARGET_TPCB - TRIP_TPCB);
-	if (K_SUM_TT_LOW)
-		MAX_SUM_TT = ((MAX_TARGET_TJ - STEADY_TARGET_TJ)<<10) / K_SUM_TT_LOW;
-	else
-		MAX_SUM_TT = 0;
-
-	if (K_SUM_TT_HIGH)
-		MIN_SUM_TT = ((MIN_TTJ - STEADY_TARGET_TJ)<<10) / K_SUM_TT_HIGH;
-	else
-		MIN_SUM_TT = 0;
-#else
 	int ret = 0;
 
 	thermal_atm_t.t_catm_par.CATM_ON = ctm_on;
@@ -381,41 +372,9 @@ static void catmplus_update_params(void)
 
 	ret = wakeup_ta_algo(TA_CATMPLUS);
 	/*tscpu_warn("catmplus_update_params : ret %d\n" , ret);*/
-#endif
 }
 
 
-#if 1/*ndef THERMAL_CATM_USER*/
-static int catmplus_decide_ttj(int cur_tpcb)
-{
-	static int sum_tt;
-	int p, i, tt;
-	int new_ttj;
-
-	/** TODO:
-		check if we can skip update new_ttj if cur_tpcb the same as last time */
-
-	if (cur_tpcb < TRIP_TPCB) {
-		sum_tt = 0;
-		return MAX_TARGET_TJ;
-	}
-
-	tt = STEADY_TARGET_TPCB - cur_tpcb;
-	p = ((tt * K_TT)>>10);
-
-	sum_tt += tt;
-	sum_tt = MIN(MAX(sum_tt, MIN_SUM_TT), MAX_SUM_TT); /* clamp(sum_tt, MIN_SUM_TT, MAX_SUM_TT); */
-	if (sum_tt >= 0)
-		i = ((sum_tt * K_SUM_TT_LOW)>>10);
-	else
-		i = ((sum_tt * K_SUM_TT_HIGH)>>10);
-
-	new_ttj = p + i + STEADY_TARGET_TJ;
-	new_ttj = MIN(MAX(new_ttj, MIN_TTJ), MAX_TARGET_TJ); /* clamp(new_ttj, MIN_TTJ, MAX_TARGET_TJ); */
-
-	return new_ttj;
-}
-#endif
 #endif
 
 #if PRECISE_HYBRID_POWER_BUDGET
@@ -977,13 +936,7 @@ static int decide_ttj(void)
 				MAX(STEADY_TARGET_TJ, (COEF_AE - COEF_BE * curr_tpcb / 1000)));
 		} else if (ctm_on == 2) {
 			/* +++ cATM+ +++ */
-#if 0 /*def THERMAL_CATM_USER*/
-				/*tscpu_warn("last_tpcb=%d,last_tpcb =%d,TARGET_TJ=%d\n",
-					curr_tpcb, last_tpcb, TARGET_TJ);*/
 				TARGET_TJ = ta_get_ttj();
-#else
-				TARGET_TJ = catmplus_decide_ttj(curr_tpcb);
-#endif
 			/* --- cATM+ --- */
 		}
 		current_ETJ =
