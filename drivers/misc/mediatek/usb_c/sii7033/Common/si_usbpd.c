@@ -43,7 +43,7 @@ int sii_usbpd_req_exit_mode(struct sii70xx_drv_context *drv_context, uint8_t por
 	if (drv_context->drp_config == USBPD_DFP) {
 		status = sii_usbpd_src_exit_mode_req(pUsbpd, portnum);
 	} else {
-		pr_info("\n**** Not Supported in UFP***\n");
+		pr_info("Not Supported in UFP\n");
 		return -EINVAL;
 	}
 	return status;
@@ -60,7 +60,7 @@ int sii_usbpd_req_alt_mode(struct sii70xx_drv_context *drv_context,
 		pUsbpd->svid_mode = svid_mode;
 		status = sii_usbpd_src_alt_mode_req(pUsbpd, portnum);
 	} else {
-		pr_info("\n**** Alternate mode cann't be issued from UFP***\n");
+		pr_info("Alternate mode cann't be issued from UFP\n");
 		return -EINVAL;
 	}
 	return status;
@@ -111,7 +111,7 @@ int sii_usbpd_req_src_cap(struct sii70xx_drv_context *drv_context, uint8_t portn
 	if (drv_context->drp_config == USBPD_UFP)
 		status = sii_usbpd_give_src_cap(pUsbpd, portnum);
 	else if (drv_context->drp_config == USBPD_DFP) {
-		pr_info("\n**** Not Supported in DFP***\n");
+		pr_info("Not Supported in DFP\n");
 		return -EINVAL;
 	}
 
@@ -132,7 +132,7 @@ bool sii_usbpd_req_vconn_swap(struct sii70xx_drv_context *drv_context, uint8_t p
 	   "\n**** Not Supported in UFP***\n");
 	   return -EINVAL;
 	   } */
-	pr_info("\n**** Not Supported***\n");
+	pr_info("Not Supported\n");
 	return -EINVAL;
 }
 
@@ -152,7 +152,7 @@ bool sii_drv_set_custom_msg(struct sii70xx_drv_context *drv_context,
 			if (result < 0)
 				return -EINVAL;
 			if (pUsbpd->dr_swap.done)
-				pr_info(" DR_SWAP DONE\n");
+				pr_info("DR_SWAP DONE\n");
 			else {
 				pr_info("Failed\n");
 				return -EINVAL;
@@ -161,7 +161,7 @@ bool sii_drv_set_custom_msg(struct sii70xx_drv_context *drv_context,
 			msleep(7000);
 			return true;
 		}
-		pr_info("\n**** Not Supported in DFP***\n");
+		pr_info("Not Supported in DFP\n");
 		return -EINVAL;
 	} else {
 		return -EINVAL;
@@ -315,7 +315,7 @@ static int pd_find_pdo_index(struct sii_usbp_policy_engine *pUsbpd,
 	for (i = 0; i < cnt; i++) {
 		mv = ((src_caps[i] >> 10) & 0x3FF) * 50;
 
-		pr_debug(" index: mv is %d\t", mv);
+		pr_debug("index: mv is %d\t", mv);
 
 		if ((src_caps[i] & PDO_TYPE_MASK) == PDO_TYPE_BATTERY) {
 			uw = 250000 * (src_caps[i] & 0x3FF);
@@ -340,13 +340,13 @@ static int pd_find_pdo_index(struct sii_usbp_policy_engine *pUsbpd,
 			ret = i;
 			max_uw = uw;
 			cur_mv = mv;
-			pr_debug(" 1 max_uw => %d , %d, %d\n", max_uw, ret, cur_mv);
+			pr_debug("1 max_uw => %d , %d, %d\n", max_uw, ret, cur_mv);
 		}
 
 		if ((uw > max_uw) && (mv <= max_mv)) {
 			ret = i;
 			max_uw = uw;
-			pr_debug(" 2 max_uw => %d , %d\n", max_uw, ret);
+			pr_debug("2 max_uw => %d , %d\n", max_uw, ret);
 		}
 	}
 
@@ -399,13 +399,13 @@ void send_request_msg(struct sii_usbp_policy_engine *pUsbpd)
 	if (res != 0)
 		return;
 
-	pr_debug("Req [%u] %u mV %u mA",
+	pr_debug("Req [%u] %u mV %u mA\n",
 		 (unsigned int)RDO_POS(pUsbpd->rdo),
 		 (unsigned int)supply_voltage, (unsigned int)curr_limit);
 
 	if (pUsbpd->rdo & RDO_CAP_MISMATCH) {
 		set_bit(CAN_NOT_BE_MET, &pUsbpd->intf.param.sm_cmd_inputs);
-		pr_debug(" Mismatch");
+		pr_debug("Mismatch\n");
 		return;
 	}
 
@@ -499,7 +499,7 @@ static void no_response_timer_handler(void *context)
 	struct sii70xx_drv_context *drv_context =
 	    (struct sii70xx_drv_context *)usbpd_dev->drv_context;
 
-	pr_debug("\n$$ NO_RESP_TIMER $$\n");
+	pr_debug("NO_RESP_TIMER\n");
 
 	if (!down_interruptible(&usbpd_dev->drv_context->isr_lock)) {
 		if (drv_context->drp_config == USBPD_DFP) {

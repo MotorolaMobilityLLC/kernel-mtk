@@ -163,7 +163,7 @@ static void confirm_conn_debounce(struct sii70xx_drv_context *drv_context, bool 
 	rcd_data1 = sii_platform_rd_reg8(REG_ADDR__CC1VOL) & 0x3F;
 	rcd_data2 = sii_platform_rd_reg8(REG_ADDR__CC2VOL) & 0x3F;
 
-	pr_info(" !!! Disconnect Reason :  %d %d \t", rcd_data1, rcd_data2);
+	pr_info("Disconnect Reason : %d %d\t", rcd_data1, rcd_data2);
 
 	if (is_dfp) {
 		vol_thres = sii_platform_rd_reg8(REG_ADDR__CCCTR8) & 0x3F;
@@ -208,7 +208,7 @@ void sii_dfp_read_vbus_status(struct sii70xx_drv_context
 	uint8_t read_data = 0;
 
 	read_data = sii_platform_rd_reg8(REG_ADDR__CC24STAT1);
-	pr_info(" read data = %x", read_data);
+	pr_info("read data = %x\n", read_data);
 
 	if ((read_data & 0x03) == 0x03) {	/*ykim1: check bit 2:1 */
 		drv_context->vbus_status->ccctr22_reg = sii_platform_rd_reg8(REG_ADDR__CCCTR22);
@@ -222,7 +222,7 @@ void sii_dfp_read_vbus_status(struct sii70xx_drv_context
 		sii_platform_wr_reg8(REG_ADDR__CCCTR2, 0x00);
 
 		drv_context->vbus_status->work = true;
-		pr_info("\ndfp setting WA enabled\n");
+		pr_info("dfp setting WA enabled\n");
 	} else {
 		drv_context->vbus_status->work = false;
 	}
@@ -238,7 +238,7 @@ void sii_dfp_restore_vbus_status(struct sii70xx_drv_context
 		sii_platform_wr_reg8(REG_ADDR__CCCTR3, drv_context->vbus_status->ccctr03_reg);
 		sii_platform_wr_reg8(REG_ADDR__CCCTR2, drv_context->vbus_status->ccctr02_reg);
 		drv_context->vbus_status->work = false;
-		pr_info("\ndfp setting WA completed\n");
+		pr_info("dfp setting WA completed\n");
 	}
 }
 
@@ -263,9 +263,9 @@ void set_70xx_mode(struct sii70xx_drv_context *drv_context, enum phy_drp_config 
 		usleep_range(1500, 1510);
 		if (sii_platform_rd_reg8(REG_ADDR__CCCTR12)
 		    == 0x01) {	/*ykim1: compare full byte */
-			pr_info("!!!DFP is configured successfully!!!)\n");
+			pr_info("DFP is configured successfully!!!\n");
 		} else {
-			pr_info("!!!DFP configuration error!!!)\n");
+			pr_info("DFP configuration error!!!\n");
 			/*ykim1: error report */
 		}
 		sii_dfp_restore_vbus_status(drv_context);
@@ -303,7 +303,7 @@ void sii_timer_disconnect_handler(void *context)
 	struct sii70xx_drv_context *drv_context = (struct sii70xx_drv_context *)context;
 
 	sii_timer_stop(&(drv_context->usbpd_inst_disconnect_tmr));
-	pr_info("\n**confirm conection debounce**\n");
+	pr_info("confirm conection debounce\n");
 	confirm_conn_debounce(drv_context, drv_context->connection_status);
 	complete(&drv_context->disconnect_done_complete);
 }
@@ -359,17 +359,17 @@ void check_drp_status(struct sii70xx_drv_context *drv_context)
 		clear_bit(DFP_ATTACHED, &ptypec_dev->inputs);
 		clear_bit(DFP_DETACHED, &ptypec_dev->inputs);
 		dev_conn_status = sii_platform_rd_reg8(REG_ADDR__CC_CONN_STAT) & 0x03;
-		pr_info("\n DFP Related interrupts ");
+		pr_info("DFP Related interrupts\n");
 	} else if (test_bit(UFP_DETACHED, &ptypec_dev->inputs)
 		   || test_bit(UFP_ATTACHED, &ptypec_dev->inputs)) {
 		clear_bit(UFP_ATTACHED, &ptypec_dev->inputs);
 		clear_bit(UFP_DETACHED, &ptypec_dev->inputs);
 		dev_conn_status = sii_platform_rd_reg8(REG_ADDR__CC_CONN_STAT) & 0x30;
-		pr_info("\n UFP Related interrupts ");
+		pr_info("UFP Related interrupts\n");
 	} else
 		pr_debug("Invalid Connection\n");
 
-	pr_info("\ndev_conn_status:%x\n", dev_conn_status);
+	pr_info("dev_conn_status:%x\n", dev_conn_status);
 
 	switch (dev_conn_status) {
 	case BIT_MSK__CC_CONN_STAT__RO_CC_DFP_ATTACHED:
@@ -439,12 +439,11 @@ irqreturn_t usbpd_irq_handler(int irq, void *data)
 	    drv_context->pusbpd_policy;
 	/*bool result; */
 
-	pr_info("%s():%d", __func__, __LINE__);
 	if (!drv_context) {
 		pr_err("Error in getting context...\n");
 		return IRQ_NONE;
 	}
-	pr_info(" IRQ -1\t");
+
 	if (!down_interruptible(&drv_context->isr_lock)) {
 #ifdef SII_LINUX_BUILD
 		if (drv_context->dev_flags & DEV_FLAG_SHUTDOWN)
@@ -455,12 +454,7 @@ irqreturn_t usbpd_irq_handler(int irq, void *data)
 		if (!(sii_platform_rd_reg8(REG_ADDR__CALIB_CTRL) & 0x02)) {
 			/*if the code enters in this if condition,
 			   the chip must have got reset */
-			pr_info("%s:!!!!!!!!!!!!!!!!!!!!!!!!!:%s\n",
-				ANSI_ESC_RED_TEXT, ANSI_ESC_RESET_TEXT);
-			pr_info("%s!!!!!BOARD RESET !!!!!!!!:%s\n",
-				ANSI_ESC_RED_TEXT, ANSI_ESC_RESET_TEXT);
-			pr_info("%s:!!!!!!!!!!!!!!!!!!!!!!!!!:%s\n",
-				ANSI_ESC_RED_TEXT, ANSI_ESC_RESET_TEXT);
+			pr_info("if the code enters in this if condition the chip must have got reset\n");
 
 			sii_platform_read_registers(drv_context);
 			sii70xx_platform_reset(drv_context);
@@ -483,14 +477,14 @@ irqreturn_t usbpd_irq_handler(int irq, void *data)
 		xfer_sts[4] = sii_platform_rd_reg8(REG_ADDR__PDCC24INT4);
 		sii_platform_wr_reg8(REG_ADDR__PDCC24INT4, xfer_sts[4]);
 
-		pr_info(" %x %x %x %x %x\t", xfer_sts[0], xfer_sts[1],
+		pr_info("%s(): %x %x %x %x %x\n", __func__, xfer_sts[0], xfer_sts[1],
 			xfer_sts[2], xfer_sts[3], xfer_sts[4]);
 
 
 		if (xfer_sts[0] & BIT_MSK__PDCC24INT0__REG_PDCC24_INTR1) {
 			/*PD Protocol Layer Transmitter Transmission retry
 			   error interrupt */
-			pr_info(" nretry - no action\n");
+			pr_info("retry - no action\n");
 			pusbpd_policy->busy_flag = true;
 			/*usbipd_send_soft_reset(drv_context,
 			   CTRL_MSG__SOFT_RESET); */
@@ -500,7 +494,7 @@ irqreturn_t usbpd_irq_handler(int irq, void *data)
 		if (xfer_sts[0] & BIT_MSK__PDCC24INT0__REG_PDCC24_INTR0) {
 			/*PD Protocol Layer Transmitter Transmission done
 			   interrupt */
-			pr_info(": Transmission Done :\n");
+			pr_info("Transmission Done\n");
 			pusbpd_policy->tx_good_crc_received = true;
 			wakeup_pd_queues(drv_context);
 		}
@@ -515,7 +509,7 @@ irqreturn_t usbpd_irq_handler(int irq, void *data)
 			/*PD Protocol Layer Receiver Hard Reset/Cable Recept
 			   Reception interrupt */
 			if (!pusbpd_policy->busy_flag) {
-				pr_info("\n received HR/CB Reset\n");
+				pr_info("received HR/CB Reset\n");
 				process_hard_reset(drv_context);
 			} else {
 				pr_info("busy has processed\n");
@@ -541,7 +535,7 @@ irqreturn_t usbpd_irq_handler(int irq, void *data)
 		if (xfer_sts[1] & BIT_MSK__PDCC24INT1__REG_PDCC24_INTR8) {
 			/*This bit is set if message request from Policy
 			   Engine is discarded since Protocol Layer Tx is busy */
-			pr_info("\n: Tx is busy\n");
+			pr_info("Tx is busy\n");
 			sii_platform_wr_reg8(REG_ADDR__PDCTR0, 0x04);
 			wakeup_pd_queues(drv_context);
 		}
@@ -560,7 +554,7 @@ irqreturn_t usbpd_irq_handler(int irq, void *data)
 					if (ptypec_dev->dfp_attached) {
 						;
 					} else {
-						pr_info(" DFP ATTACHED INTR: %x\n",
+						pr_info("DFP ATTACHED INTR: %x\n",
 							sii_platform_rd_reg8(REG_ADDR__CC24STAT1));
 						set_bit(DFP_ATTACHED, &ptypec_dev->inputs);
 						check_drp_status(drv_context);
@@ -575,7 +569,7 @@ irqreturn_t usbpd_irq_handler(int irq, void *data)
 				if (pusbpd_policy->pr_swap.in_progress)
 					pr_debug("PR_SWAP-dfp detached\n");
 				else {
-					pr_info(" DFP DETACHED INTR:\n");
+					pr_info("DFP DETACHED INTR\n");
 					set_bit(DFP_DETACHED, &ptypec_dev->inputs);
 					check_drp_status(drv_context);
 				}
@@ -592,7 +586,7 @@ irqreturn_t usbpd_irq_handler(int irq, void *data)
 					if (ptypec_dev->ufp_attached) {
 						;
 					} else {
-						pr_info(" UFP ATTACHED INTR:\n");
+						pr_info("UFP ATTACHED INTR\n");
 						set_bit(UFP_ATTACHED, &ptypec_dev->inputs);
 						check_drp_status(drv_context);
 					}
@@ -606,7 +600,7 @@ irqreturn_t usbpd_irq_handler(int irq, void *data)
 				if (pusbpd_policy->pr_swap.in_progress)
 					pr_debug("PR_SWAP In Prog-ufp detached\n");
 				else {
-					pr_info(" UFP DETACHED INTR:\n");
+					pr_info("UFP DETACHED INTR\n");
 					set_bit(UFP_DETACHED, &ptypec_dev->inputs);
 					check_drp_status(drv_context);
 				}
@@ -770,7 +764,7 @@ int sii70xx_device_init(struct device *dev, struct gpio *sk_gpios)
 
 	drv_context->ptypec = phy_init(drv_context);
 	if (!drv_context->ptypec) {
-		pr_debug("Phy is not set .\n");
+		pr_debug("Phy is not set.\n");
 		goto exit;
 	}
 
@@ -787,7 +781,7 @@ int sii70xx_device_init(struct device *dev, struct gpio *sk_gpios)
 	drv_context->pUsbpd_prot = pusbpd_prtLyr;
 
 	if (!drv_context->pUsbpd_prot) {
-		pr_warn("%s: pd_core failed...\n", __func__);
+		pr_warn("%s: pd_core failed.\n", __func__);
 		goto exit;
 	}
 
@@ -795,7 +789,7 @@ int sii70xx_device_init(struct device *dev, struct gpio *sk_gpios)
 			       drv_context, &drv_context->usbpd_inst_disconnect_tmr, 20, false);
 
 	if (ret != 0) {
-		pr_err("Failed to register disconnect timer!\n");
+		pr_err("Failed to register disconnect timer.\n");
 		goto exit;
 	}
 

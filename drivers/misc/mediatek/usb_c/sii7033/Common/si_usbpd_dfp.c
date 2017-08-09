@@ -24,33 +24,33 @@ int sii_usbpd_src_exit_mode_req(struct sii_usbp_policy_engine *pUsbpd, uint8_t p
 		return -ENODEV;
 
 	if (!pUsbpd->at_mode_established) {
-		pr_info("\n !!!!!ALT Mode is not established!!!\n");
+		pr_info("ALT Mode is not established\n");
 		return -EINVAL;
 	}
 	if (pUsbpd->exit_mode_req_send) {
-		pr_info("\n !!!!Exit mode in progress!!!!!!!!\n");
+		pr_info("Exit mode in progress\n");
 		return -EINVAL;
 	}
 	if (pUsbpd->state == PE_SRC_Ready) {
-		pr_info("\n Exit mode initiated\n");
+		pr_info("Exit mode initiated\n");
 		pUsbpd->exit_mode_req_send = true;
 		pUsbpd->alt_mode_state = PE_DFP_VDM_Mode_Exit_Request;
 		wakeup_dfp_queue(pUsbpd->drv_context);
 		return true;
 	}
-	pr_info("\n!!!!PD is not established!!!!!\n");
+	pr_info("PD is not established\n");
 	return -EINVAL;
 }
 
 int sii_usbpd_src_alt_mode_req(struct sii_usbp_policy_engine *pUsbpd, uint8_t portnum)
 {
 	if (!pUsbpd->pd_connected) {
-		pr_info("\n !!!!!PD is not Established!!!!\n");
+		pr_info("PD is not Established\n");
 		return -ENODEV;
 	}
 
 	if (pUsbpd->at_mode_established || pUsbpd->alt_mode_req_send) {
-		pr_info("\n Already in MHL Mode\n");
+		pr_info("Already in MHL Mode\n");
 		return -EINVAL;
 	}
 	if (pUsbpd->state == PE_SRC_Ready) {
@@ -58,29 +58,29 @@ int sii_usbpd_src_alt_mode_req(struct sii_usbp_policy_engine *pUsbpd, uint8_t po
 		pUsbpd->alt_mode_req_send = true;
 		pUsbpd->alt_mode_state = PE_DFP_VDM_Init;
 		wakeup_dfp_queue(pUsbpd->drv_context);
-		pr_info("\n Alt mode initiated\n");
+		pr_info("Alt mode initiated\n");
 		return true;
 	}
-	pr_info("\n!!!!PD is not established!!!!!\n");
+	pr_info("PD is not established\n");
 	return -EINVAL;
 }
 
 int sii_usbpd_src_pwr_swap(struct sii_usbp_policy_engine *pUsbpd, uint8_t portnum)
 {
 	if (!pUsbpd->pd_connected) {
-		pr_info("\n !!!!!PD is not Established!!!!\n");
+		pr_info("PD is not Established\n");
 		return -ENODEV;
 	}
 
 	if (pUsbpd->pr_swap.req_send || pUsbpd->pr_swap.req_rcv) {
-		pr_info("\n pr_swap in progress\n");
+		pr_info("pr_swap in progress\n");
 		return -EINVAL;
 	}
 	if (pUsbpd->state == PE_SRC_Ready) {
 		pUsbpd->pr_swap.req_send = true;
 		pUsbpd->pr_swap_state = PE_SRC_Swap_Init;
 		wakeup_dfp_queue(pUsbpd->drv_context);
-		pr_info("\n pr_swap initiated\n");
+		pr_info("pr_swap initiated\n");
 		return true;
 	} else {
 		return -EINVAL;
@@ -91,19 +91,19 @@ int sii_usbpd_src_pwr_swap(struct sii_usbp_policy_engine *pUsbpd, uint8_t portnu
 int sii_usbpd_src_data_swap(struct sii_usbp_policy_engine *pUsbpd, uint8_t portnum)
 {
 	if (!pUsbpd->pd_connected) {
-		pr_info("\n !!!!!PD is not Established!!!!\n");
+		pr_info("PD is not Established\n");
 		return -ENODEV;
 	}
 
 	if (pUsbpd->dr_swap.req_send) {
-		pr_info("\n dr_swap in progress\n");
+		pr_info("dr_swap in progress\n");
 		return -EINVAL;
 	}
 	if (pUsbpd->state == PE_SRC_Ready) {
 		pUsbpd->dr_swap.req_send = true;
 		pUsbpd->dr_swap_state = PE_SRC_DR_Swap_Init;
 		wakeup_dfp_queue(pUsbpd->drv_context);
-		pr_info("\n dr_swap initiated\n");
+		pr_info("dr_swap initiated\n");
 		return true;
 	} else {
 		return -EINVAL;
@@ -114,19 +114,19 @@ int sii_usbpd_src_data_swap(struct sii_usbp_policy_engine *pUsbpd, uint8_t portn
 int sii_usbpd_req_src_vconn_swap(struct sii_usbp_policy_engine *pUsbpd, uint8_t portnum)
 {
 	if (!pUsbpd->pd_connected) {
-		pr_info("\n !!!!!PD is not Established!!!!\n");
+		pr_info("PD is not Established\n");
 		return -ENODEV;
 	}
 
 	if (pUsbpd->src_vconn_swap_req) {
-		pr_info("\n vconn swap is in progress\n");
+		pr_info("vconn swap is in progress\n");
 		return -EINVAL;
 	}
 	if (pUsbpd->state == PE_SRC_Ready) {
 		pUsbpd->vconn_swap.req_send = true;
 		pUsbpd->vconn_swap_state = PE_VCS_DFP_Send_Swap;
 		wakeup_dfp_queue(pUsbpd->drv_context);
-		pr_info("\n src_vconn_req initiated\n");
+		pr_info("src_vconn_req initiated\n");
 		return true;
 	} else {
 		return -EINVAL;
@@ -139,7 +139,7 @@ static void wait_on_timer_handler(void *context)
 	struct sii_usbp_policy_engine *pdev = (struct sii_usbp_policy_engine *)context;
 
 	if (!down_interruptible(&pdev->drv_context->isr_lock)) {
-		pr_info("\n$$wait_on_timer_handler $$\n");
+		pr_info("wait_on_timer_handler\n");
 		wakeup_dfp_queue(pdev->drv_context);
 		up(&pdev->drv_context->isr_lock);
 	}
@@ -150,7 +150,7 @@ static void ps_source_on_timer_handler(void *context)
 	struct sii_usbp_policy_engine *pdev = (struct sii_usbp_policy_engine *)context;
 
 	if (!down_interruptible(&pdev->drv_context->isr_lock)) {
-		pr_info("\n$$ps_source_on_timer_handler $$\n");
+		pr_info("ps_source_on_timer_handler\n");
 
 		if (pdev->pr_swap_state == PE_SWAP_Wait_Ps_Rdy_Received) {
 			if (pdev->hard_reset_counter < N_HARDRESETCOUNT) {
@@ -169,7 +169,7 @@ static void sender_response_timer_handler(void *context)
 	struct sii_usbp_policy_engine *pdev = (struct sii_usbp_policy_engine *)context;
 
 	if (!down_interruptible(&pdev->drv_context->isr_lock)) {
-		pr_info("\n$$ Sender Response Timer $$\n");
+		pr_info("Sender Response Timer\n");
 		if (pdev->state == PE_SRC_Get_Sink_Cap) {
 			pdev->state = PE_SRC_Ready;
 			goto success;
@@ -200,7 +200,7 @@ static void vdm_exit_timer_handler(void *context)
 	struct sii_usbp_policy_engine *pdev = (struct sii_usbp_policy_engine *)context;
 
 	if (!down_interruptible(&pdev->drv_context->isr_lock)) {
-		pr_debug("\n$$ VDM_MODE_EXIT_TIMER $$\n");
+		pr_debug("VDM_MODE_EXIT_TIMER\n");
 
 		if (pdev->alt_mode_state == PE_drp_mode_Wait_Exit_ACKed) {
 			pdev->alt_mode_state = DFP_SVIDs_EXIT_NAK;
@@ -226,7 +226,7 @@ static void source_capability_timer_handler(void *context)
 	struct sii_usbp_policy_engine *pdev = (struct sii_usbp_policy_engine *)context;
 
 	if (!down_interruptible(&pdev->drv_context->isr_lock)) {
-		pr_info("\n$$ SRC_CAP_TIMER $$\n");
+		pr_info("SRC_CAP_TIMER\n");
 		if (pdev->state == PE_SRC_Discovery) {
 			if (pdev->caps_counter <= N_CAPSCOUNT) {
 				pdev->state = PE_SRC_Send_Capabilities;
@@ -244,7 +244,7 @@ exit:		up(&pdev->drv_context->isr_lock);
 
 static void bist_timer_handler(void *context)
 {
-	pr_info("\n$$ BIST_TIMER $$\n");
+	pr_info("BIST_TIMER\n");
 	sii_platform_clr_bit8(REG_ADDR__PDCTR18, BIT_MSK__PDCTR18__RI_BIST_ENABLE);
 }
 
@@ -253,7 +253,7 @@ static void vdm_mode_entry_timer_handler(void *context)
 	struct sii_usbp_policy_engine *pdev = (struct sii_usbp_policy_engine *)context;
 
 	if (!down_interruptible(&pdev->drv_context->isr_lock)) {
-		pr_info("\n$$ VDM_MODE_ENTRY_TIMER $$\n");
+		pr_info("VDM_MODE_ENTRY_TIMER\n");
 
 		if (pdev->alt_mode_state == DFP_SVIDs_ENTER_MODE_ACK_RCVD) {
 			pdev->alt_mode_state = DFP_SVIDs_ENTERY_NAK;
@@ -270,7 +270,7 @@ static void vdm_response_timer_handler(void *context)
 	struct sii_usbp_policy_engine *pdev = (struct sii_usbp_policy_engine *)context;
 
 	if (!down_interruptible(&pdev->drv_context->isr_lock)) {
-		pr_info("\n$$ VDM_RESPONSE_TIMER $$ %lx\n", jiffies);
+		pr_info("VDM_RESPONSE_TIMER %lx\n", jiffies);
 		/*commented because of nuvuton synchronization */
 		if (pdev->alt_mode_state == DFP_DISCOVER_SVID_MODES_ACK) {
 			pdev->alt_mode_state = DFP_SVIDs_MODES_NAK;
@@ -305,7 +305,7 @@ void vconn_on_timer_handler(void *context)
 	struct sii_usbp_policy_engine *pdev = (struct sii_usbp_policy_engine *)context;
 
 	if (!down_interruptible(&pdev->drv_context->isr_lock)) {
-		pr_info("\n$$ VCONN_ON_TIMER $$ %lx\n", jiffies);
+		pr_info("VCONN_ON_TIMER %lx\n", jiffies);
 
 		if (pdev->vconn_swap_state == PE_SWAP_Wait_Ps_Rdy_Received) {
 			if (pdev->hard_reset_counter < N_HARDRESETCOUNT) {
@@ -526,8 +526,7 @@ bool sii_src_alt_mode_engine(struct sii_usbp_policy_engine *pdev)
 
 	bool work = 0;
 
-	pr_info("\n----------------------------------\n");
-	pr_info("ALT MODE POLICY ENGINE -  \t");
+	pr_info("ALT MODE POLICY ENGINE - \t");
 
 	pr_info("Alt mode state:%d\n", pdev->alt_mode_state);
 
@@ -540,9 +539,8 @@ bool sii_src_alt_mode_engine(struct sii_usbp_policy_engine *pdev)
 
 	case PE_DFP_VDM_Identity_Request:
 		pr_info("PE_DFP_VDM_Identity_Request\n");
-		 /*DPM*/ pr_info("\n=================================\n");
-		pr_info("  SEND_COMMAND: DISCOVER_IDENTITY\n");
-		pr_info("\n=================================\n");
+		 /*DPM*/
+		pr_info("SEND_COMMAND: DISCOVER_IDENTITY\n");
 		usbpd_send_vdm_cmd(pUsbpd_prtlyr, VDM, CMD_DISCOVER_IDENT, pdev->svid_mode);
 		pdev->alt_mode_state = PE_VDM_Wait_Good_Src_Received;
 		break;
@@ -552,7 +550,7 @@ bool sii_src_alt_mode_engine(struct sii_usbp_policy_engine *pdev)
 			pdev->alt_mode_state = PE_DFP_VDM_Wait_Identity_ACK_Rcvd;
 			sii_timer_start(&(pdev->usbpd_vdm_resp_tmr));
 			if (test_bit(SVDM_DISC_IDEN_ACK_RCVD, &pdev->intf.param.svdm_sm_inputs)) {
-				pr_debug("\nSVDM_DISC_IDEN_ACK_RCVD\n");
+				pr_debug("SVDM_DISC_IDEN_ACK_RCVD\n");
 				work = 1;
 			}
 		}
@@ -571,7 +569,7 @@ bool sii_src_alt_mode_engine(struct sii_usbp_policy_engine *pdev)
 			pdev->alt_mode_req_rcv = false;
 			pdev->alt_mode_req_send = false;
 			pdev->alt_mode_state = PE_DFP_VDM_Init;
-			pr_info("!!! NACK RECEIVED\n");
+			pr_info("NACK RECEIVED\n");
 		}
 		break;
 	case PE_DFP_VDM_Identity_ACKed:
@@ -580,9 +578,7 @@ bool sii_src_alt_mode_engine(struct sii_usbp_policy_engine *pdev)
 		work = 1;
 		break;
 	case DFP_Identity_Request:
-		pr_info("\n============================\n");
-		pr_info("  SEND_COMMAND: DISCOVER_SVID\n");
-		pr_info("\n============================\n");
+		pr_info("SEND_COMMAND: DISCOVER_SVID\n");
 		usbpd_send_vdm_cmd(pUsbpd_prtlyr, VDM, CMD_DISCOVER_SVID, pdev->svid_mode);
 		pdev->alt_mode_state = DFP_SVIDs_Wait_Good_Crc_Rcvd;
 		break;
@@ -593,7 +589,7 @@ bool sii_src_alt_mode_engine(struct sii_usbp_policy_engine *pdev)
 			sii_timer_start(&(pdev->usbpd_vdm_resp_tmr));
 			pdev->alt_mode_state = DFP_DISCOVER_SVID_ACK;
 			if (pdev->svid_mode == 0x02) {
-				pr_info("!!! DISPLAY PORT INITIATED\n");
+				pr_info("DISPLAY PORT INITIATED\n");
 				pdev->at_mode_established = false;
 				pdev->alt_mode_req_rcv = false;
 				pdev->alt_mode_req_send = false;
@@ -602,7 +598,7 @@ bool sii_src_alt_mode_engine(struct sii_usbp_policy_engine *pdev)
 				sii_timer_stop(&(pdev->usbpd_vdm_resp_tmr));
 			}
 			if (test_bit(DISCOVER_SVID_ACK_RCVD, &pdev->intf.param.svdm_sm_inputs)) {
-				pr_debug("\nDISCOVER_SVID_ACK_RCVD\n");
+				pr_debug("DISCOVER_SVID_ACK_RCVD\n");
 				work = 1;
 			}
 		}
@@ -620,7 +616,7 @@ bool sii_src_alt_mode_engine(struct sii_usbp_policy_engine *pdev)
 				pdev->alt_mode_req_send = false;
 				pdev->alt_mode_state = PE_DFP_VDM_Init;
 				sii_timer_stop(&(pdev->usbpd_vdm_resp_tmr));
-				pr_info("!!! DISPLAY PORT DETECTED\n");
+				pr_info("DISPLAY PORT DETECTED\n");
 			}
 		} else if (test_bit(DISCOVER_SVID_NACK_RCVD, &pdev->intf.param.svdm_sm_inputs)) {
 			clear_bit(DISCOVER_SVID_NACK_RCVD, &pdev->intf.param.svdm_sm_inputs);
@@ -629,13 +625,11 @@ bool sii_src_alt_mode_engine(struct sii_usbp_policy_engine *pdev)
 			pdev->alt_mode_req_send = false;
 			pdev->alt_mode_state = PE_DFP_VDM_Init;
 			sii_timer_stop(&(pdev->usbpd_vdm_resp_tmr));
-			pr_info("!!! NACK RECEIVED\n");
+			pr_info("NACK RECEIVED\n");
 		}
 		break;
 	case DFP_SVIDs_Request:
-		pr_info("\n============================\n");
-		pr_info("  SEND_COMMAND: DISCOVER_MODES\n");
-		pr_info("\n============================\n");
+		pr_info("SEND_COMMAND: DISCOVER_MODES\n");
 		usbpd_send_vdm_cmd(pUsbpd_prtlyr, VDM, CMD_DISCOVER_MODES, pdev->svid_mode);
 		pdev->alt_mode_state = DFP_SVIDs_Modes_Good_Crc_Rcvd;
 		break;
@@ -676,9 +670,7 @@ bool sii_src_alt_mode_engine(struct sii_usbp_policy_engine *pdev)
 		break;
 	case drp_modes_Request:
 		pr_debug("drp_modes_Request\n");
-		pr_info("\n============================\n");
-		pr_info("  SEND_COMMAND: DISCOVER_ENTER_MODE\n");
-		pr_info("\n============================\n");
+		pr_info("SEND_COMMAND: DISCOVER_ENTER_MODE\n");
 		usbpd_send_vdm_cmd(pUsbpd_prtlyr, VDM, CMD_ENTER_MODE, pdev->svid_mode);
 		pdev->alt_mode_state = DFP_SVIDs_Enter_Modes_Good_Crc_Rcvd;
 		break;
@@ -688,10 +680,10 @@ bool sii_src_alt_mode_engine(struct sii_usbp_policy_engine *pdev)
 			pdev->alt_mode_state = DFP_SVIDs_ENTER_MODE_ACK_RCVD;
 			sii_timer_start(&(pdev->usbpd_vdm_mode_entry_tmr));
 			if (test_bit(ENTER_MODE_ACK_RCVD, &pdev->intf.param.svdm_sm_inputs)) {
-				pr_debug("\nENTER_MODE_ACK_RCVD\n");
+				pr_debug("ENTER_MODE_ACK_RCVD\n");
 				work = 1;
 			} else if (test_bit(ENTER_MODE_NACK_RCVD, &pdev->intf.param.svdm_sm_inputs)) {
-				pr_debug("\nENTER_MODE_NACK_RCVD\n");
+				pr_debug("ENTER_MODE_NACK_RCVD\n");
 				work = 1;
 			}
 		}
@@ -747,7 +739,7 @@ bool sii_src_alt_mode_engine(struct sii_usbp_policy_engine *pdev)
 		}
 		break;
 	case PE_drp_mode_Exit_ACKed:
-		 /*DPM*/ pr_info("!!!EXIT MODE DONE!!!\n");
+		 /*DPM*/ pr_info("EXIT MODE DONE\n");
 		sii_timer_stop(&(pdev->usbpd_vdm_exit_tmr));
 		pdev->exit_mode_req_send = false;
 		pdev->at_mode_established = false;
@@ -784,7 +776,6 @@ bool sii_src_dr_swap_engine(struct sii_usbp_policy_engine *pdev)
 
 	bool work = 0;
 
-	pr_info("\n----------------------------------\n");
 	pr_info("DR SWAP POLICY ENGINE -  \t");
 
 	pr_info("Swap state:%d\n", pdev->dr_swap_state);
@@ -801,9 +792,7 @@ bool sii_src_dr_swap_engine(struct sii_usbp_policy_engine *pdev)
 		work = 1;
 		break;
 	case PE_DRS_DFP_UFP_Send_DR_Swap:
-		pr_info("\n========================\n");
-		pr_info("  SEND_COMMAND: DR_SWAP\n");
-		pr_info("\n========================\n");
+		pr_info("SEND_COMMAND: DR_SWAP\n");
 		usbpd_xmit_ctrl_msg(pUsbpd_prtlyr, CTRL_MSG__DR_SWAP);
 		pdev->dr_swap_state = PE_SWAP_Wait_Good_Crc_Received;
 		break;
@@ -813,13 +802,13 @@ bool sii_src_dr_swap_engine(struct sii_usbp_policy_engine *pdev)
 			pdev->dr_swap_state = PE_PRS_Wait_Accept_DR_Swap;
 			sii_timer_start(&(pdev->usbpd_inst_sendr_resp_tmr));
 			if (test_bit(ACCEPT_RCVD, &pdev->intf.param.sm_cmd_inputs)) {
-				pr_debug("\nACCEPT_RCVD\n");
+				pr_debug("ACCEPT_RCVD\n");
 				work = 1;
 			} else if (test_bit(REJECT_RCVD, &pdev->intf.param.sm_cmd_inputs)) {
-				pr_debug("\nREJECT_RCVD\n");
+				pr_debug("REJECT_RCVD\n");
 				work = 1;
 			} else if (test_bit(WAIT_RCVD, &pdev->intf.param.sm_cmd_inputs)) {
-				pr_debug("\nWAIT_RCVD\n");
+				pr_debug("WAIT_RCVD\n");
 				work = 1;
 			}
 		}
@@ -836,22 +825,20 @@ bool sii_src_dr_swap_engine(struct sii_usbp_policy_engine *pdev)
 			pdev->dr_swap.req_send = false;
 			pdev->dr_swap.req_rcv = false;
 			pdev->dr_swap.done = false;
-			pr_info("\n%s:DR SWAP REJECTED:%s\n",
-				ANSI_ESC_RED_TEXT, ANSI_ESC_RESET_TEXT);
+			pr_info("DR SWAP REJECTED\n");
 		} else if (test_bit(WAIT_RCVD, &pdev->intf.param.sm_cmd_inputs)) {
 			sii_timer_stop(&(pdev->usbpd_inst_sendr_resp_tmr));
 			clear_bit(WAIT_RCVD, &pdev->intf.param.sm_cmd_inputs);
 			pdev->dr_swap.req_send = false;
 			pdev->dr_swap.req_rcv = false;
 			pdev->dr_swap.done = false;
-			pr_info("\n%s:PEER IS NOT READY FOR DR_SWAP:%s\n",
-				ANSI_ESC_RED_TEXT, ANSI_ESC_RESET_TEXT);
+			pr_info("PEER IS NOT READY FOR DR_SWAP\n");
 		}
 		break;
 
 	case PE_DRS_DFP_UFP_Change_to_UFP:
 		change_drp_data_role(pdev);
-		pr_info("\n%s:DR SWAP COMPLETED:%s\n", ANSI_ESC_MAGENTA_TEXT, ANSI_ESC_RESET_TEXT);
+		pr_info("DR SWAP COMPLETED\n");
 		pdev->dr_swap.req_send = false;
 		/*pdev->dr_swap_state = PE_SRC_DR_Swap_Init; */
 		pdev->dr_swap.done = true;
@@ -895,8 +882,7 @@ bool sii_src_dr_swap_engine(struct sii_usbp_policy_engine *pdev)
 	case PE_SRC_Wait_Reject_Good_Crc_Received:
 		if (pdev->tx_good_crc_received) {
 			pdev->tx_good_crc_received = 0;
-			pr_info("\n%s: !!! DR SWAP NOT SUPPORTED !!!:%s\n",
-				ANSI_ESC_RED_TEXT, ANSI_ESC_RESET_TEXT);
+			pr_info("DR SWAP NOT SUPPORTED\n");
 			pdev->dr_swap.req_send = false;
 			pdev->dr_swap.in_progress = false;
 			pdev->dr_swap.req_rcv = false;
@@ -917,7 +903,6 @@ bool sii_src_vconn_swap_mode_engine(struct sii_usbp_policy_engine *pdev)
 
 	bool work = 0;
 
-	pr_info("\n----------------------------------\n");
 	pr_info("VCONN POLICY ENGINE -  \t");
 
 	pr_info("vconn state:%d\n", pdev->vconn_swap_state);
@@ -925,9 +910,7 @@ bool sii_src_vconn_swap_mode_engine(struct sii_usbp_policy_engine *pdev)
 
 	switch (pdev->vconn_swap_state) {
 	case PE_VCS_DFP_Send_Swap:
-		pr_info("\n========================\n");
-		pr_info("  SEND_COMMAND: VCONN_SWAP\n");
-		pr_info("\n========================\n");
+		pr_info("SEND_COMMAND: VCONN_SWAP\n");
 		usbpd_xmit_ctrl_msg(pUsbpd_prtlyr, CTRL_MSG__VCONN_SWAP);
 		pdev->vconn_swap_state = PE_SWAP_Wait_Good_Crc_Received;
 		break;
@@ -938,7 +921,7 @@ bool sii_src_vconn_swap_mode_engine(struct sii_usbp_policy_engine *pdev)
 			sii_timer_start(&(pdev->usbpd_inst_sendr_resp_tmr));
 			pdev->vconn_swap_state = PE_PRS_Wait_Accept_VCONN_Swap;
 			if (test_bit(ACCEPT_RCVD, &pdev->intf.param.sm_cmd_inputs)) {
-				pr_debug("\nACCEPT_RCVD\n");
+				pr_debug("ACCEPT_RCVD\n");
 				work = 1;
 			}
 		}
@@ -995,7 +978,7 @@ bool sii_src_vconn_swap_mode_engine(struct sii_usbp_policy_engine *pdev)
 			pdev->pr_swap_state = PE_SWAP_Wait_Ps_Rdy_Received;
 			pdev->vconn_swap.done = true;
 			pdev->vconn_swap.req_send = false;
-			pr_info("\n!!! VCONN SWAP COMPLETED !!!\n");
+			pr_info("VCONN SWAP COMPLETED\n");
 		}
 		break;
 	default:
@@ -1013,7 +996,6 @@ bool sii_src_pr_swap_engine(struct sii_usbp_policy_engine *pdev)
 
 	bool work = 0;
 
-	pr_debug("\n----------------------------------\n");
 	pr_debug("SWAP POLICY ENGINE -  \t");
 
 	pr_debug("SWap state:%d\n", pdev->pr_swap_state);
@@ -1036,10 +1018,10 @@ bool sii_src_pr_swap_engine(struct sii_usbp_policy_engine *pdev)
 			pdev->pr_swap_state = PE_PRS_Wait_Accept_PR_Swap;
 			sii_timer_start(&(pdev->usbpd_inst_sendr_resp_tmr));
 			if (test_bit(ACCEPT_RCVD, &pdev->intf.param.sm_cmd_inputs)) {
-				pr_debug("\nACCEPT_RCVD\n");
+				pr_debug("ACCEPT_RCVD\n");
 				work = 1;
 			} else if (test_bit(REJECT_RCVD, &pdev->intf.param.sm_cmd_inputs)) {
-				pr_debug("\nREJECT_RCVD\n");
+				pr_debug("REJECT_RCVD\n");
 				work = 1;
 			}
 		}
@@ -1055,7 +1037,7 @@ bool sii_src_pr_swap_engine(struct sii_usbp_policy_engine *pdev)
 		} else if (test_bit(REJECT_RCVD, &pdev->intf.param.sm_cmd_inputs)) {
 			sii_timer_stop(&(pdev->usbpd_inst_sendr_resp_tmr));
 			clear_bit(REJECT_RCVD, &pdev->intf.param.sm_cmd_inputs);
-			pr_info("\n !!! PR SWAP REJECTED FROM PEER !!!\n");
+			pr_info("PR SWAP REJECTED FROM PEER\n");
 			pdev->pr_swap.req_send = false;
 			pdev->pr_swap.in_progress = false;
 			pdev->pr_swap.req_rcv = false;
@@ -1108,9 +1090,7 @@ bool sii_src_pr_swap_engine(struct sii_usbp_policy_engine *pdev)
 		/*      sii_timer_stop(&
 		   (pdev->usbpd_inst_source_act_tmr)); */
 		change_drp_pwr_role(pdev);
-		pr_info("\n======================\n");
-		pr_info("  SEND_COMMAND: PS_RDY\n");
-		pr_info("\n======================\n");
+		pr_info("SEND_COMMAND: PS_RDY\n");
 
 		usbpd_xmit_ctrl_msg(pUsbpd_prtlyr, CTRL_MSG__PS_RDY);
 		pdev->pr_swap_state = PE_SRC_Wait_Src_rdy_Good_Crc_Received;
@@ -1122,7 +1102,7 @@ bool sii_src_pr_swap_engine(struct sii_usbp_policy_engine *pdev)
 			sii_timer_start(&(pdev->usbpd_inst_ps_source_on_tmr));
 			pdev->pr_swap_state = PE_SWAP_Wait_Ps_Rdy_Received;
 			if (test_bit(PS_RDY_RCVD, &pdev->intf.param.sm_cmd_inputs)) {
-				pr_debug("\nPS_RDY_RCVD\n");
+				pr_debug("PS_RDY_RCVD\n");
 				work = 1;
 			}
 		}
@@ -1132,8 +1112,7 @@ bool sii_src_pr_swap_engine(struct sii_usbp_policy_engine *pdev)
 		if (test_bit(PS_RDY_RCVD, &pdev->intf.param.sm_cmd_inputs)) {
 			clear_bit(PS_RDY_RCVD, &pdev->intf.param.sm_cmd_inputs);
 			sii_timer_stop(&(pdev->usbpd_inst_ps_source_on_tmr));
-			pr_info("\n%s: !!! PR SWAP COMPLETED !!!:%s\n",
-				ANSI_ESC_YELLOW_TEXT, ANSI_ESC_RESET_TEXT);
+			pr_info("PR SWAP COMPLETED\n");
 			pdev->pr_swap.req_send = false;
 			pdev->pr_swap.in_progress = false;
 			pdev->pr_swap.req_rcv = false;
@@ -1155,9 +1134,7 @@ bool sii_src_pr_swap_engine(struct sii_usbp_policy_engine *pdev)
 		pdev->pr_swap.done = false;
 		break;
 	case PE_PRS_SRC_SNK_Reject_PR_Swap:
-		pr_info("\n======================\n");
-		pr_info("  SEND_COMMAND: REJECT\n");
-		pr_info("\n======================\n");
+		pr_info("SEND_COMMAND: REJECT\n");
 
 		usbpd_xmit_ctrl_msg(pUsbpd_prtlyr, CTRL_MSG__REJECT);
 		pdev->pr_swap_state = PE_SRC_Wait_Reject_Good_Crc_Received;
@@ -1165,8 +1142,7 @@ bool sii_src_pr_swap_engine(struct sii_usbp_policy_engine *pdev)
 	case PE_SRC_Wait_Reject_Good_Crc_Received:
 		if (pdev->tx_good_crc_received) {
 			pdev->tx_good_crc_received = 0;
-			pr_info("\n%s: !!! PR SWAP NOT SUPPORTED !!!:%s\n",
-				ANSI_ESC_RED_TEXT, ANSI_ESC_RESET_TEXT);
+			pr_info("PR SWAP NOT SUPPORTED\n");
 			pdev->pr_swap.req_send = false;
 			pdev->pr_swap.in_progress = false;
 			pdev->pr_swap.req_rcv = false;
@@ -1208,17 +1184,16 @@ void source_policy_engine(WORK_STRUCT *w)
 	bool result;
 
 	if (!pdev) {
-		pr_debug(" Not able to find address\n");
+		pr_debug("Not able to find address\n");
 		return;
 	}
 	if (!pdev->pd_connected) {
 		pr_info("DFP not Connected\n");
 		return;
 	}
-	pr_info(" SOURCE -> UNLOCK");
+	pr_info("SOURCE -> UNLOCK\n");
 	if (!down_interruptible(&drv_context->isr_lock)) {
-		pr_info("\n----------------------------------\n");
-		pr_info("SOURCE LOCK -  %x\t", pdev->state);
+		pr_info("SOURCE LOCK - %x\n", pdev->state);
 		switch (pdev->state) {
 		case PE_SRC_Disabled:
 			pr_debug("PE_SRC_Disabled\n");
@@ -1266,9 +1241,7 @@ void source_policy_engine(WORK_STRUCT *w)
 			sii_platform_clr_bit8(REG_ADDR__PDCC24INTM3,
 					      BIT_MSK__PDCC24INT3__REG_PDCC24_INTR28);
 			/*due to bugi n hardware */
-			pr_info("\n=======================\n");
-			pr_info("  SEND_COMMAND: SRC_CAP\n");
-			pr_info("\n=======================\n");
+			pr_info("SEND_COMMAND: SRC_CAP\n");
 
 			result = sii_usbpd_xmit_data_msg(pUsbpd_protlyr, SRCCAP,
 							 pUsbpd_protlyr->send_msg, pdo_value);
@@ -1280,7 +1253,7 @@ void source_policy_engine(WORK_STRUCT *w)
 
 		case PE_SWAP_Wait_Good_Crc_Received:
 			if (pdev->tx_good_crc_received) {
-				pr_debug("\nGOOD CRC received\n");
+				pr_debug("GOOD CRC received\n");
 				pdev->tx_good_crc_received = 0;
 				sii_timer_stop(&pdev->usbpd_inst_no_resp_tmr);
 				sii_timer_stop(&(pdev->usbpd_source_cap_tmr));
@@ -1292,11 +1265,11 @@ void source_policy_engine(WORK_STRUCT *w)
 				   and both queue
 				   works are executing at a same time */
 				if (test_bit(REQ_RCVD, &pdev->intf.param.sm_cmd_inputs)) {
-					pr_debug("\nREQ_RCVD\n");
+					pr_debug("REQ_RCVD\n");
 					work = 1;
 				}
 			} else {
-				pr_debug("\nGOOD CRC not received\n");
+				pr_debug("GOOD CRC not received\n");
 				pdev->next_state = PE_SRC_Discovery;
 				work = 1;
 			}
@@ -1332,14 +1305,10 @@ void source_policy_engine(WORK_STRUCT *w)
 			sii_timer_start(&(pdev->usbpd_inst_source_act_tmr));
 			if (pdev->drv_context->pUsbpd_dp_mngr->go_to_min) {
 				/*rewuested by device policy manager */
-				pr_info("\n========================\n");
-				pr_info("  SEND_COMMAND: GOTO_MIN\n");
-				pr_info("\n========================\n");
+				pr_info("SEND_COMMAND: GOTO_MIN\n");
 				result = usbpd_xmit_ctrl_msg(pUsbpd_protlyr, CTRL_MSG__GO_TO_MIN);
 			} else {
-				pr_info("\n======================\n");
-				pr_info("  SEND_COMMAND: ACCEPT\n");
-				pr_info("\n======================\n");
+				pr_info("SEND_COMMAND: ACCEPT\n");
 				result = usbpd_xmit_ctrl_msg(pUsbpd_protlyr, CTRL_MSG__ACCEPT);
 			}
 			pdev->next_state = PE_SRC_Wait_Accept_Good_Crc_Received;
@@ -1353,15 +1322,13 @@ void source_policy_engine(WORK_STRUCT *w)
 				sii_timer_start(&(pdev->usbpd_tSnkTransition_tmr));
 				pdev->next_state = PE_SRC_Wait_Ps_Rdy_sent;
 			} else {
-				pr_err("\nGOOD CRC not received -2\n");
+				pr_err("GOOD CRC not received -2\n");
 				usbpd_xmit_ctrl_msg(pUsbpd_protlyr, CTRL_MSG__SOFT_RESET);
 				pdev->next_state = PE_SRC_Wait_sft_rst_Good_Crc_Received;
 			}
 			break;
 		case PE_SRC_Wait_Ps_Rdy_sent:
-			pr_info("\n======================\n");
-			pr_info("  SEND_COMMAND: PS_RDY\n");
-			pr_info("\n======================\n");
+			pr_info("SEND_COMMAND: PS_RDY\n");
 			result = usbpd_xmit_ctrl_msg(pUsbpd_protlyr, CTRL_MSG__PS_RDY);
 			pdev->next_state = PE_SRC_Wait_Src_rdy_Good_Crc_Received;
 			break;
@@ -1369,16 +1336,12 @@ void source_policy_engine(WORK_STRUCT *w)
 		case PE_SRC_Capability_Response:
 			pr_debug("PE_SRC_Capability_Response\n");
 			if (test_bit(CAN_NOT_BE_MET, &pdev->intf.param.sm_cmd_inputs)) {
-				pr_info("\n======================\n");
-				pr_info("  SEND_COMMAND: REJECT\n");
-				pr_info("\n======================\n");
+				pr_info("SEND_COMMAND: REJECT\n");
 				result = usbpd_xmit_ctrl_msg(pUsbpd_protlyr, CTRL_MSG__REJECT);
 			} else if (test_bit(LATER_GB, &pdev->intf.param.sm_cmd_inputs)) {
 				pr_debug("set the bit later\n");
 				clear_bit(LATER_GB, &pdev->intf.param.sm_cmd_inputs);
-				pr_info("\n====================\n");
-				pr_info("  SEND_COMMAND: WAIT\n");
-				pr_info("\n====================\n");
+				pr_info("SEND_COMMAND: WAIT\n");
 				result = usbpd_xmit_ctrl_msg(pUsbpd_protlyr, CTRL_MSG__WAIT);
 			}
 			pdev->next_state = PE_SRC_Wait_cap_met_Good_Crc_Received;
@@ -1389,10 +1352,9 @@ void source_policy_engine(WORK_STRUCT *w)
 				pdev->next_state = PE_SRC_Ready;
 				work = 1;
 				pdev->tx_good_crc_received = 0;
-				pr_info("%s:POWER CONTRACT ESTABLISHED:%s\n",
-					ANSI_ESC_YELLOW_TEXT, ANSI_ESC_RESET_TEXT);
+				pr_info("POWER CONTRACT ESTABLISHED\n");
 			} else {
-				pr_err("\nGOOD CRC not received\n");
+				pr_err("GOOD CRC not received\n");
 			}
 			break;
 
@@ -1404,14 +1366,14 @@ void source_policy_engine(WORK_STRUCT *w)
 				pr_info("soft reset done\n");
 				pdev->tx_good_crc_received = 0;
 			} else {
-				pr_err("\nGOOD CRC not received - 3\n");
+				pr_err("GOOD CRC not received - 3\n");
 				pdev->next_state = PE_SRC_Hard_Reset;
 				work = 1;
 			}
 			break;
 
 		case PE_SRC_Ready:
-			pr_info("!!! ... SRC READY... !!!\n");
+			pr_info("SRC READY\n");
 			if (test_bit(GOTOMIN_RCVD, &pdev->intf.param.sm_cmd_inputs)) {
 				clear_bit(GOTOMIN_RCVD, &pdev->intf.param.sm_cmd_inputs);
 				msleep(100);
@@ -1539,9 +1501,7 @@ void source_policy_engine(WORK_STRUCT *w)
 				pdo_value = sii_usbpd_get_src_cap(pdev,
 								  pUsbpd_protlyr->send_msg,
 								  FIXED_SUPPLY);
-				pr_info("\n=======================\n");
-				pr_info("  SEND_COMMAND: SRC_CAP\n");
-				pr_info("\n=======================\n");
+				pr_info("SEND_COMMAND: SRC_CAP\n");
 
 				result = sii_usbpd_xmit_data_msg(pUsbpd_protlyr,
 								 SRCCAP,
@@ -1565,9 +1525,7 @@ void source_policy_engine(WORK_STRUCT *w)
 			pr_debug("PE_SRC_Give_Source_Cap\n");
 			pdo_value = sii_usbpd_get_src_cap(pdev,
 							  pUsbpd_protlyr->send_msg, FIXED_SUPPLY);
-			pr_info("\n=======================\n");
-			pr_info("  SEND_COMMAND: SRC_CAP\n");
-			pr_info("\n=======================\n");
+			pr_info("SEND_COMMAND: SRC_CAP\n");
 			result = sii_usbpd_xmit_data_msg(pUsbpd_protlyr,
 							 SRCCAP, pUsbpd_protlyr->send_msg,
 							 pdo_value);
@@ -1575,9 +1533,7 @@ void source_policy_engine(WORK_STRUCT *w)
 			break;
 
 		case PE_SRC_Get_Sink_Cap:
-			pr_info("\n=======================\n");
-			pr_info("  SEND_COMMAND: GET_SNK_CAP\n");
-			pr_info("\n=======================\n");
+			pr_info("SEND_COMMAND: GET_SNK_CAP\n");
 			result = usbpd_xmit_ctrl_msg(pUsbpd_protlyr, CTRL_MSG__GET_SINK_CAP);
 			sii_timer_start(&pdev->usbpd_inst_sendr_resp_tmr);
 			pdev->next_state = PE_SRC_Wait_Src_rdy_Good_Crc_Received;
@@ -1610,7 +1566,7 @@ void source_policy_engine(WORK_STRUCT *w)
 		work = 0;
 		wakeup_dfp_queue(drv_context);
 	}
-	pr_debug("\nSRC QUEUE COMPLETED\n");
+	pr_debug("SRC QUEUE COMPLETED\n");
 }
 
 void wakeup_dfp_queue(struct sii70xx_drv_context *drv_context)
@@ -1622,13 +1578,13 @@ void wakeup_dfp_queue(struct sii70xx_drv_context *drv_context)
 		sii_wakeup_queues(pUsbpd->dfp_work_queue,
 				  &pUsbpd->pd_dfp_work, &pUsbpd->is_event, true);
 	else
-		pr_info("\ncable is disconnected\n");
+		pr_info("cable is disconnected\n");
 }
 
 
 void sii_reset_dfp(struct sii_usbp_policy_engine *pUsbpd)
 {
-	pr_info("\n RESET DFP\n");
+	pr_info("RESET DFP\n");
 
 	if (pUsbpd->usbpd_inst_sendr_resp_tmr)
 		sii_timer_stop(&pUsbpd->usbpd_inst_sendr_resp_tmr);
@@ -1666,7 +1622,7 @@ void sii_reset_dfp(struct sii_usbp_policy_engine *pUsbpd)
 		pUsbpd->at_mode_established = false;
 		/*si_enable_switch_control(pUsbpd->drv_context, PD_TX, false); */
 	}
-	pr_info("\n RESET DFP FINISHED\n");
+	pr_info("RESET DFP FINISHED\n");
 }
 
 bool usbpd_set_dfp_swap_init(struct sii_usbp_policy_engine *pUsbpd)
@@ -1677,7 +1633,7 @@ bool usbpd_set_dfp_swap_init(struct sii_usbp_policy_engine *pUsbpd)
 		pr_warn("%s: Error initialisation.\n", __func__);
 		return false;
 	}
-	pr_debug("\n***usbpd_set_dfp_swap_init***\n");
+	pr_debug("usbpd_set_dfp_swap_init\n");
 
 	sii_platform_set_bit8(REG_ADDR__PDCC24INTM3, BIT_MSK__PDCC24INTM3__REG_PDCC24_INTRMASK29);
 
@@ -1720,7 +1676,7 @@ bool usbpd_set_dfp_init(struct sii_usbp_policy_engine *pUsbpd)
 		pr_warn("%s: Error initialisation.\n", __func__);
 		return false;
 	}
-	pr_debug("\n***usbpd_set_dfp_init***\n");
+	pr_debug("usbpd_set_dfp_init\n");
 	pUsbpd->drv_context->drp_config = USBPD_DFP;
 	pUsbpd->drv_context->old_drp_config = USBPD_DFP;
 

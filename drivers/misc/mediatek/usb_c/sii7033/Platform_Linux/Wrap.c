@@ -288,7 +288,7 @@ int sii_timer_start(void **timer_handle)
 	sii_timer->timer.expires = jiffies + ((HZ *
 					       ((sii_timer->time_interval >= 10) ?
 						(sii_timer->time_interval) : 10)) / 1000) + 1;
-	pr_info("\nexpires = %lx\n", sii_timer->timer.expires);
+	pr_info("expires = %lx\n", sii_timer->timer.expires);
 	if (!timer_pending(&sii_timer->timer)) {
 		add_timer(&sii_timer->timer);
 		;

@@ -81,17 +81,17 @@ void enable_power_mode(struct sii_typec *ptypec_dev, enum ufp_volsubstate cur_se
 	switch (cur_sel) {
 	case UFP_DEFAULT:
 		ptypec_dev->pwr_ufp_sub_state = UFP_DEFAULT;
-		pr_info("  Default\n");
+		pr_info("Default\n");
 		break;
 	case UFP_1P5V:
 		sii_platform_wr_reg8(REG_ADDR__ANA_CCPD_MODE_CTRL, 0x1);
 		ptypec_dev->pwr_ufp_sub_state = UFP_1P5V;
-		pr_info("  1.5A\n");
+		pr_info("1.5A\n");
 		break;
 	case UFP_3V:
 		sii_platform_wr_reg8(REG_ADDR__ANA_CCPD_MODE_CTRL, 0x2);
 		ptypec_dev->pwr_ufp_sub_state = UFP_3V;
-		pr_info("  3A\n");
+		pr_info("3A\n");
 		break;
 	default:
 		pr_info("Not a valid case\n");
@@ -119,10 +119,10 @@ void typec_sm_state_init(struct sii_typec *ptypec_dev, enum phy_drp_config drp_r
 		pr_info("DRP ROLE: set to TOGGLE_RP\n");
 		ptypec_dev->cc_mode = DRP;
 	} else if (drp_role == TYPEC_DRP_DFP) {
-		pr_info(" DFP SET(F)\n");
+		pr_info("DFP SET(F)\n");
 		ptypec_dev->cc_mode = DFP;
 	} else {
-		pr_info(" UFP SET(F)\n");
+		pr_info("UFP SET(F)\n");
 		ptypec_dev->cc_mode = UFP;
 	}
 	ptypec_dev->state = UNATTACHED;
@@ -234,17 +234,15 @@ static bool check_substrate_req_dfp(struct sii_typec *ptypec_dev)
 	else
 		cb_orietn = TYPEC_UNDEFINED;
 
-	pr_info(" CC Connection FLIP/NON-FLIP : ");
-
 	if (cb_orietn == TYPEC_CABLE_NOT_FLIPPED) {
-		pr_info(" %s: NON-FLIP  :%s\n", ANSI_ESC_CYAN_TEXT, ANSI_ESC_RESET_TEXT);
+		pr_info("CC Connection FLIP/NON-FLIP : NON-FLIP\n");
 		sii_platform_clr_bit8(REG_ADDR__PDCTR12, BIT_MSK__PDCTR12__RI_MODE_FLIP);
 		ptypec_dev->is_flipped = TYPEC_CABLE_NOT_FLIPPED;
 #ifndef CONFIG_USB_C_SWITCH_SII70XX_MHL_MODE
 		trigger_driver(g_exttypec, HOST_TYPE, ENABLE, DONT_CARE);
 #endif
 	} else if (cb_orietn == TYPEC_CABLE_FLIPPED) {
-		pr_info("%s: FLIP :%s\n", ANSI_ESC_CYAN_TEXT, ANSI_ESC_RESET_TEXT);
+		pr_info("CC Connection FLIP/NON-FLIP : FLIP\n");
 		sii_platform_set_bit8(REG_ADDR__PDCTR12, BIT_MSK__PDCTR12__RI_MODE_FLIP);
 		ptypec_dev->is_flipped = TYPEC_CABLE_FLIPPED;
 #ifndef CONFIG_USB_C_SWITCH_SII70XX_MHL_MODE
@@ -252,7 +250,7 @@ static bool check_substrate_req_dfp(struct sii_typec *ptypec_dev)
 #endif
 	} else {
 		ptypec_dev->is_flipped = TYPEC_UNDEFINED;
-		pr_info(": In-Valid :\n");
+		pr_info("CC Connection FLIP/NON-FLIP : In-Valid\n");
 	}
 	/*substrate is not checked yet */
 	return true;
@@ -272,7 +270,7 @@ void ufp_cc_adc_work(WORK_STRUCT *w)
 	ptypec_dev->rcd_data1 = 0;
 	ptypec_dev->rcd_data2 = 0;
 	vol_thres = sii_platform_rd_reg8(REG_ADDR__CCCTR8) & 0x3F;
-	pr_info("\nufp_cc_adc_work\n");
+	pr_info("ufp_cc_adc_work\n");
 	do {
 		rcd_data1 = sii_platform_rd_reg8(REG_ADDR__CC1VOL) & 0x3F;
 		rcd_data2 = sii_platform_rd_reg8(REG_ADDR__CC2VOL) & 0x3F;
@@ -328,7 +326,7 @@ static bool check_substrate_req_ufp(struct sii_typec *ptypec_dev)
 
 ufp_adc_done:
 
-	pr_info("\n **Fianal CC1 = %X and CC2 = %X **\n", rcd_data1, rcd_data2);
+	pr_info("Fianal CC1 = %X and CC2 = %X\n", rcd_data1, rcd_data2);
 	if ((rcd_data1 > DEFAULT_MIN) && (rcd_data1 <= vol_thres))
 		cb_orietn = TYPEC_CABLE_NOT_FLIPPED;
 	else if ((rcd_data2 > DEFAULT_MIN) && (rcd_data2 <= vol_thres))
@@ -351,22 +349,19 @@ ufp_adc_done:
 	else
 		ptypec_dev->pwr_dfp_sub_state = UFP_DEFAULT;
 
-
-	pr_info(" UFP CC Connection FLIP/NON-FLIP : ");
-
 	if (cb_orietn == TYPEC_CABLE_NOT_FLIPPED) {
-		pr_info("%s : NON-FLIP  :%s\n", ANSI_ESC_CYAN_TEXT, ANSI_ESC_RESET_TEXT);
+		pr_info("UFP CC Connection FLIP/NON-FLIP : NON-FLIP\n");
 		sii_platform_clr_bit8(REG_ADDR__PDCTR12, BIT_MSK__PDCTR12__RI_MODE_FLIP);
 		ptypec_dev->is_flipped = TYPEC_CABLE_NOT_FLIPPED;
 		trigger_driver(g_exttypec, DEVICE_TYPE, ENABLE, DONT_CARE);
 	} else if (cb_orietn == TYPEC_CABLE_FLIPPED) {
-		pr_info("%s: FLIP :%s\n", ANSI_ESC_CYAN_TEXT, ANSI_ESC_RESET_TEXT);
+		pr_info("UFP CC Connection FLIP/NON-FLIP : FLIP\n");
 		sii_platform_set_bit8(REG_ADDR__PDCTR12, BIT_MSK__PDCTR12__RI_MODE_FLIP);
 		ptypec_dev->is_flipped = TYPEC_CABLE_FLIPPED;
 		trigger_driver(g_exttypec, DEVICE_TYPE, ENABLE, DONT_CARE);
 	} else {
 		ptypec_dev->is_flipped = TYPEC_UNDEFINED;
-		pr_info(": In-Valid :\n");
+		pr_info("UFP CC Connection FLIP/NON-FLIP : In-Valid\n");
 	}
 
 	return true;
@@ -376,7 +371,7 @@ void sii_typec_events(struct sii_typec *ptypec_dev, uint32_t event_flags)
 {
 	int work = 1;
 
-	pr_info("\n Handle sii_typec_events :%x\n", event_flags);
+	pr_info("Handle sii_typec_events :%x\n", event_flags);
 	switch (ptypec_dev->state) {
 
 	case ATTACHED_UFP:
@@ -429,10 +424,10 @@ void sii_check_vbus_status(struct sii_typec *ptypec_dev)
 
 	if (ptypec_dev->cc_mode == DRP) {
 		if ((cc_status == 0x00) || (cc_status == 0x04)) {
-			pr_info("Vbus Glitch");
+			pr_info("Vbus Glitch\n");
 			sii_update_70xx_mode(ptypec_dev->drv_context, TYPEC_DRP_TOGGLE_RD);
 		} else {
-			pr_info("Not a Glitch");
+			pr_info("Not a Glitch\n");
 		}
 	}
 }
@@ -448,7 +443,7 @@ void typec_sm0_work(WORK_STRUCT *w)
 	bool result;
 
 	if (!down_interruptible(&drv_context->isr_lock)) {
-		pr_info("Type-c State: %x", ptypec_dev->state);
+		pr_info("Type-c State: %x ", ptypec_dev->state);
 		switch (ptypec_dev->state) {
 		case DISABLED:
 		case ERROR_RECOVERY:
@@ -461,7 +456,7 @@ void typec_sm0_work(WORK_STRUCT *w)
 			break;
 
 		case UNATTACHED:
-			pr_info("%s:UNATTACHED:%s\n", ANSI_ESC_MAGENTA_TEXT, ANSI_ESC_RESET_TEXT);
+			pr_info("UNATTACHED\n");
 			/*chihhao
 			   sii_platform_read_70xx_gpio(drv_context); */
 
@@ -480,7 +475,7 @@ void typec_sm0_work(WORK_STRUCT *w)
 				pr_info("PREV_STATE:ATTACHED_UFP\n");
 				set_pd_reset(drv_context, true);
 				if (ptypec_dev->cc_mode == DRP) {
-					pr_info("**toggle RD");
+					pr_info("toggle RD\n");
 					sii_update_70xx_mode(ptypec_dev->drv_context,
 							     TYPEC_DRP_TOGGLE_RD);
 				} else if (ptypec_dev->cc_mode == DFP) {
@@ -498,7 +493,7 @@ void typec_sm0_work(WORK_STRUCT *w)
 				pr_info("PREV_STATE:LOCK_UFP\n");
 				set_pd_reset(drv_context, true);
 				if (ptypec_dev->cc_mode == DRP) {
-					pr_info("**toggle RP");
+					pr_info("toggle RP\n");
 					sii_update_70xx_mode(ptypec_dev->drv_context,
 							     TYPEC_DRP_TOGGLE_RP);
 				} else if (ptypec_dev->cc_mode == DFP) {
@@ -549,7 +544,7 @@ void typec_sm0_work(WORK_STRUCT *w)
 			break;
 
 		case LOCK_UFP:
-			pr_info("%s:LOCK_UFP:%s\n", ANSI_ESC_MAGENTA_TEXT, ANSI_ESC_RESET_TEXT);
+			pr_info("LOCK_UFP\n");
 			sii70xx_vbus_enable(drv_context, VBUS_DEFAULT);
 			/*enable_vconn(cb_orietn); */
 			set_70xx_mode(drv_context, TYPEC_DRP_UFP);
@@ -563,11 +558,11 @@ void typec_sm0_work(WORK_STRUCT *w)
 			break;
 
 		case ATTACHED_UFP:
-			pr_info("%s:ATTACHED UFP:%s\n", ANSI_ESC_MAGENTA_TEXT, ANSI_ESC_RESET_TEXT);
+			pr_info("ATTACHED UFP\n");
 			ptypec_dev->prev_state = ptypec_dev->state;
 
 			if (test_bit(DFP_DETACHED, &ptypec_dev->inputs)) {
-				pr_info("*** DFP Detached\n");
+				pr_info("DFP Detached\n");
 				ptypec_dev->dfp_attached = false;
 				clear_bit(DFP_DETACHED, &ptypec_dev->inputs);
 				ptypec_dev->state = UNATTACHED;
@@ -615,7 +610,7 @@ void typec_sm0_work(WORK_STRUCT *w)
 			break;
 
 		case ATTACHED_DFP:
-			pr_info("%s:ATTACHED_DFP:%s\n", ANSI_ESC_MAGENTA_TEXT, ANSI_ESC_RESET_TEXT);
+			pr_info("ATTACHED_DFP\n");
 			ptypec_dev->prev_state = ptypec_dev->state;
 
 			if (test_bit(UFP_DETACHED, &ptypec_dev->inputs)) {
@@ -672,7 +667,7 @@ void typec_sm0_work(WORK_STRUCT *w)
 			sii_mask_detach_interrupts(ptypec_dev->drv_context);
 			ptypec_dev->prev_state = ptypec_dev->state;
 
-			pr_info("%s:DFP_DRP_WAIT:%s\n", ANSI_ESC_MAGENTA_TEXT, ANSI_ESC_RESET_TEXT);
+			pr_info("DFP_DRP_WAIT\n");
 			msleep(100);
 			/*enable_vconn(phy); */
 			ptypec_dev->state = ATTACHED_DFP;

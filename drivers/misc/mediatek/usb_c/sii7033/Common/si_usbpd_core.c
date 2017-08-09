@@ -138,8 +138,7 @@ bool sii_process_data_msg(struct sii_usbpd_protocol *pd, struct pd_inq *req)
 		return false;
 	}
 
-	pr_info("\n========================\n");
-	pr_info("\nReceived Command:   \t");
+	pr_info("Received Command : ");
 
 	memset(pd->cb_params, 0, sizeof(struct pd_cb_params));
 
@@ -147,31 +146,30 @@ bool sii_process_data_msg(struct sii_usbpd_protocol *pd, struct pd_inq *req)
 	pd->cb_params->sm_cmd_inputs = 0;
 	switch (MSG_TYPE(req->command)) {
 	case SRCCAP:
-		pr_info(": SRC CAP RCVD. :\n");
+		pr_info("SRC CAP RCVD.\n");
 		set_bit(SRC_CAP_RCVD, &pd->cb_params->sm_cmd_inputs);
 		break;
 	case REQ:
-		pr_info(": REQ RCVD. :\n");
+		pr_info("REQ RCVD.\n");
 		set_bit(REQ_RCVD, &pd->cb_params->sm_cmd_inputs);
 		break;
 	case BIST:
-		pr_info(": BIST RCVD. :\n");
+		pr_info("BIST RCVD.\n");
 		set_bit(BIST_RCVD, &pd->cb_params->sm_cmd_inputs);
 		parse_bist(pd, req);
 		return true;
 	case SNKCAP:
-		pr_info(": SNK CAP RCVD. :\n");
+		pr_info("SNK CAP RCVD.\n");
 		set_bit(SNK_CAP_RCVD, &pd->cb_params->sm_cmd_inputs);
 		break;
 	case VDM:
-		pr_info(": VDM CAP RCVD. :  ");
+		pr_info("VDM CAP RCVD.\n");
 		sii_pd_vdm_handler(pd, req);
 		break;
 	default:
-		pr_info(": Incorrect data message :\n");
+		pr_info("Incorrect data message.\n");
 		return false;
 	}
-	pr_info("\n========================\n");
 
 	if (pd->cb_params) {
 		pd->cb_params->data = (uint8_t *) req->msgdata;
@@ -192,67 +190,65 @@ bool sii_process_ctrl_cmds(struct sii_usbpd_protocol *pd, struct pd_inq *req)
 		return false;
 	}
 
-	pr_info("\n========================\n");
-	pr_info("\nReceived Command:   \t");
+	pr_info("Received Command : ");
 	memset(pd->cb_params, 0, sizeof(struct pd_cb_params));
 	switch (MSG_TYPE(req->command)) {
 	case CTRL_MSG__GOODCRC:
-		pr_info(": GOODCRC :\n");
+		pr_info("GOODCRC\n");
 		set_bit(GOOD_CRC_RCVD, &pd->cb_params->sm_cmd_inputs);
 		break;
 	case CTRL_MSG__GO_TO_MIN:
-		pr_info(": GO_TO_MIN :\n");
+		pr_info("GO_TO_MIN\n");
 		set_bit(GOTOMIN_RCVD, &pd->cb_params->sm_cmd_inputs);
 		break;
 	case CTRL_MSG__ACCEPT:
-		pr_info(": ACCEPT :\n");
+		pr_info("ACCEPT\n");
 		set_bit(ACCEPT_RCVD, &pd->cb_params->sm_cmd_inputs);
 		break;
 	case CTRL_MSG__REJECT:
-		pr_info(": REJECT :\n");
+		pr_info("REJECT\n");
 		set_bit(REJECT_RCVD, &pd->cb_params->sm_cmd_inputs);
 		break;
 	case CTRL_MSG__PING:
-		pr_info(": PING :\n");
+		pr_info("PING\n");
 		set_bit(PING_RCVD, &pd->cb_params->sm_cmd_inputs);
 		break;
 	case CTRL_MSG__PS_RDY:
-		pr_info(": PS_RDY :\n");
+		pr_info("PS_RDY\n");
 		set_bit(PS_RDY_RCVD, &pd->cb_params->sm_cmd_inputs);
 		break;
 	case CTRL_MSG__GET_SRC_CAP:
-		pr_info(": GET_SOURCE_CAP :\n");
+		pr_info("GET_SOURCE_CAP\n");
 		set_bit(GET_SOURCE_CAP_RCVD, &pd->cb_params->sm_cmd_inputs);
 		break;
 	case CTRL_MSG__GET_SINK_CAP:
-		pr_info(": GET_SINK_CAP :\n");
+		pr_info("GET_SINK_CAP\n");
 		set_bit(GET_SINK_CAP_RCVD, &pd->cb_params->sm_cmd_inputs);
 		break;
 	case CTRL_MSG__DR_SWAP:
-		pr_info(": DR_SWAP :\n");
+		pr_info("DR_SWAP\n");
 		set_bit(DR_SWAP_RCVD, &pd->cb_params->sm_cmd_inputs);
 		break;
 	case CTRL_MSG__PR_SWAP:
-		pr_info(": PR_SWAP :\n");
+		pr_info("PR_SWAP\n");
 		set_bit(PR_SWAP_RCVD, &pd->cb_params->sm_cmd_inputs);
 		break;
 	case CTRL_MSG__VCONN_SWAP:
-		pr_info(": VCONN_SWAP :\n");
+		pr_info("VCONN_SWAP\n");
 		set_bit(VCONN_SWAP_RCVD, &pd->cb_params->sm_cmd_inputs);
 		break;
 	case CTRL_MSG__WAIT:
-		pr_info(": WAIT :\n");
+		pr_info("WAIT\n");
 		set_bit(WAIT_RCVD, &pd->cb_params->sm_cmd_inputs);
 		break;
 	case CTRL_MSG__SOFT_RESET:
-		pr_info(": SOFT_RESET :\n");
+		pr_info("SOFT_RESET\n");
 		set_bit(SOFT_RESET_RCVD, &pd->cb_params->sm_cmd_inputs);
 		break;
 	default:
-		pr_info(": Unhandled ctrl message type :\n");
+		pr_info("Unhandled ctrl message type\n");
 		return false;
 	}
-	pr_info("\n========================\n");
 
 	if (pd->cb_params) {
 		pd->cb_params->count = req->count;
@@ -421,7 +417,7 @@ static void parse_svid(struct sii_usbpd_protocol *pd, struct pd_inq *req)
 			break;
 		}
 		if (svid0 == 0xFF01) {
-			pr_info("*DISPLAY PORT DETECTION **\n");
+			pr_info("DISPLAY PORT DETECTION\n");
 			set_bit(DISPLAY_PORT_RCVD, &pd->cb_params->svdm_sm_inputs);
 			break;
 		}
@@ -672,36 +668,36 @@ static void init_resp(struct sii_usbpd_protocol *pd, struct pd_inq *req)
 {
 	switch (SII_USBPD_VDO_CMD(req->msgdata[0])) {
 	case DISCOVER_IDENTITY:
-		pr_info(": DISCOVER_IDENTITY :\n");
+		pr_info("DISCOVER_IDENTITY\n");
 		set_bit(SVDM_DISC_IDEN_RCVD, &pd->cb_params->svdm_sm_inputs);
 		parse_vdm_identity(pd, req);
 		break;
 	case DISCOVER_SVID:
-		pr_info(": DISCOVER_SVID :\n");
+		pr_info("DISCOVER_SVID\n");
 		set_bit(DISCOVER_SVID_RCVD, &pd->cb_params->svdm_sm_inputs);
 		parse_svid(pd, req);
 		break;
 	case DISCOVER_MODE:
-		pr_info(": DISCOVER_MODE :\n");
+		pr_info("DISCOVER_MODE\n");
 		set_bit(DISCOVER_MODE_RCVD, &pd->cb_params->svdm_sm_inputs);
 		parse_modes(pd, req);
 		break;
 	case ENTER_MODE:
-		pr_info(": ENTER_MODE :\n");
+		pr_info("ENTER_MODE\n");
 		set_bit(ENTER_MODE_RCVD, &pd->cb_params->svdm_sm_inputs);
 		parse_enter_mode(pd, req);
 		break;
 	case EXIT_MODE:
-		pr_info(": EXIT_MODE :\n");
+		pr_info("EXIT_MODE\n");
 		set_bit(EXIT_MODE_RCVD, &pd->cb_params->svdm_sm_inputs);
 		parse_exit_mode(pd, req);
 		break;
 	case ATTENTION:
-		pr_info(": ATTENTION :\n");
+		pr_info("ATTENTION\n");
 		set_bit(VDM_ATTENTION_RCVD, &pd->cb_params->svdm_sm_inputs);
 		break;
 	default:
-		pr_debug(": UNDEFINED :\n");
+		pr_debug("UNDEFINED\n");
 		break;
 	}
 }
@@ -713,28 +709,28 @@ static bool sii_pd_vdm_handler(struct sii_usbpd_protocol *pd, struct pd_inq *req
 		/*pr_debug(" value => %X\n", req->msgdata[0]); */
 		set_bit(UVDM_RCVD, &pd->cb_params->uvdm_sm_inputs);
 		if ((req->msgdata[0] >> 6) & 0x1)
-			pr_debug("\n UVDM => ACK  CURRENT ==> %d00 mA\n", temp_data);
+			pr_debug("UVDM => ACK  CURRENT ==> %d00 mA\n", temp_data);
 		return true;
 	}
 	switch (SII_USBPD_VDO_CMDT(req->msgdata[0])) {
 	case INITIATOR:
-		pr_debug(": INITIATOR :  ");
+		pr_debug("INITIATOR\n");
 		init_resp(pd, req);
 		break;
 	case RESP_ACK:
-		pr_info(": RESP_ACK :  ");
+		pr_info("RESP_ACK\n");
 		init_resp_ack(pd, req);
 		break;
 	case RESP_NACK:
-		pr_debug(": RESP_NACK :  ");
+		pr_debug("RESP_NACK\n");
 		init_resp_nack(pd, req);
 		break;
 	case RESP_BUSY:
-		pr_debug(": RESP_BUSY : ");
+		pr_debug("RESP_BUSY\n");
 		init_busy(pd, req);
 		break;
 	default:
-		pr_debug(": UNDEFINED :  ");
+		pr_debug("UNDEFINED\n");
 		break;
 	}
 	set_bit(VDM_MSG_RCVD, &pd->cb_params->svdm_sm_inputs);
@@ -791,7 +787,7 @@ bool send_custom_vdm_message(struct sii_usbpd_protocol *pd, enum data_msg msg_ty
 
 	temp_data = type;
 
-	pr_debug("\n UVDM => REQ  CURRENT ==>%d00 mA\n", type);
+	pr_debug("UVDM => REQ  CURRENT ==>%d00 mA\n", type);
 
 	return b_result;
 }
@@ -807,7 +803,7 @@ bool usbpd_send_vdm_cmd(struct sii_usbpd_protocol *pd,
 	bool b_result;
 	uint32_t pd_header = 0, vdm_header = 0;
 
-	pr_info("\n====> Send Command ::");
+	pr_info("Send Command : ");
 	switch (type) {
 	case DISCOVER_IDENTITY:
 		vdm_header = SVDM_HEADER(0xFF00, 1, 0, 0, INITIATOR, DISCOVER_IDENTITY);
@@ -1127,5 +1123,5 @@ void usbpd_core_exit(void *context)
 		kfree(prot_lyr->cb_params);
 	if (prot_lyr != NULL)
 		kfree(prot_lyr);
-	pr_info("\nkfree pd_Core\n");
+	pr_info("kfree pd_Core\n");
 }

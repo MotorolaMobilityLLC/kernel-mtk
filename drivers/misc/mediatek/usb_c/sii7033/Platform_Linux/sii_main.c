@@ -89,7 +89,7 @@ static int si_parse_dt(struct device *dev)
 
 static int sii_i2c_remove(struct i2c_client *client)
 {
-	pr_info("\nGPIO free Array\n");
+	pr_info("GPIO free Array\n");
 #if 0
 	gpio_free_array(sii70xx_gpio, ARRAY_SIZE(sii70xx_gpio));
 #endif
@@ -259,8 +259,6 @@ int usb_redriver_exit_dps(struct usbtypc *typec)
 static DEFINE_MUTEX(typec_lock);
 void sii7033_eint_work(struct work_struct *data)
 {
-	pr_err("sii7033_eint_work\n");
-
 	mutex_lock(&typec_lock);
 
 	usbpd_irq_handler(g_exttypec->irqnum, g_drv_context);
@@ -275,8 +273,6 @@ void sii7033_eint_work(struct work_struct *data)
 
 irqreturn_t sii7033_eint_isr(int irqnum, void *data)
 {
-	pr_err("sii7033_eint_isr : %d\n", irqnum);
-
 	if (g_exttypec->en_irq) {
 		disable_irq_nosync(irqnum);
 		g_exttypec->en_irq = 0;
@@ -377,9 +373,7 @@ static int sii_i2c_probe(struct i2c_client *client, const struct i2c_device_id *
 
 	dev_dbg(&client->dev, "Enter\n");
 
-	pr_info("\n=======================================\n");
-	pr_info("\n --- SII70XX Driver v8.4 ---\n");
-	pr_info("\n=======================================\n");
+	pr_info("SII70XX Driver v8.4\n");
 
 #if 0
 	if (client->dev.of_node) {
@@ -408,7 +402,7 @@ static int sii_i2c_probe(struct i2c_client *client, const struct i2c_device_id *
 	mutex_init(&typec_lock);
 	INIT_DELAYED_WORK(&g_exttypec->eint_work, sii7033_eint_work);
 
-	pr_info("\ndrp_mode 0x%x\n", drp_mode);
+	pr_info("drp_mode 0x%x\n", drp_mode);
 	/*pdev->pd_mode = drp_mode; */
 	sii70xx_device_init(&client->dev, (struct gpio *)sii70xx_gpio);
 
@@ -496,7 +490,7 @@ static void __exit si_drv_70xx_exit(void)
 	usbpd_device_exit(&i2c_dev_client->dev);
 	pr_info("client removed\n");
 	i2c_del_driver(&sii_i2c_driver);
-	pr_info("driver unloaded.\n");
+	pr_info("driver unloaded\n");
 }
 fs_initcall(si_drv_70xx_init);
 

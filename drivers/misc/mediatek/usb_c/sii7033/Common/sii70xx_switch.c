@@ -37,8 +37,7 @@ void si_enable_switch_control(struct sii70xx_drv_context *drv_context,
 		sii_platform_wr_reg8(REG_ADDR__ANA_CCPD_CTRL0, 0x12);
 		/* pin select for LDO/BGR on --forceable turn on   */
 
-		pr_info("\n%s:SII70XX SWITCH POSITION = ENABLE:%s\n",
-			ANSI_ESC_GREEN_TEXT, ANSI_ESC_RESET_TEXT);
+		pr_info("SII70XX SWITCH POSITION = ENABLE\n");
 	} else {
 		sii_platform_wr_reg8(0x88, 0x8);
 		sii_platform_wr_reg8(REG_ADDR__ANA_SWCH_CTRL0, 0x00);
@@ -49,7 +48,6 @@ void si_enable_switch_control(struct sii70xx_drv_context *drv_context,
 		/*Analog switch test bus             */
 		sii_platform_wr_reg8(REG_ADDR__ANA_CCPD_CTRL0, 0x00);
 		/*pin select for LDO/BGR on --forceable turn on   */
-		pr_info("\n%s:SII70XX SWITCH POSITION = DISABLE:%s\n",
-			ANSI_ESC_GREEN_TEXT, ANSI_ESC_RESET_TEXT);
+		pr_info("SII70XX SWITCH POSITION = DISABLE\n");
 	}
 }

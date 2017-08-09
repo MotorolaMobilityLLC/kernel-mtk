@@ -120,10 +120,10 @@ void sii_platform_read_70xx_gpio(struct sii70xx_drv_context *drv_context)
 	uint8_t gpio_status = 0;
 
 	gpio_status = gpio_get_value(drv_context->sii_gpio[VBUS_SRC].gpio);
-	pr_info("\n VBUS SOURCE STATUS = %x\n", gpio_status);
+	pr_info("VBUS SOURCE STATUS = %x\n", gpio_status);
 
 	gpio_status = gpio_get_value(drv_context->sii_gpio[VBUS_SNK].gpio);
-	pr_info("\n VBUS SINK STATUS = %x\n", gpio_status);
+	pr_info("VBUS SINK STATUS = %x\n", gpio_status);
 }
 
 void sii_platform_vbus_control(struct sii70xx_drv_context *drv_context, uint8_t vbus_type)
@@ -181,13 +181,13 @@ void sii70xx_platform_reset(struct sii70xx_drv_context *drv_context)
 	msleep(20);
 	gpio_set_value(drv_context->sii_gpio[RESET_CTRL].gpio, 1);
 #endif
-	pr_info("\n!!!Platform Reset!!!\n");
+	pr_info("Platform Reset\n");
 }
 
 void SiiPlatformDebugAssert(const char *pFileName, uint32_t lineNumber,
 			    uint32_t expressionEvaluation, const char *pConditionText)
 {
-	pr_info("\n\nAsserting with failure in %s Line %d\n\n", pFileName, (int)lineNumber);
+	pr_info("Asserting with failure in %s Line %d\n", pFileName, (int)lineNumber);
 	for (;;) {
 		;
 	};			/* Note: just an example */
