@@ -780,6 +780,11 @@ static int fe_start_xmit(struct sk_buff *skb, struct net_device *dev)
 	int tx_num;
 	int len = skb->len;
 
+	/* pr_err("fe_start_xmit, FE_REG_FE_INT_ENABLE=%x, A28=%x\n", */
+	/* fe_reg_r32(FE_REG_FE_INT_ENABLE), fe_r32(0xA28)); */
+	/* pr_err("1B100020 = %lx, 1B1000A50 = %lx, 1B1000A54 =%lx\n", */
+	/* fe_r32(0x20), fe_r32(0xA50), fe_r32(0xA54)); */
+	/* pr_err("status = %lx\n", fe_reg_r32(FE_REG_FE_INT_STATUS)); */
 	if (fe_skb_padto(skb, priv)) {
 		netif_warn(priv, tx_err, dev, "tx padding failed!\n");
 		return NETDEV_TX_OK;
@@ -832,6 +837,10 @@ static int fe_poll_rx(struct napi_struct *napi, int budget,
 	int done = 0, pad;
 	bool rx_vlan = netdev->features & NETIF_F_HW_VLAN_CTAG_RX;
 
+	/* pr_err("%s: FE_REG_RX_CALC_IDX0=%d FE_REG_RX_DRX_IDX0=%d\n", */
+	/* __func__, idx, fe_reg_r32(FE_REG_RX_DRX_IDX0)); */
+	/* pr_err("if interrupt enable (1b100a28) = %lx\n", */
+	/* fe_reg_r32(FE_REG_FE_INT_ENABLE)); */
 	if (netdev->features & NETIF_F_RXCSUM)
 		checksum_bit = soc->checksum_bit;
 	else
@@ -1216,7 +1225,7 @@ static int fe_open(struct net_device *dev)
 
 	val = FE_TX_WB_DDONE | FE_RX_DMA_EN | FE_TX_DMA_EN;
 
-	if (IS_ENABLED(CONFIG_SOC_MT7621) || IS_ENABLED(CONFIG_MACH_MT2701) ||
+	if (IS_ENABLED(CONFIG_MACH_MT2701) ||
 	    IS_ENABLED(CONFIG_ARCH_MT7623))
 		val |= ADMA_RX_BT_SIZE_32DWORDS;
 
@@ -1524,6 +1533,7 @@ static void fe_pending_work(struct work_struct *work)
 
 const struct of_device_id pio_match[] = {
 	{.compatible = "mediatek,mt2701-pinctrl"},
+	{.compatible = "mediatek,mt7623-pinctrl"},
 	{}
 };
 
@@ -1662,7 +1672,7 @@ static int fe_probe(struct platform_device *pdev)
 		usleep_range(1000, 1010);
 		gpio_set_value(reset_pin_port, 1);
 		mdelay(100);
-	} else if (IS_ENABLED(CONFIG_SOC_MT7621) ||
+	} else if (IS_ENABLED(CONFIG_SOC_MT7621) || IS_ENABLED(CONFIG_ARCH_MT7623) ||
 			IS_ENABLED(CONFIG_MACH_MT2701)) {
 		if (IS_ERR(priv->reset_pin)) {
 			pr_err("pinctrl_get error\n");

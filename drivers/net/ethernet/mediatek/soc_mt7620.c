@@ -275,6 +275,7 @@ static struct fe_soc_data mt7623_data = {
 	.switch_config = mt7621_gsw_config,
 	.reg_table = mt7621_reg_table,
 	.pdma_glo_cfg = FE_PDMA_SIZE_16DWORDS,
+	/* it can be replaced by ADMA_RX_BT_SIZE_32DWORDS, */
 	.rx_int = RT5350_RX_DONE_INT,
 	.tx_int = RT5350_TX_DONE_INT,
 	.status_int = (MT7621_FE_GDM1_AF | MT7621_FE_GDM2_AF),

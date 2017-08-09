@@ -761,7 +761,7 @@ void trgmii_calibration_7623(struct mt7620_gsw *gsw)
 	init_toggle_data = 0x00000055;
 	training_word = 0x000000AC;
 
-	/* pr_err("Calibration begin ........"); */
+	pr_err("Calibration begin ........");
 	/* RX clock gating in MT7623 */
 	/* Assert RX  reset in MT7623 */
 	/* Set TX OE edge in  MT7623 */
@@ -838,7 +838,7 @@ void trgmii_calibration_7623(struct mt7620_gsw *gsw)
 		read_data = gsw_r32(gsw, TRGMII_7623_base);
 		if (err_total_flag == 0) {
 			tmp = (read_data & 0x0000007f) + rxc_step_size;
-			/* pr_err(" RXC delay = %d\n", tmp); */
+			pr_err(" RXC delay = %d\n", tmp);
 			read_data >>= 8;
 			read_data &= 0xffffff80;
 			read_data |= tmp;
@@ -848,7 +848,7 @@ void trgmii_calibration_7623(struct mt7620_gsw *gsw)
 			gsw_w32(gsw, read_data, TRGMII_7623_base);
 		} else {
 			tmp = (read_data & 0x0000007f) + 16;
-			/* pr_err(" RXC delay = %d\n", tmp); */
+			pr_err(" RXC delay = %d\n", tmp);
 			read_data >>= 8;
 			read_data &= 0xffffff80;
 			read_data |= tmp;
@@ -911,7 +911,7 @@ void trgmii_calibration_7623(struct mt7620_gsw *gsw)
 					TRGMII_7623_RD_0 + i * 8);
 			}
 		}
-		/* pr_err("MT7623 %dth bit  Tap_a = %d\n", i, tap_a[i]); */
+		pr_err("MT7623 %dth bit  Tap_a = %d\n", i, tap_a[i]);
 	}
 	/* pr_err("Last While Loop\n"); */
 	for (i = 0; i < 5; i++) {
@@ -945,7 +945,7 @@ void trgmii_calibration_7623(struct mt7620_gsw *gsw)
 		}
 
 		tap_b[i] = rd_tap;	/* -rxd_step_size; */
-		/* pr_err("MT7623 %dth bit  Tap_b = %d\n", i, tap_b[i]); */
+		pr_err("MT7623 %dth bit  Tap_b = %d\n", i, tap_b[i]);
 		/* Calculate RXD delay = (TAP_A + TAP_B)/2 */
 		final_tap[i] = (tap_a[i] + tap_b[i]) / 2;
 		read_data = (read_data & 0xffffff80) | final_tap[i];
@@ -1184,7 +1184,7 @@ void trgmii_calibration_7530(struct mt7620_gsw *gsw)
 					read_data);
 			wait_loop(gsw);
 		}
-		/* pr_err("MT7530 %dth bit  Tap_a = %d\n", i, tap_a[i]); */
+		pr_err("MT7530 %dth bit  Tap_a = %d\n", i, tap_a[i]);
 	}
 	/* pr_err("Last While Loop\n"); */
 	for (i = 0; i < 5; i++) {
@@ -1224,7 +1224,7 @@ void trgmii_calibration_7530(struct mt7620_gsw *gsw)
 			wait_loop(gsw);
 		}
 		tap_b[i] = rd_tap;	/* - rxd_step_size; */
-		/* pr_err("MT7530 %dth bit  Tap_b = %d\n", i, tap_b[i]); */
+		pr_err("MT7530 %dth bit  Tap_b = %d\n", i, tap_b[i]);
 		/* Calculate RXD delay = (TAP_A + TAP_B)/2 */
 		final_tap[i] = (tap_a[i] + tap_b[i]) / 2;
 		/* pr_err("MT7530 %dbit Final Tap = %d\n", i, final_tap[i]); */
