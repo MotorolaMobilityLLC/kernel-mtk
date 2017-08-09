@@ -480,13 +480,15 @@ int dpmgr_destroy_path_handle(disp_path_handle dp_handle)
 
 	ASSERT(dp_handle != NULL);
 	handle = (ddp_path_handle) dp_handle;
-	modules = ddp_get_scenario_list(handle->scenario);
-	module_num = ddp_get_module_num(handle->scenario);
-	content = _get_context();
 
-	DDPDBG("destroy path handle %p on scenario %s\n", handle,
-		   ddp_get_scenario_name(handle->scenario));
 	if (handle != NULL) {
+		modules = ddp_get_scenario_list(handle->scenario);
+		module_num = ddp_get_module_num(handle->scenario);
+		content = _get_context();
+
+		DDPDBG("destroy path handle %p on scenario %s\n", handle,
+		ddp_get_scenario_name(handle->scenario));
+
 		release_mutex(handle->hwmutexid);
 		for (i = 0; i < module_num; i++) {
 			module_name = modules[i];
