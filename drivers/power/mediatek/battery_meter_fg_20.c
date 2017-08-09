@@ -1749,6 +1749,7 @@ void fgauge_algo_run_get_init_data(void)
 	bm_info
 	    ("1.[fgauge_algo_run_get_init_data](gFG_voltage_init %d, gFG_current_init %d, gFG_Is_Charging_init %d)\n",
 	     gFG_voltage_init, gFG_current_init, gFG_Is_Charging_init);
+	mt_battery_set_init_vol(gFG_voltage_init);
 }
 #endif
 
