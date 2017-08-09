@@ -115,10 +115,10 @@ struct governor_profile {
 };
 
 static struct governor_profile governor_ctrl = {
-	.plat_feature_en = 0,
-	.vcore_dvs = 0,
-	.ddr_dfs = 0,
-	.freq_dfs = 0,
+	.plat_feature_en = 1,
+	.vcore_dvs = 1,
+	.ddr_dfs = 1,
+	.freq_dfs = 1,
 
 	.isr_debug = 0,
 	.screen_on = 1,
