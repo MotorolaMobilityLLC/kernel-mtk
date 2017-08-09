@@ -577,8 +577,7 @@ static int cldma_gpd_net_rx_collect(struct md_cd_queue *queue, int budget, int b
 				caculate_checksum((char *)rgpd, 0x81);
 				/* set HWO, no need to hold ring_lock as no racer */
 				spin_lock_irqsave(&md_ctrl->cldma_timeout_lock, flags);
-				if (md_ctrl->rxq_active & (1 << queue->index))
-					cldma_write8(&rgpd->gpd_flags, 0, 0x81);
+				cldma_write8(&rgpd->gpd_flags, 0, 0x81);
 				spin_unlock_irqrestore(&md_ctrl->cldma_timeout_lock, flags);
 				/* mark cldma_request as available */
 				req->skb = new_skb;
