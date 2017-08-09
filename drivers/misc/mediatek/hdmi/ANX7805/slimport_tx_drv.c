@@ -4089,7 +4089,12 @@ void SP_CTRL_Video_Changed_Int_Handler (BYTE changed_source)
 		switch(changed_source) {
 		case 0:
 			pr_err("Video:_______________Video clock changed!");
-
+			
+			//SP_TX_Power_Enable(SP_TX_PWR_LINK, SP_TX_POWER_DOWN);
+			SP_TX_Lanes_PWR_Ctrl(CH0_BLOCK, 1);
+			delay_ms(5);
+			SP_TX_Lanes_PWR_Ctrl(CH0_BLOCK, 0);
+			//SP_TX_Lanes_PWR_Ctrl(CH1_BLOCK, 1);
 			SP_CTRL_Set_System_State(SP_TX_CONFIG_VIDEO_INPUT);
 			break;
 		case 1:
