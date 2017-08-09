@@ -383,7 +383,9 @@
 
 #define AFE_MAXLENGTH           (AFE_BASE+0x07D8)
 
+#define AUDPLL_CON0   0x0250
 #define AUDPLL_CON1   0x0254/*(APMIXEDSYS_BASE+0x0254) */
+#define AUDPLL_CON2   0x0258
 #define AUDPLL_CON3   0x0408/*(APMIXEDSYS_BASE+0x0408)*/
 
 /* apmixed sys AUDPLL_CON4 */

@@ -95,7 +95,7 @@
 #include "mt_soc_pcm_common.h"
 #include <linux/of.h>
 #include <linux/of_irq.h>
-
+/*#define HDMI_PASS_I2S_DEBUG*/
 #define MT8127_AFE_MCU_IRQ_LINE (104 + 32)
 
 static DEFINE_SPINLOCK(afe_control_lock);
@@ -3392,7 +3392,12 @@ void set_hdmi_bck_div(unsigned int sample_rate)
 	unsigned int register_value = 0;
 
 	register_value |=
+#ifdef HDMI_PASS_I2S_DEBUG
+	(hdmi_clock_settings[get_sample_rate_index(sample_rate)].HDMI_BCK_DIV) << 8 | (0x20);
+	mt_afe_set_reg(AUDIO_TOP_CON3, register_value , 0x3F20);
+#else
 	    (hdmi_clock_settings[get_sample_rate_index(sample_rate)].HDMI_BCK_DIV) << 8;
 	mt_afe_set_reg(AUDIO_TOP_CON3, register_value, 0x3F00);
+#endif
 }
 

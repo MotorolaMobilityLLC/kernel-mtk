@@ -239,8 +239,20 @@ static bool CheckBitsandReg(short regaddr, char bits)
 }
 bool mt_afe_set_hdmi_connection(uint32_t ConnectionState, uint32_t Input, uint32_t Output)
 {
+	uint32_t input_index;
+	uint32_t output_index;
+
+	/* check if connection request is valid */
+	if (input < HDMI_INTER_CONN_INPUT_BASE || input > HDMI_INTER_CONN_INPUT_MAX ||
+	    output < HDMI_INTER_CONN_OUTPUT_BASE || output > HDMI_INTER_CONN_OUTPUT_MAX) {
+		return false;
+	}
+
+	input_index = Input - HDMI_INTER_CONN_INPUT_BASE;
+	output_index = Output - HDMI_INTER_CONN_OUTPUT_BASE;
+
 	if (ConnectionState)
-		mt_afe_set_reg(AFE_HDMI_CONN0, (Input << (3 * Input)), (0x7 << (3 * Output)));
+		mt_afe_set_reg(AFE_HDMI_CONN0, (input_index << (3 * output_index)), (0x7 << (3 * output_index)));
 	else
 		mt_afe_set_reg(AFE_HDMI_CONN0, 0x0, 0x3FFFFFFF);
 	return true;

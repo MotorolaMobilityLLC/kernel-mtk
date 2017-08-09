@@ -53,10 +53,10 @@ struct audio_clock_attr {
 
 static struct audio_clock_attr aud_clks[CLOCK_NUM] = {
 	[CLOCK_INFRA_SYS_AUDIO] = {"infra_sys_audio_clk", true, false, NULL},
-	[CLOCK_TOP_AUDIO_SEL] = {"top_audio_sel", true, false, NULL},/*top_pdn_audio*/
+	[CLOCK_TOP_AUDIO_SEL] = {"top_audio_sel", true, false, NULL},
 	[CLOCK_TOP_AUDINTBUS_SEL] = {"top_audintbus_sel", true, false, NULL},/*top_pdn_audintbus*/
-	[CLOCK_TOP_APLL_SEL] = {"top_apll_sel", true, false, NULL},
-	[CLOCK_TOP_AUDPLL] = {"top_audpll", true, false, NULL},
+	[CLOCK_TOP_APLL_SEL] = {"top_apll_sel", false, false, NULL},/*top_pdn_audio*/
+	[CLOCK_TOP_AUDPLL] = {"top_audpll", false, false, NULL},
 	[CLOCK_TOP_AUDPLL_D4] = {"top_audpll_d4", false, false, NULL},
 	[CLOCK_TOP_AUDPLL_D8] = {"top_audpll_d8", false, false, NULL},
 	[CLOCK_TOP_AUDPLL_D16] = {"top_audpll_d16", false, false, NULL},
@@ -120,11 +120,6 @@ void turn_on_afe_clock(void)
 		pr_err("%s clk_enable %s fail %d\n",
 		       __func__, aud_clks[CLOCK_TOP_AUDINTBUS_SEL].name, ret);
 
-	ret = clk_enable(aud_clks[CLOCK_TOP_AUDIO_SEL].clock);
-	if (ret)
-		pr_err("%s clk_enable %s fail %d\n",
-		       __func__, aud_clks[CLOCK_TOP_AUDIO_SEL].name, ret);
-
 	mt_afe_set_reg(AUDIO_TOP_CON0, 0 << 2 , 1 << 2);
 	mt_afe_set_reg(AUDIO_TOP_CON0, 0x60004000, 0xffffffff);
 
@@ -149,7 +144,6 @@ void turn_off_afe_clock(void)
 		pr_err("%s disable_clock MT_CG_INFRA_AUDIO fail", __func__);
 #else /*COMMON_CLOCK_FRAMEWORK_API*/
 	mt_afe_set_reg(AUDIO_TOP_CON0, 1 << 2, 1 << 2);
-	clk_disable(aud_clks[CLOCK_TOP_AUDIO_SEL].clock);
 	clk_disable(aud_clks[CLOCK_TOP_AUDINTBUS_SEL].clock);
 	clk_disable(aud_clks[CLOCK_INFRA_SYS_AUDIO].clock);
 #endif
@@ -346,11 +340,11 @@ void turn_on_top_apll_clock(void)
 #ifdef PM_MANAGER_API
 #ifdef CONFIG_MTK_CLKMGR
 #else /*COMMON_CLOCK_FRAMEWORK_API*/
-	int ret = clk_enable(aud_clks[CLOCK_TOP_AUDPLL].clock);
+	int ret = clk_prepare_enable(aud_clks[CLOCK_TOP_APLL_SEL].clock);
 
 	if (ret)
-		pr_err("%s clk_enable %s fail %d\n",
-		       __func__, aud_clks[CLOCK_TOP_AUDPLL].name, ret);
+		pr_err("%s clk_prepare_enable %s fail %d\n",
+		       __func__, aud_clks[CLOCK_TOP_APLL_SEL].name, ret);
 #endif
 #else
 #endif
@@ -363,7 +357,8 @@ void turn_off_top_apll_clock(void)
     /*   Should be removed, MT8127 clk mngr will set MT_CG_TOP_PDN_APLL
       when MT_CG_AUDIO_APLL_TUNER_CK, MT_CG_AUDIO_HDMI_CK, MT_CG_AUDIO_SPDF_CK is set*/
 #else /*COMMON_CLOCK_FRAMEWORK_API*/
-	clk_disable(aud_clks[CLOCK_TOP_AUDPLL].clock);
+	PRINTK_AUD_CLK("turn_off_top_apll_clock");
+	clk_disable_unprepare(aud_clks[CLOCK_TOP_APLL_SEL].clock);
 #endif
 #else
 #endif
@@ -420,18 +415,6 @@ void turn_on_apll1_tuner_clock(void)
 	mt_afe_set_reg(AUDIO_TOP_CON0, 0 << 19, 1 << 19);
 	mt_afe_set_reg(AFE_APLL1_TUNER_CFG, 0x00008033, 0x0000FFF7);
 	mt_afe_pll_set_reg(AP_PLL_CON5, 1 << 0, 1 << 0);
-#endif
-}
-
-void turn_off_apll1_tuner_clock(void)
-{
-#if defined(COMMON_CLOCK_FRAMEWORK_API)
-	mt_afe_set_reg(AUDIO_TOP_CON0, 1 << 19, 1 << 19);
-	clk_disable(aud_clks[CLOCK_INFRA_SYS_AUDIO].clock);
-	mt_afe_pll_set_reg(AP_PLL_CON5, 0 << 0, 1 << 0);
-#else
-	mt_afe_set_reg(AUDIO_TOP_CON0, 1 << 19, 1 << 19);
-	mt_afe_pll_set_reg(AP_PLL_CON5, 0 << 0, 1 << 0);
 #endif
 }
 
@@ -860,22 +843,22 @@ void mt_afe_set_hdmi_clock_source(uint32_t SampleRate, int apllclksel) /*AudDrv_
 	/*mt_afe_set_reg(AUDIO_TOP_CON3, u4HDMI_BCK_DIV << HDMI_BCK_DIV_POS,
 	((0x1 << HDMI_BCK_DIV_LEN) - 1) << HDMI_BCK_DIV_POS);*/
 #else
-	mt_afe_set_reg(AUDPLL_CON1, apll_sdm_pcw << AUDPLL_SDM_PCW_POS,
+	mt_afe_pll_set_reg(AUDPLL_CON1, apll_sdm_pcw << AUDPLL_SDM_PCW_POS,
 		(0x1 << AUDPLL_SDM_PCW_LEN - 1) << AUDPLL_SDM_PCW_POS);
 	/* Set APLL tuner clock N info */
-	mt_afe_set_reg(AUDPLL_CON3, APLL_TUNER_N_INFO << AUDPLL_TUNER_N_INFO_POS,
+	mt_afe_pll_set_reg(AUDPLL_CON3, APLL_TUNER_N_INFO << AUDPLL_TUNER_N_INFO_POS,
 		(0x1 << AUDPLL_TUNER_N_INFO_LEN - 1) << AUDPLL_TUNER_N_INFO_POS);
 	/* Set MCLK clock */
-	mt_afe_set_reg(CLK_CFG_5, ck_apll << CLK_APLL_SEL_POS,
+	mt_afe_topck_set_reg(CLK_CFG_5, ck_apll << CLK_APLL_SEL_POS,
 		(0x1 << CLK_APLL_SEL_LEN - 1) << CLK_APLL_SEL_POS);
 	/* Set HDMI BCK DIV, replaced by set_hdmi_bck_div */
 	/*mt_afe_set_reg(AUDIO_TOP_CON3, u4HDMI_BCK_DIV << HDMI_BCK_DIV_POS,
 		(0x1 << HDMI_BCK_DIV_LEN - 1) << HDMI_BCK_DIV_POS);*/
 	/* Turn on APLL source clock */
-	mt_afe_set_reg(AUDPLL_CON3, 0x1 << AUDPLL_TUNER_EN_POS,
+	mt_afe_pll_set_reg(AUDPLL_CON3, 0x1 << AUDPLL_TUNER_EN_POS,
 		(0x1 << 0x1 - 1) << AUDPLL_TUNER_EN_POS);
 	/* pdn_apll enable turn on */
-	mt_afe_set_reg(CLK_CFG_5, 0x1 << PDN_APLL_POS,
+	mt_afe_topck_set_reg(CLK_CFG_5, 0x1 << PDN_APLL_POS,
 		(0x1 << 0x1 - 1) << PDN_APLL_POS);
 #endif
 #endif
@@ -887,7 +870,7 @@ void mt_afe_top_apll_clk_on(void)/*AudDrv_TOP_Apll_Clk_On*/
 	unsigned long flags;
 
 	spin_lock_irqsave(&afe_clk_lock, flags);
-	PRINTK_AUD_CLK("%s aud_apll_tuner_clk_cntr:%d\n", __func__, aud_apll_tuner_clk_cntr);
+	PRINTK_AUD_CLK("%s aud_top_apll_clk_cntr:%d\n", __func__, aud_top_apll_clk_cntr);
 
 	if (aud_top_apll_clk_cntr == 0) {
 #ifdef PM_MANAGER_API
@@ -904,7 +887,7 @@ void mt_afe_top_apll_clk_off(void)/*AudDrv_TOP_Apll_Clk_Off*/
 	unsigned long flags;
 
 	spin_lock_irqsave(&afe_clk_lock, flags);
-	PRINTK_AUD_CLK("%s aud_apll_tuner_clk_cntr:%d\n", __func__, aud_apll_tuner_clk_cntr);
+	PRINTK_AUD_CLK("%s aud_top_apll_clk_cntr:%d\n", __func__, aud_top_apll_clk_cntr);
 
 	aud_top_apll_clk_cntr--;
 	if (aud_top_apll_clk_cntr == 0) {
@@ -912,7 +895,7 @@ void mt_afe_top_apll_clk_off(void)/*AudDrv_TOP_Apll_Clk_Off*/
 		turn_off_top_apll_clock();
 #endif
 	} else if (aud_top_apll_clk_cntr < 0) {
-		pr_err("%s aud_apll_tuner_cntr:%d<0\n", __func__, aud_apll_tuner_clk_cntr);
+		pr_err("%s aud_top_apll_clk_cntr:%d<0\n", __func__, aud_top_apll_clk_cntr);
 		AUDIO_ASSERT(true);
 		aud_top_apll_clk_cntr = 0;
 	}
@@ -926,14 +909,14 @@ void mt_afe_aplltuner_clk_on(void)/*AudDrv_APLL_TUNER_Clk_On*/
 	unsigned long flags;
 
 	spin_lock_irqsave(&afe_clk_lock, flags);
-	PRINTK_AUD_CLK("%s aud_top_apll_clk_cntr:%d\n", __func__, aud_top_apll_clk_cntr);
+	PRINTK_AUD_CLK("%s aud_apll_tuner_clk_cntr:%d\n", __func__, aud_apll_tuner_clk_cntr);
 
-	if (aud_top_apll_clk_cntr == 0) {
+	if (aud_apll_tuner_clk_cntr == 0) {
 #ifdef PM_MANAGER_API
 		turn_on_apll_tuner_clock();
 #endif
 	}
-	aud_top_apll_clk_cntr++;
+	aud_apll_tuner_clk_cntr++;
 
 	spin_unlock_irqrestore(&afe_clk_lock, flags);
 }
@@ -943,17 +926,17 @@ void mt_afe_aplltuner_clk_off(void)/*AudDrv_APLL_TUNER_Clk_Off*/
 	unsigned long flags;
 
 	spin_lock_irqsave(&afe_clk_lock, flags);
-	PRINTK_AUD_CLK("%s aud_top_apll_clk_cntr:%d\n", __func__, aud_top_apll_clk_cntr);
+	PRINTK_AUD_CLK("%s aud_apll_tuner_clk_cntr:%d\n", __func__, aud_apll_tuner_clk_cntr);
 
-	aud_top_apll_clk_cntr--;
-	if (aud_top_apll_clk_cntr == 0) {
+	aud_apll_tuner_clk_cntr--;
+	if (aud_apll_tuner_clk_cntr == 0) {
 #ifdef PM_MANAGER_API
 		turn_off_apll_tuner_clock();
 #endif
-	} else if (aud_top_apll_clk_cntr < 0) {
-		pr_err("%s aud_top_apll_clk_cntr:%d<0\n", __func__, aud_top_apll_clk_cntr);
+	} else if (aud_apll_tuner_clk_cntr < 0) {
+		pr_err("%s aud_apll_tuner_clk_cntr:%d<0\n", __func__, aud_apll_tuner_clk_cntr);
 		AUDIO_ASSERT(true);
-		aud_top_apll_clk_cntr = 0;
+		aud_apll_tuner_clk_cntr = 0;
 	}
 
 	spin_unlock_irqrestore(&afe_clk_lock, flags);
@@ -1082,39 +1065,6 @@ void mt_afe_suspend_clk_off(void)/*AudDrv_Suspend_Clk_Off*/
 
 	spin_unlock_irqrestore(&afe_clk_lock, flags);
 #endif
-}
-
-void mt_afe_apll1tuner_clk_on(void)
-{
-	mutex_lock(&afe_clk_mutex);
-	PRINTK_AUD_CLK("%s aud_apll1_tuner_cntr:%d\n", __func__, aud_apll1_tuner_cntr);
-
-	if (aud_apll1_tuner_cntr == 0) {
-#ifdef PM_MANAGER_API
-		turn_on_apll1_tuner_clock();
-#endif
-	}
-	aud_apll1_tuner_cntr++;
-
-	mutex_unlock(&afe_clk_mutex);
-}
-
-void mt_afe_apll1tuner_clk_off(void)
-{
-	mutex_lock(&afe_clk_mutex);
-	PRINTK_AUD_CLK("%s aud_apll1_tuner_cntr:%d\n", __func__, aud_apll1_tuner_cntr);
-
-	aud_apll1_tuner_cntr--;
-	if (aud_apll1_tuner_cntr == 0) {
-#ifdef PM_MANAGER_API
-		turn_off_apll1_tuner_clock();
-#endif
-	} else if (aud_apll1_tuner_cntr < 0) {
-		pr_err("%s aud_apll1_tuner_cntr:%d<0\n", __func__, aud_apll1_tuner_cntr);
-		aud_apll1_tuner_cntr = 0;
-	}
-
-	mutex_unlock(&afe_clk_mutex);
 }
 
 void mt_afe_emi_clk_on(void)

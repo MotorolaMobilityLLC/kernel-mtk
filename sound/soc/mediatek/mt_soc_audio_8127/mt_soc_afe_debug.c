@@ -20,6 +20,14 @@
 #include <mt-plat/upmu_common.h>
 
 #define DEBUG_FS_BUFFER_SIZE 4096
+static const char const ParSetkeyAfe[] = "Setafereg";
+static const char const ParSetkeyAna[] = "Setanareg";
+static const char const ParSetkeyCfg[] = "Setcfgreg";
+static const char const ParSetkeyApm[] = "Setapmreg";
+static const char const PareGetkeyAfe[] = "Getafereg";
+static const char const PareGetkeyAna[] = "Getanareg";
+static const char const PareGetkeyApm[] = "Getapmreg";
+
 
 struct mt_soc_audio_debug_fs {
 	struct dentry *audio_dentry;
@@ -319,39 +327,102 @@ static ssize_t mt_soc_debug_read(struct file *file, char __user *buf, size_t cou
 static ssize_t mt_soc_debug_write(struct file *file, const char __user *user_buf,
 			size_t count, loff_t *pos)
 {
-	char buf[64];
-	size_t buf_size;
-	char *start = buf;
-	char *reg_str;
-	char *value_str;
-	const char delim[] = " ,";
-	unsigned long reg, value;
+	int ret = 0;
+	char InputString[256];
+	char *token1 = NULL;
+	char *token2 = NULL;
+	char *token3 = NULL;
+	char *token4 = NULL;
+	char *token5 = NULL;
+	char *temp = NULL;
 
-	buf_size = min(count, (sizeof(buf) - 1));
-	if (copy_from_user(buf, user_buf, buf_size))
-		return -EFAULT;
+	unsigned long int regaddr = 0;
+	unsigned long int regvalue = 0;
+	char delim[] = " ,";
 
-	buf[buf_size] = 0;
+	memset((void *)InputString, 0, 256);
+	if (copy_from_user((InputString), user_buf, count)) {
+		pr_debug("copy_from_user mt_soc_debug_write count = %zu temp = %s\n",
+		count, InputString);
+	}
+	temp = kstrdup(InputString, GFP_KERNEL);
+	pr_debug("copy_from_user mt_soc_debug_write count = %zu temp = %s pointer = %p\n",
+	count, InputString, InputString);
+	token1 = strsep(&temp, delim);
+	pr_debug("token1 = %s\n", token1);
+	token2 = strsep(&temp, delim);
+	pr_debug("token2 = %s\n", token2);
+	token3 = strsep(&temp, delim);
+	pr_debug("token3 = %s\n", token3);
+	token4 = strsep(&temp, delim);
+	pr_debug("token4 = %s\n", token4);
+	token5 = strsep(&temp, delim);
+	pr_debug("token5 = %s\n", token5);
 
-	reg_str = strsep(&start, delim);
-	if (!reg_str || !strlen(reg_str))
-		return -EINVAL;
-
-	value_str = strsep(&start, delim);
-	if (!value_str || !strlen(value_str))
-		return -EINVAL;
-
-	if (kstrtoul(reg_str, 16, &reg))
-		return -EINVAL;
-
-	if (kstrtoul(value_str, 16, &value))
-		return -EINVAL;
-
+	mt_afe_ana_clk_on();
 	mt_afe_main_clk_on();
-	mt_afe_set_reg(reg, value, 0xffffffff);
-	mt_afe_main_clk_off();
 
-	return buf_size;
+
+	if (strcmp(token1, ParSetkeyAfe) == 0) {
+		pr_debug("strcmp (token1,ParSetkeyAfe)\n");
+		ret = kstrtol(token3, 16, &regaddr);
+		ret = kstrtol(token5, 16, &regvalue);
+		pr_debug("%s regaddr = 0x%lx regvalue = 0x%lx\n", ParSetkeyAfe, regaddr, regvalue);
+		mt_afe_set_reg(regaddr, regvalue, 0xffffffff);
+		regvalue = mt_afe_get_reg(regaddr);
+		pr_debug("%s regaddr = 0x%lx regvalue = 0x%lx\n", ParSetkeyAfe, regaddr, regvalue);
+	}
+	if (strcmp(token1, ParSetkeyAna) == 0) {
+		pr_debug("strcmp (token1,ParSetkeyAna)\n");
+		ret = kstrtol(token3, 16, &regaddr);
+		ret = kstrtol(token5, 16, &regvalue);
+		pr_debug("%s regaddr = 0x%lx regvalue = 0x%lx\n", ParSetkeyAna, regaddr, regvalue);
+		pmic_set_ana_reg(regaddr, regvalue, 0xffffffff);
+		regvalue = pmic_get_ana_reg(regaddr);
+		pr_debug("%s regaddr = 0x%lx regvalue = 0x%lx\n", ParSetkeyAna, regaddr, regvalue);
+	}
+	if (strcmp(token1, ParSetkeyCfg) == 0) {
+		pr_debug("strcmp (token1,ParSetkeyCfg)\n");
+		ret = kstrtol(token3, 16, &regaddr);
+		ret = kstrtol(token5, 16, &regvalue);
+		pr_debug("%s regaddr = 0x%lx regvalue = 0x%lx\n", ParSetkeyCfg, regaddr, regvalue);
+		mt_afe_topck_set_reg(regaddr, regvalue, 0xffffffff);
+		regvalue = mt_afe_topck_get_reg(regaddr);
+		pr_debug("%s regaddr = 0x%lx regvalue = 0x%lx\n", ParSetkeyCfg, regaddr, regvalue);
+	}
+	if (strcmp(token1, ParSetkeyApm) == 0) {
+		pr_debug("strcmp (token1,ParSetkeyApm)\n");
+		ret = kstrtol(token3, 16, &regaddr);
+		ret = kstrtol(token5, 16, &regvalue);
+		pr_debug("%s regaddr = 0x%lx regvalue = 0x%lx\n", ParSetkeyApm, regaddr, regvalue);
+		mt_afe_pll_set_reg(regaddr, regvalue, 0xffffffff);
+		regvalue = mt_afe_pll_get_reg(regaddr);
+		pr_debug("%s regaddr = 0x%lx regvalue = 0x%lx\n", ParSetkeyApm, regaddr, regvalue);
+	}
+
+	if (strcmp(token1, PareGetkeyAfe) == 0) {
+		pr_debug("strcmp (token1,PareGetkeyAfe)\n");
+		ret = kstrtol(token3, 16, &regaddr);
+		regvalue = mt_afe_get_reg(regaddr);
+		pr_debug("%s regaddr = 0x%lx regvalue = 0x%lx\n", PareGetkeyAfe, regaddr, regvalue);
+	}
+	if (strcmp(token1, PareGetkeyAna) == 0) {
+		pr_debug("strcmp (token1,PareGetkeyAna)\n");
+		ret = kstrtol(token3, 16, &regaddr);
+		regvalue = pmic_get_ana_reg(regaddr);
+		pr_debug("%s regaddr = 0x%lx regvalue = 0x%lx\n", PareGetkeyAna, regaddr, regvalue);
+	}
+	if (strcmp(token1, PareGetkeyApm) == 0) {
+		pr_debug("strcmp (token1,PareGetkeyApm)\n");
+		ret = kstrtol(token3, 16, &regaddr);
+		regvalue = mt_afe_pll_get_reg(regaddr);
+		pr_debug("%s regaddr = 0x%lx regvalue = 0x%lx\n", PareGetkeyApm, regaddr, regvalue);
+	}
+
+	mt_afe_main_clk_off();
+	mt_afe_ana_clk_off();
+
+	return count;
 }
 
 static ssize_t mt_soc_ana_debug_read(struct file *file, char __user *buf,
@@ -481,8 +552,12 @@ static ssize_t mt_soc_hdmi_debug_read(struct file *file, char __user *buf,
 		       mt_afe_get_reg(AFE_MEMIF_MSB));
 
 	n += scnprintf(buffer + n, size - n, "=APMIXED registers=\n");
+	n += scnprintf(buffer + n, size - n, "AUDPLL_CON0 = 0x%x\n",
+		       mt_afe_pll_get_reg(AUDPLL_CON0));
 	n += scnprintf(buffer + n, size - n, "AUDPLL_CON1 = 0x%x\n",
 		       mt_afe_pll_get_reg(AUDPLL_CON1));
+	n += scnprintf(buffer + n, size - n, "AUDPLL_CON2 = 0x%x\n",
+		       mt_afe_pll_get_reg(AUDPLL_CON2));
 	n += scnprintf(buffer + n, size - n, "AUDPLL_CON3 = 0x%x\n",
 		       mt_afe_pll_get_reg(AUDPLL_CON3));
 	n += scnprintf(buffer + n, size - n, "=TOPCKGEN registers=\n");

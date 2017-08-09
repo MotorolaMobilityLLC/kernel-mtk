@@ -100,7 +100,7 @@ enum Soc_Aud_InterConnectionOutput {
 };
 
 enum Soc_Aud_Hdmi_InterConnectionInput {
-	Soc_Aud_InterConnectionInput_I20,
+	Soc_Aud_InterConnectionInput_I20 = 0,
 	Soc_Aud_InterConnectionInput_I21,
 	Soc_Aud_InterConnectionInput_I22,
 	Soc_Aud_InterConnectionInput_I23,
@@ -108,11 +108,15 @@ enum Soc_Aud_Hdmi_InterConnectionInput {
 	Soc_Aud_InterConnectionInput_I25,
 	Soc_Aud_InterConnectionInput_I26,
 	Soc_Aud_InterConnectionInput_I27,
+	HDMI_INTER_CONN_INPUT_BASE = Soc_Aud_InterConnectionInput_I20,
+	HDMI_INTER_CONN_INPUT_MAX = Soc_Aud_InterConnectionInput_I27,
+	HDMI_INTER_CONN_INPUT_NUM = (HDMI_INTER_CONN_INPUT_MAX - HDMI_INTER_CONN_INPUT_BASE + 1)
+
 };
 
 
 enum Soc_Aud_Hdmi_InterConnectionOutput {
-	Soc_Aud_InterConnectionOutput_O20,
+	Soc_Aud_InterConnectionOutput_O20 = 0,
 	Soc_Aud_InterConnectionOutput_O21,
 	Soc_Aud_InterConnectionOutput_O22,
 	Soc_Aud_InterConnectionOutput_O23,
@@ -120,6 +124,10 @@ enum Soc_Aud_Hdmi_InterConnectionOutput {
 	Soc_Aud_InterConnectionOutput_O25,
 	Soc_Aud_InterConnectionOutput_O26,
 	Soc_Aud_InterConnectionOutput_O27,
+	HDMI_INTER_CONN_OUTPUT_BASE = Soc_Aud_InterConnectionOutput_O20,
+	HDMI_INTER_CONN_OUTPUT_MAX = Soc_Aud_InterConnectionOutput_O27,
+	HDMI_INTER_CONN_OUTPUT_NUM = (HDMI_INTER_CONN_OUTPUT_MAX - HDMI_INTER_CONN_OUTPUT_BASE + 1)
+
 };
 
 

@@ -44,16 +44,8 @@ void mt_afe_ana_clk_off(void);
 void mt_afe_suspend_clk_on(void);
 void mt_afe_suspend_clk_off(void);
 
-void mt_afe_apll24m_clk_on(void);
-void mt_afe_apll24m_clk_off(void);
-void mt_afe_apll22m_clk_on(void);
-void mt_afe_apll22m_clk_off(void);
-
 void mt_afe_aplltuner_clk_on(void);
 void mt_afe_aplltuner_clk_off(void);
-
-void mt_afe_apll1tuner_clk_on(void);
-void mt_afe_apll1tuner_clk_off(void);
 
 void mt_afe_top_apll_clk_on(void);
 void mt_afe_top_apll_clk_off(void);
