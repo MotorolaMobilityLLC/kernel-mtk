@@ -673,6 +673,6 @@ int __init aee_ipanic_init(void)
 	return 0;
 }
 
-module_init(aee_ipanic_init);
+arch_initcall(aee_ipanic_init);
 
 module_param(ipanic_enable, bool, S_IRUGO | S_IWUSR);

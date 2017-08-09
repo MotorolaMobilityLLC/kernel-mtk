@@ -753,7 +753,7 @@ int mrdump_mini_init(void)
 	return 0;
 }
 
-module_init(mrdump_mini_init);
+arch_initcall(mrdump_mini_init);
 
 void mrdump_mini_reserve_memory(void)
 {

@@ -519,4 +519,4 @@ static int __init aee_wdt_init(void)
 	return 0;
 }
 
-module_init(aee_wdt_init);
+arch_initcall(aee_wdt_init);
