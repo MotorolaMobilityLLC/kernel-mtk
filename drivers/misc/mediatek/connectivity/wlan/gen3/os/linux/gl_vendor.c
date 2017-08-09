@@ -139,7 +139,14 @@ int mtk_cfg80211_vendor_get_channel_list(struct wiphy *wiphy, struct wireless_de
 		channels[j] = nicChannelNum2Freq(aucChannelList[i].ucChannelNum) / 1000;
 		if (channels[j] == 0)
 			continue;
-		else {
+		else if ((prGlueInfo->prAdapter->rWifiVar.rConnSettings.u2CountryCode == COUNTRY_CODE_TW) &&
+			(channels[j] >= 5180 && channels[j] <= 5260)) {
+			/* Taiwan NCC has resolution to follow FCC spec to support 5G Band 1/2/3/4
+			 * (CH36~CH48, CH52~CH64, CH100~CH140, CH149~CH165)
+			 * Filter CH36~CH52 for compatible with some old devices.
+			 */
+			continue;
+		} else {
 			DBGLOG(REQ, INFO, "channels[%d] = %d\n", j, channels[j]);
 			j++;
 		}
