@@ -39,6 +39,8 @@
 
 
 //#include "s5k2x8_otp.h"
+/*Enable PDAF function */
+//#define ENABLE_S5K2X8_PDAF_RAW
 /****************************Modify Following Strings for Debug****************************/
 #define PFX "s5k2x8_camera_sensor"
 #define LOG_1 LOG_INF("s5k2x8,MIPI 4LANE\n")
@@ -7538,7 +7540,11 @@ static kal_uint32 get_info(MSDK_SCENARIO_ID_ENUM scenario_id,
     sensor_info->IHDR_Support = imgsensor_info.ihdr_support;
     sensor_info->IHDR_LE_FirstLine = imgsensor_info.ihdr_le_firstline;
     sensor_info->SensorModeNum = imgsensor_info.sensor_mode_num;
-    sensor_info->PDAF_Support = 1;
+#if defined(ENABLE_S5K2X8_PDAF_RAW)
+		sensor_info->PDAF_Support = 1; /*0: NO PDAF, 1: PDAF Raw Data mode, 2:PDAF VC mode*/
+#else
+		sensor_info->PDAF_Support = 0; /*0: NO PDAF, 1: PDAF Raw Data mode, 2:PDAF VC mode*/
+#endif
 
     /*0: no support, 1: G0,R0.B0, 2: G0,R0.B1, 3: G0,R1.B0, 4: G0,R1.B1*/
     /*                    5: G1,R0.B0, 6: G1,R0.B1, 7: G1,R1.B0, 8: G1,R1.B1*/
@@ -7914,15 +7920,25 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
             break;
 
         case SENSOR_FEATURE_GET_SENSOR_PDAF_CAPACITY:
+
             LOG_INF("SENSOR_FEATURE_GET_SENSOR_PDAF_CAPACITY scenarioId:%lld\n", *feature_data);
             //PDAF capacity enable or not, s5k2x8 only full size support PDAF
             switch (*feature_data) {
+#if defined(ENABLE_S5K2X8_PDAF_RAW)
                 case MSDK_SCENARIO_ID_CAMERA_CAPTURE_JPEG:
                     *(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 1;
                     break;
                 case MSDK_SCENARIO_ID_VIDEO_PREVIEW:
                     *(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 1; // video & capture use same setting
                     break;
+#else
+				case MSDK_SCENARIO_ID_CAMERA_CAPTURE_JPEG:
+					*(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 0;
+					break;
+				case MSDK_SCENARIO_ID_VIDEO_PREVIEW:
+					*(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 0; // video & capture use same setting
+					break;
+#endif
                 case MSDK_SCENARIO_ID_HIGH_SPEED_VIDEO:
                     *(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 0;
                     break;
