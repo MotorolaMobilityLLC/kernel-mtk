@@ -55,7 +55,7 @@
 #define MULTI_WRITE 0
 /*Enable PDAF function */
 //#define ENABLE_PDAF_VC
-//#define FULL_24FPS
+#define FULL_24FPS
 static DEFINE_SPINLOCK(imgsensor_drv_lock);
 
 
@@ -1990,8 +1990,8 @@ kal_uint16 addr_data_pair_cap[] =
 ,0x3809,0x00
 ,0x380a,0x10
 ,0x380b,0x80
-,0x380c,0x18
-,0x380d,0x60
+,0x380c,0x1d
+,0x380d,0x4c
 ,0x380e,0x12
 ,0x380f,0xc6
 ,0x3811,0x03
@@ -3347,6 +3347,13 @@ static void capture_setting(kal_uint16 currefps)
 #endif
 	///mdelay(30);
 	write_cmos_sensor(0x0100, 0x01);
+
+write_cmos_sensor(0x3208, 0);//group start
+write_cmos_sensor(0x380c, 0x18);
+write_cmos_sensor(0x380d, 0x60);
+write_cmos_sensor(0x3208, 0x10);//group end
+write_cmos_sensor(0x3208, 0xa0);//group latch
+
 
 
 }
