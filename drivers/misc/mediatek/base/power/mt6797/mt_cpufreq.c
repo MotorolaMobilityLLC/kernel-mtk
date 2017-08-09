@@ -690,7 +690,7 @@ bool is_in_cpufreq = 0;
  * EFUSE
  */
 
-/* #define OPP_DEFECT 1 */
+#define OPP_DEFECT 1
 int dvfs_disable_flag = 0;
 int release_dvfs = 0;
 int thres_ll = 0;
