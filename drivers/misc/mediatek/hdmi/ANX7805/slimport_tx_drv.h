@@ -31,8 +31,10 @@ typedef unsigned int uint;
 //typedef bit bool;
 //typedef unsigned long ulong;
 //typedef unsigned int WORD;
+
 #define Display_NoHDCP
 #define Redo_HDCP
+#define Standard_DP
 
 #define MAX_BUF_CNT 6
 
@@ -530,8 +532,13 @@ _SP_TX_DRV_EX_C_ BYTE ext_int_index;
 _SP_TX_DRV_EX_C_ struct VideoFormat SP_TX_Video_Input;
 _SP_TX_DRV_EX_C_ struct AudioFormat SP_TX_Audio_Input;
 
-
-_SP_TX_DRV_EX_C_ BYTE sp_tx_rx_anx7730;
+enum RX_CBL_TYPE {
+	RX_HDMI = 0x01,
+	RX_DP = 0x02,
+	RX_VGA = 0x03,
+	RX_NULL = 0x00
+};
+_SP_TX_DRV_EX_C_ enum RX_CBL_TYPE sp_tx_rx_type;
 
 _SP_TX_DRV_EX_C_ BYTE CEC_abort_message_received;
 _SP_TX_DRV_EX_C_ BYTE CEC_get_physical_adress_message_received;
