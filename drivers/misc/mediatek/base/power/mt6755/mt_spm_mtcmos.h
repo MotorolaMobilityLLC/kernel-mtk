@@ -13,6 +13,7 @@
 extern int spm_mtcmos_cpu_init(void);
 extern void spm_mtcmos_cpu_lock(unsigned long *flags);
 extern void spm_mtcmos_cpu_unlock(unsigned long *flags);
+extern int spm_topaxi_protect(unsigned int mask_value, int en);
 
 extern int spm_mtcmos_ctrl_cpu(unsigned int cpu, int state, int chkWfiBeforePdn);
 extern int spm_mtcmos_ctrl_cpu0(int state, int chkWfiBeforePdn);
@@ -33,6 +34,11 @@ extern bool spm_cpusys0_can_power_down(void);
 extern bool spm_cpusys1_can_power_down(void);
 
 extern void spm_mtcmos_ctrl_cpusys1_init_1st_bring_up(int state);
+extern void switch_armpll_ll_hwmode(int enable);
+extern void switch_armpll_l_hwmode(int enable);
+extern void disable_armpll_l(void);
+extern void enable_armpll_l(void);
+extern void iomap(void);
 
 #ifdef CONFIG_MTK_L2C_SHARE
 extern int IS_L2_BORROWED(void);

@@ -27,6 +27,7 @@
 /* #include "mach/mt_sleep.h" */
 /* #include "mach/mt_dcm.h" */
 #include <mach/mt_clkmgr.h>
+#include <mach/mt_freqhopping.h>
 /* #include "mach/mt_cpufreq.h" */
 /* #include "mach/mt_gpufreq.h" */
 /* #include "mach/mt_dormant.h" */
@@ -42,7 +43,7 @@
 	mt_reg_sync_writel(val, addr)
 #endif
 
-void __attribute__((weak)) slp_module_init(void)
+void __attribute__ ((weak)) slp_module_init(void)
 {
 
 }
@@ -500,6 +501,7 @@ static int __init mt_power_management_init(void)
 
 	spm_module_init();
 	slp_module_init();
+	mt_freqhopping_init();
 	/* mt_clkmgr_init(); */
 
 	/* mt_pm_log_init(); // power management log init */
