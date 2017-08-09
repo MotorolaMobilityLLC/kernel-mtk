@@ -295,12 +295,6 @@ int primary_fps_ctx_set_wnd_sz(unsigned int wnd_sz);
 
 int dynamic_debug_msg_print(unsigned int mva, int w, int h, int pitch, int bytes_per_pix);
 
-#define MTK_NO_DISP_IN_LK
-#if defined(MTK_NO_DISP_IN_LK)
-/* FIXME: set backlight in kernel */
-extern int disp_bls_set_backlight(int level_1024);
-#endif
-
 int display_enter_tui(void);
 int display_exit_tui(void);
 
