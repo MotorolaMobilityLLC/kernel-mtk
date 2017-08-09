@@ -152,7 +152,8 @@ static char *DISO_state_s[8] = {
 /* extern int is_mt6311_exist(void); _not_ used */
 /* extern int is_mt6311_sw_ready(void); _not_ used */
 #ifdef CONFIG_MTK_BIF_SUPPORT
-static int bif_inited;
+static int bif_exist;
+static int bif_checked;
 #endif
 static unsigned int charging_error;
 static unsigned int charging_get_error_state(void);
@@ -1239,12 +1240,12 @@ static unsigned int charging_get_bif_vbat(void *data)
 	/*change to HW control mode*/
 	/*pmic_set_register_value(MT6351_PMIC_RG_VBIF28_ON_CTRL, 0);
 	pmic_set_register_value(MT6351_PMIC_RG_VBIF28_EN, 1);*/
+	if (bif_checked != 1 || bif_exist == 1) {
+		bif_ADC_enable();
 
-	bif_ADC_enable();
-
-	vbat = bif_read16(MW3790_VBAT);
-	*(unsigned int *) (data) = vbat;
-
+		vbat = bif_read16(MW3790_VBAT);
+		*(unsigned int *) (data) = vbat;
+	}
 	/*turn off LDO and change SW control back to HW control */
 	/*pmic_set_register_value(MT6351_PMIC_RG_VBIF28_EN, 0);
 	pmic_set_register_value(MT6351_PMIC_RG_VBIF28_ON_CTRL, 1);*/
@@ -1264,7 +1265,7 @@ static unsigned int charging_get_bif_tbat(void *data)
 
 	mdelay(50);
 
-	if (bif_inited == 1) {
+	if (bif_exist == 1) {
 		do {
 			bif_ADC_enable();
 			ret = bif_read8(MW3790_TBAT, &tbat);
@@ -1456,14 +1457,16 @@ static unsigned int charging_sw_init(void *data)
 #ifdef CONFIG_MTK_BIF_SUPPORT
 	int vbat;
 
-	if (bif_inited != 1) {
+	vbat = 0;
+	if (bif_checked != 1) {
 		bif_init();
 		charging_get_bif_vbat(&vbat);
 		if (vbat != 0) {
 			battery_log(BAT_LOG_CRTI, "[BIF]BIF battery detected.\n");
-			bif_inited = 1;
+			bif_exist = 1;
 		} else
 			battery_log(BAT_LOG_CRTI, "[BIF]BIF battery _NOT_ detected.\n");
+		bif_checked = 1;
 	}
 #endif
 	return status;
