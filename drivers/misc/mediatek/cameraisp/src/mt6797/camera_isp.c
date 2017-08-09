@@ -148,7 +148,7 @@ typedef bool                    MBOOL;
 #define ISP_DBG_REF_CNT_CTRL        (0x00000200)
 #define ISP_DBG_INT_2               (0x00000400)
 #define ISP_DBG_INT_3               (0x00000800)
-
+#define ISP_DBG_HW_DON              (0x00001000)
 /*******************************************************************************
 *
 ********************************************************************************/
@@ -3105,6 +3105,7 @@ static MINT32 ISP_DumpReg(void)
     MINT32 Ret = 0;
     /*  */
     LOG_DBG("- E.");
+    #if 0
     /*  */
     /* spin_lock_irqsave(&(IspInfo.SpinLock), flags); */
 
@@ -3403,6 +3404,7 @@ static MINT32 ISP_DumpReg(void)
 
     /* spin_unlock_irqrestore(&(IspInfo.SpinLock), flags); */
     /*  */
+#endif
     LOG_DBG("- X.");
     /*  */
     return Ret;
@@ -10381,6 +10383,13 @@ static irqreturn_t ISP_Irq_CAM_A(MINT32 Irq, void *DeviceId)
             IRQ_LOG_KEEPER(module, m_CurrentPPB, _LOG_INF, "isp sof_don block, %d_%d\n", cur_v_cnt, sof_count[module]);
     }
 
+    if ((IrqStatus & HW_PASS1_DON_ST) && (IspInfo.DebugMask & ISP_DBG_HW_DON)){
+        IRQ_LOG_KEEPER(module, m_CurrentPPB, _LOG_INF, \
+                "CAMA P1_HW_DON_%d\n", \
+                (sof_count[module])? \
+                (sof_count[module]-1):(sof_count[module]));
+    }
+
     spin_lock(&(IspInfo.SpinLockIrq[module]));
     if (IrqStatus & SW_PASS1_DON_ST)
     {
@@ -10552,6 +10561,13 @@ static irqreturn_t ISP_Irq_CAM_B(MINT32  Irq,void *DeviceId)
     if ((IrqStatus & HW_PASS1_DON_ST) && (IrqStatus & SOF_INT_ST)) {
         if (cur_v_cnt != sof_count[module])
             LOG_INF("isp sof_don block, %d_%d\n", cur_v_cnt, sof_count[module]);
+    }
+
+    if ((IrqStatus & HW_PASS1_DON_ST) && (IspInfo.DebugMask & ISP_DBG_HW_DON)){
+        IRQ_LOG_KEEPER(module, m_CurrentPPB, _LOG_INF, \
+                "CAMB P1_HW_DON_%d\n", \
+                (sof_count[module])? \
+                (sof_count[module]-1):(sof_count[module]));
     }
 
     spin_lock(&(IspInfo.SpinLockIrq[module]));
