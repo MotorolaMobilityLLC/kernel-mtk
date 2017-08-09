@@ -13,19 +13,18 @@ static unsigned int max_level = 7;
 static struct {
 	int idx_fix;
 	unsigned int idx_floor;
+	unsigned int idx_floor_cust;
 	unsigned int idx_ceiling;
 	unsigned int idx_ceiling_thermal;
-	unsigned int idx_cust_boost;
 
 	unsigned int loading;
 	unsigned int block;
 	unsigned int idle;
 } glo = {
 	.idx_floor = 0,
+	.idx_floor_cust = 0,
 	.idx_ceiling = 0,
 	.idx_ceiling_thermal = 0,
-
-	.idx_cust_boost = 0,
 
 	.loading = 0,
 	.block = 0,
@@ -60,6 +59,7 @@ static void spm_update_fc(void)
 			cidx = TRANS2IDX(max_level);
 
 			fidx = min(fidx, glo.idx_floor);
+			fidx = min(fidx, glo.idx_floor_cust);
 
 			cidx = max(cidx, glo.idx_ceiling);
 			cidx = max(cidx, glo.idx_ceiling_thermal);
@@ -113,19 +113,6 @@ void mtk_gpu_spm_fix_freq(unsigned int idx)
 }
 EXPORT_SYMBOL(mtk_gpu_spm_fix_freq);
 
-extern void (*mtk_set_bottom_gpu_freq_fp)(unsigned int);
-static void ssspm_mtk_set_bottom_gpu_freq(unsigned int level)
-{
-	glo.idx_floor = TRANS2IDX(level);
-	spm_update_fc();
-}
-
-extern unsigned int (*mtk_get_bottom_gpu_freq_fp)(void);
-static unsigned int ssspm_mtk_get_bottom_gpu_freq(void)
-{
-	return glo.idx_floor;
-}
-
 extern unsigned int (*mtk_custom_get_gpu_freq_level_count_fp)(void);
 static unsigned int ssspm_mtk_custom_get_gpu_freq_level_count(void)
 {
@@ -135,14 +122,14 @@ static unsigned int ssspm_mtk_custom_get_gpu_freq_level_count(void)
 extern void (*mtk_custom_boost_gpu_freq_fp)(unsigned int level);
 static void ssspm_mtk_custom_boost_gpu_freq(unsigned int level)
 {
-	glo.idx_cust_boost = TRANS2IDX(level);
-	spm_boost(glo.idx_cust_boost);
+	glo.idx_floor_cust = TRANS2IDX(level);
+	spm_update_fc();
 }
 
 extern unsigned int (*mtk_get_custom_boost_gpu_freq_fp)(void);
 static unsigned int ssspm_mtk_get_custom_boost_gpu_freq(void)
 {
-	return glo.idx_cust_boost;
+	return TRANS2IDX(glo.idx_floor_cust);
 }
 
 extern void (*mtk_custom_upbound_gpu_freq_fp)(unsigned int level);
@@ -155,7 +142,7 @@ static void ssspm_mtk_custom_upbound_gpu_freq(unsigned int level)
 extern unsigned int (*mtk_get_custom_upbound_gpu_freq_fp)(void);
 static unsigned int ssspm_mtk_get_custom_upbound_gpu_freq(void)
 {
-	return glo.idx_ceiling;
+	return TRANS2IDX(glo.idx_ceiling);
 }
 
 static unsigned long long ssspm_get_time(void)
@@ -240,14 +227,13 @@ void mtk_kbase_spm_hal_init(void)
 
 	glo.idx_fix = -1;
 
-	glo.idx_floor   = TRANS2IDX(0);
-	glo.idx_ceiling = TRANS2IDX(max_level);
+	glo.idx_floor   	= TRANS2IDX(0);
+	glo.idx_floor_cust  = TRANS2IDX(0);
+	glo.idx_ceiling 	= TRANS2IDX(max_level);
 	glo.idx_ceiling_thermal = TRANS2IDX(max_level);
 
 	// hal
 	mtk_boost_gpu_freq_fp = ssspm_mtk_boost_gpu_freq;
-	mtk_set_bottom_gpu_freq_fp = ssspm_mtk_set_bottom_gpu_freq;
-	mtk_get_bottom_gpu_freq_fp = ssspm_mtk_get_bottom_gpu_freq;
 	mtk_custom_get_gpu_freq_level_count_fp = ssspm_mtk_custom_get_gpu_freq_level_count;
 	mtk_custom_boost_gpu_freq_fp = ssspm_mtk_custom_boost_gpu_freq;
 	mtk_get_custom_boost_gpu_freq_fp = ssspm_mtk_get_custom_boost_gpu_freq;
