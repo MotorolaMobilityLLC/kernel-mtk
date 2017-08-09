@@ -107,7 +107,7 @@ void ddp_set_mipi26m(int en)
 	mt_reg_sync_writel(write_addr, MIPITX_BASE+0x0);		\
 	mt_reg_sync_writel(write_data, MIPITX_BASE+0x0);		\
 	mt_reg_sync_writel(0x1, MIPITX_BASE+0x24);		\
-	while (INREG32(MIPITX_BASE+0xC)&0x1 != 0x1)		\
+	while ((INREG32(MIPITX_BASE+0xC)&0x1) != 0x1)		\
 		;		\
 	mt_reg_sync_writel(0xFF, MIPITX_BASE+0xC);		\
 	\
@@ -116,7 +116,7 @@ void ddp_set_mipi26m(int en)
 	mt_reg_sync_writel(((unsigned int)slave_addr << 0x1), MIPITX_BASE+0x04);		\
 	mt_reg_sync_writel(write_addr, MIPITX_BASE+0x0);		\
 	mt_reg_sync_writel(0x1, MIPITX_BASE+0x24);		\
-	while (INREG32(MIPITX_BASE+0xC)&0x1 != 0x1)		\
+	while ((INREG32(MIPITX_BASE+0xC)&0x1) != 0x1)		\
 		;		\
 	mt_reg_sync_writel(0xFF, MIPITX_BASE+0xC);		\
 	\
@@ -124,7 +124,7 @@ void ddp_set_mipi26m(int en)
 	mt_reg_sync_writel(0x1, MIPITX_BASE+0x18);		\
 	mt_reg_sync_writel(((unsigned int)slave_addr << 0x1)+1, MIPITX_BASE+0x04);		\
 	mt_reg_sync_writel(0x1, MIPITX_BASE+0x24);		\
-	while (INREG32(MIPITX_BASE+0xC)&0x1 != 0x1)		\
+	while ((INREG32(MIPITX_BASE+0xC)&0x1) != 0x1)		\
 		;		\
 	mt_reg_sync_writel(0xFF, MIPITX_BASE+0xC);		\
 	\

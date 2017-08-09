@@ -483,7 +483,7 @@ static void mmsys_config_dump_analysis(void)
 		DISP_REG_GET(DISP_REG_CONFIG_C09), DISP_REG_GET(DISP_REG_CONFIG_C10));
 #if 0
 	DDPDUMP("clock_mm setting:%u\n", DISP_REG_GET(DISP_REG_CONFIG_C11));
-	if (DISP_REG_GET(DISP_REG_CONFIG_C11) & 0xff000000 != 0xff000000) {
+	if ((DISP_REG_GET(DISP_REG_CONFIG_C11) & 0xff000000) != 0xff000000) {
 		DDPDUMP("error, MM clock bit 24~bit31 should be 1, but real value=0x%x",
 			DISP_REG_GET(DISP_REG_CONFIG_C11));
 	}
