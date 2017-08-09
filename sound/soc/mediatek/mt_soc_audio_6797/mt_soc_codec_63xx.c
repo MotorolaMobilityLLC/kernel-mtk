@@ -60,7 +60,9 @@
 #include "AudDrv_Ana.h"
 #include "AudDrv_Clk.h"
 #include "mt_soc_analog_type.h"
+#ifdef _GIT318_READY
 #include <mt_clkbuf_ctl.h>
+#endif
 #ifdef _GIT318_PMIC_READY
 #include <mach/mt_pmic.h>
 #endif
@@ -278,7 +280,9 @@ void audckbufEnable(bool enable)
 		if (audck_buf_Count == 0) {
 			pr_warn("+clk_buf_ctrl(CLK_BUF_AUDIO,true)\n");
 #ifndef CONFIG_FPGA_EARLY_PORTING
+#ifdef _GIT318_READY
 			clk_buf_ctrl(CLK_BUF_AUDIO, true);
+#endif
 #endif
 			pr_warn("-clk_buf_ctrl(CLK_BUF_AUDIO,true)\n");
 		}
@@ -288,7 +292,9 @@ void audckbufEnable(bool enable)
 		if (audck_buf_Count == 0) {
 			pr_warn("+clk_buf_ctrl(CLK_BUF_AUDIO,false)\n");
 #ifndef CONFIG_FPGA_EARLY_PORTING
+#ifdef _GIT318_READY
 			clk_buf_ctrl(CLK_BUF_AUDIO, false);
+#endif
 #endif
 			pr_warn("-clk_buf_ctrl(CLK_BUF_AUDIO,false)\n");
 		}
