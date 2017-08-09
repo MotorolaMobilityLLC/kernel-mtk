@@ -102,6 +102,31 @@ enum {
 };
 #define MTK_WIFI_COMMAND_MAX    (__STP_DBG_COMMAND_MAX - 1)
 
+static UINT8 *taskStr[TASK_ID_INDX_MAX][GEN3_TASK_ID_MAX] = {
+	{"Task_WMT",
+	"Task_BT",
+	"Task_Wifi",
+	"Task_Tst",
+	"Task_FM",
+	"Task_Idle",
+	"Task_DrvStp",
+	"Task_DrvBtif",
+	"Task_NatBt"},
+	{"Task_WMT",
+	"Task_BT",
+	"Task_Wifi",
+	"Task_Tst",
+	"Task_FM",
+	"Task_GPS",
+	"Task_FLP",
+	"Task_NULL",
+	"Task_Idle",
+	"Task_DrvStp",
+	"Task_DrvBtif",
+	"Task_NatBt",
+	"Task_DrvWifi"},
+};
+
 static struct genl_family stp_dbg_gnl_family = {
 	.id = GENL_ID_GENERATE,
 	.hdrsize = 0,
@@ -1333,20 +1358,31 @@ INT32 stp_dbg_aee_send(unsigned char *aucMsg, INT32 len, INT32 cmd)
 	return ret;
 }
 
+
 UINT8 *_stp_dbg_id_to_task(UINT32 id)
 {
-	UINT8 *taskStr[] = {
-		"Task_WMT",
-		"Task_BT",
-		"Task_Wifi",
-		"Task_Tst",
-		"Task_FM",
-		"Task_Idle",
-		"Task_DrvStp",
-		"Task_DrvBtif",
-		"Task_NatBt"
-	};
-	return taskStr[id];
+	UINT32 chipId = wmt_plat_get_soc_chipid();
+	UINT32 taskIdIndx = TASK_ID_GEN2;
+	INT32 taskIdLen = 0;
+
+	switch (chipId) {
+	case 0x6797:
+		taskIdIndx = TASK_ID_GEN3;
+		if (id >= GEN3_TASK_ID_MAX)
+			taskIdLen = GEN3_TASK_ID_MAX;
+		break;
+	default:
+		taskIdIndx = TASK_ID_GEN2;
+		if (id >= GEN2_TASK_ID_MAX)
+			taskIdLen = GEN2_TASK_ID_MAX;
+		break;
+	}
+
+	if (taskIdLen) {
+		STP_DBG_ERR_FUNC("task id(%d) overflow(%d)\n", id, taskIdLen);
+		return NULL;
+	} else
+		return taskStr[taskIdIndx][id];
 }
 
 INT32 _stp_dbg_parser_assert_str(PINT8 str, ENUM_ASSERT_INFO_PARSER_TYPE type)
