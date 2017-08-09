@@ -17,6 +17,7 @@ static int is_partial_support;
 static void _update_layer_dirty(OVL_CONFIG_STRUCT *old, disp_input_config *src,
 		struct disp_rect *layer_roi)
 {
+#if 0
 	if (rect_isEmpty(layer_roi)) {
 		if (!src->layer_enable) {
 			if (old->layer_en) {
@@ -41,6 +42,7 @@ static void _update_layer_dirty(OVL_CONFIG_STRUCT *old, disp_input_config *src,
 			    }*/
 		}
 	}
+#endif
 }
 
 static void _convert_picture_to_ovl_dirty(disp_input_config *src,
@@ -92,15 +94,18 @@ int disp_partial_compute_ovl_roi(struct disp_frame_cfg_t *cfg,
 		struct disp_rect layer_total_roi = {0, 0, 0, 0};
 		disp_input_config *input_cfg = &cfg->input_cfg[i];
 
-		num = cfg->input_cfg[i].dirty_roi_num;
+		if (!input_cfg->layer_enable)
+			continue;
+
+		num = input_cfg->dirty_roi_num;
 		if (input_cfg->dirty_roi_num) {
-			roi_addr = cfg->input_cfg[i].dirty_roi_addr;
+			roi_addr = input_cfg->dirty_roi_addr;
 			size = num * sizeof(struct layer_dirty_roi);
 			DISPDBG("layer %d dirty num %d\n",
 					i, input_cfg->dirty_roi_num);
 			if (copy_from_user(layer_roi_addr, roi_addr, size)) {
 				pr_err("[drity roi]: copy_from_user failed! line:%d\n", __LINE__);
-				cfg->input_cfg[i].dirty_roi_num = 0;
+				input_cfg->dirty_roi_num = 0;
 			} else {
 				/* 1. compute picture dirty roi*/
 				for (j = 0; j < input_cfg->dirty_roi_num; j++) {
@@ -112,12 +117,13 @@ int disp_partial_compute_ovl_roi(struct disp_frame_cfg_t *cfg,
 					rect_join(&layer_roi, &layer_total_roi, &layer_total_roi);
 				}
 				/* 2. convert picture dirty to ovl dirty */
-				_convert_picture_to_ovl_dirty(input_cfg, &layer_total_roi, &layer_total_roi);
+				if (!rect_isEmpty(&layer_total_roi))
+					_convert_picture_to_ovl_dirty(input_cfg, &layer_total_roi, &layer_total_roi);
 			}
 		}
 
 		/* 3. full dirty if num euals 0 */
-		if (input_cfg->dirty_roi_num == 0 && cfg->input_cfg[i].layer_enable) {
+		if (input_cfg->dirty_roi_num == 0 && input_cfg->layer_enable) {
 			DISPDBG("layer %d dirty num 0\n", i);
 			if (0) {
 				layer_roi.x = input_cfg->tgt_offset_x;
@@ -178,8 +184,14 @@ int is_equal_full_lcm(const struct disp_rect *roi)
 
 void disp_patial_lcm_validate_roi(disp_lcm_handle *plcm, struct disp_rect *roi)
 {
-	disp_lcm_validate_roi(plcm, &roi->x,
-			&roi->y, &roi->width, &roi->height);
+	int x = roi->x;
+	int y = roi->y;
+	int w = roi->width;
+	int h = roi->height;
+
+	disp_lcm_validate_roi(plcm, &roi->x, &roi->y, &roi->width, &roi->height);
+	DISPDBG("lcm verify partial(%d,%d,%d,%d) to (%d,%d,%d,%d)\n",
+			x, y, w, h, roi->x, roi->y, roi->width, roi->height);
 }
 
 int disp_partial_update_roi_to_lcm(disp_path_handle dp_handle,

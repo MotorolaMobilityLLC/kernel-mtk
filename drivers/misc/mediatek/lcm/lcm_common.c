@@ -1147,6 +1147,53 @@ void lcm_common_setbacklight_cmdq(void *handle, unsigned int level)
 	}
 }
 
+#if defined(R63419_WQHD_TRULY_PHANTOM_2K_CMD_OK)
+static inline int align_to(int value, int n, int lower_align)
+{
+	int x = value;
+
+	value = (((x) + ((n) - 1)) & ~((n) - 1));
+
+	if (lower_align) {
+		if (value > x)
+			value -= n;
+	} else {
+		if (value <= x)
+			value += n;
+	}
+	return value;
+}
+
+static void r63419_lcm_validate_roi(int *x, int *y, int *width, int *height)
+{
+	int x1 = 0;
+	/*int x2 = 0;*/
+	int y1 = *y;
+	int y2 = *height + y1 - 1;
+	int w = *width;
+	int h = *height;
+
+	w = _LCM_DTS.params.dsi.horizontal_active_pixel;
+	/*  comfine  SP & EP value */
+	y1 = align_to(y1, 2, 1);
+	y2 = align_to(y2, 2, 0) - 1;
+	if (y2 - y1 < 6) {
+		if (y1 > 6)
+			y1 -= 6;
+		else
+			y2 += 6;
+	}
+	h = y2 - y1 + 1;
+/*
+	LCD_DEBUG("roi(%d,%d,%d,%d) to (%d,%d,%d,%d)\n",
+		*x, *y, *width, *height, x1, y1, w, h);
+*/
+	*x = x1;
+	*y = y1;
+	*width = w;
+	*height = h;
+}
+#endif
 
 LCM_DRIVER lcm_common_drv = {
 	.name = NULL,
@@ -1161,5 +1208,8 @@ LCM_DRIVER lcm_common_drv = {
 	.ata_check = lcm_common_ata_check,
 	.set_backlight_cmdq = lcm_common_setbacklight_cmdq,
 	.parse_dts = lcm_common_parse_dts,
+#if defined(R63419_WQHD_TRULY_PHANTOM_2K_CMD_OK)
+	.validate_roi = r63419_lcm_validate_roi,
+#endif
 };
 #endif
