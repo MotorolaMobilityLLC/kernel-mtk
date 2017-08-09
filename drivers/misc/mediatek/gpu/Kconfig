@@ -29,7 +29,6 @@ config MTK_GPU_SAPPHIRE_LITE
 
 config SW_SYNC64
         bool CONFIG_SW_SYNC64
-        default n
         depends on SW_SYNC
         help
           A sync object driver that uses a 64bit counter to coordinate
