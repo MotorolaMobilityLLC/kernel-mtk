@@ -2844,7 +2844,7 @@ static int __init _mt_gpufreq_init(void)
 {
 	int ret = 0;
 
-#if defined(CONFIG_ARCH_MT6735) || defined(CONFIG_ARCH_MT6753)
+#if defined(CONFIG_ARCH_MT6753)
 	mt_gpufreq_create_procfs();
 	return 0;
 #endif

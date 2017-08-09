@@ -5013,7 +5013,7 @@ static int __init _mt_cpufreq_pdrv_init(void)
 
 	FUNC_ENTER(FUNC_LV_MODULE);
 
-#if defined(CONFIG_ARCH_MT6735) || defined(CONFIG_ARCH_MT6753)
+#if defined(CONFIG_ARCH_MT6753)
 	_mt_cpufreq_create_procfs();
 	return 0;
 #endif
