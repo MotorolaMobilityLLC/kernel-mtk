@@ -1579,8 +1579,7 @@ static unsigned int msdc_command_start(struct msdc_host   *host,
 		resp = RESP_R1;
 		break;
 	case SD_SEND_IF_COND:
-		if (mmc_cmd_type(cmd) == MMC_CMD_BCR)
-			resp = RESP_R1;
+		resp = RESP_R1;
 		break;
 	/* Ignore crc errors when sending status cmd to poll for busy
 	 * MMC_RSP_CRC will be set, then mmc_resp_type will return
