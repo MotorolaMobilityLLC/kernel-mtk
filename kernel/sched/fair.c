@@ -10930,11 +10930,11 @@ static int check_pack_buddy(int cpu, struct task_struct *p)
 	buddy = per_cpu(sd_pack_buddy, cpu);
 
 	/* Do not pack to buddy whithin little cluster */
-	if (hmp_cpu_is_slow(cpu)) {
+	if (hmp_cpu_is_slowest(cpu)) {
 		buddy = cpu;
 		goto check_load;
 	}
-	if (hmp_cpu_is_slow(buddy)) {
+	if (hmp_cpu_is_slowest(buddy)) {
 		L_target = hmp_select_cpu(HMP_SELECT_RQ, p, &hmp_slow_cpu_mask, buddy, 1);
 		per_cpu(sd_pack_buddy, cpu) = (L_target >= num_possible_cpus()) ? buddy : L_target;
 		buddy = per_cpu(sd_pack_buddy, cpu);
