@@ -5,12 +5,8 @@
 #include <linux/clk.h>	/* CCF */
 #include <linux/platform_device.h>
 
-#ifdef CONFIG_HAS_EARLYSUSPEND
-#include <linux/earlysuspend.h>
-#else
 #include <linux/fb.h>
 #include <linux/notifier.h>
-#endif
 
 #ifdef CONFIG_OF
 #include <linux/of.h>
@@ -169,41 +165,6 @@ static char *kicker_name[] = {
 	"LAST_KICKER",
 };
 
-#ifdef CONFIG_HAS_EARLYSUSPEND
-static void vcorefs_early_suspend_cb(struct early_suspend *h)
-{
-	struct governor_profile *gvrctrl = &governor_ctrl;
-
-	if (gvrctrl->md_dvfs_req & MD_DISABLE_SCREEN_CHANGE)
-		return;
-
-	mutex_lock(&governor_mutex);
-	/* set screen OFF state */
-	gvrctrl->screen_on = 0;
-	spm_vcorefs_screen_off_setting(gvrctrl->md_dvfs_req);
-	mutex_unlock(&governor_mutex);
-}
-
-static void vcorefs_late_resume_cb(struct early_suspend *h)
-{
-	struct governor_profile *gvrctrl = &governor_ctrl;
-
-	if (gvrctrl->md_dvfs_req & MD_DISABLE_SCREEN_CHANGE)
-		return;
-
-	mutex_lock(&governor_mutex);
-	/* set screen ON state */
-	gvrctrl->screen_on = 1;
-	spm_vcorefs_screen_on_setting();
-	mutex_unlock(&governor_mutex);
-}
-
-static struct early_suspend vcorefs_earlysuspend_desc = {
-	.level = EARLY_SUSPEND_LEVEL_DISABLE_FB + 50,
-	.suspend = vcorefs_early_suspend_cb,	/* after mtkfb_early_suspend */
-	.resume = vcorefs_late_resume_cb,	/* before mtkfb_late_resume */
-};
-#else
 static struct notifier_block vcorefs_fb_notif;
 
 static int
@@ -238,7 +199,6 @@ vcorefs_fb_notifier_callback(struct notifier_block *self, unsigned long event, v
 
 	return 0;
 }
-#endif
 
 /*
  * set vcore cmd
@@ -335,6 +295,18 @@ bool is_vcorefs_feature_enable(void)
 */
 
 	return gvrctrl->plat_feature_en;
+}
+
+bool vcorefs_get_screen_on_state(void)
+{
+	struct governor_profile *gvrctrl = &governor_ctrl;
+	int r;
+
+	mutex_lock(&governor_mutex);
+	r = gvrctrl->screen_on;
+	mutex_unlock(&governor_mutex);
+
+	return r;
 }
 
 int vcorefs_get_num_opp(void)
@@ -464,7 +436,7 @@ static int set_init_opp_index(void)
 /*
  *  DVFS working timer
  */
-void record_dvfs_timer(u32 timer)
+static void record_dvfs_timer(u32 timer)
 {
 	struct governor_profile *gvrctrl = &governor_ctrl;
 	int i;
@@ -484,7 +456,7 @@ void record_dvfs_timer(u32 timer)
 	}
 }
 
-void clean_dvfs_counter(int timer)
+static void clean_dvfs_counter(int timer)
 {
 	int i;
 
@@ -766,12 +738,9 @@ static int set_freq_with_opp(struct kicker_config *krconf)
 		     gvrctrl->screen_on,
 		     gvrctrl->freq_dfs ? "" : "[X]");
 
-	if (!gvrctrl->freq_dfs || !gvrctrl->screen_on)
+	if (!gvrctrl->freq_dfs)
 		return 0;
 
-/*
- * AXI DFS
- */
 #if CCF_CONFIG
 	r = clk_prepare_enable(clk_axi_sel);
 
@@ -1091,14 +1060,10 @@ static int __init vcorefs_module_init(void)
 		return r;
 	}
 
-/* set screen ON/OFF state to SPM for MD DVFS control */
-#ifdef CONFIG_HAS_EARLYSUSPEND
-	register_early_suspend(&vcorefs_earlysuspend_desc);
-#else
+	/* set screen ON/OFF state to SPM for MD DVFS control */
 	memset(&vcorefs_fb_notif, 0, sizeof(vcorefs_fb_notif));
 	vcorefs_fb_notif.notifier_call = vcorefs_fb_notifier_callback;
 	r = fb_register_client(&vcorefs_fb_notif);
-#endif
 
 	return r;
 }

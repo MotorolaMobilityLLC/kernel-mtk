@@ -106,6 +106,7 @@ extern int kicker_table[NUM_KICKER];
 
 /* Governor extern API */
 extern bool is_vcorefs_feature_enable(void);
+extern bool vcorefs_get_screen_on_state(void);
 extern int vcorefs_get_num_opp(void);
 extern int vcorefs_get_curr_opp(void);
 extern int vcorefs_get_prev_opp(void);
