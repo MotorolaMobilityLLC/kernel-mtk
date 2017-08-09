@@ -22,8 +22,8 @@
 #endif
 #endif
 #if defined(CONFIG_ARCH_MT6755)
-/* #include "disp_lowpower.h" */
-/* #include "disp_helper.h" */
+#include "disp_lowpower.h"
+#include "disp_helper.h"
 #endif
 
 /* To enable debug log: */
@@ -53,6 +53,18 @@ static volatile int g_aal_is_init_regs_valid;
 static volatile int g_aal_backlight_notified = 1023;
 static volatile int g_aal_initialed;
 
+static int disp_aal_exit_idle(const char *caller, int need_kick)
+{
+#ifdef MTK_DISP_IDLE_LP
+	disp_exit_idle_ex(caller);
+#endif
+#if defined(CONFIG_ARCH_MT6755)
+	if (need_kick == 1)
+		if (disp_helper_get_option(DISP_OPT_IDLEMGR_ENTER_ULPS))
+			primary_display_idlemgr_kick(__func__, 1);
+#endif
+	return 0;
+}
 
 static int disp_aal_init(DISP_MODULE_ENUM module, int width, int height, void *cmdq)
 {
@@ -109,9 +121,9 @@ static void disp_aal_notify_frame_dirty(void)
 	unsigned long flags;
 
 	AAL_DBG("disp_aal_notify_frame_dirty()");
-#ifdef MTK_DISP_IDLE_LP
-	disp_exit_idle_ex("disp_aal_notify_frame_dirty");
-#endif
+
+	disp_aal_exit_idle("disp_aal_notify_frame_dirty", 0);
+
 	spin_lock_irqsave(&g_aal_hist_lock, flags);
 	/* Interrupt can be disabled until dirty histogram is retrieved */
 	g_aal_dirty_frame_retrieved = 0;
@@ -194,9 +206,9 @@ void disp_aal_notify_backlight_changed(int bl_1024)
 	unsigned int service_flags;
 
 	pr_debug("disp_aal_notify_backlight_changed: %d/1023", bl_1024);
-#ifdef MTK_DISP_IDLE_LP
-	disp_exit_idle_ex("disp_aal_notify_backlight_changed");
-#endif
+
+	disp_aal_exit_idle("disp_aal_notify_backlight_changed", 1);
+
 	max_backlight = disp_pwm_get_max_backlight(DISP_PWM0);
 	if (bl_1024 > max_backlight)
 		bl_1024 = max_backlight;
@@ -220,13 +232,6 @@ void disp_aal_notify_backlight_changed(int bl_1024)
 	spin_unlock_irqrestore(&g_aal_hist_lock, flags);
 
 	if (g_aal_is_init_regs_valid) {
-#if defined(CONFIG_ARCH_MT6755)
-		/*
-		if (disp_helper_get_option(DISP_OPT_IDLEMGR_ENTER_ULPS))
-			primary_display_idlemgr_kick(__func__, 1);
-		*/
-#endif
-
 		disp_aal_set_interrupt(1);
 		disp_aal_trigger_refresh();
 	}
