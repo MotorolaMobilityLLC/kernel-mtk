@@ -358,6 +358,7 @@ static void ppm_main_calc_new_limit(void)
 	int i, active_cnt = 0;
 	bool is_ptp_activate = false;
 	struct ppm_client_req *c_req = &(ppm_main_info.client_req);
+	struct ppm_client_req *last_req = &(ppm_main_info.last_req);
 
 	FUNC_ENTER(FUNC_LV_MAIN);
 
@@ -384,14 +385,14 @@ static void ppm_main_calc_new_limit(void)
 	if (active_cnt == 0)
 		ppm_main_clear_client_req(c_req);
 
-	/* set freq idx to -1 if nr_cpu in the cluster is 0 */
+	/* set freq idx to previous limit if nr_cpu in the cluster is 0 */
 	for (i = 0; i < c_req->cluster_num; i++) {
 		if ((!c_req->cpu_limit[i].min_cpu_core && !c_req->cpu_limit[i].max_cpu_core)
 			|| (c_req->cpu_limit[i].has_advise_core && !c_req->cpu_limit[i].advise_cpu_core)) {
-			c_req->cpu_limit[i].min_cpufreq_idx = -1;
-			c_req->cpu_limit[i].max_cpufreq_idx = -1;
-			c_req->cpu_limit[i].has_advise_freq = false;
-			c_req->cpu_limit[i].advise_cpufreq_idx = -1;
+			c_req->cpu_limit[i].min_cpufreq_idx = last_req->cpu_limit[i].min_cpufreq_idx;
+			c_req->cpu_limit[i].max_cpufreq_idx = last_req->cpu_limit[i].max_cpufreq_idx;
+			c_req->cpu_limit[i].has_advise_freq = last_req->cpu_limit[i].has_advise_freq;
+			c_req->cpu_limit[i].advise_cpufreq_idx = last_req->cpu_limit[i].advise_cpufreq_idx;
 		}
 
 		ppm_ver("Final Result: [%d] --> (%d)(%d)(%d)(%d) (%d)(%d)(%d)(%d)\n",

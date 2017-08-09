@@ -308,6 +308,9 @@ enum ppm_power_state ppm_hica_get_state_by_pwr_budget(enum ppm_power_state state
 	if (fix_power_state != PPM_POWER_STATE_NONE)
 		return fix_power_state;
 
+	if (state >= PPM_POWER_STATE_NONE)
+		return PPM_POWER_STATE_NONE;
+
 	while (1) {
 		index = ppm_hica_get_table_idx_by_pwr(new_state, budget);
 		ppm_ver("@%s: index = %d\n", __func__, index);
