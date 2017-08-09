@@ -32,6 +32,10 @@
 
 #include <mt-plat/mt_io.h>
 
+#if defined(CONFIG_ARCH_MT6797)
+#include "mt_vcorefs_governor.h"
+#endif
+
 /*
  * only for internal debug
  */
@@ -307,7 +311,11 @@ static struct pwr_ctrl dpidle_ctrl = {
 	.spm_infra_req = 0,
 	.spm_vrf18_req = 0,
 	.spm_dvfs_req = 0,
+#if defined(CONFIG_ARCH_MT6755)
 	.spm_dvfs_force_down = 0,
+#elif defined(CONFIG_ARCH_MT6797)
+	.spm_dvfs_force_down = 1,
+#endif
 	.spm_ddren_req = 0,
 	.cpu_md_dvfs_sop_force_on = 0,
 
@@ -570,7 +578,12 @@ wake_reason_t spm_go_to_dpidle(u32 spm_flags, u32 spm_data, u32 dump_log)
 
 	__spm_check_md_pdn_power_control(pwrctrl);
 
+#if defined(CONFIG_ARCH_MT6755)
 	__spm_sync_vcore_dvfs_power_control(pwrctrl, __spm_vcore_dvfs.pwrctrl);
+#elif defined(CONFIG_ARCH_MT6797)
+	pwrctrl->pcm_flags &= ~SPM_FLAG_RUN_COMMON_SCENARIO;
+	pwrctrl->pcm_flags |= (SPM_FLAG_DIS_VCORE_DVS | SPM_FLAG_DIS_VCORE_DFS);
+#endif
 
 	__spm_set_power_control(pwrctrl);
 
@@ -624,6 +637,26 @@ RESTORE_IRQ:
 
 #if SPM_AEE_RR_REC
 	aee_rr_rec_deepidle_val(0);
+#endif
+
+#if defined(CONFIG_ARCH_MT6797)
+	/* Re-kick VCORE DVFS */
+	if (is_vcorefs_feature_enable()) {
+		pr_err("DP-- re-kick VCORE..0\n");
+
+		__spm_kick_im_to_fetch(pcmdesc);
+		__spm_init_pcm_register();
+		__spm_init_event_vector(pcmdesc);
+		__spm_check_md_pdn_power_control(pwrctrl);
+		__spm_sync_vcore_dvfs_power_control(pwrctrl, __spm_vcore_dvfs.pwrctrl);
+		pwrctrl->pcm_flags |= SPM_FLAG_RUN_COMMON_SCENARIO;
+		pwrctrl->pcm_flags &= ~(SPM_FLAG_DIS_VCORE_DVS | SPM_FLAG_DIS_VCORE_DFS);
+
+		__spm_set_power_control(pwrctrl);
+		__spm_set_wakeup_event(pwrctrl);
+
+		__spm_kick_pcm_to_run(pwrctrl);
+	}
 #endif
 
 	return wr;

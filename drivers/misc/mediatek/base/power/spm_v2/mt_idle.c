@@ -34,6 +34,10 @@
 #include "mt_spm_reg.h"
 #include "mt_cpufreq_hybrid.h"
 
+#if defined(CONFIG_ARCH_MT6797)
+#include "mt_vcorefs_governor.h"
+#endif
+
 #include <asm/uaccess.h>
 
 #ifdef CONFIG_CPU_ISOLATION
@@ -1244,6 +1248,15 @@ static bool dpidle_can_enter(int cpu)
 		goto out;
 	}
 
+#if defined(CONFIG_ARCH_MT6797)
+	if (is_vcorefs_feature_enable()) {
+		if (vcorefs_screen_on_lock_dpidle()) {
+			reason = BY_VTG;
+			goto out;
+		}
+	}
+#endif
+
 	/* TODO: check if mt_cpufreq_earlysuspend_status_get() should be used */
 #if 0
 	if (dpidle_by_pass_cg == 0) {
@@ -1679,11 +1692,19 @@ u32 slp_spm_deepidle_flags = {
 	#endif
 	SPM_FLAG_DIS_VPROC_VSRAM_DVS
 #else
+#if defined(CONFIG_ARCH_MT6755)
 	#ifdef CONFIG_MTK_ICUSB_SUPPORT
 	SPM_FLAG_DIS_INFRA_PDN
 	#else
 	0
 	#endif
+#elif defined(CONFIG_ARCH_MT6797)
+	#ifdef CONFIG_MTK_ICUSB_SUPPORT
+	SPM_FLAG_DIS_INFRA_PDN | SPM_FLAG_DIS_VPROC_VSRAM_DVS
+	#else
+	SPM_FLAG_DIS_VPROC_VSRAM_DVS
+	#endif
+#endif
 #endif
 };
 
