@@ -17,9 +17,11 @@
 #endif
 
 #include "ged_monitor_3D_fence.h"
+
 #include "ged_log.h"
 #include "ged_base.h"
 #include "ged_type.h"
+#include "ged_dvfs.h"
 
 #include <asm/div64.h>
 
@@ -35,6 +37,7 @@ extern bool mtk_get_bottom_gpu_freq(unsigned int *pui32FreqLevel);
 #ifdef GED_DEBUG_MONITOR_3D_FENCE
 extern GED_LOG_BUF_HANDLE ghLogBuf_GED;
 #endif
+extern GED_LOG_BUF_HANDLE ghLogBuf_DVFS;
 
 typedef struct GED_MONITOR_3D_FENCE_TAG
 {
@@ -46,8 +49,19 @@ typedef struct GED_MONITOR_3D_FENCE_TAG
 static void ged_sync_cb(struct sync_fence *fence, struct sync_fence_waiter *waiter)
 {
 	GED_MONITOR_3D_FENCE *psMonitor;
+    unsigned long long t;
+    
+    t = ged_get_time();
+    
+    
+    do_div(t,1000);
+    
     ged_monitor_3D_fence_notify();
+    ged_dvfs_cal_gpu_utilization_force();
 	psMonitor = GED_CONTAINER_OF(waiter, GED_MONITOR_3D_FENCE, sSyncWaiter);
+    
+    ged_log_buf_print(ghLogBuf_DVFS, "[-] ged_monitor_3D_fence_done (ts=%llu) %p", t, psMonitor->psSyncFence);
+    
     schedule_work(&psMonitor->sWork);
 }
 
@@ -105,7 +119,14 @@ unsigned long ged_monitor_3D_fence_done_time()
 GED_ERROR ged_monitor_3D_fence_add(int fence_fd)
 {
     int err;
-    GED_MONITOR_3D_FENCE* psMonitor = (GED_MONITOR_3D_FENCE*)ged_alloc(sizeof(GED_MONITOR_3D_FENCE));
+    unsigned long long t;
+    GED_MONITOR_3D_FENCE* psMonitor;
+    
+    t = ged_get_time();
+
+    do_div(t,1000);
+    
+    psMonitor = (GED_MONITOR_3D_FENCE*)ged_alloc(sizeof(GED_MONITOR_3D_FENCE));
 
 #ifdef GED_DEBUG_MONITOR_3D_FENCE
     ged_log_buf_print(ghLogBuf_GED, "[+]ged_monitor_3D_fence_add");
@@ -125,6 +146,8 @@ GED_ERROR ged_monitor_3D_fence_add(int fence_fd)
         return GED_ERROR_INVALID_PARAMS;
     }
 
+    ged_log_buf_print(ghLogBuf_DVFS, "[+] ged_monitor_3D_fence_add (ts=%llu) %p", t, psMonitor->psSyncFence);
+    
 #ifdef GED_DEBUG_MONITOR_3D_FENCE
     ged_log_buf_print(ghLogBuf_GED, "[+]sync_fence_wait_async");
 #endif
@@ -153,7 +176,7 @@ GED_ERROR ged_monitor_3D_fence_add(int fence_fd)
 #ifdef GED_DVFS_ENABLE
                     if (uiFreqLevelID != mt_gpufreq_get_dvfs_table_num() - 1)
 #else
-                    if (uiFreqLevelID != 9999)
+                    if (uiFreqLevelID != 9999) // NEVER TRUE
 #endif
                     {
 #if 0

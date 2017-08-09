@@ -173,7 +173,7 @@ typedef struct GED_BRIDGE_IN_NOTIFY_VSYNC_TAG
 /* Bridge out structure for VSYNCEVENT */
 typedef struct GED_BRIDGE_OUT_NOTIFY_VSYNC_TAG
 {
-    unsigned long   t;
+    GED_DVFS_UM_QUERY_PACK sQueryData;
     GED_ERROR eError;
 } GED_BRIDGE_OUT_NOTIFY_VSYNC;
 

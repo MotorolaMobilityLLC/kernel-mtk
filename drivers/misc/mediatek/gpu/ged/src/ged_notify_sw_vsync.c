@@ -23,9 +23,6 @@ static struct hrtimer g_HT_hwvsync_emu;
 
 extern void (*mtk_gpu_sodi_entry_fp)(void);
 extern void (*mtk_gpu_sodi_exit_fp)(void);
-extern void (*mtk_gpu_dvfs_clock_switch_fp)(bool bSwitch);
-extern int mtk_get_gpu_power_state(void);
-extern bool mtk_do_gpu_dvfs(unsigned long t, long phase, unsigned long ul3DFenceDoneTime);
 
 
 static struct workqueue_struct* g_psNotifyWorkQueue = NULL;
@@ -65,6 +62,12 @@ static unsigned long long g_ns_gpu_on_ts=0;
 static bool g_timer_on = false;
 static unsigned long long g_timer_on_ts=0;
 
+static bool g_bGPUClock = false;
+
+/*
+ * void timer_switch(bool bTock)
+ * only set the staus, not really operating on real timer 
+ */
 void timer_switch(bool bTock)
 {
     mutex_lock(&gsVsyncStampLock);
@@ -96,15 +99,15 @@ static void ged_timer_switch_work_handle(struct work_struct *psWork)
 }
 
 
-GED_ERROR ged_notify_sw_vsync(GED_VSYNC_TYPE eType,unsigned long *pt)
+GED_ERROR ged_notify_sw_vsync(GED_VSYNC_TYPE eType, GED_DVFS_UM_QUERY_PACK* psQueryData)
 {
 #ifdef ENABLE_COMMON_DVFS  
     
-	bool ret = false;
     long long llDiff;
     bool bHWEventKick = false;
     unsigned long long temp;
 
+    unsigned long t;
     long phase = 0;
     
     temp = ged_get_time();
@@ -165,8 +168,11 @@ GED_ERROR ged_notify_sw_vsync(GED_VSYNC_TYPE eType,unsigned long *pt)
      if(GED_VSYNC_SW_EVENT==eType)
     {
         do_div(temp,1000);
-        *pt = (unsigned long)(temp);
-    ret=mtk_do_gpu_dvfs(*pt, phase, ged_monitor_3D_fence_done_time());
+        t = (unsigned long)(temp);
+        ged_dvfs_run(t, phase, ged_monitor_3D_fence_done_time());
+        psQueryData->usT = t;
+        psQueryData-> ul3DFenceDoneTime = ged_monitor_3D_fence_done_time();
+        ged_dvfs_sw_vsync_query_data(psQueryData);
     }    
     else
     {
@@ -176,7 +182,7 @@ GED_ERROR ged_notify_sw_vsync(GED_VSYNC_TYPE eType,unsigned long *pt)
             GED_LOGE("[5566] HW Event: kick!\n");
 #endif                
             ged_log_buf_print(ghLogBuf_DVFS, "[GED_K] HW VSync: mending kick!");
-            ret=mtk_do_gpu_dvfs(0, 0, 0);
+            ged_dvfs_run(0, 0, 0);
         }
     }
 	
@@ -218,7 +224,7 @@ enum hrtimer_restart ged_sw_vsync_check_cb( struct hrtimer *timer )
     {
         psNotify = (GED_NOTIFY_SW_SYNC*)ged_alloc_atomic(sizeof(GED_NOTIFY_SW_SYNC));
         
-        if(0==mtk_get_gpu_power_state() && 0==gpu_loading && (temp - g_ns_gpu_on_ts> GED_DVFS_TIMER_TIMEOUT) )
+        if(false==g_bGPUClock && 0==gpu_loading && (temp - g_ns_gpu_on_ts> GED_DVFS_TIMER_TIMEOUT) )
         {
             if (psNotify)
             {
@@ -234,6 +240,7 @@ enum hrtimer_restart ged_sw_vsync_check_cb( struct hrtimer *timer )
         {
             INIT_WORK(&psNotify->sWork, ged_notify_sw_sync_work_handle);
             psNotify->t = temp;
+            do_div(psNotify->t,1000);
             psNotify->phase = GED_DVFS_FALLBACK;
             psNotify->ul3DFenceDoneTime = 0;
             queue_work(g_psNotifyWorkQueue, &psNotify->sWork);
@@ -245,7 +252,7 @@ enum hrtimer_restart ged_sw_vsync_check_cb( struct hrtimer *timer )
     return HRTIMER_NORESTART;
 }
 
-void ged_clock_switch(bool bSwitch)
+void ged_dvfs_gpu_clock_switch_notify(bool bSwitch)
 {
 #ifdef ENABLE_COMMON_DVFS
     #ifdef ENABLE_TIMER_BACKUP
@@ -254,6 +261,7 @@ void ged_clock_switch(bool bSwitch)
 
     if(bSwitch)
     {        
+        g_bGPUClock = true;
         if( 0 == hrtimer_start(&g_HT_hwvsync_emu, ns_to_ktime(GED_DVFS_TIMER_TIMEOUT), HRTIMER_MODE_REL))
         {
             ged_log_buf_print(ghLogBuf_DVFS, "[GED_K] HW Start Timer");
@@ -264,9 +272,14 @@ void ged_clock_switch(bool bSwitch)
             ged_log_buf_print(ghLogBuf_DVFS, "[GED_K] Timer Already Start");            
         }
     }
+    else
+    {
+        g_bGPUClock = false;
+    }
     #endif
 #endif             
 }
+EXPORT_SYMBOL(ged_dvfs_gpu_clock_switch_notify);
 
 
 #define GED_TIMER_BACKUP_THRESHOLD 3000
@@ -345,7 +358,7 @@ GED_ERROR ged_notify_sw_vsync_system_init(void)
      mtk_gpu_sodi_entry_fp= ged_sodi_start;
      mtk_gpu_sodi_exit_fp= ged_sodi_stop;
     
-     mtk_gpu_dvfs_clock_switch_fp = ged_clock_switch;
+
     #endif
 #endif     
     

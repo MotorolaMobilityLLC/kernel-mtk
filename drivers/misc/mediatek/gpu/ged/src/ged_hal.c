@@ -69,14 +69,13 @@ int tokenizer(char* pcSrc, int i32len, int* pi32IndexArray, int i32NumToken)
     return -1;
 }
 
-#define ADDRESS_TO_ERROR ((void*) 0xdeadc0de)
 
 //-----------------------------------------------------------------------------
 static void* ged_total_gpu_freq_level_count_seq_start(struct seq_file *psSeqFile, loff_t *puiPosition)
 {
     if (0 == *puiPosition)
     {
-        return ADDRESS_TO_ERROR;
+        return SEQ_START_TOKEN;
     }
 
     return NULL;
@@ -146,7 +145,7 @@ static void* ged_custom_boost_gpu_freq_seq_start(struct seq_file *psSeqFile, lof
 {
     if (0 == *puiPosition)
     {
-        return ADDRESS_TO_ERROR;
+        return SEQ_START_TOKEN;
     }
 
     return NULL;
@@ -216,7 +215,7 @@ static void* ged_custom_upbound_gpu_freq_seq_start(struct seq_file *psSeqFile, l
 {
     if (0 == *puiPosition)
     {
-        return ADDRESS_TO_ERROR;
+        return SEQ_START_TOKEN;
     }
 
     return NULL;
@@ -329,23 +328,15 @@ static ssize_t ged_vsync_offset_enable_write_entry(const char __user *pszBuffer,
                             ged_dvfs_vsync_offset_event_switch(GED_DVFS_VSYNC_OFFSET_DEBUG_CLEAR_EVENT , true);
                     }
                 }
-                 else if(strcmp(pcCMD,"sodi_knight")==0)
+                else if(strcmp(pcCMD, "gas") == 0)
                 {
                     if ( (*pcValue) =='1'|| (*pcValue) =='0')
                     {
-                        if( (*pcValue) -'0'==1)
-                            ged_sodi_start();
+                            if( (*pcValue) -'0'==0)
+                                ged_dvfs_vsync_offset_event_switch(GED_DVFS_VSYNC_OFFSET_GAS_EVENT, false);
                         else
-                            ged_sodi_stop();
+                                ged_dvfs_vsync_offset_event_switch(GED_DVFS_VSYNC_OFFSET_GAS_EVENT, true);
                     }
-                } else if(strcmp(pcCMD, "gas") == 0)
-		{
-			GED_LOGE("GAS command:%s", pcValue);
-			//printk("GAS command:%s", pcValue);
-			ged_dvfs_vsync_offset_event_switch(
-				(*pcValue) == '1' ?  GED_DVFS_VSYNC_OFFSET_FORCE_OFF
-					       :  GED_DVFS_VSYNC_OFFSET_FORCE_ON,
-				true);
 		}
                 else
                 {
@@ -363,7 +354,7 @@ static void* ged_vsync_offset_enable_seq_start(struct seq_file *psSeqFile, loff_
 {
     if (0 == *puiPosition)
     {
-        return ADDRESS_TO_ERROR;
+        return SEQ_START_TOKEN;
     }
 
     return NULL;
@@ -382,27 +373,30 @@ static void* ged_vsync_offset_enable_seq_next(struct seq_file *psSeqFile, void *
 
 
 
-extern unsigned int g_ui32EvenStatus; 
+extern unsigned int g_ui32EventStatus; 
+extern unsigned int g_ui32EventDebugStatus;
 
 static int ged_vsync_offset_enable_seq_show(struct seq_file *psSeqFile, void *pvData)
 {
     if (pvData != NULL)
     {
-        seq_printf(psSeqFile, "g_ui32EvenStatus =%x\n",g_ui32EvenStatus);
-        if( g_ui32EvenStatus&GED_EVENT_FORCE_ON )
+        seq_printf(psSeqFile, "g_ui32EventStatus =%x\n",g_ui32EventStatus);
+        seq_printf(psSeqFile, "g_ui32EventDebugStatus =%x\n",g_ui32EventDebugStatus);
+        if( g_ui32EventDebugStatus&GED_EVENT_FORCE_ON )
         {
             seq_printf(psSeqFile, "Debug mode: Force on\n");
         }
-        else if ( g_ui32EvenStatus&GED_EVENT_FORCE_OFF )
+        else if ( g_ui32EventDebugStatus&GED_EVENT_FORCE_OFF )
         {
             seq_printf(psSeqFile, "Debug mode: Force off\n");
         }
         else
         {
-            seq_printf(psSeqFile, "Touch: %d\n",  g_ui32EvenStatus&GED_EVENT_TOUCH?1:0 );
-            seq_printf(psSeqFile, "WFD: %d\n",  g_ui32EvenStatus&GED_EVENT_WFD?1:0 );
-            seq_printf(psSeqFile, "MHL: %d\n",  g_ui32EvenStatus&GED_EVENT_MHL?1:0 );
-            seq_printf(psSeqFile, "Thermal: %d\n", g_ui32EvenStatus&GED_EVENT_THERMAL?1:0 );
+            seq_printf(psSeqFile, "Touch: %d\n",  g_ui32EventStatus&GED_EVENT_TOUCH?1:0 );
+            seq_printf(psSeqFile, "WFD: %d\n",  g_ui32EventStatus&GED_EVENT_WFD?1:0 );
+            seq_printf(psSeqFile, "MHL: %d\n",  g_ui32EventStatus&GED_EVENT_MHL?1:0 );
+            seq_printf(psSeqFile, "GAS: %d\n",  g_ui32EventStatus&GED_EVENT_GAS?1:0 );
+            seq_printf(psSeqFile, "Thermal: %d\n", g_ui32EventStatus&GED_EVENT_THERMAL?1:0 );
         }
     }
 
@@ -419,7 +413,11 @@ static struct seq_operations gsVsync_offset_enableReadOps =
 //-----------------------------------------------------------------------------
 
 //ged_dvfs_vsync_offset_level_set
-static ssize_t ged_vsync_offset_level_write_entry(const char __user *pszBuffer, size_t uiCount, loff_t uiPosition, void *pvData)
+static ssize_t ged_vsync_offset_level_write_entry(
+	const char __user *pszBuffer,
+	size_t uiCount,
+	loff_t uiPosition,
+	void *pvData)
 {
 #define GED_HAL_DEBUGFS_SIZE 64
 #define NUM_TOKEN 2
@@ -435,12 +433,15 @@ static ssize_t ged_vsync_offset_level_write_entry(const char __user *pszBuffer, 
     char* pcCMD;
     char* pcValue;
     int i;
-    int err;
 int i32VsyncOffsetLevel;
-     if ((0 < uiCount) && (uiCount < GED_HAL_DEBUGFS_SIZE-1))
-    {
-        if (0 == ged_copy_from_user(acBuffer, pszBuffer, uiCount))
-        {
+	int ret;
+
+	if (!((0 < uiCount) && (uiCount < GED_HAL_DEBUGFS_SIZE - 1)))
+		return 0;
+
+	if (ged_copy_from_user(acBuffer, pszBuffer, uiCount))
+		return 0;
+
             acBuffer[uiCount] = '\n';
             acBuffer[uiCount+1] = 0;
             i=tokenizer(acBuffer, uiCount, aint32Indx, NUM_TOKEN);
@@ -452,22 +453,21 @@ int i32VsyncOffsetLevel;
                 pcValue = acBuffer+aint32Indx[1];
                 if(strcmp(pcCMD,"set_vsync_offset")==0)
                 {
-                    err = kstrtoint(pcValue, 0,&i32VsyncOffsetLevel);
-                    if(0 == err)
+			ret = kstrtoint(pcValue, 0, &i32VsyncOffsetLevel);
                         ged_dvfs_vsync_offset_level_set(i32VsyncOffsetLevel);
                 }
             }
-        }
-    }   
 
     return 0;
 }
+
 //-----------------------------------------------------------------------------
+
 static void* ged_vsync_offset_level_seq_start(struct seq_file *psSeqFile, loff_t *puiPosition)
 {
     if (0 == *puiPosition)
     {
-        return ADDRESS_TO_ERROR;
+        return SEQ_START_TOKEN;
     }
 
     return NULL;
@@ -533,7 +533,7 @@ static void* ged_dvfs_tuning_mode_seq_start(struct seq_file *psSeqFile, loff_t *
 {
     if (0 == *puiPosition)
     {
-        return ADDRESS_TO_ERROR;
+        return SEQ_START_TOKEN;
     }
 
     return NULL;
@@ -575,7 +575,7 @@ static void* ged_dvfs_cur_freq_seq_start(struct seq_file *psSeqFile, loff_t *pui
 {
     if (0 == *puiPosition)
     {
-        return ADDRESS_TO_ERROR;
+        return SEQ_START_TOKEN;
     }
 
     return NULL;
@@ -619,7 +619,7 @@ static void* ged_dvfs_pre_freq_seq_start(struct seq_file *psSeqFile, loff_t *pui
 {
     if (0 == *puiPosition)
     {
-        return ADDRESS_TO_ERROR;
+        return SEQ_START_TOKEN;
     }
 
     return NULL;
@@ -663,7 +663,7 @@ static void* ged_dvfs_gpu_util_seq_start(struct seq_file *psSeqFile, loff_t *pui
 {
     if (0 == *puiPosition)
     {
-        return ADDRESS_TO_ERROR;
+        return SEQ_START_TOKEN;
     }
 
     return NULL;
@@ -705,7 +705,7 @@ static void *ged_fps_ub_seq_start(struct seq_file *seq, loff_t *pos)
 {
 #if 0
 	if (0 == *pos)
-		return ADDRESS_TO_ERROR;
+		return SEQ_START_TOKEN;
 
 	return NULL;
 #else

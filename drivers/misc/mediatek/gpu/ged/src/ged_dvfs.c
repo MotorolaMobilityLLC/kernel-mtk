@@ -64,9 +64,16 @@ static unsigned int  g_cust_boost_freq_id;
 
 static unsigned int gpu_pre_loading = 0;
 unsigned int gpu_loading = 0;
+static unsigned int gpu_av_loading = 0;
 static unsigned int gpu_block = 0;
 static unsigned int gpu_idle = 0;
 
+
+static unsigned long g_ulCalResetTS_us = 0; // calculate loading reset time stamp
+static unsigned long g_ulPreCalResetTS_us = 0; // previous calculate loading reset time stamp
+static unsigned long g_ulWorkingPeriod_us = 0; // last frame half, t0
+
+unsigned long g_ulPreDVFS_TS_us = 0; // record previous DVFS applying time stamp
 
 
 static unsigned int  g_ui32FreqIDFromPolicy = 0;
@@ -74,10 +81,11 @@ static unsigned int  g_ui32FreqIDFromPolicy = 0;
 unsigned long g_ulvsync_period;
 static GED_DVFS_TUNING_MODE g_eTuningMode = 0;
 
-unsigned int g_ui32EvenStatus = 0;
+unsigned int g_ui32EventStatus = 0;
+unsigned int g_ui32EventDebugStatus = 0;
 static int g_VsyncOffsetLevel = 0;
 
-
+static int g_probe_pid=GED_NO_UM_SERVICE;
 
 
 
@@ -102,7 +110,7 @@ extern void (ged_monitor_3D_fence_set_disable)(GED_BOOL bFlag);
 
 static bool ged_dvfs_policy(
     unsigned int ui32GPULoading, unsigned int* pui32NewFreqID, 
-    unsigned long t, long phase, unsigned long ul3DFenceDoneTime);
+    unsigned long t, long phase, unsigned long ul3DFenceDoneTime, bool bRefreshed);
 
 unsigned long ged_query_info( GED_INFO eType)
 {
@@ -136,10 +144,16 @@ unsigned long ged_query_info( GED_INFO eType)
         case GED_VSYNC_OFFSET:
             return ged_dvfs_vsync_offset_level_get();
         case GED_EVENT_STATUS:
-            return g_ui32EvenStatus;
+            return g_ui32EventStatus;
+        case GED_EVENT_DEBUG_STATUS:
+            return g_ui32EventDebugStatus;
         case GED_SRV_SUICIDE:
             ged_dvfs_probe_signal(GED_SRV_SUICIDE_EVENT);
-            return 0;
+            return g_probe_pid;
+        case GED_PRE_HALF_PERIOD:
+            return g_ulWorkingPeriod_us;
+        case GED_LATEST_START:
+            return g_ulPreCalResetTS_us;
 #endif             
         default:
             return 0;
@@ -212,9 +226,10 @@ bool ged_dvfs_gpu_freq_commit(unsigned long ui32NewFreqID, GED_DVFS_COMMIT_TYPE 
              * since it is possible to have multiple freq settings in previous execution period
              * Does this fatal for precision?
              */
+             ged_log_buf_print(ghLogBuf_DVFS, "[GED_K] new freq ID commited: idx=%lu type=%u",ui32NewFreqID, eCommitType);
              if(true==bCommited)
              {
-                ged_log_buf_print(ghLogBuf_DVFS, "[GED_K] new freq ID commited: idx=%lu type=%u",ui32NewFreqID, eCommitType);
+                ged_log_buf_print(ghLogBuf_DVFS, "[GED_K] commited true");
                 g_ui32PreFreqID = ui32CurFreqID;            
              }
         }	
@@ -255,58 +270,54 @@ GED_DVFS_TUNING_MODE ged_dvfs_get_tuning_mode()
 void ged_dvfs_vsync_offset_event_switch(GED_DVFS_VSYNC_OFFSET_SWITCH_CMD eEvent, bool bSwitch)
 {
     unsigned int  ui32BeforeSwitchInterpret;
+    unsigned int  ui32BeforeDebugInterpret;
     mutex_lock(&gsVSyncOffsetLock);
 
-    ui32BeforeSwitchInterpret = g_ui32EvenStatus;
+    ui32BeforeSwitchInterpret = g_ui32EventStatus;
+    ui32BeforeDebugInterpret = g_ui32EventDebugStatus;
+    
     switch(eEvent)
     {
         case GED_DVFS_VSYNC_OFFSET_FORCE_ON:
-            g_ui32EvenStatus |= GED_EVENT_FORCE_ON;
-            g_ui32EvenStatus &= (~GED_EVENT_FORCE_OFF);
+            g_ui32EventDebugStatus |= GED_EVENT_FORCE_ON;
+            g_ui32EventDebugStatus &= (~GED_EVENT_FORCE_OFF);
             break;
         case GED_DVFS_VSYNC_OFFSET_FORCE_OFF:
-            g_ui32EvenStatus |= GED_EVENT_FORCE_OFF;
-            g_ui32EvenStatus &= (~GED_EVENT_FORCE_ON);
+            g_ui32EventDebugStatus |= GED_EVENT_FORCE_OFF;
+            g_ui32EventDebugStatus &= (~GED_EVENT_FORCE_ON);
             break;
         case GED_DVFS_VSYNC_OFFSET_DEBUG_CLEAR_EVENT:
-            g_ui32EvenStatus &= (~GED_EVENT_FORCE_ON);
-            g_ui32EvenStatus &= (~GED_EVENT_FORCE_OFF);
+            g_ui32EventDebugStatus &= (~GED_EVENT_FORCE_ON);
+            g_ui32EventDebugStatus &= (~GED_EVENT_FORCE_OFF);
             break;
         case GED_DVFS_VSYNC_OFFSET_TOUCH_EVENT:
             if(GED_TRUE==bSwitch) // touch boost
                 ged_dvfs_boost_gpu_freq(); 
-            (bSwitch)? (g_ui32EvenStatus|=GED_EVENT_TOUCH): (g_ui32EvenStatus&= (~GED_EVENT_TOUCH));            
+            (bSwitch)? (g_ui32EventStatus|=GED_EVENT_TOUCH): (g_ui32EventStatus&= (~GED_EVENT_TOUCH));            
             break;
         case GED_DVFS_VSYNC_OFFSET_THERMAL_EVENT:
-            (bSwitch)? (g_ui32EvenStatus|=GED_EVENT_THERMAL): (g_ui32EvenStatus&= (~GED_EVENT_THERMAL));
+            (bSwitch)? (g_ui32EventStatus|=GED_EVENT_THERMAL): (g_ui32EventStatus&= (~GED_EVENT_THERMAL));
             break;
         case GED_DVFS_VSYNC_OFFSET_WFD_EVENT:
-            (bSwitch)? (g_ui32EvenStatus|=GED_EVENT_WFD): (g_ui32EvenStatus&= (~GED_EVENT_WFD));
+            (bSwitch)? (g_ui32EventStatus|=GED_EVENT_WFD): (g_ui32EventStatus&= (~GED_EVENT_WFD));
             break;
         case GED_DVFS_VSYNC_OFFSET_MHL_EVENT:
-            (bSwitch)? (g_ui32EvenStatus|=GED_EVENT_MHL): (g_ui32EvenStatus&= (~GED_EVENT_MHL));
+            (bSwitch)? (g_ui32EventStatus|=GED_EVENT_MHL): (g_ui32EventStatus&= (~GED_EVENT_MHL));
+            break;
+        case GED_DVFS_VSYNC_OFFSET_GAS_EVENT:
+            (bSwitch)? (g_ui32EventStatus|=GED_EVENT_GAS): (g_ui32EventStatus&= (~GED_EVENT_GAS));
             break;
         default:
             GED_LOGE("%s: not acceptable event:%u \n", __func__,  eEvent); 
             goto CHECK_OUT;
     }
     
-/*
-    if(!gbDebug)
+    if(ui32BeforeSwitchInterpret != g_ui32EventStatus || ui32BeforeDebugInterpret != g_ui32EventDebugStatus 
+        || g_ui32EventDebugStatus&GED_EVENT_NOT_SYNC)
     {
-        if( gbTouch & !gbThermal &!gbWFD & !gbMHL)
-            g_bVsyncOffsetEnable = GED_TRUE;
-        else
-            g_bVsyncOffsetEnable = GED_FALSE;
-    }
-    else
-    {
-        g_bVsyncOffsetEnable = bForceOn;
-    }*/
-    
-    if(ui32BeforeSwitchInterpret != g_ui32EvenStatus)
         ged_dvfs_probe_signal(GED_DVFS_VSYNC_OFFSET_SIGNAL_EVENT);
-    
+    }
+   
 CHECK_OUT:    
     mutex_unlock(&gsVSyncOffsetLock);
 }
@@ -336,9 +347,20 @@ GED_ERROR ged_dvfs_um_commit( unsigned long gpu_tar_freq, bool bFallback)
 #ifdef GED_DVFS_UM_CAL
      mutex_lock(&gsDVFSLock);
      
+     gpu_loading = (( gpu_loading * (g_ulCalResetTS_us - g_ulPreCalResetTS_us)  ) + 100*g_ulWorkingPeriod_us ) / (g_ulCalResetTS_us  - g_ulPreDVFS_TS_us); 
+     gpu_pre_loading = gpu_av_loading;
+     gpu_av_loading = gpu_loading;
+     
+     g_ulPreDVFS_TS_us = g_ulCalResetTS_us;        
+     
+     if(gpu_tar_freq&0x1) // Magic to kill ged_srv
+     {
+         ged_dvfs_probe_signal(GED_SRV_SUICIDE_EVENT);
+    }
+     
      if(bFallback==true) // in the fallback mode, gpu_tar_freq taking as freq index
     {
-        ged_dvfs_policy(gpu_loading, &ui32NewFreqID, 0, 0, 0);        
+        ged_dvfs_policy(gpu_loading, &ui32NewFreqID, 0, 0, 0, true);  
     }
     else
     {
@@ -379,6 +401,8 @@ GED_ERROR ged_dvfs_um_commit( unsigned long gpu_tar_freq, bool bFallback)
 
     ged_dvfs_gpu_freq_commit(ui32NewFreqID, GED_DVFS_DEFAULT_COMMIT);
     
+    g_ulWorkingPeriod_us = 0;
+    
     mutex_unlock(&gsDVFSLock);            
 #endif
     
@@ -388,13 +412,25 @@ GED_ERROR ged_dvfs_um_commit( unsigned long gpu_tar_freq, bool bFallback)
 
 static bool ged_dvfs_policy(
     unsigned int ui32GPULoading, unsigned int* pui32NewFreqID, 
-    unsigned long t, long phase, unsigned long ul3DFenceDoneTime)
+    unsigned long t, long phase, unsigned long ul3DFenceDoneTime, bool bRefreshed)
 {
 #ifdef GED_DVFS_ENABLE    
     int i32MaxLevel = (int)(mt_gpufreq_get_dvfs_table_num() - 1);
     unsigned int ui32GPUFreq = mt_gpufreq_get_cur_freq_index();
     
     int i32NewFreqID = (int)ui32GPUFreq;
+    
+    if(false==bRefreshed)
+    {
+        gpu_loading = (( gpu_loading * (g_ulCalResetTS_us - g_ulPreCalResetTS_us)  ) + 100*g_ulWorkingPeriod_us ) / (g_ulCalResetTS_us  - g_ulPreDVFS_TS_us); 
+        
+        g_ulPreDVFS_TS_us = g_ulCalResetTS_us;        
+
+        gpu_pre_loading = gpu_av_loading;
+        ui32GPULoading = gpu_loading;
+        gpu_av_loading = gpu_loading;
+    }
+    
 //GED_LOGE("[5566]  HWEvent Fallback\n");
         if (ui32GPULoading >= 99)
         {
@@ -447,6 +483,7 @@ static bool ged_dvfs_policy(
         
         *pui32NewFreqID = (unsigned int)i32NewFreqID;
 	
+    g_ulWorkingPeriod_us = 0;
    
     return *pui32NewFreqID != ui32GPUFreq ? GED_TRUE : GED_FALSE;
 #else
@@ -639,13 +676,39 @@ unsigned int ged_dvfs_get_custom_boost_gpu_freq(void)
     return ui32MaxLevel - g_cust_boost_freq_id;
 }
 
+
+
+void ged_dvfs_cal_gpu_utilization_force()
+{
+    unsigned int loading;
+    unsigned int block;
+    unsigned int idle;
+    unsigned long long t;
+    unsigned long ulwork;
+    
+
+    t = ged_get_time();
+    
+    do_div(t,1000);
+    
+    ged_dvfs_cal_gpu_utilization(&loading, &block, &idle);
+    
+    ulwork = (( t - g_ulCalResetTS_us ) * loading );
+    do_div(ulwork, 100);
+    
+    g_ulWorkingPeriod_us += ulwork;
+    
+    g_ulPreCalResetTS_us = g_ulCalResetTS_us;
+    g_ulCalResetTS_us = t;
+}
+
 void ged_dvfs_run(unsigned long t, long phase, unsigned long ul3DFenceDoneTime)
 {
 	bool bError;	
 	//ged_profile_dvfs_record_SW_vsync(t, phase, ul3DFenceDoneTime);
 	mutex_lock(&gsDVFSLock);
     
-    gpu_pre_loading = gpu_loading;
+    //gpu_pre_loading = gpu_loading;
 	
 	if (0 == gpu_dvfs_enable)
     {
@@ -673,7 +736,8 @@ void ged_dvfs_run(unsigned long t, long phase, unsigned long ul3DFenceDoneTime)
     }
     else
     {
-        
+        g_ulPreCalResetTS_us = g_ulCalResetTS_us;
+        g_ulCalResetTS_us = t;
         bError=ged_dvfs_cal_gpu_utilization(&gpu_loading, &gpu_block, &gpu_idle);
 
 #ifdef GED_DVFS_UM_CAL        
@@ -681,7 +745,7 @@ void ged_dvfs_run(unsigned long t, long phase, unsigned long ul3DFenceDoneTime)
 #endif             
         {
             
-            if (ged_dvfs_policy(gpu_loading, &g_ui32FreqIDFromPolicy, t, phase, ul3DFenceDoneTime))
+            if (ged_dvfs_policy(gpu_loading, &g_ui32FreqIDFromPolicy, t, phase, ul3DFenceDoneTime, false))
             {
                 ged_dvfs_gpu_freq_commit(g_ui32FreqIDFromPolicy, GED_DVFS_DEFAULT_COMMIT);
             }
@@ -719,16 +783,30 @@ static unsigned int ged_dvfs_get_custom_ceiling_gpu_freq(void)
 
     return ui32MaxLevel - g_cust_upbound_freq_id;
 }
+
+void ged_dvfs_sw_vsync_query_data(GED_DVFS_UM_QUERY_PACK* psQueryData)
+{
+    psQueryData->ui32GPULoading = gpu_loading;
+    psQueryData->ui32GPUFreqID =  mt_gpufreq_get_cur_freq_index();
+    psQueryData->gpu_cur_freq = mt_gpufreq_get_freq_by_idx(psQueryData->ui32GPUFreqID) ;
+    psQueryData->gpu_pre_freq = g_ui32PreFreqID;
+    psQueryData->nsOffset = ged_dvfs_vsync_offset_level_get();
+    
+    psQueryData->ulWorkingPeriod_us = g_ulWorkingPeriod_us;
+    psQueryData->ulPreCalResetTS_us = g_ulPreCalResetTS_us;
+    
+}
+
 #endif
 
 unsigned int ged_dvfs_get_gpu_loading(void)
 {
-    return gpu_loading;
+    return gpu_av_loading;
 }
 
 unsigned int ged_dvfs_get_gpu_blocking(void)
 {
-    return gpu_block;
+    return 100-gpu_av_loading; //gpu_block;
 }
 
 
@@ -756,11 +834,6 @@ void ged_dvfs_get_gpu_pre_freq(GED_DVFS_FREQ_DATA* psData)
 
 
 
-#define GED_NO_UM_SERVICE -1
-
-
-
-int g_probe_pid=GED_NO_UM_SERVICE;
 
 void ged_dvfs_probe_signal(int signo)
 {
@@ -798,8 +871,6 @@ void ged_dvfs_probe_signal(int signo)
 
 void set_target_fps(int i32FPS)
 {
-    /*if(gpDVFSdata)
-        gpDVFSdata -> ui32TargetFPS = i32FPS;*/
     g_ulvsync_period = get_ns_period_from_fps(i32FPS);
     
 }
@@ -809,7 +880,30 @@ GED_ERROR ged_dvfs_probe(int pid)
 {
     // lock here, wait vsync to relief
     //wait_for_completion(&gsVSyncOffsetLock);
+    
+    if(GED_VSYNC_OFFSET_NOT_SYNC ==pid)
+    {
+        g_ui32EventDebugStatus |= GED_EVENT_NOT_SYNC;
+        return GED_OK;
+    }
+    
+    if(GED_VSYNC_OFFSET_SYNC ==pid)
+    {
+        g_ui32EventDebugStatus &= (~GED_EVENT_NOT_SYNC);
+        return GED_OK;
+    }
+    
     g_probe_pid = pid;
+
+    /* clear bits among start */
+    if(g_probe_pid!=GED_NO_UM_SERVICE)
+    {
+        g_ui32EventStatus &= (~GED_EVENT_TOUCH);
+        g_ui32EventStatus &= (~GED_EVENT_WFD);
+        g_ui32EventStatus &= (~GED_EVENT_GAS);
+        
+        g_ui32EventDebugStatus = 0;
+    }
 
     ged_log_buf_print(ghLogBuf_ged_srv, "[GED_K] ged_srv pid: %d",g_probe_pid);
     

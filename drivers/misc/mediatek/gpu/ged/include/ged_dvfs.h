@@ -5,10 +5,13 @@
 
 //#define ENABLE_COMMON_DVFS 1	
 //#define GED_DVFS_DEBUG 1
+
 #define GED_DVFS_UM_CAL 1
 
 #define GED_DVFS_PROBE_TO_UM 1
 #define GED_DVFS_PROBE_IN_KM 0
+
+#define GED_NO_UM_SERVICE -1
 
 #define GED_DVFS_VSYNC_OFFSET_SIGNAL_EVENT 44
 #define GED_FPS_CHANGE_SIGNAL_EVENT        45
@@ -42,31 +45,23 @@ typedef enum GED_DVFS_VSYNC_OFFSET_SWITCH_CMD_TAG
     GED_DVFS_VSYNC_OFFSET_TOUCH_EVENT,
     GED_DVFS_VSYNC_OFFSET_THERMAL_EVENT,
     GED_DVFS_VSYNC_OFFSET_WFD_EVENT,
-    GED_DVFS_VSYNC_OFFSET_MHL_EVENT
+    GED_DVFS_VSYNC_OFFSET_MHL_EVENT,
+    GED_DVFS_VSYNC_OFFSET_GAS_EVENT
 } GED_DVFS_VSYNC_OFFSET_SWITCH_CMD;
 
 #define GED_EVENT_TOUCH (1 << 0)
 #define GED_EVENT_THERMAL (1 << 1)
 #define GED_EVENT_WFD (1 << 2)
 #define GED_EVENT_MHL  (1 << 3)
-#define GED_EVENT_FORCE_ON  (1 << 4)
-#define GED_EVENT_FORCE_OFF  (1 << 5)
-#define GED_EVENT_DEFAULT_VALUE  (1 << 6)
+#define GED_EVENT_GAS  (1 << 4)
 
-#define GED_MAX_NUM_DVFS_FREQ 12
-typedef struct GED_DVFS_POLICY_DATA_TAG
-{
-    unsigned int ui32TargetFPS;
-    unsigned int ui32GPULoading;
-    unsigned long t; 
-    long phase; 
-    unsigned long ul3DFenceDoneTime;
-    unsigned long gpu_cur_freq;
-    unsigned long gpu_pre_freq;
-    unsigned int ui32GPUFreq;
-    int i32NumFreqTab;
-    unsigned long aulFreqTab[GED_MAX_NUM_DVFS_FREQ];
-}GED_DVFS_POLICY_DATA;
+#define GED_EVENT_FORCE_ON  (1 << 0)
+#define GED_EVENT_FORCE_OFF  (1 << 1)
+#define GED_EVENT_NOT_SYNC  (1 << 2)
+
+
+#define GED_VSYNC_OFFSET_NOT_SYNC -2
+#define GED_VSYNC_OFFSET_SYNC -3
 
 typedef struct GED_DVFS_FREQ_DATA_TAG
 {
@@ -76,6 +71,7 @@ typedef struct GED_DVFS_FREQ_DATA_TAG
 
 
 bool ged_dvfs_cal_gpu_utilization(unsigned int* pui32Loading , unsigned int* pui32Block,unsigned int* pui32Idle);
+void ged_dvfs_cal_gpu_utilization_force(void);
 
 void ged_dvfs_run(unsigned long t, long phase, unsigned long ul3DFenceDoneTime);
 
@@ -95,6 +91,7 @@ unsigned long ged_query_info( GED_INFO eType);
 void ged_dvfs_get_gpu_cur_freq(GED_DVFS_FREQ_DATA* psData);
 void ged_dvfs_get_gpu_pre_freq(GED_DVFS_FREQ_DATA* psData);
 
+void ged_dvfs_sw_vsync_query_data(GED_DVFS_UM_QUERY_PACK* psQueryData);
 
 void ged_dvfs_boost_gpu_freq(void);
 
@@ -102,6 +99,8 @@ GED_ERROR ged_dvfs_probe(int pid);
 GED_ERROR ged_dvfs_um_commit( unsigned long gpu_tar_freq, bool bFallback);
 
 void ged_dvfs_probe_signal(int signo);
+
+void ged_dvfs_gpu_clock_switch_notify(bool bSwitch);
 
 GED_ERROR ged_dvfs_system_init(void);
 void ged_dvfs_system_exit(void);

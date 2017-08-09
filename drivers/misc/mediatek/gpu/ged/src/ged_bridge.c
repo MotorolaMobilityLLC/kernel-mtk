@@ -94,7 +94,7 @@ int ged_bridge_notify_vsync(
 {
     psNotifyVsyncOUT->eError = 
         //ged_notify_vsync(psNotifyVsyncINT->eType, &psNotifyVsyncOUT->t);
-        ged_notify_sw_vsync(psNotifyVsyncINT->eType, &psNotifyVsyncOUT->t);
+        ged_notify_sw_vsync(psNotifyVsyncINT->eType, &psNotifyVsyncOUT->sQueryData);
     
     return 0;
 }

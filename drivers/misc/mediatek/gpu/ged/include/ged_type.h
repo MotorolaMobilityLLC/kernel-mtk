@@ -29,7 +29,10 @@ typedef enum GED_INFO_TAG
     GED_3D_FENCE_DONE_TIME,
     GED_VSYNC_OFFSET,
     GED_EVENT_STATUS,
+    GED_EVENT_DEBUG_STATUS,
     GED_SRV_SUICIDE,
+    GED_PRE_HALF_PERIOD,
+    GED_LATEST_START,
     GED_UNDEFINED
 } GED_INFO;
 
@@ -38,5 +41,18 @@ typedef enum GED_VSYNC_TYPE_TAG
     GED_VSYNC_SW_EVENT,
     GED_VSYNC_HW_EVENT
 } GED_VSYNC_TYPE;
+
+typedef struct GED_DVFS_UM_QUERY_PACK_TAG
+{
+    unsigned int ui32GPULoading;
+    unsigned int ui32GPUFreqID;
+    unsigned long gpu_cur_freq;
+    unsigned long gpu_pre_freq;
+    long long usT;
+    long long nsOffset;
+    unsigned long ul3DFenceDoneTime;    
+    unsigned long ulPreCalResetTS_us;
+    unsigned long ulWorkingPeriod_us;
+}GED_DVFS_UM_QUERY_PACK;
 
 #endif
