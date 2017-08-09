@@ -199,9 +199,18 @@ static void dump_info(int id)
 	struct mtk_usb_boost *ptr_inst = &boost_inst[id];
 	int *ptr_para = ptr_inst->para;
 
-	for (n = 0; n < _ATTR_PARA_MAXID; n++, ptr_para++)
+	/* PARA */
+	for (n = 0; n < _ATTR_PARA_RW_MAXID; n++, ptr_para++)
 		USB_BOOST_NOTICE("id<%d>, attr<%s>, val<%d>\n", id, attr_name[n], *ptr_para);
 
+	/* RO */
+	USB_BOOST_NOTICE("id<%d>, attr<%s>, val<%d,%d>\n", id, attr_name[ATTR_RO_REF_TIME],
+			(unsigned int)boost_inst[id].tv_ref_time.tv_sec,
+			(unsigned int)boost_inst[id].tv_ref_time.tv_usec);
+	USB_BOOST_NOTICE("id<%d>, attr<%s>, val<%d>\n", id, attr_name[ATTR_RO_IS_RUNNING], boost_inst[id].is_running);
+	USB_BOOST_NOTICE("id<%d>, attr<%s>, val<%d>\n", id, attr_name[ATTR_RO_WORK_CNT], boost_inst[id].work_cnt);
+
+	/* ARG */
 	USB_BOOST_NOTICE("id<%d>, attr<%s>, val<%d>\n", id, attr_name[ATTR_ARG1], boost_inst[id].act_arg.arg1);
 	USB_BOOST_NOTICE("id<%d>, attr<%s>, val<%d>\n", id, attr_name[ATTR_ARG2], boost_inst[id].act_arg.arg2);
 	USB_BOOST_NOTICE("id<%d>, attr<%s>, val<%d>\n", id, attr_name[ATTR_ARG3], boost_inst[id].act_arg.arg3);
