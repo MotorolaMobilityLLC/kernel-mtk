@@ -450,12 +450,29 @@ static struct notifier_block scp_pm_notifier_block = {
 static inline ssize_t scp_status_show(struct device *kobj, struct device_attribute *attr, char *buf)
 {
 	if (scp_ready)
-		return sprintf(buf, "SCP is ready");
+		return scnprintf(buf, PAGE_SIZE, "SCP is ready\n");
 	else
-		return sprintf(buf, "SCP is not ready");
+		return scnprintf(buf, PAGE_SIZE, "SCP is not ready\n");
 }
 
 DEVICE_ATTR(scp_status, 0444, scp_status_show, NULL);
+
+static inline ssize_t scp_reg_status_show(struct device *kobj, struct device_attribute *attr, char *buf)
+{
+	int len = 0;
+
+	scp_dump_regs();
+	if (scp_ready) {
+		len += scnprintf(buf + len, PAGE_SIZE - len, "[SCP] SCP_DEBUG_PC_REG:0x%x\n", SCP_DEBUG_PC_REG);
+		len += scnprintf(buf + len, PAGE_SIZE - len, "[SCP] SCP_DEBUG_LR_REG:0x%x\n", SCP_DEBUG_LR_REG);
+		len += scnprintf(buf + len, PAGE_SIZE - len, "[SCP] SCP_DEBUG_PSP_REG:0x%x\n", SCP_DEBUG_PSP_REG);
+		len += scnprintf(buf + len, PAGE_SIZE - len, "[SCP] SCP_DEBUG_SP_REG:0x%x\n", SCP_DEBUG_SP_REG);
+		return len;
+	} else
+		return scnprintf(buf, PAGE_SIZE, "SCP is not ready");
+}
+
+DEVICE_ATTR(scp_reg_status, 0444, scp_reg_status_show, NULL);
 
 static struct miscdevice scp_device = {
 	.minor = MISC_DYNAMIC_MINOR,
@@ -499,6 +516,11 @@ static int create_files(void)
 		return ret;
 
 	ret = device_create_bin_file(scp_device.this_device, &bin_attr_scp_dump);
+
+	if (unlikely(ret != 0))
+		return ret;
+
+	ret = device_create_file(scp_device.this_device, &dev_attr_scp_reg_status);
 
 	if (unlikely(ret != 0))
 		return ret;
