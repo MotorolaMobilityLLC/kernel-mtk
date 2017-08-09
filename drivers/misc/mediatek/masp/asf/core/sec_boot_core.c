@@ -245,7 +245,7 @@ int masp_boot_init(void)
 		ret = ERR_ROM_INFO_MTD_NOT_FOUND;
 		goto _error;
 	}
-
+#if 0
 	/* ----------------------------------- */
 	/* read secro                          */
 	/* ----------------------------------- */
@@ -265,7 +265,7 @@ int masp_boot_init(void)
 	ret = sec_boot_key_init();
 	if (SEC_OK != ret)
 		goto _error;
-
+#endif
 	return ret;
 
 _error:
