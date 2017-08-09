@@ -1815,10 +1815,10 @@ void aee_kernel_dal_api(const char *file, const int line, const char *msg)
 			strncpy(dal_show->msg, msg, sizeof(dal_show->msg) - 1);
 			dal_show->msg[sizeof(dal_show->msg) - 1] = 0;
 			DAL_Printf("%s", dal_show->msg);
-			kfree(dal_show);
 		} else {
 			LOGD("DAL not allowed (mode %d)\n", aee_mode);
 		}
+		kfree(dal_show);
 	}
 	up(&aed_dal_sem);
 #endif
