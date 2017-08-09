@@ -90,7 +90,7 @@
 #define AUTOK_MSDC2_CLK_TX_VALUE              0
 
 /* #define PORT0_PB0_RD_DAT_SEL_VALID */
-/* #define PORT1_PB0_RD_DAT_SEL_VALID */
+#define PORT1_PB0_RD_DAT_SEL_VALID
 #define PORT2_PB0_RD_DAT_SEL_VALID
 
 enum TUNE_TYPE {
@@ -3427,17 +3427,23 @@ void autok_low_speed_switch_edge(struct msdc_host *host, struct mmc_ios *ios, en
 {
 	void __iomem *base = host->base;
 	unsigned int orig_resp_edge, orig_crc_fifo_edge, orig_read_edge, orig_read_fifo_edge;
+	unsigned int cur_resp_edge, cur_crc_fifo_edge, cur_read_edge, cur_read_fifo_edge;
 
+	AUTOK_RAWPRINT("[AUTOK][low speed switch edge]=========start========\r\n");
 	if (host->id == 0) {
 		switch (error_type) {
 		case CMD_ERROR:
 			MSDC_GET_FIELD(MSDC_IOCON,
-			MSDC_IOCON_RSPL, orig_resp_edge);
+				MSDC_IOCON_RSPL, orig_resp_edge);
 			MSDC_SET_FIELD(MSDC_IOCON,
-			MSDC_IOCON_RSPL, orig_resp_edge ^ 0x1);
+				MSDC_IOCON_RSPL, orig_resp_edge ^ 0x1);
+			MSDC_GET_FIELD(MSDC_IOCON,
+				MSDC_IOCON_RSPL, cur_resp_edge);
+			AUTOK_RAWPRINT("[AUTOK][CMD err]pre_edge = %d cur_edge = %d\r\n"
+				, orig_resp_edge, cur_resp_edge);
 			break;
 		case DATA_ERROR:
-			#ifdef PORT0_PB0_RD_DAT_SEL_VALID
+#ifdef PORT0_PB0_RD_DAT_SEL_VALID
 			if (ios->timing == MMC_TIMING_UHS_DDR50) {
 				MSDC_SET_FIELD(MSDC_IOCON,
 					MSDC_IOCON_R_D_SMPL_SEL, 0);
@@ -3445,32 +3451,56 @@ void autok_low_speed_switch_edge(struct msdc_host *host, struct mmc_ios *ios, en
 					MSDC_IOCON_R_D_SMPL, orig_read_edge);
 				MSDC_SET_FIELD(MSDC_IOCON,
 					MSDC_IOCON_R_D_SMPL, orig_read_edge ^ 0x1);
-				MSDC_SET_FIELD(MSDC_PATCH_BIT2,
-				MSDC_PB0_RD_DAT_SEL, 0);
+				MSDC_SET_FIELD(MSDC_PATCH_BIT0,
+					MSDC_PB0_RD_DAT_SEL, 0);
+				MSDC_GET_FIELD(MSDC_IOCON,
+					MSDC_IOCON_R_D_SMPL, cur_read_edge);
+				MSDC_GET_FIELD(MSDC_PATCH_BIT0,
+					MSDC_PB0_RD_DAT_SEL, cur_read_fifo_edge);
+				AUTOK_RAWPRINT("[AUTOK][read err]PB0_BIT3_VALID DDR pre_edge = %d",
+					orig_read_edge);
+				AUTOK_RAWPRINT("cur_edge = %d cur_fifo_edge = %d\r\n",
+					cur_read_edge, cur_read_fifo_edge);
 			} else {
 				MSDC_SET_FIELD(MSDC_IOCON,
 					MSDC_IOCON_R_D_SMPL_SEL, 0);
 				MSDC_SET_FIELD(MSDC_IOCON,
 					MSDC_IOCON_R_D_SMPL, 0);
-				MSDC_GET_FIELD(MSDC_PATCH_BIT2,
+				MSDC_GET_FIELD(MSDC_PATCH_BIT0,
 					MSDC_PB0_RD_DAT_SEL, orig_read_fifo_edge);
-				MSDC_SET_FIELD(MSDC_PATCH_BIT2,
+				MSDC_SET_FIELD(MSDC_PATCH_BIT0,
 					MSDC_PB0_RD_DAT_SEL, orig_read_fifo_edge ^ 0x1);
-			}
-			#else
-				MSDC_SET_FIELD(MSDC_IOCON,
-					MSDC_IOCON_R_D_SMPL_SEL, 0);
 				MSDC_GET_FIELD(MSDC_IOCON,
-					MSDC_IOCON_R_D_SMPL, orig_read_edge);
-				MSDC_SET_FIELD(MSDC_IOCON,
-					MSDC_IOCON_R_D_SMPL, orig_read_edge ^ 0x1);
-			#endif
+					MSDC_IOCON_R_D_SMPL, cur_read_edge);
+				MSDC_GET_FIELD(MSDC_PATCH_BIT0,
+					MSDC_PB0_RD_DAT_SEL, cur_read_fifo_edge);
+				AUTOK_RAWPRINT("[AUTOK][read err]PB0[3]_VALID orig_fifo_edge = %d",
+					orig_read_fifo_edge);
+				AUTOK_RAWPRINT("cur_edge = %d cur_fifo_edge = %d\r\n",
+					cur_read_edge, cur_read_fifo_edge);
+			}
+#else
+			MSDC_SET_FIELD(MSDC_IOCON,
+				MSDC_IOCON_R_D_SMPL_SEL, 0);
+			MSDC_GET_FIELD(MSDC_IOCON,
+				MSDC_IOCON_R_D_SMPL, orig_read_edge);
+			MSDC_SET_FIELD(MSDC_IOCON,
+				MSDC_IOCON_R_D_SMPL, orig_read_edge ^ 0x1);
+			MSDC_GET_FIELD(MSDC_IOCON,
+				MSDC_IOCON_R_D_SMPL, cur_read_edge);
+			AUTOK_RAWPRINT("[AUTOK][read err]PB0[3]_INVALID pre_edge = %d cur_edge = %d\r\n"
+				, orig_read_edge, cur_read_edge);
+#endif
 			break;
 		case CRC_STATUS_ERROR:
 			MSDC_GET_FIELD(MSDC_PATCH_BIT2,
-				MSDC_PB2_CFGCRCSTS, orig_crc_fifo_edge);
+				MSDC_PB2_CFGCRCSTSEDGE, orig_crc_fifo_edge);
 			MSDC_SET_FIELD(MSDC_PATCH_BIT2,
-				MSDC_PB2_CFGCRCSTS, orig_crc_fifo_edge ^ 0x1);
+				MSDC_PB2_CFGCRCSTSEDGE, orig_crc_fifo_edge ^ 0x1);
+			MSDC_GET_FIELD(MSDC_PATCH_BIT2,
+				MSDC_PB2_CFGCRCSTSEDGE, cur_crc_fifo_edge);
+			AUTOK_RAWPRINT("[AUTOK][write err]orig_fifo_edge = %d cur_fifo_edge = %d\r\n"
+				, orig_crc_fifo_edge, cur_crc_fifo_edge);
 			break;
 		}
 	} else if (host->id == 1) {
@@ -3480,9 +3510,13 @@ void autok_low_speed_switch_edge(struct msdc_host *host, struct mmc_ios *ios, en
 				MSDC_IOCON_RSPL, orig_resp_edge);
 			MSDC_SET_FIELD(MSDC_IOCON,
 				MSDC_IOCON_RSPL, orig_resp_edge ^ 0x1);
+			MSDC_GET_FIELD(MSDC_IOCON,
+				MSDC_IOCON_RSPL, cur_resp_edge);
+			AUTOK_RAWPRINT("[AUTOK][CMD err]pre_edge = %d cur_edge = %d\r\n"
+					, orig_resp_edge, cur_resp_edge);
 			break;
 		case DATA_ERROR:
-			#ifdef PORT1_PB0_RD_DAT_SEL_VALID
+#ifdef PORT1_PB0_RD_DAT_SEL_VALID
 			if (ios->timing == MMC_TIMING_UHS_DDR50) {
 				MSDC_SET_FIELD(MSDC_IOCON,
 					MSDC_IOCON_R_D_SMPL_SEL, 0);
@@ -3490,32 +3524,56 @@ void autok_low_speed_switch_edge(struct msdc_host *host, struct mmc_ios *ios, en
 					MSDC_IOCON_R_D_SMPL, orig_read_edge);
 				MSDC_SET_FIELD(MSDC_IOCON,
 					MSDC_IOCON_R_D_SMPL, orig_read_edge ^ 0x1);
-				MSDC_SET_FIELD(MSDC_PATCH_BIT2,
+				MSDC_SET_FIELD(MSDC_PATCH_BIT0,
 					MSDC_PB0_RD_DAT_SEL, 0);
+				MSDC_GET_FIELD(MSDC_IOCON,
+					MSDC_IOCON_R_D_SMPL, cur_read_edge);
+				MSDC_GET_FIELD(MSDC_PATCH_BIT0,
+					MSDC_PB0_RD_DAT_SEL, cur_read_fifo_edge);
+				AUTOK_RAWPRINT("[AUTOK][read err]PB0[3]_VALID DDR pre_edge = %d",
+					orig_read_edge);
+				AUTOK_RAWPRINT(" cur_edge = %d cur_fifo_edge = %d\r\n",
+					cur_read_edge, cur_read_fifo_edge);
 			} else {
 				MSDC_SET_FIELD(MSDC_IOCON,
 					MSDC_IOCON_R_D_SMPL_SEL, 0);
 				MSDC_SET_FIELD(MSDC_IOCON,
 					MSDC_IOCON_R_D_SMPL, 0);
-				MSDC_GET_FIELD(MSDC_PATCH_BIT2,
+				MSDC_GET_FIELD(MSDC_PATCH_BIT0,
 					MSDC_PB0_RD_DAT_SEL, orig_read_fifo_edge);
-				MSDC_SET_FIELD(MSDC_PATCH_BIT2,
+				MSDC_SET_FIELD(MSDC_PATCH_BIT0,
 					MSDC_PB0_RD_DAT_SEL, orig_read_fifo_edge ^ 0x1);
+				MSDC_GET_FIELD(MSDC_IOCON,
+					MSDC_IOCON_R_D_SMPL, cur_read_edge);
+				MSDC_GET_FIELD(MSDC_PATCH_BIT0,
+					MSDC_PB0_RD_DAT_SEL, cur_read_fifo_edge);
+				AUTOK_RAWPRINT("[AUTOK][read err]PB0[3]_VALID orig_fifo_edge = %d",
+					orig_read_fifo_edge);
+				AUTOK_RAWPRINT(" cur_edge = %d cur_fifo_edge = %d\r\n",
+					cur_read_edge, cur_read_fifo_edge);
 			}
-			#else
+#else
 			MSDC_SET_FIELD(MSDC_IOCON,
 				MSDC_IOCON_R_D_SMPL_SEL, 0);
 			MSDC_GET_FIELD(MSDC_IOCON,
 				MSDC_IOCON_R_D_SMPL, orig_read_edge);
 			MSDC_SET_FIELD(MSDC_IOCON,
 				MSDC_IOCON_R_D_SMPL, orig_read_edge ^ 0x1);
-			#endif
+			MSDC_GET_FIELD(MSDC_IOCON,
+				MSDC_IOCON_R_D_SMPL, cur_read_edge);
+			AUTOK_RAWPRINT("[AUTOK][read err]PB0[3]_INVALID pre_edge = %d cur_edge = %d\r\n"
+				, orig_read_edge, cur_read_edge);
+#endif
 			break;
 		case CRC_STATUS_ERROR:
 			MSDC_GET_FIELD(MSDC_PATCH_BIT2,
-				MSDC_PB2_CFGCRCSTS, orig_crc_fifo_edge);
+				MSDC_PB2_CFGCRCSTSEDGE, orig_crc_fifo_edge);
 			MSDC_SET_FIELD(MSDC_PATCH_BIT2,
-				MSDC_PB2_CFGCRCSTS, orig_crc_fifo_edge ^ 0x1);
+				MSDC_PB2_CFGCRCSTSEDGE, orig_crc_fifo_edge ^ 0x1);
+			MSDC_GET_FIELD(MSDC_PATCH_BIT2,
+				MSDC_PB2_CFGCRCSTSEDGE, cur_crc_fifo_edge);
+			AUTOK_RAWPRINT("[AUTOK][write err]orig_fifo_edge = %d cur_fifo_edge = %d\r\n"
+				, orig_crc_fifo_edge, cur_crc_fifo_edge);
 			break;
 		}
 	} else if (host->id == 2) {
@@ -3525,9 +3583,13 @@ void autok_low_speed_switch_edge(struct msdc_host *host, struct mmc_ios *ios, en
 				MSDC_IOCON_RSPL, orig_resp_edge);
 			MSDC_SET_FIELD(MSDC_IOCON,
 				MSDC_IOCON_RSPL, orig_resp_edge ^ 0x1);
+			MSDC_GET_FIELD(MSDC_IOCON,
+				MSDC_IOCON_RSPL, cur_resp_edge);
+			AUTOK_RAWPRINT("[AUTOK][CMD err]pre_edge = %d cur_edge = %d\r\n"
+				, orig_resp_edge, cur_resp_edge);
 			break;
 		case DATA_ERROR:
-			#ifdef PORT2_PB0_RD_DAT_SEL_VALID
+#ifdef PORT2_PB0_RD_DAT_SEL_VALID
 			if (ios->timing == MMC_TIMING_UHS_DDR50) {
 				MSDC_SET_FIELD(MSDC_IOCON,
 					MSDC_IOCON_R_D_SMPL_SEL, 0);
@@ -3535,35 +3597,60 @@ void autok_low_speed_switch_edge(struct msdc_host *host, struct mmc_ios *ios, en
 					MSDC_IOCON_R_D_SMPL, orig_read_edge);
 				MSDC_SET_FIELD(MSDC_IOCON,
 					MSDC_IOCON_R_D_SMPL, orig_read_edge ^ 0x1);
-				MSDC_SET_FIELD(MSDC_PATCH_BIT2,
+				MSDC_SET_FIELD(MSDC_PATCH_BIT0,
 					MSDC_PB0_RD_DAT_SEL, 0);
+				MSDC_GET_FIELD(MSDC_IOCON,
+					MSDC_IOCON_R_D_SMPL, cur_read_edge);
+				MSDC_GET_FIELD(MSDC_PATCH_BIT0,
+					MSDC_PB0_RD_DAT_SEL, cur_read_fifo_edge);
+				AUTOK_RAWPRINT("[AUTOK][read err]PB0[3]_VALID DDR pre_edge = %d",
+					orig_read_edge);
+				AUTOK_RAWPRINT(" cur_edge = %d cur_fifo_edge = %d\r\n",
+					cur_read_edge, cur_read_fifo_edge);
 			} else {
 				MSDC_SET_FIELD(MSDC_IOCON,
 					MSDC_IOCON_R_D_SMPL_SEL, 0);
 				MSDC_SET_FIELD(MSDC_IOCON,
 					MSDC_IOCON_R_D_SMPL, 0);
-				MSDC_GET_FIELD(MSDC_PATCH_BIT2,
+				MSDC_GET_FIELD(MSDC_PATCH_BIT0,
 					MSDC_PB0_RD_DAT_SEL, orig_read_fifo_edge);
-				MSDC_SET_FIELD(MSDC_PATCH_BIT2,
+				MSDC_SET_FIELD(MSDC_PATCH_BIT0,
 					MSDC_PB0_RD_DAT_SEL, orig_read_fifo_edge ^ 0x1);
+				MSDC_GET_FIELD(MSDC_IOCON,
+					MSDC_IOCON_R_D_SMPL, cur_read_edge);
+				MSDC_GET_FIELD(MSDC_PATCH_BIT0,
+					MSDC_PB0_RD_DAT_SEL, cur_read_fifo_edge);
+				AUTOK_RAWPRINT("[AUTOK][read err]PB0[3]_VALID orig_fifo_edge = %d",
+					orig_read_fifo_edge);
+				AUTOK_RAWPRINT(" cur_edge = %d cur_fifo_edge = %d\r\n",
+					cur_read_edge, cur_read_fifo_edge);
 			}
-			#else
+#else
 			MSDC_SET_FIELD(MSDC_IOCON,
 				MSDC_IOCON_R_D_SMPL_SEL, 0);
 			MSDC_GET_FIELD(MSDC_IOCON,
 				MSDC_IOCON_R_D_SMPL, orig_read_edge);
 			MSDC_SET_FIELD(MSDC_IOCON,
 				MSDC_IOCON_R_D_SMPL, orig_read_edge ^ 0x1);
-			#endif
+			MSDC_GET_FIELD(MSDC_IOCON,
+				MSDC_IOCON_R_D_SMPL, cur_read_edge);
+			AUTOK_RAWPRINT("[AUTOK][read err]PB0[3]_INVALID pre_edge = %d cur_edge = %d\r\n"
+				, orig_read_edge, cur_read_edge);
+#endif
 			break;
 		case CRC_STATUS_ERROR:
 			MSDC_GET_FIELD(MSDC_PATCH_BIT2,
-				MSDC_PB2_CFGCRCSTS, orig_crc_fifo_edge);
+				MSDC_PB2_CFGCRCSTSEDGE, orig_crc_fifo_edge);
 			MSDC_SET_FIELD(MSDC_PATCH_BIT2,
-				MSDC_PB2_CFGCRCSTS, orig_crc_fifo_edge ^ 0x1);
+				MSDC_PB2_CFGCRCSTSEDGE, orig_crc_fifo_edge ^ 0x1);
+			MSDC_GET_FIELD(MSDC_PATCH_BIT2,
+				MSDC_PB2_CFGCRCSTSEDGE, cur_crc_fifo_edge);
+			AUTOK_RAWPRINT("[AUTOK][write err]orig_fifo_edge = %d cur_fifo_edge = %d\r\n"
+				, orig_crc_fifo_edge, cur_crc_fifo_edge);
 			break;
 		}
 	}
+	AUTOK_RAWPRINT("[AUTOK][low speed switch edge]=========end========\r\n");
 }
 EXPORT_SYMBOL(autok_low_speed_switch_edge);
 
