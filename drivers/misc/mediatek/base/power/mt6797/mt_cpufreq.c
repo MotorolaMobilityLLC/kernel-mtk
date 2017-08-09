@@ -1764,25 +1764,9 @@ static int _restore_default_volt(struct mt_cpu_dvfs *p, enum mt_cpu_dvfs_id id)
 		idx = _search_available_freq_idx(p, freq, CPUFREQ_RELATION_L);
 
 	/* set volt */
-	if (cpu_dvfs_is(p, MT_CPU_DVFS_CCI)) {
-		if (get_turbo_volt(p->cpu_id, cpu_dvfs_get_volt_by_idx(p, idx)) >
-			MAX(get_turbo_volt(p_ll->cpu_id, cpu_dvfs_get_volt_by_idx(p_ll, p_ll->idx_opp_tbl)),
-				get_turbo_volt(p_l->cpu_id, cpu_dvfs_get_volt_by_idx(p_l, p_l->idx_opp_tbl))))
-				ret = _set_cur_volt_locked(p,
-					get_turbo_volt(p->cpu_id, cpu_dvfs_get_volt_by_idx(p, idx)));
-	} else if (cpu_dvfs_is(p, MT_CPU_DVFS_LL)) {
-		if (get_turbo_volt(p->cpu_id, cpu_dvfs_get_volt_by_idx(p, idx)) >
-			MAX(get_turbo_volt(p_cci->cpu_id, cpu_dvfs_get_volt_by_idx(p_cci, p_cci->idx_opp_tbl)),
-				get_turbo_volt(p_l->cpu_id, cpu_dvfs_get_volt_by_idx(p_l, p_l->idx_opp_tbl))))
-				ret = _set_cur_volt_locked(p,
-					get_turbo_volt(p->cpu_id, cpu_dvfs_get_volt_by_idx(p, idx)));
-	} else {
-		if (get_turbo_volt(p->cpu_id, cpu_dvfs_get_volt_by_idx(p, idx)) >
-			MAX(get_turbo_volt(p_cci->cpu_id, cpu_dvfs_get_volt_by_idx(p_cci, p_cci->idx_opp_tbl)),
-				get_turbo_volt(p_ll->cpu_id, cpu_dvfs_get_volt_by_idx(p_ll, p_ll->idx_opp_tbl))))
-				ret = _set_cur_volt_locked(p,
-					get_turbo_volt(p->cpu_id, cpu_dvfs_get_volt_by_idx(p, idx)));
-	}
+	if (get_turbo_volt(p->cpu_id, cpu_dvfs_get_volt_by_idx(p, idx)) > volt)
+		ret = _set_cur_volt_locked(p,
+			get_turbo_volt(p->cpu_id, cpu_dvfs_get_volt_by_idx(p, idx)));
 
 	cpufreq_unlock(flags);
 
@@ -1903,25 +1887,9 @@ int mt_cpufreq_update_volt(enum mt_cpu_dvfs_id id, unsigned int *volt_tbl, int n
 		idx = _search_available_freq_idx(p, freq, CPUFREQ_RELATION_L);
 
 	/* set volt */
-	if (cpu_dvfs_is(p, MT_CPU_DVFS_CCI)) {
-		if (get_turbo_volt(p->cpu_id, cpu_dvfs_get_volt_by_idx(p, idx)) >
-			MAX(get_turbo_volt(p_ll->cpu_id, cpu_dvfs_get_volt_by_idx(p_ll, p_ll->idx_opp_tbl)),
-				get_turbo_volt(p_l->cpu_id, cpu_dvfs_get_volt_by_idx(p_l, p_l->idx_opp_tbl))))
-				ret = _set_cur_volt_locked(p,
-					get_turbo_volt(p->cpu_id, cpu_dvfs_get_volt_by_idx(p, idx)));
-	} else if (cpu_dvfs_is(p, MT_CPU_DVFS_LL)) {
-		if (get_turbo_volt(p->cpu_id, cpu_dvfs_get_volt_by_idx(p, idx)) >
-			MAX(get_turbo_volt(p_cci->cpu_id, cpu_dvfs_get_volt_by_idx(p_cci, p_cci->idx_opp_tbl)),
-				get_turbo_volt(p_l->cpu_id, cpu_dvfs_get_volt_by_idx(p_l, p_l->idx_opp_tbl))))
-				ret = _set_cur_volt_locked(p,
-					get_turbo_volt(p->cpu_id, cpu_dvfs_get_volt_by_idx(p, idx)));
-	} else {
-		if (get_turbo_volt(p->cpu_id, cpu_dvfs_get_volt_by_idx(p, idx)) >
-			MAX(get_turbo_volt(p_cci->cpu_id, cpu_dvfs_get_volt_by_idx(p_cci, p_cci->idx_opp_tbl)),
-				get_turbo_volt(p_ll->cpu_id, cpu_dvfs_get_volt_by_idx(p_ll, p_ll->idx_opp_tbl))))
-				ret = _set_cur_volt_locked(p,
-					get_turbo_volt(p->cpu_id, cpu_dvfs_get_volt_by_idx(p, idx)));
-	}
+	if (get_turbo_volt(p->cpu_id, cpu_dvfs_get_volt_by_idx(p, idx)) > volt)
+		ret = _set_cur_volt_locked(p,
+			get_turbo_volt(p->cpu_id, cpu_dvfs_get_volt_by_idx(p, idx)));
 
 	cpufreq_unlock(flags);
 
@@ -4428,6 +4396,22 @@ _mt_cpufreq_pm_callback(struct notifier_block *nb,
 	}
 	return NOTIFY_OK;
 }
+
+void mt_cpufreq_eem_resume(void)
+{
+	struct mt_cpu_dvfs *p;
+	int i;
+	unsigned long flags;
+
+	cpufreq_lock(flags);
+	for_each_cpu_dvfs(i, p) {
+		if (!cpu_dvfs_is_available(p))
+			continue;
+		p->dvfs_disable_by_suspend = false;
+	}
+	cpufreq_unlock(flags);
+}
+
 static int _mt_cpufreq_suspend(struct device *dev)
 {
 #if 0
