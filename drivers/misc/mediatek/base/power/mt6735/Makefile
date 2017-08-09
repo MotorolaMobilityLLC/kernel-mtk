@@ -10,6 +10,7 @@ obj-$(CONFIG_ARCH_MT6735) += mt_clkmgr.o
 endif
 obj-y += mt_idle.o
 obj-y += mt_spm.o
+obj-y += mt_spm_dpidle.o
 obj-y += mt_spm_internal.o
 obj-y += mt_spm_mtcmos.o
 obj-y += mt_pbm.o
