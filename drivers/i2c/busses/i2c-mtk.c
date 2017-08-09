@@ -519,10 +519,12 @@ static int mt_i2c_do_transfer(struct mt_i2c *i2c)
 	}
 	/* flush before sending start */
 	mb();
-	if (!i2c->ext_data.isEnable || !i2c->ext_data.is_hw_trig)
+	if (!i2c->is_hw_trig)
 		i2c_writew(I2C_TRANSAC_START, i2c, OFFSET_START);
-	else
+	else {
 		dev_err(i2c->dev, "I2C hw trig.\n");
+		return 0;
+	}
 
 	tmo = wait_event_timeout(i2c->wait, i2c->trans_stop, tmo);
 
@@ -536,8 +538,8 @@ static int mt_i2c_do_transfer(struct mt_i2c *i2c)
 	}
 	if (i2c->irq_stat & (I2C_HS_NACKERR | I2C_ACKERR)) {
 		dev_err(i2c->dev, "addr: %x, transfer ACK error\n", i2c->addr);
-		mt_i2c_init_hw(i2c);
 		i2c_dump_info(i2c);
+		mt_i2c_init_hw(i2c);
 		return -EREMOTEIO;
 	}
 	if (i2c->op != I2C_MASTER_WR && isDMA == false) {
@@ -685,9 +687,6 @@ static int __mt_i2c_transfer(struct mt_i2c *i2c,
 	int ret;
 	int left_num = num;
 
-	ret = mt_i2c_clock_enable(i2c);
-	if (ret)
-		return ret;
 	while (left_num--) {
 		/* In MTK platform the max transfer number is 4096 */
 		if (msgs->len > MAX_DMA_TRANS_SIZE) {
@@ -765,7 +764,6 @@ static int __mt_i2c_transfer(struct mt_i2c *i2c,
 	/* the return value is number of executed messages */
 	ret = num;
 err_exit:
-	mt_i2c_clock_disable(i2c);
 	return ret;
 }
 #endif
@@ -776,18 +774,23 @@ static int mt_i2c_transfer(struct i2c_adapter *adap,
 	int ret;
 	struct mt_i2c *i2c = i2c_get_adapdata(adap);
 
+	ret = mt_i2c_clock_enable(i2c);
+	if (ret)
+		return -EBUSY;
+
 	mutex_lock(&i2c->i2c_mutex);
 	ret = __mt_i2c_transfer(i2c, msgs, num);
 	mutex_unlock(&i2c->i2c_mutex);
 
+	mt_i2c_clock_disable(i2c);
 	return ret;
 }
 
 
 static void mt_i2c_parse_extension(struct mt_i2c_ext *pext, u32 ext_flag, u32 timing)
 {
-	if (ext_flag & I2C_HWTRIG_FLAG)
-		pext->is_hw_trig = true;
+/*	if (ext_flag & I2C_HWTRIG_FLAG)
+		pext->is_hw_trig = true;*/
 	if (timing)
 		pext->timing = timing;
 }
@@ -798,6 +801,10 @@ int mtk_i2c_transfer(struct i2c_adapter *adap, struct i2c_msg *msgs, int num,
 	int ret;
 	struct mt_i2c *i2c = i2c_get_adapdata(adap);
 
+	ret = mt_i2c_clock_enable(i2c);
+	if (ret)
+		return -EBUSY;
+
 	mutex_lock(&i2c->i2c_mutex);
 	i2c->ext_data.isEnable = true;
 
@@ -806,9 +813,56 @@ int mtk_i2c_transfer(struct i2c_adapter *adap, struct i2c_msg *msgs, int num,
 
 	i2c->ext_data.isEnable = false;
 	mutex_unlock(&i2c->i2c_mutex);
+
+	mt_i2c_clock_disable(i2c);
 	return ret;
 }
 EXPORT_SYMBOL(mtk_i2c_transfer);
+
+int hw_trig_i2c_enable(struct i2c_adapter *adap)
+{
+	struct mt_i2c *i2c = i2c_get_adapdata(adap);
+
+	if (i2c->id != 8 && i2c->id != 9)
+		return -1;
+	if (mt_i2c_clock_enable(i2c))
+		return -EBUSY;
+
+	mutex_lock(&i2c->i2c_mutex);
+	i2c->is_hw_trig = true;
+	mutex_unlock(&i2c->i2c_mutex);
+	return 0;
+}
+EXPORT_SYMBOL(hw_trig_i2c_enable);
+
+int hw_trig_i2c_disable(struct i2c_adapter *adap)
+{
+	struct mt_i2c *i2c = i2c_get_adapdata(adap);
+
+	if (i2c->id != 8 && i2c->id != 9)
+		return -1;
+	mutex_lock(&i2c->i2c_mutex);
+	i2c->is_hw_trig = false;
+	mutex_unlock(&i2c->i2c_mutex);
+	mt_i2c_clock_disable(i2c);
+	return 0;
+}
+EXPORT_SYMBOL(hw_trig_i2c_disable);
+
+int hw_trig_i2c_transfer(struct i2c_adapter *adap, struct i2c_msg *msgs,
+		int num)
+{
+	int ret;
+	struct mt_i2c *i2c = i2c_get_adapdata(adap);
+
+	if (i2c->id != 8 && i2c->id != 9)
+		return -1;
+	mutex_lock(&i2c->i2c_mutex);
+	ret = __mt_i2c_transfer(i2c, msgs, num);
+	mutex_unlock(&i2c->i2c_mutex);
+	return ret;
+}
+EXPORT_SYMBOL(hw_trig_i2c_transfer);
 
 static irqreturn_t mt_i2c_irq(int irqno, void *dev_id)
 {
@@ -821,7 +875,15 @@ static irqreturn_t mt_i2c_irq(int irqno, void *dev_id)
 	i2c_writew(I2C_HS_NACKERR | I2C_ACKERR | I2C_TRANSAC_COMP,
 		i2c, OFFSET_INTR_STAT);
 	i2c->trans_stop = true;
-	wake_up(&i2c->wait);
+	if (!i2c->is_hw_trig)
+		wake_up(&i2c->wait);
+	else {	/* dump regs info for hw trig i2c if ACK err */
+		if (i2c->irq_stat & (I2C_HS_NACKERR | I2C_ACKERR)) {
+			dev_err(i2c->dev, "addr: %x, transfer ACK error\n", i2c->addr);
+			i2c_dump_info(i2c);
+			mt_i2c_init_hw(i2c);
+		}
+	}
 	return IRQ_HANDLED;
 }
 

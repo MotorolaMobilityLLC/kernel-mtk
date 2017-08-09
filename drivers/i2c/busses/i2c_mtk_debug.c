@@ -100,7 +100,9 @@ int mt_i2c_test_multi_wr(int id, int addr)
 	msg[11].flags = I2C_M_RD;
 	msg[11].len = 1;
 	msg[11].buf = buf11;
-	ret = i2c_transfer(adap, msg, 12);
+	hw_trig_i2c_enable(adap);
+	ret = hw_trig_i2c_transfer(adap, msg, 4);
+	hw_trig_i2c_disable(adap);
 	pr_err("camera  0x5500 : %x 0x5501 : %x 0x5502 : %x 0x5503 : %x .\n",
 		buf5[0], buf7[0], buf9[0], buf11[0]);
 	return ret;

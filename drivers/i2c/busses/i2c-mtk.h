@@ -178,7 +178,6 @@ struct i2c_dma_buf {
 struct mt_i2c_ext {
 #define I2C_HWTRIG_FLAG		0x00000001
 	bool isEnable;
-	bool is_hw_trig;
 	u32 timing;
 };
 
@@ -214,6 +213,7 @@ struct mt_i2c {
 	u16 high_speed_reg;
 	struct mutex i2c_mutex;
 	struct mt_i2c_ext ext_data;
+	bool is_hw_trig;
 };
 
 extern void i2c_dump_info(struct mt_i2c *i2c);
@@ -222,5 +222,9 @@ extern unsigned int enable_4G(void);
 extern int mtk_i2c_transfer(struct i2c_adapter *adap, struct i2c_msg *msgs, int num,
 					u32 ext_flag, u32 timing);
 extern void mt_irq_dump_status(unsigned int irq);
+extern int hw_trig_i2c_enable(struct i2c_adapter *adap);
+extern int hw_trig_i2c_disable(struct i2c_adapter *adap);
+extern int hw_trig_i2c_transfer(struct i2c_adapter *adap, struct i2c_msg *msgs,
+		int num);
 
 #endif
