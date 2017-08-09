@@ -85,7 +85,7 @@ static int mtk_afe_hdmi_probe(struct snd_soc_platform *platform);
 /* #define _DEBUG_TDM_KERNEL_ */
 #define _NO_SRAM_USAGE_
 #define _TDM_8CH_SGEN_TEST 1
-
+#define _ANX7805_SLIMPORT_CHANNEL 2
 
 /* defaults */
 /* #define HDMI_MAX_BUFFER_SIZE     (192*1024) */
@@ -794,14 +794,19 @@ static int mtk_pcm_hdmi_prepare(struct snd_pcm_substream *substream)
 			Tdm_Lrck = ((Soc_Aud_I2S_WLEN_WLEN_32BITS + 1) * 16) - 1;
 
 			/*SetCLkBclk(MclkDiv, runtime->rate, runtime->channels, Soc_Aud_I2S_WLEN_WLEN_16BITS); */
-			SetCLkBclk(MclkDiv, runtime->rate, runtime->channels,
-				   Soc_Aud_I2S_WLEN_WLEN_32BITS);
+			if (mHdmi_display_control == 1) {
+				SetCLkBclk(MclkDiv, runtime->rate, _ANX7805_SLIMPORT_CHANNEL,
+					   Soc_Aud_I2S_WLEN_WLEN_32BITS);
+			} else {
+				SetCLkBclk(MclkDiv, runtime->rate, runtime->channels,
+					   Soc_Aud_I2S_WLEN_WLEN_32BITS);
+			}
 
 			SetTDMLrckWidth(Tdm_Lrck);
 			SetTDMbckcycle(Soc_Aud_I2S_WLEN_WLEN_32BITS);
 
 			if (mHdmi_display_control == 1)
-				SetTDMChannelsSdata(2);	/* ANX7805 only I2s  */
+				SetTDMChannelsSdata(_ANX7805_SLIMPORT_CHANNEL);	/* ANX7805 only I2s  */
 			else
 				SetTDMChannelsSdata(runtime->channels);	/* notify data pin */
 
@@ -816,18 +821,20 @@ static int mtk_pcm_hdmi_prepare(struct snd_pcm_substream *substream)
 			SetHDMIdatalength(Soc_Aud_I2S_WLEN_WLEN_16BITS);
 			SetTDMDatalength(Soc_Aud_I2S_WLEN_WLEN_16BITS);
 
-			SetCLkBclk(MclkDiv, runtime->rate, runtime->channels,
-				   Soc_Aud_I2S_WLEN_WLEN_16BITS);
-			if (mHdmi_display_control == 1)
+			if (mHdmi_display_control == 1) {
+				SetCLkBclk(MclkDiv, runtime->rate, _ANX7805_SLIMPORT_CHANNEL,
+					   Soc_Aud_I2S_WLEN_WLEN_32BITS);
 				Tdm_Lrck = ((Soc_Aud_I2S_WLEN_WLEN_32BITS + 1) * 16) - 1;
-			else
+			} else {
+				SetCLkBclk(MclkDiv, runtime->rate, runtime->channels,
+					   Soc_Aud_I2S_WLEN_WLEN_16BITS);
 				Tdm_Lrck = ((Soc_Aud_I2S_WLEN_WLEN_16BITS + 1) * 16) - 1;
-
+			}
 			SetTDMLrckWidth(Tdm_Lrck);
 
 			if (mHdmi_display_control == 1) {
 				SetTDMbckcycle(Soc_Aud_I2S_WLEN_WLEN_32BITS);
-				SetTDMChannelsSdata(2);	/* ANX7805 only I2s  */
+				SetTDMChannelsSdata(_ANX7805_SLIMPORT_CHANNEL);	/* ANX7805 only I2s  */
 			} else {
 				SetTDMbckcycle(Soc_Aud_I2S_WLEN_WLEN_16BITS);
 				SetTDMChannelsSdata(runtime->channels);	/* notify data pin */
