@@ -2269,7 +2269,7 @@
 		clocks = <&infrasys INFRACFG_AO_SSUSB_TOP_CG>;
 		clock-names = "sssub_clk";
 	};
-
+/*
 	mt_soc_btcvsd_rx_pcm {
 		compatible = "mediatek,mt_soc_btcvsd_rx_pcm";
 	};
@@ -2277,7 +2277,7 @@
 	mt_soc_btcvsd_tx_pcm {
 		compatible = "mediatek,mt_soc_btcvsd_tx_pcm";
 	};
-
+*/
 	mt_soc_ul1_pcm {
 		compatible = "mediatek,mt_soc_pcm_capture";
 	};
