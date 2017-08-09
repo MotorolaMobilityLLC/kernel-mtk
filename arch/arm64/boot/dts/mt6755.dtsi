@@ -678,6 +678,17 @@
 		#size-cells = <1>;
 		ranges;
 
+		vcore_dvfs@0011cf80 {
+			compatible = "mediatek,vcore_dvfs";
+			reg = <0x0011cf80 0x80>;
+			eint_spm_vcorefs_end@154 {
+				compatible = "mediatek,spm_vcorefs_err_eint";
+				interrupt-parent = <&eintc>;
+				interrupts = <154 IRQ_TYPE_LEVEL_HIGH>;
+				debounce = <154 0>;
+			};
+		};
+
 		chipid@08000000 {
 			compatible = "mediatek,chipid";
 			reg = <0x08000000 0x0004>,
@@ -774,7 +785,14 @@
 		sleep@10006000 {
 			compatible = "mediatek,sleep";
 			reg = <0x10006000 0x1000>;
-			interrupts = <GIC_SPI 165 IRQ_TYPE_LEVEL_LOW>;
+			interrupts = <GIC_SPI 165 IRQ_TYPE_LEVEL_LOW>,
+				     <GIC_SPI 166 IRQ_TYPE_LEVEL_LOW>,
+				     <GIC_SPI 167 IRQ_TYPE_LEVEL_LOW>,
+				     <GIC_SPI 168 IRQ_TYPE_LEVEL_LOW>,
+				     <GIC_SPI 169 IRQ_TYPE_LEVEL_LOW>,
+				     <GIC_SPI 170 IRQ_TYPE_LEVEL_LOW>,
+				     <GIC_SPI 171 IRQ_TYPE_LEVEL_LOW>,
+				     <GIC_SPI 172 IRQ_TYPE_LEVEL_LOW>;
 			clocks = <&infrasys INFRA_I2C3>;
 			clock-names = "i2c3-main";
 			clock-div = <10>;
