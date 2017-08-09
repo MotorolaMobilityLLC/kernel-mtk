@@ -1141,6 +1141,18 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 				<0 168 0x8>;
 		};
 
+		BAT_METTER {
+			compatible = "mediatek,bat_meter";
+		};
+
+		BAT_NOTIFY {
+			compatible = "mediatek,bat_notify";
+		};
+
+		BATTERY {
+			compatible = "mediatek,battery";
+		};
+
 		DEVAPC_AO@10007000 {
 			compatible = "mediatek,DEVAPC_AO";
 			reg = <0x10007000 0x1000>;
