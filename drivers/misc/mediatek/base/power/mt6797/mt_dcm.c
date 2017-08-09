@@ -27,9 +27,11 @@
 #include <linux/of_address.h>
 #include <mt_dramc.h>
 #include "mt_freqhopping_drv.h"
+#include <mt-plat/mt_chip.h>
 
 /* #define DCM_DEFAULT_ALL_OFF */
 /* #define NON_AO_MP2_DCM_CONFIG */
+#define ENABLE_DCM_IN_LK
 
 #if defined(CONFIG_OF)
 static unsigned long mcucfg_base;
@@ -559,7 +561,10 @@ void dcm_peri_preset(void)
 #define MEM_BUS_DCM_CTRL_MASK	((0x1 << 6) | (0x1 << 7) | (0x1 << 8) | (0x7f << 9) | \
 								 (0x1f << 16) | (0x1f << 21) | (0x1 << 26) | \
 								 (0x1 << 29) | (0x1 << 31))
-#define MEM_BUS_DCM_CTRL_EN		((0x0 << 6) | (0x1 << 7) | (0x1 << 8) | (0x10 << 9) | \
+#define MEM_BUS_DCM_CTRL_EN_1	((0x0 << 6) | (0x1 << 7) | (0x1 << 8) | (0x10 << 9) | \
+								 (0x0 << 16) | (0x1f << 21) | (0x0 << 26) | \
+								 (0x0 << 29) | (0x0 << 31))
+#define MEM_BUS_DCM_CTRL_EN_2	((0x0 << 6) | (0x1 << 7) | (0x0 << 8) | (0x10 << 9) | \
 								 (0x0 << 16) | (0x1f << 21) | (0x0 << 26) | \
 								 (0x0 << 29) | (0x0 << 31))
 #define MEM_BUS_DCM_CTRL_DIS	((0x0 << 6) | (0x0 << 7) | (0x0 << 8) | (0x2f << 9) | \
@@ -655,12 +660,21 @@ void dcm_mem_preset(void)
 
 int dcm_mem(ENUM_MEM_DCM on)
 {
+	int ver = mt_get_chip_hw_ver();
+
 	if (on == MEM_DCM_ON) {
 
-		reg_write(MEM_DCM_CTRL,
+		if (0xCA00 == ver) {
+			reg_write(MEM_DCM_CTRL,
 					aor(reg_read(MEM_DCM_CTRL),
 						~MEM_BUS_DCM_CTRL_MASK,
-						MEM_BUS_DCM_CTRL_EN));
+						MEM_BUS_DCM_CTRL_EN_1));
+		} else {
+			reg_write(MEM_DCM_CTRL,
+					aor(reg_read(MEM_DCM_CTRL),
+						~MEM_BUS_DCM_CTRL_MASK,
+						MEM_BUS_DCM_CTRL_EN_2));
+	    }
 
 		dcm_mem_toggle();
 
@@ -864,12 +878,10 @@ int dcm_ssusb(ENUM_MISC_DCM on)
 #define MCUCFG_SYNC_DCM_MP0_TOG0	(0x0 << 14)
 #define MCUCFG_SYNC_DCM_MP1_TOG1	(0x1 << 22)
 #define MCUCFG_SYNC_DCM_MP1_TOG0	(0x0 << 22)
-#define MCUCFG_SYNC_DCM_SELTOG_MASK	((0x1F << 1) | (0x1 << 6) | \
-					(0x1F << 9) | (0x1 << 14) | \
-					(0x1F << 17) | (0x1 << 22))
-#define MCUCFG_SYNC_DCM_SELTOG_CCI_MASK	((0x1F << 1) | (0x1 << 6))
-#define MCUCFG_SYNC_DCM_SELTOG_MP0_MASK	((0x1F << 9) | (0x1 << 14))
-#define MCUCFG_SYNC_DCM_SELTOG_MP1_MASK	((0x1F << 17) | (0x1 << 22))
+#define MCUCFG_SYNC_DCM_SEL_MASK	((0x1F << 1) | (0x1F << 9) | (0x1F << 17))
+#define MCUCFG_SYNC_DCM_SEL_CCI_MASK	(0x1F << 1)
+#define MCUCFG_SYNC_DCM_SEL_MP0_MASK	(0x1F << 9)
+#define MCUCFG_SYNC_DCM_SEL_MP1_MASK	(0x1F << 17)
 
 /*
  *	0x10222274 MCUCFG_SYNC_DCM_MP2_CONFIG
@@ -891,16 +903,18 @@ int dcm_ssusb(ENUM_MISC_DCM on)
 #define MCUCFG_SYNC_DCM_MP2_DIV_SEL2	(0x1 << 2)
 #define MCUCFG_SYNC_DCM_MP2_DIV_SEL4	(0x3 << 2)
 #define MCUCFG_SYNC_DCM_MP2_DIV_SEL32	(0x1F << 2)
-#define MCUCFG_SYNC_DCM_MP2_TOGDIV_MASK	((0x1 << 1) | (0x1F << 2))
+#define MCUCFG_SYNC_DCM_MP2_DIV_MASK	(0x1F << 2)
 
 /*
  * 0x074C	SYNC_DCM_CLUSTER_CONFIG
  * 4	0	mp0_sync_dcm_stall_wr_del_sel	Debounce Value must >= 16
  * 7	7	mp0_sync_dcm_stall_wr_en
+ * 12	8	mp1_sync_dcm_stall_wr_del_sel	Debounce Value must >= 16
+ * 15	15	mp1_sync_dcm_stall_wr_en
  */
-#define MCUCFG_SYNC_DCM_CLUSTER_MASK	((0x1F << 0) | (0x1 << 7))
-#define MCUCFG_SYNC_DCM_CLUSTER_EN	((0x1F << 0) | (0x1 << 7))
-#define MCUCFG_SYNC_DCM_CLUSTER_DIS	((0x0F << 0) | (0x0 << 7))
+#define MCUCFG_SYNC_DCM_CLUSTER_MASK	((0x1F << 0) | (0x1 << 7) | (0x1F << 8) | (0x1 << 15))
+#define MCUCFG_SYNC_DCM_CLUSTER_EN		((0x10 << 0) | (0x1 << 7) | (0x10 << 8) | (0x1 << 15))
+#define MCUCFG_SYNC_DCM_CLUSTER_DIS		((0x0F << 0) | (0x0 << 7) | (0x0F << 8) | (0x0 << 15))
 
 /* Fine-grained DCM use MCSI-A internal slice valid to gate clock
  * 0x20390000	MCSI-A CG
@@ -929,22 +943,21 @@ int dcm_ssusb(ENUM_MISC_DCM on)
 #define MSCI_A_DCM_ON	(0xFFFF << 16)
 #define MSCI_A_DCM_OFF	(0x0    << 16)
 
-#ifdef NON_AO_MCUSYS_DCM
-void dcm_non_ao_mcusys(ENUM_MCUSYS_DCM on)
+int dcm_mcusys_stall_dcm(ENUM_MCUSYS_DCM on)
 {
 	if (on == MCUSYS_DCM_ON) {
-		MCUSYS_SMC_WRITE(MSCI_A_DCM,
-				aor(reg_read(MSCI_A_DCM),
-				    ~MSCI_A_DCM_MASK,
-				    MSCI_A_DCM_ON));
+		MCUSYS_SMC_WRITE(MCUCFG_SYNC_DCM_CLUSTER_CONFIG,
+				aor(reg_read(MCUCFG_SYNC_DCM_CLUSTER_CONFIG),
+				    ~MCUCFG_SYNC_DCM_CLUSTER_MASK,
+				    MCUCFG_SYNC_DCM_CLUSTER_EN));
 	} else {
-		MCUSYS_SMC_WRITE(MSCI_A_DCM,
-				aor(reg_read(MSCI_A_DCM),
-				    ~MSCI_A_DCM_MASK,
-				    MSCI_A_DCM_OFF));
+		MCUSYS_SMC_WRITE(MCUCFG_SYNC_DCM_CLUSTER_CONFIG,
+				aor(reg_read(MCUCFG_SYNC_DCM_CLUSTER_CONFIG),
+				    ~MCUCFG_SYNC_DCM_CLUSTER_MASK,
+				    MCUCFG_SYNC_DCM_CLUSTER_DIS));
 	}
+	return 0;
 }
-#endif
 
 int dcm_mcusys_sync_dcm(ENUM_MCUSYS_DCM on)
 {
@@ -1055,10 +1068,6 @@ int dcm_mcusys_little(ENUM_MCUSYS_DCM on)
 				    0xff));
 
 		dcm_mcusys_sync_dcm(MCUSYS_DCM_ON);
-
-#ifdef NON_AO_MCUSYS_DCM
-		dcm_non_ao_mcusys(MCUSYS_DCM_ON);
-#endif
 	} else {
 
 		MCUSYS_SMC_WRITE(MCUCFG_L2C_SRAM_CTRL,
@@ -1082,10 +1091,6 @@ int dcm_mcusys_little(ENUM_MCUSYS_DCM on)
 				    0x0));
 
 		dcm_mcusys_sync_dcm(MCUSYS_DCM_OFF);
-
-#ifdef NON_AO_MCUSYS_DCM
-		dcm_non_ao_mcusys(MCUSYS_DCM_OFF);
-#endif
 	}
 
 	return 0;
@@ -1284,28 +1289,29 @@ enum {
 	EMI_DCM_TYPE		= (1U << 4),
 	DRAMC_DCM_TYPE		= (1U << 5),
 	DDRPHY_DCM_TYPE		= (1U << 6),
-#if 0
-	PMIC_DCM_TYPE		= (1U << 7),
-#else
 	MEM_DCM_TYPE		= (1U << 7),
-#endif
 	USB_DCM_TYPE		= (1U << 8),
 	ICUSB_DCM_TYPE		= (1U << 9),
 	AUDIO_DCM_TYPE		= (1U << 10),
 	SSUSB_DCM_TYPE		= (1U << 11),
+	MCUSYS_STALL_DCM_TYPE	= (1U << 12),
 
-	NR_DCM_TYPE = 12,
+	NR_DCM_TYPE = 13,
 };
 
 #define ALL_DCM_TYPE  (ARMCORE_DCM_TYPE | MCUSYS_DCM_TYPE | INFRA_DCM_TYPE | \
 		       PERI_DCM_TYPE | EMI_DCM_TYPE | DRAMC_DCM_TYPE | \
 		       DDRPHY_DCM_TYPE | MEM_DCM_TYPE | USB_DCM_TYPE | \
-		       ICUSB_DCM_TYPE | AUDIO_DCM_TYPE | SSUSB_DCM_TYPE)
+		       ICUSB_DCM_TYPE | AUDIO_DCM_TYPE | SSUSB_DCM_TYPE | MCUSYS_STALL_DCM_TYPE)
 
+#if !defined(ENABLE_DCM_IN_LK)
 #define INIT_DCM_TYPE  (ARMCORE_DCM_TYPE | MCUSYS_DCM_TYPE | INFRA_DCM_TYPE | \
 		       PERI_DCM_TYPE | /* EMI_DCM_TYPE | DRAMC_DCM_TYPE |*/ \
-		       /*| DDRPHY_DCM_TYPE */ MEM_DCM_TYPE | USB_DCM_TYPE | \
-		       ICUSB_DCM_TYPE | AUDIO_DCM_TYPE | SSUSB_DCM_TYPE | MEM_DCM_TYPE)
+		       /*DDRPHY_DCM_TYPE | */ MEM_DCM_TYPE | USB_DCM_TYPE | \
+		       ICUSB_DCM_TYPE | AUDIO_DCM_TYPE | SSUSB_DCM_TYPE | MCUSYS_STALL_DCM_TYPE)
+#else
+#define INIT_DCM_TYPE  (ARMCORE_DCM_TYPE)
+#endif
 
 typedef struct _dcm {
 	int current_state;
@@ -1377,17 +1383,6 @@ static DCM dcm_array[NR_DCM_TYPE] = {
 	 .default_state = DDRPHY_DCM_ON,
 	 .disable_refcnt = 0,
 	 },
-#if 0
-	/* keep pmic DCM OFF */
-	{
-	 .typeid = PMIC_DCM_TYPE,
-	 .name = "PMIC_DCM",
-	 .func = (DCM_FUNC) dcm_pmic,
-	 .current_state = PMIC_DCM_OFF,
-	 .default_state = PMIC_DCM_OFF,
-	 .disable_refcnt = 0,
-	 },
-#else
 	/* new added */
 	{
 	 .typeid = MEM_DCM_TYPE,
@@ -1398,7 +1393,6 @@ static DCM dcm_array[NR_DCM_TYPE] = {
 	 .default_state = MEM_DCM_ON,
 	 .disable_refcnt = 0,
 	 },
-#endif
 	{
 	 .typeid = USB_DCM_TYPE,
 	 .name = "USB_DCM",
@@ -1429,6 +1423,14 @@ static DCM dcm_array[NR_DCM_TYPE] = {
 	 .func = (DCM_FUNC) dcm_ssusb,
 	 .current_state = SSUSB_DCM_ON,
 	 .default_state = SSUSB_DCM_ON,
+	 .disable_refcnt = 0,
+	 },
+	{
+	 .typeid = MCUSYS_STALL_DCM_TYPE,
+	 .name = "MCUSYS_STALL_DCM",
+	 .func = (DCM_FUNC) dcm_mcusys_stall_dcm,
+	 .current_state = MCUSYS_DCM_ON,
+	 .default_state = MCUSYS_DCM_ON,
 	 .disable_refcnt = 0,
 	 }
 };
@@ -1486,14 +1488,10 @@ void dcm_set_state(unsigned int type, int state)
 			type &= ~(dcm->typeid);
 
 			dcm->saved_state = state;
-			#if 1
 			if (dcm->disable_refcnt == 0) {
-			#endif
 				dcm->current_state = state;
 				dcm->func(dcm->current_state);
-			#if 1
 			}
-			#endif
 
 			dcm_info("[%16s 0x%08x] current state:%d (%d)\n",
 				 dcm->name, dcm->typeid, dcm->current_state,
@@ -1591,11 +1589,9 @@ void dcm_dump_regs(void)
 	REG_DUMP(MCUCFG_BUS_FABRIC_DCM_CTRL);
 	REG_DUMP(MCUCFG_CCI_ADB400_DCM_CONFIG);
 	REG_DUMP(MCUCFG_SYNC_DCM_CONFIG);
+	REG_DUMP(MCUCFG_SYNC_DCM_CLUSTER_CONFIG);
 #ifdef NON_AO_MP2_DCM_CONFIG
 	REG_DUMP(MCUCFG_SYNC_DCM_MP2_CONFIG);
-#endif
-#ifdef NON_AO_MCUSYS_DCM
-	REG_DUMP(MSCI_A_DCM);
 #endif
 
 	dcm_info("\n=== infra DCM ===\n");
@@ -1653,6 +1649,8 @@ static ssize_t dcm_state_show(struct kobject *kobj, struct kobj_attribute *attr,
 				MCUCFG_CCI_ADB400_DCM_CONFIG, reg_read(MCUCFG_CCI_ADB400_DCM_CONFIG));
 	p += sprintf(p, "%-30s(0x%08lX): 0x%08X\n", "MCUCFG_SYNC_DCM_CONFIG",
 				MCUCFG_SYNC_DCM_CONFIG, reg_read(MCUCFG_SYNC_DCM_CONFIG));
+	p += sprintf(p, "%-30s(0x%08lX): 0x%08X\n", "MCUCFG_SYNC_DCM_CLUSTER_CONFIG",
+				MCUCFG_SYNC_DCM_CLUSTER_CONFIG, reg_read(MCUCFG_SYNC_DCM_CLUSTER_CONFIG));
 #ifdef NON_AO_MP2_DCM_CONFIG
 	p += sprintf(p, "%-30s(0x%08lX): 0x%08X\n", "MCUCFG_SYNC_DCM_MP2_CONFIG",
 				MCUCFG_SYNC_DCM_MP2_CONFIG, reg_read(MCUCFG_SYNC_DCM_MP2_CONFIG));
@@ -1690,16 +1688,20 @@ static ssize_t dcm_state_show(struct kobject *kobj, struct kobj_attribute *attr,
 				DFS_MEM_DCM_CTRL, reg_read(DFS_MEM_DCM_CTRL));
 
 	p += sprintf(p, "\n********** dcm_state help *********\n");
+#if 1
+	p += sprintf(p, "enable:    echo set [mask] 1 > /sys/power/dcm_state\n");
+	p += sprintf(p, "disable:   echo set [mask] 0 > /sys/power/dcm_state\n");
+	p += sprintf(p, "status:    status /sys/power/dcm_state\n");
+	p += sprintf(p, "***** [mask] is hexl bit mask of dcm;\n");
+#else
 	p += sprintf(p, "set:		echo set [mask] [mode] > /sys/power/dcm_state\n");
 	p += sprintf(p, "set:		echo default [mask] > /sys/power/dcm_state\n");
-#if 1
 	p += sprintf(p, "disable:	echo disable [mask] > /sys/power/dcm_state\n");
 	p += sprintf(p, "restore:	echo restore [mask] > /sys/power/dcm_state\n");
 	p += sprintf(p, "dump:		echo dump [mask] > /sys/power/dcm_state\n");
-#endif
 	p += sprintf(p, "***** [mask] is hexl bit mask of dcm;\n");
 	p += sprintf(p, "***** [mode] is type of DCM to set and retained\n");
-
+#endif
 	len = p - buf;
 	return len;
 }
@@ -1937,18 +1939,23 @@ unsigned int sync_dcm_convert_freq2div(unsigned int freq)
 int sync_dcm_set_cpu_freq(unsigned int cci, unsigned int mp0, unsigned int mp1)
 {
 	mt_dcm_init();
-	/* set xxx_sync_dcm_tog as 0 first */
+
+	MCUSYS_SMC_WRITE(MCUCFG_SYNC_DCM_CONFIG,
+			aor(reg_read(MCUCFG_SYNC_DCM_CONFIG),
+			    ~MCUCFG_SYNC_DCM_SEL_MASK,
+				((sync_dcm_convert_freq2div(cci) << 1) |
+				(sync_dcm_convert_freq2div(mp0) << 9) |
+				(sync_dcm_convert_freq2div(mp1) << 17))));
+
 	MCUSYS_SMC_WRITE(MCUCFG_SYNC_DCM_CONFIG,
 			aor(reg_read(MCUCFG_SYNC_DCM_CONFIG),
 			    ~MCUCFG_SYNC_DCM_TOGMASK,
 			    MCUCFG_SYNC_DCM_TOG0));
+
 	MCUSYS_SMC_WRITE(MCUCFG_SYNC_DCM_CONFIG,
 			aor(reg_read(MCUCFG_SYNC_DCM_CONFIG),
-			    ~MCUCFG_SYNC_DCM_SELTOG_MASK,
-			    (MCUCFG_SYNC_DCM_TOG1 |
-			     (sync_dcm_convert_freq2div(cci) << 1) |
-			     (sync_dcm_convert_freq2div(mp0) << 9) |
-			     (sync_dcm_convert_freq2div(mp1) << 17))));
+			    ~MCUCFG_SYNC_DCM_TOGMASK,
+			    MCUCFG_SYNC_DCM_TOG1));
 
 #ifdef DCM_DEBUG
 	dcm_info("%s: SYNC_DCM_CONFIG=0x%08x, cci=%u/%u,%u, mp0=%u/%u,%u, mp1=%u/%u,%u\n",
@@ -1971,18 +1978,22 @@ int sync_dcm_set_cpu_div(unsigned int cci, unsigned int mp0, unsigned int mp1)
 
 	mt_dcm_init();
 
-	/* set xxx_sync_dcm_tog as 0 first */
+	MCUSYS_SMC_WRITE(MCUCFG_SYNC_DCM_CONFIG,
+			aor(reg_read(MCUCFG_SYNC_DCM_CONFIG),
+			    ~MCUCFG_SYNC_DCM_SEL_MASK,
+				((cci << 1) |
+				(mp0 << 9) |
+				(mp1 << 17))));
+
 	MCUSYS_SMC_WRITE(MCUCFG_SYNC_DCM_CONFIG,
 			aor(reg_read(MCUCFG_SYNC_DCM_CONFIG),
 			    ~MCUCFG_SYNC_DCM_TOGMASK,
 			    MCUCFG_SYNC_DCM_TOG0));
+
 	MCUSYS_SMC_WRITE(MCUCFG_SYNC_DCM_CONFIG,
 			aor(reg_read(MCUCFG_SYNC_DCM_CONFIG),
-			    ~MCUCFG_SYNC_DCM_SELTOG_MASK,
-			    (MCUCFG_SYNC_DCM_TOG1 |
-			     (cci << 1) |
-			     (mp0 << 9) |
-			     (mp1 << 17))));
+			    ~MCUCFG_SYNC_DCM_TOGMASK,
+			    MCUCFG_SYNC_DCM_TOG1));
 
 #ifdef DCM_DEBUG
 	dcm_info("%s: SYNC_DCM_CONFIG=0x%08x, cci=%u/%u, mp0=%u/%u, mp1=%u/%u\n",
@@ -1999,16 +2010,20 @@ int sync_dcm_set_cci_freq(unsigned int cci)
 {
 	mt_dcm_init();
 
-	/* set xxx_sync_dcm_tog as 0 first */
+	MCUSYS_SMC_WRITE(MCUCFG_SYNC_DCM_CONFIG,
+			aor(reg_read(MCUCFG_SYNC_DCM_CONFIG),
+			    ~MCUCFG_SYNC_DCM_SEL_CCI_MASK,
+			     (sync_dcm_convert_freq2div(cci) << 1)));
+
 	MCUSYS_SMC_WRITE(MCUCFG_SYNC_DCM_CONFIG,
 			aor(reg_read(MCUCFG_SYNC_DCM_CONFIG),
 			    ~MCUCFG_SYNC_DCM_CCI_TOGMASK,
 			    MCUCFG_SYNC_DCM_CCI_TOG0));
+
 	MCUSYS_SMC_WRITE(MCUCFG_SYNC_DCM_CONFIG,
 			aor(reg_read(MCUCFG_SYNC_DCM_CONFIG),
-			    ~MCUCFG_SYNC_DCM_SELTOG_CCI_MASK,
-			    (MCUCFG_SYNC_DCM_CCI_TOG1 |
-			     (sync_dcm_convert_freq2div(cci) << 1))));
+			    ~MCUCFG_SYNC_DCM_CCI_TOGMASK,
+			    MCUCFG_SYNC_DCM_CCI_TOG1));
 
 #ifdef DCM_DEBUG
 	dcm_info("%s: SYNC_DCM_CONFIG=0x%08x, cci=%u, cci_div_sel=%u,%u\n",
@@ -2024,16 +2039,20 @@ int sync_dcm_set_mp0_freq(unsigned int mp0)
 {
 	mt_dcm_init();
 
-	/* set xxx_sync_dcm_tog as 0 first */
+	MCUSYS_SMC_WRITE(MCUCFG_SYNC_DCM_CONFIG,
+			aor(reg_read(MCUCFG_SYNC_DCM_CONFIG),
+			    ~MCUCFG_SYNC_DCM_SEL_MP0_MASK,
+			     (sync_dcm_convert_freq2div(mp0) << 9)));
+
 	MCUSYS_SMC_WRITE(MCUCFG_SYNC_DCM_CONFIG,
 			aor(reg_read(MCUCFG_SYNC_DCM_CONFIG),
 			    ~MCUCFG_SYNC_DCM_MP0_TOGMASK,
 			    MCUCFG_SYNC_DCM_MP0_TOG0));
+
 	MCUSYS_SMC_WRITE(MCUCFG_SYNC_DCM_CONFIG,
 			aor(reg_read(MCUCFG_SYNC_DCM_CONFIG),
-			    ~MCUCFG_SYNC_DCM_SELTOG_MP0_MASK,
-			    (MCUCFG_SYNC_DCM_MP0_TOG1 |
-			     (sync_dcm_convert_freq2div(mp0) << 9))));
+			    ~MCUCFG_SYNC_DCM_MP0_TOGMASK,
+			    MCUCFG_SYNC_DCM_MP0_TOG1));
 
 #ifdef DCM_DEBUG
 	dcm_info("%s: SYNC_DCM_CONFIG=0x%08x, mp0=%u, mp0_div_sel=%u,%u\n",
@@ -2049,16 +2068,20 @@ int sync_dcm_set_mp1_freq(unsigned int mp1)
 {
 	mt_dcm_init();
 
-	/* set xxx_sync_dcm_tog as 0 first */
+	MCUSYS_SMC_WRITE(MCUCFG_SYNC_DCM_CONFIG,
+			aor(reg_read(MCUCFG_SYNC_DCM_CONFIG),
+			    ~MCUCFG_SYNC_DCM_SEL_MP1_MASK,
+			     (sync_dcm_convert_freq2div(mp1) << 17)));
+
 	MCUSYS_SMC_WRITE(MCUCFG_SYNC_DCM_CONFIG,
 			aor(reg_read(MCUCFG_SYNC_DCM_CONFIG),
 			    ~MCUCFG_SYNC_DCM_MP1_TOGMASK,
 			    MCUCFG_SYNC_DCM_MP1_TOG0));
+
 	MCUSYS_SMC_WRITE(MCUCFG_SYNC_DCM_CONFIG,
 			aor(reg_read(MCUCFG_SYNC_DCM_CONFIG),
-			    ~MCUCFG_SYNC_DCM_SELTOG_MP1_MASK,
-			    (MCUCFG_SYNC_DCM_MP1_TOG1 |
-			     (sync_dcm_convert_freq2div(mp1) << 17))));
+			    ~MCUCFG_SYNC_DCM_MP1_TOGMASK,
+			    MCUCFG_SYNC_DCM_MP1_TOG1));
 
 #ifdef DCM_DEBUG
 	dcm_info("%s: SYNC_DCM_CONFIG=0x%08x, mp1=%u, mp1_div_sel=%u,%u\n",
@@ -2074,7 +2097,11 @@ int sync_dcm_set_mp2_freq(unsigned int mp2)
 {
 	mt_dcm_init();
 
-	/* set xxx_sync_dcm_tog as 0 first */
+	reg_write(MCUCFG_SYNC_DCM_MP2_CONFIG,
+			aor(reg_read(MCUCFG_SYNC_DCM_MP2_CONFIG),
+			    ~MCUCFG_SYNC_DCM_MP2_DIV_MASK,
+			     (sync_dcm_convert_freq2div(mp2) << 2)));
+
 	reg_write(MCUCFG_SYNC_DCM_MP2_CONFIG,
 			aor(reg_read(MCUCFG_SYNC_DCM_MP2_CONFIG),
 			    ~MCUCFG_SYNC_DCM_MP2_TOGMASK,
@@ -2082,9 +2109,8 @@ int sync_dcm_set_mp2_freq(unsigned int mp2)
 
 	reg_write(MCUCFG_SYNC_DCM_MP2_CONFIG,
 			aor(reg_read(MCUCFG_SYNC_DCM_MP2_CONFIG),
-			    ~MCUCFG_SYNC_DCM_MP2_TOGDIV_MASK,
-			    (MCUCFG_SYNC_DCM_MP2_TOG1 |
-			     (sync_dcm_convert_freq2div(mp2) << 2))));
+			    ~MCUCFG_SYNC_DCM_MP2_TOGMASK,
+			    MCUCFG_SYNC_DCM_MP2_TOG1));
 
 #ifdef DCM_DEBUG
 	dcm_info("%s: SYNC_DCM_CONFIG=0x%08x, mp2=%u, mp2_div_sel=%u,%u\n",
