@@ -351,6 +351,12 @@ void scp_aed_reset_inplace(scp_excep_id type)
 {
 	scp_aed(type);
 
+	/* workaround for QA, not reset SCP in WDT */
+	if (type == EXCEP_RUNTIME) {
+		if (is_scp_ready())
+			return;
+	}
+
 	reset_scp(1);
 }
 
