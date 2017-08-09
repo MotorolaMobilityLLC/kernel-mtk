@@ -74,7 +74,6 @@ static noinline int mt_secure_call_ocp(u64 function_id, u64 arg0, u64 arg1, u64 
 (ocp_read(addr) & ~(BITMASK_OCP(range))) | BITS_OCP(range, val))
 
 
-#define HW_API_DEBUG_ON 1
 #define HW_API_RET_DEBUG_ON 1
 
 /**

@@ -100,7 +100,7 @@ struct cpu_info cpu_info_fy = {
 /* zzz */
 
 
-static unsigned int func_lv_mask;
+static unsigned int HW_API_DEBUG_ON;
 static unsigned int IRQ_Debug_on;
 static unsigned int Reg_Debug_on;
 static unsigned int ocp_cluster0_enable;
@@ -248,6 +248,9 @@ if (!((OCPMode == OCP_ALL) || (OCPMode == OCP_FPI) || (OCPMode == OCP_OCPI))) {
 return -1;
 }
 
+if (HW_API_DEBUG_ON)
+	ocp_info("Set Cluster 2 limit = %d mW(mA)\n", Target);
+
 return mt_secure_call_ocp(MTK_SIP_KERNEL_BIGOCPSETTARGET, OCPMode, Target, 0);
 
 }
@@ -277,11 +280,17 @@ if (!((OCPMode == OCP_ALL) || (OCPMode == OCP_FPI) || (OCPMode == OCP_OCPI))) {
 }
 
 if (Units == OCP_MA) {
-		ocp_cluster2_enable = 1;
-		return mt_secure_call_ocp(MTK_SIP_KERNEL_BIGOCPENABLE0, OCPMode, ClkPctMin, FreqPctMin);
+	ocp_cluster2_enable = 1;
+	if (HW_API_DEBUG_ON)
+		ocp_info("Cluster 2 enable.\n");
+
+	return mt_secure_call_ocp(MTK_SIP_KERNEL_BIGOCPENABLE0, OCPMode, ClkPctMin, FreqPctMin);
 } else if (Units == OCP_MW) {
-		ocp_cluster2_enable = 1;
-		return mt_secure_call_ocp(MTK_SIP_KERNEL_BIGOCPENABLE1, OCPMode, ClkPctMin, FreqPctMin);
+	ocp_cluster2_enable = 1;
+	if (HW_API_DEBUG_ON)
+		ocp_info("Cluster 2 enable.\n");
+
+	return mt_secure_call_ocp(MTK_SIP_KERNEL_BIGOCPENABLE1, OCPMode, ClkPctMin, FreqPctMin);
 } else {
 		if (HW_API_RET_DEBUG_ON)
 			ocp_err("Units != OCP_mA/mW (0/1)");
@@ -295,6 +304,10 @@ return -1;
 void BigOCPDisable(void)
 {
 ocp_cluster2_enable = 0;
+
+if (HW_API_DEBUG_ON)
+	ocp_info("Cluster 2 disable.\n");
+
 mt_secure_call_ocp(MTK_SIP_KERNEL_BIGOCPDISABLE, 0, 0, 0);
 
 }
@@ -589,7 +602,6 @@ if (!((Cluster == OCP_LL) || (Cluster == OCP_L))) {
 return -1;
 }
 
-
 return mt_secure_call_ocp(MTK_SIP_KERNEL_LITTLEOCPCONFIG, Cluster, VOffInmV, VStepInuV);
 
 }
@@ -611,6 +623,9 @@ if (!((Cluster == OCP_LL) || (Cluster == OCP_L))) {
 
 return -1;
 }
+if (HW_API_DEBUG_ON)
+	ocp_info("Set Cluster %d target limit = %d mW(mA)\n", Cluster, Target);
+
 return mt_secure_call_ocp(MTK_SIP_KERNEL_LITTLEOCPSETTARGET, Cluster, Target, 0);
 }
 
@@ -639,11 +654,16 @@ if (!((Cluster == OCP_LL) || (Cluster == OCP_L))) {
 return -1;
 }
 
-if (Cluster == OCP_LL)
+if (Cluster == OCP_LL) {
 	ocp_cluster0_enable = 1;
-if (Cluster == OCP_L)
+	if (HW_API_DEBUG_ON)
+		ocp_info("Cluster 0 enable.\n");
+}
+if (Cluster == OCP_L) {
 	ocp_cluster1_enable = 1;
-
+	if (HW_API_DEBUG_ON)
+		ocp_info("Cluster 1 enable.\n");
+}
 return mt_secure_call_ocp(MTK_SIP_KERNEL_LITTLEOCPENABLE, Cluster, Units, ClkPctMin);
 
 }
@@ -658,10 +678,16 @@ if (!((Cluster == OCP_LL) || (Cluster == OCP_L))) {
 
 return -1;
 }
-if (Cluster == OCP_LL)
+if (Cluster == OCP_LL) {
 	ocp_cluster0_enable = 0;
-if (Cluster == OCP_L)
+	if (HW_API_DEBUG_ON)
+		ocp_info("Cluster 0 disable.\n");
+}
+if (Cluster == OCP_L) {
 	ocp_cluster1_enable = 0;
+	if (HW_API_DEBUG_ON)
+		ocp_info("Cluster 1 disable.\n");
+}
 return mt_secure_call_ocp(MTK_SIP_KERNEL_LITTLEOCPDISABLE, Cluster, 0, 0);
 
 }
@@ -689,6 +715,8 @@ if (!((Cluster == OCP_LL) || (Cluster == OCP_L))) {
 
 return -1;
 }
+if (HW_API_DEBUG_ON)
+	ocp_info("Set Cluster %d Freq= %d Mhz, Volt= %d mV\n", Cluster, FreqMHz, VoltInmV);
 
 return mt_secure_call_ocp(MTK_SIP_KERNEL_LITTLEOCPDVFSSET, Cluster, FreqMHz, VoltInmV);
 
@@ -729,6 +757,9 @@ return -1;
 
 return -1;
 }
+
+if (HW_API_DEBUG_ON)
+	ocp_info("Set Cluster %d Select= %d, Limit= %d\n", Cluster, Select, Limit);
 
 return mt_secure_call_ocp(MTK_SIP_KERNEL_LITTLEOCPINTLIMIT, Cluster, Select, Limit);
 
@@ -3785,6 +3816,14 @@ if (sscanf(buf, "%d %d %d %d %d", &function_id, &val[0], &val[1], &val[2], &val[
 		if (sscanf(buf, "%d %x", &function_id, &val[0]) == 2)
 			ocp_write_field(0x10222580, 19:0, val[0]);
 		break;
+	case 13: /* set LO */
+		if (sscanf(buf, "%d %x %x %x %x", &function_id, &val[0], &val[1], &val[2], &val[3]) == 5) {
+			ocp_write(0x10222410, val[0]); /* nocpu lo trigger_en */
+			ocp_write(0x10222414, val[1]); /* cpu0 lo trigger_en */
+			ocp_write(0x10222418, val[2]); /* cpu1 lo trigger_en */
+			ocp_write(0x10222424, val[3]); /* LO ctrl settings */
+		}
+		break;
 	default:
 		break;
 	}
@@ -3805,6 +3844,9 @@ int i;
 			seq_printf(m, "Cluster 0 AvgLkg       = %llu mA\n", ocp_hqa[0][i].AvgLkg);
 			seq_printf(m, "Cluster 0 TopRawLkg    = %d * 1.5uA\n", ocp_hqa[0][i].TopRawLkg);
 			seq_printf(m, "Cluster 0 CPU0RawLkg   = %d * 1.5uA\n", ocp_hqa[0][i].CPU0RawLkg);
+			seq_printf(m, "Cluster 0 CPU1RawLkg   = %d * 1.5uA\n", ocp_hqa[0][i].CPU1RawLkg);
+			seq_printf(m, "Cluster 0 CPU2RawLkg   = %d * 1.5uA\n", ocp_hqa[0][i].CPU2RawLkg);
+			seq_printf(m, "Cluster 0 CPU3RawLkg   = %d * 1.5uA\n", ocp_hqa[0][i].CPU3RawLkg);
 		}
 		if (ocp_cluster1_enable == 1) {
 			seq_printf(m, "Cluster 1 AvgActValid  = %d\n", ocp_hqa[1][i].CGAvgValid);
@@ -3812,6 +3854,9 @@ int i;
 			seq_printf(m, "Cluster 1 AvgLkg       = %llu mA\n", ocp_hqa[1][i].AvgLkg);
 			seq_printf(m, "Cluster 1 TopRawLkg    = %d * 1.5uA\n", ocp_hqa[1][i].TopRawLkg);
 			seq_printf(m, "Cluster 1 CPU0RawLkg   = %d * 1.5uA\n", ocp_hqa[1][i].CPU0RawLkg);
+			seq_printf(m, "Cluster 1 CPU1RawLkg   = %d * 1.5uA\n", ocp_hqa[1][i].CPU1RawLkg);
+			seq_printf(m, "Cluster 1 CPU2RawLkg   = %d * 1.5uA\n", ocp_hqa[1][i].CPU2RawLkg);
+			seq_printf(m, "Cluster 1 CPU3RawLkg   = %d * 1.5uA\n", ocp_hqa[1][i].CPU3RawLkg);
 		}
 		if (ocp_cluster2_enable == 1) {
 			seq_printf(m, "Cluster 2 CapToLkg     = %d mA(mW)\n", ocp_hqa[2][i].CapToLkg);
@@ -3823,6 +3868,7 @@ int i;
 			seq_printf(m, "Cluster 2 CGAvg        = %llu %%\n", ocp_hqa[2][i].CGAvg);
 			seq_printf(m, "Cluster 2 TopRawLkg    = %d * 1.5uA\n", ocp_hqa[2][i].TopRawLkg);
 			seq_printf(m, "Cluster 2 CPU0RawLkg   = %d * 1.5uA\n", ocp_hqa[2][i].CPU0RawLkg);
+			seq_printf(m, "Cluster 2 CPU1RawLkg   = %d * 1.5uA\n", ocp_hqa[2][i].CPU1RawLkg);
 		}
 	}
 	return 0;
@@ -3939,7 +3985,7 @@ if (sscanf(buf, "%d %d %d %d", &function_id, &val[0], &val[1], &val[2]) > 0) {
 /* ocp_debug */
 static int ocp_debug_proc_show(struct seq_file *m, void *v)
 {
-seq_printf(m, "OCP debug (log level) = %d\n", func_lv_mask);
+seq_printf(m, "OCP debug (log level) = %d\n", HW_API_DEBUG_ON);
 return 0;
 }
 
@@ -3952,7 +3998,7 @@ if (!buf)
 	return -EINVAL;
 
 if (kstrtoint(buf, 10, &dbg_lv) == 1)
-	func_lv_mask = dbg_lv;
+	HW_API_DEBUG_ON = dbg_lv;
 else
 	ocp_err("echo dbg_lv (dec) > /proc/ocp/ocp_debug\n");
 
