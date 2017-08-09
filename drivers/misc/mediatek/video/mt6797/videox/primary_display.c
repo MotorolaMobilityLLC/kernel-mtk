@@ -5620,6 +5620,9 @@ static int _screen_cap_by_cmdq(unsigned int mva, enum UNIFIED_COLOR_FMT ufmt, DI
 
 	pconfig = dpmgr_path_get_last_config(pgc->dpmgr_handle);
 	pconfig->wdma_dirty = 1;
+	pconfig->ovl_dirty = 1;
+	pconfig->dst_dirty = 1;
+	pconfig->rdma_dirty = 1;
 	pconfig->wdma_config.dstAddress = mva;
 	pconfig->wdma_config.srcHeight = h_yres;
 	pconfig->wdma_config.srcWidth = w_xres;
