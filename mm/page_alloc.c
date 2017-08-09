@@ -1199,6 +1199,12 @@ static struct page *__rmqueue(struct zone *zone, unsigned int order,
 {
 	struct page *page;
 
+#ifdef CONFIG_ZONE_MOVABLE_CMA
+	/* No fallback for page allocation on ZONE_MOVABLE */
+	if (zone_idx(zone) == ZONE_MOVABLE)
+		migratetype = MIGRATE_CMA;
+#endif
+
 retry_reserve:
 	page = __rmqueue_smallest(zone, order, migratetype);
 
