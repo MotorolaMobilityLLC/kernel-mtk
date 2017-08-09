@@ -1526,20 +1526,22 @@ wlanAdapterStart(IN P_ADAPTER_T prAdapter,
 
 			/* 3b. engage divided firmware downloading */
 			if (fgValidHead == TRUE) {
-				u4Status = wlanImageDividDownload(prAdapter,
-									prFwHead, pvFwImageMapFile, u4FwImageFileLength,
-									u4FwLoadAddr);
-				if (u4Status == WLAN_STATUS_FAILURE)
-					break;
+				if (wlanImageDividDownload(prAdapter,
+						prFwHead, pvFwImageMapFile, u4FwImageFileLength,
+						u4FwLoadAddr) != WLAN_STATUS_SUCCESS) {
+					u4Status = WLAN_STATUS_FAILURE;
+					eFailReason = RAM_CODE_DOWNLOAD_FAIL;
+				}
 			}
 			else
 #endif
 			{
-				u4Status = wlanImageSectionDownloadStage(prAdapter,
-									 pvFwImageMapFile, 0, u4FwImageFileLength,
-									 FALSE, u4FwLoadAddr);
-				if (u4Status == WLAN_STATUS_FAILURE)
-					break;
+				if (wlanImageSectionDownloadStage(prAdapter,
+						 pvFwImageMapFile, 0, u4FwImageFileLength,
+						 FALSE, u4FwLoadAddr) != WLAN_STATUS_FAILURE) {
+					u4Status = WLAN_STATUS_FAILURE;
+					eFailReason = RAM_CODE_DOWNLOAD_FAIL;
+				}
 			}
 
 			/* escape to top */
@@ -1553,6 +1555,7 @@ wlanAdapterStart(IN P_ADAPTER_T prAdapter,
 			if (wlanImageQueryStatus(prAdapter) != WLAN_STATUS_SUCCESS) {
 				DBGLOG(INIT, ERROR, "Firmware download failed!\n");
 				u4Status = WLAN_STATUS_FAILURE;
+				eFailReason = RAM_CODE_DOWNLOAD_FAIL;
 				break;
 			}
 #endif
