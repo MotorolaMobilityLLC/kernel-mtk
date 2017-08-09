@@ -2825,6 +2825,11 @@ static int _cpufreq_set_locked(struct mt_cpu_dvfs *p, unsigned int cur_khz, unsi
 
 	FUNC_ENTER(FUNC_LV_HELP);
 
+	if (!policy) {
+		cpufreq_err("Can't get policy of %s\n", cpu_dvfs_get_name(p));
+		goto out;
+	}
+
 	cpufreq_ver("DVFS: _cpufreq_set_locked: target_vproc1 = %d\n", target_volt_vproc1);
 
 	if (cpu_dvfs_is(p, MT_CPU_DVFS_B))
@@ -2867,9 +2872,10 @@ static int _cpufreq_set_locked(struct mt_cpu_dvfs *p, unsigned int cur_khz, unsi
 #ifdef CONFIG_CPU_FREQ
 	freqs.old = cur_khz;
 	freqs.new = target_khz_orig;
-	freqs.cpu = policy->cpu;
-	if (policy)
+	if (policy) {
+		freqs.cpu = policy->cpu;
 		cpufreq_freq_transition_begin(policy, &freqs);
+	}
 #endif
 
 	/* set freq (UP/DOWN) */
@@ -3255,36 +3261,40 @@ static int __cpuinit _mt_cpufreq_cpu_CB(struct notifier_block *nfb, unsigned lon
 			}
 			break;
 		case CPU_DOWN_FAILED:
-			cpufreq_lock(flags);
-			p->armpll_is_available = 1;
-			if (cpu_dvfs_is(p, MT_CPU_DVFS_B)) {
+			cpus = cpumask_weight(&cpu_online_cpumask);
+			cpufreq_ver("CPU_DOWN_FAILED -> cpus = %d\n", cpus);
+			if (cpus == 1) {
+				cpufreq_lock(flags);
+				p->armpll_is_available = 1;
+				if (cpu_dvfs_is(p, MT_CPU_DVFS_B)) {
 #ifdef CONFIG_HYBRID_CPU_DVFS	/* after BigiDVFSEnable */
-				if (enable_cpuhvfs) {
-					cpuhvfs_notify_cluster_on(cpu_dvfs_to_cluster(p));
-				} else {
+					if (enable_cpuhvfs) {
+						cpuhvfs_notify_cluster_on(cpu_dvfs_to_cluster(p));
+					} else {
 #endif
-					new_cci_opp_idx = _calc_new_cci_opp_idx(p, p->idx_opp_tbl);
-					/* set cci freq/volt */
-					_cpufreq_set_locked_cci(cpu_dvfs_get_cur_freq(p_cci),
-						cpu_dvfs_get_freq_by_idx(p_cci, new_cci_opp_idx),
-						cpu_dvfs_get_volt_by_idx(p_cci, new_cci_opp_idx));
-					p_cci->idx_opp_tbl = new_cci_opp_idx;
+						new_cci_opp_idx = _calc_new_cci_opp_idx(p, p->idx_opp_tbl);
+						/* set cci freq/volt */
+						_cpufreq_set_locked_cci(cpu_dvfs_get_cur_freq(p_cci),
+							cpu_dvfs_get_freq_by_idx(p_cci, new_cci_opp_idx),
+							cpu_dvfs_get_volt_by_idx(p_cci, new_cci_opp_idx));
+						p_cci->idx_opp_tbl = new_cci_opp_idx;
 #ifdef CONFIG_HYBRID_CPU_DVFS
 				}
 #endif
-			} else {
+				} else {
 #if 1
-				if (action == CPU_DOWN_FAILED) {
-					cur_volt = p->ops->get_cur_volt(p);
-					freq_idx = _search_available_freq_idx_under_v(p, cur_volt);
-					freq_idx = MAX(freq_idx, _calc_new_opp_idx(p, freq_idx));
-					policy = cpufreq_cpu_get(cpu);
-					_cpufreq_dfs_locked(policy, p, freq_idx, action);
-					cpufreq_cpu_put(policy);
-				}
+					if (action == CPU_DOWN_FAILED) {
+						cur_volt = p->ops->get_cur_volt(p);
+						freq_idx = _search_available_freq_idx_under_v(p, cur_volt);
+						freq_idx = MAX(freq_idx, _calc_new_opp_idx(p, freq_idx));
+						policy = cpufreq_cpu_get(cpu);
+						_cpufreq_dfs_locked(policy, p, freq_idx, action);
+						cpufreq_cpu_put(policy);
+					}
 #endif
+				}
+				cpufreq_unlock(flags);
 			}
-			cpufreq_unlock(flags);
 			break;
 		}
 #ifndef DISABLE_PBM_FEATURE
