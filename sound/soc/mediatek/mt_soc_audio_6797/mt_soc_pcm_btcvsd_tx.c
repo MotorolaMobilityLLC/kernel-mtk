@@ -90,6 +90,42 @@ static struct snd_pcm_hardware mtk_btcvsd_tx_hardware = {
 	.fifo_size =        0,
 };
 
+static int btcvsd_loopback_usage_control;
+static const char *const btcvsd_loopback_usage[] = {"Off", "On"};
+
+static const struct soc_enum Btcvsd_Loopback_Enum[] = {
+	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(btcvsd_loopback_usage), btcvsd_loopback_usage),
+};
+
+static int Btcvsd_Loopback_Control_Get(struct snd_kcontrol *kcontrol,
+						struct snd_ctl_elem_value *ucontrol)
+{
+	pr_warn("%s = %d\n", __func__, btcvsd_loopback_usage_control);
+	ucontrol->value.integer.value[0] = btcvsd_loopback_usage_control;
+	return 0;
+}
+
+static int Btcvsd_Loopback_Control_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
+{
+	if (ucontrol->value.enumerated.item[0] > ARRAY_SIZE(btcvsd_loopback_usage)) {
+		pr_warn("%s return -EINVAL\n", __func__);
+		return -EINVAL;
+	}
+	btcvsd_loopback_usage_control = ucontrol->value.integer.value[0];
+	pr_warn("%s(), btcvsd_loopback_usage_control=%d\n", __func__, btcvsd_loopback_usage_control);
+	if (btcvsd_loopback_usage_control)
+		Set_BTCVSD_State(BT_SCO_TXSTATE_DIRECT_LOOPBACK);
+	else
+		Set_BTCVSD_State(BT_SCO_TXSTATE_RUNNING);
+
+	return 0;
+}
+
+static const struct snd_kcontrol_new mtk_btcvsd_loopback_controls[] = {
+	SOC_ENUM_EXT("BT_DIRECT_LOOPBACK", Btcvsd_Loopback_Enum[0],
+		Btcvsd_Loopback_Control_Get, Btcvsd_Loopback_Control_Set),
+};
+
 static int mtk_pcm_btcvsd_tx_stop(struct snd_pcm_substream *substream)
 {
 	pr_warn("%s\n", __func__);
@@ -239,7 +275,10 @@ static int mtk_pcm_btcvsd_tx_prepare(struct snd_pcm_substream *substream)
 {
 	pr_warn("%s\n", __func__);
 
-	Set_BTCVSD_State(BT_SCO_TXSTATE_RUNNING);
+	if (btcvsd_loopback_usage_control)
+		Set_BTCVSD_State(BT_SCO_TXSTATE_DIRECT_LOOPBACK);
+	else
+		Set_BTCVSD_State(BT_SCO_TXSTATE_RUNNING);
 
 	return 0;
 }
@@ -295,6 +334,16 @@ static int mtk_asoc_pcm_btcvsd_tx_new(struct snd_soc_pcm_runtime *rtd)
 	return ret;
 }
 
+static int mtk_asoc_pcm_btcvsd_tx_platform_probe(struct snd_soc_platform *platform)
+{
+	LOGBT("%s\n", __func__);
+
+	snd_soc_add_platform_controls(platform, mtk_btcvsd_loopback_controls,
+									ARRAY_SIZE(mtk_btcvsd_loopback_controls));
+
+	return 0;
+}
+
 static struct snd_pcm_ops mtk_btcvsd_tx_ops = {
 	.open =     mtk_pcm_btcvsd_tx_open,
 	.close =    mtk_pcm_btcvsd_tx_close,
@@ -311,6 +360,7 @@ static struct snd_pcm_ops mtk_btcvsd_tx_ops = {
 static struct snd_soc_platform_driver mtk_btcvsd_tx_soc_platform = {
 	.ops        = &mtk_btcvsd_tx_ops,
 	.pcm_new    = mtk_asoc_pcm_btcvsd_tx_new,
+	.probe      = mtk_asoc_pcm_btcvsd_tx_platform_probe,
 };
 
 static int mtk_btcvsd_tx_probe(struct platform_device *pdev)

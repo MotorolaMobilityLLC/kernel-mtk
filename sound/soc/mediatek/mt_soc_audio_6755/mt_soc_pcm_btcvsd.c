@@ -354,6 +354,9 @@ pr_warn("+%s, irq=%d\n", __func__, btcvsd_irq_number);
 	if (btsco.pTX && btsco.uTXState == BT_SCO_TXSTATE_DIRECT_LOOPBACK) {
 		kal_uint8 *pSrc, *pDst;
 		unsigned long connsys_addr_rx, ap_addr_rx, connsys_addr_tx, ap_addr_tx;
+		kal_uint8 *pPacketBuf;
+		kal_int32 i;
+		unsigned long flags;
 
 		connsys_addr_rx = *bt_hw_REG_PACKET_R;
 		ap_addr_rx = (unsigned long)BTSYS_SRAM_BANK2_BASE_ADDRESS + (connsys_addr_rx & 0xFFFF);
@@ -371,6 +374,23 @@ pr_warn("+%s, irq=%d\n", __func__, btcvsd_irq_number);
 		AudDrv_BTCVSD_DataTransfer(BT_SCO_DIRECT_ARM2BT, btsco.pTX->TempPacketBuf, pDst,
 									uPacketLength, uPacketNumber,
 									BT_SCO_TXSTATE_RUNNING);
+
+		if (btsco.pRX) {
+			spin_lock_irqsave(&auddrv_btcvsd_rx_lock, flags);
+			for (i = 0; i < uBufferCount_RX; i++) {
+				memset(btsco.pRX->PacketBuf[btsco.pRX->iPacket_w & SCO_RX_PACKET_MASK],
+				0, SCO_RX_PLC_SIZE);
+
+				pPacketBuf = (kal_uint8 *)btsco.pRX->PacketBuf +
+					(btsco.pRX->iPacket_w & SCO_RX_PACKET_MASK) *
+					(SCO_RX_PLC_SIZE + BTSCO_CVSD_PACKET_VALID_SIZE) + SCO_RX_PLC_SIZE;
+				memset((void *)pPacketBuf, 0 , BTSCO_CVSD_PACKET_VALID_SIZE);
+				btsco.pRX->iPacket_w++;
+			}
+			spin_unlock_irqrestore(&auddrv_btcvsd_rx_lock, flags);
+
+		}
+
 		writeToBT_cnt++;
 		readFromBT_cnt++;
 	} else {
