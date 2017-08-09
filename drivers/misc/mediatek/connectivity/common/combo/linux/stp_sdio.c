@@ -824,7 +824,6 @@ static VOID stp_sdio_tx_rx_handling(PVOID pData)
 
 
 			if (0x0 == chisr) {
-				gStpSdioDbgLvl = STPSDIO_LOG_DBG;
 				STPSDIO_ERR_FUNC("******CHISR == 0*****\n");
 
 				stp_sdio_rw_retry(HIF_TYPE_READL, STP_SDIO_RETRY_LIMIT, clt_ctx, CCIR, &val, 0);
@@ -843,8 +842,7 @@ static VOID stp_sdio_tx_rx_handling(PVOID pData)
 				STPSDIO_ERR_FUNC("******CTFSR == 0x%x*****\n", val);
 				stp_sdio_rw_retry(HIF_TYPE_READL, STP_SDIO_RETRY_LIMIT, clt_ctx, CRPLR, &val, 0);
 				STPSDIO_ERR_FUNC("******CRPLR == 0x%x*****\n", val);
-			} else
-				gStpSdioDbgLvl = STPSDIO_LOG_INFO;
+			}
 
 			if (chisr & FW_OWN_BACK_INT)
 				STPSDIO_HINT_FUNC("FW_OWN_BACK_INT\n");
@@ -2689,11 +2687,11 @@ static INT32 stp_sdio_rw_retry(ENUM_STP_SDIO_HIF_TYPE_T type, UINT32 retry_limit
 	UINT32 card_id = CLTCTX_CID(clt_ctx);
 
 	if (card_id != 0x6630) {
-		STPSDIO_DBG_FUNC("card_id is :0x%x, does not support CSR (Common Snapshot Register)\n",
+		STPSDIO_LOUD_FUNC("card_id is :0x%x, does not support CSR (Common Snapshot Register)\n",
 				card_id);
 		retry_limit = 1;
 	}
-	STPSDIO_DBG_FUNC("clt_ctx:0x%x, offset:0x%x, retry_limit:%d\n", clt_ctx, offset, retry_limit);
+	STPSDIO_LOUD_FUNC("clt_ctx:0x%x, offset:0x%x, retry_limit:%d\n", clt_ctx, offset, retry_limit);
 
 	retry_limit = retry_limit == 0 ? 1 : retry_limit;
 	retry_limit = retry_limit > STP_SDIO_MAX_RETRY_NUM ? STP_SDIO_MAX_RETRY_NUM : retry_limit;
@@ -2737,7 +2735,7 @@ static INT32 stp_sdio_rw_retry(ENUM_STP_SDIO_HIF_TYPE_T type, UINT32 retry_limit
 			if (ret == -EIO)
 				retry_flag = 1;
 		} else {
-			STPSDIO_DBG_FUNC("CR:0x:%x value:0x%x\n", offset, *pData);
+			STPSDIO_LOUD_FUNC("CR:0x:%x value:0x%x\n", offset, *pData);
 			break;
 		}
 		retry_limit--;
