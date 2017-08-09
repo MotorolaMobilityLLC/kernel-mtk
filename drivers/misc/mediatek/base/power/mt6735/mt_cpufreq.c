@@ -1816,8 +1816,10 @@ static void _mt_cpufreq_set_cur_freq(struct mt_cpu_dvfs *p, unsigned int cur_khz
 {
 	unsigned int dds = 0;
 	unsigned int sel = 0;
+#ifndef CPUDVFS_WORKAROUND_FOR_GIT
 	unsigned int ckdiv1_val = _GET_BITS_VAL_(4:0, cpufreq_read(TOP_CKDIV1));
 	unsigned int ckdiv1_mask = _BITMASK_(4:0);
+#endif
 
 	FUNC_ENTER(FUNC_LV_LOCAL);
 

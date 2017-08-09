@@ -25,8 +25,8 @@ obj-$(CONFIG_ARCH_MT6735) += mt_vcore_dvfs_1.o
 obj-$(CONFIG_ARCH_MT6735) += mt_spm_vcore_dvfs_1.o
 obj-$(CONFIG_ARCH_MT6735) += mt_ptp.o
 obj-$(CONFIG_ARCH_MT6735) += mt_static_power.o
-obj-$(CONFIG_ARCH_MT6735) += mt_cpufreq.o
-obj-$(CONFIG_ARCH_MT6735) += mt_gpufreq.o
+obj-y += mt_cpufreq.o
+obj-y += mt_gpufreq.o
 
 ifneq ($(CONFIG_ARM64), y)
 
