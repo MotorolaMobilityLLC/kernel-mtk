@@ -2760,6 +2760,23 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 				"venc-larb",
 				"venc-jpgdec";
 		};
+		pwm:pwm@11006000 {
+			compatible = "mediatek,pwm";
+			reg = <0x11006000 0x1000>;
+			interrupts = <GIC_SPI 77 IRQ_TYPE_LEVEL_LOW>;
+			clocks = <&perisys PERI_PWM>,
+					 <&perisys PERI_PWM1>,
+					 <&perisys PERI_PWM2>,
+					 <&perisys PERI_PWM3>,
+					 <&perisys PERI_PWM4>,
+					 <&perisys PERI_PWM5>;
+			clock-names =	"PWM-main",
+					"PWM1-main",
+					"PWM2-main",
+					"PWM3-main",
+					"PWM4-main",
+					"PWM5-main";
+		};
 	};
 
 	vcorefs {
