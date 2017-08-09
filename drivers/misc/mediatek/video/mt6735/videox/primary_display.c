@@ -2293,12 +2293,13 @@ static int _DC_switch_to_DL_fast(void)
 	ddp_clk_unprepare(DISP_MTCMOS_CLK);
 #endif
 	dpmgr_destroy_path(pgc->ovl2mem_path_handle, pgc->cmdq_handle_ovl1to2_config);
+	pgc->ovl2mem_path_handle = NULL;
+
 	/*clear sof token for next dl to dc */
 	cmdqRecClearEventToken(pgc->cmdq_handle_ovl1to2_config, CMDQ_EVENT_DISP_WDMA0_SOF);
 
 	_cmdq_flush_config_handle_mira(pgc->cmdq_handle_ovl1to2_config, 1);
 	cmdqRecReset(pgc->cmdq_handle_ovl1to2_config);
-	pgc->ovl2mem_path_handle = NULL;
 
 	/* release output buffer */
 	layer = disp_sync_get_output_timeline_id();
@@ -7459,8 +7460,10 @@ int primary_display_diagnose(void)
 {
 	int ret = 0;
 
-	dpmgr_check_status(pgc->dpmgr_handle);
-	if (_is_decouple_mode(pgc->session_mode))
+	if (pgc->dpmgr_handle != NULL)
+		dpmgr_check_status(pgc->dpmgr_handle);
+
+	if (_is_decouple_mode(pgc->session_mode) && (pgc->ovl2mem_path_handle != NULL))
 		dpmgr_check_status(pgc->ovl2mem_path_handle);
 	primary_display_check_path(NULL, 0);
 
