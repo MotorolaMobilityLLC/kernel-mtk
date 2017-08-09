@@ -957,7 +957,7 @@ void EnableAfe(bool bEnable)
 	MemEnable = CheckMemIfEnable();
 
 	if (false == bEnable && false == MemEnable) {
-		Afe_Set_Reg(AFE_DAC_CON0, 0x0, 0x0);
+		Afe_Set_Reg(AFE_DAC_CON0, 0x0, 0x1);
 #ifndef CONFIG_FPGA_EARLY_PORTING
 #ifdef CONFIG_OF
 #if defined(CONFIG_MTK_LEGACY)

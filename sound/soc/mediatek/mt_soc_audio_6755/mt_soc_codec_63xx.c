@@ -961,7 +961,7 @@ static void SetDcCompenSation_SPKHP(void)
 
 static void SetDCcoupleNP(int MicBias, int mode)
 {
-	pr_warn("%s MicBias= %d mode = %d\n", __func__, MicBias, mode);
+	/* pr_warn("%s MicBias= %d mode = %d\n", __func__, MicBias, mode); */
 	switch (mode) {
 	case AUDIO_ANALOGUL_MODE_ACC:
 	case AUDIO_ANALOGUL_MODE_DCC:
@@ -3138,8 +3138,8 @@ static bool TurnOnADcPowerDCC(int ADCType, bool enable, int ECMmode)
 			/* dcclk_resync_bypass=1'b1 MT6328 requested by chen-chien(2014/10/30) */
 		}
 		if (ADCType == AUDIO_ANALOG_DEVICE_IN_ADC1) {	/* main and headset mic */
-			pr_warn("%s  AUDIO_MICSOURCE_MUX_IN_1 mux =%d\n",
-				__func__, mCodec_data->mAudio_Ana_Mux[AUDIO_MICSOURCE_MUX_IN_1]);
+			/* pr_warn("%s  AUDIO_MICSOURCE_MUX_IN_1 mux =%d\n",
+			__func__, mCodec_data->mAudio_Ana_Mux[AUDIO_MICSOURCE_MUX_IN_1]); */
 			if (mCodec_data->mAudio_Ana_Mux[AUDIO_MICSOURCE_MUX_IN_1] == 0) {
 				/* "ADC1", main_mic */
 				SetDCcoupleNP(AUDIO_MIC_BIAS0, mAudio_Analog_Mic1_mode);
@@ -3431,7 +3431,7 @@ static int Audio_ADC1_Get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_val
 
 static int Audio_ADC1_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
-	pr_warn("%s()\n", __func__);
+	/* pr_warn("%s()\n", __func__); */
 	mutex_lock(&Ana_Power_Mutex);
 	if (ucontrol->value.integer.value[0]) {
 		if (mAudio_Analog_Mic1_mode == AUDIO_ANALOGUL_MODE_ACC)
@@ -3477,7 +3477,7 @@ static int Audio_ADC2_Get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_val
 
 static int Audio_ADC2_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
-	pr_warn("%s()\n", __func__);
+	/* pr_warn("%s()\n", __func__); */
 	mutex_lock(&Ana_Power_Mutex);
 	if (ucontrol->value.integer.value[0]) {
 		if (mAudio_Analog_Mic2_mode == AUDIO_ANALOGUL_MODE_ACC)
@@ -3649,7 +3649,7 @@ static int Audio_PreAmp1_Get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_
 
 static int Audio_PreAmp1_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
-	pr_warn("%s()\n", __func__);
+	/* pr_warn("%s()\n", __func__); */
 
 	if (ucontrol->value.enumerated.item[0] > ARRAY_SIZE(PreAmp_Mux_function)) {
 		pr_err("return -EINVAL\n");
@@ -3658,7 +3658,7 @@ static int Audio_PreAmp1_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_
 	mCodec_data->mAudio_Ana_Mux[AUDIO_ANALOG_MUX_IN_PREAMP_1] =
 	    ucontrol->value.integer.value[0];
 	AudioPreAmp1_Sel(mCodec_data->mAudio_Ana_Mux[AUDIO_ANALOG_MUX_IN_PREAMP_1]);
-	pr_warn("%s() done\n", __func__);
+	/* pr_warn("%s() done\n", __func__); */
 	return 0;
 }
 
@@ -3692,7 +3692,7 @@ static int Audio_PreAmp2_Get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_
 
 static int Audio_PreAmp2_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
-	pr_warn("%s()\n", __func__);
+	/* pr_warn("%s()\n", __func__); */
 
 	if (ucontrol->value.enumerated.item[0] > ARRAY_SIZE(PreAmp_Mux_function)) {
 		pr_err("return -EINVAL\n");
@@ -3701,7 +3701,7 @@ static int Audio_PreAmp2_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_
 	mCodec_data->mAudio_Ana_Mux[AUDIO_ANALOG_MUX_IN_PREAMP_2] =
 	    ucontrol->value.integer.value[0];
 	AudioPreAmp2_Sel(mCodec_data->mAudio_Ana_Mux[AUDIO_ANALOG_MUX_IN_PREAMP_2]);
-	pr_warn("%s() done\n", __func__);
+	/* pr_warn("%s() done\n", __func__); */
 	return 0;
 }
 
@@ -3794,7 +3794,7 @@ static int Audio_MicSource1_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_el
 	/* 6752 used for ADC1 Mic source selection, "ADC1" is main_mic, "ADC2" is headset_mic */
 	int index = 0;
 
-	pr_warn("%s()\n", __func__);
+	/* pr_warn("%s()\n", __func__); */
 	if (ucontrol->value.enumerated.item[0] > ARRAY_SIZE(Pmic_Digital_Mux)) {
 		pr_err("return -EINVAL\n");
 		return -EINVAL;
