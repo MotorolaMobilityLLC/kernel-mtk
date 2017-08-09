@@ -2537,6 +2537,11 @@ int card_dump_func_read(unsigned char *buf, unsigned int len, unsigned long long
 }
 EXPORT_SYMBOL(card_dump_func_read);
 
+int has_mt_dump_support(void)
+{
+	return 1;
+}
+EXPORT_SYMBOL(has_mt_dump_support);
 
 /*--------------------------------------------------------------------------*/
 /* porting for kdump interface                                              */
