@@ -41,7 +41,8 @@
 /* project includes */
 #include "mach/mt_freqhopping.h"
 /* #include "mach/mt_ptp.h" */
-/* #include "mach/mt_static_power.h" */
+#include "mach/mt_thermal.h"
+#include "mt_static_power.h"
 #include <mt-plat/upmu_common.h>
 #include <mach/upmu_sw.h>
 #include <mach/upmu_hw.h>
@@ -1815,7 +1816,25 @@ EXPORT_SYMBOL(mt_cpufreq_restore_default_volt);
 /* for PBM */
 unsigned int mt_cpufreq_get_leakage_mw(enum mt_cpu_dvfs_id id)
 {
+#ifndef DISABLE_PBM_FEATURE
+	struct mt_cpu_dvfs *p = id_to_cpu_dvfs(id);
+	int temp;
+
+	if (cpu_dvfs_is(p, MT_CPU_DVFS_LL)) {
+		temp = tscpu_get_temp_by_bank(THERMAL_BANK4) / 1000;
+		return mt_spower_get_leakage(MT_SPOWER_CPULL, p->ops->get_cur_volt(p) / 100, temp);
+	} else if (cpu_dvfs_is(p, MT_CPU_DVFS_L)) {
+		temp = tscpu_get_temp_by_bank(THERMAL_BANK3) / 1000;
+		return mt_spower_get_leakage(MT_SPOWER_CPUL, p->ops->get_cur_volt(p) / 100, temp);
+	} else if (cpu_dvfs_is(p, MT_CPU_DVFS_B)) {
+		temp = tscpu_get_temp_by_bank(THERMAL_BANK0) / 1000;
+		return mt_spower_get_leakage(MT_SPOWER_CPUBIG, p->ops->get_cur_volt(p) / 100, temp);
+	} else
+		return 0;
+
+#else
 	return 0;
+#endif
 }
 
 #ifndef DISABLE_PBM_FEATURE
@@ -3627,9 +3646,6 @@ static int _mt_cpufreq_target(struct cpufreq_policy *policy, unsigned int target
 
 	FUNC_ENTER(FUNC_LV_MODULE);
 
-	/*if (do_dvfs_stress_test != 1)
-		return 0;*/
-
 #if 1
 	if (dvfs_disable_flag == 1)
 		return 0;
@@ -3744,9 +3760,8 @@ static int _mt_cpufreq_init(struct cpufreq_policy *policy)
 #if 0
 /* #ifdef ENABLE_IDVFS */
 		if (MT_CPU_DVFS_B == id) {
-			if (!disable_idvfs_flag) {
+			if (!disable_idvfs_flag)
 				BigiDVFSEnable_hp();
-			}
 		}
 #endif
 #ifdef CONFIG_HYBRID_CPU_DVFS	/* after BigiDVFSEnable */
