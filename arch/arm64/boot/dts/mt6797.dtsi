@@ -2461,6 +2461,14 @@ initrd=0x44000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 			vcn33_wifi-supply = <&mt_pmic_vcn33_wifi_ldo_reg>;
 		};
 
+		wifi: wifi@180f0000 {
+			compatible = "mediatek,wifi";
+			reg = <0x180f0000 0x1100>;
+			interrupts = <GIC_SPI 283 IRQ_TYPE_LEVEL_LOW>;
+			clocks = <&infrasys INFRA_AP_DMA>;
+			clock-names = "wifi-dma";
+		};
+
 		pwm_disp@1100f000 {
 			compatible = "mediatek,pwm_disp";
 			reg = <0x1100f000 0x1000>;
