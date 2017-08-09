@@ -432,6 +432,12 @@ static int _calc_hrt_num(disp_layer_info *disp_info, int disp_index,
 	bool has_gles = false;
 	layer_config *layer_info;
 
+	if (start_layer > end_layer || end_layer >= disp_info->layer_num[disp_index]) {
+		DISPERR("%s input layer index incorrect, start:%d, end:%d\n",
+			__func__, start_layer, end_layer);
+		dump_disp_info(disp_info);
+	}
+
 	/* TODO: get display fps here */
 	weight = get_layer_weight(disp_index);
 
@@ -720,8 +726,8 @@ static int dispatch_ovl_id(disp_layer_info *disp_info)
 
 int check_disp_info(disp_layer_info *disp_info)
 {
-	int disp_idx;
-	/*layer_config *layer_info;*/
+	int disp_idx, i;
+	layer_config *layer_info;
 
 	if (disp_info == NULL) {
 		DISPERR("[HRT]disp_info is empty\n");
@@ -742,6 +748,19 @@ int check_disp_info(disp_layer_info *disp_info)
 			DISPERR("[HRT]gles layer invalid, disp_idx:%d, head:%d, tail:%d\n",
 				disp_idx, disp_info->gles_head[disp_idx], disp_info->gles_tail[disp_idx]);
 			return -1;
+		}
+
+		/*
+		This step used to check all of the layer info is not empty.
+		If system crash here, means the input disp_info is incorrect.
+		*/
+		if (has_hrt_limit(disp_info, disp_idx)) {
+			int bpp;
+
+			for (i = 0 ; i < disp_info->layer_num[disp_idx] ; i++) {
+				layer_info = &disp_info->input_config[disp_idx][i];
+				bpp = get_bpp(layer_info->src_fmt);
+			}
 		}
 	}
 
