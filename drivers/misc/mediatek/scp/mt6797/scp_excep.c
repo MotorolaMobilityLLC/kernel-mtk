@@ -363,6 +363,7 @@ static void scp_prepare_aed_dump(char *aed_str, struct scp_aed_cfg *aed)
 	u32 log_size, phy_size;
 	u32 memory_dump_size;
 	MemoryDump *pMemoryDump = NULL;
+	char *last_log = NULL;
 
 
 	pr_debug("scp_prepare_aed_dump: %s\n", aed_str);
@@ -372,11 +373,10 @@ static void scp_prepare_aed_dump(char *aed_str, struct scp_aed_cfg *aed)
 	detail = vmalloc(SCP_AED_STR_LEN);
 	ptr = detail;
 	memset(detail, 0, SCP_AED_STR_LEN);
-	snprintf(detail, SCP_AED_STR_LEN, "%s scp pc=0x%08x, lr=0x%08x, psp=0x%08x, sp=0x%08x\n",
-	aed_str, scp_aee_status.pc, scp_aee_status.lr, scp_aee_status.psp, scp_aee_status.sp);
+	last_log = scp_get_last_log();
+	snprintf(detail, SCP_AED_STR_LEN, "%s scp pc=0x%08x, lr=0x%08x, psp=0x%08x, sp=0x%08x,\n last log:%s",
+	aed_str, scp_aee_status.pc, scp_aee_status.lr, scp_aee_status.psp, scp_aee_status.sp, last_log);
 	detail[SCP_AED_STR_LEN - 1] = '\0';
-
-
 	log_size = AED_DUMP_SIZE; /* 16KB */
 	log = vmalloc(log_size);
 	if (!log) {
@@ -451,16 +451,16 @@ void scp_aed(scp_excep_id type)
 			scp_prepare_aed_dump("scp reset exception", &aed);
 			break;
 		case EXCEP_BOOTUP:
-			scp_prepare_aed_dump("scp boot exception", &aed);
 			scp_get_log(1);
+			scp_prepare_aed_dump("scp boot exception", &aed);
 			break;
 		case EXCEP_RUNTIME:
-			scp_prepare_aed_dump("scp runtime exception", &aed);
 			scp_get_log(1);
+			scp_prepare_aed_dump("scp runtime exception", &aed);
 			break;
 		default:
-			scp_prepare_aed_dump("scp unknown exception", &aed);
 			scp_get_log(1);
+			scp_prepare_aed_dump("scp unknown exception", &aed);
 			break;
 	}
 

@@ -24,6 +24,7 @@
 #include <linux/fs.h>           /* needed by file_operations* */
 #include <linux/slab.h>         /* needed by kmalloc */
 #include <linux/poll.h>         /* needed by poll */
+#include <linux/vmalloc.h>      /* needed by vmalloc */
 #include <linux/mutex.h>
 #include <linux/kfifo.h>
 #include <asm/spinlock.h>
@@ -67,6 +68,7 @@ static struct mutex scp_log_write_mutex;
 static struct mutex scp_log_read_mutex;
 static wait_queue_head_t logwait;
 static struct scp_work_struct scp_logger_work, scp_buf_full_work;
+static char *last_log;
 
 
 /*
@@ -320,7 +322,8 @@ static void scp_buf_save(void)
 		}
 
 		kfifo_in(&scp_buf_fifo, prev_buf->buffer, prev_buf->len);
-
+		memcpy(last_log, prev_buf->buffer, prev_buf->len);
+		last_log[prev_buf->len] = '\0';
 		/* notify poll */
 		wake_up(&logwait);
 #else
@@ -342,7 +345,6 @@ static void scp_buf_save(void)
 		}
 
 		kfree(line_buf);
-
 #endif
 		mutex_unlock(&scp_log_write_mutex);
 		kfree(prev_buf);
@@ -359,6 +361,10 @@ static void scp_buf_full_ws(struct work_struct *ws)
 	scp_buf_save();
 }
 
+char *scp_get_last_log(void)
+{
+	return last_log;
+}
 /*
  * get log from scp and optionally save it to fifo
  * NOTE: this function may be blocked and should not be called in interrupt context when save = 1
@@ -475,6 +481,8 @@ int scp_logger_init(void)
 	scp_ipi_registration(IPI_LOGGER, scp_logger_ipi_handler, "logger");
 	/* register log buf full IPI */
 	scp_ipi_registration(IPI_BUF_FULL, scp_buf_full_ipi_handler, "buf_full");
+	/* register memory for storing last log */
+	last_log = vmalloc(SCP_FIFO_SIZE + 1);
 
 	return 0;
 }
@@ -495,4 +503,5 @@ void scp_logger_cleanup(void)
 {
 	kfifo_free(&scp_buf_fifo);
 	kfree(scp_log_buf);
+	vfree(last_log);
 }
