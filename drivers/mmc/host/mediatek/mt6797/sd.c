@@ -4058,6 +4058,9 @@ static void msdc_ops_request_legacy(struct mmc_host *mmc,
 	}
 #endif
 
+#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
+out:
+#endif
 #ifdef MTK_MSDC_USE_CACHE
 	msdc_check_cache_flush_error(host, cmd);
 #endif
