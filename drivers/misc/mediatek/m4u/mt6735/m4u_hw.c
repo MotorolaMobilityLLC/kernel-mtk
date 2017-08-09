@@ -1995,15 +1995,17 @@ int m4u_reg_init(m4u_domain_t *m4u_domain, unsigned long ProtectPA, int m4u_id)
 			node = of_find_compatible_node(NULL, NULL, gM4U_SMILARB[i]);
 			if (NULL ==  node)
 				M4UINFO("init larb %d error\n", i);
-			gLarbBaseAddr[i] = (unsigned long)of_iomap(node, 0);
-			/* set mm engine domain */
-			larb_clock_on(i);
-			M4U_WriteReg32(gLarbBaseAddr[i], SMI_LARB_DOMN_0, DOMAIN_VALUE);
-			M4U_WriteReg32(gLarbBaseAddr[i], SMI_LARB_DOMN_1, DOMAIN_VALUE);
-			M4U_WriteReg32(gLarbBaseAddr[i], SMI_LARB_DOMN_2, DOMAIN_VALUE);
-			M4U_WriteReg32(gLarbBaseAddr[i], SMI_LARB_DOMN_3, DOMAIN_VALUE);
-			larb_clock_off(i);
-			M4UINFO("init larb %d, 0x%lx\n", i, gLarbBaseAddr[i]);
+			else {
+				gLarbBaseAddr[i] = (unsigned long)of_iomap(node, 0);
+				/* set mm engine domain */
+				larb_clock_on(i);
+				M4U_WriteReg32(gLarbBaseAddr[i], SMI_LARB_DOMN_0, DOMAIN_VALUE);
+				M4U_WriteReg32(gLarbBaseAddr[i], SMI_LARB_DOMN_1, DOMAIN_VALUE);
+				M4U_WriteReg32(gLarbBaseAddr[i], SMI_LARB_DOMN_2, DOMAIN_VALUE);
+				M4U_WriteReg32(gLarbBaseAddr[i], SMI_LARB_DOMN_3, DOMAIN_VALUE);
+				larb_clock_off(i);
+				M4UINFO("init larb %d, 0x%lx\n", i, gLarbBaseAddr[i]);
+			}
 		}
 	}
 
