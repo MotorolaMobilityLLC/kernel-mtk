@@ -2205,6 +2205,43 @@ static inline void update_cfs_shares(struct cfs_rq *cfs_rq)
 #endif /* CONFIG_FAIR_GROUP_SCHED */
 
 #ifdef CONFIG_SMP
+
+#ifdef CONFIG_MTK_SCHED_CMP
+int get_cluster_id(unsigned int cpu)
+{
+	return arch_get_cluster_id(cpu);
+}
+
+void get_cluster_cpus(struct cpumask *cpus, int cluster_id,
+			    bool exclusive_offline)
+{
+	struct cpumask cls_cpus;
+
+	arch_get_cluster_cpus(&cls_cpus, cluster_id);
+	if (exclusive_offline)
+		cpumask_and(cpus, cpu_online_mask, &cls_cpus);
+	else
+		cpumask_copy(cpus, &cls_cpus);
+}
+
+static int nr_cpus_in_cluster(int cluster_id, bool exclusive_offline)
+{
+	struct cpumask cls_cpus;
+	int nr_cpus;
+
+	arch_get_cluster_cpus(&cls_cpus, cluster_id);
+	if (exclusive_offline) {
+		struct cpumask online_cpus;
+
+		cpumask_and(&online_cpus, cpu_online_mask, &cls_cpus);
+		nr_cpus = cpumask_weight(&online_cpus);
+	} else
+		nr_cpus = cpumask_weight(&cls_cpus);
+
+	return nr_cpus;
+}
+#endif /* CONFIG_MTK_SCHED_CMP */
+
 /*
  * We choose a half-life close to 1 scheduling period.
  * Note: The tables below are dependent on this value.
