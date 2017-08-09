@@ -211,17 +211,11 @@ int primary_display_switch_esd_mode(int mode)
 
 	gpio_mode = mt_get_gpio_mode(GPIO_DSI_TE_PIN);
 
-	/* no need switch */
-	if (mode == GPIO_EINT_MODE && gpio_mode == GPIO_DSI_TE_PIN_M_GPIO)
-		return ret;
-
-	if (mode == GPIO_DSI_MODE && gpio_mode == GPIO_DSI_TE_PIN_M_DSI_TE)
-		return ret;
-
 	/* switch to eint mode */
-	if (mode == GPIO_EINT_MODE && gpio_mode == GPIO_DSI_TE_PIN_M_DSI_TE) {
+	if (mode == GPIO_EINT_MODE) {
 		/* 1. set mode0 */
-		mt_set_gpio_mode(GPIO_DSI_TE_PIN, GPIO_DSI_TE_PIN_M_GPIO);
+		/* keep dsi te mode */
+		/* mt_set_gpio_mode(GPIO_DSI_TE_PIN, GPIO_DSI_TE_PIN_M_GPIO); */
 
 		/* 2.register irq handler */
 		node = of_find_compatible_node(NULL, NULL, "mediatek, DSI_TE-eint");
@@ -248,7 +242,7 @@ int primary_display_switch_esd_mode(int mode)
 
 	}
 
-	if (mode == GPIO_DSI_MODE && gpio_mode == GPIO_DSI_TE_PIN_M_GPIO) {
+	if (mode == GPIO_DSI_MODE) {
 
 		/* 1. unregister irq handler */
 		node = of_find_compatible_node(NULL, NULL, "mediatek, DSI_TE-eint");
@@ -259,7 +253,7 @@ int primary_display_switch_esd_mode(int mode)
 			DISPERR("[ESD][%s] can't find DSI_TE eint compatible node\n",  __func__);
 
 		/* 2. set dsi te mode */
-		mt_set_gpio_mode(GPIO_DSI_TE_PIN, GPIO_DSI_TE_PIN_M_DSI_TE);
+		/* mt_set_gpio_mode(GPIO_DSI_TE_PIN, GPIO_DSI_TE_PIN_M_DSI_TE); */
 
 	}
 
@@ -433,16 +427,14 @@ int primary_display_esd_check(void)
 		} else if (GPIO_DSI_MODE == mode) {
 			MMProfileLogEx(ddp_mmp_get_events()->esd_extte, MMProfileFlagPulse,
 				primary_display_is_video_mode(), mode);
-			if (primary_display_is_video_mode()) {
-				DISPCHECK("[ESD]ESD check read\n");
-				ret = do_esd_check_read();
-				mode = GPIO_EINT_MODE; /* used for mode switch */
-			} else {
-				/* need kick idle in case of cmd mode idle disable mtcmos */
-				if (disp_helper_get_option(DISP_OPT_IDLEMGR_ENTER_ULPS))
-					primary_display_idlemgr_kick((char *)__func__, 1);
-				ret = do_esd_check_dsi_te();
-			}
+#if 0
+			/* use eint do esd check instead of dsi te irq for lowpower */
+			ret = do_esd_check_dsi_te();
+#else
+			DISPCHECK("[ESD]ESD check read\n");
+			ret = do_esd_check_read();
+#endif
+			mode = GPIO_EINT_MODE; /* used for mode switch */
 		}
 		if (disp_helper_get_option(DISP_OPT_ESD_CHECK_SWITCH))
 			if (primary_display_is_video_mode()) {
@@ -654,10 +646,7 @@ void primary_display_check_recovery_init(void)
 		if (_need_do_esd_check()) {
 			/* esd check init */
 			init_waitqueue_head(&esd_ext_te_wq);
-			if (primary_display_is_video_mode())
-				set_esd_check_mode(GPIO_EINT_MODE);
-			else
-				set_esd_check_mode(GPIO_DSI_MODE);
+			set_esd_check_mode(GPIO_EINT_MODE);
 			primary_display_esd_check_enable(1);
 		} else {
 			atomic_set(&_check_task_wakeup, 1);
