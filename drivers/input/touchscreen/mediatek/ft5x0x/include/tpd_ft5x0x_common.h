@@ -159,8 +159,10 @@ extern void  ft_rw_iic_drv_exit(void);
 #endif
 
 #ifdef CONFIG_FT_AUTO_UPGRADE_SUPPORT
+extern int tpd_auto_upgrade(struct i2c_client *client);
+#ifdef CONFIG_MTK_I2C_EXTENSION
 extern u8 *tpd_i2c_dma_va;
 extern dma_addr_t tpd_i2c_dma_pa;
-extern int tpd_auto_upgrade(struct i2c_client *client);
+#endif				/* CONFIG_MTK_I2C_EXTENSION */
 #endif
 #endif /* TOUCHPANEL_H__ */

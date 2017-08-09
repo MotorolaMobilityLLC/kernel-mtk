@@ -74,6 +74,9 @@ static struct tpd_contain tpd_compat;
 static unsigned char tpd_supplier;
 #endif
 
+#ifndef CONFIG_MTK_I2C_EXTENSION
+static char I2CDMABuf[4096];
+#endif				/* CONFIG_MTK_I2C_EXTENSION */
 static void tpd_fw_init(void)
 {
 #ifdef CTP_DETECT_SUPPLIER_THROUGH_GPIO
@@ -103,6 +106,10 @@ static void tpd_fw_init(void)
 	tpd_compat.tpd_pt = TPD_FW;
 	tpd_compat.size = sizeof(TPD_FW);
 #endif /* CTP_DETECT_SUPPLIER_THROUGH_GPIO */
+
+#ifndef CONFIG_MTK_I2C_EXTENSION
+	memset(I2CDMABuf, 0x00, sizeof(I2CDMABuf));
+#endif				/* CONFIG_MTK_I2C_EXTENSION */
 }
 
 static int tpd_allow_upgrade(unsigned char tpd_fw_ver, unsigned char host_fw_ver)
@@ -152,7 +159,11 @@ static unsigned char tpd_i2c_read_interface(struct i2c_client *client, unsigned 
 {
 	int ret;
 
+#ifdef CONFIG_MTK_I2C_EXTENSION
+	client->addr = client->addr & ~I2C_DMA_FLAG;
+#else
 	client->addr = client->addr;
+#endif				/* CONFIG_MTK_I2C_EXTENSION */
 	ret = i2c_master_recv(client, pbt_buf, sw_length);
 	if (ret <= 0) {
 		TPD_DMESG("tpd_i2c_read_interface error\n");
@@ -166,7 +177,11 @@ static unsigned char tpd_i2c_write_interface(struct i2c_client *client, unsigned
 {
 	int ret;
 
+#ifdef CONFIG_MTK_I2C_EXTENSION
+	client->addr = client->addr & ~I2C_DMA_FLAG;
+#else
 	client->addr = client->addr;
+#endif				/* CONFIG_MTK_I2C_EXTENSION */
 	ret = i2c_master_send(client, pbt_buf, sw_length);
 	if (ret < 0) {
 		TPD_DMESG("tpd_i2c_write_interface error\n");
@@ -234,16 +249,28 @@ static int tpd_dma_write(struct i2c_client *client, unsigned char *pbt_buf, unsi
 {
 	int i = 0;
 
+#ifdef CONFIG_MTK_I2C_EXTENSION
 	for (i = 0; i < dw_len; i++)
 		tpd_i2c_dma_va[i] = pbt_buf[i];
 
 	if (dw_len <= 8) {
-		client->addr = client->addr;
+		client->addr = client->addr & ~I2C_DMA_FLAG;
 		return i2c_master_send(client, pbt_buf, dw_len);
 	}
-	client->addr = client->addr & 0xff;
-	return i2c_master_send(client, (u8 *)(uintptr_t)tpd_i2c_dma_pa, dw_len);
 
+	client->addr = client->addr & I2C_MASK_FLAG | I2C_DMA_FLAG;
+	return i2c_master_send(client, (const char *)tpd_i2c_dma_pa, dw_len);
+
+#else
+	for (i = 0; i < dw_len; i++)
+		I2CDMABuf[i] = pbt_buf[i];
+
+	if (dw_len < 8)
+		return i2c_master_send(client, pbt_buf, dw_len);
+
+	return i2c_master_send(client, (unsigned char *)(uintptr_t) I2CDMABuf, dw_len);
+
+#endif				/* CONFIG_MTK_I2C_EXTENSION */
 }
 
 /*static int tpd_dma_read(struct i2c_client *client, unsigned char *pbt_buf, unsigned char bt_len)
@@ -258,17 +285,25 @@ static int tpd_dma_write(struct i2c_client *client, unsigned char *pbt_buf, unsi
 		return -1;
 	}
 
-		msgs[0].addr =client->addr;
+#ifdef CONFIG_MTK_I2C_EXTENSION
+		msgs[0].addr = client->addr | I2C_DMA_FLAG;
+#else
+		msgs[0].addr = client->addr;
+#endif
 		msgs[0].flags = 0;
 		msgs[0].len = 2;
-		msgs[0].buf = (u8 *)(uintptr_t)tpd_i2c_dma_pa;
+		msgs[0].buf = tpd_i2c_dma_pa;
 //		msgs[0].ext_flag = 0;
 //		msgs[0].timing = 400;
 
+#ifdef CONFIG_MTK_I2C_EXTENSION
+		msgs[1].addr = client->addr | I2C_DMA_FLAG;
+#else
 		msgs[1].addr = client->addr;
+#endif
 		msgs[1].flags = I2C_M_RD;
 		msgs[1].len = bt_len;
-		msgs[1].buf = (u8 *)(uintptr_t)tpd_i2c_dma_pa;
+		msgs[1].buf = tpd_i2c_dma_pa;
 //		msgs[1].ext_flag = 0;
 //		msgs[1].timing = 400;
 
@@ -312,13 +347,21 @@ int ft5x0x_i2c_Read(struct i2c_client *client, char *writebuf,
 	if (writelen > 0) {
 		struct i2c_msg msgs[] = {
 			{
+#ifdef CONFIG_MTK_I2C_EXTENSION
+			 .addr = client->addr & ~I2C_DMA_FLAG,
+#else
 			 .addr = client->addr,
+#endif				/* CONFIG_MTK_I2C_EXTENSION */
 			 .flags = 0,
 			 .len = writelen,
 			 .buf = writebuf,
 			 },
 			{
+#ifdef CONFIG_MTK_I2C_EXTENSION
+			 .addr = client->addr & ~I2C_DMA_FLAG,
+#else
 			 .addr = client->addr,
+#endif				/* CONFIG_MTK_I2C_EXTENSION */
 			 .flags = I2C_M_RD,
 			 .len = readlen,
 			 .buf = readbuf,
@@ -331,7 +374,11 @@ int ft5x0x_i2c_Read(struct i2c_client *client, char *writebuf,
 	} else {
 		struct i2c_msg msgs[] = {
 			{
+#ifdef CONFIG_MTK_I2C_EXTENSION
+			 .addr = client->addr & ~I2C_DMA_FLAG,
+#else
 			 .addr = client->addr,
+#endif				/* CONFIG_MTK_I2C_EXTENSION */
 			 .flags = I2C_M_RD,
 			 .len = readlen,
 			 .buf = readbuf,
@@ -350,7 +397,11 @@ int ft5x0x_i2c_Write(struct i2c_client *client, char *writebuf, int writelen)
 
 	struct i2c_msg msg[] = {
 		{
+#ifdef CONFIG_MTK_I2C_EXTENSION
+		 .addr = client->addr & ~I2C_DMA_FLAG,
+#else
 		 .addr = client->addr,
+#endif				/* CONFIG_MTK_I2C_EXTENSION */
 		 .flags = 0,
 		 .len = writelen,
 		 .buf = writebuf,

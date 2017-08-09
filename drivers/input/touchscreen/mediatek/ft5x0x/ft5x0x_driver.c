@@ -118,8 +118,11 @@ struct i2c_client *i2c_client = NULL;
 struct task_struct *thread = NULL;
 
 #ifdef CONFIG_FT_AUTO_UPGRADE_SUPPORT
+
+#ifdef CONFIG_MTK_I2C_EXTENSION
 u8 *tpd_i2c_dma_va = NULL;
 dma_addr_t tpd_i2c_dma_pa = 0;
+#endif				/* CONFIG_MTK_I2C_EXTENSION */
 #endif
 static DECLARE_WAIT_QUEUE_HEAD(waiter);
 
@@ -665,11 +668,13 @@ static int tpd_probe(struct i2c_client *client, const struct i2c_device_id *id)
 	msleep(100);
 
 #ifdef CONFIG_FT_AUTO_UPGRADE_SUPPORT
+#ifdef CONFIG_MTK_I2C_EXTENSION
 	tpd_i2c_dma_va = (u8 *)dma_alloc_coherent(&client->dev, 4096, &tpd_i2c_dma_pa, GFP_KERNEL);
 	if (!tpd_i2c_dma_va)
 		TPD_DMESG("TPD dma_alloc_coherent error!\n");
 	else
 		TPD_DMESG("TPD dma_alloc_coherent success!\n");
+#endif				/* CONFIG_MTK_I2C_EXTENSION */
 #endif
 
 reset_proc:
@@ -753,11 +758,13 @@ static int tpd_remove(struct i2c_client *client)
 #endif
 
 #ifdef CONFIG_FT_AUTO_UPGRADE_SUPPORT
+#ifdef CONFIG_MTK_I2C_EXTENSION
 	if (tpd_i2c_dma_va) {
 		dma_free_coherent(NULL, 4096, tpd_i2c_dma_va, tpd_i2c_dma_pa);
 		tpd_i2c_dma_va = NULL;
 		tpd_i2c_dma_pa = 0;
 	}
+#endif				/* CONFIG_MTK_I2C_EXTENSION */
 #endif
 	gpio_free(tpd_rst_gpio_number);
 	gpio_free(tpd_int_gpio_number);
