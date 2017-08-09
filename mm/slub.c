@@ -634,6 +634,7 @@ static void object_err(struct kmem_cache *s, struct page *page,
 {
 	slab_bug(s, "%s", reason);
 	print_trailer(s, page, object);
+	BUG();
 }
 
 static void slab_err(struct kmem_cache *s, struct page *page,
@@ -648,6 +649,7 @@ static void slab_err(struct kmem_cache *s, struct page *page,
 	slab_bug(s, "%s", buf);
 	print_page_info(page);
 	dump_stack();
+	BUG();
 }
 
 static void init_object(struct kmem_cache *s, void *object, u8 val)
@@ -690,6 +692,7 @@ static int check_bytes_and_report(struct kmem_cache *s, struct page *page,
 					fault, end - 1, fault[0], value);
 	print_trailer(s, page, object);
 
+	BUG();
 	restore_bytes(s, what, value, fault, end);
 	return 0;
 }
