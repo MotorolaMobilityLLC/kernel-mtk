@@ -766,11 +766,6 @@ initrd=0x44000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 			status = "disabled";
 		};
 
-		gyro: gyro@ {
-			compatible = "mediatek,mt6797-gyro";
-			status = "disabled";
-		};
-
 		chr_stat: chr_stat@ {
 			compatible = "mediatek,mt6797-chr_stat";
 			status = "disabled";
@@ -2480,6 +2475,56 @@ initrd=0x44000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 			compatible = "mediatek,mt3326-gps";
 		};
 	};
+/* sensor part */
+	hwmsensor@0 {
+			compatible = "mediatek,hwmsensor";
+	};
+	gsensor@0 {
+			compatible = "mediatek,gsensor";
+	};
+	m_acc_pl@0 {
+			compatible = "mediatek,m_acc_pl";
+	};
+	als_ps@0 {
+			compatible = "mediatek,als_ps";
+	};
+	als:m_alsps_pl@0 {
+			compatible = "mediatek,m_alsps_pl";
+	};
+	m_batch_pl@0 {
+			compatible = "mediatek,m_batch_pl";
+	};
+	batchsensor@0 {
+			compatible = "mediatek,batchsensor";
+	};
+	gyroscope@0 {
+			compatible = "mediatek,gyroscope";
+	};
+	gyro:m_gyro_pl@0 {
+			compatible = "mediatek,m_gyro_pl";
+	};
+	barometer@0 {
+			compatible = "mediatek,barometer";
+	};
+	m_baro_pl@0 {
+			compatible = "mediatek,m_baro_pl";
+	};
+	humidity@0 {
+			compatible = "mediatek,humidity";
+	};
+	m_hmdy_pl@0 {
+			compatible = "mediatek,m_hmdy_pl";
+	};
+	msensor@0 {
+			compatible = "mediatek,msensor";
+	};
+	mse:m_mag_pl@0 {
+			compatible = "mediatek,m_mag_pl";
+	};
+	orientation@0 {
+			compatible = "mediatek,orientation";
+	};
+/* sensor end */
 };
 
 #include "cust.dtsi"
