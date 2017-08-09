@@ -858,7 +858,7 @@ int spm_load_pcm_firmware(struct platform_device *pdev)
 		dyna_load_pcm[i].ready = 1;
 		spm_fw_count++;
 	}
-
+#if 0 /* enable VCORE DVFS */
 #if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_MT6757)
 	/* check addr_2nd */
 	if (spm_fw_count == DYNA_LOAD_PCM_MAX) {
@@ -877,14 +877,14 @@ int spm_load_pcm_firmware(struct platform_device *pdev)
 		}
 	}
 #endif
-
 	if (spm_fw_count == DYNA_LOAD_PCM_MAX) {
-#if !defined(CONFIG_FPGA_EARLY_PORTING)
 		vcorefs_late_init_dvfs();
-#endif
 		dyna_load_pcm_done = 1;
 	}
-
+#else
+	if (spm_fw_count == DYNA_LOAD_PCM_MAX)
+		dyna_load_pcm_done = 1;
+#endif /* 0 */
 	return err;
 }
 
