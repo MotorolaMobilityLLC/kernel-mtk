@@ -129,10 +129,10 @@ int md_ccif_get_modem_hw_info(struct platform_device *dev_ptr,
 		of_property_read_u32(dev_ptr->dev.of_node, "ccif,capability",
 				     &dev_cfg->capability);
 
-		hw_info->ap_ccif_base = of_iomap(dev_ptr->dev.of_node, 0);
+		hw_info->ap_ccif_base = (unsigned long)of_iomap(dev_ptr->dev.of_node, 0);
 		/*hw_info->md_ccif_base = hw_info->ap_ccif_base+0x1000; */
 		node = of_find_compatible_node(NULL, NULL, "mediatek,md_ccif1");
-		hw_info->md_ccif_base = of_iomap(node, 0);
+		hw_info->md_ccif_base = (unsigned long)of_iomap(node, 0);
 
 		hw_info->ap_ccif_irq_id =
 		    irq_of_parse_and_map(dev_ptr->dev.of_node, 0);
