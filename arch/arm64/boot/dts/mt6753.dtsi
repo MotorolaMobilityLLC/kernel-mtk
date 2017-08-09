@@ -1698,9 +1698,12 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 			clock-names = "mfg-main", "mfg-smi-common", "mtcmos-mfg", "mtcmos-display";
 		};
 
-
+		pwm:pwm@11006000 {
+			compatible = "mediatek,pwm";
+			reg = <0x11006000 0x1000>;
+			interrupts = <GIC_SPI 77 IRQ_TYPE_LEVEL_LOW>;
+		};
 	};
-
 	rf_clock_buffer_ctrl:rf_clock_buffer {
 		compatible = "mediatek,rf_clock_buffer";
 		mediatek,clkbuf-quantity = <4>;

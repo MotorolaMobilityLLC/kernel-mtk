@@ -1669,6 +1669,12 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 		};
 
 
+		pwm:pwm@11006000 {
+			compatible = "mediatek,pwm";
+			reg = <0x11006000 0x1000>;
+			interrupts = <GIC_SPI 77 IRQ_TYPE_LEVEL_LOW>;
+		};
+
 
 	};
 
