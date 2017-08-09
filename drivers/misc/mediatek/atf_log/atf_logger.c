@@ -15,6 +15,7 @@
 #include <linux/interrupt.h>
 #include <linux/proc_fs.h>
 #include <linux/atomic.h>
+#include <linux/irq.h>
 
 /*#define ATF_LOGGER_DEBUG*/
 #define ATF_LOG_CTRL_BUF_SIZE 256
@@ -554,7 +555,11 @@ static int __init atf_log_init(void)
 	atf_buf_vir_ctl->info.atf_read_seq = 0;
 	/* initial wait queue */
 	init_waitqueue_head(&atf_log_wq);
+#ifdef CONFIG_ARCH_MT6797
+	if (request_irq(325, (irq_handler_t)ATF_log_irq_handler, IRQ_TYPE_EDGE_RISING, "ATF_irq", NULL) != 0) {
+#else
 	if (request_irq(281, (irq_handler_t)ATF_log_irq_handler, IRQF_TRIGGER_NONE, "ATF_irq", NULL) != 0) {
+#endif
 		pr_crit("Fail to request ATF_log_irq interrupt!\n");
 		return -1;
 	}
