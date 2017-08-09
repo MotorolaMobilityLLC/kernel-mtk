@@ -23,7 +23,7 @@
 #include <linux/device.h>
 #include <linux/mutex.h>
 #include <linux/string.h>
-#include <mach/memory.h>
+/*#include <mach/memory.h>*/
 #include <asm/io.h>
 #include <linux/proc_fs.h>
 #include <linux/switch.h>
@@ -119,17 +119,18 @@ static int secwidevinemdw_execute(u32 cmd)
 		break;
 	}
 
-exit:
-
 	mutex_unlock(&secwidevinemdw_lock);
 
 	return 0;
 }
 
-void secwidevinemdw_listenDci(void)
+static int secwidevinemdw_listenDci(void *data)
 {
 	enum mc_result mc_ret = MC_DRV_OK;
 	u32 cmdId;
+	u32 currentversion = 0;
+	u32 requiredversion = 0;
+	int ret = 0;
 
 	MSG(INFO, "%s: DCI listener.\n", __func__);
 
@@ -139,12 +140,13 @@ void secwidevinemdw_listenDci(void)
 		mc_ret = mc_wait_notification(&secwidevinemdwdr_session, MC_INFINITE_TIMEOUT);
 		if (mc_ret != MC_DRV_OK) {
 			MSG(ERR, "%s: mcWaitNotification failed, mc_ret=%d\n", __func__, mc_ret);
+			ret = mc_ret;
 			break;
 		}
 
 		cmdId = secwidevinemdw_dci->command;
-		u32 currentversion = secwidevinemdw_dci->request.currenthdcpversion;
-		u32 requiredversion = secwidevinemdw_dci->request.requiredhdcpversion;
+		currentversion = secwidevinemdw_dci->request.currenthdcpversion;
+		requiredversion = secwidevinemdw_dci->request.requiredhdcpversion;
 
 		MSG(INFO, "%s: wait notification done!! cmdId = 0x%x, current = 0x%x, required = 0x%x\n",
 			__func__, cmdId, currentversion, requiredversion);
@@ -155,9 +157,11 @@ void secwidevinemdw_listenDci(void)
 		mc_ret = mc_notify(&secwidevinemdwdr_session);
 		if (mc_ret != MC_DRV_OK) {
 			MSG(ERR, "%s: mcNotify returned: %d\n", __func__, mc_ret);
+			ret = mc_ret;
 			break;
 		}
 	}
+	return ret;
 }
 
 /*Open driver in open*/
@@ -299,19 +303,21 @@ static int secwidevinemdw_release(struct inode *inode, struct file *file)
 	return ret;
 }
 
-static long secwidevinemdw_read(struct file *file, char *buf, u32 size,
+static ssize_t secwidevinemdw_read(struct file *file, char *buf, size_t size,
 		loff_t *offset)
 {
 	/*ignore offsset*/
 	u32 hdcpversion = secwidevinemdw_dci->request.currenthdcpversion;
+	int ret = 0;
 
 	if (size < sizeof(hdcpversion)) {
-		MSG(ERR, "secwidevinemdw_read fail - buf size(%u) is small 0x%08lx", size, sizeof(hdcpversion));
+		MSG(ERR, "secwidevinemdw_read fail - buf size(%u) is small 0x%08lx",
+			(unsigned int) size, sizeof(hdcpversion));
 		return -1;
 	}
 	memset(buf, 0, sizeof(hdcpversion));
-	copy_to_user(buf, &hdcpversion, sizeof(hdcpversion));
-	MSG(INFO, "secwidevinemdw_read: hdcpversion = %u\n", hdcpversion);
+	ret = copy_to_user(buf, &hdcpversion, sizeof(hdcpversion));
+	MSG(INFO, "secwidevinemdw_read: hdcpversion = %d, copy result: %d\n", hdcpversion, ret);
 	return sizeof(hdcpversion);
 }
 
@@ -326,6 +332,7 @@ static const struct file_operations secwidevinemdw_fops = {
 
 static int __init secwidevinemdw_init(void)
 {
+	int ret = 0;
 	proc_create("secwidevinemdw1", (S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH),
 			NULL, &secwidevinemdw_fops);
 
@@ -334,7 +341,7 @@ static int __init secwidevinemdw_init(void)
 	secwidevinemdw_switch_data.index = 0;
 	secwidevinemdw_switch_data.state = HDCP_VERSION_ANY;
 	MSG(INFO, "secwidevinemdw_session_open: switch_dev_register");
-	int ret = switch_dev_register(&secwidevinemdw_switch_data);
+	ret = switch_dev_register(&secwidevinemdw_switch_data);
 
 	if (ret)
 		MSG(INFO, "[secwidevinemdw]switch_dev_register failed, returned:%d!\n", ret);

@@ -18,7 +18,7 @@
 #include <linux/device.h>
 #include <linux/mutex.h>
 #include <linux/string.h>
-#include <mach/memory.h>
+/*#include <mach/memory.h>*/
 #include <linux/io.h>
 #include <linux/proc_fs.h>
 
@@ -79,38 +79,10 @@ static const struct mc_uuid_t secwidevinedr_uuid = {DR_secwidevine_UUID};
 static struct mc_session_handle secwidevinedr_session = {0};
 static u32 secwidevine_session_ref;
 static u32 secwidevine_devid = MC_DEVICE_ID_DEFAULT;
-static struct tci_t *secwidevine_tci;
+/*static struct tci_t *secwidevine_tci;*/
 static struct tci_t *secwidevinedr_tci;
 
-static int secwidevine_execute(u32 cmd, struct secwidevine_param *param)
-{
-
-	mutex_lock(&secwidevine_lock);
-
-	if (NULL == secwidevine_tci) {
-		mutex_unlock(&secwidevine_lock);
-		MSG(ERR, "secwidevine_tci not exist\n");
-		return -ENODEV;
-	}
-
-	switch (cmd) {
-    /*case CMD_SEC_WIDEVINE_GET_SESSION:
-	param->session_handle = secwidevine_session;
-	param->tci_data = *secwidevine_tci;
-	param->refcount = secwidevine_session_ref;
-	break;*/
-	default:
-	MSG(ERR, "Unkonw cmd\n");
-	break;
-	}
-
-exit:
-
-	mutex_unlock(&secwidevine_lock);
-
-	return 0;
-}
-
+/*
 static int secwidevine_handle_register(struct secwidevine_context *ctx, u32 type, u32 id)
 {
 	return 0;
@@ -129,7 +101,7 @@ static int secwidevine_handle_unregister(struct secwidevine_context *ctx, u32 id
 static int secwidevine_handle_cleanup(struct secwidevine_context *ctx)
 {
 	return 0;
-}
+}*/
 
 /* Open driver in open */
 static int secwidevine_session_open(void)
@@ -317,7 +289,6 @@ static long secwidevine_ioctl(struct file *file, unsigned int cmd, unsigned long
 	int err = 0;
 
 	struct secwidevine_param param;
-	u32 handle;
 
 	if (_IOC_TYPE(cmd) != SECWIDEVINE_IOC_MAGIC) {
 		MSG(ERR, "Bad magic\n");
