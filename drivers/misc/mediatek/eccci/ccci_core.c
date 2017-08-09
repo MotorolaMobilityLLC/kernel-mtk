@@ -660,6 +660,10 @@ int exec_ccci_kern_func_by_md_id(int md_id, unsigned int id, char *buf, unsigned
 		else if (buf[0] == 2)
 			ret = ccci_send_msg_to_md(md, CCCI_SYSTEM_TX, MD_RF_TEMPERATURE_3G, 0, 0);
 		break;
+	case ID_FORCE_MD_ASSERT:
+		CCCI_NOTICE_MSG(md->index, CHAR, "Force MD assert called by %s\n", current->comm);
+		ret = md->ops->force_assert(md, CCIF_INTERRUPT);
+		break;
 	case ID_PAUSE_LTE:
 		/*
 		 * MD booting/flight mode/exception mode: return >0 to DVFS.
