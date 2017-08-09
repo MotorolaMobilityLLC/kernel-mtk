@@ -23,7 +23,7 @@
 #include <asm/smp_plat.h>
 
 #if defined(CONFIG_ARCH_MT6735) || defined(CONFIG_ARCH_MT6735M) || \
-	defined(CONFIG_ARCH_MT6753)
+	defined(CONFIG_ARCH_MT6753) || defined(CONFIG_ARCH_MT6755)
 #include <mt-smp.h>
 #endif
 
@@ -55,7 +55,7 @@ extern void secondary_startup(void);
 static int psci_boot_secondary(unsigned int cpu, struct task_struct *idle)
 {
 #if defined(CONFIG_ARCH_MT6735) || defined(CONFIG_ARCH_MT6735M) || \
-	defined(CONFIG_ARCH_MT6753)
+	defined(CONFIG_ARCH_MT6753) || defined(CONFIG_ARCH_MT6755)
 	int ret = -1;
 
 	if (psci_ops.cpu_on)
@@ -96,7 +96,7 @@ void __ref psci_cpu_die(unsigned int cpu)
 }
 
 #if defined(CONFIG_ARCH_MT6735) || defined(CONFIG_ARCH_MT6735M) || \
-	defined(CONFIG_ARCH_MT6753)
+	defined(CONFIG_ARCH_MT6753) || defined(CONFIG_ARCH_MT6755)
 int __ref psci_cpu_kill(unsigned int cpu)
 {
 	return mt_cpu_kill(cpu);
@@ -142,12 +142,12 @@ bool __init psci_smp_available(void)
 
 struct smp_operations __initdata psci_smp_ops = {
 #if defined(CONFIG_ARCH_MT6735) || defined(CONFIG_ARCH_MT6735M) || \
-	defined(CONFIG_ARCH_MT6753)
+	defined(CONFIG_ARCH_MT6753) || defined(CONFIG_ARCH_MT6755)
 	.smp_prepare_cpus       = mt_smp_prepare_cpus,
 #endif
 	.smp_boot_secondary	= psci_boot_secondary,
 #if defined(CONFIG_ARCH_MT6735) || defined(CONFIG_ARCH_MT6735M) || \
-	defined(CONFIG_ARCH_MT6753)
+	defined(CONFIG_ARCH_MT6753) || defined(CONFIG_ARCH_MT6755)
 	.smp_secondary_init     = mt_smp_secondary_init,
 #endif
 #ifdef CONFIG_HOTPLUG_CPU
