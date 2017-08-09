@@ -29,6 +29,7 @@
 #include "mt_freqhopping_drv.h"
 
 /* #define DCM_DEFAULT_ALL_OFF */
+/* #define NON_AO_MP2_DCM_CONFIG */
 
 #if defined(CONFIG_OF)
 static unsigned long mcucfg_base;
@@ -1097,14 +1098,16 @@ int dcm_mcusys(ENUM_MCUSYS_DCM on)
 	if (on == MCUSYS_DCM_ON) {
 
 		dcm_mcusys_little(MCUSYS_DCM_ON);
-
+#ifdef NON_AO_MP2_DCM_CONFIG
 		dcm_mcusys_mp2_sync_dcm(MCUSYS_DCM_ON);
+#endif
 
 	} else {
 
 		dcm_mcusys_little(MCUSYS_DCM_OFF);
-
+#ifdef NON_AO_MP2_DCM_CONFIG
 		dcm_mcusys_mp2_sync_dcm(MCUSYS_DCM_OFF);
+#endif
 	}
 
 	return 0;
@@ -1588,7 +1591,9 @@ void dcm_dump_regs(void)
 	REG_DUMP(MCUCFG_BUS_FABRIC_DCM_CTRL);
 	REG_DUMP(MCUCFG_CCI_ADB400_DCM_CONFIG);
 	REG_DUMP(MCUCFG_SYNC_DCM_CONFIG);
+#ifdef NON_AO_MP2_DCM_CONFIG
 	REG_DUMP(MCUCFG_SYNC_DCM_MP2_CONFIG);
+#endif
 #ifdef NON_AO_MCUSYS_DCM
 	REG_DUMP(MSCI_A_DCM);
 #endif
@@ -1648,8 +1653,10 @@ static ssize_t dcm_state_show(struct kobject *kobj, struct kobj_attribute *attr,
 				MCUCFG_CCI_ADB400_DCM_CONFIG, reg_read(MCUCFG_CCI_ADB400_DCM_CONFIG));
 	p += sprintf(p, "%-30s(0x%08lX): 0x%08X\n", "MCUCFG_SYNC_DCM_CONFIG",
 				MCUCFG_SYNC_DCM_CONFIG, reg_read(MCUCFG_SYNC_DCM_CONFIG));
+#ifdef NON_AO_MP2_DCM_CONFIG
 	p += sprintf(p, "%-30s(0x%08lX): 0x%08X\n", "MCUCFG_SYNC_DCM_MP2_CONFIG",
 				MCUCFG_SYNC_DCM_MP2_CONFIG, reg_read(MCUCFG_SYNC_DCM_MP2_CONFIG));
+#endif
 
 	p += sprintf(p, "\n=== infra DCM ===\n");
 	p += sprintf(p, "%-30s(0x%08lX): 0x%08X\n", "INFRA_BUS_DCM_CTRL",
