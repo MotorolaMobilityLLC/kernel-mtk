@@ -264,9 +264,9 @@ static unsigned long long _get_time(void)
 
 static unsigned long long lasttime = 0;
 
-static void mtk_init_spm_dvfs_gpu(void)
+static void mtk_init_spm_dvfs_gpu(int lock)
 {
-	mtk_kbase_spm_kick(&dvfs_gpu_pcm);
+	mtk_kbase_spm_kick(&dvfs_gpu_pcm, lock);
 	mtk_kbase_spm_set_dvfs_en(1);
 
 	/* retrive OPP table */
@@ -332,7 +332,7 @@ static int mtk_pm_callback_power_on(void)
 	MTKCLK_prepare_enable(clk_dvfs_gpu);
 	if (!mtk_kbase_spm_isonline())
 	{
-		mtk_init_spm_dvfs_gpu();
+		mtk_init_spm_dvfs_gpu(1);
 	}
 	mutex_lock(&spm_mutex_lock);
 	mtk_kbase_spm_acquire();
@@ -447,12 +447,46 @@ static void pm_callback_power_off(struct kbase_device *kbdev)
 
 	mtk_pm_callback_power_off();
 }
+static void pm_callback_suspend(struct kbase_device *kbdev)
+{
+	if (g_is_power_on)
+	{
+		/* make sure the power is off after suspend */
+		pm_callback_power_off(kbdev);
+	}
+}
+static void pm_callback_resume(struct kbase_device *kbdev)
+{
+#ifdef MTK_GPU_SPM
+	struct mtk_config *config = g_config;
+
+	MTKCLK_prepare_enable(clk_gpupm);
+	MTKCLK_prepare_enable(clk_dvfs_gpu);
+
+	if (!mtk_kbase_spm_isonline())
+	{
+		mtk_init_spm_dvfs_gpu(0);
+
+		mtk_kbase_spm_acquire();
+		mtk_kbase_spm_wait();
+		mtk_kbase_spm_release();
+	}
+
+	MTKCLK_disable_unprepare(clk_dvfs_gpu);
+	MTKCLK_disable_unprepare(clk_gpupm);
+#endif
+	if (!g_is_power_on)
+	{
+		/* make sure the power is on after resume */
+		pm_callback_power_on(kbdev);
+	}
+}
 
 struct kbase_pm_callback_conf pm_callbacks = {
 	.power_on_callback = pm_callback_power_on,
 	.power_off_callback = pm_callback_power_off,
-	.power_suspend_callback  = NULL,
-	.power_resume_callback = NULL
+	.power_suspend_callback  = pm_callback_suspend,
+	.power_resume_callback = pm_callback_resume
 };
 
 static struct kbase_platform_config versatile_platform_config = {
@@ -564,7 +598,7 @@ ssize_t mtk_kbase_dvfs_gpu_set(struct device *dev, struct device_attribute *attr
 	if (strncmp(buf, "reset",  MIN(5, count)) == 0)
 	{
 		mtk_kbase_spm_set_dvfs_en(1);
-		mtk_kbase_spm_kick(&dvfs_gpu_pcm);
+		mtk_kbase_spm_kick(&dvfs_gpu_pcm, 1);
 	}
 	else if (strncmp(buf, "enable",  MIN(6, count)) == 0)
 	{
@@ -692,7 +726,7 @@ int mtk_platform_init(struct platform_device *pdev, struct kbase_device *kbdev)
 	MTKCLK_prepare_enable(clk_dvfs_gpu);
 
 	/* kick spm_dvfs_gpu */
-	mtk_init_spm_dvfs_gpu();
+	mtk_init_spm_dvfs_gpu(1);
 
 	mtk_kbase_spm_acquire();
 

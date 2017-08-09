@@ -73,10 +73,12 @@ static void _mtk_kbase_spm_kick_unlock(void)
 	DVFS_CPU_write32(0x428, 0x1);
 }
 
-void mtk_kbase_spm_kick(struct pcm_desc *pd)
+void mtk_kbase_spm_kick(struct pcm_desc *pd, int lock)
 {
 	dma_addr_t pa;
 	uint32_t tmp;
+
+	MTK_err("spm-kick begin, lock = %d", lock);
 
 	spm_acquire();
 
@@ -109,8 +111,11 @@ void mtk_kbase_spm_kick(struct pcm_desc *pd)
 
 	DVFS_GPU_write32(DVFS_GPU_PCM_PWR_IO_EN, 0x0081); /* sync register and enable IO output for r0 and r7 */
 
-	/* Lock before fetch IM */
-	_mtk_kbase_spm_kick_lock();
+	if (lock)
+	{
+		/* Lock before fetch IM */
+		_mtk_kbase_spm_kick_lock();
+	}
 
 	/* Kick */
 	DVFS_GPU_write32(DVFS_GPU_PCM_CON0, SPM_PROJECT_CODE | CON0_PCM_CK_EN | CON0_EN_SLEEP_DVS | CON0_IM_KICK_L | CON0_PCM_KICK_L);
@@ -119,12 +124,15 @@ void mtk_kbase_spm_kick(struct pcm_desc *pd)
 	/* Wait IM ready */
 	while ((DVFS_GPU_read32(DVFS_GPU_PCM_FSM_STA) & FSM_STA_IM_STATE_MASK) != FSM_STA_IM_STATE_IM_READY);
 
-	/* Unlock after IM ready */
-	_mtk_kbase_spm_kick_unlock();
+	if (lock)
+	{
+		/* Unlock after IM ready */
+		_mtk_kbase_spm_kick_unlock();
+	}
 
 	spm_release();
 
-	MTK_err("spm-kick done");
+	MTK_err("spm-kick end - done");
 }
 
 int mtk_kbase_spm_isonline(void)

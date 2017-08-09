@@ -181,7 +181,7 @@ extern struct mtk_config *g_config;
 
 void mtk_kbase_dpm_setup(int *dfp_weights);
 
-void mtk_kbase_spm_kick(struct pcm_desc *pd);
+void mtk_kbase_spm_kick(struct pcm_desc *pd, int lock);
 
 int mtk_kbase_spm_isonline(void);
 
