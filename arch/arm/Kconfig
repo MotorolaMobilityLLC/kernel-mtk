@@ -803,7 +803,7 @@ config ARCH_MT6735
 	select MTK_SYSTRACKER
 	select MTK_SYS_CIRQ
 	select MTK_EIC
-	select MTK_IRQ
+	select MTK_GIC
 	select COMMON_CLK if !MTK_CLKMGR
 	select CPU_IDLE
 	select PINCTRL
@@ -813,6 +813,8 @@ config ARCH_MT6735
 	select KERNEL_MODE_NEON
 	select CRYPTO_AES_ARM32_CE
 	select ARM_ERRATA_836870
+	select MTK_IRQ_NEW_DESIGN
+	select MTK_IRQ_NEW_DESIGN_DEBUG
 	help
 	  This enable support for MediaTek MT6735
 

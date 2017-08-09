@@ -243,6 +243,8 @@ config ARCH_MT6735
 	select MTK_GIC
 	select ARM64_ERRATUM_845719
 	select ARM64_ERRATUM_836870
+	select MTK_IRQ_NEW_DESIGN
+	select MTK_IRQ_NEW_DESIGN_DEBUG
 	help
 	  This enable support for MediaTek MT6735
 
