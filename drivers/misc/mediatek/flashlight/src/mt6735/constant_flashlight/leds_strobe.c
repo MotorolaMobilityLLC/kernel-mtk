@@ -420,12 +420,16 @@ enum hrtimer_restart ledTimeOutCallback(struct hrtimer *timer)
 static struct hrtimer g_timeOutTimer;
 void timerInit(void)
 {
-	INIT_WORK(&workTimeOut, work_timeOutFunc);
-	g_timeOutTimeMs = 1000;
-	hrtimer_init(&g_timeOutTimer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
-	g_timeOutTimer.function = ledTimeOutCallback;
-}
+	static int init_flag;
 
+	if (init_flag == 0) {
+		init_flag = 1;
+		INIT_WORK(&workTimeOut, work_timeOutFunc);
+		g_timeOutTimeMs = 1000;
+		hrtimer_init(&g_timeOutTimer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
+		g_timeOutTimer.function = ledTimeOutCallback;
+	}
+}
 
 
 static int constant_flashlight_ioctl(unsigned int cmd, unsigned long arg)
