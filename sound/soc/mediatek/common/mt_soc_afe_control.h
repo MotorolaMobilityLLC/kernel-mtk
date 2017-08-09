@@ -125,27 +125,6 @@ bool SetoutputConnectionFormat(uint32 ConnectionFormat, uint32 Output);
 bool SetChipI2SAdcIn(AudioDigtalI2S *DigtalI2S, bool audioAdcI2SStatus);
 bool setChipDmicPath(bool _enable, uint32 sample_rate);
 
-#ifdef _NON_COMMON_FEATURE_READY
-bool SetHDMIMCLK(void);
-bool SetHDMIBCLK(void);
-uint32 GetHDMIApLLSource(void);
-bool SetHDMIApLL(uint32 ApllSource);
-bool SetHDMIdatalength(uint32 length);
-bool SetHDMIsamplerate(uint32 samplerate);
-bool SetHDMIChannels(uint32 Channels);
-bool SetHDMIEnable(bool bEnable);
-bool SetHDMIConnection(uint32 ConnectionState, uint32 Input, uint32 Output);
-
-bool SetTDMLrckWidth(uint32 cycles);
-bool SetTDMbckcycle(uint32 cycles);
-bool SetTDMChannelsSdata(uint32 channels);
-bool SetTDMDatalength(uint32 length);
-bool SetTDMI2Smode(uint32 mode);
-bool SetTDMLrckInverse(bool enable);
-bool SetTDMBckInverse(bool enable);
-bool SetTDMEnable(bool enable);
-#endif
-
 /* Sample Rate Transform */
 uint32 SampleRateTransform(uint32 sampleRate, Soc_Aud_Digital_Block audBlock);
 
