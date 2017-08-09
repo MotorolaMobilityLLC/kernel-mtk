@@ -224,16 +224,16 @@ void __iomem  *vcorefs_pericfg_base;
  * __nosavedata will not be restored after IPO-H boot
  */
 static unsigned int trans[NUM_TRANS] __nosavedata;
-static bool feature_en __nosavedata = 1;	/* if feature disable, then keep HPM */
+static bool feature_en __nosavedata;	/* if feature disable, then keep HPM */
 
 static unsigned int vcorefs_curr_opp __nosavedata = OPPI_PERF;
 static unsigned int vcorefs_prev_opp __nosavedata = OPPI_PERF;
 
 static struct vcorefs_profile vcorefs_ctrl = {
 	.recover_en		= 1,
-	.vcore_dvs		= 1,
-	.freq_dfs		= 1,
-	.ddr_dfs		= 1,
+	.vcore_dvs		= 0,
+	.freq_dfs		= 0,
+	.ddr_dfs		= 0,
 	.log_mask		= (1U << KIR_GPU),
 
 	.late_init_opp_done	= 0,
@@ -1180,7 +1180,7 @@ static int init_vcorefs_pwrctrl(void)
 
 	mutex_lock(&vcorefs_mutex);
 	pwrctrl->curr_vcore_uv = get_vcore_uv();
-	BUG_ON(pwrctrl->curr_vcore_uv == 0);
+	/* BUG_ON(pwrctrl->curr_vcore_uv == 0); */
 
 	pwrctrl->curr_ddr_khz = get_ddr_khz();
 
