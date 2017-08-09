@@ -2621,6 +2621,10 @@ static int set_cur_volt_extbuck(struct mt_cpu_dvfs *p, unsigned int volt)
 
 	FUNC_ENTER(FUNC_LV_LOCAL);
 
+	/* For avoiding i2c violation during suspend */
+	if (p->dvfs_disable_by_suspend)
+		return ret;
+
 	aee_record_cpu_volt(p, volt);
 
 	now[SET_VOLT] = ktime_get();
