@@ -179,6 +179,9 @@ extern void update_cpu_load_nohz(void);
 extern unsigned long get_parent_ip(unsigned long addr);
 
 extern void dump_cpu_task(int cpu);
+#ifdef CONFIG_SCHED_DEBUG
+extern void sysrq_sched_debug_show(void);
+#endif
 
 struct seq_file;
 struct cfs_rq;

@@ -686,6 +686,8 @@ void init_task_runnable_average(struct task_struct *p)
 	p->se.avg.runnable_avg_sum = slice;
 	p->se.avg.runnable_avg_period = slice;
 	__update_task_entity_contrib(&p->se);
+	/* sched: add trace_sched */
+	trace_sched_task_entity_avg(0, p, &p->se.avg);
 }
 #else
 void init_task_runnable_average(struct task_struct *p)
@@ -2554,8 +2556,11 @@ static inline void update_entity_load_avg(struct sched_entity *se,
 	else
 		now = cfs_rq_clock_task(group_cfs_rq(se));
 
-	if (!__update_entity_runnable_avg(now, &se->avg, se->on_rq))
+	if (!__update_entity_runnable_avg(now, &se->avg, se->on_rq)) {
+		/* sched: add trace_sched */
+		trace_sched_task_entity_avg(2, task_of(se), &se->avg);
 		return;
+	}
 
 	contrib_delta = __update_entity_load_avg_contrib(se);
 
@@ -4585,6 +4590,19 @@ static int mt_select_task_rq_fair(struct task_struct *p, int prev_cpu)
 }
 #endif
 
+#ifdef CONFIG_MTK_SCHED_TRACERS
+#define LB_RESET		0
+#define LB_AFFINITY		0x10
+#define LB_BUDDY		0x20
+#define LB_FORK			0x30
+#define LB_CMP_SHIFT	8
+#define LB_CMP			0x4000
+#define LB_SMP_SHIFT	16
+#define LB_SMP			0x500000
+#define LB_HMP_SHIFT	24
+#define LB_HMP			0x60000000
+#endif
+
 /*
  * select_task_rq_fair: Select target runqueue for the waking task in domains
  * that have the 'sd_flag' flag set. In practice, this is SD_BALANCE_WAKE,
@@ -4609,8 +4627,16 @@ select_task_rq_fair(struct task_struct *p, int prev_cpu, int sd_flag, int wake_f
 	int prefer_cpu;
 #endif
 
-	if (p->nr_cpus_allowed == 1)
+#ifdef CONFIG_MTK_SCHED_TRACERS
+	int policy = 0;
+#endif
+
+	if (p->nr_cpus_allowed == 1) {
+#ifdef CONFIG_MTK_SCHED_TRACERS
+		trace_sched_select_task_rq(p, (LB_AFFINITY | prev_cpu), prev_cpu, prev_cpu);
+#endif
 		return prev_cpu;
+	}
 
 	if (sd_flag & SD_BALANCE_WAKE)
 		want_affine = cpumask_test_cpu(cpu, tsk_cpus_allowed(p));
@@ -4702,12 +4728,21 @@ select_task_rq_fair(struct task_struct *p, int prev_cpu, int sd_flag, int wake_f
 		}
 		/* while loop will break here if sd == NULL */
 	}
+
+#ifdef CONFIG_MTK_SCHED_TRACERS
+	policy |= (new_cpu << LB_SMP_SHIFT);
+	policy |= LB_SMP;
+#endif
+
 unlock:
 	rcu_read_unlock();
 	mt_sched_printf(sched_log, "wakeup %d %s new_cpu=%x", p->pid, p->comm, new_cpu);
 
 #if defined(CONFIG_MT_SCHED_INTEROP)
 mt_found:
+#endif
+#ifdef CONFIG_MTK_SCHED_TRACERS
+	trace_sched_select_task_rq(p, policy, prev_cpu, new_cpu);
 #endif
 	return new_cpu;
 }
@@ -5537,6 +5572,9 @@ static int detach_tasks(struct lb_env *env)
 	if (env->imbalance <= 0)
 		return 0;
 
+	/* sched: add trace_sched */
+	mt_sched_printf(sched_log, "move_tasks start ");
+
 	while (!list_empty(tasks)) {
 		p = list_first_entry(tasks, struct task_struct, se.group_node);
 
@@ -5597,6 +5635,8 @@ next:
 	 * than inside detach_one_task().
 	 */
 	schedstat_add(env->sd, lb_gained[env->idle], detached);
+	/* sched: add trace_sched */
+	mt_sched_printf(sched_log, "move_tasks end");
 
 	return detached;
 }

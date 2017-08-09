@@ -420,6 +420,8 @@ struct rt_rq {
 	int rt_queued;
 
 	int rt_throttled;
+	/* sched:  prevent normal task could run anymore */
+	int rt_disable_borrow;
 	u64 rt_time;
 	u64 rt_runtime;
 	/* Nests inside the rq lock: */
@@ -1198,7 +1200,6 @@ static inline struct cpuidle_state *idle_get_state(struct rq *rq)
 }
 #endif
 
-extern void sysrq_sched_debug_show(void);
 extern void sched_init_granularity(void);
 extern void update_max_interval(void);
 
@@ -1569,3 +1570,19 @@ static inline u64 irq_time_read(int cpu)
 }
 #endif /* CONFIG_64BIT */
 #endif /* CONFIG_IRQ_TIME_ACCOUNTING */
+
+/* sched:  add for print ke log */
+#ifdef CONFIG_SMP
+static inline int rq_cpu(const struct rq *rq) { return rq->cpu; }
+#else
+static inline int rq_cpu(const struct rq *rq) { return 0; }
+#endif
+
+#ifdef TEST_SCHED_DEBUG_ENHANCEMENT
+extern void lock_timekeeper(void);
+#endif
+
+#ifdef CONFIG_SCHED_DEBUG
+extern void print_rt_rq(struct seq_file *m, int cpu, struct rt_rq *rt_rq);
+#endif /* CONFIG_SCHED_DEBUG */
+

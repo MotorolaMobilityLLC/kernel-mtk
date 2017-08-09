@@ -24,3 +24,115 @@ config MT_CPU_AFFINITY
 	  Linux design.
 
 endmenu
+
+menu "MT load balance and schedule enhancement"
+config MT_LOAD_BALANCE_ENHANCEMENT
+	bool "mt load balance enhancement"
+	depends on SMP
+	default n
+	help
+	   Mediatek aggressive load balance, include 1. wake up load balance,
+	   2. shorten the schedule migration cost and let the idle balance more aggregative,
+	   3. force ignore the cache hot when current rq is idle and src cpu have more
+	   than 2 tasks,
+	   4. migrate heavy load_weight task as long as RT tasks exist in busy cpu
+	   5. when move tasks fil, force migration no matter cache-hot,
+	   use mt_ignore_cachehot_in_idle.
+
+config MT_RT_SCHED
+	bool "mt RT scheduling enhancement for big.LITTLE"
+	depends on SCHED_HMP
+	default n
+	help
+	   Mediatek big.LITTLE MP Scheduling for RT-class. Linux big.LITTLE MP Scheduling
+	   for RT-class don’t aware the different processor power (A15/A7). That would
+	   lead to priority inversion. We want to provide a solution to solve above problem
+	   and let the user experience, and system performance  to achieve the best condition
+	   under the consideration with power-saving and following the policy of hotplug and
+	   DVFS (do not UP processor forcedly).
+
+config MTK_COMPAT
+	bool "mt fast mode switching enhancement"
+	depends on COMPAT
+	default n
+	help
+	   Current design will save/restore all registers in mode switching.
+	   However, when kernel layer is 64-bits and application layer is 32 bits,
+	   the 32-bits application use a part of registers.
+	   Save/restore all register will consume CPU cycles.
+	   To avoid the unnecessary save/restore registers behavior,
+	   we propose fast mode switching method to optimize the mode switching
+
+config MT_SCHED_INTEROP
+	bool "mtk scheduling interopation enhancement"
+	default n
+	help
+	   Original Linux Design, RT & CFS do load balance seperatedly,
+	   and let would result in unload balance.
+	   that is, one CPU has more than 2 tasks, however, one CPU is IDLE
+	   We make RT & CFS to check each other and make load more balance.
+
+config MT_SCHED_TRACE
+	bool "mt scheduling trace, output mtk schedule trace into FTRACE"
+	default n
+	help
+	   Provide RT info via ftrace,
+	   mt_sched_printf for scheduling module to output info and
+	   RT scheduling info to ftrace,
+	   including select_task_rq, check_preempt, find_lowest_rq.
+	   Say no if not sure.
+
+config MT_SCHED_DEBUG
+	bool "mt scheduling log, also output the scheduling log into Kernel log"
+	depends on MT_SCHED_TRACE
+	default n
+	help
+	   MTK scheduling log, add scheduling log into Kernel log.
+	   Including print scheduler debug information at KE and print load balance
+	   information at kernel log.
+	   Say no if not sure.
+
+config MT_DEBUG_PREEMPT
+	bool "debug preempt, output the preempt enable/disable to FTRACE"
+	default n
+	help
+	   Provide preempt debug.
+	   Dump preempt disable/enable backtrace into ftrace.
+	   Dump preempt count in kernel log.
+	   Say no if not sure.
+
+endmenu
+
+menu "MTK Cluster MultiProcessor Scheduler"
+config MTK_SCHED_CMP
+	bool "Enable CMP scheduler"
+	depends on SMP && SCHED_MC
+	default n
+	help
+	   CMP Scheduler Enhancement for MTK SoC.
+	   Attempts to introspectively select tasks to optimize
+	   energy and performance.
+	   say no if not sure.
+
+config MTK_SCHED_CMP_TGS
+	bool "Enable thread group scheduling"
+	depends on MTK_SCHED_CMP
+	default n
+	help
+	   CMP Scheduler Enhancement for MTK SoC.
+	   To utilize the nature of tasks in the same thread group, which  eager
+	   to share data (pages) essentially. Balance the same parent’s tasks to
+	   the same CPU cluster Would get improvement with L2-cache Read-Hit/Miss
+	   and Write.
+
+config MTK_SCHED_CMP_TGS_WAKEUP
+	bool "Enable thread group scheduling"
+	depends on MTK_SCHED_CMP_TGS
+	default n
+	help
+	   CMP Scheduler Enhancement for MTK SoC.
+	   If the wakeup task is single thread, it will try to find idlest group
+	   and find idlest CPU. Else if the wakeup task has thread group, prefer
+	   the cluster which has idle CPU with most tasks in the same thread group.
+
+endmenu

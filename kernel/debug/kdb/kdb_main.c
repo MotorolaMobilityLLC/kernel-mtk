@@ -1140,7 +1140,10 @@ static int kdb_local(kdb_reason_t reason, int error, struct pt_regs *regs,
 	int diag;
 	struct task_struct *kdb_current =
 		kdb_curr_task(raw_smp_processor_id());
-
+#ifdef CONFIG_SCHED_DEBUG
+	get_cpu_var(kdb_in_use) = 1;
+	put_cpu_var(kdb_in_use);
+#endif
 	KDB_DEBUG_STATE("kdb_local 1", reason);
 	kdb_go_count = 0;
 	if (reason == KDB_REASON_DEBUG) {
@@ -1302,6 +1305,10 @@ do_full_getstr:
 			kdb_cmderror(diag);
 	}
 	KDB_DEBUG_STATE("kdb_local 9", diag);
+#ifdef CONFIG_SCHED_DEBUG
+	get_cpu_var(kdb_in_use) = 0;
+	put_cpu_var(kdb_in_use);
+#endif
 	return diag;
 }
 
