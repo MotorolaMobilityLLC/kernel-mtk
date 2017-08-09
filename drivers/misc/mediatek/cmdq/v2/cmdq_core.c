@@ -39,6 +39,7 @@
 #else
 #include <mach/mt_reg_base.h>
 #endif
+#include <mt-plat/mt_lpae.h>
 
 /* #define CMDQ_PROFILE_COMMAND_TRIGGER_LOOP */
 /* #define CMDQ_APPEND_WITHOUT_SUSPEND */
@@ -1996,6 +1997,7 @@ static void cmdq_core_insert_backup_instr(TaskStruct *pTask,
 {
 	uint32_t argA;
 	int32_t subsysCode;
+	uint32_t highAddr = 0;
 
 	/* register to read from */
 	/* note that we force convert to physical reg address. */
@@ -2029,10 +2031,9 @@ static void cmdq_core_insert_backup_instr(TaskStruct *pTask,
 	/* Note that <MOVE> argB is 48-bit */
 	/* so writeAddress is split into 2 parts */
 	/* and we store address in 64-bit GPR (P0-P7) */
+	CMDQ_GET_HIGH_ADDR(writeAddress, highAddr);
 	cmdq_core_append_command(pTask, (CMDQ_CODE_MOVE << 24) |
-#ifdef CONFIG_ARCH_DMA_ADDR_T_64BIT
-				 ((writeAddress >> 32) & 0xffff) |
-#endif
+				 highAddr |
 				 ((destRegId & 0x1f) << 16) | (4 << 21), (uint32_t) writeAddress);
 
 	/* CMDQ_ERR("test %d\n", __LINE__); */

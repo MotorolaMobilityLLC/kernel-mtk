@@ -1,6 +1,7 @@
 #include <linux/slab.h>
 #include <linux/errno.h>
 #include <linux/memory.h>
+#include <mt-plat/mt_lpae.h>
 
 #include "cmdq_record.h"
 #include "cmdq_core.h"
@@ -784,6 +785,7 @@ int32_t cmdqRecBackupRegisterToSlot(cmdqRecHandle handle,
 	const CMDQ_DATA_REGISTER_ENUM destRegId = CMDQ_DATA_REG_DEBUG_DST;
 	const CMDQ_EVENT_ENUM regAccessToken = CMDQ_SYNC_TOKEN_GPR_SET_4;
 	const dma_addr_t dramAddr = hBackupSlot + slotIndex * sizeof(uint32_t);
+	uint32_t highAddr = 0;
 
 	/* lock GPR because we may access it in multiple CMDQ HW threads */
 	cmdqRecWait(handle, regAccessToken);
@@ -794,10 +796,9 @@ int32_t cmdqRecBackupRegisterToSlot(cmdqRecHandle handle,
 	/* Note that <MOVE> argB is 48-bit */
 	/* so writeAddress is split into 2 parts */
 	/* and we store address in 64-bit GPR (P0-P7) */
+	CMDQ_GET_HIGH_ADDR(dramAddr, highAddr);
 	cmdq_append_command(handle, CMDQ_CODE_MOVE,
-#ifdef CONFIG_ARCH_DMA_ADDR_T_64BIT
-			    ((dramAddr >> 32) & 0xffff) |
-#endif
+			    highAddr |
 			    ((destRegId & 0x1f) << 16) | (4 << 21), (uint32_t) dramAddr, 0, 0);
 
 	/* write value in GPR to memory pointed by GPR */
@@ -822,6 +823,7 @@ int32_t cmdqRecBackupWriteRegisterFromSlot(cmdqRecHandle handle,
 	const CMDQ_DATA_REGISTER_ENUM addrRegId = CMDQ_DATA_REG_DEBUG_DST;
 	const CMDQ_EVENT_ENUM regAccessToken = CMDQ_SYNC_TOKEN_GPR_SET_4;
 	const dma_addr_t dramAddr = hBackupSlot + slotIndex * sizeof(uint32_t);
+	uint32_t highAddr = 0;
 
 	/* lock GPR because we may access it in multiple CMDQ HW threads */
 	cmdqRecWait(handle, regAccessToken);
@@ -831,10 +833,9 @@ int32_t cmdqRecBackupWriteRegisterFromSlot(cmdqRecHandle handle,
 	/* Note that <MOVE> argB is 48-bit */
 	/* so writeAddress is split into 2 parts */
 	/* and we store address in 64-bit GPR (P0-P7) */
+	CMDQ_GET_HIGH_ADDR(dramAddr, highAddr);
 	cmdq_append_command(handle, CMDQ_CODE_MOVE,
-#ifdef CONFIG_ARCH_DMA_ADDR_T_64BIT
-			    ((dramAddr >> 32) & 0xffff) |
-#endif
+			    highAddr |
 			    ((addrRegId & 0x1f) << 16) | (4 << 21), (uint32_t) dramAddr, 0, 0);	/* argA is GPR */
 
 	/* 2. read value from src address, which is stroed in GPR, to valueRegId */
@@ -863,6 +864,7 @@ int32_t cmdqRecBackupUpdateSlot(cmdqRecHandle handle,
 	const CMDQ_EVENT_ENUM regAccessToken = CMDQ_SYNC_TOKEN_GPR_SET_4;
 	const dma_addr_t dramAddr = hBackupSlot + slotIndex * sizeof(uint32_t);
 	uint32_t argA;
+	uint32_t highAddr = 0;
 
 	/* lock GPR because we may access it in multiple CMDQ HW threads */
 	cmdqRecWait(handle, regAccessToken);
@@ -874,10 +876,9 @@ int32_t cmdqRecBackupUpdateSlot(cmdqRecHandle handle,
 	/* Note that <MOVE> argB is 48-bit */
 	/* so writeAddress is split into 2 parts */
 	/* and we store address in 64-bit GPR (P0-P7) */
+	CMDQ_GET_HIGH_ADDR(dramAddr, highAddr);
 	cmdq_append_command(handle, CMDQ_CODE_MOVE,
-#ifdef CONFIG_ARCH_DMA_ADDR_T_64BIT
-			    ((dramAddr >> 32) & 0xffff) |
-#endif
+			    highAddr |
 			    ((destRegId & 0x1f) << 16) | (4 << 21), (uint32_t) dramAddr, 0, 0);
 
 	/* write value in GPR to memory pointed by GPR */

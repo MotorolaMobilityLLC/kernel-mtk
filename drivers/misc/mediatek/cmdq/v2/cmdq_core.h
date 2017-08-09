@@ -26,6 +26,18 @@
 /*  */
 #define CMDQ_PHYS_TO_AREG(addr) ((addr) & 0xFFFFFFFF)	/* truncate directly */
 #define CMDQ_AREG_TO_PHYS(addr) ((addr) | 0L)
+/* Always set 33 bit to 1 under 4GB special mode */
+#ifdef CONFIG_ARCH_DMA_ADDR_T_64BIT
+#define CMDQ_GET_HIGH_ADDR(addr, highAddr) \
+{									\
+if (enable_4G())					\
+	highAddr = 0x1;					\
+else								\
+	highAddr = ((addr >> 32) & 0xffff);\
+}
+#else
+#define CMDQ_GET_HIGH_ADDR(addr, highAddr) { highAddr = 0; }
+#endif
 
 #define CMDQ_LONGSTRING_MAX (180)
 #define CMDQ_DELAY_RELEASE_RESOURCE_MS (1000)
