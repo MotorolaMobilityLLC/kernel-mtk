@@ -29,7 +29,7 @@ config FPGA_CA7
 
 config MTK_PSCI
 	bool "MT6752 PSCI boot method"
-	depends on (ARCH_MT6580 || ARCH_MT6735 || ARCH_MT6735M || ARCH_MT6753)
+	depends on (ARCH_MT6580 || ARCH_MT6735 || ARCH_MT6735M || ARCH_MT6753 || ARCH_MT8173)
 	default n
 	help
 	  Select if you want to enable PSCI boot method on MTK platform.
