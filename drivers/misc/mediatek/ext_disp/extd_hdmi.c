@@ -1300,11 +1300,12 @@ int hdmi_get_dev_info(int is_sf, void *info)
 			hdmi_params->is_3d_support = 1;
 
 		dispif_info->is3DSupport = hdmi_params->is_3d_support;
-
+/*
 		HDMI_LOG("DEV_INFO configuration get displayType-%d, HDMI support version:%u, 3d support %d\n",
 			dispif_info->displayType, dispif_info->isHDCPSupported, dispif_info->is3DSupport);
 		HDMI_LOG("DEV_INFO configuration displayHeight:%u, displayWidth:%u\n",
 			dispif_info->displayHeight, dispif_info->displayWidth);
+*/
 	}
 
 	return ret;
