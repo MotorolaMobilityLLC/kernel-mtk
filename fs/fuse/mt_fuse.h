@@ -1,18 +1,34 @@
-#ifndef ___FUSE_H___
-#define ___FUSE_H___
+/*
+  FUSE: file io log
+  Copyright (C) 2015 Perry Hsu <perry.hsu@mediatek.com>
+
+  This program can be distributed under the terms of the GNU GPL.
+  See the file COPYING.
+*/
+#ifndef _FS_MT_FUSE_H
+#define _FS_MT_FUSE_H
+
+#include <linux/fuse.h>
+#include <linux/fs.h>
+
 void fuse_request_send_background_ex(struct fuse_conn *fc,
 	struct fuse_req *req, __u32 size);
 void fuse_request_send_ex(struct fuse_conn *fc, struct fuse_req *req,
 	__u32 size);
 
 #if defined(CONFIG_FUSE_IO_LOG)  /* IO log is only enabled in eng load */
-#define FUSEIO_TRACE
-#endif
 
-
-#ifdef FUSEIO_TRACE
 #include <linux/sched.h>
 #include <linux/kthread.h>
+
+/* max number of access traces in one log */
+#define FUSE_IOLOG_MAX     12
+/* kernel log print buffer size */
+#define FUSE_IOLOG_BUFLEN  512
+/* latency time between logs */
+#define FUSE_IOLOG_LATENCY 1
+/* max number of logs in the ring buffer */
+#define FUSE_IOLOG_RINGBUF_MAX 120
 
 void fuse_time_diff(struct timespec *start,
 	struct timespec *end,
@@ -28,12 +44,14 @@ __u32 fuse_iolog_timeus_diff(struct timespec *start,
 void fuse_iolog_exit(void);
 void fuse_iolog_init(void);
 
+/* access trace statistic */
 struct fuse_rw_info {
 	__u32  count;
 	__u32  bytes;
 	__u32  us;
 };
 
+/* access trace */
 struct fuse_proc_info {
 	pid_t pid;
 	__u32 valid;
@@ -43,15 +61,18 @@ struct fuse_proc_info {
 	struct fuse_rw_info misc;
 };
 
+/* data container for timing macros */
 struct fuse_iolog_t {
 	struct timespec _tstart, _tend;
 	__u32 size;
 	unsigned int opcode;
 };
 
-#define FUSE_IOLOG_MAX     12
-#define FUSE_IOLOG_BUFLEN  512
-#define FUSE_IOLOG_LATENCY 1
+/* log entry of ring buffer */
+struct fuse_proc_log {
+	uint64_t time;
+	struct fuse_proc_info info[FUSE_IOLOG_MAX];
+};
 
 #define FUSE_IOLOG_INIT(iobytes, type)   struct fuse_iolog_t _iolog = { .size = iobytes, .opcode = type }
 #define FUSE_IOLOG_START()  get_monotonic_boottime(&_iolog._tstart)
@@ -71,3 +92,4 @@ struct fuse_iolog_t {
 #endif
 
 #endif
+
