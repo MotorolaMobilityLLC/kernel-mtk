@@ -1684,23 +1684,6 @@ pick_next_task_rt(struct rq *rq, struct task_struct *prev)
 			}
 		}
 
-		/*sched: prevent hps_main from RT throttle */
-		idx = 2;
-		prio = MAX_RT_PRIO - 1 - idx;
-		if (test_bit(idx, array->bitmap)) {
-			list_for_each_entry(rt_se, array->queue + idx, run_list) {
-				p = rt_task_of(rt_se);
-				if ((p->rt_priority == prio) && (0 == strncmp(p->comm, "hps_main", 8))) {
-					p->se.exec_start = rq->clock_task;
-					if (prev != p) {
-						printk_deferred("sched: unthrottle %d:%s state=%lu\n",
-							p->pid, p->comm, p->state);
-					}
-					goto found;
-				}
-			}
-		}
-
 		return NULL;
 	}
 found:
