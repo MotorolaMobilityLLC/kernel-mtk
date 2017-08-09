@@ -256,8 +256,10 @@ static kal_int32 Previous_Hw_cur;
 static snd_pcm_uframes_t mtk_capture_pcm_pointer(struct snd_pcm_substream
 						 *substream)
 {
+#if 0
 	kal_int32 HW_memory_index = 0;
 	kal_int32 HW_Cur_ReadIdx = 0;
+#endif
 	snd_pcm_uframes_t return_frames;
 	AFE_BLOCK_T *Awb_Block = &(TDM_VUL_Control_context->rBlock);
 
@@ -267,7 +269,7 @@ static snd_pcm_uframes_t mtk_capture_pcm_pointer(struct snd_pcm_substream
 
 		Previous_Hw_cur = Awb_Block->u4WriteIdx;
 		return Awb_Block->u4WriteIdx >> 2;
-
+#if 0
 		HW_Cur_ReadIdx = Afe_Get_Reg(AFE_AWB_CUR);
 		if (HW_Cur_ReadIdx == 0) {
 			PRINTK_AUD_UL1("[Auddrv] mtk_capture_pcm_pointer  HW_Cur_ReadIdx ==0\n");
@@ -280,6 +282,7 @@ static snd_pcm_uframes_t mtk_capture_pcm_pointer(struct snd_pcm_substream
 		TDM_VUL_Control_context->interruptTrigger = 0;
 		return_frames = (HW_memory_index >> 2);
 		return return_frames;
+#endif
 	}
 	return_frames = (Previous_Hw_cur >> 2);
 	return return_frames;
