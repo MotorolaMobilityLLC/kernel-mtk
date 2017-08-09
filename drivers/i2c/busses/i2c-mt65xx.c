@@ -135,6 +135,7 @@ struct mtk_i2c_compatible {
 	unsigned char pmic_i2c: 1;
 	unsigned char dcm: 1;
 	unsigned char auto_restart: 1;
+	unsigned char aux_len_reg: 1;
 	unsigned char support_33bits: 1;
 };
 
@@ -157,6 +158,7 @@ struct mtk_i2c {
 	enum mtk_trans_op op;
 	u16 timing_reg;
 	u16 high_speed_reg;
+	unsigned char auto_restart;
 	const struct mtk_i2c_compatible *dev_comp;
 };
 
@@ -182,6 +184,7 @@ static const struct mtk_i2c_compatible mt6577_compat = {
 	.pmic_i2c = 0,
 	.dcm = 1,
 	.auto_restart = 0,
+	.aux_len_reg = 0,
 	.support_33bits = 0,
 };
 
@@ -190,6 +193,7 @@ static const struct mtk_i2c_compatible mt6589_compat = {
 	.pmic_i2c = 1,
 	.dcm = 0,
 	.auto_restart = 0,
+	.aux_len_reg = 0,
 	.support_33bits = 0,
 };
 
@@ -198,6 +202,7 @@ static const struct mtk_i2c_compatible mt8173_compat = {
 	.pmic_i2c = 0,
 	.dcm = 1,
 	.auto_restart = 1,
+	.aux_len_reg = 1,
 	.support_33bits = 1,
 };
 
@@ -380,7 +385,7 @@ static int mtk_i2c_do_transfer(struct mtk_i2c *i2c, struct i2c_msg *msgs,
 
 	i2c->irq_stat = 0;
 
-	if (i2c->dev_comp->auto_restart)
+	if (i2c->auto_restart)
 		restart_flag = I2C_RS_TRANSFER;
 
 	reinit_completion(&i2c->msg_complete);
@@ -418,8 +423,14 @@ static int mtk_i2c_do_transfer(struct mtk_i2c *i2c, struct i2c_msg *msgs,
 
 	/* Set transfer and transaction len */
 	if (i2c->op == I2C_MASTER_WRRD) {
+		if (i2c->dev_comp->aux_len_reg) {
+			writew(msgs->len, i2c->base + OFFSET_TRANSFER_LEN);
+			writew((msgs + 1)->len, i2c->base +
+			       OFFSET_TRANSFER_LEN_AUX);
+		} else {
 		writew(msgs->len | ((msgs + 1)->len) << 8,
 		       i2c->base + OFFSET_TRANSFER_LEN);
+		}
 		writew(I2C_WRRD_TRANAC_VALUE, i2c->base + OFFSET_TRANSAC_LEN);
 	} else {
 		writew(msgs->len, i2c->base + OFFSET_TRANSFER_LEN);
@@ -497,7 +508,7 @@ static int mtk_i2c_do_transfer(struct mtk_i2c *i2c, struct i2c_msg *msgs,
 
 	writel(I2C_DMA_START_EN, i2c->pdmabase + OFFSET_EN);
 
-	if (!i2c->dev_comp->auto_restart) {
+	if (!i2c->auto_restart) {
 		start_reg = I2C_TRANSAC_START;
 	} else {
 		start_reg = I2C_TRANSAC_START | I2C_RS_MUL_TRIG;
@@ -554,6 +565,16 @@ static int mtk_i2c_transfer(struct i2c_adapter *adap,
 	if (ret)
 		return ret;
 
+	i2c->auto_restart = i2c->dev_comp->auto_restart;
+
+	/* checking if we can skip restart and optimize using WRRD mode */
+	if (i2c->auto_restart && num == 2) {
+		if (!(msgs[0].flags & I2C_M_RD) && (msgs[1].flags & I2C_M_RD) &&
+		    msgs[0].addr == msgs[1].addr) {
+			i2c->auto_restart = 0;
+		}
+	}
+
 	while (left_num--) {
 		if (!msgs->buf) {
 			dev_dbg(i2c->dev, "data buffer is NULL.\n");
@@ -566,7 +587,7 @@ static int mtk_i2c_transfer(struct i2c_adapter *adap,
 		else
 			i2c->op = I2C_MASTER_WR;
 
-		if (!i2c->dev_comp->auto_restart) {
+		if (!i2c->auto_restart) {
 			if (num > 1) {
 				/* combined two messages into one transaction */
 				i2c->op = I2C_MASTER_WRRD;
@@ -594,7 +615,7 @@ static irqreturn_t mtk_i2c_irq(int irqno, void *dev_id)
 	struct mtk_i2c *i2c = dev_id;
 	u16 restart_flag = 0;
 
-	if (i2c->dev_comp->auto_restart)
+	if (i2c->auto_restart)
 		restart_flag = I2C_RS_TRANSFER;
 
 	/* Clear interrupt mask */
