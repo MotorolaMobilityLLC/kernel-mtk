@@ -282,9 +282,9 @@ static imgsensor_info_struct imgsensor_info = {
 	.ae_shut_delay_frame = 0,
 	.ae_sensor_gain_delay_frame = 0,
 	.ae_ispGain_delay_frame = 2,
-	.ihdr_support = 1,	  //1, support; 0,not support
+	.ihdr_support = 0,	  //1, support; 0,not support
 	.ihdr_le_firstline = 0,  //1,le first ; 0, se first
-	.sensor_mode_num = 5,	  //support sensor mode num
+	.sensor_mode_num = 3,	  //support sensor mode num
 
 	.cap_delay_frame = 3,
 	.pre_delay_frame = 3,
@@ -292,7 +292,7 @@ static imgsensor_info_struct imgsensor_info = {
 	.hs_video_delay_frame = 2,
 	.slim_video_delay_frame = 2,
 
-	.isp_driving_current = ISP_DRIVING_2MA,
+	.isp_driving_current = ISP_DRIVING_6MA,
 	.sensor_interface_type = SENSOR_INTERFACE_TYPE_MIPI,
 	.mipi_sensor_type = MIPI_OPHY_NCSI2, //0,MIPI_OPHY_NCSI2;  1,MIPI_OPHY_CSI2
 	.mipi_settle_delay_mode = MIPI_SETTLEDELAY_AUTO,//0,MIPI_SETTLEDELAY_AUTO; 1,MIPI_SETTLEDELAY_MANNUAL
@@ -300,7 +300,7 @@ static imgsensor_info_struct imgsensor_info = {
 	.mclk = 24,
 	.mipi_lane_num = SENSOR_MIPI_4_LANE,
 	.i2c_addr_table = {0x20, 0x5A, 0xff},
-	.i2c_speed = 400, // i2c read/write speed
+	.i2c_speed = 300, // i2c read/write speed
 };
 
 
@@ -321,16 +321,11 @@ static imgsensor_struct imgsensor = {
 
 
 /* Sensor output window information */
-static SENSOR_WINSIZE_INFO_STRUCT imgsensor_winsize_info[5] =
-{{ 5343, 3007,	  8,   8, 5343, 3007, 2668,  1500, 0000, 0000, 2668, 1500, 0,	0, 2668,  1500}, // Preview
- { 5343, 3007,	  8,   8, 5343, 3007, 5336, 3000, 0000, 0000, 5336, 3000,	  0,	0, 5312, 3000}, // capture
- { 5343, 3007,	  8,   8, 5343, 3007, 5336, 3000, 0000, 0000, 5336, 3000,	  0,	0, 5312, 3000}, // video
- #ifdef SLOW_MOTION_120FPS
- { 5343, 3007,	  8,  12, 5319, 3003, 1328,  748, 0000, 0000, 1328,  748,	  0,	0, 1328,  748},// hight video 120
- #else
- { 5343, 3007,	  8,   8, 5343, 3007, 2668, 1500, 0000, 0000, 2668, 1500,	  0,	0, 2668, 1500}, //hight speed video
- #endif
- { 5343, 3007,	  8,  12, 5319, 3003, 1328,  748, 0000, 0000, 1328,  748,	  0,	0, 1328,  748}};// slim video
+static SENSOR_WINSIZE_INFO_STRUCT imgsensor_winsize_info[3] =
+{{ 5336, 3000,	  0,   0, 5336, 3000, 2668,  1500, 0000, 0000, 2668, 1500, 0,	0, 2668,  1500}, // Preview
+ { 5336, 3000,	  8,   8, 5336, 3000, 5336, 3000, 0000, 0000, 5336, 3000,	  0,	0, 5312, 3000}, // capture
+ { 5336, 3000,	  8,   8, 5336, 3000, 5336, 3000, 0000, 0000, 5336, 3000,	  0,	0, 5312, 3000}, // video
+};// slim video
 static SET_PD_BLOCK_INFO_T imgsensor_pd_info =
 {
     .i4OffsetX =  8,
@@ -2567,6 +2562,7 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 		spin_unlock(&imgsensor_drv_lock);
 		do {
             *sensor_id = read_cmos_sensor(0x0000) ;
+
             /*PDAF module ID = 0x2102*/
 			if ((*sensor_id == imgsensor_info.sensor_id) || (*sensor_id == 0x2102)) {
 				LOG_INF("i2c write id: 0x%x, sensor id: 0x%x\n", imgsensor.i2c_write_id,*sensor_id);
@@ -2578,11 +2574,20 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 		i++;
 		retry = 2;
 	}
-	if ((*sensor_id == imgsensor_info.sensor_id) || (*sensor_id == 0x2102)) {
-		// if Sensor ID is not correct, Must set *sensor_id to 0xFFFFFFFF
+#if 1
+	if (*sensor_id != imgsensor_info.sensor_id) {
+		// if Sensor ID is not correct, Must set *sensor_id to 0xFFFFFFFF 
 		*sensor_id = 0xFFFFFFFF;
 		return ERROR_SENSOR_CONNECT_FAIL;
 	}
+#else
+	if (*sensor_id != imgsensor_info.sensor_id) {
+		// if Sensor ID is not correct, Must set *sensor_id to 0xFFFFFFFF 
+		*sensor_id = S5K2P8_SENSOR_ID;
+		LOG_INF("Read sensor id fail");
+		return ERROR_NONE;
+	}
+#endif
 	return ERROR_NONE;
 }
 
@@ -2900,7 +2905,7 @@ static kal_uint32 get_info(MSDK_SCENARIO_ID_ENUM scenario_id,
 	sensor_info->IHDR_Support = imgsensor_info.ihdr_support;
 	sensor_info->IHDR_LE_FirstLine = imgsensor_info.ihdr_le_firstline;
 	sensor_info->SensorModeNum = imgsensor_info.sensor_mode_num;
-	sensor_info->PDAF_Support = 1;
+	sensor_info->PDAF_Support = 0;
 	sensor_info->SensorMIPILaneNumber = imgsensor_info.mipi_lane_num;
 	sensor_info->SensorClockFreq = imgsensor_info.mclk;
 	sensor_info->SensorClockDividCount = 3; /* not use */
