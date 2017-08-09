@@ -139,6 +139,8 @@ static int mtk_uldlloopbackpcm_close(struct snd_pcm_substream *substream)
 	pr_warn("%s\n", __func__);
 	if (substream->stream == SNDRV_PCM_STREAM_CAPTURE) {
 		pr_err("%s  with SNDRV_PCM_STREAM_CAPTURE\n", __func__);
+		AudDrv_ADC_Clk_Off();
+		AudDrv_Clk_Off();
 		return 0;
 	}
 
