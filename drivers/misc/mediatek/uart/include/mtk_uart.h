@@ -97,6 +97,7 @@ struct mtk_uart_setting {
 	u8 hw_flow;		/*support hardware flow control or not?! */
 	u8 vff;			/*support vfifo or not!? */
 	u16 _align;
+	bool support_33bits;
 };
 /*---------------------------------------------------------------------------*/
 #define C_UART_DEBUG_BUF_NUM (5)

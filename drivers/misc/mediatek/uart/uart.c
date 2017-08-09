@@ -1134,7 +1134,7 @@ static int mtk_uart_vfifo_delete(struct mtk_uart *uart)
 	for (idx = uart->nport * 2; idx < uart->nport * 2 + 2; idx++) {
 		vfifo = &mtk_uart_vfifo_port[idx];
 		if (vfifo->addr)
-			dma_free_coherent(NULL, vfifo->size, vfifo->addr, vfifo->dmahd);
+			dma_free_coherent(uart->port.dev, vfifo->size, vfifo->addr, vfifo->dmahd);
 		mtk_uart_vfifo_del_dbgbuf(vfifo);
 		MSG_RAW("[%2d] %p (%04d) ;", idx, vfifo->addr, vfifo->size);
 		vfifo->addr = NULL;
@@ -2358,9 +2358,15 @@ static int mtk_uart_probe(struct platform_device *pdev)
 	pr_debug("[UART][PinC]mtk_uart_probe CONFIG_MTK_LEGACY or CONFIG_MTK_FPGA is defined!\n");
 #endif /* !defined(CONFIG_MTK_LEGACY) && !defined(CONFIG_MTK_FPGA) */
 
-	if (mtk_uart_plat_info_query("ADD_DMA_BIT_MASK_32"))
+	if (uart->setting->support_33bits) {
+		pdev->dev.coherent_dma_mask = DMA_BIT_MASK(33);
+		if (dma_set_mask(&pdev->dev, DMA_BIT_MASK(33))) {
+			dev_err(&pdev->dev, "dma_set_mask return error.\n");
+			return -EINVAL;
+		}
+	} else {
 		pdev->dev.coherent_dma_mask = DMA_BIT_MASK(32);
-
+	}
 	uart->port.dev = &pdev->dev;
 	err = uart_add_one_port(&mtk_uart_drv, &uart->port);
 	if (!err)
