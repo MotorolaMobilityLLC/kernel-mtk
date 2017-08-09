@@ -54,6 +54,11 @@
 	WAKE_SRC_CCIF0_MD | WAKE_SRC_CCIF1_MD | WAKE_SRC_CONN2AP | WAKE_SRC_USB_CD | \
 	WAKE_SRC_USB_PDN | WAKE_SRC_SEJ | WAKE_SRC_AFE | WAKE_SRC_CIRQ | WAKE_SRC_MD1_VRF18_WAKE | \
 	WAKE_SRC_SYSPWREQ | WAKE_SRC_MD_WDT | WAKE_SRC_C2K_WDT | WAKE_SRC_CLDMA_MD)
+#elif defined(CONFIG_ARCH_MT6580)
+#define WAKE_SRC_FOR_DPIDLE \
+	(WAKE_SRC_KP | WAKE_SRC_GPT | WAKE_SRC_EINT | WAKE_SRC_CONN_WDT| \
+	WAKE_SRC_CCIF0_MD | WAKE_SRC_CONN2AP | WAKE_SRC_USB_CD | WAKE_SRC_USB_PDN | \
+	WAKE_SRC_AFE | WAKE_SRC_SYSPWREQ | WAKE_SRC_MD1_WDT | WAKE_SRC_SEJ)
 #else
 #error "Does not support!"
 #endif
@@ -75,10 +80,10 @@ static unsigned long mcucfg_phys_base;
 #undef MCUCFG_BASE
 #define MCUCFG_BASE             (mcucfg_base)
 
-#else /* #if defined(CONFIG_OF) */
+#else				/* #if defined(CONFIG_OF) */
 #undef MCUCFG_BASE
 #define MCUCFG_BASE             0xF0200000
-#endif /* #if defined(CONFIG_OF) */
+#endif				/* #if defined(CONFIG_OF) */
 
 /* MCUCFG registers */
 #define MP0_AXI_CONFIG       (MCUCFG_BASE + 0x2C)
@@ -92,7 +97,7 @@ static unsigned long mcucfg_phys_base;
 #else
 #define MCUSYS_SMC_WRITE(addr, val)  mcusys_smc_write(addr, val)
 #endif
-#endif /* #if defined(CONFIG_ARCH_MT6753) */
+#endif				/* #if defined(CONFIG_ARCH_MT6753) */
 
 #ifdef CONFIG_MTK_RAM_CONSOLE
 #define SPM_AEE_RR_REC 1
@@ -104,7 +109,7 @@ static unsigned long mcucfg_phys_base;
 #define	REDUCE_DPIDLE_LOG		1
 #if REDUCE_DPIDLE_LOG
 #define	DPIDLE_LOG_PRINT_TIMEOUT_CRITERIA	20
-#define	DPIDLE_LOG_DISCARD_CRITERIA			5000 /* ms */
+#define	DPIDLE_LOG_DISCARD_CRITERIA			5000	/* ms */
 #endif
 
 #if SPM_AEE_RR_REC
@@ -281,41 +286,42 @@ static const u32 dpidle_binary[] = {
 	0x1910001f, 0x10001138, 0x1a00001f, 0x10006604, 0xe2200007, 0xf0000000,
 	0x17c07c1f
 };
+
 static struct pcm_desc dpidle_pcm = {
-	.version	= "pcm_deepidle_v28.10.10.1_20150420",
-	.base		= dpidle_binary,
-	.size		= 937,
-	.sess		= 2,
-	.replace	= 0,
-	.vec0		= EVENT_VEC(23, 1, 0, 0),	/* FUNC_MD_VRF18_WAKEUP */
-	.vec1		= EVENT_VEC(28, 1, 0, 36),	/* FUNC_MD_VRF18_SLEEP */
-	.vec2		= EVENT_VEC(11, 1, 0, 72),	/* FUNC_26M_WAKEUP */
-	.vec3		= EVENT_VEC(12, 1, 0, 87),	/* FUNC_26M_SLEEP */
-	.vec4		= EVENT_VEC(30, 1, 0, 108),	/* FUNC_APSRC_WAKEUP */
-	.vec5		= EVENT_VEC(31, 1, 0, 195),	/* FUNC_APSRC_SLEEP */
-	.vec6		= EVENT_VEC(11, 1, 0, 283),	/* FUNC_VCORE_HIGH */
-	.vec7		= EVENT_VEC(12, 1, 0, 310),	/* FUNC_VCORE_LOW */
+	.version = "pcm_deepidle_v28.10.10.1_20150420",
+	.base = dpidle_binary,
+	.size = 937,
+	.sess = 2,
+	.replace = 0,
+	.vec0 = EVENT_VEC(23, 1, 0, 0),	/* FUNC_MD_VRF18_WAKEUP */
+	.vec1 = EVENT_VEC(28, 1, 0, 36),	/* FUNC_MD_VRF18_SLEEP */
+	.vec2 = EVENT_VEC(11, 1, 0, 72),	/* FUNC_26M_WAKEUP */
+	.vec3 = EVENT_VEC(12, 1, 0, 87),	/* FUNC_26M_SLEEP */
+	.vec4 = EVENT_VEC(30, 1, 0, 108),	/* FUNC_APSRC_WAKEUP */
+	.vec5 = EVENT_VEC(31, 1, 0, 195),	/* FUNC_APSRC_SLEEP */
+	.vec6 = EVENT_VEC(11, 1, 0, 283),	/* FUNC_VCORE_HIGH */
+	.vec7 = EVENT_VEC(12, 1, 0, 310),	/* FUNC_VCORE_LOW */
 };
 
 static struct pwr_ctrl dpidle_ctrl = {
-	.wake_src		= WAKE_SRC_FOR_DPIDLE,
-	.wake_src_md32		= WAKE_SRC_FOR_MD32,
-	.r0_ctrl_en		= 1,
-	.r7_ctrl_en		= 1,
-	.infra_dcm_lock		= 1,
-	.wfi_op			= WFI_OP_AND,
-	.ca15_wfi0_en		= 1,
-	.ca15_wfi1_en		= 1,
-	.ca15_wfi2_en		= 1,
-	.ca15_wfi3_en		= 1,
-	.ca7_wfi0_en		= 1,
-	.ca7_wfi1_en		= 1,
-	.ca7_wfi2_en		= 1,
-	.ca7_wfi3_en		= 1,
-	.disp_req_mask		= 1,
-	.mfg_req_mask		= 1,
-	.lte_mask		= 1,
-	.syspwreq_mask		= 1,
+	.wake_src = WAKE_SRC_FOR_DPIDLE,
+	.wake_src_md32 = WAKE_SRC_FOR_MD32,
+	.r0_ctrl_en = 1,
+	.r7_ctrl_en = 1,
+	.infra_dcm_lock = 1,
+	.wfi_op = WFI_OP_AND,
+	.ca15_wfi0_en = 1,
+	.ca15_wfi1_en = 1,
+	.ca15_wfi2_en = 1,
+	.ca15_wfi3_en = 1,
+	.ca7_wfi0_en = 1,
+	.ca7_wfi1_en = 1,
+	.ca7_wfi2_en = 1,
+	.ca7_wfi3_en = 1,
+	.disp_req_mask = 1,
+	.mfg_req_mask = 1,
+	.lte_mask = 1,
+	.syspwreq_mask = 1,
 };
 #elif defined(CONFIG_ARCH_MT6735M)
 /*
@@ -480,42 +486,43 @@ static const u32 dpidle_binary[] = {
 	0x1910001f, 0x10001124, 0x1a00001f, 0x10006604, 0xe2200007, 0xf0000000,
 	0x17c07c1f
 };
+
 static struct pcm_desc dpidle_pcm = {
-	.version	= "pcm_deepidle_v0.5.10_20150408",
-	.base		= dpidle_binary,
-	.size		= 937,
-	.sess		= 2,
-	.replace	= 0,
-	.vec0		= EVENT_VEC(23, 1, 0, 0),	/* FUNC_MD_VRF18_WAKEUP */
-	.vec1		= EVENT_VEC(28, 1, 0, 36),	/* FUNC_MD_VRF18_SLEEP */
-	.vec2		= EVENT_VEC(11, 1, 0, 72),	/* FUNC_26M_WAKEUP */
-	.vec3		= EVENT_VEC(12, 1, 0, 88),	/* FUNC_26M_SLEEP */
-	.vec4		= EVENT_VEC(30, 1, 0, 109),	/* FUNC_APSRC_WAKEUP */
-	.vec5		= EVENT_VEC(31, 1, 0, 196),	/* FUNC_APSRC_SLEEP */
-	.vec6		= EVENT_VEC(11, 1, 0, 284),	/* FUNC_VCORE_HIGH */
-	.vec7		= EVENT_VEC(12, 1, 0, 311),	/* FUNC_VCORE_LOW */
+	.version = "pcm_deepidle_v0.5.10_20150408",
+	.base = dpidle_binary,
+	.size = 937,
+	.sess = 2,
+	.replace = 0,
+	.vec0 = EVENT_VEC(23, 1, 0, 0),	/* FUNC_MD_VRF18_WAKEUP */
+	.vec1 = EVENT_VEC(28, 1, 0, 36),	/* FUNC_MD_VRF18_SLEEP */
+	.vec2 = EVENT_VEC(11, 1, 0, 72),	/* FUNC_26M_WAKEUP */
+	.vec3 = EVENT_VEC(12, 1, 0, 88),	/* FUNC_26M_SLEEP */
+	.vec4 = EVENT_VEC(30, 1, 0, 109),	/* FUNC_APSRC_WAKEUP */
+	.vec5 = EVENT_VEC(31, 1, 0, 196),	/* FUNC_APSRC_SLEEP */
+	.vec6 = EVENT_VEC(11, 1, 0, 284),	/* FUNC_VCORE_HIGH */
+	.vec7 = EVENT_VEC(12, 1, 0, 311),	/* FUNC_VCORE_LOW */
 };
 
 static struct pwr_ctrl dpidle_ctrl = {
-	.wake_src		= WAKE_SRC_FOR_DPIDLE,
-	.wake_src_md32		= WAKE_SRC_FOR_MD32,
-	.r0_ctrl_en		= 1,
-	.r7_ctrl_en		= 1,
-	.infra_dcm_lock		= 1,
-	.wfi_op			= WFI_OP_AND,
-	.ca15_wfi0_en		= 1,
-	.ca15_wfi1_en		= 1,
-	.ca15_wfi2_en		= 1,
-	.ca15_wfi3_en		= 1,
-	.ca7_wfi0_en		= 1,
-	.ca7_wfi1_en		= 1,
-	.ca7_wfi2_en		= 1,
-	.ca7_wfi3_en		= 1,
-	.md2_req_mask		= 1,
-	.disp_req_mask		= 1,
-	.mfg_req_mask		= 1,
-	.lte_mask		= 1,
-	.syspwreq_mask		= 1,
+	.wake_src = WAKE_SRC_FOR_DPIDLE,
+	.wake_src_md32 = WAKE_SRC_FOR_MD32,
+	.r0_ctrl_en = 1,
+	.r7_ctrl_en = 1,
+	.infra_dcm_lock = 1,
+	.wfi_op = WFI_OP_AND,
+	.ca15_wfi0_en = 1,
+	.ca15_wfi1_en = 1,
+	.ca15_wfi2_en = 1,
+	.ca15_wfi3_en = 1,
+	.ca7_wfi0_en = 1,
+	.ca7_wfi1_en = 1,
+	.ca7_wfi2_en = 1,
+	.ca7_wfi3_en = 1,
+	.md2_req_mask = 1,
+	.disp_req_mask = 1,
+	.mfg_req_mask = 1,
+	.lte_mask = 1,
+	.syspwreq_mask = 1,
 };
 #elif defined(CONFIG_ARCH_MT6753)
 /*
@@ -692,44 +699,200 @@ static const u32 dpidle_binary[] = {
 };
 
 static struct pcm_desc dpidle_pcm = {
-	.version	= "pcm_deepidle_v0.2.5.6.1_20150605-add_more_delay",
-	.base		= dpidle_binary,
-	.size		= 998,
-	.sess		= 2,
-	.replace	= 0,
-	.vec0		= EVENT_VEC(23, 1, 0, 0),	/* FUNC_MD_VRF18_WAKEUP */
-	.vec1		= EVENT_VEC(28, 1, 0, 33),	/* FUNC_MD_VRF18_SLEEP */
-	.vec2		= EVENT_VEC(11, 1, 0, 66),	/* FUNC_26M_WAKEUP */
-	.vec3		= EVENT_VEC(12, 1, 0, 88),	/* FUNC_26M_SLEEP */
-	.vec4		= EVENT_VEC(30, 1, 0, 110),	/* FUNC_APSRC_WAKEUP */
-	.vec5		= EVENT_VEC(31, 1, 0, 197),	/* FUNC_APSRC_SLEEP */
-	.vec6		= EVENT_VEC(11, 1, 0, 285),	/* FUNC_VCORE_HIGH */
-	.vec7		= EVENT_VEC(12, 1, 0, 317),	/* FUNC_VCORE_LOW */
+	.version = "pcm_deepidle_v0.2.5.6.1_20150605-add_more_delay",
+	.base = dpidle_binary,
+	.size = 998,
+	.sess = 2,
+	.replace = 0,
+	.vec0 = EVENT_VEC(23, 1, 0, 0),	/* FUNC_MD_VRF18_WAKEUP */
+	.vec1 = EVENT_VEC(28, 1, 0, 33),	/* FUNC_MD_VRF18_SLEEP */
+	.vec2 = EVENT_VEC(11, 1, 0, 66),	/* FUNC_26M_WAKEUP */
+	.vec3 = EVENT_VEC(12, 1, 0, 88),	/* FUNC_26M_SLEEP */
+	.vec4 = EVENT_VEC(30, 1, 0, 110),	/* FUNC_APSRC_WAKEUP */
+	.vec5 = EVENT_VEC(31, 1, 0, 197),	/* FUNC_APSRC_SLEEP */
+	.vec6 = EVENT_VEC(11, 1, 0, 285),	/* FUNC_VCORE_HIGH */
+	.vec7 = EVENT_VEC(12, 1, 0, 317),	/* FUNC_VCORE_LOW */
 };
 
 static struct pwr_ctrl dpidle_ctrl = {
-	.wake_src			= WAKE_SRC_FOR_DPIDLE,
-	.wake_src_md32		= WAKE_SRC_FOR_MD32,
-	.r0_ctrl_en			= 1,
-	.r7_ctrl_en			= 1,
-	.infra_dcm_lock		= 1,
-	.wfi_op				= WFI_OP_AND,
-	.ca15_wfi0_en		= 1,
-	.ca15_wfi1_en		= 1,
-	.ca15_wfi2_en		= 1,
-	.ca15_wfi3_en		= 1,
-	.ca7_wfi0_en		= 1,
-	.ca7_wfi1_en		= 1,
-	.ca7_wfi2_en		= 1,
-	.ca7_wfi3_en		= 1,
-	.disp_req_mask		= 1,
-	.mfg_req_mask		= 1,
-	.lte_mask			= 1,
-	.syspwreq_mask		= 1,
+	.wake_src = WAKE_SRC_FOR_DPIDLE,
+	.wake_src_md32 = WAKE_SRC_FOR_MD32,
+	.r0_ctrl_en = 1,
+	.r7_ctrl_en = 1,
+	.infra_dcm_lock = 1,
+	.wfi_op = WFI_OP_AND,
+	.ca15_wfi0_en = 1,
+	.ca15_wfi1_en = 1,
+	.ca15_wfi2_en = 1,
+	.ca15_wfi3_en = 1,
+	.ca7_wfi0_en = 1,
+	.ca7_wfi1_en = 1,
+	.ca7_wfi2_en = 1,
+	.ca7_wfi3_en = 1,
+	.disp_req_mask = 1,
+	.mfg_req_mask = 1,
+	.lte_mask = 1,
+	.syspwreq_mask = 1,
 
-	.pcm_apsrc_req		= 0,
-	.md1_req_mask		= 0,
-	.md2_req_mask		= 0,
+	.pcm_apsrc_req = 0,
+	.md1_req_mask = 0,
+	.md2_req_mask = 0,
+};
+#elif defined(CONFIG_ARCH_MT6580)
+/**********************************************************
+ * PCM code for deep idle
+ **********************************************************/
+static const u32 dpidle_binary[] = {
+	0x80318400, 0x80328400, 0xc2802e80, 0x1290041f, 0x1b00001f, 0x7fffd7ff,
+	0xf0000000, 0x17c07c1f, 0x1b00001f, 0x3fffc7ff, 0x1b80001f, 0x20000004,
+	0xd80002cc, 0x17c07c1f, 0xa0128400, 0xa0118400, 0xc2802e80, 0x1290841f,
+	0xc2802e80, 0x129f041f, 0x1b00001f, 0x3fffcfff, 0xf0000000, 0x17c07c1f,
+	0x81449801, 0xd8000405, 0x17c07c1f, 0x1a00001f, 0x10006604, 0xe2200000,
+	0xc0c02da0, 0x17c07c1f, 0x81491801, 0xd8000565, 0x17c07c1f, 0x18c0001f,
+	0x102085cc, 0x1910001f, 0x102085cc, 0x813f8404, 0xe0c00004, 0x1910001f,
+	0x102085cc, 0x81411801, 0xd8000685, 0x17c07c1f, 0x18c0001f, 0x10006240,
+	0xe0e00016, 0xe0e0001e, 0xe0e0000e, 0xe0e0000f, 0x803e0400, 0x1b80001f,
+	0x20000222, 0x80380400, 0x1b80001f, 0x20000280, 0x803b0400, 0x1b80001f,
+	0x2000001a, 0x803d0400, 0x1b80001f, 0x20000208, 0x80340400, 0x80310400,
+	0x1b80001f, 0x2000000a, 0x18c0001f, 0x10006240, 0xe0e0000d, 0xd8000ca5,
+	0x17c07c1f, 0x1b80001f, 0x20000020, 0x18c0001f, 0x102080f0, 0x1910001f,
+	0x102080f0, 0xa9000004, 0x10000000, 0xe0c00004, 0x1b80001f, 0x2000000a,
+	0x89000004, 0xefffffff, 0xe0c00004, 0x18c0001f, 0x102070f4, 0x1910001f,
+	0x102070f4, 0xa9000004, 0x02000000, 0xe0c00004, 0x1b80001f, 0x2000000a,
+	0x89000004, 0xfdffffff, 0xe0c00004, 0x1910001f, 0x102070f4, 0x81fa0407,
+	0x81f08407, 0xe8208000, 0x10006354, 0xfffffc23, 0xa1d80407, 0xa1df0407,
+	0xc2802e80, 0x1291041f, 0x81491801, 0xd8000f25, 0x17c07c1f, 0x18c0001f,
+	0x102085cc, 0x1910001f, 0x102085cc, 0xa11f8404, 0xe0c00004, 0x1910001f,
+	0x102085cc, 0x1b00001f, 0xbfffc7ff, 0xf0000000, 0x17c07c1f, 0x1b80001f,
+	0x20000fdf, 0x1a50001f, 0x10006608, 0x80c9a401, 0x810ba401, 0x10920c1f,
+	0xa0979002, 0x8080080d, 0xd82012a2, 0x17c07c1f, 0x81f08407, 0xa1d80407,
+	0xa1df0407, 0x1b00001f, 0x3fffc7ff, 0x1b80001f, 0x20000004, 0xd8001b4c,
+	0x17c07c1f, 0x1b00001f, 0xbfffc7ff, 0xd0001b40, 0x17c07c1f, 0x81f80407,
+	0x81ff0407, 0x1880001f, 0x10006320, 0xc0c02640, 0xe080000f, 0xd8001103,
+	0x17c07c1f, 0xe080001f, 0xa1da0407, 0x18c0001f, 0x110040d8, 0x1910001f,
+	0x110040d8, 0xa11f8404, 0xe0c00004, 0x1910001f, 0x110040d8, 0x81491801,
+	0xd8001645, 0x17c07c1f, 0x18c0001f, 0x102085cc, 0x1910001f, 0x102085cc,
+	0x813f8404, 0xe0c00004, 0x1910001f, 0x102085cc, 0xa0110400, 0xa0140400,
+	0xa0180400, 0xa01b0400, 0xa01d0400, 0x17c07c1f, 0x17c07c1f, 0xa01e0400,
+	0x17c07c1f, 0x17c07c1f, 0x81491801, 0xd80018e5, 0x17c07c1f, 0x18c0001f,
+	0x102085cc, 0x1910001f, 0x102085cc, 0xa11f8404, 0xe0c00004, 0x1910001f,
+	0x102085cc, 0x81411801, 0xd80019c5, 0x17c07c1f, 0x18c0001f, 0x10006240,
+	0xc0c025a0, 0x17c07c1f, 0x81449801, 0xd8001ac5, 0x17c07c1f, 0x1a00001f,
+	0x10006604, 0xe2200001, 0xc0c02da0, 0x17c07c1f, 0xc2802e80, 0x1291841f,
+	0x1b00001f, 0x7fffd7ff, 0xf0000000, 0x17c07c1f, 0x18c0001f, 0x10006b6c,
+	0xe0f03eef, 0x80318400, 0x80328400, 0xa1de0407, 0x80390400, 0x1b80001f,
+	0x20000300, 0x803c0400, 0x1b80001f, 0x20000300, 0x80350400, 0x1b80001f,
+	0x20000104, 0x81f40407, 0x18c0001f, 0x111403a8, 0xe0c00001, 0x18c0001f,
+	0x10006810, 0x1910001f, 0x10006810, 0x81308404, 0xe0c00004, 0x1b00001f,
+	0x7fffcfff, 0xf0000000, 0x17c07c1f, 0x81fe0407, 0x18c0001f, 0x10006810,
+	0x1910001f, 0x10006810, 0xa1108404, 0xe0c00004, 0x18c0001f, 0x10006b6c,
+	0xe0f05ead, 0x1b00001f, 0xffffcfff, 0x80dd040d, 0xd82020a3, 0x17c07c1f,
+	0xc0c02ba0, 0x17c07c1f, 0xa0150400, 0xa01c0400, 0xa0190400, 0xf0000000,
+	0x17c07c1f, 0xe0f07f16, 0x1380201f, 0xe0f07f1e, 0x1380201f, 0xe0f07f0e,
+	0x1b80001f, 0x20000100, 0xe0f07f0c, 0xe0f07f0d, 0xe0f07e0d, 0xe0f07c0d,
+	0xe0f0780d, 0xe0f0700d, 0xf0000000, 0x17c07c1f, 0xe0f07f0d, 0xe0f07f0f,
+	0xe0f07f1e, 0xe0f07f12, 0xf0000000, 0x17c07c1f, 0xe0e00016, 0x1380201f,
+	0xe0e0001e, 0x1380201f, 0xe0e0000e, 0xe0e0000c, 0xe0e0000d, 0xf0000000,
+	0x17c07c1f, 0xe0e0000f, 0xe0e0001e, 0xe0e00012, 0xf0000000, 0x17c07c1f,
+	0x1112841f, 0xa1d08407, 0xd8202704, 0x80eab401, 0xd8002683, 0x01200404,
+	0x1a00001f, 0x10006814, 0xe2000003, 0xf0000000, 0x17c07c1f, 0xa1d00407,
+	0x1b80001f, 0x20000100, 0x80ea3401, 0x1a00001f, 0x10006814, 0xe2000003,
+	0xf0000000, 0x17c07c1f, 0xd800298a, 0x17c07c1f, 0xe2e00036, 0xe2e0003e,
+	0x1380201f, 0xe2e0003c, 0xd8202aca, 0x17c07c1f, 0x1b80001f, 0x20000018,
+	0xe2e0007c, 0x1b80001f, 0x20000003, 0xe2e0005c, 0xe2e0004c, 0xe2e0004d,
+	0xf0000000, 0x17c07c1f, 0xa1d10407, 0x1b80001f, 0x20000020, 0xf0000000,
+	0x17c07c1f, 0xa1d40407, 0x1391841f, 0xf0000000, 0x17c07c1f, 0xd8002cca,
+	0x17c07c1f, 0xe2e0004f, 0xe2e0006f, 0xe2e0002f, 0xd8202d6a, 0x17c07c1f,
+	0xe2e0002e, 0xe2e0003e, 0xe2e00032, 0xf0000000, 0x17c07c1f, 0x18d0001f,
+	0x10006604, 0x10cf8c1f, 0xd8202da3, 0x17c07c1f, 0xf0000000, 0x17c07c1f,
+	0x18c0001f, 0x10006b18, 0x1910001f, 0x10006b18, 0xa1002804, 0xe0c00004,
+	0xf0000000, 0x17c07c1f, 0x17c07c1f, 0x17c07c1f, 0x17c07c1f, 0x17c07c1f,
+	0x17c07c1f, 0x17c07c1f, 0x17c07c1f, 0x17c07c1f, 0x17c07c1f, 0x17c07c1f,
+	0x17c07c1f, 0x17c07c1f, 0x17c07c1f, 0x17c07c1f, 0x17c07c1f, 0x17c07c1f,
+	0x17c07c1f, 0x17c07c1f, 0x17c07c1f, 0x17c07c1f, 0x17c07c1f, 0x17c07c1f,
+	0x17c07c1f, 0x17c07c1f, 0x17c07c1f, 0x17c07c1f, 0x17c07c1f, 0x17c07c1f,
+	0x17c07c1f, 0x17c07c1f, 0x17c07c1f, 0x17c07c1f, 0x17c07c1f, 0x17c07c1f,
+	0x17c07c1f, 0x17c07c1f, 0x17c07c1f, 0x17c07c1f, 0x17c07c1f, 0x17c07c1f,
+	0x17c07c1f, 0x17c07c1f, 0x17c07c1f, 0x17c07c1f, 0x17c07c1f, 0x17c07c1f,
+	0x17c07c1f, 0x17c07c1f, 0x17c07c1f, 0x17c07c1f, 0x17c07c1f, 0x17c07c1f,
+	0x17c07c1f, 0x17c07c1f, 0x17c07c1f, 0x17c07c1f, 0x17c07c1f, 0x17c07c1f,
+	0x17c07c1f, 0x17c07c1f, 0x17c07c1f, 0x17c07c1f, 0x17c07c1f, 0x17c07c1f,
+	0x17c07c1f, 0x17c07c1f, 0x17c07c1f, 0x17c07c1f, 0x17c07c1f, 0x17c07c1f,
+	0x17c07c1f, 0x17c07c1f, 0x17c07c1f, 0x17c07c1f, 0x17c07c1f, 0x17c07c1f,
+	0x17c07c1f, 0x17c07c1f, 0x17c07c1f, 0x17c07c1f, 0x17c07c1f, 0x17c07c1f,
+	0x17c07c1f, 0x17c07c1f, 0x17c07c1f, 0x17c07c1f, 0x17c07c1f, 0x17c07c1f,
+	0x17c07c1f, 0x17c07c1f, 0x17c07c1f, 0x17c07c1f, 0x17c07c1f, 0x17c07c1f,
+	0x17c07c1f, 0x17c07c1f, 0x17c07c1f, 0x17c07c1f, 0x17c07c1f, 0x17c07c1f,
+	0x17c07c1f, 0x17c07c1f, 0x17c07c1f, 0x17c07c1f, 0x17c07c1f, 0x17c07c1f,
+	0x17c07c1f, 0x17c07c1f, 0x17c07c1f, 0x17c07c1f, 0x17c07c1f, 0x17c07c1f,
+	0x17c07c1f, 0x17c07c1f, 0x17c07c1f, 0x17c07c1f, 0x17c07c1f, 0x17c07c1f,
+	0x17c07c1f, 0x17c07c1f, 0x17c07c1f, 0x17c07c1f, 0x17c07c1f, 0x17c07c1f,
+	0x17c07c1f, 0x17c07c1f, 0x17c07c1f, 0x17c07c1f, 0x17c07c1f, 0x17c07c1f,
+	0x17c07c1f, 0x17c07c1f, 0x1840001f, 0x00000001, 0xa1d48407, 0x1990001f,
+	0x10006b08, 0xe8208000, 0x10006b18, 0x00000000, 0x1b00001f, 0x3fffc7ff,
+	0x1b80001f, 0xd00f0000, 0x8880000c, 0x3fffc7ff, 0xd8005522, 0x17c07c1f,
+	0xe8208000, 0x10006354, 0xfffffc23, 0xc0c02b00, 0x81401801, 0xd80046c5,
+	0x17c07c1f, 0x81f60407, 0x18c0001f, 0x10006200, 0xc0c02c20, 0x12807c1f,
+	0xe8208000, 0x1000625c, 0x00000001, 0x1b80001f, 0x20000080, 0xc0c02c20,
+	0x1280041f, 0x18c0001f, 0x10006208, 0xc0c02c20, 0x12807c1f, 0xe8208000,
+	0x10006248, 0x00000000, 0x1b80001f, 0x20000080, 0xc0c02c20, 0x1280041f,
+	0x18c0001f, 0x10006290, 0xc0c02c20, 0x12807c1f, 0xc0c02c20, 0x1280041f,
+	0xc2802e80, 0x1292041f, 0x18c0001f, 0x10006294, 0xe0f07fff, 0xe0e00fff,
+	0xe0e000ff, 0xc0c02ba0, 0x17c07c1f, 0xa1d38407, 0xa1d98407, 0x18c0001f,
+	0x11004078, 0x1910001f, 0x11004078, 0xa11f8404, 0xe0c00004, 0x1910001f,
+	0x11004078, 0x18c0001f, 0x11004098, 0x1910001f, 0x11004098, 0xa11f8404,
+	0xe0c00004, 0x1910001f, 0x11004098, 0xa0108400, 0xa0120400, 0xa0148400,
+	0xa0150400, 0xa0158400, 0xa01b8400, 0xa01c0400, 0xa01c8400, 0xa0188400,
+	0xa0190400, 0xa0198400, 0xe8208000, 0x10006310, 0x0b1600f8, 0x1b00001f,
+	0xbfffc7ff, 0x1b80001f, 0x90100000, 0x80c18001, 0xc8c00003, 0x17c07c1f,
+	0x80c10001, 0xc8c00303, 0x17c07c1f, 0x1b00001f, 0x3fffc7ff, 0x18c0001f,
+	0x10006294, 0xe0e001fe, 0xe0e003fc, 0xe0e007f8, 0xe0e00ff0, 0x1b80001f,
+	0x20000020, 0xe0f07ff0, 0xe0f07f00, 0x80388400, 0x80390400, 0x80398400,
+	0x1b80001f, 0x20000300, 0x803b8400, 0x803c0400, 0x803c8400, 0x1b80001f,
+	0x20000300, 0x80348400, 0x80350400, 0x80358400, 0x1b80001f, 0x20000104,
+	0x80308400, 0x80320400, 0x81f38407, 0x81f98407, 0x81f40407, 0x81401801,
+	0xd8005525, 0x17c07c1f, 0x18c0001f, 0x10006290, 0x1212841f, 0xc0c028c0,
+	0x12807c1f, 0xc0c028c0, 0x1280041f, 0x18c0001f, 0x10006208, 0x1212841f,
+	0xc0c028c0, 0x12807c1f, 0xe8208000, 0x10006248, 0x00000001, 0x1b80001f,
+	0x20000080, 0xc0c028c0, 0x1280041f, 0x18c0001f, 0x10006200, 0x1212841f,
+	0xc0c028c0, 0x12807c1f, 0xe8208000, 0x1000625c, 0x00000000, 0x1b80001f,
+	0x20000080, 0xc0c028c0, 0x1280041f, 0x81f10407, 0x81f48407, 0xa1d60407,
+	0x1ac0001f, 0x55aa55aa, 0x10007c1f, 0xf0000000
+};
+
+static struct pcm_desc dpidle_pcm = {
+	.version = "pcm_deepidle_v14.0_new",
+	.base = dpidle_binary,
+	.size = 688,
+	.sess = 2,
+	.replace = 0,
+	.vec0 = EVENT_VEC(11, 1, 0, 0),	/* FUNC_26M_WAKEUP */
+	.vec1 = EVENT_VEC(12, 1, 0, 8),	/* FUNC_26M_SLEEP */
+	.vec2 = EVENT_VEC(30, 1, 0, 24),	/* FUNC_APSRC_WAKEUP */
+	.vec3 = EVENT_VEC(31, 1, 0, 125),	/* FUNC_APSRC_SLEEP */
+	.vec4 = EVENT_VEC(20, 1, 0, 220),	/* FUNC_AUDIO_REQ_WAKEUP */
+	.vec5 = EVENT_VEC(1, 1, 0, 249),	/* FUNC_AUDIO_REQ_SLEEP */
+};
+
+static struct pwr_ctrl dpidle_ctrl = {
+	.wake_src = WAKE_SRC_FOR_DPIDLE,
+	.wake_src_md32 = WAKE_SRC_FOR_MD32,
+	.r0_ctrl_en = 1,
+	.r7_ctrl_en = 1,
+	.infra_dcm_lock = 1,
+	.wfi_op = WFI_OP_AND,
+	.ca15_wfi0_en = 1,
+	.ca15_wfi1_en = 1,
+	.ca15_wfi2_en = 1,
+	.ca15_wfi3_en = 1,
+	.ca7_wfi0_en = 1,
+	.ca7_wfi1_en = 1,
+	.ca7_wfi2_en = 1,
+	.ca7_wfi3_en = 1,
+	.disp_req_mask = 1,
+	.mfg_req_mask = 1,
+	.lte_mask = 1,
+	.syspwreq_mask = 1,
 };
 #else
 #error "Does not support!"
@@ -741,49 +904,49 @@ static unsigned int dpidle_log_print_prev_time;
 #endif
 
 struct spm_lp_scen __spm_dpidle = {
-	.pcmdesc	= &dpidle_pcm,
-	.pwrctrl	= &dpidle_ctrl,
+	.pcmdesc = &dpidle_pcm,
+	.pwrctrl = &dpidle_ctrl,
 };
 
-int __attribute__((weak)) request_uart_to_sleep(void)
+int __attribute__ ((weak)) request_uart_to_sleep(void)
 {
 	return 0;
 }
 
-int __attribute__((weak)) request_uart_to_wakeup(void)
+int __attribute__ ((weak)) request_uart_to_wakeup(void)
 {
 	return 0;
 }
 
 #if SPM_AEE_RR_REC
-void __attribute__((weak)) aee_rr_rec_deepidle_val(u32 val)
+void __attribute__ ((weak)) aee_rr_rec_deepidle_val(u32 val)
 {
 }
 
-u32 __attribute__((weak)) aee_rr_curr_deepidle_val(void)
+u32 __attribute__ ((weak)) aee_rr_curr_deepidle_val(void)
 {
 	return 0;
 }
 #endif
 
-void __attribute__((weak)) mt_cirq_clone_gic(void)
+void __attribute__ ((weak)) mt_cirq_clone_gic(void)
 {
 }
 
-void __attribute__((weak)) mt_cirq_enable(void)
+void __attribute__ ((weak)) mt_cirq_enable(void)
 {
 }
 
-void __attribute__((weak)) mt_cirq_flush(void)
+void __attribute__ ((weak)) mt_cirq_flush(void)
 {
 }
 
-void __attribute__((weak)) mt_cirq_disable(void)
+void __attribute__ ((weak)) mt_cirq_disable(void)
 {
 }
 
 int __attribute__ ((weak)) exec_ccci_kern_func_by_md_id(int md_id, unsigned int id, char *buf,
-						unsigned int len)
+							unsigned int len)
 {
 	return 0;
 }
@@ -820,7 +983,7 @@ static void spm_trigger_wfi_for_dpidle(struct pwr_ctrl *pwrctrl)
 		 * MT6735/MT6735M: Mp0_axi_config[4] is one by default. No need to program it before entering deepidle.
 		 * MT6753:         Have to program it before entering deepidle.
 		 */
-#if defined(CONFIG_ARM_MT6735) || defined(CONFIG_ARM_MT6735M)
+#if defined(CONFIG_ARM_MT6735) || defined(CONFIG_ARM_MT6735M) || defined(CONFIG_ARCH_MT6580)
 		wfi_with_sync();
 #elif defined(CONFIG_ARCH_MT6753)
 		/* backup MPx_AXI_CONFIG */
@@ -886,7 +1049,8 @@ static wake_reason_t spm_output_wake_reason(struct wake_status *wakesta, struct 
 		log_print = true;
 	else if (wakesta->timer_out <= DPIDLE_LOG_PRINT_TIMEOUT_CRITERIA)
 		log_print = true;
-	else if ((dpidle_log_print_curr_time - dpidle_log_print_prev_time) > DPIDLE_LOG_DISCARD_CRITERIA)
+	else if ((dpidle_log_print_curr_time - dpidle_log_print_prev_time) >
+		 DPIDLE_LOG_DISCARD_CRITERIA)
 		log_print = true;
 
 	/* Print SPM log */
@@ -920,19 +1084,23 @@ static wake_reason_t spm_output_wake_reason(struct wake_status *wakesta, struct 
 	return wr;
 }
 #endif
-
+#if defined(CONFIG_ARM_MT6735) || defined(CONFIG_ARM_MT6735M) || defined(CONFIG_ARCH_MT6753)
 static u32 vsram_vosel_on_lb;
+#endif
 static void spm_dpidle_pre_process(void)
 {
 	/* set PMIC WRAP table for deepidle power control */
 	mt_cpufreq_set_pmic_phase(PMIC_WRAP_PHASE_DEEPIDLE);
-
+#if defined(CONFIG_ARM_MT6735) || defined(CONFIG_ARM_MT6735M) || defined(CONFIG_ARCH_MT6753)
 	vsram_vosel_on_lb = __spm_dpidle_sodi_set_pmic_setting();
+#endif
 }
 
 static void spm_dpidle_post_process(void)
 {
+#if defined(CONFIG_ARM_MT6735) || defined(CONFIG_ARM_MT6735M) || defined(CONFIG_ARCH_MT6753)
 	__spm_dpidle_sodi_restore_pmic_setting(vsram_vosel_on_lb);
+#endif
 	/* set PMIC WRAP table for normal power control */
 	mt_cpufreq_set_pmic_phase(PMIC_WRAP_PHASE_NORMAL);
 }
@@ -1063,7 +1231,7 @@ wake_reason_t spm_go_to_sleep_dpidle(u32 spm_flags, u32 spm_data)
 	set_pwrctrl_pcm_flags(pwrctrl, spm_flags);
 
 #if SPM_PWAKE_EN
-	sec = spm_get_wake_period(-1 /* FIXME */, last_wr);
+	sec = spm_get_wake_period(-1 /* FIXME */ , last_wr);
 #endif
 	pwrctrl->timer_val = sec * 32768;
 
@@ -1085,7 +1253,7 @@ wake_reason_t spm_go_to_sleep_dpidle(u32 spm_flags, u32 spm_data)
 	mt_cpufreq_set_pmic_phase(PMIC_WRAP_PHASE_DEEPIDLE);
 
 	spm_crit2("sleep_deepidle, sec = %u, wakesrc = 0x%x [%u]\n",
-			  sec, pwrctrl->wake_src, is_cpu_pdn(pwrctrl->pcm_flags));
+		  sec, pwrctrl->wake_src, is_cpu_pdn(pwrctrl->pcm_flags));
 
 	__spm_reset_and_init_pcm(pcmdesc);
 
@@ -1145,11 +1313,10 @@ RESTORE_IRQ:
 static void twam_handler(struct twam_sig *twamsig)
 {
 	spm_crit("sig_high = %u%%  %u%%  %u%%  %u%%, r13 = 0x%x\n",
-		get_percent(twamsig->sig0, SPM_TWAM_MONITOR_TICK),
-		get_percent(twamsig->sig1, SPM_TWAM_MONITOR_TICK),
-		get_percent(twamsig->sig2, SPM_TWAM_MONITOR_TICK),
-		get_percent(twamsig->sig3, SPM_TWAM_MONITOR_TICK),
-		spm_read(SPM_PCM_REG13_DATA));
+		 get_percent(twamsig->sig0, SPM_TWAM_MONITOR_TICK),
+		 get_percent(twamsig->sig1, SPM_TWAM_MONITOR_TICK),
+		 get_percent(twamsig->sig2, SPM_TWAM_MONITOR_TICK),
+		 get_percent(twamsig->sig3, SPM_TWAM_MONITOR_TICK), spm_read(SPM_PCM_REG13_DATA));
 }
 #endif
 

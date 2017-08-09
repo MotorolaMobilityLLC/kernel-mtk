@@ -4,7 +4,7 @@
 #include <linux/spinlock.h>
 #include <linux/delay.h>
 #include <linux/string.h>
-/* #include <linux/aee.h> */
+#include <mt-plat/aee.h>
 #include <linux/i2c.h>
 #include <linux/of_fdt.h>
 #include <asm/setup.h>
@@ -28,9 +28,11 @@
 /* #include <mt_i2c.h> */
 
 #include "mt_spm_internal.h"
+#if !defined(CONFIG_ARCH_MT6580)
 #include "pwrap_hal.h"
 #include "mt_vcore_dvfs.h"
 /* #include <mach/mt_dramc.h> */
+#endif
 
 /* for MP0,1 AXI_CONFIG */
 #ifdef CONFIG_OF
@@ -39,7 +41,9 @@
 #include <linux/of_address.h>
 #endif
 
-
+#if defined(CONFIG_ARCH_MT6580)
+#define DISABLE_DLPT_FEATURE
+#endif
 /**************************************
  * only for internal debug
  **************************************/
@@ -54,14 +58,10 @@
 #endif
 #define SPM_PCMTIMER_DIS        0
 
-#define K2_MCUCFG_BASE          (0xF0200000)	/* 0x1020_0000 */
-#define MP0_AXI_CONFIG          (K2_MCUCFG_BASE + 0x2C)
-#define MP1_AXI_CONFIG          (K2_MCUCFG_BASE + 0x22C)
-#define ACINACTM                (1<<4)
 
 #define I2C_CHANNEL 2
 
-int spm_dormant_sta = 0; /* MT_CPU_DORMANT_RESET */
+int spm_dormant_sta = 0;	/* MT_CPU_DORMANT_RESET */
 int spm_ap_mdsrc_req_cnt = 0;
 u32 spm_suspend_flag = 0;
 
@@ -71,6 +71,14 @@ u32 log_wakesta_index = 0;
 u8 spm_snapshot_golden_setting = 0;
 
 struct wake_status spm_wakesta;	/* record last wakesta */
+/* please put firmware to vendor/mediatek/proprietary/hardware/spm/mtxxxx/ */
+/* todo: dyna load SPM FW */
+/*
+#if defined(CONFIG_ARCH_MT6580)
+#define USE_DYNA_LOAD_SUSPEND
+#endif
+*/
+#ifndef USE_DYNA_LOAD_SUSPEND
 /**********************************************************
  * PCM code for suspend
  **********************************************************/
@@ -248,20 +256,21 @@ static const u32 suspend_binary[] = {
 	0xa1108404, 0xe0c00004, 0x1910001f, 0x10001138, 0x1a00001f, 0x10006604,
 	0xe2200007, 0xf0000000, 0x17c07c1f
 };
+
 static struct pcm_desc suspend_pcm = {
-	.version	= "pcm_suspend_v34.5.11.3.2_20150706-vproc_workaround_fix",
-	.base		= suspend_binary,
-	.size		= 1023,
-	.sess		= 2,
-	.replace	= 0,
-	.vec0		= EVENT_VEC(23, 1, 0, 0),	/* FUNC_MD_VRF18_WAKEUP */
-	.vec1		= EVENT_VEC(28, 1, 0, 36),	/* FUNC_MD_VRF18_SLEEP */
-	.vec2		= EVENT_VEC(11, 1, 0, 72),	/* FUNC_26M_WAKEUP */
-	.vec3		= EVENT_VEC(12, 1, 0, 106),	/* FUNC_26M_SLEEP */
-	.vec4		= EVENT_VEC(30, 1, 0, 161),	/* FUNC_APSRC_WAKEUP */
-	.vec5		= EVENT_VEC(31, 1, 0, 246),	/* FUNC_APSRC_SLEEP */
-	.vec6		= EVENT_VEC(11, 1, 0, 441),	/* FUNC_VCORE_HIGH */
-	.vec7		= EVENT_VEC(12, 1, 0, 468),	/* FUNC_VCORE_LOW */
+	.version = "pcm_suspend_v34.5.11.3.2_20150706-vproc_workaround_fix",
+	.base = suspend_binary,
+	.size = 1023,
+	.sess = 2,
+	.replace = 0,
+	.vec0 = EVENT_VEC(23, 1, 0, 0),	/* FUNC_MD_VRF18_WAKEUP */
+	.vec1 = EVENT_VEC(28, 1, 0, 36),	/* FUNC_MD_VRF18_SLEEP */
+	.vec2 = EVENT_VEC(11, 1, 0, 72),	/* FUNC_26M_WAKEUP */
+	.vec3 = EVENT_VEC(12, 1, 0, 106),	/* FUNC_26M_SLEEP */
+	.vec4 = EVENT_VEC(30, 1, 0, 161),	/* FUNC_APSRC_WAKEUP */
+	.vec5 = EVENT_VEC(31, 1, 0, 246),	/* FUNC_APSRC_SLEEP */
+	.vec6 = EVENT_VEC(11, 1, 0, 441),	/* FUNC_VCORE_HIGH */
+	.vec7 = EVENT_VEC(12, 1, 0, 468),	/* FUNC_VCORE_LOW */
 };
 
 
@@ -440,20 +449,21 @@ static const u32 suspend_binary[] = {
 	0xa1108404, 0xe0c00004, 0x1910001f, 0x10001124, 0x1a00001f, 0x10006604,
 	0xe2200007, 0xf0000000, 0x17c07c1f
 };
+
 static struct pcm_desc suspend_pcm = {
-	.version	= "pcm_suspend_v0.5.4.3_20150706-vproc_workaround-fix",
-	.base		= suspend_binary,
-	.size		= 1023,
-	.sess		= 2,
-	.replace	= 0,
-	.vec0		= EVENT_VEC(23, 1, 0, 0),	/* FUNC_MD_VRF18_WAKEUP */
-	.vec1		= EVENT_VEC(28, 1, 0, 36),	/* FUNC_MD_VRF18_SLEEP */
-	.vec2		= EVENT_VEC(11, 1, 0, 72),	/* FUNC_26M_WAKEUP */
-	.vec3		= EVENT_VEC(12, 1, 0, 106),	/* FUNC_26M_SLEEP */
-	.vec4		= EVENT_VEC(30, 1, 0, 161),	/* FUNC_APSRC_WAKEUP */
-	.vec5		= EVENT_VEC(31, 1, 0, 244),	/* FUNC_APSRC_SLEEP */
-	.vec6		= EVENT_VEC(11, 1, 0, 439),	/* FUNC_VCORE_HIGH */
-	.vec7		= EVENT_VEC(12, 1, 0, 466),	/* FUNC_VCORE_LOW */
+	.version = "pcm_suspend_v0.5.4.3_20150706-vproc_workaround-fix",
+	.base = suspend_binary,
+	.size = 1023,
+	.sess = 2,
+	.replace = 0,
+	.vec0 = EVENT_VEC(23, 1, 0, 0),	/* FUNC_MD_VRF18_WAKEUP */
+	.vec1 = EVENT_VEC(28, 1, 0, 36),	/* FUNC_MD_VRF18_SLEEP */
+	.vec2 = EVENT_VEC(11, 1, 0, 72),	/* FUNC_26M_WAKEUP */
+	.vec3 = EVENT_VEC(12, 1, 0, 106),	/* FUNC_26M_SLEEP */
+	.vec4 = EVENT_VEC(30, 1, 0, 161),	/* FUNC_APSRC_WAKEUP */
+	.vec5 = EVENT_VEC(31, 1, 0, 244),	/* FUNC_APSRC_SLEEP */
+	.vec6 = EVENT_VEC(11, 1, 0, 439),	/* FUNC_VCORE_HIGH */
+	.vec7 = EVENT_VEC(12, 1, 0, 466),	/* FUNC_VCORE_LOW */
 };
 
 
@@ -632,26 +642,160 @@ static const u32 suspend_binary[] = {
 	0x81708405, 0xe1000005, 0x1900001f, 0x10006b6c, 0xe100001f, 0xf0000000,
 	0x17c07c1f
 };
+
 static struct pcm_desc suspend_pcm = {
-	.version	= "pcm_suspend_v0.2.4.1.6_20150528-vproc_workaround",
-	.base		= suspend_binary,
-	.size		= 1021,
-	.sess		= 2,
-	.replace	= 0,
-	.vec0		= EVENT_VEC(23, 1, 0, 0),	/* FUNC_MD_VRF18_WAKEUP */
-	.vec1		= EVENT_VEC(28, 1, 0, 33),	/* FUNC_MD_VRF18_SLEEP */
-	.vec2		= EVENT_VEC(11, 1, 0, 66),	/* FUNC_26M_WAKEUP */
-	.vec3		= EVENT_VEC(12, 1, 0, 100),	/* FUNC_26M_SLEEP */
-	.vec4		= EVENT_VEC(30, 1, 0, 155),	/* FUNC_APSRC_WAKEUP */
-	.vec5		= EVENT_VEC(31, 1, 0, 238),	/* FUNC_APSRC_SLEEP */
-	.vec6		= EVENT_VEC(11, 1, 0, 432),	/* FUNC_VCORE_HIGH */
-	.vec7		= EVENT_VEC(12, 1, 0, 464),	/* FUNC_VCORE_LOW */
+	.version = "pcm_suspend_v0.2.4.1.6_20150528-vproc_workaround",
+	.base = suspend_binary,
+	.size = 1021,
+	.sess = 2,
+	.replace = 0,
+	.vec0 = EVENT_VEC(23, 1, 0, 0),	/* FUNC_MD_VRF18_WAKEUP */
+	.vec1 = EVENT_VEC(28, 1, 0, 33),	/* FUNC_MD_VRF18_SLEEP */
+	.vec2 = EVENT_VEC(11, 1, 0, 66),	/* FUNC_26M_WAKEUP */
+	.vec3 = EVENT_VEC(12, 1, 0, 100),	/* FUNC_26M_SLEEP */
+	.vec4 = EVENT_VEC(30, 1, 0, 155),	/* FUNC_APSRC_WAKEUP */
+	.vec5 = EVENT_VEC(31, 1, 0, 238),	/* FUNC_APSRC_SLEEP */
+	.vec6 = EVENT_VEC(11, 1, 0, 432),	/* FUNC_VCORE_HIGH */
+	.vec7 = EVENT_VEC(12, 1, 0, 464),	/* FUNC_VCORE_LOW */
+};
+#elif defined(CONFIG_ARCH_MT6580)
+
+static const u32 suspend_binary[] = {
+	0xa1d58407, 0x81f68407, 0x803a0400, 0x1b80001f, 0x20000000, 0x80300400,
+	0x80328400, 0xa1d28407, 0x81f20407, 0xe8208000, 0x10006b04, 0x20000000,
+	0x80318400, 0x81409801, 0xd8000285, 0x17c07c1f, 0x18c0001f, 0x10006234,
+	0xc0c02580, 0x1200041f, 0x80310400, 0x1b80001f, 0x2000000a, 0xa0110400,
+	0xe8208000, 0x10006b04, 0x40000000, 0x81f00407, 0xe8208000, 0x10006b04,
+	0x00000000, 0xc2803220, 0x1290041f, 0x1b00001f, 0x7fffd7ff, 0xf0000000,
+	0x17c07c1f, 0x1b00001f, 0x3fffc7ff, 0x1b80001f, 0x20000004, 0xd8000b0c,
+	0x17c07c1f, 0x1880001f, 0x10006320, 0xc0c02b40, 0xe080000f, 0xd82006a3,
+	0x17c07c1f, 0x1b00001f, 0x7fffd7ff, 0xd0000b00, 0x17c07c1f, 0xe080001f,
+	0x81409801, 0xd8000925, 0x17c07c1f, 0x18c0001f, 0x10207094, 0x1910001f,
+	0x10206374, 0xe0c00004, 0x18c0001f, 0x10207098, 0x1910001f, 0x10206378,
+	0xe0c00004, 0x1910001f, 0x10206378, 0x18c0001f, 0x10006234, 0xc0c02760,
+	0x17c07c1f, 0xe8208000, 0x10006b04, 0x10000000, 0xc2803220, 0x1290841f,
+	0xa1d20407, 0x81f28407, 0xa1d68407, 0xa0100400, 0xa0128400, 0xa0118400,
+	0xa01a0400, 0x81f58407, 0x1b00001f, 0x3fffcfff, 0xf0000000, 0x17c07c1f,
+	0x81491801, 0xd8000ca5, 0x17c07c1f, 0x18c0001f, 0x102085cc, 0x1910001f,
+	0x102085cc, 0x813f8404, 0xe0c00004, 0x1910001f, 0x102085cc, 0x18c0001f,
+	0x1000627c, 0xe0e00ff0, 0x1b80001f, 0x20000020, 0xe0f07ff0, 0xe0f07f00,
+	0x81f30407, 0x81411801, 0xd8000ec5, 0x17c07c1f, 0x18c0001f, 0x10006240,
+	0xe0e00016, 0xe0e0001e, 0xe0e0000e, 0xe0e0000f, 0x803e0400, 0x1b80001f,
+	0x20000222, 0x80380400, 0x1b80001f, 0x20000280, 0x803b0400, 0x1b80001f,
+	0x2000001a, 0x803d0400, 0x1b80001f, 0x20000208, 0x80340400, 0x80310400,
+	0x1910001f, 0x10000000, 0x18c0001f, 0x10000000, 0xa1108404, 0xe0c00004,
+	0x1b80001f, 0x20000068, 0x1b80001f, 0x2000000a, 0x18c0001f, 0x10006240,
+	0xe0e0000d, 0xd80015e5, 0x17c07c1f, 0x1b80001f, 0x20000020, 0x18c0001f,
+	0x102080f0, 0x1910001f, 0x102080f0, 0xa9000004, 0x10000000, 0xe0c00004,
+	0x1b80001f, 0x2000000a, 0x89000004, 0xefffffff, 0xe0c00004, 0x18c0001f,
+	0x102070f4, 0x1910001f, 0x102070f4, 0xa9000004, 0x02000000, 0xe0c00004,
+	0x1b80001f, 0x2000000a, 0x89000004, 0xfdffffff, 0xe0c00004, 0x1910001f,
+	0x102070f4, 0x81fa0407, 0x81f08407, 0xe8208000, 0x10006354, 0xfffffc23,
+	0xa1d80407, 0xa1df0407, 0xc2803220, 0x1291041f, 0x81491801, 0xd8001865,
+	0x17c07c1f, 0x18c0001f, 0x102085cc, 0x1910001f, 0x102085cc, 0xa11f8404,
+	0xe0c00004, 0x1910001f, 0x102085cc, 0x1b00001f, 0xbfffc7ff, 0xf0000000,
+	0x17c07c1f, 0x1b80001f, 0x20000fdf, 0x1a50001f, 0x10006608, 0x80c9a401,
+	0x810ba401, 0x10920c1f, 0xa0979002, 0x8080080d, 0xd8201be2, 0x17c07c1f,
+	0x81f08407, 0xa1d80407, 0xa1df0407, 0x1b00001f, 0x3fffc7ff, 0x1b80001f,
+	0x20000004, 0xd800254c, 0x17c07c1f, 0x1b00001f, 0xbfffc7ff, 0xd0002540,
+	0x17c07c1f, 0x81f80407, 0x81ff0407, 0x1880001f, 0x10006320, 0xc0c029e0,
+	0xe080000f, 0xd8001a43, 0x17c07c1f, 0xe080001f, 0xa1da0407, 0x18c0001f,
+	0x110040d8, 0x1910001f, 0x110040d8, 0xa11f8404, 0xe0c00004, 0x1910001f,
+	0x110040d8, 0xa1d30407, 0x1910001f, 0x10000000, 0x18c0001f, 0x10000000,
+	0x81308404, 0xe0c00004, 0x81491801, 0xd8002065, 0x17c07c1f, 0x18c0001f,
+	0x102085cc, 0x1910001f, 0x102085cc, 0x813f8404, 0xe0c00004, 0x1910001f,
+	0x102085cc, 0x1b80001f, 0x20000068, 0xa0110400, 0xa0140400, 0xa0180400,
+	0xa01b0400, 0xa01d0400, 0x17c07c1f, 0x17c07c1f, 0xa01e0400, 0x17c07c1f,
+	0x17c07c1f, 0x81491801, 0xd8002345, 0x17c07c1f, 0x18c0001f, 0x102085cc,
+	0x1910001f, 0x102085cc, 0xa11f8404, 0xe0c00004, 0x1910001f, 0x102085cc,
+	0x81411801, 0xd8002425, 0x17c07c1f, 0x18c0001f, 0x10006240, 0xc0c02940,
+	0x17c07c1f, 0x18c0001f, 0x1000627c, 0xe0f07ff0, 0xe0e00ff0, 0xe0e000f0,
+	0xc2803220, 0x1291841f, 0x1b00001f, 0x7fffd7ff, 0xf0000000, 0x17c07c1f,
+	0xe0f07f16, 0x1380201f, 0xe0f07f1e, 0x1380201f, 0xe0f07f0e, 0x1b80001f,
+	0x20000100, 0xe0f07f0c, 0xe0f07f0d, 0xe0f07e0d, 0xe0f07c0d, 0xe0f0780d,
+	0xe0f0700d, 0xf0000000, 0x17c07c1f, 0xe0f07f0d, 0xe0f07f0f, 0xe0f07f1e,
+	0xe0f07f12, 0xf0000000, 0x17c07c1f, 0xe0e00016, 0x1380201f, 0xe0e0001e,
+	0x1380201f, 0xe0e0000e, 0xe0e0000c, 0xe0e0000d, 0xf0000000, 0x17c07c1f,
+	0xe0e0000f, 0xe0e0001e, 0xe0e00012, 0xf0000000, 0x17c07c1f, 0x1112841f,
+	0xa1d08407, 0xd8202aa4, 0x80eab401, 0xd8002a23, 0x01200404, 0x1a00001f,
+	0x10006814, 0xe2000003, 0xf0000000, 0x17c07c1f, 0xa1d00407, 0x1b80001f,
+	0x20000100, 0x80ea3401, 0x1a00001f, 0x10006814, 0xe2000003, 0xf0000000,
+	0x17c07c1f, 0xd8002d2a, 0x17c07c1f, 0xe2e00036, 0xe2e0003e, 0x1380201f,
+	0xe2e0003c, 0xd8202e6a, 0x17c07c1f, 0x1b80001f, 0x20000018, 0xe2e0007c,
+	0x1b80001f, 0x20000003, 0xe2e0005c, 0xe2e0004c, 0xe2e0004d, 0xf0000000,
+	0x17c07c1f, 0xa1d10407, 0x1b80001f, 0x20000020, 0xf0000000, 0x17c07c1f,
+	0xa1d40407, 0x1391841f, 0xf0000000, 0x17c07c1f, 0xd800306a, 0x17c07c1f,
+	0xe2e0004f, 0xe2e0006f, 0xe2e0002f, 0xd820310a, 0x17c07c1f, 0xe2e0002e,
+	0xe2e0003e, 0xe2e00032, 0xf0000000, 0x17c07c1f, 0x18d0001f, 0x10006604,
+	0x10cf8c1f, 0xd8203143, 0x17c07c1f, 0xf0000000, 0x17c07c1f, 0x18c0001f,
+	0x10006b18, 0x1910001f, 0x10006b18, 0xa1002804, 0xe0c00004, 0xf0000000,
+	0x17c07c1f, 0x17c07c1f, 0x17c07c1f, 0x17c07c1f, 0x17c07c1f, 0x17c07c1f,
+	0x17c07c1f, 0x17c07c1f, 0x17c07c1f, 0x17c07c1f, 0x17c07c1f, 0x17c07c1f,
+	0x17c07c1f, 0x17c07c1f, 0x17c07c1f, 0x17c07c1f, 0x17c07c1f, 0x17c07c1f,
+	0x17c07c1f, 0x17c07c1f, 0x17c07c1f, 0x17c07c1f, 0x17c07c1f, 0x17c07c1f,
+	0x17c07c1f, 0x17c07c1f, 0x17c07c1f, 0x17c07c1f, 0x17c07c1f, 0x17c07c1f,
+	0x17c07c1f, 0x17c07c1f, 0x17c07c1f, 0x17c07c1f, 0x17c07c1f, 0x17c07c1f,
+	0x17c07c1f, 0x17c07c1f, 0x17c07c1f, 0x17c07c1f, 0x17c07c1f, 0x17c07c1f,
+	0x17c07c1f, 0x17c07c1f, 0x17c07c1f, 0x17c07c1f, 0x17c07c1f, 0x17c07c1f,
+	0x17c07c1f, 0x17c07c1f, 0x17c07c1f, 0x17c07c1f, 0x17c07c1f, 0x17c07c1f,
+	0x17c07c1f, 0x17c07c1f, 0x17c07c1f, 0x17c07c1f, 0x17c07c1f, 0x17c07c1f,
+	0x17c07c1f, 0x17c07c1f, 0x17c07c1f, 0x17c07c1f, 0x17c07c1f, 0x17c07c1f,
+	0x17c07c1f, 0x17c07c1f, 0x17c07c1f, 0x17c07c1f, 0x17c07c1f, 0x17c07c1f,
+	0x17c07c1f, 0x17c07c1f, 0x17c07c1f, 0x17c07c1f, 0x17c07c1f, 0x17c07c1f,
+	0x17c07c1f, 0x17c07c1f, 0x17c07c1f, 0x17c07c1f, 0x17c07c1f, 0x17c07c1f,
+	0x17c07c1f, 0x17c07c1f, 0x17c07c1f, 0x17c07c1f, 0x17c07c1f, 0x17c07c1f,
+	0x17c07c1f, 0x17c07c1f, 0x17c07c1f, 0x17c07c1f, 0x17c07c1f, 0x17c07c1f,
+	0x17c07c1f, 0x17c07c1f, 0x17c07c1f, 0x17c07c1f, 0x17c07c1f, 0x17c07c1f,
+	0x17c07c1f, 0x17c07c1f, 0x1840001f, 0x00000001, 0xa1d48407, 0x1990001f,
+	0x10006b08, 0xe8208000, 0x10006b18, 0x00000000, 0x1b00001f, 0x3fffc7ff,
+	0x1b80001f, 0xd00f0000, 0x8880000c, 0x3fffc7ff, 0xd8005522, 0x17c07c1f,
+	0xe8208000, 0x10006354, 0xfffffc23, 0xc0c02ea0, 0x81401801, 0xd80046c5,
+	0x17c07c1f, 0x81f60407, 0x18c0001f, 0x10006200, 0xc0c02fc0, 0x12807c1f,
+	0xe8208000, 0x1000625c, 0x00000001, 0x1b80001f, 0x20000080, 0xc0c02fc0,
+	0x1280041f, 0x18c0001f, 0x10006208, 0xc0c02fc0, 0x12807c1f, 0xe8208000,
+	0x10006244, 0x00000001, 0x1b80001f, 0x20000080, 0xc0c02fc0, 0x1280041f,
+	0x18c0001f, 0x10006290, 0xc0c02fc0, 0x12807c1f, 0xc0c02fc0, 0x1280041f,
+	0xc2803220, 0x1292041f, 0x18c0001f, 0x10006294, 0xe0f07fff, 0xe0e00fff,
+	0xe0e000ff, 0xc0c02f40, 0x17c07c1f, 0xa1d38407, 0xa1d98407, 0x18c0001f,
+	0x11004078, 0x1910001f, 0x11004078, 0xa11f8404, 0xe0c00004, 0x1910001f,
+	0x11004078, 0x18c0001f, 0x11004098, 0x1910001f, 0x11004098, 0xa11f8404,
+	0xe0c00004, 0x1910001f, 0x11004098, 0xa0108400, 0xa0120400, 0xa0148400,
+	0xa0150400, 0xa0158400, 0xa01b8400, 0xa01c0400, 0xa01c8400, 0xa0188400,
+	0xa0190400, 0xa0198400, 0xe8208000, 0x10006310, 0x0b1600f8, 0x1b00001f,
+	0xbfffc7ff, 0x1b80001f, 0x90100000, 0x80c00001, 0xc8c00003, 0x17c07c1f,
+	0x80c10001, 0xc8c00b43, 0x17c07c1f, 0x1b00001f, 0x3fffc7ff, 0x18c0001f,
+	0x10006294, 0xe0e001fe, 0xe0e003fc, 0xe0e007f8, 0xe0e00ff0, 0x1b80001f,
+	0x20000020, 0xe0f07ff0, 0xe0f07f00, 0x80388400, 0x80390400, 0x80398400,
+	0x1b80001f, 0x20000300, 0x803b8400, 0x803c0400, 0x803c8400, 0x1b80001f,
+	0x20000300, 0x80348400, 0x80350400, 0x80358400, 0x1b80001f, 0x20000104,
+	0x80308400, 0x80320400, 0x81f38407, 0x81f98407, 0x81f40407, 0x81401801,
+	0xd8005525, 0x17c07c1f, 0x18c0001f, 0x10006290, 0x1212841f, 0xc0c02c60,
+	0x12807c1f, 0xc0c02c60, 0x1280041f, 0x18c0001f, 0x10006208, 0x1212841f,
+	0xc0c02c60, 0x12807c1f, 0xe8208000, 0x10006244, 0x00000000, 0x1b80001f,
+	0x20000080, 0xc0c02c60, 0x1280041f, 0x18c0001f, 0x10006200, 0x1212841f,
+	0xc0c02c60, 0x12807c1f, 0xe8208000, 0x1000625c, 0x00000000, 0x1b80001f,
+	0x20000080, 0xc0c02c60, 0x1280041f, 0xe8208000, 0x10006824, 0x000f0000,
+	0xa1db0407, 0x81f10407, 0x81f48407, 0xa1d60407, 0x1ac0001f, 0x55aa55aa,
+	0x10007c1f, 0xf0000000
 };
 
+static struct pcm_desc suspend_pcm = {
+	.version = "pcm_suspend_v14.0_new",
+	.base = suspend_binary,
+	.size = 692,
+	.sess = 2,
+	.replace = 0,
+	.vec0 = EVENT_VEC(11, 1, 0, 0),	/* FUNC_26M_WAKEUP */
+	.vec1 = EVENT_VEC(12, 1, 0, 37),	/* FUNC_26M_SLEEP */
+	.vec2 = EVENT_VEC(30, 1, 0, 90),	/* FUNC_APSRC_WAKEUP */
+	.vec3 = EVENT_VEC(31, 1, 0, 199),	/* FUNC_APSRC_SLEEP */
+};
 
 #else
 /* ERROR */
 #endif
+
+#endif				/* !defined(USE_DYNA_LOAD_SUSPEND) */
 
 
 /**************************************
@@ -663,15 +807,30 @@ static struct pcm_desc suspend_pcm = {
 
 #define SPM_WAKE_PERIOD         600	/* sec */
 
+#if defined(CONFIG_ARCH_MT6580)
+
+#define WAKE_SRC_FOR_SUSPEND \
+	(WAKE_SRC_KP | WAKE_SRC_EINT |  WAKE_SRC_CONN_WDT  |  WAKE_SRC_CCIF0_MD | WAKE_SRC_CONN2AP | \
+	WAKE_SRC_USB_CD | WAKE_SRC_USB_PDN |  WAKE_SRC_SEJ | \
+	WAKE_SRC_SYSPWREQ | WAKE_SRC_MD1_WDT)
+
+#define spm_is_wakesrc_invalid(wakesrc)     (!!((u32)(wakesrc) & 0xFC7F3A9B))
+
+#else
+
 #define WAKE_SRC_FOR_SUSPEND \
 	(WAKE_SRC_KP | WAKE_SRC_EINT | WAKE_SRC_CONN_WDT | WAKE_SRC_CCIF0_MD | WAKE_SRC_CCIF1_MD | WAKE_SRC_CONN2AP | \
 	WAKE_SRC_USB_CD | WAKE_SRC_USB_PDN | WAKE_SRC_SEJ |\
 	 /*WAKE_SRC_SYSPWREQ |*/ WAKE_SRC_MD_WDT | WAKE_SRC_C2K_WDT | WAKE_SRC_CLDMA_MD)
 
+#define spm_is_wakesrc_invalid(wakesrc)     (!!((u32)(wakesrc) & 0xc0003803))
+
+#endif
+
 #define WAKE_SRC_FOR_MD32  0                                          \
 				/* (WAKE_SRC_AUD_MD32) */
 
-#define spm_is_wakesrc_invalid(wakesrc)     (!!((u32)(wakesrc) & 0xc0003803))
+
 
 #define reg_read(addr)         __raw_readl((void __force __iomem *)(addr))
 #define reg_write(addr, val)   mt_reg_sync_writel((val), ((void *)addr))
@@ -716,9 +875,10 @@ enum spm_suspend_step {
 };
 /* extern void aee_rr_rec_spm_suspend_val(u32 val); */
 /* extern u32 aee_rr_curr_spm_suspend_val(void); */
-void __attribute__((weak)) aee_rr_rec_spm_suspend_val(u32 val)
+void __attribute__ ((weak)) aee_rr_rec_spm_suspend_val(u32 val)
 {
 }
+
 u32 __attribute__ ((weak)) aee_rr_curr_spm_suspend_val(void)
 {
 	return 0;
@@ -738,40 +898,43 @@ int __attribute__ ((weak)) get_dynamic_period(int first_use, int first_wakeup_ti
 {
 	return 0;
 }
+
 /*
 #else
 extern int get_dynamic_period(int first_use, int first_wakeup_time, int battery_capacity_level);
 */
 #endif
-void __attribute__((weak)) mt_cirq_clone_gic(void)
+void __attribute__ ((weak)) mt_cirq_clone_gic(void)
 {
 }
 
-void __attribute__((weak)) mt_cirq_enable(void)
+void __attribute__ ((weak)) mt_cirq_enable(void)
 {
 }
 
-void __attribute__((weak)) mt_cirq_flush(void)
+void __attribute__ ((weak)) mt_cirq_flush(void)
 {
 }
 
-void __attribute__((weak)) mt_cirq_disable(void)
+void __attribute__ ((weak)) mt_cirq_disable(void)
 {
 }
-int __attribute__((weak)) request_uart_to_sleep(void)
+
+int __attribute__ ((weak)) request_uart_to_sleep(void)
 {
 	return 0;
 }
 
-int __attribute__((weak)) request_uart_to_wakeup(void)
+int __attribute__ ((weak)) request_uart_to_wakeup(void)
 {
 	return 0;
 }
-void __attribute__((weak)) mtk_uart_restore(void)
+
+void __attribute__ ((weak)) mtk_uart_restore(void)
 {
 }
 
-void __attribute__((weak)) mt_eint_print_status(void)
+void __attribute__ ((weak)) mt_eint_print_status(void)
 {
 }
 
@@ -787,6 +950,62 @@ extern void mtk_uart_restore(void);
 extern void dump_uart_reg(void);
 */
 
+#if defined(CONFIG_ARCH_MT6580)
+
+static struct pwr_ctrl suspend_ctrl = {
+	.wake_src = WAKE_SRC_FOR_SUSPEND,
+	.wake_src_md32 = WAKE_SRC_FOR_MD32,
+	.r0_ctrl_en = 1,
+	.r7_ctrl_en = 1,
+	.infra_dcm_lock = 1,
+	.wfi_op = WFI_OP_AND,
+
+	.ca7top_idle_mask = 0,
+	.ca15top_idle_mask = 1,
+	.mcusys_idle_mask = 0,
+	.disp_req_mask = 0,
+	.mfg_req_mask = 0,
+	.gce_req_mask = 1,
+	.md1_req_mask = 0,
+	.md2_req_mask = 0,
+	.md32_req_mask = 1,
+	.md_apsrc_sel = 0,
+	.md2_apsrc_sel = 0,
+	.lte_mask = 1,
+	.conn_mask = 0,
+#ifdef CONFIG_MTK_NFC
+	.srclkenai_mask = 0,	/* unmask for NFC use */
+#else
+	.srclkenai_mask = 1,	/* mask for gpio/i2c use */
+#endif
+#if 0
+	/* use for birng-up */
+	.ccif0_to_ap_mask = 1,
+	.ccif0_to_md_mask = 1,
+	.ccif1_to_ap_mask = 1,
+	.ccif1_to_md_mask = 1,
+	.ccifmd_md1_event_mask = 1,
+	.ccifmd_md2_event_mask = 1,
+#endif
+	/* .pcm_apsrc_req = 1, */
+
+	/* .pcm_f26m_req = 1, */
+
+	.ca7_wfi0_en = 1,
+	.ca7_wfi1_en = 1,
+	.ca7_wfi2_en = 1,
+	.ca7_wfi3_en = 1,
+	.ca15_wfi0_en = 0,
+	.ca15_wfi1_en = 0,
+	.ca15_wfi2_en = 0,
+	.ca15_wfi3_en = 0,
+
+#if SPM_BYPASS_SYSPWREQ
+	.syspwreq_mask = 1,
+#endif
+};
+
+#else
 
 static struct pwr_ctrl suspend_ctrl = {
 	.wake_src = WAKE_SRC_FOR_SUSPEND,
@@ -832,8 +1051,12 @@ static struct pwr_ctrl suspend_ctrl = {
 #endif
 };
 
+#endif
+
 struct spm_lp_scen __spm_suspend = {
+#ifndef USE_DYNA_LOAD_SUSPEND
 	.pcmdesc = &suspend_pcm,
+#endif
 	.pwrctrl = &suspend_ctrl,
 	.wakestatus = &suspend_info[0],
 };
@@ -1148,6 +1371,7 @@ static wake_reason_t spm_output_wake_reason(struct wake_status *wakesta, struct 
 	}
 #endif
 
+#if !defined(CONFIG_ARCH_MT6580)
 #ifdef CONFIG_MTK_CCCI_DEVICES
 	if (wakesta->r13 & 0x18) {
 		spm_crit2("dump ID_DUMP_MD_SLEEP_MODE");
@@ -1157,6 +1381,8 @@ static wake_reason_t spm_output_wake_reason(struct wake_status *wakesta, struct 
 
 	if (wakesta->r12 & WAKE_SRC_CLDMA_MD)
 		exec_ccci_kern_func_by_md_id(0, ID_GET_MD_WAKEUP_SRC, NULL, 0);
+
+#endif				/* !defined(CONFIG_ARCH_MT6580) */
 
 	return wr;
 }
@@ -1275,7 +1501,7 @@ void spm_suspend_aee_init(void)
 /* #include <cust_pmic.h> */
 #ifndef DISABLE_DLPT_FEATURE
 /* extern int get_dlpt_imix_spm(void); */
-int __attribute__((weak)) get_dlpt_imix_spm(void)
+int __attribute__ ((weak)) get_dlpt_imix_spm(void)
 {
 	return 0;
 }
@@ -1314,9 +1540,17 @@ wake_reason_t spm_go_to_sleep(u32 spm_flags, u32 spm_data)
 	return last_wr;
     }
 */
+#ifndef USE_DYNA_LOAD_SUSPEND
 	pcmdesc = __spm_suspend.pcmdesc;
 	pwrctrl = __spm_suspend.pwrctrl;
+#else
+	pwrctrl = __spm_suspend.pwrctrl;
 
+	if (dyna_load_pcm[DYNA_LOAD_PCM_SUSPEND].ready)
+		pcmdesc = &(dyna_load_pcm[DYNA_LOAD_PCM_SUSPEND].desc);
+	else
+		BUG();
+#endif
 	set_pwrctrl_pcm_flags(pwrctrl, spm_flags);
 	set_pwrctrl_pcm_data(pwrctrl, spm_data);
 
@@ -1369,9 +1603,10 @@ wake_reason_t spm_go_to_sleep(u32 spm_flags, u32 spm_data)
 
 	__spm_set_wakeup_event(pwrctrl);
 
+#if !defined(CONFIG_ARCH_MT6580)
 	mt_cpufreq_set_pmic_phase(PMIC_WRAP_PHASE_SUSPEND);
-
-	#if 0
+#endif
+#if 0
 	temp_a = spm_read(PMIC_WRAP_DVFS_WDATA5);
 	temp_b = spm_read(PMIC_WRAP_DVFS_WDATA4);
 	spm_write(SPM_PCM_PASR_DPD_3, (temp_a << 16) | temp_b);
@@ -1404,7 +1639,10 @@ wake_reason_t spm_go_to_sleep(u32 spm_flags, u32 spm_data)
 #endif
 
 	spm_trigger_wfi_for_sleep(pwrctrl);
+
+#if !defined(CONFIG_ARCH_MT6580)
 	mt_cpufreq_set_pmic_phase(PMIC_WRAP_PHASE_NORMAL);
+#endif
 
 #if SPM_AEE_RR_REC
 	aee_rr_rec_spm_suspend_val(aee_rr_curr_spm_suspend_val() | (1 << SPM_SUSPEND_LEAVE_WFI));
@@ -1614,5 +1852,17 @@ u32 spm_get_last_wakeup_misc(void)
 {
 	return spm_wakesta.wake_misc;
 }
+
+#if defined(CONFIG_ARCH_MT6580)
+uint32_t get_suspend_debug_flag(void)
+{
+	uint32_t value = 0;
+
+	value = spm_read(SPM_PCM_WDT_LATCH);
+	spm_crit("PCM_WDT_LATCH=0x%x\n", spm_read(SPM_PCM_WDT_LATCH));
+	return value;
+}
+EXPORT_SYMBOL(get_suspend_debug_flag);
+#endif
 
 MODULE_DESCRIPTION("SPM-Sleep Driver v0.1");

@@ -30,6 +30,52 @@ void __weak aee_kernel_warning_api(const char *file, const int line, const int d
 {
 }
 
+#if defined(CONFIG_ARCH_MT6580)
+#define ENABLE_DYNA_LOAD_PCM
+#endif
+
+#ifdef ENABLE_DYNA_LOAD_PCM	/* for dyna_load_pcm */
+/* for request_firmware */
+#include <linux/firmware.h>
+#include <linux/platform_device.h>
+#include <linux/seq_file.h>
+#include <linux/debugfs.h>
+#include <linux/dcache.h>
+#include <asm/cacheflush.h>
+#include <linux/dma-direction.h>
+
+static struct dentry *spm_dir;
+static struct dentry *spm_file;
+static struct platform_device *pspmdev;
+static int dyna_load_pcm_done;
+static char *dyna_load_pcm_path[] = {
+	[DYNA_LOAD_PCM_SUSPEND] = "pcm_suspend.bin",
+	[DYNA_LOAD_PCM_SODI] = "pcm_sodi.bin",
+	[DYNA_LOAD_PCM_DEEPIDLE] = "pcm_deepidle.bin",
+	[DYNA_LOAD_PCM_MAX] = "pcm_path_max",
+};
+
+MODULE_FIRMWARE(dyna_load_pcm_path[DYNA_LOAD_PCM_SUSPEND]);
+MODULE_FIRMWARE(dyna_load_pcm_path[DYNA_LOAD_PCM_SODI]);
+MODULE_FIRMWARE(dyna_load_pcm_path[DYNA_LOAD_PCM_DEEPIDLE]);
+
+struct dyna_load_pcm_t dyna_load_pcm[DYNA_LOAD_PCM_MAX];
+
+/* add char device for spm */
+#include <linux/cdev.h>
+#define SPM_DETECT_MAJOR 159	/* FIXME */
+#define SPM_DETECT_DEV_NUM 1
+#define SPM_DETECT_DRVIER_NAME "spm"
+#define SPM_DETECT_DEVICE_NAME "spm"
+
+struct class *pspmDetectClass = NULL;
+struct device *pspmDetectDev = NULL;
+static int gSPMDetectMajor = SPM_DETECT_MAJOR;
+static struct cdev gSPMDetectCdev;
+
+#endif				/* ENABLE_DYNA_LOAD_PCM */
+
+
 #ifdef CONFIG_OF
 #if !defined(CONFIG_ARCH_MT6580)
 void __iomem *spm_base;
@@ -432,7 +478,8 @@ int spm_module_init(void)
 
 #ifndef CONFIG_MTK_FPGA
 #if defined(CONFIG_PM)
-#if defined(CONFIG_ARCH_MT6735) /* || defined(CONFIG_ARCH_MT6735M) || defined(CONFIG_ARCH_MT6753) */
+#if defined(CONFIG_ARCH_MT6735) || defined(CONFIG_ARCH_MT6580)
+/* || defined(CONFIG_ARCH_MT6735M) || defined(CONFIG_ARCH_MT6753) */
 	if (spm_fs_init() != 0)
 		r = -EPERM;
 #endif
@@ -477,6 +524,235 @@ int spm_module_init(void)
 
 	return r;
 }
+
+#ifdef ENABLE_DYNA_LOAD_PCM	/* for dyna_load_pcm */
+int spm_load_pcm_firmware(struct platform_device *pdev)
+{
+	const struct firmware *fw;
+	int err = 0;
+	int i;
+	int offset = 0;
+
+	if (!pdev)
+		return err;
+
+	if (dyna_load_pcm_done)
+		return err;
+
+	for (i = DYNA_LOAD_PCM_SUSPEND; i < DYNA_LOAD_PCM_MAX; i++) {
+		u16 firmware_size = 0;
+		int copy_size = 0;
+		struct pcm_desc *pdesc = &(dyna_load_pcm[i].desc);
+
+		err = request_firmware(&fw, dyna_load_pcm_path[i], &pdev->dev);
+		if (err) {
+			pr_debug("Failed to load %s, %d.\n", dyna_load_pcm_path[i], err);
+			continue;
+			/* return -EINVAL; */
+		}
+
+		/* Do whatever it takes to load firmware into device. */
+		offset = 0;
+		copy_size = 2;
+		memcpy(&firmware_size, fw->data, copy_size);
+
+		offset += copy_size;
+		copy_size = firmware_size * 4;
+		memcpy(dyna_load_pcm[i].buf, fw->data + offset, copy_size);
+		dmac_map_area((void *)dyna_load_pcm[i].buf, PCM_FIRMWARE_SIZE, DMA_TO_DEVICE);
+
+		offset += copy_size;
+		copy_size = sizeof(struct pcm_desc) - offsetof(struct pcm_desc, size);
+		memcpy((void *)&(dyna_load_pcm[i].desc.size), fw->data + offset, copy_size);
+
+		offset += copy_size;
+		copy_size = fw->size - offset;
+		memcpy(dyna_load_pcm[i].version, fw->data + offset, copy_size);
+		pdesc->version = dyna_load_pcm[i].version;
+		pdesc->base = (u32 *)dyna_load_pcm[i].buf;
+
+		release_firmware(fw);
+
+		dyna_load_pcm[i].ready = 1;
+		dyna_load_pcm_done = 1;
+	}
+
+
+	return err;
+}
+
+int spm_load_pcm_firmware_nodev(void)
+{
+	spm_load_pcm_firmware(pspmdev);
+	return 0;
+}
+
+int spm_load_firmware_status(void)
+{
+	return dyna_load_pcm_done;
+}
+
+static int spm_dbg_show_firmware(struct seq_file *s, void *unused)
+{
+	int i;
+	struct pcm_desc *pdesc = NULL;
+
+	for (i = DYNA_LOAD_PCM_SUSPEND; i < DYNA_LOAD_PCM_MAX; i++) {
+		pdesc = &(dyna_load_pcm[i].desc);
+		seq_printf(s, "#@# %s\n", dyna_load_pcm_path[i]);
+
+		if (pdesc->version) {
+			seq_printf(s, "#@#  version = %s\n", pdesc->version);
+			seq_printf(s, "#@#  base = 0x%p\n", pdesc->base);
+			seq_printf(s, "#@#  size = %u\n", pdesc->size);
+			seq_printf(s, "#@#  sess = %u\n", pdesc->sess);
+			seq_printf(s, "#@#  replace = %u\n", pdesc->replace);
+			seq_printf(s, "#@#  vec0 = 0x%x\n", pdesc->vec0);
+			seq_printf(s, "#@#  vec1 = 0x%x\n", pdesc->vec1);
+			seq_printf(s, "#@#  vec2 = 0x%x\n", pdesc->vec2);
+			seq_printf(s, "#@#  vec3 = 0x%x\n", pdesc->vec3);
+			seq_printf(s, "#@#  vec4 = 0x%x\n", pdesc->vec4);
+			seq_printf(s, "#@#  vec5 = 0x%x\n", pdesc->vec5);
+			seq_printf(s, "#@#  vec6 = 0x%x\n", pdesc->vec6);
+			seq_printf(s, "#@#  vec7 = 0x%x\n", pdesc->vec7);
+		}
+	}
+	seq_puts(s, "\n\n");
+
+	return 0;
+}
+
+static int spm_dbg_open(struct inode *inode, struct file *file)
+{
+	return single_open(file, spm_dbg_show_firmware, &inode->i_private);
+}
+
+static const struct file_operations spm_debug_fops = {
+	.open = spm_dbg_open,
+	.read = seq_read,
+	.llseek = seq_lseek,
+	.release = single_release,
+};
+
+static int SPM_detect_open(struct inode *inode, struct file *file)
+{
+	pr_debug("open major %d minor %d (pid %d)\n", imajor(inode), iminor(inode), current->pid);
+	spm_load_pcm_firmware_nodev();
+
+	return 0;
+}
+
+static int SPM_detect_close(struct inode *inode, struct file *file)
+{
+	pr_debug("close major %d minor %d (pid %d)\n", imajor(inode), iminor(inode), current->pid);
+
+	return 0;
+}
+
+static ssize_t SPM_detect_read(struct file *filp, char __user *buf, size_t count, loff_t *f_pos)
+{
+	pr_debug(" ++\n");
+	pr_debug(" --\n");
+
+	return 0;
+}
+
+ssize_t SPM_detect_write(struct file *filp, const char __user *buf, size_t count, loff_t *f_pos)
+{
+	pr_debug(" ++\n");
+	pr_debug(" --\n");
+
+	return 0;
+}
+
+const struct file_operations gSPMDetectFops = {
+	.open = SPM_detect_open,
+	.release = SPM_detect_close,
+	.read = SPM_detect_read,
+	.write = SPM_detect_write,
+};
+
+int spm_module_late_init(void)
+{
+	int i = 0;
+	dev_t devID = MKDEV(gSPMDetectMajor, 0);
+	int cdevErr = -1;
+	int ret = -1;
+
+	pspmdev = platform_device_register_simple("spm", 0, NULL, 0);
+	if (IS_ERR(pspmdev)) {
+		pr_debug("Failed to register platform device.\n");
+		return -EINVAL;
+	}
+
+	ret = register_chrdev_region(devID, SPM_DETECT_DEV_NUM, SPM_DETECT_DRVIER_NAME);
+	if (ret) {
+		pr_debug("fail to register chrdev\n");
+		return ret;
+	}
+
+	cdev_init(&gSPMDetectCdev, &gSPMDetectFops);
+	gSPMDetectCdev.owner = THIS_MODULE;
+
+	cdevErr = cdev_add(&gSPMDetectCdev, devID, SPM_DETECT_DEV_NUM);
+	if (cdevErr) {
+		pr_debug("cdev_add() fails (%d)\n", cdevErr);
+		goto err1;
+	}
+
+	pspmDetectClass = class_create(THIS_MODULE, SPM_DETECT_DEVICE_NAME);
+	if (IS_ERR(pspmDetectClass)) {
+		pr_debug("class create fail, error code(%ld)\n", PTR_ERR(pspmDetectClass));
+		goto err1;
+	}
+
+	pspmDetectDev = device_create(pspmDetectClass, NULL, devID, NULL, SPM_DETECT_DEVICE_NAME);
+	if (IS_ERR(pspmDetectDev)) {
+		pr_debug("device create fail, error code(%ld)\n", PTR_ERR(pspmDetectDev));
+		goto err2;
+	}
+
+	pr_debug("driver(major %d) installed success\n", gSPMDetectMajor);
+
+	spm_dir = debugfs_create_dir("spm", NULL);
+	if (spm_dir == NULL) {
+		pr_debug("Failed to create spm dir in debugfs.\n");
+		return -EINVAL;
+	}
+
+	spm_file = debugfs_create_file("firmware", S_IRUGO,
+				       spm_dir, NULL, &spm_debug_fops);
+
+	for (i = DYNA_LOAD_PCM_SUSPEND; i < DYNA_LOAD_PCM_MAX; i++)
+		dyna_load_pcm[i].ready = 0;
+
+	return 0;
+
+err2:
+
+	if (pspmDetectClass) {
+		class_destroy(pspmDetectClass);
+		pspmDetectClass = NULL;
+	}
+
+err1:
+
+	if (cdevErr == 0)
+		cdev_del(&gSPMDetectCdev);
+
+	if (ret == 0) {
+		unregister_chrdev_region(devID, SPM_DETECT_DEV_NUM);
+		gSPMDetectMajor = -1;
+	}
+
+	pr_debug("fail\n");
+
+	return -1;
+
+}
+late_initcall(spm_module_late_init);
+#endif				/* ENABLE_DYNA_LOAD_PCM */
+
 
 /*
  * PLL Request API

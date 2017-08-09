@@ -7,6 +7,10 @@
 
 #elif defined(CONFIG_ARCH_MT6735) || defined(CONFIG_ARCH_MT6735M) || defined(CONFIG_ARCH_MT6753)
 
+#elif defined(CONFIG_ARCH_MT6580)
+
+#include "spm_v1/mt_spm_mt6580.h"
+
 #endif
 
 #endif /* __MT_SPM_H__ */

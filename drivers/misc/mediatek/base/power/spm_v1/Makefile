@@ -1,4 +1,5 @@
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/$(MTK_PLATFORM)/
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include/
 
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/irq/$(MTK_PLATFORM)/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/dramc/$(MTK_PLATFORM)/
@@ -25,6 +26,6 @@ ifneq ($(CONFIG_ARCH_MT6580),y)
 obj-y += mt_spm_dpidle.o
 endif
 
-ifneq ($(CONFIG_ARCH_MT6580),y)
+
 obj-y += mt_spm_sleep.o
-endif
+
